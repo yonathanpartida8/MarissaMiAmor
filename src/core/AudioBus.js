@@ -39,7 +39,10 @@ export class AudioBus extends Emitter {
       audio.src = cfg.src;
       audio.loop = cfg.loop;
       audio.volume = 0;
-      audio.preload = name === "music" ? "auto" : "auto";
+      // La música son 5 MB: pedirla entera antes de la primera página compite
+      // con las ilustraciones y retrasa la apertura del libro en datos móviles.
+      // Con "none" no se toca hasta que suena, y suena en streaming.
+      audio.preload = name === "music" ? "none" : "auto";
       audio.crossOrigin = "anonymous";
       // Silencia errores de red: el libro debe funcionar sin sonido.
       audio.addEventListener("error", () => this.tracks.delete(name));
