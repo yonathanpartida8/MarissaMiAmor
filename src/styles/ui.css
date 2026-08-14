@@ -1,0 +1,303 @@
+/* ============================================================
+   UI — el cromo mínimo alrededor del libro.
+   ============================================================ */
+
+#ui {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-ui);
+  pointer-events: none;
+}
+
+#ui > * {
+  pointer-events: auto;
+}
+
+/* ---- Hilo de progreso -------------------------------------- */
+.progress {
+  position: absolute;
+  top: calc(var(--safe-t) + 6px);
+  left: calc(var(--safe-l) + 14px);
+  right: calc(var(--safe-r) + 14px);
+  height: 2px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.09);
+  pointer-events: none;
+  transition: opacity var(--t-base) var(--e-out);
+}
+
+.progress__fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform: scaleX(0);
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent, var(--rose)), var(--gold-light));
+  box-shadow: 0 0 10px -1px var(--accent, var(--rose));
+  transition: transform var(--t-slow) var(--e-out), background var(--t-slow) linear;
+}
+
+.progress__ticks {
+  position: absolute;
+  inset: -4px 0;
+}
+
+.progress__tick {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--p) * 100%);
+  width: 2px;
+  height: 2px;
+  margin-left: -1px;
+  margin-top: -1px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+  transition: transform var(--t-base) var(--e-spring), background var(--t-base);
+}
+
+.progress__tick.is-past {
+  background: var(--gold-light);
+}
+
+.progress__tick.is-current {
+  transform: scale(3.2);
+  background: #fff;
+  box-shadow: 0 0 8px var(--accent, var(--rose));
+}
+
+#ui.is-bare .progress {
+  opacity: 0;
+}
+
+/* ---- Barra inferior ---------------------------------------- */
+.bar {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-b) + 12px);
+  transform: translate(-50%, 130%);
+  display: flex;
+  align-items: center;
+  gap: var(--gap-xs);
+  padding: 6px 8px;
+  border-radius: var(--r-pill);
+  background: rgba(14, 8, 22, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow: var(--sh-lift);
+  opacity: 0;
+  transition: transform 520ms var(--e-out), opacity 320ms var(--e-out);
+  max-width: calc(100vw - 2rem);
+}
+
+.bar.is-visible {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+
+#ui.is-bare .bar {
+  opacity: 0;
+  transform: translate(-50%, 130%);
+  pointer-events: none;
+}
+
+.bar__btn {
+  display: grid;
+  place-items: center;
+  width: var(--touch);
+  height: var(--touch);
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--text-soft);
+  transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast) var(--e-spring);
+}
+
+.bar__btn:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+.bar__btn:disabled {
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+.bar__center {
+  min-width: clamp(96px, 34vw, 190px);
+  text-align: center;
+  padding: 0 var(--gap-xs);
+  overflow: hidden;
+}
+
+.bar__title {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  line-height: 1.2;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar__count {
+  font-family: var(--font-ui);
+  font-size: 0.56rem;
+  font-weight: 300;
+  letter-spacing: 0.22em;
+  color: var(--text-faint);
+}
+
+.bar__tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 6px;
+  margin-left: 2px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bar__icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: var(--touch);
+  border-radius: var(--r-md);
+  font-size: 0.95rem;
+  color: var(--text-faint);
+  transition: color var(--t-fast), transform var(--t-fast) var(--e-spring);
+}
+
+.bar__icon:active {
+  transform: scale(0.88);
+}
+
+.bar__icon.is-on {
+  color: var(--gold-light);
+  text-shadow: 0 0 10px var(--gold);
+}
+
+.bar__secrets {
+  font-family: var(--font-ui);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+  padding-right: 6px;
+  white-space: nowrap;
+}
+
+.bar__secrets:empty {
+  display: none;
+}
+
+.bar__secrets.is-complete {
+  color: var(--rose-glow);
+  text-shadow: 0 0 12px var(--rose);
+}
+
+.bar__secrets.is-pop {
+  animation: secret-pop 640ms var(--e-spring);
+}
+
+@keyframes secret-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+
+/* ---- Pista ------------------------------------------------- */
+.hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-b) + 76px);
+  transform: translate(-50%, 10px);
+  max-width: min(84vw, 380px);
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--r-pill);
+  background: rgba(10, 5, 16, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  font-weight: 300;
+  letter-spacing: 0.14em;
+  text-align: center;
+  color: var(--text-soft);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 620ms var(--e-out), transform 620ms var(--e-out);
+}
+
+.hint.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  animation: hint-breathe 3.6s ease-in-out infinite;
+}
+
+@keyframes hint-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+/* ---- Aviso pasajero ---------------------------------------- */
+.toast {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--safe-t) + 26px);
+  transform: translate(-50%, -14px);
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--r-pill);
+  background: rgba(20, 10, 28, 0.78);
+  border: 1px solid rgba(215, 174, 114, 0.28);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font-family: var(--font-ui);
+  font-size: var(--fs-label);
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  color: var(--gold-light);
+  white-space: nowrap;
+  max-width: calc(100vw - 3rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-base) var(--e-out), transform var(--t-base) var(--e-out);
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Durante una transición, el cromo se aparta. */
+#ui.is-busy .bar,
+#ui.is-busy .hint {
+  opacity: 0;
+  transition-duration: 160ms;
+}
+
+/* En apaisado la barra se encoge: la pantalla tiene poca altura y el libro
+   ya ocupa casi todo el alto útil. */
+html[data-orientation="landscape"][data-device="phone"] .bar {
+  bottom: calc(var(--safe-b) + 6px);
+  padding: 3px 6px;
+  transform: translate(-50%, 130%) scale(0.82);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .bar.is-visible {
+  transform: translate(-50%, 0) scale(0.82);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .hint {
+  bottom: calc(var(--safe-b) + 52px);
+}
+
+/* En escritorio la barra vive debajo del libro, no encima. */
+html[data-device="desktop"] .bar,
+html[data-device="tablet"] .bar {
+  bottom: 20px;
+}

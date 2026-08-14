@@ -1,0 +1,156 @@
+/* ============================================================
+   CAMPO DE RECUERDOS
+   Los planos los dibuja WebGL; aquí van el texto y el respaldo.
+   ============================================================ */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+  overflow: hidden;
+}
+
+.field__surface {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  touch-action: none;
+  cursor: grab;
+}
+
+.field__surface:active {
+  cursor: grabbing;
+}
+
+/* ---- Tarjeta de texto --------------------------------------- */
+.field__card {
+  position: relative;
+  z-index: 3;
+  max-height: 44%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: clamp(0.9rem, calc(4 * var(--vw)), 1.4rem);
+  border-radius: var(--r-md);
+  background: linear-gradient(180deg, rgba(9, 5, 14, 0.72), rgba(6, 3, 11, 0.95));
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 900ms var(--e-out) 300ms, transform 900ms var(--e-out) 300ms;
+}
+
+.field.is-entered .field__card {
+  opacity: 1;
+  transform: none;
+}
+
+/* Al enfocar un recuerdo, el texto se aparta para dejarlo ver. */
+.field.is-focused .field__card {
+  opacity: 0.12;
+  transform: translateY(30%) scale(0.96);
+  transition-delay: 0ms;
+  pointer-events: none;
+}
+
+.field__card .kicker {
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+}
+
+.field__title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(1.5rem, calc(6.4 * var(--vw)), 2.1rem);
+  line-height: 1.06;
+  color: #fff;
+}
+
+.field__card .rule {
+  margin: 0.4rem 0 0.65rem;
+  background: linear-gradient(90deg, var(--accent), transparent 72%);
+}
+
+.field__scroll {
+  min-height: 0;
+  overflow-y: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 16px), transparent 100%);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 16px), transparent 100%);
+}
+
+.field__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.field__prose {
+  font-family: var(--font-display);
+  font-size: clamp(0.98rem, calc(3.8 * var(--vw)), 1.16rem);
+  line-height: 1.7;
+  color: rgba(246, 238, 232, 0.9);
+  text-align: justify;
+  hyphens: auto;
+  --word-delay: 400ms;
+}
+
+/* ---- Etiqueta del recuerdo enfocado ------------------------- */
+.field__badge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--safe-t) + 2.4rem);
+  z-index: 4;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 400ms var(--e-out), transform 400ms var(--e-out);
+  pointer-events: none;
+}
+
+.field.is-focused .field__badge {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---- Respaldo sin WebGL: mosaico ---------------------------- */
+.field__fallback {
+  display: none;
+}
+
+.field__fallback.is-active {
+  position: absolute;
+  inset: var(--pad-t) var(--pad-x) 46%;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 6px;
+}
+
+.field__cell {
+  border-radius: var(--r-sm);
+  background-size: cover;
+  background-position: center;
+  background-color: rgba(255, 255, 255, 0.04);
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 700ms var(--e-out), transform 700ms var(--e-out);
+}
+
+.field__cell.is-loaded {
+  opacity: 0.9;
+  transform: none;
+}

@@ -1,0 +1,287 @@
+/* ============================================================
+   STAGE — el libro y la mecánica de sus hojas.
+   ============================================================ */
+
+#stage {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-stage);
+  display: grid;
+  place-items: center;
+  /* La perspectiva es lo que convierte el giro en una hoja y no en un truco. */
+  perspective: 1500px;
+  perspective-origin: 50% 46%;
+  touch-action: none;
+  overflow: hidden;
+}
+
+/* ---- Medidas de la hoja ------------------------------------
+   Móvil: a sangre, como una app. Tablet y escritorio: un libro
+   apoyado sobre una mesa oscura, con su sombra.               */
+#stage {
+  --frame-w: 100vw;
+  --frame-h: var(--app-h);
+  --frame-radius: 0px;
+
+  /* «1% del ancho de la HOJA», que no es lo mismo que 1vw.
+     En apaisado la ventana mide 844px pero la hoja 311: escalar la
+     tipografía con vw hacía que el título se saliera de la página. */
+  --vw: calc(var(--frame-w) / 100);
+
+  /* La escala tipográfica se redefine aquí en función de la hoja.
+     Fuera de #stage (la pantalla de apertura) siguen valiendo las de :root. */
+  --fs-micro: clamp(0.56rem, calc(3.4 * var(--vw)), 0.7rem);
+  --fs-label: clamp(0.65rem, calc(4.2 * var(--vw)), 0.8rem);
+  --fs-body: clamp(1rem, calc(4.6 * var(--vw)), 1.3rem);
+  --fs-lead: clamp(1.14rem, calc(5.3 * var(--vw)), 1.5rem);
+  --fs-title: clamp(1.7rem, calc(9.6 * var(--vw)), 3.1rem);
+  --fs-hero: clamp(2.4rem, calc(15 * var(--vw)), 5rem);
+  --pad-page: clamp(1.2rem, calc(6.4 * var(--vw)), 2.6rem);
+}
+
+html[data-device="tablet"] #stage,
+html[data-device="desktop"] #stage {
+  /* Hueco reservado abajo para que la barra no se apoye sobre el libro. */
+  --frame-h: min(calc(var(--app-h) - 7.5rem), 860px);
+  --frame-w: min(calc(var(--frame-h) / 1.52), calc(100vw - 4rem));
+  --frame-radius: var(--r-book);
+}
+
+html[data-orientation="landscape"][data-device="phone"] #stage {
+  --frame-h: calc(var(--app-h) - 1rem);
+  --frame-w: min(calc(var(--frame-h) / 1.2), calc(100vw - 2rem));
+  --frame-radius: var(--r-book);
+}
+
+/* ---- La hoja ----------------------------------------------- */
+.leaf {
+  position: absolute;
+  width: var(--frame-w);
+  height: var(--frame-h);
+  border-radius: var(--frame-radius);
+  transform-style: preserve-3d;
+  /* El lomo está a la izquierda: la hoja gira sobre él. */
+  transform-origin: left center;
+  backface-visibility: visible;
+  will-change: transform;
+  --leaf-shade: 0;
+  --leaf-progress: 0;
+  --under-shade: 0;
+  --under-scale: 1;
+}
+
+html[data-device="tablet"] .leaf,
+html[data-device="desktop"] .leaf {
+  box-shadow: var(--sh-book);
+}
+
+/* Hoja fuera de juego: construida pero invisible y sorda. */
+.leaf--staged,
+.leaf--hidden {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Durante el giro no hay transición CSS: manda el muelle en JS. */
+.leaf--turning {
+  transition: none;
+  z-index: 3;
+}
+
+/* La hoja que se descubre debajo: ligeramente hundida en el libro. */
+.leaf--under {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: none;
+  transform: scale(var(--under-scale));
+  z-index: 2;
+}
+
+/* ---- Las dos caras ----------------------------------------- */
+.leaf__face {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: flat;
+}
+
+.leaf__face--back {
+  transform: rotateY(180deg);
+}
+
+/* Sombreado propio de cada cara mientras gira: el papel se oscurece
+   conforme se aleja de la luz. */
+.leaf__face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 46%);
+  opacity: var(--leaf-shade, 0);
+  transition: opacity 60ms linear;
+  z-index: 90;
+}
+
+/* Sombra que la hoja en movimiento proyecta sobre la de debajo. */
+.leaf__shade {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 80;
+  opacity: var(--under-shade, 0);
+  background: linear-gradient(
+    100deg,
+    rgba(0, 0, 0, 0.78) 0%,
+    rgba(0, 0, 0, 0.34) 32%,
+    rgba(0, 0, 0, 0) 62%
+  );
+}
+
+.leaf:not(.leaf--under) .leaf__shade {
+  opacity: 0;
+}
+
+/* ---- El contenido de la página ------------------------------ */
+.page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: inherit;
+  overflow: hidden;
+  isolation: isolate;
+  /* Márgenes seguros: nada toca el notch ni la barra de gestos. */
+  --pad-t: calc(var(--safe-t) + var(--pad-page));
+  --pad-b: calc(var(--safe-b) + var(--pad-page));
+  --pad-x: calc(var(--pad-page) + max(var(--safe-l), var(--safe-r)));
+}
+
+html[data-device="tablet"] .page,
+html[data-device="desktop"] .page {
+  --pad-t: var(--pad-page);
+  --pad-b: var(--pad-page);
+  --pad-x: var(--pad-page);
+}
+
+/* Un lomo sutil en el borde izquierdo: recuerda que esto está encuadernado. */
+.page::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: clamp(10px, calc(3 * var(--vw)), 22px);
+  pointer-events: none;
+  z-index: 60;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.42) 0%,
+    rgba(0, 0, 0, 0.16) 45%,
+    rgba(255, 255, 255, 0.05) 82%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+/* Mientras se arrastra, nada dentro de la página responde al dedo:
+   el gesto pertenece a la hoja. */
+#stage.is-dragging .page {
+  pointer-events: none;
+}
+
+/* Las páginas WebGL dejan ver la atmósfera del fondo. */
+.page[data-gl="true"] {
+  background: transparent;
+}
+.page[data-gl="true"]::before {
+  opacity: 0.4;
+}
+
+/* ---- Verso de la hoja --------------------------------------- */
+.verso {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-md);
+  padding: var(--pad-page);
+  background:
+    linear-gradient(118deg, var(--paper-200) 0%, var(--paper-100) 40%, var(--paper-300) 100%);
+  background-blend-mode: multiply;
+  color: var(--paper-ink-soft);
+  overflow: hidden;
+}
+
+.verso::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--paper-src);
+  background-size: 256px 256px;
+  opacity: 0.6;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+/* El lomo también existe por detrás, pero al otro lado. */
+.verso::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: clamp(10px, calc(3 * var(--vw)), 22px);
+  background: linear-gradient(270deg, rgba(90, 70, 55, 0.32), transparent);
+  pointer-events: none;
+}
+
+.verso__rule {
+  width: 46%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--verso-accent), transparent);
+  opacity: 0.5;
+}
+
+.verso__mark {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  color: var(--verso-accent);
+  opacity: 0.65;
+}
+
+.verso__num {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  color: var(--paper-ink);
+  opacity: 0.5;
+}
+
+.verso__title {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  opacity: 0.45;
+  text-align: center;
+}
+
+.verso__watermark {
+  position: absolute;
+  right: clamp(1.4rem, calc(6 * var(--vw)), 3rem);
+  bottom: clamp(1.4rem, calc(6 * var(--vw)), 3rem);
+  font-family: var(--font-display);
+  font-size: clamp(4rem, calc(18 * var(--vw)), 7rem);
+  line-height: 1;
+  color: var(--paper-edge);
+  opacity: 0.18;
+  pointer-events: none;
+}

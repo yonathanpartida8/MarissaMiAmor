@@ -1,0 +1,206 @@
+/* ============================================================
+   POLAROIDS SOBRE LA MESA
+   ============================================================ */
+
+.polaroids {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(0.5rem, 2vh, 1rem);
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+}
+
+.pola__head {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 600ms var(--e-out), transform 600ms var(--e-out);
+}
+
+.polaroids.is-entered .pola__head {
+  opacity: 1;
+  transform: none;
+}
+
+.pola__title {
+  font-size: clamp(1.4rem, calc(6 * var(--vw)), 2rem);
+  margin-top: 0.15rem;
+}
+
+/* ---- La mesa ------------------------------------------------ */
+.pola__field {
+  position: relative;
+  min-height: 0;
+  perspective: 1200px;
+  touch-action: none;
+  /* Sombra de mesa: da la sensación de superficie, no de vacío. */
+  background: radial-gradient(ellipse 70% 55% at 50% 55%, rgba(90, 66, 50, 0.1), transparent 72%);
+  border-radius: var(--r-lg);
+}
+
+.pola {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(104px, calc(31 * var(--vw)), 138px);
+  margin-left: calc(clamp(104px, calc(31 * var(--vw)), 138px) / -2);
+  margin-top: calc(clamp(104px, calc(31 * var(--vw)), 138px) * -0.62);
+  aspect-ratio: 5 / 6;
+  transform-style: preserve-3d;
+  will-change: transform;
+  touch-action: none;
+  cursor: grab;
+  outline: none;
+  opacity: 0;
+  animation: pola-drop 700ms var(--e-out) both;
+}
+
+.polaroids.is-entered .pola {
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+
+@keyframes pola-drop {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.pola:active {
+  cursor: grabbing;
+}
+
+.pola__inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 620ms var(--e-spring);
+}
+
+.pola.is-flipped .pola__inner {
+  transform: rotateY(180deg);
+}
+
+.pola__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 3px;
+  /* El marco blanco característico: más ancho abajo. */
+  background: linear-gradient(165deg, #fffdf8, #f2ece0 70%, #e6ded0);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 10px 22px -8px rgba(50, 34, 24, 0.55),
+    0 2px 4px rgba(50, 34, 24, 0.25);
+  padding: 7% 7% 20%;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 240ms var(--e-out);
+}
+
+.pola.is-dragging .pola__face {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 26px 44px -12px rgba(40, 26, 18, 0.62),
+    0 6px 12px rgba(40, 26, 18, 0.3);
+}
+
+.pola.is-dragging .pola__inner {
+  transform: scale(1.08);
+  transition: transform 220ms var(--e-out);
+}
+
+.pola.is-dragging.is-flipped .pola__inner {
+  transform: scale(1.08) rotateY(180deg);
+}
+
+.pola__face--back {
+  transform: rotateY(180deg);
+  padding: 12%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: linear-gradient(165deg, #fdf8ee, #efe6d6);
+}
+
+.pola__img {
+  flex: 1;
+  min-height: 0;
+  background-color: #cfc6b8;
+  background-size: cover;
+  background-position: center;
+  /* Aparece revelándose, como una polaroid de verdad. */
+  opacity: 0;
+  filter: saturate(0.2) contrast(0.8) brightness(1.2);
+  transition: opacity 900ms var(--e-out), filter 1800ms var(--e-out);
+}
+
+.pola__img.is-loaded {
+  opacity: 1;
+  filter: none;
+}
+
+.pola__caption {
+  padding-top: 6%;
+  font-family: var(--font-hand);
+  font-size: 0.78rem;
+  text-align: center;
+  color: #6b5f52;
+  opacity: 0.7;
+}
+
+.pola__note {
+  font-family: var(--font-hand);
+  font-size: clamp(0.9rem, calc(3.6 * var(--vw)), 1.15rem);
+  line-height: 1.35;
+  text-align: center;
+  color: #2f3f6b;
+  transform: rotate(-2deg);
+}
+
+.pola__stamp {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--accent);
+  opacity: 0.55;
+}
+
+/* ---- Panel de texto ---------------------------------------- */
+.pola__panel {
+  max-height: min(30vh, 190px);
+  display: flex;
+  padding-top: var(--gap-xs);
+  border-top: 1px solid rgba(120, 92, 70, 0.16);
+}
+
+.pola__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 16px), transparent 100%);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 16px), transparent 100%);
+}
+
+.pola__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.pola__prose {
+  font-size: clamp(0.92rem, calc(3.5 * var(--vw)), 1.08rem);
+  line-height: 1.66;
+  --word-delay: 300ms;
+}
+
+.pola__prose::first-letter {
+  font-size: 1em;
+  float: none;
+  padding: 0;
+  color: inherit;
+  font-weight: inherit;
+}
+
+@media (max-height: 680px) {
+  .pola__panel { max-height: 24vh; }
+  .pola { width: clamp(92px, calc(27 * var(--vw)), 120px); }
+}

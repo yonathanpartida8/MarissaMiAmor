@@ -1,0 +1,152 @@
+/* ============================================================
+   BASE — reset y comportamiento de app móvil (no de web).
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--ink-950);
+}
+
+html {
+  /* Bloquea el ajuste automático de texto de iOS al rotar. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-ui);
+  color: var(--text);
+  line-height: 1.55;
+  font-synthesis-weight: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Sin selección accidental al arrastrar páginas. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  /* El gesto de scroll vertical del navegador nunca compite con el libro. */
+  touch-action: none;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+canvas {
+  display: block;
+}
+
+h1,
+h2,
+h3,
+p,
+figure {
+  margin: 0;
+}
+
+::selection {
+  background: var(--rose-deep);
+  color: var(--paper-000);
+}
+
+/* Zonas que sí permiten seleccionar texto (cartas largas). */
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* ---- Capa WebGL ------------------------------------------ */
+#gl {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: var(--z-gl);
+  pointer-events: none;
+  /* Evita el "flash" blanco antes del primer frame. */
+  background: radial-gradient(ellipse 120% 80% at 50% 30%, #1b0f2b 0%, #0a0510 55%, #06030b 100%);
+}
+
+/* ---- Grano de película ----------------------------------- */
+#grain {
+  position: fixed;
+  inset: -50%;
+  z-index: var(--z-grain);
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: var(--grain-src);
+  background-size: 180px 180px;
+  will-change: transform;
+  animation: grain-shift 900ms steps(4, end) infinite;
+}
+
+@keyframes grain-shift {
+  0% { transform: translate3d(0, 0, 0); }
+  25% { transform: translate3d(-3%, 2%, 0); }
+  50% { transform: translate3d(2%, -3%, 0); }
+  75% { transform: translate3d(-2%, -2%, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+/* ---- Viñeta cinematográfica ------------------------------ */
+#vignette {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-vignette);
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 96% 74% at 50% 48%, transparent 42%, rgba(4, 2, 8, 0.55) 100%);
+  transition: opacity var(--t-slow) var(--e-out);
+}
+
+html[data-tier="low"] #grain {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #grain {
+    animation: none;
+  }
+}
+
+/* Utilidad: sólo para lectores de pantalla. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

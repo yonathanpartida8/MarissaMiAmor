@@ -1,0 +1,172 @@
+/* ============================================================
+   PAPEL — la superficie compartida por las páginas escritas.
+   Fibra, borde barbado, sombra interior y luz que entra de arriba.
+   ============================================================ */
+
+.paper {
+  position: relative;
+  background:
+    radial-gradient(ellipse 130% 80% at 20% -6%, rgba(255, 252, 244, 0.95), transparent 58%),
+    linear-gradient(158deg, var(--paper-000) 0%, var(--paper-100) 44%, var(--paper-200) 100%);
+  color: var(--paper-ink);
+  isolation: isolate;
+}
+
+/* Fibra del papel (textura generada en canvas, sin descargas). */
+.paper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--paper-src);
+  background-size: 256px 256px;
+  mix-blend-mode: multiply;
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Luz ambiental: entra por arriba a la izquierda y se apaga abajo.
+   Es lo que hace que el papel parezca estar en una habitación. */
+.paper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  /* Sólo sombra: la luz ya está en el fondo. Mezclar un blanco en `multiply`
+     no aclara nada y apagaba todo el papel a un gris sucio. */
+  background:
+    radial-gradient(ellipse 90% 60% at 82% 106%, rgba(122, 94, 68, 0.2), transparent 62%),
+    linear-gradient(180deg, transparent 62%, rgba(104, 80, 60, 0.12) 100%);
+  mix-blend-mode: multiply;
+  opacity: 0.9;
+}
+
+.paper > * {
+  position: relative;
+  z-index: 3;
+}
+
+/* ---- Papel envejecido, para las cartas --------------------- */
+.paper--aged {
+  background:
+    radial-gradient(ellipse 120% 80% at 18% -4%, rgba(255, 250, 238, 0.9), transparent 56%),
+    linear-gradient(155deg, #fdf6ea 0%, #f4e8d4 52%, #e9d9c0 100%);
+}
+
+.paper--aged::after {
+  background:
+    radial-gradient(ellipse 60% 40% at 12% 8%, rgba(196, 152, 96, 0.13), transparent 70%),
+    radial-gradient(ellipse 50% 35% at 92% 88%, rgba(176, 128, 78, 0.16), transparent 70%),
+    linear-gradient(180deg, transparent 66%, rgba(120, 88, 56, 0.14) 100%);
+  mix-blend-mode: multiply;
+}
+
+/* ---- Borde barbado ----------------------------------------- */
+.paper--deckled {
+  --deckle: 3px;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.32));
+  -webkit-mask-image: var(--deckle-mask);
+  mask-image: var(--deckle-mask);
+}
+
+/* ---- Elementos tipográficos comunes del papel --------------- */
+.paper .kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  font-weight: 400;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--paper-ink-soft);
+  opacity: 0.72;
+}
+
+.paper .title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-title);
+  line-height: 1.06;
+  letter-spacing: 0.005em;
+  color: #2c211c;
+  text-wrap: balance;
+}
+
+.paper .prose {
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  font-weight: 400;
+  line-height: 1.72;
+  color: var(--paper-ink);
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  text-wrap: pretty;
+}
+
+.paper .prose::first-letter {
+  /* Capitular discreta: elegante, no de libro de cuentos. */
+  font-size: 2.9em;
+  line-height: 0.82;
+  float: left;
+  padding: 0.08em 0.12em 0 0;
+  color: var(--drop-color, var(--rose-deep));
+  font-weight: 300;
+}
+
+.paper .rule {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(90deg, var(--accent-line, var(--rose)) 0%, transparent 78%);
+  opacity: 0.5;
+}
+
+.paper .signature {
+  font-family: var(--font-hand);
+  font-size: clamp(1.5rem, calc(6 * var(--vw)), 2rem);
+  color: var(--rose-deep);
+  opacity: 0.82;
+  transform: rotate(-3deg);
+  transform-origin: left center;
+}
+
+/* ---- Tinta escrita a mano ---------------------------------- */
+.hand {
+  font-family: var(--font-hand);
+  font-size: clamp(1.3rem, calc(5.4 * var(--vw)), 1.75rem);
+  line-height: 1.5;
+  color: #2f3f6b;
+  /* La tinta de bolígrafo no es plana: tiene poso en los trazos. */
+  text-shadow: 0 0 1px rgba(47, 63, 107, 0.32);
+}
+
+/* ---- Animación de palabras (entrada escalonada) ------------- */
+.word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.5em) rotate(1.5deg);
+  filter: blur(3px);
+}
+
+.is-writing .word {
+  animation: word-in 620ms var(--e-out) both;
+  animation-delay: calc(var(--i) * 26ms + var(--word-delay, 0ms));
+}
+
+@keyframes word-in {
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  .is-writing .word {
+    animation: none;
+  }
+}
