@@ -1,0 +1,157 @@
+/* ============================================================
+   PÁGINA RASCABLE
+   ============================================================ */
+
+.scratch {
+  display: grid;
+  grid-template-rows: auto minmax(0, 42%) minmax(0, 1fr);
+  gap: clamp(0.7rem, 2.4vh, 1.3rem);
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  --revealed: 0;
+}
+
+.scratch__head {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 600ms var(--e-out) 100ms, transform 600ms var(--e-out) 100ms;
+}
+
+.scratch.is-entered .scratch__head {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---- La lámina --------------------------------------------- */
+.scratch__plate {
+  position: relative;
+  justify-self: center;
+  width: min(100%, 340px);
+  height: 100%;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  touch-action: none;
+  cursor: crosshair;
+  box-shadow:
+    0 0 0 1px rgba(120, 92, 70, 0.25),
+    0 14px 34px -12px rgba(60, 40, 30, 0.6);
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 800ms var(--e-out) 200ms, transform 900ms var(--e-out) 200ms;
+}
+
+.scratch.is-entered .scratch__plate {
+  opacity: 1;
+  transform: none;
+}
+
+.scratch__photo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  /* Mientras está tapada casi no se ve; al descubrirla, gana color y luz. */
+  filter: saturate(calc(0.6 + var(--revealed) * 0.45)) brightness(calc(0.8 + var(--revealed) * 0.25));
+  transform: scale(calc(1.05 - var(--revealed) * 0.05));
+  transition: filter 400ms linear, transform 600ms var(--e-out);
+}
+
+.scratch__frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  box-shadow:
+    inset 0 0 0 6px rgba(255, 250, 240, 0.5),
+    inset 0 0 0 7px rgba(120, 92, 70, 0.2),
+    inset 0 0 50px rgba(40, 24, 16, 0.3);
+  border-radius: inherit;
+}
+
+.scratch__canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+/* Polvillo de plata que se acumula: pista de que algo se está borrando. */
+.scratch__dust {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: calc(var(--revealed) * 0.55);
+  background: radial-gradient(circle at 50% 92%, rgba(190, 194, 205, 0.5), transparent 55%);
+  filter: blur(6px);
+}
+
+.scratch.is-revealed .scratch__plate {
+  box-shadow:
+    0 0 0 1px rgba(120, 92, 70, 0.25),
+    0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent),
+    0 18px 44px -12px rgba(60, 40, 30, 0.65);
+}
+
+/* ---- Texto -------------------------------------------------- */
+/* El título se lee desde el primer momento: es la promesa de lo que hay
+   debajo de la plata. Lo que se gana rascando es el texto y la ilustración. */
+.scratch__body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.scratch__scroll {
+  opacity: 0.22;
+  filter: blur(1.6px);
+  transition: opacity 900ms var(--e-out), filter 900ms var(--e-out);
+}
+
+.scratch.is-revealed .scratch__scroll {
+  opacity: 1;
+  filter: none;
+}
+
+.scratch__title {
+  font-size: clamp(1.5rem, calc(6.4 * var(--vw)), 2.2rem);
+  margin-bottom: 0.35rem;
+}
+
+.scratch__body .rule {
+  margin-bottom: var(--gap-sm);
+}
+
+.scratch__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 18px), transparent 100%);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 18px), transparent 100%);
+}
+
+.scratch__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.scratch__prose {
+  --word-delay: 120ms;
+}
+
+@media (max-height: 680px) {
+  .scratch { grid-template-rows: auto minmax(0, 40%) minmax(0, 1fr); }
+}
+
+html[data-orientation="landscape"][data-device="phone"] .scratch {
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 45% 1fr;
+  column-gap: var(--gap-md);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .scratch__head {
+  grid-column: 1 / -1;
+}

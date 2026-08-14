@@ -1,0 +1,170 @@
+/* ============================================================
+   BOOT — la primera respiración del libro.
+   ============================================================ */
+
+#boot {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-boot);
+  display: grid;
+  place-items: center;
+  padding: calc(var(--safe-t) + 2rem) 1.5rem calc(var(--safe-b) + 2rem);
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 42%, #1d1030 0%, #0a0510 58%, #06030b 100%);
+  transition: opacity 900ms var(--e-out), filter 900ms var(--e-out);
+}
+
+#boot.is-done {
+  opacity: 0;
+  filter: blur(14px);
+  pointer-events: none;
+}
+
+.boot__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: boot-rise 1100ms var(--e-out) both;
+}
+
+@keyframes boot-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+.boot__seal {
+  width: clamp(74px, 22vw, 104px);
+  aspect-ratio: 1;
+  margin-bottom: var(--gap-lg);
+  filter: drop-shadow(0 0 22px rgba(236, 111, 146, 0.35));
+}
+
+.boot__seal svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.boot__ring {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 1;
+  opacity: 0.5;
+  transform-origin: 50% 50%;
+  animation: seal-spin 14s linear infinite;
+}
+
+.boot__ring--2 {
+  stroke: var(--rose);
+  stroke-dasharray: 3 9;
+  opacity: 0.65;
+  animation-duration: 9s;
+  animation-direction: reverse;
+}
+
+@keyframes seal-spin {
+  to { transform: rotate(360deg); }
+}
+
+.boot__heart {
+  fill: none;
+  stroke: var(--rose-glow);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 160;
+  stroke-dashoffset: 160;
+  animation: heart-draw 2.4s var(--e-in-out) infinite;
+}
+
+@keyframes heart-draw {
+  0% { stroke-dashoffset: 160; opacity: 0.2; }
+  45% { stroke-dashoffset: 0; opacity: 1; }
+  75% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: -160; opacity: 0.2; }
+}
+
+.boot__kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  font-weight: 300;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.boot__name {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2.4rem, 12vw, 4rem);
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  margin: 0.3rem 0 var(--gap-lg);
+  background: linear-gradient(180deg, var(--paper-000) 0%, var(--gold-light) 60%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.boot__bar {
+  width: min(190px, 52vw);
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.boot__bar i {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, transparent, var(--rose-glow), var(--gold-light));
+  transition: width 380ms var(--e-out);
+  box-shadow: 0 0 10px var(--rose);
+}
+
+.boot__status {
+  margin-top: var(--gap-md);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.2em;
+  text-transform: lowercase;
+  color: var(--text-faint);
+  min-height: 1.2em;
+}
+
+.boot__noscript {
+  position: absolute;
+  bottom: calc(var(--safe-b) + 2rem);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--text-soft);
+  text-align: center;
+  padding: 0 2rem;
+}
+
+/* ---- Puerta de entrada: el toque que despierta el audio ---- */
+.boot__enter {
+  margin-top: var(--gap-lg);
+  padding: 0.85rem 1.9rem;
+  min-height: var(--touch);
+  border: 1px solid rgba(215, 174, 114, 0.45);
+  border-radius: var(--r-pill);
+  font-family: var(--font-ui);
+  font-size: var(--fs-label);
+  font-weight: 400;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--gold-light);
+  background: rgba(215, 174, 114, 0.06);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  transform: translateY(8px);
+  animation: boot-rise 700ms var(--e-out) 120ms both;
+  transition: background var(--t-fast), transform var(--t-fast) var(--e-spring);
+}
+
+.boot__enter:active {
+  transform: scale(0.96);
+  background: rgba(215, 174, 114, 0.16);
+}
