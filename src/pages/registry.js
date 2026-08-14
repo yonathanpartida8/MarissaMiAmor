@@ -20,6 +20,17 @@ const loaders = {
   secret: () => import("./SecretPage.js"),
   constellation: () => import("./ConstellationPage.js"),
   finale: () => import("./FinalePage.js"),
+
+  // ── Añadidos en la segunda edición ──────────────────────
+  typewriter: () => import("./TypewriterPage.js"),
+  postcard: () => import("./PostcardPage.js"),
+  petals: () => import("./PetalsPage.js"),
+  mosaic: () => import("./MosaicPage.js"),
+  lock: () => import("./LockPage.js"),
+  bottle: () => import("./BottlePage.js"),
+  gift: () => import("./GiftPage.js"),
+  pulse: () => import("./PulsePage.js"),
+  orbit: () => import("./OrbitPage.js"),
 };
 
 const cache = new Map();

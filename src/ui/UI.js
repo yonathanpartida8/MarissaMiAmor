@@ -9,6 +9,8 @@
 
 import { el, qs } from "../utils/dom.js";
 import { manifest, allSecrets } from "../data/manifest.js";
+import { actById } from "../data/chapters.js";
+import { BookIndex } from "./Index.js";
 
 const HINT_DELAY = 4600;
 const BAR_HIDE_DELAY = 3400;
@@ -23,11 +25,14 @@ export class UI {
   }
 
   mount() {
+    this.index = new BookIndex(this.ctx);
+
     this.root.append(
       this.#buildProgress(),
       this.#buildBar(),
       this.#buildHint(),
-      this.#buildToast()
+      this.#buildToast(),
+      this.index.build()
     );
 
     // Cualquier gesto revive la barra y reinicia el reloj de la pista.
@@ -37,6 +42,9 @@ export class UI {
     };
     window.addEventListener("pointerdown", wake, { passive: true });
     window.addEventListener("keydown", wake);
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && this.index.open) this.index.close();
+    });
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -54,6 +62,10 @@ export class UI {
     for (let i = 0; i < manifest.length; i++) {
       const tick = el("i.progress__tick", { dataset: { index: String(i) } });
       tick.style.setProperty("--p", String(i / (manifest.length - 1)));
+      // Marca más alta al empezar cada acto: da estructura de un vistazo.
+      if (i > 0 && manifest[i].act && manifest[i].act !== manifest[i - 1].act) {
+        tick.classList.add("progress__tick--act");
+      }
       this.ticks.append(tick);
     }
     this.progress.append(this.ticks);
@@ -69,6 +81,7 @@ export class UI {
         onClick: () => this.ctx.router.prev(),
       }),
       el("div.bar__center", {}, [
+        el("div.bar__act", { text: "" }),
         el("div.bar__title", { text: "" }),
         el("div.bar__count", { text: "" }),
       ]),
@@ -91,15 +104,16 @@ export class UI {
         }),
         el("button.bar__icon", {
           type: "button",
-          "aria-label": "Volver a la portada",
-          html: "⌂",
-          onClick: () => this.ctx.router.go(0, { transition: "zoom", direction: "prev" }),
+          "aria-label": "Índice del libro",
+          html: "☰",
+          onClick: () => this.index.toggle(),
         }),
         el("div.bar__secrets", { dataset: { role: "secrets" }, text: "" }),
       ])
     );
 
     this.barTitle = qs(".bar__title", this.bar);
+    this.barAct = qs(".bar__act", this.bar);
     this.barCount = qs(".bar__count", this.bar);
     this.musicBtn = qs('[data-role="music"]', this.bar);
     this.secretsEl = qs('[data-role="secrets"]', this.bar);
@@ -146,6 +160,13 @@ export class UI {
     this.root.classList.toggle("is-bare", bare);
 
     this.currentHint = entry.hint || "";
+    this.ctx.store.markVisited(entry.id);
+    this.index?.refresh();
+
+    // El nombre del acto acompaña al título: en un libro largo, ubica.
+    const act = actById[entry.act];
+    this.barAct.textContent = act ? act.title : "";
+
     this.showBar();
     this.scheduleHint();
     this.updateSecrets();
@@ -158,6 +179,7 @@ export class UI {
   }
 
   updateSecrets() {
+    this.index?.refresh();
     const found = this.ctx.store.secretsFound;
     const total = allSecrets.length;
     if (!this.secretsEl) return;

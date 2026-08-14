@@ -9,6 +9,7 @@
 
 import { BasePage } from "./BasePage.js";
 import { createOrnament } from "../components/ornaments.js";
+import { createSparkles } from "../components/Sparkles.js";
 import { el, splitWords, setVars } from "../utils/dom.js";
 import { manifest } from "../data/manifest.js";
 
@@ -69,6 +70,9 @@ export default class ChapterPage extends BasePage {
       onReveal: () => this.unlockSecret(),
     });
 
+    // Motas flotando sobre el papel: presencia, no decoración.
+    this.sparkles = createSparkles(this.ctx, { seed: `cap-${this.id}` });
+
     // ---- Montaje ------------------------------------------------------
     this.root.append(
       el("header.chapter__head", {}, [
@@ -80,7 +84,8 @@ export default class ChapterPage extends BasePage {
       el("footer.chapter__foot", {}, [
         el("span.chapter__mark", { text: "❦" }),
         el("span.chapter__count", { text: `${num} · ${manifest.length}` }),
-      ])
+      ]),
+      this.sparkles.node
     );
 
     return this.root;
@@ -107,6 +112,7 @@ export default class ChapterPage extends BasePage {
 
   destroy() {
     this.ornament?.destroy?.();
+    this.sparkles?.destroy();
     super.destroy();
   }
 }

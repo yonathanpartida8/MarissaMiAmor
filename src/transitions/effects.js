@@ -143,6 +143,56 @@ export async function fold({ outgoing, incoming, direction, ctx }) {
   cleanup(outgoing, incoming);
 }
 
+/**
+ * IRIS — la página nueva se abre en círculo desde el centro, como el
+ * diafragma de una cámara. Va con clip-path, que el navegador compone en la
+ * GPU: es de las transiciones más baratas que hay y de las que más se notan.
+ */
+export async function iris({ outgoing, incoming, direction, ctx }) {
+  const forward = direction !== "prev";
+
+  if (incoming) {
+    incoming.style.clipPath = "circle(0% at 50% 50%)";
+    incoming.style.webkitClipPath = "circle(0% at 50% 50%)";
+    incoming.style.transform = `scale(${forward ? 1.08 : 0.96})`;
+    incoming.style.opacity = "1";
+    incoming.style.willChange = "clip-path, transform";
+  }
+  if (outgoing) outgoing.style.willChange = "transform, filter, opacity";
+
+  ctx.gl?.pulse(0.7);
+  ctx.audio?.play("turn", { volume: 0.4, rate: 1.05 });
+  ctx.haptics?.play("turn");
+
+  await tween({
+    duration: ctx.caps.reducedMotion ? 220 : 900,
+    ease: easeInOutExpo,
+    onUpdate: (t) => {
+      if (outgoing) {
+        // La que se va se hunde un poco y pierde luz: da sensación de capas.
+        outgoing.style.transform = `scale(${1 - t * 0.08})`;
+        outgoing.style.opacity = String(1 - t * 0.55);
+        outgoing.style.filter = `brightness(${1 - t * 0.5})`;
+      }
+      if (incoming) {
+        // Hasta 150%: el círculo tiene que rebasar las esquinas.
+        const r = t * 150;
+        const clip = `circle(${r.toFixed(1)}% at 50% 50%)`;
+        incoming.style.clipPath = clip;
+        incoming.style.webkitClipPath = clip;
+        const s = forward ? 1.08 - t * 0.08 : 0.96 + t * 0.04;
+        incoming.style.transform = `scale(${s.toFixed(4)})`;
+      }
+    },
+  });
+
+  if (incoming) {
+    incoming.style.clipPath = "";
+    incoming.style.webkitClipPath = "";
+  }
+  cleanup(outgoing, incoming);
+}
+
 /** Deja las hojas sin restos de estilos en línea. */
 function cleanup(outgoing, incoming) {
   for (const node of [outgoing, incoming]) {
@@ -157,4 +207,4 @@ function cleanup(outgoing, incoming) {
   }
 }
 
-export const effects = { none, dissolve, zoom, fold };
+export const effects = { none, dissolve, zoom, fold, iris };

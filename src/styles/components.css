@@ -1,0 +1,274 @@
+/* ============================================================
+   COMPONENTES COMPARTIDOS — marco de fotografía y polvo suspendido.
+   ============================================================ */
+
+/* ══════════════ MARCO DE FOTOGRAFÍA ══════════════ */
+.pframe {
+  position: relative;
+  display: block;
+  margin: 0;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: var(--ratio, 4 / 5);
+  transform-style: preserve-3d;
+  will-change: transform;
+  /* Las variables las escribe PhotoFrame.js en cada frame. */
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  --img-x: 0px;
+  --img-y: 0px;
+  --zoom: 1;
+  --glare-x: 50%;
+  --glare-y: 50%;
+  --sh-x: 0px;
+  --sh-y: 6px;
+  transform: perspective(900px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+}
+
+/* Sombra proyectada aparte: así puede moverse en sentido contrario a la luz
+   sin arrastrar consigo el desenfoque del marco. */
+.pframe__shadow {
+  position: absolute;
+  inset: 6% 4% -4%;
+  border-radius: inherit;
+  background: radial-gradient(ellipse 70% 60% at 50% 60%, rgba(20, 10, 6, 0.55), transparent 72%);
+  filter: blur(16px);
+  transform: translate3d(var(--sh-x), var(--sh-y), -1px);
+  opacity: 0;
+  transition: opacity 900ms var(--e-out);
+}
+
+.pframe.is-arriving .pframe__shadow {
+  opacity: 0.85;
+}
+
+.pframe__window {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--pf-radius, 6px);
+  background: linear-gradient(160deg, #241a2c, #16101d);
+  /* Sin esto, en iOS el contenido con transform se sale del radio. */
+  -webkit-mask-image: -webkit-radial-gradient(#fff, #000);
+  transform: translateZ(0);
+  touch-action: none;
+}
+
+.pframe__img {
+  position: absolute;
+  inset: -8%;
+  background-size: cover;
+  background-position: center;
+  transform: translate3d(var(--img-x), var(--img-y), 0) scale(calc(1.06 * var(--zoom)));
+  /* El revelado: llega velada y desenfocada, y se va aclarando. */
+  opacity: 0;
+  filter: blur(20px) saturate(0.35) brightness(1.45) contrast(0.85);
+  transition:
+    opacity 1000ms var(--e-out),
+    filter 1500ms var(--e-out);
+  will-change: transform, filter, opacity;
+}
+
+.pframe.is-revealing .pframe__img {
+  opacity: 1;
+}
+
+.pframe.is-revealed .pframe__img {
+  filter: blur(0) saturate(1.02) brightness(1) contrast(1);
+}
+
+.pframe.is-zooming .pframe__img {
+  transition: filter 300ms var(--e-out);
+}
+
+/* Grano finísimo: unifica cualquier imagen con el resto del libro. */
+.pframe__grain {
+  position: absolute;
+  inset: 0;
+  background-image: var(--grain-src);
+  background-size: 180px;
+  opacity: 0.09;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* Reflejo del cristal, que sigue a la inclinación. */
+.pframe__glare {
+  position: absolute;
+  inset: -40%;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 42% 34% at var(--glare-x) var(--glare-y),
+    rgba(255, 250, 238, 0.26) 0%,
+    rgba(255, 226, 240, 0.09) 32%,
+    transparent 60%
+  );
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 1200ms var(--e-out);
+}
+
+.pframe.is-revealed .pframe__glare {
+  opacity: 1;
+}
+
+.pframe__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 90% 80% at 50% 40%, transparent 45%, rgba(10, 4, 14, 0.42) 100%);
+}
+
+/* Barrido de luz que cruza una sola vez, al terminar de revelarse. */
+.pframe__sheen {
+  position: absolute;
+  inset: -50% -120%;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 42%,
+    rgba(255, 245, 230, 0.28) 50%,
+    transparent 58%
+  );
+  transform: translateX(-60%);
+  opacity: 0;
+}
+
+.pframe.is-revealed .pframe__sheen {
+  animation: pframe-sheen 1400ms var(--e-out) 120ms;
+}
+
+@keyframes pframe-sheen {
+  0% { transform: translateX(-70%); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(70%); opacity: 0; }
+}
+
+/* El canto del marco: un filo claro arriba y oscuro abajo. */
+.pframe__edge {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: var(--pf-radius, 6px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 240, 0.28),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 250, 240, 0.09);
+}
+
+.pframe__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1.5em;
+  text-align: center;
+  font-family: var(--font-hand);
+  font-size: 0.95rem;
+  color: var(--paper-ink-soft);
+  opacity: 0;
+  transition: opacity 800ms var(--e-out) 600ms;
+}
+
+.pframe.is-revealed .pframe__caption {
+  opacity: 0.75;
+}
+
+/* ---- Formas ------------------------------------------------- */
+.pframe[data-shape="oval"] {
+  --pf-radius: 50% 50% 48% 48% / 44% 44% 52% 52%;
+}
+
+.pframe[data-shape="circle"] {
+  --pf-radius: 50%;
+}
+
+.pframe[data-shape="postcard"] {
+  --pf-radius: 3px;
+}
+
+.pframe[data-shape="oval"] .pframe__edge,
+.pframe[data-shape="circle"] .pframe__edge {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 240, 0.3),
+    0 0 0 6px rgba(255, 252, 245, 0.5),
+    0 0 0 7px rgba(120, 92, 70, 0.2);
+}
+
+/* Si la imagen no llega, el hueco sigue siendo digno. */
+.pframe.is-missing .pframe__window {
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 8px, transparent 8px 16px),
+    linear-gradient(160deg, #241a2c, #16101d);
+}
+
+/* ══════════════ POLVO SUSPENDIDO ══════════════ */
+.sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 40;
+}
+
+.sparkle {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(255, 244, 226, 0.55);
+  transform: scale(var(--s));
+  opacity: 0;
+  animation: mote var(--dur) linear var(--delay) infinite;
+  will-change: transform, opacity;
+}
+
+.sparkle--bright {
+  background: #fff6e4;
+  box-shadow: 0 0 6px 1px rgba(255, 220, 190, 0.7);
+}
+
+@keyframes mote {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) scale(var(--s)); }
+  12% { opacity: 0.7; }
+  75% { opacity: 0.5; }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift), var(--rise), 0) scale(calc(var(--s) * 0.6));
+  }
+}
+
+/* Corazones: sólo donde el texto lo pide, y siempre casi invisibles. */
+.sparkles[data-kind="hearts"] .sparkle {
+  width: 7px;
+  height: 7px;
+  border-radius: 0;
+  background: var(--accent, #ec6f92);
+  opacity: 0;
+  /* Corazón dibujado con clip-path: sin imágenes ni tipografías de emoji. */
+  clip-path: path("M3.5 6.5 C1 4.6 0.2 3 1.4 1.9 C2.2 1.1 3.1 1.4 3.5 2.2 C3.9 1.4 4.8 1.1 5.6 1.9 C6.8 3 6 4.6 3.5 6.5 Z");
+  box-shadow: none;
+  filter: drop-shadow(0 0 4px var(--accent, #ec6f92));
+}
+
+/* Sobre papel las motas son sombras, no luces. */
+.paper .sparkle {
+  background: rgba(120, 92, 66, 0.32);
+  box-shadow: none;
+}
+
+.paper .sparkle--bright {
+  background: rgba(255, 250, 236, 0.9);
+  box-shadow: 0 0 5px 1px rgba(214, 178, 120, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sparkle {
+    animation: none;
+    opacity: 0.25;
+  }
+  .pframe.is-revealed .pframe__sheen {
+    animation: none;
+  }
+}

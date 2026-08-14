@@ -14,6 +14,7 @@ const DEFAULTS = {
   page: 0,
   furthest: 0,
   secrets: [],
+  visited: [],
   musicOn: true,
   visits: 0,
   firstOpenedAt: null,
@@ -69,6 +70,23 @@ export class Store extends Emitter {
   setPage(index) {
     this.set("page", index);
     if (index > this.state.furthest) this.set("furthest", index);
+  }
+
+  /**
+   * Marca una página como vista. Se guarda por id y no por número: así,
+   * si algún día se reordena el libro o se añaden páginas en medio, lo que
+   * ya había visto sigue contando.
+   */
+  markVisited(id) {
+    if (!id || this.state.visited.includes(id)) return false;
+    this.state.visited = [...this.state.visited, id];
+    this.#writeSoon();
+    this.emit("change:visited", this.state.visited);
+    return true;
+  }
+
+  hasVisited(id) {
+    return this.state.visited.includes(id);
   }
 
   /** Marca un secreto como encontrado. Devuelve true si es la primera vez. */

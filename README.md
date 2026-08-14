@@ -13,6 +13,7 @@ ningún comando: se sube el repositorio a GitHub Pages y funciona.
 | Capa | Qué es |
 | --- | --- |
 | **HTML/CSS moderno** | Módulos ES nativos, sin empaquetador. Cada página tiene su hoja de estilos. |
+| **22 tipos de página** | Ninguna mecánica se repite dos veces seguidas. |
 | **WebGL2 + Three.js** | Una sola escena para toda la app: la atmósfera de fondo, el polvo en suspensión y las páginas 3D. Three.js va incluido en `vendor/`, no se descarga de ningún CDN. |
 | **GLSL** | Cuatro shaders escritos a mano: niebla, partículas, profundidad y velo. |
 | **Canvas 2D** | Texturas de papel y grano generadas al vuelo, superficies que se rascan, lluvia. |
@@ -56,10 +57,18 @@ src/
   pages/                una clase por tipo de experiencia
     BasePage.js         el contrato común
     registry.js         tipo → módulo (carga perezosa)
-  components/           piezas reutilizables (ornamentos, superficie rascable…)
+  components/           piezas reutilizables
+    PhotoFrame.js       CÓMO se enseña cada fotografía (revelado, paralaje, brillo, zoom)
+    Sparkles.js         el polvo suspendido de las páginas de papel
+    ornaments.js        los ornamentos de los capítulos
+    ScratchSurface.js   superficies que se borran con el dedo
+    textures.js         papel y grano generados en canvas
+  ui/
+    UI.js               barra, progreso, pistas y avisos
+    Index.js            el índice del libro, por actos
   transitions/          volteo de hoja + efectos de luz
   data/
-    chapters.js         LOS TEXTOS
+    chapters.js         LOS TEXTOS (lo único que hay que tocar para cambiarlos)
     photos.js           inventario y reparto de las 85 ilustraciones
     manifest.js         EL ORDEN DEL LIBRO
   styles/               tokens, base y una hoja por página
@@ -70,37 +79,81 @@ src/
 
 ## Las páginas
 
-Veintidós páginas, y ninguna funciona igual que la anterior.
+Treinta y nueve páginas repartidas en cuatro actos —**Encontrarte, Conocerte,
+Extrañarte, Elegirte**— y veintidós mecánicas distintas. Ninguna se repite dos
+veces seguidas.
 
-| # | Página | Qué hay que hacer |
-| --- | --- | --- |
-| 01 | Portada | Mantener el dedo sobre el lacre hasta que se rompe. La tapa se inclina con el móvil. |
-| 02 | El Primer Encuentro | Arrastrar el sello de cera. El sobre se abre y la carta se desdobla. |
-| 03 | La Distancia | Inclinar el teléfono: la ilustración tiene profundidad real (shader). |
-| 04 | Mi Única Certeza | Rascar la lámina de plata. |
-| 05 | El Jardín de Recuerdos | Diez polaroids que se arrastran con inercia y se voltean con doble toque. |
-| 06 | La Tormenta | Limpiar el vaho del cristal con el dedo. Llueve y caen relámpagos. |
-| 07 | Tus Gestos | Acariciar la pantalla para retirar el velo (shader). |
-| 08 | El Espejo | El reflejo va con retraso y te sigue. |
-| 09 | Noches de Invierno | Un carrete de catorce fotogramas con inercia e imantado. |
-| 10 | Lo Que Viene | Arrastrar hacia abajo: la carta se escribe a mano delante de ti. |
-| 11 | Nuestra Conexión | Veinticuatro recuerdos en una esfera 3D. Girar y tocar uno. |
-| 12 | Solo Tú | Sostener el dedo: una linterna que hay que aguantar encendida. |
-| 13 | Mi Elección | Tocar la brújula. Dé las vueltas que dé, siempre acaba señalando lo mismo. |
-| 14 | Estoy Contigo | Unir doce estrellas con el dedo. |
-| 15 | Lo Que Siento | Medallón que se revela. |
-| 16 | A Mi Manera | Velo, otra vez, con dos ilustraciones. |
-| 17 | Amarte en Silencio | Está escrito muy bajito: hay que mantener el dedo para subirle la voz. |
-| 18 | Más de lo que parece | Rascar. |
-| 19 | Por Nosotros | Medallón. |
-| 20 | Crecer Contigo | Profundidad 3D. |
-| 21 | Eres Increíble | Ocho polaroids más. |
-| 22 | Final | Tocar la pantalla: las partículas se recogen y forman un corazón que late. |
+| Mecánica | Qué hay que hacer |
+| --- | --- |
+| **Portada** | Mantener el dedo en el lacre hasta que se rompe. La tapa se inclina con el móvil. |
+| **Sobre** | Arrastrar el sello de cera; la carta sale y se desdobla. |
+| **Máquina de escribir** | El texto se escribe solo, con el ritmo de quien piensa. Manteniendo el dedo va más rápido. |
+| **Profundidad 3D** | Inclinar el teléfono: la ilustración tiene fondo (shader de parallax). |
+| **Rascar** | Quitar la lámina de plata con el dedo. |
+| **Postal** | Arrastrarla para darle la vuelta. Gira en 3D hacia los dos lados, con muelle. |
+| **Capítulo** | Papel escrito, cada uno con su ornamento: medallón, cristal empañado, reflejo, brújula o susurro. |
+| **Deshojar** | Arrancar los pétalos uno a uno. Cada uno dice algo al caer. |
+| **Polaroids** | Arrastrarlas con inercia; doble toque para ver el reverso. |
+| **Velo** | Acariciar la pantalla para retirarlo (shader). |
+| **Mosaico** | Girar las piezas hasta armar la imagen. |
+| **Carrete de cine** | Deslizar con inercia e imantado; el texto está al final. |
+| **Escrito a mano** | Arrastrar hacia abajo y la carta se escribe delante de ti. |
+| **Candado** | Girar cuatro ruedas hasta dar con la combinación. |
+| **Botella** | Tirar del corcho; el papel sale y se desenrolla. |
+| **Campo de recuerdos** | Esfera 3D de fotos: girarla y tocar una. |
+| **Secreto** | Sostener el dedo: una linterna que hay que aguantar encendida. |
+| **Regalo** | Tirar del listón hasta desatarlo. |
+| **La distancia** | Acercar dos puntos que se resisten. |
+| **Pulso** | Poner el dedo y no quitarlo mientras late. |
+| **Constelación** | Unir las estrellas con el dedo. |
+| **Final** | Tocar la pantalla: las partículas forman un corazón que late. |
 
-Hay **doce secretos** repartidos. Ninguno se anuncia: aparecen al hacer las
-cosas de verdad (romper el sello, mover todas las polaroids, llegar al final del
-carrete…). El contador vive en la barra inferior y el balance sale en la última
-página.
+Hay **veintisiete secretos** repartidos. Ninguno se anuncia: se abren al hacer
+las cosas de verdad. El contador vive en la barra y el balance sale al final.
+
+### El índice
+
+Con tantas páginas, la barra tiene un botón `☰` que abre el índice: los cuatro
+actos, por dónde va, y qué páginas esconden algo. Las que todavía no ha visto
+salen sin título —sólo el número— para no reventarle las sorpresas de un
+vistazo. Puede saltar a cualquiera igualmente: esto no es un videojuego.
+
+---
+
+## Los textos
+
+Los treinta y siete capítulos, las frases sueltas que sueltan los pétalos y las
+polaroids, las que aparecen al resolver cada página y el cierre: **todo está en
+`src/data/chapters.js`**, junto y en orden. Ni una sola frase vive dentro del
+código.
+
+Cambiar lo que dice el libro es editar ese fichero y nada más.
+
+Algunos campos que quizá quieras tocar:
+
+- `combination` en el capítulo **La combinación** — la clave del candado.
+  Por defecto `1408`; cámbiala por vuestra fecha. Si falla tres veces sale la
+  pista (`combinationHint`), y a la sexta la caja se abre igual.
+- `lines` — las frases que reparte una página (un pétalo, una polaroid, una
+  estrella). Cuantas más pongas, más hay que descubrir.
+- `reveal` — lo que aparece **después** de resolver la interacción.
+
+---
+
+## Las imágenes
+
+Las ochenta y cinco ilustraciones se quedan donde están y con el nombre que
+tienen. Para cambiarlas, **sustituye los archivos de `assets/img/`
+conservando el nombre** (`imagen1.png`, `imagen2.png`…). No hay que tocar código.
+
+Si quieres cambiar qué imagen sale en qué página, mueve los números en los
+grupos de `src/data/photos.js`. Hay una comprobación que avisa por consola si
+alguna se queda sin usar o sale dos veces.
+
+Cómo se presentan sí cambió mucho: todas pasan por `PhotoFrame`, que las
+revela en tres tiempos (marco → velada → nítida), les da paralaje contra el
+marco, un brillo que sigue a la inclinación, sombra que cae al lado contrario
+de la luz y pellizco para acercarlas. Tocar ese componente cambia el libro entero.
 
 ---
 
@@ -117,6 +170,7 @@ Es lo único que hay que saber para ampliar el libro.
   title: "El título",
   kicker: "una frase corta",
   text: "Lo que le quieres decir.",
+  act: "elegirte",  // encontrarte · conocerte · extranarte · elegirte
   palette: { a: "#ec6f92", b: "#4c1d95", deep: "#10001a" },
   mood: "bloom",   // dawn · night · amber · bloom · storm · glass · winter · cosmos · light
 }
@@ -130,14 +184,15 @@ Es lo único que hay que saber para ampliar el libro.
   type: "chapter",          // cualquier tipo del registro
   chapter: "nuevo",
   photos: groups.nuevoGrupo,
-  transition: "flip",       // flip · dissolve · zoom · fold
+  transition: "flip",       // flip · dissolve · zoom · fold · iris
   hint: "la pista, si hace falta",
   secret: "id-del-secreto", // opcional
 }
 ```
 
-Ya está. La navegación, el progreso, la precarga, la limpieza de memoria y la
-paleta de la atmósfera se ajustan solos.
+Ya está. La navegación, el índice, el progreso, la precarga, la limpieza de
+memoria y la paleta de la atmósfera se ajustan solos. El libro está pensado
+para crecer: da igual que sean cuarenta páginas o cuatrocientas.
 
 ### Y para inventar un tipo de página nuevo
 

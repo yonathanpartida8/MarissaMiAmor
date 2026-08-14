@@ -1,10 +1,14 @@
 /**
- * FOTOGRAFÍAS — las 85 imágenes del libro.
+ * FOTOGRAFÍAS — el inventario de imágenes del libro.
  *
- * No hay 85 páginas iguales de "una foto centrada". Las fotos se reparten en
- * experiencias: polaroids que se arrastran, una tira de cine, un campo 3D de
- * recuerdos, zonas que se rascan… Aquí sólo vive el inventario y los grupos;
- * quién usa qué lo decide el manifiesto.
+ * ── CÓMO CAMBIAR LAS IMÁGENES ─────────────────────────────────────────
+ * Sustituye los archivos de `assets/img/` conservando el nombre
+ * (imagen1.png, imagen2.png…). No hay que tocar ni una línea de código:
+ * cada página coge las suyas de los grupos de aquí abajo.
+ *
+ * Si quieres cambiar QUÉ foto sale en QUÉ página, mueve los números en
+ * `groups`. Y si añades más imágenes, sube TOTAL y créate un grupo nuevo.
+ * ──────────────────────────────────────────────────────────────────────
  */
 
 const BASE = "assets/img/";
@@ -13,49 +17,67 @@ const TOTAL = 85;
 /** Inventario completo, en orden. */
 export const photos = Array.from({ length: TOTAL }, (_, i) => {
   const n = i + 1;
-  return {
-    id: `f${n}`,
-    src: `${BASE}imagen${n}.png`,
-    index: i,
-  };
+  return { id: `f${n}`, src: `${BASE}imagen${n}.png`, index: i, number: n };
 });
 
 export const photoSrc = (n) => `${BASE}imagen${n}.png`;
 
-/** Rango inclusivo por número de archivo: range(4, 13) → imagen4…imagen13 */
+/** Rango inclusivo por número de archivo: range(6, 13) → imagen6…imagen13 */
 export const range = (from, to) => photos.slice(from - 1, to);
 
 /** Sólo las rutas, que es lo que suele querer el precargador. */
 export const srcs = (list) => list.map((p) => p.src);
 
 /**
- * GRUPOS — el reparto de las 85 fotos entre las experiencias del libro.
- * Cambiar un grupo aquí reorganiza el libro entero sin tocar ninguna página.
+ * GRUPOS — qué fotos usa cada página.
+ * El nombre del grupo coincide con el id del capítulo, para que sea evidente
+ * de un vistazo a dónde va cada cosa.
  */
 export const groups = {
-  cover: range(1, 1),          //  1  · la portada
-  distancia: range(2, 2),      //  1  · profundidad 3D
-  certeza: range(3, 3),        //  1  · rascar para revelar
-  jardin: range(4, 13),        // 10  · polaroids arrastrables
-  tormenta: range(14, 14),     //  1  · tras la lluvia
-  gestos: range(15, 16),       //  2  · revelar con el dedo
-  espejo: range(17, 17),       //  1  · reflejo
-  invierno: range(18, 31),     // 14  · tira de cine
-  conexion: range(32, 55),     // 24  · campo 3D de recuerdos
-  solotu: range(56, 56),       //  1  · secreto con pulsación larga
-  eleccion: range(57, 57),     //  1  · medallón
-  contigo: range(58, 69),      // 12  · constelación
-  loquesiento: range(70, 70),  //  1  · medallón
-  amanera: range(71, 72),      //  2  · revelar con el dedo
-  silencio: range(73, 73),     //  1  · medallón
-  masdeloqueparece: range(74, 74), // 1 · rascar
-  pornosotros: range(75, 75),  //  1  · medallón
-  crecer: range(76, 76),       //  1  · profundidad 3D
-  increible: range(77, 84),    //  8  · polaroids
-  final: range(85, 85),        //  1  · el cierre
+  // ── Acto I ───────────────────────────────────────────────
+  portada: range(1, 1),
+  tresDeLaManana: range(2, 2),
+  loQueNoDije: range(3, 3),
+  postalPrimera: range(4, 4),
+  tuVoz: range(5, 5),
+  nuestroDesorden: range(6, 13),
+  llueveAlla: range(14, 14),
+
+  // ── Acto II ──────────────────────────────────────────────
+  listaPendiente: range(15, 16),
+  porPedacitos: range(17, 17),
+  meCaigoMejor: range(18, 18),
+  nuestraPelicula: range(19, 28),
+  laCombinacion: range(29, 29),
+  miNorte: range(30, 30),
+  todoLoQueGuardo: range(31, 46),
+  enVozBaja: range(47, 47),
+
+  // ── Acto III ─────────────────────────────────────────────
+  regalo: range(48, 48),
+  mismoCielo: range(49, 58),
+  postalSegunda: range(59, 59),
+  teLoDigoBajito: range(60, 60),
+  debajoDeEsto: range(61, 61),
+  sinAdornos: range(62, 62),
+
+  // ── Acto IV ──────────────────────────────────────────────
+  aburridos: range(63, 63),
+  rompecabezasDos: range(64, 64),
+  acariciar: range(65, 66),
+  mejorar: range(67, 67),
+  cosasTuyas: range(68, 75),
+  noSeMePasa: range(76, 81),
+  gracias: range(82, 82),
+  ultimoSecreto: range(83, 83),
+  teElijo: range(84, 84),
+  final: range(85, 85),
 };
 
-/** Comprobación en desarrollo: ninguna foto huérfana, ninguna repetida. */
+/**
+ * Comprobación de que ninguna foto se queda huérfana ni sale dos veces.
+ * Se ejecuta sola en local (ver main.js); en producción no cuesta nada.
+ */
 export function auditGroups() {
   const used = new Map();
   for (const [name, list] of Object.entries(groups)) {
@@ -64,7 +86,9 @@ export function auditGroups() {
       else used.set(photo.id, [name]);
     }
   }
-  const missing = photos.filter((p) => !used.has(p.id)).map((p) => p.id);
-  const duplicated = [...used].filter(([, where]) => where.length > 1);
+  const missing = photos.filter((p) => !used.has(p.id)).map((p) => p.number);
+  const duplicated = [...used]
+    .filter(([, where]) => where.length > 1)
+    .map(([id, where]) => `${id}: ${where.join(" + ")}`);
   return { total: TOTAL, assigned: used.size, missing, duplicated };
 }

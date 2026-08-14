@@ -73,71 +73,28 @@
 .chapter[data-ornament="whisper"] { --orn-h: 22%; }
 
 /* ══════════════ MEDALLÓN ══════════════ */
-.orn--medallion .medallion__frame {
+/* El marco lo pinta PhotoFrame; aquí sólo el halo que lo rodea. */
+.orn--medallion {
   position: relative;
+}
+
+.orn--medallion .pframe {
   height: 100%;
-  aspect-ratio: 4 / 5;
   max-width: 100%;
-  border-radius: 50% 50% 48% 48% / 44% 44% 52% 52%;
-  overflow: hidden;
-  transform-style: preserve-3d;
-  will-change: transform;
-  box-shadow:
-    0 0 0 1px rgba(120, 92, 70, 0.22),
-    0 0 0 7px rgba(255, 252, 245, 0.55),
-    0 0 0 8px rgba(120, 92, 70, 0.16),
-    0 14px 34px -10px rgba(60, 40, 30, 0.55);
-}
-
-.medallion__img {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  opacity: 0;
-  filter: blur(18px) saturate(0.4) brightness(1.5);
-  transform: scale(1.14);
-  transition:
-    opacity 900ms var(--e-out),
-    filter 1400ms var(--e-out),
-    transform 1600ms var(--e-out);
-}
-
-.orn--medallion.is-developing .medallion__img {
-  opacity: 1;
-}
-
-.orn--medallion.is-developed .medallion__img {
-  filter: blur(0) saturate(1.02) brightness(1);
-  transform: scale(1);
 }
 
 .medallion__glow {
   position: absolute;
-  inset: -20%;
-  background: radial-gradient(circle at 50% 45%, var(--accent), transparent 62%);
+  inset: -14%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, var(--accent), transparent 60%);
   opacity: 0;
-  filter: blur(22px);
-  transition: opacity 1200ms var(--e-out);
-}
-
-.orn--medallion.is-developing .medallion__glow {
-  opacity: 0.4;
-}
-
-.orn--medallion.is-developed .medallion__glow {
-  opacity: 0.16;
-}
-
-.medallion__veil {
-  position: absolute;
-  inset: 0;
+  filter: blur(26px);
+  transition: opacity 1400ms var(--e-out);
   pointer-events: none;
-  background:
-    radial-gradient(ellipse 90% 60% at 30% 8%, rgba(255, 250, 240, 0.4), transparent 60%),
-    linear-gradient(200deg, transparent 55%, rgba(70, 46, 34, 0.42) 100%);
-  mix-blend-mode: multiply;
 }
+
+.orn--medallion.is-developing .medallion__glow { opacity: 0.2; }
 
 /* ══════════════ VENTANA EMPAÑADA ══════════════ */
 .orn--fog {

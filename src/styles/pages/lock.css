@@ -1,0 +1,251 @@
+/* ============================================================
+   CAJA CON COMBINACIÓN
+   ============================================================ */
+
+.lock {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  place-items: center;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+  perspective: 1200px;
+}
+
+.lock__stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+/* ---- La caja ------------------------------------------------ */
+.lock__box {
+  position: relative;
+  width: min(90%, 320px);
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  transition: opacity 900ms var(--e-out), transform 1000ms var(--e-out);
+}
+
+.lock.is-entered .lock__box { opacity: 1; transform: none; }
+
+.lock.is-open .lock__box {
+  opacity: 0;
+  transform: translateY(-30px) scale(0.9) rotateX(24deg);
+  transition: opacity 600ms var(--e-out), transform 800ms var(--e-out);
+  pointer-events: none;
+}
+
+.lock__box.is-wrong { animation: lock-shake 480ms var(--e-out); }
+
+@keyframes lock-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-9px) rotate(-1deg); }
+  35% { transform: translateX(8px) rotate(1deg); }
+  55% { transform: translateX(-5px); }
+  78% { transform: translateX(4px); }
+}
+
+.lock__lid {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  padding: clamp(1.4rem, calc(6 * var(--vw)), 2.2rem) 1.2rem clamp(1.2rem, calc(5 * var(--vw)), 1.8rem);
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(158deg, #3a2c22 0%, #241a14 46%, #17110d 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 224, 180, 0.16),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.7),
+    0 18px 40px -14px rgba(0, 0, 0, 0.8);
+}
+
+/* Remaches del cofre. */
+.lock__lid::before,
+.lock__lid::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(214, 178, 120, 0.5), rgba(120, 88, 44, 0.2));
+}
+
+.lock__lid::before { left: 8px; }
+.lock__lid::after { right: 8px; }
+
+.lock__label {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: rgba(232, 200, 150, 0.55);
+  text-align: center;
+}
+
+/* El arco del candado. */
+.lock__shackle {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  width: 54px;
+  height: 44px;
+  margin-left: -27px;
+  border: 7px solid #9a8a70;
+  border-bottom: none;
+  border-radius: 27px 27px 0 0;
+  box-shadow: inset 0 2px 0 rgba(255, 240, 210, 0.3);
+  transform-origin: right bottom;
+  transition: transform 700ms var(--e-spring);
+}
+
+.lock.is-open .lock__shackle { transform: translateY(-14px) rotate(-32deg); }
+
+/* ---- Las ruedas --------------------------------------------- */
+.lock__dial {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  border-radius: var(--r-sm);
+  background: linear-gradient(180deg, #100b08, #1c1410);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.lock__wheel {
+  position: relative;
+  width: clamp(46px, calc(13 * var(--vw)), 58px);
+  height: clamp(64px, calc(18 * var(--vw)), 82px);
+  overflow: hidden;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #d9cdbb 0%, #fdf7ea 46%, #cfc2ae 100%);
+  box-shadow:
+    inset 0 6px 10px -6px rgba(0, 0, 0, 0.55),
+    inset 0 -6px 10px -6px rgba(0, 0, 0, 0.55);
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.lock__wheel.is-turning { box-shadow: inset 0 0 0 1px var(--accent); }
+
+.lock__strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+
+.lock__digit {
+  flex: 0 0 auto;
+  height: clamp(64px, calc(18 * var(--vw)), 82px);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, calc(7 * var(--vw)), 2.2rem);
+  color: #2c211c;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Brillo del cilindro: hace que la tira parezca curva. */
+.lock__gloss {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(20, 12, 8, 0.55) 0%,
+    rgba(20, 12, 8, 0.1) 22%,
+    rgba(255, 255, 255, 0.35) 48%,
+    rgba(20, 12, 8, 0.1) 74%,
+    rgba(20, 12, 8, 0.55) 100%
+  );
+}
+
+/* Marca de la ventana de lectura. */
+.lock__gloss::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-50%);
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  opacity: 0.5;
+}
+
+/* ---- Lo de dentro ------------------------------------------- */
+.lock__inside {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: var(--gap-md);
+  place-items: center;
+  opacity: 0;
+  transform: scale(0.9);
+  pointer-events: none;
+  transition: opacity 800ms var(--e-out), transform 900ms var(--e-out);
+}
+
+.lock.is-showing .lock__inside {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.lock__inside .pframe { max-height: 100%; }
+
+.lock__note {
+  width: 100%;
+  padding: clamp(0.9rem, calc(4 * var(--vw)), 1.4rem);
+  border-radius: var(--r-md);
+  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.7);
+}
+
+.lock__title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.3rem, calc(5.8 * var(--vw)), 1.85rem);
+  line-height: 1.1;
+  color: #2c211c;
+}
+
+.lock__note .rule { margin: 0.35rem 0 0.6rem; }
+
+.lock__text {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, calc(3.7 * var(--vw)), 1.1rem);
+  line-height: 1.65;
+  color: var(--paper-ink);
+}
+
+.lock__reveal {
+  margin-top: 0.7rem;
+  font-family: var(--font-hand);
+  font-size: clamp(1.1rem, calc(4.8 * var(--vw)), 1.45rem);
+  color: var(--rose-deep);
+  opacity: 0;
+  transition: opacity 900ms var(--e-out) 600ms;
+}
+
+.lock.is-showing .lock__reveal { opacity: 0.92; }
+
+.lock__hint {
+  font-family: var(--font-hand);
+  font-size: clamp(1.05rem, calc(4.4 * var(--vw)), 1.35rem);
+  color: var(--gold-light);
+  text-align: center;
+  min-height: 1.6em;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 600ms var(--e-out), transform 600ms var(--e-out);
+}
+
+.lock__hint.is-visible { opacity: 0.9; transform: none; }

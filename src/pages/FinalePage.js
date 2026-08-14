@@ -15,6 +15,7 @@ import { el, setVars, wait } from "../utils/dom.js";
 import { damp, clamp01 } from "../utils/math.js";
 import { seeded } from "../utils/rng.js";
 import { allSecrets } from "../data/manifest.js";
+import { finale } from "../data/chapters.js";
 
 const heartVertex = /* glsl */ `
   precision highp float;
@@ -110,13 +111,11 @@ export default class FinalePage extends BasePage {
       el("div.finale__backdrop"),
       el("div.finale__touch", { "data-claim-drag": "" }),
       el("div.finale__content", {}, [
-        el("p.finale__kicker", { text: "y hasta aquí, por ahora" }),
-        el("h2.finale__line.finale__line--1", { text: "Gracias por llegar" }),
-        el("h2.finale__line.finale__line--2", { text: "hasta el final." }),
-        el("p.finale__body", {
-          text: "Este librito seguirá aquí siempre que quieras volver. Puedes empezarlo otra vez cuando lo necesites.",
-        }),
-        el("p.finale__sign", { text: "Te amo, Marissa 🤍" }),
+        el("p.finale__kicker", { text: finale.kicker }),
+        el("h2.finale__line.finale__line--1", { text: finale.lines[0] }),
+        el("h2.finale__line.finale__line--2", { text: finale.lines[1] }),
+        el("p.finale__body", { text: finale.body }),
+        el("p.finale__sign", { text: finale.sign }),
         el("button.finale__again", {
           type: "button",
           text: "volver a la portada",

@@ -12,6 +12,7 @@
 import { el, qs } from "../utils/dom.js";
 import { Gestures } from "../core/Gestures.js";
 import { ScratchSurface, fogLayer } from "./ScratchSurface.js";
+import { createPhotoFrame } from "./PhotoFrame.js";
 import { damp, clamp01, lerp } from "../utils/math.js";
 import { seeded } from "../utils/rng.js";
 import { tween, easeOutExpo, easeOutBack } from "../utils/easing.js";
@@ -21,36 +22,33 @@ import { tween, easeOutExpo, easeOutBack } from "../utils/easing.js";
    revelando de verdad: primero el grano, luego la luz, luego ella.
    ══════════════════════════════════════════════════════════════════ */
 function medallion(ctx, { photo, accent }) {
-  const node = el("figure.orn.orn--medallion", { style: { "--accent": accent } }, [
-    el("div.medallion__frame", {}, [
-      el("div.medallion__glow"),
-      el("div.medallion__img"),
-      el("div.medallion__veil"),
-    ]),
-  ]);
+  // Toda la presentación (revelado, paralaje, brillo, pellizco para acercar)
+  // vive en PhotoFrame, compartida con las demás páginas que enseñan fotos.
+  const frame = createPhotoFrame(ctx, {
+    photo,
+    shape: "oval",
+    ratio: "4 / 5",
+    parallax: 1,
+    zoomable: true,
+  });
 
-  const imgHolder = qs(".medallion__img", node);
-  let img = null;
+  const node = el("figure.orn.orn--medallion", { style: { "--accent": accent } }, [
+    el("div.medallion__glow"),
+    frame.node,
+  ]);
 
   return {
     node,
     async enter() {
-      if (!photo) return;
-      img = await ctx.assets.load(photo.src).catch(() => null);
-      if (!img) return;
-      imgHolder.style.backgroundImage = `url("${photo.src}")`;
-      // Dos tiempos: primero aparece velada y borrosa, después se aclara.
-      requestAnimationFrame(() => node.classList.add("is-developing"));
-      setTimeout(() => node.classList.add("is-developed"), 780);
+      await frame.load();
+      node.classList.add("is-developing");
     },
-    tick(dt) {
-      // Paralaje muy contenido: se nota, pero no marea.
-      const p = ctx.pointer.influence;
-      const frame = qs(".medallion__frame", node);
-      frame.style.transform =
-        `translate3d(${p.x * 7}px, ${p.y * -5}px, 0) rotateX(${p.y * 3.5}deg) rotateY(${p.x * 4.5}deg)`;
+    tick(dt, time) {
+      frame.tick(dt, time);
     },
-    destroy() {},
+    destroy() {
+      frame.destroy();
+    },
   };
 }
 

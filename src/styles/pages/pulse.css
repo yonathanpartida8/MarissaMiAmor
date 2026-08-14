@@ -1,0 +1,229 @@
+/* ============================================================
+   PULSO
+   ============================================================ */
+
+.pulse {
+  display: grid;
+  /* El monitor no se lleva todo el alto: la almohadilla y la frase también
+     tienen que caber sin pelearse con la barra flotante. */
+  grid-template-rows: auto minmax(0, 34%) auto auto minmax(0, 1fr);
+  padding-bottom: calc(var(--pad-b) + 2.4rem);
+  gap: clamp(0.6rem, 2.2vh, 1.1rem);
+  padding: var(--pad-t) var(--pad-x);
+  place-items: center;
+  background: transparent;
+  --beat: 0;
+  --on: 0;
+}
+
+.pulse__head {
+  justify-self: stretch;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 600ms var(--e-out), transform 600ms var(--e-out);
+}
+
+.pulse.is-entered .pulse__head { opacity: 1; transform: none; }
+
+.pulse__head .kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.pulse__title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(1.5rem, calc(6.6 * var(--vw)), 2.2rem);
+  line-height: 1.08;
+  color: #fff;
+  margin-top: 0.1rem;
+}
+
+/* ---- El monitor --------------------------------------------- */
+.pulse__monitor {
+  position: relative;
+  justify-self: stretch;
+  min-height: 0;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(6, 12, 14, 0.75), rgba(4, 8, 10, 0.9));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 0 46px rgba(0, 0, 0, 0.7);
+}
+
+.pulse__trace {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+/* Rejilla de monitor médico, muy tenue. */
+.pulse__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--accent) 14%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 14%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: calc(0.25 + var(--on) * 0.35);
+  transition: opacity 400ms var(--e-out);
+}
+
+/* El monitor se enciende cuando hay dedo. */
+.pulse.is-holding .pulse__monitor {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent),
+    inset 0 0 46px rgba(0, 0, 0, 0.6),
+    0 0 calc(24px * var(--on)) -6px var(--accent);
+}
+
+/* ---- Texto -------------------------------------------------- */
+.pulse__text {
+  font-family: var(--font-display);
+  font-size: clamp(0.98rem, calc(3.9 * var(--vw)), 1.16rem);
+  line-height: 1.6;
+  color: rgba(246, 238, 232, 0.82);
+  text-align: center;
+  text-wrap: pretty;
+  max-width: 34ch;
+  opacity: 0;
+  transition: opacity 900ms var(--e-out) 300ms;
+}
+
+.pulse.is-entered .pulse__text { opacity: 1; }
+
+/* ---- La almohadilla ----------------------------------------- */
+.pulse__pad {
+  position: relative;
+  width: clamp(96px, calc(28 * var(--vw)), 124px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  touch-action: none;
+  background: radial-gradient(circle at 38% 32%, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02) 60%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  transition: transform 200ms var(--e-spring), box-shadow 300ms var(--e-out);
+}
+
+.pulse.is-holding .pulse__pad {
+  transform: scale(calc(0.97 + var(--beat) * 0.05));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 0 34px -6px var(--accent);
+}
+
+.pulse__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  opacity: 0;
+}
+
+.pulse.is-holding .pulse__ring {
+  animation: pulse-ring 1.76s var(--e-out) infinite;
+}
+
+.pulse.is-holding .pulse__ring--2 { animation-delay: 0.88s; }
+
+@keyframes pulse-ring {
+  0% { opacity: 0.55; transform: scale(0.86); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* La huella dibujada dentro de la almohadilla. */
+.pulse__finger {
+  position: absolute;
+  width: 46%;
+  height: 58%;
+  border-radius: 50% 50% 46% 46% / 62% 62% 38% 38%;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  background:
+    repeating-radial-gradient(circle at 50% 62%,
+      transparent 0 4px,
+      color-mix(in srgb, var(--accent) 22%, transparent) 4px 5px);
+  opacity: calc(0.45 + var(--on) * 0.5);
+}
+
+.pulse__bpm {
+  position: absolute;
+  bottom: -1.7em;
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  opacity: calc(0.3 + var(--on) * 0.7);
+}
+
+.pulse__reveal {
+  align-self: start;
+  min-height: 3em;
+  max-width: 32ch;
+  text-align: center;
+  font-family: var(--font-hand);
+  font-size: clamp(1.2rem, calc(5.2 * var(--vw)), 1.6rem);
+  line-height: 1.35;
+  color: var(--rose-glow);
+  text-shadow: 0 0 24px color-mix(in srgb, var(--accent) 40%, transparent);
+  opacity: 0;
+  transform: translateY(10px) scale(0.97);
+  transition: opacity 1000ms var(--e-out), transform 1000ms var(--e-spring);
+}
+
+.pulse.is-said .pulse__reveal { opacity: 1; transform: none; }
+
+.pulse.is-read .pulse__pad { opacity: 0.35; pointer-events: none; }
+
+/* ---- Apaisado: dos columnas ---------------------------------
+   Con 390 px de alto no caben cinco filas. El monitor y la
+   almohadilla se van a la izquierda y el texto a la derecha.     */
+html[data-orientation="landscape"][data-device="phone"] .pulse {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  column-gap: var(--gap-md);
+  padding-bottom: var(--pad-b);
+  align-items: center;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .pulse__head {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .pulse__monitor {
+  grid-column: 1;
+  grid-row: 2;
+  height: 100%;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .pulse__text {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: end;
+  font-size: 0.92rem;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .pulse__pad {
+  grid-column: 1;
+  grid-row: 3;
+  width: clamp(58px, 16vh, 74px);
+  justify-self: center;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .pulse__reveal {
+  grid-column: 2;
+  grid-row: 3;
+  align-self: center;
+  min-height: 0;
+  font-size: 1.05rem;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .pulse__bpm { bottom: -1.3em; }
