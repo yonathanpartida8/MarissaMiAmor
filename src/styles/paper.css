@@ -143,20 +143,43 @@
 .word {
   display: inline-block;
   opacity: 0;
-  transform: translateY(0.5em) rotate(1.5deg);
-  filter: blur(3px);
+  /* translate3d y no translateY: así la palabra viaja en la GPU y no
+     obliga a repintar la línea entera en cada frame. */
+  transform: translate3d(0, 0.5em, 0) rotate(1.5deg);
 }
 
 .is-writing .word {
   animation: word-in 620ms var(--e-out) both;
-  animation-delay: calc(var(--i) * 26ms + var(--word-delay, 0ms));
+  animation-delay: calc(var(--d, 0ms) + var(--word-delay, 0ms));
 }
 
 @keyframes word-in {
   to {
     opacity: 1;
-    transform: none;
-    filter: blur(0);
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+/* El desenfoque por palabra es lo que hace que el texto parezca enfocarse
+   al escribirse, pero cada palabra pasa a ser una capa que el navegador
+   rasteriza aparte. En un párrafo largo son cien capas. En un móvil justo
+   de potencia, eso son los tirones. Así que sólo en gama alta. */
+:root[data-tier="high"] .word {
+  filter: blur(3px);
+}
+
+:root[data-tier="high"] .is-writing .word {
+  animation-name: word-in-focus;
+}
+
+/* Termina en `none` y no en `blur(0)`: la interpolación es la misma, pero
+   al acabar la palabra se queda sin filtro y el navegador puede tirar su
+   capa en vez de guardarla para siempre. */
+@keyframes word-in-focus {
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+    filter: none;
   }
 }
 

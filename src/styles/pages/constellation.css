@@ -111,7 +111,10 @@
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 0 8px 1px var(--accent);
-  transition: all 500ms var(--e-spring);
+  /* Nunca `all`: aquí hay un `animation` infinito sobre transform y opacity,
+     y un transition sobre las mismas propiedades las pone a competir. Se
+     transiciona sólo lo que cambia de verdad al unir dos estrellas. */
+  transition: box-shadow 500ms var(--e-spring), background 500ms var(--e-out);
   animation: star-twinkle 4s ease-in-out infinite;
   animation-delay: calc(var(--i, 0) * 300ms);
 }

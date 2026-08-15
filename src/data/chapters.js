@@ -437,6 +437,22 @@ export const chapters = [
 /** Acceso por id, para que el manifiesto no dependa del orden del array. */
 export const chapterById = Object.fromEntries(chapters.map((c) => [c.id, c]));
 
+/**
+ * Registra los capítulos de las páginas que él añade en `mis-paginas/`.
+ * Se llama al arrancar, antes de construir nada.
+ */
+export function registerCustomChapters(list, act) {
+  if (!list?.length) return;
+  for (const chapter of list) {
+    chapters.push(chapter);
+    chapterById[chapter.id] = chapter;
+  }
+  if (act && !actById[act.id]) {
+    acts.push(act);
+    actById[act.id] = act;
+  }
+}
+
 export const getChapter = (id) => {
   const chapter = chapterById[id];
   if (!chapter) console.warn(`[chapters] no existe el capítulo "${id}"`);

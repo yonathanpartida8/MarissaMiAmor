@@ -10,7 +10,9 @@ import { Router } from "./Router.js";
 import { GLStage } from "../gl/GLStage.js";
 import { UI } from "../ui/UI.js";
 import { installTextures } from "../components/textures.js";
-import { manifest } from "../data/manifest.js";
+import { manifest, registerCustomPages, indexOfPage } from "../data/manifest.js";
+import { registerCustomChapters } from "../data/chapters.js";
+import { loadCustomPages, customAct } from "../data/custom.js";
 import { warmup } from "../pages/registry.js";
 import { PRIORITY } from "./AssetLoader.js";
 import { el, qs, wait } from "../utils/dom.js";
@@ -42,7 +44,11 @@ export class App {
     this.ctx.gl = new GLStage(this.canvas, this.ctx);
     this.ctx.loop.start();
 
-    // 2. Lo mínimo imprescindible para abrir: la portada y su módulo.
+    // 2. Sus páginas. Van antes que nada porque pueden colarse en cualquier
+    //    sitio del libro, incluso justo después de la portada.
+    await this.#loadMine();
+
+    // 3. Lo mínimo imprescindible para abrir: la portada y su módulo.
     setStatus("buscando la portada…");
     setProgress(0.35);
     warmup("cover");
@@ -53,7 +59,7 @@ export class App {
       .loadAll(firstPhotos, PRIORITY.CRITICAL, (p) => setProgress(0.35 + p * 0.45))
       .catch(() => {});
 
-    // 3. Router y UI.
+    // 4. Router y UI.
     setStatus("encuadernando…");
     setProgress(0.9);
     this.ctx.router = new Router(this.ctx, this.stage);
@@ -66,7 +72,7 @@ export class App {
     setStatus("listo");
     await wait(280);
 
-    // 4. La puerta: un toque real que desbloquea audio y sensores.
+    // 5. La puerta: un toque real que desbloquea audio y sensores.
     await this.#awaitEntry();
 
     this.boot.classList.add("is-done");
@@ -74,15 +80,56 @@ export class App {
 
     this.ctx.gl?.setIntensity(1);
 
-    // 5. Abrimos por donde lo dejó, si ya había estado aquí.
-    const saved = this.ctx.store.get("page") || 0;
+    // 6. Abrimos por donde lo dejó, si ya había estado aquí.
+    //    Se busca por id: si él ha metido páginas suyas en medio desde la
+    //    última visita, el número ya no vale pero el id sigue siendo el mismo.
+    const savedId = this.ctx.store.get("pageId");
+    const byId = savedId ? indexOfPage(savedId) : -1;
+    const saved = byId >= 0 ? byId : this.ctx.store.get("page") || 0;
     const resume = saved > 0 && !this.ctx.store.isFirstVisit;
     await this.ctx.router.go(resume ? saved : 0, { transition: "none", direction: "none" });
 
     if (resume) this.ctx.ui.toast(`Seguimos donde lo dejamos · página ${saved + 1}`);
 
-    // 6. Lo demás se va cargando solo, sin estorbar.
+    // 7. Lo demás se va cargando solo, sin estorbar.
     this.#backgroundPreload();
+  }
+
+  /**
+   * Carga `mis-paginas/paginas.js` — lo que él añada a mano.
+   *
+   * Todo lo que pueda salir mal aquí sale mal en silencio para ella y con un
+   * aviso claro para él en la consola: el libro tiene que abrirse siempre,
+   * aunque el archivo tenga una coma de más o falte una foto.
+   */
+  async #loadMine() {
+    try {
+      const { entries, chapters, problems } = await loadCustomPages();
+
+      if (problems.length) {
+        console.groupCollapsed(
+          `%c mis-paginas %c ${problems.length} aviso${problems.length > 1 ? "s" : ""}`,
+          "background:#ec6f92;color:#fff;border-radius:3px 0 0 3px;padding:2px 6px",
+          "background:#2a1436;color:#f6e7ef;border-radius:0 3px 3px 0;padding:2px 6px"
+        );
+        problems.forEach((p) => console.warn("·", p));
+        console.info("Cómo se escriben las páginas: mis-paginas/README.md");
+        console.groupEnd();
+      }
+
+      if (entries.length) {
+        registerCustomChapters(chapters, customAct);
+        registerCustomPages(entries);
+        console.info(
+          `%c mis-paginas %c ${entries.length} página${entries.length > 1 ? "s" : ""} tuya${entries.length > 1 ? "s" : ""} añadida${entries.length > 1 ? "s" : ""}`,
+          "background:#7ee0c0;color:#08201a;border-radius:3px 0 0 3px;padding:2px 6px",
+          "background:#2a1436;color:#f6e7ef;border-radius:0 3px 3px 0;padding:2px 6px"
+        );
+      }
+    } catch (err) {
+      // Red de seguridad final: pase lo que pase, el libro se abre.
+      console.error("[mis-paginas] no se pudieron cargar", err);
+    }
   }
 
   /**

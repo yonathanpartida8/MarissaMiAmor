@@ -91,7 +91,21 @@ export function listenerGroup() {
   };
 }
 
-/** Divide un texto en <span> por palabra, para animarlas escalonadas. */
+/**
+ * Divide un texto en <span> por palabra, para animarlas escalonadas.
+ *
+ * El retraso NO es lineal a propósito. Con `i * 26ms`, un párrafo de cien
+ * palabras tardaba casi tres segundos en terminar de aparecer: las primeras
+ * frases ya se estaban leyendo mientras las últimas seguían borrosas, y daba
+ * la sensación de que la página iba lenta.
+ *
+ * Esta curva se satura: arranca igual de escalonada que antes —que es donde
+ * se nota la gracia— y se va comprimiendo, sin pasar nunca de ~0,73 s. Los
+ * textos cortos se ven idénticos; los largos, escritos de un tirón.
+ */
+const WORD_STEP = 26; // ms entre las primeras palabras
+const WORD_SATURATION = 28; // a partir de aquí el escalonado se comprime
+
 export function splitWords(text, className = "word") {
   const frag = document.createDocumentFragment();
   const words = String(text).split(/(\s+)/);
@@ -102,7 +116,10 @@ export function splitWords(text, className = "word") {
       continue;
     }
     const span = el(`span.${className}`, { text: chunk });
-    span.style.setProperty("--i", index++);
+    const delay = (WORD_STEP * index) / (1 + index / WORD_SATURATION);
+    span.style.setProperty("--i", index);
+    span.style.setProperty("--d", `${Math.round(delay)}ms`);
+    index++;
     frag.append(span);
   }
   return { frag, count: index };

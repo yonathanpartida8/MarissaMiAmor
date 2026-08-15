@@ -562,3 +562,133 @@ html[data-device="tablet"] .bar {
 @media (prefers-reduced-motion: reduce) {
   .toc__sheet, .toc__scrim { transition-duration: 1ms; }
 }
+
+/* ---- Bordes de navegación ----------------------------------
+   La salida de emergencia: dos franjas en los cantos que siempre
+   pasan de página, aunque la página se haya quedado el dedo.
+   No capturan el puntero (el reconocedor escucha en captura sobre
+   window); esto es sólo lo que se ve.                            */
+#ui > .edges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.edge {
+  --pull: 0;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* Anchura sólo visual: la zona que de verdad escucha la decide EdgeNav en
+     JS y es más estrecha. Aquí sobra sitio para que la flecha quepa entera. */
+  width: clamp(44px, 13vw, 68px);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 320ms var(--e-out);
+}
+
+.edge--prev { left: 0; }
+.edge--next { right: 0; }
+
+/* El velo que acompaña al dedo: nace del canto y se mete hacia dentro.
+   La base es neutra oscura y no el color de acento, porque hay páginas de
+   papel muy claro y otras casi negras: así la flecha se lee en todas. */
+.edge::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 260%;
+  opacity: calc(var(--pull) * 0.92);
+  background: linear-gradient(
+    var(--edge-angle, 90deg),
+    rgba(10, 5, 16, 0.5),
+    color-mix(in srgb, var(--accent, #ec6f92) 20%, transparent) 45%,
+    transparent 82%
+  );
+  filter: blur(3px);
+}
+
+.edge--prev::before { left: 0; --edge-angle: 90deg; }
+.edge--next::before { right: 0; --edge-angle: 270deg; }
+
+.edge__arrow {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.05rem;
+  height: 2.05rem;
+  border-radius: 50%;
+  font-family: var(--font-display, serif);
+  font-size: 1.45rem;
+  line-height: 1;
+  padding-bottom: 0.14em; /* el chevron tipográfico no está centrado */
+  color: #fff;
+  background: rgba(14, 7, 20, 0.42);
+  backdrop-filter: blur(6px) saturate(1.2);
+  -webkit-backdrop-filter: blur(6px) saturate(1.2);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 4px 18px -6px rgba(0, 0, 0, 0.7);
+  will-change: transform, opacity;
+}
+
+.edge--prev .edge__arrow {
+  transform: translate3d(calc(var(--pull) * 9px), 0, 0) scale(calc(0.76 + var(--pull) * 0.3));
+}
+
+.edge--next .edge__arrow {
+  transform: translate3d(calc(var(--pull) * -9px), 0, 0) scale(calc(0.76 + var(--pull) * 0.3));
+}
+
+.edge.is-pulling {
+  opacity: 1;
+  transition: none;
+}
+
+/* Pasado el punto de no retorno: la flecha se afirma. */
+.edge.is-ready .edge__arrow {
+  background: color-mix(in srgb, var(--accent, #ec6f92) 82%, #1a0d22);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+    0 0 22px -2px var(--accent, #ec6f92);
+}
+
+/* El aviso de que los bordes existen, las primeras veces. */
+.edges.is-hinting .edge {
+  animation: edge-breathe 1300ms var(--e-out) 2 both;
+}
+
+.edges.is-hinting .edge--next { animation-delay: 120ms; }
+
+@keyframes edge-breathe {
+  0%   { opacity: 0; }
+  38%  { opacity: 0.5; }
+  100% { opacity: 0; }
+}
+
+.edges.is-hinting .edge--prev .edge__arrow {
+  animation: edge-nudge-prev 1300ms var(--e-out) 2 both;
+}
+
+.edges.is-hinting .edge--next .edge__arrow {
+  animation: edge-nudge-next 1300ms var(--e-out) 2 both;
+  animation-delay: 120ms;
+}
+
+@keyframes edge-nudge-prev {
+  0%, 100% { transform: translate3d(-5px, 0, 0) scale(0.76); }
+  40%      { transform: translate3d(5px, 0, 0) scale(0.94); }
+}
+
+@keyframes edge-nudge-next {
+  0%, 100% { transform: translate3d(5px, 0, 0) scale(0.76); }
+  40%      { transform: translate3d(-5px, 0, 0) scale(0.94); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edges.is-hinting .edge,
+  .edges.is-hinting .edge__arrow { animation: none; }
+}

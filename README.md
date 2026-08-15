@@ -34,6 +34,9 @@ index.html              el único HTML; carga estilos y arranca src/main.js
 assets/
   img/                  las 85 ilustraciones
   audio/                música y efectos
+mis-paginas/            TUS páginas: fotos, vídeos y textos que añadas a mano
+  paginas.js            la lista (lo único que se edita)
+  fotos/  videos/       tus archivos
 vendor/three/           Three.js vendorizado (licencia MIT incluida)
 src/
   main.js               punto de entrada
@@ -66,11 +69,13 @@ src/
   ui/
     UI.js               barra, progreso, pistas y avisos
     Index.js            el índice del libro, por actos
+    EdgeNav.js          los bordes que siempre pasan de página
   transitions/          volteo de hoja + efectos de luz
   data/
     chapters.js         LOS TEXTOS (lo único que hay que tocar para cambiarlos)
     photos.js           inventario y reparto de las 85 ilustraciones
     manifest.js         EL ORDEN DEL LIBRO
+    custom.js           traduce mis-paginas/paginas.js al formato interno
   styles/               tokens, base y una hoja por página
   utils/                matemáticas, easing, DOM, aleatoriedad sembrada
 ```
@@ -157,9 +162,53 @@ de la luz y pellizco para acercarlas. Tocar ese componente cambia el libro enter
 
 ---
 
-## Cómo añadir una página
+## Tus propias páginas — la carpeta `mis-paginas/`
 
-Es lo único que hay que saber para ampliar el libro.
+Para añadir contenido sin entrar en el motor: **fotos, vídeos y textos tuyos**,
+en un solo archivo escrito en español.
+
+```js
+// mis-paginas/paginas.js
+export default [
+  {
+    tipo: "foto",
+    titulo: "Nuestra tarde",
+    texto: "Lo que quieras contar.",
+    foto: "mis-paginas/fotos/tarde.jpg",
+  },
+  {
+    tipo: "video",
+    titulo: "Esto lo grabé para ti",
+    video: "mis-paginas/videos/mensaje.mp4",
+    poster: "mis-paginas/fotos/caratula.jpg",
+  },
+];
+```
+
+Con eso la página ya está en el libro, en el índice y en el contador de
+progreso. Sin compilar, sin instalar, sin tocar `manifest.js` ni `chapters.js`.
+
+- **Tipos rápidos:** `foto` · `galeria` · `video` · `carta`. Y si te quedas con
+  ganas, valen también los veintidós del libro (`polaroids`, `mosaico`,
+  `rascar`, `postal`, `candado`…).
+- **Dónde cae:** por defecto justo antes de la última página, en un acto nuevo
+  llamado «Tuyas». Con `donde: "inicio"` o `donde: 12` la colocas donde quieras,
+  y entonces adopta el acto de sus vecinas para que el índice se lea seguido.
+- **Nada de esto puede romper el libro.** Una página mal escrita se salta con un
+  aviso claro en la consola; si el archivo entero tiene un error de sintaxis,
+  el libro se abre igual con sus páginas de siempre.
+- **Los vídeos no se descargan** hasta que ella le da al play, y se liberan de
+  memoria al pasar de página.
+
+Las instrucciones completas, con todos los campos y los fallos habituales, están
+en **[`mis-paginas/README.md`](mis-paginas/README.md)**.
+
+---
+
+## Cómo añadir una página desde dentro
+
+Lo de arriba cubre casi todo. Esto es para cuando quieras una página del propio
+libro, con su capítulo y su sitio en el manifiesto.
 
 **1. Escribe el capítulo** en `src/data/chapters.js`:
 
@@ -240,6 +289,13 @@ El libro mide el aparato en el que se está abriendo y se adapta:
   las 85 ilustraciones nunca están todas en memoria a la vez.
 - **Módulos perezosos**: el código de la constelación no se descarga hasta que
   hace falta.
+- **Sólo tica la página que se ve.** El router mantiene vivas las hojas vecinas
+  para que arrastrar responda al instante, pero sus relojes están parados: nadie
+  calcula físicas ni partículas para una página que no está en pantalla.
+- **Modo ahorro durante las transiciones.** El instante más caro del libro es el
+  cambio de página: dos desenfoques a pantalla completa y la atmósfera de fondo a
+  la vez. Ahí el lienzo WebGL baja a dos tercios de resolución —invisible,
+  porque todo está desenfocado o en marcha— y vuelve a plena calidad al aterrizar.
 
 Y si no hay WebGL, el libro sigue siendo un libro: todas las páginas tienen su
 versión en DOM, sin una sola pantalla vacía.
@@ -257,19 +313,17 @@ Para depurar se puede forzar el nivel por URL: `index.html?tier=low`.
 - Zoom por doble toque y por pellizco desactivados, para que el pinch lo puedan
   usar las páginas que lo quieren.
 - Sin rebote elástico ni «tirar para recargar».
+- **Los bordes siempre pasan de página.** Casi todas las páginas se quedan el
+  dedo (la máquina de escribir, el candado, el mosaico, las que se sostienen sin
+  soltar…), y eso dejaba al lector encerrado. Ahora hay dos franjas en los cantos
+  de la pantalla que escuchan en fase de captura, antes de que ninguna página
+  pueda cortar el gesto: no hay página, presente ni futura, de la que no se pueda
+  salir arrastrando. Las primeras veces que se llega a una de ellas, las flechas
+  se asoman un momento para que se sepa que están ahí.
 - La tipografía escala respecto al **ancho de la hoja**, no al de la ventana:
   en apaisado son cosas muy distintas.
 - El giroscopio se pide dentro del primer toque, como exige iOS.
 - Vibración en Android; en iOS se ignora en silencio.
-
----
-
-## Los textos
-
-Los veinte capítulos están **tal cual fueron escritos**, sin corregir ni una
-coma. Las erratas y la forma de hablar son parte de lo que se está regalando.
-Si algún día quieres retocarlos, están todos juntos en
-`src/data/chapters.js` y no hay que tocar nada más.
 
 ---
 

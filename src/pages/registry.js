@@ -31,6 +31,11 @@ const loaders = {
   gift: () => import("./GiftPage.js"),
   pulse: () => import("./PulsePage.js"),
   orbit: () => import("./OrbitPage.js"),
+
+  // ── Para las páginas de `mis-paginas/` ──────────────────
+  photo: () => import("./PhotoPage.js"),
+  gallery: () => import("./GalleryPage.js"),
+  video: () => import("./VideoPage.js"),
 };
 
 const cache = new Map();

@@ -75,6 +75,15 @@ export function createPhotoFrame(ctx, options = {}) {
     const img = await ctx.assets.load(photo.src).catch(() => null);
     if (!img) {
       node.classList.add("is-missing");
+      // Si la foto es suya, esto casi siempre es una ruta mal escrita y
+      // conviene decírselo con nombre y apellidos. El hueco se queda digno
+      // igualmente: ella nunca ve un error, sólo un marco vacío bonito.
+      if (photo.custom) {
+        console.warn(
+          `[mis-paginas] no se encontró la foto "${photo.src}". ` +
+            `Comprueba que el archivo esté subido y que la ruta empiece por "mis-paginas/".`
+        );
+      }
       return null;
     }
     imgEl.style.backgroundImage = `url("${photo.src}")`;

@@ -392,26 +392,90 @@ const pages = [
  * Cada página hereda el acto de su capítulo. Así el índice se agrupa solo y
  * no hay que repetir el dato en dos sitios.
  */
-export const manifest = pages.map((entry, index) => ({
-  ...entry,
-  index,
-  act: entry.act || chapterById[entry.chapter]?.act || null,
-}));
+/** Le pone su índice y su acto a cada entrada. */
+function decorate(list) {
+  list.forEach((entry, index) => {
+    entry.index = index;
+    entry.act = entry.act || chapterById[entry.chapter]?.act || null;
+  });
+  return list;
+}
 
-export const pageCount = manifest.length;
+/**
+ * El manifiesto es un array MUTABLE a propósito: las páginas de `mis-paginas/`
+ * se cargan después (son un módulo aparte que puede fallar sin tumbar nada) y
+ * se insertan aquí. Todo lo demás lee `manifest` por referencia, así que en
+ * cuanto se insertan ya están en el índice, en el progreso y en la navegación.
+ */
+export const manifest = decorate(pages.map((entry) => ({ ...entry })));
+
+/**
+ * Inserta las páginas de él. `where` decide dónde va cada una:
+ *   "final"  (por defecto) justo antes de la página de cierre
+ *   "inicio" después de la portada
+ *   número   en esa posición del libro (1 = después de la portada)
+ */
+export function registerCustomPages(entries) {
+  if (!entries?.length) return manifest;
+
+  for (const entry of entries) {
+    const where = entry.where ?? "final";
+    let at;
+    let appended = false;
+
+    if (where === "inicio") {
+      at = 1;
+    } else if (where !== "final" && Number.isFinite(Number(where))) {
+      at = Math.max(1, Math.min(manifest.length, Math.round(Number(where))));
+    } else {
+      // "final": siempre justo antes del cierre, que tiene que quedar último.
+      // Se recalcula en cada vuelta porque el manifiesto acaba de crecer.
+      at = manifest.findIndex((e) => e.type === "finale");
+      if (at === -1) at = manifest.length;
+      appended = true;
+    }
+
+    const copy = { ...entry };
+
+    // Una página metida en medio del libro se pone el acto de sus vecinas:
+    // si la ha colocado entre "Conocerte" y "Conocerte", ahí pertenece, y el
+    // índice se lee seguido. Sólo las del final forman su propio acto.
+    if (!appended) {
+      copy.act = manifest[at - 1]?.act || manifest[at]?.act || copy.act || null;
+    }
+
+    manifest.splice(at, 0, copy);
+  }
+
+  decorate(manifest);
+  return manifest;
+}
+
+/** Longitud actual del libro. Es una función porque el libro puede crecer. */
+export const pageCount = () => manifest.length;
 
 export const indexOfPage = (id) => manifest.findIndex((p) => p.id === id);
 
-/** Todos los secretos que el libro puede esconder. */
-export const allSecrets = manifest.filter((p) => p.secret).map((p) => p.secret);
+/** Todos los secretos que el libro puede esconder ahora mismo. */
+export const allSecrets = () => manifest.filter((p) => p.secret).map((p) => p.secret);
 
-/** Páginas agrupadas por acto, para el índice. */
+/**
+ * Páginas agrupadas por acto, para el índice.
+ *
+ * Se agrupa por TRAMOS SEGUIDOS y no por nombre de acto. Con un mapa, una
+ * página suelta metida al principio arrastraba a su grupo todas las demás del
+ * mismo acto y el índice dejaba de ir en orden: aparecía la página 41 entre
+ * la 1 y la 2. Así el índice siempre se lee como se pasa el libro.
+ *
+ * @returns {[string, PageEntry[]][]}
+ */
 export function byAct() {
-  const out = new Map();
+  const runs = [];
   for (const entry of manifest) {
     const key = entry.act || "otros";
-    if (!out.has(key)) out.set(key, []);
-    out.get(key).push(entry);
+    const last = runs[runs.length - 1];
+    if (last && last[0] === key) last[1].push(entry);
+    else runs.push([key, [entry]]);
   }
-  return out;
+  return runs;
 }

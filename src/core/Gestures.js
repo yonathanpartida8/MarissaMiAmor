@@ -19,6 +19,28 @@ const SWIPE_MIN_VELOCITY = 0.32; // px por ms
 
 export class Gestures {
   /**
+   * El dedo reclamado por el libro.
+   *
+   * La navegación desde el borde escucha en fase de captura, por encima de
+   * todo el mundo. Cuando decide que un dedo es suyo lo anuncia aquí, y todos
+   * los reconocedores lo sueltan educadamente: la tira de cine termina de
+   * frenar, la postal se recoloca, pero ninguno actúa sobre un gesto que ya
+   * no le pertenece. Es estático a propósito: es una decisión de todo el
+   * sistema, no de una instancia.
+   *
+   * @type {number|null}
+   */
+  static claimed = null;
+
+  static claim(pointerId) {
+    Gestures.claimed = pointerId;
+  }
+
+  static release(pointerId) {
+    if (Gestures.claimed === pointerId) Gestures.claimed = null;
+  }
+
+  /**
    * @param {HTMLElement} target
    * @param {object} handlers
    * @param {object} [options]
@@ -104,6 +126,12 @@ export class Gestures {
 
   #onMove = (e) => {
     if (!this.enabled) return;
+
+    // El libro se ha quedado este dedo: lo soltamos con elegancia.
+    if (Gestures.claimed !== null && e.pointerId === Gestures.claimed) {
+      if (this.state?.id === e.pointerId || this.pointers.has(e.pointerId)) this.#yield(e);
+      return;
+    }
 
     if (this.pointers.has(e.pointerId)) {
       this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -255,6 +283,23 @@ export class Gestures {
 
   #reset() {
     clearTimeout(this.longTimer);
+    this.state = null;
+  }
+
+  /**
+   * Suelta el gesto porque el dedo ya no es nuestro.
+   *
+   * Se avisa con `onPanEnd` para que lo que estuviera moviéndose termine de
+   * frenar donde toca, pero NO se dispara `onSwipe` ni `onTap`: el gesto se
+   * abandona, no se completa.
+   */
+  #yield(e) {
+    const s = this.state;
+    clearTimeout(this.longTimer);
+    clearTimeout(this.tapTimer);
+    if (s?.panning) this.h.onPanEnd?.({ ...this.#detail(s, e), cancelled: true });
+    this.pointers.delete(e.pointerId);
+    this.pinch = null;
     this.state = null;
   }
 

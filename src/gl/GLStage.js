@@ -233,6 +233,30 @@ export class GLStage {
     this.dustUniforms.uPulse.value = Math.max(this.dustUniforms.uPulse.value, amount * 0.8);
   }
 
+  /**
+   * Modo ahorro mientras dura una transición.
+   *
+   * El momento más caro del libro es el cambio de página: la hoja que se va
+   * lleva un desenfoque a pantalla completa, la que entra otro, y por debajo
+   * la atmósfera sigue calculando ruido fractal píxel a píxel. Justo ahí,
+   * bajar la resolución del lienzo WebGL a dos tercios cuesta la mitad de
+   * fragmentos y no se ve: todo lo que hay en pantalla está desenfocado o en
+   * movimiento. Al aterrizar vuelve a resolución completa.
+   */
+  setEconomy(on) {
+    if (!this.ready || this.economy === on) return;
+    this.economy = on;
+    this.#applyPixelRatio();
+  }
+
+  #applyPixelRatio() {
+    const dpr = this.economy ? Math.max(0.6, this.caps.dpr * 0.66) : this.caps.dpr;
+    this.renderer.setPixelRatio(dpr);
+    const { width, height } = this.viewport;
+    this.atmoUniforms.uResolution.value.set(width * dpr, height * dpr);
+    this.dustUniforms.uPixelRatio.value = dpr;
+  }
+
   /** Destello blanco muy corto. Para los momentos importantes. */
   flash(amount = 0.6) {
     if (!this.ready) return;
@@ -300,13 +324,9 @@ export class GLStage {
   resize() {
     if (!this.enabled) return;
     const { width, height } = this.viewport;
-    const dpr = this.caps.dpr;
 
-    this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(width, height, false);
-
-    this.atmoUniforms.uResolution.value.set(width * dpr, height * dpr);
-    this.dustUniforms.uPixelRatio.value = dpr;
+    this.#applyPixelRatio();
 
     this.camera.aspect = width / Math.max(1, height);
     this.camera.updateProjectionMatrix();
@@ -318,7 +338,7 @@ export class GLStage {
   #applyBudget() {
     this.atmoUniforms.uQuality.value =
       this.caps.tierName === "high" ? 1 : this.caps.tierName === "mid" ? 0.6 : 0;
-    this.renderer.setPixelRatio(this.caps.dpr);
+    this.#applyPixelRatio();
     // Reducir el número de partículas exigiría rehacer el buffer; en su lugar
     // bajamos opacidad y tamaño, que es gratis y casi no se nota.
     if (this.caps.tierName === "low") {
@@ -332,6 +352,8 @@ export class GLStage {
 
   dustBudget = 1;
   dustTargetA = null;
+  /** Resolución reducida mientras cambia la página. */
+  economy = false;
 
   tick(dt, time) {
     if (!this.ready) return;

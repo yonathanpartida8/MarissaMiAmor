@@ -130,9 +130,21 @@ export class BasePage {
 
   // ---- Ayudas para las subclases ----------------------------------------
 
-  /** Añade un ticker que se cancela solo al destruir la página. */
+  /**
+   * Añade un ticker que se cancela solo al destruir la página.
+   *
+   * El guardia de `active` está aquí a propósito y no en cada página: el
+   * router mantiene vivas las hojas vecinas para que arrastrar responda al
+   * instante, así que puede haber tres o cuatro páginas construidas a la vez.
+   * Sin esto, todas seguirían pidiendo frames —físicas, partículas, escenas
+   * 3D— para nadie. Con esto, sólo gasta CPU la que se está viendo.
+   */
   addTicker(fn, order = 10) {
-    const stop = this.ctx.loop.add(fn, order);
+    const guarded = (dt, time, realDt) => {
+      if (!this.active || this.destroyed) return;
+      fn(dt, time, realDt);
+    };
+    const stop = this.ctx.loop.add(guarded, order);
     this.tickers.push(stop);
     return stop;
   }

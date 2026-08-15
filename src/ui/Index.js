@@ -115,7 +115,7 @@ export class BookIndex {
     const found = this.ctx.store.secretsFound;
     this.sub.textContent =
       `${Math.min(furthest + 1, manifest.length)} de ${manifest.length} páginas · ` +
-      `${found} de ${allSecrets.length} secretos`;
+      `${found} de ${allSecrets().length} secretos`;
   }
 
   #goTo(index) {

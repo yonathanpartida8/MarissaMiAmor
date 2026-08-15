@@ -164,12 +164,20 @@ export class Router extends Emitter {
     this.ctx.gl?.setMood(incoming.page.palette, incoming.page.mood);
 
     const name = transition || entry.transition || "flip";
-    await this.#transition(name, outgoing?.leaf, incoming.leaf, dir);
+    // Modo ahorro: durante la transición todo está desenfocado o en marcha,
+    // así que el lienzo WebGL puede rendir a menos resolución sin que se note.
+    // Es justo el instante en que el móvil va más justo.
+    this.ctx.gl?.setEconomy(true);
+    try {
+      await this.#transition(name, outgoing?.leaf, incoming.leaf, dir);
+    } finally {
+      this.ctx.gl?.setEconomy(false);
+    }
 
     // Estado nuevo
     const prevIndex = this.index;
     this.index = index;
-    this.ctx.store.setPage(index);
+    this.ctx.store.setPage(index, entry.id);
 
     if (outgoing) outgoing.leaf.classList.add("leaf--hidden");
     incoming.leaf.classList.remove("leaf--hidden");
@@ -263,6 +271,8 @@ export class Router extends Emitter {
     this.flip.begin(outLeaf, record.leaf, dir);
     this.drag = { mode: "flip", dir, target, width: this.stage.clientWidth || 1 };
     this.stage.classList.add("is-dragging");
+    // Mientras el dedo lleva la hoja, la prioridad absoluta es que responda.
+    this.ctx.gl?.setEconomy(true);
   }
 
   #dragMove(e) {
@@ -277,6 +287,22 @@ export class Router extends Emitter {
     const drag = this.drag;
     if (!drag) return;
     this.drag = null;
+
+    // El gesto se ha abandonado, no terminado: otro se ha quedado el dedo.
+    // Se recoge lo que hubiera empezado, pero no se pasa de página.
+    if (e.cancelled) {
+      if (drag.mode === "flip") {
+        this.stage.classList.remove("is-dragging");
+        this.busy = true;
+        await this.flip.settle(drag.dir === "next" ? 0 : 1, 0);
+        this.flip.end();
+        const record = this.live.get(drag.target);
+        if (record && drag.target !== this.index) record.leaf.classList.add("leaf--staged");
+        this.busy = false;
+        this.ctx.gl?.setEconomy(false);
+      }
+      return;
+    }
 
     if (drag.mode === "swipe") {
       const far = Math.abs(e.dx) > this.stage.clientWidth * 0.22;
@@ -314,7 +340,7 @@ export class Router extends Emitter {
 
       const prevIndex = this.index;
       this.index = drag.target;
-      this.ctx.store.setPage(this.index);
+      this.ctx.store.setPage(this.index, this.entries[this.index]?.id);
       this.ctx.gl?.setMood(incoming.page.palette, incoming.page.mood);
       this.ctx.haptics.play("turn");
 
@@ -336,6 +362,7 @@ export class Router extends Emitter {
 
     this.busy = false;
     this.ctx.ui?.setBusy(false);
+    this.ctx.gl?.setEconomy(false);
   }
 
   // ═══════════════════════════════════════════════════════════════════

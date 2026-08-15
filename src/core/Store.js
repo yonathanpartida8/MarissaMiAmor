@@ -12,6 +12,9 @@ const KEY = "marissa.libro.v2";
 
 const DEFAULTS = {
   page: 0,
+  // El número de página baila si él añade páginas suyas en medio; el id no.
+  // Se guardan los dos: el id manda, el número es el respaldo.
+  pageId: null,
   furthest: 0,
   secrets: [],
   visited: [],
@@ -67,8 +70,9 @@ export class Store extends Emitter {
   }
 
   /** Avanza el marcador de página y recuerda el punto más lejano alcanzado. */
-  setPage(index) {
+  setPage(index, id) {
     this.set("page", index);
+    if (id) this.set("pageId", id);
     if (index > this.state.furthest) this.set("furthest", index);
   }
 

@@ -140,7 +140,7 @@ export default class FinalePage extends BasePage {
 
     // Balance de secretos: lo que encontró por el camino.
     const found = this.ctx.store.secretsFound;
-    const total = allSecrets.length;
+    const total = allSecrets().length;
     this.root.querySelector(".finale__secrets").textContent =
       found >= total
         ? `✦ encontraste los ${total} secretos`

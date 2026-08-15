@@ -1,0 +1,2 @@
+Aquí van tus fotos.
+Desde paginas.js se llaman así:  foto: "mis-paginas/fotos/loquesea.jpg"

@@ -213,10 +213,13 @@
   height: 12px;
   background: linear-gradient(180deg, #d9c8a4, #b99f74 60%, #8f7548);
   box-shadow: inset 0 1px 0 rgba(255, 246, 226, 0.6);
-  transition: opacity 700ms var(--e-out) 400ms, height 700ms var(--e-out) 400ms;
+  /* Se encoge con scaleY y no con height: cambiar la altura reflowaría la
+     columna entera en cada frame, justo mientras el pergamino se despliega. */
+  transform-origin: center;
+  transition: opacity 700ms var(--e-out) 400ms, transform 700ms var(--e-out) 400ms;
 }
 
-.bottle.is-unrolled .bot__roll { opacity: 0.25; height: 5px; }
+.bottle.is-unrolled .bot__roll { opacity: 0.25; transform: scaleY(0.42); }
 
 .bot__inner {
   flex: 1;

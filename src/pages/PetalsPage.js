@@ -97,6 +97,12 @@ export default class PetalsPage extends BasePage {
     this.finished = false;
 
     for (const petal of this.petals) this.#bind(petal);
+
+    this.fieldHeight = 0;
+    // Si gira el teléfono, el suelo cambia de sitio: se vuelve a medir, pero
+    // sólo entonces, no en cada frame.
+    this.track(this.ctx.viewport.on("resize", () => (this.fieldHeight = 0)));
+
     this.addTicker((dt) => this.#physics(dt), 11);
   }
 
@@ -187,7 +193,10 @@ export default class PetalsPage extends BasePage {
 
   /** Caída de los pétalos arrancados. */
   #physics(dt) {
-    const height = this.root.clientHeight || 800;
+    // La altura se mide una vez y se guarda. Leerla en cada frame obliga al
+    // navegador a recalcular el layout justo en mitad de la animación, que es
+    // exactamente lo que produce los tirones.
+    const height = this.fieldHeight || (this.fieldHeight = this.root.clientHeight || 800);
     let moving = false;
 
     for (const petal of this.petals) {

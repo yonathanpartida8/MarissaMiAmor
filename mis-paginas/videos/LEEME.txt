@@ -1,0 +1,3 @@
+Aquí van tus vídeos.
+Desde paginas.js se llaman así:  video: "mis-paginas/videos/loquesea.mp4"
+Intenta que no pasen de 15 MB cada uno.

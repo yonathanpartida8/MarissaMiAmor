@@ -11,6 +11,7 @@ import { el, qs } from "../utils/dom.js";
 import { manifest, allSecrets } from "../data/manifest.js";
 import { actById } from "../data/chapters.js";
 import { BookIndex } from "./Index.js";
+import { EdgeNav } from "./EdgeNav.js";
 
 const HINT_DELAY = 4600;
 const BAR_HIDE_DELAY = 3400;
@@ -26,12 +27,14 @@ export class UI {
 
   mount() {
     this.index = new BookIndex(this.ctx);
+    this.edges = new EdgeNav(this.ctx);
 
     this.root.append(
       this.#buildProgress(),
       this.#buildBar(),
       this.#buildHint(),
       this.#buildToast(),
+      this.edges.build(),
       this.index.build()
     );
 
@@ -142,7 +145,9 @@ export class UI {
     const ratio = total > 1 ? index / (total - 1) : 1;
 
     this.progressFill.style.transform = `scaleX(${ratio})`;
-    this.progress.style.setProperty("--accent", page.palette.a);
+    // El acento vive en la raíz de la interfaz: de ahí lo heredan el hilo de
+    // progreso, los bordes de navegación y lo que venga después.
+    this.root.style.setProperty("--accent", page.palette.a);
 
     for (const tick of this.ticks.children) {
       tick.classList.toggle("is-past", Number(tick.dataset.index) <= index);
@@ -170,6 +175,34 @@ export class UI {
     this.showBar();
     this.scheduleHint();
     this.updateSecrets();
+
+    // Si la página se queda el dedo, se le enseñan los bordes un momento.
+    // Con retraso: primero que respire la animación de entrada.
+    clearTimeout(this.edgeTimer);
+    this.edgeTimer = setTimeout(() => {
+      if (this.#holdsFinger(page)) this.edges?.hint();
+    }, 1100);
+  }
+
+  /**
+   * ¿Esta página se queda el dedo?
+   *
+   * No se mira por una lista de tipos —que habría que mantener— sino por lo
+   * que hay de verdad en pantalla: si un reconocedor exclusivo cubre casi
+   * toda la hoja, arrastrar por el centro no va a pasar de página. Así vale
+   * también para las páginas que se añadan mañana, sin tocar nada aquí.
+   */
+  #holdsFinger(page) {
+    if (!page?.root?.isConnected || !page.gestures?.length) return false;
+    const box = page.root.getBoundingClientRect();
+    const total = box.width * box.height;
+    if (total <= 0) return false;
+
+    return page.gestures.some((g) => {
+      if (!g.exclusive || !g.target?.getBoundingClientRect) return false;
+      const r = g.target.getBoundingClientRect();
+      return (r.width * r.height) / total > 0.5;
+    });
   }
 
   setBusy(busy) {
@@ -181,7 +214,7 @@ export class UI {
   updateSecrets() {
     this.index?.refresh();
     const found = this.ctx.store.secretsFound;
-    const total = allSecrets.length;
+    const total = allSecrets().length;
     if (!this.secretsEl) return;
     this.secretsEl.textContent = found ? `✦ ${found}/${total}` : "";
     this.secretsEl.classList.toggle("is-complete", found >= total);
@@ -241,7 +274,7 @@ export class UI {
     this.updateSecrets();
 
     const found = this.ctx.store.secretsFound;
-    const total = allSecrets.length;
+    const total = allSecrets().length;
     this.toast(found >= total ? "Los encontraste todos ✦ Te amo" : `Secreto encontrado ✦ ${found}/${total}`);
 
     this.secretsEl?.classList.remove("is-pop");
