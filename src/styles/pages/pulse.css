@@ -7,9 +7,11 @@
   /* El monitor no se lleva todo el alto: la almohadilla y la frase también
      tienen que caber sin pelearse con la barra flotante. */
   grid-template-rows: auto minmax(0, 34%) auto auto minmax(0, 1fr);
-  padding-bottom: calc(var(--pad-b) + 2.4rem);
   gap: clamp(0.6rem, 2.2vh, 1.1rem);
-  padding: var(--pad-t) var(--pad-x);
+  /* El atajo `padding` va DESPUÉS del longhand a propósito de ningún sitio:
+     antes estaba antes y borraba el `padding-bottom` que se acababa de
+     escribir, así que la frase final quedaba pegada al canto. */
+  padding: var(--pad-t) var(--pad-x) calc(var(--pad-b) + var(--bar-space, 0rem));
   place-items: center;
   background: transparent;
   --beat: 0;
@@ -45,7 +47,11 @@
 /* ---- El monitor --------------------------------------------- */
 .pulse__monitor {
   position: relative;
+  /* Estirado en los DOS ejes: sólo con `justify-self` se quedaba con 0px de
+     alto (todo su contenido va en posición absoluta) y la línea del latido
+     no se dibujaba nunca. */
   justify-self: stretch;
+  align-self: stretch;
   min-height: 0;
   border-radius: var(--r-md);
   overflow: hidden;

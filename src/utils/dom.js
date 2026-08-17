@@ -38,28 +38,14 @@ export const qsa = (sel, root = document) => Array.from(root.querySelectorAll(se
 
 /** Fija variables CSS personalizadas de una tacada. */
 export function setVars(node, vars) {
+  // Se llama muchas veces desde temporizadores y animaciones; si para cuando
+  // llega el turno la página ya se ha ido, no es un error: no hay nada que
+  // pintar y no tiene por qué reventar nada.
+  if (!node?.style) return;
   for (const [key, value] of Object.entries(vars)) {
     if (value == null) continue;
     node.style.setProperty(key.startsWith("--") ? key : `--${key}`, String(value));
   }
-}
-
-/** Espera a que termine la transición/animación CSS de un elemento. */
-export function afterTransition(node, fallback = 1200) {
-  return new Promise((resolve) => {
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      node.removeEventListener("transitionend", finish);
-      node.removeEventListener("animationend", finish);
-      clearTimeout(timer);
-      resolve();
-    };
-    const timer = setTimeout(finish, fallback);
-    node.addEventListener("transitionend", finish, { once: true });
-    node.addEventListener("animationend", finish, { once: true });
-  });
 }
 
 /** Fuerza un reflow para que la siguiente clase sí anime. */

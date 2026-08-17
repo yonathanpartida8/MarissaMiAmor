@@ -111,7 +111,13 @@ export default class MemoryFieldPage extends BasePage {
       this.cards.push({ mesh, photo, material, home: position.clone(), loaded: false, delay });
     });
 
-    this.group.position.y = 0.75; // deja libre el tercio inferior para el texto
+    // El campo se acomoda a la forma de la hoja: en vertical se sube para
+    // dejar libre el tercio de abajo (ahí va el texto); con el teléfono
+    // tumbado el texto se va al lado derecho, así que el campo se centra,
+    // se corre a la izquierda y encoge, para no salirse del libro por arriba.
+    this.#placeField();
+    this.track(this.ctx.viewport.on("resize", () => this.#placeField()));
+
     this.unmountGL = gl.mount(this.group);
     this.raycaster = new THREE.Raycaster();
     this.pointerNdc = new THREE.Vector2();
@@ -119,6 +125,31 @@ export default class MemoryFieldPage extends BasePage {
     this.#bindGestures();
     this.#loadBatch(0);
     this.addTicker((dt, t) => this.#frame(dt, t), 12);
+  }
+
+  /**
+   * Coloca la esfera de recuerdos según la forma de LA HOJA, no de la ventana.
+   *
+   * Los planos los pinta WebGL sobre un lienzo que ocupa la pantalla entera,
+   * pero el libro no siempre la ocupa: en tablet y escritorio es una hoja
+   * estrecha centrada sobre una mesa oscura. Sin esto, los recuerdos se
+   * esparcían por fuera del libro, a los lados, como si se hubieran caído.
+   *
+   * Así que la esfera se encoge hasta caber dentro de la hoja, y se coloca
+   * donde no estorbe al texto: arriba si el texto va abajo (vertical), a la
+   * izquierda si el texto va a la derecha (móvil tumbado).
+   */
+  #placeField() {
+    if (!this.group || !this.root?.isConnected) return;
+
+    const leaf = this.root.getBoundingClientRect();
+    if (!leaf.width || !leaf.height) return;
+
+    const wide = leaf.width > leaf.height * 1.15;
+    const fit = clamp((leaf.width / (window.innerWidth || 1)) * 1.25, 0.5, 1);
+
+    this.group.position.set(wide ? -1.4 * fit : 0, wide ? 0.1 : 0.75 * fit, 0);
+    this.group.scale.setScalar(wide ? fit * 0.85 : fit);
   }
 
   #bindGestures() {
@@ -151,7 +182,12 @@ export default class MemoryFieldPage extends BasePage {
   /** Elige el recuerdo que hay bajo el dedo. */
   #pick(e) {
     if (!this.raycaster) return;
-    const rect = this.root.getBoundingClientRect();
+    // Las coordenadas del rayo van referidas al LIENZO, no a la página.
+    // La cámara pinta sobre el canvas, que ocupa toda la ventana; la hoja,
+    // en tablet, escritorio y móvil apaisado, es más pequeña y va centrada.
+    // Midiendo sobre la página, el dedo apuntaba a un sitio y el rayo salía
+    // por otro, y tocar un recuerdo no lo enfocaba.
+    const rect = (this.ctx.gl?.canvas || this.root).getBoundingClientRect();
     this.pointerNdc.set(
       ((e.x - rect.left) / rect.width) * 2 - 1,
       -(((e.y - rect.top) / rect.height) * 2 - 1)
@@ -200,7 +236,7 @@ export default class MemoryFieldPage extends BasePage {
       if (this.destroyed) return;
       const next = () => this.#loadBatch(start + 6);
       if ("requestIdleCallback" in window) requestIdleCallback(next, { timeout: 1500 });
-      else setTimeout(next, 260);
+      else this.later(next, 260);
     });
   }
 
@@ -297,7 +333,7 @@ export default class MemoryFieldPage extends BasePage {
       grid.append(cell);
       await this.ctx.assets.load(photo.src, PRIORITY.NEAR).catch(() => null);
       cell.style.backgroundImage = `url("${photo.src}")`;
-      setTimeout(() => cell.classList.add("is-loaded"), i * 60);
+      this.later(() => cell.classList.add("is-loaded"), i * 60);
     });
   }
 

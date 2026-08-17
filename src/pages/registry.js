@@ -64,4 +64,3 @@ export function warmup(type) {
   loaders[type]().then((mod) => cache.set(type, mod.default)).catch(() => {});
 }
 
-export const knownTypes = Object.keys(loaders);

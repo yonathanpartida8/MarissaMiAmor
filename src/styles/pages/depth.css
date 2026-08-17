@@ -122,3 +122,29 @@
   color: var(--accent);
   font-weight: 300;
 }
+
+/* ---- Móvil apaisado ----------------------------------------
+   La tarjeta se va al lado derecho en vez de quedarse abajo: así la
+   ilustración se ve entera a la izquierda y el texto tiene alto de sobra
+   en lugar de amontonarse en el último tercio, debajo de la barra.       */
+html[data-orientation="landscape"][data-device="phone"] .depth {
+  justify-content: center;
+  align-items: flex-end;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .depth__card {
+  width: 54%;
+  max-height: 100%;
+}
+
+/* Y el degradado deja de venir de abajo para venir de la derecha, que es
+   por donde ahora entra el texto. */
+html[data-orientation="landscape"][data-device="phone"] .depth__veil {
+  background: linear-gradient(
+    90deg,
+    rgba(8, 4, 14, 0.3) 0%,
+    rgba(8, 4, 14, 0) 22%,
+    rgba(8, 4, 14, 0.6) 52%,
+    rgba(6, 3, 11, 0.95) 100%
+  );
+}

@@ -320,8 +320,17 @@ Para depurar se puede forzar el nivel por URL: `index.html?tier=low`.
   pueda cortar el gesto: no hay página, presente ni futura, de la que no se pueda
   salir arrastrando. Las primeras veces que se llega a una de ellas, las flechas
   se asoman un momento para que se sepa que están ahí.
-- La tipografía escala respecto al **ancho de la hoja**, no al de la ventana:
-  en apaisado son cosas muy distintas.
+- **Con el teléfono tumbado, la hoja se tumba con él.** Antes se quedaba
+  vertical: una tarjeta de 312 px en una ventana de 844, con los títulos
+  partidos en tres líneas y el texto a cinco palabras por renglón. Ahora la
+  hoja es apaisada y las páginas se reordenan a dos columnas —la foto a un
+  lado, el texto al otro— que es justo para lo que se gira el móvil.
+- La tipografía escala respecto a **la hoja**, no a la ventana: al ancho en
+  vertical, al alto en apaisado, que es lo que escasea en cada caso.
+- La barra flotante no se apoya nunca sobre el texto: los paneles que se
+  posan abajo le reservan su hueco (`--bar-space`). No se le suma al relleno
+  de la página entera a propósito, para no encoger las superficies con las
+  que se juega —el velo, la lámina de rascar, el tablero del mosaico—.
 - El giroscopio se pide dentro del primer toque, como exige iOS.
 - Vibración en Android; en iOS se ignora en silencio.
 

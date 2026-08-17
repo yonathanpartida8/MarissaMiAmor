@@ -451,8 +451,6 @@ export function registerCustomPages(entries) {
   return manifest;
 }
 
-/** Longitud actual del libro. Es una función porque el libro puede crecer. */
-export const pageCount = () => manifest.length;
 
 export const indexOfPage = (id) => manifest.findIndex((p) => p.id === id);
 

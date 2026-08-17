@@ -154,3 +154,23 @@
   opacity: 0.9;
   transform: none;
 }
+
+/* ---- Móvil apaisado ----------------------------------------
+   La tarjeta se va a la derecha. Abajo se quedaba con un 44% de una hoja
+   de 378px —166px menos los rellenos— y el texto salía cortado a la
+   segunda línea. Aquí tiene el alto entero y la esfera se ve completa
+   a la izquierda.                                                        */
+html[data-orientation="landscape"][data-device="phone"] .field {
+  justify-content: center;
+  align-items: flex-end;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .field__card {
+  width: 52%;
+  max-height: 100%;
+}
+
+/* Al enfocar un recuerdo la tarjeta se aparta hacia el lado, no hacia abajo. */
+html[data-orientation="landscape"][data-device="phone"] .field.is-focused .field__card {
+  transform: translateX(30%) scale(0.96);
+}

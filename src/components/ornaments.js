@@ -390,4 +390,3 @@ export function createOrnament(name, ctx, options) {
   return factory(ctx, options);
 }
 
-export const ornamentNames = Object.keys(ORNAMENTS);

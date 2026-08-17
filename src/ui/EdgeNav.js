@@ -69,6 +69,12 @@ export class EdgeNav {
   }
 
   #onDown = (e) => {
+    // Un dedo nuevo cancela cualquier reserva antigua sobre ese mismo id.
+    // Sin esto, un `pointerup` que no llega (el dedo sale de la ventana, la
+    // pestaña pierde el foco) dejaría el dedo reservado para siempre y con
+    // él el libro entero sordo a los gestos.
+    Gestures.release(e.pointerId);
+
     if (this.drag) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
 

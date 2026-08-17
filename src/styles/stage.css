@@ -47,10 +47,19 @@ html[data-device="desktop"] #stage {
   --frame-radius: var(--r-book);
 }
 
+/* Móvil apaisado. La hoja se tumba con la pantalla en vez de quedarse
+   vertical: antes salía una tarjeta de 312px en una ventana de 844 y las
+   páginas a dos columnas se quedaban con 114px por columna, con los títulos
+   partidos en tres líneas y el texto a cinco palabras por renglón. Ahora la
+   hoja es apaisada de verdad y hay sitio para foto y texto uno al lado del
+   otro, que es justo para lo que se gira el teléfono. */
 html[data-orientation="landscape"][data-device="phone"] #stage {
-  --frame-h: calc(var(--app-h) - 1rem);
-  --frame-w: min(calc(var(--frame-h) / 1.2), calc(100vw - 2rem));
+  --frame-h: calc(var(--app-h) - 0.75rem);
+  --frame-w: min(calc(var(--frame-h) * 1.62), calc(100vw - 1.5rem));
   --frame-radius: var(--r-book);
+  /* La tipografía escala con el ancho de la hoja, y en apaisado la hoja es
+     ancha pero baja: se escala con la altura, que es lo que escasea. */
+  --vw: calc(var(--frame-h) / 100);
 }
 
 /* ---- La hoja ----------------------------------------------- */
@@ -160,6 +169,24 @@ html[data-device="desktop"] .leaf {
   --pad-t: calc(var(--safe-t) + var(--pad-page));
   --pad-b: calc(var(--safe-b) + var(--pad-page));
   --pad-x: calc(var(--pad-page) + max(var(--safe-l), var(--safe-r)));
+  /* Hueco de la barra flotante. Cero salvo en móvil, donde se apoya encima. */
+  --bar-space: 0rem;
+}
+
+/* En el móvil la barra flota POR ENCIMA de la hoja. `--bar-space` es el
+   hueco que ocupa, para que lo esquive quien lo necesite.
+   No se le suma al relleno de la página entera a propósito: eso encogería
+   también las superficies con las que se juega (el velo, la lámina de
+   rascar, el tablero del mosaico), y ésas quieren toda la hoja. Sólo lo
+   usan los paneles de texto que se apoyan abajo. */
+html[data-device="phone"] .page {
+  --bar-space: 2.7rem;
+}
+
+/* La portada y el final se ven sin barra: no hay nada que esquivar. */
+html[data-device="phone"] .page.cover,
+html[data-device="phone"] .page.finale {
+  --bar-space: 0rem;
 }
 
 html[data-device="tablet"] .page,
@@ -284,4 +311,32 @@ html[data-device="desktop"] .page {
   color: var(--paper-edge);
   opacity: 0.18;
   pointer-events: none;
+}
+
+/* ---- Hueco para la barra flotante ---------------------------
+   Los paneles de texto que se apoyan en el borde inferior de la hoja
+   dejan sitio a la barra. Sin esto, la última línea de cada página se
+   leía por debajo de ella durante los tres segundos que tarda en
+   esconderse sola. Va aquí, en un sitio, y no repetido en doce hojas
+   de estilo: cualquier página nueva con panel abajo lo hereda.        */
+.depth__card,
+.field__card,
+.mine__panel,
+.mos__panel,
+.orb__panel,
+.pola__panel,
+.veil__panel,
+.pulse__panel,
+.chapter__foot,
+.film__panel {
+  margin-bottom: var(--bar-space, 0rem);
+}
+
+/* En apaisado varios de esos paneles se van al lado derecho y ya no
+   tienen nada debajo que esquivar. */
+html[data-orientation="landscape"][data-device="phone"] .depth__card,
+html[data-orientation="landscape"][data-device="phone"] .field__card,
+html[data-orientation="landscape"][data-device="phone"] .mos__panel,
+html[data-orientation="landscape"][data-device="phone"] .pola__panel {
+  margin-bottom: 0;
 }

@@ -101,7 +101,7 @@ export default class GiftPage extends BasePage {
             setVars(this.root, { "--untie": "0" });
             this.ribbonEnd.style.transition = "transform 460ms var(--e-spring)";
             setVars(this.ribbonEnd, { "--ex": "0px", "--ey": "0px" });
-            setTimeout(() => (this.ribbonEnd.style.transition = ""), 480);
+            this.later(() => (this.ribbonEnd.style.transition = ""), 480);
             this.ctx.haptics.play("tick");
           },
           onTap: () => {

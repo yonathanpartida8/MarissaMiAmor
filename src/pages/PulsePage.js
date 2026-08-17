@@ -154,7 +154,7 @@ export default class PulsePage extends BasePage {
       this.ctx.audio.play("turn", { volume: 0.12, rate: 0.55 });
       this.bpmEl.textContent = `${BPM + Math.round(Math.sin(this.beats) * 3)}`;
       setVars(this.root, { "--beat": "1" });
-      setTimeout(() => setVars(this.root, { "--beat": "0" }), 140);
+      this.later(() => setVars(this.root, { "--beat": "0" }), 140);
       if (this.beats >= BEATS_NEEDED) this.#finish(true);
     }
 

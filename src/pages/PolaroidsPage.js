@@ -110,7 +110,7 @@ export default class PolaroidsPage extends BasePage {
       const holder = qs(`.pola__img[data-src="${photo.src}"]`, this.root);
       if (!holder) return;
       holder.style.backgroundImage = `url("${photo.src}")`;
-      setTimeout(() => holder.classList.add("is-loaded"), i * 70);
+      this.later(() => holder.classList.add("is-loaded"), i * 70);
     });
 
     this.#measure();

@@ -34,6 +34,7 @@ export class BasePage {
     this.gestures = [];
     this.tickers = [];
     this.unsubs = [];
+    this.timers = new Set();
     this.destroyed = false;
     this.active = false;
   }
@@ -120,9 +121,11 @@ export class BasePage {
     for (const g of this.gestures) g.destroy();
     for (const stop of this.tickers) stop();
     for (const off of this.unsubs) off();
+    for (const id of this.timers) clearTimeout(id);
     this.gestures.length = 0;
     this.tickers.length = 0;
     this.unsubs.length = 0;
+    this.timers.clear();
 
     this.root?.remove();
     this.root = null;
@@ -147,6 +150,25 @@ export class BasePage {
     const stop = this.ctx.loop.add(guarded, order);
     this.tickers.push(stop);
     return stop;
+  }
+
+  /**
+   * `setTimeout` que se cancela solo al destruir la página.
+   *
+   * Un `setTimeout` suelto sobrevive a la página que lo pidió. Si ella pasa
+   * hoja rápido, el temporizador se despierta en una página que ya no existe:
+   * unas veces sólo toca un nodo suelto, pero otras desbloquea un secreto que
+   * no ha descubierto, fuerza un cambio de página o escribe sobre `this.root`
+   * cuando ya vale null. Con esto no hay que acordarse: mueren con la página.
+   */
+  later(fn, ms = 0) {
+    const id = setTimeout(() => {
+      this.timers.delete(id);
+      if (this.destroyed) return;
+      fn();
+    }, ms);
+    this.timers.add(id);
+    return id;
   }
 
   /** Registra un reconocedor de gestos con limpieza automática. */

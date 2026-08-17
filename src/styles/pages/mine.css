@@ -5,6 +5,9 @@
 
 .mine {
   display: grid;
+  /* `minmax(0, 1fr)` y no `1fr`: si no, un hijo con proporción fija (el marco
+     de la foto) puede ensanchar la columna por encima de la hoja. */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto;
   gap: clamp(0.6rem, 2.2vh, 1.1rem);
   padding: var(--pad-t) var(--pad-x) var(--pad-b);
@@ -15,13 +18,27 @@
   position: relative;
   min-height: 0;
   display: grid;
+  /* La rejilla interna también tiene que estar acotada. Una columna `auto`
+     crece para caber en su contenido, así que el marco (que se dimensiona en
+     porcentaje de esa columna) tiraba de ella y se salía de la hoja. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   place-items: center;
   perspective: 1100px;
 }
 
+/* Aquí el marco ocupa TODO el escenario, sin proporción propia.
+   Con sólo `max-width/max-height` se quedaba en 0x0 —una caja con
+   proporción y ningún lado definido no mide nada— y la página salía sin
+   foto. Y encajar una proporción fija dentro de otra caja no se puede
+   hacer bien sólo con CSS: o se sale por un lado o se deforma.
+   Como la imagen va con `background-size: cover`, llenar el hueco entero
+   la recorta pero no la deforma nunca, y la foto se ve todo lo grande que
+   la pantalla permita, que es de lo que se trata. */
 .mine__stage .pframe {
-  max-height: 100%;
-  max-width: 100%;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
 }
 
 /* ---- Panel de texto ----------------------------------------- */
@@ -153,12 +170,22 @@
   flex: 0 0 auto;
   height: 100%;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   place-items: center;
   padding: 0 4%;
   /* --near lo escribe el JS: 1 en el centro, 0 en los lados. */
   transform: scale(calc(0.86 + var(--near, 0) * 0.14));
   opacity: calc(0.35 + var(--near, 0) * 0.65);
   transition: transform 120ms linear, opacity 120ms linear;
+}
+
+/* Igual que en la página de foto: el marco necesita medidas definidas o se
+   queda en 0x0 y la diapositiva sale vacía. */
+.gal__slide .pframe {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
 }
 
 .gal__dots {
@@ -360,19 +387,27 @@
 
 /* ---- Apaisado ----------------------------------------------- */
 html[data-orientation="landscape"][data-device="phone"] .mine {
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   column-gap: var(--gap-md);
-  align-items: center;
+  /* Estirado, no centrado: el escenario de la foto y el del carrusel no
+     tienen altura propia, y centrados se quedaban en 0px. Quien quiera ir
+     centrado lo pide con `align-self`. */
+  align-items: stretch;
 }
 
 html[data-orientation="landscape"][data-device="phone"] .mine__panel {
   max-height: 100%;
+  align-self: center;
 }
 
 html[data-orientation="landscape"][data-device="phone"] .mine--gallery {
   grid-template-columns: 1.2fr 1fr;
   grid-template-rows: auto minmax(0, 1fr) auto;
+  /* `align-items: center` (heredado de `.mine`) encogía las celdas a su
+     contenido, y el carrusel no tiene altura propia: se quedaba en 0px y
+     la galería desaparecía en apaisado. Aquí las celdas sí se estiran. */
+  align-items: stretch;
 }
 
 html[data-orientation="landscape"][data-device="phone"] .gal__head { grid-column: 1 / -1; }
@@ -381,6 +416,7 @@ html[data-orientation="landscape"][data-device="phone"] .gal__dots { grid-column
 html[data-orientation="landscape"][data-device="phone"] .mine--gallery .mine__panel {
   grid-column: 2;
   grid-row: 2 / 4;
+  align-self: center;
 }
 
 html[data-orientation="landscape"][data-device="phone"] .vid__frame {

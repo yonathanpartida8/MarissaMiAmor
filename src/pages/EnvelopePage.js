@@ -103,7 +103,7 @@ export default class EnvelopePage extends BasePage {
             setVars(this.root, { "--pull": "0" });
             this.seal.style.transition = "transform 520ms var(--e-spring)";
             this.seal.style.transform = "";
-            setTimeout(() => (this.seal.style.transition = ""), 540);
+            this.later(() => (this.seal.style.transition = ""), 540);
             this.ctx.haptics.play("tick");
           },
           onTap: () => {

@@ -63,7 +63,7 @@ export default class PhotoPage extends BasePage {
 
     // Si escribió un "secreto", se descubre al llegar: esta página no pide
     // resolver nada, y dejarlo sin aparecer sería esconderlo para siempre.
-    if (this.entry.secret) setTimeout(() => this.unlockSecret(), 1400);
+    if (this.entry.secret) this.later(() => this.unlockSecret(), 1400);
 
     this.addTicker((dt, time) => this.frame.tick(dt, time), 11);
   }

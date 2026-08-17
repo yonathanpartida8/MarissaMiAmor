@@ -68,6 +68,7 @@ export function createPhotoFrame(ctx, options = {}) {
   };
 
   let gestures = null;
+  const timers = [];
 
   /** Carga la imagen y lanza el revelado. */
   async function load() {
@@ -91,9 +92,13 @@ export function createPhotoFrame(ctx, options = {}) {
 
     // Tres tiempos: marco → imagen velada → imagen nítida. Lo que hace que
     // parezca que se está revelando y no que simplemente ha cargado.
-    setTimeout(() => node.classList.add("is-arriving"), delay);
-    setTimeout(() => node.classList.add("is-revealing"), delay + 180);
-    setTimeout(() => node.classList.add("is-revealed"), delay + 900);
+    // Se guardan para poder cancelarlos: si pasa de página antes de los 900ms
+    // del revelado, no tiene sentido seguir animando un marco que ya no está.
+    timers.push(
+      setTimeout(() => node.classList.add("is-arriving"), delay),
+      setTimeout(() => node.classList.add("is-revealing"), delay + 180),
+      setTimeout(() => node.classList.add("is-revealed"), delay + 900)
+    );
     return img;
   }
 
@@ -170,6 +175,8 @@ export function createPhotoFrame(ctx, options = {}) {
   function destroy() {
     gestures?.destroy();
     gestures = null;
+    for (const id of timers) clearTimeout(id);
+    timers.length = 0;
   }
 
   enableZoom();

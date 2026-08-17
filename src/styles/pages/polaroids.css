@@ -204,3 +204,28 @@
   .pola__panel { max-height: 24vh; }
   .pola { width: clamp(92px, calc(27 * var(--vw)), 120px); }
 }
+
+/* ---- Móvil apaisado ----------------------------------------
+   Las fotos se reparten por la mesa y el texto se va a la derecha, donde
+   ninguna polaroid lo tapa.                                              */
+html[data-orientation="landscape"][data-device="phone"] .polaroids {
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: 1fr 34%;
+  column-gap: var(--gap-md);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .pola__head {
+  grid-column: 1 / -1;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .pola__field {
+  grid-row: 2;
+  grid-column: 1;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .pola__panel {
+  grid-row: 2;
+  grid-column: 2;
+  align-self: center;
+  max-height: 100%;
+}

@@ -200,7 +200,17 @@
   pointer-events: auto;
 }
 
-.lock__inside .pframe { max-height: 100%; }
+/* `place-items: center` en `.lock__inside` encoge la celda a su contenido,
+   y un marco con proporción y ningún lado definido no mide nada: la foto de
+   dentro de la caja salía a 0x0, invisible. Se estira para llenar su celda;
+   la imagen va con `cover`, así que se recorta pero nunca se deforma. */
+.lock__inside .pframe {
+  align-self: stretch;
+  justify-self: stretch;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
 
 .lock__note {
   width: 100%;

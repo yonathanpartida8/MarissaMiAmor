@@ -206,3 +206,30 @@
   text-align: justify;
   hyphens: auto;
 }
+
+/* ---- Móvil apaisado ----------------------------------------
+   Tablero a la izquierda y texto a la derecha. En vertical el tablero se
+   quedaba con un hueco de 150px de alto y las piezas salían de 38px: casi
+   imposibles de acertar con el dedo. Con la hoja tumbada tiene el alto
+   entero y las piezas doblan de tamaño.                                   */
+html[data-orientation="landscape"][data-device="phone"] .mosaic {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
+  column-gap: var(--gap-md);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .mos__head {
+  grid-column: 1 / -1;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .mos__stage {
+  grid-row: 2;
+  grid-column: 1;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .mos__panel {
+  grid-row: 2;
+  grid-column: 2;
+  max-height: 100%;
+  align-self: center;
+}

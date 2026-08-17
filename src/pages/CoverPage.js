@@ -178,6 +178,6 @@ export default class CoverPage extends BasePage {
     this.ctx.gl?.pulse(1);
 
     // Un respiro antes de pasar: que se vea el lacre partirse.
-    setTimeout(() => this.ctx.router.next(), 620);
+    this.later(() => this.ctx.router.next(), 620);
   }
 }
