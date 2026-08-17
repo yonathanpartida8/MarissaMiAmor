@@ -51,7 +51,9 @@ const TYPE_ALIASES = {
   distancia: "orbit",
 };
 
-const VALID_TRANSITIONS = new Set(["flip", "dissolve", "zoom", "fold", "iris"]);
+const VALID_TRANSITIONS = new Set([
+  "flip", "dissolve", "zoom", "fold", "iris", "slide", "ink", "tide", "bloom",
+]);
 const VALID_MOODS = new Set([
   "dawn", "night", "amber", "bloom", "storm", "glass", "winter", "cosmos", "light",
 ]);
@@ -169,8 +171,9 @@ function normalize(raw, index, problems) {
 
 function defaultTransition(type) {
   if (type === "chapter") return "flip";
-  if (type === "video") return "zoom";
-  if (type === "gallery") return "iris";
+  if (type === "video") return "bloom";
+  if (type === "gallery") return "slide";
+  if (type === "photo") return "ink";
   return "dissolve";
 }
 

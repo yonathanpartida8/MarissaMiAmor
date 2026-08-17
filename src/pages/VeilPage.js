@@ -269,9 +269,15 @@ export default class VeilPage extends BasePage {
 
   async leave(direction) {
     await super.leave(direction);
-    this.unmountGL?.();
+    // Se apaga en vez de cortarse: la página es transparente y todo lo que
+    // se ve vive en el lienzo, así que quitarlo de golpe dejaba la hoja
+    // vacía un instante antes de que la transición hubiera empezado.
+    const unmount = this.unmountGL;
+    const uniforms = this.uniforms;
     this.unmountGL = null;
-    this.uniforms = null;
+    this.fadeOutGL(unmount, (k) => {
+      if (uniforms) uniforms.uReveal.value = this.reveal * k;
+    });
   }
 
   destroy() {

@@ -171,6 +171,49 @@ export class BasePage {
     return id;
   }
 
+  /**
+   * Retira un objeto de la escena 3D DESVANECIÉNDOLO, no de un tijeretazo.
+   *
+   * Las páginas WebGL son transparentes: lo que se ve no está en el DOM, está
+   * en el lienzo que hay detrás de todo. Al quitar el objeto en `leave()`, la
+   * ilustración desaparecía de un fotograma para otro —antes incluso de que
+   * la transición empezara— y la hoja se iba ya vacía. Ese era el parpadeo
+   * que tenían TODAS las páginas de WebGL al pasar de página.
+   *
+   * No usa `addTicker` a propósito: ese reloj sólo corre mientras la página
+   * está activa, y aquí la página ya se está yendo.
+   *
+   * @param {() => void} unmount  la función que devolvió `gl.mount()`
+   * @param {(k: number) => void} apply  recibe 1 → 0
+   * @param {number} [ms]
+   */
+  fadeOutGL(unmount, apply, ms = 420) {
+    if (!unmount) return;
+    if (this.ctx.caps.reducedMotion) return unmount();
+
+    let done = false;
+    let elapsed = 0;
+
+    const finish = () => {
+      if (done) return;
+      done = true;
+      stop();
+      unmount();
+    };
+
+    const stop = this.ctx.loop.add((dt, time, realDt) => {
+      elapsed += (realDt ?? dt) * 1000;
+      const k = 1 - Math.min(1, elapsed / ms);
+      apply(k * k); // se apaga rápido al principio, como una brasa
+      if (k <= 0) finish();
+    }, 14);
+
+    // Si la página muere antes de terminar el desvanecido, se remata igual:
+    // lo que no puede quedarse es un objeto huérfano en la escena.
+    this.tickers.push(stop);
+    this.unsubs.push(finish);
+  }
+
   /** Registra un reconocedor de gestos con limpieza automática. */
   addGestures(gestures) {
     this.gestures.push(gestures);

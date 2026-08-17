@@ -13,6 +13,7 @@ ningún comando: se sube el repositorio a GitHub Pages y funciona.
 | Capa | Qué es |
 | --- | --- |
 | **HTML/CSS moderno** | Módulos ES nativos, sin empaquetador. Cada página tiene su hoja de estilos. |
+| **Nueve transiciones** | Ninguna página llega igual que la anterior: volteo de hoja, fundido, travelling, pliegue, diafragma, empuje con paralaje, mancha de tinta, marea y floración. |
 | **22 tipos de página** | Ninguna mecánica se repite dos veces seguidas. |
 | **WebGL2 + Three.js** | Una sola escena para toda la app: la atmósfera de fondo, el polvo en suspensión y las páginas 3D. Three.js va incluido en `vendor/`, no se descarga de ningún CDN. |
 | **GLSL** | Cuatro shaders escritos a mano: niebla, partículas, profundidad y velo. |
@@ -233,11 +234,27 @@ libro, con su capítulo y su sitio en el manifiesto.
   type: "chapter",          // cualquier tipo del registro
   chapter: "nuevo",
   photos: groups.nuevoGrupo,
-  transition: "flip",       // flip · dissolve · zoom · fold · iris
+  transition: "ink",        // ver la tabla de abajo
   hint: "la pista, si hace falta",
   secret: "id-del-secreto", // opcional
 }
 ```
+
+### Las nueve maneras de llegar a una página
+
+| `transition` | Cómo entra |
+| --- | --- |
+| `flip` | La hoja gira sobre su lomo, en 3D. Es la única que **se puede arrastrar** con el dedo. |
+| `dissolve` | La anterior se deshace en luz mientras la nueva se condensa. |
+| `zoom` | Travelling: la cámara atraviesa una página y aterriza en la siguiente. |
+| `fold` | Se pliega sobre sí misma, como una carta que se guarda. |
+| `iris` | Diafragma de cámara que se abre desde el centro. |
+| `slide` | La nueva empuja a la anterior, que se retrasa y pierde luz: paralaje. |
+| `ink` | Cala como una mancha de tinta: tres manchas que crecen a distinto ritmo. |
+| `tide` | Sube como la marea, con el borde ondulado que se va calmando. |
+| `bloom` | Se abre en el sitio, desenfocada y de más, y se enfoca. |
+
+Están repartidas para que **ninguna se repita en dos páginas seguidas**.
 
 Ya está. La navegación, el índice, el progreso, la precarga, la limpieza de
 memoria y la paleta de la atmósfera se ajustan solos. El libro está pensado

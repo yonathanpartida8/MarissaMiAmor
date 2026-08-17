@@ -14,7 +14,16 @@
  * @property {string} type          clave del registro de páginas
  * @property {string} [chapter]     id del capítulo que muestra
  * @property {object[]} [photos]    fotos que consume
- * @property {string} [transition]  cómo se llega: flip · dissolve · zoom · fold · iris
+ * @property {string} [transition]  cómo se llega. Nueve maneras:
+ *      flip      la hoja gira sobre su lomo (y se puede arrastrar)
+ *      dissolve  se deshace en luz mientras la otra se condensa
+ *      zoom      travelling: la cámara atraviesa una y aterriza en la otra
+ *      fold      se pliega sobre sí misma, como una carta que se guarda
+ *      iris      diafragma de cámara que se abre desde el centro
+ *      slide     la nueva empuja a la anterior, con paralaje
+ *      ink       cala como una mancha de tinta
+ *      tide      sube como la marea, con el borde ondulado
+ *      bloom     se abre en el sitio y se enfoca
  * @property {string} [hint]        pista que susurra si se queda quieta
  * @property {string} [secret]      id del secreto que esconde
  * @property {boolean} [gl]         necesita la escena 3D
@@ -60,7 +69,7 @@ const pages = [
     type: "depth",
     chapter: "tres-de-la-manana",
     photos: groups.tresDeLaManana,
-    transition: "dissolve",
+    transition: "ink",
     gl: true,
     hint: "mueve el teléfono · la imagen tiene fondo",
   },
@@ -88,7 +97,7 @@ const pages = [
     type: "chapter",
     chapter: "tu-voz",
     photos: groups.tuVoz,
-    transition: "flip",
+    transition: "slide",
   },
   {
     id: "deshojando",
@@ -112,7 +121,7 @@ const pages = [
     type: "chapter",
     chapter: "llueve-alla",
     photos: groups.llueveAlla,
-    transition: "iris",
+    transition: "tide",
     hint: "pasa el dedo por el cristal empañado",
   },
 
@@ -124,7 +133,7 @@ const pages = [
     type: "veil",
     chapter: "lista-pendiente",
     photos: groups.listaPendiente,
-    transition: "dissolve",
+    transition: "bloom",
     gl: true,
     hint: "acaricia la pantalla",
     secret: "velo-1",
@@ -144,7 +153,7 @@ const pages = [
     type: "chapter",
     chapter: "me-caigo-mejor",
     photos: groups.meCaigoMejor,
-    transition: "fold",
+    transition: "slide",
     hint: "el reflejo te sigue",
   },
   {
@@ -160,7 +169,7 @@ const pages = [
     id: "con-mi-letra",
     type: "handwriting",
     chapter: "con-mi-letra",
-    transition: "flip",
+    transition: "ink",
     hint: "arrastra hacia abajo y lo escribo delante de ti",
     secret: "escrito-a-mano",
   },
@@ -179,14 +188,14 @@ const pages = [
     type: "chapter",
     chapter: "mi-norte",
     photos: groups.miNorte,
-    transition: "flip",
+    transition: "bloom",
     hint: "tócala",
   },
   {
     id: "botella",
     type: "bottle",
     chapter: "botella",
-    transition: "dissolve",
+    transition: "tide",
     gl: true,
     hint: "tira del corcho hacia arriba",
     secret: "botella-abierta",
@@ -219,7 +228,7 @@ const pages = [
     type: "gift",
     chapter: "regalo",
     photos: groups.regalo,
-    transition: "zoom",
+    transition: "bloom",
     gl: true,
     hint: "tira del listón",
     secret: "regalo-abierto",
@@ -247,7 +256,7 @@ const pages = [
     type: "constellation",
     chapter: "mismo-cielo",
     photos: groups.mismoCielo,
-    transition: "dissolve",
+    transition: "ink",
     gl: true,
     hint: "une las estrellas con el dedo",
     secret: "constelacion",
@@ -266,7 +275,7 @@ const pages = [
     type: "chapter",
     chapter: "te-lo-digo-bajito",
     photos: groups.teLoDigoBajito,
-    transition: "flip",
+    transition: "slide",
     hint: "acércate: está escrito bajito",
   },
   {
@@ -290,7 +299,7 @@ const pages = [
     type: "depth",
     chapter: "sin-adornos",
     photos: groups.sinAdornos,
-    transition: "dissolve",
+    transition: "tide",
     gl: true,
     hint: "inclina el teléfono",
   },
@@ -303,7 +312,7 @@ const pages = [
     type: "chapter",
     chapter: "aburridos",
     photos: groups.aburridos,
-    transition: "flip",
+    transition: "slide",
   },
   {
     id: "rompecabezas-dos",
@@ -320,7 +329,7 @@ const pages = [
     type: "veil",
     chapter: "acariciar",
     photos: groups.acariciar,
-    transition: "dissolve",
+    transition: "bloom",
     gl: true,
     hint: "acaricia · toca dos veces para cambiar",
     secret: "velo-2",
@@ -330,14 +339,14 @@ const pages = [
     type: "chapter",
     chapter: "mejorar",
     photos: groups.mejorar,
-    transition: "flip",
+    transition: "ink",
   },
   {
     id: "cosas-tuyas",
     type: "polaroids",
     chapter: "cosas-tuyas",
     photos: groups.cosasTuyas,
-    transition: "fold",
+    transition: "slide",
     hint: "dales la vuelta",
     secret: "cosas-tuyas-vistas",
   },
@@ -354,7 +363,7 @@ const pages = [
     type: "chapter",
     chapter: "gracias",
     photos: groups.gracias,
-    transition: "flip",
+    transition: "tide",
   },
   {
     id: "ultimo-secreto",
@@ -370,7 +379,7 @@ const pages = [
     type: "depth",
     chapter: "te-elijo",
     photos: groups.teElijo,
-    transition: "zoom",
+    transition: "bloom",
     gl: true,
   },
 

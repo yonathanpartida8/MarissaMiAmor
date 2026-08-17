@@ -12,7 +12,7 @@
 import { Emitter } from "./Emitter.js";
 import { Gestures } from "./Gestures.js";
 import { PageFlip } from "../transitions/PageFlip.js";
-import { effects } from "../transitions/effects.js";
+import { effects, resetLeaf } from "../transitions/effects.js";
 import { resolvePage, warmup } from "../pages/registry.js";
 import { createVerso } from "../components/Verso.js";
 import { manifest } from "../data/manifest.js";
@@ -156,7 +156,13 @@ export class Router extends Emitter {
       return false;
     }
 
-    incoming.leaf.classList.remove("leaf--staged");
+    // La hoja que entra empieza LIMPIA y visible. Las dos cosas importan:
+    //  · sin `leaf--hidden` no hay una hoja invisible durante el giro que
+    //    aparezca de golpe al final;
+    //  · sin estilos en línea de una transición anterior (una opacidad a
+    //    cero, media vuelta puesta) la transición nueva parte de cero.
+    incoming.leaf.classList.remove("leaf--staged", "leaf--hidden");
+    resetLeaf(incoming.leaf);
     if (!incoming.leaf.isConnected) this.stage.append(incoming.leaf);
 
     // La atmósfera cambia de color *durante* la transición, no después:
@@ -179,7 +185,10 @@ export class Router extends Emitter {
     this.index = index;
     this.ctx.store.setPage(index, entry.id);
 
-    if (outgoing) outgoing.leaf.classList.add("leaf--hidden");
+    if (outgoing) {
+      outgoing.leaf.classList.add("leaf--hidden");
+      resetLeaf(outgoing.leaf);
+    }
     incoming.leaf.classList.remove("leaf--hidden");
 
     await incoming.page.enter(dir);
@@ -216,6 +225,7 @@ export class Router extends Emitter {
       // que acaba de irse reaparece un frame en su sitio original y parpadea.
       outLeaf.classList.add("leaf--hidden");
       this.flip.end();
+      resetLeaf(outLeaf);
       inLeaf.classList.remove("leaf--hidden", "leaf--staged");
       return;
     }
@@ -268,6 +278,7 @@ export class Router extends Emitter {
     if (!outLeaf) return;
 
     record.leaf.classList.remove("leaf--staged", "leaf--hidden");
+    resetLeaf(record.leaf);
     this.flip.begin(outLeaf, record.leaf, dir);
     this.drag = { mode: "flip", dir, target, width: this.stage.clientWidth || 1 };
     this.stage.classList.add("is-dragging");
@@ -334,6 +345,7 @@ export class Router extends Emitter {
       // Misma precaución que en `#transition`: ocultar y después limpiar.
       outgoing?.leaf.classList.add("leaf--hidden");
       this.flip.end();
+      resetLeaf(outgoing?.leaf);
       incoming?.leaf.classList.remove("leaf--hidden");
 
       await outgoing?.page.leave(drag.dir);

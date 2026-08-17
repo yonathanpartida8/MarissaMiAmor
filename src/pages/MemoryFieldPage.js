@@ -339,8 +339,20 @@ export default class MemoryFieldPage extends BasePage {
 
   async leave(direction) {
     await super.leave(direction);
-    this.unmountGL?.();
+    // Los recuerdos se apagan y se encogen un poco mientras la hoja se va,
+    // en vez de esfumarse de un fotograma para otro.
+    const unmount = this.unmountGL;
+    const group = this.group;
+    const cards = this.cards.slice();
+    const base = group ? group.scale.x : 1;
+    const from = cards.map((c) => c.material?.opacity ?? 1);
     this.unmountGL = null;
+    this.fadeOutGL(unmount, (k) => {
+      if (group) group.scale.setScalar(base * (0.88 + 0.12 * k));
+      cards.forEach((c, i) => {
+        if (c.material) c.material.opacity = from[i] * k;
+      });
+    });
   }
 
   destroy() {

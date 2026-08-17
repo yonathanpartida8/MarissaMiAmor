@@ -55,7 +55,14 @@ export function tween({ from = 0, to = 1, duration = 400, ease = easeOutCubic, o
   const promise = new Promise((resolve) => {
     const frame = (now) => {
       if (cancelled) return resolve(false);
-      const t = Math.min(1, (now - start) / duration);
+      // El reloj se acota por ABAJO además de por arriba, y no es un detalle:
+      // `requestAnimationFrame` entrega la marca de tiempo del fotograma, que
+      // puede ser ANTERIOR al momento en que se pidió el rAF si se pidió a
+      // mitad de ese mismo fotograma. Con `t` negativo, las curvas de easing
+      // extrapolan —una quíntica devolvía -1.85 en el primer fotograma— y la
+      // página daba un salto de doscientos píxeles antes de empezar a
+      // animarse. Ese era el tirón que se veía al arrancar cada transición.
+      const t = Math.min(1, Math.max(0, (now - start) / duration));
       onUpdate?.(from + (to - from) * ease(t), t);
       if (t < 1) {
         raf = requestAnimationFrame(frame);

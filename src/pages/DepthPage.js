@@ -140,11 +140,14 @@ export default class DepthPage extends BasePage {
 
   async leave(direction) {
     await super.leave(direction);
-    // Se retira de la escena antes de que empiece la transición: si no, se
-    // vería la ilustración flotando sobre la página siguiente.
-    this.unmountGL?.();
+    // La ilustración no puede quedarse flotando sobre la página siguiente,
+    // pero tampoco desaparecer de golpe: se apaga mientras la hoja se va.
+    const unmount = this.unmountGL;
+    const uniforms = this.uniforms;
     this.unmountGL = null;
-    this.uniforms = null;
+    this.fadeOutGL(unmount, (k) => {
+      if (uniforms) uniforms.uReveal.value = this.reveal * k;
+    });
   }
 
   destroy() {

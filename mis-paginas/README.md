@@ -111,7 +111,7 @@ para que el índice se siga leyendo en orden.
 | `color` | Color de acento, ej. `"#ec6f92"`. Tiñe también el fondo. |
 | `humor` | Carácter del fondo: `dawn` `night` `amber` `bloom` `storm` `glass` `winter` `cosmos` `light`. |
 | `donde` | `"final"` (por defecto), `"inicio"`, o el número de página donde insertarla. |
-| `transicion` | Cómo se llega: `flip` `dissolve` `zoom` `fold` `iris`. |
+| `transicion` | Cómo se llega: `flip` `dissolve` `zoom` `fold` `iris` `slide` `ink` `tide` `bloom`. Si no lo pones, se elige una que pegue con el tipo de página. |
 | `pista` | El susurro que sale si se queda quieta sin saber qué hacer. |
 
 ---

@@ -101,7 +101,9 @@ html[data-device="desktop"] .leaf {
 /* La hoja que se descubre debajo: ligeramente hundida en el libro. */
 .leaf--under {
   visibility: visible;
-  opacity: 1;
+  /* La escribe PageFlip: la hoja de debajo se descubre conforme la de arriba
+     se levanta, en vez de estar al 100% desde el primer fotograma. */
+  opacity: var(--under-reveal, 1);
   pointer-events: none;
   transform: scale(var(--under-scale));
   z-index: 2;

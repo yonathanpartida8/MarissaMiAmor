@@ -270,9 +270,16 @@ export default class FinalePage extends BasePage {
 
   async leave(direction) {
     await super.leave(direction);
-    this.unmountGL?.();
+    const unmount = this.unmountGL;
+    const uniforms = this.uniforms;
+    const points = this.points;
     this.unmountGL = null;
-    this.uniforms = null;
+    // El shader del corazón no tiene uniforme de opacidad, pero con mezcla
+    // aditiva encoger es apagar: los puntos se recogen hacia el centro y se
+    // desvanecen solos mientras la hoja se va.
+    this.fadeOutGL(unmount, (k) => {
+      if (points) points.scale.setScalar(Math.max(0.001, k));
+    });
   }
 
   destroy() {
