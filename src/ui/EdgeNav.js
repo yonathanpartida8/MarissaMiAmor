@@ -47,12 +47,27 @@ export class EdgeNav {
   }
 
   build() {
-    this.root = el("div.edges", { "aria-hidden": "true" }, [
-      el("div.edge.edge--prev", {}, [el("span.edge__arrow", { text: "‹" })]),
-      el("div.edge.edge--next", {}, [el("span.edge__arrow", { text: "›" })]),
+    // Cada borde tiene DOS cosas: la franja invisible que responde al
+    // arrastre y un botón de verdad, redondo y visible, para quien prefiera
+    // tocar. Pasar página no puede depender de adivinar un gesto.
+    const side = (dir, glyph, label) =>
+      el(`div.edge.edge--${dir}`, {}, [
+        el("button.edge__btn", {
+          type: "button",
+          "aria-label": label,
+          html: `<span class="edge__glyph">${glyph}</span>`,
+          onClick: () => this.#tap(dir),
+        }),
+      ]);
+
+    this.root = el("div.edges", {}, [
+      side("prev", "‹", "Página anterior"),
+      side("next", "›", "Página siguiente"),
     ]);
     this.prevEl = this.root.querySelector(".edge--prev");
     this.nextEl = this.root.querySelector(".edge--next");
+    this.prevBtn = this.prevEl.querySelector(".edge__btn");
+    this.nextBtn = this.nextEl.querySelector(".edge__btn");
 
     // Captura sobre window: nadie puede cortarnos el paso.
     const opts = { capture: true, passive: false };
@@ -62,6 +77,26 @@ export class EdgeNav {
     window.addEventListener("pointercancel", this.#onUp, opts);
 
     return this.root;
+  }
+
+  /** Toque en el botón: pasa página y responde con un pellizco háptico. */
+  #tap(dir) {
+    const router = this.ctx.router;
+    if (!router || router.busy || router.locked) return;
+    const el2 = dir === "next" ? this.nextEl : this.prevEl;
+    el2.classList.remove("is-tapped");
+    void el2.offsetWidth;
+    el2.classList.add("is-tapped");
+    this.ctx.haptics.play("tap");
+    router[dir]();
+  }
+
+  /** Apaga el botón que no lleva a ninguna parte. */
+  refresh() {
+    const router = this.ctx.router;
+    if (!router || !this.prevBtn) return;
+    this.prevBtn.disabled = router.atStart;
+    this.nextBtn.disabled = router.atEnd;
   }
 
   get #edgeWidth() {

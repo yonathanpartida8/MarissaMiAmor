@@ -13,12 +13,24 @@ import { createSparkles } from "../components/Sparkles.js";
 import { el, splitWords, setVars } from "../utils/dom.js";
 import { manifest } from "../data/manifest.js";
 
-/** Qué ornamento le toca a cada capítulo. */
+/**
+ * Qué ornamento le toca a cada capítulo.
+ *
+ * Ojo con esta tabla: las claves son ids de capítulo de `chapters.js`. Al
+ * reescribir los textos cambiaron todos los ids y esta tabla se quedó
+ * apuntando a capítulos que ya no existen, así que las OCHO páginas de
+ * capítulo caían en el medallón. Cuatro de ellas prometían en su pista una
+ * interacción —«pasa el dedo por el cristal empañado», «el reflejo te
+ * sigue»— que no llegaba a existir, y el libro se sentía repetido.
+ */
 const ORNAMENT_BY_CHAPTER = {
-  tormenta: "fog",
-  espejo: "mirror",
-  eleccion: "compass",
-  silencio: "whisper",
+  "llueve-alla": "fog",        // «pasa el dedo por el cristal empañado»
+  "me-caigo-mejor": "mirror",  // «el reflejo te sigue»
+  "mi-norte": "compass",       // la brújula que siempre apunta a lo mismo
+  "te-lo-digo-bajito": "whisper", // «acércate: está escrito bajito»
+  "tu-voz": "whisper",
+  "gracias": "compass",
+  // El resto se queda con el medallón, que es el que enseña foto.
 };
 
 export default class ChapterPage extends BasePage {

@@ -106,8 +106,8 @@ export default class HandwritingPage extends BasePage {
     const wobble = Math.sin(time * 22) * 3.5 + Math.sin(time * 9.3) * 2;
     const drift = Math.sin(this.display * 34) * 26;
     setVars(this.nib, {
-      "--nib-x": `${drift + wobble}px`,
-      "--nib-tilt": `${-28 + wobble * 0.6}deg`,
+      "--nib-x": `${(drift + wobble).toFixed(1)}px`,
+      "--nib-tilt": `${(-28 + wobble * 0.6).toFixed(2)}deg`,
     });
 
     if (this.display >= 0.99 && !this.finished) this.#finish();

@@ -140,10 +140,10 @@ export default class CoverPage extends BasePage {
 
     // La luz se mueve en sentido contrario al giro: así parece una fuente fija.
     setVars(this.root, {
-      "--sheen-x": `${50 - this.tiltX * 46}%`,
-      "--sheen-y": `${50 - this.tiltY * 40}%`,
-      "--depth-x": `${this.tiltX * -14}px`,
-      "--depth-y": `${this.tiltY * 10}px`,
+      "--sheen-x": `${(50 - this.tiltX * 46).toFixed(1)}%`,
+      "--sheen-y": `${(50 - this.tiltY * 40).toFixed(1)}%`,
+      "--depth-x": `${(this.tiltX * -14).toFixed(1)}px`,
+      "--depth-y": `${(this.tiltY * 10).toFixed(1)}px`,
     });
 
     // ---- Presión sobre el sello ----------------------------------------

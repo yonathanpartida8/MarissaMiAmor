@@ -149,7 +149,7 @@
 }
 
 .is-writing .word {
-  animation: word-in 620ms var(--e-out) both;
+  animation: word-in 420ms var(--e-out) both;
   animation-delay: calc(var(--d, 0ms) + var(--word-delay, 0ms));
 }
 

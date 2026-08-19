@@ -111,7 +111,7 @@
   text-align: justify;
   hyphens: auto;
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.75);
-  --word-delay: 420ms;
+  --word-delay: 220ms;
 }
 
 .depth__prose::first-letter {

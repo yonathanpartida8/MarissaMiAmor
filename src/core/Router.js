@@ -220,7 +220,7 @@ export class Router extends Emitter {
 
     if (name === "flip" && outLeaf) {
       this.flip.begin(outLeaf, inLeaf, direction);
-      await this.flip.run(this.ctx.caps.reducedMotion ? 200 : 880);
+      await this.flip.run(this.ctx.caps.reducedMotion ? 180 : 620);
       // Ocultar ANTES de limpiar los transforms: si se hace al revés, la hoja
       // que acaba de irse reaparece un frame en su sitio original y parpadea.
       outLeaf.classList.add("leaf--hidden");

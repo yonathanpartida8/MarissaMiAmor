@@ -34,7 +34,6 @@
   transform: translateZ(var(--lift)) rotateY(var(--flip));
   pointer-events: none;
   opacity: 0;
-  filter: drop-shadow(0 22px 34px rgba(0, 0, 0, 0.55));
 }
 
 .postcard.is-entered .pc__card {
@@ -50,6 +49,12 @@
 .pc__card.is-held { cursor: grabbing; }
 
 .pc__face {
+  /* La sombra va aquí y como `box-shadow`, no como `drop-shadow` sobre la
+     tarjeta. Un filtro sobre un elemento que gira en 3D obliga al navegador
+     a volver a rasterizarlo entero en cada frame; una sombra de caja la
+     compone la GPU sin volver a dibujar nada. La postal era la página más
+     pesada del libro por esta línea. */
+  box-shadow: 0 22px 34px -10px rgba(0, 0, 0, 0.55);
   position: absolute;
   inset: 0;
   border-radius: 4px;

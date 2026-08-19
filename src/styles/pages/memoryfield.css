@@ -98,7 +98,7 @@
   color: rgba(246, 238, 232, 0.9);
   text-align: justify;
   hyphens: auto;
-  --word-delay: 400ms;
+  --word-delay: 200ms;
 }
 
 /* ---- Etiqueta del recuerdo enfocado ------------------------- */

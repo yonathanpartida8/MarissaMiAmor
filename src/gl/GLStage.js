@@ -335,6 +335,11 @@ export class GLStage {
     this.camera.position.z = this.viewport.aspect < 0.62 ? 9.4 : 8;
   }
 
+  /** ¿Toca dibujar a media cadencia? Lo decide el nivel del aparato. */
+  get frameSkip() {
+    return this.caps.tierName !== "high";
+  }
+
   #applyBudget() {
     this.atmoUniforms.uQuality.value =
       this.caps.tierName === "high" ? 1 : this.caps.tierName === "mid" ? 0.6 : 0;
@@ -357,6 +362,17 @@ export class GLStage {
 
   tick(dt, time) {
     if (!this.ready) return;
+
+    // La atmósfera es fondo: nadie la mira fijamente. En gama media y baja se
+    // dibuja a 30 imágenes por segundo en vez de a 60, y eso es la mitad de
+    // trabajo de GPU en el elemento más caro del libro —un shader de ruido
+    // fractal a pantalla completa— sin que se note absolutamente nada. Las
+    // páginas 3D y todo lo que se toca siguen a 60: esto sólo afecta al
+    // ritmo al que se repinta el lienzo.
+    if (this.frameSkip) {
+      this.skipAcc = (this.skipAcc || 0) + 1;
+      if (this.skipAcc % 2 === 0) return;
+    }
 
     const p = this.pointer.influence;
 

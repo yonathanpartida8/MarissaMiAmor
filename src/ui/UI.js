@@ -159,6 +159,7 @@ export class UI {
 
     qs(".bar__btn--prev", this.bar).disabled = this.ctx.router.atStart;
     qs(".bar__btn--next", this.bar).disabled = this.ctx.router.atEnd;
+    this.edges?.refresh();
 
     // La portada y el final se ven mejor sin cromo alrededor.
     const bare = entry.type === "cover" || entry.type === "finale";

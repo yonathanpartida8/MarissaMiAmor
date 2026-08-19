@@ -31,8 +31,15 @@
   position: absolute;
   inset: 6% 4% -4%;
   border-radius: inherit;
-  background: radial-gradient(ellipse 70% 60% at 50% 60%, rgba(20, 10, 6, 0.55), transparent 72%);
-  filter: blur(16px);
+  /* El degradado ya difumina por sí solo. El `blur(16px)` que llevaba encima
+     obligaba a rasterizar la sombra otra vez en cada frame, porque el marco
+     se inclina con el dedo sesenta veces por segundo. */
+  background: radial-gradient(
+    ellipse 78% 66% at 50% 60%,
+    rgba(20, 10, 6, 0.5) 0%,
+    rgba(20, 10, 6, 0.22) 42%,
+    transparent 74%
+  );
   transform: translate3d(var(--sh-x), var(--sh-y), -1px);
   opacity: 0;
   transition: opacity 900ms var(--e-out);
@@ -64,8 +71,8 @@
   opacity: 0;
   filter: blur(20px) saturate(0.35) brightness(1.45) contrast(0.85);
   transition:
-    opacity 1000ms var(--e-out),
-    filter 1500ms var(--e-out);
+    opacity 620ms var(--e-out),
+    filter 900ms var(--e-out);
   will-change: transform, filter, opacity;
 }
 
@@ -73,8 +80,14 @@
   opacity: 1;
 }
 
+/* Revelada: `none` y no `blur(0)`. Un filtro, aunque sea neutro, obliga al
+   navegador a mantener la imagen en su propia capa y a recomponerla en cada
+   frame. Y con `will-change` fijo, esa capa no se suelta nunca. Multiplicado
+   por las tres o cuatro fotos que hay en pantalla, es lo que hacía que las
+   páginas con foto fueran las más pesadas del libro. */
 .pframe.is-revealed .pframe__img {
-  filter: blur(0) saturate(1.02) brightness(1) contrast(1);
+  filter: none;
+  will-change: auto;
 }
 
 .pframe.is-zooming .pframe__img {
@@ -135,7 +148,7 @@
 }
 
 .pframe.is-revealed .pframe__sheen {
-  animation: pframe-sheen 1400ms var(--e-out) 120ms;
+  animation: pframe-sheen 1100ms var(--e-out) 120ms;
 }
 
 @keyframes pframe-sheen {

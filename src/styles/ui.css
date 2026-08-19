@@ -564,10 +564,10 @@ html[data-device="tablet"] .bar {
 }
 
 /* ---- Bordes de navegación ----------------------------------
-   La salida de emergencia: dos franjas en los cantos que siempre
-   pasan de página, aunque la página se haya quedado el dedo.
-   No capturan el puntero (el reconocedor escucha en captura sobre
-   window); esto es sólo lo que se ve.                            */
+   Dos cosas en el mismo sitio: una franja invisible en el canto que
+   entiende el arrastre (el reconocedor escucha en captura sobre window,
+   por encima de cualquier página), y un botón redondo, visible y
+   tocable para quien prefiera no adivinar el gesto.               */
 #ui > .edges {
   position: absolute;
   inset: 0;
@@ -577,118 +577,166 @@ html[data-device="tablet"] .bar {
 .edge {
   --pull: 0;
   position: absolute;
-  top: 0;
-  bottom: 0;
-  /* Anchura sólo visual: la zona que de verdad escucha la decide EdgeNav en
-     JS y es más estrecha. Aquí sobra sitio para que la flecha quepa entera. */
-  width: clamp(44px, 13vw, 68px);
+  /* Abajo, justo por encima de la barra y pegados al canto: es donde llega
+     el pulgar sin recolocar la mano, y donde menos estorban a lo que hay
+     que leer o tocar en la página. */
+  bottom: calc(var(--safe-b) + 4.5rem);
   display: grid;
   place-items: center;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 320ms var(--e-out);
 }
 
-.edge--prev { left: 0; }
-.edge--next { right: 0; }
+.edge--prev { left: calc(var(--safe-l) + 8px); }
+.edge--next { right: calc(var(--safe-r) + 8px); }
 
-/* El velo que acompaña al dedo: nace del canto y se mete hacia dentro.
-   La base es neutra oscura y no el color de acento, porque hay páginas de
-   papel muy claro y otras casi negras: así la flecha se lee en todas. */
+/* En apaisado la hoja es baja: los botones se centran a media altura, que
+   es donde queda sitio, y se apartan del texto que va a los lados. */
+html[data-orientation="landscape"][data-device="phone"] .edge {
+  bottom: auto;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* El velo que acompaña al dedo cuando se arrastra desde el canto. */
 .edge::before {
   content: "";
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 260%;
-  opacity: calc(var(--pull) * 0.92);
-  background: linear-gradient(
-    var(--edge-angle, 90deg),
-    rgba(10, 5, 16, 0.5),
-    color-mix(in srgb, var(--accent, #ec6f92) 20%, transparent) 45%,
-    transparent 82%
+  top: 50%;
+  width: 190px;
+  height: 190vh;
+  max-height: 100vh;
+  transform: translateY(-50%);
+  opacity: calc(var(--pull) * 0.9);
+  background: radial-gradient(
+    ellipse 60% 40% at var(--edge-anchor, 0%) 50%,
+    color-mix(in srgb, var(--accent, #ec6f92) 40%, transparent),
+    transparent 70%
   );
-  filter: blur(3px);
+  filter: blur(6px);
+  pointer-events: none;
 }
 
-.edge--prev::before { left: 0; --edge-angle: 90deg; }
-.edge--next::before { right: 0; --edge-angle: 270deg; }
+.edge--prev::before { left: -60px; --edge-anchor: 30%; }
+.edge--next::before { right: -60px; --edge-anchor: 70%; }
 
-.edge__arrow {
+/* ---- El botón ---------------------------------------------- */
+.edge__btn {
   position: relative;
+  width: 3.15rem;
+  height: 3.15rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(18, 10, 26, 0.44);
+  backdrop-filter: blur(10px) saturate(1.25);
+  -webkit-backdrop-filter: blur(10px) saturate(1.25);
+  box-shadow:
+    0 6px 20px -8px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
   display: grid;
   place-items: center;
-  width: 2.05rem;
-  height: 2.05rem;
-  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0.62;
+  transition:
+    opacity 260ms var(--e-out),
+    transform 320ms var(--e-spring),
+    background 260ms var(--e-out),
+    border-color 260ms var(--e-out);
+}
+
+.edge__glyph {
   font-family: var(--font-display, serif);
-  font-size: 1.45rem;
+  font-size: 1.6rem;
   line-height: 1;
-  padding-bottom: 0.14em; /* el chevron tipográfico no está centrado */
-  color: #fff;
-  background: rgba(14, 7, 20, 0.42);
-  backdrop-filter: blur(6px) saturate(1.2);
-  -webkit-backdrop-filter: blur(6px) saturate(1.2);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
-    0 4px 18px -6px rgba(0, 0, 0, 0.7);
-  will-change: transform, opacity;
+  /* El chevron tipográfico no está centrado en su caja. */
+  padding-bottom: 0.12em;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+  transition: transform 320ms var(--e-spring);
 }
 
-.edge--prev .edge__arrow {
-  transform: translate3d(calc(var(--pull) * 9px), 0, 0) scale(calc(0.76 + var(--pull) * 0.3));
+.edge__btn:hover,
+.edge__btn:focus-visible {
+  opacity: 1;
+  background: rgba(26, 14, 36, 0.62);
+  border-color: color-mix(in srgb, var(--accent, #ec6f92) 55%, rgba(255, 255, 255, 0.3));
 }
 
-.edge--next .edge__arrow {
-  transform: translate3d(calc(var(--pull) * -9px), 0, 0) scale(calc(0.76 + var(--pull) * 0.3));
+.edge__btn:active {
+  transform: scale(0.9);
+  opacity: 1;
 }
 
-.edge.is-pulling {
+.edge__btn:disabled {
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+/* Confirmación del toque: el botón late y la flecha sale disparada. */
+.edge.is-tapped .edge__btn { animation: edge-tap 460ms var(--e-out); }
+.edge--prev.is-tapped .edge__glyph { animation: edge-shoot-prev 460ms var(--e-out); }
+.edge--next.is-tapped .edge__glyph { animation: edge-shoot-next 460ms var(--e-out); }
+
+@keyframes edge-tap {
+  0%   { transform: scale(0.86); opacity: 1; }
+  40%  { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes edge-shoot-prev {
+  0%   { transform: translateX(0); }
+  45%  { transform: translateX(-9px); opacity: 0.3; }
+  46%  { transform: translateX(9px); }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes edge-shoot-next {
+  0%   { transform: translateX(0); }
+  45%  { transform: translateX(9px); opacity: 0.3; }
+  46%  { transform: translateX(-9px); }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+/* Mientras se arrastra desde el canto, el botón acompaña al dedo. */
+.edge.is-pulling .edge__btn {
   opacity: 1;
   transition: none;
 }
 
-/* Pasado el punto de no retorno: la flecha se afirma. */
-.edge.is-ready .edge__arrow {
-  background: color-mix(in srgb, var(--accent, #ec6f92) 82%, #1a0d22);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.4),
-    0 0 22px -2px var(--accent, #ec6f92);
+.edge--prev.is-pulling .edge__btn {
+  transform: translateX(calc(var(--pull) * 12px)) scale(calc(1 + var(--pull) * 0.14));
 }
 
-/* El aviso de que los bordes existen, las primeras veces. */
-.edges.is-hinting .edge {
-  animation: edge-breathe 1300ms var(--e-out) 2 both;
+.edge--next.is-pulling .edge__btn {
+  transform: translateX(calc(var(--pull) * -12px)) scale(calc(1 + var(--pull) * 0.14));
 }
 
-.edges.is-hinting .edge--next { animation-delay: 120ms; }
+/* Pasado el punto de no retorno: el botón se enciende. */
+.edge.is-ready .edge__btn {
+  background: color-mix(in srgb, var(--accent, #ec6f92) 78%, #1a0d22);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 22px -2px var(--accent, #ec6f92);
+}
+
+/* El aviso de que están ahí, las primeras veces. */
+.edges.is-hinting .edge__btn {
+  animation: edge-breathe 1500ms var(--e-out) 2 both;
+}
+
+.edges.is-hinting .edge--next .edge__btn { animation-delay: 160ms; }
 
 @keyframes edge-breathe {
-  0%   { opacity: 0; }
-  38%  { opacity: 0.5; }
-  100% { opacity: 0; }
+  0%, 100% { opacity: 0.62; transform: scale(1); }
+  45%      { opacity: 1; transform: scale(1.14); }
 }
 
-.edges.is-hinting .edge--prev .edge__arrow {
-  animation: edge-nudge-prev 1300ms var(--e-out) 2 both;
-}
-
-.edges.is-hinting .edge--next .edge__arrow {
-  animation: edge-nudge-next 1300ms var(--e-out) 2 both;
-  animation-delay: 120ms;
-}
-
-@keyframes edge-nudge-prev {
-  0%, 100% { transform: translate3d(-5px, 0, 0) scale(0.76); }
-  40%      { transform: translate3d(5px, 0, 0) scale(0.94); }
-}
-
-@keyframes edge-nudge-next {
-  0%, 100% { transform: translate3d(5px, 0, 0) scale(0.76); }
-  40%      { transform: translate3d(-5px, 0, 0) scale(0.94); }
-}
+/* La portada y el final se ven limpios. */
+#ui.is-bare .edges { opacity: 0; pointer-events: none; }
+.edges { transition: opacity 400ms var(--e-out); }
 
 @media (prefers-reduced-motion: reduce) {
-  .edges.is-hinting .edge,
-  .edges.is-hinting .edge__arrow { animation: none; }
+  .edges.is-hinting .edge__btn,
+  .edge.is-tapped .edge__btn,
+  .edge.is-tapped .edge__glyph { animation: none; }
 }

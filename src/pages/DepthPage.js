@@ -131,10 +131,10 @@ export default class DepthPage extends BasePage {
     // El texto se mueve menos que la imagen: eso es lo que crea la
     // sensación de que está delante y no pegado.
     setVars(this.root, {
-      "--card-x": `${this.px * -5}px`,
-      "--card-y": `${this.py * 4}px`,
-      "--fb-x": `${this.px * -14}px`,
-      "--fb-y": `${this.py * 11}px`,
+      "--card-x": `${(this.px * -5).toFixed(1)}px`,
+      "--card-y": `${(this.py * 4).toFixed(1)}px`,
+      "--fb-x": `${(this.px * -14).toFixed(1)}px`,
+      "--fb-y": `${(this.py * 11).toFixed(1)}px`,
     });
   }
 

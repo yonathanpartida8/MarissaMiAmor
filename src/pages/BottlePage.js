@@ -136,8 +136,8 @@ export default class BottlePage extends BasePage {
     const rise = Math.sin(time * 1.15 + 0.6) * 5;
 
     setVars(this.bottle, {
-      "--sway": `${sway + this.bob * 9}deg`,
-      "--rise": `${rise}px`,
+      "--sway": `${(sway + this.bob * 9).toFixed(2)}deg`,
+      "--rise": `${rise.toFixed(1)}px`,
     });
   }
 

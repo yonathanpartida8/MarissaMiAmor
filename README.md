@@ -97,7 +97,7 @@ veces seguidas.
 | **Profundidad 3D** | Inclinar el teléfono: la ilustración tiene fondo (shader de parallax). |
 | **Rascar** | Quitar la lámina de plata con el dedo. |
 | **Postal** | Arrastrarla para darle la vuelta. Gira en 3D hacia los dos lados, con muelle. |
-| **Capítulo** | Papel escrito, cada uno con su ornamento: medallón, cristal empañado, reflejo, brújula o susurro. |
+| **Capítulo** | Papel escrito, y cada uno con un ornamento distinto: **medallón** (foto que se revela), **cristal empañado** (hay que limpiarlo con el dedo, con lluvia y relámpagos), **espejo** (el reflejo va con retraso y te sigue), **brújula** (se toca y gira hasta parar siempre en el mismo sitio) y **susurro** (hay que mantener el dedo para oírlo). |
 | **Deshojar** | Arrancar los pétalos uno a uno. Cada uno dice algo al caer. |
 | **Polaroids** | Arrastrarlas con inercia; doble toque para ver el reverso. |
 | **Velo** | Acariciar la pantalla para retirarlo (shader). |
@@ -306,6 +306,17 @@ El libro mide el aparato en el que se está abriendo y se adapta:
   las 85 ilustraciones nunca están todas en memoria a la vez.
 - **Módulos perezosos**: el código de la constelación no se descarga hasta que
   hace falta.
+- **Las variables CSS recuerdan lo último que se escribió.** Se heredan, así
+  que tocar una en la raíz de una página obliga a recalcular el estilo de
+  todos sus descendientes; y los relojes de cada página escriben sesenta veces
+  por segundo. Escribiendo sólo cuando el valor cambia de verdad —y redondeando
+  para que el suavizado converja— el recálculo de estilo con el libro parado
+  baja de 30-44 ms por segundo y medio a prácticamente cero.
+- **El texto se aplana al terminar de entrar.** Un párrafo se parte en cien
+  `<span>` para escribirse palabra a palabra; cuando acaba, los cien vuelven a
+  ser un único nodo de texto. En gama baja no se parte siquiera.
+- **La atmósfera se dibuja a 30 fps** en gama media y baja. Es fondo: nadie la
+  mira fijamente, y es el shader más caro del libro.
 - **Sólo tica la página que se ve.** El router mantiene vivas las hojas vecinas
   para que arrastrar responda al instante, pero sus relojes están parados: nadie
   calcula físicas ni partículas para una página que no está en pantalla.
@@ -318,6 +329,20 @@ Y si no hay WebGL, el libro sigue siendo un libro: todas las páginas tienen su
 versión en DOM, sin una sola pantalla vacía.
 
 Para depurar se puede forzar el nivel por URL: `index.html?tier=low`.
+
+---
+
+## Pasar de página
+
+Cuatro maneras, todas equivalentes:
+
+1. **Los botones redondos** de los cantos, abajo a izquierda y derecha. Están
+   siempre a la vista y caen donde llega el pulgar sin recolocar la mano.
+2. **Arrastrar desde el canto**: el botón acompaña al dedo y se enciende al
+   pasar el punto de no retorno.
+3. **Arrastrar la hoja** por el centro, en las páginas de papel: gira de
+   verdad, con muelle e inercia.
+4. **El índice** (`☰`), para saltar a cualquier página.
 
 ---
 

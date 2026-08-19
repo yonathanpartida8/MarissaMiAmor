@@ -52,8 +52,12 @@
   background-position: center;
   /* Duotono: la foto pertenece al universo del libro, no lo interrumpe. */
   filter: grayscale(1) contrast(1.15) brightness(0.55);
-  mix-blend-mode: soft-light;
   opacity: 0.62;
+  /* Sin modo de mezcla por defecto. Mezclar una capa filtrada que ADEMÁS se
+     mueve con el giroscopio obliga a recomponer el fondo entero en cada
+     frame, y la portada era la página más lenta del libro. En gama alta,
+     donde sobra músculo, se recupera el duotono de verdad. */
+  mix-blend-mode: normal;
   transform: translate3d(var(--depth-x, 0), var(--depth-y, 0), 0) scale(1.06);
   transition: transform 200ms linear;
 }
@@ -294,13 +298,17 @@
   z-index: 2;
 }
 
+/* La cera se tensa mientras se aprieta. Con un `transform` y no con un
+   `filter`: la cera va recortada con `clip-path`, y animar un filtro sobre
+   una forma recortada la vuelve a dibujar entera sesenta veces por segundo.
+   Un escalado lo compone la GPU sin repintar nada. */
 .cover__seal.is-pressing .seal__wax {
   animation: seal-strain 240ms ease-in-out infinite alternate;
 }
 
 @keyframes seal-strain {
-  from { filter: brightness(1); }
-  to { filter: brightness(1.14) saturate(1.1); }
+  from { transform: scale(calc(1 - var(--hold, 0) * 0.06)); }
+  to   { transform: scale(calc(1 - var(--hold, 0) * 0.06 - 0.014)); }
 }
 
 .cover__seal.is-broken .seal__wax {
@@ -374,4 +382,10 @@ html[data-orientation="landscape"][data-device="phone"] .cover__content {
 
 html[data-orientation="landscape"][data-device="phone"] .cover__seal {
   width: clamp(58px, calc(16 * var(--vw)), 74px);
+}
+
+
+/* En gama alta sí: el duotono mezclado con el fondo es más bonito. */
+:root[data-tier="high"] .cover__photo {
+  mix-blend-mode: soft-light;
 }

@@ -1,6 +1,10 @@
 /**
  * TRANSICIONES QUE NO SON PAPEL.
  *
+ * Todas duran entre medio segundo y siete décimas. Antes rondaban el segundo,
+ * y sumadas a la entrada de la página siguiente se iban a más de dos segundos
+ * entre tocar y poder leer: bonito la primera vez, cansado a la quinta.
+ *
  * El volteo de hoja es para las páginas de papel. Las páginas que viven en
  * WebGL (profundidad, constelación, campo de recuerdos) no pueden girarse
  * como una cartulina: allí la transición es de luz, de escala y de partículas.
@@ -67,7 +71,7 @@ export async function dissolve({ outgoing, incoming, direction, ctx }) {
   ctx.audio?.play("turn", { volume: 0.45, rate: 1.2 });
 
   await tween({
-    duration: ctx.caps.reducedMotion ? 220 : 860,
+    duration: ctx.caps.reducedMotion ? 200 : 600,
     // Cúbica y no exponencial: la exponencial casi no tiene medio, hace todo
     // el recorrido en tres fotogramas y un fundido a pantalla completa así
     // no se lee como un fundido, se lee como un corte.
@@ -111,7 +115,7 @@ export async function zoom({ outgoing, incoming, direction, ctx }) {
   ctx.haptics?.play("reveal");
 
   await tween({
-    duration: ctx.caps.reducedMotion ? 240 : 1050,
+    duration: ctx.caps.reducedMotion ? 180 : 500,
     ease: easeOutQuint,
     onUpdate: (t) => {
       if (outgoing) {
@@ -155,7 +159,7 @@ export async function fold({ outgoing, incoming, direction, ctx }) {
   ctx.haptics?.play("turn");
 
   await tween({
-    duration: ctx.caps.reducedMotion ? 220 : 820,
+    duration: ctx.caps.reducedMotion ? 200 : 580,
     ease: easeOutCubic,
     onUpdate: (t) => {
       if (outgoing) {
@@ -198,7 +202,7 @@ export async function iris({ outgoing, incoming, direction, ctx }) {
   ctx.haptics?.play("turn");
 
   await tween({
-    duration: ctx.caps.reducedMotion ? 220 : 940,
+    duration: ctx.caps.reducedMotion ? 200 : 660,
     ease: easeInOutCubic,
     onUpdate: (t) => {
       if (outgoing) {
@@ -261,7 +265,7 @@ export async function slide({ outgoing, incoming, direction, ctx }) {
   ctx.haptics?.play("tick");
 
   await tween({
-    duration: ctx.caps.reducedMotion ? 200 : 720,
+    duration: ctx.caps.reducedMotion ? 180 : 500,
     ease: easeOutQuint,
     onUpdate: (t) => {
       if (outgoing) {
@@ -323,7 +327,7 @@ export async function ink({ outgoing, incoming, direction, ctx }) {
       .join(", ");
 
   await tween({
-    duration: ctx.caps.reducedMotion ? 220 : 1020,
+    duration: ctx.caps.reducedMotion ? 200 : 700,
     ease: easeInOutCubic,
     // La mancha va con el progreso CRUDO y no con el suavizado: encadenar la
     // curva de la tinta con una curva de easing daba una aceleración tan
@@ -371,7 +375,7 @@ export async function tide({ outgoing, incoming, direction, ctx }) {
   ctx.haptics?.play("turn");
 
   await tween({
-    duration: ctx.caps.reducedMotion ? 220 : 1000,
+    duration: ctx.caps.reducedMotion ? 200 : 700,
     ease: easeInOutCubic,
     onUpdate: (t) => {
       if (incoming) {
@@ -430,7 +434,7 @@ export async function bloom({ outgoing, incoming, ctx }) {
   ctx.haptics?.play("reveal");
 
   await tween({
-    duration: ctx.caps.reducedMotion ? 220 : 940,
+    duration: ctx.caps.reducedMotion ? 200 : 660,
     // Cúbica y no quíntica: la quíntica se come el 80% del recorrido en el
     // primer tercio y la flor se abría de un tirón.
     ease: easeOutCubic,

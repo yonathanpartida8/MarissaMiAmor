@@ -9,7 +9,7 @@
  * Añadir uno nuevo es escribir una función y ponerla en el mapa del final.
  */
 
-import { el, qs } from "../utils/dom.js";
+import { el, qs, setVars } from "../utils/dom.js";
 import { Gestures } from "../core/Gestures.js";
 import { ScratchSurface, fogLayer } from "./ScratchSurface.js";
 import { createPhotoFrame } from "./PhotoFrame.js";
@@ -114,7 +114,7 @@ function fogWindow(ctx, { photo, accent, onReveal }) {
         threshold: 0.46,
         dpr: Math.min(window.devicePixelRatio || 1, 2),
         onProgress: (p) => {
-          node.style.setProperty("--clear", String(p));
+          setVars(node, { "--clear": p.toFixed(3) });
           if (p > 0.05) ctx.haptics.scrub(p);
         },
         onComplete: async () => {
@@ -225,11 +225,15 @@ function mirror(ctx, { photo, accent }) {
       lag.x = damp(lag.x, p.x, 2.4, dt);
       lag.y = damp(lag.y, p.y, 2.4, dt);
 
-      real.style.transform = `translate3d(${p.x * 9}px, ${p.y * -6}px, 0) scale(1.02)`;
+      // Redondeado: con el teléfono quieto los valores convergen y el
+      // navegador deja de recalcular. La onda del agua ya no se calcula
+      // aquí: es una animación CSS, que corre en el compositor y sale gratis.
+      real.style.transform =
+        `translate3d(${(p.x * 9).toFixed(1)}px, ${(p.y * -6).toFixed(1)}px, 0) scale(1.02)`;
       reflection.style.transform =
-        `translate3d(${lag.x * -13}px, ${lag.y * 5}px, 0) scaleY(-1) skewX(${lag.x * 2.4}deg)`;
-      reflection.style.opacity = String(0.3 + Math.abs(lag.x) * 0.18);
-      node.style.setProperty("--ripple", String(Math.sin(time * 0.8) * 0.5 + 0.5));
+        `translate3d(${(lag.x * -13).toFixed(1)}px, ${(lag.y * 5).toFixed(1)}px, 0) ` +
+        `scaleY(-1) skewX(${(lag.x * 2.4).toFixed(2)}deg)`;
+      reflection.style.opacity = (0.3 + Math.abs(lag.x) * 0.18).toFixed(3);
     },
     destroy() {},
   };
@@ -271,7 +275,7 @@ function compass(ctx, { accent, onReveal }) {
     await tween({
       from,
       to,
-      duration: 2400,
+      duration: 1500,
       ease: easeOutExpo,
       onUpdate: (v) => {
         angle = v;

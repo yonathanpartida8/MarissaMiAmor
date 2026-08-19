@@ -87,9 +87,17 @@
   position: absolute;
   inset: -14%;
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 45%, var(--accent), transparent 60%);
+  /* El degradado ya es suave por sí mismo: el `blur(26px)` que llevaba
+     encima no añadía casi nada y mantenía viva una capa desenfocada grande
+     en todas las páginas de capítulo. Se consigue lo mismo estirando las
+     paradas del degradado, que es gratis. */
+  background: radial-gradient(
+    circle at 50% 45%,
+    color-mix(in srgb, var(--accent) 70%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 26%, transparent) 38%,
+    transparent 68%
+  );
   opacity: 0;
-  filter: blur(26px);
   transition: opacity 1400ms var(--e-out);
   pointer-events: none;
 }
@@ -208,6 +216,11 @@
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85), transparent 78%);
 }
 
+@keyframes mirror-ripple {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 0.8; }
+}
+
 .mirror__ripple {
   position: absolute;
   inset: 0;
@@ -216,7 +229,12 @@
     rgba(255, 255, 255, 0.06) 0 2px,
     transparent 2px 5px
   );
-  opacity: calc(0.3 + var(--ripple, 0) * 0.5);
+  /* La onda la lleva el CSS y no el JS: una animación de opacidad la compone
+     la GPU sin tocar el hilo principal, mientras que escribir `--ripple`
+     desde el reloj obligaba a recalcular el estilo del ornamento entero
+     sesenta veces por segundo. */
+  opacity: 0.55;
+  animation: mirror-ripple 7.8s ease-in-out infinite;
 }
 
 /* ══════════════ BRÚJULA ══════════════ */
@@ -425,7 +443,7 @@
 }
 
 .chapter__prose {
-  --word-delay: 380ms;
+  --word-delay: 200ms;
 }
 
 .chapter__sign {

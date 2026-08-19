@@ -11,7 +11,7 @@
  * libro entero, que es justo lo que se quiere.
  */
 
-import { el, qs } from "../utils/dom.js";
+import { el, qs, setVars } from "../utils/dom.js";
 import { Gestures } from "../core/Gestures.js";
 import { clamp, damp, clamp01 } from "../utils/math.js";
 
@@ -96,8 +96,8 @@ export function createPhotoFrame(ctx, options = {}) {
     // del revelado, no tiene sentido seguir animando un marco que ya no está.
     timers.push(
       setTimeout(() => node.classList.add("is-arriving"), delay),
-      setTimeout(() => node.classList.add("is-revealing"), delay + 180),
-      setTimeout(() => node.classList.add("is-revealed"), delay + 900)
+      setTimeout(() => node.classList.add("is-revealing"), delay + 130),
+      setTimeout(() => node.classList.add("is-revealed"), delay + 620)
     );
     return img;
   }
@@ -153,23 +153,28 @@ export function createPhotoFrame(ctx, options = {}) {
     state.py = damp(state.py, p.y, 3.4, dt);
     state.zoom = damp(state.zoom, state.zoomTarget, 8, dt);
 
-    // El marco se inclina…
-    node.style.setProperty("--tilt-x", `${state.py * 4.5 * strength}deg`);
-    node.style.setProperty("--tilt-y", `${state.px * 6 * strength}deg`);
-
-    // …y la imagen se mueve dentro de él, un poco más que el marco. Esa
-    // diferencia de velocidad es toda la sensación de profundidad.
-    node.style.setProperty("--img-x", `${state.px * -9 * strength + state.panX}px`);
-    node.style.setProperty("--img-y", `${state.py * 7 * strength + state.panY}px`);
-    node.style.setProperty("--zoom", state.zoom.toFixed(3));
-
-    // El brillo va al contrario, como una fuente de luz que no se mueve.
-    node.style.setProperty("--glare-x", `${50 - state.px * 42}%`);
-    node.style.setProperty("--glare-y", `${50 - state.py * 38}%`);
-
-    // Y la sombra cae hacia donde no da la luz.
-    node.style.setProperty("--sh-x", `${state.px * 10}px`);
-    node.style.setProperty("--sh-y", `${6 + state.py * -6}px`);
+    // Todo redondeado a un decimal, y por `setVars`, que se acuerda de lo que
+    // escribió la última vez. Con el dedo quieto el suavizado converge, los
+    // valores dejan de cambiar y no se escribe ni una variable: cero
+    // recálculo de estilo. Sin el redondeo nunca convergerían —el suavizado
+    // exponencial sigue moviéndose en el sexto decimal para siempre— y el
+    // navegador recalcularía el marco entero sesenta veces por segundo.
+    setVars(node, {
+      // El marco se inclina…
+      "--tilt-x": `${(state.py * 4.5 * strength).toFixed(2)}deg`,
+      "--tilt-y": `${(state.px * 6 * strength).toFixed(2)}deg`,
+      // …y la imagen se mueve dentro de él, un poco más que el marco. Esa
+      // diferencia de velocidad es toda la sensación de profundidad.
+      "--img-x": `${(state.px * -9 * strength + state.panX).toFixed(1)}px`,
+      "--img-y": `${(state.py * 7 * strength + state.panY).toFixed(1)}px`,
+      "--zoom": state.zoom.toFixed(3),
+      // El brillo va al contrario, como una fuente de luz que no se mueve.
+      "--glare-x": `${(50 - state.px * 42).toFixed(1)}%`,
+      "--glare-y": `${(50 - state.py * 38).toFixed(1)}%`,
+      // Y la sombra cae hacia donde no da la luz.
+      "--sh-x": `${(state.px * 10).toFixed(1)}px`,
+      "--sh-y": `${(6 + state.py * -6).toFixed(1)}px`,
+    });
   }
 
   function destroy() {
