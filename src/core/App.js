@@ -10,9 +10,10 @@ import { Router } from "./Router.js";
 import { GLStage } from "../gl/GLStage.js";
 import { UI } from "../ui/UI.js";
 import { installTextures } from "../components/textures.js";
-import { manifest, registerCustomPages, indexOfPage } from "../data/manifest.js";
+import { manifest, registerCustomPages, registerAmores, indexOfPage } from "../data/manifest.js";
 import { registerCustomChapters } from "../data/chapters.js";
 import { loadCustomPages, customAct } from "../data/custom.js";
+import { descubrirAmores, entradasDeAmores, actoAmores, CARPETA } from "../data/amores.js";
 import { warmup } from "../pages/registry.js";
 import { PRIORITY } from "./AssetLoader.js";
 import { el, qs, wait } from "../utils/dom.js";
@@ -44,11 +45,20 @@ export class App {
     this.ctx.gl = new GLStage(this.canvas, this.ctx);
     this.ctx.loop.start();
 
-    // 2. Sus páginas. Van antes que nada porque pueden colarse en cualquier
-    //    sitio del libro, incluso justo después de la portada.
+    // 2. Se pone a buscar sus fotos de `images/amores/` YA, pero sin esperarla:
+    //    la búsqueda son unas cuantas idas y venidas a la red, y no tiene
+    //    ningún sentido que la portada se quede parada mirándolas. Se recoge
+    //    más abajo, cuando la descarga de la portada ya ha pagado esa espera.
+    const buscandoAmores = descubrirAmores().catch((err) => {
+      console.error("[amores] no se pudieron buscar las fotos", err);
+      return [];
+    });
+
+    // 3. Sus páginas escritas a mano. Van antes que nada porque pueden colarse
+    //    en cualquier sitio del libro, incluso justo después de la portada.
     await this.#loadMine();
 
-    // 3. Lo mínimo imprescindible para abrir: la portada y su módulo.
+    // 4. Lo mínimo imprescindible para abrir: la portada y su módulo.
     setStatus("buscando la portada…");
     setProgress(0.35);
     warmup("cover");
@@ -59,7 +69,12 @@ export class App {
       .loadAll(firstPhotos, PRIORITY.CRITICAL, (p) => setProgress(0.35 + p * 0.45))
       .catch(() => {});
 
-    // 4. Router y UI.
+    // 5. Ahora sí: las fotos encontradas se pegan al final del libro. Antes de
+    //    montar el router, para que el índice, el progreso y el «página N de M»
+    //    nazcan sabiendo cuántas páginas hay de verdad.
+    await this.#loadAmores(buscandoAmores);
+
+    // 6. Router y UI.
     setStatus("encuadernando…");
     setProgress(0.9);
     this.ctx.router = new Router(this.ctx, this.stage);
@@ -129,6 +144,41 @@ export class App {
     } catch (err) {
       // Red de seguridad final: pase lo que pase, el libro se abre.
       console.error("[mis-paginas] no se pudieron cargar", err);
+    }
+  }
+
+  /**
+   * Busca `images/amores/amor1.png`, `amor2.png`… y convierte cada una en una
+   * página, al final de todo.
+   *
+   * No hay nada que configurar: se deja el archivo en la carpeta y aparece.
+   * Si la carpeta está vacía —o si la búsqueda falla, o tarda demasiado— el
+   * libro es exactamente el mismo libro y nadie se entera.
+   */
+  async #loadAmores(buscando) {
+    try {
+      const lista = await buscando;
+      if (!lista?.length) return;
+
+      const entradas = entradasDeAmores(lista);
+      registerCustomChapters([], actoAmores);
+      registerAmores(entradas);
+
+      // El módulo de la página se pide ya: cuando llegue a la primera foto,
+      // ya estará descargado y la entrada será instantánea.
+      warmup("amor");
+
+      console.info(
+        `%c amores %c ${lista.length} foto${lista.length > 1 ? "s" : ""} de ${CARPETA} al final del libro`,
+        "background:#ffb0c8;color:#3a0a1c;border-radius:3px 0 0 3px;padding:2px 6px",
+        "background:#2a1436;color:#f6e7ef;border-radius:0 3px 3px 0;padding:2px 6px"
+      );
+      console.info(
+        `[amores] los avisos de «404» de ${CARPETA} son normales: así es como se ` +
+          "averigua cuántas fotos hay, porque un sitio de archivos no sabe decirlo."
+      );
+    } catch (err) {
+      console.error("[amores] no se pudieron añadir las fotos", err);
     }
   }
 

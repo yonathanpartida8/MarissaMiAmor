@@ -53,7 +53,7 @@ export const chapters = [
     act: "encontrarte",
     title: "Las tres de la mañana",
     kicker: "nuestra hora",
-    text: "Hay una hora en la que el mundo se calla y sólo queda una pantalla encendida. Ahí es donde más hemos vivido tú y yo. Yo con los ojos cerrándose, tú diciendo que ya nos durmamos, y ninguno de los dos colgando. Creo que ahí es donde más te he querido: en ese rato tonto en el que ya no queda nada que decir y aun así nadie se va.",
+    text: "Hay una hora en la que el mundo se calla y sólo queda una pantalla encendida. Ahí es donde más hemos vivido tú y yo. Yo con los ojos cerrándose, tú diciendo que ya nos durmamos, y ninguno de los dos colgando. Creo que ahí es donde más te he amado: en ese rato tonto en el que ya no queda nada que decir y aun así nadie se va.",
     palette: { a: "#7fb4f5", b: "#16306b", deep: "#040d1e" },
     mood: "night",
   },
@@ -93,14 +93,14 @@ export const chapters = [
     kicker: "no hace falta, pero por si acaso",
     text: "Quítalas todas. Ya sabemos cómo termina.",
     lines: [
-      "me quiere",
-      "me quiere mucho",
-      "me quiere en martes cualquiera",
-      "me quiere con la voz dormida",
-      "me quiere aunque yo tarde en contestar",
-      "me quiere cuando no estoy siendo fácil",
-      "me quiere de lejos, que es más difícil",
-      "me quiere y no le da vergüenza decirlo",
+      "me ama",
+      "me ama muchísimo",
+      "me ama en martes cualquiera",
+      "me ama con la voz dormida",
+      "me ama aunque yo tarde en contestar",
+      "me ama cuando no estoy siendo fácil",
+      "me ama de lejos, que es más difícil",
+      "me ama y no le da vergüenza decirlo",
     ],
     reveal: "Ves. Siempre sale lo mismo.",
     palette: { a: "#ff8fb0", b: "#8a1e4a", deep: "#1c0813" },
@@ -212,7 +212,7 @@ export const chapters = [
     act: "conocerte",
     title: "Carta en una botella",
     kicker: "quítale el corcho",
-    text: "Escribo esto sin saber qué día lo vas a leer, y me gusta que sea así. Puede que estés bien, puede que estés cansada, puede que se te haya hecho tarde otra vez. Da igual cuál de las tres. Quería que en algún momento del futuro te llegara algo mío diciéndote que ese día, el que sea, yo también te estaba queriendo. No hace falta que contestes. Sólo quería que llegara.",
+    text: "Escribo esto sin saber qué día lo vas a leer, y me gusta que sea así. Puede que estés bien, puede que estés cansada, puede que se te haya hecho tarde otra vez. Da igual cuál de las tres. Quería que en algún momento del futuro te llegara algo mío diciéndote que ese día, el que sea, yo también te estaba amando. No hace falta que contestes. Sólo quería que llegara.",
     palette: { a: "#6ec5e0", b: "#0d3a52", deep: "#03141d" },
     mood: "winter",
   },
@@ -226,11 +226,14 @@ export const chapters = [
     mood: "cosmos",
   },
   {
+    // Este capítulo ya sólo pone la paleta y el ambiente: lo que dice la
+    // página —y cuáles son las palabras que esconden algo— está en
+    // `src/pages/secreto/textos.js`.
     id: "en-voz-baja",
     act: "conocerte",
-    title: "En voz baja",
-    kicker: "sostén el dedo, no lo sueltes",
-    text: "Esto no lo diría fuerte. No porque me dé vergüenza, sino porque hay cosas que se dicen mejor bajito, cuando no las oye nadie más: me haces mucho bien. No sé si te has dado cuenta de cuánto.",
+    title: "Lo que no se ve de primeras",
+    kicker: "hay cosas escritas entre líneas",
+    text: "Esto no lo diría fuerte. No porque me dé vergüenza, sino porque hay cosas que se dicen mejor bajito, cuando no las oye nadie más.",
     palette: { a: "#a8f0c0", b: "#0f4a2c", deep: "#03150c" },
     mood: "glass",
   },
@@ -399,7 +402,7 @@ export const chapters = [
     id: "no-se-me-pasa",
     act: "elegirte",
     title: "No se me pasa",
-    kicker: "desliza el carrete",
+    kicker: "pásalo entero, hasta el último",
     text: "Llevo el tiempo suficiente como para que se me hubiera pasado, si fuera de esas cosas que se pasan. Y no. Cada vez es menos ruido y más certeza, que es exactamente lo contrario de lo que me habían contado.",
     palette: { a: "#ffb0e0", b: "#5e1250", deep: "#150618" },
     mood: "cosmos",
@@ -414,12 +417,14 @@ export const chapters = [
     mood: "amber",
   },
   {
+    // Este capítulo ya sólo pone la paleta y el ambiente: lo que dice la
+    // página está en `src/pages/ultima-sorpresa/textos.js`.
     id: "ultimo-secreto",
     act: "elegirte",
-    title: "El último escondido",
-    kicker: "sostén el dedo",
-    text: "Te reservé una para el final, porque es la que más me cuesta decir de frente y la que más en serio va.",
-    reveal: "No te quiero para pasar el rato. Te quiero para lo lento: para los años, los lunes y las cosas aburridas.",
+    title: "El cajón",
+    kicker: "hay seis cosas aquí",
+    text: "Te reservé esto para el final, porque es lo que más me cuesta decir de frente y lo que más en serio va.",
+    reveal: "No te amo para pasar el rato. Te amo para lo lento: para los años, los lunes y las cosas aburridas.",
     palette: { a: "#ff9ec0", b: "#6b0f38", deep: "#170512" },
     mood: "bloom",
   },
@@ -442,14 +447,16 @@ export const chapterById = Object.fromEntries(chapters.map((c) => [c.id, c]));
  * Se llama al arrancar, antes de construir nada.
  */
 export function registerCustomChapters(list, act) {
+  // El acto se registra aunque no venga ningún capítulo: las páginas de
+  // `images/amores/` forman su propio acto en el índice y no tienen texto.
+  if (act && !actById[act.id]) {
+    acts.push(act);
+    actById[act.id] = act;
+  }
   if (!list?.length) return;
   for (const chapter of list) {
     chapters.push(chapter);
     chapterById[chapter.id] = chapter;
-  }
-  if (act && !actById[act.id]) {
-    acts.push(act);
-    actById[act.id] = act;
   }
 }
 
@@ -466,5 +473,5 @@ export const finale = {
   kicker: "y esto no se acaba aquí",
   lines: ["Hasta aquí", "por ahora."],
   body: "Este librito se queda contigo. Vuelve cuando quieras, ábrelo en la página que quieras, y si un día te hace falta que alguien te diga algo bonito, ya sabes dónde estoy.",
-  sign: "Te quiero, Marissa 🤍",
+  sign: "Te amo, Marissa 🤍",
 };

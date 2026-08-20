@@ -132,9 +132,34 @@ html[data-tier="low"] #grain {
   display: none;
 }
 
+/* ---- Movimiento reducido --------------------------------------
+   Si el sistema pide menos movimiento, se le hace caso EN TODO el libro y
+   no página por página. Los tokens de `tokens.css` ya acortan las duraciones
+   que salen de ahí, pero muchas páginas escriben sus milisegundos a mano
+   —`transition: opacity 900ms`—, y ésas se escapaban.
+
+   Esta regla las alcanza a todas: nada se anima, pero todo llega igual a su
+   estado final, así que ninguna página se queda a medias ni pierde un
+   `transitionend`. Lo que cada página decide por su cuenta (no soltar
+   corazones, no lanzar partículas) sigue estando en su sitio: eso se mira
+   desde JS con `ctx.caps.reducedMotion`. */
 @media (prefers-reduced-motion: reduce) {
   #grain {
     animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  html {
+    scroll-behavior: auto !important;
   }
 }
 

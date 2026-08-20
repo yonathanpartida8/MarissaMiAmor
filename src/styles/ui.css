@@ -250,8 +250,12 @@
   transform: translate(-50%, -14px);
   padding: 0.6rem 1.2rem;
   border-radius: var(--r-pill);
-  background: rgba(20, 10, 28, 0.78);
+  /* Casi opaco a propósito: el aviso cae justo donde muchas páginas ponen su
+     línea pequeña de arriba, y con el fondo semitransparente se leían las dos
+     cosas mezcladas. Se pone por encima y se lee sólo él. */
+  background: rgba(20, 10, 28, 0.94);
   border: 1px solid rgba(215, 174, 114, 0.28);
+  box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.9);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   font-family: var(--font-ui);

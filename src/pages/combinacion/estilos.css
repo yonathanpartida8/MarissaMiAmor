@@ -1,0 +1,538 @@
+/* ============================================================
+   COMBINACIÓN — el candado.
+
+   Un cuerpo de latón con su arco arriba y cuatro ruedas metidas
+   dentro. Todo con degradados: ni una imagen, ni un SVG.
+   ============================================================ */
+
+.lock {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(0.6rem, 2.2vh, 1.1rem);
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  place-items: center;
+  background: transparent;
+}
+
+.lock__kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 500ms var(--e-out), transform 500ms var(--e-out);
+}
+
+.lock.is-entered .lock__kicker { opacity: 0.85; transform: none; }
+.lock.is-open .lock__kicker { opacity: 0; }
+
+/* ---- El escenario ------------------------------------------ */
+.lock__stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 0;
+  align-self: stretch;
+}
+
+/* ══════════════ EL CANDADO ══════════════ */
+.lock__padlock {
+  position: relative;
+  width: min(84%, 310px);
+  display: grid;
+  /* El arco ocupa la fila de arriba y el cuerpo la de abajo; se solapan un
+     poco para que el arco parezca metido dentro del metal. */
+  grid-template-rows: auto auto;
+  justify-items: center;
+  opacity: 0;
+  transform: translateY(18px) scale(0.94);
+  transition:
+    opacity 620ms var(--e-out) 100ms,
+    transform 720ms var(--e-spring) 100ms;
+}
+
+.lock.is-entered .lock__padlock { opacity: 1; transform: none; }
+
+/* Al abrirse, el candado se aparta hacia arriba y deja sitio. */
+.lock.is-open .lock__padlock {
+  transition: opacity 620ms var(--e-out), transform 780ms var(--e-in-out);
+  transform: translateY(-14%) scale(0.62);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---- El arco ------------------------------------------------ */
+.lock__shackle {
+  position: relative;
+  z-index: 1;
+  width: 52%;
+  height: clamp(52px, 15vh, 92px);
+  /* Se mete por debajo del cuerpo: el solapamiento es lo que vende que
+     el arco entra en el metal y no está apoyado encima. */
+  margin-bottom: -18px;
+  transform-origin: 78% 100%;
+  transition: transform 900ms var(--e-spring);
+}
+
+/* El arco es un borde grueso en U: sin SVG, sin imagen. El degradado del
+   metal se consigue con la luz encima y la sombra debajo. */
+.lock__arc {
+  position: absolute;
+  inset: 0;
+  border: clamp(9px, 3.4vw, 14px) solid #b8a179;
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(
+    96deg,
+    rgba(255, 250, 236, 0) 30%,
+    rgba(255, 250, 236, 0.3) 46%,
+    rgba(255, 250, 236, 0) 62%
+  );
+  box-shadow:
+    inset 0 2px 3px rgba(255, 250, 236, 0.5),
+    inset 0 -3px 6px rgba(40, 28, 14, 0.55),
+    0 5px 12px -4px rgba(0, 0, 0, 0.6);
+}
+
+/* Abierto: el arco salta hacia arriba y gira sobre su pata derecha. */
+.lock__padlock.is-open .lock__shackle {
+  transform: translateY(-26%) rotate(38deg);
+}
+
+/* ---- El cuerpo ---------------------------------------------- */
+.lock__body {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  /* Proporción de candado de verdad: ancho y bajito. Más alto dejaba un
+     hueco oscuro debajo de las ruedas que parecía un error. */
+  aspect-ratio: 1 / 0.74;
+  border-radius: clamp(18px, 6vw, 28px);
+  padding: clamp(0.8rem, 3.4vw, 1.2rem);
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: clamp(0.55rem, 2.2vw, 0.85rem);
+  justify-items: center;
+  align-content: center;
+  overflow: hidden;
+  background:
+    linear-gradient(163deg, #d8c49a 0%, #b99a68 34%, #8e7040 62%, #6b5330 100%);
+  box-shadow:
+    inset 0 2px 2px rgba(255, 246, 220, 0.6),
+    inset 0 -10px 22px rgba(40, 26, 8, 0.55),
+    inset 0 0 0 1px rgba(72, 52, 24, 0.5),
+    0 20px 38px -16px rgba(0, 0, 0, 0.75);
+}
+
+/* Placa mate del centro, donde van las ruedas. */
+.lock__plate {
+  position: absolute;
+  /* Empieza por debajo del grabado —si sube más, el «M & Y» se come el borde
+     de la placa y parece un error de imprenta— y sobra por los lados, para
+     que las ruedas se vean encastradas EN la placa y no encima de ella. */
+  inset: 35% 4% 13%;
+  border-radius: clamp(12px, 4vw, 18px);
+  background: linear-gradient(168deg, rgba(52, 38, 18, 0.5), rgba(26, 18, 8, 0.62));
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.6),
+    0 1px 0 rgba(255, 246, 220, 0.28);
+}
+
+.lock__engrave {
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-display);
+  font-size: clamp(0.7rem, calc(3.4 * var(--vw)), 0.9rem);
+  letter-spacing: 0.32em;
+  color: rgba(255, 246, 220, 0.42);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), 0 -1px 0 rgba(255, 246, 220, 0.12);
+}
+
+/* Brillo que cruza el metal: da la sensación de superficie pulida. */
+.lock__shine {
+  position: absolute;
+  inset: -40% -60%;
+  pointer-events: none;
+  background: linear-gradient(
+    102deg,
+    transparent 40%,
+    rgba(255, 250, 236, 0.16) 49%,
+    transparent 58%
+  );
+  opacity: 0;
+  transition: opacity 400ms var(--e-out);
+}
+
+.lock__padlock.is-handled .lock__shine { opacity: 1; }
+
+/* ---- Las ruedas --------------------------------------------- */
+.lock__dial {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  /* El ancho lo manda el candado, no la pantalla: es lo que evita que en
+     apaisado la cuarta rueda se quede fuera del metal y aparezca cortada.
+     Se deja un poco de aire a los lados para que la placa asome por fuera. */
+  width: calc(100% - clamp(8px, 3vw, 14px));
+  justify-content: center;
+  gap: clamp(4px, 1.6vw, 8px);
+  padding: clamp(4px, 1.4vw, 7px);
+  border-radius: clamp(8px, 3vw, 12px);
+  background: linear-gradient(180deg, rgba(14, 9, 3, 0.72), rgba(30, 21, 9, 0.6));
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.8),
+    0 1px 0 rgba(255, 246, 220, 0.24);
+}
+
+.lock__wheel {
+  position: relative;
+  /* Se reparten el hueco que haya, sin pasar del tamaño bonito. La altura
+     sale de la anchura, así que la rueda siempre guarda su proporción de
+     cilindro por estrecha que se quede. */
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 52px;
+  aspect-ratio: 1 / 1.46;
+  border-radius: clamp(5px, 1.8vw, 8px);
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  background: linear-gradient(180deg, #efe6d2 0%, #fffaf0 46%, #ded2ba 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(90, 68, 34, 0.34),
+    inset 0 8px 10px -8px rgba(40, 26, 8, 0.7),
+    inset 0 -8px 10px -8px rgba(40, 26, 8, 0.7);
+  transition: box-shadow 320ms var(--e-out), transform 320ms var(--e-spring);
+}
+
+.lock__wheel:active,
+.lock__wheel.is-turning { cursor: grabbing; }
+
+.lock__wheel:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.lock__strip {
+  display: flex;
+  flex-direction: column;
+  /* 30 dígitos y sólo uno visible: la tira mide 30 veces la ventana. Con
+     1000% se veían tres a la vez y no se sabía cuál estaba elegido. */
+  height: 3000%;
+  will-change: transform;
+}
+
+.lock__digit {
+  flex: 1 0 auto;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, calc(5.6 * var(--vw)), 1.9rem);
+  font-weight: 500;
+  color: #4a3a20;
+  text-shadow: 0 1px 0 rgba(255, 250, 236, 0.8);
+}
+
+/* Reflejo del cilindro: arriba y abajo la rueda se curva. */
+.lock__gloss {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(40, 26, 8, 0.42) 0%,
+    rgba(255, 255, 255, 0) 26%,
+    rgba(255, 255, 255, 0.34) 46%,
+    rgba(255, 255, 255, 0) 66%,
+    rgba(40, 26, 8, 0.42) 100%
+  );
+}
+
+/* La marca que señala cuál es el dígito elegido. */
+.lock__notch {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  margin-top: -0.5px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(122, 32, 62, 0.45), transparent);
+}
+
+/* Cada vez que una rueda se posa en un dígito nuevo. */
+.lock__wheel.is-set { animation: lock-set 320ms var(--e-out); }
+
+@keyframes lock-set {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+
+/* Cuando el candado ya va soplando: las que están bien se encienden. */
+.lock__wheel.is-right {
+  box-shadow:
+    inset 0 0 0 1px var(--gold),
+    inset 0 8px 10px -8px rgba(40, 26, 8, 0.5),
+    0 0 14px -2px var(--gold);
+}
+
+/* ---- El halo ------------------------------------------------ */
+.lock__halo {
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 52%,
+    color-mix(in srgb, var(--gold-light) 60%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 22%, transparent) 34%,
+    transparent 66%
+  );
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 700ms var(--e-out), transform 900ms var(--e-out);
+}
+
+.lock__padlock.is-glowing .lock__halo { opacity: 0.85; transform: scale(1); }
+
+/* ---- Reacciones --------------------------------------------- */
+/* Fallo: el candado se sacude y el arco tintinea. */
+.lock__padlock.is-wrong { animation: lock-shake 520ms var(--e-out); }
+.lock__padlock.is-wrong .lock__shackle { animation: lock-rattle 520ms var(--e-out); }
+.lock__padlock.is-wrong .lock__body { animation: lock-flush 620ms var(--e-out); }
+
+@keyframes lock-shake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  15%  { transform: translateX(-9px) rotate(-1.4deg); }
+  32%  { transform: translateX(8px) rotate(1.2deg); }
+  50%  { transform: translateX(-6px) rotate(-0.8deg); }
+  68%  { transform: translateX(4px) rotate(0.5deg); }
+  85%  { transform: translateX(-2px) rotate(-0.2deg); }
+}
+
+@keyframes lock-rattle {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  20%  { transform: translateY(-3px) rotate(-2deg); }
+  45%  { transform: translateY(-1px) rotate(2.5deg); }
+  70%  { transform: translateY(-2px) rotate(-1deg); }
+}
+
+@keyframes lock-flush {
+  0%, 100% { box-shadow:
+      inset 0 2px 2px rgba(255, 246, 220, 0.6),
+      inset 0 -10px 22px rgba(40, 26, 8, 0.55),
+      inset 0 0 0 1px rgba(72, 52, 24, 0.5),
+      0 20px 38px -16px rgba(0, 0, 0, 0.75); }
+  30% { box-shadow:
+      inset 0 2px 2px rgba(255, 246, 220, 0.6),
+      inset 0 -10px 22px rgba(40, 26, 8, 0.55),
+      inset 0 0 0 2px rgba(190, 62, 84, 0.75),
+      0 0 26px -4px rgba(190, 62, 84, 0.55); }
+}
+
+/* Acierto: primero se alinean las ruedas, después se enciende. */
+.lock__padlock.is-aligning .lock__dial {
+  animation: lock-align 420ms var(--e-out);
+}
+
+@keyframes lock-align {
+  0%, 100% { box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 246, 220, 0.24); }
+  60% { box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.8), 0 0 20px -2px var(--gold-light); }
+}
+
+.lock__padlock.is-glowing .lock__body {
+  box-shadow:
+    inset 0 2px 2px rgba(255, 250, 236, 0.75),
+    inset 0 -10px 22px rgba(40, 26, 8, 0.4),
+    inset 0 0 0 1px var(--gold),
+    0 0 40px -6px var(--gold-light),
+    0 20px 38px -16px rgba(0, 0, 0, 0.6);
+}
+
+/* ---- Chispas y corazones ------------------------------------ */
+.lock__sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.lock__spark,
+.lock__heart {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  will-change: transform, opacity;
+  animation: lock-burst var(--dur, 1200ms) var(--e-out) var(--delay, 0ms) both;
+}
+
+.lock__spark {
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: var(--gold-light);
+  box-shadow: 0 0 10px 1px var(--gold);
+}
+
+.lock__heart {
+  margin: -0.5em 0 0 -0.5em;
+  font-size: clamp(0.85rem, 3.4vw, 1.15rem);
+  line-height: 1;
+  color: var(--rose);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--rose) 70%, transparent);
+}
+
+@keyframes lock-burst {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.2) rotate(0deg);
+  }
+  18% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--dx), var(--dy), 0) scale(var(--size, 1)) rotate(var(--rot, 0deg));
+  }
+}
+
+/* ══════════════ LO QUE GUARDA ══════════════ */
+.lock__inside {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: clamp(0.6rem, 2.4vh, 1rem);
+  place-items: center;
+  opacity: 0;
+  transform: scale(0.9);
+  pointer-events: none;
+  transition: opacity 700ms var(--e-out), transform 820ms var(--e-spring);
+}
+
+.lock.is-showing .lock__inside {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.lock__photo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
+  width: 100%;
+  min-height: 0;
+  /* Estirado en los dos ejes: `.lock__inside` centra sus hijos, y centrado
+     este hueco se encogía a la altura de su contenido —que es cero, porque
+     el marco se dimensiona en porcentaje— y la foto no se veía. */
+  align-self: stretch;
+  justify-self: stretch;
+}
+
+/* El marco necesita medidas definidas o se queda en 0x0. La imagen va con
+   `cover`, así que llenar el hueco la recorta pero no la deforma. */
+.lock__photo .pframe {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.lock__note {
+  width: 100%;
+  max-height: 46%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: clamp(0.85rem, calc(3.8 * var(--vw)), 1.3rem);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-card);
+  margin-bottom: var(--bar-space, 0rem);
+}
+
+.lock__title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.3rem, calc(6 * var(--vw)), 1.85rem);
+  line-height: 1.1;
+  color: #2c211c;
+  text-wrap: balance;
+}
+
+.lock__scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 18px), transparent 100%);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 18px), transparent 100%);
+}
+
+.lock__scroll::-webkit-scrollbar { display: none; }
+
+.lock__text {
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  line-height: 1.7;
+  color: var(--paper-ink);
+  text-align: justify;
+  hyphens: auto;
+  white-space: pre-line;
+}
+
+.lock__reveal {
+  font-family: var(--font-hand);
+  font-size: clamp(1.1rem, calc(4.8 * var(--vw)), 1.45rem);
+  color: var(--rose-deep);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 700ms var(--e-out) 600ms, transform 700ms var(--e-out) 600ms;
+}
+
+.lock.is-showing .lock__reveal { opacity: 0.92; transform: none; }
+
+/* ---- El susurro del candado --------------------------------- */
+.lock__status {
+  min-height: 1.4em;
+  font-family: var(--font-hand);
+  font-size: clamp(1rem, calc(4.4 * var(--vw)), 1.3rem);
+  color: var(--accent);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity 320ms var(--e-out), transform 320ms var(--e-out);
+}
+
+.lock__status.is-visible { opacity: 0.9; transform: none; }
+
+/* ---- Móvil apaisado ----------------------------------------- */
+html[data-orientation="landscape"][data-device="phone"] .lock__padlock {
+  width: min(52%, 240px);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .lock__inside {
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap-md);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .lock__note {
+  max-height: 100%;
+  align-self: center;
+  margin-bottom: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lock__padlock,
+  .lock__shackle,
+  .lock__inside { transition-duration: 1ms; }
+  .lock__padlock.is-wrong,
+  .lock__padlock.is-wrong .lock__shackle,
+  .lock__padlock.is-wrong .lock__body,
+  .lock__wheel.is-set { animation: none; }
+}

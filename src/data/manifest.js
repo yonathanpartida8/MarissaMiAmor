@@ -216,7 +216,7 @@ const pages = [
     chapter: "en-voz-baja",
     photos: groups.enVozBaja,
     transition: "dissolve",
-    hint: "mantén el dedo, sin soltar",
+    hint: "toca las palabras de la nota",
     secret: "voz-baja",
   },
 
@@ -366,12 +366,12 @@ const pages = [
     transition: "tide",
   },
   {
-    id: "ultimo-secreto",
-    type: "secret",
+    id: "ultima-sorpresa",
+    type: "sorpresa",
     chapter: "ultimo-secreto",
-    photos: groups.ultimoSecreto,
-    transition: "dissolve",
-    hint: "sostén el dedo hasta el final",
+    transition: "ink",
+    gl: true,
+    hint: "toca las cosas del cajón",
     secret: "ultimo-secreto",
   },
   {
@@ -460,6 +460,23 @@ export function registerCustomPages(entries) {
   return manifest;
 }
 
+/**
+ * Añade las páginas de `images/amores/` DESPUÉS de todo.
+ *
+ * Ojo a la diferencia con `registerCustomPages`: aquélla mete las páginas
+ * *antes* del cierre, porque son capítulos suyos y el cierre tiene que cerrar.
+ * Éstas no. Éstas van detrás del final, como el álbum que se abre cuando ya se
+ * ha leído el libro entero. Nunca, bajo ningún concepto, antes de las páginas
+ * principales: son lo último de lo último.
+ */
+export function registerAmores(entries) {
+  if (!entries?.length) return manifest;
+
+  for (const entry of entries) manifest.push({ ...entry });
+
+  decorate(manifest);
+  return manifest;
+}
 
 export const indexOfPage = (id) => manifest.findIndex((p) => p.id === id);
 

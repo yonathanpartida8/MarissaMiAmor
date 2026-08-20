@@ -1,0 +1,222 @@
+/* ============================================================
+   AMOR — una foto suya a pantalla completa.
+
+   La foto manda. Todo lo demás (el folio, el grano, la viñeta)
+   está para acompañarla, nunca para competir con ella.
+   ============================================================ */
+
+.amor {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: #08040d;
+  overflow: hidden;
+  --px: 0px;
+  --py: 0px;
+  --tilt: 0deg;
+  --zoom: 1;
+  --pan-x: 0px;
+  --pan-y: 0px;
+}
+
+.amor__marco {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: grab;
+}
+
+.amor.is-zoomed .amor__marco { cursor: grabbing; }
+
+/* ---- El fondo -----------------------------------------------
+   La misma foto, ampliada y desenfocada. Rellena las bandas cuando la
+   imagen no cubre la pantalla entera: nunca hay negro a los lados,
+   sino la propia foto difuminada. */
+.amor__fondo {
+  position: absolute;
+  /* El truco del desenfoque barato: la capa se pinta a un cuarto de tamaño,
+     se desenfoca ahí (dieciséis veces menos píxeles que hacerlo a pantalla
+     completa) y se estira después. El resultado se ve idéntico y cuesta lo
+     que no está escrito menos, que en un móvil es la diferencia entre ir
+     fluido y ir a tirones.
+     Las medidas son porcentajes del mismo padre, así que la proporción se
+     conserva y `cover` recorta exactamente igual que si fuera a tamaño real. */
+  top: -8%;
+  left: -8%;
+  width: 29%;
+  height: 29%;
+  transform-origin: 0 0;
+  transform: scale(4);
+  background-size: cover;
+  background-position: center;
+  /* Bastante oscuro para que la foto siga mandando, pero no tanto como para
+     que parezca una banda negra: tiene que leerse que es la misma foto.
+     8 × 4 de escala ≈ 32px de desenfoque en pantalla. */
+  filter: blur(8px) saturate(1.3) brightness(0.66);
+  opacity: 0;
+  transition: opacity 900ms var(--e-out);
+}
+
+.amor.is-in .amor__fondo { opacity: 1; }
+
+/* ---- La foto ------------------------------------------------ */
+.amor__img {
+  position: absolute;
+  inset: 0;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  transform:
+    translate3d(calc(var(--px) + var(--pan-x)), calc(var(--py) + var(--pan-y)), 0)
+    /* Un pelín más grande que su hueco: así la deriva y la inclinación
+       tienen por dónde moverse sin descubrir el borde de la foto. */
+    scale(calc(var(--zoom) * 1.04))
+    rotate(var(--tilt));
+  /* Llega desde el fondo y desenfocada. */
+  opacity: 0;
+  filter: blur(22px) saturate(0.6) brightness(1.3);
+  will-change: transform, filter, opacity;
+}
+
+.amor.is-in .amor__img {
+  opacity: 1;
+  transition:
+    opacity 700ms var(--e-out),
+    filter 900ms var(--e-out);
+}
+
+/* Enfocada: se le quita el filtro del todo, no se deja en `blur(0)`. Un
+   filtro, aunque sea neutro, mantiene viva una capa de composición. */
+.amor.is-sharp .amor__img {
+  filter: none;
+}
+
+/* Ya asentada: deja de reservar capa para el filtro y la opacidad. */
+.amor.is-alive .amor__img { will-change: transform; }
+
+.amor.is-broken .amor__img {
+  background: repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.03) 0 10px,
+      transparent 10px 20px
+    ),
+    linear-gradient(160deg, #241a2c, #16101d);
+  opacity: 1;
+  filter: none;
+}
+
+/* ---- El barrido de luz --------------------------------------
+   Un barrido que cruza la foto UNA vez, al llegar. */
+.amor__luz {
+  position: absolute;
+  inset: -50% -120%;
+  pointer-events: none;
+  background: linear-gradient(
+    102deg,
+    transparent 42%,
+    rgba(255, 250, 236, 0.13) 50%,
+    transparent 58%
+  );
+  opacity: 0;
+}
+
+.amor.is-sharp .amor__luz {
+  animation: amor-barrido 1500ms var(--e-out) 160ms;
+}
+
+@keyframes amor-barrido {
+  0%   { transform: translateX(-60%); opacity: 0; }
+  26%  { opacity: 1; }
+  100% { transform: translateX(60%); opacity: 0; }
+}
+
+/* ---- El folio ------------------------------------------------ */
+.amor__folio {
+  position: absolute;
+  left: calc(var(--safe-l) + var(--pad-page));
+  top: calc(var(--safe-t) + var(--pad-page));
+  z-index: 3;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 700ms var(--e-out) 600ms, transform 700ms var(--e-out) 600ms;
+}
+
+.amor.is-alive .amor__folio { opacity: 1; transform: none; }
+/* Con la foto acercada, el folio estorba: se aparta. */
+.amor.is-zoomed .amor__folio { opacity: 0; transition-delay: 0ms; }
+
+.amor__num {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, calc(6 * var(--vw)), 2rem);
+  font-weight: 300;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.8);
+}
+
+.amor__de {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+/* ---- La frase (sólo si él pone una) -------------------------- */
+.amor__frase {
+  position: absolute;
+  left: var(--pad-x);
+  right: var(--pad-x);
+  bottom: calc(var(--pad-b) + var(--bar-space, 0rem));
+  z-index: 3;
+  text-align: center;
+  pointer-events: none;
+  font-family: var(--font-hand);
+  font-size: clamp(1.1rem, calc(5 * var(--vw)), 1.5rem);
+  color: rgba(255, 246, 240, 0.94);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 800ms var(--e-out) 700ms, transform 800ms var(--e-out) 700ms;
+}
+
+.amor.is-alive .amor__frase { opacity: 1; transform: none; }
+.amor.is-zoomed .amor__frase { opacity: 0; transition-delay: 0ms; }
+
+/* ---- Corazones al tocar -------------------------------------- */
+.amor__corazones {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.amor__corazon {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  font-size: clamp(1.1rem, 4.4vw, 1.5rem);
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 0 16px color-mix(in srgb, var(--accent) 80%, transparent);
+  will-change: transform, opacity;
+  animation: amor-corazon var(--dur, 1500ms) var(--e-out) both;
+}
+
+@keyframes amor-corazon {
+  0%   { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(0.3); }
+  14%  { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(var(--size, 1)); }
+  100% { opacity: 0; transform: translate3d(calc(-50% + var(--drift, 0px)), calc(-50% - 92px), 0) scale(calc(var(--size, 1) * 1.15)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .amor__img { transform: none; }
+  .amor.is-sharp .amor__luz { animation: none; }
+  .amor__corazon { display: none; }
+}
