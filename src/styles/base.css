@@ -115,7 +115,13 @@ figure {
   background-image: var(--grain-src);
   background-size: 180px 180px;
   will-change: transform;
-  animation: grain-shift 1800ms steps(3, end) infinite;
+  /* Y va CONTINUO, no a saltos.
+     Con `steps()` el grano pegaba un tirón tres veces por segundo, y eso, a
+     pantalla completa y por encima de todo, es de lo primero que el ojo
+     detecta: parecía que la imagen se enganchaba. Deslizándose despacio se lee
+     como grano de verdad y le cuesta al navegador exactamente lo mismo —es un
+     `translate`, lo mueve el compositor sin repintar nada. */
+  animation: grain-shift 9s linear infinite;
 }
 
 html[data-tier="high"] #grain {
@@ -125,8 +131,9 @@ html[data-tier="high"] #grain {
 
 @keyframes grain-shift {
   0%   { transform: translate3d(0, 0, 0); }
-  33%  { transform: translate3d(-3%, 2%, 0); }
-  66%  { transform: translate3d(2%, -3%, 0); }
+  25%  { transform: translate3d(-2.4%, 1.6%, 0); }
+  50%  { transform: translate3d(1.8%, -2.2%, 0); }
+  75%  { transform: translate3d(2.2%, 1.4%, 0); }
   100% { transform: translate3d(0, 0, 0); }
 }
 

@@ -237,7 +237,10 @@
   left: 50%;
   top: 50%;
   width: max-content;
-  max-width: 46vw;
+  /* Acotado en píxeles y no en `vw`: en apaisado, 46vw eran cuatrocientos y
+     pico píxeles y el matasellos se salía de la postal y de la hoja. */
+  max-width: 168px;
+  white-space: normal;
   transform: translate(-50%, -50%) rotate(-13deg) scale(1.5);
   padding: 0.22rem 0.5rem;
   border: 1.5px solid var(--rose-deep, #a8325c);
@@ -262,3 +265,13 @@
 /* El sello tiene que poder recibir el dedo: sin esto, el escondite del
    matasellos era inalcanzable porque el tablero de la postal se lo comía. */
 .pc__stamp { pointer-events: auto; }
+
+/* ---- Móvil apaisado -----------------------------------------
+   La postal se mide por su ANCHO (88% de la hoja) y tiene proporción 3:4, así
+   que en apaisado salían 440 píxeles de alto dentro de una hoja de 378: se
+   salía por abajo. Tumbado, lo que escasea es alto, así que ahí manda el alto. */
+html[data-orientation="landscape"][data-device="phone"] .pc__card {
+  width: auto;
+  height: min(92%, 330px);
+  aspect-ratio: 3 / 4;
+}

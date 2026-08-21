@@ -200,3 +200,42 @@
 .finale.is-said .finale__secrets {
   opacity: 0.7;
 }
+
+/* ---- Móvil apaisado -----------------------------------------
+   Con 390 píxeles de alto, el bloque del cierre medía 321 y encima bajaba un
+   26%: el botón de «volver a la portada» acababa entero POR DEBAJO del borde
+   de la pantalla, sin manera de llegar a él. Aquí baja mucho menos y el texto
+   se aprieta un poco, que es lo que hace falta cuando lo que escasea es alto. */
+html[data-orientation="landscape"][data-device="phone"] .finale__content {
+  transform: translateY(6%);
+  gap: 0.1rem;
+  max-width: min(96%, 620px);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .finale.is-formed .finale__content {
+  transform: translateY(8%);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .finale__body {
+  font-size: clamp(0.76rem, calc(3.2 * var(--vw)), 0.92rem);
+  line-height: 1.45;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .finale__line {
+  font-size: clamp(1.3rem, calc(6.5 * var(--vw)), 1.8rem);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .finale__again {
+  margin-top: 0.3rem;
+}
+
+/* Y la indicación se aparta del botón: en apaisado caían una encima de otra
+   durante el segundo que tarda el corazón en formarse. */
+html[data-orientation="landscape"][data-device="phone"] .finale__prompt {
+  bottom: auto;
+  top: calc(var(--safe-t) + 0.5rem);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .finale__secrets {
+  bottom: calc(var(--safe-b) + 0.4rem);
+}
