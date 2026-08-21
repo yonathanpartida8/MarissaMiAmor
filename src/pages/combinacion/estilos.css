@@ -97,9 +97,34 @@
     0 5px 12px -4px rgba(0, 0, 0, 0.6);
 }
 
-/* Abierto: el arco salta hacia arriba y gira sobre su pata derecha. */
+/* Abierto: el arco SALTA. No se desliza hasta su sitio: pega el tirón de un
+   muelle que se suelta, se pasa de largo, y ahí se queda oscilando un pelín.
+   Es el fotograma que hace que abrir un candado dé gusto. */
 .lock__padlock.is-open .lock__shackle {
   transform: translateY(-26%) rotate(38deg);
+  animation: lock-salto 900ms var(--e-out);
+}
+
+@keyframes lock-salto {
+  0%   { transform: translateY(0) rotate(0deg); }
+  /* Primero se hunde: el pestillo cede antes de soltarse. */
+  12%  { transform: translateY(3%) rotate(0deg); }
+  46%  { transform: translateY(-34%) rotate(46deg); }
+  68%  { transform: translateY(-22%) rotate(33deg); }
+  85%  { transform: translateY(-28%) rotate(40deg); }
+  100% { transform: translateY(-26%) rotate(38deg); }
+}
+
+/* Y un barrido de luz cruza el latón una sola vez, al abrirse. */
+.lock__padlock.is-open .lock__shine {
+  opacity: 1;
+  animation: lock-destello 780ms var(--e-out) 60ms;
+}
+
+@keyframes lock-destello {
+  0%   { transform: translateX(-42%); opacity: 0; }
+  30%  { opacity: 1; }
+  100% { transform: translateX(42%); opacity: 0; }
 }
 
 /* ---- El cuerpo ---------------------------------------------- */
@@ -298,7 +323,22 @@
   transition: opacity 700ms var(--e-out), transform 900ms var(--e-out);
 }
 
+/* Se va templando conforme se acerca. `--cerca` es cuántas cifras están ya en
+   su sitio, de 0 a 1, y NO dice cuáles: sólo se nota que quema más. Es la
+   respuesta al proceso, no al resultado. */
+.lock__padlock .lock__halo {
+  opacity: calc(var(--cerca, 0) * 0.34);
+  transform: scale(calc(0.7 + var(--cerca, 0) * 0.18));
+}
+
 .lock__padlock.is-glowing .lock__halo { opacity: 0.85; transform: scale(1); }
+
+/* El metal también coge temperatura. Un solo `filter` barato, sin repintar. */
+.lock__body {
+  filter: saturate(calc(1 + var(--cerca, 0) * 0.3))
+          brightness(calc(1 + var(--cerca, 0) * 0.07));
+  transition: filter 520ms var(--e-out);
+}
 
 /* ---- Reacciones --------------------------------------------- */
 /* Fallo: el candado se sacude y el arco tintinea. */
@@ -405,8 +445,16 @@
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  /* Las dos filas se reparten el hueco a propósito.
+     Con `auto` en la nota, la fila se medía por el texto ENTERO sin recortar
+     —casi quinientos píxeles— aunque luego la nota se quedara en su 46%: el
+     resultado eran dos huecos enormes, uno encima y otro debajo, y una nota
+     apretadísima en medio. Repartiendo se llena la página y el texto respira. */
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1.15fr);
   gap: clamp(0.6rem, 2.4vh, 1rem);
+  /* El hueco de la barra se le quita al reparto entero, no con un margen en
+     la nota: con el margen, la nota se subía y se montaba encima de la foto. */
+  padding-bottom: var(--bar-space, 0rem);
   place-items: center;
   opacity: 0;
   transform: scale(0.9);
@@ -444,14 +492,14 @@
 
 .lock__note {
   width: 100%;
-  max-height: 46%;
+  /* El alto lo manda su fila, no un porcentaje suyo. */
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
   padding: clamp(0.85rem, calc(3.8 * var(--vw)), 1.3rem);
   border-radius: var(--r-md);
   box-shadow: var(--sh-card);
-  margin-bottom: var(--bar-space, 0rem);
 }
 
 .lock__title {
@@ -464,6 +512,9 @@
 }
 
 .lock__scroll {
+  /* Se queda con lo que sobre después del título y la frase final, y ahí
+     dentro es donde ocurre el scroll. */
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -534,5 +585,7 @@ html[data-orientation="landscape"][data-device="phone"] .lock__note {
   .lock__padlock.is-wrong,
   .lock__padlock.is-wrong .lock__shackle,
   .lock__padlock.is-wrong .lock__body,
+  .lock__padlock.is-open .lock__shackle,
+  .lock__padlock.is-open .lock__shine,
   .lock__wheel.is-set { animation: none; }
 }

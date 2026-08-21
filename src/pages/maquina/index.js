@@ -49,7 +49,7 @@ export default class TypewriterPage extends BasePage {
     this.sparkles = createSparkles(this.ctx, { seed: `tw-${this.id}`, scale: 0.7 });
 
     this.root.append(
-      el("header.tw__head", {}, [
+      el("header.tw__head.entra--teclea", {}, [
         el("span.kicker", { text: ch?.kicker || "" }),
         el("h2.title.tw__title", { text: ch?.title || "" }),
       ]),

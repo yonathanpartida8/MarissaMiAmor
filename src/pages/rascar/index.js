@@ -45,7 +45,7 @@ export default class ScratchPage extends BasePage {
     ]);
 
     this.root.append(
-      el("header.scratch__head", {}, [
+      el("header.scratch__head.entra--enfoca", {}, [
         el("span.kicker", { text: ch?.kicker || "" }),
       ]),
       this.plate,

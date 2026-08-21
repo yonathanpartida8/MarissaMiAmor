@@ -12,6 +12,8 @@ import { createOrnament } from "../../components/ornaments.js";
 import { createSparkles } from "../../components/Sparkles.js";
 import { el, splitWords, setVars } from "../../utils/dom.js";
 import { manifest } from "../../data/manifest.js";
+import escondidos from "../../data/escondidos.js";
+import { Gestures } from "../../core/Gestures.js";
 
 /**
  * Qué ornamento le toca a cada capítulo.
@@ -88,7 +90,11 @@ export default class ChapterPage extends BasePage {
     // ---- Montaje ------------------------------------------------------
     this.root.append(
       el("header.chapter__head", {}, [
-        el("span.chapter__num", { text: num }),
+        (this.numEl = el("button.chapter__num", {
+          type: "button",
+          text: num,
+          "aria-label": `Capítulo ${num}`,
+        })),
         el("span.chapter__kicker", { text: ch?.kicker || "" }),
       ]),
       el("div.chapter__ornament", {}, [this.ornament.node]),
@@ -113,8 +119,43 @@ export default class ChapterPage extends BasePage {
       this.proseEl.classList.add("is-writing");
     });
 
+    this.#escondite();
     await this.ornament.enter?.();
     this.addTicker((dt, t, realDt) => this.ornament.tick?.(dt, t, realDt), 12);
+  }
+
+  /**
+   * Escondido: doble toque en el número del capítulo.
+   *
+   * Va arriba a la izquierda y no abajo, que es donde estaba primero: abajo
+   * caía justo debajo del botón redondo de pasar página y el dedo no llegaba
+   * nunca a tocarlo.
+   *
+   * Los ocho capítulos lo llevan, pero cada uno dice una cosa distinta —y
+   * siempre la misma para ese capítulo—, así que no se repite ni parece un
+   * mensaje genérico enganchado a todas las páginas.
+   */
+  #escondite() {
+    const marca = this.numEl;
+    if (!marca) return;
+
+    const frases = escondidos.capitulo;
+    let suma = 0;
+    for (const c of String(this.id)) suma = (suma * 31 + c.charCodeAt(0)) >>> 0;
+    const frase = frases[suma % frases.length];
+
+    this.addGestures(
+      new Gestures(
+        marca,
+        {
+          onDoubleTap: (e) => {
+            marca.classList.add("is-awake");
+            this.escondite(`capitulo-${this.id}`, frase, e);
+          },
+        },
+        { threshold: 14 }
+      )
+    );
   }
 
   async leave(direction) {

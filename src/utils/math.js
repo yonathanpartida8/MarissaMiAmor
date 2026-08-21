@@ -12,25 +12,13 @@ export const lerp = (a, b, t) => a + (b - a) * t;
 /** Interpolación independiente del framerate. `speed` ~ 1..20 */
 export const damp = (a, b, speed, dt) => lerp(a, b, 1 - Math.exp(-speed * dt));
 
-export const inverseLerp = (a, b, v) => (b - a === 0 ? 0 : (v - a) / (b - a));
-
-export const remap = (v, inMin, inMax, outMin, outMax) =>
-  lerp(outMin, outMax, clamp01(inverseLerp(inMin, inMax, v)));
+const inverseLerp = (a, b, v) => (b - a === 0 ? 0 : (v - a) / (b - a));
 
 /** Curva suave clásica de Ken Perlin (más plana en los extremos). */
 export const smoothstep = (edge0, edge1, x) => {
   const t = clamp01(inverseLerp(edge0, edge1, x));
   return t * t * (3 - 2 * t);
 };
-
-export const smootherstep = (edge0, edge1, x) => {
-  const t = clamp01(inverseLerp(edge0, edge1, x));
-  return t * t * t * (t * (t * 6 - 15) + 10);
-};
-
-export const TAU = Math.PI * 2;
-
-export const degToRad = (d) => (d * Math.PI) / 180;
 
 export const distance = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
 

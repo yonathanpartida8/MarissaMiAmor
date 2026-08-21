@@ -13,6 +13,7 @@ import { BasePage } from "../BasePage.js";
 import { Gestures } from "../../core/Gestures.js";
 import { el, splitWords, setVars, wait } from "../../utils/dom.js";
 import { clamp, clamp01, distance } from "../../utils/math.js";
+import escondidos from "../../data/escondidos.js";
 
 const TOUCH_RADIUS = 0.09;  // en fracción del ancho: cuándo se consideran juntos
 const REPEL = 0.9;          // fuerza con la que se separan
@@ -46,7 +47,7 @@ export default class OrbitPage extends BasePage {
     this.revealEl = el("p.orb__reveal", { text: ch?.reveal || "" });
 
     this.root.append(
-      el("header.orb__head", {}, [
+      el("header.orb__head.entra--acerca", {}, [
         el("span.kicker", { text: ch?.kicker || "" }),
         this.gauge,
       ]),
@@ -163,6 +164,13 @@ export default class OrbitPage extends BasePage {
 
     this.#place();
     this.#drawLink(d, near);
+
+    // Escondido: separarlos del todo en vez de juntarlos. La página va de
+    // acercarse; alejarlos a propósito es justo lo contrario, y tiene
+    // respuesta. (Se apunta una sola vez.)
+    if (d > 0.78 && (this.a.dragging || this.b.dragging)) {
+      this.escondite("distancia-al-reves", escondidos.distancia);
+    }
 
     // Vibración creciente conforme se resisten.
     if (near > 0.55 && (this.a.dragging || this.b.dragging) && Math.random() < dt * 14) {

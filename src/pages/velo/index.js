@@ -15,7 +15,7 @@ import { BasePage } from "../BasePage.js";
 import { Gestures } from "../../core/Gestures.js";
 import { veilVertex, veilFragment } from "../../gl/shaders/veil.js";
 import { el, splitWords, setVars } from "../../utils/dom.js";
-import { clamp01, damp } from "../../utils/math.js";
+import { clamp01 } from "../../utils/math.js";
 
 const MASK_SIZE = 256;
 

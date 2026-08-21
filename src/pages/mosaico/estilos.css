@@ -16,12 +16,8 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--gap-sm);
-  opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity 600ms var(--e-out), transform 600ms var(--e-out);
 }
 
-.mosaic.is-entered .mos__head { opacity: 1; transform: none; }
 
 .mos__head .kicker {
   font-family: var(--font-ui);

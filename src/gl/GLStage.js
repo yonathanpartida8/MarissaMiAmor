@@ -255,6 +255,25 @@ export class GLStage {
     const { width, height } = this.viewport;
     this.atmoUniforms.uResolution.value.set(width * dpr, height * dpr);
     this.dustUniforms.uPixelRatio.value = dpr;
+
+    // Y SE VUELVE A DIBUJAR AHORA MISMO.
+    //
+    // Cambiar la resolución redimensiona el buffer de WebGL, y un buffer
+    // recién redimensionado sale VACÍO. Si el navegador compone un fotograma
+    // entre el redimensionado y el siguiente dibujado, ese fotograma sale
+    // negro a pantalla completa. Como esto se llama al entrar y al salir del
+    // modo ahorro, pasaba dos veces en CADA cambio de página: era el
+    // parpadeo negro que se veía en casi todas las transiciones del libro.
+    this.#draw();
+  }
+
+  /** Los dos dibujados, en orden: primero el fondo, después la escena. */
+  #draw() {
+    if (!this.ready) return;
+    this.renderer.clear();
+    this.renderer.render(this.atmoScene, this.atmoCamera);
+    this.renderer.clearDepth();
+    this.renderer.render(this.scene, this.camera);
   }
 
   /** Destello blanco muy corto. Para los momentos importantes. */
@@ -363,17 +382,6 @@ export class GLStage {
   tick(dt, time) {
     if (!this.ready) return;
 
-    // La atmósfera es fondo: nadie la mira fijamente. En gama media y baja se
-    // dibuja a 30 imágenes por segundo en vez de a 60, y eso es la mitad de
-    // trabajo de GPU en el elemento más caro del libro —un shader de ruido
-    // fractal a pantalla completa— sin que se note absolutamente nada. Las
-    // páginas 3D y todo lo que se toca siguen a 60: esto sólo afecta al
-    // ritmo al que se repinta el lienzo.
-    if (this.frameSkip) {
-      this.skipAcc = (this.skipAcc || 0) + 1;
-      if (this.skipAcc % 2 === 0) return;
-    }
-
     const p = this.pointer.influence;
 
     // Interpolación de color y humor: nunca hay un corte brusco de paleta.
@@ -407,10 +415,22 @@ export class GLStage {
     this.camera.position.y = damp(this.camera.position.y, p.y * 0.26, 1.6, dt);
     this.camera.lookAt(0, 0, 0);
 
-    this.renderer.clear();
-    this.renderer.render(this.atmoScene, this.atmoCamera);
-    this.renderer.clearDepth();
-    this.renderer.render(this.scene, this.camera);
+    // La atmósfera es fondo: nadie la mira fijamente. En gama media y baja se
+    // DIBUJA a 30 imágenes por segundo en vez de a 60, y eso es la mitad de
+    // trabajo de GPU en el elemento más caro del libro —un shader de ruido
+    // fractal a pantalla completa— sin que se note absolutamente nada.
+    //
+    // El salto va aquí abajo, y no arriba del todo como estaba: todo lo de
+    // encima es aritmética de CPU que no cuesta nada, y saltársela hacía que
+    // en gama media los colores y la cámara se suavizaran a la mitad de
+    // velocidad —el fondo iba a tirones y los cambios de paleta llegaban
+    // tarde—. Ahora la cuenta corre siempre lisa y sólo se ahorra el pintado.
+    if (this.frameSkip) {
+      this.skipAcc = (this.skipAcc || 0) + 1;
+      if (this.skipAcc % 2 === 0) return;
+    }
+
+    this.#draw();
   }
 
   destroy() {
@@ -425,7 +445,7 @@ export class GLStage {
 }
 
 /** Libera geometrías, materiales y texturas de un subárbol completo. */
-export function disposeDeep(root) {
+function disposeDeep(root) {
   root?.traverse?.((node) => {
     node.geometry?.dispose?.();
     const materials = Array.isArray(node.material) ? node.material : [node.material];

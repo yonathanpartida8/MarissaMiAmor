@@ -85,7 +85,7 @@ export default class ConstellationPage extends BasePage {
     this.proseEl.append(frag);
 
     this.root.append(
-      el("header.cons__head", {}, [
+      el("header.cons__head.entra--prende", {}, [
         el("span.kicker", { text: ch?.kicker || "" }),
         el("span.cons__count", { text: `0 / ${this.stars.length}` }),
       ]),

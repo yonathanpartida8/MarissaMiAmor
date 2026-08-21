@@ -22,7 +22,8 @@
 import { BasePage } from "../BasePage.js";
 import { Gestures } from "../../core/Gestures.js";
 import { el, setVars, wait } from "../../utils/dom.js";
-import { clamp, clamp01, damp } from "../../utils/math.js";
+import { clamp01, damp } from "../../utils/math.js";
+import escondidos from "../../data/escondidos.js";
 import textos from "./textos.js";
 
 /** Cuántos latidos hay que sostener para que aparezca la frase. */
@@ -72,13 +73,24 @@ export default class PulsoPage extends BasePage {
       ]),
     ]);
 
-    // ── El corazón ────────────────────────────────────────────────────
-    // En SVG y no con tres cajas de CSS: con cuadrado + dos círculos se veían
-    // las costuras entre las piezas porque cada una recibía su propio trozo
-    // de degradado. Un solo trazado no tiene costuras y escala perfecto.
-    this.heart = el("div.pulse__heart", { "aria-hidden": "true" });
-    this.heart.innerHTML = `
-      <span class="pulse__glow"></span>
+    // ── El círculo, que ES el corazón ─────────────────────────────────
+    //
+    // Antes eran dos cosas separadas: un corazón a media página y, trescientos
+    // píxeles más abajo, un círculo que tocar. Con el pulgar puesto abajo, el
+    // latido pasaba lejísimos de donde estaba el dedo y la página parecía no
+    // responder al contacto. Ahora late lo que tocas, debajo del dedo.
+    //
+    // El corazón va en SVG y no con tres cajas de CSS: con cuadrado + dos
+    // círculos se veían las costuras entre las piezas porque cada una recibía
+    // su propio trozo de degradado. Un solo trazado no tiene costuras.
+    this.pad = el("button.pulse__pad", {
+      type: "button",
+      "data-claim-drag": "",
+      "aria-label": "Mantén el pulgar aquí para sentir el pulso",
+    });
+    this.pad.innerHTML = `
+      <span class="pulse__aura" aria-hidden="true"></span>
+      <span class="pulse__disc" aria-hidden="true"></span>
       <svg class="pulse__shape" viewBox="0 0 32 29" aria-hidden="true">
         <defs>
           <linearGradient id="pulso-${this.id}" x1="0" y1="0" x2="0.6" y2="1">
@@ -88,20 +100,19 @@ export default class PulsoPage extends BasePage {
           </linearGradient>
         </defs>
         <path fill="url(#pulso-${this.id})" d="M16 28.5C6.2 21.3 0 15.4 0 8.9 0 3.9 3.8 0 8.6 0c2.9 0 5.7 1.4 7.4 3.7C17.7 1.4 20.5 0 23.4 0 28.2 0 32 3.9 32 8.9c0 6.5-6.2 12.4-16 19.6z"/>
-      </svg>`;
+      </svg>
+      <svg class="pulse__shape pulse__shape--dos" viewBox="0 0 32 29" aria-hidden="true">
+        <path fill="url(#pulso-${this.id})" d="M16 28.5C6.2 21.3 0 15.4 0 8.9 0 3.9 3.8 0 8.6 0c2.9 0 5.7 1.4 7.4 3.7C17.7 1.4 20.5 0 23.4 0 28.2 0 32 3.9 32 8.9c0 6.5-6.2 12.4-16 19.6z"/>
+      </svg>
+      <span class="pulse__hint">${textos.invitacion}</span>`;
 
-    // ── La almohadilla ────────────────────────────────────────────────
-    this.pad = el("button.pulse__pad", {
-      type: "button",
-      "data-claim-drag": "",
-      "aria-label": "Mantén el pulgar aquí para sentir el pulso",
-    }, [
-      el("span.pulse__halo"),
-      el("span.pulse__ring"),
-      el("span.pulse__ring.pulse__ring--2"),
-      el("span.pulse__print"),
-      el("span.pulse__hint", { text: textos.invitacion }),
-    ]);
+    // Tres anillos que se reciclan: en cada latido se relanza el siguiente.
+    // Van sincronizados con el corazón de verdad, no a un compás propio —que
+    // era lo que hacía que el ritmo no se leyera como un ritmo.
+    this.ondas = [0, 1, 2].map(() => el("span.pulse__onda", { "aria-hidden": "true" }));
+    this.siguienteOnda = 0;
+
+    this.core = el("div.pulse__core", {}, [...this.ondas, this.pad]);
 
     this.sayEl = el("p.pulse__say", { "aria-live": "polite" });
     this.revealEl = el("p.pulse__reveal", { text: textos.revelacion || ch?.reveal });
@@ -112,9 +123,8 @@ export default class PulsoPage extends BasePage {
         el("h2.pulse__title", { text: textos.titulo || ch?.title }),
       ]),
       this.monitor,
-      el("div.pulse__middle", {}, [this.heart]),
       el("p.pulse__text", { text: textos.texto || ch?.text }),
-      this.pad,
+      this.core,
       this.sayEl,
       this.revealEl
     );
@@ -160,6 +170,7 @@ export default class PulsoPage extends BasePage {
       );
     }
 
+    this.#dosDedos();
     this.addTicker((dt, time, realDt) => this.#frame(realDt ?? dt, time), 11);
   }
 
@@ -173,6 +184,27 @@ export default class PulsoPage extends BasePage {
     this.root.classList.add("is-holding");
     this.ctx.haptics.play("tap");
     this.ctx.audio.duck(0.5, 30_000);
+  }
+
+  /**
+   * Escondido: dos dedos a la vez en el círculo.
+   *
+   * Uno es su pulso. Dos son los dos, y entonces el corazón late acompañado.
+   * Se cuenta con `pointerdown` a pelo y no con el reconocedor de gestos
+   * porque ése, a propósito, ignora el segundo dedo para no confundir un
+   * arrastre con una pinza.
+   */
+  #dosDedos() {
+    const dedos = new Set();
+    this.on(this.pad, "pointerdown", (e) => {
+      dedos.add(e.pointerId);
+      if (dedos.size < 2 || this.done || this.root.classList.contains("is-dos")) return;
+      this.root.classList.add("is-dos");
+      this.escondite("pulso-dos-dedos", escondidos.pulso, e);
+    });
+    const soltar = (e) => dedos.delete(e.pointerId);
+    this.on(window, "pointerup", soltar);
+    this.on(window, "pointercancel", soltar);
   }
 
   #quitar() {
@@ -218,10 +250,18 @@ export default class PulsoPage extends BasePage {
     const fuerza = envolvente(dentro) * (0.22 + this.brillo * 0.78);
     this.golpe = damp(this.golpe, fuerza, 22, dt);
 
-    setVars(this.root, {
-      "--on": this.brillo.toFixed(3),
-      "--beat": this.golpe.toFixed(3),
-    });
+    // `--on` sube y baja con el dedo y se queda quieto: puede vivir en la raíz,
+    // porque `setVars` deja de escribirlo en cuanto se asienta.
+    setVars(this.root, { "--on": this.brillo.toFixed(3) });
+
+    // `--beat`, en cambio, no para nunca mientras hay dedo. Las variables de
+    // CSS se heredan, así que escribirlo en la raíz obligaba a recalcular el
+    // estilo de las setecientas y pico cajas de la página sesenta veces por
+    // segundo —era, con diferencia, la página más cara del libro—. Escrito
+    // aquí sólo despierta al puñado de cosas que de verdad laten.
+    const beat = this.golpe.toFixed(3);
+    setVars(this.core, { "--beat": beat });
+    setVars(this.bpmEl, { "--beat": beat });
 
     // Cruce de ciclo: un latido.
     if (Math.floor(this.fase) > Math.floor(anterior) && this.holding && !this.finished) {
@@ -238,6 +278,7 @@ export default class PulsoPage extends BasePage {
 
   #latir() {
     this.latidos++;
+    this.#anillo();
 
     // Vibración al compás. El patrón imita el lub-dub: golpe, hueco, golpe.
     if (this.puedeVibrar) {
@@ -255,6 +296,23 @@ export default class PulsoPage extends BasePage {
     if (frase) this.#decir(frase);
 
     if (this.latidos >= LATIDOS_META) this.#terminar(true);
+  }
+
+  /**
+   * Suelta un anillo desde el círculo, UNO POR LATIDO.
+   *
+   * Se reciclan tres nodos en vez de crear y tirar uno cada vez: a un latido
+   * por segundo durante minutos, crear nodos sin parar es basura que el
+   * navegador acaba teniendo que recoger, y se recoge justo cuando peor
+   * viene, a mitad de animación.
+   */
+  #anillo() {
+    if (this.ctx.caps.reducedMotion) return;
+    const onda = this.ondas[this.siguienteOnda];
+    this.siguienteOnda = (this.siguienteOnda + 1) % this.ondas.length;
+    onda.classList.remove("is-out");
+    void onda.offsetWidth; // relanza la animación desde el principio
+    onda.classList.add("is-out");
   }
 
   // ═══════════════════════════════════════════════════════════════════

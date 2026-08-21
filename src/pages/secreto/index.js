@@ -81,7 +81,6 @@ export default class SecretoPage extends BasePage {
     this.marcadas.forEach(() => this.contador.append(el("i.secreto__pip")));
 
     this.finalEl = el("p.secreto__final", { text: textos.final });
-    this.corazones = el("div.secreto__corazones", { "aria-hidden": "true" });
 
     this.hoja = el("div.secreto__hoja", {}, [
       el("header.secreto__head", {}, [
@@ -95,7 +94,7 @@ export default class SecretoPage extends BasePage {
       this.finalEl,
     ]);
 
-    this.root.append(this.hoja, this.lacre, this.confesion, this.corazones, this.sparkles.node);
+    this.root.append(this.hoja, this.lacre, this.confesion, this.sparkles.node);
     return this.root;
   }
 
@@ -214,7 +213,7 @@ export default class SecretoPage extends BasePage {
         {
           onDoubleTap: (e) => {
             this.ctx.haptics.play("tap");
-            this.#corazon(null, e.x, e.y, textos.corazonSuelto);
+            this.corazon(e.x, e.y, textos.corazonSuelto);
           },
         },
         { threshold: 16 }
@@ -222,29 +221,10 @@ export default class SecretoPage extends BasePage {
     );
   }
 
-  /** Un corazón que sube y se va. Con o sin frase colgando. */
-  #corazon(desde, x, y, frase) {
-    if (this.ctx.caps.reducedMotion) return;
-
-    const caja = this.root.getBoundingClientRect();
-    let cx = x;
-    let cy = y;
-    if (desde) {
-      const r = desde.getBoundingClientRect();
-      cx = r.left + r.width / 2;
-      cy = r.top + r.height / 2;
-    }
-
-    const nodo = el("span.secreto__corazon", { text: "♥" });
-    if (frase) nodo.append(el("i.secreto__corazon-txt", { text: frase }));
-    setVars(nodo, {
-      "--x": `${(cx - caja.left).toFixed(0)}px`,
-      "--y": `${(cy - caja.top).toFixed(0)}px`,
-      "--drift": `${this.rng.range(-26, 26).toFixed(0)}px`,
-      "--dur": `${this.rng.range(1500, 2100).toFixed(0)}ms`,
-    });
-    this.corazones.append(nodo);
-    this.later(() => nodo.remove(), 2300);
+  /** Un corazón que sube desde un elemento de la página. */
+  #corazon(desde, frase) {
+    const r = desde.getBoundingClientRect();
+    this.corazon(r.left + r.width / 2, r.top + r.height / 2, frase);
   }
 
   #susurrar(frase) {

@@ -247,4 +247,64 @@ export class BasePage {
     if (sound) this.ctx.audio.play(sound, opts);
     if (haptic) this.ctx.haptics.play(haptic);
   }
+
+  // ---- Lo que hay escondido ----------------------------------------------
+
+  /**
+   * Suelta un corazón que sube desde un punto de la página.
+   *
+   * Estaba escrito tres veces, casi igual, en tres páginas distintas. Aquí
+   * arriba lo tienen todas, y la capa donde caen se crea sola la primera vez
+   * que hace falta: una página que no esconda nada no paga ni un nodo.
+   *
+   * @param {number} x  en coordenadas de ventana (las que traen los gestos)
+   * @param {number} y
+   * @param {string} [frase]  lo que dice el corazón mientras sube
+   */
+  corazon(x, y, frase = "") {
+    if (this.ctx.caps.reducedMotion || this.destroyed || !this.root) return;
+
+    if (!this.capaSecretos) {
+      this.capaSecretos = el("div.escondite", { "aria-hidden": "true" });
+      this.root.append(this.capaSecretos);
+    }
+
+    const caja = this.root.getBoundingClientRect();
+    const nodo = el("span.escondite__corazon", { text: "♥" });
+    if (frase) nodo.append(el("i.escondite__frase", { text: frase }));
+
+    // Cada uno sube por su lado y a su ritmo; si salieran todos iguales
+    // parecerían una animación en vez de una casualidad bonita.
+    const az = (min, max) => min + Math.random() * (max - min);
+    nodo.style.setProperty("--x", `${Math.round(x - caja.left)}px`);
+    nodo.style.setProperty("--y", `${Math.round(y - caja.top)}px`);
+    nodo.style.setProperty("--drift", `${Math.round(az(-28, 28))}px`);
+    nodo.style.setProperty("--dur", `${Math.round(az(1500, 2200))}ms`);
+    nodo.style.setProperty("--size", az(0.8, 1.3).toFixed(2));
+
+    this.capaSecretos.append(nodo);
+    this.later(() => nodo.remove(), 2400);
+  }
+
+  /**
+   * Marca uno de los pequeños secretos escondidos por el libro.
+   *
+   * A diferencia de `unlockSecret`, esto NO desbloquea nada ni hace falta
+   * para avanzar: son detalles que están ahí por si aparecen. Si el mismo
+   * escondite ya salió otro día, no se vuelve a celebrar, pero sí se enseña,
+   * porque volver a encontrarlo también tiene su gracia.
+   *
+   * @param {string} clave   identificador estable del escondite
+   * @param {string} frase   lo que susurra
+   * @param {{x?:number,y?:number}} [donde]  para soltar el corazón ahí mismo
+   */
+  escondite(clave, frase, donde = {}) {
+    if (this.destroyed) return false;
+
+    const primera = this.ctx.store.findHideout(clave);
+    this.ctx.haptics.play(primera ? "secret" : "tap");
+    if (frase) this.ctx.ui?.toast?.(frase, primera ? 3400 : 2400);
+    if (donde.x != null) this.corazon(donde.x, donde.y, "");
+    return primera;
+  }
 }

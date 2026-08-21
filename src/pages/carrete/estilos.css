@@ -16,15 +16,8 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--gap-sm);
-  opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity 600ms var(--e-out), transform 600ms var(--e-out);
 }
 
-.film.is-entered .film__head {
-  opacity: 1;
-  transform: none;
-}
 
 .film__head .kicker {
   color: var(--text-soft);

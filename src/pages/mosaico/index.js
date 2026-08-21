@@ -37,7 +37,7 @@ export default class MosaicPage extends BasePage {
     this.counter = el("span.mos__count", { text: "" });
 
     this.root.append(
-      el("header.mos__head", {}, [
+      el("header.mos__head.entra--encaja", {}, [
         el("span.kicker", { text: ch?.kicker || "" }),
         this.counter,
       ]),

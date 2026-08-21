@@ -76,11 +76,12 @@ src/
   transitions/          volteo de hoja + efectos de luz
   data/
     chapters.js         LOS TEXTOS (lo único que hay que tocar para cambiarlos)
+    escondidos.js       lo que dicen los ocho escondites
     photos.js           inventario y reparto de las 85 ilustraciones
     manifest.js         EL ORDEN DEL LIBRO
     custom.js           traduce mis-paginas/paginas.js al formato interno
     amores.js           busca solo las fotos de images/amores/
-  styles/               tokens, base y lo común a todas las páginas
+  styles/               tokens, base, entradas y lo común a todas las páginas
   utils/                matemáticas, easing, DOM, aleatoriedad sembrada
 ```
 
@@ -144,6 +145,32 @@ como él deje ahí.
 Hay **veintisiete secretos** repartidos. Ninguno se anuncia: se abren al hacer
 las cosas de verdad. El contador vive en la barra y el balance sale al final.
 
+### Y aparte, ocho escondites
+
+Los secretos hay que encontrarlos para terminar una página. Los **escondites**
+no: no cuentan para nada, no bloquean nada y probablemente no aparezcan nunca.
+Están para el día que se le ocurra tocar donde no toca. Ninguno se repite y
+todos van de lo mismo — dos personas lejos que se las apañan:
+
+| Dónde | Qué hay que hacer |
+| --- | --- |
+| **Portada** | Tres toques en el borde de abajo de la tapa (no en el lacre). |
+| **Cualquier capítulo** | Doble toque en el número del capítulo. Cada uno de los ocho dice una cosa distinta. |
+| **Postal** | Mantener el dedo en el sello hasta que le cae el matasellos. |
+| **Carrete** | Seguir tirando hacia atrás cuando ya está el primer fotograma. |
+| **Candado** | Marcar `0000` dando la vuelta entera a las cuatro ruedas. |
+| **La distancia** | Separar los dos puntos en vez de juntarlos. |
+| **Pulso** | Poner **dos** dedos en el círculo. Aparece un segundo corazón, desfasado. |
+| **Final** | No soltar la pantalla cuando el corazón ya está formado. |
+
+Lo que dicen está todo junto en **`src/data/escondidos.js`**, que es el fichero
+que hay que abrir para cambiarlos por lo vuestro — son los que más se notan si
+suenan a algo que pasó de verdad.
+
+Además, cada página tiene los suyos propios dentro de su carpeta: la nota
+esconde frases en las palabras marcadas y un lacre que se ablanda, y el cajón
+suelta una luciérnaga si se toca tres veces el hueco vacío.
+
 ### El índice
 
 Con tantas páginas, la barra tiene un botón `☰` que abre el índice: los cuatro
@@ -156,13 +183,15 @@ igualmente: esto no es un videojuego.
 
 ## Los textos
 
-Ni una sola frase vive dentro del código. Están en dos sitios, y sólo en dos:
+Ni una sola frase vive dentro del código. Están en tres sitios, y sólo en tres:
 
 **1 · `src/data/chapters.js`** — los capítulos, las frases sueltas que sueltan
 los pétalos y las polaroids, las que aparecen al resolver cada página y el
 cierre. Junto y en orden.
 
-**2 · El `textos.js` de cada carpeta** — las páginas con mucho que decir se
+**2 · `src/data/escondidos.js`** — lo que dicen los ocho escondites.
+
+**3 · El `textos.js` de cada carpeta** — las páginas con mucho que decir se
 llevaron lo suyo dentro:
 
 | Página | Su fichero |
@@ -347,6 +376,30 @@ libro, con su capítulo y su sitio en el manifiesto.
 
 Están repartidas para que **ninguna se repita en dos páginas seguidas**.
 
+### Y cómo aparece lo primero de cada página
+
+La transición es cómo llega la hoja. La **entrada** es cómo se enciende lo que
+trae dentro, y es lo que hace que dos páginas con la misma transición no se
+parezcan. Están en `src/styles/entradas.css` y cada página se pone la suya con
+una clase en su `index.js`:
+
+| Firma | Qué hace | Dónde |
+| --- | --- | --- |
+| `entra--teclea` | Las letras llegan separadas y se asientan | Máquina de escribir |
+| `entra--revela` | Sobreexpuesto y lavado, va cogiendo color | Polaroids |
+| `entra--enfoca` | Desenfocado y se enfoca | Rascar |
+| `entra--traza` | Se descubre de izquierda a derecha, como una pluma | Escrito a mano |
+| `entra--corre` | Entra de lado, con tirón de mecanismo | Carrete |
+| `entra--encaja` | Llega grande y torcido y se asienta | Mosaico |
+| `entra--acerca` | Llega de muy atrás, no de arriba | La distancia |
+| `entra--prende` | No se mueve: enciende | Constelación |
+| `entra--cajon` | Sube desde abajo | El cajón |
+| `entra--cae` | Baja girando, sin prisa | Deshojar |
+
+Se repiten **en cada llegada**, también al volver a una página ya vista: antes
+la clase se quedaba puesta y al regresar la página aparecía de golpe, sin su
+gesto.
+
 Ya está. La navegación, el índice, el progreso, la precarga, la limpieza de
 memoria y la paleta de la atmósfera se ajustan solos. El libro está pensado
 para crecer: da igual que sean cuarenta páginas o cuatrocientas.
@@ -442,6 +495,23 @@ El libro mide el aparato en el que se está abriendo y se adapta:
   los tokens de duración: hay una regla global que apaga toda animación y
   transición del proyecto, incluidas las que llevan los milisegundos escritos a
   mano. Todo llega igual a su estado final; nada se queda a medio camino.
+- **Las hojas que no se ven no animan.** El router mantiene vivas las hojas
+  vecinas para que arrastrar responda al instante, y `visibility: hidden` las
+  esconde pero no detiene una sola animación de CSS: el lacre de la portada
+  seguía respirando eternamente por detrás de la página que estás leyendo. Ahora
+  se pausan —no se anulan—, así que al volver siguen donde estaban.
+- **Nada se reescribe si no se ha movido.** El carrete y el carrusel de fotos
+  reescribían la posición de cada fotograma sesenta veces por segundo aunque
+  estuvieran completamente parados: cientos de mutaciones de estilo por segundo
+  para dejarlo todo igual. Quietos, ahora no cuestan nada.
+- **Las variables que laten viven abajo, no en la raíz.** El `--beat` del pulso
+  se escribía en la página entera, y como las variables de CSS se heredan, cada
+  latido obligaba a recalcular el estilo de sus setecientas cajas. Escrito sólo
+  en el círculo, la página pasó de ser la más cara del libro a costar un tercio.
+- **Los recuerdos miran a cámara todos a la vez.** Ochenta y cinco `lookAt` por
+  fotograma —cada uno monta una matriz y la descompone en cuaternión— eran lo
+  más caro de todo el proyecto. Como lo que se quiere es que las cartas queden
+  planas hacia quien mira, basta deshacer el giro del grupo una vez y copiarlo.
 
 Y si no hay WebGL, el libro sigue siendo un libro: todas las páginas tienen su
 versión en DOM, sin una sola pantalla vacía.

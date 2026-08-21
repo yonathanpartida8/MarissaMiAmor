@@ -13,9 +13,9 @@ import { el, qs, setVars } from "../utils/dom.js";
 import { Gestures } from "../core/Gestures.js";
 import { ScratchSurface, fogLayer } from "./ScratchSurface.js";
 import { createPhotoFrame } from "./PhotoFrame.js";
-import { damp, clamp01, lerp } from "../utils/math.js";
+import { damp, clamp01 } from "../utils/math.js";
 import { seeded } from "../utils/rng.js";
-import { tween, easeOutExpo, easeOutBack } from "../utils/easing.js";
+import { tween, easeOutExpo } from "../utils/easing.js";
 
 /* ══════════════════════════════════════════════════════════════════
    MEDALLÓN — una fotografía que se revela como si se estuviera

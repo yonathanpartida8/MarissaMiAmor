@@ -515,3 +515,39 @@ html[data-orientation="landscape"][data-device="phone"] .chapter__body {
 html[data-orientation="landscape"][data-device="phone"] .chapter__foot {
   grid-column: 1 / -1;
 }
+
+/* El adorno del pie es un botón, pero no tiene que parecerlo. */
+.chapter__mark {
+  border: 0;
+  padding: 0 0.4rem;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 600ms var(--e-out), text-shadow 600ms var(--e-out);
+}
+
+/* Escondido: al descubrirlo se queda encendido para siempre. */
+.chapter__mark.is-awake {
+  color: var(--accent);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+/* El número del capítulo es un botón, pero sigue siendo un número. */
+.chapter__num {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 600ms var(--e-out), text-shadow 600ms var(--e-out);
+}
+
+/* Escondido: al descubrirlo se queda encendido. */
+.chapter__num.is-awake {
+  color: var(--accent);
+  text-shadow: 0 0 16px color-mix(in srgb, var(--accent) 60%, transparent);
+}

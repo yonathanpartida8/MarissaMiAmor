@@ -62,14 +62,6 @@
   mix-blend-mode: multiply;
 }
 
-/* ---- Borde barbado ----------------------------------------- */
-.paper--deckled {
-  --deckle: 3px;
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.32));
-  -webkit-mask-image: var(--deckle-mask);
-  mask-image: var(--deckle-mask);
-}
-
 /* ---- Elementos tipográficos comunes del papel --------------- */
 .paper .kicker {
   font-family: var(--font-ui);

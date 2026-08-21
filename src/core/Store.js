@@ -17,6 +17,10 @@ const DEFAULTS = {
   pageId: null,
   furthest: 0,
   secrets: [],
+  // Los escondites pequeños van APARTE de los secretos del libro. Mezclados,
+  // el contador de la barra empezaba a decir cosas como «34/27»: los secretos
+  // se cuentan contra los del manifiesto, y estos no están ahí.
+  escondites: [],
   visited: [],
   musicOn: true,
   visits: 0,
@@ -105,6 +109,21 @@ export class Store extends Emitter {
 
   hasSecret(id) {
     return this.state.secrets.includes(id);
+  }
+
+  /**
+   * Apunta uno de los escondites pequeños. Devuelve si es la primera vez.
+   * No cuentan para el marcador: no hay que encontrarlos, están por si acaso.
+   */
+  findHideout(id) {
+    if (this.state.escondites.includes(id)) return false;
+    this.state.escondites = [...this.state.escondites, id];
+    this.#writeSoon();
+    return true;
+  }
+
+  get hideoutsFound() {
+    return this.state.escondites.length;
   }
 
   get secretsFound() {

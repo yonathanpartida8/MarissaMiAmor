@@ -62,13 +62,10 @@ export default class AmorPage extends BasePage {
       el("div.amor__luz", { "aria-hidden": "true" }),
     ]);
 
-    this.corazones = el("div.amor__corazones", { "aria-hidden": "true" });
-
     // Ojo con el filtro: `append` nativo convierte un `null` en el TEXTO
     // "null" y lo planta en la página. Aquí sólo entra lo que existe.
     const hijos = [
       this.marco,
-      this.corazones,
       el("div.amor__folio", { "aria-hidden": "true" }, [
         el("span.amor__num", { text: String(numero).padStart(2, "0") }),
         el("span.amor__de", { text: `de ${this.entry.total ?? "—"}` }),
@@ -122,7 +119,7 @@ export default class AmorPage extends BasePage {
           // doble toque, `onTap` espera 280 ms por si llega el segundo, y ese
           // retraso se nota muchísimo. Así responde en el mismo fotograma.
           onDown: (e) => {
-            this.#corazon(e.x, e.y);
+            this.corazon(e.x, e.y);
             this.ctx.haptics.play("tap");
           },
           // Dos toques acercan y alejan.
@@ -181,20 +178,4 @@ export default class AmorPage extends BasePage {
     });
   }
 
-  /** Un corazón que sube desde donde ha tocado el dedo. */
-  #corazon(x, y) {
-    if (this.ctx.caps.reducedMotion || !textos.alTocar) return;
-
-    const caja = this.root.getBoundingClientRect();
-    const nodo = el("span.amor__corazon", { text: textos.alTocar });
-    setVars(nodo, {
-      "--x": `${(x - caja.left).toFixed(0)}px`,
-      "--y": `${(y - caja.top).toFixed(0)}px`,
-      "--drift": `${this.rng.range(-22, 22).toFixed(0)}px`,
-      "--dur": `${this.rng.range(1200, 1800).toFixed(0)}ms`,
-      "--size": this.rng.range(0.8, 1.35).toFixed(2),
-    });
-    this.corazones.append(nodo);
-    this.later(() => nodo.remove(), 1900);
-  }
 }

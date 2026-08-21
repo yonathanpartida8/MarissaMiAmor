@@ -92,6 +92,19 @@ html[data-device="desktop"] .leaf {
   pointer-events: none;
 }
 
+/* Y sus animaciones se PARAN mientras no se ven.
+   `visibility: hidden` esconde la hoja pero no detiene una sola animación de
+   CSS: el router mantiene vivas las hojas vecinas para que arrastrar responda
+   al instante, así que el lacre de la portada seguía respirando eternamente
+   por detrás de la página que estás leyendo, y con él todo lo demás. Los
+   relojes de JS ya se paraban solos; esto hace lo mismo con el CSS.
+   Pausar —y no anular— es lo importante: al volver, la animación continúa
+   donde estaba en vez de dar un salto. */
+.leaf--staged *,
+.leaf--hidden * {
+  animation-play-state: paused !important;
+}
+
 /* Durante el giro no hay transición CSS: manda el muelle en JS. */
 .leaf--turning {
   transition: none;
@@ -327,10 +340,7 @@ html[data-device="desktop"] .page {
 .mos__panel,
 .orb__panel,
 .pola__panel,
-.veil__panel,
-.pulse__panel,
-.chapter__foot,
-.film__panel {
+.chapter__foot {
   margin-bottom: var(--bar-space, 0rem);
 }
 

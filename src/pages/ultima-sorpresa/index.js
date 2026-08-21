@@ -20,7 +20,7 @@
 import { BasePage } from "../BasePage.js";
 import { Gestures } from "../../core/Gestures.js";
 import { el, setVars, wait } from "../../utils/dom.js";
-import { clamp01, damp } from "../../utils/math.js";
+import { damp } from "../../utils/math.js";
 import { seeded } from "../../utils/rng.js";
 import textos from "./textos.js";
 
@@ -94,7 +94,7 @@ export default class UltimaSorpresaPage extends BasePage {
     this.bichos = el("div.sorpresa__bichos", { "aria-hidden": "true" });
 
     this.root.append(
-      el("header.sorpresa__head", {}, [
+      el("header.sorpresa__head.entra--cajon", {}, [
         el("span.kicker", { text: textos.arriba }),
         el("h2.sorpresa__titulo", { text: textos.titulo }),
         el("p.sorpresa__intro", { text: textos.intro }),
@@ -389,19 +389,25 @@ export default class UltimaSorpresaPage extends BasePage {
             this.ctx.haptics.play("tap");
 
             // Sigue al dedo con retraso: es lo que la hace parecer viva.
-            this.bichoPos = { x: e.x, y: e.y };
+            //
+            // La caja de la página se mide UNA vez y se guarda. Medirla dentro
+            // del reloj obligaba al navegador a recalcular la maquetación
+            // sesenta veces por segundo para saber algo que no cambia mientras
+            // la página está abierta; y encima justo cuando hay una animación
+            // en marcha, que es cuando peor sienta.
+            const caja = this.root.getBoundingClientRect();
+            this.bichoPos = { x: e.x - caja.left, y: e.y - caja.top };
             this.addTicker((dt) => {
-              const p = this.ctx.pointer;
-              const caja = this.root.getBoundingClientRect();
+              const p = this.ctx.pointer.influence;
               const destino = {
-                x: caja.left + caja.width * (0.5 + p.influence.x * 0.42),
-                y: caja.top + caja.height * (0.5 + p.influence.y * 0.42),
+                x: caja.width * (0.5 + p.x * 0.42),
+                y: caja.height * (0.5 + p.y * 0.42),
               };
               this.bichoPos.x = damp(this.bichoPos.x, destino.x, 1.6, dt);
               this.bichoPos.y = damp(this.bichoPos.y, destino.y, 1.6, dt);
               setVars(this.bicho, {
-                "--bx": `${(this.bichoPos.x - caja.left).toFixed(0)}px`,
-                "--by": `${(this.bichoPos.y - caja.top).toFixed(0)}px`,
+                "--bx": `${this.bichoPos.x.toFixed(0)}px`,
+                "--by": `${this.bichoPos.y.toFixed(0)}px`,
               });
             }, 13);
           },

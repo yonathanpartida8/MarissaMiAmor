@@ -13,6 +13,7 @@ import { createPhotoFrame } from "../../components/PhotoFrame.js";
 import { createSparkles } from "../../components/Sparkles.js";
 import { el, splitWords, setVars } from "../../utils/dom.js";
 import { spring, springSettled, clamp } from "../../utils/math.js";
+import escondidos from "../../data/escondidos.js";
 
 export default class PostcardPage extends BasePage {
   static type = "postcard";
@@ -34,12 +35,15 @@ export default class PostcardPage extends BasePage {
       parallax: 0.6,
     });
 
+    this.sello = el("button.pc__stamp", { type: "button", "aria-label": "El sello" }, [
+      el("span.pc__stampmark", { text: "❤" }),
+      el("span.pc__stampedge"),
+      el("span.pc__sellado", { text: escondidos.postal }),
+    ]);
+
     const front = el("div.pc__face.pc__face--front", {}, [
       this.frame.node,
-      el("div.pc__stamp", {}, [
-        el("span.pc__stampmark", { text: "❤" }),
-        el("span.pc__stampedge"),
-      ]),
+      this.sello,
       el("div.pc__postmark", {}, [
         el("span", { text: "PARA" }),
         el("strong", { text: "MARISSA" }),
@@ -90,6 +94,23 @@ export default class PostcardPage extends BasePage {
     this.target = 0;
     this.dragging = false;
     this.flipped = false;
+
+    // Escondido: mantener el dedo en el sello. Un sello es lo que hace que
+    // una carta tarde días en cruzar; sostenerlo lo dice.
+    this.addGestures(
+      new Gestures(
+        this.sello,
+        {
+          onLongPress: (e) => {
+            this.sello.classList.add("is-sellado");
+            this.escondite("postal-sello", escondidos.postal, e);
+          },
+        },
+        // Sin `exclusive`: el arrastre para voltear la postal tiene que
+        // seguir pasando a través del sello.
+        { threshold: 12, longPressMs: 620 }
+      )
+    );
 
     this.addGestures(
       new Gestures(

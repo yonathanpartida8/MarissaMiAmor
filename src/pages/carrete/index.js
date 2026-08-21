@@ -14,6 +14,7 @@ import { Gestures } from "../../core/Gestures.js";
 import { el, qs, splitWords, setVars } from "../../utils/dom.js";
 import { clamp, damp } from "../../utils/math.js";
 import { PRIORITY } from "../../core/AssetLoader.js";
+import escondidos from "../../data/escondidos.js";
 
 export default class FilmstripPage extends BasePage {
   static type = "filmstrip";
@@ -57,7 +58,7 @@ export default class FilmstripPage extends BasePage {
     this.reel.append(this.endCard);
 
     this.root.append(
-      el("header.film__head", {}, [
+      el("header.film__head.entra--corre", {}, [
         el("span.kicker", { text: ch?.kicker || "" }),
         el("span.film__counter", { text: "" }),
       ]),
@@ -102,6 +103,12 @@ export default class FilmstripPage extends BasePage {
             if (next > 0) next *= 0.34;
             if (next < -this.maxOffset) next = -this.maxOffset + (next + this.maxOffset) * 0.34;
             this.offset = next;
+
+            // Escondido: seguir tirando hacia atrás cuando ya está el primer
+            // fotograma. Antes del primero no hay carrete… salvo esto.
+            if (this.startOffset + e.dx > 190) {
+              this.escondite("carrete-antes", escondidos.carrete, e);
+            }
           },
           onPanEnd: (e) => {
             this.dragging = false;
@@ -159,6 +166,8 @@ export default class FilmstripPage extends BasePage {
   #frame(dt) {
     if (!this.frameWidth) return;
 
+    const desde = this.offset;
+
     if (this.dragging) {
       this.snapping = false;
     } else if (this.snapping) {
@@ -180,6 +189,14 @@ export default class FilmstripPage extends BasePage {
       const nearest = Math.round(-this.offset / this.frameWidth);
       this.#center(clamp(nearest, 0, this.frames.length));
     }
+
+    // Con el carrete parado no hay nada que reescribir, y eso importa: abajo
+    // hay una escritura de estilo por fotograma —diez o doce— más la del
+    // carrete entero. Hacerlo sesenta veces por segundo con el dedo fuera
+    // eran cientos de mutaciones inútiles y una página que costaba lo mismo
+    // quieta que en movimiento. Ahora, quieta, no cuesta nada.
+    if (this.pintado && Math.abs(this.offset - desde) < 0.01) return;
+    this.pintado = true;
 
     this.reel.style.transform = `translate3d(${this.offset}px, 0, 0)`;
 

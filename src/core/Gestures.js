@@ -281,9 +281,20 @@ export class Gestures {
     };
   }
 
-  #reset() {
+  /**
+   * Abandona el gesto en curso.
+   *
+   * Si había un arrastre vivo se avisa con `onPanEnd({ cancelled: true })`,
+   * igual que al ceder el dedo. Sin ese aviso, quien estuviera siguiendo el
+   * dedo se quedaba creyendo que aún lo tiene: las ruedas del candado, por
+   * ejemplo, no volvían a imantarse a su dígito nunca más.
+   */
+  #reset(e) {
+    const s = this.state;
     clearTimeout(this.longTimer);
+    clearTimeout(this.tapTimer);
     this.state = null;
+    if (s?.panning) this.h.onPanEnd?.({ ...this.#detail(s, e), cancelled: true });
   }
 
   /**

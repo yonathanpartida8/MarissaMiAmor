@@ -71,7 +71,7 @@ export default class PetalsPage extends BasePage {
     this.sparkles = createSparkles(this.ctx, { seed: `pet-${this.id}`, kind: "hearts", scale: 0.5 });
 
     this.root.append(
-      el("header.petals__head", {}, [
+      el("header.petals__head.entra--cae", {}, [
         el("span.kicker", { text: ch?.kicker || "" }),
         el("h2.title.petals__title", { text: ch?.title || "" }),
       ]),

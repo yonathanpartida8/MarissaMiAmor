@@ -223,3 +223,42 @@
 }
 
 .postcard.is-back .pc__prompt { opacity: 0; }
+
+/* El sello es un botón, pero sigue siendo un sello. */
+.pc__stamp {
+  border: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Escondido: al sostenerlo, le cae el matasellos encima. */
+.pc__sellado {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max-content;
+  max-width: 46vw;
+  transform: translate(-50%, -50%) rotate(-13deg) scale(1.5);
+  padding: 0.22rem 0.5rem;
+  border: 1.5px solid var(--rose-deep, #a8325c);
+  border-radius: 3px;
+  font-family: var(--font-ui);
+  font-size: clamp(0.44rem, calc(2 * var(--vw)), 0.56rem);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--rose-deep, #a8325c);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 420ms var(--e-out), transform 620ms var(--e-out);
+}
+
+.pc__stamp.is-sellado .pc__sellado {
+  opacity: 0.82;
+  transform: translate(-50%, -50%) rotate(-13deg) scale(1);
+}
+
+/* El sello tiene que poder recibir el dedo: sin esto, el escondite del
+   matasellos era inalcanzable porque el tablero de la postal se lo comía. */
+.pc__stamp { pointer-events: auto; }

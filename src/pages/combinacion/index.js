@@ -22,10 +22,18 @@ import { createPhotoFrame } from "../../components/PhotoFrame.js";
 import { el, setVars, wait } from "../../utils/dom.js";
 import { clamp, damp } from "../../utils/math.js";
 import { seeded } from "../../utils/rng.js";
+import escondidos from "../../data/escondidos.js";
 import textos from "./textos.js";
 
 /** Píxeles de arrastre por dígito. Menos = más nervioso. */
 const PASO = 42;
+
+/**
+ * Cuánto tiene que estar todo quieto para que eso cuente como un intento.
+ * Generoso a propósito: mientras siga girando ruedas está eligiendo, no
+ * probando, y eso no se castiga.
+ */
+const ESPERA_INTENTO = 1100;
 
 /** A partir de cuántos fallos ayuda el candado. */
 const FALLOS_PISTA = 3;
@@ -162,6 +170,14 @@ export default class CombinacionPage extends BasePage {
           onPanStart: () => {
             desde = wheel.offset;
             ultimoTope = Math.round(wheel.offset);
+            // MIENTRAS EL DEDO MANDA, EL RELOJ NO TOCA ESTA RUEDA.
+            //
+            // Aquí estaba el fallo que dejaba el candado inservible: el reloj
+            // de la página hace `damp(offset → target)` sesenta veces por
+            // segundo, y como al arrastrar sólo cambiaba `offset`, cada frame
+            // lo devolvía al `target` de antes. El dedo empujaba y el reloj
+            // tiraba: la rueda no se movía ni un dígito.
+            wheel.dragging = true;
             wheel.node.classList.add("is-turning");
             this.padlock.classList.add("is-handled");
           },
@@ -176,6 +192,7 @@ export default class CombinacionPage extends BasePage {
             }
           },
           onPanEnd: (e) => {
+            wheel.dragging = false;
             wheel.node.classList.remove("is-turning");
             this.padlock.classList.remove("is-handled");
             // Se imanta al dígito más cercano. La inercia suma poco y acotada:
@@ -211,7 +228,22 @@ export default class CombinacionPage extends BasePage {
     }
 
     for (const wheel of this.wheels) {
-      wheel.offset = damp(wheel.offset, wheel.target, 12, dt);
+      // Mientras el dedo la lleva, el reloj no la toca: `offset` ya lo escribe
+      // el arrastre y suavizarlo hacia `target` sería deshacerlo cada frame.
+      if (!wheel.dragging) {
+        // Y si ya está donde tiene que estar, no se recalcula nada: con las
+        // cuatro ruedas quietas esta página deja de costar por completo.
+        if (Math.abs(wheel.target - wheel.offset) < 0.0005) {
+          if (wheel.offset !== wheel.target) {
+            wheel.offset = wheel.target;
+          } else if (wheel.value === wheel.lastShown) {
+            continue;
+          }
+        } else {
+          wheel.offset = damp(wheel.offset, wheel.target, 12, dt);
+        }
+      }
+
       // El módulo mantiene el valor en 0–9 aunque la rueda gire indefinidamente.
       wheel.value = ((Math.round(wheel.offset) % 10) + 10) % 10;
 
@@ -223,6 +255,7 @@ export default class CombinacionPage extends BasePage {
         wheel.node.classList.remove("is-set");
         void wheel.node.offsetWidth;
         wheel.node.classList.add("is-set");
+        this.#templar();
         if (this.soplando) this.#soplar();
         // Se comprueba aquí y no sólo al soltar el dedo: así vale igual para
         // el teclado, para la inercia que aún se está frenando y para
@@ -241,15 +274,46 @@ export default class CombinacionPage extends BasePage {
   //  Acertar y fallar
   // ═══════════════════════════════════════════════════════════════════
 
+  /**
+   * Juzga la combinación, pero SÓLO cuando de verdad hay un intento.
+   *
+   * Antes se juzgaba a los 420 ms de cada dígito, y eso convertía cada cifra
+   * que pasaba por delante en un fallo: girar la última rueda de 0 a 8 eran
+   * ocho fallos seguidos, así que el candado llegaba a los siete y se rendía
+   * solo antes de que a ella le diera tiempo a marcar nada. El juego se abría
+   * a sí mismo prácticamente siempre.
+   *
+   * Ahora un intento es lo que parece un intento: las cuatro ruedas quietas,
+   * el dedo fuera, y una combinación distinta de la última que ya se juzgó.
+   */
   #comprobar() {
     if (this.opened) return;
-    // Espera a que las ruedas se asienten antes de juzgar.
     clearTimeout(this.timer);
     this.timer = setTimeout(() => {
+      // Con un dedo todavía puesto no hay nada que juzgar: sigue eligiendo.
+      if (this.wheels.some((w) => w.dragging)) return this.#comprobar();
+
       const actual = this.wheels.map((w) => w.value);
-      if (actual.every((v, i) => v === this.code[i])) this.#abrir(true);
-      else if (actual.some((v) => v !== 0)) this.#fallar();
-    }, 420);
+      if (actual.every((v, i) => v === this.code[i])) return this.#abrir(true);
+
+      // Todo a ceros es el estado de partida, no un intento… salvo que haya
+      // llegado ahí a propósito, dando la vuelta entera a las cuatro ruedas.
+      // Eso no es no haber empezado: eso es haber probado el 0000.
+      if (!actual.some((v) => v !== 0)) {
+        if (this.wheels.some((w) => Math.abs(w.target) > 0.5)) {
+          this.escondite("candado-ceros", escondidos.combinacion);
+        }
+        return;
+      }
+
+      // Y la misma combinación dos veces tampoco: si se queda mirándola, o
+      // vuelve sobre sus pasos, no se le apunta un fallo nuevo.
+      const huella = actual.join("");
+      if (huella === this.ultimoIntento) return;
+      this.ultimoIntento = huella;
+
+      this.#fallar();
+    }, ESPERA_INTENTO);
   }
 
   #fallar() {
@@ -275,6 +339,24 @@ export default class CombinacionPage extends BasePage {
       this.#decir(textos.rendicion, 3000);
       setTimeout(() => this.#abrir(true), 700);
     }
+  }
+
+  /**
+   * El candado se templa según cuántas cifras están ya en su sitio.
+   *
+   * No dice cuáles —eso sería regalar el juego—, sólo quema un poco más. Es
+   * la respuesta al PROCESO: se nota que te acercas antes de acertar, que es
+   * lo que hace que girar ruedas sea un juego y no un formulario.
+   */
+  #templar() {
+    const aciertos = this.wheels.reduce(
+      (n, w, i) => n + (w.value === this.code[i] ? 1 : 0),
+      0
+    );
+    // Sólo desde dos: con una sola cifra bien es casualidad pura y encenderse
+    // por eso convertiría el candado en un detector de dígitos.
+    const cerca = aciertos < 2 ? 0 : (aciertos - 1) / (this.code.length - 1);
+    setVars(this.padlock, { "--cerca": cerca.toFixed(2) });
   }
 
   /** Enciende las ruedas que ya están en su sitio. */

@@ -10,12 +10,8 @@
 }
 
 .tw__head {
-  opacity: 0;
-  transform: translateY(-8px);
-  transition: opacity 700ms var(--e-out) 80ms, transform 700ms var(--e-out) 80ms;
 }
 
-.tw.is-entered .tw__head { opacity: 1; transform: none; }
 
 .tw__title {
   font-size: clamp(1.5rem, calc(7 * var(--vw)), 2.3rem);

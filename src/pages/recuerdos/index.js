@@ -13,7 +13,7 @@ import * as THREE from "three";
 import { BasePage } from "../BasePage.js";
 import { Gestures } from "../../core/Gestures.js";
 import { el, splitWords, setVars } from "../../utils/dom.js";
-import { damp, clamp, TAU } from "../../utils/math.js";
+import { damp, clamp } from "../../utils/math.js";
 import { PRIORITY } from "../../core/AssetLoader.js";
 
 /**
@@ -290,6 +290,15 @@ export default class MemoryFieldPage extends BasePage {
     this._v2.set(0, 0, camera.position.z - 2.8);
     const focusLocal = this.group.worldToLocal(this._v2);
 
+    // TODOS LOS RECUERDOS MIRAN A CÁMARA, Y ESO SE RESUELVE UNA SOLA VEZ.
+    //
+    // Antes cada carta llamaba a `lookAt`, que monta una matriz de orientación
+    // y la descompone en cuaternión. Con ochenta y cinco recuerdos girando eso
+    // era, con diferencia, lo más caro de todo el libro. Como lo que se quiere
+    // es que la carta quede plana hacia quien mira, basta con deshacer el giro
+    // del grupo —una inversión— y copiar esa misma orientación a todas.
+    this._q.copy(this.group.quaternion).invert();
+
     for (const card of this.cards) {
       const mesh = card.mesh;
       const isFocused = this.focused === card;
@@ -298,7 +307,7 @@ export default class MemoryFieldPage extends BasePage {
       mesh.position.lerp(target, 1 - Math.exp(-(isFocused ? 6 : 4) * dt));
 
       // Siempre de cara: el recuerdo te mira a ti, no al centro de la esfera.
-      mesh.lookAt(camera.position);
+      mesh.quaternion.copy(this._q);
 
       // Profundidad: el que está detrás se apaga. mesh.position ya está en
       // coordenadas del grupo, así que hay que llevarlo al mundo para saber
@@ -323,6 +332,7 @@ export default class MemoryFieldPage extends BasePage {
   _v1 = new THREE.Vector3();
   _v2 = new THREE.Vector3();
   _v3 = new THREE.Vector3();
+  _q = new THREE.Quaternion();
 
   /** Si no hay WebGL, un mosaico sencillo con las mismas imágenes. */
   #buildFallback() {

@@ -11,15 +11,8 @@
 }
 
 .scratch__head {
-  opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity 600ms var(--e-out) 100ms, transform 600ms var(--e-out) 100ms;
 }
 
-.scratch.is-entered .scratch__head {
-  opacity: 1;
-  transform: none;
-}
 
 /* ---- La lámina --------------------------------------------- */
 .scratch__plate {

@@ -16,6 +16,7 @@ import { damp, clamp01 } from "../../utils/math.js";
 import { seeded } from "../../utils/rng.js";
 import { allSecrets } from "../../data/manifest.js";
 import { finale } from "../../data/chapters.js";
+import escondidos from "../../data/escondidos.js";
 
 const heartVertex = /* glsl */ `
   precision highp float;
@@ -158,8 +159,26 @@ export default class FinalePage extends BasePage {
     this.addGestures(
       new Gestures(
         this.root.querySelector(".finale__touch"),
-        { onTap: () => this.#formHeart() },
-        { exclusive: true }
+        {
+          onTap: () => this.#formHeart(),
+          // Escondido: no soltar cuando el corazón ya está formado. Mientras
+          // haya dedo no se deshace, y ésa es toda la idea del libro.
+          onLongPress: (e) => {
+            if (!this.formed) return;
+            this.sujetando = true;
+            this.root.classList.add("is-held");
+            this.escondite("final-sostenido", escondidos.final, e);
+          },
+          onLongPressEnd: () => {
+            this.sujetando = false;
+            this.root.classList.remove("is-held");
+          },
+          onUp: () => {
+            this.sujetando = false;
+            this.root.classList.remove("is-held");
+          },
+        },
+        { exclusive: true, longPressMs: 900 }
       )
     );
 
@@ -248,7 +267,8 @@ export default class FinalePage extends BasePage {
   }
 
   #frame(dt, time) {
-    this.form = damp(this.form, this.targetForm, 1.3, dt);
+    // Sujetándolo, el corazón no sólo no se deshace: se aprieta un poco más.
+    this.form = damp(this.form, this.sujetando ? 1.18 : this.targetForm, 1.3, dt);
 
     // Latido: dos golpes seguidos y una pausa, como uno de verdad.
     const cycle = (time * 1.05) % 1;

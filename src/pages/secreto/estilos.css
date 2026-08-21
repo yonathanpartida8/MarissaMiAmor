@@ -291,37 +291,6 @@
 .secreto.is-confessed .secreto__confesion { opacity: 0.9; transform: none; }
 
 /* ══════════════ CORAZONES SUELTOS ══════════════ */
-.secreto__corazones {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  pointer-events: none;
-}
-
-.secreto__corazon {
-  position: absolute;
-  left: var(--x);
-  top: var(--y);
-  font-size: clamp(1rem, 4vw, 1.3rem);
-  line-height: 1;
-  color: var(--rose);
-  text-shadow: 0 0 14px color-mix(in srgb, var(--rose) 65%, transparent);
-  will-change: transform, opacity;
-  animation: secreto-sube var(--dur, 1800ms) var(--e-out) both;
-}
-
-.secreto__corazon-txt {
-  position: absolute;
-  left: 50%;
-  top: 1.5em;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font-family: var(--font-hand);
-  font-style: normal;
-  font-size: 0.82em;
-  color: var(--rose-deep);
-}
-
 @keyframes secreto-sube {
   0%   { opacity: 0; transform: translate3d(-50%, 0, 0) scale(0.5); }
   16%  { opacity: 1; }
@@ -360,6 +329,4 @@ html[data-orientation="landscape"][data-device="phone"] .secreto__final {
 @media (prefers-reduced-motion: reduce) {
   .secreto.is-nudging .secreto__palabra:not(.is-found),
   .secreto__palabra.is-found,
-  .secreto__corazon { animation: none; }
-  .secreto__corazon { display: none; }
 }

@@ -34,7 +34,6 @@ export function el(tag, props = {}, children = []) {
 }
 
 export const qs = (sel, root = document) => root.querySelector(sel);
-export const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 /**
  * Fija variables CSS personalizadas de una tacada.
@@ -71,12 +70,6 @@ export function setVars(node, vars) {
     node.style.setProperty(name, next);
   }
 }
-
-/** Fuerza un reflow para que la siguiente clase sí anime. */
-export const reflow = (node) => node.offsetHeight;
-
-export const nextFrame = () =>
-  new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
 export const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

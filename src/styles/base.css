@@ -96,24 +96,37 @@ figure {
 }
 
 /* ---- Grano de película ----------------------------------- */
+/* La capa más cara del libro si se hace mal, porque va fija encima de TODO.
+   Tres decisiones que la abaratan sin que se note la diferencia:
+
+   · El recuadro sólo sobra lo que se mueve (±3%), no media pantalla por lado.
+     Con `inset: -50%` se estaba pintando cuatro veces el área necesaria.
+   · Salta la mitad de veces por segundo. El grano de película no se lee por
+     su frecuencia, se lee por su textura.
+   · La mezcla `overlay` obliga al navegador a componer la página entera cada
+     vez que el grano se mueve, así que sólo la ve la gama alta. En las demás
+     el grano sigue estando, simplemente encima y más flojito. */
 #grain {
   position: fixed;
-  inset: -50%;
+  inset: -6%;
   z-index: var(--z-grain);
   pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: overlay;
+  opacity: 0.035;
   background-image: var(--grain-src);
   background-size: 180px 180px;
   will-change: transform;
-  animation: grain-shift 900ms steps(4, end) infinite;
+  animation: grain-shift 1800ms steps(3, end) infinite;
+}
+
+html[data-tier="high"] #grain {
+  opacity: 0.05;
+  mix-blend-mode: overlay;
 }
 
 @keyframes grain-shift {
-  0% { transform: translate3d(0, 0, 0); }
-  25% { transform: translate3d(-3%, 2%, 0); }
-  50% { transform: translate3d(2%, -3%, 0); }
-  75% { transform: translate3d(-2%, -2%, 0); }
+  0%   { transform: translate3d(0, 0, 0); }
+  33%  { transform: translate3d(-3%, 2%, 0); }
+  66%  { transform: translate3d(2%, -3%, 0); }
   100% { transform: translate3d(0, 0, 0); }
 }
 

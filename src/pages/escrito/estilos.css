@@ -11,15 +11,8 @@
 }
 
 .hw__head {
-  opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity 600ms var(--e-out), transform 600ms var(--e-out);
 }
 
-.hw.is-entered .hw__head {
-  opacity: 1;
-  transform: none;
-}
 
 .hw__title {
   font-size: clamp(1.4rem, calc(6 * var(--vw)), 2rem);

@@ -19,7 +19,7 @@
  *            glass · winter · cosmos · light
  */
 
-export const acts = [
+const acts = [
   { id: "encontrarte", number: 1, title: "Encontrarte" },
   { id: "conocerte", number: 2, title: "Conocerte" },
   { id: "extranarte", number: 3, title: "Extrañarte" },

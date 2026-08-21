@@ -3,45 +3,14 @@
  * Las de CSS viven en tokens.css; éstas son sus gemelas para el canvas/WebGL.
  */
 
-export const linear = (t) => t;
-
-export const easeInQuad = (t) => t * t;
-export const easeOutQuad = (t) => t * (2 - t);
-export const easeInOutQuad = (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t);
-
-export const easeInCubic = (t) => t * t * t;
 export const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
 export const easeInOutCubic = (t) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
 /** El "expo out" es el que da esa sensación premium de frenada suave. */
 export const easeOutExpo = (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
-export const easeInOutExpo = (t) => {
-  if (t === 0) return 0;
-  if (t === 1) return 1;
-  return t < 0.5
-    ? Math.pow(2, 20 * t - 10) / 2
-    : (2 - Math.pow(2, -20 * t + 10)) / 2;
-};
 
 export const easeOutQuint = (t) => 1 - Math.pow(1 - t, 5);
-
-export const easeOutBack = (t, overshoot = 1.7) => {
-  const c3 = overshoot + 1;
-  return 1 + c3 * Math.pow(t - 1, 3) + overshoot * Math.pow(t - 1, 2);
-};
-
-export const easeOutElastic = (t) => {
-  const c4 = (2 * Math.PI) / 3;
-  if (t === 0 || t === 1) return t;
-  return Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
-};
-
-/** Rebote de papel al asentarse. */
-export const easeOutPaper = (t) => {
-  const e = easeOutExpo(t);
-  return e + Math.sin(t * Math.PI * 3) * 0.02 * (1 - t);
-};
 
 /**
  * Tween mínimo basado en rAF. Devuelve una promesa y una función de cancelado.

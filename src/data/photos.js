@@ -20,13 +20,8 @@ export const photos = Array.from({ length: TOTAL }, (_, i) => {
   return { id: `f${n}`, src: `${BASE}imagen${n}.png`, index: i, number: n };
 });
 
-export const photoSrc = (n) => `${BASE}imagen${n}.png`;
-
 /** Rango inclusivo por número de archivo: range(6, 13) → imagen6…imagen13 */
 export const range = (from, to) => photos.slice(from - 1, to);
-
-/** Sólo las rutas, que es lo que suele querer el precargador. */
-export const srcs = (list) => list.map((p) => p.src);
 
 /**
  * GRUPOS — qué fotos usa cada página.

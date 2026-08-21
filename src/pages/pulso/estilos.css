@@ -8,12 +8,12 @@
 
 .pulse {
   display: grid;
-  grid-template-rows: auto minmax(0, 22%) minmax(0, 1fr) auto auto auto auto;
+  /* cabecera · monitor · texto · EL CÍRCULO · lo que dice · la frase final */
+  grid-template-rows: auto minmax(0, 20%) auto minmax(0, 1fr) auto auto;
   gap: clamp(0.4rem, 1.6vh, 0.8rem);
   padding: var(--pad-t) var(--pad-x) calc(var(--pad-b) + var(--bar-space, 0rem));
   place-items: center;
   background: transparent;
-  --beat: 0;
   --on: 0;
 }
 
@@ -115,6 +115,7 @@
 }
 
 .pulse__bpm {
+  --beat: 0;
   font-family: var(--font-ui);
   font-size: clamp(1.1rem, calc(5 * var(--vw)), 1.5rem);
   font-variant-numeric: tabular-nums;
@@ -130,55 +131,6 @@
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.35);
   margin-top: 3px;
-}
-
-/* ══════════════ EL CORAZÓN ══════════════ */
-.pulse__middle {
-  display: grid;
-  place-items: center;
-  min-height: 0;
-  align-self: stretch;
-  justify-self: stretch;
-}
-
-.pulse__heart {
-  position: relative;
-  width: clamp(78px, 26vw, 122px);
-  aspect-ratio: 1;
-  display: grid;
-  place-items: center;
-  /* El latido entero es esto: una escala que sigue a `--beat`. */
-  transform: scale(calc(0.94 + var(--beat) * 0.16));
-  opacity: calc(0.42 + var(--on) * 0.58);
-  transition: opacity 420ms var(--e-out);
-}
-
-/* El trazado del corazón, en SVG. El color se controla con tres variables
-   para que herede el acento de cada página sin tocar el trazado. */
-.pulse__shape {
-  width: 74%;
-  height: 74%;
-  overflow: visible;
-  --heart-hi: color-mix(in srgb, var(--accent) 88%, #fff);
-  --heart-mid: var(--accent);
-  --heart-lo: color-mix(in srgb, var(--accent) 58%, #2a0713);
-  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
-}
-
-/* El resplandor que respira con el latido. */
-.pulse__glow {
-  position: absolute;
-  inset: -34%;
-  border-radius: 50%;
-  pointer-events: none;
-  background: radial-gradient(
-    circle at 50% 50%,
-    color-mix(in srgb, var(--accent) 62%, transparent) 0%,
-    color-mix(in srgb, var(--accent) 20%, transparent) 40%,
-    transparent 70%
-  );
-  opacity: calc(0.16 + var(--beat) * 0.7 * (0.3 + var(--on) * 0.7));
-  transform: scale(calc(0.86 + var(--beat) * 0.3));
 }
 
 /* ---- El texto ----------------------------------------------- */
@@ -198,10 +150,25 @@
 .pulse.is-entered .pulse__text { opacity: 1; transform: none; }
 .pulse.is-said .pulse__text { opacity: 0.3; }
 
-/* ══════════════ LA ALMOHADILLA ══════════════ */
+/* ══════════════ EL CÍRCULO ══════════════
+   Es a la vez el sitio donde se pone el dedo y el corazón que late. Todo lo
+   que pasa aquí pasa DEBAJO del pulgar, que es lo único que hace que se
+   sienta que la página responde al contacto. */
+.pulse__core {
+  --beat: 0;
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-self: center;
+  /* Sitio de sobra alrededor para que los anillos se vayan sin recortarse. */
+  width: min(74vw, 300px);
+  aspect-ratio: 1;
+}
+
 .pulse__pad {
   position: relative;
-  width: clamp(112px, 34vw, 150px);
+  z-index: 2;
+  width: 62%;
   aspect-ratio: 1;
   border-radius: 50%;
   border: 0;
@@ -212,86 +179,117 @@
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
   background: radial-gradient(
-    circle at 50% 42%,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0.03) 46%,
-    transparent 70%
+    circle at 50% 40%,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.035) 46%,
+    transparent 72%
   );
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) calc(16% + var(--on) * 54%), transparent),
+    0 0 calc(34px * var(--on)) -6px color-mix(in srgb, var(--accent) 70%, transparent);
   opacity: 0;
-  transform: scale(0.88);
+  /* Al apoyar el dedo se hunde un poco —como cede la piel— y desde ahí late. */
+  transform: scale(calc(0.88 - var(--on) * 0.03 + var(--beat) * 0.07));
   transition:
     opacity 620ms var(--e-out) 380ms,
-    transform 720ms var(--e-spring) 380ms,
-    box-shadow 320ms var(--e-out);
+    box-shadow 300ms var(--e-out);
 }
 
-.pulse.is-entered .pulse__pad { opacity: 1; transform: none; }
-
-.pulse.is-holding .pulse__pad {
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--accent) 60%, transparent),
-    0 0 30px -6px color-mix(in srgb, var(--accent) 70%, transparent);
+.pulse.is-entered .pulse__pad {
+  opacity: 1;
+  transform: scale(calc(1 - var(--on) * 0.03 + var(--beat) * 0.07));
+  transition:
+    opacity 620ms var(--e-out) 380ms,
+    box-shadow 300ms var(--e-out),
+    transform 720ms var(--e-spring) 380ms;
 }
 
-.pulse.is-said .pulse__pad { opacity: 0.35; pointer-events: none; }
+/* Cuando ya está el dedo puesto, la escala la manda el latido y no una
+   transición: si no, cada golpe llegaba suavizado y con retraso. */
+.pulse.is-entered.is-holding .pulse__pad {
+  transition: opacity 300ms var(--e-out), box-shadow 300ms var(--e-out);
+}
 
-/* La huella: la marca que dice dónde va el dedo. */
-.pulse__print {
+.pulse.is-said .pulse__pad { opacity: 0.4; pointer-events: none; }
+
+/* El disco interior: la piel del círculo, que se enciende con cada golpe. */
+.pulse__disc {
   position: absolute;
-  width: 46%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 50% 44%,
-    color-mix(in srgb, var(--accent) 30%, transparent) 0%,
-    transparent 68%
-  );
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 32%, transparent);
-  transform: scale(calc(1 + var(--beat) * 0.1));
-}
-
-.pulse__halo {
-  position: absolute;
-  inset: -12%;
+  inset: 11%;
   border-radius: 50%;
   pointer-events: none;
   background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--accent) 34%, transparent) 0%,
-    transparent 66%
+    circle at 50% 44%,
+    color-mix(in srgb, var(--accent) calc(14% + var(--beat) * 46%), transparent) 0%,
+    transparent 70%
   );
-  opacity: calc(var(--on) * (0.2 + var(--beat) * 0.8));
-  transform: scale(calc(0.9 + var(--beat) * 0.16));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 26%, transparent);
+  transform: scale(calc(1 + var(--beat) * 0.06));
 }
 
-/* Los anillos que salen con cada latido. */
-.pulse__ring {
+/* El resplandor de alrededor, que respira con el latido. */
+.pulse__aura {
   position: absolute;
-  inset: 0;
+  inset: -26%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in srgb, var(--accent) 55%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 16%, transparent) 42%,
+    transparent 72%
+  );
+  opacity: calc((0.1 + var(--beat) * 0.62) * (0.25 + var(--on) * 0.75));
+  transform: scale(calc(0.84 + var(--beat) * 0.26));
+}
+
+/* El corazón, DENTRO del círculo. El color sale de tres variables para que
+   herede el acento de la página sin tocar el trazado. */
+.pulse__shape {
+  position: relative;
+  z-index: 2;
+  width: 44%;
+  height: 44%;
+  overflow: visible;
+  --heart-hi: color-mix(in srgb, var(--accent) 88%, #fff);
+  --heart-mid: var(--accent);
+  --heart-lo: color-mix(in srgb, var(--accent) 58%, #2a0713);
+  filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.5));
+  opacity: calc(0.34 + var(--on) * 0.66);
+  /* El corazón late MÁS que el círculo: el golpe se lee dentro. */
+  transform: scale(calc(0.92 + var(--beat) * 0.22));
+  transition: opacity 420ms var(--e-out);
+}
+
+/* Los anillos: uno por latido, lanzados desde JS. Al ir con el corazón de
+   verdad y no a un compás propio, el ritmo se lee como un ritmo. */
+.pulse__onda {
+  position: absolute;
+  width: 62%;
+  aspect-ratio: 1;
   border-radius: 50%;
   border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
   opacity: 0;
   pointer-events: none;
+  will-change: transform, opacity;
 }
 
-.pulse.is-holding .pulse__ring {
-  animation: pulse-ring 1.6s var(--e-out) infinite;
-}
+.pulse__onda.is-out { animation: pulse-onda 1400ms var(--e-out); }
 
-.pulse.is-holding .pulse__ring--2 { animation-delay: 0.8s; }
-
-@keyframes pulse-ring {
-  0%   { opacity: 0.55; transform: scale(0.92); }
-  100% { opacity: 0; transform: scale(1.6); }
+@keyframes pulse-onda {
+  0%   { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.62); }
 }
 
 .pulse__hint {
-  position: relative;
-  z-index: 2;
+  position: absolute;
+  bottom: -1.9em;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
   font-family: var(--font-hand);
   font-size: clamp(1rem, calc(4.4 * var(--vw)), 1.25rem);
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.66);
   opacity: calc(1 - var(--on));
   transition: opacity 300ms var(--e-out);
 }
@@ -337,30 +335,75 @@
 .pulse.is-said .pulse__reveal { opacity: 1; transform: none; }
 
 /* ---- Móvil apaisado ----------------------------------------- */
+/* Tumbado: la línea y el texto a la izquierda, el círculo a la derecha, donde
+   cae el pulgar de la mano que sujeta el móvil sin taparle el monitor. */
 html[data-orientation="landscape"][data-device="phone"] .pulse {
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-columns: 1fr auto;
+  /* La fila del medio tiene suelo: sin él, el texto de abajo se comía el
+     monitor y la línea del pulso quedaba en once píxeles de alto. */
+  grid-template-rows: auto minmax(72px, 1fr) auto;
   column-gap: var(--gap-md);
   align-items: center;
 }
 
-html[data-orientation="landscape"][data-device="phone"] .pulse__head { grid-column: 1 / -1; }
+html[data-orientation="landscape"][data-device="phone"] .pulse__head {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
 html[data-orientation="landscape"][data-device="phone"] .pulse__monitor { grid-column: 1; grid-row: 2; }
-html[data-orientation="landscape"][data-device="phone"] .pulse__middle { grid-column: 1; grid-row: 3; }
-html[data-orientation="landscape"][data-device="phone"] .pulse__text { grid-column: 2; grid-row: 2; align-self: end; }
-html[data-orientation="landscape"][data-device="phone"] .pulse__pad { grid-column: 2; grid-row: 3; }
+
+html[data-orientation="landscape"][data-device="phone"] .pulse__text {
+  grid-column: 1;
+  grid-row: 3;
+  max-width: 46ch;
+  font-size: clamp(0.78rem, calc(3.4 * var(--vw)), 0.95rem);
+  line-height: 1.45;
+}
+
+/* El círculo se mide por el alto que le queda, no por el ancho de pantalla:
+   así nunca se sale ni empuja al resto. */
+html[data-orientation="landscape"][data-device="phone"] .pulse__core {
+  grid-column: 2;
+  grid-row: 2;
+  width: auto;
+  height: 100%;
+  max-width: 42vw;
+}
+
 html[data-orientation="landscape"][data-device="phone"] .pulse__say,
 html[data-orientation="landscape"][data-device="phone"] .pulse__reveal {
   grid-column: 2;
   grid-row: 3;
-  align-self: end;
+  max-width: 34vw;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pulse.is-holding .pulse__ring { animation: none; }
+  .pulse__onda { display: none; }
   .pulse__say.is-visible { animation: none; opacity: 0.95; transform: none; }
-  .pulse__heart,
-  .pulse__glow,
-  .pulse__print,
-  .pulse__halo { transform: none; }
+  .pulse__aura,
+  .pulse__disc,
+  .pulse__shape { transform: none; }
+  .pulse.is-entered .pulse__pad { transform: none; }
+}
+
+/* Escondido: con dos dedos puestos, el corazón deja de latir solo.
+   Aparece un segundo, desfasado, y los dos se turnan. */
+.pulse__shape--dos {
+  position: absolute;
+  z-index: 1;
+  width: 44%;
+  height: 44%;
+  opacity: 0;
+  transform: scale(0.9) translateX(0);
+  transition: opacity 700ms var(--e-out), transform 700ms var(--e-spring);
+}
+
+.pulse.is-dos .pulse__shape--dos {
+  opacity: calc(0.24 + var(--on) * 0.5);
+  /* El segundo late medio compás por detrás: se ve que son dos y no un eco. */
+  transform: scale(calc(1.02 - var(--beat) * 0.14)) translateX(11%);
+}
+
+.pulse.is-dos .pulse__shape {
+  transform: scale(calc(0.9 + var(--beat) * 0.2)) translateX(-11%);
 }

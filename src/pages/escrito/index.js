@@ -33,7 +33,7 @@ export default class HandwritingPage extends BasePage {
     ]);
 
     this.root.append(
-      el("header.hw__head", {}, [
+      el("header.hw__head.entra--traza", {}, [
         el("span.kicker", { text: ch?.kicker || "" }),
         el("h2.title.hw__title", { text: ch?.title || "" }),
       ]),

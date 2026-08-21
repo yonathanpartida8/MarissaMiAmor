@@ -68,7 +68,11 @@
   transition-delay: 900ms;
 }
 
-.finale.is-said .finale__content {
+/* Sólo el botón recupera el dedo, no el bloque entero.
+   Con el bloque entero, el texto del cierre se quedaba por delante de la
+   capa que escucha la pantalla y ya no se podía volver a tocar el corazón
+   —ni encontrar lo que hay escondido en sostenerlo—. */
+.finale.is-said .finale__again {
   pointer-events: auto;
 }
 

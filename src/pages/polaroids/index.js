@@ -87,7 +87,7 @@ export default class PolaroidsPage extends BasePage {
     this.proseEl.append(frag);
 
     this.root.append(
-      el("header.pola__head", {}, [
+      el("header.pola__head.entra--revela", {}, [
         el("span.kicker", { text: ch?.kicker || "" }),
         el("h2.title.pola__title", { text: ch?.title || "" }),
       ]),

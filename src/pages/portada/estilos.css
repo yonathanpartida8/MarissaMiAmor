@@ -389,3 +389,24 @@ html[data-orientation="landscape"][data-device="phone"] .cover__seal {
 :root[data-tier="high"] .cover__photo {
   mix-blend-mode: soft-light;
 }
+
+/* Escondido: tres toques en el borde de abajo de la tapa y aparece
+   una firma grabada en el cartón, como la de dentro de un libro de verdad. */
+.cover__card::after {
+  content: "M · Y";
+  position: absolute;
+  right: 8%;
+  bottom: 3.2%;
+  z-index: 4;
+  font-family: var(--font-display);
+  font-size: clamp(0.6rem, calc(2.6 * var(--vw)), 0.78rem);
+  letter-spacing: 0.42em;
+  color: rgba(255, 246, 236, 0.5);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), 0 -1px 0 rgba(255, 246, 220, 0.14);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 900ms var(--e-out), transform 900ms var(--e-out);
+  pointer-events: none;
+}
+
+.cover__card.is-signed::after { opacity: 1; transform: none; }

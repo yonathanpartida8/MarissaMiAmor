@@ -12,6 +12,7 @@ import { BasePage } from "../BasePage.js";
 import { Gestures } from "../../core/Gestures.js";
 import { el, qs, setVars } from "../../utils/dom.js";
 import { clamp01, damp } from "../../utils/math.js";
+import escondidos from "../../data/escondidos.js";
 
 const HOLD_SECONDS = 1.25;
 
@@ -104,6 +105,8 @@ export default class CoverPage extends BasePage {
     this.tiltX = 0;
     this.tiltY = 0;
 
+    this.#escondite();
+
     this.addGestures(
       new Gestures(
         this.seal,
@@ -124,6 +127,37 @@ export default class CoverPage extends BasePage {
     );
 
     this.addTicker((dt, time, realDt) => this.#frame(dt, time, realDt), 12);
+  }
+
+  /**
+   * Escondido: tres toques en la esquina de abajo de la tapa.
+   *
+   * No en el lacre —eso es abrir el libro— sino en el cartón, abajo, donde
+   * nadie toca a propósito. Es el primer detalle del libro y también el más
+   * fácil de no encontrar nunca, que es como tienen que ser estas cosas.
+   */
+  #escondite() {
+    let toques = 0;
+    this.addGestures(
+      new Gestures(
+        this.card,
+        {
+          onTap: (e) => {
+            const caja = this.card.getBoundingClientRect();
+            const abajo = e.y > caja.bottom - caja.height * 0.18;
+            if (!abajo) {
+              toques = 0;
+              return;
+            }
+            if (++toques < 3) return;
+            toques = 0;
+            this.card.classList.add("is-signed");
+            this.escondite("portada-firma", escondidos.portada, e);
+          },
+        },
+        { threshold: 12 }
+      )
+    );
   }
 
   #frame(dt, time, realDt) {

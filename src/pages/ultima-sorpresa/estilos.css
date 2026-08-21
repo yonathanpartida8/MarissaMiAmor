@@ -20,12 +20,8 @@
 /* ---- Cabecera ----------------------------------------------- */
 .sorpresa__head {
   text-align: center;
-  opacity: 0;
-  transform: translateY(-8px);
-  transition: opacity 560ms var(--e-out), transform 560ms var(--e-out);
 }
 
-.sorpresa.is-entered .sorpresa__head { opacity: 1; transform: none; }
 .sorpresa.is-done .sorpresa__head { opacity: 0.25; }
 
 .sorpresa__head .kicker {

@@ -15,15 +15,8 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--gap-sm);
-  opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity 600ms var(--e-out), transform 600ms var(--e-out);
 }
 
-.cons.is-entered .cons__head {
-  opacity: 1;
-  transform: none;
-}
 
 .cons__head .kicker {
   font-family: var(--font-ui);

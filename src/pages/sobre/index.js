@@ -11,7 +11,7 @@
 
 import { BasePage } from "../BasePage.js";
 import { Gestures } from "../../core/Gestures.js";
-import { el, qs, splitWords, setVars, wait } from "../../utils/dom.js";
+import { el, splitWords, setVars, wait } from "../../utils/dom.js";
 import { clamp01 } from "../../utils/math.js";
 
 const BREAK_DISTANCE = 74;

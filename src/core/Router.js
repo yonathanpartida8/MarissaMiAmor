@@ -165,6 +165,33 @@ export class Router extends Emitter {
     resetLeaf(incoming.leaf);
     if (!incoming.leaf.isConnected) this.stage.append(incoming.leaf);
 
+    // LA HOJA QUE ENTRA YA TRAE SU CONTENIDO ENCENDIDO.
+    //
+    // Las veintiséis páginas encienden lo suyo con `is-entered`, y lo hacían
+    // desde `enter()`, que el router llama DESPUÉS de la transición. Durante
+    // todo el giro, entonces, la hoja que entraba estaba en pantalla con
+    // todo dentro a opacidad cero: se veía pasar una hoja vacía y, en las
+    // páginas cuyo contenido vive en el lienzo 3D, directamente un hueco
+    // negro de dos o tres décimas. Ése era el parpadeo de casi todas las
+    // transiciones del libro.
+    //
+    // Encendiéndolo aquí, la transición trae la página ya viva y su entrada
+    // se solapa con el giro, que además es como se ve mejor.
+    //
+    // Y se quita antes de ponerlo para que la entrada se REPITA al volver.
+    // Una página ya visitada seguía teniendo la clase puesta, así que al
+    // regresar aparecía de golpe, sin su gesto: cada página tiene el suyo
+    // —el carro de la máquina, el revelado de la polaroid, el cajón que
+    // sube— y son justo lo que hace que no se parezcan entre ellas.
+    const raiz = incoming.page.root;
+    if (raiz) {
+      raiz.classList.add("sin-transicion");
+      raiz.classList.remove("is-entered");
+      void raiz.offsetWidth; // congelado, el rebobinado es instantáneo
+      raiz.classList.remove("sin-transicion");
+      raiz.classList.add("is-entered");
+    }
+
     // La atmósfera cambia de color *durante* la transición, no después:
     // así el fondo y la página llegan juntos.
     this.ctx.gl?.setMood(incoming.page.palette, incoming.page.mood);

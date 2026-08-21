@@ -12,7 +12,7 @@ import { seeded } from "../utils/rng.js";
 const cache = new Map();
 
 /** Ruido monocromo fino: el grano de película sobre toda la escena. */
-export function filmGrain(size = 180, opacity = 26) {
+function filmGrain(size = 180, opacity = 26) {
   const key = `grain-${size}-${opacity}`;
   if (cache.has(key)) return cache.get(key);
 
@@ -38,7 +38,7 @@ export function filmGrain(size = 180, opacity = 26) {
  * Fibra de papel: ruido suave + hebras horizontales tenues, como el papel
  * de algodón de una carta buena.
  */
-export function paperFiber(size = 256) {
+function paperFiber(size = 256) {
   const key = `paper-${size}`;
   if (cache.has(key)) return cache.get(key);
 

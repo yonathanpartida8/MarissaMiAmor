@@ -13,7 +13,7 @@
 
 import { el, qs, setVars } from "../utils/dom.js";
 import { Gestures } from "../core/Gestures.js";
-import { clamp, damp, clamp01 } from "../utils/math.js";
+import { clamp, damp } from "../utils/math.js";
 
 /**
  * @param {import("../core/Context.js").Context} ctx

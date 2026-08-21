@@ -12,10 +12,8 @@
  * Todas comparten firma y devuelven una promesa que resuelve al terminar.
  */
 
-import { tween } from "../utils/easing.js";
 import {
-  easeInOutExpo,
-  easeOutExpo,
+  tween,
   easeOutQuint,
   easeOutCubic,
   easeInOutCubic,

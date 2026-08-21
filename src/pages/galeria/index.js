@@ -146,31 +146,43 @@ export default class GalleryPage extends BasePage {
   #frame(dt, time) {
     if (!this.slideWidth) return;
 
+    const desde = this.offset;
     if (!this.dragging) {
       this.offset = damp(this.offset, this.target, 11, dt);
     }
-    this.rail.style.transform = `translate3d(${this.offset}px, 0, 0)`;
 
     const center = -this.offset / this.slideWidth;
-    const index = clamp(Math.round(center), 0, this.slides.length - 1);
 
-    if (index !== this.current) {
-      this.current = index;
-      this.counter.textContent = `${index + 1} / ${this.slides.length}`;
-      for (const dot of this.dots.children) {
-        dot.classList.toggle("is-on", Number(dot.dataset.index) === index);
+    // Con el carrusel parado no se reescribe nada de la colocación: eran una
+    // escritura por diapositiva más la del riel, sesenta veces por segundo,
+    // para dejarlo todo exactamente igual que estaba.
+    if (!this.pintado || Math.abs(this.offset - desde) > 0.01) {
+      this.pintado = true;
+      this.rail.style.transform = `translate3d(${this.offset}px, 0, 0)`;
+
+      const index = clamp(Math.round(center), 0, this.slides.length - 1);
+      if (index !== this.current) {
+        this.current = index;
+        this.counter.textContent = `${index + 1} / ${this.slides.length}`;
+        for (const dot of this.dots.children) {
+          dot.classList.toggle("is-on", Number(dot.dataset.index) === index);
+        }
+        this.#load(index);
+        if (index === this.slides.length - 1 && this.entry.secret) this.unlockSecret();
       }
-      this.#load(index);
-      if (index === this.slides.length - 1 && this.entry.secret) this.unlockSecret();
+
+      // Profundidad: la del centro manda, las de al lado se retiran.
+      this.slides.forEach((slide, i) => {
+        const near = Math.max(0, 1 - Math.abs(i - center));
+        slide.node.style.setProperty("--near", near.toFixed(3));
+      });
     }
 
-    // Profundidad: la del centro manda, las de al lado se retiran.
+    // Los marcos sí siguen su ritmo siempre: tienen su propio paralaje y su
+    // brillo, que se mueven con la inclinación aunque el carrusel esté quieto.
+    // Sólo la visible y sus vecinas gastan tiempo.
     this.slides.forEach((slide, i) => {
-      const d = Math.abs(i - center);
-      const near = Math.max(0, 1 - d);
-      slide.node.style.setProperty("--near", near.toFixed(3));
-      // Sólo la visible y sus vecinas gastan tiempo de animación.
-      if (d < 1.6) slide.frame.tick(dt, time);
+      if (Math.abs(i - center) < 1.6) slide.frame.tick(dt, time);
     });
   }
 
