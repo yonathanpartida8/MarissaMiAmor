@@ -96,6 +96,11 @@ export default class CoverPage extends BasePage {
     this.ctx.gl?.setIntensity(1);
     requestAnimationFrame(() => this.root.classList.add("is-entered"));
 
+    // El sonido de romper el lacre se va trayendo AHORA, no antes: la
+    // portada ya está en pantalla, la red está libre, y todavía faltan los
+    // segundos que se tarda en encontrar el sello y mantener el dedo.
+    this.ctx.audio.prepare("open");
+
     // Circunferencia del anillo de progreso, para animar stroke-dashoffset.
     const r = 44;
     this.circumference = 2 * Math.PI * r;

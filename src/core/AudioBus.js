@@ -41,10 +41,17 @@ export class AudioBus extends Emitter {
       audio.src = cfg.src;
       audio.loop = cfg.loop;
       audio.volume = 0;
-      // La música son 5 MB: pedirla entera antes de la primera página compite
-      // con las ilustraciones y retrasa la apertura del libro en datos móviles.
-      // Con "none" no se toca hasta que suena, y suena en streaming.
-      audio.preload = name === "music" ? "none" : "auto";
+      // Nada de audio en la carrera por abrir el libro.
+      //
+      // La música son 5 MB y el sonido de abrir el sobre son 2, y los dos se
+      // pedían mientras la portada peleaba por descargar su fotografía. En
+      // datos móviles eso es la diferencia entre abrir en dos segundos y
+      // abrir en ocho, a cambio de un sonido que todavía no toca.
+      //
+      // Con "none" no se pide nada hasta que alguien lo pide: la portada
+      // llama a `prepare("open")` cuando ya está en pantalla, que es cuando
+      // sobra red y aún faltan los segundos que se tarda en romper el lacre.
+      audio.preload = "none";
       // Silencia errores de red: el libro debe funcionar sin sonido.
       audio.addEventListener("error", () => this.tracks.delete(name));
       this.tracks.set(name, { el: audio, base: cfg.volume });
@@ -66,6 +73,17 @@ export class AudioBus extends Emitter {
       return a;
     });
     this.turnIndex = 0;
+  }
+
+  /**
+   * Pide que se vaya trayendo un sonido, sin sonarlo.
+   * Para llamarlo cuando ya no le quita ancho de banda a nada urgente.
+   */
+  prepare(name) {
+    const track = this.tracks.get(name);
+    if (!track || track.el.preload === "auto") return;
+    track.el.preload = "auto";
+    track.el.load();
   }
 
   /** Debe llamarse dentro de un gesto del usuario (click/touch). */
