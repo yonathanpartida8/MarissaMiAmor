@@ -118,17 +118,6 @@
 
 .scratch__scroll {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  touch-action: pan-y;
-  overscroll-behavior: contain;
-  scrollbar-width: none;
-  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 18px), transparent 100%);
-  mask-image: linear-gradient(180deg, #000 calc(100% - 18px), transparent 100%);
-}
-
-.scratch__scroll::-webkit-scrollbar {
-  display: none;
 }
 
 .scratch__prose {

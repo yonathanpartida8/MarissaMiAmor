@@ -189,13 +189,25 @@ html[data-device="desktop"] .leaf {
 }
 
 /* En el móvil la barra flota POR ENCIMA de la hoja. `--bar-space` es el
-   hueco que ocupa, para que lo esquive quien lo necesite.
-   No se le suma al relleno de la página entera a propósito: eso encogería
-   también las superficies con las que se juega (el velo, la lámina de
-   rascar, el tablero del mosaico), y ésas quieren toda la hoja. Sólo lo
-   usan los paneles de texto que se apoyan abajo. */
+   hueco que ocupa, para que lo esquive quien lo necesite (ver `.hueco-barra`
+   en lectura.css).
+
+   Sale de las medidas reales de la barra en vez de ser un número a ojo:
+   un botón (`--touch`) más su relleno y lo que la separa del borde, menos
+   lo que la página ya deja por abajo. Las `2.7rem` de antes se quedaban
+   ocho píxeles cortas y la última línea de varias páginas se leía por
+   debajo del cristal de la barra. */
 html[data-device="phone"] .page {
-  --bar-space: 2.7rem;
+  --bar-space: max(0rem, calc(var(--touch) + 34px - var(--pad-page)));
+}
+
+/* En apaisado la barra se encoge y se pega más al borde, así que estorba
+   menos. Antes esto se resolvía anulando el hueco en los paneles que se
+   van a la columna derecha, pero la barra está CENTRADA: seguía cayendo
+   encima de ellos. Es más sencillo —y sale bien en las dos columnas—
+   quedarse con un hueco más pequeño para todos. */
+html[data-orientation="landscape"][data-device="phone"] .page {
+  --bar-space: max(0rem, calc(var(--touch) + 20px - var(--pad-page)));
 }
 
 /* La portada y el final se ven sin barra: no hay nada que esquivar. */
@@ -328,27 +340,6 @@ html[data-device="desktop"] .page {
   pointer-events: none;
 }
 
-/* ---- Hueco para la barra flotante ---------------------------
-   Los paneles de texto que se apoyan en el borde inferior de la hoja
-   dejan sitio a la barra. Sin esto, la última línea de cada página se
-   leía por debajo de ella durante los tres segundos que tarda en
-   esconderse sola. Va aquí, en un sitio, y no repetido en doce hojas
-   de estilo: cualquier página nueva con panel abajo lo hereda.        */
-.depth__card,
-.field__card,
-.mine__panel,
-.mos__panel,
-.orb__panel,
-.pola__panel,
-.chapter__foot {
-  margin-bottom: var(--bar-space, 0rem);
-}
-
-/* En apaisado varios de esos paneles se van al lado derecho y ya no
-   tienen nada debajo que esquivar. */
-html[data-orientation="landscape"][data-device="phone"] .depth__card,
-html[data-orientation="landscape"][data-device="phone"] .field__card,
-html[data-orientation="landscape"][data-device="phone"] .mos__panel,
-html[data-orientation="landscape"][data-device="phone"] .pola__panel {
-  margin-bottom: 0;
-}
+/* El hueco para la barra flotante ya no es una lista de selectores que
+   hay que acordarse de ampliar: lo pide quien lo necesita con la clase
+   `.hueco-barra`, y vive en lectura.css junto a lo demás del texto. */

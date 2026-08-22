@@ -48,11 +48,11 @@ export default class MemoryFieldPage extends BasePage {
 
     this.root.append(
       el("div.field__surface", { "data-claim-drag": "" }),
-      el("div.field__card", {}, [
+      el("div.field__card.hueco-barra", {}, [
         el("span.kicker", { text: ch?.kicker || "" }),
         el("h2.title.field__title", { text: ch?.title || "" }),
         el("hr.rule"),
-        el("div.field__scroll", {}, [this.proseEl]),
+        el("div.lectura.field__scroll", {}, [this.proseEl]),
       ]),
       el("div.field__badge", { text: "" }),
       el("div.field__fallback")

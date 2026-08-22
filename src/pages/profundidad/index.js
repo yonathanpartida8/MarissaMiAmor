@@ -35,11 +35,11 @@ export default class DepthPage extends BasePage {
     // sólo que sin profundidad. Nunca una página vacía.
     this.fallback = el("div.depth__fallback");
 
-    this.card = el("div.depth__card", {}, [
+    this.card = el("div.depth__card.hueco-barra", {}, [
       el("span.kicker.depth__kicker", { text: ch?.kicker || "" }),
       el("h2.title.depth__title", { text: ch?.title || "" }),
       el("hr.rule.depth__rule"),
-      el("div.depth__scroll", {}, [this.proseEl]),
+      el("div.lectura.depth__scroll", {}, [this.proseEl]),
     ]);
 
     this.root.append(this.fallback, el("div.depth__veil"), this.card);

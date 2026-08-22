@@ -66,7 +66,7 @@ export default class GalleryPage extends BasePage {
       el("div.mine__panel", {}, [
         el("h2.mine__title", { text: ch?.title || "" }),
         ch?.text ? el("hr.rule") : null,
-        ch?.text ? el("div.mine__scroll", {}, [this.proseEl]) : null,
+        ch?.text ? el("div.lectura.mine__scroll", {}, [this.proseEl]) : null,
       ])
     );
 

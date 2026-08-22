@@ -75,9 +75,9 @@ src/
     EdgeNav.js          los botones de los lados y el arrastre
   transitions/          volteo de hoja + efectos de luz
   data/
-    chapters.js         LOS TEXTOS (lo único que hay que tocar para cambiarlos)
+    chapters.js         LOS TEXTOS de cada página
+    fotos.js            LAS FOTOS de cada página, por nombre de archivo
     escondidos.js       lo que dicen los ocho escondites
-    photos.js           inventario y reparto de las 85 ilustraciones
     manifest.js         EL ORDEN DEL LIBRO
     custom.js           traduce mis-paginas/paginas.js al formato interno
     amores.js           busca solo las fotos de images/amores/
@@ -219,13 +219,26 @@ Algunos campos que quizá quieras tocar:
 
 ## Las imágenes
 
-Las ochenta y cinco ilustraciones se quedan donde están y con el nombre que
-tienen. Para cambiarlas, **sustituye los archivos de `assets/img/`
-conservando el nombre** (`imagen1.png`, `imagen2.png`…). No hay que tocar código.
+Qué foto sale en qué página está en **`src/data/fotos.js`**, y está escrito
+como se lee: a la izquierda el nombre de la página, a la derecha sus archivos.
 
-Si quieres cambiar qué imagen sale en qué página, mueve los números en los
-grupos de `src/data/photos.js`. Hay una comprobación que avisa por consola si
-alguna se queda sin usar o sale dos veces.
+```js
+"llueve-alla":      ["imagen14.png"],
+"nuestro-desorden": serie("imagen", 6, 13),   // ocho polaroids seguidas
+```
+
+Para cambiar la foto de una página:
+
+1. deja tu imagen en `assets/img/`
+2. escribe su nombre en la línea de esa página
+
+Y ya. Puedes ponerle el nombre que quieras (`la-playa.jpg`, `tu-risa.png`) y
+repetir la misma foto en varias páginas. Si te equivocas al escribir un
+nombre el libro **no se rompe**: esa foto no sale y la consola dice
+exactamente qué archivo no encontró y qué página lo pedía.
+
+`serie("imagen", 6, 13)` es sólo un atajo para no escribir ocho líneas
+seguidas; si prefieres nombres de verdad, pon la lista y ya está.
 
 Cómo se presentan sí cambió mucho: todas pasan por `PhotoFrame`, que las
 revela en tres tiempos (marco → velada → nítida), les da paralaje contra el

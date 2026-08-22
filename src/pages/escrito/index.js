@@ -9,7 +9,7 @@
 
 import { BasePage } from "../BasePage.js";
 import { Gestures } from "../../core/Gestures.js";
-import { el, qs, setVars } from "../../utils/dom.js";
+import { el, setVars } from "../../utils/dom.js";
 import { clamp01, damp } from "../../utils/math.js";
 
 export default class HandwritingPage extends BasePage {
@@ -32,21 +32,23 @@ export default class HandwritingPage extends BasePage {
       el("div.hw__nibglow"),
     ]);
 
+    // La pauta se queda quieta y la tinta se desliza por encima: si la carta
+    // es más larga que la hoja, la hoja se desplaza sola siguiendo a la
+    // plumilla, y cuando termina de escribirse se puede subir y bajar a mano
+    // para leerla entera. Ninguna línea se pierde por larga que sea la carta.
+    this.ink = el("div.hw__ink", {}, [el("div.hw__rules"), this.textEl, this.nib]);
+    this.sheet = el("div.lectura.hw__sheet", { "data-claim-drag": "" }, [this.ink]);
+
     this.root.append(
       el("header.hw__head.entra--traza", {}, [
         el("span.kicker", { text: ch?.kicker || "" }),
         el("h2.title.hw__title", { text: ch?.title || "" }),
       ]),
-      el("div.hw__sheet", { "data-claim-drag": "" }, [
-        el("div.hw__rules"),
-        this.textEl,
-        this.nib,
-      ]),
+      this.sheet,
       el("div.hw__sign.signature", { text: "te amo, mi amorcito" }),
-      el("div.hw__prompt", { text: "arrastra hacia abajo" })
+      el("div.hw__prompt.hueco-barra", { text: "arrastra hacia abajo" })
     );
 
-    this.sheet = qs(".hw__sheet", this.root);
     return this.root;
   }
 
@@ -101,6 +103,18 @@ export default class HandwritingPage extends BasePage {
     if (Math.abs(this.display - before) < 0.0002 && this.finished) return;
 
     setVars(this.root, { "--w": this.display.toFixed(4) });
+
+    // Si la carta no cabe de una vez, la hoja acompaña a la plumilla en vez
+    // de dejarla escribir fuera de la vista. Al terminar deja de seguirla:
+    // a partir de ahí la carta se lee subiendo y bajando con el dedo.
+    if (!this.finished) {
+      const sobra = this.sheet.scrollHeight - this.sheet.clientHeight;
+      if (sobra > 4) {
+        const frente = this.ink.offsetHeight * this.display;
+        const quiere = Math.max(0, Math.min(sobra, frente - this.sheet.clientHeight * 0.62));
+        if (Math.abs(this.sheet.scrollTop - quiere) > 0.5) this.sheet.scrollTop = quiere;
+      }
+    }
 
     // La plumilla no va recta: escribe, y escribir tiembla.
     const wobble = Math.sin(time * 22) * 3.5 + Math.sin(time * 9.3) * 2;

@@ -42,11 +42,11 @@ export default class VeilPage extends BasePage {
     this.root.append(
       this.fallback,
       el("div.veil__surface", { "data-claim-drag": "" }),
-      el("div.veil__card", {}, [
+      el("div.veil__card.hueco-barra", {}, [
         el("span.kicker", { text: ch?.kicker || "" }),
         el("h2.title.veil__title", { text: ch?.title || "" }),
         el("hr.rule"),
-        el("div.veil__scroll", {}, [this.proseEl]),
+        el("div.lectura.veil__scroll", {}, [this.proseEl]),
       ]),
       el("div.veil__meter", {}, [el("i")])
     );

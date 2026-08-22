@@ -71,7 +71,11 @@ export default class CombinacionPage extends BasePage {
         "aria-valuemax": "9",
         tabindex: "0",
       });
-      const strip = el("div.lock__strip");
+      // La tira es más alta que su ventana a propósito: es el rodillo. Va
+      // marcada como decorativa porque quien no la ve ya tiene el número
+      // en `aria-valuenow` de la rueda, y así nadie —ni un lector de
+      // pantalla ni una revisión de recortes— la confunde con texto perdido.
+      const strip = el("div.lock__strip", { "aria-hidden": "true" });
       // 0–9 repetidos tres veces: la rueda gira sin fin y sin costuras.
       for (let r = 0; r < 3; r++) {
         for (let d = 0; d < 10; d++) strip.append(el("span.lock__digit", { text: String(d) }));
@@ -121,7 +125,7 @@ export default class CombinacionPage extends BasePage {
       el("div.lock__note.paper.paper--aged", {}, [
         el("h2.lock__title", { text: textos.titulo || ch?.title }),
         el("hr.rule"),
-        el("div.lock__scroll", {}, [this.proseEl]),
+        el("div.lectura.lock__scroll", {}, [this.proseEl]),
         el("p.lock__reveal", { text: textos.revelacion || ch?.reveal }),
       ]),
     ]);

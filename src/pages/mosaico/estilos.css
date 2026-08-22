@@ -182,18 +182,6 @@
 
 .mos__panel .rule { margin: 0.3rem 0 0.55rem; background: linear-gradient(90deg, var(--accent), transparent 72%); }
 
-.mos__scroll {
-  min-height: 0;
-  overflow-y: auto;
-  touch-action: pan-y;
-  overscroll-behavior: contain;
-  scrollbar-width: none;
-  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 14px), transparent 100%);
-  mask-image: linear-gradient(180deg, #000 calc(100% - 14px), transparent 100%);
-}
-
-.mos__scroll::-webkit-scrollbar { display: none; }
-
 .mos__prose {
   font-family: var(--font-display);
   font-size: clamp(0.95rem, calc(3.7 * var(--vw)), 1.12rem);

@@ -434,16 +434,8 @@ html[data-device="tablet"] .bar {
 
 .toc__scroll {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  touch-action: pan-y;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
   padding: var(--gap-sm) var(--gap-md) var(--gap-lg);
 }
-
-.toc__scroll::-webkit-scrollbar { display: none; }
 
 .toc__act {
   display: flex;

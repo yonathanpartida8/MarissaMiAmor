@@ -1,8 +1,25 @@
 /**
  * CAPÍTULOS — las palabras.
  *
- * Este es el único fichero que hay que tocar para cambiar lo que dice el libro.
- * Todo lo demás (páginas, animaciones, efectos) sólo es la forma de enseñarlo.
+ * Aquí está lo que dice el libro. Todo lo demás (páginas, animaciones,
+ * efectos) sólo es la forma de enseñarlo.
+ *
+ * ── DÓNDE ESTÁ CADA COSA ──────────────────────────────────────────────
+ *   el texto de una página  →  aquí
+ *   sus fotos               →  `fotos.js`
+ *   el orden del libro      →  `manifest.js`
+ *
+ * Cinco páginas tienen tanto que decir que sus palabras viven al lado de
+ * su código, para no mezclarlo todo aquí. Se cambian igual de fácil:
+ *   · el candado          `src/pages/combinacion/textos.js`  (y la clave)
+ *   · el pulso            `src/pages/pulso/textos.js`
+ *   · la nota escondida   `src/pages/secreto/textos.js`
+ *   · el cajón            `src/pages/ultima-sorpresa/textos.js`
+ *   · tus fotos           `src/pages/amor/textos.js`
+ * ──────────────────────────────────────────────────────────────────────
+ *
+ * El texto puede ser tan largo como quieras: si no cabe en la pantalla,
+ * la página lo deja desplazarse con el dedo en vez de cortarlo.
  *
  * Cada capítulo puede llevar:
  *   id       identificador estable; el manifiesto lo usa para colocarlo

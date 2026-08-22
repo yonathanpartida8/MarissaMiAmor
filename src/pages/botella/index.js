@@ -40,7 +40,7 @@ export default class BottlePage extends BasePage {
         el("span.kicker", { text: ch?.kicker || "" }),
         el("h2.bot__title", { text: ch?.title || "" }),
         el("hr.rule"),
-        el("div.bot__read", {}, [this.proseEl]),
+        el("div.lectura.bot__read", {}, [this.proseEl]),
         el("div.bot__sign", { text: "— llegó, al final" }),
       ]),
       el("div.bot__roll.bot__roll--bottom"),
@@ -76,7 +76,7 @@ export default class BottlePage extends BasePage {
       el("div.bot__sea", {}, [wave("bot__wave--back"), wave("bot__wave--mid"), wave("bot__wave--front")]),
       el("div.bot__stage", {}, [this.bottle]),
       this.scroll,
-      el("p.bot__prompt", { text: "tira del corcho" }),
+      el("p.bot__prompt.hueco-barra", { text: "tira del corcho" }),
       this.sparkles.node
     );
 

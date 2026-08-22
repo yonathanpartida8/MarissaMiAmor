@@ -61,7 +61,7 @@ export default class PostcardPage extends BasePage {
         el("h2.pc__title", { text: ch?.title || "" }),
       ]),
       el("div.pc__lines"),
-      el("div.pc__scroll", {}, [this.proseEl]),
+      el("div.lectura.pc__scroll", {}, [this.proseEl]),
       ch?.reveal ? el("p.pc__reveal", { text: ch.reveal }) : null,
       el("div.pc__sign", { text: "— para ti" }),
     ]);

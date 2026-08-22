@@ -1,6 +1,16 @@
 /**
  * MANIFIESTO — el orden del libro.
  *
+ * ── LOS TRES SITIOS QUE HAY QUE TOCAR ─────────────────────────────────
+ *   · el TEXTO de una página  →  `chapters.js`
+ *   · las FOTOS de una página →  `fotos.js`
+ *   · el ORDEN del libro      →  este archivo
+ *
+ * Y no hay un cuarto. Las tres listas se enganchan por el mismo nombre de
+ * página (el `id` de aquí abajo), así que para cambiar la foto de un
+ * capítulo no hay que venir a tocar el manifiesto: basta con escribir el
+ * nombre del archivo en la línea de esa página en `fotos.js`.
+ *
  * ── CÓMO AÑADIR UNA PÁGINA ────────────────────────────────────────────
  *   1. escribe el capítulo en `chapters.js`
  *   2. añade una línea aquí, donde quieras que salga
@@ -13,7 +23,8 @@
  * @property {string} id            identificador único y estable
  * @property {string} type          clave del registro de páginas
  * @property {string} [chapter]     id del capítulo que muestra
- * @property {object[]} [photos]    fotos que consume
+ * @property {object[]} [photos]    fotos; normalmente NO se escribe aquí,
+ *                                  sale sola de `fotos.js` por el `id`
  * @property {string} [transition]  cómo se llega. Nueve maneras:
  *      flip      la hoja gira sobre su lomo (y se puede arrastrar)
  *      dissolve  se deshace en luz mientras la otra se condensa
@@ -29,7 +40,7 @@
  * @property {boolean} [gl]         necesita la escena 3D
  */
 
-import { groups } from "./photos.js";
+import { fotosDe } from "./fotos.js";
 import { chapterById } from "./chapters.js";
 
 /** @type {PageEntry[]} */
@@ -40,7 +51,6 @@ const pages = [
   {
     id: "portada",
     type: "cover",
-    photos: groups.portada,
     transition: "none",
     hint: "mantén el dedo sobre el sello",
   },
@@ -68,7 +78,6 @@ const pages = [
     id: "tres-de-la-manana",
     type: "depth",
     chapter: "tres-de-la-manana",
-    photos: groups.tresDeLaManana,
     transition: "ink",
     gl: true,
     hint: "mueve el teléfono · la imagen tiene fondo",
@@ -77,7 +86,6 @@ const pages = [
     id: "lo-que-no-dije",
     type: "scratch",
     chapter: "lo-que-no-dije",
-    photos: groups.loQueNoDije,
     transition: "flip",
     hint: "rasca con el dedo",
     secret: "raspado-1",
@@ -86,7 +94,6 @@ const pages = [
     id: "postal-primera",
     type: "postcard",
     chapter: "postal-primera",
-    photos: groups.postalPrimera,
     transition: "fold",
     gl: true,
     hint: "arrástrala para darle la vuelta",
@@ -96,7 +103,6 @@ const pages = [
     id: "tu-voz",
     type: "chapter",
     chapter: "tu-voz",
-    photos: groups.tuVoz,
     transition: "slide",
   },
   {
@@ -111,7 +117,6 @@ const pages = [
     id: "nuestro-desorden",
     type: "polaroids",
     chapter: "nuestro-desorden",
-    photos: groups.nuestroDesorden,
     transition: "flip",
     hint: "arrástralas · tócalas dos veces para verles el reverso",
     secret: "desorden-movido",
@@ -120,7 +125,6 @@ const pages = [
     id: "llueve-alla",
     type: "chapter",
     chapter: "llueve-alla",
-    photos: groups.llueveAlla,
     transition: "tide",
     hint: "pasa el dedo por el cristal empañado",
   },
@@ -132,7 +136,6 @@ const pages = [
     id: "lista-pendiente",
     type: "veil",
     chapter: "lista-pendiente",
-    photos: groups.listaPendiente,
     transition: "bloom",
     gl: true,
     hint: "acaricia la pantalla",
@@ -142,7 +145,6 @@ const pages = [
     id: "por-pedacitos",
     type: "mosaic",
     chapter: "por-pedacitos",
-    photos: groups.porPedacitos,
     transition: "zoom",
     gl: true,
     hint: "toca las piezas · o arrastra por encima",
@@ -152,7 +154,6 @@ const pages = [
     id: "me-caigo-mejor",
     type: "chapter",
     chapter: "me-caigo-mejor",
-    photos: groups.meCaigoMejor,
     transition: "slide",
     hint: "el reflejo te sigue",
   },
@@ -160,7 +161,6 @@ const pages = [
     id: "nuestra-pelicula",
     type: "filmstrip",
     chapter: "nuestra-pelicula",
-    photos: groups.nuestraPelicula,
     transition: "iris",
     hint: "desliza el carrete hasta el final",
     secret: "carrete-1",
@@ -177,7 +177,6 @@ const pages = [
     id: "la-combinacion",
     type: "lock",
     chapter: "la-combinacion",
-    photos: groups.laCombinacion,
     transition: "zoom",
     gl: true,
     hint: "gira las ruedas · arriba y abajo",
@@ -187,7 +186,6 @@ const pages = [
     id: "mi-norte",
     type: "chapter",
     chapter: "mi-norte",
-    photos: groups.miNorte,
     transition: "bloom",
     hint: "tócala",
   },
@@ -204,7 +202,6 @@ const pages = [
     id: "todo-lo-que-guardo",
     type: "memoryfield",
     chapter: "todo-lo-que-guardo",
-    photos: groups.todoLoQueGuardo,
     transition: "zoom",
     gl: true,
     hint: "gira el campo · toca un recuerdo",
@@ -214,7 +211,6 @@ const pages = [
     id: "en-voz-baja",
     type: "secret",
     chapter: "en-voz-baja",
-    photos: groups.enVozBaja,
     transition: "dissolve",
     hint: "toca las palabras de la nota",
     secret: "voz-baja",
@@ -227,7 +223,6 @@ const pages = [
     id: "regalo",
     type: "gift",
     chapter: "regalo",
-    photos: groups.regalo,
     transition: "bloom",
     gl: true,
     hint: "tira del listón",
@@ -255,7 +250,6 @@ const pages = [
     id: "mismo-cielo",
     type: "constellation",
     chapter: "mismo-cielo",
-    photos: groups.mismoCielo,
     transition: "ink",
     gl: true,
     hint: "une las estrellas con el dedo",
@@ -265,7 +259,6 @@ const pages = [
     id: "postal-segunda",
     type: "postcard",
     chapter: "postal-segunda",
-    photos: groups.postalSegunda,
     transition: "fold",
     gl: true,
     secret: "postal-2",
@@ -274,7 +267,6 @@ const pages = [
     id: "te-lo-digo-bajito",
     type: "chapter",
     chapter: "te-lo-digo-bajito",
-    photos: groups.teLoDigoBajito,
     transition: "slide",
     hint: "acércate: está escrito bajito",
   },
@@ -282,7 +274,6 @@ const pages = [
     id: "debajo-de-esto",
     type: "scratch",
     chapter: "debajo-de-esto",
-    photos: groups.debajoDeEsto,
     transition: "flip",
     hint: "rasca aquí también",
     secret: "raspado-2",
@@ -298,7 +289,6 @@ const pages = [
     id: "sin-adornos",
     type: "depth",
     chapter: "sin-adornos",
-    photos: groups.sinAdornos,
     transition: "tide",
     gl: true,
     hint: "inclina el teléfono",
@@ -311,14 +301,12 @@ const pages = [
     id: "aburridos",
     type: "chapter",
     chapter: "aburridos",
-    photos: groups.aburridos,
     transition: "slide",
   },
   {
     id: "rompecabezas-dos",
     type: "mosaic",
     chapter: "rompecabezas-dos",
-    photos: groups.rompecabezasDos,
     transition: "zoom",
     gl: true,
     hint: "descúbrela entera",
@@ -328,7 +316,6 @@ const pages = [
     id: "acariciar",
     type: "veil",
     chapter: "acariciar",
-    photos: groups.acariciar,
     transition: "bloom",
     gl: true,
     hint: "acaricia · toca dos veces para cambiar",
@@ -338,14 +325,12 @@ const pages = [
     id: "mejorar",
     type: "chapter",
     chapter: "mejorar",
-    photos: groups.mejorar,
     transition: "ink",
   },
   {
     id: "cosas-tuyas",
     type: "polaroids",
     chapter: "cosas-tuyas",
-    photos: groups.cosasTuyas,
     transition: "slide",
     hint: "dales la vuelta",
     secret: "cosas-tuyas-vistas",
@@ -354,7 +339,6 @@ const pages = [
     id: "no-se-me-pasa",
     type: "filmstrip",
     chapter: "no-se-me-pasa",
-    photos: groups.noSeMePasa,
     transition: "iris",
     secret: "carrete-2",
   },
@@ -362,7 +346,6 @@ const pages = [
     id: "gracias",
     type: "chapter",
     chapter: "gracias",
-    photos: groups.gracias,
     transition: "tide",
   },
   {
@@ -378,7 +361,6 @@ const pages = [
     id: "te-elijo",
     type: "depth",
     chapter: "te-elijo",
-    photos: groups.teElijo,
     transition: "bloom",
     gl: true,
   },
@@ -389,7 +371,6 @@ const pages = [
   {
     id: "final",
     type: "finale",
-    photos: groups.final,
     transition: "zoom",
     gl: true,
     hint: "toca el corazón",
@@ -401,11 +382,20 @@ const pages = [
  * Cada página hereda el acto de su capítulo. Así el índice se agrupa solo y
  * no hay que repetir el dato en dos sitios.
  */
-/** Le pone su índice y su acto a cada entrada. */
+/**
+ * Le pone su índice, su acto y sus fotos a cada entrada.
+ *
+ * Las fotos salen de `fotos.js` buscando por el nombre de la página. Antes
+ * había que escribirlas también aquí —treinta líneas de `photos: grupos.loQue
+ * Sea`—, así que cambiar una foto obligaba a tocar dos archivos y a acertar
+ * con un nombre en jerga. Ahora hay un solo sitio y se llama como la página.
+ */
 function decorate(list) {
   list.forEach((entry, index) => {
     entry.index = index;
     entry.act = entry.act || chapterById[entry.chapter]?.act || null;
+    // Las páginas de él (`mis-paginas/`, `images/amores/`) traen las suyas.
+    entry.photos = entry.photos || fotosDe(entry.id);
   });
   return list;
 }

@@ -53,7 +53,7 @@ export default class TypewriterPage extends BasePage {
         el("span.kicker", { text: ch?.kicker || "" }),
         el("h2.title.tw__title", { text: ch?.title || "" }),
       ]),
-      el("div.tw__sheet", { "data-claim-drag": "" }, [this.textEl]),
+      el("div.lectura.tw__sheet", { "data-claim-drag": "" }, [this.textEl]),
       el("div.tw__foot", {}, [
         el("span.tw__hint", { text: "mantén pulsado para ir más rápido" }),
       ]),

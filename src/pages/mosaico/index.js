@@ -42,10 +42,10 @@ export default class MosaicPage extends BasePage {
         this.counter,
       ]),
       el("div.mos__stage", {}, [this.board, el("div.mos__whole")]),
-      el("div.mos__panel", {}, [
+      el("div.mos__panel.hueco-barra", {}, [
         el("h2.mos__title", { text: ch?.title || "" }),
         el("hr.rule"),
-        el("div.mos__scroll", {}, [this.proseEl]),
+        el("div.lectura.mos__scroll", {}, [this.proseEl]),
       ])
     );
 

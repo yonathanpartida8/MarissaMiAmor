@@ -401,22 +401,7 @@
 
 .chapter__scroll {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  /* El scroll vertical es del texto; el horizontal, del libro. */
-  touch-action: pan-y;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
   padding-right: 2px;
-  /* Desvanecido arriba y abajo: se ve que hay más texto sin poner una barra. */
-  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14px, #000 calc(100% - 18px), transparent 100%);
-  mask-image: linear-gradient(180deg, transparent 0, #000 14px, #000 calc(100% - 18px), transparent 100%);
-}
-
-.chapter__scroll::-webkit-scrollbar {
-  display: none;
 }
 
 .chapter__title {

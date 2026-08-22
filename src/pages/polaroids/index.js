@@ -92,7 +92,7 @@ export default class PolaroidsPage extends BasePage {
         el("h2.title.pola__title", { text: ch?.title || "" }),
       ]),
       this.field,
-      el("div.pola__panel", {}, [el("div.pola__scroll", {}, [this.proseEl])])
+      el("div.pola__panel.hueco-barra", {}, [el("div.lectura.pola__scroll", {}, [this.proseEl])])
     );
 
     return this.root;

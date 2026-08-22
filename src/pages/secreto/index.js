@@ -63,7 +63,7 @@ export default class SecretoPage extends BasePage {
       }
     });
 
-    this.margen = el("div.secreto__margen", { "aria-live": "polite" });
+    this.margen = el("div.lectura.secreto__margen", { "aria-live": "polite" });
 
     // ── El lacre de la esquina (easter egg) ───────────────────────────
     this.lacre = el("button.secreto__lacre", {
@@ -88,7 +88,7 @@ export default class SecretoPage extends BasePage {
         el("h2.title.secreto__titulo", { text: textos.titulo }),
       ]),
       el("hr.rule"),
-      el("div.secreto__scroll", {}, [parrafo]),
+      el("div.lectura.secreto__scroll", {}, [parrafo]),
       this.margen,
       this.contador,
       this.finalEl,

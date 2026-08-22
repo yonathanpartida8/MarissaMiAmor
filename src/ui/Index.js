@@ -38,7 +38,7 @@ export class BookIndex {
             onClick: () => this.close(),
           }),
         ]),
-        el("div.toc__scroll"),
+        el("div.lectura.toc__scroll"),
       ]),
     ]);
 

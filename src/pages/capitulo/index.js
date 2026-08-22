@@ -68,7 +68,7 @@ export default class ChapterPage extends BasePage {
     const { frag } = splitWords(ch?.text || "");
     this.proseEl.append(frag);
 
-    const scroll = el("div.chapter__scroll", {}, [
+    const scroll = el("div.lectura.chapter__scroll", {}, [
       this.titleEl,
       el("hr.rule.chapter__rule"),
       this.proseEl,
@@ -99,7 +99,7 @@ export default class ChapterPage extends BasePage {
       ]),
       el("div.chapter__ornament", {}, [this.ornament.node]),
       el("div.chapter__body", {}, [scroll]),
-      el("footer.chapter__foot", {}, [
+      el("footer.chapter__foot.hueco-barra", {}, [
         el("span.chapter__mark", { text: "❦" }),
         el("span.chapter__count", { text: `${num} · ${manifest.length}` }),
       ]),

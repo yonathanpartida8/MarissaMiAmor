@@ -38,10 +38,10 @@ export default class ScratchPage extends BasePage {
     const { frag } = splitWords(ch?.text || "");
     this.proseEl.append(frag);
 
-    this.body = el("div.scratch__body", {}, [
+    this.body = el("div.scratch__body.hueco-barra", {}, [
       el("h2.title.scratch__title", { text: ch?.title || "" }),
       el("hr.rule"),
-      el("div.scratch__scroll", {}, [this.proseEl]),
+      el("div.lectura.scratch__scroll", {}, [this.proseEl]),
     ]);
 
     this.root.append(

@@ -59,7 +59,7 @@ export default class GiftPage extends BasePage {
       el("span.kicker", { text: ch?.kicker || "" }),
       el("h2.gift__title", { text: ch?.title || "" }),
       el("hr.rule"),
-      el("div.gift__scroll", {}, [this.proseEl]),
+      el("div.lectura.gift__scroll", {}, [this.proseEl]),
       ch?.reveal ? el("p.gift__reveal", { text: ch.reveal }) : null,
     ]);
 

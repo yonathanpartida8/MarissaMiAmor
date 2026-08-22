@@ -11,6 +11,7 @@
  */
 
 import { listenerGroup, el } from "../utils/dom.js";
+import { vigilarLectura } from "../utils/lectura.js";
 import { PRIORITY } from "../core/AssetLoader.js";
 
 export class BasePage {
@@ -98,6 +99,8 @@ export class BasePage {
     // Lo que sobraba se carga ahora, sin bloquear nada.
     const deferred = this.deferredAssets;
     if (deferred.length) this.ctx.assets.idlePreload(deferred);
+    // Si el texto de esta página no cabe, que se note que sigue.
+    this.track(vigilarLectura(this.root));
   }
 
   /**

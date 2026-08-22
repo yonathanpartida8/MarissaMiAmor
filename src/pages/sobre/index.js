@@ -38,7 +38,7 @@ export default class EnvelopePage extends BasePage {
     this.sheet = el("article.letter__sheet.paper.paper--aged", {}, [
       el("div.letter__crease.letter__crease--a"),
       el("div.letter__crease.letter__crease--b"),
-      el("div.letter__scroll", {}, [
+      el("div.lectura.letter__scroll", {}, [
         el("span.kicker.letter__kicker", { text: ch?.kicker || "" }),
         el("h2.title.letter__title", { text: ch?.title || "" }),
         el("hr.rule.letter__rule"),

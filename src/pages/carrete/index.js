@@ -52,7 +52,7 @@ export default class FilmstripPage extends BasePage {
     this.endCard = el("figure.film__frame.film__frame--end", {}, [
       el("div.film__endinner", {}, [
         el("h2.title.film__endtitle", { text: ch?.title || "" }),
-        el("div.film__endscroll", {}, [this.proseEl]),
+        el("div.lectura.film__endscroll", {}, [this.proseEl]),
       ]),
     ]);
     this.reel.append(this.endCard);

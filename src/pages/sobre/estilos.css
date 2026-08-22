@@ -294,21 +294,9 @@
   position: relative;
   z-index: 3;
   height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  touch-action: pan-y;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
   padding: clamp(1.3rem, calc(5.5 * var(--vw)), 2.4rem);
   opacity: 0;
   transition: opacity 500ms var(--e-out);
-  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 16px, #000 calc(100% - 20px), transparent 100%);
-  mask-image: linear-gradient(180deg, transparent 0, #000 16px, #000 calc(100% - 20px), transparent 100%);
-}
-
-.letter__scroll::-webkit-scrollbar {
-  display: none;
 }
 
 .envelope.is-unfolded .letter__scroll {
