@@ -13,8 +13,10 @@ import { clamp01 } from "../utils/math.js";
 const SOURCES = {
   music: { src: "assets/audio/musica.mp3", loop: true, volume: 0.3 },
   open: { src: "assets/audio/abrir.mp3", loop: false, volume: 0.65 },
-  turn: { src: "assets/audio/sonido.mp3", loop: false, volume: 0.42 },
 };
+
+/** Pasar página suena tantas veces seguidas que tiene su propia reserva. */
+const TURN = { src: "assets/audio/sonido.mp3", volume: 0.42, copias: 3 };
 
 export class AudioBus extends Emitter {
   constructor(store) {
@@ -43,16 +45,24 @@ export class AudioBus extends Emitter {
       // con las ilustraciones y retrasa la apertura del libro en datos móviles.
       // Con "none" no se toca hasta que suena, y suena en streaming.
       audio.preload = name === "music" ? "none" : "auto";
-      audio.crossOrigin = "anonymous";
       // Silencia errores de red: el libro debe funcionar sin sonido.
       audio.addEventListener("error", () => this.tracks.delete(name));
       this.tracks.set(name, { el: audio, base: cfg.volume });
     }
-    // Pequeña reserva de "pasar página" para toques rápidos encadenados.
-    this.turnPool = Array.from({ length: 3 }, () => {
-      const a = new Audio(SOURCES.turn.src);
+
+    // Reserva de "pasar página", para toques rápidos encadenados.
+    //
+    // Antes había ADEMÁS una pista suelta llamada `turn` que no sonaba nunca
+    // —`play("turn")` siempre tira de la reserva—, y encima pedida con CORS
+    // mientras la reserva la pedía sin él. Entre las dos cosas, el mismo
+    // archivo de cuatrocientos kilos se descargaba cuatro veces.
+    //
+    // Sólo la primera copia se trae el sonido; las otras dos lo encuentran
+    // en la caché del navegador porque piden exactamente lo mismo.
+    this.turnPool = Array.from({ length: TURN.copias }, (_, i) => {
+      const a = new Audio(TURN.src);
       a.volume = 0;
-      a.preload = "auto";
+      a.preload = i === 0 ? "auto" : "metadata";
       return a;
     });
     this.turnIndex = 0;
@@ -87,7 +97,7 @@ export class AudioBus extends Emitter {
     if (name === "turn") {
       const el = this.turnPool[this.turnIndex];
       this.turnIndex = (this.turnIndex + 1) % this.turnPool.length;
-      el.volume = clamp01(SOURCES.turn.volume * volume);
+      el.volume = clamp01(TURN.volume * volume);
       el.playbackRate = rate;
       el.currentTime = 0;
       el.play().catch(() => {});

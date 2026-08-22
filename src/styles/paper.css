@@ -121,15 +121,6 @@
   transform-origin: left center;
 }
 
-/* ---- Tinta escrita a mano ---------------------------------- */
-.hand {
-  font-family: var(--font-hand);
-  font-size: clamp(1.3rem, calc(5.4 * var(--vw)), 1.75rem);
-  line-height: 1.5;
-  color: #2f3f6b;
-  /* La tinta de bolígrafo no es plana: tiene poso en los trazos. */
-  text-shadow: 0 0 1px rgba(47, 63, 107, 0.32);
-}
 
 /* ---- Animación de palabras (entrada escalonada) ------------- */
 .word {

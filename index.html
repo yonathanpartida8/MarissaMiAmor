@@ -56,7 +56,9 @@
 <link rel="stylesheet" href="src/pages/mias/estilos.css">
 <link rel="stylesheet" href="src/pages/amor/estilos.css">
 
-<link rel="preload" as="image" href="assets/img/imagen1.png" crossorigin="anonymous">
+<!-- Sin `crossorigin`: la portada se pide como cualquier imagen de casa, y
+     así esta reserva sirve de verdad en vez de descargarla por segunda vez. -->
+<link rel="preload" as="image" href="assets/img/imagen1.png">
 
 <script type="importmap">
 {

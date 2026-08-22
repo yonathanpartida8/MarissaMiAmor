@@ -19,6 +19,16 @@ export const PRIORITY = {
   IDLE: 3,     // cuando el navegador no tenga nada mejor que hacer
 };
 
+/** ¿Esta imagen viene de otro dominio? (Las del libro, no.) */
+function esDeFuera(url) {
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) return false; // relativa: de casa
+  try {
+    return new URL(url, location.href).origin !== location.origin;
+  } catch {
+    return false;
+  }
+}
+
 export class AssetLoader extends Emitter {
   #cache = new Map();      // url -> HTMLImageElement resuelta
   #inflight = new Map();   // url -> Promise
@@ -110,8 +120,19 @@ export class AssetLoader extends Emitter {
   async #fetch({ url, resolve, reject }) {
     const img = new Image();
     img.decoding = "async";
-    // Necesario para poder usarla como textura WebGL sin "tainted canvas".
-    img.crossOrigin = "anonymous";
+    // `crossOrigin` SÓLO para lo que venga de otro dominio.
+    //
+    // Estaba puesto siempre, «por si acaso la usa WebGL», y ése era el
+    // agujero más caro del libro: una imagen pedida con CORS y la misma
+    // imagen puesta como fondo en CSS —que se pide sin CORS— son para el
+    // navegador dos peticiones distintas, y guarda las dos por separado.
+    // Resultado: cada fotografía se descargaba dos o tres veces. Veintidós
+    // megas para abrir la portada y siete páginas, cuando pesan nueve.
+    //
+    // Una imagen del propio sitio no mancha ningún lienzo, así que no
+    // necesita CORS para nada. Las de fuera —si algún día se enlaza una—
+    // sí, y ésas lo llevan.
+    if (esDeFuera(url)) img.crossOrigin = "anonymous";
 
     try {
       await new Promise((ok, fail) => {

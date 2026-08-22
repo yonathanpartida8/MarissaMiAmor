@@ -501,26 +501,13 @@ html[data-orientation="landscape"][data-device="phone"] .chapter__foot {
   grid-column: 1 / -1;
 }
 
-/* El adorno del pie es un botón, pero no tiene que parecerlo. */
-.chapter__mark {
-  border: 0;
-  padding: 0 0.4rem;
-  background: none;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: color 600ms var(--e-out), text-shadow 600ms var(--e-out);
-}
+/* El número del capítulo es un botón, pero sigue siendo un número.
 
-/* Escondido: al descubrirlo se queda encendido para siempre. */
-.chapter__mark.is-awake {
-  color: var(--accent);
-  text-shadow: 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent);
-}
-
-/* El número del capítulo es un botón, pero sigue siendo un número. */
+   (El adorno del pie llegó a serlo también, y su estilo de botón se quedó
+   aquí cuando el escondite se mudó al número: abajo caía justo debajo del
+   botón redondo de pasar página y el dedo no llegaba nunca.) */
 .chapter__num {
+  position: relative;
   border: 0;
   padding: 0;
   background: none;
@@ -529,6 +516,17 @@ html[data-orientation="landscape"][data-device="phone"] .chapter__foot {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: color 600ms var(--e-out), text-shadow 600ms var(--e-out);
+}
+
+/* El número mide veinte píxeles por veinticinco, que es la mitad de lo que
+   hace falta para acertarle con el dedo. Se le agranda la zona sensible con
+   una capa invisible por encima, y NO con relleno: el relleno movería la
+   línea de la cabecera, y esto sólo tiene que hacer más fácil dar con lo
+   que está escondido. */
+.chapter__num::after {
+  content: "";
+  position: absolute;
+  inset: -12px -14px;
 }
 
 /* Escondido: al descubrirlo se queda encendido. */
