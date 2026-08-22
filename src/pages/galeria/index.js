@@ -63,7 +63,7 @@ export default class GalleryPage extends BasePage {
       ]),
       el("div.gal__stage", {}, [this.rail]),
       this.dots,
-      el("div.mine__panel", {}, [
+      el("div.vidrio.mine__panel.hueco-barra", {}, [
         el("h2.mine__title", { text: ch?.title || "" }),
         ch?.text ? el("hr.rule") : null,
         ch?.text ? el("div.lectura.mine__scroll", {}, [this.proseEl]) : null,

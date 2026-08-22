@@ -285,3 +285,33 @@
     animation: none;
   }
 }
+
+/* ══════════════ VIDRIO ══════════════
+   El panel de texto que se apoya encima de una escena: la constelación, el
+   velo, el campo de recuerdos, la órbita, el mosaico, tus fotos.
+
+   Los seis llevaban la misma receta copiada —un degradado oscuro y
+   `backdrop-filter: blur(14px)`—, y ese desenfoque era la cosa más cara del
+   libro: obliga a volver a desenfocar el fondo EN CADA FOTOGRAMA, y detrás
+   de estos paneles el fondo no para nunca. Medido en las cuatro páginas
+   donde más se nota, costaba entre un tercio y la mitad de los fotogramas:
+   la constelación iba a 23 y sin él va a 35.
+
+   Lo que se ve es prácticamente lo mismo, porque detrás hay luz difusa y
+   desenfocar una luz difusa no la cambia. Así que el vidrio lo hace ahora
+   el degradado, un poco más denso para compensar, y no cuesta nada por
+   fotograma. De paso se lee mejor.                                        */
+.vidrio {
+  border-radius: var(--r-md);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(
+    180deg,
+    rgba(10, 6, 16, var(--vidrio-arriba, 0.66)),
+    rgba(6, 3, 11, var(--vidrio-abajo, 0.94))
+  );
+  /* Un filo de luz arriba: es lo que hace que parezca un cristal apoyado
+     y no un rectángulo pintado. Va en la sombra, que no cuesta capa. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 18px 40px -22px rgba(0, 0, 0, 0.8);
+}

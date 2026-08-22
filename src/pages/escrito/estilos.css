@@ -130,14 +130,19 @@
 }
 
 /* ---- Firma y pista ------------------------------------------ */
-.hw__sign {
+/* La firma aparece cuando la carta está terminada, no antes.
+   Con `.hw__sign` a secas nunca llegaba a esconderse: `.paper .signature`
+   son dos clases y gana, así que la firma se veía desde el primer momento
+   y se destripaba el final de la página. */
+.hw .hw__sign {
   opacity: 0;
   transform: translateY(8px) rotate(-3deg);
   transform-origin: left center;
   transition: opacity 900ms var(--e-out) 200ms, transform 900ms var(--e-out) 200ms;
 }
 
-.hw.is-finished .hw__sign {
+.hw.is-finished .hw__sign,
+.hw.is-finished .hw__sign.signature {
   opacity: 0.85;
   transform: rotate(-3deg);
 }

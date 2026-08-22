@@ -90,7 +90,7 @@ export default class ConstellationPage extends BasePage {
         el("span.cons__count", { text: `0 / ${this.stars.length}` }),
       ]),
       this.sky,
-      el("div.cons__panel.hueco-barra", {}, [
+      el("div.vidrio.cons__panel.hueco-barra", {}, [
         el("h2.title.cons__title", { text: ch?.title || "" }),
         el("hr.rule"),
         el("div.lectura.cons__scroll", {}, [this.proseEl]),

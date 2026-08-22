@@ -52,7 +52,7 @@ export default class OrbitPage extends BasePage {
         this.gauge,
       ]),
       this.field,
-      el("div.orb__panel.hueco-barra", {}, [
+      el("div.vidrio.orb__panel.hueco-barra", {}, [
         el("h2.orb__title", { text: ch?.title || "" }),
         el("hr.rule"),
         el("div.lectura.orb__scroll", {}, [this.proseEl]),

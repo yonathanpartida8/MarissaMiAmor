@@ -159,11 +159,6 @@
   flex-direction: column;
   gap: 0.25rem;
   padding: clamp(0.8rem, calc(3.6 * var(--vw)), 1.2rem);
-  border-radius: var(--r-md);
-  background: linear-gradient(180deg, rgba(10, 6, 16, 0.3), rgba(6, 3, 11, 0.88));
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
   opacity: 0;
   transform: translateY(14px);
   transition: opacity 800ms var(--e-out) 200ms, transform 800ms var(--e-out) 200ms;

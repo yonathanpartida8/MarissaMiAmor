@@ -79,7 +79,7 @@ export default class VideoPage extends BasePage {
 
     this.root.append(
       el("div.mine__stage", {}, [this.frame]),
-      el("div.mine__panel", {}, [
+      el("div.vidrio.mine__panel.hueco-barra", {}, [
         ch?.kicker ? el("span.kicker", { text: ch.kicker }) : null,
         el("h2.mine__title", { text: ch?.title || "" }),
         ch?.text ? el("hr.rule") : null,

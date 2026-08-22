@@ -59,31 +59,41 @@
      donde sobra músculo, se recupera el duotono de verdad. */
   mix-blend-mode: normal;
   transform: translate3d(var(--depth-x, 0), var(--depth-y, 0), 0) scale(1.06);
-  transition: transform 200ms linear;
+  /* Sin transición: el valor ya llega suavizado desde el reloj de la página,
+     y encadenar una transición a algo que se reescribe en cada fotograma
+     deja una animación viva permanentemente, para nada. */
 }
 
+/* Grano del cartón. Sin mezcla por defecto: ver la nota de abajo. */
 .cover__grain {
   position: absolute;
   inset: 0;
   background-image: var(--grain-src);
   background-size: 180px;
-  opacity: 0.14;
-  mix-blend-mode: overlay;
+  opacity: 0.1;
   pointer-events: none;
 }
 
-/* Reflejo especular que sigue la inclinación. */
+/* Reflejo especular que sigue la inclinación.
+
+   El degradado se queda QUIETO en el centro y lo que se mueve es la capa,
+   con `transform`. Antes se movía el centro del degradado, y mover un
+   degradado obliga a repintar toda la capa —aquí, vez y media la tapa, y
+   además mezclada en `screen`— sesenta veces por segundo. Con `transform`
+   lo hace la GPU sin repintar nada: se ve igual y la portada, que es lo
+   primero que se abre, dejó de ser la página más pesada del libro. */
 .cover__sheen {
   position: absolute;
   inset: -30%;
   pointer-events: none;
   background: radial-gradient(
-    ellipse 46% 38% at var(--sheen-x, 50%) var(--sheen-y, 50%),
+    ellipse 46% 38% at 50% 50%,
     rgba(255, 234, 214, 0.34) 0%,
     rgba(255, 200, 220, 0.12) 34%,
     transparent 62%
   );
-  mix-blend-mode: screen;
+  transform: translate3d(var(--sheen-x, 0px), var(--sheen-y, 0px), 0);
+  will-change: transform;
 }
 
 /* Filete dorado grabado. */
@@ -385,9 +395,28 @@ html[data-orientation="landscape"][data-device="phone"] .cover__seal {
 }
 
 
-/* En gama alta sí: el duotono mezclado con el fondo es más bonito. */
+/* ---- Las tres mezclas de la tapa ---------------------------
+   El duotono de la foto, el grano del cartón y el brillo especular son lo
+   que hace que esto parezca una tapa y no un rectángulo con una foto. Pero
+   son tres capas con `mix-blend-mode` encima del fondo animado, y eso
+   obliga a recomponer la tapa entera en cada fotograma: medido, las tres
+   juntas costaban la mitad de los fotogramas de la portada, que es
+   justamente lo primero que se abre y la primera impresión del libro.
+
+   Así que van sólo donde sobra músculo. En gama media y baja la tapa se
+   pinta plana, con el grano un pelín más tenue para compensar: se ve casi
+   igual y se mueve al doble.                                            */
 :root[data-tier="high"] .cover__photo {
   mix-blend-mode: soft-light;
+}
+
+:root[data-tier="high"] .cover__grain {
+  opacity: 0.14;
+  mix-blend-mode: overlay;
+}
+
+:root[data-tier="high"] .cover__sheen {
+  mix-blend-mode: screen;
 }
 
 /* Escondido: tres toques en el borde de abajo de la tapa y aparece

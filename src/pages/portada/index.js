@@ -35,10 +35,13 @@ export default class CoverPage extends BasePage {
     });
     setVars(this.root, { "--accent": this.palette.a });
 
+    this.photo = el("div.cover__photo");
+    this.sheen = el("div.cover__sheen");
+
     this.card = el("div.cover__card", {}, [
-      el("div.cover__photo"),
+      this.photo,
       el("div.cover__grain"),
-      el("div.cover__sheen"),
+      this.sheen,
       el("div.cover__border"),
       el("div.cover__content", {}, [
         el("span.cover__kicker", { text: "un librito de amor para" }),
@@ -88,7 +91,7 @@ export default class CoverPage extends BasePage {
     await super.enter(direction);
 
     const photo = this.photos[0];
-    if (photo) qs(".cover__photo", this.root).style.backgroundImage = `url("${photo.src}")`;
+    if (photo) this.photo.style.backgroundImage = `url("${photo.src}")`;
 
     this.ctx.gl?.setIntensity(1);
     requestAnimationFrame(() => this.root.classList.add("is-entered"));
@@ -173,9 +176,17 @@ export default class CoverPage extends BasePage {
       `rotateX(${this.tiltY * 9 + breath}deg) rotateY(${this.tiltX * 12}deg) translateZ(0)`;
 
     // La luz se mueve en sentido contrario al giro: así parece una fuente fija.
-    setVars(this.root, {
-      "--sheen-x": `${(50 - this.tiltX * 46).toFixed(1)}%`,
-      "--sheen-y": `${(50 - this.tiltY * 40).toFixed(1)}%`,
+    //
+    // Cada variable se escribe en el elemento que la usa y no en la página
+    // entera. Una propiedad personalizada se hereda, así que escribirla
+    // arriba obliga a recalcular el estilo de TODO lo que cuelga de ahí
+    // —tapa, foto, grano, filete, tipografía, lacre— sesenta veces por
+    // segundo, para que al final la lean dos capas.
+    setVars(this.sheen, {
+      "--sheen-x": `${(this.tiltX * -46).toFixed(1)}px`,
+      "--sheen-y": `${(this.tiltY * -40).toFixed(1)}px`,
+    });
+    setVars(this.photo, {
       "--depth-x": `${(this.tiltX * -14).toFixed(1)}px`,
       "--depth-y": `${(this.tiltY * 10).toFixed(1)}px`,
     });
@@ -190,7 +201,7 @@ export default class CoverPage extends BasePage {
     if (this.hold === before) return;
 
     this.progressCircle.style.strokeDashoffset = String(this.circumference * (1 - this.hold));
-    setVars(this.root, { "--hold": String(this.hold) });
+    setVars(this.seal, { "--hold": String(this.hold) });
 
     // Vibración creciente: se nota que el lacre está a punto de ceder.
     if (this.holding && Math.random() < realDt * (4 + this.hold * 14)) {

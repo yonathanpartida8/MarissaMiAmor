@@ -23,7 +23,7 @@ export default class HandwritingPage extends BasePage {
       "data-page": this.id,
       "aria-label": ch?.title,
     });
-    setVars(this.root, { "--accent": accent, "--w": "0" });
+    setVars(this.root, { "--accent": accent });
 
     this.textEl = el("div.hw__text.selectable", { text: ch?.text || "" });
 
@@ -46,7 +46,7 @@ export default class HandwritingPage extends BasePage {
       ]),
       this.sheet,
       el("div.hw__sign.signature", { text: "te amo, mi amorcito" }),
-      el("div.hw__prompt.hueco-barra", { text: "arrastra hacia abajo" })
+      (this.prompt = el("div.hw__prompt.hueco-barra", { text: "arrastra hacia abajo" }))
     );
 
     return this.root;
@@ -102,7 +102,13 @@ export default class HandwritingPage extends BasePage {
     this.display = damp(this.display, this.written, 9, dt);
     if (Math.abs(this.display - before) < 0.0002 && this.finished) return;
 
-    setVars(this.root, { "--w": this.display.toFixed(4) });
+    // A la tinta y a la pista, que son quienes lo leen, y no a la página
+    // entera: una propiedad personalizada se hereda, así que escribirla en
+    // la raíz obliga a recalcular el estilo de las ochocientas y pico cosas
+    // que cuelgan de ella en cada fotograma.
+    const w = this.display.toFixed(4);
+    setVars(this.ink, { "--w": w });
+    setVars(this.prompt, { "--w": w });
 
     // Si la carta no cabe de una vez, la hoja acompaña a la plumilla en vez
     // de dejarla escribir fuera de la vista. Al terminar deja de seguirla:
