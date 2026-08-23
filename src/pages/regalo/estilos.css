@@ -4,12 +4,51 @@
 
 .gift {
   display: grid;
-  grid-template-rows: 1fr auto;
+  /* Cabecera arriba, la caja en todo el hueco de en medio, y la invitación
+     abajo. Antes eran dos filas y la caja se quedaba flotando en el centro
+     de una pantalla sin nada más. */
+  grid-template-rows: auto minmax(0, 1fr) auto;
   place-items: center;
+  gap: clamp(0.4rem, 1.6vh, 0.9rem);
   padding: var(--pad-t) var(--pad-x) var(--pad-b);
   background: transparent;
   perspective: 1200px;
   --untie: 0;
+}
+
+/* ---- La cabecera -------------------------------------------- */
+.gift__head {
+  justify-self: stretch;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 700ms var(--e-out) 120ms, transform 700ms var(--e-out) 120ms;
+}
+
+.gift.is-entered .gift__head { opacity: 1; transform: none; }
+
+/* Cuando el regalo se abre, la cabecera se aparta: lo que importa a partir
+   de ahí es lo que había dentro. */
+.gift.is-open .gift__head { opacity: 0.28; }
+
+.gift__head .kicker {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  opacity: 0.75;
+}
+
+.gift__heading {
+  margin-top: 0.2rem;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(1.5rem, calc(6.6 * var(--vw)), 2.2rem);
+  line-height: 1.05;
+  color: #fff;
+  text-wrap: balance;
 }
 
 .gift__stage {
@@ -24,7 +63,7 @@
 /* ---- La caja ------------------------------------------------ */
 .gift__box {
   position: relative;
-  width: min(74%, 250px);
+  width: min(80%, 290px);
   aspect-ratio: 1;
   transform-style: preserve-3d;
   opacity: 0;
@@ -282,10 +321,81 @@
   font-size: var(--fs-micro);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-soft);
   text-align: center;
   min-height: 1.4em;
+  opacity: 0;
+  transition: opacity 700ms var(--e-out) 900ms;
+}
+
+.gift.is-entered .gift__prompt {
+  opacity: 0.8;
   animation: seal-breathe 3.2s ease-in-out infinite;
 }
 
-.gift.is-untied .gift__prompt { opacity: 0; transition: opacity 400ms; }
+/* Una flecha que baja despacio, señalando la punta del listón: es la única
+   pista de por dónde se empieza, y sin ella la caja no dice qué hacer. */
+.gift__prompt::after {
+  content: " ↓";
+  display: inline-block;
+  animation: gift-flecha 2.4s ease-in-out infinite;
+}
+
+@keyframes gift-flecha {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50%      { transform: translateY(4px); opacity: 1; }
+}
+
+/* Desatado: la invitación ya no pinta nada. Va con `.gift.is-untied` DOS
+   veces para ganarle a `.gift.is-entered`, que tiene la misma fuerza y
+   viene después en el archivo: sin esto, el cartelito se quedaba puesto
+   encima del regalo ya abierto diciendo que tiraras del listón. */
+.gift.is-untied.is-untied .gift__prompt {
+  opacity: 0;
+  animation: none;
+  transition: opacity 400ms var(--e-out);
+}
+
+.gift.is-untied .gift__prompt::after { animation: none; }
+
+/* ---- La sombra de la caja -----------------------------------
+   Una caja sin sombra no está encima de nada: flota. Ésta va debajo, un
+   poco aplastada, y se encoge mientras se tira del listón, como si la caja
+   se aligerara al abrirse. */
+.gift__box::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 74%;
+  height: 20px;
+  margin: 4px 0 0 -37%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.5), transparent 70%);
+  filter: blur(3px);
+  opacity: calc(0.75 - var(--untie, 0) * 0.35);
+  pointer-events: none;
+  transition: opacity 300ms linear;
+}
+
+.gift.is-open .gift__box::after {
+  opacity: 0;
+  transition: opacity 600ms var(--e-out);
+}
+
+/* La punta del listón respira hasta que alguien la toca: es lo único que
+   hay que agarrar en toda la página y tiene que verse que se agarra. */
+.gift.is-entered:not(.is-untied) .gift__end {
+  animation: gift-tira 2.8s ease-in-out infinite;
+}
+
+@keyframes gift-tira {
+  0%, 100% { transform: translate(-50%, 0) scale(1); }
+  50%      { transform: translate(-50%, 4px) scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gift.is-entered .gift__prompt,
+  .gift__prompt::after,
+  .gift.is-entered:not(.is-untied) .gift__end { animation: none; }
+}

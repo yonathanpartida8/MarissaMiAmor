@@ -63,9 +63,28 @@ export default class GiftPage extends BasePage {
       ch?.reveal ? el("p.gift__reveal", { text: ch.reveal }) : null,
     ]);
 
+    // UNA CABECERA, PARA QUE LA PÁGINA EMPIECE EN ALGUNA PARTE.
+    //
+    // El título y la línea de arriba vivían DENTRO de la tarjeta, o sea
+    // escondidos hasta que el regalo se abría. Hasta entonces la página era
+    // una caja flotando en medio de la nada, sin nombre y sin jerarquía:
+    // media pantalla vacía arriba y un cartelito perdido abajo del todo.
+    //
+    // Ahora se presenta primero y se aparta después, que es lo que hace
+    // cualquier página del libro que tenga algo que revelar.
+    //
+    // Sólo el título: la línea de arriba del capítulo dice «tira del listón»,
+    // que es exactamente lo mismo que la invitación de abajo y lo mismo que
+    // la pista del libro. Puesta también aquí, la página repetía tres veces
+    // qué hacer y ninguna de las tres decía dónde estaba.
+    this.head = el("header.gift__head", {}, [
+      el("h2.gift__heading", { text: ch?.title || "" }),
+    ]);
+
     this.root.append(
+      this.head,
       el("div.gift__stage", {}, [this.burst, this.box, this.card]),
-      el("p.gift__prompt", { text: "tira del listón" })
+      el("p.gift__prompt.hueco-barra", { text: "tira del listón" })
     );
 
     return this.root;

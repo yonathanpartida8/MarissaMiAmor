@@ -225,7 +225,9 @@ const pages = [
     chapter: "regalo",
     transition: "bloom",
     gl: true,
-    hint: "tira del listón",
+    // La página ya dice «tira del listón» con su flecha; la pista dice
+    // DÓNDE, que es lo que no se ve.
+    hint: "de la puntita de abajo · hacia ti",
     secret: "regalo-abierto",
   },
   {

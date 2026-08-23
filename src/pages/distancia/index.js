@@ -38,7 +38,31 @@ export default class OrbitPage extends BasePage {
     this.link = el("div.orb__link");
     this.gauge = el("span.orb__gauge", { text: "" });
 
-    this.field.append(this.link, this.a.node, this.b.node);
+    // LAS CARTAS QUE CRUZAN.
+    //
+    // Es lo que de verdad pasa entre dos personas separadas por dos mil
+    // kilómetros: van y vienen cosas por el hilo. Salen solas cada pocos
+    // segundos, viajan de un punto al otro por la línea que los une, y
+    // cuanto más cerca están, más seguidas van. Sin esto la página eran dos
+    // bolas y una raya.
+    //
+    // Se reciclan cuatro nodos en vez de crear y tirar uno cada vez: esto
+    // corre durante todo el rato que dure la página.
+    this.cartas = [0, 1, 2, 3].map(() => {
+      const carta = el("span.orb__carta", { "aria-hidden": "true" });
+      carta.innerHTML = `
+        <svg class="orb__carta-svg" viewBox="0 0 20 14">
+          <rect x="0.6" y="0.6" width="18.8" height="12.8" rx="1.4"/>
+          <path class="orb__carta-solapa" d="M0.6 1.4 10 8 19.4 1.4"/>
+        </svg>`;
+      return carta;
+    });
+    this.siguienteCarta = 0;
+    this.desdeCarta = 0;
+
+    this.capaCartas = el("div.orb__cartas", { "aria-hidden": "true" }, this.cartas);
+
+    this.field.append(this.link, this.capaCartas, this.a.node, this.b.node);
 
     this.proseEl = el("div.orb__prose.selectable");
     const { frag } = splitWords(ch?.text || "");
@@ -164,6 +188,7 @@ export default class OrbitPage extends BasePage {
 
     this.#place();
     this.#drawLink(d, near);
+    this.#correo(dt, near);
 
     // Escondido: separarlos del todo en vez de juntarlos. La página va de
     // acercarse; alejarlos a propósito es justo lo contrario, y tiene
@@ -178,6 +203,49 @@ export default class OrbitPage extends BasePage {
     }
 
     if (d <= TOUCH_RADIUS) this.#join();
+  }
+
+  /**
+   * Suelta una carta cada tanto y la manda al otro lado.
+   *
+   * Van alternando de dirección —una tuya, una mía— y salen más seguidas
+   * cuanto más cerca están: de una cada tres segundos y pico cuando la
+   * distancia es toda, a una por segundo cuando ya casi se tocan. Es la
+   * página entera contada sin una sola palabra.
+   */
+  #correo(dt, near) {
+    if (this.ctx.caps.reducedMotion) return;
+
+    this.relojCarta = (this.relojCarta || 0) - dt;
+    if (this.relojCarta > 0) return;
+    this.relojCarta = 3.4 - near * 2.3;
+
+    const carta = this.cartas[this.siguienteCarta];
+    this.siguienteCarta = (this.siguienteCarta + 1) % this.cartas.length;
+
+    // De un punto al otro, alternando quién escribe.
+    const deA = this.desdeCarta === 0;
+    this.desdeCarta ^= 1;
+    const o1 = deA ? this.a : this.b;
+    const o2 = deA ? this.b : this.a;
+
+    const x1 = o1.x * this.rect.width;
+    const y1 = o1.y * this.rect.height;
+    const x2 = o2.x * this.rect.width;
+    const y2 = o2.y * this.rect.height;
+
+    setVars(carta, {
+      "--x1": `${x1.toFixed(0)}px`,
+      "--y1": `${y1.toFixed(0)}px`,
+      "--x2": `${x2.toFixed(0)}px`,
+      "--y2": `${y2.toFixed(0)}px`,
+      // Se inclina hacia donde va, como una cosa que vuela.
+      "--giro": `${(Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI}deg`,
+    });
+
+    carta.classList.remove("is-yendo");
+    void carta.offsetWidth; // relanza el viaje desde el principio
+    carta.classList.add("is-yendo");
   }
 
   #drawLink(d, near) {

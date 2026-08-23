@@ -44,7 +44,7 @@ export const escondidos = {
   // ── CARRETE · seguir tirando hacia atrás en el primer fotograma ────
   carrete: "antes de la primera foto ya me caías bien",
 
-  // ── CANDADO · marcar 0000 ──────────────────────────────────────────
+  // ── CANDADO · dar la vuelta entera y volver al principio ───────────
   combinacion: "ésa no es, pero me ha hecho gracia que lo probaras",
 
   // ── DISTANCIA · separar los dos puntos en vez de juntarlos ─────────

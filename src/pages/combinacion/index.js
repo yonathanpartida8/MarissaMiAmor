@@ -394,12 +394,12 @@ export default class CombinacionPage extends BasePage {
       if (this.#acertada) return this.#abrir(true);
 
       // La fecha de partida no es un intento: es no haber empezado… salvo
-      // que haya vuelto a ella a propósito, dando la vuelta entera. Eso sí
-      // es haber probado.
+      // que haya vuelto a ella a propósito, dando la vuelta entera a los
+      // tres rodillos. Eso sí es haber probado, y tiene premio.
       const enPartida = this.wheels.every((w) => w.value === 0);
       if (enPartida) {
         if (this.wheels.some((w) => Math.abs(w.target) > 0.5)) {
-          this.escondite("candado-ceros", escondidos.combinacion);
+          this.escondite("candado-vuelta", escondidos.combinacion);
         }
         return;
       }

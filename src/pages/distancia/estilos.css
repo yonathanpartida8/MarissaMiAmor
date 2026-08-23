@@ -4,6 +4,8 @@
 
 .orbit {
   display: grid;
+  /* La última fila es `auto`: el panel mide lo que mide su texto y ni un
+     píxel más. El campo de los dos puntos se queda con todo lo que sobre. */
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: clamp(0.5rem, 2vh, 1rem);
   padding: var(--pad-t) var(--pad-x) var(--pad-b);
@@ -176,6 +178,24 @@
 
 .orb__panel .rule { margin: 0.3rem 0 0.55rem; background: linear-gradient(90deg, var(--accent), transparent 72%); }
 
+/* ---- El texto sólo ocupa cuando llega -----------------------
+   Antes el panel reservaba su hueco desde el principio, así que hasta que
+   los dos puntos se tocaban había un rectángulo negro enorme y vacío
+   ocupando media pantalla con un título arriba. Ahora el panel es del
+   tamaño de lo que tiene dentro, y crece cuando el texto aparece. */
+.orb__scroll {
+  max-height: 0;
+  opacity: 0;
+  transition:
+    max-height 900ms var(--e-out),
+    opacity 700ms var(--e-out) 200ms;
+}
+
+.orbit.is-told .orb__scroll {
+  max-height: 38vh;
+  opacity: 1;
+}
+
 .orb__prose {
   font-family: var(--font-display);
   font-size: clamp(0.95rem, calc(3.7 * var(--vw)), 1.12rem);
@@ -185,14 +205,114 @@
   hyphens: auto;
 }
 
+/* La frase del final no ocupa hasta que existe. Con `opacity: 0` a secas
+   seguía midiendo sus dos líneas, y entre eso y el texto sin escribir el
+   panel era un rectángulo negro con un título arriba y un palmo de nada
+   debajo. */
 .orb__reveal {
-  margin-top: 0.6rem;
+  margin-top: 0;
+  max-height: 0;
   font-family: var(--font-hand);
   font-size: clamp(1.1rem, calc(4.8 * var(--vw)), 1.45rem);
+  line-height: 1.35;
   color: var(--rose-glow);
   opacity: 0;
+  overflow: hidden;
   transform: translateY(8px);
-  transition: opacity 900ms var(--e-out), transform 900ms var(--e-out);
+  transition:
+    opacity 900ms var(--e-out),
+    transform 900ms var(--e-out),
+    max-height 800ms var(--e-out),
+    margin-top 800ms var(--e-out);
+}
+
+.orbit.is-told .orb__reveal {
+  margin-top: 0.6rem;
+  max-height: 6em;
+}
+
+/* La frase del final cae justo a la altura de los dos botones redondos de
+   pasar página, que van pegados a los cantos. Se le deja su sitio para que
+   la línea que más importa de la página no se lea por debajo de un botón. */
+.orb__reveal {
+  padding: 0 clamp(0.5rem, 8vw, 3rem);
+  text-align: center;
 }
 
 .orbit.is-told .orb__reveal { opacity: 1; transform: none; }
+
+/* ══════════════ LAS CARTAS QUE CRUZAN ══════════════
+   Cada pocos segundos sale una de un punto y viaja hasta el otro por la
+   línea que los une. Es lo que de verdad pasa entre dos personas separadas
+   por dos mil kilómetros, y es lo que convierte esta página en algo que
+   ocurre en vez de dos bolas y una raya.
+
+   El viaje entero es una sola animación de `transform`: la compone la GPU
+   sin repintar nada, así que cuatro cartas cruzando cuestan lo mismo que
+   ninguna. */
+.orb__cartas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.orb__carta {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: clamp(15px, 4.4vw, 20px);
+  margin: calc(clamp(15px, 4.4vw, 20px) * -0.35) 0 0 calc(clamp(15px, 4.4vw, 20px) / -2);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.orb__carta.is-yendo {
+  animation: carta-cruza 2.9s cubic-bezier(0.42, 0, 0.58, 1) forwards;
+}
+
+@keyframes carta-cruza {
+  0% {
+    transform: translate(var(--x1), var(--y1)) rotate(var(--giro)) scale(0.5);
+    opacity: 0;
+  }
+  14%  { opacity: 0.85; transform: translate(calc(var(--x1) + (var(--x2) - var(--x1)) * 0.14),
+                                             calc(var(--y1) + (var(--y2) - var(--y1)) * 0.14))
+                                   rotate(var(--giro)) scale(1); }
+  86%  { opacity: 0.85; transform: translate(calc(var(--x1) + (var(--x2) - var(--x1)) * 0.86),
+                                             calc(var(--y1) + (var(--y2) - var(--y1)) * 0.86))
+                                   rotate(var(--giro)) scale(1); }
+  100% {
+    transform: translate(var(--x2), var(--y2)) rotate(var(--giro)) scale(0.5);
+    opacity: 0;
+  }
+}
+
+.orb__carta-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent));
+}
+
+.orb__carta-svg rect {
+  fill: rgba(255, 246, 232, 0.94);
+  stroke: color-mix(in srgb, var(--accent) 55%, transparent);
+  stroke-width: 0.8;
+}
+
+.orb__carta-solapa {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 70%, transparent);
+  stroke-width: 0.9;
+  stroke-linejoin: round;
+}
+
+/* Al juntarse ya no hacen falta: lo que tenían que decir ya llegó. */
+.orbit.is-joined .orb__cartas { opacity: 0; transition: opacity 500ms var(--e-out); }
+
+@media (prefers-reduced-motion: reduce) {
+  .orb__carta { display: none; }
+  .orb__scroll { transition-duration: 1ms; }
+}
