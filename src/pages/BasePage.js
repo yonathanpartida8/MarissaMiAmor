@@ -95,12 +95,48 @@ export class BasePage {
    * @param {"next"|"prev"|"none"} direction
    */
   async enter(direction = "next") {
+    // UNA VISITA EMPIEZA LIMPIA.
+    //
+    // El router mantiene vivas las páginas vecinas, así que volver a una ya
+    // visitada NO la construye de nuevo: llama otra vez a `enter()` sobre la
+    // misma instancia. Y como cada página engancha ahí sus gestos, su reloj y
+    // sus escuchas, todo eso se DUPLICABA en cada visita: a la tercera vuelta
+    // el candado tenía nueve reconocedores de gestos y tres relojes.
+    //
+    // Lo que provocaba no era sutil. Cada gesto se atendía tantas veces como
+    // visitas llevara la página —girar un rodillo del candado saltaba un
+    // valor de más, y acertar la fecha se volvía cuestión de suerte—, y cada
+    // reloj cobraba su frame entero, así que la misma página iba peor cuanto
+    // más se pasaba por ella.
+    //
+    // Con esto, lo que quedó de la visita anterior se suelta antes de que la
+    // nueva enganche nada. Ninguna página tiene que acordarse de hacerlo.
+    this.#soltarVisita();
+
     this.active = true;
     // Lo que sobraba se carga ahora, sin bloquear nada.
     const deferred = this.deferredAssets;
     if (deferred.length) this.ctx.assets.idlePreload(deferred);
     // Si el texto de esta página no cabe, que se note que sigue.
     this.track(vigilarLectura(this.root));
+  }
+
+  /**
+   * Suelta todo lo que se enganchó durante una visita.
+   *
+   * Ninguna página engancha nada en `build()` —lo suyo va siempre en
+   * `enter()`—, así que aquí no se pierde nada que haga falta después.
+   */
+  #soltarVisita() {
+    this.listeners.clear();
+    for (const g of this.gestures) g.destroy();
+    for (const stop of this.tickers) stop();
+    for (const off of this.unsubs) off();
+    for (const id of this.timers) clearTimeout(id);
+    this.gestures.length = 0;
+    this.tickers.length = 0;
+    this.unsubs.length = 0;
+    this.timers.clear();
   }
 
   /**
@@ -120,15 +156,7 @@ export class BasePage {
     this.destroyed = true;
     this.active = false;
 
-    this.listeners.clear();
-    for (const g of this.gestures) g.destroy();
-    for (const stop of this.tickers) stop();
-    for (const off of this.unsubs) off();
-    for (const id of this.timers) clearTimeout(id);
-    this.gestures.length = 0;
-    this.tickers.length = 0;
-    this.unsubs.length = 0;
-    this.timers.clear();
+    this.#soltarVisita();
 
     this.root?.remove();
     this.root = null;

@@ -30,6 +30,18 @@ const MOODS = {
 
 const SPREAD = 22;
 
+/**
+ * De qué es cada cosa que flota, y en qué proporción.
+ *
+ * 0 mota · 1 destello · 2 estrellita · 3 corazón.
+ *
+ * Casi todo son motas de luz a propósito. Lo que hace que un corazón flotando
+ * emocione es encontrárselo, y para eso tiene que ser raro: si fueran todos
+ * corazones esto sería una pantalla de San Valentín, no el aire de un libro.
+ * De cada dieciséis: doce motas, dos destellos, un lucero y un corazón.
+ */
+const FORMAS = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3];
+
 export class GLStage {
   /**
    * @param {HTMLCanvasElement} canvas
@@ -63,7 +75,7 @@ export class GLStage {
     this.caps.on("tier", () => this.#applyBudget());
 
     this.resize();
-    this.stopTicker = ctx.loop.add((dt, t) => this.tick(dt, t), 15);
+    this.stopTicker = ctx.loop.add((dt) => this.tick(dt), 15);
     this.ready = true;
   }
 
@@ -146,6 +158,7 @@ export class GLStage {
     const positions = new Float32Array(count * 3);
     const seeds = new Float32Array(count * 3);
     const tints = new Float32Array(count);
+    const tipos = new Float32Array(count);
 
     for (let i = 0; i < count; i++) {
       positions[i * 3] = rng.range(-SPREAD * 0.6, SPREAD * 0.6);
@@ -157,19 +170,21 @@ export class GLStage {
       seeds[i * 3 + 2] = rng.range(0.35, 1.6);
 
       tints[i] = rng.next();
+      tipos[i] = FORMAS[Math.min(FORMAS.length - 1, Math.floor(rng.next() * FORMAS.length))];
     }
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 3));
     geometry.setAttribute("aTint", new THREE.BufferAttribute(tints, 1));
+    geometry.setAttribute("aTipo", new THREE.BufferAttribute(tipos, 1));
     // Sin culling: las partículas se mueven en el shader, la caja no vale.
     geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), SPREAD * 2);
 
     this.dustUniforms = {
       uTime: { value: 0 },
       uPointer: { value: new THREE.Vector2() },
-      uSize: { value: 2.4 },
+      uSize: { value: 2.9 },
       uSpread: { value: SPREAD },
       uPulse: { value: 0 },
       uPixelRatio: { value: 1 },
@@ -354,9 +369,17 @@ export class GLStage {
     this.camera.position.z = this.viewport.aspect < 0.62 ? 9.4 : 8;
   }
 
-  /** ¿Toca dibujar a media cadencia? Lo decide el nivel del aparato. */
+  /**
+   * ¿Toca dibujar a media cadencia?
+   *
+   * Sólo en la gama más humilde. Antes también en la media, y ahí se notaba:
+   * el fondo iba a treinta imágenes por segundo mientras las páginas iban a
+   * sesenta, y esa diferencia se lee como tirones aunque ninguna de las dos
+   * cosas vaya mal. Se podía permitir porque el fondo era un shader de ruido
+   * fractal carísimo; ahora son cuatro exponenciales y no hace falta.
+   */
   get frameSkip() {
-    return this.caps.tierName !== "high";
+    return this.caps.tierName === "low";
   }
 
   #applyBudget() {
@@ -366,10 +389,10 @@ export class GLStage {
     // Reducir el número de partículas exigiría rehacer el buffer; en su lugar
     // bajamos opacidad y tamaño, que es gratis y casi no se nota.
     if (this.caps.tierName === "low") {
-      this.dustUniforms.uSize.value = 1.8;
+      this.dustUniforms.uSize.value = 2.2;
       this.dustBudget = 0.45;
     } else {
-      this.dustUniforms.uSize.value = 2.4;
+      this.dustUniforms.uSize.value = 2.9;
       this.dustBudget = 1;
     }
   }
@@ -379,10 +402,23 @@ export class GLStage {
   /** Resolución reducida mientras cambia la página. */
   economy = false;
 
-  tick(dt, time) {
+  /** Reloj propio del fondo, en segundos. Ver la nota de `tick`. */
+  reloj = 0;
+
+  tick(dt) {
     if (!this.ready) return;
 
     const p = this.pointer.influence;
+
+    // EL RELOJ DEL FONDO ES SUYO, no el del libro.
+    //
+    // Así se puede pedir que vaya casi parado sin tocar nada más: quien tenga
+    // activado «reducir movimiento» en su teléfono ve la misma luz y las
+    // mismas cosas flotando, pero moviéndose tan despacio que no hay
+    // movimiento del que marearse. Y como es un acumulador y no la hora
+    // absoluta, cambiar el ritmo no da ningún salto.
+    this.reloj += dt * (this.caps.reducedMotion ? 0.1 : 1);
+    const time = this.reloj;
 
     // Interpolación de color y humor: nunca hay un corte brusco de paleta.
     const u = this.atmoUniforms;

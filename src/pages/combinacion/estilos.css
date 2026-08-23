@@ -214,13 +214,14 @@
 
 .lock__wheel {
   position: relative;
-  /* Se reparten el hueco que haya, sin pasar del tamaño bonito. La altura
-     sale de la anchura, así que la rueda siempre guarda su proporción de
-     cilindro por estrecha que se quede. */
-  flex: 1 1 0;
+  /* Cada rodillo ocupa según lo que tenga que enseñar: dos cifras el día,
+     tres letras el mes, cuatro cifras el año. `--ancho` lo pone el JS con
+     el número de caracteres, y de ahí sale el reparto. Antes eran cuatro
+     ruedas idénticas de un dígito; ahora son tres cosas distintas y tienen
+     que verse enteras. */
+  flex: var(--ancho, 2) 1 0;
   min-width: 0;
-  max-width: 52px;
-  aspect-ratio: 1 / 1.46;
+  height: clamp(46px, calc(15 * var(--vw)), 62px);
   border-radius: clamp(5px, 1.8vw, 8px);
   overflow: hidden;
   cursor: grab;
@@ -245,9 +246,10 @@
 .lock__strip {
   display: flex;
   flex-direction: column;
-  /* 30 dígitos y sólo uno visible: la tira mide 30 veces la ventana. Con
-     1000% se veían tres a la vez y no se sabía cuál estaba elegido. */
-  height: 3000%;
+  /* Tres vueltas de la lista y sólo un valor visible: la tira mide tres
+     veces el número de pasos. `--pasos` lo pone el JS, porque cada rodillo
+     tiene los suyos (31 días, 12 meses, 10 años). */
+  height: calc(var(--pasos, 10) * 300%);
   will-change: transform;
 }
 
@@ -256,11 +258,45 @@
   display: grid;
   place-items: center;
   font-family: var(--font-display);
-  font-size: clamp(1.4rem, calc(5.6 * var(--vw)), 1.9rem);
+  /* Un poco más pequeño que antes: ahora hay valores de cuatro caracteres
+     («2025») y tienen que caber sin apretarse contra el borde del rodillo. */
+  font-size: clamp(1.05rem, calc(4.3 * var(--vw)), 1.45rem);
   font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
   color: #4a3a20;
   text-shadow: 0 1px 0 rgba(255, 250, 236, 0.8);
 }
+
+/* ---- Día · mes · año ----------------------------------------
+   La letra pequeña de debajo de los rodillos. Sin ella el candado pide
+   tres números sueltos y no se sabe cuál es cuál; con ella se lee que
+   está pidiendo una fecha y ya no hay nada que adivinar salvo la fecha. */
+.lock__pie {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: calc(100% - clamp(8px, 3vw, 14px));
+  gap: clamp(4px, 1.6vw, 8px);
+  padding: 0 clamp(4px, 1.4vw, 7px);
+  margin-top: 3px;
+}
+
+.lock__etiqueta {
+  flex: var(--ancho) 1 0;
+  min-width: 0;
+  font-family: var(--font-ui);
+  font-size: 0.5rem;
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(255, 244, 216, 0.44);
+}
+
+.lock__etiqueta:nth-child(1) { --ancho: 2; }
+.lock__etiqueta:nth-child(2) { --ancho: 3; }
+.lock__etiqueta:nth-child(3) { --ancho: 4; }
 
 /* Reflejo del cilindro: arriba y abajo la rueda se curva. */
 .lock__gloss {
@@ -277,16 +313,23 @@
   );
 }
 
-/* La marca que señala cuál es el dígito elegido. */
+/* La marca que señala cuál es el valor elegido.
+   Dos muescas en los bordes y no una línea de lado a lado: con valores de
+   cuatro caracteres —«2025»— la línea cruzaba el texto por la mitad y
+   parecía tachado. */
 .lock__notch {
   position: absolute;
   left: 0;
   right: 0;
   top: 50%;
-  height: 1px;
-  margin-top: -0.5px;
+  height: 7px;
+  margin-top: -3.5px;
   pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(122, 32, 62, 0.45), transparent);
+  background:
+    linear-gradient(90deg, rgba(122, 32, 62, 0.5), transparent 14%),
+    linear-gradient(270deg, rgba(122, 32, 62, 0.5), transparent 14%);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 45%, #000 55%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 45%, #000 55%, transparent);
 }
 
 /* Cada vez que una rueda se posa en un dígito nuevo. */
@@ -341,10 +384,25 @@
 }
 
 /* ---- Reacciones --------------------------------------------- */
-/* Fallo: el candado se sacude y el arco tintinea. */
+/* Fallo: el candado se sacude, el arco tintinea y la fecha se apaga un
+   momento, como quien niega despacio con la cabeza. Lo que se apaga son
+   día, mes y año a la vez: señala DÓNDE está lo que no cuadra sin decir
+   cuál de los tres es. */
 .lock__padlock.is-wrong { animation: lock-shake 520ms var(--e-out); }
 .lock__padlock.is-wrong .lock__shackle { animation: lock-rattle 520ms var(--e-out); }
 .lock__padlock.is-wrong .lock__body { animation: lock-flush 620ms var(--e-out); }
+.lock__padlock.is-wrong .lock__dial { animation: lock-niega 620ms var(--e-out); }
+.lock__padlock.is-wrong .lock__etiqueta { animation: lock-etiqueta 900ms var(--e-out); }
+
+@keyframes lock-niega {
+  0%, 100% { filter: none; }
+  30%      { filter: saturate(0.5) brightness(0.84); }
+}
+
+@keyframes lock-etiqueta {
+  0%, 100% { color: rgba(255, 244, 216, 0.44); }
+  25%      { color: var(--rose-glow, #ffa9c4); }
+}
 
 @keyframes lock-shake {
   0%, 100% { transform: translateX(0) rotate(0deg); }
@@ -574,6 +632,8 @@ html[data-orientation="landscape"][data-device="phone"] .lock__note {
   .lock__padlock.is-wrong,
   .lock__padlock.is-wrong .lock__shackle,
   .lock__padlock.is-wrong .lock__body,
+  .lock__padlock.is-wrong .lock__dial,
+  .lock__padlock.is-wrong .lock__etiqueta,
   .lock__padlock.is-open .lock__shackle,
   .lock__padlock.is-open .lock__shine,
   .lock__wheel.is-set { animation: none; }

@@ -179,7 +179,7 @@ const pages = [
     chapter: "la-combinacion",
     transition: "zoom",
     gl: true,
-    hint: "gira las ruedas · arriba y abajo",
+    hint: "gira los rodillos · día, mes y año",
     secret: "caja-abierta",
   },
   {

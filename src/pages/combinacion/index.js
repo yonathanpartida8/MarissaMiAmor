@@ -1,19 +1,22 @@
 /**
- * COMBINACIÓN — un candado de verdad.
+ * COMBINACIÓN — un candado que se abre con una fecha.
  *
- * Un cuerpo de metal con su arco arriba y cuatro ruedas engastadas. Se giran
- * con el dedo, con topes que se notan uno a uno. Cada rueda que se asienta
- * hace su clic y el candado entero responde: no es un formulario, es un
- * objeto que se manipula.
+ * Un cuerpo de metal con su arco arriba y tres rodillos engastados: día, mes
+ * y año. Se giran con el dedo, con topes que se notan uno a uno. Cada rodillo
+ * que se asienta hace su clic y el candado entero responde: no es un
+ * formulario, es un objeto que se manipula.
  *
- * Si la combinación no es, el candado se sacude y el arco tintinea, pero no
- * pasa nada malo ni se borra lo que ya se había puesto. A los tres fallos
- * aparece la pista; a los cinco se van encendiendo los dígitos correctos; a
- * los siete el candado cede solo. Esto es un regalo, no un examen.
+ * Si la fecha no es, el candado se sacude y el arco tintinea, pero no pasa
+ * nada malo ni se borra lo que ya estaba puesto. A los pocos intentos aparece
+ * una pista, y más adelante otra; y si insiste mucho, el candado le señala
+ * qué rodillo ya está bien puesto.
  *
- * Si la combinación sí es, el arco salta, se abre una luz y salen corazones.
+ * Lo que NO hace, nunca, bajo ninguna circunstancia: abrirse solo. Antes se
+ * rendía a los siete fallos, y como cada cifra que pasaba girando contaba
+ * como un fallo, se abría prácticamente siempre sin que nadie acertara nada.
+ * Eso se ha ido: lo de dentro sale cuando está la fecha, y sólo entonces.
  *
- * Lo que dice está en `textos.js`, al lado. La combinación también.
+ * Lo que dice está en `textos.js`, al lado. La fecha también.
  */
 
 import { BasePage } from "../BasePage.js";
@@ -25,30 +28,83 @@ import { seeded } from "../../utils/rng.js";
 import escondidos from "../../data/escondidos.js";
 import textos from "./textos.js";
 
-/** Píxeles de arrastre por dígito. Menos = más nervioso. */
+/** Píxeles de arrastre por posición. Menos = más nervioso. */
 const PASO = 42;
 
 /**
  * Cuánto tiene que estar todo quieto para que eso cuente como un intento.
- * Generoso a propósito: mientras siga girando ruedas está eligiendo, no
+ * Generoso a propósito: mientras siga girando rodillos está eligiendo, no
  * probando, y eso no se castiga.
  */
 const ESPERA_INTENTO = 1100;
 
-/** A partir de cuántos fallos ayuda el candado. */
+/** A partir de cuántos intentos fallidos ayuda el candado. */
 const FALLOS_PISTA = 3;
-const FALLOS_SOPLO = 5;
-const FALLOS_RENDICION = 7;
+const FALLOS_PISTA_DOS = 6;
+const FALLOS_SOPLO = 9;
+
+const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+/** Cuántos años enseña la rueda, repartidos alrededor del de la fecha. */
+const ANIOS_ANTES = 5;
+const ANIOS_DESPUES = 4;
+
+/**
+ * Lee la fecha de `textos.js`. Si estuviera mal escrita, se cae a una válida
+ * en vez de dejar el candado sin combinación: un candado sin combinación es
+ * un candado que no se abre nunca.
+ */
+function leerFecha(texto) {
+  const m = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(String(texto || "").trim());
+  if (!m) {
+    console.warn(`[candado] la fecha "${texto}" no se entiende; se espera "DD-MM-AAAA"`);
+    return { dia: 1, mes: 1, anio: new Date().getFullYear() };
+  }
+  return {
+    dia: clamp(+m[1], 1, 31),
+    mes: clamp(+m[2], 1, 12),
+    anio: +m[3],
+  };
+}
 
 export default class CombinacionPage extends BasePage {
   static type = "lock";
 
   build() {
     const ch = this.chapter;
-    // La combinación puede venir del capítulo (para las páginas de él) o de
-    // `textos.js` (la del libro). Siempre cuatro cifras.
-    const codigo = String(textos.combinacion ?? ch?.combination).padStart(4, "0").slice(0, 4);
-    this.code = codigo.split("").map(Number);
+    const fecha = leerFecha(textos.fecha);
+
+    // Los tres rodillos, de izquierda a derecha. Cada uno sabe qué enseña y
+    // en qué posición está lo correcto; el resto de la página no necesita
+    // saber que esto es una fecha, sólo que hay tres ruedas que cuadrar.
+    const anios = Array.from(
+      { length: ANIOS_ANTES + ANIOS_DESPUES + 1 },
+      (_, i) => String(fecha.anio - ANIOS_ANTES + i)
+    );
+
+    const RODILLOS = [
+      {
+        clave: "dia",
+        etiqueta: "día",
+        ancho: 2,
+        valores: Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0")),
+        correcto: fecha.dia - 1,
+      },
+      {
+        clave: "mes",
+        etiqueta: "mes",
+        ancho: 3,
+        valores: MESES,
+        correcto: fecha.mes - 1,
+      },
+      {
+        clave: "anio",
+        etiqueta: "año",
+        ancho: 4,
+        valores: anios,
+        correcto: ANIOS_ANTES,
+      },
+    ];
 
     // El título de `textos.js` manda también fuera de la página: es el que
     // sale en la barra de abajo y en el índice del libro.
@@ -61,31 +117,53 @@ export default class CombinacionPage extends BasePage {
     });
     setVars(this.root, { "--accent": this.palette.a });
 
-    // ── Las ruedas ────────────────────────────────────────────────────
-    this.wheels = this.code.map((_, i) => {
+    // ── Los rodillos ──────────────────────────────────────────────────
+    this.wheels = RODILLOS.map((cfg, i) => {
       const wheel = el("div.lock__wheel", {
         "data-claim-drag": "",
+        "data-rueda": cfg.clave,
         role: "spinbutton",
-        "aria-label": `Rueda ${i + 1} de 4`,
-        "aria-valuemin": "0",
-        "aria-valuemax": "9",
+        "aria-label": cfg.etiqueta,
+        "aria-valuemin": "1",
+        "aria-valuemax": String(cfg.valores.length),
         tabindex: "0",
       });
+      setVars(wheel, { "--ancho": String(cfg.ancho) });
+
       // La tira es más alta que su ventana a propósito: es el rodillo. Va
-      // marcada como decorativa porque quien no la ve ya tiene el número
-      // en `aria-valuenow` de la rueda, y así nadie —ni un lector de
-      // pantalla ni una revisión de recortes— la confunde con texto perdido.
+      // marcada como decorativa porque quien no la ve ya tiene el valor en
+      // `aria-valuetext` de la rueda, y así nadie —ni un lector de pantalla
+      // ni una revisión de recortes— la confunde con texto perdido.
       const strip = el("div.lock__strip", { "aria-hidden": "true" });
-      // 0–9 repetidos tres veces: la rueda gira sin fin y sin costuras.
-      for (let r = 0; r < 3; r++) {
-        for (let d = 0; d < 10; d++) strip.append(el("span.lock__digit", { text: String(d) }));
+      // Tres vueltas de la lista: el rodillo gira sin fin y sin costuras.
+      for (let v = 0; v < 3; v++) {
+        for (const valor of cfg.valores) strip.append(el("span.lock__digit", { text: valor }));
       }
+      setVars(strip, { "--pasos": String(cfg.valores.length) });
+
       wheel.append(strip, el("div.lock__gloss"), el("div.lock__notch"));
-      return { node: wheel, strip, value: 0, offset: 0, target: 0, index: i, lastShown: -1 };
+
+      return {
+        node: wheel,
+        strip,
+        cfg,
+        n: cfg.valores.length,
+        value: 0,        // índice mostrado ahora mismo
+        offset: 0,       // posición continua, la que mueve el dedo
+        target: 0,       // a dónde se está imantando
+        index: i,
+        lastShown: -1,
+      };
     });
 
-    this.dial = el("div.lock__dial", { role: "group", "aria-label": "Combinación" },
+    this.dial = el("div.lock__dial", { role: "group", "aria-label": "La fecha" },
       this.wheels.map((w) => w.node));
+
+    // Debajo, en pequeñito, qué es cada rodillo. Sin esto el candado es un
+    // acertijo de tres números sueltos; con esto se lee «día, mes, año» de
+    // un vistazo y ya se sabe qué está pidiendo.
+    this.pie = el("div.lock__pie", { "aria-hidden": "true" },
+      RODILLOS.map((cfg) => el("span.lock__etiqueta", { text: cfg.etiqueta })));
 
     // ── El candado ────────────────────────────────────────────────────
     // El arco va DETRÁS del cuerpo para que parezca metido en él.
@@ -97,6 +175,7 @@ export default class CombinacionPage extends BasePage {
       el("div.lock__plate"),
       el("span.lock__engrave", { text: textos.grabado }),
       this.dial,
+      this.pie,
       el("div.lock__shine"),
     ]);
 
@@ -147,9 +226,15 @@ export default class CombinacionPage extends BasePage {
 
     this.fallos = 0;
     this.opened = false;
+    this.soplando = false;
+    this.ultimoIntento = null;
     this.rng = seeded(`candado-${this.id}`);
 
-    // Si ya lo abrió otro día, no la obligamos a repetirlo.
+    // ¿Ya lo abrió ella otro día? Entonces sigue abierto, sin volver a
+    // pedirle la fecha. Es el ÚNICO camino que abre esto sin acertar, y
+    // depende de que alguien acertara antes: `unlockSecret()` sólo se llama
+    // en la apertura de verdad, así que recargar, tocar o volver a entrar no
+    // lo abre nunca por su cuenta.
     if (this.ctx.store.hasSecret(this.entry.secret)) {
       this.#abrir(false);
       return;
@@ -160,7 +245,7 @@ export default class CombinacionPage extends BasePage {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  //  Girar las ruedas
+  //  Girar los rodillos
   // ═══════════════════════════════════════════════════════════════════
 
   #bind(wheel) {
@@ -176,11 +261,10 @@ export default class CombinacionPage extends BasePage {
             ultimoTope = Math.round(wheel.offset);
             // MIENTRAS EL DEDO MANDA, EL RELOJ NO TOCA ESTA RUEDA.
             //
-            // Aquí estaba el fallo que dejaba el candado inservible: el reloj
-            // de la página hace `damp(offset → target)` sesenta veces por
-            // segundo, y como al arrastrar sólo cambiaba `offset`, cada frame
-            // lo devolvía al `target` de antes. El dedo empujaba y el reloj
-            // tiraba: la rueda no se movía ni un dígito.
+            // El reloj de la página hace `damp(offset → target)` sesenta veces
+            // por segundo, y como al arrastrar sólo cambia `offset`, cada
+            // frame lo devolvería al `target` de antes. El dedo empujaría y el
+            // reloj tiraría: la rueda no se movería ni un paso.
             wheel.dragging = true;
             wheel.node.classList.add("is-turning");
             this.padlock.classList.add("is-handled");
@@ -190,19 +274,24 @@ export default class CombinacionPage extends BasePage {
             const tope = Math.round(wheel.offset);
             if (tope !== ultimoTope) {
               ultimoTope = tope;
-              // Un tope por dígito: la rueda se siente mecánica de verdad.
+              // Un tope por posición: el rodillo se siente mecánico de verdad.
               this.ctx.haptics.play("tick");
               this.ctx.audio.play("turn", { volume: 0.1, rate: 2.2 });
             }
           },
-          onPanEnd: (e) => {
+          onPanEnd: () => {
             wheel.dragging = false;
             wheel.node.classList.remove("is-turning");
             this.padlock.classList.remove("is-handled");
-            // Se imanta al dígito más cercano. La inercia suma poco y acotada:
-            // con un multiplicador alto, un giro corto y decidido se pasaba
-            // siempre un dígito y la combinación era imposible de acertar.
-            wheel.target = Math.round(wheel.offset + clamp(-e.vy * 0.45, -2, 2));
+            // SE QUEDA DONDE LO DEJASTE. Sin inercia.
+            //
+            // Un rodillo con inercia es precioso hasta que tienes que parar
+            // en un valor exacto: medido, un giro decidido se pasaba de largo
+            // un paso casi siempre —marcabas el 23 y salía el 24— y encontrar
+            // la fecha se volvía cuestión de suerte. Aquí lo que importa es
+            // acertar, así que el rodillo se imanta al valor más cercano al
+            // sitio donde levantaste el dedo y ahí se queda.
+            wheel.target = Math.round(wheel.offset);
             this.#comprobar();
           },
           onTap: () => {
@@ -235,8 +324,8 @@ export default class CombinacionPage extends BasePage {
       // Mientras el dedo la lleva, el reloj no la toca: `offset` ya lo escribe
       // el arrastre y suavizarlo hacia `target` sería deshacerlo cada frame.
       if (!wheel.dragging) {
-        // Y si ya está donde tiene que estar, no se recalcula nada: con las
-        // cuatro ruedas quietas esta página deja de costar por completo.
+        // Y si ya está donde tiene que estar, no se recalcula nada: con los
+        // tres rodillos quietos esta página deja de costar por completo.
         if (Math.abs(wheel.target - wheel.offset) < 0.0005) {
           if (wheel.offset !== wheel.target) {
             wheel.offset = wheel.target;
@@ -248,14 +337,16 @@ export default class CombinacionPage extends BasePage {
         }
       }
 
-      // El módulo mantiene el valor en 0–9 aunque la rueda gire indefinidamente.
-      wheel.value = ((Math.round(wheel.offset) % 10) + 10) % 10;
+      // El módulo mantiene el valor dentro de la lista aunque el rodillo gire
+      // indefinidamente en cualquiera de los dos sentidos.
+      wheel.value = ((Math.round(wheel.offset) % wheel.n) + wheel.n) % wheel.n;
 
-      // Cada vez que la rueda se posa en un dígito nuevo, parpadea. Es la
-      // respuesta visual a cada cifra que se introduce.
+      // Cada vez que el rodillo se posa en un valor nuevo, parpadea. Es la
+      // respuesta visual a cada cosa que se elige.
       if (wheel.value !== wheel.lastShown) {
         wheel.lastShown = wheel.value;
-        wheel.node.setAttribute("aria-valuenow", String(wheel.value));
+        wheel.node.setAttribute("aria-valuenow", String(wheel.value + 1));
+        wheel.node.setAttribute("aria-valuetext", wheel.cfg.valores[wheel.value]);
         wheel.node.classList.remove("is-set");
         void wheel.node.offsetWidth;
         wheel.node.classList.add("is-set");
@@ -263,14 +354,16 @@ export default class CombinacionPage extends BasePage {
         if (this.soplando) this.#soplar();
         // Se comprueba aquí y no sólo al soltar el dedo: así vale igual para
         // el teclado, para la inercia que aún se está frenando y para
-        // cualquier otra forma de mover una rueda.
+        // cualquier otra forma de mover un rodillo.
         this.#comprobar();
       }
 
       // Se desplaza la tira dentro del hueco. El porcentaje es del alto de la
-      // TIRA (30 dígitos), así que un dígito son 100/30 = 3,33%.
-      const dentro = ((wheel.offset % 10) + 10) % 10;
-      wheel.strip.style.transform = `translate3d(0, ${-((dentro + 10) * (100 / 30)).toFixed(3)}%, 0)`;
+      // TIRA (tres vueltas), así que un paso son 100 / (3n) por ciento.
+      const dentro = ((wheel.offset % wheel.n) + wheel.n) % wheel.n;
+      const paso = 100 / (wheel.n * 3);
+      wheel.strip.style.transform =
+        `translate3d(0, ${-((dentro + wheel.n) * paso).toFixed(4)}%, 0)`;
     }
   }
 
@@ -278,17 +371,18 @@ export default class CombinacionPage extends BasePage {
   //  Acertar y fallar
   // ═══════════════════════════════════════════════════════════════════
 
+  /** ¿Están los tres rodillos en su sitio? */
+  get #acertada() {
+    return this.wheels.every((w) => w.value === w.cfg.correcto);
+  }
+
   /**
-   * Juzga la combinación, pero SÓLO cuando de verdad hay un intento.
+   * Juzga la fecha, pero SÓLO cuando de verdad hay un intento.
    *
-   * Antes se juzgaba a los 420 ms de cada dígito, y eso convertía cada cifra
-   * que pasaba por delante en un fallo: girar la última rueda de 0 a 8 eran
-   * ocho fallos seguidos, así que el candado llegaba a los siete y se rendía
-   * solo antes de que a ella le diera tiempo a marcar nada. El juego se abría
-   * a sí mismo prácticamente siempre.
-   *
-   * Ahora un intento es lo que parece un intento: las cuatro ruedas quietas,
-   * el dedo fuera, y una combinación distinta de la última que ya se juzgó.
+   * Si se juzgara a cada valor que pasa por delante, girar el rodillo de los
+   * días del 1 al 23 serían veintidós fallos seguidos. Un intento es lo que
+   * parece un intento: los tres rodillos quietos, el dedo fuera, y una fecha
+   * distinta de la última que ya se juzgó.
    */
   #comprobar() {
     if (this.opened) return;
@@ -297,22 +391,22 @@ export default class CombinacionPage extends BasePage {
       // Con un dedo todavía puesto no hay nada que juzgar: sigue eligiendo.
       if (this.wheels.some((w) => w.dragging)) return this.#comprobar();
 
-      const actual = this.wheels.map((w) => w.value);
-      if (actual.every((v, i) => v === this.code[i])) return this.#abrir(true);
+      if (this.#acertada) return this.#abrir(true);
 
-      // Todo a ceros es el estado de partida, no un intento… salvo que haya
-      // llegado ahí a propósito, dando la vuelta entera a las cuatro ruedas.
-      // Eso no es no haber empezado: eso es haber probado el 0000.
-      if (!actual.some((v) => v !== 0)) {
+      // La fecha de partida no es un intento: es no haber empezado… salvo
+      // que haya vuelto a ella a propósito, dando la vuelta entera. Eso sí
+      // es haber probado.
+      const enPartida = this.wheels.every((w) => w.value === 0);
+      if (enPartida) {
         if (this.wheels.some((w) => Math.abs(w.target) > 0.5)) {
           this.escondite("candado-ceros", escondidos.combinacion);
         }
         return;
       }
 
-      // Y la misma combinación dos veces tampoco: si se queda mirándola, o
-      // vuelve sobre sus pasos, no se le apunta un fallo nuevo.
-      const huella = actual.join("");
+      // Y la misma fecha dos veces tampoco: si se queda mirándola, o vuelve
+      // sobre sus pasos, no se le apunta un fallo nuevo.
+      const huella = this.wheels.map((w) => w.value).join("-");
       if (huella === this.ultimoIntento) return;
       this.ultimoIntento = huella;
 
@@ -320,6 +414,13 @@ export default class CombinacionPage extends BasePage {
     }, ESPERA_INTENTO);
   }
 
+  /**
+   * Una fecha que no es.
+   *
+   * El candado se sacude, suena a metal y lo dice con cariño. Lo que NO hace
+   * es rendirse: por muchos intentos que lleve, esto no se abre sin la fecha.
+   * Lo único que va creciendo es la ayuda.
+   */
   #fallar() {
     this.fallos++;
 
@@ -333,40 +434,37 @@ export default class CombinacionPage extends BasePage {
     this.#decir(frase);
 
     if (this.fallos === FALLOS_PISTA) {
-      this.#decir(textos.pista || this.chapter?.combinationHint, 5200);
+      this.#decir(textos.pista, 5200);
+    } else if (this.fallos === FALLOS_PISTA_DOS) {
+      this.#decir(textos.pistaDos, 5200);
     } else if (this.fallos === FALLOS_SOPLO) {
-      // A partir de aquí el candado ayuda: enciende las que ya están bien.
+      // A partir de aquí el candado señala qué rodillo ya está bien. Sigue
+      // sin decir el valor de los otros dos: ayuda, no resuelve.
       this.soplando = true;
       this.#soplar();
       this.#decir(textos.ayuda, 5200);
-    } else if (this.fallos >= FALLOS_RENDICION) {
-      this.#decir(textos.rendicion, 3000);
-      setTimeout(() => this.#abrir(true), 700);
     }
   }
 
   /**
-   * El candado se templa según cuántas cifras están ya en su sitio.
+   * El candado se templa según cuántos rodillos están ya en su sitio.
    *
    * No dice cuáles —eso sería regalar el juego—, sólo quema un poco más. Es
    * la respuesta al PROCESO: se nota que te acercas antes de acertar, que es
-   * lo que hace que girar ruedas sea un juego y no un formulario.
+   * lo que hace que girar rodillos sea un juego y no un formulario.
    */
   #templar() {
-    const aciertos = this.wheels.reduce(
-      (n, w, i) => n + (w.value === this.code[i] ? 1 : 0),
-      0
-    );
-    // Sólo desde dos: con una sola cifra bien es casualidad pura y encenderse
-    // por eso convertiría el candado en un detector de dígitos.
-    const cerca = aciertos < 2 ? 0 : (aciertos - 1) / (this.code.length - 1);
+    const aciertos = this.wheels.reduce((n, w) => n + (w.value === w.cfg.correcto ? 1 : 0), 0);
+    // Sólo desde dos: con uno solo bien es casualidad pura y encenderse por
+    // eso convertiría el candado en un detector de valores.
+    const cerca = aciertos < 2 ? 0 : (aciertos - 1) / (this.wheels.length - 1);
     setVars(this.padlock, { "--cerca": cerca.toFixed(2) });
   }
 
-  /** Enciende las ruedas que ya están en su sitio. */
+  /** Enciende los rodillos que ya están en su sitio. */
   #soplar() {
     for (const wheel of this.wheels) {
-      wheel.node.classList.toggle("is-right", wheel.value === this.code[wheel.index]);
+      wheel.node.classList.toggle("is-right", wheel.value === wheel.cfg.correcto);
     }
   }
 
@@ -384,21 +482,30 @@ export default class CombinacionPage extends BasePage {
 
   /**
    * La apertura tiene tiempos, y son los que hacen que parezca que se abre
-   * algo y no que cambia una clase: primero las ruedas se alinean y el metal
-   * se enciende, después el arco salta, y sólo entonces sale lo de dentro.
+   * algo y no que cambia una clase: primero los rodillos se asientan y el
+   * metal se enciende, después el arco salta, y sólo entonces sale lo de
+   * dentro.
+   *
+   * @param {boolean} celebrar  true = acaba de acertar. false = ya estaba
+   *                            abierto de otro día y se restaura sin ruido.
    */
   async #abrir(celebrar) {
     if (this.opened) return;
     this.opened = true;
     clearTimeout(this.timer);
     this.soplando = false;
+    // Se borra el rastro del último fallo: el candado que se abre no puede
+    // llevar puesta todavía la marca de haberse equivocado.
+    this.padlock.classList.remove("is-wrong");
     for (const w of this.wheels) w.node.classList.remove("is-right");
 
     if (celebrar) {
-      // 1. Las ruedas se colocan solas en la combinación, con su clic.
+      // 1. Los rodillos se asientan en su sitio, con su clic. Ya están en la
+      //    fecha buena; esto sólo remata el imantado para que el momento
+      //    empiece con los tres perfectamente cuadrados.
       this.wheels.forEach((w, i) => {
-        const vuelta = Math.round(w.offset / 10) * 10;
-        w.target = vuelta + this.code[i];
+        const vuelta = Math.round((w.offset - w.cfg.correcto) / w.n) * w.n;
+        w.target = vuelta + w.cfg.correcto;
         this.later(() => this.ctx.haptics.play("tick"), 90 * i);
       });
       this.padlock.classList.add("is-aligning");
@@ -418,6 +525,9 @@ export default class CombinacionPage extends BasePage {
       this.ctx.gl?.pulse(1);
       this.#chispas();
       this.#decir(textos.abierto, 1800);
+      // ÚNICO sitio donde esto se marca como abierto para siempre. Si esta
+      // línea se llamara desde cualquier otro camino, el candado quedaría
+      // abierto sin que nadie hubiera puesto la fecha.
       this.unlockSecret();
       await wait(520);
     } else {
