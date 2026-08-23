@@ -141,11 +141,12 @@ export default class PulsoPage extends BasePage {
     this.holding = false;
     this.latidos = 0;
     this.fase = 0;
+    this.ciclo = 1;
     this.x = 0;
     this.brillo = 0;
     this.bpm = BPM_REPOSO;
     this.golpe = 0;
-    this.done = this.ctx.store.hasSecret(this.entry.secret);
+    this.dormido = true;
 
     // Si el aparato no vibra (iPhone en Safari), se sustituye por un golpe
     // grave muy bajito. Es un cambio de sentido, no una función menos.
@@ -154,21 +155,32 @@ export default class PulsoPage extends BasePage {
     this.#medir();
     this.track(this.ctx.viewport.on("resize", () => this.#medir()));
 
-    if (this.done) {
-      this.#terminar(false);
-    } else {
-      this.addGestures(
-        new Gestures(
-          this.pad,
-          {
-            onDown: () => this.#poner(),
-            onUp: () => this.#quitar(),
-          },
-          // Umbral altísimo: mover el dedo mientras se sostiene no cancela.
-          { exclusive: true, threshold: 999 }
-        )
-      );
+    // EL PULSO SE PUEDE SENTIR SIEMPRE.
+    //
+    // Antes, en cuanto la frase aparecía una vez, la página se marcaba como
+    // hecha y ni siquiera se enganchaban los gestos: al volver, la
+    // almohadilla estaba ahí, decía «mantén el pulgar aquí» y no pasaba
+    // absolutamente nada. Justo la página que va de sentir un corazón era la
+    // única que sólo funcionaba una vez.
+    //
+    // Ahora la frase se recuerda —eso sí es de una vez— pero el latido no:
+    // se puede volver a poner el dedo las veces que quiera.
+    if (this.ctx.store.hasSecret(this.entry.secret)) {
+      this.finished = true;
+      this.root.classList.add("is-read", "is-said");
     }
+
+    this.addGestures(
+      new Gestures(
+        this.pad,
+        {
+          onDown: () => this.#poner(),
+          onUp: () => this.#quitar(),
+        },
+        // Umbral altísimo: mover el dedo mientras se sostiene no cancela.
+        { exclusive: true, threshold: 999 }
+      )
+    );
 
     this.#dosDedos();
     this.addTicker((dt, time, realDt) => this.#frame(realDt ?? dt, time), 11);
@@ -178,12 +190,39 @@ export default class PulsoPage extends BasePage {
   //  El dedo
   // ═══════════════════════════════════════════════════════════════════
 
+  /**
+   * El dedo se pone.
+   *
+   * El primer latido sale AHORA, no cuando al ciclo le toque. Si la fase
+   * viene corriendo por su cuenta, entre poner el dedo y notar el primer
+   * golpe puede pasar casi un segundo entero, y en ese segundo la página
+   * parece que no ha respondido. Reiniciando la fase, el corazón arranca
+   * debajo del dedo en el mismo instante en que lo apoyas.
+   */
   #poner() {
-    if (this.done) return;
+    if (this.holding) return;
     this.holding = true;
+    this.dormido = false;
+    this.fase = 0;
+    this.golpe = 0;
+    this.latidos = 0;
+    this.ciclo = this.#nuevoCiclo();
     this.root.classList.add("is-holding");
     this.ctx.haptics.play("tap");
     this.ctx.audio.duck(0.5, 30_000);
+    this.#latir();
+  }
+
+  /**
+   * Cuánto dura el próximo latido, en ciclos.
+   *
+   * Un corazón no es un metrónomo: entre latido y latido hay siempre una
+   * variación pequeña, y es justo eso lo que distingue un pulso de verdad de
+   * una animación en bucle. Un tres por ciento arriba o abajo no se ve, pero
+   * se nota.
+   */
+  #nuevoCiclo() {
+    return 1 + (Math.random() - 0.5) * 0.06;
   }
 
   /**
@@ -198,7 +237,7 @@ export default class PulsoPage extends BasePage {
     const dedos = new Set();
     this.on(this.pad, "pointerdown", (e) => {
       dedos.add(e.pointerId);
-      if (dedos.size < 2 || this.done || this.root.classList.contains("is-dos")) return;
+      if (dedos.size < 2 || this.root.classList.contains("is-dos")) return;
       this.root.classList.add("is-dos");
       this.escondite("pulso-dos-dedos", escondidos.pulso, e);
     });
@@ -207,10 +246,18 @@ export default class PulsoPage extends BasePage {
     this.on(window, "pointercancel", soltar);
   }
 
+  /**
+   * El dedo se va.
+   *
+   * No se corta en seco: el latido pierde fuerza, el trazo se desvanece y la
+   * página se duerme sola cuando ya no queda nada encendido. Y la vibración
+   * se para AQUÍ, en el mismo instante, sin esperar a nada.
+   */
   #quitar() {
     if (!this.holding) return;
     this.holding = false;
     this.root.classList.remove("is-holding");
+    this.ctx.haptics.stop();
     this.ctx.audio.duck(1, 0);
     if (!this.finished && this.latidos > 0) this.#decir(textos.suelto);
   }
@@ -229,8 +276,17 @@ export default class PulsoPage extends BasePage {
   //  El latido
   // ═══════════════════════════════════════════════════════════════════
 
+  /**
+   * Un frame.
+   *
+   * Cuando no hay dedo y el rastro ya se apagó, esto NO HACE NADA: ni avanza
+   * la fase, ni escribe variables, ni dibuja, ni vibra. La página se duerme
+   * de verdad. Antes el corazón latía siempre —flojito, pero latía—, así que
+   * al soltar el dedo seguía escribiendo estilos y pintando en el lienzo
+   * sesenta veces por segundo para nadie.
+   */
   #frame(dt, time) {
-    if (!this.w) return;
+    if (!this.w || this.dormido) return;
 
     // El brillo general sube y baja con el dedo, nunca de golpe.
     this.brillo = damp(this.brillo, this.holding ? 1 : 0, 4.2, dt);
@@ -241,50 +297,80 @@ export default class PulsoPage extends BasePage {
       : BPM_REPOSO;
     this.bpm = damp(this.bpm, objetivo, 1.1, dt);
 
-    // El corazón late SIEMPRE, sólo que muy flojito si no hay dedo: así la
-    // página está viva desde que se llega, y el dedo la enciende.
-    const anterior = this.fase;
     this.fase += (dt * this.bpm) / 60;
 
-    const dentro = this.fase % 1;
-    const fuerza = envolvente(dentro) * (0.22 + this.brillo * 0.78);
+    // La envolvente se lee sobre la duración de ESTE ciclo, que no es
+    // exactamente uno: de ahí sale la irregularidad de un pulso de verdad.
+    const dentro = clamp01((this.fase % this.ciclo) / this.ciclo);
+    const fuerza = envolvente(dentro) * (0.10 + this.brillo * 0.90);
     this.golpe = damp(this.golpe, fuerza, 22, dt);
 
     // `--on` sube y baja con el dedo y se queda quieto: puede vivir en la raíz,
     // porque `setVars` deja de escribirlo en cuanto se asienta.
     setVars(this.root, { "--on": this.brillo.toFixed(3) });
 
-    // `--beat`, en cambio, no para nunca mientras hay dedo. Las variables de
-    // CSS se heredan, así que escribirlo en la raíz obligaba a recalcular el
-    // estilo de las setecientas y pico cajas de la página sesenta veces por
-    // segundo —era, con diferencia, la página más cara del libro—. Escrito
-    // aquí sólo despierta al puñado de cosas que de verdad laten.
+    // `--beat`, en cambio, no para mientras hay dedo. Las variables de CSS se
+    // heredan, así que escribirlo en la raíz obligaba a recalcular el estilo
+    // de las setecientas y pico cajas de la página sesenta veces por segundo
+    // —era, con diferencia, la página más cara del libro—. Escrito aquí sólo
+    // despierta al puñado de cosas que de verdad laten.
     const beat = this.golpe.toFixed(3);
     setVars(this.core, { "--beat": beat });
     setVars(this.bpmEl, { "--beat": beat });
 
     // Cruce de ciclo: un latido.
-    if (Math.floor(this.fase) > Math.floor(anterior) && this.holding && !this.finished) {
-      this.#latir();
+    if (this.fase >= this.ciclo) {
+      this.fase -= this.ciclo;
+      this.ciclo = this.#nuevoCiclo();
+      if (this.holding) this.#latir();
     }
 
-    if (this.holding && !this.done) this.#dibujar(dt);
-    else if (this.brillo > 0.01) this.#apagar(dt);
+    if (this.holding) this.#dibujar(dt);
+    else this.#apagar(dt);
 
-    if (this.holding || this.brillo > 0.02) {
-      this.bpmEl.textContent = String(Math.round(this.bpm));
-    }
+    this.bpmEl.textContent = this.holding || this.brillo > 0.08
+      ? String(Math.round(this.bpm))
+      : "—";
+
+    // Ya no queda nada encendido: se apaga del todo hasta el próximo dedo.
+    if (!this.holding && this.brillo < 0.02) this.#dormir();
+  }
+
+  /**
+   * Se acabó por ahora.
+   *
+   * Deja el lienzo limpio, el corazón quieto y las variables en cero, y a
+   * partir de aquí `#frame` sale por la primera línea. Sin esto, una página
+   * que ya no está haciendo nada seguía costando lo mismo que en pleno
+   * latido.
+   */
+  #dormir() {
+    this.dormido = true;
+    this.brillo = 0;
+    this.golpe = 0;
+    this.fase = 0;
+    this.ctx2d?.clearRect(0, 0, this.w, this.h);
+    this.x = 0;
+    setVars(this.root, { "--on": "0" });
+    setVars(this.core, { "--beat": "0" });
+    setVars(this.bpmEl, { "--beat": "0" });
+    this.bpmEl.textContent = "—";
   }
 
   #latir() {
     this.latidos++;
     this.#anillo();
 
-    // Vibración al compás. El patrón imita el lub-dub: golpe, hueco, golpe.
+    // Vibración al compás. El patrón imita el lub-dub: golpe corto, hueco,
+    // golpe más corto. Suave a propósito: esto tiene que sentirse como un
+    // corazón debajo del dedo, no como una notificación.
     if (this.puedeVibrar) {
       this.ctx.haptics.play("heart");
     } else {
-      // Sin vibración: un golpe grave, muy bajo, que se siente más que se oye.
+      // Sin vibración —los iPhone en Safari no la tienen— el latido se
+      // sustituye por un golpe grave y muy bajo, de los que se sienten más
+      // que se oyen, y por el propio corazón de la pantalla, que se hincha
+      // y se encoge en el mismo instante. Nunca se queda sin respuesta.
       this.ctx.audio.play("turn", { volume: 0.16, rate: 0.42 });
     }
 
@@ -292,10 +378,13 @@ export default class PulsoPage extends BasePage {
     this.ctx.audio.play("turn", { volume: 0.07, rate: 0.6 });
     this.ctx.gl?.pulse(0.22);
 
-    const frase = textos.latidos[this.latidos - 1];
-    if (frase) this.#decir(frase);
-
-    if (this.latidos >= LATIDOS_META) this.#terminar(true);
+    // Las frases del principio son de la primera vez. Quien vuelve a poner el
+    // dedo lo hace por sentirlo, no por que le vuelvan a contar lo mismo.
+    if (!this.finished) {
+      const frase = textos.latidos[this.latidos - 1];
+      if (frase) this.#decir(frase);
+      if (this.latidos >= LATIDOS_META) this.#terminar();
+    }
   }
 
   /**
@@ -395,22 +484,18 @@ export default class PulsoPage extends BasePage {
   //  El final
   // ═══════════════════════════════════════════════════════════════════
 
-  async #terminar(celebrar) {
+  /**
+   * Los ocho latidos: aparece la frase.
+   *
+   * Sólo pasa una vez en la vida del libro. Lo que NO hace es apagar la
+   * almohadilla: el dedo sigue mandando, y el corazón sigue latiendo mientras
+   * esté puesto.
+   */
+  async #terminar() {
     if (this.finished) return;
     this.finished = true;
-    this.done = true;
     this.root.classList.add("is-read");
 
-    // Si ya lo hizo otro día, la página aparece directamente en su estado
-    // final: con la frase puesta y la almohadilla apagada. Sin esto se quedaba
-    // a medias —almohadilla encendida que no hacía nada y frase sin salir—,
-    // que es la peor manera posible de volver a una página.
-    if (!celebrar) {
-      this.root.classList.add("is-said");
-      return;
-    }
-
-    this.ctx.haptics.play("heart");
     this.ctx.gl?.pulse(1);
     this.ctx.gl?.flash(0.2);
     this.#decir("");
@@ -421,11 +506,16 @@ export default class PulsoPage extends BasePage {
 
   async leave(direction) {
     await super.leave(direction);
+    // Se va la página: no puede quedarse nada corriendo detrás.
+    this.#quitar();
+    this.#dormir();
+    this.ctx.haptics.stop();
     this.ctx.audio.duck(1, 0);
   }
 
   destroy() {
     clearTimeout(this.sayTimer);
+    this.ctx.haptics?.stop();
     this.ctx.audio?.duck(1, 0);
     super.destroy();
   }

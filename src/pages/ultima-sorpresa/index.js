@@ -1,9 +1,10 @@
 /**
  * ÚLTIMA SORPRESA — el cajón de las cosas pequeñas.
  *
- * Seis objetos sobre una mesa a oscuras, y cada uno se toca de una manera
- * distinta: la cerilla se enciende con un toque, el papel se desdobla, la
- * llave se gira arrastrando, la concha hay que sostenerla, la estrella pide
+ * Seis recuerdos guardados en el forro de un cajón, y cada uno se toca de
+ * una manera distinta: la huella de un beso prende con un toque y enciende
+ * todo lo demás, la carta se abre en dos tiempos, la espiral se desenrolla
+ * arrastrando, el corazón hay que sostenerlo para notarlo, la estrella pide
  * dos toques y el anillo uno. Ninguno dice cómo: se descubren tocando.
  *
  * No hay orden. No hay manera de hacerlo mal. Si lleva un rato sin encontrar
@@ -24,14 +25,22 @@ import { damp } from "../../utils/math.js";
 import { seeded } from "../../utils/rng.js";
 import textos from "./textos.js";
 
-/** Dónde se posa cada cosa sobre la mesa, en % del hueco. */
+/**
+ * Dónde se posa cada cosa dentro del cajón, en % del hueco, con su
+ * inclinación y su tamaño.
+ *
+ * Nada está alineado con nada: las cosas de un cajón caen como caen. Los
+ * tamaños tampoco son iguales —la carta ocupa, el anillo casi no— porque
+ * seis objetos del mismo tamaño se leen como una cuadrícula de iconos y no
+ * como un puñado de recuerdos.
+ */
 const SITIOS = {
-  cerilla:  { x: 22, y: 18, r: -14 },
-  papel:    { x: 70, y: 15, r: 8 },
-  llave:    { x: 78, y: 48, r: -6 },
-  concha:   { x: 26, y: 52, r: 12 },
-  estrella: { x: 52, y: 78, r: 0 },
-  anillo:   { x: 15, y: 82, r: -4 },
+  beso:     { x: 26, y: 17, r: -11, s: 1.12 },
+  carta:    { x: 71, y: 20, r: 7,   s: 1.20 },
+  espiral:  { x: 79, y: 51, r: -5,  s: 0.94 },
+  corazon:  { x: 24, y: 49, r: 13,  s: 0.98 },
+  estrella: { x: 55, y: 77, r: -6,  s: 0.86 },
+  anillo:   { x: 17, y: 80, r: -3,  s: 0.80 },
 };
 
 const EMPUJON_MS = 8000;
@@ -54,29 +63,62 @@ export default class UltimaSorpresaPage extends BasePage {
     this.mesa = el("div.sorpresa__mesa", { "data-claim-drag": "" });
     this.objetos = {};
 
-    // ── Los seis objetos, cada uno con su forma ───────────────────────
-    this.#poner("cerilla", `
-      <span class="obj__palo"></span>
-      <span class="obj__cabeza"></span>
-      <span class="obj__llama"></span>`);
+    // ── Los seis recuerdos, cada uno dibujado ─────────────────────────
+    //
+    // Van en SVG y no en cajas de CSS. Con `<span>`s y bordes redondeados se
+    // llega hasta la llave y la concha —que era lo que había—, pero no hasta
+    // la huella de un beso ni el lacre de una carta: eso pide trazo, y el
+    // trazo pide un trazado. De paso cada cosa es UN nodo con UNA silueta, y
+    // no tres piezas que hay que hacer coincidir.
+    this.#poner("beso", `
+      <svg class="obj__svg" viewBox="0 0 44 40" aria-hidden="true">
+        <rect class="obj__tarjeta" x="1" y="2" width="42" height="36" rx="2.5"/>
+        <g class="obj__labios">
+          <path d="M11.4 17.4C11 13.3 15.1 10.6 18.4 12.1c1.8.8 3 2.4 3.6 4 .6-1.6 1.8-3.2 3.6-4 3.3-1.5 7.4 1.2 7 5.3-5.7-1.5-15.5-1.5-21.2 0z"/>
+          <path d="M11.4 18.6c5.7-1 15.5-1 21.2 0-1.2 5.3-5.4 9-10.6 9s-9.4-3.7-10.6-9z"/>
+          <path class="obj__labios-luz" d="M15.2 20.6c3.6-.7 10-.7 13.6 0-1 .8-2.4 1.2-3.6 1.2H18.8c-1.2 0-2.6-.4-3.6-1.2z"/>
+        </g>
+        <path class="obj__grieta" d="M13 30.5c5-1.2 13-1.2 18 0" />
+      </svg>`);
 
-    this.#poner("papel", `
-      <span class="obj__hoja obj__hoja--1"></span>
-      <span class="obj__hoja obj__hoja--2"></span>
-      <span class="obj__escrito">Marissa</span>`);
+    this.#poner("carta", `
+      <svg class="obj__svg" viewBox="0 0 46 34" aria-hidden="true">
+        <rect class="obj__sobre" x="1" y="1" width="44" height="32" rx="2"/>
+        <path class="obj__solapa" d="M1 3.2 23 18 45 3.2"/>
+        <path class="obj__renglon obj__renglon--1" d="M9 22h28"/>
+        <path class="obj__renglon obj__renglon--2" d="M9 26h20"/>
+        <g class="obj__lacre">
+          <circle cx="23" cy="19.5" r="5.4"/>
+          <path class="obj__lacre-corazon" d="M23 22.6c-2-1.5-3.3-2.6-3.3-3.9 0-1 .8-1.8 1.8-1.8.6 0 1.2.3 1.5.8.3-.5.9-.8 1.5-.8 1 0 1.8.8 1.8 1.8 0 1.3-1.3 2.4-3.3 3.9z"/>
+        </g>
+      </svg>`);
 
-    this.#poner("llave", `
-      <span class="obj__anilla"></span>
-      <span class="obj__vastago"></span>
-      <span class="obj__dientes"></span>`);
+    this.#poner("espiral", `
+      <svg class="obj__svg" viewBox="0 0 40 40" aria-hidden="true">
+        <path class="obj__rizo" d="M20 4c8.8 0 16 7.2 16 16s-7.2 16-16 16S4 28.8 4 20c0-6.6 5.4-12 12-12s10 4.5 10 9.5-3.6 8-7.5 8-6.5-2.8-6.5-6.2 2.4-5.3 4.8-5.3"/>
+        <circle class="obj__rizo-punta" cx="16.8" cy="14" r="1.9"/>
+      </svg>`);
 
-    this.#poner("concha", `
-      <span class="obj__valva"></span>
-      <span class="obj__eco"></span>`);
+    this.#poner("corazon", `
+      <svg class="obj__svg" viewBox="0 0 38 40" aria-hidden="true">
+        <path class="obj__cadena" d="M19 1v6"/>
+        <circle class="obj__argolla" cx="19" cy="8.4" r="2.6"/>
+        <path class="obj__guarda" d="M19 38.5C9.8 31.6 4 26 4 19.6 4 14.9 7.6 11.2 12.2 11.2c2.7 0 5.3 1.3 6.8 3.5 1.5-2.2 4.1-3.5 6.8-3.5 4.6 0 8.2 3.7 8.2 8.4 0 6.4-5.8 12-15 18.9z"/>
+        <path class="obj__guarda-luz" d="M11.6 15.4c1.6-1 3.7-.8 5.1.5-1.7.6-3.6.4-5.1-.5z"/>
+      </svg>`);
 
-    this.#poner("estrella", `<span class="obj__punta"></span><span class="obj__estela"></span>`);
+    this.#poner("estrella", `
+      <svg class="obj__svg" viewBox="0 0 36 36" aria-hidden="true">
+        <path class="obj__punta" d="M18 1.5l4.6 10.3 11.2 1.2-8.4 7.5 2.4 11-9.8-5.7-9.8 5.7 2.4-11L2.2 13l11.2-1.2z"/>
+      </svg>
+      <span class="obj__estela" aria-hidden="true"></span>`);
 
-    this.#poner("anillo", `<span class="obj__aro"></span><span class="obj__piedra"></span>`);
+    this.#poner("anillo", `
+      <svg class="obj__svg" viewBox="0 0 34 40" aria-hidden="true">
+        <path class="obj__engaste" d="M13.4 13.6 17 6.4l3.6 7.2z"/>
+        <path class="obj__piedra" d="M17 3.2l4.4 4.6L17 17.4 12.6 7.8z"/>
+        <ellipse class="obj__aro" cx="17" cy="26.6" rx="10.4" ry="11.2"/>
+      </svg>`);
 
     // ── Lo que va diciendo cada cosa ──────────────────────────────────
     this.dicho = el("p.sorpresa__dice", { "aria-live": "polite" });
@@ -123,6 +165,7 @@ export default class UltimaSorpresaPage extends BasePage {
       "--x": `${sitio.x}%`,
       "--y": `${sitio.y}%`,
       "--r": `${sitio.r}deg`,
+      "--s": String(sitio.s),
     });
     this.mesa.append(nodo);
     this.objetos[nombre] = { node: nodo, found: false, nombre };
@@ -143,10 +186,10 @@ export default class UltimaSorpresaPage extends BasePage {
 
     const yaVisto = this.ctx.store.hasSecret(this.entry.secret);
 
-    this.#cerilla();
-    this.#papel();
-    this.#llave();
-    this.#concha();
+    this.#beso();
+    this.#carta();
+    this.#espiral();
+    this.#corazon();
     this.#estrella();
     this.#anillo();
     this.#luciernagas();
@@ -163,9 +206,9 @@ export default class UltimaSorpresaPage extends BasePage {
       }, EMPUJON_MS);
     }
 
-    // Un solo reloj para toda la página: la luz de la cerilla y nada más.
+    // Un solo reloj para toda la página: la luz del beso y nada más.
     this.addTicker((dt) => {
-      this.luz = damp(this.luz, this.objetos.cerilla.found ? 1 : 0, 1.6, dt);
+      this.luz = damp(this.luz, this.objetos.beso.found ? 1 : 0, 1.6, dt);
       setVars(this.root, { "--luz": this.luz.toFixed(3) });
     }, 12);
   }
@@ -174,21 +217,21 @@ export default class UltimaSorpresaPage extends BasePage {
   //  Las seis maneras de tocar
   // ═══════════════════════════════════════════════════════════════════
 
-  /** CERILLA — un toque y prende. Ilumina toda la mesa. */
-  #cerilla() {
-    const o = this.objetos.cerilla;
+  /** BESO — un toque, y la huella prende y enciende el cajón entero. */
+  #beso() {
+    const o = this.objetos.beso;
     this.on(o.node, "click", () => {
       if (o.found) return;
       o.node.classList.add("is-lit");
       this.ctx.audio.play("open", { volume: 0.3, rate: 1.9 });
       this.ctx.gl?.flash(0.18);
-      this.#hallar("cerilla", true);
+      this.#hallar("beso", true);
     });
   }
 
-  /** PAPEL — se desdobla en dos tiempos. */
-  #papel() {
-    const o = this.objetos.papel;
+  /** CARTA — se abre en dos tiempos: el lacre y luego la solapa. */
+  #carta() {
+    const o = this.objetos.carta;
     let paso = 0;
     this.on(o.node, "click", () => {
       if (o.found) return;
@@ -196,34 +239,55 @@ export default class UltimaSorpresaPage extends BasePage {
       o.node.classList.add(`is-fold-${paso}`);
       this.ctx.haptics.play("tick");
       this.ctx.audio.play("turn", { volume: 0.2, rate: 1.5 });
-      if (paso >= 2) this.#hallar("papel", true);
+      if (paso >= 2) this.#hallar("carta", true);
     });
   }
 
-  /** LLAVE — hay que girarla arrastrando. */
-  #llave() {
-    const o = this.objetos.llave;
-    let giro = 0;
+  /**
+   * ESPIRAL — hay que desenrollarla arrastrando.
+   *
+   * Lo que cuenta es el CAMINO recorrido por el dedo, no la velocidad. Antes
+   * se sumaba la velocidad, y eso quería decir que sólo se desenrollaba si
+   * arrastrabas rápido: quien la acariciara despacio podía estar dando
+   * vueltas un minuto entero sin que pasara nada. Desenrollar un mechón es
+   * cuestión de cuánto tiras, no de con qué prisa.
+   */
+  #espiral() {
+    const o = this.objetos.espiral;
+    const CAMINO = 260; // píxeles de recorrido para soltarla del todo
+    let recorrido = 0;
+    let ultimo = null;
+    let clic = 0;
+
     this.addGestures(
       new Gestures(
         o.node,
         {
+          onPanStart: (e) => { ultimo = { x: e.x, y: e.y }; },
           onPan: (e) => {
             if (o.found) return;
-            giro += Math.abs(e.vx) + Math.abs(e.vy);
-            setVars(o.node, { "--giro": `${(giro * 26).toFixed(0)}deg` });
-            if (Math.floor(giro * 4) % 2 === 0) this.ctx.haptics.play("tick");
-            if (giro > 4) this.#hallar("llave", true);
+            if (ultimo) recorrido += Math.hypot(e.x - ultimo.x, e.y - ultimo.y);
+            ultimo = { x: e.x, y: e.y };
+
+            const parte = Math.min(1, recorrido / CAMINO);
+            setVars(o.node, { "--giro": `${(parte * 340).toFixed(0)}deg` });
+
+            // Un clic cada tramo: se nota que va cediendo.
+            const tramo = Math.floor(recorrido / 26);
+            if (tramo !== clic) { clic = tramo; this.ctx.haptics.play("tick"); }
+
+            if (parte >= 1) this.#hallar("espiral", true);
           },
+          onPanEnd: () => { ultimo = null; },
         },
         { exclusive: true, threshold: 4 }
       )
     );
   }
 
-  /** CONCHA — hay que sostenerla para oír lo que suena dentro. */
-  #concha() {
-    const o = this.objetos.concha;
+  /** CORAZÓN — hay que sostenerlo un momento para notarlo latir. */
+  #corazon() {
+    const o = this.objetos.corazon;
     this.addGestures(
       new Gestures(
         o.node,
@@ -232,8 +296,9 @@ export default class UltimaSorpresaPage extends BasePage {
           onUp: () => o.node.classList.remove("is-listening"),
           onLongPress: () => {
             if (o.found) return;
+            this.ctx.haptics.play("heart");
             this.ctx.audio.play("open", { volume: 0.22, rate: 0.5 });
-            this.#hallar("concha", true);
+            this.#hallar("corazon", true);
           },
         },
         { exclusive: true, threshold: 14, longPressMs: 700 }

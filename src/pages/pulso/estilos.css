@@ -210,7 +210,13 @@
   transition: opacity 300ms var(--e-out), box-shadow 300ms var(--e-out);
 }
 
-.pulse.is-said .pulse__pad { opacity: 0.4; pointer-events: none; }
+/* Con la frase ya dicha, el círculo se retira un poco —el protagonismo pasa
+   a lo que se ha revelado— pero SIGUE VIVO. Antes se apagaba con
+   `pointer-events: none`, y eso convertía la página de sentir un corazón en
+   una página que sólo se podía sentir una vez en la vida. */
+.pulse.is-said .pulse__pad { opacity: 0.62; }
+
+.pulse.is-said.is-holding .pulse__pad { opacity: 1; }
 
 /* El disco interior: la piel del círculo, que se enciende con cada golpe. */
 .pulse__disc {

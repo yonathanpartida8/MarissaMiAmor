@@ -19,21 +19,21 @@ export const textos = {
    * lleva un rato sin tocar nada — la interacción está en el código.
    */
   objetos: {
-    cerilla: {
-      gesto: "tócala",
-      dice: "Para las noches en que hablamos hasta tarde y no me di cuenta de la hora.",
+    beso: {
+      gesto: "tócalo",
+      dice: "El primero. Me quedé tonto un rato largo, mi amor.",
     },
-    papel: {
-      gesto: "desdóblalo",
+    carta: {
+      gesto: "ábrela",
       dice: "Aquí escribí tu nombre el día que no me atreví a decírtelo.",
     },
-    llave: {
-      gesto: "gírala",
-      dice: "No abre nada. La guardo porque me la diste tú.",
+    espiral: {
+      gesto: "desenróllala",
+      dice: "Un mechón tuyo. No preguntes cómo acabó aquí.",
     },
-    concha: {
+    corazon: {
       gesto: "mantén el dedo",
-      dice: "Suena a un sitio al que quiero llevarte, mi amor.",
+      dice: "Sigue haciendo lo mismo cada vez que apareces.",
     },
     estrella: {
       gesto: "tócala dos veces",
