@@ -13,7 +13,7 @@
 import { BasePage } from "../BasePage.js";
 import { Gestures } from "../../core/Gestures.js";
 import { createSparkles } from "../../components/Sparkles.js";
-import { el, setVars } from "../../utils/dom.js";
+import { el } from "../../utils/dom.js";
 
 /** Milisegundos por carácter, según lo que acabe de escribir. */
 const PAUSE = {
@@ -35,11 +35,6 @@ export default class TypewriterPage extends BasePage {
     this.root = el("section.page.paper.tw", {
       "data-page": this.id,
       "aria-label": ch?.title,
-    });
-    setVars(this.root, {
-      "--accent": this.palette.a,
-      "--drop-color": this.palette.a,
-      "--accent-line": this.palette.a,
     });
 
     this.textEl = el("p.tw__text");

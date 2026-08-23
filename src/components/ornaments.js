@@ -161,7 +161,7 @@ function fogWindow(ctx, { photo, accent, onReveal }) {
 
       // Lluvia
       rainCtx.clearRect(0, 0, size.width, size.height);
-      rainCtx.strokeStyle = "#cfe4ff";
+      rainCtx.strokeStyle = "#ffd9e2";
       rainCtx.lineWidth = 1;
       for (const drop of drops) {
         drop.y += drop.speed * dt;

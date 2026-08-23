@@ -11,7 +11,7 @@
 
 import { BasePage } from "../BasePage.js";
 import { Gestures } from "../../core/Gestures.js";
-import { el, qs, splitWords, setVars } from "../../utils/dom.js";
+import { el, qs, splitWords } from "../../utils/dom.js";
 import { seeded } from "../../utils/rng.js";
 import { clamp } from "../../utils/math.js";
 
@@ -37,14 +37,12 @@ export default class PolaroidsPage extends BasePage {
 
   build() {
     const ch = this.chapter;
-    const accent = this.palette.a;
     const rng = seeded(this.id);
 
     this.root = el("section.page.paper.polaroids", {
       "data-page": this.id,
       "aria-label": ch?.title,
     });
-    setVars(this.root, { "--accent": accent, "--drop-color": accent, "--accent-line": accent });
 
     this.field = el("div.pola__field");
     this.cards = [];

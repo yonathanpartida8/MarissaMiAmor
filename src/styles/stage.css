@@ -161,9 +161,9 @@ html[data-device="desktop"] .leaf {
   opacity: var(--under-shade, 0);
   background: linear-gradient(
     100deg,
-    rgba(0, 0, 0, 0.78) 0%,
-    rgba(0, 0, 0, 0.34) 32%,
-    rgba(0, 0, 0, 0) 62%
+    rgba(var(--luz-deep-rgb), 0.82) 0%,
+    rgba(var(--luz-deep-rgb), 0.36) 32%,
+    rgba(var(--luz-deep-rgb), 0) 62%
   );
 }
 

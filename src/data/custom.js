@@ -12,6 +12,8 @@
  *  · lo que escriba en español se traduce aquí; él nunca ve un nombre interno.
  */
 
+import { resolverPaleta } from "./paletas.js";
+
 /** Nombres cómodos → tipos internos de página. */
 const TYPE_ALIASES = {
   foto: "photo",
@@ -58,10 +60,17 @@ const VALID_MOODS = new Set([
   "dawn", "night", "amber", "bloom", "storm", "glass", "winter", "cosmos", "light",
 ]);
 
-/** Paleta por defecto, derivada del color que elija. */
+/**
+ * Paleta de una página suya, a partir del color que haya elegido.
+ *
+ * El hondo y el fondo salen de la paleta de la casa, no de un violeta
+ * escrito a mano: una página suya tiene que verse del mismo libro aunque
+ * el acento lo ponga él.
+ */
 function paletteFrom(color) {
-  const accent = /^#[0-9a-f]{3,8}$/i.test(String(color || "")) ? color : "#ec6f92";
-  return { a: accent, b: "#3a1a52", deep: "#10061a" };
+  const casa = resolverPaleta();
+  const accent = /^#[0-9a-f]{3,8}$/i.test(String(color || "")) ? color : casa.a;
+  return { a: accent, b: casa.b, deep: casa.deep };
 }
 
 /** Deduce el tipo cuando no lo ha escrito. */

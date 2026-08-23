@@ -35,7 +35,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 80% 60% at 50% 45%, transparent, rgba(6, 3, 11, 0.92) 78%);
+  background: radial-gradient(ellipse 80% 60% at 50% 45%, transparent, rgba(11, 3, 5, 0.92) 78%);
 }
 
 .finale__touch {

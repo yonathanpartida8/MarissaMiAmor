@@ -78,7 +78,7 @@
 .env__addressee {
   font-family: var(--font-hand);
   font-size: clamp(1.2rem, calc(5.2 * var(--vw)), 1.6rem);
-  color: #3b4a78;
+  color: #6b2340;
   transform: rotate(-2deg);
   opacity: 0.85;
 }

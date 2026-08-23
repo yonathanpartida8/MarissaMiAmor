@@ -54,7 +54,7 @@
   inset: 0;
   overflow: hidden;
   border-radius: var(--pf-radius, 6px);
-  background: linear-gradient(160deg, #241a2c, #16101d);
+  background: linear-gradient(160deg, #26101b, #170710);
   /* Sin esto, en iOS el contenido con transform se sale del radio. */
   -webkit-mask-image: -webkit-radial-gradient(#fff, #000);
   transform: translateZ(0);
@@ -129,7 +129,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(ellipse 90% 80% at 50% 40%, transparent 45%, rgba(10, 4, 14, 0.42) 100%);
+  background: radial-gradient(ellipse 90% 80% at 50% 40%, transparent 45%, rgba(14, 4, 7, 0.42) 100%);
 }
 
 /* Barrido de luz que cruza una sola vez, al terminar de revelarse. */
@@ -211,7 +211,7 @@
 .pframe.is-missing .pframe__window {
   background:
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 8px, transparent 8px 16px),
-    linear-gradient(160deg, #241a2c, #16101d);
+    linear-gradient(160deg, #26101b, #170710);
 }
 
 /* ══════════════ POLVO SUSPENDIDO ══════════════ */
@@ -257,12 +257,12 @@
   width: 7px;
   height: 7px;
   border-radius: 0;
-  background: var(--accent, #ec6f92);
+  background: var(--accent);
   opacity: 0;
   /* Corazón dibujado con clip-path: sin imágenes ni tipografías de emoji. */
   clip-path: path("M3.5 6.5 C1 4.6 0.2 3 1.4 1.9 C2.2 1.1 3.1 1.4 3.5 2.2 C3.9 1.4 4.8 1.1 5.6 1.9 C6.8 3 6 4.6 3.5 6.5 Z");
   box-shadow: none;
-  filter: drop-shadow(0 0 4px var(--accent, #ec6f92));
+  filter: drop-shadow(0 0 4px var(--accent));
 }
 
 /* Sobre papel las motas son sombras, no luces. */
@@ -306,8 +306,8 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: linear-gradient(
     180deg,
-    rgba(10, 6, 16, var(--vidrio-arriba, 0.66)),
-    rgba(6, 3, 11, var(--vidrio-abajo, 0.94))
+    rgba(16, 6, 9, var(--vidrio-arriba, 0.66)),
+    rgba(11, 3, 5, var(--vidrio-abajo, 0.94))
   );
   /* Un filo de luz arriba: es lo que hace que parezca un cristal apoyado
      y no un rectángulo pintado. Va en la sombra, que no cuesta capa. */

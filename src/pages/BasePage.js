@@ -13,6 +13,7 @@
 import { listenerGroup, el } from "../utils/dom.js";
 import { vigilarLectura } from "../utils/lectura.js";
 import { PRIORITY } from "../core/AssetLoader.js";
+import { resolverPaleta } from "../data/paletas.js";
 
 export class BasePage {
   /** Clave con la que se registra en registry.js */
@@ -49,7 +50,7 @@ export class BasePage {
 
   /** Paleta que esta página impone a la atmósfera WebGL. */
   get palette() {
-    return this.chapter?.palette || { a: "#ec6f92", b: "#4c1d95", deep: "#0a0510" };
+    return this.chapter?.palette || resolverPaleta();
   }
 
   get mood() {

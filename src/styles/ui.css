@@ -86,7 +86,11 @@
      de los lados, la mitad de los fotogramas perdidos en las páginas con
      escena. El degradado más denso y el filo de luz de arriba dan el
      mismo aspecto y no cuestan nada. */
-  background: linear-gradient(180deg, rgba(20, 12, 30, 0.82), rgba(12, 6, 20, 0.88));
+  background: linear-gradient(
+    180deg,
+    rgba(var(--chrome-alto-rgb), 0.82),
+    rgba(var(--chrome-rgb), 0.9)
+  );
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: var(--sh-lift), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   opacity: 0;
@@ -220,7 +224,7 @@
   max-width: min(84vw, 380px);
   padding: 0.55rem 1.1rem;
   border-radius: var(--r-pill);
-  background: rgba(10, 5, 16, 0.82);
+  background: rgba(var(--chrome-rgb), 0.84);
   border: 1px solid rgba(255, 255, 255, 0.09);
   font-family: var(--font-ui);
   font-size: var(--fs-micro);
@@ -267,7 +271,7 @@ html[data-orientation="landscape"][data-device="phone"] #ui.is-bare .hint {
   /* Casi opaco a propósito: el aviso cae justo donde muchas páginas ponen su
      línea pequeña de arriba, y con el fondo semitransparente se leían las dos
      cosas mezcladas. Se pone por encima y se lee sólo él. */
-  background: rgba(20, 10, 28, 0.94);
+  background: rgba(var(--chrome-alto-rgb), 0.94);
   border: 1px solid rgba(215, 174, 114, 0.28);
   box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.9);
   font-family: var(--font-ui);
@@ -329,7 +333,7 @@ html[data-device="tablet"] .bar {
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--accent, var(--rose));
-  opacity: 0.75;
+  opacity: 0.92;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -360,7 +364,7 @@ html[data-device="tablet"] .bar {
 .toc__scrim {
   position: absolute;
   inset: 0;
-  background: rgba(4, 2, 8, 0.72);
+  background: rgba(var(--luz-deep-rgb), 0.74);
   backdrop-filter: blur(10px) saturate(0.8);
   -webkit-backdrop-filter: blur(10px) saturate(0.8);
   opacity: 0;
@@ -382,7 +386,11 @@ html[data-device="tablet"] .bar {
   transition: transform 520ms var(--e-out);
   pointer-events: auto;
   border-radius: var(--r-lg) var(--r-lg) 0 0;
-  background: linear-gradient(180deg, rgba(24, 14, 34, 0.96), rgba(10, 5, 16, 0.99));
+  background: linear-gradient(
+    180deg,
+    rgba(var(--chrome-alto-rgb), 0.96),
+    rgba(var(--chrome-rgb), 0.99)
+  );
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom: none;
   box-shadow: 0 -20px 60px -20px rgba(0, 0, 0, 0.9);
@@ -617,7 +625,7 @@ html[data-orientation="landscape"][data-device="phone"] .edge {
   opacity: calc(var(--pull) * 0.9);
   background: radial-gradient(
     ellipse 60% 40% at var(--edge-anchor, 0%) 50%,
-    color-mix(in srgb, var(--accent, #ec6f92) 40%, transparent),
+    color-mix(in srgb, var(--accent) 40%, transparent),
     transparent 70%
   );
   filter: blur(6px);
@@ -636,7 +644,11 @@ html[data-orientation="landscape"][data-device="phone"] .edge {
   border: 1px solid rgba(255, 255, 255, 0.24);
   /* Sin desenfoque en vivo, por lo mismo que la barra: estos dos botones
      se ven en todas las páginas y el fondo de detrás no para nunca. */
-  background: linear-gradient(180deg, rgba(26, 15, 36, 0.7), rgba(14, 7, 22, 0.78));
+  background: linear-gradient(
+    180deg,
+    rgba(var(--chrome-alto-rgb), 0.7),
+    rgba(var(--chrome-rgb), 0.8)
+  );
   box-shadow:
     0 6px 20px -8px rgba(0, 0, 0, 0.8),
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
@@ -667,8 +679,8 @@ html[data-orientation="landscape"][data-device="phone"] .edge {
 .edge__btn:hover,
 .edge__btn:focus-visible {
   opacity: 1;
-  background: rgba(26, 14, 36, 0.62);
-  border-color: color-mix(in srgb, var(--accent, #ec6f92) 55%, rgba(255, 255, 255, 0.3));
+  background: rgba(var(--chrome-alto-rgb), 0.64);
+  border-color: color-mix(in srgb, var(--accent) 55%, rgba(255, 255, 255, 0.3));
 }
 
 .edge__btn:active {
@@ -722,9 +734,9 @@ html[data-orientation="landscape"][data-device="phone"] .edge {
 
 /* Pasado el punto de no retorno: el botón se enciende. */
 .edge.is-ready .edge__btn {
-  background: color-mix(in srgb, var(--accent, #ec6f92) 78%, #1a0d22);
+  background: color-mix(in srgb, var(--accent) 78%, #1a0710);
   border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 0 22px -2px var(--accent, #ec6f92);
+  box-shadow: 0 0 22px -2px var(--accent);
 }
 
 /* El aviso de que están ahí, las primeras veces. */

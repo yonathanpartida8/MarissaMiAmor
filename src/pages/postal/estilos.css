@@ -177,7 +177,7 @@
   font-family: var(--font-hand);
   font-size: clamp(1.05rem, calc(4.6 * var(--vw)), 1.35rem);
   line-height: 1.5;
-  color: #2f3f6b;
+  color: #5e1e38;
 }
 
 .pc__reveal {

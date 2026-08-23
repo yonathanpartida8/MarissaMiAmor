@@ -143,7 +143,7 @@ export async function revisarFotos() {
     const total = new Set([...Object.values(fotosDeCadaPagina).flat()]).size;
     console.info(
       `%c fotos %c ${total} en su sitio, ninguna rota`,
-      "background:#7ee0c0;color:#08201a;border-radius:3px 0 0 3px;padding:2px 6px",
+      "background:#7ee0c0;color:#20080f;border-radius:3px 0 0 3px;padding:2px 6px",
       "background:#2a1436;color:#f6e7ef;border-radius:0 3px 3px 0;padding:2px 6px"
     );
   }

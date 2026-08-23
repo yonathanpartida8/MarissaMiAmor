@@ -200,7 +200,7 @@
   aspect-ratio: 9 / 16;
   border-radius: var(--r-md);
   overflow: hidden;
-  background: #08050e;
+  background: #0e0508;
   touch-action: none;
   cursor: pointer;
   box-shadow:
@@ -241,7 +241,7 @@
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 90% 70% at 50% 40%, transparent 45%, rgba(6, 3, 11, 0.55) 100%);
+    radial-gradient(ellipse 90% 70% at 50% 40%, transparent 45%, rgba(11, 3, 5, 0.55) 100%);
   transition: opacity 500ms var(--e-out);
 }
 
@@ -259,7 +259,7 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(12, 6, 18, 0.66);
+  background: rgba(18, 6, 10, 0.66);
   border: 1px solid rgba(255, 255, 255, 0.24);
   transition: opacity 400ms var(--e-out), transform 400ms var(--e-spring);
   pointer-events: none;
@@ -325,7 +325,7 @@
   top: 8px;
   padding: 0.22rem 0.5rem;
   border-radius: var(--r-pill);
-  background: rgba(8, 4, 12, 0.6);
+  background: rgba(12, 4, 6, 0.6);
   font-family: var(--font-ui);
   font-size: 0.56rem;
   letter-spacing: 0.14em;
@@ -351,7 +351,7 @@
 .mine--video.is-broken .vid__frame {
   background:
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 10px, transparent 10px 20px),
-    #0d0714;
+    #14070b;
   cursor: default;
 }
 
@@ -363,7 +363,7 @@
   top: 50%;
   text-align: center;
   color: var(--rose-glow);
-  background: rgba(8, 4, 12, 0.8);
+  background: rgba(12, 4, 6, 0.8);
 }
 
 /* ---- Apaisado ----------------------------------------------- */

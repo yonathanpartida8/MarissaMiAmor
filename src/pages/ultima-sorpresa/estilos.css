@@ -236,7 +236,7 @@
 
 .obj--carta .obj__renglon {
   fill: none;
-  stroke: rgba(90, 74, 108, 0.42);
+  stroke: rgba(108, 66, 78, 0.42);
   stroke-width: 0.9;
   stroke-linecap: round;
   opacity: 0;
@@ -391,8 +391,8 @@
 }
 
 .obj--anillo .obj__piedra {
-  fill: #d9ecff;
-  stroke: rgba(120, 160, 200, 0.6);
+  fill: #ffeef2;
+  stroke: rgba(196, 140, 152, 0.6);
   stroke-width: 0.6;
   stroke-linejoin: round;
   transform-origin: 50% 66%;
@@ -416,7 +416,7 @@
   100% { transform: rotateY(720deg); }
 }
 
-.obj--anillo.is-found .obj__piedra { fill: #f2fbff; }
+.obj--anillo.is-found .obj__piedra { fill: #fff6f4; }
 
 /* ---- Movimiento reducido ------------------------------------
    Lo que se apaga es lo que se repite sin parar; lo que responde al dedo se

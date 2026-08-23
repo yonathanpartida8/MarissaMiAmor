@@ -15,6 +15,10 @@ import { atmosphereVertex, atmosphereFragment } from "./shaders/atmosphere.js";
 import { dustVertex, dustFragment } from "./shaders/dust.js";
 import { damp, clamp01 } from "../utils/math.js";
 import { seeded } from "../utils/rng.js";
+import { resolverPaleta } from "../data/paletas.js";
+
+/** El color con el que arranca la niebla, antes de la primera página. */
+const INICIO = resolverPaleta();
 
 const MOODS = {
   dawn: 0.15,
@@ -117,9 +121,9 @@ export class GLStage {
     this.atmoUniforms = {
       uTime: { value: 0 },
       uResolution: { value: new THREE.Vector2(1, 1) },
-      uDeep: { value: new THREE.Color("#0a0510") },
-      uAccentA: { value: new THREE.Color("#ec6f92") },
-      uAccentB: { value: new THREE.Color("#4c1d95") },
+      uDeep: { value: new THREE.Color(INICIO.deep) },
+      uAccentA: { value: new THREE.Color(INICIO.a) },
+      uAccentB: { value: new THREE.Color(INICIO.b) },
       uPointer: { value: new THREE.Vector2(0, 0) },
       uIntensity: { value: 0.0 },
       uPulse: { value: 0 },
@@ -143,9 +147,9 @@ export class GLStage {
 
     // Colores objetivo: se interpolan suavemente hacia ellos.
     this.target = {
-      deep: new THREE.Color("#0a0510"),
-      a: new THREE.Color("#ec6f92"),
-      b: new THREE.Color("#4c1d95"),
+      deep: new THREE.Color(INICIO.deep),
+      a: new THREE.Color(INICIO.a),
+      b: new THREE.Color(INICIO.b),
       mood: 0.3,
       intensity: 0.0,
     };

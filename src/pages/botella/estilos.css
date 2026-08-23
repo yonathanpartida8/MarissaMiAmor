@@ -38,9 +38,9 @@
 .bot__wave svg { width: 200%; height: 100%; display: block; }
 .bot__wave path { fill: currentColor; }
 
-.bot__wave--back  { color: #102a44; animation: wave-drift 21s linear infinite; opacity: 0.5; bottom: 14%; }
-.bot__wave--mid   { color: #17405e; animation: wave-drift 15s linear infinite reverse; opacity: 0.65; bottom: 6%; }
-.bot__wave--front { color: #1e5674; animation: wave-drift 11s linear infinite; opacity: 0.8; }
+.bot__wave--back  { color: #3d1424; animation: wave-drift 21s linear infinite; opacity: 0.5; bottom: 14%; }
+.bot__wave--mid   { color: #5a1d31; animation: wave-drift 15s linear infinite reverse; opacity: 0.65; bottom: 6%; }
+.bot__wave--front { color: #7a2a3f; animation: wave-drift 11s linear infinite; opacity: 0.8; }
 
 @keyframes wave-drift {
   from { transform: translateX(0); }
@@ -52,7 +52,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(180, 230, 255, 0.18), transparent 40%);
+  background: linear-gradient(180deg, rgba(255, 206, 214, 0.18), transparent 40%);
   mix-blend-mode: screen;
 }
 
@@ -89,13 +89,13 @@
   inset: 26% 0 0 0;
   border-radius: 22% 22% 34% 34% / 8% 8% 14% 14%;
   background: linear-gradient(100deg,
-    rgba(150, 220, 210, 0.32) 0%,
-    rgba(90, 170, 170, 0.18) 40%,
-    rgba(180, 240, 235, 0.36) 100%);
+    rgba(236, 168, 178, 0.32) 0%,
+    rgba(196, 118, 134, 0.18) 40%,
+    rgba(252, 200, 208, 0.36) 100%);
   box-shadow:
-    inset 0 0 0 2px rgba(200, 245, 240, 0.35),
-    inset -8px 0 18px rgba(10, 50, 60, 0.35),
-    0 10px 26px -10px rgba(0, 30, 40, 0.7);
+    inset 0 0 0 2px rgba(255, 214, 220, 0.35),
+    inset -8px 0 18px rgba(58, 14, 26, 0.35),
+    0 10px 26px -10px rgba(30, 5, 14, 0.7);
   overflow: hidden;
 }
 
@@ -131,7 +131,7 @@
   right: 0;
   bottom: 0;
   height: 18%;
-  background: linear-gradient(180deg, rgba(120, 200, 210, 0.35), rgba(40, 120, 140, 0.5));
+  background: linear-gradient(180deg, rgba(224, 146, 158, 0.35), rgba(128, 44, 62, 0.5));
 }
 
 .bot__neck {
@@ -142,8 +142,8 @@
   height: 20%;
   border-radius: 30% 30% 12% 12%;
   background: linear-gradient(100deg,
-    rgba(150, 220, 210, 0.34), rgba(180, 240, 235, 0.4));
-  box-shadow: inset 0 0 0 2px rgba(200, 245, 240, 0.35);
+    rgba(236, 168, 178, 0.34), rgba(252, 200, 208, 0.4));
+  box-shadow: inset 0 0 0 2px rgba(255, 214, 220, 0.35);
 }
 
 .bot__cork {

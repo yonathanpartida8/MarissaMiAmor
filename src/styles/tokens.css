@@ -4,38 +4,73 @@
    ============================================================ */
 
 :root {
-  /* ---- Tinta / noche ------------------------------------- */
-  --ink-950: #06030b;
-  --ink-900: #0a0510;
-  --ink-800: #120a1c;
-  --ink-700: #1b1029;
-  --ink-600: #271738;
+  /* ---- Tinta ---------------------------------------------
+     El negro de este libro no es negro: es vino apagado. En una pantalla
+     OLED un negro puro se lee como un agujero, y aquí lo que hay detrás
+     de todo tiene que seguir siendo cálido aunque no se note.          */
+  --ink-950: #0d0308;
+  --ink-900: #16060e;
 
-  /* ---- Papel --------------------------------------------- */
-  --paper-000: #fffaf2;
-  --paper-100: #f8f1e5;
-  --paper-200: #efe4d3;
-  --paper-300: #e2d3bd;
-  --paper-edge: #cdb99c;
-  --paper-ink: #3a2e28;
-  --paper-ink-soft: #6a5a50;
+  /* ---- Papel ---------------------------------------------
+     Crema con una gota de rosa. Un papel neutro al lado de una luz rosa
+     se ve gris, y este libro no tiene ni un gris.
 
-  /* ---- Acentos ------------------------------------------- */
-  --rose: #ec6f92;
-  --rose-deep: #b03a63;
-  --rose-glow: #ff8fae;
-  --gold: #d7ae72;
-  --gold-light: #f2d4a0;
-  --lilac: #b39ae8;
-  --teal: #6ed0c0;
-  --amber: #e8a15c;
+     Ojo: estos siete son el PUNTO DE PARTIDA, no el valor final. Al entrar
+     en una página, `utils/luz.js` los recalcula tiñéndolos con el color de
+     su capítulo y los escribe en `<html>`, de donde los hereda todo. Lo que
+     hay aquí es lo que se ve en el primer instante, antes de que haya
+     ninguna página, y el respaldo si algún día no se aplicase la luz.     */
+  --paper-000: #fffaf4;
+  --paper-100: #fbf0e8;
+  --paper-200: #f3e2da;
+  --paper-300: #e7d0c8;
+  --paper-edge: #d4b3ab;
+  --paper-ink: #3d2a2b;
+  --paper-ink-soft: #705558;
 
-  /* ---- Semánticos ---------------------------------------- */
+  /* ---- Acentos -------------------------------------------
+     Toda la familia, y nada más que la familia: rosa, rubor, coral,
+     vino y champán. Ni un azul, ni un verde, ni un turquesa.            */
+  --rose: #ff87a6;
+  --rose-deep: #c23a63;
+  --rose-glow: #ffa3ba;
+  --blush: #ffd0dc;
+  --coral: #ff9d86;
+  --wine: #7d1734;
+  --gold: #e6c08a;
+  --gold-light: #ffe2bb;
+
+  /* ---- Semánticos ----------------------------------------
+     `--accent` y `--accent-deep` también los reescribe `luz.js` con el
+     color del capítulo. El de aquí es el rosa de la casa: el que se ve en
+     la portada, antes de que empiece ningún capítulo.                    */
   --accent: var(--rose);
-  --accent-2: var(--gold);
-  --text: #f2e9df;
-  --text-soft: rgba(242, 233, 223, 0.66);
-  --text-faint: rgba(242, 233, 223, 0.36);
+  --accent-deep: var(--rose-deep);
+
+  /* ---- La luz del capítulo --------------------------------
+     Estos diez los reescribe `utils/luz.js` en cada página a partir de los
+     tres colores de su capítulo, y de ellos beben el papel, sus sombras, la
+     viñeta y el cromo. Aquí están los de antes de empezar.
+
+       --luz-*        los tres colores del capítulo, tal cual
+       --luz-*-rgb    los mismos en trío, para `rgba(…, α)`
+       --paper-glow   la luz que entra en la hoja por arriba
+       --paper-shade  la sombra que la envuelve
+       --chrome-*     la oscuridad de la barra, el índice y los avisos    */
+  --luz-a: #ff87a6;
+  --luz-b: #c23a63;
+  --luz-deep: #0d0308;
+  --luz-a-rgb: 255, 135, 166;
+  --luz-b-rgb: 194, 58, 99;
+  --luz-deep-rgb: 13, 3, 8;
+  --paper-glow-rgb: 255, 250, 242;
+  --paper-shade-rgb: 172, 118, 116;
+  --chrome-rgb: 20, 7, 14;
+  --chrome-alto-rgb: 34, 12, 22;
+  /* Marfil templado: un blanco frío sobre fondo rosa se ve azulado. */
+  --text: #fdeee9;
+  --text-soft: rgba(253, 238, 233, 0.68);
+  --text-faint: rgba(253, 238, 233, 0.52);
 
   /* ---- Tipografía ---------------------------------------- */
   --font-display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
@@ -69,13 +104,14 @@
   --r-pill: 999px;
 
   /* ---- Sombras ------------------------------------------- */
-  --sh-soft: 0 2px 10px rgba(0, 0, 0, 0.28);
-  --sh-lift: 0 10px 30px -8px rgba(0, 0, 0, 0.55);
+  /* Las sombras tampoco son negras: son vino muy oscuro. Una sombra negra
+     sobre un fondo cálido lo apaga y lo vuelve gris. */
+  --sh-soft: 0 2px 10px rgba(26, 4, 12, 0.32);
+  --sh-lift: 0 10px 30px -8px rgba(20, 3, 10, 0.58);
   --sh-book:
-    0 1px 0 rgba(255, 255, 255, 0.07) inset,
-    0 18px 50px -12px rgba(0, 0, 0, 0.75),
-    0 60px 120px -40px rgba(0, 0, 0, 0.85);
-  --sh-glow: 0 0 34px -6px var(--accent);
+    0 1px 0 rgba(255, 236, 240, 0.08) inset,
+    0 18px 50px -12px rgba(20, 3, 10, 0.78),
+    0 60px 120px -40px rgba(13, 2, 7, 0.88);
 
   /* ---- Curvas de animación ------------------------------- */
   --e-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -115,8 +151,8 @@
 /* Degradación automática en dispositivos de gama baja: el motor pone
    data-tier="low" en <html> y estos tokens abaratan toda la estética. */
 html[data-tier="low"] {
-  --sh-book: 0 14px 34px -14px rgba(0, 0, 0, 0.8);
-  --sh-lift: 0 6px 16px -6px rgba(0, 0, 0, 0.5);
+  --sh-book: 0 14px 34px -14px rgba(20, 3, 10, 0.82);
+  --sh-lift: 0 6px 16px -6px rgba(20, 3, 10, 0.52);
 }
 
 @media (prefers-reduced-motion: reduce) {

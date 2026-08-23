@@ -92,7 +92,7 @@ figure {
   z-index: var(--z-gl);
   pointer-events: none;
   /* Evita el "flash" blanco antes del primer frame. */
-  background: radial-gradient(ellipse 120% 80% at 50% 30%, #1b0f2b 0%, #0a0510 55%, #06030b 100%);
+  background: radial-gradient(ellipse 120% 80% at 50% 30%, #1c0713 0%, #100508 55%, #0b0305 100%);
 }
 
 /* ---- Grano de película ----------------------------------- */
@@ -137,15 +137,33 @@ html[data-tier="high"] #grain {
   100% { transform: translate3d(0, 0, 0); }
 }
 
-/* ---- Viñeta cinematográfica ------------------------------ */
+/* ---- Viñeta cinematográfica ------------------------------
+   Del color hondo del capítulo, no de un negro frío. La viñeta cae por
+   encima de TODO, papel incluido, y un negro azulado sobre una hoja
+   cálida le pone a las esquinas un gris de fotocopia: era lo que hacía
+   que el papel pareciera sucio por los bordes y limpio por el centro. */
 #vignette {
   position: fixed;
   inset: 0;
   z-index: var(--z-vignette);
   pointer-events: none;
-  background:
-    radial-gradient(ellipse 96% 74% at 50% 48%, transparent 42%, rgba(4, 2, 8, 0.55) 100%);
+  background: radial-gradient(
+    ellipse 96% 74% at 50% 48%,
+    transparent 42%,
+    rgba(var(--luz-deep-rgb), 0.55) 100%
+  );
   transition: opacity var(--t-slow) var(--e-out);
+}
+
+/* Sobre una hoja de papel, la mitad.
+   Una viñeta al 55% es preciosa encima de la niebla oscura del fondo, y
+   sobre crema ensucia: oscurecer un color claro con un color casi negro
+   le quita el color antes que la luz, y las esquinas del papel acababan
+   de un gris de fotocopia mientras el centro seguía siendo crema. Con la
+   mitad de fuerza el papel sigue teniendo relieve y no pierde el tono.
+   La clase la pone el router al entrar en una página con papel. */
+html.hoja-clara #vignette {
+  opacity: 0.44;
 }
 
 html[data-tier="low"] #grain {

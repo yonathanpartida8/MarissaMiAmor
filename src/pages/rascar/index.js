@@ -19,13 +19,11 @@ export default class ScratchPage extends BasePage {
 
   build() {
     const ch = this.chapter;
-    const accent = this.palette.a;
 
     this.root = el("section.page.paper.scratch", {
       "data-page": this.id,
       "aria-label": ch?.title,
     });
-    setVars(this.root, { "--accent": accent, "--drop-color": accent, "--accent-line": accent });
 
     this.plate = el("div.scratch__plate", { "data-claim-drag": "" }, [
       el("div.scratch__photo"),

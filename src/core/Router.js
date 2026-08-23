@@ -18,6 +18,7 @@ import { createVerso } from "../components/Verso.js";
 import { manifest } from "../data/manifest.js";
 import { getChapter } from "../data/chapters.js";
 import { el } from "../utils/dom.js";
+import { aplicarLuz } from "../utils/luz.js";
 import { clamp, clamp01 } from "../utils/math.js";
 
 /** Cuántas páginas construidas mantenemos vivas a la vez. */
@@ -192,9 +193,9 @@ export class Router extends Emitter {
       raiz.classList.add("is-entered");
     }
 
-    // La atmósfera cambia de color *durante* la transición, no después:
-    // así el fondo y la página llegan juntos.
-    this.ctx.gl?.setMood(incoming.page.palette, incoming.page.mood);
+    // El color cambia *durante* la transición, no después: así el fondo y
+    // la página llegan juntos.
+    this.#encender(incoming.page);
 
     const name = transition || entry.transition || "flip";
     // Modo ahorro: durante la transición todo está desenfocado o en marcha,
@@ -240,6 +241,25 @@ export class Router extends Emitter {
 
   prev() {
     return this.atStart ? Promise.resolve(false) : this.go(this.index - 1, { direction: "prev" });
+  }
+
+  /**
+   * Pone el color de una página en todo el libro: la niebla del fondo, el
+   * papel, la tinta, las sombras y el cromo.
+   *
+   * Están juntos porque son la misma decisión. Cuando el fondo cambiaba de
+   * color por su cuenta y el papel se quedaba en su crema de siempre, se
+   * veían dos cosas distintas en la misma pantalla; ahora la hoja está
+   * dentro de la luz del capítulo y el libro se lee como un solo objeto.
+   */
+  #encender(page) {
+    this.ctx.gl?.setMood(page.palette, page.mood);
+    aplicarLuz(page.palette);
+
+    // Y si la página que llega es de papel, se avisa: la viñeta de encima
+    // pesa la mitad sobre una hoja clara. Ver `#vignette` en `base.css`.
+    const claro = page.root?.classList.contains("paper") === true;
+    document.documentElement.classList.toggle("hoja-clara", claro);
   }
 
   async #transition(name, outLeaf, inLeaf, direction) {
@@ -380,7 +400,7 @@ export class Router extends Emitter {
       const prevIndex = this.index;
       this.index = drag.target;
       this.ctx.store.setPage(this.index, this.entries[this.index]?.id);
-      this.ctx.gl?.setMood(incoming.page.palette, incoming.page.mood);
+      this.#encender(incoming.page);
       this.ctx.haptics.play("turn");
 
       await incoming.page.enter(drag.dir);

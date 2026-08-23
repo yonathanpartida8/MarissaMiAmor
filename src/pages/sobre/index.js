@@ -21,14 +21,12 @@ export default class EnvelopePage extends BasePage {
 
   build() {
     const ch = this.chapter;
-    const accent = this.palette.a;
 
     this.root = el("section.page.envelope", {
       "data-page": this.id,
       "data-gl": "true",
       "aria-label": ch?.title,
     });
-    setVars(this.root, { "--accent": accent, "--accent-deep": this.palette.b });
 
     // ---- La carta que hay dentro ---------------------------------------
     this.proseEl = el("div.prose.letter__prose.selectable");

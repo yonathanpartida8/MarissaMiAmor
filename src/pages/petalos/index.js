@@ -27,11 +27,6 @@ export default class PetalsPage extends BasePage {
       "data-page": this.id,
       "aria-label": ch?.title,
     });
-    setVars(this.root, {
-      "--accent": this.palette.a,
-      "--drop-color": this.palette.a,
-      "--accent-line": this.palette.a,
-    });
 
     this.lines = (ch?.lines || []).slice();
     const count = Math.max(4, this.lines.length);

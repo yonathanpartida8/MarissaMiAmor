@@ -40,10 +40,10 @@
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    rgba(8, 4, 14, 0.28) 0%,
-    rgba(8, 4, 14, 0) 26%,
-    rgba(8, 4, 14, 0.55) 58%,
-    rgba(6, 3, 11, 0.94) 100%
+    rgba(14, 4, 7, 0.28) 0%,
+    rgba(14, 4, 7, 0) 26%,
+    rgba(14, 4, 7, 0.55) 58%,
+    rgba(11, 3, 5, 0.94) 100%
   );
 }
 
@@ -128,9 +128,9 @@ html[data-orientation="landscape"][data-device="phone"] .depth__card {
 html[data-orientation="landscape"][data-device="phone"] .depth__veil {
   background: linear-gradient(
     90deg,
-    rgba(8, 4, 14, 0.3) 0%,
-    rgba(8, 4, 14, 0) 22%,
-    rgba(8, 4, 14, 0.6) 52%,
-    rgba(6, 3, 11, 0.95) 100%
+    rgba(14, 4, 7, 0.3) 0%,
+    rgba(14, 4, 7, 0) 22%,
+    rgba(14, 4, 7, 0.6) 52%,
+    rgba(11, 3, 5, 0.95) 100%
   );
 }

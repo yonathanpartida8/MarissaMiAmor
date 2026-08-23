@@ -141,7 +141,7 @@ export async function descubrirAmores() {
       // navegador no se lleve un susto buscando un fallo que no existe.
       console.info(
         `%c amores %c la carpeta ${CARPETA} está vacía · los avisos de «404» de arriba son de mirar si había algo`,
-        "background:#8ea6d8;color:#0a1224;border-radius:3px 0 0 3px;padding:2px 6px",
+        "background:#8ea6d8;color:#240a12;border-radius:3px 0 0 3px;padding:2px 6px",
         "background:#2a1436;color:#f6e7ef;border-radius:0 3px 3px 0;padding:2px 6px"
       );
       return [];

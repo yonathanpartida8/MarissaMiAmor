@@ -13,6 +13,7 @@ import { Gestures } from "../../core/Gestures.js";
 import { el, qs, setVars } from "../../utils/dom.js";
 import { clamp01, damp } from "../../utils/math.js";
 import escondidos from "../../data/escondidos.js";
+import { resolverPaleta } from "../../data/paletas.js";
 
 const HOLD_SECONDS = 1.25;
 
@@ -20,7 +21,9 @@ export default class CoverPage extends BasePage {
   static type = "cover";
 
   get palette() {
-    return { a: "#e9a6bf", b: "#4b2270", deep: "#0b0512" };
+    // La tapa no es de ningún capítulo, así que elige la suya del mismo
+    // sitio que todos: vino, que es el color de abrir algo a solas.
+    return resolverPaleta("vino");
   }
 
   get mood() {

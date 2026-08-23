@@ -9,7 +9,7 @@
   position: absolute;
   inset: 0;
   display: block;
-  background: #08040d;
+  background: #0d0407;
   overflow: hidden;
   --px: 0px;
   --py: 0px;
@@ -102,7 +102,7 @@
       rgba(255, 255, 255, 0.03) 0 10px,
       transparent 10px 20px
     ),
-    linear-gradient(160deg, #241a2c, #16101d);
+    linear-gradient(160deg, #26101b, #170710);
   opacity: 1;
   filter: none;
 }

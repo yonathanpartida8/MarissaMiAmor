@@ -192,8 +192,8 @@
   top: var(--y, 50%);
   font-size: clamp(1rem, 4vw, 1.3rem);
   line-height: 1;
-  color: var(--rose, #ec6f92);
-  text-shadow: 0 0 14px color-mix(in srgb, var(--accent, #ec6f92) 65%, transparent);
+  color: var(--rose);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--accent) 65%, transparent);
   will-change: transform, opacity;
   animation: escondite-sube var(--dur, 1800ms) var(--e-out) both;
 }

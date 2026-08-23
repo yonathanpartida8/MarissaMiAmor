@@ -10,7 +10,7 @@
   place-items: center;
   padding: calc(var(--safe-t) + 2rem) 1.5rem calc(var(--safe-b) + 2rem);
   background:
-    radial-gradient(ellipse 90% 60% at 50% 42%, #1d1030 0%, #0a0510 58%, #06030b 100%);
+    radial-gradient(ellipse 90% 60% at 50% 42%, #1d0814 0%, #100508 58%, #0b0305 100%);
   transition: opacity 900ms var(--e-out), filter 900ms var(--e-out);
 }
 

@@ -153,9 +153,9 @@ export function silverLayer(accent = "#d7ae72") {
     // Base metálica: contraste alto y frío, para que no se confunda con papel.
     const g = ctx.createLinearGradient(0, 0, w * 0.4, h);
     g.addColorStop(0, "#4a4d58");
-    g.addColorStop(0.22, "#9ea3b2");
-    g.addColorStop(0.38, "#5c606d");
-    g.addColorStop(0.58, "#c3c8d6");
+    g.addColorStop(0.22, "#b2a2a5");
+    g.addColorStop(0.38, "#6b5b60");
+    g.addColorStop(0.58, "#d6c6c8");
     g.addColorStop(0.74, "#666a77");
     g.addColorStop(1, "#3e414b");
     ctx.fillStyle = g;
@@ -176,7 +176,7 @@ export function silverLayer(accent = "#d7ae72") {
     ctx.globalAlpha = 0.16;
     for (let i = 0; i < 44; i++) {
       const y = Math.random() * h;
-      ctx.strokeStyle = Math.random() > 0.45 ? "#ffffff" : "#2b2e37";
+      ctx.strokeStyle = Math.random() > 0.45 ? "#fff6f2" : "#37292d";
       ctx.lineWidth = Math.random() * 2.2;
       ctx.beginPath();
       ctx.moveTo(0, y);
@@ -204,9 +204,9 @@ export function silverLayer(accent = "#d7ae72") {
 export function fogLayer() {
   return (ctx, w, h) => {
     const g = ctx.createLinearGradient(0, 0, 0, h);
-    g.addColorStop(0, "rgba(214, 228, 240, 0.94)");
-    g.addColorStop(0.55, "rgba(196, 214, 232, 0.9)");
-    g.addColorStop(1, "rgba(168, 190, 214, 0.95)");
+    g.addColorStop(0, "rgba(240, 228, 226, 0.94)");
+    g.addColorStop(0.55, "rgba(232, 210, 210, 0.9)");
+    g.addColorStop(1, "rgba(214, 182, 186, 0.95)");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
 

@@ -145,9 +145,10 @@ export class UI {
     const ratio = total > 1 ? index / (total - 1) : 1;
 
     this.progressFill.style.transform = `scaleX(${ratio})`;
-    // El acento vive en la raíz de la interfaz: de ahí lo heredan el hilo de
-    // progreso, los bordes de navegación y lo que venga después.
-    this.root.style.setProperty("--accent", page.palette.a);
+    // El acento NO se escribe aquí. Lo pone el router en `<html>` junto con
+    // el resto de la luz del capítulo, y de ahí lo hereda esta barra igual
+    // que lo hereda el papel. Escribirlo también aquí no cambiaba nada de lo
+    // que se ve, pero partía en dos el sitio donde se decide un color.
 
     for (const tick of this.ticks.children) {
       tick.classList.toggle("is-past", Number(tick.dataset.index) <= index);

@@ -17,6 +17,7 @@ import { seeded } from "../../utils/rng.js";
 import { allSecrets } from "../../data/manifest.js";
 import { finale } from "../../data/chapters.js";
 import escondidos from "../../data/escondidos.js";
+import { resolverPaleta } from "../../data/paletas.js";
 
 const heartVertex = /* glsl */ `
   precision highp float;
@@ -93,7 +94,8 @@ export default class FinalePage extends BasePage {
   static type = "finale";
 
   get palette() {
-    return { a: "#ff8fae", b: "#7c2d5e", deep: "#0b0410" };
+    // Termina donde empieza el pulso: el rojo más vivo del libro.
+    return resolverPaleta("latido");
   }
 
   get mood() {
@@ -230,8 +232,10 @@ export default class FinalePage extends BasePage {
       uBeat: { value: 0 },
       uPixelRatio: { value: this.ctx.caps.dpr },
       uPointer: { value: new THREE.Vector2() },
-      uColorA: { value: new THREE.Color("#c4b5fd") },
-      uColorB: { value: new THREE.Color("#ff6f97") },
+      // Las dos puntas de las estrellas del final salen de su propia
+      // paleta: antes una era lavanda, el último violeta que quedaba.
+      uColorA: { value: new THREE.Color(this.palette.a) },
+      uColorB: { value: new THREE.Color(this.palette.b) },
     };
 
     this.points = new THREE.Points(

@@ -10,7 +10,7 @@
 import { BasePage } from "../BasePage.js";
 import { createOrnament } from "../../components/ornaments.js";
 import { createSparkles } from "../../components/Sparkles.js";
-import { el, splitWords, setVars } from "../../utils/dom.js";
+import { el, splitWords } from "../../utils/dom.js";
 import { manifest } from "../../data/manifest.js";
 import escondidos from "../../data/escondidos.js";
 import { Gestures } from "../../core/Gestures.js";
@@ -53,12 +53,6 @@ export default class ChapterPage extends BasePage {
       "data-mood": this.mood,
       "data-ornament": this.ornamentName,
       "aria-label": ch?.title,
-    });
-    setVars(this.root, {
-      "--accent": accent,
-      "--accent-deep": this.palette.b,
-      "--drop-color": accent,
-      "--accent-line": accent,
     });
 
     // ---- Cuerpo del texto (se construye primero: hay ornamentos que
