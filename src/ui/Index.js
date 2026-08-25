@@ -108,6 +108,17 @@ export class BookIndex {
       // Lo que aún no ha visto se queda sin nombre: no le reventamos nada.
       button.classList.toggle("is-veiled", !seen);
 
+      // Y el nombre se pone al día.
+      //
+      // El índice se construye una vez, al abrirlo, y hay páginas que aún no
+      // saben cómo se llaman en ese momento: una página de `paginas-html/` se
+      // llama «Página 3» hasta que su archivo se abre y se mira el `<title>`.
+      // Sin esto, la que aprendió su nombre después seguía apareciendo aquí
+      // con el provisional para siempre.
+      const nombre = button.querySelector(".toc__name");
+      const actual = chapterById[entry.chapter]?.title || this.#fallbackName(entry);
+      if (nombre && nombre.textContent !== actual) nombre.textContent = actual;
+
       const gem = button.querySelector(".toc__gem");
       if (gem) gem.classList.toggle("is-found", this.ctx.store.hasSecret(entry.secret));
     }

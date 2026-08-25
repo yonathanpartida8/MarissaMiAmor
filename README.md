@@ -37,6 +37,7 @@ assets/
   audio/                música y efectos
 images/
   amores/               TUS FOTOS: amor1.png, amor2.png… se vuelven páginas solas
+paginas-html/           TUS PÁGINAS HTML: página.html1.html, …2.html… idem
 mis-paginas/            TUS páginas: fotos, vídeos y textos que añadas a mano
   paginas.js            la lista (lo único que se edita)
   fotos/  videos/       tus archivos
@@ -81,6 +82,7 @@ src/
     manifest.js         EL ORDEN DEL LIBRO
     custom.js           traduce mis-paginas/paginas.js al formato interno
     amores.js           busca solo las fotos de images/amores/
+    paginas-html.js     busca solo los archivos de paginas-html/
   styles/               tokens, base, entradas y lo común a todas las páginas
   utils/                matemáticas, easing, DOM, aleatoriedad sembrada
 ```
@@ -112,8 +114,14 @@ Las demás siguen leyendo de `src/data/chapters.js`.
 
 Treinta y nueve páginas repartidas en cuatro actos —**Encontrarte, Conocerte,
 Extrañarte, Elegirte**— y veintitrés mecánicas distintas. Ninguna se repite dos
-veces seguidas. Detrás de todas ellas van las fotos de `images/amores/`, tantas
-como él deje ahí.
+veces seguidas. Detrás de todas ellas van sus páginas HTML de `paginas-html/`,
+y detrás de ésas las fotos de `images/amores/`, tantas como él deje ahí.
+
+El orden del libro es siempre éste, y no se mezcla nunca:
+
+```
+[ las páginas de siempre · … · el final ]  [ paginas-html/ ]  [ images/amores/ ]
+```
 
 | Mecánica | Qué hay que hacer |
 | --- | --- |
@@ -140,6 +148,7 @@ como él deje ahí.
 | **Constelación** | Unir las estrellas con el dedo. |
 | **El cajón** | Seis cosas sobre una mesa y seis maneras distintas de tocarlas: una cerilla que se enciende, un papel que se desdobla en dos tiempos, una llave que se gira, una concha que hay que sostener para oírla, una estrella que se toca dos veces y cae, y un anillo que da vueltas. Cuando están las seis, se juntan. |
 | **Final** | Tocar la pantalla: las partículas forman un corazón que late. |
+| **Tus páginas HTML** | Cada `página.htmlN.html` que dejes en `paginas-html/` es una página más: tu HTML entero, con sus botones, sus animaciones y su JavaScript, encajado en la hoja del libro. Ver [`paginas-html/LÉEME.md`](paginas-html/LÉEME.md). |
 | **Tus fotos** | Cada `amorN.png` que dejes en `images/amores/` es una página más al final: a pantalla completa, sobre su propio desenfoque, tocables y con pellizco para acercar. |
 
 Hay **veintisiete secretos** repartidos. Ninguno se anuncia: se abren al hacer
@@ -291,6 +300,73 @@ de «no está» en la consola del navegador. Es el precio de que esto funcione s
 servidor. Está exprimido para que sean pocas: la extensión se averigua una sola
 vez con `amor1`, se pregunta de ocho en ocho y se para a los tres huecos, así
 que son cuatro o cinco avisos, no cientos. Ella no ve nada de esto.
+
+</details>
+
+---
+
+## Tus páginas HTML — la carpeta `paginas-html/`
+
+Igual de simple que la de las fotos: se deja el archivo y aparece.
+
+```
+paginas-html/
+    página.html1.html
+    página.html2.html
+    página.html3.html
+```
+
+Salen **en orden numérico**, después del final del libro y antes de las fotos
+de `images/amores/`. Empieza por el `1`; puedes saltarte un número (con la 1,
+la 2 y la 4 salen las tres); y la tilde da igual, vale también
+`pagina.html1.html`.
+
+Dentro va **lo que quieras**: botones, animaciones, CSS, JavaScript, audio,
+imágenes, un juego pequeño. Se muestra dentro de su propia hoja, aislado del
+resto: nada de lo que escribas puede romper el libro, y nada del libro se te
+cuela dentro.
+
+**Cómo se llama tu página**: ponle un `<title>` y ése será su nombre en la
+barra y en el índice.
+
+**Los colores del libro, si los quieres**: `var(--acento)`, `var(--papel)`,
+`var(--texto)`, `var(--tipo-titulo)`, `var(--hueco-barra)`… la lista entera
+está en [`paginas-html/LÉEME.md`](paginas-html/LÉEME.md).
+
+**Cómo se pasa de página**: deslizando, igual que en el resto. El barrido
+funciona por encima de tu página, pero si el dedo empieza sobre un botón, un
+enlace, un campo, un `<canvas>` o algo marcado con `data-claim-drag`, el gesto
+es tuyo entero.
+
+<details>
+<summary>Por qué un iframe, y qué resuelve eso</summary>
+
+Pegar el HTML directamente en la página era la opción obvia y es la mala:
+
+1. **Se pisarían.** Un archivo tuyo que declare `body { background: white }` o
+   una clase `.page` reventaría el libro entero desde dentro.
+2. **No habría manera de apagarlo.** Un `<script>` pegado en el documento deja
+   intervalos, `requestAnimationFrame`, escuchas en `window`, audio sonando y
+   contextos de WebGL abiertos. Quitar el nodo no para nada de eso: a las tres
+   páginas tendrías tres bucles corriendo a la vez para nadie.
+
+Un documento aparte resuelve las dos. Y por eso **no tienes que liberar nada a
+mano**: al pasar de página el libro descarga el documento entero y con él se
+van sus relojes, su sonido y su GPU. Al volver, tu página arranca de cero.
+
+El `src` sólo se pone al ENTRAR en la hoja, nunca al construirla: el libro
+prepara las hojas vecinas por adelantado, y si se pusiera ahí, tu página
+estaría ejecutándose de fondo antes de que nadie la haya visto.
+
+</details>
+
+<details>
+<summary>Y aquí también salen unos «404» en la consola</summary>
+
+Por lo mismo que con las fotos: un sitio de archivos no sabe decir qué hay en
+una carpeta, así que se pregunta —la 1, la 2, la 3…— hasta que se acaban. Se
+pregunta con `HEAD`, que trae sólo las cabeceras y no el archivo, de seis en
+seis, y se para a los dos huecos. Ella no ve nada de esto.
 
 </details>
 
@@ -503,7 +579,17 @@ El libro mide el aparato en el que se está abriendo y se adapta:
 - **La búsqueda de las fotos no retrasa la apertura.** Averiguar cuántas hay en
   `images/amores/` son varias idas y venidas a la red; se lanzan a la vez que se
   descarga la portada y se recogen cuando ésa ya ha terminado, así que salen
-  gratis.
+  gratis. Las de `paginas-html/` van en el mismo viaje, y preguntan con `HEAD`:
+  traen las cabeceras y no el archivo, así que da igual lo que pese la página.
+- **Una página HTML sólo corre mientras se ve.** El `src` del documento se pone
+  al entrar en la hoja y se vacía al salir. No hay manera de que un archivo tuyo
+  se quede dando vueltas de fondo, y tampoco hace falta que te acuerdes de
+  pararlo: descargar el documento se lleva sus relojes, su audio y su GPU.
+- **La luz del capítulo se escribe de una vez.** Los dieciséis tonos que salen
+  del color de un capítulo se aplican cambiando el texto de una hoja de estilo,
+  no con veinte `setProperty` en el elemento raíz. Una propiedad personalizada
+  se hereda, así que cada escritura en la raíz ensucia el documento entero:
+  veinte escrituras son veinte invalidaciones, y una hoja es una.
 - **Movimiento reducido, de verdad.** Si el sistema lo pide, no basta con acortar
   los tokens de duración: hay una regla global que apaga toda animación y
   transición del proyecto, incluidas las que llevan los milisegundos escritos a

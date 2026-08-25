@@ -258,7 +258,12 @@ export class Router extends Emitter {
 
     // Y si la página que llega es de papel, se avisa: la viñeta de encima
     // pesa la mitad sobre una hoja clara. Ver `#vignette` en `base.css`.
-    const claro = page.root?.classList.contains("paper") === true;
+    //
+    // Casi todas lo dicen llevando puesta la clase `paper`. Las que no la
+    // llevan pero también son claras —la de `paginas-html/`, que tiene papel
+    // por dentro y no por fuera— lo dicen con `data-claro`.
+    const raiz = page.root;
+    const claro = !!raiz && (raiz.classList.contains("paper") || raiz.dataset.claro === "true");
     document.documentElement.classList.toggle("hoja-clara", claro);
   }
 

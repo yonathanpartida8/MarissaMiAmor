@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<!--
+  Este archivo es un EJEMPLO y también una plantilla.
+
+  Cópialo, renómbralo a «página.html2.html» y cámbialo entero: lo que
+  hay aquí dentro es todo tuyo. Las instrucciones están en LÉEME.md.
+
+  Lo único que conviene no perder:
+    · el <title>, que es como se llama la página en el librito
+    · las variables --acento, --texto… si quieres ir a juego con él
+
+  Y fíjate en una cosa: este archivo pinta corazones con un bucle de
+  requestAnimationFrame y NO lo para en ningún sitio. No hace falta.
+  Al pasar de página el librito descarga el documento entero y con él
+  se va el bucle. Escribe tranquilo.
+-->
+<title>Cuántas veces</title>
+
+<style>
+  /* --acento, --texto, --papel, --tipo… los presta el librito.
+     El valor de después de la coma es por si abres este archivo suelto
+     en el navegador, fuera del librito: así también se ve bien. */
+  :root {
+    --rosa: var(--acento, #ffa9bf);
+    --hondo: var(--acento-hondo, #93264b);
+    --letra: var(--texto, #3d2a2b);
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* `safe center` y no `center` a secas: centrado mientras quepa, y
+       pegado arriba cuando no quepa. Con `center` normal, en horizontal
+       el título se sale por encima y no hay manera de llegar a él. */
+    justify-content: safe center;
+    gap: 1.1rem;
+    min-height: 100svh;
+    padding: 1rem 1rem;
+    /* El hueco de la barra flotante del librito, para no quedar debajo. */
+    padding-bottom: calc(var(--hueco-barra, 0rem) + 1rem);
+    text-align: center;
+    /* Sin fondo propio: así se ve el papel del librito por detrás.
+       Si quieres el tuyo, ponlo aquí y ya está. */
+  }
+
+  h1 {
+    margin: 0;
+    font-family: var(--tipo-titulo, Georgia, serif);
+    font-weight: 400;
+    font-size: clamp(1.7rem, 9vw, 2.6rem);
+    line-height: 1.1;
+    color: var(--letra);
+  }
+
+  p {
+    margin: 0;
+    max-width: 24ch;
+    font-size: clamp(0.9rem, 4vw, 1.05rem);
+    line-height: 1.6;
+    color: var(--letra);
+    opacity: 0.78;
+  }
+
+  #corazon {
+    width: clamp(120px, 42vw, 190px);
+    height: clamp(120px, 42vw, 190px);
+    border: 0;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 260ms cubic-bezier(0.34, 1.4, 0.5, 1);
+  }
+
+  #corazon:active { transform: scale(0.93); }
+  #corazon.late  { animation: latir 460ms cubic-bezier(0.34, 1.4, 0.5, 1); }
+
+  @keyframes latir {
+    35% { transform: scale(1.14); }
+    70% { transform: scale(0.97); }
+  }
+
+  #corazon path { fill: var(--rosa); }
+  #corazon .relleno { fill: var(--hondo); }
+
+  #cuenta {
+    font-family: var(--tipo-mano, cursive);
+    font-size: clamp(1.4rem, 7vw, 2rem);
+    color: var(--hondo);
+    min-height: 1.4em;
+  }
+
+  /* El lienzo va detrás de todo y no se puede tocar: así los corazones
+     que suben no le roban el dedo ni al botón ni al librito. */
+  #lluvia {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #corazon, #corazon.late { transition: none; animation: none; }
+  }
+</style>
+</head>
+
+<body>
+  <canvas id="lluvia" aria-hidden="true"></canvas>
+
+  <h1>Cuántas veces<br>te lo he dicho</h1>
+
+  <button id="corazon" type="button" aria-label="Tócalo">
+    <svg viewBox="0 0 100 92" width="100%" height="100%" aria-hidden="true">
+      <path d="M50 92S4 63 4 32C4 14 18 4 31 4c8 0 15 4 19 11 4-7 11-11 19-11 13 0 30 10 30 28 0 31-49 60-49 60z"/>
+      <clipPath id="dentro">
+        <path d="M50 92S4 63 4 32C4 14 18 4 31 4c8 0 15 4 19 11 4-7 11-11 19-11 13 0 30 10 30 28 0 31-49 60-49 60z"/>
+      </clipPath>
+      <rect class="relleno" id="nivel" clip-path="url(#dentro)" x="0" y="92" width="100" height="92"/>
+    </svg>
+  </button>
+
+  <div id="cuenta"></div>
+  <p>Tócalo. No se llena nunca, y por eso me gusta.</p>
+
+<script>
+(() => {
+  const FRASES = [
+    "te amo", "mi amor", "mi vida", "amorcito", "mi niña",
+    "eres mi amor", "te amo muchísimo", "otra vez, te amo",
+  ];
+
+  const boton = document.getElementById("corazon");
+  const nivel = document.getElementById("nivel");
+  const cuenta = document.getElementById("cuenta");
+  const lienzo = document.getElementById("lluvia");
+  const px = lienzo.getContext("2d");
+
+  let veces = 0;
+  const subiendo = [];
+
+  // ---- El lienzo, a la medida de la pantalla y de su densidad ----------
+  let ancho = 0;
+  let alto = 0;
+  function medir() {
+    const d = Math.min(devicePixelRatio || 1, 2);
+    ancho = lienzo.clientWidth;
+    alto = lienzo.clientHeight;
+    lienzo.width = Math.round(ancho * d);
+    lienzo.height = Math.round(alto * d);
+    px.setTransform(d, 0, 0, d, 0, 0);
+  }
+  medir();
+  addEventListener("resize", medir);
+
+  // ---- Un toque ---------------------------------------------------------
+  boton.addEventListener("click", () => {
+    veces++;
+    cuenta.textContent = FRASES[(veces - 1) % FRASES.length];
+
+    // Se llena despacio y nunca del todo: se acerca al borde sin llegar.
+    const lleno = 1 - Math.pow(0.94, veces);
+    nivel.setAttribute("y", String(92 - lleno * 92));
+
+    boton.classList.remove("late");
+    void boton.offsetWidth;
+    boton.classList.add("late");
+
+    if (navigator.vibrate) navigator.vibrate(12);
+
+    const caja = boton.getBoundingClientRect();
+    for (let i = 0; i < 3; i++) {
+      subiendo.push({
+        x: caja.left + caja.width * (0.3 + Math.random() * 0.4),
+        y: caja.top + caja.height * 0.55,
+        vx: (Math.random() - 0.5) * 26,
+        vy: -34 - Math.random() * 26,
+        vida: 1,
+        tam: 9 + Math.random() * 9,
+      });
+    }
+  });
+
+  // ---- Los corazones que suben -----------------------------------------
+  const corazon = (x, y, t, a) => {
+    px.globalAlpha = a;
+    px.font = `${t}px serif`;
+    px.textAlign = "center";
+    px.fillText("♥", x, y);
+  };
+
+  let antes = performance.now();
+  function frame(ahora) {
+    const dt = Math.min((ahora - antes) / 1000, 0.05);
+    antes = ahora;
+
+    px.clearRect(0, 0, ancho, alto);
+    px.fillStyle = getComputedStyle(document.documentElement)
+      .getPropertyValue("--rosa").trim() || "#ffa9bf";
+
+    for (let i = subiendo.length - 1; i >= 0; i--) {
+      const c = subiendo[i];
+      c.x += c.vx * dt;
+      c.y += c.vy * dt;
+      c.vy += 16 * dt;          // pierde fuerza según sube
+      c.vida -= dt * 0.75;
+      if (c.vida <= 0) { subiendo.splice(i, 1); continue; }
+      corazon(c.x, c.y, c.tam, Math.min(1, c.vida) * 0.85);
+    }
+    px.globalAlpha = 1;
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

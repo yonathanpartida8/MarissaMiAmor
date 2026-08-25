@@ -112,7 +112,16 @@ export default class FinalePage extends BasePage {
 
     this.root.append(
       el("div.finale__backdrop"),
-      el("div.finale__touch", { "data-claim-drag": "" }),
+      // Sin `data-claim-drag`. Esta capa sólo escucha el toque y el pulsado
+      // largo, y ninguno de los dos mueve el dedo: reclamar el arrastre no
+      // le servía de nada y sí impedía pasar de página desde aquí.
+      //
+      // Antes daba igual, porque el final era la última hoja del libro y no
+      // había adónde ir. Ahora detrás pueden venir sus páginas de
+      // `paginas-html/` y sus fotos de `images/amores/`, y quedarse
+      // encallado en el final sin poder deslizar sería lo primero que
+      // pasara al llegar hasta aquí.
+      el("div.finale__touch"),
       el("div.finale__content", {}, [
         el("p.finale__kicker", { text: finale.kicker }),
         el("h2.finale__line.finale__line--1", { text: finale.lines[0] }),
@@ -180,7 +189,12 @@ export default class FinalePage extends BasePage {
             this.root.classList.remove("is-held");
           },
         },
-        { exclusive: true, longPressMs: 900 }
+        // Sin `exclusive`. Marcarlo cortaba el evento antes de que llegara al
+        // escenario, y con él se iba también el arrastre que pasa la hoja.
+        // Aquí no hace falta: de esta capa sólo salen el toque y el pulsado
+        // largo, y ninguno de los dos mueve el dedo, así que no hay nada que
+        // se pueda confundir con un pase de página.
+        { longPressMs: 900 }
       )
     );
 

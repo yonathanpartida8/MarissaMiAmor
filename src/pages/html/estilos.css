@@ -1,0 +1,114 @@
+/* ============================================================
+   PÁGINA HTML — una hoja del libro con un archivo suyo dentro.
+
+   Casi todo lo que se ve en esta página lo pinta él dentro de su
+   archivo. Lo de aquí es el marco: el papel que hay debajo, el
+   encaje exacto en la hoja y el fundido con el que aparece.
+   ============================================================ */
+
+.pagweb {
+  /* `.page` ya la deja en `inset: 0` con `overflow: hidden`: la hoja
+     entera, ni un píxel más. Aquí sólo se apila lo de dentro. */
+  display: block;
+  background: transparent;
+}
+
+/* ---- El papel de debajo -------------------------------------
+   Está siempre, aunque casi nunca se vea. Es lo que hay durante el
+   instante en que el archivo llega y lo que queda al irse, y es la
+   razón de que no haya ni un fotograma en blanco ni en negro: el
+   iframe de un documento que aún no ha llegado se pinta BLANCO, y un
+   blanco a pantalla completa en mitad de un libro oscuro es un
+   fogonazo que se ve siempre. Aquí, debajo, hay papel.             */
+.pagweb__papel {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.5rem;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  text-align: center;
+  /* El fondo, la fibra y la sombra los pone `.paper`, que lleva puesta. */
+}
+
+.pagweb__abriendo {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: lowercase;
+  color: var(--paper-ink-soft);
+  opacity: 0;
+  /* No aparece de golpe: si el archivo abre rápido —que es lo normal—
+     esta palabra no llega a verse nunca, y así tiene que ser. Sólo
+     asoma cuando de verdad se está tardando. */
+  animation: pagweb-esperando 2.4s var(--e-out) 500ms forwards;
+}
+
+@keyframes pagweb-esperando {
+  to { opacity: 0.62; }
+}
+
+/* ---- El archivo ---------------------------------------------
+   Exactamente la hoja: mismo tamaño, misma esquina redondeada, sin
+   borde y sin nada alrededor. Lo que el navegador pone por su cuenta
+   en un iframe —el borde, el fondo blanco, el hueco de línea base—
+   se quita aquí; ésos son los «espacios blancos extraños» y las
+   «bandas» que salen si no se dice nada.                          */
+.pagweb__marco {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color-scheme: normal;
+
+  /* Aparece fundido cuando el documento ya está dentro, nunca antes.
+     Es lo que evita ver medio segundo de página a medio maquetar. */
+  opacity: 0;
+  transition: opacity 420ms var(--e-out);
+}
+
+.pagweb.is-lista .pagweb__marco {
+  opacity: 1;
+}
+
+/* Mientras la hoja gira, el archivo ya está apagado (lo vacía la propia
+   página en `leave()`), pero además se le quita el fundido: una hoja en
+   pleno giro no puede estar interpolando una opacidad encima. */
+.leaf--turning .pagweb__marco,
+.leaf--under .pagweb__marco {
+  transition: none;
+}
+
+/* ---- Si el archivo no abre ---------------------------------- */
+.pagweb__aviso {
+  font-family: var(--font-display);
+  font-size: var(--fs-lead);
+  color: var(--paper-ink);
+  max-width: 22ch;
+}
+
+.pagweb__aviso-pista {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  color: var(--paper-ink-soft);
+  opacity: 0.8;
+}
+
+/* Cuando está rota no hay nada que fundir: se enseña el papel y ya. */
+.pagweb.is-rota .pagweb__abriendo {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pagweb__abriendo { animation: none; opacity: 0.62; }
+  .pagweb__marco { transition: none; }
+}

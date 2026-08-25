@@ -92,83 +92,107 @@ function legible(color, sobre) {
 
 /**
  * Última paleta aplicada. Sirve para no tocar el DOM cuando dos páginas
- * seguidas comparten color, que pasa a menudo: escribir una propiedad
- * personalizada en `<html>` invalida el estilo del documento entero, y
- * hacerlo para dejarlo igual es trabajo tirado justo cuando el móvil está
- * ocupado con la transición.
+ * seguidas comparten color, que pasa a menudo: repintar la hoja de estilo
+ * invalida el estilo del documento entero, y hacerlo para dejarlo igual es
+ * trabajo tirado justo cuando el móvil está ocupado con la transición.
  */
 let ultima = null;
+
+/**
+ * La hoja de estilo donde vive la luz.
+ *
+ * ── POR QUÉ UNA HOJA Y NO VEINTE `setProperty` EN `<html>` ────────────
+ * Primero se hizo de la otra manera: veinte `setProperty` seguidos en el
+ * elemento raíz. Funciona, pero es la forma cara de hacerlo.
+ *
+ * Una propiedad personalizada SE HEREDA, y el elemento raíz es el ancestro
+ * de todo: cada escritura marca como sucio el documento entero. Veinte
+ * escrituras son veinte invalidaciones, y si entre medias alguien lee un
+ * estilo —basta con un `getComputedStyle`—, el navegador tiene que rehacer
+ * la cuenta ahí mismo antes de seguir.
+ *
+ * Cambiar el texto de UNA hoja de estilo es una sola invalidación y un solo
+ * recálculo, pase lo que pase. El resultado en pantalla es idéntico —está
+ * comprobado píxel a píxel—, y la escritura pasa de veinte operaciones a
+ * una.
+ */
+let hoja = null;
+
+function laHoja() {
+  if (hoja) return hoja;
+  hoja = document.createElement("style");
+  hoja.id = "luz-del-capitulo";
+  // Al final de la cabecera: después de `tokens.css`, para ganarle sin
+  // tener que subir la especificidad ni escribir un `!important`.
+  document.head.append(hoja);
+  return hoja;
+}
 
 /**
  * Derrama la luz de un capítulo por todo el libro.
  *
  * @param {{a: string, b: string, deep: string}} paleta
- * @param {HTMLElement} [nodo] dónde escribir. Por defecto, `<html>`.
  */
-export function aplicarLuz(paleta, nodo = document.documentElement) {
+export function aplicarLuz(paleta) {
   if (!paleta || !paleta.a) return;
   if (paleta === ultima) return;
   ultima = paleta;
 
   const { a, b, deep } = paleta;
-  const e = nodo.style;
 
-  // ---- Los tres, tal cual, para quien los quiera enteros -------------
-  e.setProperty("--luz-a", a);
-  e.setProperty("--luz-b", b);
-  e.setProperty("--luz-deep", deep);
-
-  // ---- Y en trío, para las transparencias ----------------------------
-  e.setProperty("--luz-a-rgb", trio(a));
-  e.setProperty("--luz-b-rgb", trio(b));
-  e.setProperty("--luz-deep-rgb", trio(deep));
-
-  // ---- Semánticos ----------------------------------------------------
-  // `--accent` es el nombre con el que medio libro pide «el color de esta
-  // página». Ahora sale de aquí, y no de la interfaz, para que haya un
-  // solo sitio donde se decide.
-  e.setProperty("--accent", a);
-
-  // ---- El papel, dentro de esa luz -----------------------------------
+  // El papel, dentro de esa luz. La zona más oscura de la hoja
+  // (`--paper-200`) es la que manda en la cuenta del contraste: si algo se
+  // lee ahí, se lee en toda la hoja.
   const papel200 = mezclar(PAPEL.hondo, a, TINTE.hondo);
-  e.setProperty("--paper-000", mezclar(PAPEL.claro, a, TINTE.claro));
-  e.setProperty("--paper-100", mezclar(PAPEL.medio, a, TINTE.medio));
-  e.setProperty("--paper-200", papel200);
-  e.setProperty("--paper-300", mezclar(PAPEL.bajo, a, TINTE.bajo));
-  e.setProperty("--paper-edge", mezclar(PAPEL.borde, b, TINTE.borde));
 
-  // La tinta se tiñe MUY poco y siempre hacia el color hondo, que es
-  // oscuro: así la hoja gana temperatura sin perder ni un punto de
-  // contraste. Teñirla hacia la luz la aclararía, y entonces habría que
-  // elegir entre que sea bonita y que se lea.
-  //
-  // La zona más oscura del papel (`--paper-200`) es la que manda en la
-  // cuenta del contraste: si algo se lee ahí, se lee en toda la hoja.
-  e.setProperty("--paper-ink", legible(mezclar(PAPEL.tinta, b, TINTE.tinta), papel200));
-  e.setProperty(
-    "--paper-ink-soft",
-    legible(mezclar(PAPEL.tintaSuave, b, TINTE.tintaSuave), papel200)
-  );
+  laHoja().textContent = `:root{
+    /* Los tres, tal cual, para quien los quiera enteros. */
+    --luz-a:${a};
+    --luz-b:${b};
+    --luz-deep:${deep};
 
-  // El acento hondo es el que va ENCIMA del papel: capitulares, filetes y
-  // firmas. Por eso pasa por la red y `--accent` no: el acento claro vive
-  // sobre el fondo oscuro, donde brillar es justo lo que tiene que hacer.
-  e.setProperty("--accent-deep", legible(b, papel200));
+    /* Y en trío, para las transparencias. */
+    --luz-a-rgb:${trio(a)};
+    --luz-b-rgb:${trio(b)};
+    --luz-deep-rgb:${trio(deep)};
 
-  // ---- Sombra y luz de la hoja ---------------------------------------
-  // Las dos capas que hacen que el papel parezca estar en una habitación.
-  // Antes eran un pardo fijo y un blanco fijo; ahora la habitación es la
-  // del capítulo.
-  e.setProperty("--paper-shade-rgb", trio(mezclar(b, SOMBRA_BASE, 0.52)));
-  e.setProperty("--paper-glow-rgb", trio(mezclar(a, LUZ_BASE, 0.66)));
+    /* «--accent» es el nombre con el que medio libro pide «el color de esta
+       página». Sale de aquí, y no de la interfaz, para que haya un solo
+       sitio donde se decide. */
+    --accent:${a};
 
-  // ---- El cromo -------------------------------------------------------
-  // La barra flotante, el índice, los avisos. No se pintan del color del
-  // capítulo —serían un cartel— sino de SU oscuridad, que es la misma que
-  // hay detrás de la hoja. Así el cromo parece recortado sobre el fondo y
-  // no pegado encima.
-  e.setProperty("--chrome-rgb", trio(mezclar(deep, b, 0.22)));
-  e.setProperty("--chrome-alto-rgb", trio(mezclar(deep, b, 0.4)));
+    /* El acento hondo es el que va ENCIMA del papel: capitulares, filetes y
+       firmas. Por eso pasa por la red de legibilidad y «--accent» no: el
+       acento claro vive sobre el fondo oscuro, donde brillar es justo lo
+       que tiene que hacer. */
+    --accent-deep:${legible(b, papel200)};
+
+    --paper-000:${mezclar(PAPEL.claro, a, TINTE.claro)};
+    --paper-100:${mezclar(PAPEL.medio, a, TINTE.medio)};
+    --paper-200:${papel200};
+    --paper-300:${mezclar(PAPEL.bajo, a, TINTE.bajo)};
+    --paper-edge:${mezclar(PAPEL.borde, b, TINTE.borde)};
+
+    /* La tinta se tiñe MUY poco y siempre hacia el color hondo, que es
+       oscuro: así la hoja gana temperatura sin perder ni un punto de
+       contraste. Teñirla hacia la luz la aclararía, y entonces habría que
+       elegir entre que sea bonita y que se lea. */
+    --paper-ink:${legible(mezclar(PAPEL.tinta, b, TINTE.tinta), papel200)};
+    --paper-ink-soft:${legible(mezclar(PAPEL.tintaSuave, b, TINTE.tintaSuave), papel200)};
+
+    /* Las dos capas que hacen que el papel parezca estar en una habitación.
+       Antes eran un pardo fijo y un blanco fijo; ahora la habitación es la
+       del capítulo. */
+    --paper-shade-rgb:${trio(mezclar(b, SOMBRA_BASE, 0.52))};
+    --paper-glow-rgb:${trio(mezclar(a, LUZ_BASE, 0.66))};
+
+    /* El cromo: la barra flotante, el índice, los avisos. No se pintan del
+       color del capítulo —serían un cartel— sino de SU oscuridad, que es la
+       misma que hay detrás de la hoja. Así el cromo parece recortado sobre
+       el fondo y no pegado encima. */
+    --chrome-rgb:${trio(mezclar(deep, b, 0.22))};
+    --chrome-alto-rgb:${trio(mezclar(deep, b, 0.4))};
+  }`;
 }
 
 /** Para las pruebas: olvida lo aplicado y obliga a repintar. */

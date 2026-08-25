@@ -10,10 +10,22 @@ import { Router } from "./Router.js";
 import { GLStage } from "../gl/GLStage.js";
 import { UI } from "../ui/UI.js";
 import { installTextures } from "../components/textures.js";
-import { manifest, registerCustomPages, registerAmores, indexOfPage } from "../data/manifest.js";
+import {
+  manifest,
+  registerCustomPages,
+  registerPaginasHtml,
+  registerAmores,
+  indexOfPage,
+} from "../data/manifest.js";
 import { registerCustomChapters } from "../data/chapters.js";
 import { loadCustomPages, customAct } from "../data/custom.js";
 import { descubrirAmores, entradasDeAmores, actoAmores, CARPETA } from "../data/amores.js";
+import {
+  descubrirPaginasHtml,
+  entradasDePaginasHtml,
+  actoHtml,
+  CARPETA as CARPETA_HTML,
+} from "../data/paginas-html.js";
 import { warmup } from "../pages/registry.js";
 import { PRIORITY } from "./AssetLoader.js";
 import { el, qs, wait } from "../utils/dom.js";
@@ -54,6 +66,15 @@ export class App {
       return [];
     });
 
+    //    Y lo mismo con sus páginas HTML de `paginas-html/`: preguntar por
+    //    ellas son otras cuantas idas y venidas, así que las dos carpetas se
+    //    buscan A LA VEZ y en paralelo con la descarga de la portada. Las dos
+    //    se recogen más abajo, ya en orden y cada una en su sitio.
+    const buscandoHtml = descubrirPaginasHtml().catch((err) => {
+      console.error("[paginas-html] no se pudieron buscar las páginas", err);
+      return [];
+    });
+
     // 3. Sus páginas escritas a mano. Van antes que nada porque pueden colarse
     //    en cualquier sitio del libro, incluso justo después de la portada.
     await this.#loadMine();
@@ -69,9 +90,16 @@ export class App {
       .loadAll(firstPhotos, PRIORITY.CRITICAL, (p) => setProgress(0.35 + p * 0.45))
       .catch(() => {});
 
-    // 5. Ahora sí: las fotos encontradas se pegan al final del libro. Antes de
-    //    montar el router, para que el índice, el progreso y el «página N de M»
-    //    nazcan sabiendo cuántas páginas hay de verdad.
+    // 5. Ahora sí: lo que se ha encontrado en las dos carpetas se pega al
+    //    final del libro. Antes de montar el router, para que el índice, el
+    //    progreso y el «página N de M» nazcan sabiendo cuántas páginas hay de
+    //    verdad.
+    //
+    //    EL ORDEN DE ESTAS DOS LÍNEAS ES EL ORDEN DEL LIBRO: primero las
+    //    HTML, después las fotos. (Aun así, `registerPaginasHtml` busca su
+    //    sitio delante de la primera foto en vez de fiarse de esto: si algún
+    //    día se cambia el orden aquí, el libro seguirá saliendo bien.)
+    await this.#loadPaginasHtml(buscandoHtml);
     await this.#loadAmores(buscandoAmores);
 
     // 6. Router y UI.
@@ -144,6 +172,42 @@ export class App {
     } catch (err) {
       // Red de seguridad final: pase lo que pase, el libro se abre.
       console.error("[mis-paginas] no se pudieron cargar", err);
+    }
+  }
+
+  /**
+   * Busca `paginas-html/página.html1.html`, `…2.html`… y convierte cada
+   * archivo en una página, después del final y antes de las fotos.
+   *
+   * No hay nada que configurar: se deja el archivo en la carpeta y aparece.
+   * Si la carpeta no existe —o está vacía, o la búsqueda falla— el libro es
+   * exactamente el mismo libro y nadie se entera.
+   */
+  async #loadPaginasHtml(buscando) {
+    try {
+      const lista = await buscando;
+      if (!lista?.length) return;
+
+      const { entries, chapters } = entradasDePaginasHtml(lista);
+      registerCustomChapters(chapters, actoHtml);
+      registerPaginasHtml(entries);
+
+      // El módulo se pide ya: cuando llegue a la primera, ya estará
+      // descargado y la entrada será instantánea.
+      warmup("html");
+
+      const n = lista.length;
+      console.info(
+        `%c paginas-html %c ${n} página${n > 1 ? "s" : ""} de ${CARPETA_HTML} después del final`,
+        "background:#ffd0dc;color:#3a0a1c;border-radius:3px 0 0 3px;padding:2px 6px",
+        "background:#2a1436;color:#f6e7ef;border-radius:0 3px 3px 0;padding:2px 6px"
+      );
+      console.info(
+        `[paginas-html] los avisos de «404» de ${CARPETA_HTML} son normales: así es como ` +
+          "se averigua cuántas páginas hay, porque un sitio de archivos no sabe decirlo."
+      );
+    } catch (err) {
+      console.error("[paginas-html] no se pudieron añadir las páginas", err);
     }
   }
 

@@ -6,6 +6,17 @@
  *   · las FOTOS de una página →  `fotos.js`
  *   · el ORDEN del libro      →  este archivo
  *
+ * ── Y TRES CARPETAS QUE SE AÑADEN SOLAS ───────────────────────────────
+ * Estas no se escriben aquí: se detectan al abrir el libro y se colocan
+ * siempre en el mismo sitio, en este orden y sin mezclarse nunca:
+ *
+ *     [ lo de este archivo · … · el final ]  [ paginas-html/ ]  [ images/amores/ ]
+ *
+ *   · `mis-paginas/`    páginas suyas escritas a mano; van DENTRO del libro,
+ *                       donde él diga, siempre antes del final
+ *   · `paginas-html/`   un archivo HTML suelto = una página; después del final
+ *   · `images/amores/`  una foto = una página; lo último de lo último
+ *
  * Y no hay un cuarto. Las tres listas se enganchan por el mismo nombre de
  * página (el `id` de aquí abajo), así que para cambiar la foto de un
  * capítulo no hay que venir a tocar el manifiesto: basta con escribir el
@@ -453,13 +464,40 @@ export function registerCustomPages(entries) {
 }
 
 /**
+ * Añade las páginas de `paginas-html/` DESPUÉS del final y ANTES de las fotos.
+ *
+ * El libro tiene tres tramos, y este orden no es negociable:
+ *
+ *     [ las páginas de siempre · … · el final ]  [ las HTML ]  [ las fotos ]
+ *
+ * Por eso no vale con `push`. Las fotos de `images/amores/` se buscan en la
+ * red y pueden llegar antes o después que las HTML según lo que tarde cada
+ * carpeta; si las HTML se limitaran a añadirse al final, un día aparecerían
+ * detrás de las fotos y otro día en medio de ellas, según qué petición
+ * volviera primero. Aquí se busca el sitio en vez de suponerlo: justo delante
+ * de la primera foto, o al final si todavía no hay ninguna.
+ */
+export function registerPaginasHtml(entries) {
+  if (!entries?.length) return manifest;
+
+  for (const entry of entries) {
+    const primeraFoto = manifest.findIndex((e) => e.type === "amor");
+    const at = primeraFoto === -1 ? manifest.length : primeraFoto;
+    manifest.splice(at, 0, { ...entry });
+  }
+
+  decorate(manifest);
+  return manifest;
+}
+
+/**
  * Añade las páginas de `images/amores/` DESPUÉS de todo.
  *
  * Ojo a la diferencia con `registerCustomPages`: aquélla mete las páginas
  * *antes* del cierre, porque son capítulos suyos y el cierre tiene que cerrar.
- * Éstas no. Éstas van detrás del final, como el álbum que se abre cuando ya se
- * ha leído el libro entero. Nunca, bajo ningún concepto, antes de las páginas
- * principales: son lo último de lo último.
+ * Éstas no. Éstas van detrás del final y detrás de las HTML, como el álbum que
+ * se abre cuando ya se ha leído el libro entero. Nunca, bajo ningún concepto,
+ * antes de las páginas principales: son lo último de lo último.
  */
 export function registerAmores(entries) {
   if (!entries?.length) return manifest;

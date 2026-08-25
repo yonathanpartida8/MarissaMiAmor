@@ -49,6 +49,9 @@ const loaders = {
   gallery: () => import("./galeria/index.js"),
   video: () => import("./video/index.js"),
 
+  // ── Las que salen solas de `paginas-html/` ──────────────
+  html: () => import("./html/index.js"),
+
   // ── Las que salen solas de `images/amores/` ─────────────
   amor: () => import("./amor/index.js"),
 };
