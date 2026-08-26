@@ -16,6 +16,7 @@ import { dustVertex, dustFragment } from "./shaders/dust.js";
 import { damp, clamp01 } from "../utils/math.js";
 import { seeded } from "../utils/rng.js";
 import { resolverPaleta } from "../data/paletas.js";
+import { temaActivo } from "../utils/temas.js";
 
 /** El color con el que arranca la niebla, antes de la primera página. */
 const INICIO = resolverPaleta();
@@ -130,6 +131,10 @@ export class GLStage {
       uFlash: { value: 0 },
       uMood: { value: 0.3 },
       uQuality: { value: this.caps.tierName === "high" ? 1 : this.caps.tierName === "mid" ? 0.6 : 0 },
+      // 0 noche · 1 claro y pastel. Lo pone `setAmbiente`, y se interpola
+      // como todo lo demás para que cambiar de modo sea un amanecer y no un
+      // interruptor. Ver la nota del uniform en el shader.
+      uLight: { value: temaActivo().luzAmbiente },
     };
 
     const quad = new THREE.Mesh(
@@ -152,6 +157,7 @@ export class GLStage {
       b: new THREE.Color(INICIO.b),
       mood: 0.3,
       intensity: 0.0,
+      luz: temaActivo().luzAmbiente,
     };
   }
 
@@ -234,7 +240,19 @@ export class GLStage {
     if (palette.deep) this.target.deep.set(palette.deep);
     if (palette.a) {
       this.target.a.set(palette.a);
-      this.dustTargetA = new THREE.Color(palette.a).lerp(new THREE.Color("#ffffff"), 0.45);
+
+      // LO QUE FLOTA TAMBIÉN CAMBIA DE HABITACIÓN.
+      //
+      // De noche las motas se aclaran hacia el blanco: son luz suspendida
+      // sobre un fondo oscuro. A plena luz, aclararlas es hacerlas
+      // desaparecer —blanco sobre blanco—, así que van al revés, hacia el
+      // hondo del capítulo: dejan de ser chispas y pasan a ser pétalos.
+      const claro = this.target.luz > 0.5;
+      const hacia = claro ? palette.deep || "#8e3a58" : "#ffffff";
+      this.dustTargetA = new THREE.Color(palette.a).lerp(
+        new THREE.Color(hacia),
+        claro ? 0.62 : 0.45
+      );
     }
     if (palette.b) this.target.b.set(palette.b);
     this.target.mood = MOODS[mood] ?? 0.3;
@@ -243,6 +261,30 @@ export class GLStage {
   /** Sube la intensidad general (0 durante el arranque, 1 con el libro abierto). */
   setIntensity(value) {
     this.target.intensity = clamp01(value);
+  }
+
+  /**
+   * Enciende o apaga la luz de la habitación: 0 noche, 1 claro y pastel.
+   *
+   * Va al objetivo y no directo al uniform para que el cambio se INTERPOLE,
+   * igual que los colores. Puesto de golpe, pasar de noche a claro era un
+   * fogonazo a pantalla completa; interpolado durante medio segundo, es que
+   * alguien sube la persiana.
+   */
+  setAmbiente(valor) {
+    this.target.luz = clamp01(valor);
+    if (!this.ready) return;
+
+    // La mezcla de las motas sí cambia de golpe, y tiene que ser así: no
+    // existe una mezcla «a medio camino» entre sumar y pintar encima. Se
+    // nota poco porque son motas de dos píxeles, y la alternativa —dejarlas
+    // en aditivo— es que a plena luz no se vea ninguna.
+    const claro = this.target.luz > 0.5;
+    const mezcla = claro ? THREE.NormalBlending : THREE.AdditiveBlending;
+    if (this.dust.material.blending !== mezcla) {
+      this.dust.material.blending = mezcla;
+      this.dust.material.needsUpdate = true;
+    }
   }
 
   /** Golpe de energía: se usa en cada transición. */
@@ -338,15 +380,45 @@ export class GLStage {
     return tex;
   }
 
-  /** Libera texturas que ya no se usan (las llama el router al hacer limpieza). */
+  /**
+   * Libera texturas que ya no se usan. La llama el router al hacer limpieza.
+   *
+   * ── CUIDADO CON LAS DOS FORMAS DE ESCRIBIR LA MISMA FOTO ──────────────
+   * El caché de aquí se indexa por `img.src`, que el navegador devuelve
+   * SIEMPRE resuelto entero («https://…/assets/img/imagen7.png»). Quien
+   * llama, en cambio, tiene la ruta tal y como está escrita en `fotos.js`
+   * («assets/img/imagen7.png»). Son la misma imagen y no se parecen en
+   * nada como texto: comparándolas a pelo, ninguna foto se salvaría nunca
+   * de la quema y se liberarían las texturas de las páginas que se están
+   * viendo —que es peor que no liberar ninguna: se quedan en blanco—.
+   *
+   * Por eso la lista que llega se resuelve aquí, contra la misma base que
+   * usa el navegador. Así quien llama puede pasar la ruta corta, que es la
+   * que tiene a mano, sin saber nada de esto.
+   */
   releaseTextures(keepSrcs = []) {
-    const keep = new Set(keepSrcs);
+    const keep = new Set();
+    for (const src of keepSrcs) {
+      if (!src) continue;
+      try {
+        keep.add(new URL(src, location.href).href);
+      } catch {
+        keep.add(src);
+      }
+    }
+
+    let liberadas = 0;
     for (const [key, tex] of [...this.textures]) {
       if (keep.has(key)) continue;
+      // La marca de «compartida» se levanta justo antes de soltarla: mientras
+      // estuvo puesta protegía a la textura de que la limpieza de una escena
+      // la liberase por su cuenta, y ese peligro se acaba aquí.
       tex.userData.shared = false;
       tex.dispose();
       this.textures.delete(key);
+      liberadas++;
     }
+    return liberadas;
   }
 
   /** Altura visible del mundo 3D a una distancia dada. Para encajar planos. */
@@ -432,6 +504,8 @@ export class GLStage {
     u.uAccentB.value.lerp(this.target.b, 1 - Math.exp(-2.2 * dt));
     u.uMood.value = damp(u.uMood.value, this.target.mood, 1.8, dt);
     u.uIntensity.value = damp(u.uIntensity.value, this.target.intensity, 1.6, dt);
+    // Un poco más lento que el resto: subir la persiana es un gesto largo.
+    u.uLight.value = damp(u.uLight.value, this.target.luz, 2.6, dt);
     u.uPointer.value.set(p.x, p.y);
 
     // Los picos decaen exponencialmente: golpe seco y desvanecido suave.

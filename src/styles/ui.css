@@ -21,7 +21,7 @@
   right: calc(var(--safe-r) + 14px);
   height: 2px;
   border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(var(--cromo-luz-rgb), 0.09);
   pointer-events: none;
   transition: opacity var(--t-base) var(--e-out);
 }
@@ -32,8 +32,8 @@
   transform-origin: left center;
   transform: scaleX(0);
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--accent, var(--rose)), var(--gold-light));
-  box-shadow: 0 0 10px -1px var(--accent, var(--rose));
+  background: linear-gradient(90deg, var(--acento-fondo, var(--rose)), var(--accent-deep));
+  box-shadow: 0 0 10px -1px var(--acento-fondo, var(--rose));
   transition: transform var(--t-slow) var(--e-out), background var(--t-slow) linear;
 }
 
@@ -51,18 +51,18 @@
   margin-left: -1px;
   margin-top: -1px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.28);
+  background: rgba(var(--cromo-luz-rgb), 0.28);
   transition: transform var(--t-base) var(--e-spring), background var(--t-base);
 }
 
 .progress__tick.is-past {
-  background: var(--gold-light);
+  background: var(--acento-fondo, var(--gold-light));
 }
 
 .progress__tick.is-current {
   transform: scale(3.2);
-  background: #fff;
-  box-shadow: 0 0 8px var(--accent, var(--rose));
+  background: var(--acento-fondo, #fff);
+  box-shadow: 0 0 8px var(--acento-fondo, var(--rose));
 }
 
 #ui.is-bare .progress {
@@ -91,8 +91,8 @@
     rgba(var(--chrome-alto-rgb), 0.82),
     rgba(var(--chrome-rgb), 0.9)
   );
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: var(--sh-lift), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(var(--cromo-luz-rgb), 0.1);
+  box-shadow: var(--sh-lift), inset 0 1px 0 rgba(var(--cromo-luz-rgb), 0.08);
   opacity: 0;
   transition: transform 520ms var(--e-out), opacity 320ms var(--e-out);
   max-width: calc(100vw - 2rem);
@@ -124,7 +124,7 @@
 
 .bar__btn:active {
   transform: scale(0.9);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--cromo-luz-rgb), 0.1);
   color: var(--text);
 }
 
@@ -164,7 +164,7 @@
   gap: 2px;
   padding-left: 6px;
   margin-left: 2px;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 1px solid rgba(var(--cromo-luz-rgb), 0.08);
 }
 
 .bar__icon {
@@ -183,15 +183,15 @@
 }
 
 .bar__icon.is-on {
-  color: var(--gold-light);
-  text-shadow: 0 0 10px var(--gold);
+  color: var(--oro-cromo-brillo, var(--gold-light));
+  text-shadow: 0 0 10px var(--oro-cromo, var(--gold));
 }
 
 .bar__secrets {
   font-family: var(--font-ui);
   font-size: 0.58rem;
   letter-spacing: 0.14em;
-  color: var(--gold);
+  color: var(--oro-cromo, var(--gold));
   padding-right: 6px;
   white-space: nowrap;
 }
@@ -225,7 +225,7 @@
   padding: 0.55rem 1.1rem;
   border-radius: var(--r-pill);
   background: rgba(var(--chrome-rgb), 0.84);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(var(--cromo-luz-rgb), 0.09);
   font-family: var(--font-ui);
   font-size: var(--fs-micro);
   font-weight: 300;
@@ -272,13 +272,13 @@ html[data-orientation="landscape"][data-device="phone"] #ui.is-bare .hint {
      línea pequeña de arriba, y con el fondo semitransparente se leían las dos
      cosas mezcladas. Se pone por encima y se lee sólo él. */
   background: rgba(var(--chrome-alto-rgb), 0.94);
-  border: 1px solid rgba(215, 174, 114, 0.28);
+  border: 1px solid rgba(var(--cromo-luz-rgb), 0.22);
   box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.9);
   font-family: var(--font-ui);
   font-size: var(--fs-label);
   font-weight: 300;
   letter-spacing: 0.08em;
-  color: var(--gold-light);
+  color: var(--oro-cromo-brillo, var(--gold-light));
   white-space: nowrap;
   max-width: calc(100vw - 3rem);
   overflow: hidden;
@@ -332,7 +332,10 @@ html[data-device="tablet"] .bar {
   font-weight: 300;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--accent, var(--rose));
+  /* El acento del FONDO, no el acento a secas: el nombre del acto va sobre
+     el cromo, y el acento a secas es el claro —brilla de noche y a plena
+     luz desaparece—. Mismo motivo que el hilo de progreso. */
+  color: var(--acento-fondo, var(--accent, var(--rose)));
   opacity: 0.92;
   white-space: nowrap;
   overflow: hidden;
@@ -347,10 +350,10 @@ html[data-device="tablet"] .bar {
   height: 7px;
   margin-top: -3.5px;
   border-radius: 0;
-  background: rgba(255, 255, 255, 0.42);
+  background: rgba(var(--cromo-luz-rgb), 0.42);
 }
 
-.progress__tick--act.is-past { background: var(--gold-light); }
+.progress__tick--act.is-past { background: var(--acento-fondo, var(--gold-light)); }
 
 .toc {
   position: absolute;
@@ -391,7 +394,7 @@ html[data-device="tablet"] .bar {
     rgba(var(--chrome-alto-rgb), 0.96),
     rgba(var(--chrome-rgb), 0.99)
   );
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(var(--cromo-luz-rgb), 0.08);
   border-bottom: none;
   box-shadow: 0 -20px 60px -20px rgba(0, 0, 0, 0.9);
   padding-bottom: var(--safe-b);
@@ -409,7 +412,7 @@ html[data-device="tablet"] .bar {
   height: 3px;
   margin-left: -19px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(var(--cromo-luz-rgb), 0.18);
 }
 
 .toc__head {
@@ -418,7 +421,7 @@ html[data-device="tablet"] .bar {
   justify-content: space-between;
   gap: var(--gap-md);
   padding: calc(var(--gap-md) + 8px) var(--gap-md) var(--gap-sm);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgba(var(--cromo-luz-rgb), 0.07);
 }
 
 .toc__title {
@@ -446,11 +449,11 @@ html[data-device="tablet"] .bar {
   border-radius: 50%;
   font-size: 0.9rem;
   color: var(--text-soft);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--cromo-luz-rgb), 0.05);
   transition: transform var(--t-fast) var(--e-spring), background var(--t-fast);
 }
 
-.toc__close:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.12); }
+.toc__close:active { transform: scale(0.9); background: rgba(var(--cromo-luz-rgb), 0.12); }
 
 .toc__scroll {
   flex: 1;
@@ -487,7 +490,7 @@ html[data-device="tablet"] .bar {
   list-style: none;
   margin: 0;
   padding: 0;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 1px solid rgba(var(--cromo-luz-rgb), 0.08);
   margin-left: 0.55rem;
 }
 
@@ -504,7 +507,7 @@ html[data-device="tablet"] .bar {
   transition: background var(--t-fast), transform var(--t-fast) var(--e-out);
 }
 
-.toc__item:active { background: rgba(255, 255, 255, 0.07); transform: translateX(2px); }
+.toc__item:active { background: rgba(var(--cromo-luz-rgb), 0.07); transform: translateX(2px); }
 
 .toc__num {
   flex: 0 0 auto;
@@ -540,13 +543,13 @@ html[data-device="tablet"] .bar {
   top: 50%;
   width: 42%;
   height: 1px;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(var(--cromo-luz-rgb), 0.14);
 }
 
 .toc__item.is-seen .toc__name { color: var(--text); }
 
 .toc__item.is-current {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(var(--cromo-luz-rgb), 0.07);
 }
 
 .toc__item.is-current::before {
@@ -561,18 +564,18 @@ html[data-device="tablet"] .bar {
   box-shadow: 0 0 10px var(--accent, var(--rose));
 }
 
-.toc__item.is-current .toc__name { color: #fff; }
+.toc__item.is-current .toc__name { color: var(--text); }
 
 .toc__gem {
   flex: 0 0 auto;
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.16);
+  color: rgba(var(--cromo-luz-rgb), 0.16);
   transition: color 400ms var(--e-out), text-shadow 400ms var(--e-out);
 }
 
 .toc__gem.is-found {
-  color: var(--gold-light);
-  text-shadow: 0 0 8px var(--gold);
+  color: var(--oro-cromo-brillo, var(--gold-light));
+  text-shadow: 0 0 8px var(--oro-cromo, var(--gold));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -641,7 +644,7 @@ html[data-orientation="landscape"][data-device="phone"] .edge {
   width: 3.15rem;
   height: 3.15rem;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.24);
+  border: 1px solid rgba(var(--cromo-luz-rgb), 0.24);
   /* Sin desenfoque en vivo, por lo mismo que la barra: estos dos botones
      se ven en todas las páginas y el fondo de detrás no para nunca. */
   background: linear-gradient(
@@ -651,7 +654,7 @@ html[data-orientation="landscape"][data-device="phone"] .edge {
   );
   box-shadow:
     0 6px 20px -8px rgba(0, 0, 0, 0.8),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    inset 0 1px 0 rgba(var(--cromo-luz-rgb), 0.14);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -671,7 +674,7 @@ html[data-orientation="landscape"][data-device="phone"] .edge {
   line-height: 1;
   /* El chevron tipográfico no está centrado en su caja. */
   padding-bottom: 0.12em;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(var(--cromo-luz-rgb), 0.95);
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
   transition: transform 320ms var(--e-spring);
 }
@@ -680,7 +683,7 @@ html[data-orientation="landscape"][data-device="phone"] .edge {
 .edge__btn:focus-visible {
   opacity: 1;
   background: rgba(var(--chrome-alto-rgb), 0.64);
-  border-color: color-mix(in srgb, var(--accent) 55%, rgba(255, 255, 255, 0.3));
+  border-color: color-mix(in srgb, var(--accent) 55%, rgba(var(--cromo-luz-rgb), 0.3));
 }
 
 .edge__btn:active {
@@ -735,7 +738,7 @@ html[data-orientation="landscape"][data-device="phone"] .edge {
 /* Pasado el punto de no retorno: el botón se enciende. */
 .edge.is-ready .edge__btn {
   background: color-mix(in srgb, var(--accent) 78%, #1a0710);
-  border-color: rgba(255, 255, 255, 0.5);
+  border-color: rgba(var(--cromo-luz-rgb), 0.5);
   box-shadow: 0 0 22px -2px var(--accent);
 }
 
@@ -759,4 +762,90 @@ html[data-orientation="landscape"][data-device="phone"] .edge {
   .edges.is-hinting .edge__btn,
   .edge.is-tapped .edge__btn,
   .edge.is-tapped .edge__glyph { animation: none; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   EL BOTÓN DE LA HABITACIÓN — ☀️ / 🌸 / 🌙
+   ════════════════════════════════════════════════════════════════════ */
+
+.bar__icon--tema {
+  font-size: 1.05rem;
+  /* El emoji trae su propio color, así que ni se hereda ni se atenúa.
+     Y va sin sombra de texto: sobre un emoji se lee como suciedad. */
+  color: inherit;
+  text-shadow: none;
+  line-height: 1;
+}
+
+/* Al tocarlo gira media vuelta.
+
+   El cambio de luz dura medio segundo largo a propósito —es un amanecer,
+   no un interruptor—, y sin este giro el botón parecía no haber respondido
+   durante ese rato: el clásico caso de alguien tocando tres veces porque no
+   pasa nada. El giro contesta al instante y la luz llega detrás. */
+.bar__icon--tema.is-girando {
+  animation: tema-gira 520ms var(--e-spring);
+}
+
+@keyframes tema-gira {
+  from { transform: rotate(-180deg) scale(0.6); }
+  to   { transform: rotate(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar__icon--tema.is-girando { animation: none; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   EL FOCO — para quien no navega con el dedo.
+
+   El libro tenía UNA regla de foco en veintiséis mil líneas, y estaba en
+   los botones de los bordes. Con el resto, navegar con el teclado era
+   avanzar a ciegas: el navegador ponía su anillo por defecto donde le
+   cabía —a veces detrás de la barra, a veces recortado por un `overflow`—
+   y en la mayoría de los sitios, contra un fondo oscuro y sin contraste,
+   no se veía en absoluto.
+
+   Va con `:focus-visible` y no con `:focus`, que es la diferencia entre
+   ayudar a quien usa el teclado y castigar a quien usa el dedo: con
+   `:focus` el anillo aparecía también al tocar cualquier botón en el
+   móvil y se quedaba puesto después.
+
+   Un solo sitio, un solo aspecto, y `--cromo-luz-rgb` de por medio para
+   que el anillo sea claro sobre el cromo oscuro de la noche y oscuro
+   sobre el cromo claro del día.
+   ════════════════════════════════════════════════════════════════════ */
+
+:where(button, [href], [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--acento-fondo, var(--accent));
+  /* Separado del borde para que se lea también sobre un botón del mismo
+     color, y sin empujar el layout: `outline` no ocupa sitio. */
+  outline-offset: 3px;
+  border-radius: var(--r-sm);
+}
+
+/* Los redondos llevan el anillo redondo. */
+.bar__btn:focus-visible,
+.bar__icon:focus-visible,
+.edge__btn:focus-visible,
+.toc__close:focus-visible {
+  border-radius: 50%;
+}
+
+.bar__icon:focus-visible {
+  border-radius: var(--r-md);
+}
+
+/* Dentro del índice el anillo va pegado: las filas están juntas y con tres
+   píxeles de separación se pisaban entre ellas. */
+.toc__item:focus-visible {
+  outline-offset: -2px;
+  border-radius: var(--r-sm);
+}
+
+/* Y sobre el papel, el anillo es la tinta del capítulo: el acento del
+   fondo está pensado para leerse contra la atmósfera, no contra la hoja. */
+.paper :focus-visible,
+.leaf__face--front :focus-visible {
+  outline-color: var(--accent-deep);
 }

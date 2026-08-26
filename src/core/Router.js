@@ -19,6 +19,7 @@ import { manifest } from "../data/manifest.js";
 import { getChapter } from "../data/chapters.js";
 import { el } from "../utils/dom.js";
 import { aplicarLuz } from "../utils/luz.js";
+import { fondoDelTema } from "../utils/temas.js";
 import { clamp, clamp01 } from "../utils/math.js";
 
 /** Cuántas páginas construidas mantenemos vivas a la vez. */
@@ -253,7 +254,11 @@ export class Router extends Emitter {
    * dentro de la luz del capítulo y el libro se lee como un solo objeto.
    */
   #encender(page) {
-    this.ctx.gl?.setMood(page.palette, page.mood);
+    // El fondo recibe la paleta ya llevada a la habitación del tema, que es
+    // exactamente la misma que usa `aplicarLuz` para el papel. Si cada uno
+    // hiciera su propia cuenta volveríamos a tener una hoja de un color y un
+    // aire de otro, que es lo que este libro lleva tiempo evitando.
+    this.ctx.gl?.setMood(fondoDelTema(page.palette), page.mood);
     aplicarLuz(page.palette);
 
     // Y si la página que llega es de papel, se avisa: la viñeta de encima
@@ -433,29 +438,43 @@ export class Router extends Emitter {
   //  Teclado (escritorio)
   // ═══════════════════════════════════════════════════════════════════
 
+  /**
+   * El handler se guarda en un campo en vez de escribirse en línea: sin una
+   * referencia estable no hay forma de retirarlo, y un router muerto que
+   * siguiera escuchando el teclado pasaría páginas de un libro que ya no
+   * está en pantalla.
+   */
+  #onKeyDown = (e) => {
+    if (this.locked) return;
+    // Si el dedo está escribiendo en algún sitio, las flechas son suyas.
+    const activo = document.activeElement;
+    if (activo?.closest?.("input, textarea, [contenteditable='true']")) return;
+
+    switch (e.key) {
+      case "ArrowRight":
+      case "PageDown":
+      case " ":
+        e.preventDefault();
+        this.next();
+        break;
+      case "ArrowLeft":
+      case "PageUp":
+        e.preventDefault();
+        this.prev();
+        break;
+      case "Home":
+        e.preventDefault();
+        this.go(0);
+        break;
+      case "End":
+        e.preventDefault();
+        this.go(this.entries.length - 1);
+        break;
+    }
+  };
+
   #bindKeyboard() {
-    window.addEventListener("keydown", (e) => {
-      if (this.locked) return;
-      switch (e.key) {
-        case "ArrowRight":
-        case "PageDown":
-        case " ":
-          e.preventDefault();
-          this.next();
-          break;
-        case "ArrowLeft":
-        case "PageUp":
-          e.preventDefault();
-          this.prev();
-          break;
-        case "Home":
-          this.go(0);
-          break;
-        case "End":
-          this.go(this.entries.length - 1);
-          break;
-      }
-    });
+    window.addEventListener("keydown", this.#onKeyDown);
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -496,6 +515,23 @@ export class Router extends Emitter {
       if (entry?.photos) stillNeeded.push(...entry.photos.map((p) => p.src));
     }
     if (this.ctx.assets.cachedCount > 40) this.ctx.assets.keepOnly(stillNeeded);
+
+    // Y LAS TEXTURAS DE LA TARJETA GRÁFICA, QUE SON LAS QUE DE VERDAD PESAN.
+    //
+    // Soltar el `<img>` del caché de arriba no libera un solo byte de GPU:
+    // en cuanto una página monta una foto en una escena 3D —la profundidad,
+    // el velo, el campo de recuerdos—, esa foto se sube a la tarjeta y se
+    // queda ahí, guardada aquí al lado por si otra página la pide.
+    //
+    // Nadie las soltaba. Con más de cuarenta páginas y sus fotos, la memoria
+    // de vídeo sólo crecía en toda la lectura, y en un móvil eso termina de
+    // una sola manera: el navegador tira la pestaña sin avisar, casi siempre
+    // en la segunda mitad del libro, que es justo donde ella no debería
+    // encontrarse una pantalla en blanco.
+    //
+    // Van con la misma lista que las imágenes: lo que necesitan las páginas
+    // vivas se queda, lo demás se devuelve.
+    this.ctx.gl?.releaseTextures(stillNeeded);
   }
 
   /** Bloquea la navegación (una página puede exigir atención un momento). */
@@ -511,6 +547,7 @@ export class Router extends Emitter {
 
   destroy() {
     this.gestures.destroy();
+    window.removeEventListener("keydown", this.#onKeyDown);
     for (const record of this.live.values()) {
       record.page.destroy();
       record.leaf.remove();

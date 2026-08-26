@@ -72,6 +72,27 @@
   --text-soft: rgba(253, 238, 233, 0.68);
   --text-faint: rgba(253, 238, 233, 0.52);
 
+  /* ---- La habitación --------------------------------------
+     El libro tiene tres modos —claro ☀️, pastel 🌸 y noche 🌙— y son
+     `utils/temas.js` y `utils/luz.js` quienes deciden estos cuatro en cada
+     uno. Lo de aquí es el modo noche, que es con el que nació y con el que
+     se ve el primer instante antes de que haya ninguna página.
+
+       --cromo-luz-rgb   el filo de luz del cromo: bordes, separadores, el
+                         brillo de arriba de la barra. De noche es blanco;
+                         de día tiene que ser una sombra, porque un filo
+                         blanco sobre una superficie clara no existe.
+       --fondo-base      lo que hay detrás de todo antes del primer
+                         fotograma de WebGL, y en lugar de él si no lo hay.
+       --vineta-*        cuánta viñeta aguanta la habitación.
+       --grano-op        cuánto grano de película.                        */
+  --cromo-luz-rgb: 255, 255, 255;
+  --fondo-base: #0d0308;
+  --vineta-fuerza: 0.55;
+  --vineta-papel: 0.44;
+  --grano-op: 0.035;
+  --grano-op-alto: 0.05;
+
   /* ---- Tipografía ---------------------------------------- */
   --font-display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
   --font-hand: "Caveat", "Segoe Script", "Bradley Hand", cursive;

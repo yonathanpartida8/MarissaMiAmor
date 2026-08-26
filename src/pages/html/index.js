@@ -44,6 +44,7 @@
 
 import { BasePage } from "../BasePage.js";
 import { el, setVars } from "../../utils/dom.js";
+import { fondoDelTema } from "../../utils/temas.js";
 import textos from "./textos.js";
 
 /**
@@ -330,6 +331,23 @@ export default class HtmlPage extends BasePage {
     this.#prestarColores(doc);
   }
 
+  /**
+   * El libro ha cambiado de habitación mientras esta página estaba abierta.
+   *
+   * Los colores se le prestan al invitado UNA VEZ, al cargarse, copiando los
+   * tokens del libro dentro de su documento. Eso está bien mientras la luz
+   * no cambie, pero con los tres modos sí cambia: sin esto, pasar a modo
+   * claro dejaba su página con el papel de la noche —crema oscuro sobre un
+   * libro blanco— hasta que se saliera y se volviera a entrar.
+   *
+   * Volver a prestarlos es escribir unas cuantas variables en el elemento
+   * raíz del invitado. Lo que él haya pintado encima no se toca.
+   */
+  alCambiarTema() {
+    const doc = this.#documento();
+    if (doc?.documentElement) this.#prestarColores(doc);
+  }
+
   /** El documento de dentro, o null si aún no hay o no se deja tocar. */
   #documento() {
     try {
@@ -353,10 +371,16 @@ export default class HtmlPage extends BasePage {
     const hoja = getComputedStyle(this.root);
     const v = (nombre) => libro.getPropertyValue(nombre).trim();
 
+    // La paleta que se le presta es la del capítulo YA LLEVADA a la
+    // habitación del tema: la misma que ven el fondo y el papel. Prestando
+    // la cruda, una página suya con `var(--acento)` se pintaba con el rosa
+    // encendido de la noche mientras el libro entero estaba de día.
+    const paleta = fondoDelTema(this.palette);
+
     const vars = {
-      "--acento": this.palette.a,
-      "--acento-hondo": this.palette.b,
-      "--fondo": this.palette.deep,
+      "--acento": paleta.a,
+      "--acento-hondo": paleta.b,
+      "--fondo": paleta.deep,
       // Los tres tonos del papel del libro y la luz que le entra por arriba.
       // Con ellos, la página que él escriba se pinta sobre el MISMO papel que
       // el resto del libro, teñido con el color de este capítulo.

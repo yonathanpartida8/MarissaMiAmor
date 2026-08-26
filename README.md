@@ -188,6 +188,40 @@ esconden algo. Las que todavía no ha visto salen sin título —sólo el númer
 para no reventarle las sorpresas de un vistazo. Puede saltar a cualquiera
 igualmente: esto no es un videojuego.
 
+### Las tres habitaciones
+
+En la barra, junto al `☰`, hay un botón que rota entre tres modos:
+
+| | | |
+|---|---|---|
+| ☀️ | **Claro** | de día, con la ventana abierta |
+| 🌸 | **Pastel** | el rubor de la tarde |
+| 🌙 | **Noche** | la lámpara encendida y nadie más despierto |
+
+No son tres paletas ni tres interfaces: **los colores de cada capítulo mandan
+en los tres**. Un capítulo «vino» es vino de día y es vino de noche. Lo que
+cambia es la habitación donde está el libro, no el libro.
+
+La primera vez se abre en el modo que prefiera su teléfono; a partir de ahí,
+en el que ella elija. La elección se guarda con lo demás.
+
+Lo que hace que sea un modo claro de verdad y no un modo oscuro con el fondo
+subido está en dos sitios:
+
+- **El fondo cambia de forma de pintar.** La niebla del libro es un shader que
+  *suma* luz sobre un color casi negro, que es como se dibuja algo que brilla
+  en la oscuridad. Sumar sobre blanco no da un modo claro: da una pantalla
+  quemada. De día los mismos velos *tiñen* en vez de sumar —de linterna a
+  vidriera— y se mueven exactamente igual.
+- **El papel, la tinta, la barra y su texto se recalculan enteros.** Salen del
+  color del capítulo y de la habitación, en `src/utils/luz.js`, y llegan al
+  resto del libro como tokens de CSS. Ninguna página sabe que existen los
+  modos: hereda y ya.
+
+Para tocarlos —o para añadir un cuarto— está `src/utils/temas.js`, con los tres
+descritos uno debajo del otro. Nadie tiene una lista de tres escrita a mano: el
+botón, el guardado y el índice recogen lo que haya.
+
 ---
 
 ## Los textos

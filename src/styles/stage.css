@@ -237,7 +237,7 @@ html[data-device="desktop"] .page {
     90deg,
     rgba(0, 0, 0, 0.42) 0%,
     rgba(0, 0, 0, 0.16) 45%,
-    rgba(255, 255, 255, 0.05) 82%,
+    rgba(var(--cromo-luz-rgb), 0.05) 82%,
     rgba(0, 0, 0, 0) 100%
   );
 }

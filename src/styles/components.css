@@ -210,7 +210,7 @@
 /* Si la imagen no llega, el hueco sigue siendo digno. */
 .pframe.is-missing .pframe__window {
   background:
-    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 8px, transparent 8px 16px),
+    repeating-linear-gradient(45deg, rgba(var(--cromo-luz-rgb), 0.03) 0 8px, transparent 8px 16px),
     linear-gradient(160deg, #26101b, #170710);
 }
 
@@ -303,7 +303,7 @@
    fotograma. De paso se lee mejor.                                        */
 .vidrio {
   border-radius: var(--r-md);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(var(--cromo-luz-rgb), 0.06);
   background: linear-gradient(
     180deg,
     rgba(16, 6, 9, var(--vidrio-arriba, 0.66)),
@@ -312,6 +312,6 @@
   /* Un filo de luz arriba: es lo que hace que parezca un cristal apoyado
      y no un rectángulo pintado. Va en la sombra, que no cuesta capa. */
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 1px 0 rgba(var(--cromo-luz-rgb), 0.07),
     0 18px 40px -22px rgba(0, 0, 0, 0.8);
 }

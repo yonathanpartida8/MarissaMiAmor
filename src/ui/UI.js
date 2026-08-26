@@ -12,6 +12,7 @@ import { manifest, allSecrets } from "../data/manifest.js";
 import { actById } from "../data/chapters.js";
 import { BookIndex } from "./Index.js";
 import { EdgeNav } from "./EdgeNav.js";
+import { TEMAS, temaActivo, temaSiguiente } from "../utils/temas.js";
 
 const HINT_DELAY = 4600;
 const BAR_HIDE_DELAY = 3400;
@@ -38,16 +39,36 @@ export class UI {
       this.index.build()
     );
 
-    // Cualquier gesto revive la barra y reinicia el reloj de la pista.
-    const wake = () => {
-      this.showBar();
-      this.scheduleHint();
-    };
-    window.addEventListener("pointerdown", wake, { passive: true });
-    window.addEventListener("keydown", wake);
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && this.index.open) this.index.close();
-    });
+    window.addEventListener("pointerdown", this.#wake, { passive: true });
+    window.addEventListener("keydown", this.#onKeyDown);
+  }
+
+  /** Cualquier gesto revive la barra y reinicia el reloj de la pista. */
+  #wake = () => {
+    this.showBar();
+    this.scheduleHint();
+  };
+
+  /**
+   * Las dos cosas que hacía el teclado iban en dos escuchas distintas y
+   * anónimas. Van juntas y con nombre: una escucha menos en cada pulsación,
+   * y —lo que importa— una referencia con la que poder soltarlas.
+   */
+  #onKeyDown = (e) => {
+    if (e.key === "Escape" && this.index?.open) this.index.close();
+    this.#wake();
+  };
+
+  /** Suelta todo lo que la interfaz tenga enganchado fuera de su propio DOM. */
+  destroy() {
+    window.removeEventListener("pointerdown", this.#wake);
+    window.removeEventListener("keydown", this.#onKeyDown);
+    clearTimeout(this.hintTimer);
+    clearTimeout(this.barTimer);
+    clearTimeout(this.toastTimer);
+    clearTimeout(this.edgeTimer);
+    this.edges?.destroy();
+    this.root.replaceChildren();
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -98,6 +119,11 @@ export class UI {
 
     this.bar.append(
       el("div.bar__tools", {}, [
+        el("button.bar__icon.bar__icon--tema", {
+          type: "button",
+          dataset: { role: "tema" },
+          onClick: () => this.#rotarTema(),
+        }),
         el("button.bar__icon", {
           type: "button",
           "aria-label": "Música",
@@ -119,10 +145,49 @@ export class UI {
     this.barAct = qs(".bar__act", this.bar);
     this.barCount = qs(".bar__count", this.bar);
     this.musicBtn = qs('[data-role="music"]', this.bar);
+    this.temaBtn = qs('[data-role="tema"]', this.bar);
     this.secretsEl = qs('[data-role="secrets"]', this.bar);
 
     if (this.ctx.store.get("musicOn") !== false) this.musicBtn.classList.add("is-on");
+    this.#pintarTema();
     return this.bar;
+  }
+
+  /**
+   * El botón enseña el modo que está puesto y dice en voz alta al que
+   * lleva. Un botón que enseña a dónde vas y no dónde estás es el clásico
+   * que hace dudar a todo el mundo, así que aquí se dicen las dos cosas:
+   * el icono es el ahora, la etiqueta es el después.
+   */
+  refrescarTema() {
+    this.#pintarTema();
+  }
+
+  #pintarTema() {
+    if (!this.temaBtn) return;
+    const actual = temaActivo();
+    const proximo = TEMAS[temaSiguiente()];
+    this.temaBtn.textContent = actual.emoji;
+    this.temaBtn.setAttribute(
+      "aria-label",
+      `Modo ${actual.nombre}. Tocar para pasar a ${proximo.nombre}.`
+    );
+    this.temaBtn.dataset.tema = actual.id;
+  }
+
+  #rotarTema() {
+    // El repintado del icono NO se hace aquí: lo hace `App` al terminar de
+    // cambiar de modo. Así el botón dice la verdad venga el cambio de donde
+    // venga —de este toque, de la consola, o de lo que se guardó la última
+    // vez—, y no sólo cuando se toca.
+    this.ctx.app?.siguienteTema();
+    this.ctx.haptics.play("tap");
+
+    // Un giro corto del icono: el cambio de luz es lento a propósito
+    // —medio segundo de amanecer— y sin esto el botón parece no responder.
+    this.temaBtn.classList.remove("is-girando");
+    void this.temaBtn.offsetWidth;
+    this.temaBtn.classList.add("is-girando");
   }
 
   #buildHint() {

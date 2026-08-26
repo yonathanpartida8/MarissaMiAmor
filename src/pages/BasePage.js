@@ -146,6 +146,22 @@ export class BasePage {
    */
   tick(dt, time) {}
 
+  /**
+   * El libro ha cambiado de habitación (claro / pastel / noche).
+   *
+   * Casi ninguna página necesita enterarse: todo lo que se ve sale de tokens
+   * del CSS —el papel, la tinta, el acento, las sombras— y ésos los reescribe
+   * `utils/luz.js` en `<html>`, de donde se heredan solos.
+   *
+   * El gancho está para las pocas que guardan una copia de un color en un
+   * sitio donde el CSS no llega: un lienzo ya pintado, una escena 3D, o el
+   * documento de un iframe, que es un mundo aparte con sus propias
+   * variables. Ver `pages/html/index.js`, que es quien lo usa.
+   *
+   * @param {object} tema  el tema recién puesto
+   */
+  alCambiarTema(tema) {}
+
   /** Empieza a irse. Devuelve una promesa si necesita despedirse. */
   async leave(direction = "next") {
     this.active = false;

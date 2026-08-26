@@ -16,7 +16,10 @@ body {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
-  background: var(--ink-950);
+  /* `--fondo-base` lo escribe `utils/luz.js` con el color de la habitación:
+     casi negro de noche, casi blanco de día. Antes era el negro fijo del
+     libro, y en modo claro asomaba por los bordes durante el rebote. */
+  background: var(--fondo-base, var(--ink-950));
 }
 
 html {
@@ -91,8 +94,11 @@ figure {
   height: 100%;
   z-index: var(--z-gl);
   pointer-events: none;
-  /* Evita el "flash" blanco antes del primer frame. */
-  background: radial-gradient(ellipse 120% 80% at 50% 30%, #1c0713 0%, #100508 55%, #0b0305 100%);
+  /* Evita el "flash" antes del primer frame, y lo evita EN LOS TRES MODOS:
+     con el degradado oscuro fijo que había aquí, abrir el libro de día
+     empezaba con un fogonazo negro que duraba lo que tardara el primer
+     fotograma de WebGL. Ahora arranca ya del color de la habitación. */
+  background: var(--fondo-base, var(--ink-950));
 }
 
 /* ---- Grano de película ----------------------------------- */
@@ -111,7 +117,7 @@ figure {
   inset: -6%;
   z-index: var(--z-grain);
   pointer-events: none;
-  opacity: 0.035;
+  opacity: var(--grano-op, 0.035);
   background-image: var(--grain-src);
   background-size: 180px 180px;
   will-change: transform;
@@ -125,7 +131,7 @@ figure {
 }
 
 html[data-tier="high"] #grain {
-  opacity: 0.05;
+  opacity: var(--grano-op-alto, 0.05);
   mix-blend-mode: overlay;
 }
 
@@ -150,9 +156,12 @@ html[data-tier="high"] #grain {
   background: radial-gradient(
     ellipse 96% 74% at 50% 48%,
     transparent 42%,
-    rgba(var(--luz-deep-rgb), 0.55) 100%
+    rgba(var(--luz-deep-rgb), var(--vineta-fuerza, 0.55)) 100%
   );
-  transition: opacity var(--t-slow) var(--e-out);
+  /* El color también se interpola al cambiar de modo: si sólo se animara la
+     opacidad, pasar de noche a claro cambiaba el tono de la viñeta de golpe
+     mientras su fuerza bajaba despacio, y se veía el corte. */
+  transition: opacity var(--t-slow) var(--e-out), background var(--t-slow) var(--e-out);
 }
 
 /* Sobre una hoja de papel, la mitad.
@@ -163,7 +172,7 @@ html[data-tier="high"] #grain {
    mitad de fuerza el papel sigue teniendo relieve y no pierde el tono.
    La clase la pone el router al entrar en una página con papel. */
 html.hoja-clara #vignette {
-  opacity: 0.44;
+  opacity: var(--vineta-papel, 0.44);
 }
 
 html[data-tier="low"] #grain {

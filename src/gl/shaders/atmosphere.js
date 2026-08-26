@@ -55,6 +55,23 @@ export const atmosphereFragment = /* glsl */ `
   uniform float uMood;      // 0..1 ajusta amplitud y velocidad
   uniform float uQuality;   // 0 = móvil humilde, 1 = todo
 
+  /**
+   * 0 = cuarto oscuro · 1 = habitación con luz.
+   *
+   * Es lo que separa el modo noche de los modos claro y pastel, y no es un
+   * simple «sube el brillo»: cambia la FORMA de componer la niebla.
+   *
+   * Con 0 los velos SUMAN luz sobre un fondo casi negro, que es como se
+   * pinta algo que brilla en la oscuridad. Con 1 los velos TIÑEN un fondo
+   * casi blanco, que es como se pinta la luz que entra por una vidriera.
+   * Sumar sobre blanco no da un modo claro: da una pantalla quemada, porque
+   * a un blanco ya no se le puede añadir nada.
+   *
+   * La niebla es la misma y se mueve igual en los tres modos. Lo único que
+   * cambia es si pone luz o si pone color.
+   */
+  uniform float uLight;
+
   varying vec2 vUv;
 
   /**
@@ -96,8 +113,15 @@ export const atmosphereFragment = /* glsl */ `
     float vaiven = mix(0.34, 0.52, uMood);
 
     // --- 1. Vacío --------------------------------------------------------
+    // De noche el centro se abre (×1.55) y las esquinas se hunden (×0.32):
+    // así el fondo tiene un pozo de luz en medio. A plena luz ese mismo
+    // recorrido no sirve —×1.55 sobre un casi blanco lo quema y ×0.32 lo
+    // vuelve gris ceniza—, así que el rango se estrecha casi a nada: la
+    // pared es la pared, apenas con un respiro de sombra en los bordes.
     float radial = length(p * vec2(0.86, 1.02));
-    vec3 color = mix(uDeep * 1.55, uDeep * 0.32, smoothstep(0.10, 1.15, radial));
+    float alto = mix(1.55, 1.02, uLight);
+    float bajo = mix(0.32, 0.88, uLight);
+    vec3 color = mix(uDeep * alto, uDeep * bajo, smoothstep(0.10, 1.15, radial));
 
     // --- 2. Velos --------------------------------------------------------
     // Los periodos (0.83, 0.61, 0.47, 0.72…) no son múltiplos entre sí, así
@@ -136,18 +160,46 @@ export const atmosphereFragment = /* glsl */ `
     // como una sola mancha. Dejándoles campo, cada uno se distingue.
     float centro = 1.0 - smoothstep(0.42, 1.30, radial);
 
-    color += uAccentA * (a1 * 0.78 + a2 * 0.52) * centro * uIntensity;
-    color += uAccentB * (b1 * 0.62 + b2 * 0.44) * centro * uIntensity;
+    // La fuerza de cada velo, aparte de su color: sumando hace falta el
+    // color entero, tiñendo hace falta saber CUÁNTO se tiñe.
+    float fuerzaA = (a1 * 0.78 + a2 * 0.52) * centro * uIntensity;
+    float fuerzaB = (b1 * 0.62 + b2 * 0.44) * centro * uIntensity;
+
+    // Las dos maneras de componer, y la mezcla entre ellas. Se calculan las
+    // dos siempre: son cuatro multiplicaciones por píxel, y una rama de
+    // verdad en un shader a pantalla completa cuesta bastante más que eso.
+    // (Los nombres van sin eñes ni tildes a propósito: GLSL sólo admite
+    // ASCII en los identificadores, y un shader que no compila deja el
+    // fondo en negro sin decir por qué.)
+    vec3 sumado = color + uAccentA * fuerzaA + uAccentB * fuerzaB;
+
+    vec3 tenido = mix(color, uAccentA, clamp(fuerzaA, 0.0, 1.0) * 0.82);
+    tenido = mix(tenido, uAccentB, clamp(fuerzaB, 0.0, 1.0) * 0.66);
+
+    color = mix(sumado, tenido, uLight);
 
     // --- 3. Haz de luz que respira --------------------------------------
     float aliento = 0.5 + 0.5 * sin(uTime * 0.22);
     float haz = exp(-abs(p.x + 0.15) * 3.4) * smoothstep(0.9, -0.5, p.y);
-    color += uAccentA * haz * 0.14 * (0.6 + aliento * 0.4) * uIntensity;
+    // A plena luz el haz también tiñe: sumado sobre una pared clara no se
+    // vería, y subido de fuerza la quemaría por una banda entera.
+    float fuerzaHaz = haz * 0.14 * (0.6 + aliento * 0.4) * uIntensity;
+    color = mix(
+      color + uAccentA * fuerzaHaz,
+      mix(color, uAccentA, clamp(fuerzaHaz * 2.6, 0.0, 1.0)),
+      uLight
+    );
 
     // --- 4. Fuga de luz que sigue al dedo -------------------------------
     vec2 fuga = p - uPointer * vec2(0.42, 0.32);
     float brillo = exp(-dot(fuga, fuga) * 5.5);
-    color += mix(uAccentA, uAccentB, 0.45) * brillo * (0.20 + uPulse * 0.75);
+    vec3 colorFuga = mix(uAccentA, uAccentB, 0.45);
+    float fuerzaFuga = brillo * (0.20 + uPulse * 0.75);
+    color = mix(
+      color + colorFuga * fuerzaFuga,
+      mix(color, colorFuga, clamp(fuerzaFuga * 0.85, 0.0, 1.0)),
+      uLight
+    );
 
     // Aberración cromática mínima en los bordes: sabor de lente real.
     float borde = smoothstep(0.35, 1.0, radial);
@@ -155,7 +207,10 @@ export const atmosphereFragment = /* glsl */ `
     color.b *= 1.0 + borde * 0.09;
 
     // --- 5. Acabado ------------------------------------------------------
-    color *= 1.0 - borde * 0.42;                 // viñeta
+    // La viñeta del fondo, muy rebajada a plena luz por la misma razón que
+    // la del CSS: multiplicar un color claro por algo menor que uno le quita
+    // el color antes que la luz, y las esquinas se van a gris de fotocopia.
+    color *= 1.0 - borde * mix(0.42, 0.11, uLight);
     color += vec3(uFlash) * uFlash;              // destello de transición
 
     // Tramado finísimo contra el bandeado. Va en coordenadas de pantalla y

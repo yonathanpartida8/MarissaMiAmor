@@ -29,10 +29,17 @@ import {
 import { warmup } from "../pages/registry.js";
 import { PRIORITY } from "./AssetLoader.js";
 import { el, qs, wait } from "../utils/dom.js";
+import { aplicarTema } from "../utils/luz.js";
+import { temaActivo, temaSiguiente, temaDelSistema, fondoDelTema } from "../utils/temas.js";
 
 export class App {
   constructor() {
     this.ctx = createContext();
+    // La interfaz necesita poder pedir un cambio de modo, y el cambio de
+    // modo toca cosas (el shader del fondo, la página en pantalla) que no
+    // son suyas. En vez de repartir ese conocimiento por la barra, la barra
+    // pide y aquí se hace.
+    this.ctx.app = this;
     this.boot = qs("#boot");
     this.stage = qs("#stage");
     this.uiRoot = qs("#ui");
@@ -41,6 +48,16 @@ export class App {
 
   async start() {
     installTextures();
+
+    // LA HABITACIÓN, ANTES QUE NADA.
+    //
+    // Va la primera línea de todo, antes incluso de encender WebGL, porque
+    // es lo único que decide de qué color es la pantalla. Puesto más tarde,
+    // el libro abría de noche y se aclaraba de golpe medio segundo después:
+    // un fogonazo en la cara justo al abrir, que es el peor sitio posible.
+    //
+    // Si nunca ha elegido, se le hace caso a su teléfono.
+    this.#aplicarTema(this.ctx.store.get("tema") || temaDelSistema(), { guardar: false });
 
     const setStatus = (text) => {
       const node = qs(".boot__status", this.boot);
@@ -136,6 +153,54 @@ export class App {
 
     // 7. Lo demás se va cargando solo, sin estorbar.
     this.#backgroundPreload();
+  }
+
+  /**
+   * Cambia de habitación: claro, pastel o noche.
+   *
+   * Es el único sitio del libro donde se cambia de tema. Junta las cuatro
+   * cosas que tienen que pasar A LA VEZ para que no se vea el cambio a
+   * trozos: los tokens del CSS, la luz del fondo de WebGL, la marca en
+   * `<html>` y el recuerdo de lo que ha elegido.
+   *
+   * @param {string} id
+   * @param {{guardar?: boolean, avisar?: boolean}} [opciones]
+   * @returns {boolean} si de verdad ha cambiado
+   */
+  #aplicarTema(id, { guardar = true, avisar = false } = {}) {
+    if (!aplicarTema(id)) return false;
+    const tema = temaActivo();
+
+    // El fondo se entera aparte: no es CSS, es un shader. Y va interpolado,
+    // así que esto no da un salto sino un amanecer de medio segundo.
+    this.ctx.gl?.setAmbiente(tema.luzAmbiente);
+
+    // Y la página que esté en pantalla vuelve a encenderse con la luz nueva:
+    // su paleta es la misma, pero la habitación ya no.
+    const actual = this.ctx.router?.current;
+    if (actual) {
+      this.ctx.gl?.setMood(fondoDelTema(actual.palette), actual.mood);
+      // Y si guarda una copia de algún color donde el CSS no llega —un
+      // lienzo, una escena, el documento de un iframe—, que la ponga al día.
+      try {
+        actual.alCambiarTema?.(tema);
+      } catch (err) {
+        // Una página que se queje aquí no puede impedir el cambio de modo.
+        console.error("[temas] la página no pudo cambiar de luz", err);
+      }
+    }
+
+    if (guardar) this.ctx.store.set("tema", tema.id);
+    // Y el botón de la barra se pone al día. Va aquí y no en el botón para
+    // que diga la verdad aunque el cambio no haya salido de él.
+    this.ctx.ui?.refrescarTema?.();
+    if (avisar) this.ctx.ui?.toast(`${tema.emoji}  ${tema.frase}`, 2200);
+    return true;
+  }
+
+  /** Pasa al siguiente modo. Es lo que hace el botón de la barra. */
+  siguienteTema() {
+    return this.#aplicarTema(temaSiguiente(), { avisar: true });
   }
 
   /**

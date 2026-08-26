@@ -23,6 +23,9 @@ const DEFAULTS = {
   escondites: [],
   visited: [],
   musicOn: true,
+  // «claro», «pastel» o «noche». En blanco significa que nunca ha elegido, y
+  // entonces manda lo que prefiera su teléfono. Ver `temas.js`.
+  tema: null,
   visits: 0,
   firstOpenedAt: null,
   lastSeenAt: null,
