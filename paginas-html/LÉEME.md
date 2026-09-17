@@ -135,8 +135,18 @@ Si no las usas no pasa nada: tu página se ve como la hayas hecho.
 
 ## Ejemplo
 
-En esta misma carpeta está `página.html1.html`. Ábrelo, mira cómo está hecho,
-y úsalo de plantilla: cópialo, renómbralo a `página.html2.html` y cámbialo.
+En esta misma carpeta hay dos, y son muy distintos a propósito:
+
+- **`página.html1.html`** — el sencillo. Un botón y una animación. Es el
+  bueno para empezar: cópialo, renómbralo al número siguiente y cámbialo.
+
+- **`página.html2.html`** — «El rincón de arena». Uno grande, para ver hasta
+  dónde se puede llegar: una escena en 3D con arena de verdad que se excava
+  con una palita, cosas enterradas que hay que encontrar, cartas que se
+  abren y una llave con su código. Todo en ese único archivo, sin descargar
+  nada de fuera. Si quieres tocarlo, arriba del todo de su `<script>` hay una
+  sección marcada `CONFIGURACIÓN EDITABLE` con las frases, el código de la
+  llave, los colores y dónde está escondida cada cosa: se cambia ahí y ya.
 
 ---
 
