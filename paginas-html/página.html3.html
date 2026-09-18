@@ -1,0 +1,2644 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>El hilo rojo</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   TODO VIVE DENTRO DE .romantic-world
+
+   Esta página se incrusta dentro de un libro que tiene sus propios
+   estilos, así que aquí no se toca nada de fuera: ni `button`, ni
+   `canvas`, ni `p`, ni ninguna etiqueta a secas. Cada regla empieza por
+   la clase raíz y todos los nombres llevan el prefijo `rw-`.
+
+   Lo único global son tres líneas para que la página ocupe la ventana
+   cuando se abre suelta. Es exactamente lo que el libro ya hace por su
+   cuenta, así que dentro de él no cambia nada.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.romantic-world {
+  /* Absoluto y no fijo: así vive dentro de un div cualquiera sin
+     escaparse de él ni tapar lo que tenga alrededor. */
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;          /* su propio contexto de mezcla */
+  background: #0a0611;
+  color: #f6e9f0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  contain: layout paint;       /* nada de dentro repinta lo de fuera */
+
+  --rosa: #ffa8c8;
+  --rosa-hondo: #d4507e;
+  --verde: #a8e6c4;
+  --verde-hondo: #4ba57a;
+  --hilo: #ff3355;
+  --tinta: #f6e9f0;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.romantic-world .rw-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Nunca recibe toques: el libro cede el gesto entero a cualquier
+     canvas, y con eso no se podría pasar de hoja en toda la página.
+     Quien recibe los dedos es `.rw-toque`, que deja libres los bordes. */
+  pointer-events: none;
+}
+
+/* La zona de arrastre. Estrechada por los lados a propósito: por esas
+   franjas el libro sigue pasando de hoja. */
+.romantic-world .rw-toque {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: clamp(26px, 11%, 58px);
+  right: clamp(26px, 11%, 58px);
+  touch-action: none;
+  z-index: 2;
+}
+
+/* ---- Las cartas (capa de encima) -------------------------------- */
+
+.romantic-world .rw-cartas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.romantic-world .rw-carta {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 34px;
+  height: 26px;
+  margin: -13px 0 0 -17px;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.romantic-world .rw-carta svg { display: block; overflow: visible; }
+
+/* ---- Frases al recibir una carta -------------------------------- */
+
+.romantic-world .rw-frase {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: min(46vw, 15rem);
+  padding: 0.3rem 0.62rem;
+  margin: 0;
+  border-radius: 12px;
+  font-size: clamp(0.66rem, 2.7vw, 0.8rem);
+  line-height: 1.38;
+  text-align: center;
+  color: #fff3f7;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+  background: rgba(24, 12, 30, 0.42);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform, opacity;
+  z-index: 4;
+}
+
+.romantic-world .rw-frase--larga {
+  max-width: min(72vw, 21rem);
+  font-size: clamp(0.72rem, 3vw, 0.88rem);
+  background: rgba(46, 14, 28, 0.62);
+  box-shadow: 0 0 0 1px rgba(255, 140, 170, 0.28), 0 10px 30px -14px rgba(255, 60, 100, 0.7);
+}
+
+/* ---- Interfaz mínima -------------------------------------------- */
+
+.romantic-world .rw-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.romantic-world .rw-distancia {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--seguro-t) + 16px);
+  transform: translateX(-50%);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 900ms var(--e-suave);
+}
+
+.romantic-world .rw-distancia.rw-dentro { opacity: 1; }
+
+.romantic-world .rw-km {
+  display: block;
+  font-size: clamp(1.1rem, 4.6vw, 1.5rem);
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;   /* los números no bailan al cambiar */
+  color: #ffe9f0;
+  text-shadow: 0 0 18px rgba(255, 90, 130, 0.45);
+}
+
+.romantic-world .rw-susurro {
+  display: block;
+  margin-top: 0.22rem;
+  font-size: clamp(0.62rem, 2.6vw, 0.74rem);
+  letter-spacing: 0.02em;
+  color: rgba(246, 233, 240, 0.62);
+  transition: opacity 420ms var(--e-suave);
+}
+
+/* La única indicación, y se va sola en cuanto se toca algo. */
+.romantic-world .rw-pista {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--seguro-b) + var(--barra) + 20px);
+  transform: translateX(-50%);
+  font-size: clamp(0.64rem, 2.7vw, 0.76rem);
+  letter-spacing: 0.22em;
+  text-transform: lowercase;
+  color: rgba(246, 233, 240, 0.5);
+  opacity: 0;
+  transition: opacity 1100ms var(--e-suave);
+  white-space: nowrap;
+}
+
+.romantic-world .rw-pista.rw-dentro { opacity: 1; }
+
+/* Los dos botoncitos, arriba a la derecha y muy discretos. */
+.romantic-world .rw-mandos {
+  position: absolute;
+  top: calc(var(--seguro-t) + 12px);
+  right: 14px;
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.romantic-world .rw-boton {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 220, 232, 0.16);
+  border-radius: 50%;
+  background: rgba(30, 14, 26, 0.42);
+  color: rgba(246, 233, 240, 0.7);
+  font: inherit;
+  cursor: pointer;
+  transition: background 240ms, color 240ms, transform 240ms var(--e-suave);
+}
+
+.romantic-world .rw-boton:hover { color: #fff; background: rgba(52, 22, 40, 0.6); }
+.romantic-world .rw-boton:active { transform: scale(0.9); }
+.romantic-world .rw-boton:focus-visible {
+  outline: 2px solid var(--rosa);
+  outline-offset: 2px;
+}
+.romantic-world .rw-boton svg { display: block; }
+
+/* El aviso final, grande y centrado. */
+.romantic-world .rw-final {
+  position: absolute;
+  left: 50%;
+  /* Abajo, no en el centro: en el centro está el corazón, y la frase se
+     leía por encima de él tapando justo lo que había que ver. */
+  top: auto;
+  bottom: 16%;
+  width: min(84%, 30rem);
+  transform: translate(-50%, 0);
+  text-align: center;
+  font-size: clamp(1.05rem, 4.4vw, 1.5rem);
+  font-weight: 300;
+  line-height: 1.45;
+  color: #fff2f6;
+  text-shadow: 0 0 34px rgba(255, 70, 110, 0.6), 0 2px 18px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1400ms var(--e-suave);
+  z-index: 6;
+}
+
+.romantic-world .rw-final.rw-dentro { opacity: 1; }
+
+/* Aviso de respaldo cuando no hay WebGL2. */
+.romantic-world .rw-sencillo {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--seguro-b) + var(--barra) + 4px);
+  transform: translateX(-50%);
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+  color: rgba(246, 233, 240, 0.3);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .romantic-world .rw-distancia,
+  .romantic-world .rw-pista,
+  .romantic-world .rw-final { transition-duration: 1ms; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="romantic-world" id="rw">
+  <canvas class="rw-lienzo" id="rwLienzo"></canvas>
+  <div class="rw-toque" id="rwToque" aria-hidden="true"></div>
+  <div class="rw-cartas" id="rwCartas" aria-hidden="true"></div>
+
+  <div class="rw-ui">
+    <div class="rw-distancia" id="rwDistancia" aria-live="polite">
+      <span class="rw-km" id="rwKm"></span>
+      <span class="rw-susurro" id="rwSusurro"></span>
+    </div>
+
+    <p class="rw-pista" id="rwPista"></p>
+    <p class="rw-final" id="rwFinal"></p>
+
+    <div class="rw-mandos">
+      <button class="rw-boton" id="rwSonido" type="button" aria-label="Activar sonido">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M3 6h2.4L8.6 3.2v9.6L5.4 10H3z" fill="currentColor"/>
+          <path id="rwOndas" d="M10.6 5.6a3.4 3.4 0 0 1 0 4.8M12.6 3.6a6.2 6.2 0 0 1 0 8.8"
+                stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0"/>
+          <path id="rwMudo" d="M10.8 6.2l3.4 3.6M14.2 6.2l-3.4 3.6"
+                stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="rw-boton" id="rwReinicio" type="button" aria-label="Volver a empezar">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M13 8a5 5 0 1 1-1.6-3.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          <path d="M13.2 2.2v2.9h-2.9" stroke="currentColor" stroke-width="1.3"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+/* ══════════════════════════════════════════════════════════════════════
+   EL HILO ROJO
+
+   Dos pequeños mundos separados, unidos por un listón, mandándose
+   cartas hasta que alguien consigue juntarlos.
+
+   Todo el código vive dentro de esta función: ni una variable suelta en
+   `window`, porque esto se incrusta en un libro que tiene el suyo.
+   ══════════════════════════════════════════════════════════════════════ */
+
+// ══════════════════════════════════════════════════════════════════════
+//  CONFIGURACIÓN EDITABLE
+// ══════════════════════════════════════════════════════════════════════
+
+const CONFIG = {
+  /* Cada cuánto sale una carta de cada esfera, en segundos. */
+  CADENCIA_CARTA: 1.0,
+
+  /* La distancia inventada. A pantalla llena son estos kilómetros; de
+     ahí para abajo, la cuenta baja con curva para que los últimos
+     centímetros valgan mucho más que los primeros. */
+  KM_MAXIMOS: 2480,
+
+  /* Lo que se susurra debajo del número, según lo cerca que estén. */
+  SUSURROS: [
+    { hasta: 0.001, texto: "Por fin. Aquí, y sin distancia. ❤️" },
+    { hasta: 0.08,  texto: "Un poquito más…" },
+    { hasta: 0.20,  texto: "Ya casi te alcanzo 🤍" },
+    { hasta: 0.45,  texto: "Cada vez más cerquita…" },
+    { hasta: 1.00,  texto: "Todavía queda un pedacito de mundo entre los dos." },
+  ],
+
+  PISTA: "acercaos",
+
+  FRASE_FINAL:
+    "De todos los caminos posibles, los nuestros seguían llevándome a ti.",
+
+  /* Lo que dicen las cartas al llegar. Se barajan y no se repite
+     ninguna hasta que han salido todas: con veinticuatro frases y una
+     cada segundo, tardan casi medio minuto en volver a empezar. */
+  FRASES: [
+    "Te amo 🤍",
+    "Siempre estás en mi corazón.",
+    "Me haces muy feliz.",
+    "Eres mi persona favorita.",
+    "Qué bonito coincidir contigo.",
+    "Te elegiría una y otra vez.",
+    "Contigo todo se siente más bonito.",
+    "Mi lugar favorito siempre será contigo.",
+    "Gracias por existir.",
+    "Eres mi pequeño hogar.",
+    "Te pienso más de lo que imaginas.",
+    "Mi corazón siempre encuentra el camino hacia ti.",
+    "Eres mi casualidad favorita.",
+    "No importa la distancia.",
+    "Hoy también te elegí.",
+    "Me gusta cómo suena tu nombre.",
+    "Contigo hasta esperar es bonito.",
+    "Guardo tus risas para los días grises.",
+    "Eres lo mejor que me ha pasado sin buscarlo.",
+    "Si me pierdo, búscame donde estés tú.",
+    "Te quiero en los días fáciles y en los otros.",
+    "Mi sitio es donde estés.",
+    "Te pienso a las tres de la mañana.",
+    "Volvería a empezar sólo para volver a encontrarte.",
+  ],
+
+  /* La carta rara. Una de cada tantas dice algo distinto. */
+  CARTA_ESPECIAL: {
+    probabilidad: 0.022,
+    texto: "Esta carta tardó un poquito más porque quería decirte algo importante… Te amo. 🤍",
+  },
+
+  /* Física */
+  FISICA: {
+    muelleDedo: 240,      // cuánto tira el dedo de la esfera
+    amortiguacion: 0.86,  // cuánto frena (por fotograma a 60)
+    repulsion: 1850,      // la fuerza que las separa cuando se acercan
+    alcanceRepulsion: 1.9,// en radios: a partir de aquí ya se empujan
+    minimo: 0.92,         // no pueden acercarse más que esto (en radios)
+    /* Cuánto hay que insistir para vencer la resistencia. La fuerza que
+       las separa se va rindiendo mientras se las mantiene cerca. */
+    rendicion: 0.62,      // por segundo, mientras están cerca
+    recuperacion: 0.34,   // por segundo, cuando se separan
+  },
+
+  /* Secretos */
+  SECRETOS: {
+    /* Segundos que hay que mantenerlas cerca —sin llegar a juntarlas—
+       para que asome el corazón del fondo. */
+    corazonFondo: 4.5,
+    /* Vueltas que hay que dar con una esfera para dibujar la constelación. */
+    vueltasConstelacion: 2,
+    /* La luna aparece cuando ya se han cruzado unas cuantas cartas. */
+    cartasParaLuna: 10,
+  },
+
+  /* Rendimiento */
+  PERF: {
+    dprMax: 2,
+    dprMaxFlojo: 1.25,
+    particulas: 900,
+    particulasFlojo: 280,
+    fpsMinimo: 44,
+  },
+};
+
+// ══════════════════════════════════════════════════════════════════════
+//  MATEMÁTICAS
+// ══════════════════════════════════════════════════════════════════════
+
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const clamp01 = (v) => clamp(v, 0, 1);
+const lerp = (a, b, t) => a + (b - a) * t;
+const smoothstep = (t) => { t = clamp01(t); return t * t * (3 - 2 * t); };
+const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const azar = (a, b) => a + Math.random() * (b - a);
+
+/** Acercamiento exponencial, igual a cualquier número de fotogramas. */
+const damp = (actual, objetivo, k, dt) => objetivo + (actual - objetivo) * Math.exp(-k * dt);
+
+// ══════════════════════════════════════════════════════════════════════
+//  ESCENA — el tamaño del sitio donde nos han metido
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * Mide el CONTENEDOR, no la ventana.
+ *
+ * Esta página se incrusta dentro de un libro, y ahí la ventana y el
+ * hueco disponible no tienen por qué medir lo mismo: dentro de una hoja
+ * con márgenes, `100vh` se sale por abajo. Un `ResizeObserver` sobre la
+ * raíz avisa del tamaño de verdad, y además avisa también cuando cambia
+ * sin que la ventana se haya movido —que es justo lo que pasa cuando el
+ * libro reacomoda sus hojas—.
+ */
+class Escena {
+  constructor(raiz, lienzo, alRedimensionar) {
+    this.raiz = raiz;
+    this.lienzo = lienzo;
+    this.alRedimensionar = alRedimensionar;
+    this.ancho = 1;
+    this.alto = 1;
+    this.dpr = 1;
+    this.topeDpr = CONFIG.PERF.dprMax;
+
+    this.observador = new ResizeObserver(() => this.medir());
+    this.observador.observe(raiz);
+    this.medir();
+  }
+
+  medir() {
+    const caja = this.raiz.getBoundingClientRect();
+    const w = Math.max(1, Math.round(caja.width));
+    const h = Math.max(1, Math.round(caja.height));
+    const dpr = Math.min(window.devicePixelRatio || 1, this.topeDpr);
+    if (w === this.ancho && h === this.alto && dpr === this.dpr) return;
+
+    this.ancho = w;
+    this.alto = h;
+    this.dpr = dpr;
+    this.lienzo.width = Math.round(w * dpr);
+    this.lienzo.height = Math.round(h * dpr);
+    this.lienzo.style.width = w + "px";
+    this.lienzo.style.height = h + "px";
+    this.alRedimensionar?.(this);
+  }
+
+  /** El lado corto manda: así la escena se ve igual en cualquier forma. */
+  get medida() { return Math.min(this.ancho, this.alto); }
+
+  destruir() { this.observador.disconnect(); }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  AUDIO — todo sintetizado, nada descargado
+// ══════════════════════════════════════════════════════════════════════
+
+class AudioManager {
+  constructor() {
+    this.ctx = null;
+    this.maestro = null;
+    this.encendido = false;
+    this.listo = false;
+  }
+
+  /** Sólo se crea el contexto tras un gesto: los navegadores lo exigen. */
+  despertar() {
+    if (this.listo) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      this.ctx = new AC();
+      this.maestro = this.ctx.createGain();
+      this.maestro.gain.value = 0;   // nace en silencio a propósito
+      this.maestro.connect(this.ctx.destination);
+      this.listo = true;
+    } catch { this.listo = false; }
+  }
+
+  alternar() {
+    this.despertar();
+    if (!this.listo) return false;
+    this.encendido = !this.encendido;
+    if (this.encendido && this.ctx.state === "suspended") this.ctx.resume();
+    const t = this.ctx.currentTime;
+    this.maestro.gain.cancelScheduledValues(t);
+    this.maestro.gain.setTargetAtTime(this.encendido ? 0.32 : 0, t, 0.08);
+    return this.encendido;
+  }
+
+  #tono(frec, dur, tipo, vol, hasta) {
+    if (!this.listo || !this.encendido) return;
+    const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = tipo || "sine";
+    o.frequency.setValueAtTime(frec, t);
+    if (hasta) o.frequency.exponentialRampToValueAtTime(Math.max(40, hasta), t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(this.maestro);
+    o.start(t);
+    o.stop(t + dur + 0.05);
+  }
+
+  tocar()    { this.#tono(680, 0.1, "sine", 0.10, 940); }
+  enviar()   { this.#tono(520, 0.13, "triangle", 0.05, 720); }
+  recibir()  { this.#tono(880, 0.2, "sine", 0.07); this.#tono(1320, 0.26, "sine", 0.035); }
+  latido()   { this.#tono(160, 0.16, "sine", 0.14, 90); setTimeout(() => this.#tono(150, 0.2, "sine", 0.1, 84), 170); }
+  encuentro() {
+    [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) =>
+      setTimeout(() => this.#tono(f, 1.1, "sine", 0.075), i * 130));
+  }
+  secreto()  { [660, 880, 1100].forEach((f, i) => setTimeout(() => this.#tono(f, 0.5, "sine", 0.06), i * 90)); }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  PARTÍCULAS — una reserva fija que se reutiliza
+// ══════════════════════════════════════════════════════════════════════
+
+/* Tipos: 0 polvo · 1 destello · 2 corazón · 3 estrella · 4 chispa del hilo */
+class ParticleSystem {
+  constructor(maximo) {
+    this.max = maximo;
+    // Un solo array plano por campo: nada de objetos, nada que recoger.
+    this.x = new Float32Array(maximo);
+    this.y = new Float32Array(maximo);
+    this.vx = new Float32Array(maximo);
+    this.vy = new Float32Array(maximo);
+    this.vida = new Float32Array(maximo);
+    this.maxVida = new Float32Array(maximo);
+    this.tam = new Float32Array(maximo);
+    this.tipo = new Float32Array(maximo);
+    this.giro = new Float32Array(maximo);
+    this.giroV = new Float32Array(maximo);
+    this.grav = new Float32Array(maximo);
+    this.tono = new Float32Array(maximo);   // 0 rosa · 1 verde · 2 rojo · 3 oro
+    this.alfa = new Float32Array(maximo);
+    this.viva = new Uint8Array(maximo);
+    this.cursor = 0;
+    this.vivas = 0;
+  }
+
+  soltar(x, y, o) {
+    // Se busca desde donde se dejó la última vez: encontrar hueco sale
+    // en tiempo constante casi siempre, en vez de recorrer todo.
+    for (let i = 0; i < this.max; i++) {
+      const k = (this.cursor + i) % this.max;
+      if (this.viva[k]) continue;
+      this.cursor = (k + 1) % this.max;
+      this.viva[k] = 1;
+      this.x[k] = x; this.y[k] = y;
+      this.vx[k] = o.vx || 0; this.vy[k] = o.vy || 0;
+      this.vida[k] = 0;
+      this.maxVida[k] = o.vida || 1;
+      this.tam[k] = o.tam || 3;
+      this.tipo[k] = o.tipo || 0;
+      this.giro[k] = o.giro || 0;
+      this.giroV[k] = o.giroV || 0;
+      this.grav[k] = o.grav === undefined ? 0 : o.grav;
+      this.tono[k] = o.tono || 0;
+      this.alfa[k] = 0;
+      return k;
+    }
+    return -1;
+  }
+
+  mover(dt, atractor) {
+    let vivas = 0;
+    for (let i = 0; i < this.max; i++) {
+      if (!this.viva[i]) continue;
+      this.vida[i] += dt;
+      if (this.vida[i] >= this.maxVida[i]) { this.viva[i] = 0; this.alfa[i] = 0; continue; }
+
+      this.vy[i] += this.grav[i] * dt;
+
+      // Las de polvo se dejan llevar un poco por el dedo: un empujón
+      // muy flojo hacia donde está, que se nota sin que se vea.
+      if (atractor && this.tipo[i] === 0) {
+        const dx = atractor.x - this.x[i];
+        const dy = atractor.y - this.y[i];
+        const d2 = dx * dx + dy * dy;
+        if (d2 < atractor.r * atractor.r && d2 > 1) {
+          const f = (1 - Math.sqrt(d2) / atractor.r) * atractor.fuerza * dt;
+          this.vx[i] += dx * f;
+          this.vy[i] += dy * f;
+        }
+      }
+
+      const roce = Math.pow(0.24, dt);
+      this.vx[i] *= roce;
+      this.vy[i] *= roce;
+      this.x[i] += this.vx[i] * dt;
+      this.y[i] += this.vy[i] * dt;
+      this.giro[i] += this.giroV[i] * dt;
+
+      // Aparecer y apagarse: nada surge ni se va de un fotograma a otro.
+      const k = this.vida[i] / this.maxVida[i];
+      this.alfa[i] = smoothstep(k / 0.14) * (1 - smoothstep((k - 0.6) / 0.4));
+      vivas++;
+    }
+    this.vivas = vivas;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  WEBGL2 — fondo, esferas, listón y partículas en un solo lienzo
+// ══════════════════════════════════════════════════════════════════════
+
+const VS_QUAD = `#version 300 es
+in vec2 aPos;
+void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`;
+
+/* ── El universo de fondo ──────────────────────────────────────────────
+   Nebulosa, estrellas y bokeh. No es un espacio exterior cualquiera: la
+   nebulosa se construye con DOS nubes que se buscan —una rosa y una
+   verde—, que son las de ellos dos, y el resto del cielo es vino oscuro
+   en vez de negro. */
+const FS_FONDO = `#version 300 es
+precision highp float;
+
+uniform vec2  uRes;
+uniform float uTime;
+uniform vec2  uRosa;        // posición de la esfera rosa, en 0..1
+uniform vec2  uVerde;
+uniform float uCerca;       // 0..1, cuánto se han acercado
+uniform float uFinal;       // 0..1, el encuentro
+uniform float uCorazon;     // 0..1, el corazón escondido del fondo
+uniform float uLuna;        // 0..1, el viaje a la luna
+/* 0..1, el guiño: la lunita pequeña que asoma ANTES de tocarla.
+   Sin esto, el secreto decía «¿ves algo ahí arriba?» y arriba no había
+   absolutamente nada que ver. Un secreto que no se puede encontrar no
+   es un secreto, es una frase suelta. */
+uniform float uLunaGuino;
+uniform vec2  uLunaPos;
+uniform vec2  uDedo;
+uniform float uCalidad;
+
+out vec4 oColor;
+
+float hash(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+float ruido(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1,0)), u.x),
+             mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), u.x), u.y);
+}
+
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 4; i++) { v += a * ruido(p); p *= 2.07; a *= 0.5; }
+  return v;
+}
+
+/* La distancia con signo a un corazón. Negativa dentro, positiva fuera. */
+float sdCorazon(vec2 p) {
+  p.x = abs(p.x);
+  if (p.y + p.x > 1.0)
+    return sqrt(dot(p - vec2(0.25, 0.75), p - vec2(0.25, 0.75))) - sqrt(2.0) / 4.0;
+  return sqrt(min(dot(p - vec2(0.0, 1.0), p - vec2(0.0, 1.0)),
+                  dot(p - 0.5 * max(p.x + p.y, 0.0), p - 0.5 * max(p.x + p.y, 0.0)))) * sign(p.x - p.y);
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / uRes;
+  vec2 p = uv;
+  p.y = 1.0 - p.y;                       // y hacia abajo, como el DOM
+  float aspecto = uRes.x / max(uRes.y, 1.0);
+  vec2 c = (p - 0.5) * vec2(aspecto, 1.0);
+
+  // ── 1 · El vacío ─────────────────────────────────────────────────
+  // Vino muy oscuro, nunca negro: un negro puro en una pantalla OLED es
+  // un agujero, y este cielo tiene que seguir siendo cálido.
+  float radial = length(c);
+  vec3 color = mix(vec3(0.085, 0.042, 0.082), vec3(0.028, 0.016, 0.040),
+                   smoothstep(0.1, 1.0, radial));
+
+  // ── 2 · La nebulosa: dos nubes que se buscan ─────────────────────
+  vec2 dr = (p - uRosa) * vec2(aspecto, 1.0);
+  vec2 dv = (p - uVerde) * vec2(aspecto, 1.0);
+  float t = uTime * 0.035;
+
+  float nubeR = fbm(dr * 2.6 + vec2(t, -t * 0.7) + 3.1);
+  float nubeV = fbm(dv * 2.6 + vec2(-t * 0.8, t) + 9.4);
+  float haloR = exp(-dot(dr, dr) * 3.4);
+  float haloV = exp(-dot(dv, dv) * 3.4);
+
+  // Números pequeños a propósito: son la atmósfera de cada uno, no un
+  // filtro de color. Subidos, el cielo entero se volvía rosa y las dos
+  // esferas dejaban de recortarse contra nada.
+  color += vec3(0.42, 0.13, 0.26) * nubeR * haloR * (0.30 + uCerca * 0.34);
+  color += vec3(0.10, 0.36, 0.23) * nubeV * haloV * (0.30 + uCerca * 0.34);
+
+  // Cuando se acercan, entre las dos se enciende una bruma común: es la
+  // primera señal de que algo está pasando, antes de que se toquen.
+  vec2 medio = (uRosa + uVerde) * 0.5;
+  vec2 dm = (p - medio) * vec2(aspecto, 1.0);
+  float entre = exp(-dot(dm, dm) * 5.0);
+  color += vec3(0.46, 0.22, 0.30) * entre * uCerca * uCerca * 0.40;
+
+  // ── 3 · Estrellas ────────────────────────────────────────────────
+  // Tres capas a distinta escala: las pequeñas quietas al fondo, las
+  // grandes con parallax. Es lo que da profundidad a un cielo plano.
+  for (int capa = 0; capa < 3; capa++) {
+    float f = float(capa);
+    float escala = 90.0 + f * 55.0;
+    vec2 desliz = uDedo * (0.004 + f * 0.006);
+    vec2 g = (p + desliz) * escala * vec2(aspecto, 1.0);
+    vec2 id = floor(g);
+    float r = hash(id + f * 17.0);
+    if (r > 0.986 - f * 0.002) {
+      vec2 centro = vec2(hash(id + 3.3), hash(id + 7.7)) * 0.7 + 0.15;
+      float d = length(fract(g) - centro);
+      float brillo = exp(-d * d * (120.0 - f * 26.0));
+      float centelleo = 0.55 + 0.45 * sin(uTime * (1.2 + r * 2.0) + r * 60.0);
+      color += vec3(1.0, 0.93, 0.95) * brillo * centelleo * (0.5 + f * 0.28);
+    }
+  }
+
+  // ── 4 · Bokeh ────────────────────────────────────────────────────
+  // Cuatro círculos desenfocados que derivan lentísimo. Cuestan cuatro
+  // exponenciales y son la mitad de la sensación de profundidad.
+  if (uCalidad > 0.5) {
+    for (int i = 0; i < 4; i++) {
+      float fi = float(i);
+      vec2 cen = vec2(
+        0.5 + sin(uTime * 0.07 + fi * 2.1) * 0.42,
+        0.5 + cos(uTime * 0.055 + fi * 1.7) * 0.38
+      );
+      vec2 d = (p - cen) * vec2(aspecto, 1.0) + uDedo * 0.02;
+      float r = 0.055 + hash(vec2(fi, 3.0)) * 0.05;
+      float disco = smoothstep(r, r * 0.55, length(d));
+      vec3 tinte = mix(vec3(0.9, 0.5, 0.66), vec3(0.45, 0.86, 0.66), hash(vec2(fi, 9.0)));
+      color += tinte * disco * 0.045;
+    }
+  }
+
+  // ── 5 · El corazón escondido ─────────────────────────────────────
+  if (uCorazon > 0.001) {
+    vec2 hp = c / 0.42;
+    hp.y = -hp.y + 0.28;
+    float d = sdCorazon(hp);
+    float borde = exp(-abs(d) * 16.0);
+    float dentro = smoothstep(0.02, -0.12, d);
+    color += vec3(0.85, 0.22, 0.34) * borde * uCorazon * 0.42;
+    color += vec3(0.42, 0.10, 0.18) * dentro * uCorazon * 0.16;
+  }
+
+  // ── 5b · El guiño de la luna ─────────────────────────────────────
+  if (uLunaGuino > 0.001) {
+    vec2 dg = (p - uLunaPos) * vec2(aspecto, 1.0);
+    float d = length(dg);
+    float r = 0.022;
+    // Un cuarto creciente: el mismo disco mordido por otro desplazado.
+    float disco = smoothstep(r, r * 0.72, d);
+    float mordida = smoothstep(r * 0.94, r * 0.66, length(dg - vec2(r * 0.42, -r * 0.2)));
+    float creciente = clamp(disco - mordida, 0.0, 1.0);
+    float latido = 0.72 + 0.28 * sin(uTime * 1.5);
+    color += vec3(1.0, 0.97, 0.90) * creciente * uLunaGuino * latido;
+    color += vec3(0.86, 0.88, 1.0) * exp(-d * 26.0) * uLunaGuino * latido * 0.55;
+  }
+
+  // ── 6 · La luna ──────────────────────────────────────────────────
+  if (uLuna > 0.001) {
+    // El cielo se cierra y se hace azul de madrugada.
+    color = mix(color, color * vec3(0.5, 0.56, 0.9) + vec3(0.01, 0.015, 0.05), uLuna * 0.8);
+    vec2 cl = c - vec2(0.0, -0.14);
+    float d = length(cl);
+    // El radio se mide contra el lado CORTO. Puesto a secas, en un móvil
+    // vertical —donde c.x sólo llega a ±0.23— una luna de 0.19 ocupaba
+    // la pantalla de lado a lado.
+    float r = min(0.17, aspecto * 0.26);
+    float disco = smoothstep(r, r - 0.004, d);
+    // Sus mares. Con poco contraste salía un disco blanco quemado, que es
+    // justo lo que una luna no es: lo bonito de mirarla son las manchas.
+    float mares = fbm(cl * (2.4 / r) + 2.0);
+    vec3 luna = mix(vec3(0.95, 0.93, 0.88), vec3(0.62, 0.61, 0.66), smoothstep(0.35, 0.75, mares));
+    // Y el borde se apaga, porque es una esfera y no un recorte.
+    luna *= 0.72 + 0.28 * sqrt(max(0.0, 1.0 - pow(d / r, 2.0)));
+    color = mix(color, luna, disco * uLuna);
+    // Y su halo.
+    color += vec3(0.86, 0.88, 1.0) * exp(-pow(max(d - r, 0.0) * 9.0, 1.3)) * uLuna * 0.26;
+  }
+
+  // ── 7 · El destello del encuentro ────────────────────────────────
+  color += vec3(1.0, 0.72, 0.80) * uFinal * 0.34 * exp(-radial * 1.1);
+
+  // Viñeta muy suave y tramado contra las bandas.
+  color *= 1.0 - smoothstep(0.42, 1.15, radial) * 0.55;
+  color += (hash(gl_FragCoord.xy + uTime) - 0.5) * 0.008;
+
+  oColor = vec4(color, 1.0);
+}`;
+
+/* ── Las esferas ───────────────────────────────────────────────────────
+   Dos quads con una esfera dibujada dentro por matemáticas: volumen,
+   luz principal, brillo especular, borde iluminado y aura. Sale más
+   barato y más nítido que cualquier imagen, y se puede cambiar de
+   tamaño sin perder un pelo de definición. */
+const FS_ESFERA = `#version 300 es
+precision highp float;
+
+uniform vec2  uRes;
+uniform vec2  uCentro;     // en píxeles
+uniform float uRadio;      // en píxeles
+uniform vec3  uColor;
+uniform vec3  uColorHondo;
+uniform float uTime;
+uniform float uBrillo;     // sube al tocarla
+uniform float uPulso;      // 0..1, decae tras un golpe
+uniform float uSemilla;
+
+out vec4 oColor;
+
+float hash(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+float ruido(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1,0)), u.x),
+             mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), u.x), u.y);
+}
+
+void main() {
+  vec2 px = gl_FragCoord.xy;
+  px.y = uRes.y - px.y;                 // y hacia abajo
+  vec2 d = px - uCentro;
+  float r = uRadio;
+  float dist = length(d);
+
+  // Fuera del aura no hay nada que calcular.
+  float alcance = r * 3.6;
+  if (dist > alcance) discard;
+
+  vec3 color = vec3(0.0);
+  float alfa = 0.0;
+
+  // ── El aura ──────────────────────────────────────────────────────
+  float aura = exp(-pow(dist / (r * 1.5), 1.7));
+  float latido = 0.9 + 0.1 * sin(uTime * 1.6 + uSemilla * 6.0);
+  color += uColor * aura * 0.5 * latido * (1.0 + uBrillo * 0.7 + uPulso);
+  alfa = max(alfa, aura * 0.55 * (1.0 + uPulso * 0.5));
+
+  // ── La esfera ────────────────────────────────────────────────────
+  if (dist < r) {
+    // De la distancia al centro sale la normal de una esfera: es la
+    // media circunferencia que hay que imaginar hacia el observador.
+    vec2 n2 = d / r;
+    float z = sqrt(max(0.0, 1.0 - dot(n2, n2)));
+    vec3 n = vec3(n2, z);
+
+    vec3 luz = normalize(vec3(-0.42, -0.5, 0.78));
+    float dif = clamp(dot(n, luz), 0.0, 1.0);
+
+    // Brillo especular: el puntito de luz que la hace parecer de cristal.
+    vec3 vista = vec3(0.0, 0.0, 1.0);
+    vec3 medio = normalize(luz + vista);
+    float esp = pow(clamp(dot(n, medio), 0.0, 1.0), 42.0);
+
+    // Borde iluminado: la luz que se cuela por detrás y la despega
+    // del fondo. Sin esto, una esfera sobre un fondo oscuro es un disco.
+    float borde = pow(1.0 - z, 2.6);
+
+    // Y un interior vivo, con vetas lentísimas, para que no sea plana.
+    float veta = ruido(n2 * 3.4 + vec2(uTime * 0.16 + uSemilla * 10.0, uTime * 0.11));
+    veta += ruido(n2 * 7.0 - uTime * 0.09) * 0.5;
+
+    vec3 cuerpo = mix(uColorHondo, uColor, dif * 0.75 + veta * 0.3);
+    cuerpo += uColor * borde * 0.85;
+    cuerpo += vec3(1.0) * esp * 0.75;
+    // Un núcleo que respira.
+    cuerpo += uColor * exp(-dot(n2, n2) * 3.2) * (0.20 + uPulso * 0.6);
+
+    float filo = smoothstep(r, r - 1.6, dist);   // el borde, sin dientes
+    color = mix(color, cuerpo * (1.0 + uBrillo * 0.45), filo);
+    alfa = max(alfa, filo);
+  }
+
+  oColor = vec4(color * alfa, alfa);
+}`;
+
+/* ── El listón ─────────────────────────────────────────────────────────
+   Una tira de triángulos con su propio degradado a lo ancho: el centro
+   encendido y los cantos apagados. Eso es lo que hace que se lea como
+   una CINTA y no como una línea gorda. */
+const VS_LISTON = `#version 300 es
+in vec2  aPos;
+in float aLado;      // -1 un canto, +1 el otro
+in float aLargo;     // 0..1 a lo largo de la cinta
+uniform vec2 uRes;
+out float vLado;
+out float vLargo;
+void main() {
+  vLado = aLado;
+  vLargo = aLargo;
+  vec2 c = aPos / uRes * 2.0 - 1.0;
+  gl_Position = vec4(c.x, -c.y, 0.0, 1.0);
+}`;
+
+const FS_LISTON = `#version 300 es
+precision highp float;
+in float vLado;
+in float vLargo;
+uniform float uTime;
+uniform float uTension;   // 0 flojo · 1 tenso
+uniform float uFinal;
+out vec4 oColor;
+
+void main() {
+  float borde = 1.0 - abs(vLado);
+  // El cuerpo de la cinta y su filo de luz.
+  float cuerpo = pow(borde, 0.85);
+  float filo = exp(-pow(abs(vLado) - 0.72, 2.0) * 60.0);
+
+  vec3 rojo = vec3(1.0, 0.16, 0.30);
+  vec3 claro = vec3(1.0, 0.62, 0.66);
+  vec3 color = mix(rojo, claro, filo * 0.7 + pow(borde, 3.0) * 0.5);
+
+  // Destellos que la recorren, como la luz sobre una seda.
+  float brillo = sin((vLargo * 9.0 - uTime * 1.5)) * 0.5 + 0.5;
+  brillo = pow(brillo, 7.0);
+  color += vec3(1.0, 0.85, 0.88) * brillo * cuerpo * 0.5;
+
+  // Tensa brilla más y se afila; floja es más ancha y más mate.
+  float alfa = cuerpo * (0.52 + uTension * 0.34 + uFinal * 0.3);
+  color *= 1.0 + uTension * 0.35 + uFinal * 0.8;
+
+  oColor = vec4(color * alfa, alfa);
+}`;
+
+/* ── Partículas ────────────────────────────────────────────────────── */
+const VS_PART = `#version 300 es
+in vec2  aPos;
+in float aTam;
+in float aAlfa;
+in float aTipo;
+in float aGiro;
+in float aTono;
+uniform vec2 uRes;
+out float vAlfa;
+out float vTipo;
+out float vGiro;
+out float vTono;
+void main() {
+  vAlfa = aAlfa; vTipo = aTipo; vGiro = aGiro; vTono = aTono;
+  vec2 c = aPos / uRes * 2.0 - 1.0;
+  gl_Position = vec4(c.x, -c.y, 0.0, 1.0);
+  gl_PointSize = aTam;
+}`;
+
+const FS_PART = `#version 300 es
+precision mediump float;
+in float vAlfa;
+in float vTipo;
+in float vGiro;
+in float vTono;
+out vec4 oColor;
+
+float corazon(vec2 p) {
+  p.y = -p.y - 0.06;
+  float a = p.x * p.x + p.y * p.y - 0.34;
+  return a * a * a - p.x * p.x * p.y * p.y * p.y;
+}
+
+void main() {
+  vec2 p = gl_PointCoord * 2.0 - 1.0;
+  float c = cos(vGiro), s = sin(vGiro);
+  vec2 pr = vec2(p.x * c - p.y * s, p.x * s + p.y * c);
+
+  float a = vAlfa;
+  if (vTipo < 0.5) {                    // polvo
+    a *= exp(-dot(p, p) * 2.6);
+  } else if (vTipo < 1.5) {             // destello
+    float l = length(p);
+    a *= exp(-l * l * 3.4) + exp(-l * 14.0) * 0.5;
+  } else if (vTipo < 2.5) {             // corazón
+    a *= 1.0 - smoothstep(-0.02, 0.07, corazon(pr * 1.3));
+  } else if (vTipo < 3.5) {             // estrella de cuatro puntas
+    vec2 q = abs(pr);
+    a *= 1.0 - smoothstep(0.26, 0.92, (q.x + q.y) * 0.8 + max(q.x, q.y) * 0.2);
+  } else {                              // chispa del hilo: alargada
+    vec2 q = pr * vec2(1.0, 2.6);
+    a *= exp(-dot(q, q) * 3.0);
+  }
+
+  vec3 col =
+      vTono < 0.5 ? vec3(1.00, 0.68, 0.82)     // rosa
+    : vTono < 1.5 ? vec3(0.66, 0.96, 0.78)     // verde
+    : vTono < 2.5 ? vec3(1.00, 0.30, 0.42)     // rojo del hilo
+    :               vec3(1.00, 0.90, 0.72);    // oro
+
+  if (a <= 0.004) discard;
+  oColor = vec4(col * a, a);
+}`;
+
+class WebGLRenderer {
+  constructor(lienzo) {
+    this.lienzo = lienzo;
+    this.ok = false;
+    try {
+      this.gl = lienzo.getContext("webgl2", {
+        alpha: false, antialias: false, depth: false, stencil: false,
+        premultipliedAlpha: true, powerPreference: "high-performance",
+      });
+    } catch { this.gl = null; }
+    if (!this.gl) return;
+    this.ok = this.#montar();
+  }
+
+  #compilar(tipo, fuente) {
+    const gl = this.gl;
+    const s = gl.createShader(tipo);
+    gl.shaderSource(s, fuente);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      console.warn("[hilo] shader:", gl.getShaderInfoLog(s));
+      return null;
+    }
+    return s;
+  }
+
+  #programa(vs, fs) {
+    const gl = this.gl;
+    const v = this.#compilar(gl.VERTEX_SHADER, vs);
+    const f = this.#compilar(gl.FRAGMENT_SHADER, fs);
+    if (!v || !f) return null;
+    const p = gl.createProgram();
+    gl.attachShader(p, v); gl.attachShader(p, f); gl.linkProgram(p);
+    gl.deleteShader(v); gl.deleteShader(f);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+      console.warn("[hilo] enlace:", gl.getProgramInfoLog(p));
+      return null;
+    }
+    return p;
+  }
+
+  #uniformes(prog, nombres) {
+    const u = {};
+    for (const n of nombres) u[n] = this.gl.getUniformLocation(prog, n);
+    return u;
+  }
+
+  #montar() {
+    const gl = this.gl;
+
+    this.pFondo = this.#programa(VS_QUAD, FS_FONDO);
+    this.pEsfera = this.#programa(VS_QUAD, FS_ESFERA);
+    this.pListon = this.#programa(VS_LISTON, FS_LISTON);
+    this.pPart = this.#programa(VS_PART, FS_PART);
+    if (!this.pFondo || !this.pEsfera || !this.pListon || !this.pPart) return false;
+
+    this.uFondo = this.#uniformes(this.pFondo,
+      ["uRes","uTime","uRosa","uVerde","uCerca","uFinal","uCorazon","uLuna","uLunaGuino","uLunaPos","uDedo","uCalidad"]);
+    this.uEsfera = this.#uniformes(this.pEsfera,
+      ["uRes","uCentro","uRadio","uColor","uColorHondo","uTime","uBrillo","uPulso","uSemilla"]);
+    this.uListon = this.#uniformes(this.pListon, ["uRes","uTime","uTension","uFinal"]);
+    this.uPart = this.#uniformes(this.pPart, ["uRes"]);
+
+    // Un triángulo que cubre la pantalla (más barato que dos).
+    this.vaoQuad = gl.createVertexArray();
+    gl.bindVertexArray(this.vaoQuad);
+    const bq = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, bq);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+    for (const prog of [this.pFondo, this.pEsfera]) {
+      const loc = gl.getAttribLocation(prog, "aPos");
+      if (loc >= 0) { gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0); }
+    }
+    gl.bindVertexArray(null);
+
+    // El listón: una tira con hasta 64 tramos, o sea 130 vértices.
+    this.MAX_TRAMOS = 64;
+    this.datosListon = new Float32Array((this.MAX_TRAMOS + 1) * 2 * 4);
+    this.vaoListon = gl.createVertexArray();
+    gl.bindVertexArray(this.vaoListon);
+    this.bufListon = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufListon);
+    gl.bufferData(gl.ARRAY_BUFFER, this.datosListon.byteLength, gl.DYNAMIC_DRAW);
+    this.#atributos(this.pListon, [["aPos",2,0],["aLado",1,8],["aLargo",1,12]], 16);
+    gl.bindVertexArray(null);
+
+    // Partículas.
+    this.vaoPart = gl.createVertexArray();
+    gl.bindVertexArray(this.vaoPart);
+    this.bufPart = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufPart);
+    this.datosPart = new Float32Array(CONFIG.PERF.particulas * 7);
+    gl.bufferData(gl.ARRAY_BUFFER, this.datosPart.byteLength, gl.DYNAMIC_DRAW);
+    this.#atributos(this.pPart,
+      [["aPos",2,0],["aTam",1,8],["aAlfa",1,12],["aTipo",1,16],["aGiro",1,20],["aTono",1,24]], 28);
+    gl.bindVertexArray(null);
+
+    gl.disable(gl.DEPTH_TEST);
+    gl.enable(gl.BLEND);
+    // Mezcla premultiplicada: los shaders ya devuelven el color por su
+    // alfa, y así un brillo translúcido suma luz sin ensuciar el borde.
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    return true;
+  }
+
+  #atributos(prog, campos, paso) {
+    const gl = this.gl;
+    for (const [nombre, tam, off] of campos) {
+      const loc = gl.getAttribLocation(prog, nombre);
+      if (loc < 0) continue;
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, tam, gl.FLOAT, false, paso, off);
+    }
+  }
+
+  redimensionar(esc) {
+    if (!this.ok) return;
+    this.gl.viewport(0, 0, this.lienzo.width, this.lienzo.height);
+  }
+
+  dibujar(mundo, esc) {
+    if (!this.ok) return;
+    const gl = this.gl;
+    const W = this.lienzo.width, H = this.lienzo.height;
+    const d = esc.dpr;
+    gl.viewport(0, 0, W, H);
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // ── Fondo ──
+    gl.useProgram(this.pFondo);
+    gl.bindVertexArray(this.vaoQuad);
+    const u = this.uFondo;
+    gl.uniform2f(u.uRes, W, H);
+    gl.uniform1f(u.uTime, mundo.tiempo);
+    gl.uniform2f(u.uRosa, mundo.rosa.x / esc.ancho, mundo.rosa.y / esc.alto);
+    gl.uniform2f(u.uVerde, mundo.verde.x / esc.ancho, mundo.verde.y / esc.alto);
+    gl.uniform1f(u.uCerca, mundo.cercania);
+    gl.uniform1f(u.uFinal, mundo.destello);
+    gl.uniform1f(u.uCorazon, mundo.corazonFondo);
+    gl.uniform1f(u.uLuna, mundo.luna);
+    gl.uniform1f(u.uLunaGuino, mundo.lunaGuino);
+    gl.uniform2f(u.uLunaPos, mundo.lunaPos.x, mundo.lunaPos.y);
+    gl.uniform2f(u.uDedo, mundo.parallax.x, mundo.parallax.y);
+    gl.uniform1f(u.uCalidad, mundo.calidad);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    // ── Listón (debajo de las esferas: sale de detrás de ellas) ──
+    if (mundo.liston.length >= 4) {
+      const n = this.#subirListon(mundo.liston, d);
+      if (n >= 4) {
+        gl.useProgram(this.pListon);
+        gl.bindVertexArray(this.vaoListon);
+        gl.uniform2f(this.uListon.uRes, W, H);
+        gl.uniform1f(this.uListon.uTime, mundo.tiempo);
+        gl.uniform1f(this.uListon.uTension, mundo.tension);
+        gl.uniform1f(this.uListon.uFinal, mundo.destello);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, n);
+      }
+    }
+
+    // ── Las dos esferas ──
+    gl.useProgram(this.pEsfera);
+    gl.bindVertexArray(this.vaoQuad);
+    for (const o of [mundo.verde, mundo.rosa]) {
+      const e = this.uEsfera;
+      gl.uniform2f(e.uRes, W, H);
+      gl.uniform2f(e.uCentro, o.x * d, o.y * d);
+      gl.uniform1f(e.uRadio, o.radio * d);
+      gl.uniform3fv(e.uColor, o.color);
+      gl.uniform3fv(e.uColorHondo, o.colorHondo);
+      gl.uniform1f(e.uTime, mundo.tiempo);
+      gl.uniform1f(e.uBrillo, o.brillo);
+      gl.uniform1f(e.uPulso, o.pulso);
+      gl.uniform1f(e.uSemilla, o.semilla);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+
+    // ── Partículas ──
+    const np = this.#subirParticulas(mundo.particulas, d);
+    if (np > 0) {
+      gl.useProgram(this.pPart);
+      gl.bindVertexArray(this.vaoPart);
+      gl.uniform2f(this.uPart.uRes, W, H);
+      gl.drawArrays(gl.POINTS, 0, np);
+    }
+    gl.bindVertexArray(null);
+  }
+
+  #subirListon(puntos, dpr) {
+    const gl = this.gl;
+    const n = Math.min(puntos.length, this.MAX_TRAMOS + 1);
+    const datos = this.datosListon;
+    for (let i = 0; i < n; i++) {
+      const p = puntos[i];
+      const k = i / (n - 1);
+      const o = i * 8;
+      datos[o]     = (p.x - p.nx * p.ancho) * dpr;
+      datos[o + 1] = (p.y - p.ny * p.ancho) * dpr;
+      datos[o + 2] = -1;
+      datos[o + 3] = k;
+      datos[o + 4] = (p.x + p.nx * p.ancho) * dpr;
+      datos[o + 5] = (p.y + p.ny * p.ancho) * dpr;
+      datos[o + 6] = 1;
+      datos[o + 7] = k;
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufListon);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, datos, 0, n * 8);
+    return n * 2;
+  }
+
+  #subirParticulas(ps, dpr) {
+    const gl = this.gl;
+    const datos = this.datosPart;
+    let n = 0;
+    const tope = Math.min(ps.max, (datos.length / 7) | 0);
+    for (let i = 0; i < ps.max && n < tope; i++) {
+      if (!ps.viva[i] || ps.alfa[i] <= 0.004) continue;
+      const o = n * 7;
+      datos[o]     = ps.x[i] * dpr;
+      datos[o + 1] = ps.y[i] * dpr;
+      datos[o + 2] = ps.tam[i] * dpr;
+      datos[o + 3] = ps.alfa[i];
+      datos[o + 4] = ps.tipo[i];
+      datos[o + 5] = ps.giro[i];
+      datos[o + 6] = ps.tono[i];
+      n++;
+    }
+    if (n === 0) return 0;
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufPart);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, datos, 0, n * 7);
+    return n;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  RESPALDO — la misma escena con Canvas 2D
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * Si no hay WebGL2, la página NO se queda en negro ni enseña un error:
+ * se dibuja lo mismo con Canvas 2D. Se pierden la nebulosa por píxel y
+ * el relieve de las esferas; quedan el cielo, las estrellas, las dos
+ * esferas con su aura, el listón, las cartas y todos los secretos. Se
+ * puede jugar entera, encuentro final incluido.
+ */
+class FallbackRenderer {
+  constructor(lienzo) {
+    this.lienzo = lienzo;
+    this.ctx = lienzo.getContext("2d");
+    this.ok = !!this.ctx;
+    this.estrellas = [];
+  }
+
+  redimensionar(esc) {
+    // Las estrellas se sortean UNA vez por tamaño. Sortearlas en cada
+    // fotograma haría que el cielo hirviera, y encima en el aparato que
+    // justamente no puede con WebGL.
+    const cuantas = Math.round((esc.ancho * esc.alto) / 5200);
+    this.estrellas.length = 0;
+    for (let i = 0; i < cuantas; i++) {
+      this.estrellas.push({
+        x: Math.random() * esc.ancho, y: Math.random() * esc.alto,
+        r: azar(0.4, 1.5), f: azar(0.6, 2.4), d: azar(0, 6.28),
+      });
+    }
+  }
+
+  dibujar(mundo, esc) {
+    const c = this.ctx;
+    const { ancho: W, alto: H, dpr } = esc;
+    c.save();
+    c.scale(dpr, dpr);
+
+    // Cielo
+    const cielo = c.createRadialGradient(W * 0.5, H * 0.45, 0, W * 0.5, H * 0.45, Math.max(W, H) * 0.8);
+    cielo.addColorStop(0, "#1a0b1c");
+    cielo.addColorStop(1, "#080510");
+    c.fillStyle = cielo;
+    c.fillRect(0, 0, W, H);
+
+    // Nebulosas de cada uno
+    for (const [o, col] of [[mundo.rosa, "255,120,170"], [mundo.verde, "110,225,170"]]) {
+      const g = c.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.radio * 7);
+      g.addColorStop(0, `rgba(${col},0.20)`);
+      g.addColorStop(0.5, `rgba(${col},0.07)`);
+      g.addColorStop(1, `rgba(${col},0)`);
+      c.fillStyle = g;
+      c.fillRect(0, 0, W, H);
+    }
+
+    // Estrellas
+    c.fillStyle = "#fff0f4";
+    for (const s of this.estrellas) {
+      c.globalAlpha = 0.35 + 0.45 * Math.sin(mundo.tiempo * s.f + s.d);
+      c.fillRect(s.x, s.y, s.r, s.r);
+    }
+    c.globalAlpha = 1;
+
+    // El corazón escondido
+    if (mundo.corazonFondo > 0.01) {
+      c.save();
+      c.globalAlpha = mundo.corazonFondo * 0.42;
+      c.strokeStyle = "#d8385a";
+      c.lineWidth = 2;
+      this.#trazarCorazon(c, W / 2, H * 0.5, Math.min(W, H) * 0.3);
+      c.stroke();
+      c.restore();
+    }
+
+    // La luna
+    if (mundo.luna > 0.01) {
+      c.save();
+      c.globalAlpha = mundo.luna * 0.8;
+      c.fillStyle = "#10142e";
+      c.fillRect(0, 0, W, H);
+      c.globalAlpha = mundo.luna;
+      const r = Math.min(W, H) * 0.19;
+      const g = c.createRadialGradient(W / 2, H * 0.34, r * 0.2, W / 2, H * 0.34, r * 2.4);
+      g.addColorStop(0, "rgba(240,240,255,0.5)");
+      g.addColorStop(1, "rgba(240,240,255,0)");
+      c.fillStyle = g;
+      c.fillRect(0, 0, W, H);
+      c.fillStyle = "#f2efe8";
+      c.beginPath(); c.arc(W / 2, H * 0.34, r, 0, Math.PI * 2); c.fill();
+      c.restore();
+    }
+
+    // El listón
+    if (mundo.liston.length > 2) {
+      c.save();
+      c.lineCap = "round";
+      c.strokeStyle = `rgba(255,50,80,${0.5 + mundo.tension * 0.4})`;
+      c.lineWidth = 4 + mundo.tension * 2;
+      c.shadowColor = "rgba(255,40,80,0.8)";
+      c.shadowBlur = 14;
+      c.beginPath();
+      c.moveTo(mundo.liston[0].x, mundo.liston[0].y);
+      for (const p of mundo.liston) c.lineTo(p.x, p.y);
+      c.stroke();
+      c.restore();
+    }
+
+    // Las esferas
+    for (const o of [mundo.verde, mundo.rosa]) {
+      const col = o === mundo.rosa ? ["#ffd0e2", "#ff86b4", "#b83a68"] : ["#d6f7e6", "#8ee0b6", "#3d8f68"];
+      const aura = c.createRadialGradient(o.x, o.y, o.radio * 0.4, o.x, o.y, o.radio * 3);
+      aura.addColorStop(0, o === mundo.rosa ? "rgba(255,130,175,0.34)" : "rgba(130,225,180,0.34)");
+      aura.addColorStop(1, "rgba(0,0,0,0)");
+      c.fillStyle = aura;
+      c.beginPath(); c.arc(o.x, o.y, o.radio * 3, 0, Math.PI * 2); c.fill();
+
+      const g = c.createRadialGradient(
+        o.x - o.radio * 0.38, o.y - o.radio * 0.42, o.radio * 0.1, o.x, o.y, o.radio);
+      g.addColorStop(0, col[0]);
+      g.addColorStop(0.55, col[1]);
+      g.addColorStop(1, col[2]);
+      c.fillStyle = g;
+      c.beginPath(); c.arc(o.x, o.y, o.radio, 0, Math.PI * 2); c.fill();
+    }
+
+    // Partículas
+    const ps = mundo.particulas;
+    for (let i = 0; i < ps.max; i++) {
+      if (!ps.viva[i] || ps.alfa[i] <= 0.01) continue;
+      c.globalAlpha = clamp01(ps.alfa[i]);
+      const t = ps.tono[i];
+      c.fillStyle = t < 0.5 ? "#ffaecb" : t < 1.5 ? "#a9f2ca" : t < 2.5 ? "#ff4d66" : "#ffe4b8";
+      const s = Math.max(0.8, ps.tam[i] * 0.42);
+      c.beginPath(); c.arc(ps.x[i], ps.y[i], s, 0, Math.PI * 2); c.fill();
+    }
+    c.globalAlpha = 1;
+
+    if (mundo.destello > 0.01) {
+      c.fillStyle = `rgba(255,190,210,${mundo.destello * 0.4})`;
+      c.fillRect(0, 0, W, H);
+    }
+    c.restore();
+  }
+
+  #trazarCorazon(c, cx, cy, r) {
+    c.beginPath();
+    for (let i = 0; i <= 60; i++) {
+      const t = (i / 60) * Math.PI * 2;
+      const x = cx + (16 * Math.pow(Math.sin(t), 3)) / 16 * r;
+      const y = cy - ((13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16) * r;
+      i ? c.lineTo(x, y) : c.moveTo(x, y);
+    }
+    c.closePath();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  ORB — una de las dos esferas
+// ══════════════════════════════════════════════════════════════════════
+
+class Orb {
+  constructor(color, colorHondo, semilla) {
+    this.x = 0; this.y = 0;
+    this.vx = 0; this.vy = 0;
+    this.radio = 30;
+    this.color = new Float32Array(color);
+    this.colorHondo = new Float32Array(colorHondo);
+    this.semilla = semilla;
+    this.brillo = 0;
+    this.brilloObj = 0;
+    this.pulso = 0;
+    this.agarrada = false;
+    this.dedoId = null;
+    this.destinoX = 0; this.destinoY = 0;
+    this.ultimoToque = 0;
+    // Rastro de posiciones, para el patrón de la constelación.
+    this.rastro = [];
+  }
+
+  /** Un golpe de brillo que decae solo: al tocarla, al recibir carta. */
+  golpe(fuerza = 1) {
+    this.pulso = Math.min(1.6, this.pulso + fuerza);
+  }
+
+  mover(dt) {
+    this.brillo = damp(this.brillo, this.brilloObj, 9, dt);
+    this.pulso = damp(this.pulso, 0, 3.4, dt);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  PHYSICS — el muelle, la repulsión y su rendición
+// ══════════════════════════════════════════════════════════════════════
+
+class Physics {
+  constructor() {
+    /* 0 = la fuerza que las separa está entera · 1 = se ha rendido.
+       Es lo que permite que, insistiendo, se acaben juntando. */
+    this.rendida = 0;
+  }
+
+  paso(dt, rosa, verde, esc) {
+    const F = CONFIG.FISICA;
+    const radio = rosa.radio;
+
+    // ── Lo que tira el dedo ──
+    for (const o of [rosa, verde]) {
+      if (o.agarrada) {
+        // Un muelle hacia el dedo, no un «ponte aquí»: así la esfera
+        // llega con un poco de retraso y se pasa un pelín al frenar,
+        // que es lo que le da peso.
+        o.vx += (o.destinoX - o.x) * F.muelleDedo * dt;
+        o.vy += (o.destinoY - o.y) * F.muelleDedo * dt;
+      }
+    }
+
+    // ── La fuerza que las separa ──
+    let dx = verde.x - rosa.x;
+    let dy = verde.y - rosa.y;
+    let d = Math.hypot(dx, dy) || 0.0001;
+    const nx = dx / d, ny = dy / d;
+
+    const alcance = radio * 2 * F.alcanceRepulsion;
+    const minima = radio * 2 * F.minimo;
+
+    if (d < alcance) {
+      const cerca = 1 - d / alcance;                 // 0 lejos · 1 pegadas
+      // Crece rápido al final: de lejos casi no se nota y de cerca
+      // empuja de verdad. Es lo que hace que parezca una fuerza y no
+      // un tope programado.
+      const fuerza = F.repulsion * cerca * cerca * (1 - this.rendida);
+
+      // Sólo se aparta la que NO se está arrastrando. Si se arrastran
+      // las dos, se reparte entre ambas.
+      const arrastrando = (rosa.agarrada ? 1 : 0) + (verde.agarrada ? 1 : 0);
+      if (arrastrando === 1) {
+        const libre = rosa.agarrada ? verde : rosa;
+        const signo = libre === verde ? 1 : -1;
+        libre.vx += nx * signo * fuerza * dt;
+        libre.vy += ny * signo * fuerza * dt;
+      } else {
+        rosa.vx -= nx * fuerza * 0.5 * dt;
+        rosa.vy -= ny * fuerza * 0.5 * dt;
+        verde.vx += nx * fuerza * 0.5 * dt;
+        verde.vy += ny * fuerza * 0.5 * dt;
+      }
+
+      // Y se rinde mientras se insista. Esto es lo que convierte la
+      // resistencia en algo que se puede vencer: cuanto más cerca se
+      // las sostiene, menos empuja, hasta que deja de empujar.
+      if (arrastrando > 0 && cerca > 0.35) {
+        this.rendida = clamp01(this.rendida + F.rendicion * cerca * dt);
+      }
+    }
+
+    if (!rosa.agarrada && !verde.agarrada) {
+      this.rendida = clamp01(this.rendida - F.recuperacion * dt * 0.5);
+    }
+
+    // ── El tope elástico: no se atraviesan nunca ──
+    if (d < minima) {
+      const sobra = (minima - d) * 0.5;
+      rosa.x -= nx * sobra; rosa.y -= ny * sobra;
+      verde.x += nx * sobra; verde.y += ny * sobra;
+      // Y rebotan un poquito, en vez de quedarse pegadas al tope.
+      const rel = (verde.vx - rosa.vx) * nx + (verde.vy - rosa.vy) * ny;
+      if (rel < 0) {
+        const j = -rel * 0.32;
+        rosa.vx -= nx * j; rosa.vy -= ny * j;
+        verde.vx += nx * j; verde.vy += ny * j;
+      }
+    }
+
+    // ── Integración, rozamiento y paredes ──
+    const roce = Math.pow(CONFIG.FISICA.amortiguacion, dt * 60);
+    const margen = radio * 1.15;
+    for (const o of [rosa, verde]) {
+      o.vx *= roce; o.vy *= roce;
+      o.x += o.vx * dt;
+      o.y += o.vy * dt;
+
+      // Las paredes no cortan: empujan hacia dentro y quitan velocidad.
+      if (o.x < margen)              { o.x = lerp(o.x, margen, 0.3);              o.vx *= 0.5; }
+      if (o.x > esc.ancho - margen)  { o.x = lerp(o.x, esc.ancho - margen, 0.3);  o.vx *= 0.5; }
+      if (o.y < margen)              { o.y = lerp(o.y, margen, 0.3);              o.vy *= 0.5; }
+      if (o.y > esc.alto - margen)   { o.y = lerp(o.y, esc.alto - margen, 0.3);   o.vy *= 0.5; }
+    }
+
+    return { d, nx, ny, minima, alcance };
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  RIBBON — el listón entre las dos
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * Una cuerda de nudos con muelles entre ellos.
+ *
+ * No es una curva dibujada entre dos puntos: son dieciséis nudos que se
+ * persiguen, cada uno tirando del siguiente. Por eso la cinta ondea al
+ * mover una esfera, se queda colgando cuando están lejos y se recoge
+ * sola cuando se acercan, sin que nadie programe esas tres cosas.
+ */
+class Ribbon {
+  constructor(nudos = 24) {
+    this.n = nudos;
+    this.px = new Float32Array(nudos);
+    this.py = new Float32Array(nudos);
+    this.vx = new Float32Array(nudos);
+    this.vy = new Float32Array(nudos);
+    this.puntos = [];
+    this.iniciado = false;
+    this.forma = 0;            // 0 cinta · 1 corazón
+    this.formaObj = 0;
+  }
+
+  colocar(rosa, verde) {
+    for (let i = 0; i < this.n; i++) {
+      const k = i / (this.n - 1);
+      this.px[i] = lerp(rosa.x, verde.x, k);
+      this.py[i] = lerp(rosa.y, verde.y, k);
+      this.vx[i] = 0; this.vy[i] = 0;
+    }
+    this.iniciado = true;
+  }
+
+  mover(dt, rosa, verde, tension) {
+    if (!this.iniciado) this.colocar(rosa, verde);
+    this.forma = damp(this.forma, this.formaObj, 2.2, dt);
+
+    const n = this.n;
+    // Los extremos van clavados a las esferas.
+    this.px[0] = rosa.x; this.py[0] = rosa.y;
+    this.px[n - 1] = verde.x; this.py[n - 1] = verde.y;
+
+    const rigidez = lerp(120, 420, tension);
+    const roce = Math.pow(0.02, dt);
+    const caida = lerp(70, 8, tension);   // lo que cuelga cuando está floja
+
+    for (let i = 1; i < n - 1; i++) {
+      const k = i / (n - 1);
+
+      // Adónde querría estar este nudo.
+      let ox, oy;
+      if (this.forma > 0.001) {
+        // La forma de corazón: se dibuja alrededor del punto medio.
+        const cx = (rosa.x + verde.x) * 0.5;
+        const cy = (rosa.y + verde.y) * 0.5;
+        const r = Math.max(rosa.radio, 22) * 2.9;
+        const t = k * Math.PI * 2;
+        const hx = cx + (16 * Math.pow(Math.sin(t), 3)) / 16 * r;
+        const hy = cy - ((13 * Math.cos(t) - 5 * Math.cos(2 * t)
+                        - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16) * r;
+        const rectoX = lerp(rosa.x, verde.x, k);
+        const rectoY = lerp(rosa.y, verde.y, k) + Math.sin(k * Math.PI) * caida;
+        ox = lerp(rectoX, hx, this.forma);
+        oy = lerp(rectoY, hy, this.forma);
+      } else {
+        ox = lerp(rosa.x, verde.x, k);
+        // La comba: máxima en el centro, nula en los extremos.
+        oy = lerp(rosa.y, verde.y, k) + Math.sin(k * Math.PI) * caida;
+      }
+
+      this.vx[i] += (ox - this.px[i]) * rigidez * dt;
+      this.vy[i] += (oy - this.py[i]) * rigidez * dt;
+      this.vx[i] *= roce;
+      this.vy[i] *= roce;
+      this.px[i] += this.vx[i] * dt;
+      this.py[i] += this.vy[i] * dt;
+    }
+
+    // Y de los nudos sale la geometría: para cada uno, hacia dónde va la
+    // cinta y cuánto mide de ancho ahí.
+    this.puntos.length = 0;
+    const anchoBase = lerp(7.5, 4.2, tension);
+    for (let i = 0; i < n; i++) {
+      const k = i / (n - 1);
+      const ia = Math.max(0, i - 1), ib = Math.min(n - 1, i + 1);
+      let tx = this.px[ib] - this.px[ia];
+      let ty = this.py[ib] - this.py[ia];
+      const len = Math.hypot(tx, ty) || 1;
+      tx /= len; ty /= len;
+      // Se afila en las puntas: una cinta que acaba en corte se ve como
+      // un palo, y acabando en punta se mete dentro de la esfera.
+      const afilado = Math.sin(k * Math.PI) * 0.75 + 0.25;
+      this.puntos.push({
+        x: this.px[i], y: this.py[i],
+        nx: -ty, ny: tx,
+        ancho: anchoBase * afilado,
+      });
+    }
+    return this.puntos;
+  }
+
+  /** Un punto cualquiera de la cinta, para soltar chispas encima. */
+  punto(k) {
+    const i = clamp(Math.round(k * (this.n - 1)), 0, this.n - 1);
+    return { x: this.px[i], y: this.py[i] };
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  LETTERSYSTEM — las cartas que van y vienen
+// ══════════════════════════════════════════════════════════════════════
+
+const SOBRE_SVG = (claro, hondo, filo) => `
+<svg viewBox="0 0 34 26" width="34" height="26">
+  <defs>
+    <linearGradient id="g${filo}" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="${claro}"/><stop offset="1" stop-color="${hondo}"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="32" height="24" rx="3" fill="url(#g${filo})"
+        stroke="rgba(255,255,255,0.75)" stroke-width="0.9"/>
+  <path d="M1.8 2.6 L17 14 L32.2 2.6" fill="none"
+        stroke="rgba(255,255,255,0.8)" stroke-width="1"/>
+  <path d="M17 19.4 C13.6 16.6 12.4 15 13.4 13.9 C14.3 12.9 15.9 13.3 17 14.7
+           C18.1 13.3 19.7 12.9 20.6 13.9 C21.6 15 20.4 16.6 17 19.4 Z"
+        fill="rgba(255,255,255,0.92)"/>
+</svg>`;
+
+class LetterSystem {
+  constructor(capa, particulas, alLlegar) {
+    this.capa = capa;
+    this.ps = particulas;
+    this.alLlegar = alLlegar;
+    this.vivas = [];
+    this.libres = [];
+    this.entregadas = 0;
+
+    // Una reserva de nodos que se reutilizan. Crear y destruir nodos
+    // cada segundo obliga al navegador a rehacer la disposición de la
+    // página una y otra vez; reutilizarlos no le cuesta nada.
+    for (let i = 0; i < 14; i++) {
+      const el = document.createElement("div");
+      el.className = "rw-carta";
+      this.capa.append(el);
+      this.libres.push(el);
+    }
+    this.svgRosa = SOBRE_SVG("#ffd9e8", "#ff86b4", "r");
+    this.svgVerde = SOBRE_SVG("#daf6e8", "#7fd9ae", "v");
+  }
+
+  enviar(desde, hacia, esRosa, especial) {
+    const el = this.libres.pop();
+    if (!el) return null;                    // todas ocupadas: se salta una
+    el.innerHTML = esRosa ? this.svgRosa : this.svgVerde;
+
+    // La curva: un punto de control apartado del eje, y a un lado
+    // distinto según quién escriba. Así las cartas de ida y las de
+    // vuelta no van por el mismo sitio y se ve el ir y venir.
+    const dx = hacia.x - desde.x, dy = hacia.y - desde.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const lado = esRosa ? 1 : -1;
+    const combado = clamp(dist * 0.30, 26, 130) * lado;
+
+    const carta = {
+      el,
+      x0: desde.x, y0: desde.y,
+      x1: (desde.x + hacia.x) / 2 - (dy / dist) * combado,
+      y1: (desde.y + hacia.y) / 2 + (dx / dist) * combado,
+      hacia,
+      t: 0,
+      dur: clamp(dist / 260, 0.9, 2.4),
+      esRosa,
+      especial: !!especial,
+      giro: 0,
+      escala: 0,
+      rastro: 0,
+    };
+    this.vivas.push(carta);
+    return carta;
+  }
+
+  mover(dt) {
+    for (let i = this.vivas.length - 1; i >= 0; i--) {
+      const c = this.vivas[i];
+      c.t += dt / c.dur;
+
+      if (c.t >= 1) {
+        this.#llegar(c);
+        this.vivas.splice(i, 1);
+        c.el.style.opacity = "0";
+        this.libres.push(c.el);
+        continue;
+      }
+
+      // La curva de Bézier de segundo grado: el destino se lee EN VIVO,
+      // así que si la esfera que recibe se mueve, la carta corrige el
+      // rumbo por el camino en vez de ir a donde estaba.
+      const t = c.t;
+      const u = 1 - t;
+      const x2 = c.hacia.x, y2 = c.hacia.y;
+      const x = u * u * c.x0 + 2 * u * t * c.x1 + t * t * x2;
+      const y = u * u * c.y0 + 2 * u * t * c.y1 + t * t * y2;
+
+      // Hacia dónde mira: la derivada de la curva. Una carta que viaja
+      // de lado se ve como un cromo; girada al camino, vuela.
+      const tx = 2 * u * (c.x1 - c.x0) + 2 * t * (x2 - c.x1);
+      const ty = 2 * u * (c.y1 - c.y0) + 2 * t * (y2 - c.y1);
+      c.giro = Math.atan2(ty, tx);
+
+      // Se despliega al salir y se recoge al llegar.
+      const abre = smoothstep(t / 0.16);
+      const cierra = 1 - smoothstep((t - 0.86) / 0.14);
+      c.escala = (0.5 + abre * 0.5) * cierra * (c.especial ? 1.25 : 1);
+
+      c.el.style.opacity = String(abre * cierra);
+      c.el.style.transform =
+        `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)` +
+        ` rotate(${(c.giro + Math.sin(t * 9) * 0.12).toFixed(3)}rad)` +
+        ` scale(${c.escala.toFixed(3)})`;
+
+      // El rastro de polvo, a ritmo fijo y no por fotograma: así deja
+      // el mismo reguero vaya el aparato a 60 o a 120.
+      c.rastro += dt;
+      if (c.rastro > 0.045) {
+        c.rastro = 0;
+        this.ps.soltar(x, y, {
+          vx: azar(-14, 14), vy: azar(-14, 14),
+          vida: azar(0.5, 1.0), tam: azar(2, 4.6),
+          tipo: 1, tono: c.especial ? 3 : (c.esRosa ? 0 : 1),
+        });
+      }
+    }
+  }
+
+  #llegar(c) {
+    this.entregadas++;
+    const { x, y } = c.hacia;
+    const tono = c.especial ? 3 : (c.esRosa ? 0 : 1);
+    const cuantas = c.especial ? 34 : 16;
+    for (let i = 0; i < cuantas; i++) {
+      const a = azar(0, Math.PI * 2);
+      const v = azar(28, 130);
+      this.ps.soltar(x, y, {
+        vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+        vida: azar(0.7, 1.5), tam: azar(2.6, 6),
+        tipo: i % 5 === 0 ? 2 : 1, tono,
+        giro: azar(0, 6.28), giroV: azar(-3, 3),
+      });
+    }
+    this.alLlegar?.(c);
+  }
+
+  reiniciar() {
+    for (const c of this.vivas) { c.el.style.opacity = "0"; this.libres.push(c.el); }
+    this.vivas.length = 0;
+    this.entregadas = 0;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  DISTANCESYSTEM — la distancia inventada
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * Traduce píxeles a una distancia con la que se puede sentir algo.
+ *
+ * No es una regla de tres: los últimos centímetros valen mucho más que
+ * los primeros, porque emocionalmente es así. De lejos el número baja de
+ * mil en mil sin que importe; de cerca cada movimiento del dedo cuenta,
+ * y las unidades cambian solas a metros para que el último tramo se
+ * sienta como lo que es.
+ */
+class DistanceSystem {
+  constructor(nodoKm, nodoSusurro) {
+    this.km = nodoKm;
+    this.susurro = nodoSusurro;
+    this.valor = 1;
+    this.mostrado = -1;
+    this.ultimoTexto = "";
+  }
+
+  actualizar(dt, d, minima, maxima, juntas) {
+    // 0 = juntas, 1 = lo más lejos que se puede.
+    const bruto = clamp01((d - minima) / Math.max(1, maxima - minima));
+    // Suavizado: el número no puede saltar mientras el dedo tiembla.
+    this.valor = damp(this.valor, bruto, 7, dt);
+    const k = this.valor;
+
+    // La curva. Elevando a 1.6, la mitad del camino son sólo un tercio
+    // de los kilómetros: acercarse se nota mucho más de lo que dice la
+    // regla de tres, que es exactamente como se siente de verdad.
+    const km = Math.pow(k, 1.6) * CONFIG.KM_MAXIMOS;
+
+    let texto;
+    if (juntas || bruto <= 0.006) texto = "0 km";
+    else if (km < 0.95) texto = `${Math.max(1, Math.round(km * 1000))} m`;
+    else if (km < 10) texto = `${km.toFixed(1)} km`;
+    else texto = `${Math.round(km).toLocaleString("es-ES")} km`;
+
+    if (texto !== this.ultimoTexto) {
+      this.ultimoTexto = texto;
+      this.km.textContent = texto;
+    }
+
+    // Cuando ya están juntas manda el final, pase lo que pase con los
+    // decimales: el número dice «0 km» y el susurro tiene que decir lo
+    // suyo, no quedarse en el escalón de antes.
+    const nivel = juntas ? 0 : bruto;
+    for (const s of CONFIG.SUSURROS) {
+      if (nivel <= s.hasta) {
+        // Se compara contra lo que YA SE HA PEDIDO, no contra lo que hay
+        // escrito. Comparando contra el texto del nodo, mientras dura el
+        // parpadeo de cambio el texto viejo sigue puesto, así que cada
+        // fotograma volvía a ver una diferencia, cancelaba el reloj y lo
+        // reprogramaba: el susurro no se escribía nunca.
+        if (this.susurroPedido !== s.texto) {
+          this.susurroPedido = s.texto;
+          this.susurro.style.opacity = "0";
+          clearTimeout(this._t);
+          this._t = setTimeout(() => {
+            this.susurro.textContent = s.texto;
+            this.susurro.style.opacity = "1";
+          }, this.susurro.textContent ? 220 : 0);
+        }
+        break;
+      }
+    }
+    return bruto;
+  }
+
+  destruir() { clearTimeout(this._t); }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  EFFECTS — las frases flotantes
+// ══════════════════════════════════════════════════════════════════════
+
+class Effects {
+  constructor(capa, esc) {
+    this.capa = capa;
+    this.esc = esc;
+    this.vivas = [];
+    this.libres = [];
+    for (let i = 0; i < 9; i++) {
+      const el = document.createElement("p");
+      el.className = "rw-frase";
+      this.capa.append(el);
+      this.libres.push(el);
+    }
+    // La baraja: se reparten todas antes de volver a barajar, así no
+    // salen dos veces seguidas las mismas.
+    this.baraja = [];
+  }
+
+  #siguienteFrase() {
+    if (!this.baraja.length) {
+      this.baraja = CONFIG.FRASES.slice();
+      for (let i = this.baraja.length - 1; i > 0; i--) {
+        const j = (Math.random() * (i + 1)) | 0;
+        [this.baraja[i], this.baraja[j]] = [this.baraja[j], this.baraja[i]];
+      }
+    }
+    return this.baraja.pop();
+  }
+
+  frase(x, y, texto, larga) {
+    let el = this.libres.pop();
+
+    // LAS FRASES IMPORTANTES NUNCA SE PIERDEN.
+    //
+    // Llegan dos cartas por segundo y cada globo dura casi tres, así que
+    // el grupo se llena constantemente. Con eso, las frases que de
+    // verdad importan —la carta especial, el guiño de la luna, la
+    // constelación— se caían por no haber sitio: el secreto se activaba
+    // y no lo veía nadie. Si no queda ninguno libre, la importante le
+    // quita el sitio a la más vieja de las corrientes.
+    if (!el && larga) {
+      let viejo = -1, masT = -1;
+      for (let i = 0; i < this.vivas.length; i++) {
+        if (this.vivas[i].el.classList.contains("rw-frase--larga")) continue;
+        if (this.vivas[i].t > masT) { masT = this.vivas[i].t; viejo = i; }
+      }
+      if (viejo >= 0) {
+        el = this.vivas[viejo].el;
+        this.vivas.splice(viejo, 1);
+      }
+    }
+    if (!el) return;
+    el.textContent = texto || this.#siguienteFrase();
+    el.classList.toggle("rw-frase--larga", !!larga);
+
+    // El margen sale del ANCHO REAL del globo, medido después de
+    // escribirle el texto. Con un margen fijo, una frase larga se salía
+    // por la derecha: la caja está centrada, así que lo que hay que
+    // dejar libre es media caja, y media caja depende de lo que diga.
+    el.style.opacity = "0";
+    const medio = el.offsetWidth / 2 + 8;
+    const px = clamp(x, medio, Math.max(medio, this.esc.ancho - medio));
+
+    // Y se escalonan en altura. Dos cartas llegan por segundo, así que
+    // sin esto las frases se amontonan en el mismo sitio y se leen unas
+    // encima de otras. El turno rota, no se sortea: sorteándolo, dos
+    // seguidas podían caer igual.
+    this.turno = ((this.turno || 0) + 1) % 3;
+    const escalon = this.turno * 34;
+    const py = clamp(y - 58 - escalon, 30, this.esc.alto - 40);
+
+    this.vivas.push({ el, x: px, y: py, t: 0, dur: larga ? 5.2 : 2.9, deriva: azar(-8, 8) });
+  }
+
+  mover(dt) {
+    for (let i = this.vivas.length - 1; i >= 0; i--) {
+      const f = this.vivas[i];
+      f.t += dt;
+      const k = f.t / f.dur;
+      if (k >= 1) {
+        f.el.style.opacity = "0";
+        this.libres.push(f.el);
+        this.vivas.splice(i, 1);
+        continue;
+      }
+      const entra = smoothstep(k / 0.14);
+      const sale = 1 - smoothstep((k - 0.66) / 0.34);
+      const sube = easeOutCubic(clamp01(k / 0.8)) * 26;
+      const bal = Math.sin(f.t * 1.5) * 3;
+      f.el.style.opacity = String(entra * sale);
+      f.el.style.transform =
+        `translate3d(${(f.x + f.deriva * k + bal).toFixed(1)}px, ${(f.y - sube).toFixed(1)}px, 0)` +
+        ` translate(-50%, -50%) scale(${(0.9 + entra * 0.1).toFixed(3)})`;
+    }
+  }
+
+  limpiar() {
+    for (const f of this.vivas) { f.el.style.opacity = "0"; this.libres.push(f.el); }
+    this.vivas.length = 0;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  APP
+// ══════════════════════════════════════════════════════════════════════
+
+class App {
+  constructor(raiz) {
+    this.raiz = raiz;
+    this.$ = (id) => raiz.querySelector("#" + id);
+
+    this.lienzo = this.$("rwLienzo");
+    this.zona = this.$("rwToque");
+
+    this.flojo = this.#medirAparato();
+    const nParticulas = this.flojo ? CONFIG.PERF.particulasFlojo : CONFIG.PERF.particulas;
+
+    this.esc = new Escena(raiz, this.lienzo, (e) => this.#alRedimensionar(e));
+    this.esc.topeDpr = this.flojo ? CONFIG.PERF.dprMaxFlojo : CONFIG.PERF.dprMax;
+
+    this.ps = new ParticleSystem(nParticulas);
+    this.audio = new AudioManager();
+    this.fisica = new Physics();
+    this.liston = new Ribbon(this.flojo ? 16 : 24);
+
+    this.rosa = new Orb([1.00, 0.72, 0.83], [0.56, 0.22, 0.36], 0.3);
+    this.verde = new Orb([0.72, 0.95, 0.81], [0.20, 0.46, 0.35], 2.7);
+
+    this.gl = new WebGLRenderer(this.lienzo);
+    if (!this.gl.ok) {
+      this.respaldo = new FallbackRenderer(this.lienzo);
+      const aviso = document.createElement("p");
+      aviso.className = "rw-sencillo";
+      aviso.textContent = "modo sencillo";
+      raiz.querySelector(".rw-ui").append(aviso);
+    }
+
+    this.cartas = new LetterSystem(this.$("rwCartas"), this.ps, (c) => this.#cartaRecibida(c));
+    this.efectos = new Effects(raiz, this.esc);
+    this.distancia = new DistanceSystem(this.$("rwKm"), this.$("rwSusurro"));
+
+    // ── Estado ──
+    this.tiempo = 0;
+    this.relojCarta = { rosa: 0.35, verde: 0.85 };   // alternan, no salen a la vez
+    this.cercania = 0;
+    this.tension = 0;
+    this.destello = 0;
+    this.corazonFondo = 0;
+    this.corazonObj = 0;
+    this.luna = 0;
+    this.lunaObj = 0;
+    this.lunaLista = false;
+    this.lunaGuino = 0;
+    this.lunaGuinoObj = 0;
+    this.lunaPos = { x: 0, y: 0 };
+    this.juntas = false;
+    this.faseFinal = 0;
+    this.lentitud = 1;           // el mundo a cámara lenta en el encuentro
+    this.parallax = { x: 0, y: 0 };
+    this.parallaxObj = { x: 0, y: 0 };
+    this.tiempoCerca = 0;
+    this.calidad = this.flojo ? 0 : 1;
+    this.polvoReloj = 0;
+    this.chispaReloj = 0;
+    this.relojes = new Set();
+    this.constelacion = null;
+
+    this.#colocar();
+    this.#enganchar();
+    this.#polvoInicial();
+
+    // La única indicación, y se va sola al primer toque.
+    this.$("rwDistancia").classList.add("rw-dentro");
+    this.$("rwPista").textContent = CONFIG.PISTA;
+    this.espera(() => this.$("rwPista").classList.add("rw-dentro"), 1400);
+
+    this.corriendo = true;
+    this.ultimo = performance.now();
+    this.bucle = (t) => this.#fotograma(t);
+    this.raf = requestAnimationFrame(this.bucle);
+
+    this.alVisibilidad = () => {
+      if (document.hidden) { this.corriendo = false; cancelAnimationFrame(this.raf); }
+      else if (!this.corriendo) { this.corriendo = true; this.ultimo = performance.now(); this.raf = requestAnimationFrame(this.bucle); }
+    };
+    document.addEventListener("visibilitychange", this.alVisibilidad);
+  }
+
+  /** Temporizadores con registro: al reiniciar o salir se cancelan todos. */
+  espera(fn, ms) {
+    const id = setTimeout(() => { this.relojes.delete(id); fn(); }, ms);
+    this.relojes.add(id);
+    return id;
+  }
+
+  #medirAparato() {
+    const nucleos = navigator.hardwareConcurrency || 4;
+    const memoria = navigator.deviceMemory || 4;
+    const menos = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    this.menosMovimiento = menos;
+    let p = 0;
+    if (nucleos >= 8) p += 2; else if (nucleos >= 6) p += 1; else if (nucleos < 4) p -= 2;
+    if (memoria >= 8) p += 2; else if (memoria >= 4) p += 1; else if (memoria < 2) p -= 2;
+    return p < 1 || menos;
+  }
+
+  #colocar() {
+    const { ancho: W, alto: H } = this.esc;
+    const r = clamp(this.esc.medida * 0.072, 17, 42);
+    this.rosa.radio = this.verde.radio = r;
+    // En apaisado se separan a lo ancho; en vertical, un poco en diagonal.
+    const sep = Math.min(W * 0.34, H * 0.30);
+    this.rosa.x = W / 2 - sep; this.rosa.y = H / 2 + sep * 0.12;
+    this.verde.x = W / 2 + sep; this.verde.y = H / 2 - sep * 0.12;
+    for (const o of [this.rosa, this.verde]) { o.vx = o.vy = 0; }
+    this.liston.colocar(this.rosa, this.verde);
+  }
+
+  #alRedimensionar(e) {
+    // `Escena` mide en cuanto nace, y nace antes que las esferas: este
+    // aviso puede llegar cuando todavía no hay a quién avisar. No es un
+    // caso raro, es el primero que ocurre siempre.
+    if (!this.rosa || !this.verde) return;
+
+    this.gl?.ok ? this.gl.redimensionar(e) : this.respaldo?.redimensionar(e);
+    const r = clamp(e.medida * 0.072, 17, 42);
+    this.rosa.radio = this.verde.radio = r;
+    // Las esferas se quedan dentro del nuevo tamaño sin dar un salto.
+    const m = r * 1.2;
+    for (const o of [this.rosa, this.verde]) {
+      o.x = clamp(o.x, m, e.ancho - m);
+      o.y = clamp(o.y, m, e.alto - m);
+    }
+    this.efectos.esc = e;
+  }
+
+  #polvoInicial() {
+    const { ancho: W, alto: H } = this.esc;
+    const cuantas = this.flojo ? 40 : 110;
+    for (let i = 0; i < cuantas; i++) {
+      this.ps.soltar(Math.random() * W, Math.random() * H, {
+        vx: azar(-6, 6), vy: azar(-8, 2),
+        vida: azar(6, 15), tam: azar(1.4, 3.4),
+        tipo: 0, tono: Math.random() < 0.5 ? 0 : 1,
+      });
+    }
+  }
+
+  // ── Interacción ─────────────────────────────────────────────────────
+
+  #enganchar() {
+    const z = this.zona;
+    this.alBajar = (e) => this.#abajo(e);
+    this.alMover = (e) => this.#mueve(e);
+    this.alSubir = (e) => this.#arriba(e);
+    z.addEventListener("pointerdown", this.alBajar, { passive: false });
+    z.addEventListener("pointermove", this.alMover, { passive: false });
+    z.addEventListener("pointerup", this.alSubir);
+    z.addEventListener("pointercancel", this.alSubir);
+
+    this.$("rwSonido").addEventListener("click", () => this.#alternarSonido());
+    this.$("rwReinicio").addEventListener("click", () => this.reiniciar());
+  }
+
+  #local(e) {
+    const c = this.raiz.getBoundingClientRect();
+    return { x: e.clientX - c.left, y: e.clientY - c.top };
+  }
+
+  #abajo(e) {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    this.audio.despertar();
+    this.$("rwPista").classList.remove("rw-dentro");
+
+    const p = this.#local(e);
+
+    // ¿La luna? Se mira antes que las esferas, pero no compiten: ella
+    // vive arriba del todo y ellas en el medio.
+    if (this.lunaLista && this.lunaPos && this.lunaObj < 0.5) {
+      if (Math.hypot(p.x - this.lunaPos.x, p.y - this.lunaPos.y) < this.esc.medida * 0.13) {
+        this.tocarLuna();
+        return;
+      }
+    }
+
+    // La esfera más cercana, con un margen generoso: en un móvil el dedo
+    // tapa justo lo que quiere coger, así que el área sensible es mayor
+    // que el dibujo.
+    let mejor = null, mejorD = Infinity;
+    for (const o of [this.rosa, this.verde]) {
+      const d = Math.hypot(o.x - p.x, o.y - p.y);
+      if (d < o.radio * 2.4 && d < mejorD) { mejor = o; mejorD = d; }
+    }
+    if (!mejor) return;
+    if (this.faseFinal > 0 && this.faseFinal < 3) return;   // durante el encuentro, no
+
+    // Doble toque: un salto y corazones.
+    const ahora = performance.now();
+    if (ahora - mejor.ultimoToque < 320) {
+      this.#dobleToque(mejor);
+      mejor.ultimoToque = 0;
+    } else {
+      mejor.ultimoToque = ahora;
+    }
+
+    mejor.agarrada = true;
+    mejor.dedoId = e.pointerId;
+    mejor.destinoX = p.x;
+    mejor.destinoY = p.y;
+    mejor.brilloObj = 1;
+    mejor.golpe(0.5);
+    mejor.rastro.length = 0;
+    this.audio.tocar();
+    try { this.zona.setPointerCapture(e.pointerId); } catch { /* no siempre se puede */ }
+    if (e.cancelable) e.preventDefault();
+  }
+
+  #mueve(e) {
+    const p = this.#local(e);
+    this.parallaxObj.x = (p.x / this.esc.ancho - 0.5) * 2;
+    this.parallaxObj.y = (p.y / this.esc.alto - 0.5) * 2;
+
+    for (const o of [this.rosa, this.verde]) {
+      if (!o.agarrada || o.dedoId !== e.pointerId) continue;
+      o.destinoX = p.x;
+      o.destinoY = p.y;
+      // El rastro, para el patrón de la constelación.
+      o.rastro.push({ x: p.x, y: p.y, t: this.tiempo });
+      if (o.rastro.length > 140) o.rastro.shift();
+      if (e.cancelable) e.preventDefault();
+    }
+  }
+
+  #arriba(e) {
+    for (const o of [this.rosa, this.verde]) {
+      if (o.dedoId !== e.pointerId) continue;
+      o.agarrada = false;
+      o.dedoId = null;
+      o.brilloObj = 0;
+      this.#mirarConstelacion(o);
+      o.rastro.length = 0;
+    }
+    try { this.zona.releasePointerCapture(e.pointerId); } catch { /* ya estaba */ }
+  }
+
+  #alternarSonido() {
+    const on = this.audio.alternar();
+    const b = this.$("rwSonido");
+    b.setAttribute("aria-label", on ? "Silenciar" : "Activar sonido");
+    this.$("rwOndas").setAttribute("opacity", on ? "1" : "0");
+    this.$("rwMudo").setAttribute("opacity", on ? "0" : "1");
+    if (on) this.audio.tocar();
+  }
+
+  // ── Secretos ────────────────────────────────────────────────────────
+
+  #dobleToque(o) {
+    o.golpe(1.2);
+    o.vy -= 260;
+    this.audio.latido();
+    for (let i = 0; i < 16; i++) {
+      const a = azar(0, Math.PI * 2);
+      this.ps.soltar(o.x, o.y, {
+        vx: Math.cos(a) * azar(30, 110), vy: Math.sin(a) * azar(30, 110) - 40,
+        vida: azar(1.0, 1.9), tam: azar(6, 13), tipo: 2,
+        tono: o === this.rosa ? 0 : 1, giro: azar(-0.4, 0.4), giroV: azar(-1.4, 1.4),
+      });
+    }
+  }
+
+  /**
+   * ¿Ha dibujado un círculo con la esfera?
+   *
+   * Se mide el ángulo TOTAL recorrido alrededor del centro del rastro,
+   * sumando los giros con su signo. Sumar así distingue dar vueltas de
+   * ir y venir: un vaivén suma y resta, un círculo sólo suma.
+   */
+  #mirarConstelacion(o) {
+    const r = o.rastro;
+    if (r.length < 30 || this.constelacion) return;
+    let cx = 0, cy = 0;
+    for (const p of r) { cx += p.x; cy += p.y; }
+    cx /= r.length; cy /= r.length;
+
+    let total = 0;
+    let anterior = Math.atan2(r[0].y - cy, r[0].x - cx);
+    let radioMedio = 0;
+    for (let i = 1; i < r.length; i++) {
+      const a = Math.atan2(r[i].y - cy, r[i].x - cx);
+      let d = a - anterior;
+      while (d > Math.PI) d -= Math.PI * 2;
+      while (d < -Math.PI) d += Math.PI * 2;
+      total += d;
+      anterior = a;
+      radioMedio += Math.hypot(r[i].x - cx, r[i].y - cy);
+    }
+    radioMedio /= r.length;
+
+    const vueltas = Math.abs(total) / (Math.PI * 2);
+    if (vueltas >= CONFIG.SECRETOS.vueltasConstelacion && radioMedio > o.radio * 1.4) {
+      this.#lanzarConstelacion(cx, cy, Math.max(radioMedio, this.esc.medida * 0.18));
+    }
+  }
+
+  #lanzarConstelacion(cx, cy, r) {
+    this.constelacion = { t: 0 };
+    this.audio.secreto();
+    // Las partículas se colocan formando un corazón y se quedan quietas
+    // un rato: es un dibujo hecho de motas, no una figura pintada.
+    const n = this.flojo ? 26 : 46;
+    for (let i = 0; i < n; i++) {
+      const t = (i / n) * Math.PI * 2;
+      const hx = cx + (16 * Math.pow(Math.sin(t), 3)) / 16 * r * 0.9;
+      const hy = cy - ((13 * Math.cos(t) - 5 * Math.cos(2 * t)
+                      - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16) * r * 0.9;
+      this.ps.soltar(hx, hy, {
+        vx: azar(-5, 5), vy: azar(-5, 5),
+        vida: azar(3.4, 4.6), tam: azar(3.4, 6.5),
+        tipo: 3, tono: 3, giro: azar(0, 6.28), giroV: azar(-0.5, 0.5),
+      });
+    }
+    this.efectos.frase(cx, cy - r * 0.5, "Dibujaste un corazón sin saberlo. 🤍");
+    this.espera(() => { this.constelacion = null; }, 6000);
+  }
+
+  #mirarLuna(dt) {
+    if (this.lunaLista || this.juntas) return;
+    if (this.cartas.entregadas < CONFIG.SECRETOS.cartasParaLuna) return;
+    this.lunaLista = true;
+    // No se anuncia con un cartel: se ENCIENDE una lunita pequeña arriba,
+    // y quien se fije la encontrará. La frase sólo levanta la vista.
+    this.lunaPos = { x: this.esc.ancho * 0.5, y: this.esc.alto * 0.18 };
+    this.lunaGuinoObj = 1;
+    this.efectos.frase(this.lunaPos.x, this.lunaPos.y + 52, "¿Ves algo ahí arriba?", true);
+  }
+
+  tocarLuna() {
+    if (!this.lunaLista || this.lunaObj > 0.5) return;
+    this.lunaObj = 1;
+    this.lunaGuinoObj = 0;
+    this.audio.secreto();
+    this.efectos.limpiar();
+    this.espera(() => {
+      this.efectos.frase(this.esc.ancho / 2, this.esc.alto * 0.68,
+        "Incluso hasta la luna llegaría por ti. 🌙", true);
+    }, 1200);
+    // Y se vuelve sola: nadie se queda encerrado en un secreto.
+    this.espera(() => { this.lunaObj = 0; this.lunaLista = false; this.lunaGuinoObj = 0; }, 8200);
+  }
+
+  // ── Cartas ──────────────────────────────────────────────────────────
+
+  #cartaRecibida(c) {
+    const recibe = c.hacia === this.rosa ? this.rosa : this.verde;
+    recibe.golpe(0.7);
+    this.audio.recibir();
+    // Con el corazón hecho —o con la luna abierta— las cartas siguen
+    // cruzándose, pero calladas: lo que hay que poder leer es lo otro, y
+    // dos globos por segundo encima no dejaban ver nada.
+    if ((this.faseFinal >= 2 || this.lunaObj > 0.5) && !c.especial) return;
+    if (c.especial) {
+      this.efectos.frase(recibe.x, recibe.y, CONFIG.CARTA_ESPECIAL.texto, true);
+    } else {
+      this.efectos.frase(recibe.x, recibe.y);
+    }
+  }
+
+  #mandarCartas(dt) {
+    if (this.faseFinal > 0 && this.faseFinal < 3) return;
+    for (const quien of ["rosa", "verde"]) {
+      this.relojCarta[quien] -= dt;
+      if (this.relojCarta[quien] > 0) continue;
+      this.relojCarta[quien] = this.juntas ? CONFIG.CADENCIA_CARTA * 2.4 : CONFIG.CADENCIA_CARTA;
+      const esRosa = quien === "rosa";
+      const desde = esRosa ? this.rosa : this.verde;
+      const hacia = esRosa ? this.verde : this.rosa;
+      const especial = Math.random() < CONFIG.CARTA_ESPECIAL.probabilidad;
+      if (this.cartas.enviar(desde, hacia, esRosa, especial)) {
+        desde.golpe(0.28);
+        this.audio.enviar();
+      }
+    }
+  }
+
+  // ── El encuentro ────────────────────────────────────────────────────
+
+  #encuentro() {
+    if (this.faseFinal) return;
+    this.faseFinal = 1;
+    this.juntas = true;
+    this.audio.encuentro();
+    try { navigator.vibrate?.([24, 70, 24, 70, 50]); } catch { /* da igual */ }
+
+    // 1 · el mundo se para un instante
+    this.lentitudObj = 0.22;
+
+    // 2 · las dos se sueltan y se buscan
+    for (const o of [this.rosa, this.verde]) { o.agarrada = false; o.dedoId = null; o.brilloObj = 0.6; }
+
+    // 3 · la onda de luz y las partículas
+    this.espera(() => {
+      this.destelloObj = 1;
+      const cx = (this.rosa.x + this.verde.x) / 2;
+      const cy = (this.rosa.y + this.verde.y) / 2;
+      const n = this.flojo ? 90 : 240;
+      for (let i = 0; i < n; i++) {
+        const a = azar(0, Math.PI * 2);
+        const v = azar(60, 420);
+        this.ps.soltar(cx, cy, {
+          vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+          vida: azar(1.2, 2.8), tam: azar(3, 9),
+          tipo: i % 4 === 0 ? 2 : (i % 3 === 0 ? 3 : 1),
+          tono: i % 3 === 0 ? 2 : (i % 2 ? 0 : 1),
+          giro: azar(0, 6.28), giroV: azar(-3, 3),
+        });
+      }
+      this.rosa.golpe(1.6); this.verde.golpe(1.6);
+    }, 380);
+
+    // 4 · el listón se hace corazón
+    this.espera(() => { this.liston.formaObj = 1; this.faseFinal = 2; }, 1100);
+
+    // 5 · el mundo vuelve a su ritmo y aparece la frase
+    this.espera(() => { this.lentitudObj = 1; this.destelloObj = 0; }, 1700);
+    this.espera(() => {
+      const f = this.$("rwFinal");
+      f.textContent = CONFIG.FRASE_FINAL;
+      f.classList.add("rw-dentro");
+      this.faseFinal = 3;
+    }, 2200);
+
+    // 6 · y a partir de aquí, corazones cada tanto, para siempre
+    this.corazonesEternos = true;
+  }
+
+  #orbitarJuntas(dt) {
+    // Ya juntas, giran despacio una alrededor de la otra.
+    const cx = this.esc.ancho / 2;
+    const cy = this.esc.alto / 2;
+    this.anguloOrbita = (this.anguloOrbita || 0) + dt * 0.42;
+    const r = this.rosa.radio * 0.82;
+    const objRx = cx + Math.cos(this.anguloOrbita) * r;
+    const objRy = cy + Math.sin(this.anguloOrbita) * r * 0.62;
+    const objVx = cx - Math.cos(this.anguloOrbita) * r;
+    const objVy = cy - Math.sin(this.anguloOrbita) * r * 0.62;
+    this.rosa.x = damp(this.rosa.x, objRx, 3.4, dt);
+    this.rosa.y = damp(this.rosa.y, objRy, 3.4, dt);
+    this.verde.x = damp(this.verde.x, objVx, 3.4, dt);
+    this.verde.y = damp(this.verde.y, objVy, 3.4, dt);
+    this.rosa.vx = this.rosa.vy = this.verde.vx = this.verde.vy = 0;
+
+    // Corazoncitos que suben sin parar, muy de vez en cuando.
+    this.corazonReloj = (this.corazonReloj || 0) - dt;
+    if (this.corazonReloj <= 0) {
+      this.corazonReloj = azar(0.5, 1.4);
+      this.ps.soltar(cx + azar(-30, 30), cy + azar(-10, 20), {
+        vx: azar(-12, 12), vy: azar(-46, -22),
+        vida: azar(2.2, 3.6), tam: azar(7, 14), tipo: 2,
+        tono: Math.random() < 0.5 ? 0 : 1,
+        giro: azar(-0.3, 0.3), giroV: azar(-0.5, 0.5),
+      });
+    }
+  }
+
+  reiniciar() {
+    for (const id of this.relojes) clearTimeout(id);
+    this.relojes.clear();
+    this.cartas.reiniciar();
+    this.efectos.limpiar();
+    this.$("rwFinal").classList.remove("rw-dentro");
+    this.faseFinal = 0;
+    this.juntas = false;
+    this.corazonesEternos = false;
+    this.liston.formaObj = 0;
+    this.fisica.rendida = 0;
+    this.destelloObj = 0;
+    this.lentitudObj = 1;
+    this.corazonObj = 0;
+    this.lunaObj = 0;
+    this.lunaGuinoObj = 0;
+    this.lunaLista = false;
+    this.tiempoCerca = 0;
+    this.constelacion = null;
+    this.#colocar();
+    this.audio.tocar();
+  }
+
+  // ── El bucle ────────────────────────────────────────────────────────
+
+  #fotograma(ahora) {
+    if (!this.corriendo) return;
+    this.raf = requestAnimationFrame(this.bucle);
+
+    // Un fotograma imposible (la pestaña estuvo escondida) se descarta;
+    // uno simplemente lento se respeta acotado, para que en un aparato
+    // justo el mundo vaya despacio pero no en cámara lenta.
+    let dt = (ahora - this.ultimo) / 1000;
+    this.ultimo = ahora;
+    if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+    else if (dt > 0.1) dt = 0.1;
+
+    // El encuentro ralentiza el mundo entero durante un instante.
+    this.lentitud = damp(this.lentitud, this.lentitudObj ?? 1, 4, dt);
+    const dtm = dt * this.lentitud;
+
+    this.tiempo += dtm;
+    this.#vigilarRitmo(dt);
+
+    // Parallax
+    this.parallax.x = damp(this.parallax.x, this.parallaxObj.x, 2.6, dt);
+    this.parallax.y = damp(this.parallax.y, this.parallaxObj.y, 2.6, dt);
+
+    // Física
+    let info;
+    if (this.juntas && this.faseFinal >= 2) {
+      this.#orbitarJuntas(dtm);
+      info = { d: this.rosa.radio * 1.9, minima: this.rosa.radio * 1.84,
+               alcance: this.rosa.radio * 4 };
+    } else {
+      info = this.fisica.paso(dtm, this.rosa, this.verde, this.esc);
+    }
+
+    this.rosa.mover(dtm);
+    this.verde.mover(dtm);
+
+    // ¿Se han encontrado?
+    const maxima = Math.hypot(this.esc.ancho, this.esc.alto) * 0.72;
+    const bruto = this.distancia.actualizar(dt, info.d, info.minima, maxima, this.juntas);
+    this.cercania = damp(this.cercania, 1 - bruto, 5, dt);
+    this.tension = damp(this.tension, clamp01(info.d / maxima) * 0.9 + this.cercania * 0.1, 4, dt);
+
+    if (!this.juntas && bruto <= 0.012 && this.fisica.rendida > 0.75) this.#encuentro();
+
+    // El corazón del fondo: sale de tenerlas cerca sin llegar a juntarlas.
+    if (!this.juntas && bruto < 0.14 && bruto > 0.02) {
+      this.tiempoCerca += dt;
+      if (this.tiempoCerca > CONFIG.SECRETOS.corazonFondo) this.corazonObj = 1;
+    } else if (!this.juntas) {
+      this.tiempoCerca = Math.max(0, this.tiempoCerca - dt * 0.6);
+      if (this.tiempoCerca < 1) this.corazonObj = 0;
+    }
+    this.corazonFondo = damp(this.corazonFondo, this.corazonObj, 1.1, dt);
+    this.luna = damp(this.luna, this.lunaObj, 1.4, dt);
+    this.lunaGuino = damp(this.lunaGuino, this.lunaGuinoObj, 1.6, dt);
+    this.destello = damp(this.destello, this.destelloObj ?? 0, 2.6, dt);
+
+    // Listón
+    this.liston.mover(dtm, this.rosa, this.verde, this.tension);
+
+    // Cartas, frases y secretos
+    this.#mandarCartas(dtm);
+    this.cartas.mover(dtm);
+    this.efectos.mover(dt);
+    this.#mirarLuna(dt);
+
+    // Chispas que recorren el listón
+    this.chispaReloj -= dtm;
+    if (this.chispaReloj <= 0) {
+      this.chispaReloj = this.flojo ? 0.2 : 0.075;
+      const p = this.liston.punto(Math.random());
+      this.ps.soltar(p.x, p.y, {
+        vx: azar(-16, 16), vy: azar(-20, 6),
+        vida: azar(0.5, 1.1), tam: azar(2.4, 5), tipo: 4, tono: 2,
+        giro: azar(0, 6.28), giroV: azar(-2, 2),
+      });
+    }
+
+    // Polvo de fondo, que se repone solo
+    this.polvoReloj -= dt;
+    if (this.polvoReloj <= 0) {
+      this.polvoReloj = this.flojo ? 0.5 : 0.22;
+      this.ps.soltar(Math.random() * this.esc.ancho, this.esc.alto + 8, {
+        vx: azar(-6, 6), vy: azar(-22, -8),
+        vida: azar(7, 14), tam: azar(1.4, 3.2), tipo: 0,
+        tono: Math.random() < 0.5 ? 0 : 1,
+      });
+    }
+
+    // Partículas, con el dedo empujándolas un poquito
+    this.ps.mover(dtm, {
+      x: this.parallax.x * this.esc.ancho * 0.5 + this.esc.ancho * 0.5,
+      y: this.parallax.y * this.esc.alto * 0.5 + this.esc.alto * 0.5,
+      r: this.esc.medida * 0.3, fuerza: 0.9,
+    });
+
+    this.#dibujar();
+  }
+
+  #vigilarRitmo(dt) {
+    this.fpsAcum = (this.fpsAcum || 0) + dt;
+    this.fpsCuenta = (this.fpsCuenta || 0) + 1;
+    if (this.fpsAcum < 1.6) return;
+    const fps = this.fpsCuenta / this.fpsAcum;
+    this.fpsAcum = 0; this.fpsCuenta = 0;
+    if (fps < CONFIG.PERF.fpsMinimo && (this.recortes || 0) < 2) {
+      this.recortes = (this.recortes || 0) + 1;
+      this.flojo = true;
+      this.calidad = 0;
+      this.esc.topeDpr = CONFIG.PERF.dprMaxFlojo;
+      this.esc.medir();
+    }
+  }
+
+  #dibujar() {
+    const mundo = {
+      tiempo: this.tiempo,
+      rosa: this.rosa, verde: this.verde,
+      liston: this.liston.puntos,
+      particulas: this.ps,
+      cercania: this.cercania,
+      tension: this.tension,
+      destello: this.destello,
+      corazonFondo: this.corazonFondo,
+      luna: this.luna,
+      lunaGuino: this.lunaGuino,
+      lunaPos: { x: this.lunaPos.x / this.esc.ancho, y: this.lunaPos.y / this.esc.alto },
+      parallax: this.parallax,
+      calidad: this.calidad,
+    };
+    if (this.gl?.ok) this.gl.dibujar(mundo, this.esc);
+    else this.respaldo?.dibujar(mundo, this.esc);
+  }
+
+  destruir() {
+    this.corriendo = false;
+    cancelAnimationFrame(this.raf);
+    for (const id of this.relojes) clearTimeout(id);
+    this.relojes.clear();
+    document.removeEventListener("visibilitychange", this.alVisibilidad);
+    this.distancia.destruir();
+    this.esc.destruir();
+  }
+}
+
+// ── Arranque ────────────────────────────────────────────────────────
+// Sin pantalla de bienvenida ni menú: la escena empieza y ya está.
+
+const raiz = document.getElementById("rw");
+const app = new App(raiz);
+
+/* Al salir de la página el libro descarga el documento entero y con él se
+   va todo. Aun así se recoge a mano, por si alguien la incrusta de otra
+   manera y el documento sobrevive. */
+window.addEventListener("pagehide", () => app.destruir());
+
+})();
+</script>
+</body>
+</html>
