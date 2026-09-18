@@ -159,7 +159,7 @@ con la etiqueta de siempre:
 
 ## Las que ya hay
 
-Hay **veinte**, y son distintas a propósito. La primera es la buena para
+Hay **treinta**, y son distintas a propósito. La primera es la buena para
 empezar; las demás son para ver hasta dónde se puede llegar con un solo
 archivo y sin descargar nada de fuera.
 
@@ -185,11 +185,27 @@ archivo y sin descargar nada de fuera.
 | `página.html18.html` | **La máquina de escribir.** Escribes y te contesta. Hay palabras que sabe. |
 | `página.html19.html` | **El árbol de las estaciones.** Se arrastra de lado y pasa el año entero encima del mismo árbol. |
 | `página.html20.html` | **La cometa.** Se corre con el carrete y el viento hace el resto. |
+| `página.html21.html` | **El reloj de nosotros.** Se giran las agujas y el día entero pasa por delante. Cada hora tiene la suya. |
+| `página.html22.html` | **La carta doblada.** Cerrada con lacre. Se rompe, y se va desdoblando pliegue a pliegue. |
+| `página.html23.html` | **El café de las siete.** Se echa la leche arrastrando el dedo. Despacio sale blanco; deprisa se corta. |
+| `página.html24.html` | **El tocadiscos.** Se baja la aguja donde quieras y suena lo que haya grabado en ese surco. Se puede rascar. |
+| `página.html25.html` | **Las medusas.** Se arrastra hacia arriba para bajar. Cuanto más hondo, menos luz y más ellas. |
+| `página.html26.html` | **La ciudad dormida.** Se van encendiendo ventanas, y en cada una hay alguien haciendo algo. |
+| `página.html27.html` | **El bordado.** Está marcado a lápiz en la tela; se pasa el dedo por encima y se borda. |
+| `página.html28.html` | **La tormenta.** Se cuenta desde el rayo hasta el trueno, y esos segundos dicen lo lejos que está. |
+| `página.html29.html` | **El globo.** Se aprieta para dar gas y se sube. El aire se enfría, así que hay que estar. |
+| `página.html30.html` | **El planeta pequeño.** Se gira y se planta lo que quieras encima. Hay algo en la otra cara. |
 
 Todas menos la primera tienen **secretos escondidos** que no se anuncian:
 cosas que pasan si insistes, si dibujas algo, si esperas sin prisa, si tocas
 dos veces o si no tocas nada. Están para que los encuentre ella, no para
 explicarlos aquí.
+
+Y en unas cuantas de las diez últimas están escondidas **vuestras
+iniciales**: grabadas en la chapa de un péndulo, estampadas en un lacre,
+dibujadas en la espuma de un café, en la etiqueta de un disco, bordadas a
+mano, cosidas en la tela de un globo y clavadas en una banderita. Hay una
+más que no está en esta lista, y ésa no la digo.
 
 Y todos llevan, arriba del todo de su `<script>`, una sección marcada
 `CONFIGURACIÓN EDITABLE` con las frases, los colores, los números y dónde

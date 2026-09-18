@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>La ciudad dormida</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .ciudad-mundo, con prefijo `cd-` en cada clase.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.ciudad-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background: #070a16;
+  color: #dbe2f2;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ciudad-mundo .cd-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Los toques los recoge `.cd-toque`, que va justo encima. */
+  pointer-events: none;
+}
+
+/* La ciudad entera. El libro sólo se queda el barrido que empieza en sus
+   24-44 px de borde. */
+.ciudad-mundo .cd-toque {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.ciudad-mundo .cd-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  padding:
+    calc(var(--seguro-t) + 20px) 22px
+    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+.ciudad-mundo .cd-titulo {
+  margin: 0;
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-size: clamp(1rem, 4.4vw, 1.4rem);
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  color: #8fa4cc;
+  opacity: 0.8;
+  transition: opacity 900ms var(--e-suave);
+}
+.ciudad-mundo.is-jugando .cd-titulo { opacity: 0.18; }
+
+.ciudad-mundo .cd-pie {
+  margin: 0;
+  min-height: 3.8em;
+  max-width: 23em;
+  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
+  line-height: 1.55;
+  color: #dde4f4;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 680ms var(--e-suave), transform 680ms var(--e-suave);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+}
+.ciudad-mundo .cd-pie.is-visible { opacity: 0.94; transform: none; }
+.ciudad-mundo .cd-pie em {
+  display: block;
+  margin-top: 0.3em;
+  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  font-size: 1.16em;
+  font-style: normal;
+  color: #ffcf8a;
+}
+
+.ciudad-mundo .cd-cuenta {
+  position: absolute;
+  right: 20px;
+  top: calc(var(--seguro-t) + 20px);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  color: #7d90b8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ciudad-mundo * { transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="ciudad-mundo" id="mundo">
+  <canvas class="cd-lienzo" id="lienzo"></canvas>
+  <div class="cd-toque" id="toque" aria-hidden="true"></div>
+  <div class="cd-ui">
+    <h1 class="cd-titulo" id="titulo">Enciende las ventanas</h1>
+    <p class="cd-pie" id="pie" role="status" aria-live="polite"></p>
+  </div>
+  <div class="cd-cuenta" id="cuenta" aria-hidden="true"></div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN EDITABLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const CONF = {
+
+  /* ---- LO QUE ESCRIBEN LAS VENTANAS -----------------------------------
+     Si se encienden las de la torre del medio siguiendo el dibujo, sale
+     esto escrito en la fachada. Cada letra es una rejilla de 5 de ancho
+     por 7 de alto; un `#` es ventana encendida.                        */
+  mensaje: "y.m",
+  letras: {
+    y: [
+      "#...#",
+      "#...#",
+      ".#.#.",
+      "..#..",
+      "..#..",
+      "..#..",
+      "..#..",
+    ],
+    ".": [
+      ".....",
+      ".....",
+      ".....",
+      ".....",
+      ".....",
+      ".....",
+      "..#..",
+    ],
+    m: [
+      "#...#",
+      "##.##",
+      "#.#.#",
+      "#.#.#",
+      "#...#",
+      "#...#",
+      "#...#",
+    ],
+  },
+
+  /* ---- LO QUE SE LEE EN CADA VENTANA ----------------------------------
+     Una escena distinta en cada casa. Se sortean sin repetir.         */
+  escenas: [
+    ["En el tercero hay alguien que tampoco duerme.", "Como nosotros."],
+    ["En ése están viendo una película que ya han visto.", "Y está bien."],
+    ["Ahí dentro huele a cena.", "Se les ha hecho tarde hablando."],
+    ["Ése acaba de llegar y aún no se ha quitado el abrigo.", "Ha sido un día largo."],
+    ["En ése hay alguien leyendo.", "Va por la mitad y no puede parar."],
+    ["Ahí están discutiendo por una tontería.", "Se les pasa antes de las doce."],
+    ["En esa ventana hay una planta que alguien riega mucho.", "Se nota."],
+    ["Ahí dentro alguien está escribiendo algo.", "Igual una carta. Igual como ésta."],
+    ["En ése se han quedado dormidos con la tele puesta.", "Los dos."],
+    ["Ahí hay una fiesta pequeña.", "De las buenas, de cinco personas."],
+    ["Ésa está vacía y la luz se quedó puesta.", "Vuelven mañana."],
+    ["Ahí dentro alguien está pensando en alguien.", "Igual en ti, quién sabe."],
+  ],
+
+  /* ---- LOS HITOS ------------------------------------------------------- */
+  hitos: [
+    { n: 5,  texto: "Cinco ventanas.", firma: "La ciudad se despierta despacio." },
+    { n: 20, texto: "Veinte. Ya no está tan dormida.", firma: "Y todo porque tú vas tocando." },
+    { n: 45, texto: "Cuarenta y cinco.", firma: "Como si la hubieras despertado de golpe." },
+  ],
+
+  /* ---- LA CIUDAD ------------------------------------------------------- */
+  planos: 3,
+  torreMedio: true,     // la torre alta donde se puede escribir
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   La maquinaria.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const mundo  = document.getElementById("mundo");
+const lienzo = document.getElementById("lienzo");
+const zona   = document.getElementById("toque");
+const elPie  = document.getElementById("pie");
+const elCue  = document.getElementById("cuenta");
+const ctx    = lienzo.getContext("2d", { alpha: false });
+
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+
+let A = 0, H = 0, dpr = 1;
+
+/* Azar repetible: la misma ciudad cada vez que se mide la hoja. Con
+   Math.random, girar el móvil reconstruía otra ciudad distinta y las
+   ventanas encendidas cambiaban de sitio. */
+let semilla = 31415926;
+function rnd() {
+  semilla = (semilla * 1664525 + 1013904223) % 4294967296;
+  return semilla / 4294967296;
+}
+
+function medir() {
+  const r = mundo.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  A = r.width; H = r.height;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  lienzo.width  = Math.round(A * dpr);
+  lienzo.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  construir();
+}
+new ResizeObserver(medir).observe(mundo);
+
+/* ---- La ciudad ------------------------------------------------------------- */
+
+let edificios = [];
+let ventanas = [];          // todas, de todos los edificios
+let torre = null;           // la del medio, la que escribe
+
+function construir() {
+  semilla = 31415926;
+  edificios = [];
+  ventanas = [];
+  torre = null;
+
+  const suelo = H * 0.94;
+
+  /* Tres planos, del fondo al frente. Cada plano más oscuro, más alto y
+     con las ventanas más grandes: eso es toda la profundidad. */
+  for (let p = 0; p < CONF.planos; p++) {
+    const z = p / (CONF.planos - 1);          // 0 lejos · 1 cerca
+    const ancho = A * (0.1 + z * 0.09);
+    const n = Math.ceil(A / ancho) + 1;
+    const base = suelo - (1 - z) * H * 0.05;
+    for (let i = 0; i < n; i++) {
+      const x = i * ancho - ancho * 0.3 + rnd() * ancho * 0.3;
+      const w = ancho * (0.72 + rnd() * 0.3);
+      /* Mucha variedad de altura a propósito: si todos miden parecido,
+         la ciudad es un bloque negro con una raya recta arriba. Lo que
+         se lee como ciudad es el PERFIL, con sus huecos. */
+      const h = H * (0.09 + z * 0.09) * (0.35 + rnd() * rnd() * 3.2);
+      const e = {
+        x, y: base - h, w, h, z, p,
+        /* Casi negros, y los del fondo un pelín MÁS CLAROS que los de
+           delante: la bruma de la ciudad lava lo que está lejos. Es al
+           revés de lo que parece, y es lo que da profundidad.
+
+           Y muy oscuros de verdad: el primer intento los dejó casi del
+           color del cielo y lo que se veía eran ventanas flotando en la
+           nada. Una ciudad de noche es SILUETA. */
+        col: `rgb(${Math.round(20 - z * 13)},${Math.round(24 - z * 15)},${Math.round(40 - z * 24)})`,
+        antena: rnd() < 0.24,
+        deposito: rnd() < 0.2,
+      };
+      edificios.push(e);
+      sembrarVentanas(e);
+    }
+  }
+
+  /* La torre del medio: más alta que todas y con la rejilla justa para
+     que quepa el mensaje. Es la que guarda el secreto. */
+  if (CONF.torreMedio) {
+    const cols = CONF.mensaje.length * 5 + (CONF.mensaje.length - 1);
+    const filas = 7;
+    const cw = Math.min(A * 0.055, 16);
+    const w = cols * cw * 1.5;
+    const h = H * 0.40;
+    const x = (A - w) / 2;
+    const y = suelo - h;
+    torre = {
+      x, y, w, h, cols, filas, cw,
+      col: "rgb(16,20,34)",
+      ventanas: [],
+    };
+    const mx = w / cols;
+    const my = (h * 0.72) / filas;
+    for (let f = 0; f < filas; f++) {
+      for (let c = 0; c < cols; c++) {
+        const v = {
+          x: x + c * mx + mx * 0.22,
+          y: y + h * 0.16 + f * my + my * 0.2,
+          w: mx * 0.56,
+          h: my * 0.58,
+          on: 0, objetivo: 0,
+          torre: true, fila: f, col_: c,
+          escena: -1,
+          calor: rnd(),
+        };
+        torre.ventanas.push(v);
+        ventanas.push(v);
+      }
+    }
+    edificios.push(torre);
+  }
+
+  /* Unas cuantas encendidas de salida: una ciudad del todo apagada
+     parece rota. */
+  let ya = 0;
+  for (const v of ventanas) {
+    if (v.torre) continue;
+    if (rnd() < 0.07) { v.on = v.objetivo = 1; ya++; }
+  }
+  encendidas = ya;
+  pintarCuenta();
+}
+
+function sembrarVentanas(e) {
+  const cw = Math.max(4, e.w * 0.17);
+  const ch = Math.max(5, cw * 1.25);
+  const cols = Math.max(1, Math.floor(e.w / (cw * 1.7)));
+  const filas = Math.max(1, Math.floor(e.h / (ch * 1.9)));
+  const mx = e.w / cols, my = e.h / (filas + 0.6);
+  for (let f = 0; f < filas; f++) {
+    for (let c = 0; c < cols; c++) {
+      ventanas.push({
+        x: e.x + c * mx + (mx - cw) / 2,
+        y: e.y + my * 0.7 + f * my,
+        w: cw, h: ch,
+        on: 0, objetivo: 0,
+        z: e.z,
+        escena: -1,
+        calor: rnd(),
+      });
+    }
+  }
+}
+
+/* ---- Tocar ----------------------------------------------------------------- */
+
+let encendidas = 0;
+let escenasLibres = [];
+let siguienteHito = 0;
+let arrastrando = false;
+let ultimo = 0;
+
+function enPantalla(e) {
+  const r = mundo.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+zona.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  zona.setPointerCapture(e.pointerId);
+  arrastrando = true;
+  tocar(enPantalla(e), false);
+});
+
+/* Arrastrando se encienden en fila, como pasando la mano. Pero sin
+   contar frase en cada una: si no, es un aluvión ilegible. */
+zona.addEventListener("pointermove", (e) => {
+  if (!arrastrando) return;
+  const ahora = performance.now();
+  if (ahora - ultimo < 45) return;
+  ultimo = ahora;
+  tocar(enPantalla(e), true);
+});
+
+const soltar = () => { arrastrando = false; };
+zona.addEventListener("pointerup", soltar);
+zona.addEventListener("pointercancel", soltar);
+
+function tocar(p, callado) {
+  /* La ventana más cercana con un margen generoso, y las de delante
+     ganan: son las que se ven. */
+  let mejor = null, mejorZ = -1, dMin = Infinity;
+  for (const v of ventanas) {
+    const cx = v.x + v.w / 2, cy = v.y + v.h / 2;
+    const d = Math.hypot(cx - p.x, cy - p.y);
+    const r = Math.max(v.w, v.h) * 1.6 + 8;
+    if (d > r) continue;
+    const z = v.torre ? 2 : (v.z || 0);
+    if (z > mejorZ || (z === mejorZ && d < dMin)) { mejor = v; mejorZ = z; dMin = d; }
+  }
+  if (!mejor) return;
+
+  mundo.classList.add("is-jugando");
+  const antes = mejor.objetivo;
+  mejor.objetivo = antes > 0.5 ? 0 : 1;
+  encendidas += mejor.objetivo > 0.5 ? 1 : -1;
+  pintarCuenta();
+  clic(mejor.objetivo > 0.5);
+
+  if (!callado && mejor.objetivo > 0.5) {
+    if (mejor.escena < 0) {
+      if (!escenasLibres.length) escenasLibres = CONF.escenas.map((_, i) => i);
+      const k = Math.floor(Math.random() * escenasLibres.length);
+      mejor.escena = escenasLibres.splice(k, 1)[0];
+    }
+    const [t, f] = CONF.escenas[mejor.escena];
+    decir(t, f);
+  }
+
+  /* Los hitos mandan. */
+  while (siguienteHito < CONF.hitos.length && encendidas >= CONF.hitos[siguienteHito].n) {
+    const h = CONF.hitos[siguienteHito];
+    siguienteHito++;
+    decir(h.texto, h.firma, true);
+    campana(440 + siguienteHito * 70);
+  }
+
+  mirarSecretos();
+}
+
+function pintarCuenta() {
+  elCue.textContent = `${Math.max(0, encendidas)} luces`;
+}
+
+/* ---- Los textos ------------------------------------------------------------- */
+
+let pidiendo = null;
+let bloqueado = 0;
+
+function decir(texto, firma, importante) {
+  const ahora = performance.now();
+  if (!importante && ahora < bloqueado) return;
+  if (pidiendo === texto) return;
+  pidiendo = texto;
+  if (importante) bloqueado = ahora + 4000;
+  elPie.classList.remove("is-visible");
+  setTimeout(() => {
+    elPie.textContent = texto;
+    if (firma) {
+      const em = document.createElement("em");
+      em.textContent = firma;
+      elPie.append(em);
+    }
+    elPie.classList.add("is-visible");
+  }, suave ? 10 : 280);
+}
+
+/* ---- Sonido ----------------------------------------------------------------- */
+
+let audio = null;
+function clic(encendiendo) {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+    const t = audio.currentTime;
+    /* El clac de un interruptor: dos golpes muy cortos, el segundo más
+       flojo. Al apagar van al revés. */
+    const orden = encendiendo ? [[0, 0.18], [0.035, 0.07]] : [[0, 0.12], [0.03, 0.05]];
+    for (const [retraso, v] of orden) {
+      const n = Math.floor(audio.sampleRate * 0.015);
+      const buf = audio.createBuffer(1, n, audio.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
+      const src = audio.createBufferSource();
+      src.buffer = buf;
+      const f = audio.createBiquadFilter();
+      f.type = "bandpass";
+      f.frequency.value = encendiendo ? 2600 : 1700;
+      const g = audio.createGain();
+      g.gain.value = v;
+      src.connect(f).connect(g).connect(audio.destination);
+      src.start(t + retraso);
+    }
+  } catch { /* sin sonido se encienden igual */ }
+}
+
+function campana(hz) {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    const t = audio.currentTime;
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(hz, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.08, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+    o.connect(g).connect(audio.destination);
+    o.start(t); o.stop(t + 1.6);
+  } catch { /* nada */ }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS SECRETOS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 1. EL GRANDE. Si en la torre del medio quedan encendidas exactamente
+      las ventanas del dibujo —y ninguna más—, la fachada escribe las
+      iniciales y se queda así.                                        */
+let escrito = false;
+
+/** ¿Va encendida esta ventana de la torre, según el mensaje? */
+function tocaEncendida(fila, col) {
+  const anchoLetra = 5;
+  const letraI = Math.floor(col / (anchoLetra + 1));
+  const dentro = col % (anchoLetra + 1);
+  if (dentro === anchoLetra) return false;        // el hueco entre letras
+  const ch = CONF.mensaje[letraI];
+  const L = CONF.letras[ch];
+  if (!L) return false;
+  return L[fila][dentro] === "#";
+}
+
+function mirarSecretos() {
+  if (escrito || !torre) return;
+  let bien = true;
+  for (const v of torre.ventanas) {
+    const debe = tocaEncendida(v.fila, v.col_);
+    if ((v.objetivo > 0.5) !== debe) { bien = false; break; }
+  }
+  if (!bien) return;
+  escrito = true;
+  decir(`Ahí está. ${CONF.mensaje}, en la fachada.`,
+        "Toda la ciudad lo puede leer y me da exactamente igual.", true);
+  campana(523);
+  setTimeout(() => campana(659), 220);
+  setTimeout(() => campana(784), 440);
+  fuegos = 1;
+}
+
+/* 2. Encender TODA la ciudad: amanece.                               */
+let amanece = 0;
+let amaneceDicho = false;
+
+/* 3. Apagarlo todo: se ven las estrellas, que con las luces no se
+      veían.                                                          */
+let estrellasDichas = false;
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+let t0 = performance.now();
+let reloj = 0;
+let fuegos = 0;
+const chispas = [];
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A || !H) return;
+
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+  else if (dt > 0.1) dt = 0.1;
+  reloj += dt;
+
+  /* Las ventanas se encienden con un retraso propio: una bombilla
+     tarda, y que tarden distinto es lo que hace que parezcan casas y no
+     píxeles. */
+  for (const v of ventanas) {
+    const k = v.objetivo > v.on ? 7 + v.calor * 6 : 3.4;
+    v.on += (v.objetivo - v.on) * Math.min(1, k * dt);
+  }
+
+  const total = ventanas.length;
+  const prop = clamp(encendidas / Math.max(1, total), 0, 1);
+  if (prop > 0.93 && !amaneceDicho) {
+    amaneceDicho = true;
+    amanece = 0.001;
+    decir("Las has encendido todas.", "Ya no es de noche. Eso lo has hecho tú.", true);
+    campana(880);
+  }
+  if (amanece > 0) amanece = Math.min(1, amanece + dt * 0.12);
+
+  if (encendidas <= 0 && !estrellasDichas) {
+    estrellasDichas = true;
+    decir("Todo apagado.", "Y entonces sí se ven las estrellas. Nunca están las dos cosas.", true);
+    campana(330);
+    setTimeout(() => { estrellasDichas = false; }, 30000);
+  }
+
+  if (fuegos > 0) {
+    fuegos = Math.max(0, fuegos - dt * 0.2);
+    if (Math.random() < 0.35) lanzarChispa();
+  }
+
+  dibujar(dt, prop);
+}
+
+function lanzarChispa() {
+  const x = azar(A * 0.1, A * 0.9);
+  const y = azar(H * 0.06, H * 0.3);
+  const col = ["#ffd08a", "#ff9ec0", "#a8e0ff", "#c9ffd0"][Math.floor(Math.random() * 4)];
+  for (let i = 0; i < 22; i++) {
+    const a = (i / 22) * 6.283;
+    const s = azar(50, 130);
+    chispas.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, v: 1, col });
+  }
+  if (chispas.length > 400) chispas.splice(0, chispas.length - 400);
+}
+
+function dibujar(dt, prop) {
+  /* --- el cielo --- */
+  const dia = amanece;
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  if (dia > 0.01) {
+    g.addColorStop(0, `rgb(${Math.round(7 + dia * 130)},${Math.round(10 + dia * 150)},${Math.round(22 + dia * 170)})`);
+    g.addColorStop(0.62, `rgb(${Math.round(16 + dia * 220)},${Math.round(20 + dia * 170)},${Math.round(40 + dia * 120)})`);
+    g.addColorStop(1, `rgb(${Math.round(24 + dia * 210)},${Math.round(26 + dia * 150)},${Math.round(48 + dia * 90)})`);
+  } else {
+    /* El cielo se ACLARA hacia abajo, y bastante: es la luz de la propia
+       ciudad rebotando en el aire. Sin ese halo no hay contra qué
+       recortar los edificios y no se ve ninguno. */
+    /* El resplandor va donde está la LÍNEA DE TEJADOS, no abajo del
+       todo: abajo lo tapan los propios edificios y no sirve de nada.
+       Puesto a media altura, las siluetas se recortan contra él. */
+    g.addColorStop(0.00, "#04060f");
+    g.addColorStop(0.30, "#0b1022");
+    g.addColorStop(0.50, "#22284a");
+    g.addColorStop(0.62, "#3e3c62");
+    g.addColorStop(0.72, "#2a2a48");
+    g.addColorStop(1.00, "#14162a");
+  }
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, A, H);
+
+  /* --- las estrellas: sólo se ven con la ciudad apagada --- */
+  const verEstrellas = clamp(1 - prop * 5, 0, 1) * (1 - dia);
+  if (verEstrellas > 0.02) {
+    for (let i = 0; i < 90; i++) {
+      const sx = ((i * 61) % 100) / 100 * A;
+      const sy = ((i * 37) % 100) / 100 * H * 0.6;
+      ctx.globalAlpha = verEstrellas * (0.25 + 0.45 * Math.sin(reloj * 1.5 + i));
+      ctx.fillStyle = "#dfe8ff";
+      ctx.beginPath();
+      ctx.arc(sx, sy, 0.7 + (i % 3) * 0.5, 0, 6.283);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* --- la luna --- */
+  const lx = A * 0.8, ly = H * 0.13, lr = Math.min(A, H) * 0.05;
+  ctx.globalAlpha = 1 - dia * 0.9;
+  const gl = ctx.createRadialGradient(lx, ly, 0, lx, ly, lr * 4);
+  gl.addColorStop(0, "rgba(226, 236, 255, 0.34)");
+  gl.addColorStop(1, "rgba(226, 236, 255, 0)");
+  ctx.fillStyle = gl;
+  ctx.beginPath(); ctx.arc(lx, ly, lr * 4, 0, 6.283); ctx.fill();
+  ctx.fillStyle = "#e8f0ff";
+  ctx.beginPath(); ctx.arc(lx, ly, lr, 0, 6.283); ctx.fill();
+  ctx.globalAlpha = 1;
+
+  /* --- los edificios --- */
+  for (const e of edificios) {
+    ctx.fillStyle = e === torre ? "rgb(5,7,14)" : e.col;
+    ctx.fillRect(e.x, e.y, e.w, e.h);
+    /* Un filo de luz en el canto de arriba: el resplandor del cielo
+       rozando la azotea. Un píxel, y es lo que despega el edificio del
+       de atrás. */
+    ctx.fillStyle = "rgba(150, 165, 210, 0.16)";
+    ctx.fillRect(e.x, e.y, e.w, 1);
+    if (e.antena) {
+      ctx.strokeStyle = e.col;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(e.x + e.w * 0.5, e.y);
+      ctx.lineTo(e.x + e.w * 0.5, e.y - e.h * 0.18);
+      ctx.stroke();
+      /* La lucecita roja de la antena, que parpadea. */
+      ctx.fillStyle = `rgba(255, 90, 70, ${0.4 + 0.6 * Math.abs(Math.sin(reloj * 1.1 + e.x))})`;
+      ctx.beginPath();
+      ctx.arc(e.x + e.w * 0.5, e.y - e.h * 0.18, 2, 0, 6.283);
+      ctx.fill();
+    }
+    if (e.deposito) {
+      ctx.fillStyle = e.col;
+      ctx.fillRect(e.x + e.w * 0.6, e.y - e.h * 0.07, e.w * 0.26, e.h * 0.07);
+    }
+  }
+
+  /* El remate de la torre: una azotea con su pretil. */
+  if (torre) {
+    ctx.fillStyle = "rgb(20,25,42)";
+    ctx.fillRect(torre.x - 5, torre.y - 7, torre.w + 10, 7);
+  }
+
+  /* --- las ventanas --- */
+  ctx.globalCompositeOperation = "lighter";
+  for (const v of ventanas) {
+    if (v.on < 0.02) continue;
+    /* El color de la luz: unas más amarillas y otras más azuladas, según
+       su `calor`. Una ciudad donde todas las bombillas son iguales
+       parece una hoja de cálculo. */
+    const r = Math.round(mezcla(255, 190, v.calor));
+    const gg = Math.round(mezcla(206, 220, v.calor));
+    const b = Math.round(mezcla(120, 255, v.calor));
+    const parpadeo = 0.9 + 0.1 * Math.sin(reloj * (1.4 + v.calor) + v.x);
+    ctx.globalAlpha = v.on * parpadeo;
+    ctx.fillStyle = `rgb(${r},${gg},${b})`;
+    ctx.fillRect(v.x, v.y, v.w, v.h);
+    /* El resplandor alrededor. */
+    ctx.globalAlpha = v.on * 0.3 * parpadeo;
+    const rad = Math.max(v.w, v.h) * 2.4;
+    const gr = ctx.createRadialGradient(v.x + v.w / 2, v.y + v.h / 2, 0, v.x + v.w / 2, v.y + v.h / 2, rad);
+    gr.addColorStop(0, `rgba(${r},${gg},${b},0.7)`);
+    gr.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+    ctx.fillStyle = gr;
+    ctx.fillRect(v.x + v.w / 2 - rad, v.y + v.h / 2 - rad, rad * 2, rad * 2);
+  }
+  ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = 1;
+
+  /* --- las chispas del secreto 1 --- */
+  for (let i = chispas.length - 1; i >= 0; i--) {
+    const c = chispas[i];
+    c.v -= dt * 0.55;
+    if (c.v <= 0) { chispas.splice(i, 1); continue; }
+    c.x += c.vx * dt;
+    c.y += c.vy * dt;
+    c.vy += 90 * dt;
+    c.vx *= 0.985; c.vy *= 0.985;
+    ctx.globalAlpha = c.v;
+    ctx.fillStyle = c.col;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, 1.4 + c.v, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  /* --- la pista del secreto de la torre --- */
+  if (!escrito && torre && encendidas > 12) {
+    /* Se insinúa el dibujo con un contorno finísimo: no lo dice, pero
+       si te fijas está ahí. */
+    ctx.globalAlpha = 0.055 + 0.03 * Math.sin(reloj * 0.9);
+    ctx.strokeStyle = "#ffd08a";
+    ctx.lineWidth = 1;
+    for (const v of torre.ventanas) {
+      if (!tocaEncendida(v.fila, v.col_)) continue;
+      ctx.strokeRect(v.x, v.y, v.w, v.h);
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+function mezcla(a, b, t) { return a + (b - a) * t; }
+
+/* ---- Arranque ---------------------------------------------------------------- */
+
+medir();
+decir("Está todo el mundo durmiendo. Toca las ventanas.");
+requestAnimationFrame(paso);
+
+})();
+</script>
+</body>
+</html>
