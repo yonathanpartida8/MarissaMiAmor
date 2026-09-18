@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La ventana</title>
+
+<!-- Esta escena es nocturna. El librito lo lee y ajusta su viñeta:
+     sobre papel la pone a la mitad, sobre una escena oscura la deja
+     entera, que es lo que le da el borde de cine. -->
+<meta name="color-scheme" content="dark">
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .ventana-mundo, con prefijo `vn-`. Ni una etiqueta a
+   secas: esto se incrusta en un libro que tiene sus propios estilos.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.ventana-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background: #0b1220;
+  color: #e8eef6;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ventana-mundo .vn-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+/* El cristal que se limpia. Deja franjas libres en los lados para que el
+   libro siga pasando de hoja por los bordes. */
+.ventana-mundo .vn-cristal {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: clamp(26px, 11%, 58px);
+  right: clamp(26px, 11%, 58px);
+  touch-action: none;
+  z-index: 2;
+  cursor: crosshair;
+}
+
+.ventana-mundo .vn-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.ventana-mundo .vn-pista {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--seguro-b) + var(--barra) + 18px);
+  transform: translateX(-50%);
+  font-size: clamp(0.64rem, 2.7vw, 0.76rem);
+  letter-spacing: 0.22em;
+  color: rgba(226, 236, 248, 0.42);
+  opacity: 0;
+  transition: opacity 1100ms var(--e-suave);
+  white-space: nowrap;
+}
+
+.ventana-mundo .vn-pista.vn-dentro { opacity: 1; }
+
+.ventana-mundo .vn-susurro {
+  position: absolute;
+  left: 50%;
+  /* Abajo, no en el centro: en el centro está lo que hay escrito en el
+     cristal, y las dos frases se leían una encima de otra. */
+  top: auto;
+  bottom: 16%;
+  width: min(80%, 26rem);
+  transform: translate(-50%, 0);
+  margin: 0;
+  text-align: center;
+  font-size: clamp(0.92rem, 3.9vw, 1.2rem);
+  font-weight: 300;
+  line-height: 1.5;
+  color: #f2f7ff;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.85), 0 0 40px rgba(150, 190, 255, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1500ms var(--e-suave);
+}
+
+.ventana-mundo .vn-susurro.vn-dentro { opacity: 1; }
+
+.ventana-mundo .vn-nota {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: min(70vw, 18rem);
+  padding: 0.4rem 0.75rem;
+  margin: 0;
+  border-radius: 12px;
+  font-size: clamp(0.68rem, 2.8vw, 0.82rem);
+  line-height: 1.4;
+  text-align: center;
+  color: #eef4ff;
+  background: rgba(16, 26, 44, 0.82);
+  box-shadow: 0 0 0 1px rgba(150, 190, 255, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* Cuánto cristal queda por limpiar: un hilo finísimo arriba. */
+.ventana-mundo .vn-barra {
+  position: absolute;
+  top: calc(var(--seguro-t) + 10px);
+  left: 14%;
+  right: 14%;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(200, 220, 255, 0.12);
+  opacity: 0;
+  transition: opacity 700ms var(--e-suave);
+}
+
+.ventana-mundo .vn-barra.vn-dentro { opacity: 1; }
+
+.ventana-mundo .vn-barra i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(160, 200, 255, 0.7), rgba(255, 210, 230, 0.9));
+  transition: width 500ms var(--e-suave);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ventana-mundo .vn-pista,
+  .ventana-mundo .vn-susurro,
+  .ventana-mundo .vn-barra { transition-duration: 1ms; }
+}
+</style>
+</head>
+
+<body>
+<div class="ventana-mundo" id="vn">
+  <canvas class="vn-lienzo" id="vnLienzo"></canvas>
+  <div class="vn-cristal" id="vnCristal" aria-hidden="true"></div>
+  <div class="vn-ui" id="vnUi">
+    <div class="vn-barra" id="vnBarra"><i id="vnBarraFill"></i></div>
+    <p class="vn-susurro" id="vnSusurro"></p>
+    <p class="vn-pista" id="vnPista"></p>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+/* ══════════════════════════════════════════════════════════════════════
+   LA VENTANA
+
+   Llueve, el cristal está empañado y detrás hay algo escrito. Se limpia
+   con el dedo.
+   ══════════════════════════════════════════════════════════════════════ */
+
+// ══════════════════════════════════════════════════════════════════════
+//  CONFIGURACIÓN EDITABLE
+// ══════════════════════════════════════════════════════════════════════
+
+const CONFIG = {
+  PISTA: "limpia el cristal",
+
+  /* Lo que hay escrito detrás del vaho. Va en la letra de a mano. */
+  MENSAJE: ["Llueve,", "y yo sigo", "pensando en ti."],
+
+  /* Cuánto cristal hay que limpiar para que se lea entero. */
+  LIMPIO_PARA_LEER: 0.52,
+
+  /* Lo que se dice al conseguirlo. */
+  AL_LEERLO: "Da igual el día que haga: siempre acabo mirando hacia donde estás tú.",
+
+  /* Los secretos. Ninguno se anuncia. */
+  TEXTOS: {
+    corazon: "Alguien había dibujado esto antes que tú. 🤍",
+    aliento: "Quédate quieta un momento… así, conmigo.",
+    rayo: "Cuenta los segundos. Yo cuento los días para verte.",
+    gotas: "Dos gotas que se encuentran y bajan juntas. Nosotros.",
+  },
+
+  /* El vaho vuelve, despacio: así el cristal nunca se acaba. */
+  VAHO: {
+    /* Cuánto vuelve a empañarse por segundo (0 = nunca). */
+    regreso: 0.055,
+    /* El radio del dedo al limpiar, en parte del lado corto. */
+    dedo: 0.075,
+  },
+
+  SECRETOS: {
+    /* Aguantar el dedo quieto empaña más ahí y dibuja algo. */
+    aguantarAliento: 1.5,
+    /* Un trazo cerrado se lee como un corazón dibujado. */
+    largoMinimoTrazo: 140,
+  },
+
+  PERF: { dprMax: 2, dprMaxFlojo: 1.25, gotas: 90, gotasFlojo: 34 },
+};
+
+// ══════════════════════════════════════════════════════════════════════
+//  MATEMÁTICAS
+// ══════════════════════════════════════════════════════════════════════
+
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const clamp01 = (v) => clamp(v, 0, 1);
+const lerp = (a, b, t) => a + (b - a) * t;
+const smoothstep = (t) => { t = clamp01(t); return t * t * (3 - 2 * t); };
+const azar = (a, b) => a + Math.random() * (b - a);
+const damp = (a, b, k, dt) => b + (a - b) * Math.exp(-k * dt);
+
+// ══════════════════════════════════════════════════════════════════════
+//  ESCENA
+// ══════════════════════════════════════════════════════════════════════
+
+class Escena {
+  constructor(raiz, lienzo, alCambiar) {
+    this.raiz = raiz; this.lienzo = lienzo; this.alCambiar = alCambiar;
+    this.ancho = 1; this.alto = 1; this.dpr = 1;
+    this.topeDpr = CONFIG.PERF.dprMax;
+    this.obs = new ResizeObserver(() => this.medir());
+    this.obs.observe(raiz);
+    this.medir();
+  }
+  medir() {
+    const c = this.raiz.getBoundingClientRect();
+    const w = Math.max(1, Math.round(c.width)), h = Math.max(1, Math.round(c.height));
+    const dpr = Math.min(window.devicePixelRatio || 1, this.topeDpr);
+    if (w === this.ancho && h === this.alto && dpr === this.dpr) return;
+    this.ancho = w; this.alto = h; this.dpr = dpr;
+    this.lienzo.width = Math.round(w * dpr);
+    this.lienzo.height = Math.round(h * dpr);
+    this.lienzo.style.width = w + "px";
+    this.lienzo.style.height = h + "px";
+    this.alCambiar?.(this);
+  }
+  get medida() { return Math.min(this.ancho, this.alto); }
+  destruir() { this.obs.disconnect(); }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  AUDIO
+// ══════════════════════════════════════════════════════════════════════
+
+const Audio_ = (() => {
+  let ctx = null, maestro = null, listo = false;
+  return {
+    despertar() {
+      if (listo) return;
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        ctx = new AC();
+        maestro = ctx.createGain();
+        maestro.gain.value = 0.16;
+        maestro.connect(ctx.destination);
+        listo = true;
+      } catch { listo = false; }
+    },
+    tono(f, dur, tipo, vol, hasta) {
+      if (!listo) return;
+      const t = ctx.currentTime;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = tipo || "sine";
+      o.frequency.setValueAtTime(f, t);
+      if (hasta) o.frequency.exponentialRampToValueAtTime(Math.max(40, hasta), t + dur);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(maestro);
+      o.start(t); o.stop(t + dur + 0.05);
+    },
+    /** Ruido filtrado: es lo que suena a frotar un cristal. */
+    frote(vol) {
+      if (!listo) return;
+      const t = ctx.currentTime, n = Math.floor(ctx.sampleRate * 0.12);
+      const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      const src = ctx.createBufferSource(); src.buffer = buf;
+      const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 2600; f.Q.value = 0.7;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+      src.connect(f).connect(g).connect(maestro);
+      src.start(t);
+    },
+    trueno() { this.tono(64, 1.4, "sine", 0.12, 38); this.frote(0.05); },
+    magia()  { [740, 988, 1175].forEach((f, i) => setTimeout(() => this.tono(f, 0.55, "sine", 0.05), i * 95)); },
+  };
+})();
+
+// ══════════════════════════════════════════════════════════════════════
+//  EL VAHO — una capa aparte que se borra con el dedo
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * El vaho vive en su propio lienzo, fuera de pantalla.
+ *
+ * Limpiar es BORRAR de esa capa con `destination-out`, no pintar encima
+ * de nada: el navegador lo hace con la tarjeta gráfica y sale gratis.
+ * Y como es una capa aparte, lo de detrás —el mensaje, la ciudad, la
+ * lluvia— se dibuja una sola vez y no hay que repintarlo al frotar.
+ *
+ * Trabaja a media resolución a propósito: el vaho no tiene ni un detalle
+ * fino, así que a la mitad de tamaño se ve exactamente igual y cuesta la
+ * cuarta parte. Es lo que permite frotar sin que el móvil se entere.
+ */
+class Vaho {
+  constructor() {
+    this.lienzo = document.createElement("canvas");
+    this.c = this.lienzo.getContext("2d");
+    this.escala = 0.5;
+    this.limpio = 0;
+    this.pendiente = 0;
+  }
+
+  redimensionar(esc) {
+    const w = Math.max(1, Math.round(esc.ancho * this.escala));
+    const h = Math.max(1, Math.round(esc.alto * this.escala));
+    this.lienzo.width = w;
+    this.lienzo.height = h;
+    this.w = w; this.h = h;
+    this.rellenar();
+  }
+
+  /** Empaña el cristal entero. */
+  rellenar() {
+    const c = this.c;
+    c.globalCompositeOperation = "source-over";
+    c.clearRect(0, 0, this.w, this.h);
+
+    // El vaho no es un gris plano: es más denso por los bordes y por
+    // abajo, que es donde se condensa de verdad.
+    const g = c.createLinearGradient(0, 0, 0, this.h);
+    g.addColorStop(0, "rgba(214, 228, 245, 0.90)");
+    g.addColorStop(0.5, "rgba(206, 222, 242, 0.95)");
+    g.addColorStop(1, "rgba(198, 216, 238, 0.99)");
+    c.fillStyle = g;
+    c.fillRect(0, 0, this.w, this.h);
+
+    // Manchones, para que no parezca una cortina lisa.
+    for (let i = 0; i < 26; i++) {
+      const x = Math.random() * this.w, y = Math.random() * this.h;
+      const r = azar(this.w * 0.08, this.w * 0.3);
+      const gg = c.createRadialGradient(x, y, 0, x, y, r);
+      gg.addColorStop(0, `rgba(255,255,255,${azar(0.05, 0.16)})`);
+      gg.addColorStop(1, "rgba(255,255,255,0)");
+      c.fillStyle = gg;
+      c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+    }
+    this.limpio = 0;
+  }
+
+  /** Borra un trazo entre dos puntos. */
+  limpiarTrazo(x0, y0, x1, y1, radio, fuerza = 0.85) {
+    const c = this.c;
+    const s = this.escala;
+    c.globalCompositeOperation = "destination-out";
+    c.lineCap = "round";
+    c.lineJoin = "round";
+    c.lineWidth = radio * 2 * s;
+    // Un poco de degradado en el borde del trazo: un corte limpio
+    // parecería recortado con tijeras y esto es un dedo sobre vaho.
+    c.strokeStyle = `rgba(0,0,0,${fuerza})`;
+    c.beginPath();
+    c.moveTo(x0 * s, y0 * s);
+    c.lineTo(x1 * s, y1 * s);
+    c.stroke();
+    // Y una pasada más floja y más ancha, que difumina el canto.
+    c.globalAlpha = 0.3 * fuerza;
+    c.lineWidth = radio * 3.1 * s;
+    c.stroke();
+    c.globalAlpha = 1;
+    c.globalCompositeOperation = "source-over";
+    this.pendiente++;
+  }
+
+  /** Vuelve a empañar un poco, en todas partes. */
+  regresar(dt) {
+    if (CONFIG.VAHO.regreso <= 0) return;
+    const c = this.c;
+    c.globalCompositeOperation = "source-over";
+    c.fillStyle = `rgba(206, 222, 242, ${clamp01(CONFIG.VAHO.regreso * dt)})`;
+    c.fillRect(0, 0, this.w, this.h);
+    this.pendiente++;
+  }
+
+  /** Empaña MÁS en un punto: el aliento. */
+  alentar(x, y, radio) {
+    const c = this.c, s = this.escala;
+    c.globalCompositeOperation = "source-over";
+    const g = c.createRadialGradient(x * s, y * s, 0, x * s, y * s, radio * s);
+    g.addColorStop(0, "rgba(222, 234, 250, 0.55)");
+    g.addColorStop(1, "rgba(222, 234, 250, 0)");
+    c.fillStyle = g;
+    c.beginPath(); c.arc(x * s, y * s, radio * s, 0, Math.PI * 2); c.fill();
+    this.pendiente++;
+  }
+
+  /** Dibuja un corazón EN el vaho, como trazado con el dedo. */
+  corazonDibujado(cx, cy, r) {
+    const c = this.c, s = this.escala;
+    c.globalCompositeOperation = "destination-out";
+    c.lineWidth = Math.max(4, r * 0.16) * s;
+    c.lineCap = "round";
+    c.lineJoin = "round";
+    c.strokeStyle = "rgba(0,0,0,0.9)";
+    c.beginPath();
+    for (let i = 0; i <= 64; i++) {
+      const t = (i / 64) * Math.PI * 2;
+      const hx = cx + ((16 * Math.pow(Math.sin(t), 3)) / 16) * r;
+      const hy = cy - ((13 * Math.cos(t) - 5 * Math.cos(2 * t)
+                      - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16) * r;
+      i ? c.lineTo(hx * s, hy * s) : c.moveTo(hx * s, hy * s);
+    }
+    c.closePath();
+    c.stroke();
+    c.globalCompositeOperation = "source-over";
+    this.pendiente++;
+  }
+
+  /**
+   * Cuánto cristal está limpio.
+   *
+   * Se mide leyendo los píxeles, pero MUY de tarde en tarde y saltando
+   * de cuatro en cuatro: leer del lienzo obliga a la tarjeta gráfica a
+   * devolver la imagen a la memoria, que es de las cosas más caras que
+   * se pueden hacer por fotograma. Cada medio segundo y con una muestra
+   * de una de cada dieciséis basta de sobra para mover una barrita.
+   */
+  medir() {
+    if (!this.pendiente) return this.limpio;
+    this.pendiente = 0;
+    try {
+      const d = this.c.getImageData(0, 0, this.w, this.h).data;
+      let libres = 0, total = 0;
+      for (let i = 3; i < d.length; i += 4 * 4) {
+        if (d[i] < 60) libres++;
+        total++;
+      }
+      this.limpio = total ? libres / total : 0;
+    } catch { /* lienzo contaminado: se deja como estaba */ }
+    return this.limpio;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  GOTAS
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * Las gotas del cristal, por dentro de la escena.
+ *
+ * Una gota no cae: se queda pegada hasta que pesa lo bastante, y
+ * entonces se desliza dejando un reguero y adelgazando. Cuando alcanza a
+ * otra, se la come y se hace más gorda —por eso las de abajo van más
+ * rápido—. Eso es lo que separa una lluvia de verdad de unas rayas
+ * bajando.
+ */
+class Gotas {
+  constructor(max) {
+    this.max = max;
+    this.g = [];
+    for (let i = 0; i < max; i++) this.g.push({ viva: false });
+  }
+  poblar(esc) {
+    for (const d of this.g) this.#nacer(d, esc, true);
+  }
+  #nacer(d, esc, dondeSea) {
+    d.viva = true;
+    d.x = azar(0, esc.ancho);
+    d.y = dondeSea ? azar(0, esc.alto) : azar(-40, -4);
+    d.r = azar(1.4, 4.6);
+    d.v = 0;
+    d.quieta = azar(0, 2.4);
+    d.rastro = [];
+    d.deriva = azar(-0.3, 0.3);
+  }
+  mover(dt, esc, vaho) {
+    for (const d of this.g) {
+      if (!d.viva) continue;
+
+      if (d.quieta > 0) {
+        d.quieta -= dt;
+        // Mientras espera, va engordando: se está condensando.
+        d.r += dt * 0.5;
+        continue;
+      }
+
+      // Cuanto más gorda, más rápido baja: el peso manda.
+      d.v += (18 + d.r * 22) * dt;
+      d.v *= Math.pow(0.7, dt);
+      d.y += d.v * dt;
+      d.x += d.deriva * dt * 14;
+
+      // El reguero. Va adelgazando a la gota, que es lo que hace que se
+      // pare sola a mitad de camino como las de verdad.
+      d.rastro.push({ x: d.x, y: d.y, r: d.r * 0.34 });
+      if (d.rastro.length > 9) d.rastro.shift();
+      d.r -= dt * 0.55;
+
+      // Y el reguero limpia un poquito el vaho a su paso.
+      // Un rastro, no un surco. Al principio se borraba con la misma
+      // fuerza que el dedo, y en unos segundos las gotas dejaban el
+      // cristal entero rayado de arriba abajo: parecían barrotes.
+      if (vaho && d.r > 2.6) {
+        vaho.limpiarTrazo(d.x, d.y - d.v * dt, d.x, d.y, d.r * 0.22, 0.10);
+      }
+
+      if (d.r < 0.8 || d.y > esc.alto + 20) this.#nacer(d, esc, false);
+    }
+  }
+  dibujar(c) {
+    for (const d of this.g) {
+      if (!d.viva) continue;
+      // El reguero
+      if (d.rastro.length > 1) {
+        c.lineCap = "round";
+        for (let i = 1; i < d.rastro.length; i++) {
+          const k = i / d.rastro.length;        // 0 la cola · 1 la gota
+          const a = d.rastro[i - 1], b2 = d.rastro[i];
+          c.beginPath();
+          c.moveTo(a.x, a.y);
+          c.lineTo(b2.x, b2.y);
+          c.strokeStyle = `rgba(196, 220, 250, ${(0.11 * k).toFixed(3)})`;
+          c.lineWidth = Math.max(0.5, d.r * 0.42 * k);
+          c.stroke();
+        }
+      }
+      // La gota: un óvalo con su brillo, no un círculo plano.
+      c.save();
+      c.translate(d.x, d.y);
+      c.beginPath();
+      c.ellipse(0, 0, d.r * 0.82, d.r, 0, 0, Math.PI * 2);
+      c.fillStyle = "rgba(206, 228, 252, 0.34)";
+      c.fill();
+      c.beginPath();
+      c.arc(-d.r * 0.26, -d.r * 0.3, d.r * 0.3, 0, Math.PI * 2);
+      c.fillStyle = "rgba(255,255,255,0.5)";
+      c.fill();
+      c.restore();
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  LA VENTANA
+// ══════════════════════════════════════════════════════════════════════
+
+class Ventana {
+  constructor(raiz) {
+    this.raiz = raiz;
+    this.lienzo = raiz.querySelector("#vnLienzo");
+    this.c = this.lienzo.getContext("2d");
+    this.cristal = raiz.querySelector("#vnCristal");
+
+    this.flojo = this.#medirAparato();
+    this.esc = new Escena(raiz, this.lienzo, (e) => this.#alCambiar(e));
+    this.esc.topeDpr = this.flojo ? CONFIG.PERF.dprMaxFlojo : CONFIG.PERF.dprMax;
+
+    this.vaho = new Vaho();
+    this.gotas = new Gotas(this.flojo ? CONFIG.PERF.gotasFlojo : CONFIG.PERF.gotas);
+    this.vaho.redimensionar(this.esc);
+    this.gotas.poblar(this.esc);
+
+    this.tiempo = 0;
+    this.relampago = 0;
+    this.relojRelampago = azar(8, 16);
+    this.leido = false;
+    this.corazonHecho = false;
+    this.alientoHecho = false;
+    this.rayoHecho = false;
+    this.limpio = 0;
+    this.limpioMostrado = 0;
+    this.relojMedida = 0;
+    this.relojes = new Set();
+    this.notas = [];
+    this.notasLibres = [];
+    for (let i = 0; i < 4; i++) {
+      const el = document.createElement("p");
+      el.className = "vn-nota";
+      raiz.querySelector("#vnUi").append(el);
+      this.notasLibres.push(el);
+    }
+
+    this.dedo = { x: 0, y: 0, px: 0, py: 0, abajo: false, id: null, quieto: 0, largo: 0, trazo: [] };
+    this.luces = this.#ciudad();
+
+    this.#enganchar();
+    raiz.querySelector("#vnPista").textContent = CONFIG.PISTA;
+    this.espera(() => raiz.querySelector("#vnPista").classList.add("vn-dentro"), 1200);
+
+    this.corriendo = true;
+    this.ultimo = performance.now();
+    this.bucle = (t) => this.#fotograma(t);
+    this.raf = requestAnimationFrame(this.bucle);
+
+    this.alVisible = () => {
+      if (document.hidden) { this.corriendo = false; cancelAnimationFrame(this.raf); }
+      else if (!this.corriendo) { this.corriendo = true; this.ultimo = performance.now(); this.raf = requestAnimationFrame(this.bucle); }
+    };
+    document.addEventListener("visibilitychange", this.alVisible);
+  }
+
+  espera(fn, ms) {
+    const id = setTimeout(() => { this.relojes.delete(id); fn(); }, ms);
+    this.relojes.add(id);
+    return id;
+  }
+
+  #medirAparato() {
+    const n = navigator.hardwareConcurrency || 4;
+    const m = navigator.deviceMemory || 4;
+    this.menosMovimiento = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    return n < 4 || m < 2 || this.menosMovimiento;
+  }
+
+  /** Las luces de la ciudad de ahí fuera. Se sortean una vez. */
+  #ciudad() {
+    const l = [];
+    for (let i = 0; i < 90; i++) {
+      l.push({ x: Math.random(), y: azar(0.52, 0.95), r: azar(0.8, 2.6),
+               f: azar(0.3, 1.4), d: azar(0, 6.28),
+               t: Math.random() < 0.2 ? 1 : 0 });   // 1 = ventana cálida
+    }
+    return l;
+  }
+
+  #alCambiar(e) {
+    if (!this.vaho) return;
+    this.vaho.redimensionar(e);
+    this.gotas.poblar(e);
+  }
+
+  // ── Interacción ─────────────────────────────────────────────────────
+
+  #enganchar() {
+    const z = this.cristal;
+    this.onDown = (e) => this.#abajo(e);
+    this.onMove = (e) => this.#mueve(e);
+    this.onUp = (e) => this.#arriba(e);
+    z.addEventListener("pointerdown", this.onDown, { passive: false });
+    z.addEventListener("pointermove", this.onMove, { passive: false });
+    z.addEventListener("pointerup", this.onUp);
+    z.addEventListener("pointercancel", this.onUp);
+  }
+
+  #local(e) {
+    const c = this.raiz.getBoundingClientRect();
+    return { x: e.clientX - c.left, y: e.clientY - c.top };
+  }
+
+  #abajo(e) {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    Audio_.despertar();
+    this.raiz.querySelector("#vnPista").classList.remove("vn-dentro");
+    this.raiz.querySelector("#vnBarra").classList.add("vn-dentro");
+    const p = this.#local(e);
+    this.dedo.x = this.dedo.px = p.x;
+    this.dedo.y = this.dedo.py = p.y;
+    this.dedo.abajo = true; this.dedo.id = e.pointerId;
+    this.dedo.quieto = 0; this.dedo.largo = 0;
+    this.dedo.trazo = [{ x: p.x, y: p.y }];
+
+    // Si cae justo mientras relampaguea, es otro secreto.
+    if (this.relampago > 0.25 && !this.rayoHecho) {
+      this.rayoHecho = true;
+      this.#nota(p.x, p.y, CONFIG.TEXTOS.rayo);
+      Audio_.magia();
+    }
+
+    this.#limpiar(p.x, p.y, p.x, p.y);
+    if (e.cancelable) e.preventDefault();
+    try { this.cristal.setPointerCapture(e.pointerId); } catch { /* no siempre */ }
+  }
+
+  #mueve(e) {
+    const p = this.#local(e);
+    if (!this.dedo.abajo || e.pointerId !== this.dedo.id) {
+      this.dedo.x = p.x; this.dedo.y = p.y;
+      return;
+    }
+    const d = Math.hypot(p.x - this.dedo.x, p.y - this.dedo.y);
+    this.dedo.largo += d;
+    if (d > 2) {
+      this.dedo.quieto = 0;
+      this.dedo.trazo.push({ x: p.x, y: p.y });
+      if (this.dedo.trazo.length > 220) this.dedo.trazo.shift();
+    }
+    this.#limpiar(this.dedo.x, this.dedo.y, p.x, p.y);
+    this.dedo.px = this.dedo.x; this.dedo.py = this.dedo.y;
+    this.dedo.x = p.x; this.dedo.y = p.y;
+    if (e.cancelable) e.preventDefault();
+  }
+
+  #arriba(e) {
+    if (e.pointerId !== this.dedo.id) return;
+    this.#mirarTrazo();
+    this.dedo.abajo = false; this.dedo.id = null;
+    this.dedo.trazo = [];
+    try { this.cristal.releasePointerCapture(e.pointerId); } catch { /* ya estaba */ }
+  }
+
+  #limpiar(x0, y0, x1, y1) {
+    const r = this.esc.medida * CONFIG.VAHO.dedo;
+    this.vaho.limpiarTrazo(x0, y0, x1, y1, r);
+    if (Math.random() < 0.18) Audio_.frote(azar(0.02, 0.05));
+  }
+
+  /**
+   * ¿Ha dibujado algo cerrado?
+   *
+   * Basta con mirar si el trazo es largo y termina cerca de donde
+   * empezó. No hace falta reconocer la forma: quien dibuja un círculo o
+   * un corazón en un cristal empañado está haciendo lo mismo —cerrar una
+   * figura—, y el libro le contesta con un corazón.
+   */
+  #mirarTrazo() {
+    if (this.corazonHecho) return;
+    const t = this.dedo.trazo;
+    if (t.length < 12 || this.dedo.largo < CONFIG.SECRETOS.largoMinimoTrazo) return;
+
+    const a = t[0], z = t[t.length - 1];
+    const cierre = Math.hypot(z.x - a.x, z.y - a.y);
+    if (cierre > this.dedo.largo * 0.22) return;   // no volvió al principio
+
+    let cx = 0, cy = 0;
+    for (const p of t) { cx += p.x; cy += p.y; }
+    cx /= t.length; cy /= t.length;
+    let radio = 0;
+    for (const p of t) radio += Math.hypot(p.x - cx, p.y - cy);
+    radio /= t.length;
+    if (radio < this.esc.medida * 0.06) return;    // un garabato pequeño
+
+    this.corazonHecho = true;
+    this.vaho.corazonDibujado(cx, cy, radio * 1.15);
+    Audio_.magia();
+    this.#nota(cx, cy - radio - 24, CONFIG.TEXTOS.corazon);
+  }
+
+  #mirarAliento(dt) {
+    if (!this.dedo.abajo) { this.dedo.quieto = 0; return; }
+    this.dedo.quieto += dt;
+    if (this.dedo.quieto < CONFIG.SECRETOS.aguantarAliento) return;
+    // Empaña un poquito alrededor del dedo: es el aliento sobre el cristal.
+    this.vaho.alentar(this.dedo.x, this.dedo.y, this.esc.medida * 0.13);
+    if (!this.alientoHecho) {
+      this.alientoHecho = true;
+      this.#nota(this.dedo.x, this.dedo.y - 60, CONFIG.TEXTOS.aliento);
+      Audio_.magia();
+    }
+  }
+
+  #nota(x, y, texto) {
+    const el = this.notasLibres.pop();
+    if (!el) return;
+    el.textContent = texto;
+    el.style.opacity = "0";
+    const medio = el.offsetWidth / 2 + 8;
+    this.notas.push({
+      el, t: 0, dur: 4.6,
+      x: clamp(x, medio, Math.max(medio, this.esc.ancho - medio)),
+      y: clamp(y, 30, this.esc.alto - 40),
+    });
+  }
+
+  #moverNotas(dt) {
+    for (let i = this.notas.length - 1; i >= 0; i--) {
+      const n = this.notas[i];
+      n.t += dt;
+      const k = n.t / n.dur;
+      if (k >= 1) { n.el.style.opacity = "0"; this.notasLibres.push(n.el); this.notas.splice(i, 1); continue; }
+      const entra = smoothstep(k / 0.14), sale = 1 - smoothstep((k - 0.72) / 0.28);
+      n.el.style.opacity = String(entra * sale);
+      n.el.style.transform =
+        `translate3d(${n.x.toFixed(1)}px, ${(n.y - smoothstep(k) * 16).toFixed(1)}px, 0) translate(-50%, -50%)`;
+    }
+  }
+
+  // ── Bucle ───────────────────────────────────────────────────────────
+
+  #fotograma(ahora) {
+    if (!this.corriendo) return;
+    this.raf = requestAnimationFrame(this.bucle);
+
+    let dt = (ahora - this.ultimo) / 1000;
+    this.ultimo = ahora;
+    if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+    else if (dt > 0.1) dt = 0.1;
+
+    this.tiempo += dt;
+
+    // El relámpago, de tanto en tanto. Dos destellos seguidos, como los
+    // de verdad, y el trueno un poco después.
+    this.relojRelampago -= dt;
+    if (this.relojRelampago <= 0) {
+      this.relojRelampago = azar(11, 24);
+      this.relampago = 1;
+      this.espera(() => { this.relampago = 0.8; }, 90);
+      this.espera(() => Audio_.trueno(), azar(500, 1400));
+    }
+    this.relampago = damp(this.relampago, 0, 5.5, dt);
+
+    this.gotas.mover(dt, this.esc, this.vaho);
+    this.vaho.regresar(dt);
+    this.#mirarAliento(dt);
+    this.#moverNotas(dt);
+
+    // La medida del cristal limpio, de tarde en tarde: leer píxeles es
+    // caro y una barrita no necesita ir a sesenta por segundo.
+    this.relojMedida -= dt;
+    if (this.relojMedida <= 0) {
+      this.relojMedida = 0.5;
+      this.limpio = this.vaho.medir();
+      this.#mirarLectura();
+    }
+    this.limpioMostrado = damp(this.limpioMostrado, this.limpio, 4, dt);
+    const barra = this.raiz.querySelector("#vnBarraFill");
+    barra.style.width = (clamp01(this.limpioMostrado / CONFIG.LIMPIO_PARA_LEER) * 100).toFixed(1) + "%";
+
+    this.#dibujar();
+  }
+
+  #mirarLectura() {
+    if (this.leido || this.limpio < CONFIG.LIMPIO_PARA_LEER) return;
+    this.leido = true;
+    Audio_.magia();
+    const s = this.raiz.querySelector("#vnSusurro");
+    s.textContent = CONFIG.AL_LEERLO;
+    this.espera(() => s.classList.add("vn-dentro"), 600);
+    this.espera(() => s.classList.remove("vn-dentro"), 8000);
+    this.raiz.querySelector("#vnBarra").classList.remove("vn-dentro");
+  }
+
+  #dibujar() {
+    const c = this.c;
+    const { ancho: W, alto: H, dpr } = this.esc;
+    c.save();
+    c.scale(dpr, dpr);
+
+    // ── 1 · La noche de ahí fuera ──
+    const cielo = c.createLinearGradient(0, 0, 0, H);
+    cielo.addColorStop(0, "#0a1020");
+    cielo.addColorStop(0.45, "#121c33");
+    cielo.addColorStop(1, "#1b2440");
+    c.fillStyle = cielo;
+    c.fillRect(0, 0, W, H);
+
+    // ── 2 · La ciudad, desenfocada por la distancia ──
+    for (const l of this.luces) {
+      const x = l.x * W, y = l.y * H;
+      const br = 0.35 + 0.35 * Math.sin(this.tiempo * l.f + l.d);
+      const g = c.createRadialGradient(x, y, 0, x, y, l.r * 7);
+      const col = l.t ? "255,205,140" : "170,205,255";
+      g.addColorStop(0, `rgba(${col},${br * 0.5})`);
+      g.addColorStop(1, `rgba(${col},0)`);
+      c.fillStyle = g;
+      c.beginPath(); c.arc(x, y, l.r * 7, 0, Math.PI * 2); c.fill();
+    }
+
+    // ── 3 · La lluvia de fuera: rayas finas y rápidas ──
+    c.strokeStyle = "rgba(180, 205, 240, 0.16)";
+    c.lineWidth = 1;
+    for (let i = 0; i < (this.flojo ? 28 : 60); i++) {
+      // Sin sortear nada: la posición sale del tiempo y del índice, así
+      // que la lluvia cae igual en todos los fotogramas y no titila.
+      const x = ((i * 137.5) % 100) / 100 * W + Math.sin(this.tiempo * 0.3 + i) * 12;
+      const y = (((i * 61.8) % 100) / 100 * H + this.tiempo * (260 + (i % 7) * 40)) % (H + 60) - 30;
+      c.beginPath();
+      c.moveTo(x, y);
+      c.lineTo(x - 3, y + 16);
+      c.stroke();
+    }
+
+    // ── 4 · El relámpago ──
+    if (this.relampago > 0.01) {
+      c.fillStyle = `rgba(190, 215, 255, ${this.relampago * 0.34})`;
+      c.fillRect(0, 0, W, H);
+    }
+
+    // ── 5 · El mensaje escrito en el cristal ──
+    // Va DEBAJO del vaho: se lee según se limpia.
+    this.#escribir(c, W, H);
+
+    // ── 6 · El vaho ──
+    c.drawImage(this.vaho.lienzo, 0, 0, W, H);
+
+    // ── 7 · Las gotas, por delante de todo ──
+    this.gotas.dibujar(c);
+
+    // ── 8 · El marco de la ventana ──
+    const marco = c.createLinearGradient(0, 0, 0, H);
+    marco.addColorStop(0, "rgba(8, 12, 22, 0.55)");
+    marco.addColorStop(0.18, "rgba(8, 12, 22, 0)");
+    marco.addColorStop(0.82, "rgba(8, 12, 22, 0)");
+    marco.addColorStop(1, "rgba(8, 12, 22, 0.6)");
+    c.fillStyle = marco;
+    c.fillRect(0, 0, W, H);
+
+    c.restore();
+  }
+
+  #escribir(c, W, H) {
+    const lineas = CONFIG.MENSAJE;
+    const tam = clamp(this.esc.medida * 0.088, 20, 52);
+    c.save();
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    // Una cursiva del sistema: es lo más cerca de la letra de a mano sin
+    // descargar nada de fuera, que es la regla de esta carpeta.
+    c.font = `italic 300 ${tam}px "Segoe Script", "Bradley Hand", "Snell Roundhand", cursive, ui-serif, Georgia, serif`;
+    const alto = tam * 1.5;
+    const y0 = H * 0.42 - ((lineas.length - 1) * alto) / 2;
+    for (let i = 0; i < lineas.length; i++) {
+      const y = y0 + i * alto;
+      // Un halo detrás, para que no se pierda contra las luces.
+      c.shadowColor = "rgba(160, 200, 255, 0.55)";
+      c.shadowBlur = 22;
+      c.fillStyle = "rgba(226, 240, 255, 0.92)";
+      c.fillText(lineas[i], W / 2, y);
+      c.shadowBlur = 0;
+    }
+    c.restore();
+  }
+
+  destruir() {
+    this.corriendo = false;
+    cancelAnimationFrame(this.raf);
+    for (const id of this.relojes) clearTimeout(id);
+    this.relojes.clear();
+    document.removeEventListener("visibilitychange", this.alVisible);
+    this.esc.destruir();
+  }
+}
+
+// ── Arranque: sin portada ni menú ───────────────────────────────────
+
+const ventana = new Ventana(document.getElementById("vn"));
+window.addEventListener("pagehide", () => ventana.destruir());
+
+})();
+</script>
+</body>
+</html>

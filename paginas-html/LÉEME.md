@@ -133,20 +133,41 @@ Si no las usas no pasa nada: tu página se ve como la hayas hecho.
 
 ---
 
-## Ejemplo
+## Si tu página es de noche
 
-En esta misma carpeta hay dos, y son muy distintos a propósito:
+El librito echa una viñeta por encima de todo, y la aprieta más o menos
+según lo que haya debajo. Sobre papel la pone a la mitad; sobre una escena
+oscura la deja entera, que es lo que le da el borde de cine.
 
-- **`página.html1.html`** — el sencillo. Un botón y una animación. Es el
-  bueno para empezar: cópialo, renómbralo al número siguiente y cámbialo.
+Lo averigua solo. Pero si tu página es oscura y quieres asegurarte, díselo
+con la etiqueta de siempre:
 
-- **`página.html2.html`** — «El rincón de arena». Uno grande, para ver hasta
-  dónde se puede llegar: una escena en 3D con arena de verdad que se excava
-  con una palita, cosas enterradas que hay que encontrar, cartas que se
-  abren y una llave con su código. Todo en ese único archivo, sin descargar
-  nada de fuera. Si quieres tocarlo, arriba del todo de su `<script>` hay una
-  sección marcada `CONFIGURACIÓN EDITABLE` con las frases, el código de la
-  llave, los colores y dónde está escondida cada cosa: se cambia ahí y ya.
+```html
+<meta name="color-scheme" content="dark">
+```
+
+## Los ejemplos
+
+En esta misma carpeta hay cinco, y son distintos a propósito. El primero es
+el bueno para empezar; los otros cuatro son para ver hasta dónde se puede
+llegar con un solo archivo y sin descargar nada de fuera.
+
+| archivo | qué es |
+|---|---|
+| `página.html1.html` | **El sencillo.** Un botón y una animación. Cópialo, renómbralo al número siguiente y cámbialo. |
+| `página.html2.html` | **El rincón de arena.** Una playa en perspectiva que se excava con una palita. Once cosas enterradas, cartas que se abren y una llave con su código. |
+| `página.html3.html` | **El hilo rojo.** Dos esferas unidas por un listón, escribiéndose cartas. Se arrastran, se resisten a juntarse, y al conseguirlo el listón hace un corazón. |
+| `página.html4.html` | **Un jardín para ti.** Se toca la tierra y crece una flor. Cada una guarda una frase. Si plantas bastantes, cae la noche. |
+| `página.html5.html` | **La ventana.** Llueve y el cristal está empañado. Se limpia con el dedo y detrás hay algo escrito. |
+
+Los cuatro grandes tienen **secretos escondidos** que no se anuncian: cosas
+que pasan si insistes, si dibujas algo, si esperas sin prisa o si tocas dos
+veces. Están para que los encuentre ella, no para explicarlos aquí.
+
+Y todos llevan, arriba del todo de su `<script>`, una sección marcada
+`CONFIGURACIÓN EDITABLE` con las frases, los colores, los números y dónde
+está escondida cada cosa. Para cambiar lo que dicen no hace falta entender
+nada de lo demás: se cambia ahí y ya.
 
 ---
 

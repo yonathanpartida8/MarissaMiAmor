@@ -329,6 +329,66 @@ export default class HtmlPage extends BasePage {
     //    Con `var(--acento)` su página va a juego con el capítulo sin que él
     //    tenga que copiar ningún hexadecimal.
     this.#prestarColores(doc);
+
+    // 4. ¿SU PÁGINA ES CLARA O ES OSCURA?
+    this.#mirarLuz(doc);
+  }
+
+  /**
+   * Averigua si el archivo invitado es claro u oscuro, y avisa al libro.
+   *
+   * ── POR QUÉ HACE FALTA ────────────────────────────────────────────────
+   * El libro echa una viñeta por encima de TODO, y su fuerza depende de lo
+   * que haya debajo: sobre papel pesa la mitad, porque oscurecer un crema
+   * con un casi negro le quita el color antes que la luz y las esquinas se
+   * van a un gris de fotocopia.
+   *
+   * Hasta ahora esta página decía SIEMPRE que era clara. Con un archivo de
+   * papel es verdad. Pero en cuanto alguien deja aquí una escena nocturna
+   * —un cielo estrellado, una ventana de noche— la suposición es falsa: esa
+   * página se llevaba media viñeta y perdía el borde oscuro que es justo lo
+   * que la hace parecer una escena y no un recorte.
+   *
+   * ── CÓMO SE AVERIGUA ──────────────────────────────────────────────────
+   * Primero se le pregunta a él, con la etiqueta estándar que existe para
+   * esto:
+   *
+   *     <meta name="color-scheme" content="dark">
+   *
+   * Y si no dice nada, se mira el fondo que tenga puesto de verdad en su
+   * `<html>` o su `<body>`. Lo que NO se hace es adivinar mirando píxeles:
+   * un lienzo no tiene color de fondo en CSS y la respuesta saldría mal
+   * justo en las páginas que más oscuras son.
+   */
+  #mirarLuz(doc) {
+    let oscura = false;
+
+    const meta = doc.querySelector('meta[name="color-scheme"]')?.content || "";
+    if (/dark/i.test(meta) && !/light/i.test(meta)) {
+      oscura = true;
+    } else {
+      // El primero de los dos que tenga un fondo opaco manda.
+      for (const nodo of [doc.body, doc.documentElement]) {
+        if (!nodo) continue;
+        const fondo = doc.defaultView?.getComputedStyle(nodo).backgroundColor;
+        const n = (fondo || "").match(/[\d.]+/g)?.map(Number);
+        if (!n || n.length < 3) continue;
+        if (n[3] !== undefined && n[3] < 0.6) continue;   // translúcido: no cuenta
+        // Luminosidad rápida: el verde pesa lo que pesa en la vista.
+        const luz = (0.2126 * n[0] + 0.7152 * n[1] + 0.0722 * n[2]) / 255;
+        oscura = luz < 0.42;
+        break;
+      }
+    }
+
+    this.oscura = oscura;
+    if (this.root) this.root.dataset.claro = oscura ? "false" : "true";
+    // Y si esta página ya está en pantalla, el libro se entera ahora mismo:
+    // el archivo llega después de la transición, así que a estas alturas la
+    // viñeta ya está puesta con la suposición de antes.
+    if (this.active) {
+      document.documentElement.classList.toggle("hoja-clara", !oscura);
+    }
   }
 
   /**
