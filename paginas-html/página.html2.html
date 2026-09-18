@@ -72,27 +72,20 @@ body {
   width: 100%;
   height: 100%;
   display: block;
-  /* Nunca es el objetivo de un toque: si lo fuera, el librito le cedería
-     el dedo entero al lienzo y ya no se podría pasar de hoja por ningún
-     lado. Quien recibe los dedos es `#zonaToque`, que deja los bordes
-     libres a propósito. */
+  /* Los toques los recoge `#zonaToque`, que va justo encima. */
   pointer-events: none;
 }
 
-/* La zona donde se cava.
+/* La zona donde se cava: la playa entera, de borde a borde.
 
-   Va estrechada por los lados a posta. El librito cede el gesto entero a
-   cualquier cosa marcada con `data-claim-drag`, así que si esto llegara
-   de borde a borde, arrastrar la palita funcionaría pero pasar de página
-   deslizando dejaría de funcionar en toda la hoja. Con las franjas
-   libres, se cava en el centro y se pasa de hoja por los lados, que es
-   justo donde el librito pone sus flechas. */
+   Antes iba estrechada por los lados, para dejarle al librito unas franjas
+   por donde pasar de hoja, y llevaba `data-claim-drag`. Ya no hace falta
+   ninguna de las dos cosas: el librito sólo se queda el barrido que
+   EMPIEZA en sus 24-44 px de borde, así que se puede cavar hasta la
+   esquina y aun así pasar de hoja deslizando desde el margen. */
 #zonaToque {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: clamp(30px, 13%, 64px);
-  right: clamp(30px, 13%, 64px);
+  inset: 0;
   touch-action: none;
   z-index: 1;
 }
@@ -606,7 +599,7 @@ body {
 
 <div id="mundo">
   <canvas id="lienzo"></canvas>
-  <div id="zonaToque" data-claim-drag aria-hidden="true"></div>
+  <div id="zonaToque" aria-hidden="true"></div>
   <div id="capaObjetos"></div>
 
   <!-- La palita. Un SVG pequeño: se dibuja nítido a cualquier tamaño y

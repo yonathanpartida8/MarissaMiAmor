@@ -55,20 +55,31 @@ librito. Eso quiere decir dos cosas buenas:
 
 ## Cómo se pasa de página
 
-Igual que en el resto del librito: **deslizando de lado**, con las flechas
-`‹ ›` de los bordes, o con la barra de abajo.
+Igual que en el resto del librito: **deslizando desde el borde**, con las
+flechas `‹ ›`, o con la barra de abajo.
 
-El deslizamiento funciona por encima de tu página, pero **no te quita tus
-gestos**: si el dedo empieza encima de un botón, un enlace, un campo de texto,
-un `<canvas>`, un vídeo o un audio, el gesto es tuyo entero.
+**Desde el borde**, y eso es lo importante para ti: el librito sólo se queda
+el deslizamiento que **empieza** en los primeros ~30 píxeles de la izquierda o
+de la derecha de la hoja. Todo lo demás es tuyo.
 
-Si tienes cualquier otra cosa que necesite arrastrarse —una tarjeta que se
-mueve, un control deslizante hecho a mano— márcala así y el librito no te
-quitará el dedo:
+O sea: **puedes arrastrar por toda tu página sin miedo.** Cavar, dibujar,
+mover una ficha, tirar de algo de un lado a otro. La hoja no se va a pasar
+sola en mitad de lo que estés haciendo, y no tienes que declarar nada ni
+dejar franjas libres en los lados.
+
+Si además quieres el borde —porque justo ahí tienes algo que se arrastra—,
+márcalo y el librito ni se acerca:
 
 ```html
 <div data-claim-drag> … lo que se arrastra … </div>
 ```
+
+Los botones, los enlaces y los campos de texto ya están protegidos aunque
+estén pegadísimos al margen; no hace falta marcarlos.
+
+> Si marcas con `data-claim-drag` algo que ocupa la hoja **entera**, de borde
+> a borde, dejarás a tu página sin deslizamiento. Se seguirá saliendo con las
+> flechas y con la barra, pero piénsalo antes.
 
 ---
 

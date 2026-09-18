@@ -59,9 +59,10 @@ const CIMIENTOS = `
     padding: 0;
     width: 100%;
     min-height: 100%;
-    /* El dedo se mueve arriba y abajo dentro de la página; el barrido
-       horizontal es del libro, que es quien pasa la hoja. Cualquier cosa
-       suya que necesite el gesto entero lo pide con [data-claim-drag]. */
+    /* Se desplaza arriba y abajo, y no se hace zoom por accidente con dos
+       dedos en mitad de una escena. El barrido horizontal NO se lo queda el
+       navegador: lo reparte el libro, que sólo pasa hoja si el dedo empieza
+       en el borde (ver el puente de gestos). */
     touch-action: pan-y;
     overscroll-behavior: contain;
     -webkit-text-size-adjust: 100%;
@@ -110,9 +111,20 @@ const CIMIENTOS = `
   [data-claim-drag] { touch-action: auto; }
 `;
 
-/** Lo que, si se toca, es suyo: el libro no le quita el dedo. */
+/**
+ * Lo que, si el dedo empieza encima, es suyo aunque empiece en el borde.
+ *
+ * Son cosas que se pulsan o se escriben, no decorado: un enlace pegado al
+ * margen tiene que poder pulsarse. `[data-claim-drag]` es la manera que él
+ * tiene de decir «esto lo arrastro yo», y vale también en el borde.
+ *
+ * Fíjate en lo que NO está: `canvas`, `video`, `audio`. Antes sí estaban, y
+ * era un error —ver `#prestarGestos`—: casi todas estas páginas son un lienzo
+ * a pantalla completa, así que tenerlo aquí dejaba la hoja sin salida salvo
+ * que su autor se acordara de dejar unas franjas vacías en los lados.
+ */
 const SUYO =
-  "a,button,input,select,textarea,label,summary,canvas,video,audio," +
+  "a,button,input,select,textarea,label,summary," +
   "[contenteditable],[data-claim-drag],[role=button],[role=slider],[role=tab]";
 
 /** Cuánto tiene que correr el dedo en horizontal para que pase la hoja. */
@@ -120,6 +132,15 @@ const BARRIDO = 46;
 
 /** Y cuánto más horizontal que vertical, para no robarle un desplazamiento. */
 const SESGO = 1.5;
+
+/**
+ * La franja de los bordes donde el barrido es del libro. Exactamente la misma
+ * medida que usa la navegación de bordes del libro (`EdgeNav`), para que dentro
+ * de una página HTML el gesto caiga donde cae en el resto del libro.
+ */
+const BANDA_MIN = 24;
+const BANDA_MAX = 44;
+const BANDA_PROP = 0.07;
 
 /** Si el archivo no abre en este tiempo, se sigue adelante sin él. */
 const ESPERA_MAX = 3500;
@@ -532,11 +553,30 @@ export default class HtmlPage extends BasePage {
    * sin salida, porque el barrido que pasa la hoja tampoco llega.
    *
    * Así que se lo contamos. Se escucha dentro, en fase de captura y sin
-   * estorbar (`passive`), y cuando el dedo hace un barrido claramente
-   * horizontal sobre algo que NO es suyo, se le pide al libro que pase.
+   * estorbar (`passive`), y cuando el dedo hace un barrido horizontal QUE
+   * EMPIEZA EN EL BORDE de la hoja, se le pide al libro que pase.
    *
-   * Lo que es suyo —botones, enlaces, campos, lienzos, o cualquier cosa
-   * marcada con `data-claim-drag`— no se toca jamás.
+   * ── POR QUÉ DESDE EL BORDE, Y NO DESDE CUALQUIER SITIO ────────────────
+   * Antes valía desde cualquier sitio: si el dedo no caía encima de algo
+   * «suyo», cualquier arrastre de más de 46 px hacia el lado pasaba la hoja.
+   * Y eso, en una página que se juega arrastrando —cavar la arena, apartar
+   * una esfera, limpiar un cristal—, es exactamente el defecto que se veía:
+   * LA PÁGINA SE PASABA SOLA en mitad de lo que estabas haciendo. Un gesto
+   * de juego y un gesto de pasar página eran el mismo gesto.
+   *
+   * Se intentó parchear por el otro lado, desde las propias páginas: cada
+   * una dejaba unas franjas vacías en los lados y reclamaba el resto con
+   * `data-claim-drag`. Es frágil por dos motivos: sólo protege a quien se
+   * acuerde de hacerlo —un HTML cualquiera que él suelte aquí no lo hace—, y
+   * en cuanto la franja no coincidía con la del libro, los dos gestos se
+   * volvían a pisar.
+   *
+   * La regla buena es la que el libro ya usa en todas las demás páginas:
+   * pasar hoja se pide DESDE EL BORDE. Dentro de la hoja el dedo es suyo,
+   * entero, sin que tenga que declarar nada. Y desde el borde el barrido es
+   * del libro, aunque debajo haya un lienzo a pantalla completa —por eso
+   * `canvas` ya no está en `SUYO`—, salvo que ahí haya un botón, un campo o
+   * algo marcado `[data-claim-drag]`, que siguen mandando.
    */
   #prestarGestos() {
     const doc = this.#documento();
@@ -545,9 +585,24 @@ export default class HtmlPage extends BasePage {
     let gesto = null;
 
     const abajo = (e) => {
+      gesto = null;
       if (e.pointerType === "mouse" && e.button !== 0) return;
-      const suyo = e.target?.closest?.(SUYO);
-      gesto = suyo ? null : { id: e.pointerId, x: e.clientX, y: e.clientY, usado: false };
+
+      // 1. ¿Empieza en el borde? Si no, no hay nada que hablar: el gesto es
+      //    suyo y el libro ni se entera.
+      //    Se mide cada vez, y no una: la hoja cambia de ancho al girar el
+      //    teléfono, y una franja calculada en vertical se queda corta o
+      //    larga en horizontal.
+      const ancho = doc.documentElement?.clientWidth || this.marco?.clientWidth || 0;
+      if (!ancho) return;
+      const margen = Math.min(BANDA_MAX, Math.max(BANDA_MIN, ancho * BANDA_PROP));
+      const desdeElBorde = e.clientX <= margen || e.clientX >= ancho - margen;
+      if (!desdeElBorde) return;
+
+      // 2. Empieza en el borde, pero puede haber algo suyo justo ahí.
+      if (e.target?.closest?.(SUYO)) return;
+
+      gesto = { id: e.pointerId, x: e.clientX, y: e.clientY, usado: false };
     };
 
     const mueve = (e) => {

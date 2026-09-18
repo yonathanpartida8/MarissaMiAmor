@@ -43,14 +43,12 @@ html, body { margin: 0; height: 100%; }
   pointer-events: none;   /* el libro cedería el gesto entero a un canvas */
 }
 
-/* La tierra donde se planta. Con franjas libres a los lados para que el
-   libro siga pasando de hoja por los bordes. */
+/* La tierra donde se planta: la hoja entera, de borde a borde. El libro
+   sólo se queda el barrido que empieza en sus 24-44 px de borde, así que
+   se puede sembrar por todas partes sin que la página se pase sola. */
 .jardin-mundo .jd-toque {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: clamp(26px, 11%, 58px);
-  right: clamp(26px, 11%, 58px);
+  inset: 0;
   touch-action: none;
   z-index: 2;
 }

@@ -47,14 +47,12 @@ html, body { margin: 0; height: 100%; }
   pointer-events: none;
 }
 
-/* El cristal que se limpia. Deja franjas libres en los lados para que el
-   libro siga pasando de hoja por los bordes. */
+/* El cristal que se limpia: entero, de borde a borde. El libro sólo se
+   queda el barrido que empieza en sus 24-44 px de borde, así que se puede
+   limpiar hasta las esquinas sin que la página se pase sola. */
 .ventana-mundo .vn-cristal {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: clamp(26px, 11%, 58px);
-  right: clamp(26px, 11%, 58px);
+  inset: 0;
   touch-action: none;
   z-index: 2;
   cursor: crosshair;

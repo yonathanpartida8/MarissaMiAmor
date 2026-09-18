@@ -62,20 +62,20 @@ html, body { margin: 0; height: 100%; }
   width: 100%;
   height: 100%;
   display: block;
-  /* Nunca recibe toques: el libro cede el gesto entero a cualquier
-     canvas, y con eso no se podría pasar de hoja en toda la página.
-     Quien recibe los dedos es `.rw-toque`, que deja libres los bordes. */
+  /* Los toques los recoge `.rw-toque`, que va justo encima y llega de
+     borde a borde. Así hay un solo sitio del que salen los gestos. */
   pointer-events: none;
 }
 
-/* La zona de arrastre. Estrechada por los lados a propósito: por esas
-   franjas el libro sigue pasando de hoja. */
+/* La zona de arrastre: la hoja entera.
+
+   Antes iba estrechada por los lados, para dejarle al libro unas franjas
+   por donde pasar de hoja. Ya no hace falta: el libro sólo se queda el
+   barrido que EMPIEZA en sus 24-44 px de borde, así que las esferas se
+   pueden arrastrar por todas partes sin que la página se pase sola. */
 .romantic-world .rw-toque {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: clamp(26px, 11%, 58px);
-  right: clamp(26px, 11%, 58px);
+  inset: 0;
   touch-action: none;
   z-index: 2;
 }
