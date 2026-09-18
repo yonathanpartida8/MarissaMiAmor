@@ -61,11 +61,31 @@ html, body { margin: 0; height: 100%; }
   perspective: 700px;
 }
 
+/* LA VETA DE LA MADERA.
+   Se hace con degradados repetidos en diagonal, no con una imagen: pesa
+   cero, se ve nítida a cualquier tamaño y va a juego con el resto del
+   libro, que tampoco descarga nada. Son tres capas con pasos distintos
+   (7, 13 y 23 px) para que el dibujo no se repita a ojo. */
+.caja-mundo .cj-veta {
+  background-image:
+    repeating-linear-gradient(94deg,
+      rgba(58, 30, 18, 0.22) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(92deg,
+      rgba(255, 216, 176, 0.09) 0 1px, transparent 1px 13px),
+    repeating-linear-gradient(96deg,
+      rgba(40, 20, 12, 0.14) 0 2px, transparent 2px 23px);
+}
+
 .caja-mundo .cj-tapa {
   position: relative;
   height: 86px;
   border-radius: 12px 12px 3px 3px;
-  background: linear-gradient(175deg, #a06b50 0%, var(--madera) 46%, var(--madera-h) 100%);
+  background:
+    repeating-linear-gradient(94deg,
+      rgba(58, 30, 18, 0.22) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(92deg,
+      rgba(255, 216, 176, 0.09) 0 1px, transparent 1px 13px),
+    linear-gradient(175deg, #a06b50 0%, var(--madera) 46%, var(--madera-h) 100%);
   box-shadow:
     inset 0 2px 0 rgba(255, 228, 200, 0.4),
     inset 0 -8px 16px rgba(0, 0, 0, 0.28),
@@ -88,16 +108,99 @@ html, body { margin: 0; height: 100%; }
   box-shadow: inset 0 0 14px rgba(217, 164, 65, 0.18);
 }
 
+/* El cierre dorado del frente. Cuelga de la tapa y se abre con ella, que
+   es lo que hace que la tapa parezca una tapa y no un panel suelto. */
+.caja-mundo .cj-cierre {
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  width: 26px;
+  height: 18px;
+  margin-left: -13px;
+  border-radius: 3px 3px 5px 5px;
+  background: linear-gradient(180deg, #f0c86a, var(--oro) 55%, #a8741f);
+  box-shadow: 0 1px 3px rgba(40, 20, 8, 0.5), inset 0 1px 0 rgba(255, 245, 210, 0.7);
+  z-index: 4;
+}
+.caja-mundo .cj-cierre::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 7px;
+  width: 5px;
+  height: 7px;
+  margin-left: -2.5px;
+  border-radius: 2px 2px 40% 40%;
+  background: #5c3a10;
+}
+
 .caja-mundo .cj-cuerpo {
   position: relative;
-  height: 178px;
+  /* Lo justo para que la bailarina (104 px) no toque el techo: el hueco
+     útil son estos 196 menos los 10 de arriba y los 54 de las teclas. */
+  height: 196px;
   margin-top: -3px;
   border-radius: 3px 3px 14px 14px;
-  background: linear-gradient(180deg, var(--madera-h) 0%, var(--madera) 26%, #5c3626 100%);
+  background:
+    repeating-linear-gradient(94deg,
+      rgba(50, 26, 16, 0.2) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(96deg,
+      rgba(255, 216, 176, 0.07) 0 1px, transparent 1px 17px),
+    linear-gradient(180deg, var(--madera-h) 0%, var(--madera) 26%, #5c3626 100%);
   box-shadow:
     inset 0 10px 22px rgba(0, 0, 0, 0.45),
     0 22px 40px rgba(74, 40, 30, 0.4);
   overflow: hidden;
+}
+
+/* Las cuatro patas, cortitas. Levantan la caja del suelo y le quitan el
+   aspecto de bloque apoyado. */
+.caja-mundo .cj-patas {
+  position: relative;
+  height: 9px;
+  margin: 0 14px;
+  display: flex;
+  justify-content: space-between;
+}
+.caja-mundo .cj-patas i {
+  width: 16px;
+  height: 100%;
+  border-radius: 0 0 5px 5px;
+  background: linear-gradient(180deg, #5c3626, #3d2118);
+  box-shadow: 0 4px 10px rgba(50, 24, 16, 0.5);
+}
+
+/* La manivela del costado. Gira mientras suena, y sólo mientras suena:
+   es el aviso de que la música viene de la caja y no de otro sitio. */
+.caja-mundo .cj-manivela {
+  position: absolute;
+  right: -20px;
+  top: 118px;
+  width: 34px;
+  height: 34px;
+  z-index: 1;
+  animation: cj-manivela 2.1s linear infinite paused;
+}
+.caja-mundo.is-sonando .cj-manivela { animation-play-state: running; }
+@keyframes cj-manivela { to { transform: rotate(360deg); } }
+
+.caja-mundo .cj-manivela::before {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 15px; height: 3px;
+  margin: -1.5px 0 0 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--oro), #a8741f);
+}
+.caja-mundo .cj-manivela::after {
+  content: "";
+  position: absolute;
+  left: calc(50% + 13px); top: 50%;
+  width: 8px; height: 8px;
+  margin: -4px 0 0 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f7dc9a, var(--oro) 60%, #8f6318);
 }
 
 /* El terciopelo del interior. */
@@ -116,59 +219,100 @@ html, body { margin: 0; height: 100%; }
 }
 .caja-mundo.is-abierta .cj-interior { opacity: 1; }
 
-/* La bailarina: un cuerpo simple que gira sobre sí mismo. */
+/* La bailarina.
+
+   GIRA SIN VOLUMEN, y esto no es un capricho. El primer intento la hacía
+   dar vueltas de verdad con `rotateY` y `preserve-3d`, y el problema de
+   una figura plana girando en 3D es que a los 90 grados se ve DE CANTO:
+   desaparece del todo, dos veces por vuelta. Lo que se veía era una
+   bailarina parpadeando.
+
+   Así que el giro se finge estrechándola y ensanchándola, que es
+   exactamente lo que le pasa a una silueta cuando se da la vuelta, y
+   nunca baja del 22%: siempre hay algo que mirar. El resto lo pone el
+   balanceo, que va al doble de velocidad porque en cada media vuelta
+   pasa una vez por el centro. */
 .caja-mundo .cj-bailarina {
-  width: 60px;
-  height: 92px;
+  width: 64px;
+  height: 104px;
   position: relative;
-  transform-style: preserve-3d;
-  animation: cj-girar 4.2s linear infinite paused;
+  animation: cj-girar 4.2s ease-in-out infinite paused;
 }
 .caja-mundo.is-sonando .cj-bailarina { animation-play-state: running; }
 
-@keyframes cj-girar { to { transform: rotateY(360deg); } }
+@keyframes cj-girar {
+  0%   { transform: scaleX(1)    translateX(0)   rotate(0deg); }
+  25%  { transform: scaleX(0.22) translateX(3px) rotate(2.5deg); }
+  50%  { transform: scaleX(-1)   translateX(0)   rotate(0deg); }
+  75%  { transform: scaleX(-0.22) translateX(-3px) rotate(-2.5deg); }
+  100% { transform: scaleX(1)    translateX(0)   rotate(0deg); }
+}
 
+/* El tutú, con su vuelo: ancho abajo y recogido en la cintura. */
 .caja-mundo .cj-falda {
   position: absolute;
-  left: 50%; bottom: 8px;
-  width: 54px; height: 40px;
-  margin-left: -27px;
-  border-radius: 50% 50% 46% 46% / 74% 74% 30% 30%;
-  background: linear-gradient(180deg, #ffe9f2 0%, #ffc4dc 60%, #f59ec0 100%);
-  box-shadow: 0 3px 10px rgba(110, 30, 60, 0.4);
+  left: 50%; bottom: 14px;
+  width: 58px; height: 34px;
+  margin-left: -29px;
+  border-radius: 50% 50% 44% 44% / 84% 84% 26% 26%;
+  background:
+    radial-gradient(ellipse 70% 100% at 50% 100%, rgba(255,255,255,0.5), transparent 62%),
+    linear-gradient(180deg, #fff3f8 0%, #ffc4dc 58%, #f08cb6 100%);
+  box-shadow: 0 4px 12px rgba(110, 30, 60, 0.45);
+}
+/* Las dos piernas, juntas y en punta: es lo que la pone de pie. */
+.caja-mundo .cj-falda::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 100%;
+  width: 7px; height: 16px;
+  margin-left: -3.5px;
+  border-radius: 3px 3px 1px 1px;
+  background: linear-gradient(180deg, #ffe0ce, #f0c2a8);
 }
 .caja-mundo .cj-torso {
   position: absolute;
-  left: 50%; bottom: 40px;
-  width: 17px; height: 30px;
-  margin-left: -8.5px;
-  border-radius: 9px 9px 5px 5px;
-  background: linear-gradient(180deg, #ffd9e6, #f7a8c6);
+  left: 50%; bottom: 44px;
+  width: 16px; height: 30px;
+  margin-left: -8px;
+  border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(180deg, #ffdcea, #f7a8c6);
 }
 .caja-mundo .cj-cabeza {
   position: absolute;
-  left: 50%; bottom: 66px;
-  width: 20px; height: 20px;
-  margin-left: -10px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff3e4, #f0c8ad 70%);
+  left: 50%; bottom: 70px;
+  width: 21px; height: 22px;
+  margin-left: -10.5px;
+  border-radius: 50% 50% 46% 46%;
+  background: radial-gradient(circle at 35% 32%, #fff6ea, #efc6aa 72%);
 }
+/* El moño, con su lazo. */
 .caja-mundo .cj-monyo {
   position: absolute;
-  left: 50%; bottom: 82px;
-  width: 13px; height: 11px;
-  margin-left: -6.5px;
-  border-radius: 50%;
-  background: #6b4030;
+  left: 50%; bottom: 86px;
+  width: 22px; height: 13px;
+  margin-left: -11px;
+  border-radius: 50% 50% 34% 34%;
+  background: linear-gradient(180deg, #7a4a34, #5c3524);
 }
+.caja-mundo .cj-monyo::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: -4px;
+  width: 11px; height: 7px;
+  margin-left: -5.5px;
+  border-radius: 50%;
+  background: #ff9ec2;
+}
+/* Los brazos en corona, que es la postura de siempre. */
 .caja-mundo .cj-brazos {
   position: absolute;
-  left: 50%; bottom: 60px;
-  width: 46px; height: 4px;
-  margin-left: -23px;
-  border-radius: 2px;
-  background: #f7bcd2;
-  transform: rotate(-16deg);
+  left: 50%; bottom: 62px;
+  width: 40px; height: 22px;
+  margin-left: -20px;
+  border: 3px solid #f9c2d6;
+  border-bottom-color: transparent;
+  border-radius: 50% 50% 0 0;
 }
 
 /* El espejo del fondo, que la duplica. */
@@ -278,7 +422,9 @@ html, body { margin: 0; height: 100%; }
   <canvas class="cj-lienzo" id="lienzo"></canvas>
 
   <div class="cj-escena">
-    <div class="cj-tapa" id="tapa" role="button" tabindex="0" aria-label="Abrir la caja de música"></div>
+    <div class="cj-tapa" id="tapa" role="button" tabindex="0" aria-label="Abrir la caja de música">
+      <span class="cj-cierre" aria-hidden="true"></span>
+    </div>
     <div class="cj-cuerpo">
       <div class="cj-interior">
         <div class="cj-espejo"></div>
@@ -292,6 +438,8 @@ html, body { margin: 0; height: 100%; }
       </div>
       <div class="cj-teclas" id="teclas" role="group" aria-label="Notas"></div>
     </div>
+    <div class="cj-patas" aria-hidden="true"><i></i><i></i></div>
+    <div class="cj-manivela" aria-hidden="true"></div>
   </div>
 
   <div class="cj-ui">
