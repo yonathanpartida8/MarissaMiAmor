@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mil grullas</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .grullas-mundo, con prefijo `gr-` en cada clase.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.grullas-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background:
+    radial-gradient(ellipse 130% 70% at 50% 100%, #ffe6ec, transparent 64%),
+    linear-gradient(185deg, #cfe2f2 0%, #e6eef7 42%, #fdf3ef 100%);
+  color: #40343f;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.grullas-mundo .gr-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Los toques los recoge `.gr-toque`, que va justo encima. */
+  pointer-events: none;
+}
+
+/* La hoja entera es papel: se dobla donde toques. El libro sólo se queda
+   el barrido que empieza en sus 24-44 px de borde. */
+.grullas-mundo .gr-toque {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.grullas-mundo .gr-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  padding:
+    calc(var(--seguro-t) + 20px) 22px
+    calc(var(--seguro-b) + var(--barra) + 18px) 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+.grullas-mundo .gr-titulo {
+  margin: 0;
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-size: clamp(1rem, 4.4vw, 1.4rem);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: #6b5570;
+  opacity: 0.85;
+  transition: opacity 800ms var(--e-suave);
+}
+.grullas-mundo.is-volando .gr-titulo { opacity: 0.2; }
+
+.grullas-mundo .gr-contador {
+  position: absolute;
+  right: 20px;
+  top: calc(var(--seguro-t) + 20px);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  color: #8a7490;
+}
+.grullas-mundo .gr-contador b {
+  font-size: 1.5em;
+  font-weight: 600;
+  color: #c2567e;
+  display: block;
+  line-height: 1;
+}
+
+.grullas-mundo .gr-pie {
+  margin: 0;
+  min-height: 3.6em;
+  max-width: 23em;
+  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
+  line-height: 1.55;
+  color: #50404f;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 640ms var(--e-suave), transform 640ms var(--e-suave);
+}
+.grullas-mundo .gr-pie.is-visible { opacity: 0.94; transform: none; }
+.grullas-mundo .gr-pie em {
+  display: block;
+  margin-top: 0.3em;
+  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  font-size: 1.16em;
+  font-style: normal;
+  color: #c2567e;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grullas-mundo * { transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="grullas-mundo" id="mundo">
+  <canvas class="gr-lienzo" id="lienzo"></canvas>
+  <div class="gr-toque" id="toque" aria-hidden="true"></div>
+  <div class="gr-ui">
+    <h1 class="gr-titulo" id="titulo">Dobla una grulla</h1>
+    <p class="gr-pie" id="pie" role="status" aria-live="polite"></p>
+  </div>
+  <div class="gr-contador" id="cuenta" aria-hidden="true"><b>0</b>de mil</div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN EDITABLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const CONF = {
+
+  /* ---- LA LEYENDA -----------------------------------------------------
+     Mil grullas de papel y se concede un deseo. Aquí no hacen falta mil
+     de verdad —eso sería crueldad—: cada toque cuenta por varias, y el
+     número sube deprisa cuando se coge carrerilla.                      */
+  porToque: 1,          // grullas por toque al principio
+  carrerilla: 0.45,     // segundos entre toques para que cuente como racha
+  rachaMax: 14,         // cuántas por toque como mucho, con racha larga
+  meta: 1000,
+
+  /* ---- LAS FRASES ESCONDIDAS ------------------------------------------
+     Cada grulla guarda una. Se lee al doblarla, y no se repite hasta que
+     se hayan visto todas.                                                */
+  frases: [
+    "Por los días en que no hace falta hablar.",
+    "Por cómo dices mi nombre cuando tienes sueño.",
+    "Porque te ríes antes de terminar el chiste.",
+    "Por la manía de robarme el lado de la cama.",
+    "Porque sabes cuándo callarte y quedarte.",
+    "Por las fotos que sales movida y son las mejores.",
+    "Porque cantas fatal y muy fuerte.",
+    "Por tus pies fríos en enero.",
+    "Porque me escuchas cosas que ya te he contado.",
+    "Por la cara que pones cuando algo te gusta mucho.",
+    "Porque no te rindes conmigo.",
+    "Por los planes que hacemos y no cumplimos.",
+    "Porque el café te sale mal y me lo bebo igual.",
+    "Por cómo te enfadas: tres minutos y se pasa.",
+    "Porque cuando lloras te tapas la cara.",
+    "Por las veces que has dicho «venga, va».",
+    "Porque me has enseñado a estar quieto.",
+    "Por lo que no te digo y sabes igual.",
+  ],
+
+  /* ---- LOS HITOS ------------------------------------------------------
+     Números en los que pasa algo. En orden.                             */
+  hitos: [
+    { n: 1,    texto: "Una.", firma: "Faltan novecientas noventa y nueve." },
+    { n: 10,   texto: "Diez ya.", firma: "Vas rápido." },
+    { n: 50,   texto: "Cincuenta grullas y no has dicho nada.", firma: "Me gusta cómo te concentras." },
+    { n: 100,  texto: "Cien. Se te ha llenado el cielo.", firma: "Y todavía es por la mañana." },
+    { n: 250,  texto: "Doscientas cincuenta.", firma: "Cuando lleguemos a mil te digo el deseo." },
+    { n: 500,  texto: "Quinientas. La mitad.", firma: "La mitad de nada, si lo piensas." },
+    { n: 750,  texto: "Setecientas cincuenta.", firma: "Ya casi. No pares." },
+    { n: 999,  texto: "Novecientas noventa y nueve.", firma: "Una más." },
+  ],
+
+  /* ---- EL DESEO, al llegar a mil -------------------------------------- */
+  deseo: {
+    texto: "Mil. Dicen que ahora se concede un deseo.",
+    firma: "El mío ya se cumplió. Fue cuando dijiste que sí.",
+  },
+
+  /* ---- COLORES DEL PAPEL ---------------------------------------------- */
+  papeles: [
+    ["#ffd7e4", "#f7a8c6"],
+    ["#ffe9c4", "#f6c887"],
+    ["#d6f0e4", "#9dd8bd"],
+    ["#dbe4ff", "#a9bcf2"],
+    ["#f3dcf7", "#d2a6e0"],
+    ["#fff0d6", "#f2d197"],
+  ],
+
+  vivas: 150,      // grullas en el aire como mucho (se reciclan)
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   La maquinaria.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const mundo  = document.getElementById("mundo");
+const lienzo = document.getElementById("lienzo");
+const zona   = document.getElementById("toque");
+const elPie  = document.getElementById("pie");
+const elCue  = document.getElementById("cuenta");
+const ctx    = lienzo.getContext("2d");
+
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let A = 0, H = 0, dpr = 1;
+
+function medir() {
+  const r = mundo.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  A = r.width; H = r.height;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  lienzo.width  = Math.round(A * dpr);
+  lienzo.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+new ResizeObserver(medir).observe(mundo);
+
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+
+/* ---- Las grullas ------------------------------------------------------
+   Agrupadas en un anillo de tamaño fijo: no se crea ni se tira ni un
+   objeto mientras vuela nada, así que no hay recolector de basura
+   metiéndose en mitad de una animación.                                  */
+
+const N = CONF.vivas;
+const gx = new Float32Array(N), gy = new Float32Array(N);
+const gvx = new Float32Array(N), gvy = new Float32Array(N);
+const gesc = new Float32Array(N);      // tamaño
+const gale = new Float32Array(N);      // fase del aleteo
+const gvel = new Float32Array(N);      // velocidad del aleteo
+const ggir = new Float32Array(N);      // inclinación
+const gvid = new Float32Array(N);      // 0 = libre
+const gcol = new Int16Array(N);        // qué papel
+const gnac = new Float32Array(N);      // 0..1, lo que lleva de nacer
+let cursor = 0;
+
+function soltarGrulla(x, y) {
+  let k = -1;
+  for (let j = 0; j < N; j++) {
+    const c = (cursor + j) % N;
+    if (gvid[c] <= 0) { k = c; cursor = (c + 1) % N; break; }
+  }
+  /* Si están todas ocupadas se reutiliza la más vieja: mejor eso que
+     dejar de responder al dedo. */
+  if (k < 0) { k = cursor; cursor = (cursor + 1) % N; }
+
+  gx[k] = x; gy[k] = y;
+  const haciaDerecha = x < A * 0.5;
+  gvx[k] = (haciaDerecha ? 1 : -1) * azar(28, 70);
+  gvy[k] = azar(-52, -95);
+  gesc[k] = azar(0.7, 1.35);
+  gale[k] = Math.random() * 6.283;
+  gvel[k] = azar(4.6, 7.4);
+  ggir[k] = 0;
+  gvid[k] = 1;
+  gnac[k] = 0;
+  gcol[k] = Math.floor(Math.random() * CONF.papeles.length);
+}
+
+/* ---- Contar ----------------------------------------------------------- */
+
+let total = 0;
+let ultimoToque = 0;
+let racha = 0;
+let siguienteHito = 0;
+let frasesLibres = [];
+let deseoDicho = false;
+
+function tocar(x, y) {
+  const ahora = performance.now();
+  racha = (ahora - ultimoToque < CONF.carrerilla * 1000) ? racha + 1 : 0;
+  ultimoToque = ahora;
+
+  /* Cuantas más seguidas, más grullas por toque: así llegar a mil es un
+     rato agradable y no una tarea. */
+  const cuantas = clamp(CONF.porToque + Math.floor(racha * 0.9), 1, CONF.rachaMax);
+  const visibles = Math.min(cuantas, 6);   // en pantalla no hacen falta más
+  for (let i = 0; i < visibles; i++) {
+    soltarGrulla(x + azar(-16, 16), y + azar(-12, 12));
+  }
+
+  const antes = total;
+  total = Math.min(CONF.meta, total + cuantas);
+  pintarCuenta();
+  campanita(racha);
+  mundo.classList.add("is-volando");
+
+  /* La frase de la grulla, sin repetir hasta agotarlas. */
+  if (!frasesLibres.length) frasesLibres = CONF.frases.slice();
+  const i = Math.floor(Math.random() * frasesLibres.length);
+  const frase = frasesLibres.splice(i, 1)[0];
+
+  /* Los hitos mandan sobre la frase suelta. */
+  let hito = null;
+  while (siguienteHito < CONF.hitos.length && CONF.hitos[siguienteHito].n <= total) {
+    if (CONF.hitos[siguienteHito].n > antes) hito = CONF.hitos[siguienteHito];
+    siguienteHito++;
+  }
+  if (total >= CONF.meta && !deseoDicho) {
+    deseoDicho = true;
+    decir(CONF.deseo.texto, CONF.deseo.firma, true);
+    lluviaDeGrullas();
+  } else if (hito) {
+    decir(hito.texto, hito.firma, true);
+  } else {
+    decir(frase);
+  }
+
+  vigilarSecretos(x, y);
+}
+
+function pintarCuenta() {
+  elCue.innerHTML = "";
+  const b = document.createElement("b");
+  b.textContent = String(total);
+  elCue.append(b, document.createTextNode(total >= CONF.meta ? "mil" : "de mil"));
+}
+
+function lluviaDeGrullas() {
+  let k = 0;
+  const reloj = setInterval(() => {
+    for (let i = 0; i < 3; i++) soltarGrulla(azar(0, A), H + azar(10, 60));
+    if (++k > 22) clearInterval(reloj);
+  }, 110);
+}
+
+/* ---- Toque ------------------------------------------------------------ */
+
+function enPantalla(e) {
+  const r = mundo.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+let arrastrando = false;
+let ultimoSoltado = 0;
+
+zona.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  zona.setPointerCapture(e.pointerId);
+  arrastrando = true;
+  const p = enPantalla(e);
+  tocar(p.x, p.y);
+});
+
+/* Arrastrando también salen, pero con freno: si no, un dedo que cruza la
+   pantalla contaba doscientas de golpe y se acababa el juego. */
+zona.addEventListener("pointermove", (e) => {
+  if (!arrastrando) return;
+  const ahora = performance.now();
+  if (ahora - ultimoSoltado < 90) return;
+  ultimoSoltado = ahora;
+  const p = enPantalla(e);
+  tocar(p.x, p.y);
+});
+
+const soltar = () => { arrastrando = false; };
+zona.addEventListener("pointerup", soltar);
+zona.addEventListener("pointercancel", soltar);
+
+/* ---- Los textos ------------------------------------------------------- */
+
+let pidiendo = null;
+let bloqueado = 0;     // los hitos se quedan un rato y no los pisa una frase
+
+function decir(texto, firma, importante) {
+  const ahora = performance.now();
+  if (!importante && ahora < bloqueado) return;
+  if (pidiendo === texto) return;
+  pidiendo = texto;
+  if (importante) bloqueado = ahora + 3400;
+  elPie.classList.remove("is-visible");
+  setTimeout(() => {
+    elPie.textContent = texto;
+    if (firma) {
+      const em = document.createElement("em");
+      em.textContent = firma;
+      elPie.append(em);
+    }
+    elPie.classList.add("is-visible");
+  }, suave ? 10 : 260);
+}
+
+/* ---- Sonido ----------------------------------------------------------- */
+
+let audio = null;
+function campanita(racha) {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+    const t = audio.currentTime;
+    /* Sube de tono con la racha: premia seguir. Y se queda dentro de una
+       escala pentatónica, que es la que no puede sonar mal. */
+    const escala = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
+    const paso = escala[Math.min(racha, escala.length - 1)];
+    const f = 523.25 * Math.pow(2, paso / 12);
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.07, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+    o.connect(g).connect(audio.destination);
+    o.start(t); o.stop(t + 0.5);
+  } catch { /* sin sonido se dobla igual */ }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS SECRETOS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Una grulla de cada cien es negra y no vuela: se queda posada hasta
+      que se la toca otra vez, y entonces dice algo distinto.             */
+let posada = null;
+const PROB_POSADA = 0.012;
+
+/* 2. Si se tocan las cuatro esquinas de la hoja, en cualquier orden y sin
+      pasar un minuto, todas las grullas que haya en el aire dan la vuelta
+      y se van hacia el mismo sitio.                                      */
+const esquinas = [false, false, false, false];
+let esquinasDesde = 0;
+
+function vigilarSecretos(x, y) {
+  /* — la grulla posada — */
+  if (!posada && Math.random() < PROB_POSADA && total > 12) {
+    posada = { x, y: Math.min(y, H - 80), ale: 0, esperando: true };
+  }
+
+  /* — las cuatro esquinas — */
+  const m = Math.min(A, H) * 0.22;
+  const ahora = performance.now();
+  if (ahora - esquinasDesde > 60000) { esquinas.fill(false); esquinasDesde = ahora; }
+  if (x < m && y < m) esquinas[0] = true;
+  if (x > A - m && y < m) esquinas[1] = true;
+  if (x < m && y > H - m) esquinas[2] = true;
+  if (x > A - m && y > H - m) esquinas[3] = true;
+  if (esquinas.every(Boolean)) {
+    esquinas.fill(false);
+    bandada = 1;
+    decir("Todas a la vez, hacia el mismo sitio.", "Como cuando decidimos algo sin hablarlo.", true);
+  }
+}
+let bandada = 0;
+
+/* 3. Si no se toca nada durante medio minuto, una grulla sola cruza la
+      hoja de lado a lado, despacio, y deja una frase.                    */
+let quieta = 0;
+const SECRETO_QUIETA = 30;
+
+zona.addEventListener("pointerdown", (e) => {
+  if (!posada) return;
+  const p = enPantalla(e);
+  const d = Math.hypot(p.x - posada.x, p.y - posada.y);
+  if (d < 46) {
+    posada = null;
+    decir("Esa no quería volar.", "Hay días así, y también están bien.", true);
+    campanita(9);
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════════════
+   DIBUJAR UNA GRULLA
+   Papel doblado: dos alas, un cuello y una cola. Todo con rectas, que es
+   lo que es el origami.
+   ══════════════════════════════════════════════════════════════════════ */
+
+function grulla(x, y, esc, aleteo, giro, papel, alfa) {
+  const [claro, hondo] = CONF.papeles[papel];
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(giro);
+  ctx.scale(esc, esc);
+  ctx.globalAlpha = alfa;
+
+  /* El aleteo es el ancho de las alas: se encogen y se estiran. */
+  const a = 0.35 + 0.65 * Math.abs(Math.cos(aleteo));
+  const alto = (1 - a) * 9;
+
+  /* Ala de atrás, más oscura. */
+  ctx.fillStyle = hondo;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(-15 * a, -6 - alto);
+  ctx.lineTo(-4, 3);
+  ctx.closePath();
+  ctx.fill();
+
+  /* Cuerpo: un rombo alargado. */
+  ctx.fillStyle = claro;
+  ctx.beginPath();
+  ctx.moveTo(-6, 1);
+  ctx.lineTo(0, -3);
+  ctx.lineTo(9, 2);
+  ctx.lineTo(0, 5);
+  ctx.closePath();
+  ctx.fill();
+
+  /* Cuello y cabeza, hacia delante. */
+  ctx.strokeStyle = hondo;
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(7, 1);
+  ctx.lineTo(14, -4);
+  ctx.stroke();
+
+  /* Cola, hacia atrás. */
+  ctx.beginPath();
+  ctx.moveTo(-5, 2);
+  ctx.lineTo(-12, 5);
+  ctx.stroke();
+
+  /* Ala de delante, la que se ve entera. */
+  ctx.fillStyle = claro;
+  ctx.beginPath();
+  ctx.moveTo(1, 0);
+  ctx.lineTo(-13 * a, -9 - alto);
+  ctx.lineTo(-1, -1);
+  ctx.closePath();
+  ctx.fill();
+  /* El pliegue del ala: la raya que hace que parezca papel. */
+  ctx.strokeStyle = hondo;
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(1, 0);
+  ctx.lineTo(-9 * a, -6 - alto * 0.7);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+let t0 = performance.now();
+let reloj = 0;
+let solitaria = null;
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A || !H) return;
+
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+  else if (dt > 0.1) dt = 0.1;
+  reloj += dt;
+
+  quieta = arrastrando ? 0 : quieta + dt;
+  if (quieta > SECRETO_QUIETA && !solitaria) {
+    quieta = -45;
+    solitaria = { x: -40, y: H * azar(0.28, 0.6), ale: 0, esc: 1.7 };
+    decir("Esa iba sola y no parecía triste.", "También se puede.", true);
+  }
+
+  bandada = bandada > 0 ? Math.max(0, bandada - dt * 0.5) : 0;
+
+  ctx.clearRect(0, 0, A, H);
+
+  /* --- las grullas --- */
+  for (let i = 0; i < N; i++) {
+    if (gvid[i] <= 0) continue;
+
+    gnac[i] = Math.min(1, gnac[i] + dt * 3.4);
+    gale[i] += gvel[i] * dt;
+
+    /* Empujoncito de aire: una corriente lenta que las mece a todas
+       igual, más una ondulación propia de cada una. */
+    const brisa = Math.sin(reloj * 0.6 + gy[i] * 0.004) * 16;
+    let vx = gvx[i] + brisa;
+    let vy = gvy[i] + Math.sin(reloj * 2.1 + gale[i]) * 12;
+
+    if (bandada > 0) {
+      /* El secreto de las esquinas: todas viran al mismo rumbo. */
+      const k = Math.min(1, bandada * 2);
+      vx = vx * (1 - k) + 120 * k;
+      vy = vy * (1 - k) - 40 * k;
+    }
+
+    gx[i] += vx * dt;
+    gy[i] += vy * dt;
+    gvy[i] -= 4 * dt;                 // van subiendo cada vez más
+    ggir[i] = Math.atan2(vy, vx) * 0.32 + Math.sin(reloj * 1.4 + gale[i]) * 0.09;
+
+    if (gy[i] < -70 || gx[i] < -80 || gx[i] > A + 80) { gvid[i] = 0; continue; }
+
+    /* Se desvanecen arriba del todo en vez de cortarse de golpe. */
+    const alfa = Math.min(gnac[i], clamp(gy[i] / (H * 0.22), 0, 1));
+    grulla(gx[i], gy[i], gesc[i] * (0.5 + 0.5 * gnac[i]), gale[i], ggir[i], gcol[i], alfa);
+  }
+
+  /* --- la grulla posada (secreto 1) --- */
+  if (posada) {
+    posada.ale += dt * 1.1;
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    /* Negra: se dibuja igual y se le echa un velo oscuro encima. */
+    grulla(posada.x, posada.y, 1.25, Math.PI / 2, 0, 0, 1);
+    ctx.globalCompositeOperation = "source-atop";
+    ctx.fillStyle = "rgba(38, 28, 40, 0.86)";
+    ctx.fillRect(posada.x - 40, posada.y - 40, 80, 80);
+    ctx.restore();
+    /* Un parpadeo del ojo, para que se note que está viva. */
+    ctx.globalAlpha = 0.5 + 0.5 * Math.sin(posada.ale * 2.2);
+    ctx.fillStyle = "#ffd9e6";
+    ctx.beginPath();
+    ctx.arc(posada.x + 13, posada.y - 5, 1.6, 0, 6.283);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  /* --- la grulla solitaria (secreto 3) --- */
+  if (solitaria) {
+    solitaria.x += 52 * dt;
+    solitaria.y += Math.sin(reloj * 0.9) * 9 * dt;
+    solitaria.ale += dt * 3.1;
+    grulla(solitaria.x, solitaria.y, solitaria.esc, solitaria.ale, -0.06, 3, 0.85);
+    if (solitaria.x > A + 80) solitaria = null;
+  }
+
+  ctx.globalAlpha = 1;
+}
+
+medir();
+pintarCuenta();
+decir("Toca el papel. Se dobla solo.");
+requestAnimationFrame(paso);
+
+})();
+</script>
+</body>
+</html>
