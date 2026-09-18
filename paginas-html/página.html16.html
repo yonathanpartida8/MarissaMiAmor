@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>La radio</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .radio-mundo, con prefijo `rd-` en cada clase.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.radio-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background:
+    radial-gradient(ellipse 110% 70% at 50% 6%, #2e2018, transparent 62%),
+    linear-gradient(172deg, #241a14 0%, #1a120e 58%, #120c09 100%);
+  color: #e8d8c0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --madera: #7a4c30;
+  --madera-h: #4e2e1c;
+  --ambar: #ffb545;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---- El aparato ------------------------------------------------------ */
+
+.radio-mundo .rd-caja {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(86vw, 320px);
+  padding: 16px 16px 18px;
+  border-radius: 16px 16px 10px 10px;
+  background:
+    repeating-linear-gradient(93deg, rgba(40, 22, 12, 0.24) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(91deg, rgba(255, 210, 160, 0.07) 0 1px, transparent 1px 15px),
+    linear-gradient(172deg, #8f5a38 0%, var(--madera) 42%, var(--madera-h) 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 220, 180, 0.28),
+    inset 0 -10px 20px rgba(0, 0, 0, 0.42),
+    0 20px 44px rgba(0, 0, 0, 0.55);
+  z-index: 2;
+}
+
+/* La rejilla del altavoz. */
+.radio-mundo .rd-rejilla {
+  height: 74px;
+  border-radius: 7px;
+  background:
+    repeating-linear-gradient(0deg,
+      rgba(20, 12, 8, 0.85) 0 2px, rgba(120, 92, 66, 0.5) 2px 5px);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+/* El cono del altavoz, que vibra con la música. */
+.radio-mundo .rd-cono {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 46px; height: 46px;
+  margin: -23px 0 0 -23px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 42%, rgba(255, 190, 120, 0.22), transparent 66%);
+  transform: scale(1);
+  transition: transform 90ms ease-out;
+}
+
+/* El dial: la ventana ámbar con la aguja. */
+.radio-mundo .rd-dial {
+  position: relative;
+  margin: 14px 0 0;
+  height: 62px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #3a2a18, #24180e);
+  box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 210, 160, 0.16);
+  overflow: hidden;
+  touch-action: none;
+  cursor: ew-resize;
+}
+/* La luz de dentro, que se enciende con la emisora. */
+.radio-mundo .rd-luz {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 181, 69, 0.3), rgba(255, 140, 40, 0.1));
+  opacity: 0.25;
+  transition: opacity 320ms var(--e-suave);
+}
+.radio-mundo.is-sintonizada .rd-luz { opacity: 0.85; }
+
+.radio-mundo .rd-escala {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.radio-mundo .rd-aguja {
+  position: absolute;
+  top: 4px; bottom: 4px;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #ff6b4a, #c42f22);
+  box-shadow: 0 0 10px rgba(255, 90, 60, 0.85);
+  pointer-events: none;
+}
+
+.radio-mundo .rd-nombre {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 5px;
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #ffd9a0;
+  opacity: 0;
+  transition: opacity 380ms var(--e-suave);
+  pointer-events: none;
+}
+.radio-mundo.is-sintonizada .rd-nombre { opacity: 0.95; }
+
+/* Los mandos de abajo. */
+.radio-mundo .rd-mandos {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding: 0 6px;
+}
+.radio-mundo .rd-perilla {
+  width: 40px; height: 40px;
+  border: 0; padding: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 36% 30%, #d6a870, #8f5f38 56%, #4e2e1c 100%);
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 220, 180, 0.4);
+  cursor: pointer;
+  position: relative;
+  transition: transform 220ms var(--e-suave);
+}
+.radio-mundo .rd-perilla::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 5px;
+  width: 3px; height: 12px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: #2a1a10;
+}
+.radio-mundo .rd-perilla:focus-visible { outline: 2px solid var(--ambar); outline-offset: 3px; }
+.radio-mundo .rd-perilla.is-on { transform: rotate(140deg); }
+
+.radio-mundo .rd-marca {
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-size: 0.76rem;
+  letter-spacing: 0.3em;
+  color: rgba(255, 216, 170, 0.5);
+}
+
+/* ---- Lo que se lee --------------------------------------------------- */
+
+.radio-mundo .rd-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  padding:
+    calc(var(--seguro-t) + 20px) 22px
+    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+.radio-mundo .rd-titulo {
+  margin: 0;
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-size: clamp(1rem, 4.4vw, 1.4rem);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: #c9a678;
+  opacity: 0.82;
+  transition: opacity 800ms var(--e-suave);
+}
+.radio-mundo.is-sintonizada .rd-titulo { opacity: 0.22; }
+
+.radio-mundo .rd-pie {
+  margin: 0;
+  min-height: 3.6em;
+  max-width: 23em;
+  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
+  line-height: 1.55;
+  color: #ecdcc4;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 660ms var(--e-suave), transform 660ms var(--e-suave);
+}
+.radio-mundo .rd-pie.is-visible { opacity: 0.94; transform: none; }
+.radio-mundo .rd-pie em {
+  display: block;
+  margin-top: 0.3em;
+  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  font-size: 1.16em;
+  font-style: normal;
+  color: #ffb545;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radio-mundo * { transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="radio-mundo" id="mundo">
+  <div class="rd-caja">
+    <div class="rd-rejilla"><div class="rd-cono" id="cono"></div></div>
+    <div class="rd-dial" id="dial" role="slider" tabindex="0"
+         aria-label="Sintonizar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="rd-luz"></div>
+      <canvas class="rd-escala" id="escala"></canvas>
+      <div class="rd-aguja" id="aguja"></div>
+      <div class="rd-nombre" id="nombre"></div>
+    </div>
+    <div class="rd-mandos">
+      <button class="rd-perilla" id="encender" type="button" aria-label="Encender la radio" aria-pressed="false"></button>
+      <span class="rd-marca">ONDA CORTA</span>
+      <button class="rd-perilla" id="volumen" type="button" aria-label="Subir el volumen" aria-pressed="false"></button>
+    </div>
+  </div>
+
+  <div class="rd-ui">
+    <h1 class="rd-titulo" id="titulo">Enciéndela y busca</h1>
+    <p class="rd-pie" id="pie" role="status" aria-live="polite"></p>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN EDITABLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const CONF = {
+
+  /* ---- LAS EMISORAS ---------------------------------------------------
+     `f` es dónde está en el dial, de 0 a 100. `ancho` es lo fina que es
+     la sintonía: cuanto más pequeño, más cuesta encontrarla.
+
+     `notas` es la musiquilla que suena cuando la coges. Las notas van
+     en el nombre de siempre (C4 es el do central, una `s` detrás es
+     sostenido) y la duración en negras.                               */
+  emisoras: [
+    {
+      f: 12, ancho: 3.2, nombre: "Radio Insomnio",
+      texto: "Esta emisora sólo pone canciones lentas a las tres de la mañana.",
+      firma: "Que es cuando te escribo.",
+      notas: [["E4",1],["G4",0.5],["A4",1.5],["G4",0.5],["E4",2]],
+    },
+    {
+      f: 28, ancho: 2.6, nombre: "La del Coche",
+      texto: "La que poníamos con las ventanillas bajadas.",
+      firma: "Cantabas fatal y muy fuerte.",
+      notas: [["G4",0.5],["G4",0.5],["A4",0.5],["B4",1],["A4",0.5],["G4",1.5]],
+    },
+    {
+      f: 45, ancho: 2.2, nombre: "Onda Domingo",
+      texto: "Emitimos sólo los domingos por la mañana, y muy bajito.",
+      firma: "Para no despertarte.",
+      notas: [["C5",1],["B4",0.5],["G4",0.5],["A4",1],["F4",2]],
+    },
+    {
+      f: 61, ancho: 3.0, nombre: "Estación Central",
+      texto: "Aquí se anuncian las llegadas. Sobre todo la tuya.",
+      firma: "Siempre con retraso y siempre bien.",
+      notas: [["D5",0.5],["A4",0.5],["D5",0.5],["F5",1],["E5",1.5]],
+    },
+    {
+      f: 78, ancho: 2.4, nombre: "Frecuencia Tuya",
+      texto: "Emitiendo desde donde estés, las veinticuatro horas.",
+      firma: "Yo sólo escucho ésta.",
+      notas: [["A4",0.5],["C5",0.5],["E5",1],["D5",0.5],["C5",0.5],["A4",2]],
+    },
+    {
+      f: 93, ancho: 3.4, nombre: "La Última",
+      texto: "Cerramos emisión. Buenas noches a todo el mundo.",
+      firma: "Y a ti las mejores.",
+      notas: [["F4",1],["E4",1],["D4",1],["C4",3]],
+    },
+  ],
+
+  compas: 104,          // pulsaciones por minuto de las musiquillas
+  estatica: 0.16,       // cuánto ruido se oye entre emisoras
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   La maquinaria.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const mundo   = document.getElementById("mundo");
+const dial    = document.getElementById("dial");
+const aguja   = document.getElementById("aguja");
+const elNom   = document.getElementById("nombre");
+const elPie   = document.getElementById("pie");
+const escala  = document.getElementById("escala");
+const cono    = document.getElementById("cono");
+const btnOn   = document.getElementById("encender");
+const btnVol  = document.getElementById("volumen");
+
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+
+/* ---- La escala del dial ------------------------------------------------ */
+
+function pintarEscala() {
+  const r = dial.getBoundingClientRect();
+  if (!r.width) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  escala.width = Math.round(r.width * dpr);
+  escala.height = Math.round(r.height * dpr);
+  const c = escala.getContext("2d");
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, r.width, r.height);
+
+  /* Las rayitas, largas de cinco en cinco. */
+  for (let i = 0; i <= 50; i++) {
+    const x = (i / 50) * r.width;
+    const larga = i % 5 === 0;
+    c.strokeStyle = larga ? "rgba(255, 216, 160, 0.6)" : "rgba(255, 216, 160, 0.26)";
+    c.lineWidth = 1;
+    c.beginPath();
+    c.moveTo(x, 4);
+    c.lineTo(x, larga ? 16 : 10);
+    c.stroke();
+  }
+  /* Y una marquita en cada emisora: se ven, pero no dice cuál es cuál. */
+  for (const e of CONF.emisoras) {
+    const x = (e.f / 100) * r.width;
+    c.fillStyle = "rgba(255, 181, 69, 0.55)";
+    c.beginPath();
+    c.arc(x, 24, 2.4, 0, 6.283);
+    c.fill();
+  }
+}
+new ResizeObserver(pintarEscala).observe(dial);
+
+/* ---- El dial ----------------------------------------------------------- */
+
+let f = 0;                 // dónde está la aguja, 0..100
+let encendida = false;
+let sintonizada = null;
+let volumenAlto = false;
+
+function ponerAguja(nueva) {
+  f = clamp(nueva, 0, 100);
+  aguja.style.left = `${f}%`;
+  dial.setAttribute("aria-valuenow", String(Math.round(f)));
+  mirarEmisora();
+}
+
+function desdeX(clientX) {
+  const r = dial.getBoundingClientRect();
+  return ((clientX - r.left) / r.width) * 100;
+}
+
+let girando = null;
+dial.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  dial.setPointerCapture(e.pointerId);
+  girando = e.pointerId;
+  if (!encendida) encender(true);
+  ponerAguja(desdeX(e.clientX));
+});
+dial.addEventListener("pointermove", (e) => {
+  if (girando !== e.pointerId) return;
+  ponerAguja(desdeX(e.clientX));
+});
+const finGiro = () => { girando = null; };
+dial.addEventListener("pointerup", finGiro);
+dial.addEventListener("pointercancel", finGiro);
+
+dial.addEventListener("keydown", (e) => {
+  const paso = e.shiftKey ? 5 : 1;
+  if (e.key === "ArrowLeft")  { e.preventDefault(); if (!encendida) encender(true); ponerAguja(f - paso); }
+  if (e.key === "ArrowRight") { e.preventDefault(); if (!encendida) encender(true); ponerAguja(f + paso); }
+});
+
+/* ---- Encender y volumen -------------------------------------------------- */
+
+btnOn.addEventListener("click", () => encender(!encendida));
+btnVol.addEventListener("click", () => {
+  volumenAlto = !volumenAlto;
+  btnVol.classList.toggle("is-on", volumenAlto);
+  btnVol.setAttribute("aria-pressed", String(volumenAlto));
+  if (maestro) maestro.gain.value = volumenAlto ? 0.6 : 0.3;
+  if (volumenAlto) decir("Así se oye mejor.", "Súbela sin miedo, que aquí no molesta.");
+});
+
+function encender(on) {
+  encendida = on;
+  btnOn.classList.toggle("is-on", on);
+  btnOn.setAttribute("aria-pressed", String(on));
+  btnOn.setAttribute("aria-label", on ? "Apagar la radio" : "Encender la radio");
+  if (on) {
+    despertar();
+    arrancarEstatica();
+    decir("Ya está caliente. Mueve el dial despacio.");
+  } else {
+    pararEstatica();
+    sintonizada = null;
+    mundo.classList.remove("is-sintonizada");
+    elNom.textContent = "";
+    decir("Apagada.", "Vuelve cuando quieras.");
+  }
+}
+
+/* ---- Qué emisora hay debajo de la aguja ---------------------------------- */
+
+function mirarEmisora() {
+  if (!encendida) return;
+  let mejor = null, fuerza = 0;
+  for (const e of CONF.emisoras) {
+    const d = Math.abs(f - e.f);
+    if (d > e.ancho) continue;
+    /* Al borde se oye con ruido y en el centro limpia: eso es lo que
+       hace que buscar una emisora se sienta como buscarla. */
+    const k = 1 - d / e.ancho;
+    if (k > fuerza) { fuerza = k; mejor = e; }
+  }
+
+  if (ruidoGain) ruidoGain.gain.value = CONF.estatica * (1 - fuerza * 0.92);
+
+  const claro = mejor && fuerza > 0.55;
+  mundo.classList.toggle("is-sintonizada", !!claro);
+  elNom.textContent = mejor ? mejor.nombre : "";
+
+  if (claro && sintonizada !== mejor) {
+    sintonizada = mejor;
+    decir(mejor.texto, mejor.firma, true);
+    tocarSintonia(mejor);
+    contarEmisoras(mejor);
+  } else if (!claro && sintonizada) {
+    sintonizada = null;
+  }
+}
+
+/* ---- Sonido -------------------------------------------------------------- */
+
+let audio = null, maestro = null;
+let ruidoNodo = null, ruidoGain = null, ruidoFiltro = null;
+
+function despertar() {
+  try {
+    if (!audio) {
+      audio = new (window.AudioContext || window.webkitAudioContext)();
+      maestro = audio.createGain();
+      maestro.gain.value = 0.3;
+      maestro.connect(audio.destination);
+    }
+    if (audio.state === "suspended") audio.resume();
+  } catch { audio = null; }
+  return audio;
+}
+
+/** La estática: ruido blanco filtrado, en bucle. Es lo que hace radio. */
+function arrancarEstatica() {
+  if (!despertar() || ruidoNodo) return;
+  const seg = 2;
+  const n = audio.sampleRate * seg;
+  const buf = audio.createBuffer(1, n, audio.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  ruidoNodo = audio.createBufferSource();
+  ruidoNodo.buffer = buf;
+  ruidoNodo.loop = true;
+  ruidoFiltro = audio.createBiquadFilter();
+  ruidoFiltro.type = "bandpass";
+  ruidoFiltro.frequency.value = 1600;
+  ruidoFiltro.Q.value = 0.6;
+  ruidoGain = audio.createGain();
+  ruidoGain.gain.value = CONF.estatica;
+  ruidoNodo.connect(ruidoFiltro).connect(ruidoGain).connect(maestro);
+  ruidoNodo.start();
+}
+
+function pararEstatica() {
+  try { ruidoNodo?.stop(); } catch { /* ya estaba parado */ }
+  ruidoNodo = null; ruidoGain = null; ruidoFiltro = null;
+}
+
+const SEMI = { C:0, Cs:1, D:2, Ds:3, E:4, F:5, Fs:6, G:7, Gs:8, A:9, As:10, B:11 };
+function hz(nombre) {
+  const m = /^([A-G]s?)(-?\d)$/.exec(nombre);
+  if (!m) return 440;
+  const n = SEMI[m[1]] + (Number(m[2]) + 1) * 12;
+  return 440 * Math.pow(2, (n - 69) / 12);
+}
+
+let relojSintonia = null;
+
+function tocarSintonia(e) {
+  if (!despertar()) return;
+  clearTimeout(relojSintonia);
+  const negra = 60 / CONF.compas;
+  let t = audio.currentTime + 0.1;
+  let total = 0;
+  for (const [nota, dur] of e.notas) {
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    const filtro = audio.createBiquadFilter();
+    /* Pasa-banda estrecho: es lo que le da ese sonido de altavoz
+       pequeño y viejo. Sin él suena a sintetizador moderno. */
+    filtro.type = "bandpass";
+    filtro.frequency.value = 1100;
+    filtro.Q.value = 0.8;
+    o.type = "square";
+    o.frequency.setValueAtTime(hz(nota), t);
+    const d = dur * negra;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.16, t + 0.02);
+    g.gain.setValueAtTime(0.16, t + d * 0.7);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(filtro).connect(g).connect(maestro);
+    o.start(t); o.stop(t + d + 0.05);
+    t += d; total += d;
+    vibrarCono(d * 1000, (t - audio.currentTime) * 1000);
+  }
+  relojSintonia = setTimeout(() => { /* fin de la sintonía */ }, total * 1000);
+}
+
+function vibrarCono(dur, retraso) {
+  setTimeout(() => {
+    cono.style.transform = `scale(${1 + azar(0.1, 0.24)})`;
+    setTimeout(() => { cono.style.transform = "scale(1)"; }, Math.min(120, dur * 0.5));
+  }, retraso);
+}
+
+/* ---- Los textos ----------------------------------------------------------- */
+
+let pidiendo = null;
+let bloqueado = 0;
+
+function decir(texto, firma, importante) {
+  const ahora = performance.now();
+  if (!importante && ahora < bloqueado) return;
+  if (pidiendo === texto) return;
+  pidiendo = texto;
+  if (importante) bloqueado = ahora + 3600;
+  elPie.classList.remove("is-visible");
+  setTimeout(() => {
+    elPie.textContent = texto;
+    if (firma) {
+      const em = document.createElement("em");
+      em.textContent = firma;
+      elPie.append(em);
+    }
+    elPie.classList.add("is-visible");
+  }, suave ? 10 : 280);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS SECRETOS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Encontrar las seis emisoras: aparece una séptima que no tiene
+      marca en el dial, escondida justo al final del recorrido.        */
+const encontradas = new Set();
+let laSecreta = false;
+
+function contarEmisoras(e) {
+  encontradas.add(e.nombre);
+  if (encontradas.size < CONF.emisoras.length || laSecreta) return;
+  laSecreta = true;
+  CONF.emisoras.push({
+    f: 99.4, ancho: 1.1, nombre: "Sin nombre",
+    texto: "Esta no está en ninguna guía y no tiene marca en el dial.",
+    firma: "Emite sólo para ti, y lo único que dice es que te quiero.",
+    notas: [["C5",0.5],["E5",0.5],["G5",0.5],["C6",2]],
+  });
+  pintarEscala();
+  setTimeout(() => decir("Queda sitio al final del dial.", "Llega hasta el tope."), 2600);
+}
+
+/* 2. Dejar la aguja EXACTAMENTE entre dos emisoras y no moverla: a los
+      diez segundos se cuela una voz lejana.                           */
+let entreDos = 0;
+let vozDicha = false;
+
+/* 3. Mover el dial de punta a punta cinco veces seguidas y rápido: se
+      queja de que la vas a romper.                                    */
+let barridos = 0, ultimoExtremo = -1, tBarrido = 0;
+
+function mirarBarrido() {
+  const extremo = f < 8 ? 0 : f > 92 ? 1 : -1;
+  if (extremo < 0) return;
+  const ahora = performance.now();
+  if (ahora - tBarrido > 2600) barridos = 0;
+  if (extremo !== ultimoExtremo) {
+    barridos++;
+    ultimoExtremo = extremo;
+    tBarrido = ahora;
+  }
+  if (barridos >= 5) {
+    barridos = 0;
+    decir("Vas a gastar el dial.", "Está bien, búscalo todo. Para eso está.", true);
+  }
+}
+
+setInterval(() => {
+  if (!encendida) { entreDos = 0; return; }
+  mirarBarrido();
+  /* ¿Está justo en medio de dos? */
+  let cerca = 0;
+  for (const e of CONF.emisoras) if (Math.abs(f - e.f) < e.ancho * 3.2) cerca++;
+  const enMedio = cerca === 0 && f > 6 && f < 94;
+  entreDos = enMedio && !girando ? entreDos + 0.5 : 0;
+  if (entreDos > 10 && !vozDicha) {
+    vozDicha = true;
+    decir("Se ha colado algo entre dos emisoras.", "Alguien muy lejos diciendo tu nombre.", true);
+    if (despertar()) {
+      /* Una voz lejana fingida: dos tonos que se deslizan, muy
+         filtrados. No dice nada, y por eso parece que dice algo. */
+      const t = audio.currentTime;
+      for (const [f0, f1, retraso] of [[380, 300, 0], [520, 440, 0.35], [300, 260, 0.8]]) {
+        const o = audio.createOscillator();
+        const g = audio.createGain();
+        const fi = audio.createBiquadFilter();
+        fi.type = "lowpass"; fi.frequency.value = 700;
+        o.type = "sawtooth";
+        o.frequency.setValueAtTime(f0, t + retraso);
+        o.frequency.linearRampToValueAtTime(f1, t + retraso + 0.4);
+        g.gain.setValueAtTime(0, t + retraso);
+        g.gain.linearRampToValueAtTime(0.07, t + retraso + 0.08);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + retraso + 0.45);
+        o.connect(fi).connect(g).connect(maestro);
+        o.start(t + retraso); o.stop(t + retraso + 0.5);
+      }
+    }
+    setTimeout(() => { vozDicha = false; }, 30000);
+  }
+}, 500);
+
+/* ---- Arranque -------------------------------------------------------------- */
+
+pintarEscala();
+ponerAguja(0);
+decir("Está apagada. Gira la perilla de la izquierda.");
+
+})();
+</script>
+</body>
+</html>

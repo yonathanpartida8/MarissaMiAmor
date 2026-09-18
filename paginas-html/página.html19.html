@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>El árbol de las estaciones</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .arbol-mundo, con prefijo `ar-` en cada clase.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.arbol-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background: #dfe8ec;
+  color: #3d3a34;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.arbol-mundo .ar-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Los toques los recoge `.ar-toque`, que va justo encima. */
+  pointer-events: none;
+}
+
+/* Se arrastra por toda la hoja para pasar de estación. El libro sólo se
+   queda el barrido que empieza en sus 24-44 px de borde. */
+.arbol-mundo .ar-toque {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  z-index: 2;
+  cursor: ew-resize;
+}
+
+.arbol-mundo .ar-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  padding:
+    calc(var(--seguro-t) + 20px) 22px
+    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+.arbol-mundo .ar-estacion {
+  margin: 0;
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-size: clamp(1.1rem, 5vw, 1.6rem);
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transition: color 900ms var(--e-suave);
+}
+
+.arbol-mundo .ar-pie {
+  margin: 0;
+  min-height: 3.8em;
+  max-width: 23em;
+  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
+  line-height: 1.55;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 660ms var(--e-suave), transform 660ms var(--e-suave), color 900ms var(--e-suave);
+}
+.arbol-mundo .ar-pie.is-visible { opacity: 0.94; transform: none; }
+.arbol-mundo .ar-pie em {
+  display: block;
+  margin-top: 0.3em;
+  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  font-size: 1.16em;
+  font-style: normal;
+}
+
+/* El indicador de las cuatro estaciones, abajo. */
+.arbol-mundo .ar-puntos {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--seguro-b) + var(--barra) + 78px);
+  transform: translateX(-50%);
+  display: flex;
+  gap: 9px;
+  z-index: 3;
+  pointer-events: none;
+}
+.arbol-mundo .ar-puntos i {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.28;
+  transition: opacity 400ms var(--e-suave), transform 400ms var(--e-suave);
+}
+.arbol-mundo .ar-puntos i.is-hoy { opacity: 0.9; transform: scale(1.5); }
+
+@media (prefers-reduced-motion: reduce) {
+  .arbol-mundo * { transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="arbol-mundo" id="mundo">
+  <canvas class="ar-lienzo" id="lienzo"></canvas>
+  <div class="ar-toque" id="toque" aria-hidden="true"></div>
+  <div class="ar-ui">
+    <h1 class="ar-estacion" id="estacion">Primavera</h1>
+    <p class="ar-pie" id="pie" role="status" aria-live="polite"></p>
+  </div>
+  <div class="ar-puntos" id="puntos" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN EDITABLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const CONF = {
+
+  /* ---- LAS CUATRO ESTACIONES ------------------------------------------
+     El año entero es UN NÚMERO de 0 a 4 que se mueve arrastrando. Todo
+     lo demás —el cielo, la hoja, el suelo, lo que cae— se saca de él
+     mezclando entre la estación de antes y la de después.
+
+     `hoja` es el color de las hojas. `cae` es lo que se le cae encima al
+     árbol: "petalos", "nada", "hojas" o "nieve".                       */
+  estaciones: [
+    {
+      nombre: "Primavera",
+      cielo: ["#cfe8f2", "#e8f2dc"],
+      suelo: ["#9cc27e", "#7aa860"],
+      hoja: "#8fc96a",
+      copa: 1,               // 0 = pelado · 1 = lleno
+      cae: "petalos",
+      texto: "Todo empieza otra vez, y no cuesta nada.",
+      firma: "Contigo siempre es primavera de algo.",
+      tinta: "#43603a",
+    },
+    {
+      nombre: "Verano",
+      cielo: ["#8fd0ee", "#f2e8c0"],
+      suelo: ["#c2b874", "#a09455"],
+      hoja: "#4e9c46",
+      copa: 1,
+      cae: "nada",
+      texto: "Los días largos en los que no había que hacer nada.",
+      firma: "Y aun así hacíamos planes.",
+      tinta: "#5e5220",
+    },
+    {
+      nombre: "Otoño",
+      cielo: ["#e8d0b0", "#f0dcc4"],
+      suelo: ["#b08b5c", "#8f6f45"],
+      hoja: "#e09234",
+      copa: 0.72,
+      cae: "hojas",
+      texto: "Se cae todo y no pasa nada, porque vuelve.",
+      firma: "Eso me lo enseñaste tú.",
+      tinta: "#7a4820",
+    },
+    {
+      nombre: "Invierno",
+      cielo: ["#b8c8d8", "#e0e8ee"],
+      suelo: ["#e8eef2", "#cdd8e0"],
+      hoja: "#cfe0ea",
+      copa: 0.05,
+      cae: "nieve",
+      texto: "Hasta pelado sigue siendo el mismo árbol.",
+      firma: "Y yo sigo aquí abajo, esperándolo.",
+      tinta: "#42566a",
+    },
+  ],
+
+  /* ---- EL ARRASTRE ----------------------------------------------------- */
+  pxPorEstacion: 190,     // cuánto hay que arrastrar para pasar una entera
+
+  /* ---- EL ÁRBOL --------------------------------------------------------
+     Se genera solo, ramificándose. `niveles` es cuántas veces se parte
+     cada rama: cinco ya da un árbol de verdad y seis empieza a costar. */
+  niveles: 6,
+  hojasPorPunta: 5,
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   La maquinaria.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const mundo   = document.getElementById("mundo");
+const lienzo  = document.getElementById("lienzo");
+const zona    = document.getElementById("toque");
+const elPie   = document.getElementById("pie");
+const elEst   = document.getElementById("estacion");
+const puntos  = document.getElementById("puntos");
+const ctx     = lienzo.getContext("2d", { alpha: false });
+
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
+const mezcla = (a, b, t) => a + (b - a) * t;
+
+/** Mezcla dos colores en hexadecimal. */
+function mezclaColor(c1, c2, t) {
+  const p = (c) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+  const [r1, g1, b1] = p(c1), [r2, g2, b2] = p(c2);
+  return `rgb(${Math.round(mezcla(r1, r2, t))},${Math.round(mezcla(g1, g2, t))},${Math.round(mezcla(b1, b2, t))})`;
+}
+
+let A = 0, H = 0, dpr = 1;
+
+function medir() {
+  const r = mundo.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  A = r.width; H = r.height;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  lienzo.width  = Math.round(A * dpr);
+  lienzo.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  construirArbol();
+}
+new ResizeObserver(medir).observe(mundo);
+
+/* ---- El árbol -----------------------------------------------------------
+   Se genera UNA VEZ y se guarda como una lista de ramas: cada una con su
+   principio, su final, su grosor y su nivel. Regenerarlo en cada cuadro
+   sería tirar el tiempo en un dibujo que no cambia de forma —lo que
+   cambia es el color y las hojas—.                                       */
+
+let ramas = [];
+let puntas = [];        // dónde van las hojas
+let semilla = 7654321;
+
+function rnd() {
+  semilla = (semilla * 1664525 + 1013904223) % 4294967296;
+  return semilla / 4294967296;
+}
+
+function construirArbol() {
+  semilla = 7654321;
+  ramas = [];
+  puntas = [];
+  const baseX = A * 0.5;
+  const baseY = H * 0.86;
+  const largo = Math.min(H * 0.2, A * 0.24);
+  crecer(baseX, baseY, -Math.PI / 2, largo, Math.max(4, largo * 0.17), 0);
+}
+
+function crecer(x, y, ang, largo, grosor, nivel) {
+  const x2 = x + Math.cos(ang) * largo;
+  const y2 = y + Math.sin(ang) * largo;
+  ramas.push({ x, y, x2, y2, grosor, nivel });
+
+  if (nivel >= CONF.niveles) {
+    /* Aquí acaba una rama: sus hojas se cuelgan alrededor de la punta. */
+    for (let i = 0; i < CONF.hojasPorPunta; i++) {
+      puntas.push({
+        x: x2 + (rnd() - 0.5) * largo * 1.5,
+        y: y2 + (rnd() - 0.5) * largo * 1.5,
+        r: 3 + rnd() * 3.4,
+        giro: rnd() * 6.283,
+        f: rnd() * 6.283,
+        /* En qué orden se caen: las de fuera primero, como de verdad. */
+        orden: rnd(),
+      });
+    }
+    return;
+  }
+
+  /* Dos ramas hijas, con su ángulo y su longitud algo al azar: si no,
+     sale un fractal de manual y se nota muchísimo que es matemático. */
+  const n = rnd() < 0.18 ? 3 : 2;
+  for (let i = 0; i < n; i++) {
+    const lado = n === 2 ? (i ? 1 : -1) : (i - 1);
+    const giro = lado * (0.38 + rnd() * 0.36) + (rnd() - 0.5) * 0.18;
+    crecer(x2, y2, ang + giro, largo * (0.68 + rnd() * 0.16), grosor * 0.68, nivel + 1);
+  }
+}
+
+/* ---- El año -------------------------------------------------------------- */
+
+let anyo = 0;             // 0..4, y da la vuelta
+let anyoObj = 0;
+let arrastre = null;
+
+function estacionEn(t) {
+  const n = CONF.estaciones.length;
+  const i = ((Math.floor(t) % n) + n) % n;
+  const j = (i + 1) % n;
+  return { a: CONF.estaciones[i], b: CONF.estaciones[j], k: t - Math.floor(t), i };
+}
+
+function enPantalla(e) {
+  const r = mundo.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+zona.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  zona.setPointerCapture(e.pointerId);
+  const p = enPantalla(e);
+  arrastre = { id: e.pointerId, x: p.x, desde: anyoObj, movido: 0 };
+});
+
+zona.addEventListener("pointermove", (e) => {
+  if (!arrastre || e.pointerId !== arrastre.id) return;
+  const p = enPantalla(e);
+  const d = p.x - arrastre.x;
+  arrastre.movido = Math.abs(d);
+  anyoObj = arrastre.desde - d / CONF.pxPorEstacion;
+});
+
+function soltar() {
+  if (!arrastre) return;
+  /* Al soltar se encaja en la estación más cercana: así nunca se queda a
+     medias entre dos, que es donde el árbol no es ni una cosa ni otra. */
+  if (arrastre.movido < 8) { anyoObj = Math.round(anyoObj + 1); pasarSola(); }
+  else anyoObj = Math.round(anyoObj);
+  arrastre = null;
+}
+zona.addEventListener("pointerup", soltar);
+zona.addEventListener("pointercancel", soltar);
+
+function pasarSola() { /* un toque suelto pasa a la siguiente */ }
+
+/* ---- Los textos ----------------------------------------------------------- */
+
+let dicha = -1;
+function anunciar(i) {
+  if (dicha === i) return;
+  dicha = i;
+  const e = CONF.estaciones[i];
+  elEst.textContent = e.nombre;
+  elEst.style.color = e.tinta;
+  elPie.style.color = e.tinta;
+  elPie.classList.remove("is-visible");
+  setTimeout(() => {
+    elPie.textContent = e.texto;
+    const em = document.createElement("em");
+    em.textContent = e.firma;
+    elPie.append(em);
+    elPie.classList.add("is-visible");
+  }, suave ? 10 : 300);
+  [...puntos.children].forEach((p, k) => p.classList.toggle("is-hoy", k === i));
+  puntos.style.color = e.tinta;
+  campanilla(i);
+  contarVueltas(i);
+}
+
+/* ---- Sonido --------------------------------------------------------------- */
+
+let audio = null;
+function campanilla(i) {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+    const t = audio.currentTime;
+    /* Una nota por estación, subiendo: primavera la más aguda, invierno
+       la más grave. Se reconoce la estación sin mirar. */
+    const hz = [880, 784, 659, 523][i] || 660;
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(hz, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.08, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+    o.connect(g).connect(audio.destination);
+    o.start(t); o.stop(t + 1.7);
+  } catch { /* sin sonido cambia igual */ }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS SECRETOS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Dar una vuelta entera al año —las cuatro estaciones seguidas, en
+      orden— hace que salgan dos iniciales grabadas en el tronco.      */
+let seguidas = [];
+let iniciales = 0;
+
+function contarVueltas(i) {
+  const ultima = seguidas[seguidas.length - 1];
+  if (ultima === undefined || i === (ultima + 1) % 4) seguidas.push(i);
+  else seguidas = [i];
+  if (seguidas.length >= 5 && iniciales <= 0) {
+    iniciales = 0.001;
+    setTimeout(() => {
+      elPie.classList.remove("is-visible");
+      setTimeout(() => {
+        elPie.textContent = "Un año entero, y el árbol sigue ahí.";
+        const em = document.createElement("em");
+        em.textContent = "Mira lo que hay grabado en el tronco.";
+        elPie.append(em);
+        elPie.classList.add("is-visible");
+      }, 300);
+    }, 1400);
+  }
+}
+
+/* 2. Tocar el tronco: caen todas las hojas que queden de golpe.       */
+let sacudida = 0;
+
+/* 3. Quedarse en invierno mucho rato: sale un brote verde en una rama,
+      antes de tiempo.                                                 */
+let enInvierno = 0;
+let brote = 0;
+
+zona.addEventListener("pointerdown", (e) => {
+  const p = enPantalla(e);
+  const tx = A * 0.5, ty = H * 0.78;
+  if (Math.hypot(p.x - tx, p.y - ty) < Math.min(A, H) * 0.09) {
+    sacudida = 1;
+    for (let i = 0; i < 26; i++) soltarCosa(azar(A * 0.25, A * 0.75), azar(H * 0.3, H * 0.6), true);
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════════════
+   LO QUE CAE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const C = 150;
+const cx_ = new Float32Array(C), cy_ = new Float32Array(C);
+const cvx = new Float32Array(C), cvy = new Float32Array(C);
+const cgir = new Float32Array(C), cvg = new Float32Array(C);
+const ctam = new Float32Array(C), cvid = new Float32Array(C);
+const ctipo = new Int16Array(C);
+let curC = 0;
+
+function soltarCosa(x, y, forzada) {
+  let k = -1;
+  for (let j = 0; j < C; j++) {
+    const c = (curC + j) % C;
+    if (cvid[c] <= 0) { k = c; curC = (c + 1) % C; break; }
+  }
+  if (k < 0) return;
+  const est = estacionEn(anyo);
+  const tipo = est.k < 0.5 ? est.a.cae : est.b.cae;
+  cx_[k] = x; cy_[k] = y;
+  cvx[k] = azar(-14, 14);
+  cvy[k] = tipo === "nieve" ? azar(14, 30) : azar(20, 46);
+  cgir[k] = azar(0, 6.283);
+  cvg[k] = azar(-2.2, 2.2);
+  ctam[k] = azar(3, 6.5);
+  cvid[k] = 1;
+  ctipo[k] = forzada ? 2 : tipo === "petalos" ? 0 : tipo === "hojas" ? 2 : tipo === "nieve" ? 3 : -1;
+  if (ctipo[k] < 0) cvid[k] = 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+let t0 = performance.now();
+let reloj = 0;
+let relojCae = 0;
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A || !H) return;
+
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+  else if (dt > 0.1) dt = 0.1;
+  reloj += dt;
+
+  anyo = damp(anyo, anyoObj, 4.2, dt);
+  const est = estacionEn(anyo);
+  /* La estación que «manda» es la más cercana: así el nombre y el texto
+     cambian justo al pasar el medio, y no al llegar del todo. */
+  anunciar(est.k < 0.5 ? est.i : (est.i + 1) % 4);
+
+  sacudida = Math.max(0, sacudida - dt * 0.8);
+  enInvierno = (est.i === 3 && est.k < 0.35) || (est.i === 2 && est.k > 0.65)
+    ? enInvierno + dt : 0;
+  if (enInvierno > 14 && brote <= 0) brote = 0.001;
+  if (brote > 0) brote = Math.min(1, brote + dt * 0.35);
+  if (iniciales > 0) iniciales = Math.min(1, iniciales + dt * 0.5);
+
+  dibujar(est, dt);
+}
+
+function dibujar(est, dt) {
+  const { a, b, k } = est;
+
+  /* --- el cielo --- */
+  const c0 = mezclaColor(a.cielo[0], b.cielo[0], k);
+  const c1 = mezclaColor(a.cielo[1], b.cielo[1], k);
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, c0);
+  g.addColorStop(1, c1);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, A, H);
+
+  /* El sol, que baja y sube con el año: alto en verano, bajo en
+     invierno. Es media línea de código y cambia toda la luz. */
+  const altura = [0.2, 0.12, 0.26, 0.4][est.i];
+  const alturaB = [0.2, 0.12, 0.26, 0.4][(est.i + 1) % 4];
+  const sy = H * mezcla(altura, alturaB, k);
+  const sg = ctx.createRadialGradient(A * 0.76, sy, 0, A * 0.76, sy, Math.min(A, H) * 0.45);
+  sg.addColorStop(0, "rgba(255, 248, 220, 0.65)");
+  sg.addColorStop(1, "rgba(255, 248, 220, 0)");
+  ctx.fillStyle = sg;
+  ctx.fillRect(0, 0, A, H);
+
+  /* --- el suelo --- */
+  const s0 = mezclaColor(a.suelo[0], b.suelo[0], k);
+  const s1 = mezclaColor(a.suelo[1], b.suelo[1], k);
+  const sgr = ctx.createLinearGradient(0, H * 0.82, 0, H);
+  sgr.addColorStop(0, s0);
+  sgr.addColorStop(1, s1);
+  ctx.fillStyle = sgr;
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  ctx.lineTo(0, H * 0.87);
+  for (let x = 0; x <= A; x += 16) {
+    ctx.lineTo(x, H * 0.87 - Math.sin(x * 0.012) * H * 0.012);
+  }
+  ctx.lineTo(A, H);
+  ctx.closePath();
+  ctx.fill();
+
+  /* --- la sombra del árbol --- */
+  ctx.fillStyle = "rgba(60, 50, 35, 0.14)";
+  ctx.beginPath();
+  ctx.ellipse(A * 0.5, H * 0.87, Math.min(A, H) * 0.2, H * 0.016, 0, 0, 6.283);
+  ctx.fill();
+
+  /* --- el árbol --- */
+  const mece = Math.sin(reloj * 0.8) * 0.014 + Math.sin(reloj * 1.7) * 0.006;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = mezclaColor("#6b4a30", "#5c4130", k);
+  for (const r of ramas) {
+    /* Las ramas altas se mecen más que el tronco: un árbol no se balancea
+       entero, se le mueve la punta. */
+    const balanceo = mece * r.nivel * r.nivel * 3.4;
+    ctx.lineWidth = r.grosor;
+    ctx.beginPath();
+    ctx.moveTo(r.x + balanceo * (r.nivel ? 1 : 0), r.y);
+    ctx.lineTo(r.x2 + balanceo * 1.6, r.y2);
+    ctx.stroke();
+  }
+
+  /* --- las hojas --- */
+  const copa = mezcla(a.copa, b.copa, k) * (1 - sacudida * 0.9);
+  const hoja = mezclaColor(a.hoja, b.hoja, k);
+  for (const p of puntas) {
+    /* Cada hoja se cae cuando la copa baja de su número de orden: así se
+       van cayendo poco a poco y siempre en el mismo orden, en vez de
+       desaparecer todas a la vez. */
+    if (p.orden > copa) continue;
+    const bal = mece * 40 + Math.sin(reloj * 1.4 + p.f) * 2.6;
+    ctx.save();
+    ctx.translate(p.x + bal, p.y);
+    ctx.rotate(p.giro + Math.sin(reloj + p.f) * 0.2);
+    ctx.fillStyle = hoja;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, p.r, p.r * 0.62, 0, 0, 6.283);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /* --- el brote de invierno (secreto 3) --- */
+  if (brote > 0) {
+    const p = puntas[Math.floor(puntas.length * 0.42)];
+    if (p) {
+      ctx.fillStyle = "#7ecb5c";
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, 3 + brote * 3.4, (3 + brote * 3.4) * 0.6, 0.5, 0, 6.283);
+      ctx.fill();
+      const gl = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 20);
+      gl.addColorStop(0, `rgba(160, 240, 130, ${0.4 * brote})`);
+      gl.addColorStop(1, "rgba(160, 240, 130, 0)");
+      ctx.fillStyle = gl;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 20, 0, 6.283); ctx.fill();
+    }
+  }
+
+  /* --- las iniciales grabadas (secreto 1) --- */
+  if (iniciales > 0) {
+    const tx = A * 0.5, ty = H * 0.78;
+    ctx.save();
+    ctx.globalAlpha = iniciales * 0.8;
+    ctx.strokeStyle = "#3d2a1c";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    /* Un corazón pequeñito rayado a navaja, con dos rayas dentro. */
+    ctx.beginPath();
+    const r = Math.min(A, H) * 0.035;
+    for (let i = 0; i <= 34; i++) {
+      const t = (i / 34) * 6.283;
+      const hx = tx + (Math.pow(Math.sin(t), 3)) * r;
+      const hy = ty - ((13 * Math.cos(t) - 5 * Math.cos(2 * t)
+                - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16) * r;
+      i ? ctx.lineTo(hx, hy) : ctx.moveTo(hx, hy);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(tx - r * 0.34, ty + r * 0.1);
+    ctx.lineTo(tx + r * 0.34, ty + r * 0.1);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* --- lo que cae --- */
+  relojCae -= dt;
+  if (relojCae <= 0) {
+    relojCae = azar(0.08, 0.3);
+    const tipo = k < 0.5 ? a.cae : b.cae;
+    if (tipo !== "nada") {
+      if (tipo === "nieve") soltarCosa(azar(0, A), -10);
+      else soltarCosa(azar(A * 0.2, A * 0.8), azar(H * 0.28, H * 0.62));
+    }
+  }
+
+  for (let i = 0; i < C; i++) {
+    if (cvid[i] <= 0) continue;
+    cvx[i] += Math.sin(reloj * 1.6 + cgir[i]) * 26 * dt;
+    cvx[i] *= 0.99;
+    cx_[i] += cvx[i] * dt;
+    cy_[i] += cvy[i] * dt;
+    cgir[i] += cvg[i] * dt;
+    if (cy_[i] > H * 0.88) { cvid[i] = 0; continue; }
+    if (cx_[i] < -20 || cx_[i] > A + 20) { cvid[i] = 0; continue; }
+
+    ctx.save();
+    ctx.translate(cx_[i], cy_[i]);
+    ctx.rotate(cgir[i]);
+    if (ctipo[i] === 3) {
+      ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+      ctx.beginPath(); ctx.arc(0, 0, ctam[i] * 0.45, 0, 6.283); ctx.fill();
+    } else {
+      ctx.fillStyle = ctipo[i] === 0 ? "#ffc9dc" : hoja;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, ctam[i], ctam[i] * 0.55, 0, 0, 6.283);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+/* ---- Arranque -------------------------------------------------------------- */
+
+medir();
+anunciar(0);
+setTimeout(() => {
+  elPie.classList.remove("is-visible");
+  setTimeout(() => {
+    elPie.textContent = "Arrastra de lado para pasar el año.";
+    elPie.classList.add("is-visible");
+  }, 300);
+}, 4200);
+requestAnimationFrame(paso);
+
+})();
+</script>
+</body>
+</html>

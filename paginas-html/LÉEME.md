@@ -157,23 +157,39 @@ con la etiqueta de siempre:
 <meta name="color-scheme" content="dark">
 ```
 
-## Los ejemplos
+## Las que ya hay
 
-En esta misma carpeta hay cinco, y son distintos a propósito. El primero es
-el bueno para empezar; los otros cuatro son para ver hasta dónde se puede
-llegar con un solo archivo y sin descargar nada de fuera.
+Hay **veinte**, y son distintas a propósito. La primera es la buena para
+empezar; las demás son para ver hasta dónde se puede llegar con un solo
+archivo y sin descargar nada de fuera.
 
 | archivo | qué es |
 |---|---|
 | `página.html1.html` | **El sencillo.** Un botón y una animación. Cópialo, renómbralo al número siguiente y cámbialo. |
 | `página.html2.html` | **El rincón de arena.** Una playa en perspectiva que se excava con una palita. Once cosas enterradas, cartas que se abren y una llave con su código. |
-| `página.html3.html` | **El hilo rojo.** Dos esferas unidas por un listón, escribiéndose cartas. Se arrastran, se resisten a juntarse, y al conseguirlo el listón hace un corazón. |
+| `página.html3.html` | **El hilo rojo.** Dos bolitas unidas por un listón, escribiéndose cartas. Se arrastran, se resisten a juntarse, y al conseguirlo el listón hace un corazón. |
 | `página.html4.html` | **Un jardín para ti.** Se toca la tierra y crece una flor. Cada una guarda una frase. Si plantas bastantes, cae la noche. |
 | `página.html5.html` | **La ventana.** Llueve y el cristal está empañado. Se limpia con el dedo y detrás hay algo escrito. |
+| `página.html6.html` | **Las constelaciones.** Se unen estrellas arrastrando y aparece una figura con lo que significa. |
+| `página.html7.html` | **La caja de música.** Se levanta la tapa, gira la bailarina y suena una melodía. Siete teclas, cada una con su frase. |
+| `página.html8.html` | **Mil grullas.** Cada toque dobla una y se va volando. Mil y se concede un deseo. |
+| `página.html9.html` | **Las luciérnagas.** Se acercan al dedo quieto y huyen del que corre. Va de tener paciencia. |
+| `página.html10.html` | **El lago de los deseos.** Se tiran piedras, las ondas se suman y el cielo reflejado se retuerce al pasar. |
+| `página.html11.html` | **Las polaroids.** Seis fotos sin revelar que se frotan con el dedo. Cada una es un recuerdo. |
+| `página.html12.html` | **El tren de noche.** Se escribe en el vaho de la ventanilla mientras pasa el paisaje y las estaciones. |
+| `página.html13.html` | **Los globos.** Cada uno se lleva un deseo escrito. |
+| `página.html14.html` | **La bola de nieve.** Se agita de verdad, arrastrando de un lado a otro, y dentro hay una casita con la luz puesta. |
+| `página.html15.html` | **El ramo.** Se cogen flores del prado y se van juntando, con su papel y su lazo. |
+| `página.html16.html` | **La radio.** Se enciende, se busca en el dial, y cada emisora dice lo suyo con su sintonía. |
+| `página.html17.html` | **El mapa de nosotros.** Siete alfileres, siete sitios, y una línea que los une en orden. |
+| `página.html18.html` | **La máquina de escribir.** Escribes y te contesta. Hay palabras que sabe. |
+| `página.html19.html` | **El árbol de las estaciones.** Se arrastra de lado y pasa el año entero encima del mismo árbol. |
+| `página.html20.html` | **La cometa.** Se corre con el carrete y el viento hace el resto. |
 
-Los cuatro grandes tienen **secretos escondidos** que no se anuncian: cosas
-que pasan si insistes, si dibujas algo, si esperas sin prisa o si tocas dos
-veces. Están para que los encuentre ella, no para explicarlos aquí.
+Todas menos la primera tienen **secretos escondidos** que no se anuncian:
+cosas que pasan si insistes, si dibujas algo, si esperas sin prisa, si tocas
+dos veces o si no tocas nada. Están para que los encuentre ella, no para
+explicarlos aquí.
 
 Y todos llevan, arriba del todo de su `<script>`, una sección marcada
 `CONFIGURACIÓN EDITABLE` con las frases, los colores, los números y dónde
