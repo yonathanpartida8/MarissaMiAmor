@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Los globos</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .globos-mundo, con prefijo `gb-` en cada clase.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.globos-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background:
+    linear-gradient(182deg, #9ecbe8 0%, #c7dff0 34%, #f2e2dc 72%, #f8d9cc 100%);
+  color: #3f3340;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.globos-mundo .gb-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Los toques los recoge `.gb-toque`, que va justo encima. */
+  pointer-events: none;
+}
+
+/* El cielo entero. El libro sólo se queda el barrido que empieza en sus
+   24-44 px de borde. */
+.globos-mundo .gb-toque {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.globos-mundo .gb-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  padding:
+    calc(var(--seguro-t) + 20px) 22px
+    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+.globos-mundo .gb-titulo {
+  margin: 0;
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-size: clamp(1rem, 4.4vw, 1.4rem);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: #4d6c85;
+  opacity: 0.85;
+  transition: opacity 800ms var(--e-suave);
+}
+.globos-mundo.is-soltando .gb-titulo { opacity: 0.2; }
+
+.globos-mundo .gb-pie {
+  margin: 0;
+  min-height: 3.6em;
+  max-width: 23em;
+  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
+  line-height: 1.55;
+  color: #4a3c46;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 660ms var(--e-suave), transform 660ms var(--e-suave);
+}
+.globos-mundo .gb-pie.is-visible { opacity: 0.94; transform: none; }
+.globos-mundo .gb-pie em {
+  display: block;
+  margin-top: 0.3em;
+  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  font-size: 1.16em;
+  font-style: normal;
+  color: #c2506a;
+}
+
+.globos-mundo .gb-cuenta {
+  position: absolute;
+  right: 20px;
+  top: calc(var(--seguro-t) + 20px);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  color: #6b8299;
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .globos-mundo * { transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="globos-mundo" id="mundo">
+  <canvas class="gb-lienzo" id="lienzo"></canvas>
+  <div class="gb-toque" id="toque" aria-hidden="true"></div>
+  <div class="gb-ui">
+    <h1 class="gb-titulo" id="titulo">Suelta un globo</h1>
+    <p class="gb-pie" id="pie" role="status" aria-live="polite"></p>
+  </div>
+  <div class="gb-cuenta" id="cuenta" aria-hidden="true"></div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN EDITABLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const CONF = {
+
+  /* ---- LOS DESEOS QUE SE VAN CON CADA GLOBO --------------------------- */
+  deseos: [
+    ["Que te quiten el miedo las cosas que te dan miedo.", "Y si no, te acompaño."],
+    ["Que te salga bien eso que no me cuentas.", "Cuando quieras me lo cuentas."],
+    ["Que duermas de un tirón.", "Y que sueñes algo tonto y bonito."],
+    ["Que alguien te diga hoy lo que vales.", "Si no, te lo digo yo otra vez."],
+    ["Que tengas un día sin prisa.", "Esos son los que curan."],
+    ["Que se te quite la manía de pedir perdón por todo.", "No hace falta, de verdad."],
+    ["Que te pase algo bueno sin buscarlo.", "Te lo mereces por la cara."],
+    ["Que no se te olvide reírte fuerte.", "Es lo mejor que haces."],
+    ["Que cuando dudes, dudes menos de ti.", "Yo no dudo nada."],
+    ["Que llegues a donde quieras.", "Aunque cambies de sitio mil veces."],
+  ],
+
+  /* ---- LOS GLOBOS ----------------------------------------------------- */
+  maximo: 70,            // en el aire a la vez
+  subida: [46, 82],      // px/s: lo que sube cada uno
+  vaiven: [10, 26],      // cuánto se balancea de lado
+
+  colores: [
+    ["#ff9ec0", "#e05a88"],
+    ["#ffd08a", "#e8a04a"],
+    ["#a8e2c4", "#5cb48c"],
+    ["#a9c8f5", "#5f8ad4"],
+    ["#e0b4f0", "#ab6fc8"],
+    ["#ffb8a8", "#e07a62"],
+  ],
+
+  /* ---- EL SUELO ------------------------------------------------------- */
+  tejados: true,         // la ciudad chiquita de abajo
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   La maquinaria.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const mundo  = document.getElementById("mundo");
+const lienzo = document.getElementById("lienzo");
+const zona   = document.getElementById("toque");
+const elPie  = document.getElementById("pie");
+const elCue  = document.getElementById("cuenta");
+const ctx    = lienzo.getContext("2d");
+
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+
+let A = 0, H = 0, dpr = 1;
+
+function medir() {
+  const r = mundo.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  A = r.width; H = r.height;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  lienzo.width  = Math.round(A * dpr);
+  lienzo.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  sembrarNubes();
+}
+new ResizeObserver(medir).observe(mundo);
+
+/* ---- Las nubes --------------------------------------------------------- */
+
+let nubes = [];
+function sembrarNubes() {
+  nubes = [];
+  const n = A < 380 ? 4 : 6;
+  for (let i = 0; i < n; i++) {
+    nubes.push({
+      x: Math.random(),
+      y: azar(0.08, 0.5),
+      esc: azar(0.6, 1.5),
+      v: azar(0.004, 0.013),
+      /* Cada nube son cuatro bultos con su tamaño y su sitio, fijos:
+         sorteándolos en cada fotograma la nube hervía. */
+      bultos: Array.from({ length: 4 }, (_, k) => ({
+        dx: (k - 1.5) * 0.55 + azar(-0.15, 0.15),
+        dy: azar(-0.1, 0.12),
+        r: azar(0.55, 1),
+      })),
+    });
+  }
+}
+
+/* ---- Los globos, en arrays planos -------------------------------------- */
+
+const N = CONF.maximo;
+const gx = new Float32Array(N), gy = new Float32Array(N);
+const gsub = new Float32Array(N), gfase = new Float32Array(N);
+const gvai = new Float32Array(N), gesc = new Float32Array(N);
+const gcol = new Int16Array(N), gvid = new Float32Array(N);
+const gnac = new Float32Array(N);
+const ghil = new Float32Array(N * 6);   // el hilo: 6 nudos por globo
+let cursor = 0;
+
+function soltarGlobo(x, y) {
+  let k = -1;
+  for (let j = 0; j < N; j++) {
+    const c = (cursor + j) % N;
+    if (gvid[c] <= 0) { k = c; cursor = (c + 1) % N; break; }
+  }
+  if (k < 0) { k = cursor; cursor = (cursor + 1) % N; }
+
+  gx[k] = x; gy[k] = y;
+  gsub[k] = azar(CONF.subida[0], CONF.subida[1]);
+  gfase[k] = Math.random() * 6.283;
+  gvai[k] = azar(CONF.vaiven[0], CONF.vaiven[1]);
+  gesc[k] = azar(0.72, 1.28);
+  gcol[k] = Math.floor(Math.random() * CONF.colores.length);
+  gvid[k] = 1;
+  gnac[k] = 0;
+  /* El hilo empieza recto debajo del globo. */
+  for (let i = 0; i < 6; i++) ghil[k * 6 + i] = x;
+  return k;
+}
+
+/* ---- Soltar ------------------------------------------------------------ */
+
+let soltados = 0;
+let deseosLibres = [];
+let arrastrando = false;
+let ultimoSoltado = 0;
+
+function enPantalla(e) {
+  const r = mundo.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+zona.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  zona.setPointerCapture(e.pointerId);
+  arrastrando = true;
+  const p = enPantalla(e);
+  soltar(p.x, p.y);
+});
+
+zona.addEventListener("pointermove", (e) => {
+  if (!arrastrando) return;
+  const ahora = performance.now();
+  if (ahora - ultimoSoltado < 150) return;
+  ultimoSoltado = ahora;
+  const p = enPantalla(e);
+  soltar(p.x, p.y, true);
+});
+
+const fin = () => { arrastrando = false; };
+zona.addEventListener("pointerup", fin);
+zona.addEventListener("pointercancel", fin);
+
+function soltar(x, y, callado) {
+  soltarGlobo(x, y);
+  soltados++;
+  mundo.classList.add("is-soltando");
+  pintarCuenta();
+  puff();
+
+  if (!callado) {
+    if (!deseosLibres.length) deseosLibres = CONF.deseos.slice();
+    const i = Math.floor(Math.random() * deseosLibres.length);
+    const [texto, firma] = deseosLibres.splice(i, 1)[0];
+    decir(texto, firma);
+  }
+  mirarSecretos(x, y);
+}
+
+function pintarCuenta() {
+  elCue.textContent = soltados === 1 ? "1 deseo" : `${soltados} deseos`;
+}
+
+/* ---- Los textos --------------------------------------------------------- */
+
+let pidiendo = null;
+let bloqueado = 0;
+
+function decir(texto, firma, importante) {
+  const ahora = performance.now();
+  if (!importante && ahora < bloqueado) return;
+  if (pidiendo === texto) return;
+  pidiendo = texto;
+  if (importante) bloqueado = ahora + 4000;
+  elPie.classList.remove("is-visible");
+  setTimeout(() => {
+    elPie.textContent = texto;
+    if (firma) {
+      const em = document.createElement("em");
+      em.textContent = firma;
+      elPie.append(em);
+    }
+    elPie.classList.add("is-visible");
+  }, suave ? 10 : 280);
+}
+
+/* ---- Sonido ------------------------------------------------------------- */
+
+let audio = null;
+function puff() {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+    const t = audio.currentTime;
+    /* Un soplido corto: ruido filtrado, no un tono. Un globo que se
+       escapa no hace «pi», hace «fff». */
+    const largo = 0.14;
+    const n = Math.floor(audio.sampleRate * largo);
+    const buf = audio.createBuffer(1, n, audio.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const src = audio.createBufferSource();
+    src.buffer = buf;
+    const f = audio.createBiquadFilter();
+    f.type = "bandpass";
+    f.frequency.setValueAtTime(azar(700, 1400), t);
+    f.Q.value = 1.4;
+    const g = audio.createGain();
+    g.gain.value = 0.16;
+    src.connect(f).connect(g).connect(audio.destination);
+    src.start(t);
+  } catch { /* sin sonido vuelan igual */ }
+}
+
+function campana(hz, dur) {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    const t = audio.currentTime;
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(hz, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.08, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + (dur || 1.2));
+    o.connect(g).connect(audio.destination);
+    o.start(t); o.stop(t + (dur || 1.2) + 0.1);
+  } catch { /* nada */ }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS SECRETOS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Uno de cada veinte globos lleva una carta colgando del hilo en vez
+      de nada. Se ve desde abajo, pequeñita, y al llegar arriba se abre. */
+const conCarta = new Set();
+let cartasVistas = 0;
+
+/* 2. Soltar treinta y tres: todos los que queden en el aire cambian a
+      rojo a la vez.                                                     */
+let rojoDicho = false;
+
+/* 3. Si se sueltan tres justo en el mismo sitio, se atan entre ellos y
+      suben juntos, más deprisa.                                        */
+let mismoSitio = { x: 0, y: 0, n: 0, t: 0, ks: [] };
+const racimos = [];
+
+function mirarSecretos(x, y) {
+  /* — la carta — */
+  if (Math.random() < 0.05) {
+    /* El último soltado es el del cursor anterior. */
+    const k = (cursor - 1 + N) % N;
+    conCarta.add(k);
+  }
+
+  /* — los treinta y tres — */
+  if (soltados === 33 && !rojoDicho) {
+    rojoDicho = true;
+    for (let i = 0; i < N; i++) if (gvid[i] > 0) gcol[i] = 0;
+    decir("Se han puesto todos del mismo color.", "Adivina cuál.", true);
+    campana(523, 1.6);
+  }
+
+  /* — el racimo — */
+  const ahora = performance.now();
+  if (Math.hypot(x - mismoSitio.x, y - mismoSitio.y) < 46 && ahora - mismoSitio.t < 1600) {
+    mismoSitio.n++;
+    mismoSitio.ks.push((cursor - 1 + N) % N);
+  } else {
+    mismoSitio.n = 1;
+    mismoSitio.ks = [(cursor - 1 + N) % N];
+  }
+  mismoSitio.x = x; mismoSitio.y = y; mismoSitio.t = ahora;
+  if (mismoSitio.n >= 3) {
+    racimos.push({ ks: mismoSitio.ks.slice(-3), x, y });
+    if (racimos.length > 5) racimos.shift();
+    for (const k of mismoSitio.ks.slice(-3)) gsub[k] = 128;
+    mismoSitio.n = 0;
+    decir("Los has atado sin querer.", "Juntos suben más rápido. Mira.", true);
+    campana(659, 1.4);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+let t0 = performance.now();
+let reloj = 0;
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A || !H) return;
+
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+  else if (dt > 0.1) dt = 0.1;
+  reloj += dt;
+
+  ctx.clearRect(0, 0, A, H);
+
+  /* --- el sol, muy suave --- */
+  const sol = ctx.createRadialGradient(A * 0.8, H * 0.12, 0, A * 0.8, H * 0.12, Math.min(A, H) * 0.5);
+  sol.addColorStop(0, "rgba(255, 245, 220, 0.5)");
+  sol.addColorStop(1, "rgba(255, 245, 220, 0)");
+  ctx.fillStyle = sol;
+  ctx.fillRect(0, 0, A, H);
+
+  /* --- las nubes --- */
+  for (const n of nubes) {
+    n.x += n.v * dt;
+    if (n.x > 1.3) n.x = -0.3;
+    const cx = n.x * A, cy = n.y * H, r = Math.min(A, H) * 0.09 * n.esc;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
+    for (const b of n.bultos) {
+      ctx.beginPath();
+      ctx.arc(cx + b.dx * r * 1.8, cy + b.dy * r, r * b.r, 0, 6.283);
+      ctx.fill();
+    }
+  }
+
+  /* --- los tejados de abajo --- */
+  if (CONF.tejados) {
+    const base = H * 0.94;
+    ctx.fillStyle = "rgba(120, 100, 115, 0.3)";
+    for (let i = 0; i < 16; i++) {
+      const x = (i / 16) * A + Math.sin(i * 7.3) * 6;
+      const w = A / 15;
+      const h = 22 + ((i * 29) % 7) * 6;
+      ctx.fillRect(x, base - h, w - 3, h + 20);
+      /* Un tejado a dos aguas de vez en cuando. */
+      if (i % 3 === 0) {
+        ctx.beginPath();
+        ctx.moveTo(x - 3, base - h);
+        ctx.lineTo(x + w / 2 - 1.5, base - h - 12);
+        ctx.lineTo(x + w, base - h);
+        ctx.closePath(); ctx.fill();
+      }
+    }
+  }
+
+  /* --- los globos --- */
+  for (let i = 0; i < N; i++) {
+    if (gvid[i] <= 0) continue;
+    gnac[i] = Math.min(1, gnac[i] + dt * 3.2);
+
+    gy[i] -= gsub[i] * dt;
+    const meneo = Math.sin(reloj * 0.9 + gfase[i]) * gvai[i];
+    gx[i] += meneo * dt;
+
+    if (gy[i] < -70) { gvid[i] = 0; conCarta.delete(i); continue; }
+
+    /* El hilo: cada nudo persigue al de arriba con retraso. Eso es todo
+       lo que hace falta para que un hilo se arrastre como un hilo. */
+    const b = i * 6;
+    ghil[b] = gx[i];
+    for (let k = 1; k < 6; k++) {
+      ghil[b + k] += (ghil[b + k - 1] - ghil[b + k]) * Math.min(1, 7 * dt);
+    }
+
+    dibujarGlobo(i);
+  }
+
+  /* --- las cartas que llegan arriba --- */
+  for (const k of conCarta) {
+    if (gvid[k] > 0 && gy[k] < H * 0.18 && !abiertas.has(k)) {
+      abiertas.add(k);
+      cartasVistas++;
+      decir("Ese llevaba una carta atada.", "La has soltado tú, así que es tuya.", true);
+      campana(880, 1.1);
+    }
+  }
+}
+const abiertas = new Set();
+
+function dibujarGlobo(i) {
+  const [claro, hondo] = CONF.colores[gcol[i]];
+  const x = gx[i], y = gy[i];
+  const r = 17 * gesc[i] * (0.4 + 0.6 * gnac[i]);
+  const b = i * 6;
+
+  /* El hilo primero, que va por detrás. */
+  ctx.strokeStyle = "rgba(90, 70, 85, 0.42)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x, y + r * 1.32);
+  for (let k = 1; k < 6; k++) {
+    ctx.lineTo(ghil[b + k], y + r * 1.32 + k * r * 0.62);
+  }
+  ctx.stroke();
+
+  /* La carta, si lleva. */
+  if (conCarta.has(i)) {
+    const cx = ghil[b + 5], cy = y + r * 1.32 + 5 * r * 0.62;
+    ctx.fillStyle = "#fffaf0";
+    ctx.fillRect(cx - 6, cy, 12, 9);
+    ctx.strokeStyle = "rgba(150, 110, 130, 0.7)";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(cx - 6, cy); ctx.lineTo(cx, cy + 5); ctx.lineTo(cx + 6, cy);
+    ctx.stroke();
+  }
+
+  /* El globo: una gota, no un círculo. Lo que lo hace globo es el pico
+     de abajo y que sea un poco más alto que ancho. */
+  ctx.beginPath();
+  ctx.moveTo(x, y - r);
+  ctx.bezierCurveTo(x + r * 1.08, y - r * 0.95, x + r * 1.1, y + r * 0.62, x, y + r * 1.22);
+  ctx.bezierCurveTo(x - r * 1.1, y + r * 0.62, x - r * 1.08, y - r * 0.95, x, y - r);
+  ctx.closePath();
+  const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r * 1.3);
+  g.addColorStop(0, claro);
+  g.addColorStop(1, hondo);
+  ctx.fillStyle = g;
+  ctx.fill();
+
+  /* El nudo. */
+  ctx.fillStyle = hondo;
+  ctx.beginPath();
+  ctx.moveTo(x - 2.6, y + r * 1.2);
+  ctx.lineTo(x + 2.6, y + r * 1.2);
+  ctx.lineTo(x, y + r * 1.42);
+  ctx.closePath();
+  ctx.fill();
+
+  /* Y el reflejo, que aquí SÍ va: un globo es de goma brillante y sin
+     el brillito parece una pegatina. */
+  ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+  ctx.beginPath();
+  ctx.ellipse(x - r * 0.34, y - r * 0.38, r * 0.17, r * 0.29, -0.4, 0, 6.283);
+  ctx.fill();
+}
+
+/* ---- Arranque ----------------------------------------------------------- */
+
+medir();
+pintarCuenta();
+decir("Toca el cielo y suelta uno. Piensa algo antes.");
+requestAnimationFrame(paso);
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>El tren de noche</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .tren-mundo, con prefijo `tr-` en cada clase.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.tren-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background: #0a0d18;
+  color: #dce4f2;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tren-mundo .tr-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Los toques los recoge `.tr-toque`, que va justo encima. */
+  pointer-events: none;
+}
+
+/* El cristal entero. El libro sólo se queda el barrido que empieza en
+   sus 24-44 px de borde. */
+.tren-mundo .tr-toque {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  z-index: 2;
+  cursor: crosshair;
+}
+
+.tren-mundo .tr-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  padding:
+    calc(var(--seguro-t) + 18px) 24px
+    calc(var(--seguro-b) + var(--barra) + 16px) 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+.tren-mundo .tr-titulo {
+  margin: 0;
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-size: clamp(0.95rem, 4.2vw, 1.3rem);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #97a8cc;
+  opacity: 0.72;
+  transition: opacity 900ms var(--e-suave);
+}
+.tren-mundo.is-escribiendo .tr-titulo { opacity: 0.14; }
+
+.tren-mundo .tr-pie {
+  margin: 0;
+  min-height: 3.4em;
+  max-width: 23em;
+  font-size: clamp(0.82rem, 3.4vw, 0.96rem);
+  line-height: 1.55;
+  color: #dbe4f4;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 700ms var(--e-suave), transform 700ms var(--e-suave);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+}
+.tren-mundo .tr-pie.is-visible { opacity: 0.94; transform: none; }
+.tren-mundo .tr-pie em {
+  display: block;
+  margin-top: 0.3em;
+  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  font-size: 1.16em;
+  font-style: normal;
+  color: #ffc9a8;
+}
+
+/* El reflejo de la cara en el cristal: una silueta apenas insinuada que
+   se mueve un poquito. No se dibuja en el lienzo porque así se puede
+   dejar quieta mientras el paisaje corre por detrás. */
+.tren-mundo .tr-reflejo {
+  position: absolute;
+  right: 12%;
+  bottom: 16%;
+  width: 84px;
+  height: 108px;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.075;
+  filter: blur(1.2px);
+}
+.tren-mundo .tr-reflejo i {
+  position: absolute;
+  background: #cfe0ff;
+}
+.tren-mundo .tr-reflejo .tr-r-cabeza {
+  left: 50%; top: 0;
+  width: 44px; height: 52px;
+  margin-left: -22px;
+  border-radius: 50% 50% 44% 44%;
+}
+.tren-mundo .tr-reflejo .tr-r-pelo {
+  left: 50%; top: -6px;
+  width: 54px; height: 40px;
+  margin-left: -27px;
+  border-radius: 50% 50% 30% 30%;
+}
+.tren-mundo .tr-reflejo .tr-r-hombros {
+  left: 50%; bottom: 0;
+  width: 84px; height: 46px;
+  margin-left: -42px;
+  border-radius: 46% 46% 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tren-mundo * { transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="tren-mundo" id="mundo">
+  <canvas class="tr-lienzo" id="lienzo"></canvas>
+  <div class="tr-reflejo" aria-hidden="true">
+    <i class="tr-r-pelo"></i><i class="tr-r-cabeza"></i><i class="tr-r-hombros"></i>
+  </div>
+  <div class="tr-toque" id="toque" aria-hidden="true"></div>
+  <div class="tr-ui">
+    <h1 class="tr-titulo" id="titulo">Escribe en el vaho</h1>
+    <p class="tr-pie" id="pie" role="status" aria-live="polite"></p>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN EDITABLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const CONF = {
+
+  /* ---- EL VIAJE -------------------------------------------------------
+     El tren va siempre hacia la izquierda: el paisaje se desplaza a la
+     derecha. Cada capa a su velocidad, y de ahí sale la profundidad.   */
+  velocidad: 1,           // multiplica todas las capas a la vez
+
+  /* ---- LAS ESTACIONES -------------------------------------------------
+     Cada tanto pasa una estación con su nombre y su frase. Los nombres
+     son inventados a propósito.                                        */
+  cadaEstacion: [17, 27],  // segundos entre estaciones (entre estos dos)
+  estaciones: [
+    { nombre: "LA ESPERA",     frase: "Aquí me bajé muchas veces sin querer.", firma: "Ya no." },
+    { nombre: "PRIMER CAFÉ",   frase: "La parada donde empezó todo.", firma: "Tú llegaste tarde." },
+    { nombre: "EL DOMINGO",    frase: "No tiene horarios. Se queda quien quiere.", firma: "Nos quedamos." },
+    { nombre: "TU NOMBRE",     frase: "Esta parada es la mía siempre.", firma: "Aunque me pase de estación." },
+    { nombre: "CASA",          frase: "Esa donde dejas las llaves y respiras.", firma: "No es un sitio, ya lo sabes." },
+    { nombre: "LO QUE VIENE",  frase: "No sé qué hay ahí. Me da igual.", firma: "Si vas tú, me bajo contigo." },
+  ],
+
+  /* ---- EL VAHO -------------------------------------------------------- */
+  dedo: 20,               // lo gordo que escribe el dedo
+  vuelveVaho: 26,         // segundos hasta que se vuelve a empañar
+
+  /* ---- EL PAISAJE ----------------------------------------------------- */
+  estrellas: 100,
+  casas: 26,              // luces de casas sueltas en el campo
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   La maquinaria.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const mundo  = document.getElementById("mundo");
+const lienzo = document.getElementById("lienzo");
+const zona   = document.getElementById("toque");
+const elPie  = document.getElementById("pie");
+const ctx    = lienzo.getContext("2d", { alpha: false });
+
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+
+let A = 0, H = 0, dpr = 1;
+
+/* El vaho vive en su propio lienzo, a media resolución: se borra mucho y
+   a pantalla completa saldría caro. A la mitad no se nota, porque el
+   vaho es difuso por definición. */
+const vaho = document.createElement("canvas");
+const cv = vaho.getContext("2d");
+
+function medir() {
+  const r = mundo.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const primera = !A;
+  A = r.width; H = r.height;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  lienzo.width  = Math.round(A * dpr);
+  lienzo.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  vaho.width = Math.max(1, Math.round(A * 0.5));
+  vaho.height = Math.max(1, Math.round(H * 0.5));
+  empanyar();
+  sembrar();
+  if (primera) { /* nada más */ }
+}
+new ResizeObserver(medir).observe(mundo);
+
+/* ---- El paisaje -------------------------------------------------------- */
+
+let estrellas = [], casas = [];
+
+function sembrar() {
+  const ne = A * H < 200000 ? Math.round(CONF.estrellas * 0.6) : CONF.estrellas;
+  estrellas = new Array(ne);
+  for (let i = 0; i < ne; i++) {
+    estrellas[i] = { x: Math.random(), y: Math.random() * 0.55, r: azar(0.4, 1.5), b: azar(0.2, 0.8) };
+  }
+  const nc = A < 360 ? Math.round(CONF.casas * 0.6) : CONF.casas;
+  casas = new Array(nc);
+  for (let i = 0; i < nc; i++) {
+    casas[i] = {
+      x: Math.random(),
+      capa: Math.random() < 0.5 ? 1 : 2,
+      alto: azar(0.02, 0.05),
+      luces: 1 + Math.floor(Math.random() * 3),
+    };
+  }
+}
+
+/* ---- El vaho ----------------------------------------------------------- */
+
+function empanyar() {
+  const w = vaho.width, h = vaho.height;
+  cv.globalCompositeOperation = "source-over";
+  cv.clearRect(0, 0, w, h);
+  /* Más denso abajo y por los cantos, que es donde se condensa de verdad
+     en la ventanilla de un tren.
+
+     Y TRANSPARENTE de sobra. El primer intento iba de 0.60 a 0.86 y lo
+     que se veía era una plancha gris: el paisaje desaparecía del todo y
+     la página parecía rota. Un cristal empañado deja ver, difuminado;
+     lo que hace el dedo es afinar lo que ya se intuía, y para eso hace
+     falta que se intuya. */
+  const g = cv.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, "rgba(206, 224, 240, 0.30)");
+  g.addColorStop(0.5, "rgba(198, 218, 236, 0.42)");
+  g.addColorStop(1, "rgba(190, 212, 232, 0.54)");
+  cv.fillStyle = g;
+  cv.fillRect(0, 0, w, h);
+  const bordes = cv.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.25, w / 2, h / 2, Math.max(w, h) * 0.72);
+  bordes.addColorStop(0, "rgba(200, 220, 238, 0)");
+  bordes.addColorStop(1, "rgba(200, 220, 238, 0.28)");
+  cv.fillStyle = bordes;
+  cv.fillRect(0, 0, w, h);
+  limpiado = 0;
+}
+
+let limpiado = 0;
+
+function borrarVaho(x0, y0, x1, y1, fuerza) {
+  const k = 0.5;   // el vaho va a la mitad de resolución
+  cv.globalCompositeOperation = "destination-out";
+  cv.lineCap = "round";
+  cv.lineJoin = "round";
+  cv.strokeStyle = `rgba(0,0,0,${fuerza})`;
+  cv.lineWidth = CONF.dedo * k * 2;
+  cv.beginPath();
+  cv.moveTo(x0 * k, y0 * k);
+  cv.lineTo(x1 * k, y1 * k);
+  cv.stroke();
+  cv.globalCompositeOperation = "source-over";
+  limpiado = Math.min(1, limpiado + 0.0016);
+}
+
+/* ---- El dedo ----------------------------------------------------------- */
+
+let escribiendo = null;
+let desdeQueLimpio = 0;
+
+function enPantalla(e) {
+  const r = mundo.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+zona.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  zona.setPointerCapture(e.pointerId);
+  const p = enPantalla(e);
+  escribiendo = { id: e.pointerId, x: p.x, y: p.y, recorrido: 0 };
+  borrarVaho(p.x, p.y, p.x + 0.1, p.y + 0.1, 0.9);
+  mundo.classList.add("is-escribiendo");
+  desdeQueLimpio = 0;
+  rastroDedo.length = 0;
+});
+
+zona.addEventListener("pointermove", (e) => {
+  if (!escribiendo || e.pointerId !== escribiendo.id) return;
+  const p = enPantalla(e);
+  borrarVaho(escribiendo.x, escribiendo.y, p.x, p.y, 0.9);
+  escribiendo.recorrido += Math.hypot(p.x - escribiendo.x, p.y - escribiendo.y);
+  escribiendo.x = p.x; escribiendo.y = p.y;
+  desdeQueLimpio = 0;
+  rastroDedo.push({ x: p.x, y: p.y });
+  if (rastroDedo.length > 200) rastroDedo.shift();
+});
+
+function soltar() {
+  if (!escribiendo) return;
+  mirarSecretos(escribiendo.recorrido);
+  escribiendo = null;
+  mundo.classList.remove("is-escribiendo");
+}
+zona.addEventListener("pointerup", soltar);
+zona.addEventListener("pointercancel", soltar);
+
+/* ---- Los textos --------------------------------------------------------- */
+
+let pidiendo = null;
+let bloqueado = 0;
+
+function decir(texto, firma, importante) {
+  const ahora = performance.now();
+  if (!importante && ahora < bloqueado) return;
+  if (pidiendo === texto) return;
+  pidiendo = texto;
+  if (importante) bloqueado = ahora + 4200;
+  elPie.classList.remove("is-visible");
+  setTimeout(() => {
+    elPie.textContent = texto;
+    if (firma) {
+      const em = document.createElement("em");
+      em.textContent = firma;
+      elPie.append(em);
+    }
+    elPie.classList.add("is-visible");
+  }, suave ? 10 : 300);
+}
+
+/* ---- Sonido: el traqueteo ----------------------------------------------- */
+
+let audio = null, traqueteoOn = false;
+
+function despertar() {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+  } catch { audio = null; }
+  return audio;
+}
+
+/** Un golpe seco y grave: la junta del raíl. */
+function traca(fuerza) {
+  if (!despertar()) return;
+  const t = audio.currentTime;
+  const o = audio.createOscillator();
+  const g = audio.createGain();
+  o.type = "sine";
+  o.frequency.setValueAtTime(azar(70, 95), t);
+  o.frequency.exponentialRampToValueAtTime(40, t + 0.08);
+  g.gain.setValueAtTime(0.05 * fuerza, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+  o.connect(g).connect(audio.destination);
+  o.start(t); o.stop(t + 0.2);
+}
+
+function silbato() {
+  if (!despertar()) return;
+  const t = audio.currentTime;
+  /* Dos tonos a la vez y algo desafinados: eso es lo que hace que un
+     silbato suene a silbato y no a pitido. */
+  for (const [f, v] of [[392, 0.05], [466, 0.04], [587, 0.025]]) {
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.type = "sawtooth";
+    o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(v, t + 0.12);
+    g.gain.setValueAtTime(v, t + 0.7);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+    const filtro = audio.createBiquadFilter();
+    filtro.type = "lowpass";
+    filtro.frequency.value = 1200;
+    o.connect(filtro).connect(g).connect(audio.destination);
+    o.start(t); o.stop(t + 1.6);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS SECRETOS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Dibujar un corazón en el vaho. Se reconoce por la forma del rastro:
+      un trazo cerrado, ancho arriba y en punta abajo.                   */
+const rastroDedo = [];
+let corazonDicho = false;
+
+function pareceCorazon() {
+  if (rastroDedo.length < 25) return false;
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const p of rastroDedo) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+  const w = maxX - minX, h = maxY - minY;
+  if (w < 50 || h < 50) return false;
+  /* Cerrado: el final vuelve cerca del principio. */
+  const a = rastroDedo[0], z = rastroDedo[rastroDedo.length - 1];
+  if (Math.hypot(a.x - z.x, a.y - z.y) > w * 0.42) return false;
+  /* Y en punta abajo: el punto más bajo está cerca del centro a lo
+     ancho, que es lo que distingue un corazón de un círculo. */
+  let bajoX = 0, bajoY = -Infinity;
+  for (const p of rastroDedo) if (p.y > bajoY) { bajoY = p.y; bajoX = p.x; }
+  return Math.abs(bajoX - (minX + w / 2)) < w * 0.26;
+}
+
+/* 2. Limpiar casi todo el cristal: se ve el paisaje entero un rato y el
+      tren toca el silbato.                                             */
+let panoramicaDicha = false;
+
+/* 3. Si se está mucho rato sin tocar, pasa un tren en sentido contrario
+      con las ventanillas encendidas.                                   */
+let otroTren = null;
+let quieta = 0;
+const SECRETO_QUIETA = 24;
+
+function mirarSecretos(recorrido) {
+  if (pareceCorazon() && !corazonDicho) {
+    corazonDicho = true;
+    decir("Un corazón en el cristal.", "Lo va a ver todo el andén.", true);
+    silbato();
+    setTimeout(() => { corazonDicho = false; }, 24000);
+    return;
+  }
+  if (limpiado > 0.42 && !panoramicaDicha) {
+    panoramicaDicha = true;
+    decir("Has limpiado la ventana entera.", "Ahora se ve todo. Mira.", true);
+    silbato();
+    setTimeout(() => { panoramicaDicha = false; }, 30000);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+let t0 = performance.now();
+let reloj = 0;
+let avance = 0;              // lo que llevamos recorrido, en píxeles
+let proximaTraca = 0;
+let proximaEstacion = azar(6, 10);
+let estacion = null;
+let iEstacion = 0;
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A || !H) return;
+
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+  else if (dt > 0.1) dt = 0.1;
+  reloj += dt;
+  avance += dt * 180 * CONF.velocidad;
+
+  /* --- el traqueteo --- */
+  proximaTraca -= dt;
+  if (proximaTraca <= 0) {
+    proximaTraca = azar(0.42, 0.56);
+    if (audio) traca(1);
+  }
+
+  /* --- las estaciones --- */
+  proximaEstacion -= dt;
+  if (proximaEstacion <= 0 && !estacion) {
+    proximaEstacion = azar(CONF.cadaEstacion[0], CONF.cadaEstacion[1]);
+    const e = CONF.estaciones[iEstacion % CONF.estaciones.length];
+    iEstacion++;
+    estacion = { datos: e, t: 0, dicho: false };
+  }
+
+  /* --- el vaho se vuelve a poner --- */
+  desdeQueLimpio += dt;
+  if (desdeQueLimpio > CONF.vuelveVaho && limpiado > 0.01) {
+    /* Muy poquito a poco: que se note que vuelve, no que aparezca. */
+    cv.globalCompositeOperation = "source-over";
+    cv.fillStyle = "rgba(198, 218, 236, 0.008)";
+    cv.fillRect(0, 0, vaho.width, vaho.height);
+    limpiado = Math.max(0, limpiado - 0.0009);
+  }
+
+  /* --- quietud --- */
+  quieta = escribiendo ? 0 : quieta + dt;
+  if (quieta > SECRETO_QUIETA && !otroTren) {
+    quieta = -50;
+    otroTren = { x: A + 120, vagones: 6 };
+    decir("Ha pasado otro en sentido contrario.", "Alguien iba mirando por su ventana, como tú.", true);
+  }
+
+  dibujar(dt);
+}
+
+function dibujar(dt) {
+  /* --- el cielo --- */
+  const cielo = ctx.createLinearGradient(0, 0, 0, H);
+  cielo.addColorStop(0, "#0a0f22");
+  cielo.addColorStop(0.42, "#141b38");
+  cielo.addColorStop(0.68, "#25203c");
+  cielo.addColorStop(1, "#0d0a14");
+  ctx.fillStyle = cielo;
+  ctx.fillRect(0, 0, A, H);
+
+  /* --- las estrellas (no se mueven: están lejísimos) --- */
+  for (const s of estrellas) {
+    ctx.globalAlpha = s.b * (0.7 + 0.3 * Math.sin(reloj * 1.3 + s.x * 40));
+    ctx.fillStyle = "#cfdcf6";
+    ctx.beginPath();
+    ctx.arc(s.x * A, s.y * H, s.r, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  /* --- la luna, quieta también --- */
+  const lx = A * 0.22, ly = H * 0.17, lr = Math.min(A, H) * 0.062;
+  const gl = ctx.createRadialGradient(lx, ly, 0, lx, ly, lr * 4);
+  gl.addColorStop(0, "rgba(226, 236, 255, 0.5)");
+  gl.addColorStop(1, "rgba(226, 236, 255, 0)");
+  ctx.fillStyle = gl;
+  ctx.beginPath(); ctx.arc(lx, ly, lr * 4, 0, 6.283); ctx.fill();
+  ctx.fillStyle = "#e8f0ff";
+  ctx.beginPath(); ctx.arc(lx, ly, lr, 0, 6.283); ctx.fill();
+
+  /* --- las montañas del fondo (capa lenta) --- */
+  montanya(H * 0.58, avance * 0.08, "#1b2340", 0.055, 130);
+  montanya(H * 0.64, avance * 0.16, "#141a30", 0.075, 90);
+
+  /* --- las casas con la luz encendida --- */
+  for (const c of casas) {
+    const vel = c.capa === 1 ? 0.3 : 0.55;
+    /* El módulo trae la casa por el otro lado cuando se sale: un bucle
+       infinito de paisaje sin guardar nada. */
+    let x = ((c.x * A + avance * vel) % (A + 90)) - 45;
+    x = A - x;                       // el tren va hacia la izquierda
+    const base = H * (c.capa === 1 ? 0.67 : 0.73);
+    const w = A * 0.035 * (c.capa === 1 ? 0.8 : 1.15);
+    const h = H * c.alto * (c.capa === 1 ? 0.8 : 1.2);
+    ctx.fillStyle = c.capa === 1 ? "#0f1428" : "#0a0e1e";
+    ctx.fillRect(x, base - h, w, h);
+    /* El tejado. */
+    ctx.beginPath();
+    ctx.moveTo(x - 3, base - h);
+    ctx.lineTo(x + w / 2, base - h - h * 0.45);
+    ctx.lineTo(x + w + 3, base - h);
+    ctx.closePath(); ctx.fill();
+    /* Las ventanas encendidas, que es lo único que se ve de verdad. */
+    ctx.fillStyle = "rgba(255, 206, 130, 0.9)";
+    for (let k = 0; k < c.luces; k++) {
+      ctx.fillRect(x + 3 + k * 6, base - h * 0.62, 3.4, 4.2);
+    }
+  }
+
+  /* --- el prado de delante, rapidísimo --- */
+  const prado = ctx.createLinearGradient(0, H * 0.72, 0, H);
+  prado.addColorStop(0, "#0c1020");
+  prado.addColorStop(1, "#06080f");
+  ctx.fillStyle = prado;
+  ctx.fillRect(0, H * 0.72, A, H * 0.28);
+
+  /* Los postes del telégrafo: pasan volando y son los que dan velocidad.
+     Sin ellos el tren parece parado. */
+  const sepPoste = 150;
+  const desf = (avance * 1.6) % sepPoste;
+  for (let i = -1; i * sepPoste < A + sepPoste; i++) {
+    const x = A - (i * sepPoste - desf);
+    if (x < -20 || x > A + 20) continue;
+    ctx.strokeStyle = "rgba(10, 14, 26, 0.95)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x, H * 0.78);
+    ctx.lineTo(x, H * 0.38);
+    ctx.stroke();
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x - 9, H * 0.42);
+    ctx.lineTo(x + 9, H * 0.42);
+    ctx.stroke();
+  }
+
+  /* --- la estación, si viene una --- */
+  if (estacion) {
+    estacion.t += dt;
+    /* Entra por la derecha, se para en el medio un momento y sigue. */
+    const k = estacion.t / 7.5;
+    const x = A * 1.25 - k * A * 2.5;
+    dibujarEstacion(x, estacion.datos.nombre);
+    if (!estacion.dicho && x < A * 0.62 && x > A * 0.2) {
+      estacion.dicho = true;
+      decir(estacion.datos.frase, estacion.datos.firma, true);
+      silbato();
+    }
+    if (k >= 1) estacion = null;
+  }
+
+  /* --- el otro tren (secreto 3) --- */
+  if (otroTren) {
+    otroTren.x -= 520 * dt;
+    dibujarOtroTren(otroTren);
+    if (otroTren.x < -otroTren.vagones * 130 - 100) otroTren = null;
+  }
+
+  /* --- el vaho, por encima de todo --- */
+  ctx.drawImage(vaho, 0, 0, A, H);
+
+  /* Las gotas que resbalan por el cristal limpio. */
+  gotas(dt);
+}
+
+function montanya(base, desp, color, altura, paso) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  ctx.lineTo(0, base);
+  for (let x = 0; x <= A + paso; x += 14) {
+    const u = (x + desp) / paso;
+    const y = base - (Math.sin(u) * 0.6 + Math.sin(u * 2.3) * 0.3 + Math.sin(u * 0.7) * 0.5) * H * altura;
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(A, H);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function dibujarEstacion(x, nombre) {
+  const base = H * 0.74;
+  const w = 150, h = 62;
+  /* El andén. */
+  ctx.fillStyle = "#151a2c";
+  ctx.fillRect(x - 40, base, w + 80, 12);
+  /* La caseta. */
+  ctx.fillStyle = "#1d2338";
+  ctx.fillRect(x, base - h, w, h);
+  ctx.beginPath();
+  ctx.moveTo(x - 8, base - h);
+  ctx.lineTo(x + w / 2, base - h - 22);
+  ctx.lineTo(x + w + 8, base - h);
+  ctx.closePath();
+  ctx.fill();
+  /* Las ventanas, muy amarillas: lo único que se ve de una estación de
+     noche desde un tren. */
+  ctx.fillStyle = "rgba(255, 214, 140, 0.92)";
+  ctx.fillRect(x + 14, base - h + 18, 26, 20);
+  ctx.fillRect(x + w - 40, base - h + 18, 26, 20);
+  /* Las farolas del andén. */
+  for (const fx of [x - 24, x + w + 24]) {
+    ctx.strokeStyle = "#232a42";
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(fx, base); ctx.lineTo(fx, base - 52); ctx.stroke();
+    const g = ctx.createRadialGradient(fx, base - 52, 0, fx, base - 52, 38);
+    g.addColorStop(0, "rgba(255, 216, 150, 0.6)");
+    g.addColorStop(1, "rgba(255, 216, 150, 0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(fx, base - 52, 38, 0, 6.283); ctx.fill();
+  }
+  /* El cartel con el nombre. */
+  ctx.fillStyle = "#f0f4ff";
+  ctx.fillRect(x + 22, base - h - 2, w - 44, 16);
+  ctx.fillStyle = "#1a2038";
+  ctx.font = "600 10px ui-sans-serif, system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(nombre, x + w / 2, base - h + 6);
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+}
+
+function dibujarOtroTren(t) {
+  const y = H * 0.56;
+  const altoV = 34;
+  for (let i = 0; i < t.vagones; i++) {
+    const x = t.x + i * 128;
+    if (x < -130 || x > A + 130) continue;
+    ctx.fillStyle = "#0e1424";
+    ctx.fillRect(x, y - altoV, 118, altoV);
+    ctx.fillStyle = "rgba(255, 210, 140, 0.85)";
+    for (let k = 0; k < 5; k++) {
+      ctx.fillRect(x + 8 + k * 22, y - altoV + 8, 14, 15);
+    }
+    /* El destello que deja al pasar. */
+    const g = ctx.createRadialGradient(x + 59, y - altoV / 2, 0, x + 59, y - altoV / 2, 90);
+    g.addColorStop(0, "rgba(255, 210, 140, 0.16)");
+    g.addColorStop(1, "rgba(255, 210, 140, 0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x - 40, y - 100, 200, 150);
+  }
+}
+
+/* ---- Las gotas del cristal ---------------------------------------------- */
+
+const lasGotas = [];
+let relojGota = 0;
+
+function gotas(dt) {
+  relojGota -= dt;
+  if (relojGota <= 0 && limpiado > 0.05) {
+    relojGota = azar(0.35, 1.1);
+    lasGotas.push({ x: azar(0, A), y: azar(-20, H * 0.3), v: azar(30, 90), r: azar(1.2, 2.8), serp: Math.random() * 6.283 });
+    if (lasGotas.length > 40) lasGotas.shift();
+  }
+  for (let i = lasGotas.length - 1; i >= 0; i--) {
+    const g = lasGotas[i];
+    /* Van más rápido cuanto más gordas, y serpentean un poco: una gota
+       recta no parece una gota. */
+    g.y += g.v * dt * (0.6 + g.r * 0.3);
+    g.x += Math.sin(g.y * 0.04 + g.serp) * 12 * dt;
+    if (g.y > H + 10) { lasGotas.splice(i, 1); continue; }
+    ctx.fillStyle = "rgba(220, 235, 250, 0.42)";
+    ctx.beginPath();
+    ctx.ellipse(g.x, g.y, g.r, g.r * 1.7, 0, 0, 6.283);
+    ctx.fill();
+    /* Y dejan limpio por donde pasan. */
+    borrarVaho(g.x, g.y - 4, g.x, g.y, 0.12);
+  }
+}
+
+/* ---- Arranque ----------------------------------------------------------- */
+
+medir();
+decir("El cristal está empañado. Escribe algo.");
+requestAnimationFrame(paso);
+
+})();
+</script>
+</body>
+</html>

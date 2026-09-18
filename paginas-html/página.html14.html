@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La bola de nieve</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .bola-mundo, con prefijo `bl-` en cada clase.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.bola-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background:
+    radial-gradient(ellipse 110% 70% at 50% 8%, #fdf3e8, transparent 62%),
+    linear-gradient(172deg, #efe0d2 0%, #e2cdbe 58%, #d2b6a6 100%);
+  color: #45322e;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bola-mundo .bl-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Los toques los recoge `.bl-toque`, que va justo encima. */
+  pointer-events: none;
+}
+
+/* La mesa entera: la bola se agita arrastrando por cualquier sitio. El
+   libro sólo se queda el barrido que empieza en sus 24-44 px de borde. */
+.bola-mundo .bl-toque {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  z-index: 2;
+  cursor: grab;
+}
+.bola-mundo.is-agitando .bl-toque { cursor: grabbing; }
+
+.bola-mundo .bl-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  padding:
+    calc(var(--seguro-t) + 20px) 22px
+    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+.bola-mundo .bl-titulo {
+  margin: 0;
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-size: clamp(1rem, 4.4vw, 1.4rem);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: #7a5a4c;
+  opacity: 0.88;
+  transition: opacity 800ms var(--e-suave);
+}
+.bola-mundo.is-nevando .bl-titulo { opacity: 0.22; }
+
+.bola-mundo .bl-pie {
+  margin: 0;
+  min-height: 3.6em;
+  max-width: 23em;
+  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
+  line-height: 1.55;
+  color: #52403c;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 660ms var(--e-suave), transform 660ms var(--e-suave);
+}
+.bola-mundo .bl-pie.is-visible { opacity: 0.94; transform: none; }
+.bola-mundo .bl-pie em {
+  display: block;
+  margin-top: 0.3em;
+  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  font-size: 1.16em;
+  font-style: normal;
+  color: #b0503f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bola-mundo * { transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="bola-mundo" id="mundo">
+  <canvas class="bl-lienzo" id="lienzo"></canvas>
+  <div class="bl-toque" id="toque" aria-hidden="true"></div>
+  <div class="bl-ui">
+    <h1 class="bl-titulo" id="titulo">Agítala</h1>
+    <p class="bl-pie" id="pie" role="status" aria-live="polite"></p>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN EDITABLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const CONF = {
+
+  /* ---- LA NIEVE -------------------------------------------------------
+     Los copos no caen: FLOTAN en agua. Se hunden despacio, con mucho
+     rozamiento, y por eso tardan tanto en posarse. Es lo que diferencia
+     una bola de nieve de un fondo con nieve cayendo.                   */
+  copos: 170,
+  hundir: 16,            // px/s: lo poco que baja un copo suelto
+  rozamiento: 1.9,       // cuánto frena el agua (por segundo)
+  fuerzaAgitar: 520,     // lo que revuelve el dedo
+
+  /* ---- LO QUE SE LEE AL AGITAR ----------------------------------------
+     Se van diciendo en orden y luego vuelven a empezar.                */
+  frases: [
+    ["Dentro siempre es invierno, y siempre estamos los dos.", "No se está mal aquí."],
+    ["La casita tiene la luz encendida.", "Como si nos esperara."],
+    ["Aquí no hace frío de verdad.", "Aquí el frío es sólo bonito."],
+    ["¿Ves las huellas? Van las dos al mismo sitio.", "Nunca nos separamos ni dentro de una bola."],
+    ["Se posará todo enseguida.", "Casi todo se posa, si esperas."],
+    ["Agítala las veces que quieras.", "Yo no me canso de volver a empezar."],
+  ],
+
+  /* ---- LA ESCENA DE DENTRO -------------------------------------------- */
+  arbolitos: 5,
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   La maquinaria.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const mundo  = document.getElementById("mundo");
+const lienzo = document.getElementById("lienzo");
+const zona   = document.getElementById("toque");
+const elPie  = document.getElementById("pie");
+const ctx    = lienzo.getContext("2d");
+
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
+
+let A = 0, H = 0, dpr = 1;
+/* El centro y el radio de la bola, en píxeles. Todo lo de dentro se
+   coloca contra estos tres números, así que la escena entera se adapta
+   sola a la hoja sin una sola medida escrita a mano. */
+let cx = 0, cy = 0, R = 0;
+
+function medir() {
+  const r = mundo.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const primera = !A;
+  A = r.width; H = r.height;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  lienzo.width  = Math.round(A * dpr);
+  lienzo.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  /* La bola ocupa lo que le dejen sin tocar ni el título ni el texto de
+     abajo, y se centra CONTANDO LA PEANA: si se centra sólo el círculo,
+     el conjunto queda alto y sobra un palmo de mesa debajo. */
+  R = Math.min(A * 0.42, H * 0.33);
+  cx = A / 2;
+  cy = H / 2 - R * 0.10;
+  if (primera) sembrar();
+  else recolocar();
+}
+new ResizeObserver(medir).observe(mundo);
+
+/* ---- Los copos, en arrays planos --------------------------------------- */
+
+let N = CONF.copos;
+let px, py, pvx, pvy, pr, pf;
+
+function sembrar() {
+  N = R < 110 ? Math.round(CONF.copos * 0.6) : CONF.copos;
+  px = new Float32Array(N); py = new Float32Array(N);
+  pvx = new Float32Array(N); pvy = new Float32Array(N);
+  pr = new Float32Array(N); pf = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    /* Dentro del círculo, repartidos de verdad: sorteando x e y sueltos
+       se apelotonan en el centro. La raíz del azar lo corrige. */
+    const a = Math.random() * 6.283;
+    const d = Math.sqrt(Math.random()) * R * 0.94;
+    px[i] = cx + Math.cos(a) * d;
+    py[i] = cy + Math.sin(a) * d;
+    pvx[i] = 0; pvy[i] = 0;
+    pr[i] = azar(1, 2.8);
+    pf[i] = Math.random() * 6.283;
+  }
+}
+
+function recolocar() {
+  if (!px) { sembrar(); return; }
+  /* Al girar el móvil, los copos que se queden fuera se meten dentro.
+     Volver a sembrarlos sería más fácil y se vería como un salto. */
+  for (let i = 0; i < N; i++) {
+    const dx = px[i] - cx, dy = py[i] - cy;
+    const d = Math.hypot(dx, dy);
+    if (d > R * 0.94) {
+      px[i] = cx + dx / d * R * 0.9;
+      py[i] = cy + dy / d * R * 0.9;
+    }
+  }
+}
+
+/* ---- Agitar ------------------------------------------------------------ */
+
+let agitando = null;
+let energia = 0;          // 0 quieta · 1 revuelta del todo
+let sacudidas = 0;
+let ultimaSacudida = 0;
+let dirAnterior = 0;
+let iFrase = 0;
+
+function enPantalla(e) {
+  const r = mundo.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+zona.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  zona.setPointerCapture(e.pointerId);
+  const p = enPantalla(e);
+  agitando = { id: e.pointerId, x: p.x, y: p.y, vx: 0, vy: 0 };
+  mundo.classList.add("is-agitando");
+});
+
+zona.addEventListener("pointermove", (e) => {
+  if (!agitando || e.pointerId !== agitando.id) return;
+  const p = enPantalla(e);
+  const dx = p.x - agitando.x;
+  agitando.vx = dx;
+  agitando.vy = p.y - agitando.y;
+  agitando.x = p.x; agitando.y = p.y;
+
+  /* Se cuentan los CAMBIOS DE SENTIDO, no la velocidad: agitar es ir y
+     volver, y un arrastre largo y rápido en línea recta no es agitar. */
+  if (Math.abs(dx) > 7) {
+    const dir = dx > 0 ? 1 : -1;
+    const ahora = performance.now();
+    if (dirAnterior && dir !== dirAnterior && ahora - ultimaSacudida > 60) {
+      sacudidas++;
+      ultimaSacudida = ahora;
+      energia = Math.min(1.4, energia + 0.34);
+      remover(p.x, p.y);
+      if (sacudidas === 2 || sacudidas % 7 === 0) hablar();
+      cascabel();
+      mirarSecretos();
+    }
+    dirAnterior = dir;
+  }
+});
+
+const soltar = () => {
+  agitando = null;
+  dirAnterior = 0;
+  mundo.classList.remove("is-agitando");
+};
+zona.addEventListener("pointerup", soltar);
+zona.addEventListener("pointercancel", soltar);
+
+/* Un toque suelto también remueve un poquito: si no, tocar y que no
+   pase nada se siente roto. */
+zona.addEventListener("pointerdown", (e) => {
+  const p = enPantalla(e);
+  energia = Math.min(1.4, energia + 0.2);
+  remover(p.x, p.y);
+});
+
+function remover(x, y) {
+  const f = CONF.fuerzaAgitar;
+  for (let i = 0; i < N; i++) {
+    const dx = px[i] - x, dy = py[i] - y;
+    const d = Math.hypot(dx, dy) || 1;
+    /* El empujón se reparte: cerca del dedo mucho, lejos poco, y siempre
+       con una parte al azar para que no salgan todos en abanico. */
+    const k = clamp(1 - d / (R * 1.6), 0, 1);
+    pvx[i] += (dx / d) * f * k * azar(0.4, 1) * 0.016 + azar(-30, 30) * k;
+    pvy[i] += (dy / d) * f * k * azar(0.4, 1) * 0.016 + azar(-40, 20) * k;
+  }
+  mundo.classList.add("is-nevando");
+}
+
+function hablar() {
+  const [texto, firma] = CONF.frases[iFrase % CONF.frases.length];
+  iFrase++;
+  decir(texto, firma);
+}
+
+/* ---- Los textos --------------------------------------------------------- */
+
+let pidiendo = null;
+let bloqueado = 0;
+
+function decir(texto, firma, importante) {
+  const ahora = performance.now();
+  if (!importante && ahora < bloqueado) return;
+  if (pidiendo === texto) return;
+  pidiendo = texto;
+  if (importante) bloqueado = ahora + 4200;
+  elPie.classList.remove("is-visible");
+  setTimeout(() => {
+    elPie.textContent = texto;
+    if (firma) {
+      const em = document.createElement("em");
+      em.textContent = firma;
+      elPie.append(em);
+    }
+    elPie.classList.add("is-visible");
+  }, suave ? 10 : 280);
+}
+
+/* ---- Sonido ------------------------------------------------------------- */
+
+let audio = null;
+let ultimoCascabel = 0;
+
+function cascabel() {
+  const ahora = performance.now();
+  if (ahora - ultimoCascabel < 150) return;
+  ultimoCascabel = ahora;
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+    const t = audio.currentTime;
+    /* Tres tonos altos y muy cortos: eso es un cascabel. */
+    for (let k = 0; k < 3; k++) {
+      const o = audio.createOscillator();
+      const g = audio.createGain();
+      o.type = "sine";
+      o.frequency.setValueAtTime(azar(1900, 2900), t + k * 0.012);
+      g.gain.setValueAtTime(0.035, t + k * 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18 + k * 0.012);
+      o.connect(g).connect(audio.destination);
+      o.start(t + k * 0.012); o.stop(t + 0.25 + k * 0.012);
+    }
+  } catch { /* sin sonido nieva igual */ }
+}
+
+function campana(hz) {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    const t = audio.currentTime;
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(hz, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.08, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+    o.connect(g).connect(audio.destination);
+    o.start(t); o.stop(t + 1.5);
+  } catch { /* nada */ }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS SECRETOS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 1. A las veinte sacudidas se enciende una segunda ventana en la
+      casita: hay alguien más despierto.                               */
+let ventanaDos = 0;
+
+/* 2. Si se deja quieta hasta que TODA la nieve se posa, sale la luna y
+      se lee algo. Hay que tener paciencia de verdad.                  */
+let posadaDicha = false;
+
+/* 3. Uno de los copos no es nieve: es una estrellita dorada. Se mueve
+      como los demás y hay que fijarse.                                */
+let elDorado = 0;
+
+function mirarSecretos() {
+  if (sacudidas === 20 && !ventanaDos) {
+    ventanaDos = 1;
+    decir("Se ha encendido otra ventana.", "Alguien más no puede dormir.", true);
+    campana(587);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+let t0 = performance.now();
+let reloj = 0;
+let quietud = 0;
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A || !H || !px) return;
+
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+  else if (dt > 0.1) dt = 0.1;
+  reloj += dt;
+
+  energia = damp(energia, 0, 0.55, dt);
+  if (energia < 0.02) mundo.classList.remove("is-nevando");
+
+  ctx.clearRect(0, 0, A, H);
+
+  dibujarPeana();
+
+  /* Todo lo de dentro va recortado al círculo: así nada se sale del
+     cristal, ni un copo ni el suelo. */
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, 6.283);
+  ctx.clip();
+
+  dibujarDentro();
+  moverYDibujarCopos(dt);
+
+  ctx.restore();
+
+  dibujarCristal();
+
+  /* --- el secreto de la paciencia --- */
+  let quietos = 0;
+  for (let i = 0; i < N; i++) if (Math.abs(pvx[i]) + Math.abs(pvy[i]) < 3) quietos++;
+  if (quietos > N * 0.96 && energia < 0.03) {
+    quietud += dt;
+    if (quietud > 4 && !posadaDicha) {
+      posadaDicha = true;
+      decir("Se ha posado toda.", "Y sigue siendo bonito. Eso es lo que quería enseñarte.", true);
+      campana(392);
+      setTimeout(() => { posadaDicha = false; }, 30000);
+    }
+  } else {
+    quietud = 0;
+  }
+}
+
+/* ---- Lo que hay dentro --------------------------------------------------- */
+
+function dibujarDentro() {
+  /* El cielo de dentro. */
+  const cielo = ctx.createLinearGradient(cx, cy - R, cx, cy + R);
+  cielo.addColorStop(0, "#1a2744");
+  cielo.addColorStop(0.55, "#34456b");
+  cielo.addColorStop(1, "#5c6d90");
+  ctx.fillStyle = cielo;
+  ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+
+  /* La luna, que sale cuando todo está quieto (secreto 2). */
+  const luna = clamp(quietud / 3, 0, 1);
+  if (luna > 0.01) {
+    const lx = cx + R * 0.46, ly = cy - R * 0.52, lr = R * 0.1;
+    const g = ctx.createRadialGradient(lx, ly, 0, lx, ly, lr * 4);
+    g.addColorStop(0, `rgba(230, 240, 255, ${0.45 * luna})`);
+    g.addColorStop(1, "rgba(230, 240, 255, 0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(lx, ly, lr * 4, 0, 6.283); ctx.fill();
+    ctx.fillStyle = `rgba(240, 246, 255, ${0.9 * luna})`;
+    ctx.beginPath(); ctx.arc(lx, ly, lr, 0, 6.283); ctx.fill();
+  }
+
+  /* El suelo nevado: una curva, no una recta, para que se note que es
+     una esfera y no un cuadro. */
+  const suelo = cy + R * 0.42;
+  ctx.fillStyle = "#eef4fa";
+  ctx.beginPath();
+  ctx.moveTo(cx - R, cy + R);
+  ctx.lineTo(cx - R, suelo + R * 0.1);
+  ctx.quadraticCurveTo(cx, suelo - R * 0.1, cx + R, suelo + R * 0.1);
+  ctx.lineTo(cx + R, cy + R);
+  ctx.closePath();
+  ctx.fill();
+
+  /* Los abetos. */
+  for (let i = 0; i < CONF.arbolitos; i++) {
+    const t = (i / (CONF.arbolitos - 1)) - 0.5;
+    const ax = cx + t * R * 1.5;
+    const esc = 0.7 + Math.abs(t) * 0.5;
+    const base = suelo + R * 0.06 - Math.cos(t * 2.2) * R * 0.06;
+    arbolito(ax, base, R * 0.18 * esc);
+  }
+
+  /* La casita, en el medio. */
+  casita(cx - R * 0.1, suelo - R * 0.02, R * 0.34);
+
+  /* Las huellas: dos filas que van juntas hacia la casa. */
+  ctx.fillStyle = "rgba(160, 180, 200, 0.5)";
+  for (let i = 0; i < 7; i++) {
+    const t = i / 7;
+    const hx = cx + R * 0.72 - t * R * 0.72;
+    const hy = suelo + R * 0.2 - t * R * 0.08;
+    ctx.beginPath(); ctx.ellipse(hx, hy, R * 0.022, R * 0.014, 0, 0, 6.283); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(hx + R * 0.04, hy + R * 0.05, R * 0.022, R * 0.014, 0, 0, 6.283); ctx.fill();
+  }
+}
+
+function arbolito(x, base, alto) {
+  ctx.fillStyle = "#5c4030";
+  ctx.fillRect(x - alto * 0.06, base - alto * 0.18, alto * 0.12, alto * 0.2);
+  for (let k = 0; k < 3; k++) {
+    const w = alto * 0.42 * (1 - k * 0.22);
+    const y = base - alto * 0.14 - k * alto * 0.3;
+    ctx.fillStyle = k === 0 ? "#2e5c44" : k === 1 ? "#35684d" : "#3d7355";
+    ctx.beginPath();
+    ctx.moveTo(x, y - alto * 0.46);
+    ctx.lineTo(x - w, y);
+    ctx.lineTo(x + w, y);
+    ctx.closePath();
+    ctx.fill();
+    /* La nieve encima de cada rama. */
+    ctx.fillStyle = "rgba(240, 248, 255, 0.85)";
+    ctx.beginPath();
+    ctx.moveTo(x, y - alto * 0.46);
+    ctx.lineTo(x - w * 0.5, y - alto * 0.2);
+    ctx.lineTo(x + w * 0.5, y - alto * 0.2);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function casita(x, base, ancho) {
+  const alto = ancho * 0.74;
+  /* El cuerpo. */
+  ctx.fillStyle = "#7a4e3e";
+  ctx.fillRect(x - ancho / 2, base - alto, ancho, alto);
+  /* El tejado, con su nieve. */
+  ctx.fillStyle = "#5c3a2e";
+  ctx.beginPath();
+  ctx.moveTo(x - ancho * 0.62, base - alto);
+  ctx.lineTo(x, base - alto * 1.62);
+  ctx.lineTo(x + ancho * 0.62, base - alto);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#f2f7fc";
+  ctx.beginPath();
+  ctx.moveTo(x - ancho * 0.62, base - alto);
+  ctx.lineTo(x, base - alto * 1.62);
+  ctx.lineTo(x + ancho * 0.62, base - alto);
+  ctx.lineTo(x + ancho * 0.5, base - alto);
+  ctx.lineTo(x, base - alto * 1.42);
+  ctx.lineTo(x - ancho * 0.5, base - alto);
+  ctx.closePath();
+  ctx.fill();
+  /* La ventana encendida. Y la segunda, si se ha ganado. */
+  const parpadeo = 0.82 + 0.18 * Math.sin(reloj * 2.1);
+  ctx.fillStyle = `rgba(255, 206, 120, ${parpadeo})`;
+  ctx.fillRect(x - ancho * 0.3, base - alto * 0.72, ancho * 0.24, ancho * 0.22);
+  if (ventanaDos > 0) {
+    ventanaDos = Math.min(1, ventanaDos + 0.02);
+    ctx.fillStyle = `rgba(255, 206, 120, ${parpadeo * ventanaDos})`;
+    ctx.fillRect(x + ancho * 0.08, base - alto * 0.72, ancho * 0.24, ancho * 0.22);
+  }
+  /* La puerta y la chimenea. */
+  ctx.fillStyle = "#4a2e24";
+  ctx.fillRect(x - ancho * 0.08, base - alto * 0.42, ancho * 0.18, alto * 0.42);
+  ctx.fillStyle = "#5c3a2e";
+  ctx.fillRect(x + ancho * 0.3, base - alto * 1.42, ancho * 0.12, alto * 0.42);
+  /* El humo. */
+  ctx.strokeStyle = "rgba(230, 236, 245, 0.35)";
+  ctx.lineWidth = ancho * 0.05;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  const hx = x + ancho * 0.36;
+  const hy = base - alto * 1.44;
+  ctx.moveTo(hx, hy);
+  ctx.quadraticCurveTo(hx + ancho * 0.2 * Math.sin(reloj * 0.8), hy - alto * 0.3,
+                       hx - ancho * 0.08, hy - alto * 0.6);
+  ctx.stroke();
+}
+
+/* ---- Los copos ----------------------------------------------------------- */
+
+function moverYDibujarCopos(dt) {
+  for (let i = 0; i < N; i++) {
+    /* Rozamiento del agua: es lo que hace que floten en vez de caer. */
+    const fre = Math.exp(-CONF.rozamiento * dt);
+    pvx[i] *= fre;
+    pvy[i] *= fre;
+    /* Y el hundimiento lento de siempre, más una corriente suave. */
+    pvy[i] += CONF.hundir * dt * 2.4;
+    pvx[i] += Math.sin(reloj * 0.8 + pf[i]) * 5 * dt;
+
+    px[i] += pvx[i] * dt;
+    py[i] += pvy[i] * dt;
+
+    /* El cristal: si se sale, se devuelve al borde y rebota flojito. */
+    const dx = px[i] - cx, dy = py[i] - cy;
+    const d = Math.hypot(dx, dy);
+    const lim = R * 0.95;
+    if (d > lim) {
+      const nx = dx / d, ny = dy / d;
+      px[i] = cx + nx * lim;
+      py[i] = cy + ny * lim;
+      const vn = pvx[i] * nx + pvy[i] * ny;
+      pvx[i] -= nx * vn * 1.4;
+      pvy[i] -= ny * vn * 1.4;
+    }
+
+    /* Y el suelo de dentro los para. */
+    const suelo = cy + R * 0.42 + R * 0.1;
+    if (py[i] > suelo) { py[i] = suelo; pvy[i] *= -0.12; }
+
+    if (i === elDorado) {
+      ctx.fillStyle = "#ffd98a";
+      ctx.beginPath();
+      /* Una estrellita de cuatro puntas, para que se distinga. */
+      const r = pr[i] * 2.2;
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * 6.283;
+        const rr = k % 2 ? r * 0.38 : r;
+        const sx = px[i] + Math.cos(a) * rr;
+        const sy = py[i] + Math.sin(a) * rr;
+        k ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy);
+      }
+      ctx.closePath();
+      ctx.fill();
+      continue;
+    }
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+    ctx.beginPath();
+    ctx.arc(px[i], py[i], pr[i], 0, 6.283);
+    ctx.fill();
+  }
+}
+
+/* ---- El cristal y la peana ----------------------------------------------- */
+
+function dibujarCristal() {
+  /* El brillo del cristal: una media luna arriba a la izquierda y un
+     canto iluminado. Sin esto la bola parece un agujero. */
+  const g = ctx.createRadialGradient(
+    cx - R * 0.35, cy - R * 0.4, R * 0.05,
+    cx, cy, R);
+  g.addColorStop(0, "rgba(255, 255, 255, 0.3)");
+  g.addColorStop(0.42, "rgba(255, 255, 255, 0.05)");
+  g.addColorStop(1, "rgba(120, 150, 180, 0.16)");
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.fill();
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, cy, R - 1, 0, 6.283); ctx.stroke();
+
+  /* El reflejo alargado de siempre. */
+  ctx.save();
+  ctx.globalAlpha = 0.34;
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.ellipse(cx - R * 0.42, cy - R * 0.44, R * 0.09, R * 0.2, -0.7, 0, 6.283);
+  ctx.fill();
+  ctx.restore();
+}
+
+function dibujarPeana() {
+  const y = cy + R * 0.86;
+  const w = R * 1.12;
+  /* La sombra en la mesa. */
+  ctx.fillStyle = "rgba(90, 60, 50, 0.22)";
+  ctx.beginPath();
+  ctx.ellipse(cx, y + R * 0.3, w * 1.1, R * 0.1, 0, 0, 6.283);
+  ctx.fill();
+  /* La madera. */
+  const g = ctx.createLinearGradient(cx, y, cx, y + R * 0.3);
+  g.addColorStop(0, "#8f5c40");
+  g.addColorStop(0.5, "#6e4230");
+  g.addColorStop(1, "#4d2c20");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(cx - w * 0.72, y);
+  ctx.lineTo(cx + w * 0.72, y);
+  ctx.lineTo(cx + w, y + R * 0.28);
+  ctx.lineTo(cx - w, y + R * 0.28);
+  ctx.closePath();
+  ctx.fill();
+  /* El filete dorado. */
+  ctx.fillStyle = "rgba(215, 165, 80, 0.75)";
+  ctx.fillRect(cx - w * 0.95, y + R * 0.19, w * 1.9, R * 0.035);
+}
+
+/* ---- Arranque ------------------------------------------------------------ */
+
+medir();
+elDorado = Math.floor(Math.random() * Math.max(1, N));
+decir("Arrastra el dedo de un lado a otro. Como se agita de verdad.");
+requestAnimationFrame(paso);
+
+})();
+</script>
+</body>
+</html>
