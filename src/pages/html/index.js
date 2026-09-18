@@ -143,7 +143,50 @@ export default class HtmlPage extends BasePage {
     // Caché normal, no `force-cache`: con `force-cache` el navegador se
     // queda con la copia vieja aunque él acabe de cambiar el archivo, y
     // editar una página y no ver el cambio al recargar es de volverse loco.
-    await fetch(src).catch(() => {});
+    try {
+      const r = await fetch(src);
+      if (r.ok) this.#nombrarDesdeElTexto(await r.text());
+    } catch {
+      // Sin red o sin archivo: no pasa nada. El nombre provisional sirve y
+      // `enter()` volverá a intentarlo con el documento ya cargado.
+    }
+  }
+
+  /**
+   * Saca el `<title>` del archivo SIN ejecutarlo, y con él bautiza la página.
+   *
+   * ── POR QUÉ AQUÍ Y NO SÓLO AL ENTRAR ──────────────────────────────────
+   * El nombre de verdad se leía del documento ya vivo, o sea al ENTRAR en
+   * la página. Hasta entonces, en el índice ponía «Página 3», «Página 4»…
+   * Quien abriera el índice sin haber pasado por ellas veía una lista de
+   * números en vez de «El hilo rojo» o «La ventana», que es justo lo que
+   * hace que apetezca ir.
+   *
+   * Y no costaba nada averiguarlo: esta función ya descargaba el archivo
+   * entero para dejarlo en la caché, y tiraba el contenido a la basura.
+   * Ahora lo mira de paso. Cero peticiones de más.
+   *
+   * Se lee sólo el principio: el `<title>` vive en la cabecera, y estos
+   * archivos pueden ocupar cien kilobytes de escena que no hace falta
+   * recorrer. Y se interpreta como HTML de verdad —no a mano— para que un
+   * título con `&amp;` o con acentos escapados llegue bien; parsear NO
+   * ejecuta ni un script, que es lo que importa aquí.
+   */
+  #nombrarDesdeElTexto(texto) {
+    if (!texto || !this.chapter) return;
+    // Sin los comentarios: un archivo que cite <title> dentro de uno haría
+    // que la búsqueda empezara ahí y arrastrara el comentario entero.
+    const cabeza = texto.slice(0, 8192).replace(/<!--[\s\S]*?-->/g, "");
+    const m = cabeza.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    if (!m) return;
+    let titulo = m[1];
+    try {
+      titulo = new DOMParser().parseFromString(m[1], "text/html").body.textContent;
+    } catch {
+      /* si el intérprete falla, sirve el texto tal cual */
+    }
+    titulo = (titulo || "").trim();
+    if (titulo) this.chapter.title = titulo;
   }
 
   build() {

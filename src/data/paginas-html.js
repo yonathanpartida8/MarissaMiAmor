@@ -21,9 +21,16 @@
  *     LÉEME, y «pagina» sin ella, que es la que sale sin querer— y que una
  *     página no aparezca por una tilde sería para volverse loco.
  *
+ * ── Lo único que mira del HTML ────────────────────────────────────────
+ * El `<title>`, y sólo para que el índice pueda decir «El hilo rojo» en
+ * vez de «Página 3» antes de que nadie haya entrado ahí. Se piden cuatro
+ * kilobytes del principio de cada archivo, cuando el navegador está
+ * ocioso y nunca durante el arranque. Ver `leerTitulos`.
+ *
  * ── Lo que NO hace ────────────────────────────────────────────────────
- * No lee el HTML, no lo interpreta y no lo toca. El archivo se muestra tal
- * cual lo escribió: de eso se encarga la página `src/pages/html/`.
+ * No ejecuta el HTML, no lo modifica y no decide nada sobre él. El
+ * archivo se muestra tal cual lo escribió: de eso se encarga la página
+ * `src/pages/html/`.
  */
 
 import textos from "../pages/html/textos.js";
@@ -201,6 +208,74 @@ const COLORES = ["rubor", "vino", "azucar", "brasa", "seda", "granate", "amanece
  *
  * @returns {{entries: object[], chapters: object[]}}
  */
+/**
+ * Le pone a cada página el nombre que diga su `<title>`.
+ *
+ * ── POR QUÉ EXISTE ────────────────────────────────────────────────────
+ * Hasta que no se ENTRABA en una página HTML, el libro no sabía cómo se
+ * llamaba: el nombre se leía del documento ya cargado. Así que quien
+ * abriera el índice sin haber pasado por ellas veía «Página 1, Página 2,
+ * Página 3…» en vez de «El rincón de arena», «El hilo rojo», «La
+ * ventana». Y el índice es justo lo que tiene que dar ganas de ir.
+ *
+ * ── POR QUÉ NO SE HACE AL DESCUBRIRLAS ────────────────────────────────
+ * La búsqueda pregunta con HEAD a propósito, que trae las cabeceras y no
+ * el archivo: da igual que una página pese medio mega. Bajarlas enteras
+ * al arrancar sólo para leerles el título sería tirar por la borda esa
+ * decisión, y en un móvil con datos son megas de verdad.
+ *
+ * Así que se piden SÓLO LOS PRIMEROS CUATRO KILOBYTES de cada una, con
+ * la cabecera `Range`. El `<title>` vive en la cabecera del documento,
+ * así que ahí está siempre. Si el servidor no entiende `Range` mandará
+ * el archivo entero —correcto igualmente, sólo que menos fino—, y por eso
+ * esto se hace cuando el navegador está ocioso y nunca durante el
+ * arranque.
+ *
+ * Nunca lanza: si algo falla, la página se queda con su nombre de
+ * siempre y no se entera nadie.
+ *
+ * @param {Array<{id:string, src:string}>} entradas
+ * @param {(id:string, titulo:string)=>void} bautizar
+ */
+export async function leerTitulos(entradas, bautizar) {
+  for (const entrada of entradas) {
+    if (!entrada?.src) continue;
+    const corte = new AbortController();
+    const reloj = setTimeout(() => corte.abort(), ESPERA_MAX);
+    try {
+      const res = await fetch(entrada.src, {
+        headers: { Range: "bytes=0-4095" },
+        signal: corte.signal,
+      });
+      if (!res.ok) continue;
+      // Los comentarios se quitan ANTES de buscar. Si no, un archivo que
+      // explique algo citando <title> dentro de un comentario hace que la
+      // búsqueda empiece ahí y se trague el comentario entero hasta el
+      // cierre del título de verdad: el índice acababa enseñando un
+      // párrafo de documentación como nombre de la página. Pasó con el
+      // ejemplo sencillo de la carpeta.
+      const texto = (await res.text()).replace(/<!--[\s\S]*?-->/g, "");
+      const m = texto.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      if (!m) continue;
+      let titulo = m[1];
+      try {
+        // Se interpreta como HTML de verdad para que un título con
+        // `&amp;` o con acentos escapados llegue bien. Interpretar NO
+        // ejecuta ni un script: sólo construye el árbol.
+        titulo = new DOMParser().parseFromString(m[1], "text/html").body.textContent;
+      } catch {
+        /* si el intérprete falla, sirve el texto tal cual */
+      }
+      titulo = (titulo || "").trim();
+      if (titulo) bautizar(entrada.id, titulo);
+    } catch {
+      /* red caída, CORS, `file://`… la página se queda con su número */
+    } finally {
+      clearTimeout(reloj);
+    }
+  }
+}
+
 export function entradasDePaginasHtml(lista) {
   const entries = [];
   const chapters = [];

@@ -17,12 +17,13 @@ import {
   registerAmores,
   indexOfPage,
 } from "../data/manifest.js";
-import { registerCustomChapters } from "../data/chapters.js";
+import { registerCustomChapters, chapterById } from "../data/chapters.js";
 import { loadCustomPages, customAct } from "../data/custom.js";
 import { descubrirAmores, entradasDeAmores, actoAmores, CARPETA } from "../data/amores.js";
 import {
   descubrirPaginasHtml,
   entradasDePaginasHtml,
+  leerTitulos,
   actoHtml,
   CARPETA as CARPETA_HTML,
 } from "../data/paginas-html.js";
@@ -261,6 +262,13 @@ export class App {
       // descargado y la entrada será instantánea.
       warmup("html");
 
+      // Y los nombres de verdad, cuando el navegador no tenga nada mejor
+      // que hacer. Hasta que llegan, cada página se llama «Página N»: es
+      // lo que veía quien abriera el índice sin haber entrado en ninguna.
+      // Se piden sólo los primeros kilobytes de cada archivo, así que
+      // esto no compite con nada del arranque.
+      this.#nombrarPaginasHtml(entries);
+
       const n = lista.length;
       console.info(
         `%c paginas-html %c ${n} página${n > 1 ? "s" : ""} de ${CARPETA_HTML} después del final`,
@@ -273,6 +281,34 @@ export class App {
       );
     } catch (err) {
       console.error("[paginas-html] no se pudieron añadir las páginas", err);
+    }
+  }
+
+  /**
+   * Va a buscar el `<title>` de cada página HTML y se lo pone.
+   *
+   * En cuanto llega uno, el índice se refresca: si está abierto, el
+   * número se convierte en el nombre delante de ella; y si no lo está,
+   * ya lo encuentra puesto la próxima vez que lo abra.
+   */
+  #nombrarPaginasHtml(entries) {
+    const arrancar = () => {
+      leerTitulos(entries, (id, titulo) => {
+        const cap = chapterById[id];
+        if (cap) cap.title = titulo;
+        this.ctx.ui?.index?.refresh();
+      }).catch(() => {
+        // Ni un nombre es motivo para que nada se rompa: se quedan con
+        // el suyo de siempre.
+      });
+    };
+    // En cuanto haya un hueco. Sin `requestIdleCallback` —Safari no lo
+    // tiene— se espera un par de segundos, que es de sobra para que la
+    // portada esté puesta y quieta.
+    if (typeof requestIdleCallback === "function") {
+      requestIdleCallback(arrancar, { timeout: 4000 });
+    } else {
+      setTimeout(arrancar, 2200);
     }
   }
 
