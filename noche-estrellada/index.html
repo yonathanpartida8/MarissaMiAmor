@@ -765,10 +765,13 @@ const CONF = {
     gotasLejos: 160,
     /* Cuánto tarda en subir de 0 a tope cuando se enciende. */
     sube: 14,
-    /* Y cuánto daño le hace al fuego por segundo, a tope de lluvia. */
-    apagaFuego: 0.075,
-    /* Cuánto tarda la fogata en revivir cuando escampa. */
-    revive: 0.055,
+    /* Cuánta vida le quita al fuego POR SEGUNDO, a tope de lluvia. Con
+       0.11, de entera a apagada son unos nueve segundos: lo justo para
+       ver los seis escalones sin que se haga largo. */
+    apagaFuego: 0.11,
+    /* Y cuánta recupera por segundo cuando escampa. El triple de
+       lento, porque mojar es instantáneo y secar no. */
+    revive: 0.037,
   },
 
   /* ---- EL BÚHO ---------------------------------------------------------- */
@@ -792,6 +795,27 @@ const CONF = {
       "Se te da bien esto de encontrarme.",
       "Vale, vale. Me has pillado. Ya van varias.",
     ],
+  },
+
+  /* ---- LA FOGATA BAJO LA LLUVIA ----------------------------------------
+     Lo que se dice en cada escalón de apagarse, y en cada escalón de
+     volver. Por número de fase: 2 chisporrotea · 3 baja · 4 lucha ·
+     5 brasas · 6 apagada. La 1 no dice nada porque la 1 es lo normal. */
+  fuegoLluvia: {
+    baja: {
+      2: ["La lluvia le está cayendo encima.", "Empieza a chisporrotear."],
+      3: ["Se está achicando.", "Le queda menos llama de la que tenía."],
+      4: ["Aguanta. No sé cuánto, pero aguanta.", "Se apaga y vuelve. Se apaga y vuelve."],
+      5: ["Ya sólo quedan las brasas.", "Se ha quedado en rojo."],
+      6: ["Se apagó.", "Ya está. Se apagó del todo."],
+    },
+    sube: {
+      5: ["Todavía hay algo ahí abajo."],
+      4: ["Mira, vuelve."],
+      3: ["Se está recuperando."],
+      2: ["Casi la tenemos otra vez."],
+      1: ["Ya está. Otra vez entera.", "Como si no hubiera pasado nada."],
+    },
   },
 
   /* ---- EL ÁRBOL QUE GUARDA UNA NOTA ------------------------------------
@@ -917,6 +941,34 @@ function leerColor(c) {
   }
   const n = c.match(/[\d.]+/g);
   return n ? [Number(n[0]), Number(n[1]), Number(n[2])] : [0, 0, 0];
+}
+
+/**
+ * Un halo OVALADO, con el degradado ovalado también.
+ *
+ * ── EL FALLO QUE ARREGLA ─────────────────────────────────────────────
+ * Lo natural es pedir un degradado radial y rellenar con él una elipse
+ * aplastada. Pero un degradado radial es un CÍRCULO: si su radio es 275
+ * y la elipse sólo mide 92 de alto, arriba y abajo la elipse se acaba
+ * cuando el degradado va por su tercera parte —todavía casi opaco— y lo
+ * que se ve es el CANTO de la elipse recortado en seco. En la escena
+ * salía un arco gris enorme colgando de la cabaña, como un aro.
+ *
+ * La solución es no aplastar el relleno sino el LIENZO: se escala el
+ * eje Y, se pinta un círculo de verdad y se deshace la escala. Así el
+ * degradado se aplasta con la forma y se apaga justo en el borde.
+ */
+function haloOvalado(x, y, rx, ry, paradas, cy = y) {
+  ctx.save();
+  ctx.translate(x, cy);
+  ctx.scale(1, ry / rx);
+  const g = ctx.createRadialGradient(0, (y - cy) * (rx / ry), 0, 0, (y - cy) * (rx / ry), rx);
+  for (const [t, col] of paradas) g.addColorStop(t, col);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0, 0, rx, 0, 6.283);
+  ctx.fill();
+  ctx.restore();
 }
 
 /** Mezcla dos colores. Vale hexadecimal, `rgb(…)` o una mezcla de ambos. */
@@ -1854,17 +1906,25 @@ function moverClima(dt) {
     if (t.cerca > 0.7) sacudir(t.cerca * 0.35);
   }
 
-  /* ---- La lluvia apaga la fogata ---- */
+  /* ---- La lluvia apaga la fogata ----
+     Las dos cifras son POR SEGUNDO, y esto importa más de lo que
+     parece: con la resta multiplicada por `dt * 60` —o sea, por
+     fotograma— la fogata pasaba de entera a apagada en segundo y medio
+     y no se veía ni uno de los seis escalones. Apagarse tiene que
+     durar lo bastante para poder mirarlo.
+
+     Y revivir tarda el triple que apagarse, que es lo que pasa de
+     verdad: mojar es instantáneo y secar no. */
   if (clima.lluvia > 0.06 && escena === "bosque") {
-    fuego.vidaObj -= CONF.lluvia.apagaFuego * clima.lluvia * dt * 60;
-    fuego.vidaObj = Math.max(0, fuego.vidaObj);
-    /* Y el fuego mojado humea el doble. */
+    fuego.vidaObj = Math.max(0, fuego.vidaObj - CONF.lluvia.apagaFuego * clima.lluvia * dt);
     fuego.mojado = clima.lluvia;
   } else {
     fuego.mojado = damp(fuego.mojado || 0, 0, 0.6, dt);
-    /* Cuando escampa, revive. Más despacio de lo que se apagó. */
+    /* Cuando escampa, revive. Y linealmente, no con una exponencial:
+       una exponencial arranca deprisa y luego no acaba nunca, y lo que
+       se quiere es justo lo contrario. */
     if (fuego.vidaObj < 1) {
-      fuego.vidaObj = Math.min(1, fuego.vidaObj + CONF.lluvia.revive * dt * 60 * 0.4);
+      fuego.vidaObj = Math.min(1, fuego.vidaObj + CONF.lluvia.revive * dt);
     }
   }
 
@@ -2025,12 +2085,15 @@ function crearBolaHumo(r, g2, b) {
   return cv;
 }
 
-/* Dos, ya teñidas: la clara para la fogata y la gris para la chimenea
-   de la cabaña. Teñir en el momento no vale —`source-atop` pinta sobre
-   el lienzo entero, no sobre el sprite—, y dos canvas de 128 px son
-   treinta kilobytes de memoria en total. */
+/* Tres, ya teñidas: la clara para la fogata, la gris para la chimenea
+   de la cabaña y una casi blanca para el VAPOR, que es lo que sale de
+   la leña mojada cuando llueve —y que no es humo: el humo tapa y el
+   vapor brilla—. Teñir en el momento no vale —`source-atop` pinta sobre
+   el lienzo entero, no sobre el sprite—, y tres canvas de 128 px son
+   cuarenta y cinco kilobytes de memoria en total. */
 const bolaHumoClara = crearBolaHumo(150, 148, 158);
 const bolaHumoOscura = crearBolaHumo(74, 72, 82);
+const bolaVapor = crearBolaHumo(212, 222, 234);
 
 let P = CONF.perf.particulas;
 let px, py, pvx, pvy, pvida, pmax, ptam, ptipo, pgiro, pgiroV, pton;
@@ -2178,10 +2241,14 @@ function dibujarParticulas() {
       const a = Math.sin(clamp01(1 - k) * Math.PI) * 0.34;
       if (a < 0.004) continue;
       const s = ptam[i] * 2;
-      /* `pton` elige el sprite: bajo es humo claro (la fogata), alto es
-         humo gris (la chimenea de la cabaña). */
-      const sprite = pton[i] < 0.5 ? bolaHumoClara : bolaHumoOscura;
-      ctx.globalAlpha = a;
+      /* `pton` elige el sprite: bajo es humo claro (la fogata), medio
+         es humo gris (la chimenea, el bombón quemado) y alto es vapor,
+         que además se ve MÁS que el humo porque es agua con luz dentro,
+         no hollín. */
+      const esVapor = pton[i] >= 0.85;
+      const sprite = esVapor ? bolaVapor
+                   : pton[i] < 0.5 ? bolaHumoClara : bolaHumoOscura;
+      ctx.globalAlpha = esVapor ? a * 1.2 : a;
       ctx.drawImage(sprite, px[i] - s / 2, py[i] - s / 2, s, s);
       ctx.globalAlpha = 1;
     } else if (t === TIPO.GOTA) {
@@ -2241,6 +2308,22 @@ const fuego = {
      del fuego azul. */
   quieta: 0,
   azul: 0,
+
+  /* ---- Lo que le hace el tiempo ----
+     `mojado` es cuánta agua le está cayendo encima, 0..1.
+     `inclina` es cuánto la empuja el viento, CON SU PROPIO RETRASO: el
+     aire cambia de golpe y la llama tarda en enterarse. Sin ese retraso
+     la llama va pegada al viento y parece una bandera, no fuego.
+     `fase` es en qué punto de apagarse está, de 1 (viva) a 6 (apagada). */
+  mojado: 0,
+  inclina: 0,
+  fase: 1,
+  relojChisporroteo: 0,
+  relojVapor: 0,
+  /* Cuánto lleva sin decir nada sobre lo que le está pasando: sin esto
+     la fogata se pone a comentar cada dos segundos cuando la lluvia la
+     deja justo en el filo entre dos fases. */
+  calladaDesde: 0,
 };
 
 function construirFogata() {
@@ -2287,7 +2370,16 @@ function alturaLlama(l, t) {
 
 function moverFogata(dt) {
   fuego.vida = damp(fuego.vida, fuego.vidaObj, 1.6, dt);
-  fuego.vidaObj = damp(fuego.vidaObj, 1, 0.22, dt);
+  /* La vuelta al reposo, SÓLO hacia abajo: es para que un soplido o un
+     dedo en la llama se deshinchen solos. Hacia arriba no puede tirar,
+     porque si tira mientras llueve le está devolviendo a la fogata
+     justo lo que el agua le quita, y entonces no se apaga nunca. */
+  if (fuego.vidaObj > 1) fuego.vidaObj = damp(fuego.vidaObj, 1, 0.22, dt);
+
+  /* Lo que le está haciendo el tiempo, y en qué escalón de apagarse
+     está por culpa de ello. */
+  moverFuegoClima(dt);
+  mirarFaseFuego();
 
   /* El brillo general: la media de las lenguas, suavizada. Es lo que
      ilumina la cabaña, los troncos y las caras de todo. */
@@ -2304,7 +2396,9 @@ function moverFogata(dt) {
 
   /* ---- Chispas ---- */
   fuego.relojChispa -= dt;
-  if (fuego.relojChispa <= 0) {
+  /* Con la leña mojada saltan muchas menos chispas: lo que sube ya no
+     es fuego suelto, es agua evaporándose. */
+  if (fuego.relojChispa <= 0 && Math.random() > fuego.mojado * 0.8 && fuego.vida > 0.05) {
     fuego.relojChispa = (flojo ? 0.09 : 0.045) / clamp(fuego.vida, 0.3, 2);
     /* Salen de la PUNTA de una lengua, no del centro: una chispa nace
        donde la llama se deshace, y ahí es donde se ve bien. */
@@ -2314,7 +2408,8 @@ function moverFogata(dt) {
       f.x + l.x * f.r * 0.5 + azar(-f.r * 0.2, f.r * 0.2),
       f.y - alto * k * 0.9,
       {
-        vx: azar(-26, 26),
+        /* El viento se las lleva: una chispa pesa nada. */
+        vx: azar(-26, 26) + fuego.inclina * 70,
         vy: azar(-110, -48) * clamp(fuego.vida, 0.4, 2),
         vida: azar(0.9, 2.1),
         tam: azar(1.1, 2.6),
@@ -2326,19 +2421,23 @@ function moverFogata(dt) {
   /* ---- Humo ---- */
   fuego.relojHumo -= dt;
   if (fuego.relojHumo <= 0) {
-    fuego.relojHumo = flojo ? 0.34 : 0.17;
+    /* La leña mojada humea el doble: el agua que se evapora arrastra
+       el hollín consigo. */
+    fuego.relojHumo = (flojo ? 0.34 : 0.17) / (1 + fuego.mojado * 1.2);
     soltar(f.x + azar(-f.r * 0.4, f.r * 0.4), f.y - alto * 0.85, {
-      vx: azar(-8, 8),
+      vx: azar(-8, 8) + fuego.inclina * 34,
       vy: azar(-34, -18),
       vida: azar(3.2, 5.4),
       tam: azar(f.r * 0.22, f.r * 0.42),
       tipo: TIPO.HUMO,
-      tono: Math.random(),
+      /* Hasta 0.85 y no hasta 1: de 0.85 para arriba es vapor, y el
+         humo de una fogata seca no es vapor. */
+      tono: Math.random() * 0.84,
     });
   }
 
   /* ---- Un tronco se asienta de vez en cuando ---- */
-  if (Math.random() < dt * 0.06) {
+  if (Math.random() < dt * 0.06 * clamp(fuego.vida, 0, 1)) {
     fuego.asentar = 1;
     golpe(0.16, azar(160, 320), 0.12, "lowpass");
     for (let i = 0; i < 14; i++) {
@@ -2351,6 +2450,160 @@ function moverFogata(dt) {
   fuego.asentar = Math.max(0, fuego.asentar - dt * 2.4);
 }
 
+/* ---- LA FOGATA CONTRA EL TIEMPO ----------------------------------------
+   Apagarse no es que el número `vida` baje. Una fogata bajo la lluvia
+   pasa por estados, y cada uno se ve y se oye distinto:
+
+     1. VIVA          llamas altas, chispas, humo fino
+     2. CHISPORROTEA  la primera agua toca las brasas: siseo y vapor
+     3. BAJA          las llamas encogen, el humo se dobla
+     4. LUCHA         se apaga y vuelve, se apaga y vuelve
+     5. BRASAS        ya no hay llama: rojo debajo y mucho vapor
+     6. APAGADA       leña negra y un hilo de vapor que se va
+
+   Y al revés cuando escampa, subiendo los mismos seis escalones. Por
+   eso son escalones y no una rampa: una rampa de 1 a 0 se ve como un
+   `globalAlpha` bajando, y esto se tiene que ver como una fogata
+   peleando.                                                          */
+
+/* Los cinco cortes entre las seis fases. */
+const ESCALONES_FUEGO = [0.74, 0.54, 0.34, 0.17, 0.045];
+
+function mirarFaseFuego() {
+  const v = fuego.vida;
+  let nueva = 6;
+  for (let i = 0; i < ESCALONES_FUEGO.length; i++) {
+    /* El corte se mueve un pelín según de dónde venimos. Sin esta
+       holgura, con la lluvia dejando el fuego justo en el filo, la
+       fogata se pasaba el rato entrando y saliendo de la misma fase —y
+       cada entrada sisea, suelta vapor y a veces dice algo—. */
+    const margen = fuego.fase > i + 1 ? 0.05 : 0;
+    if (v > ESCALONES_FUEGO[i] + margen) { nueva = i + 1; break; }
+  }
+  if (nueva === fuego.fase) return;
+  const subiendo = nueva < fuego.fase;
+  fuego.fase = nueva;
+  alCambiarFase(nueva, subiendo);
+}
+
+function alCambiarFase(n, subiendo) {
+  const f = sitio.fogata;
+
+  if (subiendo) {
+    /* Revivir: un chasquido de leña seca y un puñado de chispas. */
+    golpe(0.1, azar(420, 900), 0.12, "bandpass");
+    for (let i = 0; i < 10 + n * 2; i++) {
+      soltar(f.x + azar(-f.r * 0.5, f.r * 0.5), f.y - f.r * 0.4, {
+        vx: azar(-50, 50), vy: azar(-140, -50),
+        vida: azar(0.6, 1.5), tam: azar(1, 2.3), tipo: TIPO.CHISPA,
+      });
+    }
+  } else {
+    /* Apagarse: siseo y una bocanada de vapor. Cuanto más abajo, más. */
+    sisear(0.5 + (n - 1) * 0.12);
+    vaharada(6 + n * 4);
+    if (n >= 4) sacudir(0.06);
+  }
+
+  /* Y alguien lo comenta, pero no siempre: con la lluvia al filo entre
+     dos fases, comentarlo cada vez convierte una fogata en un locutor. */
+  const frases = CONF.fuegoLluvia[subiendo ? "sube" : "baja"][n];
+  if (frases && reloj - fuego.calladaDesde > 6 && Math.random() < 0.8) {
+    fuego.calladaDesde = reloj;
+    decir(f.x, f.y - f.r * 4.5, frases[Math.floor(Math.random() * frases.length)],
+      { dur: 4, importante: n >= 5 });
+  }
+}
+
+/** Una bocanada de vapor: agua, no humo. Sale ancha y sube despacio. */
+function vaharada(n) {
+  const f = sitio.fogata;
+  for (let i = 0; i < n; i++) {
+    soltar(f.x + azar(-f.r * 0.9, f.r * 0.9), f.y - f.r * azar(0, 0.5), {
+      vx: azar(-16, 16) + clima.viento * 26,
+      vy: azar(-30, -12),
+      vida: azar(1.8, 3.6),
+      tam: azar(f.r * 0.2, f.r * 0.5),
+      tipo: TIPO.HUMO,
+      /* De 0.85 para arriba, el dibujo lo pinta como vapor. */
+      tono: 0.9,
+    });
+  }
+}
+
+/**
+ * El siseo: agua sobre brasa.
+ *
+ * Ruido blanco muy agudo con un filtro que se CIERRA mientras suena.
+ * Eso es lo que distingue un siseo de una estática: la estática no va a
+ * ninguna parte, y el siseo empieza arriba y se apaga hacia abajo,
+ * porque la gota se acaba.
+ */
+function sisear(fuerza) {
+  if (!despertarAudio()) return;
+  const c = audio.ctx, t = c.currentTime;
+  const dur = 0.12 + fuerza * 0.5;
+  const n = Math.floor(c.sampleRate * dur);
+  const buf = c.createBuffer(1, n, c.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) {
+    const k = i / n;
+    /* La envolvente: golpe inmediato y caída larga, como la gota. */
+    d[i] = (Math.random() * 2 - 1) * Math.pow(1 - k, 1.7);
+  }
+  const src = c.createBufferSource(); src.buffer = buf;
+  const fl = c.createBiquadFilter();
+  fl.type = "bandpass"; fl.Q.value = 0.8;
+  fl.frequency.setValueAtTime(azar(4200, 6200), t);
+  fl.frequency.exponentialRampToValueAtTime(azar(900, 1500), t + dur);
+  const g = c.createGain();
+  g.gain.value = 0.045 + fuerza * 0.07;
+  src.connect(fl).connect(g).connect(audio.maestro);
+  src.start(t);
+}
+
+/**
+ * Lo que la lluvia y el viento le hacen a la fogata, cada fotograma.
+ *
+ * Va aparte de `moverFogata` a propósito: `moverFogata` es la fogata
+ * consigo misma —sus lenguas, sus chispas, sus troncos— y esto es la
+ * fogata contra el mundo. Mezclarlos deja un `moverFogata` donde no se
+ * distingue lo que es el fuego de lo que le están haciendo.
+ */
+function moverFuegoClima(dt) {
+  /* El viento, con retraso. */
+  const empuje = clima.viento * (0.62 + clima.lluvia * 0.7);
+  fuego.inclina = damp(fuego.inclina, empuje, 3.2, dt);
+
+  const mojado = fuego.mojado;
+  if (mojado > 0.04) {
+    /* ---- El chisporroteo ----
+       Gotas sueltas cayendo sobre la brasa. Cuantas más gotas y más
+       brasa queda, más seguidos van: una fogata casi apagada ya no
+       tiene con qué sisear. */
+    fuego.relojChisporroteo -= dt;
+    if (fuego.relojChisporroteo <= 0) {
+      fuego.relojChisporroteo = azar(0.1, 0.55) / (mojado * clamp(fuego.vida, 0.15, 1.2) + 0.15);
+      sisear(azar(0.15, 0.5) * mojado);
+      vaharada(Math.random() < 0.55 ? 1 : 2);
+    }
+
+    /* ---- El vapor de fondo ----
+       Además de las bocanadas sueltas, la leña mojada echa vapor de
+       continuo mientras le quede calor. */
+    fuego.relojVapor -= dt;
+    if (fuego.relojVapor <= 0) {
+      /* El vapor sale del CALOR que le queda, no del agua: una fogata
+         apagada del todo y fría ya no echa nada. Sin este factor, la
+         escena se quedaba para siempre con una nube blanca encima de
+         cuatro leños negros. */
+      const calor = clamp(fuego.vida + 0.12, 0.12, 1.2);
+      fuego.relojVapor = (flojo ? 0.4 : 0.2) / (clamp(mojado, 0.2, 1) * calor);
+      vaharada(1);
+    }
+  }
+}
+
 function dibujarFogata() {
   const f = sitio.fogata;
   const d = desplazar(1.6);
@@ -2359,41 +2612,83 @@ function dibujarFogata() {
 
   /* ---- El halo de luz en el suelo ---- */
   const luz = fuego.brillo;
-  const gl = ctx.createRadialGradient(x, y, 0, x, y, f.r * 9);
   const calor = fuego.azul > 0.1
     ? `${Math.round(mez(255, 140, fuego.azul))},${Math.round(mez(170, 210, fuego.azul))},${Math.round(mez(80, 255, fuego.azul))}`
     : "255,170,80";
-  gl.addColorStop(0, `rgba(${calor},${0.30 * luz})`);
-  gl.addColorStop(0.35, `rgba(${calor},${0.13 * luz})`);
-  gl.addColorStop(1, `rgba(${calor},0)`);
-  ctx.fillStyle = gl;
-  ctx.beginPath();
-  ctx.ellipse(x, y + f.r * 0.2, f.r * 9, f.r * 4.4, 0, 0, 6.283);
-  ctx.fill();
+  haloOvalado(x, y + f.r * 0.2, f.r * 9, f.r * 4.4, [
+    [0,    `rgba(${calor},${0.30 * luz})`],
+    [0.35, `rgba(${calor},${0.13 * luz})`],
+    [1,    `rgba(${calor},0)`],
+  ]);
 
-  /* ---- Las brasas de debajo ---- */
+  /* ---- Las brasas de debajo ----
+     Cuando la llama se va, las brasas son lo ÚNICO que queda, así que
+     en las fases bajas se respetan enteras en vez de apagarse con el
+     resto: una fogata apagada por la lluvia no se queda negra de golpe,
+     se queda roja un buen rato. */
+  const vivezaBrasa = fuego.fase >= 5 ? mez(0.55, 1, clamp01(fuego.vida * 12))
+                    : clamp(fuego.vida, 0.35, 1.2);
   for (const b of fuego.brasas) {
-    const k = 0.5 + 0.5 * Math.sin(reloj * b.vel + b.fase);
+    /* Y respiran más deprisa cuando les cae agua encima. */
+    const k = 0.5 + 0.5 * Math.sin(reloj * b.vel * (1 + fuego.mojado * 1.4) + b.fase);
     const bx = x + b.x * f.r, by = y + b.y * f.r * 0.4;
-    ctx.fillStyle = `rgba(255,${Math.round(mez(70, 150, k))},40,${0.4 + k * 0.5})`;
+    /* Mojada tira a rojo oscuro; seca, a naranja. */
+    const verde = Math.round(mez(mez(70, 150, k), mez(30, 70, k), fuego.mojado));
+    ctx.fillStyle = `rgba(255,${verde},40,${(0.4 + k * 0.5) * vivezaBrasa})`;
     ctx.beginPath();
     ctx.ellipse(bx, by, b.r * f.r, b.r * f.r * 0.5, 0, 0, 6.283);
     ctx.fill();
   }
 
+  /* ---- El rescoldo ----
+     Cuando ya no hay llama, las brasas solas no se ven: quedan medio
+     tapadas por los troncos de delante y lo único que se lee en la
+     pantalla es la nube de vapor. Así que en las fases bajas se les
+     pone un resplandor rojo encima, sumando luz. Es lo que hace que una
+     fogata apagada siga pareciendo una fogata y no cuatro palos
+     mojados. */
+  if (fuego.fase >= 4 && fuego.vida > 0.004) {
+    const cuanto = clamp01(fuego.vida * 5);
+    ctx.globalCompositeOperation = "lighter";
+    haloOvalado(x, y, f.r * 2.2, f.r * 1.1, [
+      [0,    `rgba(255,120,40,${0.5 * cuanto})`],
+      [0.4,  `rgba(230,60,18,${0.2 * cuanto})`],
+      [1,    "rgba(180,30,10,0)"],
+    ]);
+    ctx.globalCompositeOperation = "source-over";
+  }
+
   /* ---- Los troncos, por detrás de la llama ---- */
   dibujarTroncos(x, y, f.r, -1);
 
-  /* ---- LAS LENGUAS ---- */
+  /* ---- LAS LENGUAS ----
+     En la fase 5 y la 6 ya no hay: sólo brasas. Dibujarlas con un alfa
+     muy bajo dejaba un resplandor naranja fantasma sobre la leña
+     mojada, que es exactamente lo que una fogata apagada no tiene. */
   ctx.globalCompositeOperation = "lighter";
-  for (const l of fuego.lenguas) {
-    const k = alturaLlama(l, reloj);
+  if (fuego.fase <= 4) for (const l of fuego.lenguas) {
+    let k = alturaLlama(l, reloj);
+    /* ---- La agonía ----
+       En la fase 4 la llama no baja: PARPADEA. Cada lengua se apaga y
+       vuelve a su ritmo, con un seno rápido y un corte duro. Es lo que
+       hace que se lea como «está peleando» y no como «está bajando el
+       volumen». */
+    if (fuego.fase === 4) {
+      const late = Math.sin(reloj * 6.1 * l.vel + l.fase * 3.1);
+      k *= late > -0.15 ? 1 : 0.12;
+    }
     const h = alto * k * l.alto;
     const lx = x + l.x * f.r * 0.5;
     /* La lengua se tuerce mientras sube: la punta va a un lado y el
-       cuerpo al otro. Una llama recta no parece fuego. */
-    const torsion = Math.sin(reloj * 2.1 * l.vel + l.fase) * f.r * 0.34;
-    const w = f.r * l.ancho * (0.6 + k * 0.5);
+       cuerpo al otro. Una llama recta no parece fuego.
+       Y encima de esa torsión propia, el VIENTO la ladea entera: la
+       punta se va mucho más que la base, que es lo que pasa de verdad
+       —abajo la llama está sujeta por la leña—. */
+    const torsion = Math.sin(reloj * 2.1 * l.vel + l.fase) * f.r * 0.34
+                  + fuego.inclina * f.r * 2.4 * (0.3 + k * 0.7);
+    /* Con viento fuerte la llama además se estira y se afina. */
+    const estira = 1 + Math.abs(fuego.inclina) * 0.35;
+    const w = f.r * l.ancho * (0.6 + k * 0.5) / estira;
 
     const g = ctx.createLinearGradient(lx, y, lx + torsion, y - h);
     if (fuego.azul > 0.1) {
@@ -2426,14 +2721,17 @@ function dibujarFogata() {
     ctx.fill();
   }
 
-  /* El corazón: lo más blanco, abajo del todo. */
-  const gc = ctx.createRadialGradient(x, y - f.r * 0.3, 0, x, y - f.r * 0.3, f.r * 1.3);
+  /* El corazón: lo más blanco, abajo del todo. Se ladea con el viento
+     como las lenguas, si no se quedaba el núcleo quieto en el centro
+     mientras el resto del fuego se iba de lado. */
+  const cx = x + fuego.inclina * f.r * 0.3;
+  const gc = ctx.createRadialGradient(cx, y - f.r * 0.3, 0, cx, y - f.r * 0.3, f.r * 1.3);
   gc.addColorStop(0, `rgba(255,252,236,${0.85 * fuego.vida})`);
   gc.addColorStop(0.5, `rgba(255,200,110,${0.4 * fuego.vida})`);
   gc.addColorStop(1, "rgba(255,150,60,0)");
   ctx.fillStyle = gc;
   ctx.beginPath();
-  ctx.arc(x, y - f.r * 0.3, f.r * 1.3, 0, 6.283);
+  ctx.arc(cx, y - f.r * 0.3, f.r * 1.3, 0, 6.283);
   ctx.fill();
   ctx.globalCompositeOperation = "source-over";
 
@@ -2470,10 +2768,14 @@ function dibujarTroncos(x, y, r, lado) {
     const largo = r * t.l, grueso = r * t.g;
     /* El tronco: oscuro arriba y encendido por abajo, que es por donde
        le da el fuego. */
+    /* La leña mojada es más oscura: el agua le rellena los poros y
+       deja de rebotar la luz. Es el mismo motivo por el que una piedra
+       mojada parece de otro color. */
+    const seco = 1 - fuego.mojado * 0.45;
     const g = ctx.createLinearGradient(0, -grueso, 0, grueso);
-    g.addColorStop(0, "#241c16");
-    g.addColorStop(0.55, `rgb(${Math.round(mez(58, 150, fuego.brillo))},${Math.round(mez(40, 86, fuego.brillo))},${Math.round(mez(30, 52, fuego.brillo))})`);
-    g.addColorStop(1, `rgb(${Math.round(mez(90, 220, fuego.brillo))},${Math.round(mez(48, 110, fuego.brillo))},${Math.round(mez(26, 40, fuego.brillo))})`);
+    g.addColorStop(0, fuego.mojado > 0.2 ? "#181310" : "#241c16");
+    g.addColorStop(0.55, `rgb(${Math.round(mez(58, 150, fuego.brillo) * seco)},${Math.round(mez(40, 86, fuego.brillo) * seco)},${Math.round(mez(30, 52, fuego.brillo) * seco)})`);
+    g.addColorStop(1, `rgb(${Math.round(mez(90, 220, fuego.brillo) * seco)},${Math.round(mez(48, 110, fuego.brillo) * seco)},${Math.round(mez(26, 40, fuego.brillo) * seco)})`);
     ctx.fillStyle = g;
     ctx.beginPath();
     ctx.roundRect
@@ -2487,6 +2789,17 @@ function dibujarTroncos(x, y, r, lado) {
       ctx.beginPath();
       ctx.moveTo(-largo * 0.42, k * grueso * 0.22);
       ctx.lineTo(largo * 0.42, k * grueso * 0.22 + grueso * 0.05);
+      ctx.stroke();
+    }
+    /* Y si está mojada, un filo de agua por el canto de arriba: la
+       raya de luz que deja una superficie húmeda. Es lo que hace que se
+       LEA como mojada en vez de simplemente más oscura. */
+    if (fuego.mojado > 0.15) {
+      ctx.strokeStyle = `rgba(190,210,235,${0.18 * fuego.mojado})`;
+      ctx.lineWidth = Math.max(0.7, grueso * 0.1);
+      ctx.beginPath();
+      ctx.moveTo(-largo * 0.4, -grueso * 0.3);
+      ctx.lineTo(largo * 0.4, -grueso * 0.3);
       ctx.stroke();
     }
     ctx.restore();
@@ -3284,13 +3597,10 @@ function dibujarCabana() {
 
   /* ---- El resplandor de las ventanas, sobre la hierba ---- */
   ctx.globalCompositeOperation = "lighter";
-  const gv = ctx.createRadialGradient(x, y - h * 0.3, 0, x, y - h * 0.3, w * 2.2);
-  gv.addColorStop(0, `rgba(255,190,110,${0.16 * cabana.brillo})`);
-  gv.addColorStop(1, "rgba(255,190,110,0)");
-  ctx.fillStyle = gv;
-  ctx.beginPath();
-  ctx.ellipse(x, y, w * 2.2, h * 0.9, 0, 0, 6.283);
-  ctx.fill();
+  haloOvalado(x, y - h * 0.3, w * 2.2, h * 0.9, [
+    [0, `rgba(255,190,110,${0.16 * cabana.brillo})`],
+    [1, "rgba(255,190,110,0)"],
+  ], y);
   ctx.globalCompositeOperation = "source-over";
 
   /* ---- El cuerpo: tablones horizontales ---- */
