@@ -64,6 +64,12 @@ html, body {
   pointer-events: none;
 }
 
+/* La capa del brillo. Cuando está puesta, TAPA a la de abajo: no suma
+   encima, la sustituye entera con el brillo ya metido. Por eso la de
+   abajo se esconde en vez de quedarse debajo asomando por los cantos. */
+.noche .ne-brillo { z-index: 1; }
+.noche.is-brillo .ne-lienzo:not(.ne-brillo) { visibility: hidden; }
+
 /* La capa que recibe los dedos. Ocupa la escena entera.
 
    Si esta página va dentro del librito, él sólo se queda el barrido que
@@ -445,6 +451,11 @@ html, body {
 
   <!-- El mundo entero se pinta aquí. -->
   <canvas class="ne-lienzo" id="lienzo" aria-hidden="true"></canvas>
+
+  <!-- Y aquí se vuelve a pintar con el brillo puesto, si hay WebGL2.
+       Si no lo hay, ésta se queda escondida y se ve la de arriba, que
+       ya está entera y bien. -->
+  <canvas class="ne-lienzo ne-brillo" id="brillo" aria-hidden="true" hidden></canvas>
 
   <!-- Y los dedos se recogen aquí, por encima. -->
   <div class="ne-toque" id="toque" aria-hidden="true"></div>
@@ -1128,6 +1139,10 @@ function medir() {
   lienzo.width  = Math.round(A * dpr);
   lienzo.height = Math.round(H * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  /* `typeof` y no una comprobación normal: `medir()` se llama desde el
+     ResizeObserver, que puede dispararse antes de que el módulo del
+     brillo se haya declarado. */
+  if (typeof medirBrillo === "function") medirBrillo();
   construirMundo();
 }
 
@@ -8352,6 +8367,19 @@ function vigilarRitmo(dt) {
   const fps = fpsCuenta / fpsAcum;
   fpsAcum = 0; fpsCuenta = 0;
   if (fps >= CONF.perf.fpsMinimo) { yaBajado = true; return; }   // va bien
+
+  /* ---- Se baja UN escalón, y el primero es el brillo ----
+     Porque es lo único que se puede quitar sin que cambie nada de lo
+     que pasa: la escena sigue estando entera debajo. Quitar partículas
+     o resolución cambia cómo se ve el mundo; quitar el brillo sólo le
+     baja el resplandor. Si con eso basta, no se toca nada más. */
+  if (brillo.encendido) {
+    apagarBrillo();
+    fpsAcum = 0; fpsCuenta = 0;
+    console.info("[noche] brillo apagado: el ritmo no llegaba al mínimo.");
+    return;
+  }
+
   yaBajado = true;
   flojo = true;
   crearParticulas(CONF.perf.particulasFlojo);
@@ -8368,6 +8396,364 @@ document.addEventListener("visibilitychange", () => {
     t0 = performance.now();      // que no cuente el tiempo que ha estado fuera
     agacharAmbientes(1, 0.8);
   }
+});
+
+// ==========================================
+// EL BRILLO — POSTPROCESADO EN WEBGL2
+// ==========================================
+//
+// ── QUÉ HACE ─────────────────────────────────────────────────────────
+// Coge el lienzo 2D ya pintado y lo vuelve a sacar por pantalla con
+// tres cosas encima:
+//
+//   · BLOOM      lo que brilla se desborda. La fogata deja de ser una
+//                mancha naranja recortada y pasa a repartir luz.
+//   · VIÑETA     los cantos se cierran, con un pelín de aberración de
+//                color en las esquinas, que es lo que hace que parezca
+//                mirado a través de algo y no dibujado.
+//   · GRANO      un ruido finísimo que se mueve. Una noche sin grano se
+//                ve digital; con grano se ve fotografiada.
+//
+// ── POR QUÉ SUSTITUYE AL LIENZO EN VEZ DE SUMARSE ENCIMA ─────────────
+// Porque la viñeta OSCURECE, y una capa que sólo suma no puede
+// oscurecer nada. Así que este lienzo pinta la escena entera —ya
+// tratada— y el otro se esconde. Si WebGL2 falla a mitad de camino,
+// basta con volver a enseñar el de abajo: está completo y correcto.
+//
+// ── POR QUÉ NO CUESTA LO QUE PARECE ──────────────────────────────────
+// El desenfoque no se hace a resolución completa. Se baja a una cuarta
+// parte, se difumina ahí con dos pasadas de una sola dimensión —lo que
+// en dos dimensiones costaría N² pasa a costar 2N— y se sube otra vez
+// estirándolo. Un desenfoque estirado se ve exactamente igual de suave,
+// porque es un desenfoque: no hay detalle que perder.
+//
+// El único gasto de verdad es subir el lienzo 2D a la GPU una vez por
+// fotograma. Si eso no cabe en el presupuesto, el vigilante de ritmo
+// apaga todo esto y no vuelve a intentarlo.
+
+const brillo = {
+  gl: null,
+  listo: false,
+  encendido: false,
+  progEscena: null,
+  progBrillo: null,
+  progMezcla: null,
+  texEscena: null,
+  fbo: [],
+  tex: [],
+  ancho: 0, alto: 0,
+  /* Cuánto se baja para difuminar. 4 = una cuarta parte de lado. */
+  escala: 4,
+};
+
+const lienzoBrillo = document.getElementById("brillo");
+
+/* ---- Los sombreadores ---------------------------------------------------
+   El vértice no lee ningún búfer: con `gl_VertexID` se calcula un
+   TRIÁNGULO que tapa la pantalla entera. Un triángulo y no dos, porque
+   así no hay costura en la diagonal, y sin búfer porque para tres
+   vértices no merece la pena reservar memoria.                       */
+
+const VS_PANTALLA = `#version 300 es
+out vec2 uv;
+void main() {
+  vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+  uv = p;
+  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+}`;
+
+/* Paso 1: quedarse sólo con lo que brilla, y ya bajado de tamaño.
+   El corte no es duro: lo que está justo en el filo entra a medias, si
+   no se ven escalones en los bordes de la llama. */
+const FS_BRILLO = `#version 300 es
+precision mediump float;
+in vec2 uv;
+uniform sampler2D uTex;
+uniform float uCorte;
+out vec4 color;
+void main() {
+  vec3 c = texture(uTex, uv).rgb;
+  float luz = dot(c, vec3(0.299, 0.587, 0.114));
+  float k = smoothstep(uCorte, uCorte + 0.25, luz);
+  color = vec4(c * k, 1.0);
+}`;
+
+/* Paso 2: el desenfoque, en una sola dirección. Se llama dos veces —una
+   horizontal y otra vertical—, que es lo que convierte un coste de N²
+   en uno de 2N. Los pesos son una gaussiana de nueve muestras. */
+const FS_DESENFOQUE = `#version 300 es
+precision mediump float;
+in vec2 uv;
+uniform sampler2D uTex;
+uniform vec2 uPaso;
+out vec4 color;
+void main() {
+  float pesos[5] = float[](0.227027, 0.194595, 0.121622, 0.054054, 0.016216);
+  vec3 c = texture(uTex, uv).rgb * pesos[0];
+  for (int i = 1; i < 5; i++) {
+    vec2 d = uPaso * float(i);
+    c += texture(uTex, uv + d).rgb * pesos[i];
+    c += texture(uTex, uv - d).rgb * pesos[i];
+  }
+  color = vec4(c, 1.0);
+}`;
+
+/* Paso 3: juntarlo todo. */
+const FS_MEZCLA = `#version 300 es
+precision mediump float;
+in vec2 uv;
+uniform sampler2D uEscena;
+uniform sampler2D uBrillo;
+uniform float uFuerza;
+uniform float uTiempo;
+uniform float uVineta;
+out vec4 color;
+
+/* Ruido barato y sin textura: un seno muy picado. No es un ruido
+   estadísticamente bueno, y da igual: se usa a un dos por ciento. */
+float ruido(vec2 p) {
+  return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void main() {
+  vec3 esc = texture(uEscena, uv).rgb;
+  vec3 bri = texture(uBrillo, uv).rgb;
+
+  /* El bloom SUMA. Un bloom que mezcla apaga la escena en vez de
+     encenderla, que es justo lo contrario de lo que se quiere. */
+  vec3 c = esc + bri * uFuerza;
+
+  /* La viñeta, medida desde el centro en coordenadas cuadradas para que
+     no se estire en pantallas alargadas. */
+  vec2 d = uv - 0.5;
+  float r = length(d * vec2(1.0, 1.0));
+  float v = smoothstep(0.78, 0.28, r);
+  c *= mix(1.0, v, uVineta);
+
+  /* La aberración: en los cantos, el rojo se va un pelín hacia fuera.
+     Dos muestras más y sólo donde se nota. */
+  float ab = smoothstep(0.3, 0.72, r) * 0.0035;
+  if (ab > 0.0002) {
+    c.r = texture(uEscena, uv + d * ab).r + bri.r * uFuerza;
+    c.b = texture(uEscena, uv - d * ab).b + bri.b * uFuerza;
+    c.rb *= mix(vec2(1.0), vec2(v), uVineta);
+  }
+
+  /* Y el grano, que se mueve con el tiempo. */
+  float g = ruido(uv * 900.0 + uTiempo) - 0.5;
+  c += g * 0.018;
+
+  color = vec4(c, 1.0);
+}`;
+
+function compilar(gl, tipo, fuente) {
+  const sh = gl.createShader(tipo);
+  gl.shaderSource(sh, fuente);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+    console.warn("[noche] sombreador:", gl.getShaderInfoLog(sh));
+    gl.deleteShader(sh);
+    return null;
+  }
+  return sh;
+}
+
+function programa(gl, fs) {
+  const v = compilar(gl, gl.VERTEX_SHADER, VS_PANTALLA);
+  const f = compilar(gl, gl.FRAGMENT_SHADER, fs);
+  if (!v || !f) return null;
+  const p = gl.createProgram();
+  gl.attachShader(p, v);
+  gl.attachShader(p, f);
+  gl.linkProgram(p);
+  gl.deleteShader(v);
+  gl.deleteShader(f);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+    console.warn("[noche] enlace:", gl.getProgramInfoLog(p));
+    return null;
+  }
+  /* Se guardan los sitios de los uniformes una vez: buscarlos por
+     nombre en cada fotograma es de las cosas más caras de WebGL. */
+  const u = {};
+  const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) {
+    const nom = gl.getActiveUniform(p, i).name;
+    u[nom] = gl.getUniformLocation(p, nom);
+  }
+  return { p, u };
+}
+
+function arrancarBrillo() {
+  /* Ya montado: no hay nada que montar, y decir que no se puede sería
+     mentira. Devolviendo `false` aquí, volver a encenderlo después de
+     que el vigilante lo apagara era imposible para siempre. */
+  if (brillo.listo) return true;
+  if (!CONF.perf.bloom || flojo) return false;
+  let gl = null;
+  try {
+    gl = lienzoBrillo.getContext("webgl2", {
+      alpha: false, antialias: false, depth: false, stencil: false,
+      premultipliedAlpha: false, preserveDrawingBuffer: false,
+      powerPreference: "low-power",
+    });
+  } catch { gl = null; }
+  if (!gl) return false;
+
+  brillo.gl = gl;
+  brillo.progBrillo = programa(gl, FS_BRILLO);
+  brillo.progDesenfoque = programa(gl, FS_DESENFOQUE);
+  brillo.progMezcla = programa(gl, FS_MEZCLA);
+  if (!brillo.progBrillo || !brillo.progDesenfoque || !brillo.progMezcla) {
+    brillo.gl = null;
+    return false;
+  }
+
+  /* La textura donde se sube el lienzo 2D. `CLAMP_TO_EDGE` es
+     obligatorio: con el desenfoque cogiendo muestras fuera del borde, si
+     repitiera se vería el otro lado de la pantalla asomando. */
+  brillo.texEscena = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, brillo.texEscena);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+  /* Los dos destinos del desenfoque, que se van turnando. */
+  for (let i = 0; i < 2; i++) {
+    const t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const f = gl.createFramebuffer();
+    brillo.tex.push(t);
+    brillo.fbo.push(f);
+  }
+
+  brillo.vao = gl.createVertexArray();      // vacío, pero hace falta uno
+  brillo.listo = true;
+  return true;
+}
+
+/** Reajusta los tamaños. Se llama desde `medir()`. */
+function medirBrillo() {
+  if (!brillo.listo) return;
+  const gl = brillo.gl;
+  const w = lienzo.width, h = lienzo.height;
+  if (w === brillo.ancho && h === brillo.alto) return;
+  brillo.ancho = w; brillo.alto = h;
+  lienzoBrillo.width = w;
+  lienzoBrillo.height = h;
+
+  const bw = Math.max(1, Math.floor(w / brillo.escala));
+  const bh = Math.max(1, Math.floor(h / brillo.escala));
+  brillo.bw = bw; brillo.bh = bh;
+  for (let i = 0; i < 2; i++) {
+    gl.bindTexture(gl.TEXTURE_2D, brillo.tex[i]);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, bw, bh, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, brillo.fbo[i]);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, brillo.tex[i], 0);
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+
+/** Pinta el triángulo que tapa la pantalla. */
+function pintarPantalla(gl) {
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+/**
+ * Una pasada entera. Se llama al final de cada fotograma, después de
+ * que el lienzo 2D esté terminado.
+ */
+function pasarBrillo() {
+  if (!brillo.listo || !brillo.encendido) return;
+  const gl = brillo.gl;
+  if (gl.isContextLost && gl.isContextLost()) { apagarBrillo(); return; }
+
+  gl.bindVertexArray(brillo.vao);
+  gl.disable(gl.DEPTH_TEST);
+  gl.disable(gl.BLEND);
+
+  /* 1. Subir el lienzo 2D. Es el único gasto de verdad de todo esto. */
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, brillo.texEscena);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, lienzo);
+
+  /* 2. Quedarse con lo que brilla, ya bajado de tamaño. */
+  gl.viewport(0, 0, brillo.bw, brillo.bh);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, brillo.fbo[0]);
+  gl.useProgram(brillo.progBrillo.p);
+  gl.uniform1i(brillo.progBrillo.u.uTex, 0);
+  /* El corte, alto a propósito: sólo desborda lo que de verdad está
+     encendido —la llama, la luna, las ventanas, los ojos—. Con el corte
+     bajo también desbordaba la madera iluminada y la escena entera se
+     quedaba con los negros levantados, como una foto mal revelada. */
+  gl.uniform1f(brillo.progBrillo.u.uCorte, 0.6);
+  pintarPantalla(gl);
+
+  /* 3. Difuminar: primero a lo ancho y luego a lo alto. */
+  gl.useProgram(brillo.progDesenfoque.p);
+  gl.uniform1i(brillo.progDesenfoque.u.uTex, 0);
+  for (const [origen, destino, px, py] of [
+    [0, 1, 1 / brillo.bw, 0],
+    [1, 0, 0, 1 / brillo.bh],
+  ]) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, brillo.fbo[destino]);
+    gl.bindTexture(gl.TEXTURE_2D, brillo.tex[origen]);
+    gl.uniform2f(brillo.progDesenfoque.u.uPaso, px, py);
+    pintarPantalla(gl);
+  }
+
+  /* 4. Y juntarlo todo sobre el lienzo de verdad. */
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, brillo.ancho, brillo.alto);
+  gl.useProgram(brillo.progMezcla.p);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, brillo.texEscena);
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, brillo.tex[0]);
+  gl.uniform1i(brillo.progMezcla.u.uEscena, 0);
+  gl.uniform1i(brillo.progMezcla.u.uBrillo, 1);
+  /* El bloom sube un poco cuando hay relámpago o cuando la fogata está
+     avivada: eso es lo que hace que un destello se sienta fuerte. */
+  gl.uniform1f(brillo.progMezcla.u.uFuerza,
+    0.5 + clima.destello * 0.8 + Math.max(0, fuego.vida - 1) * 0.28);
+  gl.uniform1f(brillo.progMezcla.u.uTiempo, reloj);
+  /* La viñeta ya la pinta el lienzo 2D, así que aquí se pone flojita:
+     la de aquí es sólo la que cierra las esquinas del todo. */
+  gl.uniform1f(brillo.progMezcla.u.uVineta, 0.32);
+  pintarPantalla(gl);
+}
+
+function encenderBrillo() {
+  if (!arrancarBrillo()) return false;
+  medirBrillo();
+  brillo.encendido = true;
+  lienzoBrillo.hidden = false;
+  raiz.classList.add("is-brillo");
+  return true;
+}
+
+/**
+ * Apagarlo. Se vuelve a ver el lienzo 2D, que está entero y correcto:
+ * nunca se ha dejado de pintar en él, sólo estaba escondido. Por eso
+ * apagar esto no tiene ningún riesgo y se puede hacer a mitad de una
+ * animación sin que se note más que porque baja un poco el brillo.
+ */
+function apagarBrillo() {
+  brillo.encendido = false;
+  lienzoBrillo.hidden = true;
+  raiz.classList.remove("is-brillo");
+}
+
+/* Si la GPU se lleva el contexto —pasa al bloquear el móvil—, se apaga
+   y se sigue con el lienzo 2D. Sin esto, la pantalla se quedaba negra. */
+lienzoBrillo.addEventListener("webglcontextlost", (e) => {
+  e.preventDefault();
+  apagarBrillo();
 });
 
 // ==========================================
@@ -8471,11 +8857,21 @@ function paso(ahora) {
       ctx.textBaseline = "alphabetic";
     }
   }
+
+  /* ---- Y el brillo, lo último de todo ----
+     Tiene que ir DESPUÉS del velo de las cinemáticas: si fuera antes,
+     el brillo cogería un lienzo a medio terminar y el fundido a negro
+     se vería una imagen por detrás. */
+  pasarBrillo();
 }
 
 /* ---- Arranque ---------------------------------------------------------- */
 
 medir();
+/* El brillo se enciende después de la primera medida: necesita saber
+   de qué tamaño es el lienzo, y en el arranque todavía no lo sabe. */
+encenderBrillo();
+medirBrillo();
 requestAnimationFrame(paso);
 
 /* Si el navegador deja sonar sin tocar nada —pasa en escritorio con el

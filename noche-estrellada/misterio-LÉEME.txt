@@ -1,0 +1,22 @@
+misterio.mp3
+============
+
+Aquí va el sonido del búho, en la carpeta principal de la experiencia
+—NO dentro de `audio/`—:
+
+    noche-estrellada/misterio.mp3
+
+Suena cuando encuentras al búho y cuando se asoma por su cuenta, que
+pasa de vez en cuando. Y, más fuerte, cuando aparece al otro lado del
+cristal de la habitación.
+
+Si no está el archivo, se usa un gemelo sintetizado: dos notas con
+vibrato lento, un armónico muy flojo y una pizca de aire de garganta.
+Sin ese aire suena a flauta y no a bicho.
+
+Conviene que sea CORTO —uno o dos segundos— y que no empiece con
+silencio: se dispara justo en el momento en que se le toca, y medio
+segundo de nada por delante se nota como un retraso.
+
+No se reproduce en bucle. No se solapa consigo mismo: si vuelve a
+dispararse antes de segundo y medio, se ignora.

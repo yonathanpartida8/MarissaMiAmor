@@ -16,6 +16,7 @@ cambian nunca:
 noche-estrellada/
 ├── index.html
 ├── musica.mp3              ← la cajita musical
+├── misterio.mp3            ← el búho
 │
 ├── audio/
 │   ├── fogata.mp3
@@ -53,9 +54,10 @@ sonar.
 
 Los gemelos no son pitidos: la fogata es ruido rosa grave con chasquidos
 sueltos, los grillos son pulsos agudos en grupos de tres, el viento es
-ruido con un filtro que se abre y se cierra, y el trueno es ruido muy
+ruido con un filtro que se abre y se cierra, el trueno es ruido muy
 grave con una envolvente de tres picos —el golpe y los dos rebotes en
-las nubes—.
+las nubes—, y el búho son dos notas con vibrato y el aire de la
+garganta, que sin él suena a flauta y no a bicho.
 
 ### Formatos
 
@@ -72,17 +74,34 @@ termine el anterior.
 
 ## Qué se puede hacer
 
-- Tostar un bombón en el palo y comérselo (sale bien o sale carbón).
+- Tostar un bombón en el palo y comérselo. **Hay que girarlo**: se
+  tuesta por caras, así que el lado de abajo se quema mientras el de
+  arriba sigue blanco, igual que uno de verdad.
+- Sacudir los árboles. Se mueven con un muelle, no con una animación.
 - Tocar la llama. No lo hagas.
 - Encender y apagar ambientes en las piedras de delante. Se arrastra de
   lado sobre una piedra para subirle el volumen.
+- Poner la lluvia y ver cómo le va ganando a la fogata, poco a poco.
 - Abrir la cajita musical.
 - Entrar en la cabaña y acabar tumbado mirando por la ventana.
 - Tocar la luna desde fuera y desde dentro.
+- Pillar una estrella fugaz al vuelo.
 - Dormirse.
 
 Y unos cuantos secretos que no se explican. Uno está muy metido en el
-bosque, es verde y casi no se ve.
+bosque, es verde y casi no se ve. Otro tiene los ojos verdes y se
+cambia de árbol cada vez que lo encuentras. Y hay algo al fondo que se
+va si te acercas.
+
+### La escena se acuerda
+
+Lo que pasa se guarda en el navegador. Cuántas veces has encontrado al
+búho, cuántas estrellas has pillado, si ya cayó el papel del árbol, si
+ya se te apagó la fogata: todo eso cambia lo que se dice la próxima
+vez. Un secreto que se comporta igual siempre se gasta a la segunda.
+
+Si tienes las cookies bloqueadas o estás en una ventana privada, no
+pasa nada: se acuerda sólo durante esa visita, que ya es bastante.
 
 ---
 
@@ -101,6 +120,15 @@ Todo lo que se dice y casi todo lo que se ve está en el bloque
 | la carta escondida y su firma | `CONF.bosqueSecreto` |
 | lo que se lee al dormir | `CONF.alDormir` |
 | lo deprisa que se tuesta el bombón | `CONF.bombon` |
+| el peso del palo y del bombón | `CONF.bombon.fisica` |
+| dónde se esconde el búho y qué dice | `CONF.buho` |
+| los ojos del fondo | `CONF.ojosRojos` |
+| la lluvia y lo que tarda en apagar el fuego | `CONF.lluvia` |
+| lo que se dice en cada escalón de apagarse | `CONF.fuegoLluvia` |
+| la nota que guarda un árbol | `CONF.arbolNota` |
+| lo de la luna a los diez toques | `CONF.dona` |
+| el susto de la ventana | `CONF.ventana` |
+| lo que sabe la cajita | `CONF.cajita` |
 
 ---
 
@@ -111,8 +139,16 @@ llega a 46 fotogramas por segundo, baja la calidad **una vez** y no
 vuelve a tocarla: un ajuste que sube y baja solo se nota más que ir
 siempre un poco peor.
 
-Lo que baja: la resolución del lienzo, el número de partículas y de
-estrellas, y cada cuánto salen chispas y humo.
+Y no baja todo de golpe: primero apaga **el brillo** —el bloom de
+WebGL2— porque es lo único que se puede quitar sin que cambie nada de
+lo que pasa. La escena sigue entera debajo; sólo le baja el resplandor.
+Si con eso basta, no se toca nada más. Si no, entonces sí bajan la
+resolución del lienzo, el número de partículas y de estrellas, y cada
+cuánto salen chispas y humo.
+
+El brillo también se apaga solo si el navegador no tiene WebGL2, o si
+la GPU se lleva el contexto al bloquear el móvil. En los tres casos se
+vuelve a ver el lienzo normal, que nunca ha dejado de pintarse.
 
 Cuando la pestaña se va a segundo plano, el bucle se para y los
 ambientes se callan. No gasta batería para nadie.
