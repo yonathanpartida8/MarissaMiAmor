@@ -43,9 +43,14 @@ html, body {
   --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
   --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
   --seguro-l: var(--seguro-lado, env(safe-area-inset-left, 0px));
+  --seguro-r: var(--seguro-lado, env(safe-area-inset-right, 0px));
   --barra: var(--hueco-barra, 0rem);
 
   --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Con rebote, para lo que aparece de golpe: un aviso que entra sin
+     pasarse un poco de largo se lee como un cartel, y pasándose se lee
+     como algo que acaba de caer ahí. */
+  --e-salto: cubic-bezier(0.34, 1.56, 0.64, 1);
   --e-cine: cubic-bezier(0.65, 0, 0.35, 1);
 
   --tipo-titulo: var(--tipo-titulo, Georgia, "Times New Roman", serif);
@@ -137,6 +142,142 @@ html, body {
   0%, 100% { opacity: 0.55; transform: scale(1); }
   50%      { opacity: 1;    transform: scale(1.035); }
 }
+
+/* ── La interfaz de la espesura ──────────────────────────────────────── */
+
+/* Todo por los cantos y del tamaño justo. Un panel grande en medio de
+   un bosque que se explora es un panel tapando el bosque. */
+.noche .ne-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 22;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 500ms var(--e-suave), visibility 0s linear 500ms;
+}
+.noche.is-espesura .ne-hud {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* El botón de volver: flecha y dos palabras, con el fondo de cristal de
+   las burbujas para que sea la misma materia que todo lo demás. */
+.noche .ne-hud-salir {
+  position: absolute;
+  left: calc(var(--seguro-l) + 10px);
+  top: calc(var(--seguro-t) + 10px);
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.42em 0.8em 0.42em 0.6em;
+  border-radius: 999px;
+  border: 1px solid rgba(180, 220, 200, 0.22);
+  background: linear-gradient(to bottom, rgba(22, 38, 32, 0.72), rgba(8, 16, 14, 0.78));
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  color: #cfe8db;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform 180ms var(--e-suave), background 260ms var(--e-suave);
+}
+.noche .ne-hud-salir:active { transform: scale(0.94); background: rgba(40, 70, 58, 0.8); }
+.noche .ne-hud-flecha { font-size: 1.1rem; line-height: 0.8; opacity: 0.8; }
+
+/* El contador de lo hallado: un número y una palabra minúscula. */
+.noche .ne-hud-hallado {
+  position: absolute;
+  right: calc(var(--seguro-r) + 12px);
+  top: calc(var(--seguro-t) + 12px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1;
+  color: rgba(190, 236, 214, 0.78);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
+}
+.noche .ne-hud-hallado b {
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.noche .ne-hud-hallado i {
+  font-style: normal;
+  font-size: 0.52rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-top: 0.25em;
+}
+
+/* La bolsa: una fila de huecos abajo a la izquierda. Vacía no se ve. */
+.noche .ne-bolsa {
+  position: absolute;
+  left: calc(var(--seguro-l) + 10px);
+  bottom: calc(var(--seguro-b) + var(--barra) + 10px);
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+.noche .ne-hueco {
+  width: 46px; height: 46px;
+  border-radius: 12px;
+  border: 1px solid rgba(180, 220, 200, 0.2);
+  background: linear-gradient(to bottom, rgba(20, 34, 30, 0.6), rgba(6, 14, 12, 0.7));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 180ms var(--e-suave), border-color 260ms var(--e-suave),
+              box-shadow 260ms var(--e-suave);
+}
+.noche .ne-hueco:active { transform: scale(0.92); }
+/* En la mano: se enciende y se levanta un pelín. */
+.noche .ne-hueco.is-mano {
+  border-color: rgba(150, 255, 200, 0.55);
+  box-shadow: 0 0 0 1px rgba(150, 255, 200, 0.18), 0 0 18px rgba(80, 230, 150, 0.3);
+  transform: translateY(-3px);
+}
+.noche .ne-hueco canvas { width: 34px; height: 34px; display: block; }
+
+/* ── El aviso de objeto conseguido ───────────────────────────────────
+   Aparece en medio, un segundo y medio, y se va. No pide nada ni tapa
+   nada: sólo dice lo que acaba de pasar. */
+.noche .ne-aviso {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  z-index: 28;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.9em 1.5em;
+  border-radius: 18px;
+  border: 1px solid rgba(180, 255, 214, 0.26);
+  background: linear-gradient(to bottom, rgba(18, 44, 36, 0.78), rgba(6, 18, 14, 0.84));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0 34px rgba(60, 220, 150, 0.22), 0 10px 40px rgba(0, 0, 0, 0.5);
+  color: #d8ffe9;
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.8);
+  transition: opacity 320ms var(--e-suave), transform 420ms var(--e-salto);
+}
+.noche .ne-aviso.is-ver {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.noche .ne-aviso-ico { width: 44px; height: 44px; }
 
 /* ── Los textos flotantes ────────────────────────────────────────────── */
 
@@ -285,6 +426,7 @@ html, body {
    bosque: dentro de la cabaña no hay piedras que tocar, y el rótulo se
    quedaba ahí explicando algo que no está. */
 .noche.is-panel-usado .ne-pista-panel,
+.noche.is-espesura .ne-pista-panel,
 .noche.is-habitacion .ne-pista-panel,
 .noche.is-durmiendo .ne-pista-panel { opacity: 0; }
 
@@ -557,6 +699,24 @@ html, body {
   <p class="ne-pista-panel" id="pistaPanel">toca · arrastra para el volumen</p>
 
   <button class="ne-volver" id="volver" type="button" aria-label="Volver al bosque">‹</button>
+
+  <!-- ── La interfaz de la espesura ─────────────────────────────────
+       Sólo existe dentro del bosque. Compacta y por los cantos: lo de
+       en medio es el bosque, y el bosque es lo que se ha venido a
+       mirar. -->
+  <div class="ne-hud" id="hud" aria-hidden="true">
+    <button class="ne-hud-salir" id="hudSalir" type="button" aria-label="Volver al claro">
+      <span class="ne-hud-flecha">‹</span><span class="ne-hud-txt">el claro</span>
+    </button>
+    <div class="ne-hud-hallado" id="hudHallado"><b>0</b><i>hallado</i></div>
+    <div class="ne-bolsa" id="bolsaUI"></div>
+  </div>
+
+  <!-- El aviso de objeto conseguido. -->
+  <div class="ne-aviso" id="aviso" aria-hidden="true">
+    <canvas class="ne-aviso-ico" id="avisoIco" width="72" height="72"></canvas>
+    <span class="ne-aviso-txt" id="avisoTxt"></span>
+  </div>
   <button class="ne-dormir" id="dormir" type="button">Dormir</button>
 
   <div class="ne-flash" id="flash" aria-hidden="true"></div>
@@ -657,6 +817,9 @@ const CONF = {
     /* El sonido del búho. Va en la carpeta principal, al lado de
        `musica.mp3`. Si no está, se sintetiza uno. */
     misterio: "misterio.mp3",
+    /* El sonido que se oye cuando el búho dice que oye algo. Va en la
+       carpeta principal, al lado de `misterio.mp3`. */
+    rag: "rag.mp3",
     cabana: {
       puertaAbre:  "Cabaña/door.open.mp3",
       puertaCierra:"Cabaña/door.close.mp3",
@@ -1019,6 +1182,103 @@ const CONF = {
     lluviaDice: "…esa no venía sola.",
   },
 
+  /* ---- LA ESPESURA -----------------------------------------------------
+     El bosque de dentro: el sendero que lleva a él y lo que se dice al
+     acercarse a cada sitio. */
+  espesura: {
+    /* Lo que se ve antes de decidir ir. */
+    senderoVisto: "Hay un camino entre los árboles.",
+    senderoPregunta: "¿Vamos a ver qué hay?",
+    /* Durante la caminata. */
+    alAndar: [
+      "El claro se queda atrás.",
+      "Aquí ya no se oye la fogata.",
+      "Huele distinto.",
+    ],
+    alLlegar: "Bueno. Ya estamos dentro.",
+    /* Al acercarse a cada cosa. */
+    salidaVista: "Por ahí se vuelve al claro.",
+    palaVista: "Hay algo apoyado en ese tocón.",
+    equisTapada: "…esto de aquí no es un montón de hojas cualquiera.",
+    equisDestapada: "Una X. Alguien marcó este sitio.",
+    equisSinPala: "¿Qué habrá aquí…?",
+    equisConPala: "Aquí es. Vamos a ver.",
+    /* Y lo que pasa con la pala. */
+    sinPala: "Necesito una pala… ¿dónde estará?",
+    palaCogida: "Una pala… justo lo que necesitaba.",
+    palaEquipada: "Pala en la mano.",
+    palaGuardada: "Pala guardada.",
+    palaSinSitio: "Aquí no hay nada que cavar.",
+    volver: "De vuelta al claro.",
+  },
+
+  /* ---- LAS TRES DE LA MAÑANA -------------------------------------------- */
+  tres: {
+    sueno: "Vaya… ¿sueño?",
+    hora: "¿Qué horas son?",
+    alTocar: [
+      "Las tres. Las tres en punto.",
+      "No se mueve. Lleva ahí parado desde que abrí los ojos.",
+      "Siempre las tres. Siempre.",
+    ],
+  },
+
+  /* ---- EL BÚHO DE LA ESPESURA ------------------------------------------
+     Éste habla. Y dice cosas distintas antes y después de que se
+     desentierre lo que hay bajo la X: antes es un bicho simpático que
+     te ve pasar, y después ya no. */
+  buhoEsp: {
+    primera: "Te veo…",
+    antes: [
+      "Te veo…",
+      "Puedo verte.",
+      "Acércate…",
+      "No soy malo…",
+      "Perdón… estaba llorando.",
+      "¿Tú también lo oyes?",
+      "Aquí no viene nadie. Casi nunca.",
+      "Shhh… ¿oyes eso?",
+    ],
+    despues: [
+      "Ya no puedes devolverlo.",
+      "Te dije que te acercaras.",
+      "Ahora todos saben que estás aquí.",
+      "No mires atrás todavía.",
+      "Shhh… ¿oyes eso?",
+      "Lo siento. De verdad que lo siento.",
+    ],
+    /* La frase que trae el sonido. Se reconoce por esta marca y no por
+       el texto, para poder cambiar el texto sin romper nada. */
+    elRuido: "Shhh… ¿oyes eso?",
+    alRevelar: "…no debiste tocarlo.",
+  },
+
+  /* ---- CAVAR -----------------------------------------------------------
+     Cuatro golpes, y cada uno tiene que sentirse distinto del anterior.
+     Si los cuatro son iguales, el cuarto sobra. */
+  cavar: {
+    golpes: 4,
+    dice: [
+      "Tierra suelta. Esto se ha cavado antes.",
+      "Hay una grieta… algo se ha movido ahí abajo.",
+      "…¿eso ha sonado debajo de la tierra?",
+      "Ahí hay algo.",
+    ],
+  },
+
+  /* ---- EL MISTERIO VERDE ------------------------------------------------ */
+  misterio: {
+    alSalir: "Estaba enterrado. Y está encendido.",
+    alTocar: [
+      "…No debiste encontrar esto.",
+      "Así que finalmente lo encontraste…",
+    ],
+    despues: [
+      "El bosque se ha quedado callado.",
+      "Algo ha cambiado. No sé qué.",
+    ],
+  },
+
   /* ---- LA CAJITA MUSICAL -----------------------------------------------
      Lo que sabe la caja. Abrirla mientras llueve no es lo mismo que
      abrirla con la noche despejada. */
@@ -1305,6 +1565,7 @@ function colocarSitios() {
   sitio.cajita.r = U * 5.4;
 
   /* Y la luz verde, metida en el bosque. */
+  colocarSendero();
   sitio.secreto.x = A * CONF.bosqueSecreto.x;
   sitio.secreto.y = mez(sitio.horizonte, sitio.suelo, 0.42);
   sitio.secreto.r = U * 5;
@@ -5629,6 +5890,9 @@ function dibujarHabitacion() {
   /* ---- Las partículas van por encima de todo ---- */
   dibujarParticulas();
 
+  /* ---- El reloj de la mesilla, si ya ha pasado lo que tenía que pasar ---- */
+  dibujarReloj3();
+
   /* ---- Cuando se apaga todo ----
      El susto de la ventana baja las luces de la habitación pero NO las
      de fuera: la ventana se queda siendo lo único que se ve, y por eso
@@ -6840,6 +7104,11 @@ function dibujarBosque(dt) {
      que se vean a distinta distancia y no sólo a distinto tamaño. */
   dibujarArboles(0);
   dibujarBruma(sitio.horizonte - U * 6, mez(sitio.horizonte, sitio.suelo, 0.55));
+
+  /* El hueco por donde se va al bosque de dentro. Entre la banda de en
+     medio y la de cerca: por delante de los árboles de fondo, para que
+     se vea el hueco, y por detrás de los troncos que enmarcan. */
+  dibujarSendero();
 
   dibujarArboles(1);
 
@@ -8165,6 +8434,3129 @@ function dibujarOjos(d) {
   ctx.globalCompositeOperation = "source-over";
 }
 
+/* ==========================================
+   LA INTERFAZ DE LA ESPESURA
+   ==========================================
+
+   Tres cosas y ninguna más: por dónde se vuelve, qué llevas encima y
+   cuánto has encontrado. Todo por los cantos, porque lo de en medio es
+   el bosque.
+
+   ── POR QUÉ ESTA VA EN HTML Y EL PANEL DE SONIDOS EN EL LIENZO ───────
+   Porque son cosas distintas. Las pastillas del sonido son OBJETOS del
+   claro: están puestas en el suelo y les da la luz de la fogata. Esto
+   no es un objeto: es lo que sabe el jugador. No tiene que recibir luz
+   de nada, tiene que leerse siempre, y para eso el texto de verdad del
+   navegador gana a cualquier cosa dibujada a mano. */
+
+const elHud      = document.getElementById("hud");
+const elHudSalir = document.getElementById("hudSalir");
+const elHallado  = document.getElementById("hudHallado");
+const elBolsa    = document.getElementById("bolsaUI");
+const elAviso    = document.getElementById("aviso");
+const elAvisoIco = document.getElementById("avisoIco");
+const elAvisoTxt = document.getElementById("avisoTxt");
+
+elHudSalir.addEventListener("click", () => { volverAlClaro(); });
+
+/* ---- Los iconos de los objetos ------------------------------------------
+   Dibujados en un lienzo pequeñito, una vez, y guardados. Un icono que
+   se repinta en cada cuadro para estar quieto es tiempo tirado.     */
+
+function pintarIconoObjeto(cv, id, lado) {
+  const c = cv.getContext("2d");
+  const S = lado;
+  cv.width = cv.height = S * 2;            // el doble, para pantallas finas
+  c.setTransform(2, 0, 0, 2, 0, 0);
+  c.clearRect(0, 0, S, S);
+  c.save();
+  c.translate(S / 2, S / 2);
+
+  if (id === "pala") {
+    c.rotate(-0.5);
+    /* El mango. */
+    const g = c.createLinearGradient(-S * 0.05, 0, S * 0.05, 0);
+    g.addColorStop(0, "#6a4a2c");
+    g.addColorStop(0.5, "#a97c4c");
+    g.addColorStop(1, "#553a22");
+    c.fillStyle = g;
+    c.beginPath();
+    if (c.roundRect) c.roundRect(-S * 0.05, -S * 0.42, S * 0.1, S * 0.5, S * 0.04);
+    else c.rect(-S * 0.05, -S * 0.42, S * 0.1, S * 0.5);
+    c.fill();
+    c.strokeStyle = "#8a6238";
+    c.lineWidth = S * 0.07;
+    c.beginPath();
+    c.arc(0, -S * 0.44, S * 0.12, Math.PI * 0.9, Math.PI * 0.1);
+    c.stroke();
+    /* La hoja. */
+    const gh = c.createLinearGradient(-S * 0.18, 0, S * 0.18, S * 0.3);
+    gh.addColorStop(0, "#9aa4b4");
+    gh.addColorStop(0.5, "#6a7484");
+    gh.addColorStop(1, "#3e444e");
+    c.fillStyle = gh;
+    c.beginPath();
+    c.moveTo(-S * 0.18, S * 0.06);
+    c.lineTo(S * 0.18, S * 0.06);
+    c.lineTo(S * 0.14, S * 0.3);
+    c.quadraticCurveTo(0, S * 0.44, -S * 0.14, S * 0.3);
+    c.closePath();
+    c.fill();
+    c.strokeStyle = "rgba(220,232,248,0.6)";
+    c.lineWidth = Math.max(1, S * 0.025);
+    c.beginPath();
+    c.moveTo(-S * 0.14, S * 0.3);
+    c.quadraticCurveTo(0, S * 0.44, S * 0.14, S * 0.3);
+    c.stroke();
+
+  } else if (id === "reliquia") {
+    /* La piedra con la luz dentro. */
+    const gp = c.createLinearGradient(-S * 0.2, -S * 0.3, S * 0.2, S * 0.3);
+    gp.addColorStop(0, "#3a4a46");
+    gp.addColorStop(1, "#141e1c");
+    c.fillStyle = gp;
+    c.beginPath();
+    c.moveTo(0, -S * 0.34);
+    c.lineTo(S * 0.2, -S * 0.12);
+    c.lineTo(S * 0.15, S * 0.2);
+    c.lineTo(-S * 0.15, S * 0.2);
+    c.lineTo(-S * 0.2, -S * 0.12);
+    c.closePath();
+    c.fill();
+    c.globalCompositeOperation = "lighter";
+    const gc = c.createRadialGradient(0, -S * 0.04, 0, 0, -S * 0.04, S * 0.2);
+    gc.addColorStop(0, "rgba(210,255,232,0.9)");
+    gc.addColorStop(1, "rgba(60,220,150,0)");
+    c.fillStyle = gc;
+    c.beginPath(); c.arc(0, -S * 0.04, S * 0.2, 0, 6.283); c.fill();
+  }
+  c.restore();
+}
+
+/* ---- La bolsa ----------------------------------------------------------- */
+
+function refrescarBolsa() {
+  const quiere = [...bolsa.tiene];
+  /* Se rehace sólo si ha cambiado lo que hay: tocar el DOM por gusto en
+     cada cuadro es la forma más fácil de que una escena que va a
+     sesenta se ponga a treinta. */
+  const firma = quiere.join(",") + "|" + (bolsa.enMano || "");
+  if (firma === elBolsa.dataset.firma) return;
+  elBolsa.dataset.firma = firma;
+
+  elBolsa.textContent = "";
+  for (const id of quiere) {
+    const b = document.createElement("button");
+    b.className = "ne-hueco" + (bolsa.enMano === id ? " is-mano" : "");
+    b.type = "button";
+    b.setAttribute("aria-label", id === "pala" ? "Pala" : "Reliquia");
+    b.setAttribute("aria-pressed", String(bolsa.enMano === id));
+    const cv = document.createElement("canvas");
+    pintarIconoObjeto(cv, id, 34);
+    b.append(cv);
+    b.addEventListener("click", () => {
+      bolsa.alterna(id);
+      golpe(0.03, bolsa.enMano === id ? 1800 : 900, 0.09, "bandpass");
+      refrescarBolsa();
+      if (escena === "espesura") {
+        decir(A * 0.5, H * 0.62,
+          bolsa.enMano === id ? CONF.espesura.palaEquipada : CONF.espesura.palaGuardada,
+          { dur: 2 });
+      }
+    });
+    elBolsa.append(b);
+  }
+}
+
+/** Cuántos secretos del bosque llevas encontrados, de los que hay. */
+function refrescarHallado() {
+  const total = 6;
+  let n = 0;
+  for (const id of ["equis", "pala", "misterio", "revelado", "buho", "enjambre"]) {
+    if (historia.hecho(id)) n++;
+  }
+  const b = elHallado.querySelector("b");
+  const txt = `${n}/${total}`;
+  if (b.textContent !== txt) b.textContent = txt;
+}
+
+/* ---- El aviso ------------------------------------------------------------ */
+
+let relojAviso = null;
+
+function avisoObjeto(id, texto) {
+  pintarIconoObjeto(elAvisoIco, id, 44);
+  elAvisoTxt.textContent = texto;
+  elAviso.classList.add("is-ver");
+  elAviso.setAttribute("aria-hidden", "false");
+  refrescarBolsa();
+  clearTimeout(relojAviso);
+  relojAviso = setTimeout(() => {
+    elAviso.classList.remove("is-ver");
+    elAviso.setAttribute("aria-hidden", "true");
+  }, 1900);
+}
+
+/* ==========================================
+   EL VIAJE AL BOSQUE
+   ==========================================
+
+   Del claro a la espesura no se llega cambiando de pantalla: se llega
+   ANDANDO.
+
+   ── POR QUÉ HAY QUE DECIDIRLO ────────────────────────────────────────
+   Porque un sitio al que te llevan no es un sitio al que has ido. El
+   sendero está ahí desde el principio, a la izquierda de la fogata,
+   apenas insinuado entre dos troncos. Se ve si se mira. Y hasta que no
+   se toca, no pasa nada.
+
+   ── QUÉ HACE QUE SE SIENTA UNA CAMINATA ──────────────────────────────
+   Cinco cosas a la vez, y hacen falta las cinco:
+
+     1. la cámara SE METE —zoom y desplazamiento hacia el hueco—;
+     2. la escena se apaga por delante, no de golpe;
+     3. cruzan hojas y motas a toda velocidad, cada vez más deprisa:
+        eso es lo que dice «me estoy moviendo»;
+     4. el sonido cruza —la fogata se va, el bosque llega—, y no se
+        corta ni un instante;
+     5. y dura. Tres segundos largos. Una caminata de medio segundo es
+        un corte con adornos.                                        */
+
+const sendero = {
+  /* Dónde está, en el claro. A la izquierda, lejos de la cabaña. */
+  x: 0, y: 0, r: 0,
+  brillo: 0,
+  /* El estado del viaje: 0 quieto, si no, segundos desde que arrancó. */
+  fase: -1,
+  hacia: "espesura",
+  /* Cuánto corre lo que cruza por delante. */
+  prisa: 0,
+};
+
+function colocarSendero() {
+  sendero.x = A * 0.085;
+  sendero.y = mez(sitio.horizonte, sitio.suelo, 0.72);
+  sendero.r = U * (apaisado ? 8 : 10);
+}
+
+/**
+ * El hueco entre los árboles por el que se va.
+ *
+ * Se dibuja en el claro, entre la banda de en medio y la de cerca: por
+ * delante de los árboles de fondo —para que se vea el hueco— y por
+ * detrás de los troncos que enmarcan, para que se lea como algo que
+ * está METIDO en el bosque y no pegado en la pantalla.
+ */
+function dibujarSendero() {
+  if (escena !== "bosque") return;
+  const d = desplazar(1.726);
+  const x = sendero.x + d.x, y = sendero.y + d.y;
+  const r = sendero.r;
+  const k = sendero.brillo;
+
+  /* La oscuridad del hueco: más negra que el bosque de alrededor. Un
+     camino de noche no es una luz, es un agujero. */
+  const gh = ctx.createRadialGradient(x, y - r * 0.3, 0, x, y - r * 0.3, r * 1.6);
+  gh.addColorStop(0, "rgba(1,2,4,0.9)");
+  gh.addColorStop(0.6, "rgba(2,4,8,0.55)");
+  gh.addColorStop(1, "rgba(2,4,8,0)");
+  ctx.fillStyle = gh;
+  ctx.beginPath();
+  ctx.ellipse(x, y - r * 0.3, r * 1.6, r * 1.9, 0, 0, 6.283);
+  ctx.fill();
+
+  /* Las piedras del camino, alejándose y juntándose. La perspectiva la
+     hacen ellas solas: cada vez más pequeñas y más cerca entre sí. */
+  for (let i = 0; i < 7; i++) {
+    const t = i / 6;
+    const py = y + r * mez(1.1, -0.5, t);
+    const sep = r * mez(0.85, 0.12, t * t);
+    const s = U * mez(1.9, 0.45, t);
+    const il = fuego.brillo * mez(0.5, 0.06, t) + k * 0.25 * (1 - t);
+    ctx.fillStyle = `rgb(${Math.round(mez(26, 116, il))},${Math.round(mez(26, 100, il))},${Math.round(mez(28, 78, il))})`;
+    for (const lado of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(x + lado * sep + Math.sin(i * 3.1) * U * 0.6, py, s, s * 0.5, 0, 0, 6.283);
+      ctx.fill();
+    }
+  }
+
+  /* Dos luciérnagas verdes metidas en el hueco, muy al fondo. Son la
+     única pista de que ahí dentro hay algo, y no se explican. */
+  ctx.globalCompositeOperation = "lighter";
+  for (let i = 0; i < 2; i++) {
+    const a = reloj * (0.4 + i * 0.25) + i * 3;
+    const lx = x + Math.sin(a) * r * 0.45;
+    const ly = y - r * 0.5 + Math.cos(a * 0.8) * r * 0.3;
+    const br = Math.pow(clamp01(0.5 + 0.5 * Math.sin(reloj * (0.7 + i * 0.4) + i * 2)), 2.2);
+    const gg = ctx.createRadialGradient(lx, ly, 0, lx, ly, U * 3);
+    gg.addColorStop(0, `rgba(170,255,205,${0.5 * br})`);
+    gg.addColorStop(1, "rgba(60,220,140,0)");
+    ctx.fillStyle = gg;
+    ctx.beginPath(); ctx.arc(lx, ly, U * 3, 0, 6.283); ctx.fill();
+  }
+  ctx.globalCompositeOperation = "source-over";
+
+  /* El aro de «se puede ir». A trazos y desvaneciéndose por arriba,
+     como el de la cabaña: un óvalo continuo se lee como un objeto. */
+  const pulso = 0.1 + 0.06 * Math.sin(reloj * 1.5) + k * 0.3;
+  ctx.lineWidth = 1.3;
+  ctx.lineCap = "round";
+  for (let i = 0; i < 22; i++) {
+    const a0 = (i / 22) * 6.283 + reloj * 0.1;
+    const a1 = a0 + 6.283 / 22 * 0.44;
+    const abajo = clamp01(0.25 + Math.sin(a0) * 0.75);
+    ctx.strokeStyle = `rgba(168,232,198,${pulso * abajo})`;
+    ctx.beginPath();
+    ctx.ellipse(x, y - r * 0.1, r * 0.95, r * 1.15, 0, a0, a1);
+    ctx.stroke();
+  }
+}
+
+/** El viaje: se llama desde el toque en el claro. */
+function irALaEspesura() {
+  if (bloqueado || escena !== "bosque") return;
+  bloqueado = true;
+  historia.marcar("sendero");
+  sendero.fase = 0;
+  sendero.hacia = "espesura";
+  sendero.prisa = 0;
+  /* El sonido empieza a cruzar YA: si esperase al final, el cambio de
+     ambiente se oiría como un corte. */
+  cruzarAmbientes("espesura", 3.2);
+}
+
+/** Y la vuelta, por el mismo camino y con la misma caminata. */
+function volverAlClaro() {
+  if (bloqueado || escena !== "espesura") return;
+  bloqueado = true;
+  sendero.fase = 0;
+  sendero.hacia = "bosque";
+  sendero.prisa = 0;
+  cruzarAmbientes("bosque", 2.6);
+}
+
+/**
+ * Cruzar el ambiente sonoro de un sitio al otro.
+ *
+ * No apaga y enciende: SUBE unos mientras BAJA otros, cada uno con su
+ * propio destino. Por eso no hay ningún instante de silencio, que es lo
+ * que delataría el cambio de escena.
+ */
+function cruzarAmbientes(destino, seg) {
+  const aEspesura = destino === "espesura";
+  const objetivos = aEspesura
+    ? { fogata: 0, grillos: 0.22, aire: 0.5, bosque: 0.6, lluvia: null, relampagos: null }
+    : { fogata: 0.55, grillos: 0.4, aire: 0.3, bosque: 0.2, lluvia: null, relampagos: null };
+
+  for (const piedra of panel.piedras) {
+    const obj = objetivos[piedra.conf.id];
+    if (obj === null || obj === undefined) continue;
+    /* Un ambiente que estaba apagado se enciende si el sitio nuevo lo
+       pide, y al revés. Lo que el jugador haya tocado a mano se
+       respeta en volumen relativo, no en el hecho de sonar. */
+    const quiere = obj > 0.02;
+    if (quiere && !piedra.on) { piedra.on = true; ambiente(piedra.conf.id, true, obj); }
+    piedra.vol = obj;
+    if (piedra.on) volumen(piedra.conf.id, obj);
+    if (!quiere && piedra.on) { piedra.on = false; ambiente(piedra.conf.id, false, 0); }
+  }
+  sincronizarClima();
+  void seg;
+}
+
+/* ---- La caminata, cuadro a cuadro --------------------------------------- */
+
+function moverViaje(dt) {
+  if (sendero.fase < 0) {
+    sendero.brillo = damp(sendero.brillo, 0, 3, dt);
+    return;
+  }
+  const t = sendero.fase += dt;
+  const aEspesura = sendero.hacia === "espesura";
+  const DUR = suaveMovimiento ? 1.2 : 3.4;
+
+  /* La prisa sube hasta la mitad y baja: se arranca a andar, se cruza,
+     y se llega parando. Un desplazamiento a velocidad constante se ve
+     como una cinta transportadora. */
+  sendero.prisa = Math.sin(clamp01(t / DUR) * Math.PI);
+
+  /* 1. La cámara se mete en el hueco. */
+  if (aEspesura) {
+    const k = suave3(clamp01(t / (DUR * 0.7)));
+    cam.oz = mez(1, 2.6, k);
+    cam.ox = (A * 0.5 - sendero.x) * k * 2.2;
+    cam.oy = (H * 0.5 - sendero.y) * k * 1.6;
+  } else {
+    const k = suave3(clamp01(t / (DUR * 0.7)));
+    cam.oz = mez(1, 1.8, k);
+  }
+
+  /* 2. Se apaga por delante, y no de golpe: la mitad del viaje está a
+     oscuras, que es cuando se cambia de sitio sin que se note. */
+  const oscuro = clamp01((t - DUR * 0.25) / (DUR * 0.3));
+  const aclara = clamp01((t - DUR * 0.62) / (DUR * 0.32));
+  cine.velo = clamp01(oscuro - aclara);
+
+  /* 3. El cambio de escena, justo en el negro. */
+  if (!sendero.hecho && cine.velo > 0.96) {
+    sendero.hecho = true;
+    /* Las partículas del sitio que se deja NO se vienen. El humo de la
+       fogata flotando en mitad de la espesura se ve como una mancha
+       gris que nadie sabe de dónde ha salido. */
+    for (let i = 0; i < P; i++) pvida[i] = 0;
+    if (aEspesura) {
+      escena = "espesura";
+      raiz.classList.add("is-espesura");
+      construirEspesura();
+      /* Se entra por la izquierda, que es por donde se ha venido. */
+      espesura.x = 0; espesura.vx = 0;
+      historia.marcar("espesura");
+      puntos.dichos.clear();
+    } else {
+      escena = "bosque";
+      raiz.classList.remove("is-espesura");
+    }
+    cam.oz = 1; cam.ox = 0; cam.oy = 0;
+    cam.z = 1; cam.x = 0; cam.y = 0;
+  }
+
+  /* 4. Lo que cruza por delante: hojas, motas y lucecitas. Cuanto más
+     deprisa se anda, más y más rápidas. */
+  const cuantas = dt * (aEspesura ? 90 : 55) * sendero.prisa;
+  for (let i = 0; i < cuantas; i++) {
+    const desde = Math.random() < 0.5 ? -U * 6 : A + U * 6;
+    const haciaDentro = desde < 0 ? 1 : -1;
+    const verde = Math.random() < (aEspesura ? 0.28 : 0.08);
+    soltar(desde, azar(0, H), {
+      vx: haciaDentro * azar(120, 420) * (0.4 + sendero.prisa),
+      vy: azar(-60, 90),
+      vida: azar(0.5, 1.4),
+      tam: verde ? azar(1, 2.4) : U * azar(0.3, 0.9),
+      tipo: verde ? TIPO.BRILLO : TIPO.HOJA,
+      giro: azar(0, 6.283), giroV: azar(-6, 6),
+      tono: verde ? 0.45 : Math.random(),
+    });
+  }
+
+  /* 5. Y los pasos. Cinco, repartidos por la caminata, cada uno un poco
+     distinto: la tierra no suena igual dos veces. */
+  const pasos = Math.floor((t / DUR) * 6);
+  if (pasos !== sendero.pasosDados) {
+    sendero.pasosDados = pasos;
+    if (pasos > 0 && pasos <= 6 && !suaveMovimiento) {
+      golpe(0.1, azar(180, 340), azar(0.1, 0.17), "lowpass");
+      golpe(0.05, azar(1800, 3200), 0.04, "highpass");
+    }
+  }
+
+  /* 6. Y se acaba. */
+  if (t >= DUR) {
+    sendero.fase = -1;
+    sendero.hecho = false;
+    sendero.pasosDados = -1;
+    cine.velo = 0;
+    cam.oz = 1; cam.ox = 0; cam.oy = 0;
+    bloqueado = false;
+    if (aEspesura) {
+      decir(A * 0.5, H * 0.4, CONF.espesura.alLlegar, { mimo: true, importante: true, dur: 4 });
+    } else {
+      decir(A * 0.5, H * 0.4, CONF.espesura.volver, { dur: 3 });
+    }
+  } else if (t > DUR * 0.34 && t < DUR * 0.42 && !sendero.dicho) {
+    sendero.dicho = true;
+    setTimeout(() => { sendero.dicho = false; }, 100);
+  }
+}
+
+// ==========================================
+// LA ESPESURA
+// ==========================================
+//
+// El bosque de dentro. No es el claro con más árboles: es otro sitio,
+// y tiene que sentirse como otro sitio desde el primer cuadro.
+//
+// ── QUÉ LO HACE OTRO SITIO ───────────────────────────────────────────
+//   · No hay fogata. La única luz es la luna colándose entre las copas
+//     y lo que brille por su cuenta.
+//   · No se ve el cielo entero: arriba hay copas, no estrellas.
+//   · Y SE ANDA. El claro cabe en una pantalla; esto mide tres, y para
+//     ver la tercera hay que ir.
+//
+// ── POR QUÉ SE ARRASTRA PARA ANDAR ───────────────────────────────────
+// Porque es lo único que funciona igual con el pulgar y con el ratón, y
+// porque el gesto es el mismo que apartar una rama. Se le pone inercia
+// y un freno: sueltas y sigues un poco, que es lo que hace que el
+// bosque tenga peso en vez de ir pegado al dedo.
+//
+// Los bordes NO rebotan: se acaban. Un rebote elástico en el canto de
+// un bosque dice «esto es una lista»; un tope seco dice «hasta aquí
+// llega».
+//
+// ── LAS CAPAS ────────────────────────────────────────────────────────
+// Seis, cada una con su factor: el fondo casi no se mueve y las ramas
+// de delante se van a toda velocidad. Eso, más la NIEBLA que se mete
+// entre ellas y la luz que reciben, es toda la profundidad. Las de
+// atrás no son árboles pequeños: son árboles TRAGADOS.
+
+const ESP = {
+  /* Lo ancho que es el mundo, en pantallas. */
+  ancho: 3.1,
+  /* Las bandas de árboles, de la más lejana a la más cercana. */
+  bandas: [
+    /* Anchos y no estacas: con `ancho` a un par de unidades salía una
+       valla de picos, no un bosque. Un abeto visto de lejos es casi tan
+       ancho como alto por abajo. */
+    { n: 46, nFlojo: 24, alto: [18, 40], ancho: [3.2, 6.0], niebla: 0.88, z: 0.10, toca: false },
+    { n: 34, nFlojo: 18, alto: [30, 62], ancho: [4.6, 8.4], niebla: 0.62, z: 0.26, toca: false },
+    { n: 24, nFlojo: 13, alto: [46, 88], ancho: [6.4, 11], niebla: 0.34, z: 0.52, toca: true  },
+    { n: 12, nFlojo: 7,  alto: [80, 150], ancho: [9, 15],  niebla: 0.10, z: 1.0,  toca: true  },
+  ],
+  /* Los troncos de primerísimo plano, que enmarcan y tapan. */
+  /* Pocos y anchos. Con siete finos, la pantalla se llenaba de postes
+     rectos y parecía un tendido eléctrico; con cuatro gruesos, son los
+     troncos entre los que se anda. */
+  marco: { n: 4, z: 2.1 },
+  /* Cuántas luciérnagas verdes flotan por ahí. */
+  luces: 26, lucesFlojo: 12,
+};
+
+const espesura = {
+  /* La cámara, en píxeles de mundo. */
+  x: 0, vx: 0,
+  /* El arrastre en curso. */
+  agarre: null,
+  /* Lo construido. */
+  arboles: [], marco: [], luces: [], bruma: [], suelo: [], raices: [],
+  /* Cuánto tira a verde todo el sitio. Sube al desenterrar el misterio
+     y es lo que hace que el bosque «sepa» lo que ha pasado. */
+  verde: 0, verdeObj: 0,
+  /* El pulso del misterio, que recorre el bosque de golpe. */
+  onda: 0, ondaX: 0,
+  /* Lo ancho que es el mundo en píxeles, y hasta dónde llega la cámara. */
+  W: 0, tope: 0,
+};
+
+function construirEspesura() {
+  sembrar(31415926);
+  const W = espesura.W = A * ESP.ancho;
+  espesura.tope = Math.max(0, W - A);
+  espesura.x = clamp(espesura.x, 0, espesura.tope);
+
+  const suelo = H * (apaisado ? 0.78 : 0.82);
+  espesura.sueloY = suelo;
+  espesura.copasY = H * (apaisado ? 0.2 : 0.16);
+
+  /* ---- Los árboles ----
+     Se reparten a lo largo del mundo con desorden, y cada uno guarda su
+     banda. Se ordenan por banda para poder pintarlos de atrás adelante
+     sin volver a mirar. */
+  espesura.arboles = [];
+  ESP.bandas.forEach((banda, iB) => {
+    const n = flojo ? banda.nFlojo : banda.n;
+    for (let i = 0; i < n; i++) {
+      const t = (i + azar(-0.4, 0.4)) / n;
+      espesura.arboles.push({
+        banda: iB,
+        x: t * W * 1.06 - W * 0.03,
+        /* Cada banda tiene su línea de suelo —las de lejos más arriba,
+           que es la perspectiva— pero DENTRO de la banda se reparten:
+           con todas a la misma altura, los troncos forman una regla y
+           las copas un peine. */
+        base: mez(suelo - H * 0.17, suelo + H * 0.05, iB / 3)
+              + azar(-H * 0.035, H * 0.045),
+        alto: U * azar(banda.alto[0], banda.alto[1]),
+        ancho: U * azar(banda.ancho[0], banda.ancho[1]),
+        f: rnd() * 6.283,
+        /* Unos son abetos y otros de hoja. Que no sean todos iguales es
+           lo que hace que parezca un bosque y no un peine. */
+        abeto: rnd() < (iB < 2 ? 0.8 : 0.45),
+        sac: 0, sacV: 0, toques: 0,
+        /* El tono: cada árbol tira un poco a su lado. Un bosque de un
+           solo verde se lee como papel pintado. */
+        tinte: azar(-0.5, 0.5),
+      });
+    }
+  });
+  espesura.arboles.sort((a, b) => (a.banda - b.banda) || (a.base - b.base));
+
+  /* ---- Los troncos del marco ----
+     Cruzan la pantalla enteros, de arriba abajo, y van a más velocidad
+     que nada. Son los que dan la sensación de estar METIDO entre los
+     árboles y no mirándolos desde fuera. */
+  espesura.marco = [];
+  for (let i = 0; i < ESP.marco.n; i++) {
+    espesura.marco.push({
+      x: (i + azar(-0.3, 0.3)) / ESP.marco.n * W * ESP.marco.z,
+      ancho: U * azar(4.5, 9),
+      /* Cuánto se estrecha de abajo arriba. Un tronco recto es un
+         poste; uno que se afina es un árbol. */
+      afina: azar(0.55, 0.82),
+      /* La corteza: seis surcos en sitios fijos. */
+      surcos: Array.from({ length: 6 }, () => ({
+        x: azar(-0.8, 0.8), y0: rnd(), largo: azar(0.1, 0.35), gr: azar(0.3, 0.9),
+      })),
+      incl: azar(-0.13, 0.13),
+      f: rnd() * 6.283,
+      /* Las ramas que salen de él y cruzan por arriba. */
+      ramas: Array.from({ length: 3 }, () => ({
+        y: azar(0.05, 0.5), lado: rnd() < 0.5 ? -1 : 1,
+        largo: azar(0.3, 0.9), caida: azar(0.1, 0.5),
+      })),
+    });
+  }
+
+  /* ---- Las luciérnagas ----
+     Verdes, lentísimas, cada una con su órbita. Son lo único vivo que
+     se ve siempre, y sin ellas el bosque está muerto. */
+  espesura.luces = [];
+  const nL = flojo ? ESP.lucesFlojo : ESP.luces;
+  for (let i = 0; i < nL; i++) {
+    espesura.luces.push({
+      x: rnd() * W,
+      y: mez(espesura.copasY, suelo, azar(0.25, 1)),
+      r: U * azar(0.28, 0.7),
+      z: azar(0.3, 1.2),
+      f: rnd() * 6.283,
+      vel: azar(0.25, 0.8),
+      radio: U * azar(2, 7),
+      /* Cuánto tarda en apagarse y encenderse. Una luciérnaga que
+         brilla continuo es una bombilla. */
+      ritmo: azar(0.35, 1.1),
+      fase: rnd() * 6.283,
+    });
+  }
+
+  /* ---- La niebla, en bandas ---- */
+  espesura.bruma = [];
+  for (let i = 0; i < 6; i++) {
+    espesura.bruma.push({
+      y: mez(espesura.copasY + H * 0.1, suelo + H * 0.02, i / 5),
+      alto: H * azar(0.05, 0.13),
+      z: mez(0.1, 0.8, i / 5),
+      v: azar(0.004, 0.016) * (rnd() < 0.5 ? -1 : 1),
+      f: rnd() * 6.283,
+      op: azar(0.3, 0.75),
+    });
+  }
+
+  /* ---- El suelo: matas, raíces y piedras ---- */
+  espesura.suelo = [];
+  for (let i = 0; i < (flojo ? 60 : 130); i++) {
+    espesura.suelo.push({
+      x: rnd() * W,
+      y: suelo + H * azar(-0.01, 0.13),
+      tipo: rnd() < 0.55 ? "hierba" : (rnd() < 0.6 ? "mata" : "piedra"),
+      s: U * azar(1, 4),
+      f: rnd() * 6.283,
+      tinte: azar(0, 1),
+    });
+  }
+  espesura.suelo.sort((a, b) => a.y - b.y);
+
+  /* ---- Las raíces que cruzan el camino ---- */
+  espesura.raices = [];
+  for (let i = 0; i < 9; i++) {
+    espesura.raices.push({
+      x: rnd() * W,
+      y: suelo + H * azar(0.02, 0.1),
+      largo: U * azar(10, 26),
+      grueso: U * azar(0.5, 1.4),
+      comba: azar(-0.5, 0.5),
+    });
+  }
+
+  construirPuntos();
+}
+
+/* ---- Andar --------------------------------------------------------------
+   La cámara se mueve con el dedo y sigue un poco al soltar. Nada de
+   muelles ni de rebotes: velocidad, rozamiento y dos topes secos.    */
+
+function moverEspesura(dt) {
+  if (!espesura.agarre) {
+    espesura.x += espesura.vx * dt;
+    /* Rozamiento exponencial: frena igual a sesenta que a ciento veinte
+       fotogramas, que es lo que no hace un `v *= 0.95`. */
+    espesura.vx *= Math.exp(-3.4 * dt);
+    if (Math.abs(espesura.vx) < 1) espesura.vx = 0;
+  }
+  if (espesura.x < 0) { espesura.x = 0; espesura.vx = 0; }
+  if (espesura.x > espesura.tope) { espesura.x = espesura.tope; espesura.vx = 0; }
+
+  espesura.verde = damp(espesura.verde, espesura.verdeObj, 0.9, dt);
+  espesura.onda = Math.max(0, espesura.onda - dt * 0.55);
+
+  moverArbolesEspesura(dt);
+  moverPuntos(dt);
+}
+
+/* El mismo muelle amortiguado que los árboles del claro, y por el mismo
+   motivo: una sacudida rígida se ve como una animación, y un muelle se
+   ve como un árbol. Paso fijo, que si no explota. */
+const PASO_ESP = 1 / 120;
+let sobraEsp = 0;
+
+function moverArbolesEspesura(dtReal) {
+  sobraEsp += dtReal;
+  let pasos = 0;
+  const k = CONF.bosque.muelleK, c = CONF.bosque.muelleAmortigua;
+  while (sobraEsp >= PASO_ESP && pasos < 8) {
+    sobraEsp -= PASO_ESP; pasos++;
+    for (const t of espesura.arboles) {
+      if (t.sac === 0 && t.sacV === 0) continue;
+      t.sacV += (-k * t.sac - c * t.sacV) * PASO_ESP;
+      t.sac += t.sacV * PASO_ESP;
+      if (Math.abs(t.sac) < 0.0004 && Math.abs(t.sacV) < 0.004) { t.sac = 0; t.sacV = 0; }
+    }
+  }
+  if (pasos >= 8) sobraEsp = 0;
+}
+
+/** Dónde cae en pantalla algo que está en `xMundo`, a profundidad `z`. */
+function enPantalla(xMundo, z) {
+  return xMundo - espesura.x * z;
+}
+
+/* ---- Dibujar ------------------------------------------------------------ */
+
+function dibujarEspesura(dt) {
+  const suelo = espesura.sueloY;
+  const verde = espesura.verde;
+
+  /* ---- 1. EL FONDO ----
+     No es cielo: es el bosque que sigue y sigue hasta que ya no se ve
+     nada. Por eso el degradado acaba en negro y no en azul. */
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, mezColor("#16244a", "#123a2c", verde * 0.55));
+  g.addColorStop(0.42, mezColor("#18305a", "#154a34", verde * 0.55));
+  g.addColorStop(0.78, mezColor("#0e1c38", "#0e2c20", verde * 0.45));
+  g.addColorStop(1, "#070d16");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, A, H);
+
+  /* La luna, colada entre las copas: un resplandor difuso arriba a la
+     izquierda, sin disco. Aquí no se ve la luna, se ve SU LUZ. */
+  ctx.globalCompositeOperation = "lighter";
+  const lx = enPantalla(A * 0.35, 0.06);
+  haloOvalado(lx, -H * 0.05, A * 0.85, H * 0.6, [
+    [0, `rgba(170,200,255,${0.3 + verde * 0.06})`],
+    [0.4, `rgba(130,170,240,0.13)`],
+    [1, "rgba(100,140,220,0)"],
+  ]);
+  /* Y un segundo haz, más abajo y más estrecho: la luz que se cuela
+     entre dos copas. Sin él, la luz viene «de arriba» en general, y un
+     bosque de noche tiene HACES, no iluminación ambiente. */
+  haloOvalado(enPantalla(A * 1.55, 0.2), H * 0.2, A * 0.3, H * 0.75, [
+    [0, `rgba(160,195,255,${0.12 + verde * 0.05})`],
+    [1, "rgba(120,160,230,0)"],
+  ]);
+  ctx.globalCompositeOperation = "source-over";
+
+  /* ---- 2. LAS BANDAS DE ÁRBOLES ---- */
+  for (let b = 0; b < ESP.bandas.length; b++) {
+    /* Primero la MASA: una copa continua que recorre toda la banda por
+       detrás de los árboles sueltos. Es lo que convierte «unos cuantos
+       árboles en fila» en «un bosque que sigue». Sin ella se ve el
+       fondo entre tronco y tronco y el bosque tiene dos dedos de
+       espesor. */
+    dibujarMasaEsp(b);
+    dibujarArbolesEsp(b);
+    /* Niebla ENTRE las bandas, no encima de todas: es lo que las separa
+       de verdad. Dos bandas sin niebla en medio son la misma banda con
+       dos tamaños. */
+    dibujarBrumaEsp(b / ESP.bandas.length, (b + 1) / ESP.bandas.length);
+  }
+
+  /* ---- 3. EL SUELO ---- */
+  dibujarSueloEsp();
+
+  /* ---- 4. LOS PUNTOS DE INTERÉS ---- */
+  dibujarPuntos();
+
+  /* ---- Lo que mira desde el fondo, y el que habla ----
+     Los ojos van ANTES que el búho: están más lejos. */
+  dibujarOjosEsp();
+  dibujarBuhoEsp();
+
+  /* ---- 5. LAS LUCIÉRNAGAS ---- */
+  dibujarLuces(dt);
+
+  /* ---- 6. LAS PARTÍCULAS ---- */
+  dibujarParticulas();
+
+  /* ---- 7. EL MARCO DE DELANTE ----
+     Troncos enteros cruzando la pantalla. Van casi negros porque no les
+     llega nada de luz: lo que está pegado a la cámara en un bosque de
+     noche es lo que menos se ve. */
+  dibujarMarcoEsp();
+
+  /* ---- 8. LA ONDA DEL MISTERIO ---- */
+  if (espesura.onda > 0.01) {
+    const k = 1 - espesura.onda;
+    ctx.globalCompositeOperation = "lighter";
+    const ox = enPantalla(espesura.ondaX, 1);
+    ctx.strokeStyle = `rgba(120,255,190,${espesura.onda * 0.32})`;
+    ctx.lineWidth = U * (1 + espesura.onda * 3);
+    ctx.beginPath();
+    ctx.ellipse(ox, suelo, A * k * 1.4, H * k * 0.7, 0, 0, 6.283);
+    ctx.stroke();
+    ctx.globalCompositeOperation = "source-over";
+  }
+
+  /* ---- 9. LA OSCURIDAD DE LOS CANTOS ----
+     Más cerrada que en el claro: aquí hay que sentir que lo que no se
+     ve es la mayor parte. */
+  const gv = ctx.createRadialGradient(A * 0.5, H * 0.52, Math.min(A, H) * 0.2,
+                                      A * 0.5, H * 0.52, Math.max(A, H) * 0.78);
+  gv.addColorStop(0, "rgba(2,5,4,0)");
+  gv.addColorStop(0.7, `rgba(2,5,4,${0.16 + verde * 0.05})`);
+  gv.addColorStop(1, "rgba(1,3,2,0.72)");
+  ctx.fillStyle = gv;
+  ctx.fillRect(0, 0, A, H);
+}
+
+/**
+ * La masa de una banda: una silueta continua de copas.
+ *
+ * Es una curva hecha con tres senos de frecuencias que no encajan —el
+ * mismo truco que el fuego— rellenada hasta el suelo. Como los senos se
+ * evalúan sobre la posición del MUNDO y no sobre la de la pantalla, la
+ * masa se queda quieta respecto a los árboles al andar, y no se ve
+ * deslizarse por detrás de ellos.
+ */
+function dibujarMasaEsp(banda) {
+  const conf = ESP.bandas[banda];
+  if (banda >= 3) return;                 // los de delante no tienen masa
+  const verde = espesura.verde;
+  const suelo = espesura.sueloY;
+  const base = mez(suelo - H * 0.17, suelo + H * 0.05, banda / 3) + H * 0.02;
+  const alto = U * mez(24, 62, banda / 3);
+
+  const deLaLuna = 0.42 * (1 - conf.z * 0.62);
+  const il = clamp01(deLaLuna * 0.7);
+  const delVerde = verde * 0.3 * (1 - conf.z * 0.25);
+  let r = mez(mez(8, 60, il), 48, conf.niebla);
+  let g2 = mez(mez(18, 100, il), 72, conf.niebla);
+  let b2 = mez(mez(22, 80, il), 98, conf.niebla);
+  r = mez(r, 20, delVerde); g2 = mez(g2, 140, delVerde); b2 = mez(b2, 84, delVerde);
+
+  ctx.fillStyle = `rgba(${Math.round(r)},${Math.round(g2)},${Math.round(b2)},0.85)`;
+  ctx.beginPath();
+  ctx.moveTo(-20, H + 10);
+  const sem = banda * 137.5;
+  for (let x = -20; x <= A + 20; x += 12) {
+    const xm = (x + espesura.x * conf.z) * 0.013 + sem;
+    const h = alto * (0.55
+      + Math.sin(xm) * 0.22
+      + Math.sin(xm * 2.7 + 1.3) * 0.14
+      + Math.sin(xm * 5.1 + 2.6) * 0.09);
+    ctx.lineTo(x, base - h);
+  }
+  ctx.lineTo(A + 20, H + 10);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function dibujarArbolesEsp(banda) {
+  const conf = ESP.bandas[banda];
+  const verde = espesura.verde;
+  const margen = A * 0.3;
+
+  for (const t of espesura.arboles) {
+    if (t.banda !== banda) continue;
+    const x = enPantalla(t.x, conf.z);
+    /* Fuera de la pantalla no se pinta. Con casi ciento sesenta árboles
+       y tres pantallas de mundo, pintarlos todos sería pintar dos
+       tercios para nadie. */
+    if (x < -margen || x > A + margen) continue;
+
+    const base = t.base;
+    const brisa = Math.sin(reloj * 0.38 + t.f) * (0.35 + clima.viento * 0.55);
+    const mece = (brisa * 0.011 + t.sac) * (0.4 + conf.z * 0.6);
+
+    /* La luz: sólo la luna, y sólo por arriba. Más la que dé el verde
+       del misterio, que sube desde el suelo. */
+    /* La luz de la luna llega mucho más a los de lejos que a los de
+       cerca: lo de lejos está a la altura de las copas, por donde entra
+       la luz, y lo de cerca está abajo, a la sombra. */
+    const deLaLuna = 0.42 * (1 - conf.z * 0.62);
+    const delVerde = verde * 0.38 * (1 - conf.z * 0.25);
+    const il = clamp01(deLaLuna + clima.destello * 0.4);
+
+    /* El color, ya con la niebla mezclada encima: lo que hace que los
+       de lejos estén medio disueltos en el fondo. La niebla es AZUL
+       CLARA, no gris: mezclarla en gris apagaba el bosque entero y lo
+       dejaba en color ceniza. */
+    let r = mez(mez(10, 74, il), 52, conf.niebla);
+    let g2 = mez(mez(22, 122, il), 78, conf.niebla);
+    let b2 = mez(mez(26, 96, il), 104, conf.niebla);
+    /* Y el tinte propio de cada árbol, para que no sean todos el mismo. */
+    g2 += t.tinte * 12;
+    r += t.tinte * 4;
+    /* El verde del misterio entra por abajo. */
+    r = mez(r, 24, delVerde); g2 = mez(g2, 168, delVerde); b2 = mez(b2, 96, delVerde);
+    ctx.fillStyle = `rgb(${Math.round(r)},${Math.round(g2)},${Math.round(b2)})`;
+
+    ctx.save();
+    ctx.translate(x, base);
+    ctx.rotate(mece);
+    if (t.abeto) abeto(0, 0, t.ancho, t.alto);
+    else arbolHoja(0, 0, t.ancho, t.alto, t.f);
+    ctx.restore();
+  }
+}
+
+/** Un árbol de hoja: tronco con dos horquillas y una copa de bultos. */
+function arbolHoja(x, base, w, h, f) {
+  ctx.beginPath();
+  ctx.moveTo(x - w * 0.22, base);
+  ctx.quadraticCurveTo(x - w * 0.1, base - h * 0.5, x - w * 0.05, base - h * 0.62);
+  ctx.lineTo(x + w * 0.05, base - h * 0.62);
+  ctx.quadraticCurveTo(x + w * 0.1, base - h * 0.5, x + w * 0.22, base);
+  ctx.closePath();
+  ctx.fill();
+  /* Dos ramas que salen a media altura. */
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.strokeStyle = ctx.fillStyle;
+  ctx.lineWidth = w * 0.12;
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(x, base - h * 0.5);
+    ctx.quadraticCurveTo(x + s * w * 0.5, base - h * 0.62, x + s * w * 0.75, base - h * 0.78);
+    ctx.stroke();
+  }
+  ctx.restore();
+  /* La copa: cinco bultos con su propio desorden. */
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * 6.283 + f;
+    const cx = x + Math.cos(a) * w * 0.55;
+    const cy = base - h * 0.8 + Math.sin(a) * h * 0.1;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, w * (0.52 + (i % 2) * 0.16), h * 0.15, 0, 0, 6.283);
+    ctx.fill();
+  }
+}
+
+function dibujarBrumaEsp(desde, hasta) {
+  for (const b of espesura.bruma) {
+    if (b.z < desde || b.z >= hasta) continue;
+    const y = b.y + Math.sin(reloj * 0.2 + b.f) * H * 0.008;
+    const desliz = (reloj * b.v * A) % (A * 2);
+    const x = enPantalla(0, b.z) + desliz;
+    const op = b.op * (0.5 + clima.lluvia * 0.5) * (0.6 + espesura.verde * 0.4);
+    const col = espesura.verde > 0.1
+      ? `${Math.round(mez(150, 110, espesura.verde))},${Math.round(mez(180, 230, espesura.verde))},${Math.round(mez(220, 190, espesura.verde))}`
+      : "150,180,220";
+    /* La banda va de canto a canto de la PANTALLA, y el desplazamiento
+       sólo mueve su textura. Antes se pintaba un rectángulo de ancho
+       fijo que se paseaba, y lo que se veía era una mancha gris
+       cruzando el bosque. */
+    const gg = ctx.createLinearGradient(0, y - b.alto, 0, y + b.alto);
+    gg.addColorStop(0, `rgba(${col},0)`);
+    gg.addColorStop(0.5, `rgba(${col},${0.14 * op})`);
+    gg.addColorStop(1, `rgba(${col},0)`);
+    ctx.fillStyle = gg;
+    ctx.fillRect(-10, y - b.alto, A + 20, b.alto * 2);
+    /* Y dos jirones que sí se mueven, para que la niebla no sea una
+       franja plana. */
+    for (let j = 0; j < 2; j++) {
+      const jx = ((x + j * A * 0.6) % (A * 1.6)) - A * 0.3;
+      const gj = ctx.createRadialGradient(jx, y, 0, jx, y, A * 0.3);
+      gj.addColorStop(0, `rgba(${col},${0.08 * op})`);
+      gj.addColorStop(1, `rgba(${col},0)`);
+      ctx.fillStyle = gj;
+      ctx.beginPath();
+      ctx.ellipse(jx, y, A * 0.3, b.alto * 1.2, 0, 0, 6.283);
+      ctx.fill();
+    }
+  }
+}
+
+function dibujarSueloEsp() {
+  const suelo = espesura.sueloY;
+  const verde = espesura.verde;
+
+  /* La tierra. */
+  const gs = ctx.createLinearGradient(0, suelo - H * 0.04, 0, H);
+  gs.addColorStop(0, mezColor("#1d2a24", "#1e402c", verde * 0.7));
+  gs.addColorStop(0.45, mezColor("#141d19", "#142c1e", verde * 0.6));
+  gs.addColorStop(1, "#080d0a");
+  ctx.fillStyle = gs;
+  ctx.beginPath();
+  ctx.moveTo(-10, H + 10);
+  ctx.lineTo(-10, suelo);
+  for (let x = -10; x <= A + 10; x += 18) {
+    const xm = x + espesura.x;
+    ctx.lineTo(x, suelo - Math.sin(xm * 0.004) * U * 2 - Math.sin(xm * 0.011) * U * 1.2);
+  }
+  ctx.lineTo(A + 10, H + 10);
+  ctx.closePath();
+  ctx.fill();
+
+  /* ---- El sendero gastado ----
+     Una franja de tierra pisada que recorre el bosque entero. Es lo que
+     dice «por aquí se anda», y de paso rompe la alfombra verde plana
+     que quedaba antes. */
+  const gp2 = ctx.createLinearGradient(0, suelo + H * 0.03, 0, H);
+  gp2.addColorStop(0, `rgba(${Math.round(mez(52, 60, verde))},${Math.round(mez(44, 66, verde))},${Math.round(mez(34, 44, verde))},0.55)`);
+  gp2.addColorStop(1, "rgba(30,26,20,0.3)");
+  ctx.fillStyle = gp2;
+  ctx.beginPath();
+  ctx.moveTo(-10, H + 10);
+  for (let x = -10; x <= A + 10; x += 16) {
+    const xm = x + espesura.x;
+    ctx.lineTo(x, suelo + H * 0.05 + Math.sin(xm * 0.0032) * H * 0.02
+                 + Math.sin(xm * 0.0091 + 2) * H * 0.012);
+  }
+  ctx.lineTo(A + 10, H + 10);
+  ctx.closePath();
+  ctx.fill();
+
+  /* Las raíces que cruzan. */
+  ctx.strokeStyle = `rgba(${Math.round(mez(22, 30, verde))},${Math.round(mez(26, 44, verde))},${Math.round(mez(22, 30, verde))},0.9)`;
+  ctx.lineCap = "round";
+  for (const r of espesura.raices) {
+    const x = enPantalla(r.x, 1);
+    if (x < -r.largo || x > A + r.largo) continue;
+    ctx.lineWidth = r.grueso;
+    ctx.beginPath();
+    ctx.moveTo(x - r.largo * 0.5, r.y);
+    ctx.quadraticCurveTo(x, r.y + r.comba * U * 4, x + r.largo * 0.5, r.y);
+    ctx.stroke();
+  }
+
+  /* Las matas, la hierba y las piedras. */
+  for (const s of espesura.suelo) {
+    const x = enPantalla(s.x, 1);
+    if (x < -20 || x > A + 20) continue;
+    const prof = clamp01((s.y - suelo) / Math.max(1, H - suelo));
+    const luz = 0.28 + prof * 0.3 + verde * 0.4 * (0.3 + prof);
+    const col = `rgb(${Math.round(mez(20, 74, luz))},${Math.round(mez(44, 186, luz))},${Math.round(mez(28, 96, luz))})`;
+    const mece = Math.sin(reloj * 1.05 + s.f) * U * (0.2 + clima.viento * 0.5) * (0.3 + prof);
+
+    if (s.tipo === "piedra") {
+      ctx.fillStyle = `rgb(${Math.round(mez(26, 56, luz))},${Math.round(mez(28, 54, luz))},${Math.round(mez(30, 50, luz))})`;
+      ctx.beginPath();
+      ctx.ellipse(x, s.y, s.s * 0.8, s.s * 0.45, s.tinte, 0, 6.283);
+      ctx.fill();
+    } else if (s.tipo === "mata") {
+      /* Un helecho, no tres óvalos: cinco frondas saliendo del mismo
+         punto. Los óvalos se veían como pegatinas de musgo. */
+      ctx.strokeStyle = col;
+      ctx.lineCap = "round";
+      for (let i = 0; i < 5; i++) {
+        const a2 = -1.57 + (i - 2) * 0.38;
+        ctx.lineWidth = Math.max(1, s.s * 0.16);
+        ctx.beginPath();
+        ctx.moveTo(x, s.y);
+        ctx.quadraticCurveTo(
+          x + Math.cos(a2) * s.s * 0.9 + mece * 0.3, s.y + Math.sin(a2) * s.s * 0.7,
+          x + Math.cos(a2) * s.s * 1.5 + mece * 0.6, s.y + Math.sin(a2) * s.s * 1.5 * 0.7);
+        ctx.stroke();
+      }
+    } else {
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1 + prof;
+      ctx.beginPath();
+      ctx.moveTo(x, s.y);
+      ctx.quadraticCurveTo(x + mece * 0.5, s.y - s.s * 1.2, x + mece, s.y - s.s * 2);
+      ctx.stroke();
+    }
+  }
+}
+
+function dibujarLuces(dt) {
+  void dt;
+  ctx.globalCompositeOperation = "lighter";
+  for (const l of espesura.luces) {
+    const x = enPantalla(l.x + Math.sin(reloj * l.vel + l.f) * l.radio, l.z);
+    if (x < -30 || x > A + 30) continue;
+    const y = l.y + Math.cos(reloj * l.vel * 0.7 + l.f * 1.7) * l.radio * 0.6;
+    /* El parpadeo: un seno elevado, para que esté más tiempo apagada
+       que encendida. Una luciérnaga es sobre todo oscuridad. */
+    const k = Math.pow(clamp01(0.5 + 0.5 * Math.sin(reloj * l.ritmo + l.fase)), 2.4);
+    if (k < 0.02) continue;
+    const gg = ctx.createRadialGradient(x, y, 0, x, y, l.r * 7);
+    gg.addColorStop(0, `rgba(190,255,215,${0.5 * k})`);
+    gg.addColorStop(0.25, `rgba(80,230,150,${0.2 * k})`);
+    gg.addColorStop(1, "rgba(50,200,120,0)");
+    ctx.fillStyle = gg;
+    ctx.beginPath(); ctx.arc(x, y, l.r * 7, 0, 6.283); ctx.fill();
+    ctx.fillStyle = `rgba(226,255,238,${0.85 * k})`;
+    ctx.beginPath(); ctx.arc(x, y, l.r, 0, 6.283); ctx.fill();
+  }
+  ctx.globalCompositeOperation = "source-over";
+}
+
+function dibujarMarcoEsp() {
+  const z = ESP.marco.z;
+  /* Dónde hay algo que mirar ahora mismo. Un tronco de primer plano
+     justo delante de la pala la tapa entera y no hay forma de
+     apartarlo: el marco va a su velocidad y no se puede esquivar. Así
+     que el tronco se aparta solo, desvaneciéndose. Se lee como que
+     está tan cerca que queda fuera de foco, y no como un fallo. */
+  const estorbos = [];
+  for (const q of puntos.lista) {
+    if (!q.hay()) continue;
+    const sx = enPantalla(q.x, q.z);
+    if (sx > -A * 0.2 && sx < A * 1.2) estorbos.push({ x: sx, r: q.r * 2.2 });
+  }
+  const bx = enPantalla(buhoEsp.x, 0.52);
+  if (bx > -A * 0.2 && bx < A * 1.2) estorbos.push({ x: bx, r: buhoEsp.r * 3 });
+
+  for (const m of espesura.marco) {
+    const x = enPantalla(m.x, z);
+    if (x < -m.ancho * 4 || x > A + m.ancho * 4) continue;
+    const mece = Math.sin(reloj * 0.3 + m.f) * U * 0.6 * (0.4 + clima.viento * 0.6);
+
+    let tapa = 1;
+    for (const es of estorbos) {
+      const d = Math.abs(x + mece - es.x);
+      if (d < es.r + m.ancho * 2) {
+        tapa = Math.min(tapa, clamp01((d - m.ancho) / Math.max(1, es.r)) * 0.55 + 0.1);
+      }
+    }
+    if (tapa < 0.04) continue;
+
+    ctx.save();
+    ctx.globalAlpha = tapa;
+    ctx.translate(x + mece, 0);
+    ctx.rotate(m.incl);
+    /* El tronco, de arriba abajo de la pantalla. Casi negro: lo pegado
+       a la cámara en un bosque de noche es lo que menos se ve. */
+    /* Se estrecha hacia arriba y se ensancha en la base, que es la
+       forma de un tronco de verdad visto desde el suelo. */
+    const aA = m.ancho * m.afina, aB = m.ancho * 1.25;
+    const gt = ctx.createLinearGradient(-m.ancho, 0, m.ancho, 0);
+    gt.addColorStop(0, "rgb(7,11,13)");
+    gt.addColorStop(0.28, "rgb(26,35,37)");
+    gt.addColorStop(0.72, "rgb(13,19,20)");
+    gt.addColorStop(1, "rgb(4,7,8)");
+    ctx.fillStyle = gt;
+    ctx.beginPath();
+    ctx.moveTo(-aA, -20);
+    ctx.quadraticCurveTo(-m.ancho * 0.9, H * 0.55, -aB, H + 20);
+    ctx.lineTo(aB, H + 20);
+    ctx.quadraticCurveTo(m.ancho * 0.9, H * 0.55, aA, -20);
+    ctx.closePath();
+    ctx.fill();
+
+    /* La corteza: surcos verticales cortos, recortados a la silueta.
+       Sin ellos el tronco es una mancha, y con ellos es madera. */
+    ctx.save();
+    ctx.clip();
+    ctx.strokeStyle = "rgba(0,0,0,0.5)";
+    ctx.lineCap = "round";
+    for (const su of m.surcos) {
+      ctx.lineWidth = m.ancho * 0.12 * su.gr;
+      const y0 = su.y0 * H;
+      ctx.beginPath();
+      ctx.moveTo(su.x * m.ancho, y0);
+      ctx.quadraticCurveTo(su.x * m.ancho + m.ancho * 0.1, y0 + H * su.largo * 0.5,
+                           su.x * m.ancho, y0 + H * su.largo);
+      ctx.stroke();
+    }
+    ctx.restore();
+    /* Un filo de luna por un lado, finísimo: sin él son rectángulos
+       negros y no se leen como troncos. */
+    ctx.strokeStyle = "rgba(160,195,255,0.22)";
+    ctx.lineWidth = Math.max(1, m.ancho * 0.12);
+    ctx.beginPath();
+    ctx.moveTo(-aA, -20);
+    ctx.quadraticCurveTo(-m.ancho * 0.9, H * 0.55, -aB, H + 20);
+    ctx.stroke();
+
+    /* Las ramas que cruzan por arriba. */
+    /* Las ramas, con grosor de verdad y con ramitas colgando. Con un
+       trazo fino y limpio parecían cables tendidos de lado a lado. */
+    ctx.strokeStyle = "rgb(9,13,14)";
+    ctx.lineCap = "round";
+    for (const r of m.ramas) {
+      const y0 = H * r.y;
+      const ex = r.lado * A * r.largo, ey = y0 + H * r.caida * 0.3;
+      /* Se pinta en dos pasadas: gruesa por dentro y fina por fuera,
+         que es como se afina una rama sin poder variar el grosor de un
+         trazo. */
+      for (const [ini, fin, gr] of [[0, 0.62, 1], [0.5, 1, 0.45]]) {
+        ctx.lineWidth = m.ancho * 0.62 * gr;
+        ctx.beginPath();
+        const x1 = mez(0, ex, ini), y1 = mez(y0, ey, ini) - H * 0.03 * ini;
+        const x2 = mez(0, ex, fin), y2 = mez(y0, ey, fin);
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo((x1 + x2) * 0.5, mez(y1, y2, 0.5) - H * 0.035, x2, y2);
+        ctx.stroke();
+      }
+      /* Dos ramitas colgando hacia abajo. */
+      ctx.lineWidth = m.ancho * 0.18;
+      for (let j = 0; j < 2; j++) {
+        const t = 0.4 + j * 0.3;
+        const hx = mez(0, ex, t), hy = mez(y0, ey, t) - H * 0.02;
+        ctx.beginPath();
+        ctx.moveTo(hx, hy);
+        ctx.quadraticCurveTo(hx + r.lado * A * 0.03, hy + H * 0.03,
+                             hx + r.lado * A * 0.01, hy + H * 0.06);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+}
+
+/* ==========================================
+   LOS PUNTOS DE INTERÉS
+   ==========================================
+
+   Sitios del bosque donde hay algo. Cada uno sabe dónde está, si se ve
+   ya, qué pasa al tocarlo y cómo se dibuja.
+
+   ── POR QUÉ UNA LISTA Y NO UN `if` POR SITIO ─────────────────────────
+   Porque el orden de los toques importa —lo pequeño gana a lo grande— y
+   con una lista ordenada por tamaño eso sale solo. Y porque para saber
+   «¿hay algo cerca?» basta recorrerla, en vez de preguntarle a cada
+   cosa por su nombre.
+
+   ── LO QUE SE VE Y LO QUE NO ─────────────────────────────────────────
+   Cada punto tiene una condición para existir. La pala está desde el
+   principio; la reliquia no aparece hasta que se ha cavado. Eso es lo
+   que hace que volver a un sitio que ya conoces tenga sentido: la
+   segunda vez hay algo que la primera no estaba.                    */
+
+const puntos = {
+  lista: [],
+  /* El que tiene el dedo encima ahora mismo, para resaltarlo. */
+  cerca: null,
+  /* Lo que se ha dicho ya al acercarse, para no repetirlo en bucle. */
+  dichos: new Set(),
+};
+
+function construirPuntos() {
+  const suelo = espesura.sueloY;
+  const W = espesura.W;
+
+  puntos.lista = [
+    /* ---- La vuelta al claro ----
+       Un hueco entre los troncos por el que se cuela luz de fogata. Es
+       lo único cálido de toda la espesura, y por eso se entiende sin
+       cartel que es por ahí por donde se vuelve. */
+    {
+      id: "salida",
+      x: W * 0.045, y: suelo - H * 0.08,
+      r: U * 13, z: 0.52,
+      hay: () => true,
+    },
+
+    /* ---- La marca del suelo ----
+       Medio tapada de hojas. No se ve hasta que se está encima, y eso
+       es a propósito: una X que se ve desde lejos es una señal, y ésta
+       tiene que ser un hallazgo. */
+    {
+      id: "equis",
+      x: W * 0.37, y: suelo + H * 0.055,
+      r: U * 11, z: 1,
+      hay: () => true,
+      hojas: 1,          // cuánto queda por apartar
+      golpes: 0,         // cuántas paladas lleva
+      hoyo: 0,
+      temblor: 0,
+    },
+
+    /* ---- El búho ----
+       En un árbol de la banda de en medio, alto. */
+    {
+      id: "buho",
+      x: W * 0.58, y: mez(espesura.copasY, suelo, 0.34),
+      r: U * 9, z: 0.52,
+      hay: () => true,
+    },
+
+    /* ---- La pala ----
+       Apoyada en un tocón. Lejos de la X a propósito: el camino de ida
+       y vuelta ES la parte que hace que encontrarla valga algo. */
+    {
+      id: "pala",
+      x: W * 0.83, y: suelo + H * 0.035,
+      r: U * 10, z: 1,
+      hay: () => !bolsa.lleva("pala"),
+      brillo: 0,
+      cogida: 0,
+    },
+
+    /* ---- Lo que estaba enterrado ----
+       No existe hasta que se cava. */
+    {
+      id: "reliquia",
+      x: W * 0.37, y: suelo + H * 0.062,
+      r: U * 8, z: 1,
+      hay: () => historia.hecho("misterio"),
+      pulso: 0, salida: 0, giro: 0,
+    },
+  ];
+
+  /* Al remedir se conserva lo vivido: si ya habías cavado dos veces, no
+     se vuelve a empezar sólo porque hayas girado el teléfono. */
+  for (const p of puntos.lista) {
+    if (p.id === "equis") {
+      p.hojas = historia.hecho("equis") ? 0 : 1;
+      p.golpes = recuerdo.leer("golpes", 0);
+      p.hoyo = clamp01(p.golpes / CONF.cavar.golpes);
+    }
+    if (p.id === "reliquia") p.salida = historia.hecho("misterio") ? 1 : 0;
+  }
+}
+
+/** Dónde cae un punto en la pantalla. */
+function puntoEnPantalla(p) {
+  return { x: enPantalla(p.x, p.z), y: p.y };
+}
+
+function moverPuntos(dt) {
+  const centro = A * 0.5;
+  puntos.cerca = null;
+  let mejorD = Infinity;
+
+  for (const p of puntos.lista) {
+    if (!p.hay()) continue;
+    const s = puntoEnPantalla(p);
+
+    /* ---- ¿Estoy encima? ----
+       «Cerca» se mide contra el CENTRO de la pantalla, no contra el
+       dedo: el dedo no está siempre puesto, y lo que cuenta aquí es
+       hacia dónde estás mirando. */
+    const d = Math.abs(s.x - centro);
+    if (d < A * 0.22 && d < mejorD) { mejorD = d; puntos.cerca = p; }
+
+    if (p.id === "pala") {
+      p.brillo = 0.5 + 0.5 * Math.sin(reloj * 1.4);
+      if (p.cogida > 0) p.cogida = Math.min(1, p.cogida + dt * 1.6);
+    }
+    if (p.id === "equis") {
+      p.temblor = Math.max(0, p.temblor - dt * 3);
+      p.hoyo = damp(p.hoyo, clamp01(p.golpes / CONF.cavar.golpes), 5, dt);
+    }
+    if (p.id === "reliquia") {
+      p.salida = damp(p.salida, 1, 1.1, dt);
+      p.pulso = Math.max(0, p.pulso - dt * 0.9);
+      p.giro += dt * 0.35;
+      /* Suelta partículas verdes por su cuenta: es lo que hace que se
+         vea que está VIVA y no que es un objeto puesto ahí. */
+      if (Math.random() < dt * (3 + p.pulso * 20)) {
+        const s2 = puntoEnPantalla(p);
+        soltar(s2.x + azar(-U * 3, U * 3), s2.y - U * azar(0, 3), {
+          vx: azar(-8, 8), vy: azar(-26, -8),
+          vida: azar(1.6, 3.4), tam: azar(1, 2.4),
+          tipo: TIPO.BRILLO, tono: 0.45,
+        });
+      }
+    }
+  }
+
+  /* ---- Lo que se dice al acercarse ----
+     Una vez por sitio y por visita. Repetirlo cada vez que pasas por
+     delante convierte una pista en un cartel. */
+  const c = puntos.cerca;
+  if (c && !puntos.dichos.has(c.id)) {
+    const frase = pistaDePunto(c);
+    if (frase) {
+      puntos.dichos.add(c.id);
+      const s = puntoEnPantalla(c);
+      decir(s.x, s.y - U * 6, frase, { dur: 4 });
+    }
+  }
+}
+
+/** La pista de acercarse, según lo que ya haya pasado. */
+function pistaDePunto(p) {
+  if (p.id === "equis") {
+    if (historia.hecho("misterio")) return null;
+    if (!historia.hecho("equis")) return null;   // primero hay que destaparla
+    if (!bolsa.lleva("pala")) return CONF.espesura.equisSinPala;
+    return CONF.espesura.equisConPala;
+  }
+  if (p.id === "pala" && !bolsa.lleva("pala")) return CONF.espesura.palaVista;
+  if (p.id === "salida") return CONF.espesura.salidaVista;
+  return null;
+}
+
+/* ---- Dibujar ------------------------------------------------------------ */
+
+function dibujarPuntos() {
+  for (const p of puntos.lista) {
+    if (!p.hay()) continue;
+    const s = puntoEnPantalla(p);
+    if (s.x < -A * 0.4 || s.x > A * 1.4) continue;
+
+    if (p.id === "salida") dibujarSalida(s.x, s.y, p);
+    else if (p.id === "equis") dibujarEquis(s.x, s.y, p);
+    else if (p.id === "pala") dibujarPala(s.x, s.y, p);
+    else if (p.id === "reliquia") dibujarReliquia(s.x, s.y, p);
+    /* El búho de la espesura se pinta con los demás bichos, aparte. */
+  }
+}
+
+/** El hueco por donde se vuelve: luz de fogata colándose entre troncos. */
+function dibujarSalida(x, y, p) {
+  const k = 0.75 + 0.25 * Math.sin(reloj * 0.8);
+  ctx.globalCompositeOperation = "lighter";
+  haloOvalado(x, y, p.r * 1.7, p.r * 2.3, [
+    [0, `rgba(255,178,96,${0.16 * k})`],
+    [0.45, `rgba(255,150,70,${0.06 * k})`],
+    [1, "rgba(255,140,60,0)"],
+  ]);
+  ctx.globalCompositeOperation = "source-over";
+
+  /* El sendero: dos hileras de piedras que se van juntando al fondo.
+     Es lo que dice «por aquí se va» sin escribirlo. */
+  ctx.fillStyle = `rgba(${Math.round(mez(40, 92, k * 0.5))},${Math.round(mez(38, 78, k * 0.5))},${Math.round(mez(36, 62, k * 0.5))},0.85)`;
+  for (let i = 0; i < 6; i++) {
+    const t = i / 5;
+    const px = x + mez(0, -p.r * 0.5, t);
+    const py = y + p.r * mez(1.5, 0.3, t);
+    const s = U * mez(2, 0.7, t);
+    for (const lado of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(px + lado * p.r * mez(0.9, 0.2, t), py, s, s * 0.5, 0, 0, 6.283);
+      ctx.fill();
+    }
+  }
+}
+
+/** La marca del suelo. Empieza tapada de hojas. */
+function dibujarEquis(x, y, p) {
+  const tap = p.hojas;
+  const hoyo = p.hoyo;
+  const tmb = p.temblor;
+  ctx.save();
+  ctx.translate(x + azar(-tmb, tmb) * U, y + azar(-tmb, tmb) * U * 0.5);
+
+  /* ---- El hoyo ----
+     Crece con las paladas. Es una elipse oscura con el borde de tierra
+     levantada alrededor: sin ese borde parece una mancha, y con él
+     parece un agujero. */
+  if (hoyo > 0.01) {
+    ctx.fillStyle = `rgba(${Math.round(mez(34, 20, hoyo))},${Math.round(mez(30, 16, hoyo))},${Math.round(mez(24, 12, hoyo))},0.95)`;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, p.r * (0.5 + hoyo * 0.6), p.r * (0.22 + hoyo * 0.3), 0, 0, 6.283);
+    ctx.fill();
+    /* La tierra levantada. */
+    ctx.fillStyle = "rgba(52,44,32,0.9)";
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * 6.283 + 0.4;
+      const rr = p.r * (0.62 + hoyo * 0.6);
+      ctx.beginPath();
+      ctx.ellipse(Math.cos(a) * rr, Math.sin(a) * rr * 0.45,
+                  p.r * 0.2 * (1 + hoyo), p.r * 0.1 * (1 + hoyo), a, 0, 6.283);
+      ctx.fill();
+    }
+    /* Y el fondo, más oscuro cuanto más hondo. */
+    const gh = ctx.createRadialGradient(0, 0, 0, 0, 0, p.r * (0.5 + hoyo * 0.6));
+    gh.addColorStop(0, `rgba(0,0,0,${0.5 + hoyo * 0.45})`);
+    gh.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = gh;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, p.r * (0.5 + hoyo * 0.6), p.r * (0.22 + hoyo * 0.3), 0, 0, 6.283);
+    ctx.fill();
+  }
+
+  /* ---- La X ----
+     Dos palos cruzados, clavados y medio hundidos. Se desvanece según
+     se cava: lo que había debajo se la va comiendo. */
+  const vis = (1 - tap * 0.82) * (1 - hoyo * 0.9);
+  if (vis > 0.02) {
+    ctx.strokeStyle = `rgba(62,48,34,${0.95 * vis})`;
+    ctx.lineWidth = Math.max(1.6, p.r * 0.13);
+    ctx.lineCap = "round";
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(-p.r * 0.55 * s, -p.r * 0.26);
+      ctx.lineTo(p.r * 0.55 * s, p.r * 0.26);
+      ctx.stroke();
+    }
+    /* Un filo claro por arriba, que es lo que la saca de la tierra. */
+    ctx.strokeStyle = `rgba(150,140,110,${0.28 * vis})`;
+    ctx.lineWidth = Math.max(0.8, p.r * 0.05);
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(-p.r * 0.55 * s, -p.r * 0.3);
+      ctx.lineTo(p.r * 0.55 * s, p.r * 0.22);
+      ctx.stroke();
+    }
+  }
+
+  /* ---- Las hojas que la tapan ----
+     Se apartan al primer toque. Mientras están, lo que se ve es un
+     montoncito cualquiera del suelo del bosque. */
+  if (tap > 0.02) {
+    ctx.globalAlpha = tap;
+    for (let i = 0; i < 11; i++) {
+      const a = (i / 11) * 6.283 + 1.1;
+      const rr = p.r * (0.2 + ((i * 7) % 5) * 0.16);
+      ctx.save();
+      ctx.translate(Math.cos(a) * rr, Math.sin(a) * rr * 0.5);
+      ctx.rotate(a * 1.7);
+      ctx.fillStyle = i % 3 === 0 ? "#3e3420" : (i % 3 === 1 ? "#4a3c24" : "#33301c");
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.r * 0.26, p.r * 0.13, 0, 0, 6.283);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+/** La pala, apoyada en un tocón. */
+function dibujarPala(x, y, p) {
+  const k = clamp01(p.cogida);
+  if (k >= 1) return;
+  const r = p.r;
+
+  /* ---- El tocón ---- */
+  ctx.fillStyle = "rgb(30,25,19)";
+  ctx.beginPath();
+  ctx.ellipse(x + r * 0.5, y, r * 0.55, r * 0.22, 0, 0, 6.283);
+  ctx.fill();
+  ctx.fillStyle = "rgb(42,34,24)";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x + r * 0.5 - r * 0.5, y - r * 0.6, r, r * 0.6, r * 0.1);
+  else ctx.rect(x + r * 0.5 - r * 0.5, y - r * 0.6, r, r * 0.6);
+  ctx.fill();
+  ctx.fillStyle = "rgb(58,47,33)";
+  ctx.beginPath();
+  ctx.ellipse(x + r * 0.5, y - r * 0.6, r * 0.5, r * 0.2, 0, 0, 6.283);
+  ctx.fill();
+  /* Los anillos del corte. */
+  ctx.strokeStyle = "rgba(24,18,12,0.6)";
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 2; i++) {
+    ctx.beginPath();
+    ctx.ellipse(x + r * 0.5, y - r * 0.6, r * 0.5 * (i / 3), r * 0.2 * (i / 3), 0, 0, 6.283);
+    ctx.stroke();
+  }
+
+  ctx.save();
+  ctx.translate(x, y);
+  /* Al cogerla sube, gira y se encoge. Es el único aviso de que se la
+     ha quedado, y sin él un objeto que desaparece se lee como un fallo. */
+  if (k > 0) {
+    ctx.translate(0, -k * H * 0.12);
+    ctx.rotate(k * 2.4);
+    ctx.scale(1 - k * 0.7, 1 - k * 0.7);
+    ctx.globalAlpha = 1 - k;
+  }
+  /* Inclinada contra el tocón. */
+  ctx.rotate(-0.42 + Math.sin(reloj * 0.6) * 0.012);
+
+  /* La sombra en el suelo, aparte del giro para que no se vaya con él. */
+  ctx.save();
+  ctx.rotate(0.42);
+  ctx.fillStyle = "rgba(2,4,3,0.5)";
+  ctx.beginPath();
+  ctx.ellipse(r * 0.1, r * 0.08, r * 0.7, r * 0.14, 0, 0, 6.283);
+  ctx.fill();
+  ctx.restore();
+
+  /* El mango: madera con veta y un remate arriba. */
+  const gm = ctx.createLinearGradient(-r * 0.1, 0, r * 0.1, 0);
+  gm.addColorStop(0, "rgb(96,68,40)");
+  gm.addColorStop(0.5, "rgb(132,96,58)");
+  gm.addColorStop(1, "rgb(74,52,30)");
+  ctx.fillStyle = gm;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-r * 0.085, -r * 1.5, r * 0.17, r * 1.6, r * 0.08);
+  else ctx.rect(-r * 0.085, -r * 1.5, r * 0.17, r * 1.6);
+  ctx.fill();
+  /* El agarre de arriba, en forma de D. */
+  ctx.strokeStyle = "rgb(116,84,50)";
+  ctx.lineWidth = r * 0.12;
+  ctx.beginPath();
+  ctx.arc(0, -r * 1.55, r * 0.2, Math.PI * 0.9, Math.PI * 0.1);
+  ctx.stroke();
+
+  /* La hoja: metal, con el filo brillante y la parte de abajo gastada. */
+  const gh = ctx.createLinearGradient(-r * 0.3, 0, r * 0.3, r * 0.5);
+  gh.addColorStop(0, "rgb(126,134,146)");
+  gh.addColorStop(0.45, "rgb(88,96,108)");
+  gh.addColorStop(1, "rgb(52,56,64)");
+  ctx.fillStyle = gh;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.3, 0);
+  ctx.lineTo(r * 0.3, 0);
+  ctx.lineTo(r * 0.24, r * 0.4);
+  ctx.quadraticCurveTo(0, r * 0.62, -r * 0.24, r * 0.4);
+  ctx.closePath();
+  ctx.fill();
+  /* El filo. */
+  ctx.strokeStyle = "rgba(210,222,240,0.5)";
+  ctx.lineWidth = Math.max(1, r * 0.04);
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.24, r * 0.4);
+  ctx.quadraticCurveTo(0, r * 0.62, r * 0.24, r * 0.4);
+  ctx.stroke();
+  /* El cuello que une hoja y mango. */
+  ctx.fillStyle = "rgb(70,76,86)";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-r * 0.1, -r * 0.2, r * 0.2, r * 0.26, r * 0.04);
+  else ctx.rect(-r * 0.1, -r * 0.2, r * 0.2, r * 0.26);
+  ctx.fill();
+
+  /* ---- El brillo de «esto se toca» ----
+     Muy flojo y respirando. Lo justo para que el ojo se pare ahí al
+     pasar, no para que grite. */
+  if (k === 0) {
+    ctx.globalCompositeOperation = "lighter";
+    const b = 0.1 + p.brillo * 0.12;
+    const gg = ctx.createRadialGradient(0, -r * 0.4, 0, 0, -r * 0.4, r * 1.6);
+    gg.addColorStop(0, `rgba(190,215,255,${b})`);
+    gg.addColorStop(1, "rgba(160,200,255,0)");
+    ctx.fillStyle = gg;
+    ctx.beginPath(); ctx.arc(0, -r * 0.4, r * 1.6, 0, 6.283); ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  /* Y un par de chispitas que suben, muy de vez en cuando. */
+  if (k === 0 && Math.random() < 0.02) {
+    soltar(x + azar(-r * 0.4, r * 0.4), y - azar(0, r), {
+      vx: azar(-5, 5), vy: azar(-18, -7),
+      vida: azar(1.2, 2.4), tam: azar(0.8, 1.6),
+      tipo: TIPO.BRILLO, tono: 0.5,
+    });
+  }
+}
+
+/** Lo que estaba enterrado: un relicario de piedra con una luz dentro. */
+function dibujarReliquia(x, y, p) {
+  const sal = suave3(p.salida);
+  if (sal < 0.01) return;
+  const r = p.r * mez(0.5, 1, sal);
+  const pulso = p.pulso;
+  const late = 0.6 + 0.4 * Math.sin(reloj * 1.6) + pulso * 1.4;
+
+  ctx.save();
+  ctx.translate(x, y - r * 0.35 * sal);
+
+  /* ---- La luz que echa ----
+     Antes que nada, porque es lo primero que se ve de ella y porque
+     tiene que iluminar la tierra de alrededor. */
+  ctx.globalCompositeOperation = "lighter";
+  haloOvalado(0, r * 0.4, r * (3 + pulso * 5), r * (1.5 + pulso * 3), [
+    [0, `rgba(120,255,190,${0.3 * late})`],
+    [0.4, `rgba(60,220,140,${0.1 * late})`],
+    [1, "rgba(40,200,120,0)"],
+  ]);
+  ctx.globalCompositeOperation = "source-over";
+
+  /* ---- La tierra que todavía la cubre ----
+     Sale medio enterrada. Que no aparezca limpia es lo que hace que se
+     lea como desenterrada y no como colocada. */
+  ctx.fillStyle = "rgba(44,38,26,0.92)";
+  ctx.beginPath();
+  ctx.ellipse(0, r * 0.45, r * 1.1, r * 0.32, 0, 0, 6.283);
+  ctx.fill();
+
+  /* ---- El cuerpo: un prisma de piedra con caras ---- */
+  ctx.save();
+  ctx.rotate(Math.sin(p.giro) * 0.05);
+  const gp = ctx.createLinearGradient(-r * 0.6, -r, r * 0.6, r * 0.6);
+  gp.addColorStop(0, "rgb(46,58,54)");
+  gp.addColorStop(0.5, "rgb(28,38,36)");
+  gp.addColorStop(1, "rgb(16,24,22)");
+  ctx.fillStyle = gp;
+  ctx.beginPath();
+  ctx.moveTo(0, -r * 0.95);
+  ctx.lineTo(r * 0.55, -r * 0.35);
+  ctx.lineTo(r * 0.42, r * 0.5);
+  ctx.lineTo(-r * 0.42, r * 0.5);
+  ctx.lineTo(-r * 0.55, -r * 0.35);
+  ctx.closePath();
+  ctx.fill();
+
+  /* Las grietas por donde se escapa la luz. Son LO importante: sin
+     ellas es una piedra, y con ellas es una piedra con algo dentro. */
+  ctx.globalCompositeOperation = "lighter";
+  ctx.strokeStyle = `rgba(150,255,205,${0.5 + late * 0.4})`;
+  ctx.lineWidth = Math.max(1, r * 0.07);
+  ctx.lineCap = "round";
+  const grietas = [
+    [[-0.28, -0.5], [-0.06, -0.1], [-0.2, 0.3]],
+    [[0.3, -0.42], [0.1, 0.0], [0.24, 0.42]],
+    [[-0.1, -0.7], [0.04, -0.34]],
+  ];
+  for (const gr of grietas) {
+    ctx.beginPath();
+    ctx.moveTo(gr[0][0] * r, gr[0][1] * r);
+    for (let i = 1; i < gr.length; i++) ctx.lineTo(gr[i][0] * r, gr[i][1] * r);
+    ctx.stroke();
+  }
+
+  /* El corazón: un rombo de luz en el centro. */
+  const gc = ctx.createRadialGradient(0, -r * 0.1, 0, 0, -r * 0.1, r * 0.55);
+  gc.addColorStop(0, `rgba(220,255,236,${0.75 * late})`);
+  gc.addColorStop(0.35, `rgba(110,255,190,${0.4 * late})`);
+  gc.addColorStop(1, "rgba(60,220,150,0)");
+  ctx.fillStyle = gc;
+  ctx.beginPath();
+  ctx.arc(0, -r * 0.1, r * 0.55, 0, 6.283);
+  ctx.fill();
+  ctx.globalCompositeOperation = "source-over";
+  ctx.restore();
+
+  /* ---- Los símbolos que flotan alrededor ----
+     Sólo después de tocarla. Giran despacio y no dicen nada: no son un
+     idioma, son la sensación de que ahí hay un idioma. */
+  if (historia.hecho("revelado")) {
+    ctx.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 5; i++) {
+      const a = p.giro * (i % 2 ? -1 : 1) + (i / 5) * 6.283;
+      const rr = r * (1.5 + Math.sin(reloj * 0.7 + i) * 0.2);
+      const sx = Math.cos(a) * rr, sy = -r * 0.2 + Math.sin(a) * rr * 0.45;
+      const op = 0.25 + 0.25 * Math.sin(reloj * 1.1 + i * 2);
+      ctx.strokeStyle = `rgba(160,255,210,${op})`;
+      ctx.lineWidth = Math.max(1, r * 0.05);
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(a);
+      ctx.beginPath();
+      /* Cinco marcas distintas, todas del mismo aire: trazos rectos que
+         se cruzan. Se eligen por el índice, así cada una es siempre la
+         misma y el conjunto parece un alfabeto. */
+      if (i === 0) { ctx.moveTo(-r * 0.15, 0); ctx.lineTo(r * 0.15, 0); ctx.moveTo(0, -r * 0.15); ctx.lineTo(0, r * 0.15); }
+      else if (i === 1) { ctx.moveTo(-r * 0.14, -r * 0.12); ctx.lineTo(r * 0.14, r * 0.12); ctx.moveTo(r * 0.14, -r * 0.12); ctx.lineTo(-r * 0.14, r * 0.12); }
+      else if (i === 2) { ctx.arc(0, 0, r * 0.13, 0.4, 5.2); }
+      else if (i === 3) { ctx.moveTo(-r * 0.14, r * 0.1); ctx.lineTo(0, -r * 0.14); ctx.lineTo(r * 0.14, r * 0.1); }
+      else { ctx.moveTo(-r * 0.12, -r * 0.12); ctx.lineTo(-r * 0.12, r * 0.12); ctx.lineTo(r * 0.12, r * 0.12); }
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.globalCompositeOperation = "source-over";
+  }
+  ctx.restore();
+}
+
+/* ==========================================
+   LO QUE VIVE EN LA ESPESURA
+   ==========================================
+
+   Un búho que habla y unos ojos que no. Van juntos en el mismo sitio
+   porque van juntos en la historia: el búho es lo que te acompaña y los
+   ojos son lo que te mira, y al final resulta que son lo mismo.
+
+   ── EL BÚHO TIENE OPINIONES ──────────────────────────────────────────
+   No suelta frases al azar: dice cosas distintas según dónde estés y
+   qué hayas hecho. Antes de desenterrar nada es un bicho simpático que
+   te ve pasar; después, ya no.
+
+   ── Y LOS OJOS SON MUCHOS ────────────────────────────────────────────
+   Cada par está a una profundidad distinta y sólo sale en las zonas
+   oscuras. Se van si te acercas. Uno de ellos —siempre el mismo, pero
+   no hay manera de saber cuál— aguanta tres toques, y entonces pasa
+   algo.                                                              */
+
+const buhoEsp = {
+  x: 0, y: 0, r: 0,
+  /* Cuánto se ve, 0..1. */
+  sal: 0, salObj: 1,
+  parpadeo: 0, relojParpadeo: 0,
+  giro: 0, giroObj: 0,
+  ala: 0, aleteo: 0,
+  /* 0 verde · 1 rojo. Se pone rojo solo, de vez en cuando. */
+  rojo: 0, rojoObj: 0, relojRojo: 0,
+  /* El brillo de los ojos cuando se le toca. */
+  visto: 0,
+  /* Lo que ha dicho ya, para no repetirse. */
+  dichas: new Set(),
+  relojDice: 0,
+  /* La desaparición y el ataque. */
+  yendo: -1,        // segundos desde que empezó a irse
+  modo: "normal",   // normal · verde · minis · ataque
+  ataque: -1,
+  escala: 1,
+};
+
+const minis = [];
+
+function colocarBuhoEsp() {
+  const p = puntos.lista.find((q) => q.id === "buho");
+  if (!p) return;
+  buhoEsp.x = p.x; buhoEsp.y = p.y;
+  buhoEsp.r = U * (apaisado ? 3.4 : 4.2);
+  buhoEsp.relojParpadeo = azar(1.5, 5);
+  buhoEsp.relojRojo = azar(14, 40);
+  buhoEsp.relojDice = azar(6, 14);
+}
+
+function moverBuhoEsp(dt) {
+  const b = buhoEsp;
+
+  /* ---- El ataque manda sobre todo lo demás ---- */
+  if (b.ataque >= 0) { moverAtaque(dt); return; }
+
+  /* ---- Irse ---- */
+  if (b.yendo >= 0) { moverIrse(dt); return; }
+
+  b.sal = damp(b.sal, b.salObj, 2, dt);
+  b.visto = Math.max(0, b.visto - dt * 0.4);
+  b.aleteo = Math.max(0, b.aleteo - dt * 2.2);
+  b.ala += dt * (3 + b.aleteo * 14);
+
+  /* Parpadeo. */
+  b.relojParpadeo -= dt;
+  if (b.relojParpadeo <= 0) { b.relojParpadeo = azar(1.8, 6); b.parpadeo = 1; }
+  b.parpadeo = Math.max(0, b.parpadeo - dt * 5.2);
+
+  /* ---- Los ojos rojos de golpe ----
+     Muy de vez en cuando y sin motivo. Lo que da miedo no es que estén
+     rojos: es que estaban verdes hace un segundo. */
+  b.relojRojo -= dt;
+  if (b.relojRojo <= 0) {
+    b.relojRojo = azar(18, 50);
+    if (Math.random() < (historia.hecho("revelado") ? 0.85 : 0.4)) {
+      b.rojoObj = 1;
+      setTimeout(() => { b.rojoObj = 0; }, azar(700, 2200));
+      tono(azar(52, 70), 1.4, "sine", 0.05);
+    }
+  }
+  b.rojo = damp(b.rojo, b.rojoObj, b.rojoObj > 0.5 ? 14 : 2.2, dt);
+
+  /* La cabeza sigue al dedo si anda cerca. */
+  const sx = enPantalla(b.x, 0.52);
+  const cerca = dedo.dentro && Math.hypot(dedo.x - sx, dedo.y - b.y) < U * 34;
+  if (cerca) b.giroObj = clamp((dedo.x - sx) / (U * 16), -1, 1);
+  else if (Math.random() < dt * 0.4) b.giroObj = Math.random() < 0.4 ? 0 : azar(-0.8, 0.8);
+  b.giro = damp(b.giro, b.giroObj, 5.5, dt);
+
+  /* ---- Lo que dice por su cuenta ----
+     Sólo si está en pantalla: un búho que habla desde fuera del campo
+     de visión es una voz en off, y aquí no hay voces en off. */
+  b.relojDice -= dt;
+  if (b.relojDice <= 0 && sx > A * 0.1 && sx < A * 0.9 && !bloqueado) {
+    b.relojDice = azar(11, 26);
+    hablarElBuho();
+  }
+
+  /* Los mini búhos, si los hay. */
+  moverMinis(dt);
+}
+
+/** Una frase, elegida por lo que haya pasado ya. */
+function hablarElBuho(forzada) {
+  const b = buhoEsp;
+  const sx = enPantalla(b.x, 0.52);
+  const lista = forzada ? [forzada]
+    : (historia.hecho("revelado") ? CONF.buhoEsp.despues : CONF.buhoEsp.antes)
+        .filter((f) => !b.dichas.has(f));
+  if (!lista.length) { b.dichas.clear(); return; }
+  const frase = lista[Math.floor(Math.random() * lista.length)];
+  b.dichas.add(frase);
+
+  /* «Shhh… ¿oyes eso?» no es una frase más: es la que trae el sonido.
+     Se reconoce por la marca, no por el texto, para poder cambiar el
+     texto sin romper nada. */
+  const esElRuido = frase === CONF.buhoEsp.elRuido;
+  decir(clamp(sx, A * 0.2, A * 0.8), b.y - U * 7, frase,
+    { misterio: esElRuido || historia.hecho("revelado"), importante: esElRuido, dur: esElRuido ? 4 : 3.6 });
+
+  if (esElRuido) {
+    b.giroObj = 0;
+    setTimeout(() => sonarRag(), 1500);
+  } else {
+    tono(azar(300, 420), 0.4, "sine", 0.035);
+  }
+  historia.marcar("buho");
+}
+
+/**
+ * `rag.mp3`, y su gemelo por si no está.
+ *
+ * El gemelo no intenta imitar nada: hace lo que tiene que hacer un
+ * sonido que sale del fondo de un bosque a las tres de la mañana. Un
+ * grave que sube muy despacio, un ruido de banda estrecha barriendo por
+ * encima, y un corte seco. Lo que inquieta es el barrido: una
+ * frecuencia que se mueve sola no se parece a nada del bosque.
+ */
+let sonandoRag = false;
+async function sonarRag(vol = 0.6) {
+  if (sonandoRag) return;
+  sonandoRag = true;
+  setTimeout(() => { sonandoRag = false; }, 4000);
+
+  /* El bosque se calla para dejarlo sonar. Que el resto baje es la
+     mitad de lo que hace que se oiga. */
+  agacharAmbientes(0.18, 0.9);
+  setTimeout(() => agacharAmbientes(1, 2.4), 3400);
+
+  const c = despertarAudio();
+  if (!c) return;
+  const buf = await traerBuffer(CONF.rutas.rag);
+  if (buf) {
+    const src = c.createBufferSource(); src.buffer = buf;
+    const g = c.createGain(); g.gain.value = vol;
+    src.connect(g).connect(audio.maestro);
+    src.start();
+    return;
+  }
+
+  const t0 = c.currentTime, dur = 2.6;
+  /* El grave que sube. */
+  const o = c.createOscillator(), og = c.createGain();
+  o.type = "sawtooth";
+  o.frequency.setValueAtTime(34, t0);
+  o.frequency.exponentialRampToValueAtTime(78, t0 + dur * 0.8);
+  const fo = c.createBiquadFilter();
+  fo.type = "lowpass"; fo.frequency.value = 220;
+  og.gain.setValueAtTime(0, t0);
+  og.gain.linearRampToValueAtTime(vol * 0.2, t0 + 0.6);
+  og.gain.setValueAtTime(vol * 0.2, t0 + dur * 0.75);
+  og.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(fo).connect(og).connect(audio.maestro);
+  o.start(t0); o.stop(t0 + dur + 0.1);
+
+  /* El barrido de banda estrecha por encima. */
+  const src = c.createBufferSource(); src.buffer = bufferRosa(3);
+  const f = c.createBiquadFilter();
+  f.type = "bandpass"; f.Q.value = 14;
+  f.frequency.setValueAtTime(380, t0);
+  f.frequency.exponentialRampToValueAtTime(1900, t0 + dur * 0.7);
+  f.frequency.exponentialRampToValueAtTime(240, t0 + dur);
+  const ng = c.createGain();
+  ng.gain.setValueAtTime(0, t0);
+  ng.gain.linearRampToValueAtTime(vol * 0.16, t0 + 0.4);
+  ng.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(f).connect(ng).connect(audio.maestro);
+  src.start(t0); src.stop(t0 + dur + 0.1);
+}
+
+/** Lo que pasa al tocarlo. */
+function tocarBuhoEspesura(p) {
+  const b = buhoEsp;
+  if (b.sal < 0.2 || b.yendo >= 0 || b.ataque >= 0) return false;
+  const sx = enPantalla(b.x, 0.52);
+  if (Math.hypot(p.x - sx, p.y - b.y) > b.r * 3) return false;
+
+  b.visto = 1;
+  b.parpadeo = 1;
+  b.aleteo = 1;
+  b.giroObj = 0;
+  sonarMisterio(0.5);
+
+  /* Partículas verdes saliendo de él. */
+  for (let i = 0; i < 16; i++) {
+    const a = azar(0, 6.283);
+    soltar(sx, b.y, {
+      vx: Math.cos(a) * azar(14, 60), vy: Math.sin(a) * azar(14, 50) - 12,
+      vida: azar(1.4, 3), tam: azar(1, 2.4),
+      tipo: TIPO.BRILLO, tono: 0.45,
+    });
+  }
+
+  const veces = recuerdo.sumar("buhoEsp");
+  /* Al tercer toque y de ahí en adelante, se va. Y cómo se va depende
+     de si el bosque ya está despierto. */
+  if (veces % 3 === 0) {
+    setTimeout(() => irseElBuho(historia.hecho("revelado") ? "minis" : "verde"), 900);
+  }
+  hablarElBuho(veces === 1 ? CONF.buhoEsp.primera : undefined);
+  return true;
+}
+
+/* ---- Irse ---------------------------------------------------------------
+   No desaparece: se deshace. Junta energía, se para un momento —esa
+   pausa es LO que hace que funcione— y revienta.                      */
+
+function irseElBuho(modo) {
+  const b = buhoEsp;
+  if (b.yendo >= 0) return;
+  b.yendo = 0;
+  b.modo = modo;
+  tono(azar(180, 240), 1.6, "sine", 0.05);
+}
+
+function moverIrse(dt) {
+  const b = buhoEsp;
+  const t = b.yendo += dt;
+  const sx = enPantalla(b.x, 0.52);
+
+  /* 0 – 1.1  junta energía y crece un pelín. */
+  if (t < 1.1) {
+    b.visto = Math.min(1.6, b.visto + dt * 1.5);
+    b.escala = 1 + t * 0.14;
+    if (Math.random() < dt * 30) {
+      const a = azar(0, 6.283), rr = b.r * azar(2, 4.5);
+      soltar(sx + Math.cos(a) * rr, b.y + Math.sin(a) * rr, {
+        /* Van HACIA él, no desde él: se está tragando el bosque. */
+        vx: -Math.cos(a) * rr * 1.6, vy: -Math.sin(a) * rr * 1.6,
+        vida: 0.6, tam: azar(1, 2.2),
+        tipo: TIPO.BRILLO, tono: 0.45,
+      });
+    }
+  }
+  /* 1.1 – 1.45  la pausa. Quieto, brillando, sin nada. */
+  else if (t < 1.45) {
+    b.escala = 1.15;
+  }
+  /* 1.45  revienta. */
+  else if (!b.reventado) {
+    b.reventado = true;
+    reventarElBuho(sx, b.y, b.modo);
+    b.sal = 0; b.salObj = 0;
+  }
+  /* Y vuelve al cabo de un rato, en su sitio. */
+  else if (t > 9) {
+    b.yendo = -1;
+    b.reventado = false;
+    b.escala = 1;
+    b.salObj = 1;
+    b.modo = "normal";
+    b.visto = 0;
+  }
+}
+
+function reventarElBuho(x, y, modo) {
+  sacudir(0.7);
+  magia(523);
+  golpe(0.18, 700, 0.2, "bandpass");
+
+  /* La nube de partículas verdes. Unas se van lejos y otras se quedan
+     dando vueltas: es lo que hace que quede algo flotando después. */
+  for (let i = 0; i < 70; i++) {
+    const a = azar(0, 6.283);
+    const lejos = Math.random() < 0.35;
+    const v = lejos ? azar(120, 300) : azar(20, 90);
+    soltar(x, y, {
+      vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.75 - 20,
+      vida: lejos ? azar(1, 2.2) : azar(2.6, 5.5),
+      tam: azar(1, 3),
+      tipo: TIPO.BRILLO, tono: 0.45,
+    });
+  }
+  espesura.onda = 0.8;
+  espesura.ondaX = buhoEsp.x;
+
+  if (modo === "minis") nacerMinis(x, y);
+}
+
+/* ---- Los mini búhos ------------------------------------------------------
+   Seis, del tamaño de una nuez, cruzando en todas direcciones. Unos se
+   pierden detrás de los árboles y otro pasa rozando la cámara.      */
+
+function nacerMinis(x, y) {
+  minis.length = 0;
+  for (let i = 0; i < 6; i++) {
+    const cerca = i === 2;              // el que pasa rozando
+    const a = (i / 6) * 6.283 + azar(-0.3, 0.3);
+    minis.push({
+      x, y,
+      vx: Math.cos(a) * azar(90, 230) * (cerca ? 1.6 : 1),
+      vy: Math.sin(a) * azar(50, 130) - 30,
+      r: U * (cerca ? 2.6 : azar(0.8, 1.6)),
+      z: cerca ? 2.4 : azar(0.5, 1.2),
+      ala: rnd() * 6.283,
+      vida: cerca ? 1.6 : azar(2.2, 4),
+      t: 0,
+      chilla: azar(0.2, 1.2),
+    });
+  }
+  /* Seis chillidos cortos y agudos, escalonados. */
+  for (let i = 0; i < 6; i++) {
+    setTimeout(() => tono(azar(900, 1700), 0.12, "triangle", 0.05), i * azar(60, 220));
+  }
+}
+
+function moverMinis(dt) {
+  for (let i = minis.length - 1; i >= 0; i--) {
+    const m = minis[i];
+    m.t += dt;
+    /* Suben un poco y se frenan: un pájaro pequeño no va recto. */
+    m.vy += (-18 - m.vy * 0.4) * dt;
+    m.vx *= Math.exp(-0.5 * dt);
+    m.x += m.vx * dt;
+    m.y += m.vy * dt + Math.sin(m.t * 9 + m.ala) * dt * 30;
+    m.ala += dt * 16;
+    m.chilla -= dt;
+    if (m.chilla <= 0) { m.chilla = azar(0.8, 2.4); tono(azar(1100, 1900), 0.09, "triangle", 0.03); }
+    if (m.t > m.vida) minis.splice(i, 1);
+  }
+}
+
+function dibujarMinis() {
+  for (const m of minis) {
+    const x = enPantalla(m.x, m.z);
+    if (x < -50 || x > A + 50) continue;
+    const k = clamp01(1 - m.t / m.vida);
+    const r = m.r;
+    ctx.save();
+    ctx.translate(x, m.y);
+    ctx.globalAlpha = Math.min(1, k * 2.5);
+    /* Las alas, que son casi todo lo que se ve de algo que vuela. */
+    const abre = Math.sin(m.ala) * 0.9;
+    ctx.fillStyle = "rgba(10,14,12,0.92)";
+    for (const s of [-1, 1]) {
+      ctx.save();
+      ctx.rotate(s * (0.4 + abre));
+      ctx.beginPath();
+      ctx.ellipse(s * r * 0.7, 0, r * 0.75, r * 0.3, 0, 0, 6.283);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.7, r * 0.8, 0, 0, 6.283);
+    ctx.fill();
+    /* Y los dos puntitos verdes. */
+    ctx.globalCompositeOperation = "lighter";
+    for (const s of [-1, 1]) {
+      const gg = ctx.createRadialGradient(s * r * 0.3, -r * 0.2, 0, s * r * 0.3, -r * 0.2, r * 0.6);
+      gg.addColorStop(0, "rgba(180,255,210,0.9)");
+      gg.addColorStop(1, "rgba(60,220,140,0)");
+      ctx.fillStyle = gg;
+      ctx.beginPath(); ctx.arc(s * r * 0.3, -r * 0.2, r * 0.6, 0, 6.283); ctx.fill();
+    }
+    ctx.globalCompositeOperation = "source-over";
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+}
+
+/* ---- Dibujar el búho ---------------------------------------------------- */
+
+function dibujarBuhoEsp() {
+  const b = buhoEsp;
+  if (b.sal < 0.015 && b.ataque < 0) { dibujarMinis(); return; }
+
+  const x = enPantalla(b.x, 0.52);
+  const y = b.y;
+  const r = b.r * b.escala;
+  const sal = clamp01(b.sal);
+  const cerrado = Math.sin(clamp01(b.parpadeo) * Math.PI);
+  const abierto = clamp01(1 - cerrado);
+
+  /* El color de los ojos: verde o rojo, mezclado. */
+  const rr = Math.round(mez(170, 255, b.rojo));
+  const gg2 = Math.round(mez(255, 60, b.rojo));
+  const bb = Math.round(mez(205, 50, b.rojo));
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.globalAlpha = mez(0.35, 1, sal);
+
+  /* Las alas. */
+  const abre = 0.12 + b.aleteo * (0.5 + Math.sin(b.ala) * 0.5) * 1.2;
+  for (const s of [-1, 1]) {
+    ctx.save();
+    ctx.translate(s * r * 0.62, -r * 0.1);
+    ctx.rotate(s * (0.35 + abre));
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.35, r * 0.44, r * 0.98, 0, 0, 6.283);
+    ctx.fillStyle = "rgba(8,12,11,0.95)";
+    ctx.fill();
+    ctx.strokeStyle = `rgba(${rr},${gg2},${bb},${0.1 + b.aleteo * 0.2})`;
+    ctx.lineWidth = Math.max(0.8, r * 0.08);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* El cuerpo: negro, con un filo verde por el lado de la luz. */
+  const gc = ctx.createLinearGradient(0, -r * 1.2, 0, r * 1.2);
+  gc.addColorStop(0, "rgb(7,11,10)");
+  gc.addColorStop(1, "rgb(14,20,18)");
+  ctx.fillStyle = gc;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r, r * 1.22, 0, 0, 6.283);
+  ctx.fill();
+  ctx.strokeStyle = `rgba(${rr},${gg2},${bb},${(0.1 + b.visto * 0.25) * sal})`;
+  ctx.lineWidth = Math.max(1, r * 0.1);
+  ctx.stroke();
+
+  /* La cabeza, que gira. */
+  ctx.save();
+  ctx.translate(b.giro * r * 0.16, -r * 0.62);
+  /* Las orejas. */
+  ctx.fillStyle = "rgb(6,10,9)";
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(s * r * 0.24, -r * 0.34);
+    ctx.lineTo(s * r * (0.62 + b.giro * s * 0.12), -r * 0.95);
+    ctx.lineTo(s * r * 0.72, -r * 0.24);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.fillStyle = "rgb(11,16,15)";
+  ctx.beginPath();
+  ctx.ellipse(b.giro * r * 0.1, 0, r * 0.88, r * 0.74, 0, 0, 6.283);
+  ctx.fill();
+
+  /* LOS OJOS. */
+  const cx = b.giro * r * 0.26;
+  const brillo = (0.6 + Math.sin(reloj * 1.7) * 0.12 + b.visto * 0.6) * mez(0.4, 1, sal);
+  ctx.globalCompositeOperation = "lighter";
+  for (const s of [-1, 1]) {
+    const ex = cx + s * r * 0.36, ey = -r * 0.04;
+    if (abierto > 0.02) {
+      const halo = r * (0.72 + b.visto * 0.5);
+      const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, halo);
+      g.addColorStop(0, `rgba(${Math.min(255, rr + 40)},${Math.min(255, gg2 + 30)},${Math.min(255, bb + 30)},${0.55 * abierto * brillo})`);
+      g.addColorStop(0.34, `rgba(${rr},${gg2},${bb},${0.24 * abierto * brillo})`);
+      g.addColorStop(1, `rgba(${rr},${gg2},${bb},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(ex, ey, halo, 0, 6.283); ctx.fill();
+      ctx.fillStyle = `rgba(${Math.min(255, rr + 50)},${Math.min(255, gg2 + 20)},${Math.min(255, bb + 30)},${0.95 * abierto})`;
+      ctx.beginPath();
+      ctx.ellipse(ex, ey, r * 0.23, r * 0.23 * abierto, 0, 0, 6.283);
+      ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = `rgba(3,7,5,${0.9 * abierto})`;
+      ctx.beginPath();
+      ctx.ellipse(ex + b.giro * r * 0.05, ey, r * 0.1, r * 0.12 * abierto, 0, 0, 6.283);
+      ctx.fill();
+      ctx.globalCompositeOperation = "lighter";
+    } else {
+      ctx.strokeStyle = `rgba(${rr},${gg2},${bb},${0.3 * brillo})`;
+      ctx.lineWidth = Math.max(0.7, r * 0.07);
+      ctx.beginPath();
+      ctx.moveTo(ex - r * 0.2, ey); ctx.lineTo(ex + r * 0.2, ey);
+      ctx.stroke();
+    }
+  }
+  ctx.globalCompositeOperation = "source-over";
+
+  /* El pico. */
+  ctx.fillStyle = `rgba(190,150,80,${mez(0.3, 0.8, sal)})`;
+  ctx.beginPath();
+  ctx.moveTo(cx - r * 0.1, r * 0.16);
+  ctx.lineTo(cx + r * 0.1, r * 0.16);
+  ctx.lineTo(cx + b.giro * r * 0.06, r * 0.42);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  /* La rama. */
+  ctx.fillStyle = `rgba(5,8,7,${0.9 * sal})`;
+  ctx.beginPath();
+  ctx.moveTo(-r * 2.4, r * 1.1);
+  ctx.quadraticCurveTo(0, r * 1.24, r * 2.4, r * 1.14);
+  ctx.quadraticCurveTo(0, r * 1.42, -r * 2.4, r * 1.28);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+  ctx.globalAlpha = 1;
+
+  dibujarMinis();
+}
+
+/* ---- LOS OJOS DE LA ESPESURA --------------------------------------------
+
+   Pares de ojos rojos en las zonas oscuras. Cada uno a su profundidad,
+   medio tapados por los troncos, y se van si te acercas.
+
+   ── POR QUÉ HAY QUE DUDAR DE HABERLOS VISTO ──────────────────────────
+   Porque si están siempre, son decoración. Aparecen pocos, duran poco y
+   se van cuando los miras de frente. La sensación que se busca no es
+   «hay ojos en el bosque»: es «¿eso de ahí era algo?».
+
+   ── EL QUE AGUANTA ──────────────────────────────────────────────────
+   Uno de cada tantos no huye. Se deja tocar tres veces, y a la tercera
+   pasa lo que pasa. No hay manera de saber cuál es hasta que uno se
+   queda quieto, y eso es justo lo que hace que se siga intentando. */
+
+const ojosEsp = {
+  lista: [],
+  reloj: azar(4, 10),
+  /* El evento: -1 quieto, si no, segundos desde que arrancó. */
+  evento: -1,
+  enjambre: [],
+};
+
+function asomarOjo(valiente) {
+  const suelo = espesura.sueloY;
+  /* En la zona que se está mirando, pero no en el centro: a los lados,
+     que es donde el ojo no está puesto. */
+  const centro = espesura.x + A * 0.5;
+  const lado = Math.random() < 0.5 ? -1 : 1;
+  const x = clamp(centro + lado * azar(A * 0.2, A * 0.55), U * 4, espesura.W - U * 4);
+  const z = azar(0.2, 0.55);
+  ojosEsp.lista.push({
+    x, z,
+    y: mez(espesura.copasY + H * 0.14, suelo - H * 0.02, azar(0.2, 0.95)),
+    r: U * mez(0.85, 0.35, z),
+    alfa: 0, alfaObj: azar(0.55, 0.95),
+    dura: valiente ? 999 : azar(2.5, 7),
+    parpadeo: 0, relojParpadeo: azar(0.8, 2.6),
+    huyendo: 0, vx: 0,
+    valiente: !!valiente,
+    toques: 0,
+    vibra: 0,
+  });
+}
+
+function moverOjosEsp(dt) {
+  if (ojosEsp.evento >= 0) { moverEnjambre(dt); return; }
+
+  /* Van saliendo solos, y más a menudo después del misterio. */
+  ojosEsp.reloj -= dt;
+  if (ojosEsp.reloj <= 0) {
+    const listo = historia.hecho("revelado");
+    ojosEsp.reloj = listo ? azar(3, 9) : azar(9, 22);
+    if (ojosEsp.lista.length < (listo ? 5 : 2)) {
+      /* Uno de cada cinco no huye. Y sólo cuando el bosque ya está
+         despierto: antes de eso, todos se van. */
+      asomarOjo(listo && Math.random() < 0.22);
+    }
+  }
+
+  const centro = A * 0.5;
+  for (let i = ojosEsp.lista.length - 1; i >= 0; i--) {
+    const o = ojosEsp.lista[i];
+    o.alfa = damp(o.alfa, o.alfaObj, o.huyendo ? 7 : 1.7, dt);
+    o.x += o.vx * dt;
+    o.vx *= Math.exp(-2.2 * dt);
+    o.vibra = Math.max(0, o.vibra - dt * 2.4);
+
+    o.relojParpadeo -= dt;
+    if (o.relojParpadeo <= 0) { o.relojParpadeo = azar(1, 3.4); o.parpadeo = 1; }
+    o.parpadeo = Math.max(0, o.parpadeo - dt * 3);
+
+    /* Huir: si el sitio que miras se les echa encima. Los valientes no. */
+    if (!o.huyendo && !o.valiente) {
+      const sx = enPantalla(o.x, o.z);
+      if (Math.abs(sx - centro) < A * 0.16) {
+        o.huyendo = 1;
+        o.alfaObj = 0;
+        o.vx = (sx < centro ? -1 : 1) * U * azar(10, 22);
+        o.dura = 0.6;
+        historia.marcar("ojos");
+      }
+    }
+
+    o.dura -= dt;
+    if (o.dura <= 0) {
+      if (!o.huyendo) { o.huyendo = 1; o.alfaObj = 0; o.dura = 0.9; }
+      else ojosEsp.lista.splice(i, 1);
+    }
+  }
+}
+
+function tocarOjosEspesura(p) {
+  if (ojosEsp.evento >= 0) return false;
+  for (const o of ojosEsp.lista) {
+    const sx = enPantalla(o.x, o.z);
+    const sep = o.r * 5.2;
+    if (Math.hypot(p.x - sx, p.y - o.y) > sep * 1.4) continue;
+
+    historia.marcar("ojos");
+    if (!o.valiente) {
+      /* Se va, y encima se lleva un susto. */
+      o.huyendo = 1; o.alfaObj = 0; o.dura = 0.3;
+      o.vx = (sx < p.x ? -1 : 1) * U * 26;
+      golpe(0.04, 2600, 0.06, "highpass");
+      return true;
+    }
+
+    /* El valiente. */
+    o.toques++;
+    o.vibra = 1;
+    o.alfaObj = Math.min(1.4, o.alfaObj + 0.25);
+    tono(azar(70, 110), 0.5, "sawtooth", 0.05);
+    if (o.toques >= 3) arrancarEnjambre(o);
+    else decir(sx, o.y - U * 5,
+      o.toques === 1 ? "…éste no se ha ido." : "Sigue ahí. Mirándome.",
+      { misterio: true, dur: 3.4 });
+    return true;
+  }
+  return false;
+}
+
+/* ---- El enjambre --------------------------------------------------------
+   El secreto del bosque. Los ojos que aguantaron revientan y, donde
+   había uno, hay cuarenta.                                          */
+
+function arrancarEnjambre(o) {
+  ojosEsp.evento = 0;
+  ojosEsp.origen = o;
+  bloqueado = true;
+  historia.marcar("enjambre");
+  agacharAmbientes(0.1, 1.2);
+}
+
+function moverEnjambre(dt) {
+  const t = ojosEsp.evento += dt;
+  const o = ojosEsp.origen;
+
+  /* 0 – 1.2  vibra y crece. */
+  if (t < 1.2) {
+    o.vibra = 1 + t;
+    o.alfaObj = 1 + t * 0.5;
+    o.alfa = o.alfaObj;
+    if (Math.random() < dt * 20) tono(azar(60, 140), 0.12, "square", 0.03);
+  }
+  /* 1.2 – 1.6  la pausa. Nada. Silencio. */
+  else if (t < 1.6) {
+    o.vibra = 0;
+  }
+  /* 1.6  revienta, y aparecen todos. */
+  else if (!ojosEsp.hecho) {
+    ojosEsp.hecho = true;
+    reventarLosOjos(o);
+  }
+  /* Y se quedan un rato mirando. */
+  else if (t > 6.5 && !ojosEsp.acabado) {
+    ojosEsp.acabado = true;
+    /* Y entonces el búho deja de ser simpático. */
+    setTimeout(() => arrancarAtaque(), 900);
+  }
+
+  /* El enjambre, mientras tanto: parpadean a destiempo y algunos se
+     mueven un poco. */
+  for (const e of ojosEsp.enjambre) {
+    e.t += dt;
+    e.alfa = damp(e.alfa, e.alfaObj, 2.4, dt);
+    e.relojParpadeo -= dt;
+    if (e.relojParpadeo <= 0) { e.relojParpadeo = azar(0.8, 4); e.parpadeo = 1; }
+    e.parpadeo = Math.max(0, e.parpadeo - dt * 3);
+    e.x += Math.sin(e.t * 0.6 + e.f) * dt * U * 0.8;
+  }
+}
+
+function reventarLosOjos(o) {
+  sacudir(1.3);
+  golpe(0.3, 90, 0.34, "lowpass");
+  golpe(0.1, 4200, 0.16, "highpass");
+  o.alfa = 0; o.alfaObj = 0; o.dura = -1;
+  ojosEsp.lista.length = 0;
+
+  const sx = enPantalla(o.x, o.z);
+  for (let i = 0; i < 50; i++) {
+    const a = azar(0, 6.283), v = azar(60, 240);
+    soltar(sx, o.y, {
+      vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.7,
+      vida: azar(0.6, 1.6), tam: azar(1, 2.6),
+      tipo: TIPO.CHISPA,
+    });
+  }
+
+  /* Y ahora sí: cuarenta pares por todo el bosque, a todas las
+     profundidades. Los de delante grandes y brillantes, los del fondo
+     dos puntos casi invisibles. Unos cuantos miran de frente. */
+  ojosEsp.enjambre.length = 0;
+  const suelo = espesura.sueloY;
+  for (let i = 0; i < (flojo ? 22 : 44); i++) {
+    const z = azar(0.12, 0.85);
+    ojosEsp.enjambre.push({
+      x: espesura.x + azar(-A * 0.2, A * 1.2),
+      y: mez(espesura.copasY + H * 0.08, suelo, azar(0.1, 1)),
+      z,
+      r: U * mez(1, 0.3, z),
+      alfa: 0, alfaObj: azar(0.4, 1) * mez(1, 0.5, z),
+      parpadeo: 0, relojParpadeo: azar(0.4, 3),
+      /* Los que miran de frente tienen la pupila centrada; los demás,
+         corrida. Ese detalle es todo lo que hace que unos te miren. */
+      mira: Math.random() < 0.3 ? 0 : azar(-0.5, 0.5),
+      t: 0, f: rnd() * 6.283,
+    });
+  }
+
+  setTimeout(() => decir(A * 0.5, H * 0.3, "…no estábamos solos.",
+    { misterio: true, importante: true, dur: 5 }), 900);
+}
+
+/** Un par de ojos, donde sea. */
+function dibujarUnOjo(x, y, r, alfa, parpadeo, mira, vibra) {
+  const ab = 1 - Math.sin(clamp01(parpadeo) * Math.PI) * 0.92;
+  const a = alfa * ab;
+  if (a < 0.01) return;
+  const vx = vibra ? azar(-vibra, vibra) * r : 0;
+  const vy = vibra ? azar(-vibra, vibra) * r * 0.6 : 0;
+  const sep = r * 5.2, halo = r * 2.8;
+
+  ctx.globalCompositeOperation = "lighter";
+  for (const s of [-1, 1]) {
+    const ex = x + vx + s * sep * 0.5;
+    const ey = y + vy;
+    const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, halo);
+    g.addColorStop(0, `rgba(255,90,70,${0.85 * a})`);
+    g.addColorStop(0.3, `rgba(220,30,25,${0.28 * a})`);
+    g.addColorStop(1, "rgba(150,12,10,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(ex, ey, halo, 0, 6.283); ctx.fill();
+    /* La pupila: negra, y corrida según a dónde mire. Es lo único que
+       distingue «hay ojos» de «me está mirando». */
+    ctx.fillStyle = `rgba(255,215,200,${0.9 * a})`;
+    ctx.beginPath();
+    ctx.ellipse(ex, ey, r * 0.62, r * 0.62 * ab, 0, 0, 6.283);
+    ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = `rgba(20,2,2,${0.85 * a})`;
+    ctx.beginPath();
+    ctx.ellipse(ex + mira * r * 0.3, ey, r * 0.22, r * 0.3 * ab, 0, 0, 6.283);
+    ctx.fill();
+    ctx.globalCompositeOperation = "lighter";
+  }
+  ctx.globalCompositeOperation = "source-over";
+}
+
+function dibujarOjosEsp() {
+  for (const o of ojosEsp.lista) {
+    const x = enPantalla(o.x, o.z);
+    if (x < -60 || x > A + 60) continue;
+    dibujarUnOjo(x, o.y, o.r, o.alfa, o.parpadeo, 0, o.vibra * 0.5);
+  }
+  for (const e of ojosEsp.enjambre) {
+    const x = enPantalla(e.x, e.z);
+    if (x < -60 || x > A + 60) continue;
+    dibujarUnOjo(x, e.y, e.r, e.alfa, e.parpadeo, e.mira, 0);
+  }
+}
+
+/** Que salgan unos cuantos de golpe, al desenterrar el misterio. */
+function despertarLosOjos() {
+  for (let i = 0; i < 3; i++) setTimeout(() => asomarOjo(false), i * 500);
+}
+
+/** Y que el búho se entere. */
+function reaccionaElBuho() {
+  buhoEsp.rojoObj = 1;
+  buhoEsp.visto = 1.2;
+  setTimeout(() => { buhoEsp.rojoObj = 0; }, 2600);
+  hablarElBuho(CONF.buhoEsp.alRevelar);
+}
+
+/* ---- EL ATAQUE ----------------------------------------------------------
+   Lo que pasa cuando el bosque decide que ya has visto bastante.    */
+
+function arrancarAtaque() {
+  if (buhoEsp.ataque >= 0) return;
+  buhoEsp.ataque = 0;
+  buhoEsp.yendo = -1;
+  buhoEsp.reventado = false;
+  buhoEsp.sal = 1; buhoEsp.salObj = 1;
+  buhoEsp.rojoObj = 1;
+  bloqueado = true;
+  historia.marcar("ataque");
+  agacharAmbientes(0.06, 0.8);
+}
+
+function moverAtaque(dt) {
+  const b = buhoEsp;
+  const t = b.ataque += dt;
+  b.rojo = damp(b.rojo, 1, 8, dt);
+
+  /* 0 – 1.4  crece. Mucho. Y abre las alas. */
+  if (t < 1.4) {
+    b.escala = 1 + suave3(t / 1.4) * 3.2;
+    b.aleteo = suave3(t / 1.4);
+    b.visto = 1.5;
+    b.ala += dt * 9;
+    if (!b.dijo1 && t > 0.4) { b.dijo1 = true; decirJugador("…¿qué le pasa?"); }
+    if (Math.random() < dt * 18) tono(azar(40, 90), 0.3, "sawtooth", 0.04);
+  }
+  /* 1.4 – 2.0  se queda quieto, enorme, mirando. La pausa antes. */
+  else if (t < 2.0) {
+    b.escala = 4.2;
+    b.ala += dt * 3;
+    if (!b.dijo2) { b.dijo2 = true; decirJugador("No, no, no —"); }
+  }
+  /* 2.0 – 2.9  vuela HACIA la cámara: crece a lo bestia y se centra. */
+  else if (t < 2.9) {
+    const k = suave3((t - 2.0) / 0.9);
+    b.escala = mez(4.2, 30, k * k);
+    b.ala += dt * 22;
+    b.volando = k;
+    if (!b.chillo) { b.chillo = true; chillidoAtaque(); }
+    sacudir(k * 0.8);
+  }
+  /* 2.9  el golpe. */
+  else if (!b.golpeado) {
+    b.golpeado = true;
+    golpeDelAtaque();
+  }
+  /* Y a partir de ahí, el desmayo. */
+  else if (t > 3.1) {
+    moverDesmayo(dt, t - 3.1);
+  }
+}
+
+function chillidoAtaque() {
+  if (!despertarAudio()) return;
+  const c = audio.ctx, t = c.currentTime;
+  /* Un chillido que BAJA, no que sube: lo que se acerca a toda
+     velocidad baja de tono, y el oído lo sabe aunque no lo piense. */
+  for (const [hz0, hz1, dur, vol] of [[1400, 380, 0.7, 0.1], [700, 190, 0.8, 0.08]]) {
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = "sawtooth";
+    o.frequency.setValueAtTime(hz0, t);
+    o.frequency.exponentialRampToValueAtTime(hz1, t + dur);
+    const f = c.createBiquadFilter();
+    f.type = "bandpass"; f.Q.value = 3; f.frequency.value = 900;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.08);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(f).connect(g).connect(audio.maestro);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+  const src = c.createBufferSource(); src.buffer = bufferBlanco(1);
+  const f2 = c.createBiquadFilter(); f2.type = "highpass"; f2.frequency.value = 1800;
+  const g2 = c.createGain();
+  g2.gain.setValueAtTime(0, t);
+  g2.gain.linearRampToValueAtTime(0.1, t + 0.3);
+  g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+  src.connect(f2).connect(g2).connect(audio.maestro);
+  src.start(t);
+}
+
+function golpeDelAtaque() {
+  sacudir(2);
+  golpe(0.35, 70, 0.4, "lowpass");
+  golpe(0.08, 3000, 0.2, "highpass");
+  /* El destello se maneja por estilo y no por clase, igual que en el
+     resto del archivo: la clase `is-ver` es del aviso de objeto. */
+  elFlash.style.transition = "none";
+  elFlash.style.opacity = "0.9";
+  requestAnimationFrame(() => {
+    elFlash.style.transition = "opacity 420ms cubic-bezier(0.22,1,0.36,1)";
+    elFlash.style.opacity = "0";
+  });
+  for (let i = 0; i < 40; i++) {
+    const a = azar(0, 6.283);
+    soltar(A * 0.5, H * 0.5, {
+      vx: Math.cos(a) * azar(120, 420), vy: Math.sin(a) * azar(120, 380),
+      vida: azar(0.4, 1.1), tam: azar(1, 3),
+      tipo: TIPO.CHISPA,
+    });
+  }
+  decirJugador("¡Ah—!");
+}
+
+/** Lo que dice el jugador durante el ataque. Corto y seguido. */
+function decirJugador(txt) {
+  decir(A * 0.5, H * 0.66, txt, { mimo: true, importante: true, dur: 2.2 });
+}
+
+/* ---- El desmayo ---------------------------------------------------------
+   Se apaga todo: la imagen, el sonido y el pulso de la cámara. Y lo
+   que queda al final es negro y nada más.                           */
+
+function moverDesmayo(dt, t) {
+  void dt;
+  const k = clamp01(t / 2.6);
+  cine.velo = suave3(k);
+  /* La cámara pierde el equilibrio: se ladea y se va yendo. */
+  cam.oz = mez(1, 1.25, k);
+  cam.ox = Math.sin(t * 1.7) * A * 0.06 * (1 - k * 0.4);
+  cam.oy = mez(0, H * 0.1, k);
+  if (k > 0.25 && k < 0.9 && Math.random() < 0.06) {
+    soltar(azar(0, A), azar(0, H), {
+      vx: azar(-10, 10), vy: azar(-20, 6),
+      vida: azar(1, 2.4), tam: azar(1, 2.6),
+      tipo: TIPO.BRILLO, tono: 0.45,
+    });
+  }
+  if (k >= 1 && !buhoEsp.desmayado) {
+    buhoEsp.desmayado = true;
+    despertarEnLaCabana();
+  }
+}
+
+/* ---- DESPERTAR EN LA CABAÑA ---------------------------------------------
+   Lo último. Se abre los ojos en la cama, con la habitación puesta y
+   algo verde donde antes no había nada.
+
+   ── POR QUÉ LOS OJOS SE ABREN DESPACIO ───────────────────────────────
+   Porque el velo no se levanta entero: se levanta, se vuelve a cerrar
+   un poco y se levanta del todo. Eso es un parpadeo, y un parpadeo es
+   la diferencia entre «ha cambiado la escena» y «he despertado». */
+
+function despertarEnLaCabana() {
+  escena = "habitacion";
+  raiz.classList.remove("is-espesura");
+  raiz.classList.add("is-habitacion");
+  construirHabitacion();
+  hab.dormida = 0;
+  hab.lamparaOn = false;             // se despierta a oscuras
+  reloj3.encendido = true;
+  historia.marcar("despertar");
+  recuerdo.poner("tresDeLaManana", 1);
+
+  cam.oz = 1; cam.ox = 0; cam.oy = 0;
+  cam.z = 1; cam.x = 0; cam.y = 0;
+  buhoEsp.ataque = -1;
+  buhoEsp.desmayado = false;
+  buhoEsp.golpeado = false;
+  buhoEsp.chillo = false;
+  buhoEsp.dijo1 = false; buhoEsp.dijo2 = false;
+  buhoEsp.escala = 1; buhoEsp.volando = 0;
+  buhoEsp.rojoObj = 0;
+  ojosEsp.evento = -1; ojosEsp.hecho = false; ojosEsp.acabado = false;
+  ojosEsp.enjambre.length = 0;
+  ojosEsp.lista.length = 0;
+
+  /* El parpadeo: abre, se cierra un poco, y abre del todo. */
+  const abrir = [
+    [700, 0.55], [1100, 0.85], [1500, 0.2], [2100, 0.0],
+  ];
+  for (const [ms, v] of abrir) setTimeout(() => { cine.velo = v; }, ms);
+
+  setTimeout(() => { agacharAmbientes(0.35, 3); }, 600);
+  setTimeout(() => {
+    bloqueado = false;
+    decir(A * 0.5, H * 0.56, CONF.tres.sueno, { mimo: true, importante: true, dur: 4 });
+  }, 2400);
+  setTimeout(() => {
+    decir(A * 0.5, H * 0.56, CONF.tres.hora, { mimo: true, importante: true, dur: 4 });
+  }, 6200);
+  /* Y a los pocos segundos, la mirada va sola al reloj. */
+  setTimeout(() => { reloj3.llama = 1; }, 8000);
+}
+
+/* ---- EL RELOJ ------------------------------------------------------------
+   En la mesilla, con números verdes. Marca las tres y no se mueve.
+
+   ── POR QUÉ NO AVANZA ───────────────────────────────────────────────
+   Porque un reloj que avanza es un reloj. Éste no está ahí para dar la
+   hora: está ahí para decir QUÉ hora es, y esa hora no cambia. */
+
+const reloj3 = {
+  encendido: false,
+  llama: 0,        // cuánto pide que lo miren
+  pulso: 0,
+  tocado: 0,
+};
+
+function moverReloj3(dt) {
+  if (!reloj3.encendido) return;
+  reloj3.llama = Math.max(0, reloj3.llama - dt * 0.22);
+  reloj3.pulso = Math.max(0, reloj3.pulso - dt * 1.4);
+}
+
+/** Dónde está, para dibujarlo y para tocarlo. */
+function sitioReloj3() {
+  const v = ventanaHab();
+  const d = desplazar(0.9);
+  const lx = Math.min(v.x + v.w * 0.85, A - U * 9) + d.x * 0.6;
+  return { x: lx - U * 4.6, y: H * 0.62 + U * 1.2, w: U * 7.6, h: U * 4 };
+}
+
+function dibujarReloj3() {
+  if (!reloj3.encendido) return;
+  const r = sitioReloj3();
+  const late = 0.75 + 0.25 * Math.sin(reloj * 1.1) + reloj3.pulso * 0.8 + reloj3.llama * 0.5;
+
+  /* La luz que echa sobre la mesilla y la pared. Es lo que hace que el
+     reloj forme parte de la habitación en vez de estar pegado encima. */
+  ctx.globalCompositeOperation = "lighter";
+  haloOvalado(r.x, r.y, r.w * 2.6, r.h * 2.6, [
+    [0, `rgba(80,255,170,${0.13 * late})`],
+    [0.45, `rgba(50,220,140,${0.05 * late})`],
+    [1, "rgba(40,200,120,0)"],
+  ]);
+  ctx.globalCompositeOperation = "source-over";
+
+  /* La caja: plástico negro, mate. */
+  ctx.fillStyle = "rgb(16,17,20)";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(r.x - r.w / 2, r.y - r.h / 2, r.w, r.h, r.h * 0.18);
+  else ctx.rect(r.x - r.w / 2, r.y - r.h / 2, r.w, r.h);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(120,160,140,0.14)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  /* Los números. Dibujados con segmentos, como los de verdad: una
+     fuente aquí se vería como texto puesto encima de un dibujo. */
+  const dig = r.h * 0.46, sep = dig * 0.78;
+  const x0 = r.x - sep * 1.55;
+  ctx.globalCompositeOperation = "lighter";
+  const col = `rgba(120,255,185,${0.75 * late})`;
+  siete(x0, r.y, dig, 3, col);
+  siete(x0 + sep * 1.5, r.y, dig, 0, col);
+  siete(x0 + sep * 2.4, r.y, dig, 0, col);
+  /* Los dos puntos, parpadeando. Lo único que se mueve. */
+  const dp = 0.35 + 0.65 * Math.pow(clamp01(0.5 + 0.5 * Math.sin(reloj * 3.1)), 3);
+  ctx.fillStyle = `rgba(120,255,185,${0.7 * late * dp})`;
+  for (const dy of [-dig * 0.22, dig * 0.22]) {
+    ctx.beginPath();
+    ctx.arc(x0 + sep * 0.85, r.y + dy, dig * 0.07, 0, 6.283);
+    ctx.fill();
+  }
+  /* Y el AM, chiquitito. */
+  ctx.fillStyle = `rgba(120,255,185,${0.45 * late})`;
+  ctx.font = `${Math.round(dig * 0.34)}px ui-sans-serif, system-ui, sans-serif`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText("AM", x0 + sep * 3.1, r.y + dig * 0.2);
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.globalCompositeOperation = "source-over";
+}
+
+/** Un dígito de siete segmentos. */
+const SEGMENTOS = {
+  0: [1, 1, 1, 1, 1, 1, 0],
+  3: [1, 1, 1, 1, 0, 0, 1],
+};
+function siete(x, y, alto, n, col) {
+  const s = SEGMENTOS[n] || SEGMENTOS[0];
+  const w = alto * 0.56, gr = Math.max(1.4, alto * 0.1);
+  ctx.strokeStyle = col;
+  ctx.lineWidth = gr;
+  ctx.lineCap = "round";
+  const t = y - alto / 2, b = y + alto / 2, l = x - w / 2, rr = x + w / 2;
+  const trazos = [
+    [l, t, rr, t],        // arriba
+    [rr, t, rr, y],       // arriba derecha
+    [rr, y, rr, b],       // abajo derecha
+    [l, b, rr, b],        // abajo
+    [l, y, l, b],         // abajo izquierda
+    [l, t, l, y],         // arriba izquierda
+    [l, y, rr, y],        // medio
+  ];
+  for (let i = 0; i < 7; i++) {
+    if (!s[i]) continue;
+    ctx.beginPath();
+    ctx.moveTo(trazos[i][0], trazos[i][1]);
+    ctx.lineTo(trazos[i][2], trazos[i][3]);
+    ctx.stroke();
+  }
+}
+
+function tocarReloj3(p) {
+  if (!reloj3.encendido) return false;
+  const r = sitioReloj3();
+  if (Math.abs(p.x - r.x) > r.w * 0.9 || Math.abs(p.y - r.y) > r.h * 1.1) return false;
+  reloj3.pulso = 1;
+  reloj3.llama = 0;
+  reloj3.tocado++;
+  tono(azar(880, 1100), 0.3, "sine", 0.04);
+  magia(392);
+  for (let i = 0; i < 12; i++) {
+    soltar(r.x + azar(-r.w * 0.4, r.w * 0.4), r.y, {
+      vx: azar(-18, 18), vy: azar(-30, -8),
+      vida: azar(1.4, 2.8), tam: azar(1, 2.2),
+      tipo: TIPO.BRILLO, tono: 0.45,
+    });
+  }
+  const dice = CONF.tres.alTocar;
+  decir(r.x, r.y - U * 8, dice[Math.min(reloj3.tocado - 1, dice.length - 1)],
+    { misterio: true, importante: true, dur: 5 });
+  return true;
+}
+
+/* ---- TOCAR EN LA ESPESURA -----------------------------------------------
+   El mismo orden de siempre: lo pequeño gana a lo grande, y lo que hay
+   delante gana a lo que hay detrás.                                   */
+
+function tocarEnEspesura(p, e) {
+  void e;
+  /* 1. Los puntos, del más pequeño al más grande. */
+  const cand = puntos.lista
+    .filter((q) => q.hay())
+    .map((q) => ({ q, s: puntoEnPantalla(q) }))
+    .filter(({ q, s }) => Math.hypot(p.x - s.x, (p.y - s.y) * 0.8) < q.r * 1.7)
+    .sort((a, b) => a.q.r - b.q.r);
+  if (cand.length) { tocarPunto(cand[0].q, cand[0].s); return; }
+
+  /* 2. El búho. */
+  if (tocarBuhoEspesura(p)) return;
+
+  /* 3. Los ojos rojos. */
+  if (tocarOjosEspesura(p)) return;
+
+  /* 4. Los árboles: se sacuden, sueltan hojas y suenan. */
+  for (let b = ESP.bandas.length - 1; b >= 0; b--) {
+    const conf = ESP.bandas[b];
+    if (!conf.toca) continue;
+    for (const t of espesura.arboles) {
+      if (t.banda !== b) continue;
+      const x = enPantalla(t.x, conf.z);
+      const cima = t.base - t.alto;
+      if (Math.abs(p.x - x) > t.ancho * 3) continue;
+      if (p.y < cima - t.ancho * 2 || p.y > t.base + U * 3) continue;
+      const altura = clamp01((t.base - p.y) / Math.max(1, t.alto));
+      sacudirArbolEsp(t, (p.x < x ? -1 : 1) * (2 + altura * 4.2), x);
+      return;
+    }
+  }
+
+  /* 5. Y si no hay nada, un puñado de hojas que caen de arriba. */
+  for (let i = 0; i < 3; i++) {
+    soltar(p.x + azar(-U * 4, U * 4), p.y - azar(U * 4, U * 14), {
+      vx: azar(-10, 10) + clima.viento * 16, vy: azar(4, 16),
+      vida: azar(2, 4), tam: U * azar(0.4, 0.9),
+      tipo: TIPO.HOJA, giro: azar(0, 6.283), giroV: azar(-2, 2),
+      tono: Math.random(),
+    });
+  }
+}
+
+function sacudirArbolEsp(t, fuerza, x) {
+  t.sacV += fuerza * azar(0.8, 1.2) * (t.banda === 3 ? 0.5 : 1);
+  t.toques++;
+  const n = Math.round(azar(4, 10));
+  for (let i = 0; i < n; i++) {
+    soltar(x + azar(-t.ancho * 2, t.ancho * 2), t.base - t.alto * azar(0.5, 1), {
+      vx: azar(-22, 22) + clima.viento * 20, vy: azar(-10, 16),
+      vida: azar(2.4, 5), tam: U * azar(0.45, 1),
+      tipo: TIPO.HOJA, giro: azar(0, 6.283), giroV: azar(-2.4, 2.4),
+      tono: Math.random(),
+    });
+  }
+  /* Hojas: ruido agudo con envolvente de seno. Un árbol no suena «toc». */
+  if (despertarAudio()) {
+    const c = audio.ctx, t0 = c.currentTime;
+    const nn = Math.floor(c.sampleRate * 0.45);
+    const buf = c.createBuffer(1, nn, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < nn; i++) {
+      const kk = i / nn;
+      d[i] = (Math.random() * 2 - 1) * Math.sin(kk * Math.PI) * (0.3 + 0.7 * Math.random());
+    }
+    const src = c.createBufferSource(); src.buffer = buf;
+    const f = c.createBiquadFilter(); f.type = "highpass"; f.frequency.value = azar(2200, 3400);
+    const g = c.createGain(); g.gain.value = 0.09 * Math.min(1, Math.abs(fuerza) * 0.3);
+    src.connect(f).connect(g).connect(audio.maestro);
+    src.start(t0);
+  }
+  sacudir(Math.min(0.25, Math.abs(fuerza) * 0.05));
+}
+
+/** Qué pasa al tocar cada sitio. */
+function tocarPunto(q, s) {
+  if (q.id === "salida") { volverAlClaro(); return; }
+
+  if (q.id === "equis") {
+    /* Primero, apartar las hojas. */
+    if (q.hojas > 0.02) {
+      q.hojas = 0;
+      historia.marcar("equis");
+      golpe(0.14, 3200, 0.1, "highpass");
+      for (let i = 0; i < 12; i++) {
+        soltar(s.x + azar(-q.r, q.r), s.y + azar(-q.r * 0.4, q.r * 0.4), {
+          vx: azar(-40, 40), vy: azar(-30, -6),
+          vida: azar(1.4, 3), tam: U * azar(0.4, 0.9),
+          tipo: TIPO.HOJA, giro: azar(0, 6.283), giroV: azar(-3, 3),
+          tono: Math.random(),
+        });
+      }
+      decir(s.x, s.y - U * 7, CONF.espesura.equisDestapada, { mimo: true, importante: true });
+      return;
+    }
+    /* Ya está cavada del todo. */
+    if (q.golpes >= CONF.cavar.golpes) {
+      decir(s.x, s.y - U * 7, "Aquí ya no queda nada por cavar.", { dur: 3 });
+      return;
+    }
+    /* Y si no hay pala, no hay nada que hacer. Ésta es LA frase que
+       manda al jugador a recorrerse el bosque. */
+    if (bolsa.enMano !== "pala") {
+      if (!bolsa.lleva("pala")) {
+        historia.marcar("faltaPala");
+        decir(s.x, s.y - U * 7, CONF.espesura.sinPala, { mimo: true, importante: true });
+      } else {
+        decir(s.x, s.y - U * 7, "Con la pala en la mano.", { dur: 3 });
+      }
+      return;
+    }
+    cavar(q, s);
+    return;
+  }
+
+  if (q.id === "pala") { cogerPala(q, s); return; }
+
+  if (q.id === "reliquia") { tocarReliquia(q, s); return; }
+}
+
+/* ---- La pala ------------------------------------------------------------ */
+
+function cogerPala(q, s) {
+  if (q.cogida > 0) return;
+  q.cogida = 0.001;
+  bolsa.coger("pala");
+  bolsa.equipar("pala");
+  historia.marcar("pala");
+
+  /* Un golpe de madera y metal a la vez: las dos cosas de las que está
+     hecha, y las dos se oyen al levantarla del suelo. */
+  golpe(0.1, 380, 0.16, "lowpass");
+  golpe(0.05, 2400, 0.1, "bandpass");
+  magia(523);
+  soltarBrillos(s.x, s.y - U * 3, 14, 0.5);
+  avisoObjeto("pala", "PALA OBTENIDA");
+  setTimeout(() => decir(A * 0.5, H * 0.52, CONF.espesura.palaCogida,
+    { mimo: true, importante: true, dur: 4.5 }), 700);
+}
+
+/* ---- Cavar --------------------------------------------------------------
+   Cuatro golpes, y cada uno distinto del anterior: primero tierra,
+   luego una grieta, luego algo que suena debajo, y al final lo que
+   había. Si los cuatro fueran iguales, el cuarto sobraría.            */
+
+function cavar(q, s) {
+  q.golpes++;
+  recuerdo.poner("golpes", q.golpes);
+  q.temblor = 1;
+  const n = q.golpes;
+  const ultimo = n >= CONF.cavar.golpes;
+
+  /* La cámara se acerca un poco más con cada palada. Es lo que hace que
+     la cosa vaya a alguna parte. */
+  cam.oz = 1 + n * 0.05;
+  cam.oy = (H * 0.46 - s.y) * n * 0.1;
+
+  sonarPalada(n, ultimo);
+  sacudir(0.25 + n * 0.08);
+
+  /* Tierra que salta. Más cuanto más hondo, y hacia el lado contrario
+     al que se supone que está la pala. */
+  const nT = 14 + n * 6;
+  for (let i = 0; i < nT; i++) {
+    soltar(s.x + azar(-q.r * 0.6, q.r * 0.6), s.y - azar(0, q.r * 0.3), {
+      vx: azar(-70, 70), vy: azar(-140, -35),
+      vida: azar(0.5, 1.4), tam: U * azar(0.2, 0.6),
+      tipo: TIPO.CENIZA,
+    });
+  }
+  /* Y a partir del segundo golpe, piedrecitas que saltan más lejos. */
+  if (n >= 2) {
+    for (let i = 0; i < 3 + n; i++) {
+      soltar(s.x + azar(-q.r * 0.4, q.r * 0.4), s.y, {
+        vx: azar(-120, 120), vy: azar(-190, -80),
+        vida: azar(0.6, 1.3), tam: U * azar(0.3, 0.7),
+        tipo: TIPO.POLVO, tono: 0.2,
+      });
+    }
+  }
+  /* En el tercero se escapa algo de luz por la grieta. */
+  if (n === 3) {
+    setTimeout(() => {
+      soltarBrillos(s.x, s.y, 8, 0.45);
+      espesura.onda = 0.5;
+      espesura.ondaX = q.x;
+    }, 420);
+  }
+
+  const frase = CONF.cavar.dice[Math.min(n - 1, CONF.cavar.dice.length - 1)];
+  setTimeout(() => decir(s.x, s.y - U * 8, frase,
+    { mimo: !ultimo, misterio: ultimo, importante: true, dur: ultimo ? 5 : 3.6 }), 520);
+
+  if (ultimo) {
+    historia.marcar("cavado");
+    setTimeout(() => salirElMisterio(q), 1400);
+  } else {
+    /* La cámara vuelve sola al cabo de un momento. */
+    setTimeout(() => { cam.oz = 1; cam.oy = 0; }, 1600);
+  }
+}
+
+/** El sonido de la pala: metal entrando en tierra. */
+function sonarPalada(n, ultimo) {
+  if (!despertarAudio()) return;
+  const c = audio.ctx, t = c.currentTime;
+
+  /* El metal cortando: ruido agudo, cortísimo. */
+  golpe(0.05, azar(2600, 4200), 0.14, "highpass");
+  /* Y la tierra: ruido grave con una envolvente que cae deprisa. Lo que
+     distingue «pala en tierra» de «pala en piedra» es lo rápido que se
+     apaga el grave. */
+  const dur = 0.24;
+  const nn = Math.floor(c.sampleRate * dur);
+  const buf = c.createBuffer(1, nn, c.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < nn; i++) {
+    const k = i / nn;
+    d[i] = (Math.random() * 2 - 1) * Math.pow(1 - k, 2.2);
+  }
+  const src = c.createBufferSource(); src.buffer = buf;
+  const f = c.createBiquadFilter();
+  f.type = "lowpass";
+  f.frequency.setValueAtTime(900 - n * 120, t);
+  f.frequency.exponentialRampToValueAtTime(220, t + dur);
+  const g = c.createGain(); g.gain.value = 0.2 + n * 0.02;
+  src.connect(f).connect(g).connect(audio.maestro);
+  src.start(t);
+
+  /* En el tercer golpe, algo suena DEBAJO. Un tono grave que no
+     pertenece a ninguna pala. */
+  if (n === 3) {
+    setTimeout(() => {
+      tono(azar(48, 62), 1.6, "sine", 0.09);
+      tono(azar(96, 118), 1.2, "sine", 0.04, 0.1);
+    }, 380);
+  }
+  if (ultimo) {
+    /* Y en el último, el golpe contra algo duro. */
+    setTimeout(() => {
+      golpe(0.12, 1400, 0.22, "bandpass");
+      tono(azar(180, 240), 0.9, "triangle", 0.06, 0.02);
+    }, 180);
+  }
+}
+
+/* ---- Lo que sale de la tierra ------------------------------------------- */
+
+function salirElMisterio(q) {
+  historia.marcar("misterio");
+  espesura.verdeObj = 0.55;
+  espesura.onda = 1;
+  espesura.ondaX = q.x;
+
+  /* El bosque se calla: los ambientes bajan y se quedan bajos. Que se
+     haga el silencio es la mitad del momento. */
+  agacharAmbientes(0.2, 2.5);
+  magia(392);
+  setTimeout(() => tono(196, 3, "sine", 0.07), 300);
+
+  const s = puntoEnPantalla(q);
+  cam.oz = 1.28;
+  cam.oy = (H * 0.46 - s.y) * 0.5;
+
+  const r = puntos.lista.find((x) => x.id === "reliquia");
+  if (r) { r.salida = 0; r.pulso = 1; }
+
+  setTimeout(() => decir(A * 0.5, H * 0.42, CONF.misterio.alSalir,
+    { misterio: true, importante: true, dur: 6 }), 900);
+}
+
+function tocarReliquia(q, s) {
+  q.pulso = 1;
+  espesura.onda = 1;
+  espesura.ondaX = q.x;
+  sacudir(0.5);
+
+  /* Las partículas se expanden desde ella. */
+  for (let i = 0; i < 46; i++) {
+    const a = azar(0, 6.283), v = azar(30, 170);
+    soltar(s.x, s.y - U * 2, {
+      vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.6 - 20,
+      vida: azar(1.4, 3.6), tam: azar(1, 2.8),
+      tipo: TIPO.BRILLO, tono: 0.45,
+    });
+  }
+
+  if (historia.marcar("revelado")) {
+    /* La primera vez: el bosque entero se entera. */
+    espesura.verdeObj = 1;
+    agacharAmbientes(0.12, 1.5);
+    setTimeout(() => agacharAmbientes(0.5, 4), 7000);
+    magia(587);
+    setTimeout(() => sonarMisterio(0.7), 500);
+
+    const frase = CONF.misterio.alTocar[Math.floor(Math.random() * CONF.misterio.alTocar.length)];
+    setTimeout(() => decir(A * 0.5, H * 0.36, frase,
+      { misterio: true, importante: true, dur: 7 }), 800);
+
+    /* Y a partir de aquí, el bosque tiene ojos. */
+    setTimeout(() => despertarLosOjos(), 2600);
+    setTimeout(() => reaccionaElBuho(), 4200);
+  } else {
+    espesura.verdeObj = Math.min(1, espesura.verdeObj + 0.1);
+    decir(s.x, s.y - U * 8,
+      CONF.misterio.despues[Math.floor(Math.random() * CONF.misterio.despues.length)],
+      { misterio: true, dur: 4.5 });
+  }
+}
+
 // ==========================================
 // SISTEMA DE INTERACCIÓN
 // ==========================================
@@ -8197,7 +11589,18 @@ zona.addEventListener("pointerdown", (e) => {
 
   if (bloqueado) return;
 
+  /* En la espesura, un dedo apoyado puede acabar siendo un paseo o un
+     toque. No se decide aquí: se apunta el sitio y se decide al
+     soltar, según cuánto haya corrido. Decidirlo al bajar obligaría a
+     elegir entre «no se puede andar» y «no se puede tocar». */
+  if (escena === "espesura") {
+    espesura.agarre = { id: e.pointerId, x: p.x, y: p.y, x0: p.x, t: reloj, corrido: 0 };
+    espesura.vx = 0;
+    return;
+  }
+
   if (escena === "habitacion") { tocarEnHabitacion(p, e); return; }
+  if (escena === "espesura") { tocarEnEspesura(p, e); return; }
   tocarEnBosque(p, e);
 });
 
@@ -8208,6 +11611,22 @@ zona.addEventListener("pointermove", (e) => {
   /* El parallax sigue al dedo, o al ratón aunque no apriete. */
   par.ox = clamp((p.x / A - 0.5) * 2, -1, 1);
   par.oy = clamp((p.y / H - 0.5) * 2, -1, 1);
+
+  /* ---- Andar por la espesura ----
+     El mundo se mueve al revés que el dedo, que es lo que hace que se
+     sienta que lo que se mueve eres tú. Y se guarda la velocidad para
+     que al soltar siga un poco. */
+  const ag = espesura.agarre;
+  if (ag && ag.id === e.pointerId) {
+    const dx = p.x - ag.x;
+    ag.corrido += Math.abs(dx);
+    espesura.x = clamp(espesura.x - dx, 0, espesura.tope);
+    const dt2 = Math.max(0.008, reloj - ag.t);
+    espesura.vx = clamp(-dx / dt2, -A * 2.2, A * 2.2);
+    ag.x = p.x; ag.t = reloj;
+    if (e.cancelable) e.preventDefault();
+    return;
+  }
 
   /* El bombón, si lo lleva cogido. */
   if (bombon.agarrado && bombon.dedoId === e.pointerId) {
@@ -8246,6 +11665,23 @@ zona.addEventListener("pointermove", (e) => {
 });
 
 function soltarDedo(e) {
+  /* ---- Soltar en la espesura ----
+     Si el dedo ha corrido poco, no era un paseo: era un toque. El
+     umbral es generoso —un dedo en un móvil nunca está del todo
+     quieto— y se mide el recorrido TOTAL, no la distancia entre el
+     principio y el final: ir y volver también es haber andado. */
+  const ag = espesura.agarre;
+  if (ag && ag.id === e.pointerId) {
+    espesura.agarre = null;
+    if (ag.corrido < U * 2.6 && !bloqueado) {
+      tocarEnEspesura({ x: ag.x0, y: ag.y }, e);
+      espesura.vx = 0;
+    }
+    dedo.dentro = false;
+    try { zona.releasePointerCapture(e.pointerId); } catch { /* ya estaba */ }
+    return;
+  }
+
   if (bombon.agarrado && bombon.dedoId === e.pointerId) {
     bombon.agarrado = false;
     bombon.dedoId = null;
@@ -8316,6 +11752,15 @@ function tocarEnBosque(p, e) {
   /* 4. LA LLAMA. El easter egg de quemarse. */
   if (dentroDe(p.x, p.y, f.x, f.y - f.r * 0.8, f.r * 1.5)) {
     quemarse(p.x, p.y);
+    return;
+  }
+
+  /* 4b. EL SENDERO. Antes que la luz verde y que la cabaña: es el
+     hueco entre los árboles, y todo lo que hay a su alrededor es más
+     grande que él. */
+  const dSen = desplazar(1.726);
+  if (dentroDe(p.x, p.y, sendero.x + dSen.x, sendero.y + dSen.y, sendero.r * 1.25)) {
+    irALaEspesura();
     return;
   }
 
@@ -8427,6 +11872,9 @@ function tocarEnBosque(p, e) {
 
 function tocarEnHabitacion(p, e) {
   const v = ventanaHab();
+
+  /* El reloj. Lo primero: es lo más pequeño que hay. */
+  if (tocarReloj3(p)) return;
 
   /* La luna de la ventana. Primero, porque está DENTRO del cristal: si
      fuera después, el cristal se llevaría todos los toques y la luna no
@@ -9194,7 +12642,16 @@ function paso(ahora) {
   moverParticulas(dt);
   moverDichos(dt);
 
-  if (escena === "bosque") {
+  moverViaje(dt);
+
+  if (escena === "espesura") {
+    moverClima(dt);
+    moverEspesura(dt);
+    moverBuhoEsp(dt);
+    moverOjosEsp(dt);
+    refrescarBolsa();
+    refrescarHallado();
+  } else if (escena === "bosque") {
     moverClima(dt);
     moverArboles(dt);
     /* El búho va DESPUÉS de los árboles: está agarrado a uno y lee su
@@ -9219,6 +12676,7 @@ function paso(ahora) {
        golpe sin que se viera nada. */
     moverLuna(dt);
     moverSusto(dt);
+    moverReloj3(dt);
   }
 
   /* ---- Dibujar ---- */
@@ -9232,6 +12690,7 @@ function paso(ahora) {
   ctx.translate(-A / 2 + cam.x / cam.z, -H / 2 + cam.y / cam.z);
 
   if (escena === "bosque") dibujarBosque(dt);
+  else if (escena === "espesura") dibujarEspesura(dt);
   else dibujarHabitacion();
 
   ctx.restore();
