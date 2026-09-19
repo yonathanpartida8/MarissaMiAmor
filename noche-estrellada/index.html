@@ -4401,11 +4401,322 @@ const hab = {
   lamparaOn: true,
   lampara: 1,
   cuadro: 0,        // el cuadrito de la pared, tocable
+  /* Lo que hay puesto: se siembra una vez y no cambia. */
+  fotos: [],
+  libros: [],
+  ramas: [],
 };
+
+/* ---- LO QUE HAY EN LA HABITACIÓN ----------------------------------------
+   Se siembra una vez por medida y se guarda. Son cosas quietas: las
+   fotos de la cuerda, los libros de la mesilla, las motas del suelo. No
+   tiene sentido decidir dónde va cada una sesenta veces por segundo, y
+   con el azar repetible salen SIEMPRE en el mismo sitio, que es lo que
+   hace que parezca una habitación de alguien y no un generador.      */
 
 function construirHabitacion() {
   hab.respira = 0;
   hab.polvo = 0;
+  sembrar(19980214);
+
+  /* Las fotos colgadas de una cuerda, de lado a lado de la ventana. */
+  hab.fotos = [];
+  for (let i = 0; i < 5; i++) {
+    hab.fotos.push({
+      t: (i + 0.5) / 5,
+      incl: azar(-0.16, 0.16),
+      alto: azar(0.86, 1.14),
+      /* Qué se ve en cada una. No se dibuja nada reconocible: son dos
+         manchas juntas, y con eso basta para que se lean como fotos de
+         dos personas. */
+      tono: rnd(),
+      balanceo: rnd() * 6.283,
+    });
+  }
+
+  /* Los libros de la mesilla, apilados con desorden. */
+  hab.libros = [];
+  for (let i = 0; i < 3; i++) {
+    hab.libros.push({
+      ancho: azar(0.78, 1),
+      alto: azar(0.6, 1),
+      dx: azar(-0.14, 0.14),
+      color: ["#6a3a42", "#3a4a62", "#5a5236"][i % 3],
+    });
+  }
+
+  /* Y las ramas que se ven por la ventana, que son las que proyectan
+     sombra en la pared. Se guardan aparte de los árboles del bosque:
+     éstas son las de JUSTO delante del cristal. */
+  hab.ramas = [];
+  for (let i = 0; i < 5; i++) {
+    hab.ramas.push({
+      x: azar(-0.6, 0.6),
+      y: azar(-0.5, 0.25),
+      largo: azar(0.3, 0.7),
+      /* Bastante tumbadas: una rama proyectada por una luz que entra en
+         diagonal se ve casi horizontal en la pared. Verticales parecían
+         grietas. */
+      ang: azar(-2.6, -1.9),
+      grueso: azar(0.6, 1.8),
+      f: rnd() * 6.283,
+      hijas: Array.from({ length: 3 }, () => ({
+        t: azar(0.3, 0.9), ang: azar(-0.9, 0.9), largo: azar(0.2, 0.5),
+      })),
+    });
+  }
+}
+
+/**
+ * Las sombras de las ramas sobre la pared.
+ *
+ * ── POR QUÉ ESTO Y NO UNA TEXTURA ────────────────────────────────────
+ * Porque se tienen que MOVER, y moverse con el mismo viento que mueve
+ * todo lo demás. Una sombra quieta en una pared es un dibujo; una
+ * sombra que se mece cuando fuera hace aire es una ventana abierta a
+ * algún sitio.
+ *
+ * Se dibujan con `multiply` para que oscurezcan lo que haya debajo en
+ * vez de pintar encima: así respetan el rectángulo de luna y sólo se
+ * ven DENTRO de él, que es donde tiene sentido que haya sombras.
+ */
+function dibujarSombrasRamas(vx, vy, v) {
+  if (!hab.ramas || !hab.ramas.length) return;
+  const viento = clima.viento * (0.4 + clima.lluvia * 0.6);
+
+  ctx.save();
+  /* Recortado al rectángulo de luna: fuera de él no hay luz, así que no
+     puede haber sombra. */
+  ctx.beginPath();
+  ctx.moveTo(vx - v.w * 0.5, vy + v.h * 0.5);
+  ctx.lineTo(vx + v.w * 0.5, vy + v.h * 0.5);
+  ctx.lineTo(vx + v.w * 1.1, H);
+  ctx.lineTo(vx - v.w * 0.2, H);
+  ctx.closePath();
+  ctx.clip();
+
+  ctx.globalCompositeOperation = "multiply";
+  /* Floja a propósito: una sombra de rama a contraluz no es negra, es
+     un azul apenas más oscuro que la pared. Con más contraste parecían
+     arañazos pintados encima. */
+  ctx.strokeStyle = "rgba(88,98,140,0.55)";
+  ctx.lineCap = "round";
+
+  for (const r of hab.ramas) {
+    /* La sombra se proyecta ESTIRADA hacia abajo, que es lo que hace un
+       rayo que entra en diagonal. Un simple factor en la Y. */
+    const bx = vx + r.x * v.w * 1.1;
+    const by = vy + v.h * 0.5 + (r.y + 0.6) * v.h * 0.9;
+    const mece = Math.sin(reloj * 0.8 + r.f) * 0.08 + viento * 0.16;
+    const ang = r.ang + mece;
+    const L = r.largo * v.h * 1.1;
+    const ex = bx + Math.cos(ang) * L;
+    const ey = by + Math.sin(ang) * L * 1.5;
+
+    ctx.lineWidth = r.grueso * U * 1.1;
+    ctx.beginPath();
+    ctx.moveTo(bx, by);
+    ctx.quadraticCurveTo(
+      (bx + ex) / 2 + Math.sin(reloj * 1.1 + r.f) * U * 1.2,
+      (by + ey) / 2, ex, ey);
+    ctx.stroke();
+
+    /* Las ramitas. Sin ellas son palos, y con ellas son un árbol. */
+    ctx.lineWidth = r.grueso * U * 0.46;
+    for (const h of r.hijas) {
+      const hx = mez(bx, ex, h.t), hy = mez(by, ey, h.t);
+      const ha = ang + h.ang + mece * 1.6;
+      ctx.beginPath();
+      ctx.moveTo(hx, hy);
+      ctx.lineTo(hx + Math.cos(ha) * L * h.largo, hy + Math.sin(ha) * L * h.largo * 1.3);
+      ctx.stroke();
+    }
+  }
+  ctx.globalCompositeOperation = "source-over";
+  ctx.restore();
+}
+
+/** Las cortinas, a los dos lados de la ventana. Se mueven con el aire. */
+function dibujarCortinas(vx, vy, v) {
+  const viento = clima.viento;
+  /* Que respiren aunque no haga viento: una cortina totalmente quieta
+     dentro de una habitación con la ventana abierta no es una cortina,
+     es una pared de tela. */
+  const base = Math.sin(reloj * 0.55) * 0.35;
+
+  for (const lado of [-1, 1]) {
+    const bx = vx + lado * v.w * 0.5;
+    const arriba = vy - v.h * 0.56;
+    const abajo = vy + v.h * 0.62;
+    /* El vuelo: el viento las empuja HACIA DENTRO, o sea hacia el lado
+       contrario al que están. Y abajo se mueven mucho más que arriba,
+       porque arriba están colgadas. */
+    const vuela = (base + viento) * -lado * U * 4.5;
+
+    const g = ctx.createLinearGradient(bx, arriba, bx - lado * v.w * 0.3, abajo);
+    g.addColorStop(0, "rgba(58,50,66,0.95)");
+    g.addColorStop(0.55, "rgba(44,38,54,0.92)");
+    g.addColorStop(1, "rgba(28,24,38,0.95)");
+    ctx.fillStyle = g;
+
+    ctx.beginPath();
+    ctx.moveTo(bx + lado * v.w * 0.2, arriba);
+    ctx.lineTo(bx - lado * v.w * 0.13, arriba);
+    ctx.quadraticCurveTo(
+      bx - lado * v.w * 0.19 + vuela * 0.5, mez(arriba, abajo, 0.55),
+      bx - lado * v.w * 0.1 + vuela, abajo);
+    ctx.lineTo(bx + lado * v.w * 0.22 + vuela * 0.4, abajo);
+    ctx.closePath();
+    ctx.fill();
+
+    /* Los pliegues: tres curvas que siguen el mismo vuelo, cada una un
+       poco retrasada. Ese retraso es lo que da la sensación de tela. */
+    ctx.strokeStyle = "rgba(12,10,18,0.4)";
+    ctx.lineWidth = 1.2;
+    for (let i = 0; i < 3; i++) {
+      const t = (i + 1) / 4;
+      const px2 = bx - lado * v.w * 0.13 * t;
+      const desf = Math.sin(reloj * 0.55 + i * 0.7) * U * 0.8;
+      ctx.beginPath();
+      ctx.moveTo(px2 + lado * v.w * 0.02, arriba + U * 1);
+      ctx.quadraticCurveTo(
+        px2 + vuela * 0.5 * t + desf, mez(arriba, abajo, 0.6),
+        px2 + vuela * t + desf * 0.5, abajo - U * 1);
+      ctx.stroke();
+    }
+
+    /* Y un filo de luna por el canto de dentro. */
+    ctx.strokeStyle = `rgba(150,180,255,${0.1 + Math.abs(viento) * 0.05})`;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(bx - lado * v.w * 0.13, arriba);
+    ctx.quadraticCurveTo(
+      bx - lado * v.w * 0.19 + vuela * 0.5, mez(arriba, abajo, 0.55),
+      bx - lado * v.w * 0.1 + vuela, abajo);
+    ctx.stroke();
+  }
+
+  /* La barra de la que cuelgan. */
+  ctx.strokeStyle = "rgba(70,58,50,0.9)";
+  ctx.lineWidth = U * 0.7;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(vx - v.w * 0.72, vy - v.h * 0.56);
+  ctx.lineTo(vx + v.w * 0.72, vy - v.h * 0.56);
+  ctx.stroke();
+}
+
+/** La cuerda de fotos, colgada de lado a lado por encima de la cama. */
+function dibujarFotos(vx, vy, v) {
+  if (!hab.fotos || !hab.fotos.length) return;
+  const x0 = vx - v.w * 1.1, x1 = vx + v.w * 1.1;
+  /* En apaisado la cuerda va más alta: con el mismo número que en
+     vertical caía justo en el canto de la manta y las fotos quedaban
+     tapadas por la cama. */
+  const y0 = vy + v.h * (apaisado ? 0.58 : 0.78), y1 = y0 + U * 1.5;
+  /* La cuerda cuelga: una parábola, no una recta. */
+  const pandeo = U * 5;
+
+  ctx.strokeStyle = "rgba(180,170,150,0.28)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.quadraticCurveTo((x0 + x1) / 2, y1 + pandeo * 2, x1, y1);
+  ctx.stroke();
+
+  for (const f of hab.fotos) {
+    const t = f.t;
+    /* El punto de la parábola donde va colgada. */
+    const px2 = mez(x0, x1, t);
+    const py2 = (1 - t) * (1 - t) * y0 + 2 * (1 - t) * t * (y1 + pandeo * 2) + t * t * y1;
+    const balanceo = Math.sin(reloj * 0.7 + f.balanceo) * 0.05;
+    const w = U * 6.4, h = U * 7.4 * f.alto;
+
+    ctx.save();
+    ctx.translate(px2, py2);
+    ctx.rotate(f.incl + balanceo);
+
+    /* La pinza. */
+    ctx.fillStyle = "rgba(150,132,104,0.5)";
+    ctx.fillRect(-U * 0.5, -U * 0.8, U, U * 1.8);
+
+    /* El papel, con su borde blanco de polaroid. */
+    ctx.fillStyle = "rgba(226,220,206,0.5)";
+    ctx.fillRect(-w / 2, U * 0.8, w, h);
+    /* La foto: dos manchas juntas. No hace falta más para que se lea
+       como dos personas, y cualquier cosa más definida a este tamaño
+       se convierte en una mancha fea. */
+    const tono = f.tono < 0.5 ? "120,140,170" : "150,130,140";
+    ctx.fillStyle = `rgba(${tono},0.55)`;
+    ctx.fillRect(-w / 2 + U * 0.6, U * 1.4, w - U * 1.2, h - U * 2.8);
+    ctx.fillStyle = "rgba(230,224,210,0.3)";
+    ctx.beginPath();
+    ctx.arc(-w * 0.13, U * 1.4 + h * 0.4, w * 0.11, 0, 6.283);
+    ctx.arc(w * 0.13, U * 1.4 + h * 0.4, w * 0.11, 0, 6.283);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+/** La mesilla: cajón, tirador, libros, taza y la lámpara encima. */
+function dibujarMesilla(lx, ly) {
+  /* El mueble. */
+  const mw = U * 15, mh = U * 14;
+  const g = ctx.createLinearGradient(lx, ly + U * 3, lx, ly + U * 3 + mh);
+  g.addColorStop(0, "rgba(62,48,40,0.95)");
+  g.addColorStop(1, "rgba(34,26,22,0.95)");
+  ctx.fillStyle = g;
+  ctx.fillRect(lx - mw / 2, ly + U * 3, mw, mh);
+  /* La tapa, un pelín más clara y sobresaliendo. */
+  ctx.fillStyle = "rgba(78,60,48,0.95)";
+  ctx.fillRect(lx - mw / 2 - U * 0.6, ly + U * 2.2, mw + U * 1.2, U * 1.1);
+  /* El cajón y su tirador. */
+  ctx.strokeStyle = "rgba(20,14,12,0.6)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(lx - mw / 2 + U, ly + U * 5, mw - U * 2, mh * 0.38);
+  ctx.fillStyle = "rgba(150,126,90,0.6)";
+  ctx.beginPath();
+  ctx.arc(lx, ly + U * 5 + mh * 0.19, U * 0.7, 0, 6.283);
+  ctx.fill();
+
+  /* Los libros, apilados. */
+  let py2 = ly + U * 2.2;
+  for (const lb of hab.libros || []) {
+    const w = U * 9 * lb.ancho, h = U * 1.5 * lb.alto;
+    py2 -= h;
+    ctx.fillStyle = lb.color;
+    ctx.globalAlpha = 0.72;
+    ctx.fillRect(lx - w / 2 + lb.dx * U * 6 - U * 3.5, py2, w, h);
+    /* El canto de las hojas. */
+    ctx.fillStyle = "rgba(226,216,192,0.5)";
+    ctx.fillRect(lx - w / 2 + lb.dx * U * 6 - U * 3.5 + w * 0.06, py2 + h * 0.18,
+                 w * 0.88, h * 0.5);
+    ctx.globalAlpha = 1;
+  }
+
+  /* La taza, con su asa. */
+  const tx = lx + U * 4.6, ty = ly + U * 2.2;
+  ctx.fillStyle = "rgba(200,190,180,0.55)";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(tx - U * 1.6, ty - U * 3, U * 3.2, U * 3, U * 0.4);
+  else ctx.rect(tx - U * 1.6, ty - U * 3, U * 3.2, U * 3);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(200,190,180,0.55)";
+  ctx.lineWidth = U * 0.45;
+  ctx.beginPath();
+  ctx.arc(tx + U * 2, ty - U * 1.7, U * 0.9, -1.2, 1.2);
+  ctx.stroke();
+  /* Y un hilillo de vapor, si la lámpara está encendida: si está todo
+     apagado se supone que ya es de madrugada y el té está frío. */
+  if (hab.lampara > 0.5) {
+    ctx.strokeStyle = `rgba(220,225,235,${0.1 * hab.lampara})`;
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty - U * 3.2);
+    ctx.quadraticCurveTo(tx + Math.sin(reloj * 1.4) * U * 1.2, ty - U * 5.2,
+                         tx + Math.sin(reloj * 0.9) * U * 0.8, ty - U * 7);
+    ctx.stroke();
+  }
 }
 
 /** Dónde está la ventana de la habitación, en píxeles. */
@@ -4461,21 +4772,46 @@ function dibujarHabitacion() {
      Es lo que de verdad ilumina la habitación, así que se dibuja antes
      que los muebles: todo lo demás se ve gracias a él. */
   ctx.globalCompositeOperation = "lighter";
-  const gl = ctx.createLinearGradient(vx, vy, vx + U * 14, H);
-  gl.addColorStop(0, "rgba(150,180,255,0.14)");
-  gl.addColorStop(1, "rgba(150,180,255,0)");
-  ctx.fillStyle = gl;
+  /* Dos degradados y no uno: el de arriba abajo, que apaga el rayo con
+     la distancia, y otro de lado a lado que le quita el CANTO. Con uno
+     solo, el rayo era un cuadrilátero gris recortado en seco sobre la
+     pared, que es lo que menos parece luz de todo. */
+  ctx.save();
   ctx.beginPath();
   ctx.moveTo(vx - v.w * 0.5, vy + v.h * 0.5);
   ctx.lineTo(vx + v.w * 0.5, vy + v.h * 0.5);
   ctx.lineTo(vx + v.w * 1.1, H);
   ctx.lineTo(vx - v.w * 0.2, H);
   ctx.closePath();
-  ctx.fill();
+  ctx.clip();
+
+  const gl = ctx.createLinearGradient(vx, vy, vx + U * 14, H);
+  gl.addColorStop(0, "rgba(150,180,255,0.16)");
+  gl.addColorStop(1, "rgba(150,180,255,0)");
+  ctx.fillStyle = gl;
+  ctx.fillRect(vx - v.w * 1.4, vy, v.w * 3, H);
+
+  const gl2 = ctx.createLinearGradient(vx - v.w * 0.6, 0, vx + v.w * 1.2, 0);
+  gl2.addColorStop(0, "rgba(0,0,0,0)");
+  gl2.addColorStop(0.18, "rgba(60,80,150,0.05)");
+  gl2.addColorStop(0.5, "rgba(80,100,170,0.06)");
+  gl2.addColorStop(0.84, "rgba(60,80,150,0.05)");
+  gl2.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = gl2;
+  ctx.fillRect(vx - v.w * 1.4, vy, v.w * 3, H);
+  ctx.restore();
   ctx.globalCompositeOperation = "source-over";
+
+  /* ---- Las sombras de las ramas, DENTRO del rectángulo de luna ----
+     Van aquí y no después: son sombras, así que tienen que estar sobre
+     la pared y por DEBAJO de todo lo que hay colgado y puesto encima. */
+  dibujarSombrasRamas(vx, vy, v);
 
   /* ---- La ventana ---- */
   dibujarVentanaHabitacion(vx, vy + resp * 0.2, v.w, v.h);
+
+  /* ---- Las cortinas, a los lados ---- */
+  dibujarCortinas(vx, vy + resp * 0.2, v);
 
   /* ---- El cuadrito de la pared (tocable) ---- */
   const qx = vx - v.w * 0.92, qy = vy + U * 2;
@@ -4493,8 +4829,13 @@ function dibujarHabitacion() {
   ctx.fillRect(qx - qw * 0.2, qy + qh * 0.14, qw * 0.16, qh * 0.2);
   ctx.fillRect(qx + qw * 0.04, qy + qh * 0.14, qw * 0.16, qh * 0.2);
 
+  /* ---- La cuerda de fotos ---- */
+  dibujarFotos(vx, vy + resp * 0.2, v);
+
   /* ---- La lámpara de la mesilla ---- */
-  const lx = vx + v.w * 0.92, ly = H * 0.62;
+  /* Metida hacia dentro: a 0.92 del ancho de la ventana se le salía
+     media mesilla por el canto de la pantalla en vertical. */
+  const lx = Math.min(vx + v.w * 0.85, A - U * 9), ly = H * 0.62;
   if (hab.lampara > 0.02) {
     ctx.globalCompositeOperation = "lighter";
     const g = ctx.createRadialGradient(lx, ly, 0, lx, ly, U * 26);
@@ -4504,10 +4845,14 @@ function dibujarHabitacion() {
     ctx.beginPath(); ctx.arc(lx, ly, U * 26, 0, 6.283); ctx.fill();
     ctx.globalCompositeOperation = "source-over";
   }
-  /* La mesilla. */
-  ctx.fillStyle = "rgba(48,38,32,0.9)";
-  ctx.fillRect(lx - U * 7, ly + U * 3, U * 14, U * 12);
-  /* La pantalla de la lámpara. */
+  /* La mesilla, con lo que tiene encima. */
+  dibujarMesilla(lx, ly);
+  /* El pie y la pantalla de la lámpara. */
+  ctx.fillStyle = "rgba(40,32,28,0.95)";
+  ctx.fillRect(lx - U * 0.5, ly - U * 3, U, U * 5.4);
+  ctx.beginPath();
+  ctx.ellipse(lx, ly + U * 2.4, U * 2.2, U * 0.7, 0, 0, 6.283);
+  ctx.fill();
   ctx.fillStyle = `rgb(${Math.round(mez(52, 220, hab.lampara))},${Math.round(mez(44, 170, hab.lampara))},${Math.round(mez(40, 110, hab.lampara))})`;
   ctx.beginPath();
   ctx.moveTo(lx - U * 4, ly + U * 2);
@@ -4555,11 +4900,39 @@ function dibujarHabitacion() {
   ctx.stroke();
   ctx.restore();
 
-  /* Los pliegues. */
-  ctx.strokeStyle = "rgba(8,6,14,0.34)";
+  /* ---- La luna sobre la manta ----
+     El rayo que entra por la ventana CAE encima de las piernas, así
+     que tiene que verse ahí también. Sin esto, la manta se quedaba
+     siendo una mancha morada plana debajo de una habitación iluminada,
+     y se notaba que era un telón y no una cama. */
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(-10, H + 10);
+  ctx.lineTo(-10, camaY + U * 8);
+  ctx.quadraticCurveTo(A * 0.16, camaY + U * 2, A * 0.3, camaY + U * 5);
+  ctx.quadraticCurveTo(A * 0.38, camaY - U * 9, A * 0.46, camaY + U * 3);
+  ctx.quadraticCurveTo(A * 0.54, camaY - U * 8, A * 0.62, camaY + U * 4);
+  ctx.quadraticCurveTo(A * 0.82, camaY + U * 1, A + 10, camaY + U * 9);
+  ctx.lineTo(A + 10, H + 10);
+  ctx.closePath();
+  ctx.clip();
+  ctx.globalCompositeOperation = "lighter";
+  const gml = ctx.createLinearGradient(vx - v.w * 0.5, 0, vx + v.w * 1.1, 0);
+  gml.addColorStop(0, "rgba(0,0,0,0)");
+  gml.addColorStop(0.3, "rgba(120,150,230,0.07)");
+  gml.addColorStop(0.7, "rgba(120,150,230,0.07)");
+  gml.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = gml;
+  ctx.fillRect(0, camaY - U * 12, A, H);
+  ctx.restore();
+
+  /* Los pliegues. Los de dentro del rayo se ven; los de fuera, casi
+     nada. Un pliegue es una sombra, y donde no hay luz no hay sombra. */
   ctx.lineWidth = 1.4;
-  for (let i = 0; i < 5; i++) {
-    const t = (i + 1) / 6;
+  for (let i = 0; i < 7; i++) {
+    const t = (i + 0.5) / 7;
+    const enLaLuz = clamp01(1 - Math.abs(A * t - vx) / (v.w * 0.9));
+    ctx.strokeStyle = `rgba(8,6,14,${0.2 + enLaLuz * 0.34})`;
     ctx.beginPath();
     ctx.moveTo(A * t, camaY + U * mez(6, 10, Math.abs(t - 0.5) * 2));
     ctx.quadraticCurveTo(A * t + U * 3, H * 0.9, A * t - U * 2, H + 10);
