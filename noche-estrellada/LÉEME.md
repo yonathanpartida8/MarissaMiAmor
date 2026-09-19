@@ -17,6 +17,7 @@ noche-estrellada/
 ├── index.html
 ├── musica.mp3              ← la cajita musical
 ├── misterio.mp3            ← el búho
+├── rag.mp3                 ← lo que se oye en el bosque
 │
 ├── audio/
 │   ├── fogata.mp3
@@ -71,6 +72,34 @@ empiecen y acaben parecido para que no se note el salto. Los cinco de
 termine el anterior.
 
 ---
+
+## La historia
+
+Ahora hay una. Se puede ignorar entera —la fogata, el bombón y la
+cajita siguen ahí para quien sólo quiera estar— pero si se tira del
+hilo, lleva a algún sitio:
+
+1. **El claro.** La fogata, la cabaña, los bombones. Y a la izquierda,
+   entre dos troncos, un hueco por el que se cuela un poco de verde.
+2. **El sendero.** Se toca y se ANDA hasta el bosque de dentro. La
+   cámara se mete, la escena se apaga, cruzan hojas y motas, y el
+   sonido cambia sin cortarse.
+3. **La espesura.** Tres pantallas de bosque. Se arrastra el dedo para
+   andar. Hay sitios: una marca en el suelo, un búho que habla, una
+   pala apoyada en un tocón, y algo que mira desde el fondo.
+4. **La X.** Medio tapada de hojas. Se destapa, y entonces hace falta
+   una pala.
+5. **La pala.** Está al otro extremo del bosque. Se coge, se queda en
+   la bolsa, y se pone en la mano tocándola ahí.
+6. **Cavar.** Cuatro paladas, y cada una distinta: tierra, una grieta,
+   algo que suena debajo, y lo que había.
+7. **El misterio.** Sale de la tierra encendido. Al tocarlo, el bosque
+   se entera.
+8. **Y lo que viene después.** No se cuenta aquí.
+
+Lo que se descubre se GUARDA. Si cierras y vuelves mañana, la pala
+sigue siendo tuya y la X sigue cavada. Lo único que no se guarda es
+dónde estabas: siempre se vuelve al claro.
 
 ## Qué se puede hacer
 
@@ -129,6 +158,12 @@ Todo lo que se dice y casi todo lo que se ve está en el bloque
 | lo de la luna a los diez toques | `CONF.dona` |
 | el susto de la ventana | `CONF.ventana` |
 | lo que sabe la cajita | `CONF.cajita` |
+| el sendero y lo que se dice al andar | `CONF.espesura` |
+| cuántas paladas y qué se dice en cada una | `CONF.cavar` |
+| lo que dice el misterio | `CONF.misterio` |
+| lo que dice el búho del bosque | `CONF.buhoEsp` |
+| lo del reloj de las tres | `CONF.tres` |
+| lo ancho que es el bosque y sus capas | `ESP` |
 
 ---
 

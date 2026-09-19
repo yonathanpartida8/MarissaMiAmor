@@ -8634,7 +8634,10 @@ const sendero = {
 };
 
 function colocarSendero() {
-  sendero.x = A * 0.085;
+  /* No pegado al canto: a 0.085 del ancho, en un móvil el hueco caía
+     a treinta píxeles del borde, justo donde el pulgar va a tientas y
+     donde el librito escucha los barridos de pasar página. */
+  sendero.x = A * 0.125;
   sendero.y = mez(sitio.horizonte, sitio.suelo, 0.72);
   sendero.r = U * (apaisado ? 8 : 10);
 }
@@ -9067,6 +9070,10 @@ function construirEspesura() {
   }
 
   construirPuntos();
+  /* El búho se coloca DESPUÉS de los puntos: su sitio es uno de ellos.
+     Sin esta línea se quedaba en el origen con radio cero, o sea
+     invisible, y no había manera de encontrarlo ni de que atacara. */
+  colocarBuhoEsp();
 }
 
 /* ---- Andar --------------------------------------------------------------
@@ -9193,14 +9200,20 @@ function dibujarEspesura(dt) {
 
   /* ---- 8. LA ONDA DEL MISTERIO ---- */
   if (espesura.onda > 0.01) {
+    /* Un frente blando que se abre, no un aro de trazo. El aro se veía
+       como una raya dibujada encima del bosque; esto se ve como luz
+       pasando por delante. El corazón del degradado es transparente y
+       sólo brilla el borde, así lo ya recorrido se queda limpio. */
     const k = 1 - espesura.onda;
-    ctx.globalCompositeOperation = "lighter";
     const ox = enPantalla(espesura.ondaX, 1);
-    ctx.strokeStyle = `rgba(120,255,190,${espesura.onda * 0.32})`;
-    ctx.lineWidth = U * (1 + espesura.onda * 3);
-    ctx.beginPath();
-    ctx.ellipse(ox, suelo, A * k * 1.4, H * k * 0.7, 0, 0, 6.283);
-    ctx.stroke();
+    const rx = A * (0.15 + k * 1.5), ry = H * (0.08 + k * 0.75);
+    ctx.globalCompositeOperation = "lighter";
+    haloOvalado(ox, suelo - H * 0.06, rx, ry, [
+      [0, "rgba(90,255,180,0)"],
+      [0.74, `rgba(90,255,180,${espesura.onda * 0.18})`],
+      [0.92, `rgba(150,255,210,${espesura.onda * 0.28})`],
+      [1, "rgba(90,255,180,0)"],
+    ]);
     ctx.globalCompositeOperation = "source-over";
   }
 
@@ -9504,7 +9517,14 @@ function dibujarMarcoEsp() {
     if (sx > -A * 0.2 && sx < A * 1.2) estorbos.push({ x: sx, r: q.r * 2.2 });
   }
   const bx = enPantalla(buhoEsp.x, 0.52);
-  if (bx > -A * 0.2 && bx < A * 1.2) estorbos.push({ x: bx, r: buhoEsp.r * 3 });
+  /* Con el tamaño de AHORA, no con el de reposo: atacando mide treinta
+     veces más, y un tronco delante de él lo partiría por la mitad. */
+  if (bx > -A * 0.2 && bx < A * 1.2 || buhoEsp.ataque >= 0) {
+    estorbos.push({
+      x: buhoEsp.ataque >= 0 ? mez(bx, A * 0.5, buhoEsp.centrado || 0) : bx,
+      r: buhoEsp.r * buhoEsp.escala * 2.2,
+    });
+  }
 
   for (const m of espesura.marco) {
     const x = enPantalla(m.x, z);
@@ -9515,7 +9535,7 @@ function dibujarMarcoEsp() {
     for (const es of estorbos) {
       const d = Math.abs(x + mece - es.x);
       if (d < es.r + m.ancho * 2) {
-        tapa = Math.min(tapa, clamp01((d - m.ancho) / Math.max(1, es.r)) * 0.55 + 0.1);
+        tapa = Math.min(tapa, clamp01((d - m.ancho) / Math.max(1, es.r * 1.6)) * 0.5 + 0.04);
       }
     }
     if (tapa < 0.04) continue;
@@ -10334,8 +10354,10 @@ async function sonarRag(vol = 0.6) {
 function tocarBuhoEspesura(p) {
   const b = buhoEsp;
   if (b.sal < 0.2 || b.yendo >= 0 || b.ataque >= 0) return false;
-  const sx = enPantalla(b.x, 0.52);
-  if (Math.hypot(p.x - sx, p.y - b.y) > b.r * 3) return false;
+  const cen = b.centrado || 0;
+  const sx = mez(enPantalla(b.x, 0.52), A * 0.5, cen);
+  const sy = mez(b.y, H * 0.5, cen);
+  if (Math.hypot(p.x - sx, p.y - sy) > b.r * 3) return false;
 
   b.visto = 1;
   b.parpadeo = 1;
@@ -10526,8 +10548,10 @@ function dibujarBuhoEsp() {
   const b = buhoEsp;
   if (b.sal < 0.015 && b.ataque < 0) { dibujarMinis(); return; }
 
-  const x = enPantalla(b.x, 0.52);
-  const y = b.y;
+  /* Durante el ataque se centra; el resto del tiempo está donde está. */
+  const cen = b.centrado || 0;
+  const x = mez(enPantalla(b.x, 0.52), A * 0.5, cen);
+  const y = mez(b.y, H * 0.5, cen);
   const r = b.r * b.escala;
   const sal = clamp01(b.sal);
   const cerrado = Math.sin(clamp01(b.parpadeo) * Math.PI);
@@ -10632,7 +10656,9 @@ function dibujarBuhoEsp() {
   ctx.fill();
   ctx.restore();
 
-  /* La rama. */
+  /* La rama. No cuando ataca: a treinta veces su tamaño, la rama es
+     una viga que cruza la pantalla de canto a canto. */
+  if (b.ataque < 0) {
   ctx.fillStyle = `rgba(5,8,7,${0.9 * sal})`;
   ctx.beginPath();
   ctx.moveTo(-r * 2.4, r * 1.1);
@@ -10640,6 +10666,7 @@ function dibujarBuhoEsp() {
   ctx.quadraticCurveTo(0, r * 1.42, -r * 2.4, r * 1.28);
   ctx.closePath();
   ctx.fill();
+  }
 
   ctx.restore();
   ctx.globalAlpha = 1;
@@ -10929,6 +10956,14 @@ function reaccionaElBuho() {
 function arrancarAtaque() {
   if (buhoEsp.ataque >= 0) return;
   buhoEsp.ataque = 0;
+  buhoEsp.centrado = 0;
+  /* La cámara se planta delante de él. Si el jugador estaba mirando a
+     otra parte del bosque, el búho crecía y se echaba encima FUERA de
+     la pantalla, y lo único que se veía era el golpe final salido de
+     la nada. Un ataque que no se ve venir no es un ataque, es un
+     fundido a negro con ruido. */
+  espesura.x = clamp(buhoEsp.x - A * 0.5, 0, espesura.tope);
+  espesura.vx = 0;
   buhoEsp.yendo = -1;
   buhoEsp.reventado = false;
   buhoEsp.sal = 1; buhoEsp.salObj = 1;
@@ -10942,6 +10977,11 @@ function moverAtaque(dt) {
   const b = buhoEsp;
   const t = b.ataque += dt;
   b.rojo = damp(b.rojo, 1, 8, dt);
+
+  /* Se va poniendo en medio de la pantalla mientras crece: si se
+     quedara pegado a su árbol, al hacerse enorme se saldría por un
+     canto y el golpe vendría de fuera. */
+  b.centrado = suave3(clamp01(t / 1.4));
 
   /* 0 – 1.4  crece. Mucho. Y abre las alas. */
   if (t < 1.4) {
@@ -11086,7 +11126,7 @@ function despertarEnLaCabana() {
   buhoEsp.golpeado = false;
   buhoEsp.chillo = false;
   buhoEsp.dijo1 = false; buhoEsp.dijo2 = false;
-  buhoEsp.escala = 1; buhoEsp.volando = 0;
+  buhoEsp.escala = 1; buhoEsp.volando = 0; buhoEsp.centrado = 0;
   buhoEsp.rojoObj = 0;
   ojosEsp.evento = -1; ojosEsp.hecho = false; ojosEsp.acabado = false;
   ojosEsp.enjambre.length = 0;
@@ -11165,7 +11205,7 @@ function dibujarReloj3() {
 
   /* Los números. Dibujados con segmentos, como los de verdad: una
      fuente aquí se vería como texto puesto encima de un dibujo. */
-  const dig = r.h * 0.46, sep = dig * 0.78;
+  const dig = r.h * 0.52, sep = dig * 0.74;
   const x0 = r.x - sep * 1.55;
   ctx.globalCompositeOperation = "lighter";
   const col = `rgba(120,255,185,${0.75 * late})`;
@@ -11198,19 +11238,26 @@ const SEGMENTOS = {
 };
 function siete(x, y, alto, n, col) {
   const s = SEGMENTOS[n] || SEGMENTOS[0];
-  const w = alto * 0.56, gr = Math.max(1.4, alto * 0.1);
+  /* El trazo, fino. Con un décimo del alto, los seis segmentos de un
+     cero se tocaban entre sí y lo que se leía era un rectángulo
+     relleno. Un siete segmentos necesita ver el hueco de dentro. */
+  const w = alto * 0.58, gr = Math.max(1.2, alto * 0.062);
   ctx.strokeStyle = col;
   ctx.lineWidth = gr;
   ctx.lineCap = "round";
+  /* Los extremos se recogen un poco: con los segmentos tocándose
+     punta con punta, las esquinas se emborronan y el dígito pierde la
+     forma. Un reloj de verdad también los deja separados. */
+  const m = gr * 0.7;
   const t = y - alto / 2, b = y + alto / 2, l = x - w / 2, rr = x + w / 2;
   const trazos = [
-    [l, t, rr, t],        // arriba
-    [rr, t, rr, y],       // arriba derecha
-    [rr, y, rr, b],       // abajo derecha
-    [l, b, rr, b],        // abajo
-    [l, y, l, b],         // abajo izquierda
-    [l, t, l, y],         // arriba izquierda
-    [l, y, rr, y],        // medio
+    [l + m, t, rr - m, t],        // arriba
+    [rr, t + m, rr, y - m],       // arriba derecha
+    [rr, y + m, rr, b - m],       // abajo derecha
+    [l + m, b, rr - m, b],        // abajo
+    [l, y + m, l, b - m],         // abajo izquierda
+    [l, t + m, l, y - m],         // arriba izquierda
+    [l + m, y, rr - m, y],        // medio
   ];
   for (let i = 0; i < 7; i++) {
     if (!s[i]) continue;
@@ -11497,7 +11544,7 @@ function sonarPalada(n, ultimo) {
 
 function salirElMisterio(q) {
   historia.marcar("misterio");
-  espesura.verdeObj = 0.55;
+  espesura.verdeObj = 0.35;
   espesura.onda = 1;
   espesura.ondaX = q.x;
 
@@ -11536,7 +11583,11 @@ function tocarReliquia(q, s) {
 
   if (historia.marcar("revelado")) {
     /* La primera vez: el bosque entero se entera. */
-    espesura.verdeObj = 1;
+    /* Tiñe, no repinta. Con el verde a tope el bosque entero se ponía
+       esmeralda y dejaba de ser un bosque de noche: la gracia es que
+       algo verde se ha metido en un sitio azul, no que el sitio se haya
+       vuelto verde. */
+    espesura.verdeObj = 0.62;
     agacharAmbientes(0.12, 1.5);
     setTimeout(() => agacharAmbientes(0.5, 4), 7000);
     magia(587);
