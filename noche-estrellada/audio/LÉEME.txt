@@ -1,0 +1,18 @@
+Aquí van los seis ambientes, con estos nombres exactos:
+
+    fogata.mp3
+    grillos.mp3
+    aire.mp3
+    lluvia.mp3
+    relampagos.mp3
+    bosque.mp3
+
+Se reproducen EN BUCLE, así que conviene que empiecen y acaben parecido
+para que no se note el salto.
+
+Cada uno se enciende y se apaga desde su piedra, delante de la fogata, y
+el volumen se cambia arrastrando de lado sobre ella. Todos los cambios
+van con fundido: nunca entra ni sale un sonido de golpe.
+
+Si falta alguno, suena un gemelo sintetizado con la Web Audio API. En
+cuanto dejes el archivo aquí, se usa el tuyo.

@@ -482,10 +482,39 @@ export function registerPaginasHtml(entries) {
 
   for (const entry of entries) {
     const primeraFoto = manifest.findIndex((e) => e.type === "amor");
-    const at = primeraFoto === -1 ? manifest.length : primeraFoto;
+    const at = primeraFoto === -1 ? finDeLoNormal() : primeraFoto;
     manifest.splice(at, 0, { ...entry });
   }
 
+  decorate(manifest);
+  return manifest;
+}
+
+/**
+ * Dónde acaba el libro «normal»: antes de las páginas marcadas como
+ * últimas.
+ *
+ * Hay páginas que tienen que ir al final de todo pase lo que pase —la
+ * noche estrellada—, y las HTML y las fotos se añaden cuando llegan de
+ * la red, que puede ser en cualquier orden. Sin esto, una foto que
+ * llegara tarde se colocaría DETRÁS del final del libro.
+ */
+function finDeLoNormal() {
+  const i = manifest.findIndex((e) => e.ultima);
+  return i === -1 ? manifest.length : i;
+}
+
+/**
+ * Añade una página que va DESPUÉS DE TODO, y que nada puede adelantar.
+ *
+ * Es para el cierre de verdad: la noche estrellada. Se marca con
+ * `ultima: true` y `registerAmores` y `registerPaginasHtml` lo respetan,
+ * llegue lo que llegue después y en el orden que llegue.
+ */
+export function registerUltima(entry) {
+  if (!entry) return manifest;
+  if (manifest.some((e) => e.id === entry.id)) return manifest;
+  manifest.push({ ...entry, ultima: true });
   decorate(manifest);
   return manifest;
 }
@@ -502,7 +531,9 @@ export function registerPaginasHtml(entries) {
 export function registerAmores(entries) {
   if (!entries?.length) return manifest;
 
-  for (const entry of entries) manifest.push({ ...entry });
+  /* Detrás de todo, sí, pero DELANTE del cierre de verdad: la noche
+     estrellada va marcada `ultima` y nada se pone después de ella. */
+  for (const entry of entries) manifest.splice(finDeLoNormal(), 0, { ...entry });
 
   decorate(manifest);
   return manifest;

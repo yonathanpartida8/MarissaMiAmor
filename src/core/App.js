@@ -15,6 +15,7 @@ import {
   registerCustomPages,
   registerPaginasHtml,
   registerAmores,
+  registerUltima,
   indexOfPage,
 } from "../data/manifest.js";
 import { registerCustomChapters, chapterById } from "../data/chapters.js";
@@ -27,6 +28,12 @@ import {
   actoHtml,
   CARPETA as CARPETA_HTML,
 } from "../data/paginas-html.js";
+import {
+  existeLaNoche,
+  entradaNoche,
+  capituloNoche,
+  actoNoche,
+} from "../data/noche.js";
 import { warmup } from "../pages/registry.js";
 import { PRIORITY } from "./AssetLoader.js";
 import { el, qs, wait } from "../utils/dom.js";
@@ -93,6 +100,10 @@ export class App {
       return [];
     });
 
+    //    Y si está, la noche estrellada: una sola pregunta a la red, que se
+    //    hace a la vez que las otras dos y no retrasa nada.
+    const buscandoNoche = existeLaNoche();
+
     // 3. Sus páginas escritas a mano. Van antes que nada porque pueden colarse
     //    en cualquier sitio del libro, incluso justo después de la portada.
     await this.#loadMine();
@@ -117,6 +128,11 @@ export class App {
     //    HTML, después las fotos. (Aun así, `registerPaginasHtml` busca su
     //    sitio delante de la primera foto en vez de fiarse de esto: si algún
     //    día se cambia el orden aquí, el libro seguirá saliendo bien.)
+    //    La noche va ANTES que las otras dos en el código y DESPUÉS que
+    //    ellas en el libro: se registra primero para que ya esté marcada
+    //    como última cuando lleguen las HTML y las fotos, y así las dos
+    //    se colocan delante de ella sin que importe cuál tarde más.
+    await this.#loadNoche(buscandoNoche);
     await this.#loadPaginasHtml(buscandoHtml);
     await this.#loadAmores(buscandoAmores);
 
@@ -238,6 +254,30 @@ export class App {
     } catch (err) {
       // Red de seguridad final: pase lo que pase, el libro se abre.
       console.error("[mis-paginas] no se pudieron cargar", err);
+    }
+  }
+
+  /**
+   * Añade `noche-estrellada/` como la última página del libro.
+   *
+   * No sale del barrido de `paginas-html/`: es una experiencia entera con
+   * su carpeta y sus sonidos, y vive fuera. Ver `data/noche.js`.
+   *
+   * Si la carpeta no está, el libro es exactamente el mismo libro.
+   */
+  async #loadNoche(buscando) {
+    try {
+      if (!(await buscando)) return;
+      registerCustomChapters([capituloNoche], actoNoche);
+      registerUltima(entradaNoche);
+      warmup("html");
+      console.info(
+        "%c noche %c la noche estrellada, al final de todo",
+        "background:#8fa8ff;color:#05070f;border-radius:3px 0 0 3px;padding:2px 6px",
+        "background:#2a1436;color:#f6e7ef;border-radius:0 3px 3px 0;padding:2px 6px"
+      );
+    } catch (err) {
+      console.error("[noche] no se pudo añadir la última página", err);
     }
   }
 

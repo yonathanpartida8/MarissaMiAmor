@@ -1,0 +1,4551 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="Una noche en el bosque, junto a una fogata.">
+<title>Noche estrellada</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   NOCHE ESTRELLADA — estilos
+
+   Todo cuelga de `.noche` y lleva el prefijo `ne-`. Ni una etiqueta a
+   secas: esta página funciona suelta, pero también se incrusta dentro
+   del librito, y ahí no puede tocarle nada a nadie.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #05070f;
+  overscroll-behavior: none;
+}
+
+.noche {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background: #05070f;
+  color: #dfe6f5;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  cursor: default;
+
+  /* Los márgenes seguros del móvil. Si esta página va dentro del librito,
+     él ya los presta con estos nombres; si va suelta, salen de `env()`. */
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --seguro-l: var(--seguro-lado, env(safe-area-inset-left, 0px));
+  --barra: var(--hueco-barra, 0rem);
+
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+  --e-cine: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --tipo-titulo: var(--tipo-titulo, Georgia, "Times New Roman", serif);
+  --tipo-mano: var(--tipo-mano, "Segoe Script", "Bradley Hand", cursive);
+}
+
+/* El lienzo donde se pinta el mundo entero. */
+.noche .ne-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Los toques los recoge `.ne-toque`, que va justo encima. Así hay un
+     solo sitio del que salen los gestos. */
+  pointer-events: none;
+}
+
+/* La capa que recibe los dedos. Ocupa la escena entera.
+
+   Si esta página va dentro del librito, él sólo se queda el barrido que
+   EMPIEZA en sus 24-44 px de borde, así que aquí se puede arrastrar de
+   lado a lado sin que se pase de hoja. */
+.noche .ne-toque {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  z-index: 2;
+}
+
+/* ── El rótulo de bienvenida ─────────────────────────────────────────── */
+
+.noche .ne-entrada {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(10, 14, 28, 0.55), rgba(3, 5, 12, 0.92));
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  transition: opacity 900ms var(--e-suave), visibility 900ms;
+  cursor: pointer;
+  text-align: center;
+  padding: 0 28px;
+  box-sizing: border-box;
+}
+.noche.is-dentro .ne-entrada {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.noche .ne-entrada h1 {
+  margin: 0 0 0.5em;
+  font-family: var(--tipo-titulo);
+  font-weight: 400;
+  font-size: clamp(1.5rem, 7vw, 2.4rem);
+  letter-spacing: 0.16em;
+  color: #f2ecff;
+  text-shadow: 0 0 40px rgba(170, 190, 255, 0.45);
+}
+.noche .ne-entrada p {
+  margin: 0;
+  font-size: clamp(0.82rem, 3.6vw, 1rem);
+  line-height: 1.7;
+  color: #b8c4e0;
+  max-width: 22em;
+}
+.noche .ne-entrada .ne-pulso {
+  display: inline-block;
+  margin-top: 1.6em;
+  padding: 0.7em 1.8em;
+  border: 1px solid rgba(190, 205, 255, 0.34);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #dfe6ff;
+  animation: ne-respira 3.4s ease-in-out infinite;
+}
+@keyframes ne-respira {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.035); }
+}
+
+/* ── Los textos flotantes ────────────────────────────────────────────── */
+
+/* Cada frase sale donde ha pasado algo y sube desvaneciéndose. Se crean
+   una vez y se reciclan: en una escena que puede soltar varias por
+   segundo, crear y tirar nodos es lo que hace que salte el recolector
+   justo encima de una animación. */
+.noche .ne-dichos {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+}
+.noche .ne-dicho {
+  position: absolute;
+  left: 0; top: 0;
+  max-width: min(17em, 74vw);
+  padding: 0.5em 0.95em;
+  border-radius: 14px;
+  background: rgba(14, 18, 34, 0.62);
+  border: 1px solid rgba(180, 196, 255, 0.16);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  font-size: clamp(0.76rem, 3.3vw, 0.92rem);
+  line-height: 1.5;
+  text-align: center;
+  color: #e8eeff;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.noche .ne-dicho.ne-mimo {
+  font-family: var(--tipo-mano);
+  font-size: clamp(0.92rem, 4vw, 1.12rem);
+  color: #ffd8e8;
+  border-color: rgba(255, 180, 210, 0.24);
+}
+
+/* ── El panel de ambientes ───────────────────────────────────────────── */
+
+/* Va dibujado con piedras en el lienzo, no con HTML: forma parte del
+   mundo. Esto de aquí es sólo la etiqueta que explica lo que se toca,
+   y se esconde en cuanto se usa una vez. */
+.noche .ne-pista-panel {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--seguro-b) + var(--barra) + 8px);
+  transform: translateX(-50%);
+  z-index: 20;
+  font-size: 0.66rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(190, 204, 240, 0.45);
+  pointer-events: none;
+  transition: opacity 700ms var(--e-suave);
+}
+/* Se va en cuanto se usa una piedra… y también en cuanto se sale del
+   bosque: dentro de la cabaña no hay piedras que tocar, y el rótulo se
+   quedaba ahí explicando algo que no está. */
+.noche.is-panel-usado .ne-pista-panel,
+.noche.is-habitacion .ne-pista-panel,
+.noche.is-durmiendo .ne-pista-panel { opacity: 0; }
+
+/* ── La carta del bosque ─────────────────────────────────────────────── */
+
+.noche .ne-velo {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: calc(var(--seguro-t) + 20px) 20px calc(var(--seguro-b) + var(--barra) + 20px);
+  box-sizing: border-box;
+  background: radial-gradient(ellipse 90% 70% at 50% 50%, rgba(6, 14, 12, 0.72), rgba(2, 5, 8, 0.94));
+  opacity: 0;
+  visibility: hidden;
+  /* `pointer-events` aparte y SIN transición: `visibility` tarda sus 900
+     ms en llegar a `hidden`, y mientras tanto el velo ocupa la pantalla
+     entera por encima de todo. Al cerrar la carta había casi un segundo
+     en el que tocar el bosque no hacía nada. */
+  pointer-events: none;
+  transition: opacity 900ms var(--e-suave), visibility 900ms;
+}
+.noche .ne-velo.is-abierto {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.noche .ne-carta {
+  position: relative;
+  width: min(92vw, 380px);
+  max-height: 100%;
+  overflow: auto;
+  padding: 30px 26px 26px;
+  box-sizing: border-box;
+  border-radius: 3px;
+  /* Papel viejo: tres tramas finísimas y un degradado. Sin descargar
+     nada, y nítido a cualquier tamaño. */
+  background-image:
+    repeating-linear-gradient(92deg, rgba(150, 125, 90, 0.05) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(2deg, rgba(150, 125, 90, 0.04) 0 1px, transparent 1px 5px),
+    linear-gradient(166deg, #fdf8ec 0%, #f4ebd6 58%, #e4d7bc 100%);
+  color: #3c3126;
+  box-shadow:
+    0 2px 4px rgba(20, 30, 20, 0.4),
+    0 26px 60px rgba(0, 0, 0, 0.6),
+    0 0 90px rgba(120, 255, 190, 0.14);
+  transform: translateY(26px) scale(0.94) rotate(-1.2deg);
+  opacity: 0;
+  transition:
+    transform 1100ms var(--e-suave) 160ms,
+    opacity 800ms var(--e-suave) 160ms;
+  scrollbar-width: none;
+}
+.noche .ne-carta::-webkit-scrollbar { display: none; }
+.noche .ne-velo.is-abierto .ne-carta {
+  transform: none;
+  opacity: 1;
+}
+
+.noche .ne-carta p {
+  margin: 0 0 0.9em;
+  font-family: var(--tipo-mano);
+  font-size: clamp(1rem, 4.4vw, 1.2rem);
+  line-height: 1.75;
+}
+.noche .ne-carta p:last-of-type { margin-bottom: 0; }
+.noche .ne-carta .ne-firma {
+  margin-top: 1.3em;
+  text-align: right;
+  font-size: clamp(1.05rem, 4.8vw, 1.3rem);
+  color: #8a3f52;
+}
+.noche .ne-carta .ne-sello {
+  position: absolute;
+  right: 18px;
+  bottom: -18px;
+  width: 52px; height: 52px;
+  border-radius: 48% 52% 50% 46% / 50% 46% 54% 50%;
+  background: radial-gradient(circle at 36% 30%, #4fd6a0, #1f9c6e 52%, #0d5c40 100%);
+  box-shadow: 0 3px 10px rgba(6, 40, 28, 0.6), inset 0 -3px 8px rgba(6, 40, 28, 0.5);
+  display: grid;
+  place-items: center;
+  font-family: var(--tipo-titulo);
+  font-size: 0.95rem;
+  color: rgba(8, 48, 34, 0.7);
+  text-shadow: 0 1px 0 rgba(160, 255, 215, 0.4);
+}
+
+.noche .ne-cerrar {
+  display: block;
+  margin: 22px auto 0;
+  padding: 0.62em 1.7em;
+  border: 1px solid rgba(190, 205, 255, 0.3);
+  border-radius: 999px;
+  background: rgba(14, 20, 30, 0.5);
+  color: #dfe6ff;
+  font: inherit;
+  font-size: 0.76rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 260ms var(--e-suave), border-color 260ms var(--e-suave);
+}
+.noche .ne-cerrar:hover { background: rgba(30, 40, 60, 0.6); border-color: rgba(190, 205, 255, 0.5); }
+.noche .ne-cerrar:focus-visible { outline: 2px solid #9fb8ff; outline-offset: 3px; }
+
+/* ── El botón de dormir, en la habitación ────────────────────────────── */
+
+.noche .ne-dormir {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--seguro-b) + var(--barra) + 26px);
+  transform: translateX(-50%) translateY(18px);
+  z-index: 22;
+  padding: 0.78em 2.1em;
+  border: 1px solid rgba(190, 205, 255, 0.26);
+  border-radius: 999px;
+  background: rgba(12, 16, 30, 0.48);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #e2e8ff;
+  font: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 900ms var(--e-suave),
+    transform 900ms var(--e-suave),
+    visibility 900ms,
+    background 300ms var(--e-suave);
+}
+.noche.is-habitacion .ne-dormir {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%);
+}
+.noche .ne-dormir:hover { background: rgba(28, 36, 62, 0.62); }
+.noche .ne-dormir:focus-visible { outline: 2px solid #9fb8ff; outline-offset: 3px; }
+
+/* ── Volver al bosque ────────────────────────────────────────────────── */
+
+.noche .ne-volver {
+  position: absolute;
+  left: calc(var(--seguro-l) + 14px);
+  top: calc(var(--seguro-t) + 14px);
+  z-index: 22;
+  width: 40px; height: 40px;
+  border: 1px solid rgba(190, 205, 255, 0.2);
+  border-radius: 50%;
+  background: rgba(12, 16, 30, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #dfe6ff;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 700ms var(--e-suave), visibility 700ms;
+}
+.noche.is-habitacion .ne-volver,
+.noche.is-durmiendo .ne-volver { opacity: 1; visibility: visible; }
+.noche .ne-volver:focus-visible { outline: 2px solid #9fb8ff; outline-offset: 3px; }
+
+/* ── Los párpados (la transición de dormirse) ────────────────────────── */
+
+/* Dos telones que bajan y suben. Con opacidad sola no se siente cerrar
+   los ojos; con dos mitades que se juntan, sí. */
+.noche .ne-parpados {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+}
+.noche .ne-parpados i {
+  position: absolute;
+  left: -2%;
+  width: 104%;
+  height: 52%;
+  background: #04060d;
+  transition: transform 2600ms var(--e-cine);
+}
+.noche .ne-parpados .ne-arriba { top: 0;    transform: translateY(-100%); border-radius: 0 0 46% 46% / 0 0 18% 18%; }
+.noche .ne-parpados .ne-abajo  { bottom: 0; transform: translateY(100%);  border-radius: 46% 46% 0 0 / 18% 18% 0 0; }
+.noche.is-durmiendo .ne-parpados .ne-arriba,
+.noche.is-durmiendo .ne-parpados .ne-abajo { transform: translateY(0); }
+
+/* El texto del sueño, cuando ya está todo oscuro. */
+.noche .ne-sueno {
+  position: absolute;
+  inset: 0;
+  z-index: 46;
+  display: grid;
+  place-items: center;
+  padding: 0 32px;
+  box-sizing: border-box;
+  text-align: center;
+  font-family: var(--tipo-mano);
+  font-size: clamp(1.05rem, 4.6vw, 1.36rem);
+  line-height: 1.8;
+  color: #cfd8f2;
+  text-shadow: 0 0 30px rgba(140, 170, 255, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1800ms var(--e-suave) 1600ms;
+}
+.noche.is-durmiendo .ne-sueno { opacity: 0.92; }
+
+/* ── El fogonazo de quemarse ─────────────────────────────────────────── */
+
+.noche .ne-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 44;
+  pointer-events: none;
+  background: radial-gradient(ellipse 70% 60% at 50% 70%, rgba(255, 150, 60, 0.5), rgba(255, 90, 30, 0));
+  opacity: 0;
+}
+
+/* ── Accesibilidad y rendimiento ─────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .noche *,
+  .noche *::before,
+  .noche *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Sólo lectores de pantalla. */
+.noche .ne-sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+</style>
+</head>
+<body>
+
+<div class="noche" id="noche">
+
+  <!-- El mundo entero se pinta aquí. -->
+  <canvas class="ne-lienzo" id="lienzo" aria-hidden="true"></canvas>
+
+  <!-- Y los dedos se recogen aquí, por encima. -->
+  <div class="ne-toque" id="toque" aria-hidden="true"></div>
+
+  <!-- Las frases que van saliendo. -->
+  <div class="ne-dichos" id="dichos" aria-hidden="true"></div>
+
+  <!-- Lo que se lee de verdad, para quien use lector de pantalla. -->
+  <p class="ne-sr" id="vivo" role="status" aria-live="polite"></p>
+
+  <p class="ne-pista-panel" id="pistaPanel">toca las piedras para el sonido</p>
+
+  <button class="ne-volver" id="volver" type="button" aria-label="Volver al bosque">‹</button>
+  <button class="ne-dormir" id="dormir" type="button">Dormir</button>
+
+  <div class="ne-flash" id="flash" aria-hidden="true"></div>
+
+  <div class="ne-parpados" aria-hidden="true">
+    <i class="ne-arriba"></i><i class="ne-abajo"></i>
+  </div>
+  <p class="ne-sueno" id="sueno" aria-hidden="true"></p>
+
+  <!-- La carta escondida en el bosque. -->
+  <div class="ne-velo" id="velo" role="dialog" aria-modal="true" aria-labelledby="cartaTexto" aria-hidden="true">
+    <div>
+      <article class="ne-carta" id="carta">
+        <div id="cartaTexto"></div>
+        <span class="ne-sello" aria-hidden="true">y.m</span>
+      </article>
+      <button class="ne-cerrar" id="cerrarCarta" type="button">Guardarla</button>
+    </div>
+  </div>
+
+  <!-- La puerta de entrada: hace falta un toque para que el navegador
+       deje sonar el audio, así que se aprovecha para presentar la noche. -->
+  <div class="ne-entrada" id="entrada" role="button" tabindex="0" aria-label="Entrar en la noche">
+    <div>
+      <h1>Noche estrellada</h1>
+      <p>Una fogata, una cabaña y el cielo entero.<br>Quédate el rato que quieras.</p>
+      <span class="ne-pulso">tocar para entrar</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+
+   NOCHE ESTRELLADA
+
+   Una noche en el bosque, junto a una fogata, cerca de una cabaña.
+
+   Todo está aquí dentro: no descarga ninguna librería, ninguna imagen y
+   ninguna fuente. Los únicos archivos de fuera son los de sonido, y si
+   no están, se sintetizan (ver el SISTEMA DE AUDIO).
+
+   El código va por módulos, en este orden:
+
+       CONFIGURACIÓN
+       UTILIDADES
+       ESCENA Y MEDIDAS          (el lienzo, el parallax, la cámara)
+       SISTEMA DE AUDIO
+       SISTEMA DE PARTÍCULAS
+       FOGATA
+       SISTEMA DE BOMBONES
+       PANEL DE AMBIENTES
+       CAJITA MUSICAL
+       CABAÑA
+       CINEMÁTICA
+       HABITACIÓN
+       LUNA
+       EASTER EGGS
+       CARTA
+       SISTEMA DE INTERACCIÓN
+       DIBUJO DEL BOSQUE
+       RESPONSIVE
+       OPTIMIZACIÓN
+       BUCLE Y ARRANQUE
+
+   ══════════════════════════════════════════════════════════════════════ */
+
+(() => {
+"use strict";
+
+// ==========================================
+// CONFIGURACIÓN
+// ==========================================
+//
+// Todo lo que se puede cambiar sin entender nada de lo demás: las frases,
+// los colores, los números y las rutas de los sonidos.
+
+const CONF = {
+
+  /* ---- LAS RUTAS DE LOS SONIDOS ---------------------------------------
+     Son EXACTAMENTE las que pediste. No las cambies de sitio: el código
+     busca aquí y nada más.
+
+     Si un archivo no está, no pasa nada: ese sonido se sintetiza con la
+     Web Audio API y la experiencia funciona igual. Cuando dejes el mp3
+     en su carpeta, se usa el tuyo sin tocar una línea.                  */
+  rutas: {
+    musica: "musica.mp3",
+    cabana: {
+      puertaAbre:  "Cabaña/door.open.mp3",
+      puertaCierra:"Cabaña/door.close.mp3",
+      escaleras:   "Cabaña/escaleras.mp3",
+      cuarto:      "Cabaña/cuarto.mp3",
+      cama:        "Cabaña/cama.mp3",
+    },
+    ambientes: {
+      fogata:     "audio/fogata.mp3",
+      grillos:    "audio/grillos.mp3",
+      aire:       "audio/aire.mp3",
+      lluvia:     "audio/lluvia.mp3",
+      relampagos: "audio/relampagos.mp3",
+      bosque:     "audio/bosque.mp3",
+    },
+  },
+
+  /* ---- LOS AMBIENTES DEL PANEL ----------------------------------------
+     El orden de aquí es el orden de las piedras alrededor de la fogata.
+     `on` dice cuáles empiezan sonando, y `vol` con cuánto volumen.     */
+  ambientes: [
+    { id: "fogata",     icono: "🔥", nombre: "Fogata",   on: true,  vol: 0.55, color: "#ff9a4a" },
+    { id: "grillos",    icono: "🦗", nombre: "Grillos",  on: true,  vol: 0.40, color: "#9fe08a" },
+    { id: "aire",       icono: "🌬️", nombre: "Aire",     on: true,  vol: 0.30, color: "#a8c8f0" },
+    { id: "bosque",     icono: "🌲", nombre: "Bosque",   on: false, vol: 0.35, color: "#6fb88a" },
+    { id: "lluvia",     icono: "🌧️", nombre: "Lluvia",   on: false, vol: 0.40, color: "#8fb4e0" },
+    { id: "relampagos", icono: "⚡", nombre: "Tormenta", on: false, vol: 0.45, color: "#e0d08a" },
+  ],
+
+  /* Cuánto tardan los volúmenes en subir y bajar. Nunca de golpe: un
+     ambiente que entra a saco se oye como un fallo, no como un ambiente. */
+  fundidoAudio: 1.1,        // segundos
+
+  /* ---- EL BOMBÓN ------------------------------------------------------
+     Los estados van por temperatura, de 0 a 1 y un poco más allá. Cada
+     uno tiene su color y lo que se dice al comérselo.                  */
+  bombon: {
+    calienta: 0.36,         // cuánto sube por segundo pegado a la llama
+    enfria: 0.055,          // cuánto baja por segundo lejos del fuego
+    radioCalor: 1.0,        // en unidades de radio de fogata
+    /* La probabilidad, por segundo, de que se prenda de golpe cuando ya
+       está muy caliente. Es lo que hace que ninguna tostada sea igual. */
+    sorpresa: 0.10,
+    estados: [
+      { hasta: 0.14, id: "crudo",      nombre: "crudo",       color: ["#fffaf0", "#f0e4d0"] },
+      { hasta: 0.34, id: "calentando", nombre: "calentando",  color: ["#fff2d8", "#f0dcb0"] },
+      { hasta: 0.56, id: "dorado",     nombre: "dorado",      color: ["#f7d79a", "#dda85e"] },
+      { hasta: 0.76, id: "tostado",    nombre: "tostado",     color: ["#c98a4a", "#8f5424"] },
+      { hasta: 0.92, id: "quemandose", nombre: "quemándose",  color: ["#7a4420", "#3e1e0c"] },
+      { hasta: 99,   id: "quemado",    nombre: "quemado",     color: ["#2e2420", "#100c0a"] },
+    ],
+  },
+
+  /* ---- LO QUE SE DICE AL COMÉRSELO ------------------------------------
+     Una lista por estado. Se saca una al azar, sin repetir hasta que se
+     acaben.                                                            */
+  alComer: {
+    crudo:      ["Está crudo, ¿eh? 😅", "Así, frío, no es lo mismo.", "Un poco más de fuego la próxima."],
+    calentando: ["Casi. Le faltaba un pelín.", "Estaba templadito. Tampoco está mal."],
+    dorado:     ["Mmm... quedó perfecto 🤍", "Dorado justo. Eres buena en esto.", "Así es como me gustan."],
+    tostado:    ["Uy... está caliente 🫦", "Uf, ese venía con carácter.", "Crujiente por fuera. Bien jugado."],
+    quemandose: ["Creo que me pasé de fuego...", "Lo he soplado, pero poco.", "Un poquito quemado, pero se come."],
+    quemado:    ["JAJA, lo quemé 😭", "Bueno, el siguiente sale mejor.", "Carbón. Delicioso carbón."],
+  },
+
+  /* ---- TOCAR LA LLAMA -------------------------------------------------- */
+  alQuemarse: [
+    "Espera... está caliente...",
+    "¡Auch! 🔥",
+    "Te dije que no tocaras el fuego 😭",
+    "Vale, vale, ya no lo toco.",
+  ],
+
+  /* ---- LA LUNA --------------------------------------------------------- */
+  alTocarLuna: [
+    "¿Estás mirando la luna ahora mismo?",
+    "Te extraño tanto :c",
+    "Qué bonito sería verla contigo.",
+    "Raionetas... ¿también estarás mirando la luna? 🤍",
+    "Aunque estemos lejos, estamos viendo el mismo cielo.",
+    "Dicen que la luna guarda lo que le cuentas. Le he contado mucho.",
+    "Si la miras a la vez que yo, casi es como estar juntos.",
+  ],
+
+  /* ---- LA LUZ VERDE DEL BOSQUE ----------------------------------------- */
+  bosqueSecreto: {
+    /* Dónde está, en partes de la pantalla. Muy metida en el fondo, y al
+       lado CONTRARIO de la cabaña: puesta del mismo lado, el área
+       táctil de la cabaña —que es grande, porque una casa es grande— se
+       tragaba el toque y la luz no se podía coger nunca. */
+    x: 0.285, y: 0.545,
+    antes: [
+      "Yo, te extraño mi vida.",
+      "Ojalá pudiera estar contigo ahora mismo.",
+    ],
+    /* Y la carta. Cada línea, un párrafo. */
+    carta: [
+      "Encontraste esto en lo más hondo del bosque, que es justo donde lo dejé.",
+      "No sé escribir cartas bonitas, pero llevo días queriendo decirte esto y por teléfono se me olvida.",
+      "Nunca dejaré de amarte. Estamos unidos por la eternidad, aunque nos separen los kilómetros, las horas o lo que sea que se le ocurra al mundo.",
+      "Si alguna vez tienes una noche fea, vuelve aquí. La fogata sigue encendida y yo sigo aquí.",
+    ],
+    firma: "Con amor,\nYonathan\npara ti, mi vida 🤍",
+  },
+
+  /* ---- LO QUE SE LEE AL DORMIR ------------------------------------------ */
+  alDormir: [
+    "Buenas noches, mi vida.",
+    "Que sueñes con algo tonto y bonito.",
+    "Aquí me quedo, cuidándote el sueño.",
+  ],
+
+  /* ---- RENDIMIENTO ------------------------------------------------------
+     La calidad se ajusta sola si el teléfono no da: ver OPTIMIZACIÓN.  */
+  perf: {
+    dprMax: 2,
+    dprMaxFlojo: 1.25,
+    particulas: 700,
+    particulasFlojo: 260,
+    estrellas: 220,
+    estrellasFlojo: 110,
+    fpsMinimo: 46,
+  },
+};
+
+// ==========================================
+// UTILIDADES
+// ==========================================
+
+const azar   = (a, b) => a + Math.random() * (b - a);
+const clamp  = (v, a, b) => (v < a ? a : v > b ? b : v);
+const clamp01 = (v) => clamp(v, 0, 1);
+const mez    = (a, b, t) => a + (b - a) * t;
+const suave3 = (t) => { t = clamp01(t); return t * t * (3 - 2 * t); };
+
+/**
+ * Amortiguación independiente de los fotogramas.
+ *
+ * `actual += (objetivo - actual) * 0.1` es la forma de siempre y está
+ * MAL: a 120 Hz llega al doble de rápido que a 60. Con la exponencial,
+ * el mismo recorrido en el mismo tiempo en cualquier pantalla.
+ */
+const damp = (actual, objetivo, k, dt) => objetivo + (actual - objetivo) * Math.exp(-k * dt);
+
+/**
+ * Lee un color y devuelve sus tres canales.
+ *
+ * Entiende `#rrggbb` Y `rgb(r,g,b)`, y esto último no es un capricho:
+ * `mezColor` devuelve `rgb(...)`, así que en cuanto se mezcla el
+ * resultado de otra mezcla —que es justo lo que hace el bombón al
+ * interpolar dentro de su estado— hay que saber volver a leerlo. Con un
+ * lector que sólo entendía hexadecimal, salía `rgb(NaN,NaN,…)`.
+ */
+function leerColor(c) {
+  if (c[0] === "#") {
+    return [
+      parseInt(c.slice(1, 3), 16),
+      parseInt(c.slice(3, 5), 16),
+      parseInt(c.slice(5, 7), 16),
+    ];
+  }
+  const n = c.match(/[\d.]+/g);
+  return n ? [Number(n[0]), Number(n[1]), Number(n[2])] : [0, 0, 0];
+}
+
+/** Mezcla dos colores. Vale hexadecimal, `rgb(…)` o una mezcla de ambos. */
+function mezColor(c1, c2, t) {
+  const [r1, g1, b1] = leerColor(c1), [r2, g2, b2] = leerColor(c2);
+  return `rgb(${Math.round(mez(r1, r2, t))},${Math.round(mez(g1, g2, t))},${Math.round(mez(b1, b2, t))})`;
+}
+
+/** Un azar REPETIBLE: el mismo bosque cada vez que se mide la pantalla. */
+let semilla = 20240214;
+function rnd() {
+  semilla = (semilla * 1664525 + 1013904223) % 4294967296;
+  return semilla / 4294967296;
+}
+const sembrar = (s) => { semilla = s; };
+
+/**
+ * Saca uno de una lista SIN repetir hasta agotarla.
+ *
+ * Con `Math.random()` a secas salían dos veces seguidas la misma frase
+ * cada dos por tres, y una frase repetida mata el encanto al instante.
+ */
+function barajador(lista) {
+  let bolsa = [];
+  return () => {
+    if (!bolsa.length) bolsa = lista.slice();
+    const i = Math.floor(Math.random() * bolsa.length);
+    return bolsa.splice(i, 1)[0];
+  };
+}
+
+/** Una promesa que se resuelve sola a los tantos milisegundos. */
+const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const suaveMovimiento = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ==========================================
+// ESCENA Y MEDIDAS
+// ==========================================
+//
+// El lienzo, el tamaño, el parallax y la cámara. Todo lo que se dibuja
+// se mide contra `U`, que es la centésima parte del lado corto: así la
+// escena entera se adapta a cualquier pantalla sin un solo número
+// escrito a mano en píxeles.
+
+const raiz   = document.getElementById("noche");
+const lienzo = document.getElementById("lienzo");
+const zona   = document.getElementById("toque");
+const ctx    = lienzo.getContext("2d", { alpha: false });
+
+let A = 0, H = 0, dpr = 1, U = 1;
+let apaisado = false;
+let flojo = false;                 // el móvil no da: ver OPTIMIZACIÓN
+
+/* El parallax: hacia dónde mira la escena, de -1 a 1. */
+const par = { x: 0, y: 0, ox: 0, oy: 0 };
+
+/* La cámara de las cinemáticas: escala y desplazamiento. */
+const cam = { z: 1, x: 0, y: 0, oz: 1, ox: 0, oy: 0 };
+
+/* La sacudida (al quemarse, al caer un rayo). */
+const meneo = { fuerza: 0, t: 0 };
+
+/* En qué escena estamos. */
+let escena = "bosque";             // bosque · habitacion · durmiendo
+let bloqueado = false;             // durante una cinemática no se toca nada
+
+function medir() {
+  const r = raiz.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  A = r.width; H = r.height;
+  apaisado = A > H * 1.15;
+  U = Math.min(A, H) / 100;
+  dpr = Math.min(window.devicePixelRatio || 1, flojo ? CONF.perf.dprMaxFlojo : CONF.perf.dprMax);
+  lienzo.width  = Math.round(A * dpr);
+  lienzo.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  construirMundo();
+}
+
+/* Se mide el CONTENEDOR, no la ventana: esta página puede vivir dentro
+   de la hoja de un libro, y una hoja no es la pantalla. */
+new ResizeObserver(medir).observe(raiz);
+
+/* ---- Dónde está cada cosa ---------------------------------------------
+   Se calcula una vez por medida y se guarda. Son los puntos de anclaje
+   de toda la escena: el resto se coloca en relación a ellos.          */
+
+const sitio = {
+  fogata:  { x: 0, y: 0, r: 0 },
+  cabana:  { x: 0, y: 0, w: 0, h: 0 },
+  luna:    { x: 0, y: 0, r: 0 },
+  cajita:  { x: 0, y: 0, r: 0 },
+  secreto: { x: 0, y: 0, r: 0 },
+  horizonte: 0,
+  suelo: 0,
+};
+
+/**
+ * Cuánto hay que dejar libre abajo.
+ *
+ * Si esta página va suelta, es el margen seguro del móvil (la barra de
+ * gestos). Si va dentro del librito, él además presta `--hueco-barra`
+ * con lo que ocupa su barra flotante y sus flechas de pasar página.
+ *
+ * Sin esto, las piedras de los ambientes caían justo debajo de las
+ * flechas del libro y no se podían tocar.
+ */
+function huecoAbajo() {
+  const cs = getComputedStyle(raiz);
+  const leer = (n) => {
+    const v = cs.getPropertyValue(n).trim();
+    if (!v) return 0;
+    if (v.endsWith("rem")) return parseFloat(v) * 16;
+    return parseFloat(v) || 0;
+  };
+  return leer("--seguro-b") + leer("--barra");
+}
+
+function colocarSitios() {
+  const abajo = huecoAbajo();
+  sitio.horizonte = H * (apaisado ? 0.56 : 0.60);
+  sitio.suelo     = H * (apaisado ? 0.74 : 0.78) - abajo * 0.5;
+
+  /* La fogata, en el centro-bajo: es el corazón de la escena y todo lo
+     demás se ordena alrededor. */
+  sitio.fogata.x = A * (apaisado ? 0.44 : 0.50);
+  /* La fogata sube lo que ocupe la barra del libro: con ella y el arco
+     de piedras pegados al canto, las flechas de pasar página caían
+     justo encima y no se podía tocar ninguna. */
+  sitio.fogata.y = H * (apaisado ? 0.775 : 0.845) - abajo * 0.9;
+  sitio.fogata.r = U * (apaisado ? 7.4 : 8.4);
+
+  /* La cabaña, a un lado, plantada en el suelo. */
+  const ladoCabana = apaisado ? 0.80 : 0.755;
+  sitio.cabana.w = U * (apaisado ? 26 : 32);
+  sitio.cabana.h = sitio.cabana.w * 0.82;
+  sitio.cabana.x = A * ladoCabana;
+  sitio.cabana.y = sitio.suelo - U * 2;
+
+  /* La luna, arriba y al otro lado, para que no compita con la cabaña. */
+  sitio.luna.x = A * 0.21;
+  sitio.luna.y = H * (apaisado ? 0.17 : 0.155);
+  sitio.luna.r = U * (apaisado ? 6.6 : 7.2);
+
+  /* La cajita musical, en una piedra al lado de la fogata. */
+  sitio.cajita.x = sitio.fogata.x - U * (apaisado ? 19 : 22);
+  sitio.cajita.y = sitio.fogata.y + U * 2.6;
+  sitio.cajita.r = U * 5.4;
+
+  /* Y la luz verde, metida en el bosque. */
+  sitio.secreto.x = A * CONF.bosqueSecreto.x;
+  sitio.secreto.y = mez(sitio.horizonte, sitio.suelo, 0.42);
+  sitio.secreto.r = U * 5;
+}
+
+/* ---- El parallax ------------------------------------------------------
+   Todas las capas se desplazan con `par`, cada una con su factor: las
+   de atrás casi nada, las de delante mucho. Eso es TODA la profundidad
+   de esta escena, y no cuesta nada.                                    */
+
+function desplazar(factor) {
+  return {
+    x: par.x * U * factor,
+    y: par.y * U * factor * 0.42,
+  };
+}
+
+/* ---- La sacudida ------------------------------------------------------ */
+
+function sacudir(fuerza) {
+  meneo.fuerza = Math.max(meneo.fuerza, fuerza);
+  meneo.t = 0;
+}
+
+/* ---- Frases flotantes -------------------------------------------------
+   Se crean unas cuantas cajas y se reciclan. En una escena que puede
+   soltar varias por segundo, crear y tirar nodos hace saltar el
+   recolector justo encima de una animación.                            */
+
+const capaDichos = document.getElementById("dichos");
+const elVivo     = document.getElementById("vivo");
+const librasDichos = [];
+const dichosVivos  = [];
+
+for (let i = 0; i < 7; i++) {
+  const el = document.createElement("div");
+  el.className = "ne-dicho";
+  capaDichos.append(el);
+  librasDichos.push(el);
+}
+
+/**
+ * Suelta una frase en (x, y).
+ *
+ * @param {number} x  dónde, en píxeles
+ * @param {number} y  dónde, en píxeles
+ * @param {string} texto
+ * @param {{mimo?:boolean, dur?:number, importante?:boolean}} [op]
+ */
+function decir(x, y, texto, op = {}) {
+  elVivo.textContent = texto;
+
+  let el = librasDichos.pop();
+
+  /* Las importantes NUNCA se pierden. Si no queda ninguna caja libre,
+     le quita el sitio a la más vieja de las corrientes: un secreto que
+     se dispara y no se ve no es un secreto, es una frase tirada. */
+  if (!el && op.importante) {
+    let viejo = -1, masT = -1;
+    for (let i = 0; i < dichosVivos.length; i++) {
+      if (dichosVivos[i].importante) continue;
+      if (dichosVivos[i].t > masT) { masT = dichosVivos[i].t; viejo = i; }
+    }
+    if (viejo >= 0) { el = dichosVivos[viejo].el; dichosVivos.splice(viejo, 1); }
+  }
+  if (!el) return;
+
+  el.textContent = texto;
+  el.classList.toggle("ne-mimo", !!op.mimo);
+  el.style.opacity = "0";
+
+  /* El margen sale del ANCHO REAL de la caja, medido ya con su texto:
+     una frase larga centrada se sale por el canto si se usa un margen
+     fijo, porque lo que hay que dejar libre es media caja. */
+  const medio = el.offsetWidth / 2 + 10;
+  const alto  = el.offsetHeight || 36;
+  const px = clamp(x, medio, Math.max(medio, A - medio));
+
+  /* Y se busca una fila libre de verdad, contando lo que va a subir
+     mientras se apaga. Escalonar por turnos reparte pero no comprueba
+     nada, y dos frases se acaban pisando. */
+  let py = null;
+  for (let f = 0; f < 5 && py === null; f++) {
+    const cand = clamp(y - U * 7 - f * (alto + 10), U * 9, H - U * 12);
+    let libre = true;
+    for (const v of dichosVivos) {
+      if (Math.abs(px - v.x) < medio + v.medio && Math.abs(cand - v.y) < (alto + v.alto) * 0.5 + 26) {
+        libre = false; break;
+      }
+    }
+    if (libre) py = cand;
+  }
+  if (py === null) py = clamp(y - U * 7, U * 9, H - U * 12);
+
+  dichosVivos.push({
+    el, x: px, y: py, medio, alto,
+    t: 0, dur: op.dur ?? (op.importante ? 5.4 : 3.6),
+    deriva: azar(-8, 8),
+    importante: !!op.importante,
+  });
+}
+
+function moverDichos(dt) {
+  for (let i = dichosVivos.length - 1; i >= 0; i--) {
+    const d = dichosVivos[i];
+    d.t += dt;
+    const k = d.t / d.dur;
+    if (k >= 1) {
+      d.el.style.opacity = "0";
+      librasDichos.push(d.el);
+      dichosVivos.splice(i, 1);
+      continue;
+    }
+    const entra = suave3(k / 0.12);
+    const sale  = 1 - suave3((k - 0.72) / 0.28);
+    const sube  = (1 - Math.pow(1 - clamp01(k / 0.85), 3)) * 22;
+    const bal   = Math.sin(d.t * 1.4) * 3;
+    d.el.style.opacity = String(entra * sale);
+    d.el.style.transform =
+      `translate3d(${(d.x + d.deriva * k + bal).toFixed(1)}px, ${(d.y - sube).toFixed(1)}px, 0)` +
+      ` translate(-50%, -50%) scale(${(0.92 + entra * 0.08).toFixed(3)})`;
+  }
+}
+
+// ==========================================
+// SISTEMA DE AUDIO
+// ==========================================
+//
+// ── POR QUÉ CADA SONIDO TIENE UN GEMELO SINTETIZADO ──────────────────
+//
+// Las rutas de los mp3 son las que pediste y no se tocan. Pero un mp3
+// puede no estar todavía, puede fallar la red o puede que el navegador
+// no sepa descodificarlo. Si eso deja la noche en silencio, la mitad de
+// la experiencia se cae por un archivo que falta.
+//
+// Así que cada ambiente y cada efecto tiene DOS formas de sonar:
+//
+//   1. el archivo, que es la buena y la que manda;
+//   2. un gemelo hecho con la Web Audio API, que entra si el archivo no
+//      está.
+//
+// El resto del código no sabe cuál está sonando: pide «fogata» y suena
+// fogata. Cuando dejes tus mp3 en su carpeta, se usan los tuyos sin
+// cambiar una línea.
+//
+// ── CÓMO SUENA CADA AMBIENTE SINTETIZADO ─────────────────────────────
+// Ninguno es un tono: son ruidos filtrados, que es de lo que están
+// hechos los sonidos de la naturaleza.
+//
+//   · fogata     ruido rosa grave + chasquidos sueltos
+//   · grillos    pulsos agudos muy cortos, en grupos
+//   · aire       ruido rosa con un filtro que se abre y se cierra
+//   · bosque     aire flojito + hojas + algún pájaro lejano
+//   · lluvia     ruido blanco filtrado, denso
+//   · relámpagos ruido muy grave con envolvente de tres picos
+
+const audio = {
+  ctx: null,
+  maestro: null,
+  listo: false,
+  buffers: new Map(),      // ruta → AudioBuffer (o null si no se pudo)
+  canales: new Map(),      // id → { gain, fuente, vol, on }
+};
+
+function despertarAudio() {
+  if (audio.ctx) {
+    if (audio.ctx.state === "suspended") audio.ctx.resume();
+    return audio.ctx;
+  }
+  try {
+    audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    audio.maestro = audio.ctx.createGain();
+    audio.maestro.gain.value = 0.9;
+    audio.maestro.connect(audio.ctx.destination);
+    audio.listo = true;
+  } catch {
+    audio.ctx = null;
+  }
+  return audio.ctx;
+}
+
+/**
+ * Trae un archivo y lo descodifica. Si falla, devuelve null y el que
+ * llama usa el gemelo sintetizado. Nunca lanza.
+ */
+async function traerBuffer(ruta) {
+  if (audio.buffers.has(ruta)) return audio.buffers.get(ruta);
+  if (!despertarAudio()) return null;
+  try {
+    const r = await fetch(ruta);
+    if (!r.ok) throw new Error(String(r.status));
+    const datos = await r.arrayBuffer();
+    /* Algunos navegadores viejos sólo tienen la forma con callbacks. */
+    const buf = await new Promise((res, rej) => {
+      const p = audio.ctx.decodeAudioData(datos, res, rej);
+      if (p && p.then) p.then(res, rej);
+    });
+    audio.buffers.set(ruta, buf);
+    return buf;
+  } catch {
+    audio.buffers.set(ruta, null);
+    return null;
+  }
+}
+
+/* ---- Los generadores de ruido -----------------------------------------
+   Se hacen una vez y se guardan: crear tres segundos de ruido cuesta
+   unos milisegundos, y hacerlo en mitad de una animación se nota.    */
+
+const ruidos = new Map();
+
+/** Ruido blanco: todas las frecuencias por igual. Suena a estática. */
+function bufferBlanco(seg) {
+  const clave = `b${seg}`;
+  if (ruidos.has(clave)) return ruidos.get(clave);
+  const n = Math.floor(audio.ctx.sampleRate * seg);
+  const buf = audio.ctx.createBuffer(1, n, audio.ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  ruidos.set(clave, buf);
+  return buf;
+}
+
+/**
+ * Ruido rosa de pobre: blanco pasado por un filtro de un polo.
+ *
+ * Suena muchísimo más a naturaleza que el blanco —viento, fuego, mar—
+ * porque tiene más energía en los graves, igual que el mundo real.
+ */
+function bufferRosa(seg, k = 0.96) {
+  const clave = `r${seg}_${k}`;
+  if (ruidos.has(clave)) return ruidos.get(clave);
+  const n = Math.floor(audio.ctx.sampleRate * seg);
+  const buf = audio.ctx.createBuffer(1, n, audio.ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  let ult = 0;
+  for (let i = 0; i < n; i++) {
+    const blanco = Math.random() * 2 - 1;
+    ult = k * ult + (1 - k) * blanco;
+    d[i] = ult * (1 / (1 - k)) * 0.12;
+  }
+  ruidos.set(clave, buf);
+  return buf;
+}
+
+/**
+ * Los gemelos sintetizados de cada ambiente.
+ *
+ * Cada uno devuelve un nodo que ya está sonando en bucle; el llamante
+ * sólo tiene que conectarlo a su ganancia.
+ */
+const sintetizar = {
+
+  fogata() {
+    const c = audio.ctx;
+    const salida = c.createGain();
+    /* El cuerpo: ruido rosa grave, que es el rumor de la leña. */
+    const src = c.createBufferSource();
+    src.buffer = bufferRosa(4, 0.97);
+    src.loop = true;
+    const f = c.createBiquadFilter();
+    f.type = "lowpass";
+    f.frequency.value = 620;
+    src.connect(f).connect(salida);
+    src.start();
+    /* Y los chasquidos, que son lo que la hace fuego y no viento. Van
+       por su cuenta, a ratos, y se paran con el canal. */
+    const reloj = setInterval(() => {
+      if (!audio.ctx) return;
+      const t = c.currentTime;
+      const n = Math.floor(c.sampleRate * 0.05);
+      const b = c.createBuffer(1, n, c.sampleRate);
+      const d = b.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.6);
+      const s = c.createBufferSource(); s.buffer = b;
+      const bf = c.createBiquadFilter();
+      bf.type = "bandpass"; bf.frequency.value = azar(900, 2600); bf.Q.value = 1.2;
+      const g = c.createGain(); g.gain.value = azar(0.05, 0.22);
+      s.connect(bf).connect(g).connect(salida);
+      s.start(t);
+    }, 420);
+    salida._parar = () => { clearInterval(reloj); try { src.stop(); } catch {} };
+    return salida;
+  },
+
+  grillos() {
+    const c = audio.ctx;
+    const salida = c.createGain();
+    /* Un grillo es un pulso agudísimo repetido en grupos de tres o
+       cuatro. Varios grillos desfasados hacen el campo entero. */
+    const reloj = setInterval(() => {
+      if (!audio.ctx) return;
+      const base = c.currentTime + azar(0, 0.4);
+      const cuantos = 3 + Math.floor(Math.random() * 3);
+      const hz = azar(3800, 5200);
+      for (let k = 0; k < cuantos; k++) {
+        const t = base + k * 0.062;
+        const o = c.createOscillator();
+        const g = c.createGain();
+        o.type = "triangle";
+        o.frequency.setValueAtTime(hz, t);
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(azar(0.03, 0.07), t + 0.004);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
+        o.connect(g).connect(salida);
+        o.start(t); o.stop(t + 0.05);
+      }
+    }, 640);
+    salida._parar = () => clearInterval(reloj);
+    return salida;
+  },
+
+  aire() {
+    const c = audio.ctx;
+    const salida = c.createGain();
+    const src = c.createBufferSource();
+    src.buffer = bufferRosa(5, 0.95);
+    src.loop = true;
+    const f = c.createBiquadFilter();
+    f.type = "bandpass";
+    f.frequency.value = 480;
+    f.Q.value = 0.55;
+    /* El filtro se abre y se cierra muy despacio: eso son las rachas.
+       Sin ese vaivén el viento suena a ventilador. */
+    const lfo = c.createOscillator();
+    const lfoG = c.createGain();
+    lfo.frequency.value = 0.07;
+    lfoG.gain.value = 300;
+    lfo.connect(lfoG).connect(f.frequency);
+    lfo.start();
+    src.connect(f).connect(salida);
+    src.start();
+    salida._parar = () => { try { src.stop(); lfo.stop(); } catch {} };
+    return salida;
+  },
+
+  bosque() {
+    const c = audio.ctx;
+    const salida = c.createGain();
+    /* Hojas: ruido agudo y muy flojito, con su propio vaivén. */
+    const src = c.createBufferSource();
+    src.buffer = bufferRosa(5, 0.88);
+    src.loop = true;
+    const f = c.createBiquadFilter();
+    f.type = "highpass";
+    f.frequency.value = 1800;
+    const g = c.createGain();
+    g.gain.value = 0.5;
+    src.connect(f).connect(g).connect(salida);
+    src.start();
+    /* Y algún pájaro lejano de vez en cuando: dos notas que bajan. */
+    const reloj = setInterval(() => {
+      if (!audio.ctx || Math.random() > 0.35) return;
+      const t = c.currentTime;
+      const hz = azar(1400, 2400);
+      for (let k = 0; k < 2; k++) {
+        const o = c.createOscillator();
+        const gg = c.createGain();
+        const ft = c.createBiquadFilter();
+        ft.type = "lowpass"; ft.frequency.value = 3000;
+        o.type = "sine";
+        o.frequency.setValueAtTime(hz * (k ? 0.78 : 1), t + k * 0.18);
+        o.frequency.exponentialRampToValueAtTime(hz * (k ? 0.68 : 0.88), t + k * 0.18 + 0.12);
+        gg.gain.setValueAtTime(0, t + k * 0.18);
+        gg.gain.linearRampToValueAtTime(0.035, t + k * 0.18 + 0.02);
+        gg.gain.exponentialRampToValueAtTime(0.0001, t + k * 0.18 + 0.2);
+        o.connect(ft).connect(gg).connect(salida);
+        o.start(t + k * 0.18); o.stop(t + k * 0.18 + 0.25);
+      }
+    }, 3400);
+    salida._parar = () => { clearInterval(reloj); try { src.stop(); } catch {} };
+    return salida;
+  },
+
+  lluvia() {
+    const c = audio.ctx;
+    const salida = c.createGain();
+    const src = c.createBufferSource();
+    src.buffer = bufferBlanco(4);
+    src.loop = true;
+    /* Pasa-banda ancho arriba: la lluvia es casi todo agudo, y lo grave
+       que tiene es el rebote en el suelo. */
+    const f = c.createBiquadFilter();
+    f.type = "bandpass";
+    f.frequency.value = 2400;
+    f.Q.value = 0.4;
+    const g = c.createGain();
+    g.gain.value = 0.55;
+    src.connect(f).connect(g).connect(salida);
+    src.start();
+    salida._parar = () => { try { src.stop(); } catch {} };
+    return salida;
+  },
+
+  relampagos() {
+    const c = audio.ctx;
+    const salida = c.createGain();
+    /* Truenos sueltos. Cada uno avisa a la escena para que dé el
+       fogonazo a la vez: el rayo y el trueno van juntos aquí porque
+       la tormenta está encima. */
+    const reloj = setInterval(() => {
+      if (!audio.ctx || Math.random() > 0.3) return;
+      truenoSintetizado(salida, azar(0.5, 1));
+      relampagoVisual(azar(0.4, 1));
+    }, 5200);
+    salida._parar = () => clearInterval(reloj);
+    return salida;
+  },
+};
+
+/**
+ * Un trueno. No es un golpe: es ruido muy grave que RUEDA, con una
+ * envolvente de tres picos —el golpe y los dos rebotes en las nubes—.
+ */
+function truenoSintetizado(destino, fuerza) {
+  const c = audio.ctx;
+  const t = c.currentTime;
+  const dur = 2.2;
+  const n = Math.floor(c.sampleRate * dur);
+  const buf = c.createBuffer(1, n, c.sampleRate);
+  const d = buf.getChannelData(0);
+  let u1 = 0, u2 = 0;
+  for (let i = 0; i < n; i++) {
+    const k = i / n;
+    const blanco = Math.random() * 2 - 1;
+    u1 = 0.96 * u1 + 0.04 * blanco;
+    u2 = 0.9 * u2 + 0.1 * u1;
+    const golpe  = Math.exp(-k * 13);
+    const rueda  = Math.exp(-k * 2.1) * (0.6 + 0.4 * Math.sin(k * 20));
+    const rueda2 = Math.exp(-k * 1.0) * 0.45 * (0.5 + 0.5 * Math.sin(k * 8));
+    d[i] = u2 * 13 * (golpe + rueda + rueda2);
+  }
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  const f = c.createBiquadFilter();
+  f.type = "lowpass";
+  f.frequency.value = 520;
+  const g = c.createGain();
+  g.gain.value = 0.85 * fuerza;
+  src.connect(f).connect(g).connect(destino || audio.maestro);
+  src.start(t);
+}
+
+/* ---- Los canales de ambiente ------------------------------------------
+   Un canal por ambiente, con su ganancia propia. Encender y apagar es
+   mover esa ganancia con una rampa, nunca de golpe.                   */
+
+async function abrirCanal(id) {
+  if (!despertarAudio()) return null;
+  if (audio.canales.has(id)) return audio.canales.get(id);
+
+  const conf = CONF.ambientes.find((a) => a.id === id);
+  const gain = audio.ctx.createGain();
+  gain.gain.value = 0;
+  gain.connect(audio.maestro);
+
+  const canal = { gain, fuente: null, vol: conf ? conf.vol : 0.5, on: false, sintetico: false };
+  audio.canales.set(id, canal);
+
+  /* Primero el archivo. Si está, manda. */
+  const ruta = CONF.rutas.ambientes[id];
+  const buf = ruta ? await traerBuffer(ruta) : null;
+
+  if (buf) {
+    const src = audio.ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    src.connect(gain);
+    src.start();
+    canal.fuente = src;
+  } else if (sintetizar[id]) {
+    /* Y si no, el gemelo. */
+    const nodo = sintetizar[id]();
+    nodo.connect(gain);
+    canal.fuente = nodo;
+    canal.sintetico = true;
+  }
+  return canal;
+}
+
+/** Enciende o apaga un ambiente, siempre con fundido. */
+async function ambiente(id, encendido, vol) {
+  const canal = await abrirCanal(id);
+  if (!canal) return;
+  canal.on = encendido;
+  if (vol !== undefined) canal.vol = clamp01(vol);
+  const destino = encendido ? canal.vol : 0;
+  const t = audio.ctx.currentTime;
+  canal.gain.gain.cancelScheduledValues(t);
+  canal.gain.gain.setValueAtTime(canal.gain.gain.value, t);
+  canal.gain.gain.linearRampToValueAtTime(destino, t + CONF.fundidoAudio);
+}
+
+/** Cambia el volumen de un ambiente que ya está sonando. */
+function volumen(id, vol) {
+  const canal = audio.canales.get(id);
+  if (!canal) return;
+  canal.vol = clamp01(vol);
+  if (!canal.on) return;
+  const t = audio.ctx.currentTime;
+  canal.gain.gain.cancelScheduledValues(t);
+  canal.gain.gain.setValueAtTime(canal.gain.gain.value, t);
+  canal.gain.gain.linearRampToValueAtTime(canal.vol, t + 0.22);
+}
+
+/** Baja todos los ambientes a la vez (para las cinemáticas). */
+function agacharAmbientes(k, seg = 0.8) {
+  for (const [, canal] of audio.canales) {
+    if (!canal.on) continue;
+    const t = audio.ctx.currentTime;
+    canal.gain.gain.cancelScheduledValues(t);
+    canal.gain.gain.setValueAtTime(canal.gain.gain.value, t);
+    canal.gain.gain.linearRampToValueAtTime(canal.vol * k, t + seg);
+  }
+}
+
+/* ---- Sonidos sueltos ---------------------------------------------------- */
+
+/**
+ * Toca un archivo una vez y AVISA CUANDO TERMINA DE VERDAD.
+ *
+ * Esto es lo que necesita la cinemática de la cabaña: los sonidos van
+ * uno detrás de otro respetando su duración real, sin cortar ninguno.
+ * Por eso se resuelve con `onended` y no con un temporizador a ojo.
+ *
+ * Si el archivo no está, suena el gemelo que se le pase y la promesa se
+ * resuelve con su duración.
+ *
+ * @returns {Promise<void>}
+ */
+async function tocarUnaVez(ruta, gemelo, vol = 1) {
+  if (!despertarAudio()) { if (gemelo) return gemelo(); return; }
+  const buf = await traerBuffer(ruta);
+  if (!buf) return gemelo ? gemelo() : undefined;
+
+  return new Promise((resolver) => {
+    const src = audio.ctx.createBufferSource();
+    src.buffer = buf;
+    const g = audio.ctx.createGain();
+    g.gain.value = vol;
+    src.connect(g).connect(audio.maestro);
+    src.onended = () => resolver();
+    src.start();
+    /* Red de seguridad: si `onended` no llega (pasa en algún navegador
+       si se suspende el contexto), se sigue adelante igual. */
+    setTimeout(resolver, (buf.duration + 0.6) * 1000);
+  });
+}
+
+/** Un tono corto, para los toques. */
+function tono(hz, dur = 0.5, tipo = "sine", vol = 0.09, cuando = 0) {
+  if (!despertarAudio()) return;
+  const t = audio.ctx.currentTime + cuando;
+  const o = audio.ctx.createOscillator();
+  const g = audio.ctx.createGain();
+  o.type = tipo;
+  o.frequency.setValueAtTime(hz, t);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(audio.maestro);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+
+/** Un golpe de ruido, para los pasos, las puertas y los chasquidos. */
+function golpe(dur = 0.12, hzFiltro = 1200, vol = 0.2, tipoFiltro = "bandpass") {
+  if (!despertarAudio()) return;
+  const c = audio.ctx;
+  const t = c.currentTime;
+  const n = Math.floor(c.sampleRate * dur);
+  const buf = c.createBuffer(1, n, c.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  const f = c.createBiquadFilter();
+  f.type = tipoFiltro;
+  f.frequency.value = hzFiltro;
+  const g = c.createGain();
+  g.gain.value = vol;
+  src.connect(f).connect(g).connect(audio.maestro);
+  src.start(t);
+}
+
+/** Una campanita mágica: tres tonos que suben, muy filtrados. */
+function magia(base = 660) {
+  [0, 4, 7, 12].forEach((s, i) => {
+    tono(base * Math.pow(2, s / 12), 1.4 - i * 0.12, "sine", 0.06, i * 0.09);
+  });
+}
+
+/* Los gemelos de los sonidos de la cabaña. Cada uno devuelve una
+   promesa que dura lo que dura el sonido, igual que el archivo. */
+const gemelosCabana = {
+  async puertaAbre() {
+    /* Una puerta que se abre: el chirrido de la bisagra y el pomo. */
+    golpe(0.06, 2600, 0.16, "highpass");
+    await esperar(120);
+    if (despertarAudio()) {
+      const c = audio.ctx, t = c.currentTime;
+      const o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
+      f.type = "bandpass"; f.frequency.value = 900; f.Q.value = 4;
+      o.type = "sawtooth";
+      o.frequency.setValueAtTime(180, t);
+      o.frequency.linearRampToValueAtTime(96, t + 0.9);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.05, t + 0.15);
+      g.gain.linearRampToValueAtTime(0, t + 1.0);
+      o.connect(f).connect(g).connect(audio.maestro);
+      o.start(t); o.stop(t + 1.1);
+    }
+    await esperar(1000);
+  },
+  async puertaCierra() {
+    await esperar(160);
+    golpe(0.2, 220, 0.34, "lowpass");
+    golpe(0.05, 3000, 0.1, "highpass");
+    await esperar(700);
+  },
+  async escaleras() {
+    /* Seis peldaños de madera, cada uno un poco distinto. */
+    for (let i = 0; i < 6; i++) {
+      golpe(0.1, azar(200, 420), azar(0.16, 0.26), "lowpass");
+      golpe(0.04, azar(1800, 3200), 0.05, "highpass");
+      await esperar(azar(390, 520));
+    }
+  },
+  async cuarto() {
+    /* El silencio de una habitación no es silencio: es un zumbido
+       gravísimo y una madera que cruje. */
+    tono(58, 2.4, "sine", 0.05);
+    await esperar(900);
+    golpe(0.18, 300, 0.08, "lowpass");
+    await esperar(1300);
+  },
+  async cama() {
+    /* Sábanas: ruido agudo con una envolvente de seno, no de golpe. */
+    if (despertarAudio()) {
+      const c = audio.ctx, t = c.currentTime;
+      const n = Math.floor(c.sampleRate * 1.3);
+      const buf = c.createBuffer(1, n, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) {
+        const k = i / n;
+        d[i] = (Math.random() * 2 - 1) * Math.sin(k * Math.PI) * (0.35 + 0.65 * Math.random());
+      }
+      const src = c.createBufferSource(); src.buffer = buf;
+      const f = c.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 1600;
+      const g = c.createGain(); g.gain.value = 0.13;
+      src.connect(f).connect(g).connect(audio.maestro);
+      src.start(t);
+    }
+    await esperar(1500);
+    tono(96, 1.6, "sine", 0.05);
+    await esperar(900);
+  },
+};
+
+// ==========================================
+// SISTEMA DE PARTÍCULAS
+// ==========================================
+//
+// Un solo grupo para todo: chispas, humo, polvo, brillos, lluvia y
+// destellos. Está en arrays planos de `Float32Array` con un cursor que
+// busca hueco, así que mientras la escena corre NO se crea ni se tira ni
+// un objeto. Eso es lo que evita que el recolector de basura salte justo
+// en mitad de una animación, que es el tirón que se nota en los móviles.
+
+const TIPO = { CHISPA: 0, HUMO: 1, BRILLO: 2, POLVO: 3, GOTA: 4, CENIZA: 5, HOJA: 6 };
+
+/**
+ * El sprite del humo: una bola difuminada, dibujada UNA VEZ.
+ *
+ * El primer intento pintaba cada voluta con `arc()` y relleno plano, y
+ * lo que se veía eran círculos duros flotando, no humo. La solución
+ * obvia —un degradado radial por partícula— arregla el aspecto y crea
+ * un objeto de gradiente por voluta y por fotograma: con treinta
+ * volutas vivas son mil ochocientos gradientes por segundo.
+ *
+ * Así que se dibuja una sola bola difuminada en un lienzo aparte al
+ * arrancar, y cada voluta es un `drawImage` de esa bola, estirado al
+ * tamaño que toque. Sale suave Y sale barato.
+ */
+function crearBolaHumo(r, g2, b) {
+  const S = 128;
+  const cv = document.createElement("canvas");
+  cv.width = cv.height = S;
+  const c = cv.getContext("2d");
+  const g = c.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+  /* La curva importa: si cae recta se ve el canto del círculo. Con el
+     tramo largo a media opacidad y el final muy largo, se deshace. */
+  g.addColorStop(0.00, `rgba(${r},${g2},${b},0.55)`);
+  g.addColorStop(0.35, `rgba(${r},${g2},${b},0.30)`);
+  g.addColorStop(0.70, `rgba(${r},${g2},${b},0.09)`);
+  g.addColorStop(1.00, `rgba(${r},${g2},${b},0)`);
+  c.fillStyle = g;
+  c.fillRect(0, 0, S, S);
+  return cv;
+}
+
+/* Dos, ya teñidas: la clara para la fogata y la gris para la chimenea
+   de la cabaña. Teñir en el momento no vale —`source-atop` pinta sobre
+   el lienzo entero, no sobre el sprite—, y dos canvas de 128 px son
+   treinta kilobytes de memoria en total. */
+const bolaHumoClara = crearBolaHumo(150, 148, 158);
+const bolaHumoOscura = crearBolaHumo(74, 72, 82);
+
+let P = CONF.perf.particulas;
+let px, py, pvx, pvy, pvida, pmax, ptam, ptipo, pgiro, pgiroV, pton;
+let cursorP = 0;
+
+function crearParticulas(n) {
+  P = n;
+  px = new Float32Array(P); py = new Float32Array(P);
+  pvx = new Float32Array(P); pvy = new Float32Array(P);
+  pvida = new Float32Array(P); pmax = new Float32Array(P);
+  ptam = new Float32Array(P); ptipo = new Int16Array(P);
+  pgiro = new Float32Array(P); pgiroV = new Float32Array(P);
+  pton = new Float32Array(P);
+  cursorP = 0;
+}
+crearParticulas(P);
+
+/**
+ * Suelta una partícula. Si no hay hueco, no pasa nada: se pierde.
+ *
+ * Perder una chispa es invisible; pararse a hacer sitio, no. Por eso
+ * esto nunca crece el grupo ni expulsa a nadie.
+ */
+function soltar(x, y, op) {
+  let k = -1;
+  for (let j = 0; j < P; j++) {
+    const c = (cursorP + j) % P;
+    if (pvida[c] <= 0) { k = c; cursorP = (c + 1) % P; break; }
+  }
+  if (k < 0) return;
+  px[k] = x; py[k] = y;
+  pvx[k] = op.vx || 0; pvy[k] = op.vy || 0;
+  pmax[k] = pvida[k] = op.vida || 1;
+  ptam[k] = op.tam || 2;
+  ptipo[k] = op.tipo || 0;
+  pgiro[k] = op.giro || 0;
+  pgiroV[k] = op.giroV || 0;
+  pton[k] = op.tono === undefined ? Math.random() : op.tono;
+}
+
+function moverParticulas(dt) {
+  const viento = Math.sin(reloj * 0.31) * 8 + Math.sin(reloj * 0.87) * 4;
+  for (let i = 0; i < P; i++) {
+    if (pvida[i] <= 0) continue;
+    pvida[i] -= dt;
+    if (pvida[i] <= 0) continue;
+
+    const t = ptipo[i];
+    if (t === TIPO.CHISPA) {
+      /* Las chispas suben, pierden fuerza y al final caen: eso es lo
+         que hace que una chispa parezca una brasa y no un punto. */
+      pvy[i] += 34 * dt;
+      pvx[i] += viento * 0.35 * dt;
+      pvx[i] *= Math.exp(-1.1 * dt);
+    } else if (t === TIPO.HUMO) {
+      /* El humo sube cada vez más despacio y se va abriendo. */
+      pvy[i] *= Math.exp(-0.55 * dt);
+      pvx[i] += viento * 0.9 * dt;
+      ptam[i] += 16 * dt;
+    } else if (t === TIPO.GOTA) {
+      pvy[i] += 340 * dt;
+    } else if (t === TIPO.CENIZA) {
+      pvy[i] += 10 * dt;
+      pvx[i] += (viento * 1.2 + Math.sin(reloj * 2 + i) * 9) * dt;
+      pvx[i] *= Math.exp(-0.8 * dt);
+    } else if (t === TIPO.HOJA) {
+      pvy[i] += 22 * dt;
+      pvx[i] += Math.sin(reloj * 1.7 + i) * 26 * dt;
+      pvx[i] *= Math.exp(-0.9 * dt);
+    } else {
+      /* Brillos y polvo: flotan y poco más. */
+      pvx[i] += Math.sin(reloj * 0.9 + i) * 5 * dt;
+      pvy[i] *= Math.exp(-0.35 * dt);
+    }
+
+    px[i] += pvx[i] * dt;
+    py[i] += pvy[i] * dt;
+    pgiro[i] += pgiroV[i] * dt;
+
+    if (py[i] > H + 40 || px[i] < -60 || px[i] > A + 60) pvida[i] = 0;
+  }
+}
+
+function dibujarParticulas() {
+  /* Dos pasadas: primero lo que se suma a la luz (chispas y brillos) y
+     luego lo que tapa (humo). Mezclarlas obligaría a cambiar el modo de
+     composición decenas de veces por cuadro, que es de lo más caro que
+     hay en un lienzo. */
+  ctx.globalCompositeOperation = "lighter";
+  for (let i = 0; i < P; i++) {
+    if (pvida[i] <= 0) continue;
+    const t = ptipo[i];
+    if (t === TIPO.HUMO || t === TIPO.GOTA || t === TIPO.HOJA) continue;
+    const k = pvida[i] / pmax[i];
+
+    if (t === TIPO.CHISPA) {
+      /* Una chispa se apaga pasando de amarillo a rojo. */
+      const r = 255;
+      const g = Math.round(mez(90, 220, k));
+      const b = Math.round(mez(20, 120, k * k));
+      const a = k * 0.95;
+      ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
+      const s = ptam[i] * (0.4 + k * 0.6);
+      ctx.beginPath();
+      ctx.arc(px[i], py[i], s, 0, 6.283);
+      ctx.fill();
+      /* Y deja una estela: la chispa va rápida y el ojo la ve alargada. */
+      if (s > 1.1) {
+        ctx.globalAlpha = a * 0.35;
+        ctx.beginPath();
+        ctx.moveTo(px[i], py[i]);
+        ctx.lineTo(px[i] - pvx[i] * 0.03, py[i] - pvy[i] * 0.03);
+        ctx.strokeStyle = `rgba(255,${g},${b},${a})`;
+        ctx.lineWidth = s * 0.8;
+        ctx.lineCap = "round";
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    } else if (t === TIPO.CENIZA) {
+      ctx.fillStyle = `rgba(200,120,70,${k * 0.5})`;
+      ctx.beginPath();
+      ctx.arc(px[i], py[i], ptam[i] * 0.6, 0, 6.283);
+      ctx.fill();
+    } else {
+      /* Brillos y polvo: un puntito con halo. */
+      const col = pton[i] < 0.33 ? "255,220,180"
+                : pton[i] < 0.66 ? "190,220,255"
+                : "255,190,225";
+      ctx.fillStyle = `rgba(${col},${k * 0.8})`;
+      ctx.beginPath();
+      ctx.arc(px[i], py[i], ptam[i] * (0.5 + k * 0.5), 0, 6.283);
+      ctx.fill();
+    }
+  }
+  ctx.globalCompositeOperation = "source-over";
+
+  /* El humo, la lluvia y las hojas, por encima y sin sumar luz. */
+  for (let i = 0; i < P; i++) {
+    if (pvida[i] <= 0) continue;
+    const t = ptipo[i];
+    const k = pvida[i] / pmax[i];
+    if (t === TIPO.HUMO) {
+      /* El humo entra, se queda y se va: si sólo se desvanece, parece
+         que se evapora de golpe nada más salir. */
+      const a = Math.sin(clamp01(1 - k) * Math.PI) * 0.34;
+      if (a < 0.004) continue;
+      const s = ptam[i] * 2;
+      /* `pton` elige el sprite: bajo es humo claro (la fogata), alto es
+         humo gris (la chimenea de la cabaña). */
+      const sprite = pton[i] < 0.5 ? bolaHumoClara : bolaHumoOscura;
+      ctx.globalAlpha = a;
+      ctx.drawImage(sprite, px[i] - s / 2, py[i] - s / 2, s, s);
+      ctx.globalAlpha = 1;
+    } else if (t === TIPO.GOTA) {
+      ctx.strokeStyle = `rgba(175,205,240,${k * 0.42})`;
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.moveTo(px[i], py[i]);
+      ctx.lineTo(px[i] - pvx[i] * 0.016, py[i] - pvy[i] * 0.016);
+      ctx.stroke();
+    } else if (t === TIPO.HOJA) {
+      ctx.save();
+      ctx.translate(px[i], py[i]);
+      ctx.rotate(pgiro[i]);
+      ctx.globalAlpha = k * 0.7;
+      ctx.fillStyle = pton[i] < 0.5 ? "#3e6b44" : "#5c7a3e";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, ptam[i], ptam[i] * 0.45, 0, 0, 6.283);
+      ctx.fill();
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
+// ==========================================
+// FOGATA
+// ==========================================
+//
+// ── CÓMO ESTÁ HECHO EL FUEGO ─────────────────────────────────────────
+//
+// No hay ninguna imagen ni ninguna animación grabada. Las llamas son
+// LENGUAS: seis u ocho tiras que suben, se estrechan y se retuercen, y
+// cada una tiene su propia fase, su propia altura y su propio ritmo.
+//
+// Lo que hace que no se vea repetitivo es que la altura de cada lengua
+// sale de sumar tres senos con frecuencias que no son múltiplos entre
+// sí (1.7, 2.9 y 4.3). Tres ondas así no vuelven a coincidir nunca, así
+// que el fuego no tiene ciclo: no se repite jamás.
+//
+// Encima de eso:
+//   · el brillo general late con el fuego y baña toda la escena;
+//   · las chispas salen de la punta de las lenguas, no del centro;
+//   · los troncos se mueven un pelín y se asientan de vez en cuando;
+//   · hay brasas debajo que respiran a su ritmo.
+
+const fuego = {
+  vida: 1,          // 0 apagándose · 1 fuerte · >1 avivado
+  vidaObj: 1,
+  brillo: 1,        // lo que ilumina alrededor, suavizado
+  lenguas: [],
+  troncos: [],
+  brasas: [],
+  relojChispa: 0,
+  relojHumo: 0,
+  asentar: 0,       // cuando un tronco se derrumba
+  /* Cuánto lleva encendida sin que nadie la toque, para el easter egg
+     del fuego azul. */
+  quieta: 0,
+  azul: 0,
+};
+
+function construirFogata() {
+  const f = sitio.fogata;
+  fuego.lenguas = [];
+  const n = flojo ? 5 : 7;
+  for (let i = 0; i < n; i++) {
+    fuego.lenguas.push({
+      /* Repartidas a lo ancho de la base, las de fuera más bajas. */
+      x: (i / (n - 1) - 0.5) * 1.5,
+      fase: rnd() * 6.283,
+      vel: azar(0.9, 1.5),
+      alto: azar(0.72, 1.12),
+      ancho: azar(0.42, 0.72),
+    });
+  }
+  fuego.troncos = [
+    { x: -0.9, y: 0.34, a: -0.28, l: 2.1, g: 0.42 },
+    { x:  0.8, y: 0.30, a:  0.34, l: 2.0, g: 0.40 },
+    { x: -0.1, y: 0.44, a:  0.06, l: 2.4, g: 0.46 },
+    { x:  0.3, y: 0.22, a: -0.62, l: 1.6, g: 0.34 },
+  ].map((t) => ({ ...t, meneo: rnd() * 6.283 }));
+  fuego.brasas = [];
+  for (let i = 0; i < 9; i++) {
+    fuego.brasas.push({
+      x: azar(-1.1, 1.1),
+      y: azar(0.24, 0.46),
+      r: azar(0.1, 0.22),
+      fase: rnd() * 6.283,
+      vel: azar(0.6, 1.5),
+    });
+  }
+}
+
+/** Cuánto vale la llama en este instante, de 0 a 1 y pico. */
+function alturaLlama(l, t) {
+  /* Tres senos con frecuencias que no encajan entre sí: la suma no se
+     repite nunca. Eso es toda la variación procedural del fuego. */
+  const a = Math.sin(t * 1.7 * l.vel + l.fase);
+  const b = Math.sin(t * 2.9 * l.vel + l.fase * 1.7) * 0.6;
+  const c = Math.sin(t * 4.3 * l.vel + l.fase * 2.3) * 0.3;
+  return clamp01(0.52 + (a + b + c) * 0.24);
+}
+
+function moverFogata(dt) {
+  fuego.vida = damp(fuego.vida, fuego.vidaObj, 1.6, dt);
+  fuego.vidaObj = damp(fuego.vidaObj, 1, 0.22, dt);
+
+  /* El brillo general: la media de las lenguas, suavizada. Es lo que
+     ilumina la cabaña, los troncos y las caras de todo. */
+  let media = 0;
+  for (const l of fuego.lenguas) media += alturaLlama(l, reloj);
+  media /= Math.max(1, fuego.lenguas.length);
+  fuego.brillo = damp(fuego.brillo, media * fuego.vida, 9, dt);
+
+  fuego.quieta += dt;
+  if (fuego.azul > 0) fuego.azul = Math.min(1, fuego.azul + dt * 0.3);
+
+  const f = sitio.fogata;
+  const alto = f.r * 2.4 * fuego.vida;
+
+  /* ---- Chispas ---- */
+  fuego.relojChispa -= dt;
+  if (fuego.relojChispa <= 0) {
+    fuego.relojChispa = (flojo ? 0.09 : 0.045) / clamp(fuego.vida, 0.3, 2);
+    /* Salen de la PUNTA de una lengua, no del centro: una chispa nace
+       donde la llama se deshace, y ahí es donde se ve bien. */
+    const l = fuego.lenguas[Math.floor(Math.random() * fuego.lenguas.length)];
+    const k = alturaLlama(l, reloj);
+    soltar(
+      f.x + l.x * f.r * 0.5 + azar(-f.r * 0.2, f.r * 0.2),
+      f.y - alto * k * 0.9,
+      {
+        vx: azar(-26, 26),
+        vy: azar(-110, -48) * clamp(fuego.vida, 0.4, 2),
+        vida: azar(0.9, 2.1),
+        tam: azar(1.1, 2.6),
+        tipo: TIPO.CHISPA,
+      }
+    );
+  }
+
+  /* ---- Humo ---- */
+  fuego.relojHumo -= dt;
+  if (fuego.relojHumo <= 0) {
+    fuego.relojHumo = flojo ? 0.34 : 0.17;
+    soltar(f.x + azar(-f.r * 0.4, f.r * 0.4), f.y - alto * 0.85, {
+      vx: azar(-8, 8),
+      vy: azar(-34, -18),
+      vida: azar(3.2, 5.4),
+      tam: azar(f.r * 0.22, f.r * 0.42),
+      tipo: TIPO.HUMO,
+      tono: Math.random(),
+    });
+  }
+
+  /* ---- Un tronco se asienta de vez en cuando ---- */
+  if (Math.random() < dt * 0.06) {
+    fuego.asentar = 1;
+    golpe(0.16, azar(160, 320), 0.12, "lowpass");
+    for (let i = 0; i < 14; i++) {
+      soltar(f.x + azar(-f.r * 0.6, f.r * 0.6), f.y - f.r * 0.3, {
+        vx: azar(-70, 70), vy: azar(-150, -60),
+        vida: azar(0.7, 1.6), tam: azar(1, 2.4), tipo: TIPO.CHISPA,
+      });
+    }
+  }
+  fuego.asentar = Math.max(0, fuego.asentar - dt * 2.4);
+}
+
+function dibujarFogata() {
+  const f = sitio.fogata;
+  const d = desplazar(1.6);
+  const x = f.x + d.x, y = f.y + d.y;
+  const alto = f.r * 2.4 * fuego.vida;
+
+  /* ---- El halo de luz en el suelo ---- */
+  const luz = fuego.brillo;
+  const gl = ctx.createRadialGradient(x, y, 0, x, y, f.r * 9);
+  const calor = fuego.azul > 0.1
+    ? `${Math.round(mez(255, 140, fuego.azul))},${Math.round(mez(170, 210, fuego.azul))},${Math.round(mez(80, 255, fuego.azul))}`
+    : "255,170,80";
+  gl.addColorStop(0, `rgba(${calor},${0.30 * luz})`);
+  gl.addColorStop(0.35, `rgba(${calor},${0.13 * luz})`);
+  gl.addColorStop(1, `rgba(${calor},0)`);
+  ctx.fillStyle = gl;
+  ctx.beginPath();
+  ctx.ellipse(x, y + f.r * 0.2, f.r * 9, f.r * 4.4, 0, 0, 6.283);
+  ctx.fill();
+
+  /* ---- Las brasas de debajo ---- */
+  for (const b of fuego.brasas) {
+    const k = 0.5 + 0.5 * Math.sin(reloj * b.vel + b.fase);
+    const bx = x + b.x * f.r, by = y + b.y * f.r * 0.4;
+    ctx.fillStyle = `rgba(255,${Math.round(mez(70, 150, k))},40,${0.4 + k * 0.5})`;
+    ctx.beginPath();
+    ctx.ellipse(bx, by, b.r * f.r, b.r * f.r * 0.5, 0, 0, 6.283);
+    ctx.fill();
+  }
+
+  /* ---- Los troncos, por detrás de la llama ---- */
+  dibujarTroncos(x, y, f.r, -1);
+
+  /* ---- LAS LENGUAS ---- */
+  ctx.globalCompositeOperation = "lighter";
+  for (const l of fuego.lenguas) {
+    const k = alturaLlama(l, reloj);
+    const h = alto * k * l.alto;
+    const lx = x + l.x * f.r * 0.5;
+    /* La lengua se tuerce mientras sube: la punta va a un lado y el
+       cuerpo al otro. Una llama recta no parece fuego. */
+    const torsion = Math.sin(reloj * 2.1 * l.vel + l.fase) * f.r * 0.34;
+    const w = f.r * l.ancho * (0.6 + k * 0.5);
+
+    const g = ctx.createLinearGradient(lx, y, lx + torsion, y - h);
+    if (fuego.azul > 0.1) {
+      const a = fuego.azul;
+      g.addColorStop(0,    `rgba(${Math.round(mez(255,120,a))},${Math.round(mez(240,220,a))},${Math.round(mez(190,255,a))},0.95)`);
+      g.addColorStop(0.35, `rgba(${Math.round(mez(255,60,a))},${Math.round(mez(170,190,a))},${Math.round(mez(60,255,a))},0.7)`);
+      g.addColorStop(1,    `rgba(${Math.round(mez(220,20,a))},${Math.round(mez(60,80,a))},${Math.round(mez(20,180,a))},0)`);
+    } else {
+      g.addColorStop(0,    "rgba(255,246,200,0.95)");
+      g.addColorStop(0.28, "rgba(255,190,70,0.78)");
+      g.addColorStop(0.62, "rgba(240,110,30,0.42)");
+      g.addColorStop(1,    "rgba(190,40,10,0)");
+    }
+    ctx.fillStyle = g;
+
+    /* La forma: una gota alargada. Base ancha, punta fina y curvada. */
+    ctx.beginPath();
+    ctx.moveTo(lx - w, y);
+    ctx.bezierCurveTo(
+      lx - w * 0.9, y - h * 0.42,
+      lx + torsion - w * 0.28, y - h * 0.76,
+      lx + torsion, y - h
+    );
+    ctx.bezierCurveTo(
+      lx + torsion + w * 0.28, y - h * 0.76,
+      lx + w * 0.9, y - h * 0.42,
+      lx + w, y
+    );
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /* El corazón: lo más blanco, abajo del todo. */
+  const gc = ctx.createRadialGradient(x, y - f.r * 0.3, 0, x, y - f.r * 0.3, f.r * 1.3);
+  gc.addColorStop(0, `rgba(255,252,236,${0.85 * fuego.vida})`);
+  gc.addColorStop(0.5, `rgba(255,200,110,${0.4 * fuego.vida})`);
+  gc.addColorStop(1, "rgba(255,150,60,0)");
+  ctx.fillStyle = gc;
+  ctx.beginPath();
+  ctx.arc(x, y - f.r * 0.3, f.r * 1.3, 0, 6.283);
+  ctx.fill();
+  ctx.globalCompositeOperation = "source-over";
+
+  /* ---- Y los troncos de delante ---- */
+  dibujarTroncos(x, y, f.r, 1);
+
+  /* Las piedras del círculo. */
+  ctx.fillStyle = "#2a2622";
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 9) * 6.283 + 0.3;
+    const rx = x + Math.cos(a) * f.r * 1.7;
+    const ry = y + f.r * 0.34 + Math.sin(a) * f.r * 0.62;
+    if (Math.sin(a) < -0.3) continue;              // ésas están detrás
+    const s = f.r * (0.22 + ((i * 7) % 5) * 0.03);
+    /* Iluminadas por el fuego: las de cerca más. */
+    const ilum = clamp01(1 - Math.abs(Math.cos(a)) * 0.5) * luz;
+    ctx.fillStyle = `rgb(${Math.round(mez(34, 120, ilum))},${Math.round(mez(30, 84, ilum))},${Math.round(mez(28, 62, ilum))})`;
+    ctx.beginPath();
+    ctx.ellipse(rx, ry, s, s * 0.72, a * 0.3, 0, 6.283);
+    ctx.fill();
+  }
+}
+
+function dibujarTroncos(x, y, r, lado) {
+  for (const t of fuego.troncos) {
+    if (Math.sign(t.y - 0.33) !== lado && lado === 1) continue;
+    if (Math.sign(t.y - 0.33) === 1 && lado === -1) continue;
+    const meneoT = Math.sin(reloj * 0.7 + t.meneo) * 0.012 + fuego.asentar * 0.05;
+    const tx = x + t.x * r * 0.9;
+    const ty = y + t.y * r * 0.5;
+    ctx.save();
+    ctx.translate(tx, ty);
+    ctx.rotate(t.a + meneoT);
+    const largo = r * t.l, grueso = r * t.g;
+    /* El tronco: oscuro arriba y encendido por abajo, que es por donde
+       le da el fuego. */
+    const g = ctx.createLinearGradient(0, -grueso, 0, grueso);
+    g.addColorStop(0, "#241c16");
+    g.addColorStop(0.55, `rgb(${Math.round(mez(58, 150, fuego.brillo))},${Math.round(mez(40, 86, fuego.brillo))},${Math.round(mez(30, 52, fuego.brillo))})`);
+    g.addColorStop(1, `rgb(${Math.round(mez(90, 220, fuego.brillo))},${Math.round(mez(48, 110, fuego.brillo))},${Math.round(mez(26, 40, fuego.brillo))})`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.roundRect
+      ? ctx.roundRect(-largo / 2, -grueso / 2, largo, grueso, grueso * 0.45)
+      : ctx.rect(-largo / 2, -grueso / 2, largo, grueso);
+    ctx.fill();
+    /* Las vetas: tres rayas oscuras. */
+    ctx.strokeStyle = "rgba(20,14,10,0.4)";
+    ctx.lineWidth = Math.max(1, grueso * 0.07);
+    for (let k = -1; k <= 1; k++) {
+      ctx.beginPath();
+      ctx.moveTo(-largo * 0.42, k * grueso * 0.22);
+      ctx.lineTo(largo * 0.42, k * grueso * 0.22 + grueso * 0.05);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+// ==========================================
+// SISTEMA DE BOMBONES
+// ==========================================
+//
+// Un palo con un bombón en la punta. Se arrastra el bombón y, cuanto
+// más cerca del fuego, más deprisa se tuesta.
+//
+// ── DE QUÉ DEPENDE EL TUESTE ─────────────────────────────────────────
+// De UN número, `tueste`, de 0 en adelante. De ahí sale el color, el
+// humo, si se prende, qué se dice al comerlo y cuánto se hincha. Con un
+// número para todo no hay manera de que el dibujo diga una cosa y el
+// texto otra.
+//
+// Sube según lo cerca que esté de la llama, con una caída cuadrática:
+// pegado al fuego va rapidísimo y a dos palmos casi no sube. Es lo que
+// obliga a estar pendiente en vez de dejarlo puesto.
+//
+// ── EL PALO ──────────────────────────────────────────────────────────
+// No se arrastra el bombón suelto: se arrastra la PUNTA de un palo que
+// está clavado en el suelo. El palo se dobla un poco, así que el bombón
+// no va exactamente donde está el dedo, va donde el palo le deja. Eso
+// es lo que hace que se sienta un objeto y no un cursor.
+
+const bombon = {
+  /* Dónde está la punta del palo, en píxeles. */
+  x: 0, y: 0,
+  /* A dónde la lleva el dedo. */
+  destX: 0, destY: 0,
+  agarrado: false,
+  dedoId: null,
+  tueste: 0,
+  ardiendo: 0,          // 0..1, si se ha prendido
+  hinchado: 0,
+  comido: 0,            // animación de comérselo
+  /* El mango del palo, clavado en el suelo. */
+  mangoX: 0, mangoY: 0,
+  relojHumo: 0,
+  seguidosQuemados: 0,
+  vivo: true,
+};
+
+const diceComer = {};
+for (const k of Object.keys(CONF.alComer)) diceComer[k] = barajador(CONF.alComer[k]);
+const diceQuemarse = barajador(CONF.alQuemarse);
+
+function colocarBombon(reiniciar) {
+  const f = sitio.fogata;
+  bombon.mangoX = f.x + U * (apaisado ? 20 : 23);
+  bombon.mangoY = f.y + U * 5;
+  if (reiniciar || !bombon.vivo) {
+    bombon.x = bombon.destX = f.x + U * 13;
+    bombon.y = bombon.destY = f.y - U * 6;
+    bombon.tueste = 0;
+    bombon.ardiendo = 0;
+    bombon.hinchado = 0;
+    bombon.comido = 0;
+    bombon.vivo = true;
+  }
+}
+
+/** En qué estado está, según el tueste. */
+function estadoBombon() {
+  const t = bombon.tueste;
+  for (const e of CONF.bombon.estados) if (t < e.hasta) return e;
+  return CONF.bombon.estados[CONF.bombon.estados.length - 1];
+}
+
+function moverBombon(dt) {
+  if (!bombon.vivo) {
+    /* Se lo ha comido: la animación y, cuando acaba, otro bombón. */
+    bombon.comido += dt;
+    if (bombon.comido > 1.4) colocarBombon(true);
+    return;
+  }
+
+  const f = sitio.fogata;
+
+  /* La punta persigue al dedo con retraso: el palo tiene peso. */
+  bombon.x = damp(bombon.x, bombon.destX, bombon.agarrado ? 13 : 4, dt);
+  bombon.y = damp(bombon.y, bombon.destY, bombon.agarrado ? 13 : 4, dt);
+
+  /* ---- El calor ----
+     Cae con el cuadrado de la distancia: pegado quema y a dos palmos
+     casi no hace nada. Esa curva es todo el juego. */
+  const d = Math.hypot(bombon.x - f.x, (bombon.y - (f.y - f.r)) * 1.25);
+  const alcance = f.r * 4.2 * CONF.bombon.radioCalor;
+  const cerca = clamp01(1 - d / alcance);
+  const calor = cerca * cerca * fuego.vida;
+
+  if (calor > 0.04) {
+    bombon.tueste += CONF.bombon.calienta * calor * dt;
+    /* Se hincha al calentarse: un malvavisco al fuego se infla antes de
+       dorarse, y sin eso no parece un malvavisco. */
+    bombon.hinchado = damp(bombon.hinchado, clamp01(calor * 1.3), 2.2, dt);
+  } else {
+    bombon.tueste = Math.max(0, bombon.tueste - CONF.bombon.enfria * dt);
+    bombon.hinchado = damp(bombon.hinchado, 0, 1.1, dt);
+  }
+
+  /* ---- La sorpresa ----
+     Cuando ya está caliente, puede prenderse de golpe. Es lo que hace
+     que ninguna tostada se parezca a la anterior. */
+  if (!bombon.ardiendo && bombon.tueste > 0.55 && calor > 0.3) {
+    if (Math.random() < CONF.bombon.sorpresa * calor * dt * 60 / 60) {
+      prenderBombon();
+    }
+  }
+  /* Y por encima de «quemándose» se prende seguro. */
+  if (!bombon.ardiendo && bombon.tueste > 0.86) prenderBombon();
+
+  /* ---- Ardiendo ---- */
+  if (bombon.ardiendo > 0) {
+    bombon.ardiendo = Math.min(1, bombon.ardiendo + dt * 0.9);
+    bombon.tueste += 0.34 * dt;
+    /* Se apaga solo si lo sacas del fuego, pero tarda. */
+    if (calor < 0.05) bombon.ardiendo -= dt * 0.22;
+    if (bombon.ardiendo <= 0) bombon.ardiendo = 0;
+
+    if (Math.random() < dt * 22) {
+      soltar(bombon.x + azar(-U, U), bombon.y - U * 0.6, {
+        vx: azar(-20, 20), vy: azar(-80, -30),
+        vida: azar(0.5, 1.2), tam: azar(0.9, 2), tipo: TIPO.CHISPA,
+      });
+    }
+  }
+
+  /* ---- El humo del bombón ---- */
+  if (bombon.tueste > 0.58) {
+    bombon.relojHumo -= dt;
+    if (bombon.relojHumo <= 0) {
+      bombon.relojHumo = mez(0.42, 0.1, clamp01((bombon.tueste - 0.58) / 0.4));
+      soltar(bombon.x + azar(-U * 0.6, U * 0.6), bombon.y - U * 1.2, {
+        vx: azar(-6, 6), vy: azar(-30, -14),
+        vida: azar(2.2, 3.6), tam: azar(U * 0.6, U * 1.2),
+        tipo: TIPO.HUMO, tono: 0.8,
+      });
+    }
+  }
+
+  /* Tope: más allá de quemado ya no hay nada. */
+  bombon.tueste = Math.min(bombon.tueste, 1.15);
+}
+
+function prenderBombon() {
+  if (bombon.ardiendo > 0) return;
+  bombon.ardiendo = 0.001;
+  tono(azar(180, 260), 0.3, "sawtooth", 0.05);
+  golpe(0.1, 1800, 0.12, "highpass");
+  for (let i = 0; i < 16; i++) {
+    soltar(bombon.x + azar(-U, U), bombon.y + azar(-U, U), {
+      vx: azar(-60, 60), vy: azar(-120, -20),
+      vida: azar(0.6, 1.4), tam: azar(1.2, 2.6), tipo: TIPO.CHISPA,
+    });
+  }
+}
+
+/** Comerse el bombón. */
+function comerBombon() {
+  if (!bombon.vivo) return;
+  const e = estadoBombon();
+  bombon.vivo = false;
+  bombon.comido = 0;
+
+  /* Un mordisco: un golpe blando y un tono corto. */
+  golpe(0.09, 420, 0.16, "lowpass");
+  tono(azar(300, 420), 0.18, "sine", 0.07, 0.05);
+  tono(azar(520, 660), 0.22, "triangle", 0.05, 0.12);
+
+  for (let i = 0; i < 18; i++) {
+    soltar(bombon.x + azar(-U, U), bombon.y + azar(-U, U), {
+      vx: azar(-90, 90), vy: azar(-110, -10),
+      vida: azar(0.5, 1.3), tam: azar(1.4, 3),
+      tipo: TIPO.BRILLO, tono: e.id === "quemado" ? 0.1 : 0.8,
+    });
+  }
+
+  decir(bombon.x, bombon.y, diceComer[e.id](), { mimo: true, importante: true });
+
+  /* ---- Easter egg: tres quemados seguidos ---- */
+  if (e.id === "quemado" || e.id === "quemandose") {
+    bombon.seguidosQuemados++;
+    if (bombon.seguidosQuemados === 3) {
+      setTimeout(() => decir(sitio.fogata.x, sitio.fogata.y - U * 22,
+        "Tres seguidos. Voy a tener que tostarlos yo. 😭", { mimo: true, importante: true }), 2200);
+      magia(330);
+    }
+  } else {
+    if (bombon.seguidosQuemados >= 2) {
+      setTimeout(() => decir(bombon.x, bombon.y - U * 10,
+        "Ahí está. Sabía que le cogías el punto.", { mimo: true }), 1800);
+    }
+    bombon.seguidosQuemados = 0;
+  }
+  contarLogro("bombon");
+}
+
+function dibujarBombon() {
+  const d = desplazar(1.9);
+  const bx = bombon.x + d.x, by = bombon.y + d.y;
+  const mx = bombon.mangoX + d.x, my = bombon.mangoY + d.y;
+
+  /* ---- El palo ----
+     Una curva, no una recta: un palo de verdad se dobla con el peso, y
+     el punto de control se desplaza hacia abajo según lo estirado que
+     esté. Eso es lo que le da flexión sin simular nada. */
+  const largo = Math.hypot(bx - mx, by - my);
+  const comba = clamp(largo * 0.08, 0, U * 5);
+  const cxP = (mx + bx) / 2;
+  const cyP = (my + by) / 2 + comba;
+
+  const g = ctx.createLinearGradient(mx, my, bx, by);
+  g.addColorStop(0, `rgb(${Math.round(mez(58, 130, fuego.brillo))},${Math.round(mez(42, 86, fuego.brillo))},${Math.round(mez(30, 54, fuego.brillo))})`);
+  g.addColorStop(1, `rgb(${Math.round(mez(78, 170, fuego.brillo))},${Math.round(mez(56, 112, fuego.brillo))},${Math.round(mez(38, 68, fuego.brillo))})`);
+  ctx.strokeStyle = g;
+  ctx.lineWidth = U * 0.62;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(mx, my);
+  ctx.quadraticCurveTo(cxP, cyP, bx, by);
+  ctx.stroke();
+
+  if (!bombon.vivo) {
+    /* Se lo está comiendo: el palo se queda solo un momento. */
+    return;
+  }
+
+  /* ---- El bombón ---- */
+  const e = estadoBombon();
+  /* El color se interpola DENTRO del estado, no salta de uno a otro:
+     así se ve cómo se va dorando en vez de cambiar de golpe. */
+  const iEstado = CONF.bombon.estados.indexOf(e);
+  const antes = CONF.bombon.estados[Math.max(0, iEstado - 1)];
+  const desde = iEstado === 0 ? 0 : antes.hasta;
+  const k = clamp01((bombon.tueste - desde) / Math.max(0.01, e.hasta - desde));
+  const claro = mezColor(antes.color[0], e.color[0], k);
+  const hondo = mezColor(antes.color[1], e.color[1], k);
+
+  const r = U * (2.6 + bombon.hinchado * 0.9);
+  const alto = r * (1.15 - bombon.hinchado * 0.18);
+
+  /* La sombra de la llama sobre él. */
+  ctx.save();
+  ctx.translate(bx, by);
+
+  /* Cuerpo: un cilindro redondeado, que es la forma de un malvavisco.
+     Una bola parece un caramelo. */
+  const gb = ctx.createLinearGradient(-r, -alto, r, alto);
+  gb.addColorStop(0, claro);
+  gb.addColorStop(0.5, mezColor(claro, hondo, 0.45));
+  gb.addColorStop(1, hondo);
+  ctx.fillStyle = gb;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-r, -alto, r * 2, alto * 2, r * 0.55);
+  else ctx.rect(-r, -alto, r * 2, alto * 2);
+  ctx.fill();
+
+  /* El brillo del fuego en el canto de abajo. */
+  const gi = ctx.createLinearGradient(0, alto * 0.2, 0, alto);
+  gi.addColorStop(0, "rgba(255,170,80,0)");
+  gi.addColorStop(1, `rgba(255,170,80,${0.34 * fuego.brillo})`);
+  ctx.fillStyle = gi;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-r, -alto, r * 2, alto * 2, r * 0.55);
+  else ctx.rect(-r, -alto, r * 2, alto * 2);
+  ctx.fill();
+
+  /* Las manchas de tostado: no se dora uniforme, se dora a parches. */
+  if (bombon.tueste > 0.2) {
+    ctx.globalAlpha = clamp01((bombon.tueste - 0.2) * 1.4) * 0.5;
+    ctx.fillStyle = hondo;
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * 6.283 + 0.7;
+      ctx.beginPath();
+      ctx.ellipse(Math.cos(a) * r * 0.4, Math.sin(a) * alto * 0.4,
+                  r * (0.3 + (i % 2) * 0.14), alto * 0.22, a, 0, 6.283);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* Si está ardiendo, su propia llamita. */
+  if (bombon.ardiendo > 0) {
+    ctx.globalCompositeOperation = "lighter";
+    const hL = r * 3.4 * bombon.ardiendo * (0.7 + 0.3 * Math.sin(reloj * 9));
+    const gf = ctx.createLinearGradient(0, -alto, 0, -alto - hL);
+    gf.addColorStop(0, "rgba(255,240,180,0.9)");
+    gf.addColorStop(0.4, "rgba(255,150,50,0.6)");
+    gf.addColorStop(1, "rgba(220,60,20,0)");
+    ctx.fillStyle = gf;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.8, -alto);
+    ctx.quadraticCurveTo(
+      Math.sin(reloj * 6) * r * 0.5, -alto - hL * 0.7,
+      Math.sin(reloj * 6) * r * 0.7, -alto - hL);
+    ctx.quadraticCurveTo(r * 0.5, -alto - hL * 0.5, r * 0.8, -alto);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+  }
+
+  ctx.restore();
+
+  /* Y un aro finísimo cuando se puede coger, para que se note que es
+     tocable sin poner un cartel. */
+  if (!bombon.agarrado) {
+    const pulso = 0.12 + 0.08 * Math.sin(reloj * 2.2);
+    ctx.strokeStyle = `rgba(255,235,210,${pulso})`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(bx, by, r * 2.2, 0, 6.283);
+    ctx.stroke();
+  }
+}
+
+// ==========================================
+// PANEL DE AMBIENTES
+// ==========================================
+//
+// No es un menú: son PIEDRAS puestas en semicírculo delante de la
+// fogata, como las que uno alinea sin darse cuenta mientras habla.
+//
+// Cada piedra lleva su símbolo grabado y se enciende cuando su ambiente
+// suena. El volumen es el arco de luz que la rodea: se arrastra de lado
+// sobre la piedra para subirlo o bajarlo.
+//
+//   · tocar          → enciende o apaga (con fundido)
+//   · arrastrar      → volumen
+//
+// Se dibuja en el lienzo, no en HTML, porque tiene que recibir la luz
+// del fuego igual que todo lo demás. Un panel HTML encima se vería
+// pegado, no puesto.
+
+const panel = {
+  piedras: [],
+  arrastrando: null,
+  usado: false,
+};
+
+function construirPanel() {
+  panel.piedras = [];
+  const n = CONF.ambientes.length;
+  const f = sitio.fogata;
+  /* En arco por delante de la fogata, mirando a quien mira. */
+  const radio = f.r * (apaisado ? 3.1 : 3.4);
+  /* El arco no puede llegar a las esquinas: si esta página va dentro del
+     librito, ahí están sus flechas de pasar página, y las dos piedras de
+     los extremos quedaban justo debajo y no se podían tocar. Se limita
+     el semiancho a un tercio de la hoja y el problema desaparece en
+     cualquier pantalla, dentro del libro o fuera. */
+  const semiancho = Math.min(radio * 1.42, A * 0.33);
+  for (let i = 0; i < n; i++) {
+    const t = n === 1 ? 0.5 : i / (n - 1);
+    const a = mez(Math.PI * 0.86, Math.PI * 0.14, t);
+    panel.piedras.push({
+      conf: CONF.ambientes[i],
+      x: f.x + Math.cos(a) * semiancho,
+      y: f.y + f.r * 1.05 + Math.sin(a) * radio * 0.26,
+      r: U * (apaisado ? 3.1 : 3.4),
+      on: CONF.ambientes[i].on,
+      vol: CONF.ambientes[i].vol,
+      luz: CONF.ambientes[i].on ? 1 : 0,
+      pulso: 0,
+    });
+  }
+}
+
+function moverPanel(dt) {
+  for (const p of panel.piedras) {
+    p.luz = damp(p.luz, p.on ? 1 : 0, 3, dt);
+    p.pulso = Math.max(0, p.pulso - dt * 2.2);
+  }
+}
+
+function dibujarPanel() {
+  const d = desplazar(2.1);
+  for (const p of panel.piedras) {
+    const x = p.x + d.x, y = p.y + d.y;
+    const col = p.conf.color;
+
+    /* El halo del ambiente encendido, que además hace de medidor: cuanto
+       más volumen, más se abre. */
+    if (p.luz > 0.02) {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, p.r * (2.2 + p.vol * 2.4));
+      g.addColorStop(0, hexA(col, 0.34 * p.luz));
+      g.addColorStop(1, hexA(col, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, p.r * (2.2 + p.vol * 2.4), 0, 6.283);
+      ctx.fill();
+    }
+
+    /* La piedra. Iluminada por el fuego por el lado que mira a la
+       fogata, como todo lo demás de la escena. */
+    const haciaFuego = Math.sign(sitio.fogata.x - p.x);
+    const gp = ctx.createLinearGradient(x - p.r, y - p.r, x + p.r * haciaFuego, y + p.r);
+    const il = fuego.brillo * 0.7;
+    gp.addColorStop(0, `rgb(${Math.round(mez(40, 92, il))},${Math.round(mez(38, 68, il))},${Math.round(mez(40, 56, il))})`);
+    gp.addColorStop(1, `rgb(${Math.round(mez(22, 52, il))},${Math.round(mez(21, 40, il))},${Math.round(mez(24, 34, il))})`);
+    ctx.fillStyle = gp;
+    ctx.beginPath();
+    ctx.ellipse(x, y, p.r, p.r * 0.86, 0, 0, 6.283);
+    ctx.fill();
+
+    /* El arco de volumen, grabado en el canto. */
+    if (p.luz > 0.05) {
+      ctx.strokeStyle = hexA(col, 0.75 * p.luz);
+      ctx.lineWidth = Math.max(1.6, p.r * 0.13);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      /* Empieza abajo a la izquierda y da la vuelta según el volumen. */
+      ctx.arc(x, y, p.r * 1.24, Math.PI * 0.78, Math.PI * 0.78 + Math.PI * 1.44 * p.vol);
+      ctx.stroke();
+      /* Y el resto del arco, apagado, para que se vea cuánto queda. */
+      ctx.strokeStyle = hexA(col, 0.12 * p.luz);
+      ctx.beginPath();
+      ctx.arc(x, y, p.r * 1.24, Math.PI * 0.78 + Math.PI * 1.44 * p.vol, Math.PI * 2.22);
+      ctx.stroke();
+    }
+
+    /* El símbolo. */
+    ctx.save();
+    ctx.globalAlpha = 0.35 + p.luz * 0.65;
+    ctx.font = `${Math.round(p.r * 1.05)}px ui-sans-serif, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(p.conf.icono, x, y + p.r * 0.04);
+    ctx.restore();
+
+    /* Y un destello al tocarla. */
+    if (p.pulso > 0.01) {
+      ctx.strokeStyle = hexA(col, p.pulso * 0.7);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, p.r * (1.3 + (1 - p.pulso) * 1.6), 0, 6.283);
+      ctx.stroke();
+    }
+  }
+}
+
+function hexA(hex, a) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function alternarPiedra(p) {
+  p.on = !p.on;
+  p.pulso = 1;
+  ambiente(p.conf.id, p.on, p.vol);
+  tono(p.on ? 520 : 330, 0.4, "sine", 0.05);
+  marcarPanelUsado();
+  decir(p.x, p.y - U * 5, `${p.conf.icono} ${p.conf.nombre}${p.on ? "" : " · apagado"}`, { dur: 1.9 });
+}
+
+function marcarPanelUsado() {
+  if (panel.usado) return;
+  panel.usado = true;
+  raiz.classList.add("is-panel-usado");
+}
+
+// ==========================================
+// CAJITA MUSICAL
+// ==========================================
+//
+// Una cajita de madera apoyada en una piedra, al lado de la fogata. Se
+// toca y se abre; se vuelve a tocar y se cierra.
+//
+// Suena `musica.mp3`, con fundido de entrada y de salida. Si el archivo
+// no está, suena una nana sintetizada en bucle —la misma melodía— para
+// que la cajita nunca se quede muda.
+
+const cajita = {
+  abierta: false,
+  tapa: 0,            // 0 cerrada · 1 abierta
+  nota: 0,            // el brillo de la última nota
+  fuente: null,
+  gain: null,
+  sinteticaReloj: null,
+  girando: 0,
+};
+
+/* La nana sintetizada, por si no hay archivo. Es una caja de música: el
+   sonido de una púa metálica, que es el fundamental más dos armónicos
+   INARMÓNICOS —2.76 y 5.4—, porque una lámina de metal no vibra en
+   múltiplos exactos. Eso es lo que la hace sonar a metal y no a flauta. */
+const NANA = [
+  ["E5",1],["G5",0.5],["A5",1.5],["G5",0.5],["E5",1],["D5",1],["E5",2],
+  ["C5",1],["E5",0.5],["G5",1.5],["E5",0.5],["D5",1],["C5",2],
+];
+const SEMI = { C:0, Cs:1, D:2, Ds:3, E:4, F:5, Fs:6, G:7, Gs:8, A:9, As:10, B:11 };
+function hz(n) {
+  const m = /^([A-G]s?)(-?\d)$/.exec(n);
+  if (!m) return 440;
+  const k = SEMI[m[1]] + (Number(m[2]) + 1) * 12;
+  return 440 * Math.pow(2, (k - 69) / 12);
+}
+
+function puaCajita(frecuencia, cuando, destino) {
+  const c = audio.ctx;
+  for (const [mult, amp] of [[1, 1], [2.76, 0.3], [5.4, 0.12]]) {
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(frecuencia * mult, cuando);
+    /* Los armónicos se apagan antes que el fundamental: por eso suena
+       metálico al principio y dulce al final. */
+    const largo = 2.3 / mult;
+    g.gain.setValueAtTime(0, cuando);
+    g.gain.linearRampToValueAtTime(0.14 * amp, cuando + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, cuando + largo);
+    o.connect(g).connect(destino);
+    o.start(cuando); o.stop(cuando + largo + 0.05);
+  }
+}
+
+async function abrirCajita() {
+  if (!despertarAudio()) return;
+  cajita.abierta = true;
+  golpe(0.07, 1500, 0.14, "bandpass");
+
+  cajita.gain = audio.ctx.createGain();
+  cajita.gain.gain.value = 0;
+  cajita.gain.connect(audio.maestro);
+  cajita.gain.gain.linearRampToValueAtTime(0.75, audio.ctx.currentTime + 1.4);
+
+  const buf = await traerBuffer(CONF.rutas.musica);
+  if (!cajita.abierta) return;                 // la cerró mientras cargaba
+
+  if (buf) {
+    const src = audio.ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    src.connect(cajita.gain);
+    src.start();
+    cajita.fuente = src;
+  } else {
+    /* La nana, en bucle, programada por compases. */
+    const negra = 60 / 82;
+    let t = audio.ctx.currentTime + 0.2;
+    const tocarVuelta = () => {
+      if (!cajita.abierta || !audio.ctx) return;
+      let total = 0;
+      for (const [nota, dur] of NANA) {
+        puaCajita(hz(nota), t + total, cajita.gain);
+        puaCajita(hz(nota) / 2, t + total + 0.01, cajita.gain);
+        total += dur * negra;
+      }
+      t += total;
+      cajita.sinteticaReloj = setTimeout(tocarVuelta, (total - 0.4) * 1000);
+    };
+    tocarVuelta();
+  }
+  decir(sitio.cajita.x, sitio.cajita.y - U * 7, "🎵", { dur: 2 });
+}
+
+function cerrarCajita() {
+  cajita.abierta = false;
+  golpe(0.08, 700, 0.16, "lowpass");
+  clearTimeout(cajita.sinteticaReloj);
+  if (cajita.gain) {
+    const g = cajita.gain, src = cajita.fuente;
+    const t = audio.ctx.currentTime;
+    g.gain.cancelScheduledValues(t);
+    g.gain.setValueAtTime(g.gain.value, t);
+    g.gain.linearRampToValueAtTime(0, t + 1.2);
+    setTimeout(() => {
+      try { src?.stop(); } catch {}
+      try { g.disconnect(); } catch {}
+    }, 1400);
+  }
+  cajita.fuente = null;
+  cajita.gain = null;
+}
+
+function moverCajita(dt) {
+  cajita.tapa = damp(cajita.tapa, cajita.abierta ? 1 : 0, 4.5, dt);
+  if (cajita.abierta) {
+    cajita.girando += dt * 2.4;
+    /* Una nota de luz cada tanto, al ritmo de la música. */
+    cajita.nota = Math.max(0, cajita.nota - dt * 1.6);
+    if (Math.random() < dt * 1.6) {
+      cajita.nota = 1;
+      soltar(sitio.cajita.x + azar(-U, U), sitio.cajita.y - U * 3, {
+        vx: azar(-14, 14), vy: azar(-34, -16),
+        vida: azar(1.6, 2.8), tam: azar(1.2, 2.4),
+        tipo: TIPO.BRILLO, tono: 0.85,
+      });
+    }
+  } else {
+    cajita.nota = Math.max(0, cajita.nota - dt * 2);
+  }
+}
+
+function dibujarCajita() {
+  const d = desplazar(2.0);
+  const c = sitio.cajita;
+  const x = c.x + d.x, y = c.y + d.y;
+  const w = c.r * 1.5, h = c.r * 0.9;
+
+  /* La piedra sobre la que está. */
+  ctx.fillStyle = `rgb(${Math.round(mez(30, 70, fuego.brillo * 0.6))},${Math.round(mez(28, 52, fuego.brillo * 0.6))},${Math.round(mez(30, 44, fuego.brillo * 0.6))})`;
+  ctx.beginPath();
+  ctx.ellipse(x, y + h * 0.75, w * 1.1, h * 0.5, 0, 0, 6.283);
+  ctx.fill();
+
+  /* La luz que sale de dentro cuando está abierta. */
+  if (cajita.tapa > 0.05) {
+    ctx.globalCompositeOperation = "lighter";
+    const g = ctx.createRadialGradient(x, y - h * 0.2, 0, x, y - h * 0.2, w * 3);
+    g.addColorStop(0, `rgba(255,214,150,${0.3 * cajita.tapa})`);
+    g.addColorStop(1, "rgba(255,214,150,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y - h * 0.2, w * 3, 0, 6.283);
+    ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+  }
+
+  /* La tapa, que se abre girando sobre su bisagra de atrás. Se finge el
+     giro estrechándola: una tapa plana rotando de verdad se ve de canto
+     y desaparece a los 90 grados. */
+  const abre = cajita.tapa;
+  ctx.save();
+  ctx.translate(x, y - h * 0.5);
+  const gt = ctx.createLinearGradient(-w, -h * 0.4, w, h * 0.2);
+  const il = fuego.brillo;
+  gt.addColorStop(0, `rgb(${Math.round(mez(96, 180, il))},${Math.round(mez(62, 112, il))},${Math.round(mez(38, 62, il))})`);
+  gt.addColorStop(1, `rgb(${Math.round(mez(58, 120, il))},${Math.round(mez(36, 72, il))},${Math.round(mez(22, 40, il))})`);
+  ctx.fillStyle = gt;
+  ctx.save();
+  ctx.translate(0, -h * 0.1);
+  ctx.scale(1, 1 - abre * 0.82);
+  ctx.translate(0, -h * 0.22 * (1 - abre));
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-w, -h * 0.34, w * 2, h * 0.5, h * 0.12);
+  else ctx.rect(-w, -h * 0.34, w * 2, h * 0.5);
+  ctx.fill();
+  ctx.restore();
+  ctx.restore();
+
+  /* El cuerpo. */
+  const gc = ctx.createLinearGradient(x - w, y, x + w, y + h);
+  gc.addColorStop(0, `rgb(${Math.round(mez(84, 164, fuego.brillo))},${Math.round(mez(54, 100, fuego.brillo))},${Math.round(mez(32, 56, fuego.brillo))})`);
+  gc.addColorStop(1, `rgb(${Math.round(mez(48, 104, fuego.brillo))},${Math.round(mez(30, 62, fuego.brillo))},${Math.round(mez(18, 34, fuego.brillo))})`);
+  ctx.fillStyle = gc;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x - w, y - h * 0.5, w * 2, h, h * 0.16);
+  else ctx.rect(x - w, y - h * 0.5, w * 2, h);
+  ctx.fill();
+
+  /* El filete dorado. */
+  ctx.strokeStyle = `rgba(214,168,86,${0.4 + fuego.brillo * 0.4})`;
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x - w * 0.88, y - h * 0.34, w * 1.76, h * 0.72, h * 0.12);
+  else ctx.rect(x - w * 0.88, y - h * 0.34, w * 1.76, h * 0.72);
+  ctx.stroke();
+
+  /* La bailarina de dentro, que sólo se ve con la tapa abierta. */
+  if (abre > 0.3) {
+    ctx.save();
+    ctx.globalAlpha = clamp01((abre - 0.3) / 0.5);
+    ctx.translate(x, y - h * 0.5);
+    /* Gira estrechándose, sin bajar nunca del 25%: una silueta plana
+       rotando de verdad desaparece dos veces por vuelta. */
+    const s = Math.cos(cajita.girando);
+    ctx.scale(Math.max(0.25, Math.abs(s)) * Math.sign(s || 1), 1);
+    ctx.fillStyle = "#ffd0e4";
+    ctx.beginPath();
+    ctx.ellipse(0, -h * 0.12, w * 0.24, h * 0.2, 0, 0, 6.283);
+    ctx.fill();
+    ctx.fillStyle = "#ffe8f2";
+    ctx.beginPath();
+    ctx.arc(0, -h * 0.42, w * 0.1, 0, 6.283);
+    ctx.fill();
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  /* La manivela del costado, que gira mientras suena. */
+  ctx.save();
+  ctx.translate(x + w * 1.08, y);
+  ctx.rotate(cajita.abierta ? cajita.girando * 1.2 : 0);
+  ctx.strokeStyle = "#c9a45c";
+  ctx.lineWidth = Math.max(1.4, w * 0.07);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(w * 0.24, 0);
+  ctx.stroke();
+  ctx.fillStyle = "#e0bd72";
+  ctx.beginPath();
+  ctx.arc(w * 0.26, 0, w * 0.09, 0, 6.283);
+  ctx.fill();
+  ctx.restore();
+}
+
+// ==========================================
+// CABAÑA
+// ==========================================
+//
+// Al otro lado de la fogata, con la luz puesta. Es lo más acogedor de
+// la escena y por eso está entera dibujada: tablones con su veta,
+// ventanas con su cruz, chimenea con su humo, farol en la puerta,
+// matas alrededor y un caminito de piedras hasta la entrada.
+//
+// Se toca y empieza la cinemática.
+
+const cabana = {
+  brillo: 1,          // el parpadeo de las ventanas
+  humo: 0,
+  puerta: 0,          // 0 cerrada · 1 abierta (durante la cinemática)
+  resalte: 0,         // cuando el dedo pasa por encima
+  farol: 0,
+};
+
+function moverCabana(dt) {
+  cabana.brillo = 0.86 + 0.14 * Math.sin(reloj * 0.9) + 0.04 * Math.sin(reloj * 3.7);
+  cabana.farol = 0.8 + 0.2 * Math.sin(reloj * 2.3 + 1.1);
+  cabana.resalte = damp(cabana.resalte, 0, 2.6, dt);
+
+  cabana.humo -= dt;
+  if (cabana.humo <= 0) {
+    cabana.humo = flojo ? 0.7 : 0.38;
+    const c = sitio.cabana;
+    soltar(c.x + c.w * 0.3 + azar(-2, 2), c.y - c.h * 1.24, {
+      vx: azar(-4, 10), vy: azar(-26, -14),
+      vida: azar(3.4, 5.6), tam: azar(U * 0.5, U * 1.1),
+      tipo: TIPO.HUMO, tono: 0.2,
+    });
+  }
+}
+
+function dibujarCabana() {
+  const d = desplazar(1.25);
+  const c = sitio.cabana;
+  const x = c.x + d.x, y = c.y + d.y;
+  const w = c.w, h = c.h;
+
+  /* Cuánta luz le llega de la fogata: cae con la distancia, así que la
+     cabaña está más apagada que la hoguera aunque las dos se dibujen
+     igual. Es lo que da sensación de que hay espacio entre ellas. */
+  const distF = Math.abs(x - sitio.fogata.x) / A;
+  const ilum = fuego.brillo * clamp01(1 - distF * 1.3) * 0.7;
+
+  /* ---- El caminito de piedras ---- */
+  for (let i = 0; i < 7; i++) {
+    const t = i / 6;
+    const pxc = mez(x - w * 0.1, sitio.fogata.x + U * 10, t);
+    const pyc = mez(y + h * 0.04, sitio.fogata.y + U * 5, t) + Math.sin(i * 2.1) * U * 0.8;
+    const s = U * mez(1.5, 2.2, t);
+    ctx.fillStyle = `rgb(${Math.round(mez(30, 92, fuego.brillo * (0.3 + t * 0.7)))},${Math.round(mez(29, 78, fuego.brillo * (0.3 + t * 0.7)))},${Math.round(mez(30, 68, fuego.brillo * (0.3 + t * 0.7)))})`;
+    ctx.beginPath();
+    ctx.ellipse(pxc, pyc, s, s * 0.5, 0, 0, 6.283);
+    ctx.fill();
+  }
+
+  /* ---- La sombra en el suelo ---- */
+  ctx.fillStyle = "rgba(4,6,12,0.5)";
+  ctx.beginPath();
+  ctx.ellipse(x, y + h * 0.03, w * 0.72, h * 0.09, 0, 0, 6.283);
+  ctx.fill();
+
+  /* ---- El resplandor de las ventanas, sobre la hierba ---- */
+  ctx.globalCompositeOperation = "lighter";
+  const gv = ctx.createRadialGradient(x, y - h * 0.3, 0, x, y - h * 0.3, w * 2.2);
+  gv.addColorStop(0, `rgba(255,190,110,${0.16 * cabana.brillo})`);
+  gv.addColorStop(1, "rgba(255,190,110,0)");
+  ctx.fillStyle = gv;
+  ctx.beginPath();
+  ctx.ellipse(x, y, w * 2.2, h * 0.9, 0, 0, 6.283);
+  ctx.fill();
+  ctx.globalCompositeOperation = "source-over";
+
+  /* ---- El cuerpo: tablones horizontales ---- */
+  const nT = 9;
+  for (let i = 0; i < nT; i++) {
+    const ty = y - h + (i / nT) * h;
+    const th = h / nT + 0.6;
+    const tono0 = ((i * 37) % 5) / 5;
+    const base = mez(30, 40, tono0);
+    ctx.fillStyle = `rgb(${Math.round(mez(base, base + 96, ilum))},${Math.round(mez(base - 6, base + 52, ilum))},${Math.round(mez(base - 10, base + 26, ilum))})`;
+    ctx.fillRect(x - w / 2, ty, w, th);
+    /* La junta entre tablones. */
+    ctx.fillStyle = "rgba(8,6,10,0.34)";
+    ctx.fillRect(x - w / 2, ty + th - 1.2, w, 1.2);
+  }
+
+  /* ---- El tejado, a dos aguas y sobresaliendo ---- */
+  const alaR = w * 0.62;
+  const gtj = ctx.createLinearGradient(x, y - h * 1.5, x, y - h);
+  gtj.addColorStop(0, `rgb(${Math.round(mez(26, 78, ilum))},${Math.round(mez(24, 52, ilum))},${Math.round(mez(28, 44, ilum))})`);
+  gtj.addColorStop(1, `rgb(${Math.round(mez(18, 54, ilum))},${Math.round(mez(16, 36, ilum))},${Math.round(mez(20, 30, ilum))})`);
+  ctx.fillStyle = gtj;
+  ctx.beginPath();
+  ctx.moveTo(x - alaR, y - h);
+  ctx.lineTo(x, y - h * 1.52);
+  ctx.lineTo(x + alaR, y - h);
+  ctx.closePath();
+  ctx.fill();
+  /* Las tejas: rayas paralelas al alero. */
+  ctx.strokeStyle = "rgba(10,8,12,0.28)";
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 6; i++) {
+    const t = i / 6;
+    ctx.beginPath();
+    ctx.moveTo(mez(x - alaR, x, t), mez(y - h, y - h * 1.52, t));
+    ctx.lineTo(mez(x + alaR, x, t), mez(y - h, y - h * 1.52, t));
+    ctx.stroke();
+  }
+
+  /* ---- La chimenea ---- */
+  ctx.fillStyle = `rgb(${Math.round(mez(30, 74, ilum))},${Math.round(mez(26, 50, ilum))},${Math.round(mez(28, 42, ilum))})`;
+  ctx.fillRect(x + w * 0.22, y - h * 1.38, w * 0.16, h * 0.42);
+  ctx.fillStyle = `rgb(${Math.round(mez(38, 88, ilum))},${Math.round(mez(34, 60, ilum))},${Math.round(mez(36, 50, ilum))})`;
+  ctx.fillRect(x + w * 0.2, y - h * 1.42, w * 0.2, h * 0.07);
+
+  /* ---- Las ventanas ---- */
+  const luzV = cabana.brillo;
+  dibujarVentanaCabana(x - w * 0.26, y - h * 0.62, w * 0.24, h * 0.3, luzV);
+  dibujarVentanaCabana(x + w * 0.26, y - h * 0.62, w * 0.24, h * 0.3, luzV * 0.9);
+
+  /* ---- La puerta ---- */
+  const pw = w * 0.22, ph = h * 0.46;
+  ctx.fillStyle = `rgb(${Math.round(mez(26, 96, ilum))},${Math.round(mez(20, 58, ilum))},${Math.round(mez(16, 34, ilum))})`;
+  ctx.beginPath();
+  ctx.moveTo(x - pw / 2, y);
+  ctx.lineTo(x - pw / 2, y - ph * 0.82);
+  ctx.quadraticCurveTo(x, y - ph * 1.12, x + pw / 2, y - ph * 0.82);
+  ctx.lineTo(x + pw / 2, y);
+  ctx.closePath();
+  ctx.fill();
+  /* Si está abierta —durante la cinemática—, se ve el hueco caliente. */
+  if (cabana.puerta > 0.01) {
+    ctx.save();
+    ctx.globalAlpha = cabana.puerta;
+    const gp = ctx.createLinearGradient(x - pw / 2, y, x + pw / 2, y - ph);
+    gp.addColorStop(0, "rgba(255,180,90,0.9)");
+    gp.addColorStop(1, "rgba(255,140,60,0.5)");
+    ctx.fillStyle = gp;
+    ctx.beginPath();
+    ctx.moveTo(x - pw / 2, y);
+    ctx.lineTo(x - pw / 2, y - ph * 0.82);
+    ctx.quadraticCurveTo(x, y - ph * 1.12, x + pw * (0.5 - cabana.puerta * 0.8), y - ph * 0.82);
+    ctx.lineTo(x + pw * (0.5 - cabana.puerta * 0.8), y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  /* El pomo. */
+  ctx.fillStyle = `rgba(220,180,110,${0.4 + ilum * 0.5})`;
+  ctx.beginPath();
+  ctx.arc(x + pw * 0.28, y - ph * 0.42, Math.max(1.4, w * 0.014), 0, 6.283);
+  ctx.fill();
+
+  /* ---- El farol de la puerta ---- */
+  const fx = x + pw * 0.86, fy = y - ph * 0.92;
+  ctx.globalCompositeOperation = "lighter";
+  const gf = ctx.createRadialGradient(fx, fy, 0, fx, fy, w * 0.5);
+  gf.addColorStop(0, `rgba(255,200,120,${0.4 * cabana.farol})`);
+  gf.addColorStop(1, "rgba(255,200,120,0)");
+  ctx.fillStyle = gf;
+  ctx.beginPath(); ctx.arc(fx, fy, w * 0.5, 0, 6.283); ctx.fill();
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fillStyle = "#1a1512";
+  ctx.fillRect(fx - w * 0.026, fy - w * 0.04, w * 0.052, w * 0.08);
+  ctx.fillStyle = `rgba(255,214,140,${cabana.farol})`;
+  ctx.fillRect(fx - w * 0.018, fy - w * 0.032, w * 0.036, w * 0.064);
+
+  /* ---- Las matas de alrededor ---- */
+  for (let i = 0; i < 6; i++) {
+    const t = (i / 5 - 0.5) * 1.9;
+    const mx = x + t * w * 0.66;
+    const my = y + Math.abs(t) * h * 0.02;
+    if (Math.abs(t) < 0.28) continue;         // deja libre la puerta
+    const s = U * (1.6 + ((i * 13) % 4) * 0.5);
+    const il2 = ilum * 0.7;
+    ctx.fillStyle = `rgb(${Math.round(mez(16, 62, il2))},${Math.round(mez(26, 82, il2))},${Math.round(mez(18, 48, il2))})`;
+    ctx.beginPath();
+    ctx.ellipse(mx, my, s, s * 0.72, 0, 0, 6.283);
+    ctx.fill();
+  }
+
+  /* ---- El aro de «tócame», discretísimo ---- */
+  if (escena === "bosque" && !bloqueado) {
+    const pulso = 0.07 + 0.05 * Math.sin(reloj * 1.6) + cabana.resalte * 0.3;
+    ctx.strokeStyle = `rgba(255,214,150,${pulso})`;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.ellipse(x, y - h * 0.6, w * 0.78, h * 0.86, 0, 0, 6.283);
+    ctx.stroke();
+  }
+}
+
+function dibujarVentanaCabana(vx, vy, vw, vh, luz) {
+  /* El resplandor. */
+  ctx.globalCompositeOperation = "lighter";
+  const g = ctx.createRadialGradient(vx, vy, 0, vx, vy, vw * 2.6);
+  g.addColorStop(0, `rgba(255,196,110,${0.34 * luz})`);
+  g.addColorStop(1, "rgba(255,196,110,0)");
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(vx, vy, vw * 2.6, 0, 6.283); ctx.fill();
+  ctx.globalCompositeOperation = "source-over";
+
+  /* El cristal. */
+  const gc = ctx.createLinearGradient(vx, vy - vh / 2, vx, vy + vh / 2);
+  gc.addColorStop(0, `rgba(255,222,160,${luz})`);
+  gc.addColorStop(1, `rgba(255,170,80,${luz * 0.9})`);
+  ctx.fillStyle = gc;
+  ctx.fillRect(vx - vw / 2, vy - vh / 2, vw, vh);
+
+  /* La cruz del marco. */
+  ctx.strokeStyle = "rgba(24,16,10,0.75)";
+  ctx.lineWidth = Math.max(1.2, vw * 0.07);
+  ctx.beginPath();
+  ctx.moveTo(vx, vy - vh / 2); ctx.lineTo(vx, vy + vh / 2);
+  ctx.moveTo(vx - vw / 2, vy); ctx.lineTo(vx + vw / 2, vy);
+  ctx.stroke();
+  ctx.strokeRect(vx - vw / 2, vy - vh / 2, vw, vh);
+}
+
+// ==========================================
+// CINEMÁTICA
+// ==========================================
+//
+// De la fogata a la cama, sin cortes.
+//
+// ── LO IMPORTANTE: LOS SONIDOS VAN UNO DETRÁS DE OTRO ────────────────
+// Cada `await` espera a que el archivo TERMINE de verdad —`tocarUnaVez`
+// se resuelve en el `onended` de la fuente, no con un temporizador a
+// ojo—, así que ninguno corta al anterior por mucho que dure. Si un
+// archivo no está, su gemelo sintetizado dura lo suyo y la secuencia
+// sigue igual de bien.
+//
+// Mientras tanto la cámara empuja hacia la cabaña y el velo se va a
+// negro; los ambientes se agachan pero no se callan, porque el bosque
+// sigue ahí fuera.
+
+const cine = { velo: 0, texto: "" };
+
+async function entrarEnLaCabana() {
+  if (bloqueado || escena !== "bosque") return;
+  bloqueado = true;
+  contarLogro("cabana");
+
+  const c = sitio.cabana;
+
+  /* 1. La cámara empuja hacia la puerta. */
+  cam.oz = 2.4;
+  cam.ox = (A / 2 - c.x) * 2.4;
+  cam.oy = (H * 0.56 - (c.y - c.h * 0.5)) * 2.4;
+  agacharAmbientes(0.45, 1.6);
+
+  await esperar(suaveMovimiento ? 100 : 1500);
+
+  /* 2. La puerta se abre, y suena. */
+  cabana.puerta = 0.001;
+  const abrir = tocarUnaVez(CONF.rutas.cabana.puertaAbre, gemelosCabana.puertaAbre, 0.9);
+  animar((k) => { cabana.puerta = k; }, 900);
+  await abrir;
+
+  /* 3. Se entra: a negro. */
+  cine.velo = 0.001;
+  animar((k) => { cine.velo = k; }, 1100);
+  await esperar(suaveMovimiento ? 60 : 900);
+  cabana.puerta = 0;
+
+  /* 4. Y se cierra por dentro. */
+  await tocarUnaVez(CONF.rutas.cabana.puertaCierra, gemelosCabana.puertaCierra, 0.9);
+
+  /* 5. Las escaleras. */
+  cine.texto = "subiendo";
+  await tocarUnaVez(CONF.rutas.cabana.escaleras, gemelosCabana.escaleras, 0.85);
+
+  /* 6. El cuarto. */
+  cine.texto = "el cuarto";
+  await tocarUnaVez(CONF.rutas.cabana.cuarto, gemelosCabana.cuarto, 0.85);
+
+  /* 7. La cama. */
+  cine.texto = "";
+  const cama = tocarUnaVez(CONF.rutas.cabana.cama, gemelosCabana.cama, 0.85);
+
+  /* Mientras suena la cama, se monta la habitación por detrás y se
+     levanta el velo: así el primer fotograma de la habitación llega con
+     el sonido de las sábanas, no después. */
+  escena = "habitacion";
+  raiz.classList.add("is-habitacion");
+  construirHabitacion();
+  cam.oz = 1; cam.ox = 0; cam.oy = 0;
+  cam.z = 1; cam.x = 0; cam.y = 0;
+  animar((k) => { cine.velo = 1 - k; }, 1800);
+  agacharAmbientes(0.32, 2);
+
+  await cama;
+  bloqueado = false;
+
+  setTimeout(() => {
+    if (escena !== "habitacion") return;
+    decir(A * 0.5, H * 0.3, "Desde aquí se ve la luna. Tócala.", { dur: 4.6 });
+  }, 1800);
+}
+
+/** Una animación de 0 a 1 en `ms`, con suavizado. */
+function animar(paso, ms, alAcabar) {
+  if (suaveMovimiento) { paso(1); alAcabar?.(); return; }
+  const t0 = performance.now();
+  const tic = (ahora) => {
+    const k = clamp01((ahora - t0) / ms);
+    paso(suave3(k));
+    if (k < 1) requestAnimationFrame(tic);
+    else alAcabar?.();
+  };
+  requestAnimationFrame(tic);
+}
+
+function volverAlBosque() {
+  if (bloqueado) return;
+  bloqueado = true;
+  cine.velo = 0.001;
+  animar((k) => { cine.velo = k; }, 700, () => {
+    escena = "bosque";
+    raiz.classList.remove("is-habitacion", "is-durmiendo");
+    hab.dormida = 0;
+    agacharAmbientes(1, 1.4);
+    animar((k) => { cine.velo = 1 - k; }, 900, () => { bloqueado = false; });
+  });
+}
+
+// ==========================================
+// HABITACIÓN
+// ==========================================
+//
+// La vista desde la cama: la manta y las rodillas en primer plano, la
+// habitación alrededor, y la ventana con el bosque y la luna.
+//
+// La perspectiva es la de estar tumbado mirando hacia los pies: la
+// ventana arriba y lejos, la manta abajo y cerca, y el suelo con el
+// rectángulo de luz de luna que entra por el cristal.
+
+const hab = {
+  respira: 0,
+  dormida: 0,       // 0 despierta · 1 dormida del todo
+  polvo: 0,
+  lamparaOn: true,
+  lampara: 1,
+  cuadro: 0,        // el cuadrito de la pared, tocable
+};
+
+function construirHabitacion() {
+  hab.respira = 0;
+  hab.polvo = 0;
+}
+
+/** Dónde está la ventana de la habitación, en píxeles. */
+function ventanaHab() {
+  const w = Math.min(A * 0.5, U * 46);
+  const h = w * 1.05;
+  return { x: A * 0.5, y: H * (apaisado ? 0.36 : 0.33), w, h };
+}
+
+function moverHabitacion(dt) {
+  /* La respiración: un vaivén lentísimo que mueve toda la vista. Es lo
+     que hace que se sienta que hay alguien tumbado y no una foto. */
+  hab.respira += dt * (hab.dormida > 0.5 ? 0.55 : 0.78);
+  hab.lampara = damp(hab.lampara, hab.lamparaOn ? 1 : 0, 3, dt);
+  hab.cuadro = Math.max(0, hab.cuadro - dt * 1.4);
+
+  /* Polvo flotando en el rayo de luna. */
+  hab.polvo -= dt;
+  if (hab.polvo <= 0) {
+    hab.polvo = flojo ? 0.5 : 0.22;
+    const v = ventanaHab();
+    soltar(v.x + azar(-v.w * 0.5, v.w * 0.5), v.y + azar(0, H * 0.3), {
+      vx: azar(-5, 5), vy: azar(-7, 3),
+      vida: azar(3, 6), tam: azar(0.7, 1.8),
+      tipo: TIPO.POLVO, tono: 0.5,
+    });
+  }
+}
+
+function dibujarHabitacion() {
+  const d = desplazar(0.9);
+  const v = ventanaHab();
+  const vx = v.x + d.x * 0.6, vy = v.y + d.y * 0.6;
+  const resp = Math.sin(hab.respira) * U * 0.7;
+
+  /* ---- La pared ---- */
+  const gp = ctx.createLinearGradient(0, 0, 0, H);
+  gp.addColorStop(0, "#14131f");
+  gp.addColorStop(0.55, "#1c1a26");
+  gp.addColorStop(1, "#100e18");
+  ctx.fillStyle = gp;
+  ctx.fillRect(0, 0, A, H);
+
+  /* Los tablones de la pared, insinuados. */
+  ctx.strokeStyle = "rgba(255,240,220,0.028)";
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 14; i++) {
+    const y = (i / 14) * H * 0.78;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(A, y); ctx.stroke();
+  }
+
+  /* ---- El rectángulo de luna en la pared y el suelo ----
+     Es lo que de verdad ilumina la habitación, así que se dibuja antes
+     que los muebles: todo lo demás se ve gracias a él. */
+  ctx.globalCompositeOperation = "lighter";
+  const gl = ctx.createLinearGradient(vx, vy, vx + U * 14, H);
+  gl.addColorStop(0, "rgba(150,180,255,0.14)");
+  gl.addColorStop(1, "rgba(150,180,255,0)");
+  ctx.fillStyle = gl;
+  ctx.beginPath();
+  ctx.moveTo(vx - v.w * 0.5, vy + v.h * 0.5);
+  ctx.lineTo(vx + v.w * 0.5, vy + v.h * 0.5);
+  ctx.lineTo(vx + v.w * 1.1, H);
+  ctx.lineTo(vx - v.w * 0.2, H);
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalCompositeOperation = "source-over";
+
+  /* ---- La ventana ---- */
+  dibujarVentanaHabitacion(vx, vy + resp * 0.2, v.w, v.h);
+
+  /* ---- El cuadrito de la pared (tocable) ---- */
+  const qx = vx - v.w * 0.92, qy = vy + U * 2;
+  const qw = U * 9, qh = U * 11;
+  ctx.fillStyle = `rgba(120,96,64,${0.5 + hab.cuadro * 0.4})`;
+  ctx.fillRect(qx - qw / 2, qy - qh / 2, qw, qh);
+  ctx.fillStyle = "rgba(220,200,180,0.16)";
+  ctx.fillRect(qx - qw / 2 + 3, qy - qh / 2 + 3, qw - 6, qh - 6);
+  /* Lo que hay pintado: dos siluetas juntas, pequeñísimas. */
+  ctx.fillStyle = `rgba(200,180,210,${0.24 + hab.cuadro * 0.5})`;
+  ctx.beginPath();
+  ctx.arc(qx - qw * 0.12, qy + qh * 0.06, qw * 0.09, 0, 6.283);
+  ctx.arc(qx + qw * 0.12, qy + qh * 0.06, qw * 0.09, 0, 6.283);
+  ctx.fill();
+  ctx.fillRect(qx - qw * 0.2, qy + qh * 0.14, qw * 0.16, qh * 0.2);
+  ctx.fillRect(qx + qw * 0.04, qy + qh * 0.14, qw * 0.16, qh * 0.2);
+
+  /* ---- La lámpara de la mesilla ---- */
+  const lx = vx + v.w * 0.92, ly = H * 0.62;
+  if (hab.lampara > 0.02) {
+    ctx.globalCompositeOperation = "lighter";
+    const g = ctx.createRadialGradient(lx, ly, 0, lx, ly, U * 26);
+    g.addColorStop(0, `rgba(255,190,110,${0.22 * hab.lampara})`);
+    g.addColorStop(1, "rgba(255,190,110,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(lx, ly, U * 26, 0, 6.283); ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+  }
+  /* La mesilla. */
+  ctx.fillStyle = "rgba(48,38,32,0.9)";
+  ctx.fillRect(lx - U * 7, ly + U * 3, U * 14, U * 12);
+  /* La pantalla de la lámpara. */
+  ctx.fillStyle = `rgb(${Math.round(mez(52, 220, hab.lampara))},${Math.round(mez(44, 170, hab.lampara))},${Math.round(mez(40, 110, hab.lampara))})`;
+  ctx.beginPath();
+  ctx.moveTo(lx - U * 4, ly + U * 2);
+  ctx.lineTo(lx - U * 2.6, ly - U * 3.4);
+  ctx.lineTo(lx + U * 2.6, ly - U * 3.4);
+  ctx.lineTo(lx + U * 4, ly + U * 2);
+  ctx.closePath();
+  ctx.fill();
+
+  /* ---- La cama, en primer plano ---- */
+  const camaY = H * (apaisado ? 0.74 : 0.70) + resp;
+
+  /* La manta: una curva grande que cruza toda la pantalla, con dos
+     bultos donde están las rodillas. Es lo que pone al espectador
+     DENTRO de la cama en vez de mirándola. */
+  const gm = ctx.createLinearGradient(0, camaY - U * 6, 0, H);
+  gm.addColorStop(0, "#3a2c42");
+  gm.addColorStop(0.4, "#2c2134");
+  gm.addColorStop(1, "#181222");
+  ctx.fillStyle = gm;
+  ctx.beginPath();
+  ctx.moveTo(-10, H + 10);
+  ctx.lineTo(-10, camaY + U * 8);
+  ctx.quadraticCurveTo(A * 0.16, camaY + U * 2, A * 0.3, camaY + U * 5);
+  /* Las rodillas. */
+  ctx.quadraticCurveTo(A * 0.38, camaY - U * 9, A * 0.46, camaY + U * 3);
+  ctx.quadraticCurveTo(A * 0.54, camaY - U * 8, A * 0.62, camaY + U * 4);
+  ctx.quadraticCurveTo(A * 0.82, camaY + U * 1, A + 10, camaY + U * 9);
+  ctx.lineTo(A + 10, H + 10);
+  ctx.closePath();
+  ctx.fill();
+
+  /* La luz de la luna rozando la manta por el canto de arriba: sin ese
+     filo, la manta es una mancha oscura y no se lee como volumen. */
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.strokeStyle = "rgba(150,180,255,0.16)";
+  ctx.lineWidth = U * 1.1;
+  ctx.beginPath();
+  ctx.moveTo(-10, camaY + U * 8);
+  ctx.quadraticCurveTo(A * 0.16, camaY + U * 2, A * 0.3, camaY + U * 5);
+  ctx.quadraticCurveTo(A * 0.38, camaY - U * 9, A * 0.46, camaY + U * 3);
+  ctx.quadraticCurveTo(A * 0.54, camaY - U * 8, A * 0.62, camaY + U * 4);
+  ctx.quadraticCurveTo(A * 0.82, camaY + U * 1, A + 10, camaY + U * 9);
+  ctx.stroke();
+  ctx.restore();
+
+  /* Los pliegues. */
+  ctx.strokeStyle = "rgba(8,6,14,0.34)";
+  ctx.lineWidth = 1.4;
+  for (let i = 0; i < 5; i++) {
+    const t = (i + 1) / 6;
+    ctx.beginPath();
+    ctx.moveTo(A * t, camaY + U * mez(6, 10, Math.abs(t - 0.5) * 2));
+    ctx.quadraticCurveTo(A * t + U * 3, H * 0.9, A * t - U * 2, H + 10);
+    ctx.stroke();
+  }
+
+  /* ---- Las partículas van por encima de todo ---- */
+  dibujarParticulas();
+
+  /* ---- El velo de dormirse ---- */
+  if (hab.dormida > 0.01) {
+    ctx.fillStyle = `rgba(4,6,14,${hab.dormida * 0.72})`;
+    ctx.fillRect(0, 0, A, H);
+  }
+}
+
+function dibujarVentanaHabitacion(x, y, w, h) {
+  /* El cielo de fuera. */
+  const g = ctx.createLinearGradient(x, y - h / 2, x, y + h / 2);
+  g.addColorStop(0, "#0a1030");
+  g.addColorStop(0.55, "#131b42");
+  g.addColorStop(1, "#1b2440");
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x - w / 2, y - h / 2, w, h);
+  ctx.clip();
+  ctx.fillStyle = g;
+  ctx.fillRect(x - w / 2, y - h / 2, w, h);
+
+  /* Las estrellas de fuera: las mismas de siempre, recolocadas dentro
+     del marco. Así el cielo de la ventana es el cielo del bosque. */
+  for (let i = 0; i < 46; i++) {
+    const sx = x - w / 2 + ((i * 61) % 100) / 100 * w;
+    const sy = y - h / 2 + ((i * 37) % 100) / 100 * h * 0.66;
+    const b = 0.3 + 0.5 * Math.sin(reloj * 1.4 + i);
+    ctx.fillStyle = `rgba(226,232,255,${b})`;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 0.7 + (i % 3) * 0.4, 0, 6.283);
+    ctx.fill();
+  }
+
+  /* La luna, tocable también desde aquí. */
+  const lx = x + w * 0.24, ly = y - h * 0.26;
+  const lr = w * 0.16;
+  dibujarLuna(lx, ly, lr);
+  sitio.luna.vx = lx; sitio.luna.vy = ly; sitio.luna.vr = lr;
+
+  /* Los árboles de fuera, en silueta. */
+  ctx.fillStyle = "#070a16";
+  for (let i = 0; i < 9; i++) {
+    const tx = x - w / 2 + (i / 8) * w;
+    const th = h * (0.2 + ((i * 29) % 5) * 0.045);
+    const tw = w * 0.07;
+    ctx.beginPath();
+    ctx.moveTo(tx, y + h / 2);
+    ctx.lineTo(tx - tw, y + h / 2 - th * 0.55);
+    ctx.lineTo(tx - tw * 0.5, y + h / 2 - th * 0.6);
+    ctx.lineTo(tx - tw * 0.8, y + h / 2 - th * 0.85);
+    ctx.lineTo(tx, y + h / 2 - th);
+    ctx.lineTo(tx + tw * 0.8, y + h / 2 - th * 0.85);
+    ctx.lineTo(tx + tw * 0.5, y + h / 2 - th * 0.6);
+    ctx.lineTo(tx + tw, y + h / 2 - th * 0.55);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+
+  /* El marco. */
+  ctx.strokeStyle = "#2a2230";
+  ctx.lineWidth = U * 1.3;
+  ctx.strokeRect(x - w / 2, y - h / 2, w, h);
+  ctx.lineWidth = U * 0.7;
+  ctx.beginPath();
+  ctx.moveTo(x, y - h / 2); ctx.lineTo(x, y + h / 2);
+  ctx.moveTo(x - w / 2, y); ctx.lineTo(x + w / 2, y);
+  ctx.stroke();
+
+  /* El alféizar. */
+  ctx.fillStyle = "#241d2c";
+  ctx.fillRect(x - w * 0.56, y + h / 2, w * 1.12, U * 2);
+
+  /* Y una vela encendida en el alféizar, que es el detalle que hace la
+     habitación. */
+  const cx2 = x - w * 0.36, cy2 = y + h / 2;
+  ctx.fillStyle = "#e8e0d0";
+  ctx.fillRect(cx2 - U * 0.7, cy2 - U * 4, U * 1.4, U * 4);
+  ctx.globalCompositeOperation = "lighter";
+  const gv2 = ctx.createRadialGradient(cx2, cy2 - U * 5, 0, cx2, cy2 - U * 5, U * 9);
+  gv2.addColorStop(0, "rgba(255,200,120,0.5)");
+  gv2.addColorStop(1, "rgba(255,200,120,0)");
+  ctx.fillStyle = gv2;
+  ctx.beginPath(); ctx.arc(cx2, cy2 - U * 5, U * 9, 0, 6.283); ctx.fill();
+  ctx.fillStyle = "rgba(255,230,170,0.95)";
+  ctx.beginPath();
+  ctx.ellipse(cx2 + Math.sin(reloj * 4) * U * 0.14, cy2 - U * 5,
+              U * 0.5, U * 1.1 * (0.85 + 0.15 * Math.sin(reloj * 7)), 0, 0, 6.283);
+  ctx.fill();
+  ctx.globalCompositeOperation = "source-over";
+}
+
+// ==========================================
+// LUNA
+// ==========================================
+//
+// Se puede tocar desde el bosque y desde la ventana de la habitación.
+// Cada vez dice algo distinto, sin repetir hasta agotarlas, y suelta un
+// puñado de brillos que caen despacio.
+
+const luna = { pulso: 0, guino: 0, tocadas: 0 };
+const diceLuna = barajador(CONF.alTocarLuna);
+
+function dibujarLuna(x, y, r) {
+  /* El halo, en tres capas: cerca fuerte, lejos muy abierto. Una sola
+     capa se ve como un círculo borroso pegado; tres se ven como luz. */
+  ctx.globalCompositeOperation = "lighter";
+  for (const [k, a] of [[2.2, 0.20], [4.4, 0.10], [9, 0.05]]) {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r * k);
+    g.addColorStop(0, `rgba(198,214,255,${a * (1 + luna.pulso)})`);
+    g.addColorStop(1, "rgba(198,214,255,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y, r * k, 0, 6.283); ctx.fill();
+  }
+  ctx.globalCompositeOperation = "source-over";
+
+  /* El disco. */
+  const gd = ctx.createRadialGradient(x - r * 0.28, y - r * 0.3, r * 0.08, x, y, r);
+  gd.addColorStop(0, "#fdfcff");
+  gd.addColorStop(0.62, "#e6e9fa");
+  gd.addColorStop(1, "#bcc2dd");
+  ctx.fillStyle = gd;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill();
+
+  /* Los mares: cuatro manchas fijas. Sin ellas la luna es un círculo
+     blanco y se lee como un foco. */
+  ctx.fillStyle = "rgba(150,158,190,0.34)";
+  const mares = [[-0.26, -0.2, 0.3], [0.22, 0.12, 0.24], [-0.06, 0.34, 0.17], [0.34, -0.3, 0.13]];
+  for (const [mx, my, mr] of mares) {
+    ctx.beginPath();
+    ctx.arc(x + mx * r, y + my * r, mr * r, 0, 6.283);
+    ctx.fill();
+  }
+
+  /* El guiño del easter egg: un arco que se cierra. */
+  if (luna.guino > 0.02) {
+    ctx.strokeStyle = `rgba(90,96,130,${luna.guino * 0.8})`;
+    ctx.lineWidth = r * 0.1;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(x - r * 0.22, y - r * 0.12, r * 0.2, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+  }
+}
+
+function tocarLuna(x, y) {
+  luna.pulso = 1;
+  luna.tocadas++;
+  magia(luna.tocadas % 3 === 0 ? 784 : 660);
+
+  for (let i = 0; i < 22; i++) {
+    const a = azar(0, 6.283);
+    const rr = azar(0.4, 1.6);
+    soltar(x + Math.cos(a) * sitio.luna.r * rr, y + Math.sin(a) * sitio.luna.r * rr, {
+      vx: Math.cos(a) * azar(8, 34), vy: Math.sin(a) * azar(8, 34) + 10,
+      vida: azar(1.8, 3.4), tam: azar(1, 2.6),
+      tipo: TIPO.BRILLO, tono: 0.45,
+    });
+  }
+
+  /* A la quinta, guiña. Es un secreto pequeñito y no se anuncia. */
+  if (luna.tocadas === 5) {
+    luna.guino = 1;
+    setTimeout(() => { luna.guino = 0; }, 1400);
+    decir(x, y + sitio.luna.r * 2, "…¿te acaba de guiñar un ojo?", { mimo: true, importante: true });
+    contarLogro("guino");
+    return;
+  }
+
+  decir(x, y + sitio.luna.r * 2, diceLuna(), { mimo: true, importante: true });
+  contarLogro("luna");
+}
+
+// ==========================================
+// EASTER EGGS
+// ==========================================
+//
+// Ninguno se explica. Están para encontrarlos jugando.
+//
+//   1. la luz verde del bosque → la carta
+//   2. tocar la llama → te quemas
+//   3. tocar estrellas → algunas responden
+//   4. la estrella fugaz, si la pillas → un deseo
+//   5. la luna a la quinta vez → guiña
+//   6. dejar la fogata en paz mucho rato → se pone azul
+//   7. tres bombones quemados seguidos
+//   8. el cuadro de la habitación
+//   9. el búho del bosque, que parpadea si te fijas
+//  10. encontrarlo casi todo → un mensaje que no tiene otro sitio
+
+const logros = new Set();
+
+function contarLogro(id) {
+  if (logros.has(id)) return;
+  logros.add(id);
+  /* El final de los finales: cuando ya ha encontrado casi todo. */
+  if (logros.size === 7 && !logros.has("final")) {
+    logros.add("final");
+    setTimeout(() => {
+      decir(A * 0.5, H * 0.42,
+        "Has encontrado casi todo lo que escondí aquí. Queda una cosa, y está en el bosque.",
+        { mimo: true, importante: true, dur: 7 });
+      magia(523);
+    }, 3000);
+  }
+}
+
+/* ---- 2. Tocar la llama ------------------------------------------------- */
+
+const elFlash = document.getElementById("flash");
+let quemadas = 0;
+
+function quemarse(x, y) {
+  quemadas++;
+  sacudir(1);
+  fuego.vidaObj = 1.5;
+  fuego.quieta = 0;
+  fuego.azul = 0;
+
+  /* El fogonazo: sube de golpe y baja despacio. */
+  elFlash.style.transition = "none";
+  elFlash.style.opacity = "0.85";
+  requestAnimationFrame(() => {
+    elFlash.style.transition = "opacity 520ms cubic-bezier(0.22,1,0.36,1)";
+    elFlash.style.opacity = "0";
+  });
+
+  golpe(0.14, 900, 0.3, "bandpass");
+  tono(azar(160, 240), 0.35, "sawtooth", 0.07, 0.03);
+
+  for (let i = 0; i < 26; i++) {
+    const a = azar(0, 6.283);
+    soltar(x, y, {
+      vx: Math.cos(a) * azar(60, 220), vy: Math.sin(a) * azar(60, 200) - 40,
+      vida: azar(0.5, 1.4), tam: azar(1.2, 3), tipo: TIPO.CHISPA,
+    });
+  }
+
+  decir(x, y - U * 8, diceQuemarse(), { mimo: true, importante: true });
+  contarLogro("fuego");
+
+  /* Y si insiste mucho, la fogata se harta. */
+  if (quemadas === 6) {
+    setTimeout(() => decir(sitio.fogata.x, sitio.fogata.y - U * 26,
+      "Ya van seis. Te va a doler mañana. 😭", { mimo: true, importante: true }), 1800);
+  }
+}
+
+/* ---- 6. La fogata que se pone azul ------------------------------------- */
+
+function mirarFogataAzul() {
+  if (fuego.azul > 0 || escena !== "bosque") return;
+  if (fuego.quieta < 95) return;
+  fuego.azul = 0.001;
+  magia(392);
+  decir(sitio.fogata.x, sitio.fogata.y - U * 24,
+    "Se ha puesto azul. Dicen que pasa cuando el fuego lleva mucho rato pensando.",
+    { mimo: true, importante: true, dur: 6.5 });
+  contarLogro("azul");
+}
+
+/* ---- 1. La luz verde del bosque ---------------------------------------- */
+
+const secreto = {
+  luz: 0,          // 0..1, lo que se ve
+  hallado: false,
+  fase: 0,
+  zoom: 0,
+};
+const diceSecretoAntes = barajador(CONF.bosqueSecreto.antes);
+
+function moverSecreto(dt) {
+  secreto.fase += dt;
+  if (!secreto.hallado) {
+    /* Apenas se ve: late muy despacio y muy poco. Hay que fijarse, y
+       ésa es toda la gracia. */
+    secreto.luz = 0.16 + 0.14 * Math.sin(secreto.fase * 0.55);
+    /* Y suelta alguna chispita verde de vez en cuando, que es lo que
+       hace que el ojo acabe yendo ahí. */
+    if (Math.random() < dt * 0.7) {
+      soltar(sitio.secreto.x + azar(-U * 2, U * 2), sitio.secreto.y + azar(-U, U), {
+        vx: azar(-6, 6), vy: azar(-16, -6),
+        vida: azar(1.6, 3), tam: azar(0.8, 1.8),
+        tipo: TIPO.BRILLO, tono: 0.5,
+      });
+    }
+  } else {
+    secreto.luz = damp(secreto.luz, 1, 1.2, dt);
+    secreto.zoom = damp(secreto.zoom, 0, 0.8, dt);
+  }
+}
+
+function dibujarSecreto() {
+  const d = desplazar(0.7);
+  const s = sitio.secreto;
+  const x = s.x + d.x, y = s.y + d.y;
+  const k = secreto.luz;
+
+  ctx.globalCompositeOperation = "lighter";
+  for (const [m, a] of [[1.2, 0.5], [3.4, 0.2], [8, 0.09]]) {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, s.r * m * (0.5 + k));
+    g.addColorStop(0, `rgba(120,255,190,${a * k})`);
+    g.addColorStop(1, "rgba(120,255,190,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y, s.r * m * (0.5 + k), 0, 6.283); ctx.fill();
+  }
+  ctx.fillStyle = `rgba(210,255,230,${0.6 + k * 0.4})`;
+  ctx.beginPath();
+  ctx.arc(x, y, U * (0.5 + k * 0.7), 0, 6.283);
+  ctx.fill();
+  ctx.globalCompositeOperation = "source-over";
+}
+
+async function tocarSecreto(x, y) {
+  if (secreto.hallado || bloqueado) return;
+  secreto.hallado = true;
+  bloqueado = true;
+  contarLogro("secreto");
+
+  /* 1. Suena algo que no ha sonado antes. */
+  magia(294);
+  setTimeout(() => magia(392), 400);
+
+  /* 2. La cámara se acerca un poco. */
+  cam.oz = 1.5;
+  cam.ox = (A / 2 - x) * 1.5;
+  cam.oy = (H * 0.5 - y) * 1.5;
+
+  /* 3. La luz llena esa parte del bosque. */
+  for (let i = 0; i < 40; i++) {
+    setTimeout(() => {
+      const a = azar(0, 6.283);
+      soltar(x, y, {
+        vx: Math.cos(a) * azar(20, 130), vy: Math.sin(a) * azar(20, 110),
+        vida: azar(2, 4), tam: azar(1.2, 3),
+        tipo: TIPO.BRILLO, tono: 0.5,
+      });
+    }, i * 26);
+  }
+
+  /* 4. Y lo que dice antes de la carta. */
+  await esperar(900);
+  decir(x, y, diceSecretoAntes(), { mimo: true, importante: true, dur: 4.4 });
+
+  await esperar(3400);
+  cam.oz = 1; cam.ox = 0; cam.oy = 0;
+  abrirCarta();
+  bloqueado = false;
+}
+
+// ==========================================
+// CARTA
+// ==========================================
+
+const velo = document.getElementById("velo");
+const cartaTexto = document.getElementById("cartaTexto");
+const cerrarCarta = document.getElementById("cerrarCarta");
+
+function abrirCarta() {
+  cartaTexto.textContent = "";
+  for (const linea of CONF.bosqueSecreto.carta) {
+    const p = document.createElement("p");
+    p.textContent = linea;
+    cartaTexto.append(p);
+  }
+  const f = document.createElement("p");
+  f.className = "ne-firma";
+  /* La firma va en varias líneas, tal cual está escrita. */
+  CONF.bosqueSecreto.firma.split("\n").forEach((l, i) => {
+    if (i) f.append(document.createElement("br"));
+    f.append(document.createTextNode(l));
+  });
+  cartaTexto.append(f);
+
+  velo.classList.add("is-abierto");
+  velo.setAttribute("aria-hidden", "false");
+  agacharAmbientes(0.4, 1.2);
+  setTimeout(() => cerrarCarta.focus({ preventScroll: true }), 900);
+}
+
+cerrarCarta.addEventListener("click", () => {
+  velo.classList.remove("is-abierto");
+  velo.setAttribute("aria-hidden", "true");
+  agacharAmbientes(1, 1.4);
+  decir(sitio.secreto.x, sitio.secreto.y - U * 6, "Guardada. Vuelve cuando quieras.", { dur: 3.4 });
+});
+
+// ==========================================
+// DIBUJO DEL BOSQUE
+// ==========================================
+//
+// Las once capas, de la más lejana a la más cercana. Cada una con su
+// factor de parallax: el cielo casi no se mueve y la hierba de delante
+// mucho. Ésa es toda la profundidad, y no cuesta nada.
+//
+//   1 cielo · 2 estrellas · 3 luna · 4 nubes · 5 montañas ·
+//   6 bosque lejano · 7 árboles cercanos · 8 cabaña · 9 fogata ·
+//   10 suelo · 11 partículas
+
+const cielo = {
+  estrellas: [],
+  nubes: [],
+  fugaz: null,
+  proximaFugaz: azar(14, 34),
+  relampago: 0,
+};
+
+let arbolesLejos = [];
+let arbolesCerca = [];
+let montanas = [];
+let hierbas = [];
+let buho = null;
+
+function construirMundo() {
+  colocarSitios();
+  sembrar(20240214);
+
+  /* ---- Estrellas ---- */
+  const nE = flojo ? CONF.perf.estrellasFlojo : CONF.perf.estrellas;
+  cielo.estrellas = [];
+  for (let i = 0; i < nE; i++) {
+    cielo.estrellas.push({
+      x: rnd() * A,
+      y: rnd() * sitio.horizonte * 1.02,
+      r: azar(0.4, 1.7),
+      b: azar(0.2, 0.95),
+      v: azar(0.4, 2.2),
+      f: rnd() * 6.283,
+      /* Una de cada doce responde si la tocas. No se sabe cuál. */
+      viva: rnd() < 0.085,
+      pulso: 0,
+    });
+  }
+
+  /* ---- Nubes ---- */
+  cielo.nubes = [];
+  for (let i = 0; i < 5; i++) {
+    cielo.nubes.push({
+      x: rnd(),
+      y: azar(0.08, 0.42),
+      esc: azar(0.8, 2.2),
+      v: azar(0.0025, 0.008),
+      bultos: Array.from({ length: 5 }, (_, k) => ({
+        dx: (k - 2) * 0.52 + azar(-0.14, 0.14),
+        dy: azar(-0.09, 0.1),
+        r: azar(0.5, 1),
+      })),
+    });
+  }
+
+  /* ---- Montañas ---- */
+  montanas = [
+    { y: sitio.horizonte - U * 6, alto: U * 12, paso: A * 0.42, col: "#0d1226" },
+    { y: sitio.horizonte - U * 2, alto: U * 8,  paso: A * 0.28, col: "#0a0e1e" },
+  ];
+
+  /* ---- Bosque lejano y árboles cercanos ---- */
+  arbolesLejos = [];
+  const nL = flojo ? 22 : 34;
+  for (let i = 0; i < nL; i++) {
+    const t = i / nL;
+    arbolesLejos.push({
+      x: (t + azar(-0.012, 0.012)) * A * 1.06 - A * 0.03,
+      base: mez(sitio.horizonte + U * 1, sitio.suelo - U * 4, rnd() * 0.75),
+      alto: U * azar(9, 20),
+      ancho: U * azar(2.4, 4.6),
+      f: rnd() * 6.283,
+    });
+  }
+  arbolesLejos.sort((a, b) => a.base - b.base);
+
+  arbolesCerca = [];
+  /* Dos a cada lado, ENMARCANDO la escena, no metidos en ella.
+     Están muy pegados al canto a propósito: son troncos altos y casi
+     negros, y si se meten hacia el centro tapan la cabaña y la fogata.
+     Lo que tienen que hacer es cerrar los lados para que se sienta que
+     estamos dentro del bosque, y nada más. */
+  for (const lado of [-1, 1]) {
+    for (let i = 0; i < 2; i++) {
+      const dentro = U * (1.5 + i * 6.5);
+      arbolesCerca.push({
+        x: lado < 0 ? -U * 4 + dentro : A + U * 4 - dentro,
+        base: sitio.suelo + U * azar(2, 9),
+        alto: H * azar(0.62, 0.95),
+        ancho: U * azar(2.6, 4.4),
+        f: rnd() * 6.283,
+        ramas: Array.from({ length: 4 }, () => ({
+          y: azar(0.25, 0.8),
+          lado: rnd() < 0.5 ? -1 : 1,
+          largo: azar(0.4, 1),
+        })),
+      });
+    }
+  }
+
+  /* ---- El búho, escondido en uno de los árboles cercanos ---- */
+  const anfitrion = arbolesCerca[arbolesCerca.length - 1];
+  buho = {
+    x: anfitrion.x + anfitrion.ancho * 0.6,
+    y: anfitrion.base - anfitrion.alto * 0.52,
+    r: U * 2.6,
+    parpadeo: 0,
+    reloj: azar(2, 6),
+    visto: false,
+  };
+
+  /* ---- Hierba de delante ---- */
+  hierbas = [];
+  const nH = flojo ? 40 : 80;
+  for (let i = 0; i < nH; i++) {
+    hierbas.push({
+      x: rnd() * A,
+      y: sitio.suelo + rnd() * (H - sitio.suelo) * 1.1,
+      alto: U * azar(1.4, 4.2),
+      incl: azar(-0.3, 0.3),
+      f: rnd() * 6.283,
+    });
+  }
+  hierbas.sort((a, b) => a.y - b.y);
+
+  construirFogata();
+  construirPanel();
+  construirPanelPosiciones();
+  colocarBombon(true);
+}
+
+/* El panel y la cajita dependen de la fogata, así que se recolocan
+   después de ella. */
+function construirPanelPosiciones() { /* ya lo hace construirPanel() */ }
+
+function dibujarBosque(dt) {
+  /* ---- 1. CIELO ---- */
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, "#050716");
+  g.addColorStop(0.32, "#0a1028");
+  g.addColorStop(0.58, "#131a38");
+  g.addColorStop(0.78, "#0e1226");
+  g.addColorStop(1, "#070912");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, A, H);
+
+  /* La vía láctea, en diagonal y muy tenue. */
+  const vl = ctx.createLinearGradient(0, sitio.horizonte, A, 0);
+  vl.addColorStop(0.00, "rgba(40, 50, 100, 0)");
+  vl.addColorStop(0.42, "rgba(66, 66, 128, 0.26)");
+  vl.addColorStop(0.58, "rgba(88, 70, 130, 0.2)");
+  vl.addColorStop(1.00, "rgba(40, 50, 100, 0)");
+  ctx.fillStyle = vl;
+  ctx.fillRect(0, 0, A, sitio.horizonte);
+
+  /* ---- 2. ESTRELLAS ---- */
+  const dE = desplazar(0.18);
+  for (const s of cielo.estrellas) {
+    s.pulso = Math.max(0, s.pulso - dt * 1.8);
+    const b = s.b * (0.62 + 0.38 * Math.sin(reloj * s.v + s.f)) + s.pulso;
+    const x = s.x + dE.x, y = s.y + dE.y;
+    if (s.pulso > 0.02) {
+      ctx.globalCompositeOperation = "lighter";
+      const gp = ctx.createRadialGradient(x, y, 0, x, y, U * 4 * s.pulso);
+      gp.addColorStop(0, `rgba(255,240,200,${s.pulso * 0.6})`);
+      gp.addColorStop(1, "rgba(255,240,200,0)");
+      ctx.fillStyle = gp;
+      ctx.beginPath(); ctx.arc(x, y, U * 4 * s.pulso, 0, 6.283); ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+    }
+    ctx.fillStyle = `rgba(228,234,255,${clamp01(b)})`;
+    ctx.beginPath();
+    ctx.arc(x, y, s.r * (1 + s.pulso), 0, 6.283);
+    ctx.fill();
+  }
+
+  /* ---- La estrella fugaz ---- */
+  if (cielo.fugaz) {
+    const f = cielo.fugaz;
+    f.x += f.vx * dt; f.y += f.vy * dt; f.v -= dt * 0.55;
+    const gx2 = f.x - f.vx * 0.14, gy2 = f.y - f.vy * 0.14;
+    const gr = ctx.createLinearGradient(f.x, f.y, gx2, gy2);
+    gr.addColorStop(0, `rgba(255,248,255,${clamp01(f.v) * 0.95})`);
+    gr.addColorStop(1, "rgba(255,248,255,0)");
+    ctx.strokeStyle = gr;
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(gx2, gy2); ctx.stroke();
+    if (f.v <= 0 || f.x > A + 80 || f.y > sitio.horizonte) cielo.fugaz = null;
+  } else {
+    cielo.proximaFugaz -= dt;
+    if (cielo.proximaFugaz <= 0) {
+      cielo.proximaFugaz = azar(16, 40);
+      cielo.fugaz = {
+        x: azar(-40, A * 0.55), y: azar(0, sitio.horizonte * 0.4),
+        vx: azar(260, 420), vy: azar(80, 160), v: 1,
+      };
+    }
+  }
+
+  /* ---- 3. LUNA ---- */
+  const dL = desplazar(0.3);
+  dibujarLuna(sitio.luna.x + dL.x, sitio.luna.y + dL.y, sitio.luna.r);
+
+  /* ---- 4. NUBES ---- */
+  const dN = desplazar(0.5);
+  for (const n of cielo.nubes) {
+    n.x += n.v * dt;
+    if (n.x > 1.3) n.x = -0.3;
+    const cx2 = n.x * A + dN.x, cy2 = n.y * sitio.horizonte + dN.y;
+    const r = U * 7 * n.esc;
+    /* Cada bulto con su propio degradado y APLASTADO: con círculos
+       opacos se ven las bolas una a una y parece espuma, no nube. Una
+       nube de noche es una mancha que se deshace por los cantos. */
+    for (const b of n.bultos) {
+      const bx2 = cx2 + b.dx * r * 2.1, by2 = cy2 + b.dy * r;
+      const rr = r * b.r;
+      const g2 = ctx.createRadialGradient(bx2, by2, 0, bx2, by2, rr);
+      g2.addColorStop(0, "rgba(116,126,176,0.07)");
+      g2.addColorStop(0.55, "rgba(116,126,176,0.035)");
+      g2.addColorStop(1, "rgba(116,126,176,0)");
+      ctx.fillStyle = g2;
+      ctx.beginPath();
+      ctx.ellipse(bx2, by2, rr * 1.5, rr * 0.62, 0, 0, 6.283);
+      ctx.fill();
+    }
+  }
+
+  /* ---- 5. MONTAÑAS ---- */
+  const dM = desplazar(0.8);
+  for (const m of montanas) {
+    ctx.fillStyle = m.col;
+    ctx.beginPath();
+    ctx.moveTo(-10, H);
+    ctx.lineTo(-10, m.y + dM.y);
+    for (let x = -10; x <= A + 10; x += 12) {
+      const u = (x + dM.x) / m.paso;
+      const y = m.y + dM.y
+        - (Math.sin(u) * 0.6 + Math.sin(u * 2.3) * 0.28 + Math.sin(u * 0.7) * 0.42) * m.alto;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(A + 10, H);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /* ---- 6. BOSQUE LEJANO ---- */
+  const dB = desplazar(1.0);
+  for (const t of arbolesLejos) {
+    /* Los de más abajo están más cerca: más grandes y más oscuros. Es
+       toda la profundidad que necesita un bosque de fondo. */
+    const prof = clamp01((t.base - sitio.horizonte) / Math.max(1, sitio.suelo - sitio.horizonte));
+    const x = t.x + dB.x * (0.5 + prof);
+    const base = t.base + dB.y * (0.5 + prof);
+    const alto = t.alto * (0.7 + prof * 0.6);
+    const ancho = t.ancho * (0.7 + prof * 0.6);
+    const mece = Math.sin(reloj * 0.5 + t.f) * U * 0.3;
+    /* Un poco de luz de la fogata en los que están cerca de ella. */
+    const cercaFuego = clamp01(1 - Math.abs(x - sitio.fogata.x) / (A * 0.4)) * prof;
+    const il = fuego.brillo * cercaFuego * 0.34;
+    const c = Math.round(mez(9, 70, il));
+    ctx.fillStyle = `rgb(${c},${Math.round(mez(13, 58, il))},${Math.round(mez(22, 44, il))})`;
+    abeto(x + mece, base, ancho, alto);
+  }
+
+  /* ---- La luz verde, metida entre el bosque lejano ---- */
+  dibujarSecreto();
+
+  /* ---- 10. SUELO ---- */
+  const dS = desplazar(1.4);
+  const gs = ctx.createLinearGradient(0, sitio.suelo + dS.y, 0, H);
+  gs.addColorStop(0, "#0c1218");
+  gs.addColorStop(0.5, "#0a0f14");
+  gs.addColorStop(1, "#060a0e");
+  ctx.fillStyle = gs;
+  ctx.beginPath();
+  ctx.moveTo(-10, H + 10);
+  ctx.lineTo(-10, sitio.suelo + dS.y);
+  for (let x = -10; x <= A + 10; x += 16) {
+    ctx.lineTo(x, sitio.suelo + dS.y - Math.sin(x * 0.006) * U * 1.6);
+  }
+  ctx.lineTo(A + 10, H + 10);
+  ctx.closePath();
+  ctx.fill();
+
+  /* ---- 8. CABAÑA ---- */
+  dibujarCabana();
+
+  /* ---- La cajita musical y el panel ---- */
+  dibujarCajita();
+  dibujarPanel();
+
+  /* ---- 9. FOGATA ---- */
+  dibujarFogata();
+  dibujarBombon();
+
+  /* ---- 11. PARTÍCULAS ---- */
+  dibujarParticulas();
+
+  /* ---- 7. ÁRBOLES CERCANOS, delante de todo ---- */
+  const dC = desplazar(3.4);
+  for (const t of arbolesCerca) {
+    const x = t.x + dC.x;
+    const mece = Math.sin(reloj * 0.42 + t.f) * U * 0.7;
+    const cercaFuego = clamp01(1 - Math.abs(x - sitio.fogata.x) / (A * 0.55));
+    const il = fuego.brillo * cercaFuego * 0.22;
+    ctx.fillStyle = `rgb(${Math.round(mez(5, 60, il))},${Math.round(mez(7, 44, il))},${Math.round(mez(11, 30, il))})`;
+    /* Tronco. */
+    ctx.beginPath();
+    ctx.moveTo(x - t.ancho, t.base + dC.y);
+    ctx.quadraticCurveTo(x - t.ancho * 0.7 + mece * 0.5, t.base - t.alto * 0.5,
+                         x - t.ancho * 0.35 + mece, t.base - t.alto);
+    ctx.lineTo(x + t.ancho * 0.35 + mece, t.base - t.alto);
+    ctx.quadraticCurveTo(x + t.ancho * 0.7 + mece * 0.5, t.base - t.alto * 0.5,
+                         x + t.ancho, t.base + dC.y);
+    ctx.closePath();
+    ctx.fill();
+    /* Ramas. */
+    ctx.strokeStyle = ctx.fillStyle;
+    ctx.lineCap = "round";
+    for (const r of t.ramas) {
+      const ry = t.base - t.alto * r.y;
+      const rx = x + mece * r.y;
+      ctx.lineWidth = t.ancho * 0.44 * (1 - r.y * 0.4);
+      ctx.beginPath();
+      ctx.moveTo(rx, ry);
+      ctx.quadraticCurveTo(
+        rx + r.lado * t.ancho * 3.4, ry - t.alto * 0.06,
+        rx + r.lado * t.ancho * 5.2, ry - t.alto * 0.16);
+      ctx.stroke();
+    }
+  }
+
+  /* ---- El búho ---- */
+  dibujarBuho(dC);
+
+  /* ---- Hierba de delante ---- */
+  ctx.lineCap = "round";
+  for (const h of hierbas) {
+    const prof = clamp01((h.y - sitio.suelo) / Math.max(1, H - sitio.suelo));
+    const x = h.x + dC.x * (0.5 + prof);
+    const y = h.y + dC.y * 0.4;
+    const mece = Math.sin(reloj * 1.05 + h.f) * U * (0.3 + prof * 0.5);
+    const cercaFuego = clamp01(1 - Math.abs(x - sitio.fogata.x) / (A * 0.42));
+    const il = fuego.brillo * cercaFuego * 0.4;
+    ctx.strokeStyle = `rgba(${Math.round(mez(12, 110, il))},${Math.round(mez(20, 86, il))},${Math.round(mez(16, 52, il))},0.9)`;
+    ctx.lineWidth = 1 + prof * 1.4;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(x + h.incl * h.alto * 0.5 + mece * 0.5, y - h.alto * 0.6,
+                         x + h.incl * h.alto + mece, y - h.alto);
+    ctx.stroke();
+  }
+
+  /* ---- El relámpago, si la tormenta está puesta ---- */
+  if (cielo.relampago > 0.01) {
+    ctx.fillStyle = `rgba(190,210,255,${cielo.relampago * 0.34})`;
+    ctx.fillRect(0, 0, A, H);
+  }
+
+  /* ---- La viñeta: cierra la escena por los cantos ---- */
+  const gv = ctx.createRadialGradient(A * 0.5, H * 0.55, Math.min(A, H) * 0.26,
+                                      A * 0.5, H * 0.55, Math.max(A, H) * 0.82);
+  gv.addColorStop(0, "rgba(2,4,10,0)");
+  gv.addColorStop(1, "rgba(2,4,10,0.62)");
+  ctx.fillStyle = gv;
+  ctx.fillRect(0, 0, A, H);
+}
+
+/** Un abeto: tres pisos de triángulos y un tronquito. */
+function abeto(x, base, w, h) {
+  ctx.beginPath();
+  ctx.moveTo(x - w * 0.22, base);
+  ctx.lineTo(x - w * 0.22, base - h * 0.16);
+  ctx.lineTo(x - w, base - h * 0.16);
+  ctx.lineTo(x - w * 0.5, base - h * 0.44);
+  ctx.lineTo(x - w * 0.78, base - h * 0.44);
+  ctx.lineTo(x - w * 0.38, base - h * 0.74);
+  ctx.lineTo(x - w * 0.56, base - h * 0.74);
+  ctx.lineTo(x, base - h);
+  ctx.lineTo(x + w * 0.56, base - h * 0.74);
+  ctx.lineTo(x + w * 0.38, base - h * 0.74);
+  ctx.lineTo(x + w * 0.78, base - h * 0.44);
+  ctx.lineTo(x + w * 0.5, base - h * 0.44);
+  ctx.lineTo(x + w, base - h * 0.16);
+  ctx.lineTo(x + w * 0.22, base - h * 0.16);
+  ctx.lineTo(x + w * 0.22, base);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/** El búho: dos ojos que parpadean. Sólo se ve si te fijas. */
+function dibujarBuho(d) {
+  if (!buho) return;
+  buho.reloj -= 1 / 60;
+  if (buho.reloj <= 0) { buho.reloj = azar(2.4, 7); buho.parpadeo = 1; }
+  buho.parpadeo = Math.max(0, buho.parpadeo - 0.06);
+
+  const x = buho.x + d.x, y = buho.y + d.y;
+  const abierto = 1 - Math.sin(clamp01(buho.parpadeo) * Math.PI);
+
+  /* El cuerpo, casi invisible: es una sombra un pelín más clara. */
+  ctx.fillStyle = "rgba(24,22,30,0.7)";
+  ctx.beginPath();
+  ctx.ellipse(x, y, buho.r, buho.r * 1.25, 0, 0, 6.283);
+  ctx.fill();
+
+  /* Los ojos: lo único que se ve de verdad. */
+  ctx.globalCompositeOperation = "lighter";
+  for (const s of [-1, 1]) {
+    const ex = x + s * buho.r * 0.42;
+    const ey = y - buho.r * 0.3;
+    const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, buho.r * 0.8);
+    g.addColorStop(0, `rgba(255,200,90,${0.7 * abierto + buho.visto * 0.3})`);
+    g.addColorStop(1, "rgba(255,200,90,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(ex, ey, buho.r * 0.8, 0, 6.283); ctx.fill();
+    ctx.fillStyle = `rgba(255,230,160,${0.9 * abierto})`;
+    ctx.beginPath();
+    ctx.ellipse(ex, ey, buho.r * 0.2, buho.r * 0.2 * abierto, 0, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.globalCompositeOperation = "source-over";
+}
+
+/** El fogonazo del relámpago, que llama el ambiente de tormenta. */
+function relampagoVisual(fuerza) {
+  cielo.relampago = fuerza;
+  sacudir(fuerza * 0.5);
+}
+
+// ==========================================
+// SISTEMA DE INTERACCIÓN
+// ==========================================
+//
+// Un solo sitio del que salen todos los gestos: `.ne-toque`, por encima
+// del lienzo. Se usa Pointer Events, así que dedo, lápiz y ratón entran
+// por la misma puerta y no hay que escribir nada dos veces.
+//
+// Al tocar se busca QUÉ hay debajo, de lo más cercano a lo más lejano.
+// El orden importa: el bombón gana a la fogata, y la fogata gana al
+// fondo, porque es lo que está delante.
+
+const dedo = { x: -999, y: -999, dentro: false };
+let arrastrePanel = null;
+
+function local(e) {
+  const r = raiz.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+/** ¿El punto (x,y) cae dentro del círculo? */
+const dentroDe = (x, y, cx2, cy2, r) => Math.hypot(x - cx2, y - cy2) < r;
+
+zona.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  despertarAudio();
+  const p = local(e);
+  dedo.x = p.x; dedo.y = p.y; dedo.dentro = true;
+  try { zona.setPointerCapture(e.pointerId); } catch { /* no siempre se puede */ }
+
+  if (bloqueado) return;
+
+  if (escena === "habitacion") { tocarEnHabitacion(p, e); return; }
+  tocarEnBosque(p, e);
+});
+
+zona.addEventListener("pointermove", (e) => {
+  const p = local(e);
+  dedo.x = p.x; dedo.y = p.y; dedo.dentro = true;
+
+  /* El parallax sigue al dedo, o al ratón aunque no apriete. */
+  par.ox = clamp((p.x / A - 0.5) * 2, -1, 1);
+  par.oy = clamp((p.y / H - 0.5) * 2, -1, 1);
+
+  /* El bombón, si lo lleva cogido. */
+  if (bombon.agarrado && bombon.dedoId === e.pointerId) {
+    const f = sitio.fogata;
+    /* La punta del palo no va a cualquier sitio: está atada al mango,
+       así que se limita el alcance. Eso es lo que hace que se sienta un
+       palo y no un puntero. */
+    const dx = p.x - bombon.mangoX, dy = p.y - bombon.mangoY;
+    const d = Math.hypot(dx, dy) || 1;
+    const maxD = U * (apaisado ? 30 : 34);
+    const k = Math.min(1, maxD / d);
+    bombon.destX = bombon.mangoX + dx * k;
+    bombon.destY = clamp(bombon.mangoY + dy * k, U * 20, H - U * 6);
+    if (e.cancelable) e.preventDefault();
+  }
+
+  /* El volumen de una piedra del panel. */
+  if (arrastrePanel && arrastrePanel.id === e.pointerId) {
+    const dx2 = p.x - arrastrePanel.x0;
+    if (Math.abs(dx2) > 4) arrastrePanel.movido = true;
+    const nv = clamp01(arrastrePanel.vol0 + dx2 / (U * 26));
+    arrastrePanel.piedra.vol = nv;
+    volumen(arrastrePanel.piedra.conf.id, nv);
+    marcarPanelUsado();
+    if (e.cancelable) e.preventDefault();
+  }
+
+  /* Y el resalte de la cabaña al pasar por encima. */
+  if (escena === "bosque") {
+    const c = sitio.cabana;
+    if (Math.abs(p.x - c.x) < c.w * 0.8 && p.y > c.y - c.h * 1.6 && p.y < c.y + c.h * 0.2) {
+      cabana.resalte = 1;
+    }
+  }
+});
+
+function soltarDedo(e) {
+  if (bombon.agarrado && bombon.dedoId === e.pointerId) {
+    bombon.agarrado = false;
+    bombon.dedoId = null;
+  }
+  if (arrastrePanel && arrastrePanel.id === e.pointerId) {
+    /* Si no ha arrastrado, es un toque: enciende o apaga. */
+    if (!arrastrePanel.movido) alternarPiedra(arrastrePanel.piedra);
+    arrastrePanel = null;
+  }
+  dedo.dentro = false;
+  try { zona.releasePointerCapture(e.pointerId); } catch { /* ya estaba */ }
+}
+zona.addEventListener("pointerup", soltarDedo);
+zona.addEventListener("pointercancel", soltarDedo);
+zona.addEventListener("pointerleave", () => { dedo.dentro = false; });
+
+/** Qué hay debajo del dedo en el bosque, de delante hacia atrás. */
+function tocarEnBosque(p, e) {
+  const f = sitio.fogata;
+
+  /* 1. EL BOMBÓN. Lo primero de todo: está delante y es lo que más se
+        usa. Si está fuera del fuego, un toque se lo come; si está
+        dentro, se coge para sacarlo. */
+  if (bombon.vivo && dentroDe(p.x, p.y, bombon.x, bombon.y, U * 6)) {
+    const cerca = Math.hypot(bombon.x - f.x, bombon.y - (f.y - f.r)) < f.r * 2.6;
+    if (!cerca && bombon.tueste > 0.04) { comerBombon(); return; }
+    bombon.agarrado = true;
+    bombon.dedoId = e.pointerId;
+    bombon.destX = p.x; bombon.destY = p.y;
+    tono(520, 0.12, "sine", 0.04);
+    if (e.cancelable) e.preventDefault();
+    return;
+  }
+
+  /* 2. LAS PIEDRAS DEL PANEL. */
+  for (const piedra of panel.piedras) {
+    if (dentroDe(p.x, p.y, piedra.x, piedra.y, piedra.r * 1.35)) {
+      arrastrePanel = { id: e.pointerId, piedra, x0: p.x, vol0: piedra.vol, movido: false };
+      if (e.cancelable) e.preventDefault();
+      return;
+    }
+  }
+
+  /* 3. LA CAJITA MUSICAL. */
+  if (dentroDe(p.x, p.y, sitio.cajita.x, sitio.cajita.y, sitio.cajita.r * 1.5)) {
+    if (cajita.abierta) cerrarCajita(); else abrirCajita();
+    contarLogro("cajita");
+    return;
+  }
+
+  /* 4. LA LLAMA. El easter egg de quemarse. */
+  if (dentroDe(p.x, p.y, f.x, f.y - f.r * 0.8, f.r * 1.5)) {
+    quemarse(p.x, p.y);
+    return;
+  }
+
+  /* 5. LA LUZ VERDE DEL BOSQUE.
+        Antes que la cabaña a propósito: el área táctil de una casa es
+        grande, y lo grande se traga lo pequeño si va primero. */
+  if (dentroDe(p.x, p.y, sitio.secreto.x, sitio.secreto.y, U * 7)) {
+    if (secreto.hallado) abrirCarta();
+    else tocarSecreto(sitio.secreto.x, sitio.secreto.y);
+    return;
+  }
+
+  /* 6. LA CABAÑA. */
+  const c = sitio.cabana;
+  if (Math.abs(p.x - c.x) < c.w * 0.78 && p.y > c.y - c.h * 1.6 && p.y < c.y + c.h * 0.12) {
+    entrarEnLaCabana();
+    return;
+  }
+
+  /* 7. EL BÚHO. */
+  if (buho && dentroDe(p.x, p.y, buho.x, buho.y, buho.r * 2)) {
+    buho.visto = 1;
+    buho.parpadeo = 1;
+    tono(azar(320, 420), 0.5, "sine", 0.05);
+    tono(azar(240, 300), 0.7, "sine", 0.04, 0.3);
+    decir(buho.x, buho.y - U * 5,
+      "Llevaba ahí todo el rato mirándote. 🦉", { mimo: true, importante: true });
+    contarLogro("buho");
+    return;
+  }
+
+  /* 8. LA LUNA. */
+  const dL = desplazar(0.3);
+  if (dentroDe(p.x, p.y, sitio.luna.x + dL.x, sitio.luna.y + dL.y, sitio.luna.r * 1.9)) {
+    tocarLuna(sitio.luna.x + dL.x, sitio.luna.y + dL.y);
+    return;
+  }
+
+  /* 9. LA ESTRELLA FUGAZ, si la pillas al vuelo. */
+  if (cielo.fugaz && dentroDe(p.x, p.y, cielo.fugaz.x, cielo.fugaz.y, U * 9)) {
+    cielo.fugaz = null;
+    magia(880);
+    decir(p.x, p.y + U * 6, "La has pillado. Pide algo, va.", { mimo: true, importante: true });
+    contarLogro("fugaz");
+    return;
+  }
+
+  /* 10. LAS ESTRELLAS. Algunas responden. */
+  const dE = desplazar(0.18);
+  let mejor = null, dMin = U * 5;
+  for (const s of cielo.estrellas) {
+    const d = Math.hypot(p.x - (s.x + dE.x), p.y - (s.y + dE.y));
+    if (d < dMin) { dMin = d; mejor = s; }
+  }
+  if (mejor) {
+    mejor.pulso = 1;
+    tono(azar(900, 1700), 0.7, "sine", 0.045);
+    if (mejor.viva) {
+      soltarBrillos(mejor.x + dE.x, mejor.y + dE.y, 14, 0.45);
+      decir(mejor.x + dE.x, mejor.y + dE.y + U * 5,
+        "Ésta contesta. No todas lo hacen.", { mimo: true, importante: true });
+      contarLogro("estrella");
+    }
+    return;
+  }
+
+  /* 11. Y si no hay nada, se aviva un poco el fuego soplando. */
+  if (p.y > sitio.horizonte) {
+    fuego.vidaObj = Math.min(1.7, fuego.vidaObj + 0.22);
+    fuego.quieta = 0;
+  }
+}
+
+function tocarEnHabitacion(p, e) {
+  const v = ventanaHab();
+
+  /* La luna de la ventana. */
+  if (sitio.luna.vx !== undefined &&
+      dentroDe(p.x, p.y, sitio.luna.vx, sitio.luna.vy, sitio.luna.vr * 2.1)) {
+    tocarLuna(sitio.luna.vx, sitio.luna.vy);
+    return;
+  }
+
+  /* El cuadro de la pared. */
+  const qx = v.x - v.w * 0.92, qy = v.y + U * 2;
+  if (Math.abs(p.x - qx) < U * 6 && Math.abs(p.y - qy) < U * 7) {
+    hab.cuadro = 1;
+    tono(523, 0.8, "triangle", 0.05);
+    decir(qx, qy - U * 8, "Somos nosotros. Lo colgué el primer día.", { mimo: true, importante: true });
+    contarLogro("cuadro");
+    return;
+  }
+
+  /* La lámpara de la mesilla. */
+  const lx = v.x + v.w * 0.92, ly = H * 0.62;
+  if (Math.abs(p.x - lx) < U * 8 && Math.abs(p.y - ly) < U * 10) {
+    hab.lamparaOn = !hab.lamparaOn;
+    golpe(0.02, 2600, 0.14, "bandpass");
+    return;
+  }
+
+  /* La vela del alféizar: se apaga soplando... o tocándola. */
+  const cvx = v.x - v.w * 0.36, cvy = v.y + v.h / 2 - U * 5;
+  if (dentroDe(p.x, p.y, cvx, cvy, U * 6)) {
+    decir(cvx, cvy - U * 6, "Déjala encendida, anda.", { dur: 3 });
+    return;
+  }
+}
+
+function soltarBrillos(x, y, n, tono2) {
+  for (let i = 0; i < n; i++) {
+    const a = azar(0, 6.283);
+    soltar(x, y, {
+      vx: Math.cos(a) * azar(14, 70), vy: Math.sin(a) * azar(14, 60),
+      vida: azar(1.4, 2.8), tam: azar(1, 2.4),
+      tipo: TIPO.BRILLO, tono: tono2,
+    });
+  }
+}
+
+/* ---- Los botones ------------------------------------------------------- */
+
+const btnDormir = document.getElementById("dormir");
+const btnVolver = document.getElementById("volver");
+const elSueno = document.getElementById("sueno");
+const diceDormir = barajador(CONF.alDormir);
+
+btnDormir.addEventListener("click", dormirse);
+btnVolver.addEventListener("click", () => {
+  if (raiz.classList.contains("is-durmiendo")) despertarse();
+  else volverAlBosque();
+});
+
+function dormirse() {
+  if (escena !== "habitacion" || bloqueado) return;
+  escena = "durmiendo";
+  raiz.classList.add("is-durmiendo");
+  btnDormir.disabled = true;
+
+  /* Los ambientes NO se callan: bajan. Dormirse con la fogata y los
+     grillos de fondo es justo lo que se quiere sentir aquí. */
+  agacharAmbientes(0.55, 3);
+  if (cajita.gain) {
+    const t = audio.ctx.currentTime;
+    cajita.gain.gain.linearRampToValueAtTime(0.35, t + 3);
+  }
+
+  elSueno.textContent = diceDormir();
+  animar((k) => { hab.dormida = k; }, 2800);
+  tono(196, 3.2, "sine", 0.05);
+}
+
+function despertarse() {
+  escena = "habitacion";
+  raiz.classList.remove("is-durmiendo");
+  btnDormir.disabled = false;
+  agacharAmbientes(0.32, 1.6);
+  animar((k) => { hab.dormida = 1 - k; }, 1400);
+}
+
+/* ---- La puerta de entrada ---------------------------------------------- */
+
+const entrada = document.getElementById("entrada");
+
+function entrar() {
+  raiz.classList.add("is-dentro");
+  despertarAudio();
+  /* Los ambientes que empiezan encendidos, con su fundido. */
+  for (const a of CONF.ambientes) if (a.on) ambiente(a.id, true, a.vol);
+  setTimeout(() => {
+    decir(sitio.fogata.x, sitio.fogata.y - U * 20,
+      "Coge el palo y acerca el bombón al fuego.", { dur: 5.2 });
+  }, 1600);
+}
+
+entrada.addEventListener("click", entrar);
+entrada.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); entrar(); }
+});
+
+// ==========================================
+// RESPONSIVE
+// ==========================================
+//
+// No hay dos diseños: hay UNO que se mide contra `U` —la centésima
+// parte del lado corto— y contra `apaisado`. Al girar el teléfono, la
+// escena se reconstruye entera en `medir()`:
+//
+//   · la fogata y la cabaña se separan más en apaisado, que hay sitio;
+//   · el arco de piedras se abre o se cierra;
+//   · el bosque se vuelve a sembrar con la MISMA semilla, así que es el
+//     mismo bosque y no otro distinto;
+//   · el alcance del palo se recalcula.
+//
+// Lo único que se conserva entre medidas es el estado: qué ambientes
+// están puestos, el tueste del bombón, si la carta está encontrada.
+
+addEventListener("orientationchange", () => setTimeout(medir, 220));
+
+// ==========================================
+// OPTIMIZACIÓN
+// ==========================================
+//
+// Se mide el ritmo de verdad durante los primeros segundos. Si no llega
+// al mínimo, se baja la calidad UNA VEZ y no se vuelve a tocar: un
+// ajuste que sube y baja solo se nota más que ir siempre algo peor.
+//
+// Lo que se baja: la resolución del lienzo, el número de partículas, el
+// de estrellas y la frecuencia con la que salen chispas y humo.
+
+let fpsAcum = 0, fpsCuenta = 0, yaBajado = false;
+
+function vigilarRitmo(dt) {
+  if (yaBajado) return;
+  fpsAcum += dt;
+  fpsCuenta++;
+  if (fpsAcum < 2.5) return;
+  const fps = fpsCuenta / fpsAcum;
+  fpsAcum = 0; fpsCuenta = 0;
+  if (fps >= CONF.perf.fpsMinimo) { yaBajado = true; return; }   // va bien
+  yaBajado = true;
+  flojo = true;
+  crearParticulas(CONF.perf.particulasFlojo);
+  medir();
+  console.info("[noche] calidad reducida: el ritmo no llegaba al mínimo.");
+}
+
+/* Cuando la pestaña se va, se para todo: un bucle corriendo de fondo
+   gasta batería para nadie. */
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    agacharAmbientes(0, 0.4);
+  } else {
+    t0 = performance.now();      // que no cuente el tiempo que ha estado fuera
+    agacharAmbientes(1, 0.8);
+  }
+});
+
+// ==========================================
+// BUCLE Y ARRANQUE
+// ==========================================
+
+let t0 = performance.now();
+let reloj = 0;
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A || !H) return;
+  if (document.hidden) return;
+
+  /* El dt se ACOTA, no se sustituye. Cambiarlo por 1/60 en un salto
+     largo hace que todo avance a cámara lenta en un móvil que se
+     atasque: la escena entera se queda atrás y no se recupera. */
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+  else if (dt > 0.1) dt = 0.1;
+  reloj += dt;
+
+  vigilarRitmo(dt);
+
+  /* ---- Parallax y cámara ---- */
+  /* Si nadie toca, la escena respira sola: un vaivén lentísimo. Así no
+     hay ni un fotograma completamente quieto. */
+  if (!dedo.dentro) {
+    par.ox = Math.sin(reloj * 0.11) * 0.28;
+    par.oy = Math.sin(reloj * 0.08 + 1.2) * 0.2;
+  }
+  par.x = damp(par.x, par.ox, 2.6, dt);
+  par.y = damp(par.y, par.oy, 2.6, dt);
+
+  cam.z = damp(cam.z, cam.oz, 2.2, dt);
+  cam.x = damp(cam.x, cam.ox, 2.2, dt);
+  cam.y = damp(cam.y, cam.oy, 2.2, dt);
+
+  meneo.t += dt;
+  meneo.fuerza = damp(meneo.fuerza, 0, 4.4, dt);
+
+  luna.pulso = damp(luna.pulso, 0, 2.2, dt);
+  cielo.relampago = Math.max(0, cielo.relampago - dt * 3.2);
+
+  /* ---- Mover ---- */
+  moverParticulas(dt);
+  moverDichos(dt);
+
+  if (escena === "bosque") {
+    moverFogata(dt);
+    moverBombon(dt);
+    moverPanel(dt);
+    moverCajita(dt);
+    moverCabana(dt);
+    moverSecreto(dt);
+    mirarFogataAzul();
+  } else {
+    moverHabitacion(dt);
+    moverCajita(dt);
+  }
+
+  /* ---- Dibujar ---- */
+  ctx.save();
+
+  /* La cámara y la sacudida se aplican a TODO de una vez. */
+  const mx = Math.sin(meneo.t * 43) * meneo.fuerza * U * 1.2;
+  const my = Math.cos(meneo.t * 37) * meneo.fuerza * U * 1.1;
+  ctx.translate(A / 2 + mx, H / 2 + my);
+  ctx.scale(cam.z, cam.z);
+  ctx.translate(-A / 2 + cam.x / cam.z, -H / 2 + cam.y / cam.z);
+
+  if (escena === "bosque") dibujarBosque(dt);
+  else dibujarHabitacion();
+
+  ctx.restore();
+
+  /* El velo de las cinemáticas va POR ENCIMA de la cámara: si entrara
+     en la transformación, un zoom lo dejaría sin cubrir los cantos. */
+  if (cine.velo > 0.001) {
+    ctx.fillStyle = `rgba(2,3,8,${clamp01(cine.velo)})`;
+    ctx.fillRect(0, 0, A, H);
+    if (cine.texto && cine.velo > 0.8) {
+      ctx.fillStyle = "rgba(190,200,230,0.5)";
+      ctx.font = `${Math.round(U * 2.6)}px ui-sans-serif, system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(cine.texto, A / 2, H / 2);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+    }
+  }
+}
+
+/* ---- Arranque ---------------------------------------------------------- */
+
+medir();
+requestAnimationFrame(paso);
+
+/* Si el navegador deja sonar sin tocar nada —pasa en escritorio con el
+   sonido ya permitido—, se entra solo a los pocos segundos. Si no, la
+   puerta espera el toque, que es lo que hace falta para el audio. */
+setTimeout(() => {
+  if (audio.ctx && audio.ctx.state === "running" && !raiz.classList.contains("is-dentro")) {
+    entrar();
+  }
+}, 2600);
+
+})();
+</script>
+</body>
+</html>

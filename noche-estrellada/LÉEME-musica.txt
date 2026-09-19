@@ -1,0 +1,8 @@
+`musica.mp3` va AQUÍ, en esta misma carpeta (no dentro de audio/).
+
+Es lo que suena la cajita musical al abrirla. Se reproduce en bucle con
+fundido de entrada, y al cerrar la cajita se va con fundido de salida.
+
+Si no está, suena una nana sintetizada: púas de caja de música de
+verdad, con el fundamental y dos armónicos inarmónicos (2.76 y 5.4), que
+es lo que hace que suene a metal y no a flauta.
