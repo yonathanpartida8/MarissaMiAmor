@@ -154,26 +154,107 @@ html, body {
   position: absolute;
   left: 0; top: 0;
   max-width: min(17em, 74vw);
-  padding: 0.5em 0.95em;
-  border-radius: 14px;
-  background: rgba(14, 18, 34, 0.62);
-  border: 1px solid rgba(180, 196, 255, 0.16);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  font-size: clamp(0.76rem, 3.3vw, 0.92rem);
-  line-height: 1.5;
+  padding: 0.6em 1.05em;
+  border-radius: 16px;
+  /* Tres capas y no un color plano: un cristal ahumado con un poco de
+     luz recogida arriba —de donde viene la luna— y el fondo cerrándose
+     abajo. Un rectángulo de un solo color se lee como un bocadillo de
+     cómic; esto se lee como algo que flota en la noche. */
+  background:
+    linear-gradient(to bottom,
+      rgba(36, 44, 74, 0.72) 0%,
+      rgba(16, 20, 38, 0.74) 55%,
+      rgba(10, 13, 26, 0.78) 100%);
+  border: 1px solid rgba(180, 196, 255, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(214, 228, 255, 0.14),
+    0 6px 28px rgba(2, 4, 12, 0.55);
+  backdrop-filter: blur(7px) saturate(1.2);
+  -webkit-backdrop-filter: blur(7px) saturate(1.2);
+  font-size: clamp(0.78rem, 3.35vw, 0.94rem);
+  line-height: 1.55;
   text-align: center;
-  color: #e8eeff;
+  color: #eaf0ff;
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
   opacity: 0;
-  will-change: transform, opacity;
+  will-change: transform, opacity, filter;
 }
+
+/* La puntita, que la ancla a lo que ha hablado. Es un cuadrado girado
+   cuarenta y cinco grados con sólo dos de sus cuatro lados pintados:
+   así hereda el mismo borde que la caja y no hay que dibujar nada. */
+.noche .ne-dicho::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 10px; height: 10px;
+  transform: translateX(-50%) rotate(45deg);
+  background: rgba(10, 13, 26, 0.78);
+  border-right: 1px solid rgba(180, 196, 255, 0.2);
+  border-bottom: 1px solid rgba(180, 196, 255, 0.2);
+}
+
 .noche .ne-dicho.ne-mimo {
   font-family: var(--tipo-mano);
-  font-size: clamp(0.92rem, 4vw, 1.12rem);
-  color: #ffd8e8;
-  border-color: rgba(255, 180, 210, 0.24);
+  font-size: clamp(0.94rem, 4.1vw, 1.14rem);
+  color: #ffdcea;
+  border-color: rgba(255, 180, 210, 0.3);
+  background:
+    linear-gradient(to bottom,
+      rgba(58, 34, 56, 0.72) 0%,
+      rgba(28, 16, 32, 0.76) 55%,
+      rgba(16, 9, 20, 0.8) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 214, 234, 0.16),
+    0 6px 30px rgba(40, 4, 24, 0.5);
 }
+.noche .ne-dicho.ne-mimo::after {
+  background: rgba(16, 9, 20, 0.8);
+  border-color: rgba(255, 180, 210, 0.3);
+}
+
+/* ── La burbuja del misterio ──────────────────────────────────────────
+   Para lo que dice el bosque, no lo que dice alguien. Verde, con letra
+   de libro viejo, más espaciada y con un resplandor propio. El texto
+   sale LETRA A LETRA: es lo único que hace que una frase se lea como
+   algo que está pasando y no como un cartel que aparece. */
+.noche .ne-dicho.ne-misterio {
+  font-family: var(--tipo-titulo, ui-serif, Georgia, serif);
+  font-size: clamp(0.9rem, 4vw, 1.1rem);
+  letter-spacing: 0.04em;
+  color: #d6ffe6;
+  border-color: rgba(120, 255, 190, 0.26);
+  background:
+    linear-gradient(to bottom,
+      rgba(16, 50, 40, 0.74) 0%,
+      rgba(8, 26, 22, 0.78) 55%,
+      rgba(4, 16, 14, 0.82) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(170, 255, 214, 0.18),
+    0 0 26px rgba(40, 200, 130, 0.22),
+    0 6px 30px rgba(0, 12, 8, 0.6);
+  text-shadow: 0 0 14px rgba(90, 255, 180, 0.45), 0 1px 10px rgba(0, 0, 0, 0.8);
+}
+.noche .ne-dicho.ne-misterio::after {
+  background: rgba(4, 16, 14, 0.82);
+  border-color: rgba(120, 255, 190, 0.26);
+}
+
+/* El cursor mientras se escribe. Parpadea con CSS y no con JavaScript:
+   un parpadeo que depende del bucle se para cuando el bucle se para. */
+.noche .ne-dicho .ne-cursor {
+  display: inline-block;
+  width: 0.5em;
+  opacity: 0.8;
+  animation: ne-parpadeo 900ms steps(2, end) infinite;
+}
+/* `display: inline-block` de arriba GANA al `display: none` que el
+   navegador le pone a `[hidden]`, porque una clase pesa más que un
+   atributo. Sin esta línea, el cursor salía en todas las frases, hasta
+   en las que no se escriben. */
+.noche .ne-dicho .ne-cursor[hidden] { display: none; }
+@keyframes ne-parpadeo { 50% { opacity: 0; } }
 
 /* ── El panel de ambientes ───────────────────────────────────────────── */
 
@@ -183,13 +264,20 @@ html, body {
 .noche .ne-pista-panel {
   position: absolute;
   left: 50%;
-  bottom: calc(var(--seguro-b) + var(--barra) + 8px);
+  /* Por encima de la fila de sonidos, que le dice lo alta que es. El
+     valor de reserva es para el primer cuadro, antes de que el panel se
+     haya medido. */
+  bottom: calc(var(--seguro-b) + var(--barra) + var(--fila-alto, 76px) + 6px);
   transform: translateX(-50%);
   z-index: 20;
-  font-size: 0.66rem;
-  letter-spacing: 0.22em;
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(190, 204, 240, 0.45);
+  /* En una línea siempre: partido en tres se comía media escena y
+     tapaba la fogata, que es justo lo que no puede tapar. */
+  white-space: nowrap;
+  color: rgba(190, 204, 240, 0.42);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
   pointer-events: none;
   transition: opacity 700ms var(--e-suave);
 }
@@ -466,7 +554,7 @@ html, body {
   <!-- Lo que se lee de verdad, para quien use lector de pantalla. -->
   <p class="ne-sr" id="vivo" role="status" aria-live="polite"></p>
 
-  <p class="ne-pista-panel" id="pistaPanel">toca las piedras para el sonido</p>
+  <p class="ne-pista-panel" id="pistaPanel">toca · arrastra para el volumen</p>
 
   <button class="ne-volver" id="volver" type="button" aria-label="Volver al bosque">‹</button>
   <button class="ne-dormir" id="dormir" type="button">Dormir</button>
@@ -1251,12 +1339,23 @@ const elVivo     = document.getElementById("vivo");
 const librasDichos = [];
 const dichosVivos  = [];
 
-for (let i = 0; i < 7; i++) {
+for (let i = 0; i < 9; i++) {
   const el = document.createElement("div");
   el.className = "ne-dicho";
+  /* Cada caja lleva dentro un nodo de texto y un cursor. Separados, para
+     poder escribir letra a letra sin tirar el cursor en cada cuadro. */
+  el.append(document.createTextNode(""));
+  const cur = document.createElement("span");
+  cur.className = "ne-cursor";
+  cur.textContent = "|";
+  cur.hidden = true;
+  el.append(cur);
   capaDichos.append(el);
   librasDichos.push(el);
 }
+
+/** Pone el texto de una caja sin tocar su cursor. */
+function ponerTexto(el, txt) { el.firstChild.nodeValue = txt; }
 
 /**
  * Suelta una frase en (x, y).
@@ -1284,9 +1383,16 @@ function decir(x, y, texto, op = {}) {
   }
   if (!el) return;
 
-  el.textContent = texto;
+  /* Para medir la caja hace falta que tenga YA su texto entero: si se
+     mide vacía —como haría falta para escribirla letra a letra— sale un
+     ancho de cero y la frase se coloca en el sitio equivocado. Así que
+     se pone completa, se mide, y luego se recorta. */
+  ponerTexto(el, texto);
   el.classList.toggle("ne-mimo", !!op.mimo);
+  el.classList.toggle("ne-misterio", !!op.misterio);
+  el.querySelector(".ne-cursor").hidden = !op.misterio;
   el.style.opacity = "0";
+  el.style.filter = "";
 
   /* El margen sale del ANCHO REAL de la caja, medido ya con su texto:
      una frase larga centrada se sale por el canto si se usa un margen
@@ -1311,11 +1417,21 @@ function decir(x, y, texto, op = {}) {
   }
   if (py === null) py = clamp(y - U * 7, U * 9, H - U * 12);
 
+  /* Las del misterio se escriben. El tiempo de escritura sale del largo
+     del texto, no de un número fijo: una frase corta escrita despacio se
+     hace eterna y una larga escrita deprisa no se lee. */
+  const escribe = op.misterio ? clamp(texto.length * 0.045, 0.6, 2.6) : 0;
+  if (escribe) ponerTexto(el, "");
+
   dichosVivos.push({
     el, x: px, y: py, medio, alto,
     t: 0, dur: op.dur ?? (op.importante ? 5.4 : 3.6),
     deriva: azar(-8, 8),
     importante: !!op.importante,
+    texto, escribe, escritas: -1,
+    /* Cuánto se inclina al entrar: un pelín, y a un lado u otro. Que no
+       todas entren rectas es lo que hace que no parezcan un sistema. */
+    giro: azar(-2.2, 2.2),
   });
 }
 
@@ -1326,18 +1442,48 @@ function moverDichos(dt) {
     const k = d.t / d.dur;
     if (k >= 1) {
       d.el.style.opacity = "0";
+      d.el.style.filter = "";
       librasDichos.push(d.el);
       dichosVivos.splice(i, 1);
       continue;
     }
-    const entra = suave3(k / 0.12);
-    const sale  = 1 - suave3((k - 0.72) / 0.28);
-    const sube  = (1 - Math.pow(1 - clamp01(k / 0.85), 3)) * 22;
+
+    /* ---- Escribir a máquina ----
+       Se recorta el texto sólo cuando cambia el número de letras. Tocar
+       el DOM en cada cuadro para escribir la misma cadena obliga al
+       navegador a rehacer el trazado de la caja sesenta veces por
+       segundo para nada. */
+    if (d.escribe) {
+      const n = Math.min(d.texto.length,
+        Math.floor(clamp01(d.t / d.escribe) * d.texto.length + 0.0001));
+      if (n !== d.escritas) {
+        d.escritas = n;
+        ponerTexto(d.el, d.texto.slice(0, n));
+        if (n >= d.texto.length) d.el.querySelector(".ne-cursor").hidden = true;
+      }
+    }
+
+    /* ---- La entrada ----
+       Un muelle que se pasa un poco y vuelve, no una rampa. La
+       diferencia entre que la frase «aparezca» y que la frase «llegue»
+       son exactamente estos tres términos. */
+    const ke = clamp01(k / 0.16);
+    const muelle = 1 - Math.pow(1 - ke, 3) * Math.cos(ke * 7.2) ;
+    const entra = suave3(k / 0.1);
+    const sale  = 1 - suave3((k - 0.76) / 0.24);
+    const sube  = (1 - Math.pow(1 - clamp01(k / 0.85), 3)) * 24;
     const bal   = Math.sin(d.t * 1.4) * 3;
+    /* Al irse se desenfoca un pelín: es lo que hace que se deshaga en el
+       aire en vez de apagarse como una bombilla. */
+    const borrosa = (1 - sale) * 2.4;
+
     d.el.style.opacity = String(entra * sale);
+    d.el.style.filter = borrosa > 0.05 ? `blur(${borrosa.toFixed(2)}px)` : "";
     d.el.style.transform =
       `translate3d(${(d.x + d.deriva * k + bal).toFixed(1)}px, ${(d.y - sube).toFixed(1)}px, 0)` +
-      ` translate(-50%, -50%) scale(${(0.92 + entra * 0.08).toFixed(3)})`;
+      ` translate(-50%, -50%)` +
+      ` rotate(${(d.giro * (1 - ke)).toFixed(2)}deg)` +
+      ` scale(${(0.86 + muelle * 0.14).toFixed(3)})`;
   }
 }
 
@@ -3685,59 +3831,209 @@ function construirPanel() {
   panel.piedras = [];
   const n = CONF.ambientes.length;
   const f = sitio.fogata;
-  /* En arco por delante de la fogata, mirando a quien mira. */
-  const radio = f.r * (apaisado ? 3.1 : 3.4);
-  /* El arco no puede llegar a las esquinas: si esta página va dentro del
-     librito, ahí están sus flechas de pasar página, y las dos piedras de
-     los extremos quedaban justo debajo y no se podían tocar. Se limita
-     el semiancho a un tercio de la hoja y el problema desaparece en
-     cualquier pantalla, dentro del libro o fuera. */
-  const semiancho = Math.min(radio * 1.42, A * 0.33);
+
+  /* ---- La fila ----
+     Una fila compacta y centrada, no un arco de canto a canto. El arco
+     quedaba bonito y ocupaba media pantalla: en un móvil, la mitad de
+     lo que se ve es el bosque, y el bosque es lo que se ha venido a
+     mirar. Además las dos pastillas de los extremos caían justo bajo
+     las flechas de pasar página del librito.
+
+     El ancho se calcula ANTES de repartir: si la fila no cabe, encogen
+     todas a la vez en vez de salirse las de fuera. */
+  const hueco = huecoAbajo();
+  const maxFila = Math.min(A * 0.9, U * 62);
+  const sep = 1.18;                     // separación, en anchos de pastilla
+  let w = Math.min(U * 8.6, maxFila / (n * sep));
+  const h = w * 0.86;
+  const paso = w * sep;
+  const x0 = A * 0.5 - (paso * (n - 1)) * 0.5;
+  /* Media pastilla de aire por debajo, más el hueco que pida la barra
+     del librito. Antes iba a tres cuartos de alto del canto y en un
+     móvil la fila se quedaba pegada al borde: la mitad de abajo caía en
+     la zona del gesto de inicio del sistema y no había manera de
+     arrastrar el volumen sin salirse de la página. */
+  const y = H - hueco - h * 1.15 - U * 2;
+  /* Se le dice al CSS lo alto que ha quedado la fila, para que el
+     rótulo de abajo se coloque ENCIMA y no encima de las pastillas. */
+  raiz.style.setProperty("--fila-alto", `${Math.round(h * 1.9 + U * 2)}px`);
+
   for (let i = 0; i < n; i++) {
-    const t = n === 1 ? 0.5 : i / (n - 1);
-    const a = mez(Math.PI * 0.86, Math.PI * 0.14, t);
     panel.piedras.push({
       conf: CONF.ambientes[i],
-      x: f.x + Math.cos(a) * semiancho,
-      y: f.y + f.r * 1.05 + Math.sin(a) * radio * 0.26,
-      r: U * (apaisado ? 3.1 : 3.4),
+      x: x0 + i * paso,
+      y,
+      w, h,
+      /* Se conserva `r` porque hay código viejo que lo mira para
+         colocar frases: es la media del lado, que es lo que se quiere
+         decir con «lo grande que es esto». */
+      r: (w + h) * 0.25,
       on: CONF.ambientes[i].on,
       vol: CONF.ambientes[i].vol,
       luz: CONF.ambientes[i].on ? 1 : 0,
       pulso: 0,
-      /* Para que cada una respire a su ritmo. */
+      /* Cuánto está apretada ahora mismo: se hunde al tocarla. */
+      hundida: 0,
       fase: rnd() * 6.283,
-      /* Su forma: nueve radios sorteados con el azar repetible. Ninguna
-         es igual a otra y ninguna cambia de forma al mirarla. */
-      forma: Array.from({ length: 9 }, () => azar(0.82, 1.06)),
-      /* Y tres briznas de hierba delante, para asentarla en el suelo. */
-      hierba: Array.from({ length: 3 }, () => ({
-        dx: azar(-0.9, 0.9), alto: azar(1.4, 3.2),
-        incl: azar(-0.6, 0.6), g: rnd() * 0.8, f: rnd() * 6.283,
-      })),
     });
   }
+  void f;
 }
 
 function moverPanel(dt) {
   for (const p of panel.piedras) {
     p.luz = damp(p.luz, p.on ? 1 : 0, 3, dt);
     p.pulso = Math.max(0, p.pulso - dt * 2.2);
+    const apretada = arrastrePanel && arrastrePanel.piedra === p;
+    p.hundida = damp(p.hundida, apretada ? 1 : 0, 14, dt);
   }
 }
 
-/* ---- LAS PIEDRAS ---------------------------------------------------------
-   ── POR QUÉ NO SON BOTONES ───────────────────────────────────────────
-   Porque un botón dice «esto es una interfaz» y rompe el sitio. Una
-   piedra puesta en el suelo delante de una fogata no dice nada: está
-   ahí porque alguien la puso ahí mientras hablaba.
+/* ---- LOS ICONOS ---------------------------------------------------------
+   Dibujados a mano, no emoji. Un emoji trae su propio color, su propio
+   estilo y su propio brillo, y en una escena que es toda azules y
+   naranjas de fogata, seis emoji a todo color se leen como seis
+   pegatinas. Estos son trazos, del color que les toque, y se apagan y
+   se encienden con el resto de la escena.
 
-   Lo que las hace piedras y no círculos es todo lo que NO es el
-   círculo: que cada una tenga su forma —un polígono irregular fijo, no
-   una elipse—, que se apoyen en el suelo con su sombra, que tengan
-   vetas, que la cara que mira a la fogata esté iluminada y la de atrás
-   no, y que lo que se enciende al activarlas sea un GRABADO dentro de
-   la piedra y no una luz encima.                                     */
+   Todos se dibujan dentro de un cuadrado de lado 1 centrado en el
+   origen, así que quien los llama sólo tiene que trasladar y escalar. */
+
+function icono(id, s, col, alfa) {
+  ctx.save();
+  ctx.scale(s, s);
+  ctx.strokeStyle = col;
+  ctx.fillStyle = col;
+  ctx.globalAlpha = alfa;
+  ctx.lineWidth = 0.09;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  if (id === "fogata") {
+    /* Una llama: la gota de siempre, con el corazón dentro. */
+    ctx.beginPath();
+    ctx.moveTo(0, 0.42);
+    ctx.bezierCurveTo(-0.42, 0.18, -0.3, -0.16, -0.06, -0.44);
+    ctx.bezierCurveTo(-0.04, -0.2, 0.12, -0.2, 0.1, -0.34);
+    ctx.bezierCurveTo(0.38, -0.08, 0.36, 0.2, 0, 0.42);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = alfa * 0.5;
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.ellipse(0, 0.2, 0.12, 0.17, 0, 0, 6.283);
+    ctx.fill();
+
+  } else if (id === "grillos") {
+    /* Un grillo de perfil: cuerpo, ala, dos antenas y la pata de
+       atrás doblada, que es lo único que hace falta para que se lea. */
+    ctx.beginPath();
+    ctx.ellipse(0.02, 0.06, 0.28, 0.15, -0.2, 0, 6.283);
+    ctx.fill();
+    ctx.globalAlpha = alfa * 0.55;
+    ctx.beginPath();
+    ctx.ellipse(0.06, 0.0, 0.22, 0.09, -0.3, 0, 6.283);
+    ctx.fill();
+    ctx.globalAlpha = alfa;
+    ctx.beginPath();
+    ctx.moveTo(-0.22, -0.02);
+    ctx.quadraticCurveTo(-0.38, -0.2, -0.3, -0.4);
+    ctx.moveTo(-0.2, 0.02);
+    ctx.quadraticCurveTo(-0.42, -0.06, -0.44, -0.24);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0.14, 0.12);
+    ctx.lineTo(0.3, -0.12);
+    ctx.lineTo(0.36, 0.3);
+    ctx.stroke();
+
+  } else if (id === "aire") {
+    /* Tres rachas con el rizo al final. El rizo es lo que convierte
+       tres rayas en viento. */
+    for (let i = 0; i < 3; i++) {
+      const y = -0.22 + i * 0.22;
+      const largo = i === 1 ? 0.34 : 0.22;
+      ctx.beginPath();
+      ctx.moveTo(-0.42, y);
+      ctx.lineTo(largo, y);
+      ctx.arc(largo, y - 0.1, 0.1, 1.57, -1.0);
+      ctx.stroke();
+    }
+
+  } else if (id === "bosque") {
+    /* Tres abetos de alturas distintas. */
+    for (const [cx, e] of [[-0.28, 0.72], [0.02, 1], [0.3, 0.62]]) {
+      ctx.beginPath();
+      for (let p2 = 0; p2 < 3; p2++) {
+        const y0 = -0.36 * e + p2 * 0.2 * e;
+        const an = (0.1 + p2 * 0.07) * e;
+        ctx.moveTo(cx, y0);
+        ctx.lineTo(cx - an, y0 + 0.22 * e);
+        ctx.lineTo(cx + an, y0 + 0.22 * e);
+        ctx.closePath();
+      }
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cx, 0.24 * e);
+      ctx.lineTo(cx, 0.4);
+      ctx.stroke();
+    }
+
+  } else if (id === "lluvia") {
+    /* Una nube con tres gotas. La nube son tres arcos, no un óvalo:
+       un óvalo se lee como una piedra flotando. */
+    ctx.beginPath();
+    ctx.arc(-0.16, -0.1, 0.15, Math.PI, 0);
+    ctx.arc(0.06, -0.16, 0.2, Math.PI, 0);
+    ctx.arc(0.26, -0.08, 0.13, Math.PI, 0.4);
+    ctx.closePath();
+    ctx.fill();
+    for (let i = 0; i < 3; i++) {
+      const x = -0.22 + i * 0.22;
+      ctx.beginPath();
+      ctx.moveTo(x, 0.1 + (i % 2) * 0.06);
+      ctx.lineTo(x - 0.07, 0.34 + (i % 2) * 0.06);
+      ctx.stroke();
+    }
+
+  } else if (id === "relampagos") {
+    /* El rayo de siempre, pero con la nube detrás para que no parezca
+       un signo de peligro. */
+    ctx.globalAlpha = alfa * 0.45;
+    ctx.beginPath();
+    ctx.arc(-0.14, -0.16, 0.14, Math.PI, 0);
+    ctx.arc(0.08, -0.22, 0.18, Math.PI, 0.3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = alfa;
+    ctx.beginPath();
+    ctx.moveTo(0.06, -0.06);
+    ctx.lineTo(-0.14, 0.14);
+    ctx.lineTo(0.0, 0.14);
+    ctx.lineTo(-0.1, 0.42);
+    ctx.lineTo(0.18, 0.06);
+    ctx.lineTo(0.03, 0.06);
+    ctx.lineTo(0.18, -0.12);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* ---- EL PANEL -----------------------------------------------------------
+   ── POR QUÉ PASTILLAS Y NO PIEDRAS SUELTAS ───────────────────────────
+   Porque seis piedras repartidas en arco por delante de la fogata no se
+   leen como «los controles»: se leen como seis piedras. Y para saber si
+   un ambiente está puesto había que mirar seis sitios distintos.
+
+   Una fila junta, con el mismo alto y la misma separación, se lee de
+   una vez. Sigue siendo materia del sitio —piedra oscura con su filo de
+   luz, no un botón de aplicación—, pero se entiende sin explicarlo.
+
+   ── LA BARRA ────────────────────────────────────────────────────────
+   El volumen va en una barra fina en la base de la pastilla, no en un
+   aro alrededor. Un aro obliga a mirar dónde acaba; una barra se lee de
+   reojo, y todas juntas se comparan entre sí de un vistazo. */
 
 function dibujarPanel() {
   const d = desplazar(2.1);
@@ -3745,154 +4041,129 @@ function dibujarPanel() {
   for (const p of panel.piedras) {
     const x = p.x + d.x, y = p.y + d.y;
     const col = p.conf.color;
-    /* Un latido lentísimo y propio de cada piedra: las encendidas
-       respiran, y no todas a la vez. */
-    const latido = p.luz * (0.9 + 0.1 * Math.sin(reloj * 1.3 + p.fase));
+    const luz = p.luz * (0.9 + 0.1 * Math.sin(reloj * 1.3 + p.fase));
+    const w = p.w, h = p.h;
+    /* Al apretarla se hunde y se encoge un pelín. Es el único aviso de
+       que el dedo ha entrado, y sin él los toques se sienten muertos. */
+    const k = 1 - p.hundida * 0.06;
+    const hy = y + p.hundida * U * 0.5;
 
-    /* ---- El resplandor en el suelo ----
-       Sale de DEBAJO de la piedra y se aplasta: es luz cayendo sobre la
-       tierra, no un aro alrededor de un botón. */
-    if (latido > 0.02) {
-      haloOvalado(x, y + p.r * 0.5, p.r * (2.6 + p.vol * 2.6), p.r * (1.1 + p.vol * 0.9), [
-        [0, hexA(col, 0.3 * latido)],
-        [0.45, hexA(col, 0.1 * latido)],
+    ctx.save();
+    ctx.translate(x, hy);
+    ctx.scale(k, k);
+
+    /* ---- El resplandor de debajo ----
+       Cae sobre el suelo, aplastado. Es lo que hace que la fila esté
+       APOYADA en la tierra y no pegada sobre la pantalla. */
+    if (luz > 0.02) {
+      haloOvalado(0, h * 0.52, w * (1.1 + p.vol * 0.7), h * (0.5 + p.vol * 0.3), [
+        [0, hexA(col, 0.34 * luz)],
+        [0.5, hexA(col, 0.1 * luz)],
         [1, hexA(col, 0)],
       ]);
     }
 
     /* ---- La sombra ---- */
-    ctx.fillStyle = "rgba(4,5,10,0.45)";
+    ctx.fillStyle = "rgba(3,4,9,0.5)";
     ctx.beginPath();
-    ctx.ellipse(x + p.r * 0.1, y + p.r * 0.66, p.r * 0.94, p.r * 0.3, 0, 0, 6.283);
+    ctx.ellipse(0, h * 0.5, w * 0.46, h * 0.12, 0, 0, 6.283);
     ctx.fill();
 
-    /* ---- La piedra ----
-       Un polígono irregular, siempre el mismo para cada una. Los radios
-       se sembraron al construirla, así que ninguna es igual a otra y
-       ninguna cambia de forma al mirarla. */
-    const haciaFuego = Math.sign(sitio.fogata.x - p.x) || 1;
-    const il = fuego.brillo * 0.7;
-    const gp = ctx.createLinearGradient(
-      x - p.r * haciaFuego, y - p.r, x + p.r * haciaFuego, y + p.r);
-    /* Piedra, no madera: el tono de base tira a gris azulado y sólo el
-       fuego lo empuja hacia el marrón. Con la base ya cálida, las seis
-       parecían pastillas de chocolate puestas en fila. */
-    gp.addColorStop(0, `rgb(${Math.round(mez(62, 112, il))},${Math.round(mez(64, 84, il))},${Math.round(mez(72, 66, il))})`);
-    gp.addColorStop(0.55, `rgb(${Math.round(mez(44, 78, il))},${Math.round(mez(46, 58, il))},${Math.round(mez(54, 46, il))})`);
-    gp.addColorStop(1, `rgb(${Math.round(mez(26, 46, il))},${Math.round(mez(28, 34, il))},${Math.round(mez(34, 28, il))})`);
+    /* ---- La pastilla ----
+       Piedra pulida: más clara por arriba, donde le da la luna, y casi
+       negra por abajo. El filo de arriba es un trazo aparte, porque un
+       degradado solo no da canto y sin canto no hay bulto. */
+    const il = fuego.brillo * 0.6;
+    const gp = ctx.createLinearGradient(0, -h * 0.5, 0, h * 0.5);
+    gp.addColorStop(0, `rgba(${Math.round(mez(74, 118, il))},${Math.round(mez(80, 94, il))},${Math.round(mez(96, 80, il))},0.92)`);
+    gp.addColorStop(0.55, `rgba(${Math.round(mez(38, 66, il))},${Math.round(mez(41, 50, il))},${Math.round(mez(52, 42, il))},0.92)`);
+    gp.addColorStop(1, `rgba(${Math.round(mez(20, 38, il))},${Math.round(mez(22, 28, il))},${Math.round(mez(29, 24, il))},0.94)`);
     ctx.fillStyle = gp;
-
     ctx.beginPath();
-    const N = p.forma.length;
-    for (let i = 0; i <= N; i++) {
-      const a = (i % N) / N * 6.283;
-      const rr = p.r * p.forma[i % N];
-      const px2 = x + Math.cos(a) * rr;
-      const py2 = y + Math.sin(a) * rr * 0.86;
-      if (i === 0) ctx.moveTo(px2, py2);
-      else ctx.lineTo(px2, py2);
-    }
-    ctx.closePath();
+    if (ctx.roundRect) ctx.roundRect(-w * 0.5, -h * 0.5, w, h, h * 0.3);
+    else ctx.rect(-w * 0.5, -h * 0.5, w, h);
     ctx.fill();
 
-    /* Las vetas: dos rayas que cruzan la piedra siguiendo su forma. */
-    ctx.save();
-    ctx.clip();
-    ctx.strokeStyle = `rgba(255,248,235,${0.05 + il * 0.05})`;
-    ctx.lineWidth = Math.max(1, p.r * 0.06);
-    for (let i = 0; i < 2; i++) {
-      const yy = y + (i - 0.5) * p.r * 0.7;
-      ctx.beginPath();
-      ctx.moveTo(x - p.r, yy - p.r * 0.14);
-      ctx.quadraticCurveTo(x, yy + p.r * 0.12, x + p.r, yy - p.r * 0.06);
-      ctx.stroke();
-    }
-    /* Y el filo iluminado de arriba, que es lo que le da bulto. */
-    ctx.strokeStyle = `rgba(255,214,160,${0.1 + il * 0.28})`;
-    ctx.lineWidth = Math.max(1.2, p.r * 0.12);
-    ctx.beginPath();
-    ctx.ellipse(x, y, p.r * 0.92, p.r * 0.8, 0, Math.PI * 1.08, Math.PI * 1.92);
+    /* El canto encendido: blanco frío de la luna arriba, y del color
+       del ambiente cuando está puesto. */
+    ctx.strokeStyle = luz > 0.05
+      ? hexA(col, 0.2 + luz * 0.5)
+      : "rgba(168,186,228,0.16)";
+    ctx.lineWidth = Math.max(1, h * 0.035);
     ctx.stroke();
-    ctx.restore();
 
-    /* ---- EL GRABADO ----
-       El símbolo va HUNDIDO en la piedra: primero una sombra un pelín
-       desplazada, y encima el símbolo encendido. Es la diferencia entre
-       un icono pegado y algo tallado ahí hace tiempo. */
+    /* ---- El icono ----
+       Hundido: una sombra un pelín desplazada debajo y el trazo
+       encima. Apagado es gris de piedra; encendido, de su color. */
+    const ic = luz > 0.05 ? col : "#aab4cc";
     ctx.save();
-    ctx.font = `${Math.round(p.r * 1.0)}px ui-sans-serif, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.globalAlpha = 0.45;
-    ctx.fillStyle = "rgba(0,0,0,0.75)";
-    ctx.fillText(p.conf.icono, x + p.r * 0.045, y + p.r * 0.09);
-    ctx.globalAlpha = 0.3 + latido * 0.7;
-    ctx.fillStyle = "#fff";
-    ctx.fillText(p.conf.icono, x, y + p.r * 0.04);
+    ctx.translate(0, -h * 0.08);
+    ctx.save();
+    ctx.translate(h * 0.03, h * 0.04);
+    icono(p.conf.id, h * 0.6, "#05070c", 0.5);
+    ctx.restore();
+    icono(p.conf.id, h * 0.6, ic, 0.4 + luz * 0.6);
     ctx.restore();
 
-    /* ---- EL ARO DE VOLUMEN ----
-       Grabado en el canto, y sólo cuando está encendida. El tramo
-       apagado se ve siempre que haya luz, para que se sepa cuánto
-       queda por subir sin tener que arrastrar a ciegas. */
-    if (latido > 0.05) {
-      const ini = Math.PI * 0.78, vuelta = Math.PI * 1.44;
-      ctx.lineCap = "round";
-      ctx.lineWidth = Math.max(1.4, p.r * 0.1);
-      ctx.strokeStyle = hexA(col, 0.12 * latido);
+    /* ---- La barra del volumen ----
+       Siempre visible el carril, sólo se llena si está puesto: así se
+       sabe que se puede arrastrar antes de haberlo hecho nunca. */
+    const bw = w * 0.62, by = h * 0.3, bh = Math.max(1.6, h * 0.055);
+    ctx.fillStyle = "rgba(210,222,255,0.12)";
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(-bw * 0.5, by, bw, bh, bh);
+    else ctx.rect(-bw * 0.5, by, bw, bh);
+    ctx.fill();
+    if (luz > 0.03) {
+      ctx.fillStyle = hexA(col, 0.35 + luz * 0.55);
       ctx.beginPath();
-      ctx.ellipse(x, y, p.r * 1.18, p.r * 1.02, 0, ini, ini + vuelta);
-      ctx.stroke();
-      ctx.strokeStyle = hexA(col, 0.8 * latido);
-      ctx.lineWidth = Math.max(1.8, p.r * 0.13);
+      const llena = Math.max(bh, bw * p.vol);
+      if (ctx.roundRect) ctx.roundRect(-bw * 0.5, by, llena, bh, bh);
+      else ctx.rect(-bw * 0.5, by, llena, bh);
+      ctx.fill();
+      /* La cuenta de la punta: dice dónde poner el dedo. */
       ctx.beginPath();
-      ctx.ellipse(x, y, p.r * 1.18, p.r * 1.02, 0, ini, ini + vuelta * p.vol);
-      ctx.stroke();
-      /* Y una cuenta en la punta del arco: es donde hay que poner el
-         dedo para arrastrar, así que se dice sin decirlo. */
-      const ap = ini + vuelta * p.vol;
-      ctx.fillStyle = hexA(col, 0.9 * latido);
-      ctx.beginPath();
-      ctx.arc(x + Math.cos(ap) * p.r * 1.18, y + Math.sin(ap) * p.r * 1.02,
-              p.r * 0.11, 0, 6.283);
+      ctx.arc(-bw * 0.5 + llena, by + bh * 0.5, bh * 1.3, 0, 6.283);
       ctx.fill();
     }
 
     /* ---- El destello al tocarla ----
-       Dos aros que salen a distinta velocidad. Con uno solo parecía un
-       eco de radar; con dos, parece que la piedra ha SONADO. */
+       Dos aros a distinta velocidad: con uno solo parece un eco de
+       radar, con dos parece que la pastilla ha SONADO. */
     if (p.pulso > 0.01) {
-      for (const [vel, gr] of [[1, 2.2], [1.7, 1.4]]) {
-        const k = clamp01(1 - p.pulso);
-        ctx.strokeStyle = hexA(col, p.pulso * 0.6 / vel);
-        ctx.lineWidth = Math.max(1, gr);
+      for (const [vel, gr] of [[1, 2], [1.7, 1.2]]) {
+        const kk = clamp01(1 - p.pulso);
+        ctx.strokeStyle = hexA(col, p.pulso * 0.55 / vel);
+        ctx.lineWidth = gr;
         ctx.beginPath();
-        ctx.ellipse(x, y, p.r * (1.2 + k * 1.8 * vel), p.r * (1 + k * 1.5 * vel),
-                    0, 0, 6.283);
+        const ew = w * (0.5 + kk * 0.5 * vel), eh = h * (0.5 + kk * 0.6 * vel);
+        if (ctx.roundRect) ctx.roundRect(-ew, -eh, ew * 2, eh * 2, eh * 0.5);
+        else ctx.rect(-ew, -eh, ew * 2, eh * 2);
         ctx.stroke();
       }
     }
+    ctx.restore();
   }
 
-  /* ---- Las briznas de hierba entre las piedras ----
-     Se pintan DESPUÉS: unas cuantas hierbas cruzando por delante de los
-     cantos es lo que asienta el arco en el suelo. Sin ellas las piedras
-     flotan sobre la tierra como pegatinas. */
-  ctx.strokeStyle = `rgba(${Math.round(mez(16, 96, fuego.brillo * 0.5))},${Math.round(mez(26, 78, fuego.brillo * 0.5))},${Math.round(mez(18, 48, fuego.brillo * 0.5))},0.85)`;
+  /* ---- Las briznas de delante ----
+     Cuatro hierbas cruzando la fila por abajo. Es lo que la mete en el
+     suelo en vez de dejarla flotando sobre la tierra. */
+  const p0 = panel.piedras[0];
+  if (!p0) return;
+  const ancho = panel.piedras[panel.piedras.length - 1].x - p0.x + p0.w;
+  ctx.strokeStyle = `rgba(${Math.round(mez(16, 96, fuego.brillo * 0.5))},${Math.round(mez(26, 78, fuego.brillo * 0.5))},${Math.round(mez(18, 48, fuego.brillo * 0.5))},0.8)`;
   ctx.lineCap = "round";
-  for (const p of panel.piedras) {
-    const x = p.x + d.x, y = p.y + d.y;
-    for (const b of p.hierba) {
-      const bx = x + b.dx * p.r;
-      const by = y + p.r * 0.6;
-      const mece = Math.sin(reloj * 1.1 + b.f) * U * (0.3 + clima.viento * 0.5);
-      ctx.lineWidth = 1 + b.g;
-      ctx.beginPath();
-      ctx.moveTo(bx, by);
-      ctx.quadraticCurveTo(bx + b.incl * U + mece * 0.5, by - b.alto * U * 0.6,
-                           bx + b.incl * U * 2 + mece, by - b.alto * U);
-      ctx.stroke();
-    }
+  for (let i = 0; i < 9; i++) {
+    const t = i / 8;
+    const bx = p0.x - p0.w * 0.5 + ancho * t + d.x + Math.sin(i * 41) * U;
+    const by = p0.y + p0.h * 0.5 + d.y + U * 0.4;
+    const alto = U * (1.4 + ((i * 7) % 4) * 0.6);
+    const mece = Math.sin(reloj * 1.1 + i) * U * (0.3 + clima.viento * 0.5);
+    ctx.lineWidth = 1 + (i % 3) * 0.3;
+    ctx.beginPath();
+    ctx.moveTo(bx, by);
+    ctx.quadraticCurveTo(bx + mece * 0.5, by - alto * 0.6, bx + mece, by - alto);
+    ctx.stroke();
   }
 }
 
@@ -3914,7 +4185,9 @@ function alternarPiedra(p) {
   sincronizarClima();
   tono(p.on ? 520 : 330, 0.4, "sine", 0.05);
   marcarPanelUsado();
-  decir(p.x, p.y - U * 5, `${p.conf.icono} ${p.conf.nombre}${p.on ? "" : " · apagado"}`, { dur: 1.9 });
+  /* Sin el emoji delante: ahora el icono está dibujado en la pastilla,
+     y repetirlo en la frase era decir dos veces lo mismo. */
+  decir(p.x, p.y - p.h * 0.9, `${p.conf.nombre}${p.on ? "" : " · apagado"}`, { dur: 1.8 });
 }
 
 /**
@@ -4135,7 +4408,9 @@ function dibujarCajita() {
   const d = desplazar(2.0);
   const c = sitio.cajita;
   const x = c.x + d.x, y = c.y + d.y;
-  const w = c.r * 1.5, h = c.r * 0.9;
+  /* Un poco más alta que antes: con `0.9` el cuerpo medía menos que la
+     tapa y la caja entera se leía como dos tablas apiladas. */
+  const w = c.r * 1.42, h = c.r * 1.06;
   const abre = cajita.tapa;
   const il = fuego.brillo;
 
@@ -4293,7 +4568,10 @@ function dibujarCajita() {
      y la caja parecía abierta y cerrada a la vez. */
   ctx.translate(x, boca - dentro);
   ctx.save();
-  ctx.translate(0, -h * 0.1);
+  /* Cerrada, la tapa se APOYA en el cuerpo. Con el hueco fijo de antes
+     quedaba un dedo de aire entre las dos y la caja se veía partida por
+     la mitad. El hueco sólo aparece según se abre. */
+  ctx.translate(0, mez(-h * 0.015, -h * 0.12, abre));
   /* Se finge el giro estrechándola: una tapa plana rotando de verdad se
      ve de canto y desaparece a los noventa grados. */
   ctx.scale(1, 1 - abre * 0.72);
@@ -4334,13 +4612,22 @@ function dibujarCajita() {
   ctx.fillText("y · m", 0, -h * 0.06);
   ctx.restore();
 
-  /* El filete dorado de la tapa. */
-  ctx.strokeStyle = `rgba(214,168,86,${0.34 + il * 0.4})`;
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(-w * 0.9, -h * 0.28, w * 1.8, h * 0.38, h * 0.1);
-  else ctx.rect(-w * 0.9, -h * 0.28, w * 1.8, h * 0.38);
-  ctx.stroke();
+  /* El filete dorado de la tapa, y sólo cuando está ABIERTA: cerrada,
+     dos rectángulos con su marco dorado cada uno se leen como dos
+     cajas, no como una caja con tapa. */
+  if (abre > 0.06) {
+    ctx.strokeStyle = `rgba(214,168,86,${(0.34 + il * 0.4) * clamp01(abre * 2)})`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(-w * 0.9, -h * 0.26, w * 1.8, h * 0.34, h * 0.09);
+    else ctx.rect(-w * 0.9, -h * 0.26, w * 1.8, h * 0.34);
+    ctx.stroke();
+  }
+  /* Y la sombra que la tapa echa sobre el cuerpo: es LO que las une.
+     Dos piezas que se tocan sin sombra entre medias parecen dibujadas
+     una al lado de la otra; con la sombra, una descansa sobre la otra. */
+  ctx.fillStyle = `rgba(6,4,10,${0.45 * (1 - abre * 0.7)})`;
+  ctx.fillRect(-w * 0.98, h * 0.14, w * 1.96, h * 0.09);
   ctx.restore();
 
   /* La bisagra: dos cilindros de latón donde la tapa se dobla. */
@@ -5934,6 +6221,99 @@ const recuerdo = (() => {
   };
 })();
 recuerdo.visitas = recuerdo.sumar("visitas");
+
+/* ==========================================
+   LA HISTORIA
+   ==========================================
+
+   Todo lo que pasa en el bosque pasa EN UN ORDEN. No es un montón de
+   secretos sueltos: es una cosa que lleva a otra.
+
+     claro → sendero → espesura → encontrar la X → descubrir que hace
+     falta una pala → encontrar la pala → volver a la X → excavar →
+     desenterrar el misterio → tocarlo → el búho → los ojos rojos →
+     el enjambre → el ataque → despertar a las tres.
+
+   ── POR QUÉ UNA LISTA Y NO UN MONTÓN DE BANDERAS SUELTAS ─────────────
+   Porque con banderas sueltas, cada sitio del código que quiere saber
+   «¿ya puede pasar esto?» acaba escribiendo su propia condición, y en
+   cuanto hay doce, dos de ellas se contradicen. Aquí hay UN orden, y
+   preguntar es mirar si el paso anterior ya está hecho.
+
+   ── Y SE ACUERDA ────────────────────────────────────────────────────
+   Los hitos se guardan. Si cierras y vuelves mañana, la pala sigue
+   siendo tuya y la X sigue excavada. Lo que NO se guarda es dónde
+   estabas: siempre se vuelve al claro, que es el sitio al que se
+   vuelve. */
+
+const PASOS = [
+  "sendero",     // has visto que hay un camino
+  "espesura",    // has llegado al bosque de dentro
+  "equis",       // has encontrado la marca del suelo
+  "faltaPala",   // y sabes que no puedes cavar con las manos
+  "pala",        // la tienes
+  "cavado",      // has cavado los cuatro golpes
+  "misterio",    // ha salido de la tierra
+  "revelado",    // lo has tocado
+  "buho",        // el búho te ha hablado
+  "ojos",        // has visto los ojos rojos
+  "enjambre",    // el evento secreto
+  "ataque",      // te ha atacado
+  "despertar",   // has despertado a las tres
+];
+
+const historia = {
+  hitos: new Set(),
+
+  /** ¿Ya ha pasado esto? */
+  hecho(id) { return this.hitos.has(id); },
+
+  /**
+   * Marca un hito. Devuelve `true` sólo la PRIMERA vez, hoy o cualquier
+   * otro día. Con eso, quien lo llama puede poner la frase, el sonido y
+   * el destello dentro del `if` y olvidarse de comprobar nada más.
+   */
+  marcar(id) {
+    if (this.hitos.has(id)) return false;
+    this.hitos.add(id);
+    recuerdo.poner("h:" + id, 1);
+    return true;
+  },
+
+  /** El último paso alcanzado, como número. Para lo que necesite orden. */
+  get paso() {
+    let n = -1;
+    for (let i = 0; i < PASOS.length; i++) if (this.hitos.has(PASOS[i])) n = i;
+    return n;
+  },
+
+  /** Empieza de cero. Sólo para probar: no lo llama nadie del juego. */
+  olvidar() {
+    for (const id of PASOS) { this.hitos.delete(id); recuerdo.poner("h:" + id, 0); }
+  },
+};
+for (const id of PASOS) if (recuerdo.leer("h:" + id, 0)) historia.hitos.add(id);
+
+/* ---- El inventario ------------------------------------------------------
+   De momento sólo hay una cosa que se pueda llevar encima, pero el
+   sistema es el mismo para una que para diez: una lista de lo que se
+   tiene y cuál está en la mano.                                        */
+
+const bolsa = {
+  tiene: new Set(),
+  enMano: null,
+
+  coger(id) {
+    if (this.tiene.has(id)) return false;
+    this.tiene.add(id);
+    recuerdo.poner("obj:" + id, 1);
+    return true;
+  },
+  lleva(id) { return this.tiene.has(id); },
+  equipar(id) { this.enMano = this.tiene.has(id) ? id : null; },
+  alterna(id) { this.enMano = this.enMano === id ? null : (this.tiene.has(id) ? id : null); },
+};
+for (const id of ["pala", "reliquia"]) if (recuerdo.leer("obj:" + id, 0)) bolsa.tiene.add(id);
 
 const logros = new Set();
 
@@ -7842,8 +8222,14 @@ zona.addEventListener("pointermove", (e) => {
   /* El volumen de una piedra del panel. */
   if (arrastrePanel && arrastrePanel.id === e.pointerId) {
     const dx2 = p.x - arrastrePanel.x0;
-    if (Math.abs(dx2) > 4) arrastrePanel.movido = true;
-    const nv = clamp01(arrastrePanel.vol0 + dx2 / (U * 26));
+    /* Seis píxeles de margen y no cuatro: en un móvil, un toque limpio
+       mueve el dedo tres o cuatro, y con el margen justo se colaban
+       arrastres de volumen minúsculos en vez de encender el ambiente. */
+    if (Math.abs(dx2) > 6) arrastrePanel.movido = true;
+    /* El recorrido es el ancho de la pastilla por tres: cabe entero en
+       un pulgar sin levantarlo, y no hace falta cruzar la pantalla para
+       subir el volumen del todo. */
+    const nv = clamp01(arrastrePanel.vol0 + dx2 / (arrastrePanel.piedra.w * 3));
     arrastrePanel.piedra.vol = nv;
     volumen(arrastrePanel.piedra.conf.id, nv);
     marcarPanelUsado();
@@ -7903,10 +8289,18 @@ function tocarEnBosque(p, e) {
     return;
   }
 
-  /* 2. LAS PIEDRAS DEL PANEL. */
+  /* 2. LAS PASTILLAS DEL SONIDO.
+     El área de toque es un RECTÁNGULO más alto y más ancho que la
+     pastilla, no un círculo: son pastillas, y con un círculo las
+     esquinas se quedaban fuera. Y se estira hacia abajo, que es por
+     donde falla el dedo en un móvil. */
+  const dPan = desplazar(2.1);
   for (const piedra of panel.piedras) {
-    if (dentroDe(p.x, p.y, piedra.x, piedra.y, piedra.r * 1.35)) {
+    const dx = p.x - (piedra.x + dPan.x);
+    const dy = p.y - (piedra.y + dPan.y);
+    if (Math.abs(dx) < piedra.w * 0.58 && dy > -piedra.h * 0.62 && dy < piedra.h * 0.78) {
       arrastrePanel = { id: e.pointerId, piedra, x0: p.x, vol0: piedra.vol, movido: false };
+      piedra.hundida = 1;
       if (e.cancelable) e.preventDefault();
       return;
     }
