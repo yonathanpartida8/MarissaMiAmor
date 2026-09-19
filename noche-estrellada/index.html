@@ -595,17 +595,56 @@ const CONF = {
      Los estados van por temperatura, de 0 a 1 y un poco más allá. Cada
      uno tiene su color y lo que se dice al comérselo.                  */
   bombon: {
-    calienta: 0.36,         // cuánto sube por segundo pegado a la llama
+    /* Cuánto se tuesta por segundo una cara puesta de lleno en la
+       llama. Con 0.22, un bombón bien hecho son unos cinco segundos de
+       fuego: lo justo para que dé tiempo a girarlo y no tan largo como
+       para que aburra. */
+    calienta: 0.22,
     enfria: 0.055,          // cuánto baja por segundo lejos del fuego
     radioCalor: 1.0,        // en unidades de radio de fogata
+
+    /* ---- LA FÍSICA ----
+       El palo es una varilla con inercia colgada del mango, y el bombón
+       cuelga de su punta con un muelle corto. Estos números son todo lo
+       que hay que tocar para que se sienta más pesado o más ágil. */
+    fisica: {
+      muellePalo: 130,      // cuánto tira el palo hacia donde apunta el dedo
+      frenoPalo: 15,        // y cuánto se frena. Bajo = más bamboleo
+      pesoPalo: 2.6,        // cuánto lo vence la gravedad estando en cruz
+      muelleLargo: 150,     // lo mismo para estirarlo y encogerlo
+      frenoLargo: 17,
+      muelleBombon: 320,    // el muelle del bombón a la punta
+      frenoBombon: 13,
+      gravedad: 190,        // px/s² sobre el bombón. No es 9.8: es dibujo
+      cuelga: 0.42,         // cuánto cuelga por debajo de la punta, en radios
+      maxSeparacion: 1.3,   // hasta dónde puede irse de la punta, en radios
+    },
+
+    /* ---- EL CALOR ----
+       `masa` es la inercia térmica: cuánto tarda en coger la temperatura
+       del sitio donde está. Es LA cifra importante, porque es la que
+       hace que siga tostándose un rato después de sacarlo del fuego. */
+    masa: 1.35,
+    /* Por debajo de esto no se tuesta nada: el azúcar necesita un
+       mínimo para empezar a dorarse. Es lo que hace que acercarlo un
+       poco no sirva de nada y haya que meterlo de verdad. */
+    umbral: 0.16,
+    /* Cuántos lados se tuestan por separado. Con seis, girarlo se nota
+       y no cuesta nada. */
+    lados: 6,
+    /* Cuánto calor se reparte entre lados vecinos por segundo: el
+       azúcar conduce, así que un lado muy tostado calienta a los de al
+       lado. Sin esto salían seis gajos de colores y parecía una pelota
+       de playa. */
+    conduce: 0.55,
     /* La probabilidad, por segundo, de que se prenda de golpe cuando ya
        está muy caliente. Es lo que hace que ninguna tostada sea igual. */
     sorpresa: 0.10,
     estados: [
       { hasta: 0.14, id: "crudo",      nombre: "crudo",       color: ["#fffaf0", "#f0e4d0"] },
-      { hasta: 0.34, id: "calentando", nombre: "calentando",  color: ["#fff2d8", "#f0dcb0"] },
-      { hasta: 0.56, id: "dorado",     nombre: "dorado",      color: ["#f7d79a", "#dda85e"] },
-      { hasta: 0.76, id: "tostado",    nombre: "tostado",     color: ["#c98a4a", "#8f5424"] },
+      { hasta: 0.34, id: "calentando", nombre: "calentando",  color: ["#fbe7bd", "#ecd08e"] },
+      { hasta: 0.56, id: "dorado",     nombre: "dorado",      color: ["#e8b468", "#c2822f"] },
+      { hasta: 0.76, id: "tostado",    nombre: "tostado",     color: ["#b8702f", "#7d4418"] },
       { hasta: 0.92, id: "quemandose", nombre: "quemándose",  color: ["#7a4420", "#3e1e0c"] },
       { hasta: 99,   id: "quemado",    nombre: "quemado",     color: ["#2e2420", "#100c0a"] },
     ],
@@ -2830,21 +2869,54 @@ function dibujarTroncos(x, y, r, lado) {
 // es lo que hace que se sienta un objeto y no un cursor.
 
 const bombon = {
-  /* Dónde está la punta del palo, en píxeles. */
-  x: 0, y: 0,
-  /* A dónde la lleva el dedo. */
+  /* ---- EL PALO ----
+     No es una línea del mango al dedo: es una varilla con inercia. Se
+     guarda su ÁNGULO y su LARGO, y la punta sale de los dos. Así el
+     palo puede ir con retraso, pasarse de largo y volver, que es lo que
+     hace un palo de verdad en la mano de alguien. */
+  ang: 0, angV: 0, angObj: 0,
+  largo: 0, largoV: 0, largoObj: 0,
+  /* Dónde ha acabado la punta, y con qué velocidad. El bombón lee esto
+     y nada más: por eso hereda el impulso del palo sin que nadie se lo
+     pase. */
+  px: 0, py: 0, pvx: 0, pvy: 0,
+  /* El mango del palo, clavado en el suelo. */
+  mangoX: 0, mangoY: 0,
+  /* A dónde lleva el dedo la punta. */
   destX: 0, destY: 0,
   agarrado: false,
   dedoId: null,
+
+  /* ---- EL BOMBÓN ----
+     No está clavado en la punta: cuelga de ella con un muelle corto y
+     un tope duro. Tiene su propia posición y su propia velocidad, y de
+     la diferencia entre dónde está y dónde debería salen solos el
+     balanceo, la inercia y la rotación. */
+  x: 0, y: 0, vx: 0, vy: 0,
+  giro: 0,
+
+  /* ---- EL CALOR ----
+     `calor` es la temperatura de dentro, con inercia: sube despacio
+     junto al fuego y BAJA DESPACIO al sacarlo, así que sigue tostándose
+     un rato después. `lados` es cuánto se ha tostado cada cara, y por
+     eso hay que girarlo. `tueste` es la media, que es lo que mira todo
+     lo demás. */
+  calor: 0,
+  lados: null,
   tueste: 0,
+  blando: 0,            // cuánto se ha reblandecido: se hunde y se estira
+  burbujas: [],
+  relojBurbuja: 0,
+  relojGota: 0,
+
   ardiendo: 0,          // 0..1, si se ha prendido
   hinchado: 0,
   comido: 0,            // animación de comérselo
-  /* El mango del palo, clavado en el suelo. */
-  mangoX: 0, mangoY: 0,
   relojHumo: 0,
   seguidosQuemados: 0,
   vivo: true,
+  /* Sobrante del paso fijo: la física va a 120 Hz pase lo que pase. */
+  sobra: 0,
 };
 
 const diceComer = {};
@@ -2855,15 +2927,41 @@ function colocarBombon(reiniciar) {
   const f = sitio.fogata;
   bombon.mangoX = f.x + U * (apaisado ? 20 : 23);
   bombon.mangoY = f.y + U * 5;
-  if (reiniciar || !bombon.vivo) {
-    bombon.x = bombon.destX = f.x + U * 13;
-    bombon.y = bombon.destY = f.y - U * 6;
+  /* El sitio de reposo del palo: apuntando al fuego y un poco hacia
+     arriba, como si estuviera apoyado esperando. */
+  bombon.largoObj = U * (apaisado ? 16 : 19);
+  bombon.angObj = Math.atan2(-U * 7, -bombon.largoObj * 0.8);
+
+  if (reiniciar || !bombon.vivo || !bombon.estrenado) {
+    bombon.estrenado = true;
+    bombon.ang = bombon.angObj;
+    bombon.angV = 0;
+    bombon.largo = bombon.largoObj;
+    bombon.largoV = 0;
+    recolocarPunta();
+    bombon.x = bombon.px; bombon.y = bombon.py + U * 1.2;
+    bombon.vx = bombon.vy = 0;
+    bombon.giro = 0;
+    bombon.calor = 0;
     bombon.tueste = 0;
+    bombon.lados = new Float32Array(CONF.bombon.lados);
+    bombon.blando = 0;
+    bombon.burbujas = [];
     bombon.ardiendo = 0;
     bombon.hinchado = 0;
     bombon.comido = 0;
     bombon.vivo = true;
+  } else {
+    /* Al remedir la pantalla no se reinicia nada: sólo se vuelve a
+       colgar de donde toca ahora. */
+    recolocarPunta();
   }
+  if (!bombon.lados) bombon.lados = new Float32Array(CONF.bombon.lados);
+}
+
+function recolocarPunta() {
+  bombon.px = bombon.mangoX + Math.cos(bombon.ang) * bombon.largo;
+  bombon.py = bombon.mangoY + Math.sin(bombon.ang) * bombon.largo;
 }
 
 /** En qué estado está, según el tueste. */
@@ -2873,6 +2971,17 @@ function estadoBombon() {
   return CONF.bombon.estados[CONF.bombon.estados.length - 1];
 }
 
+/* ---- EL PASO FIJO -------------------------------------------------------
+   Los muelles se integran a 120 Hz SIEMPRE, pase lo que pase con los
+   fotogramas. No es manía: un muelle rígido integrado con un `dt` que
+   sube de golpe —una pestaña que vuelve, un móvil que se atasca— no se
+   pasa de la raya, EXPLOTA, y el bombón sale disparado fuera de la
+   pantalla para no volver. Con paso fijo eso no puede pasar ni aunque
+   el navegador se pare un segundo entero.                             */
+
+const PASO_BOMBON = 1 / 120;
+const MAX_PASOS_BOMBON = 8;
+
 function moverBombon(dt) {
   if (!bombon.vivo) {
     /* Se lo ha comido: la animación y, cuando acaba, otro bombón. */
@@ -2881,72 +2990,287 @@ function moverBombon(dt) {
     return;
   }
 
-  const f = sitio.fogata;
+  bombon.sobra += dt;
+  let pasos = 0;
+  while (bombon.sobra >= PASO_BOMBON && pasos < MAX_PASOS_BOMBON) {
+    bombon.sobra -= PASO_BOMBON;
+    pasos++;
+    pasoFisicaBombon(PASO_BOMBON);
+  }
+  /* Si se ha ido tantísimo tiempo que no caben los pasos, se tira lo
+     que sobra en vez de acumularlo: acumularlo sólo garantiza que el
+     siguiente fotograma tampoco llegue. */
+  if (pasos >= MAX_PASOS_BOMBON) bombon.sobra = 0;
 
-  /* La punta persigue al dedo con retraso: el palo tiene peso. */
-  bombon.x = damp(bombon.x, bombon.destX, bombon.agarrado ? 13 : 4, dt);
-  bombon.y = damp(bombon.y, bombon.destY, bombon.agarrado ? 13 : 4, dt);
+  cocerBombon(dt);
+}
 
-  /* ---- El calor ----
-     Cae con el cuadrado de la distancia: pegado quema y a dos palmos
-     casi no hace nada. Esa curva es todo el juego. */
-  const d = Math.hypot(bombon.x - f.x, (bombon.y - (f.y - f.r)) * 1.25);
-  const alcance = f.r * 4.2 * CONF.bombon.radioCalor;
-  const cerca = clamp01(1 - d / alcance);
-  const calor = cerca * cerca * fuego.vida;
+function pasoFisicaBombon(h) {
+  const F = CONF.bombon.fisica;
 
-  if (calor > 0.04) {
-    bombon.tueste += CONF.bombon.calienta * calor * dt;
-    /* Se hincha al calentarse: un malvavisco al fuego se infla antes de
-       dorarse, y sin eso no parece un malvavisco. */
-    bombon.hinchado = damp(bombon.hinchado, clamp01(calor * 1.3), 2.2, dt);
-  } else {
-    bombon.tueste = Math.max(0, bombon.tueste - CONF.bombon.enfria * dt);
-    bombon.hinchado = damp(bombon.hinchado, 0, 1.1, dt);
+  /* ---- 1. A dónde quiere ir el palo ----
+     Si lo llevas cogido, apunta al dedo. Si no, vuelve a su sitio. El
+     largo se limita aquí y no en el dedo: así, cuando estiras más allá
+     del alcance, el palo se queda tirante y se nota que TIENE un
+     alcance en vez de seguirte a cualquier parte. */
+  if (bombon.agarrado) {
+    const dx = bombon.destX - bombon.mangoX;
+    const dy = bombon.destY - bombon.mangoY;
+    bombon.angObj = Math.atan2(dy, dx);
+    bombon.largoObj = clamp(Math.hypot(dx, dy), U * 9, U * (apaisado ? 30 : 34));
   }
 
-  /* ---- La sorpresa ----
-     Cuando ya está caliente, puede prenderse de golpe. Es lo que hace
-     que ninguna tostada se parezca a la anterior. */
-  if (!bombon.ardiendo && bombon.tueste > 0.55 && calor > 0.3) {
-    if (Math.random() < CONF.bombon.sorpresa * calor * dt * 60 / 60) {
-      prenderBombon();
+  /* ---- 2. El palo, como muelle angular ----
+     Y con la gravedad venciéndolo: un palo sujeto por un extremo pesa
+     más cuanto más en cruz esté, que es por lo que cuesta mantenerlo
+     horizontal y no cuesta nada tenerlo vertical. El coseno del ángulo
+     es exactamente ese brazo de palanca. */
+  let angA = (bombon.angObj - bombon.ang) * F.muellePalo - bombon.angV * F.frenoPalo;
+  angA += Math.cos(bombon.ang) * F.pesoPalo * (bombon.largo / (U * 20));
+  bombon.angV += angA * h;
+  bombon.ang += bombon.angV * h;
+
+  let larA = (bombon.largoObj - bombon.largo) * F.muelleLargo - bombon.largoV * F.frenoLargo;
+  bombon.largoV += larA * h;
+  bombon.largo += bombon.largoV * h;
+
+  /* ---- 3. La punta, y con qué velocidad se mueve ---- */
+  const pxAntes = bombon.px, pyAntes = bombon.py;
+  recolocarPunta();
+  bombon.pvx = (bombon.px - pxAntes) / h;
+  bombon.pvy = (bombon.py - pyAntes) / h;
+
+  /* ---- 4. El bombón colgando de la punta ----
+     Muelle hacia el punto de reposo —un poco por debajo de la punta—,
+     gravedad, y rozamiento. De aquí salen el balanceo y la inercia sin
+     escribir ni una línea de «si se mueve, inclínalo». */
+  const r = radioBombon();
+  const repY = bombon.py + r * F.cuelga;
+  let fx = (bombon.px - bombon.x) * F.muelleBombon - bombon.vx * F.frenoBombon;
+  let fy = (repY - bombon.y) * F.muelleBombon - bombon.vy * F.frenoBombon + F.gravedad;
+  /* Derretido pesa más y se frena menos: se bambolea como un flan. */
+  const flan = 1 + bombon.blando * 0.8;
+  bombon.vx += (fx / flan) * h;
+  bombon.vy += (fy / flan) * h;
+  bombon.x += bombon.vx * h;
+  bombon.y += bombon.vy * h;
+
+  /* ---- 5. El tope duro ----
+     El palo está CLAVADO en el bombón: por muy deprisa que muevas la
+     mano, no se puede separar más de un radio y pico. Un muelle solo no
+     basta —con un tirón fuerte se estira sin límite y se ve el bombón
+     flotando lejos del palo—, así que se corta en seco Y se le quita la
+     parte de la velocidad que iba en esa dirección. Sin quitarla, se
+     queda rebotando contra el tope para siempre. */
+  const dx2 = bombon.x - bombon.px, dy2 = bombon.y - bombon.py;
+  const dist = Math.hypot(dx2, dy2);
+  const tope = r * F.maxSeparacion;
+  if (dist > tope && dist > 0.0001) {
+    const nx = dx2 / dist, ny = dy2 / dist;
+    bombon.x = bombon.px + nx * tope;
+    bombon.y = bombon.py + ny * tope;
+    const radial = bombon.vx * nx + bombon.vy * ny;
+    if (radial > 0) { bombon.vx -= nx * radial; bombon.vy -= ny * radial; }
+  }
+
+  /* ---- 6. El giro ----
+     El bombón se inclina hacia donde cuelga. No hay ángulo que simular:
+     ES la dirección en la que está tirando, y por eso al frenar de
+     golpe se ladea solo. */
+  bombon.giro = Math.atan2(bombon.y - bombon.py, bombon.x - bombon.px) - Math.PI / 2;
+}
+
+/** El radio del bombón ahora mismo, con lo hinchado y lo blando. */
+function radioBombon() {
+  return U * (2.6 + bombon.hinchado * 0.9);
+}
+
+/* ---- COCER EL BOMBÓN ----------------------------------------------------
+
+   ── POR QUÉ NO ES `if (cercaDelFuego) quemar()` ──────────────────────
+   Porque así no se tuesta nada. Se enciende y se apaga, y lo único que
+   se puede hacer es acercarlo y esperar.
+
+   Aquí hay tres cosas encadenadas, y cada una tarda lo suyo:
+
+     1. el SITIO donde está tiene una temperatura (cae con el cuadrado
+        de la distancia al fuego, y depende de cómo esté el fuego);
+     2. el bombón coge esa temperatura DESPACIO, porque tiene masa. Por
+        eso sigue tostándose un rato después de sacarlo, y por eso
+        pasarlo un segundo por la llama no hace nada;
+     3. y sólo por encima de cierta temperatura empieza a dorarse. El
+        azúcar necesita un mínimo; por debajo, se calienta y ya.
+
+   ── Y SE TUESTA POR LADOS ────────────────────────────────────────────
+   Seis caras, cada una con su tueste. Cada una recibe calor según
+   CUÁNTO MIRA AL FUEGO, así que el lado de abajo se quema mientras el
+   de arriba sigue blanco, y hay que GIRARLO. Que es lo que se hace con
+   un malvavisco de verdad.
+
+   El calor se reparte un poco entre caras vecinas, porque el azúcar
+   conduce. Sin eso salían seis gajos de colores planos y parecía una
+   pelota de playa.                                                    */
+
+function cocerBombon(dt) {
+  const f = sitio.fogata;
+  const C = CONF.bombon;
+  const r = radioBombon();
+
+  /* ---- 1. La temperatura del sitio ---- */
+  const d = Math.hypot(bombon.x - f.x, (bombon.y - (f.y - f.r)) * 1.25);
+  const alcance = f.r * 4.2 * C.radioCalor;
+  const cerca = clamp01(1 - d / alcance);
+  /* El cuadrado: pegado quema y a dos palmos casi no hace nada. Esa
+     curva es todo el juego. */
+  const ambiente = cerca * cerca * clamp(fuego.vida, 0, 1.6)
+                 + bombon.ardiendo * 0.9;
+
+  /* ---- 2. El bombón coge esa temperatura, pero con inercia ---- */
+  bombon.calor = damp(bombon.calor, ambiente, 1 / C.masa, dt);
+
+  /* ---- 3. Cada cara se tuesta según lo que mire al fuego ---- */
+  const n = C.lados;
+  if (!bombon.lados || bombon.lados.length !== n) bombon.lados = new Float32Array(n);
+  const haciaFuego = Math.atan2((f.y - f.r) - bombon.y, f.x - bombon.x);
+  const paso = 6.283185 / n;
+  let suma = 0;
+
+  for (let i = 0; i < n; i++) {
+    /* Hacia dónde mira esta cara, contando el giro del bombón. */
+    const mira = bombon.giro + i * paso;
+    /* Cuánto le da el fuego: 1 de frente, 0 de canto, nada de espaldas.
+       El +0.18 es el calor que le llega por el aire aunque esté del
+       otro lado; sin él, la cara de arriba no se tostaba NUNCA por
+       mucho que giraras, porque siempre había alguna cara tapándola. */
+    const encara = Math.max(0, Math.cos(mira - haciaFuego)) * 0.82 + 0.18;
+    const recibe = bombon.calor * encara;
+
+    if (recibe > C.umbral) {
+      bombon.lados[i] += C.calienta * (recibe - C.umbral) * dt;
+    } else {
+      bombon.lados[i] = Math.max(0, bombon.lados[i] - C.enfria * dt * 0.5);
+    }
+    bombon.lados[i] = Math.min(bombon.lados[i], 1.15);
+    suma += bombon.lados[i];
+  }
+
+  /* ---- 4. El azúcar conduce: las caras se igualan un poco ----
+     Se hace con una copia, si no cada cara leería el valor ya
+     modificado de su vecina y el calor viajaría en una dirección. */
+  const k = clamp01(C.conduce * dt);
+  if (k > 0) {
+    const copia = bombon.lados.slice();
+    for (let i = 0; i < n; i++) {
+      const izq = copia[(i + n - 1) % n], der = copia[(i + 1) % n];
+      bombon.lados[i] += ((izq + der) * 0.5 - copia[i]) * k;
     }
   }
-  /* Y por encima de «quemándose» se prende seguro. */
-  if (!bombon.ardiendo && bombon.tueste > 0.86) prenderBombon();
 
-  /* ---- Ardiendo ---- */
+  bombon.tueste = suma / n;
+
+  /* ---- 5. Lo blando y lo hinchado ----
+     Se hincha con el calor y se ablanda con el tueste. Lo blando es lo
+     que luego le hace colgar la barriga y gotear. */
+  bombon.hinchado = damp(bombon.hinchado, clamp01(bombon.calor * 1.25), 2.2, dt);
+  /* Reblandecerse pide calor DE VERDAD, no cualquier tibieza: con
+     `calor * 1.6` se derretía entero sólo por estar cerca, y un bombón
+     que gotea antes de dorarse no es un bombón. Y al tostarse vuelve a
+     endurecerse por fuera, que es la costra. */
+  bombon.blando = damp(bombon.blando,
+    clamp01((bombon.calor - 0.3) * 1.1) * clamp01(1 - bombon.tueste * 0.55), 1.4, dt);
+
+  /* ---- 6. Las burbujas ----
+     El azúcar derretido burbujea. Nacen en un punto de la superficie,
+     crecen y revientan. Es lo que hace que se vea COCIÉNDOSE y no
+     simplemente cambiando de color. */
+  for (let i = bombon.burbujas.length - 1; i >= 0; i--) {
+    const b = bombon.burbujas[i];
+    b.t += dt;
+    if (b.t >= b.dur) {
+      bombon.burbujas.splice(i, 1);
+      /* Al reventar deja una marquita más tostada en su cara. */
+      const cara = Math.round(b.a / paso) % n;
+      bombon.lados[(cara + n) % n] = Math.min(1.15, bombon.lados[(cara + n) % n] + 0.012);
+    }
+  }
+  if (bombon.calor > 0.3 && bombon.burbujas.length < 7) {
+    bombon.relojBurbuja -= dt;
+    if (bombon.relojBurbuja <= 0) {
+      bombon.relojBurbuja = azar(0.12, 0.5) / clamp(bombon.calor, 0.3, 1.5);
+      /* Nacen donde más calor hay, que es donde el fuego pega. */
+      const sesgo = haciaFuego - bombon.giro + azar(-1.1, 1.1);
+      bombon.burbujas.push({
+        a: sesgo, rr: azar(0.16, 0.34),
+        t: 0, dur: azar(0.5, 1.5),
+      });
+    }
+  }
+
+  /* ---- 7. Las gotas ----
+     Cuando está muy blando, se le cae azúcar derretido. Y si cae sobre
+     la fogata, chisporrotea. */
+  if (bombon.blando > 0.45) {
+    bombon.relojGota -= dt;
+    if (bombon.relojGota <= 0) {
+      bombon.relojGota = azar(0.5, 2.4) / bombon.blando;
+      const e = estadoBombon();
+      soltar(bombon.x + azar(-r * 0.5, r * 0.5), bombon.y + r * 0.8, {
+        vx: bombon.vx * 0.25 + azar(-6, 6),
+        vy: azar(4, 22),
+        vida: azar(0.7, 1.4),
+        tam: U * azar(0.28, 0.5),
+        tipo: TIPO.CENIZA,
+      });
+      void e;
+      /* Si cae cerca del fuego, se oye. */
+      if (Math.abs(bombon.x - f.x) < f.r * 2.2 && bombon.y < f.y) {
+        setTimeout(() => sisear(0.18), 220);
+      }
+    }
+  }
+
+  /* ---- 8. La sorpresa ----
+     Cuando ya está muy caliente, puede prenderse de golpe. Es lo que
+     hace que ninguna tostada se parezca a la anterior. */
+  if (!bombon.ardiendo && bombon.tueste > 0.55 && bombon.calor > 0.45) {
+    if (Math.random() < C.sorpresa * bombon.calor * dt) prenderBombon();
+  }
+  /* Y si alguna cara se pasa del todo, arde seguro. */
+  if (!bombon.ardiendo) {
+    for (let i = 0; i < n; i++) if (bombon.lados[i] > 0.95) { prenderBombon(); break; }
+  }
+
+  /* ---- 9. Ardiendo ---- */
   if (bombon.ardiendo > 0) {
     bombon.ardiendo = Math.min(1, bombon.ardiendo + dt * 0.9);
-    bombon.tueste += 0.34 * dt;
-    /* Se apaga solo si lo sacas del fuego, pero tarda. */
-    if (calor < 0.05) bombon.ardiendo -= dt * 0.22;
+    /* Arder tuesta TODAS las caras, no sólo la que mira al fuego. */
+    for (let i = 0; i < n; i++) bombon.lados[i] = Math.min(1.15, bombon.lados[i] + 0.3 * dt);
+    /* Se apaga solo si lo sacas del fuego, pero tarda. Y si lo agitas
+       de lado, se apaga antes: eso es soplarlo con el movimiento. */
+    const agita = Math.hypot(bombon.vx, bombon.vy) / (U * 60);
+    if (ambiente < 0.12) bombon.ardiendo -= dt * (0.22 + agita * 0.5);
     if (bombon.ardiendo <= 0) bombon.ardiendo = 0;
 
     if (Math.random() < dt * 22) {
       soltar(bombon.x + azar(-U, U), bombon.y - U * 0.6, {
-        vx: azar(-20, 20), vy: azar(-80, -30),
+        vx: azar(-20, 20) + fuego.inclina * 30, vy: azar(-80, -30),
         vida: azar(0.5, 1.2), tam: azar(0.9, 2), tipo: TIPO.CHISPA,
       });
     }
   }
 
-  /* ---- El humo del bombón ---- */
+  /* ---- 10. El humo del bombón ---- */
   if (bombon.tueste > 0.58) {
     bombon.relojHumo -= dt;
     if (bombon.relojHumo <= 0) {
       bombon.relojHumo = mez(0.42, 0.1, clamp01((bombon.tueste - 0.58) / 0.4));
       soltar(bombon.x + azar(-U * 0.6, U * 0.6), bombon.y - U * 1.2, {
-        vx: azar(-6, 6), vy: azar(-30, -14),
+        vx: azar(-6, 6) + fuego.inclina * 18, vy: azar(-30, -14),
         vida: azar(2.2, 3.6), tam: azar(U * 0.6, U * 1.2),
         tipo: TIPO.HUMO, tono: 0.8,
       });
     }
   }
-
-  /* Tope: más allá de quemado ya no hay nada. */
-  bombon.tueste = Math.min(bombon.tueste, 1.15);
 }
 
 function prenderBombon() {
@@ -3002,21 +3326,48 @@ function comerBombon() {
   contarLogro("bombon");
 }
 
+/**
+ * El color de una cara, según lo tostada que esté.
+ *
+ * El último estado tiene `hasta: 99` para que nada se salga de la
+ * lista, y eso escondía un fallo: al interpolar dentro de él, con un
+ * tramo de 98 de ancho y un tueste que como mucho llega a 1.15, el
+ * factor salía 0.002 y el negro del quemado no se veía JAMÁS. Un bombón
+ * carbonizado se quedaba marrón claro. Así que el tramo del último se
+ * recorta al tueste máximo de verdad.
+ */
+const TUESTE_MAX = 1.15;
+
+function colorTueste(t, hondo) {
+  const est = CONF.bombon.estados;
+  let i = 0;
+  while (i < est.length - 1 && t >= est[i].hasta) i++;
+  const antes = est[Math.max(0, i - 1)];
+  const desde = i === 0 ? 0 : antes.hasta;
+  const hasta = Math.min(est[i].hasta, TUESTE_MAX);
+  const k = clamp01((t - desde) / Math.max(0.01, hasta - desde));
+  return mezColor(antes.color[hondo ? 1 : 0], est[i].color[hondo ? 1 : 0], k);
+}
+
 function dibujarBombon() {
   const d = desplazar(1.9);
   const bx = bombon.x + d.x, by = bombon.y + d.y;
+  const px = bombon.px + d.x, py = bombon.py + d.y;
   const mx = bombon.mangoX + d.x, my = bombon.mangoY + d.y;
 
   /* ---- El palo ----
-     Una curva, no una recta: un palo de verdad se dobla con el peso, y
-     el punto de control se desplaza hacia abajo según lo estirado que
-     esté. Eso es lo que le da flexión sin simular nada. */
-  const largo = Math.hypot(bx - mx, by - my);
-  const comba = clamp(largo * 0.08, 0, U * 5);
-  const cxP = (mx + bx) / 2;
-  const cyP = (my + by) / 2 + comba;
+     Una curva, no una recta: un palo de verdad se dobla con el peso. Y
+     la comba no es fija: sale de lo LEJOS que esté la punta de donde
+     debería estar si el palo fuera rígido. Cuando lo mueves deprisa el
+     palo va por detrás, y entonces se dobla de verdad. */
+  const largo = Math.hypot(px - mx, py - my);
+  const retraso = bombon.angV * largo * 0.06;
+  const comba = clamp(largo * 0.07 + retraso, -U * 6, U * 6);
+  const nx = -(py - my) / Math.max(1, largo), ny = (px - mx) / Math.max(1, largo);
+  const cxP = (mx + px) / 2 + nx * comba;
+  const cyP = (my + py) / 2 + ny * comba + largo * 0.05;
 
-  const g = ctx.createLinearGradient(mx, my, bx, by);
+  const g = ctx.createLinearGradient(mx, my, px, py);
   g.addColorStop(0, `rgb(${Math.round(mez(58, 130, fuego.brillo))},${Math.round(mez(42, 86, fuego.brillo))},${Math.round(mez(30, 54, fuego.brillo))})`);
   g.addColorStop(1, `rgb(${Math.round(mez(78, 170, fuego.brillo))},${Math.round(mez(56, 112, fuego.brillo))},${Math.round(mez(38, 68, fuego.brillo))})`);
   ctx.strokeStyle = g;
@@ -3024,7 +3375,7 @@ function dibujarBombon() {
   ctx.lineCap = "round";
   ctx.beginPath();
   ctx.moveTo(mx, my);
-  ctx.quadraticCurveTo(cxP, cyP, bx, by);
+  ctx.quadraticCurveTo(cxP, cyP, px, py);
   ctx.stroke();
 
   if (!bombon.vivo) {
@@ -3033,33 +3384,94 @@ function dibujarBombon() {
   }
 
   /* ---- El bombón ---- */
-  const e = estadoBombon();
-  /* El color se interpola DENTRO del estado, no salta de uno a otro:
-     así se ve cómo se va dorando en vez de cambiar de golpe. */
-  const iEstado = CONF.bombon.estados.indexOf(e);
-  const antes = CONF.bombon.estados[Math.max(0, iEstado - 1)];
-  const desde = iEstado === 0 ? 0 : antes.hasta;
-  const k = clamp01((bombon.tueste - desde) / Math.max(0.01, e.hasta - desde));
-  const claro = mezColor(antes.color[0], e.color[0], k);
-  const hondo = mezColor(antes.color[1], e.color[1], k);
+  const r = radioBombon();
+  /* ---- La forma ----
+     De frío es un CILINDRO de pie: más alto que ancho. Al calentarse se
+     hincha y al derretirse se hunde —se ensancha y se aplasta—, hasta
+     quedarse casi redondo. Antes empezaba ya casi circular y no se
+     notaba ningún cambio: era la misma bola siempre, sólo que de otro
+     color. */
+  const ancho = r * (0.9 + bombon.blando * 0.26 + bombon.hinchado * 0.1);
+  const alto  = r * (1.3 - bombon.blando * 0.22 - bombon.hinchado * 0.05);
 
-  const r = U * (2.6 + bombon.hinchado * 0.9);
-  const alto = r * (1.15 - bombon.hinchado * 0.18);
-
-  /* La sombra de la llama sobre él. */
   ctx.save();
   ctx.translate(bx, by);
+  ctx.rotate(bombon.giro);
 
-  /* Cuerpo: un cilindro redondeado, que es la forma de un malvavisco.
-     Una bola parece un caramelo. */
-  const gb = ctx.createLinearGradient(-r, -alto, r, alto);
-  gb.addColorStop(0, claro);
-  gb.addColorStop(0.5, mezColor(claro, hondo, 0.45));
-  gb.addColorStop(1, hondo);
-  ctx.fillStyle = gb;
+  /* ---- El cuerpo, cara a cara ----
+     Seis gajos, cada uno con el color de lo tostada que está esa cara.
+     Con un degradado cónico si el navegador lo tiene —que es lo suyo,
+     porque el tueste da la vuelta al bombón— y con gajos recortados si
+     no. En los dos casos el tueste se ve GIRAR cuando giras el palo,
+     que es lo que hace que valga la pena girarlo. */
+  const n = CONF.bombon.lados;
+  const paso6 = 6.283185 / n;
   ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(-r, -alto, r * 2, alto * 2, r * 0.55);
-  else ctx.rect(-r, -alto, r * 2, alto * 2);
+  /* Un malvavisco es un CILINDRO, no una bola: cantos casi rectos y las
+     dos tapas redondeadas. Con el radio a la mitad parecía un caramelo
+     cuadrado; con 0.78 del ancho queda la cápsula de siempre. */
+  if (ctx.roundRect) ctx.roundRect(-ancho, -alto, ancho * 2, alto * 2, ancho * 0.62);
+  else ctx.rect(-ancho, -alto, ancho * 2, alto * 2);
+
+  /* ---- El tueste, cara a cara ----
+     El primer intento fue un degradado CÓNICO con una parada por cara.
+     Técnicamente correcto y visualmente falso: un cónico reparte el
+     color en gajos que salen del centro, así que el bombón salía como
+     un gráfico de quesitos. Un malvavisco no se tuesta en quesitos: se
+     tuesta A MANCHAS, por fuera, donde le ha dado la llama.
+
+     Así que se pinta el cuerpo del color de la cara MENOS tostada —el
+     fondo— y encima, recortada a la silueta, una mancha difuminada por
+     cara, pegada al borde en su dirección y con la opacidad de lo que
+     esa cara se haya tostado de más. Las manchas se solapan y se
+     funden solas, que es exactamente lo que hacen las de verdad. */
+  let minT = Infinity, maxT = -Infinity;
+  for (let i = 0; i < n; i++) {
+    if (bombon.lados[i] < minT) minT = bombon.lados[i];
+    if (bombon.lados[i] > maxT) maxT = bombon.lados[i];
+  }
+  const gb = ctx.createLinearGradient(0, -alto, 0, alto);
+  gb.addColorStop(0, colorTueste(minT, false));
+  gb.addColorStop(1, colorTueste(minT, true));
+  ctx.fillStyle = gb;
+  ctx.fill();
+
+  if (maxT - minT > 0.01) {
+    ctx.save();
+    ctx.clip();
+    for (let i = 0; i < n; i++) {
+      /* La opacidad sale de la diferencia DE VERDAD con la cara menos
+         tostada, no de dónde queda entre la mínima y la máxima. Con la
+         proporción, un bombón con todas las caras casi crudas pintaba
+         la menos cruda a tope y parecía medio hecho. */
+      const extra = clamp01((bombon.lados[i] - minT) * 3.2);
+      if (extra < 0.05) continue;
+      const a = i * paso6;
+      const mx2 = Math.cos(a) * ancho * 0.72;
+      const my2 = Math.sin(a) * alto * 0.72;
+      const rr = Math.max(ancho, alto) * 0.95;
+      const gm = ctx.createRadialGradient(mx2, my2, 0, mx2, my2, rr);
+      const col = colorTueste(bombon.lados[i], false);
+      gm.addColorStop(0, col);
+      gm.addColorStop(0.55, col.replace("rgb(", "rgba(").replace(")", ",0.45)"));
+      gm.addColorStop(1, col.replace("rgb(", "rgba(").replace(")", ",0)"));
+      ctx.globalAlpha = clamp01(extra);
+      ctx.fillStyle = gm;
+      ctx.fillRect(-ancho * 1.2, -alto * 1.2, ancho * 2.4, alto * 2.4);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(-ancho, -alto, ancho * 2, alto * 2, ancho * 0.62);
+    else ctx.rect(-ancho, -alto, ancho * 2, alto * 2);
+  }
+
+  /* Y una sombra propia de arriba abajo, que si no queda plano. */
+  const gs = ctx.createLinearGradient(0, -alto, 0, alto);
+  gs.addColorStop(0, "rgba(255,255,255,0.09)");
+  gs.addColorStop(0.55, "rgba(0,0,0,0)");
+  gs.addColorStop(1, "rgba(60,30,10,0.22)");
+  ctx.fillStyle = gs;
   ctx.fill();
 
   /* El brillo del fuego en el canto de abajo. */
@@ -3067,42 +3479,109 @@ function dibujarBombon() {
   gi.addColorStop(0, "rgba(255,170,80,0)");
   gi.addColorStop(1, `rgba(255,170,80,${0.34 * fuego.brillo})`);
   ctx.fillStyle = gi;
-  ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(-r, -alto, r * 2, alto * 2, r * 0.55);
-  else ctx.rect(-r, -alto, r * 2, alto * 2);
   ctx.fill();
 
-  /* Las manchas de tostado: no se dora uniforme, se dora a parches. */
-  if (bombon.tueste > 0.2) {
-    ctx.globalAlpha = clamp01((bombon.tueste - 0.2) * 1.4) * 0.5;
-    ctx.fillStyle = hondo;
-    for (let i = 0; i < 4; i++) {
-      const a = (i / 4) * 6.283 + 0.7;
-      ctx.beginPath();
-      ctx.ellipse(Math.cos(a) * r * 0.4, Math.sin(a) * alto * 0.4,
-                  r * (0.3 + (i % 2) * 0.14), alto * 0.22, a, 0, 6.283);
-      ctx.fill();
-    }
+  /* La costura: la raya de en medio que tiene todo malvavisco. Es una
+     tontería de dos píxeles y es lo que hace que se lea como un
+     malvavisco y no como una goma de borrar. */
+  ctx.strokeStyle = "rgba(90,60,35,0.16)";
+  ctx.lineWidth = Math.max(0.6, ancho * 0.07);
+  ctx.beginPath();
+  ctx.moveTo(-ancho * 0.92, 0);
+  ctx.lineTo(ancho * 0.92, 0);
+  ctx.stroke();
+
+  /* El barniz: cuando se derrite, brilla. Una mancha clara arriba a la
+     izquierda, que es de donde vendría la luz. */
+  if (bombon.blando > 0.1) {
+    ctx.globalAlpha = bombon.blando * 0.4;
+    ctx.fillStyle = "rgba(255,248,230,0.7)";
+    ctx.beginPath();
+    ctx.ellipse(-ancho * 0.34, -alto * 0.42, ancho * 0.3, alto * 0.18, -0.4, 0, 6.283);
+    ctx.fill();
     ctx.globalAlpha = 1;
+  }
+
+  /* ---- Las burbujas ----
+     Cada una crece y revienta. El seno de su vida da las dos cosas de
+     una vez: sale de la nada, se hincha y desaparece. */
+  for (const b of bombon.burbujas) {
+    const k = clamp01(b.t / b.dur);
+    const s = Math.sin(k * Math.PI) * b.rr * ancho;
+    if (s < 0.3) continue;
+    const ax = Math.cos(b.a) * ancho * 0.62;
+    const ay = Math.sin(b.a) * alto * 0.62;
+    ctx.fillStyle = `rgba(255,244,214,${0.5 * Math.sin(k * Math.PI)})`;
+    ctx.beginPath();
+    ctx.arc(ax, ay, s, 0, 6.283);
+    ctx.fill();
+    /* El puntito de luz encima: sin él son manchas, con él son pompas. */
+    ctx.fillStyle = `rgba(255,255,255,${0.55 * Math.sin(k * Math.PI)})`;
+    ctx.beginPath();
+    ctx.arc(ax - s * 0.3, ay - s * 0.3, s * 0.3, 0, 6.283);
+    ctx.fill();
+  }
+
+  /* ---- El goterón ----
+     Cuando está muy blando, le cuelga azúcar por abajo antes de caer.
+     Es el mismo dato que dispara las gotas, pero visto. */
+  if (bombon.blando > 0.55) {
+    /* Cuelga POR DEBAJO del bombón, no desde dentro: partiendo de la
+       mitad del cuerpo se veía un pico de otro color metido en la
+       barriga, como si estuviera roto. */
+    const cuelga = (bombon.blando - 0.55) * alto * 2.2;
+    ctx.fillStyle = colorTueste(bombon.tueste, true);
+    ctx.beginPath();
+    ctx.moveTo(-ancho * 0.26, alto * 0.94);
+    ctx.quadraticCurveTo(-ancho * 0.16, alto + cuelga, 0, alto + cuelga);
+    ctx.quadraticCurveTo(ancho * 0.16, alto + cuelga, ancho * 0.26, alto * 0.94);
+    ctx.closePath();
+    ctx.fill();
   }
 
   /* Si está ardiendo, su propia llamita. */
   if (bombon.ardiendo > 0) {
     ctx.globalCompositeOperation = "lighter";
     const hL = r * 3.4 * bombon.ardiendo * (0.7 + 0.3 * Math.sin(reloj * 9));
-    const gf = ctx.createLinearGradient(0, -alto, 0, -alto - hL);
-    gf.addColorStop(0, "rgba(255,240,180,0.9)");
-    gf.addColorStop(0.4, "rgba(255,150,50,0.6)");
+    /* La llama sube DERECHA aunque el bombón esté ladeado: el fuego no
+       sabe cómo tengas tú el palo. Por eso se deshace el giro. */
+    ctx.rotate(-bombon.giro);
+    /* Un halo redondo detrás, que es lo que le quita el canto duro de
+       triángulo recortado y hace que la llama ILUMINE en vez de estar
+       pegada encima. */
+    const gh = ctx.createRadialGradient(0, -alto - hL * 0.35, 0, 0, -alto - hL * 0.35, hL * 1.2);
+    gh.addColorStop(0, `rgba(255,190,90,${0.35 * bombon.ardiendo})`);
+    gh.addColorStop(1, "rgba(255,150,60,0)");
+    ctx.fillStyle = gh;
+    ctx.beginPath();
+    ctx.arc(0, -alto - hL * 0.35, hL * 1.2, 0, 6.283);
+    ctx.fill();
+
+    /* El degradado arranca DENTRO del bombón y con poca opacidad: con
+       el blanco a tope justo en el borde de arriba, lo que se veía era
+       una mancha blanca posada encima, no una llama saliendo de él. */
+    const gf = ctx.createLinearGradient(0, -alto * 0.2, 0, -alto - hL);
+    gf.addColorStop(0, "rgba(255,210,120,0.35)");
+    gf.addColorStop(0.35, "rgba(255,235,170,0.8)");
+    gf.addColorStop(0.62, "rgba(255,150,50,0.55)");
     gf.addColorStop(1, "rgba(220,60,20,0)");
     ctx.fillStyle = gf;
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.8, -alto);
-    ctx.quadraticCurveTo(
-      Math.sin(reloj * 6) * r * 0.5, -alto - hL * 0.7,
-      Math.sin(reloj * 6) * r * 0.7, -alto - hL);
-    ctx.quadraticCurveTo(r * 0.5, -alto - hL * 0.5, r * 0.8, -alto);
-    ctx.closePath();
-    ctx.fill();
+    /* Dos lenguas y no una: la grande y una pequeña a un lado, cada una
+       con su ritmo. Una sola se lee como una forma; dos se leen como
+       fuego. */
+    for (const [esc, desf] of [[1, 0], [0.55, 2.1]]) {
+      const ld = Math.sin(reloj * 6 + desf) * r * 0.5 + fuego.inclina * r * 0.6;
+      const h2 = hL * esc;
+      const w2 = r * 0.8 * esc;
+      ctx.beginPath();
+      ctx.moveTo(-w2, -alto * 0.6);
+      ctx.bezierCurveTo(-w2 * 0.9, -alto - h2 * 0.5, ld - w2 * 0.3, -alto - h2 * 0.8,
+                        ld * 1.2, -alto - h2);
+      ctx.bezierCurveTo(ld + w2 * 0.3, -alto - h2 * 0.8, w2 * 0.9, -alto - h2 * 0.5,
+                        w2, -alto * 0.6);
+      ctx.closePath();
+      ctx.fill();
+    }
     ctx.globalCompositeOperation = "source-over";
   }
 
@@ -3712,14 +4191,33 @@ function dibujarCabana() {
     ctx.fill();
   }
 
-  /* ---- El aro de «tócame», discretísimo ---- */
+  /* ---- El aro de «tócame» ----
+     Era un óvalo continuo de canto a canto, y en pantalla no se leía
+     como «esto se puede tocar»: se leía como un aro geométrico flotando
+     alrededor de la casa, una figura que no pinta nada en un bosque.
+
+     Ahora es de TRAZOS, cortos y separados, y además se desvanece por
+     arriba: la parte de abajo —la del suelo y la puerta, que es a donde
+     mira quien quiere entrar— se ve, y la de arriba se disuelve. Un
+     trazo discontinuo se lee como una indicación; una línea entera se
+     lee como un objeto. */
   if (escena === "bosque" && !bloqueado) {
-    const pulso = 0.07 + 0.05 * Math.sin(reloj * 1.6) + cabana.resalte * 0.3;
-    ctx.strokeStyle = `rgba(255,214,150,${pulso})`;
+    const pulso = 0.09 + 0.05 * Math.sin(reloj * 1.6) + cabana.resalte * 0.34;
+    const rx = w * 0.78, ry = h * 0.86;
+    const cy2 = y - h * 0.6;
     ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.ellipse(x, y - h * 0.6, w * 0.78, h * 0.86, 0, 0, 6.283);
-    ctx.stroke();
+    ctx.lineCap = "round";
+    const N = 26;
+    for (let i = 0; i < N; i++) {
+      const a0 = (i / N) * 6.283 + reloj * 0.12;
+      const a1 = a0 + 6.283 / N * 0.46;
+      /* Más fuerte abajo que arriba: `sin(a)` vale 1 abajo del óvalo. */
+      const abajo = clamp01(0.25 + Math.sin(a0) * 0.75);
+      ctx.strokeStyle = `rgba(255,214,150,${pulso * abajo})`;
+      ctx.beginPath();
+      ctx.ellipse(x, cy2, rx, ry, 0, a0, a1);
+      ctx.stroke();
+    }
   }
 }
 
@@ -4631,7 +5129,10 @@ function construirMundo() {
   construirFogata();
   construirPanel();
   construirPanelPosiciones();
-  colocarBombon(true);
+  /* `false`: al girar el teléfono se remide el mundo entero, y tirar un
+     bombón a medio tostar sólo porque has cambiado de postura es de las
+     cosas que más rabia dan. Se vuelve a colgar donde toca y ya. */
+  colocarBombon(false);
 }
 
 /* El panel y la cajita dependen de la fogata, así que se recolocan
@@ -6126,16 +6627,11 @@ zona.addEventListener("pointermove", (e) => {
 
   /* El bombón, si lo lleva cogido. */
   if (bombon.agarrado && bombon.dedoId === e.pointerId) {
-    const f = sitio.fogata;
-    /* La punta del palo no va a cualquier sitio: está atada al mango,
-       así que se limita el alcance. Eso es lo que hace que se sienta un
-       palo y no un puntero. */
-    const dx = p.x - bombon.mangoX, dy = p.y - bombon.mangoY;
-    const d = Math.hypot(dx, dy) || 1;
-    const maxD = U * (apaisado ? 30 : 34);
-    const k = Math.min(1, maxD / d);
-    bombon.destX = bombon.mangoX + dx * k;
-    bombon.destY = clamp(bombon.mangoY + dy * k, U * 20, H - U * 6);
+    /* Aquí sólo se apunta a DÓNDE está el dedo, sin recortar nada. El
+       alcance lo pone la física del palo, que se queda tirante cuando
+       te pasas en vez de que el dedo se despegue del palo. */
+    bombon.destX = p.x;
+    bombon.destY = clamp(p.y, U * 14, H - U * 4);
     if (e.cancelable) e.preventDefault();
   }
 
@@ -6163,6 +6659,10 @@ function soltarDedo(e) {
   if (bombon.agarrado && bombon.dedoId === e.pointerId) {
     bombon.agarrado = false;
     bombon.dedoId = null;
+    /* Al soltarlo, el palo vuelve solo a su sitio, pero CONSERVANDO la
+       velocidad que llevaba. Por eso si lo sueltas en pleno movimiento
+       se pasa de largo y se balancea antes de pararse. */
+    colocarBombon(false);
   }
   if (arrastrePanel && arrastrePanel.id === e.pointerId) {
     /* Si no ha arrastrado, es un toque: enciende o apaga. */
@@ -6183,12 +6683,17 @@ function tocarEnBosque(p, e) {
   /* 1. EL BOMBÓN. Lo primero de todo: está delante y es lo que más se
         usa. Si está fuera del fuego, un toque se lo come; si está
         dentro, se coge para sacarlo. */
-  if (bombon.vivo && dentroDe(p.x, p.y, bombon.x, bombon.y, U * 6)) {
+  const dBom = desplazar(1.9);
+  if (bombon.vivo && dentroDe(p.x, p.y, bombon.x + dBom.x, bombon.y + dBom.y, U * 6.5)) {
     const cerca = Math.hypot(bombon.x - f.x, bombon.y - (f.y - f.r)) < f.r * 2.6;
     if (!cerca && bombon.tueste > 0.04) { comerBombon(); return; }
     bombon.agarrado = true;
     bombon.dedoId = e.pointerId;
     bombon.destX = p.x; bombon.destY = p.y;
+    /* Al soltarse de su sitio de reposo, el palo arranca quieto: si no,
+       se lleva consigo la velocidad que traía de volver y da un
+       latigazo nada más tocarlo. */
+    bombon.angV *= 0.3; bombon.largoV *= 0.3;
     tono(520, 0.12, "sine", 0.04);
     if (e.cancelable) e.preventDefault();
     return;
