@@ -900,6 +900,26 @@ const CONF = {
     ],
   },
 
+  /* ---- LAS ESTRELLAS FUGACES -------------------------------------------
+     Cruzan solas de vez en cuando. Si te da tiempo a tocar una antes de
+     que se apague, contesta. Y no contesta lo mismo la primera que la
+     quinta: lleva la cuenta. */
+  fugaces: {
+    cada: [14, 36],       // segundos entre una y otra
+    /* Lo que dice cada una, por orden. De la última en adelante, se
+       repite: es la que cierra. */
+    deseos: [
+      "La has pillado. Pide algo, va.",
+      "Otra. Oye, se te da bien esto.",
+      "Tres. A este paso te quedas sin deseos que pedir.",
+      "Cuatro. Yo ya pedí el mío hace tiempo, y me tocó.",
+      "Y van muchas. Creo que el cielo te debe algo.",
+    ],
+    /* Y una de cada tantas, en vez de deseo, cae un ramillete. */
+    probLluvia: 0.22,
+    lluviaDice: "…esa no venía sola.",
+  },
+
   /* ---- LA LUNA A LOS DIEZ TOQUES ---------------------------------------
      El secreto más tonto y el que más gracia hace.                    */
   dona: {
@@ -923,6 +943,14 @@ const CONF = {
       "No estaba preparado para verte ahí...",
       "¿Tú también estabas mirando por la ventana?",
       "Casi me caigo de la cama, en serio.",
+    ],
+    /* Y lo que se dice a partir de la segunda vez. Un susto que se
+       repite igual deja de ser un susto. */
+    otraVez: [
+      "Ah, eres tú otra vez. Hola.",
+      "Ya me lo esperaba, ¿eh? Casi.",
+      "Creo que le caemos bien.",
+      "Este búho tiene un problema con los cristales.",
     ],
   },
 
@@ -4541,6 +4569,25 @@ function dibujarHabitacion() {
   /* ---- Las partículas van por encima de todo ---- */
   dibujarParticulas();
 
+  /* ---- Cuando se apaga todo ----
+     El susto de la ventana baja las luces de la habitación pero NO las
+     de fuera: la ventana se queda siendo lo único que se ve, y por eso
+     acabas mirándola. El recorte deja el cristal fuera del velo. */
+  if (susto.oscuro > 0.01) {
+    const v = ventanaHab();
+    const dv = desplazar(0.9);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, A, H);
+    ctx.rect(v.x + dv.x * 0.6 - v.w / 2, v.y + dv.y * 0.6 - v.h / 2, v.w, v.h);
+    /* `evenodd`: el rectángulo de dentro agujerea al de fuera, así que
+       el recorte es «toda la pantalla MENOS la ventana». */
+    ctx.clip("evenodd");
+    ctx.fillStyle = `rgba(2,3,9,${susto.oscuro * 0.86})`;
+    ctx.fillRect(0, 0, A, H);
+    ctx.restore();
+  }
+
   /* ---- El velo de dormirse ---- */
   if (hab.dormida > 0.01) {
     ctx.fillStyle = `rgba(4,6,14,${hab.dormida * 0.72})`;
@@ -4597,6 +4644,11 @@ function dibujarVentanaHabitacion(x, y, w, h) {
     ctx.closePath();
     ctx.fill();
   }
+
+  /* Y lo que a veces hay al otro lado del cristal. Va DENTRO del
+     recorte: lo que se sale del marco no se ve, y eso es lo que hace
+     que parezca que está fuera y no pegado encima. */
+  dibujarSustoVentana(x, y, w, h);
   ctx.restore();
 
   /* El marco. */
@@ -4640,49 +4692,357 @@ function dibujarVentanaHabitacion(x, y, w, h) {
 // Cada vez dice algo distinto, sin repetir hasta agotarlas, y suelta un
 // puñado de brillos que caen despacio.
 
-const luna = { pulso: 0, guino: 0, tocadas: 0 };
+/* ==========================================
+   LA LUNA, Y LO QUE PASA A LOS DIEZ TOQUES
+   ==========================================
+
+   A la quinta guiña. A la décima deja de ser la luna.
+
+   ── LA TRANSFORMACIÓN, PASO A PASO ──────────────────────────────────
+   No es un cambio de dibujo. Son cinco momentos encadenados, y cada
+   uno tiene su ruido y su movimiento:
+
+     0.0 – 0.8   GLITCH    se descoloca en bandas, vibra y chirría
+     0.8 – 1.4   ZUMBIDO   se encoge y el tono sube
+     1.4 – 1.8   ESTALLIDO se abre en pedazos con un fogonazo
+     1.8 – 2.8   REUNIÓN   los pedazos vuelven y se ordenan en otra cosa
+     2.8 – …     DONA      y lo que queda arriba es una dona de chocolate
+
+   Vuelve sola al cabo de un rato, con la misma escalera al revés. Lo
+   que la hace graciosa es justo eso: que no se queda. Si se quedara
+   sería un cambio de tema; volviendo, es un chiste.                  */
+
+const luna = {
+  pulso: 0,
+  guino: 0,
+  tocadas: 0,
+  /* 0 luna · 1 dona. Y `fase`, dónde va la transformación en segundos. */
+  dona: 0,
+  fase: -1,           // -1 = quieta
+  volviendo: false,
+  reloj: 0,
+  trozos: [],
+  vibra: 0,
+};
 const diceLuna = barajador(CONF.alTocarLuna);
+const diceDona = barajador(CONF.dona.dice);
+
+function empezarDona(volver) {
+  luna.fase = 0;
+  luna.volviendo = !!volver;
+  luna.reloj = 0;
+  /* Los pedazos: nacen ordenados y salen despedidos. Cada uno con su
+     ángulo, su velocidad y su giro, para que ninguno haga lo mismo. */
+  luna.trozos = [];
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * 6.283 + azar(-0.2, 0.2);
+    luna.trozos.push({
+      a, d: azar(0.15, 0.95),
+      vel: azar(1.6, 3.4),
+      giro: azar(0, 6.283), giroV: azar(-5, 5),
+      tam: azar(0.1, 0.26),
+    });
+  }
+  if (!volver) recuerdo.poner("dona", 1);
+}
+
+/** Una fugaz nueva, cruzando el cielo de izquierda a derecha. */
+function nuevaFugaz() {
+  return {
+    x: azar(-40, A * 0.55),
+    y: azar(0, sitio.horizonte * 0.4),
+    vx: azar(260, 420), vy: azar(80, 160),
+    v: 1,
+    rastro: [],
+  };
+}
+
+/**
+ * Lo que pasa al pillar una. Y lo que dice depende de CUÁNTAS lleves,
+ * hoy y cualquier otra noche: la primera te deja pedir un deseo, y a la
+ * quinta el cielo ya te debe algo.
+ */
+function cazarFugaz(f, p) {
+  cielo.cazadas = recuerdo.sumar("fugaces");
+  magia(880);
+  soltarBrillos(f.x, f.y, 16, 0.45);
+  /* Y los trocitos salen en la dirección en la que iba, no en todas:
+     lo que se ha roto llevaba una inercia. */
+  for (let i = 0; i < 10; i++) {
+    soltar(f.x, f.y, {
+      vx: f.vx * azar(0.1, 0.45) + azar(-40, 40),
+      vy: f.vy * azar(0.1, 0.45) + azar(-40, 40),
+      vida: azar(0.8, 2), tam: azar(1, 2.4),
+      tipo: TIPO.BRILLO, tono: 0.2,
+    });
+  }
+  const d = CONF.fugaces.deseos;
+  const frase = d[Math.min(cielo.cazadas - 1, d.length - 1)];
+  decir(p.x, p.y + U * 6, frase, { mimo: true, importante: true, dur: 5 });
+  contarLogro("fugaz");
+}
+
+function moverLuna(dt) {
+  luna.pulso = damp(luna.pulso, 0, 2.2, dt);
+  luna.vibra = damp(luna.vibra, 0, 6, dt);
+
+  if (luna.fase < 0) {
+    /* Quieta. Si lleva mucho rato siendo dona, se le pasa. */
+    if (luna.dona > 0.99) {
+      luna.reloj += dt;
+      if (luna.reloj > CONF.dona.dura) {
+        empezarDona(true);
+        decir(sitio.luna.x, sitio.luna.y + sitio.luna.r * 2.4,
+          CONF.dona.alVolver, { mimo: true, dur: 4.5 });
+      }
+    }
+    return;
+  }
+
+  const t = luna.fase += dt;
+  const haciaDona = luna.volviendo ? 0 : 1;
+
+  if (t < 0.8) {
+    /* ---- GLITCH ----
+       Vibra y se descoloca. El ruido va subiendo con ella. */
+    luna.vibra = (t / 0.8) * 1.2;
+    if (Math.random() < dt * 14) chirrido(0.3 + t);
+  } else if (t < 1.4) {
+    /* ---- ZUMBIDO ---- */
+    luna.vibra = 1.2 + (t - 0.8) * 1.5;
+    if (Math.random() < dt * 7) chirrido(1.1 + (t - 0.8) * 2);
+  } else if (t < 1.8) {
+    /* ---- ESTALLIDO ---- */
+    if (!luna.estallada) {
+      luna.estallada = true;
+      luna.vibra = 0;
+      estallidoLuna();
+    }
+  } else if (t < 2.8) {
+    /* ---- REUNIÓN ----
+       Los pedazos vuelven. Y a mitad de camino, el cambio de forma. */
+    const k = suave3((t - 1.8) / 1);
+    luna.dona = luna.volviendo ? 1 - k : k;
+  } else {
+    /* ---- YA ESTÁ ---- */
+    luna.dona = haciaDona;
+    luna.fase = -1;
+    luna.estallada = false;
+    luna.reloj = 0;
+    luna.trozos = [];
+    if (!luna.volviendo) {
+      magia(392);
+      decir(sitio.luna.x, sitio.luna.y + sitio.luna.r * 2.6,
+        diceDona(), { mimo: true, importante: true, dur: 5 });
+    }
+  }
+}
+
+/** El chirrido del glitch: ruido cortado con un filtro muy estrecho. */
+function chirrido(altura) {
+  if (!despertarAudio()) return;
+  const c = audio.ctx, t = c.currentTime;
+  const dur = azar(0.03, 0.09);
+  const o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
+  o.type = "square";
+  o.frequency.value = azar(200, 900) * clamp(altura, 0.4, 3);
+  f.type = "bandpass"; f.frequency.value = o.frequency.value * 2; f.Q.value = 9;
+  g.gain.setValueAtTime(0.035, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(f).connect(g).connect(audio.maestro);
+  o.start(t); o.stop(t + dur);
+}
+
+function estallidoLuna() {
+  const L = sitio.luna;
+  sacudir(0.8);
+  /* Un golpe grave y un fogonazo agudo a la vez: el peso y el destello. */
+  golpe(0.3, 90, 0.3, "lowpass");
+  golpe(0.08, 5200, 0.14, "highpass");
+  magia(587);
+  for (let i = 0; i < 40; i++) {
+    const a = azar(0, 6.283), v = azar(40, 190);
+    soltar(L.x + Math.cos(a) * L.r * 0.5, L.y + Math.sin(a) * L.r * 0.5, {
+      vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+      vida: azar(0.8, 2.2), tam: azar(1, 3),
+      tipo: TIPO.BRILLO, tono: 0.45,
+    });
+  }
+  /* Y un destello de verdad en todo el cielo, que es lo que hace que
+     parezca que ha pasado algo gordo y no que ha cambiado un dibujo. */
+  clima.destello = Math.max(clima.destello, 0.7);
+  clima.destelloX = L.x / A;
+}
 
 function dibujarLuna(x, y, r) {
+  /* La vibración del glitch: se aplica a TODO, incluido el halo. */
+  if (luna.vibra > 0.01) {
+    x += azar(-1, 1) * luna.vibra * r * 0.09;
+    y += azar(-1, 1) * luna.vibra * r * 0.06;
+  }
+
+  /* Durante el estallido no hay disco: hay pedazos. */
+  const estallando = luna.fase >= 1.4 && luna.fase < 2.4;
+
   /* El halo, en tres capas: cerca fuerte, lejos muy abierto. Una sola
-     capa se ve como un círculo borroso pegado; tres se ven como luz. */
+     capa se ve como un círculo borroso pegado; tres se ven como luz.
+     De dona, el halo tira a caramelo. */
+  const halo = luna.dona > 0.02
+    ? `${Math.round(mez(198, 255, luna.dona))},${Math.round(mez(214, 176, luna.dona))},${Math.round(mez(255, 120, luna.dona))}`
+    : "198,214,255";
   ctx.globalCompositeOperation = "lighter";
   for (const [k, a] of [[2.2, 0.20], [4.4, 0.10], [9, 0.05]]) {
     const g = ctx.createRadialGradient(x, y, 0, x, y, r * k);
-    g.addColorStop(0, `rgba(198,214,255,${a * (1 + luna.pulso)})`);
-    g.addColorStop(1, "rgba(198,214,255,0)");
+    g.addColorStop(0, `rgba(${halo},${a * (1 + luna.pulso) * (estallando ? 1.8 : 1)})`);
+    g.addColorStop(1, `rgba(${halo},0)`);
     ctx.fillStyle = g;
     ctx.beginPath(); ctx.arc(x, y, r * k, 0, 6.283); ctx.fill();
   }
   ctx.globalCompositeOperation = "source-over";
 
-  /* El disco. */
-  const gd = ctx.createRadialGradient(x - r * 0.28, y - r * 0.3, r * 0.08, x, y, r);
-  gd.addColorStop(0, "#fdfcff");
-  gd.addColorStop(0.62, "#e6e9fa");
-  gd.addColorStop(1, "#bcc2dd");
-  ctx.fillStyle = gd;
-  ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill();
-
-  /* Los mares: cuatro manchas fijas. Sin ellas la luna es un círculo
-     blanco y se lee como un foco. */
-  ctx.fillStyle = "rgba(150,158,190,0.34)";
-  const mares = [[-0.26, -0.2, 0.3], [0.22, 0.12, 0.24], [-0.06, 0.34, 0.17], [0.34, -0.3, 0.13]];
-  for (const [mx, my, mr] of mares) {
-    ctx.beginPath();
-    ctx.arc(x + mx * r, y + my * r, mr * r, 0, 6.283);
-    ctx.fill();
+  if (estallando) {
+    /* ---- Los pedazos ----
+       Salen y vuelven con el mismo número: `k` va de 0 a 1 y de 1 a 0
+       con un seno, así que no hace falta ni una condición. */
+    const k = Math.sin(clamp01((luna.fase - 1.4) / 1) * Math.PI);
+    for (const p of luna.trozos) {
+      const dd = r * (0.2 + p.d * 3.2 * k * p.vel * 0.4);
+      const px2 = x + Math.cos(p.a) * dd;
+      const py2 = y + Math.sin(p.a) * dd;
+      ctx.save();
+      ctx.translate(px2, py2);
+      ctx.rotate(p.giro + p.giroV * luna.fase);
+      ctx.fillStyle = `rgba(232,236,252,${1 - k * 0.5})`;
+      ctx.beginPath();
+      ctx.moveTo(-r * p.tam, -r * p.tam * 0.7);
+      ctx.lineTo(r * p.tam, -r * p.tam);
+      ctx.lineTo(r * p.tam * 0.7, r * p.tam);
+      ctx.lineTo(-r * p.tam * 0.8, r * p.tam * 0.6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+    return;
   }
 
-  /* El guiño del easter egg: un arco que se cierra. */
-  if (luna.guino > 0.02) {
-    ctx.strokeStyle = `rgba(90,96,130,${luna.guino * 0.8})`;
-    ctx.lineWidth = r * 0.1;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.arc(x - r * 0.22, y - r * 0.12, r * 0.2, 0.2, Math.PI - 0.2);
-    ctx.stroke();
+  /* ---- El cuerpo ----
+     Se pinta la luna y, si toca, la dona ENCIMA con su propia
+     opacidad. Interpolar entre las dos formas píxel a píxel no vale la
+     pena: durante el medio segundo que dura, lo que se ve es un
+     fundido, y un fundido después de un estallido se lee perfectamente
+     como «se ha convertido en». */
+  if (luna.dona < 0.995) {
+    ctx.globalAlpha = 1 - luna.dona;
+    const gd = ctx.createRadialGradient(x - r * 0.28, y - r * 0.3, r * 0.08, x, y, r);
+    gd.addColorStop(0, "#fdfcff");
+    gd.addColorStop(0.62, "#e6e9fa");
+    gd.addColorStop(1, "#bcc2dd");
+    ctx.fillStyle = gd;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill();
+
+    /* Los mares: cuatro manchas fijas. Sin ellas la luna es un círculo
+       blanco y se lee como un foco. */
+    ctx.fillStyle = "rgba(150,158,190,0.34)";
+    const mares = [[-0.26, -0.2, 0.3], [0.22, 0.12, 0.24], [-0.06, 0.34, 0.17], [0.34, -0.3, 0.13]];
+    for (const [mx, my, mr] of mares) {
+      ctx.beginPath();
+      ctx.arc(x + mx * r, y + my * r, mr * r, 0, 6.283);
+      ctx.fill();
+    }
+
+    /* El guiño del easter egg: un arco que se cierra. */
+    if (luna.guino > 0.02) {
+      ctx.strokeStyle = `rgba(90,96,130,${luna.guino * 0.8})`;
+      ctx.lineWidth = r * 0.1;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.arc(x - r * 0.22, y - r * 0.12, r * 0.2, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
   }
+
+  if (luna.dona > 0.005) dibujarDona(x, y, r, luna.dona);
+}
+
+/** Una dona de chocolate donde estaba la luna. Con chispitas. */
+function dibujarDona(x, y, r, op) {
+  ctx.save();
+  ctx.globalAlpha = op;
+  /* Un poco ladeada: una dona perfectamente de frente parece un icono. */
+  ctx.translate(x, y);
+  ctx.rotate(-0.18);
+  ctx.scale(1, 0.92);
+
+  /* La masa. */
+  const gm = ctx.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r);
+  gm.addColorStop(0, "#f0c98a");
+  gm.addColorStop(0.7, "#dba95f");
+  gm.addColorStop(1, "#b9803e");
+  ctx.fillStyle = gm;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, 6.283);
+  ctx.fill();
+
+  /* El chocolate: no es un círculo, es una mancha con goterones. Es lo
+     que hace que parezca glaseado y no una arandela pintada. */
+  const gc = ctx.createRadialGradient(-r * 0.28, -r * 0.34, r * 0.08, 0, 0, r * 0.96);
+  gc.addColorStop(0, "#6b3c22");
+  gc.addColorStop(0.6, "#4a2413");
+  gc.addColorStop(1, "#33170c");
+  ctx.fillStyle = gc;
+  ctx.beginPath();
+  const lobulos = 11;
+  for (let i = 0; i <= lobulos; i++) {
+    const a = (i / lobulos) * 6.283;
+    /* El borde ondula, y unos pocos puntos bajan mucho más: los
+       goterones. El seno de tres vueltas los reparte sin listas. */
+    const gota = Math.max(0, Math.sin(a * 3 + 0.7)) * 0.1;
+    const rr = r * (0.9 + Math.sin(a * 5 + 1.3) * 0.035 + gota);
+    const px2 = Math.cos(a) * rr, py2 = Math.sin(a) * rr;
+    if (i === 0) ctx.moveTo(px2, py2);
+    else ctx.lineTo(px2, py2);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  /* El agujero, con el cielo asomando. Se recorta de verdad: pintarlo
+     del color del cielo sólo funciona si el cielo es liso, y aquí
+     detrás hay estrellas. */
+  ctx.globalCompositeOperation = "destination-out";
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.3, 0, 6.283);
+  ctx.fill();
+  ctx.globalCompositeOperation = "source-over";
+
+  /* El canto del agujero, para que se vea la masa por dentro. */
+  ctx.strokeStyle = "rgba(220,170,110,0.55)";
+  ctx.lineWidth = r * 0.05;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.32, 0, 6.283);
+  ctx.stroke();
+
+  /* Las chispitas de colores. Fijas: si parpadearan parecerían luces. */
+  const colores = ["#ff8fb0", "#8fd4ff", "#ffe27a", "#b0f0a0", "#e2a6ff"];
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * 6.283 + 0.4;
+    const rr = r * (0.42 + ((i * 7) % 5) * 0.09);
+    ctx.save();
+    ctx.translate(Math.cos(a) * rr, Math.sin(a) * rr);
+    ctx.rotate(a + i);
+    ctx.fillStyle = colores[i % colores.length];
+    ctx.fillRect(-r * 0.09, -r * 0.028, r * 0.18, r * 0.056);
+    ctx.restore();
+  }
+
+  /* Y un brillo en el chocolate, arriba a la izquierda. */
+  ctx.fillStyle = "rgba(255,240,220,0.16)";
+  ctx.beginPath();
+  ctx.ellipse(-r * 0.36, -r * 0.42, r * 0.26, r * 0.13, -0.5, 0, 6.283);
+  ctx.fill();
+
+  ctx.restore();
+  ctx.globalAlpha = 1;
 }
 
 function tocarLuna(x, y) {
@@ -4700,6 +5060,21 @@ function tocarLuna(x, y) {
     });
   }
 
+  /* ---- A la décima, deja de ser la luna ----
+     Va ANTES que el guiño porque manda sobre todo lo demás. Y si ya es
+     una dona, tocarla no vuelve a lanzar la transformación: dice otra
+     cosa y ya. */
+  if (luna.dona > 0.5 || luna.fase >= 0) {
+    if (luna.fase < 0) decir(x, y + sitio.luna.r * 2.4, diceDona(), { mimo: true, dur: 4 });
+    return;
+  }
+  if (luna.tocadas >= CONF.dona.toques) {
+    luna.tocadas = 0;
+    empezarDona(false);
+    contarLogro("dona");
+    return;
+  }
+
   /* A la quinta, guiña. Es un secreto pequeñito y no se anuncia. */
   if (luna.tocadas === 5) {
     luna.guino = 1;
@@ -4709,7 +5084,23 @@ function tocarLuna(x, y) {
     return;
   }
 
-  decir(x, y + sitio.luna.r * 2, diceLuna(), { mimo: true, importante: true });
+  /* ---- Lo que dice, según lo que ya haya pasado ----
+     La luna es lo único que está ahí arriba viéndolo todo, así que es
+     lo único que puede comentarlo. Si ya has encontrado al búho, si se
+     te apagó la fogata, si ya abriste la carta: lo sabe. Es el easter
+     egg con memoria más barato de hacer y el que más se nota. */
+  let frase = null;
+  if (luna.tocadas >= 3 && Math.random() < 0.55) {
+    const sabe = [];
+    if (recuerdo.leer("buho", 0) > 0) sabe.push("Ese búho y yo llevamos toda la noche mirándote.");
+    if (fuego.fase >= 5) sabe.push("Se te ha apagado la fogata. Desde aquí arriba se nota.");
+    if (recuerdo.leer("notaArbol", 0)) sabe.push("Lo del papel del árbol lo vi. No diré nada.");
+    if (recuerdo.leer("ojos", 0) > 0) sabe.push("Eso de los ojos rojos… yo tampoco sé qué es.");
+    if (secreto.hallado) sabe.push("Ya encontraste lo del bosque. Sabía que lo harías.");
+    if (recuerdo.visitas > 1) sabe.push("Otra noche por aquí. Me gusta que vuelvas.");
+    if (sabe.length) frase = sabe[Math.floor(Math.random() * sabe.length)];
+  }
+  decir(x, y + sitio.luna.r * 2, frase || diceLuna(), { mimo: true, importante: true });
   contarLogro("luna");
 }
 
@@ -4722,7 +5113,8 @@ function tocarLuna(x, y) {
 //   1. la luz verde del bosque → la carta
 //   2. tocar la llama → te quemas
 //   3. tocar estrellas → algunas responden
-//   4. la estrella fugaz, si la pillas → un deseo
+//   4. las estrellas fugaces, si pillas alguna → un deseo, y la quinta
+//      ya no dice lo mismo que la primera
 //   5. la luna a la quinta vez → guiña
 //   6. dejar la fogata en paz mucho rato → se pone azul
 //   7. tres bombones quemados seguidos
@@ -4982,7 +5374,10 @@ cerrarCarta.addEventListener("click", () => {
 const cielo = {
   estrellas: [],
   nubes: [],
-  fugaz: null,
+  /* Las fugaces, en lista: a veces cae una sola y a veces un
+     ramillete, y con una sola variable no cabía más que una. */
+  fugaces: [],
+  cazadas: 0,
   proximaFugaz: azar(14, 34),
 };
 
@@ -5180,27 +5575,63 @@ function dibujarBosque(dt) {
     ctx.fill();
   }
 
-  /* ---- La estrella fugaz ---- */
-  if (cielo.fugaz) {
-    const f = cielo.fugaz;
+  /* ---- Las estrellas fugaces ----
+     La estela no es una línea recta con un degradado: es un ARCO que
+     recuerda por dónde ha pasado. Una fugaz de verdad no va recta del
+     todo, y una estela guardada punto a punto se curva sola sin que
+     haya que calcular nada.
+
+     Y la cabeza va aparte, con su halo: sin ella la estela se lee como
+     una raya, y con ella se lee como algo que está cayendo. */
+  for (let i = cielo.fugaces.length - 1; i >= 0; i--) {
+    const f = cielo.fugaces[i];
     f.x += f.vx * dt; f.y += f.vy * dt; f.v -= dt * 0.55;
-    const gx2 = f.x - f.vx * 0.14, gy2 = f.y - f.vy * 0.14;
-    const gr = ctx.createLinearGradient(f.x, f.y, gx2, gy2);
-    gr.addColorStop(0, `rgba(255,248,255,${clamp01(f.v) * 0.95})`);
-    gr.addColorStop(1, "rgba(255,248,255,0)");
-    ctx.strokeStyle = gr;
-    ctx.lineWidth = 2.2;
+    /* Se guarda por dónde ha ido, y lo viejo se va tirando. */
+    f.rastro.push(f.x, f.y);
+    if (f.rastro.length > 24) f.rastro.splice(0, 2);
+
+    const a0 = clamp01(f.v);
     ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(gx2, gy2); ctx.stroke();
-    if (f.v <= 0 || f.x > A + 80 || f.y > sitio.horizonte) cielo.fugaz = null;
-  } else {
+    ctx.lineJoin = "round";
+    for (let k = 2; k < f.rastro.length; k += 2) {
+      const t2 = k / f.rastro.length;
+      ctx.strokeStyle = `rgba(255,248,255,${a0 * t2 * t2 * 0.85})`;
+      ctx.lineWidth = 0.6 + t2 * 2;
+      ctx.beginPath();
+      ctx.moveTo(f.rastro[k - 2], f.rastro[k - 1]);
+      ctx.lineTo(f.rastro[k], f.rastro[k + 1]);
+      ctx.stroke();
+    }
+    /* La cabeza. */
+    ctx.globalCompositeOperation = "lighter";
+    const gh = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, U * 2.4);
+    gh.addColorStop(0, `rgba(255,252,255,${a0 * 0.9})`);
+    gh.addColorStop(0.35, `rgba(200,215,255,${a0 * 0.3})`);
+    gh.addColorStop(1, "rgba(180,200,255,0)");
+    ctx.fillStyle = gh;
+    ctx.beginPath(); ctx.arc(f.x, f.y, U * 2.4, 0, 6.283); ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+
+    if (f.v <= 0 || f.x > A + 80 || f.y > sitio.horizonte) cielo.fugaces.splice(i, 1);
+  }
+
+  if (!cielo.fugaces.length) {
     cielo.proximaFugaz -= dt;
     if (cielo.proximaFugaz <= 0) {
-      cielo.proximaFugaz = azar(16, 40);
-      cielo.fugaz = {
-        x: azar(-40, A * 0.55), y: azar(0, sitio.horizonte * 0.4),
-        vx: azar(260, 420), vy: azar(80, 160), v: 1,
-      };
+      cielo.proximaFugaz = azar(CONF.fugaces.cada[0], CONF.fugaces.cada[1]);
+      /* De vez en cuando no cae una: cae un puñado, separadas en el
+         tiempo, como una lluvia de estrellas de verdad. */
+      const cuantas = Math.random() < CONF.fugaces.probLluvia ? Math.round(azar(3, 6)) : 1;
+      for (let k = 0; k < cuantas; k++) {
+        setTimeout(() => {
+          if (escena !== "bosque") return;
+          cielo.fugaces.push(nuevaFugaz());
+        }, k * azar(280, 900));
+      }
+      if (cuantas > 1) {
+        setTimeout(() => decir(A * 0.5, sitio.horizonte * 0.3,
+          CONF.fugaces.lluviaDice, { dur: 4 }), 900);
+      }
     }
   }
 
@@ -6787,13 +7218,18 @@ function tocarEnBosque(p, e) {
     return;
   }
 
-  /* 11. LA ESTRELLA FUGAZ, si la pillas al vuelo. */
-  if (cielo.fugaz && dentroDe(p.x, p.y, cielo.fugaz.x, cielo.fugaz.y, U * 9)) {
-    cielo.fugaz = null;
-    magia(880);
-    decir(p.x, p.y + U * 6, "La has pillado. Pide algo, va.", { mimo: true, importante: true });
-    contarLogro("fugaz");
-    return;
+  /* 11. LAS ESTRELLAS FUGACES, si pillas alguna al vuelo.
+     El radio es grande —y ADELANTADO a donde va— porque se mueve a
+     cuatrocientos píxeles por segundo: apuntando a donde está, para
+     cuando el dedo llega ya no está ahí. */
+  for (let i = 0; i < cielo.fugaces.length; i++) {
+    const f = cielo.fugaces[i];
+    const ax = f.x + f.vx * 0.08, ay = f.y + f.vy * 0.08;
+    if (dentroDe(p.x, p.y, ax, ay, U * 11) || dentroDe(p.x, p.y, f.x, f.y, U * 11)) {
+      cielo.fugaces.splice(i, 1);
+      cazarFugaz(f, p);
+      return;
+    }
   }
 
   /* 12. LAS ESTRELLAS. Algunas responden. */
@@ -6825,11 +7261,18 @@ function tocarEnBosque(p, e) {
 function tocarEnHabitacion(p, e) {
   const v = ventanaHab();
 
-  /* La luna de la ventana. */
+  /* La luna de la ventana. Primero, porque está DENTRO del cristal: si
+     fuera después, el cristal se llevaría todos los toques y la luna no
+     se podría tocar desde aquí. */
   if (sitio.luna.vx !== undefined &&
       dentroDe(p.x, p.y, sitio.luna.vx, sitio.luna.vy, sitio.luna.vr * 2.1)) {
     tocarLuna(sitio.luna.vx, sitio.luna.vy);
     return;
+  }
+
+  /* El cristal. Tres veces. */
+  if (Math.abs(p.x - v.x) < v.w * 0.55 && Math.abs(p.y - v.y) < v.h * 0.55) {
+    if (tocarVentanaHab(p.x, p.y)) return;
   }
 
   /* El cuadro de la pared. */
@@ -6856,6 +7299,188 @@ function tocarEnHabitacion(p, e) {
     decir(cvx, cvy - U * 6, "Déjala encendida, anda.", { dur: 3 });
     return;
   }
+}
+
+/* ---- EL SUSTO DE LA VENTANA --------------------------------------------
+
+   Tocar el cristal tres veces. No pasa nada, no pasa nada… y a la
+   tercera hay algo al otro lado.
+
+   ── POR QUÉ TRES Y POR QUÉ NADA LAS DOS PRIMERAS ─────────────────────
+   Porque el susto no está en el búho: está en haber tocado dos veces
+   sin consecuencias. Las dos primeras contestan con una tontería —«no
+   se ve nada», «está lloviendo»— y por eso la tercera pilla.
+
+   ── Y POR QUÉ NO ES SÓLO UN DIBUJO QUE APARECE ───────────────────────
+   Un dibujo que aparece se ve venir. Esto es una secuencia: primero se
+   apaga la lámpara y la habitación se queda a oscuras, luego un golpe
+   en el cristal, luego la cámara SE GIRA hacia la ventana —despacio,
+   lo justo para que dé tiempo a pensar «no, no, no»— y entonces sí.
+
+   Y se acuerda: la segunda vez que se hace, el búho ya no aparece
+   igual. Un susto que se repite igual deja de ser un susto y pasa a
+   ser una animación.                                                 */
+
+const susto = {
+  toques: 0,
+  fase: -1,          // -1 quieto · si no, segundos desde que empezó
+  buho: 0,           // cuánto se ve el búho de fuera, 0..1
+  oscuro: 0,         // cuánto se ha apagado la habitación
+  lamparaAntes: true,
+};
+
+function tocarVentanaHab(x, y) {
+  if (susto.fase >= 0) return true;
+  susto.toques++;
+
+  if (susto.toques < CONF.ventana.toques) {
+    /* Las dos primeras: un golpecito en el cristal y una tontería. */
+    golpe(0.05, azar(1800, 2600), 0.1, "bandpass");
+    golpe(0.03, azar(600, 900), 0.06, "bandpass");
+    const antes = [
+      "Ahí fuera no se ve nada.",
+      "Sólo está el bosque. Y la noche.",
+      "Nada. Un árbol, y ya.",
+      "¿Qué miras? Si está todo oscuro.",
+    ];
+    decir(x, y + U * 8, antes[(susto.toques - 1) % antes.length], { dur: 3.2 });
+    return true;
+  }
+
+  /* La tercera. */
+  susto.toques = 0;
+  susto.fase = 0;
+  susto.lamparaAntes = hab.lamparaOn;
+  hab.lamparaOn = false;
+  bloqueado = true;
+  recuerdo.sumar("susto");
+  contarLogro("ventana");
+  return true;
+}
+
+function moverSusto(dt) {
+  if (susto.fase < 0) {
+    susto.buho = damp(susto.buho, 0, 2.4, dt);
+    susto.oscuro = damp(susto.oscuro, 0, 2, dt);
+    return;
+  }
+  const t = susto.fase += dt;
+  const v = ventanaHab();
+
+  /* 0.0 – 0.9  todo se apaga y se queda quieto. */
+  if (t < 0.9) {
+    susto.oscuro = suave3(t / 0.9);
+    agacharAmbientes(0.25, 0.8);
+  }
+  /* 0.9 – 1.1  un golpe en el cristal. */
+  else if (t < 1.1) {
+    if (!susto.golpeado) {
+      susto.golpeado = true;
+      golpe(0.06, 2200, 0.24, "bandpass");
+      golpe(0.12, 320, 0.18, "lowpass");
+      sacudir(0.25);
+    }
+  }
+  /* 1.1 – 2.1  la cámara se vuelve hacia la ventana. Despacio, que es
+     lo que da tiempo a pensar «no, no, no». La ventana está centrada,
+     así que girar hacia ella no mueve nada de lado: lo que se hace es
+     ACERCARSE y subir un poco, que es lo que haría alguien tumbado que
+     se incorpora para mirar. */
+  else if (t < 2.1) {
+    const k = suave3((t - 1.1) / 1);
+    cam.oz = mez(1, 1.3, k);
+    cam.oy = (H * 0.5 - v.y) * k * 0.55;
+  }
+  /* 2.1 – 2.35  y está ahí. */
+  else if (t < 2.35) {
+    if (!susto.asustado) {
+      susto.asustado = true;
+      susto.buho = 1;
+      sacudir(1.2);
+      sonarMisterio(0.85);
+      golpe(0.2, 140, 0.3, "lowpass");
+      /* La segunda vez y las siguientes, el búho ya no es sorpresa: es
+         un conocido que se ha pasado a saludar. */
+      const veces = recuerdo.leer("susto", 1);
+      const dice = veces <= 1
+        ? CONF.ventana.dice[Math.floor(Math.random() * CONF.ventana.dice.length)]
+        : (CONF.ventana.otraVez[Math.min(veces - 2, CONF.ventana.otraVez.length - 1)]);
+      setTimeout(() => decir(v.x, v.y + v.h * 0.6, dice,
+        { mimo: true, importante: true, dur: 5 }), 700);
+    }
+  }
+  /* 2.35 – 4.2  se queda mirando y se va. */
+  else if (t < 4.2) {
+    susto.buho = 1 - suave3(clamp01((t - 3.2) / 1));
+  }
+  /* Y se recoge todo. */
+  else {
+    susto.fase = -1;
+    susto.golpeado = false;
+    susto.asustado = false;
+    susto.buho = 0;
+    hab.lamparaOn = susto.lamparaAntes;
+    cam.ox = 0; cam.oy = 0; cam.oz = 1;
+    bloqueado = false;
+    agacharAmbientes(1, 1.4);
+  }
+}
+
+/**
+ * El búho al otro lado del cristal.
+ *
+ * Se dibuja DENTRO del recorte de la ventana, así que no hace falta
+ * comprobar nada: lo que se sale del marco, no se ve. Y eso es lo que
+ * hace que parezca que está fuera y no pegado encima.
+ */
+function dibujarSustoVentana(x, y, w, h) {
+  if (susto.buho < 0.01) return;
+  const k = clamp01(susto.buho);
+  /* Se acerca al cristal según aparece: empieza al fondo y acaba
+     pegado. Un búho que aparece ya pegado es un salto; uno que se
+     acerca en dos décimas es un susto. */
+  const r = w * mez(0.1, 0.3, k);
+  const cy = y + h * mez(0.1, 0.02, k);
+
+  ctx.save();
+  ctx.globalAlpha = k;
+
+  /* El cuerpo: una silueta negra, sin ningún detalle. Lo que asusta es
+     no verle la cara. */
+  ctx.fillStyle = "rgba(8,8,12,0.94)";
+  ctx.beginPath();
+  ctx.ellipse(x, cy, r, r * 1.2, 0, 0, 6.283);
+  ctx.fill();
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(x + s * r * 0.24, cy - r * 0.85);
+    ctx.lineTo(x + s * r * 0.66, cy - r * 1.6);
+    ctx.lineTo(x + s * r * 0.74, cy - r * 0.72);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /* Y los ojos. Verdes, enormes, muy juntos al cristal. */
+  ctx.globalCompositeOperation = "lighter";
+  for (const s of [-1, 1]) {
+    const ex = x + s * r * 0.38, ey = cy - r * 0.3;
+    /* Apretados: con el halo ancho los dos se juntaban en una bola
+       verde y el búho se quedaba sin silueta. Lo que asusta es la
+       silueta negra CON dos puntos, no una mancha luminosa. */
+    const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, r * 0.46);
+    g.addColorStop(0, `rgba(190,255,215,${0.95 * k})`);
+    g.addColorStop(0.32, `rgba(60,225,145,${0.4 * k})`);
+    g.addColorStop(1, "rgba(40,200,120,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(ex, ey, r * 0.46, 0, 6.283); ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = `rgba(6,14,9,${0.92 * k})`;
+    ctx.beginPath(); ctx.arc(ex, ey, r * 0.08, 0, 6.283); ctx.fill();
+    ctx.globalCompositeOperation = "lighter";
+  }
+  ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = 1;
+  ctx.restore();
 }
 
 function soltarBrillos(x, y, n, tono2) {
@@ -7027,8 +7652,6 @@ function paso(ahora) {
   meneo.t += dt;
   meneo.fuerza = damp(meneo.fuerza, 0, 4.4, dt);
 
-  luna.pulso = damp(luna.pulso, 0, 2.2, dt);
-
   /* ---- Mover ---- */
   moverParticulas(dt);
   moverDichos(dt);
@@ -7048,10 +7671,16 @@ function paso(ahora) {
     moverCajita(dt);
     moverCabana(dt);
     moverSecreto(dt);
+    moverLuna(dt);
     mirarFogataAzul();
   } else {
     moverHabitacion(dt);
     moverCajita(dt);
+    /* La luna también, que se ve por la ventana: si no, una dona se
+       quedaría congelada mientras estás dentro y al salir volvería de
+       golpe sin que se viera nada. */
+    moverLuna(dt);
+    moverSusto(dt);
   }
 
   /* ---- Dibujar ---- */
