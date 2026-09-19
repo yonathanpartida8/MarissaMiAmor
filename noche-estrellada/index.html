@@ -920,6 +920,21 @@ const CONF = {
     lluviaDice: "…esa no venía sola.",
   },
 
+  /* ---- LA CAJITA MUSICAL -----------------------------------------------
+     Lo que sabe la caja. Abrirla mientras llueve no es lo mismo que
+     abrirla con la noche despejada. */
+  cajita: {
+    bajoLaLluvia: [
+      "Esta canción con lluvia de fondo es otra canción.",
+      "Déjala sonar así. Lloviendo suena a nosotros.",
+      "Ponla otra vez cuando llueva de verdad y acuérdate de esto.",
+    ],
+    /* Y a la séptima vez que se abre, la caja demuestra que llevaba la
+       cuenta. No hace nada más. */
+    cuenta: 7,
+    alaSeptima: "Siete veces la has abierto. Las he contado todas. 🤍",
+  },
+
   /* ---- LA LUNA A LOS DIEZ TOQUES ---------------------------------------
      El secreto más tonto y el que más gracia hace.                    */
   dona: {
@@ -3675,6 +3690,16 @@ function construirPanel() {
       vol: CONF.ambientes[i].vol,
       luz: CONF.ambientes[i].on ? 1 : 0,
       pulso: 0,
+      /* Para que cada una respire a su ritmo. */
+      fase: rnd() * 6.283,
+      /* Su forma: nueve radios sorteados con el azar repetible. Ninguna
+         es igual a otra y ninguna cambia de forma al mirarla. */
+      forma: Array.from({ length: 9 }, () => azar(0.82, 1.06)),
+      /* Y tres briznas de hierba delante, para asentarla en el suelo. */
+      hierba: Array.from({ length: 3 }, () => ({
+        dx: azar(-0.9, 0.9), alto: azar(1.4, 3.2),
+        incl: azar(-0.6, 0.6), g: rnd() * 0.8, f: rnd() * 6.283,
+      })),
     });
   }
 }
@@ -3686,67 +3711,171 @@ function moverPanel(dt) {
   }
 }
 
+/* ---- LAS PIEDRAS ---------------------------------------------------------
+   ── POR QUÉ NO SON BOTONES ───────────────────────────────────────────
+   Porque un botón dice «esto es una interfaz» y rompe el sitio. Una
+   piedra puesta en el suelo delante de una fogata no dice nada: está
+   ahí porque alguien la puso ahí mientras hablaba.
+
+   Lo que las hace piedras y no círculos es todo lo que NO es el
+   círculo: que cada una tenga su forma —un polígono irregular fijo, no
+   una elipse—, que se apoyen en el suelo con su sombra, que tengan
+   vetas, que la cara que mira a la fogata esté iluminada y la de atrás
+   no, y que lo que se enciende al activarlas sea un GRABADO dentro de
+   la piedra y no una luz encima.                                     */
+
 function dibujarPanel() {
   const d = desplazar(2.1);
+
   for (const p of panel.piedras) {
     const x = p.x + d.x, y = p.y + d.y;
     const col = p.conf.color;
+    /* Un latido lentísimo y propio de cada piedra: las encendidas
+       respiran, y no todas a la vez. */
+    const latido = p.luz * (0.9 + 0.1 * Math.sin(reloj * 1.3 + p.fase));
 
-    /* El halo del ambiente encendido, que además hace de medidor: cuanto
-       más volumen, más se abre. */
-    if (p.luz > 0.02) {
-      const g = ctx.createRadialGradient(x, y, 0, x, y, p.r * (2.2 + p.vol * 2.4));
-      g.addColorStop(0, hexA(col, 0.34 * p.luz));
-      g.addColorStop(1, hexA(col, 0));
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(x, y, p.r * (2.2 + p.vol * 2.4), 0, 6.283);
-      ctx.fill();
+    /* ---- El resplandor en el suelo ----
+       Sale de DEBAJO de la piedra y se aplasta: es luz cayendo sobre la
+       tierra, no un aro alrededor de un botón. */
+    if (latido > 0.02) {
+      haloOvalado(x, y + p.r * 0.5, p.r * (2.6 + p.vol * 2.6), p.r * (1.1 + p.vol * 0.9), [
+        [0, hexA(col, 0.3 * latido)],
+        [0.45, hexA(col, 0.1 * latido)],
+        [1, hexA(col, 0)],
+      ]);
     }
 
-    /* La piedra. Iluminada por el fuego por el lado que mira a la
-       fogata, como todo lo demás de la escena. */
-    const haciaFuego = Math.sign(sitio.fogata.x - p.x);
-    const gp = ctx.createLinearGradient(x - p.r, y - p.r, x + p.r * haciaFuego, y + p.r);
-    const il = fuego.brillo * 0.7;
-    gp.addColorStop(0, `rgb(${Math.round(mez(40, 92, il))},${Math.round(mez(38, 68, il))},${Math.round(mez(40, 56, il))})`);
-    gp.addColorStop(1, `rgb(${Math.round(mez(22, 52, il))},${Math.round(mez(21, 40, il))},${Math.round(mez(24, 34, il))})`);
-    ctx.fillStyle = gp;
+    /* ---- La sombra ---- */
+    ctx.fillStyle = "rgba(4,5,10,0.45)";
     ctx.beginPath();
-    ctx.ellipse(x, y, p.r, p.r * 0.86, 0, 0, 6.283);
+    ctx.ellipse(x + p.r * 0.1, y + p.r * 0.66, p.r * 0.94, p.r * 0.3, 0, 0, 6.283);
     ctx.fill();
 
-    /* El arco de volumen, grabado en el canto. */
-    if (p.luz > 0.05) {
-      ctx.strokeStyle = hexA(col, 0.75 * p.luz);
-      ctx.lineWidth = Math.max(1.6, p.r * 0.13);
-      ctx.lineCap = "round";
+    /* ---- La piedra ----
+       Un polígono irregular, siempre el mismo para cada una. Los radios
+       se sembraron al construirla, así que ninguna es igual a otra y
+       ninguna cambia de forma al mirarla. */
+    const haciaFuego = Math.sign(sitio.fogata.x - p.x) || 1;
+    const il = fuego.brillo * 0.7;
+    const gp = ctx.createLinearGradient(
+      x - p.r * haciaFuego, y - p.r, x + p.r * haciaFuego, y + p.r);
+    /* Piedra, no madera: el tono de base tira a gris azulado y sólo el
+       fuego lo empuja hacia el marrón. Con la base ya cálida, las seis
+       parecían pastillas de chocolate puestas en fila. */
+    gp.addColorStop(0, `rgb(${Math.round(mez(62, 112, il))},${Math.round(mez(64, 84, il))},${Math.round(mez(72, 66, il))})`);
+    gp.addColorStop(0.55, `rgb(${Math.round(mez(44, 78, il))},${Math.round(mez(46, 58, il))},${Math.round(mez(54, 46, il))})`);
+    gp.addColorStop(1, `rgb(${Math.round(mez(26, 46, il))},${Math.round(mez(28, 34, il))},${Math.round(mez(34, 28, il))})`);
+    ctx.fillStyle = gp;
+
+    ctx.beginPath();
+    const N = p.forma.length;
+    for (let i = 0; i <= N; i++) {
+      const a = (i % N) / N * 6.283;
+      const rr = p.r * p.forma[i % N];
+      const px2 = x + Math.cos(a) * rr;
+      const py2 = y + Math.sin(a) * rr * 0.86;
+      if (i === 0) ctx.moveTo(px2, py2);
+      else ctx.lineTo(px2, py2);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    /* Las vetas: dos rayas que cruzan la piedra siguiendo su forma. */
+    ctx.save();
+    ctx.clip();
+    ctx.strokeStyle = `rgba(255,248,235,${0.05 + il * 0.05})`;
+    ctx.lineWidth = Math.max(1, p.r * 0.06);
+    for (let i = 0; i < 2; i++) {
+      const yy = y + (i - 0.5) * p.r * 0.7;
       ctx.beginPath();
-      /* Empieza abajo a la izquierda y da la vuelta según el volumen. */
-      ctx.arc(x, y, p.r * 1.24, Math.PI * 0.78, Math.PI * 0.78 + Math.PI * 1.44 * p.vol);
-      ctx.stroke();
-      /* Y el resto del arco, apagado, para que se vea cuánto queda. */
-      ctx.strokeStyle = hexA(col, 0.12 * p.luz);
-      ctx.beginPath();
-      ctx.arc(x, y, p.r * 1.24, Math.PI * 0.78 + Math.PI * 1.44 * p.vol, Math.PI * 2.22);
+      ctx.moveTo(x - p.r, yy - p.r * 0.14);
+      ctx.quadraticCurveTo(x, yy + p.r * 0.12, x + p.r, yy - p.r * 0.06);
       ctx.stroke();
     }
+    /* Y el filo iluminado de arriba, que es lo que le da bulto. */
+    ctx.strokeStyle = `rgba(255,214,160,${0.1 + il * 0.28})`;
+    ctx.lineWidth = Math.max(1.2, p.r * 0.12);
+    ctx.beginPath();
+    ctx.ellipse(x, y, p.r * 0.92, p.r * 0.8, 0, Math.PI * 1.08, Math.PI * 1.92);
+    ctx.stroke();
+    ctx.restore();
 
-    /* El símbolo. */
+    /* ---- EL GRABADO ----
+       El símbolo va HUNDIDO en la piedra: primero una sombra un pelín
+       desplazada, y encima el símbolo encendido. Es la diferencia entre
+       un icono pegado y algo tallado ahí hace tiempo. */
     ctx.save();
-    ctx.globalAlpha = 0.35 + p.luz * 0.65;
-    ctx.font = `${Math.round(p.r * 1.05)}px ui-sans-serif, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+    ctx.font = `${Math.round(p.r * 1.0)}px ui-sans-serif, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = "rgba(0,0,0,0.75)";
+    ctx.fillText(p.conf.icono, x + p.r * 0.045, y + p.r * 0.09);
+    ctx.globalAlpha = 0.3 + latido * 0.7;
+    ctx.fillStyle = "#fff";
     ctx.fillText(p.conf.icono, x, y + p.r * 0.04);
     ctx.restore();
 
-    /* Y un destello al tocarla. */
-    if (p.pulso > 0.01) {
-      ctx.strokeStyle = hexA(col, p.pulso * 0.7);
-      ctx.lineWidth = 2;
+    /* ---- EL ARO DE VOLUMEN ----
+       Grabado en el canto, y sólo cuando está encendida. El tramo
+       apagado se ve siempre que haya luz, para que se sepa cuánto
+       queda por subir sin tener que arrastrar a ciegas. */
+    if (latido > 0.05) {
+      const ini = Math.PI * 0.78, vuelta = Math.PI * 1.44;
+      ctx.lineCap = "round";
+      ctx.lineWidth = Math.max(1.4, p.r * 0.1);
+      ctx.strokeStyle = hexA(col, 0.12 * latido);
       ctx.beginPath();
-      ctx.arc(x, y, p.r * (1.3 + (1 - p.pulso) * 1.6), 0, 6.283);
+      ctx.ellipse(x, y, p.r * 1.18, p.r * 1.02, 0, ini, ini + vuelta);
+      ctx.stroke();
+      ctx.strokeStyle = hexA(col, 0.8 * latido);
+      ctx.lineWidth = Math.max(1.8, p.r * 0.13);
+      ctx.beginPath();
+      ctx.ellipse(x, y, p.r * 1.18, p.r * 1.02, 0, ini, ini + vuelta * p.vol);
+      ctx.stroke();
+      /* Y una cuenta en la punta del arco: es donde hay que poner el
+         dedo para arrastrar, así que se dice sin decirlo. */
+      const ap = ini + vuelta * p.vol;
+      ctx.fillStyle = hexA(col, 0.9 * latido);
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(ap) * p.r * 1.18, y + Math.sin(ap) * p.r * 1.02,
+              p.r * 0.11, 0, 6.283);
+      ctx.fill();
+    }
+
+    /* ---- El destello al tocarla ----
+       Dos aros que salen a distinta velocidad. Con uno solo parecía un
+       eco de radar; con dos, parece que la piedra ha SONADO. */
+    if (p.pulso > 0.01) {
+      for (const [vel, gr] of [[1, 2.2], [1.7, 1.4]]) {
+        const k = clamp01(1 - p.pulso);
+        ctx.strokeStyle = hexA(col, p.pulso * 0.6 / vel);
+        ctx.lineWidth = Math.max(1, gr);
+        ctx.beginPath();
+        ctx.ellipse(x, y, p.r * (1.2 + k * 1.8 * vel), p.r * (1 + k * 1.5 * vel),
+                    0, 0, 6.283);
+        ctx.stroke();
+      }
+    }
+  }
+
+  /* ---- Las briznas de hierba entre las piedras ----
+     Se pintan DESPUÉS: unas cuantas hierbas cruzando por delante de los
+     cantos es lo que asienta el arco en el suelo. Sin ellas las piedras
+     flotan sobre la tierra como pegatinas. */
+  ctx.strokeStyle = `rgba(${Math.round(mez(16, 96, fuego.brillo * 0.5))},${Math.round(mez(26, 78, fuego.brillo * 0.5))},${Math.round(mez(18, 48, fuego.brillo * 0.5))},0.85)`;
+  ctx.lineCap = "round";
+  for (const p of panel.piedras) {
+    const x = p.x + d.x, y = p.y + d.y;
+    for (const b of p.hierba) {
+      const bx = x + b.dx * p.r;
+      const by = y + p.r * 0.6;
+      const mece = Math.sin(reloj * 1.1 + b.f) * U * (0.3 + clima.viento * 0.5);
+      ctx.lineWidth = 1 + b.g;
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.quadraticCurveTo(bx + b.incl * U + mece * 0.5, by - b.alto * U * 0.6,
+                           bx + b.incl * U * 2 + mece, by - b.alto * U);
       ctx.stroke();
     }
   }
@@ -3809,10 +3938,17 @@ const cajita = {
   abierta: false,
   tapa: 0,            // 0 cerrada · 1 abierta
   nota: 0,            // el brillo de la última nota
+  lamina: 0,          // qué lámina del peine acaba de sonar
   fuente: null,
   gain: null,
   sinteticaReloj: null,
   girando: 0,
+  /* La manivela va aparte del rodillo: tiene inercia propia y al cerrar
+     la caja no se para en seco, se va parando. */
+  manivela: 0,
+  manivelaV: 0,
+  /* Cuántas veces se ha abierto, para el secreto de la caja. */
+  veces: 0,
 };
 
 /* La nana sintetizada, por si no hay archivo. Es una caja de música: el
@@ -3893,6 +4029,44 @@ async function abrirCajita() {
     tocarVuelta();
   }
   decir(sitio.cajita.x, sitio.cajita.y - U * 7, "🎵", { dur: 2 });
+  secretoDeLaCajita();
+}
+
+/**
+ * Lo que la cajita sabe.
+ *
+ * ── LA MÚSICA BAJO LA LLUVIA ─────────────────────────────────────────
+ * Abrirla mientras llueve no es lo mismo que abrirla con la noche
+ * despejada, y la escena se da por enterada: baja el resto de
+ * ambientes para que la música se quede sola contra el agua, y lo dice.
+ * Es el secreto que más cuesta encontrar porque hay que hacer dos cosas
+ * a la vez, y por eso es el que mejor sienta.
+ *
+ * ── Y LA CUENTA ──────────────────────────────────────────────────────
+ * La séptima vez que se abre —hoy o cualquier otra noche— la caja
+ * contesta. No hace nada más: sólo demuestra que llevaba la cuenta.
+ */
+function secretoDeLaCajita() {
+  cajita.veces = recuerdo.sumar("cajita");
+  const c = sitio.cajita;
+
+  if (clima.lluvia > 0.35) {
+    contarLogro("cajitaLluvia");
+    /* Los ambientes se apartan para dejarla sonar sola. */
+    agacharAmbientes(0.35, 2);
+    setTimeout(() => agacharAmbientes(1, 3), 12000);
+    setTimeout(() => decir(c.x, c.y - U * 9,
+      CONF.cajita.bajoLaLluvia[Math.floor(Math.random() * CONF.cajita.bajoLaLluvia.length)],
+      { mimo: true, importante: true, dur: 6 }), 1800);
+    return;
+  }
+
+  if (cajita.veces === CONF.cajita.cuenta) {
+    setTimeout(() => decir(c.x, c.y - U * 9, CONF.cajita.alaSeptima,
+      { mimo: true, importante: true, dur: 6 }), 2400);
+    magia(523);
+    contarLogro("cajitaCuenta");
+  }
 }
 
 function cerrarCajita() {
@@ -3916,14 +4090,23 @@ function cerrarCajita() {
 
 function moverCajita(dt) {
   cajita.tapa = damp(cajita.tapa, cajita.abierta ? 1 : 0, 4.5, dt);
+
+  /* La manivela, con inercia: acelera al abrir y se va parando al
+     cerrar. Que no se detenga en seco es lo que la hace parecer una
+     pieza de metal con peso y no una aguja de reloj. */
+  const quiere = cajita.abierta ? 2.9 : 0;
+  cajita.manivelaV = damp(cajita.manivelaV, quiere, cajita.abierta ? 2.2 : 0.9, dt);
+  cajita.manivela += cajita.manivelaV * dt;
+
   if (cajita.abierta) {
     cajita.girando += dt * 2.4;
     /* Una nota de luz cada tanto, al ritmo de la música. */
     cajita.nota = Math.max(0, cajita.nota - dt * 1.6);
     if (Math.random() < dt * 1.6) {
       cajita.nota = 1;
+      cajita.lamina = Math.floor(Math.random() * 7);
       soltar(sitio.cajita.x + azar(-U, U), sitio.cajita.y - U * 3, {
-        vx: azar(-14, 14), vy: azar(-34, -16),
+        vx: azar(-14, 14) + clima.viento * 10, vy: azar(-34, -16),
         vida: azar(1.6, 2.8), tam: azar(1.2, 2.4),
         tipo: TIPO.BRILLO, tono: 0.85,
       });
@@ -3938,18 +4121,25 @@ function dibujarCajita() {
   const c = sitio.cajita;
   const x = c.x + d.x, y = c.y + d.y;
   const w = c.r * 1.5, h = c.r * 0.9;
+  const abre = cajita.tapa;
+  const il = fuego.brillo;
 
   /* La piedra sobre la que está. */
-  ctx.fillStyle = `rgb(${Math.round(mez(30, 70, fuego.brillo * 0.6))},${Math.round(mez(28, 52, fuego.brillo * 0.6))},${Math.round(mez(30, 44, fuego.brillo * 0.6))})`;
+  ctx.fillStyle = `rgb(${Math.round(mez(30, 70, il * 0.6))},${Math.round(mez(28, 52, il * 0.6))},${Math.round(mez(30, 44, il * 0.6))})`;
   ctx.beginPath();
   ctx.ellipse(x, y + h * 0.75, w * 1.1, h * 0.5, 0, 0, 6.283);
   ctx.fill();
+  /* Y su sombra, que la pega al suelo. */
+  ctx.fillStyle = "rgba(4,4,10,0.4)";
+  ctx.beginPath();
+  ctx.ellipse(x, y + h * 0.66, w * 1.02, h * 0.28, 0, 0, 6.283);
+  ctx.fill();
 
   /* La luz que sale de dentro cuando está abierta. */
-  if (cajita.tapa > 0.05) {
+  if (abre > 0.05) {
     ctx.globalCompositeOperation = "lighter";
     const g = ctx.createRadialGradient(x, y - h * 0.2, 0, x, y - h * 0.2, w * 3);
-    g.addColorStop(0, `rgba(255,214,150,${0.3 * cajita.tapa})`);
+    g.addColorStop(0, `rgba(255,214,150,${0.3 * abre})`);
     g.addColorStop(1, "rgba(255,214,150,0)");
     ctx.fillStyle = g;
     ctx.beginPath();
@@ -3958,80 +4148,275 @@ function dibujarCajita() {
     ctx.globalCompositeOperation = "source-over";
   }
 
-  /* La tapa, que se abre girando sobre su bisagra de atrás. Se finge el
-     giro estrechándola: una tapa plana rotando de verdad se ve de canto
-     y desaparece a los 90 grados. */
-  const abre = cajita.tapa;
+  /* =====================================================================
+     EL INTERIOR
+     =====================================================================
+     Se pinta ANTES que el cuerpo y que la tapa, y recortado a la boca de
+     la caja. Así, cuando la tapa sube, lo de dentro aparece por detrás
+     del canto en vez de crecer encima de él, que es la diferencia entre
+     «se abre una caja» y «aparece un dibujo».                        */
+  /* La boca de la caja y cuánto se ha abierto. Todo lo de dentro se
+     mide desde aquí: el interior CRECE hacia arriba desde el canto del
+     cuerpo según sube la tapa, que es lo que hace que se vea aparecer
+     por detrás en vez de crecer encima. */
+  const boca = y - h * 0.5;
+  const dentro = h * 1.25 * abre;
+
+  if (abre > 0.04) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x - w * 0.94, boca - dentro, w * 1.88, dentro);
+    ctx.clip();
+
+    /* El fondo de terciopelo. */
+    const gf = ctx.createLinearGradient(0, boca - dentro, 0, boca);
+    gf.addColorStop(0, "#2b1018");
+    gf.addColorStop(1, "#4a1c28");
+    ctx.fillStyle = gf;
+    ctx.fillRect(x - w * 0.94, boca - dentro, w * 1.88, dentro);
+
+    /* ---- EL MECANISMO ----
+       El cilindro con sus púas y el peine de láminas. Es lo que hace
+       que se vea que la música SALE de algo, y no que suena de fondo. */
+    /* El rodillo va a un tercio de alto de la boca: más abajo y el
+       peine que cuelga de él se salía del recorte y no se veía. */
+    const my2 = boca - dentro * 0.34;
+    const cw = w * 0.62, ch = h * 0.16;
+    /* El rodillo, dorado, con sus anillos. */
+    const gr = ctx.createLinearGradient(0, my2 - ch, 0, my2 + ch);
+    gr.addColorStop(0, "#e8c478");
+    gr.addColorStop(0.5, "#b8862f");
+    gr.addColorStop(1, "#6d4c17");
+    ctx.fillStyle = gr;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x - cw / 2, my2 - ch, cw, ch * 2, ch * 0.5);
+    else ctx.rect(x - cw / 2, my2 - ch, cw, ch * 2);
+    ctx.fill();
+    /* Las púas: rayitas que se MUEVEN con el giro. Son ocho líneas y
+       son la mitad del encanto de la pieza. */
+    ctx.strokeStyle = "rgba(60,40,12,0.55)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 9; i++) {
+      const t = ((i / 9) + (cajita.girando * 0.11) % 1) % 1;
+      const px2 = x - cw / 2 + t * cw;
+      ctx.beginPath();
+      ctx.moveTo(px2, my2 - ch * 0.8);
+      ctx.lineTo(px2, my2 + ch * 0.8);
+      ctx.stroke();
+    }
+    /* El peine: las láminas que suenan. La que acaba de sonar vibra. */
+    for (let i = 0; i < 7; i++) {
+      const lx = x - cw * 0.44 + (i / 6) * cw * 0.88;
+      const vibra = cajita.nota > 0.1 && i === cajita.lamina
+        ? Math.sin(reloj * 60) * h * 0.05 * cajita.nota : 0;
+      ctx.strokeStyle = `rgba(226,216,190,${0.45 + (i === cajita.lamina ? cajita.nota * 0.5 : 0)})`;
+      ctx.lineWidth = Math.max(1, h * 0.045);
+      ctx.beginPath();
+      ctx.moveTo(lx, my2 + ch * 1.2);
+      ctx.lineTo(lx + vibra, my2 + ch * 1.2 + h * (0.14 + i * 0.016));
+      ctx.stroke();
+    }
+
+    /* ---- La bailarina ----
+       Gira estrechándose, sin bajar nunca del 22%: una silueta plana
+       rotando de verdad desaparece dos veces por vuelta. */
+    ctx.save();
+    ctx.globalAlpha = clamp01((abre - 0.25) / 0.5);
+    /* De pie sobre el mecanismo, mirando al frente. */
+    ctx.translate(x, my2 - h * 0.34);
+    const sg = Math.cos(cajita.girando);
+    ctx.scale(Math.max(0.22, Math.abs(sg)) * Math.sign(sg || 1), 1);
+    /* El tutú, la cintura, la cabeza y los brazos en alto. */
+    /* El tutú: dos capas, la de abajo más ancha y más floja. Con una
+       sola raya rosa la bailarina parecía un alfiler. */
+    for (const [anchoT, altoT, alfa] of [[0.26, 0.14, 0.55], [0.19, 0.1, 0.95]]) {
+      ctx.fillStyle = `rgba(247,185,212,${alfa})`;
+      ctx.beginPath();
+      ctx.moveTo(-w * anchoT, h * 0.12);
+      ctx.quadraticCurveTo(0, h * 0.12 - h * altoT, w * anchoT, h * 0.12);
+      ctx.quadraticCurveTo(0, h * 0.12 + h * altoT * 1.3, -w * anchoT, h * 0.12);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#ffd6e6";
+    ctx.beginPath();
+    ctx.ellipse(0, -h * 0.06, w * 0.055, h * 0.2, 0, 0, 6.283);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, -h * 0.33, w * 0.075, 0, 6.283);
+    ctx.fill();
+    ctx.strokeStyle = "#ffd6e6";
+    ctx.lineWidth = Math.max(1, w * 0.035);
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.04, -h * 0.18);
+    ctx.quadraticCurveTo(-w * 0.14, -h * 0.4, 0, -h * 0.52);
+    ctx.moveTo(w * 0.04, -h * 0.18);
+    ctx.quadraticCurveTo(w * 0.14, -h * 0.4, 0, -h * 0.52);
+    ctx.stroke();
+    ctx.restore();
+    ctx.globalAlpha = 1;
+
+    /* El espejito del fondo de la tapa, que devuelve un reflejo
+       borroso. Es el detalle que hace que la caja tenga PROFUNDIDAD. */
+    ctx.globalAlpha = clamp01((abre - 0.6) / 0.4) * 0.1;
+    ctx.fillStyle = "#cfd8ee";
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x - w * 0.6, boca - dentro * 0.99, w * 1.2, dentro * 0.4, h * 0.06);
+    else ctx.rect(x - w * 0.6, boca - dentro * 0.99, w * 1.2, dentro * 0.4);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
+  }
+
+  /* =====================================================================
+     LA TAPA
+     ===================================================================== */
   ctx.save();
-  ctx.translate(x, y - h * 0.5);
-  const gt = ctx.createLinearGradient(-w, -h * 0.4, w, h * 0.2);
-  const il = fuego.brillo;
-  gt.addColorStop(0, `rgb(${Math.round(mez(96, 180, il))},${Math.round(mez(62, 112, il))},${Math.round(mez(38, 62, il))})`);
-  gt.addColorStop(1, `rgb(${Math.round(mez(58, 120, il))},${Math.round(mez(36, 72, il))},${Math.round(mez(22, 40, il))})`);
-  ctx.fillStyle = gt;
+  /* La tapa SUBE con el interior: se queda apoyada en el canto de
+     arriba de la boca. Antes se quedaba abajo, encima del mecanismo,
+     y la caja parecía abierta y cerrada a la vez. */
+  ctx.translate(x, boca - dentro);
   ctx.save();
   ctx.translate(0, -h * 0.1);
-  ctx.scale(1, 1 - abre * 0.82);
+  /* Se finge el giro estrechándola: una tapa plana rotando de verdad se
+     ve de canto y desaparece a los noventa grados. */
+  ctx.scale(1, 1 - abre * 0.72);
   ctx.translate(0, -h * 0.22 * (1 - abre));
+
+  const gt = ctx.createLinearGradient(-w, -h * 0.4, w, h * 0.2);
+  gt.addColorStop(0, `rgb(${Math.round(mez(104, 190, il))},${Math.round(mez(68, 120, il))},${Math.round(mez(42, 68, il))})`);
+  gt.addColorStop(0.5, `rgb(${Math.round(mez(78, 150, il))},${Math.round(mez(50, 94, il))},${Math.round(mez(30, 52, il))})`);
+  gt.addColorStop(1, `rgb(${Math.round(mez(58, 120, il))},${Math.round(mez(36, 72, il))},${Math.round(mez(22, 40, il))})`);
+  ctx.fillStyle = gt;
   ctx.beginPath();
   if (ctx.roundRect) ctx.roundRect(-w, -h * 0.34, w * 2, h * 0.5, h * 0.12);
   else ctx.rect(-w, -h * 0.34, w * 2, h * 0.5);
   ctx.fill();
-  ctx.restore();
+
+  /* La VETA de la madera: tres líneas curvas que siguen el mismo
+     recorrido con una fase distinta. Sin veta, la madera es un
+     rectángulo marrón. */
+  ctx.strokeStyle = `rgba(40,22,10,${0.16 + il * 0.1})`;
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 3; i++) {
+    const yy = -h * 0.26 + i * h * 0.15;
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.94, yy);
+    ctx.bezierCurveTo(-w * 0.3, yy + h * 0.04 * (i % 2 ? 1 : -1),
+                      w * 0.3, yy - h * 0.04 * (i % 2 ? 1 : -1), w * 0.94, yy);
+    ctx.stroke();
+  }
+
+  /* El grabado de la tapa: dos iniciales y un corazón entre ellas.
+     Es el detalle que la convierte en SU caja y no en una caja. */
+  ctx.save();
+  ctx.globalAlpha = 0.5 + il * 0.4;
+  ctx.fillStyle = `rgb(${Math.round(mez(150, 232, il))},${Math.round(mez(116, 190, il))},${Math.round(mez(62, 110, il))})`;
+  ctx.font = `${Math.round(h * 0.3)}px ui-serif, Georgia, serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("y · m", 0, -h * 0.06);
   ctx.restore();
 
-  /* El cuerpo. */
+  /* El filete dorado de la tapa. */
+  ctx.strokeStyle = `rgba(214,168,86,${0.34 + il * 0.4})`;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-w * 0.9, -h * 0.28, w * 1.8, h * 0.38, h * 0.1);
+  else ctx.rect(-w * 0.9, -h * 0.28, w * 1.8, h * 0.38);
+  ctx.stroke();
+  ctx.restore();
+
+  /* La bisagra: dos cilindros de latón donde la tapa se dobla. */
+  ctx.fillStyle = `rgb(${Math.round(mez(120, 214, il))},${Math.round(mez(92, 168, il))},${Math.round(mez(44, 86, il))})`;
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(s * w * 0.6, h * 0.08, w * 0.07, h * 0.06, 0, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  /* =====================================================================
+     EL CUERPO
+     ===================================================================== */
   const gc = ctx.createLinearGradient(x - w, y, x + w, y + h);
-  gc.addColorStop(0, `rgb(${Math.round(mez(84, 164, fuego.brillo))},${Math.round(mez(54, 100, fuego.brillo))},${Math.round(mez(32, 56, fuego.brillo))})`);
-  gc.addColorStop(1, `rgb(${Math.round(mez(48, 104, fuego.brillo))},${Math.round(mez(30, 62, fuego.brillo))},${Math.round(mez(18, 34, fuego.brillo))})`);
+  gc.addColorStop(0, `rgb(${Math.round(mez(84, 164, il))},${Math.round(mez(54, 100, il))},${Math.round(mez(32, 56, il))})`);
+  gc.addColorStop(0.55, `rgb(${Math.round(mez(66, 138, il))},${Math.round(mez(42, 84, il))},${Math.round(mez(25, 46, il))})`);
+  gc.addColorStop(1, `rgb(${Math.round(mez(48, 104, il))},${Math.round(mez(30, 62, il))},${Math.round(mez(18, 34, il))})`);
   ctx.fillStyle = gc;
   ctx.beginPath();
   if (ctx.roundRect) ctx.roundRect(x - w, y - h * 0.5, w * 2, h, h * 0.16);
   else ctx.rect(x - w, y - h * 0.5, w * 2, h);
   ctx.fill();
 
-  /* El filete dorado. */
-  ctx.strokeStyle = `rgba(214,168,86,${0.4 + fuego.brillo * 0.4})`;
+  /* Los tablones del costado y su veta. */
+  ctx.strokeStyle = `rgba(30,16,8,${0.2 + il * 0.12})`;
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 4; i++) {
+    const yy = y - h * 0.5 + (i / 4) * h;
+    ctx.beginPath();
+    ctx.moveTo(x - w * 0.96, yy);
+    ctx.quadraticCurveTo(x, yy + (i % 2 ? h * 0.03 : -h * 0.03), x + w * 0.96, yy);
+    ctx.stroke();
+  }
+
+  /* Las cantoneras de latón de las cuatro esquinas. */
+  ctx.fillStyle = `rgba(${Math.round(mez(130, 226, il))},${Math.round(mez(100, 180, il))},${Math.round(mez(50, 96, il))},0.85)`;
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+    const cx2 = x + sx * w * 0.9, cy3 = y + sy * h * 0.38;
+    ctx.beginPath();
+    ctx.moveTo(cx2, cy3 - sy * h * 0.12);
+    ctx.lineTo(cx2, cy3);
+    ctx.lineTo(cx2 - sx * w * 0.12, cy3);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /* El filete dorado del cuerpo. */
+  ctx.strokeStyle = `rgba(214,168,86,${0.4 + il * 0.4})`;
   ctx.lineWidth = 1.3;
   ctx.beginPath();
   if (ctx.roundRect) ctx.roundRect(x - w * 0.88, y - h * 0.34, w * 1.76, h * 0.72, h * 0.12);
   else ctx.rect(x - w * 0.88, y - h * 0.34, w * 1.76, h * 0.72);
   ctx.stroke();
 
-  /* La bailarina de dentro, que sólo se ve con la tapa abierta. */
-  if (abre > 0.3) {
-    ctx.save();
-    ctx.globalAlpha = clamp01((abre - 0.3) / 0.5);
-    ctx.translate(x, y - h * 0.5);
-    /* Gira estrechándose, sin bajar nunca del 25%: una silueta plana
-       rotando de verdad desaparece dos veces por vuelta. */
-    const s = Math.cos(cajita.girando);
-    ctx.scale(Math.max(0.25, Math.abs(s)) * Math.sign(s || 1), 1);
-    ctx.fillStyle = "#ffd0e4";
-    ctx.beginPath();
-    ctx.ellipse(0, -h * 0.12, w * 0.24, h * 0.2, 0, 0, 6.283);
-    ctx.fill();
-    ctx.fillStyle = "#ffe8f2";
-    ctx.beginPath();
-    ctx.arc(0, -h * 0.42, w * 0.1, 0, 6.283);
-    ctx.fill();
-    ctx.restore();
-    ctx.globalAlpha = 1;
-  }
+  /* El cierre de delante: una lengüeta de latón. */
+  ctx.fillStyle = `rgba(${Math.round(mez(140, 236, il))},${Math.round(mez(108, 190, il))},${Math.round(mez(56, 104, il))},0.9)`;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x - w * 0.09, y - h * 0.5, w * 0.18, h * 0.26, h * 0.05);
+  else ctx.rect(x - w * 0.09, y - h * 0.5, w * 0.18, h * 0.26);
+  ctx.fill();
+  /* Y su ojo de cerradura. */
+  ctx.fillStyle = "rgba(24,16,8,0.7)";
+  ctx.beginPath();
+  ctx.arc(x, y - h * 0.4, w * 0.022, 0, 6.283);
+  ctx.fill();
 
-  /* La manivela del costado, que gira mientras suena. */
+  /* =====================================================================
+     LA MANIVELA
+     =====================================================================
+     Gira mientras suena, y tiene su propia inercia: al cerrar la caja
+     no se para en seco, se va parando. */
   ctx.save();
   ctx.translate(x + w * 1.08, y);
-  ctx.rotate(cajita.abierta ? cajita.girando * 1.2 : 0);
+  ctx.rotate(cajita.manivela);
+  /* El eje. */
+  ctx.fillStyle = `rgba(${Math.round(mez(120, 214, il))},${Math.round(mez(92, 168, il))},${Math.round(mez(44, 86, il))},0.9)`;
+  ctx.beginPath(); ctx.arc(0, 0, w * 0.06, 0, 6.283); ctx.fill();
   ctx.strokeStyle = "#c9a45c";
   ctx.lineWidth = Math.max(1.4, w * 0.07);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  /* La manivela de verdad tiene un codo, no es un palo recto. */
   ctx.beginPath();
   ctx.moveTo(0, 0);
-  ctx.lineTo(w * 0.24, 0);
+  ctx.lineTo(w * 0.2, 0);
+  ctx.lineTo(w * 0.2, -w * 0.1);
   ctx.stroke();
   ctx.fillStyle = "#e0bd72";
   ctx.beginPath();
-  ctx.arc(w * 0.26, 0, w * 0.09, 0, 6.283);
+  ctx.ellipse(w * 0.2, -w * 0.15, w * 0.055, w * 0.1, 0, 0, 6.283);
   ctx.fill();
   ctx.restore();
 }
