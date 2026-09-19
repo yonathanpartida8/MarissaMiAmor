@@ -555,6 +555,9 @@ const CONF = {
       "../assets/audio/musica.mp3",
       "../assets/audio/Musica.mp3",
     ],
+    /* El sonido del búho. Va en la carpeta principal, al lado de
+       `musica.mp3`. Si no está, se sintetiza uno. */
+    misterio: "misterio.mp3",
     cabana: {
       puertaAbre:  "Cabaña/door.open.mp3",
       puertaCierra:"Cabaña/door.close.mp3",
@@ -612,12 +615,44 @@ const CONF = {
      Una lista por estado. Se saca una al azar, sin repetir hasta que se
      acaben.                                                            */
   alComer: {
-    crudo:      ["Está crudo, ¿eh? 😅", "Así, frío, no es lo mismo.", "Un poco más de fuego la próxima."],
-    calentando: ["Casi. Le faltaba un pelín.", "Estaba templadito. Tampoco está mal."],
-    dorado:     ["Mmm... quedó perfecto 🤍", "Dorado justo. Eres buena en esto.", "Así es como me gustan."],
-    tostado:    ["Uy... está caliente 🫦", "Uf, ese venía con carácter.", "Crujiente por fuera. Bien jugado."],
-    quemandose: ["Creo que me pasé de fuego...", "Lo he soplado, pero poco.", "Un poquito quemado, pero se come."],
-    quemado:    ["JAJA, lo quemé 😭", "Bueno, el siguiente sale mejor.", "Carbón. Delicioso carbón."],
+    crudo: [
+      "Está crudo, ¿eh? 😅",
+      "Esto es un malvavisco con frío.",
+      "Ni le has enseñado el fuego, mujer.",
+      "Vale. Cuenta como aperitivo.",
+    ],
+    calentando: [
+      "Casi. Le faltaba un pelín.",
+      "Templadito. Como el café que se te olvida.",
+      "Un ratito más y era el bueno.",
+      "Le faltaban diez segundos. Diez.",
+    ],
+    dorado: [
+      "Mmm... quedó perfecto 🤍",
+      "Dorado justo. Oye, qué mano.",
+      "Ése era. Ése es el que yo hubiera querido.",
+      "Por fuera crujiente y por dentro derretido. Perfecto.",
+      "Te ha salido de revista.",
+    ],
+    tostado: [
+      "Uy... está caliente 🫦",
+      "Uf, ése venía con carácter.",
+      "Sopla, sopla, que te quemas.",
+      "Un poco pasado, pero de los buenos.",
+    ],
+    quemandose: [
+      "Creo que me pasé de fuego...",
+      "Lo he soplado, pero poco.",
+      "Bueno, por fuera está... interesante.",
+      "Se me ha ido la mano un pelín.",
+    ],
+    quemado: [
+      "JAJA, lo quemé 😭",
+      "Carbón. Delicioso carbón.",
+      "Esto ya no es un bombón, es arqueología.",
+      "Bueno. El siguiente sale mejor. Seguro. Casi seguro.",
+      "Lo he convertido en un mineral.",
+    ],
   },
 
   /* ---- TOCAR LA LLAMA -------------------------------------------------- */
@@ -626,6 +661,8 @@ const CONF = {
     "¡Auch! 🔥",
     "Te dije que no tocaras el fuego 😭",
     "Vale, vale, ya no lo toco.",
+    "Es fuego. FUEGO. Literalmente fuego.",
+    "Mi dedo y yo hemos aprendido algo hoy.",
   ],
 
   /* ---- LA LUNA --------------------------------------------------------- */
@@ -635,8 +672,17 @@ const CONF = {
     "Qué bonito sería verla contigo.",
     "Raionetas... ¿también estarás mirando la luna? 🤍",
     "Aunque estemos lejos, estamos viendo el mismo cielo.",
-    "Dicen que la luna guarda lo que le cuentas. Le he contado mucho.",
+    "Dicen que la luna guarda lo que le cuentas. Le he contado bastante.",
     "Si la miras a la vez que yo, casi es como estar juntos.",
+    "Está igual de lejos de los dos. Eso me gusta.",
+    "Le he pedido que te dé las buenas noches de mi parte.",
+    "Un día te llevo a un sitio donde se vea así de grande.",
+  ],
+  /* Y si ya han pasado cosas, cambia de tema. Ver EASTER EGGS. */
+  lunaDespues: [
+    "Ahora que has visto la carta... ya sabes lo que pienso.",
+    "El búho me ha dicho que te ha visto. Te está vigilando.",
+    "Con la fogata apagada se ve mejor, ¿verdad?",
   ],
 
   /* ---- LA LUZ VERDE DEL BOSQUE ----------------------------------------- */
@@ -665,18 +711,171 @@ const CONF = {
     "Buenas noches, mi vida.",
     "Que sueñes con algo tonto y bonito.",
     "Aquí me quedo, cuidándote el sueño.",
+    "Duerme. Yo apago la luz.",
+    "Mañana seguimos. Ahora descansa.",
   ],
+
+  /* ---- EL BOSQUE -------------------------------------------------------
+     Tres bandas de profundidad. Cada una con su número de árboles, su
+     tamaño, su color y cuánta niebla se le come. Lo que separa una
+     banda de otra no es sólo el tamaño: es CUÁNTA NIEBLA hay delante,
+     y eso es lo que de verdad da profundidad.                         */
+  bosque: {
+    bandas: [
+      /* Lejos: muchos, pequeños, casi tragados por la niebla. */
+      { n: 44, nFlojo: 22, alto: [5, 11],  ancho: [1.6, 3.0], niebla: 0.78, z: 0.14, toca: false },
+      /* Medio: los que se pueden tocar y sacudir. */
+      { n: 22, nFlojo: 12, alto: [13, 24], ancho: [3.0, 5.4], niebla: 0.34, z: 0.46, toca: true },
+      /* Cerca: dos a cada lado, enmarcando. */
+      { n: 5,  nFlojo: 4,  alto: [52, 88], ancho: [2.6, 4.6], niebla: 0.06, z: 1.0,  toca: true },
+    ],
+    /* La física de la sacudida: un muelle con amortiguación. Cuanto más
+       bajo `k`, más lento el bamboleo; cuanto más bajo `amortigua`, más
+       tarda en pararse. */
+    muelleK: 46,
+    muelleAmortigua: 3.4,
+    hojasPorSacudida: [4, 11],
+  },
+
+  /* ---- LA NIEBLA -------------------------------------------------------- */
+  niebla: {
+    bandas: 5,            // cuántas capas de bruma entre los árboles
+    base: 0.30,           // cuánta hay de normal
+    conLluvia: 0.68,      // cuánta sube cuando llueve
+  },
+
+  /* ---- LA TORMENTA -----------------------------------------------------
+     Un relámpago de verdad no es un fogonazo blanco: es un destello que
+     ilumina las nubes desde dentro, en dos o tres pulsos, y el trueno
+     llega DESPUÉS, tanto más tarde cuanto más lejos esté.             */
+  tormenta: {
+    cada: [7, 20],        // segundos entre relámpagos
+    /* La distancia decide todo: lo fuerte que se ve, cuánto tarda el
+       trueno y lo grave que suena. 343 m/s, como en el mundo real. */
+    distancia: [0.9, 7.5],  // segundos de retraso del trueno
+    pulsos: [2, 4],         // cuántos parpadeos tiene cada relámpago
+  },
+
+  /* ---- LA LLUVIA -------------------------------------------------------
+     Tres planos: lejos fina y lenta, cerca gorda y rápida. Y lo
+     importante: APAGA LA FOGATA, poco a poco.                         */
+  lluvia: {
+    gotasCerca: 90,
+    gotasMedio: 130,
+    gotasLejos: 160,
+    /* Cuánto tarda en subir de 0 a tope cuando se enciende. */
+    sube: 14,
+    /* Y cuánto daño le hace al fuego por segundo, a tope de lluvia. */
+    apagaFuego: 0.075,
+    /* Cuánto tarda la fogata en revivir cuando escampa. */
+    revive: 0.055,
+  },
+
+  /* ---- EL BÚHO ---------------------------------------------------------- */
+  buho: {
+    /* Se esconde en uno de estos sitios, en partes de pantalla. Cambia
+       cada vez que se le encuentra: no está siempre en el mismo árbol. */
+    escondites: [
+      [0.08, 0.42], [0.30, 0.40], [0.955, 0.44], [0.19, 0.52], [0.42, 0.38],
+    ],
+    dice: [
+      "¿Acabas de verme...?",
+      "Pensé que no me encontrarías.",
+      "Shhh... no hagas tanto ruido.",
+      "Llevo aquí toda la noche. Tú a lo tuyo.",
+      "Yo también estoy esperando a alguien.",
+      "No le digas a nadie dónde estoy.",
+    ],
+    /* Lo que dice cuando ya lo has encontrado varias veces. */
+    diceOtraVez: [
+      "Otra vez tú.",
+      "Se te da bien esto de encontrarme.",
+      "Vale, vale. Me has pillado. Ya van varias.",
+    ],
+  },
+
+  /* ---- EL ÁRBOL QUE GUARDA UNA NOTA ------------------------------------
+     Uno de los árboles de en medio, siempre el mismo, no se distingue
+     de los demás en nada. Si lo sacudes lo suficiente, se le cae algo
+     de entre las ramas.
+
+     Lo importante es que SE ACUERDA: la nota cae una sola vez en la
+     vida, y si vuelves otro día el árbol te lo dice con una frase en
+     vez de soltarte otra. Un secreto que se repite deja de serlo. */
+  arbolNota: {
+    toques: 4,            // cuántas sacudidas hacen falta
+    /* Lo que se nota antes de que caiga, al acercarse al número. */
+    cruje: [
+      "…algo se ha movido ahí arriba.",
+      "Hay algo enganchado entre las ramas.",
+    ],
+    alCaer: "Se ha caído algo del árbol.",
+    /* La nota, línea a línea. Se leen flotando, una detrás de otra. */
+    nota: [
+      "Sabía que ibas a sacudir este árbol.",
+      "Te conozco, mi vida.",
+      "Un beso desde aquí. y.m 🤍",
+    ],
+    yaCayo: "Éste ya te dio lo que tenía. Prueba en otro.",
+  },
+
+  /* ---- LOS OJOS ROJOS ---------------------------------------------------
+     Algo que mira desde el fondo. Nunca se sabe qué es, y ésa es la
+     gracia: no da miedo, da curiosidad.                               */
+  ojosRojos: {
+    cada: [22, 55],       // segundos entre apariciones
+    dura: [2.5, 7],       // cuánto se quedan mirando
+    /* Si el dedo se acerca a menos de esto, desaparecen. */
+    huyeA: 22,            // en unidades U
+    /* Y de vez en cuando se van al instante, sin más. */
+    probHuyeYa: 0.3,
+    dice: [
+      "…eso de ahí se ha movido.",
+      "¿Has visto eso? Yo sí.",
+      "Era algo. Y ya no está.",
+      "No te preocupes, es del bosque. Nos conoce.",
+    ],
+  },
+
+  /* ---- LA LUNA A LOS DIEZ TOQUES ---------------------------------------
+     El secreto más tonto y el que más gracia hace.                    */
+  dona: {
+    toques: 10,
+    dice: [
+      "Wow...",
+      "Estoy alucinando...",
+      "¿Por qué hay una dona de chocolate ahí arriba?",
+      "Quiero una dona 😭🍩",
+      "Vale. Esto no estaba en el plan.",
+    ],
+    dura: 26,             // segundos antes de volver a ser luna
+    alVolver: "Ya vuelve a ser la luna. Qué pena, oye.",
+  },
+
+  /* ---- EL SUSTO DE LA VENTANA ------------------------------------------ */
+  ventana: {
+    toques: 3,
+    dice: [
+      "¡OH POR DIOS! ¡Qué susto me diste! 😭",
+      "No estaba preparado para verte ahí...",
+      "¿Tú también estabas mirando por la ventana?",
+      "Casi me caigo de la cama, en serio.",
+    ],
+  },
 
   /* ---- RENDIMIENTO ------------------------------------------------------
      La calidad se ajusta sola si el teléfono no da: ver OPTIMIZACIÓN.  */
   perf: {
     dprMax: 2,
     dprMaxFlojo: 1.25,
-    particulas: 700,
-    particulasFlojo: 260,
-    estrellas: 220,
+    particulas: 900,
+    particulasFlojo: 300,
+    estrellas: 240,
     estrellasFlojo: 110,
     fpsMinimo: 46,
+    /* El postprocesado de WebGL2 (bloom + niebla). Se apaga solo si el
+       teléfono no da o si no hay WebGL2. */
+    bloom: true,
   },
 };
 
@@ -1271,8 +1470,10 @@ const sintetizar = {
        la tormenta está encima. */
     const reloj = setInterval(() => {
       if (!audio.ctx || Math.random() > 0.3) return;
-      truenoSintetizado(salida, azar(0.5, 1));
-      relampagoVisual(azar(0.4, 1));
+      /* El ambiente de tormenta ya no pinta nada por su cuenta: avisa
+         al clima y él decide a qué distancia cae el rayo, cuándo llega
+         el trueno y cómo se ilumina el bosque. */
+      lanzarRayo();
     }, 5200);
     salida._parar = () => clearInterval(reloj);
     return salida;
@@ -1367,6 +1568,10 @@ function volumen(id, vol) {
   const canal = audio.canales.get(id);
   if (!canal) return;
   canal.vol = clamp01(vol);
+  /* El volumen de la lluvia ES la intensidad de la lluvia: subirle el
+     sonido moja más. Que las dos cosas sean el mismo número es lo que
+     hace que el panel se sienta parte del mundo y no un mezclador. */
+  if (typeof sincronizarClima === "function") sincronizarClima();
   if (!canal.on) return;
   const t = audio.ctx.currentTime;
   canal.gain.gain.cancelScheduledValues(t);
@@ -1526,6 +1731,257 @@ const gemelosCabana = {
     await esperar(900);
   },
 };
+
+// ==========================================
+// CLIMA — LLUVIA, TORMENTA Y NIEBLA
+// ==========================================
+//
+// ── POR QUÉ ES UN MÓDULO Y NO UN EFECTO SUELTO ───────────────────────
+// Porque el tiempo que hace lo cambia TODO: el color del bosque, la
+// niebla, cuánto ilumina la fogata, si la fogata sigue viva siquiera, y
+// cada cuánto cae un rayo. Si cada cosa mirara por su cuenta si llueve,
+// acabarían desincronizadas.
+//
+// Así que hay un solo estado —`clima`— del que se lee en todas partes.
+//
+// ── LA LLUVIA APAGA LA FOGATA ────────────────────────────────────────
+// No de golpe. La lluvia le va quitando vida al fuego cada segundo, y
+// el fuego responde con lo que ya sabe hacer: menos llama, menos luz,
+// menos chispas y más humo, porque el humo sale de la leña mojada. Al
+// final sólo quedan las brasas, y luego ni eso.
+//
+// Cuando escampa, revive solo. Más despacio de lo que se apagó, que es
+// como pasa de verdad.
+//
+// ── EL RAYO Y EL TRUENO ──────────────────────────────────────────────
+// Van separados, como en el mundo: primero el destello, después el
+// trueno, y el retraso depende de la distancia. Un rayo cerca da un
+// fogonazo blanco y un golpe seco; uno lejos apenas ilumina las nubes y
+// llega como un rumor cinco segundos después.
+
+const clima = {
+  /* 0 seco · 1 diluvio. Lo mueve el ambiente de lluvia del panel. */
+  lluvia: 0,
+  lluviaObj: 0,
+  /* Igual con la tormenta. */
+  tormenta: 0,
+  tormentaObj: 0,
+  /* El viento: un valor que se mueve solo y que empuja el humo, las
+     llamas, las hojas y la lluvia. Todo lee de aquí. */
+  viento: 0,
+  /* El destello del relámpago, 0..1, y de qué lado viene. */
+  destello: 0,
+  destelloX: 0.5,
+  pulsos: 0,
+  relojRayo: azar(4, 10),
+  /* Los truenos pendientes: {cuando, distancia}. */
+  truenos: [],
+  /* La niebla, que sube cuando llueve. */
+  brumaBandas: [],
+};
+
+function construirBruma() {
+  clima.brumaBandas = [];
+  for (let i = 0; i < CONF.niebla.bandas; i++) {
+    const t = i / Math.max(1, CONF.niebla.bandas - 1);
+    clima.brumaBandas.push({
+      /* De la línea del horizonte hacia abajo: las de arriba más
+         delgadas y más lejos, las de abajo más gordas. */
+      y: mez(sitio.horizonte - U * 2, sitio.suelo + U * 3, t),
+      alto: U * mez(5, 13, t),
+      v: azar(0.004, 0.016) * (rnd() < 0.5 ? -1 : 1),
+      x: rnd(),
+      op: mez(0.5, 1, t),
+      f: rnd() * 6.283,
+    });
+  }
+}
+
+/** Dispara un relámpago a una distancia dada (en segundos de retraso). */
+function lanzarRayo(segundos) {
+  const d = segundos ?? azar(CONF.tormenta.distancia[0], CONF.tormenta.distancia[1]);
+  /* Lo cerca que está decide lo fuerte que se ve. Uno a siete segundos
+     apenas es un parpadeo en las nubes; uno a uno te ciega. */
+  const cerca = clamp01(1 - (d - CONF.tormenta.distancia[0]) /
+    (CONF.tormenta.distancia[1] - CONF.tormenta.distancia[0]));
+  clima.destello = 0.25 + cerca * 0.75;
+  clima.destelloX = azar(0.1, 0.9);
+  clima.pulsos = Math.round(azar(CONF.tormenta.pulsos[0], CONF.tormenta.pulsos[1]));
+  /* El trueno se apunta para más tarde. Ésa es toda la magia. */
+  clima.truenos.push({ cuando: reloj + d, cerca });
+  if (cerca > 0.62) sacudir(cerca * 0.5);
+}
+
+function moverClima(dt) {
+  /* ---- El viento ----
+     Tres senos con frecuencias que no encajan: rachas que no se repiten.
+     Es el mismo truco que el fuego, y por eso los dos se mueven juntos
+     sin estar sincronizados. */
+  clima.viento =
+    Math.sin(reloj * 0.17) * 0.55 +
+    Math.sin(reloj * 0.43 + 1.3) * 0.3 +
+    Math.sin(reloj * 0.91 + 2.6) * 0.15;
+  /* Con lluvia y tormenta hace más aire. */
+  clima.viento *= 1 + clima.lluvia * 0.8 + clima.tormenta * 0.5;
+
+  clima.lluvia = damp(clima.lluvia, clima.lluviaObj, 1 / CONF.lluvia.sube * 6, dt);
+  clima.tormenta = damp(clima.tormenta, clima.tormentaObj, 0.35, dt);
+
+  /* ---- Los rayos ---- */
+  if (clima.tormenta > 0.08) {
+    clima.relojRayo -= dt * clima.tormenta;
+    if (clima.relojRayo <= 0) {
+      clima.relojRayo = azar(CONF.tormenta.cada[0], CONF.tormenta.cada[1]);
+      lanzarRayo();
+    }
+  }
+  /* El destello parpadea un par de veces y se va: un relámpago no es un
+     fogonazo plano, son dos o tres golpes seguidos. */
+  if (clima.destello > 0.001) {
+    clima.destello -= dt * (clima.pulsos > 0 ? 9 : 3.4);
+    if (clima.destello <= 0.06 && clima.pulsos > 0) {
+      clima.pulsos--;
+      if (clima.pulsos > 0) clima.destello = azar(0.3, 0.85);
+    }
+    clima.destello = Math.max(0, clima.destello);
+  }
+
+  /* ---- Los truenos que tocan ---- */
+  for (let i = clima.truenos.length - 1; i >= 0; i--) {
+    if (reloj < clima.truenos[i].cuando) continue;
+    const t = clima.truenos.splice(i, 1)[0];
+    if (audio.ctx) truenoSintetizado(audio.maestro, 0.3 + t.cerca * 0.7);
+    if (t.cerca > 0.7) sacudir(t.cerca * 0.35);
+  }
+
+  /* ---- La lluvia apaga la fogata ---- */
+  if (clima.lluvia > 0.06 && escena === "bosque") {
+    fuego.vidaObj -= CONF.lluvia.apagaFuego * clima.lluvia * dt * 60;
+    fuego.vidaObj = Math.max(0, fuego.vidaObj);
+    /* Y el fuego mojado humea el doble. */
+    fuego.mojado = clima.lluvia;
+  } else {
+    fuego.mojado = damp(fuego.mojado || 0, 0, 0.6, dt);
+    /* Cuando escampa, revive. Más despacio de lo que se apagó. */
+    if (fuego.vidaObj < 1) {
+      fuego.vidaObj = Math.min(1, fuego.vidaObj + CONF.lluvia.revive * dt * 60 * 0.4);
+    }
+  }
+
+  moverGotas(dt);
+}
+
+/* ---- Las gotas, en tres planos ------------------------------------------
+   Lejos: finas, lentas y casi transparentes. Cerca: gordas, rápidas y
+   con salpicadura al llegar al suelo. Sin los tres planos la lluvia se
+   ve como una cortina plana pegada a la pantalla.                      */
+
+const LLUVIA_PLANOS = 3;
+let gotaX = null, gotaY, gotaV, gotaL, gotaP;
+let nGotas = 0;
+
+function construirLluvia() {
+  const c = CONF.lluvia;
+  nGotas = flojo
+    ? Math.round((c.gotasCerca + c.gotasMedio + c.gotasLejos) * 0.42)
+    : c.gotasCerca + c.gotasMedio + c.gotasLejos;
+  gotaX = new Float32Array(nGotas);
+  gotaY = new Float32Array(nGotas);
+  gotaV = new Float32Array(nGotas);
+  gotaL = new Float32Array(nGotas);
+  gotaP = new Int8Array(nGotas);
+  for (let i = 0; i < nGotas; i++) {
+    /* El plano se reparte por tercios. */
+    const p = Math.floor((i / nGotas) * LLUVIA_PLANOS);
+    gotaP[i] = p;
+    gotaX[i] = azar(-A * 0.2, A * 1.2);
+    gotaY[i] = azar(-H, H);
+    gotaV[i] = azar(420, 720) * (0.45 + p * 0.38);
+    gotaL[i] = azar(6, 14) * (0.5 + p * 0.5);
+  }
+}
+
+const salpicaduras = [];
+
+function moverGotas(dt) {
+  if (!gotaX || clima.lluvia < 0.01) return;
+  const empuje = clima.viento * 90;
+  /* Cuántas gotas están vivas ahora mismo: con poca lluvia caen pocas,
+     y así la intensidad se nota de verdad en vez de ser sólo opacidad. */
+  const vivas = Math.round(nGotas * clima.lluvia);
+  for (let i = 0; i < vivas; i++) {
+    gotaY[i] += gotaV[i] * dt;
+    gotaX[i] += empuje * (0.4 + gotaP[i] * 0.4) * dt;
+    if (gotaY[i] > H) {
+      /* Salpicadura, sólo las del plano de delante: las de lejos no se
+         verían y costarían lo mismo. */
+      if (gotaP[i] === LLUVIA_PLANOS - 1 && salpicaduras.length < 40) {
+        salpicaduras.push({ x: gotaX[i], y: H - azar(0, U * 6), t: 0, r: azar(U * 0.8, U * 2) });
+      }
+      gotaY[i] = azar(-H * 0.4, -10);
+      gotaX[i] = azar(-A * 0.2, A * 1.2);
+    }
+    if (gotaX[i] > A * 1.25) gotaX[i] = -A * 0.2;
+    if (gotaX[i] < -A * 0.25) gotaX[i] = A * 1.2;
+  }
+  for (let i = salpicaduras.length - 1; i >= 0; i--) {
+    salpicaduras[i].t += dt * 3.4;
+    if (salpicaduras[i].t >= 1) salpicaduras.splice(i, 1);
+  }
+}
+
+function dibujarLluvia() {
+  if (!gotaX || clima.lluvia < 0.01) return;
+  const vivas = Math.round(nGotas * clima.lluvia);
+  const empuje = clima.viento * 0.16;
+  ctx.lineCap = "round";
+  for (let p = 0; p < LLUVIA_PLANOS; p++) {
+    /* Un trazo por plano: cambiar de color y de grosor una vez cada
+       plano en vez de una vez por gota. */
+    const a = (0.12 + p * 0.13) * clamp01(clima.lluvia * 1.4);
+    ctx.strokeStyle = `rgba(176,206,240,${a})`;
+    ctx.lineWidth = 0.7 + p * 0.7;
+    ctx.beginPath();
+    for (let i = 0; i < vivas; i++) {
+      if (gotaP[i] !== p) continue;
+      const l = gotaL[i];
+      ctx.moveTo(gotaX[i], gotaY[i]);
+      ctx.lineTo(gotaX[i] - l * empuje, gotaY[i] - l);
+    }
+    ctx.stroke();
+  }
+  /* Las salpicaduras: un arito que se abre y se apaga. */
+  for (const s of salpicaduras) {
+    ctx.strokeStyle = `rgba(190,215,245,${(1 - s.t) * 0.34})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(s.x, s.y, s.r * (0.4 + s.t * 1.6), s.r * (0.2 + s.t * 0.6), 0, 0, 6.283);
+    ctx.stroke();
+  }
+}
+
+/** La bruma entre los árboles. Va por capas y se mueve muy despacio. */
+function dibujarBruma(desde, hasta) {
+  const fuerza = CONF.niebla.base + clima.lluvia * (CONF.niebla.conLluvia - CONF.niebla.base);
+  for (const b of clima.brumaBandas) {
+    if (b.y < desde || b.y > hasta) continue;
+    b.x += b.v * 0.02;
+    if (b.x > 1.4) b.x = -0.4;
+    if (b.x < -0.4) b.x = 1.4;
+    const y = b.y + Math.sin(reloj * 0.24 + b.f) * U * 0.8;
+    const g = ctx.createLinearGradient(0, y - b.alto, 0, y + b.alto);
+    /* Fría con lluvia, algo cálida sin ella: la niebla coge el color de
+       lo que la ilumina, y de noche eso es la luna. */
+    const r0 = Math.round(mez(120, 96, clima.lluvia));
+    const g0 = Math.round(mez(132, 112, clima.lluvia));
+    const b0 = Math.round(mez(158, 150, clima.lluvia));
+    g.addColorStop(0, `rgba(${r0},${g0},${b0},0)`);
+    g.addColorStop(0.5, `rgba(${r0},${g0},${b0},${0.16 * fuerza * b.op})`);
+    g.addColorStop(1, `rgba(${r0},${g0},${b0},0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(-20, y - b.alto, A + 40, b.alto * 2);
+  }
+}
 
 // ==========================================
 // SISTEMA DE PARTÍCULAS
@@ -2487,9 +2943,29 @@ function alternarPiedra(p) {
   p.on = !p.on;
   p.pulso = 1;
   ambiente(p.conf.id, p.on, p.vol);
+  /* Dos de las piedras no encienden sólo un sonido: cambian el TIEMPO
+     que hace. Lo que pasa después —la niebla, el color del bosque, la
+     fogata apagándose— lo lleva el módulo del clima, que es el único
+     que sabe de eso. */
+  sincronizarClima();
   tono(p.on ? 520 : 330, 0.4, "sine", 0.05);
   marcarPanelUsado();
   decir(p.x, p.y - U * 5, `${p.conf.icono} ${p.conf.nombre}${p.on ? "" : " · apagado"}`, { dur: 1.9 });
+}
+
+/**
+ * Lleva el estado del panel al estado del clima.
+ *
+ * Es el único puente entre los dos, a propósito: el panel no sabe qué
+ * es la niebla ni cómo se apaga una fogata, y el clima no sabe que hay
+ * unas piedras. Se hablan por aquí y por ningún otro sitio.
+ */
+function sincronizarClima() {
+  for (const piedra of panel.piedras) {
+    const v = piedra.on ? piedra.vol : 0;
+    if (piedra.conf.id === "lluvia") clima.lluviaObj = v;
+    if (piedra.conf.id === "relampagos") clima.tormentaObj = v;
+  }
 }
 
 function marcarPanelUsado() {
@@ -3445,6 +3921,46 @@ function tocarLuna(x, y) {
 //   8. el cuadro de la habitación
 //   9. el búho del bosque, que parpadea si te fijas
 //  10. encontrarlo casi todo → un mensaje que no tiene otro sitio
+//  11. la ventana de la habitación, tres veces
+//  12. la luna diez veces → deja de ser la luna
+//  13. lo que se recuerda de la última vez que estuviste aquí
+//
+// ── LA MEMORIA ───────────────────────────────────────────────────────
+// Un secreto que se comporta igual siempre se gasta a la segunda. Así
+// que la escena SE ACUERDA: cuántas veces has encontrado al búho,
+// cuántas veces has tocado la luna, si ya abriste la carta, si ya te
+// quemaste. Y lo que dice cambia según eso.
+//
+// Se guarda en `localStorage` con try/catch en todas partes: en una
+// ventana privada o con las cookies bloqueadas, leer o escribir LANZA,
+// y un secreto bonito no puede ser la razón de que la página se caiga.
+// Si no hay dónde guardar, se recuerda sólo durante esta visita, que ya
+// es bastante.
+
+const recuerdo = (() => {
+  const CLAVE = "noche-estrellada:recuerdos";
+  let datos = {};
+  try {
+    const crudo = localStorage.getItem(CLAVE);
+    if (crudo) datos = JSON.parse(crudo) || {};
+  } catch { datos = {}; }
+  if (typeof datos !== "object" || !datos) datos = {};
+
+  const guardar = () => {
+    try { localStorage.setItem(CLAVE, JSON.stringify(datos)); } catch { /* da igual */ }
+  };
+
+  return {
+    leer: (k, porDefecto = 0) => (k in datos ? datos[k] : porDefecto),
+    poner(k, v) { datos[k] = v; guardar(); return v; },
+    sumar(k, n = 1) { return this.poner(k, (Number(datos[k]) || 0) + n); },
+    /** ¿Es la primera vez de esta visita Y de todas las anteriores? */
+    esNuevo: (k) => !datos[k],
+    /** Cuántas visitas lleva. Se cuenta una sola vez por carga. */
+    visitas: 0,
+  };
+})();
+recuerdo.visitas = recuerdo.sumar("visitas");
 
 const logros = new Set();
 
@@ -3660,11 +4176,9 @@ const cielo = {
   nubes: [],
   fugaz: null,
   proximaFugaz: azar(14, 34),
-  relampago: 0,
 };
 
-let arbolesLejos = [];
-let arbolesCerca = [];
+let arboles = [];
 let montanas = [];
 let hierbas = [];
 let buho = null;
@@ -3712,70 +4226,98 @@ function construirMundo() {
     { y: sitio.horizonte - U * 2, alto: U * 8,  paso: A * 0.28, col: "#0a0e1e" },
   ];
 
-  /* ---- Bosque lejano y árboles cercanos ---- */
-  arbolesLejos = [];
-  const nL = flojo ? 22 : 34;
-  for (let i = 0; i < nL; i++) {
-    const t = i / nL;
-    arbolesLejos.push({
-      x: (t + azar(-0.012, 0.012)) * A * 1.06 - A * 0.03,
-      base: mez(sitio.horizonte + U * 1, sitio.suelo - U * 4, rnd() * 0.75),
-      alto: U * azar(9, 20),
-      ancho: U * azar(2.4, 4.6),
-      f: rnd() * 6.283,
-    });
-  }
-  arbolesLejos.sort((a, b) => a.base - b.base);
+  /* ---- EL BOSQUE, EN TRES BANDAS ----
+     Cada banda es una profundidad: lejos, medio y cerca. Lo que las
+     separa no es sólo el tamaño —eso lo hace cualquiera— sino CUÁNTA
+     NIEBLA se les pone delante y cuánto se mueven con el parallax. Eso
+     es lo que hace que se distingan de verdad.
 
-  arbolesCerca = [];
-  /* Dos a cada lado, ENMARCANDO la escena, no metidos en ella.
-     Están muy pegados al canto a propósito: son troncos altos y casi
-     negros, y si se meten hacia el centro tapan la cabaña y la fogata.
-     Lo que tienen que hacer es cerrar los lados para que se sienta que
-     estamos dentro del bosque, y nada más. */
-  for (const lado of [-1, 1]) {
-    for (let i = 0; i < 2; i++) {
-      const dentro = U * (1.5 + i * 6.5);
-      arbolesCerca.push({
-        x: lado < 0 ? -U * 4 + dentro : A + U * 4 - dentro,
-        base: sitio.suelo + U * azar(2, 9),
-        alto: H * azar(0.62, 0.95),
-        ancho: U * azar(2.6, 4.4),
+     Los de la banda media y los de cerca se pueden TOCAR: se sacuden
+     con un muelle amortiguado, sueltan hojas y suenan. */
+  arboles = [];
+  CONF.bosque.bandas.forEach((banda, iB) => {
+    const n = flojo ? banda.nFlojo : banda.n;
+    for (let i = 0; i < n; i++) {
+      const t = n === 1 ? 0.5 : i / (n - 1);
+      let x, base;
+
+      if (iB === 2) {
+        /* Los de cerca ENMARCAN: pegados a los cantos, nunca en medio.
+           Son troncos altos y casi negros, y metidos hacia el centro
+           taparían la cabaña y la fogata. */
+        const lado = i % 2 === 0 ? -1 : 1;
+        const orden = Math.floor(i / 2);
+        const dentro = U * (1.2 + orden * 6.2);
+        x = lado < 0 ? -U * 4 + dentro : A + U * 4 - dentro;
+        base = sitio.suelo + U * azar(2, 10);
+      } else {
+        /* Los demás se reparten a lo ancho con algo de desorden, y su
+           altura en pantalla sale de lo lejos que estén. */
+        x = (t + azar(-0.018, 0.018)) * A * 1.1 - A * 0.05;
+        base = mez(sitio.horizonte + U * 1.5, sitio.suelo - U * 2,
+                   iB === 0 ? rnd() * 0.5 : 0.42 + rnd() * 0.58);
+      }
+
+      arboles.push({
+        banda: iB,
+        x, base,
+        alto: (iB === 2 ? H * 0.01 : U) * azar(banda.alto[0], banda.alto[1]),
+        ancho: U * azar(banda.ancho[0], banda.ancho[1]),
         f: rnd() * 6.283,
-        ramas: Array.from({ length: 4 }, () => ({
-          y: azar(0.25, 0.8),
+        z: banda.z,
+        niebla: banda.niebla,
+        toca: banda.toca,
+        /* La forma: unos son abetos y otros de hoja. Que no sean todos
+           iguales es lo que hace que parezca un bosque. */
+        abeto: iB === 0 ? rnd() < 0.72 : rnd() < 0.45,
+        ramas: Array.from({ length: iB === 2 ? 5 : 3 }, () => ({
+          y: azar(0.24, 0.84),
           lado: rnd() < 0.5 ? -1 : 1,
-          largo: azar(0.4, 1),
+          largo: azar(0.35, 1),
         })),
+        /* La sacudida: ángulo, velocidad y cuántas veces lo han tocado.
+           Un muelle de verdad, no una animación rígida. */
+        sac: 0, sacV: 0, toques: 0,
+        /* Uno de los de en medio esconde una carta. Se sabrá tocándolo. */
+        carta: false,
       });
     }
-  }
+  });
+  /* De atrás adelante, para que los de delante tapen a los de detrás. */
+  arboles.sort((a, b) => (a.banda - b.banda) || (a.base - b.base));
 
-  /* ---- El búho, escondido en uno de los árboles cercanos ---- */
-  const anfitrion = arbolesCerca[arbolesCerca.length - 1];
-  buho = {
-    x: anfitrion.x + anfitrion.ancho * 0.6,
-    y: anfitrion.base - anfitrion.alto * 0.52,
-    r: U * 2.6,
-    parpadeo: 0,
-    reloj: azar(2, 6),
-    visto: false,
-  };
+  /* ---- EL ÁRBOL DE LA CARTA ----
+     Uno de la banda media, elegido con el azar repetible: siempre el
+     mismo mientras no se gire el teléfono, y no se distingue de los
+     demás en nada. */
+  const medios = arboles.filter((a) => a.banda === 1);
+  if (medios.length) medios[Math.floor(rnd() * medios.length)].carta = true;
 
-  /* ---- Hierba de delante ---- */
+  /* ---- Hierba de delante ----
+     Va por debajo del canto, pegada a la cámara. Cuanto más abajo está
+     una brizna más cerca se supone que está, y por eso se mueve más con
+     el parallax y se pinta más gruesa. */
   hierbas = [];
-  const nH = flojo ? 40 : 80;
-  for (let i = 0; i < nH; i++) {
+  const nHierba = flojo ? 60 : 140;
+  for (let i = 0; i < nHierba; i++) {
     hierbas.push({
-      x: rnd() * A,
-      y: sitio.suelo + rnd() * (H - sitio.suelo) * 1.1,
-      alto: U * azar(1.4, 4.2),
-      incl: azar(-0.3, 0.3),
+      x: rnd() * A * 1.06 - A * 0.03,
+      y: mez(sitio.suelo + U * 1.5, H + U * 2, Math.pow(rnd(), 0.75)),
+      alto: U * azar(1.6, 5.2),
+      incl: azar(-0.5, 0.5),
       f: rnd() * 6.283,
     });
   }
   hierbas.sort((a, b) => a.y - b.y);
 
+  /* ---- EL BÚHO ---- */
+  construirBuho();
+
+  /* ---- LOS OJOS DEL FONDO ---- */
+  construirOjos();
+
+  construirBruma();
+  construirLluvia();
   construirFogata();
   construirPanel();
   construirPanelPosiciones();
@@ -3897,24 +4439,37 @@ function dibujarBosque(dt) {
     ctx.fill();
   }
 
-  /* ---- 6. BOSQUE LEJANO ---- */
-  const dB = desplazar(1.0);
-  for (const t of arbolesLejos) {
-    /* Los de más abajo están más cerca: más grandes y más oscuros. Es
-       toda la profundidad que necesita un bosque de fondo. */
-    const prof = clamp01((t.base - sitio.horizonte) / Math.max(1, sitio.suelo - sitio.horizonte));
-    const x = t.x + dB.x * (0.5 + prof);
-    const base = t.base + dB.y * (0.5 + prof);
-    const alto = t.alto * (0.7 + prof * 0.6);
-    const ancho = t.ancho * (0.7 + prof * 0.6);
-    const mece = Math.sin(reloj * 0.5 + t.f) * U * 0.3;
-    /* Un poco de luz de la fogata en los que están cerca de ella. */
-    const cercaFuego = clamp01(1 - Math.abs(x - sitio.fogata.x) / (A * 0.4)) * prof;
-    const il = fuego.brillo * cercaFuego * 0.34;
-    const c = Math.round(mez(9, 70, il));
-    ctx.fillStyle = `rgb(${c},${Math.round(mez(13, 58, il))},${Math.round(mez(22, 44, il))})`;
-    abeto(x + mece, base, ancho, alto);
-  }
+  /* ---- 6. EL BOSQUE: BANDAS 0 Y 1 ----
+     Se dibujan intercaladas con la niebla: primero los de más lejos,
+     luego una tanda de bruma, luego los de en medio. Ésa es la razón de
+     que se vean a distinta distancia y no sólo a distinto tamaño. */
+  dibujarArboles(0);
+  dibujarBruma(sitio.horizonte - U * 6, mez(sitio.horizonte, sitio.suelo, 0.55));
+
+  dibujarArboles(1);
+
+  /* ---- Lo que mira desde el fondo ----
+     Va DESPUÉS de los árboles de en medio y ANTES de la niebla de
+     delante, y ese hueco de una línea es todo el efecto.
+
+     Detrás de los árboles se probó primero, que era lo bonito sobre el
+     papel: unos ojos asomando entre dos troncos. En la práctica los
+     troncos de en medio están casi pegados, así que la mitad de las
+     veces tapaban un ojo y lo que quedaba era UN punto rojo suelto, que
+     no es una mirada, es una mota.
+
+     Delante de ellos se ven los dos siempre, y la niebla que viene
+     justo después es la que los deja medio disueltos. Sale mejor:
+     misterio de verdad y no misterio por accidente. */
+  dibujarOjos(desplazar(1.726));
+
+  /* El búho, si está posado en un árbol de en medio: justo detrás de
+     los de cerca, que es donde le toca. */
+  dibujarBuho(1);
+
+  /* Y el papelito, si ha caído de alguno. */
+  dibujarNota(desplazar(1.726));
+  dibujarBruma(mez(sitio.horizonte, sitio.suelo, 0.45), sitio.suelo + U * 6);
 
   /* ---- La luz verde, metida entre el bosque lejano ---- */
   dibujarSecreto();
@@ -3951,43 +4506,17 @@ function dibujarBosque(dt) {
   dibujarParticulas();
 
   /* ---- 7. ÁRBOLES CERCANOS, delante de todo ---- */
+  dibujarArboles(2);
+
+  /* El búho, si está en uno de los de cerca —o si va volando, que
+     entonces pasa por delante de todo—. */
+  dibujarBuho(2);
+
+  /* ---- Hierba de delante ----
+     El parallax de la hierba es el mismo que el de los árboles de
+     cerca: están a la misma distancia, y si no coincidieran se vería
+     la hierba deslizarse por debajo de los troncos. */
   const dC = desplazar(3.4);
-  for (const t of arbolesCerca) {
-    const x = t.x + dC.x;
-    const mece = Math.sin(reloj * 0.42 + t.f) * U * 0.7;
-    const cercaFuego = clamp01(1 - Math.abs(x - sitio.fogata.x) / (A * 0.55));
-    const il = fuego.brillo * cercaFuego * 0.22;
-    ctx.fillStyle = `rgb(${Math.round(mez(5, 60, il))},${Math.round(mez(7, 44, il))},${Math.round(mez(11, 30, il))})`;
-    /* Tronco. */
-    ctx.beginPath();
-    ctx.moveTo(x - t.ancho, t.base + dC.y);
-    ctx.quadraticCurveTo(x - t.ancho * 0.7 + mece * 0.5, t.base - t.alto * 0.5,
-                         x - t.ancho * 0.35 + mece, t.base - t.alto);
-    ctx.lineTo(x + t.ancho * 0.35 + mece, t.base - t.alto);
-    ctx.quadraticCurveTo(x + t.ancho * 0.7 + mece * 0.5, t.base - t.alto * 0.5,
-                         x + t.ancho, t.base + dC.y);
-    ctx.closePath();
-    ctx.fill();
-    /* Ramas. */
-    ctx.strokeStyle = ctx.fillStyle;
-    ctx.lineCap = "round";
-    for (const r of t.ramas) {
-      const ry = t.base - t.alto * r.y;
-      const rx = x + mece * r.y;
-      ctx.lineWidth = t.ancho * 0.44 * (1 - r.y * 0.4);
-      ctx.beginPath();
-      ctx.moveTo(rx, ry);
-      ctx.quadraticCurveTo(
-        rx + r.lado * t.ancho * 3.4, ry - t.alto * 0.06,
-        rx + r.lado * t.ancho * 5.2, ry - t.alto * 0.16);
-      ctx.stroke();
-    }
-  }
-
-  /* ---- El búho ---- */
-  dibujarBuho(dC);
-
-  /* ---- Hierba de delante ---- */
   ctx.lineCap = "round";
   for (const h of hierbas) {
     const prof = clamp01((h.y - sitio.suelo) / Math.max(1, H - sitio.suelo));
@@ -4005,9 +4534,22 @@ function dibujarBosque(dt) {
     ctx.stroke();
   }
 
-  /* ---- El relámpago, si la tormenta está puesta ---- */
-  if (cielo.relampago > 0.01) {
-    ctx.fillStyle = `rgba(190,210,255,${cielo.relampago * 0.34})`;
+  /* ---- La lluvia, por delante de todo ---- */
+  dibujarLluvia();
+
+  /* ---- EL RELÁMPAGO ----
+     No es una pantalla blanca: es un destello que viene DE UN LADO y
+     que ilumina más arriba que abajo, porque la luz sale de las nubes.
+     Y las nubes se encienden por dentro, que es lo que de verdad se ve
+     de un rayo lejano. */
+  if (clima.destello > 0.01) {
+    const k = clima.destello;
+    const gx = A * clima.destelloX;
+    const g = ctx.createRadialGradient(gx, -H * 0.15, 0, gx, -H * 0.15, H * 1.5);
+    g.addColorStop(0, `rgba(214,228,255,${k * 0.5})`);
+    g.addColorStop(0.45, `rgba(190,210,255,${k * 0.2})`);
+    g.addColorStop(1, "rgba(180,200,255,0)");
+    ctx.fillStyle = g;
     ctx.fillRect(0, 0, A, H);
   }
 
@@ -4018,6 +4560,192 @@ function dibujarBosque(dt) {
   gv.addColorStop(1, "rgba(2,4,10,0.62)");
   ctx.fillStyle = gv;
   ctx.fillRect(0, 0, A, H);
+}
+
+/**
+ * Dibuja una banda entera del bosque.
+ *
+ * ── DE QUÉ DEPENDE QUE UN ÁRBOL SE VEA CERCA O LEJOS ─────────────────
+ * De cuatro cosas a la vez, y hacen falta las cuatro:
+ *
+ *   1. el tamaño            — obvio, y lo de menos;
+ *   2. el PARALLAX          — los de lejos casi no se mueven;
+ *   3. la NIEBLA de delante — se les mezcla el color del cielo encima;
+ *   4. la LUZ que reciben   — la fogata sólo alcanza a los de cerca.
+ *
+ * La tercera es la que más hace. Un árbol pequeño y negro se ve como un
+ * árbol pequeño; un árbol pequeño y medio disuelto en azul se ve LEJOS.
+ */
+function dibujarArboles(banda) {
+  const conf = CONF.bosque.bandas[banda];
+  const d = desplazar(mez(0.3, 3.4, conf.z));
+
+  for (const t of arboles) {
+    if (t.banda !== banda) continue;
+
+    const x = t.x + d.x;
+    const base = t.base + d.y;
+
+    /* El bamboleo propio: lentísimo y distinto en cada uno, más el
+       viento, que los mueve a todos a la vez pero cada uno a su ritmo.
+       Y encima, la sacudida si lo han tocado. */
+    const brisa = Math.sin(reloj * 0.42 + t.f) * (0.4 + clima.viento * 0.5);
+    const meceT = (brisa * 0.012 + t.sac) * (0.4 + conf.z * 0.6);
+
+    /* La luz: la fogata alcanza a los de cerca, la luna baña a todos por
+       arriba. Dos fuentes, y se nota cuál manda en cada árbol. */
+    const cercaFuego = clamp01(1 - Math.abs(x - sitio.fogata.x) / (A * mez(0.3, 0.6, conf.z)));
+    const delFuego = fuego.brillo * cercaFuego * mez(0.2, 0.34, conf.z);
+    const deLaLuna = 0.1 * (1 - conf.z * 0.5) * (1 - clima.lluvia * 0.7);
+    const il = clamp01(delFuego + deLaLuna + clima.destello * 0.5);
+
+    /* El color base, ya con la niebla mezclada encima: lo que hace que
+       los de lejos estén medio disueltos en el cielo. */
+    const r = mez(mez(5, 74, il), 22, conf.niebla);
+    const g = mez(mez(8, 52, il), 30, conf.niebla);
+    const b = mez(mez(13, 34, il), 54, conf.niebla);
+    ctx.fillStyle = `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+
+    if (t.abeto) {
+      /* Los abetos se inclinan enteros: son rígidos. */
+      ctx.save();
+      ctx.translate(x, base);
+      ctx.rotate(meceT);
+      abeto(0, 0, t.ancho, t.alto);
+      ctx.restore();
+    } else {
+      /* Los de hoja se doblan: la base queda quieta y la copa se va.
+         Por eso el tronco es una curva y no una recta. */
+      const puntaX = x + meceT * t.alto * 0.85;
+      ctx.beginPath();
+      ctx.moveTo(x - t.ancho, base);
+      ctx.quadraticCurveTo(x - t.ancho * 0.72 + meceT * t.alto * 0.3, base - t.alto * 0.5,
+                           puntaX - t.ancho * 0.32, base - t.alto);
+      ctx.lineTo(puntaX + t.ancho * 0.32, base - t.alto);
+      ctx.quadraticCurveTo(x + t.ancho * 0.72 + meceT * t.alto * 0.3, base - t.alto * 0.5,
+                           x + t.ancho, base);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = ctx.fillStyle;
+      ctx.lineCap = "round";
+      for (const rama of t.ramas) {
+        const ry = base - t.alto * rama.y;
+        const rx = x + meceT * t.alto * rama.y * 0.85;
+        ctx.lineWidth = Math.max(1, t.ancho * 0.42 * (1 - rama.y * 0.4));
+        ctx.beginPath();
+        ctx.moveTo(rx, ry);
+        ctx.quadraticCurveTo(
+          rx + rama.lado * t.ancho * 3.2 * rama.largo, ry - t.alto * 0.05,
+          rx + rama.lado * t.ancho * 5 * rama.largo, ry - t.alto * 0.15);
+        ctx.stroke();
+      }
+
+      /* La copa de los de cerca: una masa de hojas por encima, que se
+         mueve un poco más que el tronco porque pesa menos. */
+      if (banda === 2) {
+        ctx.globalAlpha = 0.9;
+        for (let k = 0; k < 4; k++) {
+          const a = (k / 4) * 6.283;
+          ctx.beginPath();
+          ctx.ellipse(
+            puntaX + Math.cos(a) * t.ancho * 1.6 + meceT * t.alto * 0.25,
+            base - t.alto + Math.sin(a) * t.ancho * 1.1,
+            t.ancho * 2.1, t.ancho * 1.5, a, 0, 6.283);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    /* Y el filo de luz de luna por el canto de arriba, en los de lejos:
+       es lo que los despega del cielo. */
+    if (banda === 0 && clima.lluvia < 0.5) {
+      ctx.globalAlpha = 0.1 * (1 - clima.lluvia * 2);
+      ctx.strokeStyle = "#a8badf";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x - t.ancho * 0.5, base - t.alto * 0.86);
+      ctx.lineTo(x, base - t.alto);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
+/**
+ * La física de la sacudida.
+ *
+ * Un muelle amortiguado, no una animación. Al tocar un árbol se le mete
+ * velocidad angular; el muelle lo devuelve al centro y la amortiguación
+ * lo va parando. Por eso se bambolea varias veces y cada vez menos, que
+ * es lo que hace un árbol de verdad, en vez de ir y volver una vez con
+ * una curva de suavizado.
+ *
+ * Se integra a PASO FIJO. Con el dt del navegador, un cuadro largo le
+ * mete al muelle una patada enorme y el árbol sale disparado.
+ */
+const PASO_ARBOL = 1 / 120;
+let sobraArbol = 0;
+
+function moverArboles(dtReal) {
+  sobraArbol = Math.min(sobraArbol + dtReal, 0.2);
+  const k = CONF.bosque.muelleK;
+  const c = CONF.bosque.muelleAmortigua;
+  let vueltas = 0;
+  while (sobraArbol >= PASO_ARBOL && vueltas < 24) {
+    for (const t of arboles) {
+      if (t.sac === 0 && t.sacV === 0) continue;
+      t.sacV += (-k * t.sac - c * t.sacV) * PASO_ARBOL;
+      t.sac += t.sacV * PASO_ARBOL;
+      /* Cuando ya no se nota, se para del todo: si no, el bucle sigue
+         calculando cuarenta árboles quietos para siempre. */
+      if (Math.abs(t.sac) < 0.0004 && Math.abs(t.sacV) < 0.004) { t.sac = 0; t.sacV = 0; }
+    }
+    sobraArbol -= PASO_ARBOL;
+    vueltas++;
+  }
+}
+
+/** Sacude un árbol: le mete velocidad y le tira hojas. */
+function sacudirArbol(t, fuerza) {
+  t.sacV += fuerza * azar(0.8, 1.2) * (t.banda === 2 ? 0.55 : 1);
+  t.toques++;
+
+  const x = t.x, base = t.base;
+  const n = Math.round(azar(CONF.bosque.hojasPorSacudida[0], CONF.bosque.hojasPorSacudida[1]));
+  for (let i = 0; i < n; i++) {
+    soltar(x + azar(-t.ancho * 2, t.ancho * 2), base - t.alto * azar(0.5, 1), {
+      vx: azar(-24, 24) + clima.viento * 20,
+      vy: azar(-12, 18),
+      vida: azar(2.4, 5),
+      tam: U * azar(0.5, 1.1),
+      tipo: TIPO.HOJA,
+      giro: azar(0, 6.283), giroV: azar(-2.4, 2.4),
+      tono: Math.random(),
+    });
+  }
+
+  /* El sonido: hojas. Ruido agudo con envolvente de seno, no un golpe:
+     un árbol no suena «toc», suena «shhh». */
+  if (despertarAudio()) {
+    const c = audio.ctx, t0 = c.currentTime;
+    const nn = Math.floor(c.sampleRate * 0.45);
+    const buf = c.createBuffer(1, nn, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < nn; i++) {
+      const kk = i / nn;
+      d[i] = (Math.random() * 2 - 1) * Math.sin(kk * Math.PI) * (0.3 + 0.7 * Math.random());
+    }
+    const src = c.createBufferSource(); src.buffer = buf;
+    const f = c.createBiquadFilter(); f.type = "highpass"; f.frequency.value = azar(2200, 3400);
+    const g = c.createGain(); g.gain.value = 0.1 * Math.min(1, Math.abs(fuerza) * 0.3);
+    src.connect(f).connect(g).connect(audio.maestro);
+    src.start(t0);
+  }
+
+  /* Y la cámara acusa el golpe, poquito. */
+  sacudir(Math.min(0.3, Math.abs(fuerza) * 0.06));
 }
 
 /** Un abeto: tres pisos de triángulos y un tronquito. */
@@ -4042,44 +4770,1004 @@ function abeto(x, base, w, h) {
   ctx.fill();
 }
 
-/** El búho: dos ojos que parpadean. Sólo se ve si te fijas. */
-function dibujarBuho(d) {
+/* ==========================================
+   EL BÚHO Y LO QUE MIRA DESDE EL FONDO
+   ==========================================
+
+   ── POR QUÉ EL BÚHO NO ES UN DIBUJO QUIETO ──────────────────────────
+   Antes eran dos óvalos amarillos que parpadeaban con un contador. Se
+   encontraba una vez y ya no volvía a pasar nada: siempre en el mismo
+   sitio, siempre la misma frase, siempre la misma cara.
+
+   Ahora es un bicho. Se asoma y se vuelve a meter, gira la cabeza para
+   seguirte el dedo, guiña un ojo de vez en cuando, y cuando lo pillas
+   SE VA VOLANDO a otro árbol. La próxima vez que lo busques no está
+   donde lo dejaste, y eso es lo que hace que se siga buscando.
+
+   ── LOS OJOS SON VERDES ─────────────────────────────────────────────
+   Verde y no amarillo a propósito: es el mismo verde de la luz que se
+   esconde en el bosque. Cuando se ven los dos a la vez, se entiende sin
+   que nadie lo explique que son la misma cosa.
+
+   ── SE POSA EN UN ÁRBOL DE VERDAD ───────────────────────────────────
+   Los escondites de `CONF` son puntos de pantalla, y una pantalla
+   cambia de forma. Así que no se usan tal cual: se busca el árbol
+   tocable más cercano a ese punto y el búho se posa EN ÉL, a la altura
+   de su copa. Gire el teléfono quien lo gire, el búho sigue en una
+   rama y no flotando en el aire.
+
+   Y como está agarrado al árbol, cuando sacudes ese árbol el búho se
+   sacude con él. No hay código para eso: sale solo de leer `sac`.
+*/
+
+/* Las frases, barajadas: sin esto salía dos veces seguidas la misma
+   cada dos por tres, y una frase repetida mata el encanto al instante. */
+const diceBuho         = barajador(CONF.buho.dice);
+const diceBuhoOtraVez  = barajador(CONF.buho.diceOtraVez);
+const diceOjos         = barajador(CONF.ojosRojos.dice);
+const diceCruje        = barajador(CONF.arbolNota.cruje);
+
+function construirBuho() {
+  /* Se conserva lo vivido: al girar el teléfono se remide el mundo
+     entero, y sería feo que el búho se olvidara de cuántas veces lo
+     has encontrado sólo porque has cambiado de postura. */
+  const antes = buho;
+  buho = {
+    escondite: antes ? antes.escondite : 0,
+    veces: antes ? antes.veces : recuerdo.leer("buho", 0),
+    arbol: null,
+    x: 0, y: 0, r: U * 2.7,
+    /* Cuánto asoma, de 0 (escondido del todo) a 1. */
+    salida: 0, salidaObj: 0,
+    relojAsomo: azar(3, 9),
+    /* El parpadeo. `guino` es cerrar sólo el ojo izquierdo. */
+    parpadeo: 0, guino: 0, relojParpadeo: azar(1.5, 5),
+    /* El giro de la cabeza: -1 mira a su izquierda, 1 a su derecha. */
+    giro: 0, giroObj: 0, relojGiro: azar(2, 6),
+    /* El aleteo: fase y amplitud. */
+    ala: 0, aleteo: 0,
+    /* El respiro del cuerpo y el brillo de los ojos. */
+    resp: Math.random() * 6.283,
+    /* El susto: cuando salta a la cara, esto se pone a 1. */
+    susto: 0,
+    /* El vuelo de un escondite a otro. */
+    vuelo: null,
+    visto: 0,
+  };
+  buho.perchas = elegirPerchas();
+  /* La primera vez empieza en uno cualquiera; al remedir se queda en el
+     que estaba, que es lo que se espera al girar el teléfono. */
+  if (!antes) buho.escondite = Math.floor(rnd() * Math.max(1, buho.perchas.length));
+  colocarBuhoEn(buho.escondite);
+  if (antes) { buho.salida = antes.salida; buho.salidaObj = antes.salidaObj; }
+}
+
+/**
+ * Reparte los escondites entre árboles DISTINTOS.
+ *
+ * Los de `CONF` son puntos de pantalla, y buscar cada vez «el árbol más
+ * cercano a este punto» tenía un fallo tonto: como la cabaña y la
+ * fogata dejan fuera media anchura, tres escondites acababan cayendo en
+ * el MISMO árbol. Cinco sitios que son uno no son cinco sitios.
+ *
+ * Así que se reparten de una vez, y cada árbol elegido se retira del
+ * saco. Si no cabe alguno, se queda con menos escondites y ya está: es
+ * mejor que repetirlos.
+ */
+function elegirPerchas() {
+  const cab = sitio.cabana;
+  const vale = (t) => {
+    /* Los de lejos no: son demasiado pequeños para que quepa un búho
+       encima sin parecer un pájaro gigante. */
+    if (t.banda === 0) return false;
+    /* Los que caen sobre la cabaña tampoco: quedan tapados por ella, o
+       peor, encima del tejado. */
+    if (Math.abs(t.x - cab.x) < cab.w * 0.5) return false;
+    /* Los de en medio pegados a la fogata, tampoco: ahí hay luz de
+       sobra y un búho que se ve a la primera deja de ser un secreto. */
+    if (t.banda === 1 && Math.abs(t.x - sitio.fogata.x) < A * 0.1) return false;
+    /* Y los de cerca cuyo tronco está fuera de la pantalla: el búho
+       quedaría flotando lejos de su propio árbol. */
+    if (t.banda === 2 && (t.x < -U * 2 || t.x > A + U * 2)) return false;
+    return true;
+  };
+
+  const libres = arboles.filter(vale);
+  const perchas = [];
+  for (const [fx, fy] of CONF.buho.escondites) {
+    const px = fx * A;
+    let mejor = -1, mejorD = Infinity;
+    for (let i = 0; i < libres.length; i++) {
+      if (!libres[i]) continue;
+      const d = Math.abs(libres[i].x - px);
+      if (d < mejorD) { mejorD = d; mejor = i; }
+    }
+    if (mejor < 0) break;
+    perchas.push({ arbol: libres[mejor], fy });
+    libres[mejor] = null;
+  }
+  return perchas;
+}
+
+/** Posa el búho en el escondite número `i`. */
+function colocarBuhoEn(i) {
+  const n = buho.perchas ? buho.perchas.length : 0;
+  if (!n) { buho.arbol = null; buho.r = U * 3.1; return; }
+  buho.escondite = ((i % n) + n) % n;
+  const percha = buho.perchas[buho.escondite];
+  const mejor = percha.arbol;
+  const cab = sitio.cabana;
+  const py = percha.fy * H;
+  buho.arbol = mejor;
+
+  if (mejor) {
+    const cima = mejor.base - mejor.alto;
+    /* ---- A qué lado del tronco ----
+       Se prueban los dos y gana el que quede más lejos de la cabaña sin
+       salirse de la pantalla. Empujarlo siempre «hacia dentro» tenía un
+       fallo: los árboles de la derecha lo mandaban justo encima del
+       tejado, que es lo único que se quería evitar. */
+    const dentroPantalla = (x) => x > U * 6 && x < A - U * 6;
+    const izq = mejor.x - mejor.ancho * 1.6;
+    const der = mejor.x + mejor.ancho * 1.6;
+    let haciaDentro;
+    if (dentroPantalla(izq) && dentroPantalla(der)) {
+      haciaDentro = Math.abs(izq - cab.x) >= Math.abs(der - cab.x) ? -1 : 1;
+    } else {
+      haciaDentro = dentroPantalla(der) ? 1 : -1;
+    }
+    /* Y en la COPA, no a media altura: en el tercio de arriba del
+       árbol, que es donde se posan. A media altura quedaba metido
+       entre el ramaje y no se veía ni buscándolo. */
+    buho.r = U * (apaisado ? 2.6 : 3.1) * (mejor.banda === 2 ? 1.3 : 1);
+    buho.x = clamp(mejor.x + mejor.ancho * 1.6 * haciaDentro, U * 6, A - U * 6);
+    buho.y = clamp(
+      clamp(py, cima + mejor.alto * 0.08, cima + mejor.alto * 0.5),
+      U * 9, sitio.suelo - U * 3,
+    );
+    /* Se guarda dónde está respecto al árbol para poder seguir sus
+       bamboleos sin recalcular nada. */
+    buho.relX = buho.x - mejor.x;
+    buho.relY = buho.y - mejor.base;
+  } else {
+    buho.r = U * (apaisado ? 2.6 : 3.1);
+    buho.x = A * 0.5; buho.y = py; buho.relX = 0; buho.relY = 0;
+  }
+}
+
+/** El sonido del búho: `misterio.mp3` si está, y si no su gemelo. */
+let sonandoMisterio = false;
+async function sonarMisterio(vol = 0.5) {
+  if (sonandoMisterio) return;
+  sonandoMisterio = true;
+  setTimeout(() => { sonandoMisterio = false; }, 1600);
+
+  const c = despertarAudio();
+  if (!c) return;
+  const buf = await traerBuffer(CONF.rutas.misterio);
+  if (buf) {
+    const src = c.createBufferSource(); src.buffer = buf;
+    const g = c.createGain(); g.gain.value = vol;
+    src.connect(g).connect(audio.maestro);
+    src.start();
+    return;
+  }
+
+  /* ---- El gemelo: un ulular de verdad ----
+     Un búho no hace "pip". Hace dos notas: una corta y una larga que
+     baja un poco al final, las dos con un vibrato lento y muy poquito
+     armónico. Se monta con dos senos —el tono y su quinta muy floja— y
+     una pizca de ruido soplado por encima, que es el aire de la
+     garganta. Sin ese ruido suena a flauta, no a bicho. */
+  const t0 = c.currentTime;
+  const notas = [
+    { cuando: 0.00, dur: 0.34, hz: 392, baja: 0 },
+    { cuando: 0.46, dur: 0.72, hz: 330, baja: 26 },
+  ];
+  for (const n of notas) {
+    const t = t0 + n.cuando;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol * 0.24, t + 0.07);
+    g.gain.setValueAtTime(vol * 0.24, t + n.dur * 0.6);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + n.dur);
+    g.connect(audio.maestro);
+
+    /* El vibrato: un seno lentísimo movido sobre la frecuencia. */
+    const vib = c.createOscillator(), vibG = c.createGain();
+    vib.frequency.value = 5.2; vibG.gain.value = n.hz * 0.012;
+    vib.connect(vibG);
+
+    for (const [mult, amp] of [[1, 1], [1.5, 0.18], [2, 0.08]]) {
+      const o = c.createOscillator(), og = c.createGain();
+      o.type = "sine";
+      o.frequency.setValueAtTime(n.hz * mult, t);
+      o.frequency.linearRampToValueAtTime((n.hz - n.baja) * mult, t + n.dur);
+      og.gain.value = amp;
+      vibG.connect(o.frequency);
+      o.connect(og).connect(g);
+      o.start(t); o.stop(t + n.dur + 0.05);
+    }
+    vib.start(t); vib.stop(t + n.dur + 0.05);
+
+    /* El aire de la garganta. */
+    const src = c.createBufferSource(); src.buffer = bufferRosa(1.2);
+    const f = c.createBiquadFilter(); f.type = "bandpass";
+    f.frequency.value = n.hz * 2.2; f.Q.value = 1.6;
+    const ng = c.createGain();
+    ng.gain.setValueAtTime(0, t);
+    ng.gain.linearRampToValueAtTime(vol * 0.05, t + 0.09);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + n.dur);
+    src.connect(f).connect(ng).connect(audio.maestro);
+    src.start(t); src.stop(t + n.dur + 0.05);
+  }
+}
+
+function moverBuho(dt) {
   if (!buho) return;
-  buho.reloj -= 1 / 60;
-  if (buho.reloj <= 0) { buho.reloj = azar(2.4, 7); buho.parpadeo = 1; }
-  buho.parpadeo = Math.max(0, buho.parpadeo - 0.06);
+  const b = buho;
+  b.resp += dt * 1.3;
+  b.susto = Math.max(0, b.susto - dt * 1.1);
 
-  const x = buho.x + d.x, y = buho.y + d.y;
-  const abierto = 1 - Math.sin(clamp01(buho.parpadeo) * Math.PI);
+  /* ---- El vuelo entre escondites ----
+     Va por una parábola y no en línea recta, y el aleteo es más fuerte
+     al despegar que al llegar. Es todo lo que hace falta para que se
+     lea como un bicho volando y no como una imagen deslizándose. */
+  if (b.vuelo) {
+    const v = b.vuelo;
+    v.t += dt;
+    const k = clamp01(v.t / v.dur);
+    const s = suave3(k);
+    b.x = mez(v.x0, v.x1, s);
+    b.y = mez(v.y0, v.y1, s) - Math.sin(k * Math.PI) * v.arco;
+    b.aleteo = mez(1, 0.35, k);
+    b.ala += dt * 17;
+    b.giro = mez(b.giro, v.x1 > v.x0 ? 0.6 : -0.6, 0.1);
+    b.salida = 1;
+    if (k >= 1) {
+      b.vuelo = null;
+      b.aleteo = 0;
+      colocarBuhoEn(v.destino);
+      /* Al llegar se mete entre las ramas y tarda un rato en asomar:
+         que no esté esperándote ya con los ojos encendidos. */
+      b.salida = 0; b.salidaObj = 0;
+      b.relojAsomo = azar(8, 18);
+    }
+    return;
+  }
 
-  /* El cuerpo, casi invisible: es una sombra un pelín más clara. */
-  ctx.fillStyle = "rgba(24,22,30,0.7)";
+  /* ---- Asomarse y volver a esconderse ---- */
+  b.relojAsomo -= dt;
+  if (b.relojAsomo <= 0) {
+    if (b.salidaObj > 0.5) { b.salidaObj = 0; b.relojAsomo = azar(10, 24); }
+    else {
+      b.salidaObj = 1;
+      b.relojAsomo = azar(9, 20);
+      /* Una de cada seis veces que se asoma, además canta. Y sólo si la
+         tormenta no está tapándolo todo: un búho no ulula bajo un
+         diluvio, y encima no se oiría. */
+      if (Math.random() < 0.17 && clima.lluvia < 0.4) sonarMisterio(0.32);
+    }
+  }
+  b.salida = damp(b.salida, b.salidaObj, 1.7, dt);
+
+  /* ---- Parpadeo ---- */
+  b.relojParpadeo -= dt;
+  if (b.relojParpadeo <= 0) {
+    b.relojParpadeo = azar(1.8, 6);
+    if (Math.random() < 0.22) b.guino = 1; else b.parpadeo = 1;
+  }
+  b.parpadeo = Math.max(0, b.parpadeo - dt * 5.2);
+  b.guino = Math.max(0, b.guino - dt * 3.4);
+
+  /* ---- El giro de la cabeza ----
+     Si el dedo anda cerca, lo sigue. Si no, mira a su aire de vez en
+     cuando. Un búho gira la cabeza a saltos, no en continuo, así que
+     el objetivo cambia de golpe y lo que se amortigua es el camino. */
+  const cerca = dedo.dentro && Math.hypot(dedo.x - b.x, dedo.y - b.y) < U * 34;
+  if (cerca) {
+    b.giroObj = clamp((dedo.x - b.x) / (U * 16), -1, 1);
+    b.relojGiro = azar(1.4, 3);
+  } else {
+    b.relojGiro -= dt;
+    if (b.relojGiro <= 0) {
+      b.relojGiro = azar(2.2, 6.5);
+      b.giroObj = Math.random() < 0.35 ? 0 : azar(-0.85, 0.85);
+    }
+  }
+  b.giro = damp(b.giro, b.giroObj, 5.5, dt);
+
+  b.visto = Math.max(0, b.visto - dt * 0.35);
+  b.aleteo = Math.max(0, b.aleteo - dt * 2.2);
+  b.ala += dt * (4 + b.aleteo * 14);
+
+  /* ---- Va montado en su árbol ----
+     Si el árbol se bambolea, el búho se bambolea con él. Se rehace su
+     posición a partir de la del árbol y su ángulo de sacudida, que es
+     exactamente lo que le pasaría a algo agarrado a una rama. */
+  const t = b.arbol;
+  if (t && !b.vuelo) {
+    const alturaRel = clamp01((t.base - (t.base + b.relY)) / Math.max(1, t.alto));
+    const giroRama = t.sac * alturaRel;
+    const cos = Math.cos(giroRama), sen = Math.sin(giroRama);
+    b.x = t.x + b.relX * cos - b.relY * sen;
+    b.y = t.base + b.relX * sen + b.relY * cos;
+    b.inclina = giroRama;
+  } else {
+    b.inclina = 0;
+  }
+}
+
+/**
+ * Lo que pasa cuando lo encuentras: te mira, canta y se va volando.
+ * Y la próxima vez dice otra cosa, porque se acuerda.
+ */
+function tocarBuho() {
+  const b = buho;
+  if (!b || b.vuelo) return false;
+
+  b.veces++;
+  recuerdo.poner("buho", b.veces);
+  b.visto = 1;
+  b.salida = 1; b.salidaObj = 1;
+  b.parpadeo = 1;
+  b.giroObj = 0; b.giro = 0;
+  b.aleteo = 1;
+
+  sonarMisterio(0.55);
+  soltarBrillos(b.x, b.y, 8, 140);
+
+  const dice = b.veces <= 1
+    ? CONF.buho.dice[0]
+    : (b.veces >= 4 ? diceBuhoOtraVez() : diceBuho());
+  decir(b.x, b.y - U * 6, dice, { mimo: true, importante: true });
+  contarLogro("buho");
+
+  /* Se va a otro escondite. Nunca al mismo, y con preferencia por uno
+     lejos: si se quedara al lado, no habría que volver a buscarlo. */
+  setTimeout(() => {
+    if (!buho || buho.vuelo) return;
+    const lista = buho.perchas || [];
+    if (lista.length < 2) return;
+    /* ---- A cuál se va ----
+       No al más lejano: eso lo dejaba yendo y viniendo entre los mismos
+       dos árboles para siempre, que es peor que quedarse quieto. Se
+       sortea entre todos los demás, pero con el cuadrado de la
+       distancia como peso: casi siempre acaba lejos, y de vez en cuando
+       aparece a dos palmos, que es cuando más gracia hace. */
+    let destino = buho.escondite;
+    let total = 0;
+    const pesos = lista.map((q, i) => {
+      if (i === buho.escondite) return 0;
+      const d = Math.abs(q.arbol.x - buho.x) / A;
+      const w = 0.12 + d * d * 3;
+      total += w;
+      return w;
+    });
+    let tirada = Math.random() * total;
+    for (let i = 0; i < pesos.length; i++) {
+      if (tirada < pesos[i]) { destino = i; break; }
+      tirada -= pesos[i];
+    }
+    if (destino === buho.escondite) destino = (buho.escondite + 1) % lista.length;
+    const px = lista[destino].arbol.x, py = lista[destino].fy * H;
+    buho.vuelo = {
+      t: 0,
+      dur: 1.25 + Math.abs(px - buho.x) / A * 0.9,
+      x0: buho.x, y0: buho.y,
+      x1: px, y1: py,
+      arco: U * azar(9, 16),
+      destino,
+    };
+  }, 900);
+
+  return true;
+}
+
+/**
+ * Dibuja el búho: cuerpo, orejas, alas y dos ojos que miran.
+ *
+ * Se llama DOS VECES por fotograma, una por cada banda de árboles que
+ * puede estar tapándolo, y sólo pinta en la que le toca. Es la única
+ * forma de que un búho posado en un árbol de en medio quede detrás de
+ * los troncos de delante y uno posado en los de delante quede encima:
+ * el orden de pintado es la profundidad, y aquí la profundidad depende
+ * de en qué árbol se haya posado esta vez.
+ *
+ * Volando pasa por delante de todo, que es lo que hace un bicho que
+ * cruza la escena.
+ */
+function dibujarBuho(banda) {
+  if (!buho) return;
+  const b = buho;
+  /* Escondido del todo y sin volar: no hay nada que pintar. */
+  if (b.salida < 0.015 && !b.vuelo) return;
+
+  const miBanda = b.vuelo ? 2 : (b.arbol ? b.arbol.banda : 2);
+  if (miBanda !== banda) return;
+
+  /* El mismo parallax que los árboles de su banda: si no coincidiera,
+     se le vería despegarse de la rama al mover el dedo. */
+  const conf = CONF.bosque.bandas[miBanda];
+  const d = desplazar(mez(0.3, 3.4, conf.z));
+
+  const x = b.x + d.x, y = b.y + d.y;
+  const r = b.r * (1 + b.susto * 1.6);
+  const sal = clamp01(b.salida);
+
+  /* Cuánto tiene los ojos abiertos. El guiño cierra sólo el izquierdo,
+     así que se calculan por separado. */
+  const cerrado = Math.sin(clamp01(b.parpadeo) * Math.PI);
+  const cerradoG = Math.sin(clamp01(b.guino) * Math.PI);
+  const abiertoI = clamp01(1 - Math.max(cerrado, cerradoG));
+  const abiertoD = clamp01(1 - cerrado);
+
+  /* El respiro: el cuerpo se ensancha un pelín al inspirar. */
+  const resp = 1 + Math.sin(b.resp) * 0.035;
+  /* Cuando está a medio asomar, lo que se ve es la mitad de arriba. */
+  const asoma = mez(0.45, 1, sal);
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate((b.inclina || 0) * 0.6 + (b.vuelo ? Math.sin(b.ala) * 0.08 : 0));
+  ctx.globalAlpha = mez(0.35, 1, sal);
+
+  /* ---- Las alas, detrás del cuerpo ----
+     Dos hojas que se abren y se cierran. En reposo apenas se mueven; al
+     volar se abren del todo. */
+  const abre = 0.12 + b.aleteo * (0.5 + Math.sin(b.ala) * 0.5) * 1.15;
+  for (const s of [-1, 1]) {
+    ctx.save();
+    ctx.translate(s * r * 0.62, -r * 0.1);
+    ctx.rotate(s * (0.35 + abre));
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.35, r * 0.42, r * 0.95 * asoma, 0, 0, 6.283);
+    ctx.fillStyle = "rgba(20,19,27,0.95)";
+    ctx.fill();
+    /* Un filo de luna por el canto del ala. Sin esto el aleteo no se
+       veía: era negro moviéndose sobre negro. */
+    ctx.strokeStyle = `rgba(140,172,225,${mez(0.08, 0.3, sal) * (0.35 + b.aleteo * 0.65)})`;
+    ctx.lineWidth = Math.max(0.8, r * 0.1);
+    ctx.stroke();
+    /* Y tres plumas largas marcadas en el borde de abajo, que es lo que
+       convierte un óvalo en un ala. */
+    if (b.aleteo > 0.15) {
+      ctx.strokeStyle = `rgba(150,180,235,${0.16 * b.aleteo})`;
+      ctx.lineWidth = Math.max(0.6, r * 0.05);
+      for (let i = 0; i < 3; i++) {
+        const ang = -0.5 + i * 0.42;
+        ctx.beginPath();
+        ctx.moveTo(Math.sin(ang) * r * 0.2, r * (0.5 + i * 0.1));
+        ctx.lineTo(Math.sin(ang) * r * 0.42, r * (1.2 * asoma));
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  /* ---- El cuerpo ----
+     No es un óvalo liso: lleva un degradado de arriba abajo para que la
+     barriga se vea un poco más clara, como si le llegara la luz de la
+     fogata de abajo. */
+  const gc = ctx.createLinearGradient(0, -r * 1.2, 0, r * 1.2);
+  const luzF = fuego.brillo * clamp01(1 - Math.abs(x - sitio.fogata.x) / (A * 0.7)) * 0.5;
+  gc.addColorStop(0, "rgb(20,19,27)");
+  gc.addColorStop(1, mezColor("rgb(34,30,38)", "rgb(96,64,44)", luzF));
+  ctx.fillStyle = gc;
   ctx.beginPath();
-  ctx.ellipse(x, y, buho.r, buho.r * 1.25, 0, 0, 6.283);
+  ctx.ellipse(0, 0, r * resp, r * 1.22 * asoma, 0, 0, 6.283);
   ctx.fill();
 
-  /* Los ojos: lo único que se ve de verdad. */
+  /* ---- La luz de borde ----
+     Un bulto negro sobre un fondo negro no se ve. Lo que lo saca es un
+     filo de luz por el lado de la luna: un arco finísimo, de un azul
+     frío, siguiendo el contorno. Es lo que separa al búho del árbol sin
+     tener que iluminarlo entero y estropear que esté escondido. */
+  const haciaLuna = sitio.luna.x < b.x ? -1 : 1;
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r * resp, r * 1.22 * asoma, 0, 0, 6.283);
+  ctx.clip();
+  ctx.strokeStyle = `rgba(150,180,235,${mez(0.1, 0.34, sal) * (1 - clima.lluvia * 0.5)})`;
+  ctx.lineWidth = Math.max(1, r * 0.16);
+  ctx.beginPath();
+  ctx.ellipse(haciaLuna * r * 0.1, 0, r * resp, r * 1.22 * asoma, 0, 0, 6.283);
+  ctx.stroke();
+  ctx.restore();
+
+  /* Las plumas del pecho: tres arcos flojos. Sin esto es una piedra. */
+  ctx.strokeStyle = "rgba(255,240,220,0.055)";
+  ctx.lineWidth = Math.max(0.6, r * 0.07);
+  for (let i = 0; i < 3; i++) {
+    const yy = r * (0.12 + i * 0.3) * asoma;
+    ctx.beginPath();
+    ctx.arc(0, yy - r * 0.9, r * 0.82, 0.55, Math.PI - 0.55);
+    ctx.stroke();
+  }
+
+  /* ---- La cabeza, que gira ---- */
+  ctx.save();
+  ctx.translate(b.giro * r * 0.16, -r * 0.62 * asoma);
+
+  /* Las orejas: dos picos que se inclinan con el giro. Llevan su propio
+     filo de luna, porque sin él eran negro sobre negro y el búho se
+     quedaba con la cabeza redonda, que es media cara de gato. */
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(s * r * 0.24, -r * 0.34);
+    ctx.lineTo(s * r * (0.62 + b.giro * s * 0.12), -r * (0.92 + b.aleteo * 0.1));
+    ctx.lineTo(s * r * 0.72, -r * 0.24);
+    ctx.closePath();
+    ctx.fillStyle = "rgb(17,16,23)";
+    ctx.fill();
+    ctx.strokeStyle = `rgba(140,172,225,${mez(0.06, 0.26, sal)})`;
+    ctx.lineWidth = Math.max(0.6, r * 0.07);
+    ctx.stroke();
+  }
+
+  /* El disco facial: lo que hace que un búho sea un búho. */
+  ctx.fillStyle = "rgb(26,24,33)";
+  ctx.beginPath();
+  ctx.ellipse(b.giro * r * 0.1, 0, r * 0.88, r * 0.74, 0, 0, 6.283);
+  ctx.fill();
+
+  /* ---- LOS OJOS, VERDES ----
+     El mismo verde que la luz escondida del bosque. Se pintan en
+     `lighter` para que brillen de verdad y no sean dos pegatinas. */
+  const cx = b.giro * r * 0.26;
+  const brillo = (0.55 + Math.sin(b.resp * 1.7) * 0.12 + b.visto * 0.45) * mez(0.35, 1, sal);
+  ctx.globalCompositeOperation = "lighter";
+  const ojos = [[-1, abiertoI], [1, abiertoD]];
+  for (const [s, ab] of ojos) {
+    const ex = cx + s * r * 0.36;
+    const ey = -r * 0.04;
+    if (ab > 0.02) {
+      /* El halo es CORTO a propósito. Uno grande le comía la cabeza
+         entera y el búho se quedaba en una mancha verde con dos puntos:
+         no se le veían ni las orejas ni el pico. Apretado, en cambio,
+         parecen dos ojos encendidos dentro de una cara oscura, que es
+         justo lo que tiene que parecer. */
+      const halo = r * 0.72;
+      const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, halo);
+      g.addColorStop(0,    `rgba(170,255,200,${(0.5 * ab + b.visto * 0.32) * brillo})`);
+      g.addColorStop(0.34, `rgba(60,220,140,${0.22 * ab * brillo})`);
+      g.addColorStop(1,    "rgba(40,200,120,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(ex, ey, halo, 0, 6.283); ctx.fill();
+
+      /* El iris y, dentro, la pupila negra. La pupila NO brilla: es lo
+         que le da profundidad al ojo. */
+      ctx.fillStyle = `rgba(190,255,215,${0.95 * ab * mez(0.4, 1, sal)})`;
+      ctx.beginPath();
+      ctx.ellipse(ex, ey, r * 0.22, r * 0.22 * ab, 0, 0, 6.283);
+      ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = `rgba(4,10,7,${0.9 * ab})`;
+      ctx.beginPath();
+      ctx.ellipse(ex + b.giro * r * 0.05, ey, r * 0.1, r * 0.12 * ab, 0, 0, 6.283);
+      ctx.fill();
+      ctx.globalCompositeOperation = "lighter";
+    } else {
+      /* Cerrado: una rayita clara, el borde del párpado. */
+      ctx.strokeStyle = `rgba(90,190,130,${0.3 * brillo})`;
+      ctx.lineWidth = Math.max(0.7, r * 0.07);
+      ctx.beginPath();
+      ctx.moveTo(ex - r * 0.2, ey); ctx.lineTo(ex + r * 0.2, ey);
+      ctx.stroke();
+    }
+  }
+  ctx.globalCompositeOperation = "source-over";
+
+  /* El pico, entre los dos ojos y un poco más abajo. */
+  ctx.fillStyle = `rgba(210,160,90,${mez(0.3, 0.85, sal)})`;
+  ctx.beginPath();
+  ctx.moveTo(cx - r * 0.1, r * 0.16);
+  ctx.lineTo(cx + r * 0.1, r * 0.16);
+  ctx.lineTo(cx + b.giro * r * 0.06, r * 0.42);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();  // cabeza
+
+  /* ---- La rama ----
+     Sólo cuando está posado. Es un palito, pero sin él el búho parece
+     flotando y con él parece que vive ahí. */
+  if (!b.vuelo && sal > 0.25) {
+    /* No es un palo recto de canto a canto —eso parecía un cable—: es
+       una rama que sale de un lado, se afina y acaba en dos ramitas.
+       Se pinta con un relleno y no con un trazo, que es lo único que
+       permite que tenga grosor variable. */
+    const haciaTronco = (b.relX || 0) < 0 ? 1 : -1;
+    const largo = r * 2.2, grueso = r * 0.26;
+    ctx.fillStyle = `rgba(16,15,20,${0.9 * sal})`;
+    ctx.beginPath();
+    ctx.moveTo(haciaTronco * largo, r * 1.1 - grueso * 1.3);
+    ctx.quadraticCurveTo(0, r * 1.22 - grueso * 0.6, -haciaTronco * r * 0.85, r * 1.3);
+    ctx.quadraticCurveTo(0, r * 1.3 + grueso * 0.5, haciaTronco * largo, r * 1.14 + grueso * 1.2);
+    ctx.closePath();
+    ctx.fill();
+    /* Dos ramitas en la punta. */
+    ctx.strokeStyle = `rgba(16,15,20,${0.8 * sal})`;
+    ctx.lineWidth = Math.max(0.8, r * 0.09);
+    ctx.lineCap = "round";
+    for (const [dx, dy] of [[0.5, -0.32], [0.34, 0.2]]) {
+      ctx.beginPath();
+      ctx.moveTo(-haciaTronco * r * 0.7, r * 1.29);
+      ctx.lineTo(-haciaTronco * r * (0.7 + dx), r * (1.29 + dy));
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+/* ==========================================
+   LA NOTA DEL ÁRBOL
+   ==========================================
+
+   Uno de los árboles de en medio guarda un papelito. No se distingue
+   de los demás: hay que sacudir árboles a lo tonto hasta dar con él, y
+   eso es exactamente lo que se quiere que pase.
+
+   ── EL PAPEL CAE DE VERDAD ──────────────────────────────────────────
+   No aparece: se desprende de la copa y BAJA. Y no baja recto, baja
+   como baja un papel, que es lo único que lo hace creíble: la
+   resistencia del aire lo frena mucho más que a una piedra, y el
+   viento lo empuja de lado mientras se balancea sobre sí mismo.
+
+   Se simula con tres cosas y ya está:
+     · gravedad floja y un rozamiento fuerte → cae despacio
+     · un seno sobre la velocidad horizontal → el vaivén de la hoja
+     · el ángulo sigue a la velocidad → se pone de canto al caer deprisa
+
+   ── Y SE ACUERDA ────────────────────────────────────────────────────
+   Cae una sola vez. Para siempre, no para esta visita: si mañana se
+   vuelve a abrir la página, ese árbol ya no tiene nada y lo dice.   */
+
+const nota = {
+  viva: false,
+  x: 0, y: 0, vx: 0, vy: 0,
+  ang: 0, angV: 0,
+  posada: false,
+  leida: false,
+  brillo: 0,
+  t: 0,
+};
+
+/**
+ * Se llama cada vez que se sacude un árbol. Decide si éste era el
+ * árbol, y si lo era, si ya toca soltar el papel.
+ */
+function mirarArbolCarta(t, p) {
+  if (!t || !t.carta) return;
+
+  /* Ya cayó, hoy o cualquier otro día. */
+  if (recuerdo.leer("notaArbol", 0)) {
+    /* Sólo se dice de vez en cuando: si lo dijera en cada sacudida
+       sería un cartel, y esto no es un cartel. */
+    if (Math.random() < 0.3) {
+      decir(t.x, t.base - t.alto * 0.9, CONF.arbolNota.yaCayo, { dur: 3.2 });
+    }
+    return;
+  }
+
+  const faltan = CONF.arbolNota.toques - t.toques;
+
+  /* Cerca pero todavía no: se oye algo ahí arriba. Es la pista, y es
+     lo que convierte «sacudir árboles» en «sacudir ESTE árbol». */
+  if (faltan > 0) {
+    if (faltan <= 2) {
+      decir(t.x, t.base - t.alto * 0.92, diceCruje(), { dur: 3 });
+      /* Un crujido de madera, muy corto. */
+      golpe(0.09, azar(300, 560), 0.1, "bandpass");
+    }
+    return;
+  }
+
+  /* Y cae. */
+  nota.viva = true;
+  nota.posada = false;
+  nota.leida = false;
+  nota.x = t.x + azar(-t.ancho, t.ancho);
+  nota.y = t.base - t.alto * azar(0.72, 0.9);
+  nota.vx = azar(-6, 6);
+  nota.vy = 0;
+  nota.ang = azar(-0.6, 0.6);
+  nota.angV = azar(-1.4, 1.4);
+  nota.t = 0;
+  nota.brillo = 0;
+  /* El suelo donde se posará: un poco por delante del árbol. */
+  nota.suelo = mez(t.base, sitio.suelo + U * 3, 0.55);
+
+  sacudirArbol(t, (p && p.x < t.x ? 1 : -1) * 2.4);
+  decir(t.x, t.base - t.alto * 0.9, CONF.arbolNota.alCaer, { dur: 3.4, importante: true });
+  magia(392);
+  contarLogro("arbolNota");
+}
+
+function moverNota(dt) {
+  if (!nota.viva) return;
+  nota.t += dt;
+  nota.brillo = 0.4 + Math.sin(nota.t * 2.1) * 0.25;
+
+  if (nota.posada) return;
+
+  /* La caída de un papel. Gravedad floja, rozamiento fuerte, y un
+     vaivén que sale de un seno sobre la velocidad horizontal. */
+  nota.vy += U * 26 * dt;
+  nota.vy *= Math.exp(-2.6 * dt);
+  nota.vx += (Math.sin(nota.t * 3.4) * U * 16 + clima.viento * U * 18) * dt;
+  nota.vx *= Math.exp(-1.9 * dt);
+
+  nota.x += nota.vx * dt;
+  nota.y += nota.vy * dt;
+
+  /* El ángulo sigue a la velocidad: cuando baja deprisa se pone de
+     canto, y cuando planea se pone plana. */
+  const objAng = Math.atan2(nota.vx, Math.max(1, nota.vy)) * 0.9;
+  nota.angV += (objAng - nota.ang) * 22 * dt;
+  nota.angV *= Math.exp(-4.2 * dt);
+  nota.ang += nota.angV * dt;
+
+  if (nota.y >= nota.suelo) {
+    nota.y = nota.suelo;
+    nota.posada = true;
+    nota.ang = azar(-0.35, 0.35);
+    golpe(0.06, 1800, 0.05, "highpass");
+  }
+}
+
+/** Leer la nota: las líneas van saliendo una detrás de otra. */
+function leerNota() {
+  if (!nota.viva || nota.leida) return false;
+  nota.leida = true;
+  recuerdo.poner("notaArbol", 1);
+  magia(523);
+  soltarBrillos(nota.x, nota.y, 10, 60);
+
+  CONF.arbolNota.nota.forEach((linea, i) => {
+    setTimeout(() => {
+      decir(clamp(nota.x, A * 0.22, A * 0.78), nota.y - U * (7 + i * 0.5),
+        linea, { mimo: true, importante: i === CONF.arbolNota.nota.length - 1, dur: 4.2 });
+    }, i * 2000);
+  });
+
+  /* Y se la queda: el papel se va con un puñado de brillos. */
+  setTimeout(() => { nota.viva = false; }, CONF.arbolNota.nota.length * 2000 + 1200);
+  return true;
+}
+
+function dibujarNota(d) {
+  if (!nota.viva) return;
+  const x = nota.x + d.x, y = nota.y + d.y;
+  const w = U * 2.1, h = U * 2.7;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(nota.ang);
+
+  /* Un halo calentito, para que se vea que hay algo ahí sin tener que
+     dibujarle una flecha encima. */
+  ctx.globalCompositeOperation = "lighter";
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, w * 3.4);
+  g.addColorStop(0, `rgba(255,236,190,${0.2 * nota.brillo})`);
+  g.addColorStop(1, "rgba(255,210,140,0)");
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(0, 0, w * 3.4, 0, 6.283); ctx.fill();
+  ctx.globalCompositeOperation = "source-over";
+
+  /* El papel: doblado por la mitad, con la sombra del doblez. Dos
+     cuadriláteros y ya parece un papel. */
+  ctx.fillStyle = "rgb(236,228,206)";
+  ctx.beginPath();
+  ctx.moveTo(-w, -h * 0.5);
+  ctx.lineTo(w, -h * 0.42);
+  ctx.lineTo(w * 0.92, h * 0.5);
+  ctx.lineTo(-w * 0.96, h * 0.44);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(150,140,118,0.5)";
+  ctx.beginPath();
+  ctx.moveTo(-w, -h * 0.5);
+  ctx.lineTo(w, -h * 0.42);
+  ctx.lineTo(w * 0.96, -h * 0.24);
+  ctx.lineTo(-w * 0.98, -h * 0.3);
+  ctx.closePath();
+  ctx.fill();
+
+  /* Dos rayitas de escritura. No se leen, y por eso funcionan: se
+     entiende que hay algo escrito. */
+  ctx.strokeStyle = "rgba(90,80,70,0.45)";
+  ctx.lineWidth = Math.max(0.5, U * 0.14);
+  for (let i = 0; i < 3; i++) {
+    const yy = -h * 0.06 + i * h * 0.19;
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.62, yy);
+    ctx.lineTo(w * (0.2 + (i % 2) * 0.35), yy + U * 0.1);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/* ==========================================
+   LOS OJOS ROJOS DEL FONDO
+   ==========================================
+
+   No es nada. No se puede tocar, no da puntos, no cuenta para nada. Se
+   asoman muy de vez en cuando entre los árboles de lejos, se quedan un
+   rato mirando, y si acercas el dedo se van.
+
+   ── POR QUÉ NO SE PUEDEN ALCANZAR ───────────────────────────────────
+   Porque lo que da la sensación de bosque de noche no es lo que ves:
+   es lo que crees haber visto. En cuanto se pudieran tocar dejarían de
+   ser eso y pasarían a ser un botón.
+
+   Así que huyen SIEMPRE, y a veces sin ni siquiera dejar que te
+   acerques. Es la única cosa de toda la escena que no quiere nada
+   contigo, y por eso es la que más se recuerda.
+*/
+
+const ojos = {
+  vivo: false,
+  x: 0, y: 0, r: 0,
+  alfa: 0, alfaObj: 0,
+  reloj: azar(14, 30),
+  dura: 0,
+  parpadeo: 0, relojParpadeo: 0,
+  huyendo: 0,
+  vx: 0,
+  dichas: 0,
+};
+
+function construirOjos() {
+  ojos.vivo = false;
+  ojos.alfa = 0; ojos.alfaObj = 0;
+  ojos.reloj = azar(CONF.ojosRojos.cada[0] * 0.4, CONF.ojosRojos.cada[1] * 0.6);
+}
+
+function asomarOjos() {
+  /* ---- Dónde caben ----
+     Ni delante de la fogata —ahí hay demasiada luz y se verían de más—
+     ni detrás de la cabaña, que se dibuja después y los taparía
+     enteros. Antes esto era un bucle de «prueba un sitio al azar, y si
+     no vale, otro»: con la cabaña y la fogata quitando entre las dos
+     dos tercios de la pantalla, se quedaba sin intentos y los ponía
+     igual donde no se veían.
+
+     Así que no se sortea un punto: se sortean los HUECOS que quedan
+     libres, cada uno con la probabilidad que le toca por lo ancho que
+     sea. Siempre sale un sitio donde se ven. */
+  const cab = sitio.cabana;
+  const prohibido = [
+    [sitio.fogata.x - A * 0.14, sitio.fogata.x + A * 0.14],
+    [cab.x - cab.w * 0.62, cab.x + cab.w * 0.62],
+  ].sort((u, v) => u[0] - v[0]);
+
+  const huecos = [];
+  let desde = A * 0.05;
+  for (const [a0, a1] of prohibido) {
+    if (a0 > desde) huecos.push([desde, Math.min(a0, A * 0.95)]);
+    desde = Math.max(desde, a1);
+  }
+  if (desde < A * 0.95) huecos.push([desde, A * 0.95]);
+
+  const validos = huecos.filter(([a0, a1]) => a1 - a0 > U * 6);
+  let x;
+  if (validos.length) {
+    const total = validos.reduce((n, [a0, a1]) => n + (a1 - a0), 0);
+    let tirada = Math.random() * total;
+    for (const [a0, a1] of validos) {
+      if (tirada < a1 - a0) { x = a0 + tirada; break; }
+      tirada -= a1 - a0;
+    }
+    if (x === undefined) x = validos[0][0];
+  } else {
+    x = A * 0.08;
+  }
+  ojos.x = x;
+  ojos.y = mez(sitio.horizonte + U * 2, sitio.suelo - U * 3, azar(0.15, 0.8));
+  ojos.r = U * azar(0.42, 0.78);
+  ojos.vivo = true;
+  ojos.alfaObj = azar(0.5, 0.95);
+  ojos.dura = azar(CONF.ojosRojos.dura[0], CONF.ojosRojos.dura[1]);
+  ojos.huyendo = 0;
+  ojos.vx = 0;
+  ojos.parpadeo = 0;
+  ojos.relojParpadeo = azar(0.8, 2.4);
+}
+
+function huirOjos(deGolpe) {
+  if (!ojos.vivo || ojos.huyendo) return;
+  ojos.huyendo = 1;
+  ojos.alfaObj = 0;
+  /* Se va hacia el lado contrario al dedo, metiéndose más en el
+     bosque. */
+  ojos.vx = (ojos.x < dedo.x ? -1 : 1) * U * azar(8, 18);
+  ojos.dura = deGolpe ? 0.12 : 0.5;
+
+  /* Y a veces —sólo a veces— alguien lo comenta. Si lo dijera todas
+     las veces se convertiría en un aviso, y esto no avisa. */
+  if (ojos.dichas < 2 && Math.random() < 0.45) {
+    ojos.dichas++;
+    const x = ojos.x, y = ojos.y;
+    setTimeout(() => decir(clamp(x, A * 0.2, A * 0.8), y - U * 4,
+      diceOjos(), { dur: 4.2 }), 500);
+  }
+  recuerdo.sumar("ojos");
+  contarLogro("ojos");
+}
+
+function moverOjos(dt) {
+  if (escena !== "bosque") { ojos.vivo = false; ojos.alfa = 0; return; }
+
+  if (!ojos.vivo) {
+    ojos.alfa = damp(ojos.alfa, 0, 4, dt);
+    ojos.reloj -= dt;
+    if (ojos.reloj <= 0) {
+      ojos.reloj = azar(CONF.ojosRojos.cada[0], CONF.ojosRojos.cada[1]);
+      asomarOjos();
+    }
+    return;
+  }
+
+  ojos.alfa = damp(ojos.alfa, ojos.alfaObj, ojos.huyendo ? 7 : 1.8, dt);
+  ojos.x += ojos.vx * dt;
+  ojos.vx *= Math.exp(-2.2 * dt);
+
+  /* El parpadeo: lento y pesado, nada que ver con el del búho. */
+  ojos.relojParpadeo -= dt;
+  if (ojos.relojParpadeo <= 0) { ojos.relojParpadeo = azar(1, 3.4); ojos.parpadeo = 1; }
+  ojos.parpadeo = Math.max(0, ojos.parpadeo - dt * 3);
+
+  /* ---- Huir ----
+     Si el dedo se acerca, se van. Y con algo de probabilidad se van
+     antes de que llegue, como si te hubieran oído venir. */
+  if (!ojos.huyendo && dedo.dentro) {
+    const d = Math.hypot(dedo.x - ojos.x, dedo.y - ojos.y);
+    if (d < U * CONF.ojosRojos.huyeA) {
+      huirOjos(Math.random() < CONF.ojosRojos.probHuyeYa);
+    }
+  }
+
+  ojos.dura -= dt;
+  if (ojos.dura <= 0) {
+    if (!ojos.huyendo) { ojos.huyendo = 1; ojos.alfaObj = 0; ojos.dura = 0.9; }
+    else { ojos.vivo = false; ojos.reloj = azar(CONF.ojosRojos.cada[0], CONF.ojosRojos.cada[1]); }
+  }
+}
+
+function dibujarOjos(d) {
+  if (ojos.alfa < 0.01) return;
+  const x = ojos.x + d.x, y = ojos.y + d.y;
+  const ab = 1 - Math.sin(clamp01(ojos.parpadeo) * Math.PI) * 0.92;
+  const a = ojos.alfa * ab;
+  /* ---- La separación manda ----
+     Con los halos pegados salía UNA mancha roja, que no da ninguna
+     sensación. Con los ojos bien separados y el halo corto salen DOS
+     puntos, y dos puntos en la oscuridad ya son una cara mirando. */
+  const sep = ojos.r * 5.2;
+  const halo = ojos.r * 2.8;
+
   ctx.globalCompositeOperation = "lighter";
   for (const s of [-1, 1]) {
-    const ex = x + s * buho.r * 0.42;
-    const ey = y - buho.r * 0.3;
-    const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, buho.r * 0.8);
-    g.addColorStop(0, `rgba(255,200,90,${0.7 * abierto + buho.visto * 0.3})`);
-    g.addColorStop(1, "rgba(255,200,90,0)");
+    const ex = x + s * sep * 0.5;
+    const g = ctx.createRadialGradient(ex, y, 0, ex, y, halo);
+    g.addColorStop(0,    `rgba(255,90,70,${0.85 * a})`);
+    g.addColorStop(0.3,  `rgba(220,30,25,${0.28 * a})`);
+    g.addColorStop(1,    "rgba(150,12,10,0)");
     ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(ex, ey, buho.r * 0.8, 0, 6.283); ctx.fill();
-    ctx.fillStyle = `rgba(255,230,160,${0.9 * abierto})`;
+    ctx.beginPath(); ctx.arc(ex, y, halo, 0, 6.283); ctx.fill();
+    /* El punto de dentro, casi blanco: es lo que hace que parezca luz
+       reflejada y no una pegatina pintada. */
+    ctx.fillStyle = `rgba(255,215,200,${0.9 * a})`;
     ctx.beginPath();
-    ctx.ellipse(ex, ey, buho.r * 0.2, buho.r * 0.2 * abierto, 0, 0, 6.283);
+    ctx.ellipse(ex, y, ojos.r * 0.62, ojos.r * 0.62 * ab, 0, 0, 6.283);
     ctx.fill();
   }
   ctx.globalCompositeOperation = "source-over";
-}
-
-/** El fogonazo del relámpago, que llama el ambiente de tormenta. */
-function relampagoVisual(fuerza) {
-  cielo.relampago = fuerza;
-  sacudir(fuerza * 0.5);
 }
 
 // ==========================================
@@ -4227,33 +5915,64 @@ function tocarEnBosque(p, e) {
     return;
   }
 
-  /* 6. LA CABAÑA. */
+  /* 6. EL PAPELITO DEL ÁRBOL, si hay uno en el suelo. */
+  if (nota.viva && !nota.leida && dentroDe(p.x, p.y, nota.x, nota.y, U * 6)) {
+    if (leerNota()) return;
+  }
+
+  /* 7. EL BÚHO.
+     ANTES QUE LA CABAÑA Y QUE LOS ÁRBOLES, y esto no es un detalle:
+     está posado EN un árbol y a veces en uno que cae justo delante de
+     la cabaña. Con el orden de antes, el árbol o la casa se llevaban el
+     toque y el búho no se podía tocar NUNCA desde esos escondites: se
+     asomaba, lo veías, le dabas y no pasaba nada.
+
+     Lo pequeño gana a lo grande. Siempre, y sin excepciones.
+
+     El radio es generoso —tres veces su tamaño— a propósito: es
+     pequeño, está medio escondido y casi siempre se busca con el dedo a
+     oscuras. Un búho que hay que acertar al píxel no se encuentra. */
+  if (buho && buho.salida > 0.2 && !buho.vuelo) {
+    const banda = CONF.bosque.bandas[buho.arbol ? buho.arbol.banda : 1];
+    const dB = desplazar(mez(0.3, 3.4, banda.z));
+    if (dentroDe(p.x, p.y, buho.x + dB.x, buho.y + dB.y, buho.r * 3)) {
+      if (tocarBuho()) return;
+    }
+  }
+
+  /* 8. LA CABAÑA. */
   const c = sitio.cabana;
   if (Math.abs(p.x - c.x) < c.w * 0.78 && p.y > c.y - c.h * 1.6 && p.y < c.y + c.h * 0.12) {
     entrarEnLaCabana();
     return;
   }
 
-  /* 7. EL BÚHO. */
-  if (buho && dentroDe(p.x, p.y, buho.x, buho.y, buho.r * 2)) {
-    buho.visto = 1;
-    buho.parpadeo = 1;
-    tono(azar(320, 420), 0.5, "sine", 0.05);
-    tono(azar(240, 300), 0.7, "sine", 0.04, 0.3);
-    decir(buho.x, buho.y - U * 5,
-      "Llevaba ahí todo el rato mirándote. 🦉", { mimo: true, importante: true });
-    contarLogro("buho");
+  /* 9. LOS ÁRBOLES. Se buscan de delante hacia atrás: el de cerca gana
+        al de lejos, que es lo que está viendo el dedo. */
+  for (let i = arboles.length - 1; i >= 0; i--) {
+    const t = arboles[i];
+    if (!t.toca) continue;
+    const dx = p.x - (t.x + desplazar(mez(0.3, 3.4, t.z)).x);
+    const cima = t.base - t.alto;
+    if (Math.abs(dx) > t.ancho * 3.4) continue;
+    if (p.y < cima - t.ancho * 2 || p.y > t.base + U * 2) continue;
+    /* La fuerza depende de por dónde se toque: arriba se mueve mucho
+       más que abajo, porque arriba hace palanca. */
+    const altura = clamp01((t.base - p.y) / Math.max(1, t.alto));
+    sacudirArbol(t, (dx < 0 ? -1 : 1) * (2.2 + altura * 4.4));
+    mirarArbolCarta(t, p);
+    contarLogro("arbol");
     return;
   }
 
-  /* 8. LA LUNA. */
+  /* 10. LA LUNA. */
   const dL = desplazar(0.3);
   if (dentroDe(p.x, p.y, sitio.luna.x + dL.x, sitio.luna.y + dL.y, sitio.luna.r * 1.9)) {
     tocarLuna(sitio.luna.x + dL.x, sitio.luna.y + dL.y);
     return;
   }
 
-  /* 9. LA ESTRELLA FUGAZ, si la pillas al vuelo. */
+  /* 11. LA ESTRELLA FUGAZ, si la pillas al vuelo. */
   if (cielo.fugaz && dentroDe(p.x, p.y, cielo.fugaz.x, cielo.fugaz.y, U * 9)) {
     cielo.fugaz = null;
     magia(880);
@@ -4262,7 +5981,7 @@ function tocarEnBosque(p, e) {
     return;
   }
 
-  /* 10. LAS ESTRELLAS. Algunas responden. */
+  /* 12. LAS ESTRELLAS. Algunas responden. */
   const dE = desplazar(0.18);
   let mejor = null, dMin = U * 5;
   for (const s of cielo.estrellas) {
@@ -4281,7 +6000,7 @@ function tocarEnBosque(p, e) {
     return;
   }
 
-  /* 11. Y si no hay nada, se aviva un poco el fuego soplando. */
+  /* 13. Y si no hay nada, se aviva un poco el fuego soplando. */
   if (p.y > sitio.horizonte) {
     fuego.vidaObj = Math.min(1.7, fuego.vidaObj + 0.22);
     fuego.quieta = 0;
@@ -4494,13 +6213,20 @@ function paso(ahora) {
   meneo.fuerza = damp(meneo.fuerza, 0, 4.4, dt);
 
   luna.pulso = damp(luna.pulso, 0, 2.2, dt);
-  cielo.relampago = Math.max(0, cielo.relampago - dt * 3.2);
 
   /* ---- Mover ---- */
   moverParticulas(dt);
   moverDichos(dt);
 
   if (escena === "bosque") {
+    moverClima(dt);
+    moverArboles(dt);
+    /* El búho va DESPUÉS de los árboles: está agarrado a uno y lee su
+       bamboleo, así que si fuera antes iría siempre un fotograma
+       retrasado y se le vería despegarse de la rama. */
+    moverBuho(dt);
+    moverOjos(dt);
+    moverNota(dt);
     moverFogata(dt);
     moverBombon(dt);
     moverPanel(dt);
