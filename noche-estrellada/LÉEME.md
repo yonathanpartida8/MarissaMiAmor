@@ -36,6 +36,12 @@ noche-estrellada/
 **Deja tus archivos ahí con esos nombres y ya está.** No hay que tocar
 ni una línea de código.
 
+> **La cajita musical, además**, mira en `assets/audio/musica.mp3` si no
+> encuentra `noche-estrellada/musica.mp3`. Es para que una canción que ya
+> esté en el proyecto suene sin tener que copiarla dos veces. El de
+> `noche-estrellada/` manda siempre: si lo pones ahí, ése es el que se
+> usa.
+
 ### Y si todavía no los tienes
 
 No pasa nada: **la experiencia funciona igual desde el primer momento**.

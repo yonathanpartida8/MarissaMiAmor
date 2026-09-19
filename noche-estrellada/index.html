@@ -547,6 +547,14 @@ const CONF = {
      en su carpeta, se usa el tuyo sin tocar una línea.                  */
   rutas: {
     musica: "musica.mp3",
+    /* Y si ahí no está, se mira en estos otros sitios antes de rendirse
+       y tocar la nana sintetizada. El primero sigue mandando siempre:
+       esto es sólo para que una canción que ya esté en el proyecto suene
+       sin tener que copiarla dos veces. */
+    musicaTambien: [
+      "../assets/audio/musica.mp3",
+      "../assets/audio/Musica.mp3",
+    ],
     cabana: {
       puertaAbre:  "Cabaña/door.open.mp3",
       puertaCierra:"Cabaña/door.close.mp3",
@@ -2555,7 +2563,13 @@ async function abrirCajita() {
   cajita.gain.connect(audio.maestro);
   cajita.gain.gain.linearRampToValueAtTime(0.75, audio.ctx.currentTime + 1.4);
 
-  const buf = await traerBuffer(CONF.rutas.musica);
+  /* Se prueban las rutas en orden y se coge la primera que exista. */
+  let buf = null;
+  for (const ruta of [CONF.rutas.musica, ...(CONF.rutas.musicaTambien || [])]) {
+    buf = await traerBuffer(ruta);
+    if (buf) break;
+    if (!cajita.abierta) return;
+  }
   if (!cajita.abierta) return;                 // la cerró mientras cargaba
 
   if (buf) {
