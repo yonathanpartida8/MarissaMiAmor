@@ -13416,6 +13416,11 @@ const caza = {
   /* El fogonazo del cañón y el enfriamiento entre disparos. */
   disparo: 0,
   fogonazo: 0,
+  /* El arma en la mano: hacia dónde apunta, cuánto retrocede y los
+     casquillos que va soltando. */
+  apunta: -1.15, apuntaObj: -1.15,
+  culatazo: 0,
+  casquillos: [],
   /* Cuánto se ha oscurecido el bosque. */
   oscuro: 0, oscuroObj: 0,
   /* Lo que había antes, para devolverlo al acabar. */
@@ -13442,6 +13447,9 @@ function arrancarCaceria() {
   caza.vidas = VIDAS;
   caza.buhos.length = 0;
   caza.anillos.length = 0;
+  caza.casquillos.length = 0;
+  caza.culatazo = 0;
+  caza.apunta = caza.apuntaObj = -1.15;
   caza.avisadaAyuda = false;
   caza.dicho = false;
   /* `hecha` es «esta partida ya llegó al final», no «ya la jugaste
@@ -13507,6 +13515,23 @@ function moverCaceria(dt) {
   caza.disparo = Math.max(0, caza.disparo - dt);
   caza.fogonazo = Math.max(0, caza.fogonazo - dt * 6);
   caza.oscuro = damp(caza.oscuro, caza.oscuroObj, 1.1, dt);
+  /* El arma vuelve sola al apoyo y el culatazo se le pasa. */
+  caza.apunta = damp(caza.apunta, caza.apuntaObj, 11, dt);
+  caza.culatazo = Math.max(0, caza.culatazo - dt * 4.5);
+  if (caza.fase === "no" && !caza.casquillos.length) {
+    caza.apuntaObj = damp(caza.apuntaObj, -1.15, 2, dt);
+  }
+  /* Los casquillos caen, rebotan una vez y se apagan. */
+  for (let i = caza.casquillos.length - 1; i >= 0; i--) {
+    const c = caza.casquillos[i];
+    c.t += dt;
+    c.vy += 780 * dt;
+    c.x += c.vx * dt;
+    c.y += c.vy * dt;
+    c.giro += c.giroV * dt;
+    if (c.y > H - U * 2 && c.vy > 0) { c.y = H - U * 2; c.vy *= -0.32; c.vx *= 0.6; c.giroV *= 0.5; }
+    if (c.t > 2.6) caza.casquillos.splice(i, 1);
+  }
 
   if (caza.fase === "no") return;
   caza.t += dt;
@@ -13589,7 +13614,42 @@ function dispararEscopeta(p) {
   if (caza.disparo > 0) return true;
   caza.disparo = 0.42;
   caza.fogonazo = 1;
+  caza.culatazo = 1;
   sacudir(0.45);
+
+  /* El arma apunta a donde se tocó. El ángulo se guarda como OBJETIVO y
+     el cañón llega solo: un arma que se teletransporta al sitio nuevo
+     en un cuadro no pesa nada. */
+  const J = sitioJugador();
+  caza.apuntaObj = Math.atan2(p.y - J.y, p.x - J.x);
+
+  /* El humo del cañón, en la boca y no en el centro de la pantalla. */
+  const boca = bocaDelCanon();
+  for (let i = 0; i < (flojo ? 3 : 7); i++) {
+    soltar(boca.x + azar(-U, U), boca.y + azar(-U, U), {
+      vx: Math.cos(caza.apunta) * azar(30, 90) + azar(-20, 20),
+      vy: Math.sin(caza.apunta) * azar(30, 90) + azar(-30, 0),
+      vida: azar(0.7, 1.6), tam: azar(U * 0.4, U * 1),
+      tipo: TIPO.HUMO, tono: 0.2,
+    });
+  }
+  /* Y unas chispas de pólvora. */
+  for (let i = 0; i < (flojo ? 3 : 8); i++) {
+    const a2 = caza.apunta + azar(-0.4, 0.4);
+    soltar(boca.x, boca.y, {
+      vx: Math.cos(a2) * azar(120, 320), vy: Math.sin(a2) * azar(120, 320),
+      vida: azar(0.2, 0.5), tam: azar(0.8, 1.8),
+      tipo: TIPO.CHISPA, tono: 0.1,
+    });
+  }
+  /* El casquillo, saltando hacia un lado. */
+  caza.casquillos.push({
+    x: J.x + Math.cos(caza.apunta) * U * 9,
+    y: J.y + Math.sin(caza.apunta) * U * 9 - U * 2,
+    vx: azar(50, 130), vy: azar(-190, -120),
+    giro: azar(0, 6.283), giroV: azar(-14, 14), t: 0,
+  });
+  if (caza.casquillos.length > 14) caza.casquillos.shift();
 
   /* El estampido: un golpe de ruido grave y ancho, y encima el
      chasquido del cerrojo un pelín después. Los dos, o suena a globo. */
@@ -13880,6 +13940,9 @@ function dibujarCaceria() {
 
   for (const o of caza.buhos) dibujarBuhoCaza(o);
 
+  /* El arma, por delante de los búhos: la tienes tú en las manos. */
+  dibujarEscopetaEnMano();
+
   /* Los anillos de las explosiones, por encima de todo. */
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
@@ -13899,18 +13962,144 @@ function dibujarCaceria() {
   }
   ctx.restore();
 
-  /* El fogonazo del cañón: sale de abajo, de donde estás tú. */
+  /* Y la luz que el disparo echa sobre el bosque. Esto sí es un halo
+     grande, pero va aparte del fogonazo del cañón: uno es la llama y
+     el otro es lo que ILUMINA esa llama. Juntos en uno solo, o el
+     cañón no se veía o el bosque no se encendía. */
   if (caza.fogonazo > 0.02) {
-    const J = sitioJugador();
+    const boca = bocaDelCanon();
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
-    haloOvalado(J.x, J.y, A * 0.55, H * 0.4, [
-      [0, `rgba(255,224,170,${0.34 * caza.fogonazo})`],
-      [0.5, `rgba(255,170,90,${0.12 * caza.fogonazo})`],
+    haloOvalado(boca.x, boca.y, A * 0.6, H * 0.45, [
+      [0, `rgba(255,224,170,${0.24 * caza.fogonazo})`],
+      [0.5, `rgba(255,170,90,${0.08 * caza.fogonazo})`],
       [1, "rgba(255,150,70,0)"],
     ]);
     ctx.restore();
   }
+}
+
+/** Dónde acaba el cañón ahora mismo, en coordenadas de pantalla. */
+function bocaDelCanon() {
+  const J = sitioJugador();
+  const L = U * 30 - caza.culatazo * U * 4;
+  return {
+    x: J.x + Math.cos(caza.apunta) * L,
+    y: J.y + Math.sin(caza.apunta) * L,
+  };
+}
+
+/**
+ * LA ESCOPETA, EN LA MANO.
+ *
+ * ── POR QUÉ SE VE EL ARMA Y NO SÓLO SUS EFECTOS ──────────────────────
+ * Porque antes no se veía: había un fogonazo naranja saliendo del borde
+ * de abajo de la pantalla y ya. Se sabía que algo había disparado, pero
+ * no QUÉ, ni desde dónde, ni hacia dónde. Con el arma dibujada, el
+ * cañón apunta a lo que se tocó, el fogonazo sale de la boca y el
+ * retroceso se ve en el arma: los tres dicen lo mismo y se refuerzan.
+ *
+ * ── CÓMO SE SOSTIENE ─────────────────────────────────────────────────
+ * Desde abajo del todo, en diagonal, como se ve la propia arma cuando
+ * la llevas tú: escorzada, entrando por el canto inferior. No es una
+ * escopeta de perfil pegada encima, es la que tienes en las manos.
+ */
+function dibujarEscopetaEnMano() {
+  if (caza.fase === "no" && caza.culatazo < 0.02) return;
+  const J = sitioJugador();
+  const culat = caza.culatazo;
+  /* El retroceso: el arma se va hacia atrás y se le levanta la boca. */
+  const atras = culat * U * 5;
+  const ang = caza.apunta - culat * 0.16;
+
+  ctx.save();
+  ctx.translate(J.x - Math.cos(ang) * atras, J.y - Math.sin(ang) * atras + U * 2);
+  ctx.rotate(ang);
+
+  /* Grande. Un arma en primera persona ocupa pantalla: a diecisiete
+     unidades de largo y una y media de ancho salía una cerilla. */
+  const L = U * 30, w = U * 3.4;
+
+  /* La culata, entrando por abajo. */
+  ctx.fillStyle = "#4a2f18";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-L * 0.42, -w * 0.55, L * 0.4, w * 1.25, w * 0.4);
+  else ctx.rect(-L * 0.42, -w * 0.55, L * 0.4, w * 1.25);
+  ctx.fill();
+  /* La caja de mecanismos. */
+  ctx.fillStyle = "#3e434b";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-L * 0.06, -w * 0.62, L * 0.2, w * 1.3, w * 0.18);
+  else ctx.rect(-L * 0.06, -w * 0.62, L * 0.2, w * 1.3);
+  ctx.fill();
+  /* Los dos cañones. */
+  for (const dy of [-w * 0.34, w * 0.34]) {
+    const g = ctx.createLinearGradient(0, dy - w * 0.32, 0, dy + w * 0.32);
+    g.addColorStop(0, "#79818d");
+    g.addColorStop(0.45, "#3a414a");
+    g.addColorStop(1, "#171b21");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(L * 0.12, dy - w * 0.32, L * 0.88, w * 0.64, w * 0.24);
+    else ctx.rect(L * 0.12, dy - w * 0.32, L * 0.88, w * 0.64);
+    ctx.fill();
+  }
+  /* El guardamanos. */
+  ctx.fillStyle = "#573418";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(L * 0.16, w * 0.1, L * 0.3, w * 0.7, w * 0.22);
+  else ctx.rect(L * 0.16, w * 0.1, L * 0.3, w * 0.7);
+  ctx.fill();
+  /* Y el punto de mira. */
+  ctx.fillStyle = "rgba(230,200,124,0.9)";
+  ctx.beginPath();
+  ctx.arc(L * 0.94, -w * 0.62, w * 0.16, 0, 6.283);
+  ctx.fill();
+
+  /* ---- El fogonazo, en la BOCA ----
+     Una estrella corta y muy blanca por dentro, no un halo naranja. Lo
+     que se ve al disparar es el gas ardiendo saliendo del cañón, y eso
+     dura dos centésimas y es blanco. */
+  if (caza.fogonazo > 0.02) {
+    const f = caza.fogonazo;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.translate(L, 0);
+    haloOvalado(0, 0, U * 17 * f, U * 12 * f, [
+      [0, `rgba(255,244,214,${0.8 * f})`],
+      [0.3, `rgba(255,186,96,${0.34 * f})`],
+      [1, "rgba(255,140,60,0)"],
+    ]);
+    /* Las cuatro puntas de la llamarada. */
+    ctx.fillStyle = `rgba(255,236,190,${0.85 * f})`;
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a2 = (i / 8) * 6.283;
+      const rr = U * (i % 2 ? 2.4 : 10) * f;
+      const px2 = Math.cos(a2) * rr, py2 = Math.sin(a2) * rr * 0.7;
+      if (i === 0) ctx.moveTo(px2, py2); else ctx.lineTo(px2, py2);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+
+  /* Los casquillos, ya fuera del arma. */
+  ctx.save();
+  for (const c of caza.casquillos) {
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.giro);
+    ctx.globalAlpha = clamp01((2.6 - c.t) * 1.4);
+    ctx.fillStyle = "#b4302c";
+    ctx.fillRect(-U * 0.9, -U * 0.32, U * 1.8, U * 0.64);
+    ctx.fillStyle = "#c8a44e";
+    ctx.fillRect(-U * 0.9, -U * 0.32, U * 0.6, U * 0.64);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
 }
 
 /**
