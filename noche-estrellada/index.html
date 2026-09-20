@@ -1320,6 +1320,18 @@ const CONF = {
     palaGuardada: "Pala guardada.",
     palaSinSitio: "Acá no hay nada que cavar.",
     volver: "De regreso al claro.",
+
+    /* ---- Lo que hay tirado por el suelo ----
+       Casi nada de esto da nada. Están para que tocar el bosque tenga
+       sentido, y para que los dos que SÍ dan algo se escondan entre
+       ellos. */
+    setasCuenta: 12,
+    setasTodas: "Doce setas. Las conté contigo 🤍",
+    lucesCuenta: 15,
+    lucesTodas: "Quince luciérnagas espantadas. Ya te tienen miedo :>",
+    piedraFlecha: "Alguien rayó una flecha en esta piedra. Apunta al fondo del bosque.",
+    piedraFlechaOtra: "La flecha sigue apuntando para allá.",
+    charcoRaro: "…en el charco se vieron dos puntos rojos. Arriba no hay nada.",
   },
 
   /* ---- LAS TRES DE LA MAÑANA -------------------------------------------- */
@@ -7599,7 +7611,10 @@ const historia = {
 /* Los secretos no son pasos de la historia: no llevan orden y no
    desbloquean nada. Van en su propia lista para que no cuenten en
    `historia.paso`, pero se recuerdan igual de una visita a otra. */
-const SECRETOS = ["bajoTapete", "constelacion", "relojBosque", "escopeta", "caceria"];
+const SECRETOS = [
+  "bajoTapete", "constelacion", "relojBosque", "escopeta", "caceria",
+  "flecha", "charco",
+];
 
 for (const id of PASOS.concat(SECRETOS)) {
   if (recuerdo.leer("h:" + id, 0)) historia.hitos.add(id);
@@ -7653,7 +7668,7 @@ const TODO_LO_ESCONDIDO = [
   "estrellas", "libros", "vela", "taza", "nudo", "deseo",
   "botella", "papelBotella", "rayas", "manta",
   /* En el bosque */
-  "relojBosque", "caceria",
+  "relojBosque", "caceria", "setas", "luciernagas", "flecha", "charco",
 ];
 
 const logros = new Set();
@@ -10231,16 +10246,48 @@ function construirEspesura() {
   /* ---- El suelo: matas, raíces y piedras ---- */
   espesura.suelo = [];
   for (let i = 0; i < (flojo ? 60 : 130); i++) {
+    const d = rnd();
     espesura.suelo.push({
       x: rnd() * W,
       y: suelo + H * azar(-0.01, 0.13),
-      tipo: rnd() < 0.55 ? "hierba" : (rnd() < 0.6 ? "mata" : "piedra"),
+      /* Y setas, que antes no había. Son lo que hace que un suelo de
+         bosque de noche se lea como un suelo de bosque y no como una
+         alfombra: algo que da luz propia y está a ras del piso. */
+      tipo: d < 0.5 ? "hierba" : d < 0.72 ? "mata" : d < 0.88 ? "piedra" : "seta",
       s: U * azar(1, 4),
       f: rnd() * 6.283,
       tinte: azar(0, 1),
+      /* Lo que aporta cada cosa al tocarla. */
+      pulso: 0, veces: 0,
     });
   }
+  /* ---- La piedra marcada ----
+     Una sola, de todas, lleva una flecha rayada apuntando al fondo del
+     bosque. Es la única pista que hay de que allá al final haya algo,
+     y hay que tropezarse con ella: no brilla, no suena y no avisa. */
+  const piedras = espesura.suelo.filter((z) => z.tipo === "piedra");
+  if (piedras.length) {
+    const marcada = piedras[Math.floor(rnd() * piedras.length)];
+    marcada.marcada = true;
+    marcada.s = Math.max(marcada.s, U * 3);
+  }
   espesura.suelo.sort((a, b) => a.y - b.y);
+
+  /* ---- Los charcos ----
+     Están siempre, pero secos no se ven: sólo aparecen cuando llueve,
+     que es exactamente lo que hacen los charcos. Y reflejan. */
+  espesura.charcos = [];
+  for (let i = 0; i < (flojo ? 5 : 11); i++) {
+    espesura.charcos.push({
+      x: rnd() * W,
+      y: suelo + H * azar(0.04, 0.12),
+      rx: U * azar(4, 11),
+      f: rnd() * 6.283,
+      onda: 0,
+      /* Uno de cada tantos enseña algo que no está ahí. */
+      raro: rnd() < 0.25,
+    });
+  }
 
   /* ---- Las raíces que cruzan el camino ---- */
   espesura.raices = [];
@@ -10279,8 +10326,57 @@ function moverEspesura(dt) {
   espesura.verde = damp(espesura.verde, espesura.verdeObj, 0.9, dt);
   espesura.onda = Math.max(0, espesura.onda - dt * 0.55);
 
+  /* Lo que se ha tocado, volviendo a su sitio. */
+  for (const z of espesura.suelo) if (z.pulso > 0) z.pulso = Math.max(0, z.pulso - dt * 2.4);
+  for (const c of espesura.charcos || []) if (c.onda > 0) c.onda = Math.max(0, c.onda - dt * 1.3);
+  moverRuidosLejanos(dt);
+
   moverArbolesEspesura(dt);
   moverPuntos(dt);
+}
+
+/* ---- LO QUE SE OYE A LO LEJOS ------------------------------------------
+
+   Cada tanto, un ruido. Una rama que se parte, algo pesado que se
+   mueve, un ulular muy lejos. No se ve nada, no pasa nada y no se
+   puede ir a mirar.
+
+   ── POR QUÉ NO HAY NADA QUE MIRAR ────────────────────────────────────
+   Porque un ruido con una causa visible deja de ser inquietante en el
+   mismo instante en que se ve la causa. Lo que hace que un bosque dé
+   respeto no es lo que hay: es que se oiga algo y no se sepa qué.
+
+   Van siempre por un lado —izquierda o derecha— y con el volumen bajo,
+   que es lo que dice «lejos» sin decirlo.                            */
+
+const lejos = { reloj: azar(14, 30) };
+
+function moverRuidosLejanos(dt) {
+  if (bloqueado || caza.fase !== "no") return;
+  lejos.reloj -= dt;
+  if (lejos.reloj > 0) return;
+  lejos.reloj = azar(22, 52);
+
+  const cual = Math.floor(Math.random() * 4);
+  if (cual === 0) {
+    /* Una rama que se parte: un golpe seco y corto. */
+    golpe(0.05, azar(900, 1600), 0.06, "bandpass");
+    setTimeout(() => golpe(0.1, azar(300, 500), 0.04, "lowpass"), 90);
+  } else if (cual === 1) {
+    /* Algo pesado moviéndose entre la hojarasca. */
+    for (let i = 0; i < 5; i++) {
+      setTimeout(() => golpe(0.09, azar(2000, 4000), 0.018, "highpass"), i * azar(110, 240));
+    }
+  } else if (cual === 2) {
+    /* Un ulular lejanísimo: dos notas que bajan. */
+    tono(azar(300, 360), 0.5, "sine", 0.018);
+    setTimeout(() => tono(azar(230, 270), 0.7, "sine", 0.015), 380);
+  } else {
+    /* Y lo peor: un crujido largo, de tronco. */
+    for (let i = 0; i < 8; i++) {
+      setTimeout(() => golpe(0.04, azar(180, 420), 0.016, "lowpass"), i * azar(60, 150));
+    }
+  }
 }
 
 /* El mismo muelle amortiguado que los árboles del claro, y por el mismo
@@ -10654,6 +10750,12 @@ function dibujarSueloEsp() {
     ctx.stroke();
   }
 
+  /* ---- Los charcos ----
+     Van antes que la hierba y las piedras: el agua está en el suelo y
+     todo lo demás crece encima de ella. Con la tierra seca no existen;
+     conforme llueve, aparecen. */
+  dibujarCharcos();
+
   /* Las matas, la hierba y las piedras. */
   for (const s of espesura.suelo) {
     const x = enPantalla(s.x, 1);
@@ -10663,18 +10765,66 @@ function dibujarSueloEsp() {
     const col = `rgb(${Math.round(mez(20, 74, luz))},${Math.round(mez(44, 186, luz))},${Math.round(mez(28, 96, luz))})`;
     const mece = Math.sin(reloj * 1.05 + s.f) * U * (0.2 + clima.viento * 0.5) * (0.3 + prof);
 
+    /* Al tocar cualquier cosa del suelo, da un saltito. Es lo que hace
+       que TODO el bosque se sienta tocable: no hace falta que cada
+       matojo tenga una frase, hace falta que conteste. */
+    const salto = s.pulso * U * 0.9;
+
     if (s.tipo === "piedra") {
+      ctx.save();
+      ctx.translate(x, s.y - salto);
+      ctx.rotate(s.tinte + s.pulso * 0.5);
       ctx.fillStyle = `rgb(${Math.round(mez(26, 56, luz))},${Math.round(mez(28, 54, luz))},${Math.round(mez(30, 50, luz))})`;
       ctx.beginPath();
-      ctx.ellipse(x, s.y, s.s * 0.8, s.s * 0.45, s.tinte, 0, 6.283);
+      ctx.ellipse(0, 0, s.s * 0.8, s.s * 0.45, 0, 0, 6.283);
       ctx.fill();
+      /* La piedra marcada lleva una flecha rayada, apuntando al fondo
+         del bosque. Es más clara que la piedra, no más brillante: una
+         raya luminosa sería un cartel, y esto es una raya. */
+      if (s.marcada) {
+        ctx.strokeStyle = `rgba(206,196,176,${0.3 + s.pulso * 0.4})`;
+        ctx.lineWidth = Math.max(1, s.s * 0.1);
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(-s.s * 0.42, 0);
+        ctx.lineTo(s.s * 0.42, 0);
+        ctx.moveTo(s.s * 0.16, -s.s * 0.2);
+        ctx.lineTo(s.s * 0.42, 0);
+        ctx.lineTo(s.s * 0.16, s.s * 0.2);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+    } else if (s.tipo === "seta") {
+      /* Un sombrerito y un pie, y luz saliendo de debajo del sombrero,
+         que es donde de verdad brillan las que brillan. */
+      const sr = s.s * 0.62;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      haloOvalado(x, s.y - sr * 0.6 - salto, sr * 3.4, sr * 2.6, [
+        [0, `rgba(140,255,200,${0.1 + s.pulso * 0.3})`],
+        [1, "rgba(110,240,175,0)"],
+      ]);
+      ctx.restore();
+      ctx.fillStyle = "rgba(216,222,200,0.55)";
+      ctx.fillRect(x - sr * 0.16, s.y - sr * 1.1 - salto, sr * 0.32, sr * 1.1);
+      ctx.fillStyle = `rgba(${Math.round(mez(196, 236, s.pulso))},${Math.round(mez(228, 255, s.pulso))},206,0.8)`;
+      ctx.beginPath();
+      ctx.ellipse(x, s.y - sr * 1.05 - salto, sr, sr * 0.62, 0, Math.PI, 0);
+      ctx.fill();
+      ctx.fillStyle = `rgba(160,255,210,${0.35 + s.pulso * 0.4})`;
+      ctx.beginPath();
+      ctx.ellipse(x, s.y - sr * 1.05 - salto, sr * 0.92, sr * 0.2, 0, 0, 6.283);
+      ctx.fill();
+
     } else if (s.tipo === "mata") {
       /* Un helecho, no tres óvalos: cinco frondas saliendo del mismo
          punto. Los óvalos se veían como pegatinas de musgo. */
       ctx.strokeStyle = col;
       ctx.lineCap = "round";
+      const abre = 1 + s.pulso * 0.5;
       for (let i = 0; i < 5; i++) {
-        const a2 = -1.57 + (i - 2) * 0.38;
+        const a2 = -1.57 + (i - 2) * 0.38 * abre;
         ctx.lineWidth = Math.max(1, s.s * 0.16);
         ctx.beginPath();
         ctx.moveTo(x, s.y);
@@ -10688,8 +10838,97 @@ function dibujarSueloEsp() {
       ctx.lineWidth = 1 + prof;
       ctx.beginPath();
       ctx.moveTo(x, s.y);
-      ctx.quadraticCurveTo(x + mece * 0.5, s.y - s.s * 1.2, x + mece, s.y - s.s * 2);
+      ctx.quadraticCurveTo(x + mece * 0.5 + s.pulso * U, s.y - s.s * 1.2,
+        x + mece + s.pulso * U * 1.6, s.y - s.s * 2);
       ctx.stroke();
+    }
+  }
+}
+
+/**
+ * LOS CHARCOS.
+ *
+ * ── POR QUÉ REFLEJAN ─────────────────────────────────────────────────
+ * Porque un charco que no refleja es una mancha oscura en el suelo. Lo
+ * que convierte una mancha en agua es que se vea algo DENTRO, y lo que
+ * hay encima de un charco en un bosque son las copas: así que lo que
+ * reflejan es el cielo entre las copas, más claro que la tierra.
+ *
+ * ── Y POR QUÉ UNO DE CADA CUATRO REFLEJA OTRA COSA ───────────────────
+ * Porque el bosque de este juego tiene algo raro, y un sitio con algo
+ * raro tiene que enseñarlo de vez en cuando sin explicarlo. En uno de
+ * cada cuatro, y sólo a ratos, lo que se ve en el agua son dos puntos
+ * rojos. No hay nada arriba que los produzca. Quien lo vea, lo vio.
+ */
+function dibujarCharcos() {
+  if (!espesura.charcos || clima.lluvia < 0.04) return;
+  const k = clamp01((clima.lluvia - 0.04) / 0.5);
+
+  for (const c of espesura.charcos) {
+    const x = enPantalla(c.x, 1);
+    if (x < -A * 0.2 || x > A * 1.2) continue;
+    const rx = c.rx * k, ry = rx * 0.3;
+
+    /* El agua. */
+    ctx.save();
+    ctx.globalAlpha = 0.6 * k;
+    const g = ctx.createLinearGradient(0, c.y - ry, 0, c.y + ry);
+    g.addColorStop(0, "rgba(96,124,150,0.55)");
+    g.addColorStop(0.5, "rgba(40,58,76,0.7)");
+    g.addColorStop(1, "rgba(22,32,44,0.75)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(x, c.y, rx, ry, 0, 0, 6.283);
+    ctx.fill();
+
+    /* El filo de luz del borde: sin él, el charco es un agujero. */
+    ctx.strokeStyle = "rgba(170,200,230,0.2)";
+    ctx.lineWidth = Math.max(1, U * 0.16);
+    ctx.beginPath();
+    ctx.ellipse(x, c.y, rx, ry, 0, 0, 6.283);
+    ctx.stroke();
+    ctx.restore();
+
+    /* Lo que se ve dentro. */
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(x, c.y, rx, ry, 0, 0, 6.283);
+    ctx.clip();
+    ctx.globalCompositeOperation = "lighter";
+    /* El cielo entre las copas, temblando. */
+    const tem = Math.sin(reloj * 1.7 + c.f) * ry * 0.12;
+    haloOvalado(x + tem, c.y, rx * 0.8, ry * 1.4, [
+      [0, `rgba(130,166,220,${0.16 * k})`],
+      [1, "rgba(110,150,210,0)"],
+    ]);
+    /* Y, en algunos, dos puntos rojos que no vienen de ninguna parte. */
+    if (c.raro) {
+      const asoma = clamp01(Math.sin(reloj * 0.21 + c.f) * 3 - 2.2);
+      if (asoma > 0.01) {
+        for (const lado of [-1, 1]) {
+          haloOvalado(x + lado * rx * 0.18 + tem, c.y, rx * 0.16, ry * 0.5, [
+            [0, `rgba(255,70,60,${0.7 * asoma * k})`],
+            [1, "rgba(220,30,30,0)"],
+          ]);
+        }
+      }
+    }
+    ctx.restore();
+
+    /* Las ondas de haberlo tocado, y las de la lluvia cayendo. */
+    if (c.onda > 0.01) {
+      ctx.save();
+      ctx.strokeStyle = `rgba(190,220,250,${c.onda * 0.5})`;
+      ctx.lineWidth = Math.max(1, U * 0.16);
+      for (let i = 0; i < 3; i++) {
+        const t = clamp01((1 - c.onda) + i * 0.22);
+        if (t >= 1) continue;
+        ctx.globalAlpha = (1 - t) * c.onda;
+        ctx.beginPath();
+        ctx.ellipse(x, c.y, rx * t, ry * t, 0, 0, 6.283);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
   }
 }
@@ -10810,11 +11049,21 @@ function dibujarMarcoEsp() {
     ctx.restore();
     /* Un filo de luna por un lado, finísimo: sin él son rectángulos
        negros y no se leen como troncos. */
-    ctx.strokeStyle = "rgba(160,195,255,0.22)";
-    ctx.lineWidth = Math.max(1, m.ancho * 0.12);
+    ctx.strokeStyle = "rgba(164,198,255,0.3)";
+    ctx.lineWidth = Math.max(1, m.ancho * 0.13);
     ctx.beginPath();
     ctx.moveTo(-aA, -20);
     ctx.quadraticCurveTo(-m.ancho * 0.9, H * 0.55, -aB, H + 20);
+    ctx.stroke();
+    /* Y un rebote verdoso por el otro, mucho más flojo: la luz que
+       sube del suelo del bosque. Con filo sólo por un lado, el tronco
+       se lee como un recorte de papel pegado encima; con los dos, como
+       una cosa redonda. */
+    ctx.strokeStyle = "rgba(120,190,150,0.1)";
+    ctx.lineWidth = Math.max(1, m.ancho * 0.1);
+    ctx.beginPath();
+    ctx.moveTo(aA, -20);
+    ctx.quadraticCurveTo(m.ancho * 0.9, H * 0.55, aB, H + 20);
     ctx.stroke();
 
     /* Las ramas que cruzan por arriba. */
@@ -10837,6 +11086,19 @@ function dibujarMarcoEsp() {
         ctx.quadraticCurveTo((x1 + x2) * 0.5, mez(y1, y2, 0.5) - H * 0.035, x2, y2);
         ctx.stroke();
       }
+      /* El canto de arriba de la rama, mojado de luna. Media línea, y
+         es lo que las separa de ser cables tendidos. */
+      ctx.save();
+      ctx.strokeStyle = "rgba(150,186,246,0.16)";
+      ctx.lineWidth = Math.max(1, m.ancho * 0.1);
+      ctx.beginPath();
+      ctx.moveTo(0, y0 - m.ancho * 0.26);
+      ctx.quadraticCurveTo(ex * 0.5, mez(y0, ey, 0.5) - H * 0.035 - m.ancho * 0.26,
+                           ex, ey - m.ancho * 0.1);
+      ctx.stroke();
+      ctx.restore();
+      ctx.strokeStyle = "rgb(9,13,14)";
+
       /* Dos ramitas colgando hacia abajo. */
       ctx.lineWidth = m.ancho * 0.18;
       for (let j = 0; j < 2; j++) {
@@ -11139,9 +11401,9 @@ function dibujarRelojBosque(x, y, p) {
      lejos, cuando el reloj todavía es una mancha entre los árboles. */
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
-  haloOvalado(x, y - alto * 0.55, ancho * 4.2, alto * 0.85, [
-    [0, `rgba(120,255,175,${0.1 * vivo})`],
-    [0.45, `rgba(90,230,150,${0.035 * vivo})`],
+  haloOvalado(x, y - alto * 0.55, ancho * 5, alto * 0.95, [
+    [0, `rgba(120,255,175,${0.15 * vivo})`],
+    [0.45, `rgba(90,230,150,${0.05 * vivo})`],
     [1, "rgba(90,230,150,0)"],
   ]);
   ctx.restore();
@@ -14960,7 +15222,15 @@ function tocarEnEspesura(p, e) {
   /* 3. Los ojos rojos. */
   if (tocarOjosEspesura(p)) return;
 
-  /* 4. Los árboles: se sacuden, sueltan hojas y suenan. */
+  /* 4. Las luciérnagas, que son lo más chico que vuela. */
+  if (tocarLuciernaga(p)) return;
+
+  /* 5. Lo que hay en el suelo: setas, piedras, helechos, hierba… y los
+        charcos cuando llueve. Todo contesta: eso es lo que separa un
+        bosque explorable de un telón con cuatro cosas tocables. */
+  if (tocarElSuelo(p)) return;
+
+  /* 6. Los árboles: se sacuden, sueltan hojas y suenan. */
   for (let b = ESP.bandas.length - 1; b >= 0; b--) {
     const conf = ESP.bandas[b];
     if (!conf.toca) continue;
@@ -14985,6 +15255,141 @@ function tocarEnEspesura(p, e) {
       tono: Math.random(),
     });
   }
+}
+
+/**
+ * TOCAR EL SUELO DEL BOSQUE.
+ *
+ * ── POR QUÉ CONTESTA TODO Y NO SÓLO LO IMPORTANTE ────────────────────
+ * Porque la diferencia entre un escenario y un sitio no está en cuántas
+ * cosas guardan un secreto: está en si lo que tocas se entera. Un
+ * helecho que se abre, una piedra que se ladea, una seta que suelta
+ * esporas, un charco que hace ondas. Ninguno de los cuatro da nada, y
+ * son los cuatro los que hacen que valga la pena tocar el quinto.
+ *
+ * Y dentro de ese montón de cosas que no dan nada hay dos que sí: la
+ * piedra con la flecha —la única pista de que al fondo hay algo— y las
+ * setas, que llevan la cuenta.
+ */
+function tocarElSuelo(p) {
+  /* Los charcos primero: son anchos y planos, y están debajo de todo. */
+  for (const c of espesura.charcos || []) {
+    if (clima.lluvia < 0.06) break;
+    const x = enPantalla(c.x, 1);
+    const rx = c.rx * clamp01((clima.lluvia - 0.04) / 0.5);
+    if (Math.abs(p.x - x) > rx * 1.2 || Math.abs(p.y - c.y) > rx * 0.55) continue;
+    c.onda = 1;
+    golpe(0.06, azar(600, 1100), 0.07, "bandpass");
+    for (let i = 0; i < 6; i++) {
+      soltar(x + azar(-rx, rx), c.y, {
+        vx: azar(-30, 30), vy: azar(-60, -18),
+        vida: azar(0.4, 0.9), tam: azar(0.8, 1.6),
+        tipo: TIPO.BRILLO, tono: 0.7,
+      });
+    }
+    if (c.raro && !historia.hecho("charco")) {
+      historia.marcar("charco");
+      sonarMisterio(0.35);
+      decir(x, c.y - U * 8, CONF.espesura.charcoRaro,
+        { misterio: true, importante: true, dur: 5.5 });
+      contarLogro("charco");
+    }
+    return true;
+  }
+
+  /* Y luego lo que crece. Del más pequeño al más grande, como siempre. */
+  let mejor = null, mejorD = Infinity;
+  for (const z of espesura.suelo) {
+    const x = enPantalla(z.x, 1);
+    const alcance = z.s * (z.tipo === "hierba" ? 1.4 : 1.9) + U * 1.5;
+    const d = Math.hypot(p.x - x, (p.y - (z.y - z.s * 0.7)) * 0.9);
+    if (d > alcance) continue;
+    if (z.s < mejorD) { mejorD = z.s; mejor = z; }
+  }
+  if (!mejor) return false;
+
+  const z = mejor;
+  const x = enPantalla(z.x, 1);
+  z.pulso = 1;
+  z.veces++;
+
+  if (z.tipo === "seta") {
+    /* Esporas: motas verdes que suben despacio y se quedan un rato. */
+    tono(azar(700, 1100), 0.5, "sine", 0.03);
+    for (let i = 0; i < 9; i++) {
+      soltar(x + azar(-z.s, z.s), z.y - z.s * 0.8, {
+        vx: azar(-10, 10), vy: azar(-22, -6),
+        vida: azar(1.6, 3.4), tam: azar(0.8, 1.8),
+        tipo: TIPO.BRILLO, tono: 0.45,
+      });
+    }
+    const n = recuerdo.sumar("setas");
+    if (n === CONF.espesura.setasCuenta) {
+      magia(587);
+      decir(x, z.y - U * 8, CONF.espesura.setasTodas,
+        { mimo: true, importante: true, dur: 6 });
+      contarLogro("setas");
+    }
+    return true;
+  }
+
+  if (z.tipo === "piedra") {
+    golpe(0.07, azar(200, 340), 0.09, "lowpass");
+    if (z.marcada) {
+      /* La flecha. Se dice una vez y ya: repetirla la convertiría en un
+         cartel, y una pista que insiste deja de ser una pista. */
+      if (historia.marcar("flecha")) {
+        sonarMisterio(0.3);
+        decir(x, z.y - U * 7, CONF.espesura.piedraFlecha,
+          { misterio: true, importante: true, dur: 6 });
+        contarLogro("flecha");
+      } else {
+        decir(x, z.y - U * 6, CONF.espesura.piedraFlechaOtra, { dur: 3.4 });
+      }
+    }
+    return true;
+  }
+
+  /* Helechos y hierba: un roce y unas hojas. */
+  golpe(0.06, azar(2600, 4200), 0.02, "highpass");
+  for (let i = 0; i < 3; i++) {
+    soltar(x + azar(-z.s, z.s), z.y - z.s * azar(0.2, 1.2), {
+      vx: azar(-24, 24), vy: azar(-22, -4),
+      vida: azar(1, 2.2), tam: U * azar(0.3, 0.6),
+      tipo: TIPO.HOJA, giro: azar(0, 6.283), giroV: azar(-3, 3),
+      tono: Math.random(),
+    });
+  }
+  return true;
+}
+
+/**
+ * TOCAR UNA LUCIÉRNAGA.
+ *
+ * Se escapan. No se pueden coger, y ésa es la gracia: lo que hacen es
+ * apagarse y volver a encenderse un poco más allá. Llevan la cuenta
+ * entre visitas, y a la duodécima pasa algo.
+ */
+function tocarLuciernaga(p) {
+  for (const l of espesura.luces) {
+    const x = enPantalla(l.x + Math.sin(reloj * l.vel + l.f) * l.radio, l.z);
+    if (Math.hypot(p.x - x, p.y - l.y) > U * 4) continue;
+    /* Se va de un salto. */
+    l.x += azar(-U * 14, U * 14);
+    l.y += azar(-U * 8, U * 8);
+    l.f = azar(0, 6.283);
+    tono(azar(1400, 2000), 0.28, "sine", 0.025);
+    soltarBrillos(x, l.y, 4, 0.45);
+    const n = recuerdo.sumar("luciernagas");
+    if (n === CONF.espesura.lucesCuenta) {
+      magia(659);
+      decir(x, l.y - U * 6, CONF.espesura.lucesTodas,
+        { mimo: true, importante: true, dur: 6 });
+      contarLogro("luciernagas");
+    }
+    return true;
+  }
+  return false;
 }
 
 function sacudirArbolEsp(t, fuerza, x) {
