@@ -84,9 +84,10 @@ hilo, lleva a algún sitio:
 2. **El sendero.** Se toca y se ANDA hasta el bosque de dentro. La
    cámara se mete, la escena se apaga, cruzan hojas y motas, y el
    sonido cambia sin cortarse.
-3. **La espesura.** Tres pantallas de bosque. Se arrastra el dedo para
-   andar. Hay sitios: una marca en el suelo, un búho que habla, una
-   pala apoyada en un tocón, y algo que mira desde el fondo.
+3. **La espesura.** Tres pantallas de bosque. Se anda arrastrando el
+   dedo, o con las dos flechas de abajo. Hay sitios: una marca en el
+   suelo, un búho que habla, una pala apoyada en un tocón, un reloj de
+   pie recargado en un árbol, y algo que mira desde el fondo.
 4. **La X.** Medio tapada de hojas. Se destapa, y entonces hace falta
    una pala.
 5. **La pala.** Está al otro extremo del bosque. Se coge, se queda en
@@ -96,6 +97,29 @@ hilo, lleva a algún sitio:
 7. **El misterio.** Sale de la tierra encendido. Al tocarlo, el bosque
    se entera.
 8. **Y lo que viene después.** No se cuenta aquí.
+
+### La cacería
+
+Al final del todo del bosque, tirada entre las hojas, hay una escopeta.
+Hay que andar el bosque entero para dar con ella, y aun así no salta a
+la vista: lo único que hace es un destello por el cañón cada cuatro o
+cinco segundos. (Hay una pista escondida por ahí que apunta hacia allá.
+Una sola, y no avisa de que es una pista.)
+
+Al recogerla se abre el cielo. Llueve, oscurece, y del bosque salen
+búhos de ojos rojos en **cinco oleadas** cada vez más grandes: tres,
+cinco, siete, diez y catorce. Se tienen **cinco vidas**, arriba y por
+el centro. Se dispara tocando: el dedo es el gatillo, y para andar
+están los botones. Al que le das no se muere, **revienta en luz**.
+
+Si se acaban las vidas, te caes y despiertas en la cabaña a las tres.
+No pasa nada: se puede volver a empezar tocando la escopeta en la
+bolsa.
+
+Y al acabar la quinta oleada vuelve el que llevaba toda la noche
+vigilando, con los ojos encendidos, a decir una cosa. Después se va…
+pero **no desaparece**. Sigue en el bosque, en otra rama, y en una
+distinta cada vez que se entra. Hay que volver a encontrarlo.
 
 Lo que se descubre se GUARDA. Si cierras y vuelves mañana, la pala
 sigue siendo tuya y la X sigue cavada. Lo único que no se guarda es
@@ -117,6 +141,20 @@ dónde estabas: siempre se vuelve al claro.
 - Atrapar una estrella fugaz al vuelo.
 - Dormirse.
 
+### Y en el bosque
+
+Contesta todo lo que hay en el suelo: los helechos se abren, las
+piedras se ladean, la hierba se dobla, las setas sueltan esporas, las
+luciérnagas se espantan y los charcos hacen ondas. Casi nada de eso da
+nada, y ésa es la idea: están para que valga la pena tocar lo que sí.
+
+Los charcos sólo existen cuando llueve, y reflejan. Uno de cada cuatro
+refleja, a ratos, algo que no está arriba.
+
+Y de vez en cuando se oye algo lejos: una rama que se parte, algo
+pesado entre la hojarasca, un ulular. No hay nada que mirar, a
+propósito.
+
 ### Y dentro del cuarto
 
 Casi todo lo que hay se puede tocar, y casi todo contesta:
@@ -130,6 +168,9 @@ Casi todo lo que hay se puede tocar, y casi todo contesta:
 - Once estrellitas de las que brillan en la oscuridad, pegadas arriba.
   Brillan menos con la lámpara encendida y más a oscuras, como las de
   verdad.
+
+El cajón de la mesilla se abre —y guarda algo—, las cortinas se corren
+a toque o arrastrándolas, y la manta se sube hasta la barbilla.
 
 Y unos cuantos secretos que no se explican y que nadie te va a decir.
 Uno está muy metido en el bosque, es verde y casi no se ve. Otro tiene
@@ -184,6 +225,9 @@ Todo lo que se dice y casi todo lo que se ve está en el bloque
 | lo que dice el misterio | `CONF.misterio` |
 | lo que dice el búho del bosque | `CONF.buhoEsp` |
 | lo del reloj de las tres | `CONF.tres` |
+| lo que dice el reloj del bosque | `CONF.relojBosque` |
+| la escopeta y toda la cacería | `CONF.caza` |
+| cuántos búhos trae cada oleada, y cuántas vidas hay | `OLEADAS` y `VIDAS` |
 | todo lo del cuarto: radio, frasco, planta, guitarra, tapete, estrellitas, libros, taza, vela, el nudo del suelo y el deseo | `CONF.cuarto` |
 | las tres frases de la cuenta de secretos | `CONF.logros` |
 | lo ancho que es el bosque y sus capas | `ESP` |
