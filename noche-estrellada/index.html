@@ -715,7 +715,7 @@ html, body {
     <button class="ne-hud-salir" id="hudSalir" type="button" aria-label="Regresar al claro">
       <span class="ne-hud-flecha">‹</span><span class="ne-hud-txt">el claro</span>
     </button>
-    <div class="ne-hud-hallado" id="hudHallado"><b>0</b><i>hallado</i></div>
+    <div class="ne-hud-hallado" id="hudHallado"><b>0</b><i>secretos</i></div>
     <div class="ne-bolsa" id="bolsaUI"></div>
   </div>
 
@@ -938,7 +938,7 @@ const CONF = {
     dorado: [
       "Mmm… quedó perfecto 🤍",
       "Dorado justo. Oye, qué mano tienes.",
-      "Ese era. Ese es el que yo habría querido.",
+      "Ese era. Justo ese era el que yo quería.",
       "Crujiente por fuera y derretido por dentro. Perfecto.",
       "Te quedó de revista.",
     ],
@@ -980,7 +980,7 @@ const CONF = {
     "Qué bonito sería verla contigo.",
     "Raionetas… ¿tú también estarás viendo la luna? 🤍",
     "Aunque estemos lejos, es el mismo cielo.",
-    "Dicen que la luna guarda lo que le cuentas. Yo le he contado bastante.",
+    "Dicen que la luna guarda lo que le cuentas. Yo ya le conté bastantes cosas.",
     "Si la vemos al mismo tiempo, casi es como estar juntos.",
     "Está igual de lejos de los dos. Eso me gusta :>",
     "Le pedí que te diera las buenas noches de mi parte.",
@@ -1100,7 +1100,7 @@ const CONF = {
     /* Lo que dice cuando ya lo has encontrado varias veces. */
     diceOtraVez: [
       "Otra vez tú.",
-      "Se te da bien esto de encontrarme.",
+      "Eres buena para encontrarme, ¿eh?",
       "Ya, ya. Me agarraste. Ya van varias :>",
     ],
   },
@@ -5848,13 +5848,15 @@ function dibujarSombrasRamas(vx, vy, v) {
   const viento = clima.viento * (0.4 + clima.lluvia * 0.6);
 
   ctx.save();
-  /* Recortado al rectángulo de luna: fuera de él no hay luz, así que no
-     puede haber sombra. */
+  /* Recortado al rayo, con un poco de holgura: fuera de él no hay luz,
+     así que no puede haber sombra. La holgura es porque el rayo ya no
+     tiene borde duro, y un recorte justo dejaba las sombras cortadas
+     en seco por una raya vertical que no se correspondía con nada. */
   ctx.beginPath();
-  ctx.moveTo(vx - v.w * 0.5, vy + v.h * 0.5);
-  ctx.lineTo(vx + v.w * 0.5, vy + v.h * 0.5);
-  ctx.lineTo(vx + v.w * 1.1, H);
-  ctx.lineTo(vx - v.w * 0.2, H);
+  ctx.moveTo(vx - v.w * 0.62, vy + v.h * 0.5);
+  ctx.lineTo(vx + v.w * 0.62, vy + v.h * 0.5);
+  ctx.lineTo(vx + v.w * 1.3, H);
+  ctx.lineTo(vx - v.w * 0.36, H);
   ctx.closePath();
   ctx.clip();
 
@@ -5869,7 +5871,6 @@ function dibujarSombrasRamas(vx, vy, v) {
      Y floja a propósito: una sombra a contraluz no es negra, es un
      azul apenas más oscuro que la pared. */
   for (const [gordo, alfa] of [[2.6, 0.12], [1.6, 0.16], [1, 0.24]]) {
-    ctx.strokeStyle = `rgba(88,98,140,${alfa})`;
     for (const r of hab.ramas) {
       /* La sombra se proyecta ESTIRADA hacia abajo, que es lo que hace un
          rayo que entra en diagonal. Un simple factor en la Y. */
@@ -5881,12 +5882,25 @@ function dibujarSombrasRamas(vx, vy, v) {
       const ex = bx + Math.cos(ang) * L;
       const ey = by + Math.sin(ang) * L * 1.5;
 
+      /* Cuánta luz le llega a ESTA rama: la del centro del rayo se ve
+         entera, y las de los lados se van borrando. El recorte sigue
+         ahí por si acaso, pero ya no es lo que las corta: si lo fuera,
+         se vería la raya recta del recorte. */
+      const mx = (bx + ex) / 2;
+      const u = clamp01(Math.abs(mx - vx) / (v.w * 0.72));
+      const enLuz = 1 - u * u;
+      if (enLuz < 0.03) continue;
+      ctx.strokeStyle = `rgba(88,98,140,${alfa * enLuz})`;
+
       ctx.lineWidth = r.grueso * U * 1.1 * gordo;
       ctx.beginPath();
       ctx.moveTo(bx, by);
+      /* Curvada de verdad, y no casi recta: una rama recta proyecta
+         una raya, y una raya sobre una pared es un arañazo. */
       ctx.quadraticCurveTo(
-        (bx + ex) / 2 + Math.sin(reloj * 1.1 + r.f) * U * 1.2,
-        (by + ey) / 2, ex, ey);
+        (bx + ex) / 2 - Math.cos(ang) * L * 0.18 + Math.sin(reloj * 1.1 + r.f) * U * 1.4,
+        (by + ey) / 2 + L * 0.2,
+        ex, ey);
       ctx.stroke();
 
       /* Las ramitas. Sin ellas son palos, y con ellas son un árbol. */

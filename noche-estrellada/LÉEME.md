@@ -114,13 +114,34 @@ dónde estabas: siempre se vuelve al claro.
 - Abrir la cajita musical.
 - Entrar en la cabaña y acabar tumbado mirando por la ventana.
 - Tocar la luna desde fuera y desde dentro.
-- Pillar una estrella fugaz al vuelo.
+- Atrapar una estrella fugaz al vuelo.
 - Dormirse.
 
-Y unos cuantos secretos que no se explican. Uno está muy metido en el
-bosque, es verde y casi no se ve. Otro tiene los ojos verdes y se
-cambia de árbol cada vez que lo encuentras. Y hay algo al fondo que se
-va si te acercas.
+### Y dentro del cuarto
+
+Casi todo lo que hay se puede tocar, y casi todo contesta:
+
+- El radio de la repisa se prende y se apaga, con su estática y una
+  melodía de fondo.
+- La guitarra recargada en la pared tiene seis cuerdas y suenan las
+  seis, cada una la suya.
+- La planta, la taza, los tres libros de la mesilla, el tapete de
+  trapo, el apagador, la vela del alféizar.
+- Once estrellitas de las que brillan en la oscuridad, pegadas arriba.
+  Brillan menos con la lámpara encendida y más a oscuras, como las de
+  verdad.
+
+Y unos cuantos secretos que no se explican y que nadie te va a decir.
+Uno está muy metido en el bosque, es verde y casi no se ve. Otro tiene
+los ojos verdes y se cambia de árbol cada vez que lo encuentras. Hay
+algo al fondo que se va si te acercas. Hay algo debajo del tapete. Hay
+algo dentro del último libro. Hay algo grabado en una tabla del suelo.
+Las once estrellas no están puestas al azar. Y la chimenea de la
+cabaña, una vez cada minuto y pico, hace una cosa que no se puede
+provocar: o la ves o no la ves.
+
+Ninguno de esos secretos hace falta para nada. No abren puertas y no
+desbloquean nada. Sólo están.
 
 ### La escena se acuerda
 
@@ -163,7 +184,13 @@ Todo lo que se dice y casi todo lo que se ve está en el bloque
 | lo que dice el misterio | `CONF.misterio` |
 | lo que dice el búho del bosque | `CONF.buhoEsp` |
 | lo del reloj de las tres | `CONF.tres` |
+| todo lo del cuarto: radio, frasco, planta, guitarra, tapete, estrellitas, libros, taza, vela, el nudo del suelo y el deseo | `CONF.cuarto` |
+| las tres frases de la cuenta de secretos | `CONF.logros` |
 | lo ancho que es el bosque y sus capas | `ESP` |
+
+Si añades o quitas secretos, la cuenta va en `TODO_LO_ESCONDIDO`: es la
+lista de todo lo escondido que hay, y de su tamaño salen el tercio, los
+dos tercios y el final.
 
 ---
 
