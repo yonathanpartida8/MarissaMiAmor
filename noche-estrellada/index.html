@@ -1522,9 +1522,20 @@ const CONF = {
       "Ahí vienen.",
       "Más. Son más que antes.",
       "No paran de salir del bosque…",
-      "¡Son un montón! ¡No te quedes quieta!",
-      "Ésta es la última. Aguanta, mi vida.",
+      "¡Son un montón!",
+      "Otra más. Respira.",
+      "Ni de broma se acaba esto.",
+      "Están saliendo de todos lados.",
+      "Ya casi. Ya casi.",
+      "La penúltima. Aguanta.",
+      "…algo grande viene.",
     ],
+    /* ---- El jefe de la décima ---- */
+    jefeLlega: "Eso no es un búho.",
+    jefePista: "¡Métete detrás de la roca cuando escupa!",
+    jefeEnfada: "Se enojó. Trae más.",
+    jefeMuere: "Se deshizo. Se deshizo entero.",
+    quemado: "¡Quema! ¡Quema!",
     golpe: [
       "¡Ay! Eso dolió.",
       "Otro más… cuidado.",
@@ -1625,6 +1636,13 @@ function leerColor(c) {
  * degradado se aplasta con la forma y se apaga justo en el borde.
  */
 function haloOvalado(x, y, rx, ry, paradas, cy = y) {
+  /* ---- El portero ----
+     Con `rx` o `ry` a cero, la escala de abajo divide entre cero y el
+     centro del degradado sale NaN: `createRadialGradient` lanza y se
+     lleva por delante el fotograma entero. Pasa de verdad —un bicho que
+     entra desde escala cero, un halo que se apaga del todo— y cuesta
+     una línea evitarlo. */
+  if (!(rx > 0.01) || !(ry > 0.01) || !Number.isFinite(x) || !Number.isFinite(y)) return;
   ctx.save();
   ctx.translate(x, cy);
   ctx.scale(1, ry / rx);
@@ -11412,6 +11430,18 @@ function construirPuntos() {
       latido: 0, fogonazo: 0, tic: 0, toques: 0, salto: 0,
     },
 
+    /* ---- La roca de cobertura ----
+       Un peñasco. Está desde siempre —no aparece con el jefe— y no da
+       nada al tocarlo: lo único que hace es PARAR cosas. Quien no haya
+       peleado nunca lo verá como una roca grande, que es lo que es. */
+    {
+      id: "roca",
+      x: W * 0.79, y: suelo + H * 0.045,
+      r: U * 13, z: 1,
+      hay: () => true,
+      musgo: 0,
+    },
+
     /* ---- La escopeta ----
        Al final del todo, tirada entre las hojas. Hay que andar el
        bosque entero para dar con ella, y ni siquiera entonces salta a
@@ -11549,9 +11579,109 @@ function dibujarPuntos() {
     else if (p.id === "equis") dibujarEquis(s.x, s.y, p);
     else if (p.id === "pala") dibujarPala(s.x, s.y, p);
     else if (p.id === "reliquia") dibujarReliquia(s.x, s.y, p);
+    else if (p.id === "roca") dibujarRocaGrande(s.x, s.y, p);
     else if (p.id === "reloj") dibujarRelojBosque(s.x, s.y, p);
     else if (p.id === "escopeta") dibujarEscopetaSuelo(s.x, s.y, p);
     /* El búho de la espesura se pinta con los demás bichos, aparte. */
+  }
+}
+
+/**
+ * LA ROCA GRANDE.
+ *
+ * Un peñasco de los que lleva ahí desde antes que el bosque. Tres capas
+ * y un filo de luna: la cara de sombra, la cara que da a la luz, y el
+ * musgo del lado norte, que es el detalle que dice que lleva siglos.
+ *
+ * Durante la pelea se le pinta encima un aviso de que ahí se está a
+ * cubierto, pero sólo entonces: fuera de la pelea es una roca.
+ */
+function dibujarRocaGrande(x, y, p) {
+  const r = p.r;
+
+  /* La sombra en el suelo. */
+  haloOvalado(x + U * 0.8, y + U * 1.4, r * 1.25, r * 0.36, [
+    [0.4, "rgba(0,0,0,0.5)"],
+    [1, "rgba(0,0,0,0)"],
+  ]);
+
+  ctx.save();
+  ctx.translate(x, y);
+
+  /* El bulto: un polígono irregular, no una elipse. Una roca con
+     silueta suave es un huevo. */
+  const perfil = [
+    [-1.0, 0.18], [-0.92, -0.32], [-0.6, -0.7], [-0.2, -0.92],
+    [0.25, -0.86], [0.66, -0.6], [0.95, -0.2], [1.0, 0.2],
+  ];
+  const trazo = () => {
+    ctx.beginPath();
+    ctx.moveTo(perfil[0][0] * r, perfil[0][1] * r);
+    for (let i = 1; i < perfil.length; i++) {
+      ctx.lineTo(perfil[i][0] * r, perfil[i][1] * r);
+    }
+    ctx.lineTo(r * 1.02, r * 0.28);
+    ctx.lineTo(-r * 1.02, r * 0.28);
+    ctx.closePath();
+  };
+
+  const g = ctx.createLinearGradient(-r, -r, r * 0.6, r * 0.3);
+  g.addColorStop(0, "#3c4148");
+  g.addColorStop(0.5, "#272c33");
+  g.addColorStop(1, "#14181d");
+  ctx.fillStyle = g;
+  trazo();
+  ctx.fill();
+
+  /* Las grietas. */
+  ctx.save();
+  trazo();
+  ctx.clip();
+  ctx.strokeStyle = "rgba(8,10,13,0.6)";
+  ctx.lineWidth = Math.max(1, r * 0.035);
+  for (let i = 0; i < 4; i++) {
+    const t = (i + 0.5) / 4;
+    ctx.beginPath();
+    ctx.moveTo(-r + t * r * 2, -r * 0.9);
+    ctx.quadraticCurveTo(-r + t * r * 2 + r * 0.16, -r * 0.3,
+                         -r + t * r * 2 - r * 0.1, r * 0.3);
+    ctx.stroke();
+  }
+  /* Y el musgo del lado de abajo. */
+  ctx.fillStyle = "rgba(56,88,56,0.4)";
+  for (let i = 0; i < 7; i++) {
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.8 + azarFijo(i * 3.7) * r * 1.6,
+      r * (0.05 + azarFijo(i * 5.1) * 0.22),
+      r * (0.1 + azarFijo(i * 7.3) * 0.16), r * 0.06, 0, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  /* El filo de luna por el canto de arriba. */
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.strokeStyle = "rgba(154,186,240,0.24)";
+  ctx.lineWidth = Math.max(1, r * 0.06);
+  ctx.beginPath();
+  ctx.moveTo(perfil[0][0] * r, perfil[0][1] * r);
+  for (let i = 1; i < perfil.length; i++) ctx.lineTo(perfil[i][0] * r, perfil[i][1] * r);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.restore();
+
+  /* Y durante la pelea, el aviso de que ahí no llega el fuego. */
+  if (jefe.vivo) {
+    const pulso = 0.28 + 0.16 * Math.sin(reloj * 2.6);
+    const dentro = aCubierto();
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    haloOvalado(x, y - r * 0.2, r * 1.5, r * 0.95, [
+      [0, `rgba(${dentro ? "140,255,190" : "255,220,150"},${pulso * (dentro ? 0.16 : 0.1)})`],
+      [1, "rgba(140,255,190,0)"],
+    ]);
+    ctx.restore();
   }
 }
 
@@ -13399,8 +13529,48 @@ function moverDesmayo(dt, t) {
 
 /* Cuántos búhos trae cada oleada. Cinco números y se acabó: subir la
    dificultad es cambiar esta línea. */
-const OLEADAS = [3, 5, 7, 10, 14];
+/* Diez oleadas. Las cinco primeras son las de siempre; de la sexta a la
+   novena aprieta, y la décima no es una oleada: es EL JEFE. */
+const OLEADAS = [3, 5, 7, 10, 14, 12, 16, 18, 22, 0];
+const OLEADA_JEFE = 10;
 const VIDAS = 5;
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL JEFE DE LA DÉCIMA, Y LA ROCA
+
+   ── POR QUÉ NO ES «UN BÚHO CON MÁS VIDA» ─────────────────────────────
+   Porque un enemigo con más vida no cambia nada: se hace lo mismo más
+   rato. Lo que convierte esto en una pelea es que el jefe hace algo que
+   no se puede resolver disparando —escupe fuego— y que hay UN SITIO en
+   el escenario donde ese fuego no llega.
+
+   De ahí sale el bucle que hace que sea un combate y no una diana:
+   esconderse cuando escupe, salir cuando para, disparar, y volver. El
+   que se queda fuera se quema; el que se queda dentro no gana nunca.
+
+   ── LA ROCA ──────────────────────────────────────────────────────────
+   Está en el mundo, no en la pantalla: es un peñasco que lleva ahí
+   desde siempre, en un sitio fijo del bosque. Hay que ANDAR hasta él.
+   Por eso el jefe aparece donde aparece —cerca— y por eso la cacería
+   deja andar mientras se dispara.
+
+   Y para en serio: el fuego que la cruza se apaga contra ella. No es
+   una zona segura invisible, es que la bola choca con la piedra.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const jefe = {
+  vivo: false,
+  vida: 0, vidaMax: 30,
+  x: 0, y: 0,            // pantalla
+  f: 0,
+  ala: 0,
+  /* El ciclo: carga · escupe · descansa. */
+  modo: "entrando",
+  t: 0,
+  dolor: 0,
+  bolas: [],
+  entrada: 0,
+};
 
 const caza = {
   /* no · aviso · oleada · pausa · final · perdida */
@@ -13475,6 +13645,8 @@ function siguienteOleada() {
   caza.relojSalida = 0.35;
   decir(A * 0.5, H * 0.34, CONF.caza.oleadas[caza.oleada - 1],
     { misterio: true, importante: true, dur: 3.2 });
+  /* La décima no trae búhos: trae al jefe. */
+  if (caza.oleada === OLEADA_JEFE) { arrancarJefe(); return; }
   /* Un trueno por oleada, y cada vez más cerca. */
   lanzarRayo(mez(2.2, 0.25, (caza.oleada - 1) / (OLEADAS.length - 1)));
 }
@@ -13553,6 +13725,8 @@ function moverCaceria(dt) {
 
   if (caza.fase !== "oleada") return;
 
+  moverJefe(dt);
+
   /* ---- Sacar los que falten ---- */
   if (caza.porSalir > 0) {
     caza.relojSalida -= dt;
@@ -13594,7 +13768,7 @@ function moverCaceria(dt) {
   }
 
   /* ---- ¿Se acabó la oleada? ---- */
-  if (caza.porSalir === 0 && !caza.buhos.some((o) => o.muerte < 0)) {
+  if (caza.porSalir === 0 && !caza.buhos.some((o) => o.muerte < 0) && !jefe.vivo) {
     caza.fase = "pausa";
     caza.t = 0;
     if (caza.oleada < OLEADAS.length) {
@@ -13670,8 +13844,17 @@ function dispararEscopeta(p) {
     if (d > r * 1.7 + U * 4) continue;
     if (d < mejorD) { mejorD = d; mejor = o; }
   }
-  if (mejor) reventarBuho(mejor);
-  else humoDeFallo(p);
+  if (mejor) { reventarBuho(mejor); return true; }
+
+  /* ¿Y al jefe? Va después de los búhos: si hay uno pequeño encima de
+     él, se le da al pequeño. Es lo que haría cualquiera. */
+  if (jefe.vivo && jefe.entrada > 0.5
+      && Math.hypot(p.x - jefe.x, p.y - jefe.y) < U * 13) {
+    herirJefe();
+    return true;
+  }
+
+  humoDeFallo(p);
   return true;
 }
 
@@ -13737,6 +13920,403 @@ function reventarBuho(o) {
 
   magia(azar(520, 700));
   golpe(0.1, 300, 0.2, "lowpass");
+}
+
+
+/* ---- ESTAR A CUBIERTO ---------------------------------------------------
+
+   La roca para el fuego si está ENTRE tú y el jefe. Eso no es una zona
+   marcada en el suelo: es geometría. Se mira dónde cae la roca en la
+   pantalla y si el jugador está lo bastante cerca de ella como para
+   tenerla delante.
+
+   ── POR QUÉ NO ES UN RECTÁNGULO EN EL SUELO ──────────────────────────
+   Porque un rectángulo se aprende y deja de ser una roca: se mira el
+   suelo en vez de mirar la roca. Con la distancia a la piedra de
+   verdad, lo que hay que hacer es acercarse a ella, que es lo que hace
+   cualquiera con una piedra y algo escupiéndole fuego.            */
+
+function sitioRoca() {
+  const q = puntos.lista.find((z) => z.id === "roca");
+  if (!q) return null;
+  return { x: enPantalla(q.x, q.z), y: q.y, r: q.r };
+}
+
+/** ¿El jugador está detrás de la roca? */
+function aCubierto() {
+  const R = sitioRoca();
+  if (!R) return false;
+  const J = sitioJugador();
+  return Math.abs(J.x - R.x) < R.r * 1.15;
+}
+
+/* ---- EL JEFE ------------------------------------------------------------ */
+
+function arrancarJefe() {
+  jefe.vivo = true;
+  jefe.vida = jefe.vidaMax;
+  jefe.modo = "entrando";
+  jefe.t = 0;
+  jefe.dolor = 0;
+  jefe.bolas.length = 0;
+  jefe.entrada = 0;
+  jefe.f = 0;
+  jefe.ala = 0;
+  /* Sale por arriba, en el tercio contrario a la roca: así lo primero
+     que se hace es correr hacia la piedra. */
+  const R = sitioRoca();
+  jefe.x = R && R.x > A * 0.5 ? A * 0.26 : A * 0.74;
+  jefe.y = -H * 0.2;
+  clima.tormentaObj = 1;
+  clima.lluviaObj = 1;
+  caza.oscuroObj = 1;
+  lanzarRayo(0.1);
+  decir(A * 0.5, H * 0.3, CONF.caza.jefeLlega,
+    { misterio: true, importante: true, dur: 3.2 });
+  setTimeout(() => {
+    if (jefe.vivo) decir(A * 0.5, H * 0.38, CONF.caza.jefePista, { importante: true, dur: 3 });
+  }, 3200);
+}
+
+function moverJefe(dt) {
+  if (!jefe.vivo) return;
+  const J = sitioJugador();
+  jefe.t += dt;
+  jefe.f += dt;
+  jefe.dolor = Math.max(0, jefe.dolor - dt * 2.6);
+  jefe.entrada = Math.min(1, jefe.entrada + dt * 0.5);
+  jefe.ala += dt * mez(3.4, 6.2, jefe.modo === "escupe" ? 1 : 0);
+
+  /* Se queda arriba, meciéndose, y se desplaza despacio de un lado a
+     otro: hay que reapuntar, no clavar el dedo en un sitio. */
+  const alturaObj = H * 0.24;
+  jefe.y = damp(jefe.y, alturaObj + Math.sin(jefe.f * 0.8) * H * 0.03, 1.6, dt);
+  const paseo = A * 0.5 + Math.sin(jefe.f * 0.31) * A * 0.3;
+  jefe.x = damp(jefe.x, paseo, 0.7, dt);
+
+  /* ---- El ciclo ---- */
+  if (jefe.modo === "entrando") {
+    if (jefe.t > 3) { jefe.modo = "descansa"; jefe.t = 0; }
+    return;
+  }
+
+  if (jefe.modo === "descansa") {
+    /* Aquí es cuando se le puede disparar sin quemarse. Dura poco y
+       cada vez menos: esa es toda la curva de dificultad. */
+    const cuanto = mez(2.6, 1.5, 1 - jefe.vida / jefe.vidaMax);
+    if (jefe.t > cuanto) { jefe.modo = "carga"; jefe.t = 0; }
+  } else if (jefe.modo === "carga") {
+    /* Avisa. Un ataque sin aviso no se puede esquivar, y un ataque que
+       no se puede esquivar no es una pelea: es un impuesto. */
+    if (jefe.t > 1.1) {
+      jefe.modo = "escupe";
+      jefe.t = 0;
+      jefe.quedan = Math.round(mez(3, 6, 1 - jefe.vida / jefe.vidaMax));
+      jefe.relojBola = 0;
+      tono(azar(90, 130), 0.6, "sawtooth", 0.06);
+    }
+  } else if (jefe.modo === "escupe") {
+    jefe.relojBola -= dt;
+    if (jefe.relojBola <= 0 && jefe.quedan > 0) {
+      jefe.quedan--;
+      jefe.relojBola = azar(0.24, 0.42);
+      escupirFuego(J);
+    }
+    if (jefe.quedan <= 0 && jefe.t > 0.6) { jefe.modo = "descansa"; jefe.t = 0; }
+  }
+
+  /* ---- Las bolas de fuego ---- */
+  for (let i = jefe.bolas.length - 1; i >= 0; i--) {
+    const b = jefe.bolas[i];
+    b.t += dt;
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+    b.vy += 120 * dt;
+
+    /* Rastro. */
+    if (Math.random() < dt * 40) {
+      soltar(b.x + azar(-U, U), b.y + azar(-U, U), {
+        vx: azar(-16, 16), vy: azar(-26, 4),
+        vida: azar(0.3, 0.8), tam: azar(1.4, 3.2),
+        tipo: TIPO.CHISPA, tono: 0.08,
+      });
+    }
+
+    /* ---- Chocar con la roca ----
+       De verdad: la bola se apaga contra la piedra, con su reventón.
+       No es una zona segura invisible. */
+    const R = sitioRoca();
+    if (R && Math.abs(b.x - R.x) < R.r * 1.05
+        && b.y > R.y - R.r * 0.95 && b.y < R.y + R.r * 0.4) {
+      reventarBola(b, true);
+      jefe.bolas.splice(i, 1);
+      continue;
+    }
+
+    /* Llegar al jugador. */
+    if (b.y > J.y - U * 3 && Math.abs(b.x - J.x) < U * 9) {
+      reventarBola(b, false);
+      jefe.bolas.splice(i, 1);
+      quemarAlJugador();
+      continue;
+    }
+    if (b.y > H + U * 6 || b.t > 6) {
+      reventarBola(b, false);
+      jefe.bolas.splice(i, 1);
+    }
+  }
+}
+
+function escupirFuego(J) {
+  /* Apunta a donde ESTÁS, no a donde estarás: así correr funciona. */
+  const dx = J.x - jefe.x, dy = J.y - jefe.y;
+  const d = Math.max(1, Math.hypot(dx, dy));
+  const v = A * 0.62;
+  jefe.bolas.push({
+    x: jefe.x, y: jefe.y + U * 4,
+    vx: (dx / d) * v + azar(-A * 0.05, A * 0.05),
+    vy: (dy / d) * v * 0.7,
+    t: 0, r: U * azar(2.4, 3.6), f: azar(0, 6.283),
+  });
+  golpe(0.12, 320, 0.2, "lowpass");
+  tono(azar(140, 200), 0.3, "sawtooth", 0.04);
+}
+
+function reventarBola(b, contraRoca) {
+  golpe(0.1, contraRoca ? 240 : 400, 0.18, "lowpass");
+  const n = flojo ? 6 : 14;
+  for (let i = 0; i < n; i++) {
+    const a = azar(0, 6.283);
+    soltar(b.x, b.y, {
+      vx: Math.cos(a) * azar(40, 190), vy: Math.sin(a) * azar(40, 190) - 30,
+      vida: azar(0.4, 1.1), tam: azar(1.2, 3),
+      tipo: TIPO.CHISPA, tono: 0.08,
+    });
+  }
+  for (let i = 0; i < (flojo ? 2 : 4); i++) {
+    soltar(b.x, b.y, {
+      vx: azar(-24, 24), vy: azar(-40, -8),
+      vida: azar(1, 2), tam: azar(U * 0.5, U * 1.1),
+      tipo: TIPO.HUMO, tono: 0.2,
+    });
+  }
+}
+
+/** Una bola que llega: quema. */
+function quemarAlJugador() {
+  caza.vidas = Math.max(0, caza.vidas - 1);
+  refrescarVidas();
+  sacudir(1.4);
+  elFlash.style.transition = "none";
+  elFlash.style.background = "rgba(255,120,40,0.6)";
+  elFlash.style.opacity = "0.85";
+  requestAnimationFrame(() => {
+    elFlash.style.transition = "opacity 560ms cubic-bezier(0.22,1,0.36,1)";
+    elFlash.style.opacity = "0";
+  });
+  golpe(0.2, 150, 0.34, "lowpass");
+  if (caza.vidas <= 0) { perderCaceria(); return; }
+  decir(A * 0.5, H * 0.46, CONF.caza.quemado, { importante: true, dur: 2.4 });
+}
+
+/** Un tiro que le da al jefe. */
+function herirJefe() {
+  jefe.vida--;
+  jefe.dolor = 1;
+  sacudir(0.5);
+  magia(azar(320, 420));
+  golpe(0.1, 240, 0.2, "lowpass");
+  for (let i = 0; i < (flojo ? 6 : 16); i++) {
+    const a = azar(0, 6.283);
+    soltar(jefe.x, jefe.y, {
+      vx: Math.cos(a) * azar(50, 210), vy: Math.sin(a) * azar(50, 210),
+      vida: azar(0.4, 1.2), tam: azar(1.2, 2.8),
+      tipo: TIPO.BRILLO, tono: 0.05,
+    });
+  }
+  /* A media vida se enfada y suelta búhos. */
+  if (jefe.vida === Math.round(jefe.vidaMax * 0.55)) {
+    decir(A * 0.5, H * 0.36, CONF.caza.jefeEnfada, { misterio: true, importante: true, dur: 2.8 });
+    for (let i = 0; i < 4; i++) setTimeout(() => { if (jefe.vivo) soltarBuhoCaza(); }, i * 450);
+  }
+  if (jefe.vida <= 0) matarJefe();
+}
+
+function matarJefe() {
+  jefe.vivo = false;
+  jefe.bolas.length = 0;
+  sacudir(2);
+  magia(659);
+  golpe(0.3, 120, 0.5, "lowpass");
+  /* Revienta en grande: el mismo lenguaje que los búhos, a lo bestia. */
+  for (let k = 0; k < 3; k++) {
+    setTimeout(() => {
+      caza.anillos.push({ x: jefe.x, y: jefe.y, r0: U * (8 + k * 5), t: 0, dur: 0.8 });
+      for (let i = 0; i < (flojo ? 10 : 26); i++) {
+        const a = azar(0, 6.283);
+        soltar(jefe.x, jefe.y, {
+          vx: Math.cos(a) * azar(60, 330), vy: Math.sin(a) * azar(60, 330),
+          vida: azar(0.8, 2), tam: azar(1.4, 3.6),
+          tipo: TIPO.BRILLO, tono: 0.45,
+        });
+      }
+    }, k * 220);
+  }
+  /* Y los búhos que quedaran se van con él. */
+  for (const o of caza.buhos) if (o.muerte < 0) reventarBuho(o);
+  decir(A * 0.5, H * 0.38, CONF.caza.jefeMuere,
+    { misterio: true, importante: true, dur: 3.4 });
+  setTimeout(() => { if (caza.fase === "oleada") { caza.fase = "pausa"; caza.t = 2.4; } }, 2200);
+}
+
+/* ---- Dibujar el jefe ---------------------------------------------------- */
+
+function dibujarJefe() {
+  /* Las bolas van siempre, aunque el jefe ya no esté: las que estén en
+     el aire tienen que acabar su viaje. */
+  for (const b of jefe.bolas) {
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const late = 1 + Math.sin(b.t * 22 + b.f) * 0.12;
+    haloOvalado(b.x, b.y, b.r * 4.2 * late, b.r * 4.2 * late, [
+      [0, "rgba(255,226,170,0.5)"],
+      [0.3, "rgba(255,140,50,0.26)"],
+      [1, "rgba(220,60,20,0)"],
+    ]);
+    /* La cola: dos bolas más chicas por detrás, en la dirección de la
+       que viene. Sin cola, una bola de fuego es una lámpara. */
+    const d = Math.max(1, Math.hypot(b.vx, b.vy));
+    for (let k = 1; k <= 2; k++) {
+      const t = k * 0.055;
+      haloOvalado(b.x - (b.vx / d) * b.r * k * 2.2, b.y - (b.vy / d) * b.r * k * 2.2,
+        b.r * (1.8 - k * 0.5), b.r * (1.8 - k * 0.5), [
+        [0, `rgba(255,${180 - k * 40},60,${0.4 - k * 0.12})`],
+        [1, "rgba(220,70,20,0)"],
+      ]);
+      void t;
+    }
+    /* El corazón: naranja por fuera y casi blanco por dentro, que es
+       como se ve algo ardiendo de verdad. */
+    const gb = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r * late);
+    gb.addColorStop(0, "rgba(255,250,232,0.98)");
+    gb.addColorStop(0.45, "rgba(255,206,110,0.95)");
+    gb.addColorStop(1, "rgba(240,120,30,0.85)");
+    ctx.fillStyle = gb;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r * late, 0, 6.283);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  if (!jefe.vivo) return;
+  const r = U * 11 * jefe.entrada;
+  const x = jefe.x, y = jefe.y;
+  const carga = jefe.modo === "carga" ? clamp01(jefe.t / 1.1) : 0;
+  const esc = jefe.modo === "escupe" ? 1 : 0;
+
+  ctx.save();
+  ctx.translate(x, y);
+
+  /* El aura. Roja siempre; al cargar se pone naranja y crece, que es
+     todo el aviso que hay y es suficiente. */
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  haloOvalado(0, 0, r * (4 + carga * 2.4), r * (3.2 + carga * 2), [
+    [0, `rgba(${Math.round(mez(180, 255, carga))},${Math.round(mez(30, 150, carga))},30,${0.16 + carga * 0.28 + jefe.dolor * 0.2})`],
+    [1, "rgba(160,20,10,0)"],
+  ]);
+  ctx.restore();
+
+  /* Las alas: enormes y membranosas, no de plumas. */
+  const bat = Math.sin(jefe.ala) * 0.85;
+  ctx.fillStyle = `rgba(${Math.round(mez(10, 70, jefe.dolor))},8,12,0.95)`;
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.3);
+    ctx.quadraticCurveTo(s * r * 1.6, -r * (1 + bat * 1.1), s * r * 3.1, -r * (0.2 + bat * 0.7));
+    ctx.quadraticCurveTo(s * r * 2.4, r * 0.5, s * r * 1.5, r * 0.5);
+    ctx.quadraticCurveTo(s * r * 0.7, r * 0.8, 0, r * 0.6);
+    ctx.closePath();
+    ctx.fill();
+    /* Las varillas del ala. */
+    ctx.strokeStyle = "rgba(3,3,5,0.85)";
+    ctx.lineWidth = Math.max(1, r * 0.08);
+    for (let i = 1; i <= 3; i++) {
+      const t = i / 4;
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 0.2);
+      ctx.lineTo(s * r * mez(1.4, 2.9, t), -r * mez(0.9, 0.1, t) - bat * r * 0.6 * (1 - t));
+      ctx.stroke();
+    }
+  }
+
+  /* El cuerpo. */
+  const gc = ctx.createLinearGradient(0, -r * 1.4, 0, r * 1.4);
+  gc.addColorStop(0, `rgb(${Math.round(mez(16, 90, jefe.dolor))},12,16)`);
+  gc.addColorStop(1, "rgb(6,5,8)");
+  ctx.fillStyle = gc;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r, r * 1.2, 0, 0, 6.283);
+  ctx.fill();
+  /* Los cuernos: largos y torcidos. */
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(s * r * 0.34, -r * 0.82);
+    ctx.quadraticCurveTo(s * r * 1.15, -r * 1.5, s * r * 0.82, -r * 2.15);
+    ctx.quadraticCurveTo(s * r * 0.86, -r * 1.4, s * r * 0.72, -r * 0.62);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /* La boca, que se abre al escupir. */
+  if (carga > 0.1 || esc) {
+    const abre = Math.max(carga, esc);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    haloOvalado(0, r * 0.46, r * 0.8 * abre, r * 0.6 * abre, [
+      [0, `rgba(255,236,190,${0.85 * abre})`],
+      [0.4, `rgba(255,140,40,${0.5 * abre})`],
+      [1, "rgba(220,60,10,0)"],
+    ]);
+    ctx.restore();
+  }
+
+  /* Y los ojos: dos brasas. */
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  for (const s of [-1, 1]) {
+    const ex = s * r * 0.4, ey = -r * 0.24;
+    haloOvalado(ex, ey, r * 1.1, r * 1.1, [
+      [0, `rgba(255,90,60,${0.6 + jefe.dolor * 0.3})`],
+      [0.35, "rgba(230,40,30,0.24)"],
+      [1, "rgba(200,20,20,0)"],
+    ]);
+    ctx.fillStyle = "rgba(255,190,160,0.95)";
+    ctx.beginPath();
+    ctx.ellipse(ex, ey, r * 0.2, r * 0.26, 0, 0, 6.283);
+    ctx.fill();
+    ctx.fillStyle = "rgba(60,4,2,0.9)";
+    ctx.beginPath();
+    ctx.ellipse(ex, ey, r * 0.07, r * 0.2, 0, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.restore();
+  ctx.restore();
+
+  /* La barra de vida: una raya fina debajo de él, y nada más. */
+  const k = clamp01(jefe.vida / jefe.vidaMax);
+  const w = U * 22;
+  ctx.save();
+  ctx.globalAlpha = 0.72;
+  ctx.fillStyle = "rgba(8,6,10,0.55)";
+  ctx.fillRect(x - w / 2, y + r * 1.9, w, U * 0.55);
+  const gv = ctx.createLinearGradient(x - w / 2, 0, x + w / 2, 0);
+  gv.addColorStop(0, "#7a1a16");
+  gv.addColorStop(1, "#c94f26");
+  ctx.fillStyle = gv;
+  ctx.fillRect(x - w / 2, y + r * 1.9, w * k, U * 0.55);
+  ctx.globalAlpha = 1;
+  ctx.restore();
 }
 
 /* ---- Recibir un golpe --------------------------------------------------- */
@@ -13841,6 +14421,8 @@ function moverFinalCaceria(dt) {
 /** Devuelve el bosque a como estaba. */
 function limpiarCaceria(suave) {
   caza.fase = "no";
+  jefe.vivo = false;
+  jefe.bolas.length = 0;
   caza.dicho = false;
   caza.buhos.length = 0;
   caza.porSalir = 0;
@@ -13939,6 +14521,10 @@ function dibujarCaceria() {
   }
 
   for (const o of caza.buhos) dibujarBuhoCaza(o);
+
+  /* Y el jefe, por detrás de los búhos normales: es más grande y está
+     más lejos, así que los pequeños le pasan por delante. */
+  dibujarJefe();
 
   /* El arma, por delante de los búhos: la tienes tú en las manos. */
   dibujarEscopetaEnMano();
