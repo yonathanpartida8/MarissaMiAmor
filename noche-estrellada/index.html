@@ -887,6 +887,29 @@ const CONF = {
       relampagos: "audio/relampagos.mp3",
       bosque:     "audio/bosque.mp3",
     },
+
+    /* ---- SONIDOS SUELTOS ------------------------------------------
+       Éstos NO van en bucle: suenan una vez, cuando pasa lo que tiene
+       que pasar. Déjalos en `audio/` con estos nombres y se usan; si
+       no están, se sintetizan como todo lo demás.
+
+       Los truenos son una LISTA a propósito: con un solo archivo, la
+       tormenta se convierte en el mismo ruido repetido cada veinte
+       segundos, y eso se oye a la segunda vez. Con tres o cuatro
+       distintos, y eligiendo al azar sin repetir el anterior, parece
+       una tormenta. Pon los que quieras: la lista se lee entera.     */
+    sueltos: {
+      truenos: [
+        "audio/trueno1.mp3",
+        "audio/trueno2.mp3",
+        "audio/trueno3.mp3",
+      ],
+      disparo:  "audio/disparo.mp3",
+      recarga:  "audio/recarga.mp3",
+      pasos:    "audio/pasos.mp3",
+      buho:     "audio/buho.mp3",
+      puerta:   "audio/puerta.mp3",
+    },
   },
 
   /* ---- LOS AMBIENTES DEL PANEL ----------------------------------------
@@ -2242,6 +2265,52 @@ async function traerBuffer(ruta) {
   }
 }
 
+/* ---- SONIDOS SUELTOS DEL JUGADOR ---------------------------------------
+
+   Un solo sitio por donde pasa todo lo que suena una vez. Busca el
+   archivo; si está, lo toca con la ganancia que se le pida y se acabó;
+   si no está, devuelve `false` y quien lo llamó se apaña con su gemelo
+   sintetizado.
+
+   ── POR QUÉ CON FUNDIDOS ─────────────────────────────────────────────
+   Porque un trueno que arranca a volumen pleno en la primera muestra
+   hace «clac» antes de retumbar, y uno que se corta en seco al acabar
+   hace otro. Dos milisegundos de rampa a cada lado y desaparecen los
+   dos, y no se pierde nada de lo que hay que oír.                   */
+
+async function sonarSuelto(ruta, vol = 0.8, seg = 0) {
+  if (!ruta || !despertarAudio()) return false;
+  const buf = await traerBuffer(ruta);
+  if (!buf) return false;
+  const c = audio.ctx;
+  const t = c.currentTime + Math.max(0, seg);
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  const g = c.createGain();
+  /* Entra y sale con rampas cortas: nada de chasquidos. */
+  const dur = buf.duration;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.02);
+  g.gain.setValueAtTime(vol, t + Math.max(0.05, dur - 0.14));
+  g.gain.linearRampToValueAtTime(0, t + dur);
+  src.connect(g).connect(audio.maestro);
+  src.start(t);
+  src.stop(t + dur + 0.05);
+  return true;
+}
+
+/* Cuál sonó la última vez, para no repetirlo dos veces seguidas. */
+const ultimoSuelto = new Map();
+
+/** Uno de una lista, sin repetir el anterior. */
+async function sonarDeLista(clave, lista, vol = 0.8) {
+  if (!lista || !lista.length) return false;
+  let i = Math.floor(Math.random() * lista.length);
+  if (lista.length > 1 && i === ultimoSuelto.get(clave)) i = (i + 1) % lista.length;
+  ultimoSuelto.set(clave, i);
+  return sonarSuelto(lista[i], vol);
+}
+
 /* ---- Los generadores de ruido -----------------------------------------
    Se hacen una vez y se guardan: crear tres segundos de ruido cuesta
    unos milisegundos, y hacerlo en mitad de una animación se nota.    */
@@ -2537,10 +2606,14 @@ function volumen(id, vol) {
   const canal = audio.canales.get(id);
   if (!canal) return;
   canal.vol = clamp01(vol);
-  /* El volumen de la lluvia ES la intensidad de la lluvia: subirle el
-     sonido moja más. Que las dos cosas sean el mismo número es lo que
-     hace que el panel se sienta parte del mundo y no un mezclador. */
-  if (typeof sincronizarClima === "function") sincronizarClima();
+  /* ---- El volumen es SÓLO volumen ----
+     Antes, subirle el sonido a la lluvia hacía llover más: el mismo
+     número era el volumen y la intensidad. Sonaba bonito de explicar y
+     en la mano era un fastidio: bajar el ruido del agua porque molesta
+     dejaba de mojar, y no hay manera de tener lluvia fuerte y callada.
+
+     Ahora la piedra encendida dice SI llueve y cuánto; la barra dice
+     cuánto se oye. Dos cosas, dos mandos. */
   if (!canal.on) return;
   const t = audio.ctx.currentTime;
   canal.gain.gain.cancelScheduledValues(t);
@@ -2743,6 +2816,9 @@ const clima = {
   destelloX: 0.5,
   pulsos: 0,
   relojRayo: azar(4, 10),
+  /* Cuánto lleva arreciando, de 0 a 1. Sube sola con la tormenta
+     puesta y baja al quitarla. */
+  crece: 0,
   /* Los truenos pendientes: {cuando, distancia}. */
   truenos: [],
   /* La niebla, que sube cuando llueve. */
@@ -2768,12 +2844,16 @@ function construirBruma() {
 
 /** Dispara un relámpago a una distancia dada (en segundos de retraso). */
 function lanzarRayo(segundos) {
-  const d = segundos ?? azar(CONF.tormenta.distancia[0], CONF.tormenta.distancia[1]);
+  /* Conforme arrecia, los rayos caen más cerca: se acorta el tramo
+     largo de la distancia y el trueno llega antes. */
+  const [d0, d1] = CONF.tormenta.distancia;
+  const d = segundos ?? azar(d0, mez(d1, d0 + (d1 - d0) * 0.4, clima.crece || 0));
   /* Lo cerca que está decide lo fuerte que se ve. Uno a siete segundos
      apenas es un parpadeo en las nubes; uno a uno te ciega. */
   const cerca = clamp01(1 - (d - CONF.tormenta.distancia[0]) /
     (CONF.tormenta.distancia[1] - CONF.tormenta.distancia[0]));
   clima.destello = 0.25 + cerca * 0.75;
+  clima.destello *= mez(0.85, 1.1, clima.crece || 0);
   clima.destelloX = azar(0.1, 0.9);
   clima.pulsos = Math.round(azar(CONF.tormenta.pulsos[0], CONF.tormenta.pulsos[1]));
   /* El trueno se apunta para más tarde. Ésa es toda la magia. */
@@ -2795,13 +2875,38 @@ function moverClima(dt) {
 
   clima.lluvia = damp(clima.lluvia, clima.lluviaObj, 1 / CONF.lluvia.sube * 6, dt);
   clima.tormenta = damp(clima.tormenta, clima.tormentaObj, 0.35, dt);
+  /* Y al quitarla, amaina: la cuenta de cuánto lleva arreciando se va
+     deshaciendo, así que volver a ponerla empieza otra vez suave. */
+  if (clima.tormentaObj < 0.1) clima.crece = Math.max(0, clima.crece - dt * 0.06);
 
   /* ---- Los rayos ---- */
   if (clima.tormenta > 0.08) {
-    clima.relojRayo -= dt * clima.tormenta;
+    /* ---- CUÁNDO CAE EL SIGUIENTE ----
+       El reloj corre a la velocidad de la tormenta, así que una
+       tormenta floja da un rayo cada mucho y una fuerte, cada poco.
+       Eso ya estaba.
+
+       Lo que faltaba es que la tormenta ARRECIE. `clima.crece` sube
+       despacio mientras la tormenta está puesta y baja al quitarla, y
+       lo que hace es dos cosas: acortar el hueco entre rayos y acercar
+       los truenos. Así una tormenta que lleva un rato encima es peor
+       que la que acaba de empezar, que es lo que hacen las tormentas.
+
+       El hueco no es un número fijo con azar encima: es un azar entre
+       dos límites que se mueven los dos. Con hueco fijo, los rayos caen
+       a compás y se oye el metrónomo.                                */
+    clima.crece = clamp01(clima.crece + dt * 0.012 * clima.tormenta);
+    clima.relojRayo -= dt * clima.tormenta * mez(1, 1.9, clima.crece);
     if (clima.relojRayo <= 0) {
-      clima.relojRayo = azar(CONF.tormenta.cada[0], CONF.tormenta.cada[1]);
+      const [a1, a2] = CONF.tormenta.cada;
+      clima.relojRayo = azar(mez(a1, a1 * 0.4, clima.crece),
+                             mez(a2, a2 * 0.45, clima.crece));
+      /* Y de vez en cuando, dos seguidos: una tormenta de verdad no
+         reparte los rayos uno a uno. */
       lanzarRayo();
+      if (Math.random() < 0.18 + clima.crece * 0.22) {
+        setTimeout(() => { if (clima.tormenta > 0.2) lanzarRayo(); }, azar(400, 1100));
+      }
     }
   }
   /* El destello parpadea un par de veces y se va: un relámpago no es un
@@ -2819,7 +2924,14 @@ function moverClima(dt) {
   for (let i = clima.truenos.length - 1; i >= 0; i--) {
     if (reloj < clima.truenos[i].cuando) continue;
     const t = clima.truenos.splice(i, 1)[0];
-    if (audio.ctx) truenoSintetizado(audio.maestro, 0.3 + t.cerca * 0.7);
+    const fuerza = 0.3 + t.cerca * 0.7;
+    /* Primero tus truenos, si los has dejado en `audio/`. Uno de la
+       lista, nunca el mismo dos veces seguidas: con un solo archivo la
+       tormenta se convierte en el mismo ruido cada veinte segundos y
+       eso se oye a la segunda vez. */
+    sonarDeLista("trueno", CONF.rutas.sueltos.truenos, fuerza * 0.9).then((ok) => {
+      if (!ok && audio.ctx) truenoSintetizado(audio.maestro, fuerza);
+    });
     if (t.cerca > 0.7) sacudir(t.cerca * 0.35);
   }
 
@@ -4945,10 +5057,15 @@ function alternarPiedra(p) {
  * unas piedras. Se hablan por aquí y por ningún otro sitio.
  */
 function sincronizarClima() {
+  /* Encendida quiere decir que llueve, y llueve de verdad: no al 20%
+     porque la barra esté baja. Lo que hay en la barra es cuánto se oye.
+
+     Se deja un pelín por debajo de uno para que el aguacero de la
+     cacería —que sube `lluviaObj` a tope por su cuenta— siga siendo
+     claramente más que la lluvia que se pone a mano. */
   for (const piedra of panel.piedras) {
-    const v = piedra.on ? piedra.vol : 0;
-    if (piedra.conf.id === "lluvia") clima.lluviaObj = v;
-    if (piedra.conf.id === "relampagos") clima.tormentaObj = v;
+    if (piedra.conf.id === "lluvia") clima.lluviaObj = piedra.on ? 0.8 : 0;
+    if (piedra.conf.id === "relampagos") clima.tormentaObj = piedra.on ? 0.8 : 0;
   }
 }
 
@@ -13825,11 +13942,18 @@ function dispararEscopeta(p) {
   });
   if (caza.casquillos.length > 14) caza.casquillos.shift();
 
-  /* El estampido: un golpe de ruido grave y ancho, y encima el
-     chasquido del cerrojo un pelín después. Los dos, o suena a globo. */
-  golpe(0.2, 160, 0.42, "lowpass");
-  golpe(0.06, 900, 0.3, "bandpass");
-  setTimeout(() => golpe(0.03, 2200, 0.12, "bandpass"), 260);
+  /* El estampido. Si has dejado tu `audio/disparo.mp3`, suena ése; si
+     no, el sintetizado de siempre: un golpe de ruido grave y ancho, y
+     encima el chasquido del cerrojo un pelín después. Los dos, o suena
+     a globo. */
+  sonarSuelto(CONF.rutas.sueltos.disparo, 0.85).then((ok) => {
+    if (ok) return;
+    golpe(0.2, 160, 0.42, "lowpass");
+    golpe(0.06, 900, 0.3, "bandpass");
+  });
+  sonarSuelto(CONF.rutas.sueltos.recarga, 0.5, 0.26).then((ok) => {
+    if (!ok) setTimeout(() => golpe(0.03, 2200, 0.12, "bandpass"), 260);
+  });
 
   /* ---- A qué le ha dado ----
      Al MÁS CERCANO de los que caen dentro del tiro, no al primero de la

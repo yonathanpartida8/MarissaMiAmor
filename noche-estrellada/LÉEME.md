@@ -20,12 +20,21 @@ noche-estrellada/
 ├── rag.mp3                 ← lo que se oye en el bosque
 │
 ├── audio/
-│   ├── fogata.mp3
-│   ├── grillos.mp3
-│   ├── aire.mp3
-│   ├── lluvia.mp3
-│   ├── relampagos.mp3
-│   └── bosque.mp3
+│   ├── fogata.mp3          ← en bucle
+│   ├── grillos.mp3         ← en bucle
+│   ├── aire.mp3            ← en bucle
+│   ├── lluvia.mp3          ← en bucle
+│   ├── relampagos.mp3      ← en bucle
+│   ├── bosque.mp3          ← en bucle
+│   │
+│   ├── trueno1.mp3         ← sueltos: suenan una vez
+│   ├── trueno2.mp3            (pon los que quieras, la lista
+│   ├── trueno3.mp3             se lee entera)
+│   ├── disparo.mp3
+│   ├── recarga.mp3
+│   ├── pasos.mp3
+│   ├── buho.mp3
+│   └── puerta.mp3
 │
 └── Cabaña/
     ├── door.open.mp3
@@ -66,10 +75,38 @@ Vale cualquier cosa que sepa abrir el navegador: `.mp3`, `.m4a`, `.ogg`,
 `.wav`. Si usas otra extensión, cambia la ruta en el bloque
 `CONF.rutas` del principio del `<script>`.
 
-Los seis de `audio/` **se reproducen en bucle**, así que conviene que
-empiecen y acaben parecido para que no se note el salto. Los cinco de
-`Cabaña/` suenan **una sola vez y en orden**, esperando cada uno a que
-termine el anterior.
+Los seis primeros de `audio/` **se reproducen en bucle**, así que
+conviene que empiecen y acaben parecido para que no se note el salto.
+Los cinco de `Cabaña/` suenan **una sola vez y en orden**, esperando
+cada uno a que termine el anterior.
+
+Los demás de `audio/` —los truenos, el disparo, la recarga, los pasos,
+el búho, la puerta— son **sueltos**: suenan una vez, cuando pasa lo que
+tiene que pasar, con dos milisegundos de rampa a cada lado para que no
+hagan «clac». No hace falta que estén todos: los que falten se
+sintetizan.
+
+Los truenos son una **lista** a propósito. Con un solo archivo la
+tormenta se convierte en el mismo ruido cada veinte segundos, y eso se
+oye a la segunda vez; con tres o cuatro, eligiendo al azar y sin
+repetir el anterior, parece una tormenta. Si quieres más, añádelos a
+`CONF.rutas.sueltos.truenos`.
+
+### La barra de volumen es sólo volumen
+
+Antes, subirle el sonido a la lluvia hacía llover más: el mismo número
+era las dos cosas. Sonaba bonito de explicar y en la mano era un
+fastidio, porque no había manera de tener lluvia fuerte y callada.
+
+Ahora la piedra **encendida** dice si llueve y cuánto; la **barra** dice
+cuánto se oye. Dos cosas, dos mandos.
+
+### La tormenta arrecia
+
+Mientras está puesta, va a peor: los rayos se acercan —de uno cada
+siete-veinte segundos a uno cada tres-diez—, los truenos llegan antes,
+y de vez en cuando caen dos seguidos. Al quitarla, amaina, así que
+volver a ponerla empieza otra vez suave.
 
 ---
 
