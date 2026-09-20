@@ -167,7 +167,7 @@ html, body {
 .noche .ne-hud-salir {
   position: absolute;
   left: calc(var(--seguro-l) + 10px);
-  top: calc(var(--seguro-t) + 10px);
+  top: calc(var(--seguro-t) + 46px);
   display: flex;
   align-items: center;
   gap: 0.35em;
@@ -192,7 +192,7 @@ html, body {
 .noche .ne-hud-hallado {
   position: absolute;
   right: calc(var(--seguro-r) + 12px);
-  top: calc(var(--seguro-t) + 12px);
+  top: calc(var(--seguro-t) + 12px);   /* lo mueve la regla de más abajo */
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -430,6 +430,13 @@ html, body {
 .noche.is-habitacion .ne-pista-panel,
 .noche.is-durmiendo .ne-pista-panel { opacity: 0; }
 
+/* ── El contador del bosque ───────────────────────────────────────────
+   Más abajo del canto de arriba de lo que pediría el buen gusto, y a
+   propósito: los navegadores de móvil ponen ahí sus propios botones
+   flotantes —el de la barra, el del asistente— y el número quedaba
+   justo debajo de uno de ellos, tapado. */
+.noche .ne-hud-hallado { top: calc(var(--seguro-t) + 52px); }
+
 /* ── La carta del bosque ─────────────────────────────────────────────── */
 
 .noche .ne-velo {
@@ -571,7 +578,7 @@ html, body {
 .noche .ne-dormir:hover { background: rgba(28, 36, 62, 0.62); }
 .noche .ne-dormir:focus-visible { outline: 2px solid #9fb8ff; outline-offset: 3px; }
 
-/* ── Volver al bosque ────────────────────────────────────────────────── */
+/* ── Regresar al bosque ────────────────────────────────────────────────── */
 
 .noche .ne-volver {
   position: absolute;
@@ -696,16 +703,16 @@ html, body {
   <!-- Lo que se lee de verdad, para quien use lector de pantalla. -->
   <p class="ne-sr" id="vivo" role="status" aria-live="polite"></p>
 
-  <p class="ne-pista-panel" id="pistaPanel">toca · arrastra para el volumen</p>
+  <p class="ne-pista-panel" id="pistaPanel">toca para prender · arrastra para el volumen</p>
 
-  <button class="ne-volver" id="volver" type="button" aria-label="Volver al bosque">‹</button>
+  <button class="ne-volver" id="volver" type="button" aria-label="Regresar al bosque">‹</button>
 
   <!-- ── La interfaz de la espesura ─────────────────────────────────
        Sólo existe dentro del bosque. Compacta y por los cantos: lo de
        en medio es el bosque, y el bosque es lo que se ha venido a
        mirar. -->
   <div class="ne-hud" id="hud" aria-hidden="true">
-    <button class="ne-hud-salir" id="hudSalir" type="button" aria-label="Volver al claro">
+    <button class="ne-hud-salir" id="hudSalir" type="button" aria-label="Regresar al claro">
       <span class="ne-hud-flecha">‹</span><span class="ne-hud-txt">el claro</span>
     </button>
     <div class="ne-hud-hallado" id="hudHallado"><b>0</b><i>hallado</i></div>
@@ -917,72 +924,72 @@ const CONF = {
      acaben.                                                            */
   alComer: {
     crudo: [
-      "Está crudo, ¿eh? 😅",
-      "Esto es un malvavisco con frío.",
-      "Ni le has enseñado el fuego, mujer.",
-      "Vale. Cuenta como aperitivo.",
+      "Está crudito, ¿eh? 😅",
+      "Este malvavisco tiene frío.",
+      "Ni lo acercaste al fuego, mi vida.",
+      "Bueno. Cuenta como botana.",
     ],
     calentando: [
-      "Casi. Le faltaba un pelín.",
-      "Templadito. Como el café que se te olvida.",
+      "Casi. Le faltaba un poquito.",
+      "Tibiecito. Como el café que se te olvida.",
       "Un ratito más y era el bueno.",
       "Le faltaban diez segundos. Diez.",
     ],
     dorado: [
-      "Mmm... quedó perfecto 🤍",
-      "Dorado justo. Oye, qué mano.",
-      "Ése era. Ése es el que yo hubiera querido.",
-      "Por fuera crujiente y por dentro derretido. Perfecto.",
-      "Te ha salido de revista.",
+      "Mmm… quedó perfecto 🤍",
+      "Dorado justo. Oye, qué mano tienes.",
+      "Ese era. Ese es el que yo habría querido.",
+      "Crujiente por fuera y derretido por dentro. Perfecto.",
+      "Te quedó de revista.",
     ],
     tostado: [
-      "Uy... está caliente 🫦",
-      "Uf, ése venía con carácter.",
+      "Uy… está calientito 🫦",
+      "Uf, ese venía con carácter.",
       "Sopla, sopla, que te quemas.",
-      "Un poco pasado, pero de los buenos.",
+      "Un poco pasadito, pero de los buenos.",
     ],
     quemandose: [
-      "Creo que me pasé de fuego...",
-      "Lo he soplado, pero poco.",
-      "Bueno, por fuera está... interesante.",
-      "Se me ha ido la mano un pelín.",
+      "Creo que me pasé de fuego…",
+      "Le soplé, pero poquito.",
+      "Bueno… por fuera se ve interesante.",
+      "Se me pasó la mano un poquito.",
     ],
     quemado: [
-      "JAJA, lo quemé 😭",
+      "JAJAJA lo quemé 😭",
       "Carbón. Delicioso carbón.",
-      "Esto ya no es un bombón, es arqueología.",
-      "Bueno. El siguiente sale mejor. Seguro. Casi seguro.",
-      "Lo he convertido en un mineral.",
+      "Esto ya no es un malvavisco, es arqueología.",
+      "Ya. El siguiente sale mejor. Seguro. Casi seguro.",
+      "Lo convertí en un mineral.",
     ],
   },
 
   /* ---- TOCAR LA LLAMA -------------------------------------------------- */
   alQuemarse: [
-    "Espera... está caliente...",
+    "Espérate… está caliente…",
     "¡Auch! 🔥",
     "Te dije que no tocaras el fuego 😭",
-    "Vale, vale, ya no lo toco.",
+    "Ya, ya, ya no lo toco.",
     "Es fuego. FUEGO. Literalmente fuego.",
-    "Mi dedo y yo hemos aprendido algo hoy.",
+    "Mi dedo y yo aprendimos algo hoy.",
   ],
 
   /* ---- LA LUNA --------------------------------------------------------- */
   alTocarLuna: [
-    "¿Estás mirando la luna ahora mismo?",
+    "¿Estás viendo la luna ahorita?",
     "Te extraño tanto :c",
     "Qué bonito sería verla contigo.",
-    "Raionetas... ¿también estarás mirando la luna? 🤍",
-    "Aunque estemos lejos, estamos viendo el mismo cielo.",
-    "Dicen que la luna guarda lo que le cuentas. Le he contado bastante.",
-    "Si la miras a la vez que yo, casi es como estar juntos.",
-    "Está igual de lejos de los dos. Eso me gusta.",
-    "Le he pedido que te dé las buenas noches de mi parte.",
-    "Un día te llevo a un sitio donde se vea así de grande.",
+    "Raionetas… ¿tú también estarás viendo la luna? 🤍",
+    "Aunque estemos lejos, es el mismo cielo.",
+    "Dicen que la luna guarda lo que le cuentas. Yo le he contado bastante.",
+    "Si la vemos al mismo tiempo, casi es como estar juntos.",
+    "Está igual de lejos de los dos. Eso me gusta :>",
+    "Le pedí que te diera las buenas noches de mi parte.",
+    "Un día te llevo a un lugar donde se vea así de grande.",
   ],
   /* Y si ya han pasado cosas, cambia de tema. Ver EASTER EGGS. */
   lunaDespues: [
-    "Ahora que has visto la carta... ya sabes lo que pienso.",
-    "El búho me ha dicho que te ha visto. Te está vigilando.",
+    "Ahora que leíste la carta… ya sabes lo que pienso.",
+    "El búho me dijo que ya te vio. Te anda cuidando.",
     "Con la fogata apagada se ve mejor, ¿verdad?",
   ],
 
@@ -994,8 +1001,8 @@ const CONF = {
        tragaba el toque y la luz no se podía coger nunca. */
     x: 0.285, y: 0.545,
     antes: [
-      "Yo, te extraño mi vida.",
-      "Ojalá pudiera estar contigo ahora mismo.",
+      "Te extraño, mi vida.",
+      "Ojalá pudiera estar contigo ahorita.",
     ],
     /* Y la carta. Cada línea, un párrafo. */
     carta: [
@@ -1083,10 +1090,10 @@ const CONF = {
       [0.08, 0.42], [0.30, 0.40], [0.955, 0.44], [0.19, 0.52], [0.42, 0.38],
     ],
     dice: [
-      "¿Acabas de verme...?",
-      "Pensé que no me encontrarías.",
-      "Shhh... no hagas tanto ruido.",
-      "Llevo aquí toda la noche. Tú a lo tuyo.",
+      "¿Me acabas de ver…?",
+      "Pensé que no me ibas a encontrar.",
+      "Shhh… no hagas tanto ruido.",
+      "Llevo acá toda la noche. Tú a lo tuyo.",
       "Yo también estoy esperando a alguien.",
       "No le digas a nadie dónde estoy.",
     ],
@@ -1094,7 +1101,7 @@ const CONF = {
     diceOtraVez: [
       "Otra vez tú.",
       "Se te da bien esto de encontrarme.",
-      "Vale, vale. Me has pillado. Ya van varias.",
+      "Ya, ya. Me agarraste. Ya van varias :>",
     ],
   },
 
@@ -1104,18 +1111,18 @@ const CONF = {
      5 brasas · 6 apagada. La 1 no dice nada porque la 1 es lo normal. */
   fuegoLluvia: {
     baja: {
-      2: ["La lluvia le está cayendo encima.", "Empieza a chisporrotear."],
-      3: ["Se está achicando.", "Le queda menos llama de la que tenía."],
+      2: ["Le está cayendo la lluvia encima.", "Ya empezó a chisporrotear."],
+      3: ["Se está haciendo chiquita.", "Le queda menos llama que hace rato."],
       4: ["Aguanta. No sé cuánto, pero aguanta.", "Se apaga y vuelve. Se apaga y vuelve."],
-      5: ["Ya sólo quedan las brasas.", "Se ha quedado en rojo."],
-      6: ["Se apagó.", "Ya está. Se apagó del todo."],
+      5: ["Ya nomás quedan las brasas.", "Se quedó en rojo."],
+      6: ["Se apagó.", "Ya. Se apagó por completo."],
     },
     sube: {
       5: ["Todavía hay algo ahí abajo."],
-      4: ["Mira, vuelve."],
+      4: ["Mira, ya vuelve."],
       3: ["Se está recuperando."],
-      2: ["Casi la tenemos otra vez."],
-      1: ["Ya está. Otra vez entera.", "Como si no hubiera pasado nada."],
+      2: ["Ya casi la tenemos otra vez."],
+      1: ["Listo. Otra vez completita.", "Como si nada hubiera pasado."],
     },
   },
 
@@ -1131,17 +1138,17 @@ const CONF = {
     toques: 4,            // cuántas sacudidas hacen falta
     /* Lo que se nota antes de que caiga, al acercarse al número. */
     cruje: [
-      "…algo se ha movido ahí arriba.",
-      "Hay algo enganchado entre las ramas.",
+      "…algo se movió allá arriba.",
+      "Hay algo atorado entre las ramas.",
     ],
-    alCaer: "Se ha caído algo del árbol.",
+    alCaer: "Se cayó algo del árbol.",
     /* La nota, línea a línea. Se leen flotando, una detrás de otra. */
     nota: [
       "Sabía que ibas a sacudir este árbol.",
       "Te conozco, mi vida.",
-      "Un beso desde aquí. y.m 🤍",
+      "Un beso desde acá. y.m 🤍",
     ],
-    yaCayo: "Éste ya te dio lo que tenía. Prueba en otro.",
+    yaCayo: "Este ya te dio lo que tenía. Prueba con otro.",
   },
 
   /* ---- LOS OJOS ROJOS ---------------------------------------------------
@@ -1155,10 +1162,10 @@ const CONF = {
     /* Y de vez en cuando se van al instante, sin más. */
     probHuyeYa: 0.3,
     dice: [
-      "…eso de ahí se ha movido.",
-      "¿Has visto eso? Yo sí.",
+      "…eso de ahí se movió.",
+      "¿Viste eso? Yo sí.",
       "Era algo. Y ya no está.",
-      "No te preocupes, es del bosque. Nos conoce.",
+      "No te preocupes, es del bosque. Ya nos conoce.",
     ],
   },
 
@@ -1171,11 +1178,11 @@ const CONF = {
     /* Lo que dice cada una, por orden. De la última en adelante, se
        repite: es la que cierra. */
     deseos: [
-      "La has pillado. Pide algo, va.",
+      "¡La atrapaste! Pide algo, córrele.",
       "Otra. Oye, se te da bien esto.",
-      "Tres. A este paso te quedas sin deseos que pedir.",
-      "Cuatro. Yo ya pedí el mío hace tiempo, y me tocó.",
-      "Y van muchas. Creo que el cielo te debe algo.",
+      "Tres. A este paso te vas a quedar sin deseos.",
+      "Cuatro. Yo ya pedí el mío hace rato, y me tocó :>",
+      "Ya van varias. Creo que el cielo te debe algo.",
     ],
     /* Y una de cada tantas, en vez de deseo, cae un ramillete. */
     probLluvia: 0.22,
@@ -1188,33 +1195,33 @@ const CONF = {
   espesura: {
     /* Lo que se ve antes de decidir ir. */
     senderoVisto: "Hay un camino entre los árboles.",
-    senderoPregunta: "¿Vamos a ver qué hay?",
+    senderoPregunta: "¿Vamos a ver qué hay? :>",
     /* Durante la caminata. */
     alAndar: [
-      "El claro se queda atrás.",
-      "Aquí ya no se oye la fogata.",
-      "Huele distinto.",
+      "El claro se va quedando atrás.",
+      "Acá ya no se oye la fogata.",
+      "Huele diferente.",
     ],
-    alLlegar: "Bueno. Ya estamos dentro.",
+    alLlegar: "Bueno. Ya estamos adentro.",
     /* Al acercarse a cada cosa. */
-    salidaVista: "Por ahí se vuelve al claro.",
-    palaVista: "Hay algo apoyado en ese tocón.",
-    equisTapada: "…esto de aquí no es un montón de hojas cualquiera.",
-    equisDestapada: "Una X. Alguien marcó este sitio.",
+    salidaVista: "Por ahí se regresa al claro.",
+    palaVista: "Hay algo recargado en ese tronco.",
+    equisTapada: "…esto de acá no es un montón de hojas cualquiera.",
+    equisDestapada: "Una X. Alguien marcó este lugar.",
     equisSinPala: "¿Qué habrá aquí…?",
-    equisConPala: "Aquí es. Vamos a ver.",
+    equisConPala: "Aquí es. A ver qué sale.",
     /* Y lo que pasa con la pala. */
-    sinPala: "Necesito una pala… ¿dónde estará?",
-    palaCogida: "Una pala… justo lo que necesitaba.",
+    sinPala: "Necesito una pala… ¿dónde habrá una?",
+    palaCogida: "Una pala… justo lo que necesitaba :>",
     palaEquipada: "Pala en la mano.",
     palaGuardada: "Pala guardada.",
-    palaSinSitio: "Aquí no hay nada que cavar.",
-    volver: "De vuelta al claro.",
+    palaSinSitio: "Acá no hay nada que cavar.",
+    volver: "De regreso al claro.",
   },
 
   /* ---- LAS TRES DE LA MAÑANA -------------------------------------------- */
   tres: {
-    sueno: "Vaya… ¿sueño?",
+    sueno: "Ash… ¿fue un sueño?",
     hora: "¿Qué horas son?",
     alTocar: [
       "Las tres. Las tres en punto.",
@@ -1231,21 +1238,21 @@ const CONF = {
     primera: "Te veo…",
     antes: [
       "Te veo…",
-      "Puedo verte.",
+      "Sí te veo, ¿eh?",
       "Acércate…",
       "No soy malo…",
       "Perdón… estaba llorando.",
       "¿Tú también lo oyes?",
-      "Aquí no viene nadie. Casi nunca.",
+      "Acá no viene nadie. Casi nunca.",
       "Shhh… ¿oyes eso?",
     ],
     despues: [
-      "Ya no puedes devolverlo.",
+      "Ya no lo puedes regresar.",
       "Te dije que te acercaras.",
-      "Ahora todos saben que estás aquí.",
-      "No mires atrás todavía.",
+      "Ahora todos saben que estás acá.",
+      "No voltees todavía.",
       "Shhh… ¿oyes eso?",
-      "Lo siento. De verdad que lo siento.",
+      "Perdón. De verdad, perdón.",
     ],
     /* La frase que trae el sonido. Se reconoce por esta marca y no por
        el texto, para poder cambiar el texto sin romper nada. */
@@ -1259,23 +1266,23 @@ const CONF = {
   cavar: {
     golpes: 4,
     dice: [
-      "Tierra suelta. Esto se ha cavado antes.",
-      "Hay una grieta… algo se ha movido ahí abajo.",
-      "…¿eso ha sonado debajo de la tierra?",
+      "Tierra suelta. Esto ya lo cavaron antes.",
+      "Hay una grieta… algo se movió ahí abajo.",
+      "…¿eso sonó debajo de la tierra?",
       "Ahí hay algo.",
     ],
   },
 
   /* ---- EL MISTERIO VERDE ------------------------------------------------ */
   misterio: {
-    alSalir: "Estaba enterrado. Y está encendido.",
+    alSalir: "Estaba enterrado. Y está prendido.",
     alTocar: [
       "…No debiste encontrar esto.",
-      "Así que finalmente lo encontraste…",
+      "Así que al final lo encontraste…",
     ],
     despues: [
-      "El bosque se ha quedado callado.",
-      "Algo ha cambiado. No sé qué.",
+      "El bosque se quedó callado.",
+      "Algo cambió. No sé qué.",
     ],
   },
 
@@ -1285,13 +1292,13 @@ const CONF = {
   cajita: {
     bajoLaLluvia: [
       "Esta canción con lluvia de fondo es otra canción.",
-      "Déjala sonar así. Lloviendo suena a nosotros.",
+      "Déjala sonar así. Con lluvia suena a nosotros.",
       "Ponla otra vez cuando llueva de verdad y acuérdate de esto.",
     ],
     /* Y a la séptima vez que se abre, la caja demuestra que llevaba la
        cuenta. No hace nada más. */
     cuenta: 7,
-    alaSeptima: "Siete veces la has abierto. Las he contado todas. 🤍",
+    alaSeptima: "Siete veces la abriste. Las conté todas 🤍",
   },
 
   /* ---- LA LUNA A LOS DIEZ TOQUES ---------------------------------------
@@ -1300,31 +1307,65 @@ const CONF = {
     toques: 10,
     dice: [
       "Wow...",
-      "Estoy alucinando...",
-      "¿Por qué hay una dona de chocolate ahí arriba?",
+      "No mames, ¿qué?",
+      "¿Por qué hay una dona de chocolate allá arriba?",
       "Quiero una dona 😭🍩",
-      "Vale. Esto no estaba en el plan.",
+      "Bueno. Esto no estaba en el plan.",
     ],
     dura: 26,             // segundos antes de volver a ser luna
-    alVolver: "Ya vuelve a ser la luna. Qué pena, oye.",
+    alVolver: "Ya volvió a ser la luna. Qué lástima.",
   },
 
   /* ---- EL SUSTO DE LA VENTANA ------------------------------------------ */
   ventana: {
     toques: 3,
     dice: [
-      "¡OH POR DIOS! ¡Qué susto me diste! 😭",
-      "No estaba preparado para verte ahí...",
-      "¿Tú también estabas mirando por la ventana?",
+      "¡AY NO! ¡Qué susto me diste! 😭",
+      "No estaba listo para verte ahí…",
+      "¿Tú también estabas viendo por la ventana?",
       "Casi me caigo de la cama, en serio.",
     ],
     /* Y lo que se dice a partir de la segunda vez. Un susto que se
        repite igual deja de ser un susto. */
     otraVez: [
-      "Ah, eres tú otra vez. Hola.",
+      "Ah, eres tú otra vez. Hola :>",
       "Ya me lo esperaba, ¿eh? Casi.",
       "Creo que le caemos bien.",
-      "Este búho tiene un problema con los cristales.",
+      "Este búho tiene un problema con los vidrios.",
+    ],
+  },
+
+  /* ---- LO QUE HAY EN EL CUARTO -----------------------------------------
+     Seis cosas que se pueden tocar. Cada una contesta algo distinto, y
+     dos de ellas guardan un secreto de verdad: el frasco sólo tiene
+     luciérnagas si ya fuiste al bosque, y debajo del tapete hay algo
+     que aparece a la tercera.                                         */
+  cuarto: {
+    radioOn: "Suena bajito, pero suena :>",
+    radioOff: "Ya, mejor el silencio de afuera.",
+    /* El frasco. Lleno sólo después del bosque: es la prueba de que
+       algo te seguiste hasta acá. */
+    frascoLleno: "Se metieron solitas cuando volvimos del bosque 🤍",
+    frascoVacio: "Está vacío. Todavía.",
+    planta: [
+      "Hola, plantita.",
+      "Sigue viva, eso ya es mucho.",
+      "Le hablo cuando no estás. No se lo digas.",
+      "Creo que le caes mejor tú que yo.",
+      "Tiene nombre, ¿sabías? Se llama como tú :>",
+    ],
+    guitarra: "Te aprendí una canción. Algún día te la toco bien.",
+    tapete: "Un tapete de trapo. Nada más.",
+    tapeteSecreto: "Aquí guardé tu primer papelito. Lo tengo desde ese día 🤍",
+    /* Las estrellitas de la pared. La pista aparece sola a la tercera,
+       y sólo dice que hay algo: nunca dice qué. */
+    estrellasPista: "Oye… ¿y si las prendes todas?",
+    estrellasCorazon: "Siempre estuvo ahí. Sólo faltaba que las prendieras tú 🤍",
+    estrellasYa: [
+      "Ya las tienes todas :>",
+      "Ahí está. Nuestra constelación.",
+      "Las pegué una por una pensando en esto.",
+      "Apaga la lámpara y míralas otra vez.",
     ],
   },
 
@@ -1626,7 +1667,27 @@ function ponerTexto(el, txt) { el.firstChild.nodeValue = txt; }
  * @param {string} texto
  * @param {{mimo?:boolean, dur?:number, importante?:boolean}} [op]
  */
+/* ---- Que no se sature -------------------------------------------------
+   El sistema aguanta nueve burbujas a la vez y las coloca sin pisarse,
+   así que una ráfaga se ve bien. Pero «se ve bien» y «se lee bien» no
+   son lo mismo: tres frases sueltas en dos segundos cansan aunque
+   quepan.
+
+   Así que las CORRIENTES —las que no son importantes— tienen un hueco
+   mínimo entre ellas, y además se ignoran si repiten la frase anterior.
+   Las importantes no pasan por aquí: un secreto que se dispara y no se
+   ve no es un secreto, es una frase tirada.                           */
+let ultimoDicho = -99;
+let ultimoTexto = "";
+const HUECO_DICHO = 0.9;          // segundos entre frases corrientes
+
 function decir(x, y, texto, op = {}) {
+  if (!op.importante) {
+    if (texto === ultimoTexto && reloj - ultimoDicho < 6) return;
+    if (reloj - ultimoDicho < HUECO_DICHO) return;
+  }
+  ultimoDicho = reloj;
+  ultimoTexto = texto;
   elVivo.textContent = texto;
 
   let el = librasDichos.pop();
@@ -2636,6 +2697,18 @@ function soltar(x, y, op) {
   pgiro[k] = op.giro || 0;
   pgiroV[k] = op.giroV || 0;
   pton[k] = op.tono === undefined ? Math.random() : op.tono;
+}
+
+/** Mata todas las partículas de golpe.
+ *
+ *  Se llama en CADA cambio de escena, sin excepciones. El humo de la
+ *  fogata mide treinta o cuarenta píxeles y vive varios segundos, así
+ *  que si no se limpia aparece flotando en mitad de la pared del
+ *  cuarto como una mancha gris que nadie sabe de dónde salió. Costó
+ *  encontrarla justamente porque no se movía: al no haber viento
+ *  dentro, el humo se quedaba clavado ahí. */
+function limpiarParticulas() {
+  for (let i = 0; i < P; i++) pvida[i] = 0;
 }
 
 function moverParticulas(dt) {
@@ -3778,13 +3851,13 @@ function comerBombon() {
     bombon.seguidosQuemados++;
     if (bombon.seguidosQuemados === 3) {
       setTimeout(() => decir(sitio.fogata.x, sitio.fogata.y - U * 22,
-        "Tres seguidos. Voy a tener que tostarlos yo. 😭", { mimo: true, importante: true }), 2200);
+        "Tres seguidos. Voy a tener que tostarlos yo 😭", { mimo: true, importante: true }), 2200);
       magia(330);
     }
   } else {
     if (bombon.seguidosQuemados >= 2) {
       setTimeout(() => decir(bombon.x, bombon.y - U * 10,
-        "Ahí está. Sabía que le cogías el punto.", { mimo: true }), 1800);
+        "¡Ahí está! Sabía que le ibas a agarrar el modo.", { mimo: true }), 1800);
     }
     bombon.seguidosQuemados = 0;
   }
@@ -4114,10 +4187,14 @@ function construirPanel() {
      móvil la fila se quedaba pegada al borde: la mitad de abajo caía en
      la zona del gesto de inicio del sistema y no había manera de
      arrastrar el volumen sin salirse de la página. */
-  const y = H - hueco - h * 1.15 - U * 2;
+  /* Alto y medio de aire por debajo, más lo que pida la barra del
+     librito. Con uno y cuarto, en un móvil con la barra del navegador
+     puesta la fila se quedaba cortada por el canto de abajo: se veía
+     media pastilla. */
+  const y = H - hueco - h * 1.55 - U * 3;
   /* Se le dice al CSS lo alto que ha quedado la fila, para que el
      rótulo de abajo se coloque ENCIMA y no encima de las pastillas. */
-  raiz.style.setProperty("--fila-alto", `${Math.round(h * 1.9 + U * 2)}px`);
+  raiz.style.setProperty("--fila-alto", `${Math.round(h * 2.3 + U * 3)}px`);
 
   for (let i = 0; i < n; i++) {
     panel.piedras.push({
@@ -5290,6 +5367,7 @@ async function entrarEnLaCabana() {
      el sonido de las sábanas, no después. */
   escena = "habitacion";
   raiz.classList.add("is-habitacion");
+  limpiarParticulas();
   construirHabitacion();
   cam.oz = 1; cam.ox = 0; cam.oy = 0;
   cam.z = 1; cam.x = 0; cam.y = 0;
@@ -5301,7 +5379,7 @@ async function entrarEnLaCabana() {
 
   setTimeout(() => {
     if (escena !== "habitacion") return;
-    decir(A * 0.5, H * 0.3, "Desde aquí se ve la luna. Tócala.", { dur: 4.6 });
+    decir(A * 0.5, H * 0.3, "Desde acá se ve la luna. Tócala.", { dur: 4.6 });
   }, 1800);
 }
 
@@ -5325,6 +5403,7 @@ function volverAlBosque() {
   animar((k) => { cine.velo = k; }, 700, () => {
     escena = "bosque";
     raiz.classList.remove("is-habitacion", "is-durmiendo");
+    limpiarParticulas();
     hab.dormida = 0;
     agacharAmbientes(1, 1.4);
     animar((k) => { cine.velo = 1 - k; }, 900, () => { bloqueado = false; });
@@ -5413,6 +5492,195 @@ function construirHabitacion() {
       })),
     });
   }
+
+  /* Y lo que hay en la pared de la izquierda: la repisa con el radio,
+     el frasco y la planta, la guitarra recargada y el tapete. */
+  construirCosas();
+}
+
+/**
+ * El rayo de luna que entra por la ventana.
+ *
+ * ── POR QUÉ NO ES UN POLÍGONO CON DEGRADADO ──────────────────────────
+ * Porque un polígono recortado tiene CANTO, y la luz no tiene canto.
+ * Antes esto era un trapecio recortado con `clip()` y relleno con dos
+ * degradados: se veía exactamente como lo que era, una cartulina gris
+ * pegada en la pared, con dos aristas rectas de arriba abajo.
+ *
+ * Lo que se pinta ahora es una IMAGEN del rayo, hecha una sola vez en
+ * un lienzo pequeño aparte: un degradado de arriba abajo al que se le
+ * recorta el alfa con otro degradado de lado a lado usando
+ * `destination-in`. Eso multiplica las dos caídas, que es exactamente
+ * lo que hace la luz de verdad, y sale sin un solo canto.
+ *
+ * Luego esa imagen se estampa en diez rebanadas horizontales, cada una
+ * un poco más ancha que la de arriba: así el rayo se abre al caer sin
+ * necesidad de recortar nada. Las rebanadas no se notan porque sus
+ * bordes laterales ya son transparentes.
+ *
+ * (El intento anterior eran catorce trapecios superpuestos en modo
+ * `lighter`. Funcionaba, pero se veían las catorce franjas.)
+ */
+const rayo = { lienzo: null };
+
+function construirRayo() {
+  const w = 128, h = 256;
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const g = c.getContext("2d");
+
+  /* La caída con la distancia. */
+  const gv = g.createLinearGradient(0, 0, 0, h);
+  gv.addColorStop(0, "rgba(162,192,255,1)");
+  gv.addColorStop(0.45, "rgba(142,172,252,0.7)");
+  gv.addColorStop(1, "rgba(120,150,235,0)");
+  g.fillStyle = gv;
+  g.fillRect(0, 0, w, h);
+
+  /* Y la penumbra de los lados, mordiendo el alfa. */
+  g.globalCompositeOperation = "destination-in";
+  const gh = g.createLinearGradient(0, 0, w, 0);
+  gh.addColorStop(0.00, "rgba(0,0,0,0)");
+  gh.addColorStop(0.13, "rgba(0,0,0,0.42)");
+  gh.addColorStop(0.33, "rgba(0,0,0,0.9)");
+  gh.addColorStop(0.50, "rgba(0,0,0,1)");
+  gh.addColorStop(0.67, "rgba(0,0,0,0.9)");
+  gh.addColorStop(0.87, "rgba(0,0,0,0.42)");
+  gh.addColorStop(1.00, "rgba(0,0,0,0)");
+  g.fillStyle = gh;
+  g.fillRect(0, 0, w, h);
+
+  rayo.lienzo = c;
+}
+
+function dibujarRayoDeLuna(vx, vy, v, sy) {
+  if (!rayo.lienzo) construirRayo();
+  const im = rayo.lienzo;
+  /* El trapecio de fuera: sale del alféizar y se abre al caer. */
+  const yA = vy + v.h * 0.5;
+  const x0A = vx - v.w * 0.5, x1A = vx + v.w * 0.5;
+  const x0B = vx - v.w * 0.24, x1B = vx + v.w * 1.16;
+  const abajo = H + 10;
+
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.globalAlpha = 0.5;
+  /* Muchas rebanadas y no pocas: con diez se veía la escalerita en el
+     borde del rayo, porque cada una salta de golpe al ancho siguiente. */
+  const N = flojo ? 14 : 28;
+  for (let k = 0; k < N; k++) {
+    const t0 = k / N, t1 = (k + 1) / N, tm = (t0 + t1) * 0.5;
+    /* Los bordes de la rebanada, redondeados: con decimales, el
+       navegador interpola y deja una costura clarita entre una y la
+       siguiente al sumarse en modo `lighter`. */
+    const y0 = Math.round(mez(yA, abajo, t0));
+    const y1 = Math.round(mez(yA, abajo, t1));
+    if (y1 <= y0) continue;
+    const xl = mez(x0A, x0B, tm), xr = mez(x1A, x1B, tm);
+    ctx.drawImage(im, 0, t0 * im.height, im.width, (t1 - t0) * im.height,
+      xl, y0, xr - xl, y1 - y0);
+  }
+  ctx.globalAlpha = 1;
+
+  /* El charco de luz en el suelo, justo donde el rayo lo toca. Un rayo
+     que atraviesa la pared y el piso con la misma fuerza se lee como
+     una mancha; el charco es lo que dice DÓNDE cae la luz. */
+  if (sy < H) {
+    const cy = sy + (H - sy) * 0.34;
+    haloOvalado(vx + v.w * 0.16, cy, v.w * 0.72, (H - sy) * 0.55, [
+      [0, "rgba(168,196,255,0.10)"],
+      [0.55, "rgba(150,178,250,0.045)"],
+      [1, "rgba(130,160,240,0)"],
+    ]);
+  }
+
+  /* Y el resplandor del alféizar: donde la luz entra siempre hay un
+     halo, porque el marco la difracta. */
+  haloOvalado(vx, yA, v.w * 0.62, v.h * 0.2, [
+    [0, "rgba(180,205,255,0.09)"],
+    [1, "rgba(180,205,255,0)"],
+  ]);
+  ctx.restore();
+}
+
+/**
+ * El suelo de madera, con su rodapié y sus tablas en fuga.
+ *
+ * ── POR QUÉ LAS TABLAS CONVERGEN ─────────────────────────────────────
+ * Porque un suelo de tablas paralelas visto desde una cama es un suelo
+ * visto desde arriba, y eso aplana el cuarto entero. Convergiendo hacia
+ * un punto de fuga que está justo debajo de la ventana, el suelo se
+ * mete hacia dentro y la habitación deja de ser un telón.
+ *
+ * El punto de fuga se pone ARRIBA de la línea de suelo, no abajo: el
+ * ojo está por encima del piso, así que las tablas se juntan al fondo,
+ * que en pantalla es hacia arriba.
+ */
+function dibujarSuelo(sy, vx) {
+  /* La madera, más clara cerca y más oscura al fondo. */
+  const g = ctx.createLinearGradient(0, sy, 0, H);
+  g.addColorStop(0, "#241c24");
+  g.addColorStop(0.45, "#302430");
+  g.addColorStop(1, "#1b1524");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, sy, A, H - sy);
+
+  /* Y los rincones, más oscuros. Un suelo con la misma luz de lado a
+     lado es una cartulina; lo que hace que se lea como un cuarto es
+     que las esquinas se apaguen. */
+  const gv = ctx.createLinearGradient(0, 0, A, 0);
+  gv.addColorStop(0, "rgba(8,6,14,0.5)");
+  gv.addColorStop(0.3, "rgba(8,6,14,0)");
+  gv.addColorStop(0.7, "rgba(8,6,14,0)");
+  gv.addColorStop(1, "rgba(8,6,14,0.5)");
+  ctx.fillStyle = gv;
+  ctx.fillRect(0, sy, A, H - sy);
+
+  /* Las juntas entre tablas. */
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, sy, A, H - sy); ctx.clip();
+  ctx.strokeStyle = "rgba(10,8,14,0.45)";
+  ctx.lineWidth = Math.max(1, U * 0.16);
+  /* La fuga es suave a propósito. Con las tablas muy abiertas parecían
+     rayos de sol saliendo de debajo de la ventana, no un piso. */
+  for (let i = -9; i <= 9; i++) {
+    const dx = i * U * 8;
+    ctx.beginPath();
+    ctx.moveTo(vx + dx * 0.62, sy);
+    ctx.lineTo(vx + dx * 1.5, H + 10);
+    ctx.stroke();
+  }
+  /* Y dos juntas transversales, para que las tablas tengan largo. */
+  ctx.strokeStyle = "rgba(10,8,14,0.22)";
+  for (const t of [0.3, 0.7]) {
+    const y = mez(sy, H, t);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(A, y); ctx.stroke();
+  }
+  ctx.restore();
+
+  /* El rodapié: una tira de madera, con su filo de luz arriba. Es lo
+     que de verdad cierra la pared contra el suelo.
+
+     El filo va muy bajito de opacidad y con el color de la madera, no
+     blanco: con un blanco al 8% ya se leía como un tubo de neón
+     cruzando el cuarto de lado a lado. */
+  const alto = U * 2.2;
+  const gr = ctx.createLinearGradient(0, sy - alto, 0, sy);
+  gr.addColorStop(0, "#2e2430");
+  gr.addColorStop(1, "#231b26");
+  ctx.fillStyle = gr;
+  ctx.fillRect(0, sy - alto, A, alto);
+  /* El filo sólo brilla donde le da la luna. Una línea clara de lado a
+     lado del cuarto, con la misma fuerza en el rincón oscuro que
+     debajo de la ventana, se lee como un tubo de neón. */
+  const gf = ctx.createLinearGradient(vx - U * 34, 0, vx + U * 40, 0);
+  gf.addColorStop(0, "rgba(196,176,206,0.012)");
+  gf.addColorStop(0.5, "rgba(206,190,222,0.09)");
+  gf.addColorStop(1, "rgba(196,176,206,0.012)");
+  ctx.fillStyle = gf;
+  ctx.fillRect(0, sy - alto, A, Math.max(1, U * 0.24));
+  ctx.fillStyle = "rgba(6,4,10,0.5)";
+  ctx.fillRect(0, sy - Math.max(1, U * 0.26), A, Math.max(1, U * 0.26));
 }
 
 /**
@@ -5444,40 +5712,46 @@ function dibujarSombrasRamas(vx, vy, v) {
   ctx.clip();
 
   ctx.globalCompositeOperation = "multiply";
-  /* Floja a propósito: una sombra de rama a contraluz no es negra, es
-     un azul apenas más oscuro que la pared. Con más contraste parecían
-     arañazos pintados encima. */
-  ctx.strokeStyle = "rgba(88,98,140,0.55)";
   ctx.lineCap = "round";
 
-  for (const r of hab.ramas) {
-    /* La sombra se proyecta ESTIRADA hacia abajo, que es lo que hace un
-       rayo que entra en diagonal. Un simple factor en la Y. */
-    const bx = vx + r.x * v.w * 1.1;
-    const by = vy + v.h * 0.5 + (r.y + 0.6) * v.h * 0.9;
-    const mece = Math.sin(reloj * 0.8 + r.f) * 0.08 + viento * 0.16;
-    const ang = r.ang + mece;
-    const L = r.largo * v.h * 1.1;
-    const ex = bx + Math.cos(ang) * L;
-    const ey = by + Math.sin(ang) * L * 1.5;
+  /* Tres pasadas y no una: ancha y casi transparente, media, y fina.
+     Sumadas hacen una sombra con penumbra, que es lo que tiene una
+     sombra de verdad. Con una sola pasada de borde limpio, las ramas
+     se veían como palos grises pintados encima del rayo.
 
-    ctx.lineWidth = r.grueso * U * 1.1;
-    ctx.beginPath();
-    ctx.moveTo(bx, by);
-    ctx.quadraticCurveTo(
-      (bx + ex) / 2 + Math.sin(reloj * 1.1 + r.f) * U * 1.2,
-      (by + ey) / 2, ex, ey);
-    ctx.stroke();
+     Y floja a propósito: una sombra a contraluz no es negra, es un
+     azul apenas más oscuro que la pared. */
+  for (const [gordo, alfa] of [[2.6, 0.12], [1.6, 0.16], [1, 0.24]]) {
+    ctx.strokeStyle = `rgba(88,98,140,${alfa})`;
+    for (const r of hab.ramas) {
+      /* La sombra se proyecta ESTIRADA hacia abajo, que es lo que hace un
+         rayo que entra en diagonal. Un simple factor en la Y. */
+      const bx = vx + r.x * v.w * 1.1;
+      const by = vy + v.h * 0.5 + (r.y + 0.6) * v.h * 0.9;
+      const mece = Math.sin(reloj * 0.8 + r.f) * 0.08 + viento * 0.16;
+      const ang = r.ang + mece;
+      const L = r.largo * v.h * 1.1;
+      const ex = bx + Math.cos(ang) * L;
+      const ey = by + Math.sin(ang) * L * 1.5;
 
-    /* Las ramitas. Sin ellas son palos, y con ellas son un árbol. */
-    ctx.lineWidth = r.grueso * U * 0.46;
-    for (const h of r.hijas) {
-      const hx = mez(bx, ex, h.t), hy = mez(by, ey, h.t);
-      const ha = ang + h.ang + mece * 1.6;
+      ctx.lineWidth = r.grueso * U * 1.1 * gordo;
       ctx.beginPath();
-      ctx.moveTo(hx, hy);
-      ctx.lineTo(hx + Math.cos(ha) * L * h.largo, hy + Math.sin(ha) * L * h.largo * 1.3);
+      ctx.moveTo(bx, by);
+      ctx.quadraticCurveTo(
+        (bx + ex) / 2 + Math.sin(reloj * 1.1 + r.f) * U * 1.2,
+        (by + ey) / 2, ex, ey);
       ctx.stroke();
+
+      /* Las ramitas. Sin ellas son palos, y con ellas son un árbol. */
+      ctx.lineWidth = r.grueso * U * 0.46 * gordo;
+      for (const h of r.hijas) {
+        const hx = mez(bx, ex, h.t), hy = mez(by, ey, h.t);
+        const ha = ang + h.ang + mece * 1.6;
+        ctx.beginPath();
+        ctx.moveTo(hx, hy);
+        ctx.lineTo(hx + Math.cos(ha) * L * h.largo, hy + Math.sin(ha) * L * h.largo * 1.3);
+        ctx.stroke();
+      }
     }
   }
   ctx.globalCompositeOperation = "source-over";
@@ -5557,13 +5831,19 @@ function dibujarCortinas(vx, vy, v) {
 /** La cuerda de fotos, colgada de lado a lado por encima de la cama. */
 function dibujarFotos(vx, vy, v) {
   if (!hab.fotos || !hab.fotos.length) return;
-  const x0 = vx - v.w * 1.1, x1 = vx + v.w * 1.1;
-  /* En apaisado la cuerda va más alta: con el mismo número que en
-     vertical caía justo en el canto de la manta y las fotos quedaban
-     tapadas por la cama. */
-  const y0 = vy + v.h * (apaisado ? 0.58 : 0.78), y1 = y0 + U * 1.5;
+  /* La cuerda va atada al marco, DENTRO de la ventana, y las fotos
+     cuelgan delante del cristal.
+     Antes cruzaba la pared por debajo del alféizar, y ahí las fotos
+     no colgaban de nada: eran cinco papeles flotando en mitad del
+     rayo de luna. Delante del cristal se entiende sola —está atada al
+     marco— y además las fotos salen a contraluz, que es justo como se
+     ven unas fotos colgadas en una ventana de noche. */
+  const x0 = vx - v.w * 0.54, x1 = vx + v.w * 0.54;
+  /* Por la mitad de abajo: arriba está la luna, y taparla sería tapar
+     lo único que hay que mirar. */
+  const y0 = vy + v.h * (apaisado ? 0.06 : 0.1), y1 = y0 + U * 1.2;
   /* La cuerda cuelga: una parábola, no una recta. */
-  const pandeo = U * 5;
+  const pandeo = U * 3;
 
   ctx.strokeStyle = "rgba(180,170,150,0.28)";
   ctx.lineWidth = 1;
@@ -5578,7 +5858,7 @@ function dibujarFotos(vx, vy, v) {
     const px2 = mez(x0, x1, t);
     const py2 = (1 - t) * (1 - t) * y0 + 2 * (1 - t) * t * (y1 + pandeo * 2) + t * t * y1;
     const balanceo = Math.sin(reloj * 0.7 + f.balanceo) * 0.05;
-    const w = U * 6.4, h = U * 7.4 * f.alto;
+    const w = U * 5.4, h = U * 6.2 * f.alto;
 
     ctx.save();
     ctx.translate(px2, py2);
@@ -5674,6 +5954,20 @@ function ventanaHab() {
   return { x: A * 0.5, y: H * (apaisado ? 0.36 : 0.33), w, h };
 }
 
+/** Dónde acaba la pared y empieza el suelo.
+ *
+ *  ── POR QUÉ HACÍA FALTA UNA LÍNEA DE SUELO ──────────────────────────
+ *  Porque antes no había: el degradado de la pared llegaba hasta abajo
+ *  y la manta de la cama lo tapaba. Eso funciona mientras no pongas
+ *  nada en el piso, pero en cuanto hay un tapete o una guitarra
+ *  recargada, se nota que están flotando sobre un fondo y no apoyados
+ *  en un cuarto. Una sola línea, y de repente hay profundidad. */
+function sueloHab() {
+  const v = ventanaHab();
+  const camaY = H * (apaisado ? 0.74 : 0.70);
+  return clamp(camaY - U * 15, v.y + v.h * 0.56, camaY - U * 3);
+}
+
 function moverHabitacion(dt) {
   /* La respiración: un vaivén lentísimo que mueve toda la vista. Es lo
      que hace que se sienta que hay alguien tumbado y no una foto. */
@@ -5692,6 +5986,9 @@ function moverHabitacion(dt) {
       tipo: TIPO.POLVO, tono: 0.5,
     });
   }
+
+  /* Y lo que hay en la pared de la izquierda, que también se mueve. */
+  moverCosas(dt);
 }
 
 function dibujarHabitacion() {
@@ -5709,51 +6006,36 @@ function dibujarHabitacion() {
   ctx.fillRect(0, 0, A, H);
 
   /* Los tablones de la pared, insinuados. */
+  const sy = sueloHab();
   ctx.strokeStyle = "rgba(255,240,220,0.028)";
   ctx.lineWidth = 1;
-  for (let i = 1; i < 14; i++) {
-    const y = (i / 14) * H * 0.78;
+  for (let i = 1; i < 12; i++) {
+    const y = (i / 12) * sy;
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(A, y); ctx.stroke();
   }
+
+  /* ---- El suelo ---- */
+  dibujarSuelo(sy, vx);
 
   /* ---- El rectángulo de luna en la pared y el suelo ----
      Es lo que de verdad ilumina la habitación, así que se dibuja antes
      que los muebles: todo lo demás se ve gracias a él. */
-  ctx.globalCompositeOperation = "lighter";
-  /* Dos degradados y no uno: el de arriba abajo, que apaga el rayo con
-     la distancia, y otro de lado a lado que le quita el CANTO. Con uno
-     solo, el rayo era un cuadrilátero gris recortado en seco sobre la
-     pared, que es lo que menos parece luz de todo. */
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(vx - v.w * 0.5, vy + v.h * 0.5);
-  ctx.lineTo(vx + v.w * 0.5, vy + v.h * 0.5);
-  ctx.lineTo(vx + v.w * 1.1, H);
-  ctx.lineTo(vx - v.w * 0.2, H);
-  ctx.closePath();
-  ctx.clip();
-
-  const gl = ctx.createLinearGradient(vx, vy, vx + U * 14, H);
-  gl.addColorStop(0, "rgba(150,180,255,0.16)");
-  gl.addColorStop(1, "rgba(150,180,255,0)");
-  ctx.fillStyle = gl;
-  ctx.fillRect(vx - v.w * 1.4, vy, v.w * 3, H);
-
-  const gl2 = ctx.createLinearGradient(vx - v.w * 0.6, 0, vx + v.w * 1.2, 0);
-  gl2.addColorStop(0, "rgba(0,0,0,0)");
-  gl2.addColorStop(0.18, "rgba(60,80,150,0.05)");
-  gl2.addColorStop(0.5, "rgba(80,100,170,0.06)");
-  gl2.addColorStop(0.84, "rgba(60,80,150,0.05)");
-  gl2.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.fillStyle = gl2;
-  ctx.fillRect(vx - v.w * 1.4, vy, v.w * 3, H);
-  ctx.restore();
-  ctx.globalCompositeOperation = "source-over";
+  dibujarRayoDeLuna(vx, vy, v, sy);
 
   /* ---- Las sombras de las ramas, DENTRO del rectángulo de luna ----
      Van aquí y no después: son sombras, así que tienen que estar sobre
      la pared y por DEBAJO de todo lo que hay colgado y puesto encima. */
   dibujarSombrasRamas(vx, vy, v);
+
+  /* ---- Las estrellitas de la pared de arriba ----
+     Van sobre la pared y debajo de todo lo demás, que es donde está
+     una pegatina. */
+  dibujarCielo();
+
+  /* ---- El tapete ----
+     Va aquí porque está en el suelo: todo lo demás del cuarto se apoya
+     encima o cuelga por delante. */
+  dibujarTapete();
 
   /* ---- La ventana ---- */
   dibujarVentanaHabitacion(vx, vy + resp * 0.2, v.w, v.h);
@@ -5779,6 +6061,9 @@ function dibujarHabitacion() {
 
   /* ---- La cuerda de fotos ---- */
   dibujarFotos(vx, vy + resp * 0.2, v);
+
+  /* ---- La repisa, el radio, el frasco, la planta, la guitarra ---- */
+  dibujarCosas();
 
   /* ---- La lámpara de la mesilla ---- */
   /* Metida hacia dentro: a 0.92 del ancho de la ventana se le salía
@@ -6403,7 +6688,7 @@ function tocarLuna(x, y) {
   if (luna.tocadas === 5) {
     luna.guino = 1;
     setTimeout(() => { luna.guino = 0; }, 1400);
-    decir(x, y + sitio.luna.r * 2, "…¿te acaba de guiñar un ojo?", { mimo: true, importante: true });
+    decir(x, y + sitio.luna.r * 2, "…¿te acaba de guiñar el ojo?", { mimo: true, importante: true });
     contarLogro("guino");
     return;
   }
@@ -6416,12 +6701,12 @@ function tocarLuna(x, y) {
   let frase = null;
   if (luna.tocadas >= 3 && Math.random() < 0.55) {
     const sabe = [];
-    if (recuerdo.leer("buho", 0) > 0) sabe.push("Ese búho y yo llevamos toda la noche mirándote.");
-    if (fuego.fase >= 5) sabe.push("Se te ha apagado la fogata. Desde aquí arriba se nota.");
-    if (recuerdo.leer("notaArbol", 0)) sabe.push("Lo del papel del árbol lo vi. No diré nada.");
-    if (recuerdo.leer("ojos", 0) > 0) sabe.push("Eso de los ojos rojos… yo tampoco sé qué es.");
-    if (secreto.hallado) sabe.push("Ya encontraste lo del bosque. Sabía que lo harías.");
-    if (recuerdo.visitas > 1) sabe.push("Otra noche por aquí. Me gusta que vuelvas.");
+    if (recuerdo.leer("buho", 0) > 0) sabe.push("Ese búho y yo llevamos toda la noche viéndote.");
+    if (fuego.fase >= 5) sabe.push("Se te apagó la fogata. Desde acá arriba se nota.");
+    if (recuerdo.leer("notaArbol", 0)) sabe.push("Lo del papelito del árbol lo vi. No digo nada.");
+    if (recuerdo.leer("ojos", 0) > 0) sabe.push("Eso de los ojos rojos… yo tampoco sé qué sea.");
+    if (secreto.hallado) sabe.push("Ya encontraste lo del bosque. Sabía que sí.");
+    if (recuerdo.visitas > 1) sabe.push("Otra noche por acá. Me gusta que vuelvas :>");
     if (sabe.length) frase = sabe[Math.floor(Math.random() * sabe.length)];
   }
   decir(x, y + sitio.luna.r * 2, frase || diceLuna(), { mimo: true, importante: true });
@@ -6556,7 +6841,14 @@ const historia = {
     for (const id of PASOS) { this.hitos.delete(id); recuerdo.poner("h:" + id, 0); }
   },
 };
-for (const id of PASOS) if (recuerdo.leer("h:" + id, 0)) historia.hitos.add(id);
+/* Los secretos no son pasos de la historia: no llevan orden y no
+   desbloquean nada. Van en su propia lista para que no cuenten en
+   `historia.paso`, pero se recuerdan igual de una visita a otra. */
+const SECRETOS = ["bajoTapete", "constelacion"];
+
+for (const id of PASOS.concat(SECRETOS)) {
+  if (recuerdo.leer("h:" + id, 0)) historia.hitos.add(id);
+}
 
 /* ---- El inventario ------------------------------------------------------
    De momento sólo hay una cosa que se pueda llevar encima, pero el
@@ -6589,7 +6881,7 @@ function contarLogro(id) {
     logros.add("final");
     setTimeout(() => {
       decir(A * 0.5, H * 0.42,
-        "Has encontrado casi todo lo que escondí aquí. Queda una cosa, y está en el bosque.",
+        "Ya encontraste casi todo lo que escondí acá. Falta una cosa, y está en el bosque.",
         { mimo: true, importante: true, dur: 7 });
       magia(523);
     }, 3000);
@@ -6633,7 +6925,7 @@ function quemarse(x, y) {
   /* Y si insiste mucho, la fogata se harta. */
   if (quemadas === 6) {
     setTimeout(() => decir(sitio.fogata.x, sitio.fogata.y - U * 26,
-      "Ya van seis. Te va a doler mañana. 😭", { mimo: true, importante: true }), 1800);
+      "Ya van seis. Mañana te va a doler 😭", { mimo: true, importante: true }), 1800);
   }
 }
 
@@ -6645,7 +6937,7 @@ function mirarFogataAzul() {
   fuego.azul = 0.001;
   magia(392);
   decir(sitio.fogata.x, sitio.fogata.y - U * 24,
-    "Se ha puesto azul. Dicen que pasa cuando el fuego lleva mucho rato pensando.",
+    "Se puso azul. Dicen que pasa cuando el fuego lleva mucho rato pensando.",
     { mimo: true, importante: true, dur: 6.5 });
   contarLogro("azul");
 }
@@ -7993,15 +8285,15 @@ function dibujarBuho(banda) {
          justo lo que tiene que parecer. */
       const halo = r * 0.72;
       const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, halo);
-      g.addColorStop(0,    `rgba(170,255,200,${(0.5 * ab + b.visto * 0.32) * brillo})`);
-      g.addColorStop(0.34, `rgba(60,220,140,${0.22 * ab * brillo})`);
-      g.addColorStop(1,    "rgba(40,200,120,0)");
+      g.addColorStop(0,    `rgba(150,255,190,${(0.62 * ab + b.visto * 0.38) * brillo})`);
+      g.addColorStop(0.3,  `rgba(40,240,140,${0.34 * ab * brillo})`);
+      g.addColorStop(1,    "rgba(20,210,110,0)");
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(ex, ey, halo, 0, 6.283); ctx.fill();
 
       /* El iris y, dentro, la pupila negra. La pupila NO brilla: es lo
          que le da profundidad al ojo. */
-      ctx.fillStyle = `rgba(190,255,215,${0.95 * ab * mez(0.4, 1, sal)})`;
+      ctx.fillStyle = `rgba(140,255,190,${0.98 * ab * mez(0.4, 1, sal)})`;
       ctx.beginPath();
       ctx.ellipse(ex, ey, r * 0.22, r * 0.22 * ab, 0, 0, 6.283);
       ctx.fill();
@@ -8806,8 +9098,8 @@ function moverViaje(dt) {
     sendero.hecho = true;
     /* Las partículas del sitio que se deja NO se vienen. El humo de la
        fogata flotando en mitad de la espesura se ve como una mancha
-       gris que nadie sabe de dónde ha salido. */
-    for (let i = 0; i < P; i++) pvida[i] = 0;
+       gris que nadie sabe de dónde salió. */
+    limpiarParticulas();
     if (aEspesura) {
       escena = "espesura";
       raiz.classList.add("is-espesura");
@@ -9492,13 +9784,28 @@ function dibujarLuces(dt) {
     const k = Math.pow(clamp01(0.5 + 0.5 * Math.sin(reloj * l.ritmo + l.fase)), 2.4);
     if (k < 0.02) continue;
     const gg = ctx.createRadialGradient(x, y, 0, x, y, l.r * 7);
-    gg.addColorStop(0, `rgba(190,255,215,${0.5 * k})`);
-    gg.addColorStop(0.25, `rgba(80,230,150,${0.2 * k})`);
-    gg.addColorStop(1, "rgba(50,200,120,0)");
+    /* Verde de bicho, no blanco de bombilla. El corazón tira a limón y
+       el halo a esmeralda: una luciérnaga es amarilla por dentro y
+       verde por fuera, y con el corazón blanco se leían como motas de
+       polvo iluminadas. */
+    gg.addColorStop(0, `rgba(210,255,170,${0.62 * k})`);
+    gg.addColorStop(0.22, `rgba(90,255,150,${0.3 * k})`);
+    gg.addColorStop(1, "rgba(30,200,110,0)");
     ctx.fillStyle = gg;
     ctx.beginPath(); ctx.arc(x, y, l.r * 7, 0, 6.283); ctx.fill();
-    ctx.fillStyle = `rgba(226,255,238,${0.85 * k})`;
+    ctx.fillStyle = `rgba(228,255,200,${0.95 * k})`;
     ctx.beginPath(); ctx.arc(x, y, l.r, 0, 6.283); ctx.fill();
+    /* Y una estela cortita: se están moviendo, aunque muy despacio. */
+    if (k > 0.5) {
+      ctx.strokeStyle = `rgba(120,255,170,${0.18 * k})`;
+      ctx.lineWidth = l.r * 1.1;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - Math.cos(reloj * l.vel + l.f) * l.radio * 0.12,
+                 y - Math.sin(reloj * l.vel * 0.7 + l.f * 1.7) * l.radio * 0.1);
+      ctx.stroke();
+    }
   }
   ctx.globalCompositeOperation = "source-over";
 }
@@ -10708,11 +11015,15 @@ function asomarOjo(valiente) {
   ojosEsp.lista.push({
     x, z,
     y: mez(espesura.copasY + H * 0.14, suelo - H * 0.02, azar(0.2, 0.95)),
-    r: U * mez(0.85, 0.35, z),
+    r: U * mez(1.15, 0.5, z),
     alfa: 0, alfaObj: azar(0.55, 0.95),
     dura: valiente ? 999 : azar(2.5, 7),
     parpadeo: 0, relojParpadeo: azar(0.8, 2.6),
     huyendo: 0, vx: 0,
+    /* Hacia dónde mira y con qué ritmo late. Un par que mira de frente
+       inquieta el triple que uno que mira de lado. */
+    mira: Math.random() < 0.45 ? 0 : azar(-0.5, 0.5),
+    fase: Math.random() * 6.283,
     valiente: !!valiente,
     toques: 0,
     vibra: 0,
@@ -10789,7 +11100,7 @@ function tocarOjosEspesura(p) {
     tono(azar(70, 110), 0.5, "sawtooth", 0.05);
     if (o.toques >= 3) arrancarEnjambre(o);
     else decir(sx, o.y - U * 5,
-      o.toques === 1 ? "…éste no se ha ido." : "Sigue ahí. Mirándome.",
+      o.toques === 1 ? "…este no se fue." : "Sigue ahí. Viéndome.",
       { misterio: true, dur: 3.4 });
     return true;
   }
@@ -10875,7 +11186,7 @@ function reventarLosOjos(o) {
       x: espesura.x + azar(-A * 0.2, A * 1.2),
       y: mez(espesura.copasY + H * 0.08, suelo, azar(0.1, 1)),
       z,
-      r: U * mez(1, 0.3, z),
+      r: U * mez(1.3, 0.42, z),
       alfa: 0, alfaObj: azar(0.4, 1) * mez(1, 0.5, z),
       parpadeo: 0, relojParpadeo: azar(0.4, 3),
       /* Los que miran de frente tienen la pupila centrada; los demás,
@@ -10889,37 +11200,92 @@ function reventarLosOjos(o) {
     { misterio: true, importante: true, dur: 5 }), 900);
 }
 
-/** Un par de ojos, donde sea. */
-function dibujarUnOjo(x, y, r, alfa, parpadeo, mira, vibra) {
-  const ab = 1 - Math.sin(clamp01(parpadeo) * Math.PI) * 0.92;
+/**
+ * Un par de ojos, donde sea.
+ *
+ * ── POR QUÉ ESTÁN HECHOS DE CINCO CAPAS ──────────────────────────────
+ * Porque un punto rojo con un degradado alrededor no es un ojo
+ * encendido: es un punto rojo. Lo que hace que se claven en la pantalla
+ * es que cada capa hace UNA cosa y ninguna hace dos:
+ *
+ *   1. el resplandor ancho, que tiñe el bosque de alrededor;
+ *   2. el resplandor corto y saturado, que le da el color de verdad;
+ *   3. el IRIS, un anillo brillante con su hueco dentro —sin hueco, un
+ *      ojo es una bola—;
+ *   4. la pupila negra, corrida hacia donde mira;
+ *   5. y la chispa blanca, un punto diminuto arriba a un lado. Ese
+ *      punto es el que convierte una luz en una MIRADA: es el reflejo
+ *      de algo, y si hay reflejo hay superficie, y si hay superficie
+ *      hay un ojo de verdad.
+ *
+ * Encima de todo eso late: el latido no es un cambio de opacidad sino
+ * de TAMAÑO del resplandor, que es lo que hace que parezca que se
+ * enciende por dentro en vez de que alguien le sube el brillo.
+ */
+function dibujarUnOjo(x, y, r, alfa, parpadeo, mira, vibra, fase) {
+  const ab = 1 - Math.sin(clamp01(parpadeo) * Math.PI) * 0.94;
   const a = alfa * ab;
   if (a < 0.01) return;
   const vx = vibra ? azar(-vibra, vibra) * r : 0;
   const vy = vibra ? azar(-vibra, vibra) * r * 0.6 : 0;
-  const sep = r * 5.2, halo = r * 2.8;
+  const sep = r * 5.2;
+  /* El latido: cada par con su propio desfase, para que no respiren
+     todos a la vez como un semáforo. */
+  const late = 0.82 + 0.18 * Math.sin(reloj * 2.3 + (fase || 0));
+  const halo = r * 4.6 * late;
 
   ctx.globalCompositeOperation = "lighter";
   for (const s of [-1, 1]) {
     const ex = x + vx + s * sep * 0.5;
     const ey = y + vy;
-    const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, halo);
-    g.addColorStop(0, `rgba(255,90,70,${0.85 * a})`);
-    g.addColorStop(0.3, `rgba(220,30,25,${0.28 * a})`);
-    g.addColorStop(1, "rgba(150,12,10,0)");
-    ctx.fillStyle = g;
+
+    /* 1. El resplandor ancho. Rojo oscuro, muy abierto: es la luz que
+          moja los árboles de alrededor. */
+    const g1 = ctx.createRadialGradient(ex, ey, 0, ex, ey, halo);
+    g1.addColorStop(0, `rgba(255,60,40,${0.4 * a})`);
+    g1.addColorStop(0.25, `rgba(230,24,18,${0.16 * a})`);
+    g1.addColorStop(1, "rgba(160,8,6,0)");
+    ctx.fillStyle = g1;
     ctx.beginPath(); ctx.arc(ex, ey, halo, 0, 6.283); ctx.fill();
-    /* La pupila: negra, y corrida según a dónde mire. Es lo único que
-       distingue «hay ojos» de «me está mirando». */
-    ctx.fillStyle = `rgba(255,215,200,${0.9 * a})`;
+
+    /* 2. El resplandor corto y saturado. Aquí está el color. */
+    const g2 = ctx.createRadialGradient(ex, ey, 0, ex, ey, r * 1.9 * late);
+    g2.addColorStop(0, `rgba(255,170,130,${0.95 * a})`);
+    g2.addColorStop(0.32, `rgba(255,60,40,${0.7 * a})`);
+    g2.addColorStop(1, "rgba(220,20,16,0)");
+    ctx.fillStyle = g2;
+    ctx.beginPath(); ctx.arc(ex, ey, r * 1.9 * late, 0, 6.283); ctx.fill();
+
+    /* 3. El iris: un anillo, no un disco. */
+    ctx.strokeStyle = `rgba(255,120,90,${0.9 * a})`;
+    ctx.lineWidth = Math.max(0.8, r * 0.3);
     ctx.beginPath();
-    ctx.ellipse(ex, ey, r * 0.62, r * 0.62 * ab, 0, 0, 6.283);
+    ctx.ellipse(ex, ey, r * 0.7, r * 0.7 * ab, 0, 0, 6.283);
+    ctx.stroke();
+    /* El relleno del iris tira a naranja, no a blanco: en blanco los
+       ojos se leían como dos focos, y en naranja se leen como algo que
+       tiene sangre detrás. */
+    ctx.fillStyle = `rgba(255,140,96,${0.8 * a})`;
+    ctx.beginPath();
+    ctx.ellipse(ex, ey, r * 0.55, r * 0.55 * ab, 0, 0, 6.283);
     ctx.fill();
+
+    /* 4. La pupila. Negra de verdad, así que fuera del modo de sumar. */
     ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = `rgba(20,2,2,${0.85 * a})`;
+    ctx.fillStyle = `rgba(6,0,0,${0.96 * a})`;
     ctx.beginPath();
-    ctx.ellipse(ex + mira * r * 0.3, ey, r * 0.22, r * 0.3 * ab, 0, 0, 6.283);
+    ctx.ellipse(ex + mira * r * 0.28, ey, r * 0.24, r * 0.34 * ab, 0, 0, 6.283);
     ctx.fill();
+
+    /* 5. Y la chispa. Diminuta, arriba a un lado, y SIEMPRE al mismo
+          lado en los dos ojos: la luz que la produce está en un sitio. */
     ctx.globalCompositeOperation = "lighter";
+    if (ab > 0.4) {
+      ctx.fillStyle = `rgba(255,248,240,${0.85 * a})`;
+      ctx.beginPath();
+      ctx.arc(ex - r * 0.26, ey - r * 0.28, r * 0.15, 0, 6.283);
+      ctx.fill();
+    }
   }
   ctx.globalCompositeOperation = "source-over";
 }
@@ -10927,13 +11293,13 @@ function dibujarUnOjo(x, y, r, alfa, parpadeo, mira, vibra) {
 function dibujarOjosEsp() {
   for (const o of ojosEsp.lista) {
     const x = enPantalla(o.x, o.z);
-    if (x < -60 || x > A + 60) continue;
-    dibujarUnOjo(x, o.y, o.r, o.alfa, o.parpadeo, 0, o.vibra * 0.5);
+    if (x < -90 || x > A + 90) continue;
+    dibujarUnOjo(x, o.y, o.r, o.alfa, o.parpadeo, o.mira || 0, o.vibra * 0.5, o.fase || 0);
   }
   for (const e of ojosEsp.enjambre) {
     const x = enPantalla(e.x, e.z);
-    if (x < -60 || x > A + 60) continue;
-    dibujarUnOjo(x, e.y, e.r, e.alfa, e.parpadeo, e.mira, 0);
+    if (x < -90 || x > A + 90) continue;
+    dibujarUnOjo(x, e.y, e.r, e.alfa, e.parpadeo, e.mira, 0, e.f);
   }
 }
 
@@ -11099,6 +11465,860 @@ function moverDesmayo(dt, t) {
   }
 }
 
+/* ---- LO QUE HAY EN EL CUARTO -------------------------------------------
+   Cinco cosas más, y todas se pueden tocar. No están para decorar: cada
+   una contesta algo, y una de ellas guarda un secreto.
+
+   ── POR QUÉ SE DIBUJAN A LA IZQUIERDA ────────────────────────────────
+   Porque la mesilla, el reloj y la lámpara están a la derecha, y la
+   ventana en medio. La pared de la izquierda estaba vacía, y una pared
+   vacía en una habitación pequeña se lee como que falta algo.        */
+
+const cosas = {
+  /* La repisa con sus tres cachivaches. */
+  radio: { on: false, luz: 0, pulso: 0, banda: 0 },
+  planta: { meneo: 0, regada: 0 },
+  guitarra: { cuerda: -1, vibra: 0, veces: 0 },
+  tapete: { pulso: 0 },
+  interruptor: { pulso: 0 },
+  /* El frasco de luciérnagas: el secreto de la habitación. Empieza
+     vacío y sólo se llena si has estado en el bosque. */
+  frasco: { luces: [], pulso: 0, abierto: 0 },
+  /* Las estrellitas que brillan en la oscuridad, pegadas en la pared
+     de arriba. Ver más abajo: son el secreto grande del cuarto. */
+  cielo: { lista: [], trazo: 0, hecha: false, avisada: false },
+};
+
+function construirCosas() {
+  cosas.frasco.luces = [];
+  const n = historia.hecho("espesura") ? (flojo ? 4 : 7) : 0;
+  for (let i = 0; i < n; i++) {
+    cosas.frasco.luces.push({
+      a: rnd() * 6.283, r: azar(0.15, 0.7),
+      vel: azar(0.5, 1.6), f: rnd() * 6.283,
+      ritmo: azar(0.6, 1.8),
+    });
+  }
+  construirCielo();
+}
+
+/* ---- LAS ESTRELLITAS DE LA PARED ---------------------------------------
+
+   Once estrellas de esas que brillan en la oscuridad, pegadas arriba.
+   Fáciles de ver: están ahí desde el primer momento y se pueden tocar
+   una por una. Lo que NO es fácil de ver es que no están puestas al
+   azar.
+
+   ── DÓNDE ESTÁ EL SECRETO ────────────────────────────────────────────
+   Están colocadas sobre una curva de corazón, pero con un temblorcito
+   encima que la deshace: mirándolas, son once estrellas desordenadas.
+   Cuando se tocan LAS ONCE, se dibuja la línea que las une en orden y
+   el corazón aparece. Ese es el premio.
+
+   ── Y UN DETALLE QUE VALE POR TODO EL RESTO ──────────────────────────
+   Brillan MENOS con la lámpara encendida y MÁS a oscuras, porque eso
+   es lo que hacen las de verdad: cargan luz y la sueltan. Apagar la
+   lámpara y ver cómo se encienden solas es de las cosas más bonitas
+   que hace este cuarto, y no hay que tocar nada para que pase.       */
+
+const CIELO_N = 11;
+const diceEstrellasYa = barajador(CONF.cuarto.estrellasYa);
+
+function construirCielo() {
+  const c = cosas.cielo;
+  c.lista = [];
+  c.hecha = !!recuerdo.leer("constel", 0);
+  c.trazo = c.hecha ? 1 : 0;
+  for (let i = 0; i < CIELO_N; i++) {
+    const t = (i / CIELO_N) * 6.283;
+    /* La curva de corazón de toda la vida. */
+    const hx = 16 * Math.pow(Math.sin(t), 3);
+    const hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t)
+               - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+    c.lista.push({
+      /* En unidades de la curva, de -17 a 17. El temblor es lo que
+         impide que se lea el corazón antes de tiempo. */
+      hx: hx + azar(-2.1, 2.1),
+      hy: hy + azar(-2.1, 2.1),
+      tam: azar(0.72, 1.25),
+      giro: azar(-0.5, 0.5),
+      f: rnd() * 6.283,
+      on: !!recuerdo.leer("est:" + i, 0) || c.hecha,
+      brote: 0,
+    });
+  }
+}
+
+/** El sitio y el tamaño del corazón entero, según quepa. */
+function sitioCielo() {
+  const v = ventanaHab();
+  const d = desplazar(0.9);
+  if (apaisado) {
+    /* En apaisado no hay pared encima de la ventana: se van al hueco
+       grande de la derecha, que es el único sitio vacío que queda. */
+    const cx = mez(v.x + v.w * 0.5, A, 0.56);
+    return { cx: cx + d.x * 0.6, cy: H * 0.3 + d.y * 0.6,
+             esc: Math.min(A * 0.085, H * 0.014) };
+  }
+  const techo = v.y - v.h / 2;
+  return { cx: A * 0.5 + d.x * 0.6, cy: techo * 0.47 + d.y * 0.6,
+           esc: Math.min(A * 0.0125, techo * 0.0245) };
+}
+
+/** Cuánto brillan ahora mismo: mucho a oscuras, poco con la luz. */
+function cargaCielo() {
+  return mez(1, 0.34, hab.lampara);
+}
+
+function moverCielo(dt) {
+  const c = cosas.cielo;
+  for (const e of c.lista) e.brote = Math.max(0, e.brote - dt * 1.5);
+  if (c.hecha) c.trazo = Math.min(1, c.trazo + dt * 0.55);
+}
+
+function dibujarCielo() {
+  const c = cosas.cielo;
+  if (!c.lista.length) return;
+  const S = sitioCielo();
+  const carga = cargaCielo();
+
+  /* La línea del corazón, si ya está. Se dibuja DEBAJO de las
+     estrellas: la línea une, no tapa. */
+  if (c.trazo > 0.001) {
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.strokeStyle = `rgba(150,255,190,${0.3 * carga})`;
+    ctx.lineWidth = Math.max(1, U * 0.34);
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    const total = CIELO_N;
+    const hasta = c.trazo * total;
+    ctx.beginPath();
+    for (let i = 0; i <= Math.floor(hasta); i++) {
+      const a = c.lista[i % total], b = c.lista[(i + 1) % total];
+      const ax = S.cx + a.hx * S.esc, ay = S.cy + a.hy * S.esc;
+      const bx = S.cx + b.hx * S.esc, by = S.cy + b.hy * S.esc;
+      /* El último tramo se va dibujando a medias, para que la línea
+         recorra el corazón en vez de aparecer entera de golpe. */
+      const k = Math.min(1, hasta - i);
+      if (i === 0) ctx.moveTo(ax, ay);
+      ctx.lineTo(mez(ax, bx, k), mez(ay, by, k));
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  for (const e of c.lista) {
+    const x = S.cx + e.hx * S.esc, y = S.cy + e.hy * S.esc;
+    const r = S.esc * 1.35 * e.tam;
+    /* Late despacio y cada una por su lado: once estrellas latiendo a
+       la vez es un parpadeo, y eso no lo hace ninguna pegatina. */
+    const vivo = (e.on ? 1 : 0.42) * carga
+               * (0.86 + 0.14 * Math.sin(reloj * 0.9 + e.f))
+               + e.brote * 0.8;
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    haloOvalado(x, y, r * 4.2, r * 4.2, [
+      [0, `rgba(146,255,186,${0.1 * vivo})`],
+      [0.5, `rgba(120,240,170,${0.035 * vivo})`],
+      [1, "rgba(120,240,170,0)"],
+    ]);
+    ctx.translate(x, y);
+    ctx.rotate(e.giro + Math.sin(reloj * 0.2 + e.f) * 0.04);
+    ctx.fillStyle = `rgba(196,255,214,${0.34 + 0.5 * vivo})`;
+    estrellaCinco(r * (1 + e.brote * 0.3));
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+/** Una estrella de cinco puntas, centrada en el origen. */
+function estrellaCinco(r) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * 6.283 - 1.5708;
+    const rr = i % 2 ? r * 0.42 : r;
+    const px = Math.cos(a) * rr, py = Math.sin(a) * rr;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+}
+
+/** Tocar una estrellita. Devuelve true si se tocó alguna. */
+function tocarCielo(p) {
+  const c = cosas.cielo;
+  if (!c.lista.length) return false;
+  const S = sitioCielo();
+  /* La MÁS CERCANA, no la primera que pille. Las once no están
+     repartidas a distancias iguales —siguen una curva—, y por el
+     escote del corazón se juntan tanto que sus zonas de toque se
+     solapan. Cogiendo la primera, esas dos o tres nunca se podían
+     encender, y el secreto se quedaba imposible sin que se notara
+     por qué. */
+  let i = -1, mejor = S.esc * 3.8;
+  for (let j = 0; j < c.lista.length; j++) {
+    const e = c.lista[j];
+    const d = Math.hypot(p.x - (S.cx + e.hx * S.esc), p.y - (S.cy + e.hy * S.esc));
+    if (d < mejor) { mejor = d; i = j; }
+  }
+  if (i >= 0) {
+    const e = c.lista[i];
+    const x = S.cx + e.hx * S.esc, y = S.cy + e.hy * S.esc;
+
+    e.brote = 1;
+    if (!e.on) {
+      e.on = true;
+      recuerdo.poner("est:" + i, 1);
+      /* Una nota más aguda por cada una que falta menos: la escala
+         sube sola conforme se van encendiendo. */
+      const quedan = c.lista.filter((z) => !z.on).length;
+      tono(440 * Math.pow(2, (CIELO_N - quedan - 1) / 12), 0.7, "sine", 0.05);
+      soltarBrillos(x, y, 4, 0.36);
+      if (quedan === 0) completarCielo(S);
+      else if (!c.avisada && CIELO_N - quedan === 3) {
+        c.avisada = true;
+        decir(x, y + U * 6, CONF.cuarto.estrellasPista, { dur: 4.5 });
+      }
+    } else {
+      tono(azar(900, 1400), 0.35, "sine", 0.03);
+      if (c.hecha) decir(x, y + U * 6, diceEstrellasYa(), { dur: 3 });
+    }
+    return true;
+  }
+  return false;
+}
+
+function completarCielo(S) {
+  const c = cosas.cielo;
+  c.hecha = true;
+  c.trazo = 0;
+  recuerdo.poner("constel", 1);
+  historia.marcar("constelacion");
+  magia(587);
+  for (let i = 0; i < c.lista.length; i++) {
+    const e = c.lista[i];
+    setTimeout(() => {
+      soltarBrillos(S.cx + e.hx * S.esc, S.cy + e.hy * S.esc, 5, 0.36);
+    }, i * 170);
+  }
+  setTimeout(() => {
+    decir(S.cx, S.cy + S.esc * 20, CONF.cuarto.estrellasCorazon,
+      { mimo: true, importante: true, dur: 7 });
+  }, 2100);
+  contarLogro("estrellas");
+}
+
+/** Dónde está cada cosa. Se calcula aquí para que dibujar y tocar no
+    puedan discrepar nunca. */
+function sitiosCosas() {
+  const v = ventanaHab();
+  const d = desplazar(0.9);
+  const dx = d.x * 0.6, dy = d.y * 0.6;
+  const sy = sueloHab();
+  /* La repisa, lo más a la izquierda que se pueda sin salirse. El tope
+     de U*14 no es capricho: con menos, en vertical el radio se quedaba
+     medio fuera de la pantalla por el canto izquierdo. */
+  const izq = Math.max(v.x - v.w * 0.92, U * 14);
+  const ry = v.y + v.h * 0.2;
+  /* La guitarra se apoya en el suelo, así que su sitio depende del
+     suelo y no de la altura de la pantalla: si no, en apaisado se
+     hundía media guitarra debajo de la cama.
+
+     Y se encoge si no cabe: en apaisado, entre la repisa y el suelo
+     hay poquísimo, y a tamaño fijo el mástil salía por encima de la
+     repisa y atravesaba el radio. */
+  const gr = clamp((sy - ry) * 0.42, U * 6, U * 11);
+  const gy = sy - gr * 0.96;
+  return {
+    repisa:   { x: izq + dx, y: ry + dy, w: U * 18, h: U * 1.2 },
+    radio:    { x: izq - U * 5.2 + dx, y: ry - U * 2.6 + dy, r: U * 4 },
+    frasco:   { x: izq + U * 0.6 + dx, y: ry - U * 2.4 + dy, r: U * 2.6 },
+    planta:   { x: izq + U * 5.6 + dx, y: ry - U * 2 + dy, r: U * 3.4 },
+    guitarra: { x: izq - U * 1 + dx, y: gy + dy, r: gr },
+    tapete:   { x: v.x + dx, y: mez(sy, H * (apaisado ? 0.74 : 0.70), 0.52) + dy, r: U * 15 },
+    interruptor: { x: Math.min(v.x + v.w * 1.0, A - U * 4.5) + dx, y: v.y + v.h * 0.12 + dy, r: U * 2.6 },
+  };
+}
+
+function moverCosas(dt) {
+  cosas.radio.luz = damp(cosas.radio.luz, cosas.radio.on ? 1 : 0, 4, dt);
+  cosas.radio.pulso = Math.max(0, cosas.radio.pulso - dt * 2);
+  if (cosas.radio.on) cosas.radio.banda += dt * 1.6;
+  cosas.planta.meneo = damp(cosas.planta.meneo, 0, 3.2, dt);
+  cosas.planta.regada = Math.max(0, cosas.planta.regada - dt * 0.25);
+  cosas.guitarra.vibra = Math.max(0, cosas.guitarra.vibra - dt * 2.6);
+  cosas.tapete.pulso = Math.max(0, cosas.tapete.pulso - dt * 1.6);
+  cosas.interruptor.pulso = Math.max(0, cosas.interruptor.pulso - dt * 3);
+  cosas.frasco.pulso = Math.max(0, cosas.frasco.pulso - dt * 1.2);
+  cosas.frasco.abierto = Math.max(0, cosas.frasco.abierto - dt * 0.4);
+  moverCielo(dt);
+}
+
+function dibujarCosas() {
+  const S = sitiosCosas();
+
+  /* ---- La repisa ---- */
+  ctx.fillStyle = "rgba(56,44,36,0.95)";
+  ctx.fillRect(S.repisa.x - S.repisa.w / 2, S.repisa.y, S.repisa.w, S.repisa.h);
+  ctx.fillStyle = "rgba(26,20,16,0.8)";
+  ctx.fillRect(S.repisa.x - S.repisa.w / 2, S.repisa.y + S.repisa.h, S.repisa.w, U * 0.5);
+  /* Las escuadras de debajo. */
+  ctx.strokeStyle = "rgba(40,32,26,0.9)";
+  ctx.lineWidth = Math.max(1, U * 0.3);
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(S.repisa.x + s * S.repisa.w * 0.38, S.repisa.y + S.repisa.h);
+    ctx.lineTo(S.repisa.x + s * S.repisa.w * 0.26, S.repisa.y + S.repisa.h + U * 2.4);
+    ctx.stroke();
+  }
+
+  dibujarRadio(S.radio);
+  dibujarFrasco(S.frasco);
+  dibujarPlanta(S.planta);
+  dibujarGuitarra(S.guitarra);
+  dibujarInterruptor(S.interruptor);
+}
+
+/** El tapete. Va debajo de todo, así que se pinta aparte y antes. */
+function dibujarTapete() {
+  const S = sitiosCosas();
+  const t = S.tapete;
+  const k = t.y < H * 0.95 ? 1 : 0;
+  if (!k) return;
+  /* La sombra de contacto. Sin ella el tapete se ve pegado con cinta:
+     es lo que dice que hay un objeto con grosor apoyado en el piso. */
+  haloOvalado(t.x, t.y + U * 0.6, t.r * 1.12, t.r * 0.4, [
+    [0.55, "rgba(0,0,0,0.34)"],
+    [1, "rgba(0,0,0,0)"],
+  ]);
+
+  const late = 1 + cosas.tapete.pulso * 0.035;
+  ctx.save();
+  ctx.translate(t.x, t.y);
+  ctx.scale(1, 0.3);
+
+  /* Anillos de trapo trenzado. Uno de trapo de verdad no tiene tres
+     franjas de tres colores: tiene muchas vueltas, cada una un poco
+     distinta, porque se hizo con lo que había. */
+  const N = flojo ? 6 : 10;
+  for (let i = N; i >= 1; i--) {
+    const u = i / N;
+    /* Dos moradas y una rosa vieja alternándose, cada vuelta un pelín
+       más clara hacia el centro. */
+    const c = i % 3 === 0 ? "#5c4466" : (i % 3 === 1 ? "#3d2c4a" : "#4a3350");
+    ctx.fillStyle = mezColor(c, "#6b5070", (1 - u) * 0.35);
+    ctx.globalAlpha = 0.93;
+    ctx.beginPath();
+    /* Las vueltas no son círculos perfectos: cada una se sale un poco
+       por un lado distinto. */
+    ctx.arc(Math.cos(i * 2.2) * t.r * 0.012, Math.sin(i * 1.7) * t.r * 0.012,
+      t.r * u * late, 0, 6.283);
+    ctx.fill();
+  }
+
+  /* El trenzado: rayitas cortas cruzando las vueltas, que es lo que
+     convierte unos anillos de color en tela. */
+  if (!flojo) {
+    ctx.globalAlpha = 0.16;
+    ctx.strokeStyle = "#1b1424";
+    ctx.lineWidth = Math.max(1, U * 0.34);
+    for (let i = 0; i < 64; i++) {
+      const a = (i / 64) * 6.283;
+      const r0 = t.r * (0.16 + (i % 5) * 0.16), r1 = r0 + t.r * 0.12;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
+      ctx.lineTo(Math.cos(a) * r1, Math.sin(a) * r1);
+      ctx.stroke();
+    }
+  }
+
+  /* El fleco del borde. */
+  ctx.globalAlpha = 0.42;
+  ctx.strokeStyle = "rgba(214,196,224,0.42)";
+  ctx.lineWidth = Math.max(1, U * 0.3);
+  ctx.setLineDash([U * 1.1, U * 1.3]);
+  ctx.beginPath();
+  ctx.arc(0, 0, t.r * 0.965, 0, 6.283);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  /* Y la luna encima: el tapete está justo debajo de la ventana, así
+     que le da el rayo. Si no se le ve la luz, parece un agujero. */
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.beginPath();
+  ctx.ellipse(t.x, t.y, t.r * late, t.r * 0.3 * late, 0, 0, 6.283);
+  ctx.clip();
+  haloOvalado(t.x + U * 1.4, t.y - U * 1.2, t.r * 0.8, t.r * 0.3, [
+    [0, "rgba(176,200,255,0.16)"],
+    [1, "rgba(176,200,255,0)"],
+  ]);
+  ctx.restore();
+}
+
+/** Un radio viejo, con su dial y su ojo mágico. */
+function dibujarRadio(S) {
+  const r = S.r, luz = cosas.radio.luz;
+  ctx.save();
+  ctx.translate(S.x, S.y);
+
+  if (luz > 0.02) {
+    ctx.globalCompositeOperation = "lighter";
+    haloOvalado(0, 0, r * 4, r * 3.4, [
+      [0, `rgba(255,190,110,${0.14 * luz})`],
+      [1, "rgba(255,170,90,0)"],
+    ]);
+    ctx.globalCompositeOperation = "source-over";
+  }
+
+  /* La caja de madera. */
+  const g = ctx.createLinearGradient(0, -r, 0, r);
+  g.addColorStop(0, "rgb(84,58,38)");
+  g.addColorStop(1, "rgb(46,31,20)");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-r, -r * 0.9, r * 2, r * 1.8, r * 0.18);
+  else ctx.rect(-r, -r * 0.9, r * 2, r * 1.8);
+  ctx.fill();
+
+  /* La rejilla del altavoz: líneas, no un rectángulo. */
+  ctx.strokeStyle = "rgba(20,14,10,0.55)";
+  ctx.lineWidth = Math.max(0.8, r * 0.07);
+  for (let i = 0; i < 5; i++) {
+    const y = -r * 0.55 + i * r * 0.24;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.82, y);
+    ctx.lineTo(-r * 0.12, y);
+    ctx.stroke();
+  }
+
+  /* El dial, con la aguja moviéndose si está prendido. */
+  ctx.fillStyle = `rgba(${Math.round(mez(40, 240, luz))},${Math.round(mez(34, 210, luz))},${Math.round(mez(26, 150, luz))},0.9)`;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(r * 0.05, -r * 0.6, r * 0.82, r * 0.7, r * 0.06);
+  else ctx.rect(r * 0.05, -r * 0.6, r * 0.82, r * 0.7);
+  ctx.fill();
+  if (luz > 0.1) {
+    ctx.strokeStyle = `rgba(140,30,20,${luz})`;
+    ctx.lineWidth = Math.max(1, r * 0.06);
+    const ax = r * 0.46 + Math.sin(cosas.radio.banda) * r * 0.32;
+    ctx.beginPath();
+    ctx.moveTo(ax, -r * 0.58);
+    ctx.lineTo(ax, -r * 0.02);
+    ctx.stroke();
+  }
+
+  /* Las dos perillas. */
+  ctx.fillStyle = "rgb(30,22,16)";
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.arc(s * r * 0.45, r * 0.52, r * 0.18, 0, 6.283);
+    ctx.fill();
+  }
+
+  /* Y las notas que salen cuando toca. */
+  if (luz > 0.5 && Math.random() < 0.02) {
+    soltar(S.x + azar(-r * 0.5, r * 0.5), S.y - r, {
+      vx: azar(-6, 6), vy: azar(-22, -10),
+      vida: azar(1.6, 3), tam: azar(1, 2),
+      tipo: TIPO.BRILLO, tono: 0.8,
+    });
+  }
+  ctx.restore();
+}
+
+/** El frasco de luciérnagas. Sólo tiene algo dentro si has ido al bosque. */
+function dibujarFrasco(S) {
+  const r = S.r;
+  const hay = cosas.frasco.luces.length > 0;
+  ctx.save();
+  ctx.translate(S.x, S.y);
+
+  if (hay) {
+    ctx.globalCompositeOperation = "lighter";
+    haloOvalado(0, 0, r * 4.5, r * 4.5, [
+      [0, `rgba(120,255,170,${0.13 + cosas.frasco.pulso * 0.2})`],
+      [1, "rgba(60,220,140,0)"],
+    ]);
+    ctx.globalCompositeOperation = "source-over";
+  }
+
+  /* El vidrio: dos trazos y un brillo. */
+  ctx.fillStyle = "rgba(150,190,200,0.1)";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-r * 0.62, -r * 0.8, r * 1.24, r * 1.7, r * 0.26);
+  else ctx.rect(-r * 0.62, -r * 0.8, r * 1.24, r * 1.7);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(180,220,235,0.3)";
+  ctx.lineWidth = Math.max(1, r * 0.08);
+  ctx.stroke();
+  /* La tapa, con sus agujeritos. */
+  ctx.fillStyle = "rgb(120,104,72)";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-r * 0.7, -r * 1.05, r * 1.4, r * 0.32, r * 0.08);
+  else ctx.rect(-r * 0.7, -r * 1.05, r * 1.4, r * 0.32);
+  ctx.fill();
+  ctx.fillStyle = "rgba(30,24,16,0.8)";
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath();
+    ctx.arc(-r * 0.42 + i * r * 0.28, -r * 0.89, r * 0.05, 0, 6.283);
+    ctx.fill();
+  }
+  /* Un brillo en el vidrio. */
+  ctx.strokeStyle = "rgba(230,245,255,0.25)";
+  ctx.lineWidth = Math.max(1, r * 0.09);
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.4, -r * 0.5);
+  ctx.lineTo(-r * 0.4, r * 0.4);
+  ctx.stroke();
+
+  /* Y las luciérnagas de dentro, dando vueltas. */
+  ctx.globalCompositeOperation = "lighter";
+  for (const l of cosas.frasco.luces) {
+    const a = l.a + reloj * l.vel * (0.3 + cosas.frasco.abierto);
+    const lx = Math.cos(a) * r * 0.42 * l.r;
+    const ly = Math.sin(a * 1.3 + l.f) * r * 0.62 * l.r;
+    const k = Math.pow(clamp01(0.5 + 0.5 * Math.sin(reloj * l.ritmo + l.f)), 2);
+    const g = ctx.createRadialGradient(lx, ly, 0, lx, ly, r * 0.5);
+    g.addColorStop(0, `rgba(210,255,170,${0.7 * k})`);
+    g.addColorStop(1, "rgba(60,220,130,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(lx, ly, r * 0.5, 0, 6.283); ctx.fill();
+    ctx.fillStyle = `rgba(232,255,206,${0.9 * k})`;
+    ctx.beginPath(); ctx.arc(lx, ly, r * 0.08, 0, 6.283); ctx.fill();
+  }
+  ctx.globalCompositeOperation = "source-over";
+  ctx.restore();
+}
+
+/** Una plantita en su maceta. Se menea si la tocas. */
+function dibujarPlanta(S) {
+  const r = S.r;
+  const m = cosas.planta.meneo;
+  const viva = cosas.planta.regada;
+  ctx.save();
+  ctx.translate(S.x, S.y + r * 0.6);
+
+  /* Las hojas: cinco, saliendo del centro, cada una con su curva. */
+  ctx.strokeStyle = `rgb(${Math.round(mez(52, 70, viva))},${Math.round(mez(104, 168, viva))},${Math.round(mez(62, 88, viva))})`;
+  ctx.lineCap = "round";
+  for (let i = 0; i < 5; i++) {
+    const base = -1.57 + (i - 2) * 0.42;
+    const a = base + Math.sin(reloj * 1.4 + i) * 0.04 + m * 0.3 * (i % 2 ? 1 : -1);
+    const largo = r * (0.9 + (i % 2) * 0.3);
+    ctx.lineWidth = Math.max(1.4, r * 0.16);
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.3);
+    ctx.quadraticCurveTo(Math.cos(a) * largo * 0.5, -r * 0.3 + Math.sin(a) * largo * 0.7,
+                         Math.cos(a) * largo, -r * 0.3 + Math.sin(a) * largo);
+    ctx.stroke();
+  }
+  /* La maceta: un trapecio con su reborde. */
+  const g = ctx.createLinearGradient(-r * 0.6, 0, r * 0.6, 0);
+  g.addColorStop(0, "rgb(120,74,56)");
+  g.addColorStop(0.5, "rgb(156,98,72)");
+  g.addColorStop(1, "rgb(96,58,42)");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.56, -r * 0.28);
+  ctx.lineTo(r * 0.56, -r * 0.28);
+  ctx.lineTo(r * 0.42, r * 0.56);
+  ctx.lineTo(-r * 0.42, r * 0.56);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "rgb(168,108,80)";
+  ctx.fillRect(-r * 0.62, -r * 0.38, r * 1.24, r * 0.16);
+  ctx.restore();
+}
+
+/** Una guitarra recargada en la pared. Tiene seis cuerdas y suenan. */
+function dibujarGuitarra(S) {
+  const r = S.r;
+
+  /* La sombra en el suelo, donde se apoya. Va fuera del giro: una
+     sombra proyectada en el piso no se ladea con el objeto. */
+  haloOvalado(S.x + U * 0.8, S.y + r * 0.96, r * 0.62, r * 0.2, [
+    [0.4, "rgba(0,0,0,0.42)"],
+    [1, "rgba(0,0,0,0)"],
+  ]);
+
+  ctx.save();
+  ctx.translate(S.x, S.y);
+  ctx.rotate(-0.16);
+
+  /* Y la de la pared, que es la que le da grosor. */
+  ctx.fillStyle = "rgba(2,3,8,0.4)";
+  ctx.beginPath();
+  ctx.ellipse(U * 1.4, r * 0.5, r * 0.52, r * 0.44, 0.2, 0, 6.283);
+  ctx.fill();
+
+  /* El mástil. */
+  ctx.fillStyle = "rgb(54,36,24)";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-r * 0.08, -r * 1.05, r * 0.16, r * 1.1, r * 0.03);
+  else ctx.rect(-r * 0.08, -r * 1.05, r * 0.16, r * 1.1);
+  ctx.fill();
+  /* La pala, con sus clavijas. */
+  ctx.fillStyle = "rgb(44,29,19)";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-r * 0.13, -r * 1.24, r * 0.26, r * 0.24, r * 0.04);
+  else ctx.rect(-r * 0.13, -r * 1.24, r * 0.26, r * 0.24);
+  ctx.fill();
+  ctx.fillStyle = "rgb(170,150,110)";
+  for (let i = 0; i < 3; i++) for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.arc(s * r * 0.17, -r * 1.2 + i * r * 0.08, r * 0.025, 0, 6.283);
+    ctx.fill();
+  }
+
+  /* El cuerpo: dos círculos que se solapan, que es la forma de siempre. */
+  const gc = ctx.createLinearGradient(-r * 0.5, 0, r * 0.5, r * 0.5);
+  gc.addColorStop(0, "rgb(150,94,44)");
+  gc.addColorStop(0.55, "rgb(112,66,30)");
+  gc.addColorStop(1, "rgb(70,40,18)");
+  ctx.fillStyle = gc;
+  ctx.beginPath();
+  ctx.ellipse(0, r * 0.14, r * 0.34, r * 0.3, 0, 0, 6.283);
+  ctx.ellipse(0, r * 0.55, r * 0.45, r * 0.4, 0, 0, 6.283);
+  ctx.fill();
+  /* La boca. */
+  ctx.fillStyle = "rgb(16,10,6)";
+  ctx.beginPath();
+  ctx.ellipse(0, r * 0.38, r * 0.16, r * 0.15, 0, 0, 6.283);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(210,170,110,0.4)";
+  ctx.lineWidth = Math.max(1, r * 0.02);
+  ctx.beginPath();
+  ctx.ellipse(0, r * 0.38, r * 0.2, r * 0.19, 0, 0, 6.283);
+  ctx.stroke();
+
+  /* Las seis cuerdas. La que se ha tocado vibra. */
+  for (let i = 0; i < 6; i++) {
+    const x = (i - 2.5) * r * 0.05;
+    const vib = (cosas.guitarra.cuerda === i)
+      ? Math.sin(reloj * 70 + i) * cosas.guitarra.vibra * r * 0.02 : 0;
+    ctx.strokeStyle = `rgba(226,220,196,${0.35 + (cosas.guitarra.cuerda === i ? cosas.guitarra.vibra * 0.5 : 0)})`;
+    ctx.lineWidth = Math.max(0.6, r * (0.008 + i * 0.002));
+    ctx.beginPath();
+    ctx.moveTo(x, -r * 1.16);
+    ctx.quadraticCurveTo(x + vib, r * 0.1, x, r * 0.72);
+    ctx.stroke();
+  }
+  /* El puente. */
+  ctx.fillStyle = "rgb(38,24,14)";
+  ctx.fillRect(-r * 0.2, r * 0.68, r * 0.4, r * 0.07);
+  ctx.restore();
+}
+
+/** El apagador de la pared. Sube y baja. */
+function dibujarInterruptor(S) {
+  const r = S.r;
+  const arriba = hab.lampara;
+  ctx.save();
+  ctx.translate(S.x, S.y);
+
+  /* La sombra de la placa contra la pared. Sin ella el interruptor es
+     un rectángulo claro pegado a la pared, no una pieza con canto. */
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-r * 0.48, -r * 0.68, r, r * 1.5, r * 0.16);
+  else ctx.rect(-r * 0.48, -r * 0.68, r, r * 1.5);
+  ctx.fill();
+
+  /* La placa, con su degradado de arriba abajo: la luz de la ventana
+     le da por arriba. */
+  const g = ctx.createLinearGradient(0, -r * 0.75, 0, r * 0.75);
+  g.addColorStop(0, "rgba(212,206,198,0.4)");
+  g.addColorStop(1, "rgba(150,144,140,0.26)");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-r * 0.56, -r * 0.78, r * 1.12, r * 1.56, r * 0.16);
+  else ctx.rect(-r * 0.56, -r * 0.78, r * 1.12, r * 1.56);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(244,242,238,0.24)";
+  ctx.lineWidth = Math.max(1, r * 0.05);
+  ctx.stroke();
+
+  /* Los dos tornillos. */
+  ctx.fillStyle = "rgba(60,56,52,0.5)";
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.arc(0, s * r * 0.62, r * 0.07, 0, 6.283);
+    ctx.fill();
+  }
+
+  /* El hueco donde va la palanca. */
+  ctx.fillStyle = "rgba(24,20,24,0.45)";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-r * 0.27, -r * 0.44, r * 0.54, r * 0.92, r * 0.07);
+  else ctx.rect(-r * 0.27, -r * 0.44, r * 0.54, r * 0.92);
+  ctx.fill();
+
+  /* La palanca: arriba si la lámpara está prendida. */
+  const py = mez(r * 0.0, -r * 0.44, arriba);
+  ctx.fillStyle = `rgba(250,248,244,${0.42 + cosas.interruptor.pulso * 0.4})`;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-r * 0.22, py, r * 0.44, r * 0.46, r * 0.07);
+  else ctx.rect(-r * 0.22, py, r * 0.44, r * 0.46);
+  ctx.fill();
+  /* El filo de arriba de la palanca, que es lo que le da el relieve. */
+  ctx.fillStyle = "rgba(255,254,250,0.3)";
+  ctx.fillRect(-r * 0.22, py, r * 0.44, Math.max(1, r * 0.07));
+  ctx.restore();
+}
+
+/* ---- Tocar las cosas del cuarto ---------------------------------------- */
+
+function tocarCosas(p) {
+  const S = sitiosCosas();
+
+  if (dentroDe(p.x, p.y, S.radio.x, S.radio.y, S.radio.r * 1.5)) {
+    cosas.radio.on = !cosas.radio.on;
+    cosas.radio.pulso = 1;
+    golpe(0.03, 1400, 0.12, "bandpass");
+    if (cosas.radio.on) sonarRadio();
+    decir(S.radio.x, S.radio.y - U * 7,
+      cosas.radio.on ? CONF.cuarto.radioOn : CONF.cuarto.radioOff,
+      { dur: 3 });
+    contarLogro("radio");
+    return true;
+  }
+
+  if (dentroDe(p.x, p.y, S.frasco.x, S.frasco.y, S.frasco.r * 1.6)) {
+    cosas.frasco.pulso = 1;
+    cosas.frasco.abierto = 1;
+    const hay = cosas.frasco.luces.length > 0;
+    tono(hay ? azar(900, 1300) : azar(400, 500), 0.4, "sine", 0.04);
+    if (hay) {
+      soltarBrillos(S.frasco.x, S.frasco.y, 8, 0.45);
+      recuerdo.sumar("frasco");
+      decir(S.frasco.x, S.frasco.y - U * 8, CONF.cuarto.frascoLleno,
+        { misterio: true, importante: true, dur: 5 });
+      contarLogro("frasco");
+    } else {
+      decir(S.frasco.x, S.frasco.y - U * 8, CONF.cuarto.frascoVacio, { dur: 3.4 });
+    }
+    return true;
+  }
+
+  if (dentroDe(p.x, p.y, S.planta.x, S.planta.y, S.planta.r * 1.5)) {
+    cosas.planta.meneo = 1;
+    cosas.planta.regada = Math.min(1, cosas.planta.regada + 0.4);
+    golpe(0.06, 3000, 0.05, "highpass");
+    const veces = recuerdo.sumar("planta");
+    decir(S.planta.x, S.planta.y - U * 8,
+      CONF.cuarto.planta[Math.min(veces - 1, CONF.cuarto.planta.length - 1)],
+      { dur: 3.2 });
+    if (veces >= 5) contarLogro("planta");
+    return true;
+  }
+
+  if (dentroDe(p.x, p.y, S.guitarra.x, S.guitarra.y, S.guitarra.r * 0.9)) {
+    /* Qué cuerda, según dónde se toque: de izquierda a derecha.
+       El reparto se hace sobre TODO el ancho de la guitarra y no sobre
+       el de las cuerdas de verdad. Seis cuerdas reales ocupan diecisiete
+       píxeles en un teléfono: con un dedo encima no se puede elegir
+       ninguna. Así cada una se lleva su franja y se pueden recorrer. */
+    const ancho = S.guitarra.r * 1.5;
+    const i = clamp(Math.floor((p.x - (S.guitarra.x - ancho / 2)) / ancho * 6), 0, 5);
+    cosas.guitarra.cuerda = i;
+    cosas.guitarra.vibra = 1;
+    cosas.guitarra.veces++;
+    /* Mi menor al aire, que es el acorde que sale solo en cualquier
+       guitarra que alguien deja recargada en una pared. */
+    const notas = [82.4, 123.5, 164.8, 196.0, 246.9, 329.6];
+    pulsarCuerda(notas[i]);
+    if (cosas.guitarra.veces === 6) {
+      contarLogro("guitarra");
+      setTimeout(() => decir(S.guitarra.x, S.guitarra.y - U * 12,
+        CONF.cuarto.guitarra, { mimo: true, importante: true, dur: 4.5 }), 600);
+    }
+    return true;
+  }
+
+  if (dentroDe(p.x, p.y, S.interruptor.x, S.interruptor.y, S.interruptor.r * 1.6)) {
+    hab.lamparaOn = !hab.lamparaOn;
+    cosas.interruptor.pulso = 1;
+    golpe(0.02, 2600, 0.16, "bandpass");
+    return true;
+  }
+
+  if (dentroDe(p.x, p.y, S.tapete.x, S.tapete.y, S.tapete.r * 0.9)) {
+    cosas.tapete.pulso = 1;
+    golpe(0.1, 300, 0.07, "lowpass");
+    const veces = recuerdo.sumar("tapete");
+    /* El tapete guarda algo debajo. A la tercera. */
+    if (veces === 3 && !historia.hecho("bajoTapete")) {
+      historia.marcar("bajoTapete");
+      magia(523);
+      soltarBrillos(S.tapete.x, S.tapete.y, 14, 0.8);
+      decir(S.tapete.x, S.tapete.y - U * 10, CONF.cuarto.tapeteSecreto,
+        { mimo: true, importante: true, dur: 6 });
+      contarLogro("tapete");
+    } else {
+      decir(S.tapete.x, S.tapete.y - U * 8, CONF.cuarto.tapete, { dur: 2.8 });
+    }
+    return true;
+  }
+  return false;
+}
+
+/** Una cuerda de guitarra: cuerpo con armónicos y caída larga. */
+function pulsarCuerda(hz0) {
+  if (!despertarAudio()) return;
+  const c = audio.ctx, t = c.currentTime;
+  /* El pellizco: un chasquido cortísimo antes de la nota. Sin él suena
+     a sintetizador; con él suena a dedo. */
+  golpe(0.02, hz0 * 12, 0.05, "bandpass");
+  for (const [mult, amp, dur] of [[1, 1, 2.4], [2, 0.42, 1.6], [3, 0.2, 1.1], [4.2, 0.1, 0.7]]) {
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = "triangle";
+    o.frequency.value = hz0 * mult;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.055 * amp, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(audio.maestro);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+}
+
+/** El radio: una emisora lejana. Ruido con un poco de melodía dentro. */
+function sonarRadio() {
+  if (!despertarAudio()) return;
+  const c = audio.ctx;
+  /* La estática de fondo, que se queda mientras esté prendido. */
+  const src = c.createBufferSource();
+  src.buffer = bufferRosa(4);
+  src.loop = true;
+  const f = c.createBiquadFilter();
+  f.type = "bandpass"; f.frequency.value = 1400; f.Q.value = 1.2;
+  const g = c.createGain(); g.gain.value = 0;
+  g.gain.linearRampToValueAtTime(0.03, c.currentTime + 0.4);
+  src.connect(f).connect(g).connect(audio.maestro);
+  src.start();
+  cosas.radio.fuente = src;
+  cosas.radio.gain = g;
+
+  /* Y una melodía muy floja que se cuela entre la estática. */
+  const mel = [392, 440, 494, 440, 392, 330, 392];
+  let i = 0;
+  const tocar = () => {
+    if (!cosas.radio.on) {
+      if (cosas.radio.gain) cosas.radio.gain.gain.linearRampToValueAtTime(0, c.currentTime + 0.3);
+      if (cosas.radio.fuente) { try { cosas.radio.fuente.stop(c.currentTime + 0.4); } catch { /* ya */ } }
+      cosas.radio.fuente = null;
+      return;
+    }
+    tono(mel[i % mel.length], 0.5, "sine", 0.022);
+    i++;
+    cosas.radio.reloj = setTimeout(tocar, 520);
+  };
+  tocar();
+}
+
 /* ---- DESPERTAR EN LA CABAÑA ---------------------------------------------
    Lo último. Se abre los ojos en la cama, con la habitación puesta y
    algo verde donde antes no había nada.
@@ -11112,6 +12332,7 @@ function despertarEnLaCabana() {
   escena = "habitacion";
   raiz.classList.remove("is-espesura");
   raiz.classList.add("is-habitacion");
+  limpiarParticulas();
   construirHabitacion();
   hab.dormida = 0;
   hab.lamparaOn = false;             // se despierta a oscuras
@@ -11391,7 +12612,7 @@ function tocarPunto(q, s) {
     }
     /* Ya está cavada del todo. */
     if (q.golpes >= CONF.cavar.golpes) {
-      decir(s.x, s.y - U * 7, "Aquí ya no queda nada por cavar.", { dur: 3 });
+      decir(s.x, s.y - U * 7, "Acá ya no queda nada por cavar.", { dur: 3 });
       return;
     }
     /* Y si no hay pala, no hay nada que hacer. Ésta es LA frase que
@@ -11401,7 +12622,7 @@ function tocarPunto(q, s) {
         historia.marcar("faltaPala");
         decir(s.x, s.y - U * 7, CONF.espesura.sinPala, { mimo: true, importante: true });
       } else {
-        decir(s.x, s.y - U * 7, "Con la pala en la mano.", { dur: 3 });
+        decir(s.x, s.y - U * 7, "Ya la traigo en la mano.", { dur: 3 });
       }
       return;
     }
@@ -11429,7 +12650,7 @@ function cogerPala(q, s) {
   golpe(0.05, 2400, 0.1, "bandpass");
   magia(523);
   soltarBrillos(s.x, s.y - U * 3, 14, 0.5);
-  avisoObjeto("pala", "PALA OBTENIDA");
+  avisoObjeto("pala", "¡CONSEGUISTE UNA PALA!");
   setTimeout(() => decir(A * 0.5, H * 0.52, CONF.espesura.palaCogida,
     { mimo: true, importante: true, dur: 4.5 }), 700);
 }
@@ -11908,7 +13129,7 @@ function tocarEnBosque(p, e) {
     if (mejor.viva) {
       soltarBrillos(mejor.x + dE.x, mejor.y + dE.y, 14, 0.45);
       decir(mejor.x + dE.x, mejor.y + dE.y + U * 5,
-        "Ésta contesta. No todas lo hacen.", { mimo: true, importante: true });
+        "Esta sí contesta. No todas lo hacen.", { mimo: true, importante: true });
       contarLogro("estrella");
     }
     return;
@@ -11927,6 +13148,9 @@ function tocarEnHabitacion(p, e) {
   /* El reloj. Lo primero: es lo más pequeño que hay. */
   if (tocarReloj3(p)) return;
 
+  /* Y las estrellitas, que son lo segundo más pequeño. */
+  if (tocarCielo(p)) return;
+
   /* La luna de la ventana. Primero, porque está DENTRO del cristal: si
      fuera después, el cristal se llevaría todos los toques y la luna no
      se podría tocar desde aquí. */
@@ -11940,6 +13164,11 @@ function tocarEnHabitacion(p, e) {
   if (Math.abs(p.x - v.x) < v.w * 0.55 && Math.abs(p.y - v.y) < v.h * 0.55) {
     if (tocarVentanaHab(p.x, p.y)) return;
   }
+
+  /* Las cosas de la repisa, la guitarra y el tapete. Van después del
+     cristal porque el interruptor queda pegado al marco, y antes que
+     el cuadro y la lámpara porque son más pequeñas que ellos. */
+  if (tocarCosas(p)) return;
 
   /* El cuadro de la pared. */
   const qx = v.x - v.w * 0.92, qy = v.y + U * 2;
@@ -11962,7 +13191,7 @@ function tocarEnHabitacion(p, e) {
   /* La vela del alféizar: se apaga soplando... o tocándola. */
   const cvx = v.x - v.w * 0.36, cvy = v.y + v.h / 2 - U * 5;
   if (dentroDe(p.x, p.y, cvx, cvy, U * 6)) {
-    decir(cvx, cvy - U * 6, "Déjala encendida, anda.", { dur: 3 });
+    decir(cvx, cvy - U * 6, "Déjala prendida, ¿sí?", { dur: 3 });
     return;
   }
 }
@@ -12004,10 +13233,10 @@ function tocarVentanaHab(x, y) {
     golpe(0.05, azar(1800, 2600), 0.1, "bandpass");
     golpe(0.03, azar(600, 900), 0.06, "bandpass");
     const antes = [
-      "Ahí fuera no se ve nada.",
-      "Sólo está el bosque. Y la noche.",
-      "Nada. Un árbol, y ya.",
-      "¿Qué miras? Si está todo oscuro.",
+      "Allá afuera no se ve nada.",
+      "Solo está el bosque. Y la noche.",
+      "Nada. Un árbol y ya.",
+      "¿Qué tanto ves? Si está todo oscuro.",
     ];
     decir(x, y + U * 8, antes[(susto.toques - 1) % antes.length], { dur: 3.2 });
     return true;
@@ -12211,7 +13440,7 @@ function entrar() {
   for (const a of CONF.ambientes) if (a.on) ambiente(a.id, true, a.vol);
   setTimeout(() => {
     decir(sitio.fogata.x, sitio.fogata.y - U * 20,
-      "Coge el palo y acerca el bombón al fuego.", { dur: 5.2 });
+      "Agarra el palo y acerca el malvavisco al fuego. :>", { dur: 5.2 });
   }, 1600);
 }
 
@@ -12342,17 +13571,28 @@ const brillo = {
 const lienzoBrillo = document.getElementById("brillo");
 
 /* ---- Los sombreadores ---------------------------------------------------
-   El vértice no lee ningún búfer: con `gl_VertexID` se calcula un
-   TRIÁNGULO que tapa la pantalla entera. Un triángulo y no dos, porque
-   así no hay costura en la diagonal, y sin búfer porque para tres
-   vértices no merece la pena reservar memoria.                       */
+   ── POR QUÉ UN CUADRILÁTERO Y NO EL TRIÁNGULO DE SIEMPRE ────────────
+   El truco habitual es no usar ningún búfer y sacarse un triángulo
+   gigante de `gl_VertexID`. Es más elegante y ocupa menos, y en el
+   teléfono de verdad dejaba MEDIA PANTALLA EN NEGRO, cortada por una
+   diagonal dentada: justo la hipotenusa de ese triángulo.
+
+   Sea cual sea el motivo exacto —el driver, la conversión de entero a
+   flotante, el orden de los bits—, no hay forma de depurarlo a ciegas
+   desde aquí, y un fallo que tapa media escena no se puede dejar
+   puesto. Cuatro vértices en un búfer funcionan en todas partes, pesan
+   treinta y dos bytes y no se pueden interpretar mal.
+
+   Y por si acaso, más abajo hay una comprobación que mira las cuatro
+   esquinas después del primer cuadro y apaga el brillo solo si alguna
+   sale negra.                                                        */
 
 const VS_PANTALLA = `#version 300 es
+in vec2 aPos;
 out vec2 uv;
 void main() {
-  vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
-  uv = p;
-  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+  uv = aPos * 0.5 + 0.5;
+  gl_Position = vec4(aPos, 0.0, 1.0);
 }`;
 
 /* Paso 1: quedarse sólo con lo que brilla, y ya bajado de tamaño.
@@ -12458,6 +13698,9 @@ function programa(gl, fs) {
   const p = gl.createProgram();
   gl.attachShader(p, v);
   gl.attachShader(p, f);
+  /* El sitio del atributo se fija ANTES de enlazar: así los tres
+     programas usan el mismo y basta con un solo montaje de vértices. */
+  gl.bindAttribLocation(p, 0, "aPos");
   gl.linkProgram(p);
   gl.deleteShader(v);
   gl.deleteShader(f);
@@ -12525,7 +13768,19 @@ function arrancarBrillo() {
     brillo.fbo.push(f);
   }
 
-  brillo.vao = gl.createVertexArray();      // vacío, pero hace falta uno
+  /* El cuadrilátero: dos triángulos en tira, cuatro vértices. */
+  brillo.vao = gl.createVertexArray();
+  gl.bindVertexArray(brillo.vao);
+  const vbo = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.bufferData(gl.ARRAY_BUFFER,
+    new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+  /* La posición va en el sitio 0 en los tres programas: se fija a mano
+     antes de enlazar, para no tener que preguntarlo tres veces. */
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+
   brillo.listo = true;
   return true;
 }
@@ -12552,9 +13807,9 @@ function medirBrillo() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
-/** Pinta el triángulo que tapa la pantalla. */
+/** Pinta el cuadrilátero que tapa la pantalla. */
 function pintarPantalla(gl) {
-  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 
 /**
@@ -12565,9 +13820,16 @@ function pasarBrillo() {
   if (!brillo.listo || !brillo.encendido) return;
   const gl = brillo.gl;
   if (gl.isContextLost && gl.isContextLost()) { apagarBrillo(); return; }
+  /* Sin tamaño no se pinta. Un `viewport` de cero por cero deja el
+     lienzo tal cual —o sea, negro— y desde fuera se ve exactamente
+     igual que un fallo de dibujo. */
+  if (!(brillo.ancho > 0) || !(brillo.alto > 0) ||
+      !(brillo.bw > 0) || !(brillo.bh > 0)) return;
 
   gl.bindVertexArray(brillo.vao);
   gl.disable(gl.DEPTH_TEST);
+  gl.disable(gl.SCISSOR_TEST);
+  gl.colorMask(true, true, true, true);
   gl.disable(gl.BLEND);
 
   /* 1. Subir el lienzo 2D. Es el único gasto de verdad de todo esto. */
@@ -12619,6 +13881,47 @@ function pasarBrillo() {
      la de aquí es sólo la que cierra las esquinas del todo. */
   gl.uniform1f(brillo.progMezcla.u.uVineta, 0.32);
   pintarPantalla(gl);
+
+  /* ---- La comprobación de las esquinas ----
+     Una sola vez, en el primer cuadro con la escena ya puesta. Se leen
+     cuatro píxeles de las esquinas; si alguno sale NEGRO DEL TODO, es
+     que el cuadrilátero no ha tapado la pantalla —que es lo que pasaba
+     en el móvil— y el brillo se apaga para siempre.
+
+     Cuesta una lectura de cuatro píxeles, una vez en la vida. Lo que
+     ahorra es que media escena se quede en negro en un teléfono que no
+     tengo delante para probarlo. */
+  if (!brillo.revisado && reloj > 2) {
+    brillo.revisado = true;
+    try {
+      const px = new Uint8Array(4);
+      const esquinas = [
+        [2, 2], [brillo.ancho - 3, 2],
+        [2, brillo.alto - 3], [brillo.ancho - 3, brillo.alto - 3],
+      ];
+      let negras = 0;
+      for (const [x, y] of esquinas) {
+        gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        if (px[0] === 0 && px[1] === 0 && px[2] === 0) negras++;
+      }
+      /* El centro también. Si el centro sale negro no hay discusión:
+         no hay ninguna escena en la que el punto medio de la pantalla
+         sea negro absoluto. */
+      gl.readPixels(brillo.ancho >> 1, brillo.alto >> 1, 1, 1,
+                    gl.RGBA, gl.UNSIGNED_BYTE, px);
+      const centroNegro = px[0] === 0 && px[1] === 0 && px[2] === 0;
+
+      /* Dos esquinas y no una: una esquina puede estar legítimamente a
+         cero si la viñeta se la come del todo, y apagar el brillo por
+         eso sería quitarlo donde funciona. Dos ya es un recorte. */
+      if (negras >= 2 || centroNegro) {
+        console.warn("[noche] el brillo no tapaba la pantalla entera: apagado.");
+        CONF.perf.bloom = false;
+        apagarBrillo();
+        return;
+      }
+    } catch { /* si no deja leer, se deja como está */ }
+  }
 }
 
 function encenderBrillo() {
