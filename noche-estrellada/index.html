@@ -1578,6 +1578,24 @@ const CONF = {
     ],
   },
 
+  /* ---- EL MENSAJE DEL CIELO --------------------------------------------
+     Lo que escriben las estrellas. Cambia el texto y el cielo escribe
+     otra cosa: las estrellas salen de leer la frase de un lienzo, así
+     que no hay letras dibujadas a mano que haya que rehacer.         */
+  cieloMensaje: {
+    /* En DOS renglones a propósito. En uno solo, dieciséis letras
+       repartidas a lo ancho de un teléfono dejan cada letra en veinte
+       píxeles, y a esa escala las estrellas de una letra se juntan con
+       las de la de al lado: lo que se ve es una franja de purpurina.
+       En dos renglones cada letra es dos veces y media más grande y se
+       lee de un vistazo. */
+    texto: ["Te amo", "muchísimo"],
+    /* Cuántos secretos hay que llevar encontrados para que salga sola
+       la primera vez. Después se puede volver a ver tocando la luna. */
+    hacenFalta: 6,
+    alVolver: "Míralo otra vez. Siempre estuvo ahí arriba.",
+  },
+
   /* ---- LA CUENTA DE LO ESCONDIDO ---------------------------------------
      Tres frases y nada más. Ni listas, ni porcentajes, ni medallas:
      sólo la sensación de que queda más.                               */
@@ -7221,6 +7239,226 @@ function dibujarVentanaHabitacion(x, y, w, h) {
   }
 }
 
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL MENSAJE DEL CIELO
+
+   Una vez, cuando ya has encontrado bastante, el cielo se pone a
+   escribir. No aparece un cartel: se ENCIENDEN ESTRELLAS, una detrás
+   de otra, hasta que lo que estaba ahí arriba desde el principio dice
+   una cosa.
+
+   ── CÓMO SE SACAN LAS ESTRELLAS DE UNA FRASE ─────────────────────────
+   No a mano. Se escribe la frase en un lienzo pequeño que nadie ve, se
+   recorren sus píxeles en una rejilla, y donde hay tinta se pone una
+   estrella. Eso tiene tres ventajas sobre dibujar las letras a mano:
+   sale con la tipografía de verdad, se puede cambiar el texto sin tocar
+   una línea de código, y las estrellas quedan repartidas de una manera
+   que no es regular —porque la letra no lo es— y por eso parecen
+   estrellas y no puntos de una matriz.
+
+   ── POR QUÉ NO SE PUEDE PROVOCAR LA PRIMERA VEZ ──────────────────────
+   Porque lo que hace que valga algo es que no lo estabas esperando.
+   Sale sola, una vez, cuando llevas encontrados unos cuantos secretos y
+   llevas un rato quieta en el claro. Después de esa primera vez sí se
+   puede volver a ver, tocando la luna: para poder enseñárselo a alguien.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const escrito = {
+  puntos: [],
+  /* -1 quieto; si no, segundos desde que empezó. */
+  t: -1,
+  dur: 15,
+  vista: false, leido: false,
+  /* Cuánto falta para mirar si toca. */
+  reloj: 40,
+  quieta: 0,
+};
+
+/** Convierte una frase en una nube de puntos, leyéndola de un lienzo. */
+function puntosDeTexto(texto, ancho) {
+  const lineas = Array.isArray(texto) ? texto : [texto];
+  const cv = document.createElement("canvas");
+  const alto = Math.round(ancho * (0.3 + lineas.length * 0.21));
+  cv.width = ancho; cv.height = alto;
+  const c = cv.getContext("2d", { willReadFrequently: true });
+  c.fillStyle = "#000";
+  c.fillRect(0, 0, ancho, alto);
+  c.fillStyle = "#fff";
+  c.textAlign = "center";
+  c.textBaseline = "middle";
+  /* Se prueba a lo grande y se va bajando hasta que quepa el renglón
+     más largo. Medir y ajustar es más fiable que adivinar un tamaño. */
+  let tam = Math.round(alto / lineas.length * 0.78);
+  for (; tam > 6; tam--) {
+    /* Palo seco y gorda. La rejilla sólo puede encontrar la letra si
+       el trazo es MÁS ANCHO que el paso de la rejilla, y una romana
+       fina tiene trazos de doce píxeles donde una gorda tiene veinte:
+       con la fina, media letra se cae por los huecos. */
+    c.font = `700 ${tam}px ui-sans-serif, system-ui, "Segoe UI", sans-serif`;
+    let cabe = true;
+    for (const l of lineas) if (c.measureText(l).width > ancho * 0.9) cabe = false;
+    if (cabe) break;
+  }
+  const hueco = alto / (lineas.length + 0.35);
+  lineas.forEach((l, i) => {
+    c.fillText(l, ancho / 2, hueco * (i + 0.68));
+  });
+
+  const d = c.getImageData(0, 0, ancho, alto).data;
+  /* El paso tiene que ser MENOR que el grosor del trazo. Con el paso
+     gordo quedaban pocas estrellas y muy bonitas, pero se saltaban los
+     trazos y las letras se deshacían en puntos sueltos: bonito, sí, y
+     ilegible. Con trazo de palo seco al 700, el grosor anda por el 14%
+     del tamaño, así que el 8,5% cae dentro con margen. */
+  const paso = Math.max(3, Math.round(tam * 0.085));
+  const fuera = [];
+  for (let y = 0; y < alto; y += paso) {
+    for (let x = 0; x < ancho; x += paso) {
+      /* Se mira el píxel del centro de la casilla, no la esquina: en
+         los trazos finos la esquina se sale de la letra. */
+      const i = (y * ancho + x) * 4;
+      if (d[i] < 120) continue;
+      fuera.push({
+        /* Normalizado a [-0.5, 0.5], y con un temblorcito: una rejilla
+           perfecta se ve como una rejilla. */
+        x: (x / ancho - 0.5) + (Math.random() - 0.5) * (paso / ancho) * 0.9,
+        y: (y / alto - 0.5) + (Math.random() - 0.5) * (paso / alto) * 0.9,
+        f: Math.random() * 6.283,
+        /* Cuándo le toca encenderse: de izquierda a derecha, como se
+           escribe. Con todas a la vez sería un cartel. */
+        cuando: x / ancho,
+        tam: 0.6 + Math.random() * 0.8,
+      });
+    }
+  }
+  return fuera;
+}
+
+/* Lo de si ya se vio se lee la PRIMERA vez que hace falta, no al
+   cargar: aquí arriba, `recuerdo` todavía no existe —se declara más
+   abajo— y leerlo reventaba el arranque entero con un ReferenceError,
+   que en un módulo de una sola pieza significa que no arranca nada. */
+function recordarSiYaSeVio() {
+  if (escrito.leido) return;
+  escrito.leido = true;
+  escrito.vista = !!recuerdo.leer("cielo", 0);
+}
+
+function arrancarMensajeCielo(forzado) {
+  recordarSiYaSeVio();
+  if (escrito.t >= 0) return false;
+  if (!escrito.puntos.length) {
+    escrito.puntos = puntosDeTexto(CONF.cieloMensaje.texto, 460);
+  }
+  if (!escrito.puntos.length) return false;
+  escrito.t = 0;
+  if (!escrito.vista) {
+    escrito.vista = true;
+    recuerdo.poner("cielo", 1);
+    contarLogro("cielo");
+  }
+  /* Un acorde larguísimo y muy bajito. No es una fanfarria: es que el
+     aire cambie. */
+  tono(261.6, 6, "sine", 0.03);
+  tono(329.6, 6, "sine", 0.022, 0.4);
+  tono(392.0, 6, "sine", 0.018, 0.8);
+  if (forzado) return true;
+  return true;
+}
+
+function moverMensajeCielo(dt) {
+  if (escrito.t >= 0) {
+    escrito.t += dt;
+    if (escrito.t > escrito.dur) escrito.t = -1;
+    return;
+  }
+  recordarSiYaSeVio();
+  if (escena !== "bosque" || bloqueado) { escrito.quieta = 0; return; }
+  /* Sólo sale si llevas un rato sin tocar nada: es un momento, y un
+     momento no puede interrumpir lo que estabas haciendo. */
+  escrito.quieta += dt;
+  if (dedo.dentro) escrito.quieta = 0;
+  escrito.reloj -= dt;
+  if (escrito.reloj > 0) return;
+  escrito.reloj = 30;
+  if (escrito.vista) return;
+  if (escrito.quieta < 12) return;
+  if (logros.size < CONF.cieloMensaje.hacenFalta) return;
+  arrancarMensajeCielo(false);
+}
+
+function dibujarMensajeCielo() {
+  if (escrito.t < 0 || !escrito.puntos.length) return;
+  const k = escrito.t / escrito.dur;
+  /* Entra escribiéndose, se queda un rato entero, y se va todo a la
+     vez y despacio. */
+  const escribe = clamp01(escrito.t / 5.5);
+  const salida = 1 - clamp01((k - 0.78) / 0.22);
+  if (salida <= 0.01) return;
+
+  const cx = A * 0.5;
+  const cy = H * (apaisado ? 0.26 : 0.2);
+  const anchoM = Math.min(A * 0.9, U * 84);
+  const altoM = anchoM * 0.72;
+
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+
+  /* ---- La luz de detrás ----
+     Una aurora muy floja que cruza por detrás de la frase. Es lo que
+     hace que el cielo parezca estar haciendo algo, y no que le hayan
+     pegado unas estrellas encima. */
+  const aurora = Math.sin(Math.PI * clamp01(k * 1.15)) * salida;
+  haloOvalado(cx, cy, anchoM * 0.75, altoM * 2.2, [
+    [0, `rgba(150,205,255,${0.07 * aurora})`],
+    [0.5, `rgba(180,150,255,${0.03 * aurora})`],
+    [1, "rgba(150,205,255,0)"],
+  ]);
+
+  /* ---- Las estrellas ---- */
+  for (const p of escrito.puntos) {
+    /* Cada una espera su turno: de izquierda a derecha, como se lee. */
+    const enciende = clamp01((escribe - p.cuando * 0.78) / 0.22);
+    if (enciende <= 0.01) continue;
+    const x = cx + p.x * anchoM;
+    const y = cy + p.y * altoM;
+    /* Titilan, cada una a su ritmo. Sin titileo son puntos. */
+    const vivo = enciende * salida * (0.72 + 0.28 * Math.sin(reloj * 2.1 + p.f));
+    const r = U * 0.4 * p.tam;
+
+    haloOvalado(x, y, r * 7, r * 7, [
+      [0, `rgba(214,236,255,${0.3 * vivo})`],
+      [0.4, `rgba(170,206,255,${0.1 * vivo})`],
+      [1, "rgba(150,190,255,0)"],
+    ]);
+    ctx.fillStyle = `rgba(240,248,255,${0.95 * vivo})`;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, 6.283);
+    ctx.fill();
+    /* Y la cruz de destello de las que acaban de encenderse. */
+    if (enciende < 1) {
+      const d = (1 - enciende) * r * 9;
+      ctx.strokeStyle = `rgba(226,242,255,${0.5 * vivo})`;
+      ctx.lineWidth = Math.max(1, r * 0.4);
+      ctx.beginPath();
+      ctx.moveTo(x - d, y); ctx.lineTo(x + d, y);
+      ctx.moveTo(x, y - d); ctx.lineTo(x, y + d);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+
+  /* Y unas motas subiendo, poquísimas, que le dan aire. */
+  if (Math.random() < 0.5 && !flojo) {
+    soltar(cx + azar(-anchoM * 0.5, anchoM * 0.5), cy + azar(-altoM, altoM), {
+      vx: azar(-6, 6), vy: azar(-14, -4),
+      vida: azar(2, 4), tam: azar(0.8, 1.7),
+      tipo: TIPO.BRILLO, tono: 0.62,
+    });
+  }
+}
+
 // ==========================================
 // LUNA
 // ==========================================
@@ -7587,6 +7825,17 @@ function tocarLuna(x, y) {
   luna.tocadas++;
   magia(luna.tocadas % 3 === 0 ? 784 : 660);
 
+  /* ---- Volver a ver lo del cielo ----
+     Sólo después de haberlo visto salir solo. La primera vez no se
+     puede provocar —lo que hace que valga algo es que no lo estuvieras
+     esperando—, pero una vez que ha pasado, se puede enseñar. */
+  recordarSiYaSeVio();
+  if (escrito.vista && escrito.t < 0 && escena === "bosque") {
+    arrancarMensajeCielo(true);
+    decir(x, y + sitio.luna.r * 2, CONF.cieloMensaje.alVolver, { mimo: true, dur: 2.6 });
+    return;
+  }
+
   for (let i = 0; i < 22; i++) {
     const a = azar(0, 6.283);
     const rr = azar(0.4, 1.6);
@@ -7830,6 +8079,8 @@ const TODO_LO_ESCONDIDO = [
   "botella", "papelBotella", "rayas", "manta",
   /* En el bosque */
   "relojBosque", "caceria", "setas", "luciernagas", "flecha", "charco",
+  /* Y en el cielo */
+  "cielo",
 ];
 
 const logros = new Set();
@@ -8313,6 +8564,13 @@ function dibujarBosque(dt) {
   /* ---- 3. LUNA ---- */
   const dL = desplazar(0.3);
   dibujarLuna(sitio.luna.x + dL.x, sitio.luna.y + dL.y, sitio.luna.r);
+
+  /* ---- 3b. EL MENSAJE, si el cielo está escribiendo ----
+     Entre la luna y las nubes: lo escriben las estrellas, que están
+     detrás de las nubes, y por eso una nube que pase por delante lo
+     tapa un poco. Eso es justo lo que hace que esté EN el cielo y no
+     encima de él. */
+  dibujarMensajeCielo();
 
   /* ---- 4. NUBES ---- */
   const dN = desplazar(0.5);
@@ -18225,6 +18483,7 @@ function paso(ahora) {
     moverCabana(dt);
     moverSecreto(dt);
     moverLuna(dt);
+    moverMensajeCielo(dt);
     mirarFogataAzul();
   } else {
     moverHabitacion(dt);
