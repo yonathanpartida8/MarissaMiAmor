@@ -411,8 +411,12 @@ html, body {
   bottom: calc(var(--seguro-b) + var(--barra) + var(--fila-alto, 76px) + 6px);
   transform: translateX(-50%);
   z-index: 20;
-  font-size: 0.6rem;
-  letter-spacing: 0.16em;
+  font-size: 0.56rem;
+  /* Apretada a propósito. Esta página también se lee DENTRO del librito,
+     y ahí las flechas de pasar hoja se sientan en los dos cantos a esta
+     misma altura: una línea que llegue hasta los bordes se queda con
+     las puntas escondidas debajo. */
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   /* En una línea siempre: partido en tres se comía media escena y
      tapaba la fogata, que es justo lo que no puede tapar. */
@@ -703,7 +707,7 @@ html, body {
   <!-- Lo que se lee de verdad, para quien use lector de pantalla. -->
   <p class="ne-sr" id="vivo" role="status" aria-live="polite"></p>
 
-  <p class="ne-pista-panel" id="pistaPanel">toca para prender · arrastra para el volumen</p>
+  <p class="ne-pista-panel" id="pistaPanel">toca para prender · arrastra el volumen</p>
 
   <button class="ne-volver" id="volver" type="button" aria-label="Regresar al bosque">‹</button>
 
@@ -4056,10 +4060,24 @@ function dibujarBombon() {
 
   /* Y una sombra propia de arriba abajo, que si no queda plano. */
   const gs = ctx.createLinearGradient(0, -alto, 0, alto);
-  gs.addColorStop(0, "rgba(255,255,255,0.09)");
-  gs.addColorStop(0.55, "rgba(0,0,0,0)");
-  gs.addColorStop(1, "rgba(60,30,10,0.22)");
+  gs.addColorStop(0, "rgba(255,255,255,0.11)");
+  gs.addColorStop(0.5, "rgba(0,0,0,0)");
+  gs.addColorStop(1, "rgba(60,30,10,0.26)");
   ctx.fillStyle = gs;
+  ctx.fill();
+
+  /* Y OTRA de lado a lado, que es la que de verdad lo redondea.
+     Un malvavisco es un cilindro visto de canto: lo que dice que es
+     redondo no es la sombra de abajo —eso lo tiene también un ladrillo—
+     sino que los dos costados se apaguen y el centro no. Sin esto era
+     una goma de borrar blanca. */
+  const gl2 = ctx.createLinearGradient(-ancho, 0, ancho, 0);
+  gl2.addColorStop(0, "rgba(58,34,18,0.26)");
+  gl2.addColorStop(0.2, "rgba(58,34,18,0.05)");
+  gl2.addColorStop(0.42, "rgba(255,252,242,0.1)");
+  gl2.addColorStop(0.72, "rgba(58,34,18,0.04)");
+  gl2.addColorStop(1, "rgba(58,34,18,0.24)");
+  ctx.fillStyle = gl2;
   ctx.fill();
 
   /* El brillo del fuego en el canto de abajo. */
@@ -4175,15 +4193,28 @@ function dibujarBombon() {
 
   ctx.restore();
 
-  /* Y un aro finísimo cuando se puede coger, para que se note que es
-     tocable sin poner un cartel. */
+  /* Y un aro cuando se puede coger, para que se note que es tocable sin
+     poner un cartel.
+
+     A trazos y girando despacio, no entero: un círculo fino y continuo
+     sobre la escena se lee como un fallo de dibujo —un borde que no
+     cierra nada— y no como algo que invita a tocar. A trazos y en
+     movimiento se entiende al instante. */
   if (!bombon.agarrado) {
-    const pulso = 0.12 + 0.08 * Math.sin(reloj * 2.2);
+    const pulso = 0.16 + 0.1 * Math.sin(reloj * 2.2);
+    const rr = r * (2.15 + 0.05 * Math.sin(reloj * 2.2));
+    ctx.save();
+    ctx.translate(bx, by);
+    ctx.rotate(reloj * 0.28);
     ctx.strokeStyle = `rgba(255,235,210,${pulso})`;
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = Math.max(1, U * 0.24);
+    ctx.lineCap = "round";
+    ctx.setLineDash([rr * 0.3, rr * 0.52]);
     ctx.beginPath();
-    ctx.arc(bx, by, r * 2.2, 0, 6.283);
+    ctx.arc(0, 0, rr, 0, 6.283);
     ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
   }
 }
 
