@@ -214,54 +214,6 @@ html, body {
   margin-top: 0.25em;
 }
 
-/* ── Andar ──────────────────────────────────────────────────────────────
-   Dos flechas juntas, abajo y POR EL CENTRO.
-
-   El centro no es decoración: cuando esta página va dentro del librito,
-   él pone sus dos botones redondos de pasar hoja pegados a los cantos
-   —abajo en vertical, a media altura en apaisado— y además se queda los
-   barridos que empiezan en sus 24-44 px de borde. Cualquier cosa que se
-   ponga ahí queda debajo de un botón o se come un pase de página.
-
-   Se puede seguir arrastrando el bosque con el dedo, que es lo bonito;
-   esto es para que andar no dependa NUNCA de acertar dónde empieza el
-   gesto.                                                              */
-.noche .ne-andar {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(var(--seguro-b) + var(--barra) + 10px);
-  display: flex;
-  gap: 14px;
-  pointer-events: none;
-}
-.noche .ne-andar-b {
-  width: 46px;
-  height: 46px;
-  border-radius: 999px;
-  border: 1px solid rgba(180, 220, 200, 0.2);
-  background: linear-gradient(to bottom, rgba(20, 34, 30, 0.58), rgba(6, 14, 12, 0.68));
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  color: #cfe8db;
-  font-size: 1.3rem;
-  line-height: 1;
-  display: grid;
-  place-items: center;
-  pointer-events: auto;
-  cursor: pointer;
-  /* `manipulation` y no `none`: hace falta que el navegador NO espere al
-     doble toque, pero el botón tiene que poder quedarse apretado. */
-  touch-action: manipulation;
-  transition: transform 140ms var(--e-suave), background 240ms var(--e-suave);
-}
-.noche .ne-andar-b:active,
-.noche .ne-andar-b.is-on {
-  transform: scale(0.92);
-  background: rgba(40, 70, 58, 0.8);
-  border-color: rgba(150, 255, 200, 0.4);
-}
-
 /* ── Las vidas de la cacería ────────────────────────────────────────────
    Arriba y por el centro: es lo único que hay que poder mirar de reojo
    sin dejar de disparar, y por el centro no lo tapa nada. */
@@ -808,16 +760,6 @@ html, body {
     </button>
     <div class="ne-hud-hallado" id="hudHallado"><b>0</b><i>secretos</i></div>
     <div class="ne-bolsa" id="bolsaUI"></div>
-    <!-- Andar. Se puede arrastrar el bosque con el dedo, pero dentro del
-         librito los barridos que empiezan pegados a un canto son suyos
-         —es su salida de emergencia— y andar hacia ese lado pasaba de
-         hoja. Con estos dos, andar no depende nunca de adivinar por
-         dónde empieza el gesto. Van juntos y por el centro, lejos de
-         los dos botones redondos de pasar página. -->
-    <div class="ne-andar" id="andarUI" aria-hidden="false">
-      <button class="ne-andar-b" id="andarIzq" type="button" aria-label="Andar a la izquierda">‹</button>
-      <button class="ne-andar-b" id="andarDer" type="button" aria-label="Andar a la derecha">›</button>
-    </div>
     <!-- Las vidas, durante la cacería. -->
     <div class="ne-vidas" id="vidasUI" aria-hidden="true"></div>
   </div>
@@ -2005,38 +1947,77 @@ function ponerTexto(el, txt) { el.firstChild.nodeValue = txt; }
  * @param {string} texto
  * @param {{mimo?:boolean, dur?:number, importante?:boolean}} [op]
  */
-/* ---- Que no se sature -------------------------------------------------
-   El sistema aguanta nueve burbujas a la vez y las coloca sin pisarse,
-   así que una ráfaga se ve bien. Pero «se ve bien» y «se lee bien» no
-   son lo mismo: tres frases sueltas en dos segundos cansan aunque
-   quepan.
+/* ---- CUÁNTAS SE VEN A LA VEZ, Y CUÁNTO ---------------------------------
 
-   Así que las CORRIENTES —las que no son importantes— tienen un hueco
-   mínimo entre ellas, y además se ignoran si repiten la frase anterior.
-   Las importantes no pasan por aquí: un secreto que se dispara y no se
-   ve no es un secreto, es una frase tirada.                           */
+   ── EL PROBLEMA QUE HABÍA ────────────────────────────────────────────
+   El sistema aguantaba NUEVE burbujas a la vez y las colocaba sin
+   pisarse. Colocarlas bien no era el problema: el problema es que nueve
+   frases en pantalla son un muro de texto encima del bosque, y quien
+   juega deja de leerlas a la tercera.
+
+   ── LA REGLA DE AHORA ────────────────────────────────────────────────
+   DOS. Como mucho dos a la vez, y punto. Cuando llega una tercera, la
+   más vieja no se borra de golpe: se le manda salir —le quedan dos
+   décimas de desvanecido— y la nueva entra mientras aquélla se va. Eso
+   es lo que hace que la pantalla no se llene nunca y que aun así no se
+   vea a nadie desaparecer de repente.
+
+   ── Y DURAN UN SEGUNDO ───────────────────────────────────────────────
+   Aproximadamente. Un segundo clavado para todas sería ilegible en las
+   largas, así que la duración sale del LARGO del texto: una frase corta
+   dura poco más de un segundo y una larga llega a algo más de dos. Lo
+   que no hace ninguna es quedarse.                                    */
+
+const MAX_DICHOS = 2;
 let ultimoDicho = -99;
 let ultimoTexto = "";
-const HUECO_DICHO = 0.9;          // segundos entre frases corrientes
+const HUECO_DICHO = 0.35;         // segundos entre frases corrientes
+
+/** Cuánto vive una frase, según lo que hay que leer. */
+function duraDicho(texto, importante) {
+  const base = 0.95 + texto.length * 0.021;
+  return clamp(base, 1, importante ? 2.6 : 2.1);
+}
+
+/** Manda salir a una frase: no la borra, la despide. */
+function despedirDicho(d) {
+  if (d.saliendo) return;
+  d.saliendo = true;
+  /* Se le reescribe la vida para que le queden justo las dos décimas
+     del desvanecido y ni una más. */
+  d.dur = d.t + 0.22;
+  d.salida = 0.22;
+}
 
 function decir(x, y, texto, op = {}) {
   if (!op.importante) {
-    if (texto === ultimoTexto && reloj - ultimoDicho < 6) return;
+    if (texto === ultimoTexto && reloj - ultimoDicho < 4) return;
     if (reloj - ultimoDicho < HUECO_DICHO) return;
   }
   ultimoDicho = reloj;
   ultimoTexto = texto;
   elVivo.textContent = texto;
 
+  /* ---- Hacer sitio ----
+     Si ya hay dos que no se están yendo, se despide a la más vieja. Se
+     cuentan sólo las que NO se están yendo: las que ya están de salida
+     no ocupan sitio, están desapareciendo. */
+  let enPie = dichosVivos.filter((d) => !d.saliendo);
+  while (enPie.length >= MAX_DICHOS) {
+    let viejo = enPie[0];
+    for (const d of enPie) if (d.t > viejo.t) viejo = d;
+    despedirDicho(viejo);
+    enPie = enPie.filter((d) => d !== viejo);
+  }
+
   let el = librasDichos.pop();
 
-  /* Las importantes NUNCA se pierden. Si no queda ninguna caja libre,
-     le quita el sitio a la más vieja de las corrientes: un secreto que
-     se dispara y no se ve no es un secreto, es una frase tirada. */
-  if (!el && op.importante) {
+  /* Y si aun así no queda caja libre —porque las que se van todavía la
+     están usando—, se le quita el sitio a la más vieja de todas. Una
+     frase que se dispara y no se ve no es una frase, es un fallo. */
+  if (!el) {
     let viejo = -1, masT = -1;
     for (let i = 0; i < dichosVivos.length; i++) {
-      if (dichosVivos[i].importante) continue;
       if (dichosVivos[i].t > masT) { masT = dichosVivos[i].t; viejo = i; }
     }
     if (viejo >= 0) { el = dichosVivos[viejo].el; dichosVivos.splice(viejo, 1); }
@@ -2080,12 +2061,18 @@ function decir(x, y, texto, op = {}) {
   /* Las del misterio se escriben. El tiempo de escritura sale del largo
      del texto, no de un número fijo: una frase corta escrita despacio se
      hace eterna y una larga escrita deprisa no se lee. */
-  const escribe = op.misterio ? clamp(texto.length * 0.045, 0.6, 2.6) : 0;
+  /* Y se escribe en como mucho la mitad de lo que dura: si tardara más
+     en escribirse que en vivir, la frase se iría sin llegar a estar
+     entera nunca. */
+  const dur = clamp(op.dur ?? duraDicho(texto, op.importante),
+    1, op.importante ? 3.4 : 2.4);
+  const escribe = op.misterio ? Math.min(clamp(texto.length * 0.03, 0.4, 1.2), dur * 0.45) : 0;
   if (escribe) ponerTexto(el, "");
 
   dichosVivos.push({
     el, x: px, y: py, medio, alto,
-    t: 0, dur: op.dur ?? (op.importante ? 5.4 : 3.6),
+    t: 0, dur,
+    saliendo: false, salida: 0.24,
     deriva: azar(-8, 8),
     importante: !!op.importante,
     texto, escribe, escritas: -1,
@@ -2127,10 +2114,19 @@ function moverDichos(dt) {
        Un muelle que se pasa un poco y vuelve, no una rampa. La
        diferencia entre que la frase «aparezca» y que la frase «llegue»
        son exactamente estos tres términos. */
-    const ke = clamp01(k / 0.16);
+    /* Con frases de un segundo, la entrada tiene que ser MÁS RÁPIDA en
+       proporción: si ocupara el 16% como antes, una frase de un segundo
+       se pasaría dos décimas enteras apareciendo. Se mide en segundos
+       de verdad y no en porcentaje de la vida. */
+    const ke = clamp01(d.t / 0.14);
     const muelle = 1 - Math.pow(1 - ke, 3) * Math.cos(ke * 7.2) ;
-    const entra = suave3(k / 0.1);
-    const sale  = 1 - suave3((k - 0.76) / 0.24);
+    const entra = suave3(d.t / 0.1);
+    /* Y la salida arranca a falta de `d.salida` segundos para el final,
+       sea la frase larga o corta. Despedir a una frase a mitad de vida
+       —porque ha llegado una tercera— es exactamente cambiarle `dur`:
+       la salida se recoloca sola. */
+    const queda = d.dur - d.t;
+    const sale  = clamp01(queda / d.salida);
     const sube  = (1 - Math.pow(1 - clamp01(k / 0.85), 3)) * 24;
     const bal   = Math.sin(d.t * 1.4) * 3;
     /* Al irse se desenfoca un pelín: es lo que hace que se deshaga en el
@@ -3890,25 +3886,43 @@ function pasoFisicaBombon(h) {
      del alcance, el palo se queda tirante y se nota que TIENE un
      alcance en vez de seguirte a cualquier parte. */
   if (bombon.agarrado) {
+    /* Sólo el ángulo. El palo mide lo que mide. */
     const dx = bombon.destX - bombon.mangoX;
     const dy = bombon.destY - bombon.mangoY;
-    bombon.angObj = Math.atan2(dy, dx);
-    bombon.largoObj = clamp(Math.hypot(dx, dy), U * 9, U * (apaisado ? 30 : 34));
+    if (Math.hypot(dx, dy) > U * 2) bombon.angObj = Math.atan2(dy, dx);
   }
 
-  /* ---- 2. El palo, como muelle angular ----
+  /* ---- 2. El palo, como varilla RÍGIDA que gira ----
      Y con la gravedad venciéndolo: un palo sujeto por un extremo pesa
      más cuanto más en cruz esté, que es por lo que cuesta mantenerlo
      horizontal y no cuesta nada tenerlo vertical. El coseno del ángulo
-     es exactamente ese brazo de palanca. */
+     es exactamente ese brazo de palanca.
+
+     ── POR QUÉ EL LARGO YA NO ES UN MUELLE ───────────────────────────
+     Porque un palo no se estira. Antes el largo tenía su propio muelle
+     y su propio freno, así que al mover el dedo deprisa el palo se
+     alargaba y se encogía: se veía exactamente como lo que era, una
+     goma. Y encima el bombón colgaba de la punta con OTRO muelle, así
+     que las dos elasticidades se sumaban y el conjunto se bamboleaba
+     como gelatina.
+
+     Ahora el largo es fijo. Lo único que se mueve es el ÁNGULO. Si
+     estiras el dedo más allá del alcance, el palo apunta hacia allá y
+     se queda donde llega, que es lo que hace un palo de verdad cuando
+     lo que quieres alcanzar está más lejos que el palo. */
   let angA = (bombon.angObj - bombon.ang) * F.muellePalo - bombon.angV * F.frenoPalo;
-  angA += Math.cos(bombon.ang) * F.pesoPalo * (bombon.largo / (U * 20));
+  angA += Math.cos(bombon.ang) * F.pesoPalo;
   bombon.angV += angA * h;
+  /* Tope de velocidad angular: por muy rápido que arrastres, el palo no
+     puede dar más de unas vueltas por segundo. Sin esto, un barrido
+     rápido de un canto a otro lo hacía girar como un aspa. */
+  bombon.angV = clamp(bombon.angV, -22, 22);
   bombon.ang += bombon.angV * h;
 
-  let larA = (bombon.largoObj - bombon.largo) * F.muelleLargo - bombon.largoV * F.frenoLargo;
-  bombon.largoV += larA * h;
-  bombon.largo += bombon.largoV * h;
+  /* El largo sólo cambia si cambia el ALCANCE —al girar el teléfono—, y
+     entonces va despacio y sin rebote: eso no es física, es recolocar. */
+  bombon.largo = damp(bombon.largo, bombon.largoObj, 9, h);
+  bombon.largoV = 0;
 
   /* ---- 3. La punta, y con qué velocidad se mueve ---- */
   const pxAntes = bombon.px, pyAntes = bombon.py;
@@ -3916,18 +3930,23 @@ function pasoFisicaBombon(h) {
   bombon.pvx = (bombon.px - pxAntes) / h;
   bombon.pvy = (bombon.py - pyAntes) / h;
 
-  /* ---- 4. El bombón colgando de la punta ----
-     Muelle hacia el punto de reposo —un poco por debajo de la punta—,
-     gravedad, y rozamiento. De aquí salen el balanceo y la inercia sin
-     escribir ni una línea de «si se mueve, inclínalo». */
+  /* ---- 4. El bombón, ENSARTADO en la punta ----
+     No cuelga: está atravesado por el palo, que es lo que se hace con
+     un malvavisco. Su sitio es la punta y ya está.
+
+     Lo que queda de muelle es un temblorcito muy corto y muy duro, para
+     que al frenar de golpe se note que tiene masa. Derretido, y sólo
+     derretido, se ablanda: entonces sí cede y se escurre un poco hacia
+     abajo, que es lo que hace el azúcar cuando se va a caer. */
   const r = radioBombon();
-  const repY = bombon.py + r * F.cuelga;
-  let fx = (bombon.px - bombon.x) * F.muelleBombon - bombon.vx * F.frenoBombon;
-  let fy = (repY - bombon.y) * F.muelleBombon - bombon.vy * F.frenoBombon + F.gravedad;
-  /* Derretido pesa más y se frena menos: se bambolea como un flan. */
-  const flan = 1 + bombon.blando * 0.8;
-  bombon.vx += (fx / flan) * h;
-  bombon.vy += (fy / flan) * h;
+  const blandura = bombon.blando;
+  const rigidez = mez(F.muelleBombon, F.muelleBombon * 0.28, blandura);
+  const freno = mez(F.frenoBombon, F.frenoBombon * 0.55, blandura);
+  const repY = bombon.py + r * F.cuelga * blandura;
+  let fx = (bombon.px - bombon.x) * rigidez - bombon.vx * freno;
+  let fy = (repY - bombon.y) * rigidez - bombon.vy * freno + F.gravedad * blandura;
+  bombon.vx += fx * h;
+  bombon.vy += fy * h;
   bombon.x += bombon.vx * h;
   bombon.y += bombon.vy * h;
 
@@ -3950,10 +3969,17 @@ function pasoFisicaBombon(h) {
   }
 
   /* ---- 6. El giro ----
-     El bombón se inclina hacia donde cuelga. No hay ángulo que simular:
-     ES la dirección en la que está tirando, y por eso al frenar de
-     golpe se ladea solo. */
-  bombon.giro = Math.atan2(bombon.y - bombon.py, bombon.x - bombon.px) - Math.PI / 2;
+     Ensartado, el bombón gira con EL PALO: su eje es el palo. Y encima
+     se le suma lo poco que se haya desplazado del eje, que es lo que
+     hace que al frenar de golpe se ladee un pelín sin despegarse.
+
+     Antes el giro salía sólo de la dirección en la que colgaba, y por
+     eso al mover el palo el bombón se revolvía como si estuviera
+     atado con un hilo. */
+  const ladeo = Math.atan2(bombon.y - bombon.py, bombon.x - bombon.px)
+              - bombon.ang;
+  const corto = Math.atan2(Math.sin(ladeo), Math.cos(ladeo));
+  bombon.giro = bombon.ang + clamp(corto, -0.5, 0.5) * (0.25 + blandura * 0.5);
 }
 
 /** El radio del bombón ahora mismo, con lo hinchado y lo blando. */
@@ -9556,58 +9582,9 @@ const elBolsa    = document.getElementById("bolsaUI");
 const elAviso    = document.getElementById("aviso");
 const elAvisoIco = document.getElementById("avisoIco");
 const elAvisoTxt = document.getElementById("avisoTxt");
-const elAndarIzq = document.getElementById("andarIzq");
-const elAndarDer = document.getElementById("andarDer");
 const elVidas    = document.getElementById("vidasUI");
 
 elHudSalir.addEventListener("click", () => { volverAlClaro(); });
-
-/* ---- Andar con los botones ----------------------------------------------
-
-   Se puede andar arrastrando el bosque, y eso se queda. Esto es el otro
-   camino: mientras uno de los dos está apretado, el bosque corre.
-
-   ── POR QUÉ NO ES UN «DAR UN PASO» POR TOQUE ─────────────────────────
-   Porque andar a saltitos de un paso se siente a menú, no a bosque. Lo
-   que hace esto es empujar la MISMA velocidad que empujaría el dedo, y
-   al soltar la inercia de siempre lo va parando. Apretado o arrastrado,
-   el bosque se mueve igual.                                          */
-
-const andando = { izq: false, der: false };
-
-function pegarBoton(el, lado) {
-  const abajo = (e) => {
-    andando[lado] = true;
-    el.classList.add("is-on");
-    el.setPointerCapture?.(e.pointerId);
-    despertarAudio();
-    if (e.cancelable) e.preventDefault();
-  };
-  const arriba = () => { andando[lado] = false; el.classList.remove("is-on"); };
-  el.addEventListener("pointerdown", abajo);
-  el.addEventListener("pointerup", arriba);
-  el.addEventListener("pointercancel", arriba);
-  el.addEventListener("pointerleave", arriba);
-  /* Y con el teclado, que también se juega con teclado. */
-  el.addEventListener("keydown", (e) => {
-    if (e.key === " " || e.key === "Enter") { andando[lado] = true; el.classList.add("is-on"); }
-  });
-  el.addEventListener("keyup", arriba);
-  el.addEventListener("blur", arriba);
-}
-pegarBoton(elAndarIzq, "izq");
-pegarBoton(elAndarDer, "der");
-
-/** Lo que empujan los botones, una vez por cuadro. */
-function moverAndando(dt) {
-  const d = (andando.der ? 1 : 0) - (andando.izq ? 1 : 0);
-  if (!d) return;
-  /* La aceleración pelea contra el mismo rozamiento que frena la
-     inercia del arrastre, así que la velocidad se queda sola donde las
-     dos se igualan. Sale un paso de algo más de un segundo por
-     pantalla: andar, no correr. */
-  espesura.vx = clamp(espesura.vx + d * A * 3 * dt, -A * 0.85, A * 0.85);
-}
 
 /* ---- Los iconos de los objetos ------------------------------------------
    Dibujados en un lienzo pequeñito, una vez, y guardados. Un icono que
@@ -13078,6 +13055,11 @@ const caza = {
   avisadaAyuda: false,
 };
 
+/** ¿Se está peleando ahora mismo? */
+function enCombate() {
+  return caza.fase === "oleada" || caza.fase === "pausa" || caza.fase === "aviso";
+}
+
 /** Dónde está el jugador, en coordenadas de pantalla. */
 function sitioJugador() {
   return { x: A * 0.5, y: H * 0.88 };
@@ -15202,11 +15184,10 @@ function tocarEnEspesura(p, e) {
   void e;
   /* 0. Si hay cacería, el dedo es el gatillo y no hay más que hablar.
      Tocar un árbol en mitad de un ataque para que suelte hojas no es
-     una opción que nadie quiera tener. */
-  if (caza.fase === "oleada" || caza.fase === "pausa" || caza.fase === "aviso") {
-    dispararEscopeta(p);
-    return;
-  }
+     una opción que nadie quiera tener. (Por el camino normal esto no
+     llega: se dispara al APRETAR, no al soltar. Está aquí para lo que
+     entre por otro lado.) */
+  if (enCombate()) { dispararEscopeta(p); return; }
 
   /* 1. Los puntos, del más pequeño al más grande. */
   const cand = puntos.lista
@@ -15748,15 +15729,21 @@ zona.addEventListener("pointerdown", (e) => {
      soltar, según cuánto haya corrido. Decidirlo al bajar obligaría a
      elegir entre «no se puede andar» y «no se puede tocar». */
   if (escena === "espesura") {
-    /* Con la cacería en marcha, el dedo es el gatillo y dispara YA. No
-       se espera a soltar como con los toques normales: medio segundo
-       de retraso entre apretar y que salga el tiro convierte el
-       apuntar en adivinar. Para andar están los botones. */
-    if (caza.fase === "oleada" || caza.fase === "pausa" || caza.fase === "aviso") {
-      dispararEscopeta(p);
-      return;
-    }
-    espesura.agarre = { id: e.pointerId, x: p.x, y: p.y, x0: p.x, t: reloj, corrido: 0 };
+    /* Con la cacería en marcha, el dedo es el gatillo y dispara YA, al
+       APRETAR. No se espera a soltar como con los toques normales:
+       medio segundo entre apretar y que salga el tiro convierte el
+       apuntar en adivinar.
+
+       Y aun así se sigue pudiendo andar, porque el mismo dedo puede
+       seguir arrastrando después de haber disparado. Apretar dispara;
+       apretar y arrastrar dispara y además te mueve, que es justo lo
+       que hace falta para meterse detrás de la roca. */
+    if (enCombate()) dispararEscopeta(p);
+    espesura.agarre = {
+      id: e.pointerId, x: p.x, y: p.y, x0: p.x, t: reloj, corrido: 0,
+      /* Ya se disparó al apretar: al soltar no hay que volver a hacerlo. */
+      yaDisparo: enCombate(),
+    };
     espesura.vx = 0;
     return;
   }
@@ -15802,6 +15789,8 @@ zona.addEventListener("pointermove", (e) => {
     /* Aquí sólo se apunta a DÓNDE está el dedo, sin recortar nada. El
        alcance lo pone la física del palo, que se queda tirante cuando
        te pasas en vez de que el dedo se despegue del palo. */
+    bombon.corrido = (bombon.corrido || 0)
+      + Math.hypot(p.x - bombon.destX, p.y - bombon.destY);
     bombon.destX = p.x;
     bombon.destY = clamp(p.y, U * 14, H - U * 4);
     if (e.cancelable) e.preventDefault();
@@ -15842,7 +15831,7 @@ function soltarDedo(e) {
   const ag = espesura.agarre;
   if (ag && ag.id === e.pointerId) {
     espesura.agarre = null;
-    if (ag.corrido < U * 2.6 && !bloqueado) {
+    if (ag.corrido < U * 2.6 && !bloqueado && !ag.yaDisparo) {
       tocarEnEspesura({ x: ag.x0, y: ag.y }, e);
       espesura.vx = 0;
     }
@@ -15864,10 +15853,22 @@ function soltarDedo(e) {
   if (bombon.agarrado && bombon.dedoId === e.pointerId) {
     bombon.agarrado = false;
     bombon.dedoId = null;
-    /* Al soltarlo, el palo vuelve solo a su sitio, pero CONSERVANDO la
-       velocidad que llevaba. Por eso si lo sueltas en pleno movimiento
-       se pasa de largo y se balancea antes de pararse. */
-    colocarBombon(false);
+    /* ¿Fue un toque? Entonces se lo come. Y se lo come esté como esté:
+       crudo, hecho o carbonizado. Cada estado tiene sus frases.
+
+       Y si se lo come, NO se recoloca el palo. `colocarBombon(false)`
+       mira si el bombón está vivo y, al encontrarlo recién comido,
+       entiende que hay que sacar uno nuevo… y lo saca en el acto,
+       borrando el mordisco. El bombón nuevo lo pone `moverBombon` a su
+       tiempo, cuando acaba la animación de comérselo. */
+    if ((bombon.corrido || 0) < U * 2.4) {
+      comerBombon();
+    } else {
+      /* Al soltarlo, el palo vuelve solo a su sitio, pero CONSERVANDO
+         la velocidad que llevaba. Por eso si lo sueltas en pleno
+         movimiento se pasa de largo y se balancea antes de pararse. */
+      colocarBombon(false);
+    }
   }
   if (arrastrePanel && arrastrePanel.id === e.pointerId) {
     /* Si no ha arrastrado, es un toque: enciende o apaga. */
@@ -15889,16 +15890,26 @@ function tocarEnBosque(p, e) {
         usa. Si está fuera del fuego, un toque se lo come; si está
         dentro, se coge para sacarlo. */
   const dBom = desplazar(1.9);
-  if (bombon.vivo && dentroDe(p.x, p.y, bombon.x + dBom.x, bombon.y + dBom.y, U * 6.5)) {
-    const cerca = Math.hypot(bombon.x - f.x, bombon.y - (f.y - f.r)) < f.r * 2.6;
-    if (!cerca && bombon.tueste > 0.04) { comerBombon(); return; }
+  if (bombon.vivo && dentroDe(p.x, p.y, bombon.x + dBom.x, bombon.y + dBom.y, U * 7.5)) {
+    /* ---- Coger o comer ----
+       No se decide aquí: se coge SIEMPRE, y al soltar se mira cuánto ha
+       corrido el dedo. Poco es un toque y se lo come; mucho es que lo
+       estabas moviendo y no.
+
+       Antes se decidía al apretar, mirando si estaba lejos del fuego y
+       si tenía algo de tueste. Eso tenía dos fallos: uno crudo no se
+       podía comer nunca —y hay frases escritas para comérselo crudo—, y
+       para sacarlo del fuego había que tocarlo, soltarlo y volver a
+       tocarlo. Ahora es lo mismo que todo lo demás del juego: arrastrar
+       mueve, tocar hace. */
     bombon.agarrado = true;
     bombon.dedoId = e.pointerId;
     bombon.destX = p.x; bombon.destY = p.y;
+    bombon.corrido = 0;
     /* Al soltarse de su sitio de reposo, el palo arranca quieto: si no,
        se lleva consigo la velocidad que traía de volver y da un
        latigazo nada más tocarlo. */
-    bombon.angV *= 0.3; bombon.largoV *= 0.3;
+    bombon.angV *= 0.3;
     tono(520, 0.12, "sine", 0.04);
     if (e.cancelable) e.preventDefault();
     return;
@@ -16924,10 +16935,6 @@ function paso(ahora) {
 
   if (escena === "espesura") {
     moverClima(dt);
-    /* Los botones de andar empujan ANTES de que la espesura integre: si
-       fuera después, la velocidad que meten se quedaría un cuadro sin
-       aplicarse y el bosque arrancaría con un tirón. */
-    moverAndando(dt);
     moverEspesura(dt);
     moverBuhoEsp(dt);
     moverOjosEsp(dt);
