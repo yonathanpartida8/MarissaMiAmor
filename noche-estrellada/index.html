@@ -12234,6 +12234,9 @@ const buhoEsp = {
   /* Lo que ha dicho ya, para no repetirse. */
   dichas: new Set(),
   relojDice: 0,
+  /* La respiración y el erizarse de plumas: lo que hace que un bicho
+     quieto siga estando vivo. */
+  respira: 0, pluma: 0, relojPluma: 3,
   /* La desaparición y el ataque. */
   yendo: -1,        // segundos desde que empezó a irse
   modo: "normal",   // normal · verde · minis · ataque
@@ -12299,6 +12302,18 @@ function moverBuhoEsp(dt) {
   /* ---- Lo que dice por su cuenta ----
      Sólo si está en pantalla: un búho que habla desde fuera del campo
      de visión es una voz en off, y aquí no hay voces en off. */
+  /* ---- Lo que hace estando quieto ----
+     Respira, y cada tantos segundos se eriza y se vuelve a alisar. Son
+     dos números y son la diferencia entre un bicho posado y un dibujo
+     de un bicho posado. */
+  b.respira += dt * 1.05;
+  b.pluma = Math.max(0, b.pluma - dt * 1.6);
+  b.relojPluma -= dt;
+  if (b.relojPluma <= 0) {
+    b.relojPluma = azar(4, 13);
+    b.pluma = 1;
+  }
+
   b.relojDice -= dt;
   if (b.relojDice <= 0 && sx > A * 0.1 && sx < A * 0.9 && !bloqueado) {
     b.relojDice = azar(11, 26);
@@ -12606,6 +12621,112 @@ function dibujarMinis() {
 
 /* ---- Dibujar el búho ---------------------------------------------------- */
 
+/**
+ * LA RAMA EN LA QUE ESTÁ POSADO.
+ *
+ * ── POR QUÉ SALE HACIA UN LADO Y NO ES SIMÉTRICA ─────────────────────
+ * Porque una rama nace de un tronco. La de antes era un huso con la
+ * misma punta a los dos lados, o sea un palo flotando: no venía de
+ * ninguna parte. Ésta es gorda por donde se agarra al árbol —que queda
+ * fuera de pantalla, o detrás de la niebla— y se va afinando hasta la
+ * punta, con dos ramitas saliendo por arriba.
+ *
+ * ── Y SE COMBA ───────────────────────────────────────────────────────
+ * Una rama que no cede bajo un bicho de dos kilos no está aguantando
+ * nada. `pesa` la hunde por donde está el búho y la deja subir en la
+ * punta, y respira despacio con él: lo justo para que se vea que hay
+ * peso encima.
+ */
+function dibujarRamaDelBuho(b, r, sal) {
+  /* A qué lado está el árbol. Es fijo por búho: se saca de su sitio en
+     el mundo, así que al cambiar de rama puede cambiar de lado, pero
+     mientras esté en una no baila. */
+  const lado = Math.sin(b.x * 0.013) < 0 ? -1 : 1;
+  const largo = r * 5.2;
+  const pesa = r * (0.16 + Math.sin(b.respira || 0) * 0.03);
+  const y0 = r * 1.16;
+
+  ctx.save();
+  ctx.fillStyle = `rgba(6,10,9,${0.94 * sal})`;
+  ctx.beginPath();
+  /* El canto de arriba: del tronco hasta la punta, hundiéndose donde
+     se apoya el búho. */
+  ctx.moveTo(-lado * largo, y0 - r * 0.34);
+  ctx.quadraticCurveTo(-lado * largo * 0.3, y0 + pesa * 0.8,
+                       lado * largo * 0.55, y0 + pesa);
+  ctx.lineTo(lado * largo * 0.72, y0 + pesa * 0.72);
+  /* Y el de abajo, de vuelta: más separado junto al tronco. */
+  ctx.quadraticCurveTo(-lado * largo * 0.28, y0 + pesa + r * 0.3,
+                       -lado * largo, y0 + r * 0.22);
+  ctx.closePath();
+  ctx.fill();
+
+  /* Dos ramitas hacia arriba, para que la rama tenga de dónde. */
+  ctx.strokeStyle = `rgba(6,10,9,${0.9 * sal})`;
+  ctx.lineCap = "round";
+  for (let i = 0; i < 2; i++) {
+    const t = 0.25 + i * 0.42;
+    const bx = mez(-lado * largo, lado * largo * 0.6, t);
+    const by = y0 + pesa * t;
+    ctx.lineWidth = Math.max(1, r * (0.16 - i * 0.05));
+    ctx.beginPath();
+    ctx.moveTo(bx, by);
+    ctx.quadraticCurveTo(bx + lado * r * 0.5, by - r * 0.5,
+                         bx + lado * r * 0.95, by - r * (0.75 + i * 0.3));
+    ctx.stroke();
+  }
+
+  /* El filo de luna por el canto de arriba. */
+  ctx.strokeStyle = `rgba(150,186,246,${0.14 * sal})`;
+  ctx.lineWidth = Math.max(1, r * 0.08);
+  ctx.beginPath();
+  ctx.moveTo(-lado * largo, y0 - r * 0.34);
+  ctx.quadraticCurveTo(-lado * largo * 0.3, y0 + pesa * 0.8,
+                       lado * largo * 0.55, y0 + pesa);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * LAS PATAS, agarrando.
+ *
+ * Tres dedos: dos hacia delante y uno hacia atrás, que es como agarra
+ * un búho. Y no están apoyadas encima de la rama: la RODEAN, con las
+ * puntas metiéndose por debajo del canto. Eso es agarrar; lo otro es
+ * estar de pie.
+ */
+function dibujarPatasDelBuho(b, r, sal) {
+  const pesa = r * (0.16 + Math.sin(b.respira || 0) * 0.03);
+  const y0 = r * 1.16 + pesa;
+  /* Al estar alerta aprieta: los dedos se cierran un poco. */
+  const aprieta = 0.8 + clamp01(b.visto) * 0.25;
+
+  ctx.save();
+  ctx.strokeStyle = `rgba(172,140,84,${0.8 * sal})`;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const s of [-1, 1]) {
+    const px = s * r * 0.3;
+    /* La pata: del vientre a la rama. Cortísima, que es lo que se ve de
+       un búho posado: casi nada de pierna. */
+    ctx.lineWidth = Math.max(1, r * 0.13);
+    ctx.beginPath();
+    ctx.moveTo(px, r * 0.92);
+    ctx.lineTo(px, y0 - r * 0.02);
+    ctx.stroke();
+    /* Los tres dedos. */
+    ctx.lineWidth = Math.max(1, r * 0.09);
+    for (const [dir, largo] of [[-1, 0.3], [1, 0.34], [0.35, 0.22]]) {
+      ctx.beginPath();
+      ctx.moveTo(px, y0 - r * 0.04);
+      ctx.quadraticCurveTo(px + dir * r * largo, y0 + r * 0.02,
+                           px + dir * r * largo * aprieta, y0 + r * 0.2);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
 function dibujarBuhoEsp() {
   const b = buhoEsp;
   if (b.sal < 0.015 && b.ataque < 0) { dibujarMinis(); return; }
@@ -12628,6 +12749,18 @@ function dibujarBuhoEsp() {
   ctx.translate(x, y);
   ctx.globalAlpha = mez(0.35, 1, sal);
 
+  /* ---- LA RAMA, y por qué va DEBAJO ------------------------------
+     Antes se pintaba al final, después del búho, y era un huso
+     simétrico flotando debajo de él: una rama que no venía de ningún
+     árbol y que además tapaba las patas, porque no había patas.
+
+     Ahora va primero —el que se posa está ENCIMA de la rama, no al
+     revés—, sale hacia un lado buscando el tronco del que nace, y se
+     afina hacia la punta. Y se comba con el peso: `pesa` es cuánto la
+     hunde el búho, y sube y baja despacito con la respiración. Una
+     rama que no cede no está aguantando nada. */
+  if (b.ataque < 0) dibujarRamaDelBuho(b, r, sal);
+
   /* Las alas. */
   const abre = 0.12 + b.aleteo * (0.5 + Math.sin(b.ala) * 0.5) * 1.2;
   for (const s of [-1, 1]) {
@@ -12649,9 +12782,31 @@ function dibujarBuhoEsp() {
   gc.addColorStop(0, "rgb(7,11,10)");
   gc.addColorStop(1, "rgb(14,20,18)");
   ctx.fillStyle = gc;
+  /* Respira: se ensancha un pelín y se acorta otro pelín, que es lo
+     que hace un pecho al llenarse. Y al erizarse se hincha de golpe y
+     se desinfla despacio. */
+  const aire = Math.sin(b.respira) * 0.018 + b.pluma * 0.06;
   ctx.beginPath();
-  ctx.ellipse(0, 0, r, r * 1.22, 0, 0, 6.283);
+  ctx.ellipse(0, r * aire * 0.5, r * (1 + aire), r * 1.22 * (1 - aire * 0.35),
+    0, 0, 6.283);
   ctx.fill();
+  /* Y las puntas de las plumas erizadas, sólo cuando se eriza. */
+  if (b.pluma > 0.04) {
+    ctx.save();
+    ctx.strokeStyle = `rgba(18,26,24,${b.pluma * 0.9})`;
+    ctx.lineWidth = Math.max(1, r * 0.07);
+    ctx.lineCap = "round";
+    for (let i = 0; i < 9; i++) {
+      const a2 = 0.5 + (i / 8) * 2.14;
+      const rr2 = r * (1 + aire);
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a2) * rr2 * 0.94, Math.sin(a2) * r * 1.16);
+      ctx.lineTo(Math.cos(a2) * rr2 * (1.1 + b.pluma * 0.14),
+                 Math.sin(a2) * r * (1.28 + b.pluma * 0.1));
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
   ctx.strokeStyle = `rgba(${rr},${gg2},${bb},${(0.1 + b.visto * 0.25) * sal})`;
   ctx.lineWidth = Math.max(1, r * 0.1);
   ctx.stroke();
@@ -12718,17 +12873,15 @@ function dibujarBuhoEsp() {
   ctx.fill();
   ctx.restore();
 
-  /* La rama. No cuando ataca: a treinta veces su tamaño, la rama es
-     una viga que cruza la pantalla de canto a canto. */
-  if (b.ataque < 0) {
-  ctx.fillStyle = `rgba(5,8,7,${0.9 * sal})`;
-  ctx.beginPath();
-  ctx.moveTo(-r * 2.4, r * 1.1);
-  ctx.quadraticCurveTo(0, r * 1.24, r * 2.4, r * 1.14);
-  ctx.quadraticCurveTo(0, r * 1.42, -r * 2.4, r * 1.28);
-  ctx.closePath();
-  ctx.fill();
-  }
+  /* ---- LAS PATAS ----
+     Van al final de todo: agarran la rama POR ENCIMA, que es lo que
+     hace una garra. Dibujadas antes quedarían debajo de la corteza y
+     el búho volvería a estar apoyado en el aire.
+
+     Tres dedos por pata: dos hacia delante y uno hacia atrás, que es
+     como agarra un búho de verdad. Y se cierran un poco más cuando
+     está alerta, porque al tensarse aprieta. */
+  if (b.ataque < 0) dibujarPatasDelBuho(b, r, sal);
 
   ctx.restore();
   ctx.globalAlpha = 1;
