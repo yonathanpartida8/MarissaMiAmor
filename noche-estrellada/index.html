@@ -214,6 +214,93 @@ html, body {
   margin-top: 0.25em;
 }
 
+/* ── Andar ──────────────────────────────────────────────────────────────
+   Dos flechas juntas, abajo y POR EL CENTRO.
+
+   El centro no es decoración: cuando esta página va dentro del librito,
+   él pone sus dos botones redondos de pasar hoja pegados a los cantos
+   —abajo en vertical, a media altura en apaisado— y además se queda los
+   barridos que empiezan en sus 24-44 px de borde. Cualquier cosa que se
+   ponga ahí queda debajo de un botón o se come un pase de página.
+
+   Se puede seguir arrastrando el bosque con el dedo, que es lo bonito;
+   esto es para que andar no dependa NUNCA de acertar dónde empieza el
+   gesto.                                                              */
+.noche .ne-andar {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--seguro-b) + var(--barra) + 10px);
+  display: flex;
+  gap: 14px;
+  pointer-events: none;
+}
+.noche .ne-andar-b {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  border: 1px solid rgba(180, 220, 200, 0.2);
+  background: linear-gradient(to bottom, rgba(20, 34, 30, 0.58), rgba(6, 14, 12, 0.68));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #cfe8db;
+  font-size: 1.3rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+  cursor: pointer;
+  /* `manipulation` y no `none`: hace falta que el navegador NO espere al
+     doble toque, pero el botón tiene que poder quedarse apretado. */
+  touch-action: manipulation;
+  transition: transform 140ms var(--e-suave), background 240ms var(--e-suave);
+}
+.noche .ne-andar-b:active,
+.noche .ne-andar-b.is-on {
+  transform: scale(0.92);
+  background: rgba(40, 70, 58, 0.8);
+  border-color: rgba(150, 255, 200, 0.4);
+}
+
+/* ── Las vidas de la cacería ────────────────────────────────────────────
+   Arriba y por el centro: es lo único que hay que poder mirar de reojo
+   sin dejar de disparar, y por el centro no lo tapa nada. */
+.noche .ne-vidas {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(var(--seguro-t) + 12px);
+  display: flex;
+  gap: 7px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 400ms var(--e-suave);
+}
+.noche .ne-vidas.is-on { opacity: 1; }
+.noche .ne-vida {
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 34% 30%, #ffd9e2, #e0506e 62%, #7a1f30);
+  box-shadow: 0 0 10px rgba(255, 90, 120, 0.5);
+  transition: transform 300ms var(--e-suave), opacity 300ms var(--e-suave),
+              box-shadow 300ms var(--e-suave), background 300ms var(--e-suave);
+}
+/* Una vida perdida NO se borra: se queda apagada en su sitio. Si
+   desapareciera, las que quedan se moverían y no se sabría cuántas
+   había ni cuántas se han ido. */
+.noche .ne-vida.is-ida {
+  background: rgba(120, 130, 140, 0.24);
+  box-shadow: none;
+  transform: scale(0.62);
+}
+@keyframes ne-golpe {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.9); }
+  100% { transform: scale(0.62); }
+}
+.noche .ne-vida.is-golpe { animation: ne-golpe 460ms var(--e-out); }
+
 /* La bolsa: una fila de huecos abajo a la izquierda. Vacía no se ve. */
 .noche .ne-bolsa {
   position: absolute;
@@ -721,6 +808,18 @@ html, body {
     </button>
     <div class="ne-hud-hallado" id="hudHallado"><b>0</b><i>secretos</i></div>
     <div class="ne-bolsa" id="bolsaUI"></div>
+    <!-- Andar. Se puede arrastrar el bosque con el dedo, pero dentro del
+         librito los barridos que empiezan pegados a un canto son suyos
+         —es su salida de emergencia— y andar hacia ese lado pasaba de
+         hoja. Con estos dos, andar no depende nunca de adivinar por
+         dónde empieza el gesto. Van juntos y por el centro, lejos de
+         los dos botones redondos de pasar página. -->
+    <div class="ne-andar" id="andarUI" aria-hidden="false">
+      <button class="ne-andar-b" id="andarIzq" type="button" aria-label="Andar a la izquierda">‹</button>
+      <button class="ne-andar-b" id="andarDer" type="button" aria-label="Andar a la derecha">›</button>
+    </div>
+    <!-- Las vidas, durante la cacería. -->
+    <div class="ne-vidas" id="vidasUI" aria-hidden="true"></div>
   </div>
 
   <!-- El aviso de objeto conseguido. -->
@@ -1412,6 +1511,34 @@ const CONF = {
       "Ahí va otra. Pide rápido.",
       "Las mando yo. Todas son para ti.",
     ],
+
+    /* ---- El cajón de la mesilla y la botella ---- */
+    cajonBotella: "…¿y esa botella? Yo no la puse ahí.",
+    cajonCierra: "Mejor lo dejo cerrado.",
+    botellaPapel: "«Si estás leyendo esto, encontraste el cajón. Sabía que sí. Te amo 🤍»",
+    botella: [
+      "El papel sigue adentro.",
+      "No sé quién la metió ahí. En serio.",
+      "Huele a mar. Y estamos en un bosque.",
+      "Pesa más de lo que debería :>",
+    ],
+
+    /* ---- Las rayas del marco, detrás de la cortina ----
+       El {n} se cambia por las veces que has abierto esta página. */
+    rayasUna: "Una raya recién hecha en la madera. Por esta noche.",
+    rayas: "{n} rayas talladas. Alguien lleva la cuenta de las noches… y son justo las tuyas.",
+
+    /* ---- La manta ---- */
+    mantaSube: [
+      "Así. Hasta la barbilla :>",
+      "Ya, ya, no te destapo.",
+      "Es la buena, la que pesa.",
+    ],
+    mantaBaja: [
+      "¿Calor? Bueno.",
+      "Sácate un pie, yo también lo hago.",
+      "Destapada duermes peor, te lo digo yo.",
+    ],
   },
 
   /* ---- LA CUENTA DE LO ESCONDIDO ---------------------------------------
@@ -1571,6 +1698,102 @@ const meneo = { fuerza: 0, t: 0 };
 /* En qué escena estamos. */
 let escena = "bosque";             // bosque · habitacion · durmiendo
 let bloqueado = false;             // durante una cinemática no se toca nada
+
+/* ---- EL SITIO QUE SE QUEDA EL LIBRITO -----------------------------------
+
+   Esta página se puede abrir sola o ir dentro del librito. Dentro, el
+   librito pone DOS BOTONES REDONDOS de pasar hoja por encima de todo:
+   abajo pegados a los cantos en vertical, y a media altura en apaisado.
+   Lo que quede debajo de uno de ellos no se puede tocar nunca, porque
+   el toque ni siquiera llega a esta página.
+
+   Así que aquí se calcula dónde caen y se les deja el sitio. No es una
+   suposición sobre el librito: es el mismo número que usa él, y si un
+   día cambia, lo peor que pasa es que se reserve un poco de más.
+
+   Sola, esta página no reserva nada: no hay botones que esquivar.    */
+
+const dentroDelLibro = (() => {
+  try { return window.self !== window.top; } catch { return true; }
+})();
+
+/**
+ * Dónde está esta página dentro de la ventana del librito.
+ *
+ * Hace falta porque los botones de pasar hoja van pegados a los cantos
+ * de LA VENTANA, no a los de la página. En vertical la página ocupa
+ * todo el ancho y da igual, pero en apaisado la hoja se queda centrada
+ * y más estrecha, y entonces los dos botones caen FUERA: reservarles
+ * sitio ahí sería apartar cosas de un botón que no está.
+ *
+ * Devuelve `null` si no se puede mirar —otro dominio, sin marco— y
+ * entonces se supone lo peor: que la página llena la ventana.
+ */
+function marcoDelLibro() {
+  if (!dentroDelLibro) return null;
+  try {
+    const fe = window.frameElement;
+    if (!fe) return null;
+    const r = fe.getBoundingClientRect();
+    const W = window.parent.innerWidth, Hh = window.parent.innerHeight;
+    if (!W || !Hh) return null;
+    return { W, H: Hh, ox: r.left, oy: r.top };
+  } catch {
+    return null;
+  }
+}
+
+/** Los círculos que hay que dejar libres, en coordenadas de la escena. */
+function zonasDelLibro() {
+  if (!dentroDelLibro) return [];
+  /* 3.15rem de botón y 8 px de margen, que es lo que pone su hoja de
+     estilos. El radio se infla un poco: un botón que se puede tocar por
+     el canto necesita más sitio del que ocupa. */
+  const r = 25.2, m = 8, rr = r * 1.45;
+  const marco = marcoDelLibro();
+  const W = marco ? marco.W : A, Hh = marco ? marco.H : H;
+  const ox = marco ? marco.ox : 0, oy = marco ? marco.oy : 0;
+  /* Él decide por la forma de LA VENTANA, no por la de la hoja. */
+  const apaisadoLibro = W > Hh * 1.15;
+  /* En vertical van a 4.5rem del suelo; en apaisado, a media altura. */
+  const cy = apaisadoLibro ? Hh * 0.5 : Hh - 72 - r;
+  const fuera = [];
+  for (const cx of [m + r, W - m - r]) {
+    /* De coordenadas de la ventana a las de esta página. */
+    const x = cx - ox, y = cy - oy;
+    /* Y si cae del todo fuera de la hoja, no estorba a nadie. */
+    if (x + rr < 0 || x - rr > A || y + rr < 0 || y - rr > H) continue;
+    fuera.push({ x, y, r: rr });
+  }
+  return fuera;
+}
+
+/** ¿Este punto de la pantalla lo tapa un botón de pasar hoja? */
+function tapadoPorElLibro(x, y) {
+  for (const z of zonasDelLibro()) {
+    if (Math.hypot(x - z.x, y - z.y) < z.r) return true;
+  }
+  return false;
+}
+
+/**
+ * Aparta un punto de la pantalla de los botones de pasar hoja.
+ *
+ * Devuelve el MISMO punto si ya estaba libre, y si no, el más cercano
+ * que lo esté. Se usa para colocar las cosas fijas de la escena —un
+ * reloj recargado en un árbol, una escopeta en el suelo— que si no se
+ * pueden quedar debajo de un botón para siempre.
+ */
+function apartarDelLibro(x, y) {
+  for (const z of zonasDelLibro()) {
+    const d = Math.hypot(x - z.x, y - z.y);
+    if (d >= z.r) continue;
+    if (d < 0.001) return { x: z.x + z.r, y };
+    const k = z.r / d;
+    return { x: z.x + (x - z.x) * k, y: z.y + (y - z.y) * k };
+  }
+  return { x, y };
+}
 
 function medir() {
   const r = raiz.getBoundingClientRect();
@@ -5950,6 +6173,79 @@ function dibujarSombrasRamas(vx, vy, v) {
   ctx.restore();
 }
 
+/**
+ * LAS RAYAS DEL MARCO — lo que hay detrás de la cortina izquierda.
+ *
+ * Alguien ha estado llevando la cuenta de las noches a cuchillo sobre
+ * la madera del marco: grupos de cuatro rayas cruzadas por una quinta.
+ *
+ * ── POR QUÉ ESTO Y NO UN DIBUJO ──────────────────────────────────────
+ * Porque el número no es inventado: son las veces que se ha abierto
+ * esta página. Quien la abra por sexta vez encontrará seis rayas, y ahí
+ * es donde deja de ser una decoración y pasa a dar un poco de frío.
+ *
+ * Y por eso está detrás de una cortina: si estuviera a la vista se leería
+ * como un adorno de cabaña. Hay que correrla para encontrarlas.
+ */
+function dibujarRayas(vx, vy, v) {
+  const k = clamp01((secretos.cortina.izq - 0.25) / 0.45);
+  if (k < 0.02) return;
+  const n = Math.min(60, Math.max(1, recuerdo.leer("visitas", 1)));
+  const x0 = vx - v.w * 0.62;
+  const y0 = vy - v.h * 0.16;
+  const paso = U * 1.25;          // entre rayas
+  const grupo = U * 7.4;          // entre grupos de cinco
+  const alto = U * 3.4;
+
+  ctx.save();
+  ctx.globalAlpha = k;
+  /* Talladas: una raya oscura con un filo claro pegado. Eso es lo que
+     hace que se lean como un corte en la madera y no como tinta. */
+  ctx.lineCap = "round";
+  for (let i = 0; i < n; i++) {
+    const g = Math.floor(i / 5), j = i % 5;
+    const fila = Math.floor(g / 3), col = g % 3;
+    const bx = x0 + col * grupo;
+    const by = y0 + fila * (alto + U * 2.6);
+    /* Las cuatro primeras rectas; la quinta cruzada por encima. */
+    const incl = azarFijo(i) * 0.14 - 0.07;
+    let ax, ay, bx2, by2;
+    if (j < 4) {
+      ax = bx + j * paso; ay = by;
+      bx2 = ax + Math.sin(incl) * alto; by2 = by + alto;
+    } else {
+      ax = bx - paso * 0.5; ay = by + alto * 0.78;
+      bx2 = bx + paso * 3.6; by2 = by + alto * 0.2;
+    }
+    for (const [dx, dy, col2, gr] of [
+      [1, 1, "rgba(196,178,152,0.46)", 1],
+      [0, 0, "rgba(10,7,9,0.78)", 1.35],
+    ]) {
+      ctx.strokeStyle = col2;
+      ctx.lineWidth = Math.max(1.2, U * 0.28 * gr);
+      ctx.beginPath();
+      ctx.moveTo(ax + dx, ay + dy);
+      ctx.lineTo(bx2 + dx, by2 + dy);
+      ctx.stroke();
+    }
+  }
+
+  /* Y un verde muy flojo encima, que sólo se ve si te fijas. Es el
+     mismo verde de lo que había enterrado en el bosque. */
+  ctx.globalCompositeOperation = "lighter";
+  haloOvalado(x0 + grupo, y0 + alto * 0.5, grupo * 1.9, alto * 2.2, [
+    [0, `rgba(120,255,180,${0.05 * k * (0.6 + 0.4 * Math.sin(reloj * 0.8))})`],
+    [1, "rgba(120,255,180,0)"],
+  ]);
+  ctx.restore();
+}
+
+/** Un azar fijo por índice: el mismo temblor en la misma raya siempre. */
+function azarFijo(i) {
+  const s = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+  return s - Math.floor(s);
+}
+
 /** Las cortinas, a los dos lados de la ventana. Se mueven con el aire. */
 function dibujarCortinas(vx, vy, v) {
   const viento = clima.viento;
@@ -5958,8 +6254,15 @@ function dibujarCortinas(vx, vy, v) {
      es una pared de tela. */
   const base = Math.sin(reloj * 0.55) * 0.35;
 
+  /* Lo que hay detrás de la cortina de la izquierda se pinta ANTES que
+     ella: la cortina lo tapa, y destaparlo es justo el secreto. */
+  dibujarRayas(vx, vy, v);
+
   for (const lado of [-1, 1]) {
-    const bx = vx + lado * v.w * 0.5;
+    /* Cuánto se ha corrido esta cortina, de 0 a 1. Se va hacia SU lado,
+       que es donde se amontona una cortina cuando se abre. */
+    const corr = (lado < 0 ? secretos.cortina.izq : secretos.cortina.der);
+    const bx = vx + lado * v.w * (0.5 + corr * 0.4);
     const arriba = vy - v.h * 0.56;
     const abajo = vy + v.h * 0.62;
     /* El vuelo: el viento las empuja HACIA DENTRO, o sea hacia el lado
@@ -6090,14 +6393,10 @@ function dibujarMesilla(lx, ly) {
   /* La tapa, un pelín más clara y sobresaliendo. */
   ctx.fillStyle = "rgba(78,60,48,0.95)";
   ctx.fillRect(lx - mw / 2 - U * 0.6, ly + U * 2.2, mw + U * 1.2, U * 1.1);
-  /* El cajón y su tirador. */
-  ctx.strokeStyle = "rgba(20,14,12,0.6)";
-  ctx.lineWidth = 1;
-  ctx.strokeRect(lx - mw / 2 + U, ly + U * 5, mw - U * 2, mh * 0.38);
-  ctx.fillStyle = "rgba(150,126,90,0.6)";
-  ctx.beginPath();
-  ctx.arc(lx, ly + U * 5 + mh * 0.19, U * 0.7, 0, 6.283);
-  ctx.fill();
+  /* ---- El cajón ----
+     Se abre de verdad. Antes era un rectángulo dibujado en el frente
+     del mueble, que es lo que menos invita a abrir nada. */
+  dibujarCajon(lx, ly, mw, mh);
 
   /* Los libros, apilados. */
   let py2 = ly + U * 2.2;
@@ -6167,6 +6466,162 @@ function dibujarMesilla(lx, ly) {
                          tx + Math.sin(reloj * 0.9) * U * 0.8, ty - U * 7);
     ctx.stroke();
   }
+}
+
+/**
+ * El cajón de la mesilla, abierto o cerrado.
+ *
+ * ── CÓMO SE ABRE UN CAJÓN VISTO DESDE LA CAMA ────────────────────────
+ * Se mira desde arriba y un poco de lado, así que un cajón que sale no
+ * se mueve «hacia ti»: baja por la pantalla y se ve un poco más grande.
+ * Por eso el frente baja y ensancha a la vez, y por encima aparece el
+ * hueco negro de dentro del mueble. Sólo con bajarlo parecía que se
+ * caía; sólo con ensancharlo, que crecía.
+ *
+ * Y lo que hay dentro se dibuja ANTES que el frente, porque el frente
+ * lo tapa a medida que se cierra. Eso es lo que hace que cerrar el
+ * cajón se sienta como esconder algo.
+ */
+function dibujarCajon(lx, ly, mw, mh) {
+  const k = secretos.cajon.abierto;
+  const ancho = mw - U * 2;
+  const alto = mh * 0.38;
+  const y0 = ly + U * 5;
+
+  /* El hueco de dentro, que se ve conforme el frente baja. Un pelín más
+     alto que lo que baja el frente: si midiera exactamente lo mismo,
+     lo que hay dentro quedaría siempre justo detrás del frente y no se
+     vería nunca. */
+  if (k > 0.01) {
+    const hAbre = alto * k * 1.25;
+    const gh = ctx.createLinearGradient(0, y0, 0, y0 + hAbre);
+    gh.addColorStop(0, "rgba(6,4,6,0.96)");
+    gh.addColorStop(1, "rgba(20,15,16,0.92)");
+    ctx.fillStyle = gh;
+    ctx.fillRect(lx - ancho / 2, y0, ancho, hAbre);
+
+    /* Y el fondo del cajón, apenas insinuado. */
+    ctx.fillStyle = "rgba(48,36,28,0.45)";
+    ctx.fillRect(lx - ancho / 2 + U * 0.4, y0 + hAbre * 0.62,
+                 ancho - U * 0.8, hAbre * 0.38);
+
+    dibujarBotella(lx - U * 2, y0 + alto * 0.45, k);
+  }
+
+  /* El frente. */
+  const sale = k * U * 3.2;
+  const crece = 1 + k * 0.07;
+  const fx = lx - (ancho * crece) / 2;
+  const fy = y0 + sale;
+  /* Su sombra contra el mueble, que es lo que le da el grosor. */
+  if (k > 0.01) {
+    ctx.fillStyle = `rgba(0,0,0,${0.4 * k})`;
+    ctx.fillRect(fx - U * 0.4, fy - U * 0.5, ancho * crece + U * 0.8, U * 1);
+  }
+  const gf = ctx.createLinearGradient(0, fy, 0, fy + alto);
+  gf.addColorStop(0, "rgba(84,64,50,0.95)");
+  gf.addColorStop(1, "rgba(46,34,28,0.95)");
+  ctx.fillStyle = gf;
+  ctx.fillRect(fx, fy, ancho * crece, alto);
+  ctx.strokeStyle = "rgba(20,14,12,0.6)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(fx, fy, ancho * crece, alto);
+  /* El filo de luz de arriba: sin él el frente es una mancha plana. */
+  ctx.fillStyle = "rgba(226,206,178,0.1)";
+  ctx.fillRect(fx, fy, ancho * crece, Math.max(1, U * 0.2));
+
+  /* El tirador. */
+  ctx.fillStyle = `rgba(${150 + secretos.cajon.pulso * 90},${126 + secretos.cajon.pulso * 70},90,0.65)`;
+  ctx.beginPath();
+  ctx.arc(lx, fy + alto * 0.5, U * 0.7, 0, 6.283);
+  ctx.fill();
+}
+
+/**
+ * La botella del cajón. Dentro lleva un papel enrollado.
+ *
+ * Se dibuja tumbada, que es como queda una botella en un cajón, y con
+ * un brillo largo por el lomo: es lo único que hay ahí dentro que
+ * refleje, y por eso es lo que se ve primero al abrir.
+ */
+function dibujarBotella(x, y, k) {
+  const L = U * 7, r = U * 1.5;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(-0.08);
+  ctx.globalAlpha = clamp01(k * 1.6);
+
+  /* El cuerpo: vidrio verde oscuro. */
+  const g = ctx.createLinearGradient(0, -r, 0, r);
+  g.addColorStop(0, "rgba(96,140,104,0.85)");
+  g.addColorStop(0.45, "rgba(44,78,54,0.9)");
+  g.addColorStop(1, "rgba(20,38,26,0.92)");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-L * 0.5, -r, L * 0.78, r * 2, r * 0.7);
+  else ctx.rect(-L * 0.5, -r, L * 0.78, r * 2);
+  ctx.fill();
+  /* El cuello y el corcho. */
+  ctx.fillStyle = "rgba(44,78,54,0.9)";
+  ctx.fillRect(L * 0.28, -r * 0.42, L * 0.16, r * 0.84);
+  ctx.fillStyle = "rgba(186,146,96,0.9)";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(L * 0.42, -r * 0.46, L * 0.1, r * 0.92, r * 0.18);
+  else ctx.rect(L * 0.42, -r * 0.46, L * 0.1, r * 0.92);
+  ctx.fill();
+
+  /* El papel de dentro: un rollito claro que se adivina a través del
+     vidrio. Es la razón de que la botella esté ahí. */
+  ctx.fillStyle = "rgba(232,222,196,0.5)";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-L * 0.36, -r * 0.42, L * 0.52, r * 0.84, r * 0.4);
+  else ctx.rect(-L * 0.36, -r * 0.42, L * 0.52, r * 0.84);
+  ctx.fill();
+
+  /* Y el lomo de luz. */
+  ctx.fillStyle = "rgba(226,246,230,0.34)";
+  ctx.beginPath();
+  ctx.ellipse(-L * 0.08, -r * 0.55, L * 0.3, r * 0.17, -0.05, 0, 6.283);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+/**
+ * LA CAMA — dónde empieza y cómo se dibuja.
+ *
+ * ── POR QUÉ HAY DOS FUNCIONES Y NO UNA ───────────────────────────────
+ * El canto de la manta se pinta CUATRO veces: el relleno, el filo de
+ * luna, el dobladillo y el recorte del rayo que cae encima. Esas cuatro
+ * tienen que coincidir al píxel, porque un filo de luz que no siga
+ * exactamente al canto de la tela se ve como una raya suelta. Antes la
+ * curva estaba copiada tres veces a mano, y subir la manta habría
+ * significado acordarse de cambiar las tres.
+ *
+ * `cantoManta` traza sólo el canto de arriba —para lo que se estira—,
+ * y `caminoManta` lo cierra por abajo —para lo que se rellena—.
+ */
+function cimaCama() {
+  /* Al subirse la manta, la cama entera sube: se tapa hasta la
+     barbilla y se ve menos cuarto, que es exactamente la sensación. */
+  return H * (apaisado ? 0.74 : 0.70) - secretos.manta.sube * U * 7;
+}
+
+function cantoManta(y) {
+  ctx.beginPath();
+  ctx.moveTo(-10, y + U * 8);
+  ctx.quadraticCurveTo(A * 0.16, y + U * 2, A * 0.3, y + U * 5);
+  /* Las rodillas. */
+  ctx.quadraticCurveTo(A * 0.38, y - U * 9, A * 0.46, y + U * 3);
+  ctx.quadraticCurveTo(A * 0.54, y - U * 8, A * 0.62, y + U * 4);
+  ctx.quadraticCurveTo(A * 0.82, y + U * 1, A + 10, y + U * 9);
+}
+
+function caminoManta(y) {
+  cantoManta(y);
+  ctx.lineTo(A + 10, H + 10);
+  ctx.lineTo(-10, H + 10);
+  ctx.closePath();
 }
 
 /** Dónde está la ventana de la habitación, en píxeles. */
@@ -6322,7 +6777,14 @@ function dibujarHabitacion() {
   ctx.fill();
 
   /* ---- La cama, en primer plano ---- */
-  const camaY = H * (apaisado ? 0.74 : 0.70) + resp;
+  const camaY = cimaCama() + resp;
+
+  /* La sábana, asomando por debajo del canto de la manta. Es el detalle
+     que convierte «una tela morada» en «una cama hecha»: una manta
+     sola se lee como un telón, y dos capas distintas no. */
+  ctx.fillStyle = "#4a4258";
+  caminoManta(camaY + U * 2.2);
+  ctx.fill();
 
   /* La manta: una curva grande que cruza toda la pantalla, con dos
      bultos donde están las rodillas. Es lo que pone al espectador
@@ -6332,17 +6794,19 @@ function dibujarHabitacion() {
   gm.addColorStop(0.4, "#2c2134");
   gm.addColorStop(1, "#181222");
   ctx.fillStyle = gm;
-  ctx.beginPath();
-  ctx.moveTo(-10, H + 10);
-  ctx.lineTo(-10, camaY + U * 8);
-  ctx.quadraticCurveTo(A * 0.16, camaY + U * 2, A * 0.3, camaY + U * 5);
-  /* Las rodillas. */
-  ctx.quadraticCurveTo(A * 0.38, camaY - U * 9, A * 0.46, camaY + U * 3);
-  ctx.quadraticCurveTo(A * 0.54, camaY - U * 8, A * 0.62, camaY + U * 4);
-  ctx.quadraticCurveTo(A * 0.82, camaY + U * 1, A + 10, camaY + U * 9);
-  ctx.lineTo(A + 10, H + 10);
-  ctx.closePath();
+  caminoManta(camaY);
   ctx.fill();
+
+  /* El dobladillo: una franja un poco más clara pegada al canto, con su
+     pespunte. Una manta que acaba en una línea limpia no tiene canto;
+     con el dobladillo, sí. */
+  ctx.save();
+  caminoManta(camaY);
+  ctx.clip();
+  ctx.fillStyle = "rgba(96,84,116,0.42)";
+  caminoManta(camaY - U * 1.8);
+  ctx.fill();
+  ctx.restore();
 
   /* La luz de la luna rozando la manta por el canto de arriba: sin ese
      filo, la manta es una mancha oscura y no se lee como volumen. */
@@ -6350,13 +6814,18 @@ function dibujarHabitacion() {
   ctx.globalCompositeOperation = "lighter";
   ctx.strokeStyle = "rgba(150,180,255,0.16)";
   ctx.lineWidth = U * 1.1;
-  ctx.beginPath();
-  ctx.moveTo(-10, camaY + U * 8);
-  ctx.quadraticCurveTo(A * 0.16, camaY + U * 2, A * 0.3, camaY + U * 5);
-  ctx.quadraticCurveTo(A * 0.38, camaY - U * 9, A * 0.46, camaY + U * 3);
-  ctx.quadraticCurveTo(A * 0.54, camaY - U * 8, A * 0.62, camaY + U * 4);
-  ctx.quadraticCurveTo(A * 0.82, camaY + U * 1, A + 10, camaY + U * 9);
+  cantoManta(camaY);
   ctx.stroke();
+  ctx.restore();
+
+  /* El pespunte del dobladillo. */
+  ctx.save();
+  ctx.strokeStyle = "rgba(190,176,214,0.16)";
+  ctx.lineWidth = Math.max(1, U * 0.2);
+  ctx.setLineDash([U * 0.9, U * 0.9]);
+  cantoManta(camaY + U * 1.5);
+  ctx.stroke();
+  ctx.setLineDash([]);
   ctx.restore();
 
   /* ---- La luna sobre la manta ----
@@ -6365,15 +6834,7 @@ function dibujarHabitacion() {
      siendo una mancha morada plana debajo de una habitación iluminada,
      y se notaba que era un telón y no una cama. */
   ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(-10, H + 10);
-  ctx.lineTo(-10, camaY + U * 8);
-  ctx.quadraticCurveTo(A * 0.16, camaY + U * 2, A * 0.3, camaY + U * 5);
-  ctx.quadraticCurveTo(A * 0.38, camaY - U * 9, A * 0.46, camaY + U * 3);
-  ctx.quadraticCurveTo(A * 0.54, camaY - U * 8, A * 0.62, camaY + U * 4);
-  ctx.quadraticCurveTo(A * 0.82, camaY + U * 1, A + 10, camaY + U * 9);
-  ctx.lineTo(A + 10, H + 10);
-  ctx.closePath();
+  caminoManta(camaY);
   ctx.clip();
   ctx.globalCompositeOperation = "lighter";
   const gml = ctx.createLinearGradient(vx - v.w * 0.5, 0, vx + v.w * 1.1, 0);
@@ -7139,6 +7600,7 @@ const TODO_LO_ESCONDIDO = [
   /* En el cuarto */
   "cuadro", "ventana", "radio", "frasco", "planta", "guitarra", "tapete",
   "estrellas", "libros", "vela", "taza", "nudo", "deseo",
+  "botella", "papelBotella", "rayas", "manta",
 ];
 
 const logros = new Set();
@@ -9023,8 +9485,58 @@ const elBolsa    = document.getElementById("bolsaUI");
 const elAviso    = document.getElementById("aviso");
 const elAvisoIco = document.getElementById("avisoIco");
 const elAvisoTxt = document.getElementById("avisoTxt");
+const elAndarIzq = document.getElementById("andarIzq");
+const elAndarDer = document.getElementById("andarDer");
+const elVidas    = document.getElementById("vidasUI");
 
 elHudSalir.addEventListener("click", () => { volverAlClaro(); });
+
+/* ---- Andar con los botones ----------------------------------------------
+
+   Se puede andar arrastrando el bosque, y eso se queda. Esto es el otro
+   camino: mientras uno de los dos está apretado, el bosque corre.
+
+   ── POR QUÉ NO ES UN «DAR UN PASO» POR TOQUE ─────────────────────────
+   Porque andar a saltitos de un paso se siente a menú, no a bosque. Lo
+   que hace esto es empujar la MISMA velocidad que empujaría el dedo, y
+   al soltar la inercia de siempre lo va parando. Apretado o arrastrado,
+   el bosque se mueve igual.                                          */
+
+const andando = { izq: false, der: false };
+
+function pegarBoton(el, lado) {
+  const abajo = (e) => {
+    andando[lado] = true;
+    el.classList.add("is-on");
+    el.setPointerCapture?.(e.pointerId);
+    despertarAudio();
+    if (e.cancelable) e.preventDefault();
+  };
+  const arriba = () => { andando[lado] = false; el.classList.remove("is-on"); };
+  el.addEventListener("pointerdown", abajo);
+  el.addEventListener("pointerup", arriba);
+  el.addEventListener("pointercancel", arriba);
+  el.addEventListener("pointerleave", arriba);
+  /* Y con el teclado, que también se juega con teclado. */
+  el.addEventListener("keydown", (e) => {
+    if (e.key === " " || e.key === "Enter") { andando[lado] = true; el.classList.add("is-on"); }
+  });
+  el.addEventListener("keyup", arriba);
+  el.addEventListener("blur", arriba);
+}
+pegarBoton(elAndarIzq, "izq");
+pegarBoton(elAndarDer, "der");
+
+/** Lo que empujan los botones, una vez por cuadro. */
+function moverAndando(dt) {
+  const d = (andando.der ? 1 : 0) - (andando.izq ? 1 : 0);
+  if (!d) return;
+  /* La aceleración pelea contra el mismo rozamiento que frena la
+     inercia del arrastre, así que la velocidad se queda sola donde las
+     dos se igualan. Sale un paso de algo más de un segundo por
+     pantalla: andar, no correr. */
+  espesura.vx = clamp(espesura.vx + d * A * 3 * dt, -A * 0.85, A * 0.85);
+}
 
 /* ---- Los iconos de los objetos ------------------------------------------
    Dibujados en un lienzo pequeñito, una vez, y guardados. Un icono que
@@ -12572,10 +13084,17 @@ const secretos = {
   nudo: { veces: 0, pulso: 0, hallado: false },
   /* La estrella fugaz de la pared: t < 0 es que no hay ninguna. */
   deseo: { t: -1, y0: 0, y1: 0 },
+  /* El cajón de la mesilla, y lo que guarda. */
+  cajon: { abierto: 0, abiertoObj: 0, hallada: false, leida: false, pulso: 0 },
+  /* Las cortinas, que se corren a mano. Cada una por su lado. */
+  cortina: { izq: 0, der: 0, izqObj: 0, derObj: 0, hallado: false, veces: 0 },
+  /* La manta de la cama: subida hasta la barbilla o no. */
+  manta: { sube: 0, subeObj: 0, veces: 0 },
 };
 
 const diceTaza = barajador(CONF.cuarto.taza);
 const diceDeseo = barajador(CONF.cuarto.deseo);
+const diceBotella = barajador(CONF.cuarto.botella);
 
 function arrancarSecretos() {
   secretos.libros.leidos = recuerdo.leer("libros", 0);
@@ -12584,6 +13103,18 @@ function arrancarSecretos() {
   secretos.vela.veces = 0;
   secretos.vela.apagada = 0;
   secretos.deseo.t = -1;
+  /* El cajón se cierra al volver, pero lo que se encontró dentro no se
+     desencuentra. */
+  secretos.cajon.abierto = 0;
+  secretos.cajon.abiertoObj = 0;
+  secretos.cajon.hallada = !!recuerdo.leer("botella", 0);
+  secretos.cajon.leida = !!recuerdo.leer("botellaLeida", 0);
+  secretos.cortina.izq = secretos.cortina.izqObj = 0;
+  secretos.cortina.der = secretos.cortina.derObj = 0;
+  secretos.cortina.hallado = !!recuerdo.leer("rayas", 0);
+  secretos.cortina.veces = 0;
+  secretos.manta.sube = secretos.manta.subeObj = 0;
+  secretos.manta.veces = 0;
 }
 
 /** La mesilla y lo que tiene encima. Un solo sitio para dibujar y para
@@ -12605,6 +13136,14 @@ function sitioMesilla() {
     lampara: { x: lx, y: ly - U * 2.2, ax: U * 4.4, ay: U * 2.8 },
     libros:  { x: lx - U * 5, y: ly + U * 1.2, ax: U * 3.2, ay: U * 1.6 },
     taza:    { x: lx + U * 4.6, y: ly + U * 0.7, r: U * 2.6 },
+    /* El cajón: el frente, con el tirador en medio. Se mide desde la
+       misma cuenta con la que se dibuja el mueble. */
+    cajon:   { x: lx, y: ly + U * 7.7 + secretos.cajon.abierto * U * 3.2,
+               ax: U * 6.5, ay: U * 2.8 },
+    /* Y lo que hay dentro, cuando está abierto. La Y sale de la misma
+       cuenta con la que la dibuja el cajón: `y0 + alto * 0.45`, con
+       `y0 = ly + 5U` y `alto = 14U * 0.38`. */
+    botella: { x: lx - U * 2, y: ly + U * 7.4, r: U * 2.6 },
   };
 }
 
@@ -12628,6 +13167,13 @@ function moverSecretos(dt) {
   secretos.vela.pulso = Math.max(0, secretos.vela.pulso - dt * 2);
   secretos.vela.apagada = damp(secretos.vela.apagada,
     secretos.vela.veces >= 3 ? 1 : 0, 3.5, dt);
+  secretos.cajon.pulso = Math.max(0, secretos.cajon.pulso - dt * 2);
+  /* El cajón va despacio a propósito: un cajón que se abre de golpe es
+     una animación, y uno que se abre con su peso es un cajón. */
+  secretos.cajon.abierto = damp(secretos.cajon.abierto, secretos.cajon.abiertoObj, 6, dt);
+  secretos.cortina.izq = damp(secretos.cortina.izq, secretos.cortina.izqObj, 7, dt);
+  secretos.cortina.der = damp(secretos.cortina.der, secretos.cortina.derObj, 7, dt);
+  secretos.manta.sube = damp(secretos.manta.sube, secretos.manta.subeObj, 4.5, dt);
   if (secretos.deseo.t >= 0) {
     secretos.deseo.t += dt;
     if (secretos.deseo.t > 2.4) secretos.deseo.t = -1;
@@ -12755,6 +13301,37 @@ function tocarSecretos(p) {
     return true;
   }
 
+  /* El cajón: el tirador y el frente. */
+  if (Math.abs(p.x - M.cajon.x) < M.cajon.ax
+      && Math.abs(p.y - M.cajon.y) < M.cajon.ay) {
+    /* Si está abierto y se toca lo de DENTRO, es la botella y no el
+       cajón: lo pequeño gana a lo grande, también aquí. */
+    if (secretos.cajon.abierto > 0.5
+        && dentroDe(p.x, p.y, M.botella.x, M.botella.y, M.botella.r)) {
+      tocarBotella(M.botella);
+      return true;
+    }
+    secretos.cajon.pulso = 1;
+    secretos.cajon.abiertoObj = secretos.cajon.abiertoObj > 0.5 ? 0 : 1;
+    /* Madera contra madera: un golpe grave y arrastrado. */
+    golpe(0.16, 260, 0.1, "lowpass");
+    if (secretos.cajon.abiertoObj > 0.5 && !secretos.cajon.hallada) {
+      secretos.cajon.hallada = true;
+      recuerdo.poner("botella", 1);
+      setTimeout(() => decir(M.botella.x, M.botella.y - U * 8,
+        CONF.cuarto.cajonBotella, { misterio: true, importante: true, dur: 5 }), 700);
+      contarLogro("botella");
+    } else if (secretos.cajon.abiertoObj < 0.5) {
+      decir(M.cajon.x, M.cajon.y - U * 6, CONF.cuarto.cajonCierra, { dur: 2.6 });
+    }
+    return true;
+  }
+  if (secretos.cajon.abierto > 0.5
+      && dentroDe(p.x, p.y, M.botella.x, M.botella.y, M.botella.r)) {
+    tocarBotella(M.botella);
+    return true;
+  }
+
   /* El nudo del suelo. */
   const n = sitioNudo();
   if (dentroDe(p.x, p.y, n.x, n.y, n.r * 2.2)) {
@@ -12778,6 +13355,138 @@ function tocarSecretos(p) {
     return true;
   }
   return false;
+}
+
+/** La botella del cajón, y el papel que lleva dentro. */
+function tocarBotella(B) {
+  tono(azar(1300, 1700), 0.5, "sine", 0.035);
+  soltarBrillos(B.x, B.y, 5, 0.32);
+  if (!secretos.cajon.leida) {
+    secretos.cajon.leida = true;
+    recuerdo.poner("botellaLeida", 1);
+    magia(523);
+    setTimeout(() => decir(B.x, B.y - U * 9, CONF.cuarto.botellaPapel,
+      { mimo: true, importante: true, dur: 7 }), 500);
+    contarLogro("papelBotella");
+  } else {
+    decir(B.x, B.y - U * 8, diceBotella(), { dur: 3.4 });
+  }
+}
+
+/** Correr una cortina. Devuelve el lado tocado, o null. */
+function ladoCortina(p) {
+  const v = ventanaHab();
+  const d = desplazar(0.9);
+  const vx = v.x + d.x * 0.6, vy = v.y + d.y * 0.6;
+  if (p.y < vy - v.h * 0.6 || p.y > vy + v.h * 0.62) return null;
+  for (const lado of [-1, 1]) {
+    const corr = lado < 0 ? secretos.cortina.izq : secretos.cortina.der;
+    const bx = vx + lado * v.w * (0.5 + corr * 0.4);
+    /* La cortina cuelga desde `bx` hacia fuera y muerde hacia dentro
+       un trozo de ventana. Ese trozo es lo que se puede agarrar. */
+    const dentro = bx - lado * v.w * 0.14;
+    const fuera = bx + lado * v.w * 0.24;
+    if ((p.x - Math.min(dentro, fuera)) * (Math.max(dentro, fuera) - p.x) > 0) return lado;
+  }
+  return null;
+}
+
+/**
+ * Agarrar una cortina.
+ *
+ * ── POR QUÉ NO SE DECIDE AQUÍ SI ES TOQUE O ARRASTRE ─────────────────
+ * Porque al bajar el dedo todavía no se sabe. Si al tocar se corriera
+ * entera, arrastrarla sería imposible —ya estaría descorrida antes de
+ * mover el dedo—, y si sólo se pudiera arrastrar, un toque no haría
+ * nada y parecería que la cortina no es tocable.
+ *
+ * Así que aquí sólo se apunta de dónde se agarró, el movimiento la va
+ * corriendo, y al soltar se mira cuánto corrió: poco es un toque y se
+ * va del todo a un lado, mucho es un arrastre y se queda donde la
+ * dejaron. Es el mismo trato que tiene andar por la espesura.
+ */
+let arrastreCortina = null;
+
+function agarrarCortina(lado, p, e) {
+  const v = ventanaHab();
+  arrastreCortina = {
+    id: e && e.pointerId !== undefined ? e.pointerId : -1,
+    lado,
+    x0: p.x,
+    base: lado < 0 ? secretos.cortina.izqObj : secretos.cortina.derObj,
+    /* El recorrido completo de la cortina, en píxeles. */
+    largo: Math.max(1, v.w * 0.4),
+    corrido: 0,
+  };
+}
+
+/** Lo que hace el dedo mientras arrastra una cortina. */
+function moverCortina(p) {
+  const a = arrastreCortina;
+  if (!a) return;
+  const dx = (p.x - a.x0) * a.lado;   // positivo = hacia su lado = abrir
+  a.corrido = Math.max(a.corrido, Math.abs(p.x - a.x0));
+  const k = clamp01(a.base + dx / a.largo);
+  if (a.lado < 0) { secretos.cortina.izqObj = k; secretos.cortina.izq = k; }
+  else { secretos.cortina.derObj = k; secretos.cortina.der = k; }
+  if (a.lado < 0 && k > 0.55) descubrirRayas();
+}
+
+/** Y al soltar. */
+function soltarCortina() {
+  const a = arrastreCortina;
+  arrastreCortina = null;
+  if (!a) return;
+  /* Menos de seis píxeles no es un arrastre: es un toque. */
+  if (a.corrido < 6) { tocarCortina(a.lado); return; }
+  /* Y si se arrastró, se queda donde esté pero se redondea a los
+     extremos si quedó muy cerca: una cortina a un 4% abierta no la
+     dejó nadie ahí queriendo. */
+  const k = a.lado < 0 ? "izqObj" : "derObj";
+  const v = secretos.cortina[k];
+  if (v < 0.12) secretos.cortina[k] = 0;
+  else if (v > 0.88) secretos.cortina[k] = 1;
+  if (a.lado < 0 && secretos.cortina[k] > 0.5) descubrirRayas();
+}
+
+/** Tocar una cortina sin arrastrarla: se corre entera de un lado a otro. */
+function tocarCortina(lado) {
+  const k = lado < 0 ? "izqObj" : "derObj";
+  secretos.cortina[k] = secretos.cortina[k] > 0.5 ? 0 : 1;
+  /* Anillas de metal contra la barra. */
+  for (let i = 0; i < 4; i++) {
+    setTimeout(() => golpe(0.03, azar(2200, 3400), 0.05, "bandpass"), i * 55);
+  }
+  if (lado < 0 && secretos.cortina[k] > 0.5) descubrirRayas();
+}
+
+/** Lo que pasa la primera vez que se destapan las rayas del marco. */
+function descubrirRayas() {
+  if (secretos.cortina.hallado) return;
+  secretos.cortina.hallado = true;
+  recuerdo.poner("rayas", 1);
+  const v = ventanaHab();
+  const n = Math.max(1, recuerdo.leer("visitas", 1));
+  setTimeout(() => {
+    sonarMisterio(0.4);
+    decir(v.x - v.w * 0.62, v.y - v.h * 0.3,
+      n === 1 ? CONF.cuarto.rayasUna : CONF.cuarto.rayas.replace("{n}", n),
+      { misterio: true, importante: true, dur: 7 });
+  }, 900);
+  contarLogro("rayas");
+}
+
+/** La manta: se sube hasta la barbilla, o se baja. */
+function tocarManta(p) {
+  secretos.manta.subeObj = secretos.manta.subeObj > 0.5 ? 0 : 1;
+  secretos.manta.veces++;
+  /* Tela: un siseo corto y grave. */
+  golpe(0.22, 620, 0.05, "lowpass");
+  const sube = secretos.manta.subeObj > 0.5;
+  const lista = sube ? CONF.cuarto.mantaSube : CONF.cuarto.mantaBaja;
+  decir(p.x, cimaCama() - U * 6, lista[Math.min(secretos.manta.veces >> 1, lista.length - 1)],
+    { dur: 3.4 });
+  if (secretos.manta.veces >= 4) contarLogro("manta");
 }
 
 /** La vela del alféizar: se apaga a la tercera y se vuelve a prender
@@ -13455,6 +14164,13 @@ zona.addEventListener("pointermove", (e) => {
     return;
   }
 
+  /* Una cortina, si la lleva agarrada. */
+  if (arrastreCortina && arrastreCortina.id === e.pointerId) {
+    moverCortina(p);
+    if (e.cancelable) e.preventDefault();
+    return;
+  }
+
   /* El bombón, si lo lleva cogido. */
   if (bombon.agarrado && bombon.dedoId === e.pointerId) {
     /* Aquí sólo se apunta a DÓNDE está el dedo, sin recortar nada. El
@@ -13504,6 +14220,16 @@ function soltarDedo(e) {
       tocarEnEspesura({ x: ag.x0, y: ag.y }, e);
       espesura.vx = 0;
     }
+    dedo.dentro = false;
+    try { zona.releasePointerCapture(e.pointerId); } catch { /* ya estaba */ }
+    return;
+  }
+
+  /* ---- Soltar una cortina ----
+     Mismo trato que el paseo por la espesura: si el dedo corrió poco
+     era un toque, y si corrió, se queda donde la dejaron. */
+  if (arrastreCortina && arrastreCortina.id === e.pointerId) {
+    soltarCortina();
     dedo.dentro = false;
     try { zona.releasePointerCapture(e.pointerId); } catch { /* ya estaba */ }
     return;
@@ -13756,6 +14482,16 @@ function tocarEnHabitacion(p, e) {
     golpe(0.02, 2600, 0.14, "bandpass");
     return;
   }
+
+  /* Las cortinas. Van casi al final: son lo más grande que hay en la
+     pared, y todo lo que está delante de ellas —la vela, el cuadro,
+     las fotos— tiene que poder tocarse primero. */
+  const lado = ladoCortina(p);
+  if (lado !== null) { agarrarCortina(lado, p, e); return; }
+
+  /* Y la manta, que es todo lo de abajo. Lo último de todo, porque
+     ocupa un tercio de la pantalla. */
+  if (p.y > cimaCama() - U * 4) { tocarManta(p); return; }
 }
 
 /* ---- EL SUSTO DE LA VENTANA --------------------------------------------
@@ -14562,6 +15298,10 @@ function paso(ahora) {
 
   if (escena === "espesura") {
     moverClima(dt);
+    /* Los botones de andar empujan ANTES de que la espesura integre: si
+       fuera después, la velocidad que meten se quedaría un cuadro sin
+       aplicarse y el bosque arrancaría con un tirón. */
+    moverAndando(dt);
     moverEspesura(dt);
     moverBuhoEsp(dt);
     moverOjosEsp(dt);
