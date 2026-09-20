@@ -1102,8 +1102,10 @@ const CONF = {
       { n: 44, nFlojo: 22, alto: [5, 11],  ancho: [1.6, 3.0], niebla: 0.78, z: 0.14, toca: false },
       /* Medio: los que se pueden tocar y sacudir. */
       { n: 22, nFlojo: 12, alto: [13, 24], ancho: [3.0, 5.4], niebla: 0.34, z: 0.46, toca: true },
-      /* Cerca: dos a cada lado, enmarcando. */
-      { n: 5,  nFlojo: 4,  alto: [52, 88], ancho: [2.6, 4.6], niebla: 0.06, z: 1.0,  toca: true },
+      /* Cerca: dos a cada lado, enmarcando. Se salen por arriba a
+         propósito —ver el apunte de `troncoDeMarco`— y por eso el alto
+         va en centésimas de pantalla y no en `U`. */
+      { n: 4,  nFlojo: 3,  alto: [100, 158], ancho: [4, 6.5], niebla: 0.05, z: 1.0,  toca: true },
     ],
     /* La física de la sacudida: un muelle con amortiguación. Cuanto más
        bajo `k`, más lento el bamboleo; cuanto más bajo `amortigua`, más
@@ -5622,21 +5624,70 @@ const cabana = {
   puerta: 0,          // 0 cerrada · 1 abierta (durante la cinemática)
   resalte: 0,         // cuando el dedo pasa por encima
   farol: 0,
+  mece: 0,            // cuánto se balancea el farol colgado
+  apagon: 0,          // y cuándo le entra aire y casi se apaga
   /* Cuánto falta para el corazón de humo. Empieza largo: que no salga
      en los primeros segundos, cuando todavía no se está mirando. */
   corazon: 45,
+  /* Alguien cruza por detrás de una ventana: vale -1 casi siempre, y de
+     0 a 1 mientras dura el paso. */
+  cruza: -1,
+  cruzaVentana: 0,
+  faltaCruce: 26,
+  /* Y, mucho más de tarde en tarde, algo se asoma a la lumbrera. */
+  desvan: 0,
+  faltaDesvan: 80,
 };
 
 function moverCabana(dt) {
   cabana.brillo = 0.86 + 0.14 * Math.sin(reloj * 0.9) + 0.04 * Math.sin(reloj * 3.7);
-  cabana.farol = 0.8 + 0.2 * Math.sin(reloj * 2.3 + 1.1);
   cabana.resalte = damp(cabana.resalte, 0, 2.6, dt);
+
+  /* ---- EL FAROL ----
+     Se mece con el viento DE VERDAD: el mismo `clima.viento` que dobla
+     la hierba y tumba la llama de la fogata. Y cada tanto le entra una
+     racha por la rendija y se queda a nada de apagarse. Dura medio
+     segundo y no se repite nunca igual, porque no hay ningún reloj
+     detrás: hay viento. */
+  cabana.mece = Math.sin(reloj * 1.7) * (0.05 + clima.viento * 0.3)
+              + Math.sin(reloj * 0.63 + 2.1) * 0.035;
+  cabana.apagon = Math.max(0, cabana.apagon - dt * 2.2);
+  if (cabana.apagon <= 0 && Math.random() < dt * clima.viento * 0.22) cabana.apagon = 1;
+  cabana.farol = (0.8 + 0.2 * Math.sin(reloj * 2.3 + 1.1))
+               * (1 - Math.sin(Math.PI * clamp01(cabana.apagon)) * 0.72);
+
+  /* ---- ALGUIEN SE MUEVE AHÍ DENTRO ----
+     Cada tanto una sombra cruza una de las ventanas, y una vez cada
+     mucho más algo se asoma a la lumbrera del desván. No se pueden
+     tocar, no dan nada, no se cuentan en ningún sitio y no se explican
+     jamás. Están para que la cabaña tenga a alguien dentro justo cuando
+     no está pasando absolutamente nada. */
+  if (cabana.cruza >= 0) {
+    cabana.cruza += dt / 2.4;
+    if (cabana.cruza > 1) cabana.cruza = -1;
+  } else {
+    cabana.faltaCruce -= dt;
+    if (cabana.faltaCruce <= 0) {
+      cabana.faltaCruce = azar(34, 88);
+      cabana.cruza = 0;
+      cabana.cruzaVentana = Math.random() < 0.5 ? 0 : 1;
+    }
+  }
+  cabana.faltaDesvan -= dt;
+  if (cabana.faltaDesvan <= 0) {
+    cabana.faltaDesvan = azar(95, 190);
+    cabana.desvan = 1;
+  }
+  cabana.desvan = Math.max(0, cabana.desvan - dt * 0.42);
 
   cabana.humo -= dt;
   if (cabana.humo <= 0) {
     cabana.humo = flojo ? 0.7 : 0.38;
-    const c = sitio.cabana;
-    soltar(c.x + c.w * 0.3 + azar(-2, 2), c.y - c.h * 1.24, {
+    /* La boca de la chimenea no va puesta a mano: la da el mismo sitio
+       que la dibuja. Cuando se rehízo el tejado, el humo escrito a mano
+       se quedó saliendo de las tejas. */
+    const b = bocaDeLaChimenea();
+    soltar(b.x + azar(-2, 2), b.y, {
       vx: azar(-4, 10), vy: azar(-26, -14),
       vida: azar(3.4, 5.6), tam: azar(U * 0.5, U * 1.1),
       tipo: TIPO.HUMO, tono: 0.2,
@@ -5694,7 +5745,7 @@ function dibujarCorazonDeHumo() {
      derecho, así que un corazón centrado en su chimenea se sale por
      ahí y sólo se ve la mitad izquierda, que no parece un corazón: el
      humo se puede inclinar un poco al subir y nadie lo nota. */
-  const bx = clamp(c.x + c.w * 0.3 + d.x + k * U * 5,
+  const bx = clamp(bocaDeLaChimenea().x + d.x + k * U * 5,
     17 * esc + U * 4, A - 17 * esc - U * 5);
   /* Bien alto: a la altura de la chimenea lo tapan el tejado, el humo
      normal y cualquier tronco de los de delante. Tiene que subir hasta
@@ -5734,6 +5785,68 @@ function dibujarCorazonDeHumo() {
   ctx.restore();
 }
 
+/* ---- LOS DOS MATERIALES DE LA CABAÑA ----
+   Toda la madera de la escena —la pared, el porche, la leña, el tajo de
+   partir— sale de esta función, y toda la piedra de la otra. Es lo que
+   hace que la cabaña se lea como UNA cosa construida con dos materiales
+   y no como ocho marrones distintos que por casualidad pegan.
+
+   `veta` es el tono propio de cada pieza (0..1), `luz` cuánta fogata le
+   llega y `sombra` cuánto la tapa el tejado, el costado o lo que sea. */
+function tonoMadera(veta, luz, sombra) {
+  const b = mez(19, 32, veta) * (1 - (sombra || 0) * 0.62);
+  return `rgb(${Math.round(mez(b, b + 96, luz))},${Math.round(mez(b - 4, b + 49, luz))},${Math.round(mez(b - 8, b + 23, luz))})`;
+}
+function tonoPiedra(veta, luz, sombra) {
+  const b = mez(21, 34, veta) * (1 - (sombra || 0) * 0.62);
+  return `rgb(${Math.round(mez(b, b + 56, luz))},${Math.round(mez(b, b + 50, luz))},${Math.round(mez(b + 4, b + 48, luz))})`;
+}
+
+/**
+ * Azar repetible y SIN ESTADO: el mismo `n` da siempre el mismo 0..1.
+ *
+ * Hace falta porque los nudos de la madera, el escalonado de las tejas y
+ * el canto de cada piedra tienen que estar siempre en el mismo sitio.
+ * Con `rnd()` dentro del bucle de dibujo se moverían en cada cuadro y la
+ * cabaña herviría; con una tabla guardada habría que reconstruirla al
+ * girar el teléfono. Así no hay nada que guardar ni que reconstruir.
+ */
+function ruidito(n) {
+  const s = Math.sin(n * 127.1 + 43.37) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+/**
+ * Dónde está la boca de la chimenea.
+ *
+ * Lo usan tres sitios —el humo normal, el corazón de humo y el dibujo—,
+ * y estaba puesto a mano en cada uno. El día que se movió el tejado, el
+ * humo se quedó saliendo de las tejas.
+ */
+function bocaDeLaChimenea() {
+  const c = sitio.cabana;
+  const lado = c.x > A * 0.5 ? -1 : 1;
+  return { x: c.x + lado * c.w * 0.2, y: c.y - c.h * 1.66, lado };
+}
+
+/**
+ * La cabaña.
+ *
+ * ── POR QUÉ TIENE COSTADO ────────────────────────────────────────────
+ * Antes era un rectángulo con un triángulo encima: una fachada, no una
+ * casa. Lo que convierte una fachada en un volumen no es el sombreado,
+ * es que se le vea OTRA CARA. La cámara está en el centro de la
+ * pantalla, así que a una cabaña plantada a la derecha se le ve el
+ * costado izquierdo; de ahí sale todo lo demás: hacia dónde recede el
+ * tejado, dónde cae la chimenea, de qué lado quedan los rincones
+ * oscuros y hacia dónde mira la leña.
+ *
+ * ── POR QUÉ HAY TRASTOS ──────────────────────────────────────────────
+ * Una cabaña limpia es una maqueta. La leña apilada, el tajo con el
+ * hacha clavada, el barril bajo el alero y las botas en el escalón no
+ * hacen nada y no se tocan: están para que se note que alguien vive
+ * ahí, y para que la cabaña tenga algo que contar cuando no pasa nada.
+ */
 function dibujarCabana() {
   const d = desplazar(1.25);
   const c = sitio.cabana;
@@ -5745,84 +5858,465 @@ function dibujarCabana() {
      igual. Es lo que da sensación de que hay espacio entre ellas. */
   const distF = Math.abs(x - sitio.fogata.x) / A;
   const ilum = fuego.brillo * clamp01(1 - distF * 1.3) * 0.7;
+  const luzV = cabana.brillo;
 
-  /* ---- El caminito de piedras ---- */
-  for (let i = 0; i < 7; i++) {
-    const t = i / 6;
-    const pxc = mez(x - w * 0.1, sitio.fogata.x + U * 10, t);
-    const pyc = mez(y + h * 0.04, sitio.fogata.y + U * 5, t) + Math.sin(i * 2.1) * U * 0.8;
-    const s = U * mez(1.5, 2.2, t);
-    ctx.fillStyle = `rgb(${Math.round(mez(30, 92, fuego.brillo * (0.3 + t * 0.7)))},${Math.round(mez(29, 78, fuego.brillo * (0.3 + t * 0.7)))},${Math.round(mez(30, 68, fuego.brillo * (0.3 + t * 0.7)))})`;
+  /* De qué lado se le ve el costado, y cuánto. */
+  const lado = x > A * 0.5 ? -1 : 1;
+  const hondo = w * 0.26;              // lo que se mete el costado
+  const sube  = h * 0.055;             // y lo que sube: se mira desde abajo
+  /* Y de qué lado le da la fogata. NO se deduce de `lado`: se mira dónde
+     está la hoguera y ya está. Deducirlo salió mal una vez —la leña
+     acabó apilada en la cara iluminada y la sombra en la del fuego— y
+     el fallo no se ve en el código, se ve en la pantalla. */
+  const haciaFuego = sitio.fogata.x < x ? -1 : 1;
+
+  /* La geometría del tejado, de una vez y para todos: el hastial y las
+     tejas tienen que salir de los MISMOS números o se abre una rendija
+     de cielo entre la pared y el alero. */
+  const cumbre = y - h * 1.36;                    // la punta de la pared
+  const pend   = (cumbre - (y - h)) / (w * 0.5);  // lo que baja por unidad de ancho
+  const alaX   = w * 0.66;                        // hasta dónde vuela el alero
+  const grosT  = h * 0.075;                       // el canto del tejado
+  const aleY   = cumbre - pend * alaX;            // la altura del alero (bajo canto)
+
+  /* ---- 1. EL CAMINITO ----
+     Piedras medio enterradas: cada una tiene su cara de arriba —la que
+     ve la luna y la fogata— y su canto en sombra. Una elipse plana sola
+     se lee como una mancha; con el canto se lee como una piedra. */
+  for (let i = 0; i < 9; i++) {
+    const t = i / 8;
+    const n0 = ruidito(i * 3.1), n1 = ruidito(i * 7.7 + 5);
+    const pxc = mez(x - w * 0.34, sitio.fogata.x + U * 9, t) + (n0 - 0.5) * U * 3;
+    const pyc = mez(y + h * 0.05, sitio.fogata.y + U * 4.6, t) + (n1 - 0.5) * U * 2.2;
+    const s = U * mez(1.7, 2.6, t) * (0.8 + n0 * 0.4);
+    const li = ilum * (0.35 + t * 0.75);
+    /* El canto, primero y más oscuro. */
+    ctx.fillStyle = tonoPiedra(n1, li * 0.45, 0.35);
     ctx.beginPath();
-    ctx.ellipse(pxc, pyc, s, s * 0.5, 0, 0, 6.283);
+    ctx.ellipse(pxc, pyc + s * 0.16, s, s * 0.46, (n0 - 0.5) * 0.6, 0, 6.283);
+    ctx.fill();
+    /* Y la cara de arriba. */
+    ctx.fillStyle = tonoPiedra(n0, li);
+    ctx.beginPath();
+    ctx.ellipse(pxc, pyc, s * 0.92, s * 0.4, (n0 - 0.5) * 0.6, 0, 6.283);
     ctx.fill();
   }
 
-  /* ---- La sombra en el suelo ---- */
-  ctx.fillStyle = "rgba(4,6,12,0.5)";
+  /* ---- 2. LO QUE APOYA EN EL SUELO ----
+     Dos sombras y no una: la de contacto, corta y oscura, que es la que
+     pega la casa al suelo, y la larga y difusa, que es la que dice que
+     hay una luna. Con una sola, o la casa flota o parece recortada. */
+  ctx.fillStyle = "rgba(3,5,10,0.42)";
   ctx.beginPath();
-  ctx.ellipse(x, y + h * 0.03, w * 0.72, h * 0.09, 0, 0, 6.283);
+  ctx.ellipse(x - lado * w * 0.06, y + h * 0.035, w * 0.86, h * 0.115, 0, 0, 6.283);
+  ctx.fill();
+  ctx.fillStyle = "rgba(2,4,9,0.55)";
+  ctx.beginPath();
+  ctx.ellipse(x, y + h * 0.012, w * 0.6, h * 0.05, 0, 0, 6.283);
   ctx.fill();
 
-  /* ---- El resplandor de las ventanas, sobre la hierba ---- */
+  /* ---- 3. LA LUZ QUE SALE POR LAS VENTANAS, EN EL SUELO ----
+     Va ANTES que la cabaña: es luz tirada en la hierba, y si fuera
+     después le pintaría encima de la pared. Dos manchas y no una, una
+     por ventana, porque dos ventanas encendidas hacen dos manchas. */
   ctx.globalCompositeOperation = "lighter";
-  haloOvalado(x, y - h * 0.3, w * 2.2, h * 0.9, [
-    [0, `rgba(255,190,110,${0.16 * cabana.brillo})`],
+  for (const s of [-1, 1]) {
+    const vx = x + s * w * 0.27;
+    haloOvalado(vx, y + h * 0.05, w * 0.42, h * 0.1, [
+      [0, `rgba(255,186,104,${0.2 * luzV})`],
+      [1, "rgba(255,186,104,0)"],
+    ], y + h * 0.05);
+  }
+  haloOvalado(x, y - h * 0.22, w * 2.1, h * 0.86, [
+    [0, `rgba(255,190,110,${0.12 * luzV})`],
     [1, "rgba(255,190,110,0)"],
   ], y);
   ctx.globalCompositeOperation = "source-over";
 
-  /* ---- El cuerpo: tablones horizontales ---- */
-  const nT = 9;
+  /* ---- 4. EL COSTADO ----
+     Le da la espalda a la fogata, así que es donde vive la sombra de la
+     cabaña. Los tablones van en la misma tanda que los de delante pero
+     recortados y más apagados: es la misma pared doblando la esquina. */
+  const xA = x + lado * w * 0.5;                  // la esquina de delante
+  const xB = xA + lado * hondo;                   // y la de atrás
+  /* Los troncos del costado van SESGADOS, no escalonados. Se dibujaron
+     primero como rectángulos bajados un poco cada uno, y lo que salía
+     era una escalera: la línea de las juntas hacía peldaños en vez de
+     irse al punto de fuga. Un paralelogramo es la misma cuenta y sí
+     recede. */
+  const nT = 8;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(xA, y - h);
+  ctx.lineTo(xB, y - h - sube);
+  ctx.lineTo(xB, y - sube);
+  ctx.lineTo(xA, y);
+  ctx.closePath();
+  ctx.clip();
   for (let i = 0; i < nT; i++) {
     const ty = y - h + (i / nT) * h;
-    const th = h / nT + 0.6;
-    const tono0 = ((i * 37) % 5) / 5;
-    const base = mez(30, 40, tono0);
-    ctx.fillStyle = `rgb(${Math.round(mez(base, base + 96, ilum))},${Math.round(mez(base - 6, base + 52, ilum))},${Math.round(mez(base - 10, base + 26, ilum))})`;
-    ctx.fillRect(x - w / 2, ty, w, th);
-    /* La junta entre tablones. */
-    ctx.fillStyle = "rgba(8,6,10,0.34)";
-    ctx.fillRect(x - w / 2, ty + th - 1.2, w, 1.2);
-  }
-
-  /* ---- El tejado, a dos aguas y sobresaliendo ---- */
-  const alaR = w * 0.62;
-  const gtj = ctx.createLinearGradient(x, y - h * 1.5, x, y - h);
-  gtj.addColorStop(0, `rgb(${Math.round(mez(26, 78, ilum))},${Math.round(mez(24, 52, ilum))},${Math.round(mez(28, 44, ilum))})`);
-  gtj.addColorStop(1, `rgb(${Math.round(mez(18, 54, ilum))},${Math.round(mez(16, 36, ilum))},${Math.round(mez(20, 30, ilum))})`);
-  ctx.fillStyle = gtj;
-  ctx.beginPath();
-  ctx.moveTo(x - alaR, y - h);
-  ctx.lineTo(x, y - h * 1.52);
-  ctx.lineTo(x + alaR, y - h);
-  ctx.closePath();
-  ctx.fill();
-  /* Las tejas: rayas paralelas al alero. */
-  ctx.strokeStyle = "rgba(10,8,12,0.28)";
-  ctx.lineWidth = 1;
-  for (let i = 1; i < 6; i++) {
-    const t = i / 6;
+    const th = h / nT + 0.8;
+    /* Le da la fogata de refilón: no está a oscuras, está RASANTE, que
+       es más bonito y además es lo que pasa de verdad. */
+    ctx.fillStyle = tonoMadera(ruidito(i * 5.3 + 70), ilum * 0.34, 0.34);
     ctx.beginPath();
-    ctx.moveTo(mez(x - alaR, x, t), mez(y - h, y - h * 1.52, t));
-    ctx.lineTo(mez(x + alaR, x, t), mez(y - h, y - h * 1.52, t));
+    ctx.moveTo(xA, ty);
+    ctx.lineTo(xB, ty - sube);
+    ctx.lineTo(xB, ty - sube + th);
+    ctx.lineTo(xA, ty + th);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(6,4,8,0.45)";
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(xA, ty + th);
+    ctx.lineTo(xB, ty - sube + th);
     ctx.stroke();
   }
+  /* La ventanuca del costado: escorzada de verdad —un paralelogramo con
+     el mismo sesgo que la pared—, más apagada y sin cruz. Es la pieza
+     que dice que la casa sigue hacia dentro. */
+  const lv0 = xA + lado * hondo * 0.3, lv1 = xA + lado * hondo * 0.66;
+  const lvy = y - h * 0.6 - sube * 0.48;
+  ctx.beginPath();
+  ctx.moveTo(lv0, lvy - h * 0.09);
+  ctx.lineTo(lv1, lvy - h * 0.09 - sube * 0.36);
+  ctx.lineTo(lv1, lvy + h * 0.09 - sube * 0.36);
+  ctx.lineTo(lv0, lvy + h * 0.09);
+  ctx.closePath();
+  ctx.fillStyle = `rgba(226,142,66,${0.38 * luzV})`;
+  ctx.fill();
+  ctx.strokeStyle = "rgba(14,9,6,0.9)";
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+  ctx.restore();
 
-  /* ---- La chimenea ---- */
-  ctx.fillStyle = `rgb(${Math.round(mez(30, 74, ilum))},${Math.round(mez(26, 50, ilum))},${Math.round(mez(28, 42, ilum))})`;
-  ctx.fillRect(x + w * 0.22, y - h * 1.38, w * 0.16, h * 0.42);
-  ctx.fillStyle = `rgb(${Math.round(mez(38, 88, ilum))},${Math.round(mez(34, 60, ilum))},${Math.round(mez(36, 50, ilum))})`;
-  ctx.fillRect(x + w * 0.2, y - h * 1.42, w * 0.2, h * 0.07);
+  /* ---- 5. LA PARED DE DELANTE: TRONCOS, NO TABLONES ----
+     Cada tronco lleva su propio degradado de arriba abajo, y eso es lo
+     que lo hace cilíndrico: claro donde la luz le pega de canto, oscuro
+     donde ya se va. Un rectángulo de color plano es un tablón pintado;
+     un rectángulo con ese degradado es un tronco. */
+  const izq = x - w * 0.5, der = x + w * 0.5;
+  /* La sombra que echa el montón de leña sobre la pared, ANTES de los
+     troncos y difuminada. Iba después y como rectángulo con canto, y en
+     pantalla se leía como un panel gris atornillado a la fachada. */
+  const lenaX = x - haciaFuego * w * 0.44;
+  for (let i = 0; i < nT; i++) {
+    const ty = y - h + (i / nT) * h;
+    const th = h / nT + 0.8;
+    const veta = ruidito(i * 5.3);
+    const gt = ctx.createLinearGradient(0, ty, 0, ty + th);
+    gt.addColorStop(0, tonoMadera(veta, ilum * 0.72, 0.18));
+    gt.addColorStop(0.34, tonoMadera(veta, ilum));
+    gt.addColorStop(1, tonoMadera(veta, ilum * 0.4, 0.3));
+    ctx.fillStyle = gt;
+    ctx.fillRect(izq, ty, w, th);
+    /* El barro de entre tronco y tronco. */
+    ctx.fillStyle = "rgba(9,7,11,0.44)";
+    ctx.fillRect(izq, ty + th - 1.5, w, 1.5);
 
-  /* ---- Las ventanas ---- */
-  const luzV = cabana.brillo;
-  dibujarVentanaCabana(x - w * 0.26, y - h * 0.62, w * 0.24, h * 0.3, luzV);
-  dibujarVentanaCabana(x + w * 0.26, y - h * 0.62, w * 0.24, h * 0.3, luzV * 0.9);
+    /* La veta y los nudos, sólo si el teléfono da para ello: son
+       cuarenta trazos de un píxel que no se ven de lejos. */
+    if (!flojo) {
+      ctx.strokeStyle = `rgba(26,17,12,${0.13 + ilum * 0.12})`;
+      ctx.lineWidth = 1;
+      for (let k = 0; k < 3; k++) {
+        const n = ruidito(i * 11 + k * 3.7);
+        const gy = ty + th * (0.25 + n * 0.5);
+        ctx.beginPath();
+        ctx.moveTo(izq + w * (0.06 + n * 0.2), gy);
+        ctx.lineTo(izq + w * (0.4 + ruidito(i * 13 + k) * 0.5), gy);
+        ctx.stroke();
+      }
+      if (ruidito(i * 17) > 0.62) {
+        const nx = izq + w * (0.12 + ruidito(i * 19) * 0.74);
+        ctx.fillStyle = `rgba(22,14,10,${0.3 + ilum * 0.2})`;
+        ctx.beginPath();
+        ctx.ellipse(nx, ty + th * 0.5, th * 0.19, th * 0.13, 0, 0, 6.283);
+        ctx.fill();
+      }
+    }
 
-  /* ---- La puerta ---- */
-  const pw = w * 0.22, ph = h * 0.46;
-  ctx.fillStyle = `rgb(${Math.round(mez(26, 96, ilum))},${Math.round(mez(20, 58, ilum))},${Math.round(mez(16, 34, ilum))})`;
+    /* La testa del tronco en la esquina de delante: el trozo que
+       sobresale del entramado. Es el detalle que dice «cabaña de
+       troncos» y no «caseta de tablas». */
+    for (const s of [-1, 1]) {
+      const ex = x + s * w * 0.5;
+      const salido = w * 0.032 * (0.7 + ruidito(i * 23 + s) * 0.6);
+      const cara = s === haciaFuego;
+      ctx.fillStyle = tonoMadera(veta, cara ? ilum * 1.15 : ilum * 0.35, cara ? 0 : 0.4);
+      ctx.beginPath();
+      ctx.ellipse(ex + s * salido * 0.5, ty + th * 0.5, salido, th * 0.46, 0, 0, 6.283);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(16,10,8,${0.4 + ilum * 0.2})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(ex + s * salido * 0.5, ty + th * 0.5, salido * 0.5, th * 0.24, 0, 0, 6.283);
+      ctx.stroke();
+    }
+  }
+
+  /* La sombra que echa el montón de leña sobre la pared. Se pintó
+     primero como un rectángulo con su canto, y en pantalla se leía como
+     un panel gris atornillado a la fachada. Difuminada se lee como lo
+     que es: un rincón donde no llega la luz. */
+  const gL = ctx.createRadialGradient(lenaX, y - h * 0.16, 0, lenaX, y - h * 0.16, w * 0.32);
+  gL.addColorStop(0, "rgba(2,3,8,0.52)");
+  gL.addColorStop(1, "rgba(2,3,8,0)");
+  ctx.fillStyle = gL;
+  ctx.fillRect(izq, y - h * 0.62, w, h * 0.62);
+
+  /* ---- 6. DE DÓNDE VIENE LA LUZ, EN UNA SOLA PASADA ----
+     Un degradado a lo ancho de la pared: caliente por el lado de la
+     fogata y negro por el otro. Hace a la vez la luz dinámica y el
+     rincón oscuro, que son la misma cosa vista por los dos cabos. */
+  const gl = ctx.createLinearGradient(haciaFuego < 0 ? izq : der, 0, haciaFuego < 0 ? der : izq, 0);
+  gl.addColorStop(0, `rgba(255,170,90,${0.045 + ilum * 0.1})`);
+  gl.addColorStop(0.42, "rgba(120,70,30,0)");
+  gl.addColorStop(1, "rgba(0,0,0,0.42)");
+  ctx.fillStyle = gl;
+  ctx.fillRect(izq, y - h, w, h);
+
+  /* Y la sombra del alero, que cae sobre lo alto de la pared. Sin ella
+     el tejado parece pegado con cola encima de una caja. */
+  const gA = ctx.createLinearGradient(0, y - h, 0, y - h * 0.76);
+  gA.addColorStop(0, "rgba(2,3,8,0.62)");
+  gA.addColorStop(1, "rgba(2,3,8,0)");
+  ctx.fillStyle = gA;
+  ctx.fillRect(izq, y - h, w, h * 0.24);
+
+  /* ---- 7. EL HASTIAL ----
+     Tabla vertical, que es como se cierra de verdad el triángulo de una
+     cabaña de troncos, y una lumbrera redonda en medio. La lumbrera es
+     NEGRA: es el único hueco de la casa que no está iluminado, y ese
+     agujero oscuro en lo alto es la mitad del misterio que tiene. */
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(izq, y - h);
+  ctx.lineTo(x, cumbre);
+  ctx.lineTo(der, y - h);
+  ctx.closePath();
+  ctx.clip();
+  const nV = 9;
+  for (let i = 0; i < nV; i++) {
+    const vx2 = izq + (i / nV) * w;
+    ctx.fillStyle = tonoMadera(ruidito(i * 9.1 + 40), ilum * 0.46, 0.22);
+    ctx.fillRect(vx2, cumbre - 2, w / nV + 0.7, h * 0.42);
+    ctx.fillStyle = "rgba(8,6,10,0.34)";
+    ctx.fillRect(vx2 + w / nV - 1, cumbre - 2, 1, h * 0.42);
+  }
+  ctx.restore();
+  /* La lumbrera. */
+  const luy = y - h * 1.12;
+  ctx.fillStyle = "rgba(4,4,8,0.95)";
+  ctx.beginPath();
+  ctx.ellipse(x, luy, w * 0.052, w * 0.052, 0, 0, 6.283);
+  ctx.fill();
+  ctx.strokeStyle = tonoMadera(0.8, ilum * 0.7);
+  ctx.lineWidth = Math.max(1.2, w * 0.014);
+  ctx.beginPath();
+  ctx.ellipse(x, luy, w * 0.052, w * 0.052, 0, 0, 6.283);
+  ctx.stroke();
+  /* Y, una de cada muchas, algo se mueve dentro de la lumbrera. No hay
+     nada que tocar y no se cuenta en ningún sitio. */
+  if (cabana.desvan > 0.01) {
+    ctx.fillStyle = `rgba(255,150,60,${cabana.desvan * 0.5})`;
+    ctx.beginPath();
+    ctx.ellipse(x + w * 0.014, luy, w * 0.014, w * 0.02, 0, 0, 6.283);
+    ctx.fill();
+  }
+
+  /* ---- 8. EL TEJADO ----
+     Dos piezas: la faja de canto que se ve de frente —el borde de las
+     tejas, que es lo que da el grosor— y el faldón que se va hacia
+     dentro, que es donde van las hileras. Sin el faldón el tejado es
+     una raya; con él la casa tiene fondo. */
+  const pPico = [x, cumbre - grosT];
+  const pIzq  = [x - alaX, aleY - grosT];
+  const pDer  = [x + alaX, aleY - grosT];
+  /* El faldón que se ve, hacia donde recede la casa. */
+  const rEave = [pIzq[0] + (lado < 0 ? 0 : 2 * alaX), pIzq[1]];
+  const fEave = [rEave[0] + lado * hondo * 1.1, rEave[1] - sube * 1.1];
+  const fPico = [pPico[0] + lado * hondo * 1.1, pPico[1] - sube * 1.1];
+  const gF = ctx.createLinearGradient(rEave[0], rEave[1], fPico[0], fPico[1]);
+  gF.addColorStop(0, tonoPiedra(0.2, ilum * 0.34, 0.3));
+  gF.addColorStop(1, tonoPiedra(0.5, ilum * 0.12, 0.5));
+  ctx.fillStyle = gF;
+  ctx.beginPath();
+  ctx.moveTo(rEave[0], rEave[1]);
+  ctx.lineTo(pPico[0], pPico[1]);
+  ctx.lineTo(fPico[0], fPico[1]);
+  ctx.lineTo(fEave[0], fEave[1]);
+  ctx.closePath();
+  ctx.fill();
+  /* Las hileras de tejas del faldón, y el escalonado: una hilera de
+     rayas paralelas se lee como una persiana; con los cortes cambiados
+     de sitio en cada hilera se lee como un tejado. */
+  if (!flojo) {
+    ctx.strokeStyle = "rgba(6,6,12,0.4)";
+    ctx.lineWidth = 1;
+    const nH = 7;
+    for (let i = 1; i < nH; i++) {
+      const t = i / nH;
+      const a0 = [mez(rEave[0], pPico[0], t), mez(rEave[1], pPico[1], t)];
+      const a1 = [mez(fEave[0], fPico[0], t), mez(fEave[1], fPico[1], t)];
+      ctx.beginPath();
+      ctx.moveTo(a0[0], a0[1]);
+      ctx.lineTo(a1[0], a1[1]);
+      ctx.stroke();
+      /* El escalonado: los CORTES entre teja y teja, cambiados de sitio
+         en cada hilera. Tienen que ser trocitos, no segmentos enteros
+         de hilera a hilera: la primera versión los llevaba de punta a
+         punta y lo que salía en pantalla era una red de pescar. */
+      const paso = (i + 1) / nH;
+      const c0 = [mez(rEave[0], pPico[0], paso), mez(rEave[1], pPico[1], paso)];
+      const c1 = [mez(fEave[0], fPico[0], paso), mez(fEave[1], fPico[1], paso)];
+      for (let k = 0; k < 5; k++) {
+        const u = (k + 0.5 + (i % 2) * 0.5) / 5.5;
+        const b0 = [mez(a0[0], a1[0], u), mez(a0[1], a1[1], u)];
+        const b1 = [mez(c0[0], c1[0], u), mez(c0[1], c1[1], u)];
+        ctx.beginPath();
+        ctx.moveTo(b0[0], b0[1]);
+        ctx.lineTo(mez(b0[0], b1[0], 0.45), mez(b0[1], b1[1], 0.45));
+        ctx.stroke();
+      }
+    }
+    /* Y manchas de musgo en el faldón: un tejado impecable es un tejado
+       recién puesto, y esta cabaña lleva ahí toda la vida. */
+    for (let i = 0; i < 5; i++) {
+      const t = 0.15 + ruidito(i * 31) * 0.7, u = 0.2 + ruidito(i * 37) * 0.6;
+      const mx = mez(mez(rEave[0], pPico[0], t), mez(fEave[0], fPico[0], t), u);
+      const my = mez(mez(rEave[1], pPico[1], t), mez(fEave[1], fPico[1], t), u);
+      ctx.fillStyle = `rgba(${Math.round(mez(24, 58, ilum))},${Math.round(mez(32, 70, ilum))},${Math.round(mez(24, 40, ilum))},0.26)`;
+      ctx.beginPath();
+      ctx.ellipse(mx, my, w * (0.03 + ruidito(i * 41) * 0.04), w * 0.018, 0, 0, 6.283);
+      ctx.fill();
+    }
+  }
+
+  /* La faja de canto, de alero a alero por encima del hastial. */
+  ctx.beginPath();
+  ctx.moveTo(pIzq[0], pIzq[1]);
+  ctx.lineTo(pPico[0], pPico[1]);
+  ctx.lineTo(pDer[0], pDer[1]);
+  ctx.lineTo(pDer[0], pDer[1] + grosT);
+  ctx.lineTo(pPico[0], pPico[1] + grosT);
+  ctx.lineTo(pIzq[0], pIzq[1] + grosT);
+  ctx.closePath();
+  const gC = ctx.createLinearGradient(0, cumbre - grosT, 0, aleY + grosT);
+  gC.addColorStop(0, tonoPiedra(0.7, ilum * 0.5));
+  gC.addColorStop(1, tonoPiedra(0.25, ilum * 0.26, 0.28));
+  ctx.fillStyle = gC;
+  ctx.fill();
+  /* El caballete, que remata la cumbrera. */
+  ctx.fillStyle = tonoMadera(0.9, ilum * 0.55, 0.1);
+  ctx.beginPath();
+  ctx.moveTo(x - w * 0.05, cumbre - grosT * 0.8);
+  ctx.lineTo(x + lado * hondo * 1.12 + w * 0.02, cumbre - grosT * 0.8 - sube * 1.12);
+  ctx.lineTo(x + lado * hondo * 1.12 - w * 0.02, cumbre - grosT * 0.2 - sube * 1.12);
+  ctx.lineTo(x + w * 0.05, cumbre - grosT * 0.2);
+  ctx.closePath();
+  ctx.fill();
+
+  /* El sofito: el bajo del vuelo del alero, que queda a oscuras. Es una
+     cuña negra pequeñita en cada punta y se nota muchísimo cuando no
+     está, porque sin ella el tejado no vuela, se posa. */
+  for (const s of [-1, 1]) {
+    ctx.fillStyle = "rgba(2,3,7,0.72)";
+    ctx.beginPath();
+    ctx.moveTo(x + s * alaX, aleY + grosT * 0.2);
+    ctx.lineTo(x + s * w * 0.5, y - h);
+    ctx.lineTo(x + s * w * 0.5, y - h * 0.94);
+    ctx.lineTo(x + s * alaX, aleY + grosT * 0.9);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /* ---- 9. LA CHIMENEA ----
+     Va DESPUÉS del tejado porque sale de él, no de detrás. Piedra a
+     piedra, con las juntas cambiadas de hilada, y con su sombra sobre
+     las tejas: eso último es lo que la planta en el faldón. */
+  const b0ch = bocaDeLaChimenea();
+  const chx = b0ch.x + d.x;
+  const chAncho = w * 0.14;
+  const chPie = cumbre - pend * Math.abs(w * 0.2) - sube * 0.5;
+  const chCima = b0ch.y + d.y;
+  const chAlto = chPie - chCima;
+  /* El collarín, donde la chimenea entra en las tejas. Es la pieza que
+     la PLANTA en el tejado: sin ella se lee como una torre apoyada
+     encima. Va hacia `lado`, que es hacia donde recede el faldón que se
+     ve; puesto al otro lado —que fue el primer intento— se dibujaba
+     sobre el hastial y salía un triángulo negro en medio de la casa. */
+  ctx.fillStyle = "rgba(3,4,10,0.6)";
+  ctx.beginPath();
+  ctx.moveTo(chx - chAncho * 0.62, chPie - chAncho * 0.16);
+  ctx.lineTo(chx - chAncho * 0.62 + lado * chAncho * 0.66, chPie - chAncho * 0.5);
+  ctx.lineTo(chx + chAncho * 0.62 + lado * chAncho * 0.66, chPie - chAncho * 0.5);
+  ctx.lineTo(chx + chAncho * 0.62, chPie - chAncho * 0.16);
+  ctx.closePath();
+  ctx.fill();
+  /* La piedra: seis hiladas con las juntas cambiadas, y todo bastante
+     más apagado que la madera. Una chimenea clara se lee como una torre
+     de hormigón; ésta tiene que ser un bulto oscuro con canto de luna. */
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(chx - chAncho * 0.5, chCima, chAncho, chAlto);
+  ctx.clip();
+  for (let i = 0; i < 6; i++) {
+    const py2 = chPie - (i / 6) * chAlto;
+    const ph2 = chAlto / 6 + 0.9;
+    for (let k = -1; k < 3; k++) {
+      const bx = chx - chAncho * 0.5 + (k + (i % 2) * 0.5) * chAncho * 0.5;
+      ctx.fillStyle = tonoPiedra(ruidito(i * 7 + k * 3 + 90), ilum * 0.2, 0.42);
+      ctx.fillRect(bx, py2 - ph2, chAncho * 0.5 - 1, ph2 - 1);
+    }
+  }
+  ctx.restore();
+  /* El canto que le pone la luna por el lado de fuera. */
+  ctx.strokeStyle = `rgba(150,166,210,${0.12 * (1 - clima.lluvia * 0.7)})`;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(chx - lado * chAncho * 0.5, chPie);
+  ctx.lineTo(chx - lado * chAncho * 0.5, chCima);
+  ctx.stroke();
+  /* El remate, que sobresale. */
+  ctx.fillStyle = tonoPiedra(0.6, ilum * 0.22, 0.34);
+  ctx.fillRect(chx - chAncho * 0.66, chCima - chAncho * 0.1, chAncho * 1.32, chAncho * 0.16);
+  /* La boca, negra, con la brasa de dentro asomando: es la razón de que
+     el humo salga de ahí y no de un punto cualquiera. */
+  ctx.fillStyle = "rgba(2,2,5,0.96)";
+  ctx.fillRect(chx - chAncho * 0.3, chCima - chAncho * 0.04, chAncho * 0.6, chAncho * 0.14);
+  ctx.globalCompositeOperation = "lighter";
+  haloOvalado(chx, chCima, chAncho * 1.3, chAncho * 0.8, [
+    [0, `rgba(255,124,44,${0.16 + fuego.brillo * 0.08})`],
+    [1, "rgba(255,120,40,0)"],
+  ], chCima);
+  ctx.globalCompositeOperation = "source-over";
+
+  /* ---- 10. LAS VENTANAS ---- */
+  const vy = y - h * 0.63, vw = w * 0.23, vh = h * 0.29;
+  dibujarVentanaCabana(x - w * 0.3, vy, vw, vh, luzV, ilum,
+    cabana.cruzaVentana === 0 ? cabana.cruza : -1);
+  dibujarVentanaCabana(x + w * 0.3, vy, vw, vh, luzV * 0.92, ilum,
+    cabana.cruzaVentana === 1 ? cabana.cruza : -1);
+
+  /* ---- 11. LA PUERTA ----
+     Con su marco, su dintel y su umbral. Una puerta sin marco es una
+     mancha con forma de puerta pegada en la pared. */
+  const pw = w * 0.23, ph = h * 0.48;
+  ctx.fillStyle = tonoMadera(0.95, ilum * 0.9, 0.05);
+  ctx.beginPath();
+  ctx.moveTo(x - pw * 0.66, y);
+  ctx.lineTo(x - pw * 0.66, y - ph * 0.86);
+  ctx.quadraticCurveTo(x, y - ph * 1.2, x + pw * 0.66, y - ph * 0.86);
+  ctx.lineTo(x + pw * 0.66, y);
+  ctx.closePath();
+  ctx.fill();
+  /* La hoja, más oscura que el marco y con sus tablas. */
+  const gpu = ctx.createLinearGradient(x - pw / 2, 0, x + pw / 2, 0);
+  gpu.addColorStop(0, tonoMadera(0.3, ilum * (haciaFuego < 0 ? 0.8 : 0.3), 0.3));
+  gpu.addColorStop(1, tonoMadera(0.3, ilum * (haciaFuego < 0 ? 0.3 : 0.8), 0.3));
+  ctx.fillStyle = gpu;
   ctx.beginPath();
   ctx.moveTo(x - pw / 2, y);
   ctx.lineTo(x - pw / 2, y - ph * 0.82);
@@ -5830,6 +6324,25 @@ function dibujarCabana() {
   ctx.lineTo(x + pw / 2, y);
   ctx.closePath();
   ctx.fill();
+  ctx.strokeStyle = "rgba(10,7,6,0.5)";
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 4; i++) {
+    const tx2 = x - pw / 2 + (i / 4) * pw;
+    ctx.beginPath();
+    ctx.moveTo(tx2, y - ph * 0.04);
+    ctx.lineTo(tx2, y - ph * (0.86 - Math.abs(i / 4 - 0.5) * 0.36));
+    ctx.stroke();
+  }
+  /* Los herrajes: dos bandas de hierro cruzando la hoja. */
+  ctx.strokeStyle = `rgba(${Math.round(mez(26, 96, ilum))},${Math.round(mez(24, 84, ilum))},${Math.round(mez(26, 76, ilum))},0.8)`;
+  ctx.lineWidth = Math.max(1.3, w * 0.013);
+  for (const fy2 of [0.24, 0.66]) {
+    ctx.beginPath();
+    ctx.moveTo(x - pw * 0.46, y - ph * fy2);
+    ctx.lineTo(x + pw * 0.46, y - ph * fy2);
+    ctx.stroke();
+  }
+
   /* Si está abierta —durante la cinemática—, se ve el hueco caliente. */
   if (cabana.puerta > 0.01) {
     ctx.save();
@@ -5847,39 +6360,134 @@ function dibujarCabana() {
     ctx.fill();
     ctx.restore();
   }
-  /* El pomo. */
-  ctx.fillStyle = `rgba(220,180,110,${0.4 + ilum * 0.5})`;
+  /* El pomo, de hierro, con su brillito. */
+  ctx.fillStyle = `rgba(${Math.round(mez(40, 210, ilum))},${Math.round(mez(36, 172, ilum))},${Math.round(mez(34, 110, ilum))},0.95)`;
   ctx.beginPath();
-  ctx.arc(x + pw * 0.28, y - ph * 0.42, Math.max(1.4, w * 0.014), 0, 6.283);
+  ctx.arc(x + pw * 0.3, y - ph * 0.44, Math.max(1.5, w * 0.016), 0, 6.283);
   ctx.fill();
 
-  /* ---- El farol de la puerta ---- */
-  const fx = x + pw * 0.86, fy = y - ph * 0.92;
-  ctx.globalCompositeOperation = "lighter";
-  const gf = ctx.createRadialGradient(fx, fy, 0, fx, fy, w * 0.5);
-  gf.addColorStop(0, `rgba(255,200,120,${0.4 * cabana.farol})`);
-  gf.addColorStop(1, "rgba(255,200,120,0)");
-  ctx.fillStyle = gf;
-  ctx.beginPath(); ctx.arc(fx, fy, w * 0.5, 0, 6.283); ctx.fill();
-  ctx.globalCompositeOperation = "source-over";
-  ctx.fillStyle = "#1a1512";
-  ctx.fillRect(fx - w * 0.026, fy - w * 0.04, w * 0.052, w * 0.08);
-  ctx.fillStyle = `rgba(255,214,140,${cabana.farol})`;
-  ctx.fillRect(fx - w * 0.018, fy - w * 0.032, w * 0.036, w * 0.064);
+  /* ---- 12. EL ESCALÓN ----
+     Una losa y dos maderos, con su hueco negro debajo. Antes la puerta
+     salía directamente de la hierba. */
+  ctx.fillStyle = "rgba(2,3,7,0.7)";
+  ctx.fillRect(x - pw * 0.95, y + h * 0.008, pw * 1.9, h * 0.035);
+  ctx.fillStyle = tonoMadera(0.5, ilum * 0.8, 0.1);
+  ctx.fillRect(x - pw * 0.95, y - h * 0.018, pw * 1.9, h * 0.03);
+  ctx.fillStyle = tonoMadera(0.8, ilum * 1.05);
+  ctx.fillRect(x - pw * 0.95, y - h * 0.018, pw * 1.9, h * 0.008);
 
-  /* ---- Las matas de alrededor ---- */
-  for (let i = 0; i < 6; i++) {
-    const t = (i / 5 - 0.5) * 1.9;
-    const mx = x + t * w * 0.66;
-    const my = y + Math.abs(t) * h * 0.02;
-    if (Math.abs(t) < 0.28) continue;         // deja libre la puerta
-    const s = U * (1.6 + ((i * 13) % 4) * 0.5);
-    const il2 = ilum * 0.7;
-    ctx.fillStyle = `rgb(${Math.round(mez(16, 62, il2))},${Math.round(mez(26, 82, il2))},${Math.round(mez(18, 48, il2))})`;
+  /* ---- 13. EL FAROL ----
+     Colgado del alero, en la esquina que da a la fogata, y se mece con
+     el viento de verdad: el mismo `clima.viento` que dobla la hierba y
+     tumba la llama.
+
+     Estuvo primero clavado a la pared, al lado de la puerta, y ahí se
+     metía dentro de la ventana: la escarpia cruzaba el alféizar y el
+     farol quedaba pegado al cristal, que es exactamente lo que no se
+     quiere cuando lo que se busca es que las cosas tengan su sitio.
+     Colgado de la punta del alero no estorba a nada, alumbra el
+     caminito y además vuela, que es lo que hace un farol. */
+  const fx0 = x + haciaFuego * alaX * 0.84, fy0 = aleY + grosT * 0.4;
+  const cuerda = w * 0.1;
+  const mece = cabana.mece;
+  const fx = fx0 + Math.sin(mece) * cuerda, fy = fy0 + Math.cos(mece) * cuerda;
+  /* La escarpia, metida bajo el alero. */
+  ctx.strokeStyle = tonoMadera(0.2, ilum * 0.5, 0.2);
+  ctx.lineWidth = Math.max(1.3, w * 0.016);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(fx0 - haciaFuego * w * 0.05, fy0 - w * 0.012);
+  ctx.lineTo(fx0, fy0);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(30,26,24,0.9)";
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(fx0, fy0);
+  ctx.lineTo(fx, fy);
+  ctx.stroke();
+  /* El halo, que es lo que de verdad se ve del farol de lejos. */
+  ctx.globalCompositeOperation = "lighter";
+  haloOvalado(fx, fy, w * 0.55, w * 0.55, [
+    [0, `rgba(255,206,128,${0.46 * cabana.farol})`],
+    [0.4, `rgba(255,186,104,${0.14 * cabana.farol})`],
+    [1, "rgba(255,186,104,0)"],
+  ], fy);
+  ctx.globalCompositeOperation = "source-over";
+  /* Y el farol: caja de hierro, cristal y llama. */
+  const fw = w * 0.06, fh = w * 0.086;
+  ctx.fillStyle = "#171310";
+  ctx.beginPath();
+  ctx.moveTo(fx - fw * 0.7, fy - fh * 0.5);
+  ctx.lineTo(fx + fw * 0.7, fy - fh * 0.5);
+  ctx.lineTo(fx + fw * 0.55, fy + fh * 0.6);
+  ctx.lineTo(fx - fw * 0.55, fy + fh * 0.6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = `rgba(255,214,140,${cabana.farol})`;
+  ctx.fillRect(fx - fw * 0.36, fy - fh * 0.34, fw * 0.72, fh * 0.76);
+  ctx.fillStyle = `rgba(255,248,214,${cabana.farol})`;
+  ctx.beginPath();
+  ctx.ellipse(fx, fy + fh * 0.06, fw * 0.16, fh * 0.24, 0, 0, 6.283);
+  ctx.fill();
+  ctx.fillStyle = "#0f0c0a";
+  ctx.fillRect(fx - fw * 0.75, fy - fh * 0.62, fw * 1.5, fh * 0.16);
+
+  /* ---- 14. LOS TRASTOS ----
+     Nada de esto se toca ni da nada. Está para que la cabaña tenga
+     biografía: alguien partió esa leña, alguien dejó ahí el hacha.
+
+     Y todos van al lado de FUERA, el que no da a la fogata. No es una
+     decisión de composición: entre la pared de la cabaña y el corro de
+     piedras de la hoguera hay treinta y siete píxeles, así que
+     cualquier cosa puesta de ese lado se mete dentro del fuego. Ese
+     lado tiene que quedarse vacío, y de paso queda bien: delante de una
+     hoguera no se apila leña. */
+  dibujarLenaCabana(lenaX, y, w, h, ilum, haciaFuego);
+  dibujarTajoCabana(x - haciaFuego * w * 0.14, y + h * 0.07, w, ilum, haciaFuego);
+  dibujarBarrilCabana(x - haciaFuego * w * 0.64, y + h * 0.02, w, ilum);
+  /* Las botas, en el escalón, apuntando hacia dentro. */
+  for (const s of [0, 1]) {
+    const bx2 = x - pw * 0.72 + s * w * 0.045;
+    ctx.fillStyle = tonoMadera(0.1, ilum * 0.5, 0.4);
     ctx.beginPath();
-    ctx.ellipse(mx, my, s, s * 0.72, 0, 0, 6.283);
+    ctx.ellipse(bx2, y - h * 0.032, w * 0.019, w * 0.012, 0, 0, 6.283);
     ctx.fill();
+    ctx.fillRect(bx2 - w * 0.013, y - h * 0.064, w * 0.026, h * 0.034);
   }
+
+  /* ---- 15. LO QUE CRECE PEGADO A LA PARED ----
+     Matas de hojas, no elipses: cada una son cuatro o cinco bultos
+     pequeños, y ésa es toda la diferencia entre una planta y un borrón
+     verde. Y ninguna delante de la puerta. */
+  for (let i = 0; i < 9; i++) {
+    const t = (i / 8 - 0.5) * 2.1;
+    if (Math.abs(t) < 0.3) continue;
+    const mx = x + t * w * 0.62;
+    const my = y + Math.abs(t) * h * 0.028 + h * 0.012;
+    const s = U * (1.5 + ruidito(i * 29) * 1.5);
+    const il2 = ilum * (0.35 + 0.5 * clamp01(1 - Math.abs(t)));
+    for (let k = 0; k < 5; k++) {
+      const a = (k / 5) * 6.283 + ruidito(i * 31 + k) * 1.2;
+      ctx.fillStyle = `rgb(${Math.round(mez(14, 66, il2))},${Math.round(mez(26, 88, il2))},${Math.round(mez(18, 46, il2))})`;
+      ctx.beginPath();
+      ctx.ellipse(mx + Math.cos(a) * s * 0.6, my - s * 0.45 + Math.sin(a) * s * 0.34,
+                  s * 0.56, s * 0.38, a * 0.5, 0, 6.283);
+      ctx.fill();
+    }
+  }
+
+  /* ---- 16. EL FILO CALIENTE ----
+     Una línea de luz por el canto que da a la fogata. Es lo último que
+     se pinta de la casa y lo que la despega del bosque de detrás. */
+  ctx.globalCompositeOperation = "lighter";
+  ctx.strokeStyle = `rgba(255,160,80,${0.1 + ilum * 0.3})`;
+  ctx.lineWidth = Math.max(1.4, w * 0.016);
+  ctx.beginPath();
+  ctx.moveTo(x + haciaFuego * w * 0.5, y - h * 0.02);
+  ctx.lineTo(x + haciaFuego * w * 0.5, y - h * 0.96);
+  ctx.lineTo(x + haciaFuego * alaX, aleY - grosT * 0.2);
+  ctx.stroke();
+  ctx.globalCompositeOperation = "source-over";
 
   /* ---- El aro de «tócame» ----
      Era un óvalo continuo de canto a canto, y en pantalla no se leía
@@ -5914,31 +6522,246 @@ function dibujarCabana() {
   dibujarCorazonDeHumo();
 }
 
-function dibujarVentanaCabana(vx, vy, vw, vh, luz) {
+/**
+ * La leña apilada contra la pared.
+ *
+ * Se ven las TESTAS, no los costados: un montón de leña visto de frente
+ * es una pared de círculos de distinto tamaño, y ese patrón es
+ * inconfundible. Apilada de costado son palos, y parecen otra cosa.
+ */
+function dibujarLenaCabana(lx, ly, w, h, ilum, haciaFuego) {
+  const anchoP = w * 0.2, altoP = h * 0.3;
+  /* La sombra contra la pared NO se pinta aquí: se pinta antes, entre
+     los troncos y la luz, y difuminada. Aquí era un rectángulo opaco
+     con sus cuatro cantos y en pantalla se leía como un panel gris
+     atornillado a la fachada, no como un rincón sin luz. */
+  const filas = 5, porFila = 4;
+  for (let f = 0; f < filas; f++) {
+    for (let i = 0; i < porFila; i++) {
+      const n = ruidito(f * 13 + i * 7 + 200);
+      const r = anchoP / porFila * (0.42 + n * 0.16);
+      const cx2 = lx - anchoP * 0.5 + (i + 0.5) * (anchoP / porFila) + (n - 0.5) * r * 0.5;
+      const cy3 = ly - (f + 0.5) * (altoP / filas);
+      /* Las de arriba del todo, menos: un montón perfecto es un muro. */
+      if (f === filas - 1 && n > 0.55) continue;
+      ctx.fillStyle = tonoMadera(n, ilum * 0.34, 0.3);
+      ctx.beginPath();
+      ctx.arc(cx2, cy3, r, 0, 6.283);
+      ctx.fill();
+      ctx.fillStyle = tonoMadera(1 - n, ilum * 0.75, 0.05);
+      ctx.beginPath();
+      ctx.arc(cx2 - haciaFuego * r * 0.12, cy3 - r * 0.1, r * 0.76, 0, 6.283);
+      ctx.fill();
+      /* Los anillos, que es lo que la hace leña y no guijarros. */
+      ctx.strokeStyle = `rgba(20,13,9,${0.3 + ilum * 0.2})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(cx2 - haciaFuego * r * 0.12, cy3 - r * 0.1, r * 0.4, 0, 6.283);
+      ctx.stroke();
+    }
+  }
+  /* Y dos que se han caído, tiradas delante. Un montón sin nada caído
+     está colocado; con dos en el suelo, lleva ahí un invierno. */
+  for (let i = 0; i < 2; i++) {
+    const n = ruidito(i * 53 + 300);
+    const cx2 = lx + (n - 0.5) * anchoP * 1.6;
+    ctx.save();
+    ctx.translate(cx2, ly + h * 0.015);
+    ctx.rotate((n - 0.5) * 0.7);
+    ctx.fillStyle = tonoMadera(n, ilum * 0.5, 0.2);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, w * 0.055, w * 0.018, 0, 0, 6.283);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+/** El tajo de partir, con el hacha clavada donde la dejaron. */
+function dibujarTajoCabana(tx, ty, w, ilum, haciaFuego) {
+  const r = w * 0.055;
+  ctx.fillStyle = "rgba(2,3,7,0.55)";
+  ctx.beginPath();
+  ctx.ellipse(tx, ty + r * 0.1, r * 1.5, r * 0.42, 0, 0, 6.283);
+  ctx.fill();
+  /* El costado del tocón. */
+  ctx.fillStyle = tonoMadera(0.25, ilum * 0.38, 0.3);
+  ctx.fillRect(tx - r, ty - r * 1.5, r * 2, r * 1.5);
+  ctx.beginPath();
+  ctx.ellipse(tx, ty, r, r * 0.34, 0, 0, 6.283);
+  ctx.fill();
+  /* La cara de arriba, con sus anillos y el tajo del hacha. */
+  ctx.fillStyle = tonoMadera(0.8, ilum * 0.8);
+  ctx.beginPath();
+  ctx.ellipse(tx, ty - r * 1.5, r, r * 0.34, 0, 0, 6.283);
+  ctx.fill();
+  ctx.strokeStyle = `rgba(22,15,10,${0.3 + ilum * 0.25})`;
+  ctx.lineWidth = 1;
+  for (const k of [0.38, 0.68]) {
+    ctx.beginPath();
+    ctx.ellipse(tx, ty - r * 1.5, r * k, r * 0.34 * k, 0, 0, 6.283);
+    ctx.stroke();
+  }
+  /* El hacha: mango inclinado y cabeza clavada. */
+  ctx.strokeStyle = tonoMadera(0.95, ilum * 0.9);
+  ctx.lineWidth = Math.max(1.6, w * 0.017);
+  ctx.lineCap = "round";
+  const m = -haciaFuego;                 // el mango se va hacia fuera
+  ctx.beginPath();
+  ctx.moveTo(tx + m * r * 0.2, ty - r * 1.6);
+  ctx.lineTo(tx + m * r * 1.5, ty - r * 3.1);
+  ctx.stroke();
+  ctx.fillStyle = `rgba(${Math.round(mez(52, 176, ilum))},${Math.round(mez(54, 180, ilum))},${Math.round(mez(58, 188, ilum))},0.95)`;
+  ctx.beginPath();
+  ctx.moveTo(tx + m * r * 0.05, ty - r * 1.5);
+  ctx.lineTo(tx + m * r * 0.6, ty - r * 2.1);
+  ctx.lineTo(tx + m * r * 0.36, ty - r * 2.5);
+  ctx.lineTo(tx - m * r * 0.28, ty - r * 1.82);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/** El barril bajo el alero. Cuando llueve se le junta agua y tiembla. */
+function dibujarBarrilCabana(bx, by, w, ilum) {
+  const r = w * 0.052, alt = w * 0.12;
+  ctx.fillStyle = "rgba(2,3,7,0.55)";
+  ctx.beginPath();
+  ctx.ellipse(bx, by + r * 0.14, r * 1.4, r * 0.4, 0, 0, 6.283);
+  ctx.fill();
+  const gb = ctx.createLinearGradient(bx - r, 0, bx + r, 0);
+  gb.addColorStop(0, tonoMadera(0.2, ilum * 0.25, 0.35));
+  gb.addColorStop(0.42, tonoMadera(0.6, ilum * 0.7, 0.05));
+  gb.addColorStop(1, tonoMadera(0.2, ilum * 0.2, 0.4));
+  ctx.fillStyle = gb;
+  ctx.beginPath();
+  ctx.moveTo(bx - r * 0.86, by);
+  ctx.quadraticCurveTo(bx - r * 1.1, by - alt * 0.5, bx - r * 0.86, by - alt);
+  ctx.lineTo(bx + r * 0.86, by - alt);
+  ctx.quadraticCurveTo(bx + r * 1.1, by - alt * 0.5, bx + r * 0.86, by);
+  ctx.closePath();
+  ctx.fill();
+  /* Los aros de hierro. */
+  ctx.strokeStyle = `rgba(${Math.round(mez(34, 124, ilum))},${Math.round(mez(32, 116, ilum))},${Math.round(mez(34, 108, ilum))},0.85)`;
+  ctx.lineWidth = Math.max(1.2, w * 0.011);
+  for (const k of [0.24, 0.76]) {
+    ctx.beginPath();
+    ctx.moveTo(bx - r * (0.88 + k * 0.2 * (1 - Math.abs(k - 0.5) * 2)), by - alt * k);
+    ctx.lineTo(bx + r * (0.88 + k * 0.2 * (1 - Math.abs(k - 0.5) * 2)), by - alt * k);
+    ctx.stroke();
+  }
+  /* El agua de dentro: sólo si ha llovido, y con sus ondas. */
+  const agua = clamp01(clima.lluvia * 1.4);
+  ctx.fillStyle = agua > 0.02
+    ? `rgba(${Math.round(mez(16, 40, ilum))},${Math.round(mez(22, 52, ilum))},${Math.round(mez(30, 60, ilum))},1)`
+    : "rgba(6,5,8,0.95)";
+  ctx.beginPath();
+  ctx.ellipse(bx, by - alt, r * 0.86, r * 0.3, 0, 0, 6.283);
+  ctx.fill();
+  if (agua > 0.02) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(bx, by - alt, r * 0.86, r * 0.3, 0, 0, 6.283);
+    ctx.clip();
+    ctx.strokeStyle = `rgba(190,210,255,${0.16 * agua})`;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      const rr = ((reloj * 0.6 + i * 0.33) % 1) * r * 0.9;
+      ctx.beginPath();
+      ctx.ellipse(bx, by - alt, rr, rr * 0.35, 0, 0, 6.283);
+      ctx.stroke();
+    }
+    /* Y el reflejo de la luna, que es el detalle por el que está ahí. */
+    ctx.fillStyle = `rgba(200,214,255,${0.2 * agua})`;
+    ctx.beginPath();
+    ctx.ellipse(bx - r * 0.2, by - alt - r * 0.04, r * 0.16, r * 0.06, 0, 0, 6.283);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+/**
+ * Una ventana de la cabaña.
+ *
+ * El cristal no es un rectángulo naranja: es un degradado que va de
+ * claro arriba a ámbar abajo, porque la luz de dentro viene de una
+ * lumbre que está en el suelo. Y lleva su alféizar, su contra y sus
+ * cuatro cuarterones.
+ *
+ * `cruza` va de 0 a 1 mientras algo pasa por detrás del cristal, y vale
+ * -1 el resto del tiempo, que es casi siempre.
+ */
+function dibujarVentanaCabana(vx, vy, vw, vh, luz, ilum, cruza) {
   /* El resplandor. */
   ctx.globalCompositeOperation = "lighter";
-  const g = ctx.createRadialGradient(vx, vy, 0, vx, vy, vw * 2.6);
-  g.addColorStop(0, `rgba(255,196,110,${0.34 * luz})`);
-  g.addColorStop(1, "rgba(255,196,110,0)");
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.arc(vx, vy, vw * 2.6, 0, 6.283); ctx.fill();
+  /* El halo, CORTO. Llegó a medir dos veces y media la ventana y con
+     `lighter` los dos se cruzaban en medio de la pared: la fachada
+     entera se iba a crema y la cabaña dejaba de ser de madera de noche
+     para ser una casa de día. Una ventana encendida tiñe un palmo de
+     pared, no la pared. */
+  haloOvalado(vx, vy, vw * 1.75, vh * 1.6, [
+    [0, `rgba(255,196,110,${0.19 * luz})`],
+    [0.45, `rgba(255,176,96,${0.05 * luz})`],
+    [1, "rgba(255,196,110,0)"],
+  ], vy);
   ctx.globalCompositeOperation = "source-over";
+
+  /* El hueco, que es más grande que el cristal: la pared tiene grosor. */
+  ctx.fillStyle = "rgba(4,4,8,0.8)";
+  ctx.fillRect(vx - vw * 0.58, vy - vh * 0.58, vw * 1.16, vh * 1.16);
 
   /* El cristal. */
   const gc = ctx.createLinearGradient(vx, vy - vh / 2, vx, vy + vh / 2);
-  gc.addColorStop(0, `rgba(255,222,160,${luz})`);
-  gc.addColorStop(1, `rgba(255,170,80,${luz * 0.9})`);
+  gc.addColorStop(0, `rgba(255,228,172,${luz})`);
+  gc.addColorStop(0.55, `rgba(255,192,110,${luz})`);
+  gc.addColorStop(1, `rgba(248,152,64,${luz * 0.92})`);
   ctx.fillStyle = gc;
   ctx.fillRect(vx - vw / 2, vy - vh / 2, vw, vh);
 
-  /* La cruz del marco. */
-  ctx.strokeStyle = "rgba(24,16,10,0.75)";
+  /* La cortina: un paño recogido a un lado, en contraluz. Lo que
+     convierte un cuadrado de luz en una ventana de una casa habitada. */
+  ctx.fillStyle = `rgba(92,52,26,${0.42 * luz})`;
+  ctx.beginPath();
+  ctx.moveTo(vx - vw / 2, vy - vh / 2);
+  ctx.lineTo(vx - vw * 0.18, vy - vh / 2);
+  ctx.quadraticCurveTo(vx - vw * 0.34, vy, vx - vw * 0.1, vy + vh / 2);
+  ctx.lineTo(vx - vw / 2, vy + vh / 2);
+  ctx.closePath();
+  ctx.fill();
+
+  /* ---- ALGUIEN PASA ----
+     Una sombra que cruza el cristal. No se puede tocar, no da nada, no
+     se cuenta y no se explica nunca. Es lo que hace que la cabaña tenga
+     a alguien dentro aunque no pase absolutamente nada más. */
+  if (cruza >= 0) {
+    const t = clamp01(cruza);
+    /* Entra y sale por los cantos, y se ve más fuerte en medio. */
+    const sx = mez(vx - vw * 0.75, vx + vw * 0.75, t);
+    const fuerza = Math.sin(Math.PI * t);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(vx - vw / 2, vy - vh / 2, vw, vh);
+    ctx.clip();
+    const gs2 = ctx.createRadialGradient(sx, vy, 0, sx, vy, vw * 0.5);
+    gs2.addColorStop(0, `rgba(40,20,8,${0.72 * fuerza})`);
+    gs2.addColorStop(1, "rgba(40,20,8,0)");
+    ctx.fillStyle = gs2;
+    ctx.fillRect(vx - vw / 2, vy - vh / 2, vw, vh);
+    ctx.restore();
+  }
+
+  /* La cruz del marco y el marco. */
+  ctx.strokeStyle = "rgba(22,15,9,0.82)";
   ctx.lineWidth = Math.max(1.2, vw * 0.07);
   ctx.beginPath();
   ctx.moveTo(vx, vy - vh / 2); ctx.lineTo(vx, vy + vh / 2);
   ctx.moveTo(vx - vw / 2, vy); ctx.lineTo(vx + vw / 2, vy);
   ctx.stroke();
   ctx.strokeRect(vx - vw / 2, vy - vh / 2, vw, vh);
+
+  /* El alféizar, con su cara de arriba iluminada. */
+  ctx.fillStyle = tonoMadera(0.3, ilum * 0.45, 0.25);
+  ctx.fillRect(vx - vw * 0.66, vy + vh * 0.58, vw * 1.32, vh * 0.1);
+  ctx.fillStyle = tonoMadera(0.85, ilum * 0.9 + 0.12 * luz);
+  ctx.fillRect(vx - vw * 0.66, vy + vh * 0.58, vw * 1.32, vh * 0.035);
 }
 
 // ==========================================
@@ -8391,6 +9214,9 @@ function construirMundo() {
         banda: iB,
         x, base,
         alto: (iB === 2 ? H * 0.01 : U) * azar(banda.alto[0], banda.alto[1]),
+        /* Cuánto del árbol cae dentro de la pantalla. Lo usan las ramas
+           y el búho: sin esto habría que recalcularlo en los dos. */
+        visible: 0,
         ancho: U * azar(banda.ancho[0], banda.ancho[1]),
         f: rnd() * 6.283,
         z: banda.z,
@@ -8398,12 +9224,50 @@ function construirMundo() {
         toca: banda.toca,
         /* La forma: unos son abetos y otros de hoja. Que no sean todos
            iguales es lo que hace que parezca un bosque. */
-        abeto: iB === 0 ? rnd() < 0.72 : rnd() < 0.45,
-        ramas: Array.from({ length: iB === 2 ? 5 : 3 }, () => ({
-          y: azar(0.24, 0.84),
-          lado: rnd() < 0.5 ? -1 : 1,
+        abeto: iB === 0 ? rnd() < 0.72 : iB === 1 ? rnd() < 0.45 : false,
+        /* Las ramas de los de cerca van medidas contra la PANTALLA y no
+           contra el árbol: como el árbol se sale por arriba, una rama
+           puesta «al 70 % de su altura» cae fuera de cuadro y no se ve
+           nunca. El factor de abajo la coloca entre el 22 % y el 64 %
+           de lo que queda a la vista, que es donde se ven. */
+        ramas: Array.from({ length: iB === 2 ? 2 : 3 }, () => ({
+          /* Arriba del todo en los de cerca: una rama a media altura
+             cruza el cuadro por el centro y parte la escena en dos. En
+             el tercio de arriba, en cambio, cierra el encuadre por la
+             esquina, que es lo que tiene que hacer. */
+          y: iB === 2 ? azar(0.42, 0.9) : azar(0.24, 0.84),
+          /* Y casi siempre hacia dentro: una rama que se va por el
+             canto no entra en cuadro y el árbol se queda pelado. */
+          lado: iB !== 2 ? (rnd() < 0.5 ? -1 : 1)
+              : (x < A * 0.5 ? (rnd() < 0.8 ? 1 : -1) : (rnd() < 0.8 ? -1 : 1)),
           largo: azar(0.35, 1),
+          sube: rnd(),
+          f: rnd() * 6.283,
         })),
+        /* Cuántos pisos tiene si es abeto, y cómo es su copa si es de
+           hoja. Dos abetos con los mismos pisos son el mismo abeto. */
+        pisos: Math.round(azar(iB === 0 ? 4 : 6, iB === 0 ? 7 : 9)),
+        copa: iB === 2 ? null
+          : Array.from({ length: Math.round(azar(5, 8)) }, () => ({
+              a: rnd() * 6.283,
+              d: azar(0.1, 0.85),
+              r: azar(0.34, 0.66),
+            })),
+        /* Y el pie: raíces que se meten en la hierba y surcos de
+           corteza. Sólo los de cerca los usan; a los demás no se les ve
+           el pie de tan pequeños. */
+        raices: iB === 2 ? Array.from({ length: Math.round(azar(3, 5)) }, () => ({
+          lado: rnd() < 0.5 ? -1 : 1,
+          largo: azar(0.3, 1),
+          hondo: azar(0.1, 0.5),
+          alto: azar(0.6, 1.4),
+        })) : null,
+        surcos: iB === 2 ? Array.from({ length: Math.round(azar(4, 7)) }, () => ({
+          x: azar(-0.62, 0.62),
+          curva: azar(-0.22, 0.22),
+          y0: azar(0.005, 0.1),
+          y1: azar(0.16, 0.5),
+        })) : null,
         /* La sacudida: ángulo, velocidad y cuántas veces lo han tocado.
            Un muelle de verdad, no una animación rígida. */
         sac: 0, sacV: 0, toques: 0,
@@ -8412,6 +9276,15 @@ function construirMundo() {
       });
     }
   });
+  /* ---- Las ramas de los de cerca, contra la pantalla ----
+     Hay que esperar a aquí porque hace falta saber la base Y el alto
+     del árbol a la vez, y dentro del bucle sólo se tiene uno. */
+  for (const t of arboles) {
+    if (t.banda !== 2) continue;
+    t.visible = clamp01(t.base / Math.max(1, t.alto));
+    for (const r of t.ramas) r.y *= t.visible;
+  }
+
   /* De atrás adelante, para que los de delante tapen a los de detrás. */
   arboles.sort((a, b) => (a.banda - b.banda) || (a.base - b.base));
 
@@ -8786,56 +9659,20 @@ function dibujarArboles(banda) {
     const b = mez(mez(13, 34, il), 54, conf.niebla);
     ctx.fillStyle = `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
 
-    if (t.abeto) {
+    if (banda === 2) {
+      /* Los de cerca tienen su propio dibujo: pie, corteza y ramas. */
+      troncoDeMarco(t, x, base, meceT, ctx.fillStyle, il);
+    } else if (t.abeto) {
       /* Los abetos se inclinan enteros: son rígidos. */
       ctx.save();
       ctx.translate(x, base);
       ctx.rotate(meceT);
-      abeto(0, 0, t.ancho, t.alto);
+      abeto(0, 0, t.ancho, t.alto, t.pisos, t.f);
       ctx.restore();
     } else {
       /* Los de hoja se doblan: la base queda quieta y la copa se va.
          Por eso el tronco es una curva y no una recta. */
-      const puntaX = x + meceT * t.alto * 0.85;
-      ctx.beginPath();
-      ctx.moveTo(x - t.ancho, base);
-      ctx.quadraticCurveTo(x - t.ancho * 0.72 + meceT * t.alto * 0.3, base - t.alto * 0.5,
-                           puntaX - t.ancho * 0.32, base - t.alto);
-      ctx.lineTo(puntaX + t.ancho * 0.32, base - t.alto);
-      ctx.quadraticCurveTo(x + t.ancho * 0.72 + meceT * t.alto * 0.3, base - t.alto * 0.5,
-                           x + t.ancho, base);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.strokeStyle = ctx.fillStyle;
-      ctx.lineCap = "round";
-      for (const rama of t.ramas) {
-        const ry = base - t.alto * rama.y;
-        const rx = x + meceT * t.alto * rama.y * 0.85;
-        ctx.lineWidth = Math.max(1, t.ancho * 0.42 * (1 - rama.y * 0.4));
-        ctx.beginPath();
-        ctx.moveTo(rx, ry);
-        ctx.quadraticCurveTo(
-          rx + rama.lado * t.ancho * 3.2 * rama.largo, ry - t.alto * 0.05,
-          rx + rama.lado * t.ancho * 5 * rama.largo, ry - t.alto * 0.15);
-        ctx.stroke();
-      }
-
-      /* La copa de los de cerca: una masa de hojas por encima, que se
-         mueve un poco más que el tronco porque pesa menos. */
-      if (banda === 2) {
-        ctx.globalAlpha = 0.9;
-        for (let k = 0; k < 4; k++) {
-          const a = (k / 4) * 6.283;
-          ctx.beginPath();
-          ctx.ellipse(
-            puntaX + Math.cos(a) * t.ancho * 1.6 + meceT * t.alto * 0.25,
-            base - t.alto + Math.sin(a) * t.ancho * 1.1,
-            t.ancho * 2.1, t.ancho * 1.5, a, 0, 6.283);
-          ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-      }
+      frondoso(t, x, base, meceT);
     }
 
     /* Y el filo de luz de luna por el canto de arriba, en los de lejos:
@@ -8929,25 +9766,302 @@ function sacudirArbol(t, fuerza) {
 }
 
 /** Un abeto: tres pisos de triángulos y un tronquito. */
-function abeto(x, base, w, h) {
+/**
+ * Un tronco de los que enmarcan el claro.
+ *
+ * ── POR QUÉ NO SE LE VE LA COPA ──────────────────────────────────────
+ * Porque se sale por arriba, y es a propósito. Antes medían lo justo
+ * para acabar en punta DENTRO de la pantalla, y una punta dentro de la
+ * pantalla convierte un árbol de primer plano en una antena: se ve el
+ * triángulo entero, el ojo lo mide contra la cabaña, le sale que es más
+ * flaco que la puerta y deja de ser un árbol.
+ *
+ * Un tronco que se va por el canto de arriba no se puede medir. Y lo
+ * que no se puede medir, el ojo lo pone CERCA.
+ *
+ * Lo que se ve de él, entonces, es sólo el pie —con las raíces
+ * metiéndose en la hierba—, la corteza y dos o tres ramas que entran en
+ * cuadro. Con eso basta y sobra.
+ */
+function troncoDeMarco(t, x, base, mece, col, luz) {
+  const h = t.alto, w = t.ancho;
+  const cima = base - h;
+  /* Cuánto se ha ido el tronco a una altura dada. Lo usan el tronco,
+     las ramas y los surcos, y tienen que usar LA MISMA cuenta o la
+     corteza se despega del tronco al mecerse. */
+  const va = (yf) => mece * h * yf * 0.85;
+
+  ctx.fillStyle = col;
+
+  /* ---- Las raíces ----
+     Van antes que el tronco para que él les tape el arranque. Dibujadas
+     después se les ven las dos puntas de la cuña y se leen como patas.
+     Y cada una sale del pie y se HUNDE: la punta baja de la línea del
+     suelo, que es lo que dice que se mete en la tierra en vez de
+     apoyarse encima. */
+  for (const r of t.raices) {
+    const rx = x + r.lado * w * (1.15 + r.largo * 1.7);
+    ctx.beginPath();
+    ctx.moveTo(x, base - w * r.alto);
+    ctx.quadraticCurveTo(x + r.lado * w * 0.95, base - w * 0.25,
+                         rx, base + w * r.hondo * 0.5);
+    ctx.quadraticCurveTo(x + r.lado * w * 0.75, base + w * 0.4, x, base + w * 0.28);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /* ---- El tronco ----
+     Ancho abajo, estrecho arriba, y el ensanche del pie hecho con la
+     misma curva: un tronco no es un rectángulo, es una campana muy
+     estirada. */
   ctx.beginPath();
-  ctx.moveTo(x - w * 0.22, base);
-  ctx.lineTo(x - w * 0.22, base - h * 0.16);
-  ctx.lineTo(x - w, base - h * 0.16);
-  ctx.lineTo(x - w * 0.5, base - h * 0.44);
-  ctx.lineTo(x - w * 0.78, base - h * 0.44);
-  ctx.lineTo(x - w * 0.38, base - h * 0.74);
-  ctx.lineTo(x - w * 0.56, base - h * 0.74);
-  ctx.lineTo(x, base - h);
-  ctx.lineTo(x + w * 0.56, base - h * 0.74);
-  ctx.lineTo(x + w * 0.38, base - h * 0.74);
-  ctx.lineTo(x + w * 0.78, base - h * 0.44);
-  ctx.lineTo(x + w * 0.5, base - h * 0.44);
-  ctx.lineTo(x + w, base - h * 0.16);
-  ctx.lineTo(x + w * 0.22, base - h * 0.16);
-  ctx.lineTo(x + w * 0.22, base);
+  ctx.moveTo(x - w * 1.3, base + w * 0.14);
+  ctx.bezierCurveTo(x - w * 1.04, base - h * 0.06,
+                    x - w * 0.84 + va(0.4), base - h * 0.4,
+                    x - w * 0.5 + va(1), cima);
+  ctx.lineTo(x + w * 0.5 + va(1), cima);
+  ctx.bezierCurveTo(x + w * 0.84 + va(0.4), base - h * 0.4,
+                    x + w * 1.04, base - h * 0.06,
+                    x + w * 1.3, base + w * 0.14);
   ctx.closePath();
   ctx.fill();
+
+  /* ---- Las ramas ----
+     Se van hacia arriba, no hacia los lados: una rama horizontal se lee
+     como un travesaño. Y llevan ramillos a MEDIA rama, que es lo que
+     distingue una rama de un cable. */
+  ctx.strokeStyle = col;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const rama of t.ramas) {
+    const c = curvaDeRama(t, rama, mece);
+    const rx = c.P0[0], ry = c.P0[1];
+    const largo = c.L;
+    const px2 = c.P2[0], py2 = c.P2[1];
+    ctx.lineWidth = c.grueso;
+    ctx.beginPath();
+    ctx.moveTo(rx, ry);
+    ctx.quadraticCurveTo(c.C[0], c.C[1], px2, py2);
+    ctx.stroke();
+    for (let k = 0; k < 2; k++) {
+      const u = 0.48 + k * 0.3;
+      const bx = rx + rama.lado * largo * u;
+      const by = ry - largo * (0.3 + rama.sube * 0.55) * u * u;
+      ctx.lineWidth = Math.max(1.2, w * 0.14 * (1 - u * 0.4));
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.quadraticCurveTo(bx + rama.lado * largo * 0.13, by - largo * 0.18,
+                           bx + rama.lado * largo * (0.08 + k * 0.1),
+                           by - largo * (0.28 + k * 0.12));
+      ctx.stroke();
+    }
+    /* Y el follaje de la punta, PEQUEÑO, y sólo en las ramas largas.
+       La primera versión ponía cuatro bultos de ancho y pico en cada
+       punta de cada rama de cada árbol, y lo que salía en pantalla eran
+       quince nubarrones negros colgados del cielo que se comían la
+       luna, la cabaña y la escena entera. Un bosque de noche se lee por
+       los troncos; las hojas son la guinda, no el plato. */
+    if (rama.largo > 0.62) {
+      for (let k = 0; k < 5; k++) {
+        /* El ángulo áureo reparte los bultos sin que se repita el
+           patrón. Con tres a ciento veinte grados exactos salían
+           tréboles, y un trébol en la punta de cada rama de cada árbol
+           se nota a la primera. */
+        const n = ruidito(rama.f * 13 + k * 5.7);
+        const a = rama.f + k * 2.399;
+        const dd = 0.25 + n * 0.8;
+        ctx.beginPath();
+        ctx.ellipse(px2 + Math.cos(a) * w * dd * 0.85, py2 + Math.sin(a) * w * dd * 0.6,
+                    w * (0.32 + n * 0.3), w * (0.22 + n * 0.22), a * 0.5, 0, 6.283);
+        ctx.fill();
+      }
+    }
+  }
+
+  /* ---- La corteza ----
+     Surcos de arriba abajo, apenas más claros que el tronco. Sin ellos
+     el tronco es una silueta plana, y con ellos —aunque esté casi
+     negro— se le nota la vuelta. */
+  if (!flojo) {
+    ctx.strokeStyle = `rgba(158,150,172,${0.045 + luz * 0.11})`;
+    ctx.lineWidth = Math.max(1, w * 0.09);
+    for (const s of t.surcos) {
+      const ym = (s.y0 + s.y1) * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(x + s.x * w + va(s.y0), base - h * s.y0);
+      ctx.quadraticCurveTo(x + (s.x + s.curva) * w + va(ym), base - h * ym,
+                           x + s.x * w + va(s.y1), base - h * s.y1);
+      ctx.stroke();
+    }
+    /* Musgo en el arranque, siempre del lado de la sombra. */
+    ctx.fillStyle = `rgba(${Math.round(mez(16, 44, luz))},${Math.round(mez(26, 58, luz))},${Math.round(mez(18, 32, luz))},0.55)`;
+    for (let i = 0; i < 3; i++) {
+      const n = ruidito(t.f * 10 + i * 7);
+      ctx.beginPath();
+      ctx.ellipse(x + (n - 0.5) * w * 1.5, base - w * (0.3 + n * 1.6),
+                  w * 0.34, w * 0.5, 0, 0, 6.283);
+      ctx.fill();
+    }
+  }
+
+  /* ---- El canto de luna ----
+     Una raya finísima por el lado que mira a la luna. Es lo único que
+     despega el tronco del cielo cuando no hay fuego, y sin ella el
+     primer plano es un agujero negro con forma de árbol. */
+  const haciaLuna = sitio.luna.x < x ? -1 : 1;
+  ctx.strokeStyle = `rgba(138,152,198,${0.14 * (1 - clima.lluvia * 0.6)})`;
+  ctx.lineWidth = Math.max(1, w * 0.1);
+  ctx.beginPath();
+  ctx.moveTo(x + haciaLuna * w * 1.1, base - h * 0.02);
+  ctx.bezierCurveTo(x + haciaLuna * w * 0.92, base - h * 0.1,
+                    x + haciaLuna * w * 0.78 + va(0.4), base - h * 0.4,
+                    x + haciaLuna * w * 0.46 + va(1), cima);
+  ctx.stroke();
+}
+
+/**
+ * La curva de una rama: de dónde sale, por dónde pasa y dónde acaba.
+ *
+ * Existe porque hay DOS cosas que necesitan saberlo —el dibujo, que la
+ * pinta, y el búho, que se posa en ella— y tenerlo escrito dos veces es
+ * justo lo que deja al búho flotando en el aire al lado de su rama: se
+ * retoca la curva, nadie se acuerda de retocar la cuenta del búho, y el
+ * bicho se queda agarrado a nada.
+ *
+ * `mece` es lo que esté bamboleándose el árbol en ese momento.
+ */
+function curvaDeRama(t, rama, mece) {
+  const h = t.alto, w = t.ancho;
+  const va = (yf) => (mece || 0) * h * yf * 0.85;
+  if (t.banda === 2) {
+    const ry = t.base - h * rama.y;
+    const rx = t.x + va(rama.y);
+    const L = w * (2.6 + rama.largo * 3.2);
+    return {
+      P0: [rx, ry],
+      C:  [rx + rama.lado * L * 0.56, ry + L * 0.05],
+      P2: [rx + rama.lado * L, ry - L * (0.3 + rama.sube * 0.55)],
+      L,
+      grueso: Math.max(2, w * 0.36 * (1 - rama.y * 0.4)),
+    };
+  }
+  const yH = t.base - h * 0.44;
+  const k = clamp01((rama.y - 0.24) / 0.6);
+  const ry = mez(yH, t.base - h * 0.8, k);
+  const rx = t.x + va(0.44 + k * 0.36);
+  return {
+    P0: [rx, ry],
+    C:  [rx + rama.lado * w * 0.72, ry - h * 0.07],
+    P2: [rx + rama.lado * w * (0.9 + rama.largo * 0.9), ry - h * (0.1 + rama.largo * 0.1)],
+    L: w * (0.9 + rama.largo * 0.9),
+    grueso: Math.max(1, w * 0.3 * (1 - k * 0.5)),
+  };
+}
+
+/** Un punto de la rama. `u` va de 0 —donde nace— a 1 —la punta—. */
+function puntoDeRama(t, rama, u, mece) {
+  const c = curvaDeRama(t, rama, mece);
+  const v = 1 - u;
+  return {
+    x: v * v * c.P0[0] + 2 * v * u * c.C[0] + u * u * c.P2[0],
+    y: v * v * c.P0[1] + 2 * v * u * c.C[1] + u * u * c.P2[1],
+    grueso: c.grueso,
+  };
+}
+
+/**
+ * Un abeto de los de lejos y los de en medio.
+ *
+ * Los pisos de ramas se SOLAPAN, y ésa es toda la diferencia. Dejados
+ * separados —que es como estaban— se ve el tronco entre piso y piso y
+ * el árbol se lee como una espina con aletas, no como un abeto. Y cada
+ * piso va un poco corrido a un lado según su semilla: tres abetos con
+ * los pisos perfectamente centrados son el mismo abeto tres veces.
+ */
+function abeto(x, base, w, h, pisos, f) {
+  pisos = pisos || 6;
+  f = f || 0;
+  /* El tronco, que asoma por debajo del primer piso. */
+  ctx.beginPath();
+  ctx.moveTo(x - w * 0.17, base);
+  ctx.lineTo(x - w * 0.11, base - h * 0.34);
+  ctx.lineTo(x + w * 0.11, base - h * 0.34);
+  ctx.lineTo(x + w * 0.17, base);
+  ctx.closePath();
+  ctx.fill();
+
+  for (let i = 0; i < pisos; i++) {
+    const u = pisos === 1 ? 0 : i / (pisos - 1);
+    const ancho = w * (1.16 - Math.pow(u, 0.78) * 1.03);
+    const alto = h * mez(0.3, 0.12, u);
+    const y = mez(base - h * 0.08, base - h * 0.97, u);
+    const off = Math.sin(f + i * 1.9) * ancho * 0.13;
+    ctx.beginPath();
+    ctx.moveTo(x + off - ancho, y);
+    ctx.quadraticCurveTo(x + off - ancho * 0.34, y - alto * 0.42, x + off, y - alto);
+    ctx.quadraticCurveTo(x + off + ancho * 0.34, y - alto * 0.42, x + off + ancho, y);
+    ctx.quadraticCurveTo(x + off, y + alto * 0.14, x + off - ancho, y);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+/**
+ * Un árbol de hoja de los de lejos y los de en medio.
+ *
+ * ── LO QUE ESTABA MAL ────────────────────────────────────────────────
+ * Era un tronco acampanado y SIN COPA, con tres ramas que salían casi
+ * horizontales y medían cinco veces el ancho del tronco. En pantalla no
+ * se leía como un árbol: el tronco quedaba como una losa de pie —una
+ * lápida, literalmente— y las ramas como tablones flotando de un lado
+ * al otro del bosque.
+ *
+ * Ahora tiene lo que tiene un árbol de hoja: el tronco se BIFURCA a
+ * media altura, los brazos salen hacia ARRIBA y encima hay una copa de
+ * bultos solapados.
+ *
+ * Y el tamaño de esos bultos se mide contra el ANCHO del tronco, no
+ * contra su altura. Medido contra la altura, a los árboles estirados
+ * —que son seis veces más altos que anchos— les salían almendras
+ * verticales de ciento veinte píxeles que se fundían en una sola masa.
+ */
+function frondoso(t, x, base, mece) {
+  const h = t.alto, w = t.ancho;
+  const yH = base - h * 0.44;                 // donde se bifurca
+  const va = (yf) => mece * h * yf * 0.85;
+
+  /* El tronco. */
+  ctx.beginPath();
+  ctx.moveTo(x - w * 0.52, base);
+  ctx.quadraticCurveTo(x - w * 0.36 + va(0.2), base - h * 0.24,
+                       x - w * 0.19 + va(0.44), yH);
+  ctx.lineTo(x + w * 0.19 + va(0.44), yH);
+  ctx.quadraticCurveTo(x + w * 0.36 + va(0.2), base - h * 0.24,
+                       x + w * 0.52, base);
+  ctx.closePath();
+  ctx.fill();
+
+  /* Los brazos, hacia arriba y metiéndose en la copa. */
+  ctx.strokeStyle = ctx.fillStyle;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const rama of t.ramas) {
+    const c = curvaDeRama(t, rama, mece);
+    ctx.lineWidth = c.grueso;
+    ctx.beginPath();
+    ctx.moveTo(c.P0[0] - x + x, c.P0[1]);
+    ctx.quadraticCurveTo(c.C[0], c.C[1], c.P2[0], c.P2[1]);
+    ctx.stroke();
+  }
+
+  /* La copa. */
+  const cx = x + va(0.84), cy = base - h * 0.82;
+  for (const b of t.copa) {
+    ctx.beginPath();
+    ctx.ellipse(cx + Math.cos(b.a) * w * b.d * 2, cy + Math.sin(b.a) * w * b.d * 1.25,
+                w * b.r * 1.5, w * b.r * 1.08, b.a * 0.3, 0, 6.283);
+    ctx.fill();
+  }
 }
 
 /* ==========================================
@@ -9084,6 +10198,41 @@ function colocarBuhoEn(i) {
   buho.arbol = mejor;
 
   if (mejor) {
+    /* ---- EN UNA RAMA DE VERDAD ----
+       Los árboles del claro tienen ramas dibujadas, con su curva y su
+       grosor. Poner al búho «al lado del tronco, a media altura» lo
+       dejaba flotando en el aire justo al lado de una rama perfecta, y
+       eso es exactamente lo que no puede pasar: si se le ven las patas,
+       las patas tienen que estar EN algo.
+
+       Se prueban todas las ramas del árbol y gana la que quede más
+       cerca de la altura que le tocaba, descartando las que caen fuera
+       de la pantalla. Si ninguna vale —puede pasar en los de en medio,
+       que son chiquitos— se cae al método de antes. */
+    buho.r = U * (apaisado ? 2.6 : 3.1) * (mejor.banda === 2 ? 1.34 : 1);
+    if (mejor.ramas && mejor.ramas.length) {
+      let laRama = null, cerca = Infinity;
+      for (const rm of mejor.ramas) {
+        const q = puntoDeRama(mejor, rm, 0.82, 0);
+        if (q.x < U * 7 || q.x > A - U * 7) continue;
+        if (q.y < U * 11 || q.y > sitio.suelo - U * 5) continue;
+        const dd = Math.abs(q.y - py);
+        if (dd < cerca) { cerca = dd; laRama = rm; }
+      }
+      if (laRama) {
+        const q = puntoDeRama(mejor, laRama, 0.82, 0);
+        buho.x = q.x;
+        /* Las patas caen a `r * 1.32` del centro del cuerpo —lo dice
+           `dibujarPatasDelBuho`—, así que el cuerpo va justo eso por
+           encima de la rama. */
+        buho.y = q.y - buho.r * 1.32;
+        buho.relX = buho.x - mejor.x;
+        buho.relY = buho.y - mejor.base;
+        buho.enRama = true;
+        return;
+      }
+    }
+    buho.enRama = false;
     const cima = mejor.base - mejor.alto;
     /* ---- A qué lado del tronco ----
        Se prueban los dos y gana el que quede más lejos de la cabaña sin
@@ -9102,7 +10251,6 @@ function colocarBuhoEn(i) {
     /* Y en la COPA, no a media altura: en el tercio de arriba del
        árbol, que es donde se posan. A media altura quedaba metido
        entre el ramaje y no se veía ni buscándolo. */
-    buho.r = U * (apaisado ? 2.6 : 3.1) * (mejor.banda === 2 ? 1.3 : 1);
     buho.x = clamp(mejor.x + mejor.ancho * 1.6 * haciaDentro, U * 6, A - U * 6);
     buho.y = clamp(
       clamp(py, cima + mejor.alto * 0.08, cima + mejor.alto * 0.5),
@@ -9115,6 +10263,7 @@ function colocarBuhoEn(i) {
   } else {
     buho.r = U * (apaisado ? 2.6 : 3.1);
     buho.x = A * 0.5; buho.y = py; buho.relX = 0; buho.relY = 0;
+    buho.enRama = false;
   }
 }
 
@@ -9394,6 +10543,22 @@ function dibujarBuho(banda) {
   ctx.translate(x, y);
   ctx.rotate((b.inclina || 0) * 0.6 + (b.vuelo ? Math.sin(b.ala) * 0.08 : 0));
   ctx.globalAlpha = mez(0.35, 1, sal);
+
+  /* ---- LAS PATAS, Y DÓNDE SE APOYAN ----
+     Mientras no vuele, el búho está POSADO, y posado quiere decir que
+     algo le aguanta el peso. Si el árbol donde está tiene una rama
+     dibujada, las patas van sobre ella y no hace falta nada más. Si no
+     —porque el árbol es chiquito y ninguna rama suya cabe en la
+     pantalla—, se le pinta la suya: antes que un búho flotando, una
+     rama de más.
+
+     Y las patas se dibujan ANTES del cuerpo, para que el vientre les
+     tape el arranque. Después se les ve la pierna entera y el bicho
+     parece de pie sobre un palo, no agarrado a él. */
+  if (!b.vuelo && sal > 0.1) {
+    if (!b.enRama) dibujarRamaDelBuho(b, r, sal);
+    dibujarPatasDelBuho(b, r, sal);
+  }
 
   /* ---- Las alas, detrás del cuerpo ----
      Dos hojas que se abren y se cierran. En reposo apenas se mueven; al
@@ -17528,7 +18693,10 @@ function tocarEnBosque(p, e) {
     if (!t.toca) continue;
     const dx = p.x - (t.x + desplazar(mez(0.3, 3.4, t.z)).x);
     const cima = t.base - t.alto;
-    if (Math.abs(dx) > t.ancho * 3.4) continue;
+    /* Los de cerca son mucho más gordos que los de en medio, así que
+       tres veces y media su ancho se comería media pantalla y no se
+       podría tocar nada más de ese lado. */
+    if (Math.abs(dx) > t.ancho * (t.banda === 2 ? 1.8 : 3.4)) continue;
     if (p.y < cima - t.ancho * 2 || p.y > t.base + U * 2) continue;
     /* La fuerza depende de por dónde se toque: arriba se mueve mucho
        más que abajo, porque arriba hace palanca. */
