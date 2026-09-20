@@ -10127,34 +10127,97 @@ function construirEspesura() {
   espesura.sueloY = suelo;
   espesura.copasY = H * (apaisado ? 0.2 : 0.16);
 
-  /* ---- Los árboles ----
-     Se reparten a lo largo del mundo con desorden, y cada uno guarda su
-     banda. Se ordenan por banda para poder pintarlos de atrás adelante
-     sin volver a mirar. */
+  /* ---- LOS ÁRBOLES -------------------------------------------------
+
+     ── POR QUÉ NO SE REPARTEN A DISTANCIAS IGUALES ──────────────────
+     Porque un bosque no crece así. Antes cada árbol salía en `i/n` del
+     mundo con un poco de temblor encima, y eso da un PEINE: mires
+     donde mires, los troncos están a la misma distancia unos de otros.
+     Se nota aunque no se sepa qué es lo que se está notando.
+
+     Un bosque de verdad va a MATAS. Donde cayó luz hay cuatro juntos;
+     donde cayó un árbol viejo, un claro. Así que primero se eligen unos
+     cuantos centros de mata repartidos a lo bruto, y luego cada árbol
+     sale cerca de uno de ellos, con la probabilidad cayendo hacia
+     fuera. De ahí salen solos los claros y los grupos.
+
+     ── Y POR QUÉ SE COMPRUEBA LA SEPARACIÓN ─────────────────────────
+     Porque dos árboles que crecen en el mismo sitio no existen: se
+     habrían matado entre ellos. Sin comprobarlo, la distribución por
+     matas amontona dos o tres troncos en el mismo punto y lo que se ve
+     es una mancha con ramas saliendo por todos lados.
+
+     ── Y LA BASE VA EN EL SUELO ─────────────────────────────────────
+     El suelo de cada banda tiembla un poco —el terreno no es una mesa—
+     pero el árbol se apoya EN ÉL, no a treinta píxeles por encima. El
+     temblor sale de una onda, no de un azar por árbol: con azar por
+     árbol, dos vecinos podían acabar a distinta altura sin que hubiera
+     ninguna loma que lo explicara.                                  */
   espesura.arboles = [];
+  /* El relieve del terreno: dos ondas que no cuadran entre ellas. */
+  const relieve = (x) => Math.sin(x * 0.0021) * H * 0.02
+                       + Math.sin(x * 0.0057 + 1.7) * H * 0.012;
+  espesura.relieve = relieve;
+
   ESP.bandas.forEach((banda, iB) => {
     const n = flojo ? banda.nFlojo : banda.n;
+    /* Las matas: una cada cinco árboles, más o menos. */
+    const nMatas = Math.max(3, Math.round(n / 5));
+    const matas = [];
+    for (let i = 0; i < nMatas; i++) {
+      matas.push((i + azar(-0.35, 0.35)) / nMatas * W * 1.06 - W * 0.03);
+    }
+    const puestos = [];
+    const baseBanda = mez(suelo - H * 0.17, suelo + H * 0.05, iB / 3);
+    /* Cuánto tienen que separarse, en anchos de árbol. Los de lejos
+       pueden estar más juntos: se solapan y no pasa nada, porque a esa
+       distancia lo que se ve es masa. */
+    const hueco = U * banda.ancho[1] * mez(0.5, 1.3, iB / 3);
+
     for (let i = 0; i < n; i++) {
-      const t = (i + azar(-0.4, 0.4)) / n;
+      /* De qué mata sale, y cuánto se aparta de ella. */
+      let x = 0;
+      for (let intento = 0; intento < 12; intento++) {
+        const m = matas[Math.floor(rnd() * matas.length)];
+        /* Dos azares sumados: eso ya no es una caja, es una campana, y
+           una campana amontona cerca del centro. */
+        x = m + (azar(-1, 1) + azar(-1, 1)) * W * 0.055;
+        let vale = true;
+        for (const px of puestos) {
+          if (Math.abs(px - x) < hueco) { vale = false; break; }
+        }
+        if (vale) break;
+      }
+      puestos.push(x);
+
+      const alto = U * azar(banda.alto[0], banda.alto[1]);
+      const ancho = U * azar(banda.ancho[0], banda.ancho[1]);
+      const abeto = rnd() < (iB < 2 ? 0.7 : 0.42);
       espesura.arboles.push({
         banda: iB,
-        x: t * W * 1.06 - W * 0.03,
-        /* Cada banda tiene su línea de suelo —las de lejos más arriba,
-           que es la perspectiva— pero DENTRO de la banda se reparten:
-           con todas a la misma altura, los troncos forman una regla y
-           las copas un peine. */
-        base: mez(suelo - H * 0.17, suelo + H * 0.05, iB / 3)
-              + azar(-H * 0.035, H * 0.045),
-        alto: U * azar(banda.alto[0], banda.alto[1]),
-        ancho: U * azar(banda.ancho[0], banda.ancho[1]),
+        x,
+        /* Apoyado en el terreno de su banda, y ni un píxel flotando. */
+        base: baseBanda + relieve(x) * mez(0.4, 1, iB / 3),
+        alto, ancho,
         f: rnd() * 6.283,
-        /* Unos son abetos y otros de hoja. Que no sean todos iguales es
-           lo que hace que parezca un bosque y no un peine. */
-        abeto: rnd() < (iB < 2 ? 0.8 : 0.45),
+        abeto,
         sac: 0, sacV: 0, toques: 0,
-        /* El tono: cada árbol tira un poco a su lado. Un bosque de un
-           solo verde se lee como papel pintado. */
         tinte: azar(-0.5, 0.5),
+        /* ---- La forma, que es de este árbol y de ningún otro ---- */
+        /* Cuántos pisos de ramas tiene el pino, y cuánto caen. */
+        pisos: Math.round(azar(8, 13)),
+        caida: azar(0.12, 0.32),
+        /* Cuánto se ladea el tronco. Ninguno crece recto del todo. */
+        ladeo: azar(-0.08, 0.08),
+        /* Y los bultos de la copa de los de hoja, cada uno a lo suyo. */
+        bultos: Array.from({ length: Math.round(azar(6, 11)) }, () => ({
+          a: rnd() * 6.283,
+          d: azar(0.15, 0.85),
+          r: azar(0.3, 0.62),
+        })),
+        /* Las raíces: cuántas y cómo se abren. */
+        raices: Math.round(azar(3, 5)),
+        raizF: rnd() * 6.283,
       });
     }
   });
@@ -10600,41 +10663,194 @@ function dibujarArbolesEsp(banda) {
 
     ctx.save();
     ctx.translate(x, base);
-    ctx.rotate(mece);
-    if (t.abeto) abeto(0, 0, t.ancho, t.alto);
-    else arbolHoja(0, 0, t.ancho, t.alto, t.f);
+    ctx.rotate(mece + t.ladeo * 0.5);
+    /* Las raíces van SIN el meneo del viento: lo que se mece es la
+       copa, no lo que está enterrado. Por eso se pintan aparte, antes
+       de aplicar el giro… que ya está aplicado, así que se deshace. */
+    ctx.save();
+    ctx.rotate(-(mece + t.ladeo * 0.5));
+    raicesEsp(t);
+    ctx.restore();
+    if (t.abeto) pinoEsp(t);
+    else frondosoEsp(t);
     ctx.restore();
   }
 }
 
-/** Un árbol de hoja: tronco con dos horquillas y una copa de bultos. */
-function arbolHoja(x, base, w, h, f) {
+/**
+ * LAS RAÍCES.
+ *
+ * ── POR QUÉ HACEN FALTA ──────────────────────────────────────────────
+ * Porque un tronco que acaba en una línea recta contra el suelo no está
+ * plantado: está apoyado. Tres o cuatro cuñas cortas abriéndose hacia
+ * los lados y metiéndose un poco en la tierra, y el árbol pasa de estar
+ * puesto encima del suelo a salir de él. Cuesta cuatro triángulos.
+ */
+function raicesEsp(t) {
+  const w = t.ancho;
+  for (let i = 0; i < t.raices; i++) {
+    const u = (i + 0.5) / t.raices;
+    /* Repartidas a los dos lados, y ninguna igual a la de al lado. */
+    const lado = u < 0.5 ? -1 : 1;
+    const sep = (Math.abs(u - 0.5) * 2) * 0.9 + 0.25;
+    const largo = w * (0.5 + Math.sin(t.raizF + i * 2.1) * 0.25 + sep * 0.7);
+    const grueso = w * (0.2 - sep * 0.08);
+    ctx.beginPath();
+    ctx.moveTo(-grueso, -w * 0.12);
+    ctx.quadraticCurveTo(lado * largo * 0.6, -w * 0.1,
+                         lado * largo, w * 0.18);
+    ctx.quadraticCurveTo(lado * largo * 0.55, w * 0.02,
+                         grueso, -w * 0.02);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+/**
+ * UN PINO.
+ *
+ * ── POR QUÉ NO ES UN CONO ────────────────────────────────────────────
+ * Antes era una silueta de quince vértices en zigzag: el cono con
+ * escalones de toda la vida. Visto una vez pasa; visto ciento veinte
+ * veces seguidas, con los mismos escalones en las mismas proporciones,
+ * lo que se ve es un patrón repetido, no un bosque.
+ *
+ * Un pino de verdad es un PALO con PISOS de ramas colgando, y cada piso
+ * es más ancho que el de arriba. Así que eso es lo que se dibuja: el
+ * tronco entero de abajo arriba, y encima N pisos —entre cinco y nueve,
+ * distintos en cada árbol— con las puntas caídas. La caída también es
+ * de cada árbol: unos tienen las ramas casi horizontales y otros las
+ * tienen desplomadas.
+ *
+ * Y cada piso se desplaza un pelín a un lado según una onda que
+ * depende del árbol, así que ninguno sale simétrico. La simetría es lo
+ * que delata que algo lo ha dibujado una fórmula.
+ */
+function pinoEsp(t) {
+  const w = t.ancho, h = t.alto;
+
+  /* El tronco, de abajo arriba, afinando. */
   ctx.beginPath();
-  ctx.moveTo(x - w * 0.22, base);
-  ctx.quadraticCurveTo(x - w * 0.1, base - h * 0.5, x - w * 0.05, base - h * 0.62);
-  ctx.lineTo(x + w * 0.05, base - h * 0.62);
-  ctx.quadraticCurveTo(x + w * 0.1, base - h * 0.5, x + w * 0.22, base);
+  ctx.moveTo(-w * 0.17, 0);
+  ctx.quadraticCurveTo(-w * 0.08, -h * 0.5, -w * 0.035, -h * 0.94);
+  ctx.lineTo(w * 0.035, -h * 0.94);
+  ctx.quadraticCurveTo(w * 0.08, -h * 0.5, w * 0.17, 0);
   ctx.closePath();
   ctx.fill();
-  /* Dos ramas que salen a media altura. */
+
+  /* Los pisos. El de abajo es el más ancho y el de arriba, casi la
+     punta. */
+  const pisos = t.pisos;
+  for (let i = 0; i < pisos; i++) {
+    const u = i / (pisos - 1);          // 0 abajo, 1 arriba
+    const y = mez(-h * 0.1, -h * 0.96, u);
+    /* El ancho cae deprisa al principio y despacio al final: eso es lo
+       que da la silueta de pino y no la de triángulo. */
+    const ancho = w * (1.3 - Math.pow(u, 0.72) * 1.16);
+    /* Los pisos se SOLAPAN. Si cada uno midiera menos que lo que hay
+       entre él y el siguiente, se verían los huecos y el pino saldría
+       una espina con aletas. Solapados, la silueta se cierra. */
+    const alto = h * mez(0.24, 0.1, u);
+    /* El desplazamiento de este piso: ninguno centrado del todo. */
+    const desv = Math.sin(t.f + i * 1.7) * ancho * 0.13;
+
+    for (const lado of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(desv, y - alto * 0.55);
+      /* Sale hacia fuera y CAE: el punto de la punta está más abajo
+         que el arranque. */
+      ctx.quadraticCurveTo(
+        desv + lado * ancho * 0.62, y - alto * 0.2,
+        desv + lado * ancho, y + alto * t.caida * 3.2);
+      /* Y vuelve por debajo, más recogida: eso le da grosor a la rama
+         sin tener que dibujarla dos veces. */
+      ctx.quadraticCurveTo(
+        desv + lado * ancho * 0.5, y + alto * 0.62,
+        desv, y + alto * 0.5);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+  /* La punta. */
+  ctx.beginPath();
+  ctx.moveTo(0, -h);
+  ctx.lineTo(-w * 0.1, -h * 0.9);
+  ctx.lineTo(w * 0.1, -h * 0.9);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/**
+ * UN ÁRBOL DE HOJA.
+ *
+ * ── POR QUÉ NO SON CINCO BULTOS ──────────────────────────────────────
+ * Porque cinco elipses repartidas en círculo dan una piruleta. Se veía
+ * el círculo: los cinco bultos a la misma distancia del centro y con el
+ * mismo tamaño alterno.
+ *
+ * Ahora son entre seis y once, cada uno con SU ángulo, SU distancia al
+ * centro y SU tamaño, todo sorteado por árbol. El contorno que sale de
+ * eso es irregular de verdad, que es como se ve una copa a contraluz.
+ *
+ * Y el tronco se bifurca: sube, se abre en dos, y de cada brazo salen
+ * ramas más finas que se meten en la copa. Un tronco recto rematado en
+ * una bola es un champiñón.
+ */
+function frondosoEsp(t) {
+  const w = t.ancho, h = t.alto;
+
+  /* El tronco hasta la horquilla. */
+  const yH = -h * 0.34;
+  ctx.beginPath();
+  ctx.moveTo(-w * 0.2, 0);
+  ctx.quadraticCurveTo(-w * 0.13, yH * 0.5, -w * 0.09, yH);
+  ctx.lineTo(w * 0.09, yH);
+  ctx.quadraticCurveTo(w * 0.13, yH * 0.5, w * 0.2, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  /* Los dos brazos, y de cada uno dos ramas. */
   ctx.save();
   ctx.lineCap = "round";
   ctx.strokeStyle = ctx.fillStyle;
-  ctx.lineWidth = w * 0.12;
-  for (const s of [-1, 1]) {
+  for (const lado of [-1, 1]) {
+    const abre = 0.42 + Math.abs(Math.sin(t.f + lado)) * 0.3;
+    const ex = lado * w * abre, ey = -h * 0.76;
+    ctx.lineWidth = w * 0.13;
     ctx.beginPath();
-    ctx.moveTo(x, base - h * 0.5);
-    ctx.quadraticCurveTo(x + s * w * 0.5, base - h * 0.62, x + s * w * 0.75, base - h * 0.78);
+    ctx.moveTo(lado * w * 0.05, yH);
+    ctx.quadraticCurveTo(lado * w * 0.16, -h * 0.62, ex, ey);
     ctx.stroke();
+    /* Las ramas finas. */
+    ctx.lineWidth = w * 0.06;
+    for (let j = 0; j < 2; j++) {
+      const u = 0.45 + j * 0.35;
+      const bx = mez(lado * w * 0.05, ex, u), by = mez(yH, ey, u);
+      const dir = j % 2 ? 1 : -1;
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.quadraticCurveTo(bx + lado * w * 0.2, by - h * 0.08,
+                           bx + lado * w * 0.3 + dir * w * 0.1, by - h * 0.14);
+      ctx.stroke();
+    }
   }
   ctx.restore();
-  /* La copa: cinco bultos con su propio desorden. */
-  for (let i = 0; i < 5; i++) {
-    const a = (i / 5) * 6.283 + f;
-    const cx = x + Math.cos(a) * w * 0.55;
-    const cy = base - h * 0.8 + Math.sin(a) * h * 0.1;
+
+  /* Y la copa: muchos bultos, cada uno a lo suyo.
+
+     Los bultos se miden contra el ANCHO del árbol, no contra su alto.
+     Contra el alto, un árbol de banda cercana —que mide seis veces más
+     de alto que de ancho— sacaba bultos de ciento veinte píxeles de
+     radio vertical, y los seis o diez se fundían en un único almendrón
+     gigante. Una copa es ancha, no larga. */
+  const cy = -h * 0.72;
+  const radio = w * 1.3;
+  for (const b of t.bultos) {
+    const cx = Math.cos(b.a) * radio * b.d;
+    const cyy = cy + Math.sin(b.a) * radio * b.d * 0.52;
+    const rx = w * b.r * 1.1;
     ctx.beginPath();
-    ctx.ellipse(cx, cy, w * (0.52 + (i % 2) * 0.16), h * 0.15, 0, 0, 6.283);
+    ctx.ellipse(cx, cyy, rx, rx * 0.74, b.a * 0.3, 0, 6.283);
     ctx.fill();
   }
 }
