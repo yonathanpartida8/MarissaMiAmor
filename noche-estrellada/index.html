@@ -1541,6 +1541,55 @@ const CONF = {
     ],
   },
 
+  /* ---- EL RELOJ DEL BOSQUE ---------------------------------------------
+     Un reloj de pie recargado en un árbol, en mitad de la nada. Marca
+     las tres. Siempre las tres, como el de la mesilla.               */
+  relojBosque: {
+    frase: "Aquí nunca se termina, siempre se repite lo mismo.",
+    otras: [
+      "Las manecillas vuelven solas a las tres.",
+      "No hace tic. Hace otra cosa.",
+      "¿Quién carga un reloj de pie hasta acá?",
+      "Las tres. Igual que el de la cabaña.",
+      "Está caliente. Un reloj no debería estar caliente.",
+    ],
+  },
+
+  /* ---- LA ESCOPETA Y LA CACERÍA ----------------------------------------
+     Lo más grande que esconde el bosque. Está al otro extremo del
+     todo, tirada entre las hojas, y sólo brilla un momento cada
+     tantos segundos.                                                */
+  caza: {
+    alVerla: "…hay algo tirado entre las hojas.",
+    alCogerla: "Woah... ¿y esto?",
+    arranque: "…se está poniendo feo. Muy feo.",
+    comoSeUsa: "Tócalos para dispararles. No dejes que lleguen.",
+    oleadas: [
+      "Ahí vienen.",
+      "Más. Son más que antes.",
+      "No paran de salir del bosque…",
+      "¡Son un montón! ¡No te quedes quieta!",
+      "Ésta es la última. Aguanta, mi vida.",
+    ],
+    golpe: [
+      "¡Ay! Eso dolió.",
+      "Otro más… cuidado.",
+      "No aguanto muchos más.",
+      "Uno más y me caigo.",
+    ],
+    entreOleadas: "Respira. Ya viene otra.",
+    final: "¡Te veo... y no estás a salvo!",
+    despues: "Se fue. Pero sigue ahí, en alguna parte del bosque.",
+    caida: "No… ya no puedo…",
+    otraVez: "¿Otra vez? …va. Agarra la escopeta.",
+    /* Y lo que se dice cuando se le vuelve a ver, de lejos. */
+    vuelveAVerlo: [
+      "Ahí está. Nos está viendo desde esa rama.",
+      "No se ha ido. Nunca se fue.",
+      "Sigue ahí. Y creo que sonríe.",
+    ],
+  },
+
   /* ---- LA CUENTA DE LO ESCONDIDO ---------------------------------------
      Tres frases y nada más. Ni listas, ni porcentajes, ni medallas:
      sólo la sensación de que queda más.                               */
@@ -7550,7 +7599,7 @@ const historia = {
 /* Los secretos no son pasos de la historia: no llevan orden y no
    desbloquean nada. Van en su propia lista para que no cuenten en
    `historia.paso`, pero se recuerdan igual de una visita a otra. */
-const SECRETOS = ["bajoTapete", "constelacion"];
+const SECRETOS = ["bajoTapete", "constelacion", "relojBosque", "escopeta", "caceria"];
 
 for (const id of PASOS.concat(SECRETOS)) {
   if (recuerdo.leer("h:" + id, 0)) historia.hitos.add(id);
@@ -7575,7 +7624,9 @@ const bolsa = {
   equipar(id) { this.enMano = this.tiene.has(id) ? id : null; },
   alterna(id) { this.enMano = this.enMano === id ? null : (this.tiene.has(id) ? id : null); },
 };
-for (const id of ["pala", "reliquia"]) if (recuerdo.leer("obj:" + id, 0)) bolsa.tiene.add(id);
+for (const id of ["pala", "reliquia", "escopeta"]) {
+  if (recuerdo.leer("obj:" + id, 0)) bolsa.tiene.add(id);
+}
 
 /* ---- LA CUENTA DE LO QUE SE HA ENCONTRADO -------------------------------
 
@@ -7601,6 +7652,8 @@ const TODO_LO_ESCONDIDO = [
   "cuadro", "ventana", "radio", "frasco", "planta", "guitarra", "tapete",
   "estrellas", "libros", "vela", "taza", "nudo", "deseo",
   "botella", "papelBotella", "rayas", "manta",
+  /* En el bosque */
+  "relojBosque", "caceria",
 ];
 
 const logros = new Set();
@@ -8498,6 +8551,9 @@ function abeto(x, base, w, h) {
 const diceBuho         = barajador(CONF.buho.dice);
 const diceBuhoOtraVez  = barajador(CONF.buho.diceOtraVez);
 const diceOjos         = barajador(CONF.ojosRojos.dice);
+const diceReloj        = barajador(CONF.relojBosque.otras);
+const diceGolpe        = barajador(CONF.caza.golpe);
+const diceVerlo        = barajador(CONF.caza.vuelveAVerlo);
 const diceCruje        = barajador(CONF.arbolNota.cruje);
 
 function construirBuho() {
@@ -9608,6 +9664,33 @@ function pintarIconoObjeto(cv, id, lado) {
     gc.addColorStop(1, "rgba(60,220,150,0)");
     c.fillStyle = gc;
     c.beginPath(); c.arc(0, -S * 0.04, S * 0.2, 0, 6.283); c.fill();
+
+  } else if (id === "escopeta") {
+    /* De canto y en diagonal, que es como cabe una escopeta en un
+       cuadradito de cuarenta píxeles. */
+    c.rotate(-0.42);
+    c.fillStyle = "#5b391f";
+    c.beginPath();
+    if (c.roundRect) c.roundRect(-S * 0.34, -S * 0.02, S * 0.26, S * 0.16, S * 0.05);
+    else c.rect(-S * 0.34, -S * 0.02, S * 0.26, S * 0.16);
+    c.fill();
+    c.fillStyle = "#43484f";
+    c.beginPath();
+    if (c.roundRect) c.roundRect(-S * 0.12, -S * 0.05, S * 0.12, S * 0.16, S * 0.03);
+    else c.rect(-S * 0.12, -S * 0.05, S * 0.12, S * 0.16);
+    c.fill();
+    for (const dy of [-S * 0.05, S * 0.02]) {
+      const gb = c.createLinearGradient(0, dy, 0, dy + S * 0.07);
+      gb.addColorStop(0, "#6e7681");
+      gb.addColorStop(1, "#22272d");
+      c.fillStyle = gb;
+      c.beginPath();
+      if (c.roundRect) c.roundRect(-S * 0.02, dy, S * 0.36, S * 0.07, S * 0.03);
+      else c.rect(-S * 0.02, dy, S * 0.36, S * 0.07);
+      c.fill();
+    }
+    c.fillStyle = "rgba(226,196,120,0.85)";
+    c.beginPath(); c.arc(S * 0.32, -S * 0.06, S * 0.03, 0, 6.283); c.fill();
   }
   c.restore();
 }
@@ -9628,12 +9711,25 @@ function refrescarBolsa() {
     const b = document.createElement("button");
     b.className = "ne-hueco" + (bolsa.enMano === id ? " is-mano" : "");
     b.type = "button";
-    b.setAttribute("aria-label", id === "pala" ? "Pala" : "Reliquia");
+    b.setAttribute("aria-label",
+      id === "pala" ? "Pala" : id === "escopeta" ? "Escopeta" : "Reliquia");
     b.setAttribute("aria-pressed", String(bolsa.enMano === id));
     const cv = document.createElement("canvas");
     pintarIconoObjeto(cv, id, 34);
     b.append(cv);
     b.addEventListener("click", () => {
+      /* La escopeta no se equipa ni se guarda: se usa. Tocarla en la
+         bolsa, en el bosque y con todo en calma, vuelve a llamarlos.
+         Sin esto la cacería sería de una sola vez en la vida, porque el
+         arma desaparece del suelo en cuanto la recoges. */
+      if (id === "escopeta") {
+        if (escena === "espesura" && caza.fase === "no" && !bloqueado) {
+          decir(A * 0.5, H * 0.56, CONF.caza.otraVez, { dur: 3 });
+          setTimeout(() => arrancarCaceria(), 1400);
+        }
+        golpe(0.04, 1400, 0.12, "bandpass");
+        return;
+      }
       bolsa.alterna(id);
       golpe(0.03, bolsa.enMano === id ? 1800 : 900, 0.09, "bandpass");
       refrescarBolsa();
@@ -9648,10 +9744,15 @@ function refrescarBolsa() {
 }
 
 /** Cuántos secretos del bosque llevas encontrados, de los que hay. */
+const SECRETOS_DEL_BOSQUE = [
+  "equis", "pala", "misterio", "revelado", "buho", "enjambre",
+  "relojBosque", "escopeta", "caceria",
+];
+
 function refrescarHallado() {
-  const total = 6;
+  const total = SECRETOS_DEL_BOSQUE.length;
   let n = 0;
-  for (const id of ["equis", "pala", "misterio", "revelado", "buho", "enjambre"]) {
+  for (const id of SECRETOS_DEL_BOSQUE) {
     if (historia.hecho(id)) n++;
   }
   const b = elHallado.querySelector("b");
@@ -9811,6 +9912,11 @@ function irALaEspesura() {
 /** Y la vuelta, por el mismo camino y con la misma caminata. */
 function volverAlClaro() {
   if (bloqueado || escena !== "espesura") return;
+  /* Irse en mitad de la cacería es una salida legítima —el botón está
+     ahí y no se va a esconder—, pero el bosque tiene que quedar como
+     estaba: sin lluvia pendiente, sin penumbra y sin búhos a medio
+     camino esperando en una escena que ya no existe. */
+  if (caza.fase !== "no") limpiarCaceria(true);
   bloqueado = true;
   sendero.fase = 0;
   sendero.hacia = "bosque";
@@ -10265,11 +10371,40 @@ function dibujarEspesura(dt) {
   dibujarOjosEsp();
   dibujarBuhoEsp();
 
+  /* ---- Y los que vienen a por ti ----
+     Van por delante del búho y por detrás del marco de troncos: se te
+     echan encima, pero siguen estando DENTRO del bosque. */
+  dibujarCaceria();
+
   /* ---- 5. LAS LUCIÉRNAGAS ---- */
   dibujarLuces(dt);
 
   /* ---- 6. LAS PARTÍCULAS ---- */
   dibujarParticulas();
+
+  /* ---- 6b. LA LLUVIA Y LOS RELÁMPAGOS ----
+     Esto faltaba desde el primer día y no se notaba porque en el bosque
+     nunca llovía. Ahora sí: la cacería abre el cielo, y si el agua no
+     se pintara, lo único que pasaría al recoger la escopeta es que la
+     pantalla se oscurece.
+
+     Va después de las partículas y antes del marco de troncos: el agua
+     cae por delante del bosque, pero por detrás de lo que tienes a dos
+     palmos de la cara. */
+  if (clima.lluvia > 0.01) dibujarLluvia();
+
+  if (clima.destello > 0.01) {
+    const kd = clima.destello;
+    const gx = A * clima.destelloX;
+    const gr2 = ctx.createRadialGradient(gx, -H * 0.15, 0, gx, -H * 0.15, H * 1.5);
+    /* Más frío y más flojo que en el claro: aquí no hay cielo abierto,
+       lo que llega es lo que se cuela entre las copas. */
+    gr2.addColorStop(0, `rgba(196,216,255,${kd * 0.34})`);
+    gr2.addColorStop(0.45, `rgba(170,196,255,${kd * 0.13})`);
+    gr2.addColorStop(1, "rgba(160,190,255,0)");
+    ctx.fillStyle = gr2;
+    ctx.fillRect(0, 0, A, H);
+  }
 
   /* ---- 7. EL MARCO DE DELANTE ----
      Troncos enteros cruzando la pantalla. Van casi negros porque no les
@@ -10807,6 +10942,33 @@ function construirPuntos() {
       hay: () => historia.hecho("misterio"),
       pulso: 0, salida: 0, giro: 0,
     },
+
+    /* ---- El reloj de pie ----
+       Entre el búho y la pala, recargado en un árbol. No está
+       escondido: está donde nadie esperaría uno, que es peor.
+
+       Se ve de lejos porque brilla, pero el brillo es verde y flojo, y
+       hasta que no se está encima parece una luciérnaga grande. */
+    {
+      id: "reloj",
+      x: W * 0.665, y: suelo + H * 0.03,
+      r: U * 10, z: 1,
+      hay: () => true,
+      latido: 0, fogonazo: 0, tic: 0, toques: 0, salto: 0,
+    },
+
+    /* ---- La escopeta ----
+       Al final del todo, tirada entre las hojas. Hay que andar el
+       bosque entero para dar con ella, y ni siquiera entonces salta a
+       la vista: lo único que hace es un destello por el cañón cada
+       cuatro o cinco segundos. */
+    {
+      id: "escopeta",
+      x: W * 0.955, y: suelo + H * 0.055,
+      r: U * 9, z: 1,
+      hay: () => !bolsa.lleva("escopeta"),
+      destello: 0, relojDestello: azar(1, 4), cogida: 0,
+    },
   ];
 
   /* Al remedir se conserva lo vivido: si ya habías cavado dos veces, no
@@ -10850,6 +11012,28 @@ function moverPuntos(dt) {
       p.temblor = Math.max(0, p.temblor - dt * 3);
       p.hoyo = damp(p.hoyo, clamp01(p.golpes / CONF.cavar.golpes), 5, dt);
     }
+    if (p.id === "reloj") {
+      /* Respira despacio, y de vez en cuando le da un fogonazo. El
+         fogonazo no es al azar del todo: va a un ritmo que no cuadra
+         con nada, y eso es lo que lo hace inquietante. */
+      p.latido = 0.5 + 0.5 * Math.sin(reloj * 0.62);
+      p.fogonazo = Math.max(0, p.fogonazo - dt * 2.2);
+      p.salto = Math.max(0, p.salto - dt * 2.6);
+      if (Math.random() < dt * 0.14) p.fogonazo = azar(0.5, 1);
+      /* Y el segundero: da el tic… y vuelve. Nunca avanza. Es todo el
+         chiste del reloj, y está en dos líneas. */
+      p.tic += dt;
+      if (p.tic > 1) p.tic -= 1;
+    }
+    if (p.id === "escopeta") {
+      p.destello = Math.max(0, p.destello - dt * 1.1);
+      p.relojDestello -= dt;
+      if (p.relojDestello <= 0) {
+        p.relojDestello = azar(3.4, 5.6);
+        p.destello = 1;
+      }
+      if (p.cogida > 0) p.cogida = Math.min(1, p.cogida + dt * 1.8);
+    }
     if (p.id === "reliquia") {
       p.salida = damp(p.salida, 1, 1.1, dt);
       p.pulso = Math.max(0, p.pulso - dt * 0.9);
@@ -10891,6 +11075,10 @@ function pistaDePunto(p) {
   }
   if (p.id === "pala" && !bolsa.lleva("pala")) return CONF.espesura.palaVista;
   if (p.id === "salida") return CONF.espesura.salidaVista;
+  if (p.id === "escopeta") return CONF.caza.alVerla;
+  /* El reloj NO avisa de nada. Si al acercarse saltara una frase, sería
+     un sitio señalado; callado, es una cosa rarísima que alguien puso
+     ahí y que hay que decidirse a tocar. */
   return null;
 }
 
@@ -10906,7 +11094,314 @@ function dibujarPuntos() {
     else if (p.id === "equis") dibujarEquis(s.x, s.y, p);
     else if (p.id === "pala") dibujarPala(s.x, s.y, p);
     else if (p.id === "reliquia") dibujarReliquia(s.x, s.y, p);
+    else if (p.id === "reloj") dibujarRelojBosque(s.x, s.y, p);
+    else if (p.id === "escopeta") dibujarEscopetaSuelo(s.x, s.y, p);
     /* El búho de la espesura se pinta con los demás bichos, aparte. */
+  }
+}
+
+/**
+ * EL RELOJ DE PIE DEL BOSQUE.
+ *
+ * ── POR QUÉ UN RELOJ Y NO OTRA COSA ──────────────────────────────────
+ * Porque un reloj de pie en mitad de un bosque no da miedo por lo que
+ * es: da miedo por lo que implica. Alguien lo trajo hasta aquí. Alguien
+ * le dio cuerda. Y sigue marcando las tres, igual que el de la mesilla
+ * de la cabaña, que es la hora a la que se despierta uno después del
+ * ataque. Los dos relojes dicen lo mismo sin decirlo.
+ *
+ * ── DE DÓNDE SALE LO INQUIETANTE ─────────────────────────────────────
+ * De tres cosas pequeñas, no de una grande:
+ *
+ *   1. El verde respira despacio, a un ritmo que no cuadra con ningún
+ *      otro de la escena.
+ *   2. Cada tanto le da un FOGONAZO que no viene a cuento: no está
+ *      sincronizado con nada, así que no se puede anticipar.
+ *   3. El segundero da el tic… y vuelve al mismo sitio. Nunca avanza.
+ *      Eso lo ve todo el mundo a los cinco segundos, y es lo que cuenta
+ *      la frase entera antes de tocarlo.
+ */
+function dibujarRelojBosque(x, y, p) {
+  const alto = U * (apaisado ? 26 : 30);
+  const ancho = alto * 0.26;
+  const vivo = 0.45 + p.latido * 0.35 + p.fogonazo * 0.9;
+  /* Recargado: se inclina, y por eso la sombra del suelo no va debajo
+     del centro sino del pie. */
+  const incl = -0.07;
+
+  /* La sombra donde se apoya. */
+  haloOvalado(x + U * 1.2, y + U * 0.6, ancho * 1.4, U * 1.8, [
+    [0.35, "rgba(0,0,0,0.45)"],
+    [1, "rgba(0,0,0,0)"],
+  ]);
+
+  /* El resplandor de alrededor, antes que la caja: es lo que se ve de
+     lejos, cuando el reloj todavía es una mancha entre los árboles. */
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  haloOvalado(x, y - alto * 0.55, ancho * 4.2, alto * 0.85, [
+    [0, `rgba(120,255,175,${0.1 * vivo})`],
+    [0.45, `rgba(90,230,150,${0.035 * vivo})`],
+    [1, "rgba(90,230,150,0)"],
+  ]);
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(incl);
+  ctx.translate(0, -alto);
+
+  /* ---- La caja ---- */
+  const g = ctx.createLinearGradient(-ancho / 2, 0, ancho / 2, 0);
+  g.addColorStop(0, "#241a18");
+  g.addColorStop(0.35, "#3d2b24");
+  g.addColorStop(0.72, "#2a1e1a");
+  g.addColorStop(1, "#160f0e");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-ancho / 2, 0, ancho, alto, [ancho * 0.3, ancho * 0.3, 2, 2]);
+  else ctx.rect(-ancho / 2, 0, ancho, alto);
+  ctx.fill();
+
+  /* La cornisa de arriba y la base, que son lo que lo hace «de pie» y
+     no una tabla. */
+  ctx.fillStyle = "#3a2922";
+  ctx.fillRect(-ancho * 0.62, alto * 0.06, ancho * 1.24, alto * 0.035);
+  ctx.fillRect(-ancho * 0.6, alto * 0.965, ancho * 1.2, alto * 0.035);
+
+  /* ---- El cristal del péndulo ----
+     El hueco largo de en medio, con el péndulo dentro. Va en modo de
+     sumar porque lo que se ve ahí no es madera iluminada: es luz. */
+  const cy = alto * 0.58, ch = alto * 0.34;
+  ctx.fillStyle = "rgba(8,14,10,0.9)";
+  ctx.fillRect(-ancho * 0.3, cy - ch / 2, ancho * 0.6, ch);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(-ancho * 0.3, cy - ch / 2, ancho * 0.6, ch);
+  ctx.clip();
+  ctx.globalCompositeOperation = "lighter";
+  /* El péndulo: quieto en el centro, porque el reloj no anda. Sólo
+     tiembla un pelo. Un péndulo balanceándose diría que funciona, y lo
+     que hay que decir es lo contrario. */
+  const px2 = Math.sin(reloj * 0.9) * ancho * 0.05;
+  ctx.strokeStyle = `rgba(150,255,190,${0.3 * vivo})`;
+  ctx.lineWidth = Math.max(1, U * 0.24);
+  ctx.beginPath();
+  ctx.moveTo(0, cy - ch / 2);
+  ctx.lineTo(px2, cy + ch * 0.26);
+  ctx.stroke();
+  haloOvalado(px2, cy + ch * 0.3, ancho * 0.34, ancho * 0.34, [
+    [0, `rgba(180,255,210,${0.75 * vivo})`],
+    [0.4, `rgba(110,240,160,${0.3 * vivo})`],
+    [1, "rgba(110,240,160,0)"],
+  ]);
+  ctx.restore();
+
+  /* ---- La esfera ---- */
+  const ey = alto * 0.2, er = ancho * 0.34;
+  ctx.fillStyle = "rgba(226,216,190,0.16)";
+  ctx.beginPath(); ctx.arc(0, ey, er * 1.16, 0, 6.283); ctx.fill();
+  ctx.fillStyle = "rgba(16,22,18,0.92)";
+  ctx.beginPath(); ctx.arc(0, ey, er, 0, 6.283); ctx.fill();
+
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  /* Las doce marcas. */
+  ctx.strokeStyle = `rgba(150,255,195,${0.3 + 0.3 * vivo})`;
+  ctx.lineWidth = Math.max(1, U * 0.16);
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * 6.283;
+    const largo = i % 3 === 0 ? 0.26 : 0.14;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * er * 0.82, ey + Math.sin(a) * er * 0.82);
+    ctx.lineTo(Math.cos(a) * er * (0.82 - largo), ey + Math.sin(a) * er * (0.82 - largo));
+    ctx.stroke();
+  }
+  /* Las manecillas: las tres en punto, clavadas. */
+  ctx.lineCap = "round";
+  const manecilla = (ang, largo, gordo) => {
+    ctx.lineWidth = Math.max(1, U * gordo);
+    ctx.beginPath();
+    ctx.moveTo(0, ey);
+    ctx.lineTo(Math.cos(ang) * er * largo, ey + Math.sin(ang) * er * largo);
+    ctx.stroke();
+  };
+  ctx.strokeStyle = `rgba(190,255,215,${0.5 + 0.4 * vivo})`;
+  /* Las tres en punto: la horaria al 3 —a la derecha— y el minutero al
+     12 —arriba—. La horaria es la corta y la gorda. */
+  manecilla(0, 0.44, 0.34);
+  manecilla(-1.5708, 0.66, 0.26);
+  /* El segundero: da el tic y vuelve. El salto es un pelín adelante y
+     el resto del segundo, quieto en el cero. */
+  const salto = p.tic < 0.12 ? (p.tic / 0.12) * 0.1 : 0;
+  ctx.strokeStyle = `rgba(255,140,140,${0.34 + 0.3 * vivo})`;
+  manecilla(-1.5708 + salto, 0.72, 0.16);
+  ctx.fillStyle = `rgba(200,255,220,${0.6 * vivo})`;
+  ctx.beginPath(); ctx.arc(0, ey, er * 0.08, 0, 6.283); ctx.fill();
+  ctx.restore();
+
+  /* ---- Lo que le ha crecido encima ----
+     Lleva ahí lo bastante como para tener musgo. Eso es lo que dice
+     cuánto tiempo lleva, sin escribirlo en ningún lado. */
+  for (let i = 0; i < 11; i++) {
+    /* Repartido por los dos cantos y de tamaños distintos. En una sola
+       columna a la izquierda se leía como una costura, no como musgo. */
+    const lado = i % 2 ? 1 : -1;
+    const t = azarFijo(i * 3.1);
+    ctx.fillStyle = i % 3 === 0 ? "rgba(74,104,62,0.42)" : "rgba(52,84,54,0.5)";
+    ctx.beginPath();
+    ctx.ellipse(lado * ancho * (0.3 + azarFijo(i * 7.3) * 0.22),
+      alto * (0.12 + azarFijo(i * 5.7) * 0.82),
+      ancho * (0.07 + t * 0.16), alto * (0.008 + t * 0.016),
+      azarFijo(i * 2.3) * 0.5 - 0.25, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  /* Y el destello del cristal cuando le da el fogonazo. */
+  if (p.fogonazo > 0.02) {
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    haloOvalado(x, y - alto * 0.42, ancho * 2.4, alto * 0.5, [
+      [0, `rgba(190,255,215,${0.2 * p.fogonazo})`],
+      [1, "rgba(150,255,190,0)"],
+    ]);
+    ctx.restore();
+  }
+}
+
+/**
+ * LA ESCOPETA, TIRADA ENTRE LAS HOJAS.
+ *
+ * ── CÓMO SE ESCONDE ALGO QUE TIENE QUE ENCONTRARSE ───────────────────
+ * No tapándolo: poniéndolo lejos y haciendo que llame la atención un
+ * momento cada tantos segundos. Un objeto que brilla todo el rato es un
+ * cartel; uno que brilla una vez cada cuatro segundos hace que quien lo
+ * vio de reojo se pregunte si lo vio de verdad, y vuelva a mirar.
+ *
+ * El destello no es un halo: es una franja estrecha que RECORRE el
+ * cañón, que es lo que hace el metal pulido cuando le pasa por encima
+ * una luz. Un halo diría «objeto mágico»; esto dice «metal».
+ */
+function dibujarEscopetaSuelo(x, y, p) {
+  const L = U * 15;
+  const k = 1 - p.cogida;
+  if (k < 0.02) return;
+
+  ctx.save();
+  ctx.translate(x, y - p.cogida * U * 8);
+  ctx.rotate(-0.14 + p.cogida * 0.8);
+  ctx.globalAlpha = k;
+
+  /* La sombra, para que se apoye en el suelo y no flote. */
+  haloOvalado(U * 0.6, U * 1.4, L * 0.52, U * 1.2, [
+    [0.3, "rgba(0,0,0,0.42)"],
+    [1, "rgba(0,0,0,0)"],
+  ]);
+
+  /* ---- La culata: madera, ancha atrás y estrechando hacia delante ---- */
+  const gm = ctx.createLinearGradient(0, -U * 1.4, 0, U * 1.4);
+  gm.addColorStop(0, "#7a4f2c");
+  gm.addColorStop(0.45, "#5b391f");
+  gm.addColorStop(1, "#33200f");
+  ctx.fillStyle = gm;
+  ctx.beginPath();
+  ctx.moveTo(-L * 0.5, -U * 0.5);
+  ctx.quadraticCurveTo(-L * 0.52, U * 1.5, -L * 0.42, U * 1.5);
+  ctx.lineTo(-L * 0.1, U * 0.85);
+  ctx.lineTo(-L * 0.1, -U * 0.6);
+  ctx.closePath();
+  ctx.fill();
+  /* La veta. */
+  ctx.strokeStyle = "rgba(20,12,6,0.3)";
+  ctx.lineWidth = Math.max(1, U * 0.14);
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(-L * 0.48, -U * 0.2 + i * U * 0.5);
+    ctx.quadraticCurveTo(-L * 0.3, U * 0.1 + i * U * 0.45, -L * 0.12, -U * 0.1 + i * U * 0.4);
+    ctx.stroke();
+  }
+
+  /* ---- La caja de mecanismos ---- */
+  ctx.fillStyle = "#4a4e55";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-L * 0.13, -U * 0.75, L * 0.2, U * 1.6, U * 0.18);
+  else ctx.rect(-L * 0.13, -U * 0.75, L * 0.2, U * 1.6);
+  ctx.fill();
+  /* El guardamonte y el gatillo. */
+  ctx.strokeStyle = "#3a3e45";
+  ctx.lineWidth = Math.max(1, U * 0.3);
+  ctx.beginPath();
+  ctx.arc(-L * 0.04, U * 1.15, U * 0.8, -0.2, Math.PI + 0.2);
+  ctx.stroke();
+  ctx.fillStyle = "#2c3036";
+  ctx.fillRect(-L * 0.055, U * 0.5, U * 0.26, U * 0.9);
+
+  /* ---- Los dos cañones ----
+     Uno encima del otro, que es lo que hace que se lea como escopeta y
+     no como rifle. */
+  for (const dy of [-U * 0.42, U * 0.42]) {
+    const gc = ctx.createLinearGradient(0, dy - U * 0.4, 0, dy + U * 0.4);
+    gc.addColorStop(0, "#6e7681");
+    gc.addColorStop(0.4, "#3c434c");
+    gc.addColorStop(1, "#1d2127");
+    ctx.fillStyle = gc;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(L * 0.06, dy - U * 0.4, L * 0.46, U * 0.8, U * 0.28);
+    else ctx.rect(L * 0.06, dy - U * 0.4, L * 0.46, U * 0.8);
+    ctx.fill();
+  }
+  /* Las bocas. */
+  ctx.fillStyle = "#0b0d10";
+  for (const dy of [-U * 0.42, U * 0.42]) {
+    ctx.beginPath();
+    ctx.ellipse(L * 0.515, dy, U * 0.16, U * 0.34, 0, 0, 6.283);
+    ctx.fill();
+  }
+  /* Y el guardamanos de madera bajo los cañones. */
+  ctx.fillStyle = "#5b391f";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(L * 0.08, U * 0.1, L * 0.24, U * 0.95, U * 0.25);
+  else ctx.rect(L * 0.08, U * 0.1, L * 0.24, U * 0.95);
+  ctx.fill();
+  /* El punto de mira: un grano de latón. */
+  ctx.fillStyle = "rgba(226,196,120,0.8)";
+  ctx.beginPath();
+  ctx.arc(L * 0.48, -U * 0.8, U * 0.16, 0, 6.283);
+  ctx.fill();
+
+  /* ---- El destello que recorre el cañón ---- */
+  if (p.destello > 0.02) {
+    const t = 1 - p.destello;
+    const bx = mez(L * 0.04, L * 0.56, t);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const gd = ctx.createLinearGradient(bx - L * 0.09, 0, bx + L * 0.09, 0);
+    gd.addColorStop(0, "rgba(220,240,255,0)");
+    gd.addColorStop(0.5, `rgba(226,244,255,${0.75 * Math.sin(p.destello * Math.PI)})`);
+    gd.addColorStop(1, "rgba(220,240,255,0)");
+    ctx.fillStyle = gd;
+    ctx.fillRect(bx - L * 0.09, -U * 0.95, L * 0.18, U * 1.9);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  /* Unas hojas por encima, tapándola a medias. Lo que la hace un
+     hallazgo y no un objeto puesto en el suelo. */
+  if (k > 0.5) {
+    ctx.save();
+    ctx.globalAlpha = (k - 0.5) * 2;
+    for (let i = 0; i < 5; i++) {
+      const a = azarFijo(i * 7) * 6.283;
+      ctx.fillStyle = i % 2 ? "rgba(52,74,42,0.75)" : "rgba(70,60,34,0.72)";
+      ctx.beginPath();
+      ctx.ellipse(x + Math.cos(a) * L * 0.32, y + Math.sin(a) * U * 1.3 + U * 0.4,
+        U * (0.9 + azarFijo(i * 11) * 0.7), U * 0.42, a, 0, 6.283);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
   }
 }
 
@@ -11298,6 +11793,9 @@ function colocarBuhoEsp() {
   if (!p) return;
   buhoEsp.x = p.x; buhoEsp.y = p.y;
   buhoEsp.r = U * (apaisado ? 3.4 : 4.2);
+  /* Si ya hubo cacería, no está en su árbol: está en otro, y en otro
+     distinto cada vez que se entra al bosque. */
+  if (historia.hecho("caceria")) posarBuhoLejos();
   buhoEsp.relojParpadeo = azar(1.5, 5);
   buhoEsp.relojRojo = azar(14, 40);
   buhoEsp.relojDice = azar(6, 14);
@@ -11350,6 +11848,16 @@ function moverBuhoEsp(dt) {
   if (b.relojDice <= 0 && sx > A * 0.1 && sx < A * 0.9 && !bloqueado) {
     b.relojDice = azar(11, 26);
     hablarElBuho();
+  }
+
+  /* ---- Volver a dar con él después de la cacería ----
+     La primera vez que se le encuentra en su rama nueva, lo dice. Una
+     vez por rama, no una vez por partida: cada vez que cambia de sitio
+     vuelve a ser un hallazgo. */
+  if (historia.hecho("caceria") && b.sal > 0.5 && !b.saludado
+      && sx > A * 0.15 && sx < A * 0.85 && !bloqueado && caza.fase === "no") {
+    b.saludado = true;
+    decir(sx, b.y - b.r * 3, diceVerlo(), { misterio: true, dur: 4.5 });
   }
 
   /* Los mini búhos, si los hay. */
@@ -11528,6 +12036,11 @@ function moverIrse(dt) {
     b.salObj = 1;
     b.modo = "normal";
     b.visto = 0;
+    /* Después de la cacería NO vuelve a su árbol: vuelve a OTRO, lejos
+       de donde estés mirando. «Sigue ahí» y «sigue en el mismo sitio»
+       no son lo mismo; si volviera a su rama de siempre, lo que
+       quedaría de todo aquello es que no pasó nada. */
+    if (historia.hecho("caceria")) posarBuhoLejos();
   }
 }
 
@@ -12250,6 +12763,650 @@ function moverDesmayo(dt, t) {
     buhoEsp.desmayado = true;
     despertarEnLaCabana();
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LA CACERÍA
+
+   Lo que pasa cuando se recoge la escopeta del final del bosque.
+
+   ── POR QUÉ ESTO NO ES UN MINIJUEGO PEGADO ───────────────────────────
+   Porque no cambia de pantalla, no para el mundo y no pide nada. El
+   bosque sigue siendo el mismo bosque: los mismos árboles, el mismo
+   suelo, las mismas luciérnagas. Lo que cambia es el CLIMA —empieza a
+   llover, baja la luz, caen rayos— y lo que sale de entre los árboles.
+   Se puede seguir andando con los mismos botones de siempre.
+
+   ── LAS REGLAS, EN TRES LÍNEAS ───────────────────────────────────────
+   Cinco oleadas, cada una más grande. Cinco vidas. Los búhos vienen
+   hacia ti creciendo, y hay que tocarlos antes de que lleguen. Al que
+   se toca no se le mata: revienta en luz, que es otra cosa.
+
+   ── POR QUÉ LOS BÚHOS VIVEN EN COORDENADAS DE PANTALLA ───────────────
+   Todo lo demás de la espesura vive en coordenadas de MUNDO y se
+   proyecta según dónde esté la cámara. Éstos no: éstos van a por ti.
+   Si vivieran en el mundo, andar dos pasos los dejaría atrás y el
+   ataque se esquivaría caminando, que es justo lo que no puede pasar.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Cuántos búhos trae cada oleada. Cinco números y se acabó: subir la
+   dificultad es cambiar esta línea. */
+const OLEADAS = [3, 5, 7, 10, 14];
+const VIDAS = 5;
+
+const caza = {
+  /* no · aviso · oleada · pausa · final · perdida */
+  fase: "no",
+  oleada: 0,
+  vidas: VIDAS,
+  t: 0,
+  /* Cuántos faltan por salir en esta oleada, y cuándo sale el próximo. */
+  porSalir: 0,
+  relojSalida: 0,
+  buhos: [],
+  anillos: [],
+  /* El fogonazo del cañón y el enfriamiento entre disparos. */
+  disparo: 0,
+  fogonazo: 0,
+  /* Cuánto se ha oscurecido el bosque. */
+  oscuro: 0, oscuroObj: 0,
+  /* Lo que había antes, para devolverlo al acabar. */
+  lluviaAntes: 0, tormentaAntes: 0,
+  hecha: false,
+  avisadaAyuda: false,
+};
+
+/** Dónde está el jugador, en coordenadas de pantalla. */
+function sitioJugador() {
+  return { x: A * 0.5, y: H * 0.88 };
+}
+
+function arrancarCaceria() {
+  if (caza.fase !== "no" || escena !== "espesura") return;
+  caza.fase = "aviso";
+  caza.t = 0;
+  caza.oleada = 0;
+  caza.vidas = VIDAS;
+  caza.buhos.length = 0;
+  caza.anillos.length = 0;
+  caza.avisadaAyuda = false;
+  caza.dicho = false;
+  /* `hecha` es «esta partida ya llegó al final», no «ya la jugaste
+     alguna vez». Lo segundo lo guarda el hito, que no se toca. */
+  caza.hecha = false;
+  caza.lluviaAntes = clima.lluviaObj;
+  caza.tormentaAntes = clima.tormentaObj;
+  /* Que llueva. No de golpe: `lluviaObj` es un objetivo y el clima va
+     hacia él con su propia inercia, así que el agua ARRANCA. */
+  clima.lluviaObj = 1;
+  clima.tormentaObj = 0.8;
+  caza.oscuroObj = 1;
+  refrescarVidas(true);
+  decir(A * 0.5, H * 0.4, CONF.caza.arranque, { misterio: true, importante: true, dur: 4 });
+}
+
+function siguienteOleada() {
+  caza.oleada++;
+  if (caza.oleada > OLEADAS.length) { terminarCaceria(); return; }
+  caza.fase = "oleada";
+  caza.t = 0;
+  caza.porSalir = OLEADAS[caza.oleada - 1];
+  caza.relojSalida = 0.35;
+  decir(A * 0.5, H * 0.34, CONF.caza.oleadas[caza.oleada - 1],
+    { misterio: true, importante: true, dur: 3.2 });
+  /* Un trueno por oleada, y cada vez más cerca. */
+  lanzarRayo(mez(2.2, 0.25, (caza.oleada - 1) / (OLEADAS.length - 1)));
+}
+
+/** Saca un búho por un canto de la pantalla. */
+function soltarBuhoCaza() {
+  const J = sitioJugador();
+  /* Salen de arriba y de los lados, nunca de abajo: abajo estás tú. */
+  const desde = Math.random();
+  let x, y;
+  if (desde < 0.34) { x = azar(-A * 0.1, A * 1.1); y = -H * 0.05; }
+  else if (desde < 0.67) { x = -A * 0.08; y = azar(H * 0.05, H * 0.6); }
+  else { x = A * 1.08; y = azar(H * 0.05, H * 0.6); }
+
+  caza.buhos.push({
+    x0: x, y0: y,
+    x, y,
+    d: 1,
+    /* Cada uno a lo suyo: si todos tardaran lo mismo, llegarían en
+       bloque y se convertiría en un ritmo, no en un ataque. */
+    vel: azar(0.1, 0.17) * (1 + (caza.oleada - 1) * 0.06),
+    f: azar(0, 6.283),
+    vaiven: azar(0.6, 1.5) * (Math.random() < 0.5 ? -1 : 1),
+    ala: 0,
+    muerte: -1,
+    J,
+  });
+}
+
+function moverCaceria(dt) {
+  /* Los anillos de las explosiones viven aunque no haya cacería: si se
+     apagaran con la última oleada, el último búho reventaría a medias. */
+  for (let i = caza.anillos.length - 1; i >= 0; i--) {
+    const a = caza.anillos[i];
+    a.t += dt;
+    if (a.t > a.dur) caza.anillos.splice(i, 1);
+  }
+  caza.disparo = Math.max(0, caza.disparo - dt);
+  caza.fogonazo = Math.max(0, caza.fogonazo - dt * 6);
+  caza.oscuro = damp(caza.oscuro, caza.oscuroObj, 1.1, dt);
+
+  if (caza.fase === "no") return;
+  caza.t += dt;
+
+  if (caza.fase === "aviso") {
+    if (caza.t > 3.2) siguienteOleada();
+    return;
+  }
+
+  if (caza.fase === "pausa") {
+    if (caza.t > 2.8) siguienteOleada();
+    return;
+  }
+
+  if (caza.fase === "final") {
+    moverFinalCaceria(dt);
+    return;
+  }
+
+  if (caza.fase !== "oleada") return;
+
+  /* ---- Sacar los que falten ---- */
+  if (caza.porSalir > 0) {
+    caza.relojSalida -= dt;
+    if (caza.relojSalida <= 0) {
+      /* Cuanto más avanzada la oleada, más juntos salen. */
+      caza.relojSalida = azar(0.5, 1.1) / (1 + (caza.oleada - 1) * 0.22);
+      caza.porSalir--;
+      soltarBuhoCaza();
+    }
+  }
+
+  /* ---- Moverlos ---- */
+  const J = sitioJugador();
+  for (let i = caza.buhos.length - 1; i >= 0; i--) {
+    const o = caza.buhos[i];
+    o.ala += dt * mez(7, 13, 1 - o.d);
+
+    if (o.muerte >= 0) {
+      o.muerte += dt;
+      if (o.muerte > 0.45) caza.buhos.splice(i, 1);
+      continue;
+    }
+
+    o.d -= o.vel * dt;
+    /* La posición sale de interpolar entre de dónde salió y dónde
+       estás tú, con un vaivén encima. El vaivén se APAGA al acercarse:
+       un búho que serpentea hasta el último palmo es imposible de
+       tocar, y eso no es difícil, es injusto. */
+    const k = 1 - clamp01(o.d);
+    const suave = suave3(k);
+    const bal = Math.sin(o.f + reloj * 2.2 * o.vaiven) * A * 0.13 * (1 - suave);
+    o.x = mez(o.x0, J.x, suave) + bal;
+    o.y = mez(o.y0, J.y, suave) - Math.sin(suave * Math.PI) * H * 0.08;
+
+    if (o.d <= 0) {
+      caza.buhos.splice(i, 1);
+      golpearAlJugador(o);
+    }
+  }
+
+  /* ---- ¿Se acabó la oleada? ---- */
+  if (caza.porSalir === 0 && !caza.buhos.some((o) => o.muerte < 0)) {
+    caza.fase = "pausa";
+    caza.t = 0;
+    if (caza.oleada < OLEADAS.length) {
+      decir(A * 0.5, H * 0.38, CONF.caza.entreOleadas, { dur: 2.4 });
+    }
+  }
+}
+
+/** El radio en pantalla de un búho, según lo cerca que esté. */
+function radioBuhoCaza(o) {
+  return U * mez(1.4, 10, Math.pow(1 - clamp01(o.d), 1.7));
+}
+
+/* ---- Disparar ----------------------------------------------------------- */
+
+function dispararEscopeta(p) {
+  if (caza.disparo > 0) return true;
+  caza.disparo = 0.42;
+  caza.fogonazo = 1;
+  sacudir(0.45);
+
+  /* El estampido: un golpe de ruido grave y ancho, y encima el
+     chasquido del cerrojo un pelín después. Los dos, o suena a globo. */
+  golpe(0.2, 160, 0.42, "lowpass");
+  golpe(0.06, 900, 0.3, "bandpass");
+  setTimeout(() => golpe(0.03, 2200, 0.12, "bandpass"), 260);
+
+  /* ---- A qué le ha dado ----
+     Al MÁS CERCANO de los que caen dentro del tiro, no al primero de la
+     lista: con una escopeta apuntas a un sitio, no a un objeto. El
+     margen es generoso a propósito —es una escopeta, no un rifle— y
+     crece con lo cerca que esté el bicho. */
+  let mejor = null, mejorD = Infinity;
+  for (const o of caza.buhos) {
+    if (o.muerte >= 0) continue;
+    const r = radioBuhoCaza(o);
+    const d = Math.hypot(p.x - o.x, p.y - o.y);
+    if (d > r * 1.7 + U * 4) continue;
+    if (d < mejorD) { mejorD = d; mejor = o; }
+  }
+  if (mejor) reventarBuho(mejor);
+  else humoDeFallo(p);
+  return true;
+}
+
+/** Cuando no le da a nada: un poco de humo y hojas, para que se note. */
+function humoDeFallo(p) {
+  for (let i = 0; i < 4; i++) {
+    soltar(p.x + azar(-U * 3, U * 3), p.y + azar(-U * 3, U * 3), {
+      vx: azar(-20, 20), vy: azar(-30, -6),
+      vida: azar(0.8, 1.6), tam: azar(U * 0.4, U * 0.9),
+      tipo: TIPO.HUMO, tono: 0.2,
+    });
+  }
+}
+
+/**
+ * REVENTAR UN BÚHO.
+ *
+ * ── POR QUÉ NO SE MUERE, REVIENTA EN LUZ ─────────────────────────────
+ * Porque esto es un bosque encantado y porque la novia de quien esto
+ * escribe no tiene por qué ver morir a nada. Lo que se dispara no es
+ * un animal: es lo que sea que lo está ocupando, y al darle se deshace
+ * en lo que estaba hecho.
+ *
+ * Son cuatro cosas a la vez, y hacen falta las cuatro para que se lea
+ * como magia y no como una explosión: el ANILLO que se abre, las
+ * ESQUIRLAS de luz que salen disparadas, el HUMO que queda flotando y
+ * las CHISPAS que caen después, más despacio que todo lo demás.
+ */
+function reventarBuho(o) {
+  o.muerte = 0;
+  const r = radioBuhoCaza(o);
+
+  caza.anillos.push({ x: o.x, y: o.y, r0: r, t: 0, dur: 0.55 });
+
+  /* Las esquirlas: verdes, que es el color de lo que hay enterrado en
+     este bosque. */
+  const n = flojo ? 10 : 22;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * 6.283 + azar(-0.2, 0.2);
+    const v = azar(60, 220);
+    soltar(o.x, o.y, {
+      vx: Math.cos(a) * v, vy: Math.sin(a) * v - 20,
+      vida: azar(0.6, 1.5), tam: azar(1.2, 3),
+      tipo: TIPO.BRILLO, tono: 0.45,
+    });
+  }
+  /* El humo, que se queda. */
+  for (let i = 0; i < (flojo ? 2 : 5); i++) {
+    soltar(o.x + azar(-r * 0.4, r * 0.4), o.y + azar(-r * 0.4, r * 0.4), {
+      vx: azar(-16, 16), vy: azar(-26, -6),
+      vida: azar(1.4, 2.6), tam: azar(U * 0.5, U * 1.2),
+      tipo: TIPO.HUMO, tono: 0.2,
+    });
+  }
+  /* Y las chispas, que caen. */
+  for (let i = 0; i < (flojo ? 4 : 9); i++) {
+    soltar(o.x, o.y, {
+      vx: azar(-70, 70), vy: azar(-90, -20),
+      vida: azar(0.8, 1.8), tam: azar(0.8, 1.8),
+      tipo: TIPO.CHISPA, tono: 0.3,
+    });
+  }
+
+  magia(azar(520, 700));
+  golpe(0.1, 300, 0.2, "lowpass");
+}
+
+/* ---- Recibir un golpe --------------------------------------------------- */
+
+function golpearAlJugador(o) {
+  caza.vidas = Math.max(0, caza.vidas - 1);
+  refrescarVidas();
+  sacudir(1.2);
+  /* Un fogonazo rojo corto. El mismo elemento que usa el fuego, con
+     otro color: un golpe tiene que verse sin mirar dónde. */
+  elFlash.style.transition = "none";
+  elFlash.style.background = "rgba(200,40,50,0.55)";
+  elFlash.style.opacity = "0.8";
+  requestAnimationFrame(() => {
+    elFlash.style.transition = "opacity 520ms cubic-bezier(0.22,1,0.36,1)";
+    elFlash.style.opacity = "0";
+  });
+  golpe(0.16, 120, 0.3, "lowpass");
+  tono(azar(90, 130), 0.4, "sawtooth", 0.05);
+
+  /* Un manotazo de plumas negras. */
+  for (let i = 0; i < 10; i++) {
+    soltar(o.x + azar(-U * 4, U * 4), o.y + azar(-U * 4, U * 4), {
+      vx: azar(-90, 90), vy: azar(-60, 40),
+      vida: azar(0.9, 2), tam: U * azar(0.5, 1.1),
+      tipo: TIPO.HOJA, giro: azar(0, 6.283), giroV: azar(-4, 4),
+      tono: 0.1,
+    });
+  }
+
+  if (caza.vidas <= 0) { perderCaceria(); return; }
+  decir(A * 0.5, H * 0.46, diceGolpe(), { importante: true, dur: 2.6 });
+}
+
+function perderCaceria() {
+  caza.fase = "perdida";
+  caza.buhos.length = 0;
+  decir(A * 0.5, H * 0.44, CONF.caza.caida, { misterio: true, importante: true, dur: 3 });
+  /* Y se cae redonda. Se reaprovecha entero el desmayo que ya existía:
+     el velo, la cámara que pierde el equilibrio y el despertar a las
+     tres en la cabaña. Un segundo final distinto para lo mismo sería
+     dos finales que no se parecen. */
+  setTimeout(() => {
+    limpiarCaceria(false);
+    arrancarAtaque();
+  }, 1800);
+}
+
+/* ---- El final ----------------------------------------------------------- */
+
+function terminarCaceria() {
+  caza.fase = "final";
+  caza.t = 0;
+  caza.buhos.length = 0;
+  /* Deja de llover poco a poco: el bosque se calma antes de que hable. */
+  clima.lluviaObj = mez(caza.lluviaAntes, 0.25, 0.5);
+  clima.tormentaObj = 0.2;
+  caza.oscuroObj = 0.45;
+
+  /* Y aparece él. Centrado, rojo y mirando de frente. */
+  buhoEsp.centrado = 0;
+  buhoEsp.sal = 1; buhoEsp.salObj = 1;
+  buhoEsp.rojoObj = 1;
+  buhoEsp.visto = 1;
+  buhoEsp.yendo = -1;
+  espesura.x = clamp(buhoEsp.x - A * 0.5, 0, espesura.tope);
+  espesura.vx = 0;
+  agacharAmbientes(0.3, 1.2);
+}
+
+function moverFinalCaceria(dt) {
+  const t = caza.t;
+  /* 1. Se centra. */
+  buhoEsp.centrado = damp(buhoEsp.centrado || 0, 1, 2.2, dt);
+  buhoEsp.escala = damp(buhoEsp.escala, 2.1, 1.6, dt);
+
+  /* 2. Habla. */
+  if (t > 1.2 && !caza.dicho) {
+    caza.dicho = true;
+    sonarMisterio(0.7);
+    decir(A * 0.5, H * 0.34, CONF.caza.final,
+      { misterio: true, importante: true, dur: 5 });
+  }
+
+  /* 3. Y se va. Pero no se borra: se deshace con la misma animación de
+     siempre —junta energía, se para y revienta— y vuelve al rato. Lo
+     que cambia es DÓNDE vuelve: ver `moverIrse`. */
+  if (t > 5 && !caza.hecha) {
+    caza.hecha = true;
+    historia.marcar("caceria");
+    recuerdo.poner("caceria", 1);
+    contarLogro("caceria");
+    buhoEsp.centrado = 0;
+    buhoEsp.escala = 1;
+    irseElBuho("verde");
+    decir(A * 0.5, H * 0.44, CONF.caza.despues, { misterio: true, dur: 5 });
+  }
+
+  if (t > 8) limpiarCaceria(true);
+}
+
+/** Devuelve el bosque a como estaba. */
+function limpiarCaceria(suave) {
+  caza.fase = "no";
+  caza.dicho = false;
+  caza.buhos.length = 0;
+  caza.porSalir = 0;
+  caza.oscuroObj = 0;
+  clima.lluviaObj = caza.lluviaAntes;
+  clima.tormentaObj = caza.tormentaAntes;
+  buhoEsp.escala = 1;
+  buhoEsp.centrado = 0;
+  refrescarVidas(false);
+  if (suave) agacharAmbientes(1, 2.4);
+}
+
+/**
+ * Posa al búho en una rama lejana.
+ *
+ * ── POR QUÉ NO SE QUEDA DONDE ESTABA ─────────────────────────────────
+ * Porque «sigue ahí» y «sigue en el mismo sitio» no son lo mismo. Si
+ * volviera a su árbol de siempre, lo que quedaría después de la cacería
+ * es que no pasó nada. Cambiándolo de rama cada vez que se entra en el
+ * bosque, encontrarlo vuelve a ser encontrarlo: está, pero hay que dar
+ * con él, y nunca está donde estaba ayer.
+ */
+function posarBuhoLejos() {
+  if (!historia.hecho("caceria")) return;
+  /* Una rama de la banda de en medio, lejos de donde esté la cámara. */
+  const candidatos = espesura.arboles.filter((t) => t.banda === 2);
+  if (!candidatos.length) return;
+  const centro = espesura.x + A * 0.5;
+  const lejos = candidatos.filter((t) => Math.abs(t.x - centro) > A * 0.6);
+  const lista = lejos.length ? lejos : candidatos;
+  const t = lista[Math.floor(Math.random() * lista.length)];
+  buhoEsp.x = t.x;
+  buhoEsp.y = t.base - t.alto * azar(0.5, 0.72);
+  buhoEsp.modo = "lejano";
+  buhoEsp.rojoObj = 1;
+  buhoEsp.sal = 0.001;
+  buhoEsp.salObj = 1;
+  buhoEsp.dichas.clear();
+  /* Rama nueva, hallazgo nuevo: se vuelve a poder decir lo de «ahí
+     está». Si no se borrara, sólo se diría la primera vez de todas. */
+  buhoEsp.saludado = false;
+}
+
+/* ---- Las vidas, en la interfaz ------------------------------------------ */
+
+function refrescarVidas(encender) {
+  if (encender === false) {
+    elVidas.classList.remove("is-on");
+    elVidas.setAttribute("aria-hidden", "true");
+    return;
+  }
+  if (encender === true || !elVidas.children.length) {
+    elVidas.textContent = "";
+    for (let i = 0; i < VIDAS; i++) {
+      const s = document.createElement("i");
+      s.className = "ne-vida";
+      elVidas.append(s);
+    }
+    elVidas.classList.add("is-on");
+    elVidas.setAttribute("aria-hidden", "false");
+  }
+  const hijos = elVidas.children;
+  for (let i = 0; i < hijos.length; i++) {
+    const ida = i >= caza.vidas;
+    const el = hijos[i];
+    if (ida && !el.classList.contains("is-ida")) {
+      el.classList.add("is-ida", "is-golpe");
+      setTimeout(() => el.classList.remove("is-golpe"), 500);
+    } else if (!ida) {
+      el.classList.remove("is-ida", "is-golpe");
+    }
+  }
+}
+
+/* ---- Dibujar ------------------------------------------------------------ */
+
+function dibujarCaceria() {
+  /* ---- El bosque mojado ----
+     Dos capas y no una. La primera MULTIPLICA un azul frío: eso no
+     oscurece, APAGA —baja los verdes, sube el contraste del agua— y es
+     lo que hace que el sitio parezca húmedo. La segunda oscurece de
+     verdad. Con sólo la segunda, el bosque se veía exactamente igual
+     pero con menos luz, que es lo que hace un atardecer, no una
+     tormenta.
+
+     Y va DEBAJO de los búhos: lo que se te echa encima no puede estar
+     detrás de la penumbra. */
+  if (caza.oscuro > 0.01) {
+    ctx.save();
+    ctx.globalCompositeOperation = "multiply";
+    ctx.fillStyle = `rgba(104,132,176,${caza.oscuro * 0.6})`;
+    ctx.fillRect(0, 0, A, H);
+    ctx.restore();
+    ctx.fillStyle = `rgba(3,6,12,${caza.oscuro * 0.3})`;
+    ctx.fillRect(0, 0, A, H);
+  }
+
+  for (const o of caza.buhos) dibujarBuhoCaza(o);
+
+  /* Los anillos de las explosiones, por encima de todo. */
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  for (const a of caza.anillos) {
+    const k = a.t / a.dur;
+    const r = a.r0 * (1 + k * 4.2);
+    const alfa = (1 - k) * (1 - k) * 0.6;
+    ctx.strokeStyle = `rgba(170,255,205,${alfa})`;
+    ctx.lineWidth = Math.max(1, a.r0 * 0.5 * (1 - k));
+    ctx.beginPath();
+    ctx.arc(a.x, a.y, r, 0, 6.283);
+    ctx.stroke();
+    haloOvalado(a.x, a.y, r * 0.8, r * 0.8, [
+      [0, `rgba(210,255,228,${alfa * 0.5})`],
+      [1, "rgba(120,240,170,0)"],
+    ]);
+  }
+  ctx.restore();
+
+  /* El fogonazo del cañón: sale de abajo, de donde estás tú. */
+  if (caza.fogonazo > 0.02) {
+    const J = sitioJugador();
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    haloOvalado(J.x, J.y, A * 0.55, H * 0.4, [
+      [0, `rgba(255,224,170,${0.34 * caza.fogonazo})`],
+      [0.5, `rgba(255,170,90,${0.12 * caza.fogonazo})`],
+      [1, "rgba(255,150,70,0)"],
+    ]);
+    ctx.restore();
+  }
+}
+
+/**
+ * UN BÚHO DE LOS QUE ATACAN.
+ *
+ * Silueta negra y dos ojos rojos, y nada más. No hacen falta plumas:
+ * lo que se ve de un pájaro que viene de frente en una noche de lluvia
+ * son los ojos y la forma de las alas, y eso es exactamente lo que da
+ * miedo de ellos.
+ */
+function dibujarBuhoCaza(o) {
+  const r = radioBuhoCaza(o);
+  const muerto = o.muerte >= 0;
+  /* Al reventar se hincha y se apaga en menos de medio segundo. */
+  const k = muerto ? clamp01(o.muerte / 0.45) : 0;
+  const esc = 1 + k * 0.7;
+  const alfa = 1 - k;
+  if (alfa < 0.02) return;
+
+  ctx.save();
+  ctx.translate(o.x, o.y);
+  ctx.scale(esc, esc);
+  ctx.globalAlpha = alfa;
+
+  /* Un resplandor rojo flojo por detrás de todo. No es un adorno: es
+     lo que SEPARA al bicho del bosque. Sin él, una silueta negra sobre
+     unos árboles negros no se ve, y lo único que llegaba a la pantalla
+     eran dos ojos flotando. */
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  haloOvalado(0, 0, r * 4.4, r * 3.4, [
+    [0, `rgba(180,40,44,${0.12 * alfa})`],
+    [1, "rgba(160,30,34,0)"],
+  ]);
+  ctx.restore();
+
+  /* Las alas: dos arcos que suben y bajan. Se dibujan ANTES que el
+     cuerpo para que salgan de detrás. Anchas: con dos arcos finos
+     parecían bigotes. */
+  const bat = Math.sin(o.ala) * 0.9;
+  ctx.fillStyle = "rgba(8,7,12,0.94)";
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.3);
+    ctx.quadraticCurveTo(s * r * 1.3, -r * (0.8 + bat * 1.3),
+                         s * r * 2.25, -r * (0.1 + bat * 0.75));
+    ctx.quadraticCurveTo(s * r * 1.9, r * (0.45 - bat * 0.3),
+                         s * r * 1.1, r * 0.66);
+    ctx.quadraticCurveTo(s * r * 0.55, r * 0.82, 0, r * 0.6);
+    ctx.closePath();
+    ctx.fill();
+    /* Las plumas de la punta: tres muescas. Es lo que convierte una
+       mancha con forma de ala en un ala. */
+    ctx.strokeStyle = "rgba(2,2,4,0.9)";
+    ctx.lineWidth = Math.max(1, r * 0.1);
+    for (let i = 1; i <= 3; i++) {
+      const t = i / 4;
+      ctx.beginPath();
+      ctx.moveTo(s * r * mez(1.5, 2.2, t), r * mez(-0.5 - bat * 0.8, 0.1 - bat * 0.5, t));
+      ctx.lineTo(s * r * mez(1.0, 1.5, t), r * mez(0.05, 0.5, t));
+      ctx.stroke();
+    }
+  }
+
+  /* El cuerpo. */
+  ctx.fillStyle = "rgba(14,12,19,0.97)";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r, r * 1.08, 0, 0, 6.283);
+  ctx.fill();
+  /* Los cuernecitos. */
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(s * r * 0.3, -r * 0.8);
+    ctx.lineTo(s * r * 0.74, -r * 1.5);
+    ctx.lineTo(s * r * 0.78, -r * 0.6);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /* Y el filo de luz de arriba: la lluvia y los relámpagos vienen del
+     cielo, así que lo que se ve de un bicho negro de noche es el canto
+     mojado de la cabeza. Es media línea y es lo que hace que tenga
+     volumen en vez de ser un agujero. */
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.strokeStyle = `rgba(150,178,222,${0.4 * alfa})`;
+  ctx.lineWidth = Math.max(1, r * 0.13);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r * 0.97, r * 1.05, 0, -2.5, -0.64);
+  ctx.stroke();
+  ctx.restore();
+
+  /* Y los ojos, que es lo único que tiene color. */
+  ctx.globalCompositeOperation = "lighter";
+  for (const s of [-1, 1]) {
+    const ex = s * r * 0.42, ey = -r * 0.12;
+    const er = r * 0.3;
+    haloOvalado(ex, ey, er * 4, er * 4, [
+      [0, `rgba(255,80,60,${0.5 * alfa})`],
+      [0.4, `rgba(220,30,30,${0.16 * alfa})`],
+      [1, "rgba(200,20,20,0)"],
+    ]);
+    ctx.fillStyle = `rgba(255,150,120,${0.95 * alfa})`;
+    ctx.beginPath(); ctx.arc(ex, ey, er * 0.62, 0, 6.283); ctx.fill();
+    ctx.fillStyle = `rgba(255,236,226,${0.9 * alfa})`;
+    ctx.beginPath(); ctx.arc(ex - er * 0.2, ey - er * 0.2, er * 0.22, 0, 6.283); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
 }
 
 /* ---- LO QUE HAY EN EL CUARTO -------------------------------------------
@@ -13781,6 +14938,14 @@ function tocarReloj3(p) {
 
 function tocarEnEspesura(p, e) {
   void e;
+  /* 0. Si hay cacería, el dedo es el gatillo y no hay más que hablar.
+     Tocar un árbol en mitad de un ataque para que suelte hojas no es
+     una opción que nadie quiera tener. */
+  if (caza.fase === "oleada" || caza.fase === "pausa" || caza.fase === "aviso") {
+    dispararEscopeta(p);
+    return;
+  }
+
   /* 1. Los puntos, del más pequeño al más grande. */
   const cand = puntos.lista
     .filter((q) => q.hay())
@@ -13897,6 +15062,54 @@ function tocarPunto(q, s) {
   if (q.id === "pala") { cogerPala(q, s); return; }
 
   if (q.id === "reliquia") { tocarReliquia(q, s); return; }
+
+  if (q.id === "reloj") { tocarRelojBosque(q, s); return; }
+
+  if (q.id === "escopeta") { cogerEscopeta(q, s); return; }
+}
+
+/* ---- El reloj de pie ---------------------------------------------------- */
+
+function tocarRelojBosque(q, s) {
+  q.toques++;
+  q.fogonazo = 1;
+  q.salto = 1;
+  /* Una campanada sola, grave y larga. No tres: una. Un reloj que da
+     las tres estaría funcionando, y éste no funciona. */
+  tono(174.6, 2.8, "sine", 0.05);
+  tono(349.2, 1.8, "sine", 0.025);
+  soltarBrillos(s.x, s.y - U * 16, 10, 0.4);
+
+  if (historia.marcar("relojBosque")) {
+    sonarMisterio(0.5);
+    decir(s.x, s.y - U * 22, CONF.relojBosque.frase,
+      { misterio: true, importante: true, dur: 7 });
+    contarLogro("relojBosque");
+    return;
+  }
+  decir(s.x, s.y - U * 20, diceReloj(), { misterio: true, dur: 4 });
+}
+
+/* ---- La escopeta -------------------------------------------------------- */
+
+function cogerEscopeta(q, s) {
+  if (q.cogida > 0) return;
+  q.cogida = 0.001;
+  bolsa.coger("escopeta");
+  bolsa.equipar("escopeta");
+  historia.marcar("escopeta");
+
+  /* Metal pesado levantado del suelo, y el chasquido del cerrojo. */
+  golpe(0.08, 220, 0.2, "lowpass");
+  setTimeout(() => golpe(0.04, 1800, 0.14, "bandpass"), 180);
+  soltarBrillos(s.x, s.y - U * 2, 10, 0.55);
+  avisoObjeto("escopeta", "¡UNA ESCOPETA!");
+  decir(s.x, s.y - U * 9, CONF.caza.alCogerla,
+    { mimo: true, importante: true, dur: 3.4 });
+
+  /* Y entonces empieza lo otro. No de inmediato: hay un momento de
+     «qué hago yo con esto» antes de que el bosque conteste. */
+  setTimeout(() => arrancarCaceria(), 2200);
 }
 
 /* ---- La pala ------------------------------------------------------------ */
@@ -14130,6 +15343,14 @@ zona.addEventListener("pointerdown", (e) => {
      soltar, según cuánto haya corrido. Decidirlo al bajar obligaría a
      elegir entre «no se puede andar» y «no se puede tocar». */
   if (escena === "espesura") {
+    /* Con la cacería en marcha, el dedo es el gatillo y dispara YA. No
+       se espera a soltar como con los toques normales: medio segundo
+       de retraso entre apretar y que salga el tiro convierte el
+       apuntar en adivinar. Para andar están los botones. */
+    if (caza.fase === "oleada" || caza.fase === "pausa" || caza.fase === "aviso") {
+      dispararEscopeta(p);
+      return;
+    }
     espesura.agarre = { id: e.pointerId, x: p.x, y: p.y, x0: p.x, t: reloj, corrido: 0 };
     espesura.vx = 0;
     return;
@@ -15305,6 +16526,7 @@ function paso(ahora) {
     moverEspesura(dt);
     moverBuhoEsp(dt);
     moverOjosEsp(dt);
+    moverCaceria(dt);
     refrescarBolsa();
     refrescarHallado();
   } else if (escena === "bosque") {
