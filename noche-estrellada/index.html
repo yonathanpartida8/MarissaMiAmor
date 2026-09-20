@@ -1367,6 +1367,56 @@ const CONF = {
       "Las pegué una por una pensando en esto.",
       "Apaga la lámpara y míralas otra vez.",
     ],
+
+    /* ---- Los libros de la mesilla ----
+       Tres, y cada uno dice su título al tocarlo. Cuando se han leído
+       los tres, del último cae una flor seca. */
+    libros: [
+      "«Cosas que te quiero contar». Tomo uno de muchos.",
+      "«Cómo dormir cuando ella no está». No sirvió de nada.",
+      "«El libro que te ibas a llevar y se te olvidó» :>",
+    ],
+    librosFlor: "Se cayó algo… una flor seca. Es de aquel día del parque 🤍",
+
+    /* ---- La taza ---- */
+    taza: [
+      "Frío. Como siempre.",
+      "Me lo hice pensando que me lo iba a tomar.",
+      "Es de canela. Como el tuyo.",
+    ],
+
+    /* ---- La vela del alféizar ---- */
+    vela: [
+      "Déjala prendida, ¿sí?",
+      "En serio, déjala.",
+    ],
+    velaApagada: "…ya. Me gusta más prendida.",
+    velaVuelve: "La prendo otra vez. No me gusta lo oscuro sin ti.",
+
+    /* ---- El nudo de la tabla ----
+       De lo más escondido que hay: es una manchita en el suelo. */
+    nudo: [
+      "Es un nudo de la madera. Nada más.",
+      "…aunque se siente raro al tocarlo.",
+    ],
+    nudoHallado: "Lo grabé la primera noche que dormí acá. Sigue ahí 🤍",
+
+    /* ---- El deseo, en el centro del corazón ---- */
+    deseoLuz: "Con la luz prendida no se ve nada. Apágala :>",
+    deseo: [
+      "Pide algo. Yo ya pedí lo mío, y me salió.",
+      "Ahí va otra. Pide rápido.",
+      "Las mando yo. Todas son para ti.",
+    ],
+  },
+
+  /* ---- LA CUENTA DE LO ESCONDIDO ---------------------------------------
+     Tres frases y nada más. Ni listas, ni porcentajes, ni medallas:
+     sólo la sensación de que queda más.                               */
+  logros: {
+    tercio: "Vas encontrando cosas :> hay muchas más, te lo juro.",
+    dosTercios: "Ya casi las tienes todas. Las que faltan son las difíciles.",
+    todo: "Las encontraste TODAS. Todo esto lo escondí para ti, y lo hallaste enterito 🤍",
   },
 
   /* ---- RENDIMIENTO ------------------------------------------------------
@@ -5078,6 +5128,9 @@ const cabana = {
   puerta: 0,          // 0 cerrada · 1 abierta (durante la cinemática)
   resalte: 0,         // cuando el dedo pasa por encima
   farol: 0,
+  /* Cuánto falta para el corazón de humo. Empieza largo: que no salga
+     en los primeros segundos, cuando todavía no se está mirando. */
+  corazon: 45,
 };
 
 function moverCabana(dt) {
@@ -5095,6 +5148,96 @@ function moverCabana(dt) {
       tipo: TIPO.HUMO, tono: 0.2,
     });
   }
+
+  /* ---- Y una de cada muchas, la chimenea echa un corazón ----------
+
+     Una vez cada minuto y pico, y no avisa. No se puede tocar, no da
+     nada y no se cuenta en ningún sitio: o lo ves o no lo ves.
+
+     Es el secreto más escondido de todo el claro, precisamente porque
+     no hay manera de provocarlo. La única forma de encontrarlo es
+     quedarse mirando la cabaña sin hacer nada, que es justo lo que
+     casi nadie hace. */
+  cabana.corazon -= dt;
+  if (cabana.corazon <= 0) {
+    cabana.corazon = azar(70, 130);
+    soltarCorazonDeHumo();
+  }
+  if (humoCorazon.t >= 0) {
+    humoCorazon.t += dt;
+    if (humoCorazon.t > HUMO_DURA) humoCorazon.t = -1;
+  }
+}
+
+/* El corazón de humo NO se hace con partículas.
+   Se intentó, y no funciona: cada bocanada de humo crece dieciséis
+   píxeles por segundo, así que a los dos segundos las veintidós se han
+   comido unas a otras y lo que queda es una nube gris del tamaño de
+   media pantalla. Para que se leyera el contorno había que hacer el
+   corazón tan grande que ocupaba todo el cielo.
+
+   Así que es una cosa suya, con su propio reloj: veintidós bocanadas
+   que suben JUNTAS, se abren despacio y se desvanecen. Pintarlo a mano
+   cuesta veintidós `drawImage` durante cuatro segundos, una vez cada
+   minuto y pico. */
+
+const HUMO_DURA = 4.6;
+const humoCorazon = { t: -1 };
+
+function soltarCorazonDeHumo() {
+  if (flojo || humoCorazon.t >= 0) return;
+  humoCorazon.t = 0;
+}
+
+function dibujarCorazonDeHumo() {
+  if (humoCorazon.t < 0) return;
+  const k = clamp01(humoCorazon.t / HUMO_DURA);
+  const c = sitio.cabana;
+  const d = desplazar(1.25);
+  /* Se abre al subir, como se abre el humo. */
+  const esc = U * 0.55 * (1 + k * 0.5);
+  /* Y se queda DENTRO de la pantalla. La cabaña está pegada al canto
+     derecho, así que un corazón centrado en su chimenea se sale por
+     ahí y sólo se ve la mitad izquierda, que no parece un corazón: el
+     humo se puede inclinar un poco al subir y nadie lo nota. */
+  const bx = clamp(c.x + c.w * 0.3 + d.x + k * U * 5,
+    17 * esc + U * 4, A - 17 * esc - U * 5);
+  /* Bien alto: a la altura de la chimenea lo tapan el tejado, el humo
+     normal y cualquier tronco de los de delante. Tiene que subir hasta
+     el cielo abierto para que se vea entero. */
+  const by = c.y - c.h * 2.05 + d.y - k * U * 24;
+  /* Y entra y sale: si sólo se desvaneciera, aparecería de golpe ya
+     hecho, que es lo que delataría que está puesto a mano. */
+  const alfa = Math.sin(Math.PI * k) * 0.44;
+  if (alfa < 0.004) return;
+  /* Treinta bocanadas y no veintidós: la curva de corazón no reparte
+     los puntos a distancias iguales —se amontonan en la punta de abajo
+     y se separan en los lóbulos—, y con pocas se abren huecos arriba
+     que rompen el contorno. Y cada una un pelín más grande que la
+     separación, para que el anillo salga continuo. */
+  const s = U * (1.6 + k * 3.2);
+  const N = 30;
+
+  ctx.save();
+  ctx.globalAlpha = alfa;
+  for (let i = 0; i < N; i++) {
+    const t = (i / N) * 6.283;
+    /* La misma curva de corazón que las estrellas de la pared. */
+    const hx = 16 * Math.pow(Math.sin(t), 3);
+    const hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t)
+               - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+    /* Cada bocanada se mueve un poco por su cuenta, pero MUY poco: lo
+       justo para que no se vea que están puestas en una fórmula. */
+    const tx = bx + hx * esc + Math.sin(i * 2.3 + reloj * 0.6) * U * 1.1 * k;
+    const ty = by + hy * esc + Math.cos(i * 1.7 + reloj * 0.5) * U * 0.7 * k;
+    /* La bola CLARA, no la gris de la chimenea. La gris tiene casi el
+       mismo color que el cielo de noche: a la opacidad a la que hay
+       que pintarla para que no cante, no se distingue del fondo y el
+       corazón no se ve. La clara sí recorta contra el cielo. */
+    ctx.drawImage(bolaHumoClara, tx - s / 2, ty - s / 2, s, s);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
 }
 
 function dibujarCabana() {
@@ -5272,6 +5415,9 @@ function dibujarCabana() {
       ctx.stroke();
     }
   }
+
+  /* Y lo que echa la chimenea una vez cada minuto y pico. */
+  dibujarCorazonDeHumo();
 }
 
 function dibujarVentanaCabana(vx, vy, vw, vh, luz) {
@@ -5496,6 +5642,7 @@ function construirHabitacion() {
   /* Y lo que hay en la pared de la izquierda: la repisa con el radio,
      el frasco y la planta, la guitarra recargada y el tapete. */
   construirCosas();
+  arrancarSecretos();
 }
 
 /**
@@ -5909,22 +6056,52 @@ function dibujarMesilla(lx, ly) {
 
   /* Los libros, apilados. */
   let py2 = ly + U * 2.2;
+  const salta = secretos.libros.pulso;
   for (const lb of hab.libros || []) {
     const w = U * 9 * lb.ancho, h = U * 1.5 * lb.alto;
     py2 -= h;
+    const bx = lx - w / 2 + lb.dx * U * 6 - U * 5;
+    /* Al tocarlos, la pila se asienta: un saltito y ya. */
+    const by = py2 - salta * U * 0.5;
     ctx.fillStyle = lb.color;
     ctx.globalAlpha = 0.72;
-    ctx.fillRect(lx - w / 2 + lb.dx * U * 6 - U * 3.5, py2, w, h);
+    ctx.fillRect(bx, by, w, h);
     /* El canto de las hojas. */
     ctx.fillStyle = "rgba(226,216,192,0.5)";
-    ctx.fillRect(lx - w / 2 + lb.dx * U * 6 - U * 3.5 + w * 0.06, py2 + h * 0.18,
-                 w * 0.88, h * 0.5);
+    ctx.fillRect(bx + w * 0.06, by + h * 0.18, w * 0.88, h * 0.5);
     ctx.globalAlpha = 1;
   }
 
+  /* La flor seca que se cayó del último libro, si ya se leyeron los
+     tres. Se queda ahí para siempre, apoyada contra la pila. */
+  if (secretos.libros.flor) {
+    const fx = lx - U * 7.4, fy = ly + U * 2;
+    ctx.save();
+    ctx.translate(fx, fy);
+    ctx.rotate(-0.5);
+    ctx.strokeStyle = "rgba(120,140,96,0.5)";
+    ctx.lineWidth = Math.max(1, U * 0.2);
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(0, -U * 2.4);
+    ctx.stroke();
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * 6.283;
+      ctx.fillStyle = `rgba(${216 - i * 6},${164 + i * 4},${186},0.5)`;
+      ctx.beginPath();
+      ctx.ellipse(Math.cos(a) * U * 0.55, -U * 2.4 + Math.sin(a) * U * 0.55,
+        U * 0.52, U * 0.34, a, 0, 6.283);
+      ctx.fill();
+    }
+    ctx.fillStyle = "rgba(240,214,150,0.55)";
+    ctx.beginPath();
+    ctx.arc(0, -U * 2.4, U * 0.28, 0, 6.283);
+    ctx.fill();
+    ctx.restore();
+  }
+
   /* La taza, con su asa. */
-  const tx = lx + U * 4.6, ty = ly + U * 2.2;
-  ctx.fillStyle = "rgba(200,190,180,0.55)";
+  const tx = lx + U * 4.6, ty = ly + U * 2.2 - secretos.taza.pulso * U * 0.5;
+  ctx.fillStyle = `rgba(${Math.round(mez(200, 240, secretos.taza.pulso))},190,180,0.55)`;
   ctx.beginPath();
   if (ctx.roundRect) ctx.roundRect(tx - U * 1.6, ty - U * 3, U * 3.2, U * 3, U * 0.4);
   else ctx.rect(tx - U * 1.6, ty - U * 3, U * 3.2, U * 3);
@@ -5989,6 +6166,7 @@ function moverHabitacion(dt) {
 
   /* Y lo que hay en la pared de la izquierda, que también se mueve. */
   moverCosas(dt);
+  moverSecretos(dt);
 }
 
 function dibujarHabitacion() {
@@ -6036,6 +6214,9 @@ function dibujarHabitacion() {
      Va aquí porque está en el suelo: todo lo demás del cuarto se apoya
      encima o cuelga por delante. */
   dibujarTapete();
+
+  /* Y el nudo de la tabla, que está en el suelo y no encima de él. */
+  dibujarNudo();
 
   /* ---- La ventana ---- */
   dibujarVentanaHabitacion(vx, vy + resp * 0.2, v.w, v.h);
@@ -6275,22 +6456,41 @@ function dibujarVentanaHabitacion(x, y, w, h) {
   ctx.fillRect(x - w * 0.56, y + h / 2, w * 1.12, U * 2);
 
   /* Y una vela encendida en el alféizar, que es el detalle que hace la
-     habitación. */
+     habitación. Se puede apagar tocándola tres veces; se vuelve a
+     prender sola a los pocos segundos. */
   const cx2 = x - w * 0.36, cy2 = y + h / 2;
+  const llama = 1 - secretos.vela.apagada;
   ctx.fillStyle = "#e8e0d0";
   ctx.fillRect(cx2 - U * 0.7, cy2 - U * 4, U * 1.4, U * 4);
-  ctx.globalCompositeOperation = "lighter";
-  const gv2 = ctx.createRadialGradient(cx2, cy2 - U * 5, 0, cx2, cy2 - U * 5, U * 9);
-  gv2.addColorStop(0, "rgba(255,200,120,0.5)");
-  gv2.addColorStop(1, "rgba(255,200,120,0)");
-  ctx.fillStyle = gv2;
-  ctx.beginPath(); ctx.arc(cx2, cy2 - U * 5, U * 9, 0, 6.283); ctx.fill();
-  ctx.fillStyle = "rgba(255,230,170,0.95)";
-  ctx.beginPath();
-  ctx.ellipse(cx2 + Math.sin(reloj * 4) * U * 0.14, cy2 - U * 5,
-              U * 0.5, U * 1.1 * (0.85 + 0.15 * Math.sin(reloj * 7)), 0, 0, 6.283);
-  ctx.fill();
-  ctx.globalCompositeOperation = "source-over";
+  /* El pabilo. Cuando la vela está apagada es lo único que queda, y
+     por eso se dibuja siempre. */
+  ctx.fillStyle = `rgb(${Math.round(mez(30, 90, llama))},${Math.round(mez(26, 70, llama))},24)`;
+  ctx.fillRect(cx2 - U * 0.12, cy2 - U * 4.9, U * 0.24, U * 1);
+
+  if (llama > 0.02) {
+    ctx.globalCompositeOperation = "lighter";
+    const gv2 = ctx.createRadialGradient(cx2, cy2 - U * 5, 0, cx2, cy2 - U * 5, U * 9);
+    gv2.addColorStop(0, `rgba(255,200,120,${0.5 * llama})`);
+    gv2.addColorStop(1, "rgba(255,200,120,0)");
+    ctx.fillStyle = gv2;
+    ctx.beginPath(); ctx.arc(cx2, cy2 - U * 5, U * 9, 0, 6.283); ctx.fill();
+    ctx.fillStyle = `rgba(255,230,170,${0.95 * llama})`;
+    ctx.beginPath();
+    ctx.ellipse(cx2 + Math.sin(reloj * 4) * U * 0.14, cy2 - U * 5,
+                U * 0.5 * llama,
+                U * 1.1 * llama * (0.85 + 0.15 * Math.sin(reloj * 7)), 0, 0, 6.283);
+    ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+  } else {
+    /* Y el hilillo de humo de haberla apagado hace un momento. */
+    ctx.strokeStyle = "rgba(200,196,206,0.16)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx2, cy2 - U * 4.9);
+    ctx.quadraticCurveTo(cx2 + Math.sin(reloj * 1.3) * U * 1.4, cy2 - U * 7,
+                         cx2 + Math.sin(reloj * 0.8) * U, cy2 - U * 9);
+    ctx.stroke();
+  }
 }
 
 // ==========================================
@@ -6871,21 +7071,51 @@ const bolsa = {
 };
 for (const id of ["pala", "reliquia"]) if (recuerdo.leer("obj:" + id, 0)) bolsa.tiene.add(id);
 
+/* ---- LA CUENTA DE LO QUE SE HA ENCONTRADO -------------------------------
+
+   Todo lo escondido llama a `contarLogro` con su nombre. Aquí sólo se
+   lleva la cuenta, se recuerda de una visita a otra, y se dice algo
+   cuando se llega a un tercio, a dos tercios y al final.
+
+   ── POR QUÉ NO HAY UNA LISTA A LA VISTA ──────────────────────────────
+   Porque una lista de logros convierte esto en una tarea: se mira lo
+   que falta y se va a por ello. Sin lista, lo que queda es la sensación
+   de que hay más cosas y no se sabe cuántas, que es lo que hace que se
+   sigan tocando cosas.
+
+   Y por eso la cuenta SÍ se guarda: encontrar algo por segunda vez, en
+   otro día, no debería contar como encontrarlo. */
+
+const TODO_LO_ESCONDIDO = [
+  /* En el claro */
+  "fuego", "azul", "bombon", "luna", "dona", "guino", "fugaz", "estrella",
+  "cajita", "cajitaLluvia", "cajitaCuenta", "arbol", "arbolNota", "buho",
+  "ojos", "secreto", "cabana",
+  /* En el cuarto */
+  "cuadro", "ventana", "radio", "frasco", "planta", "guitarra", "tapete",
+  "estrellas", "libros", "vela", "taza", "nudo", "deseo",
+];
+
 const logros = new Set();
+for (const id of TODO_LO_ESCONDIDO) if (recuerdo.leer("lg:" + id, 0)) logros.add(id);
 
 function contarLogro(id) {
   if (logros.has(id)) return;
   logros.add(id);
-  /* El final de los finales: cuando ya ha encontrado casi todo. */
-  if (logros.size === 7 && !logros.has("final")) {
-    logros.add("final");
-    setTimeout(() => {
-      decir(A * 0.5, H * 0.42,
-        "Ya encontraste casi todo lo que escondí acá. Falta una cosa, y está en el bosque.",
-        { mimo: true, importante: true, dur: 7 });
-      magia(523);
-    }, 3000);
-  }
+  recuerdo.poner("lg:" + id, 1);
+
+  const n = logros.size, T = TODO_LO_ESCONDIDO.length;
+  const frase = n === Math.ceil(T / 3) ? CONF.logros.tercio
+              : n === Math.ceil(T * 2 / 3) ? CONF.logros.dosTercios
+              : n >= T ? CONF.logros.todo
+              : null;
+  if (!frase) return;
+  /* Con retraso: si sale a la vez que lo que se acaba de encontrar, se
+     pisan las dos burbujas y no se lee ninguna. */
+  setTimeout(() => {
+    decir(A * 0.5, H * 0.42, frase, { mimo: true, importante: true, dur: 7 });
+    magia(n >= T ? 659 : 523);
+  }, 3200);
 }
 
 /* ---- 2. Tocar la llama ------------------------------------------------- */
@@ -11631,6 +11861,9 @@ function dibujarCielo() {
     ctx.fill();
     ctx.restore();
   }
+
+  /* Y la fugaz del deseo, si va cruzando. */
+  dibujarDeseo();
 }
 
 /** Una estrella de cinco puntas, centrada en el origen. */
@@ -11662,6 +11895,15 @@ function tocarCielo(p) {
     const d = Math.hypot(p.x - (S.cx + e.hx * S.esc), p.y - (S.cy + e.hy * S.esc));
     if (d < mejor) { mejor = d; i = j; }
   }
+  /* El hueco de en medio del corazón, una vez está hecho. Es el
+     secreto más escondido del cuarto: hay que tocar donde NO hay nada,
+     y además con la lámpara apagada. */
+  if (i < 0 && c.hecha && secretos.deseo.t < 0
+      && dentroDe(p.x, p.y, S.cx, S.cy + S.esc * 2, S.esc * 6)) {
+    pedirDeseo(S);
+    return true;
+  }
+
   if (i >= 0) {
     const e = c.lista[i];
     const x = S.cx + e.hx * S.esc, y = S.cy + e.hy * S.esc;
@@ -12264,6 +12506,274 @@ function tocarCosas(p) {
     return true;
   }
   return false;
+}
+
+/* ---- LOS SECRETOS CHIQUITOS DEL CUARTO ---------------------------------
+
+   Cinco cosas más. Tres están a la vista —los libros, la taza, la
+   vela— y dos hay que dar con ellas: un nudo en una tabla del suelo y
+   el hueco que queda en medio del corazón de estrellas.
+
+   ── LA REGLA QUE SIGUEN TODAS ────────────────────────────────────────
+   Ninguna hace falta para nada. No abren puertas, no desbloquean
+   escenas y en ningún momento se avisa de que existen. Quien las
+   encuentre las encontró porque le dio por tocar, y eso es justo lo
+   que hace que valga la pena encontrarlas.                          */
+
+const secretos = {
+  libros: { pulso: 0, leidos: 0, flor: false },
+  taza: { pulso: 0 },
+  vela: { veces: 0, apagada: 0, pulso: 0 },
+  nudo: { veces: 0, pulso: 0, hallado: false },
+  /* La estrella fugaz de la pared: t < 0 es que no hay ninguna. */
+  deseo: { t: -1, y0: 0, y1: 0 },
+};
+
+const diceTaza = barajador(CONF.cuarto.taza);
+const diceDeseo = barajador(CONF.cuarto.deseo);
+
+function arrancarSecretos() {
+  secretos.libros.leidos = recuerdo.leer("libros", 0);
+  secretos.libros.flor = secretos.libros.leidos >= CONF.cuarto.libros.length;
+  secretos.nudo.hallado = !!recuerdo.leer("nudo", 0);
+  secretos.vela.veces = 0;
+  secretos.vela.apagada = 0;
+  secretos.deseo.t = -1;
+}
+
+/** La mesilla y lo que tiene encima. Un solo sitio para dibujar y para
+    tocar: antes el mueble se pintaba en un sitio y se tocaba en otro,
+    medio ancho de ventana más a la derecha. */
+function sitioMesilla() {
+  const v = ventanaHab();
+  const d = desplazar(0.9);
+  const vx = v.x + d.x * 0.6;
+  const lx = Math.min(vx + v.w * 0.85, A - U * 9);
+  const ly = H * 0.62 + d.y * 0.6;
+  /* Las tres cosas viven encima de una mesilla de quince U de ancho y
+     se estorban entre ellas, así que las zonas de toque van a mano y
+     no salen de un radio: la pantalla de la lámpara se lleva la parte
+     de arriba, los libros la de abajo a la izquierda y la taza la
+     derecha. Se comprueban en ese orden, de más chica a más grande. */
+  return {
+    lx, ly,
+    lampara: { x: lx, y: ly - U * 2.2, ax: U * 4.4, ay: U * 2.8 },
+    libros:  { x: lx - U * 5, y: ly + U * 1.2, ax: U * 3.2, ay: U * 1.6 },
+    taza:    { x: lx + U * 4.6, y: ly + U * 0.7, r: U * 2.6 },
+  };
+}
+
+/** El nudo de la tabla. En el suelo, a la izquierda, lejos del tapete. */
+function sitioNudo() {
+  const v = ventanaHab();
+  const d = desplazar(0.9);
+  const sy = sueloHab();
+  const camaY = H * (apaisado ? 0.74 : 0.70);
+  return {
+    x: mez(U * 6, v.x - v.w * 0.5, 0.42) + d.x * 0.6,
+    y: mez(sy, camaY, 0.46) + d.y * 0.6,
+    r: U * 2.6,
+  };
+}
+
+function moverSecretos(dt) {
+  secretos.libros.pulso = Math.max(0, secretos.libros.pulso - dt * 2);
+  secretos.taza.pulso = Math.max(0, secretos.taza.pulso - dt * 2);
+  secretos.nudo.pulso = Math.max(0, secretos.nudo.pulso - dt * 1.6);
+  secretos.vela.pulso = Math.max(0, secretos.vela.pulso - dt * 2);
+  secretos.vela.apagada = damp(secretos.vela.apagada,
+    secretos.vela.veces >= 3 ? 1 : 0, 3.5, dt);
+  if (secretos.deseo.t >= 0) {
+    secretos.deseo.t += dt;
+    if (secretos.deseo.t > 2.4) secretos.deseo.t = -1;
+  }
+}
+
+/** El nudo, y lo que hay grabado debajo. */
+function dibujarNudo() {
+  const n = sitioNudo();
+  const r = n.r;
+  ctx.save();
+  ctx.translate(n.x, n.y);
+  ctx.scale(1, 0.46);
+
+  /* Tres óvalos concéntricos, que es exactamente como se ve un nudo en
+     una tabla: la veta dando vueltas alrededor de donde había una rama. */
+  for (let i = 3; i >= 1; i--) {
+    /* Un pelín más CLARO que la tabla, no más oscuro: un nudo es
+       madera apretada, y la madera apretada refleja. Oscuro parecía
+       una mancha de algo. */
+    ctx.strokeStyle = `rgba(112,92,104,${0.1 + i * 0.035})`;
+    ctx.lineWidth = Math.max(1, U * 0.26);
+    ctx.beginPath();
+    ctx.arc(0, 0, r * (i / 3) * 0.82, 0, 6.283);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "rgba(14,10,18,0.55)";
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.22, 0, 6.283);
+  ctx.fill();
+  ctx.restore();
+
+  /* Y lo grabado, si ya se encontró. Queda para siempre. */
+  if (secretos.nudo.hallado || secretos.nudo.pulso > 0.02) {
+    const vivo = secretos.nudo.hallado ? 1 : secretos.nudo.pulso;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.translate(n.x, n.y + r * 0.1);
+    /* Un corazoncito rayado, con las dos letras dentro. */
+    const k = r * 1.85;
+    ctx.strokeStyle = `rgba(226,176,196,${0.3 * vivo
+      * (0.8 + 0.2 * Math.sin(reloj * 1.6))})`;
+    ctx.lineWidth = Math.max(1, U * 0.24);
+    ctx.beginPath();
+    ctx.moveTo(0, k * 0.5);
+    ctx.bezierCurveTo(-k, -k * 0.2, -k * 0.5, -k * 0.8, 0, -k * 0.28);
+    ctx.bezierCurveTo(k * 0.5, -k * 0.8, k, -k * 0.2, 0, k * 0.5);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(240,206,220,${0.34 * vivo})`;
+    ctx.font = `${Math.max(7, Math.round(U * 1.5))}px ui-sans-serif, system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("y + m", 0, -k * 0.06);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.restore();
+  }
+}
+
+/** La estrella fugaz que cruza la pared cuando se pide un deseo. */
+function dibujarDeseo() {
+  const d = secretos.deseo;
+  if (d.t < 0) return;
+  const k = clamp01(d.t / 2.4);
+  /* Entra por arriba a la izquierda y sale abajo a la derecha, en
+     diagonal. Se apaga antes de llegar al final: una fugaz no termina
+     el recorrido, se acaba a media caída. */
+  const x = mez(-A * 0.1, A * 1.1, suave3(k));
+  const y = mez(d.y0, d.y1, suave3(k));
+  const vivo = Math.sin(Math.PI * clamp01(k * 1.25));
+  const largo = A * 0.16;
+
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  const g = ctx.createLinearGradient(x - largo, y - largo * 0.34, x, y);
+  g.addColorStop(0, "rgba(180,210,255,0)");
+  g.addColorStop(1, `rgba(214,232,255,${0.5 * vivo})`);
+  ctx.strokeStyle = g;
+  ctx.lineWidth = Math.max(1, U * 0.5);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x - largo, y - largo * 0.34);
+  ctx.lineTo(x, y);
+  ctx.stroke();
+  haloOvalado(x, y, U * 4, U * 4, [
+    [0, `rgba(226,240,255,${0.5 * vivo})`],
+    [1, "rgba(226,240,255,0)"],
+  ]);
+  ctx.restore();
+}
+
+/** Tocar los libros, la taza, la vela o el nudo. */
+function tocarSecretos(p) {
+  const M = sitioMesilla();
+
+  /* Los libros. Uno cada vez, en orden. */
+  if (Math.abs(p.x - M.libros.x) < M.libros.ax
+      && Math.abs(p.y - M.libros.y) < M.libros.ay) {
+    secretos.libros.pulso = 1;
+    golpe(0.05, 700, 0.08, "lowpass");
+    const L = CONF.cuarto.libros;
+    const i = Math.min(secretos.libros.leidos, L.length - 1);
+    decir(M.libros.x, M.libros.y - U * 7, L[i], { dur: 4 });
+    if (secretos.libros.leidos < L.length) {
+      secretos.libros.leidos++;
+      recuerdo.poner("libros", secretos.libros.leidos);
+      if (secretos.libros.leidos === L.length) {
+        secretos.libros.flor = true;
+        magia(494);
+        soltarBrillos(M.libros.x, M.libros.y, 10, 0.12);
+        setTimeout(() => decir(M.libros.x, M.libros.y - U * 11,
+          CONF.cuarto.librosFlor, { mimo: true, importante: true, dur: 6 }), 1400);
+        contarLogro("libros");
+      }
+    }
+    return true;
+  }
+
+  /* La taza. */
+  if (dentroDe(p.x, p.y, M.taza.x, M.taza.y, M.taza.r * 1.6)) {
+    secretos.taza.pulso = 1;
+    tono(azar(1100, 1500), 0.3, "sine", 0.03);
+    decir(M.taza.x, M.taza.y - U * 6, diceTaza(), { dur: 3.2 });
+    contarLogro("taza");
+    return true;
+  }
+
+  /* El nudo del suelo. */
+  const n = sitioNudo();
+  if (dentroDe(p.x, p.y, n.x, n.y, n.r * 2.2)) {
+    secretos.nudo.pulso = 1;
+    golpe(0.08, 240, 0.08, "lowpass");
+    if (!secretos.nudo.hallado) {
+      secretos.nudo.veces++;
+      if (secretos.nudo.veces >= 3) {
+        secretos.nudo.hallado = true;
+        recuerdo.poner("nudo", 1);
+        magia(587);
+        soltarBrillos(n.x, n.y, 12, 0.94);
+        decir(n.x, n.y - U * 8, CONF.cuarto.nudoHallado,
+          { mimo: true, importante: true, dur: 6 });
+        contarLogro("nudo");
+      } else {
+        decir(n.x, n.y - U * 6,
+          CONF.cuarto.nudo[Math.min(secretos.nudo.veces - 1, 1)], { dur: 3 });
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+/** La vela del alféizar: se apaga a la tercera y se vuelve a prender
+    ella sola a los pocos segundos. */
+function tocarVela(x, y) {
+  secretos.vela.pulso = 1;
+  if (secretos.vela.veces >= 3) {
+    decir(x, y - U * 6, CONF.cuarto.velaVuelve, { dur: 3.4 });
+    return;
+  }
+  secretos.vela.veces++;
+  if (secretos.vela.veces >= 3) {
+    golpe(0.12, 400, 0.1, "lowpass");
+    decir(x, y - U * 6, CONF.cuarto.velaApagada, { mimo: true, dur: 3.6 });
+    contarLogro("vela");
+    /* Y se vuelve a prender sola. Lo bonito no es apagarla: es que
+       vuelva. */
+    setTimeout(() => {
+      secretos.vela.veces = 0;
+      tono(880, 0.5, "sine", 0.04);
+      decir(x, y - U * 6, CONF.cuarto.velaVuelve, { mimo: true, dur: 4 });
+    }, 5200);
+  } else {
+    golpe(0.04, 2400, 0.06, "highpass");
+    decir(x, y - U * 6,
+      CONF.cuarto.vela[secretos.vela.veces - 1], { dur: 3 });
+  }
+}
+
+/** Pedir un deseo en el hueco del corazón. */
+function pedirDeseo(S) {
+  if (hab.lampara > 0.4) {
+    decir(S.cx, S.cy, CONF.cuarto.deseoLuz, { dur: 3.6 });
+    return;
+  }
+  secretos.deseo.t = 0;
+  secretos.deseo.y0 = azar(H * 0.03, H * 0.1);
+  secretos.deseo.y1 = secretos.deseo.y0 + H * azar(0.14, 0.26);
+  tono(1318, 1.1, "sine", 0.035);
+  decir(S.cx, S.cy + S.esc * 16, diceDeseo(), { misterio: true, dur: 4.5 });
+  contarLogro("deseo");
 }
 
 /** Una cuerda de guitarra: cuerpo con armónicos y caída larga. */
@@ -13180,18 +13690,25 @@ function tocarEnHabitacion(p, e) {
     return;
   }
 
-  /* La lámpara de la mesilla. */
-  const lx = v.x + v.w * 0.92, ly = H * 0.62;
-  if (Math.abs(p.x - lx) < U * 8 && Math.abs(p.y - ly) < U * 10) {
-    hab.lamparaOn = !hab.lamparaOn;
-    golpe(0.02, 2600, 0.14, "bandpass");
+  /* La vela del alféizar. Antes que la mesilla y que el cuadro: es
+     chiquita y está pegada al marco. */
+  const cvx = v.x - v.w * 0.36, cvy = v.y + v.h / 2 - U * 5;
+  if (dentroDe(p.x, p.y, cvx, cvy, U * 6)) {
+    tocarVela(cvx, cvy);
     return;
   }
 
-  /* La vela del alféizar: se apaga soplando... o tocándola. */
-  const cvx = v.x - v.w * 0.36, cvy = v.y + v.h / 2 - U * 5;
-  if (dentroDe(p.x, p.y, cvx, cvy, U * 6)) {
-    decir(cvx, cvy - U * 6, "Déjala prendida, ¿sí?", { dur: 3 });
+  /* Los libros, la taza y el nudo del suelo. Van antes que la lámpara
+     porque están encima de la misma mesilla y su zona de toque es más
+     pequeña: lo pequeño gana a lo grande. */
+  if (tocarSecretos(p)) return;
+
+  /* La lámpara de la mesilla. */
+  const M = sitioMesilla();
+  if (Math.abs(p.x - M.lampara.x) < M.lampara.ax
+      && Math.abs(p.y - M.lampara.y) < M.lampara.ay) {
+    hab.lamparaOn = !hab.lamparaOn;
+    golpe(0.02, 2600, 0.14, "bandpass");
     return;
   }
 }
