@@ -144,19 +144,33 @@ cinco segundos. (Hay una pista escondida por ahí que apunta hacia allá.
 Una sola, y no avisa de que es una pista.)
 
 Al recogerla se abre el cielo. Llueve, oscurece, y del bosque salen
-búhos de ojos rojos en **cinco oleadas** cada vez más grandes: tres,
-cinco, siete, diez y catorce. Se tienen **cinco vidas**, arriba y por
-el centro. Se dispara tocando: el dedo es el gatillo, y para andar
-están los botones. Al que le das no se muere, **revienta en luz**.
+búhos de ojos rojos en **diez rondas** cada vez más grandes: tres,
+cinco, siete, diez, catorce, doce, dieciséis, dieciocho, veintidós… y
+la última. Se tienen **cinco vidas**, arriba y por el centro. Se
+dispara tocando: el dedo es el gatillo, y ese mismo dedo, arrastrando,
+te mueve por el bosque. No hay botones de andar: se desliza y ya.
+Al que le das no se muere, **revienta en luz**.
+
+**La décima ronda es otra cosa.** No vienen más búhos: viene uno solo,
+mucho más grande, y no se acerca: se planta y **escupe fuego**. Aguanta
+treinta impactos y el fuego quema en cuanto te alcanza, así que no se
+puede pelear a pecho descubierto.
+
+Para eso está **la roca**. Es una piedra grande, plantada en el suelo
+como cualquier otra cosa del bosque, y el fuego **choca de verdad**
+contra ella: no es una zona segura invisible, la bola revienta contra
+la piedra y se apaga. Pero detrás de la roca no se puede disparar. Hay
+que salir, tirar, y volver a meterse. Y él se da cuenta de cuándo le
+das, y contesta.
 
 Si se acaban las vidas, te caes y despiertas en la cabaña a las tres.
 No pasa nada: se puede volver a empezar tocando la escopeta en la
 bolsa.
 
-Y al acabar la quinta oleada vuelve el que llevaba toda la noche
-vigilando, con los ojos encendidos, a decir una cosa. Después se va…
-pero **no desaparece**. Sigue en el bosque, en otra rama, y en una
-distinta cada vez que se entra. Hay que volver a encontrarlo.
+Y al acabar con él vuelve el que llevaba toda la noche vigilando, con
+los ojos encendidos, a decir una cosa. Después se va… pero **no
+desaparece**. Sigue en el bosque, en otra rama, y en una distinta cada
+vez que se entra. Hay que volver a encontrarlo.
 
 Lo que se descubre se GUARDA. Si cierras y vuelves mañana, la pala
 sigue siendo tuya y la X sigue cavada. Lo único que no se guarda es
@@ -177,6 +191,28 @@ dónde estabas: siempre se vuelve al claro.
 - Tocar la luna desde fuera y desde dentro.
 - Atrapar una estrella fugaz al vuelo.
 - Dormirse.
+
+### Y quedarse mirando la cabaña sin hacer nada
+
+Es lo que casi nadie hace, y por eso está casi todo ahí:
+
+- Una vez cada minuto y pico, la chimenea echa un **corazón de humo**.
+  No se puede provocar, no da nada y no se cuenta en ningún sitio: o lo
+  ves o no lo ves.
+- Cada tanto **una sombra cruza por detrás de una ventana**. Alguien
+  vive ahí.
+- Mucho más de tarde en tarde, algo **se asoma a la lumbrera** del
+  desván, ese agujero negro de lo alto del hastial.
+- Al farol colgado del alero le entra una racha de viento y se queda
+  **a nada de apagarse**. Depende del viento de verdad, así que no pasa
+  dos veces igual.
+- Cuando llueve, el barril de debajo del alero **junta agua**, y en el
+  agua se ve la luna.
+
+Y cuando ya se han encontrado seis secretos, alguna noche el cielo se
+pone a escribir. Las letras no están pintadas encima: **son estrellas**,
+una a una, encendiéndose de izquierda a derecha, detrás de las nubes.
+Si pasa una nube por delante, tapa un trozo.
 
 ### Y en el bosque
 
@@ -264,7 +300,9 @@ Todo lo que se dice y casi todo lo que se ve está en el bloque
 | lo del reloj de las tres | `CONF.tres` |
 | lo que dice el reloj del bosque | `CONF.relojBosque` |
 | la escopeta y toda la cacería | `CONF.caza` |
-| cuántos búhos trae cada oleada, y cuántas vidas hay | `OLEADAS` y `VIDAS` |
+| cuántos búhos trae cada ronda, y cuántas vidas hay | `OLEADAS` y `VIDAS` |
+| cuál es la ronda del jefe y cuánto aguanta | `OLEADA_JEFE` y `jefe.vidaMax` |
+| qué dice el cielo, y cuántos secretos hacen falta para que lo diga | `CONF.cieloMensaje` |
 | todo lo del cuarto: radio, frasco, planta, guitarra, tapete, estrellitas, libros, taza, vela, el nudo del suelo y el deseo | `CONF.cuarto` |
 | las tres frases de la cuenta de secretos | `CONF.logros` |
 | lo ancho que es el bosque y sus capas | `ESP` |
