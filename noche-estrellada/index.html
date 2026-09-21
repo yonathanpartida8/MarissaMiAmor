@@ -15797,7 +15797,6 @@ function moverCaceria(dt) {
     o.y = mez(o.y0, J.y, suave) - Math.sin(suave * Math.PI) * H * 0.08;
 
     if (o.d <= 0) {
-      caza.buhos.splice(i, 1);
       /* ---- LA ROCA TAMBIÉN PARA A LOS BICHOS ----
          Antes sólo paraba el fuego del jefe, y eso dejaba la piedra
          sirviendo para una sola cosa en una sola ronda. Ahora, metido
@@ -15809,8 +15808,22 @@ function moverCaceria(dt) {
          te da aire. Hay que asomarse, tirar y volver a meterte, que es
          justo lo que se quería que hiciera esa roca. */
       if (aCubierto()) {
+        /* ---- Y REBOTAN, NO SE MUEREN ----
+           Ésta es la parte que falta si uno no lo piensa dos veces.
+           Borrándolos al chocar, esconderse detrás de la piedra GANABA
+           la ronda: los bichos venían, se estrellaban solos, la lista
+           se vaciaba y la ronda se daba por limpia sin haber disparado
+           ni una vez. La cobertura tiene que darte aire, no la partida.
+
+           Así que rebotan: se van para atrás, vuelven a salir desde
+           donde están y siguen viniendo. Para acabar la ronda hay que
+           asomarse y matarlos, que era justo el trato. */
         chocarContraLaRoca(o.x, o.y);
+        o.d = azar(0.3, 0.5);
+        o.x0 = o.x; o.y0 = o.y;
+        o.f = azar(0, 6.283);
       } else {
+        caza.buhos.splice(i, 1);
         golpearAlJugador(o);
         /* Y si con ese golpe se acabó la partida, aquí ya no queda nada
            que mover. */
