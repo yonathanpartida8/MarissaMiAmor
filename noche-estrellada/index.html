@@ -933,19 +933,35 @@ const CONF = {
      uno tiene su color y lo que se dice al comérselo.                  */
   bombon: {
     /* Cuánto se tuesta por segundo una cara puesta de lleno en la
-       llama. Con 0.22, un bombón bien hecho son unos cinco segundos de
-       fuego: lo justo para que dé tiempo a girarlo y no tan largo como
-       para que aburra. */
-    calienta: 0.22,
+       llama.
+
+       Estaba en 0.22 y el bombón no se hacía: había que tenerlo dentro
+       del fuego quince o veinte segundos para que se dorara, y como el
+       palo además volvía solo a la hoguera, lo que pasaba de verdad es
+       que se tostaba a medias sin que nadie hiciera nada y no había
+       manera de acabar de hacerlo a propósito. Con 0.42, metido de
+       lleno en la llama se dora en unos tres segundos y se quema en
+       seis: da tiempo a girarlo y hay que estar pendiente. */
+    calienta: 0.42,
     enfria: 0.055,          // cuánto baja por segundo lejos del fuego
-    radioCalor: 1.0,        // en unidades de radio de fogata
+    /* El alcance del calor, en radios de hoguera. Tiene que dejar
+       FUERA el sitio de reposo del palo —si no, el bombón se cuece solo
+       sin que nadie lo acerque— y DENTRO, con fuerza, la llama. Con el
+       palo descansando a unos 170 píxeles de la hoguera, 4.6 radios
+       (unos 150) deja las dos cosas. */
+    radioCalor: 1.0,
 
     /* ---- LA FÍSICA ----
        El palo es una varilla con inercia colgada del mango, y el bombón
        cuelga de su punta con un muelle corto. Estos números son todo lo
        que hay que tocar para que se sienta más pesado o más ágil. */
     fisica: {
-      muellePalo: 130,      // cuánto tira el palo hacia donde apunta el dedo
+      /* Cogido, el palo no tiene muelle: PERSIGUE al dedo. Éste es lo
+         rápido que lo alcanza; cuanto más alto, más pegado va. */
+      sigueDedo: 30,
+      /* Y suelto, lo que tarda en pararse lo que llevara de impulso. */
+      frenoSuelto: 6,
+      muellePalo: 130,      // sólo para recolocar al girar el teléfono
       frenoPalo: 15,        // y cuánto se frena. Bajo = más bamboleo
       pesoPalo: 2.6,        // cuánto lo vence la gravedad estando en cruz
       muelleLargo: 150,     // lo mismo para estirarlo y encogerlo
@@ -961,7 +977,7 @@ const CONF = {
        `masa` es la inercia térmica: cuánto tarda en coger la temperatura
        del sitio donde está. Es LA cifra importante, porque es la que
        hace que siga tostándose un rato después de sacarlo del fuego. */
-    masa: 1.35,
+    masa: 0.8,
     /* Por debajo de esto no se tuesta nada: el azúcar necesita un
        mínimo para empezar a dorarse. Es lo que hace que acercarlo un
        poco no sirva de nada y haya que meterlo de verdad. */
@@ -4030,10 +4046,17 @@ function colocarBombon(reiniciar) {
   const f = sitio.fogata;
   bombon.mangoX = f.x + U * (apaisado ? 20 : 23);
   bombon.mangoY = f.y + U * 5;
-  /* El sitio de reposo del palo: apuntando al fuego y un poco hacia
-     arriba, como si estuviera apoyado esperando. */
+  /* ---- EL SITIO DE REPOSO: APARTADO DEL FUEGO ----
+     Apuntaba A LA HOGUERA, y ése era el fallo gordo: el palo suelto se
+     iba solo a la llama y el bombón se tostaba sin que nadie lo
+     acercara. Y como se tostaba solo y despacio, cuando por fin lo
+     cogías ya estaba a medias y no había manera de hacerlo bien.
+
+     Ahora el palo descansa al otro lado, apartado y un poco levantado,
+     como apoyado esperando. Para tostar hay que acercarlo, que es justo
+     lo que se le pide a quien juega. */
   bombon.largoObj = U * (apaisado ? 16 : 19);
-  bombon.angObj = Math.atan2(-U * 7, -bombon.largoObj * 0.8);
+  bombon.angObj = Math.atan2(-U * 4, U * 9);
 
   if (reiniciar || !bombon.vivo || !bombon.estrenado) {
     bombon.estrenado = true;
@@ -4116,39 +4139,72 @@ function pasoFisicaBombon(h) {
      largo se limita aquí y no en el dedo: así, cuando estiras más allá
      del alcance, el palo se queda tirante y se nota que TIENE un
      alcance en vez de seguirte a cualquier parte. */
+  /* ---- COGIDO: EL PALO PERSIGUE AL DEDO, SIN MUELLE ----
+     Antes el dedo movía un ángulo OBJETIVO y un muelle tiraba del palo
+     hacia él. Eso hace dos cosas malas a la vez: el palo llega tarde
+     —se queda atrás mientras arrastras— y al parar se pasa y vuelve.
+     En un palo eso no se lee como peso: se lee como goma.
+
+     Ahora el ángulo va directo detrás del dedo con amortiguación pura:
+     rápido, y sin pasarse nunca. Se siente libre porque lo es.
+
+     Se guarda la velocidad de verdad que ha llevado, para que al soltar
+     conserve el impulso; y el objetivo se queda pegado al ángulo real,
+     para que al soltar NO tire de vuelta a ningún sitio. */
   if (bombon.agarrado) {
-    /* Sólo el ángulo. El palo mide lo que mide. */
     const dx = bombon.destX - bombon.mangoX;
     const dy = bombon.destY - bombon.mangoY;
-    if (Math.hypot(dx, dy) > U * 2) bombon.angObj = Math.atan2(dy, dx);
+    if (Math.hypot(dx, dy) > U * 1.2) {
+      const objetivo = Math.atan2(dy, dx);
+      /* La diferencia CORTA. Sin esto, al cruzar el dedo por detrás del
+         mango el palo daba la vuelta entera por el otro lado. */
+      const dif = Math.atan2(Math.sin(objetivo - bombon.ang),
+                             Math.cos(objetivo - bombon.ang));
+      const avance = dif * (1 - Math.exp(-F.sigueDedo * h));
+      bombon.ang += avance;
+      bombon.angV = clamp(avance / h, -22, 22);
+      bombon.angObj = bombon.ang;
+    }
+    recolocarPuntaYBombon(h);
+    return;
   }
 
-  /* ---- 2. El palo, como varilla RÍGIDA que gira ----
-     Y con la gravedad venciéndolo: un palo sujeto por un extremo pesa
-     más cuanto más en cruz esté, que es por lo que cuesta mantenerlo
-     horizontal y no cuesta nada tenerlo vertical. El coseno del ángulo
-     es exactamente ese brazo de palanca.
-
-     ── POR QUÉ EL LARGO YA NO ES UN MUELLE ───────────────────────────
-     Porque un palo no se estira. Antes el largo tenía su propio muelle
-     y su propio freno, así que al mover el dedo deprisa el palo se
-     alargaba y se encogía: se veía exactamente como lo que era, una
-     goma. Y encima el bombón colgaba de la punta con OTRO muelle, así
-     que las dos elasticidades se sumaban y el conjunto se bamboleaba
-     como gelatina.
-
-     Ahora el largo es fijo. Lo único que se mueve es el ÁNGULO. Si
-     estiras el dedo más allá del alcance, el palo apunta hacia allá y
-     se queda donde llega, que es lo que hace un palo de verdad cuando
-     lo que quieres alcanzar está más lejos que el palo. */
-  let angA = (bombon.angObj - bombon.ang) * F.muellePalo - bombon.angV * F.frenoPalo;
-  angA += Math.cos(bombon.ang) * F.pesoPalo;
-  bombon.angV += angA * h;
-  /* Tope de velocidad angular: por muy rápido que arrastres, el palo no
-     puede dar más de unas vueltas por segundo. Sin esto, un barrido
-     rápido de un canto a otro lo hacía girar como un aspa. */
-  bombon.angV = clamp(bombon.angV, -22, 22);
+  /* ---- SUELTO: SE QUEDA DONDE LO DEJASTE ----
+     Sólo se frena lo que llevara de impulso y se le deja un poquito de
+     peso, topado para que nunca llegue a caerse dentro del fuego él
+     solo. Un palo apoyado se queda apoyado. */
+  bombon.angV *= Math.exp(-F.frenoSuelto * h);
+  bombon.angV += Math.cos(bombon.ang) * F.pesoPalo * 0.25 * h;
+  bombon.angV = clamp(bombon.angV, -6, 6);
   bombon.ang += bombon.angV * h;
+  bombon.angObj = bombon.ang;
+  recolocarPuntaYBombon(h);
+}
+
+/**
+ * Lo que va DESPUÉS de saber dónde apunta el palo: la punta, el bombón
+ * ensartado en ella y su giro.
+ *
+ * Está aparte porque el palo se resuelve de dos maneras muy distintas
+ * —persiguiendo al dedo o quedándose quieto— y esto es igual en las
+ * dos. Repetido en los dos sitios, se arreglaba en uno y no en el otro.
+ */
+function recolocarPuntaYBombon(h) {
+  const F = CONF.bombon.fisica;
+
+  /* ── POR QUÉ EL PALO NO ES ELÁSTICO, NI DE LARGO NI DE ÁNGULO ──────
+     Porque un palo no se estira ni rebota. Al principio el largo tenía
+     su propio muelle, así que al mover el dedo deprisa el palo se
+     alargaba y se encogía; y el ángulo tenía otro, así que llegaba
+     tarde y se pasaba al frenar; y el bombón colgaba de la punta con un
+     tercero. Las tres elasticidades se sumaban y el conjunto se
+     bamboleaba como gelatina.
+
+     Ahora el largo es fijo, el ángulo persigue al dedo sin pasarse, y
+     del bombón sólo queda un temblorcito. Si estiras el dedo más allá
+     del alcance, el palo apunta hacia allá y se queda donde llega, que
+     es lo que hace un palo de verdad cuando lo que quieres alcanzar
+     está más lejos que el palo. */
 
   /* El largo sólo cambia si cambia el ALCANCE —al girar el teléfono—, y
      entonces va despacio y sin rebote: eso no es física, es recolocar. */
@@ -4251,11 +4307,21 @@ function cocerBombon(dt) {
 
   /* ---- 1. La temperatura del sitio ---- */
   const d = Math.hypot(bombon.x - f.x, (bombon.y - (f.y - f.r)) * 1.25);
-  const alcance = f.r * 4.2 * C.radioCalor;
+  const alcance = f.r * 4.6 * C.radioCalor;
   const cerca = clamp01(1 - d / alcance);
-  /* El cuadrado: pegado quema y a dos palmos casi no hace nada. Esa
-     curva es todo el juego. */
-  const ambiente = cerca * cerca * clamp(fuego.vida, 0, 1.6)
+  /* ---- LA CURVA DEL CALOR ----
+     Pegado quema y a dos palmos casi no hace nada: eso es todo el
+     juego. Pero era un CUADRADO y con eso ni pegado a la llama daba
+     calor suficiente para pasar del umbral en más de dos caras: había
+     que tener el bombón dentro del fuego medio minuto para que se
+     dorara, y la mayoría de la gente lo sacaba antes pensando que no
+     funcionaba.
+
+     Con exponente 1.6 y un empujón de 1.3, metido de lleno en la llama
+     llega a unos 0.85 de temperatura, que es lo que hace falta para que
+     se dore en tres segundos y se queme en siete. Y fuera del alcance
+     sigue siendo cero, que es lo otro que hacía falta. */
+  const ambiente = Math.pow(cerca, 1.6) * clamp(fuego.vida, 0, 1.6) * 1.3
                  + bombon.ardiendo * 0.9;
 
   /* ---- 2. El bombón coge esa temperatura, pero con inercia ---- */
