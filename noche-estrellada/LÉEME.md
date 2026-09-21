@@ -143,13 +143,31 @@ la vista: lo único que hace es un destello por el cañón cada cuatro o
 cinco segundos. (Hay una pista escondida por ahí que apunta hacia allá.
 Una sola, y no avisa de que es una pista.)
 
-Al recogerla se abre el cielo. Llueve, oscurece, y del bosque salen
-búhos de ojos rojos en **diez rondas** cada vez más grandes: tres,
-cinco, siete, diez, catorce, doce, dieciséis, dieciocho, veintidós… y
-la última. Se tienen **cinco vidas**, arriba y por el centro. Se
-dispara tocando: el dedo es el gatillo, y ese mismo dedo, arrastrando,
-te mueve por el bosque. No hay botones de andar: se desliza y ya.
-Al que le das no se muere, **revienta en luz**.
+Al recogerla se abre el cielo. Llueve, oscurece, y del bosque sale de
+todo en **diez rondas** cada vez más grandes. Se tienen **cinco
+vidas**, arriba y por el centro. Se dispara tocando: el dedo es el
+gatillo, y ese mismo dedo, arrastrando, te mueve por el bosque. No hay
+botones de andar: se desliza y ya. Al que le das no se muere,
+**revienta en luz**.
+
+No todos son búhos, y hay que mirar qué viene:
+
+- el **búho** de ojos rojos va derecho y cae al primer tiro;
+- el **murciélago** es chico, rapidísimo y va a bandazos. Cuesta
+  apuntarle. Bate las alas al doble de velocidad, así que se reconoce
+  de un vistazo aunque los dos sean siluetas negras;
+- el **cuervo** aguanta **dos**. El primer tiro no lo mata: lo enfada.
+  Se pone rojo entero y acelera, así que se sabe perfectamente que
+  sigue viniendo.
+
+Los murciélagos salen desde la segunda ronda y los cuervos desde la
+cuarta. Y nunca hay más de **ocho a la vez** en pantalla: los demás
+esperan turno, así que las rondas de arriba aprietan mucho pero se
+pueden ganar.
+
+Si te queda menos de la mitad de la vida, de vez en cuando un bicho
+suelta un **corazón** al reventar. Baja flotando y hay que **tocarlo**
+antes de que se caiga por abajo. Con la vida llena no cae ninguno.
 
 **La décima ronda es otra cosa.** No vienen más búhos: viene uno solo,
 mucho más grande, y no se acerca: se planta y **escupe fuego**. Aguanta
@@ -157,10 +175,14 @@ treinta impactos y el fuego quema en cuanto te alcanza, así que no se
 puede pelear a pecho descubierto.
 
 Para eso está **la roca**. Es una piedra grande, plantada en el suelo
-como cualquier otra cosa del bosque, y el fuego **choca de verdad**
-contra ella: no es una zona segura invisible, la bola revienta contra
-la piedra y se apaga. Pero detrás de la roca no se puede disparar. Hay
-que salir, tirar, y volver a meterse. Y él se da cuenta de cuándo le
+como cualquier otra cosa del bosque, y las cosas **chocan de verdad**
+contra ella: la bola de fuego revienta contra la piedra y se apaga, y
+lo que venga volando se estrella también. No es una zona segura
+invisible.
+
+Pero detrás de la roca **no hay tiro**. Hay que asomarse, disparar y
+volver a meterse. Sin esas dos mitades no sería una cobertura: sería
+un sitio donde se gana sin hacer nada. Y él se da cuenta de cuándo le
 das, y contesta.
 
 Si se acaban las vidas, te caes y despiertas en la cabaña a las tres.
@@ -227,6 +249,21 @@ refleja, a ratos, algo que no está arriba.
 Y de vez en cuando se oye algo lejos: una rama que se parte, algo
 pesado entre la hojarasca, un ulular. No hay nada que mirar, a
 propósito.
+
+### El libro del suelo
+
+Tirado en las tablas, entre el tapete y la mesilla. Cerrado no llama la
+atención: es un bulto marrón en la penumbra. **Tócalo.** Se abre con su
+peso y un segundo después le prende fuego rosa por la costura, y encima
+queda escrito «Juntos por siempre». Se puede cerrar y volver a abrir
+todas las veces que quieras.
+
+### La botella del cajón
+
+Después de leer su papel, si la sigues tocando se va **rajando**: una
+grieta más por toque a partir del tercero, sonando cada vez más agudo.
+Al séptimo **revienta**. No se pierde nada —el papel ya está leído y
+guardado— pero la botella ya no vuelve.
 
 ### Y dentro del cuarto
 

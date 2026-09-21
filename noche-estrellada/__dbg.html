@@ -20917,6 +20917,15 @@ setTimeout(() => {
   }
 }, 2600);
 
+
+window.__ne = new Proxy({}, {
+  get(_, k) { try { return eval(k); } catch (e) { return undefined; } },
+  set(_, k, v) { try { eval(k + " = v"); return true; } catch (e) { return false; } },
+  has(_, k) { try { eval(k); return true; } catch (e) { return false; } },
+});
+window.__llamar = (nombre, ...args) => eval(nombre).apply(null, args);
+window.__ev = (src) => eval(src);
+
 })();
 </script>
 </body>

@@ -28,6 +28,38 @@ equivalente: el libro se abre igual sin conexión al segundo intento.
 
 ---
 
+## Instalarlo en el teléfono
+
+Se puede añadir a la pantalla de inicio y se abre a pantalla completa, sin
+barras del navegador, como una aplicación. Y una vez instalado se abre **sin
+internet**, porque guarda su propia copia.
+
+- **Android (Chrome):** menú ⋮ → «Instalar aplicación».
+- **iPhone (Safari):** botón de compartir → «Añadir a pantalla de inicio».
+
+También hay un botón que lo explica dentro del libro: se abre el índice (☰) y
+está en el pie, junto al de empezar de cero.
+
+### El icono
+
+Se deja caer cualquier imagen en la carpeta **`icono/`** con el nombre
+`icono.png` —también vale `.jpg`, `.jpeg`, `.webp` o `.svg`— y ya está. No hay
+que preparar tamaños ni tocar una línea de código: el libro la busca al
+arrancar, la recorta cuadrada por el centro y rehace el manifiesto con las
+medidas que pide cada sistema, más una versión con aire por los lados para el
+recorte redondo de Android.
+
+Si no hay ninguna, usa la portada. Consejo: cuadrada y con lo importante en el
+centro, de 512×512 para arriba.
+
+### Empezar de cero
+
+En el mismo pie del índice. Avisa dos veces —el segundo toque dice exactamente
+qué se pierde— y borra las tres cosas que guardan estado: la memoria del libro,
+la de la noche estrellada y la copia guardada para abrirlo sin internet.
+
+---
+
 ## Estructura
 
 ```
