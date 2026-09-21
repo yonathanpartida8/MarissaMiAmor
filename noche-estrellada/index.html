@@ -15368,6 +15368,16 @@ function moverCaceria(dt) {
   const J = sitioJugador();
   for (let i = caza.buhos.length - 1; i >= 0; i--) {
     const o = caza.buhos[i];
+    /* El bucle va hacia atrás, que es lo que hace falta para poder
+       quitar bichos de la lista sin saltarse ninguno. Pero eso sólo
+       cubre los que se quita ESTE bucle: `golpearAlJugador`, ahí abajo,
+       puede terminar la partida, y al terminarla VACÍA la lista entera.
+       El índice que quedaba pendiente ya no apunta a nada.
+
+       Pasaba justo al perder la última vida —el peor momento posible
+       para que reviente el bucle de dibujo— y se llevaba por delante la
+       pantalla de derrota. */
+    if (!o) break;
     o.ala += dt * mez(7, 13, 1 - o.d);
 
     if (o.muerte >= 0) {
@@ -15390,6 +15400,9 @@ function moverCaceria(dt) {
     if (o.d <= 0) {
       caza.buhos.splice(i, 1);
       golpearAlJugador(o);
+      /* Y si con ese golpe se acabó la partida, aquí ya no queda nada
+         que mover. */
+      if (caza.fase !== "oleada") return;
     }
   }
 
@@ -15661,6 +15674,10 @@ function moverJefe(dt) {
   /* ---- Las bolas de fuego ---- */
   for (let i = jefe.bolas.length - 1; i >= 0; i--) {
     const b = jefe.bolas[i];
+    /* Lo mismo que en el bucle de los búhos: `quemarAlJugador` puede
+       acabar la partida y vaciar la lista de bolas de un golpe, y el
+       índice pendiente se queda apuntando a nada. */
+    if (!b) break;
     b.t += dt;
     b.x += b.vx * dt;
     b.y += b.vy * dt;
@@ -15691,6 +15708,7 @@ function moverJefe(dt) {
       reventarBola(b, false);
       jefe.bolas.splice(i, 1);
       quemarAlJugador();
+      if (caza.fase !== "oleada") return;
       continue;
     }
     if (b.y > H + U * 6 || b.t > 6) {
