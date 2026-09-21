@@ -333,9 +333,14 @@ html, body {
 .noche .ne-dicho {
   position: absolute;
   left: 0; top: 0;
-  max-width: min(17em, 74vw);
-  padding: 0.6em 1.05em;
-  border-radius: 16px;
+  /* ---- EL TAMAÑO ----
+     Medía diecisiete emes de ancho y ocupaba tres cuartos de la
+     pantalla: una frase larga se comía la escena entera y tapaba justo
+     lo que acababas de encontrar. Trece emes y algo más de la mitad de
+     la pantalla siguen leyéndose de sobra y dejan ver lo de detrás. */
+  max-width: min(13em, 58vw);
+  padding: 0.46em 0.8em;
+  border-radius: 13px;
   /* Tres capas y no un color plano: un cristal ahumado con un poco de
      luz recogida arriba —de donde viene la luna— y el fondo cerrándose
      abajo. Un rectángulo de un solo color se lee como un bocadillo de
@@ -351,8 +356,8 @@ html, body {
     0 6px 28px rgba(2, 4, 12, 0.55);
   backdrop-filter: blur(7px) saturate(1.2);
   -webkit-backdrop-filter: blur(7px) saturate(1.2);
-  font-size: clamp(0.78rem, 3.35vw, 0.94rem);
-  line-height: 1.55;
+  font-size: clamp(0.7rem, 2.85vw, 0.82rem);
+  line-height: 1.45;
   text-align: center;
   color: #eaf0ff;
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
@@ -2194,23 +2199,58 @@ function decir(x, y, texto, op = {}) {
      fijo, porque lo que hay que dejar libre es media caja. */
   const medio = el.offsetWidth / 2 + 10;
   const alto  = el.offsetHeight || 36;
-  const px = clamp(x, medio, Math.max(medio, A - medio));
 
-  /* Y se busca una fila libre de verdad, contando lo que va a subir
-     mientras se apaga. Escalonar por turnos reparte pero no comprueba
-     nada, y dos frases se acaban pisando. */
+  /* ---- DÓNDE SE PONE, QUE ES LO QUE MÁS IMPORTA ----
+     Antes sólo subía en línea recta buscando fila libre de otras
+     frases. Eso deja dos agujeros grandes:
+
+       · TAPA LO QUE ACABAS DE TOCAR. Atrapas una estrella fugaz y la
+         frase sale justo encima, así que lo único que no ves es la
+         estrella. Lo mismo con cada easter egg: la recompensa de
+         encontrarlo es un cartel tapándolo.
+       · TAPA EL DEDO. Con el dedo apoyado, la frase sale debajo de la
+         mano y no se lee.
+
+     Ahora se prueban sitios ALREDEDOR —arriba, arriba a los lados, los
+     lados, y abajo si no queda otra— y gana el primero que no pise: ni
+     lo que se acaba de tocar, ni el dedo, ni otra frase, ni las flechas
+     de pasar página del librito. Sólo si no hay ninguno libre se pone
+     arriba a lo bruto, que es mejor que no decir nada. */
+  const guarda = Math.max(U * 9, (op.guarda ?? 0));
+  const sitios = [
+    [0, -U * 8], [0, -U * 8 - alto - 12], [0, -U * 8 - (alto + 12) * 2],
+    [-(medio + guarda * 0.8), -U * 5], [medio + guarda * 0.8, -U * 5],
+    [-(medio + guarda * 0.8), -U * 10], [medio + guarda * 0.8, -U * 10],
+    [0, U * 9 + alto * 0.5], [0, -U * 8 - (alto + 12) * 3],
+  ];
+
+  let px = clamp(x, medio, Math.max(medio, A - medio));
   let py = null;
-  for (let f = 0; f < 5 && py === null; f++) {
-    const cand = clamp(y - U * 7 - f * (alto + 10), U * 9, H - U * 12);
+  for (const [ox, oy] of sitios) {
+    const cx = clamp(x + ox, medio, Math.max(medio, A - medio));
+    const cy = clamp(y + oy, U * 9 + alto * 0.5, H - U * 12);
+
+    /* ¿Tapa lo que se acaba de tocar? Se mide caja contra círculo. */
+    if (Math.abs(cx - x) < medio + guarda && Math.abs(cy - y) < alto * 0.5 + guarda) continue;
+    /* ¿Y el dedo, si está apoyado? */
+    if (dedo.dentro
+        && Math.abs(cx - dedo.x) < medio + U * 6
+        && Math.abs(cy - dedo.y) < alto * 0.5 + U * 6) continue;
+    /* ¿Otra frase? */
     let libre = true;
     for (const v of dichosVivos) {
-      if (Math.abs(px - v.x) < medio + v.medio && Math.abs(cand - v.y) < (alto + v.alto) * 0.5 + 26) {
+      if (Math.abs(cx - v.x) < medio + v.medio && Math.abs(cy - v.y) < (alto + v.alto) * 0.5 + 20) {
         libre = false; break;
       }
     }
-    if (libre) py = cand;
+    if (!libre) continue;
+    /* ¿Las flechas del librito? */
+    if (tapadoPorElLibro(cx, cy) || tapadoPorElLibro(cx - medio, cy)
+        || tapadoPorElLibro(cx + medio, cy)) continue;
+
+    px = cx; py = cy; break;
   }
-  if (py === null) py = clamp(y - U * 7, U * 9, H - U * 12);
+  if (py === null) py = clamp(y - U * 8, U * 9 + alto * 0.5, H - U * 12);
 
   /* Las del misterio se escriben. El tiempo de escritura sale del largo
      del texto, no de un número fijo: una frase corta escrita despacio se
