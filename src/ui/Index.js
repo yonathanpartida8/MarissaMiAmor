@@ -39,6 +39,7 @@ export class BookIndex {
           }),
         ]),
         el("div.lectura.toc__scroll"),
+        this.#buildAjustes(),
       ]),
     ]);
 
@@ -49,6 +50,114 @@ export class BookIndex {
     this.#buildList();
     this.built = true;
     return this.root;
+  }
+
+  /**
+   * El pie del índice: instalar el librito y empezarlo de cero.
+   *
+   * Van aquí y no en la barra de abajo por una razón de peso: ninguno de
+   * los dos es algo que se quiera tocar sin querer. La barra se toca a
+   * cada rato para pasar página, y un botón que borra toda la historia a
+   * un dedo de distancia del de «siguiente» es una bomba esperando.
+   * Aquí hay que abrir el índice a propósito y bajar hasta el final.
+   */
+  #buildAjustes() {
+    this.instalarBtn = el("button.toc__accion", {
+      type: "button",
+      html: "<span>📲</span><b>Instalar el librito</b><i>se abre a pantalla completa, sin barras</i>",
+      onClick: () => this.#instalar(),
+    });
+    this.borrarBtn = el("button.toc__accion.toc__accion--peligro", {
+      type: "button",
+      html: "<span>↺</span><b>Empezar de cero</b><i>se borra todo lo descubierto</i>",
+      onClick: () => this.#pedirBorrar(),
+    });
+    this.pie = el("footer.toc__pie", {}, [this.instalarBtn, this.borrarBtn]);
+    return this.pie;
+  }
+
+  /**
+   * Instalar.
+   *
+   * En Android hay diálogo del sistema y basta con pedirlo. En iPhone NO
+   * existe ese diálogo —Apple no lo ofrece a las páginas— así que lo
+   * único honrado es explicar los dos toques que hay que dar. Poner un
+   * botón que en iPhone no hace nada sería peor que no ponerlo.
+   */
+  async #instalar() {
+    const inst = this.ctx.instalacion;
+    if (inst?.instalado) {
+      this.ctx.ui?.toast?.("Ya lo tienes instalado 🤍");
+      return;
+    }
+    if (inst?.puedeInstalar) {
+      const si = await inst.instalar();
+      if (si) this.ctx.ui?.toast?.("Listo. Búscalo en tu pantalla de inicio 🤍");
+      return;
+    }
+    if (inst?.esIOS) {
+      this.ctx.ui?.toast?.("Toca «Compartir» ⬆️ y luego «Añadir a pantalla de inicio»", 6500);
+      return;
+    }
+    this.ctx.ui?.toast?.("Busca «Instalar aplicación» en el menú de tu navegador", 6000);
+  }
+
+  /**
+   * Empezar de cero, con su aviso de verdad.
+   *
+   * Dos toques y el segundo dice exactamente qué se pierde. No se usa el
+   * `confirm()` del navegador porque en pantalla completa instalada sale
+   * feo y, en iOS, a veces ni sale.
+   */
+  #pedirBorrar() {
+    if (this.borrarBtn.dataset.seguro === "si") return;
+    this.borrarBtn.dataset.seguro = "si";
+    this.borrarBtn.innerHTML =
+      "<span>⚠️</span><b>Toca otra vez para borrarlo todo</b>"
+      + "<i>la historia, los secretos, el bosque y la cacería vuelven al principio</i>";
+    this.borrarBtn.classList.add("is-armado");
+
+    const cancelar = setTimeout(() => this.#desarmarBorrar(), 6000);
+    this.borrarBtn.onclick = () => {
+      clearTimeout(cancelar);
+      this.#borrarTodo();
+    };
+  }
+
+  #desarmarBorrar() {
+    if (!this.borrarBtn) return;
+    delete this.borrarBtn.dataset.seguro;
+    this.borrarBtn.classList.remove("is-armado");
+    this.borrarBtn.innerHTML =
+      "<span>↺</span><b>Empezar de cero</b><i>se borra todo lo descubierto</i>";
+    this.borrarBtn.onclick = () => this.#pedirBorrar();
+  }
+
+  /**
+   * Borra TODO lo que el libro haya podido dejar por ahí.
+   *
+   * No basta con vaciar el almacén del libro: la noche estrellada guarda
+   * lo suyo en su propia llave, y el ayudante de segundo plano tiene una
+   * copia de los archivos. Si se borra sólo una de las tres, algo se
+   * queda: el bosque se acuerda de la pala aunque el libro no se acuerde
+   * de nada, y eso desconcierta más que no borrar.
+   */
+  async #borrarTodo() {
+    this.borrarBtn.disabled = true;
+    this.borrarBtn.innerHTML = "<span>…</span><b>Borrando</b><i>un momento</i>";
+    try { this.ctx.store.reset(); } catch { /* seguimos */ }
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith("marissa.") || k.startsWith("noche-estrellada"))) {
+          localStorage.removeItem(k);
+        }
+      }
+    } catch { /* ventana privada: no había nada que borrar */ }
+    try { sessionStorage.clear(); } catch { /* igual */ }
+    await this.ctx.instalacion?.olvidarTodo?.();
+    /* Recarga limpia, sin el número de página en la dirección. */
+    location.replace(location.pathname);
   }
 
   #buildList() {

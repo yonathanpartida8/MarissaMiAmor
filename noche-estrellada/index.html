@@ -19186,9 +19186,16 @@ function entrar() {
   }, 1600);
 }
 
-entrada.addEventListener("click", entrar);
+/* `pointerup` además de `click`: esto es un `div`, no un `button`, y
+   Safari en iOS sólo dispara `click` en elementos que no son de control
+   si además tienen cursor de mano. Con los dos entra siempre, y el
+   cerrojo de dentro evita que entre dos veces. */
+let yaEntre = false;
+function entrarUnaVez() { if (yaEntre) return; yaEntre = true; entrar(); }
+entrada.addEventListener("click", entrarUnaVez);
+entrada.addEventListener("pointerup", entrarUnaVez);
 entrada.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); entrar(); }
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); entrarUnaVez(); }
 });
 
 // ==========================================

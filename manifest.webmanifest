@@ -1,0 +1,21 @@
+{
+  "name": "Marissa · Mi Amorcito",
+  "short_name": "Marissa",
+  "description": "Un librito de amor interactivo, hecho a mano.",
+  "lang": "es",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "/marissa-mi-amorcito",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#0a0510",
+  "theme_color": "#0a0510",
+  "categories": ["lifestyle", "entertainment"],
+  "icons": [
+    { "src": "icono/icono.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icono/icono.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/img/imagen1.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -163,10 +163,19 @@
   /* Alto real de viewport: --vh lo escribe Viewport.js como fallback
      para navegadores sin dvh (Safari antiguo). */
   --vh: 1vh;
-  --app-h: 100dvh;
+  /* El alto GRANDE, no el dinámico. `100dvh` encoge cuando iOS saca la
+     barra de direcciones, y la hoja se quedaba más corta que la pantalla
+     dejando asomar una franja de fondo por abajo. `100vh` en iOS ya es
+     el grande de toda la vida; donde exista `lvh`, mejor aún. De todas
+     formas Viewport.js lo sobrescribe en cuanto arranca. */
+  --app-h: 100vh;
 
   /* Tamaño mínimo de zona táctil */
   --touch: 44px;
+}
+
+@supports (height: 100lvh) {
+  :root { --app-h: 100lvh; }
 }
 
 /* Degradación automática en dispositivos de gama baja: el motor pone

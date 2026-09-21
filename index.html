@@ -14,8 +14,19 @@
 
 <title>Marissa · Mi Amorcito</title>
 
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>💌</text></svg>">
-<link rel="apple-touch-icon" href="assets/img/imagen1.png">
+<!-- INSTALABLE.
+
+     El manifiesto y el icono de aquí son el respaldo: valen si el libro se
+     abre sin JavaScript de por medio o si algo falla al arrancar. En cuanto
+     arranca, `src/core/Instalable.js` los sustituye por los de verdad, con
+     la imagen que haya en la carpeta `icono/` —la que sea, del tamaño que
+     sea— recortada a lo que pide cada sistema.
+
+     `mobile-web-app-capable` y su gemelo de Apple, que ya están arriba, son
+     lo que hace que instalado se abra a pantalla completa y sin barras. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icono/icono.png">
+<link rel="apple-touch-icon" href="icono/icono.png">
 
 <!-- LAS LETRAS NO PUEDEN RETRASAR EL LIBRO.
 

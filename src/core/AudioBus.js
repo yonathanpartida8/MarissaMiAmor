@@ -87,20 +87,46 @@ export class AudioBus extends Emitter {
   }
 
   /** Debe llamarse dentro de un gesto del usuario (click/touch). */
+  /**
+   * Despierta el audio dentro del gesto del usuario.
+   *
+   * ── POR QUÉ HAY UN TOPE DE TIEMPO, Y POR QUÉ IMPORTA TANTO ──────────
+   * `el.play()` devuelve una promesa que en Safari NO SE RESUELVE NUNCA
+   * si el elemento no tiene nada que reproducir: se queda esperando unos
+   * datos que no van a llegar, ni se resuelve ni falla. Y esto estaba
+   * dentro de un bucle con `await` seco.
+   *
+   * O sea que UNA SOLA pista vacía dejaba colgado todo lo de detrás. Y
+   * hay una pista vacía de fábrica: `Musica.mp3` pesa dos bytes mientras
+   * no se ponga la de verdad. Resultado: el botón de «Tócame para abrir»
+   * se quedaba en «abriendo…» para siempre y el libro no se abría. En
+   * Chrome fallaba rápido y casi no se notaba; en Safari no se abría y
+   * ya está. Eso era el «no me deja hacer nada».
+   *
+   * Ahora van todas A LA VEZ —son gestos del mismo toque, y encadenarlas
+   * gasta la ventanita que da iOS— y con medio segundo de tope. Si
+   * alguna no contesta, se sigue sin ella: el libro se abre igual y lo
+   * único que puede faltar es un sonido.
+   */
   async unlock() {
     if (this.unlocked) return true;
     const attempts = [...this.tracks.values(), ...this.turnPool.map((el) => ({ el, base: 0 }))];
-    for (const track of attempts) {
+    const uno = async (track) => {
       try {
         track.el.muted = true;
         await track.el.play();
         track.el.pause();
         track.el.currentTime = 0;
-        track.el.muted = false;
       } catch {
         /* seguimos: quizá otro sí arranque */
+      } finally {
+        track.el.muted = false;
       }
-    }
+    };
+    await Promise.race([
+      Promise.all(attempts.map(uno)).catch(() => {}),
+      new Promise((r) => setTimeout(r, 600)),
+    ]);
     this.unlocked = true;
     this.emit("unlocked");
     return true;

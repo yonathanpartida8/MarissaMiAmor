@@ -8,6 +8,7 @@
 import { createContext } from "./Context.js";
 import { Router } from "./Router.js";
 import { GLStage } from "../gl/GLStage.js";
+import { prepararInstalacion } from "./Instalable.js";
 import { UI } from "../ui/UI.js";
 import { installTextures } from "../components/textures.js";
 import {
@@ -56,6 +57,13 @@ export class App {
 
   async start() {
     installTextures();
+
+    /* El icono, el manifiesto y el ayudante de segundo plano. Va sin
+       `await`: que el libro se pueda instalar está muy bien, pero no
+       puede retrasar ni un cuadro la pantalla de apertura. */
+    prepararInstalacion(this.ctx)
+      .then((inst) => { this.ctx.instalacion = inst; })
+      .catch(() => {});
 
     // LA HABITACIÓN, ANTES QUE NADA.
     //
@@ -401,24 +409,42 @@ export class App {
       });
       qs(".boot__inner", this.boot).append(button);
 
+      /* ---- ABRIR NO PUEDE FALLAR NUNCA ----
+         Todo lo de dentro es adorno: sonido, vibración, giroscopio,
+         destello. Si algo de eso revienta o se queda colgado, el libro
+         TIENE que abrirse igual, porque si no la página se queda con el
+         botón puesto y no hay manera de entrar. Por eso el `resolve` va
+         en un `finally` y no al final del cuerpo. */
+      let abriendo = false;
       const open = async () => {
+        if (abriendo) return;
+        abriendo = true;
         button.disabled = true;
         button.textContent = "abriendo…";
+        try {
+          await this.ctx.audio.unlock();
+          if (this.ctx.store.get("musicOn") !== false) this.ctx.audio.startMusic(4200);
+          this.ctx.audio.play("open", { volume: 0.8 });
+          this.ctx.haptics.play("open");
 
-        await this.ctx.audio.unlock();
-        if (this.ctx.store.get("musicOn") !== false) this.ctx.audio.startMusic(4200);
-        this.ctx.audio.play("open", { volume: 0.8 });
-        this.ctx.haptics.play("open");
+          // El giroscopio se pide aquí, dentro del gesto (iOS lo exige).
+          this.ctx.pointer.enableTilt().catch(() => {});
 
-        // El giroscopio se pide aquí, dentro del gesto (iOS lo exige).
-        this.ctx.pointer.enableTilt().catch(() => {});
-
-        this.ctx.gl?.flash(0.55);
-        this.ctx.gl?.pulse(1);
-        resolve();
+          this.ctx.gl?.flash(0.55);
+          this.ctx.gl?.pulse(1);
+        } catch {
+          /* da igual qué haya fallado: se abre igual */
+        } finally {
+          resolve();
+        }
       };
 
-      button.addEventListener("click", open, { once: true });
+      /* `pointerup` además de `click`: en iOS, si el dedo se mueve tres
+         píxeles mientras toca, Safari se come el `click` y el botón no
+         hace nada. Con los dos, y el cerrojo de arriba, entra siempre y
+         una sola vez. */
+      button.addEventListener("click", open);
+      button.addEventListener("pointerup", open);
     });
   }
 
