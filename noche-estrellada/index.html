@@ -15268,13 +15268,51 @@ function moverDesmayo(dt, t) {
    ataque se esquivaría caminando, que es justo lo que no puede pasar.
    ══════════════════════════════════════════════════════════════════════ */
 
-/* Cuántos búhos trae cada oleada. Cinco números y se acabó: subir la
-   dificultad es cambiar esta línea. */
-/* Diez oleadas. Las cinco primeras son las de siempre; de la sexta a la
-   novena aprieta, y la décima no es una oleada: es EL JEFE. */
-const OLEADAS = [3, 5, 7, 10, 14, 12, 16, 18, 22, 0];
+/* Cuántos bichos trae cada ronda. Diez números y se acabó: subir la
+   dificultad es cambiar esta línea. La décima no trae bichos: trae al
+   JEFE.
+
+   ── POR QUÉ BAJAN LOS NÚMEROS DEL FINAL ─────────────────────────────
+   Iban hasta veintidós, y veintidós bichos encima a la vez no es
+   difícil: es imposible. Con la escopeta enfriando cuatro décimas entre
+   tiro y tiro, veintidós llegando a la vez son más de lo que se puede
+   disparar aunque no falles ni uno. Perder por no dar abasto no enseña
+   nada y no se puede arreglar jugando mejor.
+
+   Ahora el total sube pero NUNCA hay más de `MAX_VIVOS` en pantalla a
+   la vez: los demás esperan turno. La ronda dura más, aprieta más, y se
+   puede ganar. */
+const OLEADAS = [3, 5, 7, 9, 12, 11, 14, 15, 17, 0];
 const OLEADA_JEFE = 10;
 const VIDAS = 5;
+
+/* El tope de bichos vivos a la vez. Sale de la cadencia del arma: con
+   0.42 s entre tiros, ocho es lo máximo que se puede limpiar sin que se
+   te echen encima aunque aciertes todos. */
+const MAX_VIVOS = 8;
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS BICHOS
+
+   No todos son búhos. Un bosque que sólo manda búhos se aprende en dos
+   rondas: sale uno, apuntas, revienta. Con tres clases distintas hay
+   que MIRAR qué viene, porque cada una pide otra cosa:
+
+     · el BÚHO va derecho y aguanta un tiro. Es el de siempre.
+     · el MURCIÉLAGO es chico, rapidísimo y va dando bandazos. Cuesta
+       apuntarle, pero cae al primer tiro y no quita más que los demás.
+     · el CUERVO es grande y lento, y AGUANTA DOS. El primero lo enfada
+       —se pone rojo y acelera—, y si lo dejas a medias te llega.
+
+   Cada uno aparece en su momento: los murciélagos desde la segunda
+   ronda y los cuervos desde la cuarta, así que la dificultad no sube
+   sólo en cantidad.
+   ══════════════════════════════════════════════════════════════════════ */
+const BICHOS = {
+  buho:        { esc: 1,    vel: [0.10, 0.17], vaiven: [0.6, 1.5], vida: 1, desde: 1, peso: 6 },
+  murcielago:  { esc: 0.62, vel: [0.17, 0.26], vaiven: [2.2, 3.6], vida: 1, desde: 2, peso: 4 },
+  cuervo:      { esc: 1.34, vel: [0.075, 0.11], vaiven: [0.3, 0.7], vida: 2, desde: 4, peso: 3 },
+};
 
 /* ══════════════════════════════════════════════════════════════════════
    EL JEFE DE LA DÉCIMA, Y LA ROCA
@@ -15324,6 +15362,8 @@ const caza = {
   relojSalida: 0,
   buhos: [],
   anillos: [],
+  /* Los corazones que sueltan al reventar. Se tocan y devuelven vida. */
+  corazones: [],
   /* El fogonazo del cañón y el enfriamiento entre disparos. */
   disparo: 0,
   fogonazo: 0,
@@ -15358,6 +15398,7 @@ function arrancarCaceria() {
   caza.vidas = VIDAS;
   caza.buhos.length = 0;
   caza.anillos.length = 0;
+  caza.corazones.length = 0;
   caza.casquillos.length = 0;
   caza.culatazo = 0;
   caza.apunta = caza.apuntaObj = -1.15;
@@ -15392,7 +15433,25 @@ function siguienteOleada() {
   lanzarRayo(mez(2.2, 0.25, (caza.oleada - 1) / (OLEADAS.length - 1)));
 }
 
-/** Saca un búho por un canto de la pantalla. */
+/** Cuántos hay vivos ahora mismo. */
+function vivosEnCaza() {
+  let n = 0;
+  for (const o of caza.buhos) if (o.muerte < 0) n++;
+  return n;
+}
+
+/** Elige qué clase de bicho toca, según la ronda. */
+function claseDeBicho() {
+  const ronda = caza.oleada;
+  const posibles = Object.entries(BICHOS).filter(([, c]) => ronda >= c.desde);
+  let total = 0;
+  for (const [, c] of posibles) total += c.peso;
+  let t = Math.random() * total;
+  for (const [id, c] of posibles) { t -= c.peso; if (t <= 0) return id; }
+  return "buho";
+}
+
+/** Saca un bicho por un canto de la pantalla. */
 function soltarBuhoCaza() {
   const J = sitioJugador();
   /* Salen de arriba y de los lados, nunca de abajo: abajo estás tú. */
@@ -15402,19 +15461,115 @@ function soltarBuhoCaza() {
   else if (desde < 0.67) { x = -A * 0.08; y = azar(H * 0.05, H * 0.6); }
   else { x = A * 1.08; y = azar(H * 0.05, H * 0.6); }
 
+  const clase = claseDeBicho();
+  const C = BICHOS[clase];
   caza.buhos.push({
+    clase,
     x0: x, y0: y,
     x, y,
     d: 1,
     /* Cada uno a lo suyo: si todos tardaran lo mismo, llegarían en
        bloque y se convertiría en un ritmo, no en un ataque. */
-    vel: azar(0.1, 0.17) * (1 + (caza.oleada - 1) * 0.06),
+    vel: azar(C.vel[0], C.vel[1]) * (1 + (caza.oleada - 1) * 0.05),
     f: azar(0, 6.283),
-    vaiven: azar(0.6, 1.5) * (Math.random() < 0.5 ? -1 : 1),
+    vaiven: azar(C.vaiven[0], C.vaiven[1]) * (Math.random() < 0.5 ? -1 : 1),
+    esc: C.esc,
+    vida: C.vida,
+    furia: 0,               // sube cuando le das y no cae
     ala: 0,
     muerte: -1,
     J,
   });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS CORAZONES
+
+   Cada tanto, un bicho suelta uno al reventar. Baja flotando y hay que
+   TOCARLO antes de que se caiga por abajo: no se recoge solo.
+
+   Y no salen siempre, ni cuando vas bien. Sólo cuando te queda menos de
+   la mitad de la vida, y entonces uno de cada seis. Un botiquín que cae
+   cuando ya no lo necesitas es basura en la pantalla; uno que cae justo
+   cuando estás a una vida de perder es la mejor cosa que le puede pasar
+   a una partida.
+   ══════════════════════════════════════════════════════════════════════ */
+function quizaSoltarCorazon(x, y) {
+  if (caza.vidas >= VIDAS) return;
+  if (caza.vidas > VIDAS * 0.5) return;
+  if (Math.random() > 0.17) return;
+  caza.corazones.push({ x, y, vy: -U * 6, t: 0, cogido: 0 });
+}
+
+function moverCorazones(dt) {
+  for (let i = caza.corazones.length - 1; i >= 0; i--) {
+    const c = caza.corazones[i];
+    c.t += dt;
+    if (c.cogido > 0) {
+      c.cogido += dt * 2.6;
+      if (c.cogido > 1) caza.corazones.splice(i, 1);
+      continue;
+    }
+    /* Sube un poco al salir y luego cae despacio, meciéndose. */
+    c.vy = Math.min(c.vy + U * 26 * dt, U * 13);
+    c.y += c.vy * dt;
+    c.x += Math.sin(c.t * 2.2) * U * 0.5;
+    if (c.y > H + U * 6) caza.corazones.splice(i, 1);
+  }
+}
+
+/** ¿El dedo ha tocado un corazón? Devuelve true si se ha llevado uno. */
+function tocarCorazonCaza(p) {
+  for (const c of caza.corazones) {
+    if (c.cogido > 0) continue;
+    if (Math.hypot(p.x - c.x, p.y - c.y) > U * 9) continue;
+    c.cogido = 0.001;
+    caza.vidas = Math.min(VIDAS, caza.vidas + 1);
+    refrescarVidas();
+    soltarBrillos(c.x, c.y, 10, 120);
+    tono(660, 0.12, "sine", 0.16);
+    setTimeout(() => tono(990, 0.16, "sine", 0.14), 90);
+    decir(c.x, c.y, "Una más :>", { importante: true, dur: 1.6 });
+    return true;
+  }
+  return false;
+}
+
+function dibujarCorazonesCaza() {
+  for (const c of caza.corazones) {
+    const k = clamp01(c.cogido);
+    const esc = U * (1.5 + k * 1.6);
+    const alfa = (1 - k) * (0.75 + 0.25 * Math.sin(c.t * 5));
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    haloOvalado(c.x, c.y, esc * 4, esc * 4, [
+      [0, `rgba(255,90,120,${0.3 * alfa})`],
+      [1, "rgba(255,90,120,0)"],
+    ], c.y);
+    ctx.globalCompositeOperation = "source-over";
+    ctx.translate(c.x, c.y);
+    ctx.scale(esc / 16, esc / 16);
+    ctx.globalAlpha = alfa;
+    /* La misma curva de corazón que el humo de la chimenea y las
+       estrellas de la pared: en este libro los corazones se dibujan
+       todos igual. */
+    ctx.beginPath();
+    for (let i = 0; i <= 40; i++) {
+      const t = (i / 40) * 6.283;
+      const hx = 16 * Math.pow(Math.sin(t), 3);
+      const hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t)
+                 - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+      if (i === 0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy);
+    }
+    ctx.closePath();
+    ctx.fillStyle = "#ff5c78";
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,210,224,0.75)";
+    ctx.beginPath();
+    ctx.ellipse(-5, -6, 3.4, 2.2, -0.5, 0, 6.283);
+    ctx.fill();
+    ctx.restore();
+  }
 }
 
 function moverCaceria(dt) {
@@ -15471,13 +15626,20 @@ function moverCaceria(dt) {
   /* ---- Sacar los que falten ---- */
   if (caza.porSalir > 0) {
     caza.relojSalida -= dt;
-    if (caza.relojSalida <= 0) {
-      /* Cuanto más avanzada la oleada, más juntos salen. */
-      caza.relojSalida = azar(0.5, 1.1) / (1 + (caza.oleada - 1) * 0.22);
+    /* El TOPE: si ya hay ocho encima, el noveno espera. Sin esto, las
+       rondas de arriba soltaban veintidós a la vez y no había forma
+       humana de limpiarlas: perdías por no dar abasto, no por jugar
+       mal. Con el tope, el total sigue siendo el mismo, la ronda dura
+       más y siempre se puede ganar. */
+    if (caza.relojSalida <= 0 && vivosEnCaza() < MAX_VIVOS) {
+      /* Cuanto más avanzada la ronda, más juntos salen. */
+      caza.relojSalida = azar(0.45, 1) / (1 + (caza.oleada - 1) * 0.16);
       caza.porSalir--;
       soltarBuhoCaza();
     }
   }
+
+  moverCorazones(dt);
 
   /* ---- Moverlos ---- */
   const J = sitioJugador();
@@ -15514,10 +15676,24 @@ function moverCaceria(dt) {
 
     if (o.d <= 0) {
       caza.buhos.splice(i, 1);
-      golpearAlJugador(o);
-      /* Y si con ese golpe se acabó la partida, aquí ya no queda nada
-         que mover. */
-      if (caza.fase !== "oleada") return;
+      /* ---- LA ROCA TAMBIÉN PARA A LOS BICHOS ----
+         Antes sólo paraba el fuego del jefe, y eso dejaba la piedra
+         sirviendo para una sola cosa en una sola ronda. Ahora, metido
+         detrás, lo que viene volando se estrella contra la piedra y no
+         te toca.
+
+         Y no es gratis: desde ahí TAMPOCO SE DISPARA —lo mira
+         `dispararEscopeta`—, así que esconderse no gana la partida, sólo
+         te da aire. Hay que asomarse, tirar y volver a meterte, que es
+         justo lo que se quería que hiciera esa roca. */
+      if (aCubierto()) {
+        chocarContraLaRoca(o.x, o.y);
+      } else {
+        golpearAlJugador(o);
+        /* Y si con ese golpe se acabó la partida, aquí ya no queda nada
+           que mover. */
+        if (caza.fase !== "oleada") return;
+      }
     }
   }
 
@@ -15533,13 +15709,34 @@ function moverCaceria(dt) {
 
 /** El radio en pantalla de un búho, según lo cerca que esté. */
 function radioBuhoCaza(o) {
-  return U * mez(1.4, 10, Math.pow(1 - clamp01(o.d), 1.7));
+  return U * mez(1.4, 10, Math.pow(1 - clamp01(o.d), 1.7)) * (o.esc || 1);
 }
 
 /* ---- Disparar ----------------------------------------------------------- */
 
 function dispararEscopeta(p) {
   if (caza.disparo > 0) return true;
+
+  /* ---- DESDE DETRÁS DE LA ROCA NO SE DISPARA ----
+     Es la otra mitad del trato. La piedra te protege de todo —del fuego
+     del jefe y de lo que venga volando— y a cambio, mientras estés
+     detrás, no hay ángulo de tiro. Sin esto, la roca no sería una
+     cobertura: sería un sitio donde se gana sin hacer nada.
+
+     Lo que hay que hacer es asomarse, tirar y volver a meterse. Ése es
+     el juego, y es lo único que hace que la piedra pinte algo. */
+  if (aCubierto()) {
+    caza.disparo = 0.18;
+    caza.apuntaObj = Math.atan2(p.y - sitioJugador().y, p.x - sitioJugador().x);
+    if (!caza.avisoRoca || reloj - caza.avisoRoca > 6) {
+      caza.avisoRoca = reloj;
+      decir(A * 0.5, H * 0.3, "Desde aquí no tienes tiro. Asómate.",
+        { importante: true, dur: 2.2 });
+    }
+    golpe(0.03, 1400, 0.1, "bandpass");
+    return true;
+  }
+
   caza.disparo = 0.42;
   caza.fogonazo = 1;
   caza.culatazo = 1;
@@ -15605,7 +15802,30 @@ function dispararEscopeta(p) {
     if (d > r * 1.7 + U * 4) continue;
     if (d < mejorD) { mejorD = d; mejor = o; }
   }
-  if (mejor) { reventarBuho(mejor); return true; }
+  if (mejor) {
+    /* ---- LOS QUE AGUANTAN ----
+       El cuervo se lleva dos. El primero no lo mata: lo ENFADA. Se
+       pone rojo, acelera y se le nota, que es lo que avisa de que ese
+       bicho sigue viniendo y hay que volver a darle. Un enemigo con más
+       vida y sin señal ninguna sólo parece que el tiro ha fallado. */
+    mejor.vida = (mejor.vida ?? 1) - 1;
+    if (mejor.vida > 0) {
+      mejor.furia = 1;
+      mejor.vel *= 1.45;
+      caza.anillos.push({ x: mejor.x, y: mejor.y, r0: radioBuhoCaza(mejor) * 0.6, t: 0, dur: 0.3 });
+      for (let i = 0; i < (flojo ? 4 : 9); i++) {
+        soltar(mejor.x, mejor.y, {
+          vx: azar(-90, 90), vy: azar(-80, 40),
+          vida: azar(0.3, 0.8), tam: azar(0.9, 2),
+          tipo: TIPO.CHISPA, tono: 0.08,
+        });
+      }
+      golpe(0.05, 420, 0.24, "bandpass");
+      return true;
+    }
+    reventarBuho(mejor);
+    return true;
+  }
 
   /* ¿Y al jefe? Va después de los búhos: si hay uno pequeño encima de
      él, se le da al pequeño. Es lo que haría cualquiera. */
@@ -15647,6 +15867,7 @@ function humoDeFallo(p) {
 function reventarBuho(o) {
   o.muerte = 0;
   const r = radioBuhoCaza(o);
+  quizaSoltarCorazon(o.x, o.y);
 
   caza.anillos.push({ x: o.x, y: o.y, r0: r, t: 0, dur: 0.55 });
 
@@ -15709,6 +15930,23 @@ function aCubierto() {
   if (!R) return false;
   const J = sitioJugador();
   return Math.abs(J.x - R.x) < R.r * 1.15;
+}
+
+/** Algo se ha estrellado contra la piedra. Polvo, chasquido y sacudida. */
+function chocarContraLaRoca(x, y) {
+  const R = sitioRoca();
+  const px = R ? R.x : x;
+  const py = R ? R.y - R.r * 0.5 : y;
+  sacudir(0.28);
+  caza.anillos.push({ x: px, y: py, r0: U * 5, t: 0, dur: 0.4 });
+  for (let i = 0; i < (flojo ? 5 : 12); i++) {
+    soltar(px + azar(-U * 3, U * 3), py + azar(-U * 2, U * 2), {
+      vx: azar(-110, 110), vy: azar(-120, -10),
+      vida: azar(0.4, 1.1), tam: azar(1, 2.6),
+      tipo: TIPO.CHISPA, tono: 0.5,
+    });
+  }
+  golpe(0.08, 320, 0.3, "lowpass");
 }
 
 /* ---- EL JEFE ------------------------------------------------------------ */
@@ -16120,6 +16358,7 @@ function golpearAlJugador(o) {
 function perderCaceria() {
   caza.fase = "perdida";
   caza.buhos.length = 0;
+  caza.corazones.length = 0;
   decir(A * 0.5, H * 0.44, CONF.caza.caida, { misterio: true, importante: true, dur: 3 });
   /* Y se cae redonda. Se reaprovecha entero el desmayo que ya existía:
      el velo, la cámara que pierde el equilibrio y el despertar a las
@@ -16137,6 +16376,7 @@ function terminarCaceria() {
   caza.fase = "final";
   caza.t = 0;
   caza.buhos.length = 0;
+  caza.corazones.length = 0;
   /* Deja de llover poco a poco: el bosque se calma antes de que hable. */
   clima.lluviaObj = mez(caza.lluviaAntes, 0.25, 0.5);
   clima.tormentaObj = 0.2;
@@ -16191,6 +16431,7 @@ function limpiarCaceria(suave) {
   jefe.bolas.length = 0;
   caza.dicho = false;
   caza.buhos.length = 0;
+  caza.corazones.length = 0;
   caza.porSalir = 0;
   caza.oscuroObj = 0;
   clima.lluviaObj = caza.lluviaAntes;
@@ -16287,6 +16528,7 @@ function dibujarCaceria() {
   }
 
   for (const o of caza.buhos) dibujarBuhoCaza(o);
+  dibujarCorazonesCaza();
 
   /* Y el jefe, por detrás de los búhos normales: es más grande y está
      más lejos, así que los pequeños le pasan por delante. */
@@ -16364,13 +16606,52 @@ function dibujarEscopetaEnMano() {
   const atras = culat * U * 5;
   const ang = caza.apunta - culat * 0.16;
 
+  /* ---- LA RESPIRACIÓN ----
+     El arma nunca está del todo quieta: sube y baja un poco, y se
+     mueve más cuando no apuntas y menos justo después de disparar. Un
+     arma clavada en su sitio no la sostiene nadie; con esto la sostiene
+     alguien que está nervioso, que es lo que toca. */
+  const resp = Math.sin(reloj * 1.7) * U * 0.55 + Math.sin(reloj * 0.9 + 1.3) * U * 0.3;
+
   ctx.save();
-  ctx.translate(J.x - Math.cos(ang) * atras, J.y - Math.sin(ang) * atras + U * 2);
+  ctx.translate(J.x - Math.cos(ang) * atras,
+                J.y - Math.sin(ang) * atras + U * 2 + resp * (1 - culat));
   ctx.rotate(ang);
 
   /* Grande. Un arma en primera persona ocupa pantalla: a diecisiete
      unidades de largo y una y media de ancho salía una cerilla. */
   const L = U * 30, w = U * 3.4;
+
+  /* ---- LOS BRAZOS ----
+     Esto es lo que convierte «una escopeta dibujada encima de la
+     pantalla» en «TU escopeta». Sin brazos, el arma flota: es un icono
+     pegado al cristal. Con el antebrazo saliendo del canto de abajo y
+     la mano cerrada sobre el guardamanos, el arma la está sujetando
+     alguien, y ese alguien eres tú.
+
+     Van los primeros de todo, por debajo del arma, porque la mano
+     agarra por detrás y el arma le tapa los dedos. */
+  const piel = "#7a4f38", pielOsc = "#573524";
+  /* El brazo de atrás, el del gatillo: entra en diagonal desde abajo. */
+  ctx.fillStyle = pielOsc;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-L * 0.62, -w * 0.05, L * 0.5, w * 1.5, w * 0.5);
+  else ctx.rect(-L * 0.62, -w * 0.05, L * 0.5, w * 1.5);
+  ctx.fill();
+  /* El de delante, el que sujeta el guardamanos: más claro porque le
+     da la luz del cañón. */
+  ctx.fillStyle = piel;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(L * 0.1, w * 0.3, L * 0.34, w * 1.5, w * 0.5);
+  else ctx.rect(L * 0.1, w * 0.3, L * 0.34, w * 1.5);
+  ctx.fill();
+  /* La mano de delante, cerrada sobre la madera: cuatro nudillos. */
+  ctx.fillStyle = "#8a5b41";
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath();
+    ctx.ellipse(L * (0.18 + i * 0.075), w * 0.46, w * 0.17, w * 0.24, 0, 0, 6.283);
+    ctx.fill();
+  }
 
   /* La culata, entrando por abajo. */
   ctx.fillStyle = "#4a2f18";
@@ -16378,6 +16659,20 @@ function dibujarEscopetaEnMano() {
   if (ctx.roundRect) ctx.roundRect(-L * 0.42, -w * 0.55, L * 0.4, w * 1.25, w * 0.4);
   else ctx.rect(-L * 0.42, -w * 0.55, L * 0.4, w * 1.25);
   ctx.fill();
+  /* La cantonera y la veta de la culata. */
+  ctx.fillStyle = "#2a1a0e";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-L * 0.44, -w * 0.55, L * 0.04, w * 1.25, w * 0.2);
+  else ctx.rect(-L * 0.44, -w * 0.55, L * 0.04, w * 1.25);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(24,14,8,0.4)";
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(-L * 0.4, -w * 0.3 + i * w * 0.4);
+    ctx.lineTo(-L * 0.06, -w * 0.24 + i * w * 0.38);
+    ctx.stroke();
+  }
   /* La caja de mecanismos. */
   ctx.fillStyle = "#3e434b";
   ctx.beginPath();
@@ -16402,11 +16697,40 @@ function dibujarEscopetaEnMano() {
   if (ctx.roundRect) ctx.roundRect(L * 0.16, w * 0.1, L * 0.3, w * 0.7, w * 0.22);
   else ctx.rect(L * 0.16, w * 0.1, L * 0.3, w * 0.7);
   ctx.fill();
-  /* Y el punto de mira. */
-  ctx.fillStyle = "rgba(230,200,124,0.9)";
+  /* ---- LA MIRA ----
+     El grano de latón en la punta y la banda que lo une con la caja.
+     Es pequeñísima y hace más de lo que parece: el ojo la sigue, y por
+     eso se sabe hacia dónde apunta el arma sin tener que pensarlo.
+     Cuando de verdad estás apuntando —el dedo puesto— se enciende. */
+  ctx.fillStyle = "rgba(60,66,74,0.9)";
   ctx.beginPath();
-  ctx.arc(L * 0.94, -w * 0.62, w * 0.16, 0, 6.283);
+  if (ctx.roundRect) ctx.roundRect(L * 0.3, -w * 0.76, L * 0.68, w * 0.16, w * 0.06);
+  else ctx.rect(L * 0.3, -w * 0.76, L * 0.68, w * 0.16);
   ctx.fill();
+  const apuntando = dedo.dentro && caza.fase !== "no";
+  ctx.save();
+  if (apuntando) ctx.globalCompositeOperation = "lighter";
+  ctx.fillStyle = apuntando ? "rgba(255,226,150,0.95)" : "rgba(210,182,112,0.85)";
+  ctx.beginPath();
+  ctx.arc(L * 0.95, -w * 0.72, w * (apuntando ? 0.22 : 0.16), 0, 6.283);
+  ctx.fill();
+  ctx.restore();
+
+  /* ---- EL ARMA VACÍA ----
+     Los dos cañones se ponen rojos un momento después de disparar. Es
+     la única forma de ver, sin contadores ni números, que acabas de
+     tirar y que todavía no puedes volver a hacerlo. */
+  if (caza.disparo > 0.04) {
+    const cal = clamp01(caza.disparo / 0.42);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.fillStyle = `rgba(255,90,40,${0.3 * cal})`;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(L * 0.78, -w * 0.4, L * 0.2, w * 0.8, w * 0.2);
+    else ctx.rect(L * 0.78, -w * 0.4, L * 0.2, w * 0.8);
+    ctx.fill();
+    ctx.restore();
+  }
 
   /* ---- El fogonazo, en la BOCA ----
      Una estrella corta y muy blanca por dentro, no un halo naranja. Lo
@@ -16462,6 +16786,167 @@ function dibujarEscopetaEnMano() {
  * son los ojos y la forma de las alas, y eso es exactamente lo que da
  * miedo de ellos.
  */
+/**
+ * EL MURCIÉLAGO.
+ *
+ * Chico, rapidísimo y a bandazos. No tiene ojos que se vean: lo que se
+ * ve de él son las alas, que son enormes para su cuerpo y se baten al
+ * doble de velocidad que las de un búho. Eso solo ya lo distingue a la
+ * primera aunque los dos sean siluetas negras, que es de lo que se
+ * trata: hay que saber qué viene sin tener que fijarse.
+ */
+function dibujarMurcielagoCaza(o, r, esc, alfa) {
+  const bat = Math.sin(o.ala * 2.4);
+  ctx.save();
+  ctx.translate(o.x, o.y);
+  ctx.scale(esc, esc);
+  ctx.globalAlpha = alfa;
+  /* Se ladea hacia donde va: un murciélago no vuela nunca recto. */
+  ctx.rotate(Math.sin(o.ala * 1.3 + o.f) * 0.3);
+
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  haloOvalado(0, 0, r * 4.6, r * 2.6, [
+    [0, `rgba(150,60,180,${0.1 * alfa})`],
+    [1, "rgba(150,60,180,0)"],
+  ]);
+  ctx.restore();
+
+  ctx.fillStyle = "rgba(10,8,14,0.96)";
+  for (const s of [-1, 1]) {
+    /* El ala de membrana: tres dedos y el borde festoneado entre
+       ellos. Sin los picos entre dedo y dedo es una hoja, no un ala de
+       murciélago. */
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.2);
+    ctx.quadraticCurveTo(s * r * 1.6, -r * (1.1 + bat * 1.5),
+                         s * r * 3.1, -r * (0.2 + bat * 1.1));
+    for (let i = 2; i >= 0; i--) {
+      const t = i / 3;
+      ctx.quadraticCurveTo(
+        s * r * mez(0.9, 2.7, t + 0.12), r * (0.9 - bat * 0.5),
+        s * r * mez(0.55, 2.55, t), r * (0.25 - bat * 0.75));
+    }
+    ctx.quadraticCurveTo(s * r * 0.3, r * 0.5, 0, r * 0.45);
+    ctx.closePath();
+    ctx.fill();
+  }
+  /* El cuerpo: pequeñito, con sus dos orejas de punta. */
+  ctx.fillStyle = "rgba(16,13,22,0.98)";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r * 0.52, r * 0.78, 0, 0, 6.283);
+  ctx.fill();
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(s * r * 0.12, -r * 0.6);
+    ctx.lineTo(s * r * 0.5, -r * 1.35);
+    ctx.lineTo(s * r * 0.44, -r * 0.45);
+    ctx.closePath();
+    ctx.fill();
+  }
+  /* Y dos rendijas moradas por ojos: no son redondas, son cortes. */
+  ctx.globalCompositeOperation = "lighter";
+  for (const s of [-1, 1]) {
+    haloOvalado(s * r * 0.2, -r * 0.24, r * 0.9, r * 0.9, [
+      [0, `rgba(216,120,255,${0.55 * alfa})`],
+      [1, "rgba(180,60,220,0)"],
+    ]);
+    ctx.fillStyle = `rgba(240,190,255,${0.9 * alfa})`;
+    ctx.beginPath();
+    ctx.ellipse(s * r * 0.2, -r * 0.24, r * 0.07, r * 0.15, s * 0.4, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
+}
+
+/**
+ * EL CUERVO.
+ *
+ * Grande, lento y AGUANTA DOS TIROS. El primero no lo mata: lo enfada,
+ * y entonces se pone rojo y acelera.
+ *
+ * Esa señal es lo importante. Un enemigo que aguanta dos tiros sin
+ * enseñar que le has dado no se lee como «aguanta dos»: se lee como que
+ * has fallado. Aquí, en cuanto le entra el primero, se le enciende todo
+ * el cuerpo y deja un rastro: no hay manera de confundirlo.
+ */
+function dibujarCuervoCaza(o, r, esc, alfa) {
+  const bat = Math.sin(o.ala * 0.85);
+  const furia = clamp01(o.furia || 0);
+  ctx.save();
+  ctx.translate(o.x, o.y);
+  ctx.scale(esc, esc);
+  ctx.globalAlpha = alfa;
+
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  haloOvalado(0, 0, r * 5, r * 3.4, [
+    [0, furia > 0.1
+        ? `rgba(255,60,40,${(0.2 + 0.1 * Math.sin(reloj * 9)) * alfa})`
+        : `rgba(120,130,180,${0.08 * alfa})`],
+    [1, "rgba(160,30,34,0)"],
+  ]);
+  ctx.restore();
+
+  /* Las alas, largas y con las plumas de la punta separadas, que es lo
+     que hace que un pájaro grande se lea como grande. */
+  ctx.fillStyle = furia > 0.1 ? "rgba(34,10,12,0.96)" : "rgba(9,9,14,0.96)";
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.25);
+    ctx.quadraticCurveTo(s * r * 1.5, -r * (0.7 + bat * 1.1),
+                         s * r * 2.7, -r * (0.05 + bat * 0.9));
+    ctx.quadraticCurveTo(s * r * 2.1, r * (0.5 - bat * 0.2),
+                         s * r * 0.9, r * 0.7);
+    ctx.quadraticCurveTo(s * r * 0.4, r * 0.85, 0, r * 0.6);
+    ctx.closePath();
+    ctx.fill();
+    /* Las cuatro plumas largas de la punta, separadas de verdad. */
+    for (let i = 0; i < 4; i++) {
+      const t = i / 3;
+      const a0 = -r * (0.1 + bat * 0.85) - r * 0.1 * t;
+      ctx.beginPath();
+      ctx.ellipse(s * r * mez(2.5, 3.25, t), a0 + r * t * 0.42,
+                  r * 0.42, r * 0.13, s * (0.25 + t * 0.4), 0, 6.283);
+      ctx.fill();
+    }
+  }
+  /* El cuerpo, alargado, y la cola en cuña. */
+  ctx.beginPath();
+  ctx.ellipse(0, r * 0.05, r * 0.72, r * 1.05, 0, 0, 6.283);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.3, r * 0.8);
+  ctx.lineTo(0, r * 2);
+  ctx.lineTo(r * 0.3, r * 0.8);
+  ctx.closePath();
+  ctx.fill();
+  /* El pico, que es lo que lo hace cuervo y no mirlo: largo y recto. */
+  ctx.fillStyle = furia > 0.1 ? "rgba(255,170,90,0.95)" : "rgba(120,116,128,0.9)";
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.08, -r * 0.6);
+  ctx.lineTo(r * 0.82, -r * 0.42);
+  ctx.lineTo(-r * 0.08, -r * 0.22);
+  ctx.closePath();
+  ctx.fill();
+  /* Y el ojo: un punto blanco frío, o rojo si ya le has dado. */
+  ctx.globalCompositeOperation = "lighter";
+  const col = furia > 0.1 ? [255, 70, 50] : [190, 210, 255];
+  haloOvalado(r * 0.1, -r * 0.55, r * 1.5, r * 1.5, [
+    [0, `rgba(${col[0]},${col[1]},${col[2]},${(0.45 + furia * 0.35) * alfa})`],
+    [1, `rgba(${col[0]},${col[1]},${col[2]},0)`],
+  ]);
+  ctx.fillStyle = `rgba(255,${240 - furia * 150},${235 - furia * 170},${0.95 * alfa})`;
+  ctx.beginPath();
+  ctx.arc(r * 0.1, -r * 0.55, r * 0.15, 0, 6.283);
+  ctx.fill();
+  ctx.restore();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
+}
+
 function dibujarBuhoCaza(o) {
   const r = radioBuhoCaza(o);
   const muerto = o.muerte >= 0;
@@ -16471,19 +16956,45 @@ function dibujarBuhoCaza(o) {
   const alfa = 1 - k;
   if (alfa < 0.02) return;
 
+  if (o.clase === "murcielago") { dibujarMurcielagoCaza(o, r, esc, alfa); return; }
+  if (o.clase === "cuervo") { dibujarCuervoCaza(o, r, esc, alfa); return; }
+
   ctx.save();
   ctx.translate(o.x, o.y);
   ctx.scale(esc, esc);
   ctx.globalAlpha = alfa;
 
-  /* Un resplandor rojo flojo por detrás de todo. No es un adorno: es
-     lo que SEPARA al bicho del bosque. Sin él, una silueta negra sobre
-     unos árboles negros no se ve, y lo único que llegaba a la pantalla
-     eran dos ojos flotando. */
+  /* ---- LA ESTELA ----
+     Tres sombras suyas, más chicas y más tenues, en el sitio donde
+     estaba hace un momento. Es lo que convierte «un búho negro que se
+     acerca» en «algo que VIENE a por ti»: se le ve la trayectoria, y
+     verla venir da más miedo que verlo llegar. */
+  if (!muerto) {
+    const haciaMi = Math.atan2(o.J ? o.J.y - o.y : 1, o.J ? o.J.x - o.x : 0);
+    for (let i = 3; i >= 1; i--) {
+      const d = r * 0.5 * i;
+      ctx.save();
+      ctx.globalAlpha = alfa * 0.13 * (1 - i * 0.22);
+      ctx.fillStyle = "#0a0810";
+      ctx.beginPath();
+      ctx.ellipse(-Math.cos(haciaMi) * d, -Math.sin(haciaMi) * d,
+                  r * (1 - i * 0.12), r * 1.08 * (1 - i * 0.12), 0, 0, 6.283);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  /* Un resplandor rojo por detrás de todo. No es un adorno: es lo que
+     SEPARA al bicho del bosque. Sin él, una silueta negra sobre unos
+     árboles negros no se ve, y lo único que llegaba a la pantalla eran
+     dos ojos flotando. Y late: un halo fijo es una lámpara, uno que
+     respira es algo vivo y con malas intenciones. */
+  const late = 0.12 + 0.05 * Math.sin(reloj * 5 + o.f);
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
-  haloOvalado(0, 0, r * 4.4, r * 3.4, [
-    [0, `rgba(180,40,44,${0.12 * alfa})`],
+  haloOvalado(0, 0, r * 5, r * 3.9, [
+    [0, `rgba(210,44,40,${late * alfa})`],
+    [0.45, `rgba(160,24,28,${late * 0.4 * alfa})`],
     [1, "rgba(160,30,34,0)"],
   ]);
   ctx.restore();
@@ -16548,14 +17059,26 @@ function dibujarBuhoCaza(o) {
   ctx.globalCompositeOperation = "lighter";
   for (const s of [-1, 1]) {
     const ex = s * r * 0.42, ey = -r * 0.12;
-    const er = r * 0.3;
-    haloOvalado(ex, ey, er * 4, er * 4, [
-      [0, `rgba(255,80,60,${0.5 * alfa})`],
-      [0.4, `rgba(220,30,30,${0.16 * alfa})`],
+    const er = r * 0.34;
+    /* ---- LOS OJOS ----
+       Tres capas de halo y no una, y el pico brillante casi blanco. Un
+       ojo rojo sobre un cuerpo negro con una sola capa se lee como una
+       pegatina; con el halo ancho, el medio y el punto caliente dentro,
+       se lee como algo encendido POR DENTRO, que es lo que tiene que
+       parecer. Y la ceja de encima es la mitad del gesto: sin ella son
+       dos luces, con ella es una mirada de odio. */
+    haloOvalado(ex, ey, er * 6, er * 6, [
+      [0, `rgba(255,96,64,${0.66 * alfa})`],
+      [0.28, `rgba(238,40,34,${0.3 * alfa})`],
       [1, "rgba(200,20,20,0)"],
     ]);
-    ctx.fillStyle = `rgba(255,150,120,${0.95 * alfa})`;
+    /* El punto caliente de dentro va pequeño y no del todo blanco: en
+       modo de sumar, un núcleo grande y blanco se come el rojo y los
+       ojos se leen como dos focos de obra en vez de como brasas. */
+    ctx.fillStyle = `rgba(255,150,110,${0.85 * alfa})`;
     ctx.beginPath(); ctx.arc(ex, ey, er * 0.62, 0, 6.283); ctx.fill();
+    ctx.fillStyle = `rgba(255,206,176,${0.75 * alfa})`;
+    ctx.beginPath(); ctx.arc(ex, ey, er * 0.26, 0, 6.283); ctx.fill();
     ctx.fillStyle = `rgba(255,236,226,${0.9 * alfa})`;
     ctx.beginPath(); ctx.arc(ex - er * 0.2, ey - er * 0.2, er * 0.22, 0, 6.283); ctx.fill();
   }
@@ -18648,7 +19171,10 @@ zona.addEventListener("pointerdown", (e) => {
        seguir arrastrando después de haber disparado. Apretar dispara;
        apretar y arrastrar dispara y además te mueve, que es justo lo
        que hace falta para meterse detrás de la roca. */
-    if (enCombate()) dispararEscopeta(p);
+    /* Un corazón se coge TOCÁNDOLO, y eso manda sobre el gatillo: si
+       hay uno bajo el dedo, el toque lo recoge en vez de disparar. Lo
+       pequeño gana a lo grande, como en todo el resto del libro. */
+    if (enCombate() && !tocarCorazonCaza(p)) dispararEscopeta(p);
     espesura.agarre = {
       id: e.pointerId, x: p.x, y: p.y, x0: p.x, t: reloj, corrido: 0,
       /* Ya se disparó al apretar: al soltar no hay que volver a hacerlo. */
