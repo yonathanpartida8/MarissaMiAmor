@@ -7809,10 +7809,16 @@ function dibujarCajon(lx, ly, mw, mh) {
  * refleje, y por eso es lo que se ve primero al abrir.
  */
 function dibujarBotella(x, y, k) {
+  /* Reventada no hay nada que dibujar: el cajón se queda con su hueco
+     y unos cristalitos que ya soltaron las partículas. */
+  if (secretos.cajon.rota) return;
   const L = U * 7, r = U * 1.5;
+  const tmb = secretos.cajon.tiembla;
   ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(-0.08);
+  /* El temblor del último golpe: corto y rápido, como el vidrio. */
+  ctx.translate(x + Math.sin(reloj * 60) * tmb * U * 0.5,
+                y + Math.cos(reloj * 71) * tmb * U * 0.3);
+  ctx.rotate(-0.08 + tmb * 0.05);
   ctx.globalAlpha = clamp01(k * 1.6);
 
   /* El cuerpo: vidrio verde oscuro. */
@@ -7825,6 +7831,29 @@ function dibujarBotella(x, y, k) {
   if (ctx.roundRect) ctx.roundRect(-L * 0.5, -r, L * 0.78, r * 2, r * 0.7);
   else ctx.rect(-L * 0.5, -r, L * 0.78, r * 2);
   ctx.fill();
+
+  /* ---- LAS GRIETAS ----
+     Una más por cada toque a partir del tercero. Van SIEMPRE en el
+     mismo sitio —salen de una cuenta fija, no del azar—, así que se ve
+     que las de antes siguen ahí y que sólo ha aparecido una nueva. Con
+     grietas sorteadas en cada cuadro el vidrio hervía. */
+  const gri = secretos.cajon.grietas || 0;
+  if (gri > 0) {
+    ctx.strokeStyle = "rgba(226,244,230,0.62)";
+    ctx.lineWidth = Math.max(1, r * 0.11);
+    ctx.lineCap = "round";
+    for (let i = 0; i < gri; i++) {
+      const bx = -L * 0.34 + (i * 0.23) * L * 0.6;
+      const by = (i % 2 ? -1 : 1) * r * 0.42;
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx + r * 0.5, by - r * 0.45);
+      ctx.lineTo(bx + r * 0.25, by - r * 0.92);
+      ctx.moveTo(bx + r * 0.5, by - r * 0.45);
+      ctx.lineTo(bx + r * 1.05, by - r * 0.3);
+      ctx.stroke();
+    }
+  }
   /* El cuello y el corcho. */
   ctx.fillStyle = "rgba(44,78,54,0.9)";
   ctx.fillRect(L * 0.28, -r * 0.42, L * 0.16, r * 0.84);
@@ -8013,7 +8042,7 @@ function dibujarHabitacion() {
   /* ---- La lámpara de la mesilla ---- */
   /* Metida hacia dentro: a 0.92 del ancho de la ventana se le salía
      media mesilla por el canto de la pantalla en vertical. */
-  const lx = Math.min(vx + v.w * 0.85, A - U * 9), ly = H * 0.62;
+  const lx = Math.min(vx + v.w * 0.85, A - U * 12), ly = H * 0.62;
   if (hab.lampara > 0.02) {
     ctx.globalCompositeOperation = "lighter";
     const g = ctx.createRadialGradient(lx, ly, 0, lx, ly, U * 26);
@@ -8128,6 +8157,9 @@ function dibujarHabitacion() {
 
   /* ---- El reloj de la mesilla, si ya ha pasado lo que tenía que pasar ---- */
   dibujarReloj3();
+
+  /* ---- Y lo que sale del libro del suelo, por encima de todo ---- */
+  dibujarJuntosPorSiempre();
 
   /* ---- Cuando se apaga todo ----
      El susto de la ventana baja las luces de la habitación pero NO las
@@ -9100,7 +9132,7 @@ const TODO_LO_ESCONDIDO = [
   /* En el cuarto */
   "cuadro", "ventana", "radio", "frasco", "planta", "guitarra", "tapete",
   "estrellas", "libros", "vela", "taza", "nudo", "deseo",
-  "botella", "papelBotella", "rayas", "manta",
+  "botella", "papelBotella", "botellaRota", "libroSuelo", "rayas", "manta",
   /* En el bosque */
   "relojBosque", "caceria", "setas", "luciernagas", "flecha", "charco",
   /* Y en el cielo */
@@ -17108,6 +17140,9 @@ const cosas = {
   /* Las estrellitas que brillan en la oscuridad, pegadas en la pared
      de arriba. Ver más abajo: son el secreto grande del cuarto. */
   cielo: { lista: [], trazo: 0, hecha: false, avisada: false },
+  /* El libro tirado en el suelo. Se abre solo una vez, y lo que sale
+     de dentro no se olvida. */
+  libro: { abierto: 0, abiertoObj: 0, fuego: 0, pulso: 0, hecho: false, t: 0 },
 };
 
 function construirCosas() {
@@ -17120,6 +17155,9 @@ function construirCosas() {
       ritmo: azar(0.6, 1.8),
     });
   }
+  cosas.libro.hecho = !!recuerdo.leer("libroSuelo", 0);
+  cosas.libro.abierto = cosas.libro.abiertoObj = 0;
+  cosas.libro.fuego = 0;
   construirCielo();
 }
 
@@ -17364,11 +17402,26 @@ function sitiosCosas() {
   const gr = clamp((sy - ry) * 0.42, U * 6, U * 11);
   const gy = sy - gr * 0.96;
   return {
-    repisa:   { x: izq + dx, y: ry + dy, w: U * 18, h: U * 1.2 },
-    radio:    { x: izq - U * 5.2 + dx, y: ry - U * 2.6 + dy, r: U * 4 },
-    frasco:   { x: izq + U * 0.6 + dx, y: ry - U * 2.4 + dy, r: U * 2.6 },
-    planta:   { x: izq + U * 5.6 + dx, y: ry - U * 2 + dy, r: U * 3.4 },
-    guitarra: { x: izq - U * 1 + dx, y: gy + dy, r: gr },
+    /* ---- LO DE LA REPISA, SEPARADO ----
+       Estaba todo pegado: el radio, el frasco y la planta se tocaban
+       entre ellos y se leían como un bulto. La repisa se ensancha dos
+       unidades y los tres se reparten con dos de aire entre cada dos,
+       que es justo lo que hace falta para que cada uno se vea como una
+       cosa y no como parte de la de al lado. */
+    repisa:   { x: izq + dx, y: ry + dy, w: U * 21, h: U * 1.2 },
+    radio:    { x: izq - U * 6.6 + dx, y: ry - U * 2.6 + dy, r: U * 4 },
+    frasco:   { x: izq + U * 0.4 + dx, y: ry - U * 2.4 + dy, r: U * 2.6 },
+    planta:   { x: izq + U * 7.2 + dx, y: ry - U * 2 + dy, r: U * 3.4 },
+    /* Y la guitarra se aparta de debajo del radio: apoyada justo ahí
+       parecía colgada de la repisa. */
+    guitarra: { x: izq + U * 2.6 + dx, y: gy + dy, r: gr },
+    /* El libro, tirado en las tablas entre el tapete y la mesilla, y
+       bien abajo: ahí está el único hueco de suelo que quedaba libre.
+       A la izquierda no cabía —se juntaba con la guitarra, que también
+       está apoyada en el suelo— y en medio se le montaba el tapete. */
+    libro:    { x: Math.min(v.x + v.w * 0.51, A - U * 24) + dx,
+                y: mez(sy, H * (apaisado ? 0.74 : 0.70), 0.78) + dy,
+                r: U * 5.5 },
     tapete:   { x: v.x + dx, y: mez(sy, H * (apaisado ? 0.74 : 0.70), 0.52) + dy, r: U * 15 },
     interruptor: { x: Math.min(v.x + v.w * 1.0, A - U * 4.5) + dx, y: v.y + v.h * 0.12 + dy, r: U * 2.6 },
   };
@@ -17384,6 +17437,13 @@ function moverCosas(dt) {
   cosas.tapete.pulso = Math.max(0, cosas.tapete.pulso - dt * 1.6);
   cosas.interruptor.pulso = Math.max(0, cosas.interruptor.pulso - dt * 3);
   cosas.frasco.pulso = Math.max(0, cosas.frasco.pulso - dt * 1.2);
+  /* El libro del suelo: se abre con su peso y el fuego prende después,
+     no a la vez. Prendiendo a la vez parecía un interruptor. */
+  cosas.libro.t += dt;
+  cosas.libro.pulso = Math.max(0, cosas.libro.pulso - dt * 2);
+  cosas.libro.abierto = damp(cosas.libro.abierto, cosas.libro.abiertoObj, 4.5, dt);
+  const prende = cosas.libro.abierto > 0.55 ? 1 : 0;
+  cosas.libro.fuego = damp(cosas.libro.fuego, prende, 1.6, dt);
   cosas.frasco.abierto = Math.max(0, cosas.frasco.abierto - dt * 0.4);
   moverCielo(dt);
 }
@@ -17411,6 +17471,188 @@ function dibujarCosas() {
   dibujarPlanta(S.planta);
   dibujarGuitarra(S.guitarra);
   dibujarInterruptor(S.interruptor);
+  dibujarLibroSuelo(S.libro);
+}
+
+/**
+ * EL LIBRO DEL SUELO.
+ *
+ * Está tirado boca abajo en el rincón vacío, como si se hubiera caído y
+ * nadie lo hubiera recogido. Cerrado no llama la atención: es un bulto
+ * marrón en la penumbra.
+ *
+ * Al tocarlo se abre, y de entre las páginas sale fuego —fuego de
+ * verdad, con sus lenguas y sus pavesas subiendo— y en el humo se queda
+ * escrito «Juntos por siempre» en rosa. No se quema: arde y sigue ahí.
+ *
+ * Es el único sitio del cuarto donde hay color rosa, y por eso se ve
+ * desde la otra punta cuando pasa.
+ */
+function dibujarLibroSuelo(S) {
+  const L = cosas.libro;
+  const a = clamp01(L.abierto);
+  const r = S.r;
+  const luz = hab.lampara;
+
+  ctx.save();
+  ctx.translate(S.x, S.y);
+
+  /* La sombra de contacto: es lo que lo apoya en las tablas. */
+  ctx.fillStyle = `rgba(0,0,0,${0.36 - a * 0.1})`;
+  ctx.beginPath();
+  ctx.ellipse(0, r * 0.26, r * (1.05 + a * 0.35), r * 0.26, 0, 0, 6.283);
+  ctx.fill();
+
+  /* El resplandor del fuego en el suelo de alrededor, si ya arde. */
+  if (L.fuego > 0.01) {
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    haloOvalado(0, -r * 0.2, r * 5 * L.fuego, r * 2.6 * L.fuego, [
+      [0, `rgba(255,140,80,${0.3 * L.fuego})`],
+      [0.5, `rgba(255,90,140,${0.12 * L.fuego})`],
+      [1, "rgba(255,90,140,0)"],
+    ], 0);
+    ctx.restore();
+  }
+
+  const tapa = `rgb(${Math.round(mez(52, 108, luz))},${Math.round(mez(26, 52, luz))},${Math.round(mez(30, 58, luz))})`;
+  const hoja = `rgb(${Math.round(mez(120, 218, luz))},${Math.round(mez(112, 206, luz))},${Math.round(mez(98, 184, luz))})`;
+
+  if (a < 0.02) {
+    /* CERRADO: un libro de tapa dura, un poco de canto, con el corte de
+       las hojas asomando. Nada que llame la atención. */
+    ctx.fillStyle = hoja;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(-r * 0.88, -r * 0.3, r * 1.76, r * 0.46, r * 0.07);
+    else ctx.rect(-r * 0.88, -r * 0.3, r * 1.76, r * 0.46);
+    ctx.fill();
+    ctx.fillStyle = tapa;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(-r * 0.95, -r * 0.46, r * 1.9, r * 0.36, r * 0.08);
+    else ctx.rect(-r * 0.95, -r * 0.46, r * 1.9, r * 0.36);
+    ctx.fill();
+    /* El lomo y el hilo del señalador. */
+    ctx.fillStyle = "rgba(24,10,14,0.5)";
+    ctx.fillRect(-r * 0.95, -r * 0.46, r * 0.14, r * 0.36);
+    ctx.strokeStyle = `rgba(214,96,132,${0.5 + luz * 0.4})`;
+    ctx.lineWidth = Math.max(1, r * 0.05);
+    ctx.beginPath();
+    ctx.moveTo(r * 0.5, -r * 0.1);
+    ctx.lineTo(r * 0.62, r * 0.12);
+    ctx.stroke();
+  } else {
+    /* ABIERTO: las dos páginas en uve, abiertas por la mitad. */
+    for (const s of [-1, 1]) {
+      ctx.fillStyle = hoja;
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 0.34);
+      ctx.lineTo(s * r * (0.35 + a * 0.85), -r * (0.3 + a * 0.24));
+      ctx.lineTo(s * r * (0.4 + a * 0.9), r * 0.14);
+      ctx.lineTo(0, r * 0.08);
+      ctx.closePath();
+      ctx.fill();
+      /* Los renglones: cuatro rayas por página. Es lo que dice que hay
+         algo escrito sin tener que escribir nada. */
+      ctx.strokeStyle = `rgba(70,58,54,${0.3 * a})`;
+      ctx.lineWidth = 1;
+      for (let i = 1; i <= 4; i++) {
+        const t = i / 5;
+        ctx.beginPath();
+        ctx.moveTo(s * r * 0.1, mez(-r * 0.28, r * 0.06, t));
+        ctx.lineTo(s * r * (0.33 + a * 0.8), mez(-r * 0.26, r * 0.1, t));
+        ctx.stroke();
+      }
+      /* La tapa, por debajo. */
+      ctx.fillStyle = tapa;
+      ctx.beginPath();
+      ctx.moveTo(0, r * 0.08);
+      ctx.lineTo(s * r * (0.42 + a * 0.92), r * 0.14);
+      ctx.lineTo(s * r * (0.44 + a * 0.94), r * 0.26);
+      ctx.lineTo(0, r * 0.2);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    /* ---- EL FUEGO ----
+       Sale de la costura, que es por donde se abre. Cinco lenguas con
+       su propio ritmo: con una sola se lee como una llama de dibujo, y
+       con cinco desacompasadas se lee como fuego. */
+    const f = L.fuego;
+    if (f > 0.01) {
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for (let i = 0; i < 5; i++) {
+        const t = i / 4 - 0.5;
+        const vai = Math.sin(L.t * (3 + i * 0.7) + i * 2.1);
+        const alto = r * (0.9 + Math.abs(vai) * 0.55) * f * (1 - Math.abs(t) * 0.45);
+        const bx = t * r * 0.55 + vai * r * 0.1;
+        const g = ctx.createLinearGradient(bx, -r * 0.3, bx, -r * 0.3 - alto);
+        g.addColorStop(0, `rgba(255,190,120,${0.75 * f})`);
+        g.addColorStop(0.45, `rgba(255,120,150,${0.5 * f})`);
+        g.addColorStop(1, "rgba(255,80,160,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(bx - r * 0.16, -r * 0.28);
+        ctx.quadraticCurveTo(bx - r * 0.1, -r * 0.3 - alto * 0.6,
+                             bx + vai * r * 0.12, -r * 0.3 - alto);
+        ctx.quadraticCurveTo(bx + r * 0.1, -r * 0.3 - alto * 0.6,
+                             bx + r * 0.16, -r * 0.28);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+
+}
+
+/**
+ * «JUNTOS POR SIEMPRE».
+ *
+ * Va en su propia función y se pinta AL FINAL de todo el cuarto, por
+ * encima de la mesilla y de la lámpara. Dibujado junto al libro, que va
+ * pronto, la pantalla de la lámpara se comía media frase: la
+ * recompensa de encontrar el secreto quedaba tapada por un mueble.
+ *
+ * En rosa, que es el único rosa del cuarto: por eso se ve desde la otra
+ * punta en cuanto aparece.
+ */
+function dibujarJuntosPorSiempre() {
+  const L = cosas.libro;
+  const S = sitiosCosas().libro;
+  if (L.fuego > 0.05) {
+    const k = clamp01((L.fuego - 0.05) / 0.95);
+    const sube = (1 - k) * U * 5;
+    ctx.save();
+    ctx.globalAlpha = k;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    /* El tamaño sale de lo ANCHO que sea la pantalla, no de `U` a
+       secas: con un tamaño fijo, la frase se salía por el canto derecho
+       en vertical, que es donde el libro está más cerca del borde. */
+    const frase = "Juntos por siempre";
+    let tam = U * 4.6;
+    ctx.font = `600 ${Math.round(tam)}px ui-sans-serif, system-ui, "Segoe UI", sans-serif`;
+    const cabe = A - U * 6;
+    if (ctx.measureText(frase).width > cabe) {
+      tam *= cabe / ctx.measureText(frase).width;
+      ctx.font = `600 ${Math.round(tam)}px ui-sans-serif, system-ui, "Segoe UI", sans-serif`;
+    }
+    /* Y se centra donde quepa entera, no encima del libro a ciegas. */
+    const medio = ctx.measureText(frase).width / 2 + U * 2;
+    const tx = clamp(S.x, medio, Math.max(medio, A - medio));
+    const ty = S.y - S.r * 2.4 - sube + Math.sin(L.t * 1.4) * U * 0.6;
+    ctx.globalCompositeOperation = "lighter";
+    ctx.fillStyle = "rgba(255,120,180,0.34)";
+    for (const [ox, oy] of [[-2, 0], [2, 0], [0, -2], [0, 2]]) {
+      ctx.fillText(frase, tx + ox, ty + oy);
+    }
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = "#ff9ec8";
+    ctx.fillText(frase, tx, ty);
+    ctx.restore();
+  }
 }
 
 /** El tapete. Va debajo de todo, así que se pinta aparte y antes. */
@@ -17919,7 +18161,10 @@ const secretos = {
   /* La estrella fugaz de la pared: t < 0 es que no hay ninguna. */
   deseo: { t: -1, y0: 0, y1: 0 },
   /* El cajón de la mesilla, y lo que guarda. */
-  cajon: { abierto: 0, abiertoObj: 0, hallada: false, leida: false, pulso: 0 },
+  cajon: { abierto: 0, abiertoObj: 0, hallada: false, leida: false, pulso: 0,
+           /* Cuántas veces se ha tocado la botella, cuántas grietas
+              lleva, cuánto tiembla del último golpe y si ya reventó. */
+           golpes: 0, grietas: 0, tiembla: 0, rota: false },
   /* Las cortinas, que se corren a mano. Cada una por su lado. */
   cortina: { izq: 0, der: 0, izqObj: 0, derObj: 0, hallado: false, veces: 0 },
   /* La manta de la cama: subida hasta la barbilla o no. */
@@ -17943,6 +18188,9 @@ function arrancarSecretos() {
   secretos.cajon.abiertoObj = 0;
   secretos.cajon.hallada = !!recuerdo.leer("botella", 0);
   secretos.cajon.leida = !!recuerdo.leer("botellaLeida", 0);
+  secretos.cajon.rota = !!recuerdo.leer("botellaRota", 0);
+  secretos.cajon.golpes = 0;
+  secretos.cajon.grietas = 0;
   secretos.cortina.izq = secretos.cortina.izqObj = 0;
   secretos.cortina.der = secretos.cortina.derObj = 0;
   secretos.cortina.hallado = !!recuerdo.leer("rayas", 0);
@@ -17958,7 +18206,9 @@ function sitioMesilla() {
   const v = ventanaHab();
   const d = desplazar(0.9);
   const vx = v.x + d.x * 0.6;
-  const lx = Math.min(vx + v.w * 0.85, A - U * 9);
+  /* `U * 12` y no `U * 9`: con nueve, la taza y la esquina del mueble
+     se salían por el canto derecho en vertical. */
+  const lx = Math.min(vx + v.w * 0.85, A - U * 12);
   const ly = H * 0.62 + d.y * 0.6;
   /* Las tres cosas viven encima de una mesilla de quince U de ancho y
      se estorban entre ellas, así que las zonas de toque van a mano y
@@ -17967,9 +18217,13 @@ function sitioMesilla() {
      derecha. Se comprueban en ese orden, de más chica a más grande. */
   return {
     lx, ly,
-    lampara: { x: lx, y: ly - U * 2.2, ax: U * 4.4, ay: U * 2.8 },
-    libros:  { x: lx - U * 5, y: ly + U * 1.2, ax: U * 3.2, ay: U * 1.6 },
-    taza:    { x: lx + U * 4.6, y: ly + U * 0.7, r: U * 2.6 },
+    /* Separados de verdad: la lámpara arriba del todo, los libros
+       abajo a la izquierda y la taza abajo a la derecha, con hueco
+       entre las tres. Amontonadas en el mismo palmo no se distinguía
+       dónde acababa una y empezaba la otra. */
+    lampara: { x: lx, y: ly - U * 2.9, ax: U * 4.4, ay: U * 2.8 },
+    libros:  { x: lx - U * 5.6, y: ly + U * 1.5, ax: U * 3.2, ay: U * 1.6 },
+    taza:    { x: lx + U * 5.2, y: ly + U * 1, r: U * 2.6 },
     /* El cajón: el frente, con el tirador en medio. Se mide desde la
        misma cuenta con la que se dibuja el mueble. */
     cajon:   { x: lx, y: ly + U * 7.7 + secretos.cajon.abierto * U * 3.2,
@@ -17979,6 +18233,36 @@ function sitioMesilla() {
        `y0 = ly + 5U` y `alto = 14U * 0.38`. */
     botella: { x: lx - U * 2, y: ly + U * 7.4, r: U * 2.6 },
   };
+}
+
+/**
+ * Tocar el libro del suelo.
+ *
+ * La primera vez se abre y arde. Las siguientes, se cierra y se vuelve
+ * a abrir: no es una animación de un solo uso. Un secreto que sólo se
+ * puede ver una vez es un secreto que se pierde, y éste es de los que
+ * apetece volver a ver.
+ */
+function tocarLibroSuelo(p) {
+  const S = sitiosCosas().libro;
+  if (Math.abs(p.x - S.x) > S.r * 1.5 || Math.abs(p.y - S.y) > S.r * 0.95) return false;
+  const L = cosas.libro;
+  L.pulso = 1;
+
+  if (L.abiertoObj < 0.5) {
+    L.abiertoObj = 1;
+    tono(196, 0.3, "sine", 0.06);
+    setTimeout(() => { golpe(0.12, 260, 0.3, "lowpass"); magia(392); }, 460);
+    if (!L.hecho) {
+      L.hecho = true;
+      recuerdo.poner("libroSuelo", 1);
+      contarLogro("libroSuelo");
+    }
+  } else {
+    L.abiertoObj = 0;
+    tono(150, 0.2, "sine", 0.05);
+  }
+  return true;
 }
 
 /** El nudo de la tabla. En el suelo, a la izquierda, lejos del tapete. */
@@ -18002,6 +18286,7 @@ function moverSecretos(dt) {
   secretos.vela.apagada = damp(secretos.vela.apagada,
     secretos.vela.veces >= 3 ? 1 : 0, 3.5, dt);
   secretos.cajon.pulso = Math.max(0, secretos.cajon.pulso - dt * 2);
+  secretos.cajon.tiembla = Math.max(0, secretos.cajon.tiembla - dt * 4.5);
   /* El cajón va despacio a propósito: un cajón que se abre de golpe es
      una animación, y uno que se abre con su peso es un cajón. */
   secretos.cajon.abierto = damp(secretos.cajon.abierto, secretos.cajon.abiertoObj, 6, dt);
@@ -18192,19 +18477,83 @@ function tocarSecretos(p) {
 }
 
 /** La botella del cajón, y el papel que lleva dentro. */
+/**
+ * LA BOTELLA DEL CAJÓN.
+ *
+ * Primero suelta su papel. Después, si se sigue tocando, se va
+ * rajando: a cada toque le sale una grieta más y suena más agudo, y al
+ * séptimo REVIENTA en un montón de esquirlas.
+ *
+ * ── POR QUÉ SIETE Y NO TRES ──────────────────────────────────────────
+ * Porque con tres se rompe sin querer. La primera vez que se toca es
+ * para leer el papel, y quien quiera volver a leerlo la tocaría dos
+ * veces más y se la cargaría sin saber por qué. Con siete, romperla es
+ * una decisión: hay que insistir, y a partir de la tercera se ve y se
+ * oye que algo va a pasar.
+ *
+ * Y romperla no quita nada: el papel ya está leído y guardado. Lo único
+ * que se pierde es la botella, que es justo el tipo de secreto que
+ * merece la pena: uno que sólo encuentra quien se atreve a estropear
+ * algo bonito.
+ */
+const BOTELLA_TOQUES = 7;
+
 function tocarBotella(B) {
-  tono(azar(1300, 1700), 0.5, "sine", 0.035);
+  if (secretos.cajon.rota) return;
   soltarBrillos(B.x, B.y, 5, 0.32);
+
   if (!secretos.cajon.leida) {
+    tono(azar(1300, 1700), 0.5, "sine", 0.035);
     secretos.cajon.leida = true;
     recuerdo.poner("botellaLeida", 1);
     magia(523);
     setTimeout(() => decir(B.x, B.y - U * 9, CONF.cuarto.botellaPapel,
       { mimo: true, importante: true, dur: 7 }), 500);
     contarLogro("papelBotella");
+    return;
+  }
+
+  secretos.cajon.golpes = (secretos.cajon.golpes || 0) + 1;
+  const g = secretos.cajon.golpes;
+  secretos.cajon.tiembla = 1;
+
+  if (g >= BOTELLA_TOQUES) { reventarBotella(B); return; }
+
+  /* Cada golpe suena un poco más agudo y más seco: el vidrio que se
+     va rajando sube de tono, y eso avisa sin decir nada. */
+  tono(900 + g * 190, 0.26, "triangle", 0.05);
+  golpe(0.03, 1800 + g * 260, 0.12, "bandpass");
+  if (g >= 3) {
+    secretos.cajon.grietas = Math.min(5, g - 2);
+    if (g === 3) decir(B.x, B.y - U * 8, "Uy… creo que la rajé.", { dur: 2.6 });
+    else if (g === BOTELLA_TOQUES - 1) {
+      decir(B.x, B.y - U * 8, "Un toque más y se rompe :>", { importante: true, dur: 2.4 });
+    }
   } else {
     decir(B.x, B.y - U * 8, diceBotella(), { dur: 3.4 });
   }
+}
+
+function reventarBotella(B) {
+  secretos.cajon.rota = true;
+  recuerdo.poner("botellaRota", 1);
+  sacudir(0.7);
+  /* Las esquirlas: verdes de vidrio, y muchas. */
+  for (let i = 0; i < (flojo ? 14 : 34); i++) {
+    const a = azar(0, 6.283);
+    const v = azar(70, 280);
+    soltar(B.x, B.y, {
+      vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40,
+      vida: azar(0.7, 1.9), tam: azar(1, 2.8),
+      tipo: TIPO.BRILLO, tono: 0.5,
+    });
+  }
+  golpe(0.14, 2600, 0.5, "highpass");
+  setTimeout(() => golpe(0.1, 1200, 0.3, "bandpass"), 60);
+  contarLogro("botellaRota");
+  setTimeout(() => decir(B.x, B.y - U * 9,
+    "Ya estaba vacía. Lo que llevaba dentro ya es tuyo 🤍",
+    { mimo: true, importante: true, dur: 5 }), 420);
 }
 
 /** Correr una cortina. Devuelve el lado tocado, o null. */
@@ -19521,6 +19870,11 @@ function tocarEnHabitacion(p, e) {
   if (Math.abs(p.x - v.x) < v.w * 0.55 && Math.abs(p.y - v.y) < v.h * 0.55) {
     if (tocarVentanaHab(p.x, p.y)) return;
   }
+
+  /* El libro del suelo. Antes que el resto de cosas del cuarto porque
+     está tirado sobre las tablas y el suelo es la zona más grande de
+     todas: puesto después, el suelo se llevaba el toque. */
+  if (tocarLibroSuelo(p)) return;
 
   /* Las cosas de la repisa, la guitarra y el tapete. Van después del
      cristal porque el interruptor queda pegado al marco, y antes que
