@@ -11,14 +11,30 @@
       modo avión a las tres de la mañana.
 
    ── LA REGLA, QUE ES LA MITAD DEL ASUNTO ────────────────────────────
-   Las páginas van a la RED PRIMERO y lo demás va a la CACHÉ PRIMERO.
+   El CÓDIGO va a la red primero. Las FOTOS Y LOS SONIDOS van a la
+   caché primero.
 
-   Al revés —todo a la caché— es el error clásico: se publica una
-   corrección, la novia abre el libro, y sigue viendo el de antes para
-   siempre, porque su teléfono ya tiene una copia y no vuelve a
-   preguntar. Con las páginas pidiendo a la red, cualquier arreglo entra
-   en el siguiente arranque; y si no hay red, sale la copia guardada,
-   que es justo para lo que está.                                       */
+   Todo a la caché es el error clásico: se publica una corrección, ella
+   abre el libro, y sigue viendo el de antes para siempre, porque su
+   teléfono ya tiene una copia y no vuelve a preguntar.
+
+   Y no basta con hacerlo sólo con las páginas. Los archivos de código
+   no llevan el número de versión en el nombre, así que una página
+   nueva pide exactamente los mismos `src/…` de siempre: se quedaría
+   con el HTML nuevo llamando al JavaScript viejo, que es peor que no
+   actualizar nada. Por eso el código entero —páginas, guiones y
+   estilos— pregunta a la red.
+
+   Las fotos y los sonidos sí van a la caché primero: pesan, no
+   cambian, y son justo lo que hace que el libro tarde en abrir.
+
+   Sin red, todo tira de la copia guardada. Que es para lo que está. */
+
+/** ¿Es código? Entonces la red manda. */
+function esCodigo(url) {
+  return /\.(html?|js|mjs|css|json|webmanifest)$/i.test(url.pathname)
+      || url.pathname.endsWith("/");
+}
 
 const VERSION = "marissa-v1";
 const ESENCIALES = [
@@ -63,7 +79,7 @@ self.addEventListener("fetch", (e) => {
   const esPagina = req.mode === "navigate"
     || (req.headers.get("accept") || "").includes("text/html");
 
-  if (esPagina) {
+  if (esPagina || esCodigo(url)) {
     e.respondWith(
       fetch(req)
         .then((r) => {
@@ -71,7 +87,13 @@ self.addEventListener("fetch", (e) => {
           caches.open(VERSION).then((c) => c.put(req, copia)).catch(() => {});
           return r;
         })
-        .catch(() => caches.match(req).then((r) => r || caches.match("./index.html"))),
+        .catch(() => caches.match(req).then((r) => {
+          if (r) return r;
+          /* Sólo una PÁGINA puede caer en la portada. Un guión que no
+             está no se sustituye por un HTML: eso da un error de
+             sintaxis rarísimo en vez de un fallo claro. */
+          return esPagina ? caches.match("./index.html") : Response.error();
+        })),
     );
     return;
   }
