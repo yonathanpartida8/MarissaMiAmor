@@ -978,7 +978,11 @@ const CONF = {
        está muy caliente. Es lo que hace que ninguna tostada sea igual. */
     sorpresa: 0.10,
     estados: [
-      { hasta: 0.14, id: "crudo",      nombre: "crudo",       color: ["#fffaf0", "#f0e4d0"] },
+      /* Crema y no blanco puro: con `#fffaf0` el bombón crudo entraba
+         de lleno en el brillo del postprocesado y se convertía en una
+         mancha blanca del tamaño de la hoguera. Sigue leyéndose como
+         un bombón sin tostar, pero ya no deslumbra. */
+      { hasta: 0.14, id: "crudo",      nombre: "crudo",       color: ["#f7eedd", "#e2d3ba"] },
       { hasta: 0.34, id: "calentando", nombre: "calentando",  color: ["#fbe7bd", "#ecd08e"] },
       { hasta: 0.56, id: "dorado",     nombre: "dorado",      color: ["#e8b468", "#c2822f"] },
       { hasta: 0.76, id: "tostado",    nombre: "tostado",     color: ["#b8702f", "#7d4418"] },
@@ -1920,29 +1924,93 @@ function colocarSitios() {
   sitio.horizonte = H * (apaisado ? 0.56 : 0.60);
   sitio.suelo     = H * (apaisado ? 0.74 : 0.78) - abajo * 0.5;
 
-  /* La fogata, en el centro-bajo: es el corazón de la escena y todo lo
-     demás se ordena alrededor. */
-  sitio.fogata.x = A * (apaisado ? 0.44 : 0.50);
-  /* La fogata sube lo que ocupe la barra del libro: con ella y el arco
-     de piedras pegados al canto, las flechas de pasar página caían
-     justo encima y no se podía tocar ninguna. */
-  sitio.fogata.y = H * (apaisado ? 0.775 : 0.845) - abajo * 0.9;
-  sitio.fogata.r = U * (apaisado ? 7.4 : 8.4);
-
-  /* La cabaña, a un lado, plantada en el suelo. */
+  /* ---- LA CABAÑA ----
+     Va primero porque es el ancla: está plantada en el suelo, a un lado
+     fijo, y no se mueve. Todo lo demás se coloca esquivándola. */
   const ladoCabana = apaisado ? 0.80 : 0.755;
   sitio.cabana.w = U * (apaisado ? 26 : 32);
   sitio.cabana.h = sitio.cabana.w * 0.82;
   sitio.cabana.x = A * ladoCabana;
   sitio.cabana.y = sitio.suelo - U * 2;
 
+  /* ---- EL CAMPAMENTO, ENCAJADO ----
+     La fogata no va en un sitio fijo: va DONDE CABE. Estaba escrita a
+     mano —`H * 0.845`— y funcionaba en un móvil de pie y en ningún
+     sitio más: en una tableta la fila de pastillas de sonido caía justo
+     encima del corro de piedras, y tumbado la hoguera se comía media
+     fila.
+
+     Tiene que dejar aire con tres cosas, y las tres mandan más que
+     ella: la fila de ambientes —que va centrada abajo y no se puede
+     mover—, el rótulo que va encima de la fila, y la cabaña.
+
+     Primero se intenta BAJARLA hasta donde la fila le deje. Si para eso
+     hubiera que subirla tanto que se despegara del suelo, no sube: se
+     APARTA de lado. Y si apartándose se le echa encima la cabaña, se
+     aparta más. El que se mueve siempre es el campamento, porque es el
+     único que puede. */
+  const fila = medidaDeLaFila();
+  sitio.fogata.r = U * (apaisado ? 7.4 : 8.4);
+  const rF = sitio.fogata.r;
+  /* La fogata sube lo que ocupe la barra del libro: con ella y el arco
+     de piedras pegados al canto, las flechas de pasar página caían
+     justo encima y no se podía tocar ninguna. */
+  const suyo = H * (apaisado ? 0.775 : 0.845) - abajo * 0.9;
+  /* `U * 6` de aire y no `U * 2`: entre la fila y la hoguera va además
+     el rótulo de «toca para prender», que no se toca pero sí se ve, y
+     ocupa su línea de texto más su respiro. Con `U * 4` le pasaba el
+     corro de piedras por encima de las letras por cinco píxeles. */
+  const tope = fila.y - fila.h * 0.62 - U * 6 - rF * 1.45;
+  /* El suelo no es una frontera dura —la hierba sigue por debajo—, así
+     que la hoguera puede subir un poco por encima de la línea sin que
+     se note. Hasta `U * 3` no lo nota nadie; hasta `U * 9` se aguanta
+     si no queda otra; más arriba se planta en mitad de la pantalla y
+     deja de estar en el suelo. */
+  const holgado = sitio.suelo - U * 3;
+  const forzado = sitio.suelo - U * 9;
+
+  let fx = A * (apaisado ? 0.44 : 0.50);
+  if (tope >= holgado) {
+    sitio.fogata.y = Math.min(suyo, tope);
+  } else {
+    /* No cabe abajo. Primero se prueba a APARTARLA de lado, que no se
+       nota nada; de lado sólo cabe si la cajita musical, que va a su
+       izquierda, no se sale por el canto. Y si de lado tampoco hay
+       sitio, entonces sí se sube, aunque se despegue un poco. */
+    const sitioIzq = fila.x0 - U * 2 - rF * 1.7;
+    const minimo = U * (apaisado ? 27 : 30);
+    if (sitioIzq >= minimo) {
+      sitio.fogata.y = suyo;
+      fx = Math.min(fx, sitioIzq);
+    } else {
+      sitio.fogata.y = Math.min(suyo, Math.max(tope, forzado));
+    }
+  }
+
+  /* Y ahora a lo ancho, contra la cabaña. Lo que se comparan son las
+     bandas donde cada uno TOCA EL SUELO, no sus siluetas: si la hoguera
+     queda por debajo de la cabaña está delante de ella y las llamas
+     pueden subirle por la fachada todo lo que quieran, que es de hecho
+     lo bonito. Comparando siluetas, en un móvil de pie la hoguera salía
+     huyendo al canto izquierdo por once píxeles de llama. */
+  const altoF = [sitio.fogata.y - rF * 0.75, sitio.fogata.y + rF];
+  const altoC = [sitio.cabana.y - sitio.cabana.h * 0.12, sitio.cabana.y + sitio.cabana.h * 0.12];
+  if (altoF[0] < altoC[1] && altoF[1] > altoC[0]) {
+    fx = Math.min(fx, sitio.cabana.x - sitio.cabana.w * 0.72 - U * 2 - rF * 1.7);
+  }
+  /* Sin pasarse: la cajita musical va a su izquierda y tiene que caber. */
+  sitio.fogata.x = Math.max(fx, U * (apaisado ? 27 : 30));
+
   /* La luna, arriba y al otro lado, para que no compita con la cabaña. */
   sitio.luna.x = A * 0.21;
   sitio.luna.y = H * (apaisado ? 0.17 : 0.155);
   sitio.luna.r = U * (apaisado ? 6.6 : 7.2);
 
-  /* La cajita musical, en una piedra al lado de la fogata. */
-  sitio.cajita.x = sitio.fogata.x - U * (apaisado ? 19 : 22);
+  /* La cajita musical, en una piedra al lado de la fogata. Y sin
+     salirse por el canto: si la hoguera se ha tenido que apartar, la
+     cajita se le va detrás y en una pantalla estrecha se quedaba con
+     media caja fuera. */
+  sitio.cajita.x = Math.max(U * 7, sitio.fogata.x - U * (apaisado ? 19 : 22));
   sitio.cajita.y = sitio.fogata.y + U * 2.6;
   sitio.cajita.r = U * 5.4;
 
@@ -3299,7 +3367,11 @@ function dibujarParticulas() {
     if (t === TIPO.HUMO) {
       /* El humo entra, se queda y se va: si sólo se desvanece, parece
          que se evapora de golpe nada más salir. */
-      const a = Math.sin(clamp01(1 - k) * Math.PI) * 0.34;
+      /* `0.24` y no `0.34`: las bocanadas se solapan, así que la
+         opacidad se suma, y una columna de humo espesa por delante de
+         la cabaña le borraba media fachada. El humo tiene que verse,
+         no tapar. */
+      const a = Math.sin(clamp01(1 - k) * Math.PI) * 0.24;
       if (a < 0.004) continue;
       const s = ptam[i] * 2;
       /* `pton` elige el sprite: bajo es humo claro (la fogata), medio
@@ -4702,37 +4774,52 @@ const panel = {
   usado: false,
 };
 
-function construirPanel() {
-  panel.piedras = [];
+/**
+ * Las medidas de la fila de ambientes, sin construirla todavía.
+ *
+ * ── POR QUÉ ESTÁ SEPARADA DE `construirPanel` ────────────────────────
+ * Porque hacen falta ANTES de colocar la fogata. La hoguera se pone
+ * donde queda sitio, y el sitio lo marca esta fila, que va centrada
+ * abajo y no se puede mover. Calcularlo dos veces —una aquí y otra
+ * allí— sería el mismo error de siempre con otro nombre.
+ *
+ * ── LA FILA ──────────────────────────────────────────────────────────
+ * Compacta y centrada, no un arco de canto a canto. El arco quedaba
+ * bonito y ocupaba media pantalla: en un móvil, la mitad de lo que se
+ * ve es el bosque, y el bosque es lo que se ha venido a mirar. Además
+ * las dos pastillas de los extremos caían justo bajo las flechas de
+ * pasar página del librito.
+ *
+ * El ancho se calcula ANTES de repartir: si la fila no cabe, encogen
+ * todas a la vez en vez de salirse las de fuera.
+ *
+ * Y la altura: alto y medio de aire por debajo, más lo que pida la
+ * barra del librito. Con uno y cuarto, en un móvil con la barra del
+ * navegador puesta, la fila se quedaba cortada por el canto de abajo y
+ * se veía media pastilla.
+ */
+function medidaDeLaFila() {
   const n = CONF.ambientes.length;
-  const f = sitio.fogata;
-
-  /* ---- La fila ----
-     Una fila compacta y centrada, no un arco de canto a canto. El arco
-     quedaba bonito y ocupaba media pantalla: en un móvil, la mitad de
-     lo que se ve es el bosque, y el bosque es lo que se ha venido a
-     mirar. Además las dos pastillas de los extremos caían justo bajo
-     las flechas de pasar página del librito.
-
-     El ancho se calcula ANTES de repartir: si la fila no cabe, encogen
-     todas a la vez en vez de salirse las de fuera. */
   const hueco = huecoAbajo();
   const maxFila = Math.min(A * 0.9, U * 62);
   const sep = 1.18;                     // separación, en anchos de pastilla
-  let w = Math.min(U * 8.6, maxFila / (n * sep));
+  const w = Math.min(U * 8.6, maxFila / (n * sep));
   const h = w * 0.86;
   const paso = w * sep;
-  const x0 = A * 0.5 - (paso * (n - 1)) * 0.5;
-  /* Media pastilla de aire por debajo, más el hueco que pida la barra
-     del librito. Antes iba a tres cuartos de alto del canto y en un
-     móvil la fila se quedaba pegada al borde: la mitad de abajo caía en
-     la zona del gesto de inicio del sistema y no había manera de
-     arrastrar el volumen sin salirse de la página. */
-  /* Alto y medio de aire por debajo, más lo que pida la barra del
-     librito. Con uno y cuarto, en un móvil con la barra del navegador
-     puesta la fila se quedaba cortada por el canto de abajo: se veía
-     media pastilla. */
-  const y = H - hueco - h * 1.55 - U * 3;
+  const medio = paso * (n - 1) * 0.5;
+  return {
+    n, w, h, paso,
+    y: H - hueco - h * 1.55 - U * 3,
+    primera: A * 0.5 - medio,
+    x0: A * 0.5 - medio - w * 0.5,
+    x1: A * 0.5 + medio + w * 0.5,
+  };
+}
+
+function construirPanel() {
+  panel.piedras = [];
+  const { n, w, h, paso, y, primera } = medidaDeLaFila();
+  const x0 = primera;
   /* Se le dice al CSS lo alto que ha quedado la fila, para que el
      rótulo de abajo se coloque ENCIMA y no encima de las pastillas. */
   raiz.style.setProperty("--fila-alto", `${Math.round(h * 2.3 + U * 3)}px`);
@@ -4756,7 +4843,6 @@ function construirPanel() {
       fase: rnd() * 6.283,
     });
   }
-  void f;
 }
 
 function moverPanel(dt) {
