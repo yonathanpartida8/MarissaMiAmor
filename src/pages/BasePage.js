@@ -11,7 +11,9 @@
  */
 
 import { listenerGroup, el } from "../utils/dom.js";
+import { vigilarLectura } from "../utils/lectura.js";
 import { PRIORITY } from "../core/AssetLoader.js";
+import { resolverPaleta } from "../data/paletas.js";
 
 export class BasePage {
   /** Clave con la que se registra en registry.js */
@@ -34,6 +36,7 @@ export class BasePage {
     this.gestures = [];
     this.tickers = [];
     this.unsubs = [];
+    this.timers = new Set();
     this.destroyed = false;
     this.active = false;
   }
@@ -47,7 +50,7 @@ export class BasePage {
 
   /** Paleta que esta página impone a la atmósfera WebGL. */
   get palette() {
-    return this.chapter?.palette || { a: "#ec6f92", b: "#4c1d95", deep: "#0a0510" };
+    return this.chapter?.palette || resolverPaleta();
   }
 
   get mood() {
@@ -93,10 +96,48 @@ export class BasePage {
    * @param {"next"|"prev"|"none"} direction
    */
   async enter(direction = "next") {
+    // UNA VISITA EMPIEZA LIMPIA.
+    //
+    // El router mantiene vivas las páginas vecinas, así que volver a una ya
+    // visitada NO la construye de nuevo: llama otra vez a `enter()` sobre la
+    // misma instancia. Y como cada página engancha ahí sus gestos, su reloj y
+    // sus escuchas, todo eso se DUPLICABA en cada visita: a la tercera vuelta
+    // el candado tenía nueve reconocedores de gestos y tres relojes.
+    //
+    // Lo que provocaba no era sutil. Cada gesto se atendía tantas veces como
+    // visitas llevara la página —girar un rodillo del candado saltaba un
+    // valor de más, y acertar la fecha se volvía cuestión de suerte—, y cada
+    // reloj cobraba su frame entero, así que la misma página iba peor cuanto
+    // más se pasaba por ella.
+    //
+    // Con esto, lo que quedó de la visita anterior se suelta antes de que la
+    // nueva enganche nada. Ninguna página tiene que acordarse de hacerlo.
+    this.#soltarVisita();
+
     this.active = true;
     // Lo que sobraba se carga ahora, sin bloquear nada.
     const deferred = this.deferredAssets;
     if (deferred.length) this.ctx.assets.idlePreload(deferred);
+    // Si el texto de esta página no cabe, que se note que sigue.
+    this.track(vigilarLectura(this.root));
+  }
+
+  /**
+   * Suelta todo lo que se enganchó durante una visita.
+   *
+   * Ninguna página engancha nada en `build()` —lo suyo va siempre en
+   * `enter()`—, así que aquí no se pierde nada que haga falta después.
+   */
+  #soltarVisita() {
+    this.listeners.clear();
+    for (const g of this.gestures) g.destroy();
+    for (const stop of this.tickers) stop();
+    for (const off of this.unsubs) off();
+    for (const id of this.timers) clearTimeout(id);
+    this.gestures.length = 0;
+    this.tickers.length = 0;
+    this.unsubs.length = 0;
+    this.timers.clear();
   }
 
   /**
@@ -104,6 +145,22 @@ export class BasePage {
    * empieza a salir, deja de recibir tiempo y libera CPU.
    */
   tick(dt, time) {}
+
+  /**
+   * El libro ha cambiado de habitación (claro / pastel / noche).
+   *
+   * Casi ninguna página necesita enterarse: todo lo que se ve sale de tokens
+   * del CSS —el papel, la tinta, el acento, las sombras— y ésos los reescribe
+   * `utils/luz.js` en `<html>`, de donde se heredan solos.
+   *
+   * El gancho está para las pocas que guardan una copia de un color en un
+   * sitio donde el CSS no llega: un lienzo ya pintado, una escena 3D, o el
+   * documento de un iframe, que es un mundo aparte con sus propias
+   * variables. Ver `pages/html/index.js`, que es quien lo usa.
+   *
+   * @param {object} tema  el tema recién puesto
+   */
+  alCambiarTema(tema) {}
 
   /** Empieza a irse. Devuelve una promesa si necesita despedirse. */
   async leave(direction = "next") {
@@ -116,13 +173,7 @@ export class BasePage {
     this.destroyed = true;
     this.active = false;
 
-    this.listeners.clear();
-    for (const g of this.gestures) g.destroy();
-    for (const stop of this.tickers) stop();
-    for (const off of this.unsubs) off();
-    this.gestures.length = 0;
-    this.tickers.length = 0;
-    this.unsubs.length = 0;
+    this.#soltarVisita();
 
     this.root?.remove();
     this.root = null;
@@ -130,11 +181,85 @@ export class BasePage {
 
   // ---- Ayudas para las subclases ----------------------------------------
 
-  /** Añade un ticker que se cancela solo al destruir la página. */
+  /**
+   * Añade un ticker que se cancela solo al destruir la página.
+   *
+   * El guardia de `active` está aquí a propósito y no en cada página: el
+   * router mantiene vivas las hojas vecinas para que arrastrar responda al
+   * instante, así que puede haber tres o cuatro páginas construidas a la vez.
+   * Sin esto, todas seguirían pidiendo frames —físicas, partículas, escenas
+   * 3D— para nadie. Con esto, sólo gasta CPU la que se está viendo.
+   */
   addTicker(fn, order = 10) {
-    const stop = this.ctx.loop.add(fn, order);
+    const guarded = (dt, time, realDt) => {
+      if (!this.active || this.destroyed) return;
+      fn(dt, time, realDt);
+    };
+    const stop = this.ctx.loop.add(guarded, order);
     this.tickers.push(stop);
     return stop;
+  }
+
+  /**
+   * `setTimeout` que se cancela solo al destruir la página.
+   *
+   * Un `setTimeout` suelto sobrevive a la página que lo pidió. Si ella pasa
+   * hoja rápido, el temporizador se despierta en una página que ya no existe:
+   * unas veces sólo toca un nodo suelto, pero otras desbloquea un secreto que
+   * no ha descubierto, fuerza un cambio de página o escribe sobre `this.root`
+   * cuando ya vale null. Con esto no hay que acordarse: mueren con la página.
+   */
+  later(fn, ms = 0) {
+    const id = setTimeout(() => {
+      this.timers.delete(id);
+      if (this.destroyed) return;
+      fn();
+    }, ms);
+    this.timers.add(id);
+    return id;
+  }
+
+  /**
+   * Retira un objeto de la escena 3D DESVANECIÉNDOLO, no de un tijeretazo.
+   *
+   * Las páginas WebGL son transparentes: lo que se ve no está en el DOM, está
+   * en el lienzo que hay detrás de todo. Al quitar el objeto en `leave()`, la
+   * ilustración desaparecía de un fotograma para otro —antes incluso de que
+   * la transición empezara— y la hoja se iba ya vacía. Ese era el parpadeo
+   * que tenían TODAS las páginas de WebGL al pasar de página.
+   *
+   * No usa `addTicker` a propósito: ese reloj sólo corre mientras la página
+   * está activa, y aquí la página ya se está yendo.
+   *
+   * @param {() => void} unmount  la función que devolvió `gl.mount()`
+   * @param {(k: number) => void} apply  recibe 1 → 0
+   * @param {number} [ms]
+   */
+  fadeOutGL(unmount, apply, ms = 420) {
+    if (!unmount) return;
+    if (this.ctx.caps.reducedMotion) return unmount();
+
+    let done = false;
+    let elapsed = 0;
+
+    const finish = () => {
+      if (done) return;
+      done = true;
+      stop();
+      unmount();
+    };
+
+    const stop = this.ctx.loop.add((dt, time, realDt) => {
+      elapsed += (realDt ?? dt) * 1000;
+      const k = 1 - Math.min(1, elapsed / ms);
+      apply(k * k); // se apaga rápido al principio, como una brasa
+      if (k <= 0) finish();
+    }, 14);
+
+    // Si la página muere antes de terminar el desvanecido, se remata igual:
+    // lo que no puede quedarse es un objeto huérfano en la escena.
+    this.tickers.push(stop);
+    this.unsubs.push(finish);
   }
 
   /** Registra un reconocedor de gestos con limpieza automática. */
@@ -169,5 +294,65 @@ export class BasePage {
   feedback(sound, haptic, opts) {
     if (sound) this.ctx.audio.play(sound, opts);
     if (haptic) this.ctx.haptics.play(haptic);
+  }
+
+  // ---- Lo que hay escondido ----------------------------------------------
+
+  /**
+   * Suelta un corazón que sube desde un punto de la página.
+   *
+   * Estaba escrito tres veces, casi igual, en tres páginas distintas. Aquí
+   * arriba lo tienen todas, y la capa donde caen se crea sola la primera vez
+   * que hace falta: una página que no esconda nada no paga ni un nodo.
+   *
+   * @param {number} x  en coordenadas de ventana (las que traen los gestos)
+   * @param {number} y
+   * @param {string} [frase]  lo que dice el corazón mientras sube
+   */
+  corazon(x, y, frase = "") {
+    if (this.ctx.caps.reducedMotion || this.destroyed || !this.root) return;
+
+    if (!this.capaSecretos) {
+      this.capaSecretos = el("div.escondite", { "aria-hidden": "true" });
+      this.root.append(this.capaSecretos);
+    }
+
+    const caja = this.root.getBoundingClientRect();
+    const nodo = el("span.escondite__corazon", { text: "♥" });
+    if (frase) nodo.append(el("i.escondite__frase", { text: frase }));
+
+    // Cada uno sube por su lado y a su ritmo; si salieran todos iguales
+    // parecerían una animación en vez de una casualidad bonita.
+    const az = (min, max) => min + Math.random() * (max - min);
+    nodo.style.setProperty("--x", `${Math.round(x - caja.left)}px`);
+    nodo.style.setProperty("--y", `${Math.round(y - caja.top)}px`);
+    nodo.style.setProperty("--drift", `${Math.round(az(-28, 28))}px`);
+    nodo.style.setProperty("--dur", `${Math.round(az(1500, 2200))}ms`);
+    nodo.style.setProperty("--size", az(0.8, 1.3).toFixed(2));
+
+    this.capaSecretos.append(nodo);
+    this.later(() => nodo.remove(), 2400);
+  }
+
+  /**
+   * Marca uno de los pequeños secretos escondidos por el libro.
+   *
+   * A diferencia de `unlockSecret`, esto NO desbloquea nada ni hace falta
+   * para avanzar: son detalles que están ahí por si aparecen. Si el mismo
+   * escondite ya salió otro día, no se vuelve a celebrar, pero sí se enseña,
+   * porque volver a encontrarlo también tiene su gracia.
+   *
+   * @param {string} clave   identificador estable del escondite
+   * @param {string} frase   lo que susurra
+   * @param {{x?:number,y?:number}} [donde]  para soltar el corazón ahí mismo
+   */
+  escondite(clave, frase, donde = {}) {
+    if (this.destroyed) return false;
+
+    const primera = this.ctx.store.findHideout(clave);
+    this.ctx.haptics.play(primera ? "secret" : "tap");
+    if (frase) this.ctx.ui?.toast?.(frase, primera ? 3400 : 2400);
+    if (donde.x != null) this.corazon(donde.x, donde.y, "");
+    return primera;
   }
 }

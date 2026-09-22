@@ -1,0 +1,31 @@
+EL ICONO DEL LIBRITO
+====================
+
+Pon aquí tu imagen y ya está. Vale cualquiera:
+
+    icono/icono.png     ← la que se usa primero
+    icono/icono.jpg
+    icono/icono.jpeg
+    icono/icono.webp
+    icono/icono.svg
+
+Se prueban en ese orden y se queda con la primera que exista. No hace
+falta tocar ni una línea de código: el libro las busca solo al arrancar
+y, si encuentra una, la recorta a los tamaños que piden Android y iOS
+—192, 512 y 180 píxeles— sin que tengas que preparar nada.
+
+CONSEJOS
+--------
+· Cuadrada, y que lo importante quede en el centro: Android le puede
+  recortar las esquinas para hacerla redonda.
+· De 512x512 para arriba se ve bien en cualquier teléfono.
+· Si no pones ninguna, el libro usa su sello de corazón dibujado, que
+  también queda bonito.
+
+CÓMO SE INSTALA
+---------------
+· Android (Chrome): menú ⋮ → «Instalar aplicación» / «Añadir a la
+  pantalla de inicio».
+· iPhone (Safari): botón de compartir → «Añadir a pantalla de inicio».
+
+Instalado se abre a pantalla completa, sin barras del navegador.

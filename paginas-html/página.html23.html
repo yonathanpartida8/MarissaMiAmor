@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>El café de las siete</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .cafe-mundo, con prefijo `cf-` en cada clase.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.cafe-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background:
+    radial-gradient(ellipse 120% 70% at 50% 4%, #f6e9d8, transparent 58%),
+    linear-gradient(172deg, #ead9c4 0%, #d9c2a8 56%, #c2a68c 100%);
+  color: #45352a;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cafe-mundo .cf-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Los toques los recoge `.cf-toque`, que va justo encima. */
+  pointer-events: none;
+}
+
+/* La mesa entera. El libro sólo se queda el barrido que empieza en sus
+   24-44 px de borde. */
+.cafe-mundo .cf-toque {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  z-index: 2;
+  cursor: crosshair;
+}
+
+.cafe-mundo .cf-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  padding:
+    calc(var(--seguro-t) + 20px) 22px
+    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+.cafe-mundo .cf-titulo {
+  margin: 0;
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-size: clamp(1rem, 4.4vw, 1.4rem);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: #7d5c42;
+  opacity: 0.88;
+  transition: opacity 800ms var(--e-suave);
+}
+.cafe-mundo.is-servido .cf-titulo { opacity: 0.22; }
+
+.cafe-mundo .cf-pie {
+  margin: 0;
+  min-height: 3.8em;
+  max-width: 23em;
+  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
+  line-height: 1.55;
+  color: #4d3b2e;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 640ms var(--e-suave), transform 640ms var(--e-suave);
+}
+.cafe-mundo .cf-pie.is-visible { opacity: 0.94; transform: none; }
+.cafe-mundo .cf-pie em {
+  display: block;
+  margin-top: 0.3em;
+  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  font-size: 1.16em;
+  font-style: normal;
+  color: #b0603a;
+}
+
+/* La jarrita de leche, que se inclina. */
+.cafe-mundo .cf-jarra {
+  position: absolute;
+  z-index: 4;
+  width: 62px; height: 52px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 320ms var(--e-suave);
+}
+.cafe-mundo.is-vertiendo .cf-jarra { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cafe-mundo * { transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="cafe-mundo" id="mundo">
+  <canvas class="cf-lienzo" id="lienzo"></canvas>
+  <div class="cf-toque" id="toque" aria-hidden="true"></div>
+  <div class="cf-ui">
+    <h1 class="cf-titulo" id="titulo">Echa la leche despacio</h1>
+    <p class="cf-pie" id="pie" role="status" aria-live="polite"></p>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN EDITABLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const CONF = {
+
+  /* ---- LAS INICIALES --------------------------------------------------
+     Lo que sale dibujado en la espuma cuando el café está bien hecho. */
+  iniciales: "y.m",
+
+  /* ---- LA LECHE -------------------------------------------------------
+     Se echa arrastrando el dedo. Cuanto más despacio, más blanca sale la
+     línea: eso es lo que hace de verdad un barista, y es lo que
+     convierte «pintar» en «servir».                                   */
+  chorro: 17,            // lo gordo que es el chorro, en px
+  lentoIdeal: 90,        // px/s del dedo para el blanco más limpio
+  leche: 0.9,            // cuánta leche cabe (0..1); al llenarse, rebosa
+
+  /* ---- LAS FRASES -----------------------------------------------------
+     Se van leyendo mientras se sirve.                                  */
+  frases: [
+    ["Despacito, que si vas rápido se corta.", "Como todo."],
+    ["Ahí. Así sale la flor.", "Te está quedando bien."],
+    ["Un poco más de leche.", "A ti te gusta con mucha, ya lo sé."],
+    ["Mira qué dibujo.", "No sabía que sabías."],
+    ["Éste ya es el bueno.", "Éste me lo tomo yo."],
+  ],
+
+  /* ---- LA TAZA --------------------------------------------------------- */
+  cafe: ["#6b3f22", "#3e2312"],
+  crema: "#c49a6a",
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   La maquinaria.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const mundo  = document.getElementById("mundo");
+const lienzo = document.getElementById("lienzo");
+const zona   = document.getElementById("toque");
+const elPie  = document.getElementById("pie");
+const ctx    = lienzo.getContext("2d");
+
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
+
+let A = 0, H = 0, dpr = 1;
+let cx = 0, cy = 0, R = 0;        // la boca de la taza
+
+/* La superficie del café vive en su propio lienzo, del tamaño de la boca
+   de la taza. Se pinta la leche ahí y luego se estampa recortada en
+   redondo: así la leche NUNCA se sale del borde, por mucho que el dedo
+   se vaya, y no hace falta comprobar nada en cada trazo. */
+const sup = document.createElement("canvas");
+const cs = sup.getContext("2d");
+let ladoSup = 0;
+
+function medir() {
+  const r = mundo.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const primera = !A;
+  A = r.width; H = r.height;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  lienzo.width  = Math.round(A * dpr);
+  lienzo.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  R = Math.min(A * 0.36, H * 0.24);
+  cx = A / 2;
+  cy = H * 0.50;
+
+  const nuevo = Math.max(64, Math.round(R * 2));
+  if (nuevo !== ladoSup) {
+    ladoSup = nuevo;
+    sup.width = Math.round(ladoSup * dpr);
+    sup.height = Math.round(ladoSup * dpr);
+    cs.setTransform(dpr, 0, 0, dpr, 0, 0);
+    servirCafe();
+  }
+}
+new ResizeObserver(medir).observe(mundo);
+
+/* ---- La superficie del café ---------------------------------------------- */
+
+function servirCafe() {
+  const L = ladoSup;
+  cs.globalCompositeOperation = "source-over";
+  cs.clearRect(0, 0, L, L);
+  /* El café: hondo por el centro y con la crema más clara por el canto,
+     que es como se ve una taza recién puesta. */
+  const g = cs.createRadialGradient(L * 0.42, L * 0.38, L * 0.05, L / 2, L / 2, L / 2);
+  g.addColorStop(0, CONF.cafe[0]);
+  g.addColorStop(0.62, CONF.cafe[1]);
+  g.addColorStop(1, "#2a160a");
+  cs.fillStyle = g;
+  cs.fillRect(0, 0, L, L);
+  /* La crema, en un anillo irregular. */
+  cs.globalAlpha = 0.5;
+  cs.strokeStyle = CONF.crema;
+  cs.lineWidth = L * 0.06;
+  cs.beginPath();
+  for (let i = 0; i <= 40; i++) {
+    const a = (i / 40) * 6.283;
+    const rr = L * 0.42 + Math.sin(a * 3.1) * L * 0.012;
+    const x = L / 2 + Math.cos(a) * rr;
+    const y = L / 2 + Math.sin(a) * rr;
+    i ? cs.lineTo(x, y) : cs.moveTo(x, y);
+  }
+  cs.closePath();
+  cs.stroke();
+  cs.globalAlpha = 1;
+  llenado = 0;
+  dibujado = 0;
+  hechas = 0;
+  rebosado = false;
+  mundo.classList.remove("is-servido");
+}
+
+/* Cuánta leche se ha echado, de 0 a 1. */
+let llenado = 0;
+let dibujado = 0;      // cuánta superficie se ha cubierto, más o menos
+
+/* ---- Echar la leche -------------------------------------------------------- */
+
+let echando = null;
+let velocidadDedo = 0;
+
+function enPantalla(e) {
+  const r = mundo.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+/** De coordenadas de la hoja a coordenadas de la superficie del café. */
+function aSup(p) {
+  return { x: (p.x - cx) / R * (ladoSup / 2) + ladoSup / 2,
+           y: (p.y - cy) / R * (ladoSup / 2) + ladoSup / 2 };
+}
+
+zona.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  zona.setPointerCapture(e.pointerId);
+  const p = enPantalla(e);
+  echando = { id: e.pointerId, x: p.x, y: p.y, px: p.x, py: p.y, rastro: [] };
+  mundo.classList.add("is-vertiendo");
+  verter();
+  echarLeche(p, p);
+});
+
+zona.addEventListener("pointermove", (e) => {
+  if (!echando || e.pointerId !== echando.id) return;
+  const p = enPantalla(e);
+  echarLeche({ x: echando.x, y: echando.y }, p);
+  echando.px = echando.x; echando.py = echando.y;
+  echando.x = p.x; echando.y = p.y;
+  echando.rastro.push({ x: p.x, y: p.y });
+  if (echando.rastro.length > 260) echando.rastro.shift();
+});
+
+function soltar() {
+  if (!echando) return;
+  mirarSecretos(echando.rastro);
+  echando = null;
+  mundo.classList.remove("is-vertiendo");
+  pararVerter();
+}
+zona.addEventListener("pointerup", soltar);
+zona.addEventListener("pointercancel", soltar);
+
+function echarLeche(desde, hasta) {
+  if (llenado >= CONF.leche) { rebosar(); return; }
+
+  const d = Math.hypot(hasta.x - desde.x, hasta.y - desde.y);
+  /* La velocidad manda en el color: despacio sale blanco limpio, deprisa
+     sale una raya sucia que se mezcla con el café. Es LO ÚNICO que hay
+     que saber para servir bien, y está en una línea. */
+  velocidadDedo = damp(velocidadDedo, d * 60, 9, 1 / 60);
+  const limpieza = clamp(1 - (velocidadDedo - CONF.lentoIdeal) / 420, 0.22, 1);
+
+  const a = aSup(desde), b = aSup(hasta);
+  const esc = ladoSup / (R * 2);
+
+  cs.globalCompositeOperation = "source-over";
+  cs.lineCap = "round";
+  cs.lineJoin = "round";
+  /* El chorro se ensancha cuando va despacio: la leche se acumula. */
+  cs.lineWidth = CONF.chorro * esc * (0.7 + limpieza * 0.7);
+  cs.strokeStyle = `rgba(250, 240, 224, ${0.30 + limpieza * 0.55})`;
+  cs.beginPath();
+  cs.moveTo(a.x, a.y);
+  cs.lineTo(b.x, b.y);
+  cs.stroke();
+  /* Y un borde más tenue alrededor, que es la leche que se difumina. */
+  cs.lineWidth = CONF.chorro * esc * (1.5 + limpieza * 0.8);
+  cs.strokeStyle = `rgba(226, 198, 164, ${0.09 + limpieza * 0.1})`;
+  cs.stroke();
+
+  llenado = Math.min(1, llenado + (d + 4) * 0.00016);
+  dibujado = Math.min(1, dibujado + (d + 4) * 0.0009);
+  mundo.classList.add("is-servido");
+  mirarFrases();
+}
+
+/* ---- Rebosar ---------------------------------------------------------------- */
+
+let rebosado = false;
+const gotas = [];
+
+function rebosar() {
+  if (rebosado) return;
+  rebosado = true;
+  decir("Ya no cabe más.", "Se ha salido un poquito. No pasa nada.", true);
+  for (let i = 0; i < 10; i++) {
+    const a = azar(0, 6.283);
+    gotas.push({
+      x: cx + Math.cos(a) * R * 0.95,
+      y: cy + Math.sin(a) * R * 0.95 * 0.42 + R * 0.2,
+      vx: Math.cos(a) * azar(10, 40), vy: azar(10, 40), v: 1,
+    });
+  }
+  setTimeout(() => { rebosado = false; }, 4000);
+}
+
+/* ---- Los textos --------------------------------------------------------- */
+
+let hechas = 0;
+let pidiendo = null;
+let bloqueado = 0;
+
+function mirarFrases() {
+  const paso = Math.floor(dibujado * CONF.frases.length);
+  if (paso <= hechas || paso > CONF.frases.length) return;
+  hechas = paso;
+  const [t, f] = CONF.frases[paso - 1];
+  decir(t, f);
+}
+
+function decir(texto, firma, importante) {
+  const ahora = performance.now();
+  if (!importante && ahora < bloqueado) return;
+  if (pidiendo === texto) return;
+  pidiendo = texto;
+  if (importante) bloqueado = ahora + 3800;
+  elPie.classList.remove("is-visible");
+  setTimeout(() => {
+    elPie.textContent = texto;
+    if (firma) {
+      const em = document.createElement("em");
+      em.textContent = firma;
+      elPie.append(em);
+    }
+    elPie.classList.add("is-visible");
+  }, suave ? 10 : 270);
+}
+
+/* ---- Sonido: el chorro --------------------------------------------------- */
+
+let audio = null, chorroNodo = null, chorroGain = null, chorroFiltro = null;
+
+function despertar() {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+  } catch { audio = null; }
+  return audio;
+}
+
+function verter() {
+  if (!despertar() || chorroNodo) return;
+  const n = audio.sampleRate * 1.5;
+  const buf = audio.createBuffer(1, n, audio.sampleRate);
+  const d = buf.getChannelData(0);
+  let ult = 0;
+  for (let i = 0; i < n; i++) {
+    const blanco = Math.random() * 2 - 1;
+    ult = 0.94 * ult + 0.06 * blanco;
+    d[i] = ult * 4;
+  }
+  chorroNodo = audio.createBufferSource();
+  chorroNodo.buffer = buf;
+  chorroNodo.loop = true;
+  chorroFiltro = audio.createBiquadFilter();
+  chorroFiltro.type = "bandpass";
+  chorroFiltro.frequency.value = 900;
+  chorroFiltro.Q.value = 0.8;
+  chorroGain = audio.createGain();
+  chorroGain.gain.value = 0;
+  chorroGain.gain.linearRampToValueAtTime(0.09, audio.currentTime + 0.12);
+  chorroNodo.connect(chorroFiltro).connect(chorroGain).connect(audio.destination);
+  chorroNodo.start();
+}
+
+function pararVerter() {
+  if (!chorroNodo) return;
+  try {
+    chorroGain.gain.linearRampToValueAtTime(0, audio.currentTime + 0.14);
+    chorroNodo.stop(audio.currentTime + 0.2);
+  } catch { /* ya estaba parado */ }
+  chorroNodo = null;
+}
+
+function campana(hz) {
+  if (!despertar()) return;
+  const t = audio.currentTime;
+  const o = audio.createOscillator();
+  const g = audio.createGain();
+  o.type = "triangle";
+  o.frequency.setValueAtTime(hz, t);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.08, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+  o.connect(g).connect(audio.destination);
+  o.start(t); o.stop(t + 1.5);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS SECRETOS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Dibujar un corazón con la leche: la espuma se recompone sola y sale
+      un corazón LIMPIO, con las iniciales debajo.                     */
+let corazonHecho = 0;
+
+function pareceCorazon(rastro) {
+  if (rastro.length < 22) return false;
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const p of rastro) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+  const w = maxX - minX, h = maxY - minY;
+  if (w < R * 0.4 || h < R * 0.4) return false;
+  const a = rastro[0], z = rastro[rastro.length - 1];
+  if (Math.hypot(a.x - z.x, a.y - z.y) > w * 0.45) return false;
+  let bajoX = 0, bajoY = -Infinity;
+  for (const p of rastro) if (p.y > bajoY) { bajoY = p.y; bajoX = p.x; }
+  return Math.abs(bajoX - (minX + w / 2)) < w * 0.3;
+}
+
+/* 2. Dar tres vueltas seguidas al mismo sitio: la leche hace la roseta
+      de verdad, la de las hojitas.                                    */
+let roseta = 0;
+
+function vueltasDe(rastro) {
+  if (rastro.length < 30) return 0;
+  let mx = 0, my = 0;
+  for (const p of rastro) { mx += p.x; my += p.y; }
+  mx /= rastro.length; my /= rastro.length;
+  let total = 0;
+  let ant = Math.atan2(rastro[0].y - my, rastro[0].x - mx);
+  for (let i = 1; i < rastro.length; i++) {
+    const a = Math.atan2(rastro[i].y - my, rastro[i].x - mx);
+    let d = a - ant;
+    while (d > Math.PI) d -= Math.PI * 2;
+    while (d < -Math.PI) d += Math.PI * 2;
+    total += d;
+    ant = a;
+  }
+  return Math.abs(total) / (Math.PI * 2);
+}
+
+/* 3. Tocar la taza y no moverse: se ve el reflejo de una cara en el
+      café, muy poquito, y se va al mover el dedo.                     */
+let quieto = 0;
+let reflejo = 0;
+
+function mirarSecretos(rastro) {
+  if (pareceCorazon(rastro)) {
+    corazonHecho = 1;
+    decir("Has hecho un corazón sin querer.", `Le pongo un ${CONF.iniciales} debajo y ya es nuestro.`, true);
+    campana(659);
+    setTimeout(() => campana(880), 220);
+    return;
+  }
+  if (vueltasDe(rastro) >= 3) {
+    roseta = 1;
+    decir("Una roseta. La de verdad.", "Con sus hojitas y todo. Quién te ha enseñado.", true);
+    campana(523);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+let t0 = performance.now();
+let reloj = 0;
+let vapor = [];
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A || !H) return;
+
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+  else if (dt > 0.1) dt = 0.1;
+  reloj += dt;
+
+  quieto = echando ? 0 : quieto + dt;
+  reflejo = damp(reflejo, quieto > 5 ? 1 : 0, 1.2, dt);
+  if (quieto > 5 && quieto < 5.1) {
+    decir("Si te quedas quieta se ve algo en el café.", "Mira bien.");
+  }
+
+  if (corazonHecho > 0) corazonHecho = Math.min(1, corazonHecho + dt * 0.6);
+  if (roseta > 0) roseta = Math.min(1, roseta + dt * 0.6);
+
+  ctx.clearRect(0, 0, A, H);
+
+  dibujarPlato();
+  dibujarTaza();
+  dibujarVapor(dt);
+  dibujarGotas(dt);
+  dibujarJarra();
+}
+
+/* ---- La taza ------------------------------------------------------------- */
+
+function dibujarPlato() {
+  const py = cy + R * 0.5;
+  ctx.fillStyle = "rgba(80, 55, 38, 0.2)";
+  ctx.beginPath();
+  ctx.ellipse(cx, py + R * 0.2, R * 1.7, R * 0.42, 0, 0, 6.283);
+  ctx.fill();
+  const g = ctx.createLinearGradient(cx - R * 1.6, py, cx + R * 1.6, py + R * 0.5);
+  g.addColorStop(0, "#fdf7ec");
+  g.addColorStop(0.5, "#eee2d2");
+  g.addColorStop(1, "#d6c4b0");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.ellipse(cx, py, R * 1.62, R * 0.4, 0, 0, 6.283);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(180, 150, 120, 0.4)";
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.ellipse(cx, py, R * 1.3, R * 0.32, 0, 0, 6.283);
+  ctx.stroke();
+}
+
+function dibujarTaza() {
+  /* El asa, por detrás de la taza. */
+  ctx.strokeStyle = "#e8dcc8";
+  ctx.lineWidth = R * 0.14;
+  ctx.beginPath();
+  ctx.arc(cx + R * 1.14, cy + R * 0.16, R * 0.3, -1.1, 1.1);
+  ctx.stroke();
+  ctx.strokeStyle = "#cbb9a2";
+  ctx.lineWidth = R * 0.05;
+  ctx.beginPath();
+  ctx.arc(cx + R * 1.14, cy + R * 0.16, R * 0.3, -1.1, 1.1);
+  ctx.stroke();
+
+  /* El cuerpo. */
+  const g = ctx.createLinearGradient(cx - R, cy, cx + R, cy + R * 0.7);
+  g.addColorStop(0, "#fdf8ee");
+  g.addColorStop(0.45, "#f2e8da");
+  g.addColorStop(1, "#d4c2ab");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(cx - R, cy);
+  ctx.quadraticCurveTo(cx - R * 0.94, cy + R * 0.66, cx, cy + R * 0.7);
+  ctx.quadraticCurveTo(cx + R * 0.94, cy + R * 0.66, cx + R, cy);
+  ctx.closePath();
+  ctx.fill();
+
+  /* La boca: un óvalo, porque la taza se ve en escorzo. */
+  ctx.fillStyle = "#e8dcc8";
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, R, R * 0.42, 0, 0, 6.283);
+  ctx.fill();
+
+  /* El café, recortado dentro de la boca. */
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, R * 0.93, R * 0.39, 0, 0, 6.283);
+  ctx.clip();
+  /* La superficie es cuadrada y la boca ovalada: se aplasta al dibujar,
+     y así el dibujo de la leche se ve en escorzo como todo lo demás. */
+  ctx.drawImage(sup, cx - R * 0.93, cy - R * 0.39, R * 1.86, R * 0.78);
+
+  /* El corazón limpio del secreto 1. */
+  if (corazonHecho > 0) {
+    ctx.globalAlpha = corazonHecho * 0.94;
+    ctx.fillStyle = "#f8efe0";
+    ctx.beginPath();
+    const rr = R * 0.4;
+    for (let i = 0; i <= 44; i++) {
+      const t = (i / 44) * 6.283;
+      const hx = cx + Math.pow(Math.sin(t), 3) * rr;
+      const hy = cy - ((13 * Math.cos(t) - 5 * Math.cos(2 * t)
+              - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16) * rr * 0.42;
+      i ? ctx.lineTo(hx, hy) : ctx.moveTo(hx, hy);
+    }
+    ctx.closePath();
+    ctx.fill();
+    /* LAS INICIALES, debajo del corazón, con la leche más clara. */
+    ctx.fillStyle = "rgba(62, 35, 18, 0.7)";
+    ctx.font = `600 ${Math.round(R * 0.16)}px Georgia, "Times New Roman", serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(CONF.iniciales, cx, cy + R * 0.2);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.globalAlpha = 1;
+  }
+
+  /* La roseta del secreto 2. */
+  if (roseta > 0) {
+    ctx.globalAlpha = roseta * 0.9;
+    ctx.fillStyle = "#f8efe0";
+    for (let i = 0; i < 9; i++) {
+      const t = i / 8;
+      const y = cy - R * 0.22 + t * R * 0.42;
+      const w = R * 0.52 * (1 - t * 0.6);
+      ctx.beginPath();
+      ctx.ellipse(cx, y, w, R * 0.05, 0, 0, 6.283);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* El reflejo del secreto 3: una cara insinuada en el café. */
+  if (reflejo > 0.02) {
+    ctx.globalAlpha = reflejo * 0.16;
+    ctx.fillStyle = "#fff0d8";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - R * 0.04, R * 0.2, R * 0.12, 0, 0, 6.283);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + R * 0.16, R * 0.34, R * 0.1, 0, 0, 6.283);
+    ctx.fill();
+    ctx.globalAlpha = reflejo * 0.3;
+    ctx.beginPath();
+    ctx.arc(cx - R * 0.08, cy - R * 0.06, R * 0.018, 0, 6.283);
+    ctx.arc(cx + R * 0.08, cy - R * 0.06, R * 0.018, 0, 6.283);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+
+  /* El canto de la boca, por encima de todo. */
+  ctx.strokeStyle = "rgba(255, 252, 244, 0.9)";
+  ctx.lineWidth = R * 0.05;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, R * 0.96, R * 0.405, 0, 0, 6.283);
+  ctx.stroke();
+}
+
+/* ---- El vapor -------------------------------------------------------------- */
+
+function dibujarVapor(dt) {
+  if (Math.random() < 0.5) {
+    vapor.push({
+      x: cx + azar(-R * 0.5, R * 0.5),
+      y: cy - R * 0.1,
+      v: 1, r: azar(6, 16), vy: azar(-22, -44), f: Math.random() * 6.283,
+    });
+    if (vapor.length > 60) vapor.shift();
+  }
+  for (let i = vapor.length - 1; i >= 0; i--) {
+    const s = vapor[i];
+    s.v -= dt * 0.38;
+    if (s.v <= 0) { vapor.splice(i, 1); continue; }
+    s.y += s.vy * dt;
+    s.x += Math.sin(reloj * 1.1 + s.f) * 16 * dt;
+    s.r += 11 * dt;
+    ctx.globalAlpha = s.v * 0.14;
+    ctx.fillStyle = "#fff8ec";
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function dibujarGotas(dt) {
+  for (let i = gotas.length - 1; i >= 0; i--) {
+    const g = gotas[i];
+    g.v -= dt * 0.8;
+    if (g.v <= 0) { gotas.splice(i, 1); continue; }
+    g.x += g.vx * dt;
+    g.y += g.vy * dt;
+    g.vy += 260 * dt;
+    ctx.globalAlpha = g.v;
+    ctx.fillStyle = "#f2e2cc";
+    ctx.beginPath();
+    ctx.ellipse(g.x, g.y, 2.4, 3.6, 0, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ---- La jarrita, dibujada donde esté el dedo ------------------------------ */
+
+function dibujarJarra() {
+  if (!echando) return;
+  const x = echando.x, y = echando.y;
+  const s = R * 0.3;
+  ctx.save();
+  ctx.translate(x, y - s * 2.2);
+  /* Se inclina hacia donde va el dedo: la leche cae desde el pico. */
+  const dir = clamp((echando.x - echando.px) * 0.06, -0.5, 0.5);
+  ctx.rotate(0.5 + dir);
+  const g = ctx.createLinearGradient(-s, -s, s, s);
+  g.addColorStop(0, "#f2f2f0");
+  g.addColorStop(0.5, "#cfd2d4");
+  g.addColorStop(1, "#8f9498");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.7, -s * 0.8);
+  ctx.lineTo(s * 0.5, -s * 0.8);
+  ctx.lineTo(s * 1.25, -s * 0.2);      // el pico
+  ctx.lineTo(s * 0.45, s * 0.9);
+  ctx.lineTo(-s * 0.6, s * 0.9);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "#8f9498";
+  ctx.lineWidth = s * 0.16;
+  ctx.beginPath();
+  ctx.arc(-s * 0.85, s * 0.05, s * 0.4, -1.2, 1.2);
+  ctx.stroke();
+  ctx.restore();
+
+  /* El chorrito, del pico al dedo. */
+  ctx.strokeStyle = "rgba(252, 246, 234, 0.85)";
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x + s * 0.5, y - s * 2.2);
+  ctx.quadraticCurveTo(x + s * 0.2, y - s, x, y);
+  ctx.stroke();
+}
+
+/* ---- Arranque -------------------------------------------------------------- */
+
+medir();
+decir("Una taza recién puesta. Echa la leche arrastrando el dedo, despacio.");
+requestAnimationFrame(paso);
+
+})();
+</script>
+</body>
+</html>

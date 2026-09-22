@@ -1,25 +1,59 @@
 /**
  * REGISTRO DE PÁGINAS — la tabla de tipos.
  *
+ * Cada página vive en su propia carpeta, con TODO lo suyo dentro:
+ *
+ *     src/pages/combinacion/
+ *         index.js     la lógica y el DOM
+ *         textos.js    lo que dice  ← lo único que hay que tocar para cambiarlo
+ *         estilos.css  cómo se ve
+ *
+ * Para cambiar lo que dice una página no hace falta abrir su código: se abre
+ * su `textos.js` y ya. Para añadir un tipo nuevo, se crea una carpeta más y
+ * se pone una línea en la tabla de abajo.
+ *
  * Cada tipo de experiencia se importa de forma perezosa: el módulo de la
  * constelación no se descarga hasta que hace falta. En un móvil con datos
  * limitados eso es la diferencia entre abrir el libro en un segundo o en seis.
  */
 
 const loaders = {
-  cover: () => import("./CoverPage.js"),
-  envelope: () => import("./EnvelopePage.js"),
-  chapter: () => import("./ChapterPage.js"),
-  depth: () => import("./DepthPage.js"),
-  scratch: () => import("./ScratchPage.js"),
-  polaroids: () => import("./PolaroidsPage.js"),
-  veil: () => import("./VeilPage.js"),
-  filmstrip: () => import("./FilmstripPage.js"),
-  handwriting: () => import("./HandwritingPage.js"),
-  memoryfield: () => import("./MemoryFieldPage.js"),
-  secret: () => import("./SecretPage.js"),
-  constellation: () => import("./ConstellationPage.js"),
-  finale: () => import("./FinalePage.js"),
+  cover: () => import("./portada/index.js"),
+  envelope: () => import("./sobre/index.js"),
+  chapter: () => import("./capitulo/index.js"),
+  depth: () => import("./profundidad/index.js"),
+  scratch: () => import("./rascar/index.js"),
+  polaroids: () => import("./polaroids/index.js"),
+  veil: () => import("./velo/index.js"),
+  filmstrip: () => import("./carrete/index.js"),
+  handwriting: () => import("./escrito/index.js"),
+  memoryfield: () => import("./recuerdos/index.js"),
+  secret: () => import("./secreto/index.js"),
+  constellation: () => import("./constelacion/index.js"),
+  finale: () => import("./final/index.js"),
+
+  // ── Añadidos en la segunda edición ──────────────────────
+  typewriter: () => import("./maquina/index.js"),
+  postcard: () => import("./postal/index.js"),
+  petals: () => import("./petalos/index.js"),
+  mosaic: () => import("./mosaico/index.js"),
+  lock: () => import("./combinacion/index.js"),
+  bottle: () => import("./botella/index.js"),
+  gift: () => import("./regalo/index.js"),
+  pulse: () => import("./pulso/index.js"),
+  orbit: () => import("./distancia/index.js"),
+  sorpresa: () => import("./ultima-sorpresa/index.js"),
+
+  // ── Para las páginas de `mis-paginas/` ──────────────────
+  photo: () => import("./foto/index.js"),
+  gallery: () => import("./galeria/index.js"),
+  video: () => import("./video/index.js"),
+
+  // ── Las que salen solas de `paginas-html/` ──────────────
+  html: () => import("./html/index.js"),
+
+  // ── Las que salen solas de `images/amores/` ─────────────
+  amor: () => import("./amor/index.js"),
 };
 
 const cache = new Map();
@@ -48,4 +82,3 @@ export function warmup(type) {
   loaders[type]().then((mod) => cache.set(type, mod.default)).catch(() => {});
 }
 
-export const knownTypes = Object.keys(loaders);

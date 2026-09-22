@@ -1,0 +1,150 @@
+/* ============================================================
+   PÁGINA DEL VELO
+   ============================================================ */
+
+.veil {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+  overflow: hidden;
+  --cx: 50%;
+  --cy: 50%;
+}
+
+/* La superficie que recoge las caricias ocupa toda la página. */
+.veil__surface {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+/* ---- Respaldo sin WebGL ------------------------------------- */
+.veil__fallback {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 1000ms var(--e-out), filter 700ms var(--e-out);
+  filter: blur(14px) saturate(0.4) brightness(0.6);
+}
+
+.veil.is-entered .veil__fallback {
+  opacity: 1;
+}
+
+.veil.has-gl .veil__fallback {
+  opacity: 0;
+}
+
+/* Sin GPU, el velo se aparta con una máscara radial alrededor del dedo. */
+.veil.no-gl.is-touched .veil__fallback {
+  filter: blur(0) saturate(1) brightness(0.92);
+  -webkit-mask-image: radial-gradient(circle 46vmin at var(--cx) var(--cy), #000 30%, transparent 78%);
+  mask-image: radial-gradient(circle 46vmin at var(--cx) var(--cy), #000 30%, transparent 78%);
+}
+
+/* ---- Tarjeta de texto --------------------------------------- */
+.veil__card {
+  position: relative;
+  z-index: 4;
+  max-height: 52%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: clamp(0.9rem, calc(4 * var(--vw)), 1.4rem);
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 900ms var(--e-out) 300ms, transform 900ms var(--e-out) 300ms;
+}
+
+.veil.is-entered .veil__card {
+  opacity: 1;
+  transform: none;
+}
+
+.veil__card .kicker {
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+}
+
+.veil__title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(1.5rem, calc(6.4 * var(--vw)), 2.2rem);
+  line-height: 1.06;
+  color: #fff;
+}
+
+.veil__card .rule {
+  margin: 0.45rem 0 0.7rem;
+  background: linear-gradient(90deg, var(--accent), transparent 72%);
+}
+
+.veil__prose {
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  line-height: 1.7;
+  color: rgba(246, 238, 232, 0.9);
+  text-align: justify;
+  hyphens: auto;
+  /* El texto está tan velado como la imagen hasta que se descubre. */
+  opacity: 0.3;
+  filter: blur(1.6px);
+  transition: opacity 900ms var(--e-out), filter 900ms var(--e-out);
+}
+
+.veil.is-revealed .veil__prose {
+  opacity: 1;
+  filter: none;
+}
+
+.veil__prose::first-letter {
+  font-size: 2.4em;
+  line-height: 0.86;
+  float: left;
+  padding: 0.1em 0.14em 0 0;
+  color: var(--accent);
+  font-weight: 300;
+}
+
+/* ---- Medidor de lo descubierto ------------------------------ */
+.veil__meter {
+  position: absolute;
+  left: var(--pad-x);
+  right: var(--pad-x);
+  top: calc(var(--safe-t) + 1.6rem);
+  z-index: 5;
+  height: 2px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 600ms var(--e-out);
+}
+
+.veil.is-touched .veil__meter {
+  opacity: 1;
+}
+
+.veil.is-revealed .veil__meter {
+  opacity: 0;
+}
+
+.veil__meter i {
+  display: block;
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--accent), var(--gold-light));
+  box-shadow: 0 0 10px var(--accent);
+  transition: transform 320ms var(--e-out);
+}

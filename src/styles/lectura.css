@@ -1,0 +1,79 @@
+/* ============================================================
+   LECTURA — el texto siempre se puede leer entero.
+
+   Un libro escrito a mano no sabe cuánto va a medir cada página. Si un
+   día cambias un capítulo por otro más largo, el texto no cabe: antes se
+   salía de la hoja o se quedaba debajo de la barra flotante.
+
+   Aquí está la solución, en un sitio y no repetida en catorce hojas de
+   estilo. Cualquier zona de texto que pueda no caber lleva `.lectura`:
+   se queda dentro de su hueco y se desplaza con el dedo.
+
+   Para una página nueva basta con esto:
+
+     el("div.lectura.mipagina__scroll", {}, [titulo, texto])
+
+   y en el CSS de esa página, sólo lo suyo (colores, opacidad, márgenes).
+   La mecánica del desplazamiento ya está resuelta aquí.
+   ============================================================ */
+
+.lectura {
+  /* Sin esto no encoge nunca dentro de un flex o un grid, y en vez de
+     desplazarse empuja la página hacia abajo. Es LA línea importante. */
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* El vertical es del texto; el horizontal sigue siendo del libro, para
+     que arrastrar de lado pase de página aunque el dedo caiga en la nota. */
+  touch-action: pan-y;
+  /* Al llegar al final no arrastra la página de detrás. */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  /* Ni barra de desplazamiento ni sombra de foco: esto es papel. */
+  scrollbar-width: none;
+  scroll-padding-block: 0.5rem;
+}
+
+.lectura::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---- «Hay más» ---------------------------------------------
+   El borde se desvanece SÓLO por el lado donde queda texto sin leer.
+   Lo marca `vigilarLectura()` con `data-mas`, así que un texto corto no
+   paga ninguna máscara —que es una capa más que componer— y uno largo
+   avisa de que sigue sin necesidad de una barra que estorbe.          */
+.lectura {
+  --fundido: 18px;
+}
+
+.lectura[data-mas="abajo"] {
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - var(--fundido)), transparent 100%);
+  mask-image: linear-gradient(180deg, #000 calc(100% - var(--fundido)), transparent 100%);
+}
+
+.lectura[data-mas="arriba"] {
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 var(--fundido));
+  mask-image: linear-gradient(180deg, transparent 0, #000 var(--fundido));
+}
+
+.lectura[data-mas="ambos"] {
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 var(--fundido), #000 calc(100% - var(--fundido)), transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 var(--fundido), #000 calc(100% - var(--fundido)), transparent 100%);
+}
+
+/* ============================================================
+   HUECO DE LA BARRA
+
+   La barra de pasar página flota POR ENCIMA de la hoja. Lo que se apoye
+   en el borde de abajo y haya que leer lleva `.hueco-barra` y se queda
+   justo encima de ella.
+
+   No se le suma al relleno de la página entera a propósito: eso encogería
+   también las superficies con las que se juega —el velo, la lámina de
+   rascar, el tablero del mosaico— y ésas quieren la hoja completa.
+   ============================================================ */
+
+.hueco-barra {
+  margin-bottom: var(--bar-space, 0rem);
+}

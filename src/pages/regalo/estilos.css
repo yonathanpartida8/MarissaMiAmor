@@ -1,0 +1,401 @@
+/* ============================================================
+   REGALO
+   ============================================================ */
+
+.gift {
+  display: grid;
+  /* Cabecera arriba, la caja en todo el hueco de en medio, y la invitación
+     abajo. Antes eran dos filas y la caja se quedaba flotando en el centro
+     de una pantalla sin nada más. */
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  place-items: center;
+  gap: clamp(0.4rem, 1.6vh, 0.9rem);
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+  perspective: 1200px;
+  --untie: 0;
+}
+
+/* ---- La cabecera -------------------------------------------- */
+.gift__head {
+  justify-self: stretch;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 700ms var(--e-out) 120ms, transform 700ms var(--e-out) 120ms;
+}
+
+.gift.is-entered .gift__head { opacity: 1; transform: none; }
+
+/* Cuando el regalo se abre, la cabecera se aparta: lo que importa a partir
+   de ahí es lo que había dentro. */
+.gift.is-open .gift__head { opacity: 0.28; }
+
+.gift__head .kicker {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  opacity: 0.75;
+}
+
+.gift__heading {
+  margin-top: 0.2rem;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(1.5rem, calc(6.6 * var(--vw)), 2.2rem);
+  line-height: 1.05;
+  color: #fff;
+  text-wrap: balance;
+}
+
+.gift__stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  transform-style: preserve-3d;
+}
+
+/* ---- La caja ------------------------------------------------ */
+.gift__box {
+  position: relative;
+  width: min(80%, 290px);
+  aspect-ratio: 1;
+  transform-style: preserve-3d;
+  opacity: 0;
+  transform: translateY(24px) scale(0.92);
+  transition: opacity 900ms var(--e-out), transform 1000ms var(--e-spring);
+}
+
+.gift.is-entered .gift__box { opacity: 1; transform: none; }
+
+.gift.is-open .gift__box {
+  opacity: 0;
+  transform: translateY(30px) scale(0.86);
+  transition: opacity 700ms var(--e-out) 200ms, transform 900ms var(--e-out) 200ms;
+  pointer-events: none;
+}
+
+.gift__box.is-shake { animation: lock-shake 460ms var(--e-out); }
+
+.gift__body {
+  position: absolute;
+  inset: 22% 0 0 0;
+  border-radius: 4px;
+  background:
+    linear-gradient(152deg, #b8305c 0%, #8e1f45 48%, #66132f 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 190, 210, 0.28),
+    inset 0 -10px 20px rgba(50, 4, 20, 0.5),
+    0 16px 34px -12px rgba(60, 6, 26, 0.75);
+}
+
+/* Textura de papel de regalo. */
+.gift__body::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: var(--paper-src);
+  background-size: 200px;
+  opacity: 0.16;
+  mix-blend-mode: overlay;
+}
+
+.gift__lid {
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  top: 6%;
+  height: 22%;
+  transform-origin: 50% 100%;
+  transform: rotateX(0deg);
+  transition: transform 700ms var(--e-out);
+  z-index: 3;
+}
+
+.gift.is-lifting .gift__lid { transform: rotateX(-118deg) translateY(-16%); }
+
+.gift__lidface {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background: linear-gradient(152deg, #c8386a 0%, #9c2450 52%, #741636 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 200, 216, 0.34),
+    0 6px 14px -4px rgba(50, 4, 20, 0.6);
+}
+
+/* ---- Listón ------------------------------------------------- */
+.gift__ribbon {
+  position: absolute;
+  background: linear-gradient(180deg, #ffdf9a, #e0b45c 52%, #b98a34);
+  box-shadow: 0 1px 3px rgba(60, 30, 0, 0.4);
+  z-index: 4;
+  /* Se afloja conforme se tira: se estrecha y se desvanece. */
+  opacity: calc(1 - var(--untie) * 0.9);
+}
+
+.gift__ribbon--v {
+  left: 42%;
+  right: 42%;
+  top: 6%;
+  bottom: 0;
+  transform: scaleX(calc(1 - var(--untie) * 0.5));
+}
+
+.gift__ribbon--h {
+  left: -4%;
+  right: -4%;
+  top: 30%;
+  height: 13%;
+  transform: scaleY(calc(1 - var(--untie) * 0.5));
+}
+
+.gift__bow {
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  width: 46%;
+  aspect-ratio: 2;
+  margin-left: -23%;
+  z-index: 6;
+  transform: scale(calc(1 - var(--untie) * 0.6)) rotate(calc(var(--untie) * 26deg));
+  opacity: calc(1 - var(--untie));
+}
+
+.gift__loop {
+  position: absolute;
+  top: 8%;
+  width: 46%;
+  height: 84%;
+  border-radius: 60% 40% 50% 50%;
+  background: linear-gradient(150deg, #ffe6ab, #dfae52 60%, #b3822c);
+  box-shadow: inset 0 2px 4px rgba(255, 246, 220, 0.6);
+}
+
+.gift__loop--l { left: 0; transform: rotate(-22deg); }
+.gift__loop--r { right: 0; transform: rotate(22deg) scaleX(-1); }
+
+.gift__knot {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  width: 22%;
+  aspect-ratio: 1;
+  margin-left: -11%;
+  border-radius: 40%;
+  background: radial-gradient(circle at 36% 32%, #fff1cd, #d9a64a 60%, #a9761f);
+  box-shadow: 0 2px 5px rgba(60, 30, 0, 0.45);
+}
+
+/* La punta del listón: es lo que se arrastra. */
+.gift__end {
+  position: absolute;
+  left: 50%;
+  bottom: -6%;
+  width: 22%;
+  height: 26%;
+  margin-left: -11%;
+  z-index: 7;
+  border-radius: 0 0 40% 40%;
+  background: linear-gradient(180deg, #e6bc68, #c1913c);
+  clip-path: polygon(0 0, 100% 0, 100% 74%, 50% 100%, 0 74%);
+  transform: translate3d(var(--ex, 0px), var(--ey, 0px), 0);
+  cursor: grab;
+  touch-action: none;
+  box-shadow: 0 3px 8px -2px rgba(60, 30, 0, 0.5);
+}
+
+.gift__end:active { cursor: grabbing; }
+
+.gift.is-untied .gift__end,
+.gift.is-untied .gift__bow,
+.gift.is-untied .gift__ribbon {
+  opacity: 0;
+  transition: opacity 420ms var(--e-out);
+}
+
+/* ---- Estallido ---------------------------------------------- */
+.gift__burst {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 0;
+  height: 0;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.gift__bit {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 50%;
+  background: var(--gold-light);
+  transform: scale(var(--bs));
+  opacity: 0;
+  animation: bit-fly var(--bd) var(--e-out) var(--bl) forwards;
+  box-shadow: 0 0 6px 1px rgba(255, 220, 160, 0.7);
+}
+
+.gift__bit--heart {
+  border-radius: 0;
+  background: var(--accent);
+  clip-path: path("M3.5 6.5 C1 4.6 0.2 3 1.4 1.9 C2.2 1.1 3.1 1.4 3.5 2.2 C3.9 1.4 4.8 1.1 5.6 1.9 C6.8 3 6 4.6 3.5 6.5 Z");
+  box-shadow: none;
+  filter: drop-shadow(0 0 5px var(--accent));
+}
+
+@keyframes bit-fly {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) scale(0) rotate(0deg); }
+  14% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--bx), calc(var(--by) + 190px), 0) scale(var(--bs)) rotate(var(--br));
+  }
+}
+
+/* ---- La tarjeta de dentro ----------------------------------- */
+.gift__card {
+  position: absolute;
+  left: max(var(--pad-x), 50% - 250px);
+  right: max(var(--pad-x), 50% - 250px);
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 84%;
+  padding: clamp(1rem, calc(4.4 * var(--vw)), 1.6rem);
+  border-radius: var(--r-md);
+  box-shadow: 0 22px 50px -18px rgba(0, 0, 0, 0.75);
+  opacity: 0;
+  transform: translateY(46px) scale(0.94);
+  pointer-events: none;
+  transition: opacity 800ms var(--e-out), transform 900ms var(--e-spring);
+}
+
+.gift.is-open .gift__card {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.gift__title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.35rem, calc(6 * var(--vw)), 1.95rem);
+  line-height: 1.08;
+  color: #2c211c;
+}
+
+.gift__card .rule { margin: 0.35rem 0 0.6rem; }
+
+.gift__prose {
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  line-height: 1.7;
+  color: var(--paper-ink);
+  text-align: justify;
+  hyphens: auto;
+}
+
+.gift__reveal {
+  margin-top: 0.7rem;
+  font-family: var(--font-hand);
+  font-size: clamp(1.1rem, calc(4.8 * var(--vw)), 1.45rem);
+  color: var(--rose-deep);
+  opacity: 0;
+  transition: opacity 900ms var(--e-out) 900ms;
+}
+
+.gift.is-open .gift__reveal { opacity: 0.92; }
+
+.gift__prompt {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  text-align: center;
+  min-height: 1.4em;
+  opacity: 0;
+  transition: opacity 700ms var(--e-out) 900ms;
+}
+
+.gift.is-entered .gift__prompt {
+  opacity: 0.8;
+  animation: seal-breathe 3.2s ease-in-out infinite;
+}
+
+/* Una flecha que baja despacio, señalando la punta del listón: es la única
+   pista de por dónde se empieza, y sin ella la caja no dice qué hacer. */
+.gift__prompt::after {
+  content: " ↓";
+  display: inline-block;
+  animation: gift-flecha 2.4s ease-in-out infinite;
+}
+
+@keyframes gift-flecha {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50%      { transform: translateY(4px); opacity: 1; }
+}
+
+/* Desatado: la invitación ya no pinta nada. Va con `.gift.is-untied` DOS
+   veces para ganarle a `.gift.is-entered`, que tiene la misma fuerza y
+   viene después en el archivo: sin esto, el cartelito se quedaba puesto
+   encima del regalo ya abierto diciendo que tiraras del listón. */
+.gift.is-untied.is-untied .gift__prompt {
+  opacity: 0;
+  animation: none;
+  transition: opacity 400ms var(--e-out);
+}
+
+.gift.is-untied .gift__prompt::after { animation: none; }
+
+/* ---- La sombra de la caja -----------------------------------
+   Una caja sin sombra no está encima de nada: flota. Ésta va debajo, un
+   poco aplastada, y se encoge mientras se tira del listón, como si la caja
+   se aligerara al abrirse. */
+.gift__box::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 74%;
+  height: 20px;
+  margin: 4px 0 0 -37%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.5), transparent 70%);
+  filter: blur(3px);
+  opacity: calc(0.75 - var(--untie, 0) * 0.35);
+  pointer-events: none;
+  transition: opacity 300ms linear;
+}
+
+.gift.is-open .gift__box::after {
+  opacity: 0;
+  transition: opacity 600ms var(--e-out);
+}
+
+/* La punta del listón respira hasta que alguien la toca: es lo único que
+   hay que agarrar en toda la página y tiene que verse que se agarra. */
+.gift.is-entered:not(.is-untied) .gift__end {
+  animation: gift-tira 2.8s ease-in-out infinite;
+}
+
+@keyframes gift-tira {
+  0%, 100% { transform: translate(-50%, 0) scale(1); }
+  50%      { transform: translate(-50%, 4px) scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gift.is-entered .gift__prompt,
+  .gift__prompt::after,
+  .gift.is-entered:not(.is-untied) .gift__end { animation: none; }
+}

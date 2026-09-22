@@ -12,6 +12,7 @@
 
 import { clamp01, spring, springSettled } from "../utils/math.js";
 import { easeInOutCubic } from "../utils/easing.js";
+import { resetLeaf } from "./effects.js";
 
 export class PageFlip {
   /**
@@ -42,6 +43,12 @@ export class PageFlip {
    */
   begin(outgoing, incoming, direction = "next") {
     this.active = true;
+
+    // Las dos hojas entran al giro sin restos de otras transiciones. Un
+    // `opacity: 0` en línea de una salida anterior le gana a `leaf--under`
+    // y dejaba la hoja de debajo invisible durante todo el volteo.
+    resetLeaf(outgoing);
+    resetLeaf(incoming);
     this.direction = direction;
     this.soundFired = false;
     this.velocity = 0;
@@ -165,6 +172,13 @@ export class PageFlip {
     if (this.under) {
       this.under.style.setProperty("--under-shade", String(lift * 0.55));
       this.under.style.setProperty("--under-scale", String(0.965 + eased * 0.035));
+
+      // Y aparece conforme la de arriba se levanta. Muchas páginas son
+      // transparentes (lo que se ve vive en el lienzo de WebGL), así que con
+      // la hoja de debajo al 100% desde el primer fotograma se veía a través
+      // de la que todavía no se había movido: el fondo cambiaba de golpe
+      // antes de que la hoja hubiera girado un solo grado.
+      this.under.style.setProperty("--under-reveal", String(0.04 + clamp01(p * 1.7) * 0.96));
     }
 
     // Sombreado propio de la hoja que gira: la cara que se aleja se oscurece.

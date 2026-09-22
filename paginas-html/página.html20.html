@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La cometa</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .cometa-mundo, con prefijo `cm-` en cada clase.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.cometa-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background: linear-gradient(184deg, #7fc4e8 0%, #b8dcf0 40%, #e8eec8 78%, #f2e0c0 100%);
+  color: #3a4340;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cometa-mundo .cm-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Los toques los recoge `.cm-toque`, que va justo encima. */
+  pointer-events: none;
+}
+
+/* El cielo entero. El libro sólo se queda el barrido que empieza en sus
+   24-44 px de borde. */
+.cometa-mundo .cm-toque {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  z-index: 2;
+  cursor: grab;
+}
+.cometa-mundo.is-volando .cm-toque { cursor: grabbing; }
+
+.cometa-mundo .cm-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  padding:
+    calc(var(--seguro-t) + 20px) 22px
+    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+.cometa-mundo .cm-titulo {
+  margin: 0;
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-size: clamp(1rem, 4.4vw, 1.4rem);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: #3f6a84;
+  opacity: 0.85;
+  transition: opacity 800ms var(--e-suave);
+}
+.cometa-mundo.is-volando .cm-titulo { opacity: 0.2; }
+
+.cometa-mundo .cm-pie {
+  margin: 0;
+  min-height: 3.6em;
+  max-width: 23em;
+  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
+  line-height: 1.55;
+  color: #3a4b44;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 660ms var(--e-suave), transform 660ms var(--e-suave);
+  text-shadow: 0 1px 8px rgba(255, 255, 255, 0.6);
+}
+.cometa-mundo .cm-pie.is-visible { opacity: 0.94; transform: none; }
+.cometa-mundo .cm-pie em {
+  display: block;
+  margin-top: 0.3em;
+  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  font-size: 1.16em;
+  font-style: normal;
+  color: #c2506a;
+}
+
+.cometa-mundo .cm-altura {
+  position: absolute;
+  right: 20px;
+  top: calc(var(--seguro-t) + 20px);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  color: #4d7a94;
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cometa-mundo * { transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="cometa-mundo" id="mundo">
+  <canvas class="cm-lienzo" id="lienzo"></canvas>
+  <div class="cm-toque" id="toque" aria-hidden="true"></div>
+  <div class="cm-ui">
+    <h1 class="cm-titulo" id="titulo">Arrastra para volarla</h1>
+    <p class="cm-pie" id="pie" role="status" aria-live="polite"></p>
+  </div>
+  <div class="cm-altura" id="altura" aria-hidden="true"></div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN EDITABLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const CONF = {
+
+  /* ---- LA COMETA ------------------------------------------------------
+     No se arrastra la cometa: se arrastra EL CARRETE. La cometa va
+     atada a una cuerda, y la cuerda hace el resto. Es lo que convierte
+     «mover un dibujo» en «volar algo».                                 */
+  /* El largo de la cuerda es una PARTE DE LA HOJA, no un número de
+     píxeles: con 250 px fijos, en un móvil alto la cometa no pasaba del
+     tercio de abajo por mucho que corrieras, y la página parecía rota.
+     Así llega arriba del todo en cualquier pantalla. */
+  cuerda: 0.82,          // del alto de la hoja
+  nudos: 22,             // en cuántos trozos se parte para simularla
+  gravedad: 900,
+  viento: 420,           // cuánto empuja el aire de lado
+  /* Tiene que poder MÁS que la gravedad, o la cometa no despega nunca.
+     Con el multiplicador de reposo (0.82) ya vuela sola, y correr con el
+     carrete es lo que la sube del todo. */
+  sustentacion: 2100,
+  sustentacionQuieta: 0.82,   // cuánto de eso queda al soltar el dedo
+
+  /* ---- LO QUE SE LEE --------------------------------------------------
+     Van saliendo según sube. `alturaMin` es la parte de la hoja que hay
+     que haber subido (0 abajo del todo, 1 arriba del todo).           */
+  hitos: [
+    { alt: 0.30, texto: "Ya coge aire.", firma: "No tires tan fuerte, déjala." },
+    { alt: 0.50, texto: "Mira cómo se sostiene sola.", firma: "Las cosas que funcionan no hay que forzarlas." },
+    { alt: 0.68, texto: "Más arriba que los pájaros.", firma: "Y aún tienes cuerda." },
+    { alt: 0.82, texto: "Casi no se ve.", firma: "Pero la notas en la mano. Eso es lo bueno." },
+    { alt: 0.92, texto: "Ahí está, en lo alto del todo.", firma: "Igual que yo cuando me escribes." },
+  ],
+
+  /* ---- EL LAZO DE LA COLA ---------------------------------------------
+     Cada lazo lleva algo escrito. Se leen cuando la cometa pasa cerca
+     del dedo.                                                         */
+  lazos: [
+    "contigo", "siempre", "vuelve", "mírame", "quédate", "gracias", "tú",
+  ],
+
+  /* ---- EL SUELO -------------------------------------------------------- */
+  nubes: 5,
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   La maquinaria.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const mundo  = document.getElementById("mundo");
+const lienzo = document.getElementById("lienzo");
+const zona   = document.getElementById("toque");
+const elPie  = document.getElementById("pie");
+const elAlt  = document.getElementById("altura");
+const ctx    = lienzo.getContext("2d", { alpha: false });
+
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
+
+let A = 0, H = 0, dpr = 1;
+let suelo = 0;
+
+function medir() {
+  const r = mundo.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const primera = !A;
+  A = r.width; H = r.height;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  lienzo.width  = Math.round(A * dpr);
+  lienzo.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  suelo = H * 0.9;
+  if (primera) arrancar();
+  else {
+    carrete.x = clamp(carrete.x, 20, A - 20);
+    carrete.y = suelo - 14;
+  }
+  sembrarNubes();
+}
+new ResizeObserver(medir).observe(mundo);
+
+/* ---- La cuerda ----------------------------------------------------------
+   Una cadena de nudos: cada uno con su posición y la de antes. Se mueve
+   por Verlet —posición menos posición anterior es la velocidad— y luego
+   se corrigen las distancias unas cuantas veces. Es la forma más corta
+   de que una cuerda se comporte como una cuerda.                         */
+
+const nudos = [];
+const carrete = { x: 0, y: 0 };
+const cometa = { x: 0, y: 0, px: 0, py: 0, ang: 0 };
+
+/** El largo de la cuerda, en píxeles, para la hoja que haya ahora. */
+function largoCuerda() { return H * CONF.cuerda; }
+
+function arrancar() {
+  carrete.x = A * 0.5;
+  carrete.y = suelo - 14;
+  cometa.x = carrete.x;
+  cometa.y = carrete.y - 40;
+  cometa.px = cometa.x;
+  cometa.py = cometa.y;
+  nudos.length = 0;
+  for (let i = 0; i < CONF.nudos; i++) {
+    const t = i / (CONF.nudos - 1);
+    const x = carrete.x;
+    const y = carrete.y - t * 40;
+    nudos.push({ x, y, px: x, py: y });
+  }
+}
+
+/* ---- El dedo ------------------------------------------------------------- */
+
+let llevando = null;
+let dedoVX = 0;
+
+function enPantalla(e) {
+  const r = mundo.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+zona.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  zona.setPointerCapture(e.pointerId);
+  const p = enPantalla(e);
+  llevando = { id: e.pointerId, x: p.x, y: p.y };
+  mundo.classList.add("is-volando");
+});
+
+zona.addEventListener("pointermove", (e) => {
+  if (!llevando || e.pointerId !== llevando.id) return;
+  const p = enPantalla(e);
+  dedoVX = p.x - llevando.x;
+  llevando.x = p.x; llevando.y = p.y;
+  /* El carrete sigue al dedo a lo ancho y se queda pegado al suelo.
+     Correr con el carrete es lo que le da aire a la cometa: de eso va. */
+  carrete.x = clamp(p.x, 18, A - 18);
+});
+
+const soltar = () => {
+  llevando = null;
+  dedoVX = 0;
+  mundo.classList.remove("is-volando");
+};
+zona.addEventListener("pointerup", soltar);
+zona.addEventListener("pointercancel", soltar);
+
+/* ---- Los textos ----------------------------------------------------------- */
+
+let pidiendo = null;
+let bloqueado = 0;
+
+function decir(texto, firma, importante) {
+  const ahora = performance.now();
+  if (!importante && ahora < bloqueado) return;
+  if (pidiendo === texto) return;
+  pidiendo = texto;
+  if (importante) bloqueado = ahora + 4000;
+  elPie.classList.remove("is-visible");
+  setTimeout(() => {
+    elPie.textContent = texto;
+    if (firma) {
+      const em = document.createElement("em");
+      em.textContent = firma;
+      elPie.append(em);
+    }
+    elPie.classList.add("is-visible");
+  }, suave ? 10 : 280);
+}
+
+/* ---- Sonido: el viento ---------------------------------------------------- */
+
+let audio = null, vientoNodo = null, vientoGain = null, vientoFiltro = null;
+
+function despertar() {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+  } catch { audio = null; }
+  return audio;
+}
+
+function arrancarViento() {
+  if (!despertar() || vientoNodo) return;
+  const n = audio.sampleRate * 2;
+  const buf = audio.createBuffer(1, n, audio.sampleRate);
+  const d = buf.getChannelData(0);
+  /* Ruido rosa de pobre: ruido blanco pasado por un filtro de un polo.
+     Suena mucho más a viento que el blanco, que suena a estática. */
+  let ultimo = 0;
+  for (let i = 0; i < n; i++) {
+    const blanco = Math.random() * 2 - 1;
+    ultimo = 0.98 * ultimo + 0.02 * blanco;
+    d[i] = ultimo * 8;
+  }
+  vientoNodo = audio.createBufferSource();
+  vientoNodo.buffer = buf;
+  vientoNodo.loop = true;
+  vientoFiltro = audio.createBiquadFilter();
+  vientoFiltro.type = "lowpass";
+  vientoFiltro.frequency.value = 500;
+  vientoGain = audio.createGain();
+  vientoGain.gain.value = 0.02;
+  vientoNodo.connect(vientoFiltro).connect(vientoGain).connect(audio.destination);
+  vientoNodo.start();
+}
+
+function campana(hz) {
+  if (!despertar()) return;
+  const t = audio.currentTime;
+  const o = audio.createOscillator();
+  const g = audio.createGain();
+  o.type = "triangle";
+  o.frequency.setValueAtTime(hz, t);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.07, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.3);
+  o.connect(g).connect(audio.destination);
+  o.start(t); o.stop(t + 1.4);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS SECRETOS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Subir la cometa hasta el borde de arriba y aguantarla ahí: se
+      engancha en una nube y hay que tirar para soltarla.               */
+let enganchada = 0;
+let enganchadaDicha = false;
+
+/* 2. Dejar de tocar con la cometa arriba: baja sola dando vueltas, y
+      mientras baja se lee algo.                                        */
+let cayendo = 0;
+
+/* 3. Cruzar el cielo de lado a lado corriendo con el carrete: la cometa
+      hace un rizo entero.                                              */
+let rizos = 0, ultimoLado = -1, tLado = 0, rizando = 0;
+
+function mirarRizo() {
+  const lado = carrete.x < A * 0.22 ? 0 : carrete.x > A * 0.78 ? 1 : -1;
+  if (lado < 0) return;
+  const ahora = performance.now();
+  if (ahora - tLado > 3400) rizos = 0;
+  if (lado !== ultimoLado) { rizos++; ultimoLado = lado; tLado = ahora; }
+  if (rizos >= 3 && rizando <= 0) {
+    rizos = 0;
+    rizando = 1;
+    decir("¡Un rizo entero!", "Ya sabes volarla mejor que yo.", true);
+    campana(784);
+  }
+}
+
+/* ---- Los hitos ------------------------------------------------------------ */
+
+let hitosDichos = 0;
+let maxAltura = 0;
+
+/* ---- Las nubes ------------------------------------------------------------ */
+
+let nubes = [];
+function sembrarNubes() {
+  nubes = [];
+  for (let i = 0; i < CONF.nubes; i++) {
+    nubes.push({
+      x: Math.random(),
+      y: azar(0.06, 0.4),
+      esc: azar(0.7, 1.6),
+      v: azar(0.004, 0.012),
+      bultos: Array.from({ length: 4 }, (_, k) => ({
+        dx: (k - 1.5) * 0.55 + azar(-0.12, 0.12),
+        dy: azar(-0.09, 0.1),
+        r: azar(0.55, 1),
+      })),
+    });
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+let t0 = performance.now();
+let reloj = 0;
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A || !H) return;
+
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+  else if (dt > 0.1) dt = 0.1;
+  reloj += dt;
+
+  fisica(dt);
+  dibujar(dt);
+
+  /* La altura, en metros inventados. */
+  const alt = clamp(1 - cometa.y / (suelo - 20), 0, 1);
+  maxAltura = Math.max(maxAltura, alt);
+  elAlt.textContent = `${Math.round(alt * 140)} m`;
+
+  /* Los hitos, según sube. */
+  while (hitosDichos < CONF.hitos.length && maxAltura >= CONF.hitos[hitosDichos].alt) {
+    const h = CONF.hitos[hitosDichos];
+    hitosDichos++;
+    decir(h.texto, h.firma, true);
+    campana(523 + hitosDichos * 60);
+  }
+
+  mirarRizo();
+
+  /* El secreto de la nube. */
+  if (alt > 0.93 && llevando) {
+    enganchada = Math.min(1, enganchada + dt * 0.5);
+    if (enganchada >= 1 && !enganchadaDicha) {
+      enganchadaDicha = true;
+      decir("Se ha enganchado en una nube.", "Tira flojito, que no se rompa.", true);
+      campana(392);
+    }
+  } else if (!llevando) {
+    if (enganchada > 0) enganchada = Math.max(0, enganchada - dt * 1.4);
+    if (enganchadaDicha && enganchada <= 0) {
+      enganchadaDicha = false;
+      decir("Ya está suelta.", "Menos mal. Le tengo cariño.", true);
+    }
+  }
+
+  /* El secreto de la caída. */
+  if (!llevando && alt > 0.5) {
+    cayendo += dt;
+    if (cayendo > 2.5 && cayendo < 2.6) {
+      decir("Está bajando sola, dando vueltas.", "No pasa nada. Vuelve a subirla cuando quieras.", true);
+    }
+  } else cayendo = 0;
+
+  if (rizando > 0) rizando = Math.max(0, rizando - dt * 0.5);
+}
+
+/* Verlet quiere un paso FIJO.
+
+   Con el paso variable del navegador, la fórmula `x += (x - anterior)` ya
+   no significa lo mismo de un cuadro a otro: un cuadro largo mete de
+   golpe una velocidad enorme, la cuerda tira para corregirla y la cometa
+   sale disparada. Eso es lo que pasaba: subía, daba un latigazo y se
+   estrellaba. Aquí se camina el dt real en pasos de 1/120 s, con un tope
+   para que un parón no obligue a dar cien pasos seguidos. */
+const PASO = 1 / 120;
+let sobra = 0;
+
+function fisica(dtReal) {
+  sobra = Math.min(sobra + dtReal, 0.25);
+  let vueltas = 0;
+  while (sobra >= PASO && vueltas < 30) {
+    unPaso(PASO);
+    sobra -= PASO;
+    vueltas++;
+  }
+  dedoVX = damp(dedoVX, 0, 6, dtReal);
+}
+
+function unPaso(dt) {
+  /* --- el viento --- */
+  /* Sopla de un lado, con rachas. Y correr con el carrete cuenta como
+     viento de cara, que es exactamente por lo que se corre. */
+  const racha = Math.sin(reloj * 0.6) * 0.4 + Math.sin(reloj * 1.7) * 0.25;
+  const vientoX = CONF.viento * (0.45 + racha) - dedoVX * 22;
+  const sube = CONF.sustentacion * (0.62 + Math.abs(dedoVX) * 0.06 + racha * 0.22)
+             * (llevando ? 1 : CONF.sustentacionQuieta);
+
+  /* --- la cometa, por Verlet --- */
+  const vx = (cometa.x - cometa.px) * 0.985;
+  const vy = (cometa.y - cometa.py) * 0.985;
+  cometa.px = cometa.x;
+  cometa.py = cometa.y;
+
+  let ax = vientoX;
+  let ay = CONF.gravedad - sube;
+  /* Enganchada en la nube: deja de subir y se queda clavada. */
+  if (enganchada > 0.9) { ay = 0; ax *= 0.2; }
+  /* Rizando: se le mete una vuelta entera por la fuerza. */
+  if (rizando > 0) {
+    const a = (1 - rizando) * 12.6;
+    ax += Math.cos(a) * 900;
+    ay += Math.sin(a) * 900;
+  }
+
+  /* Verlet de libro: desplazamiento anterior más aceleración por dt al
+     cuadrado. Sin factores de más: el `* 60` que había aquí multiplicaba
+     la aceleración por sesenta y la cometa se volvía loca en un segundo. */
+  cometa.x += vx + ax * dt * dt;
+  cometa.y += vy + ay * dt * dt;
+
+  /* --- el tirón de la cuerda ---
+     La cuerda NO empuja a la cometa: sólo le impide alejarse más de lo
+     que mide. Mientras haya cuerda de sobra, la cometa vuela a su aire;
+     cuando se acaba, se queda en el círculo y se le quita la velocidad
+     que la sacaría de él.
+
+     Ésta fue la segunda vuelta al problema. La primera hacía la cuerda
+     entera con nudos con peso y ataba la cometa al último: físicamente
+     más fino, y en la práctica la cuerda pesaba tanto que la cometa
+     subía trece metros de ciento cuarenta por mucho que corrieras. Una
+     cuerda de cometa es un hilo, y un hilo no tira hacia abajo. */
+  const L = largoCuerda();
+  let dx = cometa.x - carrete.x, dy = cometa.y - carrete.y;
+  let d = Math.hypot(dx, dy);
+  if (d > L) {
+    const nx = dx / d, ny = dy / d;
+    cometa.x = carrete.x + nx * L;
+    cometa.y = carrete.y + ny * L;
+    /* Se anula sólo la componente que se va hacia fuera; la de girar
+       alrededor del carrete se conserva, y por eso la cometa barre el
+       cielo en arco cuando corres, en vez de frenar en seco. */
+    const rvx = cometa.x - cometa.px, rvy = cometa.y - cometa.py;
+    const radial = rvx * nx + rvy * ny;
+    if (radial > 0) {
+      cometa.px += nx * radial;
+      cometa.py += ny * radial;
+    }
+  }
+
+  /* --- la cuerda, para dibujarla ---
+     Los nudos ya no sujetan nada: sólo cuelgan entre el carrete y la
+     cometa para que la línea tenga panza y ondee. Su física es suya y
+     no le llega a la cometa. */
+  const tramo = L / (CONF.nudos - 1);
+  for (let i = 1; i < nudos.length - 1; i++) {
+    const n = nudos[i];
+    const nvx = (n.x - n.px) * 0.98;
+    const nvy = (n.y - n.py) * 0.98;
+    n.px = n.x; n.py = n.y;
+    n.x += nvx + vientoX * 0.4 * dt * dt;
+    n.y += nvy + CONF.gravedad * 0.16 * dt * dt;
+  }
+  for (let pasada = 0; pasada < 5; pasada++) {
+    nudos[0].x = carrete.x;
+    nudos[0].y = carrete.y;
+    const ult = nudos[nudos.length - 1];
+    ult.x = cometa.x;
+    ult.y = cometa.y;
+    for (let i = 0; i < nudos.length - 1; i++) {
+      const a = nudos[i], b = nudos[i + 1];
+      const ax2 = b.x - a.x, ay2 = b.y - a.y;
+      const dd = Math.hypot(ax2, ay2) || 0.0001;
+      if (dd <= tramo) continue;          // la cuerda floja no empuja
+      const corrige = (dd - tramo) / dd * 0.5;
+      const cxd = ax2 * corrige, cyd = ay2 * corrige;
+      if (i > 0) { a.x += cxd; a.y += cyd; }
+      if (i + 1 < nudos.length - 1) { b.x -= cxd; b.y -= cyd; }
+    }
+  }
+
+  /* --- límites --- */
+  cometa.x = clamp(cometa.x, 14, A - 14);
+  if (cometa.y > suelo - 16) {
+    cometa.y = suelo - 16;
+    cometa.py = cometa.y + 2;
+  }
+  /* El techo deja sitio para la cometa ENTERA, no para su centro: con un
+     tope de 22 px el morro se salía por arriba de la hoja. */
+  const alto = Math.min(A, H) * 0.075 * 1.6 + 16;
+  if (cometa.y < alto) { cometa.y = alto; cometa.py = cometa.y - 1; }
+
+  /* El morro apunta a donde tira la cuerda. */
+  const ant = nudos[nudos.length - 2];
+  cometa.ang = Math.atan2(cometa.y - ant.y, cometa.x - ant.x) + Math.PI / 2;
+}
+
+function dibujar(dt) {
+  /* --- el cielo --- */
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, "#7fc4e8");
+  g.addColorStop(0.42, "#b8dcf0");
+  g.addColorStop(0.8, "#e8eec8");
+  g.addColorStop(1, "#f2e0c0");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, A, H);
+
+  /* --- el sol --- */
+  const sg = ctx.createRadialGradient(A * 0.2, H * 0.14, 0, A * 0.2, H * 0.14, Math.min(A, H) * 0.42);
+  sg.addColorStop(0, "rgba(255, 250, 220, 0.75)");
+  sg.addColorStop(1, "rgba(255, 250, 220, 0)");
+  ctx.fillStyle = sg;
+  ctx.fillRect(0, 0, A, H);
+
+  /* --- las nubes --- */
+  for (const n of nubes) {
+    n.x += n.v * dt;
+    if (n.x > 1.3) n.x = -0.3;
+    const ncx = n.x * A, ncy = n.y * H, r = Math.min(A, H) * 0.085 * n.esc;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+    for (const b of n.bultos) {
+      ctx.beginPath();
+      ctx.arc(ncx + b.dx * r * 1.8, ncy + b.dy * r, r * b.r, 0, 6.283);
+      ctx.fill();
+    }
+  }
+
+  /* --- el prado --- */
+  const pg = ctx.createLinearGradient(0, suelo - 10, 0, H);
+  pg.addColorStop(0, "#9cc27e");
+  pg.addColorStop(1, "#6f9a58");
+  ctx.fillStyle = pg;
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  ctx.lineTo(0, suelo);
+  for (let x = 0; x <= A; x += 14) ctx.lineTo(x, suelo - Math.sin(x * 0.014) * 7);
+  ctx.lineTo(A, H);
+  ctx.closePath();
+  ctx.fill();
+
+  /* --- la cuerda --- */
+  ctx.strokeStyle = "rgba(90, 80, 70, 0.55)";
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  ctx.moveTo(nudos[0].x, nudos[0].y);
+  for (let i = 1; i < nudos.length; i++) ctx.lineTo(nudos[i].x, nudos[i].y);
+  ctx.stroke();
+
+  /* --- el carrete y la manita --- */
+  ctx.fillStyle = "#8f6a4a";
+  ctx.fillRect(carrete.x - 6, carrete.y, 12, 16);
+  ctx.fillStyle = "#c2907e";
+  ctx.beginPath();
+  ctx.arc(carrete.x, carrete.y + 2, 7, 0, 6.283);
+  ctx.fill();
+
+  /* --- la cometa --- */
+  dibujarCometa();
+
+  /* --- el enganchón --- */
+  if (enganchada > 0.9) {
+    const gl = ctx.createRadialGradient(cometa.x, cometa.y, 0, cometa.x, cometa.y, 52);
+    gl.addColorStop(0, "rgba(255, 255, 255, 0.7)");
+    gl.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.fillStyle = gl;
+    ctx.beginPath(); ctx.arc(cometa.x, cometa.y, 52, 0, 6.283); ctx.fill();
+  }
+}
+
+function dibujarCometa() {
+  const R = Math.min(A, H) * 0.075;
+  ctx.save();
+  ctx.translate(cometa.x, cometa.y);
+  ctx.rotate(cometa.ang);
+
+  /* El rombo, en cuatro cuartos de dos colores: es lo que hace que se
+     vea girar. Una cometa de un solo color parece una pegatina. */
+  const cuartos = [
+    [[0, -R], [R * 0.62, 0], [0, 0], "#ff8aa8"],
+    [[0, -R], [-R * 0.62, 0], [0, 0], "#ffd473"],
+    [[0, R * 1.5], [R * 0.62, 0], [0, 0], "#ffd473"],
+    [[0, R * 1.5], [-R * 0.62, 0], [0, 0], "#ff8aa8"],
+  ];
+  for (const [p1, p2, p3, col] of cuartos) {
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(p1[0], p1[1]);
+    ctx.lineTo(p2[0], p2[1]);
+    ctx.lineTo(p3[0], p3[1]);
+    ctx.closePath();
+    ctx.fill();
+  }
+  /* Las varillas. */
+  ctx.strokeStyle = "rgba(110, 80, 60, 0.6)";
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(0, -R); ctx.lineTo(0, R * 1.5);
+  ctx.moveTo(-R * 0.62, 0); ctx.lineTo(R * 0.62, 0);
+  ctx.stroke();
+  ctx.restore();
+
+  /* La cola con sus lazos, colgando hacia abajo y ondeando. Se dibuja
+     FUERA del giro: una cola cuelga, no gira con la cometa. */
+  ctx.strokeStyle = "rgba(120, 100, 90, 0.5)";
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  const largoCola = R * 3.4;
+  const puntos = [];
+  for (let i = 0; i <= 9; i++) {
+    const t = i / 9;
+    const x = cometa.x + Math.sin(reloj * 2.4 + t * 5) * R * 0.55 * t
+            - Math.sin(cometa.ang) * largoCola * t * 0.4;
+    const y = cometa.y + largoCola * t + Math.cos(cometa.ang) * R * 1.5 * t * 0.3;
+    puntos.push([x, y]);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  }
+  ctx.stroke();
+
+  CONF.lazos.forEach((texto, i) => {
+    const p = puntos[i + 1];
+    if (!p) return;
+    ctx.save();
+    ctx.translate(p[0], p[1]);
+    ctx.rotate(Math.sin(reloj * 2.6 + i) * 0.5);
+    ctx.fillStyle = ["#ff9ec0", "#ffd473", "#a8e0c0", "#a9c8f5", "#e0b4f0", "#ffb8a8", "#ff9ec0"][i % 7];
+    ctx.beginPath();
+    ctx.moveTo(-6, 0); ctx.lineTo(0, -3.4); ctx.lineTo(6, 0); ctx.lineTo(0, 3.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  });
+
+  /* Y si el dedo pasa cerca de un lazo, se lee lo que pone. */
+  if (llevando) {
+    for (let i = 0; i < CONF.lazos.length; i++) {
+      const p = puntos[i + 1];
+      if (!p) continue;
+      if (Math.hypot(p[0] - llevando.x, p[1] - llevando.y) < 26) {
+        decir(`En este lazo pone «${CONF.lazos[i]}».`, "Los escribí antes de atarlos.");
+        break;
+      }
+    }
+  }
+}
+
+/* ---- Arranque -------------------------------------------------------------- */
+
+medir();
+decir("Corre con el carrete. El viento hace el resto.");
+zona.addEventListener("pointerdown", arrancarViento, { once: true });
+requestAnimationFrame(paso);
+
+})();
+</script>
+</body>
+</html>

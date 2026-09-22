@@ -14,34 +14,84 @@
 
 <title>Marissa · Mi Amorcito</title>
 
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>💌</text></svg>">
-<link rel="apple-touch-icon" href="assets/img/imagen1.png">
+<!-- INSTALABLE.
 
+     El manifiesto y el icono de aquí son el respaldo: valen si el libro se
+     abre sin JavaScript de por medio o si algo falla al arrancar. En cuanto
+     arranca, `src/core/Instalable.js` los sustituye por los de verdad, con
+     la imagen que haya en la carpeta `icono/` —la que sea, del tamaño que
+     sea— recortada a lo que pide cada sistema.
+
+     `mobile-web-app-capable` y su gemelo de Apple, que ya están arriba, son
+     lo que hace que instalado se abra a pantalla completa y sin barras. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icono/icono.png">
+<link rel="apple-touch-icon" href="icono/icono.png">
+
+<!-- LAS LETRAS NO PUEDEN RETRASAR EL LIBRO.
+
+     Una hoja de estilo normal bloquea el pintado Y el `DOMContentLoaded`, y
+     el libro entero arranca desde un módulo, que se ejecuta después de eso.
+     Resultado: mientras Google tardara en contestar, no había libro. Medido
+     con la petición atascada, el botón de entrar tardaba TRECE SEGUNDOS en
+     aparecer, con la pantalla de carga quieta. En una conexión mala, en un
+     avión o en una red donde fonts.googleapis.com no responda, eso es
+     exactamente lo que le pasaría a ella.
+
+     Con `media="print"` el navegador la descarga pero no espera por ella, y
+     al llegar se pone en su sitio. El libro se abre con las letras del
+     teléfono y se recompone solo cuando llegan las buenas —para eso está
+     `display=swap` en la propia petición—. Si tardan mucho o no llegan, el
+     libro se lee igual: las alternativas de `tokens.css` están elegidas
+     para parecerse. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&family=Jost:wght@300;400;500&display=swap">
+<link rel="stylesheet" media="print" onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&family=Jost:wght@300;400;500&display=swap">
+<noscript>
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Caveat:wght@400;500;600&family=Jost:wght@300;400;500&display=swap">
+</noscript>
 
 <link rel="stylesheet" href="src/styles/tokens.css">
 <link rel="stylesheet" href="src/styles/base.css">
 <link rel="stylesheet" href="src/styles/boot.css">
 <link rel="stylesheet" href="src/styles/paper.css">
+<link rel="stylesheet" href="src/styles/lectura.css">
+<link rel="stylesheet" href="src/styles/components.css">
+<link rel="stylesheet" href="src/styles/entradas.css">
 <link rel="stylesheet" href="src/styles/stage.css">
 <link rel="stylesheet" href="src/styles/ui.css">
-<link rel="stylesheet" href="src/styles/pages/cover.css">
-<link rel="stylesheet" href="src/styles/pages/chapter.css">
-<link rel="stylesheet" href="src/styles/pages/envelope.css">
-<link rel="stylesheet" href="src/styles/pages/scratch.css">
-<link rel="stylesheet" href="src/styles/pages/polaroids.css">
-<link rel="stylesheet" href="src/styles/pages/veil.css">
-<link rel="stylesheet" href="src/styles/pages/depth.css">
-<link rel="stylesheet" href="src/styles/pages/filmstrip.css">
-<link rel="stylesheet" href="src/styles/pages/handwriting.css">
-<link rel="stylesheet" href="src/styles/pages/memoryfield.css">
-<link rel="stylesheet" href="src/styles/pages/secret.css">
-<link rel="stylesheet" href="src/styles/pages/constellation.css">
-<link rel="stylesheet" href="src/styles/pages/finale.css">
+<link rel="stylesheet" href="src/pages/portada/estilos.css">
+<link rel="stylesheet" href="src/pages/capitulo/estilos.css">
+<link rel="stylesheet" href="src/pages/sobre/estilos.css">
+<link rel="stylesheet" href="src/pages/rascar/estilos.css">
+<link rel="stylesheet" href="src/pages/polaroids/estilos.css">
+<link rel="stylesheet" href="src/pages/velo/estilos.css">
+<link rel="stylesheet" href="src/pages/profundidad/estilos.css">
+<link rel="stylesheet" href="src/pages/carrete/estilos.css">
+<link rel="stylesheet" href="src/pages/escrito/estilos.css">
+<link rel="stylesheet" href="src/pages/recuerdos/estilos.css">
+<link rel="stylesheet" href="src/pages/secreto/estilos.css">
+<link rel="stylesheet" href="src/pages/constelacion/estilos.css">
+<link rel="stylesheet" href="src/pages/final/estilos.css">
+<link rel="stylesheet" href="src/pages/maquina/estilos.css">
+<link rel="stylesheet" href="src/pages/postal/estilos.css">
+<link rel="stylesheet" href="src/pages/petalos/estilos.css">
+<link rel="stylesheet" href="src/pages/mosaico/estilos.css">
+<link rel="stylesheet" href="src/pages/combinacion/estilos.css">
+<link rel="stylesheet" href="src/pages/botella/estilos.css">
+<link rel="stylesheet" href="src/pages/regalo/estilos.css">
+<link rel="stylesheet" href="src/pages/pulso/estilos.css">
+<link rel="stylesheet" href="src/pages/distancia/estilos.css">
+<link rel="stylesheet" href="src/pages/ultima-sorpresa/estilos.css">
+<link rel="stylesheet" href="src/pages/mias/estilos.css">
+<link rel="stylesheet" href="src/pages/html/estilos.css">
+<link rel="stylesheet" href="src/pages/amor/estilos.css">
 
-<link rel="preload" as="image" href="assets/img/imagen1.png" crossorigin="anonymous">
+<!-- Sin `crossorigin`: la portada se pide como cualquier imagen de casa, y
+     así esta reserva sirve de verdad en vez de descargarla por segunda vez. -->
+<link rel="preload" as="image" href="assets/img/imagen1.png">
 
 <script type="importmap">
 {

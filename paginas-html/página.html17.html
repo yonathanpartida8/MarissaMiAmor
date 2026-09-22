@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>El mapa de nosotros</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .mapa-mundo, con prefijo `mp-` en cada clase.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.mapa-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background: #e6d9bd;
+  color: #4a3c28;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mapa-mundo .mp-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Los toques los recoge `.mp-toque`, que va justo encima. */
+  pointer-events: none;
+}
+
+/* El mapa entero. El libro sólo se queda el barrido que empieza en sus
+   24-44 px de borde. */
+.mapa-mundo .mp-toque {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.mapa-mundo .mp-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  padding:
+    calc(var(--seguro-t) + 18px) 22px
+    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+.mapa-mundo .mp-titulo {
+  margin: 0;
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-size: clamp(1rem, 4.4vw, 1.4rem);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #7a6444;
+  opacity: 0.85;
+  transition: opacity 800ms var(--e-suave);
+}
+.mapa-mundo.is-mirando .mp-titulo { opacity: 0.22; }
+
+.mapa-mundo .mp-pie {
+  margin: 0;
+  min-height: 3.8em;
+  max-width: 23em;
+  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
+  line-height: 1.55;
+  color: #4e402c;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 660ms var(--e-suave), transform 660ms var(--e-suave);
+}
+.mapa-mundo .mp-pie.is-visible { opacity: 0.94; transform: none; }
+.mapa-mundo .mp-pie strong {
+  display: block;
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-weight: 500;
+  font-size: 1.1em;
+  letter-spacing: 0.06em;
+  color: #9c4a34;
+  margin-bottom: 0.15em;
+}
+.mapa-mundo .mp-pie em {
+  display: block;
+  margin-top: 0.3em;
+  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  font-size: 1.16em;
+  font-style: normal;
+  color: #9c4a34;
+}
+
+.mapa-mundo .mp-cuenta {
+  position: absolute;
+  right: 20px;
+  top: calc(var(--seguro-t) + 18px);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  color: #8a7454;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapa-mundo * { transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="mapa-mundo" id="mundo">
+  <canvas class="mp-lienzo" id="lienzo"></canvas>
+  <div class="mp-toque" id="toque" aria-hidden="true"></div>
+  <div class="mp-ui">
+    <h1 class="mp-titulo" id="titulo">Toca un alfiler</h1>
+    <p class="mp-pie" id="pie" role="status" aria-live="polite"></p>
+  </div>
+  <div class="mp-cuenta" id="cuenta" aria-hidden="true"></div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN EDITABLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const CONF = {
+
+  /* ---- LOS SITIOS -----------------------------------------------------
+     Cada alfiler es un recuerdo. `x` e `y` van de 0 a 1 sobre el mapa,
+     así que valen igual en un móvil que en una tableta.
+
+     El ORDEN importa: la línea de puntos los une en este orden, y es la
+     que cuenta el viaje.                                               */
+  sitios: [
+    { x: 0.22, y: 0.30, nombre: "Donde te vi",
+      texto: "Estabas de espaldas y te reías de algo que no oí.",
+      firma: "Todavía me pregunto de qué." },
+    { x: 0.46, y: 0.22, nombre: "El primer café",
+      texto: "Pediste algo rarísimo y luego no te lo bebiste.",
+      firma: "Sigues haciéndolo." },
+    { x: 0.70, y: 0.34, nombre: "La cuesta",
+      texto: "Subimos hablando y no nos dimos cuenta de la cuesta.",
+      firma: "Contigo todo es menos cuesta." },
+    { x: 0.80, y: 0.55, nombre: "El banco",
+      texto: "Ese banco en el que se nos hizo de noche.",
+      firma: "Nos echaron del parque." },
+    { x: 0.56, y: 0.66, nombre: "La estación",
+      texto: "La primera vez que me costó irme.",
+      firma: "Y la última, y todas." },
+    { x: 0.30, y: 0.62, nombre: "Tu portal",
+      texto: "El sitio donde tardo media hora en despedirme.",
+      firma: "Ya lo sabes, no disimulo." },
+    { x: 0.17, y: 0.80, nombre: "Casa",
+      texto: "Ésta la pusimos entre los dos.",
+      firma: "Y es la única que no pienso mover." },
+  ],
+
+  /* ---- EL MAPA -------------------------------------------------------- */
+  rios: 2,
+  bosques: 7,
+  pueblos: 11,
+
+  /* ---- LA ROSA DE LOS VIENTOS ----------------------------------------- */
+  rosa: { x: 0.85, y: 0.14, r: 0.075 },
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   La maquinaria.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const mundo  = document.getElementById("mundo");
+const lienzo = document.getElementById("lienzo");
+const zona   = document.getElementById("toque");
+const elPie  = document.getElementById("pie");
+const elCue  = document.getElementById("cuenta");
+const ctx    = lienzo.getContext("2d", { alpha: false });
+
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
+
+let A = 0, H = 0, dpr = 1;
+
+/* El mapa dibujado se guarda en su propio lienzo y se pinta UNA VEZ.
+   Es un dibujo fijo: redibujar cada fotograma los ríos, los bosques y
+   los once pueblos sería tirar el presupuesto de la GPU en algo que no
+   se mueve. Lo que se repinta en cada cuadro son sólo los alfileres y
+   la línea, que sí cambian. */
+const fondo = document.createElement("canvas");
+const cf = fondo.getContext("2d");
+
+function medir() {
+  const r = mundo.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  A = r.width; H = r.height;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  for (const l of [lienzo, fondo]) {
+    l.width = Math.round(A * dpr);
+    l.height = Math.round(H * dpr);
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cf.setTransform(dpr, 0, 0, dpr, 0, 0);
+  pintarMapa();
+}
+new ResizeObserver(medir).observe(mundo);
+
+/* ---- El mapa de fondo ---------------------------------------------------- */
+
+/** Un azar REPETIBLE: el mismo mapa cada vez que se mide, no uno nuevo. */
+let semilla = 20240214;
+function rnd() {
+  semilla = (semilla * 1664525 + 1013904223) % 4294967296;
+  return semilla / 4294967296;
+}
+
+function pintarMapa() {
+  semilla = 20240214;
+  const c = cf;
+
+  /* El papel. */
+  c.fillStyle = "#e6d9bd";
+  c.fillRect(0, 0, A, H);
+  /* Las manchas de la edad. */
+  for (let i = 0; i < 60; i++) {
+    const x = rnd() * A, y = rnd() * H, r = 8 + rnd() * 46;
+    const g = c.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(160, 130, 80, ${0.02 + rnd() * 0.035})`);
+    g.addColorStop(1, "rgba(160, 130, 80, 0)");
+    c.fillStyle = g;
+    c.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  /* La cuadrícula del cartógrafo. */
+  c.strokeStyle = "rgba(120, 95, 60, 0.13)";
+  c.lineWidth = 1;
+  for (let i = 1; i < 8; i++) {
+    c.beginPath(); c.moveTo(A * i / 8, 0); c.lineTo(A * i / 8, H); c.stroke();
+    c.beginPath(); c.moveTo(0, H * i / 8); c.lineTo(A, H * i / 8); c.stroke();
+  }
+
+  /* La costa: una orilla que cruza abajo a la derecha. */
+  c.fillStyle = "#bcd2c8";
+  c.beginPath();
+  c.moveTo(A, H * 0.86);
+  for (let x = A; x >= 0; x -= 14) {
+    const t = x / A;
+    c.lineTo(x, H * (0.86 + Math.sin(t * 7) * 0.035 + Math.sin(t * 2.3) * 0.05));
+  }
+  c.lineTo(0, H); c.lineTo(A, H);
+  c.closePath(); c.fill();
+  /* Las rayitas del agua, paralelas a la orilla. */
+  c.strokeStyle = "rgba(110, 145, 135, 0.4)";
+  for (let k = 1; k <= 3; k++) {
+    c.beginPath();
+    for (let x = 0; x <= A; x += 14) {
+      const t = x / A;
+      const y = H * (0.86 + Math.sin(t * 7) * 0.035 + Math.sin(t * 2.3) * 0.05) + k * 9;
+      x ? c.lineTo(x, y) : c.moveTo(x, y);
+    }
+    c.stroke();
+  }
+
+  /* Los ríos. */
+  c.strokeStyle = "rgba(120, 160, 175, 0.75)";
+  c.lineCap = "round";
+  for (let i = 0; i < CONF.rios; i++) {
+    let x = rnd() * A, y = -10;
+    c.lineWidth = 3.4;
+    c.beginPath();
+    c.moveTo(x, y);
+    while (y < H * 0.88) {
+      x += (rnd() - 0.5) * 60;
+      y += 26 + rnd() * 18;
+      c.lineTo(clamp(x, 6, A - 6), y);
+    }
+    c.stroke();
+  }
+
+  /* Los bosques: grupos de arbolitos. */
+  for (let i = 0; i < CONF.bosques; i++) {
+    const bx = rnd() * A, by = rnd() * H * 0.82;
+    const n = 4 + Math.floor(rnd() * 6);
+    for (let k = 0; k < n; k++) {
+      const x = bx + (rnd() - 0.5) * 60;
+      const y = by + (rnd() - 0.5) * 40;
+      c.fillStyle = "rgba(96, 124, 82, 0.62)";
+      c.beginPath();
+      c.moveTo(x, y - 7);
+      c.lineTo(x - 4.5, y + 3);
+      c.lineTo(x + 4.5, y + 3);
+      c.closePath(); c.fill();
+      c.fillStyle = "rgba(120, 95, 60, 0.6)";
+      c.fillRect(x - 0.8, y + 3, 1.6, 3);
+    }
+  }
+
+  /* Los pueblos: un cuadradito y su nombre fingido en rayitas. */
+  for (let i = 0; i < CONF.pueblos; i++) {
+    const x = 20 + rnd() * (A - 40), y = 20 + rnd() * (H * 0.8);
+    c.fillStyle = "rgba(120, 95, 60, 0.7)";
+    c.fillRect(x - 2.5, y - 2.5, 5, 5);
+    c.strokeStyle = "rgba(120, 95, 60, 0.35)";
+    c.lineWidth = 1.4;
+    c.beginPath();
+    c.moveTo(x + 6, y + 1);
+    c.lineTo(x + 6 + 10 + rnd() * 16, y + 1);
+    c.stroke();
+  }
+
+  /* Las montañas, arriba a la izquierda. */
+  for (let i = 0; i < 9; i++) {
+    const x = A * (0.05 + rnd() * 0.3), y = H * (0.06 + rnd() * 0.14);
+    const w = 9 + rnd() * 10;
+    c.strokeStyle = "rgba(120, 95, 60, 0.6)";
+    c.lineWidth = 1.6;
+    c.beginPath();
+    c.moveTo(x - w, y + w * 0.6);
+    c.lineTo(x, y - w * 0.6);
+    c.lineTo(x + w, y + w * 0.6);
+    c.stroke();
+  }
+
+  /* La rosa de los vientos. */
+  const rx = CONF.rosa.x * A, ry = CONF.rosa.y * H, rr = Math.min(A, H) * CONF.rosa.r;
+  c.strokeStyle = "rgba(120, 95, 60, 0.55)";
+  c.lineWidth = 1.2;
+  c.beginPath(); c.arc(rx, ry, rr, 0, 6.283); c.stroke();
+  c.beginPath(); c.arc(rx, ry, rr * 0.72, 0, 6.283); c.stroke();
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * 6.283 - Math.PI / 2;
+    c.fillStyle = i === 0 ? "rgba(156, 74, 52, 0.85)" : "rgba(120, 95, 60, 0.7)";
+    c.beginPath();
+    c.moveTo(rx + Math.cos(a) * rr, ry + Math.sin(a) * rr);
+    c.lineTo(rx + Math.cos(a + 1.4) * rr * 0.26, ry + Math.sin(a + 1.4) * rr * 0.26);
+    c.lineTo(rx + Math.cos(a - 1.4) * rr * 0.26, ry + Math.sin(a - 1.4) * rr * 0.26);
+    c.closePath(); c.fill();
+  }
+  c.fillStyle = "rgba(156, 74, 52, 0.9)";
+  c.font = `600 ${Math.round(rr * 0.34)}px ui-sans-serif, system-ui, sans-serif`;
+  c.textAlign = "center";
+  c.fillText("N", rx, ry - rr * 1.22);
+  c.textAlign = "left";
+
+  /* Y el borde del papel, con su sombra hacia dentro. */
+  const b = c.createRadialGradient(A / 2, H / 2, Math.min(A, H) * 0.3, A / 2, H / 2, Math.max(A, H) * 0.72);
+  b.addColorStop(0, "rgba(90, 66, 34, 0)");
+  b.addColorStop(1, "rgba(90, 66, 34, 0.26)");
+  c.fillStyle = b;
+  c.fillRect(0, 0, A, H);
+}
+
+/* ---- Los alfileres -------------------------------------------------------- */
+
+const vistos = new Set();
+let elegido = -1;
+let brillo = [];
+
+function puntos() {
+  return CONF.sitios.map((s) => ({ x: s.x * A, y: s.y * H }));
+}
+
+function enPantalla(e) {
+  const r = mundo.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+zona.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  const p = enPantalla(e);
+  const ps = puntos();
+  let mejor = -1, dMin = Infinity;
+  for (let i = 0; i < ps.length; i++) {
+    const d = Math.hypot(ps[i].x - p.x, ps[i].y - p.y - 10);
+    if (d < 38 && d < dMin) { dMin = d; mejor = i; }
+  }
+  if (mejor < 0) { tocarMapa(p); return; }
+
+  elegido = mejor;
+  brillo[mejor] = 1.6;
+  vistos.add(mejor);
+  mundo.classList.add("is-mirando");
+  const s = CONF.sitios[mejor];
+  decir(s.texto, s.firma, s.nombre);
+  chincheta();
+  pintarCuenta();
+  mirarSecretos(mejor);
+});
+
+function pintarCuenta() {
+  elCue.textContent = `${vistos.size} / ${CONF.sitios.length}`;
+}
+
+/* ---- Los textos ----------------------------------------------------------- */
+
+let pidiendo = null;
+
+function decir(texto, firma, nombre) {
+  if (pidiendo === texto) return;
+  pidiendo = texto;
+  elPie.classList.remove("is-visible");
+  setTimeout(() => {
+    elPie.textContent = "";
+    if (nombre) {
+      const st = document.createElement("strong");
+      st.textContent = nombre;
+      elPie.append(st);
+    }
+    elPie.append(document.createTextNode(texto));
+    if (firma) {
+      const em = document.createElement("em");
+      em.textContent = firma;
+      elPie.append(em);
+    }
+    elPie.classList.add("is-visible");
+  }, suave ? 10 : 290);
+}
+
+/* ---- Sonido --------------------------------------------------------------- */
+
+let audio = null;
+function chincheta() {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+    const t = audio.currentTime;
+    /* Un golpecito de madera: tono medio que cae rapidísimo. */
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(azar(520, 700), t);
+    o.frequency.exponentialRampToValueAtTime(180, t + 0.06);
+    g.gain.setValueAtTime(0.14, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    o.connect(g).connect(audio.destination);
+    o.start(t); o.stop(t + 0.15);
+  } catch { /* sin sonido se clava igual */ }
+}
+
+function campana(hz) {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    const t = audio.currentTime;
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(hz, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.09, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+    o.connect(g).connect(audio.destination);
+    o.start(t); o.stop(t + 1.5);
+  } catch { /* nada */ }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS SECRETOS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Al verlos todos, la línea de puntos se completa y se recorre sola
+      de principio a fin, con una luz que va pasando por encima.       */
+let recorrido = -1;
+
+/* 2. Tocar la rosa de los vientos: la aguja gira sola y se queda
+      apuntando al último alfiler, no al norte.                        */
+let rosaGiro = 0, rosaApunta = false;
+
+/* 3. Tocar el mar tres veces: sale un barquito que cruza la costa.    */
+let toquesMar = 0;
+let barco = null;
+
+function tocarMapa(p) {
+  /* ¿la rosa? */
+  const rx = CONF.rosa.x * A, ry = CONF.rosa.y * H, rr = Math.min(A, H) * CONF.rosa.r;
+  if (Math.hypot(p.x - rx, p.y - ry) < rr * 1.25) {
+    rosaGiro = 0.001;
+    rosaApunta = false;
+    decir("La aguja se ha vuelto loca.", "Ya no marca el norte. Marca otra cosa.", "La rosa");
+    campana(440);
+    return;
+  }
+  /* ¿el mar? */
+  const orilla = H * (0.86 + Math.sin((p.x / A) * 7) * 0.035 + Math.sin((p.x / A) * 2.3) * 0.05);
+  if (p.y > orilla) {
+    toquesMar++;
+    if (toquesMar === 3 && !barco) {
+      barco = { x: -40, y: orilla + 22 };
+      decir("Ha salido un barco de alguna parte.", "Va hacia donde vamos nosotros.", "El mar");
+      campana(523);
+    }
+  }
+}
+
+function mirarSecretos() {
+  if (vistos.size === CONF.sitios.length && recorrido < 0) {
+    recorrido = 0;
+    setTimeout(() => {
+      decir("Ya están todos.", "Mira el camino entero. Empieza allí y acaba aquí.", "El viaje");
+      campana(659);
+    }, 1800);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+let t0 = performance.now();
+let reloj = 0;
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A || !H) return;
+
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+  else if (dt > 0.1) dt = 0.1;
+  reloj += dt;
+
+  /* El mapa ya está pintado: se copia y se dibuja lo que se mueve. */
+  ctx.drawImage(fondo, 0, 0, A, H);
+
+  const ps = puntos();
+
+  /* --- la línea del viaje --- */
+  ctx.setLineDash([2, 6]);
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+  for (let i = 0; i < ps.length - 1; i++) {
+    /* Un tramo se dibuja entero sólo si se han visto sus dos puntas: el
+       camino se va descubriendo, no está dado. */
+    const hecho = vistos.has(i) && vistos.has(i + 1);
+    ctx.strokeStyle = hecho ? "rgba(156, 74, 52, 0.8)" : "rgba(140, 112, 76, 0.22)";
+    ctx.beginPath();
+    /* Curvado, que un viaje no va en línea recta. */
+    const mx = (ps[i].x + ps[i + 1].x) / 2;
+    const my = (ps[i].y + ps[i + 1].y) / 2 - Math.hypot(ps[i + 1].x - ps[i].x, ps[i + 1].y - ps[i].y) * 0.16;
+    ctx.moveTo(ps[i].x, ps[i].y);
+    ctx.quadraticCurveTo(mx, my, ps[i + 1].x, ps[i + 1].y);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  /* --- la luz que recorre el camino (secreto 1) --- */
+  if (recorrido >= 0) {
+    recorrido += dt * 0.22;
+    if (recorrido > 1.3) recorrido = 0;
+    const t = clamp(recorrido, 0, 1) * (ps.length - 1);
+    const i = Math.min(ps.length - 2, Math.floor(t));
+    const k = t - i;
+    const mx = (ps[i].x + ps[i + 1].x) / 2;
+    const my = (ps[i].y + ps[i + 1].y) / 2 - Math.hypot(ps[i + 1].x - ps[i].x, ps[i + 1].y - ps[i].y) * 0.16;
+    /* Bézier cuadrática evaluada a mano: es dónde está la luz. */
+    const u = 1 - k;
+    const lx = u * u * ps[i].x + 2 * u * k * mx + k * k * ps[i + 1].x;
+    const ly = u * u * ps[i].y + 2 * u * k * my + k * k * ps[i + 1].y;
+    const g = ctx.createRadialGradient(lx, ly, 0, lx, ly, 22);
+    g.addColorStop(0, "rgba(255, 190, 110, 0.9)");
+    g.addColorStop(1, "rgba(255, 190, 110, 0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(lx, ly, 22, 0, 6.283); ctx.fill();
+  }
+
+  /* --- la rosa que gira (secreto 2) --- */
+  if (rosaGiro > 0) {
+    const rx = CONF.rosa.x * A, ry = CONF.rosa.y * H, rr = Math.min(A, H) * CONF.rosa.r;
+    rosaGiro += dt;
+    /* Gira deprisa y va frenando; al parar, apunta al último alfiler
+       que se tocó, que es lo que hace el chiste. */
+    const objetivo = elegido >= 0
+      ? Math.atan2(ps[elegido].y - ry, ps[elegido].x - rx)
+      : -Math.PI / 2;
+    const frena = Math.min(1, rosaGiro / 2.6);
+    const ang = objetivo + (1 - frena) * rosaGiro * 9;
+    ctx.strokeStyle = "rgba(156, 74, 52, 0.9)";
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(rx - Math.cos(ang) * rr * 0.5, ry - Math.sin(ang) * rr * 0.5);
+    ctx.lineTo(rx + Math.cos(ang) * rr * 0.92, ry + Math.sin(ang) * rr * 0.92);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(156, 74, 52, 0.9)";
+    ctx.beginPath(); ctx.arc(rx, ry, 3, 0, 6.283); ctx.fill();
+    if (frena >= 1 && !rosaApunta) {
+      rosaApunta = true;
+      decir("Se ha quedado apuntando ahí.", "Al final, el norte es donde estés.", "La rosa");
+    }
+  }
+
+  /* --- el barco (secreto 3) --- */
+  if (barco) {
+    barco.x += 42 * dt;
+    barco.y = H * (0.86 + Math.sin((barco.x / A) * 7) * 0.035 + Math.sin((barco.x / A) * 2.3) * 0.05) + 22;
+    ctx.fillStyle = "rgba(120, 95, 60, 0.85)";
+    ctx.beginPath();
+    ctx.moveTo(barco.x - 11, barco.y);
+    ctx.lineTo(barco.x + 11, barco.y);
+    ctx.lineTo(barco.x + 6, barco.y + 6);
+    ctx.lineTo(barco.x - 6, barco.y + 6);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "rgba(250, 244, 226, 0.9)";
+    ctx.beginPath();
+    ctx.moveTo(barco.x, barco.y - 2);
+    ctx.lineTo(barco.x, barco.y - 18);
+    ctx.lineTo(barco.x + 11, barco.y - 2);
+    ctx.closePath(); ctx.fill();
+    if (barco.x > A + 40) barco = null;
+  }
+
+  /* --- los alfileres --- */
+  for (let i = 0; i < ps.length; i++) {
+    brillo[i] = damp(brillo[i] || 0, 0, 2.2, dt);
+    dibujarAlfiler(ps[i].x, ps[i].y, vistos.has(i), brillo[i], i === elegido);
+  }
+}
+
+function dibujarAlfiler(x, y, visto, brillo, elegido) {
+  /* La sombra en el papel. */
+  ctx.fillStyle = "rgba(90, 66, 34, 0.22)";
+  ctx.beginPath();
+  ctx.ellipse(x + 3, y + 2, 5, 2.4, 0, 0, 6.283);
+  ctx.fill();
+
+  /* La aguja. */
+  ctx.strokeStyle = "rgba(90, 80, 74, 0.85)";
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + 3, y - 13);
+  ctx.stroke();
+
+  /* La cabeza, que late si acabas de tocarla. */
+  const r = 6 + brillo * 3 + (elegido ? 1 + Math.sin(reloj * 3.4) * 0.8 : 0);
+  if (brillo > 0.02) {
+    const g = ctx.createRadialGradient(x + 3, y - 14, 0, x + 3, y - 14, r * 3.4);
+    g.addColorStop(0, `rgba(230, 110, 80, ${0.5 * brillo})`);
+    g.addColorStop(1, "rgba(230, 110, 80, 0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x + 3, y - 14, r * 3.4, 0, 6.283); ctx.fill();
+  }
+  const g = ctx.createRadialGradient(x + 1.6, y - 15.6, 0.5, x + 3, y - 14, r);
+  g.addColorStop(0, visto ? "#ffb49a" : "#d8cbb0");
+  g.addColorStop(0.55, visto ? "#d4523a" : "#a8987a");
+  g.addColorStop(1, visto ? "#8f2e1e" : "#7a6a4e");
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x + 3, y - 14, r, 0, 6.283); ctx.fill();
+}
+
+/* ---- Arranque -------------------------------------------------------------- */
+
+brillo = CONF.sitios.map(() => 0);
+medir();
+pintarCuenta();
+decir("Siete sitios nuestros. Toca los alfileres.");
+requestAnimationFrame(paso);
+
+})();
+</script>
+</body>
+</html>

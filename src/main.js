@@ -25,7 +25,11 @@ app.start().catch((error) => {
     </div>`;
 });
 
-// Ayuda en desarrollo: window.libro para inspeccionar desde la consola.
+// Ayuda mientras se prepara el libro en el ordenador: `window.libro` para
+// mirarlo desde la consola, y un repaso de que todas las fotos de `fotos.js`
+// existen de verdad —con el nombre del archivo y la página que lo pide, para
+// no tener que buscar dónde está la errata—. En el libro publicado no corre.
 if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
   window.libro = app;
+  import("./data/fotos.js").then(({ revisarFotos }) => revisarFotos());
 }

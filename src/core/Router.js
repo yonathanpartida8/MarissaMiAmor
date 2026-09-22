@@ -12,12 +12,14 @@
 import { Emitter } from "./Emitter.js";
 import { Gestures } from "./Gestures.js";
 import { PageFlip } from "../transitions/PageFlip.js";
-import { effects } from "../transitions/effects.js";
+import { effects, resetLeaf } from "../transitions/effects.js";
 import { resolvePage, warmup } from "../pages/registry.js";
 import { createVerso } from "../components/Verso.js";
 import { manifest } from "../data/manifest.js";
 import { getChapter } from "../data/chapters.js";
 import { el } from "../utils/dom.js";
+import { aplicarLuz } from "../utils/luz.js";
+import { fondoDelTema } from "../utils/temas.js";
 import { clamp, clamp01 } from "../utils/math.js";
 
 /** Cuántas páginas construidas mantenemos vivas a la vez. */
@@ -156,22 +158,66 @@ export class Router extends Emitter {
       return false;
     }
 
-    incoming.leaf.classList.remove("leaf--staged");
+    // La hoja que entra empieza LIMPIA y visible. Las dos cosas importan:
+    //  · sin `leaf--hidden` no hay una hoja invisible durante el giro que
+    //    aparezca de golpe al final;
+    //  · sin estilos en línea de una transición anterior (una opacidad a
+    //    cero, media vuelta puesta) la transición nueva parte de cero.
+    incoming.leaf.classList.remove("leaf--staged", "leaf--hidden");
+    resetLeaf(incoming.leaf);
     if (!incoming.leaf.isConnected) this.stage.append(incoming.leaf);
 
-    // La atmósfera cambia de color *durante* la transición, no después:
-    // así el fondo y la página llegan juntos.
-    this.ctx.gl?.setMood(incoming.page.palette, incoming.page.mood);
+    // LA HOJA QUE ENTRA YA TRAE SU CONTENIDO ENCENDIDO.
+    //
+    // Las veintiséis páginas encienden lo suyo con `is-entered`, y lo hacían
+    // desde `enter()`, que el router llama DESPUÉS de la transición. Durante
+    // todo el giro, entonces, la hoja que entraba estaba en pantalla con
+    // todo dentro a opacidad cero: se veía pasar una hoja vacía y, en las
+    // páginas cuyo contenido vive en el lienzo 3D, directamente un hueco
+    // negro de dos o tres décimas. Ése era el parpadeo de casi todas las
+    // transiciones del libro.
+    //
+    // Encendiéndolo aquí, la transición trae la página ya viva y su entrada
+    // se solapa con el giro, que además es como se ve mejor.
+    //
+    // Y se quita antes de ponerlo para que la entrada se REPITA al volver.
+    // Una página ya visitada seguía teniendo la clase puesta, así que al
+    // regresar aparecía de golpe, sin su gesto: cada página tiene el suyo
+    // —el carro de la máquina, el revelado de la polaroid, el cajón que
+    // sube— y son justo lo que hace que no se parezcan entre ellas.
+    const raiz = incoming.page.root;
+    if (raiz) {
+      raiz.classList.add("sin-transicion");
+      raiz.classList.remove("is-entered");
+      void raiz.offsetWidth; // congelado, el rebobinado es instantáneo
+      raiz.classList.remove("sin-transicion");
+      raiz.classList.add("is-entered");
+    }
+
+    // El color cambia *durante* la transición, no después: así el fondo y
+    // la página llegan juntos.
+    this.#encender(incoming.page);
 
     const name = transition || entry.transition || "flip";
-    await this.#transition(name, outgoing?.leaf, incoming.leaf, dir);
+    // Modo ahorro: durante la transición todo está desenfocado o en marcha,
+    // así que el lienzo WebGL puede rendir a menos resolución sin que se note.
+    // Es justo el instante en que el móvil va más justo.
+    this.ctx.gl?.setEconomy(true);
+    try {
+      await this.#transition(name, outgoing?.leaf, incoming.leaf, dir);
+    } finally {
+      this.ctx.gl?.setEconomy(false);
+    }
 
     // Estado nuevo
     const prevIndex = this.index;
     this.index = index;
-    this.ctx.store.setPage(index);
+    this.ctx.store.setPage(index, entry.id);
 
-    if (outgoing) outgoing.leaf.classList.add("leaf--hidden");
+    if (outgoing) {
+      outgoing.leaf.classList.add("leaf--hidden");
+      resetLeaf(outgoing.leaf);
+    }
     incoming.leaf.classList.remove("leaf--hidden");
 
     await incoming.page.enter(dir);
@@ -198,16 +244,45 @@ export class Router extends Emitter {
     return this.atStart ? Promise.resolve(false) : this.go(this.index - 1, { direction: "prev" });
   }
 
+  /**
+   * Pone el color de una página en todo el libro: la niebla del fondo, el
+   * papel, la tinta, las sombras y el cromo.
+   *
+   * Están juntos porque son la misma decisión. Cuando el fondo cambiaba de
+   * color por su cuenta y el papel se quedaba en su crema de siempre, se
+   * veían dos cosas distintas en la misma pantalla; ahora la hoja está
+   * dentro de la luz del capítulo y el libro se lee como un solo objeto.
+   */
+  #encender(page) {
+    // El fondo recibe la paleta ya llevada a la habitación del tema, que es
+    // exactamente la misma que usa `aplicarLuz` para el papel. Si cada uno
+    // hiciera su propia cuenta volveríamos a tener una hoja de un color y un
+    // aire de otro, que es lo que este libro lleva tiempo evitando.
+    this.ctx.gl?.setMood(fondoDelTema(page.palette), page.mood);
+    aplicarLuz(page.palette);
+
+    // Y si la página que llega es de papel, se avisa: la viñeta de encima
+    // pesa la mitad sobre una hoja clara. Ver `#vignette` en `base.css`.
+    //
+    // Casi todas lo dicen llevando puesta la clase `paper`. Las que no la
+    // llevan pero también son claras —la de `paginas-html/`, que tiene papel
+    // por dentro y no por fuera— lo dicen con `data-claro`.
+    const raiz = page.root;
+    const claro = !!raiz && (raiz.classList.contains("paper") || raiz.dataset.claro === "true");
+    document.documentElement.classList.toggle("hoja-clara", claro);
+  }
+
   async #transition(name, outLeaf, inLeaf, direction) {
     const payload = { outgoing: outLeaf, incoming: inLeaf, direction, ctx: this.ctx };
 
     if (name === "flip" && outLeaf) {
       this.flip.begin(outLeaf, inLeaf, direction);
-      await this.flip.run(this.ctx.caps.reducedMotion ? 200 : 880);
+      await this.flip.run(this.ctx.caps.reducedMotion ? 180 : 620);
       // Ocultar ANTES de limpiar los transforms: si se hace al revés, la hoja
       // que acaba de irse reaparece un frame en su sitio original y parpadea.
       outLeaf.classList.add("leaf--hidden");
       this.flip.end();
+      resetLeaf(outLeaf);
       inLeaf.classList.remove("leaf--hidden", "leaf--staged");
       return;
     }
@@ -260,9 +335,12 @@ export class Router extends Emitter {
     if (!outLeaf) return;
 
     record.leaf.classList.remove("leaf--staged", "leaf--hidden");
+    resetLeaf(record.leaf);
     this.flip.begin(outLeaf, record.leaf, dir);
     this.drag = { mode: "flip", dir, target, width: this.stage.clientWidth || 1 };
     this.stage.classList.add("is-dragging");
+    // Mientras el dedo lleva la hoja, la prioridad absoluta es que responda.
+    this.ctx.gl?.setEconomy(true);
   }
 
   #dragMove(e) {
@@ -277,6 +355,22 @@ export class Router extends Emitter {
     const drag = this.drag;
     if (!drag) return;
     this.drag = null;
+
+    // El gesto se ha abandonado, no terminado: otro se ha quedado el dedo.
+    // Se recoge lo que hubiera empezado, pero no se pasa de página.
+    if (e.cancelled) {
+      if (drag.mode === "flip") {
+        this.stage.classList.remove("is-dragging");
+        this.busy = true;
+        await this.flip.settle(drag.dir === "next" ? 0 : 1, 0);
+        this.flip.end();
+        const record = this.live.get(drag.target);
+        if (record && drag.target !== this.index) record.leaf.classList.add("leaf--staged");
+        this.busy = false;
+        this.ctx.gl?.setEconomy(false);
+      }
+      return;
+    }
 
     if (drag.mode === "swipe") {
       const far = Math.abs(e.dx) > this.stage.clientWidth * 0.22;
@@ -308,14 +402,15 @@ export class Router extends Emitter {
       // Misma precaución que en `#transition`: ocultar y después limpiar.
       outgoing?.leaf.classList.add("leaf--hidden");
       this.flip.end();
+      resetLeaf(outgoing?.leaf);
       incoming?.leaf.classList.remove("leaf--hidden");
 
       await outgoing?.page.leave(drag.dir);
 
       const prevIndex = this.index;
       this.index = drag.target;
-      this.ctx.store.setPage(this.index);
-      this.ctx.gl?.setMood(incoming.page.palette, incoming.page.mood);
+      this.ctx.store.setPage(this.index, this.entries[this.index]?.id);
+      this.#encender(incoming.page);
       this.ctx.haptics.play("turn");
 
       await incoming.page.enter(drag.dir);
@@ -336,35 +431,50 @@ export class Router extends Emitter {
 
     this.busy = false;
     this.ctx.ui?.setBusy(false);
+    this.ctx.gl?.setEconomy(false);
   }
 
   // ═══════════════════════════════════════════════════════════════════
   //  Teclado (escritorio)
   // ═══════════════════════════════════════════════════════════════════
 
+  /**
+   * El handler se guarda en un campo en vez de escribirse en línea: sin una
+   * referencia estable no hay forma de retirarlo, y un router muerto que
+   * siguiera escuchando el teclado pasaría páginas de un libro que ya no
+   * está en pantalla.
+   */
+  #onKeyDown = (e) => {
+    if (this.locked) return;
+    // Si el dedo está escribiendo en algún sitio, las flechas son suyas.
+    const activo = document.activeElement;
+    if (activo?.closest?.("input, textarea, [contenteditable='true']")) return;
+
+    switch (e.key) {
+      case "ArrowRight":
+      case "PageDown":
+      case " ":
+        e.preventDefault();
+        this.next();
+        break;
+      case "ArrowLeft":
+      case "PageUp":
+        e.preventDefault();
+        this.prev();
+        break;
+      case "Home":
+        e.preventDefault();
+        this.go(0);
+        break;
+      case "End":
+        e.preventDefault();
+        this.go(this.entries.length - 1);
+        break;
+    }
+  };
+
   #bindKeyboard() {
-    window.addEventListener("keydown", (e) => {
-      if (this.locked) return;
-      switch (e.key) {
-        case "ArrowRight":
-        case "PageDown":
-        case " ":
-          e.preventDefault();
-          this.next();
-          break;
-        case "ArrowLeft":
-        case "PageUp":
-          e.preventDefault();
-          this.prev();
-          break;
-        case "Home":
-          this.go(0);
-          break;
-        case "End":
-          this.go(this.entries.length - 1);
-          break;
-      }
-    });
+    window.addEventListener("keydown", this.#onKeyDown);
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -405,6 +515,23 @@ export class Router extends Emitter {
       if (entry?.photos) stillNeeded.push(...entry.photos.map((p) => p.src));
     }
     if (this.ctx.assets.cachedCount > 40) this.ctx.assets.keepOnly(stillNeeded);
+
+    // Y LAS TEXTURAS DE LA TARJETA GRÁFICA, QUE SON LAS QUE DE VERDAD PESAN.
+    //
+    // Soltar el `<img>` del caché de arriba no libera un solo byte de GPU:
+    // en cuanto una página monta una foto en una escena 3D —la profundidad,
+    // el velo, el campo de recuerdos—, esa foto se sube a la tarjeta y se
+    // queda ahí, guardada aquí al lado por si otra página la pide.
+    //
+    // Nadie las soltaba. Con más de cuarenta páginas y sus fotos, la memoria
+    // de vídeo sólo crecía en toda la lectura, y en un móvil eso termina de
+    // una sola manera: el navegador tira la pestaña sin avisar, casi siempre
+    // en la segunda mitad del libro, que es justo donde ella no debería
+    // encontrarse una pantalla en blanco.
+    //
+    // Van con la misma lista que las imágenes: lo que necesitan las páginas
+    // vivas se queda, lo demás se devuelve.
+    this.ctx.gl?.releaseTextures(stillNeeded);
   }
 
   /** Bloquea la navegación (una página puede exigir atención un momento). */
@@ -420,6 +547,7 @@ export class Router extends Emitter {
 
   destroy() {
     this.gestures.destroy();
+    window.removeEventListener("keydown", this.#onKeyDown);
     for (const record of this.live.values()) {
       record.page.destroy();
       record.leaf.remove();

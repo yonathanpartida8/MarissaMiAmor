@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Las luciérnagas</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .bosque-mundo, con prefijo `bs-` en cada clase.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.bosque-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background: #060d0a;
+  color: #dff0e4;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bosque-mundo .bs-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Los toques los recoge `.bs-toque`, que va justo encima. */
+  pointer-events: none;
+}
+
+/* El bosque entero responde al dedo. El libro sólo se queda el barrido
+   que empieza en sus 24-44 px de borde. */
+.bosque-mundo .bs-toque {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  z-index: 2;
+}
+
+.bosque-mundo .bs-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  padding:
+    calc(var(--seguro-t) + 20px) 22px
+    calc(var(--seguro-b) + var(--barra) + 18px) 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+.bosque-mundo .bs-titulo {
+  margin: 0;
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-size: clamp(1rem, 4.4vw, 1.4rem);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: #a8d8bc;
+  opacity: 0.8;
+  text-shadow: 0 0 16px rgba(110, 220, 160, 0.4);
+  transition: opacity 900ms var(--e-suave);
+}
+.bosque-mundo.is-cerca .bs-titulo { opacity: 0.16; }
+
+.bosque-mundo .bs-pie {
+  margin: 0;
+  min-height: 3.6em;
+  max-width: 23em;
+  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
+  line-height: 1.55;
+  color: #d4ecdc;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 700ms var(--e-suave), transform 700ms var(--e-suave);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85);
+}
+.bosque-mundo .bs-pie.is-visible { opacity: 0.94; transform: none; }
+.bosque-mundo .bs-pie em {
+  display: block;
+  margin-top: 0.3em;
+  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  font-size: 1.16em;
+  font-style: normal;
+  color: #ffe6a8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bosque-mundo * { transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="bosque-mundo" id="mundo">
+  <canvas class="bs-lienzo" id="lienzo"></canvas>
+  <div class="bs-toque" id="toque" aria-hidden="true"></div>
+  <div class="bs-ui">
+    <h1 class="bs-titulo" id="titulo">Quédate quieta</h1>
+    <p class="bs-pie" id="pie" role="status" aria-live="polite"></p>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN EDITABLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const CONF = {
+
+  /* ---- LAS LUCIÉRNAGAS ------------------------------------------------
+     Son tímidas: se acercan al dedo si está QUIETO y huyen si se mueve
+     rápido. Todo el juego está en esos dos números.                     */
+  cuantas: 46,
+  atraccion: 130,        // cuánto tiran hacia un dedo quieto
+  huida: 330,            // cuánto empujan cuando el dedo corre
+  velocidadQueAsusta: 340, // px/s del dedo a partir de los cuales huyen
+  radioDedo: 190,        // hasta dónde llega su influencia, en px
+
+  /* ---- EL PREMIO ------------------------------------------------------
+     Si se mantienen muchas cerca del dedo a la vez, se lee una frase.   */
+  paraFrase: 7,          // cuántas a la vez alrededor
+  segundosCerca: 1.4,    // aguantando
+
+  frases: [
+    "Vienen si no las persigues.",
+    "Ya son unas cuantas.",
+    "No se fían de nadie, y de ti sí.",
+    "Quieta así estás preciosa.",
+    "Se te han subido a la mano.",
+    "Mira cuántas.",
+  ],
+  firmas: [
+    "Como casi todo lo bueno.",
+    "Se nota que te conocen.",
+    "Yo tampoco me fiaba, y mírame.",
+    "Es lo que llevo diciendo.",
+    "No te muevas, por favor.",
+    "Se ha llenado el bosque.",
+  ],
+
+  /* ---- EL BOSQUE ------------------------------------------------------ */
+  arboles: 13,           // troncos de fondo
+  niebla: 0.3,           // cuánta bruma baja hay
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   La maquinaria.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const mundo  = document.getElementById("mundo");
+const lienzo = document.getElementById("lienzo");
+const zona   = document.getElementById("toque");
+const elPie  = document.getElementById("pie");
+const ctx    = lienzo.getContext("2d", { alpha: false });
+
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let A = 0, H = 0, dpr = 1;
+
+function medir() {
+  const r = mundo.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const primera = !A;
+  A = r.width; H = r.height;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  lienzo.width  = Math.round(A * dpr);
+  lienzo.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  sembrarArboles();
+  if (primera) sembrarBichos();
+}
+new ResizeObserver(medir).observe(mundo);
+
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
+
+/* ---- El bosque de fondo ----------------------------------------------- */
+
+let arboles = [];
+
+function sembrarArboles() {
+  const n = A < 360 ? Math.round(CONF.arboles * 0.7) : CONF.arboles;
+  arboles = new Array(n);
+  for (let i = 0; i < n; i++) {
+    /* La profundidad decide TODO: lo ancho que es, lo oscuro y lo poco
+       que se mueve con el dedo. Un tronco lejano casi no se desplaza, y
+       eso es lo que hace que haya fondo y no un telón pintado. */
+    const z = i / n;
+    arboles[i] = {
+      x: azar(-0.1, 1.1) * A,
+      z,
+      ancho: (8 + (1 - z) * 44),
+      inclina: azar(-0.05, 0.05),
+      /* Cuánto se estrecha al subir. Un tronco del mismo grosor de abajo
+         arriba no es un árbol, es una raya: el primer intento de este
+         bosque parecía un código de barras justamente por eso. */
+      afila: azar(0.3, 0.6),
+      /* Y una curva suave, distinta en cada uno, para que ninguno esté
+         a plomo. En un bosque no hay dos troncos rectos iguales. */
+      curva: azar(-0.16, 0.16),
+      /* Dos ramas, a distinta altura y para distinto lado. */
+      ramas: [
+        { y: azar(0.16, 0.38), lado: Math.random() < 0.5 ? -1 : 1, largo: azar(0.3, 0.7) },
+        { y: azar(0.4, 0.62), lado: Math.random() < 0.5 ? -1 : 1, largo: azar(0.25, 0.55) },
+      ],
+    };
+  }
+  /* Los lejanos primero, para que los cercanos los tapen. */
+  arboles.sort((a, b) => a.z - b.z).reverse();
+}
+
+/* ---- Las luciérnagas --------------------------------------------------
+   Agrupadas en arrays planos: cero basura en el bucle.                   */
+
+let N = CONF.cuantas;
+let bx, by, bvx, bvy, bfase, bvel, bz, bbri;
+
+function sembrarBichos() {
+  N = A * H < 200000 ? Math.round(CONF.cuantas * 0.65) : CONF.cuantas;
+  bx = new Float32Array(N); by = new Float32Array(N);
+  bvx = new Float32Array(N); bvy = new Float32Array(N);
+  bfase = new Float32Array(N); bvel = new Float32Array(N);
+  bz = new Float32Array(N); bbri = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    bx[i] = Math.random() * A;
+    by[i] = azar(H * 0.2, H * 0.95);
+    bvx[i] = azar(-12, 12);
+    bvy[i] = azar(-10, 10);
+    bfase[i] = Math.random() * 6.283;
+    bvel[i] = azar(0.7, 2.1);
+    bz[i] = azar(0.35, 1);        // profundidad: tamaño y brillo
+    bbri[i] = Math.random();
+  }
+}
+
+/* ---- El dedo ---------------------------------------------------------- */
+
+const dedo = { x: 0, y: 0, dentro: false, vel: 0, px: 0, py: 0, quieto: 0 };
+
+function enPantalla(e) {
+  const r = mundo.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+zona.addEventListener("pointerdown", (e) => {
+  zona.setPointerCapture(e.pointerId);
+  const p = enPantalla(e);
+  dedo.x = dedo.px = p.x;
+  dedo.y = dedo.py = p.y;
+  dedo.dentro = true;
+  dedo.vel = 0;
+  contarToques(p);
+});
+zona.addEventListener("pointermove", (e) => {
+  const p = enPantalla(e);
+  if (!dedo.dentro) { dedo.x = dedo.px = p.x; dedo.y = dedo.py = p.y; }
+  dedo.x = p.x; dedo.y = p.y;
+  dedo.dentro = true;
+});
+const fuera = () => { dedo.dentro = false; };
+zona.addEventListener("pointerup", fuera);
+zona.addEventListener("pointercancel", fuera);
+zona.addEventListener("pointerleave", fuera);
+
+/* ---- Los textos ------------------------------------------------------- */
+
+let pidiendo = null;
+let bloqueado = 0;
+
+function decir(texto, firma, importante) {
+  const ahora = performance.now();
+  if (!importante && ahora < bloqueado) return;
+  if (pidiendo === texto) return;
+  pidiendo = texto;
+  if (importante) bloqueado = ahora + 3600;
+  elPie.classList.remove("is-visible");
+  setTimeout(() => {
+    elPie.textContent = texto;
+    if (firma) {
+      const em = document.createElement("em");
+      em.textContent = firma;
+      elPie.append(em);
+    }
+    elPie.classList.add("is-visible");
+  }, suave ? 10 : 300);
+}
+
+/* ---- Sonido ----------------------------------------------------------- */
+
+let audio = null;
+function tintineo(hz, dur) {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+    const t = audio.currentTime;
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(hz, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.05, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + (dur || 0.7));
+    o.connect(g).connect(audio.destination);
+    o.start(t); o.stop(t + (dur || 0.7) + 0.05);
+  } catch { /* sin sonido brillan igual */ }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS SECRETOS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Si consigues reunir MUCHAS a la vez, se ponen todas a parpadear
+      al mismo tiempo, como hacen de verdad algunas especies.            */
+const SECRETO_SINCRONIA = 16;
+let sincronia = 0;
+let sincroniaDicha = false;
+
+/* 2. Una de las luciérnagas es distinta: dorada, más lenta, y no huye
+      nunca. Si la tocas te dice algo sólo suyo.                         */
+let laDorada = 0;
+let doradaDicha = false;
+
+/* 3. Tocar el suelo (el tercio de abajo) cinco veces despierta a los
+      grillos: se oyen y se enciende una hierba de luz al fondo.         */
+let toquesSuelo = 0;
+let grillos = 0;
+
+function contarToques(p) {
+  /* ¿la dorada? */
+  const d = Math.hypot(bx[laDorada] - p.x, by[laDorada] - p.y);
+  if (d < 34 && !doradaDicha) {
+    doradaDicha = true;
+    decir("Esa no se va nunca.", "Se le nota en el color.", true);
+    tintineo(1318, 1.1);
+    bbri[laDorada] = 1;
+    setTimeout(() => { doradaDicha = false; }, 20000);
+    return;
+  }
+  /* ¿el suelo? */
+  if (p.y > H * 0.7) {
+    toquesSuelo++;
+    if (toquesSuelo === 5) {
+      grillos = 1;
+      decir("Has despertado a los grillos.", "Ahora ya no se calla nadie.", true);
+      cantarGrillos();
+    }
+  }
+}
+
+function cantarGrillos() {
+  if (grillos <= 0) return;
+  let k = 0;
+  const cri = setInterval(() => {
+    tintineo(azar(2100, 2600), 0.05);
+    if (++k > 40) clearInterval(cri);
+  }, 320);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+let t0 = performance.now();
+let reloj = 0;
+let cerca = 0;          // cuántas hay ahora mismo alrededor del dedo
+let tiempoCerca = 0;
+let iFrase = 0;
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A || !H || !bx) return;
+
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+  else if (dt > 0.1) dt = 0.1;
+  reloj += dt;
+
+  /* --- velocidad del dedo, suavizada --- */
+  const vd = Math.hypot(dedo.x - dedo.px, dedo.y - dedo.py) / dt;
+  dedo.vel = damp(dedo.vel, Number.isFinite(vd) ? vd : 0, 8, dt);
+  dedo.px = dedo.x; dedo.py = dedo.y;
+  const asusta = clamp(dedo.vel / CONF.velocidadQueAsusta, 0, 1.6);
+
+  /* --- fondo --- */
+  ctx.fillStyle = "#060d0a";
+  ctx.fillRect(0, 0, A, H);
+
+  /* Un resto de luz de luna entre los árboles. */
+  const cielo = ctx.createLinearGradient(0, 0, 0, H);
+  cielo.addColorStop(0, "rgba(28, 52, 44, 0.85)");
+  cielo.addColorStop(0.45, "rgba(12, 26, 22, 0.5)");
+  cielo.addColorStop(1, "rgba(5, 12, 9, 0)");
+  ctx.fillStyle = cielo;
+  ctx.fillRect(0, 0, A, H);
+
+  /* --- los troncos --- */
+  const desX = dedo.dentro ? (dedo.x / A - 0.5) : Math.sin(reloj * 0.12) * 0.25;
+  for (const a of arboles) {
+    /* Paralaje: los de delante se mueven más. */
+    const off = desX * (1 - a.z) * 26;
+    const x = a.x + off;
+    const w = a.ancho;
+
+    /* Los lejanos son más claros —la bruma se los come— y los cercanos,
+       casi negros. Eso es lo único que hace falta para que haya fondo. */
+    const oscuro = 0.05 + (1 - a.z) * 0.1;
+    const col = `rgb(${Math.round(oscuro * 95)},${Math.round(oscuro * 135)},${Math.round(oscuro * 115)})`;
+
+    /* El tronco: dos cantos curvos que se van juntando al subir. La
+       curva (a.curva) desplaza el medio hacia un lado, así que sube
+       torcido; el afilado (a.afila) le quita grosor arriba. */
+    const cima = -20;
+    const medioY = H * 0.45;
+    const desvMedio = a.curva * H * 0.13 + a.inclina * H * 0.2;
+    const desvCima = a.inclina * H * 0.4;
+    const wCima = w * (1 - a.afila);
+
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(x - w / 2, H);
+    ctx.quadraticCurveTo(x - w * 0.42 + desvMedio, medioY, x - wCima / 2 + desvCima, cima);
+    ctx.lineTo(x + wCima / 2 + desvCima, cima);
+    ctx.quadraticCurveTo(x + w * 0.42 + desvMedio, medioY, x + w / 2, H);
+    ctx.closePath();
+    ctx.fill();
+
+    /* Las ramas. Se dibujan con trazo, que para una rama basta, y se
+       afinan con la distancia igual que el tronco. */
+    ctx.strokeStyle = col;
+    ctx.lineCap = "round";
+    for (const r of a.ramas) {
+      const ry = H * r.y;
+      /* Dónde está el tronco a esa altura, siguiendo la misma curva. */
+      const t = 1 - r.y;
+      const cx = x + (desvMedio * 2 * t * (1 - t) + desvCima * t * t);
+      const largo = w * 2.2 * r.largo;
+      ctx.lineWidth = Math.max(1.2, w * 0.16 * (1 - r.y * 0.4));
+      ctx.beginPath();
+      ctx.moveTo(cx, ry);
+      ctx.quadraticCurveTo(
+        cx + r.lado * largo * 0.6, ry - largo * 0.2,
+        cx + r.lado * largo, ry - largo * 0.75);
+      ctx.stroke();
+    }
+  }
+
+  /* La copa: una sombra ancha arriba que cierra el bosque por encima.
+     Sin ella se ven los troncos terminar en el canto de la hoja y el
+     bosque parece un decorado recortado. */
+  const copa = ctx.createLinearGradient(0, 0, 0, H * 0.34);
+  copa.addColorStop(0, "rgba(4, 10, 8, 0.92)");
+  copa.addColorStop(1, "rgba(4, 10, 8, 0)");
+  ctx.fillStyle = copa;
+  ctx.fillRect(0, 0, A, H * 0.34);
+
+  /* --- la hierba de los grillos (secreto 3) --- */
+  if (grillos > 0) {
+    grillos = Math.min(1, grillos + dt * 0.4);
+    const n = 70;
+    for (let i = 0; i < n; i++) {
+      const x = (i / n) * A + Math.sin(i * 12.9) * 9;
+      const alto = 16 + Math.sin(i * 3.1) * 10;
+      const mece = Math.sin(reloj * 1.3 + i * 0.7) * 5;
+      ctx.globalAlpha = grillos * (0.12 + 0.1 * Math.sin(reloj * 2 + i));
+      ctx.strokeStyle = "#7fe0a8";
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(x, H);
+      ctx.quadraticCurveTo(x + mece * 0.5, H - alto * 0.6, x + mece, H - alto);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* --- las luciérnagas --- */
+  cerca = 0;
+  ctx.globalCompositeOperation = "lighter";
+  for (let i = 0; i < N; i++) {
+    const dorada = i === laDorada;
+
+    /* Vuelo propio: un vaivén lento, distinto en cada una. */
+    bvx[i] += Math.cos(reloj * bvel[i] * 0.7 + bfase[i]) * 16 * dt;
+    bvy[i] += Math.sin(reloj * bvel[i] * 0.9 + bfase[i] * 1.7) * 14 * dt;
+
+    if (dedo.dentro) {
+      const dx = dedo.x - bx[i], dy = dedo.y - by[i];
+      const d = Math.hypot(dx, dy) || 0.001;
+      if (d < CONF.radioDedo) {
+        const k = 1 - d / CONF.radioDedo;
+        if (d < 76) cerca++;
+        /* Aquí está el juego entero: si el dedo va despacio tiran hacia
+           él, y si corre huyen. Las luciérnagas de verdad hacen justo
+           esto, y es lo que convierte «tocar la pantalla» en «tener
+           paciencia». La dorada no huye nunca. */
+        const tira = dorada
+          ? CONF.atraccion * 0.8
+          : CONF.atraccion * (1 - asusta) - CONF.huida * Math.max(0, asusta - 0.35);
+        bvx[i] += (dx / d) * tira * k * dt;
+        bvy[i] += (dy / d) * tira * k * dt;
+      }
+    }
+
+    bvx[i] *= 0.985; bvy[i] *= 0.985;
+    bx[i] += bvx[i] * dt * (dorada ? 0.6 : 1);
+    by[i] += bvy[i] * dt * (dorada ? 0.6 : 1);
+
+    /* Los bordes las devuelven suavemente, sin rebotes secos. */
+    if (bx[i] < 10) bvx[i] += 60 * dt;
+    if (bx[i] > A - 10) bvx[i] -= 60 * dt;
+    if (by[i] < H * 0.1) bvy[i] += 60 * dt;
+    if (by[i] > H - 10) bvy[i] -= 60 * dt;
+
+    /* El parpadeo. Con la sincronía, todas a la vez. */
+    const fase = sincronia > 0.5 ? reloj * 2.2 : reloj * bvel[i] + bfase[i];
+    let b = 0.5 + 0.5 * Math.sin(fase);
+    b = Math.pow(b, 2.4);
+    bbri[i] = damp(bbri[i], b, 9, dt);
+
+    const r = (dorada ? 3.4 : 2.2) * bz[i];
+    const luz = bbri[i] * bz[i] * (dorada ? 1.35 : 1);
+    if (luz < 0.02) continue;
+
+    const col = dorada ? "255, 214, 120" : "170, 255, 190";
+    const g = ctx.createRadialGradient(bx[i], by[i], 0, bx[i], by[i], r * 7);
+    g.addColorStop(0, `rgba(${col}, ${0.95 * luz})`);
+    g.addColorStop(0.25, `rgba(${col}, ${0.34 * luz})`);
+    g.addColorStop(1, `rgba(${col}, 0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(bx[i], by[i], r * 7, 0, 6.283);
+    ctx.fill();
+
+    ctx.fillStyle = `rgba(255, 255, 240, ${luz})`;
+    ctx.beginPath();
+    ctx.arc(bx[i], by[i], r * 0.65, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.globalCompositeOperation = "source-over";
+
+  /* --- la bruma baja --- */
+  const bruma = ctx.createLinearGradient(0, H * 0.55, 0, H);
+  bruma.addColorStop(0, "rgba(120, 180, 150, 0)");
+  bruma.addColorStop(1, `rgba(120, 180, 150, ${CONF.niebla * 0.22})`);
+  ctx.fillStyle = bruma;
+  ctx.fillRect(0, H * 0.55, A, H * 0.45);
+
+  /* --- el premio por tener paciencia --- */
+  mundo.classList.toggle("is-cerca", cerca >= 3);
+  if (cerca >= CONF.paraFrase) {
+    tiempoCerca += dt;
+    if (tiempoCerca > CONF.segundosCerca) {
+      tiempoCerca = 0;
+      decir(CONF.frases[iFrase % CONF.frases.length],
+            CONF.firmas[iFrase % CONF.firmas.length]);
+      iFrase++;
+      tintineo(880 + iFrase * 60, 0.9);
+    }
+  } else {
+    tiempoCerca = Math.max(0, tiempoCerca - dt);
+  }
+
+  /* --- el secreto de la sincronía --- */
+  if (cerca >= SECRETO_SINCRONIA) {
+    sincronia = Math.min(1, sincronia + dt * 1.6);
+    if (sincronia > 0.9 && !sincroniaDicha) {
+      sincroniaDicha = true;
+      decir("Se han puesto de acuerdo.", "Parpadean todas a la vez por ti.", true);
+      tintineo(659, 1.4);
+      setTimeout(() => { sincroniaDicha = false; }, 22000);
+    }
+  } else {
+    sincronia = Math.max(0, sincronia - dt * 0.7);
+  }
+}
+
+medir();
+laDorada = Math.floor(Math.random() * N);
+decir("No las persigas. Deja la mano quieta y ven a verlas.");
+requestAnimationFrame(paso);
+
+})();
+</script>
+</body>
+</html>

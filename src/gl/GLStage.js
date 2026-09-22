@@ -15,6 +15,11 @@ import { atmosphereVertex, atmosphereFragment } from "./shaders/atmosphere.js";
 import { dustVertex, dustFragment } from "./shaders/dust.js";
 import { damp, clamp01 } from "../utils/math.js";
 import { seeded } from "../utils/rng.js";
+import { resolverPaleta } from "../data/paletas.js";
+import { temaActivo } from "../utils/temas.js";
+
+/** El color con el que arranca la niebla, antes de la primera página. */
+const INICIO = resolverPaleta();
 
 const MOODS = {
   dawn: 0.15,
@@ -29,6 +34,18 @@ const MOODS = {
 };
 
 const SPREAD = 22;
+
+/**
+ * De qué es cada cosa que flota, y en qué proporción.
+ *
+ * 0 mota · 1 destello · 2 estrellita · 3 corazón.
+ *
+ * Casi todo son motas de luz a propósito. Lo que hace que un corazón flotando
+ * emocione es encontrárselo, y para eso tiene que ser raro: si fueran todos
+ * corazones esto sería una pantalla de San Valentín, no el aire de un libro.
+ * De cada dieciséis: doce motas, dos destellos, un lucero y un corazón.
+ */
+const FORMAS = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 3];
 
 export class GLStage {
   /**
@@ -63,7 +80,7 @@ export class GLStage {
     this.caps.on("tier", () => this.#applyBudget());
 
     this.resize();
-    this.stopTicker = ctx.loop.add((dt, t) => this.tick(dt, t), 15);
+    this.stopTicker = ctx.loop.add((dt) => this.tick(dt), 15);
     this.ready = true;
   }
 
@@ -105,15 +122,19 @@ export class GLStage {
     this.atmoUniforms = {
       uTime: { value: 0 },
       uResolution: { value: new THREE.Vector2(1, 1) },
-      uDeep: { value: new THREE.Color("#0a0510") },
-      uAccentA: { value: new THREE.Color("#ec6f92") },
-      uAccentB: { value: new THREE.Color("#4c1d95") },
+      uDeep: { value: new THREE.Color(INICIO.deep) },
+      uAccentA: { value: new THREE.Color(INICIO.a) },
+      uAccentB: { value: new THREE.Color(INICIO.b) },
       uPointer: { value: new THREE.Vector2(0, 0) },
       uIntensity: { value: 0.0 },
       uPulse: { value: 0 },
       uFlash: { value: 0 },
       uMood: { value: 0.3 },
       uQuality: { value: this.caps.tierName === "high" ? 1 : this.caps.tierName === "mid" ? 0.6 : 0 },
+      // 0 noche · 1 claro y pastel. Lo pone `setAmbiente`, y se interpola
+      // como todo lo demás para que cambiar de modo sea un amanecer y no un
+      // interruptor. Ver la nota del uniform en el shader.
+      uLight: { value: temaActivo().luzAmbiente },
     };
 
     const quad = new THREE.Mesh(
@@ -131,11 +152,12 @@ export class GLStage {
 
     // Colores objetivo: se interpolan suavemente hacia ellos.
     this.target = {
-      deep: new THREE.Color("#0a0510"),
-      a: new THREE.Color("#ec6f92"),
-      b: new THREE.Color("#4c1d95"),
+      deep: new THREE.Color(INICIO.deep),
+      a: new THREE.Color(INICIO.a),
+      b: new THREE.Color(INICIO.b),
       mood: 0.3,
       intensity: 0.0,
+      luz: temaActivo().luzAmbiente,
     };
   }
 
@@ -146,6 +168,7 @@ export class GLStage {
     const positions = new Float32Array(count * 3);
     const seeds = new Float32Array(count * 3);
     const tints = new Float32Array(count);
+    const tipos = new Float32Array(count);
 
     for (let i = 0; i < count; i++) {
       positions[i * 3] = rng.range(-SPREAD * 0.6, SPREAD * 0.6);
@@ -157,19 +180,21 @@ export class GLStage {
       seeds[i * 3 + 2] = rng.range(0.35, 1.6);
 
       tints[i] = rng.next();
+      tipos[i] = FORMAS[Math.min(FORMAS.length - 1, Math.floor(rng.next() * FORMAS.length))];
     }
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 3));
     geometry.setAttribute("aTint", new THREE.BufferAttribute(tints, 1));
+    geometry.setAttribute("aTipo", new THREE.BufferAttribute(tipos, 1));
     // Sin culling: las partículas se mueven en el shader, la caja no vale.
     geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), SPREAD * 2);
 
     this.dustUniforms = {
       uTime: { value: 0 },
       uPointer: { value: new THREE.Vector2() },
-      uSize: { value: 2.4 },
+      uSize: { value: 2.9 },
       uSpread: { value: SPREAD },
       uPulse: { value: 0 },
       uPixelRatio: { value: 1 },
@@ -215,7 +240,19 @@ export class GLStage {
     if (palette.deep) this.target.deep.set(palette.deep);
     if (palette.a) {
       this.target.a.set(palette.a);
-      this.dustTargetA = new THREE.Color(palette.a).lerp(new THREE.Color("#ffffff"), 0.45);
+
+      // LO QUE FLOTA TAMBIÉN CAMBIA DE HABITACIÓN.
+      //
+      // De noche las motas se aclaran hacia el blanco: son luz suspendida
+      // sobre un fondo oscuro. A plena luz, aclararlas es hacerlas
+      // desaparecer —blanco sobre blanco—, así que van al revés, hacia el
+      // hondo del capítulo: dejan de ser chispas y pasan a ser pétalos.
+      const claro = this.target.luz > 0.5;
+      const hacia = claro ? palette.deep || "#8e3a58" : "#ffffff";
+      this.dustTargetA = new THREE.Color(palette.a).lerp(
+        new THREE.Color(hacia),
+        claro ? 0.62 : 0.45
+      );
     }
     if (palette.b) this.target.b.set(palette.b);
     this.target.mood = MOODS[mood] ?? 0.3;
@@ -226,11 +263,78 @@ export class GLStage {
     this.target.intensity = clamp01(value);
   }
 
+  /**
+   * Enciende o apaga la luz de la habitación: 0 noche, 1 claro y pastel.
+   *
+   * Va al objetivo y no directo al uniform para que el cambio se INTERPOLE,
+   * igual que los colores. Puesto de golpe, pasar de noche a claro era un
+   * fogonazo a pantalla completa; interpolado durante medio segundo, es que
+   * alguien sube la persiana.
+   */
+  setAmbiente(valor) {
+    this.target.luz = clamp01(valor);
+    if (!this.ready) return;
+
+    // La mezcla de las motas sí cambia de golpe, y tiene que ser así: no
+    // existe una mezcla «a medio camino» entre sumar y pintar encima. Se
+    // nota poco porque son motas de dos píxeles, y la alternativa —dejarlas
+    // en aditivo— es que a plena luz no se vea ninguna.
+    const claro = this.target.luz > 0.5;
+    const mezcla = claro ? THREE.NormalBlending : THREE.AdditiveBlending;
+    if (this.dust.material.blending !== mezcla) {
+      this.dust.material.blending = mezcla;
+      this.dust.material.needsUpdate = true;
+    }
+  }
+
   /** Golpe de energía: se usa en cada transición. */
   pulse(amount = 1) {
     if (!this.ready) return;
     this.atmoUniforms.uPulse.value = Math.max(this.atmoUniforms.uPulse.value, amount);
     this.dustUniforms.uPulse.value = Math.max(this.dustUniforms.uPulse.value, amount * 0.8);
+  }
+
+  /**
+   * Modo ahorro mientras dura una transición.
+   *
+   * El momento más caro del libro es el cambio de página: la hoja que se va
+   * lleva un desenfoque a pantalla completa, la que entra otro, y por debajo
+   * la atmósfera sigue calculando ruido fractal píxel a píxel. Justo ahí,
+   * bajar la resolución del lienzo WebGL a dos tercios cuesta la mitad de
+   * fragmentos y no se ve: todo lo que hay en pantalla está desenfocado o en
+   * movimiento. Al aterrizar vuelve a resolución completa.
+   */
+  setEconomy(on) {
+    if (!this.ready || this.economy === on) return;
+    this.economy = on;
+    this.#applyPixelRatio();
+  }
+
+  #applyPixelRatio() {
+    const dpr = this.economy ? Math.max(0.6, this.caps.dpr * 0.66) : this.caps.dpr;
+    this.renderer.setPixelRatio(dpr);
+    const { width, height } = this.viewport;
+    this.atmoUniforms.uResolution.value.set(width * dpr, height * dpr);
+    this.dustUniforms.uPixelRatio.value = dpr;
+
+    // Y SE VUELVE A DIBUJAR AHORA MISMO.
+    //
+    // Cambiar la resolución redimensiona el buffer de WebGL, y un buffer
+    // recién redimensionado sale VACÍO. Si el navegador compone un fotograma
+    // entre el redimensionado y el siguiente dibujado, ese fotograma sale
+    // negro a pantalla completa. Como esto se llama al entrar y al salir del
+    // modo ahorro, pasaba dos veces en CADA cambio de página: era el
+    // parpadeo negro que se veía en casi todas las transiciones del libro.
+    this.#draw();
+  }
+
+  /** Los dos dibujados, en orden: primero el fondo, después la escena. */
+  #draw() {
+    if (!this.ready) return;
+    this.renderer.clear();
+    this.renderer.render(this.atmoScene, this.atmoCamera);
+    this.renderer.clearDepth();
+    this.renderer.render(this.scene, this.camera);
   }
 
   /** Destello blanco muy corto. Para los momentos importantes. */
@@ -276,15 +380,45 @@ export class GLStage {
     return tex;
   }
 
-  /** Libera texturas que ya no se usan (las llama el router al hacer limpieza). */
+  /**
+   * Libera texturas que ya no se usan. La llama el router al hacer limpieza.
+   *
+   * ── CUIDADO CON LAS DOS FORMAS DE ESCRIBIR LA MISMA FOTO ──────────────
+   * El caché de aquí se indexa por `img.src`, que el navegador devuelve
+   * SIEMPRE resuelto entero («https://…/assets/img/imagen7.png»). Quien
+   * llama, en cambio, tiene la ruta tal y como está escrita en `fotos.js`
+   * («assets/img/imagen7.png»). Son la misma imagen y no se parecen en
+   * nada como texto: comparándolas a pelo, ninguna foto se salvaría nunca
+   * de la quema y se liberarían las texturas de las páginas que se están
+   * viendo —que es peor que no liberar ninguna: se quedan en blanco—.
+   *
+   * Por eso la lista que llega se resuelve aquí, contra la misma base que
+   * usa el navegador. Así quien llama puede pasar la ruta corta, que es la
+   * que tiene a mano, sin saber nada de esto.
+   */
   releaseTextures(keepSrcs = []) {
-    const keep = new Set(keepSrcs);
+    const keep = new Set();
+    for (const src of keepSrcs) {
+      if (!src) continue;
+      try {
+        keep.add(new URL(src, location.href).href);
+      } catch {
+        keep.add(src);
+      }
+    }
+
+    let liberadas = 0;
     for (const [key, tex] of [...this.textures]) {
       if (keep.has(key)) continue;
+      // La marca de «compartida» se levanta justo antes de soltarla: mientras
+      // estuvo puesta protegía a la textura de que la limpieza de una escena
+      // la liberase por su cuenta, y ese peligro se acaba aquí.
       tex.userData.shared = false;
       tex.dispose();
       this.textures.delete(key);
+      liberadas++;
     }
+    return liberadas;
   }
 
   /** Altura visible del mundo 3D a una distancia dada. Para encajar planos. */
@@ -300,13 +434,9 @@ export class GLStage {
   resize() {
     if (!this.enabled) return;
     const { width, height } = this.viewport;
-    const dpr = this.caps.dpr;
 
-    this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(width, height, false);
-
-    this.atmoUniforms.uResolution.value.set(width * dpr, height * dpr);
-    this.dustUniforms.uPixelRatio.value = dpr;
+    this.#applyPixelRatio();
 
     this.camera.aspect = width / Math.max(1, height);
     this.camera.updateProjectionMatrix();
@@ -315,28 +445,56 @@ export class GLStage {
     this.camera.position.z = this.viewport.aspect < 0.62 ? 9.4 : 8;
   }
 
+  /**
+   * ¿Toca dibujar a media cadencia?
+   *
+   * Sólo en la gama más humilde. Antes también en la media, y ahí se notaba:
+   * el fondo iba a treinta imágenes por segundo mientras las páginas iban a
+   * sesenta, y esa diferencia se lee como tirones aunque ninguna de las dos
+   * cosas vaya mal. Se podía permitir porque el fondo era un shader de ruido
+   * fractal carísimo; ahora son cuatro exponenciales y no hace falta.
+   */
+  get frameSkip() {
+    return this.caps.tierName === "low";
+  }
+
   #applyBudget() {
     this.atmoUniforms.uQuality.value =
       this.caps.tierName === "high" ? 1 : this.caps.tierName === "mid" ? 0.6 : 0;
-    this.renderer.setPixelRatio(this.caps.dpr);
+    this.#applyPixelRatio();
     // Reducir el número de partículas exigiría rehacer el buffer; en su lugar
     // bajamos opacidad y tamaño, que es gratis y casi no se nota.
     if (this.caps.tierName === "low") {
-      this.dustUniforms.uSize.value = 1.8;
+      this.dustUniforms.uSize.value = 2.2;
       this.dustBudget = 0.45;
     } else {
-      this.dustUniforms.uSize.value = 2.4;
+      this.dustUniforms.uSize.value = 2.9;
       this.dustBudget = 1;
     }
   }
 
   dustBudget = 1;
   dustTargetA = null;
+  /** Resolución reducida mientras cambia la página. */
+  economy = false;
 
-  tick(dt, time) {
+  /** Reloj propio del fondo, en segundos. Ver la nota de `tick`. */
+  reloj = 0;
+
+  tick(dt) {
     if (!this.ready) return;
 
     const p = this.pointer.influence;
+
+    // EL RELOJ DEL FONDO ES SUYO, no el del libro.
+    //
+    // Así se puede pedir que vaya casi parado sin tocar nada más: quien tenga
+    // activado «reducir movimiento» en su teléfono ve la misma luz y las
+    // mismas cosas flotando, pero moviéndose tan despacio que no hay
+    // movimiento del que marearse. Y como es un acumulador y no la hora
+    // absoluta, cambiar el ritmo no da ningún salto.
+    this.reloj += dt * (this.caps.reducedMotion ? 0.1 : 1);
+    const time = this.reloj;
 
     // Interpolación de color y humor: nunca hay un corte brusco de paleta.
     const u = this.atmoUniforms;
@@ -346,6 +504,8 @@ export class GLStage {
     u.uAccentB.value.lerp(this.target.b, 1 - Math.exp(-2.2 * dt));
     u.uMood.value = damp(u.uMood.value, this.target.mood, 1.8, dt);
     u.uIntensity.value = damp(u.uIntensity.value, this.target.intensity, 1.6, dt);
+    // Un poco más lento que el resto: subir la persiana es un gesto largo.
+    u.uLight.value = damp(u.uLight.value, this.target.luz, 2.6, dt);
     u.uPointer.value.set(p.x, p.y);
 
     // Los picos decaen exponencialmente: golpe seco y desvanecido suave.
@@ -369,10 +529,22 @@ export class GLStage {
     this.camera.position.y = damp(this.camera.position.y, p.y * 0.26, 1.6, dt);
     this.camera.lookAt(0, 0, 0);
 
-    this.renderer.clear();
-    this.renderer.render(this.atmoScene, this.atmoCamera);
-    this.renderer.clearDepth();
-    this.renderer.render(this.scene, this.camera);
+    // La atmósfera es fondo: nadie la mira fijamente. En gama media y baja se
+    // DIBUJA a 30 imágenes por segundo en vez de a 60, y eso es la mitad de
+    // trabajo de GPU en el elemento más caro del libro —un shader de ruido
+    // fractal a pantalla completa— sin que se note absolutamente nada.
+    //
+    // El salto va aquí abajo, y no arriba del todo como estaba: todo lo de
+    // encima es aritmética de CPU que no cuesta nada, y saltársela hacía que
+    // en gama media los colores y la cámara se suavizaran a la mitad de
+    // velocidad —el fondo iba a tirones y los cambios de paleta llegaban
+    // tarde—. Ahora la cuenta corre siempre lisa y sólo se ahorra el pintado.
+    if (this.frameSkip) {
+      this.skipAcc = (this.skipAcc || 0) + 1;
+      if (this.skipAcc % 2 === 0) return;
+    }
+
+    this.#draw();
   }
 
   destroy() {
@@ -387,7 +559,7 @@ export class GLStage {
 }
 
 /** Libera geometrías, materiales y texturas de un subárbol completo. */
-export function disposeDeep(root) {
+function disposeDeep(root) {
   root?.traverse?.((node) => {
     node.geometry?.dispose?.();
     const materials = Array.isArray(node.material) ? node.material : [node.material];

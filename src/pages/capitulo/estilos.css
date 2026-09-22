@@ -1,0 +1,535 @@
+/* ============================================================
+   PÁGINA DE CAPÍTULO — papel escrito + su ornamento.
+   ============================================================ */
+
+.chapter {
+  display: grid;
+  grid-template-rows: auto minmax(0, var(--orn-h, 34%)) minmax(0, 1fr) auto;
+  gap: clamp(0.6rem, 2.2vh, 1.2rem);
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+}
+
+/* ---- Cabecera ---------------------------------------------- */
+.chapter__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gap-sm);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 600ms var(--e-out) 120ms, transform 600ms var(--e-out) 120ms;
+}
+
+.chapter.is-entered .chapter__head {
+  opacity: 1;
+  transform: none;
+}
+
+.chapter__num {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, calc(6 * var(--vw)), 2.1rem);
+  font-weight: 300;
+  line-height: 1;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.chapter__kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  font-weight: 300;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--paper-ink-soft);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Zona del ornamento ------------------------------------ */
+.chapter__ornament {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  perspective: 900px;
+}
+
+.orn {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+/* Alturas por tipo de ornamento. */
+.chapter[data-ornament="medallion"] { --orn-h: 33%; }
+.chapter[data-ornament="fog"] { --orn-h: 42%; }
+.chapter[data-ornament="mirror"] { --orn-h: 38%; }
+.chapter[data-ornament="compass"] { --orn-h: 30%; }
+.chapter[data-ornament="whisper"] { --orn-h: 22%; }
+
+/* ══════════════ MEDALLÓN ══════════════ */
+/* El marco lo pinta PhotoFrame; aquí sólo el halo que lo rodea. */
+.orn--medallion {
+  position: relative;
+}
+
+.orn--medallion .pframe {
+  height: 100%;
+  max-width: 100%;
+}
+
+.medallion__glow {
+  position: absolute;
+  inset: -14%;
+  border-radius: 50%;
+  /* El degradado ya es suave por sí mismo: el `blur(26px)` que llevaba
+     encima no añadía casi nada y mantenía viva una capa desenfocada grande
+     en todas las páginas de capítulo. Se consigue lo mismo estirando las
+     paradas del degradado, que es gratis. */
+  background: radial-gradient(
+    circle at 50% 45%,
+    color-mix(in srgb, var(--accent) 70%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 26%, transparent) 38%,
+    transparent 68%
+  );
+  opacity: 0;
+  transition: opacity 1400ms var(--e-out);
+  pointer-events: none;
+}
+
+.orn--medallion.is-developing .medallion__glow { opacity: 0.2; }
+
+/* ══════════════ VENTANA EMPAÑADA ══════════════ */
+.orn--fog {
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 0 1px rgba(128, 78, 92, 0.4),
+    inset 0 0 40px rgba(34, 8, 18, 0.5),
+    0 12px 30px -12px rgba(0, 0, 0, 0.6);
+  background: #160610;
+  touch-action: none;
+}
+
+.fog__scene {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.72) saturate(0.86) contrast(1.06);
+  transform: scale(1.04);
+  transition: filter 900ms var(--e-out), transform 1400ms var(--e-out);
+}
+
+.orn--fog.is-clear .fog__scene {
+  filter: brightness(0.95) saturate(1) contrast(1);
+  transform: scale(1);
+}
+
+.fog__rain,
+.fog__glass {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.fog__rain {
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.75;
+}
+
+.fog__glass {
+  cursor: grab;
+  touch-action: none;
+}
+
+.fog__flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 216, 222, 0.9), rgba(246, 168, 184, 0.2));
+  opacity: 0;
+}
+
+.fog__flash.is-bolt {
+  animation: bolt 900ms ease-out;
+}
+
+@keyframes bolt {
+  0% { opacity: 0; }
+  4% { opacity: 0.85; }
+  9% { opacity: 0.05; }
+  14% { opacity: 0.65; }
+  30% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* ══════════════ ESPEJO ══════════════ */
+.orn--mirror {
+  display: block;
+  overflow: hidden;
+}
+
+.mirror__real,
+.mirror__reflection {
+  position: absolute;
+  left: 50%;
+  width: min(72%, 240px);
+  aspect-ratio: 4 / 5;
+  margin-left: calc(min(72%, 240px) / -2);
+  background-size: cover;
+  background-position: center;
+  border-radius: var(--r-md);
+  will-change: transform;
+}
+
+.mirror__real {
+  top: 0;
+  height: 62%;
+  aspect-ratio: auto;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 900ms var(--e-out), transform 900ms var(--e-out);
+  box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.6);
+}
+
+.orn--mirror.is-visible .mirror__real {
+  opacity: 1;
+  transform: none;
+}
+
+.mirror__reflection {
+  top: 63%;
+  height: 36%;
+  aspect-ratio: auto;
+  opacity: 0.3;
+  filter: blur(2px) saturate(0.7);
+  transform-origin: top center;
+  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85), transparent 78%);
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85), transparent 78%);
+}
+
+@keyframes mirror-ripple {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 0.8; }
+}
+
+.mirror__ripple {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06) 0 2px,
+    transparent 2px 5px
+  );
+  /* La onda la lleva el CSS y no el JS: una animación de opacidad la compone
+     la GPU sin tocar el hilo principal, mientras que escribir `--ripple`
+     desde el reloj obligaba a recalcular el estilo del ornamento entero
+     sesenta veces por segundo. */
+  opacity: 0.55;
+  animation: mirror-ripple 7.8s ease-in-out infinite;
+}
+
+/* ══════════════ BRÚJULA ══════════════ */
+.orn--compass {
+  flex-direction: column;
+  gap: var(--gap-sm);
+  grid-template-rows: 1fr auto;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 700ms var(--e-out), transform 700ms var(--e-spring);
+}
+
+.orn--compass.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.compass__dial {
+  position: relative;
+  height: 100%;
+  aspect-ratio: 1;
+  max-width: 100%;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 34% 28%, #fffaf0, #e6d7bd 58%, #c4ad8a 100%);
+  box-shadow:
+    inset 0 2px 8px rgba(255, 255, 255, 0.7),
+    inset 0 -4px 14px rgba(110, 84, 56, 0.4),
+    0 10px 26px -10px rgba(60, 42, 26, 0.7);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.compass__ring {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  border: 1px solid rgba(120, 92, 60, 0.4);
+}
+
+.compass__marks {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background:
+    repeating-conic-gradient(
+      from 0deg,
+      rgba(90, 68, 44, 0.5) 0deg 0.6deg,
+      transparent 0.6deg 15deg
+    );
+  -webkit-mask-image: radial-gradient(circle, transparent 78%, #000 79%);
+  mask-image: radial-gradient(circle, transparent 78%, #000 79%);
+}
+
+.compass__needle {
+  position: absolute;
+  width: 5%;
+  height: 66%;
+  will-change: transform;
+  background: linear-gradient(
+    180deg,
+    var(--accent) 0%,
+    var(--accent) 48%,
+    #6b5a48 50%,
+    #8d7a63 100%
+  );
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  filter: drop-shadow(0 2px 3px rgba(60, 40, 20, 0.5));
+}
+
+.compass__pin {
+  position: absolute;
+  width: 9%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 32%, #fff, #b09668 60%, #7a6446);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.orn--compass.is-settled .compass__dial {
+  box-shadow:
+    inset 0 2px 8px rgba(255, 255, 255, 0.7),
+    inset 0 -4px 14px rgba(110, 84, 56, 0.4),
+    0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent),
+    0 0 34px -6px var(--accent);
+}
+
+.compass__label {
+  font-family: var(--font-hand);
+  font-size: clamp(1.1rem, calc(4.6 * var(--vw)), 1.5rem);
+  color: var(--rose-deep);
+  min-height: 1.4em;
+  opacity: 0.85;
+}
+
+/* ══════════════ SUSURRO ══════════════ */
+.orn--whisper {
+  opacity: 0;
+  transition: opacity 700ms var(--e-out);
+}
+
+.orn--whisper.is-visible {
+  opacity: 1;
+}
+
+.whisper__pad {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: 0.4rem;
+  padding: 0.9rem 1.6rem;
+  min-height: var(--touch);
+  border-radius: var(--r-pill);
+  border: 1px dashed rgba(120, 92, 70, calc(0.4 - var(--voice, 0) * 0.35));
+  background: rgba(255, 255, 255, calc(0.2 + var(--voice, 0) * 0.4));
+  touch-action: none;
+  cursor: pointer;
+}
+
+.whisper__ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  border: 1px solid var(--accent);
+  opacity: var(--voice, 0);
+  transform: scale(calc(1 + var(--voice, 0) * 0.06));
+  box-shadow: 0 0 calc(var(--voice, 0) * 26px) -4px var(--accent);
+}
+
+.whisper__hint {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--paper-ink-soft);
+  opacity: calc(1 - var(--voice, 0));
+}
+
+/* El texto del capítulo, atenuado hasta que se le sube la voz. */
+.chapter__scroll.is-whispered .chapter__prose,
+.chapter__scroll.is-whispered .chapter__title {
+  opacity: calc(0.18 + var(--voice, 0) * 0.82);
+  filter: blur(calc((1 - var(--voice, 0)) * 2.6px));
+  transform: scale(calc(0.985 + var(--voice, 0) * 0.015));
+  transition: none;
+}
+
+.chapter__scroll.is-heard .chapter__prose,
+.chapter__scroll.is-heard .chapter__title {
+  opacity: 1;
+  filter: none;
+  transform: none;
+  transition: opacity 500ms var(--e-out), filter 500ms var(--e-out);
+}
+
+/* ---- Cuerpo del texto -------------------------------------- */
+.chapter__body {
+  position: relative;
+  min-height: 0;
+  display: flex;
+}
+
+.chapter__scroll {
+  flex: 1;
+  padding-right: 2px;
+}
+
+.chapter__title {
+  margin-bottom: 0.5rem;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 700ms var(--e-out) 60ms, transform 700ms var(--e-out) 60ms;
+}
+
+.chapter.is-entered .chapter__title {
+  opacity: 1;
+  transform: none;
+}
+
+.chapter__rule {
+  margin: 0 0 var(--gap-md);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 900ms var(--e-out) 260ms;
+}
+
+.chapter.is-entered .chapter__rule {
+  transform: scaleX(1);
+}
+
+.chapter__prose {
+  --word-delay: 200ms;
+}
+
+.chapter__sign {
+  margin-top: var(--gap-md);
+  font-family: var(--font-hand);
+  font-size: clamp(1.1rem, calc(4.4 * var(--vw)), 1.4rem);
+  color: var(--rose-deep);
+  opacity: 0;
+  transform: rotate(-2deg) translateY(6px);
+  transform-origin: left center;
+  transition: opacity 800ms var(--e-out) 900ms, transform 800ms var(--e-out) 900ms;
+}
+
+.chapter.is-entered .chapter__sign {
+  opacity: 0.8;
+  transform: rotate(-2.5deg);
+}
+
+/* ---- Pie ---------------------------------------------------- */
+.chapter__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  color: var(--paper-ink-soft);
+  opacity: 0;
+  transition: opacity 700ms var(--e-out) 500ms;
+}
+
+.chapter.is-entered .chapter__foot {
+  opacity: 0.55;
+}
+
+.chapter__mark {
+  font-family: var(--font-display);
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+/* ---- Ajustes por pantalla ---------------------------------- */
+@media (max-height: 680px) {
+  .chapter { --orn-h: 26%; }
+  .chapter[data-ornament="fog"] { --orn-h: 34%; }
+  .chapter[data-ornament="whisper"] { --orn-h: 18%; }
+}
+
+html[data-orientation="landscape"][data-device="phone"] .chapter {
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 42% 1fr;
+  column-gap: var(--gap-md);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .chapter__head {
+  grid-column: 1 / -1;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .chapter__ornament {
+  grid-row: 2;
+  grid-column: 1;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .chapter__body {
+  grid-row: 2;
+  grid-column: 2;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .chapter__foot {
+  grid-column: 1 / -1;
+}
+
+/* El número del capítulo es un botón, pero sigue siendo un número.
+
+   (El adorno del pie llegó a serlo también, y su estilo de botón se quedó
+   aquí cuando el escondite se mudó al número: abajo caía justo debajo del
+   botón redondo de pasar página y el dedo no llegaba nunca.) */
+.chapter__num {
+  position: relative;
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 600ms var(--e-out), text-shadow 600ms var(--e-out);
+}
+
+/* El número mide veinte píxeles por veinticinco, que es la mitad de lo que
+   hace falta para acertarle con el dedo. Se le agranda la zona sensible con
+   una capa invisible por encima, y NO con relleno: el relleno movería la
+   línea de la cabecera, y esto sólo tiene que hacer más fácil dar con lo
+   que está escondido. */
+.chapter__num::after {
+  content: "";
+  position: absolute;
+  inset: -12px -14px;
+}
+
+/* Escondido: al descubrirlo se queda encendido. */
+.chapter__num.is-awake {
+  color: var(--accent);
+  text-shadow: 0 0 16px color-mix(in srgb, var(--accent) 60%, transparent);
+}

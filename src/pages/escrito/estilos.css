@@ -1,0 +1,175 @@
+/* ============================================================
+   CARTA ESCRITA A MANO
+   ============================================================ */
+
+.hw {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: clamp(0.5rem, 2vh, 1rem);
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  --w: 0;
+}
+
+.hw__title {
+  font-size: clamp(1.4rem, calc(6 * var(--vw)), 2rem);
+  margin-top: 0.15rem;
+}
+
+/* ---- La hoja de escribir ------------------------------------
+   La hoja es la ventana; la carta, lo que se desliza por dentro. Antes
+   eran la misma cosa, y por eso una carta más larga que la pantalla se
+   quedaba con el final cortado y sin manera de llegar hasta él.      */
+.hw__sheet {
+  position: relative;
+  cursor: ns-resize;
+  padding: 0.4rem 0.2rem;
+}
+
+/* Mientras se escribe manda el arrastre, no el desplazamiento: el dedo
+   está dibujando la tinta. En cuanto la carta está entera, la hoja pasa
+   a comportarse como cualquier otro texto del libro. */
+.hw:not(.is-finished) .hw__sheet {
+  overflow-y: hidden;
+  touch-action: none;
+}
+
+.hw.is-finished .hw__sheet {
+  cursor: default;
+}
+
+/* Lo que crece con la carta: la pauta, la tinta y la plumilla van juntas,
+   y por eso el renglón sigue cayendo debajo de su línea aunque la carta
+   se haya desplazado. */
+.hw__ink {
+  position: relative;
+  min-height: 100%;
+}
+
+/* Pauta tenue, como un cuaderno bueno. Misma medida de letra que la tinta:
+   así `1.5em` es exactamente un renglón y las líneas cuadran. */
+.hw__rules {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    180deg,
+    transparent 0 calc(1.5em - 1px),
+    rgba(150, 96, 116, 0.14) calc(1.5em - 1px) 1.5em
+  );
+  font-size: clamp(1.25rem, calc(5.2 * var(--vw)), 1.65rem);
+  opacity: 0.5;
+}
+
+/* La tinta: aparece de arriba abajo, con un borde blando de 2 líneas. */
+.hw__text {
+  position: relative;
+  font-family: var(--font-hand);
+  font-size: clamp(1.25rem, calc(5.2 * var(--vw)), 1.65rem);
+  line-height: 1.5;
+  letter-spacing: 0.008em;
+  color: transparent;
+  background-image: linear-gradient(
+    180deg,
+    #5e1e38 0%,
+    #5e1e38 calc(var(--w) * 100%),
+    rgba(94, 30, 56, 0.28) calc(var(--w) * 100% + 0.6em),
+    transparent calc(var(--w) * 100% + 2.2em)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  /* La tinta fresca brilla un poco más que la seca. */
+  text-shadow: none;
+  transition: none;
+}
+
+.hw.is-finished .hw__text {
+  background-image: linear-gradient(180deg, #5e1e38, #54182f);
+}
+
+/* ---- La plumilla -------------------------------------------- */
+.hw__nib {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--w) * 100%);
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  transform: translate(var(--nib-x, 0), -0.2em);
+  opacity: 0;
+  transition: opacity 400ms var(--e-out);
+}
+
+.hw:not(.is-finished) .hw__nib {
+  opacity: 1;
+}
+
+.hw__nibtip {
+  position: absolute;
+  width: 3px;
+  height: 22px;
+  margin-left: -1.5px;
+  margin-top: -20px;
+  border-radius: 2px 2px 60% 60%;
+  background: linear-gradient(180deg, #c08298 0%, #6d2842 60%, #3a0f22 100%);
+  transform: rotate(var(--nib-tilt, -28deg));
+  transform-origin: bottom center;
+  box-shadow: 0 2px 5px rgba(48, 12, 26, 0.5);
+}
+
+.hw__nibglow {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(94, 30, 56, 0.2), transparent 65%);
+}
+
+.hw.is-writing-now .hw__nibglow {
+  background: radial-gradient(circle, rgba(94, 30, 56, 0.34), transparent 68%);
+}
+
+/* ---- Firma y pista ------------------------------------------ */
+/* La firma aparece cuando la carta está terminada, no antes.
+   Con `.hw__sign` a secas nunca llegaba a esconderse: `.paper .signature`
+   son dos clases y gana, así que la firma se veía desde el primer momento
+   y se destripaba el final de la página. */
+.hw .hw__sign {
+  opacity: 0;
+  transform: translateY(8px) rotate(-3deg);
+  transform-origin: left center;
+  transition: opacity 900ms var(--e-out) 200ms, transform 900ms var(--e-out) 200ms;
+}
+
+.hw.is-finished .hw__sign,
+.hw.is-finished .hw__sign.signature {
+  opacity: 0.85;
+  transform: rotate(-3deg);
+}
+
+.hw__prompt {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--paper-ink-soft);
+  text-align: center;
+  min-height: 1.4em;
+  opacity: calc(0.7 - var(--w) * 0.7);
+}
+
+/* Una flecha que respira mientras aún no ha empezado. */
+.hw__prompt::after {
+  content: " ↓";
+  display: inline-block;
+  animation: hw-arrow 2.2s ease-in-out infinite;
+}
+
+@keyframes hw-arrow {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50% { transform: translateY(4px); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hw__prompt::after { animation: none; }
+}

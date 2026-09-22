@@ -1,0 +1,225 @@
+/* ============================================================
+   ENTRADAS — cómo aparece lo primero de cada página.
+
+   Casi todas las páginas encendían su encabezado exactamente
+   igual: opacidad de 0 a 1 y seis píxeles de caída, 600 ms. Con
+   veintitantas páginas seguidas, ese gesto repetido era la razón
+   principal de que el libro se sintiera igual en todas partes,
+   por muy distinta que fuera la mecánica de cada una.
+
+   Aquí viven las firmas de entrada. Cada página se pone la suya
+   —una línea en su `index.js`— y ninguna se repite en dos
+   páginas consecutivas. La firma siempre TIENE QUE VER con lo
+   que la página hace: la máquina de escribir asienta el carro,
+   la polaroid se revela sobreexpuesta, el velo se enfoca, el
+   cajón se abre desde abajo.
+
+   Todas terminan en el mismo sitio (sin transformar, opacidad 1),
+   así que se pueden intercambiar sin tocar el resto del CSS.
+   ============================================================ */
+
+[class*="entra--"] {
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.page.is-entered [class*="entra--"] {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  /* `inset(...)` → `none` NO se puede interpolar: el navegador daba el salto
+     entero de golpe y el trazo de pluma no se veía nunca. Hacia `inset(0)`
+     sí interpola, y acaba en el mismo sitio. */
+  clip-path: inset(0);
+  letter-spacing: normal;
+}
+
+/* Para rebobinar la entrada sin que se vea rebobinar.
+   El router quita `is-entered` y lo vuelve a poner para que cada llegada
+   repita el gesto de la página; sin congelar las transiciones ese primer
+   paso se ANIMABA hacia atrás y lo que se veía era una entrada a medias. */
+.page.sin-transicion,
+.page.sin-transicion * {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Ya asentada, se suelta la capa: mantenerla reservada toda la vida de la
+   página es justo lo que `will-change` no debe hacer. */
+.page.is-entered [class*="entra--"] {
+  animation: entra-suelta 0s linear 1400ms forwards;
+}
+
+@keyframes entra-suelta {
+  to { will-change: auto; }
+}
+
+/* ---- El carro de la máquina de escribir ---------------------
+   Llega con las letras separadas y se asientan de golpe, como el
+   carro cuando vuelve al margen. */
+.entra--teclea {
+  letter-spacing: 0.42em;
+  transform: translateX(10px);
+  transition:
+    opacity 360ms var(--e-out),
+    transform 820ms var(--e-out),
+    letter-spacing 980ms var(--e-out);
+}
+
+/* ---- El revelado de una polaroid ----------------------------
+   Sobreexpuesta y lavada, y va cogiendo color, como el papel
+   cuando se revela en la mano. */
+.entra--revela {
+  filter: brightness(2.6) contrast(0.35) saturate(0.2);
+  transform: scale(1.02);
+  transition:
+    opacity 420ms var(--e-out),
+    filter 1100ms var(--e-out),
+    transform 1100ms var(--e-out);
+}
+
+/* ---- Enfocar ------------------------------------------------
+   Desenfocada y se enfoca. Para las páginas que van de mirar
+   bien: la profundidad y el velo. */
+.entra--enfoca {
+  filter: blur(9px);
+  transform: scale(1.04);
+  transition:
+    opacity 360ms var(--e-out),
+    filter 1000ms var(--e-out),
+    transform 1050ms var(--e-out);
+}
+
+/* ---- El trazo de una pluma ----------------------------------
+   Se descubre de izquierda a derecha, como si lo estuvieran
+   escribiendo ahora mismo. */
+.entra--traza {
+  clip-path: inset(0 100% 0 0);
+  transition:
+    opacity 200ms var(--e-out),
+    clip-path 900ms var(--e-in-out);
+}
+
+/* ---- El carrete que avanza ----------------------------------
+   Entra de lado, con el arranque de un mecanismo que tira. */
+.entra--corre {
+  transform: translateX(-26px);
+  transition:
+    opacity 380ms var(--e-out),
+    transform 880ms var(--e-spring);
+}
+
+/* ---- La pieza que encaja ------------------------------------
+   Llega un poco grande y torcida y se asienta en su hueco. */
+.entra--encaja {
+  transform: scale(1.09) rotate(1.6deg);
+  transition:
+    opacity 340ms var(--e-out),
+    transform 840ms var(--e-spring);
+}
+
+/* ---- Algo que se acerca desde lejos -------------------------
+   Para la distancia y para el campo de recuerdos: llega de muy
+   atrás, no de arriba. */
+.entra--acerca {
+  transform: scale(0.82);
+  transition:
+    opacity 420ms var(--e-out),
+    transform 1050ms var(--e-out);
+}
+
+/* ---- Una estrella que prende --------------------------------
+   No se mueve: enciende. */
+.entra--prende {
+  transform: scale(0.94);
+  text-shadow: none;
+  transition:
+    opacity 900ms var(--e-out),
+    transform 1000ms var(--e-out),
+    text-shadow 1200ms var(--e-out);
+}
+
+.page.is-entered .entra--prende {
+  text-shadow: 0 0 26px color-mix(in srgb, var(--accent) 65%, transparent);
+}
+
+/* ---- El cajón que se abre -----------------------------------
+   Sube desde abajo, que es por donde se abre un cajón. */
+.entra--cajon {
+  transform: translateY(22px);
+  transition:
+    opacity 380ms var(--e-out),
+    transform 960ms var(--e-spring);
+}
+
+/* ---- Lo que cae despacio ------------------------------------
+   Para los pétalos: baja girando un poco, sin prisa. */
+.entra--cae {
+  transform: translateY(-24px) rotate(-3deg);
+  transition:
+    opacity 420ms var(--e-out),
+    transform 1150ms var(--e-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="entra--"] {
+    transform: none;
+    filter: none;
+    clip-path: none;
+    letter-spacing: normal;
+  }
+}
+
+/* ============================================================
+   LOS ESCONDITES
+
+   El corazón que sube cuando aparece algo escondido. Estaba
+   escrito tres veces, casi igual, en tres páginas distintas;
+   ahora lo pinta `BasePage.corazon()` y vive aquí una sola vez,
+   para todo el libro.
+   ============================================================ */
+
+.escondite {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.escondite__corazon {
+  position: absolute;
+  left: var(--x, 50%);
+  top: var(--y, 50%);
+  font-size: clamp(1rem, 4vw, 1.3rem);
+  line-height: 1;
+  color: var(--rose);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--accent) 65%, transparent);
+  will-change: transform, opacity;
+  animation: escondite-sube var(--dur, 1800ms) var(--e-out) both;
+}
+
+.escondite__frase {
+  position: absolute;
+  left: 50%;
+  top: 1.5em;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-family: var(--font-hand);
+  font-style: normal;
+  font-size: 0.82em;
+  color: var(--rose-deep, #a8325c);
+}
+
+@keyframes escondite-sube {
+  0%   { opacity: 0; transform: translate3d(-50%, 0, 0) scale(calc(var(--size, 1) * 0.5)); }
+  16%  { opacity: 1; transform: translate3d(-50%, -12px, 0) scale(var(--size, 1)); }
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(-50% + var(--drift, 0px)), -110px, 0)
+               scale(calc(var(--size, 1) * 1.12));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .escondite { display: none; }
+}

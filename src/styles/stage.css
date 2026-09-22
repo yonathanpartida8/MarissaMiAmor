@@ -47,10 +47,19 @@ html[data-device="desktop"] #stage {
   --frame-radius: var(--r-book);
 }
 
+/* Móvil apaisado. La hoja se tumba con la pantalla en vez de quedarse
+   vertical: antes salía una tarjeta de 312px en una ventana de 844 y las
+   páginas a dos columnas se quedaban con 114px por columna, con los títulos
+   partidos en tres líneas y el texto a cinco palabras por renglón. Ahora la
+   hoja es apaisada de verdad y hay sitio para foto y texto uno al lado del
+   otro, que es justo para lo que se gira el teléfono. */
 html[data-orientation="landscape"][data-device="phone"] #stage {
-  --frame-h: calc(var(--app-h) - 1rem);
-  --frame-w: min(calc(var(--frame-h) / 1.2), calc(100vw - 2rem));
+  --frame-h: calc(var(--app-h) - 0.75rem);
+  --frame-w: min(calc(var(--frame-h) * 1.62), calc(100vw - 1.5rem));
   --frame-radius: var(--r-book);
+  /* La tipografía escala con el ancho de la hoja, y en apaisado la hoja es
+     ancha pero baja: se escala con la altura, que es lo que escasea. */
+  --vw: calc(var(--frame-h) / 100);
 }
 
 /* ---- La hoja ----------------------------------------------- */
@@ -83,6 +92,19 @@ html[data-device="desktop"] .leaf {
   pointer-events: none;
 }
 
+/* Y sus animaciones se PARAN mientras no se ven.
+   `visibility: hidden` esconde la hoja pero no detiene una sola animación de
+   CSS: el router mantiene vivas las hojas vecinas para que arrastrar responda
+   al instante, así que el lacre de la portada seguía respirando eternamente
+   por detrás de la página que estás leyendo, y con él todo lo demás. Los
+   relojes de JS ya se paraban solos; esto hace lo mismo con el CSS.
+   Pausar —y no anular— es lo importante: al volver, la animación continúa
+   donde estaba en vez de dar un salto. */
+.leaf--staged *,
+.leaf--hidden * {
+  animation-play-state: paused !important;
+}
+
 /* Durante el giro no hay transición CSS: manda el muelle en JS. */
 .leaf--turning {
   transition: none;
@@ -92,7 +114,9 @@ html[data-device="desktop"] .leaf {
 /* La hoja que se descubre debajo: ligeramente hundida en el libro. */
 .leaf--under {
   visibility: visible;
-  opacity: 1;
+  /* La escribe PageFlip: la hoja de debajo se descubre conforme la de arriba
+     se levanta, en vez de estar al 100% desde el primer fotograma. */
+  opacity: var(--under-reveal, 1);
   pointer-events: none;
   transform: scale(var(--under-scale));
   z-index: 2;
@@ -137,9 +161,9 @@ html[data-device="desktop"] .leaf {
   opacity: var(--under-shade, 0);
   background: linear-gradient(
     100deg,
-    rgba(0, 0, 0, 0.78) 0%,
-    rgba(0, 0, 0, 0.34) 32%,
-    rgba(0, 0, 0, 0) 62%
+    rgba(var(--luz-deep-rgb), 0.82) 0%,
+    rgba(var(--luz-deep-rgb), 0.36) 32%,
+    rgba(var(--luz-deep-rgb), 0) 62%
   );
 }
 
@@ -160,6 +184,36 @@ html[data-device="desktop"] .leaf {
   --pad-t: calc(var(--safe-t) + var(--pad-page));
   --pad-b: calc(var(--safe-b) + var(--pad-page));
   --pad-x: calc(var(--pad-page) + max(var(--safe-l), var(--safe-r)));
+  /* Hueco de la barra flotante. Cero salvo en móvil, donde se apoya encima. */
+  --bar-space: 0rem;
+}
+
+/* En el móvil la barra flota POR ENCIMA de la hoja. `--bar-space` es el
+   hueco que ocupa, para que lo esquive quien lo necesite (ver `.hueco-barra`
+   en lectura.css).
+
+   Sale de las medidas reales de la barra en vez de ser un número a ojo:
+   un botón (`--touch`) más su relleno y lo que la separa del borde, menos
+   lo que la página ya deja por abajo. Las `2.7rem` de antes se quedaban
+   ocho píxeles cortas y la última línea de varias páginas se leía por
+   debajo del cristal de la barra. */
+html[data-device="phone"] .page {
+  --bar-space: max(0rem, calc(var(--touch) + 34px - var(--pad-page)));
+}
+
+/* En apaisado la barra se encoge y se pega más al borde, así que estorba
+   menos. Antes esto se resolvía anulando el hueco en los paneles que se
+   van a la columna derecha, pero la barra está CENTRADA: seguía cayendo
+   encima de ellos. Es más sencillo —y sale bien en las dos columnas—
+   quedarse con un hueco más pequeño para todos. */
+html[data-orientation="landscape"][data-device="phone"] .page {
+  --bar-space: max(0rem, calc(var(--touch) + 20px - var(--pad-page)));
+}
+
+/* La portada y el final se ven sin barra: no hay nada que esquivar. */
+html[data-device="phone"] .page.cover,
+html[data-device="phone"] .page.finale {
+  --bar-space: 0rem;
 }
 
 html[data-device="tablet"] .page,
@@ -183,7 +237,7 @@ html[data-device="desktop"] .page {
     90deg,
     rgba(0, 0, 0, 0.42) 0%,
     rgba(0, 0, 0, 0.16) 45%,
-    rgba(255, 255, 255, 0.05) 82%,
+    rgba(var(--cromo-luz-rgb), 0.05) 82%,
     rgba(0, 0, 0, 0) 100%
   );
 }
@@ -285,3 +339,7 @@ html[data-device="desktop"] .page {
   opacity: 0.18;
   pointer-events: none;
 }
+
+/* El hueco para la barra flotante ya no es una lista de selectores que
+   hay que acordarse de ampliar: lo pide quien lo necesita con la clase
+   `.hueco-barra`, y vive en lectura.css junto a lo demás del texto. */

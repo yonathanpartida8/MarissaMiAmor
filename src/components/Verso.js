@@ -18,7 +18,7 @@ const ORNAMENTS = ["❦", "✦", "❧", "✧", "◆"];
  * @param {string} [options.accent]
  * @param {string} [options.title]
  */
-export function createVerso({ number, total, accent = "#ec6f92", title = "" }) {
+export function createVerso({ number, total, accent = "#ff87a6", title = "" }) {
   const ornament = ORNAMENTS[number % ORNAMENTS.length];
 
   const node = el("div.verso", { style: { "--verso-accent": accent } }, [

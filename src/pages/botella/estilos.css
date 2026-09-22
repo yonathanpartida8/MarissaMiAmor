@@ -1,0 +1,293 @@
+/* ============================================================
+   MENSAJE EN UNA BOTELLA
+   ============================================================ */
+
+.bottle {
+  display: grid;
+  /* `minmax(0, …)` y no `1fr` a secas: en apaisado la botella se negaba a
+     encoger por debajo de su tamaño mínimo y empujaba la pista fuera de
+     la pantalla. */
+  grid-template-rows: minmax(0, 1fr) auto;
+  place-items: center;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+  overflow: hidden;
+  --pull: 0;
+}
+
+/* ---- El mar ------------------------------------------------- */
+.bot__sea {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: 0;
+  height: 42%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.bot__wave {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  opacity: 0.55;
+}
+
+.bot__wave svg { width: 200%; height: 100%; display: block; }
+.bot__wave path { fill: currentColor; }
+
+.bot__wave--back  { color: #3d1424; animation: wave-drift 21s linear infinite; opacity: 0.5; bottom: 14%; }
+.bot__wave--mid   { color: #5a1d31; animation: wave-drift 15s linear infinite reverse; opacity: 0.65; bottom: 6%; }
+.bot__wave--front { color: #7a2a3f; animation: wave-drift 11s linear infinite; opacity: 0.8; }
+
+@keyframes wave-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Brillo de la superficie. */
+.bot__sea::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 206, 214, 0.18), transparent 40%);
+  mix-blend-mode: screen;
+}
+
+/* ---- La botella --------------------------------------------- */
+.bot__stage {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.bot__bottle {
+  position: relative;
+  width: min(42%, 150px);
+  aspect-ratio: 1 / 2.4;
+  transform: translateY(var(--rise, 0px)) rotate(var(--sway, 0deg));
+  opacity: 0;
+  transition: opacity 900ms var(--e-out);
+  will-change: transform;
+}
+
+.bottle.is-entered .bot__bottle { opacity: 1; }
+
+.bottle.is-uncorked .bot__bottle {
+  transition: transform 900ms var(--e-out), opacity 700ms var(--e-out) 900ms;
+  transform: translateY(40px) rotate(-14deg) scale(0.9);
+  opacity: 0;
+}
+
+.bot__glass {
+  position: absolute;
+  inset: 26% 0 0 0;
+  border-radius: 22% 22% 34% 34% / 8% 8% 14% 14%;
+  background: linear-gradient(100deg,
+    rgba(236, 168, 178, 0.32) 0%,
+    rgba(196, 118, 134, 0.18) 40%,
+    rgba(252, 200, 208, 0.36) 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 214, 220, 0.35),
+    inset -8px 0 18px rgba(58, 14, 26, 0.35),
+    0 10px 26px -10px rgba(30, 5, 14, 0.7);
+  overflow: hidden;
+}
+
+/* El papel enrollado que se ve dentro. */
+.bot__paper {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 12%;
+  height: 46%;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(92deg, rgba(150, 120, 78, 0.22) 0 2px, transparent 2px 7px),
+    linear-gradient(180deg, #f6ebd6, #e2d0ad);
+  transform: rotate(-8deg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.bot__shine {
+  position: absolute;
+  left: 12%;
+  top: 6%;
+  bottom: 10%;
+  width: 16%;
+  border-radius: 40%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.12));
+  filter: blur(1px);
+}
+
+.bot__water {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 18%;
+  background: linear-gradient(180deg, rgba(224, 146, 158, 0.35), rgba(128, 44, 62, 0.5));
+}
+
+.bot__neck {
+  position: absolute;
+  left: 34%;
+  right: 34%;
+  top: 10%;
+  height: 20%;
+  border-radius: 30% 30% 12% 12%;
+  background: linear-gradient(100deg,
+    rgba(236, 168, 178, 0.34), rgba(252, 200, 208, 0.4));
+  box-shadow: inset 0 0 0 2px rgba(255, 214, 220, 0.35);
+}
+
+.bot__cork {
+  position: absolute;
+  left: 32%;
+  right: 32%;
+  top: 0;
+  height: 13%;
+  border-radius: 22% 22% 14% 14%;
+  background: linear-gradient(180deg, #d8a86a 0%, #b4813f 55%, #8d5f27 100%);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 226, 180, 0.5),
+    inset 0 -3px 6px rgba(70, 40, 10, 0.5),
+    0 3px 8px -2px rgba(0, 0, 0, 0.5);
+  /* Sube con el tirón. */
+  transform: translateY(calc(var(--pull) * -26px)) rotate(calc(var(--pull) * 7deg));
+  cursor: grab;
+  touch-action: none;
+  z-index: 4;
+}
+
+.bot__cork:active { cursor: grabbing; }
+
+.bot__cork.is-nudge { animation: seal-nudge 420ms var(--e-spring); }
+
+.bottle.is-uncorked .bot__cork {
+  animation: cork-pop 700ms var(--e-out) forwards;
+}
+
+@keyframes cork-pop {
+  0% { transform: translateY(-26px); }
+  100% { transform: translateY(-140px) rotate(220deg); opacity: 0; }
+}
+
+/* ---- La carta ----------------------------------------------- */
+.bot__scroll {
+  position: absolute;
+  left: max(var(--pad-x), 50% - 280px);
+  right: max(var(--pad-x), 50% - 280px);
+  top: var(--pad-t);
+  bottom: var(--pad-b);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  overflow: hidden;
+  /* Empieza enrollada: casi sin alto y con perspectiva. */
+  transform-origin: center center;
+  transform: scaleY(0.06) rotateX(60deg) translateY(30%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 780ms var(--e-out),
+    opacity 400ms var(--e-out);
+  box-shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.75);
+}
+
+.bottle.is-out .bot__scroll { opacity: 1; }
+
+.bottle.is-unrolled .bot__scroll {
+  transform: none;
+  pointer-events: auto;
+}
+
+/* Los cilindros de los extremos del rollo. */
+.bot__roll {
+  flex: 0 0 auto;
+  height: 12px;
+  background: linear-gradient(180deg, #d9c8a4, #b99f74 60%, #8f7548);
+  box-shadow: inset 0 1px 0 rgba(255, 246, 226, 0.6);
+  /* Se encoge con scaleY y no con height: cambiar la altura reflowaría la
+     columna entera en cada frame, justo mientras el pergamino se despliega. */
+  transform-origin: center;
+  transition: opacity 700ms var(--e-out) 400ms, transform 700ms var(--e-out) 400ms;
+}
+
+.bottle.is-unrolled .bot__roll { opacity: 0.25; transform: scaleY(0.42); }
+
+.bot__inner {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: clamp(1rem, calc(4.6 * var(--vw)), 1.7rem);
+  opacity: 0;
+  transition: opacity 600ms var(--e-out) 300ms;
+}
+
+.bottle.is-unrolled .bot__inner { opacity: 1; }
+
+.bot__title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.35rem, calc(6 * var(--vw)), 1.95rem);
+  line-height: 1.08;
+  color: #2c211c;
+}
+
+.bot__read {
+  flex: 1;
+}
+
+.bot__prose {
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  line-height: 1.72;
+  color: var(--paper-ink);
+  text-align: justify;
+  hyphens: auto;
+}
+
+.bot__prose::first-letter {
+  font-size: 2.7em;
+  line-height: 0.84;
+  float: left;
+  padding: 0.08em 0.12em 0 0;
+  color: var(--rose-deep);
+  font-weight: 300;
+}
+
+.bot__sign {
+  font-family: var(--font-hand);
+  font-size: clamp(1.1rem, calc(4.6 * var(--vw)), 1.4rem);
+  color: var(--rose-deep);
+  opacity: 0;
+  transform: rotate(-2deg);
+  transform-origin: left center;
+  transition: opacity 900ms var(--e-out) 700ms;
+}
+
+.bottle.is-reading .bot__sign { opacity: 0.85; }
+
+.bot__prompt {
+  position: relative;
+  z-index: 6;
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  text-align: center;
+  min-height: 1.4em;
+  animation: seal-breathe 3.2s ease-in-out infinite;
+}
+
+.bottle.is-uncorked .bot__prompt { opacity: 0; transition: opacity 400ms; }

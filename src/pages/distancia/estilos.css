@@ -1,0 +1,318 @@
+/* ============================================================
+   LA DISTANCIA
+   ============================================================ */
+
+.orbit {
+  display: grid;
+  /* La última fila es `auto`: el panel mide lo que mide su texto y ni un
+     píxel más. El campo de los dos puntos se queda con todo lo que sobre. */
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(0.5rem, 2vh, 1rem);
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+  --near: 0;
+}
+
+.orb__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--gap-sm);
+}
+
+
+.orb__head .kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.orb__gauge {
+  font-family: var(--font-ui);
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  transition: color 400ms var(--e-out);
+}
+
+.orbit.is-joined .orb__gauge {
+  color: var(--rose-glow);
+  text-shadow: 0 0 18px var(--accent);
+}
+
+/* ---- El campo ----------------------------------------------- */
+.orb__field {
+  position: relative;
+  min-height: 0;
+  touch-action: none;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+/* El hilo entre los dos: se tensa y brilla al acercarse. */
+.orb__link {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 2px;
+  transform-origin: 0 50%;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 70%, transparent),
+    color-mix(in srgb, var(--accent) calc(20% + var(--near) * 70%), transparent)
+  );
+  opacity: calc(0.22 + var(--near) * 0.7);
+  filter: blur(calc(1.5px - var(--near) * 1.2px))
+          drop-shadow(0 0 calc(var(--near) * 12px) var(--accent));
+  pointer-events: none;
+}
+
+.orb {
+  position: absolute;
+  width: 84px;
+  height: 84px;
+  margin: -42px 0 0 -42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  touch-action: none;
+  cursor: grab;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 200ms var(--e-spring);
+}
+
+.orb:active,
+.orb.is-held { cursor: grabbing; }
+
+.orb.is-held { transform: scale(1.1); }
+
+.orb__core {
+  position: relative;
+  z-index: 2;
+  width: 34%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 32%, #fff, var(--accent) 58%, color-mix(in srgb, var(--accent) 60%, #000));
+  box-shadow: 0 0 calc(12px + var(--near) * 22px) -2px var(--accent);
+}
+
+.orb__halo {
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  opacity: calc(0.35 + var(--near) * 0.5);
+  animation: orb-breathe 3.4s ease-in-out infinite;
+}
+
+.orb[data-orb="b"] .orb__halo { animation-delay: 1.7s; }
+
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.35; }
+  50% { transform: scale(1.18); opacity: 0.7; }
+}
+
+.orb__label {
+  position: absolute;
+  bottom: 4px;
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.2em;
+  text-transform: lowercase;
+  color: var(--text-soft);
+  pointer-events: none;
+}
+
+/* Al juntarse: uno solo, y un destello. */
+.orbit.is-joined .orb {
+  transition: transform 700ms var(--e-spring);
+}
+
+.orbit.is-joined .orb__core {
+  animation: orb-merge 900ms var(--e-out) forwards;
+}
+
+@keyframes orb-merge {
+  0% { transform: scale(1); }
+  40% { transform: scale(2.1); }
+  100% { transform: scale(1.5); }
+}
+
+.orbit.is-joined .orb__label { opacity: 0; transition: opacity 400ms; }
+
+.orbit.is-joined .orb__link { opacity: 0; transition: opacity 500ms; }
+
+.orbit.is-joined .orb__halo {
+  animation: orb-shock 900ms var(--e-out) forwards;
+}
+
+@keyframes orb-shock {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(4.5); opacity: 0; }
+}
+
+/* ---- Texto -------------------------------------------------- */
+.orb__panel {
+  max-height: min(38vh, 270px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: clamp(0.8rem, calc(3.6 * var(--vw)), 1.2rem);
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 800ms var(--e-out) 200ms, transform 800ms var(--e-out) 200ms;
+}
+
+.orbit.is-entered .orb__panel { opacity: 1; transform: none; }
+
+.orb__title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(1.35rem, calc(6 * var(--vw)), 1.95rem);
+  line-height: 1.06;
+  color: #fff;
+}
+
+.orb__panel .rule { margin: 0.3rem 0 0.55rem; background: linear-gradient(90deg, var(--accent), transparent 72%); }
+
+/* ---- El texto sólo ocupa cuando llega -----------------------
+   Antes el panel reservaba su hueco desde el principio, así que hasta que
+   los dos puntos se tocaban había un rectángulo negro enorme y vacío
+   ocupando media pantalla con un título arriba. Ahora el panel es del
+   tamaño de lo que tiene dentro, y crece cuando el texto aparece. */
+.orb__scroll {
+  max-height: 0;
+  opacity: 0;
+  transition:
+    max-height 900ms var(--e-out),
+    opacity 700ms var(--e-out) 200ms;
+}
+
+.orbit.is-told .orb__scroll {
+  max-height: 38vh;
+  opacity: 1;
+}
+
+.orb__prose {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, calc(3.7 * var(--vw)), 1.12rem);
+  line-height: 1.68;
+  color: rgba(246, 238, 232, 0.92);
+  text-align: justify;
+  hyphens: auto;
+}
+
+/* La frase del final no ocupa hasta que existe. Con `opacity: 0` a secas
+   seguía midiendo sus dos líneas, y entre eso y el texto sin escribir el
+   panel era un rectángulo negro con un título arriba y un palmo de nada
+   debajo. */
+.orb__reveal {
+  margin-top: 0;
+  max-height: 0;
+  font-family: var(--font-hand);
+  font-size: clamp(1.1rem, calc(4.8 * var(--vw)), 1.45rem);
+  line-height: 1.35;
+  color: var(--rose-glow);
+  opacity: 0;
+  overflow: hidden;
+  transform: translateY(8px);
+  transition:
+    opacity 900ms var(--e-out),
+    transform 900ms var(--e-out),
+    max-height 800ms var(--e-out),
+    margin-top 800ms var(--e-out);
+}
+
+.orbit.is-told .orb__reveal {
+  margin-top: 0.6rem;
+  max-height: 6em;
+}
+
+/* La frase del final cae justo a la altura de los dos botones redondos de
+   pasar página, que van pegados a los cantos. Se le deja su sitio para que
+   la línea que más importa de la página no se lea por debajo de un botón. */
+.orb__reveal {
+  padding: 0 clamp(0.5rem, 8vw, 3rem);
+  text-align: center;
+}
+
+.orbit.is-told .orb__reveal { opacity: 1; transform: none; }
+
+/* ══════════════ LAS CARTAS QUE CRUZAN ══════════════
+   Cada pocos segundos sale una de un punto y viaja hasta el otro por la
+   línea que los une. Es lo que de verdad pasa entre dos personas separadas
+   por dos mil kilómetros, y es lo que convierte esta página en algo que
+   ocurre en vez de dos bolas y una raya.
+
+   El viaje entero es una sola animación de `transform`: la compone la GPU
+   sin repintar nada, así que cuatro cartas cruzando cuestan lo mismo que
+   ninguna. */
+.orb__cartas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.orb__carta {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: clamp(15px, 4.4vw, 20px);
+  margin: calc(clamp(15px, 4.4vw, 20px) * -0.35) 0 0 calc(clamp(15px, 4.4vw, 20px) / -2);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.orb__carta.is-yendo {
+  animation: carta-cruza 2.9s cubic-bezier(0.42, 0, 0.58, 1) forwards;
+}
+
+@keyframes carta-cruza {
+  0% {
+    transform: translate(var(--x1), var(--y1)) rotate(var(--giro)) scale(0.5);
+    opacity: 0;
+  }
+  14%  { opacity: 0.85; transform: translate(calc(var(--x1) + (var(--x2) - var(--x1)) * 0.14),
+                                             calc(var(--y1) + (var(--y2) - var(--y1)) * 0.14))
+                                   rotate(var(--giro)) scale(1); }
+  86%  { opacity: 0.85; transform: translate(calc(var(--x1) + (var(--x2) - var(--x1)) * 0.86),
+                                             calc(var(--y1) + (var(--y2) - var(--y1)) * 0.86))
+                                   rotate(var(--giro)) scale(1); }
+  100% {
+    transform: translate(var(--x2), var(--y2)) rotate(var(--giro)) scale(0.5);
+    opacity: 0;
+  }
+}
+
+.orb__carta-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent));
+}
+
+.orb__carta-svg rect {
+  fill: rgba(255, 246, 232, 0.94);
+  stroke: color-mix(in srgb, var(--accent) 55%, transparent);
+  stroke-width: 0.8;
+}
+
+.orb__carta-solapa {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 70%, transparent);
+  stroke-width: 0.9;
+  stroke-linejoin: round;
+}
+
+/* Al juntarse ya no hacen falta: lo que tenían que decir ya llegó. */
+.orbit.is-joined .orb__cartas { opacity: 0; transition: opacity 500ms var(--e-out); }
+
+@media (prefers-reduced-motion: reduce) {
+  .orb__carta { display: none; }
+  .orb__scroll { transition-duration: 1ms; }
+}

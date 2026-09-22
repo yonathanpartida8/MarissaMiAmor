@@ -12,7 +12,7 @@ import { seeded } from "../utils/rng.js";
 const cache = new Map();
 
 /** Ruido monocromo fino: el grano de película sobre toda la escena. */
-export function filmGrain(size = 180, opacity = 26) {
+function filmGrain(size = 180, opacity = 26) {
   const key = `grain-${size}-${opacity}`;
   if (cache.has(key)) return cache.get(key);
 
@@ -38,7 +38,7 @@ export function filmGrain(size = 180, opacity = 26) {
  * Fibra de papel: ruido suave + hebras horizontales tenues, como el papel
  * de algodón de una carta buena.
  */
-export function paperFiber(size = 256) {
+function paperFiber(size = 256) {
   const key = `paper-${size}`;
   if (cache.has(key)) return cache.get(key);
 
@@ -85,25 +85,6 @@ export function paperFiber(size = 256) {
   return url;
 }
 
-/** Mancha de luz suave, para halos y destellos sin imágenes. */
-export function softDot(size = 64, color = "255,255,255") {
-  const key = `dot-${size}-${color}`;
-  if (cache.has(key)) return cache.get(key);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  g.addColorStop(0, `rgba(${color},1)`);
-  g.addColorStop(0.35, `rgba(${color},0.42)`);
-  g.addColorStop(1, `rgba(${color},0)`);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, size, size);
-
-  const url = canvas.toDataURL("image/png");
-  cache.set(key, url);
-  return url;
-}
 
 /** Instala las texturas como variables CSS globales. Se llama una vez. */
 export function installTextures() {

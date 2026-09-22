@@ -1,0 +1,441 @@
+/* ============================================================
+   PORTADA
+   ============================================================ */
+
+.cover {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  justify-items: center;
+  padding: calc(var(--pad-t) + 1rem) var(--pad-x) calc(var(--pad-b) + 1rem);
+  background: transparent;
+  perspective: 1100px;
+}
+
+.cover::before {
+  /* La portada no lleva lomo pintado: es la tapa, no una hoja. */
+  display: none;
+}
+
+/* ---- La tapa ------------------------------------------------ */
+.cover__card {
+  position: relative;
+  width: min(100%, 340px);
+  height: min(100%, 520px);
+  align-self: center;
+  border-radius: clamp(8px, calc(2.6 * var(--vw)), 16px);
+  overflow: hidden;
+  transform-style: preserve-3d;
+  will-change: transform;
+  background:
+    linear-gradient(150deg, #33101f 0%, #6d1c3c 42%, #1d0710 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.14) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.5) inset,
+    0 26px 60px -18px rgba(0, 0, 0, 0.85),
+    0 60px 120px -50px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transform: translateY(18px) scale(0.96);
+  transition: opacity 1200ms var(--e-out), transform 1400ms var(--e-out);
+}
+
+.cover.is-entered .cover__card {
+  opacity: 1;
+  transform: none;
+}
+
+/* La fotografía, tratada como una tela estampada bajo la tinta. */
+.cover__photo {
+  position: absolute;
+  inset: -6%;
+  background-size: cover;
+  background-position: center;
+  /* Duotono: la foto pertenece al universo del libro, no lo interrumpe. */
+  filter: grayscale(1) contrast(1.15) brightness(0.55);
+  opacity: 0.62;
+  /* Sin modo de mezcla por defecto. Mezclar una capa filtrada que ADEMÁS se
+     mueve con el giroscopio obliga a recomponer el fondo entero en cada
+     frame, y la portada era la página más lenta del libro. En gama alta,
+     donde sobra músculo, se recupera el duotono de verdad. */
+  mix-blend-mode: normal;
+  transform: translate3d(var(--depth-x, 0), var(--depth-y, 0), 0) scale(1.06);
+  /* Sin transición: el valor ya llega suavizado desde el reloj de la página,
+     y encadenar una transición a algo que se reescribe en cada fotograma
+     deja una animación viva permanentemente, para nada. */
+}
+
+/* Grano del cartón. Sin mezcla por defecto: ver la nota de abajo. */
+.cover__grain {
+  position: absolute;
+  inset: 0;
+  background-image: var(--grain-src);
+  background-size: 180px;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+/* Reflejo especular que sigue la inclinación.
+
+   El degradado se queda QUIETO en el centro y lo que se mueve es la capa,
+   con `transform`. Antes se movía el centro del degradado, y mover un
+   degradado obliga a repintar toda la capa —aquí, vez y media la tapa, y
+   además mezclada en `screen`— sesenta veces por segundo. Con `transform`
+   lo hace la GPU sin repintar nada: se ve igual y la portada, que es lo
+   primero que se abre, dejó de ser la página más pesada del libro. */
+.cover__sheen {
+  position: absolute;
+  inset: -30%;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 46% 38% at 50% 50%,
+    rgba(255, 234, 214, 0.34) 0%,
+    rgba(255, 200, 220, 0.12) 34%,
+    transparent 62%
+  );
+  transform: translate3d(var(--sheen-x, 0px), var(--sheen-y, 0px), 0);
+  will-change: transform;
+}
+
+/* Filete dorado grabado. */
+.cover__border {
+  position: absolute;
+  inset: clamp(10px, calc(3.4 * var(--vw)), 18px);
+  border: 1px solid rgba(215, 174, 114, 0.42);
+  border-radius: 4px;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    inset 0 0 24px rgba(215, 174, 114, 0.08);
+}
+
+.cover__border::before,
+.cover__border::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(215, 174, 114, 0.5), transparent);
+}
+
+.cover__border::before { top: 8px; }
+.cover__border::after { bottom: 8px; }
+
+/* ---- Tipografía de la tapa --------------------------------- */
+.cover__content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem 1.6rem;
+  text-align: center;
+  transform: translateZ(24px);
+}
+
+.cover__kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  font-weight: 300;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: rgba(242, 212, 160, 0.68);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 900ms var(--e-out) 500ms, transform 900ms var(--e-out) 500ms;
+}
+
+.cover__name {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(3rem, calc(17 * var(--vw)), 4.6rem);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  background: linear-gradient(
+    170deg,
+    #fff6e8 0%,
+    var(--gold-light) 38%,
+    var(--gold) 62%,
+    #a67a44 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.5));
+  opacity: 0;
+  transform: translateY(16px) scale(0.97);
+  transition: opacity 1200ms var(--e-out) 700ms, transform 1200ms var(--e-out) 700ms;
+}
+
+.cover__flourish {
+  width: min(58%, 150px);
+  color: var(--gold);
+  opacity: 0;
+  transition: opacity 900ms var(--e-out) 1000ms;
+}
+
+.cover__flourish svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.cover__sub {
+  font-family: var(--font-hand);
+  font-size: clamp(1.25rem, calc(5.4 * var(--vw)), 1.7rem);
+  color: var(--rose-glow);
+  opacity: 0;
+  transform: translateY(8px) rotate(-2deg);
+  transition: opacity 900ms var(--e-out) 1150ms, transform 900ms var(--e-out) 1150ms;
+  text-shadow: 0 0 18px rgba(236, 111, 146, 0.45);
+}
+
+.cover.is-entered .cover__kicker,
+.cover.is-entered .cover__flourish {
+  opacity: 1;
+  transform: none;
+}
+
+.cover.is-entered .cover__name {
+  opacity: 1;
+  transform: none;
+}
+
+.cover.is-entered .cover__sub {
+  opacity: 0.92;
+  transform: rotate(-2deg);
+}
+
+/* ---- El sello de lacre ------------------------------------- */
+.cover__sealwrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  padding-top: clamp(1rem, 4vh, 2rem);
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 900ms var(--e-out) 1400ms, transform 900ms var(--e-out) 1400ms;
+}
+
+.cover.is-entered .cover__sealwrap {
+  opacity: 1;
+  transform: none;
+}
+
+.cover__seal {
+  position: relative;
+  width: clamp(74px, calc(21 * var(--vw)), 92px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.seal__ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+
+.seal__track,
+.seal__prog {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.seal__track {
+  stroke: rgba(255, 255, 255, 0.12);
+}
+
+.seal__prog {
+  stroke: var(--gold-light);
+  filter: drop-shadow(0 0 6px var(--gold));
+  transition: stroke-dashoffset 60ms linear;
+}
+
+/* El lacre: cera de verdad, con brillo, borde irregular y peso. */
+.seal__wax {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 72%;
+  aspect-ratio: 1;
+  /* Recorte irregular: la cera se aplasta, no se moldea en círculo. */
+  clip-path: polygon(50% 1%, 63% 4%, 74% 10%, 85% 18%, 93% 29%, 97% 42%, 99% 55%, 95% 68%, 87% 79%, 76% 88%, 63% 95%, 50% 99%, 37% 96%, 24% 90%, 13% 81%, 5% 69%, 1% 56%, 3% 42%, 8% 29%, 17% 18%, 27% 9%, 38% 3%);
+  background:
+    radial-gradient(ellipse 130% 100% at 32% 20%, rgba(255, 186, 202, 0.34) 0%, transparent 44%),
+    radial-gradient(ellipse 90% 90% at 62% 88%, rgba(60, 6, 24, 0.5) 0%, transparent 52%),
+    linear-gradient(158deg, #c03859 0%, #a52b4c 46%, #851c3a 100%);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 200, 214, 0.34),
+    inset 0 -7px 14px rgba(50, 4, 18, 0.5),
+    inset 0 0 0 4px rgba(146, 34, 70, 0.4);
+  /* El clip-path recorta las sombras exteriores: van por filtro. */
+  filter: drop-shadow(0 5px 10px rgba(90, 14, 42, 0.7));
+  transform: scale(calc(1 - var(--hold, 0) * 0.06));
+  transition: transform 90ms linear;
+}
+
+.seal__wax::after {
+  /* Grietas que sólo aparecen bajo presión. */
+  content: "";
+  position: absolute;
+  inset: 8%;
+  background:
+    linear-gradient(74deg, transparent 47%, rgba(30, 0, 12, 0.65) 48.5%, transparent 50%),
+    linear-gradient(-38deg, transparent 44%, rgba(30, 0, 12, 0.5) 45.5%, transparent 47%);
+  opacity: calc(var(--hold, 0) * 1.1);
+}
+
+.seal__letter {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, calc(5.6 * var(--vw)), 2rem);
+  /* Hundido: luz por debajo, sombra por arriba. Al revés que en relieve. */
+  color: rgba(122, 24, 56, 0.92);
+  text-shadow:
+    0 -1px 1px rgba(50, 4, 20, 0.9),
+    0 1px 1px rgba(255, 176, 196, 0.45);
+  z-index: 2;
+}
+
+/* La cera se tensa mientras se aprieta. Con un `transform` y no con un
+   `filter`: la cera va recortada con `clip-path`, y animar un filtro sobre
+   una forma recortada la vuelve a dibujar entera sesenta veces por segundo.
+   Un escalado lo compone la GPU sin repintar nada. */
+.cover__seal.is-pressing .seal__wax {
+  animation: seal-strain 240ms ease-in-out infinite alternate;
+}
+
+@keyframes seal-strain {
+  from { transform: scale(calc(1 - var(--hold, 0) * 0.06)); }
+  to   { transform: scale(calc(1 - var(--hold, 0) * 0.06 - 0.014)); }
+}
+
+.cover__seal.is-broken .seal__wax {
+  animation: seal-break 620ms var(--e-out) forwards;
+}
+
+@keyframes seal-break {
+  0% { transform: scale(0.94); }
+  30% { transform: scale(1.16); filter: brightness(1.5); }
+  100% { transform: scale(2.6); opacity: 0; filter: brightness(2) blur(6px); }
+}
+
+.cover__sealtext {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  font-weight: 300;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  animation: seal-breathe 3s ease-in-out infinite;
+}
+
+@keyframes seal-breathe {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.9; }
+}
+
+.cover__seal.is-broken ~ .cover__sealtext,
+.cover.is-opening .cover__sealtext {
+  opacity: 0;
+  transition: opacity 300ms;
+}
+
+/* Al abrirse, la tapa se va hacia el fondo. */
+.cover.is-opening .cover__card {
+  transition: transform 700ms var(--e-in-out), opacity 700ms var(--e-in-out), filter 700ms;
+  transform: scale(1.1) translateZ(80px);
+  opacity: 0;
+  filter: blur(10px) brightness(1.6);
+}
+
+/* ---- Pantallas pequeñas ------------------------------------ */
+@media (max-height: 700px) {
+  .cover__card {
+    height: min(100%, 420px);
+    width: min(100%, 290px);
+  }
+}
+
+html[data-orientation="landscape"][data-device="phone"] .cover {
+  grid-template-rows: 1fr;
+  grid-template-columns: 1fr auto;
+  gap: var(--gap-lg);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .cover__card {
+  height: min(100%, 300px);
+  width: min(100%, 200px);
+}
+
+/* En apaisado la tapa es estrecha: el nombre tiene que poder encogerse
+   por debajo de su mínimo vertical o se sale por los lados. */
+html[data-orientation="landscape"][data-device="phone"] .cover__name {
+  font-size: clamp(1.7rem, calc(13 * var(--vw)), 2.8rem);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .cover__content {
+  padding: 1.2rem 1rem;
+  gap: 0.3rem;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .cover__seal {
+  width: clamp(58px, calc(16 * var(--vw)), 74px);
+}
+
+
+/* ---- Las tres mezclas de la tapa ---------------------------
+   El duotono de la foto, el grano del cartón y el brillo especular son lo
+   que hace que esto parezca una tapa y no un rectángulo con una foto. Pero
+   son tres capas con `mix-blend-mode` encima del fondo animado, y eso
+   obliga a recomponer la tapa entera en cada fotograma: medido, las tres
+   juntas costaban la mitad de los fotogramas de la portada, que es
+   justamente lo primero que se abre y la primera impresión del libro.
+
+   Así que van sólo donde sobra músculo. En gama media y baja la tapa se
+   pinta plana, con el grano un pelín más tenue para compensar: se ve casi
+   igual y se mueve al doble.                                            */
+:root[data-tier="high"] .cover__photo {
+  mix-blend-mode: soft-light;
+}
+
+:root[data-tier="high"] .cover__grain {
+  opacity: 0.14;
+  mix-blend-mode: overlay;
+}
+
+:root[data-tier="high"] .cover__sheen {
+  mix-blend-mode: screen;
+}
+
+/* Escondido: tres toques en el borde de abajo de la tapa y aparece
+   una firma grabada en el cartón, como la de dentro de un libro de verdad. */
+.cover__card::after {
+  content: "M · Y";
+  position: absolute;
+  right: 8%;
+  bottom: 3.2%;
+  z-index: 4;
+  font-family: var(--font-display);
+  font-size: clamp(0.6rem, calc(2.6 * var(--vw)), 0.78rem);
+  letter-spacing: 0.42em;
+  color: rgba(255, 246, 236, 0.5);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), 0 -1px 0 rgba(255, 246, 220, 0.14);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 900ms var(--e-out), transform 900ms var(--e-out);
+  pointer-events: none;
+}
+
+.cover__card.is-signed::after { opacity: 1; transform: none; }

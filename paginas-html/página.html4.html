@@ -1,0 +1,1213 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Un jardín para ti</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .jardin-mundo, con prefijo `jd-` en cada clase.
+   Ni una etiqueta a secas: esta página se incrusta en un libro que tiene
+   sus propios estilos y no le toca ninguno.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.jardin-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background: #f2e4d6;
+  color: #43302c;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.jardin-mundo .jd-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;   /* el libro cedería el gesto entero a un canvas */
+}
+
+/* La tierra donde se planta: la hoja entera, de borde a borde. El libro
+   sólo se queda el barrido que empieza en sus 24-44 px de borde, así que
+   se puede sembrar por todas partes sin que la página se pase sola. */
+.jardin-mundo .jd-toque {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  z-index: 2;
+}
+
+.jardin-mundo .jd-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.jardin-mundo .jd-nota {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: min(66vw, 17rem);
+  padding: 0.42rem 0.75rem;
+  margin: 0;
+  border-radius: 13px;
+  font-size: clamp(0.7rem, 2.9vw, 0.84rem);
+  line-height: 1.4;
+  text-align: center;
+  color: #4a3430;
+  background: rgba(255, 253, 247, 0.92);
+  box-shadow: 0 8px 22px -12px rgba(80, 55, 40, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.jardin-mundo .jd-nota--secreto {
+  background: rgba(255, 248, 232, 0.96);
+  color: #5a3a24;
+  box-shadow: 0 0 0 1px rgba(214, 170, 96, 0.5), 0 12px 26px -12px rgba(150, 100, 40, 0.6);
+}
+
+.jardin-mundo .jd-cuenta {
+  position: absolute;
+  top: calc(var(--seguro-t) + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 252, 245, 0.55);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #7a5b4c;
+  opacity: 0;
+  transition: opacity 800ms var(--e-suave);
+}
+
+.jardin-mundo .jd-cuenta.jd-dentro { opacity: 1; }
+.jardin-mundo .jd-cuenta b { font-size: 0.86rem; font-weight: 500; color: #4a3430; }
+
+.jardin-mundo .jd-pista {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--seguro-b) + var(--barra) + 16px);
+  transform: translateX(-50%);
+  font-size: clamp(0.64rem, 2.7vw, 0.76rem);
+  letter-spacing: 0.2em;
+  color: rgba(74, 52, 48, 0.5);
+  opacity: 0;
+  transition: opacity 1000ms var(--e-suave);
+  white-space: nowrap;
+}
+
+.jardin-mundo .jd-pista.jd-dentro { opacity: 1; }
+.jardin-mundo .jd-pista.jd-noche { color: rgba(240, 232, 245, 0.55); }
+
+@media (prefers-reduced-motion: reduce) {
+  .jardin-mundo .jd-cuenta, .jardin-mundo .jd-pista { transition-duration: 1ms; }
+}
+</style>
+</head>
+
+<body>
+<div class="jardin-mundo" id="jd">
+  <canvas class="jd-lienzo" id="jdLienzo"></canvas>
+  <div class="jd-toque" id="jdToque" aria-hidden="true"></div>
+  <div class="jd-ui" id="jdUi">
+    <div class="jd-cuenta" id="jdCuenta"><b id="jdN">0</b><span>flores</span></div>
+    <p class="jd-pista" id="jdPista"></p>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+/* ══════════════════════════════════════════════════════════════════════
+   UN JARDÍN PARA TI
+
+   Se toca la tierra y crece una flor. Cada una guarda algo.
+   ══════════════════════════════════════════════════════════════════════ */
+
+// ══════════════════════════════════════════════════════════════════════
+//  CONFIGURACIÓN EDITABLE
+// ══════════════════════════════════════════════════════════════════════
+
+const CONFIG = {
+  PISTA: "toca la tierra",
+
+  /* Lo que guarda cada flor. Se barajan y no se repite ninguna hasta
+     que han salido todas. */
+  NOTAS: [
+    "Contigo hasta lo pequeño se pone bonito.",
+    "Me gusta la vida cuando estás.",
+    "Hoy también me acordé de ti.",
+    "Eres mi sitio favorito.",
+    "Gracias por quedarte.",
+    "Te quiero en lo fácil y en lo otro.",
+    "Todo lo bueno se parece un poco a ti.",
+    "Me haces reír hasta cuando no quiero.",
+    "Si pudiera elegir, te elegiría hoy otra vez.",
+    "Cada día me caes un poquito mejor.",
+    "Tienes la risa que me arregla los días.",
+    "Contigo no hace falta hacer nada para que sea bonito.",
+    "Me gusta cómo cuidas las cosas.",
+    "Eres de lo poco que no me cansa nunca.",
+    "Guardo tus abrazos para el invierno.",
+    "Quiero verte viejita y seguir pensando lo mismo.",
+  ],
+
+  /* Los secretos. No se anuncian. */
+  SECRETOS: {
+    /* Flores que hay que plantar para que caiga la noche. */
+    floresParaNoche: 12,
+    /* Cuánto hay que mantener el dedo quieto en la tierra vacía. */
+    aguantarBrote: 1.6,
+    /* Cuántas flores en círculo para que el jardín se haga corazón. */
+    floresCirculo: 7,
+  },
+
+  TEXTOS: {
+    noche: "Se hizo de noche y el jardín se llenó de luces. Como tú, que iluminas hasta lo oscuro. 🤍",
+    trebol: "Un trébol de cuatro hojas. Ya tenía suerte desde que te conocí.",
+    brote: "Si esperas sin prisa, siempre acaba saliendo algo bonito.",
+    corazon: "Mira lo que plantaste sin darte cuenta. ❤️",
+    petalos: "Deshojé la margarita y salía «me quiere» en todas.",
+    mariposa: "Se posó en tu flor. Sabe distinguir las cosas bonitas.",
+  },
+
+  /* Las cinco clases de flor. Cada una con su forma y su color. */
+  FLORES: [
+    { petalos: 5,  color: "#ff9fc0", centro: "#ffd978", largo: 1.00, nombre: "rosada" },
+    { petalos: 6,  color: "#c4a8f0", centro: "#ffe9a8", largo: 0.88, nombre: "lila" },
+    { petalos: 8,  color: "#ffd98a", centro: "#e0833c", largo: 1.10, nombre: "sol" },
+    { petalos: 5,  color: "#fdf3e6", centro: "#ffca5c", largo: 0.94, nombre: "margarita" },
+    { petalos: 12, color: "#ffb2a3", centro: "#d4604a", largo: 1.05, nombre: "coral" },
+  ],
+
+  PERF: { dprMax: 2, dprMaxFlojo: 1.25, maxPetalos: 260, maxPetalosFlojo: 90 },
+};
+
+// ══════════════════════════════════════════════════════════════════════
+//  MATEMÁTICAS
+// ══════════════════════════════════════════════════════════════════════
+
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const clamp01 = (v) => clamp(v, 0, 1);
+const lerp = (a, b, t) => a + (b - a) * t;
+const smoothstep = (t) => { t = clamp01(t); return t * t * (3 - 2 * t); };
+const easeOutBack = (t) => { const c = 1.9, d = c + 1; return 1 + d * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+const azar = (a, b) => a + Math.random() * (b - a);
+const damp = (a, b, k, dt) => b + (a - b) * Math.exp(-k * dt);
+
+/** Muelle por pasos: recorre el tiempo entero sin explotar ni ir lento. */
+function muelle(valor, vel, objetivo, rigidez, amort, dt) {
+  const pasos = Math.min(Math.max(1, Math.ceil(dt * 60)), 8);
+  const h = dt / pasos;
+  const roce = Math.pow(amort, h * 60);
+  let v = vel, x = valor;
+  for (let i = 0; i < pasos; i++) {
+    v += (objetivo - x) * rigidez * h;
+    v *= roce;
+    x += v * h;
+  }
+  return { valor: x, velocidad: v };
+}
+
+/** Mezcla dos colores hexadecimales. */
+function mezclar(a, b, t) {
+  const pa = [1, 3, 5].map((i) => parseInt(a.substr(i, 2), 16));
+  const pb = [1, 3, 5].map((i) => parseInt(b.substr(i, 2), 16));
+  return "#" + pa.map((v, i) => Math.round(lerp(v, pb[i], t)).toString(16).padStart(2, "0")).join("");
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  ESCENA
+// ══════════════════════════════════════════════════════════════════════
+
+/** Mide el CONTENEDOR, no la ventana: esto vive dentro de una hoja. */
+class Escena {
+  constructor(raiz, lienzo, alCambiar) {
+    this.raiz = raiz; this.lienzo = lienzo; this.alCambiar = alCambiar;
+    this.ancho = 1; this.alto = 1; this.dpr = 1;
+    this.topeDpr = CONFIG.PERF.dprMax;
+    this.obs = new ResizeObserver(() => this.medir());
+    this.obs.observe(raiz);
+    this.medir();
+  }
+  medir() {
+    const c = this.raiz.getBoundingClientRect();
+    const w = Math.max(1, Math.round(c.width)), h = Math.max(1, Math.round(c.height));
+    const dpr = Math.min(window.devicePixelRatio || 1, this.topeDpr);
+    if (w === this.ancho && h === this.alto && dpr === this.dpr) return;
+    this.ancho = w; this.alto = h; this.dpr = dpr;
+    this.lienzo.width = Math.round(w * dpr);
+    this.lienzo.height = Math.round(h * dpr);
+    this.lienzo.style.width = w + "px";
+    this.lienzo.style.height = h + "px";
+    this.alCambiar?.(this);
+  }
+  /** Dónde empieza la tierra. Todo lo de abajo es jardín. */
+  get horizonte() { return this.alto * 0.66; }
+  get medida() { return Math.min(this.ancho, this.alto); }
+  destruir() { this.obs.disconnect(); }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  AUDIO — sintetizado, y sólo tras un gesto
+// ══════════════════════════════════════════════════════════════════════
+
+const Audio_ = (() => {
+  let ctx = null, maestro = null, listo = false;
+  return {
+    despertar() {
+      if (listo) return;
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        ctx = new AC();
+        maestro = ctx.createGain();
+        maestro.gain.value = 0.18;
+        maestro.connect(ctx.destination);
+        listo = true;
+      } catch { listo = false; }
+    },
+    tono(f, dur, tipo, vol, hasta) {
+      if (!listo) return;
+      const t = ctx.currentTime;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = tipo || "sine";
+      o.frequency.setValueAtTime(f, t);
+      if (hasta) o.frequency.exponentialRampToValueAtTime(Math.max(40, hasta), t + dur);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.014);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(maestro);
+      o.start(t); o.stop(t + dur + 0.05);
+    },
+    brote() { this.tono(430, 0.3, "sine", 0.08, 760); },
+    flor()  { this.tono(660, 0.24, "sine", 0.07); this.tono(990, 0.3, "sine", 0.035); },
+    nota()  { this.tono(880, 0.16, "triangle", 0.05); },
+    magia() { [660, 880, 1100, 1320].forEach((f, i) => setTimeout(() => this.tono(f, 0.6, "sine", 0.05), i * 100)); },
+  };
+})();
+
+// ══════════════════════════════════════════════════════════════════════
+//  PÉTALOS — reserva fija que se reutiliza
+// ══════════════════════════════════════════════════════════════════════
+
+class Petalos {
+  constructor(max) {
+    this.max = max;
+    this.p = [];
+    for (let i = 0; i < max; i++) {
+      this.p.push({ viva: false, x: 0, y: 0, vx: 0, vy: 0, vida: 0, maxVida: 1,
+                    tam: 4, giro: 0, giroV: 0, color: "#fff", alfa: 0, tipo: 0 });
+    }
+    this.cursor = 0;
+  }
+  soltar(x, y, o) {
+    for (let i = 0; i < this.max; i++) {
+      const k = (this.cursor + i) % this.max;
+      const p = this.p[k];
+      if (p.viva) continue;
+      this.cursor = (k + 1) % this.max;
+      p.viva = true; p.x = x; p.y = y;
+      p.vx = o.vx || 0; p.vy = o.vy || 0;
+      p.vida = 0; p.maxVida = o.vida || 2;
+      p.tam = o.tam || 4; p.giro = o.giro || 0; p.giroV = o.giroV || 0;
+      p.color = o.color || "#ffb6ce"; p.tipo = o.tipo || 0; p.alfa = 0;
+      return p;
+    }
+    return null;
+  }
+  mover(dt, suelo) {
+    for (const p of this.p) {
+      if (!p.viva) continue;
+      p.vida += dt;
+      if (p.vida >= p.maxVida) { p.viva = false; continue; }
+      // Los pétalos caen balanceándose: la gravedad los baja y el aire
+      // los mece. Cayendo rectos parecerían piedras.
+      p.vy += (p.tipo === 1 ? -14 : 42) * dt;
+      p.vx += Math.sin(p.vida * 3.2 + p.giro) * 16 * dt;
+      p.vx *= Math.pow(0.5, dt);
+      p.vy *= Math.pow(0.7, dt);
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.giro += p.giroV * dt;
+      if (p.tipo === 0 && p.y > suelo) { p.y = suelo; p.vy = 0; p.vx *= 0.7; }
+      const k = p.vida / p.maxVida;
+      p.alfa = smoothstep(k / 0.12) * (1 - smoothstep((k - 0.6) / 0.4));
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  FLOR
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * Una flor que crece de verdad: primero el tallo, después las hojas,
+ * después los pétalos. Cada parte con su muelle, así que se pasa un
+ * poco y vuelve, como una planta que se estira.
+ */
+class Flor {
+  constructor(x, sueloY, tipo, nota, alto) {
+    this.x = x;
+    this.suelo = sueloY;
+    this.tipo = tipo;
+    this.nota = nota;
+    this.altoObjetivo = alto;
+
+    this.alto = 0; this.altoV = 0;       // el tallo
+    this.abre = 0; this.abreV = 0;       // los pétalos
+    this.hojas = 0; this.hojasV = 0;
+    this.balanceo = 0; this.balanceoV = 0;
+    this.semilla = Math.random() * 10;
+    this.edad = 0;
+    this.abierta = false;
+    this.brillo = 0;
+    this.giroCentro = azar(0, Math.PI * 2);
+  }
+
+  mover(dt, viento) {
+    this.edad += dt;
+
+    // El tallo sube primero; los pétalos esperan a que esté crecido.
+    const m1 = muelle(this.alto, this.altoV, this.altoObjetivo, 42, 0.76, dt);
+    this.alto = m1.valor; this.altoV = m1.velocidad;
+
+    const listo = this.alto / this.altoObjetivo;
+    const m2 = muelle(this.hojas, this.hojasV, listo > 0.45 ? 1 : 0, 70, 0.72, dt);
+    this.hojas = m2.valor; this.hojasV = m2.velocidad;
+
+    const m3 = muelle(this.abre, this.abreV, listo > 0.72 ? 1 : 0, 58, 0.70, dt);
+    this.abre = m3.valor; this.abreV = m3.velocidad;
+
+    if (!this.abierta && this.abre > 0.85) this.abierta = true;
+
+    // El viento la mece. Cada flor tiene su fase, si no se moverían
+    // todas a la vez como un decorado.
+    const objetivo = viento * (0.5 + this.altoObjetivo / 160) +
+                     Math.sin(this.edad * 1.1 + this.semilla) * 0.035;
+    const m4 = muelle(this.balanceo, this.balanceoV, objetivo, 26, 0.80, dt);
+    this.balanceo = m4.valor; this.balanceoV = m4.velocidad;
+
+    this.brillo = damp(this.brillo, 0, 2.6, dt);
+  }
+
+  /** La punta del tallo, que es donde va la flor. */
+  punta() {
+    const inclina = this.balanceo;
+    return {
+      x: this.x + Math.sin(inclina) * this.alto,
+      y: this.suelo - Math.cos(inclina) * this.alto,
+    };
+  }
+
+  golpe(f = 1) {
+    this.balanceoV += azar(-2.4, 2.4) * f;
+    this.altoV += 34 * f;
+    this.brillo = Math.min(1, this.brillo + f);
+  }
+
+  dibujar(c, def, noche) {
+    const p = this.punta();
+    const escala = clamp(this.altoObjetivo / 90, 0.6, 1.5);
+
+    // ── Tallo ──
+    // Una curva, no una recta: se dobla donde la empuja el viento.
+    c.beginPath();
+    c.moveTo(this.x, this.suelo);
+    c.quadraticCurveTo(
+      this.x + Math.sin(this.balanceo) * this.alto * 0.35,
+      this.suelo - this.alto * 0.55,
+      p.x, p.y
+    );
+    c.strokeStyle = noche ? "#2f5a44" : "#5f9e6e";
+    c.lineWidth = 2.6 * escala;
+    c.lineCap = "round";
+    c.stroke();
+
+    // ── Hojas ──
+    if (this.hojas > 0.02) {
+      const hy = this.suelo - this.alto * 0.42;
+      const hx = this.x + Math.sin(this.balanceo) * this.alto * 0.2;
+      for (const lado of [-1, 1]) {
+        c.save();
+        c.translate(hx, hy);
+        c.rotate(lado * (0.5 + this.balanceo * 0.5));
+        c.scale(this.hojas * escala, this.hojas * escala);
+        c.beginPath();
+        c.moveTo(0, 0);
+        c.quadraticCurveTo(lado * 12, -7, lado * 22, 1);
+        c.quadraticCurveTo(lado * 12, 5, 0, 0);
+        c.fillStyle = noche ? "#2c5240" : "#6cab78";
+        c.fill();
+        c.restore();
+      }
+    }
+
+    // ── Flor ──
+    if (this.abre > 0.01) {
+      c.save();
+      c.translate(p.x, p.y);
+      c.rotate(this.balanceo * 0.6 + this.giroCentro * 0.08);
+      const s = easeOutBack(clamp01(this.abre)) * escala * (1 + this.brillo * 0.16);
+      c.scale(s, s);
+
+      const color = noche ? mezclar(def.color, "#3a3a6a", 0.42) : def.color;
+      const centro = noche ? mezclar(def.centro, "#4a4a70", 0.34) : def.centro;
+
+      // Halo, de noche o al tocarla.
+      if (noche || this.brillo > 0.02) {
+        const g = c.createRadialGradient(0, 0, 2, 0, 0, 26);
+        g.addColorStop(0, `rgba(255,240,200,${0.24 + this.brillo * 0.4})`);
+        g.addColorStop(1, "rgba(255,240,200,0)");
+        c.fillStyle = g;
+        c.beginPath(); c.arc(0, 0, 26, 0, Math.PI * 2); c.fill();
+      }
+
+      // Pétalos: elipses girando alrededor del centro.
+      for (let i = 0; i < def.petalos; i++) {
+        const a = (i / def.petalos) * Math.PI * 2;
+        c.save();
+        c.rotate(a);
+        c.beginPath();
+        c.ellipse(0, -9, 5.2, 9, 0, 0, Math.PI * 2);
+        c.fillStyle = i % 2 ? color : mezclar(color, "#ffffff", 0.22);
+        c.fill();
+        c.restore();
+      }
+
+      // Centro.
+      c.beginPath(); c.arc(0, 0, 4.6, 0, Math.PI * 2);
+      c.fillStyle = centro; c.fill();
+      c.beginPath(); c.arc(-1.2, -1.2, 1.8, 0, Math.PI * 2);
+      c.fillStyle = "rgba(255,255,255,0.5)"; c.fill();
+      c.restore();
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  MARIPOSA
+// ══════════════════════════════════════════════════════════════════════
+
+/** Va de flor en flor. Si no hay ninguna, deambula. */
+class Mariposa {
+  constructor(esc) {
+    this.x = azar(0, esc.ancho);
+    this.y = azar(esc.alto * 0.3, esc.horizonte);
+    this.vx = 0; this.vy = 0;
+    this.destino = null;
+    this.espera = azar(1, 4);
+    this.ala = 0;
+    this.color = ["#ffd3e4", "#ffe6b0", "#d9ccff"][(Math.random() * 3) | 0];
+    this.posada = null;
+  }
+  mover(dt, flores, esc, alPosarse) {
+    this.ala += dt * (this.posada ? 3 : 15);
+
+    if (this.posada) {
+      const p = this.posada.punta();
+      this.x = damp(this.x, p.x, 8, dt);
+      this.y = damp(this.y, p.y - 8, 8, dt);
+      this.espera -= dt;
+      if (this.espera <= 0) { this.posada = null; this.espera = azar(2, 5); this.destino = null; }
+      return;
+    }
+
+    if (!this.destino) {
+      const abiertas = flores.filter((f) => f.abierta);
+      if (abiertas.length && Math.random() < 0.7) {
+        const f = abiertas[(Math.random() * abiertas.length) | 0];
+        this.destino = { flor: f };
+      } else {
+        this.destino = { x: azar(esc.ancho * 0.1, esc.ancho * 0.9),
+                         y: azar(esc.alto * 0.25, esc.horizonte - 20) };
+      }
+    }
+
+    const d = this.destino.flor ? this.destino.flor.punta() : this.destino;
+    const dx = d.x - this.x, dy = (d.y - (this.destino.flor ? 8 : 0)) - this.y;
+    const dist = Math.hypot(dx, dy) || 1;
+
+    // Vuelo de mariposa: no va recta, se bambolea. Es un empujón hacia
+    // el destino más un vaivén perpendicular.
+    this.vx += (dx / dist) * 62 * dt + Math.sin(this.ala * 0.4) * 24 * dt;
+    this.vy += (dy / dist) * 62 * dt + Math.cos(this.ala * 0.33) * 30 * dt;
+    const roce = Math.pow(0.16, dt);
+    this.vx *= roce; this.vy *= roce;
+    this.x += this.vx * dt; this.y += this.vy * dt;
+
+    if (dist < 14) {
+      if (this.destino.flor) {
+        this.posada = this.destino.flor;
+        this.espera = azar(1.6, 3.6);
+        alPosarse?.(this.destino.flor);
+      }
+      this.destino = null;
+    }
+  }
+  dibujar(c, noche) {
+    const bat = Math.abs(Math.sin(this.ala)) * 0.8 + 0.2;
+    c.save();
+    c.translate(this.x, this.y);
+    c.rotate(clamp(this.vx * 0.002, -0.4, 0.4));
+    c.globalAlpha = noche ? 0.55 : 0.92;
+    for (const lado of [-1, 1]) {
+      c.save();
+      c.scale(lado * bat, 1);
+      c.beginPath();
+      c.moveTo(0, 0);
+      c.quadraticCurveTo(7, -8, 10, -2);
+      c.quadraticCurveTo(9, 3, 0, 1);
+      c.quadraticCurveTo(7, 4, 8, 7);
+      c.quadraticCurveTo(5, 8, 0, 2);
+      c.fillStyle = this.color;
+      c.fill();
+      c.restore();
+    }
+    c.beginPath(); c.ellipse(0, 0, 1.3, 4.4, 0, 0, Math.PI * 2);
+    c.fillStyle = "#6b4a3c"; c.fill();
+    c.restore();
+    c.globalAlpha = 1;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  NOTAS FLOTANTES
+// ══════════════════════════════════════════════════════════════════════
+
+class Notas {
+  constructor(capa, esc) {
+    this.capa = capa; this.esc = esc;
+    this.vivas = []; this.libres = [];
+    for (let i = 0; i < 5; i++) {
+      const el = document.createElement("p");
+      el.className = "jd-nota";
+      capa.append(el);
+      this.libres.push(el);
+    }
+    this.baraja = [];
+  }
+  siguienteNota() {
+    if (!this.baraja.length) {
+      this.baraja = CONFIG.NOTAS.slice();
+      for (let i = this.baraja.length - 1; i > 0; i--) {
+        const j = (Math.random() * (i + 1)) | 0;
+        [this.baraja[i], this.baraja[j]] = [this.baraja[j], this.baraja[i]];
+      }
+    }
+    return this.baraja.pop();
+  }
+  mostrar(x, y, texto, secreto) {
+    let el = this.libres.pop();
+    // Un secreto nunca se pierde por falta de sitio: si no queda ninguno
+    // libre, le quita el suyo a la nota corriente más vieja.
+    if (!el && secreto) {
+      let peor = -1, masT = -1;
+      for (let i = 0; i < this.vivas.length; i++) {
+        if (this.vivas[i].secreto) continue;
+        if (this.vivas[i].t > masT) { masT = this.vivas[i].t; peor = i; }
+      }
+      if (peor >= 0) { el = this.vivas[peor].el; this.vivas.splice(peor, 1); }
+    }
+    if (!el) return;
+    el.textContent = texto || this.siguienteNota();
+    el.classList.toggle("jd-nota--secreto", !!secreto);
+    el.style.opacity = "0";
+    const medio = el.offsetWidth / 2 + 8;
+    this.vivas.push({
+      el, secreto: !!secreto, t: 0, dur: secreto ? 5.4 : 3.2,
+      x: clamp(x, medio, Math.max(medio, this.esc.ancho - medio)),
+      y: clamp(y - 34, 28, this.esc.alto - 40),
+    });
+  }
+  mover(dt) {
+    for (let i = this.vivas.length - 1; i >= 0; i--) {
+      const n = this.vivas[i];
+      n.t += dt;
+      const k = n.t / n.dur;
+      if (k >= 1) { n.el.style.opacity = "0"; this.libres.push(n.el); this.vivas.splice(i, 1); continue; }
+      const entra = smoothstep(k / 0.15), sale = 1 - smoothstep((k - 0.7) / 0.3);
+      const sube = smoothstep(clamp01(k / 0.8)) * 22;
+      n.el.style.opacity = String(entra * sale);
+      n.el.style.transform =
+        `translate3d(${n.x.toFixed(1)}px, ${(n.y - sube).toFixed(1)}px, 0)` +
+        ` translate(-50%, -50%) scale(${(0.92 + entra * 0.08).toFixed(3)})`;
+    }
+  }
+  limpiar() {
+    for (const n of this.vivas) { n.el.style.opacity = "0"; this.libres.push(n.el); }
+    this.vivas.length = 0;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  EL JARDÍN
+// ══════════════════════════════════════════════════════════════════════
+
+class Jardin {
+  constructor(raiz) {
+    this.raiz = raiz;
+    this.lienzo = raiz.querySelector("#jdLienzo");
+    this.c = this.lienzo.getContext("2d");
+    this.zona = raiz.querySelector("#jdToque");
+
+    this.flojo = this.#medirAparato();
+    this.esc = new Escena(raiz, this.lienzo, (e) => this.#alCambiar(e));
+    this.esc.topeDpr = this.flojo ? CONFIG.PERF.dprMaxFlojo : CONFIG.PERF.dprMax;
+
+    this.petalos = new Petalos(this.flojo ? CONFIG.PERF.maxPetalosFlojo : CONFIG.PERF.maxPetalos);
+    this.notas = new Notas(raiz.querySelector("#jdUi"), this.esc);
+
+    this.flores = [];
+    this.mariposas = [];
+    this.luciernagas = [];
+    this.hierba = [];
+    this.tiempo = 0;
+    this.viento = 0;
+    this.vientoObj = 0;
+    this.noche = 0;
+    this.nocheObj = 0;
+    this.esNoche = false;
+    this.relojes = new Set();
+    this.dedo = { x: 0, y: 0, abajo: false, id: null, desde: 0, movido: 0 };
+    this.trebol = null;
+    this.corazonHecho = false;
+    this.brotesSecretos = 0;
+
+    this.#sembrarHierba();
+    this.#ponerTrebol();
+    for (let i = 0; i < (this.flojo ? 1 : 2); i++) this.mariposas.push(new Mariposa(this.esc));
+
+    this.#enganchar();
+    raiz.querySelector("#jdPista").textContent = CONFIG.PISTA;
+    this.espera(() => raiz.querySelector("#jdPista").classList.add("jd-dentro"), 1100);
+
+    this.corriendo = true;
+    this.ultimo = performance.now();
+    this.bucle = (t) => this.#fotograma(t);
+    this.raf = requestAnimationFrame(this.bucle);
+
+    this.alVisible = () => {
+      if (document.hidden) { this.corriendo = false; cancelAnimationFrame(this.raf); }
+      else if (!this.corriendo) { this.corriendo = true; this.ultimo = performance.now(); this.raf = requestAnimationFrame(this.bucle); }
+    };
+    document.addEventListener("visibilitychange", this.alVisible);
+  }
+
+  espera(fn, ms) {
+    const id = setTimeout(() => { this.relojes.delete(id); fn(); }, ms);
+    this.relojes.add(id);
+    return id;
+  }
+
+  #medirAparato() {
+    const n = navigator.hardwareConcurrency || 4;
+    const m = navigator.deviceMemory || 4;
+    this.menosMovimiento = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    return n < 4 || m < 2 || this.menosMovimiento;
+  }
+
+  #sembrarHierba() {
+    // Las briznas se sortean UNA vez. Sortearlas cada fotograma haría
+    // que el césped hirviera.
+    this.hierba.length = 0;
+    const cuantas = Math.round(this.esc.ancho / (this.flojo ? 9 : 5));
+    for (let i = 0; i < cuantas; i++) {
+      this.hierba.push({
+        x: azar(-10, this.esc.ancho + 10),
+        y: this.esc.horizonte + azar(-4, this.esc.alto - this.esc.horizonte),
+        alto: azar(7, 20),
+        fase: azar(0, 6.28),
+        tono: azar(0, 1),
+      });
+    }
+    // Las de delante (más abajo) se dibujan después, para que tapen.
+    this.hierba.sort((a, b) => a.y - b.y);
+  }
+
+  #ponerTrebol() {
+    // Escondido entre la hierba, en un sitio al azar de la mitad baja.
+    this.trebol = {
+      x: azar(this.esc.ancho * 0.12, this.esc.ancho * 0.88),
+      y: azar(this.esc.horizonte + 24, this.esc.alto - 34),
+      encontrado: false, brillo: 0, giro: azar(-0.3, 0.3),
+    };
+  }
+
+  #alCambiar(e) {
+    if (!this.hierba) return;
+    this.#sembrarHierba();
+    // Las flores se quedan donde les toca dentro del jardín nuevo.
+    for (const f of this.flores) {
+      f.x = clamp(f.x, 12, e.ancho - 12);
+      f.suelo = clamp(f.suelo, e.horizonte + 6, e.alto - 10);
+    }
+    if (this.trebol) {
+      this.trebol.x = clamp(this.trebol.x, 20, e.ancho - 20);
+      this.trebol.y = clamp(this.trebol.y, e.horizonte + 24, e.alto - 34);
+    }
+    this.notas.esc = e;
+  }
+
+  // ── Interacción ─────────────────────────────────────────────────────
+
+  #enganchar() {
+    const z = this.zona;
+    this.onDown = (e) => this.#abajo(e);
+    this.onMove = (e) => this.#mueve(e);
+    this.onUp = (e) => this.#arriba(e);
+    z.addEventListener("pointerdown", this.onDown, { passive: false });
+    z.addEventListener("pointermove", this.onMove, { passive: false });
+    z.addEventListener("pointerup", this.onUp);
+    z.addEventListener("pointercancel", this.onUp);
+  }
+
+  #local(e) {
+    const c = this.raiz.getBoundingClientRect();
+    return { x: e.clientX - c.left, y: e.clientY - c.top };
+  }
+
+  #abajo(e) {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    Audio_.despertar();
+    this.raiz.querySelector("#jdPista").classList.remove("jd-dentro");
+    const p = this.#local(e);
+    this.dedo.x = p.x; this.dedo.y = p.y;
+    this.dedo.abajo = true; this.dedo.id = e.pointerId;
+    this.dedo.desde = this.tiempo; this.dedo.movido = 0;
+
+    // ¿El trébol?
+    if (this.trebol && !this.trebol.encontrado &&
+        Math.hypot(p.x - this.trebol.x, p.y - this.trebol.y) < 26) {
+      this.trebol.encontrado = true;
+      this.trebol.brillo = 1;
+      Audio_.magia();
+      this.notas.mostrar(this.trebol.x, this.trebol.y, CONFIG.TEXTOS.trebol, true);
+      this.#lluviaPetalos(this.trebol.x, this.trebol.y, "#a8e6a0", 16);
+      if (e.cancelable) e.preventDefault();
+      return;
+    }
+
+    // ¿Una flor ya abierta?
+    const flor = this.#florEn(p.x, p.y);
+    if (flor) {
+      const ahora = performance.now();
+      if (ahora - (flor.ultimoToque || 0) < 320) {
+        // Doble toque: se deshoja entera.
+        this.#lluviaPetalos(flor.punta().x, flor.punta().y, CONFIG.FLORES[flor.tipo].color, 26, true);
+        this.notas.mostrar(flor.punta().x, flor.punta().y, CONFIG.TEXTOS.petalos, true);
+        Audio_.magia();
+        flor.golpe(1.4);
+      } else {
+        flor.golpe(0.8);
+        Audio_.nota();
+        this.notas.mostrar(flor.punta().x, flor.punta().y, flor.nota);
+        this.#lluviaPetalos(flor.punta().x, flor.punta().y, CONFIG.FLORES[flor.tipo].color, 7);
+      }
+      flor.ultimoToque = ahora;
+      if (e.cancelable) e.preventDefault();
+      return;
+    }
+
+    // Tierra libre: se planta.
+    if (p.y > this.esc.horizonte + 4) this.#plantar(p.x, p.y);
+    if (e.cancelable) e.preventDefault();
+    try { this.zona.setPointerCapture(e.pointerId); } catch { /* no siempre */ }
+  }
+
+  #mueve(e) {
+    const p = this.#local(e);
+    if (this.dedo.abajo && e.pointerId === this.dedo.id) {
+      this.dedo.movido += Math.hypot(p.x - this.dedo.x, p.y - this.dedo.y);
+      if (e.cancelable) e.preventDefault();
+    }
+    this.dedo.x = p.x; this.dedo.y = p.y;
+  }
+
+  #arriba(e) {
+    if (e.pointerId !== this.dedo.id) return;
+    this.dedo.abajo = false; this.dedo.id = null;
+    try { this.zona.releasePointerCapture(e.pointerId); } catch { /* ya estaba */ }
+  }
+
+  #florEn(x, y) {
+    let mejor = null, mejorD = Infinity;
+    for (const f of this.flores) {
+      if (!f.abierta) continue;
+      const p = f.punta();
+      const d = Math.hypot(p.x - x, p.y - y);
+      if (d < 30 && d < mejorD) { mejor = f; mejorD = d; }
+    }
+    return mejor;
+  }
+
+  #plantar(x, y) {
+    if (this.flores.length >= 30) return;    // el jardín tiene su límite
+    const tipo = (Math.random() * CONFIG.FLORES.length) | 0;
+    // Más altas las de atrás, más bajas las de delante: es lo que da
+    // profundidad a un jardín dibujado en dos dimensiones.
+    const hondura = clamp01((y - this.esc.horizonte) / Math.max(1, this.esc.alto - this.esc.horizonte));
+    const alto = lerp(46, 104, 1 - hondura) * CONFIG.FLORES[tipo].largo * azar(0.88, 1.12);
+    const f = new Flor(x, y, tipo, this.notas.siguienteNota(), alto);
+    this.flores.push(f);
+    // Las de delante se dibujan las últimas.
+    this.flores.sort((a, b) => a.suelo - b.suelo);
+
+    Audio_.brote();
+    this.#lluviaPetalos(x, y - 4, "#c8a27a", 8);
+    this.#actualizarCuenta();
+    this.espera(() => Audio_.flor(), 420);
+
+    this.#mirarNoche();
+    this.#mirarCirculo();
+  }
+
+  #lluviaPetalos(x, y, color, cuantas, alto) {
+    for (let i = 0; i < cuantas; i++) {
+      const a = azar(0, Math.PI * 2);
+      this.petalos.soltar(x, y, {
+        vx: Math.cos(a) * azar(18, 70),
+        vy: Math.sin(a) * azar(18, 70) - (alto ? 50 : 20),
+        vida: azar(1.4, 2.8), tam: azar(3, 6.4),
+        giro: azar(0, 6.28), giroV: azar(-4, 4), color,
+      });
+    }
+  }
+
+  #actualizarCuenta() {
+    const n = this.raiz.querySelector("#jdN");
+    n.textContent = String(this.flores.length);
+    this.raiz.querySelector("#jdCuenta").classList.add("jd-dentro");
+  }
+
+  // ── Secretos ────────────────────────────────────────────────────────
+
+  #mirarNoche() {
+    if (this.esNoche || this.flores.length < CONFIG.SECRETOS.floresParaNoche) return;
+    this.esNoche = true;
+    this.nocheObj = 1;
+    Audio_.magia();
+    this.raiz.querySelector("#jdPista").classList.add("jd-noche");
+    this.espera(() => {
+      this.notas.mostrar(this.esc.ancho / 2, this.esc.alto * 0.34, CONFIG.TEXTOS.noche, true);
+    }, 1600);
+    // Y salen las luciérnagas.
+    for (let i = 0; i < (this.flojo ? 7 : 16); i++) {
+      this.luciernagas.push({
+        x: azar(0, this.esc.ancho), y: azar(this.esc.alto * 0.42, this.esc.alto),
+        fase: azar(0, 6.28), vel: azar(0.4, 1.1), r: azar(1.4, 2.8),
+        dx: azar(-12, 12), dy: azar(-9, 9),
+      });
+    }
+  }
+
+  /**
+   * ¿Las flores forman un círculo?
+   *
+   * Se mira si todas están más o menos a la misma distancia de su
+   * centro común. Es la definición de círculo, y distingue un corro de
+   * una fila o de un montón: en una fila, las distancias al centro son
+   * muy distintas entre sí.
+   */
+  #mirarCirculo() {
+    if (this.corazonHecho) return;
+    const n = this.flores.length;
+    if (n < CONFIG.SECRETOS.floresCirculo) return;
+
+    let cx = 0, cy = 0;
+    for (const f of this.flores) { cx += f.x; cy += f.suelo; }
+    cx /= n; cy /= n;
+
+    let media = 0;
+    const ds = [];
+    for (const f of this.flores) {
+      const d = Math.hypot(f.x - cx, f.suelo - cy);
+      ds.push(d); media += d;
+    }
+    media /= n;
+    if (media < this.esc.medida * 0.12) return;   // amontonadas, no en corro
+
+    let desvio = 0;
+    for (const d of ds) desvio += Math.abs(d - media);
+    desvio /= n;
+
+    // Si la desviación media es pequeña comparada con el radio, es un
+    // corro. Un tercio es generoso a propósito: nadie planta un círculo
+    // perfecto con el dedo.
+    if (desvio / media > 0.34) return;
+
+    this.corazonHecho = true;
+    Audio_.magia();
+    this.notas.mostrar(cx, cy - 60, CONFIG.TEXTOS.corazon, true);
+    // Corazones que suben desde el corro.
+    for (let i = 0; i < (this.flojo ? 14 : 34); i++) {
+      const t = (i / 34) * Math.PI * 2;
+      const r = media * 0.9;
+      const hx = cx + (16 * Math.pow(Math.sin(t), 3)) / 16 * r;
+      const hy = cy - ((13 * Math.cos(t) - 5 * Math.cos(2 * t)
+                      - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16) * r;
+      this.petalos.soltar(hx, hy, {
+        vx: azar(-8, 8), vy: azar(-26, -8),
+        vida: azar(2.4, 3.8), tam: azar(5, 10),
+        giro: azar(0, 6.28), giroV: azar(-1, 1),
+        color: "#ff8fb0", tipo: 1,
+      });
+    }
+    for (const f of this.flores) f.golpe(0.7);
+  }
+
+  #mirarBrote(dt) {
+    // Aguantar el dedo quieto en tierra vacía hace brotar algo.
+    if (!this.dedo.abajo || this.dedo.movido > 16) return;
+    if (this.dedo.y < this.esc.horizonte + 4) return;
+    if (this.tiempo - this.dedo.desde < CONFIG.SECRETOS.aguantarBrote) return;
+    if (this.brotesSecretos >= 2) return;
+    this.dedo.desde = this.tiempo + 999;   // sólo una vez por pulsación
+    this.brotesSecretos++;
+    Audio_.magia();
+    this.notas.mostrar(this.dedo.x, this.dedo.y - 40, CONFIG.TEXTOS.brote, true);
+    this.#lluviaPetalos(this.dedo.x, this.dedo.y, "#ffe9a8", 20, true);
+  }
+
+  // ── Bucle ───────────────────────────────────────────────────────────
+
+  #fotograma(ahora) {
+    if (!this.corriendo) return;
+    this.raf = requestAnimationFrame(this.bucle);
+
+    let dt = (ahora - this.ultimo) / 1000;
+    this.ultimo = ahora;
+    if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+    else if (dt > 0.1) dt = 0.1;
+
+    this.tiempo += dt;
+
+    // El viento va y viene solo, con dos ritmos que no encajan entre sí
+    // para que no se note el bucle.
+    this.vientoObj = Math.sin(this.tiempo * 0.23) * 0.1 + Math.sin(this.tiempo * 0.081) * 0.06;
+    this.viento = damp(this.viento, this.vientoObj, 1.4, dt);
+    this.noche = damp(this.noche, this.nocheObj, 0.7, dt);
+
+    for (const f of this.flores) f.mover(dt, this.viento);
+    for (const m of this.mariposas) {
+      m.mover(dt, this.flores, this.esc, (flor) => {
+        if (Math.random() < 0.16) {
+          this.notas.mostrar(flor.punta().x, flor.punta().y, CONFIG.TEXTOS.mariposa);
+        }
+      });
+    }
+    this.petalos.mover(dt, this.esc.alto - 6);
+    this.notas.mover(dt);
+    this.#mirarBrote(dt);
+    if (this.trebol) this.trebol.brillo = damp(this.trebol.brillo, 0, 1.2, dt);
+
+    this.#dibujar();
+  }
+
+  #dibujar() {
+    const c = this.c;
+    const { ancho: W, alto: H, dpr } = this.esc;
+    const hz = this.esc.horizonte;
+    const n = this.noche;
+
+    c.save();
+    c.scale(dpr, dpr);
+
+    // ── Cielo ──
+    const cielo = c.createLinearGradient(0, 0, 0, hz + 30);
+    cielo.addColorStop(0, mezclar("#bfe0f0", "#141b3c", n));
+    cielo.addColorStop(0.55, mezclar("#ffe6d8", "#26203f", n));
+    cielo.addColorStop(1, mezclar("#ffeccd", "#33264a", n));
+    c.fillStyle = cielo;
+    c.fillRect(0, 0, W, hz + 30);
+
+    // Sol o luna, según la hora.
+    const astroX = W * 0.76, astroY = hz * 0.3;
+    const g = c.createRadialGradient(astroX, astroY, 2, astroX, astroY, 70);
+    g.addColorStop(0, n > 0.5 ? "rgba(240,242,255,0.9)" : "rgba(255,238,190,0.95)");
+    g.addColorStop(1, "rgba(255,238,190,0)");
+    c.fillStyle = g;
+    c.beginPath(); c.arc(astroX, astroY, 70, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(astroX, astroY, 17, 0, Math.PI * 2);
+    c.fillStyle = mezclar("#fff4cd", "#eef0ff", n); c.fill();
+
+    // Estrellas, sólo de noche.
+    if (n > 0.05) {
+      c.fillStyle = "#fff";
+      for (let i = 0; i < 70; i++) {
+        const sx = ((i * 137.5) % 100) / 100 * W;
+        const sy = ((i * 61.8) % 100) / 100 * hz * 0.92;
+        c.globalAlpha = n * (0.3 + 0.5 * Math.sin(this.tiempo * 1.6 + i));
+        c.fillRect(sx, sy, 1.6, 1.6);
+      }
+      c.globalAlpha = 1;
+    }
+
+    // ── Colinas del fondo ──
+    for (const [alt, col, desf] of [[0.10, "#cfe0b4", 0], [0.05, "#b9d49c", 40]]) {
+      c.beginPath();
+      c.moveTo(0, hz + 4);
+      const perfil = (x) => hz - Math.sin((x + desf) / (W * 0.42)) * H * alt - H * alt * 0.4;
+      for (let x = 0; x <= W; x += 24) c.lineTo(x, perfil(x));
+      // El último punto va EXACTAMENTE en el borde. Sin esto, el bucle se
+      // quedaba unos píxeles antes y la colina terminaba en un escalón
+      // vertical perfectamente visible.
+      c.lineTo(W, perfil(W));
+      c.lineTo(W, hz + 4);
+      c.closePath();
+      c.fillStyle = mezclar(col, "#1f2a42", n);
+      c.fill();
+    }
+
+    // ── Tierra ──
+    const suelo = c.createLinearGradient(0, hz - 6, 0, H);
+    suelo.addColorStop(0, mezclar("#a7cc84", "#22402f", n));
+    suelo.addColorStop(0.35, mezclar("#8fbd6e", "#1b3527", n));
+    suelo.addColorStop(1, mezclar("#6ba055", "#142a1f", n));
+    // El borde de arriba va ONDULADO, no recto. Con un rectángulo, el
+    // césped empezaba en una raya horizontal que cruzaba la pantalla de
+    // lado a lado y delataba que esto son dos dibujos pegados.
+    c.fillStyle = suelo;
+    c.beginPath();
+    c.moveTo(0, hz + 2);
+    for (let x = 0; x <= W; x += 16) {
+      c.lineTo(x, hz - 2 + Math.sin(x / (W * 0.11)) * 4 + Math.sin(x / (W * 0.037) + 1.7) * 2.5);
+    }
+    c.lineTo(W, H); c.lineTo(0, H);
+    c.closePath();
+    c.fill();
+
+    // ── Hierba ──
+    c.lineCap = "round";
+    for (const b of this.hierba) {
+      const mece = Math.sin(this.tiempo * 1.5 + b.fase) * 3 + this.viento * 26;
+      c.beginPath();
+      c.moveTo(b.x, b.y);
+      c.quadraticCurveTo(b.x + mece * 0.4, b.y - b.alto * 0.6, b.x + mece, b.y - b.alto);
+      c.strokeStyle = mezclar(
+        mezclar("#7fb85f", "#a8d182", b.tono), "#1d3b2a", n);
+      c.lineWidth = 1.5;
+      c.stroke();
+    }
+
+    // ── El trébol ──
+    if (this.trebol) {
+      const t = this.trebol;
+      c.save();
+      c.translate(t.x, t.y);
+      c.rotate(t.giro + Math.sin(this.tiempo + 2) * 0.05);
+      if (t.brillo > 0.02 || t.encontrado) {
+        const gg = c.createRadialGradient(0, 0, 1, 0, 0, 22);
+        gg.addColorStop(0, `rgba(210,255,190,${0.3 + t.brillo * 0.5})`);
+        gg.addColorStop(1, "rgba(210,255,190,0)");
+        c.fillStyle = gg;
+        c.beginPath(); c.arc(0, 0, 22, 0, Math.PI * 2); c.fill();
+      }
+      // Cuatro hojas de corazón. Es un trébol, pero mirándolo bien son
+      // cuatro corazoncitos: por eso da suerte.
+      for (let i = 0; i < 4; i++) {
+        c.save();
+        c.rotate((i / 4) * Math.PI * 2);
+        c.beginPath();
+        c.moveTo(0, -1);
+        c.bezierCurveTo(-6, -9, -9, -2, 0, 5);
+        c.bezierCurveTo(9, -2, 6, -9, 0, -1);
+        c.fillStyle = mezclar(t.encontrado ? "#8fe07a" : "#6fbf5e", "#2b5540", n);
+        c.fill();
+        c.restore();
+      }
+      c.restore();
+    }
+
+    // ── Flores ──
+    for (const f of this.flores) f.dibujar(c, CONFIG.FLORES[f.tipo], n > 0.5);
+
+    // ── Pétalos ──
+    for (const p of this.petalos.p) {
+      if (!p.viva || p.alfa <= 0.01) continue;
+      c.save();
+      c.globalAlpha = p.alfa;
+      c.translate(p.x, p.y);
+      c.rotate(p.giro);
+      c.fillStyle = p.color;
+      if (p.tipo === 1) {
+        // Corazón.
+        c.beginPath();
+        c.moveTo(0, p.tam * 0.7);
+        c.bezierCurveTo(-p.tam * 1.3, -p.tam * 0.2, -p.tam * 0.5, -p.tam, 0, -p.tam * 0.34);
+        c.bezierCurveTo(p.tam * 0.5, -p.tam, p.tam * 1.3, -p.tam * 0.2, 0, p.tam * 0.7);
+        c.fill();
+      } else {
+        c.beginPath();
+        c.ellipse(0, 0, p.tam, p.tam * 0.62, 0, 0, Math.PI * 2);
+        c.fill();
+      }
+      c.restore();
+    }
+    c.globalAlpha = 1;
+
+    // ── Luciérnagas ──
+    for (const l of this.luciernagas) {
+      const br = (0.4 + 0.6 * Math.sin(this.tiempo * l.vel * 2.2 + l.fase)) * this.noche;
+      if (br <= 0.02) continue;
+      const lx = l.x + Math.sin(this.tiempo * l.vel * 0.7 + l.fase) * l.dx * 3;
+      const ly = l.y + Math.cos(this.tiempo * l.vel * 0.55 + l.fase) * l.dy * 3;
+      const gl = c.createRadialGradient(lx, ly, 0, lx, ly, l.r * 6);
+      gl.addColorStop(0, `rgba(255,240,150,${br * 0.9})`);
+      gl.addColorStop(1, "rgba(255,240,150,0)");
+      c.fillStyle = gl;
+      c.beginPath(); c.arc(lx, ly, l.r * 6, 0, Math.PI * 2); c.fill();
+      c.fillStyle = `rgba(255,252,210,${br})`;
+      c.beginPath(); c.arc(lx, ly, l.r, 0, Math.PI * 2); c.fill();
+    }
+
+    // ── Mariposas ──
+    for (const m of this.mariposas) m.dibujar(c, n > 0.5);
+
+    c.restore();
+  }
+
+  destruir() {
+    this.corriendo = false;
+    cancelAnimationFrame(this.raf);
+    for (const id of this.relojes) clearTimeout(id);
+    this.relojes.clear();
+    document.removeEventListener("visibilitychange", this.alVisible);
+    this.esc.destruir();
+  }
+}
+
+// ── Arranque: sin portada ni menú ───────────────────────────────────
+
+const jardin = new Jardin(document.getElementById("jd"));
+
+window.addEventListener("pagehide", () => jardin.destruir());
+
+})();
+</script>
+</body>
+</html>

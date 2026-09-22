@@ -13,6 +13,8 @@ ningún comando: se sube el repositorio a GitHub Pages y funciona.
 | Capa | Qué es |
 | --- | --- |
 | **HTML/CSS moderno** | Módulos ES nativos, sin empaquetador. Cada página tiene su hoja de estilos. |
+| **Nueve transiciones** | Ninguna página llega igual que la anterior: volteo de hoja, fundido, travelling, pliegue, diafragma, empuje con paralaje, mancha de tinta, marea y floración. |
+| **23 tipos de página** | Ninguna mecánica se repite dos veces seguidas. Y las fotos que él añada se convierten en un tipo más, al final. |
 | **WebGL2 + Three.js** | Una sola escena para toda la app: la atmósfera de fondo, el polvo en suspensión y las páginas 3D. Three.js va incluido en `vendor/`, no se descarga de ningún CDN. |
 | **GLSL** | Cuatro shaders escritos a mano: niebla, partículas, profundidad y velo. |
 | **Canvas 2D** | Texturas de papel y grano generadas al vuelo, superficies que se rascan, lluvia. |
@@ -26,6 +28,38 @@ equivalente: el libro se abre igual sin conexión al segundo intento.
 
 ---
 
+## Instalarlo en el teléfono
+
+Se puede añadir a la pantalla de inicio y se abre a pantalla completa, sin
+barras del navegador, como una aplicación. Y una vez instalado se abre **sin
+internet**, porque guarda su propia copia.
+
+- **Android (Chrome):** menú ⋮ → «Instalar aplicación».
+- **iPhone (Safari):** botón de compartir → «Añadir a pantalla de inicio».
+
+También hay un botón que lo explica dentro del libro: se abre el índice (☰) y
+está en el pie, junto al de empezar de cero.
+
+### El icono
+
+Se deja caer cualquier imagen en la carpeta **`icono/`** con el nombre
+`icono.png` —también vale `.jpg`, `.jpeg`, `.webp` o `.svg`— y ya está. No hay
+que preparar tamaños ni tocar una línea de código: el libro la busca al
+arrancar, la recorta cuadrada por el centro y rehace el manifiesto con las
+medidas que pide cada sistema, más una versión con aire por los lados para el
+recorte redondo de Android.
+
+Si no hay ninguna, usa la portada. Consejo: cuadrada y con lo importante en el
+centro, de 512×512 para arriba.
+
+### Empezar de cero
+
+En el mismo pie del índice. Avisa dos veces —el segundo toque dice exactamente
+qué se pierde— y borra las tres cosas que guardan estado: la memoria del libro,
+la de la noche estrellada y la copia guardada para abrirlo sin internet.
+
+---
+
 ## Estructura
 
 ```
@@ -33,6 +67,12 @@ index.html              el único HTML; carga estilos y arranca src/main.js
 assets/
   img/                  las 85 ilustraciones
   audio/                música y efectos
+images/
+  amores/               TUS FOTOS: amor1.png, amor2.png… se vuelven páginas solas
+paginas-html/           TUS PÁGINAS HTML: página.html1.html, …2.html… idem
+mis-paginas/            TUS páginas: fotos, vídeos y textos que añadas a mano
+  paginas.js            la lista (lo único que se edita)
+  fotos/  videos/       tus archivos
 vendor/three/           Three.js vendorizado (licencia MIT incluida)
 src/
   main.js               punto de entrada
@@ -53,60 +93,398 @@ src/
   gl/
     GLStage.js          el único contexto WebGL2
     shaders/            atmosphere · dust · depth · veil
-  pages/                una clase por tipo de experiencia
+  pages/                UNA CARPETA POR PÁGINA (ver abajo)
     BasePage.js         el contrato común
     registry.js         tipo → módulo (carga perezosa)
-  components/           piezas reutilizables (ornamentos, superficie rascable…)
+  components/           piezas reutilizables
+    PhotoFrame.js       CÓMO se enseña cada fotografía (revelado, paralaje, brillo, zoom)
+    Sparkles.js         el polvo suspendido de las páginas de papel
+    ornaments.js        los ornamentos de los capítulos
+    ScratchSurface.js   superficies que se borran con el dedo
+    textures.js         papel y grano generados en canvas
+  ui/
+    UI.js               barra, progreso, pistas y avisos
+    Index.js            el índice del libro, por actos
+    EdgeNav.js          los botones de los lados y el arrastre
   transitions/          volteo de hoja + efectos de luz
   data/
-    chapters.js         LOS TEXTOS
-    photos.js           inventario y reparto de las 85 ilustraciones
+    chapters.js         LOS TEXTOS de cada página
+    fotos.js            LAS FOTOS de cada página, por nombre de archivo
+    escondidos.js       lo que dicen los ocho escondites
     manifest.js         EL ORDEN DEL LIBRO
-  styles/               tokens, base y una hoja por página
+    custom.js           traduce mis-paginas/paginas.js al formato interno
+    amores.js           busca solo las fotos de images/amores/
+    paginas-html.js     busca solo los archivos de paginas-html/
+  styles/               tokens, base, entradas y lo común a todas las páginas
   utils/                matemáticas, easing, DOM, aleatoriedad sembrada
 ```
+
+### Cada página, en su carpeta
+
+Nada de recursos mezclados. Cada tipo de página tiene lo suyo dentro:
+
+```
+src/pages/combinacion/
+  index.js              la lógica y el DOM
+  textos.js             LO QUE DICE  ← lo único que hay que tocar
+  estilos.css           cómo se ve
+```
+
+Las veinticinco carpetas: `portada · sobre · capitulo · profundidad · rascar ·
+polaroids · velo · carrete · escrito · recuerdos · secreto · constelacion ·
+final · maquina · postal · petalos · mosaico · combinacion · botella · regalo ·
+pulso · distancia · ultima-sorpresa · amor` (más `foto`, `galeria`, `video` y la
+hoja compartida `mias/` para las páginas de `mis-paginas/`).
+
+Las que tienen `textos.js` —candado, pulso, secreto, última sorpresa y las
+páginas de fotos— se cambian ahí y no hace falta abrir su código para nada.
+Las demás siguen leyendo de `src/data/chapters.js`.
 
 ---
 
 ## Las páginas
 
-Veintidós páginas, y ninguna funciona igual que la anterior.
+Treinta y nueve páginas repartidas en cuatro actos —**Encontrarte, Conocerte,
+Extrañarte, Elegirte**— y veintitrés mecánicas distintas. Ninguna se repite dos
+veces seguidas. Detrás de todas ellas van sus páginas HTML de `paginas-html/`,
+y detrás de ésas las fotos de `images/amores/`, tantas como él deje ahí.
 
-| # | Página | Qué hay que hacer |
-| --- | --- | --- |
-| 01 | Portada | Mantener el dedo sobre el lacre hasta que se rompe. La tapa se inclina con el móvil. |
-| 02 | El Primer Encuentro | Arrastrar el sello de cera. El sobre se abre y la carta se desdobla. |
-| 03 | La Distancia | Inclinar el teléfono: la ilustración tiene profundidad real (shader). |
-| 04 | Mi Única Certeza | Rascar la lámina de plata. |
-| 05 | El Jardín de Recuerdos | Diez polaroids que se arrastran con inercia y se voltean con doble toque. |
-| 06 | La Tormenta | Limpiar el vaho del cristal con el dedo. Llueve y caen relámpagos. |
-| 07 | Tus Gestos | Acariciar la pantalla para retirar el velo (shader). |
-| 08 | El Espejo | El reflejo va con retraso y te sigue. |
-| 09 | Noches de Invierno | Un carrete de catorce fotogramas con inercia e imantado. |
-| 10 | Lo Que Viene | Arrastrar hacia abajo: la carta se escribe a mano delante de ti. |
-| 11 | Nuestra Conexión | Veinticuatro recuerdos en una esfera 3D. Girar y tocar uno. |
-| 12 | Solo Tú | Sostener el dedo: una linterna que hay que aguantar encendida. |
-| 13 | Mi Elección | Tocar la brújula. Dé las vueltas que dé, siempre acaba señalando lo mismo. |
-| 14 | Estoy Contigo | Unir doce estrellas con el dedo. |
-| 15 | Lo Que Siento | Medallón que se revela. |
-| 16 | A Mi Manera | Velo, otra vez, con dos ilustraciones. |
-| 17 | Amarte en Silencio | Está escrito muy bajito: hay que mantener el dedo para subirle la voz. |
-| 18 | Más de lo que parece | Rascar. |
-| 19 | Por Nosotros | Medallón. |
-| 20 | Crecer Contigo | Profundidad 3D. |
-| 21 | Eres Increíble | Ocho polaroids más. |
-| 22 | Final | Tocar la pantalla: las partículas se recogen y forman un corazón que late. |
+El orden del libro es siempre éste, y no se mezcla nunca:
 
-Hay **doce secretos** repartidos. Ninguno se anuncia: aparecen al hacer las
-cosas de verdad (romper el sello, mover todas las polaroids, llegar al final del
-carrete…). El contador vive en la barra inferior y el balance sale en la última
-página.
+```
+[ las páginas de siempre · … · el final ]  [ paginas-html/ ]  [ images/amores/ ]
+```
+
+| Mecánica | Qué hay que hacer |
+| --- | --- |
+| **Portada** | Mantener el dedo en el lacre hasta que se rompe. La tapa se inclina con el móvil. |
+| **Sobre** | Arrastrar el sello de cera; la carta sale y se desdobla. |
+| **Máquina de escribir** | El texto se escribe solo, con el ritmo de quien piensa. Manteniendo el dedo va más rápido. |
+| **Profundidad 3D** | Inclinar el teléfono: la ilustración tiene fondo (shader de parallax). |
+| **Rascar** | Quitar la lámina de plata con el dedo. |
+| **Postal** | Arrastrarla para darle la vuelta. Gira en 3D hacia los dos lados, con muelle. |
+| **Capítulo** | Papel escrito, y cada uno con un ornamento distinto: **medallón** (foto que se revela), **cristal empañado** (hay que limpiarlo con el dedo, con lluvia y relámpagos), **espejo** (el reflejo va con retraso y te sigue), **brújula** (se toca y gira hasta parar siempre en el mismo sitio) y **susurro** (hay que mantener el dedo para oírlo). |
+| **Deshojar** | Arrancar los pétalos uno a uno. Cada uno dice algo al caer. |
+| **Polaroids** | Arrastrarlas con inercia; doble toque para ver el reverso. |
+| **Velo** | Acariciar la pantalla para retirarlo (shader). |
+| **Mosaico** | Girar las piezas hasta armar la imagen. |
+| **Carrete de cine** | Deslizar con inercia e imantado; el texto está al final. |
+| **Escrito a mano** | Arrastrar hacia abajo y la carta se escribe delante de ti. |
+| **Candado** | Girar cuatro ruedas hasta dar con la combinación. |
+| **Botella** | Tirar del corcho; el papel sale y se desenrolla. |
+| **Campo de recuerdos** | Esfera 3D de fotos: girarla y tocar una. |
+| **La nota** | Una nota corriente. Corriente hasta que se tocan las palabras: unas cuantas están marcadas y, al tocarlas, sueltan al margen lo que de verdad querían decir. Nada indica cuáles son. Y hay un lacre en la esquina que, si se mantiene pulsado, se ablanda y confiesa. |
+| **Regalo** | Tirar del listón hasta desatarlo. |
+| **La distancia** | Acercar dos puntos que se resisten. |
+| **Pulso** | Poner el dedo y no quitarlo. El corazón late, la línea lo dibuja y el teléfono vibra con él. No mide nada: es una manera de enseñar cómo se pone. |
+| **Constelación** | Unir las estrellas con el dedo. |
+| **El cajón** | Seis cosas sobre una mesa y seis maneras distintas de tocarlas: una cerilla que se enciende, un papel que se desdobla en dos tiempos, una llave que se gira, una concha que hay que sostener para oírla, una estrella que se toca dos veces y cae, y un anillo que da vueltas. Cuando están las seis, se juntan. |
+| **Final** | Tocar la pantalla: las partículas forman un corazón que late. |
+| **Tus páginas HTML** | Cada `página.htmlN.html` que dejes en `paginas-html/` es una página más: tu HTML entero, con sus botones, sus animaciones y su JavaScript, encajado en la hoja del libro. Ver [`paginas-html/LÉEME.md`](paginas-html/LÉEME.md). |
+| **Tus fotos** | Cada `amorN.png` que dejes en `images/amores/` es una página más al final: a pantalla completa, sobre su propio desenfoque, tocables y con pellizco para acercar. |
+
+Hay **veintisiete secretos** repartidos. Ninguno se anuncia: se abren al hacer
+las cosas de verdad. El contador vive en la barra y el balance sale al final.
+
+### Y aparte, ocho escondites
+
+Los secretos hay que encontrarlos para terminar una página. Los **escondites**
+no: no cuentan para nada, no bloquean nada y probablemente no aparezcan nunca.
+Están para el día que se le ocurra tocar donde no toca. Ninguno se repite y
+todos van de lo mismo — dos personas lejos que se las apañan:
+
+| Dónde | Qué hay que hacer |
+| --- | --- |
+| **Portada** | Tres toques en el borde de abajo de la tapa (no en el lacre). |
+| **Cualquier capítulo** | Doble toque en el número del capítulo. Cada uno de los ocho dice una cosa distinta. |
+| **Postal** | Mantener el dedo en el sello hasta que le cae el matasellos. |
+| **Carrete** | Seguir tirando hacia atrás cuando ya está el primer fotograma. |
+| **Candado** | Marcar `0000` dando la vuelta entera a las cuatro ruedas. |
+| **La distancia** | Separar los dos puntos en vez de juntarlos. |
+| **Pulso** | Poner **dos** dedos en el círculo. Aparece un segundo corazón, desfasado. |
+| **Final** | No soltar la pantalla cuando el corazón ya está formado. |
+
+Lo que dicen está todo junto en **`src/data/escondidos.js`**, que es el fichero
+que hay que abrir para cambiarlos por lo vuestro — son los que más se notan si
+suenan a algo que pasó de verdad.
+
+Además, cada página tiene los suyos propios dentro de su carpeta: la nota
+esconde frases en las palabras marcadas y un lacre que se ablanda, y el cajón
+suelta una luciérnaga si se toca tres veces el hueco vacío.
+
+### El índice
+
+Con tantas páginas, la barra tiene un botón `☰` que abre el índice: los cuatro
+actos —cinco, si hay fotos en `images/amores/`—, por dónde va, y qué páginas
+esconden algo. Las que todavía no ha visto salen sin título —sólo el número—
+para no reventarle las sorpresas de un vistazo. Puede saltar a cualquiera
+igualmente: esto no es un videojuego.
+
+### Las tres habitaciones
+
+En la barra, junto al `☰`, hay un botón que rota entre tres modos:
+
+| | | |
+|---|---|---|
+| ☀️ | **Claro** | de día, con la ventana abierta |
+| 🌸 | **Pastel** | el rubor de la tarde |
+| 🌙 | **Noche** | la lámpara encendida y nadie más despierto |
+
+No son tres paletas ni tres interfaces: **los colores de cada capítulo mandan
+en los tres**. Un capítulo «vino» es vino de día y es vino de noche. Lo que
+cambia es la habitación donde está el libro, no el libro.
+
+La primera vez se abre en el modo que prefiera su teléfono; a partir de ahí,
+en el que ella elija. La elección se guarda con lo demás.
+
+Lo que hace que sea un modo claro de verdad y no un modo oscuro con el fondo
+subido está en dos sitios:
+
+- **El fondo cambia de forma de pintar.** La niebla del libro es un shader que
+  *suma* luz sobre un color casi negro, que es como se dibuja algo que brilla
+  en la oscuridad. Sumar sobre blanco no da un modo claro: da una pantalla
+  quemada. De día los mismos velos *tiñen* en vez de sumar —de linterna a
+  vidriera— y se mueven exactamente igual.
+- **El papel, la tinta, la barra y su texto se recalculan enteros.** Salen del
+  color del capítulo y de la habitación, en `src/utils/luz.js`, y llegan al
+  resto del libro como tokens de CSS. Ninguna página sabe que existen los
+  modos: hereda y ya.
+
+Para tocarlos —o para añadir un cuarto— está `src/utils/temas.js`, con los tres
+descritos uno debajo del otro. Nadie tiene una lista de tres escrita a mano: el
+botón, el guardado y el índice recogen lo que haya.
 
 ---
 
-## Cómo añadir una página
+## Los textos
 
-Es lo único que hay que saber para ampliar el libro.
+Ni una sola frase vive dentro del código. Están en tres sitios, y sólo en tres:
+
+**1 · `src/data/chapters.js`** — los capítulos, las frases sueltas que sueltan
+los pétalos y las polaroids, las que aparecen al resolver cada página y el
+cierre. Junto y en orden.
+
+**2 · `src/data/escondidos.js`** — lo que dicen los ocho escondites.
+
+**3 · El `textos.js` de cada carpeta** — las páginas con mucho que decir se
+llevaron lo suyo dentro:
+
+| Página | Su fichero |
+| --- | --- |
+| El candado | `src/pages/combinacion/textos.js` (aquí está la **combinación**) |
+| El pulso | `src/pages/pulso/textos.js` |
+| La nota | `src/pages/secreto/textos.js` (las palabras entre `*asteriscos*` son las que esconden algo) |
+| El cajón | `src/pages/ultima-sorpresa/textos.js` |
+| Tus fotos | `src/pages/amor/textos.js` |
+
+Cada uno lleva arriba un cartelito diciendo qué es cada campo. Cambiar lo que
+dice el libro es editar esos ficheros y nada más.
+
+Algunos campos que quizá quieras tocar:
+
+- `combinacion` en `src/pages/combinacion/textos.js` — la clave del candado.
+  Por defecto `1408`; cámbiala por vuestra fecha. A los tres fallos sale la
+  pista, a los cinco el candado sopla el número, y a los siete se rinde y se
+  abre solo: nunca se queda encallada delante de él.
+- `lines` — las frases que reparte una página (un pétalo, una polaroid, una
+  estrella). Cuantas más pongas, más hay que descubrir.
+- `reveal` — lo que aparece **después** de resolver la interacción.
+
+---
+
+## Las imágenes
+
+Qué foto sale en qué página está en **`src/data/fotos.js`**, y está escrito
+como se lee: a la izquierda el nombre de la página, a la derecha sus archivos.
+
+```js
+"llueve-alla":      ["imagen14.png"],
+"nuestro-desorden": serie("imagen", 6, 13),   // ocho polaroids seguidas
+```
+
+Para cambiar la foto de una página:
+
+1. deja tu imagen en `assets/img/`
+2. escribe su nombre en la línea de esa página
+
+Y ya. Puedes ponerle el nombre que quieras (`la-playa.jpg`, `tu-risa.png`) y
+repetir la misma foto en varias páginas. Si te equivocas al escribir un
+nombre el libro **no se rompe**: esa foto no sale y la consola dice
+exactamente qué archivo no encontró y qué página lo pedía.
+
+`serie("imagen", 6, 13)` es sólo un atajo para no escribir ocho líneas
+seguidas; si prefieres nombres de verdad, pon la lista y ya está.
+
+Cómo se presentan sí cambió mucho: todas pasan por `PhotoFrame`, que las
+revela en tres tiempos (marco → velada → nítida), les da paralaje contra el
+marco, un brillo que sigue a la inclinación, sombra que cae al lado contrario
+de la luz y pellizco para acercarlas. Tocar ese componente cambia el libro entero.
+
+---
+
+## Tus fotos — la carpeta `images/amores/`
+
+Esto no hay ni que configurarlo. Se dejan ahí las fotos:
+
+```
+images/amores/amor1.png
+images/amores/amor2.png
+images/amores/amor3.png
+…
+```
+
+y cada una **se convierte sola en una página**, sin tocar ni una línea de
+código. Se pueden meter dos hoy y siete el mes que viene: el índice, el
+progreso, la navegación y la precarga se ajustan solos.
+
+**Siempre van al final.** Después de la portada, de los cuatro actos, de las
+experiencias, de los secretos, del cajón y del cierre. Nunca se cuelan antes de
+las páginas principales, hagas lo que hagas.
+
+Cómo quedan: a pantalla completa, sobre un fondo que es la misma foto
+desenfocada —así no hay barras negras nunca—, entran desenfocadas y se enfocan
+en tres tiempos, las cruza un barrido de luz al llegar, derivan despacio y se
+mueven con la inclinación del móvil. Se tocan: sale un corazón donde toques,
+dos toques o un pellizco la acercan, y arrastrando la recorres. Sin texto
+encima, que la foto es lo importante — si a alguna quieres ponerle una frase,
+se escribe en `src/pages/amor/textos.js` con su número.
+
+Dos cosas que hay que respetar y ya está:
+
+- **Numeradas seguidas desde 1.** Si te saltas más de tres seguidas, el libro
+  entiende que se acabaron y deja de buscar.
+- **La primera manda la extensión.** También valen `.jpg`, `.jpeg` y `.webp`,
+  pero es más limpio si todas van igual.
+
+<details>
+<summary>Por qué salen unos «404» en la consola (y por qué están bien)</summary>
+
+GitHub Pages sirve archivos y punto: no sabe decir qué hay dentro de una
+carpeta. Así que `src/data/amores.js` lo averigua preguntando —`amor1`,
+`amor2`, `amor3`…— hasta que se acaban, y las últimas preguntas dejan un aviso
+de «no está» en la consola del navegador. Es el precio de que esto funcione sin
+servidor. Está exprimido para que sean pocas: la extensión se averigua una sola
+vez con `amor1`, se pregunta de ocho en ocho y se para a los tres huecos, así
+que son cuatro o cinco avisos, no cientos. Ella no ve nada de esto.
+
+</details>
+
+---
+
+## Tus páginas HTML — la carpeta `paginas-html/`
+
+Igual de simple que la de las fotos: se deja el archivo y aparece.
+
+```
+paginas-html/
+    página.html1.html
+    página.html2.html
+    página.html3.html
+```
+
+Salen **en orden numérico**, después del final del libro y antes de las fotos
+de `images/amores/`. Empieza por el `1`; puedes saltarte un número (con la 1,
+la 2 y la 4 salen las tres); y la tilde da igual, vale también
+`pagina.html1.html`.
+
+Dentro va **lo que quieras**: botones, animaciones, CSS, JavaScript, audio,
+imágenes, un juego pequeño. Se muestra dentro de su propia hoja, aislado del
+resto: nada de lo que escribas puede romper el libro, y nada del libro se te
+cuela dentro.
+
+**Cómo se llama tu página**: ponle un `<title>` y ése será su nombre en la
+barra y en el índice.
+
+**Los colores del libro, si los quieres**: `var(--acento)`, `var(--papel)`,
+`var(--texto)`, `var(--tipo-titulo)`, `var(--hueco-barra)`… la lista entera
+está en [`paginas-html/LÉEME.md`](paginas-html/LÉEME.md).
+
+**Cómo se pasa de página**: deslizando, igual que en el resto. El barrido
+funciona por encima de tu página, pero si el dedo empieza sobre un botón, un
+enlace, un campo, un `<canvas>` o algo marcado con `data-claim-drag`, el gesto
+es tuyo entero.
+
+<details>
+<summary>Por qué un iframe, y qué resuelve eso</summary>
+
+Pegar el HTML directamente en la página era la opción obvia y es la mala:
+
+1. **Se pisarían.** Un archivo tuyo que declare `body { background: white }` o
+   una clase `.page` reventaría el libro entero desde dentro.
+2. **No habría manera de apagarlo.** Un `<script>` pegado en el documento deja
+   intervalos, `requestAnimationFrame`, escuchas en `window`, audio sonando y
+   contextos de WebGL abiertos. Quitar el nodo no para nada de eso: a las tres
+   páginas tendrías tres bucles corriendo a la vez para nadie.
+
+Un documento aparte resuelve las dos. Y por eso **no tienes que liberar nada a
+mano**: al pasar de página el libro descarga el documento entero y con él se
+van sus relojes, su sonido y su GPU. Al volver, tu página arranca de cero.
+
+El `src` sólo se pone al ENTRAR en la hoja, nunca al construirla: el libro
+prepara las hojas vecinas por adelantado, y si se pusiera ahí, tu página
+estaría ejecutándose de fondo antes de que nadie la haya visto.
+
+</details>
+
+<details>
+<summary>Y aquí también salen unos «404» en la consola</summary>
+
+Por lo mismo que con las fotos: un sitio de archivos no sabe decir qué hay en
+una carpeta, así que se pregunta —la 1, la 2, la 3…— hasta que se acaban. Se
+pregunta con `HEAD`, que trae sólo las cabeceras y no el archivo, de seis en
+seis, y se para a los dos huecos. Ella no ve nada de esto.
+
+</details>
+
+---
+
+## Tus propias páginas — la carpeta `mis-paginas/`
+
+Para añadir contenido sin entrar en el motor: **fotos, vídeos y textos tuyos**,
+en un solo archivo escrito en español.
+
+```js
+// mis-paginas/paginas.js
+export default [
+  {
+    tipo: "foto",
+    titulo: "Nuestra tarde",
+    texto: "Lo que quieras contar.",
+    foto: "mis-paginas/fotos/tarde.jpg",
+  },
+  {
+    tipo: "video",
+    titulo: "Esto lo grabé para ti",
+    video: "mis-paginas/videos/mensaje.mp4",
+    poster: "mis-paginas/fotos/caratula.jpg",
+  },
+];
+```
+
+Con eso la página ya está en el libro, en el índice y en el contador de
+progreso. Sin compilar, sin instalar, sin tocar `manifest.js` ni `chapters.js`.
+
+- **Tipos rápidos:** `foto` · `galeria` · `video` · `carta`. Y si te quedas con
+  ganas, valen también los veintidós del libro (`polaroids`, `mosaico`,
+  `rascar`, `postal`, `candado`…).
+- **Dónde cae:** por defecto justo antes de la última página, en un acto nuevo
+  llamado «Tuyas». Con `donde: "inicio"` o `donde: 12` la colocas donde quieras,
+  y entonces adopta el acto de sus vecinas para que el índice se lea seguido.
+- **Nada de esto puede romper el libro.** Una página mal escrita se salta con un
+  aviso claro en la consola; si el archivo entero tiene un error de sintaxis,
+  el libro se abre igual con sus páginas de siempre.
+- **Los vídeos no se descargan** hasta que ella le da al play, y se liberan de
+  memoria al pasar de página.
+
+Las instrucciones completas, con todos los campos y los fallos habituales, están
+en **[`mis-paginas/README.md`](mis-paginas/README.md)**.
+
+---
+
+## Cómo añadir una página desde dentro
+
+Lo de arriba cubre casi todo. Esto es para cuando quieras una página del propio
+libro, con su capítulo y su sitio en el manifiesto.
 
 **1. Escribe el capítulo** en `src/data/chapters.js`:
 
@@ -117,6 +495,7 @@ Es lo único que hay que saber para ampliar el libro.
   title: "El título",
   kicker: "una frase corta",
   text: "Lo que le quieres decir.",
+  act: "elegirte",  // encontrarte · conocerte · extranarte · elegirte
   palette: { a: "#ec6f92", b: "#4c1d95", deep: "#10001a" },
   mood: "bloom",   // dawn · night · amber · bloom · storm · glass · winter · cosmos · light
 }
@@ -130,23 +509,73 @@ Es lo único que hay que saber para ampliar el libro.
   type: "chapter",          // cualquier tipo del registro
   chapter: "nuevo",
   photos: groups.nuevoGrupo,
-  transition: "flip",       // flip · dissolve · zoom · fold
+  transition: "ink",        // ver la tabla de abajo
   hint: "la pista, si hace falta",
   secret: "id-del-secreto", // opcional
 }
 ```
 
-Ya está. La navegación, el progreso, la precarga, la limpieza de memoria y la
-paleta de la atmósfera se ajustan solos.
+### Las nueve maneras de llegar a una página
+
+| `transition` | Cómo entra |
+| --- | --- |
+| `flip` | La hoja gira sobre su lomo, en 3D. Es la única que **se puede arrastrar** con el dedo. |
+| `dissolve` | La anterior se deshace en luz mientras la nueva se condensa. |
+| `zoom` | Travelling: la cámara atraviesa una página y aterriza en la siguiente. |
+| `fold` | Se pliega sobre sí misma, como una carta que se guarda. |
+| `iris` | Diafragma de cámara que se abre desde el centro. |
+| `slide` | La nueva empuja a la anterior, que se retrasa y pierde luz: paralaje. |
+| `ink` | Cala como una mancha de tinta: tres manchas que crecen a distinto ritmo. |
+| `tide` | Sube como la marea, con el borde ondulado que se va calmando. |
+| `bloom` | Se abre en el sitio, desenfocada y de más, y se enfoca. |
+
+Están repartidas para que **ninguna se repita en dos páginas seguidas**.
+
+### Y cómo aparece lo primero de cada página
+
+La transición es cómo llega la hoja. La **entrada** es cómo se enciende lo que
+trae dentro, y es lo que hace que dos páginas con la misma transición no se
+parezcan. Están en `src/styles/entradas.css` y cada página se pone la suya con
+una clase en su `index.js`:
+
+| Firma | Qué hace | Dónde |
+| --- | --- | --- |
+| `entra--teclea` | Las letras llegan separadas y se asientan | Máquina de escribir |
+| `entra--revela` | Sobreexpuesto y lavado, va cogiendo color | Polaroids |
+| `entra--enfoca` | Desenfocado y se enfoca | Rascar |
+| `entra--traza` | Se descubre de izquierda a derecha, como una pluma | Escrito a mano |
+| `entra--corre` | Entra de lado, con tirón de mecanismo | Carrete |
+| `entra--encaja` | Llega grande y torcido y se asienta | Mosaico |
+| `entra--acerca` | Llega de muy atrás, no de arriba | La distancia |
+| `entra--prende` | No se mueve: enciende | Constelación |
+| `entra--cajon` | Sube desde abajo | El cajón |
+| `entra--cae` | Baja girando, sin prisa | Deshojar |
+
+Se repiten **en cada llegada**, también al volver a una página ya vista: antes
+la clase se quedaba puesta y al regresar la página aparecía de golpe, sin su
+gesto.
+
+Ya está. La navegación, el índice, el progreso, la precarga, la limpieza de
+memoria y la paleta de la atmósfera se ajustan solos. El libro está pensado
+para crecer: da igual que sean cuarenta páginas o cuatrocientas.
 
 ### Y para inventar un tipo de página nuevo
 
-Crea `src/pages/MiPagina.js` extendiendo `BasePage`, regístrala en
-`src/pages/registry.js` y úsala en el manifiesto:
+Se crea una carpeta, `src/pages/mi-pagina/`, con sus tres archivos dentro:
+
+```
+src/pages/mi-pagina/
+  index.js
+  textos.js      (si tiene mucho que decir)
+  estilos.css
+```
+
+`index.js`:
 
 ```js
-import { BasePage } from "./BasePage.js";
-import { el } from "../utils/dom.js";
+import { BasePage } from "../BasePage.js";
+import { el } from "../../utils/dom.js";
+import textos from "./textos.js";
 
 export default class MiPagina extends BasePage {
   static type = "mipagina";
@@ -163,6 +592,11 @@ export default class MiPagina extends BasePage {
   }
 }
 ```
+
+Y se enchufa en dos sitios: una línea en `src/pages/registry.js`
+(`mipagina: () => import("./mi-pagina/index.js")`), otra en `index.html`
+(`<link rel="stylesheet" href="src/pages/mi-pagina/estilos.css">`), y ya se
+puede usar en el manifiesto.
 
 `BasePage` se encarga de limpiar listeners, gestos, tickers e imágenes cuando la
 página se destruye. No hay que acordarse de nada.
@@ -185,11 +619,83 @@ El libro mide el aparato en el que se está abriendo y se adapta:
   las 85 ilustraciones nunca están todas en memoria a la vez.
 - **Módulos perezosos**: el código de la constelación no se descarga hasta que
   hace falta.
+- **Las variables CSS recuerdan lo último que se escribió.** Se heredan, así
+  que tocar una en la raíz de una página obliga a recalcular el estilo de
+  todos sus descendientes; y los relojes de cada página escriben sesenta veces
+  por segundo. Escribiendo sólo cuando el valor cambia de verdad —y redondeando
+  para que el suavizado converja— el recálculo de estilo con el libro parado
+  baja de 30-44 ms por segundo y medio a prácticamente cero.
+- **El texto se aplana al terminar de entrar.** Un párrafo se parte en cien
+  `<span>` para escribirse palabra a palabra; cuando acaba, los cien vuelven a
+  ser un único nodo de texto. En gama baja no se parte siquiera.
+- **La atmósfera se dibuja a 30 fps** en gama media y baja. Es fondo: nadie la
+  mira fijamente, y es el shader más caro del libro.
+- **Sólo tica la página que se ve.** El router mantiene vivas las hojas vecinas
+  para que arrastrar responda al instante, pero sus relojes están parados: nadie
+  calcula físicas ni partículas para una página que no está en pantalla.
+- **Modo ahorro durante las transiciones.** El instante más caro del libro es el
+  cambio de página: dos desenfoques a pantalla completa y la atmósfera de fondo a
+  la vez. Ahí el lienzo WebGL baja a dos tercios de resolución —invisible,
+  porque todo está desenfocado o en marcha— y vuelve a plena calidad al aterrizar.
+- **Los desenfoques grandes se pintan pequeños y se estiran.** El fondo de las
+  páginas de fotos es la misma imagen desenfocada a pantalla completa, que es de
+  lo más caro que existe. Se pinta a un cuarto de tamaño —dieciséis veces menos
+  píxeles— y se escala después: se ve idéntico y la página pasa de ir a tirones
+  a ser de las más fluidas del libro.
+- **La búsqueda de las fotos no retrasa la apertura.** Averiguar cuántas hay en
+  `images/amores/` son varias idas y venidas a la red; se lanzan a la vez que se
+  descarga la portada y se recogen cuando ésa ya ha terminado, así que salen
+  gratis. Las de `paginas-html/` van en el mismo viaje, y preguntan con `HEAD`:
+  traen las cabeceras y no el archivo, así que da igual lo que pese la página.
+- **Una página HTML sólo corre mientras se ve.** El `src` del documento se pone
+  al entrar en la hoja y se vacía al salir. No hay manera de que un archivo tuyo
+  se quede dando vueltas de fondo, y tampoco hace falta que te acuerdes de
+  pararlo: descargar el documento se lleva sus relojes, su audio y su GPU.
+- **La luz del capítulo se escribe de una vez.** Los dieciséis tonos que salen
+  del color de un capítulo se aplican cambiando el texto de una hoja de estilo,
+  no con veinte `setProperty` en el elemento raíz. Una propiedad personalizada
+  se hereda, así que cada escritura en la raíz ensucia el documento entero:
+  veinte escrituras son veinte invalidaciones, y una hoja es una.
+- **Movimiento reducido, de verdad.** Si el sistema lo pide, no basta con acortar
+  los tokens de duración: hay una regla global que apaga toda animación y
+  transición del proyecto, incluidas las que llevan los milisegundos escritos a
+  mano. Todo llega igual a su estado final; nada se queda a medio camino.
+- **Las hojas que no se ven no animan.** El router mantiene vivas las hojas
+  vecinas para que arrastrar responda al instante, y `visibility: hidden` las
+  esconde pero no detiene una sola animación de CSS: el lacre de la portada
+  seguía respirando eternamente por detrás de la página que estás leyendo. Ahora
+  se pausan —no se anulan—, así que al volver siguen donde estaban.
+- **Nada se reescribe si no se ha movido.** El carrete y el carrusel de fotos
+  reescribían la posición de cada fotograma sesenta veces por segundo aunque
+  estuvieran completamente parados: cientos de mutaciones de estilo por segundo
+  para dejarlo todo igual. Quietos, ahora no cuestan nada.
+- **Las variables que laten viven abajo, no en la raíz.** El `--beat` del pulso
+  se escribía en la página entera, y como las variables de CSS se heredan, cada
+  latido obligaba a recalcular el estilo de sus setecientas cajas. Escrito sólo
+  en el círculo, la página pasó de ser la más cara del libro a costar un tercio.
+- **Los recuerdos miran a cámara todos a la vez.** Ochenta y cinco `lookAt` por
+  fotograma —cada uno monta una matriz y la descompone en cuaternión— eran lo
+  más caro de todo el proyecto. Como lo que se quiere es que las cartas queden
+  planas hacia quien mira, basta deshacer el giro del grupo una vez y copiarlo.
 
 Y si no hay WebGL, el libro sigue siendo un libro: todas las páginas tienen su
 versión en DOM, sin una sola pantalla vacía.
 
 Para depurar se puede forzar el nivel por URL: `index.html?tier=low`.
+
+---
+
+## Pasar de página
+
+Cuatro maneras, todas equivalentes:
+
+1. **Los botones redondos** de los cantos, abajo a izquierda y derecha. Están
+   siempre a la vista y caen donde llega el pulgar sin recolocar la mano.
+2. **Arrastrar desde el canto**: el botón acompaña al dedo y se enciende al
+   pasar el punto de no retorno.
+3. **Arrastrar la hoja** por el centro, en las páginas de papel: gira de
+   verdad, con muelle e inercia.
+4. **El índice** (`☰`), para saltar a cualquier página.
 
 ---
 
@@ -202,19 +708,29 @@ Para depurar se puede forzar el nivel por URL: `index.html?tier=low`.
 - Zoom por doble toque y por pellizco desactivados, para que el pinch lo puedan
   usar las páginas que lo quieren.
 - Sin rebote elástico ni «tirar para recargar».
-- La tipografía escala respecto al **ancho de la hoja**, no al de la ventana:
-  en apaisado son cosas muy distintas.
+- **Los bordes siempre pasan de página.** Casi todas las páginas se quedan el
+  dedo (la máquina de escribir, el candado, el mosaico, las que se sostienen sin
+  soltar…), y eso dejaba al lector encerrado. Ahora hay dos franjas en los cantos
+  de la pantalla que escuchan en fase de captura, antes de que ninguna página
+  pueda cortar el gesto: no hay página, presente ni futura, de la que no se pueda
+  salir arrastrando. Las primeras veces que se llega a una de ellas, las flechas
+  se asoman un momento para que se sepa que están ahí.
+- **Con el teléfono tumbado, la hoja se tumba con él.** Antes se quedaba
+  vertical: una tarjeta de 312 px en una ventana de 844, con los títulos
+  partidos en tres líneas y el texto a cinco palabras por renglón. Ahora la
+  hoja es apaisada y las páginas se reordenan a dos columnas —la foto a un
+  lado, el texto al otro— que es justo para lo que se gira el móvil.
+- La tipografía escala respecto a **la hoja**, no a la ventana: al ancho en
+  vertical, al alto en apaisado, que es lo que escasea en cada caso.
+- La barra flotante no se apoya nunca sobre el texto: los paneles que se
+  posan abajo le reservan su hueco (`--bar-space`). No se le suma al relleno
+  de la página entera a propósito, para no encoger las superficies con las
+  que se juega —el velo, la lámina de rascar, el tablero del mosaico—.
 - El giroscopio se pide dentro del primer toque, como exige iOS.
-- Vibración en Android; en iOS se ignora en silencio.
-
----
-
-## Los textos
-
-Los veinte capítulos están **tal cual fueron escritos**, sin corregir ni una
-coma. Las erratas y la forma de hablar son parte de lo que se está regalando.
-Si algún día quieres retocarlos, están todos juntos en
-`src/data/chapters.js` y no hay que tocar nada más.
+- **Vibración con sustituto, no con hueco.** En Android el libro vibra; en Safari
+  de iPhone no hay API que valga, y ahí la página del pulso cambia la vibración
+  por un golpe grave muy bajito que se siente casi más que se oye. Ninguna
+  página se queda sin respuesta física por el aparato que sea.
 
 ---
 

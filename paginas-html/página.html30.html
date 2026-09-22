@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>El planeta pequeño</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .planeta-mundo, con prefijo `pl-` en cada clase.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.planeta-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background: #060512;
+  color: #ddd8f0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.planeta-mundo .pl-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Los toques los recoge `.pl-toque`, que va justo encima. */
+  pointer-events: none;
+}
+
+/* El cielo entero. El libro sólo se queda el barrido que empieza en sus
+   24-44 px de borde. */
+.planeta-mundo .pl-toque {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  z-index: 2;
+  cursor: grab;
+}
+.planeta-mundo.is-girando .pl-toque { cursor: grabbing; }
+
+.planeta-mundo .pl-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  padding:
+    calc(var(--seguro-t) + 20px) 22px
+    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+.planeta-mundo .pl-titulo {
+  margin: 0;
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-size: clamp(1rem, 4.4vw, 1.4rem);
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  color: #a396d8;
+  opacity: 0.82;
+  text-shadow: 0 0 20px rgba(140, 120, 230, 0.4);
+  transition: opacity 900ms var(--e-suave);
+}
+.planeta-mundo.is-jugando .pl-titulo { opacity: 0.18; }
+
+.planeta-mundo .pl-pie {
+  margin: 0;
+  min-height: 3.8em;
+  max-width: 23em;
+  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
+  line-height: 1.55;
+  color: #e2dcf4;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 680ms var(--e-suave), transform 680ms var(--e-suave);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+}
+.planeta-mundo .pl-pie.is-visible { opacity: 0.94; transform: none; }
+.planeta-mundo .pl-pie em {
+  display: block;
+  margin-top: 0.3em;
+  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  font-size: 1.16em;
+  font-style: normal;
+  color: #ffb8cc;
+}
+
+.planeta-mundo .pl-cuenta {
+  position: absolute;
+  right: 20px;
+  top: calc(var(--seguro-t) + 20px);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  color: #8a7ec0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planeta-mundo * { transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="planeta-mundo" id="mundo">
+  <canvas class="pl-lienzo" id="lienzo"></canvas>
+  <div class="pl-toque" id="toque" aria-hidden="true"></div>
+  <div class="pl-ui">
+    <h1 class="pl-titulo" id="titulo">Dale la vuelta</h1>
+    <p class="pl-pie" id="pie" role="status" aria-live="polite"></p>
+  </div>
+  <div class="pl-cuenta" id="cuenta" aria-hidden="true"></div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN EDITABLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const CONF = {
+
+  /* ---- LAS INICIALES --------------------------------------------------
+     Van clavadas en una banderita, en lo alto del planeta.            */
+  iniciales: "y.m",
+
+  /* ---- LO QUE SE PUEDE PLANTAR ----------------------------------------
+     Se van poniendo en este orden, y cuando se acaban vuelve a empezar.
+     `tipo` decide cómo se dibuja.                                     */
+  cosas: [
+    { tipo: "arbol",   texto: "Un árbol. Para la sombra que no hay.",        firma: "Y para sentarnos debajo." },
+    { tipo: "farola",  texto: "Una farola, que aquí se hace de noche pronto.", firma: "Para volver sin tropezarnos." },
+    { tipo: "banco",   texto: "Un banco. Sólo cabemos dos.",                 firma: "Está calculado." },
+    { tipo: "flor",    texto: "Una flor. Tardará, pero sale.",               firma: "Casi todo tarda." },
+    { tipo: "casa",    texto: "Una casa con la luz puesta.",                 firma: "Aunque no haya nadie dentro todavía." },
+    { tipo: "arbol",   texto: "Otro árbol. Ya son dos.",                     firma: "Esto empieza a parecer un sitio." },
+    { tipo: "flor",    texto: "Más flores. Que se llene.",                   firma: "Me gusta cómo va quedando." },
+    { tipo: "buzon",   texto: "Un buzón. Por si me escribes.",               firma: "Escríbeme, que lo miro todos los días." },
+  ],
+
+  /* ---- EL PLANETA ------------------------------------------------------ */
+  friccion: 1.4,        // cuánto frena el giro al soltar
+  girarSolo: 0.16,      // rad/s cuando nadie lo toca
+
+  /* ---- LOS HITOS ------------------------------------------------------- */
+  hitos: [
+    { n: 3, texto: "Tres cosas y ya no está vacío.", firma: "Lo has hecho tú." },
+    { n: 7, texto: "Siete. Esto ya es un mundo.",    firma: "Pequeño, pero nuestro." },
+  ],
+
+  /* ---- LAS ESTRELLAS --------------------------------------------------- */
+  estrellas: 150,
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   La maquinaria.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const mundo  = document.getElementById("mundo");
+const lienzo = document.getElementById("lienzo");
+const zona   = document.getElementById("toque");
+const elPie  = document.getElementById("pie");
+const elCue  = document.getElementById("cuenta");
+const ctx    = lienzo.getContext("2d", { alpha: false });
+
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
+
+let A = 0, H = 0, dpr = 1;
+let cx = 0, cy = 0, R = 0;
+
+function medir() {
+  const r = mundo.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  A = r.width; H = r.height;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  lienzo.width  = Math.round(A * dpr);
+  lienzo.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  R = Math.min(A * 0.34, H * 0.22);
+  cx = A / 2;
+  cy = H * 0.52;
+  sembrarCielo();
+}
+new ResizeObserver(medir).observe(mundo);
+
+/* ---- El cielo -------------------------------------------------------------- */
+
+let estrellas = [];
+function sembrarCielo() {
+  const n = A * H < 200000 ? Math.round(CONF.estrellas * 0.6) : CONF.estrellas;
+  estrellas = Array.from({ length: n }, () => ({
+    x: Math.random() * A, y: Math.random() * H,
+    r: azar(0.4, 1.6), b: azar(0.2, 0.9), f: Math.random() * 6.283, v: azar(0.5, 2),
+  }));
+}
+
+/* ---- El planeta -------------------------------------------------------------
+   Todo lo que hay encima se guarda por su ÁNGULO, no por su posición: el
+   planeta gira y las cosas van con él sin tocarles nada. Eso es toda la
+   idea de la página.                                                      */
+
+let giro = 0;
+let velocidad = 0;
+const cosas = [];
+let iCosa = 0;
+let siguienteHito = 0;
+
+/* La rosa. Está desde el principio, en la cara de atrás, y nadie la
+   anuncia. Se encuentra girando. */
+const ROSA = { ang: Math.PI * 1.07, tipo: "rosa", abre: 0, hallada: false };
+cosas.push(ROSA);
+
+/* Y la banderita con las iniciales, clavada en el polo. */
+const BANDERA = { ang: -Math.PI / 2, tipo: "bandera" };
+cosas.push(BANDERA);
+
+function enPantalla(e) {
+  const r = mundo.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+let arrastre = null;
+
+zona.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  zona.setPointerCapture(e.pointerId);
+  const p = enPantalla(e);
+  arrastre = {
+    id: e.pointerId,
+    ang: Math.atan2(p.y - cy, p.x - cx),
+    movido: 0,
+    x: p.x, y: p.y,
+  };
+  mundo.classList.add("is-girando");
+});
+
+zona.addEventListener("pointermove", (e) => {
+  if (!arrastre || e.pointerId !== arrastre.id) return;
+  const p = enPantalla(e);
+  const a = Math.atan2(p.y - cy, p.x - cx);
+  let d = a - arrastre.ang;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d < -Math.PI) d += Math.PI * 2;
+  arrastre.ang = a;
+  arrastre.movido += Math.abs(d) * R;
+  giro += d;
+  velocidad = d * 30;
+  mareo += Math.abs(d);
+});
+
+function soltar(e) {
+  if (!arrastre) return;
+  const corto = arrastre.movido < 10;
+  const p = arrastre;
+  arrastre = null;
+  mundo.classList.remove("is-girando");
+  if (corto) plantar({ x: p.x, y: p.y });
+}
+zona.addEventListener("pointerup", soltar);
+zona.addEventListener("pointercancel", () => { arrastre = null; mundo.classList.remove("is-girando"); });
+
+function plantar(p) {
+  const d = Math.hypot(p.x - cx, p.y - cy);
+  /* Sólo se planta en la superficie, no en el cielo ni en el centro. */
+  if (d < R * 0.55 || d > R * 1.5) {
+    if (d > R * 1.5) decir("Ahí no hay suelo.", "Toca el planeta.");
+    return;
+  }
+  const ang = Math.atan2(p.y - cy, p.x - cx) - giro;
+  const c = CONF.cosas[iCosa % CONF.cosas.length];
+  iCosa++;
+  cosas.push({ ang, tipo: c.tipo, crece: 0, semilla: Math.random() });
+  plantadas++;
+  pintarCuenta();
+  mundo.classList.add("is-jugando");
+  decir(c.texto, c.firma);
+  plof();
+
+  while (siguienteHito < CONF.hitos.length && plantadas >= CONF.hitos[siguienteHito].n) {
+    const h = CONF.hitos[siguienteHito];
+    siguienteHito++;
+    decir(h.texto, h.firma, true);
+    campana(523 + siguienteHito * 110);
+  }
+  mirarSecretos();
+}
+
+let plantadas = 0;
+function pintarCuenta() {
+  elCue.textContent = plantadas === 1 ? "1 cosa" : `${plantadas} cosas`;
+}
+
+/* ---- Los textos --------------------------------------------------------------- */
+
+let pidiendo = null;
+let bloqueado = 0;
+
+function decir(texto, firma, importante) {
+  const ahora = performance.now();
+  if (!importante && ahora < bloqueado) return;
+  if (pidiendo === texto) return;
+  pidiendo = texto;
+  if (importante) bloqueado = ahora + 4200;
+  elPie.classList.remove("is-visible");
+  setTimeout(() => {
+    elPie.textContent = texto;
+    if (firma) {
+      const em = document.createElement("em");
+      em.textContent = firma;
+      elPie.append(em);
+    }
+    elPie.classList.add("is-visible");
+  }, suave ? 10 : 280);
+}
+
+/* ---- Sonido -------------------------------------------------------------------- */
+
+let audio = null;
+function despertar() {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+  } catch { audio = null; }
+  return audio;
+}
+
+/** Plantar algo: un golpecito blando en la tierra. */
+function plof() {
+  if (!despertar()) return;
+  const t = audio.currentTime;
+  const o = audio.createOscillator();
+  const g = audio.createGain();
+  o.type = "sine";
+  o.frequency.setValueAtTime(azar(260, 360), t);
+  o.frequency.exponentialRampToValueAtTime(90, t + 0.1);
+  g.gain.setValueAtTime(0.13, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+  o.connect(g).connect(audio.destination);
+  o.start(t); o.stop(t + 0.26);
+}
+
+function campana(hz) {
+  if (!despertar()) return;
+  const t = audio.currentTime;
+  const o = audio.createOscillator();
+  const g = audio.createGain();
+  o.type = "triangle";
+  o.frequency.setValueAtTime(hz, t);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.08, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+  o.connect(g).connect(audio.destination);
+  o.start(t); o.stop(t + 1.7);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS SECRETOS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 1. LA ROSA. Está desde el primer momento en la cara de atrás. Sólo
+      aparece si giras el planeta hasta encontrarla. No se anuncia.    */
+
+/* 2. Girar muy deprisa y mucho rato: sale una luna que se pone a dar
+      vueltas alrededor.                                              */
+let mareo = 0;
+let luna = null;
+
+/* 3. Plantar las ocho cosas distintas: el planeta se llena de aire y se
+      le pone atmósfera azul.                                         */
+let atmosfera = 0;
+const tipos = new Set();
+
+function mirarSecretos() {
+  for (const c of cosas) if (c.tipo !== "rosa" && c.tipo !== "bandera") tipos.add(c.tipo);
+  if (tipos.size >= 6 && atmosfera <= 0) {
+    atmosfera = 0.001;
+    decir("Se le ha puesto atmósfera.", "Con lo que has plantado ya se puede respirar aquí.", true);
+    campana(659);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+let t0 = performance.now();
+let reloj = 0;
+let fugaz = null;
+let proximaFugaz = azar(9, 20);
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A || !H) return;
+
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+  else if (dt > 0.1) dt = 0.1;
+  reloj += dt;
+
+  if (!arrastre) {
+    /* Al soltar sigue girando y va frenando, y cuando ya casi para, se
+       queda girando solo muy despacito. Un planeta no se queda quieto. */
+    velocidad = damp(velocidad, 0, CONF.friccion, dt);
+    giro += (velocidad + CONF.girarSolo) * dt;
+  }
+
+  mareo = Math.max(0, mareo - dt * 0.5);
+  if (mareo > 26 && !luna) {
+    mareo = 0;
+    luna = { ang: 0, r: R * 2.3, v: 0.5, nace: 0 };
+    decir("De tanto girar se ha enganchado una luna.", "Ahora ya tenemos hasta luna. No está mal.", true);
+    campana(392);
+  }
+  if (luna) {
+    luna.nace = Math.min(1, luna.nace + dt * 0.5);
+    luna.ang += luna.v * dt;
+  }
+
+  if (atmosfera > 0) atmosfera = Math.min(1, atmosfera + dt * 0.3);
+
+  /* La rosa: se abre cuando está de cara, y sólo se dice una vez. */
+  const rx = Math.cos(ROSA.ang + giro);
+  const deCara = Math.sin(ROSA.ang + giro) < 0.1 && Math.abs(rx) < 0.85;
+  ROSA.abre = damp(ROSA.abre, deCara ? 1 : 0.15, 2, dt);
+  if (deCara && !ROSA.hallada) {
+    ROSA.hallada = true;
+    decir("Ahí estaba, en la otra cara.", "Llevaba todo el rato ahí, esperando a que dieras la vuelta.", true);
+    campana(880);
+  }
+
+  for (const c of cosas) if (c.crece !== undefined && c.crece < 1) c.crece = Math.min(1, c.crece + dt * 1.6);
+
+  proximaFugaz -= dt;
+  if (proximaFugaz <= 0 && !fugaz) {
+    proximaFugaz = azar(11, 24);
+    fugaz = { x: azar(-30, A * 0.5), y: azar(0, H * 0.4), vx: azar(220, 340), vy: azar(70, 130), v: 1 };
+  }
+
+  dibujar(dt);
+}
+
+function dibujar(dt) {
+  /* --- el cielo --- */
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(A, H) * 0.9);
+  g.addColorStop(0, "#161034");
+  g.addColorStop(0.5, "#0b0820");
+  g.addColorStop(1, "#040310");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, A, H);
+
+  /* --- las estrellas --- */
+  for (const s of estrellas) {
+    ctx.globalAlpha = s.b * (0.55 + 0.45 * Math.sin(reloj * s.v + s.f));
+    ctx.fillStyle = "#e4dcff";
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  /* --- la fugaz --- */
+  if (fugaz) {
+    fugaz.x += fugaz.vx * dt;
+    fugaz.y += fugaz.vy * dt;
+    fugaz.v -= dt * 0.55;
+    const gx2 = fugaz.x - fugaz.vx * 0.13;
+    const gy2 = fugaz.y - fugaz.vy * 0.13;
+    const gr2 = ctx.createLinearGradient(fugaz.x, fugaz.y, gx2, gy2);
+    gr2.addColorStop(0, `rgba(255, 244, 250, ${clamp(fugaz.v, 0, 1) * 0.9})`);
+    gr2.addColorStop(1, "rgba(255, 244, 250, 0)");
+    ctx.strokeStyle = gr2;
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(fugaz.x, fugaz.y);
+    ctx.lineTo(gx2, gy2);
+    ctx.stroke();
+    if (fugaz.v <= 0 || fugaz.x > A + 60) fugaz = null;
+  }
+
+  /* --- la luna (secreto 2) --- */
+  if (luna) {
+    const lx = cx + Math.cos(luna.ang) * luna.r;
+    const ly = cy + Math.sin(luna.ang) * luna.r * 0.44;
+    const lr = R * 0.17 * luna.nace;
+    /* La órbita, insinuada. */
+    ctx.strokeStyle = "rgba(180, 170, 230, 0.13)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, luna.r, luna.r * 0.44, 0, 0, 6.283);
+    ctx.stroke();
+    const gl = ctx.createRadialGradient(lx - lr * 0.3, ly - lr * 0.3, 0, lx, ly, lr);
+    gl.addColorStop(0, "#f2eeff");
+    gl.addColorStop(0.7, "#c9c0e8");
+    gl.addColorStop(1, "#8f86b0");
+    ctx.fillStyle = gl;
+    ctx.beginPath(); ctx.arc(lx, ly, lr, 0, 6.283); ctx.fill();
+    /* Dos cráteres, que si no parece una pelota. */
+    ctx.fillStyle = "rgba(120, 112, 150, 0.4)";
+    ctx.beginPath(); ctx.arc(lx + lr * 0.25, ly - lr * 0.1, lr * 0.22, 0, 6.283); ctx.fill();
+    ctx.beginPath(); ctx.arc(lx - lr * 0.2, ly + lr * 0.3, lr * 0.14, 0, 6.283); ctx.fill();
+  }
+
+  /* --- la atmósfera (secreto 3) --- */
+  if (atmosfera > 0.02) {
+    const ga = ctx.createRadialGradient(cx, cy, R * 0.95, cx, cy, R * 1.4);
+    ga.addColorStop(0, `rgba(120, 200, 255, ${0.3 * atmosfera})`);
+    ga.addColorStop(0.5, `rgba(120, 200, 255, ${0.12 * atmosfera})`);
+    ga.addColorStop(1, "rgba(120, 200, 255, 0)");
+    ctx.fillStyle = ga;
+    ctx.beginPath(); ctx.arc(cx, cy, R * 1.4, 0, 6.283); ctx.fill();
+  }
+
+  /* --- el planeta --- */
+  const gp = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.08, cx, cy, R);
+  gp.addColorStop(0, "#8fbf72");
+  gp.addColorStop(0.45, "#5f9450");
+  gp.addColorStop(0.8, "#3e6b3c");
+  gp.addColorStop(1, "#24402a");
+  ctx.fillStyle = gp;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.fill();
+
+  /* Los continentes: manchas que giran con el planeta. Se dibujan
+     recortadas dentro del círculo, y se van por detrás al girar. */
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.clip();
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * 6.283 + giro * 1.0;
+    const prof = Math.sin(a);
+    if (prof > 0.1) continue;                 // está en la cara de atrás
+    const px = cx + Math.cos(a) * R * 0.55;
+    const py = cy + Math.sin(a) * R * 0.3 + (i % 3 - 1) * R * 0.3;
+    /* Se aplasta según se acerca al canto: es una esfera. */
+    const ap = clamp(-prof, 0.15, 1);
+    ctx.globalAlpha = 0.5 * ap;
+    ctx.fillStyle = i % 2 ? "#7aa862" : "#6b9a58";
+    ctx.beginPath();
+    ctx.ellipse(px, py, R * 0.3 * ap, R * 0.17, i * 0.7, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  /* Un mar pequeñito. */
+  const am = giro * 1.0 + 2.2;
+  if (Math.sin(am) < 0.1) {
+    const ap = clamp(-Math.sin(am), 0.15, 1);
+    ctx.globalAlpha = 0.6 * ap;
+    ctx.fillStyle = "#4a86a8";
+    ctx.beginPath();
+    ctx.ellipse(cx + Math.cos(am) * R * 0.5, cy + R * 0.32, R * 0.26 * ap, R * 0.15, 0.3, 0, 6.283);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+
+  /* El canto en sombra: es lo que lo hace redondo. */
+  const gs = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.35, R * 0.2, cx, cy, R);
+  gs.addColorStop(0, "rgba(0,0,0,0)");
+  gs.addColorStop(0.75, "rgba(10, 16, 24, 0.12)");
+  gs.addColorStop(1, "rgba(6, 10, 18, 0.62)");
+  ctx.fillStyle = gs;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.fill();
+
+  /* --- lo que hay plantado --- */
+  /* Se ordenan por profundidad: primero lo de atrás, luego lo de
+     delante. Sin esto, un árbol del fondo se pinta encima de la casa de
+     delante y se rompe la ilusión de esfera. */
+  const enOrden = cosas
+    .map((c) => ({ c, a: c.ang + giro }))
+    .sort((p, q) => Math.sin(q.a) - Math.sin(p.a));
+
+  for (const { c, a } of enOrden) {
+    const prof = Math.sin(a);
+    if (prof > 0.16) continue;                // en la cara de atrás
+    /* Cuanto más cerca del canto, más pequeño y más apagado: así se ve
+       la curva del planeta sin dibujar ni una línea de perspectiva. */
+    const esc = clamp(-prof + 0.3, 0.3, 1.1);
+    const alfa = clamp((-prof + 0.2) * 1.6, 0.12, 1);
+    const px = cx + Math.cos(a) * R;
+    const py = cy + Math.sin(a) * R;
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(a + Math.PI / 2);              // de pie sobre la superficie
+    ctx.globalAlpha = alfa;
+    dibujarCosa(c, R * 0.3 * esc);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ---- Las cosas que se plantan -------------------------------------------- */
+
+function dibujarCosa(c, s) {
+  const k = c.crece === undefined ? 1 : c.crece;
+  const S = s * k;
+  if (S < 0.5) return;
+
+  switch (c.tipo) {
+    case "arbol": {
+      ctx.fillStyle = "#6b4a30";
+      ctx.fillRect(-S * 0.06, -S * 0.5, S * 0.12, S * 0.5);
+      ctx.fillStyle = "#3e7a46";
+      ctx.beginPath(); ctx.arc(0, -S * 0.66, S * 0.3, 0, 6.283); ctx.fill();
+      ctx.fillStyle = "#4f9455";
+      ctx.beginPath(); ctx.arc(-S * 0.14, -S * 0.74, S * 0.2, 0, 6.283); ctx.fill();
+      break;
+    }
+    case "farola": {
+      ctx.strokeStyle = "#5c5a68";
+      ctx.lineWidth = S * 0.08;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -S * 0.8);
+      ctx.stroke();
+      /* La luz, con su halo: es lo que hace que la farola sirva. */
+      const gl = ctx.createRadialGradient(0, -S * 0.82, 0, 0, -S * 0.82, S * 0.6);
+      gl.addColorStop(0, "rgba(255, 216, 140, 0.85)");
+      gl.addColorStop(1, "rgba(255, 216, 140, 0)");
+      ctx.fillStyle = gl;
+      ctx.beginPath(); ctx.arc(0, -S * 0.82, S * 0.6, 0, 6.283); ctx.fill();
+      ctx.fillStyle = "#ffe8b0";
+      ctx.beginPath(); ctx.arc(0, -S * 0.82, S * 0.11, 0, 6.283); ctx.fill();
+      break;
+    }
+    case "banco": {
+      ctx.fillStyle = "#8a5f38";
+      ctx.fillRect(-S * 0.32, -S * 0.26, S * 0.64, S * 0.09);
+      ctx.fillRect(-S * 0.32, -S * 0.46, S * 0.64, S * 0.07);
+      ctx.fillStyle = "#5c4026";
+      ctx.fillRect(-S * 0.3, -S * 0.26, S * 0.06, S * 0.26);
+      ctx.fillRect(S * 0.24, -S * 0.26, S * 0.06, S * 0.26);
+      break;
+    }
+    case "flor": {
+      ctx.strokeStyle = "#4f8a46";
+      ctx.lineWidth = S * 0.05;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -S * 0.34);
+      ctx.stroke();
+      const col = ["#ff9ec0", "#ffd473", "#c9a8f0", "#fff0c8"][Math.floor((c.semilla || 0) * 4)];
+      ctx.fillStyle = col;
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * 6.283;
+        ctx.beginPath();
+        ctx.ellipse(Math.cos(a) * S * 0.1, -S * 0.34 + Math.sin(a) * S * 0.1, S * 0.08, S * 0.08, 0, 0, 6.283);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#f2c04a";
+      ctx.beginPath(); ctx.arc(0, -S * 0.34, S * 0.05, 0, 6.283); ctx.fill();
+      break;
+    }
+    case "casa": {
+      ctx.fillStyle = "#c2a882";
+      ctx.fillRect(-S * 0.28, -S * 0.42, S * 0.56, S * 0.42);
+      ctx.fillStyle = "#8f4a3a";
+      ctx.beginPath();
+      ctx.moveTo(-S * 0.36, -S * 0.42);
+      ctx.lineTo(0, -S * 0.72);
+      ctx.lineTo(S * 0.36, -S * 0.42);
+      ctx.closePath(); ctx.fill();
+      /* La ventana encendida, con su resplandor. */
+      const gl = ctx.createRadialGradient(0, -S * 0.24, 0, 0, -S * 0.24, S * 0.42);
+      gl.addColorStop(0, "rgba(255, 206, 130, 0.6)");
+      gl.addColorStop(1, "rgba(255, 206, 130, 0)");
+      ctx.fillStyle = gl;
+      ctx.beginPath(); ctx.arc(0, -S * 0.24, S * 0.42, 0, 6.283); ctx.fill();
+      ctx.fillStyle = "#ffcc82";
+      ctx.fillRect(-S * 0.1, -S * 0.32, S * 0.2, S * 0.16);
+      break;
+    }
+    case "buzon": {
+      ctx.fillStyle = "#4a5f7a";
+      ctx.fillRect(-S * 0.04, -S * 0.4, S * 0.08, S * 0.4);
+      ctx.fillStyle = "#c2506a";
+      ctx.beginPath();
+      ctx.moveTo(-S * 0.18, -S * 0.4);
+      ctx.lineTo(-S * 0.18, -S * 0.56);
+      ctx.arc(0, -S * 0.56, S * 0.18, Math.PI, 0);
+      ctx.lineTo(S * 0.18, -S * 0.4);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#8f3448";
+      ctx.fillRect(-S * 0.14, -S * 0.5, S * 0.28, S * 0.04);
+      /* La banderita de «hay carta», levantada siempre. */
+      ctx.fillStyle = "#e8c04a";
+      ctx.fillRect(S * 0.16, -S * 0.68, S * 0.03, S * 0.2);
+      ctx.fillRect(S * 0.18, -S * 0.68, S * 0.12, S * 0.08);
+      break;
+    }
+    case "bandera": {
+      /* LAS INICIALES. En una banderita clavada en el polo. */
+      ctx.strokeStyle = "#cfc8e0";
+      ctx.lineWidth = S * 0.05;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -S * 0.9);
+      ctx.stroke();
+      const on = Math.sin(reloj * 2.4) * 0.1;
+      ctx.fillStyle = "#e8536a";
+      ctx.beginPath();
+      ctx.moveTo(0, -S * 0.9);
+      ctx.quadraticCurveTo(S * 0.28, -S * 0.86 + on * S, S * 0.5, -S * 0.82);
+      ctx.lineTo(S * 0.5, -S * 0.54);
+      ctx.quadraticCurveTo(S * 0.28, -S * 0.58 - on * S, 0, -S * 0.62);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 245, 235, 0.95)";
+      ctx.font = `600 ${Math.max(6, Math.round(S * 0.2))}px Georgia, serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(CONF.iniciales, S * 0.26, -S * 0.71);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      break;
+    }
+    case "rosa": {
+      /* La rosa del secreto: cerrada mientras está de canto y abierta
+         cuando la miras de frente. */
+      const abre = c.abre;
+      ctx.strokeStyle = "#4f7a42";
+      ctx.lineWidth = S * 0.055;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(S * 0.06, -S * 0.26, 0, -S * 0.5);
+      ctx.stroke();
+      /* Las dos hojas. */
+      ctx.fillStyle = "#5f9450";
+      ctx.beginPath();
+      ctx.ellipse(-S * 0.14, -S * 0.26, S * 0.12, S * 0.05, -0.5, 0, 6.283);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(S * 0.14, -S * 0.36, S * 0.1, S * 0.045, 0.5, 0, 6.283);
+      ctx.fill();
+      /* La flor: capas de pétalos que se abren. */
+      const r0 = S * (0.1 + abre * 0.13);
+      for (let cap = 3; cap >= 1; cap--) {
+        const rr = r0 * (cap / 3);
+        ctx.fillStyle = cap === 3 ? "#a8203c" : cap === 2 ? "#c93552" : "#e85a74";
+        const n = 5 + cap;
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * 6.283 + cap * 0.4;
+          ctx.beginPath();
+          ctx.ellipse(
+            Math.cos(a) * rr * 0.5 * abre,
+            -S * 0.52 + Math.sin(a) * rr * 0.5 * abre,
+            rr * 0.62, rr * 0.5, a, 0, 6.283);
+          ctx.fill();
+        }
+      }
+      /* Y un brillito en el corazón cuando está del todo abierta. */
+      if (abre > 0.7) {
+        const gl = ctx.createRadialGradient(0, -S * 0.52, 0, 0, -S * 0.52, r0 * 2.4);
+        gl.addColorStop(0, `rgba(255, 160, 190, ${0.4 * (abre - 0.7) / 0.3})`);
+        gl.addColorStop(1, "rgba(255, 160, 190, 0)");
+        ctx.fillStyle = gl;
+        ctx.beginPath(); ctx.arc(0, -S * 0.52, r0 * 2.4, 0, 6.283); ctx.fill();
+      }
+      break;
+    }
+  }
+}
+
+/* ---- Arranque ------------------------------------------------------------------ */
+
+medir();
+pintarCuenta();
+decir("Un planeta con nada encima. Tócalo para plantar, arrástralo para girarlo.");
+requestAnimationFrame(paso);
+
+})();
+</script>
+</body>
+</html>

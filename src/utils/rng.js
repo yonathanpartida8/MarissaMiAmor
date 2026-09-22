@@ -5,7 +5,7 @@
  */
 
 /** Mulberry32: rápido, minúsculo, calidad de sobra para dispersión visual. */
-export function createRng(seed = 1) {
+function createRng(seed = 1) {
   let a = seed >>> 0;
   return function rng() {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -17,7 +17,7 @@ export function createRng(seed = 1) {
 }
 
 /** Convierte un texto en semilla numérica estable (djb2). */
-export function hashSeed(str) {
+function hashSeed(str) {
   let h = 5381;
   for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0;
   return h;

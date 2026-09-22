@@ -12,9 +12,20 @@ const KEY = "marissa.libro.v2";
 
 const DEFAULTS = {
   page: 0,
+  // El número de página baila si él añade páginas suyas en medio; el id no.
+  // Se guardan los dos: el id manda, el número es el respaldo.
+  pageId: null,
   furthest: 0,
   secrets: [],
+  // Los escondites pequeños van APARTE de los secretos del libro. Mezclados,
+  // el contador de la barra empezaba a decir cosas como «34/27»: los secretos
+  // se cuentan contra los del manifiesto, y estos no están ahí.
+  escondites: [],
+  visited: [],
   musicOn: true,
+  // «claro», «pastel» o «noche». En blanco significa que nunca ha elegido, y
+  // entonces manda lo que prefiera su teléfono. Ver `temas.js`.
+  tema: null,
   visits: 0,
   firstOpenedAt: null,
   lastSeenAt: null,
@@ -66,9 +77,27 @@ export class Store extends Emitter {
   }
 
   /** Avanza el marcador de página y recuerda el punto más lejano alcanzado. */
-  setPage(index) {
+  setPage(index, id) {
     this.set("page", index);
+    if (id) this.set("pageId", id);
     if (index > this.state.furthest) this.set("furthest", index);
+  }
+
+  /**
+   * Marca una página como vista. Se guarda por id y no por número: así,
+   * si algún día se reordena el libro o se añaden páginas en medio, lo que
+   * ya había visto sigue contando.
+   */
+  markVisited(id) {
+    if (!id || this.state.visited.includes(id)) return false;
+    this.state.visited = [...this.state.visited, id];
+    this.#writeSoon();
+    this.emit("change:visited", this.state.visited);
+    return true;
+  }
+
+  hasVisited(id) {
+    return this.state.visited.includes(id);
   }
 
   /** Marca un secreto como encontrado. Devuelve true si es la primera vez. */
@@ -83,6 +112,21 @@ export class Store extends Emitter {
 
   hasSecret(id) {
     return this.state.secrets.includes(id);
+  }
+
+  /**
+   * Apunta uno de los escondites pequeños. Devuelve si es la primera vez.
+   * No cuentan para el marcador: no hay que encontrarlos, están por si acaso.
+   */
+  findHideout(id) {
+    if (this.state.escondites.includes(id)) return false;
+    this.state.escondites = [...this.state.escondites, id];
+    this.#writeSoon();
+    return true;
+  }
+
+  get hideoutsFound() {
+    return this.state.escondites.length;
   }
 
   get secretsFound() {

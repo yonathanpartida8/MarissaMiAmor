@@ -1,0 +1,406 @@
+/* ============================================================
+   PÁGINAS PROPIAS — foto, galería y vídeo.
+   Las que él añade desde mis-paginas/.
+   ============================================================ */
+
+.mine {
+  display: grid;
+  /* `minmax(0, 1fr)` y no `1fr`: si no, un hijo con proporción fija (el marco
+     de la foto) puede ensanchar la columna por encima de la hoja. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: clamp(0.6rem, 2.2vh, 1.1rem);
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+}
+
+.mine__stage {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  /* La rejilla interna también tiene que estar acotada. Una columna `auto`
+     crece para caber en su contenido, así que el marco (que se dimensiona en
+     porcentaje de esa columna) tiraba de ella y se salía de la hoja. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
+  perspective: 1100px;
+}
+
+/* Aquí el marco ocupa TODO el escenario, sin proporción propia.
+   Con sólo `max-width/max-height` se quedaba en 0x0 —una caja con
+   proporción y ningún lado definido no mide nada— y la página salía sin
+   foto. Y encajar una proporción fija dentro de otra caja no se puede
+   hacer bien sólo con CSS: o se sale por un lado o se deforma.
+   Como la imagen va con `background-size: cover`, llenar el hueco entero
+   la recorta pero no la deforma nunca, y la foto se ve todo lo grande que
+   la pantalla permita, que es de lo que se trata. */
+.mine__stage .pframe {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+/* ---- Panel de texto ----------------------------------------- */
+.mine__panel {
+  max-height: min(42vh, 300px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: clamp(0.8rem, calc(3.6 * var(--vw)), 1.25rem);
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 800ms var(--e-out) 200ms, transform 800ms var(--e-out) 200ms;
+}
+
+.mine.is-entered .mine__panel { opacity: 1; transform: none; }
+
+.mine__panel .kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.mine__title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(1.35rem, calc(6 * var(--vw)), 2rem);
+  line-height: 1.08;
+  color: #fff;
+  text-wrap: balance;
+}
+
+.mine__panel .rule {
+  margin: 0.35rem 0 0.6rem;
+  background: linear-gradient(90deg, var(--accent), transparent 72%);
+}
+
+.mine__prose {
+  font-family: var(--font-display);
+  font-size: clamp(0.96rem, calc(3.8 * var(--vw)), 1.14rem);
+  line-height: 1.68;
+  color: rgba(246, 238, 232, 0.92);
+  text-align: justify;
+  hyphens: auto;
+  text-wrap: pretty;
+}
+
+.mine__reveal {
+  margin-top: 0.6rem;
+  font-family: var(--font-hand);
+  font-size: clamp(1.05rem, calc(4.6 * var(--vw)), 1.4rem);
+  color: var(--rose-glow);
+  opacity: 0;
+  transition: opacity 900ms var(--e-out) 900ms;
+}
+
+.mine.is-entered .mine__reveal { opacity: 0.92; }
+
+/* ══════════════ GALERÍA ══════════════ */
+.mine--gallery {
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+}
+
+.gal__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--gap-sm);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 600ms var(--e-out), transform 600ms var(--e-out);
+}
+
+.mine--gallery.is-entered .gal__head { opacity: 1; transform: none; }
+
+.gal__head .kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.gal__count {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.gal__stage {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+  perspective: 1200px;
+}
+
+.gal__track {
+  display: flex;
+  height: 100%;
+  will-change: transform;
+  cursor: grab;
+  touch-action: none;
+}
+
+.gal__track:active { cursor: grabbing; }
+
+.gal__slide {
+  flex: 0 0 auto;
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
+  padding: 0 4%;
+  /* --near lo escribe el JS: 1 en el centro, 0 en los lados. */
+  transform: scale(calc(0.86 + var(--near, 0) * 0.14));
+  opacity: calc(0.35 + var(--near, 0) * 0.65);
+  transition: transform 120ms linear, opacity 120ms linear;
+}
+
+/* Igual que en la página de foto: el marco necesita medidas definidas o se
+   queda en 0x0 y la diapositiva sale vacía. */
+.gal__slide .pframe {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.gal__dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 0.2rem 0;
+}
+
+.gal__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: transform 400ms var(--e-spring), background 400ms var(--e-out);
+}
+
+.gal__dot.is-on {
+  background: var(--accent);
+  transform: scale(1.5);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* ══════════════ VÍDEO ══════════════ */
+.vid__frame {
+  position: relative;
+  width: min(100%, 420px);
+  max-height: 100%;
+  aspect-ratio: 9 / 16;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: #0e0508;
+  touch-action: none;
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 22px 50px -18px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 900ms var(--e-out), transform 1000ms var(--e-out);
+}
+
+.mine--video.is-entered .vid__frame { opacity: 1; transform: none; }
+
+.vid__poster {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.72) saturate(0.95);
+  transition: opacity 500ms var(--e-out), filter 700ms var(--e-out);
+}
+
+.mine--video.is-playing .vid__poster { opacity: 0; }
+
+.vid__el {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 500ms var(--e-out);
+}
+
+.mine--video.is-playing .vid__el { opacity: 1; }
+
+.vid__veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 40%, transparent 45%, rgba(11, 3, 5, 0.55) 100%);
+  transition: opacity 500ms var(--e-out);
+}
+
+.mine--video.is-playing .vid__veil { opacity: 0.4; }
+
+/* Botón de play: círculo de cristal con su triángulo. */
+.vid__play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(64px, calc(19 * var(--vw)), 84px);
+  aspect-ratio: 1;
+  margin: calc(clamp(64px, calc(19 * var(--vw)), 84px) / -2) 0 0
+          calc(clamp(64px, calc(19 * var(--vw)), 84px) / -2);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(18, 6, 10, 0.66);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  transition: opacity 400ms var(--e-out), transform 400ms var(--e-spring);
+  pointer-events: none;
+}
+
+.vid__play::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  opacity: 0.5;
+  animation: vid-ring 2.6s var(--e-out) infinite;
+}
+
+@keyframes vid-ring {
+  0% { opacity: 0.5; transform: scale(0.9); }
+  100% { opacity: 0; transform: scale(1.35); }
+}
+
+.vid__triangle {
+  width: 0;
+  height: 0;
+  margin-left: 5px;
+  border-left: 18px solid rgba(255, 250, 244, 0.92);
+  border-top: 11px solid transparent;
+  border-bottom: 11px solid transparent;
+}
+
+.mine--video.is-playing .vid__play {
+  opacity: 0;
+  transform: scale(1.4);
+}
+
+.mine--video.is-playing .vid__play::after { animation: none; }
+
+/* Barra de avance, finísima. */
+.vid__progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  opacity: 0;
+  transition: opacity 400ms var(--e-out);
+}
+
+.mine--video.is-playing .vid__progress { opacity: 1; }
+
+.vid__progress i {
+  display: block;
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--accent), var(--gold-light));
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.vid__badge {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  padding: 0.22rem 0.5rem;
+  border-radius: var(--r-pill);
+  background: rgba(12, 4, 6, 0.6);
+  font-family: var(--font-ui);
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.vid__badge:empty { display: none; }
+
+/* Cargando. */
+.mine--video.is-buffering .vid__play {
+  opacity: 1;
+  transform: scale(0.9);
+  animation: vid-wait 1.1s ease-in-out infinite;
+}
+
+@keyframes vid-wait {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Roto: se dice, no se disimula. */
+.mine--video.is-broken .vid__frame {
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 10px, transparent 10px 20px),
+    #14070b;
+  cursor: default;
+}
+
+.mine--video.is-broken .vid__play { display: none; }
+
+.mine--video.is-broken .vid__badge {
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  text-align: center;
+  color: var(--rose-glow);
+  background: rgba(12, 4, 6, 0.8);
+}
+
+/* ---- Apaisado ----------------------------------------------- */
+html[data-orientation="landscape"][data-device="phone"] .mine {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  column-gap: var(--gap-md);
+  /* Estirado, no centrado: el escenario de la foto y el del carrusel no
+     tienen altura propia, y centrados se quedaban en 0px. Quien quiera ir
+     centrado lo pide con `align-self`. */
+  align-items: stretch;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .mine__panel {
+  max-height: 100%;
+  align-self: center;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .mine--gallery {
+  grid-template-columns: 1.2fr 1fr;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* `align-items: center` (heredado de `.mine`) encogía las celdas a su
+     contenido, y el carrusel no tiene altura propia: se quedaba en 0px y
+     la galería desaparecía en apaisado. Aquí las celdas sí se estiran. */
+  align-items: stretch;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .gal__head { grid-column: 1 / -1; }
+html[data-orientation="landscape"][data-device="phone"] .gal__stage { grid-column: 1; grid-row: 2; }
+html[data-orientation="landscape"][data-device="phone"] .gal__dots { grid-column: 1; grid-row: 3; }
+html[data-orientation="landscape"][data-device="phone"] .mine--gallery .mine__panel {
+  grid-column: 2;
+  grid-row: 2 / 4;
+  align-self: center;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .vid__frame {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+}

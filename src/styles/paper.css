@@ -3,10 +3,17 @@
    Fibra, borde barbado, sombra interior y luz que entra de arriba.
    ============================================================ */
 
+/* Los tonos del papel —y la luz y la sombra que lo envuelven— los escribe
+   `luz.js` en `<html>` a partir del color del capítulo. Los valores de aquí
+   son sólo el respaldo para el primer instante, antes de que haya página. */
 .paper {
   position: relative;
   background:
-    radial-gradient(ellipse 130% 80% at 20% -6%, rgba(255, 252, 244, 0.95), transparent 58%),
+    radial-gradient(
+      ellipse 130% 80% at 20% -6%,
+      rgba(var(--paper-glow-rgb), 0.95),
+      transparent 58%
+    ),
     linear-gradient(158deg, var(--paper-000) 0%, var(--paper-100) 44%, var(--paper-200) 100%);
   color: var(--paper-ink);
   isolation: isolate;
@@ -34,10 +41,18 @@
   pointer-events: none;
   z-index: 2;
   /* Sólo sombra: la luz ya está en el fondo. Mezclar un blanco en `multiply`
-     no aclara nada y apagaba todo el papel a un gris sucio. */
+     no aclara nada y apagaba todo el papel a un gris sucio.
+
+     Y la sombra lleva el color del capítulo. Un pardo neutro multiplicado
+     sobre una hoja que está bañada en luz rosa se lee como suciedad gris:
+     era justo lo que le quitaba vida a las esquinas del papel. */
   background:
-    radial-gradient(ellipse 90% 60% at 82% 106%, rgba(122, 94, 68, 0.2), transparent 62%),
-    linear-gradient(180deg, transparent 62%, rgba(104, 80, 60, 0.12) 100%);
+    radial-gradient(
+      ellipse 90% 60% at 82% 106%,
+      rgba(var(--paper-shade-rgb), 0.2),
+      transparent 62%
+    ),
+    linear-gradient(180deg, transparent 62%, rgba(var(--paper-shade-rgb), 0.13) 100%);
   mix-blend-mode: multiply;
   opacity: 0.9;
 }
@@ -47,7 +62,11 @@
   z-index: 3;
 }
 
-/* ---- Papel envejecido, para las cartas --------------------- */
+/* ---- Papel envejecido, para las cartas ---------------------
+   Éste sí guarda su propio crema: lo suyo es estar amarilleado por el
+   tiempo, y eso no depende del capítulo. Lo que sí coge del capítulo son
+   las manchas y la sombra, que es lo que lo pone en la misma habitación
+   que el resto de la hoja. */
 .paper--aged {
   background:
     radial-gradient(ellipse 120% 80% at 18% -4%, rgba(255, 250, 238, 0.9), transparent 56%),
@@ -56,18 +75,18 @@
 
 .paper--aged::after {
   background:
-    radial-gradient(ellipse 60% 40% at 12% 8%, rgba(196, 152, 96, 0.13), transparent 70%),
-    radial-gradient(ellipse 50% 35% at 92% 88%, rgba(176, 128, 78, 0.16), transparent 70%),
-    linear-gradient(180deg, transparent 66%, rgba(120, 88, 56, 0.14) 100%);
+    radial-gradient(
+      ellipse 60% 40% at 12% 8%,
+      rgba(var(--paper-shade-rgb), 0.13),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 50% 35% at 92% 88%,
+      rgba(var(--paper-shade-rgb), 0.17),
+      transparent 70%
+    ),
+    linear-gradient(180deg, transparent 66%, rgba(var(--paper-shade-rgb), 0.15) 100%);
   mix-blend-mode: multiply;
-}
-
-/* ---- Borde barbado ----------------------------------------- */
-.paper--deckled {
-  --deckle: 3px;
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.32));
-  -webkit-mask-image: var(--deckle-mask);
-  mask-image: var(--deckle-mask);
 }
 
 /* ---- Elementos tipográficos comunes del papel --------------- */
@@ -77,8 +96,10 @@
   font-weight: 400;
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
+  /* Sin opacidad: lo suave lo pone el color, no una transparencia.
+     Rebajar una tinta ya suave con un 0.7 encima dejaba estas etiquetas
+     en 3.5 sobre 1 contra el papel, por debajo del mínimo legible. */
   color: var(--paper-ink-soft);
-  opacity: 0.72;
 }
 
 .paper .title {
@@ -87,7 +108,9 @@
   font-size: var(--fs-title);
   line-height: 1.06;
   letter-spacing: 0.005em;
-  color: #2c211c;
+  /* Un punto más oscuro que el cuerpo, y del mismo tono: el título manda
+     por peso, no por ser de otro color. */
+  color: color-mix(in srgb, var(--paper-ink) 78%, #1a0d11);
   text-wrap: balance;
 }
 
@@ -103,60 +126,82 @@
   text-wrap: pretty;
 }
 
+/* Sobre papel manda `--accent-deep` —el color HONDO del capítulo—, nunca
+   `--accent`, que es su luz. La luz de un capítulo es un rosa casi blanco:
+   preciosa sobre la niebla del fondo e invisible sobre crema. Cinco páginas
+   pedían la luz para su capitular y su filete, y por eso no se veían. */
 .paper .prose::first-letter {
   /* Capitular discreta: elegante, no de libro de cuentos. */
   font-size: 2.9em;
   line-height: 0.82;
   float: left;
   padding: 0.08em 0.12em 0 0;
-  color: var(--drop-color, var(--rose-deep));
+  color: var(--drop-color, var(--accent-deep));
   font-weight: 300;
 }
 
 .paper .rule {
   height: 1px;
   border: 0;
-  background: linear-gradient(90deg, var(--accent-line, var(--rose)) 0%, transparent 78%);
-  opacity: 0.5;
+  background: linear-gradient(
+    90deg,
+    var(--accent-line, var(--accent-deep)) 0%,
+    transparent 78%
+  );
+  opacity: 0.55;
 }
 
 .paper .signature {
   font-family: var(--font-hand);
   font-size: clamp(1.5rem, calc(6 * var(--vw)), 2rem);
-  color: var(--rose-deep);
+  color: var(--accent-deep);
   opacity: 0.82;
   transform: rotate(-3deg);
   transform-origin: left center;
 }
 
-/* ---- Tinta escrita a mano ---------------------------------- */
-.hand {
-  font-family: var(--font-hand);
-  font-size: clamp(1.3rem, calc(5.4 * var(--vw)), 1.75rem);
-  line-height: 1.5;
-  color: #2f3f6b;
-  /* La tinta de bolígrafo no es plana: tiene poso en los trazos. */
-  text-shadow: 0 0 1px rgba(47, 63, 107, 0.32);
-}
 
 /* ---- Animación de palabras (entrada escalonada) ------------- */
 .word {
   display: inline-block;
   opacity: 0;
-  transform: translateY(0.5em) rotate(1.5deg);
-  filter: blur(3px);
+  /* translate3d y no translateY: así la palabra viaja en la GPU y no
+     obliga a repintar la línea entera en cada frame. */
+  transform: translate3d(0, 0.5em, 0) rotate(1.5deg);
 }
 
 .is-writing .word {
-  animation: word-in 620ms var(--e-out) both;
-  animation-delay: calc(var(--i) * 26ms + var(--word-delay, 0ms));
+  animation: word-in 420ms var(--e-out) both;
+  animation-delay: calc(var(--d, 0ms) + var(--word-delay, 0ms));
 }
 
 @keyframes word-in {
   to {
     opacity: 1;
-    transform: none;
-    filter: blur(0);
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+/* El desenfoque por palabra es lo que hace que el texto parezca enfocarse
+   al escribirse, pero cada palabra pasa a ser una capa que el navegador
+   rasteriza aparte. En un párrafo largo son cien capas. En un móvil justo
+   de potencia, eso son los tirones. Así que sólo en gama alta. */
+:root[data-tier="high"] .word {
+  filter: blur(3px);
+}
+
+:root[data-tier="high"] .is-writing .word {
+  animation-name: word-in-focus;
+}
+
+/* Termina en `none` y no en `blur(0)`: la interpolación es la misma, pero
+   al acabar la palabra se queda sin filtro y el navegador puede tirar su
+   capa en vez de guardarla para siempre. */
+@keyframes word-in-focus {
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+    filter: none;
   }
 }
 

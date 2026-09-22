@@ -13,8 +13,10 @@ import { clamp01 } from "../utils/math.js";
 const SOURCES = {
   music: { src: "assets/audio/musica.mp3", loop: true, volume: 0.3 },
   open: { src: "assets/audio/abrir.mp3", loop: false, volume: 0.65 },
-  turn: { src: "assets/audio/sonido.mp3", loop: false, volume: 0.42 },
 };
+
+/** Pasar página suena tantas veces seguidas que tiene su propia reserva. */
+const TURN = { src: "assets/audio/sonido.mp3", volume: 0.42, copias: 3 };
 
 export class AudioBus extends Emitter {
   constructor(store) {
@@ -39,40 +41,92 @@ export class AudioBus extends Emitter {
       audio.src = cfg.src;
       audio.loop = cfg.loop;
       audio.volume = 0;
-      // La música son 5 MB: pedirla entera antes de la primera página compite
-      // con las ilustraciones y retrasa la apertura del libro en datos móviles.
-      // Con "none" no se toca hasta que suena, y suena en streaming.
-      audio.preload = name === "music" ? "none" : "auto";
-      audio.crossOrigin = "anonymous";
+      // Nada de audio en la carrera por abrir el libro.
+      //
+      // La música son 5 MB y el sonido de abrir el sobre son 2, y los dos se
+      // pedían mientras la portada peleaba por descargar su fotografía. En
+      // datos móviles eso es la diferencia entre abrir en dos segundos y
+      // abrir en ocho, a cambio de un sonido que todavía no toca.
+      //
+      // Con "none" no se pide nada hasta que alguien lo pide: la portada
+      // llama a `prepare("open")` cuando ya está en pantalla, que es cuando
+      // sobra red y aún faltan los segundos que se tarda en romper el lacre.
+      audio.preload = "none";
       // Silencia errores de red: el libro debe funcionar sin sonido.
       audio.addEventListener("error", () => this.tracks.delete(name));
       this.tracks.set(name, { el: audio, base: cfg.volume });
     }
-    // Pequeña reserva de "pasar página" para toques rápidos encadenados.
-    this.turnPool = Array.from({ length: 3 }, () => {
-      const a = new Audio(SOURCES.turn.src);
+
+    // Reserva de "pasar página", para toques rápidos encadenados.
+    //
+    // Antes había ADEMÁS una pista suelta llamada `turn` que no sonaba nunca
+    // —`play("turn")` siempre tira de la reserva—, y encima pedida con CORS
+    // mientras la reserva la pedía sin él. Entre las dos cosas, el mismo
+    // archivo de cuatrocientos kilos se descargaba cuatro veces.
+    //
+    // Sólo la primera copia se trae el sonido; las otras dos lo encuentran
+    // en la caché del navegador porque piden exactamente lo mismo.
+    this.turnPool = Array.from({ length: TURN.copias }, (_, i) => {
+      const a = new Audio(TURN.src);
       a.volume = 0;
-      a.preload = "auto";
+      a.preload = i === 0 ? "auto" : "metadata";
       return a;
     });
     this.turnIndex = 0;
   }
 
+  /**
+   * Pide que se vaya trayendo un sonido, sin sonarlo.
+   * Para llamarlo cuando ya no le quita ancho de banda a nada urgente.
+   */
+  prepare(name) {
+    const track = this.tracks.get(name);
+    if (!track || track.el.preload === "auto") return;
+    track.el.preload = "auto";
+    track.el.load();
+  }
+
   /** Debe llamarse dentro de un gesto del usuario (click/touch). */
+  /**
+   * Despierta el audio dentro del gesto del usuario.
+   *
+   * ── POR QUÉ HAY UN TOPE DE TIEMPO, Y POR QUÉ IMPORTA TANTO ──────────
+   * `el.play()` devuelve una promesa que en Safari NO SE RESUELVE NUNCA
+   * si el elemento no tiene nada que reproducir: se queda esperando unos
+   * datos que no van a llegar, ni se resuelve ni falla. Y esto estaba
+   * dentro de un bucle con `await` seco.
+   *
+   * O sea que UNA SOLA pista vacía dejaba colgado todo lo de detrás. Y
+   * hay una pista vacía de fábrica: `Musica.mp3` pesa dos bytes mientras
+   * no se ponga la de verdad. Resultado: el botón de «Tócame para abrir»
+   * se quedaba en «abriendo…» para siempre y el libro no se abría. En
+   * Chrome fallaba rápido y casi no se notaba; en Safari no se abría y
+   * ya está. Eso era el «no me deja hacer nada».
+   *
+   * Ahora van todas A LA VEZ —son gestos del mismo toque, y encadenarlas
+   * gasta la ventanita que da iOS— y con medio segundo de tope. Si
+   * alguna no contesta, se sigue sin ella: el libro se abre igual y lo
+   * único que puede faltar es un sonido.
+   */
   async unlock() {
     if (this.unlocked) return true;
     const attempts = [...this.tracks.values(), ...this.turnPool.map((el) => ({ el, base: 0 }))];
-    for (const track of attempts) {
+    const uno = async (track) => {
       try {
         track.el.muted = true;
         await track.el.play();
         track.el.pause();
         track.el.currentTime = 0;
-        track.el.muted = false;
       } catch {
         /* seguimos: quizá otro sí arranque */
+      } finally {
+        track.el.muted = false;
       }
-    }
+    };
+    await Promise.race([
+      Promise.all(attempts.map(uno)).catch(() => {}),
+      new Promise((r) => setTimeout(r, 600)),
+    ]);
     this.unlocked = true;
     this.emit("unlocked");
     return true;
@@ -87,7 +141,7 @@ export class AudioBus extends Emitter {
     if (name === "turn") {
       const el = this.turnPool[this.turnIndex];
       this.turnIndex = (this.turnIndex + 1) % this.turnPool.length;
-      el.volume = clamp01(SOURCES.turn.volume * volume);
+      el.volume = clamp01(TURN.volume * volume);
       el.playbackRate = rate;
       el.currentTime = 0;
       el.play().catch(() => {});

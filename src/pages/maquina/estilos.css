@@ -1,0 +1,87 @@
+/* ============================================================
+   MÁQUINA DE ESCRIBIR
+   ============================================================ */
+
+.tw {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(0.7rem, 2.4vh, 1.3rem);
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+}
+
+.tw__head {
+}
+
+
+.tw__title {
+  font-size: clamp(1.5rem, calc(7 * var(--vw)), 2.3rem);
+  margin-top: 0.2rem;
+}
+
+.tw__sheet {
+  padding-right: 2px;
+}
+
+.tw__text {
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  line-height: 1.78;
+  color: var(--paper-ink);
+  text-align: left;
+  /* Sin justificar: el texto crece letra a letra y justificarlo daría saltos
+     de espaciado en cada palabra nueva. */
+  text-wrap: pretty;
+  min-height: 100%;
+}
+
+/* El cursor: un bloque de tinta que parpadea y se apaga al terminar. */
+.tw__cursor {
+  display: inline-block;
+  width: 0.52em;
+  height: 1.02em;
+  margin-left: 0.04em;
+  vertical-align: -0.16em;
+  background: var(--accent);
+  opacity: 0.8;
+  animation: tw-blink 1s steps(2, end) infinite;
+}
+
+@keyframes tw-blink { 50% { opacity: 0.1; } }
+
+.tw.is-fast .tw__cursor { animation-duration: 0.4s; }
+
+.tw.is-done .tw__cursor {
+  animation: none;
+  opacity: 0;
+  transition: opacity 700ms var(--e-out);
+}
+
+.tw__foot {
+  text-align: center;
+  min-height: 1.5em;
+}
+
+.tw__hint {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--paper-ink-soft);
+  opacity: 0.6;
+  transition: opacity 500ms var(--e-out);
+}
+
+.tw.is-fast .tw__hint { opacity: 1; color: var(--accent); }
+
+.tw.is-done .tw__hint { opacity: 0; }
+
+/* Al terminar, el papel respira una vez. */
+.tw.is-done .tw__sheet {
+  animation: tw-settle 900ms var(--e-out);
+}
+
+@keyframes tw-settle {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.012); }
+  100% { transform: scale(1); }
+}

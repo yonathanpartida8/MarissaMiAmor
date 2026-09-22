@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>El ramo</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .ramo-mundo, con prefijo `rm-` en cada clase.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.ramo-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background:
+    radial-gradient(ellipse 120% 60% at 50% 100%, #e8f0d8, transparent 66%),
+    linear-gradient(176deg, #cfe4f0 0%, #e6f0e2 46%, #f4f0dc 100%);
+  color: #3f4433;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ramo-mundo .rm-lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Los toques los recoge `.rm-toque`, que va justo encima. */
+  pointer-events: none;
+}
+
+/* El prado entero. El libro sólo se queda el barrido que empieza en sus
+   24-44 px de borde. */
+.ramo-mundo .rm-toque {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.ramo-mundo .rm-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  padding:
+    calc(var(--seguro-t) + 20px) 22px
+    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+.ramo-mundo .rm-titulo {
+  margin: 0;
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-size: clamp(1rem, 4.4vw, 1.4rem);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: #5e7050;
+  opacity: 0.88;
+  transition: opacity 800ms var(--e-suave);
+}
+.ramo-mundo.is-cogiendo .rm-titulo { opacity: 0.22; }
+
+.ramo-mundo .rm-pie {
+  margin: 0;
+  min-height: 3.6em;
+  max-width: 23em;
+  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
+  line-height: 1.55;
+  color: #47503a;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 660ms var(--e-suave), transform 660ms var(--e-suave);
+}
+.ramo-mundo .rm-pie.is-visible { opacity: 0.94; transform: none; }
+.ramo-mundo .rm-pie em {
+  display: block;
+  margin-top: 0.3em;
+  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  font-size: 1.16em;
+  font-style: normal;
+  color: #b5507a;
+}
+
+.ramo-mundo .rm-cuenta {
+  position: absolute;
+  right: 20px;
+  top: calc(var(--seguro-t) + 20px);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  color: #6f8060;
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ramo-mundo * { transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="ramo-mundo" id="mundo">
+  <canvas class="rm-lienzo" id="lienzo"></canvas>
+  <div class="rm-toque" id="toque" aria-hidden="true"></div>
+  <div class="rm-ui">
+    <h1 class="rm-titulo" id="titulo">Coge las que quieras</h1>
+    <p class="rm-pie" id="pie" role="status" aria-live="polite"></p>
+  </div>
+  <div class="rm-cuenta" id="cuenta" aria-hidden="true"></div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN EDITABLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const CONF = {
+
+  /* ---- LAS FLORES -----------------------------------------------------
+     Cada clase tiene su color, su forma y lo que significa. Al cogerla
+     se lee lo suyo, y sólo la primera vez de cada una.                 */
+  clases: [
+    { nombre: "amapola",    petalos: 5,  color: ["#ff8a8a", "#d63f4e"], centro: "#2d1f22",
+      frase: "Amapola: lo que dura poco y vale mucho.", firma: "Como las tardes buenas." },
+    { nombre: "margarita",  petalos: 12, color: ["#ffffff", "#f2ebd8"], centro: "#f2c04a",
+      frase: "Margarita: la de «me quiere, no me quiere».", firma: "No la deshojes, que ya te lo digo yo." },
+    { nombre: "lavanda",    petalos: 6,  color: ["#c9a8e8", "#8f5fc4"], centro: "#5c3a80",
+      frase: "Lavanda: la que huele a dormir tranquila.", firma: "Te pongo un ramito en la almohada." },
+    { nombre: "girasol",    petalos: 14, color: ["#ffd45c", "#e09a1e"], centro: "#6b4520",
+      frase: "Girasol: la que siempre mira a lo que le da calor.", firma: "Yo hago lo mismo contigo." },
+    { nombre: "nomeolvides",petalos: 5,  color: ["#a8caf0", "#4d7fc4"], centro: "#f2d97a",
+      frase: "Nomeolvides. El nombre lo dice todo.", firma: "Aunque no hacía falta pedirlo." },
+    { nombre: "rosa",       petalos: 9,  color: ["#ffb8ce", "#c9436f"], centro: "#8f2a4d",
+      frase: "Rosa: la obvia, la de siempre.", firma: "Las obvias son obvias por algo." },
+  ],
+
+  /* ---- EL PRADO -------------------------------------------------------- */
+  cuantas: 26,           // flores en el prado a la vez
+  reponer: 2.2,          // segundos hasta que sale otra donde cogiste una
+
+  /* ---- EL RAMO --------------------------------------------------------- */
+  paraLazo: 12,          // a partir de cuántas se ata el lazo
+
+  /* ---- HITOS ----------------------------------------------------------- */
+  hitos: [
+    { n: 3,  texto: "Tres. Ya es un ramito.", firma: "Uno pequeño, de los de camino a casa." },
+    { n: 7,  texto: "Siete y no has repetido ninguna.", firma: "Tienes buen ojo." },
+    { n: 12, texto: "Doce. Le pongo un lazo.", firma: "Ya es un ramo de verdad." },
+    { n: 24, texto: "Veinticuatro.", firma: "Vas a tener que llevarlo con las dos manos." },
+  ],
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   La maquinaria.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const mundo  = document.getElementById("mundo");
+const lienzo = document.getElementById("lienzo");
+const zona   = document.getElementById("toque");
+const elPie  = document.getElementById("pie");
+const elCue  = document.getElementById("cuenta");
+const ctx    = lienzo.getContext("2d");
+
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
+
+let A = 0, H = 0, dpr = 1;
+/* Dónde empieza el prado y dónde se sostiene el ramo. */
+let lineaPrado = 0, ramoX = 0, ramoY = 0;
+
+function medir() {
+  const r = mundo.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const primera = !A;
+  A = r.width; H = r.height;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  lienzo.width  = Math.round(A * dpr);
+  lienzo.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  lineaPrado = H * 0.42;
+  ramoX = A * 0.5;
+  /* El nudo, justo por encima de donde empieza el texto de abajo. */
+  ramoY = H * 0.87;
+  if (primera) sembrar();
+  else for (const f of prado) {
+    f.x = clamp(f.x, 16, A - 16);
+    f.y = clamp(f.y, lineaPrado + 20, H - 40);
+  }
+}
+new ResizeObserver(medir).observe(mundo);
+
+/* ---- El prado ----------------------------------------------------------- */
+
+const prado = [];
+const hierbas = [];
+
+function sembrar() {
+  prado.length = 0;
+  const n = A * H < 200000 ? Math.round(CONF.cuantas * 0.7) : CONF.cuantas;
+  for (let i = 0; i < n; i++) prado.push(nuevaFlor());
+
+  hierbas.length = 0;
+  const nh = A < 360 ? 90 : 150;
+  for (let i = 0; i < nh; i++) {
+    hierbas.push({
+      x: Math.random() * A,
+      y: azar(lineaPrado, H),
+      alto: azar(14, 40),
+      incl: azar(-0.3, 0.3),
+      f: Math.random() * 6.283,
+    });
+  }
+  hierbas.sort((a, b) => a.y - b.y);
+}
+
+function nuevaFlor(x, y) {
+  const c = Math.floor(Math.random() * CONF.clases.length);
+  /* Cuanto más abajo, más grande: eso es toda la perspectiva que hace
+     falta en un prado visto de frente. */
+  const py = y ?? azar(lineaPrado + 16, H - 34);
+  const prof = (py - lineaPrado) / Math.max(1, H - lineaPrado);
+  return {
+    x: x ?? azar(20, A - 20),
+    y: py,
+    clase: c,
+    esc: 0.6 + prof * 0.75,
+    giro: azar(-0.3, 0.3),
+    f: Math.random() * 6.283,
+    nace: 0,
+    tallo: azar(26, 52),
+  };
+}
+
+/* ---- El ramo ------------------------------------------------------------- */
+
+const ramo = [];
+let cogidas = 0;
+const dichas = new Set();
+let siguienteHito = 0;
+
+function enPantalla(e) {
+  const r = mundo.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+zona.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  const p = enPantalla(e);
+  coger(p.x, p.y);
+});
+
+function coger(x, y) {
+  /* La flor más cercana dentro de un margen generoso: en un móvil el
+     dedo tapa justo lo que quiere coger. */
+  let mejor = -1, dMin = Infinity;
+  for (let i = 0; i < prado.length; i++) {
+    const f = prado[i];
+    if (f.nace < 0.6) continue;
+    const d = Math.hypot(f.x - x, f.y - y - f.tallo * 0.3);
+    if (d < 40 * f.esc && d < dMin) { dMin = d; mejor = i; }
+  }
+  if (mejor < 0) { tocarPrado(x, y); return; }
+
+  const f = prado[mejor];
+  prado.splice(mejor, 1);
+  mundo.classList.add("is-cogiendo");
+
+  /* Va volando al ramo: se guarda de dónde sale y adónde llega, y el
+     bucle la lleva. */
+  const clase = CONF.clases[f.clase];
+  ramo.push({
+    clase: f.clase, esc: f.esc, giro: f.giro, f: f.f,
+    x: f.x, y: f.y,
+    destX: 0, destY: 0, angulo: 0,
+    vuelo: 0,
+  });
+  cogidas++;
+  colocarRamo();
+  pintarCuenta();
+  chasquido();
+  brotes.push({ x: f.x, y: f.y, t: 0 });
+
+  /* Lo que dice. Los hitos mandan sobre la frase de la flor. */
+  let hito = null;
+  while (siguienteHito < CONF.hitos.length && CONF.hitos[siguienteHito].n <= cogidas) {
+    hito = CONF.hitos[siguienteHito];
+    siguienteHito++;
+  }
+  if (hito) decir(hito.texto, hito.firma, true);
+  else if (!dichas.has(f.clase)) {
+    dichas.add(f.clase);
+    decir(clase.frase, clase.firma);
+    if (dichas.size === CONF.clases.length) {
+      setTimeout(() => decir("Las has cogido todas, una de cada.", "Sabía que ibas a hacer eso.", true), 2200);
+    }
+  } else {
+    decir(`Otra ${clase.nombre}.`);
+  }
+
+  /* Y sale otra en su sitio, que el prado no se acaba. */
+  setTimeout(() => {
+    if (prado.length < CONF.cuantas) prado.push(nuevaFlor(azar(20, A - 20)));
+  }, CONF.reponer * 1000);
+
+  mirarSecretos(f);
+}
+
+/** Recoloca el ramo entero: un abanico que se abre según cuántas hay. */
+function colocarRamo() {
+  const n = ramo.length;
+  const abre = Math.min(1.15, 0.28 + n * 0.045);
+  ramo.forEach((r, i) => {
+    const t = n === 1 ? 0 : (i / (n - 1)) - 0.5;
+    /* Se reparten en arco, y las de en medio suben más: eso es lo que
+       hace que un puñado de tallos parezca un ramo. */
+    r.angulo = t * abre;
+    const alto = 92 + (1 - Math.abs(t) * 1.5) * 26 + (i % 3) * 7;
+    r.destX = ramoX + Math.sin(r.angulo) * alto;
+    r.destY = ramoY - Math.cos(r.angulo) * alto;
+  });
+}
+
+function pintarCuenta() {
+  elCue.textContent = cogidas === 1 ? "1 flor" : `${cogidas} flores`;
+}
+
+/* ---- Los textos ----------------------------------------------------------- */
+
+let pidiendo = null;
+let bloqueado = 0;
+
+function decir(texto, firma, importante) {
+  const ahora = performance.now();
+  if (!importante && ahora < bloqueado) return;
+  if (pidiendo === texto) return;
+  pidiendo = texto;
+  if (importante) bloqueado = ahora + 3800;
+  elPie.classList.remove("is-visible");
+  setTimeout(() => {
+    elPie.textContent = texto;
+    if (firma) {
+      const em = document.createElement("em");
+      em.textContent = firma;
+      elPie.append(em);
+    }
+    elPie.classList.add("is-visible");
+  }, suave ? 10 : 280);
+}
+
+/* ---- Sonido --------------------------------------------------------------- */
+
+let audio = null;
+function chasquido() {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+    const t = audio.currentTime;
+    /* Un tallo que se parte: ruido cortísimo y agudo. */
+    const n = Math.floor(audio.sampleRate * 0.05);
+    const buf = audio.createBuffer(1, n, audio.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+    const src = audio.createBufferSource();
+    src.buffer = buf;
+    const f = audio.createBiquadFilter();
+    f.type = "highpass";
+    f.frequency.value = 1800;
+    const g = audio.createGain();
+    g.gain.value = 0.2;
+    src.connect(f).connect(g).connect(audio.destination);
+    src.start(t);
+  } catch { /* sin sonido se cogen igual */ }
+}
+
+function campana(hz) {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    const t = audio.currentTime;
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(hz, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.08, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.3);
+    o.connect(g).connect(audio.destination);
+    o.start(t); o.stop(t + 1.4);
+  } catch { /* nada */ }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS SECRETOS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Una de cada treinta flores es blanca y no tiene nombre. Al cogerla
+      dice lo que dice, y no vuelve a salir.                            */
+let laBlancaCogida = false;
+
+/* 2. Tocar el prado sin coger nada, cinco veces, levanta mariposas.    */
+let toquesVacios = 0;
+const mariposas = [];
+
+/* 3. Si se coge una sola clase seis veces seguidas, se dice algo.      */
+let ultimaClase = -1, seguidas = 0;
+
+function mirarSecretos(f) {
+  if (f.clase === ultimaClase) seguidas++;
+  else { ultimaClase = f.clase; seguidas = 1; }
+  if (seguidas === 6) {
+    seguidas = 0;
+    decir(`Seis ${CONF.clases[f.clase].nombre}s seguidas.`, "Cuando algo te gusta, no disimulas nada.", true);
+    campana(659);
+  }
+}
+
+function tocarPrado(x, y) {
+  if (y < lineaPrado) return;
+  toquesVacios++;
+  if (toquesVacios % 5 !== 0) return;
+  for (let i = 0; i < 6; i++) {
+    mariposas.push({
+      x: x + azar(-30, 30), y: y + azar(-20, 20),
+      vx: azar(-40, 40), vy: azar(-70, -30),
+      ala: Math.random() * 6.283, v: azar(9, 15),
+      col: Math.random() < 0.5 ? "#fff0a8" : "#ffd0e4",
+      vida: azar(4, 7),
+    });
+  }
+  if (mariposas.length > 30) mariposas.splice(0, mariposas.length - 30);
+  decir("Has levantado mariposas.", "Estaban ahí y no las veías.", true);
+  campana(880);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const brotes = [];
+let t0 = performance.now();
+let reloj = 0;
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A || !H) return;
+
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
+  else if (dt > 0.1) dt = 0.1;
+  reloj += dt;
+
+  ctx.clearRect(0, 0, A, H);
+
+  /* --- el sol y las lomas del fondo --- */
+  const sol = ctx.createRadialGradient(A * 0.76, H * 0.1, 0, A * 0.76, H * 0.1, Math.min(A, H) * 0.42);
+  sol.addColorStop(0, "rgba(255, 248, 210, 0.75)");
+  sol.addColorStop(1, "rgba(255, 248, 210, 0)");
+  ctx.fillStyle = sol;
+  ctx.fillRect(0, 0, A, H);
+
+  loma(lineaPrado - 26, "#c2d8ac", 16, 150);
+  loma(lineaPrado - 6, "#a8c894", 12, 105);
+
+  /* --- el prado --- */
+  const g = ctx.createLinearGradient(0, lineaPrado, 0, H);
+  g.addColorStop(0, "#96bd7e");
+  g.addColorStop(0.5, "#84ab6c");
+  g.addColorStop(1, "#6b9256");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, lineaPrado, A, H - lineaPrado);
+
+  /* --- las hierbas --- */
+  ctx.lineCap = "round";
+  for (const h of hierbas) {
+    const prof = (h.y - lineaPrado) / Math.max(1, H - lineaPrado);
+    const mece = Math.sin(reloj * 1.1 + h.f) * (4 + prof * 6);
+    ctx.strokeStyle = `rgba(${Math.round(70 + prof * 20)}, ${Math.round(120 + prof * 24)}, ${Math.round(60 + prof * 10)}, 0.75)`;
+    ctx.lineWidth = 1 + prof * 1.6;
+    ctx.beginPath();
+    ctx.moveTo(h.x, h.y);
+    ctx.quadraticCurveTo(
+      h.x + h.incl * h.alto * 0.5 + mece * 0.5, h.y - h.alto * 0.6,
+      h.x + h.incl * h.alto + mece, h.y - h.alto);
+    ctx.stroke();
+  }
+
+  /* --- los brotes: el hueco que queda al coger una --- */
+  for (let i = brotes.length - 1; i >= 0; i--) {
+    const b = brotes[i];
+    b.t += dt;
+    if (b.t > 0.9) { brotes.splice(i, 1); continue; }
+    const k = 1 - b.t / 0.9;
+    ctx.globalAlpha = k * 0.6;
+    ctx.strokeStyle = "#f7f2d8";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, (1 - k) * 26, 0, 6.283);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  /* --- las flores del prado, de atrás adelante --- */
+  prado.sort((a, b) => a.y - b.y);
+  for (const f of prado) {
+    f.nace = Math.min(1, f.nace + dt * 1.6);
+    const mece = Math.sin(reloj * 1.05 + f.f) * 5;
+    dibujarFlor(f.x + mece, f.y, f.esc * (0.3 + 0.7 * f.nace), f.giro + mece * 0.01, f.clase, f.tallo);
+  }
+
+  /* --- las mariposas (secreto 2) --- */
+  for (let i = mariposas.length - 1; i >= 0; i--) {
+    const m = mariposas[i];
+    m.vida -= dt;
+    if (m.vida <= 0) { mariposas.splice(i, 1); continue; }
+    m.ala += m.v * dt;
+    m.vx += Math.cos(reloj * 1.7 + m.ala) * 30 * dt;
+    m.vy += (Math.sin(reloj * 2.3 + m.ala) * 26 - 12) * dt;
+    m.vx *= 0.99; m.vy *= 0.99;
+    m.x += m.vx * dt; m.y += m.vy * dt;
+    dibujarMariposa(m);
+  }
+
+  /* --- el ramo --- */
+  dibujarRamo(dt);
+}
+
+function loma(y, color, altura, paso) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  ctx.lineTo(0, y);
+  for (let x = 0; x <= A; x += 12) {
+    ctx.lineTo(x, y - Math.sin(x / paso) * altura - Math.sin(x / (paso * 2.3)) * altura * 0.5);
+  }
+  ctx.lineTo(A, H);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/* ---- Dibujar una flor ----------------------------------------------------- */
+
+function dibujarFlor(x, y, esc, giro, clase, tallo) {
+  const c = CONF.clases[clase];
+  const r = 13 * esc;
+  const alto = (tallo || 40) * esc;
+
+  /* El tallo y una hoja. */
+  ctx.strokeStyle = "#5e8a48";
+  ctx.lineWidth = 1.8 * esc;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.quadraticCurveTo(x + giro * 12, y - alto * 0.5, x + giro * 20, y - alto);
+  ctx.stroke();
+  ctx.fillStyle = "#6f9c52";
+  ctx.beginPath();
+  ctx.ellipse(x + giro * 8 + 6 * esc, y - alto * 0.45, 7 * esc, 3.2 * esc, -0.5, 0, 6.283);
+  ctx.fill();
+
+  /* La corola. */
+  const fx = x + giro * 20, fy = y - alto;
+  ctx.save();
+  ctx.translate(fx, fy);
+  ctx.rotate(giro);
+  for (let i = 0; i < c.petalos; i++) {
+    const a = (i / c.petalos) * 6.283;
+    ctx.save();
+    ctx.rotate(a);
+    const gp = ctx.createLinearGradient(0, 0, 0, -r);
+    gp.addColorStop(0, c.color[1]);
+    gp.addColorStop(1, c.color[0]);
+    ctx.fillStyle = gp;
+    ctx.beginPath();
+    /* Pétalos más finos cuantos más hay: si no, un girasol de catorce
+       pétalos es un disco. */
+    const ancho = r * (0.52 - Math.min(0.3, c.petalos * 0.018));
+    ctx.ellipse(0, -r * 0.6, ancho, r * 0.6, 0, 0, 6.283);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.fillStyle = c.centro;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.3, 0, 6.283);
+  ctx.fill();
+  ctx.restore();
+}
+
+function dibujarMariposa(m) {
+  const abre = Math.abs(Math.cos(m.ala));
+  ctx.save();
+  ctx.translate(m.x, m.y);
+  ctx.globalAlpha = clamp(m.vida / 2, 0, 1);
+  ctx.fillStyle = m.col;
+  for (const s of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(s * 5 * abre, -2, 5 * abre, 6, s * 0.5, 0, 6.283);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(s * 4 * abre, 3, 4 * abre, 4.4, s * 0.3, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#4a3c30";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 1.4, 6, 0, 0, 6.283);
+  ctx.fill();
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+/* ---- Dibujar el ramo ------------------------------------------------------ */
+
+function dibujarRamo(dt) {
+  if (!ramo.length) return;
+
+  /* El papel de detrás, que aparece con la cuarta flor.
+
+     Va ESTRECHO ABAJO Y ANCHO ARRIBA: es un cono, y se abre hacia donde
+     están las flores. Al revés —en punta arriba— parecía un árbol de
+     Navidad con flores encima, que es exactamente lo que salió la
+     primera vez. */
+  if (ramo.length >= 4) {
+    ctx.fillStyle = "rgba(250, 244, 228, 0.9)";
+    ctx.beginPath();
+    ctx.moveTo(ramoX - 9, ramoY + 4);
+    ctx.lineTo(ramoX - 104, ramoY - 128);
+    ctx.lineTo(ramoX - 34, ramoY - 108);       // la arruga del canto
+    ctx.lineTo(ramoX, ramoY - 136);
+    ctx.lineTo(ramoX + 34, ramoY - 108);
+    ctx.lineTo(ramoX + 104, ramoY - 128);
+    ctx.lineTo(ramoX + 9, ramoY + 4);
+    ctx.closePath();
+    ctx.fill();
+    /* Un sombreado hacia el nudo, que le da el pliegue. */
+    const gp = ctx.createLinearGradient(ramoX, ramoY - 130, ramoX, ramoY);
+    gp.addColorStop(0, "rgba(180, 165, 130, 0)");
+    gp.addColorStop(1, "rgba(180, 165, 130, 0.3)");
+    ctx.fillStyle = gp;
+    ctx.fill();
+  }
+
+  for (const r of ramo) {
+    /* Vuela hasta su sitio y se queda. `damp` para que llegue suave y
+       no dé un salto, y sin muelle: una flor no rebota. */
+    r.vuelo = Math.min(1, r.vuelo + dt * 1.5);
+    r.x = damp(r.x, r.destX, 6, dt);
+    r.y = damp(r.y, r.destY, 6, dt);
+
+    const c = CONF.clases[r.clase];
+    const esc = r.esc * 0.9;
+    const r0 = 13 * esc;
+
+    /* El tallo, desde el nudo hasta la flor. */
+    ctx.strokeStyle = "#5e8a48";
+    ctx.lineWidth = 2 * esc;
+    ctx.beginPath();
+    ctx.moveTo(ramoX, ramoY);
+    ctx.quadraticCurveTo(
+      (ramoX + r.x) / 2 + Math.sin(r.angulo) * 10, (ramoY + r.y) / 2,
+      r.x, r.y);
+    ctx.stroke();
+
+    /* Y la corola, meciéndose un poquito. */
+    const mece = Math.sin(reloj * 1.3 + r.f) * 0.04;
+    ctx.save();
+    ctx.translate(r.x, r.y);
+    ctx.rotate(r.angulo + mece);
+    for (let i = 0; i < c.petalos; i++) {
+      const a = (i / c.petalos) * 6.283;
+      ctx.save();
+      ctx.rotate(a);
+      const gp = ctx.createLinearGradient(0, 0, 0, -r0);
+      gp.addColorStop(0, c.color[1]);
+      gp.addColorStop(1, c.color[0]);
+      ctx.fillStyle = gp;
+      const ancho = r0 * (0.52 - Math.min(0.3, c.petalos * 0.018));
+      ctx.beginPath();
+      ctx.ellipse(0, -r0 * 0.6, ancho, r0 * 0.6, 0, 0, 6.283);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = c.centro;
+    ctx.beginPath();
+    ctx.arc(0, 0, r0 * 0.3, 0, 6.283);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /* El lazo, cuando ya es un ramo de verdad. */
+  if (ramo.length >= CONF.paraLazo) {
+    ctx.fillStyle = "#d9527c";
+    ctx.fillRect(ramoX - 18, ramoY - 34, 36, 13);
+    ctx.beginPath();
+    ctx.moveTo(ramoX - 16, ramoY - 30);
+    ctx.lineTo(ramoX - 40, ramoY - 42);
+    ctx.lineTo(ramoX - 36, ramoY - 18);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(ramoX + 16, ramoY - 30);
+    ctx.lineTo(ramoX + 40, ramoY - 42);
+    ctx.lineTo(ramoX + 36, ramoY - 18);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+/* ---- Arranque -------------------------------------------------------------- */
+
+medir();
+pintarCuenta();
+decir("El prado está lleno. Coge las que te gusten.");
+requestAnimationFrame(paso);
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+Aquí van los cinco sonidos de la cinemática de la cabaña, con estos
+nombres exactos:
+
+    door.open.mp3     la puerta al abrirse
+    door.close.mp3    la puerta al cerrarse por dentro
+    escaleras.mp3     los pasos subiendo
+    cuarto.mp3        el cuarto (el silencio de una habitación)
+    cama.mp3          meterse en la cama
+
+Suenan UNO DETRÁS DE OTRO y en ese orden. Cada uno espera a que termine
+el anterior de verdad, así que pueden durar lo que haga falta: ninguno
+corta al de antes.
+
+Si falta alguno, se usa un sonido sintetizado en su lugar y la
+cinemática sigue igual de bien. En cuanto dejes el archivo aquí, se usa
+el tuyo.

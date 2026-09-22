@@ -9,48 +9,46 @@
  * Añadir uno nuevo es escribir una función y ponerla en el mapa del final.
  */
 
-import { el, qs } from "../utils/dom.js";
+import { el, qs, setVars } from "../utils/dom.js";
 import { Gestures } from "../core/Gestures.js";
 import { ScratchSurface, fogLayer } from "./ScratchSurface.js";
-import { damp, clamp01, lerp } from "../utils/math.js";
+import { createPhotoFrame } from "./PhotoFrame.js";
+import { damp, clamp01 } from "../utils/math.js";
 import { seeded } from "../utils/rng.js";
-import { tween, easeOutExpo, easeOutBack } from "../utils/easing.js";
+import { tween, easeOutExpo } from "../utils/easing.js";
 
 /* ══════════════════════════════════════════════════════════════════
    MEDALLÓN — una fotografía que se revela como si se estuviera
    revelando de verdad: primero el grano, luego la luz, luego ella.
    ══════════════════════════════════════════════════════════════════ */
 function medallion(ctx, { photo, accent }) {
-  const node = el("figure.orn.orn--medallion", { style: { "--accent": accent } }, [
-    el("div.medallion__frame", {}, [
-      el("div.medallion__glow"),
-      el("div.medallion__img"),
-      el("div.medallion__veil"),
-    ]),
-  ]);
+  // Toda la presentación (revelado, paralaje, brillo, pellizco para acercar)
+  // vive en PhotoFrame, compartida con las demás páginas que enseñan fotos.
+  const frame = createPhotoFrame(ctx, {
+    photo,
+    shape: "oval",
+    ratio: "4 / 5",
+    parallax: 1,
+    zoomable: true,
+  });
 
-  const imgHolder = qs(".medallion__img", node);
-  let img = null;
+  const node = el("figure.orn.orn--medallion", { style: { "--accent": accent } }, [
+    el("div.medallion__glow"),
+    frame.node,
+  ]);
 
   return {
     node,
     async enter() {
-      if (!photo) return;
-      img = await ctx.assets.load(photo.src).catch(() => null);
-      if (!img) return;
-      imgHolder.style.backgroundImage = `url("${photo.src}")`;
-      // Dos tiempos: primero aparece velada y borrosa, después se aclara.
-      requestAnimationFrame(() => node.classList.add("is-developing"));
-      setTimeout(() => node.classList.add("is-developed"), 780);
+      await frame.load();
+      node.classList.add("is-developing");
     },
-    tick(dt) {
-      // Paralaje muy contenido: se nota, pero no marea.
-      const p = ctx.pointer.influence;
-      const frame = qs(".medallion__frame", node);
-      frame.style.transform =
-        `translate3d(${p.x * 7}px, ${p.y * -5}px, 0) rotateX(${p.y * 3.5}deg) rotateY(${p.x * 4.5}deg)`;
+    tick(dt, time) {
+      frame.tick(dt, time);
     },
-    destroy() {},
+    destroy() {
+      frame.destroy();
+    },
   };
 }
 
@@ -116,7 +114,7 @@ function fogWindow(ctx, { photo, accent, onReveal }) {
         threshold: 0.46,
         dpr: Math.min(window.devicePixelRatio || 1, 2),
         onProgress: (p) => {
-          node.style.setProperty("--clear", String(p));
+          setVars(node, { "--clear": p.toFixed(3) });
           if (p > 0.05) ctx.haptics.scrub(p);
         },
         onComplete: async () => {
@@ -163,7 +161,7 @@ function fogWindow(ctx, { photo, accent, onReveal }) {
 
       // Lluvia
       rainCtx.clearRect(0, 0, size.width, size.height);
-      rainCtx.strokeStyle = "#cfe4ff";
+      rainCtx.strokeStyle = "#ffd9e2";
       rainCtx.lineWidth = 1;
       for (const drop of drops) {
         drop.y += drop.speed * dt;
@@ -227,11 +225,15 @@ function mirror(ctx, { photo, accent }) {
       lag.x = damp(lag.x, p.x, 2.4, dt);
       lag.y = damp(lag.y, p.y, 2.4, dt);
 
-      real.style.transform = `translate3d(${p.x * 9}px, ${p.y * -6}px, 0) scale(1.02)`;
+      // Redondeado: con el teléfono quieto los valores convergen y el
+      // navegador deja de recalcular. La onda del agua ya no se calcula
+      // aquí: es una animación CSS, que corre en el compositor y sale gratis.
+      real.style.transform =
+        `translate3d(${(p.x * 9).toFixed(1)}px, ${(p.y * -6).toFixed(1)}px, 0) scale(1.02)`;
       reflection.style.transform =
-        `translate3d(${lag.x * -13}px, ${lag.y * 5}px, 0) scaleY(-1) skewX(${lag.x * 2.4}deg)`;
-      reflection.style.opacity = String(0.3 + Math.abs(lag.x) * 0.18);
-      node.style.setProperty("--ripple", String(Math.sin(time * 0.8) * 0.5 + 0.5));
+        `translate3d(${(lag.x * -13).toFixed(1)}px, ${(lag.y * 5).toFixed(1)}px, 0) ` +
+        `scaleY(-1) skewX(${(lag.x * 2.4).toFixed(2)}deg)`;
+      reflection.style.opacity = (0.3 + Math.abs(lag.x) * 0.18).toFixed(3);
     },
     destroy() {},
   };
@@ -273,7 +275,7 @@ function compass(ctx, { accent, onReveal }) {
     await tween({
       from,
       to,
-      duration: 2400,
+      duration: 1500,
       ease: easeOutExpo,
       onUpdate: (v) => {
         angle = v;
@@ -392,4 +394,3 @@ export function createOrnament(name, ctx, options) {
   return factory(ctx, options);
 }
 
-export const ornamentNames = Object.keys(ORNAMENTS);

@@ -1,0 +1,56 @@
+AQUÍ VAN TUS IMÁGENES
+=====================
+
+Pon aquí tus fotos con este nombre exacto:
+
+    amor1.png
+    amor2.png
+    amor3.png
+    ...
+
+Cada una se convierte sola en una página del libro, y todas
+aparecen AL FINAL, después de todo lo demás.
+
+No hay que tocar ni una línea de código: se suben y ya están.
+
+
+LO ÚNICO QUE HAY QUE RESPETAR
+-----------------------------
+
+  · Los números van seguidos y empiezan en 1 (amor1, amor2,
+    amor3…). Si te saltas más de tres seguidos, el libro
+    entiende que se acabaron y deja de buscar.
+
+  · Manda la primera: la extensión de amor1 es la que el libro
+    da por buena para todas. También valen .jpg, .jpeg y .webp,
+    pero es más limpio si todas van igual.
+
+  · Salen en el orden de los números, así que si quieres cambiar
+    el orden, cambia los nombres.
+
+
+CÓMO QUEDAN
+-----------
+
+A pantalla completa, sobre un fondo que es la misma foto
+desenfocada (nunca hay barras negras). Entran desenfocadas y se
+enfocan, se mueven despacio solas, y se pueden tocar: sale un
+corazón donde toques, dos toques o un pellizco la acercan, y
+arrastrando la recorres.
+
+Por defecto NO llevan texto encima: la foto es lo importante.
+Si a alguna quieres ponerle una frase, se escribe en
+
+    src/pages/amor/textos.js
+
+poniendo el número de la foto. Lo que no pongas, se queda limpio.
+
+
+UN DETALLE PARA CURIOSOS
+------------------------
+
+Si abres la consola del navegador verás unos avisos de «404» de
+esta carpeta. Son normales y no son un fallo: como GitHub Pages
+no sabe decir qué archivos hay dentro de una carpeta, el libro
+lo averigua preguntando hasta que se acaban. Son cuatro o cinco
+preguntas y ya.

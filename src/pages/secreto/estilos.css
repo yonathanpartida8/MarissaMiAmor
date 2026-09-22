@@ -1,0 +1,315 @@
+/* ============================================================
+   SECRETO — la nota con cosas escritas entre líneas.
+   ============================================================ */
+
+.secreto {
+  display: grid;
+  /* Una sola fila, y acotada. Sin el `minmax(0, 1fr)` la fila crecía con
+     la nota y el `max-height: 100%` de la hoja se medía contra ella misma,
+     así que una nota larga se salía de la página en vez de desplazarse. */
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
+  padding: var(--pad-t) var(--pad-x) calc(var(--pad-b) + var(--bar-space, 0rem));
+  overflow: hidden;
+}
+
+.secreto__hoja {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  max-width: 34rem;
+  max-height: 100%;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
+  gap: clamp(0.4rem, 1.8vh, 0.75rem);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 620ms var(--e-out), transform 700ms var(--e-out);
+}
+
+.secreto.is-entered .secreto__hoja { opacity: 1; transform: none; }
+
+.secreto__head {
+  /* Hueco para el lacre de la esquina. */
+  padding-right: clamp(52px, 15vw, 66px);
+}
+
+.secreto__head .kicker { display: block; }
+
+.secreto__titulo {
+  margin-top: 0.15rem;
+  font-size: clamp(1.35rem, calc(6.2 * var(--vw)), 1.9rem);
+}
+
+/* ---- La nota ------------------------------------------------ */
+.secreto__nota {
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  line-height: 1.78;
+  color: var(--paper-ink);
+  text-align: justify;
+  hyphens: auto;
+}
+
+/* ---- Las palabras marcadas ---------------------------------- */
+/* Se ven exactamente igual que el resto: ésa es la gracia. Sólo el área
+   táctil es más generosa, para que se puedan acertar con el dedo. */
+.secreto__palabra {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0.14em 0.1em;
+  margin: -0.14em -0.1em;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 400ms var(--e-out), text-shadow 400ms var(--e-out);
+}
+
+.secreto__palabra:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* El empujoncito: si lleva un rato sin encontrar ninguna, respiran. */
+.secreto.is-nudging .secreto__palabra:not(.is-found) {
+  animation: secreto-respira 2.2s var(--e-out) infinite;
+}
+
+.secreto.is-nudging .secreto__palabra:nth-of-type(2) { animation-delay: 0.3s; }
+.secreto.is-nudging .secreto__palabra:nth-of-type(3) { animation-delay: 0.6s; }
+.secreto.is-nudging .secreto__palabra:nth-of-type(4) { animation-delay: 0.9s; }
+.secreto.is-nudging .secreto__palabra:nth-of-type(5) { animation-delay: 1.2s; }
+
+@keyframes secreto-respira {
+  0%, 100% { color: var(--paper-ink); text-shadow: none; }
+  50% {
+    color: var(--rose-deep);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+}
+
+/* Encontrada: se queda encendida para siempre. */
+.secreto__palabra.is-found {
+  color: var(--rose-deep);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent);
+  animation: secreto-chispa 700ms var(--e-out);
+}
+
+@keyframes secreto-chispa {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+
+.secreto__palabra.is-found::after {
+  content: "";
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 0.06em;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.6;
+}
+
+/* ---- El margen donde caen las frases ------------------------- */
+.secreto__margen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  max-height: 40%;
+}
+
+.secreto__linea {
+  font-family: var(--font-hand);
+  font-size: clamp(1rem, calc(4.4 * var(--vw)), 1.25rem);
+  line-height: 1.35;
+  color: var(--rose-deep);
+  opacity: 0;
+  transform: translateX(-10px) rotate(var(--tilt, 0deg));
+  transition: opacity 620ms var(--e-out), transform 700ms var(--e-spring);
+}
+
+.secreto__linea.is-in { opacity: 0.92; transform: rotate(var(--tilt, 0deg)); }
+
+.secreto__linea::before {
+  content: "—";
+  margin-right: 0.4em;
+  opacity: 0.5;
+}
+
+/* ---- El contador de hallazgos -------------------------------- */
+.secreto__contador {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.secreto__pip {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(120, 86, 60, 0.24);
+  transition: background 400ms var(--e-out), box-shadow 400ms var(--e-out), transform 400ms var(--e-spring);
+}
+
+.secreto__pip.is-on {
+  background: var(--rose);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
+  transform: scale(1.3);
+}
+
+/* ---- La frase del final -------------------------------------- */
+.secreto__final {
+  font-family: var(--font-hand);
+  font-size: clamp(1.15rem, calc(5.2 * var(--vw)), 1.5rem);
+  text-align: center;
+  color: var(--rose-deep);
+  opacity: 0;
+  transform: translateY(10px) scale(0.97);
+  transition: opacity 900ms var(--e-out), transform 1000ms var(--e-spring);
+}
+
+.secreto.is-said .secreto__final { opacity: 1; transform: none; }
+
+/* Al encontrarlas todas, el papel se enciende por detrás. */
+.secreto.is-lit .secreto__hoja::before {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 40%;
+  background: radial-gradient(
+    ellipse 60% 50% at 50% 50%,
+    color-mix(in srgb, var(--gold-light) 40%, transparent),
+    transparent 70%
+  );
+  animation: secreto-luz 1400ms var(--e-out) both;
+}
+
+@keyframes secreto-luz {
+  0%   { opacity: 0; transform: scale(0.7); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ══════════════ EL LACRE (easter egg) ══════════════ */
+.secreto__lacre {
+  position: absolute;
+  z-index: 4;
+  /* Arriba a la derecha, como se sella una carta de verdad. Abajo chocaba
+     con el botón de pasar página, que se le ponía encima y se comía el
+     gesto: el lacre no había manera de abrirlo. */
+  right: calc(var(--pad-x) - 0.5rem);
+  top: calc(var(--pad-t) - 0.4rem);
+  width: clamp(46px, 14vw, 58px);
+  aspect-ratio: 1;
+  border: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  /* Cera: recorte irregular, no un círculo perfecto. */
+  clip-path: polygon(
+    50% 2%, 66% 6%, 79% 14%, 90% 26%, 96% 41%, 97% 57%,
+    90% 72%, 78% 85%, 62% 94%, 47% 98%, 32% 92%, 19% 82%,
+    9% 69%, 3% 54%, 4% 38%, 12% 24%, 24% 12%, 37% 5%
+  );
+  background:
+    radial-gradient(ellipse 120% 90% at 34% 22%, rgba(255, 186, 202, 0.32), transparent 46%),
+    linear-gradient(158deg, #b8365a 0%, #99284a 48%, #7a1a38 100%);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 200, 214, 0.3),
+    inset 0 -6px 12px rgba(50, 4, 18, 0.5);
+  opacity: 0;
+  transform: scale(0.8) rotate(-8deg);
+  transition:
+    opacity 700ms var(--e-out) 500ms,
+    transform 260ms var(--e-spring);
+}
+
+.secreto.is-entered .secreto__lacre { opacity: 0.94; transform: rotate(-8deg); }
+
+.secreto__lacre.is-pressing { transform: rotate(-8deg) scale(0.93); }
+
+.secreto__lacre-txt {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  color: rgba(255, 214, 224, 0.72);
+  text-shadow: 0 1px 0 rgba(60, 6, 24, 0.6);
+}
+
+/* Ablandado: se derrite un poco y suelta luz. */
+.secreto__lacre.is-melted {
+  transform: rotate(-8deg) scale(1.06);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 200, 214, 0.4),
+    inset 0 -6px 12px rgba(50, 4, 18, 0.4),
+    0 0 26px -2px var(--rose);
+}
+
+.secreto__confesion {
+  position: absolute;
+  z-index: 4;
+  right: calc(var(--pad-x) + 3.4rem);
+  top: calc(var(--pad-t) + 0.9rem);
+  max-width: 11rem;
+  text-align: right;
+  font-family: var(--font-hand);
+  font-size: clamp(0.95rem, calc(4 * var(--vw)), 1.1rem);
+  color: var(--rose-deep);
+  opacity: 0;
+  transform: translateX(8px);
+  transition: opacity 620ms var(--e-out), transform 700ms var(--e-spring);
+  pointer-events: none;
+}
+
+.secreto.is-confessed .secreto__confesion { opacity: 0.9; transform: none; }
+
+/* ══════════════ CORAZONES SUELTOS ══════════════ */
+@keyframes secreto-sube {
+  0%   { opacity: 0; transform: translate3d(-50%, 0, 0) scale(0.5); }
+  16%  { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(calc(-50% + var(--drift, 0px)), -110px, 0) scale(1.1); }
+}
+
+/* ---- Móvil apaisado ----------------------------------------- */
+html[data-orientation="landscape"][data-device="phone"] .secreto__hoja {
+  max-width: none;
+  grid-template-columns: 1.15fr 1fr;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  column-gap: var(--gap-md);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .secreto__head,
+html[data-orientation="landscape"][data-device="phone"] .secreto__hoja > .rule {
+  grid-column: 1 / -1;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .secreto__scroll {
+  grid-column: 1;
+  grid-row: 3 / span 2;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .secreto__margen {
+  grid-column: 2;
+  grid-row: 3;
+  max-height: 100%;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .secreto__contador,
+html[data-orientation="landscape"][data-device="phone"] .secreto__final {
+  grid-column: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .secreto.is-nudging .secreto__palabra:not(.is-found),
+  .secreto__palabra.is-found,
+}

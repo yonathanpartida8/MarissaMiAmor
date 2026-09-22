@@ -1,0 +1,839 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Las polaroids</title>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Todo dentro de .album-mundo, con prefijo `al-` en cada clase.
+   ══════════════════════════════════════════════════════════════════════ */
+
+html, body { margin: 0; height: 100%; }
+
+.album-mundo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 0%, #fdf4ea, transparent 60%),
+    linear-gradient(168deg, #f4e6da 0%, #e8d4c6 60%, #dcc2b4 100%);
+  color: #45322e;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+
+  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --barra: var(--hueco-barra, 0rem);
+  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* El tapete de fieltro donde se dejan caer las fotos. */
+.album-mundo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(120, 80, 60, 0.03) 0 2px, transparent 2px 5px);
+  pointer-events: none;
+}
+
+.album-mundo .al-mesa {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  touch-action: none;
+}
+
+/* ---- Una polaroid --------------------------------------------------- */
+
+.album-mundo .al-foto {
+  position: absolute;
+  width: 152px;
+  padding: 9px 9px 34px 9px;
+  background: linear-gradient(178deg, #fffdf8 0%, #f7f0e4 88%, #ece0d0 100%);
+  border-radius: 3px;
+  box-shadow:
+    0 1px 2px rgba(70, 40, 30, 0.2),
+    0 10px 22px rgba(70, 40, 30, 0.26);
+  transform-origin: 50% 50%;
+  cursor: grab;
+  touch-action: none;
+  will-change: transform;
+}
+.album-mundo .al-foto.is-cogida {
+  cursor: grabbing;
+  box-shadow: 0 4px 8px rgba(70, 40, 30, 0.22), 0 26px 46px rgba(70, 40, 30, 0.34);
+}
+
+/* La ventana de la imagen. Lo que se ve dentro lo pinta un lienzo. */
+.album-mundo .al-ventana {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 1px;
+  overflow: hidden;
+  background: #2a2420;
+}
+.album-mundo .al-ventana canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* El emulsionado que hay que frotar para revelar. */
+.album-mundo .al-emulsion {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.album-mundo .al-pie {
+  position: absolute;
+  left: 9px; right: 9px; bottom: 8px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  font-size: 0.82rem;
+  line-height: 1.1;
+  text-align: center;
+  color: #6b4a3f;
+  opacity: 0;
+  transition: opacity 900ms var(--e-suave);
+}
+.album-mundo .al-foto.is-revelada .al-pie { opacity: 1; }
+
+/* ---- Lo que se lee -------------------------------------------------- */
+
+.album-mundo .al-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  padding:
+    calc(var(--seguro-t) + 18px) 22px
+    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+.album-mundo .al-titulo {
+  margin: 0;
+  font-family: var(--tipo-titulo, Georgia, serif);
+  font-size: clamp(1rem, 4.4vw, 1.4rem);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: #7a564a;
+  opacity: 0.88;
+  transition: opacity 800ms var(--e-suave);
+}
+.album-mundo.is-jugando .al-titulo { opacity: 0.26; }
+
+.album-mundo .al-nota {
+  margin: 0;
+  min-height: 3.2em;
+  max-width: 23em;
+  font-size: clamp(0.8rem, 3.3vw, 0.95rem);
+  line-height: 1.55;
+  color: #55403a;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 640ms var(--e-suave), transform 640ms var(--e-suave);
+}
+.album-mundo .al-nota.is-visible { opacity: 0.92; transform: none; }
+.album-mundo .al-nota em {
+  display: block;
+  margin-top: 0.28em;
+  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  font-size: 1.16em;
+  font-style: normal;
+  color: #b0543f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .album-mundo * { transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="album-mundo" id="mundo">
+  <div class="al-mesa" id="mesa"></div>
+  <div class="al-ui">
+    <h1 class="al-titulo" id="titulo">Frota para revelar</h1>
+    <p class="al-nota" id="nota" role="status" aria-live="polite"></p>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN EDITABLE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const CONF = {
+
+  /* ---- LAS FOTOS ------------------------------------------------------
+     Ninguna es un archivo: cada una se DIBUJA. Así la página sigue siendo
+     un solo HTML sin descargar nada, y además se puede cambiar lo que sea
+     con dos números.
+
+     `escena` elige qué se pinta dentro (hay cinco abajo, en `ESCENAS`).
+     `pie` es lo que pone escrito debajo, a mano.
+     `nota` es lo que se lee al terminar de revelarla.                   */
+  fotos: [
+    { escena: "playa",   pie: "aquel agosto",      nota: ["La arena se nos metió hasta en el coche.", "Y volvería mañana."] },
+    { escena: "ciudad",  pie: "las 2 de la mañana", nota: ["Nos perdimos y no nos importó nada.", "Contigo perderse es un plan."] },
+    { escena: "campo",   pie: "el domingo largo",  nota: ["Ese día no hicimos absolutamente nada.", "Fue de los mejores."] },
+    { escena: "cocina",  pie: "salió fatal",       nota: ["Se nos quemó y nos reímos media hora.", "Aún nos reímos."] },
+    { escena: "nieve",   pie: "qué frío hacía",    nota: ["Tenías la nariz roja y no te dejabas fotografiar.", "Te la hice igual."] },
+    { escena: "ventana", pie: "sin motivo",        nota: ["No pasaba nada especial. Por eso la guardo.", "Los días normales son los que cuentan."] },
+  ],
+
+  /* ---- EL REVELADO ---------------------------------------------------- */
+  brochaRadio: 22,      // lo gordo que es el dedo al frotar
+  paraRevelada: 0.62,   // qué parte hay que limpiar para darla por hecha
+
+  /* ---- LA MESA -------------------------------------------------------- */
+  inclinacion: 9,       // grados de desorden de cada foto
+};
+
+/* Las escenas. Cada una es una función que pinta en un lienzo cuadrado
+   de lado `L`. Nada de imágenes: rectángulos, círculos y degradados. */
+const ESCENAS = {
+
+  playa(c, L) {
+    const cielo = c.createLinearGradient(0, 0, 0, L * 0.62);
+    cielo.addColorStop(0, "#f7c89a");
+    cielo.addColorStop(0.55, "#f2a789");
+    cielo.addColorStop(1, "#e88a80");
+    c.fillStyle = cielo; c.fillRect(0, 0, L, L * 0.62);
+    /* El sol, bajo, casi tocando el agua. */
+    c.fillStyle = "#fff0c8";
+    c.beginPath(); c.arc(L * 0.68, L * 0.5, L * 0.1, 0, 6.283); c.fill();
+    /* El mar y su reguero de luz. */
+    const mar = c.createLinearGradient(0, L * 0.62, 0, L);
+    mar.addColorStop(0, "#c96f72");
+    mar.addColorStop(1, "#7a4258");
+    c.fillStyle = mar; c.fillRect(0, L * 0.62, L, L * 0.38);
+    c.fillStyle = "rgba(255, 238, 200, 0.5)";
+    for (let i = 0; i < 9; i++) {
+      const y = L * 0.63 + i * L * 0.04;
+      const w = L * (0.16 - i * 0.012);
+      c.fillRect(L * 0.68 - w / 2, y, w, 2);
+    }
+    /* Dos siluetas pequeñas, juntas. */
+    c.fillStyle = "#3d2230";
+    c.fillRect(L * 0.3, L * 0.72, 5, 16);
+    c.fillRect(L * 0.36, L * 0.72, 5, 16);
+    c.beginPath(); c.arc(L * 0.325, L * 0.70, 3.4, 0, 6.283); c.fill();
+    c.beginPath(); c.arc(L * 0.385, L * 0.70, 3.4, 0, 6.283); c.fill();
+  },
+
+  ciudad(c, L) {
+    c.fillStyle = "#151a2e"; c.fillRect(0, 0, L, L);
+    /* Los edificios, en tres planos. Cada plano más claro y más borroso
+       que el de delante: así hay profundidad sin dibujar nada más. */
+    const planos = [
+      { y: 0.46, alto: 0.4, col: "#232a48", n: 7 },
+      { y: 0.56, alto: 0.34, col: "#1b2138", n: 9 },
+      { y: 0.66, alto: 0.3, col: "#121728", n: 11 },
+    ];
+    for (const p of planos) {
+      c.fillStyle = p.col;
+      for (let i = 0; i < p.n; i++) {
+        const w = L / p.n;
+        const h = L * p.alto * (0.45 + ((i * 37) % 11) / 18);
+        c.fillRect(i * w, L * p.y + (L * p.alto - h), w - 1.5, h);
+      }
+    }
+    /* Las ventanas encendidas. */
+    c.fillStyle = "#ffd98a";
+    for (let i = 0; i < 46; i++) {
+      const x = ((i * 53) % 100) / 100 * L;
+      const y = L * 0.5 + ((i * 29) % 100) / 100 * L * 0.42;
+      if ((i * 7) % 3) c.fillRect(x, y, 2.4, 3);
+    }
+    /* La farola y el charco. */
+    c.fillStyle = "#2a3050"; c.fillRect(L * 0.18, L * 0.55, 2.5, L * 0.4);
+    const luz = c.createRadialGradient(L * 0.19, L * 0.56, 0, L * 0.19, L * 0.56, L * 0.22);
+    luz.addColorStop(0, "rgba(255, 216, 140, 0.55)");
+    luz.addColorStop(1, "rgba(255, 216, 140, 0)");
+    c.fillStyle = luz; c.fillRect(0, L * 0.4, L * 0.5, L * 0.6);
+  },
+
+  campo(c, L) {
+    const cielo = c.createLinearGradient(0, 0, 0, L * 0.58);
+    cielo.addColorStop(0, "#a8d4ea");
+    cielo.addColorStop(1, "#dcecd8");
+    c.fillStyle = cielo; c.fillRect(0, 0, L, L * 0.58);
+    /* Tres lomas, de la más lejana a la más cercana. */
+    const lomas = [["#b8cf9a", 0.56, 0.1], ["#96b878", 0.64, 0.14], ["#6f9a5a", 0.74, 0.2]];
+    for (const [col, y, alto] of lomas) {
+      c.fillStyle = col;
+      c.beginPath();
+      c.moveTo(0, L);
+      c.lineTo(0, L * y);
+      for (let x = 0; x <= L; x += 8) {
+        c.lineTo(x, L * y - Math.sin(x * 0.03 + y * 12) * L * alto * 0.3);
+      }
+      c.lineTo(L, L);
+      c.closePath(); c.fill();
+    }
+    /* El árbol solo de siempre. */
+    c.fillStyle = "#5b4030"; c.fillRect(L * 0.7, L * 0.56, 5, L * 0.2);
+    c.fillStyle = "#4f7d42";
+    c.beginPath(); c.arc(L * 0.72, L * 0.54, L * 0.11, 0, 6.283); c.fill();
+    /* La manta y las dos manchitas que somos. */
+    c.fillStyle = "#e8d0a8";
+    c.beginPath(); c.ellipse(L * 0.34, L * 0.8, L * 0.16, L * 0.06, 0, 0, 6.283); c.fill();
+    c.fillStyle = "#c4607a";
+    c.beginPath(); c.arc(L * 0.3, L * 0.78, 5, 0, 6.283); c.fill();
+    c.fillStyle = "#4a6f9a";
+    c.beginPath(); c.arc(L * 0.39, L * 0.78, 5, 0, 6.283); c.fill();
+  },
+
+  cocina(c, L) {
+    c.fillStyle = "#e8dcc8"; c.fillRect(0, 0, L, L);
+    /* Los azulejos del fondo. */
+    c.strokeStyle = "rgba(160, 140, 115, 0.45)";
+    c.lineWidth = 1;
+    for (let i = 0; i <= 6; i++) {
+      c.beginPath(); c.moveTo(0, i * L / 6); c.lineTo(L, i * L / 6); c.stroke();
+      c.beginPath(); c.moveTo(i * L / 6, 0); c.lineTo(i * L / 6, L * 0.62); c.stroke();
+    }
+    /* La encimera. */
+    c.fillStyle = "#8f6a4e"; c.fillRect(0, L * 0.62, L, L * 0.38);
+    c.fillStyle = "rgba(255, 240, 210, 0.25)"; c.fillRect(0, L * 0.62, L, 4);
+    /* La sartén, con lo que sea que había dentro. */
+    c.fillStyle = "#2e2a28";
+    c.beginPath(); c.ellipse(L * 0.44, L * 0.68, L * 0.19, L * 0.08, 0, 0, 6.283); c.fill();
+    c.fillStyle = "#4a3a30";
+    c.beginPath(); c.ellipse(L * 0.44, L * 0.67, L * 0.15, L * 0.06, 0, 0, 6.283); c.fill();
+    c.fillStyle = "#2e2a28"; c.fillRect(L * 0.62, L * 0.665, L * 0.28, 5);
+    /* El humo. Tres volutas, que es lo que hace el chiste. */
+    c.strokeStyle = "rgba(90, 80, 75, 0.45)";
+    c.lineWidth = 3; c.lineCap = "round";
+    for (let i = 0; i < 3; i++) {
+      const x = L * (0.36 + i * 0.07);
+      c.beginPath();
+      c.moveTo(x, L * 0.6);
+      c.quadraticCurveTo(x + 10, L * 0.44, x - 6, L * 0.3);
+      c.quadraticCurveTo(x - 14, L * 0.2, x + 4, L * 0.1);
+      c.stroke();
+    }
+  },
+
+  nieve(c, L) {
+    const cielo = c.createLinearGradient(0, 0, 0, L);
+    cielo.addColorStop(0, "#9eb4c8");
+    cielo.addColorStop(0.6, "#c8d6e0");
+    cielo.addColorStop(1, "#eef3f6");
+    c.fillStyle = cielo; c.fillRect(0, 0, L, L);
+    /* Abetos, cada vez más pequeños hacia el fondo. */
+    for (let i = 0; i < 7; i++) {
+      const x = L * (0.08 + i * 0.14);
+      const esc = 0.6 + ((i * 31) % 7) / 10;
+      const base = L * (0.62 + ((i * 17) % 5) * 0.02);
+      c.fillStyle = `rgba(48, 72, 62, ${0.5 + esc * 0.35})`;
+      for (let k = 0; k < 3; k++) {
+        const w = L * 0.07 * esc * (1 - k * 0.22);
+        const y = base - k * L * 0.07 * esc;
+        c.beginPath();
+        c.moveTo(x, y - L * 0.11 * esc);
+        c.lineTo(x - w, y);
+        c.lineTo(x + w, y);
+        c.closePath(); c.fill();
+      }
+    }
+    /* La nieve del suelo y los copos. */
+    c.fillStyle = "#f6fafc";
+    c.beginPath();
+    c.moveTo(0, L);
+    c.lineTo(0, L * 0.66);
+    for (let x = 0; x <= L; x += 10) c.lineTo(x, L * 0.66 + Math.sin(x * 0.05) * 5);
+    c.lineTo(L, L); c.closePath(); c.fill();
+    c.fillStyle = "rgba(255,255,255,0.9)";
+    for (let i = 0; i < 40; i++) {
+      const x = ((i * 67) % 100) / 100 * L;
+      const y = ((i * 43) % 100) / 100 * L * 0.7;
+      c.beginPath(); c.arc(x, y, 1.4 + (i % 3) * 0.6, 0, 6.283); c.fill();
+    }
+  },
+
+  ventana(c, L) {
+    c.fillStyle = "#3a3330"; c.fillRect(0, 0, L, L);
+    /* Lo que se ve fuera: un día gris y bonito. */
+    const fuera = c.createLinearGradient(0, 0, 0, L);
+    fuera.addColorStop(0, "#c8d8e0");
+    fuera.addColorStop(0.7, "#e0e4dc");
+    fuera.addColorStop(1, "#b8c4ac");
+    c.fillStyle = fuera;
+    c.fillRect(L * 0.1, L * 0.08, L * 0.8, L * 0.76);
+    /* Unos tejados al fondo. */
+    c.fillStyle = "#8a9490";
+    for (let i = 0; i < 5; i++) {
+      const x = L * (0.12 + i * 0.16);
+      const h = L * (0.1 + ((i * 23) % 5) * 0.02);
+      c.fillRect(x, L * 0.84 - h, L * 0.14, h);
+    }
+    /* El marco, en cruz. */
+    c.fillStyle = "#4a4038";
+    c.fillRect(L * 0.1, L * 0.08, L * 0.8, 6);
+    c.fillRect(L * 0.1, L * 0.8, L * 0.8, 6);
+    c.fillRect(L * 0.1, L * 0.08, 6, L * 0.78);
+    c.fillRect(L * 0.87, L * 0.08, 6, L * 0.78);
+    c.fillRect(L * 0.485, L * 0.08, 5, L * 0.78);
+    c.fillRect(L * 0.1, L * 0.44, L * 0.8, 5);
+    /* Una taza en el alféizar. */
+    c.fillStyle = "#e8e0d4";
+    c.fillRect(L * 0.2, L * 0.72, L * 0.1, L * 0.08);
+    c.strokeStyle = "#e8e0d4"; c.lineWidth = 3;
+    c.beginPath(); c.arc(L * 0.32, L * 0.76, L * 0.03, -1.2, 1.2); c.stroke();
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   La maquinaria.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const mundo  = document.getElementById("mundo");
+const mesa   = document.getElementById("mesa");
+const elNota = document.getElementById("nota");
+
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+
+let A = 0, H = 0;
+const fotos = [];
+let zTop = 10;
+
+function medir() {
+  const r = mundo.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const primera = !A;
+  A = r.width; H = r.height;
+  if (primera) repartir();
+  else for (const f of fotos) {
+    colocar(f, clamp(f.x, -54, Math.max(-54, A - 116)), clamp(f.y, 30, Math.max(30, H - 96)));
+  }
+}
+new ResizeObserver(medir).observe(mundo);
+
+/* ---- Construir el montón --------------------------------------------- */
+
+function repartir() {
+  /* Se reparten en abanico desde el centro, con un desorden fijo por
+     foto: si se sortea cada vez que se mide, al girar el móvil el montón
+     se baraja solo y eso da muy mala sensación. */
+  /* El ancho de una foto, marco incluido: 152 de imagen más los 9 de
+     cada lado. Todo lo de abajo se mide contra esto, y no contra un
+     número a ojo, que fue lo que dejó la última foto medio fuera. */
+  const ANCHA = 170, ALTA = 205;
+  const margen = 10;
+  const sitio = Math.max(0, A - ANCHA - margen * 2);
+
+  CONF.fotos.forEach((datos, i) => {
+    const f = crearFoto(datos, i);
+    fotos.push(f);
+    const t = (i / Math.max(1, CONF.fotos.length - 1)) - 0.5;   // -0.5 … +0.5
+    /* El abanico nunca es más ancho que el sitio que hay: en una hoja
+       estrecha las fotos se amontonan más, y ya está. */
+    const x = margen + sitio * 0.5 + t * Math.min(sitio, 130);
+    const y = H * 0.5 - ALTA * 0.55 + Math.abs(t) * 30 + i * 6;
+    colocar(f,
+      clamp(x, margen, Math.max(margen, A - ANCHA - margen)),
+      clamp(y, 64, Math.max(64, H - ALTA - 56)));
+  });
+}
+
+function crearFoto(datos, i) {
+  const raiz = document.createElement("div");
+  raiz.className = "al-foto";
+  raiz.style.zIndex = String(++zTop);
+
+  const ventana = document.createElement("div");
+  ventana.className = "al-ventana";
+
+  const imagen = document.createElement("canvas");
+  const emulsion = document.createElement("canvas");
+  emulsion.className = "al-emulsion";
+  ventana.append(imagen, emulsion);
+
+  const pie = document.createElement("div");
+  pie.className = "al-pie";
+  pie.textContent = datos.pie;
+
+  raiz.append(ventana, pie);
+  mesa.append(raiz);
+
+  const f = {
+    raiz, ventana, imagen, emulsion, pie,
+    datos, i,
+    x: 0, y: 0,
+    giro: azar(-CONF.inclinacion, CONF.inclinacion),
+    revelada: false,
+    limpiado: 0,
+    ctxEmu: null,
+    lado: 0,
+  };
+
+  pintarFoto(f);
+  engancharFoto(f);
+  return f;
+}
+
+/** Dibuja la escena y pone encima el emulsionado que hay que frotar. */
+function pintarFoto(f) {
+  const lado = Math.round(f.ventana.clientWidth || 134);
+  if (lado < 8) { requestAnimationFrame(() => pintarFoto(f)); return; }
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  f.lado = lado;
+
+  for (const lienzo of [f.imagen, f.emulsion]) {
+    lienzo.width = Math.round(lado * dpr);
+    lienzo.height = Math.round(lado * dpr);
+  }
+
+  const ci = f.imagen.getContext("2d");
+  ci.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const pinta = ESCENAS[f.datos.escena] || ESCENAS.ventana;
+  pinta(ci, lado);
+  /* El tono cálido de una polaroid vieja: un velo naranja y las esquinas
+     un poco quemadas. Es lo que separa «un dibujo» de «una foto». */
+  ci.fillStyle = "rgba(255, 190, 120, 0.13)";
+  ci.fillRect(0, 0, lado, lado);
+  const vin = ci.createRadialGradient(lado / 2, lado / 2, lado * 0.3, lado / 2, lado / 2, lado * 0.75);
+  vin.addColorStop(0, "rgba(60, 30, 20, 0)");
+  vin.addColorStop(1, "rgba(60, 30, 20, 0.35)");
+  ci.fillStyle = vin;
+  ci.fillRect(0, 0, lado, lado);
+
+  const ce = f.emulsion.getContext("2d");
+  ce.setTransform(dpr, 0, 0, dpr, 0, 0);
+  f.ctxEmu = ce;
+  emulsionar(f);
+}
+
+function emulsionar(f) {
+  const c = f.ctxEmu, L = f.lado;
+  c.globalCompositeOperation = "source-over";
+  c.clearRect(0, 0, L, L);
+  const g = c.createLinearGradient(0, 0, L, L);
+  g.addColorStop(0, "#5c5048");
+  g.addColorStop(0.5, "#6b5d52");
+  g.addColorStop(1, "#4e443d");
+  c.fillStyle = g;
+  c.fillRect(0, 0, L, L);
+  /* Un moteado tenue, para que el emulsionado no sea una plancha lisa. */
+  c.fillStyle = "rgba(255,255,255,0.05)";
+  for (let i = 0; i < 90; i++) {
+    c.fillRect(((i * 61) % 100) / 100 * L, ((i * 37) % 100) / 100 * L, 2, 2);
+  }
+  f.limpiado = 0;
+  f.revelada = false;
+  f.raiz.classList.remove("is-revelada");
+}
+
+/* ---- Frotar y arrastrar ----------------------------------------------- */
+
+function engancharFoto(f) {
+  /* Dos gestos distintos sobre la misma foto:
+       · frotar dentro de la ventana → revela;
+       · arrastrar el marco blanco   → la mueve.
+     Se distinguen por dónde empieza el dedo, que es lo natural. */
+
+  let frotando = null;
+  f.emulsion.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    e.stopPropagation();
+    f.emulsion.setPointerCapture(e.pointerId);
+    frotando = { id: e.pointerId, x: null, y: null };
+    alFrente(f);
+    frotar(f, e, frotando);
+  });
+  f.emulsion.addEventListener("pointermove", (e) => {
+    if (!frotando || e.pointerId !== frotando.id) return;
+    frotar(f, e, frotando);
+  });
+  const finFrote = () => { frotando = null; };
+  f.emulsion.addEventListener("pointerup", finFrote);
+  f.emulsion.addEventListener("pointercancel", finFrote);
+
+  let llevando = null;
+  f.raiz.addEventListener("pointerdown", (e) => {
+    if (e.target === f.emulsion) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    f.raiz.setPointerCapture(e.pointerId);
+    const r = mundo.getBoundingClientRect();
+    llevando = { id: e.pointerId, dx: e.clientX - r.left - f.x, dy: e.clientY - r.top - f.y };
+    f.raiz.classList.add("is-cogida");
+    alFrente(f);
+    mirarCaricia(f);
+  });
+  f.raiz.addEventListener("pointermove", (e) => {
+    if (!llevando || e.pointerId !== llevando.id) return;
+    const r = mundo.getBoundingClientRect();
+    /* Se deja sacar un poco por los cantos —queda bien, parece una mesa
+       de verdad— pero nunca tanto como para perderla. */
+    colocar(f,
+      clamp(e.clientX - r.left - llevando.dx, -54, A - 116),
+      clamp(e.clientY - r.top - llevando.dy, 30, H - 96));
+  });
+  const soltar = () => {
+    if (!llevando) return;
+    llevando = null;
+    f.raiz.classList.remove("is-cogida");
+  };
+  f.raiz.addEventListener("pointerup", soltar);
+  f.raiz.addEventListener("pointercancel", soltar);
+}
+
+function colocar(f, x, y) {
+  f.x = x; f.y = y;
+  f.raiz.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) rotate(${f.giro.toFixed(2)}deg)`;
+}
+
+function alFrente(f) {
+  f.raiz.style.zIndex = String(++zTop);
+  mundo.classList.add("is-jugando");
+}
+
+function frotar(f, e, estado) {
+  const r = f.emulsion.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width * f.lado;
+  const y = (e.clientY - r.top) / r.height * f.lado;
+  const c = f.ctxEmu;
+
+  /* `destination-out` borra en vez de pintar: es lo que convierte un
+     trazo en una ventana al dibujo de debajo. */
+  c.globalCompositeOperation = "destination-out";
+  c.lineCap = "round";
+  c.lineJoin = "round";
+  c.lineWidth = CONF.brochaRadio * 2;
+  c.strokeStyle = "rgba(0,0,0,1)";
+  c.beginPath();
+  if (estado.x === null) {
+    c.moveTo(x, y);
+    c.lineTo(x + 0.1, y + 0.1);
+  } else {
+    c.moveTo(estado.x, estado.y);
+    c.lineTo(x, y);
+  }
+  c.stroke();
+  estado.x = x; estado.y = y;
+
+  medirRevelado(f);
+}
+
+/** Cuánto queda por limpiar. Se mira de tarde en tarde: leer píxeles es
+    lo más caro que hay y no hace falta hacerlo en cada movimiento. */
+let ultimaMedida = 0;
+function medirRevelado(f) {
+  if (f.revelada) return;
+  const ahora = performance.now();
+  if (ahora - ultimaMedida < 160) return;
+  ultimaMedida = ahora;
+
+  const c = f.ctxEmu;
+  const paso = 12;
+  let vacios = 0, total = 0;
+  try {
+    const d = c.getImageData(0, 0, f.emulsion.width, f.emulsion.height).data;
+    const w = f.emulsion.width;
+    for (let y = 0; y < f.emulsion.height; y += paso) {
+      for (let x = 0; x < w; x += paso) {
+        const a = d[(y * w + x) * 4 + 3];
+        total++;
+        if (a < 40) vacios++;
+      }
+    }
+  } catch { return; }
+  f.limpiado = total ? vacios / total : 0;
+
+  if (f.limpiado >= CONF.paraRevelada) revelar(f);
+}
+
+function revelar(f) {
+  if (f.revelada) return;
+  f.revelada = true;
+  f.raiz.classList.add("is-revelada");
+  /* Lo que quede de emulsionado se va solo: obligar a rascar hasta el
+     último rincón es trabajo, no juego. */
+  const c = f.ctxEmu, L = f.lado;
+  let k = 0;
+  const desvanecer = setInterval(() => {
+    k += 0.12;
+    c.globalCompositeOperation = "destination-out";
+    c.fillStyle = `rgba(0,0,0,${0.2})`;
+    c.fillRect(0, 0, L, L);
+    if (k >= 1) clearInterval(desvanecer);
+  }, suave ? 8 : 34);
+
+  decir(f.datos.nota[0], f.datos.nota[1]);
+  campanita(520 + f.i * 55);
+  contarReveladas();
+}
+
+/* ---- Los textos -------------------------------------------------------- */
+
+let pidiendo = null;
+function decir(texto, firma) {
+  if (pidiendo === texto) return;
+  pidiendo = texto;
+  elNota.classList.remove("is-visible");
+  setTimeout(() => {
+    elNota.textContent = texto;
+    if (firma) {
+      const em = document.createElement("em");
+      em.textContent = firma;
+      elNota.append(em);
+    }
+    elNota.classList.add("is-visible");
+  }, suave ? 10 : 300);
+}
+
+/* ---- Sonido ------------------------------------------------------------ */
+
+let audio = null;
+function campanita(hz) {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+    const t = audio.currentTime;
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(hz, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.08, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+    o.connect(g).connect(audio.destination);
+    o.start(t); o.stop(t + 1.2);
+  } catch { /* nada */ }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS SECRETOS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Al revelarlas TODAS, aparece una séptima foto que no estaba en el
+      montón, y es la única en la que sale algo escrito.                 */
+let reveladas = 0;
+let laSecreta = false;
+
+function contarReveladas() {
+  reveladas++;
+  if (reveladas < CONF.fotos.length || laSecreta) return;
+  laSecreta = true;
+  setTimeout(() => {
+    const f = crearFoto({
+      escena: "carta",
+      pie: "para ti",
+      nota: ["Ésta no estaba en el montón.", "La dejé para cuando las encontraras todas."],
+    }, 99);
+    fotos.push(f);
+    colocar(f, A * 0.5 - 76, H * 0.5 - 100);
+    f.raiz.style.transition = "opacity 900ms ease";
+    f.raiz.style.opacity = "0";
+    requestAnimationFrame(() => { f.raiz.style.opacity = "1"; });
+    alFrente(f);
+    decir("Espera. Queda una.", "No la habías visto.");
+    campanita(784);
+  }, 1400);
+}
+
+/* La escena de esa séptima: una carta escrita a mano. */
+ESCENAS.carta = (c, L) => {
+  c.fillStyle = "#f7efe0"; c.fillRect(0, 0, L, L);
+  c.fillStyle = "rgba(190, 170, 140, 0.35)";
+  for (let i = 3; i < 13; i++) c.fillRect(L * 0.12, L * (i / 15), L * 0.76, 1);
+  /* Los renglones fingidos: rayas de distinto largo. Se lee como letra
+     sin serlo, que es lo que hace falta a este tamaño. */
+  c.strokeStyle = "#4a3d58";
+  c.lineWidth = 2; c.lineCap = "round";
+  const largos = [0.66, 0.72, 0.58, 0.7, 0.44, 0.68, 0.52];
+  largos.forEach((l, i) => {
+    const y = L * (0.24 + i * 0.067);
+    c.beginPath();
+    let x = L * 0.14;
+    while (x < L * (0.14 + l)) {
+      const trozo = 4 + ((i * 7 + x) % 11);
+      c.moveTo(x, y + Math.sin(x * 0.4) * 1.2);
+      c.lineTo(Math.min(x + trozo, L * (0.14 + l)), y + Math.cos(x * 0.3) * 1.2);
+      x += trozo + 3;
+    }
+    c.stroke();
+  });
+  /* Y el corazón de la firma. */
+  c.fillStyle = "#c4506e";
+  c.beginPath();
+  for (let i = 0; i <= 40; i++) {
+    const t = (i / 40) * Math.PI * 2;
+    const r = L * 0.05;
+    const hx = L * 0.74 + Math.pow(Math.sin(t), 3) * r;
+    const hy = L * 0.8 - ((13 * Math.cos(t) - 5 * Math.cos(2 * t)
+              - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16) * r;
+    i ? c.lineTo(hx, hy) : c.moveTo(hx, hy);
+  }
+  c.closePath(); c.fill();
+};
+
+/* 2. Sacudir una foto ya revelada —moverla de lado a lado deprisa— la
+      vuelve a emulsionar: se puede revelar otra vez.                    */
+function mirarCaricia(f) {
+  f.cogidas = (f.cogidas || 0) + 1;
+  if (f.revelada && f.cogidas % 5 === 0) {
+    emulsionar(f);
+    decir("Se ha vuelto a velar.", "Algunas cosas hay que descubrirlas dos veces.");
+    campanita(392);
+  }
+}
+
+/* 3. Si se juntan dos fotos casi encima la una de la otra, se dice algo.
+      Se mira de vez en cuando, no en cada movimiento.                   */
+let juntasDicho = false;
+setInterval(() => {
+  if (juntasDicho || fotos.length < 2) return;
+  for (let i = 0; i < fotos.length; i++) {
+    for (let j = i + 1; j < fotos.length; j++) {
+      const d = Math.hypot(fotos[i].x - fotos[j].x, fotos[i].y - fotos[j].y);
+      if (d < 18) {
+        juntasDicho = true;
+        decir("Las has dejado pegadas.", "Así es como estamos mejor.");
+        campanita(659);
+        setTimeout(() => { juntasDicho = false; }, 25000);
+        return;
+      }
+    }
+  }
+}, 900);
+
+/* ---- Arranque ---------------------------------------------------------- */
+
+medir();
+decir("Seis fotos sin revelar. Frota con el dedo.");
+
+})();
+</script>
+</body>
+</html>

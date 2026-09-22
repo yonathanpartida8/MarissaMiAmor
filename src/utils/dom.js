@@ -34,39 +34,42 @@ export function el(tag, props = {}, children = []) {
 }
 
 export const qs = (sel, root = document) => root.querySelector(sel);
-export const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-/** Fija variables CSS personalizadas de una tacada. */
+/**
+ * Fija variables CSS personalizadas de una tacada.
+ *
+ * Con memoria de lo último escrito, y NO es un detalle. Las variables CSS se
+ * heredan: tocar una en la raíz de una página obliga al navegador a
+ * recalcular el estilo de TODOS sus descendientes. Estas funciones se llaman
+ * desde los relojes de cada página, sesenta veces por segundo, así que
+ * escribir el mismo valor otra vez costaba treinta o cuarenta milisegundos de
+ * recálculo por segundo con el libro parado. Ahora, si el valor no ha
+ * cambiado, no se escribe: con el dedo quieto el coste baja a cero.
+ *
+ * Para que esto sirva, quien llame desde un reloj debe redondear lo que
+ * manda; si no, el suavizado exponencial nunca deja de cambiar en el sexto
+ * decimal y siempre parece un valor nuevo.
+ */
+const varMemory = new WeakMap();
+
 export function setVars(node, vars) {
+  // Se llama muchas veces desde temporizadores y animaciones; si para cuando
+  // llega el turno la página ya se ha ido, no es un error: no hay nada que
+  // pintar y no tiene por qué reventar nada.
+  if (!node?.style) return;
+
+  let seen = varMemory.get(node);
+  if (!seen) varMemory.set(node, (seen = new Map()));
+
   for (const [key, value] of Object.entries(vars)) {
     if (value == null) continue;
-    node.style.setProperty(key.startsWith("--") ? key : `--${key}`, String(value));
+    const name = key.startsWith("--") ? key : `--${key}`;
+    const next = String(value);
+    if (seen.get(name) === next) continue;
+    seen.set(name, next);
+    node.style.setProperty(name, next);
   }
 }
-
-/** Espera a que termine la transición/animación CSS de un elemento. */
-export function afterTransition(node, fallback = 1200) {
-  return new Promise((resolve) => {
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      node.removeEventListener("transitionend", finish);
-      node.removeEventListener("animationend", finish);
-      clearTimeout(timer);
-      resolve();
-    };
-    const timer = setTimeout(finish, fallback);
-    node.addEventListener("transitionend", finish, { once: true });
-    node.addEventListener("animationend", finish, { once: true });
-  });
-}
-
-/** Fuerza un reflow para que la siguiente clase sí anime. */
-export const reflow = (node) => node.offsetHeight;
-
-export const nextFrame = () =>
-  new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
 export const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -91,19 +94,70 @@ export function listenerGroup() {
   };
 }
 
-/** Divide un texto en <span> por palabra, para animarlas escalonadas. */
+/**
+ * Divide un texto en <span> por palabra, para animarlas escalonadas.
+ *
+ * El retraso NO es lineal a propósito. Con `i * 26ms`, un párrafo de cien
+ * palabras tardaba casi tres segundos en terminar de aparecer: las primeras
+ * frases ya se estaban leyendo mientras las últimas seguían borrosas, y daba
+ * la sensación de que la página iba lenta.
+ *
+ * Esta curva se satura: arranca igual de escalonada que antes —que es donde
+ * se nota la gracia— y se va comprimiendo, sin pasar nunca de ~0,44 s. Los
+ * textos cortos se ven idénticos; los largos, escritos de un tirón.
+ */
+const WORD_STEP = 17; // ms entre las primeras palabras
+const WORD_SATURATION = 26; // a partir de aquí el escalonado se comprime
+
 export function splitWords(text, className = "word") {
   const frag = document.createDocumentFragment();
   const words = String(text).split(/(\s+)/);
+
+  // En gama baja el texto no se parte. Cien <span>, cada uno con su propia
+  // animación, es la factura más cara de todo el libro en un móvil justo: la
+  // página entra igual, con el fundido del contenedor, y va fluida.
+  if (document.documentElement.dataset.tier === "low") {
+    frag.append(document.createTextNode(String(text)));
+    return { frag, count: 0 };
+  }
+
+  const made = [];
   let index = 0;
+  let last = null;
+
   for (const chunk of words) {
     if (/^\s+$/.test(chunk)) {
-      frag.append(document.createTextNode(chunk));
+      const node = document.createTextNode(chunk);
+      made.push(node);
+      frag.append(node);
       continue;
     }
     const span = el(`span.${className}`, { text: chunk });
-    span.style.setProperty("--i", index++);
+    const delay = (WORD_STEP * index) / (1 + index / WORD_SATURATION);
+    span.style.setProperty("--i", index);
+    span.style.setProperty("--d", `${Math.round(delay)}ms`);
+    index++;
+    made.push(span);
     frag.append(span);
+    last = span;
   }
+
+  // Terminada la entrada, los <span> ya no pintan nada: se sustituyen por un
+  // único nodo de texto. Un párrafo largo pasa de cien elementos con
+  // animación viva —que el navegador sigue recalculando en cada frame— a uno
+  // solo. Es lo que hace que las páginas de texto dejen de ir pesadas.
+  if (last) {
+    last.addEventListener(
+      "animationend",
+      () => {
+        const parent = last.parentNode;
+        if (!parent || !made[0]?.isConnected) return;
+        parent.insertBefore(document.createTextNode(String(text)), made[0]);
+        for (const node of made) node.remove();
+      },
+      { once: true }
+    );
+  }
+
   return { frag, count: index };
 }

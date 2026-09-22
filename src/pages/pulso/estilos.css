@@ -1,0 +1,415 @@
+/* ============================================================
+   PULSO — el corazón que late mientras la tocas.
+
+   `--beat` va de 0 a 1 con cada latido y `--on` de 0 a 1 según
+   haya dedo o no. Todo lo demás cuelga de esos dos números, así
+   que el ritmo se escribe una sola vez, en JS.
+   ============================================================ */
+
+.pulse {
+  display: grid;
+  /* cabecera · monitor · texto · EL CÍRCULO · lo que dice · la frase final */
+  grid-template-rows: auto minmax(0, 20%) auto minmax(0, 1fr) auto auto;
+  gap: clamp(0.4rem, 1.6vh, 0.8rem);
+  padding: var(--pad-t) var(--pad-x) calc(var(--pad-b) + var(--bar-space, 0rem));
+  place-items: center;
+  background: transparent;
+  --on: 0;
+}
+
+/* ---- Cabecera ----------------------------------------------- */
+.pulse__head {
+  text-align: center;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 520ms var(--e-out), transform 520ms var(--e-out);
+}
+
+.pulse.is-entered .pulse__head { opacity: 1; transform: none; }
+
+.pulse__head .kicker {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.pulse__title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(1.5rem, calc(7 * var(--vw)), 2.2rem);
+  line-height: 1.1;
+  color: #fff;
+  margin-top: 0.15rem;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.6);
+}
+
+/* ══════════════ EL MONITOR ══════════════ */
+.pulse__monitor {
+  position: relative;
+  width: 100%;
+  /* Estirado en los dos ejes: todo lo que lleva dentro va en posición
+     absoluta, así que centrado se quedaría con cero de alto. */
+  justify-self: stretch;
+  align-self: stretch;
+  min-height: 0;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(16, 5, 10, 0.7), rgba(10, 3, 7, 0.88));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 0 46px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 620ms var(--e-out) 120ms,
+    transform 620ms var(--e-out) 120ms,
+    box-shadow 400ms var(--e-out);
+}
+
+.pulse.is-entered .pulse__monitor { opacity: 1; transform: none; }
+
+.pulse.is-holding .pulse__monitor {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+    inset 0 0 46px rgba(0, 0, 0, 0.55),
+    0 0 calc(20px * var(--on)) -4px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+/* Rejilla tenue de monitor. */
+.pulse__grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: calc(0.1 + var(--on) * 0.16);
+  background-image:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(0deg, color-mix(in srgb, var(--accent) 55%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+  transition: opacity 400ms var(--e-out);
+}
+
+.pulse__trace {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.pulse__readout {
+  position: absolute;
+  right: 10px;
+  bottom: 7px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1;
+  pointer-events: none;
+  opacity: calc(0.28 + var(--on) * 0.72);
+  transition: opacity 300ms var(--e-out);
+}
+
+.pulse__bpm {
+  --beat: 0;
+  font-family: var(--font-ui);
+  font-size: clamp(1.1rem, calc(5 * var(--vw)), 1.5rem);
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 65%, transparent);
+  transform: scale(calc(1 + var(--beat) * 0.12));
+}
+
+.pulse__unit {
+  font-family: var(--font-ui);
+  font-size: 0.52rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 3px;
+}
+
+/* ---- El texto ----------------------------------------------- */
+.pulse__text {
+  max-width: 30ch;
+  font-family: var(--font-display);
+  font-size: clamp(0.92rem, calc(4.1 * var(--vw)), 1.12rem);
+  line-height: 1.62;
+  text-align: center;
+  color: rgba(246, 238, 232, 0.86);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 700ms var(--e-out) 260ms, transform 700ms var(--e-out) 260ms;
+}
+
+.pulse.is-entered .pulse__text { opacity: 1; transform: none; }
+.pulse.is-said .pulse__text { opacity: 0.3; }
+
+/* ══════════════ EL CÍRCULO ══════════════
+   Es a la vez el sitio donde se pone el dedo y el corazón que late. Todo lo
+   que pasa aquí pasa DEBAJO del pulgar, que es lo único que hace que se
+   sienta que la página responde al contacto. */
+.pulse__core {
+  --beat: 0;
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-self: center;
+  /* Sitio de sobra alrededor para que los anillos se vayan sin recortarse. */
+  width: min(74vw, 300px);
+  aspect-ratio: 1;
+}
+
+.pulse__pad {
+  position: relative;
+  z-index: 2;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  background: radial-gradient(
+    circle at 50% 40%,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.035) 46%,
+    transparent 72%
+  );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) calc(16% + var(--on) * 54%), transparent),
+    0 0 calc(34px * var(--on)) -6px color-mix(in srgb, var(--accent) 70%, transparent);
+  opacity: 0;
+  /* Al apoyar el dedo se hunde un poco —como cede la piel— y desde ahí late. */
+  transform: scale(calc(0.88 - var(--on) * 0.03 + var(--beat) * 0.07));
+  transition:
+    opacity 620ms var(--e-out) 380ms,
+    box-shadow 300ms var(--e-out);
+}
+
+.pulse.is-entered .pulse__pad {
+  opacity: 1;
+  transform: scale(calc(1 - var(--on) * 0.03 + var(--beat) * 0.07));
+  transition:
+    opacity 620ms var(--e-out) 380ms,
+    box-shadow 300ms var(--e-out),
+    transform 720ms var(--e-spring) 380ms;
+}
+
+/* Cuando ya está el dedo puesto, la escala la manda el latido y no una
+   transición: si no, cada golpe llegaba suavizado y con retraso. */
+.pulse.is-entered.is-holding .pulse__pad {
+  transition: opacity 300ms var(--e-out), box-shadow 300ms var(--e-out);
+}
+
+/* Con la frase ya dicha, el círculo se retira un poco —el protagonismo pasa
+   a lo que se ha revelado— pero SIGUE VIVO. Antes se apagaba con
+   `pointer-events: none`, y eso convertía la página de sentir un corazón en
+   una página que sólo se podía sentir una vez en la vida. */
+.pulse.is-said .pulse__pad { opacity: 0.62; }
+
+.pulse.is-said.is-holding .pulse__pad { opacity: 1; }
+
+/* El disco interior: la piel del círculo, que se enciende con cada golpe. */
+.pulse__disc {
+  position: absolute;
+  inset: 11%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 44%,
+    color-mix(in srgb, var(--accent) calc(14% + var(--beat) * 46%), transparent) 0%,
+    transparent 70%
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 26%, transparent);
+  transform: scale(calc(1 + var(--beat) * 0.06));
+}
+
+/* El resplandor de alrededor, que respira con el latido. */
+.pulse__aura {
+  position: absolute;
+  inset: -26%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in srgb, var(--accent) 55%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 16%, transparent) 42%,
+    transparent 72%
+  );
+  opacity: calc((0.1 + var(--beat) * 0.62) * (0.25 + var(--on) * 0.75));
+  transform: scale(calc(0.84 + var(--beat) * 0.26));
+}
+
+/* El corazón, DENTRO del círculo. El color sale de tres variables para que
+   herede el acento de la página sin tocar el trazado. */
+.pulse__shape {
+  position: relative;
+  z-index: 2;
+  width: 44%;
+  height: 44%;
+  overflow: visible;
+  --heart-hi: color-mix(in srgb, var(--accent) 88%, #fff);
+  --heart-mid: var(--accent);
+  --heart-lo: color-mix(in srgb, var(--accent) 58%, #2a0713);
+  filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.5));
+  opacity: calc(0.34 + var(--on) * 0.66);
+  /* El corazón late MÁS que el círculo: el golpe se lee dentro. */
+  transform: scale(calc(0.92 + var(--beat) * 0.22));
+  transition: opacity 420ms var(--e-out);
+}
+
+/* Los anillos: uno por latido, lanzados desde JS. Al ir con el corazón de
+   verdad y no a un compás propio, el ritmo se lee como un ritmo. */
+.pulse__onda {
+  position: absolute;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.pulse__onda.is-out { animation: pulse-onda 1400ms var(--e-out); }
+
+@keyframes pulse-onda {
+  0%   { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.62); }
+}
+
+.pulse__hint {
+  position: absolute;
+  bottom: -1.9em;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-family: var(--font-hand);
+  font-size: clamp(1rem, calc(4.4 * var(--vw)), 1.25rem);
+  color: rgba(255, 255, 255, 0.66);
+  opacity: calc(1 - var(--on));
+  transition: opacity 300ms var(--e-out);
+}
+
+/* ---- Lo que va diciendo ------------------------------------- */
+.pulse__say {
+  min-height: 1.5em;
+  font-family: var(--font-hand);
+  font-size: clamp(1rem, calc(4.6 * var(--vw)), 1.3rem);
+  color: var(--accent);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(6px) scale(0.96);
+}
+
+.pulse__say.is-visible {
+  animation: pulse-say 2.4s var(--e-out) both;
+}
+
+@keyframes pulse-say {
+  0%   { opacity: 0; transform: translateY(8px) scale(0.94); }
+  16%  { opacity: 0.95; transform: none; }
+  76%  { opacity: 0.95; transform: none; }
+  100% { opacity: 0; transform: translateY(-5px); }
+}
+
+/* ---- La frase del final -------------------------------------- */
+.pulse__reveal {
+  max-width: 28ch;
+  font-family: var(--font-hand);
+  font-size: clamp(1.15rem, calc(5.2 * var(--vw)), 1.55rem);
+  line-height: 1.45;
+  text-align: center;
+  color: var(--rose-glow);
+  text-shadow: 0 0 22px color-mix(in srgb, var(--accent) 55%, transparent);
+  opacity: 0;
+  transform: translateY(12px) scale(0.96);
+  transition:
+    opacity 900ms var(--e-out),
+    transform 1000ms var(--e-spring);
+}
+
+.pulse.is-said .pulse__reveal { opacity: 1; transform: none; }
+
+/* ---- Móvil apaisado ----------------------------------------- */
+/* Tumbado: la línea y el texto a la izquierda, el círculo a la derecha, donde
+   cae el pulgar de la mano que sujeta el móvil sin taparle el monitor. */
+html[data-orientation="landscape"][data-device="phone"] .pulse {
+  grid-template-columns: 1fr auto;
+  /* La fila del medio tiene suelo: sin él, el texto de abajo se comía el
+     monitor y la línea del pulso quedaba en once píxeles de alto. */
+  grid-template-rows: auto minmax(72px, 1fr) auto;
+  column-gap: var(--gap-md);
+  align-items: center;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .pulse__head {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+html[data-orientation="landscape"][data-device="phone"] .pulse__monitor { grid-column: 1; grid-row: 2; }
+
+html[data-orientation="landscape"][data-device="phone"] .pulse__text {
+  grid-column: 1;
+  grid-row: 3;
+  max-width: 46ch;
+  font-size: clamp(0.78rem, calc(3.4 * var(--vw)), 0.95rem);
+  line-height: 1.45;
+}
+
+/* El círculo se mide por el alto que le queda, no por el ancho de pantalla:
+   así nunca se sale ni empuja al resto. */
+html[data-orientation="landscape"][data-device="phone"] .pulse__core {
+  grid-column: 2;
+  grid-row: 2;
+  width: auto;
+  height: 100%;
+  max-width: 42vw;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .pulse__say,
+html[data-orientation="landscape"][data-device="phone"] .pulse__reveal {
+  grid-column: 2;
+  grid-row: 3;
+  max-width: 34vw;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse__onda { display: none; }
+  .pulse__say.is-visible { animation: none; opacity: 0.95; transform: none; }
+  .pulse__aura,
+  .pulse__disc,
+  .pulse__shape { transform: none; }
+  .pulse.is-entered .pulse__pad { transform: none; }
+}
+
+/* Escondido: con dos dedos puestos, el corazón deja de latir solo.
+   Aparece un segundo, desfasado, y los dos se turnan. */
+.pulse__shape--dos {
+  position: absolute;
+  z-index: 1;
+  width: 44%;
+  height: 44%;
+  opacity: 0;
+  transform: scale(0.9) translateX(0);
+  transition: opacity 700ms var(--e-out), transform 700ms var(--e-spring);
+}
+
+.pulse.is-dos .pulse__shape--dos {
+  opacity: calc(0.24 + var(--on) * 0.5);
+  /* El segundo late medio compás por detrás: se ve que son dos y no un eco. */
+  transform: scale(calc(1.02 - var(--beat) * 0.14)) translateX(11%);
+}
+
+.pulse.is-dos .pulse__shape {
+  transform: scale(calc(0.9 + var(--beat) * 0.2)) translateX(-11%);
+}

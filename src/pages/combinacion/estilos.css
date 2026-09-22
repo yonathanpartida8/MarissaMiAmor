@@ -1,0 +1,640 @@
+/* ============================================================
+   COMBINACIÓN — el candado.
+
+   Un cuerpo de latón con su arco arriba y cuatro ruedas metidas
+   dentro. Todo con degradados: ni una imagen, ni un SVG.
+   ============================================================ */
+
+.lock {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(0.6rem, 2.2vh, 1.1rem);
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  place-items: center;
+  background: transparent;
+}
+
+.lock__kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 500ms var(--e-out), transform 500ms var(--e-out);
+}
+
+.lock.is-entered .lock__kicker { opacity: 0.85; transform: none; }
+.lock.is-open .lock__kicker { opacity: 0; }
+
+/* ---- El escenario ------------------------------------------ */
+.lock__stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 0;
+  align-self: stretch;
+}
+
+/* ══════════════ EL CANDADO ══════════════ */
+.lock__padlock {
+  position: relative;
+  width: min(84%, 310px);
+  display: grid;
+  /* El arco ocupa la fila de arriba y el cuerpo la de abajo; se solapan un
+     poco para que el arco parezca metido dentro del metal. */
+  grid-template-rows: auto auto;
+  justify-items: center;
+  opacity: 0;
+  transform: translateY(18px) scale(0.94);
+  transition:
+    opacity 620ms var(--e-out) 100ms,
+    transform 720ms var(--e-spring) 100ms;
+}
+
+.lock.is-entered .lock__padlock { opacity: 1; transform: none; }
+
+/* Al abrirse, el candado se aparta hacia arriba y deja sitio. */
+.lock.is-open .lock__padlock {
+  transition: opacity 620ms var(--e-out), transform 780ms var(--e-in-out);
+  transform: translateY(-14%) scale(0.62);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---- El arco ------------------------------------------------ */
+.lock__shackle {
+  position: relative;
+  z-index: 1;
+  width: 52%;
+  height: clamp(52px, 15vh, 92px);
+  /* Se mete por debajo del cuerpo: el solapamiento es lo que vende que
+     el arco entra en el metal y no está apoyado encima. */
+  margin-bottom: -18px;
+  transform-origin: 78% 100%;
+  transition: transform 900ms var(--e-spring);
+}
+
+/* El arco es un borde grueso en U: sin SVG, sin imagen. El degradado del
+   metal se consigue con la luz encima y la sombra debajo. */
+.lock__arc {
+  position: absolute;
+  inset: 0;
+  border: clamp(9px, 3.4vw, 14px) solid #b8a179;
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(
+    96deg,
+    rgba(255, 250, 236, 0) 30%,
+    rgba(255, 250, 236, 0.3) 46%,
+    rgba(255, 250, 236, 0) 62%
+  );
+  box-shadow:
+    inset 0 2px 3px rgba(255, 250, 236, 0.5),
+    inset 0 -3px 6px rgba(40, 28, 14, 0.55),
+    0 5px 12px -4px rgba(0, 0, 0, 0.6);
+}
+
+/* Abierto: el arco SALTA. No se desliza hasta su sitio: pega el tirón de un
+   muelle que se suelta, se pasa de largo, y ahí se queda oscilando un pelín.
+   Es el fotograma que hace que abrir un candado dé gusto. */
+.lock__padlock.is-open .lock__shackle {
+  transform: translateY(-26%) rotate(38deg);
+  animation: lock-salto 900ms var(--e-out);
+}
+
+@keyframes lock-salto {
+  0%   { transform: translateY(0) rotate(0deg); }
+  /* Primero se hunde: el pestillo cede antes de soltarse. */
+  12%  { transform: translateY(3%) rotate(0deg); }
+  46%  { transform: translateY(-34%) rotate(46deg); }
+  68%  { transform: translateY(-22%) rotate(33deg); }
+  85%  { transform: translateY(-28%) rotate(40deg); }
+  100% { transform: translateY(-26%) rotate(38deg); }
+}
+
+/* Y un barrido de luz cruza el latón una sola vez, al abrirse. */
+.lock__padlock.is-open .lock__shine {
+  opacity: 1;
+  animation: lock-destello 780ms var(--e-out) 60ms;
+}
+
+@keyframes lock-destello {
+  0%   { transform: translateX(-42%); opacity: 0; }
+  30%  { opacity: 1; }
+  100% { transform: translateX(42%); opacity: 0; }
+}
+
+/* ---- El cuerpo ---------------------------------------------- */
+.lock__body {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  /* Proporción de candado de verdad: ancho y bajito. Más alto dejaba un
+     hueco oscuro debajo de las ruedas que parecía un error. */
+  aspect-ratio: 1 / 0.74;
+  border-radius: clamp(18px, 6vw, 28px);
+  padding: clamp(0.8rem, 3.4vw, 1.2rem);
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: clamp(0.55rem, 2.2vw, 0.85rem);
+  justify-items: center;
+  align-content: center;
+  overflow: hidden;
+  background:
+    linear-gradient(163deg, #d8c49a 0%, #b99a68 34%, #8e7040 62%, #6b5330 100%);
+  box-shadow:
+    inset 0 2px 2px rgba(255, 246, 220, 0.6),
+    inset 0 -10px 22px rgba(40, 26, 8, 0.55),
+    inset 0 0 0 1px rgba(72, 52, 24, 0.5),
+    0 20px 38px -16px rgba(0, 0, 0, 0.75);
+}
+
+/* Placa mate del centro, donde van las ruedas. */
+.lock__plate {
+  position: absolute;
+  /* Empieza por debajo del grabado —si sube más, el «M & Y» se come el borde
+     de la placa y parece un error de imprenta— y sobra por los lados, para
+     que las ruedas se vean encastradas EN la placa y no encima de ella. */
+  inset: 35% 4% 13%;
+  border-radius: clamp(12px, 4vw, 18px);
+  background: linear-gradient(168deg, rgba(52, 38, 18, 0.5), rgba(26, 18, 8, 0.62));
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.6),
+    0 1px 0 rgba(255, 246, 220, 0.28);
+}
+
+.lock__engrave {
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-display);
+  font-size: clamp(0.7rem, calc(3.4 * var(--vw)), 0.9rem);
+  letter-spacing: 0.32em;
+  color: rgba(255, 246, 220, 0.42);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), 0 -1px 0 rgba(255, 246, 220, 0.12);
+}
+
+/* Brillo que cruza el metal: da la sensación de superficie pulida. */
+.lock__shine {
+  position: absolute;
+  inset: -40% -60%;
+  pointer-events: none;
+  background: linear-gradient(
+    102deg,
+    transparent 40%,
+    rgba(255, 250, 236, 0.16) 49%,
+    transparent 58%
+  );
+  opacity: 0;
+  transition: opacity 400ms var(--e-out);
+}
+
+.lock__padlock.is-handled .lock__shine { opacity: 1; }
+
+/* ---- Las ruedas --------------------------------------------- */
+.lock__dial {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  /* El ancho lo manda el candado, no la pantalla: es lo que evita que en
+     apaisado la cuarta rueda se quede fuera del metal y aparezca cortada.
+     Se deja un poco de aire a los lados para que la placa asome por fuera. */
+  width: calc(100% - clamp(8px, 3vw, 14px));
+  justify-content: center;
+  gap: clamp(4px, 1.6vw, 8px);
+  padding: clamp(4px, 1.4vw, 7px);
+  border-radius: clamp(8px, 3vw, 12px);
+  background: linear-gradient(180deg, rgba(14, 9, 3, 0.72), rgba(30, 21, 9, 0.6));
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.8),
+    0 1px 0 rgba(255, 246, 220, 0.24);
+}
+
+.lock__wheel {
+  position: relative;
+  /* Cada rodillo ocupa según lo que tenga que enseñar: dos cifras el día,
+     tres letras el mes, cuatro cifras el año. `--ancho` lo pone el JS con
+     el número de caracteres, y de ahí sale el reparto. Antes eran cuatro
+     ruedas idénticas de un dígito; ahora son tres cosas distintas y tienen
+     que verse enteras. */
+  flex: var(--ancho, 2) 1 0;
+  min-width: 0;
+  height: clamp(46px, calc(15 * var(--vw)), 62px);
+  border-radius: clamp(5px, 1.8vw, 8px);
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  background: linear-gradient(180deg, #efe6d2 0%, #fffaf0 46%, #ded2ba 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(90, 68, 34, 0.34),
+    inset 0 8px 10px -8px rgba(40, 26, 8, 0.7),
+    inset 0 -8px 10px -8px rgba(40, 26, 8, 0.7);
+  transition: box-shadow 320ms var(--e-out), transform 320ms var(--e-spring);
+}
+
+.lock__wheel:active,
+.lock__wheel.is-turning { cursor: grabbing; }
+
+.lock__wheel:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.lock__strip {
+  display: flex;
+  flex-direction: column;
+  /* Tres vueltas de la lista y sólo un valor visible: la tira mide tres
+     veces el número de pasos. `--pasos` lo pone el JS, porque cada rodillo
+     tiene los suyos (31 días, 12 meses, 10 años). */
+  height: calc(var(--pasos, 10) * 300%);
+  will-change: transform;
+}
+
+.lock__digit {
+  flex: 1 0 auto;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  /* Un poco más pequeño que antes: ahora hay valores de cuatro caracteres
+     («2025») y tienen que caber sin apretarse contra el borde del rodillo. */
+  font-size: clamp(1.05rem, calc(4.3 * var(--vw)), 1.45rem);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  color: #4a3a20;
+  text-shadow: 0 1px 0 rgba(255, 250, 236, 0.8);
+}
+
+/* ---- Día · mes · año ----------------------------------------
+   La letra pequeña de debajo de los rodillos. Sin ella el candado pide
+   tres números sueltos y no se sabe cuál es cuál; con ella se lee que
+   está pidiendo una fecha y ya no hay nada que adivinar salvo la fecha. */
+.lock__pie {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: calc(100% - clamp(8px, 3vw, 14px));
+  gap: clamp(4px, 1.6vw, 8px);
+  padding: 0 clamp(4px, 1.4vw, 7px);
+  margin-top: 3px;
+}
+
+.lock__etiqueta {
+  flex: var(--ancho) 1 0;
+  min-width: 0;
+  font-family: var(--font-ui);
+  font-size: 0.5rem;
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(255, 244, 216, 0.44);
+}
+
+.lock__etiqueta:nth-child(1) { --ancho: 2; }
+.lock__etiqueta:nth-child(2) { --ancho: 3; }
+.lock__etiqueta:nth-child(3) { --ancho: 4; }
+
+/* Reflejo del cilindro: arriba y abajo la rueda se curva. */
+.lock__gloss {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(40, 26, 8, 0.42) 0%,
+    rgba(255, 255, 255, 0) 26%,
+    rgba(255, 255, 255, 0.34) 46%,
+    rgba(255, 255, 255, 0) 66%,
+    rgba(40, 26, 8, 0.42) 100%
+  );
+}
+
+/* La marca que señala cuál es el valor elegido.
+   Dos muescas en los bordes y no una línea de lado a lado: con valores de
+   cuatro caracteres —«2025»— la línea cruzaba el texto por la mitad y
+   parecía tachado. */
+.lock__notch {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 7px;
+  margin-top: -3.5px;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(122, 32, 62, 0.5), transparent 14%),
+    linear-gradient(270deg, rgba(122, 32, 62, 0.5), transparent 14%);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 45%, #000 55%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 45%, #000 55%, transparent);
+}
+
+/* Cada vez que una rueda se posa en un dígito nuevo. */
+.lock__wheel.is-set { animation: lock-set 320ms var(--e-out); }
+
+@keyframes lock-set {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+
+/* Cuando el candado ya va soplando: las que están bien se encienden. */
+.lock__wheel.is-right {
+  box-shadow:
+    inset 0 0 0 1px var(--gold),
+    inset 0 8px 10px -8px rgba(40, 26, 8, 0.5),
+    0 0 14px -2px var(--gold);
+}
+
+/* ---- El halo ------------------------------------------------ */
+.lock__halo {
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 52%,
+    color-mix(in srgb, var(--gold-light) 60%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 22%, transparent) 34%,
+    transparent 66%
+  );
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 700ms var(--e-out), transform 900ms var(--e-out);
+}
+
+/* Se va templando conforme se acerca. `--cerca` es cuántas cifras están ya en
+   su sitio, de 0 a 1, y NO dice cuáles: sólo se nota que quema más. Es la
+   respuesta al proceso, no al resultado. */
+.lock__padlock .lock__halo {
+  opacity: calc(var(--cerca, 0) * 0.34);
+  transform: scale(calc(0.7 + var(--cerca, 0) * 0.18));
+}
+
+.lock__padlock.is-glowing .lock__halo { opacity: 0.85; transform: scale(1); }
+
+/* El metal también coge temperatura. Un solo `filter` barato, sin repintar. */
+.lock__body {
+  filter: saturate(calc(1 + var(--cerca, 0) * 0.3))
+          brightness(calc(1 + var(--cerca, 0) * 0.07));
+  transition: filter 520ms var(--e-out);
+}
+
+/* ---- Reacciones --------------------------------------------- */
+/* Fallo: el candado se sacude, el arco tintinea y la fecha se apaga un
+   momento, como quien niega despacio con la cabeza. Lo que se apaga son
+   día, mes y año a la vez: señala DÓNDE está lo que no cuadra sin decir
+   cuál de los tres es. */
+.lock__padlock.is-wrong { animation: lock-shake 520ms var(--e-out); }
+.lock__padlock.is-wrong .lock__shackle { animation: lock-rattle 520ms var(--e-out); }
+.lock__padlock.is-wrong .lock__body { animation: lock-flush 620ms var(--e-out); }
+.lock__padlock.is-wrong .lock__dial { animation: lock-niega 620ms var(--e-out); }
+.lock__padlock.is-wrong .lock__etiqueta { animation: lock-etiqueta 900ms var(--e-out); }
+
+@keyframes lock-niega {
+  0%, 100% { filter: none; }
+  30%      { filter: saturate(0.5) brightness(0.84); }
+}
+
+@keyframes lock-etiqueta {
+  0%, 100% { color: rgba(255, 244, 216, 0.44); }
+  25%      { color: var(--rose-glow, #ffa9c4); }
+}
+
+@keyframes lock-shake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  15%  { transform: translateX(-9px) rotate(-1.4deg); }
+  32%  { transform: translateX(8px) rotate(1.2deg); }
+  50%  { transform: translateX(-6px) rotate(-0.8deg); }
+  68%  { transform: translateX(4px) rotate(0.5deg); }
+  85%  { transform: translateX(-2px) rotate(-0.2deg); }
+}
+
+@keyframes lock-rattle {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  20%  { transform: translateY(-3px) rotate(-2deg); }
+  45%  { transform: translateY(-1px) rotate(2.5deg); }
+  70%  { transform: translateY(-2px) rotate(-1deg); }
+}
+
+@keyframes lock-flush {
+  0%, 100% { box-shadow:
+      inset 0 2px 2px rgba(255, 246, 220, 0.6),
+      inset 0 -10px 22px rgba(40, 26, 8, 0.55),
+      inset 0 0 0 1px rgba(72, 52, 24, 0.5),
+      0 20px 38px -16px rgba(0, 0, 0, 0.75); }
+  30% { box-shadow:
+      inset 0 2px 2px rgba(255, 246, 220, 0.6),
+      inset 0 -10px 22px rgba(40, 26, 8, 0.55),
+      inset 0 0 0 2px rgba(190, 62, 84, 0.75),
+      0 0 26px -4px rgba(190, 62, 84, 0.55); }
+}
+
+/* Acierto: primero se alinean las ruedas, después se enciende. */
+.lock__padlock.is-aligning .lock__dial {
+  animation: lock-align 420ms var(--e-out);
+}
+
+@keyframes lock-align {
+  0%, 100% { box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 246, 220, 0.24); }
+  60% { box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.8), 0 0 20px -2px var(--gold-light); }
+}
+
+.lock__padlock.is-glowing .lock__body {
+  box-shadow:
+    inset 0 2px 2px rgba(255, 250, 236, 0.75),
+    inset 0 -10px 22px rgba(40, 26, 8, 0.4),
+    inset 0 0 0 1px var(--gold),
+    0 0 40px -6px var(--gold-light),
+    0 20px 38px -16px rgba(0, 0, 0, 0.6);
+}
+
+/* ---- Chispas y corazones ------------------------------------ */
+.lock__sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.lock__spark,
+.lock__heart {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  will-change: transform, opacity;
+  animation: lock-burst var(--dur, 1200ms) var(--e-out) var(--delay, 0ms) both;
+}
+
+.lock__spark {
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: var(--gold-light);
+  box-shadow: 0 0 10px 1px var(--gold);
+}
+
+.lock__heart {
+  margin: -0.5em 0 0 -0.5em;
+  font-size: clamp(0.85rem, 3.4vw, 1.15rem);
+  line-height: 1;
+  color: var(--rose);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--rose) 70%, transparent);
+}
+
+@keyframes lock-burst {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.2) rotate(0deg);
+  }
+  18% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--dx), var(--dy), 0) scale(var(--size, 1)) rotate(var(--rot, 0deg));
+  }
+}
+
+/* ══════════════ LO QUE GUARDA ══════════════ */
+.lock__inside {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  /* Las dos filas se reparten el hueco a propósito.
+     Con `auto` en la nota, la fila se medía por el texto ENTERO sin recortar
+     —casi quinientos píxeles— aunque luego la nota se quedara en su 46%: el
+     resultado eran dos huecos enormes, uno encima y otro debajo, y una nota
+     apretadísima en medio. Repartiendo se llena la página y el texto respira. */
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: clamp(0.6rem, 2.4vh, 1rem);
+  /* El hueco de la barra se le quita al reparto entero, no con un margen en
+     la nota: con el margen, la nota se subía y se montaba encima de la foto. */
+  padding-bottom: var(--bar-space, 0rem);
+  place-items: center;
+  opacity: 0;
+  transform: scale(0.9);
+  pointer-events: none;
+  transition: opacity 700ms var(--e-out), transform 820ms var(--e-spring);
+}
+
+.lock.is-showing .lock__inside {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.lock__photo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
+  width: 100%;
+  min-height: 0;
+  /* Estirado en los dos ejes: `.lock__inside` centra sus hijos, y centrado
+     este hueco se encogía a la altura de su contenido —que es cero, porque
+     el marco se dimensiona en porcentaje— y la foto no se veía. */
+  align-self: stretch;
+  justify-self: stretch;
+}
+
+/* El marco necesita medidas definidas o se queda en 0x0. La imagen va con
+   `cover`, así que llenar el hueco la recorta pero no la deforma. */
+.lock__photo .pframe {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.lock__note {
+  width: 100%;
+  /* El alto lo manda su fila, no un porcentaje suyo. */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: clamp(0.85rem, calc(3.8 * var(--vw)), 1.3rem);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-card);
+}
+
+.lock__title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.3rem, calc(6 * var(--vw)), 1.85rem);
+  line-height: 1.1;
+  color: #2c211c;
+  text-wrap: balance;
+}
+
+.lock__scroll {
+  flex: 1 1 auto;
+}
+
+.lock__text {
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  line-height: 1.7;
+  color: var(--paper-ink);
+  text-align: justify;
+  hyphens: auto;
+  white-space: pre-line;
+}
+
+.lock__reveal {
+  font-family: var(--font-hand);
+  font-size: clamp(1.1rem, calc(4.8 * var(--vw)), 1.45rem);
+  color: var(--rose-deep);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 700ms var(--e-out) 600ms, transform 700ms var(--e-out) 600ms;
+}
+
+.lock.is-showing .lock__reveal { opacity: 0.92; transform: none; }
+
+/* ---- El susurro del candado --------------------------------- */
+.lock__status {
+  min-height: 1.4em;
+  font-family: var(--font-hand);
+  font-size: clamp(1rem, calc(4.4 * var(--vw)), 1.3rem);
+  color: var(--accent);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity 320ms var(--e-out), transform 320ms var(--e-out);
+}
+
+.lock__status.is-visible { opacity: 0.9; transform: none; }
+
+/* ---- Móvil apaisado ----------------------------------------- */
+html[data-orientation="landscape"][data-device="phone"] .lock__padlock {
+  width: min(52%, 240px);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .lock__inside {
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap-md);
+}
+
+html[data-orientation="landscape"][data-device="phone"] .lock__note {
+  max-height: 100%;
+  align-self: center;
+  margin-bottom: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lock__padlock,
+  .lock__shackle,
+  .lock__inside { transition-duration: 1ms; }
+  .lock__padlock.is-wrong,
+  .lock__padlock.is-wrong .lock__shackle,
+  .lock__padlock.is-wrong .lock__body,
+  .lock__padlock.is-wrong .lock__dial,
+  .lock__padlock.is-wrong .lock__etiqueta,
+  .lock__padlock.is-open .lock__shackle,
+  .lock__padlock.is-open .lock__shine,
+  .lock__wheel.is-set { animation: none; }
+}

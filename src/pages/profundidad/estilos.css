@@ -1,0 +1,136 @@
+/* ============================================================
+   PÁGINA CON PROFUNDIDAD
+   La ilustración la pinta WebGL detrás; aquí sólo vive el texto
+   y el respaldo por si no hay GPU.
+   ============================================================ */
+
+.depth {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+  overflow: hidden;
+}
+
+/* Respaldo en DOM: se ve siempre, y se apaga si WebGL toma el relevo. */
+.depth__fallback {
+  position: absolute;
+  inset: -6%;
+  background-size: cover;
+  background-position: center;
+  transform: translate3d(var(--fb-x, 0), var(--fb-y, 0), 0) scale(1.06);
+  opacity: 0;
+  transition: opacity 1200ms var(--e-out);
+}
+
+.depth.is-entered .depth__fallback {
+  opacity: 1;
+}
+
+.depth.has-gl .depth__fallback {
+  opacity: 0;
+  transition: opacity 700ms var(--e-out);
+}
+
+/* Degradado que separa la imagen del texto. */
+.depth__veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(14, 4, 7, 0.28) 0%,
+    rgba(14, 4, 7, 0) 26%,
+    rgba(14, 4, 7, 0.55) 58%,
+    rgba(11, 3, 5, 0.94) 100%
+  );
+}
+
+/* ---- Tarjeta de texto --------------------------------------- */
+.depth__card {
+  position: relative;
+  z-index: 2;
+  max-height: 58%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  transform: translate3d(var(--card-x, 0), var(--card-y, 0), 0);
+  opacity: 0;
+  transition: opacity 900ms var(--e-out) 260ms;
+}
+
+.depth.is-entered .depth__card {
+  opacity: 1;
+}
+
+.depth__kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0.9;
+}
+
+.depth__title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: var(--fs-title);
+  line-height: 1.05;
+  color: #fff;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.7);
+  text-wrap: balance;
+}
+
+.depth__rule {
+  margin: 0.5rem 0 0.8rem;
+  background: linear-gradient(90deg, var(--accent), transparent 70%);
+  opacity: 0.7;
+}
+
+.depth__prose {
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  line-height: 1.72;
+  color: rgba(246, 238, 232, 0.92);
+  text-align: justify;
+  hyphens: auto;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.75);
+  --word-delay: 220ms;
+}
+
+.depth__prose::first-letter {
+  font-size: 2.6em;
+  line-height: 0.84;
+  float: left;
+  padding: 0.1em 0.14em 0 0;
+  color: var(--accent);
+  font-weight: 300;
+}
+
+/* ---- Móvil apaisado ----------------------------------------
+   La tarjeta se va al lado derecho en vez de quedarse abajo: así la
+   ilustración se ve entera a la izquierda y el texto tiene alto de sobra
+   en lugar de amontonarse en el último tercio, debajo de la barra.       */
+html[data-orientation="landscape"][data-device="phone"] .depth {
+  justify-content: center;
+  align-items: flex-end;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .depth__card {
+  width: 54%;
+  max-height: 100%;
+}
+
+/* Y el degradado deja de venir de abajo para venir de la derecha, que es
+   por donde ahora entra el texto. */
+html[data-orientation="landscape"][data-device="phone"] .depth__veil {
+  background: linear-gradient(
+    90deg,
+    rgba(14, 4, 7, 0.3) 0%,
+    rgba(14, 4, 7, 0) 22%,
+    rgba(14, 4, 7, 0.6) 52%,
+    rgba(11, 3, 5, 0.95) 100%
+  );
+}

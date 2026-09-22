@@ -1,0 +1,24 @@
+rag.mp3
+=======
+
+Lo que se oye cuando el búho dice «Shhh… ¿oyes eso?».
+
+Va en la carpeta principal de la experiencia, al lado de
+`misterio.mp3` y de `musica.mp3`:
+
+    noche-estrellada/rag.mp3
+
+Suena UNA vez, no en bucle, y mientras suena el resto de ambientes
+baja para dejarle sitio. Vuelven solos al acabar.
+
+Conviene que dure entre dos y cuatro segundos. Más corto se pierde
+detrás del bajón de los ambientes; más largo y el momento se estira.
+
+Si el archivo no está, suena un gemelo sintetizado: un grave que sube
+muy despacio con un ruido de banda estrecha barriendo por encima. No
+intenta imitar nada —no sé qué vas a poner ahí— sino hacer lo que tiene
+que hacer un sonido que sale del fondo de un bosque a las tres de la
+mañana. Lo que inquieta es el barrido: una frecuencia que se mueve sola
+no se parece a nada del bosque.
+
+En cuanto dejes el archivo de verdad, se usa el tuyo.

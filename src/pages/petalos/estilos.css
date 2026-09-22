@@ -1,0 +1,215 @@
+/* ============================================================
+   DESHOJAR
+   ============================================================ */
+
+.petals {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(0.5rem, 2vh, 1rem);
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+}
+
+.petals__head {
+}
+
+
+.petals__title { font-size: clamp(1.4rem, calc(6.4 * var(--vw)), 2.1rem); margin-top: 0.15rem; }
+
+.petals__field {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  overflow: visible;
+}
+
+.petals__flower {
+  position: relative;
+  width: min(72%, 260px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  transform: scale(0.7);
+  opacity: 0;
+  transition: transform 1100ms var(--e-spring) 120ms, opacity 800ms var(--e-out) 120ms;
+}
+
+.petals.is-entered .petals__flower { transform: scale(1); opacity: 1; }
+
+/* ---- Pétalo ------------------------------------------------- */
+.petal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 21%;
+  height: 46%;
+  margin: -46% 0 0 -10.5%;
+  transform-origin: 50% 100%;
+  /* --a lo pone el JS: cada pétalo mira hacia su ángulo. */
+  transform:
+    translate3d(var(--fx, 0px), var(--fy, 0px), 0)
+    rotate(calc(var(--a) + var(--fr, 0deg)))
+    translate3d(var(--px, 0px), var(--py, 0px), 0)
+    scaleY(calc(1 + var(--pull, 0) * 0.14));
+  touch-action: none;
+  cursor: grab;
+  will-change: transform;
+  animation: petal-in 700ms var(--e-out) both;
+  animation-delay: calc(var(--i) * 55ms + 200ms);
+}
+
+@keyframes petal-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.petal:active { cursor: grabbing; }
+
+.petal__body {
+  position: absolute;
+  inset: 0;
+  border-radius: 50% 50% 46% 46% / 62% 62% 38% 38%;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 18%, rgba(255, 255, 255, 0.72), transparent 60%),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--accent) 42%, #fff8fb) 0%,
+      color-mix(in srgb, var(--accent) 76%, #fff) 58%,
+      color-mix(in srgb, var(--accent) 92%, #7a1030) 100%);
+  filter: brightness(var(--tint, 1));
+  box-shadow:
+    inset 0 2px 6px rgba(255, 255, 255, 0.5),
+    0 3px 10px -3px rgba(120, 30, 60, 0.35);
+  transition: filter 200ms var(--e-out);
+}
+
+/* La nervadura del pétalo. */
+.petal__body::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  bottom: 8%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+}
+
+.petal.is-pulling .petal__body {
+  filter: brightness(calc(var(--tint, 1) * 1.12));
+}
+
+/* Arrancado: deja de ocupar sitio y cae. */
+.petal.is-taken {
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  transform:
+    translate3d(var(--fx, 0px), var(--fy, 0px), 0)
+    rotate(calc(var(--a) + var(--fr, 0deg)));
+  transition: none;
+}
+
+.petal.is-taken .petal__body {
+  box-shadow: 0 6px 16px -6px rgba(120, 30, 60, 0.45);
+}
+
+/* ---- Corazón del centro ------------------------------------- */
+.petals__core {
+  position: relative;
+  width: 30%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 36% 32%, #ffe9a8, #e0a642 62%, #a86f18);
+  box-shadow:
+    inset 0 -4px 10px rgba(120, 78, 10, 0.5),
+    0 4px 14px -4px rgba(80, 50, 6, 0.5);
+}
+
+/* Textura de semillas del centro de la margarita. */
+.petals__core::after {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle 1.5px at 50% 50%, rgba(120, 78, 10, 0.4) 40%, transparent 42%);
+  background-size: 7px 7px;
+  opacity: 0.7;
+}
+
+.petals__heart {
+  position: relative;
+  z-index: 2;
+  width: 42%;
+  aspect-ratio: 1;
+  background: var(--rose-deep);
+  clip-path: path("M3.5 6.5 C1 4.6 0.2 3 1.4 1.9 C2.2 1.1 3.1 1.4 3.5 2.2 C3.9 1.4 4.8 1.1 5.6 1.9 C6.8 3 6 4.6 3.5 6.5 Z");
+  transform: scale(0);
+  transition: transform 800ms var(--e-spring);
+}
+
+.petals.is-bare .petals__heart { transform: scale(1.6); }
+
+.petals.is-finished .petals__core {
+  animation: core-beat 1.6s ease-in-out infinite;
+  box-shadow:
+    inset 0 -4px 10px rgba(120, 78, 10, 0.5),
+    0 0 30px -4px var(--accent);
+}
+
+@keyframes core-beat {
+  0%, 100% { transform: scale(1); }
+  22% { transform: scale(1.08); }
+  40% { transform: scale(1); }
+}
+
+/* ---- Pie ---------------------------------------------------- */
+.petals__foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.3rem;
+  /* Sitio para dos líneas de frase más el contador, y hueco para la barra
+     flotante: si no, la segunda línea se lee por debajo de ella. */
+  min-height: 5.4em;
+  padding-bottom: 2.6rem;
+  text-align: center;
+}
+
+.petals__said {
+  max-width: 26ch;
+  text-wrap: balance;
+  font-family: var(--font-hand);
+  font-size: clamp(1.2rem, calc(5.4 * var(--vw)), 1.7rem);
+  line-height: 1.3;
+  color: var(--rose-deep);
+  min-height: 1.4em;
+}
+
+.petals__said.is-in {
+  animation: said-in 620ms var(--e-out);
+}
+
+@keyframes said-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+.petals.is-finished .petals__said {
+  font-size: clamp(1.35rem, calc(6.2 * var(--vw)), 1.95rem);
+  color: var(--rose-deep);
+  text-shadow: 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.petals__left {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--paper-ink-soft);
+  opacity: 0.7;
+  transition: opacity 500ms var(--e-out);
+}
+
+.petals.is-bare .petals__left { opacity: 0; }

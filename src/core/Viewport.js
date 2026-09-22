@@ -63,9 +63,28 @@ export class Viewport extends Emitter {
   }
 
   #measure(force = false) {
+    /* ---- LA RAYA NEGRA ----
+       `visualViewport.height` es lo que se ve DESCONTANDO las barras del
+       navegador. En iOS, con la barra de direcciones desplegada, eso es
+       bastante menos que la ventana; y como `--app-h` es lo que mide la
+       hoja del libro, la hoja se quedaba más corta que la pantalla y por
+       debajo asomaba una franja del color de fondo. Ésa era la raya
+       negra que estorbaba.
+
+       Aquí se coge el MAYOR de los tres altos. No hay ni un campo de
+       texto en todo el libro, así que el teclado no va a salir nunca y
+       no hace falta el alto pequeño para nada; y el cuerpo va fijo y sin
+       scroll, así que la barra tampoco se recoge sola. El alto grande es
+       el bueno siempre. */
     const vv = window.visualViewport;
-    const width = Math.round(vv?.width || window.innerWidth);
-    const height = Math.round(vv?.height || window.innerHeight);
+    const width = Math.round(Math.max(
+      vv?.width || 0, window.innerWidth || 0,
+      document.documentElement.clientWidth || 0,
+    )) || 1;
+    const height = Math.round(Math.max(
+      vv?.height || 0, window.innerHeight || 0,
+      document.documentElement.clientHeight || 0,
+    )) || 1;
 
     // Ignora los cambios de alto minúsculos de la barra de direcciones,
     // que si no provocan reflows constantes al hacer scroll en móvil.
