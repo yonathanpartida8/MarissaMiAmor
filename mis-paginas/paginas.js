@@ -82,7 +82,7 @@ export default [
   //   arriba: "dale al play",
   //   titulo: "Esto lo grabé para ti",
   //   texto: "Sube el volumen.",
-  //   video: "mis-paginas/videos/mi-video.mp4",
+  //   video: "mis-paginas/videos/VID-20260915-WA0017.mp4",
   //   poster: "mis-paginas/fotos/portada-del-video.jpg",
   // },
 
