@@ -58,7 +58,22 @@ export class Router extends Emitter {
   }
 
   get atEnd() {
-    return this.index >= this.entries.length - 1;
+    return this.index >= this.entries.length - 1 || this.#cerrada(this.index + 1);
+  }
+
+  /**
+   * La página del candado: mientras esté puesta, nada pasa de ahí —ni el
+   * dedo, ni las flechas, ni la barra, ni el índice—. `null` = abierto.
+   */
+  barrera = null;
+
+  #cerrada(index) {
+    return this.barrera != null && index > this.barrera;
+  }
+
+  abrirBarrera() {
+    this.barrera = null;
+    this.emit("abierta");
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -139,6 +154,13 @@ export class Router extends Emitter {
   async go(index, { direction, transition } = {}) {
     if (this.busy || this.locked) return false;
     index = clamp(index, 0, this.entries.length - 1);
+    if (this.#cerrada(index)) {
+      if (this.index === this.barrera) {
+        this.emit("bloqueado");
+        return false;
+      }
+      index = this.barrera;
+    }
     if (index === this.index) return false;
 
     this.busy = true;
@@ -316,6 +338,10 @@ export class Router extends Emitter {
     const dir = e.dx < 0 ? "next" : "prev";
     const target = dir === "next" ? this.index + 1 : this.index - 1;
     if (target < 0 || target >= this.entries.length) return;
+    if (this.#cerrada(target)) {
+      this.emit("bloqueado");
+      return;
+    }
 
     const targetEntry = this.entries[target];
     const record = this.live.get(target);

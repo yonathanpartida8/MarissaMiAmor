@@ -219,9 +219,10 @@
 .hint {
   position: absolute;
   left: 50%;
-  bottom: calc(var(--safe-b) + 76px);
+  /* Entre los dos botones de los lados, en la franja de la barra. */
+  bottom: calc(var(--safe-b) + 22px);
   transform: translate(-50%, 10px);
-  max-width: min(84vw, 380px);
+  max-width: min(calc(100vw - 8.6rem), 380px);
   padding: 0.55rem 1.1rem;
   border-radius: var(--r-pill);
   background: rgba(var(--chrome-rgb), 0.84);
@@ -235,6 +236,10 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 620ms var(--e-out), transform 620ms var(--e-out);
+}
+
+#ui:has(.bar.is-visible) .hint.is-visible {
+  opacity: 0;
 }
 
 .hint.is-visible {
@@ -313,7 +318,9 @@ html[data-orientation="landscape"][data-device="phone"] .bar.is-visible {
 }
 
 html[data-orientation="landscape"][data-device="phone"] .hint {
-  bottom: calc(var(--safe-b) + 52px);
+  /* En apaisado los botones van a media altura: la franja de abajo es
+     sólo de la barra, y la pista cabe en ella sin pisar el texto. */
+  bottom: calc(var(--safe-b) + 10px);
 }
 
 /* En escritorio la barra vive debajo del libro, no encima. */
@@ -599,11 +606,21 @@ html[data-device="tablet"] .bar {
   /* Abajo, justo por encima de la barra y pegados al canto: es donde llega
      el pulgar sin recolocar la mano, y donde menos estorban a lo que hay
      que leer o tocar en la página. */
-  bottom: calc(var(--safe-b) + 4.5rem);
+  /* En la misma franja que la barra y no encima: así no tapan la última
+     línea de ninguna página. Cuando la barra aparece (trae sus propias
+     flechas) se apartan, y vuelven en cuanto se esconde. */
+  bottom: calc(var(--safe-b) + 15px);
   display: grid;
   place-items: center;
   pointer-events: none;
+  transition: opacity 320ms var(--e-out), translate 420ms var(--e-out);
 }
+
+#ui:has(.bar.is-visible) .edge {
+  opacity: 0;
+  translate: 0 12px;
+}
+#ui:has(.bar.is-visible) .edge__btn { pointer-events: none; }
 
 .edge--prev { left: calc(var(--safe-l) + 8px); }
 .edge--next { right: calc(var(--safe-r) + 8px); }

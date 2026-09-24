@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--
+  inicio.html1 — LA PRIMERA PÁGINA DEL LIBRITO.
+  Es tuya: cámbiala entera o pega aquí tu propio HTML. Sale antes que
+  nada; después va inicio.html2.html y luego el candado de la fecha.
+  Conserva el <title>: es su nombre en el índice.
+-->
+<title>Hola, mi amorcito</title>
+<style>
+  :root { --rosa: var(--acento, #ffa9bf); --letra: var(--texto, #3d2a2b); }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100svh; display: flex; flex-direction: column;
+    align-items: center; justify-content: safe center; gap: .9rem;
+    padding: 1.2rem 1.2rem calc(var(--hueco-barra, 0rem) + 1.2rem);
+    text-align: center; overflow-x: hidden;
+    font-family: var(--tipo, Georgia, serif); color: var(--letra);
+  }
+  h1 { margin: 0; font-family: var(--tipo-titulo, Georgia, serif); font-weight: 400;
+       font-size: clamp(2rem, 11vw, 3rem); line-height: 1.05; }
+  p { margin: 0; max-width: 30ch; font-size: clamp(1rem, 4.4vw, 1.2rem); line-height: 1.5; opacity: .85; }
+  .latido { font-size: clamp(3rem, 18vw, 5rem); color: var(--rosa); animation: late 1.3s ease-in-out infinite;
+            filter: drop-shadow(0 6px 16px color-mix(in srgb, var(--rosa) 60%, transparent)); }
+  @keyframes late { 0%,100% { transform: scale(1) } 15% { transform: scale(1.18) } 30% { transform: scale(1) } 45% { transform: scale(1.1) } }
+  .pista { font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; opacity: .55; animation: va 2.4s ease-in-out infinite; }
+  @keyframes va { 50% { transform: translateX(6px); opacity: .9 } }
+  .flota { position: fixed; bottom: -2rem; color: var(--rosa); pointer-events: none; animation: sube linear forwards; }
+  @keyframes sube { to { transform: translateY(-110vh) rotate(25deg); opacity: 0 } }
+  @media (prefers-reduced-motion: reduce) { .latido, .pista { animation: none } }
+</style>
+</head>
+<body>
+  <div class="latido" aria-hidden="true">♥</div>
+  <h1>Hola, mi amorcito</h1>
+  <p>Te hice algo con mucho cariño. Tómate tu tiempo, aquí no hay prisa.</p>
+  <span class="pista">desliza para seguir →</span>
+<script>
+  // Corazoncitos que suben de vez en cuando. Al pasar de página, el librito
+  // descarga este documento y el bucle se va con él.
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    setInterval(() => {
+      const c = document.createElement("span");
+      c.className = "flota"; c.textContent = "♥";
+      c.style.left = Math.random() * 100 + "vw";
+      c.style.fontSize = 0.8 + Math.random() * 1.2 + "rem";
+      c.style.animationDuration = 5 + Math.random() * 4 + "s";
+      document.body.append(c);
+      setTimeout(() => c.remove(), 9500);
+    }, 900);
+  }
+</script>
+</body>
+</html>

@@ -44,7 +44,7 @@
    paga ninguna máscara —que es una capa más que componer— y uno largo
    avisa de que sigue sin necesidad de una barra que estorbe.          */
 .lectura {
-  --fundido: 18px;
+  --fundido: 24px;
 }
 
 .lectura[data-mas="abajo"] {

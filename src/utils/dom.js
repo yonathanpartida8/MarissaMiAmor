@@ -109,6 +109,16 @@ export function listenerGroup() {
 const WORD_STEP = 17; // ms entre las primeras palabras
 const WORD_SATURATION = 26; // a partir de aquí el escalonado se comprime
 
+/** El texto tal cual, con cada salto de línea convertido en un párrafo corto. */
+export function textoPlano(text) {
+  const frag = document.createDocumentFragment();
+  String(text).split(/\s*\n\s*/).forEach((trozo, i) => {
+    if (i) frag.append(el("span.parrafo", { "aria-hidden": "true" }));
+    frag.append(document.createTextNode(trozo));
+  });
+  return frag;
+}
+
 export function splitWords(text, className = "word") {
   const frag = document.createDocumentFragment();
   const words = String(text).split(/(\s+)/);
@@ -117,7 +127,7 @@ export function splitWords(text, className = "word") {
   // animación, es la factura más cara de todo el libro en un móvil justo: la
   // página entra igual, con el fundido del contenedor, y va fluida.
   if (document.documentElement.dataset.tier === "low") {
-    frag.append(document.createTextNode(String(text)));
+    frag.append(textoPlano(text));
     return { frag, count: 0 };
   }
 
@@ -127,7 +137,9 @@ export function splitWords(text, className = "word") {
 
   for (const chunk of words) {
     if (/^\s+$/.test(chunk)) {
-      const node = document.createTextNode(chunk);
+      const node = chunk.includes("\n")
+        ? el("span.parrafo", { "aria-hidden": "true" })
+        : document.createTextNode(chunk);
       made.push(node);
       frag.append(node);
       continue;
@@ -152,7 +164,7 @@ export function splitWords(text, className = "word") {
       () => {
         const parent = last.parentNode;
         if (!parent || !made[0]?.isConnected) return;
-        parent.insertBefore(document.createTextNode(String(text)), made[0]);
+        parent.insertBefore(textoPlano(text), made[0]);
         for (const node of made) node.remove();
       },
       { once: true }

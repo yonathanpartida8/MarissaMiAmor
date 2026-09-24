@@ -49,15 +49,10 @@ export const textos = {
   titulo: "Sólo tú sabes abrirlo",
 
   /** El cuerpo. Puedes escribir tanto como quieras: hace scroll solo. */
-  texto:
-    "Guardo cosas. No muchas, pero las guardo: una fecha, una frase que dijiste sin darle importancia, " +
-    "la cara que pusiste cuando te dije lo que sentía. Las tengo aquí dentro, detrás de un día que sólo " +
-    "significa algo para nosotros dos.\n\n" +
-    "Cualquiera podría probar mil fechas. Tú lo sabías al primer intento, mi vida, y eso es exactamente " +
-    "lo que quería contarte con esto.",
+  texto: "Guardo cosas. No muchas, pero las guardo: una fecha, una frase que dijiste sin darle importancia, la cara que pusiste cuando te dije lo que sentía. Las tengo aquí dentro, detrás de un día que sólo significa algo para nosotros dos.\nNuestro día especial. Ese día que, aunque estemos lejos y no podamos vivirlo juntos de la manera que quisiera, sigue siendo nuestro. Una fecha que para los demás puede ser cualquiera, pero que para mí siempre va a tener algo diferente porque lleva un pedacito de nosotros.\nGuardo esos pequeños momentos porque, estando a distancia, a veces son lo más cerquita que puedo sentirte. Una llamada, un mensaje, una palabra tuya… cosas pequeñitas que terminan significando muchísimo cuando vienen de ti.\nY quizá algún día podamos mirar atrás y decir: “¿Te acuerdas de todo esto?” Y entonces ya no estaremos separados por una pantalla, sino juntos, recordando todo lo que tuvimos que esperar para llegar hasta ahí.\nPor eso sólo tú sabes abrirlo. Porque sólo tú conoces la historia que hay detrás de todo lo que guardo aquí.",
 
   /** Lo que aparece al final, cuando ya está todo abierto. */
-  revelacion: "Te amo muchísimo, amorcito.",
+  revelacion: "Te amo muchísimo, amorcito. Y nuestro día siempre va a ser nuestro. 🥹",
 };
 
 export default textos;

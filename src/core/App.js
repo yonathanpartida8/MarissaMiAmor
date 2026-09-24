@@ -119,10 +119,10 @@ export class App {
     // 4. Lo mínimo imprescindible para abrir: la portada y su módulo.
     setStatus("buscando la portada…");
     setProgress(0.35);
-    warmup("cover");
+    warmup(manifest[0]?.type || "cover");
     warmup(manifest[1]?.type || "envelope");
 
-    const firstPhotos = (manifest[0].photos || []).map((p) => p.src);
+    const firstPhotos = (manifest.find((p) => p.type === "cover")?.photos || []).map((p) => p.src);
     await this.ctx.assets
       .loadAll(firstPhotos, PRIORITY.CRITICAL, (p) => setProgress(0.35 + p * 0.45))
       .catch(() => {});
@@ -148,6 +148,8 @@ export class App {
     setStatus("encuadernando…");
     setProgress(0.9);
     this.ctx.router = new Router(this.ctx, this.stage);
+    const puerta = indexOfPage("puerta");
+    if (puerta >= 0 && !this.ctx.store.get("puertaAbierta")) this.ctx.router.barrera = puerta;
     this.ctx.ui = new UI(this.ctx, this.uiRoot);
     this.ctx.ui.mount();
 
@@ -174,7 +176,9 @@ export class App {
     const resume = saved > 0 && !this.ctx.store.isFirstVisit;
     await this.ctx.router.go(resume ? saved : 0, { transition: "none", direction: "none" });
 
-    if (resume) this.ctx.ui.toast(`Seguimos donde lo dejamos · página ${saved + 1}`);
+    if (resume && this.ctx.router.index === saved) {
+      this.ctx.ui.toast(`Seguimos donde lo dejamos · página ${saved + 1}`);
+    }
 
     // 7. Lo demás se va cargando solo, sin estorbar.
     this.#backgroundPreload();
@@ -458,6 +462,14 @@ export class App {
     });
 
     router.on("willchange", () => ui.hideHint());
+
+    let avisado = 0;
+    router.on("bloqueado", () => {
+      if (Date.now() - avisado < 2500) return;
+      avisado = Date.now();
+      this.ctx.haptics.play("error");
+      ui.toast("🔒 primero pon nuestra fecha en el candadito", 2400);
+    });
 
     // Si el rendimiento cae, se avisa por lo bajo y se recorta.
     this.ctx.loop.on("degraded", (budget) => {

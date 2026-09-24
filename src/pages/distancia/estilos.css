@@ -192,8 +192,13 @@
 }
 
 .orbit.is-told .orb__scroll {
-  max-height: 38vh;
+  max-height: 44vh;
   opacity: 1;
+}
+
+/* Ya juntos, el texto es lo importante: el panel crece para que se lea. */
+.orbit.is-told .orb__panel {
+  max-height: min(60vh, 480px);
 }
 
 .orb__prose {

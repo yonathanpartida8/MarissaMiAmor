@@ -38,6 +38,7 @@ const loaders = {
   petals: () => import("./petalos/index.js"),
   mosaic: () => import("./mosaico/index.js"),
   lock: () => import("./combinacion/index.js"),
+  puerta: () => import("./puerta/index.js"),
   bottle: () => import("./botella/index.js"),
   gift: () => import("./regalo/index.js"),
   pulse: () => import("./pulso/index.js"),

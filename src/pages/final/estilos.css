@@ -55,15 +55,26 @@
   gap: 0.4rem;
   text-align: center;
   max-width: min(92%, 460px);
+  /* El corazón vive arriba; el cierre ocupa la parte de abajo y, si la
+     carta es larga, se desplaza dentro de su hueco en vez de salirse de
+     la pantalla (y con ella el botón de seguir). */
+  align-self: end;
+  max-height: 66%;
+  min-height: 0;
   /* Mientras el corazón no se ha formado, el texto espera abajo. */
-  transform: translateY(22%);
+  transform: translateY(10%);
   opacity: 0;
   transition: transform 1400ms var(--e-out), opacity 1200ms var(--e-out);
   pointer-events: none;
 }
 
+.finale__scroll {
+  flex: 0 1 auto;
+  width: 100%;
+}
+
 .finale.is-formed .finale__content {
-  transform: translateY(26%);
+  transform: none;
   opacity: 1;
   transition-delay: 900ms;
 }
@@ -110,7 +121,7 @@
   font-family: var(--font-display);
   font-size: clamp(0.98rem, calc(3.9 * var(--vw)), 1.14rem);
   line-height: 1.6;
-  color: rgba(246, 238, 232, 0.7);
+  color: rgba(246, 238, 232, 0.88);
   text-wrap: pretty;
   opacity: 0;
   transition: opacity 1000ms var(--e-out) 1500ms;
@@ -123,7 +134,8 @@
 .finale__sign {
   margin-top: 0.9rem;
   font-family: var(--font-hand);
-  font-size: clamp(1.5rem, calc(6.6 * var(--vw)), 2.1rem);
+  font-size: clamp(1.3rem, calc(5.6 * var(--vw)), 1.8rem);
+  line-height: 1.2;
   color: var(--rose-glow);
   text-shadow: 0 0 26px rgba(255, 143, 174, 0.5);
   opacity: 0;
@@ -179,6 +191,12 @@
   animation: seal-breathe 3.2s ease-in-out infinite;
 }
 
+/* Cuando ya salió el texto, la indicación sobra y caería sobre el botón. */
+.finale.is-formed .finale__prompt {
+  visibility: hidden;
+  animation: none;
+}
+
 .finale__secrets {
   position: absolute;
   left: 0;
@@ -205,13 +223,15 @@
    de la pantalla, sin manera de llegar a él. Aquí baja mucho menos y el texto
    se aprieta un poco, que es lo que hace falta cuando lo que escasea es alto. */
 html[data-orientation="landscape"][data-device="phone"] .finale__content {
+  align-self: center;
+  max-height: 100%;
   transform: translateY(6%);
   gap: 0.1rem;
   max-width: min(96%, 620px);
 }
 
 html[data-orientation="landscape"][data-device="phone"] .finale.is-formed .finale__content {
-  transform: translateY(8%);
+  transform: none;
 }
 
 html[data-orientation="landscape"][data-device="phone"] .finale__body {

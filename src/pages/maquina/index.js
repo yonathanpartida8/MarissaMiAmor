@@ -18,6 +18,7 @@ import { el } from "../../utils/dom.js";
 /** Milisegundos por carácter, según lo que acabe de escribir. */
 const PAUSE = {
   base: 34,
+  "\n": 520,
   ",": 210,
   ";": 240,
   ":": 240,
@@ -49,7 +50,7 @@ export default class TypewriterPage extends BasePage {
         el("h2.title.tw__title", { text: ch?.title || "" }),
       ]),
       el("div.lectura.tw__sheet", { "data-claim-drag": "" }, [this.textEl]),
-      el("div.tw__foot", {}, [
+      el("div.tw__foot.hueco-barra", {}, [
         el("span.tw__hint", { text: "mantén pulsado para ir más rápido" }),
       ]),
       this.sparkles.node
@@ -107,7 +108,7 @@ export default class TypewriterPage extends BasePage {
     let guard = 0;
     while (this.wait <= 0 && this.at < this.full.length && guard++ < 40) {
       const char = this.full[this.at++];
-      this.cursorEl.before(document.createTextNode(char));
+      this.cursorEl.before(char === "\n" ? el("span.parrafo") : document.createTextNode(char));
 
       const pause = PAUSE[char] ?? PAUSE.base;
       // Irregularidad humana: nadie teclea a intervalos exactos.

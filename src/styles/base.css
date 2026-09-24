@@ -80,6 +80,17 @@ figure {
   color: var(--paper-000);
 }
 
+/* Un salto de línea en los textos es un párrafo: con aire, pero poco. */
+.parrafo {
+  display: block;
+  height: 0.6em;
+  /* Que la letra capitular no se coma el párrafo siguiente. */
+  clear: both;
+}
+.hw__text {
+  white-space: pre-line;
+}
+
 /* Zonas que sí permiten seleccionar texto (cartas largas). */
 .selectable {
   -webkit-user-select: text;

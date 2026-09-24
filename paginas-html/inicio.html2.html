@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--
+  inicio.html2 — LA SEGUNDA PÁGINA DEL LIBRITO.
+  Es tuya: cámbiala entera o pega aquí tu propio HTML. Justo después
+  viene el candado: sin la fecha no se puede pasar de ahí.
+-->
+<title>Antes de abrirlo</title>
+<style>
+  :root { --rosa: var(--acento, #ffa9bf); --letra: var(--texto, #3d2a2b); }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100svh; display: flex; flex-direction: column;
+    align-items: center; justify-content: safe center; gap: .9rem;
+    padding: 1.2rem 1.2rem calc(var(--hueco-barra, 0rem) + 1.2rem);
+    text-align: center; font-family: var(--tipo, Georgia, serif); color: var(--letra);
+  }
+  h1 { margin: 0; font-family: var(--tipo-titulo, Georgia, serif); font-weight: 400;
+       font-size: clamp(1.8rem, 9.5vw, 2.6rem); line-height: 1.1; }
+  p { margin: 0; max-width: 30ch; font-size: clamp(1rem, 4.4vw, 1.2rem); line-height: 1.5; opacity: .85; }
+  .sobre { width: min(62vw, 220px); aspect-ratio: 3 / 2; position: relative; cursor: pointer;
+           border-radius: 10px; background: color-mix(in srgb, var(--rosa) 35%, #fff6f2);
+           box-shadow: 0 14px 30px -14px rgba(90, 20, 50, .45); transition: transform .5s cubic-bezier(.34,1.4,.5,1); }
+  .sobre::before { content: ""; position: absolute; inset: 0; clip-path: polygon(0 0, 100% 0, 50% 58%);
+           background: color-mix(in srgb, var(--rosa) 60%, #fff); border-radius: 10px 10px 0 0;
+           transform-origin: top; transition: transform .6s ease; }
+  .sobre span { position: absolute; left: 50%; top: 52%; translate: -50% -50%; font-size: 1.6rem; color: #c2335f; transition: opacity .3s; }
+  .sobre.abierto { transform: translateY(-4px) scale(1.03); }
+  .sobre.abierto::before { transform: rotateX(180deg); }
+  .sobre.abierto span { opacity: 0; }
+  .nota { max-height: 0; overflow: hidden; opacity: 0; transition: max-height .7s ease, opacity .7s ease; }
+  .nota.visible { max-height: 12rem; opacity: 1; }
+  small { font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; opacity: .55; }
+</style>
+</head>
+<body>
+  <h1>Antes de abrirlo…</h1>
+  <p>El librito está cerrado con un candadito. Sólo tú sabes la fecha que lo abre.</p>
+  <div class="sobre" role="button" tabindex="0" aria-label="Abrir la nota"><span>♥</span></div>
+  <p class="nota">Pista: es el día en que empezó lo más bonito que me ha pasado.</p>
+  <small>toca el sobre · luego desliza →</small>
+<script>
+  const sobre = document.querySelector(".sobre");
+  const abrir = () => {
+    sobre.classList.toggle("abierto");
+    document.querySelector(".nota").classList.toggle("visible", sobre.classList.contains("abierto"));
+  };
+  sobre.addEventListener("click", abrir);
+  sobre.addEventListener("keydown", (e) => (e.key === "Enter" || e.key === " ") && abrir());
+</script>
+</body>
+</html>

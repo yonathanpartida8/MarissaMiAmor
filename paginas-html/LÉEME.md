@@ -226,3 +226,18 @@ El orden del librito es siempre éste:
 
 Las fotos son siempre lo último. Una página HTML nueva nunca se cuela entre
 ellas, por muchas que añadas.
+
+---
+
+## Las dos páginas del principio y el candado
+
+`inicio.html1.html` e `inicio.html2.html` son **las dos primeras páginas del
+librito**, antes incluso de la portada. Son tuyas: cámbialas enteras o pega
+ahí tu propio HTML (conserva el `<title>`, que es su nombre en el índice).
+
+Justo después sale **un candadito** que pide la fecha **23 · ago · 2025**.
+Hasta que no se pone, no se puede pasar de ahí: ni deslizando, ni con las
+flechas, ni con la barra, ni desde el índice. Al abrirlo pasa sola a la
+portada y ya no se vuelve a pedir (salvo con «Empezar de cero»).
+
+La fecha y lo que dice el candado están en `src/pages/puerta/textos.js`.

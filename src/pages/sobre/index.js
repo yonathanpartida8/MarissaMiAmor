@@ -41,7 +41,6 @@ export default class EnvelopePage extends BasePage {
         el("h2.title.letter__title", { text: ch?.title || "" }),
         el("hr.rule.letter__rule"),
         this.proseEl,
-        el("div.letter__sign.signature", { text: "para ti, Marissa" }),
       ]),
     ]);
 
@@ -63,7 +62,7 @@ export default class EnvelopePage extends BasePage {
       this.seal,
     ]);
 
-    this.prompt = el("p.env__prompt", { text: "arrastra el sello hacia abajo" });
+    this.prompt = el("p.env__prompt.hueco-barra", { text: "arrastra el sello hacia abajo" });
 
     this.root.append(el("div.env__stage", {}, [this.envelope]), this.prompt);
     return this.root;

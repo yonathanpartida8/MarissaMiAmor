@@ -11,7 +11,7 @@
 import * as THREE from "three";
 import { BasePage } from "../BasePage.js";
 import { Gestures } from "../../core/Gestures.js";
-import { el, setVars, wait } from "../../utils/dom.js";
+import { el, setVars, wait, textoPlano } from "../../utils/dom.js";
 import { damp, clamp01 } from "../../utils/math.js";
 import { seeded } from "../../utils/rng.js";
 import { allSecrets } from "../../data/manifest.js";
@@ -125,13 +125,15 @@ export default class FinalePage extends BasePage {
       el("div.finale__content", {}, [
         el("p.finale__kicker", { text: finale.kicker }),
         el("h2.finale__line.finale__line--1", { text: finale.lines[0] }),
-        el("h2.finale__line.finale__line--2", { text: finale.lines[1] }),
-        el("p.finale__body", { text: finale.body }),
-        el("p.finale__sign", { text: finale.sign }),
+        finale.lines[1] ? el("h2.finale__line.finale__line--2", { text: finale.lines[1] }) : null,
+        el("div.lectura.finale__scroll", {}, [
+          el("p.finale__body", {}, [textoPlano(finale.body)]),
+          el("p.finale__sign", {}, [textoPlano(finale.sign)]),
+        ]),
         el("button.finale__again", {
           type: "button",
-          text: "volver a la portada",
-          onClick: () => this.ctx.router.go(0, { transition: "zoom", direction: "prev" }),
+          text: "seguir →",
+          onClick: () => this.ctx.router.next(),
         }),
       ]),
       el("div.finale__prompt", { text: "toca la pantalla" }),

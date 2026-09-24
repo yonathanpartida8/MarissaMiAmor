@@ -1,0 +1,101 @@
+/* ============================================================
+   PUERTA — el candado de la entrada. Hereda todo de `.lock`.
+   ============================================================ */
+
+.lock--puerta {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: clamp(0.35rem, 1.4vh, 0.8rem);
+}
+
+.puerta__cabeza {
+  text-align: center;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 600ms var(--e-out) 120ms, transform 600ms var(--e-out) 120ms;
+}
+.lock--puerta.is-entered .puerta__cabeza { opacity: 1; transform: none; }
+
+.puerta__titulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, calc(6.4 * var(--vw)), 2.1rem);
+  line-height: 1.1;
+  color: var(--ink-100, #fff4f7);
+  text-shadow: 0 0 22px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.puerta__sub {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.04em;
+  opacity: 0.72;
+}
+
+/* El candado respira mientras espera: poquito, para que se note vivo. */
+@keyframes puerta-respira {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(-0.6deg); }
+}
+.lock--puerta.is-entered:not(.is-open) .lock__stage {
+  animation: puerta-respira 3.6s var(--e-in-out) infinite;
+}
+
+/* Aquí no hay carta dentro: al abrirse, el candado se queda a la vista,
+   abierto, y aparece la bienvenida. */
+.lock--puerta .lock__inside { display: none; }
+.lock--puerta.is-open .lock__padlock {
+  opacity: 1;
+  transform: translateY(-10%) scale(0.78);
+}
+.lock--puerta.is-open .lock__kicker,
+.lock--puerta.is-open .puerta__cabeza { opacity: 0; }
+
+.puerta__abierta {
+  position: absolute;
+  inset: auto 0 6%;
+  display: grid;
+  justify-items: center;
+  gap: 0.7rem;
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+  transition: opacity 700ms var(--e-out) 300ms, transform 800ms var(--e-spring, ease) 300ms;
+}
+.lock--puerta.is-bienvenida .puerta__abierta {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.puerta__hola {
+  margin: 0;
+  font-family: var(--font-hand, var(--font-display));
+  font-size: clamp(1.5rem, calc(7 * var(--vw)), 2.2rem);
+  color: #fff4f7;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.puerta__seguir {
+  font: inherit;
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.06em;
+  padding: 0.6rem 1.4rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  background: color-mix(in srgb, var(--accent) 26%, rgba(20, 6, 16, 0.55));
+  color: #fff4f7;
+  cursor: pointer;
+  box-shadow: 0 6px 22px -8px var(--accent);
+  animation: puerta-late 1.8s ease-in-out infinite;
+}
+@keyframes puerta-late {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lock--puerta .lock__stage,
+  .puerta__seguir { animation: none !important; }
+}

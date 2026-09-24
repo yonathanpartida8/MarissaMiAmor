@@ -22,7 +22,7 @@
 import { BasePage } from "../BasePage.js";
 import { Gestures } from "../../core/Gestures.js";
 import { createPhotoFrame } from "../../components/PhotoFrame.js";
-import { el, setVars, wait } from "../../utils/dom.js";
+import { el, setVars, wait, textoPlano } from "../../utils/dom.js";
 import { clamp, damp } from "../../utils/math.js";
 import { seeded } from "../../utils/rng.js";
 import escondidos from "../../data/escondidos.js";
@@ -70,9 +70,27 @@ function leerFecha(texto) {
 export default class CombinacionPage extends BasePage {
   static type = "lock";
 
+  /** Lo que dice y la fecha que abre. Otra página puede traer los suyos. */
+  get t() {
+    return textos;
+  }
+
+  /** ¿Lo abrió ya otro día? */
+  get yaAbierto() {
+    return this.ctx.store.hasSecret(this.entry.secret);
+  }
+
+  /** Se apunta para siempre que se abrió. */
+  marcarAbierto() {
+    this.unlockSecret();
+  }
+
+  /** Lo que pasa cuando termina de abrirse. */
+  alAbrir(celebrar) {}
+
   build() {
     const ch = this.chapter;
-    const fecha = leerFecha(textos.fecha);
+    const fecha = leerFecha(this.t.fecha);
 
     // Los tres rodillos, de izquierda a derecha. Cada uno sabe qué enseña y
     // en qué posición está lo correcto; el resto de la página no necesita
@@ -108,12 +126,12 @@ export default class CombinacionPage extends BasePage {
 
     // El título de `textos.js` manda también fuera de la página: es el que
     // sale en la barra de abajo y en el índice del libro.
-    this.chapter = { ...this.chapter, title: textos.titulo };
+    this.chapter = { ...this.chapter, title: this.t.titulo };
 
     this.root = el("section.page.lock", {
       "data-page": this.id,
       "data-gl": "true",
-      "aria-label": textos.titulo || ch?.title,
+      "aria-label": this.t.titulo || ch?.title,
     });
     setVars(this.root, { "--accent": this.palette.a });
 
@@ -173,7 +191,7 @@ export default class CombinacionPage extends BasePage {
 
     this.body = el("div.lock__body", {}, [
       el("div.lock__plate"),
-      el("span.lock__engrave", { text: textos.grabado }),
+      el("span.lock__engrave", { text: this.t.grabado }),
       this.dial,
       this.pie,
       el("div.lock__shine"),
@@ -197,22 +215,22 @@ export default class CombinacionPage extends BasePage {
       zoomable: true,
     });
 
-    this.proseEl = el("p.lock__text", { text: textos.texto || ch?.text });
+    this.proseEl = el("p.lock__text", {}, [textoPlano(this.t.texto || ch?.text || "")]);
 
     this.inside = el("div.lock__inside", {}, [
       el("div.lock__photo", {}, [this.frame.node]),
       el("div.lock__note.paper.paper--aged", {}, [
-        el("h2.lock__title", { text: textos.titulo || ch?.title }),
+        el("h2.lock__title", { text: this.t.titulo || ch?.title }),
         el("hr.rule"),
         el("div.lectura.lock__scroll", {}, [this.proseEl]),
-        el("p.lock__reveal", { text: textos.revelacion || ch?.reveal }),
+        el("p.lock__reveal", { text: this.t.revelacion || ch?.reveal }),
       ]),
     ]);
 
-    this.statusEl = el("p.lock__status", { "aria-live": "polite" });
+    this.statusEl = el("p.lock__status.hueco-barra", { "aria-live": "polite" });
 
     this.root.append(
-      el("span.lock__kicker", { text: textos.arriba || ch?.kicker }),
+      el("span.lock__kicker", { text: this.t.arriba || ch?.kicker }),
       el("div.lock__stage", {}, [this.padlock, this.inside]),
       this.statusEl
     );
@@ -235,7 +253,7 @@ export default class CombinacionPage extends BasePage {
     // depende de que alguien acertara antes: `unlockSecret()` sólo se llama
     // en la apertura de verdad, así que recargar, tocar o volver a entrar no
     // lo abre nunca por su cuenta.
-    if (this.ctx.store.hasSecret(this.entry.secret)) {
+    if (this.yaAbierto) {
       this.#abrir(false);
       return;
     }
@@ -295,7 +313,7 @@ export default class CombinacionPage extends BasePage {
             this.#comprobar();
           },
           onTap: () => {
-            wheel.target = Math.round(wheel.offset) + 1;
+            wheel.target = Math.round(wheel.target) + 1;
             this.ctx.haptics.play("tick");
             this.#comprobar();
           },
@@ -308,7 +326,7 @@ export default class CombinacionPage extends BasePage {
     this.on(wheel.node, "keydown", (e) => {
       if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
       e.preventDefault();
-      wheel.target = Math.round(wheel.offset) + (e.key === "ArrowUp" ? 1 : -1);
+      wheel.target = Math.round(wheel.target) + (e.key === "ArrowUp" ? 1 : -1);
       this.ctx.haptics.play("tick");
       this.#comprobar();
     });
@@ -430,19 +448,19 @@ export default class CombinacionPage extends BasePage {
     this.ctx.haptics.play("error");
     this.ctx.audio.play("turn", { volume: 0.22, rate: 0.6 });
 
-    const frase = textos.fallo[Math.min(this.fallos - 1, textos.fallo.length - 1)];
+    const frase = this.t.fallo[Math.min(this.fallos - 1, this.t.fallo.length - 1)];
     this.#decir(frase);
 
     if (this.fallos === FALLOS_PISTA) {
-      this.#decir(textos.pista, 5200);
+      this.#decir(this.t.pista, 5200);
     } else if (this.fallos === FALLOS_PISTA_DOS) {
-      this.#decir(textos.pistaDos, 5200);
+      this.#decir(this.t.pistaDos, 5200);
     } else if (this.fallos === FALLOS_SOPLO) {
       // A partir de aquí el candado señala qué rodillo ya está bien. Sigue
       // sin decir el valor de los otros dos: ayuda, no resuelve.
       this.soplando = true;
       this.#soplar();
-      this.#decir(textos.ayuda, 5200);
+      this.#decir(this.t.ayuda, 5200);
     }
   }
 
@@ -524,11 +542,11 @@ export default class CombinacionPage extends BasePage {
       this.ctx.gl?.flash(0.45);
       this.ctx.gl?.pulse(1);
       this.#chispas();
-      this.#decir(textos.abierto, 1800);
+      this.#decir(this.t.abierto, 1800);
       // ÚNICO sitio donde esto se marca como abierto para siempre. Si esta
       // línea se llamara desde cualquier otro camino, el candado quedaría
       // abierto sin que nadie hubiera puesto la fecha.
-      this.unlockSecret();
+      this.marcarAbierto();
       await wait(520);
     } else {
       this.padlock.classList.add("is-open", "is-glowing");
@@ -544,6 +562,7 @@ export default class CombinacionPage extends BasePage {
       this.tickerOn = true;
       this.addTicker((dt, time) => this.frame.tick(dt, time), 11);
     }
+    this.alAbrir(celebrar);
   }
 
   /** Corazones y chispas al abrirse. Pocos y buenos. */

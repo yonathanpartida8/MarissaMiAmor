@@ -57,6 +57,32 @@ import { chapterById } from "./chapters.js";
 /** @type {PageEntry[]} */
 const pages = [
   // ═══════════════════════════════════════════════════════════════
+  //  ANTES DE TODO: `paginas-html/inicio.html1.html`, `…2.html` y el
+  //  candado de la fecha. Hasta que no se abre, no se pasa de ahí.
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "inicio-1",
+    type: "html",
+    chapter: "inicio-1",
+    src: "paginas-html/inicio.html1.html",
+    transition: "dissolve",
+  },
+  {
+    id: "inicio-2",
+    type: "html",
+    chapter: "inicio-2",
+    src: "paginas-html/inicio.html2.html",
+    transition: "flip",
+  },
+  {
+    id: "puerta",
+    type: "puerta",
+    chapter: "puerta",
+    transition: "zoom",
+    hint: "gira las ruedas hasta nuestra fecha",
+  },
+
+  // ═══════════════════════════════════════════════════════════════
   //  PORTADA
   // ═══════════════════════════════════════════════════════════════
   {
