@@ -76,7 +76,7 @@ export default class PostcardPage extends BasePage {
 
     this.root.append(
       this.stage,
-      el("p.pc__prompt", { text: "arrástrala para darle la vuelta" }),
+      el("p.pc__prompt.hueco-barra", { text: "arrástrala para darle la vuelta" }),
       this.sparkles.node
     );
 
