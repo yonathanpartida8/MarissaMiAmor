@@ -219,8 +219,8 @@
 .hint {
   position: absolute;
   left: 50%;
-  /* Entre los dos botones de los lados, en la franja de la barra. */
-  bottom: calc(var(--safe-b) + 22px);
+  /* Entre los dos botones de los lados, encima del botón de la barra. */
+  bottom: calc(var(--safe-b) + 36px);
   transform: translate(-50%, 10px);
   max-width: min(calc(100vw - 8.6rem), 380px);
   padding: 0.55rem 1.1rem;
@@ -238,7 +238,7 @@
   transition: opacity 620ms var(--e-out), transform 620ms var(--e-out);
 }
 
-#ui:has(.bar.is-visible) .hint.is-visible {
+#ui.barra-abierta .hint.is-visible {
   opacity: 0;
 }
 
@@ -623,11 +623,11 @@ html[data-device="tablet"] .bar {
   transition: opacity 320ms var(--e-out), translate 420ms var(--e-out);
 }
 
-#ui:has(.bar.is-visible) .edge {
+#ui.barra-abierta .edge {
   opacity: 0;
   translate: 0 12px;
 }
-#ui:has(.bar.is-visible) .edge__btn { pointer-events: none; }
+#ui.barra-abierta .edge__btn { pointer-events: none; }
 
 .edge--prev { left: calc(var(--safe-l) + 8px); }
 .edge--next { right: calc(var(--safe-r) + 8px); }
@@ -945,4 +945,56 @@ html[data-orientation="landscape"][data-device="phone"] .edge {
 
 @media (prefers-reduced-motion: reduce) {
   .toc__accion.is-armado { animation: none; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   EL BOTÓN DE LA BARRA — una pestañita abajo al centro que la abre.
+   ════════════════════════════════════════════════════════════════════ */
+.barra-toggle {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-b) + 6px);
+  translate: -50% 0;
+  width: 64px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(var(--cromo-luz-rgb), 0.22);
+  background: linear-gradient(180deg, rgba(var(--chrome-alto-rgb), 0.72), rgba(var(--chrome-rgb), 0.84));
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(var(--cromo-luz-rgb), 0.14);
+  color: var(--text-soft);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 320ms var(--e-out), translate 420ms var(--e-out), bottom 420ms var(--e-out), transform 200ms var(--e-out);
+}
+.barra-toggle span { transition: rotate 420ms var(--e-out); }
+.barra-toggle span { display: block; translate: 0 2px; animation: barra-asoma 2.6s ease-in-out infinite; }
+.barra-toggle:active { transform: scale(0.92); }
+@keyframes barra-asoma { 50% { translate: 0 -1px; } }
+
+/* Con la barra abierta, la pestaña sube y se queda encima para cerrarla. */
+#ui.barra-abierta .barra-toggle {
+  bottom: calc(var(--safe-b) + 74px);
+}
+#ui.barra-abierta .barra-toggle span {
+  rotate: 180deg;
+  animation: none;
+}
+
+#ui.is-bare .barra-toggle {
+  opacity: 0;
+  translate: -50% 14px;
+  pointer-events: none;
+}
+
+/* La pista nunca se queda encima de la barra abierta (ni invisible). */
+#ui.barra-abierta .hint { visibility: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .barra-toggle span { animation: none; }
 }

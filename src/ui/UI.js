@@ -15,7 +15,6 @@ import { EdgeNav } from "./EdgeNav.js";
 import { TEMAS, temaActivo, temaSiguiente } from "../utils/temas.js";
 
 const HINT_DELAY = 4600;
-const BAR_HIDE_DELAY = 3400;
 
 export class UI {
   constructor(ctx, root) {
@@ -45,7 +44,6 @@ export class UI {
 
   /** Cualquier gesto revive la barra y reinicia el reloj de la pista. */
   #wake = () => {
-    this.showBar();
     this.scheduleHint();
   };
 
@@ -116,6 +114,16 @@ export class UI {
         onClick: () => this.ctx.router.next(),
       }),
     ]);
+
+    // La barra ya no sale sola: se abre y se cierra con su botón, y así los
+    // de ‹ › de los lados nunca se esconden debajo del dedo.
+    this.toggleBtn = el("button.barra-toggle", {
+      type: "button",
+      "aria-label": "Mostrar la barra",
+      html: "<span>︿</span>",
+      onClick: () => this.setBarra(!this.root.classList.contains("barra-abierta")),
+    });
+    this.root.append(this.toggleBtn);
 
     this.bar.append(
       el("div.bar__tools", {}, [
@@ -320,10 +328,20 @@ export class UI {
     this.hint?.classList.remove("is-visible");
   }
 
+  /** Abre o cierra la barra, y se acuerda para la próxima vez. */
+  setBarra(abierta) {
+    this.bar.classList.toggle("is-visible", abierta);
+    this.root.classList.toggle("barra-abierta", abierta);
+    this.toggleBtn?.setAttribute("aria-expanded", String(abierta));
+    this.ctx.store.set("barra", abierta);
+    this.ctx.haptics?.play?.("tap");
+  }
+
+  /** Antes la enseñaba un rato; ahora sólo respeta lo que ella eligió. */
   showBar() {
-    clearTimeout(this.barTimer);
-    this.bar.classList.add("is-visible");
-    this.barTimer = setTimeout(() => this.bar.classList.remove("is-visible"), BAR_HIDE_DELAY);
+    const abierta = !!this.ctx.store.get("barra");
+    this.bar.classList.toggle("is-visible", abierta);
+    this.root.classList.toggle("barra-abierta", abierta);
   }
 
   toast(message, ms = 2800) {
