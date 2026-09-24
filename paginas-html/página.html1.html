@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <!--
   Este archivo es un EJEMPLO y también una plantilla.
 
@@ -11,11 +12,6 @@
   Lo único que conviene no perder:
     · el <title>, que es como se llama la página en el librito
     · las variables --acento, --texto… si quieres ir a juego con él
-
-  Y fíjate en una cosa: este archivo pinta corazones con un bucle de
-  requestAnimationFrame y NO lo para en ningún sitio. No hace falta.
-  Al pasar de página el librito descarga el documento entero y con él
-  se va el bucle. Escribe tranquilo.
 -->
 <title>Cuántas veces</title>
 
@@ -29,22 +25,44 @@
     --letra: var(--texto, #3d2a2b);
   }
 
+  * { box-sizing: border-box; }
+
+  html, body { overflow-x: hidden; }
+
   body {
     display: flex;
     flex-direction: column;
     align-items: center;
     /* `safe center` y no `center` a secas: centrado mientras quepa, y
-       pegado arriba cuando no quepa. Con `center` normal, en horizontal
-       el título se sale por encima y no hay manera de llegar a él. */
+       pegado arriba cuando no quepa. */
     justify-content: safe center;
-    gap: 1.1rem;
     min-height: 100svh;
     padding: 1rem 1rem;
     /* El hueco de la barra flotante del librito, para no quedar debajo. */
     padding-bottom: calc(var(--hueco-barra, 0rem) + 1rem);
     text-align: center;
-    /* Sin fondo propio: así se ve el papel del librito por detrás.
-       Si quieres el tuyo, ponlo aquí y ya está. */
+    /* Sin fondo propio: así se ve el papel del librito por detrás. */
+  }
+
+  /* Un envoltorio para poder temblar entero sin mover el lienzo. */
+  .escena {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.1rem;
+    width: 100%;
+  }
+  body.temblor .escena {
+    animation: temblor 500ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+  @keyframes temblor {
+    0%   { transform: translate(0, 0); }
+    15%  { transform: translate(-7px, 4px) rotate(-0.6deg); }
+    30%  { transform: translate(6px, -5px) rotate(0.5deg); }
+    45%  { transform: translate(-5px, -3px) rotate(-0.4deg); }
+    60%  { transform: translate(4px, 5px) rotate(0.4deg); }
+    80%  { transform: translate(-3px, 2px) rotate(-0.2deg); }
+    100% { transform: translate(0, 0) rotate(0); }
   }
 
   h1 {
@@ -58,25 +76,32 @@
 
   p {
     margin: 0;
-    max-width: 24ch;
+    max-width: 26ch;
     font-size: clamp(0.9rem, 4vw, 1.05rem);
     line-height: 1.6;
     color: var(--letra);
     opacity: 0.78;
   }
 
+  /* ---------- El corazón ---------- */
   #corazon {
-    width: clamp(120px, 42vw, 190px);
-    height: clamp(120px, 42vw, 190px);
+    position: relative;
+    width: clamp(130px, 46vw, 200px);
+    height: clamp(130px, 46vw, 200px);
     border: 0;
     padding: 0;
     background: none;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: transform 260ms cubic-bezier(0.34, 1.4, 0.5, 1);
+    transition:
+      transform 260ms cubic-bezier(0.34, 1.4, 0.5, 1),
+      filter    450ms ease,
+      opacity   300ms ease;
+    /* --lleno lo va actualizando el JS de 0 a 1 mientras se llena. */
   }
 
   #corazon:active { transform: scale(0.93); }
+
   #corazon.late  { animation: latir 460ms cubic-bezier(0.34, 1.4, 0.5, 1); }
 
   @keyframes latir {
@@ -84,27 +109,145 @@
     70% { transform: scale(0.97); }
   }
 
-  #corazon path { fill: var(--rosa); }
+  /* Cuando ya va por la mitad, empieza a brillar. */
+  #corazon.ardiendo {
+    filter:
+      drop-shadow(0 0 calc(6px + var(--lleno, 0) * 26px) var(--rosa))
+      drop-shadow(0 0 calc(var(--lleno, 0) * 60px) rgba(255, 169, 191, 0.35));
+  }
+
+  /* Se va apagando y encogiendo justo antes de explotar. */
+  #corazon.explotando {
+    transform: scale(0);
+    opacity: 0;
+    filter: drop-shadow(0 0 40px var(--rosa));
+    transition:
+      transform 420ms cubic-bezier(0.6, -0.3, 0.75, 0.05),
+      opacity   420ms ease;
+  }
+
+  #corazon svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+  #corazon .base    { fill: var(--rosa); }
   #corazon .relleno { fill: var(--hondo); }
 
+  #corazon .relleno {
+    transition: y 420ms cubic-bezier(0.34, 1.2, 0.5, 1);
+  }
+
+  /* ---------- La frase ---------- */
   #cuenta {
     font-family: var(--tipo-mano, cursive);
     font-size: clamp(1.4rem, 7vw, 2rem);
     color: var(--hondo);
     min-height: 1.4em;
+    letter-spacing: 0.01em;
+  }
+  #cuenta.nueva {
+    animation: fraseEntra 520ms cubic-bezier(0.2, 1.3, 0.3, 1);
+  }
+  @keyframes fraseEntra {
+    from { opacity: 0; transform: translateY(10px) scale(0.92); }
+    60%  { opacity: 1; }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
   }
 
-  /* El lienzo va detrás de todo y no se puede tocar: así los corazones
-     que suben no le roban el dedo ni al botón ni al librito. */
+  /* ---------- El lienzo de las partículas ---------- */
   #lluvia {
     position: fixed;
     inset: 0;
-    z-index: -1;
+    z-index: 5;
     pointer-events: none;
   }
 
+  /* ---------- El mensaje final ---------- */
+  #mensaje {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 500ms ease;
+  }
+  #mensaje.visible { opacity: 1; }
+
+  .mensaje__texto {
+    font-family: var(--tipo-titulo, Georgia, serif);
+    color: var(--hondo);
+    line-height: 1.05;
+    text-shadow:
+      0 0 20px rgba(255, 169, 191, 0.9),
+      0 6px 40px rgba(255, 169, 191, 0.6);
+  }
+  .mensaje__texto span,
+  .mensaje__texto strong,
+  .mensaje__texto .infinito {
+    display: block;
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  .mensaje__texto span {
+    font-size: clamp(0.95rem, 4.2vw, 1.25rem);
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    font-weight: 400;
+    opacity: 0.75;
+    margin-bottom: 0.4rem;
+  }
+  .mensaje__texto strong {
+    font-size: clamp(2.2rem, 11vw, 4.2rem);
+    font-weight: 400;
+    font-style: italic;
+  }
+  .mensaje__texto .infinito {
+    font-size: clamp(3.4rem, 17vw, 6.5rem);
+    line-height: 0.9;
+    margin-top: 0.4rem;
+  }
+
+  #mensaje.visible .mensaje__texto span {
+    animation: subir 620ms 60ms forwards cubic-bezier(0.2, 1.3, 0.3, 1);
+  }
+  #mensaje.visible .mensaje__texto strong {
+    animation: subir 720ms 180ms forwards cubic-bezier(0.2, 1.3, 0.3, 1);
+  }
+  #mensaje.visible .mensaje__texto .infinito {
+    animation:
+      subir 780ms 320ms forwards cubic-bezier(0.2, 1.3, 0.3, 1),
+      palpitar 2.2s 1100ms ease-in-out infinite;
+  }
+
+  @keyframes subir {
+    from { opacity: 0; transform: translateY(28px) scale(0.94); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
+  }
+  @keyframes palpitar {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    #corazon, #corazon.late { transition: none; animation: none; }
+    #corazon,
+    #corazon.late,
+    #corazon.explotando,
+    #cuenta.nueva,
+    #mensaje.visible .mensaje__texto span,
+    #mensaje.visible .mensaje__texto strong,
+    #mensaje.visible .mensaje__texto .infinito,
+    body.temblor .escena {
+      animation: none !important;
+      transition: none !important;
+    }
+    #mensaje.visible .mensaje__texto span,
+    #mensaje.visible .mensaje__texto strong,
+    #mensaje.visible .mensaje__texto .infinito {
+      opacity: 1;
+      transform: none;
+    }
   }
 </style>
 </head>
@@ -112,60 +255,135 @@
 <body>
   <canvas id="lluvia" aria-hidden="true"></canvas>
 
-  <h1>Cuántas veces<br>te lo he dicho</h1>
+  <main class="escena">
+    <h1>Cuántas veces<br>te lo he dicho</h1>
 
-  <button id="corazon" type="button" aria-label="Tócalo">
-    <svg viewBox="0 0 100 92" width="100%" height="100%" aria-hidden="true">
-      <path d="M50 92S4 63 4 32C4 14 18 4 31 4c8 0 15 4 19 11 4-7 11-11 19-11 13 0 30 10 30 28 0 31-49 60-49 60z"/>
-      <clipPath id="dentro">
-        <path d="M50 92S4 63 4 32C4 14 18 4 31 4c8 0 15 4 19 11 4-7 11-11 19-11 13 0 30 10 30 28 0 31-49 60-49 60z"/>
-      </clipPath>
-      <rect class="relleno" id="nivel" clip-path="url(#dentro)" x="0" y="92" width="100" height="92"/>
-    </svg>
-  </button>
+    <button id="corazon" type="button" aria-label="Toca el corazón">
+      <svg viewBox="0 0 100 92" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <defs>
+          <clipPath id="dentro">
+            <path d="M50 92S4 63 4 32C4 14 18 4 31 4c8 0 15 4 19 11 4-7 11-11 19-11 13 0 30 10 30 28 0 31-49 60-49 60z"/>
+          </clipPath>
+        </defs>
+        <path class="base" d="M50 92S4 63 4 32C4 14 18 4 31 4c8 0 15 4 19 11 4-7 11-11 19-11 13 0 30 10 30 28 0 31-49 60-49 60z"/>
+        <rect class="relleno" id="nivel" clip-path="url(#dentro)"
+              x="-2" y="92" width="104" height="96"/>
+      </svg>
+    </button>
 
-  <div id="cuenta"></div>
-  <p>Tócalo. No se llena nunca, y por eso me gusta.</p>
+    <div id="cuenta" aria-hidden="true"></div>
+    <p>Tócalo hasta que se llene. No te voy a mentir: tarda poquito.</p>
+  </main>
+
+  <div id="mensaje" role="status" aria-live="polite">
+    <div class="mensaje__texto">
+      <span>Mi amor por ti</span>
+      <strong>es infinito</strong>
+      <div class="infinito" aria-hidden="true">∞</div>
+    </div>
+  </div>
 
 <script>
 (() => {
+  "use strict";
+
+  /* ---------- Ajustes ---------- */
+  const META = 15;          // toques para llenar el corazón
   const FRASES = [
-    "te amo", "mi amor", "mi vida", "amorcito", "mi niña",
-    "eres mi amor", "te amo muchísimo", "otra vez, te amo",
+    "te amo",
+    "mi amor",
+    "mi vida",
+    "amorcito",
+    "mi niña",
+    "mi cielo",
+    "te amo muchísimo",
+    "otra vez, te amo",
+    "eres todo para mí",
+    "mi corazón es tuyo",
+    "te adoro, mi amor",
+    "mi amor por ti no cabe",
   ];
 
-  const boton = document.getElementById("corazon");
-  const nivel = document.getElementById("nivel");
-  const cuenta = document.getElementById("cuenta");
-  const lienzo = document.getElementById("lluvia");
-  const px = lienzo.getContext("2d");
+  /* ---------- Referencias ---------- */
+  const boton    = document.getElementById("corazon");
+  const nivel    = document.getElementById("nivel");
+  const cuenta   = document.getElementById("cuenta");
+  const lienzo   = document.getElementById("lluvia");
+  const mensaje  = document.getElementById("mensaje");
+  const px       = lienzo.getContext("2d");
 
-  let veces = 0;
-  const subiendo = [];
+  const raiz     = document.documentElement;
+  const leerVar  = (n, def) =>
+    getComputedStyle(raiz).getPropertyValue(n).trim() || def;
+  const ROSA  = leerVar("--rosa",  "#ffa9bf");
+  const HONDO = leerVar("--hondo", "#93264b");
 
-  // ---- El lienzo, a la medida de la pantalla y de su densidad ----------
-  let ancho = 0;
-  let alto = 0;
+  /* ---------- Estado ---------- */
+  let veces       = 0;
+  let explotando  = false;
+  const particulas = [];
+
+  /* ---------- Lienzo a la medida de la pantalla ---------- */
+  let ancho = 0, alto = 0;
   function medir() {
     const d = Math.min(devicePixelRatio || 1, 2);
     ancho = lienzo.clientWidth;
-    alto = lienzo.clientHeight;
-    lienzo.width = Math.round(ancho * d);
-    lienzo.height = Math.round(alto * d);
+    alto  = lienzo.clientHeight;
+    lienzo.width  = Math.round(ancho * d);
+    lienzo.height = Math.round(alto  * d);
     px.setTransform(d, 0, 0, d, 0, 0);
   }
   medir();
   addEventListener("resize", medir);
 
-  // ---- Un toque ---------------------------------------------------------
-  boton.addEventListener("click", () => {
+  /* ---------- Fábricas de partículas ---------- */
+  function corazoncito(x, y, vx, vy, tam, color, vida = 1, decae = 0.72) {
+    particulas.push({
+      tipo: "corazon",
+      x, y, vx, vy, tam, color,
+      rot:  (Math.random() - 0.5) * 0.8,
+      vrot: (Math.random() - 0.5) * 4,
+      vida, decae,
+    });
+  }
+
+  function chispa(x, y, vx, vy, tam, color, vida = 1, decae = 1.5) {
+    particulas.push({
+      tipo: "chispa",
+      x, y, vx, vy, tam, color,
+      vida, decae,
+    });
+  }
+
+  function onda(x, y, tamMax, decae = 0.85) {
+    particulas.push({
+      tipo: "onda",
+      x, y,
+      tam: 0,
+      tamMax,
+      vida: 1,
+      decae,
+    });
+  }
+
+  /* ---------- Un toque ---------- */
+  function tocar() {
+    if (explotando) return;
     veces++;
+
+    // Frase
     cuenta.textContent = FRASES[(veces - 1) % FRASES.length];
+    cuenta.classList.remove("nueva");
+    void cuenta.offsetWidth;
+    cuenta.classList.add("nueva");
 
-    // Se llena despacio y nunca del todo: se acerca al borde sin llegar.
-    const lleno = 1 - Math.pow(0.94, veces);
+    // Nivel de llenado
+    const lleno = Math.min(1, veces / META);
     nivel.setAttribute("y", String(92 - lleno * 92));
+    boton.style.setProperty("--lleno", lleno.toFixed(3));
+    boton.classList.toggle("ardiendo", lleno >= 0.5);
 
+    // Latido
     boton.classList.remove("late");
     void boton.offsetWidth;
     boton.classList.add("late");
@@ -173,48 +391,172 @@
     if (navigator.vibrate) navigator.vibrate(12);
 
     const caja = boton.getBoundingClientRect();
+    const cx = caja.left + caja.width  / 2;
+    const cy = caja.top  + caja.height / 2;
+
+    // Corazones que suben desde el botón
     for (let i = 0; i < 3; i++) {
-      subiendo.push({
-        x: caja.left + caja.width * (0.3 + Math.random() * 0.4),
-        y: caja.top + caja.height * 0.55,
-        vx: (Math.random() - 0.5) * 26,
-        vy: -34 - Math.random() * 26,
-        vida: 1,
-        tam: 9 + Math.random() * 9,
-      });
+      corazoncito(
+        cx + (Math.random() - 0.5) * caja.width  * 0.55,
+        cy + (Math.random() - 0.5) * caja.height * 0.35,
+        (Math.random() - 0.5) * 40,
+        -50 - Math.random() * 60,
+        11 + Math.random() * 12,
+        Math.random() > 0.35 ? ROSA : HONDO
+      );
     }
-  });
 
-  // ---- Los corazones que suben -----------------------------------------
-  const corazon = (x, y, t, a) => {
-    px.globalAlpha = a;
-    px.font = `${t}px serif`;
-    px.textAlign = "center";
-    px.fillText("♥", x, y);
-  };
+    // Chispitas alrededor
+    for (let i = 0; i < 7; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const v = 30 + Math.random() * 90;
+      chispa(
+        cx + (Math.random() - 0.5) * 24,
+        cy + (Math.random() - 0.5) * 24,
+        Math.cos(a) * v,
+        Math.sin(a) * v,
+        1.6 + Math.random() * 2.6,
+        Math.random() > 0.5 ? HONDO : ROSA
+      );
+    }
 
+    if (veces >= META) explotar(cx, cy);
+  }
+
+  /* ---------- La explosión final ---------- */
+  function explotar(cx, cy) {
+    explotando = true;
+    boton.classList.add("explotando");
+
+    // Temblor
+    document.body.classList.add("temblor");
+    setTimeout(() => document.body.classList.remove("temblor"), 560);
+
+    if (navigator.vibrate) navigator.vibrate([24, 40, 60, 40, 140]);
+
+    // Onda expansiva
+    onda(cx, cy, Math.hypot(ancho, alto) * 0.9, 0.9);
+    setTimeout(() => onda(cx, cy, Math.hypot(ancho, alto) * 0.7, 1.1), 120);
+
+    // Corazones disparados en todas direcciones
+    const total = 56;
+    for (let i = 0; i < total; i++) {
+      const a = (i / total) * Math.PI * 2 + Math.random() * 0.45;
+      const v = 110 + Math.random() * 260;
+      corazoncito(
+        cx, cy,
+        Math.cos(a) * v,
+        Math.sin(a) * v - 40,
+        12 + Math.random() * 22,
+        Math.random() > 0.5 ? ROSA : HONDO,
+        1.15 + Math.random() * 0.7,
+        0.5 + Math.random() * 0.25
+      );
+    }
+
+    // Chispas
+    for (let i = 0; i < 90; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const v = 90 + Math.random() * 380;
+      chispa(
+        cx, cy,
+        Math.cos(a) * v,
+        Math.sin(a) * v,
+        1.6 + Math.random() * 3.4,
+        Math.random() > 0.55 ? HONDO : ROSA,
+        0.9 + Math.random() * 0.6,
+        1.1 + Math.random() * 0.7
+      );
+    }
+
+    // El mensaje
+    setTimeout(() => mensaje.classList.add("visible"), 380);
+
+    // Y luego, se reinicia con calma
+    setTimeout(reiniciar, 6800);
+  }
+
+  function reiniciar() {
+    mensaje.classList.remove("visible");
+
+    setTimeout(() => {
+      veces = 0;
+      nivel.setAttribute("y", "92");
+      cuenta.textContent = "";
+      boton.classList.remove("ardiendo", "explotando");
+      boton.style.setProperty("--lleno", "0");
+      explotando = false;
+    }, 520);
+  }
+
+  boton.addEventListener("click", tocar);
+
+  /* ---------- El bucle de dibujo ---------- */
   let antes = performance.now();
+
   function frame(ahora) {
     const dt = Math.min((ahora - antes) / 1000, 0.05);
     antes = ahora;
 
-    px.clearRect(0, 0, ancho, alto);
-    px.fillStyle = getComputedStyle(document.documentElement)
-      .getPropertyValue("--rosa").trim() || "#ffa9bf";
+    // Actualizar partículas
+    for (let i = particulas.length - 1; i >= 0; i--) {
+      const p = particulas[i];
 
-    for (let i = subiendo.length - 1; i >= 0; i--) {
-      const c = subiendo[i];
-      c.x += c.vx * dt;
-      c.y += c.vy * dt;
-      c.vy += 16 * dt;          // pierde fuerza según sube
-      c.vida -= dt * 0.75;
-      if (c.vida <= 0) { subiendo.splice(i, 1); continue; }
-      corazon(c.x, c.y, c.tam, Math.min(1, c.vida) * 0.85);
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+
+      if (p.tipo === "corazon") {
+        p.vy += 70 * dt;       // gravedad suave, se van cayendo
+        p.vx *= 0.985;
+        p.rot += p.vrot * dt;
+      } else if (p.tipo === "chispa") {
+        p.vx *= 0.955;
+        p.vy *= 0.955;
+      } else if (p.tipo === "onda") {
+        p.tam += (p.tamMax - p.tam) * dt * 6;
+      }
+
+      p.vida -= p.decae * dt;
+      if (p.vida <= 0) particulas.splice(i, 1);
     }
-    px.globalAlpha = 1;
 
+    // Dibujar
+    px.clearRect(0, 0, ancho, alto);
+
+    for (const p of particulas) {
+      const a = Math.max(0, Math.min(1, p.vida));
+      px.globalAlpha = a;
+
+      if (p.tipo === "corazon") {
+        px.save();
+        px.translate(p.x, p.y);
+        px.rotate(p.rot);
+        px.fillStyle = p.color;
+        px.font = `${p.tam}px serif`;
+        px.textAlign = "center";
+        px.textBaseline = "middle";
+        px.fillText("\u2665", 0, 0);
+        px.restore();
+
+      } else if (p.tipo === "chispa") {
+        px.fillStyle = p.color;
+        px.beginPath();
+        px.arc(p.x, p.y, p.tam, 0, Math.PI * 2);
+        px.fill();
+
+      } else if (p.tipo === "onda") {
+        px.strokeStyle = ROSA;
+        px.lineWidth = Math.max(1, 7 * a);
+        px.beginPath();
+        px.arc(p.x, p.y, p.tam, 0, Math.PI * 2);
+        px.stroke();
+      }
+    }
+
+    px.globalAlpha = 1;
     requestAnimationFrame(frame);
   }
+
   requestAnimationFrame(frame);
 })();
 </script>
