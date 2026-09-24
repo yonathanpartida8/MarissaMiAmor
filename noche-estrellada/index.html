@@ -6,6 +6,8 @@
 <meta name="color-scheme" content="dark">
 <meta name="description" content="Una noche en el bosque, junto a una fogata.">
 <title>Noche estrellada</title>
+<link rel="icon" href="../assets/img/imagen1.png">
+<script src="archivos.js"></script>
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
@@ -2400,6 +2402,13 @@ function despertarAudio() {
  */
 async function traerBuffer(ruta) {
   if (audio.buffers.has(ruta)) return audio.buffers.get(ruta);
+  /* `archivos.js` dice qué sonidos existen de verdad: los que no, ni se
+     piden (cada uno era un 404 en rojo) y suena su gemelo sintetizado. */
+  const hay = window.NOCHE_ARCHIVOS;
+  if (Array.isArray(hay) && !hay.includes(String(ruta).normalize("NFC"))) {
+    audio.buffers.set(ruta, null);
+    return null;
+  }
   if (!despertarAudio()) return null;
   try {
     const r = await fetch(ruta);

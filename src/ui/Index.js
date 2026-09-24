@@ -213,6 +213,9 @@ export class BookIndex {
       const seen = visited.has(entry.id) || index <= furthest;
 
       button.classList.toggle("is-current", index === current);
+      // Lo que queda detrás de un candado cerrado lleva su candadito.
+      const barrera = this.ctx.router?.barrera;
+      button.classList.toggle("is-cerrada", barrera != null && index > barrera);
       button.classList.toggle("is-seen", seen);
       // Lo que aún no ha visto se queda sin nombre: no le reventamos nada.
       button.classList.toggle("is-veiled", !seen);

@@ -514,6 +514,13 @@ html[data-device="tablet"] .bar {
   transition: background var(--t-fast), transform var(--t-fast) var(--e-out);
 }
 
+.toc__item.is-cerrada { opacity: 0.55; }
+.toc__item.is-cerrada .toc__num::before {
+  content: "🔒";
+  margin-right: 0.3em;
+  font-size: 0.8em;
+}
+
 .toc__item:active { background: rgba(var(--cromo-luz-rgb), 0.07); transform: translateX(2px); }
 
 .toc__num {

@@ -148,8 +148,12 @@ export class App {
     setStatus("encuadernando…");
     setProgress(0.9);
     this.ctx.router = new Router(this.ctx, this.stage);
-    const puerta = indexOfPage("puerta");
-    if (puerta >= 0 && !this.ctx.store.get("puertaAbierta")) this.ctx.router.barrera = puerta;
+    // Los dos candados del libro: hasta poner la fecha no se pasa de ellos.
+    const store = this.ctx.store;
+    this.ctx.router.cerrado = (e) =>
+      (e.type === "puerta" && !store.get("puertaAbierta")) ||
+      (e.type === "lock" && !!e.secret && !store.hasSecret(e.secret));
+    this.ctx.router.recalcularBarrera();
     this.ctx.ui = new UI(this.ctx, this.uiRoot);
     this.ctx.ui.mount();
 
@@ -468,7 +472,7 @@ export class App {
       if (Date.now() - avisado < 2500) return;
       avisado = Date.now();
       this.ctx.haptics.play("error");
-      ui.toast("🔒 primero pon nuestra fecha en el candadito", 2400);
+      ui.toast("🔒 primero abre el candadito con nuestra fecha", 2400);
     });
 
     // Si el rendimiento cae, se avisa por lo bajo y se recorta.

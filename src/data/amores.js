@@ -26,6 +26,7 @@
  */
 
 import textos from "../pages/amor/textos.js";
+import contenido from "./contenido.js";
 
 /** Dónde busca. */
 export const CARPETA = "images/amores/";
@@ -130,6 +131,17 @@ async function buscarConCualquiera(numero, salvo) {
  * @returns {Promise<{numero:number, src:string, w:number, h:number}[]>}
  */
 export async function descubrirAmores() {
+  // Con la lista de `contenido.js` sólo se cargan las que existen (para
+  // saber sus medidas): cero 404.
+  if (Array.isArray(contenido?.amores)) {
+    const medidas = await Promise.all(
+      contenido.amores.map((f) => probar(CARPETA + encodeURIComponent(f.archivo)))
+    );
+    return contenido.amores
+      .map((f, i) => medidas[i] && { numero: f.numero, src: medidas[i].ruta, w: medidas[i].w, h: medidas[i].h })
+      .filter(Boolean);
+  }
+
   const encontradas = [];
 
   try {

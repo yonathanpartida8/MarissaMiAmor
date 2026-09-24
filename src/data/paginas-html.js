@@ -34,6 +34,7 @@
  */
 
 import textos from "../pages/html/textos.js";
+import contenido from "./contenido.js";
 
 /** Dónde busca. */
 export const CARPETA = "paginas-html/";
@@ -122,6 +123,15 @@ async function averiguarPatron() {
  * @returns {Promise<{numero:number, src:string}[]>}
  */
 export async function descubrirPaginasHtml() {
+  // Con la lista de `contenido.js` no hace falta preguntar a ciegas: ni un
+  // solo 404, y funciona igual abierto como archivo en el móvil.
+  if (Array.isArray(contenido?.paginasHtml)) {
+    return contenido.paginasHtml.map((p) => ({
+      numero: p.numero,
+      src: CARPETA + encodeURIComponent(p.archivo),
+    }));
+  }
+
   const encontradas = [];
 
   try {

@@ -1,3 +1,8 @@
-Aquí van tus vídeos.
-Desde paginas.js se llaman así:  video: "mis-paginas/videos/loquesea.mp4"
-Intenta que no pasen de 15 MB cada uno.
+Aquí van tus vídeos (.mp4 de preferencia; menos de 15 MB cada uno).
+
+Con sólo dejarlo aquí, cada vídeo sale SOLO como una página del libro
+(«Un videíto para ti»), antes del final. No hace falta tocar código.
+
+Si quieres ponerle título, texto o carátula, añádelo en paginas.js:
+  { titulo: "Nuestro día", texto: "…", video: "mis-paginas/videos/nombre.mp4" }
+y entonces ya no sale repetido.

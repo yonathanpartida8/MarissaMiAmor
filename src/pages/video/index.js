@@ -122,6 +122,14 @@ export default class VideoPage extends BasePage {
       if (secs) this.badge.textContent = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
     });
 
+    // Sin carátula, se enseña el primer fotograma en vez de un cuadro negro:
+    // sólo se piden los metadatos y un trocito, no el vídeo entero.
+    if (!this.poster) {
+      this.armed = true;
+      this.video.preload = "metadata";
+      this.video.src = `${this.src}#t=0.1`;
+    }
+
     this.addGestures(
       new Gestures(
         this.frame,

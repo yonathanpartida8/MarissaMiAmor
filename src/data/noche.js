@@ -26,6 +26,8 @@
  * la respeta: nada se coloca después de ella. Nunca.
  */
 
+import contenido from "./contenido.js";
+
 /** Dónde está el archivo, visto desde la raíz del libro. */
 export const CARPETA_NOCHE = "noche-estrellada/";
 export const ARCHIVO_NOCHE = `${CARPETA_NOCHE}index.html`;
@@ -72,6 +74,9 @@ export const entradaNoche = {
  * entero para saber si existe, y esto corre durante el arranque.
  */
 export async function existeLaNoche() {
+  // La lista lo sabe sin preguntar a la red (y así también funciona como
+  // archivo, donde `fetch` no puede leer nada).
+  if (typeof contenido?.noche === "boolean") return contenido.noche;
   try {
     const r = await fetch(ARCHIVO_NOCHE, { method: "HEAD" });
     if (r.ok) return true;

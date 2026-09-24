@@ -13,6 +13,48 @@
  */
 
 import { resolverPaleta } from "./paletas.js";
+import contenido from "./contenido.js";
+
+/**
+ * Título para un archivo suelto. Los nombres que pone el móvil
+ * («VID-20260915-WA0017») no se enseñan: salen como «Un videíto para ti».
+ */
+function nombreBonito(archivo, porDefecto, n, total) {
+  const base = archivo.replace(/\.[^.]+$/, "");
+  const deCamara = /^(vid|img|pxl|mvimg|whatsapp|screenshot|captura|video|foto|dsc|mov)[\s_-]*\d/i.test(base) || /^\d[\d\s_-]*$/.test(base);
+  if (deCamara) return total > 1 ? `${porDefecto} · ${n}` : porDefecto;
+  const limpio = base.replace(/[_-]+/g, " ").trim();
+  return limpio.charAt(0).toUpperCase() + limpio.slice(1);
+}
+
+/**
+ * Los vídeos y fotos que él deja en `mis-paginas/videos/` y `mis-paginas/fotos/`
+ * y que no usa ya ninguna página de `paginas.js` salen solos, cada uno en su
+ * página. Sin tocar código.
+ */
+function sueltos(raw) {
+  const usados = new Set();
+  for (const item of raw) {
+    if (item?.video) usados.add(String(item.video).trim());
+    for (const f of [].concat(item?.foto ?? item?.fotos ?? item?.imagen ?? item?.imagenes ?? [])) {
+      usados.add(String(typeof f === "string" ? f : f?.src ?? "").trim());
+    }
+  }
+  const vids = (contenido?.misVideos || []).map((f) => [f, `mis-paginas/videos/${f}`]).filter(([, r]) => !usados.has(r));
+  const fotos = (contenido?.misFotos || []).map((f) => [f, `mis-paginas/fotos/${f}`]).filter(([, r]) => !usados.has(r));
+  return [
+    ...vids.map(([f, r], i) => ({
+      titulo: nombreBonito(f, "Un videíto para ti", i + 1, vids.length),
+      arriba: "dale play",
+      video: r,
+    })),
+    ...fotos.map(([f, r], i) => ({
+      titulo: nombreBonito(f, "Una fotito que me encanta", i + 1, fotos.length),
+      arriba: "una de tantas",
+      foto: r,
+    })),
+  ];
+}
 
 /** Nombres cómodos → tipos internos de página. */
 const TYPE_ALIASES = {
@@ -212,8 +254,10 @@ export async function loadCustomPages() {
   } catch (err) {
     // Archivo ausente o con un error de sintaxis: el libro sigue abriéndose.
     problems.push(`no se pudo leer mis-paginas/paginas.js — ${err.message}`);
-    return { entries: [], chapters: [], problems };
+    raw = [];
   }
+
+  raw = raw.concat(sueltos(raw));
 
   const entries = [];
   const chapters = [];

@@ -83,6 +83,7 @@ export default class CombinacionPage extends BasePage {
   /** Se apunta para siempre que se abrió. */
   marcarAbierto() {
     this.unlockSecret();
+    this.ctx.router.abrirBarrera?.();
   }
 
   /** Lo que pasa cuando termina de abrirse. */

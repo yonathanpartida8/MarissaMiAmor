@@ -240,7 +240,7 @@ export default class HtmlPage extends BasePage {
       referrerpolicy: "no-referrer",
       // `allow` con la lista vacía: nada de cámara, micrófono ni ubicación.
       // El sonido y la pantalla completa sí, que es lo que puede querer.
-      allow: "autoplay; fullscreen",
+      allow: "autoplay *; fullscreen *",
     });
 
     this.root.append(this.fondo, this.marco);
@@ -294,10 +294,16 @@ export default class HtmlPage extends BasePage {
       const alCargar = () => {
         // `about:blank` también dispara `load`. Ése no cuenta.
         const ventana = this.marco?.contentWindow;
-        if (!ventana || ventana.location.href === "about:blank") return;
+        if (!ventana) return;
+        // Abierto como archivo (`file://`) el documento de dentro cuenta como
+        // de otro origen y leerlo lanza: se da por cargado y se sigue, sin
+        // prestarle colores ni gestos, en vez de quedarse la hoja en blanco.
+        let href = "ajeno";
+        try { href = ventana.location.href; } catch { /* otro origen */ }
+        if (href === "about:blank") return;
 
-        this.#acomodar();
-        this.#prestarGestos();
+        try { this.#acomodar(); } catch { /* otro origen */ }
+        try { this.#prestarGestos(); } catch { /* otro origen */ }
         // Si el archivo tardó tanto que ya se había dado por perdido, ahora
         // que ha llegado se retira el aviso: mejor tarde que un cartel de
         // error encima de una página que sí funciona.

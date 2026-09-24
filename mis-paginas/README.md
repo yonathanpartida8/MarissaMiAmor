@@ -12,6 +12,15 @@ mis-paginas/
 
 ---
 
+## Lo más fácil: sólo dejar el archivo
+
+Cualquier vídeo que dejes en `mis-paginas/videos/` y cualquier foto que dejes
+en `mis-paginas/fotos/` sale **sola** como una página, sin escribir nada.
+Si además la pones en `paginas.js` (con título, texto…), sale sólo esa.
+
+La lista de lo que hay en las carpetas (`src/data/contenido.js`) la rehace
+GitHub solo a cada subida. Si trabajas en el ordenador: `node herramientas/contenido.mjs`.
+
 ## En tres pasos
 
 1. **Sube el archivo** a `mis-paginas/fotos/` o `mis-paginas/videos/`.

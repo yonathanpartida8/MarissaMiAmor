@@ -26,15 +26,11 @@
  * tamaño, ya lo escala él.
  */
 
-const CANDIDATOS = [
-  "icono/icono.png",
-  "icono/icono.jpg",
-  "icono/icono.jpeg",
-  "icono/icono.webp",
-  "icono/icono.svg",
-  "icono/icon.png",
-  "assets/img/imagen1.png",
-];
+import contenido from "../data/contenido.js";
+
+/* Sólo se prueba lo que la lista dice que existe: así, sin icono propio,
+   no quedan seis 404 en la consola buscando uno. */
+const CANDIDATOS = [contenido?.icono, "assets/img/imagen1.png"].filter(Boolean);
 
 const FONDO = "#0a0510";
 

@@ -1,2 +1,5 @@
-Aquí van tus fotos.
-Desde paginas.js se llaman así:  foto: "mis-paginas/fotos/loquesea.jpg"
+Aquí van tus fotos (.jpg, .png, .webp).
+
+Con sólo dejarla aquí, cada foto sale SOLA como una página del libro,
+antes del final. Si la usas en paginas.js (foto: "mis-paginas/fotos/…"),
+ya no sale repetida.

@@ -71,8 +71,17 @@ export class Router extends Emitter {
     return this.barrera != null && index > this.barrera;
   }
 
+  /** Dice si una entrada es un candado todavía cerrado. Lo pone App. */
+  cerrado = () => false;
+
+  /** La barrera es el primer candado del libro que siga cerrado. */
+  recalcularBarrera() {
+    const i = this.entries.findIndex((e) => this.cerrado(e));
+    this.barrera = i >= 0 ? i : null;
+  }
+
   abrirBarrera() {
-    this.barrera = null;
+    this.recalcularBarrera();
     this.emit("abierta");
   }
 
