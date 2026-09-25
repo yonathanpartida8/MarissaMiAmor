@@ -1,0 +1,136 @@
+/* FAROLITOS — deseos que suben al cielo. */
+.farolitos {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.4rem;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+}
+.far__head, .far__pie { text-align: center; position: relative; z-index: 2; }
+.far__head .kicker, .far__cuenta {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) 45%, #fff);
+}
+.far__title {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.6rem, calc(7 * var(--vw)), 2.3rem);
+  color: #fff6f8;
+  text-shadow: 0 2px 18px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.far__cielo {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(10, 6, 30, 0.55), rgba(40, 14, 50, 0.35) 70%, rgba(80, 30, 60, 0.3));
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.far__luna {
+  position: absolute;
+  right: 12%;
+  top: 9%;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fffbe8, #f7e2a6 60%, #e8c877);
+  box-shadow: 0 0 30px 6px rgba(255, 236, 170, 0.45);
+  cursor: pointer;
+}
+.far__luna::after {
+  content: "";
+  position: absolute;
+  inset: 0 -6px 0 10px;
+  border-radius: 50%;
+  background: rgba(20, 10, 40, 0.0);
+}
+.far__luna.is-guina { animation: far-guina 500ms var(--e-out); }
+@keyframes far-guina { 40% { scale: 1.2; box-shadow: 0 0 50px 14px rgba(255, 236, 170, 0.7); } }
+.far__agua {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 16%;
+  background: linear-gradient(180deg, transparent, rgba(255, 190, 120, 0.12));
+}
+.far__farol {
+  position: absolute;
+  left: var(--x);
+  bottom: 4%;
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  translate: -50% 0;
+  animation: far-sube var(--dur) cubic-bezier(0.3, 0.1, 0.5, 1) forwards, far-meneo 2.6s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes far-sube {
+  0% { bottom: 4%; opacity: 0; }
+  8% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { bottom: 105%; opacity: 0; }
+}
+@keyframes far-meneo { from { transform: translateX(calc(var(--meneo) * -1)) rotate(-3deg); } to { transform: translateX(var(--meneo)) rotate(3deg); } }
+.far__papel {
+  width: 30px;
+  height: 40px;
+  border-radius: 40% 40% 30% 30% / 30% 30% 20% 20%;
+  background: radial-gradient(ellipse at 50% 75%, #fff4c0, #ffb45a 55%, #e86a3a);
+  box-shadow: 0 0 22px 6px rgba(255, 170, 80, 0.55);
+  animation: far-llama 1.3s ease-in-out infinite alternate;
+}
+@keyframes far-llama { to { box-shadow: 0 0 30px 10px rgba(255, 190, 100, 0.7); } }
+.far__farol--dorado .far__papel {
+  background: radial-gradient(ellipse at 50% 75%, #fffbe0, #ffd86a 55%, #e9a92e);
+  box-shadow: 0 0 36px 12px rgba(255, 220, 120, 0.8);
+  width: 36px;
+  height: 48px;
+}
+.far__actual {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 6%;
+  margin: 0;
+  padding: 0.45rem 0.8rem;
+  border-radius: 12px;
+  background: rgba(20, 8, 20, 0.45);
+  font-family: var(--font-hand);
+  font-size: clamp(1.15rem, calc(5.2 * var(--vw)), 1.5rem);
+  line-height: 1.2;
+  color: #fff3dc;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+}
+.far__actual.is-nuevo { animation: far-deseo 5s var(--e-out) forwards; }
+@keyframes far-deseo { 0% { opacity: 0; transform: translateY(10px); } 10%, 80% { opacity: 1; transform: none; } 100% { opacity: 0.85; } }
+.far__deseo {
+  max-width: 62vw;
+  padding: 0.25rem 0.6rem;
+  border-radius: 10px;
+  background: rgba(20, 8, 20, 0.45);
+  font-family: var(--font-hand);
+  font-size: clamp(1rem, calc(4.4 * var(--vw)), 1.25rem);
+  line-height: 1.15;
+  color: #fff3dc;
+  text-align: center;
+}
+.far__reveal {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-hand);
+  font-size: clamp(1.2rem, calc(5.4 * var(--vw)), 1.6rem);
+  color: #ffe7b0;
+  opacity: 0;
+  transition: opacity 800ms var(--e-out);
+}
+.farolitos.is-todos .far__reveal { opacity: 1; }

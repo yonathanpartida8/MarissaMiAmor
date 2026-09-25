@@ -53,7 +53,7 @@
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.05),
     inset 0 12px 30px rgba(0, 0, 0, 0.6);
-  touch-action: none;
+  touch-action: pan-x;
 }
 
 /* Perforaciones del negativo. */
@@ -77,9 +77,21 @@
      fotograma a lo alto de la tira y su proporción 4/5 se pierde. */
   height: clamp(220px, 46vh, 380px);
   flex: 0 0 auto;
-  will-change: transform;
-  touch-action: none;
+  position: relative;
+  /* Desplazamiento nativo con imán: una foto por gesto. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
   cursor: grab;
+}
+.film__reel::-webkit-scrollbar { display: none; }
+.film__reel > .film__frame {
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
 }
 
 .film__reel:active {

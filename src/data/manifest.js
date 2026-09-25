@@ -276,6 +276,14 @@ const pages = [
     secret: "regalo-abierto",
   },
   {
+    id: "cupones",
+    type: "cupones",
+    chapter: "cupones",
+    transition: "slide",
+    hint: "toca el vale de arriba, o arráncalo hacia arriba",
+    secret: "vales-todos",
+  },
+  {
     id: "la-distancia",
     type: "orbit",
     chapter: "la-distancia",
@@ -283,6 +291,14 @@ const pages = [
     gl: true,
     hint: "acércalos · se resisten",
     secret: "distancia-cerrada",
+  },
+  {
+    id: "manos",
+    type: "manos",
+    chapter: "manos",
+    transition: "dissolve",
+    hint: "arrastra tu mano hacia la mía",
+    secret: "manos-juntas",
   },
   {
     id: "mi-pulso",
@@ -301,6 +317,14 @@ const pages = [
     gl: true,
     hint: "une las estrellas con el dedo",
     secret: "constelacion",
+  },
+  {
+    id: "farolitos",
+    type: "farolitos",
+    chapter: "farolitos",
+    transition: "ink",
+    hint: "toca el cielo para soltar un farolito",
+    secret: "farolitos-todos",
   },
   {
     id: "postal-segunda",
@@ -357,6 +381,14 @@ const pages = [
     type: "chapter",
     chapter: "aburridos",
     transition: "slide",
+  },
+  {
+    id: "cajita",
+    type: "cajita",
+    chapter: "cajita",
+    transition: "corazon",
+    hint: "sigue girando hasta que termine la canción",
+    secret: "cajita-cancion",
   },
   {
     id: "rompecabezas-dos",

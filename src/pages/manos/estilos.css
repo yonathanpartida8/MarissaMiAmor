@@ -1,0 +1,104 @@
+/* MANOS — acercar la tuya a la mía. */
+.manos {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+}
+.man__head, .man__pie { text-align: center; }
+.man__head .kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) 45%, #fff);
+}
+.man__title {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.6rem, calc(7 * var(--vw)), 2.3rem);
+  color: #fff6f8;
+  text-shadow: 0 2px 18px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.man__escena { position: relative; min-height: 0; }
+.man__hilo {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 50%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 80%, #fff), transparent);
+  opacity: calc(0.25 + var(--acerca) * 0.75);
+  filter: blur(calc((1 - var(--acerca)) * 2px));
+}
+.man__mano {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  translate: 0 -50%;
+  touch-action: none;
+}
+.man__mano--tuya {
+  left: calc(4% + var(--acerca) * 34%);
+  cursor: grab;
+  transition: left 420ms var(--e-spring);
+}
+.manos.is-moviendo .man__mano--tuya { transition: none; }
+.man__mano--mia { right: 4%; animation: man-respira 3.2s ease-in-out infinite; }
+@keyframes man-respira { 50% { translate: -4px -50%; } }
+.man__emoji {
+  font-size: clamp(4.2rem, 22vw, 6rem);
+  line-height: 1;
+  filter: drop-shadow(0 10px 16px rgba(40, 5, 20, 0.45));
+}
+.man__nombre {
+  font-family: var(--font-hand);
+  font-size: 1.2rem;
+  color: #fff6f8;
+}
+.man__chispa {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 110px;
+  height: 110px;
+  margin: -55px 0 0 -55px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95), color-mix(in srgb, var(--accent) 70%, transparent) 35%, transparent 70%);
+  opacity: 0;
+  scale: 0.3;
+  transition: opacity 400ms var(--e-out), scale 600ms var(--e-spring);
+  pointer-events: none;
+}
+.manos.is-juntas .man__chispa { opacity: 1; scale: 1; animation: man-late 1.4s ease-in-out infinite; }
+@keyframes man-late { 50% { scale: 1.25; } }
+.man__anillo {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  font-size: 2.6rem;
+  translate: -50% 0;
+  opacity: 0;
+  scale: 0.2;
+  transition: opacity 600ms var(--e-out), scale 800ms var(--e-spring);
+  filter: drop-shadow(0 0 14px rgba(255, 240, 200, 0.9));
+  pointer-events: none;
+}
+.manos.is-anillo .man__anillo { opacity: 1; scale: 1; }
+.man__reveal, .man__secreto {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-size: clamp(1.35rem, calc(6 * var(--vw)), 1.8rem);
+  color: #fff6f8;
+  text-shadow: 0 0 16px color-mix(in srgb, var(--accent) 70%, transparent);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 700ms var(--e-out), transform 700ms var(--e-out);
+}
+.man__secreto { font-size: clamp(1.1rem, calc(5 * var(--vw)), 1.4rem); color: #ffe7b0; }
+.manos.is-juntas .man__reveal { opacity: 1; transform: none; }
+.manos.is-anillo .man__secreto { opacity: 1; transform: none; }

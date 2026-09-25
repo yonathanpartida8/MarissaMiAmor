@@ -10,9 +10,8 @@
  */
 
 import { BasePage } from "../BasePage.js";
-import { Gestures } from "../../core/Gestures.js";
 import { el, qs, splitWords, setVars } from "../../utils/dom.js";
-import { clamp, damp } from "../../utils/math.js";
+import { clamp } from "../../utils/math.js";
 import { PRIORITY } from "../../core/AssetLoader.js";
 import escondidos from "../../data/escondidos.js";
 
@@ -36,6 +35,7 @@ export default class FilmstripPage extends BasePage {
     setVars(this.root, { "--accent": accent });
 
     this.reel = el("div.film__reel", { "data-claim-drag": "" });
+    this.reel.setAttribute("tabindex", "0");
     this.frames = this.photos.map((photo, i) => {
       const frame = el("figure.film__frame", { dataset: { index: String(i) } }, [
         el("div.film__img", { dataset: { src: photo.src } }),
@@ -98,95 +98,80 @@ export default class FilmstripPage extends BasePage {
     await super.enter(direction);
     requestAnimationFrame(() => this.root.classList.add("is-entered"));
 
-    this.offset = 0;      // desplazamiento actual en px
-    this.targetOffset = 0;
-    this.velocity = 0;
-    this.dragging = false;
+    // EL CARRETE AHORA ES EL DESPLAZAMIENTO NATIVO DEL NAVEGADOR, con imán en
+    // cada foto. Antes era una física hecha a mano: un deslizamiento rápido
+    // saltaba dos fotos y uno lento a veces no avanzaba. Así se comporta
+    // igual que cualquier carrusel del móvil: una foto por gesto, suave en
+    // Chrome y en Safari, y con la inercia del propio teléfono.
     this.activeFrame = -1;
-
     this.#measure();
     this.track(this.ctx.viewport.on("resize", () => this.#measure()));
 
-    this.addGestures(
-      new Gestures(
-        this.reel,
-        {
-          onPanStart: () => {
-            this.dragging = true;
-            this.startOffset = this.offset;
-            this.velocity = 0;
-          },
-          onPan: (e) => {
-            // Resistencia elástica fuera de los límites.
-            let next = this.startOffset + e.dx;
-            if (next > 0) next *= 0.34;
-            if (next < -this.maxOffset) next = -this.maxOffset + (next + this.maxOffset) * 0.34;
-            this.offset = next;
+    let pendiente = false;
+    this.on(this.reel, "scroll", () => {
+      if (pendiente) return;
+      pendiente = true;
+      requestAnimationFrame(() => {
+        pendiente = false;
+        this.#pintar();
+      });
+    }, { passive: true });
 
-            // Escondido: seguir tirando hacia atrás cuando ya está el primer
-            // fotograma. Antes del primero no hay carrete… salvo esto.
-            if (this.startOffset + e.dx > 190) {
-              this.escondite("carrete-antes", escondidos.carrete, e);
-            }
-          },
-          onPanEnd: (e) => {
-            this.dragging = false;
-            const v = e.vx * 1000;
-            const fuera = this.offset > 0 || this.offset < -this.maxOffset;
-            // Soltado despacio o tirando más allá del borde: antes se quedaba
-            // a medias entre dos fotos. Ahora va a la más cercana, con un
-            // empujoncito hacia donde iba el dedo.
-            if (fuera || Math.abs(v) < 140) {
-              const cerca = -this.offset / this.frameWidth + clamp(-v / 1600, -0.5, 0.5);
-              this.#center(clamp(Math.round(cerca), 0, this.frames.length));
-            } else {
-              this.velocity = v;
-            }
-          },
-          onTap: (e) => {
-            const frame = e.target.closest?.(".film__frame");
-            if (frame && !frame.classList.contains("film__frame--end")) {
-              const i = Number(frame.dataset.index);
-              if (i === this.activeFrame) this.#abrirLupa(i);
-              else this.#center(i);
-            }
-          },
-        },
-        { axis: "x", exclusive: true, threshold: 8 }
-      )
-    );
+    this.on(this.reel, "click", (e) => {
+      const frame = e.target.closest?.(".film__frame");
+      if (!frame || frame.classList.contains("film__frame--end")) return;
+      const i = Number(frame.dataset.index);
+      if (i === this.activeFrame) this.#abrirLupa(i);
+      else this.#center(i);
+    });
 
-    this.addTicker((dt) => this.#frame(dt), 11);
-    this.#loadNear(0);
+    // Escondido: insistir con la flecha de atrás cuando ya está la primera.
+    this.intentosAtras = 0;
+
+    this.#pintar();
+    this.#loadNear(Math.max(0, this.activeFrame));
+  }
+
+  get #nodos() {
+    return [...this.frames.map((f) => f.node), this.endCard];
   }
 
   #measure() {
     const first = this.frames[0]?.node;
     if (!first) return;
-
-    this.viewWidth = this.root.querySelector(".film__track").clientWidth;
+    const ancho = this.reel.clientWidth;
     const frameW = first.getBoundingClientRect().width;
-
-    // Relleno lateral para que el primer y el último fotograma también puedan
-    // quedarse centrados; sin esto, el carrete siempre empieza pegado al borde.
-    const pad = Math.max(6, (this.viewWidth - frameW) / 2);
+    // Relleno a los lados para que la primera y la última también se puedan
+    // quedar en el centro.
+    const pad = Math.max(6, (ancho - frameW) / 2);
     this.reel.style.paddingLeft = `${pad}px`;
     this.reel.style.paddingRight = `${pad}px`;
+    this.#pintar();
+  }
 
-    this.frameWidth = frameW + parseFloat(getComputedStyle(this.reel).gap || 0);
-    this.maxOffset = Math.max(0, this.reel.scrollWidth - this.viewWidth);
-    this.padOffset = pad;
-
-    // Y arranca con el primero en el centro, no a medio salir de cuadro.
-    if (!this.centered) {
-      this.centered = true;
-      this.offset = 0;
-      this.targetOffset = 0;
+  /** Lo que se ve según dónde está el carrete: foto activa y profundidad. */
+  #pintar() {
+    const centro = this.reel.scrollLeft + this.reel.clientWidth / 2;
+    let mejor = 0;
+    let menor = Infinity;
+    this.#nodos.forEach((node, i) => {
+      const c = node.offsetLeft + node.offsetWidth / 2;
+      const d = Math.abs(c - centro);
+      if (d < menor) { menor = d; mejor = i; }
+      const near = Math.max(0, 1 - d / (node.offsetWidth * 1.15));
+      node.style.setProperty("--near", near.toFixed(3));
+    });
+    if (mejor !== this.activeFrame) {
+      this.activeFrame = mejor;
+      this.#onActiveChange(mejor);
     }
   }
 
   /** Una foto hacia un lado, con las flechas del propio carrete. */
   #paso(d) {
+    if (d < 0 && this.activeFrame <= 0 && ++this.intentosAtras >= 3) {
+      this.escondite("carrete-antes", escondidos.carrete);
+    }
     const desde = this.activeFrame < 0 ? 0 : this.activeFrame;
     this.#center(clamp(desde + d, 0, this.frames.length));
   }
@@ -200,65 +185,11 @@ export default class FilmstripPage extends BasePage {
   }
 
   #center(index) {
-    // Con el relleno lateral, centrar el fotograma `i` es simplemente
-    // desplazar el carrete `i` anchos de fotograma.
-    this.targetOffset = clamp(-index * this.frameWidth, -this.maxOffset, 0);
-    this.snapping = true;
-    this.velocity = 0;
+    const node = this.#nodos[index];
+    if (!node) return;
+    const left = node.offsetLeft + node.offsetWidth / 2 - this.reel.clientWidth / 2;
+    this.reel.scrollTo({ left, behavior: this.ctx.caps.reducedMotion ? "auto" : "smooth" });
     this.ctx.haptics.play("tap");
-  }
-
-  #frame(dt) {
-    if (!this.frameWidth) return;
-
-    const desde = this.offset;
-
-    if (this.dragging) {
-      this.snapping = false;
-    } else if (this.snapping) {
-      this.offset = damp(this.offset, this.targetOffset, 9, dt);
-      if (Math.abs(this.offset - this.targetOffset) < 0.4) this.snapping = false;
-    } else if (Math.abs(this.velocity) > 6) {
-      // Inercia con rozamiento.
-      this.offset += this.velocity * dt;
-      this.velocity *= Math.exp(-2.9 * dt);
-
-      if (this.offset > 0 || this.offset < -this.maxOffset) {
-        this.offset = clamp(this.offset, -this.maxOffset, 0);
-        this.velocity *= -0.28;
-        this.ctx.haptics.play("tick");
-      }
-    } else if (Math.abs(this.velocity) > 0) {
-      // Se ha parado: imanta al fotograma más cercano.
-      this.velocity = 0;
-      const nearest = Math.round(-this.offset / this.frameWidth);
-      this.#center(clamp(nearest, 0, this.frames.length));
-    }
-
-    // Con el carrete parado no hay nada que reescribir, y eso importa: abajo
-    // hay una escritura de estilo por fotograma —diez o doce— más la del
-    // carrete entero. Hacerlo sesenta veces por segundo con el dedo fuera
-    // eran cientos de mutaciones inútiles y una página que costaba lo mismo
-    // quieta que en movimiento. Ahora, quieta, no cuesta nada.
-    if (this.pintado && Math.abs(this.offset - desde) < 0.01) return;
-    this.pintado = true;
-
-    this.reel.style.transform = `translate3d(${this.offset}px, 0, 0)`;
-
-    // Qué fotograma manda ahora mismo.
-    const center = -this.offset / this.frameWidth;
-    const index = clamp(Math.round(center), 0, this.frames.length);
-    if (index !== this.activeFrame) {
-      this.activeFrame = index;
-      this.#onActiveChange(index);
-    }
-
-    // Profundidad: los laterales se alejan y pierden luz.
-    this.frames.forEach((frame, i) => {
-      const d = Math.abs(i - center);
-      const near = Math.max(0, 1 - d * 0.85);
-      frame.node.style.setProperty("--near", near.toFixed(3));
-    });
   }
 
   #onActiveChange(index) {

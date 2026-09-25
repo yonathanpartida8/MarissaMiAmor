@@ -1,0 +1,85 @@
+/* CUPONES — la libretita de vales. */
+.cupones {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+}
+.cup__head, .cup__pie { text-align: center; }
+.cup__head .kicker, .cup__pie {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) 45%, #fff);
+}
+.cup__title {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.6rem, calc(7 * var(--vw)), 2.3rem);
+  color: #fff6f8;
+  text-shadow: 0 2px 18px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.cup__mesa { position: relative; display: grid; place-items: center; min-height: 0; }
+.cup__libreta, .cup__monton { position: absolute; width: min(82vw, 320px); aspect-ratio: 16 / 9; }
+.cup__libreta { touch-action: none; }
+.cup__monton { top: 4%; transform: scale(0.42); transform-origin: 50% 0; opacity: 0.9; }
+.cup__vale {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  align-items: center;
+  padding: 0.8rem 1rem 0.7rem 1.4rem;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 0 50%, transparent 0 9px, var(--col) 10px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 0 9px, var(--col) 10px) right / 51% 100% no-repeat;
+  box-shadow: 0 14px 30px -16px rgba(40, 5, 20, 0.7);
+  text-align: center;
+  transform: translateY(calc(var(--i) * -2px));
+  transition: transform 460ms var(--e-spring), opacity 400ms var(--e-out);
+}
+.cup__vale::before {
+  content: "";
+  position: absolute;
+  left: 0.7rem;
+  top: 10%;
+  bottom: 10%;
+  border-left: 2px dashed rgba(90, 30, 55, 0.3);
+}
+.cup__vale.is-tirando { transition: none; }
+.cup__vale.is-arrancado { transform: translate(0, -60vh) rotate(-18deg); opacity: 0; }
+.cup__vale.en-monton { transform: rotate(var(--g)); }
+.cup__sello {
+  font-family: var(--font-ui);
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #9a4166;
+}
+.cup__texto {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-size: clamp(1.25rem, calc(5.8 * var(--vw)), 1.6rem);
+  line-height: 1.15;
+  color: #4a1a2e;
+}
+.cup__firma { font-family: var(--font-hand); font-size: 0.95rem; color: #9a4166; justify-self: end; }
+.cup__vale--dorado {
+  --col: #ffe08a;
+  position: absolute;
+  width: min(82vw, 320px);
+  aspect-ratio: 16 / 9;
+  inset: auto;
+  background: linear-gradient(135deg, #fff1b8, #f6c85f 45%, #fff3c4 60%, #e9b54a);
+  box-shadow: 0 0 40px -6px rgba(255, 210, 110, 0.9), 0 18px 36px -16px rgba(60, 30, 0, 0.7);
+  opacity: 0;
+  transform: scale(0.6) rotate(-8deg);
+  pointer-events: none;
+  cursor: pointer;
+}
+.cupones.is-dorado .cup__vale--dorado { opacity: 1; transform: rotate(-2deg); pointer-events: auto; animation: cup-brilla 2.4s ease-in-out infinite; }
+@keyframes cup-brilla { 50% { box-shadow: 0 0 60px 0 rgba(255, 220, 130, 1), 0 18px 36px -16px rgba(60, 30, 0, 0.7); } }
