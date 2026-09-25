@@ -94,7 +94,8 @@
   font-size: var(--fs-body);
   line-height: 1.72;
   color: rgba(246, 238, 232, 0.92);
-  text-align: justify;
+  text-align: left;
+  text-wrap: pretty;
   hyphens: auto;
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.75);
   --word-delay: 220ms;

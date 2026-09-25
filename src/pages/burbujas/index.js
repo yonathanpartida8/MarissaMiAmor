@@ -4,6 +4,12 @@
  * Suben despacio y se mecen. Al tocar una, estalla y la siguiente palabra de
  * la frase aparece abajo; cuando la frase está completa, sale lo último. La
  * que revienta vuelve a nacer abajo al rato: siempre queda alguna.
+ *
+ * EL POP. Cada una suena al reventar, hecho aquí con WebAudio: un chasquido
+ * de aire y un «blup» que cae de tono. Las grandes suenan más graves que las
+ * chiquitas, y si se revientan seguidas, cada una suena un poquito más
+ * aguda que la anterior (como una escala): da gusto encadenarlas. Al
+ * romperse sueltan gotitas.
  */
 
 import { BasePage } from "../BasePage.js";
@@ -60,6 +66,7 @@ export default class BurbujasPage extends BasePage {
       "--meneo": `${r.range(10, 26).toFixed(0)}px`,
       "--tono": `${r.range(-30, 40).toFixed(0)}deg`,
     });
+    b.dataset.tam = tam.toFixed(0);
     this.on(b, "pointerdown", (e) => this.#reventar(b, e), { passive: true });
     this.cielo.append(b);
   }
@@ -67,7 +74,9 @@ export default class BurbujasPage extends BasePage {
   #reventar(b, e) {
     if (b.classList.contains("is-rota")) return;
     b.classList.add("is-rota");
-    this.feedback("turn", "tick", { volume: 0.3, rate: 2.4 });
+    this.#pop(Number(b.dataset.tam) || 60);
+    this.#gotitas(b);
+    this.ctx.haptics.play("tick");
     this.later(() => b.remove(), 420);
     this.later(() => this.active && this.#nacer(), 2200);
 
@@ -83,5 +92,73 @@ export default class BurbujasPage extends BasePage {
     } else {
       this.corazon(e.clientX, e.clientY);
     }
+  }
+
+  /**
+   * El sonido del pop: un chasquido de aire (ruido filtrado, cortísimo) y un
+   * «blup» (un tono que cae una octava en 70 ms). Seguidas en menos de un
+   * segundo, cada una sube medio tono: la racha se oye.
+   */
+  #pop(tam) {
+    const audio = this.ctx.audio;
+    const salida = audio.efectos(420, 0.5);
+    if (!salida) return;
+    const ac = audio.ac;
+    const t = ac.currentTime + 0.002;
+
+    const ahora = performance.now();
+    this.racha = ahora - (this.ultimoPop || 0) < 900 ? Math.min((this.racha || 0) + 1, 12) : 0;
+    this.ultimoPop = ahora;
+    const escala = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21][this.racha];
+    const base = 1500 - (tam - 46) * 12; // grande → grave
+    const tono = base * 2 ** (escala / 12) * (0.97 + Math.random() * 0.06);
+
+    // El «blup».
+    const osc = ac.createOscillator();
+    const vol = ac.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(tono, t);
+    osc.frequency.exponentialRampToValueAtTime(tono * 0.48, t + 0.07);
+    vol.gain.setValueAtTime(0.0001, t);
+    vol.gain.exponentialRampToValueAtTime(0.42, t + 0.004);
+    vol.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+    osc.connect(vol).connect(salida);
+    osc.start(t);
+    osc.stop(t + 0.14);
+
+    // El chasquido: ruido blanco por un filtro de banda, 30 ms.
+    if (!this.ruido) {
+      const n = Math.floor(ac.sampleRate * 0.05);
+      this.ruido = ac.createBuffer(1, n, ac.sampleRate);
+      const d = this.ruido.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n) ** 2;
+    }
+    const src = ac.createBufferSource();
+    const filtro = ac.createBiquadFilter();
+    const vr = ac.createGain();
+    src.buffer = this.ruido;
+    filtro.type = "bandpass";
+    filtro.frequency.value = 2600 + Math.random() * 1600;
+    filtro.Q.value = 1.4;
+    vr.gain.value = 0.55;
+    src.connect(filtro).connect(vr).connect(salida);
+    src.start(t);
+  }
+
+  /** Unas gotitas que salen disparadas desde donde estaba la burbuja. */
+  #gotitas(b) {
+    if (this.ctx.caps.reducedMotion) return;
+    const r = b.getBoundingClientRect();
+    const c = this.cielo.getBoundingClientRect();
+    const grupo = el("span.bur__estallido", { "aria-hidden": "true" });
+    setVars(grupo, { "--gx": `${(r.left - c.left + r.width / 2).toFixed(0)}px`, "--gy": `${(r.top - c.top + r.height / 2).toFixed(0)}px`, "--r": `${(r.width / 2).toFixed(0)}px` });
+    grupo.append(el("span.bur__aro"));
+    for (let k = 0; k < 8; k++) {
+      const g = el("span.bur__gota");
+      setVars(g, { "--a": `${(k * 45 + Math.random() * 20).toFixed(0)}deg`, "--d": `${(r.width * (0.55 + Math.random() * 0.4)).toFixed(0)}px` });
+      grupo.append(g);
+    }
+    this.cielo.append(grupo);
+    this.later(() => grupo.remove(), 700);
   }
 }

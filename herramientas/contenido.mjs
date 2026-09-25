@@ -56,6 +56,31 @@ const sorpresas = Object.fromEntries(
     .map((f) => [f.replace(/\.[^.]+$/, ""), f])
 );
 
+// Sonidos que se pueden añadir sin tocar código. Se buscan en
+// `assets/audio/`, en `mis-sonidos/` y en la raíz, sin importar mayúsculas
+// ni acentos: «corazón.mp3», «Corazon.MP3» y «corazon.m4a» valen igual.
+const sinAcentos = (s) => nfc(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const buscarSonido = (nombre) => {
+  for (const dir of ["assets/audio", "mis-sonidos", ""]) {
+    const f = (dir ? leer(dir) : readdirSync(RAIZ)).find((f) => sinAcentos(f).replace(/\.(mp3|m4a|ogg|wav|aac)$/, "") === nombre && /\.(mp3|m4a|ogg|wav|aac)$/i.test(f));
+    if (f) return dir ? `${dir}/${nfc(f)}` : nfc(f);
+  }
+  return null;
+};
+const sonidos = { corazon: buscarSonido("corazon") };
+
+// Los vales de «Vales de amor», uno por línea, en `mis-vales/vales.txt`.
+// Las líneas que empiezan por # son notas y no salen; la que empieza por
+// «dorado:» es el vale dorado del final.
+const vales = (() => {
+  const ruta = join(RAIZ, "mis-vales/vales.txt");
+  if (!existsSync(ruta)) return null;
+  const lineas = readFileSync(ruta, "utf8").split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
+  const dorado = lineas.find((l) => /^dorado\s*:/i.test(l));
+  const lista = lineas.filter((l) => l !== dorado);
+  return lista.length ? { lista, dorado: dorado ? dorado.replace(/^dorado\s*:\s*/i, "") : null } : null;
+})();
+
 const ICONOS = ["icono/icono.png", "icono/icono.jpg", "icono/icono.jpeg", "icono/icono.webp", "icono/icono.svg", "icono/icon.png"];
 const icono = ICONOS.find((r) => existsSync(join(RAIZ, r))) || null;
 
@@ -67,6 +92,8 @@ const contenido = {
   icono,
   fotosPaginas,
   sorpresas,
+  sonidos,
+  vales,
   noche: existsSync(join(RAIZ, "noche-estrellada/index.html")),
 };
 
@@ -111,5 +138,6 @@ if (process.argv.includes("--comprobar")) {
 for (const [ruta, texto] of Object.entries(SALIDAS)) writeFileSync(join(RAIZ, ruta), texto);
 console.log(
   `contenido: ${paginasHtml.length} páginas html · ${amores.length} fotos de amores · ` +
-    `${misVideos.length} vídeos · ${misFotos.length} fotos · icono ${icono || "—"} · noche ${contenido.noche} · ${archivosNoche.length} sonidos de la noche`
+    `${misVideos.length} vídeos · ${misFotos.length} fotos · icono ${icono || "—"} · noche ${contenido.noche} · ${archivosNoche.length} sonidos de la noche · ` +
+    `corazón ${sonidos.corazon || "—"} · ${vales ? vales.lista.length : 0} vales`
 );

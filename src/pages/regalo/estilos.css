@@ -47,8 +47,9 @@
   font-weight: 300;
   font-size: clamp(1.5rem, calc(6.6 * var(--vw)), 2.2rem);
   line-height: 1.05;
-  color: #fff;
+  color: var(--text);
   text-wrap: balance;
+  text-shadow: 0 2px 18px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .gift__stage {
@@ -72,6 +73,9 @@
 }
 
 .gift.is-entered .gift__box { opacity: 1; transform: none; }
+/* Se inclina hacia el tirón (lo escribe el reloj): con `rotate` y no con
+   `transform`, para que la transición de entrada no la retrase. */
+.gift__box { rotate: var(--inclina, 0deg); transform-origin: 50% 100%; }
 
 .gift.is-open .gift__box {
   opacity: 0;
@@ -118,7 +122,8 @@
   z-index: 3;
 }
 
-.gift.is-lifting .gift__lid { transform: rotateX(-118deg) translateY(-16%); }
+/* La bisagra de la tapa la mueve un muelle desde JS (`--tapa`). */
+.gift.is-untied .gift__lid { transform: rotateX(var(--tapa, 0deg)); transition: none; }
 
 .gift__lidface {
   position: absolute;
@@ -164,9 +169,12 @@
   aspect-ratio: 2;
   margin-left: -23%;
   z-index: 6;
-  transform: scale(calc(1 - var(--untie) * 0.6)) rotate(calc(var(--untie) * 26deg));
-  opacity: calc(1 - var(--untie));
+  /* Al tirar, el lazo se aprieta: se encoge y se tuerce hacia la cinta. */
+  transform: scale(calc(1 - var(--untie) * 0.35)) rotate(calc(var(--untie) * 14deg));
 }
+/* Los lazos, cuando salen volando (la posición la escribe el reloj). */
+.gift__loop, .gift__knot { translate: var(--vx, 0px) var(--vy, 0px); rotate: var(--vr, 0deg); }
+.gift.is-untied .gift__bow { transform: none; opacity: 0; transition: opacity 500ms var(--e-out) 900ms; }
 
 .gift__loop {
   position: absolute;
@@ -193,72 +201,65 @@
   box-shadow: 0 2px 5px rgba(60, 30, 0, 0.45);
 }
 
-/* La punta del listón: es lo que se arrastra. */
-.gift__end {
+/* Las dos colas del listón (cuerdas con peso, dibujadas desde JS). */
+.gift__colas {
   position: absolute;
-  left: 50%;
-  bottom: -6%;
-  width: 22%;
-  height: 26%;
-  margin-left: -11%;
-  z-index: 7;
-  border-radius: 0 0 40% 40%;
-  background: linear-gradient(180deg, #e6bc68, #c1913c);
-  clip-path: polygon(0 0, 100% 0, 100% 74%, 50% 100%, 0 74%);
-  transform: translate3d(var(--ex, 0px), var(--ey, 0px), 0);
-  cursor: grab;
-  touch-action: none;
-  box-shadow: 0 3px 8px -2px rgba(60, 30, 0, 0.5);
-}
-
-.gift__end:active { cursor: grabbing; }
-
-.gift.is-untied .gift__end,
-.gift.is-untied .gift__bow,
-.gift.is-untied .gift__ribbon {
-  opacity: 0;
-  transition: opacity 420ms var(--e-out);
-}
-
-/* ---- Estallido ---------------------------------------------- */
-.gift__burst {
-  position: absolute;
-  left: 50%;
-  top: 42%;
-  width: 0;
-  height: 0;
-  z-index: 8;
+  inset: 0;
+  z-index: 5;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
   pointer-events: none;
 }
+.gift__cola {
+  fill: none;
+  stroke: var(--liston);
+  stroke-width: var(--ancho, 18px);
+  stroke-linecap: butt;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 3px 3px rgba(60, 30, 0, 0.35));
+}
+.gift__punta { fill: #d4a24c; }
+/* La que se agarra brilla un poquito, para que se note cuál es. */
+.gift.is-entered:not(.is-untied):not(.is-tirando) .gift__cola--tira { animation: gift-brilla 2.6s ease-in-out infinite; }
+@keyframes gift-brilla { 50% { filter: drop-shadow(0 0 7px rgba(255, 220, 140, 0.95)); } }
+.gift.is-untied .gift__colas { opacity: 0; transition: opacity 900ms var(--e-out) 500ms; }
 
-.gift__bit {
+/* Lo que se agarra: invisible, grande, y siempre sobre la punta. */
+.gift__end {
   position: absolute;
-  width: 6px;
-  height: 6px;
-  margin: -3px;
+  left: 0;
+  top: 0;
+  z-index: 7;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  padding: 0;
+  border: 0;
   border-radius: 50%;
-  background: var(--gold-light);
-  transform: scale(var(--bs));
+  background: transparent;
+  translate: var(--ex, 50%) var(--ey, 100%);
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.gift.is-tirando .gift__end { cursor: grabbing; }
+.gift.is-untied .gift__end { pointer-events: none; }
+
+.gift.is-untied .gift__ribbon {
   opacity: 0;
-  animation: bit-fly var(--bd) var(--e-out) var(--bl) forwards;
-  box-shadow: 0 0 6px 1px rgba(255, 220, 160, 0.7);
+  transform: translateY(18px);
+  transition: opacity 500ms var(--e-out), transform 700ms var(--e-in, ease-in);
 }
 
-.gift__bit--heart {
-  border-radius: 0;
-  background: var(--accent);
-  clip-path: path("M3.5 6.5 C1 4.6 0.2 3 1.4 1.9 C2.2 1.1 3.1 1.4 3.5 2.2 C3.9 1.4 4.8 1.1 5.6 1.9 C6.8 3 6 4.6 3.5 6.5 Z");
-  box-shadow: none;
-  filter: drop-shadow(0 0 5px var(--accent));
-}
-
-@keyframes bit-fly {
-  0% { opacity: 0; transform: translate3d(0, 0, 0) scale(0) rotate(0deg); }
-  14% { opacity: 1; }
-  100% {
-    opacity: 0;
-    transform: translate3d(var(--bx), calc(var(--by) + 190px), 0) scale(var(--bs)) rotate(var(--br));
-  }
+/* ---- Confeti (lo pinta el reloj en un lienzo) ----------------- */
+.gift__confeti {
+  position: absolute;
+  inset: -10% 0 0;
+  z-index: 8;
+  width: 100%;
+  height: 110%;
+  pointer-events: none;
 }
 
 /* ---- La tarjeta de dentro ----------------------------------- */
@@ -301,7 +302,8 @@
   font-size: var(--fs-body);
   line-height: 1.7;
   color: var(--paper-ink);
-  text-align: justify;
+  text-align: left;
+  text-wrap: pretty;
   hyphens: auto;
 }
 
@@ -383,19 +385,12 @@
   transition: opacity 600ms var(--e-out);
 }
 
-/* La punta del listón respira hasta que alguien la toca: es lo único que
-   hay que agarrar en toda la página y tiene que verse que se agarra. */
-.gift.is-entered:not(.is-untied) .gift__end {
-  animation: gift-tira 2.8s ease-in-out infinite;
-}
-
-@keyframes gift-tira {
-  0%, 100% { transform: translate(-50%, 0) scale(1); }
-  50%      { transform: translate(-50%, 4px) scale(1.06); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .gift.is-entered .gift__prompt,
   .gift__prompt::after,
-  .gift.is-entered:not(.is-untied) .gift__end { animation: none; }
+  .gift__cola--tira { animation: none !important; }
 }
+
+/* Apaisado: la caja se mide por el alto, para que la invitación de abajo no
+   caiga encima de ella. */
+html[data-orientation="landscape"][data-device="phone"] .gift__box { width: min(60%, 44vh); }

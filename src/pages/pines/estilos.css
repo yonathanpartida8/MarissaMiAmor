@@ -1,0 +1,234 @@
+/* ============================================================
+   PINES — un tablero de pines que se pasa con el dedo.
+   `--cerca` va de 0 (lejos del centro) a 1 (en el centro).
+   ============================================================ */
+
+.pines {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+}
+.pin__head, .pin__pie { text-align: center; }
+
+/* ---- El tablero ----------------------------------------------------- */
+.pin__tablero {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  align-items: center;
+  margin: 0 calc(-1 * var(--pad-x));
+  /* Para medir los pines por el alto que hay (`cqh`): un pin alto no puede
+     salirse del tablero. */
+  container-type: size;
+}
+/* Un tablero de corcho muy suave, apenas un punteado. */
+.pin__tablero::before {
+  content: "";
+  position: absolute;
+  inset: 6% 0;
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--accent) 22%, transparent) 1px, transparent 1.6px);
+  background-size: 16px 16px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.pin__reel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 4vw, 22px);
+  height: 100%;
+  max-height: 520px;
+  padding-block: 26px 18px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+}
+.pin__reel::-webkit-scrollbar { display: none; }
+
+/* ---- Cada pin -------------------------------------------------------- */
+.pin__pin {
+  --cerca: 0;
+  --alto: 1.3;
+  position: relative;
+  flex: 0 0 auto;
+  width: min(62vw, 250px, calc((100cqh - 70px) / var(--alto) + 16px));
+  margin: 0;
+  padding: 8px 8px 10px;
+  border-radius: 20px;
+  background: linear-gradient(170deg, #fffdfb, #fbf1f3);
+  box-shadow:
+    0 calc(10px + var(--cerca) * 16px) calc(24px + var(--cerca) * 20px) -16px rgba(50, 5, 25, 0.75),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  transform: rotate(calc(var(--giro, 0deg) * (1 - var(--cerca)))) scale(calc(0.86 + var(--cerca) * 0.14));
+  opacity: calc(0.55 + var(--cerca) * 0.45);
+  transition: box-shadow 300ms var(--e-out);
+  cursor: pointer;
+}
+.pin__img {
+  width: 100%;
+  aspect-ratio: 1 / var(--alto);
+  max-height: 100%;
+  border-radius: 14px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 35%, #fff), color-mix(in srgb, var(--accent) 12%, #fff)) center / cover no-repeat;
+  opacity: 0.35;
+  transition: opacity 500ms var(--e-out), aspect-ratio 500ms var(--e-out);
+}
+.pin__img.is-cargada { opacity: 1; }
+
+/* La chincheta: una bolita brillante con su sombra. */
+.pin__chincheta {
+  position: absolute;
+  left: 50%;
+  top: -9px;
+  z-index: 2;
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #fff 0 12%, var(--chincheta, #ff5c8a) 42%, color-mix(in srgb, var(--chincheta, #ff5c8a) 60%, #3a0716) 100%);
+  box-shadow: 2px 5px 6px -2px rgba(40, 5, 20, 0.6);
+}
+.pin__chincheta::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 70%;
+  width: 2px;
+  height: 7px;
+  margin-left: -1px;
+  background: linear-gradient(180deg, #9a9aa5, transparent);
+  transform: rotate(18deg);
+  transform-origin: top;
+  opacity: 0.8;
+}
+/* Al llegar al centro, la chincheta da un saltito, como si se clavara. */
+.pines.is-entered .pin__pin .pin__chincheta { animation: pin-clava 700ms var(--e-spring) both; animation-delay: calc(var(--cerca) * 0ms); }
+@keyframes pin-clava { from { transform: translateY(-14px) scale(1.3); opacity: 0; } }
+
+/* Guardado (doble toque): un corazón en la esquina, como en la app. */
+.pin__guardado {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #e60f50;
+  color: #fff;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 10px -3px rgba(120, 0, 40, 0.8);
+  opacity: 0;
+  scale: 0.3;
+  transition: opacity 250ms var(--e-out), scale 450ms var(--e-spring);
+}
+.pin__pin.is-guardado .pin__guardado { opacity: 1; scale: 1; }
+
+.pin__pin--vacio { display: grid; place-items: center; min-height: 240px; }
+.pin__vacio { margin: 0; padding: 2rem 1rem; font-family: var(--font-hand); font-size: 1.3rem; color: #7a3a55; text-align: center; }
+
+/* ---- La carta del final ----------------------------------------------- */
+.pin__pin--carta {
+  width: min(78vw, 320px);
+  padding: 0;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 27px, rgba(180, 120, 140, 0.15) 27px 28px),
+    linear-gradient(170deg, #fffaf3, #f8ebe6);
+  cursor: default;
+}
+.pin__carta-dentro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  height: min(calc(100cqh - 60px), 440px);
+  padding: 1.4rem 1.2rem 1rem;
+}
+.pin__carta-titulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.15rem, calc(5 * var(--vw)), 1.45rem);
+  line-height: 1.15;
+  color: #3e1427;
+  text-align: center;
+}
+.pin__carta-scroll { flex: 1; min-height: 0; }
+.pin__prosa {
+  font-family: var(--font-display);
+  font-size: clamp(0.92rem, calc(3.9 * var(--vw)), 1.02rem);
+  line-height: 1.62;
+  color: #4a1a2e;
+  text-align: left;
+  hyphens: auto;
+}
+
+/* ---- Flechas, puntos y contador --------------------------------------- */
+.pin__nav {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  width: 38px;
+  height: 38px;
+  margin-top: -19px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.82);
+  color: #7a2346;
+  font-size: 1.4rem;
+  line-height: 1;
+  box-shadow: 0 6px 16px -8px rgba(40, 5, 20, 0.7);
+  cursor: pointer;
+  transition: opacity 300ms var(--e-out);
+}
+.pin__nav--prev { left: calc(var(--pad-x) * 0.5); }
+.pin__nav--next { right: calc(var(--pad-x) * 0.5); }
+.pines.en-principio .pin__nav--prev,
+.pines.en-final .pin__nav--next { opacity: 0; pointer-events: none; }
+
+.pin__pie { display: grid; justify-items: center; gap: 0.35rem; }
+.pin__puntos { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; max-width: 80%; }
+.pin__puntos span {
+  width: 6px;
+  height: 6px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--text) 25%, transparent);
+  transition: width 300ms var(--e-out), background 300ms var(--e-out);
+}
+.pin__puntos span.is-ahora { width: 18px; background: var(--accent); }
+.pin__puntos span:last-child { border-radius: 2px; }
+.pin__contador { font-family: var(--font-ui); font-size: var(--fs-micro); letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-soft); }
+
+/* ---- La foto en grande ---------------------------------------------- */
+.pin__lupa {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(10, 3, 8, 0.92) center / contain no-repeat;
+  opacity: 0;
+  transform: scale(0.96);
+  pointer-events: none;
+  cursor: zoom-out;
+  transition: opacity 360ms var(--e-out), transform 420ms var(--e-spring);
+}
+.pines.is-lupa .pin__lupa { opacity: 1; transform: none; pointer-events: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pin__pin .pin__chincheta { animation: none !important; }
+}
+
+html[data-orientation="landscape"][data-device="phone"] .pin__reel { padding-block: 18px 8px; }
+html[data-orientation="landscape"][data-device="phone"] .pin__pin { width: min(40vw, 220px, calc((100cqh - 50px) / var(--alto) + 16px)); }
+html[data-orientation="landscape"][data-device="phone"] .pin__carta-dentro { height: calc(100cqh - 40px); }
+html[data-orientation="landscape"][data-device="phone"] .pin__pin--carta { width: min(60vw, 380px); }

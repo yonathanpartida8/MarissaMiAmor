@@ -16,6 +16,10 @@ on:
       - "icono/**"
       - "noche-estrellada/**"
       - "assets/audio/**"
+      - "mis-sonidos/**"
+      - "mis-vales/**"
+      - "*.mp3"
+      - "*.m4a"
       - "herramientas/contenido.mjs"
   workflow_dispatch:
 

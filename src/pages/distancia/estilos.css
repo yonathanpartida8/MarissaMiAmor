@@ -43,116 +43,181 @@
   text-shadow: 0 0 18px var(--accent);
 }
 
-/* ---- El campo ----------------------------------------------- */
+/* ---- El mapa ------------------------------------------------ */
+.orb__centro {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0.3rem;
+}
 .orb__field {
   position: relative;
   min-height: 0;
   touch-action: none;
-  border-radius: var(--r-lg);
-  overflow: hidden;
+  perspective: 900px;
+  perspective-origin: 50% 40%;
 }
 
-/* El hilo entre los dos: se tensa y brilla al acercarse. */
-.orb__link {
+/* Cada tira del mapa: su trozo del dibujo, girada en 3D sobre su centro. */
+.orb__mapa {
   position: absolute;
   left: 0;
+  top: 50%;
+  width: 100%;
+  height: var(--mh, 180px);
+  margin-top: calc(var(--mh, 180px) / -2);
+  transform-style: preserve-3d;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 800ms var(--e-out) 150ms, transform 900ms var(--e-spring) 150ms;
+}
+.orbit.is-entered .orb__mapa { opacity: 1; transform: none; }
+.orb__tira {
+  position: absolute;
   top: 0;
-  height: 2px;
-  transform-origin: 0 50%;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--accent) 70%, transparent),
-    color-mix(in srgb, var(--accent) calc(20% + var(--near) * 70%), transparent)
-  );
-  opacity: calc(0.22 + var(--near) * 0.7);
-  filter: blur(calc(1.5px - var(--near) * 1.2px))
-          drop-shadow(0 0 calc(var(--near) * 12px) var(--accent));
+  left: 0;
+  width: calc(var(--mw, 360px) / 6 + 0.6px);
+  height: 100%;
+  overflow: hidden;
+  translate: calc(var(--cx, 0px) - var(--mw, 360px) / 12) 0;
+  rotate: y var(--rot, 0deg);
+  filter: brightness(var(--luz, 1));
+  box-shadow: 0 18px 30px -18px rgba(40, 10, 10, 0.55);
+  backface-visibility: hidden;
+}
+.orb__tira:first-child { border-radius: 6px 0 0 6px; }
+.orb__tira:last-child { border-radius: 0 6px 6px 0; }
+.orb__mapa-svg {
+  position: absolute;
+  top: 0;
+  left: calc(var(--i) * var(--mw, 360px) / -6);
+  width: var(--mw, 360px);
+  height: 100%;
+}
+.orb__rejilla path { fill: none; stroke: rgba(120, 80, 50, 0.16); stroke-width: 1; }
+.orb__tierra path { fill: color-mix(in srgb, var(--accent) 22%, #d9c29a); stroke: rgba(120, 70, 50, 0.35); stroke-width: 1.2; }
+.orb__olas path { fill: none; stroke: rgba(90, 110, 150, 0.35); stroke-width: 1.2; }
+.orb__rosa path { fill: rgba(120, 50, 70, 0.55); }
+.orb__rosa circle { fill: #b0224f; }
+.orb__borde { fill: none; stroke: rgba(120, 80, 50, 0.3); stroke-width: 1.2; stroke-dasharray: 5 4; }
+
+/* La ruta punteada y el avioncito de papel. */
+.orb__ruta {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 800ms var(--e-out) 900ms;
+}
+.orbit.is-entered .orb__ruta { opacity: 1; }
+.orb__ruta-linea {
+  fill: none;
+  stroke: #c2335f;
+  stroke-width: 2;
+  stroke-dasharray: 2 7;
+  stroke-linecap: round;
+  animation: orb-ruta 1.2s linear infinite;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.8));
+}
+@keyframes orb-ruta { to { stroke-dashoffset: -9; } }
+.orb__avion { fill: #fffaf5; stroke: #7a2346; stroke-width: 1.1; stroke-linejoin: round; filter: drop-shadow(0 2px 2px rgba(60, 10, 30, 0.4)); }
+.orbit.is-joined .orb__ruta { opacity: 0; transition: opacity 500ms var(--e-out); }
+
+/* Los dos puntos: chinchetas de mapa, con su onda y su nombre. */
+.orb__pin {
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  top: 0;
+  width: 64px;
+  height: 64px;
+  margin: -54px 0 0 -32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  translate: var(--px, 0px) var(--py, 0px);
+  display: grid;
+  justify-items: center;
+  align-content: end;
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0;
+  transition: opacity 700ms var(--e-out) 700ms;
+}
+.orbit.is-entered .orb__pin { opacity: 1; }
+.orb__pin.is-held { cursor: grabbing; }
+.orb__pin-gota {
+  width: 26px;
+  height: 26px;
+  border-radius: 50% 50% 50% 0;
+  rotate: -45deg;
+  background: radial-gradient(circle at 50% 50%, #fff 0 22%, #e0356c 26% 100%);
+  box-shadow: 2px 4px 8px -2px rgba(60, 5, 25, 0.6);
+  transition: scale 250ms var(--e-spring);
+}
+.orb__pin--yo .orb__pin-gota { background: radial-gradient(circle at 50% 50%, #fff 0 22%, #7d5cff 26% 100%); }
+.orb__pin.is-held .orb__pin-gota { scale: 1.2; }
+.orb__pin-onda {
+  position: absolute;
+  bottom: -6px;
+  width: 34px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 70%, #fff);
+  animation: orb-onda 2.4s ease-out infinite;
+}
+.orb__pin--yo .orb__pin-onda { animation-delay: 1.2s; }
+@keyframes orb-onda { 0% { scale: 0.4; opacity: 0.9; } 100% { scale: 2; opacity: 0; } }
+.orb__pin-texto {
+  position: absolute;
+  top: calc(100% + 10px);
+  padding: 0.1rem 0.5rem;
+  border-radius: 99px;
+  background: rgba(255, 250, 240, 0.9);
+  color: #5a1f38;
+  font-family: var(--font-hand);
+  font-size: 1.15rem;
+  line-height: 1.2;
+  box-shadow: 0 3px 8px -4px rgba(60, 10, 30, 0.5);
+  white-space: nowrap;
 }
 
-.orb {
+/* Juntos: los dos se funden en un corazón que late. */
+.orb__union {
   position: absolute;
-  width: 84px;
-  height: 84px;
-  margin: -42px 0 0 -42px;
+  z-index: 4;
+  left: 50%;
+  top: 50%;
+  width: 90px;
+  height: 90px;
+  margin: -45px 0 0 -45px;
+  opacity: 0;
+  scale: 0.2;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95), color-mix(in srgb, var(--accent) 70%, transparent) 40%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  transition: opacity 500ms var(--e-out), scale 800ms var(--e-spring);
+}
+.orb__union::after {
+  content: "♥";
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
-  border-radius: 50%;
-  touch-action: none;
-  cursor: grab;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 200ms var(--e-spring);
+  font-size: 2.4rem;
+  color: #e0356c;
+  text-shadow: 0 0 12px #fff;
 }
+.orbit.is-joined .orb__union { opacity: 1; scale: 1; animation: orb-late 1.5s ease-in-out 0.8s infinite; }
+@keyframes orb-late { 0%, 100% { scale: 1; } 15% { scale: 1.18; } 30% { scale: 0.97; } 45% { scale: 1.1; } }
+.orbit.is-joined .orb__pin { opacity: 0; transition: opacity 400ms var(--e-out); }
 
-.orb:active,
-.orb.is-held { cursor: grabbing; }
-
-.orb.is-held { transform: scale(1.1); }
-
-.orb__core {
-  position: relative;
-  z-index: 2;
-  width: 34%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle at 36% 32%, #fff, var(--accent) 58%, color-mix(in srgb, var(--accent) 60%, #000));
-  box-shadow: 0 0 calc(12px + var(--near) * 22px) -2px var(--accent);
-}
-
-.orb__halo {
-  position: absolute;
-  inset: 18%;
-  border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
-  opacity: calc(0.35 + var(--near) * 0.5);
-  animation: orb-breathe 3.4s ease-in-out infinite;
-}
-
-.orb[data-orb="b"] .orb__halo { animation-delay: 1.7s; }
-
-@keyframes orb-breathe {
-  0%, 100% { transform: scale(1); opacity: 0.35; }
-  50% { transform: scale(1.18); opacity: 0.7; }
-}
-
-.orb__label {
-  position: absolute;
-  bottom: 4px;
-  font-family: var(--font-ui);
-  font-size: var(--fs-micro);
-  letter-spacing: 0.2em;
-  text-transform: lowercase;
-  color: var(--text-soft);
-  pointer-events: none;
-}
-
-/* Al juntarse: uno solo, y un destello. */
-.orbit.is-joined .orb {
-  transition: transform 700ms var(--e-spring);
-}
-
-.orbit.is-joined .orb__core {
-  animation: orb-merge 900ms var(--e-out) forwards;
-}
-
-@keyframes orb-merge {
-  0% { transform: scale(1); }
-  40% { transform: scale(2.1); }
-  100% { transform: scale(1.5); }
-}
-
-.orbit.is-joined .orb__label { opacity: 0; transition: opacity 400ms; }
-
-.orbit.is-joined .orb__link { opacity: 0; transition: opacity 500ms; }
-
-.orbit.is-joined .orb__halo {
-  animation: orb-shock 900ms var(--e-out) forwards;
-}
-
-@keyframes orb-shock {
-  0% { transform: scale(1); opacity: 0.8; }
-  100% { transform: scale(4.5); opacity: 0; }
-}
+.orb__pista { margin: 0; text-align: center; transition: opacity 500ms var(--e-out); }
+.orbit.is-joined .orb__pista { opacity: 0; }
 
 /* ---- Texto -------------------------------------------------- */
 .orb__panel {
@@ -173,6 +238,7 @@
   font-weight: 300;
   font-size: clamp(1.35rem, calc(6 * var(--vw)), 1.95rem);
   line-height: 1.06;
+  /* Sobre el cristal oscuro, en los dos temas. */
   color: #fff;
 }
 
@@ -206,7 +272,8 @@
   font-size: clamp(0.95rem, calc(3.7 * var(--vw)), 1.12rem);
   line-height: 1.68;
   color: rgba(246, 238, 232, 0.92);
-  text-align: justify;
+  text-align: left;
+  text-wrap: pretty;
   hyphens: auto;
 }
 
@@ -246,78 +313,7 @@
 
 .orbit.is-told .orb__reveal { opacity: 1; transform: none; }
 
-/* ══════════════ LAS CARTAS QUE CRUZAN ══════════════
-   Cada pocos segundos sale una de un punto y viaja hasta el otro por la
-   línea que los une. Es lo que de verdad pasa entre dos personas separadas
-   por dos mil kilómetros, y es lo que convierte esta página en algo que
-   ocurre en vez de dos bolas y una raya.
-
-   El viaje entero es una sola animación de `transform`: la compone la GPU
-   sin repintar nada, así que cuatro cartas cruzando cuestan lo mismo que
-   ninguna. */
-.orb__cartas {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.orb__carta {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: clamp(15px, 4.4vw, 20px);
-  margin: calc(clamp(15px, 4.4vw, 20px) * -0.35) 0 0 calc(clamp(15px, 4.4vw, 20px) / -2);
-  opacity: 0;
-  will-change: transform, opacity;
-}
-
-.orb__carta.is-yendo {
-  animation: carta-cruza 2.9s cubic-bezier(0.42, 0, 0.58, 1) forwards;
-}
-
-@keyframes carta-cruza {
-  0% {
-    transform: translate(var(--x1), var(--y1)) rotate(var(--giro)) scale(0.5);
-    opacity: 0;
-  }
-  14%  { opacity: 0.85; transform: translate(calc(var(--x1) + (var(--x2) - var(--x1)) * 0.14),
-                                             calc(var(--y1) + (var(--y2) - var(--y1)) * 0.14))
-                                   rotate(var(--giro)) scale(1); }
-  86%  { opacity: 0.85; transform: translate(calc(var(--x1) + (var(--x2) - var(--x1)) * 0.86),
-                                             calc(var(--y1) + (var(--y2) - var(--y1)) * 0.86))
-                                   rotate(var(--giro)) scale(1); }
-  100% {
-    transform: translate(var(--x2), var(--y2)) rotate(var(--giro)) scale(0.5);
-    opacity: 0;
-  }
-}
-
-.orb__carta-svg {
-  width: 100%;
-  height: auto;
-  display: block;
-  overflow: visible;
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent));
-}
-
-.orb__carta-svg rect {
-  fill: rgba(255, 246, 232, 0.94);
-  stroke: color-mix(in srgb, var(--accent) 55%, transparent);
-  stroke-width: 0.8;
-}
-
-.orb__carta-solapa {
-  fill: none;
-  stroke: color-mix(in srgb, var(--accent) 70%, transparent);
-  stroke-width: 0.9;
-  stroke-linejoin: round;
-}
-
-/* Al juntarse ya no hacen falta: lo que tenían que decir ya llegó. */
-.orbit.is-joined .orb__cartas { opacity: 0; transition: opacity 500ms var(--e-out); }
-
 @media (prefers-reduced-motion: reduce) {
-  .orb__carta { display: none; }
+  .orb__ruta-linea, .orb__pin-onda, .orbit.is-joined .orb__union { animation: none !important; }
   .orb__scroll { transition-duration: 1ms; }
 }

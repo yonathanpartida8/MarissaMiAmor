@@ -168,7 +168,7 @@ export default {
     "10-contigo-me-caigo-mejor": [
       "imagen1.png"
     ],
-    "11-nuestra-pelicula": [
+    "11-pines-que-me-recordaron-a-ti": [
       "imagen1.png",
       "imagen2.png",
       "imagen3.png",
@@ -180,6 +180,7 @@ export default {
       "imagen9.png",
       "imagen10.png"
     ],
+    "11b-pines-que-te-dedico": [],
     "12-solo-tu-sabes-abrirlo": [
       "imagen1.png"
     ],
@@ -276,5 +277,21 @@ export default {
     ]
   },
   "sorpresas": {},
+  "sonidos": {
+    "corazon": null
+  },
+  "vales": {
+    "lista": [
+      "Vale por un abrazo de esos que no se terminan.",
+      "Vale por una videollamada hasta que nos quedemos dormidos.",
+      "Vale por un beso en la frente (canjeable en persona).",
+      "Vale por un día en el que yo te consienta en todo.",
+      "Vale por una cita, la que tú escojas.",
+      "Vale por escucharte sin interrumpir, aunque sea de madrugada.",
+      "Vale por un masajito cuando estés cansada.",
+      "Vale por una canción dedicada, cantada mal pero con amor."
+    ],
+    "dorado": "Vale por lo que tú quieras, cuando tú quieras. Sin fecha de caducidad."
+  },
   "noche": true
 };

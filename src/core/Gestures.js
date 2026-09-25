@@ -284,6 +284,9 @@ export class Gestures {
       const near = Math.hypot(s.x - this.lastTapPos.x, s.y - this.lastTapPos.y) < 34;
       if (this.h.onDoubleTap && now - this.lastTapAt < DOUBLE_TAP_MS && near) {
         this.lastTapAt = 0;
+        // El primer toque estaba esperando por si era uno solo: ya no lo es.
+        // Sin esto, un doble toque hacía las DOS cosas (el toque y el doble).
+        clearTimeout(this.tapTimer);
         this.h.onDoubleTap(detail);
       } else {
         this.lastTapAt = now;

@@ -578,7 +578,8 @@
   font-size: var(--fs-body);
   line-height: 1.7;
   color: var(--paper-ink);
-  text-align: justify;
+  text-align: left;
+  text-wrap: pretty;
   hyphens: auto;
   white-space: pre-line;
 }

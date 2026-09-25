@@ -13,21 +13,89 @@
   overflow: hidden;
 }
 
+/* La carta: una hoja rayada con su margen rojo, un poco torcida, sobre el
+   papel viejo de la página. */
 .secreto__hoja {
+  --renglon: 1.9rem;
   position: relative;
   z-index: 3;
   width: 100%;
   max-width: 34rem;
   max-height: 100%;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
-  gap: clamp(0.4rem, 1.8vh, 0.75rem);
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  gap: clamp(0.35rem, 1.4vh, 0.6rem);
+  padding: 1.5rem 1.1rem 1.1rem 2.1rem;
+  border-radius: 3px;
+  background:
+    linear-gradient(90deg, transparent 1.45rem, rgba(214, 72, 104, 0.4) 1.45rem, rgba(214, 72, 104, 0.4) calc(1.45rem + 1px), transparent calc(1.45rem + 1px)),
+    repeating-linear-gradient(180deg, transparent 0 calc(var(--renglon) - 1px), rgba(92, 128, 190, 0.16) calc(var(--renglon) - 1px) var(--renglon)),
+    radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, 0.8), transparent 60%),
+    linear-gradient(175deg, #fffdf8, #fbf3e6 70%, #f5e8d4);
+  background-position: 0 0, 0 0.35rem, 0 0, 0 0;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 26px 40px -24px rgba(60, 30, 20, 0.55),
+    0 4px 10px -6px rgba(60, 30, 20, 0.35);
+  rotate: -0.8deg;
   opacity: 0;
   transform: translateY(12px);
   transition: opacity 620ms var(--e-out), transform 700ms var(--e-out);
 }
 
 .secreto.is-entered .secreto__hoja { opacity: 1; transform: none; }
+
+/* Dos tiras de cinta de papel sujetando la carta. */
+.secreto__cinta {
+  position: absolute;
+  top: -12px;
+  width: 78px;
+  height: 24px;
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.28) 0 6px, transparent 6px 12px),
+    color-mix(in srgb, var(--accent) 45%, rgba(255, 222, 230, 0.8));
+  opacity: 0.85;
+  box-shadow: 0 2px 4px rgba(80, 30, 40, 0.18);
+  clip-path: polygon(3% 0, 97% 4%, 100% 50%, 96% 100%, 2% 94%, 0 50%);
+}
+.secreto__cinta--izq { left: -14px; rotate: -32deg; }
+.secreto__cinta--der { right: -14px; rotate: 30deg; background-color: rgba(190, 220, 240, 0.8); }
+
+/* Una mancha de café, muy tenue, de alguien que escribió de madrugada. */
+.secreto__mancha {
+  position: absolute;
+  right: 8%;
+  bottom: 14%;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 5px solid rgba(150, 95, 50, 0.08);
+  box-shadow: inset 0 0 0 2px rgba(150, 95, 50, 0.05), 0 0 0 1px rgba(150, 95, 50, 0.04);
+  rotate: 20deg;
+  pointer-events: none;
+}
+
+/* La florecita prensada. */
+.secreto__flor {
+  position: absolute;
+  right: -10px;
+  bottom: -18px;
+  width: 58px;
+  rotate: 18deg;
+  opacity: 0.8;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgba(80, 40, 30, 0.25));
+}
+.secreto__flor-tallo { fill: none; stroke: #7d8f5a; stroke-width: 2; stroke-linecap: round; }
+.secreto__flor-hoja { fill: #9bb074; opacity: 0.85; }
+.secreto__flor-petalo { fill: color-mix(in srgb, var(--accent) 55%, #f7c6d3); opacity: 0.85; }
+.secreto__flor-centro { fill: #e8b451; }
+
+/* El saludo y la fecha, a mano. */
+.secreto__encabezado { display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; }
+.secreto__saludo { font-family: var(--font-hand); font-size: clamp(1.35rem, calc(6 * var(--vw)), 1.7rem); color: #5a2138; }
+.secreto__fecha { font-family: var(--font-hand); font-size: 1rem; color: #8a5a6c; white-space: nowrap; }
+.secreto__firma { margin: 0.5rem 0 0; text-align: right; font-family: var(--font-hand); font-size: clamp(1.05rem, calc(4.6 * var(--vw)), 1.3rem); color: #7a2f4d; }
 
 .secreto__head {
   /* Hueco para el lacre de la esquina. */
@@ -42,13 +110,14 @@
 }
 
 /* ---- La nota ------------------------------------------------ */
+/* A mano y sobre los renglones: el alto de línea es el del rayado. */
 .secreto__nota {
-  font-family: var(--font-display);
-  font-size: var(--fs-body);
-  line-height: 1.78;
-  color: var(--paper-ink);
-  text-align: justify;
-  hyphens: auto;
+  margin: 0;
+  font-family: var(--font-hand);
+  font-size: clamp(1.18rem, calc(5.3 * var(--vw)), 1.42rem);
+  line-height: var(--renglon);
+  color: #3b2030;
+  text-align: left;
 }
 
 /* ---- Las palabras marcadas ---------------------------------- */
@@ -92,12 +161,34 @@
   }
 }
 
-/* Encontrada: se queda encendida para siempre. */
+/* Encontrada: la tinta se calienta (como el jugo de limón al fuego) y se
+   queda rodeada con un círculo a mano. */
 .secreto__palabra.is-found {
-  color: var(--rose-deep);
+  color: #b3264f;
   text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent);
   animation: secreto-chispa 700ms var(--e-out);
 }
+.secreto__circulo {
+  position: absolute;
+  left: -9%;
+  top: -14%;
+  width: 118%;
+  height: 128%;
+  overflow: visible;
+  pointer-events: none;
+}
+.secreto__circulo path {
+  fill: none;
+  stroke: #c2335f;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0.85;
+}
+.secreto__palabra.is-found .secreto__circulo path { animation: secreto-circulo 700ms var(--e-out) 120ms forwards; }
+@keyframes secreto-circulo { to { stroke-dashoffset: 0; } }
 
 @keyframes secreto-chispa {
   0%   { transform: scale(1); }
@@ -105,36 +196,30 @@
   100% { transform: scale(1); }
 }
 
-.secreto__palabra.is-found::after {
-  content: "";
-  position: absolute;
-  left: 6%;
-  right: 6%;
-  bottom: 0.06em;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  opacity: 0.6;
-}
+
 
 /* ---- El margen donde caen las frases ------------------------- */
 .secreto__margen {
   display: flex;
   flex-direction: column;
   gap: 0.28rem;
-  max-height: 40%;
+  margin-top: 0.4rem;
 }
 
 .secreto__linea {
+  margin: 0;
   font-family: var(--font-hand);
-  font-size: clamp(1rem, calc(4.4 * var(--vw)), 1.25rem);
-  line-height: 1.35;
-  color: var(--rose-deep);
+  font-size: clamp(1.05rem, calc(4.5 * var(--vw)), 1.28rem);
+  line-height: 1.3;
+  color: #b3264f;
   opacity: 0;
-  transform: translateX(-10px) rotate(var(--tilt, 0deg));
-  transition: opacity 620ms var(--e-out), transform 700ms var(--e-spring);
+  /* Se escribe de izquierda a derecha, como a mano. */
+  clip-path: inset(0 100% 0 0);
+  transform: rotate(var(--tilt, 0deg));
+  transition: opacity 300ms var(--e-out), clip-path 1100ms var(--e-out);
 }
 
-.secreto__linea.is-in { opacity: 0.92; transform: rotate(var(--tilt, 0deg)); }
+.secreto__linea.is-in { opacity: 0.95; clip-path: inset(0 0 0 0); }
 
 .secreto__linea::before {
   content: "—";
@@ -311,5 +396,81 @@ html[data-orientation="landscape"][data-device="phone"] .secreto__final {
 
 @media (prefers-reduced-motion: reduce) {
   .secreto.is-nudging .secreto__palabra:not(.is-found),
-  .secreto__palabra.is-found,
+  .secreto__palabra.is-found { animation: none; }
+  .secreto__circulo path { animation: none !important; stroke-dashoffset: 0 !important; }
 }
+
+
+/* ══════════════ LA LINTERNA DE TINTA INVISIBLE ══════════════ */
+.secreto__lampara {
+  position: absolute;
+  z-index: 5;
+  left: calc(var(--pad-x) - 0.2rem);
+  bottom: calc(var(--pad-b) + var(--bar-space, 0rem) + 0.1rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem 0.35rem 0.4rem;
+  border: 0;
+  border-radius: 99px;
+  background: rgba(60, 30, 50, 0.1);
+  color: #5a2f45;
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 700ms var(--e-out) 1.2s, background 300ms var(--e-out);
+  -webkit-tap-highlight-color: transparent;
+}
+.secreto.is-entered .secreto__lampara { opacity: 1; }
+.secreto__lampara-foco {
+  width: 22px;
+  height: 14px;
+  border-radius: 3px 8px 8px 3px;
+  background: linear-gradient(90deg, #3a3342 0 58%, #7d6bff 58% 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  position: relative;
+}
+.secreto.is-linterna .secreto__lampara { background: rgba(125, 107, 255, 0.22); color: #3b2a8a; }
+.secreto.is-linterna .secreto__lampara-foco { box-shadow: 0 0 12px 3px rgba(150, 120, 255, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.35); }
+
+/* La capa de la luz: sólo se ve dentro del círculo de la linterna. */
+.secreto__uv {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle 80px at var(--lx, 50%) var(--ly, 50%), rgba(60, 20, 120, 0.2), rgba(40, 10, 90, 0.05) 70%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle 80px at var(--lx, 50%) var(--ly, 50%), #000 55%, transparent 100%);
+  mask-image: radial-gradient(circle 80px at var(--lx, 50%) var(--ly, 50%), #000 55%, transparent 100%);
+  opacity: 0;
+  transition: opacity 400ms var(--e-out);
+}
+.secreto.is-linterna .secreto__uv { opacity: 1; }
+/* También en los hijos: la nota es un área que se desplaza, y el navegador
+   sólo mira el `touch-action` hasta ella. Sin esto, el primer movimiento
+   del dedo se lo quedaba el desplazamiento y la luz no se movía. */
+.secreto.is-linterna .secreto__hoja,
+.secreto.is-linterna .secreto__hoja * { touch-action: none; }
+.secreto.is-linterna .secreto__hoja { cursor: crosshair; }
+.secreto__invisible {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  rotate: var(--giro);
+  font-family: var(--font-hand);
+  font-size: clamp(1.1rem, calc(4.8 * var(--vw)), 1.35rem);
+  color: #c9f7ff;
+  text-shadow: 0 0 6px #7ff0ff, 0 0 14px #9b7bff;
+  white-space: nowrap;
+}
+/* Las ya vistas brillan un poco más, para acordarse. */
+.secreto__invisible.is-vista { color: #f2ffff; text-shadow: 0 0 8px #7ff0ff, 0 0 20px #b69bff; }
+
+html[data-orientation="landscape"][data-device="phone"] .secreto__hoja { --renglon: 1.6rem; padding: 1rem 1rem 0.8rem 2rem; }
+html[data-orientation="landscape"][data-device="phone"] .secreto__nota { font-size: 1.1rem; }
+html[data-orientation="landscape"][data-device="phone"] .secreto__flor { display: none; }
+html[data-orientation="landscape"][data-device="phone"] .secreto__encabezado { grid-column: 1 / -1; }

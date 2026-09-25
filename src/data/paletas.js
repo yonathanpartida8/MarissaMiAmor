@@ -5,7 +5,7 @@
  * ║  Todo lo que se ve —la luz del fondo, el brillo de los bordes,    ║
  * ║  el tono del papel, la barra de abajo— sale de aquí.             ║
  * ║                                                                  ║
- * ║  Para repintar el libro entero: cambia estos nueve. No hay que    ║
+ * ║  Para repintar el libro entero: cambia estos trece. No hay que    ║
  * ║  tocar ni una página.                                            ║
  * ║  Para cambiar el color de UN capítulo: escribe otro nombre en su  ║
  * ║  línea de `chapters.js`.                                         ║
@@ -25,43 +25,56 @@
  *   b     el hondo. El segundo color de la niebla, más oscuro y saturado.
  *   deep  el fondo. Casi negro, pero nunca negro: siempre queda el rescoldo.
  *
- * Los tres son de la misma familia a propósito. Este libro va de una sola
- * cosa, y su color también: rosas, rubores, corales, vino y champán. Ni un
- * azul. Ni un verde. Amor y nada más.
+ * Todos son de la misma familia a propósito: rosas, rubores, corales,
+ * duraznos, lavandas, ciruela y vino. Ni un azul frío. Ni un verde. Las
+ * lavandas están para que el libro no sea un solo rojo de principio a fin:
+ * las páginas de noche y de cielo respiran mejor en violeta.
  */
 
 export const paletas = {
   // ── Los claros ────────────────────────────────────────────────────
   /** Primera luz. El rosa más tierno, el de empezar. */
-  amanecer: { a: "#ffc2d1", b: "#a83c66", deep: "#1d0a13" },
+  amanecer: { a: "#ffc4d6", b: "#b0406f", deep: "#1d0a14" },
 
   /** Rubor. Cuando algo se dice y sale color a la cara. */
-  rubor: { a: "#ffa9bf", b: "#93264b", deep: "#1a0710" },
+  rubor: { a: "#ffa9c2", b: "#a02a58", deep: "#1a0712" },
 
   /** Seda. Rosa pálido con champán: lo suave, lo que se acaricia. */
-  seda: { a: "#ffd6c6", b: "#b45f7c", deep: "#1f0d14" },
+  seda: { a: "#ffd1c4", b: "#b86478", deep: "#1f0d15" },
 
-  /** Nácar. Casi blanco cálido, para los momentos de luz limpia. */
-  nacar: { a: "#ffe6d9", b: "#c4818a", deep: "#1e1013" },
+  /** Nácar. Rosa perla, para los momentos de luz limpia. */
+  nacar: { a: "#ffdce6", b: "#b77391", deep: "#1c0e16" },
+
+  /** Melocotón. Durazno tibio sobre rosa terracota: lo cálido, la tarde. */
+  melocoton: { a: "#ffc6a8", b: "#c05a5e", deep: "#1d0c0f" },
 
   // ── Los encendidos ────────────────────────────────────────────────
   /** Azúcar. Rosa de algodón, el juguetón. */
-  azucar: { a: "#ffbcda", b: "#ab3f8c", deep: "#1c0a0f" },
+  azucar: { a: "#ffb7d9", b: "#b0428f", deep: "#1c0a14" },
 
-  /** Brasa. Coral encendido sobre rojo hondo: lo que arde despacio.
-      El hondo tira a carmín y no a naranja: un naranja puro deja de ser
-      amor y se convierte en fuego, y este libro no va de fuego. */
-  brasa: { a: "#ffa593", b: "#ae3446", deep: "#1c0810" },
+  /** Brasa. Coral encendido sobre rojo hondo: lo que arde despacio. */
+  brasa: { a: "#ffa08c", b: "#b3364a", deep: "#1c0810" },
 
   /** Latido. El rojo del corazón. El más vivo de todos: úsalo poco. */
-  latido: { a: "#ff8096", b: "#ad1039", deep: "#1a040c" },
+  latido: { a: "#ff7f9a", b: "#b01242", deep: "#1a040c" },
+
+  // ── Los de lavanda ────────────────────────────────────────────────
+  /** Lila. Lavanda con rubor: lo tierno y un poco soñado. */
+  lila: { a: "#e8bdff", b: "#8a3fa8", deep: "#150a1c" },
+
+  /** Ciruela. Orquídea sobre ciruela: lo íntimo, con elegancia. */
+  ciruela: { a: "#f4a6d8", b: "#6e1f63", deep: "#140713" },
+
+  /** Medianoche. Lavanda de estrellas sobre un violeta muy hondo: el
+      cielo de las páginas que pasan de noche. */
+  medianoche: { a: "#cdb8ff", b: "#4f2a7d", deep: "#0d0817" },
 
   // ── Los hondos ────────────────────────────────────────────────────
   /** Vino. La intimidad, la noche larga, lo que se dice bajito. */
-  vino: { a: "#f2a2b6", b: "#71142f", deep: "#14040a" },
+  vino: { a: "#f3a3bd", b: "#74163a", deep: "#14040b" },
 
   /** Granate. El más profundo. Para lo que pesa. */
-  granate: { a: "#e98da0", b: "#631028", deep: "#120309" },
+  granate: { a: "#ec8ea8", b: "#66112f", deep: "#12030a" },
 };
 
 /** Si un capítulo no dice de qué color es. */

@@ -172,6 +172,11 @@ export const atmosphereFragment = /* glsl */ `
     // ASCII en los identificadores, y un shader que no compila deja el
     // fondo en negro sin decir por qué.)
     vec3 sumado = color + uAccentA * fuerzaA + uAccentB * fuerzaB;
+    // Que la luz no se queme. Con los acentos claros (nacar, seda) los
+    // velos se sumaban hasta un melocotón casi blanco justo detrás de los
+    // títulos, y el texto claro no se leía. Por encima de 0.55 la luz sube
+    // a la mitad de ritmo: el brillo sigue ahí, pero con cuerpo y color.
+    sumado -= max(sumado - 0.55, 0.0) * 0.5;
 
     vec3 tenido = mix(color, uAccentA, clamp(fuerzaA, 0.0, 1.0) * 0.82);
     tenido = mix(tenido, uAccentB, clamp(fuerzaB, 0.0, 1.0) * 0.66);

@@ -38,6 +38,26 @@ export const textos = {
   /** Cuando ya las ha encontrado todas. */
   final: "Te amo, mi niña. Con todo lo que no digo también.",
 
+  /** Arriba de la carta. */
+  saludo: "Para Marissa,",
+  fecha: "23 · 08 · 25",
+  firma: "— tuyo, aunque no lo diga en voz alta",
+
+  // ── LA LINTERNA DE TINTA INVISIBLE ──────────────────────────────────
+  // Con la linterna encendida, al pasar el dedo por la carta aparecen estas
+  // frases, escritas con tinta que sólo se ve con esa luz. Cada una lleva
+  // dónde va (en % de la carta) y cuánto se tuerce.
+  linterna: "linterna",
+  linternaAyuda: "pasa el dedo por la carta",
+  invisibles: [
+    { texto: "te pienso más de lo que te digo", x: 12, y: 30, giro: -4 },
+    { texto: "quédate", x: 68, y: 44, giro: 6 },
+    { texto: "eres mi casa", x: 10, y: 58, giro: 3 },
+    { texto: "ya quiero verte", x: 52, y: 72, giro: -5 },
+    { texto: "para siempre, ¿va?", x: 22, y: 86, giro: 2 },
+  ],
+  linternaTodas: "Tinta invisible: ahora ya lo sabes todo.",
+
   // ── EASTER EGGS ───────────────────────────────────────────────────
   /** Mantener pulsado el lacre de la esquina. */
   lacre: "M · Y",

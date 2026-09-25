@@ -213,11 +213,19 @@ const pages = [
   },
   {
     id: "nuestra-pelicula",
-    type: "filmstrip",
+    type: "pines",
     chapter: "nuestra-pelicula",
     transition: "iris",
-    hint: "desliza el carrete hasta el final",
+    hint: "desliza los pines hasta la carta",
     secret: "carrete-1",
+  },
+  {
+    id: "pines-dedicados",
+    type: "pines",
+    chapter: "pines-dedicados",
+    transition: "bloom",
+    hint: "desliza hasta la carta · doble toque guarda un pin",
+    secret: "pines-dedicados",
   },
   {
     id: "con-mi-letra",
@@ -238,10 +246,11 @@ const pages = [
   },
   {
     id: "mi-norte",
-    type: "chapter",
+    type: "norte",
     chapter: "mi-norte",
     transition: "bloom",
-    hint: "tócala",
+    hint: "gira la brújula o arrastra la foto",
+    secret: "norte-siempre",
   },
   {
     id: "botella",

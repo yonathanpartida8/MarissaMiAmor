@@ -1,0 +1,22 @@
+# ═══════════════════════════════════════════════════════════════
+#  LOS VALES DE «VALES DE AMOR»
+#
+#  Un vale por línea, en el orden en que se arrancan.
+#  Puedes poner los que quieras (más o menos que ahora).
+#  Las líneas que empiezan con # son notas: no salen en el libro.
+#  La línea que empieza con «dorado:» es el vale dorado del final.
+#
+#  Para cambiarlos desde GitHub: abre este archivo, toca el lápiz,
+#  escribe y guarda. En un minuto el libro ya los tiene.
+# ═══════════════════════════════════════════════════════════════
+
+Vale por un abrazo de esos que no se terminan.
+Vale por una videollamada hasta que nos quedemos dormidos.
+Vale por un beso en la frente (canjeable en persona).
+Vale por un día en el que yo te consienta en todo.
+Vale por una cita, la que tú escojas.
+Vale por escucharte sin interrumpir, aunque sea de madrugada.
+Vale por un masajito cuando estés cansada.
+Vale por una canción dedicada, cantada mal pero con amor.
+
+dorado: Vale por lo que tú quieras, cuando tú quieras. Sin fecha de caducidad.

@@ -5,6 +5,23 @@
  * queda armado y se desbloquea con el primer toque real. La música entra con
  * un fundido lento (nada de golpes de volumen) y se silencia sola si la
  * pestaña pasa a segundo plano.
+ *
+ * LA MÚSICA SE APARTA SOLA. Cualquier otro sonido —pasar página, abrir un
+ * sobre, el corazón, las burbujas— baja la música mientras suena y la
+ * devuelve con un fundido al terminar. Para eso:
+ *
+ *   · `play()` ya lo hace con sus propios sonidos;
+ *   · las páginas que hacen sonidos a mano (con WebAudio) los sacan por
+ *     `efectos()`, o llaman a `apartar(ms)` si suenan por su cuenta;
+ *   · varios a la vez se suman: manda el que más la baja y la música no
+ *     vuelve hasta que termina el último.
+ *
+ * En iPhone el volumen de un `<audio>` NO SE PUEDE CAMBIAR (Safari lo ignora
+ * y suena siempre al máximo): ni el fundido de entrada ni apartarse hacían
+ * nada. Por eso, cuando el libro está publicado (http/https), la música pasa
+ * por un control de volumen de WebAudio, que sí obedece en todas partes.
+ * Abierto como archivo (file://) no se hace, porque ahí el navegador lo
+ * trata como de otro origen y la música saldría muda.
  */
 
 import { Emitter } from "./Emitter.js";
@@ -14,6 +31,32 @@ const SOURCES = {
   music: { src: "assets/audio/musica.mp3", loop: true, volume: 0.3 },
   open: { src: "assets/audio/abrir.mp3", loop: false, volume: 0.65 },
 };
+
+/**
+ * Decodifica un sonido sin dejar ninguna promesa suelta.
+ *
+ * `decodeAudioData` acepta funciones de vuelta (lo único que entiende el
+ * Safari viejo) y ADEMÁS devuelve una promesa (lo moderno). Si se le pasan
+ * las funciones y el archivo no se puede leer, la promesa que devuelve
+ * falla igual, nadie la escucha, y la consola se llena de errores rojos.
+ * Aquí se atienden las dos y gana la primera que conteste.
+ */
+function decodificar(ac, datos) {
+  return new Promise((ok) => {
+    let hecho = false;
+    const fin = (b) => {
+      if (hecho) return;
+      hecho = true;
+      ok(b || null);
+    };
+    try {
+      const p = ac.decodeAudioData(datos, fin, () => fin(null));
+      p?.then?.(fin, () => fin(null));
+    } catch {
+      fin(null);
+    }
+  });
+}
 
 /** Pasar página suena tantas veces seguidas que tiene su propia reserva. */
 const TURN = { src: "assets/audio/sonido.mp3", volume: 0.42, copias: 3 };
@@ -31,9 +74,110 @@ export class AudioBus extends Emitter {
       const music = this.tracks.get("music");
       if (!music) return;
       if (document.hidden) music.el.pause();
-      else if (this.playingMusic && !this.muted) music.el.play().catch(() => {});
+      else {
+        this.ac?.resume?.().catch?.(() => {});
+        if (this.playingMusic && !this.muted) music.el.play().catch(() => {});
+      }
     });
   }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  WebAudio compartido
+  // ═══════════════════════════════════════════════════════════════════
+
+  /** El contexto de audio del libro (uno para todos). Puede ser null. */
+  contexto() {
+    if (this.ac === undefined) {
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        this.ac = AC ? new AC({ latencyHint: "interactive" }) : null;
+      } catch {
+        this.ac = null;
+      }
+      if (this.ac) {
+        this.salidaEfectos = this.ac.createGain();
+        this.salidaEfectos.gain.value = this.muted ? 0 : 1;
+        this.salidaEfectos.connect(this.ac.destination);
+      }
+    }
+    if (this.ac?.state === "suspended") this.ac.resume().catch(() => {});
+    return this.ac;
+  }
+
+  /**
+   * Por dónde sacar un sonido hecho a mano. Respeta el silencio del libro y
+   * aparta la música `ms` milisegundos. Devuelve null si no hay audio.
+   */
+  efectos(ms = 600, cuanto = 0.4) {
+    const ac = this.contexto();
+    if (!ac || this.muted) return null;
+    this.apartar(ms, cuanto);
+    return this.salidaEfectos;
+  }
+
+  /** Trae y decodifica un archivo de sonido (una vez; luego sale de caché). */
+  cargar(url) {
+    this.buffers ??= new Map();
+    if (!this.buffers.has(url)) {
+      const ac = this.contexto();
+      const promesa = !ac
+        ? Promise.resolve(null)
+        : fetch(url)
+            .then((r) => (r.ok ? r.arrayBuffer() : null))
+            .then((datos) => datos && decodificar(ac, datos))
+            .catch(() => null);
+      this.buffers.set(url, promesa);
+    }
+    return this.buffers.get(url);
+  }
+
+  /**
+   * Suena un sonido ya decodificado. `hasta` corta el sonido (con un fundido
+   * cortito) a esa cantidad de segundos, para que los latidos rápidos no se
+   * pisen unos a otros.
+   */
+  sonar(buffer, { volume = 1, rate = 1, hasta = Infinity } = {}) {
+    if (!buffer) return;
+    const dura = Math.min(buffer.duration / rate, hasta);
+    const salida = this.efectos(dura * 1000 + 250);
+    if (!salida) return;
+    const ac = this.ac;
+    const fuente = ac.createBufferSource();
+    const vol = ac.createGain();
+    fuente.buffer = buffer;
+    fuente.playbackRate.value = rate;
+    const t = ac.currentTime;
+    vol.gain.setValueAtTime(volume, t);
+    if (Number.isFinite(hasta) && hasta < buffer.duration / rate) {
+      vol.gain.setValueAtTime(volume, t + Math.max(0, hasta - 0.04));
+      vol.gain.linearRampToValueAtTime(0.0001, t + hasta);
+      fuente.stop(t + hasta + 0.02);
+    }
+    fuente.connect(vol).connect(salida);
+    fuente.start(t);
+  }
+
+  /**
+   * Pasa la música por WebAudio para poder cambiarle el volumen también en
+   * iPhone. Se hace dentro del primer gesto y sólo con el libro publicado.
+   */
+  #enrutarMusica() {
+    if (this.volumenMusica || !/^https?:$/.test(location.protocol)) return;
+    const track = this.tracks.get("music");
+    const ac = this.contexto();
+    if (!track || !ac) return;
+    try {
+      const fuente = ac.createMediaElementSource(track.el);
+      this.volumenMusica = ac.createGain();
+      this.volumenMusica.gain.value = track.el.volume;
+      fuente.connect(this.volumenMusica).connect(ac.destination);
+      track.el.volume = 1;
+      track.enrutada = true;
+    } catch {
+      this.volumenMusica = null;
+    }
+  }
+
 
   #build() {
     for (const [name, cfg] of Object.entries(SOURCES)) {
@@ -123,6 +267,10 @@ export class AudioBus extends Emitter {
         track.el.muted = false;
       }
     };
+    // El contexto de WebAudio también nace aquí, dentro del gesto: fuera de
+    // uno, Safari lo deja suspendido y los sonidos hechos a mano no suenan.
+    this.contexto();
+    this.#enrutarMusica();
     await Promise.race([
       Promise.all(attempts.map(uno)).catch(() => {}),
       new Promise((r) => setTimeout(r, 600)),
@@ -134,7 +282,7 @@ export class AudioBus extends Emitter {
 
   playingMusic = false;
 
-  /** Efecto puntual. */
+  /** Efecto puntual. La música se aparta mientras suena. */
   play(name, { volume = 1, rate = 1 } = {}) {
     if (this.muted) return;
 
@@ -145,11 +293,15 @@ export class AudioBus extends Emitter {
       el.playbackRate = rate;
       el.currentTime = 0;
       el.play().catch(() => {});
+      // Pasar página es cortito: apenas un respiro de la música.
+      this.apartar(900 / Math.max(0.3, rate), 0.55);
       return;
     }
 
     const track = this.tracks.get(name);
     if (!track) return;
+    const dura = Number.isFinite(track.el.duration) ? track.el.duration / Math.max(0.3, rate) : 2.4;
+    this.apartar(Math.min(6000, dura * 1000 + 300), 0.35);
     track.el.volume = clamp01(track.base * volume);
     track.el.playbackRate = rate;
     try {
@@ -165,10 +317,10 @@ export class AudioBus extends Emitter {
     const track = this.tracks.get("music");
     if (!track || this.muted) return;
     this.playingMusic = true;
-    track.el.volume = 0;
+    this.#ponerVolMusica(track, 0);
     track.el
       .play()
-      .then(() => this.#fade(track.el, track.base, fade))
+      .then(() => this.#fadeMusica(track, track.base * this.#nivelApartado(), fade))
       .catch(() => {
         this.playingMusic = false;
       });
@@ -179,7 +331,7 @@ export class AudioBus extends Emitter {
     const track = this.tracks.get("music");
     if (!track) return;
     this.playingMusic = false;
-    this.#fade(track.el, 0, fade, () => track.el.pause());
+    this.#fadeMusica(track, 0, fade, () => track.el.pause());
     this.emit("music", false);
   }
 
@@ -190,17 +342,72 @@ export class AudioBus extends Emitter {
     return this.playingMusic;
   }
 
-  /** Baja la música un momento (por ejemplo, al abrir una carta). */
-  duck(amount = 0.4, ms = 2600) {
+  // ═══════════════════════════════════════════════════════════════════
+  //  Apartar la música
+  // ═══════════════════════════════════════════════════════════════════
+
+  /**
+   * Baja la música `ms` milisegundos hasta `cuanto` de su volumen.
+   *
+   * Si ya estaba apartada, no la sube: se queda con el nivel más bajo de los
+   * dos y con el final más tardío. Así un sonido corto encima de uno largo
+   * no la devuelve antes de tiempo.
+   */
+  apartar(ms = 1200, cuanto = 0.4) {
+    const ahora = performance.now();
+    const vigente = ahora < this.#apartadaHasta;
+    this.#nivel = vigente ? Math.min(this.#nivel, cuanto) : cuanto;
+    this.#apartadaHasta = Math.max(vigente ? this.#apartadaHasta : 0, ahora + ms);
     const track = this.tracks.get("music");
     if (!track || !this.playingMusic) return;
     clearTimeout(this.#duckTimer);
-    this.#fade(track.el, track.base * amount, 400);
-    this.#duckTimer = setTimeout(() => this.#fade(track.el, track.base, 900), ms);
+    this.#fadeMusica(track, track.base * this.#nivel, 260);
+    this.#duckTimer = setTimeout(() => this.#devolver(), this.#apartadaHasta - ahora);
+  }
+
+  /** Lo de antes, con su nombre de antes: `duck(1, 0)` la devuelve ya. */
+  duck(amount = 0.4, ms = 2600) {
+    if (amount >= 1 || ms <= 0) return this.#devolver();
+    this.apartar(ms, amount);
+  }
+
+  #devolver() {
+    clearTimeout(this.#duckTimer);
+    this.#apartadaHasta = 0;
+    this.#nivel = 1;
+    const track = this.tracks.get("music");
+    if (track && this.playingMusic) this.#fadeMusica(track, track.base, 1100);
+  }
+
+  #nivelApartado() {
+    return performance.now() < this.#apartadaHasta ? this.#nivel : 1;
   }
 
   #duckTimer = 0;
+  #nivel = 1;
+  #apartadaHasta = 0;
   #fades = new WeakMap();
+
+  #ponerVolMusica(track, v) {
+    if (track.enrutada) {
+      this.volumenMusica.gain.cancelScheduledValues(this.ac.currentTime);
+      this.volumenMusica.gain.value = clamp01(v);
+    } else track.el.volume = clamp01(v);
+  }
+
+  /** Fundido de la música, por el camino que le toque. */
+  #fadeMusica(track, to, ms, onDone) {
+    if (!track.enrutada) return this.#fade(track.el, to, ms, onDone);
+    const g = this.volumenMusica.gain;
+    const t = this.ac.currentTime;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(clamp01(to), t + Math.max(0.01, ms / 1000));
+    clearTimeout(this.#finFundido);
+    if (onDone) this.#finFundido = setTimeout(onDone, ms);
+  }
+
+  #finFundido = 0;
 
   #fade(el, to, ms, onDone) {
     cancelAnimationFrame(this.#fades.get(el) || 0);
@@ -224,6 +431,7 @@ export class AudioBus extends Emitter {
     this.muted = muted;
     for (const { el } of this.tracks.values()) el.muted = muted;
     for (const el of this.turnPool) el.muted = muted;
+    if (this.salidaEfectos) this.salidaEfectos.gain.value = muted ? 0 : 1;
     this.emit("muted", muted);
   }
 }

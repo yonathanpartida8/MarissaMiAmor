@@ -13,6 +13,15 @@
  *
  * Al levantar el dedo no se corta: el corazón desacelera y la línea se apaga.
  *
+ * CADA LATIDO SUENA: con `corazón.mp3` si está (ver `mis-sonidos/LÉEME.md`),
+ * y si no, con un «pum-pum» grave hecho aquí mismo. La música se aparta
+ * mientras late.
+ *
+ * ESCONDIDO — EL BESO. Cuando ya salió la frase, debajo del corazón se lee
+ * «Besa tus dos dedos y ponlos para ver mi pulso». Con dos dedos a la vez
+ * (o tocando esa línea), el corazón se dispara hasta 420 latidos por
+ * minuto, la página se sonroja, y sale un diálogo: «¡Jhsusbsy 😭 me chivié!».
+ *
  * Esto NO mide nada. Es una representación, y el texto lo dice.
  *
  * Todo lo que dice está en `textos.js`, al lado, y MANDA sobre lo que diga
@@ -23,7 +32,7 @@ import { BasePage } from "../BasePage.js";
 import { Gestures } from "../../core/Gestures.js";
 import { el, setVars, wait } from "../../utils/dom.js";
 import { clamp01, damp } from "../../utils/math.js";
-import escondidos from "../../data/escondidos.js";
+import contenido from "../../data/contenido.js";
 import textos from "./textos.js";
 
 /** Cuántos latidos hay que sostener para que aparezca la frase. */
@@ -32,6 +41,13 @@ const LATIDOS_META = 8;
 /** De cuánto a cuánto se acelera. */
 const BPM_REPOSO = 58;
 const BPM_MAXIMO = 96;
+
+/** El beso: cuánto tarda en llegar arriba y cuánto se queda ahí. */
+const BESO_SUBIDA = 7.5;
+const BESO_ARRIBA = 1.4;
+
+/** La ruta de un sonido, con cada trozo codificado (lleva acentos). */
+const ruta = (r) => r.split("/").map(encodeURIComponent).join("/");
 
 /**
  * El corazón dentro de un ciclo, de 0 a 1.
@@ -117,6 +133,15 @@ export default class PulsoPage extends BasePage {
     this.sayEl = el("p.pulse__say", { "aria-live": "polite" });
     this.revealEl = el("p.pulse__reveal", { text: textos.revelacion || ch?.reveal });
 
+    // La invitación del beso: un botón que parece una línea escrita a mano.
+    this.besoEl = el("button.pulse__beso", { type: "button" }, [
+      el("span.pulse__beso-labios", { "aria-hidden": "true" }),
+      el("span", { text: textos.beso }),
+    ]);
+    this.core.append(this.besoEl);
+    this.rubor = el("div.pulse__rubor", { "aria-hidden": "true" });
+    this.dialogo = this.#construirDialogo();
+
     this.root.append(
       el("header.pulse__head", {}, [
         el("span.kicker", { text: textos.arriba || ch?.kicker }),
@@ -126,7 +151,9 @@ export default class PulsoPage extends BasePage {
       el("p.pulse__text", { text: textos.texto || ch?.text }),
       this.core,
       this.sayEl,
-      this.revealEl
+      this.revealEl,
+      this.rubor,
+      this.dialogo
     );
 
     this.bpmEl = this.monitor.querySelector(".pulse__bpm");
@@ -148,9 +175,16 @@ export default class PulsoPage extends BasePage {
     this.golpe = 0;
     this.dormido = true;
 
-    // Si el aparato no vibra (iPhone en Safari), se sustituye por un golpe
-    // grave muy bajito. Es un cambio de sentido, no una función menos.
+    // Si el aparato no vibra (iPhone en Safari), el sonido del latido se
+    // encarga solo: nunca se queda sin respuesta física.
     this.puedeVibrar = this.ctx.haptics.enabled;
+
+    // El sonido del corazón: el archivo si está, y si no, uno hecho aquí.
+    const archivo = contenido?.sonidos?.corazon;
+    if (archivo && !this.bufferCorazon) {
+      this.ctx.audio.cargar(ruta(archivo)).then((b) => (this.bufferCorazon = b));
+    }
+    this.beso = false;
 
     this.#medir();
     this.track(this.ctx.viewport.on("resize", () => this.#medir()));
@@ -183,6 +217,16 @@ export default class PulsoPage extends BasePage {
     );
 
     this.#dosDedos();
+    this.on(this.besoEl, "click", () => this.#empezarBeso());
+    this.on(this.dialogo, "click", (e) => {
+      if (e.target.closest(".pulse__boton")) return;
+      this.#siguienteLinea();
+    });
+    this.on(this.dialogo.querySelector(".pulse__boton--otra"), "click", () => {
+      this.#cerrarDialogo();
+      this.later(() => this.#empezarBeso(), 700);
+    });
+    this.on(this.dialogo.querySelector(".pulse__boton--cerrar"), "click", () => this.#cerrarDialogo());
     this.addTicker((dt, time, realDt) => this.#frame(realDt ?? dt, time), 11);
   }
 
@@ -226,24 +270,152 @@ export default class PulsoPage extends BasePage {
   }
 
   /**
-   * Escondido: dos dedos a la vez en el círculo.
+   * Escondido: dos dedos a la vez en el círculo. Es el beso.
    *
-   * Uno es su pulso. Dos son los dos, y entonces el corazón late acompañado.
    * Se cuenta con `pointerdown` a pelo y no con el reconocedor de gestos
    * porque ése, a propósito, ignora el segundo dedo para no confundir un
-   * arrastre con una pinza.
+   * arrastre con una pinza. Vale en todo el corazón, no sólo en el botón:
+   * dos dedos no caben siempre dentro de un círculo pequeño.
    */
   #dosDedos() {
     const dedos = new Set();
-    this.on(this.pad, "pointerdown", (e) => {
+    // En captura: el reconocedor del círculo detiene el evento al vuelo
+    // (`exclusive`) y en burbuja aquí no llegaría nunca.
+    this.on(this.core, "pointerdown", (e) => {
       dedos.add(e.pointerId);
-      if (dedos.size < 2 || this.root.classList.contains("is-dos")) return;
-      this.root.classList.add("is-dos");
-      this.escondite("pulso-dos-dedos", escondidos.pulso, e);
-    });
+      if (dedos.size >= 2) this.#empezarBeso();
+    }, { capture: true });
     const soltar = (e) => dedos.delete(e.pointerId);
     this.on(window, "pointerup", soltar);
     this.on(window, "pointercancel", soltar);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  El beso
+  // ═══════════════════════════════════════════════════════════════════
+
+  #empezarBeso() {
+    if (this.beso || this.root.classList.contains("is-hablando")) return;
+    this.beso = true;
+    this.besoT = 0;
+    this.besoDicho = -1;
+    this.besoLlego = false;
+    this.dormido = false;
+    this.bpm = Math.max(this.bpm, 70);
+    this.root.classList.add("is-beso", "is-dos");
+    this.ctx.haptics.play("secret");
+    this.#decir("mua");
+  }
+
+  /** Lo que pasa cada frame mientras dura el beso. */
+  #pasoBeso(dt) {
+    this.besoT += dt;
+    const k = clamp01(this.besoT / BESO_SUBIDA);
+    // Empieza despacio y se desboca al final, como un susto bonito.
+    const arriba = textos.besoMaximo || 420;
+    this.bpm = 70 + (arriba - 70) * k ** 2.1;
+    setVars(this.root, { "--prisa": k.toFixed(3) });
+
+    const frases = textos.besoSubiendo || [];
+    const cual = Math.min(frases.length - 1, Math.floor(k * frases.length));
+    if (cual > this.besoDicho && k < 1) {
+      this.besoDicho = cual;
+      this.#decir(frases[cual]);
+    }
+
+    if (k >= 1 && !this.besoLlego) {
+      this.besoLlego = true;
+      this.bpm = arriba;
+      this.root.classList.add("is-420");
+      this.ctx.gl?.flash?.(0.35);
+      this.later(() => this.#estallar(), BESO_ARRIBA * 1000);
+    }
+  }
+
+  /** Arriba del todo: una lluvia de corazones y habla. */
+  #estallar() {
+    if (!this.beso) return;
+    const r = this.pad.getBoundingClientRect();
+    for (let k = 0; k < 12; k++) {
+      this.later(() => this.corazon(r.left + r.width * (0.2 + Math.random() * 0.6), r.top + r.height * 0.4), k * 70);
+    }
+    this.feedback("open", "secret", { volume: 0.5, rate: 1.1 });
+    this.beso = false;
+    this.root.classList.remove("is-420");
+    this.root.classList.add("is-hablando");
+    this.escondite("pulso-beso", "");
+    this.#abrirDialogo();
+  }
+
+  #construirDialogo() {
+    this.lineaEl = el("p.pulse__linea");
+    return el("div.pulse__dialogo", { role: "dialog", "aria-live": "polite", "aria-label": textos.besoQuien }, [
+      el("div.pulse__carita", { "aria-hidden": "true", html: `
+        <svg viewBox="0 0 64 58">
+          <path class="pulse__carita-cuerpo" d="M32 56C12 42 0 30 0 17.5 0 7.6 7.6 0 17.2 0 23 0 28.6 2.8 32 7.4 35.4 2.8 41 0 46.8 0 56.4 0 64 7.6 64 17.5 64 30 52 42 32 56z"/>
+          <ellipse class="pulse__carita-cachete" cx="15" cy="28" rx="6" ry="3.6"/>
+          <ellipse class="pulse__carita-cachete" cx="49" cy="28" rx="6" ry="3.6"/>
+          <path class="pulse__carita-ojo" d="M16 21 q5 -5 10 0"/>
+          <path class="pulse__carita-ojo" d="M38 21 q5 -5 10 0"/>
+          <path class="pulse__carita-boca" d="M28 30 q4 4 8 0"/>
+          <path class="pulse__carita-lagrima" d="M19 24 q-3 6 0 8 q3 -2 0 -8z"/>
+          <path class="pulse__carita-lagrima" d="M45 24 q-3 6 0 8 q3 -2 0 -8z"/>
+        </svg>` }),
+      el("div.pulse__globo", {}, [
+        el("span.pulse__quien", { text: textos.besoQuien }),
+        this.lineaEl,
+        el("span.pulse__sigue", { text: "toca para seguir" }),
+        el("div.pulse__botones", {}, [
+          el("button.pulse__boton.pulse__boton--otra", { type: "button", text: textos.besoOtraVez }),
+          el("button.pulse__boton.pulse__boton--cerrar", { type: "button", text: textos.besoCerrar }),
+        ]),
+      ]),
+    ]);
+  }
+
+  #abrirDialogo() {
+    this.linea = -1;
+    this.dialogo.classList.remove("is-final");
+    this.dialogo.classList.add("is-abierto");
+    this.#siguienteLinea();
+  }
+
+  /** Pasa a la siguiente tarjeta. Si aún se está escribiendo, la completa. */
+  #siguienteLinea() {
+    const lineas = textos.besoDialogo || [];
+    if (this.escribiendo) {
+      clearInterval(this.escribiendo);
+      this.escribiendo = 0;
+      this.lineaEl.textContent = lineas[this.linea];
+      return;
+    }
+    if (this.linea >= lineas.length - 1) return;
+    this.linea++;
+    const texto = lineas[this.linea];
+    this.dialogo.dataset.linea = String(this.linea);
+    this.dialogo.classList.toggle("is-final", this.linea === lineas.length - 1);
+    this.lineaEl.textContent = "";
+    this.ctx.haptics.play("tap");
+    // Letra a letra, contando los emojis como una sola.
+    const letras = Array.from(texto);
+    let i = 0;
+    this.escribiendo = setInterval(() => {
+      i++;
+      this.lineaEl.textContent = letras.slice(0, i).join("");
+      if (i >= letras.length) {
+        clearInterval(this.escribiendo);
+        this.escribiendo = 0;
+      }
+    }, texto === "…" ? 260 : 34);
+  }
+
+  #cerrarDialogo() {
+    clearInterval(this.escribiendo);
+    this.escribiendo = 0;
+    this.dialogo.classList.remove("is-abierto");
+    this.root.classList.remove("is-hablando", "is-beso", "is-dos");
+    setVars(this.root, { "--prisa": "0" });
+    // El corazón vuelve a su sitio poco a poco: lo hace `#frame`.
   }
 
   /**
@@ -287,15 +459,25 @@ export default class PulsoPage extends BasePage {
    */
   #frame(dt, time) {
     if (!this.w || this.dormido) return;
+    // Mientras dura el beso (y mientras habla) el corazón late solo.
+    const hablando = this.root.classList.contains("is-hablando");
+    const activo = this.holding || this.beso || hablando;
 
     // El brillo general sube y baja con el dedo, nunca de golpe.
-    this.brillo = damp(this.brillo, this.holding ? 1 : 0, 4.2, dt);
+    this.brillo = damp(this.brillo, activo ? 1 : 0, 4.2, dt);
 
-    // El ritmo se acelera mientras hay dedo y vuelve al reposo al soltar.
-    const objetivo = this.holding
-      ? BPM_REPOSO + (BPM_MAXIMO - BPM_REPOSO) * clamp01(this.latidos / LATIDOS_META)
-      : BPM_REPOSO;
-    this.bpm = damp(this.bpm, objetivo, 1.1, dt);
+    if (this.beso) {
+      this.#pasoBeso(dt);
+    } else {
+      // El ritmo se acelera mientras hay dedo y vuelve al reposo al soltar.
+      // Después del beso baja despacito, como quien recupera el aliento.
+      const objetivo = hablando
+        ? 150
+        : this.holding
+          ? BPM_REPOSO + (BPM_MAXIMO - BPM_REPOSO) * clamp01(this.latidos / LATIDOS_META)
+          : BPM_REPOSO;
+      this.bpm = damp(this.bpm, objetivo, hablando ? 0.5 : 1.1, dt);
+    }
 
     this.fase += (dt * this.bpm) / 60;
 
@@ -322,18 +504,18 @@ export default class PulsoPage extends BasePage {
     if (this.fase >= this.ciclo) {
       this.fase -= this.ciclo;
       this.ciclo = this.#nuevoCiclo();
-      if (this.holding) this.#latir();
+      if (activo) this.#latir();
     }
 
-    if (this.holding) this.#dibujar(dt);
+    if (activo) this.#dibujar(dt);
     else this.#apagar(dt);
 
-    this.bpmEl.textContent = this.holding || this.brillo > 0.08
+    this.bpmEl.textContent = activo || this.brillo > 0.08
       ? String(Math.round(this.bpm))
       : "—";
 
     // Ya no queda nada encendido: se apaga del todo hasta el próximo dedo.
-    if (!this.holding && this.brillo < 0.02) this.#dormir();
+    if (!activo && this.brillo < 0.02) this.#dormir();
   }
 
   /**
@@ -360,31 +542,70 @@ export default class PulsoPage extends BasePage {
   #latir() {
     this.latidos++;
     this.#anillo();
+    const periodo = 60 / this.bpm;
 
     // Vibración al compás. El patrón imita el lub-dub: golpe corto, hueco,
     // golpe más corto. Suave a propósito: esto tiene que sentirse como un
-    // corazón debajo del dedo, no como una notificación.
+    // corazón debajo del dedo, no como una notificación. Muy deprisa, el
+    // motor no da para tanto: se vibra un golpe seco y ya.
     if (this.puedeVibrar) {
-      this.ctx.haptics.play("heart");
-    } else {
-      // Sin vibración —los iPhone en Safari no la tienen— el latido se
-      // sustituye por un golpe grave y muy bajo, de los que se sienten más
-      // que se oyen, y por el propio corazón de la pantalla, que se hincha
-      // y se encoge en el mismo instante. Nunca se queda sin respuesta.
-      this.ctx.audio.play("turn", { volume: 0.16, rate: 0.42 });
+      if (periodo > 0.34) this.ctx.haptics.play("heart");
+      else if (this.latidos % 2 === 0) this.ctx.haptics.play("tick");
     }
 
-    // Un sonido bajito acompaña siempre, vibre o no.
-    this.ctx.audio.play("turn", { volume: 0.07, rate: 0.6 });
-    this.ctx.gl?.pulse(0.22);
+    // Y SIEMPRE suena: `corazón.mp3` si lo hay, o uno hecho aquí.
+    this.#sonarLatido(periodo);
+    this.ctx.gl?.pulse(this.beso ? 0.4 : 0.22);
+
+    // En pleno beso, de vez en cuando se escapa un corazoncito.
+    if (this.beso && this.bpm > 240 && Math.random() < 0.35) {
+      const r = this.pad.getBoundingClientRect();
+      this.corazon(r.left + r.width * (0.25 + Math.random() * 0.5), r.top + r.height * 0.3);
+    }
 
     // Las frases del principio son de la primera vez. Quien vuelve a poner el
     // dedo lo hace por sentirlo, no por que le vuelvan a contar lo mismo.
-    if (!this.finished) {
+    if (!this.finished && this.holding) {
       const frase = textos.latidos[this.latidos - 1];
       if (frase) this.#decir(frase);
       if (this.latidos >= LATIDOS_META) this.#terminar();
     }
+  }
+
+  /**
+   * El sonido de un latido.
+   *
+   * Con el archivo, se corta al llegar el siguiente latido para que a 420
+   * por minuto no se amontonen. Sin archivo, dos golpes graves (el «pum» y
+   * el «pum» flojito) hechos con un oscilador que cae de tono: se sienten
+   * más de lo que se oyen, como un corazón de verdad.
+   */
+  #sonarLatido(periodo) {
+    const audio = this.ctx.audio;
+    if (this.bufferCorazon) {
+      audio.sonar(this.bufferCorazon, { volume: 0.95, hasta: Math.max(0.09, periodo * 0.94) });
+      return;
+    }
+    const salida = audio.efectos(periodo * 1000 + 300, 0.45);
+    if (!salida) return;
+    const ac = audio.ac;
+    const t = ac.currentTime + 0.005;
+    const hueco = Math.min(0.17, periodo * 0.36);
+    const golpe = (cuando, fuerza, tono) => {
+      const osc = ac.createOscillator();
+      const vol = ac.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(tono, cuando);
+      osc.frequency.exponentialRampToValueAtTime(tono * 0.55, cuando + 0.12);
+      vol.gain.setValueAtTime(0.0001, cuando);
+      vol.gain.exponentialRampToValueAtTime(fuerza, cuando + 0.012);
+      vol.gain.exponentialRampToValueAtTime(0.0001, cuando + Math.min(0.2, periodo * 0.5));
+      osc.connect(vol).connect(salida);
+      osc.start(cuando);
+      osc.stop(cuando + 0.25);
+    };
+    golpe(t, 0.9, 74);
+    golpe(t + hueco, 0.5, 62);
   }
 
   /**
@@ -507,6 +728,8 @@ export default class PulsoPage extends BasePage {
   async leave(direction) {
     await super.leave(direction);
     // Se va la página: no puede quedarse nada corriendo detrás.
+    this.beso = false;
+    this.#cerrarDialogo();
     this.#quitar();
     this.#dormir();
     this.ctx.haptics.stop();
@@ -515,6 +738,7 @@ export default class PulsoPage extends BasePage {
 
   destroy() {
     clearTimeout(this.sayTimer);
+    clearInterval(this.escribiendo);
     this.ctx.haptics?.stop();
     this.ctx.audio?.duck(1, 0);
     super.destroy();

@@ -77,7 +77,8 @@
   font-size: clamp(0.98rem, calc(3.8 * var(--vw)), 1.16rem);
   line-height: 1.7;
   color: rgba(246, 238, 232, 0.9);
-  text-align: justify;
+  text-align: left;
+  text-wrap: pretty;
   hyphens: auto;
   --word-delay: 200ms;
 }

@@ -39,15 +39,15 @@
   font-family: var(--font-display);
   font-weight: 300;
   font-size: clamp(1.5rem, calc(7 * var(--vw)), 2.1rem);
-  color: #fff;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.6);
+  color: var(--text);
+  text-shadow: 0 2px 20px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .sorpresa__intro {
   margin-top: 0.3rem;
   font-family: var(--font-hand);
   font-size: clamp(0.98rem, calc(4.3 * var(--vw)), 1.18rem);
-  color: rgba(246, 238, 232, 0.66);
+  color: var(--text-soft);
 }
 
 /* ══════════════ LA MESA ══════════════ */
@@ -75,6 +75,8 @@
       transparent 74%
     ),
     radial-gradient(ellipse 120% 90% at 50% 8%, rgba(92, 26, 48, 0.5), transparent 62%),
+    /* el pelito del terciopelo */
+    repeating-linear-gradient(45deg, rgba(255, 220, 235, 0.018) 0 2px, transparent 2px 5px),
     linear-gradient(168deg, #3d1024 0%, #2a0a19 46%, #1d0611 100%);
   box-shadow:
     /* la madera del borde */
@@ -98,6 +100,57 @@
 }
 
 .sorpresa.is-rising .sorpresa__mesa { pointer-events: none; }
+
+/* El cajón se abre al llegar: sale deslizándose hacia ti. Deja sitio
+   debajo para su frente de madera. */
+.sorpresa__mesa {
+  margin-bottom: calc(clamp(6px, 2vw, 10px) + 22px);
+  opacity: 0;
+  transform: translateY(46px) scale(0.97);
+  transition: opacity 600ms var(--e-out), transform 1100ms var(--e-spring), background 400ms linear;
+}
+.sorpresa.is-entered .sorpresa__mesa { opacity: 1; transform: none; }
+
+/* El frente del cajón, con su tirador de latón. */
+.sorpresa__mesa::after {
+  content: "";
+  position: absolute;
+  left: calc(clamp(6px, 2vw, 10px) * -1);
+  right: calc(clamp(6px, 2vw, 10px) * -1);
+  bottom: calc(clamp(6px, 2vw, 10px) * -1 - 22px);
+  height: 24px;
+  border-radius: 0 0 8px 8px;
+  background:
+    radial-gradient(ellipse 34px 5px at 50% 55%, #fff1c9 0 20%, #d9aa5c 45%, #8a5a22 80%, transparent 82%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0 2px, transparent 2px 9px, rgba(255, 220, 180, 0.05) 9px 11px, transparent 11px 17px),
+    linear-gradient(180deg, #7a4f2c, #5a3519);
+  box-shadow: 0 10px 18px -8px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 220, 180, 0.2);
+  pointer-events: none;
+}
+
+/* Las etiquetitas a mano, debajo de cada cosa encontrada. */
+.obj__etiqueta {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 2px);
+  translate: -50% 0;
+  rotate: calc(var(--r, 0deg) * -1);
+  padding: 0.05rem 0.4rem;
+  border-radius: 3px;
+  background: #fbf3e2;
+  box-shadow: 0 2px 5px -2px rgba(0, 0, 0, 0.6);
+  color: #6a2743;
+  font-family: var(--font-hand);
+  font-size: 0.95rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: 0;
+  scale: 0.6;
+  transition: opacity 400ms var(--e-out) 200ms, scale 600ms var(--e-spring) 200ms;
+  pointer-events: none;
+}
+.sorpresa__obj.is-found .obj__etiqueta { opacity: 1; scale: 1; }
+.sorpresa.is-rising .obj__etiqueta { opacity: 0; transition-delay: 0s; }
 
 /* ---- Base común de los objetos ------------------------------ */
 .sorpresa__obj {

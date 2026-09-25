@@ -22,7 +22,8 @@ El icono de la app es `icono/icono.png`.
 | `08-cosas-que-todavia-no-se-de-ti` | 2 |
 | `09-te-fui-armando` | 1 |
 | `10-contigo-me-caigo-mejor` | 1 |
-| `11-nuestra-pelicula` | 10 |
+| `11-pines-que-me-recordaron-a-ti` | 10 |
+| `11b-pines-que-te-dedico` | 0 — sube aquí los pines que le dedicas |
 | `12-solo-tu-sabes-abrirlo` | 1 |
 | `13-mi-norte` | 1 |
 | `14-todo-lo-que-guardo` | 16 |

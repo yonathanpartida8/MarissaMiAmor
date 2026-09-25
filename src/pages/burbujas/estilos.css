@@ -70,3 +70,39 @@
 @media (prefers-reduced-motion: reduce) {
   .bur__burbuja { animation-duration: 40s, 0s; }
 }
+
+/* Al reventar: un aro que se abre y unas gotitas que salen disparadas. */
+.bur__estallido {
+  position: absolute;
+  left: var(--gx);
+  top: var(--gy);
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.bur__aro {
+  position: absolute;
+  left: calc(var(--r) * -1);
+  top: calc(var(--r) * -1);
+  width: calc(var(--r) * 2);
+  height: calc(var(--r) * 2);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  animation: bur-aro 420ms var(--e-out) forwards;
+}
+@keyframes bur-aro { from { scale: 0.9; opacity: 1; } to { scale: 1.5; opacity: 0; border-width: 0.5px; } }
+.bur__gota {
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, rgba(200, 230, 255, 0.8));
+  rotate: var(--a);
+  animation: bur-gota 560ms var(--e-out) forwards;
+}
+@keyframes bur-gota {
+  from { transform: translateX(calc(var(--r) * 0.8)) scale(1); opacity: 1; }
+  to { transform: translateX(var(--d)) scale(0.2); opacity: 0; }
+}

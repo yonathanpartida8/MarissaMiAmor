@@ -416,3 +416,202 @@ html[data-orientation="landscape"][data-device="phone"] .pulse__reveal {
 
 /* En pastel el acento rosa no se lee sobre el fondo rosa. */
 html[data-tema="pastel"] .pulse__head .kicker { color: var(--text-soft); opacity: 1; }
+
+/* ══════════════ EL BESO (escondido) ══════════════
+   `--prisa` va de 0 a 1 mientras el corazón se dispara hasta 420. */
+.pulse { --prisa: 0; }
+
+/* La invitación: una línea escrita a mano, con unos labios dibujados. Va
+   debajo del corazón, donde antes decía «aquí». */
+.pulse__beso {
+  position: absolute;
+  left: 50%;
+  bottom: -0.2rem;
+  translate: -50% 0;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: min(88vw, 360px);
+  padding: 0.45rem 0.95rem 0.45rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--accent) 12%, rgba(20, 6, 12, 0.35));
+  color: var(--text);
+  font-family: var(--font-hand);
+  font-size: clamp(1rem, calc(4.3 * var(--vw)), 1.2rem);
+  line-height: 1.15;
+  text-align: left;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity 900ms var(--e-out) 1.2s, transform 900ms var(--e-spring) 1.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+html[data-tema="pastel"] .pulse__beso { background: rgba(255, 255, 255, 0.55); }
+.pulse.is-said .pulse__beso { opacity: 1; pointer-events: auto; transform: none; animation: pulse-beso-brilla 3.2s ease-in-out 2.4s infinite; }
+.pulse.is-said .pulse__hint { opacity: 0 !important; }
+.pulse.is-beso .pulse__beso,
+.pulse.is-hablando .pulse__beso { opacity: 0; pointer-events: none; animation: none; transition-delay: 0s; }
+@keyframes pulse-beso-brilla {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+  50% { box-shadow: 0 0 18px 2px color-mix(in srgb, var(--accent) 45%, transparent); }
+}
+/* Unos labios hechos con dos óvalos: sin emojis, sin imágenes. */
+.pulse__beso-labios {
+  position: relative;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 13px;
+}
+.pulse__beso-labios::before,
+.pulse__beso-labios::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, #ff6f93, #d6285a);
+}
+.pulse__beso-labios::before { top: 0; height: 7px; border-radius: 50% 50% 30% 30% / 70% 70% 30% 30%; clip-path: polygon(0 100%, 30% 0, 50% 40%, 70% 0, 100% 100%); }
+.pulse__beso-labios::after { bottom: 0; height: 6px; border-radius: 20% 20% 60% 60% / 30% 30% 90% 90%; }
+
+/* Con el beso encima, la página entera se sonroja. */
+.pulse__rubor {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 62%, rgba(255, 70, 120, calc(var(--prisa) * 0.55)), transparent 60%),
+    radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(255, 40, 100, calc(var(--prisa) * 0.35)));
+  opacity: 0;
+  transition: opacity 700ms var(--e-out);
+}
+.pulse.is-beso .pulse__rubor,
+.pulse.is-hablando .pulse__rubor { opacity: 1; }
+.pulse.is-hablando .pulse__rubor { --prisa: 0.55; }
+
+/* El corazón tiembla más cuanto más rápido va. */
+.pulse.is-beso .pulse__core { animation: pulse-tiembla 110ms linear infinite; }
+@keyframes pulse-tiembla {
+  0% { translate: calc(var(--prisa) * 2px) calc(var(--prisa) * -1px); }
+  25% { translate: calc(var(--prisa) * -2.5px) calc(var(--prisa) * 1.5px); }
+  50% { translate: calc(var(--prisa) * 1.5px) calc(var(--prisa) * 2px); }
+  75% { translate: calc(var(--prisa) * -1px) calc(var(--prisa) * -2px); }
+  100% { translate: 0 0; }
+}
+.pulse.is-beso .pulse__shape { --heart-hi: #ffd0dd; --heart-mid: #ff3f7a; --heart-lo: #b80d45; }
+.pulse.is-beso .pulse__bpm {
+  color: color-mix(in srgb, #ff3f7a calc(var(--prisa) * 100%), var(--accent));
+  font-size: calc(clamp(1.1rem, calc(5 * var(--vw)), 1.5rem) * (1 + var(--prisa) * 0.6));
+}
+.pulse.is-420 .pulse__bpm { animation: pulse-420 380ms ease-in-out infinite; }
+@keyframes pulse-420 { 50% { scale: 1.25; text-shadow: 0 0 22px #ff3f7a; } }
+.pulse.is-420 .pulse__monitor { box-shadow: inset 0 0 0 2px #ff3f7a, 0 0 30px -4px #ff3f7a; }
+
+/* ---- El diálogo ------------------------------------------------ */
+.pulse__dialogo {
+  position: absolute;
+  left: var(--pad-x);
+  right: var(--pad-x);
+  bottom: calc(var(--pad-b) + var(--bar-space, 0rem) + 0.4rem);
+  z-index: 40;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: end;
+  gap: 0.6rem;
+  max-width: 440px;
+  margin: 0 auto;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(24px) scale(0.96);
+  transition: opacity 400ms var(--e-out), transform 600ms var(--e-spring);
+  cursor: pointer;
+}
+.pulse__dialogo.is-abierto { opacity: 1; pointer-events: auto; transform: none; }
+
+.pulse__carita { width: 62px; height: 56px; animation: pulse-carita 1.2s ease-in-out infinite; }
+.pulse__carita svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 6px 10px rgba(120, 10, 50, 0.45)); }
+@keyframes pulse-carita { 50% { transform: translateY(-3px) rotate(-3deg); } }
+.pulse__carita-cuerpo { fill: #ff4f86; }
+.pulse__carita-cachete { fill: #ffb3c9; opacity: 0.9; }
+.pulse__carita-ojo, .pulse__carita-boca { fill: none; stroke: #5b0a26; stroke-width: 2.4; stroke-linecap: round; }
+.pulse__carita-lagrima { fill: #bfe6ff; opacity: 0; }
+/* En la primera tarjeta llora de la emoción; después ya sólo se sonroja. */
+.pulse__dialogo[data-linea="0"] .pulse__carita-lagrima { animation: pulse-lagrima 1.1s ease-in infinite; }
+.pulse__dialogo[data-linea="0"] .pulse__carita { animation-duration: 0.5s; }
+.pulse__dialogo[data-linea="3"] .pulse__carita-boca { d: path("M29 31 h6"); }
+@keyframes pulse-lagrima {
+  0% { opacity: 0; transform: translateY(0); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(12px); }
+}
+
+.pulse__globo {
+  position: relative;
+  padding: 0.7rem 0.9rem 0.6rem;
+  border-radius: 18px 18px 18px 6px;
+  background: linear-gradient(170deg, #fffaf6, #ffeef3);
+  box-shadow: 0 18px 40px -16px rgba(80, 5, 35, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.7) inset;
+  color: #4a1a2e;
+  text-align: left;
+}
+.pulse__quien {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #c2336a;
+}
+.pulse__linea {
+  margin: 0.2rem 0 0.35rem;
+  min-height: 2.4em;
+  font-family: var(--font-hand);
+  font-size: clamp(1.2rem, calc(5.4 * var(--vw)), 1.5rem);
+  line-height: 1.18;
+}
+.pulse__dialogo[data-linea="0"] .pulse__linea { font-size: clamp(1.45rem, calc(6.4 * var(--vw)), 1.85rem); color: #c2185b; }
+.pulse__sigue {
+  display: block;
+  text-align: right;
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #b0708a;
+  animation: pulse-sigue 1.4s ease-in-out infinite;
+}
+@keyframes pulse-sigue { 50% { opacity: 0.4; } }
+.pulse__botones { display: none; gap: 0.5rem; justify-content: flex-end; margin-top: 0.2rem; }
+.pulse__dialogo.is-final .pulse__sigue { display: none; }
+.pulse__dialogo.is-final .pulse__botones { display: flex; }
+.pulse__boton {
+  padding: 0.45rem 0.85rem;
+  border: 0;
+  border-radius: 99px;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.pulse__boton--otra { background: linear-gradient(180deg, #ff6f9a, #e0356c); color: #fff; box-shadow: 0 6px 14px -6px rgba(200, 30, 90, 0.8); }
+.pulse__boton--cerrar { background: rgba(194, 51, 106, 0.1); color: #8a2a50; }
+
+/* Mientras habla, lo de abajo se aparta para no quedar debajo del globo. */
+.pulse.is-hablando .pulse__say,
+.pulse.is-hablando .pulse__reveal { opacity: 0 !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse.is-beso .pulse__core, .pulse__carita, .pulse__carita-lagrima { animation: none !important; }
+}
+
+/* En pastel el fondo es claro: los textos van con la tinta del tema, no en
+   blanco, o no se leen. */
+html[data-tema="pastel"] .pulse__title { color: var(--text); text-shadow: 0 1px 12px rgba(255, 255, 255, 0.6); }
+html[data-tema="pastel"] .pulse__text { color: var(--text-soft); text-shadow: none; }
+html[data-tema="pastel"] .pulse__reveal { color: color-mix(in srgb, var(--accent) 35%, var(--text)); text-shadow: 0 1px 12px rgba(255, 255, 255, 0.6); }
+html[data-tema="pastel"] .pulse__say { color: color-mix(in srgb, var(--accent) 45%, var(--text)); }
+html[data-tema="pastel"] .pulse__hint { color: var(--text-soft); }

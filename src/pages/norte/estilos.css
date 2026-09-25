@@ -1,0 +1,174 @@
+/* NORTE — la brújula de latón que siempre apunta a ti. */
+.norte {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+}
+.nor__head, .nor__pie { text-align: center; }
+
+.nor__escena {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 0.4rem;
+}
+
+/* ---- La brújula ------------------------------------------------------ */
+.nor__brujula {
+  position: relative;
+  z-index: 2;
+  width: min(78vw, 300px, 62cqh);
+  aspect-ratio: 1;
+  touch-action: none;
+  cursor: grab;
+  filter: drop-shadow(0 24px 30px rgba(40, 10, 5, 0.55));
+  opacity: 0;
+  transform: translateY(18px) scale(0.94);
+  transition: opacity 800ms var(--e-out) 150ms, transform 900ms var(--e-spring) 150ms;
+}
+.nor__escena { container-type: size; }
+.norte.is-entered .nor__brujula { opacity: 1; transform: none; }
+.nor__svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+.nor__argolla { fill: none; stroke: url(#norte-laton); stroke-width: 4; }
+.nor__bisel { fill: url(#norte-laton); }
+.nor__bisel-dentro { fill: #6e4618; }
+.nor__cara { fill: url(#norte-papel); }
+.nor__cara-filete { fill: none; stroke: #b08b5a; stroke-width: 0.6; opacity: 0.7; }
+.nor__marca { stroke: #5c3d24; stroke-width: 0.5; }
+.nor__marca--media { stroke-width: 0.9; }
+.nor__marca--larga { stroke-width: 1.6; stroke: #7a1f3d; }
+.nor__grado { fill: #7c5a3a; font-family: var(--font-ui); font-size: 5px; letter-spacing: 0.02em; }
+.nor__letra {
+  fill: #3c2416;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.nor__letra--n { fill: #b0224f; }
+.nor__lis { fill: #d6336c; }
+
+/* La rosa de los vientos, en los tonos del libro. */
+.nor__rosa--luz { fill: color-mix(in srgb, var(--accent) 45%, #fff3e6); }
+.nor__rosa--sombra { fill: color-mix(in srgb, var(--accent) 55%, #6a1733); }
+.nor__pico--medio.nor__rosa--luz { fill: #f3e2c4; }
+.nor__pico--medio.nor__rosa--sombra { fill: #b58d57; }
+.nor__pico--chico.nor__rosa--luz { fill: #efe3cf; }
+.nor__pico--chico.nor__rosa--sombra { fill: #c9ab80; }
+.nor__rosa-aro { fill: none; stroke: #b08b5a; stroke-width: 0.8; }
+
+/* La aguja. */
+.nor__aguja-norte { fill: #d4265f; }
+.nor__aguja-sur { fill: #2e3248; }
+.nor__aguja-brillo { fill: rgba(255, 255, 255, 0.28); }
+.nor__aguja-corazon { fill: #fff2f5; }
+.nor__aguja { filter: drop-shadow(1px 2px 1.5px rgba(40, 10, 5, 0.45)); }
+.nor__eje { fill: url(#norte-laton); stroke: #6e4618; stroke-width: 0.8; }
+.nor__eje-punto { fill: #fff6dc; }
+.nor__cristal { fill: url(#norte-cristal); pointer-events: none; }
+
+/* Mareada (girar la esfera muy rápido): la aguja tiembla un rato. */
+.norte.is-mareada .nor__aguja { animation: nor-mareo 140ms linear infinite; }
+@keyframes nor-mareo { 50% { opacity: 0.8; } }
+
+/* ---- El medallón con su foto ----------------------------------------- */
+.nor__medallon {
+  position: absolute;
+  z-index: 3;
+  left: var(--mx, 50%);
+  top: var(--my, 12%);
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  border-radius: 50%;
+  padding: 4px;
+  background: conic-gradient(from 20deg, #fff1c9, #d9aa5c, #fff1c9, #b88138, #fff1c9);
+  box-shadow: 0 10px 22px -8px rgba(40, 10, 5, 0.7), 0 0 0 6px color-mix(in srgb, var(--accent) 18%, transparent);
+  touch-action: none;
+  cursor: grab;
+  opacity: 0;
+  scale: 0.6;
+  transition: opacity 700ms var(--e-out) 600ms, scale 800ms var(--e-spring) 600ms, box-shadow 300ms var(--e-out);
+}
+.norte.is-entered .nor__medallon { opacity: 1; scale: 1; }
+.nor__medallon.is-arrastrado { cursor: grabbing; transition: none; scale: 1.08; box-shadow: 0 16px 30px -10px rgba(40, 10, 5, 0.8), 0 0 0 10px color-mix(in srgb, var(--accent) 24%, transparent); }
+.nor__medallon.is-late { animation: nor-late 700ms var(--e-spring); }
+@keyframes nor-late { 30% { scale: 1.18; } 60% { scale: 0.96; } }
+.nor__medallon-foto {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--accent) 50%, #fff), var(--accent)) center / cover no-repeat;
+}
+/* Sin foto, un corazón. */
+.nor__medallon.sin-foto .nor__medallon-foto::after {
+  content: "♥";
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: #fff;
+  font-size: 1.6rem;
+}
+.nor__medallon-tu {
+  position: absolute;
+  left: 50%;
+  bottom: -1.35rem;
+  translate: -50% 0;
+  font-family: var(--font-hand);
+  font-size: 1.15rem;
+  color: var(--text);
+  text-shadow: 0 1px 8px color-mix(in srgb, var(--accent) 40%, transparent);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Un hilo de luz desde el centro de la brújula hasta ella. */
+.nor__rastro {
+  position: absolute;
+  z-index: 1;
+  left: var(--cx, 50%);
+  top: var(--cy, 70%);
+  width: var(--largo, 0px);
+  height: 2px;
+  margin-top: -1px;
+  transform-origin: 0 50%;
+  rotate: var(--ang, -90deg);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 60%, transparent) 30%, color-mix(in srgb, var(--accent) 80%, #fff));
+  -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 12px);
+  mask-image: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 12px);
+  opacity: 0;
+  transition: opacity 900ms var(--e-out) 1.2s;
+  pointer-events: none;
+}
+.norte.is-entered .nor__rastro { opacity: 0.55; }
+
+/* ---- Lo de abajo ------------------------------------------------------ */
+.nor__pie { display: grid; gap: 0.35rem; }
+.nor__dice { margin: 0; min-height: 1.2em; text-transform: none; letter-spacing: 0.04em; font-size: 0.8rem; }
+.nor__dice.is-nuevo { animation: nor-dice 600ms var(--e-out); color: var(--text); }
+@keyframes nor-dice { from { opacity: 0; transform: translateY(6px); } }
+.nor__texto {
+  margin: 0 auto;
+  max-width: 34ch;
+  font-family: var(--font-display);
+  font-size: clamp(0.98rem, calc(4.1 * var(--vw)), 1.12rem);
+  line-height: 1.45;
+  color: var(--text-soft);
+}
+.nor__reveal { margin: 0; opacity: 0; transform: translateY(8px); transition: opacity 900ms var(--e-out), transform 900ms var(--e-out); }
+.norte.is-revelado .nor__reveal { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .norte.is-mareada .nor__aguja { animation: none; }
+}
+
+html[data-orientation="landscape"][data-device="phone"] .norte { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: 1rem; }
+html[data-orientation="landscape"][data-device="phone"] .nor__head { grid-column: 1 / -1; }
+html[data-orientation="landscape"][data-device="phone"] .nor__escena { place-items: center; }
+html[data-orientation="landscape"][data-device="phone"] .nor__brujula { width: min(80cqh, 80cqw); }
+html[data-orientation="landscape"][data-device="phone"] .nor__pie { align-content: center; }

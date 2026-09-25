@@ -115,6 +115,8 @@ paginas-html/           TUS PÁGINAS HTML: página.html1.html, …2.html… idem
 mis-paginas/            TUS páginas: fotos, vídeos y textos que añadas a mano
   paginas.js            la lista (lo único que se edita)
   fotos/  videos/       tus archivos
+mis-vales/vales.txt     LOS VALES de «Vales de amor», uno por línea
+mis-sonidos/            sonidos propios: corazón.mp3 (el latido de «Mi pulso»)
 noche-estrellada/       la escena final (bosque, cabaña, cacería)
 herramientas/
   contenido.mjs         rehace la lista de lo que hay en las carpetas
@@ -159,7 +161,9 @@ src/
   data/
     chapters.js         LOS TEXTOS de cada página
     fotos.js            qué carpeta de fotos-paginas/ usa cada página
-    sorpresas.js        las 45 sorpresas: frase y escena de cada página
+    sorpresas.js        las 46 sorpresas: frase y escena de cada página
+    razones.js          las cien razones por las que te amo
+    paletas.js          los trece colores del libro
     contenido.js        GENERADO: lo que hay en las carpetas (sin 404)
     escondidos.js       lo que dicen los ocho escondites
     manifest.js         EL ORDEN DEL LIBRO
@@ -195,7 +199,7 @@ Las demás siguen leyendo de `src/data/chapters.js`.
 
 ## Las páginas
 
-Cuarenta y siete páginas repartidas en cuatro actos —**Encontrarte,
+Cincuenta y una páginas repartidas en cuatro actos —**Encontrarte,
 Conocerte, Extrañarte, Elegirte**—, cada una con su mecánica. Delante van las
 dos de inicio y el candado; detrás, las páginas HTML de `paginas-html/`, las
 fotos de `images/amores/` y, al final de todo, la noche estrellada.
@@ -221,28 +225,30 @@ El orden del libro es siempre éste, y no se mezcla nunca:
 | **Velo** | Acariciar la pantalla para retirarlo (shader). |
 | **Mosaico** | Girar las piezas hasta armar la imagen. |
 | **Carrete de cine** | Deslizar: una foto por gesto, con el desplazamiento propio del teléfono. Flechas propias y la foto del centro se abre en grande al tocarla. El texto está al final. |
+| **Pines** (dos páginas: «Pines que me recordaron a ti» y «Pines que te dedico») | Un tablero de Pinterest que se pasa con el dedo: cada foto es un pin clavado con su chincheta, un poco torcido, y el del centro se endereza y crece. Tocarlo lo abre en grande; **doble toque lo guarda** (sale el corazón rojo, y el libro se acuerda). Al final, la carta. Cada página lee las fotos de su carpeta. |
+| **Mi norte** | Una brújula antigua de latón con su rosa de los vientos. La esfera se gira con el dedo (con inercia) y tu foto, en un medallón, se puede arrastrar a cualquier sitio: la aguja la busca, se pasa, vuelve y se queda temblando hacia ella. Cada letra, tocada, dice lo que significa (N de «nunca me pierdo»…). Si se gira muy rápido, la aguja se marea… y aun así acaba en ella. |
 | **Escrito a mano** | Arrastrar hacia abajo y la carta se escribe delante de ti. |
 | **Candado** | Girar las tres ruedas (día, mes, año) hasta dar con la fecha. No deja pasar de página hasta abrirlo. |
 | **Botella** | Tirar del corcho; el papel sale y se desenrolla. |
 | **Campo de recuerdos** | Esfera 3D de fotos: girarla y tocar una. |
-| **La nota** | Una nota corriente. Corriente hasta que se tocan las palabras: unas cuantas están marcadas y, al tocarlas, sueltan al margen lo que de verdad querían decir. Nada indica cuáles son. Y hay un lacre en la esquina que, si se mantiene pulsado, se ablanda y confiesa. |
-| **Regalo** | Tirar del listón hasta desatarlo. |
-| **La distancia** | Acercar dos puntos que se resisten. |
-| **Pulso** | Poner el dedo y no quitarlo. El corazón late, la línea lo dibuja y el teléfono vibra con él. No mide nada: es una manera de enseñar cómo se pone. |
+| **Lo que no se ve de primeras** | Una carta de verdad: papel rayado con su margen rojo, cinta en las esquinas, la fecha, «Para Marissa», una florecita prensada y una mancha de café. Hay palabras que esconden algo: al tocarlas quedan **rodeadas con un círculo a mano** y lo que querían decir se escribe al margen. Abajo hay una **linterna**: encendida, al pasar el dedo por la carta aparecen frases escritas con **tinta invisible**. Y el lacre de la esquina, mantenido, se ablanda y confiesa. |
+| **Regalo** | Del nudo cuelgan dos colas del listón que son cuerdas de verdad: pesan, se mecen y rebotan. Se tira de la derecha: se estira, el lazo se aprieta y la caja se inclina hacia el tirón. Cuando cede, los lazos salen volando, la tapa se abre con una bisagra que rebota y cae confeti que gira y planea. |
+| **La distancia** | Un mapa de papel con «tú» y «yo» en los extremos, una ruta punteada y un avioncito de papel que va y viene. Al arrastrar uno hacia el otro **el mapa se dobla en acordeón** (en 3D, con luz y sombra en cada pliegue) y los kilómetros bajan. Cuesta: si se suelta antes de tiempo, el papel se vuelve a abrir con un rebote. Cuando se tocan, se funden en un corazón y sale la carta. |
+| **Pulso** | Poner el dedo y no quitarlo. El corazón late, la línea lo dibuja, el teléfono vibra con él y **cada latido suena** (`corazón.mp3` si lo subes a `mis-sonidos/`; si no, un «pum-pum» hecho por el libro). No mide nada: es una manera de enseñar cómo se pone. |
 | **Constelación** | Unir las estrellas con el dedo. |
-| **El cajón** | Seis cosas sobre una mesa y seis maneras distintas de tocarlas: una cerilla que se enciende, un papel que se desdobla en dos tiempos, una llave que se gira, una concha que hay que sostener para oírla, una estrella que se toca dos veces y cae, y un anillo que da vueltas. Cuando están las seis, se juntan. |
-| **Razones** | Un mazo de doce cartas «razones por las que te amo»: se lanzan con el dedo y al final se puede volver a barajar. |
-| **Vales de amor** | Una libretita de vales que se arrancan. Al arrancar el último aparece el vale dorado. |
+| **El cajón** | Un cajón de madera con su forro de terciopelo y su tirador de latón, que se abre al llegar. Seis cosas y seis maneras de tocarlas: la huella de un beso (un toque), una carta (dos), un mechón (desenrollarlo), un corazón (sostenerlo), una estrella (doble toque) y un anillo (uno). Cada una encontrada lleva su etiquetita a mano. Si se va a medias y vuelve, lo que ya encontró se queda. |
+| **Razones** | Un mazo de **cien** cartas «razones por las que te amo». Se lanzan con el dedo (o tocando); con **doble toque** se guarda una (le sale un sello) y al final se pueden repasar sólo las guardadas. El libro se acuerda de por cuál iba, dice algo en la 25, la 50 y la 75, y al final se puede barajar. Las razones están en `src/data/razones.js`. |
+| **Vales de amor** | Una libretita de vales que se arrancan. Al arrancar el último aparece el vale dorado. **Los vales se cambian en `mis-vales/vales.txt`** (uno por línea; el dorado en la línea que empieza por `dorado:`). |
 | **Nuestras manos** | Dos manos dibujadas a una sola línea, con un hilo rojo entre los meñiques. Se arrastra la tuya hacia la mía (la mía también se acerca al final); por el camino salen frases y, al tocarse, hay un destello y ondas como un latido. Si se quedan juntas tres segundos se dibuja un corazón. Mi mano saluda si se toca tres veces. |
 | **Farolitos** | Cada toque en el cielo suelta un farolito con un deseo. La luna, tocada tres veces, suelta el dorado. |
-| **Burbujas** | Cada burbuja que revienta suelta una palabra de la frase. |
+| **Burbujas** | Cada burbuja que revienta suelta una palabra de la frase, hace **pop** (un chasquido de aire y un «blup»; las grandes, más graves) y suelta gotitas. Si se revientan seguidas, cada una suena un poquito más aguda: da gusto encadenarlas. |
 | **Dos relojes** | Tu hora y la mía. Se gira la manecilla larga del tuyo (una vuelta, una hora) hasta las 8:23, como nuestro 23 del 8: los dos relojes se juntan en uno y los segunderos laten a la vez. Si se deja en las 3:00, sale la luna. |
 | **Frasco de notitas** | Tocar el frasco: se sacude y sale una notita que se despliega. |
 | **Caminar juntos** | Deslizar hacia arriba por un camino: quedan dos pares de huellas lado a lado y dos lucecitas al frente. En el tramo difícil, con piedras, sólo quedan unas huellas más hondas («te cargo yo»). Al llegar, la banquita del final se puede tocar. |
 | **Aunque esté oscuro** | Un mar de noche y un faro. Se mueve la luz con el dedo hasta alumbrar al barquito perdido; enciende su farolito y navega hasta la orilla siguiendo la luz. El faro, tocado tres veces, parpadea: te a-mo. |
 | **Lo que te prometo** | Una tarjetita por promesa con su lacre: se deja el dedo hasta llenar el anillo, se estampa un corazón en la cera y la tarjeta se guarda en el cofrecito. Al final aparece una más, boca abajo. |
 | **Un día cualquiera contigo** | Deslizar de la mañana a la noche sobre una casita: amanece, sale el humo del café, se encienden las ventanas, sale la luna. A cada rato le toca una cosa pequeña de las que quiero contigo. De noche, tres toques a la luna y cruza una estrella fugaz. |
-| **Final** | Tocar la pantalla: las partículas forman un corazón que late. El botón «seguir» pasa a lo que venga después. |
+| **Final** | «Esto no se acaba aquí». Tocar la pantalla: miles de partículas forman un corazón que late (ahora se ve entero en cualquier pantalla), cruzan estrellas fugaces, y la carta del cierre se va diciendo párrafo a párrafo en su propio cristal, con la firma y un «continuará…». El botón «seguir» pasa a lo que venga después. |
 | **Tus páginas HTML** | Cada `página.htmlN.html` que dejes en `paginas-html/` es una página más: tu HTML entero, con sus botones, sus animaciones y su JavaScript, encajado en la hoja del libro. Ver [`paginas-html/LÉEME.md`](paginas-html/LÉEME.md). |
 | **Tus fotos** | Cada `amorN.png` que dejes en `images/amores/` es una página más al final: a pantalla completa, sobre su propio desenfoque, tocables y con pellizco para acercar. |
 
@@ -264,7 +270,7 @@ todos van de lo mismo — dos personas lejos que se las apañan:
 | **Carrete** | Seguir tirando hacia atrás cuando ya está el primer fotograma. |
 | **Candado** | Marcar `0000` dando la vuelta entera a las cuatro ruedas. |
 | **La distancia** | Separar los dos puntos en vez de juntarlos. |
-| **Pulso** | Poner **dos** dedos en el círculo. Aparece un segundo corazón, desfasado. |
+| **Pulso** | Cuando ya salió la frase, debajo del corazón se lee **«Besa tus dos dedos y ponlos para ver mi pulso»**. Con **dos dedos** a la vez (o tocando esa línea) el corazón se dispara hasta **420 latidos por minuto**, la página se sonroja, y sale un diálogo: «¡Jhsusbsy 😭 me chivié!». Al final, «otro besito» lo repite. Los textos están en `src/pages/pulso/textos.js`. |
 | **Final** | No soltar la pantalla cuando el corazón ya está formado. |
 
 Lo que dicen está todo junto en **`src/data/escondidos.js`**, que es el fichero
@@ -277,7 +283,7 @@ suelta una luciérnaga si se toca tres veces el hueco vacío.
 
 ### Una sorpresa en cada página, y su álbum
 
-Aparte de todo lo anterior, **cada página esconde una sorpresa distinta** (45
+Aparte de todo lo anterior, **cada página esconde una sorpresa distinta** (46
 en total): una tarjetita con su frase y su escena. Las páginas de pareja
 (manos, relojes, caminar juntos, el faro, las promesas y un día cualquiera)
 no la llevan a propósito: van sin emojis y guardan su secreto dentro de la
@@ -307,6 +313,36 @@ actos —cinco, si hay fotos en `images/amores/`—, por dónde va, y qué pági
 esconden algo. Las que todavía no ha visto salen sin título —sólo el número—
 para no reventarle las sorpresas de un vistazo. Puede saltar a cualquiera
 igualmente: esto no es un videojuego.
+
+### Los colores
+
+Cada capítulo dice de qué color es con un nombre de `src/data/paletas.js`, y
+hay trece, todos de la misma familia: **amanecer, rubor, seda, nácar,
+melocotón, azúcar, brasa, latido, lila, ciruela, medianoche, vino y
+granate**. Las lavandas (lila, ciruela, medianoche) están para que el libro
+no sea un solo rojo de principio a fin: las páginas de noche y de cielo
+—el mismo cielo, la distancia, el faro— respiran mejor en violeta, y las
+cálidas —la brújula, los farolitos— van en durazno. Para cambiarle el color
+a una página basta con escribir otro nombre en su `palette` de `chapters.js`.
+
+De noche, la luz de los velos ya no se quema: por encima de cierto brillo
+sube a la mitad de ritmo, así que los acentos claros no dejan una mancha
+blanca detrás de los títulos. En pastel, los paneles de cristal son ciruela
+en vez de negros.
+
+El texto va alineado a la izquierda y no justificado (en un teléfono,
+justificar sin guiones abre ríos de espacios), los títulos reparten sus
+palabras en líneas parejas y los párrafos evitan dejar una palabra sola en
+la última línea.
+
+### El sonido
+
+La música de fondo **se aparta sola** cada vez que suena otra cosa —pasar
+página, abrir un sobre, el corazón, las burbujas— y vuelve con un fundido al
+terminar. Si suenan varias cosas seguidas, se queda baja hasta que acaba la
+última. Funciona también en iPhone: publicado, la música pasa por un control
+de volumen de WebAudio, porque Safari no deja cambiarle el volumen a un
+`<audio>`.
 
 ### Las dos habitaciones
 
@@ -357,6 +393,12 @@ cierre. Junto y en orden.
 
 **2 · `src/data/escondidos.js`** — lo que dicen los ocho escondites.
 
+**Y dos carpetas para cambiar cosas sin tocar código:**
+
+- **`mis-vales/vales.txt`** — los vales de «Vales de amor», uno por línea.
+- **`mis-sonidos/`** — `corazón.mp3`, el latido de «Mi pulso». Ver
+  `mis-sonidos/LÉEME.md`.
+
 **3 · El `textos.js` de cada carpeta** — las páginas con mucho que decir se
 llevaron lo suyo dentro:
 
@@ -366,6 +408,7 @@ llevaron lo suyo dentro:
 | El pulso | `src/pages/pulso/textos.js` |
 | La nota | `src/pages/secreto/textos.js` (las palabras entre `*asteriscos*` son las que esconden algo) |
 | El cajón | `src/pages/ultima-sorpresa/textos.js` |
+| Las cien razones | `src/data/razones.js` |
 | Tus fotos | `src/pages/amor/textos.js` |
 
 Cada uno lleva arriba un cartelito diciendo qué es cada campo. Cambiar lo que
@@ -391,7 +434,8 @@ Cada página con fotos tiene **su propia carpeta** dentro de
 ```
 fotos-paginas/01-portada/imagen1.png
 fotos-paginas/06-recuerdos/imagen1.png … imagen8.png
-fotos-paginas/11-nuestra-pelicula/imagen1.png … imagen10.png
+fotos-paginas/11-pines-que-me-recordaron-a-ti/imagen1.png … imagen10.png
+fotos-paginas/11b-pines-que-te-dedico/imagen1.jpg …   ← (vacía: sube aquí tus pines)
 ```
 
 - **Cambiar una foto:** se sube otra a esa carpeta con el **mismo nombre**.

@@ -122,13 +122,27 @@ export default class FinalePage extends BasePage {
       // encallado en el final sin poder deslizar sería lo primero que
       // pasara al llegar hasta aquí.
       el("div.finale__touch"),
+      // Estrellas fugaces que cruzan el cielo cuando ya se formó el corazón.
+      el("div.finale__fugaces", { "aria-hidden": "true" }, [0, 1, 2].map(() => el("span.finale__fugaz"))),
       el("div.finale__content", {}, [
         el("p.finale__kicker", { text: finale.kicker }),
         el("h2.finale__line.finale__line--1", { text: finale.lines[0] }),
         finale.lines[1] ? el("h2.finale__line.finale__line--2", { text: finale.lines[1] }) : null,
-        el("div.lectura.finale__scroll", {}, [
-          el("p.finale__body", {}, [textoPlano(finale.body)]),
-          el("p.finale__sign", {}, [textoPlano(finale.sign)]),
+        // La carta del cierre, en su propio cristal: se lee igual de bien
+        // sobre el cielo oscuro que sobre el rosa del tema pastel.
+        el("div.finale__carta", {}, [
+          el("div.lectura.finale__scroll", {}, [
+            ...String(finale.body || "")
+              .split("\n")
+              .filter(Boolean)
+              .map((parrafo, i) => {
+                const p = el("p.finale__body", {}, [textoPlano(parrafo)]);
+                p.style.setProperty("--n", String(i));
+                return p;
+              }),
+            el("p.finale__sign", {}, [textoPlano(finale.sign)]),
+            el("p.finale__continuara", { text: finale.continuara || "continuará" }),
+          ]),
         ]),
         el("button.finale__again", {
           type: "button",
@@ -266,8 +280,30 @@ export default class FinalePage extends BasePage {
       })
     );
     this.points.frustumCulled = false;
-    this.points.position.y = 0.9;
+    this.#encuadrar();
+    this.track(this.ctx.viewport.on("resize", () => this.#encuadrar()));
     this.unmountGL = gl.mount(this.points);
+  }
+
+  /**
+   * El corazón tiene que verse ENTERO en la parte de arriba, en cualquier
+   * pantalla. Antes tenía un tamaño fijo pensado para pantallas anchas: en
+   * el teléfono de pie se salía por los lados y por arriba, y sólo se veían
+   * las dos puntas de abajo.
+   */
+  #encuadrar() {
+    if (!this.points) return;
+    const cam = this.ctx.gl?.camera;
+    const z = cam?.position?.z || 9.4;
+    const aspecto = cam?.aspect || window.innerWidth / Math.max(1, window.innerHeight);
+    const medioAlto = z * Math.tan((21 * Math.PI) / 180);
+    const medioAncho = medioAlto * aspecto;
+    // El corazón mide ~2.5 de medio ancho y ~2.25 de medio alto (escala 1).
+    const k = Math.min(1, (medioAncho * 0.78) / 2.5, (medioAlto * 0.36) / 2.25);
+    this.escala = k;
+    this.points.scale.setScalar(k);
+    // Su centro, a un cuarto de pantalla desde arriba.
+    this.points.position.y = medioAlto * 0.5 + 0.4 * k;
   }
 
   async #formHeart() {
@@ -317,8 +353,9 @@ export default class FinalePage extends BasePage {
     // El shader del corazón no tiene uniforme de opacidad, pero con mezcla
     // aditiva encoger es apagar: los puntos se recogen hacia el centro y se
     // desvanecen solos mientras la hoja se va.
+    const base = this.escala || 1;
     this.fadeOutGL(unmount, (k) => {
-      if (points) points.scale.setScalar(Math.max(0.001, k));
+      if (points) points.scale.setScalar(Math.max(0.001, k * base));
     });
   }
 

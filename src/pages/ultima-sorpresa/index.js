@@ -132,7 +132,10 @@ export default class UltimaSorpresaPage extends BasePage {
       el("p.sorpresa__firma", { text: textos.firma }),
     ]);
 
-    this.corazon = el("div.sorpresa__corazon", { "aria-hidden": "true" });
+    // OJO: no se llama `this.corazon`, que es el método de BasePage que
+    // suelta corazoncitos. Con ese nombre lo tapaba, y cualquier sorpresa o
+    // escondite de esta página que quisiera soltar uno reventaba.
+    this.capaCorazon = el("div.sorpresa__corazon", { "aria-hidden": "true" });
     this.bichos = el("div.sorpresa__bichos", { "aria-hidden": "true" });
 
     this.root.append(
@@ -144,7 +147,7 @@ export default class UltimaSorpresaPage extends BasePage {
       this.mesa,
       this.dicho,
       this.contador,
-      this.corazon,
+      this.capaCorazon,
       this.finalEl,
       this.bichos
     );
@@ -161,6 +164,8 @@ export default class UltimaSorpresaPage extends BasePage {
       dataset: { obj: nombre },
     });
     nodo.innerHTML = html;
+    // Una etiquetita a mano que sale al encontrarlo.
+    nodo.append(el("span.obj__etiqueta", { text: textos.objetos[nombre]?.etiqueta || "" }));
     setVars(nodo, {
       "--x": `${sitio.x}%`,
       "--y": `${sitio.y}%`,
@@ -180,9 +185,13 @@ export default class UltimaSorpresaPage extends BasePage {
     requestAnimationFrame(() => this.root.classList.add("is-entered"));
 
     this.rng = seeded(`sorpresa-${this.id}`);
-    this.encontrados = 0;
-    this.luz = 0;
+    // Lo que ya encontró en otra visita cuenta: antes esto volvía a cero y,
+    // si se iba a medias y volvía, las que ya tenía no se podían «volver a
+    // encontrar» y el cajón no se terminaba nunca.
+    this.encontrados = Object.values(this.objetos).filter((o) => o.found).length;
+    this.luz = this.luz || 0;
     this.toquesVacios = 0;
+    this.ctx.audio.play("turn", { volume: 0.18, rate: 0.55 }); // el cajón se abre
 
     const yaVisto = this.ctx.store.hasSecret(this.entry.secret);
 
@@ -198,7 +207,7 @@ export default class UltimaSorpresaPage extends BasePage {
       // Ya lo descubrió otro día: se abre entero, sin obligarla a repetirlo.
       for (const nombre of Object.keys(this.objetos)) this.#hallar(nombre, false);
     } else {
-      this.empujon = setTimeout(() => {
+      this.later(() => {
         if (this.encontrados === 0) {
           this.root.classList.add("is-nudging");
           this.ctx.ui?.toast?.(textos.empujoncito, 2600);
@@ -357,7 +366,6 @@ export default class UltimaSorpresaPage extends BasePage {
 
     this.contador.children[this.encontrados - 1]?.classList.add("is-on");
     this.root.classList.remove("is-nudging");
-    clearTimeout(this.empujon);
 
     if (celebrar) {
       this.ctx.haptics.play("reveal");
@@ -377,7 +385,7 @@ export default class UltimaSorpresaPage extends BasePage {
     void this.dicho.offsetWidth;
     this.dicho.classList.add("is-visible");
     clearTimeout(this.decirTimer);
-    this.decirTimer = setTimeout(() => this.dicho.classList.remove("is-visible"), 3600);
+    this.decirTimer = this.later(() => this.dicho.classList.remove("is-visible"), 3600);
   }
 
   /**
@@ -428,9 +436,9 @@ export default class UltimaSorpresaPage extends BasePage {
         "--delay": `${(i * 26).toFixed(0)}ms`,
         "--size": this.rng.range(0.65, 1.25).toFixed(2),
       });
-      this.corazon.append(nodo);
+      this.capaCorazon.append(nodo);
     }
-    this.later(() => (this.corazon.textContent = ""), 4200);
+    this.later(() => (this.capaCorazon.textContent = ""), 4200);
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -438,6 +446,8 @@ export default class UltimaSorpresaPage extends BasePage {
   // ═══════════════════════════════════════════════════════════════════
 
   #luciernagas() {
+    // Si ya había salido en otra visita, sigue volando.
+    if (this.bicho) this.#volarBicho();
     this.addGestures(
       new Gestures(
         this.mesa,
@@ -462,19 +472,7 @@ export default class UltimaSorpresaPage extends BasePage {
             // en marcha, que es cuando peor sienta.
             const caja = this.root.getBoundingClientRect();
             this.bichoPos = { x: e.x - caja.left, y: e.y - caja.top };
-            this.addTicker((dt) => {
-              const p = this.ctx.pointer.influence;
-              const destino = {
-                x: caja.width * (0.5 + p.x * 0.42),
-                y: caja.height * (0.5 + p.y * 0.42),
-              };
-              this.bichoPos.x = damp(this.bichoPos.x, destino.x, 1.6, dt);
-              this.bichoPos.y = damp(this.bichoPos.y, destino.y, 1.6, dt);
-              setVars(this.bicho, {
-                "--bx": `${this.bichoPos.x.toFixed(0)}px`,
-                "--by": `${this.bichoPos.y.toFixed(0)}px`,
-              });
-            }, 13);
+            this.#volarBicho();
           },
         },
         { threshold: 14 }
@@ -482,9 +480,20 @@ export default class UltimaSorpresaPage extends BasePage {
     );
   }
 
-  destroy() {
-    clearTimeout(this.empujon);
-    clearTimeout(this.decirTimer);
-    super.destroy();
+  #volarBicho() {
+    const caja = this.root.getBoundingClientRect();
+    this.addTicker((dt) => {
+      const p = this.ctx.pointer.influence;
+      const destino = {
+        x: caja.width * (0.5 + p.x * 0.42),
+        y: caja.height * (0.5 + p.y * 0.42),
+      };
+      this.bichoPos.x = damp(this.bichoPos.x, destino.x, 1.6, dt);
+      this.bichoPos.y = damp(this.bichoPos.y, destino.y, 1.6, dt);
+      setVars(this.bicho, {
+        "--bx": `${this.bichoPos.x.toFixed(0)}px`,
+        "--by": `${this.bichoPos.y.toFixed(0)}px`,
+      });
+    }, 13);
   }
 }

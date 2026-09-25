@@ -60,7 +60,7 @@ for (const e of manifest) {
   if (e.src && !existe(decodeURIComponent(e.src))) mal(`«${e.id}» apunta a ${e.src}, que no existe`);
 }
 
-const conTexto = new Set(["chapter", "envelope", "typewriter", "depth", "scratch", "postcard", "handwriting", "bottle", "gift", "veil", "mosaic", "polaroids", "filmstrip"]);
+const conTexto = new Set(["chapter", "envelope", "typewriter", "depth", "scratch", "postcard", "handwriting", "bottle", "gift", "veil", "mosaic", "polaroids", "filmstrip", "pines", "norte"]);
 for (const e of manifest) {
   const ch = chapterById[e.chapter];
   if (!ch) continue;

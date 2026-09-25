@@ -202,6 +202,7 @@
   font-size: clamp(0.96rem, calc(3.7 * var(--vw)), 1.12rem);
   line-height: 1.68;
   color: rgba(246, 238, 232, 0.92);
-  text-align: justify;
+  text-align: left;
+  text-wrap: pretty;
   hyphens: auto;
 }

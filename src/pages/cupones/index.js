@@ -3,11 +3,16 @@
  *
  * Se arranca el de arriba (tocándolo o tirando de él) y sale volando a su
  * montoncito. Easter egg: al arrancar el último aparece el vale DORADO.
+ *
+ * LOS VALES SE CAMBIAN EN `mis-vales/vales.txt`: uno por línea, y el dorado
+ * en la que empieza por «dorado:». Si ese archivo no está, salen los del
+ * capítulo (`chapters.js`).
  */
 
 import { BasePage } from "../BasePage.js";
 import { Gestures } from "../../core/Gestures.js";
 import { el, setVars } from "../../utils/dom.js";
+import contenido from "../../data/contenido.js";
 
 const COLORES = ["#ffd6e0", "#ffe9b8", "#d7ecff", "#dff5d8", "#eadcff", "#ffdcc8"];
 
@@ -16,7 +21,9 @@ export default class CuponesPage extends BasePage {
 
   build() {
     const ch = this.chapter;
-    this.textos = ch?.lines || [];
+    const propios = contenido?.vales;
+    this.textos = propios?.lista?.length ? propios.lista : ch?.lines || [];
+    const dorado = propios?.dorado || ch?.reveal || "";
     this.root = el("section.page.cupones", { "data-page": this.id, "aria-label": ch?.title });
     setVars(this.root, { "--accent": this.palette.a });
 
@@ -24,7 +31,7 @@ export default class CuponesPage extends BasePage {
     this.monton = el("div.cup__monton", { "aria-hidden": "true" });
     this.dorado = el("div.cup__vale.cup__vale--dorado", {}, [
       el("span.cup__sello", { text: "✦ vale dorado ✦" }),
-      el("p.cup__texto", { text: ch?.reveal || "" }),
+      el("p.cup__texto", { text: dorado }),
     ]);
     this.cuenta = el("span.cup__cuenta");
 

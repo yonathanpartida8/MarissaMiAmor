@@ -77,3 +77,30 @@
 .hueco-barra {
   margin-bottom: var(--bar-space, 0rem);
 }
+
+
+/* ============================================================
+   LETRAS ORDENADAS
+
+   Reglas pequeñas que valen para todas las páginas:
+     · los títulos reparten sus palabras entre líneas parejas, en vez de
+       dejar una palabra sola colgando en la última;
+     · los párrafos evitan las viudas (una palabra sola en la última
+       línea) y cortan con guion cuando hace falta;
+     · nada se sale de su caja por una palabra larga.
+   El texto va alineado a la izquierda y no justificado: en un teléfono,
+   justificar sin guiones abre ríos de espacios entre palabras, y era lo
+   que hacía que varias páginas se vieran desordenadas.
+   ============================================================ */
+.page :is(h1, h2, h3, .title, [class*="__title"], [class*="__titulo"]) {
+  text-wrap: balance;
+}
+.page :is(p, li, blockquote, .prose) {
+  text-wrap: pretty;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  overflow-wrap: break-word;
+}
+.page :is(.kicker, [class*="kicker"]) {
+  text-wrap: balance;
+}

@@ -40,6 +40,7 @@
  *            cosmos · light
  */
 
+import { razones } from "./razones.js";
 import { resolverPaleta } from "./paletas.js";
 
 const acts = [
@@ -222,32 +223,31 @@ export const chapters = [
     title: "Razones por las que te amo",
     kicker: "desliza cada carta",
     text: "",
-    lines: [
-      "Porque me haces reír hasta en mis días grises.",
-      "Porque contigo puedo ser yo, sin fingir nada.",
-      "Porque me cuidas aunque estés lejos.",
-      "Porque tu voz me calma y me desordena al mismo tiempo.",
-      "Porque lo intentas, incluso cuando cuesta.",
-      "Porque nuestras madrugadas raras son mis favoritas.",
-      "Porque me escuchas de verdad.",
-      "Porque cuando dices mi nombre, todo se siente distinto.",
-      "Porque eres terca, y aun así me encanta.",
-      "Porque me haces querer ser mejor.",
-      "Porque me elegiste, y me sigues eligiendo.",
-      "Porque eres tú. Y con eso ya es suficiente.",
-    ],
-    reveal: "Y me faltan cartas: las razones no se me acaban.",
+    // Las cien razones están en `src/data/razones.js`.
+    lines: razones,
+    reveal: "Y eso que sólo cupieron cien. Las razones no se me acaban.",
     palette: "rubor",
     mood: "bloom",
   },
   {
+    // (El id se queda como estaba para no perder lo que ya recuerda el
+    // libro; lo que se ve es «Pines que me recordaron a ti».)
     id: "nuestra-pelicula",
     act: "conocerte",
-    title: "Nuestra película",
-    kicker: "desliza el carrete",
-    text: "Si esto fuera una película tendría un ritmo rarísimo. Mucho silencio, mucha pantalla, dos personas hablándose todos los días desde muy lejos. Sería lenta y no pasaría casi nada. Y aun así yo la volvería a ver entera.",
+    title: "Pines que me recordaron a ti",
+    kicker: "desliza los pines",
+    text: "Cada vez que ando en Pinterest me pasa lo mismo: veo algo bonito y pienso en ti. Un color, una frase, una canción, un lugar al que quiero ir contigo, una tontería que sé que te daría risa.\nLos fui guardando sin decirte nada, uno por uno, como quien junta piedritas bonitas en la playa.\nAquí están. Son pedacitos del mundo que, sin saberlo, tenían algo tuyo.",
     palette: "vino",
     mood: "winter",
+  },
+  {
+    id: "pines-dedicados",
+    act: "conocerte",
+    title: "Pines que te dedico",
+    kicker: "estos son para ti",
+    text: "Éstos no me recordaron a ti: éstos los escogí para ti.\nCada uno lo guardé pensando «esto se lo quiero dedicar», porque hay cosas que siento y que no me salen en palabras, pero que de repente encuentro en una imagen.\nSi algún día no sabes cuánto te quiero, ven aquí y pasa los pines despacito. Todos dicen lo mismo.",
+    palette: "azucar",
+    mood: "bloom",
   },
   {
     id: "con-mi-letra",
@@ -276,10 +276,10 @@ export const chapters = [
     id: "mi-norte",
     act: "conocerte",
     title: "Mi norte",
-    kicker: "tócala, gírala, da igual",
-    text: "Puedes darle todas las vueltas que quieras.",
-    reveal: "Siempre acaba apuntando al mismo lado.",
-    palette: "nacar",
+    kicker: "gírala, muévela, da igual",
+    text: "Hay días en los que no sé muy bien hacia dónde voy. Pero en cuanto pienso en ti se me acomoda todo. Puedes darle todas las vueltas que quieras.",
+    reveal: "Siempre acaba apuntando al mismo lado: a ti.",
+    palette: "melocoton",
     mood: "amber",
   },
   {
@@ -353,7 +353,7 @@ export const chapters = [
     kicker: "acércalos con el dedo",
     text: "La distancia no me da miedo. Pero sí me pesa muchísimo. Me pesa no poder abrazarte cuando quiero, no poder tomarte de la mano, no poder estar a tu lado en esos momentos pequeños que quisiera compartir contigo.\nA veces quisiera que no existieran tantos kilómetros entre nosotros y que una pantalla no fuera la única manera de sentirte cerca.\nPero incluso con todo eso, te sigo eligiendo. Porque todo este tiempo esperando vale la pena por algo que deseo muchísimo: una tarde cualquiera contigo, sin prisas, sin pantallas y sin tener que despedirnos. Sólo tú y yo, juntos, disfrutando de tenernos por fin cerquita.\nY cuando llegue ese día, quiero abrazarte tan fuerte que por un ratito se me olvide toda la distancia que tuvimos que soportar.",
     reveal: "Y esto, tarde o temprano, se cierra.",
-    palette: "vino",
+    palette: "medianoche",
     mood: "cosmos",
   },
   {
@@ -400,7 +400,7 @@ export const chapters = [
       "esa canción que ya es tuya",
       "el día que se te olvidó colgar",
     ],
-    palette: "vino",
+    palette: "medianoche",
     mood: "cosmos",
   },
   {
@@ -420,7 +420,7 @@ export const chapters = [
       "Que me sigas eligiendo, como yo a ti.",
     ],
     reveal: "Todos los deseos van al mismo lugar: a nosotros.",
-    palette: "vino",
+    palette: "melocoton",
     mood: "night",
   },
   {
@@ -455,7 +455,7 @@ export const chapters = [
       "mando.",
     ],
     reveal: "Revienta las que quieras: los besos no se acaban. 💋",
-    palette: "seda",
+    palette: "lila",
     mood: "glass",
   },
   {
@@ -464,7 +464,7 @@ export const chapters = [
     title: "Nada del otro mundo",
     kicker: "acércate",
     text: "No tengo una frase enorme para hoy. Sólo esto: me gusta que existas, y me gusta que existas hoy también.",
-    palette: "nacar",
+    palette: "ciruela",
     mood: "light",
   },
   {
@@ -485,7 +485,7 @@ export const chapters = [
     // Sale cuando el barquito llega a la orilla.
     text: "Hay días en que todo se pone oscuro y no se ve la orilla. En esos días no tienes que saber el camino: sólo busca la luz. Yo la voy a dejar prendida.",
     reveal: "Siempre vas a tener a dónde volver.",
-    palette: "granate",
+    palette: "medianoche",
     mood: "night",
   },
   {
@@ -573,7 +573,7 @@ export const chapters = [
       "Te prometo no dejar de aprender a quererte mejor.",
     ],
     reveal: "Y todas las firmo con lo mismo: con todo lo que soy.",
-    palette: "rubor",
+    palette: "ciruela",
     mood: "amber",
   },
   {
@@ -614,7 +614,7 @@ export const chapters = [
       "Te amo más de lo que cabe en este frasco.",
     ],
     reveal: "Ya las leíste todas… pero el frasco se vuelve a llenar cada día.",
-    palette: "brasa",
+    palette: "lila",
     mood: "amber",
   },
   {
@@ -727,4 +727,6 @@ export const finale = {
   lines: ["Por ahora."],
   body: "Este librito termina aquí, pero todo lo que siento por ti no.\nQuiero que sepas que mi corazón está contigo. Que me entrego a ti con todo lo que soy, con mis cosas buenas, mis defectos, mis días bonitos y también los que no lo son tanto, todo de mí.\nSoy tuyo, mi amorcito. No a medias, no por un ratito y no sólo cuando todo está bien.\nSoy tuyo porque te elegí y porque, cada día, te sigo eligiendo a ti, y no como una opción 🤍\nQuiero cuidarte, respetarte, amarte bonito y seguir creciendo contigo. Quiero que tengas la tranquilidad de saber que mi amor está aquí, para ti y sólo para ti, y que no me iré.\nAsí que sí, este librito termina aquí, pero mis palabras no terminan: tengo millones de palabras que necesito decirte, tantas cosas lindas…\npero lo mío contigo apenas sigue.",
   sign: "Te amo, mi amorcito\nSiempre tuyo. 🥹",
+  /** Lo último de todo, debajo de la firma. */
+  continuara: "continuará",
 };
