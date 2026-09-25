@@ -550,6 +550,14 @@ export default class CombinacionPage extends BasePage {
       this.marcarAbierto();
       await wait(520);
     } else {
+      // Abierto de otro día: las ruedas enseñan la fecha buena. Sin esto se
+      // quedaban en la de partida y el candado abierto decía «01 ene 2020».
+      for (const w of this.wheels) {
+        w.offset = w.target = w.value = w.lastShown = w.cfg.correcto;
+        const paso = 100 / (w.n * 3);
+        w.strip.style.transform = `translate3d(0, ${-((w.cfg.correcto + w.n) * paso).toFixed(4)}%, 0)`;
+        w.node.setAttribute("aria-valuetext", w.cfg.valores[w.cfg.correcto]);
+      }
       this.padlock.classList.add("is-open", "is-glowing");
     }
 

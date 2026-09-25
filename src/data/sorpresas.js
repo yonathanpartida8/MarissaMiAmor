@@ -55,7 +55,7 @@ export default {
   "frasco":             { frase: "El frasco nunca se vacía: lo relleno cada día.", escena: ["🫙", "💌", "⭐", "💗"] },
   "no-se-me-pasa":      { frase: "No se me pasa, se me multiplica.", escena: ["⏳", "💞", "♾️", "🌙"] },
   "gracias":            { frase: "Gracias por quedarte. Me quedo también.", escena: ["🙏", "🤝", "🤍", "🌅"] },
-  "ultimo-secreto":     { frase: "El último secreto es que no es el último.", escena: ["🗝️", "📦", "💫", "💗"] },
+  "ultima-sorpresa":    { frase: "El último secreto es que no es el último.", escena: ["🗝️", "📦", "💫", "💗"] },
   "te-elijo":           { frase: "Te elegiría en todas las vidas.", escena: ["💘", "🌍", "♾️", "✨"] },
   "final":              { frase: "Esto no se acaba. Apenas va empezando.", escena: ["🎆", "💞", "🌠", "🥹"] },
 };

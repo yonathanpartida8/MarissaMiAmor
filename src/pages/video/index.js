@@ -111,7 +111,14 @@ export default class VideoPage extends BasePage {
     // claramente en vez de dejar un rectángulo negro para siempre.
     this.on(this.video, "error", () => {
       this.root.classList.add("is-broken");
-      this.badge.textContent = "este vídeo no se pudo abrir";
+      this.badge.textContent = "este navegador no pudo abrir el vídeo";
+      // Plan B: abrirlo aparte, con el reproductor del propio teléfono.
+      if (!this.frame.querySelector(".vid__aparte")) {
+        const aparte = el("a.vid__aparte", { href: this.src, target: "_blank", rel: "noopener", text: "abrir el vídeo aparte ↗" });
+        // Que el toque sea del enlace y no del reproductor de debajo.
+        aparte.addEventListener("pointerdown", (e) => e.stopPropagation());
+        this.frame.append(aparte);
+      }
     });
     this.on(this.video, "waiting", () => this.root.classList.add("is-buffering"));
     this.on(this.video, "playing", () => this.root.classList.remove("is-buffering"));

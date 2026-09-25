@@ -69,6 +69,8 @@
 .chapter[data-ornament="fog"] { --orn-h: 42%; }
 .chapter[data-ornament="mirror"] { --orn-h: 38%; }
 .chapter[data-ornament="compass"] { --orn-h: 30%; }
+.chapter[data-ornament="vela"] { --orn-h: 30%; }
+.chapter[data-ornament="onda"] { --orn-h: 16%; }
 .chapter[data-ornament="whisper"] { --orn-h: 22%; }
 
 /* ══════════════ MEDALLÓN ══════════════ */
@@ -532,4 +534,150 @@ html[data-orientation="landscape"][data-device="phone"] .chapter__foot {
 .chapter__num.is-awake {
   color: var(--accent);
   text-shadow: 0 0 16px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+/* ══════════════ VELITA ══════════════ */
+.orn--vela {
+  grid-template-rows: 1fr auto;
+  gap: var(--gap-sm);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity 700ms var(--e-out), transform 700ms var(--e-spring);
+  --flama: 1;
+}
+.orn--vela.is-visible { opacity: 1; transform: none; }
+
+.vela__halo {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  width: 150%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 196, 120, 0.55), rgba(255, 170, 120, 0.18) 38%, transparent 66%);
+  opacity: 0;
+  transform: scale(calc(0.85 + var(--flama) * 0.15));
+  transition: opacity 1.2s var(--e-out);
+  pointer-events: none;
+}
+.orn--vela.is-encendida .vela__halo { opacity: 1; }
+
+.vela__cuerpo {
+  position: relative;
+  height: 100%;
+  min-height: 120px;
+  aspect-ratio: 1 / 1.35;
+  /* Columna flexible y no rejilla: con rejilla, los altos en % de piezas
+     vacías (la cera, el plato) no se resolvían y la vela medía cero. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+.vela__cera,
+.vela__plato,
+.vela__mecha { flex: 0 0 auto; }
+.vela__cera {
+  position: relative;
+  width: 36%;
+  height: 58%;
+  border-radius: 10px 10px 6px 6px;
+  background:
+    radial-gradient(ellipse 60% 18% at 50% 0%, #fff9ef 0 60%, transparent 62%),
+    linear-gradient(90deg, #efe0cc, #fff8ee 38%, #f6e9d8 70%, #e2cfb6);
+  box-shadow: inset 0 -10px 18px rgba(160, 110, 70, 0.18), 0 10px 18px -12px rgba(80, 40, 20, 0.5);
+}
+.vela__cera::before {
+  /* Una gota de cera que resbala. */
+  content: "";
+  position: absolute;
+  left: 22%;
+  top: 4%;
+  width: 14%;
+  height: 26%;
+  border-radius: 0 0 99px 99px;
+  background: #fbf2e4;
+  box-shadow: 0 2px 3px rgba(150, 100, 60, 0.18);
+}
+.vela__plato {
+  width: 62%;
+  height: 7%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #e8c890, #b98a4d);
+  box-shadow: 0 6px 10px -6px rgba(60, 30, 10, 0.6);
+}
+.vela__mecha {
+  width: 3px;
+  height: 7%;
+  border-radius: 2px;
+  background: #3a2a20;
+}
+.vela__llama {
+  position: absolute;
+  left: 50%;
+  bottom: calc(65% + 7%);
+  width: 14%;
+  aspect-ratio: 1 / 1.8;
+  translate: -50% 0;
+  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+  background: radial-gradient(ellipse at 50% 72%, #fffbe6 0 18%, #ffd36b 40%, #ff9a3c 68%, rgba(255, 120, 60, 0) 72%);
+  filter: drop-shadow(0 0 10px rgba(255, 180, 90, 0.9));
+  transform-origin: 50% 100%;
+  transform: scale(0);
+  transition: transform 700ms var(--e-spring);
+}
+.orn--vela.is-encendida .vela__llama { transform: scale(var(--flama)) skewX(calc((var(--flama) - 0.93) * 60deg)); transition: none; }
+.orn--vela.is-soplo .vela__llama { animation: vela-soplo 700ms var(--e-out); }
+@keyframes vela-soplo { 30% { transform: scale(0.55) skewX(-18deg); } 60% { transform: scale(1.1) skewX(10deg); } }
+
+.vela__label {
+  font-family: var(--font-hand);
+  font-size: 1.15rem;
+  color: var(--accent);
+  text-align: center;
+}
+
+/* ══════════════ ONDA ══════════════ */
+.orn--onda { opacity: 0; transition: opacity 700ms var(--e-out); }
+.orn--onda.is-visible { opacity: 1; }
+.onda__pad {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  width: min(86%, 320px);
+  padding: 0.8rem 1rem 0.7rem;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) calc(18% + var(--voice, 0) * 50%), transparent);
+  background: rgba(255, 255, 255, calc(0.25 + var(--voice, 0) * 0.35));
+  box-shadow: 0 0 calc(var(--voice, 0) * 28px) -6px var(--accent);
+  touch-action: none;
+  cursor: pointer;
+}
+.onda__barras {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 46px;
+  width: 100%;
+}
+.onda__barra {
+  flex: 1 1 0;
+  max-width: 6px;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 70%, #fff), var(--accent));
+  transform: scaleY(0.12);
+  transform-origin: 50% 50%;
+}
+.onda__hint {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--paper-ink-soft);
+  opacity: calc(1 - var(--voice, 0));
 }

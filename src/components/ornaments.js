@@ -375,9 +375,127 @@ function whisper(ctx, { accent, target, onReveal }) {
   };
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   VELITA — una vela apagada. Se enciende al tocarla y se queda
+   encendida, con su luz tibia sobre el papel. Tocarla otra vez la hace
+   titilar, como si alguien le soplara despacito.
+   ══════════════════════════════════════════════════════════════════ */
+function vela(ctx, { accent, onReveal }) {
+  const node = el("div.orn.orn--vela", { style: { "--accent": accent } }, [
+    el("div.vela__halo"),
+    el("div.vela__cuerpo", {}, [
+      el("span.vela__llama"),
+      el("span.vela__mecha"),
+      el("span.vela__cera"),
+      el("span.vela__plato"),
+    ]),
+    el("div.vela__label", { text: "enciéndela" }),
+  ]);
+  const label = qs(".vela__label", node);
+  let gestures = null;
+  let encendida = false;
+
+  const tocar = () => {
+    if (encendida) {
+      node.classList.remove("is-soplo");
+      void node.offsetWidth;
+      node.classList.add("is-soplo");
+      ctx.haptics.play("tap");
+      return;
+    }
+    encendida = true;
+    node.classList.add("is-encendida");
+    label.textContent = "una velita, por quedarte";
+    ctx.haptics.play("heart");
+    ctx.audio.play("turn", { volume: 0.22, rate: 0.55 });
+    onReveal?.();
+  };
+
+  return {
+    node,
+    async enter() {
+      gestures = new Gestures(node, { onTap: tocar }, { exclusive: true });
+      requestAnimationFrame(() => node.classList.add("is-visible"));
+    },
+    tick(dt, time) {
+      if (!encendida) return;
+      // Una llama de verdad no late: tiembla con dos ritmos que no cuadran.
+      const f = 0.93 + Math.sin(time * 9.3) * 0.04 + Math.sin(time * 23.1) * 0.03;
+      node.style.setProperty("--flama", f.toFixed(3));
+    },
+    destroy() {
+      gestures?.destroy();
+    },
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ONDA — la voz dibujada. Mientras se mantiene el dedo, la onda se
+   anima como si alguien hablara bajito, y el texto va apareciendo.
+   Usa el mismo atenuado del texto que el susurro, pero se ve distinto.
+   ══════════════════════════════════════════════════════════════════ */
+function onda(ctx, { accent, target, onReveal }) {
+  const barras = Array.from({ length: 23 }, () => el("span.onda__barra"));
+  const node = el("div.orn.orn--onda", { style: { "--accent": accent } }, [
+    el("div.onda__pad", { "data-claim-drag": "" }, [
+      el("div.onda__barras", {}, barras),
+      el("div.onda__hint", { text: "mantén el dedo y escucha" }),
+    ]),
+  ]);
+  const pad = qs(".onda__pad", node);
+  let gestures = null;
+  let holding = false;
+  let volume = 0;
+  let done = false;
+
+  return {
+    node,
+    async enter() {
+      target?.classList.add("is-whispered");
+      gestures = new Gestures(
+        pad,
+        {
+          onDown: () => {
+            holding = true;
+            ctx.haptics.play("tap");
+          },
+          onUp: () => (holding = false),
+        },
+        { exclusive: true }
+      );
+      requestAnimationFrame(() => node.classList.add("is-visible"));
+    },
+    tick(dt, time, realDt = dt) {
+      volume = clamp01(volume + (holding ? realDt * 0.55 : -realDt * 0.32));
+      target?.style.setProperty("--voice", String(volume));
+      node.style.setProperty("--voice", String(volume));
+      // Las barras respiran siempre un poquito; con la voz, hablan.
+      barras.forEach((b, i) => {
+        const habla = Math.abs(Math.sin(time * (5.3 + (i % 5)) + i * 0.7)) * (0.35 + 0.65 * Math.abs(Math.sin(time * 1.3 + i)));
+        const h = 0.12 + volume * 0.88 * habla + Math.sin(time * 1.6 + i * 0.5) * 0.04;
+        b.style.transform = `scaleY(${Math.max(0.08, h).toFixed(3)})`;
+      });
+      if (holding && Math.random() < realDt * 6) ctx.haptics.scrub(volume * 0.6);
+      if (volume >= 0.99 && !done) {
+        done = true;
+        target?.classList.add("is-heard");
+        ctx.haptics.play("reveal");
+        onReveal?.();
+      }
+    },
+    destroy() {
+      gestures?.destroy();
+      target?.classList.remove("is-whispered");
+      target?.style.removeProperty("--voice");
+    },
+  };
+}
+
 /* ══════════════════════════════════════════════════════════════════ */
 
 const ORNAMENTS = {
+  vela,
+  onda,
   medallion,
   fog: fogWindow,
   mirror,

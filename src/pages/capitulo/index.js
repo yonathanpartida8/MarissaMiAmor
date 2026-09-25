@@ -30,8 +30,8 @@ const ORNAMENT_BY_CHAPTER = {
   "me-caigo-mejor": "mirror",  // «el reflejo te sigue»
   "mi-norte": "compass",       // la brújula que siempre apunta a lo mismo
   "te-lo-digo-bajito": "whisper", // «acércate: está escrito bajito»
-  "tu-voz": "whisper",
-  "gracias": "compass",
+  "tu-voz": "onda",           // la voz dibujada: se oye al mantener el dedo
+  "gracias": "vela",          // una velita que se enciende por quedarte
   // El resto se queda con el medallón, que es el que enseña foto.
 };
 
@@ -66,7 +66,9 @@ export default class ChapterPage extends BasePage {
       this.titleEl,
       el("hr.rule.chapter__rule"),
       this.proseEl,
-      el("div.chapter__sign", { text: "— siempre tuyo" }),
+      // La firma de siempre, salvo que el texto ya traiga la suya al final
+      // (si no, salía dos veces: «— siempre tuyo» y «— siempre tuyo»).
+      /\n\s*—[^\n]*$/.test(ch?.text || "") ? null : el("div.chapter__sign", { text: "— siempre tuyo" }),
     ]);
     this.scrollEl = scroll;
 
