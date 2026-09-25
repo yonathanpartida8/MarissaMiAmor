@@ -9,6 +9,7 @@ on:
     paths:
       - "paginas-html/**"
       - "images/amores/**"
+      - "fotos-paginas/**"
       - "mis-paginas/videos/**"
       - "mis-paginas/fotos/**"
       - "icono/**"

@@ -1,152 +1,75 @@
 /**
- * ╔══════════════════════════════════════════════════════════════════╗
- * ║  QUÉ FOTO SALE EN CADA PÁGINA                                    ║
- * ║                                                                  ║
- * ║  Una lista por página, con el NOMBRE DEL ARCHIVO tal cual.        ║
- * ║  Nada de números sueltos ni de rangos que hay que descifrar.      ║
- * ║                                                                  ║
- * ║  Para cambiar la foto de una página:                              ║
- * ║    1. Deja tu imagen en `assets/img/`.                            ║
- * ║    2. Escribe su nombre aquí, en la línea de esa página.          ║
- * ║                                                                  ║
- * ║  Y ya. Puedes ponerle el nombre que quieras —«la-playa.jpg»,      ║
- * ║  «tu-risa.png»— y puedes repetir la misma foto en varias          ║
- * ║  páginas si te apetece.                                          ║
- * ║                                                                  ║
- * ║  Si te equivocas al escribir un nombre, el libro NO se rompe:     ║
- * ║  esa foto simplemente no sale, y en la consola aparece un aviso   ║
- * ║  diciéndote exactamente qué nombre no encontró y en qué página.   ║
- * ╚══════════════════════════════════════════════════════════════════╝
- */
-
-/** Dónde están las imágenes. Todo lo de abajo cuelga de aquí. */
-export const CARPETA = "assets/img/";
-
-/**
- * Atajo para cuando una página lleva muchas fotos seguidas y numeradas.
- * `serie("imagen", 6, 13)` es lo mismo que escribir imagen6.png … imagen13.png
- * a mano, pero sin escribir ocho líneas.
+ * FOTOS — qué carpeta de `fotos-paginas/` usa cada página.
  *
- * Si prefieres nombres de verdad, no lo uses: pon la lista y ya.
- */
-export const serie = (nombre, desde, hasta, ext = "png") =>
-  Array.from({ length: hasta - desde + 1 }, (_, i) => `${nombre}${desde + i}.${ext}`);
-
-/**
- * ───────────────────────────────────────────────────────────────────
- *  LA LISTA
+ * Cada página con imágenes tiene SU carpeta, en el orden del libro:
  *
- *  A la izquierda, el nombre de la página (el mismo que sale en el
- *  índice del libro). A la derecha, sus fotos.
- * ───────────────────────────────────────────────────────────────────
+ *   fotos-paginas/02-las-tres-de-la-manana/imagen1.png
+ *   fotos-paginas/06-recuerdos/imagen1.png … imagen8.png
+ *
+ * Para cambiar una foto, se sube otra con el MISMO nombre a esa carpeta.
+ * Para poner más o menos, se añaden o quitan `imagen9`, `imagen10`… y la
+ * página enseña las que haya, en orden. Vale .png, .jpg, .jpeg, .webp y .gif.
+ *
+ * Qué hay en cada carpeta lo sabe `contenido.js`, que se rehace solo en
+ * GitHub a cada subida: nunca se pide una foto que no exista.
  */
-export const fotosDeCadaPagina = {
-  // ══ ACTO I · ENCONTRARTE ═══════════════════════════════════════
-  "portada":            ["imagen1.png"],
-  "tres-de-la-manana":  ["imagen2.png"],
-  "lo-que-no-dije":     ["imagen3.png"],
-  "postal-primera":     ["imagen4.png"],
-  "tu-voz":             ["imagen5.png"],
-  "nuestro-desorden":   serie("imagen", 6, 13),   // las polaroids sueltas
-  "llueve-alla":        ["imagen14.png"],
 
-  // ══ ACTO II · CONOCERTE ════════════════════════════════════════
-  "lista-pendiente":    serie("imagen", 15, 16),
-  "por-pedacitos":      ["imagen17.png"],         // la que se arma por piezas
-  "me-caigo-mejor":     ["imagen18.png"],
-  "nuestra-pelicula":   serie("imagen", 19, 28),  // el carrete entero
-  "la-combinacion":     ["imagen29.png"],         // lo que guarda el candado
-  "mi-norte":           ["imagen30.png"],
-  "todo-lo-que-guardo": serie("imagen", 31, 46),  // la esfera de recuerdos
-  "en-voz-baja":        ["imagen47.png"],
+import contenido from "./contenido.js";
 
-  // ══ ACTO III · EXTRAÑARTE ══════════════════════════════════════
-  "regalo":             ["imagen48.png"],
-  "mismo-cielo":        serie("imagen", 49, 58),  // las estrellas
-  "postal-segunda":     ["imagen59.png"],
-  "te-lo-digo-bajito":  ["imagen60.png"],
-  "debajo-de-esto":     ["imagen61.png"],         // la de debajo de la lámina
-  "sin-adornos":        ["imagen62.png"],
+export const CARPETA = "fotos-paginas/";
 
-  // ══ ACTO IV · ELEGIRTE ═════════════════════════════════════════
-  "aburridos":          ["imagen63.png"],
-  "rompecabezas-dos":   ["imagen64.png"],
-  "acariciar":          serie("imagen", 65, 66),  // la que hay detrás del velo
-  "mejorar":            ["imagen67.png"],
-  "cosas-tuyas":        serie("imagen", 68, 75),  // las otras polaroids
-  "no-se-me-pasa":      serie("imagen", 76, 81),  // el otro carrete
-  "gracias":            ["imagen82.png"],
-  "te-elijo":           ["imagen84.png"],
-  "final":              ["imagen85.png"],
-
-  // La página del cajón no enseña fotos: lo que se toca ahí son objetos.
-  // «imagen83.png» está en la carpeta y no la usa nadie; si algún día quieres
-  // que salga en alguna página, escribe su nombre en la línea de esa página.
+export const carpetaDeCadaPagina = {
+  "portada":             "01-portada",
+  "tres-de-la-manana":   "02-las-tres-de-la-manana",
+  "lo-que-no-dije":      "03-lo-que-no-te-dije-ese-dia",
+  "postal-primera":      "04-postal-desde-aqui",
+  "tu-voz":              "05-como-dices-mi-nombre",
+  "nuestro-desorden":    "06-recuerdos",
+  "llueve-alla":         "07-cuando-llueve-alla",
+  "lista-pendiente":     "08-cosas-que-todavia-no-se-de-ti",
+  "por-pedacitos":       "09-te-fui-armando",
+  "me-caigo-mejor":      "10-contigo-me-caigo-mejor",
+  "nuestra-pelicula":    "11-nuestra-pelicula",
+  "la-combinacion":      "12-solo-tu-sabes-abrirlo",
+  "mi-norte":            "13-mi-norte",
+  "todo-lo-que-guardo":  "14-todo-lo-que-guardo",
+  "en-voz-baja":         "15-lo-que-no-se-ve-de-primeras",
+  "regalo":              "16-abrelo",
+  "mismo-cielo":         "17-el-mismo-cielo",
+  "postal-segunda":      "18-otra-postal",
+  "te-lo-digo-bajito":   "19-nada-del-otro-mundo",
+  "debajo-de-esto":      "20-debajo-de-esto",
+  "sin-adornos":         "21-sin-adornos",
+  "aburridos":           "22-aburridos-juntos",
+  "rompecabezas-dos":    "23-no-como-alguien-perfecto",
+  "acariciar":           "24-lo-que-quiero-de-ti",
+  "mejorar":             "25-lo-que-estoy-haciendo",
+  "cosas-tuyas":         "26-unas-de-tantas-fotitos-tuyas",
+  "no-se-me-pasa":       "27-no-se-me-pasa",
+  "gracias":             "28-gracias-por-quedarte",
+  "te-elijo":            "29-te-elijo",
+  "final":               "30-el-final",
 };
 
-/**
- * Traduce la lista de arriba al formato que espera el libro.
- * Nadie tiene que llamar a esto a mano: lo hace el manifiesto solo.
- */
+/** Las fotos de una página, en el formato que espera el libro. */
 export function fotosDe(idDePagina) {
-  const lista = fotosDeCadaPagina[idDePagina];
-  if (!lista) return [];
-  return lista.map((archivo, i) => ({
+  const carpeta = carpetaDeCadaPagina[idDePagina];
+  const archivos = (carpeta && contenido?.fotosPaginas?.[carpeta]) || [];
+  return archivos.map((archivo, i) => ({
     id: `${idDePagina}-${i}`,
-    src: archivo.includes("/") ? archivo : CARPETA + archivo,
+    src: CARPETA + carpeta + "/" + encodeURIComponent(archivo),
     nombre: archivo,
     pagina: idDePagina,
   }));
 }
 
-/**
- * Comprueba que todas las fotos de la lista existen de verdad.
- *
- * Se hace pidiéndolas por `Image`, que es lo mismo que hace el libro al
- * enseñarlas, así que si una está mal escrita se entera aquí y lo dice claro
- * en vez de dejar un hueco misterioso en la página.
- *
- * Sólo corre en local (lo llama `main.js`): a ella no le sirve de nada.
- */
+/** Avisa en la consola de las páginas que se han quedado sin ninguna foto. */
 export async function revisarFotos() {
-  const problemas = [];
-  const vistas = new Map();
-
-  const existe = (src) =>
-    new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve(true);
-      img.onerror = () => resolve(false);
-      img.src = src;
-    });
-
-  for (const [pagina, lista] of Object.entries(fotosDeCadaPagina)) {
-    for (const archivo of lista) {
-      const src = archivo.includes("/") ? archivo : CARPETA + archivo;
-      if (!vistas.has(src)) vistas.set(src, existe(src));
-      if (!(await vistas.get(src))) problemas.push({ pagina, archivo });
-    }
-  }
-
-  if (problemas.length) {
-    console.groupCollapsed(
-      `%c fotos %c ${problemas.length} que no existen`,
-      "background:#ec6f92;color:#fff;border-radius:3px 0 0 3px;padding:2px 6px",
-      "background:#2a1436;color:#f6e7ef;border-radius:0 3px 3px 0;padding:2px 6px"
-    );
-    for (const { pagina, archivo } of problemas) {
-      console.warn(`· "${archivo}" no está en ${CARPETA} — lo pide la página "${pagina}"`);
-    }
-    console.info("La lista de qué foto va en qué página: src/data/fotos.js");
-    console.groupEnd();
-  } else {
-    const total = new Set([...Object.values(fotosDeCadaPagina).flat()]).size;
-    console.info(
-      `%c fotos %c ${total} en su sitio, ninguna rota`,
-      "background:#7ee0c0;color:#20080f;border-radius:3px 0 0 3px;padding:2px 6px",
-      "background:#2a1436;color:#f6e7ef;border-radius:0 3px 3px 0;padding:2px 6px"
+  const vacias = Object.entries(carpetaDeCadaPagina).filter(([id]) => !fotosDe(id).length);
+  if (vacias.length) {
+    console.warn(
+      "[fotos] carpetas sin imágenes: " + vacias.map(([, c]) => CARPETA + c).join(", ")
     );
   }
-
-  return problemas;
+  return vacias;
 }

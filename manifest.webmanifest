@@ -14,7 +14,7 @@
   "theme_color": "#0a0510",
   "categories": ["lifestyle", "entertainment"],
   "icons": [
-    { "src": "assets/img/imagen1.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "assets/img/imagen1.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "icono/icono.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icono/icono.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

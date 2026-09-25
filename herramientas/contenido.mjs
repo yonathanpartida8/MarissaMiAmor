@@ -34,6 +34,21 @@ const orden = (a, b) => a.localeCompare(b, "es", { numeric: true });
 const misVideos = leer("mis-paginas/videos").filter((f) => /\.(mp4|webm|m4v|mov)$/i.test(f)).sort(orden);
 const misFotos = leer("mis-paginas/fotos").filter((f) => /\.(png|jpe?g|webp|gif|avif)$/i.test(f)).sort(orden);
 
+// Una carpeta por página con imágenes: imagen1, imagen2… en orden.
+const fotosPaginas = Object.fromEntries(
+  leer("fotos-paginas")
+    .filter((c) => !c.includes("."))
+    .sort(orden)
+    .map((c) => [
+      c,
+      leer(`fotos-paginas/${c}`)
+        .map((f) => ({ f, m: /^imagen(\d+)\.(png|jpe?g|webp|gif|avif)$/i.exec(f) }))
+        .filter((x) => x.m)
+        .sort((a, b) => a.m[1] - b.m[1])
+        .map((x) => x.f),
+    ])
+);
+
 const ICONOS = ["icono/icono.png", "icono/icono.jpg", "icono/icono.jpeg", "icono/icono.webp", "icono/icono.svg", "icono/icon.png"];
 const icono = ICONOS.find((r) => existsSync(join(RAIZ, r))) || null;
 
@@ -43,6 +58,7 @@ const contenido = {
   misVideos,
   misFotos,
   icono,
+  fotosPaginas,
   noche: existsSync(join(RAIZ, "noche-estrellada/index.html")),
 };
 

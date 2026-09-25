@@ -128,6 +128,152 @@ export default {
     "VID-20260915-WA0017.mp4"
   ],
   "misFotos": [],
-  "icono": null,
+  "icono": "icono/icono.png",
+  "fotosPaginas": {
+    "01-portada": [
+      "imagen1.png"
+    ],
+    "02-las-tres-de-la-manana": [
+      "imagen1.png"
+    ],
+    "03-lo-que-no-te-dije-ese-dia": [
+      "imagen1.png"
+    ],
+    "04-postal-desde-aqui": [
+      "imagen1.png"
+    ],
+    "05-como-dices-mi-nombre": [
+      "imagen1.png"
+    ],
+    "06-recuerdos": [
+      "imagen1.png",
+      "imagen2.png",
+      "imagen3.png",
+      "imagen4.png",
+      "imagen5.png",
+      "imagen6.png",
+      "imagen7.png",
+      "imagen8.png"
+    ],
+    "07-cuando-llueve-alla": [
+      "imagen1.png"
+    ],
+    "08-cosas-que-todavia-no-se-de-ti": [
+      "imagen1.png",
+      "imagen2.png"
+    ],
+    "09-te-fui-armando": [
+      "imagen1.png"
+    ],
+    "10-contigo-me-caigo-mejor": [
+      "imagen1.png"
+    ],
+    "11-nuestra-pelicula": [
+      "imagen1.png",
+      "imagen2.png",
+      "imagen3.png",
+      "imagen4.png",
+      "imagen5.png",
+      "imagen6.png",
+      "imagen7.png",
+      "imagen8.png",
+      "imagen9.png",
+      "imagen10.png"
+    ],
+    "12-solo-tu-sabes-abrirlo": [
+      "imagen1.png"
+    ],
+    "13-mi-norte": [
+      "imagen1.png"
+    ],
+    "14-todo-lo-que-guardo": [
+      "imagen1.png",
+      "imagen2.png",
+      "imagen3.png",
+      "imagen4.png",
+      "imagen5.png",
+      "imagen6.png",
+      "imagen7.png",
+      "imagen8.png",
+      "imagen9.png",
+      "imagen10.png",
+      "imagen11.png",
+      "imagen12.png",
+      "imagen13.png",
+      "imagen14.png",
+      "imagen15.png",
+      "imagen16.png"
+    ],
+    "15-lo-que-no-se-ve-de-primeras": [
+      "imagen1.png"
+    ],
+    "16-abrelo": [
+      "imagen1.png"
+    ],
+    "17-el-mismo-cielo": [
+      "imagen1.png",
+      "imagen2.png",
+      "imagen3.png",
+      "imagen4.png",
+      "imagen5.png",
+      "imagen6.png",
+      "imagen7.png",
+      "imagen8.png",
+      "imagen9.png",
+      "imagen10.png"
+    ],
+    "18-otra-postal": [
+      "imagen1.png"
+    ],
+    "19-nada-del-otro-mundo": [
+      "imagen1.png"
+    ],
+    "20-debajo-de-esto": [
+      "imagen1.png"
+    ],
+    "21-sin-adornos": [
+      "imagen1.png"
+    ],
+    "22-aburridos-juntos": [
+      "imagen1.png"
+    ],
+    "23-no-como-alguien-perfecto": [
+      "imagen1.png"
+    ],
+    "24-lo-que-quiero-de-ti": [
+      "imagen1.png",
+      "imagen2.png"
+    ],
+    "25-lo-que-estoy-haciendo": [
+      "imagen1.png"
+    ],
+    "26-unas-de-tantas-fotitos-tuyas": [
+      "imagen1.png",
+      "imagen2.png",
+      "imagen3.png",
+      "imagen4.png",
+      "imagen5.png",
+      "imagen6.png",
+      "imagen7.png",
+      "imagen8.png"
+    ],
+    "27-no-se-me-pasa": [
+      "imagen1.png",
+      "imagen2.png",
+      "imagen3.png",
+      "imagen4.png",
+      "imagen5.png",
+      "imagen6.png"
+    ],
+    "28-gracias-por-quedarte": [
+      "imagen1.png"
+    ],
+    "29-te-elijo": [
+      "imagen1.png"
+    ],
+    "30-el-final": [
+      "imagen1.png"
+    ]
+  },
   "noche": true
 };
