@@ -10,7 +10,7 @@
  *
  * En GitHub se ejecuta solo a cada subida (`.github/workflows/contenido.yml`).
  */
-import { readdirSync, existsSync, writeFileSync } from "node:fs";
+import { readdirSync, existsSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const RAIZ = new URL("..", import.meta.url).pathname;
@@ -85,18 +85,30 @@ const archivosNoche = [
   ...recorrer("noche-estrellada").filter((f) => SONIDO.test(f)),
   ...leer("assets/audio").filter((f) => SONIDO.test(f)).map((f) => `../assets/audio/${f}`),
 ].map(nfc).sort();
-writeFileSync(
-  join(RAIZ, "noche-estrellada/archivos.js"),
-  "// GENERADO por `node herramientas/contenido.mjs`: los sonidos que existen.\n" +
-    `window.NOCHE_ARCHIVOS = ${JSON.stringify(archivosNoche, null, 2)};\n`
-);
-
-writeFileSync(
-  join(RAIZ, "src/data/contenido.js"),
-  "// GENERADO: no se edita a mano. Lo rehace `node herramientas/contenido.mjs`\n" +
+const SALIDAS = {
+  "noche-estrellada/archivos.js":
+    "// GENERADO por `node herramientas/contenido.mjs`: los sonidos que existen.\n" +
+    `window.NOCHE_ARCHIVOS = ${JSON.stringify(archivosNoche, null, 2)};\n`,
+  "src/data/contenido.js":
+    "// GENERADO: no se edita a mano. Lo rehace `node herramientas/contenido.mjs`\n" +
     "// y, en GitHub, la acción `.github/workflows/contenido.yml` a cada subida.\n" +
-    `export default ${JSON.stringify(contenido, null, 2)};\n`
-);
+    `export default ${JSON.stringify(contenido, null, 2)};\n`,
+};
+
+// Con `--comprobar` no escribe nada: sólo dice si las listas están al día.
+if (process.argv.includes("--comprobar")) {
+  const viejas = Object.entries(SALIDAS).filter(
+    ([ruta, texto]) => !existsSync(join(RAIZ, ruta)) || readFileSync(join(RAIZ, ruta), "utf8") !== texto
+  );
+  if (viejas.length) {
+    console.log(`listas desactualizadas: ${viejas.map(([r]) => r).join(", ")}`);
+    process.exit(1);
+  }
+  console.log("listas al día");
+  process.exit(0);
+}
+
+for (const [ruta, texto] of Object.entries(SALIDAS)) writeFileSync(join(RAIZ, ruta), texto);
 console.log(
   `contenido: ${paginasHtml.length} páginas html · ${amores.length} fotos de amores · ` +
     `${misVideos.length} vídeos · ${misFotos.length} fotos · icono ${icono || "—"} · noche ${contenido.noche} · ${archivosNoche.length} sonidos de la noche`

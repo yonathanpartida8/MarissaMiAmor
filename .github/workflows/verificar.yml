@@ -1,0 +1,24 @@
+# Revisa que el libro esté entero en cada subida: que cada página tenga su
+# tipo, su texto, sus fotos y su sorpresa, que las fechas de los candados
+# sean válidas, que no falte ningún archivo enlazado y que todo el código
+# se pueda leer. Si algo falla, la subida sale con una cruz roja y el
+# registro dice qué y dónde.
+name: Verificar el libro
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node herramientas/verificar.mjs
