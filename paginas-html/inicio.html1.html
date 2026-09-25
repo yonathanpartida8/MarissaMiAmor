@@ -2,56 +2,793 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!--
-  inicio.html1 — LA PRIMERA PÁGINA DEL LIBRITO.
-  Es tuya: cámbiala entera o pega aquí tu propio HTML. Sale antes que
-  nada; después va inicio.html2.html y luego el candado de la fecha.
-  Conserva el <title>: es su nombre en el índice.
--->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#fff5f9">
+<meta name="format-detection" content="telephone=no">
 <title>Hola, mi amorcito</title>
 <style>
-  :root { --rosa: var(--acento, #ffa9bf); --letra: var(--texto, #3d2a2b); }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; min-height: 100svh; display: flex; flex-direction: column;
-    align-items: center; justify-content: safe center; gap: .9rem;
-    padding: 1.2rem 1.2rem calc(var(--hueco-barra, 0rem) + 1.2rem);
-    text-align: center; overflow-x: hidden;
-    font-family: var(--tipo, Georgia, serif); color: var(--letra);
+  /* ============ PALETA PASTEL ============ */
+  :root{
+    --acento1: #f7a8c4;
+    --acento2: #c9b4f0;
+    --acento3: #ffc4a3;
+    --acento4: #a8e6cf;
+    --texto:   #5a4250;
+    --texto-suave: #9b7891;
+
+    --card-bg: linear-gradient(160deg, rgba(255,255,255,.97), rgba(255,247,251,.93));
+    --card-shadow:
+      inset 0 1px 0 rgba(255,255,255,.95),
+      0 30px 60px -28px rgba(190,120,160,.4),
+      0 12px 26px -14px rgba(190,120,160,.25);
   }
-  h1 { margin: 0; font-family: var(--tipo-titulo, Georgia, serif); font-weight: 400;
-       font-size: clamp(2rem, 11vw, 3rem); line-height: 1.05; }
-  p { margin: 0; max-width: 30ch; font-size: clamp(1rem, 4.4vw, 1.2rem); line-height: 1.5; opacity: .85; }
-  .latido { font-size: clamp(3rem, 18vw, 5rem); color: var(--rosa); animation: late 1.3s ease-in-out infinite;
-            filter: drop-shadow(0 6px 16px color-mix(in srgb, var(--rosa) 60%, transparent)); }
-  @keyframes late { 0%,100% { transform: scale(1) } 15% { transform: scale(1.18) } 30% { transform: scale(1) } 45% { transform: scale(1.1) } }
-  .pista { font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; opacity: .55; animation: va 2.4s ease-in-out infinite; }
-  @keyframes va { 50% { transform: translateX(6px); opacity: .9 } }
-  .flota { position: fixed; bottom: -2rem; color: var(--rosa); pointer-events: none; animation: sube linear forwards; }
-  @keyframes sube { to { transform: translateY(-110vh) rotate(25deg); opacity: 0 } }
-  @media (prefers-reduced-motion: reduce) { .latido, .pista { animation: none } }
+
+  /* ============ RESET / BASE ============ */
+  *, *::before, *::after{ box-sizing: border-box; }
+  html{ -webkit-text-size-adjust: 100%; }
+
+  html, body{
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body{
+    min-height: 100vh;
+    min-height: 100svh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: safe center;
+    align-items: center;
+    padding:
+      max(env(safe-area-inset-top), 1rem)
+      max(env(safe-area-inset-right), 1rem)
+      max(env(safe-area-inset-bottom), 1rem)
+      max(env(safe-area-inset-left), 1rem);
+    overflow-x: hidden;
+    font-family: var(--tipo, Georgia, "Times New Roman", serif);
+    color: var(--texto);
+    background: #fff5f9;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ============ FONDO PASTEL ANIMADO ============ */
+  .fondo{
+    position: fixed;
+    inset: -25%;
+    z-index: -3;
+    pointer-events: none;
+    filter: blur(55px);
+    opacity: .9;
+    background:
+      radial-gradient(28% 24% at 22% 22%, var(--acento1), transparent 70%),
+      radial-gradient(30% 26% at 80% 30%, var(--acento2), transparent 72%),
+      radial-gradient(34% 30% at 50% 92%, var(--acento3), transparent 74%),
+      radial-gradient(24% 22% at 12% 82%, var(--acento1), transparent 74%);
+    animation: mover 24s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  @keyframes mover{
+    0%   { transform: translate(0, 0) scale(1); }
+    50%  { transform: translate(-2%, 1.5%) scale(1.06); }
+    100% { transform: translate(2%, -1%) scale(1.02); }
+  }
+
+  /* ============ BOTÓN SILENCIO ============ */
+  .mute{
+    position: fixed;
+    top: max(env(safe-area-inset-top), .8rem);
+    right: max(env(safe-area-inset-right), .8rem);
+    z-index: 100;
+    width: 44px; height: 44px;
+    display: grid; place-items: center;
+    border: 1.5px solid rgba(200,140,175,.35);
+    border-radius: 50%;
+    background: rgba(255,255,255,.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: var(--texto);
+    font-size: 1.1rem;
+    cursor: pointer;
+    box-shadow: 0 6px 16px -8px rgba(190,120,160,.4);
+    transition: transform .2s ease, opacity .2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mute:active{ transform: scale(.92); }
+  .mute.silenciado{ opacity: .5; }
+
+  /* ============ ESCENARIO 3D ============ */
+  .escena{
+    width: min(94vw, 26rem);
+    perspective: 1200px;
+    perspective-origin: 50% 50%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .tarjeta{
+    --rx: 0deg;
+    --ry: 0deg;
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .65rem;
+    padding: clamp(1.9rem, 8vw, 2.5rem) clamp(1.3rem, 6vw, 2rem) clamp(1.6rem, 6vw, 2rem);
+    border-radius: 28px;
+    transform-style: preserve-3d;
+    transform: rotateX(var(--rx)) rotateY(var(--ry));
+    transition: transform .15s cubic-bezier(.2,.8,.25,1);
+    background: var(--card-bg);
+    box-shadow: var(--card-shadow);
+    isolation: isolate;
+    will-change: transform;
+  }
+
+  /* borde pastel multicapa */
+  .tarjeta::before{
+    content: "";
+    position: absolute; inset: 0; z-index: 6;
+    border-radius: inherit;
+    padding: 1.6px;
+    background: linear-gradient(140deg,
+      var(--acento1), var(--acento2) 45%, var(--acento3) 80%, var(--acento1));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+  /* filete interior punteado */
+  .tarjeta::after{
+    content: "";
+    position: absolute; inset: 9px; z-index: 1;
+    border-radius: 20px;
+    border: 1px dashed rgba(200,140,175,.32);
+    pointer-events: none;
+  }
+
+  /* capas con parallax */
+  .capa{
+    transform-style: preserve-3d;
+    transform: translateZ(var(--z, 0px));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .45rem;
+    width: 100%;
+  }
+
+  /* ============ CORAZÓN ============ */
+  .halo{
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: .3rem .85rem;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .2s cubic-bezier(.2,.9,.3,1.4);
+  }
+  .halo::before{
+    content: "";
+    position: absolute;
+    width: 165%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(247,168,196,.5), transparent 62%);
+    animation: pulso 3.4s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .corazon{
+    position: relative;
+    display: block;
+    line-height: 1;
+    font-size: clamp(2.9rem, 15vw, 3.9rem);
+    color: var(--acento1);
+    text-shadow:
+      0 6px 18px rgba(247,168,196,.5),
+      0 0 40px rgba(201,180,240,.3);
+    animation: late 1.6s ease-in-out infinite;
+    transition: transform .2s cubic-bezier(.2,.9,.3,1.5), color .3s ease, text-shadow .3s ease;
+    will-change: transform;
+  }
+  .halo.tocando{ transform: scale(1.12); }
+  .halo.tocando .corazon{
+    transform: scale(1.28);
+    color: var(--acento2);
+    text-shadow:
+      0 6px 22px rgba(201,180,240,.75),
+      0 0 60px rgba(247,168,196,.6);
+    animation-duration: .5s;
+  }
+  @keyframes late{
+    0%, 100%{ transform: scale(1); }
+    14%{ transform: scale(1.12); }
+    28%{ transform: scale(1); }
+    42%{ transform: scale(1.06); }
+    56%{ transform: scale(1); }
+  }
+  @keyframes pulso{
+    0%, 100%{ transform: scale(.85); opacity: .55; }
+    50%    { transform: scale(1.12); opacity: 1; }
+  }
+
+  /* ============ TEXTOS ============ */
+  .ceja{
+    margin: 0;
+    font-size: .68rem;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    color: var(--texto-suave);
+    opacity: .9;
+  }
+  h1{
+    margin: 0;
+    font-weight: 400;
+    font-size: clamp(2rem, 10vw, 2.8rem);
+    line-height: 1.08;
+    background: linear-gradient(120deg,
+      var(--acento1) 0%, var(--acento2) 50%, var(--acento3) 100%);
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: brillo 9s ease-in-out infinite;
+  }
+  @keyframes brillo{
+    0%, 100%{ background-position: 0% 50%; }
+    50%    { background-position: 100% 50%; }
+  }
+
+  .frase{
+    margin: 0;
+    max-width: 28ch;
+    font-size: clamp(.98rem, 4.2vw, 1.12rem);
+    line-height: 1.55;
+    opacity: .82;
+    color: var(--texto);
+  }
+
+  .pista-toque{
+    font-size: .68rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--texto-suave);
+    opacity: .55;
+    animation: vaiven 2.6s ease-in-out infinite;
+  }
+  @keyframes vaiven{
+    0%, 100%{ opacity: .4; }
+    50%    { opacity: .85; }
+  }
+
+  /* ============ BOTÓN SEGUIR ============ */
+  .accion{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .8rem;
+    margin-top: .4rem;
+  }
+  .seguir{
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: .55rem;
+    min-height: 52px;
+    padding: 1rem 2.2rem;
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    color: #7a3f5e;
+    background: linear-gradient(150deg, #ffffff, #ffe3ec);
+    box-shadow:
+      0 16px 30px -14px rgba(190,120,160,.5),
+      0 6px 14px -8px rgba(190,120,160,.3),
+      inset 0 1px 0 rgba(255,255,255,1),
+      inset 0 0 0 1.6px var(--acento1);
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .2s cubic-bezier(.2,.9,.3,1.4), box-shadow .25s ease;
+    overflow: hidden;
+  }
+  .seguir::before{
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.95) 50%, transparent 60%);
+    transform: translateX(-120%);
+    transition: transform .9s ease;
+    pointer-events: none;
+  }
+  .seguir:hover{
+    transform: translateY(-2px) scale(1.03);
+    box-shadow:
+      0 22px 38px -16px rgba(190,120,160,.55),
+      0 8px 16px -8px rgba(190,120,160,.35),
+      inset 0 1px 0 rgba(255,255,255,1),
+      inset 0 0 0 1.6px var(--acento2);
+  }
+  .seguir:hover::before{ transform: translateX(120%); }
+  .seguir:active{ transform: translateY(0) scale(.96); }
+  .seguir:focus-visible{ outline: 3px solid var(--acento2); outline-offset: 4px; }
+
+  .flecha{
+    display: inline-block;
+    animation: va 1.9s ease-in-out infinite;
+  }
+  @keyframes va{
+    0%, 100%{ transform: translateX(0); }
+    50%    { transform: translateX(5px); }
+  }
+
+  /* ============ CHISPAS ============ */
+  .chispa{
+    position: fixed;
+    z-index: 50;
+    pointer-events: none;
+    line-height: 1;
+    transform: translate(-50%, -50%);
+    animation: explotar .95s cubic-bezier(.15,.7,.3,1) forwards;
+    will-change: transform, opacity;
+  }
+  @keyframes explotar{
+    0%{
+      transform: translate(-50%, -50%) scale(.4) rotate(0deg);
+      opacity: 1;
+    }
+    100%{
+      transform:
+        translate(calc(-50% + var(--dx)), calc(-50% + var(--dy)))
+        scale(1.15) rotate(var(--rot));
+      opacity: 0;
+    }
+  }
+
+  /* rastro del cursor (solo desktop) */
+  .rastro{
+    position: fixed;
+    z-index: 40;
+    pointer-events: none;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--acento1), transparent 70%);
+    transform: translate(-50%, -50%);
+    animation: desvanecer .8s ease-out forwards;
+    will-change: transform, opacity;
+  }
+  @keyframes desvanecer{
+    0%  { opacity: .75; transform: translate(-50%,-50%) scale(1); }
+    100%{ opacity: 0;   transform: translate(-50%,-50%) scale(2.4); }
+  }
+
+  /* ============ RESPONSIVE AJUSTES FINOS ============ */
+  @media (max-height: 640px){
+    .tarjeta{ padding: 1.5rem 1.1rem 1.3rem; gap: .4rem; }
+    .corazon{ font-size: clamp(2.4rem, 12vw, 3rem); }
+    h1{ font-size: clamp(1.7rem, 9vw, 2.3rem); }
+    .frase{ font-size: .95rem; }
+    .seguir{ padding: .85rem 1.9rem; min-height: 48px; }
+  }
+
+  @media (min-width: 720px){
+    .escena{ width: min(88vw, 24rem); }
+  }
+
+  /* ============ MENOS MOVIMIENTO ============ */
+  @media (prefers-reduced-motion: reduce){
+    .fondo, .corazon, .halo::before, h1, .pista-toque, .flecha{ animation: none !important; }
+    .tarjeta{ transition: none !important; transform: none !important; }
+    .chispa, .rastro{ display: none; }
+  }
 </style>
 </head>
 <body>
-  <div class="latido" aria-hidden="true">♥</div>
-  <h1>Hola, mi amorcito</h1>
-  <p>Te hice algo con mucho cariño. Tómate tu tiempo, aquí no hay prisa.</p>
-  <span class="pista">desliza para seguir →</span>
+  <div class="fondo" aria-hidden="true"></div>
+
+  <button class="mute" id="mute" type="button" aria-label="Silenciar sonidos" title="Sonido">🔊</button>
+
+  <div class="escena">
+    <main class="tarjeta" id="tarjeta">
+      <div class="capa" style="--z: 45px;">
+        <div class="halo" id="halo" role="button" tabindex="0" aria-label="Toca el corazón">
+          <span class="corazon" aria-hidden="true">♥</span>
+        </div>
+      </div>
+
+      <div class="capa" style="--z: 25px;">
+        <p class="ceja">Para ti, mi amor</p>
+        <h1>Hola,<br>mi amorcito</h1>
+      </div>
+
+      <div class="capa" style="--z: 12px;">
+        <p class="frase">Te hice algo con mucho cariño. Tómate tu tiempo, aquí no hay prisa.</p>
+        <span class="pista-toque" aria-hidden="true">♥ toca el corazón ♥</span>
+      </div>
+
+      <div class="accion" style="transform: translateZ(30px);">
+        <button class="seguir" id="seguir" type="button">
+          Seguir <span class="flecha" aria-hidden="true">→</span>
+        </button>
+      </div>
+    </main>
+  </div>
+
 <script>
-  // Corazoncitos que suben de vez en cuando. Al pasar de página, el librito
-  // descarga este documento y el bucle se va con él.
-  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    setInterval(() => {
-      const c = document.createElement("span");
-      c.className = "flota"; c.textContent = "♥";
-      c.style.left = Math.random() * 100 + "vw";
-      c.style.fontSize = 0.8 + Math.random() * 1.2 + "rem";
-      c.style.animationDuration = 5 + Math.random() * 4 + "s";
-      document.body.append(c);
-      setTimeout(() => c.remove(), 9500);
-    }, 900);
+(function(){
+  "use strict";
+
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var tarjeta = document.getElementById("tarjeta");
+  var halo    = document.getElementById("halo");
+  var boton   = document.getElementById("seguir");
+  var mute    = document.getElementById("mute");
+
+  /* ============================================================
+     AUDIO — Web Audio API (sin archivos externos)
+     ============================================================ */
+  var AC = null;
+  var muted = false;
+  var audioUnlocked = false;
+
+  function initAudio(){
+    if (AC) return;
+    try{
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      AC = new Ctx();
+    }catch(e){ AC = null; }
   }
+  function resumeAudio(){
+    if (!AC) return;
+    if (AC.state === "suspended"){
+      AC.resume().catch(function(){});
+    }
+  }
+  function unlockAudio(){
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    initAudio();
+    resumeAudio();
+  }
+  document.addEventListener("touchstart", unlockAudio, { passive: true });
+  document.addEventListener("touchend",   unlockAudio, { passive: true });
+  document.addEventListener("click",      unlockAudio);
+  document.addEventListener("keydown",    unlockAudio);
+
+  function tone(opts){
+    if (!AC || muted) return;
+    try{
+      var t0 = AC.currentTime;
+      var osc = AC.createOscillator();
+      var g   = AC.createGain();
+      osc.type = opts.type || "sine";
+      osc.frequency.setValueAtTime(opts.freq, t0);
+      if (opts.sweepTo){
+        osc.frequency.exponentialRampToValueAtTime(opts.sweepTo, t0 + (opts.dur || 0.2));
+      }
+      var gain = opts.gain || 0.12;
+      var dur  = opts.dur  || 0.2;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(gain, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(g);
+      g.connect(AC.destination);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.05);
+    }catch(e){}
+  }
+
+  /* Pequeño "plink" al tocar */
+  function sndTap(){
+    var base = 900 + Math.random() * 500;
+    tone({ freq: base, type: "sine", dur: 0.09, gain: 0.05, sweepTo: base * 1.35 });
+  }
+  /* Campanita cálida para el corazón */
+  function sndHeart(){
+    tone({ freq: 523.25, type: "sine",     dur: 0.28, gain: 0.10 });
+    setTimeout(function(){ tone({ freq: 783.99, type: "sine", dur: 0.36, gain: 0.07 }); }, 85);
+    setTimeout(function(){ tone({ freq: 1046.5, type: "triangle", dur: 0.4, gain: 0.045 }); }, 175);
+  }
+  /* Arpegio brillante para el botón */
+  function sndButton(){
+    [659.25, 783.99, 987.77, 1318.5].forEach(function(f, i){
+      setTimeout(function(){
+        tone({ freq: f, type: "triangle", dur: 0.3, gain: 0.08 });
+      }, i * 65);
+    });
+  }
+  /* Pequeña vibración háptica */
+  function haptic(ms){
+    if (navigator.vibrate){
+      try{ navigator.vibrate(ms); }catch(e){}
+    }
+  }
+
+  /* Botón de silencio */
+  mute.addEventListener("click", function(e){
+    e.stopPropagation();
+    muted = !muted;
+    mute.textContent = muted ? "🔇" : "🔊";
+    mute.classList.toggle("silenciado", muted);
+    mute.setAttribute("aria-label", muted ? "Activar sonidos" : "Silenciar sonidos");
+    if (!muted){
+      unlockAudio();
+      sndTap();
+    }
+  });
+
+  /* ============================================================
+     3D TILT — escritorio con cursor / móvil con arrastre
+     ============================================================ */
+  var MAX_TILT = 12;
+  function setTilt(dx, dy, fuerza){
+    var f = fuerza || 1;
+    var ry = Math.max(-MAX_TILT, Math.min(MAX_TILT, dx * f));
+    var rx = Math.max(-MAX_TILT, Math.min(MAX_TILT, -dy * f));
+    tarjeta.style.setProperty("--ry", ry.toFixed(2) + "deg");
+    tarjeta.style.setProperty("--rx", rx.toFixed(2) + "deg");
+  }
+  function resetTilt(){
+    tarjeta.style.setProperty("--ry", "0deg");
+    tarjeta.style.setProperty("--rx", "0deg");
+  }
+
+  if (!reduce){
+    /* --- Escritorio: sigue al cursor con normalidad --- */
+    window.addEventListener("pointermove", function(e){
+      if (e.pointerType === "touch") return;
+      var r = tarjeta.getBoundingClientRect();
+      var cx = r.left + r.width / 2;
+      var cy = r.top + r.height / 2;
+      var dx = (e.clientX - cx) / (r.width  / 2) * MAX_TILT;
+      var dy = (e.clientY - cy) / (r.height / 2) * MAX_TILT;
+      setTilt(dx, dy, 1);
+    }, { passive: true });
+
+    window.addEventListener("pointerleave", resetTilt);
+    window.addEventListener("blur", resetTilt);
+
+    /* --- Móvil: inclina solo cuando el dedo se mueve (no al tocar) --- */
+    var touchStartPos = null;
+    var touchActivo = false;
+
+    tarjeta.addEventListener("touchstart", function(e){
+      var t = e.touches[0]; if (!t) return;
+      touchActivo = true;
+      touchStartPos = { x: t.clientX, y: t.clientY };
+    }, { passive: true });
+
+    tarjeta.addEventListener("touchmove", function(e){
+      if (!touchActivo || !touchStartPos) return;
+      var t = e.touches[0]; if (!t) return;
+      var dx = t.clientX - touchStartPos.x;
+      var dy = t.clientY - touchStartPos.y;
+      /* dead zone para no inclinar en un simple toque */
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      /* normalizamos por el ancho de la tarjeta */
+      var r = tarjeta.getBoundingClientRect();
+      var nx = dx / (r.width  / 2) * MAX_TILT * 1.2;
+      var ny = dy / (r.height / 2) * MAX_TILT * 1.2;
+      setTilt(nx, ny, 1);
+    }, { passive: true });
+
+    function finTouch(){
+      touchActivo = false;
+      touchStartPos = null;
+      resetTilt();
+    }
+    tarjeta.addEventListener("touchend",    finTouch, { passive: true });
+    tarjeta.addEventListener("touchcancel", finTouch, { passive: true });
+  }
+
+  /* ============================================================
+     CHISPAS / EXPLOSIONES
+     ============================================================ */
+  var glifos = ["♥","✦","❤","✿","✧","♡","❀"];
+  var colores = ["#f7a8c4","#c9b4f0","#ffc4a3","#a8e6cf","#ffd9c2"];
+
+  function estallido(cx, cy, cantidad, fuerza){
+    if (reduce) return;
+    cantidad = cantidad || 14;
+    fuerza   = fuerza   || 90;
+    for (var i = 0; i < cantidad; i++){
+      (function(){
+        var s = document.createElement("span");
+        s.className = "chispa";
+        s.textContent = glifos[(Math.random() * glifos.length) | 0];
+        var ang  = Math.random() * Math.PI * 2;
+        var dist = fuerza * (0.5 + Math.random() * 0.9);
+        s.style.left = cx + "px";
+        s.style.top  = cy + "px";
+        s.style.setProperty("--dx", (Math.cos(ang) * dist).toFixed(1) + "px");
+        s.style.setProperty("--dy", (Math.sin(ang) * dist).toFixed(1) + "px");
+        s.style.setProperty("--rot", ((Math.random() * 540 - 270) | 0) + "deg");
+        s.style.fontSize = (0.75 + Math.random() * 1.1).toFixed(2) + "rem";
+        s.style.color = colores[(Math.random() * colores.length) | 0];
+        document.body.appendChild(s);
+        setTimeout(function(){ s.remove(); }, 1050);
+      })();
+    }
+  }
+
+  /* ============================================================
+     CORAZÓN INTERACTIVO
+     ============================================================ */
+  function tocarCorazon(cx, cy){
+    halo.classList.add("tocando");
+    estallido(cx, cy, 20, 115);
+    sndHeart();
+    haptic([12, 30, 18]);
+  }
+  function soltarCorazon(){
+    halo.classList.remove("tocando");
+  }
+
+  halo.addEventListener("pointerdown", function(e){
+    e.preventDefault();
+    unlockAudio();
+    tocarCorazon(e.clientX, e.clientY);
+  });
+  halo.addEventListener("pointerup", soltarCorazon);
+  halo.addEventListener("pointerleave", soltarCorazon);
+  halo.addEventListener("pointercancel", soltarCorazon);
+
+  halo.addEventListener("keydown", function(e){
+    if (e.key === " " || e.key === "Enter"){
+      e.preventDefault();
+      var r = halo.getBoundingClientRect();
+      unlockAudio();
+      tocarCorazon(r.left + r.width / 2, r.top + r.height / 2);
+      setTimeout(soltarCorazon, 320);
+    }
+  });
+
+  /* ============================================================
+     RASTRO DEL CURSOR (solo desktop)
+     ============================================================ */
+  if (!reduce && matchMedia("(hover: hover)").matches){
+    var ultimo = 0;
+    window.addEventListener("pointermove", function(e){
+      if (e.pointerType === "touch") return;
+      var ahora = Date.now();
+      if (ahora - ultimo < 55) return;
+      ultimo = ahora;
+      var r = document.createElement("span");
+      r.className = "rastro";
+      r.style.left = e.clientX + "px";
+      r.style.top  = e.clientY + "px";
+      document.body.appendChild(r);
+      setTimeout(function(){ r.remove(); }, 820);
+    }, { passive: true });
+  }
+
+  /* ============================================================
+     TOQUES EN CUALQUIER PARTE (chispa + sonido)
+     ============================================================ */
+  document.addEventListener("pointerdown", function(e){
+    if (e.target.closest("button") || e.target.closest(".halo")) return;
+    unlockAudio();
+    estallido(e.clientX, e.clientY, 7, 70);
+    sndTap();
+    haptic(8);
+  }, { passive: true });
+
+  /* ============================================================
+     BOTÓN SEGUIR
+     ============================================================ */
+  function siguientePagina(){
+    /* 1) Si el librito expone una función pública, la usamos. */
+    var nombres = ["siguiente","irSiguiente","nextPage","pasarPagina","avanzar","next"];
+    for (var i = 0; i < nombres.length; i++){
+      if (typeof window[nombres[i]] === "function"){
+        try{ window[nombres[i]](); return true; }catch(e){}
+      }
+    }
+    /* 2) Si no, simulamos un swipe táctil hacia la izquierda. */
+    var w = innerWidth, h = innerHeight;
+    var x0 = w * 0.85, x1 = w * 0.12, y = h * 0.5;
+    var objetivo = document.elementFromPoint(x0, y) || document.body;
+    var pasos = 8, i;
+
+    try{
+      if (("ontouchstart" in window) && (typeof Touch === "function")){
+        var mk = function(t, x){
+          var tt = new Touch({ identifier: 1, target: objetivo, clientX: x, clientY: y, pageX: x, pageY: y });
+          var vacio = (t === "touchend");
+          return new TouchEvent(t, {
+            bubbles: true, cancelable: true, composed: true,
+            touches: vacio ? [] : [tt],
+            targetTouches: vacio ? [] : [tt],
+            changedTouches: [tt]
+          });
+        };
+        objetivo.dispatchEvent(mk("touchstart", x0));
+        for (i = 1; i <= pasos; i++){
+          (function(k){
+            setTimeout(function(){
+              objetivo.dispatchEvent(mk("touchmove", x0 + (x1 - x0) * k / pasos));
+            }, k * 16);
+          })(i);
+        }
+        setTimeout(function(){ objetivo.dispatchEvent(mk("touchend", x1)); }, pasos * 16 + 30);
+        return true;
+      }
+      if (typeof PointerEvent === "function"){
+        var mp = function(t, x){
+          return new PointerEvent(t, {
+            bubbles: true, cancelable: true, composed: true,
+            pointerId: 1, pointerType: "touch", isPrimary: true,
+            clientX: x, clientY: y,
+            buttons: t === "pointerup" ? 0 : 1
+          });
+        };
+        objetivo.dispatchEvent(mp("pointerdown", x0));
+        for (i = 1; i <= pasos; i++){
+          (function(k){
+            setTimeout(function(){
+              objetivo.dispatchEvent(mp("pointermove", x0 + (x1 - x0) * k / pasos));
+            }, k * 16);
+          })(i);
+        }
+        setTimeout(function(){ objetivo.dispatchEvent(mp("pointerup", x1)); }, pasos * 16 + 30);
+        return true;
+      }
+    }catch(e){}
+    return false;
+  }
+
+  boton.addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    unlockAudio();
+    var r = boton.getBoundingClientRect();
+    estallido(r.left + r.width / 2, r.top + r.height / 2, 30, 150);
+    sndButton();
+    haptic([15, 40, 20, 40, 25]);
+    setTimeout(siguientePagina, 420);
+  });
+
+  /* ============================================================
+     PREVENIR ZOOM POR DOBLE TOQUE (iOS)
+     ============================================================ */
+  var ultimoToque = 0;
+  document.addEventListener("touchend", function(e){
+    var ahora = Date.now();
+    if (ahora - ultimoToque < 320){
+      e.preventDefault();
+    }
+    ultimoToque = ahora;
+  }, { passive: false });
+
+  /* ============================================================
+     PREVENIR "PULL TO REFRESH" / BOUNCE EN iOS
+     ============================================================ */
+  document.addEventListener("touchmove", function(e){
+    /* permitimos el move solo dentro de la tarjeta (para el tilt) */
+    if (!e.target.closest(".tarjeta")){
+      e.preventDefault();
+    }
+  }, { passive: false });
+})();
 </script>
 </body>
 </html>
