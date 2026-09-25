@@ -159,7 +159,7 @@ src/
   data/
     chapters.js         LOS TEXTOS de cada página
     fotos.js            qué carpeta de fotos-paginas/ usa cada página
-    sorpresas.js        las 47 sorpresas: frase y escena de cada página
+    sorpresas.js        las 45 sorpresas: frase y escena de cada página
     contenido.js        GENERADO: lo que hay en las carpetas (sin 404)
     escondidos.js       lo que dicen los ocho escondites
     manifest.js         EL ORDEN DEL LIBRO
@@ -233,16 +233,20 @@ El orden del libro es siempre éste, y no se mezcla nunca:
 | **El cajón** | Seis cosas sobre una mesa y seis maneras distintas de tocarlas: una cerilla que se enciende, un papel que se desdobla en dos tiempos, una llave que se gira, una concha que hay que sostener para oírla, una estrella que se toca dos veces y cae, y un anillo que da vueltas. Cuando están las seis, se juntan. |
 | **Razones** | Un mazo de doce cartas «razones por las que te amo»: se lanzan con el dedo y al final se puede volver a barajar. |
 | **Vales de amor** | Una libretita de vales que se arrancan. Al arrancar el último aparece el vale dorado. |
-| **Nuestras manos** | Acercar tu mano a la mía; si se quedan juntas tres segundos, aparece un anillo. |
+| **Nuestras manos** | Dos manos dibujadas a una sola línea, con un hilo rojo entre los meñiques. Se arrastra la tuya hacia la mía (la mía también se acerca al final); por el camino salen frases y, al tocarse, hay un destello y ondas como un latido. Si se quedan juntas tres segundos se dibuja un corazón. Mi mano saluda si se toca tres veces. |
 | **Farolitos** | Cada toque en el cielo suelta un farolito con un deseo. La luna, tocada tres veces, suelta el dorado. |
 | **Burbujas** | Cada burbuja que revienta suelta una palabra de la frase. |
-| **Cajita musical** | Girar la manivela: suena una canción de cuna nota a nota (hecha con WebAudio, sin archivos) y la parejita baila. Tres toques a la pareja y se dan un beso. |
+| **Dos relojes** | Tu hora y la mía. Se gira la manecilla larga del tuyo (una vuelta, una hora) hasta las 8:23, como nuestro 23 del 8: los dos relojes se juntan en uno y los segunderos laten a la vez. Si se deja en las 3:00, sale la luna. |
 | **Frasco de notitas** | Tocar el frasco: se sacude y sale una notita que se despliega. |
+| **Caminar juntos** | Deslizar hacia arriba por un camino: quedan dos pares de huellas lado a lado y dos lucecitas al frente. En el tramo difícil, con piedras, sólo quedan unas huellas más hondas («te cargo yo»). Al llegar, la banquita del final se puede tocar. |
+| **Aunque esté oscuro** | Un mar de noche y un faro. Se mueve la luz con el dedo hasta alumbrar al barquito perdido; enciende su farolito y navega hasta la orilla siguiendo la luz. El faro, tocado tres veces, parpadea: te a-mo. |
+| **Lo que te prometo** | Una tarjetita por promesa con su lacre: se deja el dedo hasta llenar el anillo, se estampa un corazón en la cera y la tarjeta se guarda en el cofrecito. Al final aparece una más, boca abajo. |
+| **Un día cualquiera contigo** | Deslizar de la mañana a la noche sobre una casita: amanece, sale el humo del café, se encienden las ventanas, sale la luna. A cada rato le toca una cosa pequeña de las que quiero contigo. De noche, tres toques a la luna y cruza una estrella fugaz. |
 | **Final** | Tocar la pantalla: las partículas forman un corazón que late. El botón «seguir» pasa a lo que venga después. |
 | **Tus páginas HTML** | Cada `página.htmlN.html` que dejes en `paginas-html/` es una página más: tu HTML entero, con sus botones, sus animaciones y su JavaScript, encajado en la hoja del libro. Ver [`paginas-html/LÉEME.md`](paginas-html/LÉEME.md). |
 | **Tus fotos** | Cada `amorN.png` que dejes en `images/amores/` es una página más al final: a pantalla completa, sobre su propio desenfoque, tocables y con pellizco para acercar. |
 
-Hay **veintisiete secretos** repartidos. Ninguno se anuncia: se abren al hacer
+Hay **treinta y ocho secretos** repartidos. Ninguno se anuncia: se abren al hacer
 las cosas de verdad. El contador vive en la barra y el balance sale al final.
 
 ### Y aparte, ocho escondites
@@ -273,8 +277,11 @@ suelta una luciérnaga si se toca tres veces el hueco vacío.
 
 ### Una sorpresa en cada página, y su álbum
 
-Aparte de todo lo anterior, **cada página esconde una sorpresa distinta** (47
-en total): una tarjetita con su frase y su escena. La manera de encontrarla
+Aparte de todo lo anterior, **cada página esconde una sorpresa distinta** (45
+en total): una tarjetita con su frase y su escena. Las páginas de pareja
+(manos, relojes, caminar juntos, el faro, las promesas y un día cualquiera)
+no la llevan a propósito: van sin emojis y guardan su secreto dentro de la
+propia escena. En `manifest.js` llevan `sorpresa: false`. La manera de encontrarla
 cambia de una página a la siguiente —una estrellita escondida, tocar tres
 veces el título, dejar el dedo en las letras de arriba, tocar una esquina o
 tamborilear— y si tarda en dar con ella sale una pista, una sola vez.

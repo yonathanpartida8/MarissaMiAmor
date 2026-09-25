@@ -35,6 +35,24 @@ export function el(tag, props = {}, children = []) {
 
 export const qs = (sel, root = document) => root.querySelector(sel);
 
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+/**
+ * Lo mismo que `el`, pero para dibujos SVG: los atributos van tal cual
+ * (`viewBox`, `d`, `pathLength`…) y `class` se escribe como atributo, que
+ * es lo único que entienden los nodos SVG.
+ */
+export function svgEl(tag, attrs = {}, children = []) {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [key, value] of Object.entries(attrs)) {
+    if (value == null || value === false) continue;
+    if (key === "text") node.textContent = value;
+    else node.setAttribute(key, String(value));
+  }
+  for (const child of [].concat(children)) if (child) node.append(child);
+  return node;
+}
+
 /**
  * Fija variables CSS personalizadas de una tacada.
  *

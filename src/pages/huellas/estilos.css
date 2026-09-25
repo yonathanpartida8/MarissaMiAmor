@@ -1,0 +1,109 @@
+/* HUELLAS — caminar juntos, huella a huella. */
+.huellas {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+  --arena: rgba(255, 236, 214, 0.1);
+  --arena-borde: rgba(255, 236, 214, 0.22);
+  --pisada: rgba(255, 244, 236, 0.78);
+}
+html[data-tema="pastel"] .huellas {
+  --arena: rgba(255, 250, 240, 0.55);
+  --arena-borde: rgba(150, 70, 95, 0.2);
+  --pisada: rgba(90, 30, 52, 0.62);
+}
+.hue__head, .hue__pie { text-align: center; }
+
+.hue__escena {
+  position: relative;
+  min-height: 0;
+  touch-action: none;
+  cursor: ns-resize;
+  -webkit-tap-highlight-color: transparent;
+}
+.hue__lienzo { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+/* ---- El camino ---------------------------------------------------- */
+.hue__orilla,
+.hue__camino,
+.hue__centro { fill: none; stroke-linecap: round; }
+.hue__orilla { stroke: var(--arena-borde); stroke-width: 44; }
+.hue__camino { stroke: var(--arena); stroke-width: 42; }
+/* El tramo difícil: más oscuro, con piedras. */
+.hue__tramo { fill: none; stroke: rgba(20, 5, 12, 0.22); stroke-width: 42; stroke-linecap: butt; opacity: 0; transition: opacity 1s var(--e-out); }
+html[data-tema="pastel"] .hue__tramo { stroke: rgba(120, 60, 80, 0.14); }
+.huellas.is-entered .hue__tramo { opacity: 1; }
+.hue__centro { stroke: var(--arena-borde); stroke-width: 0.8; stroke-dasharray: 2 6; }
+.hue__orilla, .hue__camino, .hue__centro { opacity: 0; transition: opacity 1s var(--e-out); }
+.huellas.is-entered .hue__camino,
+.huellas.is-entered .hue__centro { opacity: 1; }
+.huellas.is-entered .hue__orilla { opacity: 0.5; }
+
+.hue__piedras ellipse { fill: var(--pisada); opacity: 0.4; }
+
+/* Hierbitas y flores a la orilla: salen de abajo arriba al llegar. */
+.hue__hierba { fill: none; stroke: var(--hierba, rgba(190, 230, 190, 0.5)); stroke-width: 0.9; stroke-linecap: round; }
+html[data-tema="pastel"] .hue__hierba { --hierba: rgba(90, 130, 90, 0.5); }
+.hue__flor circle { fill: color-mix(in srgb, var(--accent) 75%, #fff); }
+.hue__flor .hue__flor-centro { fill: #ffe29a; }
+.hue__hierba, .hue__flor { opacity: 0; transform-box: fill-box; transform-origin: 50% 100%; }
+.huellas.is-entered .hue__hierba,
+.huellas.is-entered .hue__flor { animation: hue-brota 900ms var(--e-spring) var(--d) forwards; }
+@keyframes hue-brota { from { opacity: 0; scale: 0.2; } to { opacity: 0.85; scale: 1; } }
+
+/* ---- Las huellas -------------------------------------------------- */
+.hue__huella { fill: var(--pisada); opacity: 0; }
+.hue__huella--tuya ellipse { transform: scale(0.84); }
+.hue__huella--honda { fill: color-mix(in srgb, var(--accent) 40%, var(--pisada)); }
+.hue__huella--honda ellipse { transform: scale(1.12); }
+.hue__huella.is-puesta { animation: hue-pisa 900ms var(--e-out) forwards; }
+@keyframes hue-pisa {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  100% { opacity: 0.72; }
+}
+.huellas.is-mirar .hue__huella.is-puesta { animation: hue-brilla 2.4s ease-in-out infinite; fill: var(--accent); }
+@keyframes hue-brilla { 50% { opacity: 1; } }
+
+/* ---- Las lucecitas ------------------------------------------------ */
+.hue__luz {
+  fill: #fff;
+  opacity: 0;
+  transition: opacity 800ms var(--e-out) 0.8s;
+}
+.hue__luz--tuya { filter: drop-shadow(0 0 4px var(--accent)) drop-shadow(0 0 9px var(--accent)); }
+.hue__luz--mia { filter: drop-shadow(0 0 4px #ffd9a0) drop-shadow(0 0 9px #ffc36e); }
+html[data-tema="pastel"] .hue__luz { fill: #fffaf2; }
+.huellas.is-entered .hue__luz { opacity: 1; }
+.huellas.is-llegamos .hue__luz { animation: hue-late 1.8s ease-in-out infinite; }
+@keyframes hue-late { 50% { opacity: 0.55; } }
+
+/* ---- La banquita del final ---------------------------------------- */
+.hue__banca { opacity: 0.45; transition: opacity 900ms var(--e-out); cursor: pointer; }
+.hue__banca-cuerpo { fill: var(--pisada); }
+.hue__banca line { stroke: var(--pisada); stroke-width: 2; stroke-linecap: round; }
+.huellas.is-llegamos .hue__banca { opacity: 1; }
+
+/* ---- Frases ------------------------------------------------------- */
+.hue__pie { display: grid; gap: 0.2rem; }
+.hue__frase {
+  margin: 0;
+  min-height: 2.4em;
+  display: grid;
+  place-items: center;
+  transition: opacity 260ms var(--e-out), transform 360ms var(--e-out);
+}
+.hue__frase.is-cambia { opacity: 0; transform: translateY(6px); }
+.hue__guia { margin: 0; transition: opacity 500ms var(--e-out); }
+.hue__guia.is-fuera { opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hue__huella.is-puesta { animation: none; opacity: 0.72; }
+  .hue__luz { animation: none !important; }
+}
+
+html[data-orientation="landscape"][data-device="phone"] .huellas { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: 1rem; }
+html[data-orientation="landscape"][data-device="phone"] .hue__head { grid-column: 1 / -1; }
+html[data-orientation="landscape"][data-device="phone"] .hue__pie { align-content: center; }

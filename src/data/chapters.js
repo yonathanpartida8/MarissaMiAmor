@@ -166,6 +166,25 @@ export const chapters = [
     palette: "granate",
     mood: "storm",
   },
+  {
+    id: "huellas",
+    act: "conocerte",
+    title: "Caminar juntos",
+    kicker: "desliza el dedo por el camino",
+    text: "",
+    // Van saliendo mientras caminan. La cuarta cae en el tramo difícil.
+    lines: [
+      "No sé exactamente a dónde vamos.",
+      "Pero sé con quién quiero ir.",
+      "Habrá tramos difíciles.",
+      "Y en esos, si te cansas, te cargo yo.",
+      "Y cuando el cansado sea yo, sé que me vas a esperar.",
+      "A tu paso. Ni adelante, ni atrás: a tu lado.",
+    ],
+    reveal: "A donde vayas, quiero ir contigo.",
+    palette: "seda",
+    mood: "dawn",
+  },
 
   // ═══════════════════════════════════════════════════════════════
   //  ACTO II — CONOCERTE
@@ -343,8 +362,11 @@ export const chapters = [
     title: "Nuestras manos",
     kicker: "acerca tu mano a la mía",
     text: "",
+    // Salen mientras se acercan, y la última si se quedan juntas un rato.
     lines: [
-      "💍 Y algún día, también esto.",
+      "Aunque ahora estemos lejos,",
+      "cada día estamos un poquito más cerca.",
+      "Y cuando por fin pase, no te voy a soltar.",
     ],
     reveal: "Algún día, sin pantalla de por medio.",
     palette: "latido",
@@ -456,6 +478,17 @@ export const chapters = [
     mood: "glass",
   },
   {
+    id: "faro",
+    act: "extranarte",
+    title: "Aunque esté oscuro",
+    kicker: "encuentra el barquito con la luz",
+    // Sale cuando el barquito llega a la orilla.
+    text: "Hay días en que todo se pone oscuro y no se ve la orilla. En esos días no tienes que saber el camino: sólo busca la luz. Yo la voy a dejar prendida.",
+    reveal: "Siempre vas a tener a dónde volver.",
+    palette: "granate",
+    mood: "night",
+  },
+  {
     id: "confesion",
     act: "extranarte",
     title: "Una confesión",
@@ -487,17 +520,15 @@ export const chapters = [
     mood: "amber",
   },
   {
-    id: "cajita",
+    id: "relojes",
     act: "elegirte",
-    title: "Nuestra cajita musical",
-    kicker: "gira la manivela",
-    text: "",
-    lines: [
-,
-    ],
-    reveal: "Esta melodía suena a nosotros.",
-    palette: "nacar",
-    mood: "amber",
+    title: "Dos relojes",
+    kicker: "pon tu reloj a la hora del mío",
+    // Sale cuando los dos relojes se juntan.
+    text: "Tus días y los míos no siempre caminan igual: a veces tú apenas empiezas cuando yo ya voy terminando. Pero siempre encontramos un ratito que es sólo de los dos.",
+    reveal: "Y en ese ratito, el tiempo es nuestro.",
+    palette: "granate",
+    mood: "night",
   },
   {
     id: "rompecabezas-dos",
@@ -525,6 +556,25 @@ export const chapters = [
     text: "No te voy a prometer que nunca voy a cambiar, porque sé que las personas cambiamos con el tiempo.\nPero sí quiero que confíes en algo <: si cambio, quiero que sepas que será siempre para bien. Para aprender, para crecer y para saber amarte cada vez mejor.\nEstoy aprendiendo a decir las cosas cuando pasan y no días después. Estoy aprendiendo a preguntarte en vez de escucharte, quiero charlar mejor contigo.\nSé que no siempre voy a hacerlo perfecto. Voy a equivocarme, pero no quiero quedarme en el mismo error. Quiero aprender de él y volver a intentarlo al día siguiente.\nY sobre todo, quiero que tengas la tranquilidad de que nunca voy a dejar de tratarte con amor, respeto y cariño. No quiero hacerte sentir menos, lastimarte a propósito ni hacerte dudar de lo que siento por ti.\nQuiero que confíes en mí, no solamente por lo que te digo, sino por la manera en que te lo demuestro con el tiempo.\nPorque no quiero ser alguien que simplemente te prometa que va a ser mejor.\nQuiero ser alguien que realmente lo sea.",
     palette: "amanecer",
     mood: "glass",
+  },
+  {
+    id: "promesas",
+    act: "elegirte",
+    title: "Lo que te prometo",
+    kicker: "sella cada una con el lacre",
+    text: "",
+    // Una tarjeta por promesa. Se sellan de una en una.
+    lines: [
+      "Te prometo escucharte, incluso cuando no sepa qué decir.",
+      "Te prometo que ninguna pelea va a durar más que las ganas de abrazarte.",
+      "Te prometo cuidar tus sueños como si fueran míos.",
+      "Te prometo decirte la verdad, aunque cueste.",
+      "Te prometo elegirte también en los días grises.",
+      "Te prometo no dejar de aprender a quererte mejor.",
+    ],
+    reveal: "Y todas las firmo con lo mismo: con todo lo que soy.",
+    palette: "rubor",
+    mood: "amber",
   },
   {
     id: "cosas-tuyas",
@@ -605,6 +655,26 @@ export const chapters = [
     text: "No porque me falte nada. No porque no haya más gente en el mundo. Te elijo despierto, sabiendo lo que cuesta, sabiendo que estás lejos y que hay días difíciles. Te elegí, te elijo y pienso seguir eligiéndote, que es lo único que de verdad depende de mí.",
     palette: "latido",
     mood: "bloom",
+  },
+  {
+    id: "un-dia",
+    act: "elegirte",
+    title: "Un día cualquiera contigo",
+    kicker: "desliza de la mañana a la noche",
+    text: "",
+    // Un momento por cada hora del día, de la mañana a la noche.
+    lines: [
+      "Despertarte con café y dejarte cinco minutos más.",
+      "Ir al súper y discutir qué pan llevar.",
+      "Comer lo que sea, pero en la misma mesa.",
+      "Una siesta que se nos alarga sin querer.",
+      "Caminar sin rumbo mientras baja el sol.",
+      "Ver una película que ninguno de los dos termina.",
+      "Y quedarnos dormidos a media plática.",
+    ],
+    reveal: "Nada especial. Justo eso es lo que más quiero contigo.",
+    palette: "amanecer",
+    mood: "dawn",
   },
 ];
 

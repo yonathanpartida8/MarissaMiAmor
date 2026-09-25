@@ -1,0 +1,220 @@
+/* PROMESAS — tarjetitas con lacre, selladas de una en una. */
+.promesas {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+  --cera: #b5173f;
+  --cera-oscura: #780a27;
+}
+.pro__head, .pro__pie { text-align: center; }
+
+.pro__mesa {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  perspective: 900px;
+}
+
+/* ---- La tarjeta --------------------------------------------------- */
+.pro__carta {
+  grid-area: 1 / 1;
+  position: relative;
+  width: min(86%, 340px);
+  padding: 1.1rem 1.2rem 1.3rem;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 27px, rgba(180, 120, 140, 0.16) 27px 28px),
+    linear-gradient(170deg, #fffaf3, #f8ebe6);
+  box-shadow: 0 24px 50px -22px rgba(0, 0, 0, 0.75), 0 2px 0 rgba(255, 255, 255, 0.7) inset;
+  display: grid;
+  justify-items: center;
+  gap: 0.7rem;
+  text-align: center;
+  color: #4a1a2e;
+  rotate: -1.2deg;
+  opacity: 0;
+  translate: 0 18px;
+  transition: opacity 700ms var(--e-out), translate 800ms var(--e-spring);
+}
+/* Un doblez en la esquina, como las tarjetas de verdad. */
+.pro__carta::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(225deg, transparent 50%, rgba(160, 90, 110, 0.18) 50%, #f3e0db 62%);
+  border-radius: 0 6px 0 0;
+}
+.promesas.is-entered .pro__carta { opacity: 1; translate: 0 0; }
+.pro__num {
+  font-family: var(--font-ui);
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #a0576f;
+}
+.pro__promesa {
+  margin: 0;
+  min-height: 3.6em;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-hand);
+  font-size: clamp(1.35rem, calc(6 * var(--vw)), 1.75rem);
+  line-height: 1.22;
+  text-wrap: balance;
+}
+
+.pro__carta.is-sale { animation: pro-guardar 600ms var(--e-in, ease-in) forwards; }
+@keyframes pro-guardar {
+  to { opacity: 0; transform: translateY(46%) scale(0.35) rotate(6deg); }
+}
+.pro__carta.is-llega { animation: pro-llega 650ms var(--e-spring) both; }
+@keyframes pro-llega {
+  from { opacity: 0; transform: translateY(-30px) rotate(-5deg) scale(0.94); }
+}
+
+/* ---- El lacre ----------------------------------------------------- */
+.pro__lacre {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.pro__lacre-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.pro__anillo-fondo { fill: none; stroke: rgba(160, 80, 105, 0.18); stroke-width: 3; }
+.pro__anillo {
+  fill: none;
+  stroke: var(--cera);
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transform: rotate(-90deg);
+  transform-origin: 40px 40px;
+}
+.pro__cera {
+  fill: var(--cera);
+  filter: drop-shadow(0 3px 3px rgba(90, 10, 30, 0.35));
+  transform-origin: 40px 40px;
+  transition: transform 300ms var(--e-out), fill 300ms var(--e-out);
+  scale: calc(0.86 - var(--carga) * 0.08);
+}
+.pro__cera-brillo { fill: none; stroke: rgba(255, 255, 255, 0.4); stroke-width: 2.2; stroke-linecap: round; }
+/* Al apretar, la cera se hunde un poquito bajo el dedo. */
+.pro__lacre.is-apretado .pro__cera { fill: color-mix(in srgb, var(--cera) 85%, #000); }
+.pro__estampa { opacity: 0; }
+.pro__estampa-aro { fill: none; stroke: var(--cera-oscura); stroke-width: 1.2; opacity: 0.7; }
+.pro__estampa-corazon { fill: var(--cera-oscura); stroke: rgba(255, 190, 200, 0.55); stroke-width: 0.8; }
+
+.pro__carta.is-sellada .pro__cera { animation: pro-estampa 620ms var(--e-spring); scale: 0.9; }
+.pro__carta.is-sellada .pro__estampa { opacity: 1; transition: opacity 250ms var(--e-out) 120ms; }
+.pro__carta.is-sellada .pro__anillo,
+.pro__carta.is-sellada .pro__anillo-fondo { opacity: 0; transition: opacity 300ms var(--e-out); }
+@keyframes pro-estampa {
+  0% { scale: 0.78; }
+  35% { scale: 1.06; }
+  60% { scale: 0.88; }
+  100% { scale: 0.9; }
+}
+
+/* ---- La tarjeta de más -------------------------------------------- */
+.pro__extra {
+  grid-area: 1 / 1;
+  position: relative;
+  width: min(70%, 270px);
+  aspect-ratio: 3 / 2;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 900ms var(--e-spring), opacity 700ms var(--e-out) 0.9s;
+  opacity: 0;
+  pointer-events: none;
+}
+.promesas.is-todas .pro__carta { display: none; }
+.promesas.is-todas .pro__extra { opacity: 1; pointer-events: auto; }
+.pro__extra.is-volteada { transform: rotateY(180deg); }
+.pro__extra-cara {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 0.3rem;
+  padding: 1rem;
+  border-radius: 8px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.pro__extra-cara--atras {
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 70%, var(--text));
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text);
+  font-family: var(--font-hand);
+  font-size: 1.5rem;
+}
+.pro__extra-cara--atras small { font-family: var(--font-ui); font-size: 0.64rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-soft); }
+.pro__extra-cara--frente {
+  transform: rotateY(180deg);
+  background: linear-gradient(170deg, #fffaf3, #f8ebe6);
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.7);
+  color: #4a1a2e;
+  font-family: var(--font-hand);
+  font-size: clamp(1.25rem, calc(5.4 * var(--vw)), 1.55rem);
+  line-height: 1.2;
+}
+
+/* ---- El cofrecito ------------------------------------------------- */
+.pro__pie { display: grid; justify-items: center; gap: 0.45rem; }
+.pro__cofre {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 99px;
+  background: rgba(var(--cromo-luz-rgb), 0.06);
+  border: 1px solid rgba(var(--cromo-luz-rgb), 0.14);
+}
+.pro__mini {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px dashed color-mix(in srgb, var(--text) 40%, transparent);
+  transition: background 400ms var(--e-out), border-color 400ms var(--e-out);
+}
+.pro__mini.is-llena {
+  border: 0;
+  background: radial-gradient(circle at 35% 30%, #e0496f, var(--cera) 55%, var(--cera-oscura));
+  box-shadow: 0 2px 4px rgba(90, 10, 30, 0.35);
+}
+.pro__mini.is-nueva { animation: pro-mini 700ms var(--e-spring); }
+@keyframes pro-mini { 0% { scale: 0.2; } 60% { scale: 1.35; } }
+
+.pro__guia { margin: 0; transition: opacity 500ms var(--e-out); }
+.pro__reveal { margin: 0; opacity: 0; min-height: 2.4em; }
+.promesas.is-todas .pro__guia { display: none; }
+.promesas.is-todas .pro__reveal { animation: pro-aparece 1s var(--e-out) 0.3s both; }
+@keyframes pro-aparece { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pro__carta.is-sale, .pro__carta.is-llega, .pro__cera { animation: none !important; }
+}
+
+html[data-orientation="landscape"][data-device="phone"] .promesas { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: 1rem; }
+html[data-orientation="landscape"][data-device="phone"] .pro__head { grid-column: 1 / -1; }
+html[data-orientation="landscape"][data-device="phone"] .pro__pie { align-content: center; }
+html[data-orientation="landscape"][data-device="phone"] .pro__carta { padding: 0.7rem 1rem 0.8rem; gap: 0.4rem; }
+html[data-orientation="landscape"][data-device="phone"] .pro__lacre { width: 64px; height: 64px; }
+html[data-orientation="landscape"][data-device="phone"] .pro__promesa { min-height: 2.5em; font-size: 1.3rem; }

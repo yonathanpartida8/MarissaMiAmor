@@ -107,6 +107,12 @@ const escenas = Object.values(sorpresas).map((s) => s.escena.join(""));
 if (new Set(escenas).size !== escenas.length) mal("hay dos sorpresas con la misma escena");
 for (const e of manifest) {
   if (["html", "amor", "photo", "gallery", "video"].includes(e.type)) continue;
+  // `sorpresa: false`: la página lleva su propio secreto dentro y no quiere
+  // la tarjetita (las de pareja, que van sin emojis a propósito).
+  if (e.sorpresa === false) {
+    if (sorpresas[e.id]) mal(`«${e.id}» dice \`sorpresa: false\` pero tiene sorpresa en sorpresas.js`);
+    continue;
+  }
   if (!sorpresas[e.id]) ojo(`«${e.id}» no tiene sorpresa escondida`);
 }
 

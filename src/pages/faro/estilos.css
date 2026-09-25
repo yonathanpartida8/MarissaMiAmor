@@ -1,0 +1,185 @@
+/* FARO — un mar de noche, una luz y un barquito que vuelve. */
+.faro {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+}
+.fa__head, .fa__texto { text-align: center; }
+
+/* ---- El mar (siempre de noche, en los dos temas) ------------------ */
+.fa__mar {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, #05071a 0%, #0c1233 38%, #1a1d45 49.6%, #0b1636 50%, #07132a 72%, #040b1a 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 18px 40px -24px rgba(0, 0, 0, 0.8);
+  touch-action: none;
+  cursor: crosshair;
+  -webkit-tap-highlight-color: transparent;
+  --lx: 85%;
+  --ly: 45%;
+  --ang: -140deg;
+  --luz: 0;
+}
+
+.fa__estrella {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: calc(2px * var(--t));
+  height: calc(2px * var(--t));
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0.5;
+  animation: fa-titila 3.6s ease-in-out var(--d) infinite;
+}
+@keyframes fa-titila { 50% { opacity: 0.15; } }
+
+.fa__horizonte {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 44%;
+  height: 12%;
+  background: radial-gradient(ellipse at 80% 50%, rgba(120, 110, 200, 0.18), transparent 70%);
+  pointer-events: none;
+}
+
+/* ---- Las olas ----------------------------------------------------- */
+.fa__ola {
+  position: absolute;
+  left: 0;
+  width: 200%;
+  height: 14px;
+  pointer-events: none;
+  animation: fa-ola var(--dur, 16s) linear infinite;
+}
+.fa__ola svg { display: block; width: 100%; height: 100%; }
+.fa__ola path { fill: none; stroke: rgba(170, 190, 255, 0.28); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.fa__ola--1 { top: 57%; --dur: 22s; opacity: 0.6; }
+.fa__ola--2 { top: 70%; --dur: 16s; opacity: 0.8; animation-direction: reverse; }
+.fa__ola--3 { top: 86%; --dur: 11s; height: 18px; }
+@keyframes fa-ola { to { transform: translateX(-50%); } }
+
+/* ---- La luz del faro ---------------------------------------------- */
+.fa__haz {
+  position: absolute;
+  left: var(--lx);
+  top: var(--ly);
+  width: 260%;
+  height: 150px;
+  margin-top: -75px;
+  transform-origin: 0 50%;
+  rotate: var(--ang);
+  background: linear-gradient(90deg, rgba(255, 246, 205, 0.8), rgba(255, 240, 190, 0.32) 22%, rgba(255, 236, 180, 0.08) 48%, transparent 70%);
+  clip-path: polygon(0 48.5%, 100% 0, 100% 100%, 0 51.5%);
+  filter: blur(2px);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 1.2s var(--e-out) 0.6s;
+  pointer-events: none;
+}
+.faro.is-entered .fa__haz { opacity: 1; }
+.fa__halo {
+  position: absolute;
+  left: var(--lx);
+  top: var(--ly);
+  width: 90px;
+  height: 90px;
+  margin: -45px 0 0 -45px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 248, 215, 0.95), rgba(255, 230, 160, 0.35) 30%, transparent 68%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: fa-respira 3s ease-in-out infinite;
+}
+@keyframes fa-respira { 50% { scale: 1.12; } }
+.faro.is-destellos .fa__haz,
+.faro.is-destellos .fa__halo { animation: fa-destello 2s steps(1, end); }
+@keyframes fa-destello {
+  0%, 20%, 40%, 60%, 80% { opacity: 1; filter: blur(2px) brightness(1.6); }
+  10%, 30%, 50%, 70% { opacity: 0.1; }
+}
+
+/* ---- El faro ------------------------------------------------------ */
+.fa__faro-caja {
+  position: absolute;
+  right: 4%;
+  bottom: 8%;
+  height: 58%;
+  aspect-ratio: 60 / 150;
+  cursor: pointer;
+}
+.fa__faro { display: block; width: 100%; height: 100%; overflow: visible; }
+.fa__roca { fill: #0a0a18; }
+.fa__torre { fill: #e9e4f2; }
+.fa__franja { fill: #b3304f; }
+.fa__puerta { fill: #2b2440; }
+.fa__balcon { fill: #3a3350; }
+.fa__cristal { fill: rgba(255, 244, 200, 0.4); stroke: #3a3350; stroke-width: 1; }
+.fa__lampara { fill: #fff7d6; filter: drop-shadow(0 0 3px #ffe9a8); }
+.fa__techo, .fa__punta { fill: #3a3350; }
+/* El faro, de noche, se ve apenas: sólo su silueta y su luz. */
+.fa__torre, .fa__franja { filter: brightness(0.55); }
+
+/* ---- El barquito -------------------------------------------------- */
+.fa__barco-caja {
+  position: absolute;
+  left: 11%;
+  top: 56%;
+  width: 16%;
+  max-width: 78px;
+  transition: left 4.2s cubic-bezier(0.45, 0.05, 0.4, 1), top 4.2s cubic-bezier(0.45, 0.05, 0.4, 1), scale 4.2s ease-in-out;
+}
+.faro.is-rumbo .fa__barco-caja { left: 38%; top: 64%; scale: 1.12; }
+.fa__barco {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  animation: fa-mece 3.4s ease-in-out infinite;
+  transform-origin: 50% 80%;
+  /* Casi invisible en lo oscuro; la luz lo va dibujando. */
+  opacity: calc(0.16 + var(--luz) * 0.84);
+  filter: drop-shadow(0 0 calc(var(--luz) * 10px) rgba(255, 236, 170, 0.7));
+}
+@keyframes fa-mece { 50% { rotate: 4deg; translate: 0 2px; } 0%, 100% { rotate: -3deg; } }
+.fa__mastil { stroke: #d8cdb8; stroke-width: 1.4; }
+.fa__vela { fill: #f6ecd8; }
+.fa__vela--chica { fill: #e8dcc6; }
+.fa__casco { fill: #7a4a3a; }
+.fa__farolito { fill: #3a2c20; transition: fill 600ms var(--e-out); }
+.faro.is-hallado .fa__farolito { fill: #ffd779; filter: drop-shadow(0 0 4px #ffcc55) drop-shadow(0 0 10px #ffb13b); animation: fa-farolito 1.6s ease-in-out infinite; }
+@keyframes fa-farolito { 50% { opacity: 0.75; } }
+
+/* ---- Los textos --------------------------------------------------- */
+.fa__texto { display: grid; gap: 0.45rem; }
+.fa__guia { grid-area: 1 / 1; align-self: center; margin: 0; transition: opacity 500ms var(--e-out); }
+.faro.is-hallado .fa__guia { opacity: 0; }
+.fa__cuerpo {
+  grid-area: 1 / 1;
+  margin: 0 auto;
+  max-width: 36ch;
+  font-family: var(--font-body, var(--font-display));
+  font-size: clamp(0.98rem, calc(4.1 * var(--vw)), 1.12rem);
+  line-height: 1.45;
+  color: var(--text-soft);
+  opacity: 0;
+}
+.fa__reveal { grid-area: 2 / 1; margin: 0; opacity: 0; }
+.faro.is-orilla .fa__cuerpo { animation: fa-aparece 1s var(--e-out) both; }
+.faro.is-orilla .fa__reveal { animation: fa-aparece 1s var(--e-out) 0.9s both; }
+@keyframes fa-aparece { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fa__ola, .fa__barco, .fa__estrella, .fa__halo { animation: none !important; }
+  .fa__barco-caja { transition: none; }
+}
+
+html[data-orientation="landscape"][data-device="phone"] .faro { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: 1rem; }
+html[data-orientation="landscape"][data-device="phone"] .fa__head { grid-column: 1 / -1; }
+html[data-orientation="landscape"][data-device="phone"] .fa__texto { align-content: center; }

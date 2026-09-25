@@ -170,6 +170,15 @@ const pages = [
   //  ACTO II — CONOCERTE
   // ═══════════════════════════════════════════════════════════════
   {
+    id: "huellas",
+    type: "huellas",
+    chapter: "huellas",
+    transition: "tide",
+    hint: "desliza hacia arriba por el camino",
+    secret: "huellas-llegamos",
+    sorpresa: false,
+  },
+  {
     id: "lista-pendiente",
     type: "veil",
     chapter: "lista-pendiente",
@@ -299,6 +308,7 @@ const pages = [
     transition: "dissolve",
     hint: "arrastra tu mano hacia la mía",
     secret: "manos-juntas",
+    sorpresa: false,
   },
   {
     id: "mi-pulso",
@@ -358,6 +368,15 @@ const pages = [
     secret: "raspado-2",
   },
   {
+    id: "faro",
+    type: "faro",
+    chapter: "faro",
+    transition: "ink",
+    hint: "mueve la luz hasta encontrar el barquito",
+    secret: "faro-orilla",
+    sorpresa: false,
+  },
+  {
     id: "confesion",
     type: "typewriter",
     chapter: "confesion",
@@ -383,12 +402,13 @@ const pages = [
     transition: "slide",
   },
   {
-    id: "cajita",
-    type: "cajita",
-    chapter: "cajita",
+    id: "relojes",
+    type: "relojes",
+    chapter: "relojes",
     transition: "corazon",
-    hint: "sigue girando hasta que termine la canción",
-    secret: "cajita-cancion",
+    hint: "gira la manecilla larga hasta las 8:23",
+    secret: "relojes-juntos",
+    sorpresa: false,
   },
   {
     id: "rompecabezas-dos",
@@ -413,6 +433,15 @@ const pages = [
     type: "chapter",
     chapter: "mejorar",
     transition: "ink",
+  },
+  {
+    id: "promesas",
+    type: "promesas",
+    chapter: "promesas",
+    transition: "fold",
+    hint: "mantén el dedo en el lacre",
+    secret: "promesas-selladas",
+    sorpresa: false,
   },
   {
     id: "cosas-tuyas",
@@ -458,6 +487,15 @@ const pages = [
     chapter: "te-elijo",
     transition: "bloom",
     gl: true,
+  },
+  {
+    id: "un-dia",
+    type: "undia",
+    chapter: "un-dia",
+    transition: "dissolve",
+    hint: "desliza el sol hasta la noche",
+    secret: "un-dia-entero",
+    sorpresa: false,
   },
 
   // ═══════════════════════════════════════════════════════════════

@@ -1,89 +1,186 @@
-/* MANOS — acercar la tuya a la mía. */
+/* MANOS — dos manos de una sola línea y un hilo rojo entre los meñiques. */
 .manos {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 0.5rem;
   padding: var(--pad-t) var(--pad-x) var(--pad-b);
   background: transparent;
+  --tinta: var(--text);
+  --hilo: #e2476d;
 }
+html[data-tema="pastel"] .manos { --hilo: #c4284f; }
+
 .man__head, .man__pie { text-align: center; }
-.man__escena { position: relative; min-height: 0; }
-.man__hilo {
-  position: absolute;
-  left: 12%;
-  right: 12%;
-  top: 50%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 80%, #fff), transparent);
-  opacity: calc(0.25 + var(--acerca) * 0.75);
-  filter: blur(calc((1 - var(--acerca)) * 2px));
-}
-.man__mano {
-  position: absolute;
-  top: 50%;
+
+/* Las manos y sus frases van juntas, en el centro del hueco que queda. */
+.man__centro {
+  min-height: 0;
   display: grid;
-  justify-items: center;
-  gap: 0.2rem;
-  translate: 0 -50%;
-  touch-action: none;
+  grid-template-rows: minmax(0, auto) auto;
+  align-content: center;
+  gap: 0.8rem;
 }
-.man__mano--tuya {
-  left: calc(4% + var(--acerca) * 34%);
+.man__escena {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  place-items: center;
   cursor: grab;
-  transition: left 420ms var(--e-spring);
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
 }
-.manos.is-moviendo .man__mano--tuya { transition: none; }
-.man__mano--mia { right: 4%; animation: man-respira 3.2s ease-in-out infinite; }
-@keyframes man-respira { 50% { translate: -4px -50%; } }
-.man__emoji {
-  font-size: clamp(4.2rem, 22vw, 6rem);
-  line-height: 1;
-  filter: drop-shadow(0 10px 16px rgba(40, 5, 20, 0.45));
-}
-.man__nombre {
-  font-family: var(--font-hand);
-  font-size: 1.2rem;
-  color: #fff6f8;
-}
-.man__chispa {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 110px;
-  height: 110px;
-  margin: -55px 0 0 -55px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.95), color-mix(in srgb, var(--accent) 70%, transparent) 35%, transparent 70%);
+.manos.is-moviendo .man__escena { cursor: grabbing; }
+.man__lienzo { display: block; width: 100%; height: auto; max-height: min(100%, 420px); overflow: visible; }
+
+/* ---- Las manos ---------------------------------------------------- */
+.man__piel {
+  fill: color-mix(in srgb, var(--accent) 16%, transparent);
   opacity: 0;
+  transition: opacity 900ms var(--e-out) 1.2s, fill 700ms var(--e-out);
+}
+.man__trazo {
+  fill: none;
+  stroke: var(--tinta);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke 700ms var(--e-out);
+}
+.man__trazo--fino { stroke-width: 1.6; opacity: 0.75; }
+.manos.is-entered .man__piel { opacity: 1; }
+.manos.is-entered .man__trazo { animation: man-dibuja 1.8s var(--e-out) forwards; }
+.manos.is-entered .man__mano--mia .man__trazo { animation-delay: 0.35s; }
+.manos.is-entered .man__trazo--fino { animation-delay: 1s; }
+.manos.is-entered .man__mano--mia .man__trazo--fino { animation-delay: 1.3s; }
+@keyframes man-dibuja { to { stroke-dashoffset: 0; } }
+
+/* Juntas: la línea se tiñe del acento y la piel se enciende un poco. */
+.manos.is-juntas .man__trazo { stroke: color-mix(in srgb, var(--accent) 55%, var(--tinta)); }
+.manos.is-juntas .man__piel { fill: color-mix(in srgb, var(--accent) 30%, transparent); }
+
+/* Mi mano saluda cuando la tocas. */
+.man__mano--mia > g { transform-box: fill-box; transform-origin: 0% 60%; }
+.man__mano--mia.is-saluda > g { animation: man-saluda 900ms var(--e-out); }
+@keyframes man-saluda {
+  20% { rotate: -7deg; }
+  45% { rotate: 5deg; }
+  70% { rotate: -3deg; }
+}
+
+/* ---- El hilo rojo ------------------------------------------------- */
+.man__hilo {
+  fill: none;
+  stroke: var(--hilo);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  opacity: 0;
+  transition: opacity 900ms var(--e-out) 1.6s;
+}
+.manos.is-entered .man__hilo { opacity: calc(0.55 + var(--acerca, 0) * 0.45); }
+.man__nudo { fill: var(--hilo); opacity: 0; transition: opacity 900ms var(--e-out) 1.6s; }
+.manos.is-entered .man__nudo { opacity: 0.9; }
+/* Una lucecita que va y viene por el hilo, más rápida cuanto más cerca. */
+.man__hilo-luz {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-dasharray: 0.001 0.999;
+  opacity: 0;
+  filter: drop-shadow(0 0 3px var(--hilo)) drop-shadow(0 0 6px var(--hilo));
+}
+.manos.is-entered .man__hilo-luz { opacity: 0.9; animation: man-luz 3.4s ease-in-out 2s infinite alternate; }
+.manos.is-juntas .man__hilo-luz { animation-duration: 1.4s; }
+@keyframes man-luz { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -0.999; } }
+
+/* ---- El toque ----------------------------------------------------- */
+.man__brillo {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
   scale: 0.3;
-  transition: opacity 400ms var(--e-out), scale 600ms var(--e-spring);
+  transition: opacity 500ms var(--e-out), scale 700ms var(--e-spring);
   pointer-events: none;
 }
-.manos.is-juntas .man__chispa { opacity: 1; scale: 1; animation: man-late 1.4s ease-in-out infinite; }
-@keyframes man-late { 50% { scale: 1.25; } }
-.man__anillo {
-  position: absolute;
-  left: 50%;
-  top: 22%;
-  font-size: 2.6rem;
-  translate: -50% 0;
+.manos.is-juntas .man__brillo { opacity: 1; scale: 1; animation: man-late 1.6s ease-in-out infinite; }
+@keyframes man-late {
+  0%, 100% { scale: 1; }
+  14% { scale: 1.22; }
+  28% { scale: 0.96; }
+  42% { scale: 1.14; }
+}
+.man__stop, .man__tono { stop-color: var(--accent); }
+
+.man__onda {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.4;
   opacity: 0;
-  scale: 0.2;
-  transition: opacity 600ms var(--e-out), scale 800ms var(--e-spring);
-  filter: drop-shadow(0 0 14px rgba(255, 240, 200, 0.9));
+  transform-box: fill-box;
+  transform-origin: center;
   pointer-events: none;
 }
-.manos.is-anillo .man__anillo { opacity: 1; scale: 1; }
-.man__reveal, .man__secreto {
+.manos.is-juntas .man__onda { animation: man-onda 3.2s var(--e-out) infinite; }
+.manos.is-juntas .man__onda:nth-child(2) { animation-delay: 1.05s; }
+.manos.is-juntas .man__onda:nth-child(3) { animation-delay: 2.1s; }
+@keyframes man-onda {
+  0% { opacity: 0.85; scale: 0.4; }
+  100% { opacity: 0; scale: 4.2; }
+}
+
+.man__chispa { fill: #fff; opacity: 0; pointer-events: none; }
+.manos.is-juntas .man__chispa {
+  animation: man-chispa 1.9s var(--e-out) calc(var(--k) * 0.28s) infinite;
+  filter: drop-shadow(0 0 3px var(--accent));
+}
+@keyframes man-chispa {
+  0% { opacity: 0; transform: translate(0, 0); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc((var(--k) - 2.5) * 9px), -58px); }
+}
+
+/* ---- El corazón, si se quedan juntas ------------------------------ */
+.man__corazon {
+  fill: color-mix(in srgb, var(--accent) 0%, transparent);
+  stroke: var(--accent);
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0;
+  transition: opacity 400ms var(--e-out), fill 1s var(--e-out) 1.4s;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent));
+  pointer-events: none;
+}
+.manos.is-corazon .man__corazon {
+  opacity: 1;
+  fill: color-mix(in srgb, var(--accent) 28%, transparent);
+  animation: man-dibuja 1.6s var(--e-out) forwards;
+}
+
+/* ---- Las frases --------------------------------------------------- */
+.man__pie { display: grid; gap: 0.25rem; min-height: 4.2em; align-content: start; }
+.man__frase {
   margin: 0;
-  font-family: var(--font-hand);
-  font-size: clamp(1.35rem, calc(6 * var(--vw)), 1.8rem);
-  color: #fff6f8;
-  text-shadow: 0 0 16px color-mix(in srgb, var(--accent) 70%, transparent);
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 700ms var(--e-out), transform 700ms var(--e-out);
+  min-height: 2.4em;
+  display: grid;
+  place-items: start center;
+  transition: opacity 260ms var(--e-out), transform 360ms var(--e-out);
 }
-.man__secreto { font-size: clamp(1.1rem, calc(5 * var(--vw)), 1.4rem); color: #ffe7b0; }
-.manos.is-juntas .man__reveal { opacity: 1; transform: none; }
-.manos.is-anillo .man__secreto { opacity: 1; transform: none; }
+.man__frase.is-cambia { opacity: 0; transform: translateY(6px); }
+.man__guia { margin: 0; transition: opacity 500ms var(--e-out); }
+.man__guia.is-fuera { opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .manos .man__trazo { stroke-dashoffset: 0; animation: none !important; }
+  .man__hilo-luz, .man__onda, .man__chispa { animation: none !important; }
+}
+
+/* Apaisado: manda la altura. Las manos se ajustan al hueco y la frase
+   va debajo, sin montarse encima. */
+html[data-orientation="landscape"][data-device="phone"] .man__centro { grid-template-rows: minmax(0, 1fr) auto; align-content: stretch; gap: 0.3rem; }
+html[data-orientation="landscape"][data-device="phone"] .man__lienzo { position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; }
+html[data-orientation="landscape"][data-device="phone"] .man__pie { min-height: 0; }
+html[data-orientation="landscape"][data-device="phone"] .man__frase { min-height: 1.3em; }

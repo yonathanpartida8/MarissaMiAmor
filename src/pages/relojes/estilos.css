@@ -1,0 +1,152 @@
+/* RELOJES — tu hora y la mía, hasta que son la misma. */
+.relojes {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+  --tinta: var(--text);
+}
+.rel__head, .rel__texto { text-align: center; }
+
+/* ---- La mesa con los dos relojes --------------------------------- */
+.rel__mesa {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7%;
+}
+.rel__reloj {
+  margin: 0;
+  width: min(41%, 210px);
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  transition: transform 1.3s var(--e-spring);
+  opacity: 0;
+  translate: 0 14px;
+}
+.relojes.is-entered .rel__reloj { opacity: 1; translate: 0 0; transition: transform 1.3s var(--e-spring), opacity 800ms var(--e-out), translate 900ms var(--e-out); }
+.relojes.is-entered .rel__reloj--mio { transition-delay: 0s, 180ms, 180ms; }
+.rel__giro { width: 100%; touch-action: none; cursor: grab; -webkit-tap-highlight-color: transparent; }
+.relojes.is-girando .rel__giro { cursor: grabbing; }
+.rel__esfera { display: block; width: 100%; height: auto; overflow: visible; }
+
+.rel__cara {
+  fill: color-mix(in srgb, var(--accent) 12%, transparent);
+  transition: fill 900ms var(--e-out);
+}
+.rel__bisel {
+  fill: none;
+  stroke: var(--tinta);
+  stroke-width: 1.6;
+  opacity: 0.55;
+  transition: stroke 700ms var(--e-out), opacity 700ms var(--e-out), stroke-width 700ms var(--e-out);
+}
+.rel__marca { stroke: var(--tinta); stroke-width: 0.9; opacity: 0.4; stroke-linecap: round; }
+.rel__marca--hora { stroke-width: 2; opacity: 0.75; }
+.rel__numero {
+  fill: var(--tinta);
+  font-family: var(--font-display);
+  font-size: 17px;
+  opacity: 0.8;
+}
+.rel__marcas, .rel__numeros { transition: opacity 900ms var(--e-out); }
+
+.rel__aguja { stroke: var(--tinta); stroke-linecap: round; transition: stroke 900ms var(--e-out); }
+.rel__aguja--hora { stroke-width: 5; }
+.rel__aguja--minuto { stroke-width: 3; }
+.rel__aguja--segundo { stroke: var(--accent); stroke-width: 1.3; }
+.rel__eje { fill: var(--tinta); stroke: var(--accent); stroke-width: 1.4; }
+
+/* Mi reloj lleva sus manecillas del color del acento, para distinguirlos. */
+.rel__esfera--mia .rel__aguja--hora,
+.rel__esfera--mia .rel__aguja--minuto { stroke: color-mix(in srgb, var(--accent) 70%, var(--tinta)); }
+html[data-tema="pastel"] .rel__esfera--mia .rel__aguja--hora,
+html[data-tema="pastel"] .rel__esfera--mia .rel__aguja--minuto { stroke: color-mix(in srgb, var(--accent) 45%, var(--tinta)); }
+
+/* Tu manecilla larga invita a tocarla. */
+.rel__esfera--tuya .rel__aguja--minuto { stroke-width: 3.6; }
+.relojes.is-entered:not(.is-juntos) .rel__esfera--tuya .rel__aguja--minuto { animation: rel-invita 2.4s ease-in-out 1.6s 3; }
+@keyframes rel-invita { 50% { stroke: var(--accent); stroke-width: 5; } }
+
+/* Cerquita de la hora buena: el bisel se enciende. */
+.relojes.is-cerca .rel__esfera--tuya .rel__bisel { stroke: var(--accent); opacity: 1; stroke-width: 3; }
+
+.rel__pie { position: relative; display: grid; justify-items: center; gap: 0.05rem; }
+.rel__pie > * { transition: opacity 600ms var(--e-out); }
+.rel__digital {
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, calc(5.6 * var(--vw)), 1.6rem);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* ---- La luna de las 3:00 ----------------------------------------- */
+.rel__luna { fill: #fff3c8; opacity: 0; transition: opacity 900ms var(--e-out); filter: drop-shadow(0 0 5px rgba(255, 240, 190, 0.8)); }
+.relojes.is-luna .rel__esfera--tuya .rel__luna { opacity: 1; }
+.relojes.is-luna .rel__esfera--tuya .rel__cara { fill: rgba(20, 12, 50, 0.5); }
+
+/* ---- Juntos ------------------------------------------------------- */
+.relojes.is-juntos .rel__reloj--tuyo { transform: translateX(var(--junta)) scale(1.12); z-index: 2; }
+.relojes.is-juntos .rel__reloj--mio { transform: translateX(calc(-1 * var(--junta))) scale(1.12); }
+.relojes.is-juntos .rel__esfera--tuya .rel__cara { fill: transparent; }
+.relojes.is-juntos .rel__esfera--tuya .rel__bisel,
+.relojes.is-juntos .rel__esfera--tuya .rel__marcas,
+.relojes.is-juntos .rel__esfera--tuya .rel__numeros,
+.relojes.is-juntos .rel__esfera--tuya .rel__eje { opacity: 0; }
+.relojes.is-juntos .rel__esfera--tuya .rel__aguja--hora,
+.relojes.is-juntos .rel__esfera--tuya .rel__aguja--minuto { stroke: transparent; }
+.relojes.is-juntos .rel__pie > :not(.rel__nuestra) { opacity: 0; }
+.relojes.is-juntos .rel__esfera--mia .rel__cara { fill: color-mix(in srgb, var(--accent) 22%, transparent); }
+.relojes.is-juntos .rel__esfera--mia .rel__bisel { stroke: var(--accent); opacity: 1; stroke-width: 2.4; }
+.relojes.is-juntos .rel__esfera--mia { animation: rel-late 1.8s ease-in-out 1.4s infinite; filter: drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 55%, transparent)); }
+@keyframes rel-late { 0%, 100% { scale: 1; } 12% { scale: 1.035; } 24% { scale: 1; } 36% { scale: 1.02; } }
+.rel__esfera--mia { transform-origin: center; }
+
+/* Donde estaban «tu hora» y «la mía», al juntarse: la hora de los dos. */
+.rel__pie > .rel__nuestra {
+  position: absolute;
+  top: 0.4rem;
+  left: 50%;
+  translate: -50% 0;
+  white-space: nowrap;
+  color: var(--text);
+  opacity: 0;
+  transition: opacity 900ms var(--e-out) 1.2s;
+}
+.relojes.is-juntos .rel__pie > .rel__nuestra { opacity: 1; }
+
+/* ---- Los textos --------------------------------------------------- */
+/* Todo ocupa su sitio desde el principio (sólo se enciende), para que los
+   relojes no den un brinco cuando sale el texto. */
+.rel__texto { display: grid; gap: 0.45rem; }
+.rel__guia { grid-area: 1 / 1; align-self: center; margin: 0; transition: opacity 500ms var(--e-out); }
+.relojes.is-juntos .rel__guia { opacity: 0; }
+.rel__cuerpo {
+  margin: 0 auto;
+  max-width: 34ch;
+  font-family: var(--font-body, var(--font-display));
+  font-size: clamp(0.98rem, calc(4.1 * var(--vw)), 1.12rem);
+  line-height: 1.45;
+  color: var(--text-soft);
+  grid-area: 1 / 1;
+  opacity: 0;
+}
+.rel__reveal { margin: 0; grid-area: 2 / 1; opacity: 0; }
+.relojes.is-juntos .rel__cuerpo,
+.relojes.is-juntos .rel__reveal { animation: rel-aparece 1s var(--e-out) 1.1s both; }
+.relojes.is-juntos .rel__reveal { animation-delay: 1.9s; }
+@keyframes rel-aparece { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .rel__reloj { transition: none !important; }
+  .rel__esfera--mia, .rel__esfera--tuya .rel__aguja--minuto { animation: none !important; }
+}
+
+html[data-orientation="landscape"][data-device="phone"] .relojes { grid-template-columns: 1fr 1fr; grid-template-rows: auto minmax(0, 1fr); column-gap: 1.2rem; }
+html[data-orientation="landscape"][data-device="phone"] .rel__head { grid-column: 1 / -1; }
+html[data-orientation="landscape"][data-device="phone"] .rel__reloj { width: min(44%, 30vh); }
+html[data-orientation="landscape"][data-device="phone"] .rel__texto { align-content: center; }
