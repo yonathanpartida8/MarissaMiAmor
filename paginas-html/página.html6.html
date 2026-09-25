@@ -4,16 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#060912">
 <title>Las constelaciones</title>
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
    Todo dentro de .cielo-mundo, con prefijo `cl-` en cada clase.
-   Ni una etiqueta a secas: esta página se incrusta en un libro que tiene
-   sus propios estilos y no le toca ninguno.
    ══════════════════════════════════════════════════════════════════════ */
 
-html, body { margin: 0; height: 100%; }
+html, body { margin: 0; height: 100%; background: #060912; }
 
 .cielo-mundo {
   position: absolute;
@@ -21,7 +20,7 @@ html, body { margin: 0; height: 100%; }
   overflow: hidden;
   isolation: isolate;
   contain: layout paint;
-  background: #070b1c;
+  background: #060912;
   color: #e9e6ff;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-user-select: none;
@@ -41,13 +40,9 @@ html, body { margin: 0; height: 100%; }
   width: 100%;
   height: 100%;
   display: block;
-  /* Los toques los recoge `.cl-toque`, que va justo encima. */
   pointer-events: none;
 }
 
-/* La zona de trazado: el cielo entero, de borde a borde. El libro sólo se
-   queda el barrido que empieza en sus 24-44 px de borde, así que se puede
-   unir estrellas hasta la esquina sin que la página se pase sola. */
 .cielo-mundo .cl-toque {
   position: absolute;
   inset: 0;
@@ -55,6 +50,7 @@ html, body { margin: 0; height: 100%; }
   z-index: 2;
   cursor: crosshair;
 }
+.cielo-mundo.is-trazando .cl-toque { cursor: grabbing; }
 
 /* ---- Lo que se lee -------------------------------------------------- */
 
@@ -64,8 +60,8 @@ html, body { margin: 0; height: 100%; }
   pointer-events: none;
   z-index: 3;
   padding:
-    calc(var(--seguro-t) + 18px) 20px
-    calc(var(--seguro-b) + var(--barra) + 18px) 20px;
+    calc(var(--seguro-t) + 20px) 22px
+    calc(var(--seguro-b) + var(--barra) + 20px) 22px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -75,54 +71,58 @@ html, body { margin: 0; height: 100%; }
 
 .cielo-mundo .cl-titulo {
   margin: 0;
-  font-family: var(--tipo-titulo, Georgia, "Times New Roman", serif);
+  font-family: var(--tipo-titulo, Georgia, "Iowan Old Style", "Palatino Linotype", serif);
   font-size: clamp(1.05rem, 4.6vw, 1.5rem);
   font-weight: 500;
-  letter-spacing: 0.06em;
-  color: #cfd3ff;
-  opacity: 0.82;
-  text-shadow: 0 0 18px rgba(120, 140, 255, 0.45);
+  letter-spacing: 0.09em;
+  color: #d4d8ff;
+  opacity: 0.85;
+  text-shadow:
+    0 0 22px rgba(130, 150, 255, 0.5),
+    0 2px 10px rgba(0, 0, 0, 0.6);
   transition: opacity 900ms var(--e-suave);
 }
-.cielo-mundo.is-trazando .cl-titulo { opacity: 0.16; }
+.cielo-mundo.is-trazando .cl-titulo { opacity: 0.12; }
 
 .cielo-mundo .cl-pie {
   margin: 0;
   min-height: 3.4em;
   max-width: 24em;
   font-size: clamp(0.82rem, 3.4vw, 0.98rem);
-  line-height: 1.55;
-  color: #d8d4ff;
+  line-height: 1.6;
+  color: #dcd8ff;
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 700ms var(--e-suave), transform 700ms var(--e-suave);
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.85);
 }
-.cielo-mundo .cl-pie.is-visible { opacity: 0.94; transform: none; }
+.cielo-mundo .cl-pie.is-visible { opacity: 0.95; transform: none; }
 
 .cielo-mundo .cl-pie em {
   display: block;
-  margin-top: 0.35em;
-  font-family: var(--tipo-mano, "Segoe Script", cursive);
+  margin-top: 0.4em;
+  font-family: var(--tipo-mano, "Segoe Script", "Bradley Hand", cursive);
   font-size: 1.16em;
   font-style: normal;
   color: #ffd9e6;
+  text-shadow: 0 0 18px rgba(255, 170, 210, 0.55);
 }
 
-/* El nombre de la figura, grande, cuando se completa. */
 .cielo-mundo .cl-nombre {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%) scale(0.86);
   margin: 0;
-  font-family: var(--tipo-titulo, Georgia, serif);
+  font-family: var(--tipo-titulo, Georgia, "Iowan Old Style", serif);
   font-size: clamp(1.4rem, 7vw, 2.4rem);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   color: #fff3f8;
   opacity: 0;
   pointer-events: none;
-  text-shadow: 0 0 34px rgba(255, 190, 220, 0.75);
+  text-shadow:
+    0 0 40px rgba(255, 190, 220, 0.8),
+    0 0 90px rgba(255, 150, 200, 0.45);
   transition: opacity 620ms var(--e-suave), transform 900ms var(--e-suave);
 }
 .cielo-mundo .cl-nombre.is-visible {
@@ -130,15 +130,38 @@ html, body { margin: 0; height: 100%; }
   transform: translate(-50%, -50%) scale(1);
 }
 
-/* El contador discreto de arriba a la derecha. */
+/* Contador: puntitos que se encienden con el color de la figura. */
 .cielo-mundo .cl-cuenta {
   position: absolute;
-  right: 18px;
-  top: calc(var(--seguro-t) + 18px);
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
-  color: #8f96d8;
-  opacity: 0.7;
+  right: 20px;
+  top: calc(var(--seguro-t) + 20px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(20, 24, 52, 0.42);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+.cielo-mundo .cl-punto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(150, 160, 220, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(180, 190, 255, 0.15);
+  transition:
+    background 320ms var(--e-suave),
+    box-shadow 320ms var(--e-suave),
+    transform 320ms var(--e-suave);
+}
+.cielo-mundo .cl-punto.is-hecho {
+  background: #c8d0ff;
+  box-shadow:
+    0 0 8px rgba(160, 180, 255, 0.9),
+    0 0 16px rgba(140, 160, 255, 0.5);
+  transform: scale(1.15);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -152,7 +175,7 @@ html, body { margin: 0; height: 100%; }
   <canvas class="cl-lienzo" id="lienzo"></canvas>
   <div class="cl-toque" id="toque" aria-hidden="true"></div>
   <div class="cl-ui">
-    <h1 class="cl-titulo" id="titulo">Une las estrellas</h1>
+    <h1 class="cl-titulo">Une las estrellas</h1>
     <p class="cl-pie" id="pie" role="status" aria-live="polite"></p>
   </div>
   <p class="cl-nombre" id="nombre" aria-hidden="true"></p>
@@ -165,19 +188,11 @@ html, body { margin: 0; height: 100%; }
 
 /* ══════════════════════════════════════════════════════════════════════
    CONFIGURACIÓN EDITABLE
-   Aquí está TODO lo que se puede cambiar sin entender nada de lo demás:
-   las figuras, lo que dicen, los colores y los números.
    ══════════════════════════════════════════════════════════════════════ */
 
 const CONF = {
 
-  /* ---- LAS FIGURAS ---------------------------------------------------
-     Cada figura son unos puntos y las líneas que hay que trazar entre
-     ellos. Los puntos van en coordenadas de 0 a 1 sobre el cielo: (0,0)
-     es arriba a la izquierda y (1,1) abajo a la derecha.
-
-     `union` son parejas de índices: [0,1] quiere decir «hay que unir el
-     punto 0 con el punto 1». El orden en que se tracen da igual.        */
+  /* ---- LAS FIGURAS --------------------------------------------------- */
   figuras: [
     {
       nombre: "El corazón",
@@ -196,10 +211,13 @@ const CONF = {
       firma: "Donde sea, si estás.",
       color: "#ffcf9a",
       puntos: [
-        [0.32, 0.62], [0.32, 0.42], [0.50, 0.28], [0.68, 0.42],
-        [0.68, 0.62], [0.50, 0.62],
+        [0.28, 0.62], [0.28, 0.40], [0.50, 0.26], [0.72, 0.40], [0.72, 0.62],
+        [0.42, 0.62], [0.42, 0.48], [0.58, 0.48], [0.58, 0.62],
       ],
-      union: [[0,1],[1,2],[2,3],[3,4],[4,0]],
+      union: [
+        [0,1],[1,2],[2,3],[3,4],[4,0],
+        [5,6],[6,7],[7,8],[8,5],
+      ],
     },
     {
       nombre: "La taza",
@@ -207,8 +225,8 @@ const CONF = {
       firma: "Ya sé cuánta.",
       color: "#b8f0d8",
       puntos: [
-        [0.34, 0.36], [0.62, 0.36], [0.58, 0.60], [0.38, 0.60],
-        [0.62, 0.42], [0.72, 0.48], [0.60, 0.54],
+        [0.30, 0.34], [0.60, 0.34], [0.56, 0.62], [0.34, 0.62],
+        [0.68, 0.40], [0.76, 0.48], [0.68, 0.56],
       ],
       union: [[0,1],[1,2],[2,3],[3,0],[1,4],[4,5],[5,6],[6,2]],
     },
@@ -218,8 +236,8 @@ const CONF = {
       firma: "Casi siempre coincidimos.",
       color: "#dfe4ff",
       puntos: [
-        [0.56, 0.24], [0.42, 0.30], [0.36, 0.44], [0.42, 0.58],
-        [0.56, 0.64], [0.48, 0.52], [0.46, 0.44], [0.48, 0.36],
+        [0.62, 0.22], [0.46, 0.28], [0.38, 0.44], [0.46, 0.60], [0.62, 0.70],
+        [0.56, 0.56], [0.52, 0.44], [0.56, 0.32],
       ],
       union: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,0]],
     },
@@ -229,14 +247,13 @@ const CONF = {
       firma: "Tú llevas el timón cuando yo me canso.",
       color: "#9ecdff",
       puntos: [
-        [0.28, 0.60], [0.72, 0.60], [0.64, 0.70], [0.36, 0.70],
-        [0.50, 0.60], [0.50, 0.26], [0.68, 0.52], [0.50, 0.44],
+        [0.26, 0.62], [0.74, 0.62], [0.66, 0.74], [0.34, 0.74],
+        [0.50, 0.62], [0.50, 0.22], [0.72, 0.54],
       ],
-      union: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,4],[5,7]],
+      union: [[0,4],[4,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,4]],
     },
   ],
 
-  /* ---- LO QUE SE LEE MIENTRAS SE TRAZA -------------------------------- */
   alUnir: [
     "Ahí va una.",
     "Sigue, que va tomando forma.",
@@ -253,14 +270,16 @@ const CONF = {
   },
 
   /* ---- EL CIELO ------------------------------------------------------- */
-  estrellasFondo: 170,      // cuántas estrellas sueltas de adorno
-  radioToque: 30,           // px alrededor de una estrella que cuentan como suya
-  polvo: 120,               // partículas máximas de destello a la vez
-  fugaces: [7000, 16000],   // cada cuánto pasa una estrella fugaz (ms, entre)
+  estrellasFondo: 170,
+  luciernagas: 26,
+  radioToque: 34,
+  polvo: 160,
+  fugaces: [7000, 16000],
+  maxMemorias: 150,           // estrellas del pasado que se guardan
 };
 
 /* ══════════════════════════════════════════════════════════════════════
-   A partir de aquí ya es la maquinaria. No hace falta tocar nada.
+   A partir de aquí, la maquinaria.
    ══════════════════════════════════════════════════════════════════════ */
 
 const mundo  = document.getElementById("mundo");
@@ -285,79 +304,228 @@ function medir() {
   lienzo.width  = Math.round(A * dpr);
   lienzo.height = Math.round(H * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  pintarCieloFondo();
   colocarFigura();
   sembrarFondo();
+  sembrarLuciernagas();
+  /* Las memorias quedan en coordenadas normalizadas, así que no hay
+     que recolocarlas. Sí que hay que remapear las que aún existan. */
 }
 
-/* Se mide el CONTENEDOR, no la ventana: esta página vive dentro de la hoja
-   de un libro y la hoja no es la pantalla. */
 new ResizeObserver(medir).observe(mundo);
 
 /* ---- Utilidades ------------------------------------------------------ */
 
-const azar  = (a, b) => a + Math.random() * (b - a);
-const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-/* Amortiguación independiente de los fotogramas: el mismo recorrido a 60,
-   a 90 y a 120 Hz. */
-const damp = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
+const azar   = (a, b) => a + Math.random() * (b - a);
+const clamp  = (v, a, b) => v < a ? a : v > b ? b : v;
+const damp   = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
+const vibrar = (ms) => { try { navigator.vibrate?.(ms); } catch (_) {} };
 
-/* ---- El cielo de fondo ----------------------------------------------- */
+/* ---- El cielo, cacheado en un canvas aparte ------------------------- */
+
+const cacheCielo = document.createElement("canvas");
+const ctxCielo   = cacheCielo.getContext("2d");
+
+function pintarCieloFondo() {
+  const w = Math.round(A * dpr);
+  const h = Math.round(H * dpr);
+  if (cacheCielo.width === w && cacheCielo.height === h) return;
+
+  cacheCielo.width  = w;
+  cacheCielo.height = h;
+  ctxCielo.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  ctxCielo.fillStyle = "#060912";
+  ctxCielo.fillRect(0, 0, A, H);
+
+  const R = Math.max(A, H);
+  const nebulas = [
+    { x: A * 0.22, y: H * 0.20, r: R * 0.55, c: [ 82,  52, 150, 0.32] },
+    { x: A * 0.86, y: H * 0.76, r: R * 0.50, c: [ 40,  70, 140, 0.28] },
+    { x: A * 0.55, y: H * 0.55, r: R * 0.65, c: [122,  48, 108, 0.18] },
+    { x: A * 0.10, y: H * 0.90, r: R * 0.42, c: [ 34,  96, 132, 0.22] },
+  ];
+  for (const n of nebulas) {
+    const g = ctxCielo.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+    g.addColorStop(0, `rgba(${n.c[0]},${n.c[1]},${n.c[2]},${n.c[3]})`);
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctxCielo.fillStyle = g;
+    ctxCielo.fillRect(0, 0, A, H);
+  }
+
+  const vl = ctxCielo.createLinearGradient(0, H, A, 0);
+  vl.addColorStop(0.00, "rgba(40, 50, 110, 0)");
+  vl.addColorStop(0.42, "rgba(64, 58, 128, 0.32)");
+  vl.addColorStop(0.56, "rgba(90, 68, 138, 0.24)");
+  vl.addColorStop(1.00, "rgba(40, 50, 110, 0)");
+  ctxCielo.fillStyle = vl;
+  ctxCielo.fillRect(0, 0, A, H);
+
+  const vg = ctxCielo.createRadialGradient(
+    A / 2, H / 2, Math.min(A, H) * 0.28,
+    A / 2, H / 2, Math.max(A, H) * 0.80
+  );
+  vg.addColorStop(0, "rgba(0,0,0,0)");
+  vg.addColorStop(1, "rgba(0,0,0,0.55)");
+  ctxCielo.fillStyle = vg;
+  ctxCielo.fillRect(0, 0, A, H);
+}
+
+/* ---- Estrellas de fondo --------------------------------------------- */
 
 let fondo = [];
+const PALETA_FONDO = ["#dfe6ff", "#fff4e6", "#e6e6ff", "#ffe9ee", "#e8f2ff"];
 
 function sembrarFondo() {
-  const n = A * H < 200000 ? Math.round(CONF.estrellasFondo * 0.6) : CONF.estrellasFondo;
+  const n = A * H < 200000
+    ? Math.round(CONF.estrellasFondo * 0.6)
+    : CONF.estrellasFondo;
   fondo = new Array(n);
   for (let i = 0; i < n; i++) {
     fondo[i] = {
       x: Math.random() * A,
       y: Math.random() * H,
       r: azar(0.35, 1.4),
-      b: azar(0.2, 0.7),
+      b: azar(0.2, 0.75),
       v: azar(0.4, 1.9),
       f: Math.random() * 6.283,
+      c: PALETA_FONDO[(Math.random() * PALETA_FONDO.length) | 0],
     };
   }
 }
 
-/* ---- Las figuras ------------------------------------------------------ */
+/* ---- Luciérnagas ---------------------------------------------------- */
 
-let iFig = 0;                 // qué figura toca
-let puntos = [];              // {x, y, br} en píxeles
-let hechas = [];              // qué uniones ya están trazadas
+let luciernagas = [];
+
+function sembrarLuciernagas() {
+  const n = CONF.luciernagas;
+  luciernagas = new Array(n);
+  for (let i = 0; i < n; i++) {
+    luciernagas[i] = {
+      x: Math.random() * A,
+      y: Math.random() * H,
+      vx: azar(-10, 10),
+      vy: azar(-8, 8),
+      r: azar(0.8, 1.9),
+      a: azar(0.18, 0.5),
+      f: Math.random() * 6.283,
+      vf: azar(0.5, 1.6),
+    };
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   MEMORIA DEL CIELO
+   Cuando una figura se completa y se desvanece, sus estrellas se quedan
+   en el fondo para siempre, un poco más tenues y del color de la figura.
+   El cielo se va poblando de lo que ya has dibujado.
+   ══════════════════════════════════════════════════════════════════════ */
+
+let memorias = [];  // { x, y, color, b, bObj, n }
+
+function guardarMemoria(pts, color) {
+  for (const p of pts) {
+    memorias.push({
+      x: p.x, y: p.y,
+      color,
+      b: 0,
+      bObj: 0.34 + Math.random() * 0.16,
+      n: Math.random() * 6.283,
+    });
+  }
+  if (memorias.length > CONF.maxMemorias) {
+    memorias.splice(0, memorias.length - CONF.maxMemorias);
+  }
+}
+
+/* ---- Figuras --------------------------------------------------------- */
+
+let iFig = 0;
+let puntos = [];
+let hechas = [];
 let completadas = 0;
-let fulgor = 0;               // 0..1, el brillo cuando se completa una figura
+let fulgor = 0;
+let ondaExpansiva = 0;
+let iMensaje = 0;
+let hoverI = -1;
 
-function figura() { return CONF.figuras[iFig]; }
+/* Estados: apareciendo | jugando | celebrando | desvaneciendo | pausa */
+let estado = "apareciendo";
+let tEstado = 0;
+let opacidad = 0;   // visibilidad de la figura actual
+let tokenAparicion = 0;
+
+const figura = () => CONF.figuras[iFig];
 
 function colocarFigura() {
   const f = figura();
   if (!f) return;
-  /* La figura se dibuja en un cuadrado centrado, no estirada al ancho de
-     la hoja: un corazón estirado deja de ser un corazón. */
   const lado = Math.min(A, H) * 0.86;
   const ox = (A - lado) / 2;
   const oy = (H - lado) / 2;
   puntos = f.puntos.map(([u, v]) => ({
     x: ox + u * lado,
     y: oy + v * lado,
-    br: 0,          // brillo propio, sube al tocarla
+    br: 0,
+    onda: 0,
   }));
 }
 
 function reiniciarFigura() {
   hechas = figura().union.map(() => false);
+  iMensaje = 0;
   colocarFigura();
 }
 
-/* ---- El polvo de estrellas (agrupado, sin crear basura) --------------- */
+function aparecerFigura() {
+  estado = "apareciendo";
+  tEstado = 0;
+  opacidad = 0;
+  const miToken = ++tokenAparicion;
+  /* Cada estrella entra con un pequeño retardo: primero una, luego otra. */
+  puntos.forEach((p, i) => {
+    setTimeout(() => {
+      if (tokenAparicion !== miToken) return;
+      p.br = 1;
+      p.onda = 0.65;
+      destello(p.x, p.y, 4, 1);
+      sonar(360 + i * 70, 0.09);
+    }, (suave ? 0 : 260) + i * (suave ? 20 : 110));
+  });
+}
 
-const P = CONF.polvo;
-const px = new Float32Array(P), py = new Float32Array(P);
+function avanzarFigura() {
+  if (completadas >= CONF.figuras.length) {
+    /* Ciclo completo. */
+    decir(CONF.alEmpezar);
+    setTimeout(() => {
+      anunciar(CONF.alTerminarTodo.nombre);
+      decir(CONF.alTerminarTodo.frase, CONF.alTerminarTodo.firma);
+    }, suave ? 100 : 300);
+    setTimeout(() => {
+      completadas = 0;
+      iFig = 0;
+      reiniciarFigura();
+      aparecerFigura();
+      decir(CONF.alEmpezar);
+    }, suave ? 1400 : 4400);
+  } else {
+    iFig = (iFig + 1) % CONF.figuras.length;
+    reiniciarFigura();
+    aparecerFigura();
+    decir(CONF.alEmpezar);
+  }
+}
+
+/* ---- Polvo ---------------------------------------------------------- */
+
+const P   = CONF.polvo;
+const px  = new Float32Array(P), py  = new Float32Array(P);
 const pvx = new Float32Array(P), pvy = new Float32Array(P);
-const pv  = new Float32Array(P);   // vida restante, 0 = libre
-const pm  = new Float32Array(P);   // vida máxima
-const pt  = new Float32Array(P);   // tono: 0 blanco, 1 el color de la figura
+const pv  = new Float32Array(P);
+const pm  = new Float32Array(P);
+const pt  = new Float32Array(P);
 let cursor = 0;
 
 function destello(x, y, n, tono) {
@@ -378,17 +546,18 @@ function destello(x, y, n, tono) {
   }
 }
 
-/* ---- Estrellas fugaces ------------------------------------------------ */
+/* ---- Fugaces -------------------------------------------------------- */
 
 let fugaz = null;
 let proximaFugaz = azar(CONF.fugaces[0], CONF.fugaces[1]);
+let rachaFugaces = 0;   // cuántas quedan por lanzar en una racha
 
 function lanzarFugaz() {
-  const desdeIzq = Math.random() < 0.5;
+  const izq = Math.random() < 0.5;
   fugaz = {
-    x: desdeIzq ? -40 : A + 40,
+    x: izq ? -40 : A + 40,
     y: azar(H * 0.05, H * 0.45),
-    vx: (desdeIzq ? 1 : -1) * azar(340, 520),
+    vx: (izq ? 1 : -1) * azar(340, 520),
     vy: azar(120, 210),
     vida: 1,
   };
@@ -396,11 +565,14 @@ function lanzarFugaz() {
 
 /* ---- El trazo -------------------------------------------------------- */
 
-let trazo = null;        // { desde, x, y }
-let ultimoAviso = 0;
+let trazo = null;
+let destinos = new Set();     // índices válidos desde `trazo.desde`
+let ultimoPuntoRastro = null;
+let ultimoAvisoFallo = 0;
 
 function estrellaEn(x, y) {
-  let mejor = -1, dMin = CONF.radioToque * CONF.radioToque;
+  let mejor = -1;
+  let dMin = CONF.radioToque * CONF.radioToque;
   for (let i = 0; i < puntos.length; i++) {
     const dx = puntos[i].x - x, dy = puntos[i].y - y;
     const d = dx * dx + dy * dy;
@@ -412,7 +584,8 @@ function estrellaEn(x, y) {
 function indiceUnion(a, b) {
   const u = figura().union;
   for (let i = 0; i < u.length; i++) {
-    if ((u[i][0] === a && u[i][1] === b) || (u[i][0] === b && u[i][1] === a)) return i;
+    if ((u[i][0] === a && u[i][1] === b) ||
+        (u[i][0] === b && u[i][1] === a)) return i;
   }
   return -1;
 }
@@ -422,105 +595,171 @@ function enPantalla(e) {
   return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
 
+function recalcularDestinos() {
+  destinos.clear();
+  if (!trazo) return;
+  const u = figura().union;
+  for (let i = 0; i < u.length; i++) {
+    if (hechas[i]) continue;
+    if (u[i][0] === trazo.desde) destinos.add(u[i][1]);
+    else if (u[i][1] === trazo.desde) destinos.add(u[i][0]);
+  }
+}
+
 zona.addEventListener("pointerdown", (e) => {
   if (e.pointerType === "mouse" && e.button !== 0) return;
   const p = enPantalla(e);
   const i = estrellaEn(p.x, p.y);
-  if (i < 0) { tocarVacio(p); return; }
-  zona.setPointerCapture(e.pointerId);
-  trazo = { desde: i, x: p.x, y: p.y };
-  puntos[i].br = 1;
-  mundo.classList.add("is-trazando");
-  sonar(520 + i * 40, 0.06);
+
+  if (i >= 0 && estado === "jugando" && opacidad > 0.6) {
+    /* Golpes secretos sobre una misma estrella */
+    const ahora = performance.now();
+    if (i === golpes.i && ahora - golpes.t < 900) golpes.n++;
+    else { golpes.i = i; golpes.n = 1; }
+    golpes.t = ahora;
+    if (golpes.n === 3) {
+      golpes.n = 0;
+      latiendo = { i, t: 0 };
+      decir("Esa estrella se ha puesto nerviosa.",
+            "Como yo la primera vez.");
+      sonar(392, 0.4, "triangle");
+      vibrar(40);
+    }
+
+    zona.setPointerCapture(e.pointerId);
+    trazo = { desde: i, x: p.x, y: p.y };
+    ultimoPuntoRastro = { x: p.x, y: p.y };
+    puntos[i].br = 1;
+    puntos[i].onda = 1;
+    mundo.classList.add("is-trazando");
+    recalcularDestinos();
+    sonar(520 + i * 40, 0.06);
+  } else if (i < 0) {
+    golpes.n = 0;
+    tocarVacio(p);
+  }
 });
 
 zona.addEventListener("pointermove", (e) => {
-  if (!trazo) return;
   const p = enPantalla(e);
+
+  /* Brillo al pasar el ratón */
+  if (!trazo) {
+    hoverI = estrellaEn(p.x, p.y);
+    return;
+  }
+
   trazo.x = p.x; trazo.y = p.y;
+
+  /* Estela de polvo al arrastrar */
+  if (ultimoPuntoRastro) {
+    const dx = p.x - ultimoPuntoRastro.x;
+    const dy = p.y - ultimoPuntoRastro.y;
+    if (dx * dx + dy * dy > 64) {
+      destello(p.x, p.y, 1, 1);
+      ultimoPuntoRastro.x = p.x;
+      ultimoPuntoRastro.y = p.y;
+    }
+  }
+
   const i = estrellaEn(p.x, p.y);
-  /* Se encadena: al llegar a una estrella válida se cierra esa unión y el
-     trazo sigue desde ella. Así se dibuja la figura de un tirón. */
   if (i >= 0 && i !== trazo.desde) {
     const k = indiceUnion(trazo.desde, i);
     if (k >= 0 && !hechas[k]) {
       hechas[k] = true;
       puntos[i].br = 1;
+      puntos[i].onda = 1;
       destello(puntos[i].x, puntos[i].y, 9, 1);
       sonar(660 + hechas.filter(Boolean).length * 55, 0.08);
+      vibrar(12);
       trazo.desde = i;
+      recalcularDestinos();
       revisarFigura();
     } else if (k >= 0) {
-      trazo.desde = i;   // ya estaba: se sigue sin decir nada
+      trazo.desde = i;
+      recalcularDestinos();
+    } else {
+      const ahora = performance.now();
+      if (ahora - ultimoAvisoFallo > 1600) {
+        ultimoAvisoFallo = ahora;
+        decir(CONF.alFallar);
+      }
     }
   }
 });
 
+zona.addEventListener("pointerleave", () => { hoverI = -1; });
+
 function soltar() {
   if (!trazo) return;
   trazo = null;
+  destinos.clear();
+  ultimoPuntoRastro = null;
   mundo.classList.remove("is-trazando");
 }
 zona.addEventListener("pointerup", soltar);
 zona.addEventListener("pointercancel", soltar);
 
-/* ---- Cuando se completa ---------------------------------------------- */
+/* ---- Al completar ---------------------------------------------------- */
 
 function revisarFigura() {
   const faltan = hechas.filter((h) => !h).length;
+
   if (faltan > 0) {
     if (faltan <= CONF.alUnir.length) {
-      decir(CONF.alUnir[CONF.alUnir.length - faltan]);
+      decir(CONF.alUnir[iMensaje % CONF.alUnir.length]);
+      iMensaje++;
     }
     ponerCuenta();
     return;
   }
 
   /* Completa. */
+  trazo = null;
+  destinos.clear();
+  mundo.classList.remove("is-trazando");
+
   const f = figura();
   completadas++;
   fulgor = 1;
-  for (const p of puntos) destello(p.x, p.y, 7, 1);
+  ondaExpansiva = 1;
+  for (const p of puntos) { destello(p.x, p.y, 8, 1); p.onda = 1; }
   sonar(784, 0.5, "triangle");
   setTimeout(() => sonar(1047, 0.6, "triangle"), 130);
+  vibrar(60);
+
+  /* Racha de fugaces al celebrar. */
+  rachaFugaces = 2 + ((Math.random() * 2) | 0);
 
   anunciar(f.nombre);
   decir(f.frase, f.firma);
   ponerCuenta();
 
-  /* Y a la siguiente, sin prisa. */
-  setTimeout(() => {
-    if (completadas >= CONF.figuras.length) { finDeTodo(); return; }
-    iFig = (iFig + 1) % CONF.figuras.length;
-    reiniciarFigura();
-    decir(CONF.alEmpezar);
-  }, suave ? 900 : 2600);
-}
-
-function finDeTodo() {
-  const f = CONF.alTerminarTodo;
-  anunciar(f.nombre);
-  decir(f.frase, f.firma);
-  /* Y se vuelve a empezar, que el cielo no se acaba nunca. */
-  setTimeout(() => {
-    completadas = 0; iFig = 0; reiniciarFigura(); ponerCuenta();
-  }, suave ? 1200 : 5200);
+  estado = "celebrando";
+  tEstado = 0;
 }
 
 function ponerCuenta() {
-  const hech = hechas.filter(Boolean).length;
-  elCue.textContent = `${hech} / ${hechas.length}`;
+  const total = hechas.length;
+  const hech  = hechas.filter(Boolean).length;
+  let html = "";
+  for (let i = 0; i < total; i++) {
+    html += `<span class="cl-punto${i < hech ? " is-hecho" : ""}"></span>`;
+  }
+  elCue.innerHTML = html;
 }
 
-/* ---- Los textos ------------------------------------------------------- */
+/* ---- Textos ---------------------------------------------------------- */
 
-let pidiendo = null;
+let tokenPie = 0;
+let tokenNom = 0;
 
 function decir(texto, firma) {
-  if (pidiendo === texto) return;
-  pidiendo = texto;
+  const miToken = ++tokenPie;
   elPie.classList.remove("is-visible");
+  const esperar = suave ? 10 : 260;
   setTimeout(() => {
+    if (tokenPie !== miToken) return;
     elPie.textContent = texto;
     if (firma) {
       const em = document.createElement("em");
@@ -528,19 +767,28 @@ function decir(texto, firma) {
       elPie.append(em);
     }
     elPie.classList.add("is-visible");
-  }, suave ? 10 : 320);
+  }, esperar);
 }
 
 function anunciar(nombre) {
+  const miToken = ++tokenNom;
   elNom.textContent = nombre;
   elNom.classList.add("is-visible");
-  setTimeout(() => elNom.classList.remove("is-visible"), suave ? 700 : 2200);
+  setTimeout(() => {
+    if (tokenNom !== miToken) return;
+    elNom.classList.remove("is-visible");
+  }, suave ? 700 : 2200);
 }
 
-/* ---- Sonido (sintetizado, sin descargar nada) ------------------------- */
+/* ---- Sonido ---------------------------------------------------------- */
 
 let audio = null;
+let ultimoSonido = 0;
+
 function sonar(hz, dur, tipo) {
+  const ahora = performance.now();
+  if (ahora - ultimoSonido < 28) return;
+  ultimoSonido = ahora;
   try {
     if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
     if (audio.state === "suspended") audio.resume();
@@ -550,19 +798,17 @@ function sonar(hz, dur, tipo) {
     o.type = tipo || "sine";
     o.frequency.setValueAtTime(hz, t);
     g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.11, t + 0.012);
+    g.gain.linearRampToValueAtTime(0.09, t + 0.012);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g).connect(audio.destination);
     o.start(t); o.stop(t + dur + 0.05);
-  } catch { /* sin sonido se juega igual */ }
+  } catch (_) { /* sin sonido se juega igual */ }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
    LOS SECRETOS. No se anuncian en ningún sitio.
    ══════════════════════════════════════════════════════════════════════ */
 
-/* 1. Tocar el cielo vacío deja una estrella nueva, tuya. A las doce, el
-      cielo se llena de golpe y lo dice.                                   */
 let mias = [];
 const SECRETO_MIAS = 12;
 
@@ -572,39 +818,26 @@ function tocarVacio(p) {
   sonar(azar(880, 1320), 0.12);
   if (mias.length === SECRETO_MIAS) {
     for (let i = 0; i < 60; i++) {
-      mias.push({ x: Math.random() * A, y: Math.random() * H, br: 1, n: Math.random() * 6.283 });
+      mias.push({
+        x: Math.random() * A,
+        y: Math.random() * H,
+        br: 1,
+        n: Math.random() * 6.283,
+      });
     }
     anunciar("Doce");
-    decir("Doce estrellas que no estaban. Las has puesto tú.", "Este cielo ya es medio tuyo.");
+    decir("Doce estrellas que no estaban. Las has puesto tú.",
+          "Este cielo ya es medio tuyo.");
     sonar(523, 0.7, "triangle");
+    vibrar(80);
   }
   if (mias.length > 200) mias.splice(0, mias.length - 200);
 }
 
-/* 2. Si te quedas muy quieta un rato largo sin tocar nada, pasa una fugaz
-      justo por el centro y hay que pedir deseo.                           */
 let quieta = 0;
-const SECRETO_QUIETA = 22;   // segundos
+const SECRETO_QUIETA = 22;
 
-/* 3. Tocar tres veces seguidas la misma estrella de la figura sin unirla a
-      nada: esa estrella se pone a latir.                                  */
 let golpes = { i: -1, n: 0, t: 0 };
-
-zona.addEventListener("pointerdown", (e) => {
-  const p = enPantalla(e);
-  const i = estrellaEn(p.x, p.y);
-  if (i < 0) { golpes.n = 0; return; }
-  const ahora = performance.now();
-  if (i === golpes.i && ahora - golpes.t < 900) golpes.n++;
-  else { golpes.i = i; golpes.n = 1; }
-  golpes.t = ahora;
-  if (golpes.n === 3) {
-    golpes.n = 0;
-    latiendo = { i, t: 0 };
-    decir("Esa estrella se ha puesto nerviosa.", "Como yo la primera vez.");
-    sonar(392, 0.4, "triangle");
-  }
-});
 let latiendo = null;
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -614,60 +847,140 @@ let latiendo = null;
 let t0 = performance.now();
 let reloj = 0;
 
+/* Duraciones del ciclo de vida de una figura (segundos). */
+const T_APARECE     = 1.4;
+const T_CELEBRA     = 2.3;
+const T_DESVANECE   = 1.8;
+
 function paso(ahora) {
   requestAnimationFrame(paso);
   if (!A || !H) return;
 
-  /* dt acotado, no sustituido: sustituirlo por 1/60 en un salto largo hace
-     que todo avance a cámara lenta en un móvil que se atasque. */
   let dt = (ahora - t0) / 1000;
   t0 = ahora;
   if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
   else if (dt > 0.1) dt = 0.1;
 
   reloj += dt;
+  tEstado += dt;
+
+  /* ─── Máquina de estados de la figura ─────────────────────────── */
+  if (estado === "apareciendo") {
+    opacidad = Math.min(1, tEstado / T_APARECE);
+    if (tEstado >= T_APARECE) { estado = "jugando"; tEstado = 0; }
+  } else if (estado === "jugando") {
+    opacidad = 1;
+  } else if (estado === "celebrando") {
+    opacidad = 1;
+    if (tEstado >= (suave ? T_CELEBRA * 0.4 : T_CELEBRA)) {
+      estado = "desvaneciendo";
+      tEstado = 0;
+      /* Guardar las estrellas de esta figura como memoria del cielo. */
+      guardarMemoria(puntos, figura().color);
+    }
+  } else if (estado === "desvaneciendo") {
+    opacidad = Math.max(0, 1 - tEstado / T_DESVANECE);
+    if (tEstado >= T_DESVANECE) {
+      opacidad = 0;
+      avanzarFigura();
+    }
+  }
+
+  /* ─── Ambiente ─────────────────────────────────────────────────── */
   quieta = trazo ? 0 : quieta + dt;
   if (quieta > SECRETO_QUIETA) {
-    quieta = -40;   // y no vuelve a pasar en un buen rato
+    quieta = -40;
     fugaz = { x: -40, y: H * 0.42, vx: 300, vy: 40, vida: 1, gorda: true };
-    decir("Ha pasado una. ¿Has pedido algo?", "Yo pido lo mismo siempre.");
+    decir("Ha pasado una. ¿Has pedido algo?",
+          "Yo pido lo mismo siempre.");
   }
 
   fulgor = damp(fulgor, 0, 1.6, dt);
+  if (ondaExpansiva > 0) {
+    ondaExpansiva -= dt * 0.65;
+    if (ondaExpansiva < 0) ondaExpansiva = 0;
+  }
 
-  /* --- fondo --- */
-  ctx.fillStyle = "#070b1c";
-  ctx.fillRect(0, 0, A, H);
+  /* ─── Fondo ─────────────────────────────────────────────────────── */
+  ctx.drawImage(cacheCielo, 0, 0, A, H);
 
-  /* Un velo de vía láctea en diagonal, muy tenue. */
-  const vl = ctx.createLinearGradient(0, H, A, 0);
-  vl.addColorStop(0.00, "rgba(28, 34, 78, 0)");
-  vl.addColorStop(0.45, "rgba(52, 46, 102, 0.42)");
-  vl.addColorStop(0.58, "rgba(70, 54, 112, 0.30)");
-  vl.addColorStop(1.00, "rgba(28, 34, 78, 0)");
-  ctx.fillStyle = vl;
-  ctx.fillRect(0, 0, A, H);
-
+  /* Fogonazo al completar, con el color de la figura. */
   if (fulgor > 0.01) {
-    const g = ctx.createRadialGradient(A / 2, H / 2, 0, A / 2, H / 2, Math.max(A, H) * 0.7);
-    g.addColorStop(0, `rgba(255, 220, 240, ${0.30 * fulgor})`);
-    g.addColorStop(1, "rgba(255, 220, 240, 0)");
+    const f = figura();
+    const g = ctx.createRadialGradient(
+      A / 2, H / 2, 0,
+      A / 2, H / 2, Math.max(A, H) * 0.72
+    );
+    g.addColorStop(0, hexRGBA(f.color, 0.34 * fulgor));
+    g.addColorStop(1, hexRGBA(f.color, 0));
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, A, H);
   }
 
-  /* --- estrellas de fondo --- */
+  /* Onda expansiva al completar. */
+  if (ondaExpansiva > 0) {
+    const r = (1 - ondaExpansiva) * Math.max(A, H) * 0.85;
+    ctx.globalAlpha = ondaExpansiva * 0.55;
+    ctx.strokeStyle = figura().color;
+    ctx.lineWidth = 1.5 + ondaExpansiva * 3;
+    ctx.beginPath();
+    ctx.arc(A / 2, H / 2, r, 0, 6.283);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  /* ─── Estrellas de fondo ───────────────────────────────────────── */
   for (const s of fondo) {
     const b = s.b * (0.72 + 0.28 * Math.sin(reloj * s.v + s.f));
     ctx.globalAlpha = b;
-    ctx.fillStyle = "#dfe6ff";
+    ctx.fillStyle = s.c;
     ctx.beginPath();
     ctx.arc(s.x, s.y, s.r, 0, 6.283);
     ctx.fill();
   }
   ctx.globalAlpha = 1;
 
-  /* --- las estrellas que ha puesto ella --- */
+  /* ─── Memorias: estrellas del pasado ───────────────────────────── */
+  for (const m of memorias) {
+    m.b = damp(m.b, m.bObj, 0.6, dt);
+    const a = m.b * (0.7 + 0.3 * Math.sin(reloj * 1.6 + m.n));
+    if (a < 0.02) continue;
+    ctx.globalAlpha = a;
+    ctx.fillStyle = m.color;
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, 1.5, 0, 6.283);
+    ctx.fill();
+    ctx.globalAlpha = a * 0.22;
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, 5, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  /* ─── Luciérnagas ──────────────────────────────────────────────── */
+  for (const m of luciernagas) {
+    m.x += m.vx * dt;
+    m.y += m.vy * dt;
+    if (m.x < -10) m.x = A + 10;
+    if (m.x > A + 10) m.x = -10;
+    if (m.y < -10) m.y = H + 10;
+    if (m.y > H + 10) m.y = -10;
+    m.f += dt * m.vf;
+    const a = m.a * (0.45 + 0.55 * Math.sin(m.f));
+    if (a <= 0) continue;
+    ctx.globalAlpha = a;
+    ctx.fillStyle = "#c9d3ff";
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, m.r, 0, 6.283);
+    ctx.fill();
+    ctx.globalAlpha = a * 0.35;
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, m.r * 3, 0, 6.283);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  /* ─── Estrellas puestas por ella ───────────────────────────────── */
   for (const s of mias) {
     s.br = damp(s.br, 0.55, 1.1, dt);
     const b = s.br * (0.75 + 0.25 * Math.sin(reloj * 2.2 + s.n));
@@ -676,14 +989,14 @@ function paso(ahora) {
     ctx.beginPath();
     ctx.arc(s.x, s.y, 1.8, 0, 6.283);
     ctx.fill();
-    ctx.globalAlpha = b * 0.3;
+    ctx.globalAlpha = b * 0.32;
     ctx.beginPath();
     ctx.arc(s.x, s.y, 5.5, 0, 6.283);
     ctx.fill();
   }
   ctx.globalAlpha = 1;
 
-  /* --- fugaz --- */
+  /* ─── Fugaces ──────────────────────────────────────────────────── */
   if (fugaz) {
     fugaz.x += fugaz.vx * dt;
     fugaz.y += fugaz.vy * dt;
@@ -702,6 +1015,9 @@ function paso(ahora) {
     ctx.lineTo(gx, gy);
     ctx.stroke();
     if (fugaz.vida <= 0 || fugaz.x < -120 || fugaz.x > A + 120) fugaz = null;
+  } else if (rachaFugaces > 0) {
+    lanzarFugaz();
+    rachaFugaces--;
   } else {
     proximaFugaz -= dt * 1000;
     if (proximaFugaz <= 0) {
@@ -710,82 +1026,164 @@ function paso(ahora) {
     }
   }
 
-  /* --- la figura --- */
+  /* ─── La figura ────────────────────────────────────────────────── */
   const f = figura();
   const u = f.union;
+  const vis = opacidad;
 
-  /* Las uniones que faltan, apenas insinuadas. */
-  ctx.lineCap = "round";
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = "rgba(150, 160, 220, 0.16)";
-  ctx.setLineDash([2, 7]);
-  ctx.beginPath();
-  for (let i = 0; i < u.length; i++) {
-    if (hechas[i]) continue;
-    const a = puntos[u[i][0]], b = puntos[u[i][1]];
-    ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-  }
-  ctx.stroke();
-  ctx.setLineDash([]);
+  if (vis > 0.01) {
+    /* Brillo al pasar el ratón sobre una estrella libre. */
+    if (hoverI >= 0 && !trazo && estado === "jugando") {
+      puntos[hoverI].br = Math.max(puntos[hoverI].br, 0.42);
+    }
 
-  /* Las trazadas, con el color de la figura y su halo. */
-  ctx.lineWidth = 2.4;
-  ctx.strokeStyle = f.color;
-  ctx.shadowColor = f.color;
-  ctx.shadowBlur = 14 + 18 * fulgor;
-  ctx.beginPath();
-  for (let i = 0; i < u.length; i++) {
-    if (!hechas[i]) continue;
-    const a = puntos[u[i][0]], b = puntos[u[i][1]];
-    ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-  }
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-
-  /* El trazo que se está arrastrando ahora mismo. */
-  if (trazo) {
-    const a = puntos[trazo.desde];
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-    ctx.lineWidth = 1.5;
+    /* Pistas: las que faltan, con un pulso suave. */
+    const pulso = 0.13 + 0.07 * Math.sin(reloj * 1.4);
+    ctx.lineCap = "round";
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = `rgba(160, 170, 230, ${pulso * vis})`;
+    ctx.setLineDash([2, 7]);
     ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(trazo.x, trazo.y);
+    for (let i = 0; i < u.length; i++) {
+      if (hechas[i]) continue;
+      const a = puntos[u[i][0]], b = puntos[u[i][1]];
+      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+    }
     ctx.stroke();
+    ctx.setLineDash([]);
+
+    /* Trazadas, con el color de la figura. */
+    ctx.globalAlpha = vis;
+    ctx.lineWidth = 2.4;
+    ctx.strokeStyle = f.color;
+    ctx.shadowColor = f.color;
+    ctx.shadowBlur = 14 + 20 * fulgor;
+    ctx.beginPath();
+    for (let i = 0; i < u.length; i++) {
+      if (!hechas[i]) continue;
+      const a = puntos[u[i][0]], b = puntos[u[i][1]];
+      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+
+    /* Trazo actual: línea blanca + resplandor del color de la figura. */
+    if (trazo) {
+      const a = puntos[trazo.desde];
+      /* Resplandor suave del color de la figura */
+      ctx.globalAlpha = vis * 0.4;
+      ctx.strokeStyle = f.color;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(trazo.x, trazo.y);
+      ctx.stroke();
+      /* Línea blanca */
+      ctx.globalAlpha = vis;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.65)";
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(trazo.x, trazo.y);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    /* Estrellas de la figura. */
+    if (latiendo) {
+      latiendo.t += dt;
+      if (latiendo.t > 5) latiendo = null;
+    }
+
+    /* Encontrar el destino más cercano al cursor para destacarlo. */
+    let cercaDestino = -1;
+    if (trazo && destinos.size) {
+      let dMin = Infinity;
+      for (const idx of destinos) {
+        const p = puntos[idx];
+        const dx = p.x - trazo.x, dy = p.y - trazo.y;
+        const d = dx * dx + dy * dy;
+        if (d < dMin) { dMin = d; cercaDestino = idx; }
+      }
+    }
+
+    for (let i = 0; i < puntos.length; i++) {
+      const p = puntos[i];
+      p.br = damp(p.br, 0, 2.2, dt);
+
+      let r = 2.9 + p.br * 3.2 + fulgor * 1.6;
+      if (latiendo && latiendo.i === i) {
+        r += 1.8 + 1.8 * Math.sin(latiendo.t * 7);
+      }
+      if (hoverI === i && !trazo) r += 1.2;
+
+      /* Halo extra si es un destino válido. */
+      const esDestino = destinos.has(i);
+      const esCerca = i === cercaDestino;
+
+      /* Aro de onda al tocar o unir. */
+      if (p.onda > 0) {
+        p.onda = damp(p.onda, 0, 2.4, dt);
+        const rr = r * 2.5 + (1 - p.onda) * 44;
+        ctx.globalAlpha = p.onda * 0.5 * vis;
+        ctx.strokeStyle = f.color;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, rr, 0, 6.283);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
+      /* Anillo pulsante sobre destinos válidos mientras se arrastra. */
+      if (esDestino && vis > 0.8) {
+        const pul = 0.5 + 0.5 * Math.sin(reloj * 3.2 + i);
+        ctx.globalAlpha = (esCerca ? 0.85 : 0.35) * pul;
+        ctx.strokeStyle = f.color;
+        ctx.lineWidth = esCerca ? 1.8 : 1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r * 3 + (esCerca ? 4 : 1), 0, 6.283);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
+      /* Cuerpo de la estrella. */
+      ctx.globalAlpha = vis;
+      const radio = r * (esCerca ? 4.8 : 4.2);
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radio);
+      g.addColorStop(0.00, "rgba(255, 255, 255, 0.95)");
+      g.addColorStop(0.22, f.color);
+      g.addColorStop(1.00, "rgba(255, 255, 255, 0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, radio, 0, 6.283);
+      ctx.fill();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r * 0.7, 0, 6.283);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  } else if (trazo) {
+    /* Si la figura se desvaneció mientras arrastrábamos, soltamos. */
+    soltar();
   }
 
-  /* Las estrellas de la figura. */
-  if (latiendo) latiendo.t += dt;
-  for (let i = 0; i < puntos.length; i++) {
-    const p = puntos[i];
-    p.br = damp(p.br, 0, 2.2, dt);
-    let r = 2.9 + p.br * 3.2 + fulgor * 1.6;
-    if (latiendo && latiendo.i === i) r += 1.8 + 1.8 * Math.sin(latiendo.t * 7);
-    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 4.2);
-    g.addColorStop(0, "rgba(255, 255, 255, 0.95)");
-    g.addColorStop(0.22, f.color);
-    g.addColorStop(1, "rgba(255, 255, 255, 0)");
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, r * 4.2, 0, 6.283);
-    ctx.fill();
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, r * 0.7, 0, 6.283);
-    ctx.fill();
-  }
-
-  /* --- polvo --- */
+  /* ─── Polvo ────────────────────────────────────────────────────── */
+  const colorFig = f.color;
   for (let i = 0; i < P; i++) {
     if (pv[i] <= 0) continue;
     pv[i] -= dt;
     if (pv[i] <= 0) continue;
     px[i] += pvx[i] * dt;
     py[i] += pvy[i] * dt;
-    pvx[i] *= 0.965; pvy[i] *= 0.965;
+    pvx[i] *= 0.965;
+    pvy[i] *= 0.965;
     pvy[i] += 14 * dt;
     const k = pv[i] / pm[i];
     ctx.globalAlpha = k * 0.85;
-    ctx.fillStyle = pt[i] > 0.5 ? f.color : "#ffffff";
+    ctx.fillStyle = pt[i] > 0.5 ? colorFig : "#ffffff";
     ctx.beginPath();
     ctx.arc(px[i], py[i], 1.1 + k * 1.3, 0, 6.283);
     ctx.fill();
@@ -793,12 +1191,23 @@ function paso(ahora) {
   ctx.globalAlpha = 1;
 }
 
-/* ---- Arranque --------------------------------------------------------- */
+/* ---- Helper: hex → rgba --------------------------------------------- */
+
+function hexRGBA(hex, a) {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* ---- Arranque -------------------------------------------------------- */
 
 reiniciarFigura();
 medir();
 ponerCuenta();
 decir(CONF.alEmpezar);
+aparecerFigura();
 requestAnimationFrame(paso);
 
 })();
