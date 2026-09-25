@@ -1,0 +1,165 @@
+/* ============================================================
+   EXTRAS — álbum de sorpresas, notita del día y corazoncitos.
+   ============================================================ */
+
+/* Lo oculto se oculta DE VERDAD (si no, `display: grid` gana a `hidden`
+   y una capa invisible se queda tapando todos los toques), y la capa de
+   los corazoncitos nunca recibe el dedo. */
+.album[hidden],
+.notita__carta[hidden] { display: none !important; }
+#ui > .toques { pointer-events: none !important; }
+
+/* ---- Álbum ---------------------------------------------------- */
+.album {
+  position: absolute;
+  inset: 0;
+  z-index: calc(var(--z-overlay, 50) + 5);
+  display: grid;
+  align-items: end;
+  background: rgba(8, 2, 6, 0);
+  pointer-events: auto;
+  transition: background 320ms var(--e-out);
+}
+.album.is-abierto { background: rgba(8, 2, 6, 0.55); }
+.album__hoja {
+  display: flex;
+  flex-direction: column;
+  max-height: 92%;
+  margin: 0 auto;
+  width: min(100%, 560px);
+  border-radius: var(--r-lg, 22px) var(--r-lg, 22px) 0 0;
+  background: linear-gradient(180deg, rgba(var(--chrome-alto-rgb), 0.97), rgba(var(--chrome-rgb), 0.99));
+  box-shadow: 0 -20px 60px -20px rgba(0, 0, 0, 0.9);
+  padding-bottom: var(--safe-b);
+  color: var(--text);
+  transform: translateY(100%);
+  transition: transform 520ms var(--e-out);
+}
+.album.is-abierto .album__hoja { transform: none; }
+.album__cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.1rem 0.4rem;
+}
+.album__titulo { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; }
+.album__cuenta { margin: 0.1rem 0 0; font-family: var(--font-ui); font-size: var(--fs-micro); letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-soft); }
+.album__cerrar {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid rgba(var(--cromo-luz-rgb), 0.18);
+  background: rgba(var(--cromo-luz-rgb), 0.06);
+  color: var(--text); font-size: 1rem; cursor: pointer;
+}
+.album__progreso { margin: 0.3rem 1.1rem 0.6rem; height: 6px; border-radius: 99px; background: rgba(var(--cromo-luz-rgb), 0.1); overflow: hidden; }
+.album__barra { display: block; height: 100%; width: calc(var(--p, 0) * 100%); border-radius: inherit; background: linear-gradient(90deg, #ff9ab8, #ffd38a); transition: width 900ms var(--e-out); }
+.album__scroll { padding: 0 0.9rem 1rem; }
+.album__cuadro { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 0.6rem; }
+.album__carta {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.4rem 0.4rem 0.55rem;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--cromo-luz-rgb), 0.12);
+  background: rgba(var(--cromo-luz-rgb), 0.05);
+  color: inherit;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(10px) scale(0.96);
+  animation: album-entra 480ms var(--e-out) var(--d) forwards;
+}
+@keyframes album-entra { to { opacity: 1; transform: none; } }
+.album__carta:active { transform: scale(0.96); }
+.album__figura {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: repeating-linear-gradient(45deg, rgba(var(--cromo-luz-rgb), 0.05) 0 8px, transparent 8px 16px);
+  background-size: cover;
+  background-position: center;
+}
+.album__carta.is-hallada .album__figura { background: linear-gradient(145deg, #ffc2d4, #c75b83); }
+.album__carta.is-hallada .album__figura.con-foto { background-size: cover; background-position: center; }
+.album__emoji { font-size: 2.3rem; line-height: 1; filter: drop-shadow(0 4px 6px rgba(60, 10, 30, 0.35)); }
+.album__mini { position: absolute; bottom: 4px; left: 0; right: 0; font-size: 0.8rem; letter-spacing: 0.1em; }
+.album__misterio { font-family: var(--font-display); font-size: 2rem; color: var(--text-faint); }
+.album__num { font-family: var(--font-ui); font-size: 0.62rem; letter-spacing: 0.14em; color: var(--text-faint); }
+.album__frase { font-family: var(--font-display); font-size: 0.78rem; line-height: 1.2; color: var(--text-soft); }
+.album__carta.is-hallada .album__frase { font-family: var(--font-hand); font-size: 0.98rem; color: var(--text); }
+
+/* ---- Notita del día ------------------------------------------- */
+.notita {
+  position: absolute;
+  top: calc(var(--safe-t) + 22px);
+  right: calc(var(--safe-r) + 12px);
+  z-index: calc(var(--z-overlay, 50) - 1);
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 6px 8px 4px;
+  border: 1px solid rgba(var(--cromo-luz-rgb), 0.22);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(var(--chrome-alto-rgb), 0.82), rgba(var(--chrome-rgb), 0.9));
+  box-shadow: 0 8px 22px -10px rgba(0, 0, 0, 0.7);
+  color: var(--text);
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(-12px) scale(0.8);
+  transition: opacity 500ms var(--e-out), transform 600ms var(--e-spring);
+}
+.notita.is-visible { opacity: 1; transform: none; animation: notita-llama 2.6s ease-in-out 1s infinite; }
+@keyframes notita-llama { 0%, 70%, 100% { rotate: 0deg; } 76% { rotate: -9deg; } 84% { rotate: 8deg; } 92% { rotate: -4deg; } }
+.notita__sobre { font-size: 1.6rem; line-height: 1; }
+.notita__etiqueta { font-family: var(--font-ui); font-size: 0.56rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-soft); }
+.notita__carta {
+  position: absolute;
+  inset: 0;
+  z-index: calc(var(--z-overlay, 50) + 6);
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+  background: rgba(8, 2, 6, 0);
+  pointer-events: auto;
+  cursor: pointer;
+  transition: background 400ms var(--e-out);
+}
+.notita__carta.is-abierta { background: rgba(8, 2, 6, 0.55); }
+.notita__papel {
+  width: min(84vw, 340px);
+  padding: 1.4rem 1.3rem 1.1rem;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 29px, rgba(180, 120, 140, 0.18) 29px 30px),
+    linear-gradient(170deg, #fffaf3, #fbeee9);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.8);
+  text-align: left;
+  transform: translateY(40px) rotate(4deg) scale(0.85);
+  opacity: 0;
+  transition: transform 700ms var(--e-spring), opacity 400ms var(--e-out);
+}
+.notita__carta.is-abierta .notita__papel { transform: rotate(-1.5deg); opacity: 1; }
+.notita__fecha { font-family: var(--font-ui); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: #a0576f; }
+.notita__texto { margin: 0.6rem 0 0.8rem; font-family: var(--font-hand); font-size: clamp(1.45rem, 6.4vw, 1.85rem); line-height: 1.2; color: #4a1a2e; }
+.notita__firma { display: block; text-align: right; font-family: var(--font-hand); font-size: 1.15rem; color: #9a4166; }
+
+/* ---- Corazoncitos al tocar ------------------------------------ */
+.toques { position: absolute; inset: 0; z-index: calc(var(--z-overlay, 50) + 8); pointer-events: none; overflow: hidden; }
+.toques__corazon {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  translate: -50% -50%;
+  font-size: calc(1.1rem * var(--s));
+  color: #ff8fb0;
+  text-shadow: 0 0 10px rgba(255, 140, 180, 0.8);
+  animation: toque-sube 1.2s var(--e-out) forwards;
+}
+@keyframes toque-sube {
+  0% { opacity: 0; transform: scale(0.3); }
+  20% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0; transform: translate(var(--dx), -70px) scale(0.8); }
+}

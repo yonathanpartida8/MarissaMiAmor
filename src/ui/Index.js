@@ -72,7 +72,15 @@ export class BookIndex {
       html: "<span>↺</span><b>Empezar de cero</b><i>se borra todo lo descubierto</i>",
       onClick: () => this.#pedirBorrar(),
     });
-    this.pie = el("footer.toc__pie", {}, [this.instalarBtn, this.borrarBtn]);
+    this.albumBtn = el("button.toc__accion.toc__accion--album", {
+      type: "button",
+      html: "<span>✦</span><b>Álbum de sorpresas</b><i>las que vas encontrando, y dónde faltan</i>",
+      onClick: () => {
+        this.close();
+        setTimeout(() => this.ctx.ui?.album?.abrir(), 260);
+      },
+    });
+    this.pie = el("footer.toc__pie", {}, [this.albumBtn, this.instalarBtn, this.borrarBtn]);
     return this.pie;
   }
 

@@ -12,6 +12,7 @@ import { manifest, allSecrets } from "../data/manifest.js";
 import { actById } from "../data/chapters.js";
 import { BookIndex } from "./Index.js";
 import { EdgeNav } from "./EdgeNav.js";
+import { Album, corazoncitos } from "./Extras.js";
 import { TEMAS, temaActivo, temaSiguiente } from "../utils/temas.js";
 
 const HINT_DELAY = 4600;
@@ -37,6 +38,8 @@ export class UI {
       this.edges.build(),
       this.index.build()
     );
+    this.album = new Album(this.ctx, this.root);
+    corazoncitos(this.ctx, this.root);
 
     window.addEventListener("pointerdown", this.#wake, { passive: true });
     window.addEventListener("keydown", this.#onKeyDown);

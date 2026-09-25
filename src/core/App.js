@@ -180,6 +180,9 @@ export class App {
     const resume = saved > 0 && !this.ctx.store.isFirstVisit;
     await this.ctx.router.go(resume ? saved : 0, { transition: "none", direction: "none" });
 
+    // La notita del día, una vez al día, cuando ya se ve el libro.
+    setTimeout(() => import("../ui/Extras.js").then(({ notitaDelDia }) => notitaDelDia(this.ctx, this.uiRoot)), 2600);
+
     if (resume && this.ctx.router.index === saved) {
       this.ctx.ui.toast(`Seguimos donde lo dejamos · página ${saved + 1}`);
     }
