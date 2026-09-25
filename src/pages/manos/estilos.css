@@ -7,21 +7,6 @@
   background: transparent;
 }
 .man__head, .man__pie { text-align: center; }
-.man__head .kicker {
-  font-family: var(--font-ui);
-  font-size: var(--fs-micro);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--accent) 45%, #fff);
-}
-.man__title {
-  margin: 0.2rem 0 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(1.6rem, calc(7 * var(--vw)), 2.3rem);
-  color: #fff6f8;
-  text-shadow: 0 2px 18px color-mix(in srgb, var(--accent) 50%, transparent);
-}
 .man__escena { position: relative; min-height: 0; }
 .man__hilo {
   position: absolute;

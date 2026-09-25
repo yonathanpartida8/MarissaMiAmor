@@ -22,13 +22,13 @@ export default class BurbujasPage extends BasePage {
     setVars(this.root, { "--accent": this.palette.a, "--b": this.palette.b });
 
     this.cielo = el("div.bur__cielo", { "data-claim-drag": "" });
-    this.frase = el("p.bur__frase", { "aria-live": "polite" });
-    this.reveal = el("p.bur__reveal", { text: ch?.reveal || "" });
+    this.frase = el("p.bur__frase.escena__frase", { "aria-live": "polite" });
+    this.reveal = el("p.bur__reveal.escena__reveal", { text: ch?.reveal || "" });
 
     this.root.append(
-      el("header.bur__head.entra--sube", {}, [
-        el("span.kicker", { text: ch?.kicker || "" }),
-        el("h2.title.bur__title", { text: ch?.title || "" }),
+      el("header.bur__head.escena__head.entra--sube", {}, [
+        el("span.kicker.escena__kicker", { text: ch?.kicker || "" }),
+        el("h2.title.bur__title.escena__title", { text: ch?.title || "" }),
       ]),
       this.cielo,
       el("div.bur__pie.hueco-barra", {}, [this.frase, this.reveal])
@@ -42,6 +42,9 @@ export default class BurbujasPage extends BasePage {
     if (this.dichas === undefined) this.dichas = 0;
     this.rng = seeded(`burbujas-${Date.now()}`);
     this.cielo.textContent = "";
+    const medir = () => setVars(this.cielo, { "--alto": `${this.cielo.clientHeight}px` });
+    medir();
+    this.track(this.ctx.viewport.on("resize", medir));
     for (let i = 0; i < CUANTAS; i++) this.#nacer(i * 0.9);
   }
 

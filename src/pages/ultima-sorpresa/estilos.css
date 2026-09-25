@@ -603,3 +603,7 @@ html[data-orientation="landscape"][data-device="phone"] .sorpresa__contador { gr
   .sorpresa__latido { display: none; }
   .sorpresa__dice.is-visible { animation: none; opacity: 0.95; transform: none; }
 }
+
+/* En pastel el acento rosa no se lee sobre el fondo rosa. */
+html[data-tema="pastel"] .sorpresa__head .kicker,
+html[data-tema="pastel"] .sorpresa__intro { color: var(--text-soft); opacity: 1; }

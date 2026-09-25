@@ -7,21 +7,6 @@
   background: transparent;
 }
 .far__head, .far__pie { text-align: center; position: relative; z-index: 2; }
-.far__head .kicker, .far__cuenta {
-  font-family: var(--font-ui);
-  font-size: var(--fs-micro);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--accent) 45%, #fff);
-}
-.far__title {
-  margin: 0.2rem 0 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(1.6rem, calc(7 * var(--vw)), 2.3rem);
-  color: #fff6f8;
-  text-shadow: 0 2px 18px color-mix(in srgb, var(--accent) 50%, transparent);
-}
 .far__cielo {
   position: relative;
   min-height: 0;
@@ -73,13 +58,14 @@
   animation: far-sube var(--dur) cubic-bezier(0.3, 0.1, 0.5, 1) forwards, far-meneo 2.6s ease-in-out infinite alternate;
   pointer-events: none;
 }
+/* Con `transform`, no con `bottom`: sin recalcular la maquetación. */
 @keyframes far-sube {
-  0% { bottom: 4%; opacity: 0; }
+  0% { transform: translateY(0); opacity: 0; }
   8% { opacity: 1; }
   80% { opacity: 1; }
-  100% { bottom: 105%; opacity: 0; }
+  100% { transform: translateY(calc(-1 * var(--alto, 500px) - 60px)); opacity: 0; }
 }
-@keyframes far-meneo { from { transform: translateX(calc(var(--meneo) * -1)) rotate(-3deg); } to { transform: translateX(var(--meneo)) rotate(3deg); } }
+@keyframes far-meneo { from { translate: calc(-50% - var(--meneo)) 0; rotate: -3deg; } to { translate: calc(-50% + var(--meneo)) 0; rotate: 3deg; } }
 .far__papel {
   width: 30px;
   height: 40px;

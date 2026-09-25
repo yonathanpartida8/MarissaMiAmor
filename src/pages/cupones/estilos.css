@@ -7,21 +7,6 @@
   background: transparent;
 }
 .cup__head, .cup__pie { text-align: center; }
-.cup__head .kicker, .cup__pie {
-  font-family: var(--font-ui);
-  font-size: var(--fs-micro);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--accent) 45%, #fff);
-}
-.cup__title {
-  margin: 0.2rem 0 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(1.6rem, calc(7 * var(--vw)), 2.3rem);
-  color: #fff6f8;
-  text-shadow: 0 2px 18px color-mix(in srgb, var(--accent) 50%, transparent);
-}
 .cup__mesa { position: relative; display: grid; place-items: center; min-height: 0; }
 .cup__libreta, .cup__monton { position: absolute; width: min(82vw, 320px); aspect-ratio: 16 / 9; }
 .cup__libreta { touch-action: none; }

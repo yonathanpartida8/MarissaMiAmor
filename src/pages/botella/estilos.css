@@ -291,3 +291,8 @@
 }
 
 .bottle.is-uncorked .bot__prompt { opacity: 0; transition: opacity 400ms; }
+
+/* La escena de abajo (las colinas) es oscura en los dos temas: la
+   indicación va siempre clara. Con el color del tema, en pastel salía
+   ciruela sobre ciruela. */
+.bot__prompt { color: rgba(253, 238, 233, 0.72); }

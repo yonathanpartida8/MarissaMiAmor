@@ -7,25 +7,10 @@
   background: transparent;
 }
 .caj__head, .caj__pie { text-align: center; }
-.caj__head .kicker, .caj__pie {
-  font-family: var(--font-ui);
-  font-size: var(--fs-micro);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--accent) 45%, #fff);
-}
-.caj__title {
-  margin: 0.2rem 0 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(1.6rem, calc(7 * var(--vw)), 2.3rem);
-  color: #fff6f8;
-  text-shadow: 0 2px 18px color-mix(in srgb, var(--accent) 50%, transparent);
-}
 .caj__mesa { display: grid; place-items: center; min-height: 0; perspective: 900px; }
 .caj__caja {
   position: relative;
-  width: min(66vw, 260px);
+  width: min(66vw, 260px, 40vh);
   aspect-ratio: 5 / 4;
   margin-top: 34%;
 }
@@ -153,3 +138,30 @@
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
   transform: rotate(var(--giro)) translateX(30px);
 }
+
+/* ---- Detalles del frente: filete dorado y corazón grabado -------- */
+.caj__frente::before {
+  content: "";
+  position: absolute;
+  inset: 9% 7% 26%;
+  border-radius: 8px;
+  border: 1.5px solid rgba(255, 220, 160, 0.55);
+  box-shadow: inset 0 0 0 4px rgba(255, 220, 160, 0.08), 0 0 0 1px rgba(90, 20, 40, 0.3);
+}
+.caj__frente::after {
+  content: "♥";
+  position: absolute;
+  left: 50%;
+  top: 36%;
+  translate: -50% -50%;
+  font-size: clamp(1.8rem, 9vw, 2.6rem);
+  line-height: 1;
+  color: #f3cf8c;
+  text-shadow: 0 1px 0 rgba(255, 245, 220, 0.6), 0 -1px 0 rgba(80, 20, 30, 0.5), 0 0 14px rgba(255, 210, 140, 0.35);
+  opacity: 0.9;
+}
+.cajita.is-abierta .caj__frente::after { animation: caj-late 1.4s ease-in-out infinite; }
+@keyframes caj-late { 50% { scale: 1.15; } }
+
+html[data-orientation="landscape"][data-device="phone"] .caj__caja { width: min(30vh, 150px); margin-top: 10%; }
+html[data-orientation="landscape"][data-device="phone"] .caj__pareja { font-size: 1.9rem; }

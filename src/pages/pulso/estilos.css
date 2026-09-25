@@ -413,3 +413,6 @@ html[data-orientation="landscape"][data-device="phone"] .pulse__reveal {
 .pulse.is-dos .pulse__shape {
   transform: scale(calc(0.9 + var(--beat) * 0.2)) translateX(-11%);
 }
+
+/* En pastel el acento rosa no se lee sobre el fondo rosa. */
+html[data-tema="pastel"] .pulse__head .kicker { color: var(--text-soft); opacity: 1; }

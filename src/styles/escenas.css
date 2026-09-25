@@ -1,0 +1,75 @@
+/* ============================================================
+   ESCENAS — lo que comparten las páginas-escena (razones, burbujas,
+   frasco, vales, manos, farolitos, cajita): la cabecera, las notas
+   pequeñas y la frase final.
+
+   Usan los colores del TEMA y no un blanco fijo: en pastel el fondo es
+   rosa claro y el texto tiene que ser oscuro; en noche, al revés. Antes
+   cada página llevaba su copia con blanco puesto a mano y en pastel
+   apenas se leían.
+   ============================================================ */
+
+.escena__head {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.escena__kicker {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  font-weight: 400;
+  letter-spacing: var(--tracking-wider, 0.22em);
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.escena__title {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.7rem, calc(7.2 * var(--vw)), 2.4rem);
+  line-height: 1.06;
+  letter-spacing: -0.005em;
+  color: var(--text);
+  text-wrap: balance;
+  text-shadow: 0 2px 20px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+/* Un filete fino bajo el título, como en las páginas de papel. */
+.escena__title::after {
+  content: "";
+  display: block;
+  width: 2.8rem;
+  height: 1px;
+  margin: 0.55rem auto 0;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.85;
+}
+
+.escena__nota {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.escena__reveal {
+  font-family: var(--font-hand);
+  font-size: clamp(1.3rem, calc(6 * var(--vw)), 1.75rem);
+  line-height: 1.2;
+  color: var(--text);
+  text-shadow: 0 0 16px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.escena__frase {
+  color: var(--text);
+}
+
+html[data-tema="pastel"] .escena__title,
+html[data-tema="pastel"] .escena__reveal,
+html[data-tema="pastel"] .escena__frase {
+  text-shadow: 0 1px 12px rgba(255, 255, 255, 0.65);
+}

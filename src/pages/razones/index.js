@@ -23,17 +23,17 @@ export default class RazonesPage extends BasePage {
     this.mazo = el("div.raz__mazo", { "data-claim-drag": "" });
     this.cuenta = el("span.raz__cuenta");
     this.fin = el("div.raz__fin", {}, [
-      el("p.raz__reveal", { text: ch?.reveal || "" }),
+      el("p.raz__reveal.escena__reveal", { text: ch?.reveal || "" }),
       el("button.raz__otra", { type: "button", text: "barajar otra vez ↺", onClick: () => this.#barajar() }),
     ]);
 
     this.root.append(
-      el("header.raz__head.entra--sube", {}, [
-        el("span.kicker", { text: ch?.kicker || "" }),
-        el("h2.title.raz__title", { text: ch?.title || "" }),
+      el("header.raz__head.escena__head.entra--sube", {}, [
+        el("span.kicker.escena__kicker", { text: ch?.kicker || "" }),
+        el("h2.title.raz__title.escena__title", { text: ch?.title || "" }),
       ]),
       el("div.raz__mesa", {}, [this.fin, this.mazo]),
-      el("p.raz__pie.hueco-barra", {}, [this.cuenta])
+      el("p.raz__pie.escena__nota.hueco-barra", {}, [this.cuenta])
     );
     return this.root;
   }

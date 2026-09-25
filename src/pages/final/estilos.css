@@ -257,3 +257,6 @@ html[data-orientation="landscape"][data-device="phone"] .finale__prompt {
 html[data-orientation="landscape"][data-device="phone"] .finale__secrets {
   bottom: calc(var(--safe-b) + 0.4rem);
 }
+
+/* El final es de noche en cualquier tema: letra clara. */
+.finale__prompt { color: rgba(253, 238, 233, 0.66); }

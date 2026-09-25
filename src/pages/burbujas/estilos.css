@@ -7,24 +7,14 @@
   background: transparent;
 }
 .bur__head { text-align: center; position: relative; z-index: 2; }
-.bur__head .kicker {
-  font-family: var(--font-ui);
-  font-size: var(--fs-micro);
-  letter-spacing: var(--tracking-wider, 0.22em);
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--accent) 45%, #fff);
-  opacity: 0.9;
+.bur__cielo {
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  touch-action: none;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 10%, #000 90%, transparent);
 }
-.bur__title {
-  margin: 0.2rem 0 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  line-height: 1.08;
-  font-size: clamp(1.6rem, calc(7 * var(--vw)), 2.3rem);
-  color: var(--paper-000, #fff6f8);
-  text-shadow: 0 2px 18px color-mix(in srgb, var(--accent) 50%, transparent);
-}
-.bur__cielo { position: relative; overflow: hidden; min-height: 0; touch-action: none; }
 .bur__burbuja {
   position: absolute;
   left: var(--x);
@@ -45,7 +35,9 @@
     bur-sube var(--dur) linear var(--delay) infinite,
     bur-meneo 3.2s ease-in-out var(--delay) infinite alternate;
 }
-@keyframes bur-sube { to { bottom: 110%; } }
+/* Sube con `transform` (la GPU) y no con `bottom` (maquetación en cada
+   fotograma): con once burbujas a la vez, eso era lo que daba tirones. */
+@keyframes bur-sube { to { transform: translateY(calc(-1 * (var(--alto, 600px) + var(--tam) * 2.4))); } }
 @keyframes bur-meneo { from { translate: calc(var(--meneo) * -1) 0; } to { translate: var(--meneo) 0; } }
 .bur__burbuja.is-rota {
   animation-play-state: paused;

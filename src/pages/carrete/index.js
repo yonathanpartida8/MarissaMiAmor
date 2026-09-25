@@ -79,7 +79,7 @@ export default class FilmstripPage extends BasePage {
           onClick: () => this.#paso(1),
         }),
       ]),
-      el("div.film__caption", { text: ch?.title || "" }),
+      el("div.film__caption.hueco-barra", { text: ch?.title || "" }),
       // La foto en grande: se abre tocando la del centro y se cierra tocando.
       (this.lupa = el("div.film__lupa", {
         "data-claim-drag": "",

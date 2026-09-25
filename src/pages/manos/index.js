@@ -21,19 +21,19 @@ export default class ManosPage extends BasePage {
 
     this.tuya = el("div.man__mano.man__mano--tuya", { "data-claim-drag": "", role: "slider", "aria-label": "Tu mano" }, [
       el("span.man__emoji", { text: "🫱" }),
-      el("span.man__nombre", { text: "tú" }),
+      el("span.man__nombre.escena__frase", { text: "tú" }),
     ]);
     this.mia = el("div.man__mano.man__mano--mia", { "aria-hidden": "true" }, [
       el("span.man__emoji", { text: "🫲" }),
-      el("span.man__nombre", { text: "yo" }),
+      el("span.man__nombre.escena__frase", { text: "yo" }),
     ]);
     this.chispa = el("div.man__chispa", { "aria-hidden": "true" });
     this.anillo = el("div.man__anillo", { "aria-hidden": "true", text: "💍" });
 
     this.root.append(
-      el("header.man__head.entra--sube", {}, [
-        el("span.kicker", { text: ch?.kicker || "" }),
-        el("h2.title.man__title", { text: ch?.title || "" }),
+      el("header.man__head.escena__head.entra--sube", {}, [
+        el("span.kicker.escena__kicker", { text: ch?.kicker || "" }),
+        el("h2.title.man__title.escena__title", { text: ch?.title || "" }),
       ]),
       el("div.man__escena", {}, [
         el("div.man__hilo", { "aria-hidden": "true" }),
@@ -43,8 +43,8 @@ export default class ManosPage extends BasePage {
         this.mia,
       ]),
       el("div.man__pie.hueco-barra", {}, [
-        el("p.man__reveal", { text: ch?.reveal || "" }),
-        el("p.man__secreto", { text: (ch?.lines || [])[0] || "" }),
+        el("p.man__reveal.escena__reveal", { text: ch?.reveal || "" }),
+        el("p.man__secreto.escena__reveal", { text: (ch?.lines || [])[0] || "" }),
       ])
     );
     return this.root;

@@ -29,12 +29,12 @@ export default class CuponesPage extends BasePage {
     this.cuenta = el("span.cup__cuenta");
 
     this.root.append(
-      el("header.cup__head.entra--sube", {}, [
-        el("span.kicker", { text: ch?.kicker || "" }),
-        el("h2.title.cup__title", { text: ch?.title || "" }),
+      el("header.cup__head.escena__head.entra--sube", {}, [
+        el("span.kicker.escena__kicker", { text: ch?.kicker || "" }),
+        el("h2.title.cup__title.escena__title", { text: ch?.title || "" }),
       ]),
       el("div.cup__mesa", {}, [this.monton, this.dorado, this.libreta]),
-      el("p.cup__pie.hueco-barra", {}, [this.cuenta])
+      el("p.cup__pie.escena__nota.hueco-barra", {}, [this.cuenta])
     );
     this.#rellenar();
     return this.root;

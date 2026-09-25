@@ -39,15 +39,15 @@ export default class FrascoPage extends BasePage {
       el("span.fra__etiqueta", { text: "para ti ♥" }),
     ]);
     this.nota = el("div.fra__nota", { role: "button", "aria-live": "polite" }, [el("p.fra__texto")]);
-    this.cuenta = el("span.fra__cuenta");
+    this.cuenta = el("span.fra__cuenta.escena__nota");
 
     this.root.append(
-      el("header.fra__head.entra--sube", {}, [
-        el("span.kicker", { text: ch?.kicker || "" }),
-        el("h2.title.fra__title", { text: ch?.title || "" }),
+      el("header.fra__head.escena__head.entra--sube", {}, [
+        el("span.kicker.escena__kicker", { text: ch?.kicker || "" }),
+        el("h2.title.fra__title.escena__title", { text: ch?.title || "" }),
       ]),
       el("div.fra__mesa", {}, [this.frasco, this.nota]),
-      el("div.fra__pie.hueco-barra", {}, [this.cuenta, el("p.fra__reveal", { text: ch?.reveal || "" })])
+      el("div.fra__pie.hueco-barra", {}, [this.cuenta, el("p.fra__reveal.escena__reveal", { text: ch?.reveal || "" })])
     );
     return this.root;
   }

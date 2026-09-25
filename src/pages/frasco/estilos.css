@@ -7,29 +7,12 @@
   background: transparent;
 }
 .fra__head { text-align: center; }
-.fra__head .kicker {
-  font-family: var(--font-ui);
-  font-size: var(--fs-micro);
-  letter-spacing: var(--tracking-wider, 0.22em);
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--accent) 45%, #fff);
-  opacity: 0.9;
-}
-.fra__title {
-  margin: 0.2rem 0 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  line-height: 1.08;
-  font-size: clamp(1.6rem, calc(7 * var(--vw)), 2.3rem);
-  color: var(--paper-000, #fff6f8);
-  text-shadow: 0 2px 18px color-mix(in srgb, var(--accent) 50%, transparent);
-}
 .fra__mesa { position: relative; display: grid; place-items: center; min-height: 0; }
 .fra__frasco {
   position: relative;
-  width: min(52vw, 210px);
+  height: min(100%, 280px);
   aspect-ratio: 3 / 4;
-  max-height: 100%;
+  max-width: 52vw;
   padding: 0;
   border: 0;
   background: none;

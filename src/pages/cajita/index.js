@@ -29,9 +29,9 @@ export default class CajitaPage extends BasePage {
       el("span.caj__pomo"),
     ]);
     this.root.append(
-      el("header.caj__head.entra--sube", {}, [
-        el("span.kicker", { text: ch?.kicker || "" }),
-        el("h2.title.caj__title", { text: ch?.title || "" }),
+      el("header.caj__head.escena__head.entra--sube", {}, [
+        el("span.kicker.escena__kicker", { text: ch?.kicker || "" }),
+        el("h2.title.caj__title.escena__title", { text: ch?.title || "" }),
       ]),
       el("div.caj__mesa", {}, [
         el("div.caj__caja", {}, [
@@ -42,8 +42,8 @@ export default class CajitaPage extends BasePage {
         ]),
       ]),
       el("div.caj__pie.hueco-barra", {}, [
-        el("p.caj__nota", { text: ch?.reveal || "" }),
-        el("p.caj__ayuda", { text: "gira la manivela en círculos ↻" }),
+        el("p.caj__nota.escena__reveal", { text: ch?.reveal || "" }),
+        el("p.caj__ayuda.escena__nota", { text: "gira la manivela en círculos ↻" }),
       ])
     );
     return this.root;

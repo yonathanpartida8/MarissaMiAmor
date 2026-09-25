@@ -20,15 +20,15 @@ export default class FarolitosPage extends BasePage {
 
     this.cielo = el("div.far__cielo", { "data-claim-drag": "", role: "button", "aria-label": "Soltar un farolito" });
     this.luna = el("button.far__luna", { type: "button", "aria-label": "La luna" });
-    this.cuenta = el("span.far__cuenta");
+    this.cuenta = el("span.far__cuenta.escena__nota");
 
     this.root.append(
-      el("header.far__head.entra--sube", {}, [
-        el("span.kicker", { text: ch?.kicker || "" }),
-        el("h2.title.far__title", { text: ch?.title || "" }),
+      el("header.far__head.escena__head.entra--sube", {}, [
+        el("span.kicker.escena__kicker", { text: ch?.kicker || "" }),
+        el("h2.title.far__title.escena__title", { text: ch?.title || "" }),
       ]),
       this.cielo,
-      el("div.far__pie.hueco-barra", {}, [this.cuenta, el("p.far__reveal", { text: ch?.reveal || "" })])
+      el("div.far__pie.hueco-barra", {}, [this.cuenta, el("p.far__reveal.escena__reveal", { text: ch?.reveal || "" })])
     );
     this.actual = el("p.far__actual", { "aria-live": "polite" });
     this.cielo.append(this.luna, el("div.far__agua", { "aria-hidden": "true" }), this.actual);
@@ -41,6 +41,9 @@ export default class FarolitosPage extends BasePage {
     if (this.soltados === undefined) this.soltados = 0;
     this.#contar();
     this.toquesLuna = 0;
+    const medir = () => setVars(this.cielo, { "--alto": `${this.cielo.clientHeight}px` });
+    medir();
+    this.track(this.ctx.viewport.on("resize", medir));
     // Al primer contacto y no con `click`: el navegador se come los clics
     // seguidos y rápidos, y aquí se toca muchas veces seguidas.
     this.on(this.cielo, "pointerdown", (e) => {

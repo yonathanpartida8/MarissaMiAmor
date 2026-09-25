@@ -99,3 +99,13 @@
   .lock--puerta .lock__stage,
   .puerta__seguir { animation: none !important; }
 }
+
+/* En horizontal no hay alto para las dos cosas una encima de otra: el
+   candado se va a la izquierda y la bienvenida a la derecha. */
+html[data-orientation="landscape"][data-device="phone"] .lock--puerta.is-open .lock__padlock {
+  transform: translateX(-42%) scale(0.72);
+}
+html[data-orientation="landscape"][data-device="phone"] .puerta__abierta {
+  inset: 0 0 0 50%;
+  align-content: center;
+}
