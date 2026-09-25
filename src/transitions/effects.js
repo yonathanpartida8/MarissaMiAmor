@@ -468,4 +468,54 @@ function cleanup(outgoing, incoming) {
   resetLeaf(incoming);
 }
 
-export const effects = { none, dissolve, zoom, fold, iris, slide, ink, tide, bloom };
+/**
+ * CORAZÓN — la página nueva se abre por dentro de un corazón que crece.
+ * Es una máscara (no un recorte), así que funciona igual en Chrome y Safari.
+ */
+const MASCARA_CORAZON =
+  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 92'>" +
+  "<path d='M50 90C22 70 2 52 2 30 2 14 14 2 29 2c10 0 17 6 21 13 4-7 11-13 21-13 15 0 27 12 27 28 0 22-20 40-48 60Z'/></svg>\")";
+
+export async function corazon({ outgoing, incoming, ctx }) {
+  const poner = (node, k, v) => {
+    node.style[k] = v;
+    node.style["webkit" + k[0].toUpperCase() + k.slice(1)] = v;
+  };
+  if (incoming) {
+    poner(incoming, "maskImage", MASCARA_CORAZON);
+    poner(incoming, "maskRepeat", "no-repeat");
+    poner(incoming, "maskPosition", "50% 52%");
+    poner(incoming, "maskSize", "0% 0%");
+    incoming.style.opacity = "1";
+    incoming.style.willChange = "transform";
+  }
+
+  ctx.gl?.pulse(0.8);
+  ctx.audio?.play("turn", { volume: 0.4, rate: 1.15 });
+  ctx.haptics?.play("turn");
+
+  await tween({
+    duration: ctx.caps.reducedMotion ? 200 : 780,
+    ease: easeInOutCubic,
+    onUpdate: (t) => {
+      if (outgoing) {
+        outgoing.style.transform = `scale(${(1 - t * 0.06).toFixed(4)})`;
+        outgoing.style.opacity = String(Math.max(0, 1 - Math.max(0, t - 0.1) * 1.15));
+        outgoing.style.filter = `brightness(${(1 - t * 0.45).toFixed(3)})`;
+      }
+      if (incoming) {
+        // El corazón tiene que rebasar las esquinas: hasta ~5 veces la hoja.
+        const k = (Math.pow(t, 0.7) * 520).toFixed(1);
+        poner(incoming, "maskSize", `${k}% ${k}%`);
+        incoming.style.transform = `scale(${(1.06 - t * 0.06).toFixed(4)})`;
+      }
+    },
+  });
+
+  if (incoming) {
+    for (const k of ["maskImage", "maskRepeat", "maskPosition", "maskSize"]) poner(incoming, k, "");
+  }
+  cleanup(outgoing, incoming);
+}
+
+export const effects = { none, dissolve, zoom, fold, iris, slide, ink, tide, bloom, corazon };

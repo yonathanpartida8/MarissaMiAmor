@@ -275,5 +275,6 @@ export default {
       "imagen1.png"
     ]
   },
+  "sorpresas": {},
   "noche": true
 };

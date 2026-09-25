@@ -10,6 +10,7 @@ on:
       - "paginas-html/**"
       - "images/amores/**"
       - "fotos-paginas/**"
+      - "sorpresas/**"
       - "mis-paginas/videos/**"
       - "mis-paginas/fotos/**"
       - "icono/**"

@@ -1,0 +1,80 @@
+/* BURBUJAS — suben, se mecen y revientan. */
+.burbujas {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.4rem;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+}
+.bur__head { text-align: center; position: relative; z-index: 2; }
+.bur__head .kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wider, 0.22em);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) 45%, #fff);
+  opacity: 0.9;
+}
+.bur__title {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.08;
+  font-size: clamp(1.6rem, calc(7 * var(--vw)), 2.3rem);
+  color: var(--paper-000, #fff6f8);
+  text-shadow: 0 2px 18px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.bur__cielo { position: relative; overflow: hidden; min-height: 0; touch-action: none; }
+.bur__burbuja {
+  position: absolute;
+  left: var(--x);
+  bottom: calc(var(--tam) * -1.2);
+  width: var(--tam);
+  height: var(--tam);
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.95) 0 8%, transparent 20%),
+    radial-gradient(circle at 70% 75%, rgba(255, 255, 255, 0.35), transparent 40%),
+    conic-gradient(from var(--tono), rgba(255, 170, 210, 0.35), rgba(160, 210, 255, 0.35), rgba(200, 255, 220, 0.3), rgba(255, 170, 210, 0.35));
+  box-shadow: inset 0 0 14px rgba(255, 255, 255, 0.45), 0 4px 18px -8px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  animation:
+    bur-sube var(--dur) linear var(--delay) infinite,
+    bur-meneo 3.2s ease-in-out var(--delay) infinite alternate;
+}
+@keyframes bur-sube { to { bottom: 110%; } }
+@keyframes bur-meneo { from { translate: calc(var(--meneo) * -1) 0; } to { translate: var(--meneo) 0; } }
+.bur__burbuja.is-rota {
+  animation-play-state: paused;
+  scale: 1.5;
+  opacity: 0;
+  transition: scale 260ms var(--e-out), opacity 300ms var(--e-out);
+  pointer-events: none;
+}
+.bur__pie { text-align: center; min-height: 4.5rem; position: relative; z-index: 2; }
+.bur__frase {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, calc(5.8 * var(--vw)), 1.7rem);
+  line-height: 1.35;
+  color: #fff6f8;
+  text-shadow: 0 2px 14px rgba(40, 5, 20, 0.5);
+}
+.bur__palabra { display: inline-block; animation: bur-palabra 520ms var(--e-spring) both; }
+@keyframes bur-palabra { from { opacity: 0; transform: translateY(-18px) scale(0.6); } }
+.bur__reveal {
+  margin: 0.4rem 0 0;
+  font-family: var(--font-hand);
+  font-size: clamp(1.2rem, calc(5.4 * var(--vw)), 1.6rem);
+  color: var(--accent);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 700ms var(--e-out) 300ms, transform 700ms var(--e-out) 300ms;
+}
+.burbujas.is-completa .bur__reveal { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .bur__burbuja { animation-duration: 40s, 0s; }
+}

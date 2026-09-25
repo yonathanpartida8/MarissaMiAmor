@@ -195,6 +195,14 @@ const pages = [
     hint: "el reflejo te sigue",
   },
   {
+    id: "razones",
+    type: "razones",
+    chapter: "razones",
+    transition: "corazon",
+    hint: "arrastra la carta a un lado, o tócala",
+    secret: "razones-todas",
+  },
+  {
     id: "nuestra-pelicula",
     type: "filmstrip",
     chapter: "nuestra-pelicula",
@@ -303,6 +311,14 @@ const pages = [
     secret: "postal-2",
   },
   {
+    id: "burbujas",
+    type: "burbujas",
+    chapter: "burbujas",
+    transition: "bloom",
+    hint: "toca las burbujas para reventarlas",
+    secret: "burbujas-frase",
+  },
+  {
     id: "te-lo-digo-bajito",
     type: "chapter",
     chapter: "te-lo-digo-bajito",
@@ -373,6 +389,14 @@ const pages = [
     transition: "slide",
     hint: "dales la vuelta",
     secret: "cosas-tuyas-vistas",
+  },
+  {
+    id: "frasco",
+    type: "frasco",
+    chapter: "frasco",
+    transition: "corazon",
+    hint: "toca el frasco para sacar una notita",
+    secret: "frasco-vacio",
   },
   {
     id: "no-se-me-pasa",

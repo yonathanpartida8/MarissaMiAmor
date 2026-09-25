@@ -1,0 +1,151 @@
+/* ============================================================
+   SORPRESAS — la estrellita escondida y la tarjeta que aparece.
+   ============================================================ */
+
+.page > .sorpresa-estrella {
+  position: absolute !important;
+  left: var(--x);
+  top: var(--y);
+  z-index: 30;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent, #ffb3c7);
+  font-size: 15px;
+  line-height: 30px;
+  text-align: center;
+  cursor: pointer;
+  rotate: var(--r);
+  opacity: 0.32;
+  text-shadow: 0 0 8px currentColor;
+  -webkit-tap-highlight-color: transparent;
+  animation: sorpresa-titila 3.4s ease-in-out infinite;
+}
+.sorpresa-estrella.is-hallada { animation: none; opacity: 0.12; }
+
+@keyframes sorpresa-titila {
+  0%, 100% { opacity: 0.2; scale: 0.85; }
+  45% { opacity: 0.55; scale: 1.15; }
+  55% { opacity: 0.3; scale: 1; }
+}
+
+/* ---- La tarjeta ------------------------------------------------ */
+/* Con `.page >` y `!important` porque varias páginas ponen a TODOS sus
+   hijos en su rejilla o en `position: relative`, y la tarjeta acababa
+   pegada arriba sin tapar nada. */
+.page > .sorpresa {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 60;
+  margin: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1.2rem;
+  background: radial-gradient(ellipse at 50% 45%, rgba(30, 8, 20, 0.35), rgba(12, 3, 8, 0.72));
+  opacity: 0;
+  transition: opacity 360ms var(--e-out);
+  cursor: pointer;
+}
+.sorpresa.is-visible { opacity: 1; }
+.sorpresa.is-saliendo { opacity: 0; }
+
+.sorpresa__carta {
+  flex: 0 0 auto;
+  margin: auto !important;
+  width: min(84vw, 320px);
+  padding: 0.8rem 0.8rem 0.9rem;
+  border-radius: 18px;
+  background: linear-gradient(170deg, #fffaf6, #fbeef2);
+  box-shadow: 0 26px 60px -18px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  text-align: center;
+  transform: translateY(26px) scale(0.86) rotate(-3deg);
+  transition: transform 620ms var(--e-spring);
+}
+.sorpresa.is-visible .sorpresa__carta { transform: rotate(-1.2deg); }
+.sorpresa.is-saliendo .sorpresa__carta { transform: translateY(18px) scale(0.92); }
+
+.sorpresa__img {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.55), transparent 45%),
+    linear-gradient(145deg, var(--a, #ffb3c7), var(--c, #b9406b));
+  background-size: cover;
+  background-position: center;
+}
+.sorpresa__img.con-foto { background-color: #1a0a12; }
+.sorpresa__img::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.5) 1px, transparent 1.5px);
+  background-size: 22px 22px;
+  opacity: 0.25;
+  pointer-events: none;
+}
+.sorpresa__img.con-foto::after { display: none; }
+
+.sorpresa__main,
+.sorpresa__sat {
+  position: absolute;
+  line-height: 1;
+  filter: drop-shadow(0 8px 12px rgba(60, 10, 30, 0.35));
+}
+.sorpresa__main {
+  left: 50%;
+  top: 50%;
+  font-size: clamp(4rem, 26vw, 6rem);
+  translate: -50% -50%;
+  animation: sorpresa-late 2.2s ease-in-out infinite;
+}
+.sorpresa__sat {
+  left: var(--x);
+  top: var(--y);
+  font-size: calc(1.9rem * var(--s, 1));
+  translate: -50% -50%;
+  animation: sorpresa-flota 3.2s ease-in-out var(--d) infinite;
+}
+
+@keyframes sorpresa-late {
+  0%, 100% { scale: 1; }
+  12% { scale: 1.1; }
+  24% { scale: 0.98; }
+  36% { scale: 1.06; }
+}
+@keyframes sorpresa-flota {
+  0%, 100% { transform: translateY(0) rotate(-6deg); }
+  50% { transform: translateY(-9px) rotate(6deg); }
+}
+
+.sorpresa__frase {
+  margin: 0.75rem 0.2rem 0.35rem;
+  font-family: var(--font-hand, cursive);
+  font-size: clamp(1.25rem, 5.6vw, 1.55rem);
+  line-height: 1.2;
+  color: #5e1e38;
+}
+.sorpresa__cuenta,
+.sorpresa__cerrar {
+  display: block;
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a0576f;
+}
+.sorpresa__cerrar { margin-top: 0.25rem; opacity: 0.6; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sorpresa-estrella,
+  .sorpresa__main,
+  .sorpresa__sat { animation: none; }
+}

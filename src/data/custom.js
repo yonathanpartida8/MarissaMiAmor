@@ -96,7 +96,7 @@ const TYPE_ALIASES = {
 };
 
 const VALID_TRANSITIONS = new Set([
-  "flip", "dissolve", "zoom", "fold", "iris", "slide", "ink", "tide", "bloom",
+  "flip", "dissolve", "zoom", "fold", "iris", "slide", "ink", "tide", "bloom", "corazon",
 ]);
 const VALID_MOODS = new Set([
   "dawn", "night", "amber", "bloom", "storm", "glass", "winter", "cosmos", "light",

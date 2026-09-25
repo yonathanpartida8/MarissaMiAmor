@@ -1,0 +1,9 @@
+Aquí puedes poner una FOTO para la sorpresa escondida de cualquier página.
+
+El nombre del archivo es el de la página, por ejemplo:
+  sorpresas/tu-voz.jpg
+  sorpresas/tres-de-la-manana.png
+  sorpresas/final.webp
+
+Si no hay foto, la sorpresa enseña su escena dibujada. La lista de nombres
+de página y sus frases está en src/data/sorpresas.js.

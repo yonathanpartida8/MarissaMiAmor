@@ -66,8 +66,27 @@ export default class FilmstripPage extends BasePage {
         el("div.film__perf.film__perf--top"),
         this.reel,
         el("div.film__perf.film__perf--bottom"),
+        el("button.film__nav.film__nav--prev", {
+          type: "button",
+          "aria-label": "Foto anterior",
+          html: "‹",
+          onClick: () => this.#paso(-1),
+        }),
+        el("button.film__nav.film__nav--next", {
+          type: "button",
+          "aria-label": "Foto siguiente",
+          html: "›",
+          onClick: () => this.#paso(1),
+        }),
       ]),
-      el("div.film__caption", { text: ch?.title || "" })
+      el("div.film__caption", { text: ch?.title || "" }),
+      // La foto en grande: se abre tocando la del centro y se cierra tocando.
+      (this.lupa = el("div.film__lupa", {
+        "data-claim-drag": "",
+        role: "button",
+        "aria-label": "Cerrar la foto",
+        onClick: () => this.root.classList.remove("is-lupa"),
+      }))
     );
 
     this.counter = qs(".film__counter", this.root);
@@ -112,12 +131,24 @@ export default class FilmstripPage extends BasePage {
           },
           onPanEnd: (e) => {
             this.dragging = false;
-            this.velocity = e.vx * 1000;
+            const v = e.vx * 1000;
+            const fuera = this.offset > 0 || this.offset < -this.maxOffset;
+            // Soltado despacio o tirando más allá del borde: antes se quedaba
+            // a medias entre dos fotos. Ahora va a la más cercana, con un
+            // empujoncito hacia donde iba el dedo.
+            if (fuera || Math.abs(v) < 140) {
+              const cerca = -this.offset / this.frameWidth + clamp(-v / 1600, -0.5, 0.5);
+              this.#center(clamp(Math.round(cerca), 0, this.frames.length));
+            } else {
+              this.velocity = v;
+            }
           },
           onTap: (e) => {
             const frame = e.target.closest?.(".film__frame");
             if (frame && !frame.classList.contains("film__frame--end")) {
-              this.#center(Number(frame.dataset.index));
+              const i = Number(frame.dataset.index);
+              if (i === this.activeFrame) this.#abrirLupa(i);
+              else this.#center(i);
             }
           },
         },
@@ -152,6 +183,20 @@ export default class FilmstripPage extends BasePage {
       this.offset = 0;
       this.targetOffset = 0;
     }
+  }
+
+  /** Una foto hacia un lado, con las flechas del propio carrete. */
+  #paso(d) {
+    const desde = this.activeFrame < 0 ? 0 : this.activeFrame;
+    this.#center(clamp(desde + d, 0, this.frames.length));
+  }
+
+  #abrirLupa(i) {
+    const src = this.frames[i]?.photo.src;
+    if (!src) return;
+    this.lupa.style.backgroundImage = `url("${src}")`;
+    this.root.classList.add("is-lupa");
+    this.ctx.haptics.play("tap");
   }
 
   #center(index) {
@@ -217,6 +262,8 @@ export default class FilmstripPage extends BasePage {
   }
 
   #onActiveChange(index) {
+    this.root.classList.toggle("en-principio", index <= 0);
+    this.root.classList.toggle("en-final", index >= this.frames.length);
     this.counter.textContent =
       index >= this.frames.length ? "fin" : `${index + 1} / ${this.frames.length}`;
     this.ctx.haptics.play("tick");

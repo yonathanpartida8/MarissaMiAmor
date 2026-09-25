@@ -14,6 +14,7 @@ import { listenerGroup, el } from "../utils/dom.js";
 import { vigilarLectura } from "../utils/lectura.js";
 import { PRIORITY } from "../core/AssetLoader.js";
 import { resolverPaleta } from "../data/paletas.js";
+import { montarSorpresa } from "../components/Sorpresa.js";
 
 export class BasePage {
   /** Clave con la que se registra en registry.js */
@@ -120,6 +121,8 @@ export class BasePage {
     if (deferred.length) this.ctx.assets.idlePreload(deferred);
     // Si el texto de esta página no cabe, que se note que sigue.
     this.track(vigilarLectura(this.root));
+    // Y su sorpresa escondida, distinta en cada página.
+    montarSorpresa(this);
   }
 
   /**

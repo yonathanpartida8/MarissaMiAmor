@@ -190,3 +190,52 @@
 .film.is-entered .film__caption {
   opacity: 0.9;
 }
+
+/* ---- Flechas propias del carrete ---------------------------------- */
+.film__track { position: relative; }
+.film__nav {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  width: 38px;
+  height: 38px;
+  margin-top: -19px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(20, 8, 16, 0.42);
+  color: #fff;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.8);
+  transition: opacity 300ms var(--e-out), transform 200ms var(--e-out);
+}
+.film__nav:active { transform: scale(0.9); }
+.film__nav--prev { left: 6px; }
+.film__nav--next { right: 6px; }
+.film.en-principio .film__nav--prev,
+.film.en-final .film__nav--next { opacity: 0; pointer-events: none; }
+
+/* El fotograma del centro se puede tocar para verlo en grande. */
+.film__frame { cursor: zoom-in; }
+
+/* ---- La foto en grande -------------------------------------------- */
+.film__lupa {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(8, 3, 6, 0.9) center / contain no-repeat;
+  opacity: 0;
+  transform: scale(0.96);
+  pointer-events: none;
+  cursor: zoom-out;
+  transition: opacity 360ms var(--e-out), transform 420ms var(--e-spring);
+}
+.film.is-lupa .film__lupa {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}

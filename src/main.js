@@ -7,6 +7,14 @@
 
 import { App } from "./core/App.js";
 
+/* Chrome en Android: una pulsación larga abría el menú de «descargar
+   imagen / copiar», y arrastrar una foto la sacaba de la página. Aquí se
+   mantienen el dedo y la foto dentro del libro; el texto que se puede
+   seleccionar (`.selectable`) sigue funcionando como siempre. */
+const esTexto = (t) => t?.closest?.(".selectable, input, textarea, [contenteditable]");
+window.addEventListener("contextmenu", (e) => { if (!esTexto(e.target)) e.preventDefault(); });
+window.addEventListener("dragstart", (e) => { if (!esTexto(e.target)) e.preventDefault(); });
+
 const app = new App();
 
 app.start().catch((error) => {

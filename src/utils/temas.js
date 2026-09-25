@@ -263,7 +263,8 @@ export const TEMAS = {
 };
 
 /** El orden en que los recorre el botón de la barra: de día a noche. */
-export const ORDEN = ["claro", "pastel", "noche"];
+/* El modo claro se quitó: el libro vive entre la tarde y la noche. */
+export const ORDEN = ["pastel", "noche"];
 
 /** Con el que abre quien nunca ha elegido. El libro nació de noche. */
 export const TEMA_POR_DEFECTO = "noche";
@@ -283,6 +284,8 @@ export function temaActivo() {
  * @returns {boolean} si de verdad ha cambiado
  */
 export function ponerTema(id) {
+  // Quien tuviera guardado el modo claro pasa al pastel, que es el más cercano.
+  if (!ORDEN.includes(id)) id = "pastel";
   const tema = TEMAS[id];
   if (!tema || tema === activo) return false;
   activo = tema;
@@ -316,7 +319,7 @@ export function fondoDelTema(paleta, tema = activo) {
  */
 export function temaDelSistema() {
   try {
-    return matchMedia("(prefers-color-scheme: light)").matches ? "claro" : "noche";
+    return matchMedia("(prefers-color-scheme: light)").matches ? "pastel" : "noche";
   } catch {
     return TEMA_POR_DEFECTO;
   }

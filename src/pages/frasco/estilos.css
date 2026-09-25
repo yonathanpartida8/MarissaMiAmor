@@ -1,0 +1,140 @@
+/* FRASCO — el frasco de notitas. */
+.frasco {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  background: transparent;
+}
+.fra__head { text-align: center; }
+.fra__head .kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wider, 0.22em);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) 45%, #fff);
+  opacity: 0.9;
+}
+.fra__title {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.08;
+  font-size: clamp(1.6rem, calc(7 * var(--vw)), 2.3rem);
+  color: var(--paper-000, #fff6f8);
+  text-shadow: 0 2px 18px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.fra__mesa { position: relative; display: grid; place-items: center; min-height: 0; }
+.fra__frasco {
+  position: relative;
+  width: min(52vw, 210px);
+  aspect-ratio: 3 / 4;
+  max-height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transform-origin: 50% 90%;
+}
+.fra__frasco.is-sacude { animation: fra-sacude 520ms var(--e-out); }
+@keyframes fra-sacude {
+  20% { rotate: -7deg; } 40% { rotate: 6deg; } 60% { rotate: -4deg; } 80% { rotate: 2deg; }
+}
+.fra__tapa {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 0;
+  height: 11%;
+  border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(180deg, #d9a36a, #9c6a3b);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18), 0 3px 6px -2px rgba(0, 0, 0, 0.4);
+}
+.fra__cristal {
+  position: absolute;
+  inset: 9% 6% 0;
+  border-radius: 22% 22% 18% 18% / 12% 12% 10% 10%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08) 40%, rgba(255, 255, 255, 0.2));
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 0 22px rgba(255, 255, 255, 0.25), 0 20px 40px -20px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+.fra__doblada {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 24%;
+  height: 14%;
+  border-radius: 3px;
+  background: linear-gradient(135deg, var(--col) 50%, color-mix(in srgb, var(--col) 80%, #000) 50%);
+  rotate: var(--g);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+  transition: transform 520ms var(--e-out), opacity 420ms var(--e-out);
+}
+.fra__doblada.is-fuera { transform: translateY(-260%) scale(0.6); opacity: 0; }
+.fra__brillo {
+  position: absolute;
+  left: 16%;
+  top: 18%;
+  width: 9%;
+  height: 58%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+.fra__etiqueta {
+  position: absolute;
+  left: 50%;
+  bottom: 14%;
+  translate: -50% 0;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  background: #fff8ef;
+  color: #7a2945;
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+  white-space: nowrap;
+  rotate: -3deg;
+  box-shadow: 0 3px 8px -3px rgba(0, 0, 0, 0.4);
+}
+.fra__nota {
+  position: absolute;
+  width: min(80vw, 310px);
+  padding: 1.3rem 1.1rem;
+  border-radius: 6px;
+  background: var(--col, #ffd1dc);
+  box-shadow: 0 24px 50px -18px rgba(0, 0, 0, 0.7);
+  text-align: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(40px) rotateX(80deg) scale(0.6);
+  transition: opacity 360ms var(--e-out), transform 620ms var(--e-spring);
+  pointer-events: none;
+}
+.frasco.is-leyendo .fra__nota { opacity: 1; transform: rotate(-2deg); pointer-events: auto; }
+.frasco.is-leyendo .fra__frasco { opacity: 0.35; }
+.fra__texto {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-size: clamp(1.35rem, calc(6.2 * var(--vw)), 1.8rem);
+  line-height: 1.25;
+  color: #4a1a2e;
+}
+.fra__pie { text-align: center; }
+.fra__cuenta {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-soft, #f3dbe3);
+}
+.fra__reveal {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-hand);
+  font-size: clamp(1.15rem, calc(5.2 * var(--vw)), 1.5rem);
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity 700ms var(--e-out);
+}
+.frasco.is-vacio .fra__reveal { opacity: 1; }

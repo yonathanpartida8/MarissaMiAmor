@@ -49,6 +49,13 @@ const fotosPaginas = Object.fromEntries(
     ])
 );
 
+// Fotos propias para las sorpresas: `sorpresas/<id-de-la-página>.jpg`.
+const sorpresas = Object.fromEntries(
+  leer("sorpresas")
+    .filter((f) => /\.(png|jpe?g|webp|gif|avif)$/i.test(f))
+    .map((f) => [f.replace(/\.[^.]+$/, ""), f])
+);
+
 const ICONOS = ["icono/icono.png", "icono/icono.jpg", "icono/icono.jpeg", "icono/icono.webp", "icono/icono.svg", "icono/icon.png"];
 const icono = ICONOS.find((r) => existsSync(join(RAIZ, r))) || null;
 
@@ -59,6 +66,7 @@ const contenido = {
   misFotos,
   icono,
   fotosPaginas,
+  sorpresas,
   noche: existsSync(join(RAIZ, "noche-estrellada/index.html")),
 };
 
