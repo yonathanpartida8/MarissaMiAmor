@@ -42,15 +42,17 @@
 
   var ahora = function () { return (window.performance && performance.now()) || Date.now(); };
 
-  /* Cuánto se baja por defecto con un efecto, y con una canción. */
-  var POR_EFECTO = 0.3;
-  var POR_CANCION = 0.12;
+  /* Cuánto se baja por defecto con un efecto, y con una canción. Bien
+     abajo: con la música a un tercio, los sonidos de la página peleaban
+     con ella y no se oían claros. */
+  var POR_EFECTO = 0.14;
+  var POR_CANCION = 0.05;
   /* Por debajo de esto, lo que sale por WebAudio se cuenta como silencio. */
   var UMBRAL = 0.0035;
   /* Cuánto silencio seguido hace falta para devolver la música: sin este
      respiro, dos golpes separados por medio segundo la harían subir y bajar
      como un bombeo. */
-  var COLA = 700;
+  var COLA = 1000;
 
   var L = {
     cuanto: POR_EFECTO,
@@ -178,7 +180,7 @@
       if (!p || !Object.prototype.hasOwnProperty.call(p, "start") || p.start.__libro) return;
       var arrancar = p.start;
       var nuevo = function () {
-        if (enGesto() && !this.__libroCallado) pedir(L.cuanto, 500);
+        if (enGesto() && !this.__libroCallado) pedir(L.cuanto, 700);
         return arrancar.apply(this, arguments);
       };
       nuevo.__libro = true;
@@ -216,8 +218,8 @@
   /* Un sonido flojito aparta poco; uno fuerte, lo que diga `cuanto`. */
   function nivelPorPico(pico) {
     if (pico <= UMBRAL) return 1;
-    var f = Math.min(1, Math.log(pico / UMBRAL) / Math.log(0.12 / UMBRAL));
-    return 0.62 + (L.cuanto - 0.62) * f;
+    var f = Math.min(1, Math.log(pico / UMBRAL) / Math.log(0.07 / UMBRAL));
+    return 0.45 + (L.cuanto - 0.45) * f;
   }
 
   function revisar() {

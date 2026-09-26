@@ -423,7 +423,7 @@ export class AudioBus extends Emitter {
     const baja = n < this.#nivelPuesto;
     const salto = Math.abs(n - this.#nivelPuesto);
     this.#nivelPuesto = n;
-    const ms = baja ? 320 + 260 * salto : 1500 + 1200 * salto;
+    const ms = baja ? 220 + 220 * salto : 1500 + 1200 * salto;
     this.#fadeMusica(track, track.base * n, ms);
   }
 
