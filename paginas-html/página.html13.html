@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Los globos</title>
+<script src="sonido-libro.js"></script>
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
@@ -142,15 +143,15 @@ const CONF = {
   /* ---- LOS DESEOS QUE SE VAN CON CADA GLOBO --------------------------- */
   deseos: [
     ["Que te quiten el miedo las cosas que te dan miedo.", "Y si no, te acompaño."],
-    ["Que te salga bien eso que no me cuentas.", "Cuando quieras me lo cuentas."],
+    ["Que te salga bien todo lo que te propongas.", "Y si no, lo intentamos juntos."],
     ["Que duermas de un tirón.", "Y que sueñes algo tonto y bonito."],
     ["Que alguien te diga hoy lo que vales.", "Si no, te lo digo yo otra vez."],
     ["Que tengas un día sin prisa.", "Esos son los que curan."],
-    ["Que se te quite la manía de pedir perdón por todo.", "No hace falta, de verdad."],
-    ["Que te pase algo bueno sin buscarlo.", "Te lo mereces por la cara."],
+    ["Que nunca dudes de lo mucho que te quiero.", "Ni tantito."],
+    ["Que te pase algo bueno sin buscarlo.", "Te lo mereces todo."],
     ["Que no se te olvide reírte fuerte.", "Es lo mejor que haces."],
     ["Que cuando dudes, dudes menos de ti.", "Yo no dudo nada."],
-    ["Que llegues a donde quieras.", "Aunque cambies de sitio mil veces."],
+    ["Que llegues a donde quieras.", "Y ahí voy a estar yo, aplaudiendo."],
   ],
 
   /* ---- LOS GLOBOS ----------------------------------------------------- */
@@ -405,7 +406,7 @@ function mirarSecretos(x, y) {
   if (soltados === 33 && !rojoDicho) {
     rojoDicho = true;
     for (let i = 0; i < N; i++) if (gvid[i] > 0) gcol[i] = 0;
-    decir("Se han puesto todos del mismo color.", "Adivina cuál.", true);
+    decir("Se pusieron todos del mismo color.", "Adivina cuál.", true);
     campana(523, 1.6);
   }
 
@@ -424,7 +425,7 @@ function mirarSecretos(x, y) {
     if (racimos.length > 5) racimos.shift();
     for (const k of mismoSitio.ks.slice(-3)) gsub[k] = 128;
     mismoSitio.n = 0;
-    decir("Los has atado sin querer.", "Juntos suben más rápido. Mira.", true);
+    decir("Los amarraste sin querer.", "Juntos suben más rápido. Mira.", true);
     campana(659, 1.4);
   }
 }
@@ -515,7 +516,7 @@ function paso(ahora) {
     if (gvid[k] > 0 && gy[k] < H * 0.18 && !abiertas.has(k)) {
       abiertas.add(k);
       cartasVistas++;
-      decir("Ese llevaba una carta atada.", "La has soltado tú, así que es tuya.", true);
+      decir("Ese llevaba una carta amarrada.", "La soltaste tú, así que es tuya.", true);
       campana(880, 1.1);
     }
   }

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>La radio</title>
+<script src="sonido-libro.js"></script>
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
@@ -275,13 +276,13 @@ const CONF = {
     {
       f: 12, ancho: 3.2, nombre: "Radio Insomnio",
       texto: "Esta emisora sólo pone canciones lentas a las tres de la mañana.",
-      firma: "Que es cuando te escribo.",
+      firma: "Para cuando no puedas dormir.",
       notas: [["E4",1],["G4",0.5],["A4",1.5],["G4",0.5],["E4",2]],
     },
     {
       f: 28, ancho: 2.6, nombre: "La del Coche",
-      texto: "La que poníamos con las ventanillas bajadas.",
-      firma: "Cantabas fatal y muy fuerte.",
+      texto: "Canciones para ir con las ventanillas abajo.",
+      firma: "Y cantar bien fuerte, aunque salga desafinado.",
       notas: [["G4",0.5],["G4",0.5],["A4",0.5],["B4",1],["A4",0.5],["G4",1.5]],
     },
     {
@@ -293,7 +294,7 @@ const CONF = {
     {
       f: 61, ancho: 3.0, nombre: "Estación Central",
       texto: "Aquí se anuncian las llegadas. Sobre todo la tuya.",
-      firma: "Siempre con retraso y siempre bien.",
+      firma: "Siempre la más esperada.",
       notas: [["D5",0.5],["A4",0.5],["D5",0.5],["F5",1],["E5",1.5]],
     },
     {
@@ -638,7 +639,7 @@ setInterval(() => {
   entreDos = enMedio && !girando ? entreDos + 0.5 : 0;
   if (entreDos > 10 && !vozDicha) {
     vozDicha = true;
-    decir("Se ha colado algo entre dos emisoras.", "Alguien muy lejos diciendo tu nombre.", true);
+    decir("Se coló algo entre dos emisoras.", "Alguien muy lejos diciendo tu nombre.", true);
     if (despertar()) {
       /* Una voz lejana fingida: dos tonos que se deslizan, muy
          filtrados. No dice nada, y por eso parece que dice algo. */

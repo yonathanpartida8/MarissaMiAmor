@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mil grullas</title>
+<script src="sonido-libro.js"></script>
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
@@ -160,22 +161,22 @@ const CONF = {
      se hayan visto todas.                                                */
   frases: [
     "Por los días en que no hace falta hablar.",
-    "Por cómo dices mi nombre cuando tienes sueño.",
-    "Porque te ríes antes de terminar el chiste.",
-    "Por la manía de robarme el lado de la cama.",
-    "Porque sabes cuándo callarte y quedarte.",
-    "Por las fotos que sales movida y son las mejores.",
-    "Porque cantas fatal y muy fuerte.",
-    "Por tus pies fríos en enero.",
-    "Porque me escuchas cosas que ya te he contado.",
+    "Por cómo suena mi nombre cuando lo dices tú.",
+    "Por tu risa, que me arregla cualquier día.",
+    "Porque contigo todo se siente como en casa.",
+    "Porque a tu lado todo se siente tranquilo.",
+    "Porque en todas tus fotos te ves preciosa.",
+    "Porque cada día te quiero un poquito más.",
+    "Por tus abrazos.",
+    "Porque me escuchas.",
     "Por la cara que pones cuando algo te gusta mucho.",
     "Porque no te rindes conmigo.",
-    "Por los planes que hacemos y no cumplimos.",
-    "Porque el café te sale mal y me lo bebo igual.",
-    "Por cómo te enfadas: tres minutos y se pasa.",
-    "Porque cuando lloras te tapas la cara.",
-    "Por las veces que has dicho «venga, va».",
-    "Porque me has enseñado a estar quieto.",
+    "Por todos los planes que nos faltan.",
+    "Porque eres mi lugar favorito.",
+    "Por tu forma de ser, completita.",
+    "Porque quiero cuidarte siempre.",
+    "Porque contigo lo quiero todo.",
+    "Porque me enseñas a querer bonito.",
     "Por lo que no te digo y sabes igual.",
   ],
 
@@ -184,8 +185,8 @@ const CONF = {
   hitos: [
     { n: 1,    texto: "Una.", firma: "Faltan novecientas noventa y nueve." },
     { n: 10,   texto: "Diez ya.", firma: "Vas rápido." },
-    { n: 50,   texto: "Cincuenta grullas y no has dicho nada.", firma: "Me gusta cómo te concentras." },
-    { n: 100,  texto: "Cien. Se te ha llenado el cielo.", firma: "Y todavía es por la mañana." },
+    { n: 50,   texto: "Cincuenta grullas y ni te cansaste.", firma: "Me gusta cómo te concentras." },
+    { n: 100,  texto: "Cien. Se te llenó el cielo.", firma: "Y apenas vamos empezando." },
     { n: 250,  texto: "Doscientas cincuenta.", firma: "Cuando lleguemos a mil te digo el deseo." },
     { n: 500,  texto: "Quinientas. La mitad.", firma: "La mitad de nada, si lo piensas." },
     { n: 750,  texto: "Setecientas cincuenta.", firma: "Ya casi. No pares." },
@@ -195,7 +196,7 @@ const CONF = {
   /* ---- EL DESEO, al llegar a mil -------------------------------------- */
   deseo: {
     texto: "Mil. Dicen que ahora se concede un deseo.",
-    firma: "El mío ya se cumplió. Fue cuando dijiste que sí.",
+    firma: "El mío ya se cumplió: eres tú.",
   },
 
   /* ---- COLORES DEL PAPEL ---------------------------------------------- */
@@ -460,7 +461,7 @@ function vigilarSecretos(x, y) {
   if (esquinas.every(Boolean)) {
     esquinas.fill(false);
     bandada = 1;
-    decir("Todas a la vez, hacia el mismo sitio.", "Como cuando decidimos algo sin hablarlo.", true);
+    decir("Todas a la vez, hacia el mismo sitio.", "Como nosotros, siempre hacia el mismo lado.", true);
   }
 }
 let bandada = 0;

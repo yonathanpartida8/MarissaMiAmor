@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>Las constelaciones</title>
+<script src="sonido-libro.js"></script>
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
@@ -181,8 +182,8 @@ const CONF = {
   figuras: [
     {
       nombre: "El corazón",
-      frase: "La primera que aprendí a dibujar sin mirar.",
-      firma: "Y sigo sin necesitar mirar.",
+      frase: "El que se me dibuja solo cuando pienso en ti.",
+      firma: "o sea, todo el tiempo",
       color: "#ff9ec4",
       puntos: [
         [0.50, 0.30], [0.38, 0.22], [0.28, 0.30], [0.30, 0.44],
@@ -192,7 +193,7 @@ const CONF = {
     },
     {
       nombre: "La casa",
-      frase: "No es un sitio. Es la hora en que llegas y dejas las llaves.",
+      frase: "No es un lugar. Es donde estés tú.",
       firma: "Donde sea, si estás.",
       color: "#ffcf9a",
       puntos: [
@@ -203,8 +204,8 @@ const CONF = {
     },
     {
       nombre: "La taza",
-      frase: "Dos, siempre. Y la tuya con más leche de la que nadie diría.",
-      firma: "Ya sé cuánta.",
+      frase: "Dos tazas, siempre dos.",
+      firma: "una para ti y otra para mí",
       color: "#b8f0d8",
       puntos: [
         [0.34, 0.36], [0.62, 0.36], [0.58, 0.60], [0.38, 0.60],
@@ -214,8 +215,8 @@ const CONF = {
     },
     {
       nombre: "La luna",
-      frase: "La miro cuando no estás, por si la estás mirando tú.",
-      firma: "Casi siempre coincidimos.",
+      frase: "La miro y pienso que tú también podrías estar mirándola.",
+      firma: "así te siento más cerca",
       color: "#dfe4ff",
       puntos: [
         [0.56, 0.24], [0.42, 0.30], [0.36, 0.44], [0.42, 0.58],
@@ -225,8 +226,8 @@ const CONF = {
     },
     {
       nombre: "El barco",
-      frase: "Nos subimos sin mapa y resultó que no hacía falta.",
-      firma: "Tú llevas el timón cuando yo me canso.",
+      frase: "Contigo no hace falta mapa.",
+      firma: "a donde vayamos, juntos",
       color: "#9ecdff",
       puntos: [
         [0.28, 0.60], [0.72, 0.60], [0.64, 0.70], [0.36, 0.70],
@@ -575,7 +576,7 @@ function tocarVacio(p) {
       mias.push({ x: Math.random() * A, y: Math.random() * H, br: 1, n: Math.random() * 6.283 });
     }
     anunciar("Doce");
-    decir("Doce estrellas que no estaban. Las has puesto tú.", "Este cielo ya es medio tuyo.");
+    decir("Doce estrellas que no estaban. Las pusiste tú.", "Este cielo ya es medio tuyo.");
     sonar(523, 0.7, "triangle");
   }
   if (mias.length > 200) mias.splice(0, mias.length - 200);
@@ -601,7 +602,7 @@ zona.addEventListener("pointerdown", (e) => {
   if (golpes.n === 3) {
     golpes.n = 0;
     latiendo = { i, t: 0 };
-    decir("Esa estrella se ha puesto nerviosa.", "Como yo la primera vez.");
+    decir("Esa estrella se puso nerviosa.", "Como yo cuando te veo.");
     sonar(392, 0.4, "triangle");
   }
 });
@@ -630,7 +631,7 @@ function paso(ahora) {
   if (quieta > SECRETO_QUIETA) {
     quieta = -40;   // y no vuelve a pasar en un buen rato
     fugaz = { x: -40, y: H * 0.42, vx: 300, vy: 40, vida: 1, gorda: true };
-    decir("Ha pasado una. ¿Has pedido algo?", "Yo pido lo mismo siempre.");
+    decir("Pasó una. ¿Pediste algo?", "Yo pido lo mismo siempre.");
   }
 
   fulgor = damp(fulgor, 0, 1.6, dt);

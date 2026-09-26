@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Las polaroids</title>
+<script src="sonido-libro.js"></script>
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
@@ -200,12 +201,12 @@ const CONF = {
      `pie` es lo que pone escrito debajo, a mano.
      `nota` es lo que se lee al terminar de revelarla.                   */
   fotos: [
-    { escena: "playa",   pie: "aquel agosto",      nota: ["La arena se nos metió hasta en el coche.", "Y volvería mañana."] },
-    { escena: "ciudad",  pie: "las 2 de la mañana", nota: ["Nos perdimos y no nos importó nada.", "Contigo perderse es un plan."] },
-    { escena: "campo",   pie: "el domingo largo",  nota: ["Ese día no hicimos absolutamente nada.", "Fue de los mejores."] },
-    { escena: "cocina",  pie: "salió fatal",       nota: ["Se nos quemó y nos reímos media hora.", "Aún nos reímos."] },
-    { escena: "nieve",   pie: "qué frío hacía",    nota: ["Tenías la nariz roja y no te dejabas fotografiar.", "Te la hice igual."] },
-    { escena: "ventana", pie: "sin motivo",        nota: ["No pasaba nada especial. Por eso la guardo.", "Los días normales son los que cuentan."] },
+    { escena: "playa",   pie: "algún agosto",      nota: ["Una playa, tú y yo, y el sol bajando.", "Esa foto nos la debemos."] },
+    { escena: "ciudad",  pie: "las 2 de la mañana", nota: ["Perdernos en una ciudad, sin mapa y sin prisa.", "Contigo perderse es un plan."] },
+    { escena: "campo",   pie: "un domingo largo",  nota: ["Un día entero sin hacer absolutamente nada.", "Sería de los mejores."] },
+    { escena: "cocina",  pie: "aunque salga mal",  nota: ["Cocinar juntos, aunque se queme todo.", "Y reírnos media hora."] },
+    { escena: "nieve",   pie: "con mucho frío",    nota: ["Tú con la nariz roja por el frío.", "Y yo tomándote la foto igual."] },
+    { escena: "ventana", pie: "sin motivo",        nota: ["Un día normal, sin nada especial.", "Contigo, los días normales son los que cuentan."] },
   ],
 
   /* ---- EL REVELADO ---------------------------------------------------- */
@@ -819,7 +820,7 @@ setInterval(() => {
       const d = Math.hypot(fotos[i].x - fotos[j].x, fotos[i].y - fotos[j].y);
       if (d < 18) {
         juntasDicho = true;
-        decir("Las has dejado pegadas.", "Así es como estamos mejor.");
+        decir("Las dejaste pegadas.", "Así es como estamos mejor.");
         campanita(659);
         setTimeout(() => { juntasDicho = false; }, 25000);
         return;
