@@ -5,143 +5,78 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>Las medusas</title>
+<script src="sonido-libro.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Caveat:wght@500&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
-   Todo dentro de .mar-mundo, con prefijo `md-` en cada clase.
+   LAS MEDUSAS — «Baja despacio»
+   Se baja al fondo del mar arrastrando hacia arriba, con inercia, como
+   si nadaras. Arriba entran rayos de sol; abajo sólo hay la luz de ellas.
+   Las medusas laten, ondean sus tentáculos y se apartan con curiosidad.
+   Prefijo `md-`.
    ══════════════════════════════════════════════════════════════════════ */
-
-html, body { margin: 0; height: 100%; }
-
-.mar-mundo {
-  position: absolute;
+html, body { margin: 0; height: 100%; overflow: hidden; background: #03101e; }
+.md {
+  position: fixed;
   inset: 0;
   overflow: hidden;
-  isolation: isolate;
-  contain: layout paint;
-  background: #040a16;
-  color: #cfe4f2;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
-
-  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
-  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  font-family: "Cormorant Garamond", Georgia, serif;
+  color: #e6f4ff;
+  --seg-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seg-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
   --barra: var(--hueco-barra, 0rem);
-  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+  --suave: cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.mar-mundo .md-lienzo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  /* Los toques los recoge `.md-toque`, que va justo encima. */
-  pointer-events: none;
+.md canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.md-titulo {
+  position: absolute; top: calc(var(--seg-t) + 14px); left: 0; right: 0; margin: 0;
+  text-align: center; pointer-events: none;
+  font-weight: 600; font-size: clamp(0.66rem, 2.8vw, 0.78rem); letter-spacing: 0.36em; text-transform: uppercase;
+  color: rgba(210, 240, 255, 0.7);
 }
-
-/* El mar entero. El libro sólo se queda el barrido que empieza en sus
-   24-44 px de borde. */
-.mar-mundo .md-toque {
-  position: absolute;
-  inset: 0;
-  touch-action: none;
-  z-index: 2;
+.md-metros {
+  position: absolute; right: calc(var(--seguro-lado, 0px) + 12px); top: 50%; transform: translateY(-50%);
+  margin: 0; pointer-events: none; writing-mode: vertical-rl;
+  font-weight: 600; font-size: 0.68rem; letter-spacing: 0.3em; color: rgba(190, 230, 255, 0.5);
 }
-
-.mar-mundo .md-ui {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-  padding:
-    calc(var(--seguro-t) + 20px) 22px
-    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  text-align: center;
+.md-pie {
+  position: absolute; left: 0; right: 0; bottom: calc(var(--seg-b) + var(--barra) + 16px);
+  display: grid; justify-items: center; gap: 3px; padding: 0 26px; pointer-events: none; text-align: center;
 }
-
-.mar-mundo .md-titulo {
-  margin: 0;
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-size: clamp(1rem, 4.4vw, 1.4rem);
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  color: #86b8d8;
-  opacity: 0.78;
-  text-shadow: 0 0 20px rgba(90, 170, 220, 0.4);
-  transition: opacity 900ms var(--e-suave);
+.md-frase {
+  margin: 0; max-width: 20em; font-style: italic; font-weight: 500;
+  font-size: clamp(1.05rem, 4.8vw, 1.32rem); line-height: 1.3; color: #effaff;
+  text-shadow: 0 0 18px rgba(120, 200, 255, 0.35), 0 2px 12px rgba(0, 0, 0, 0.8);
+  transition: opacity 900ms var(--suave), transform 900ms var(--suave), filter 900ms var(--suave);
 }
-.mar-mundo.is-cerca .md-titulo { opacity: 0.16; }
-
-.mar-mundo .md-pie {
-  margin: 0;
-  min-height: 3.8em;
-  max-width: 23em;
-  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
-  line-height: 1.55;
-  color: #d8ecf6;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 700ms var(--e-suave), transform 700ms var(--e-suave);
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
-}
-.mar-mundo .md-pie.is-visible { opacity: 0.94; transform: none; }
-.mar-mundo .md-pie em {
-  display: block;
-  margin-top: 0.3em;
-  font-family: var(--tipo-mano, "Segoe Script", cursive);
-  font-size: 1.16em;
-  font-style: normal;
-  color: #ffc8e4;
-}
-
-.mar-mundo .md-hondo {
-  position: absolute;
-  right: 20px;
-  top: calc(var(--seguro-t) + 20px);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
-  color: #5e8ba8;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mar-mundo * { transition-duration: 1ms !important; }
-}
+.md-firma { margin: 0; font-family: "Caveat", cursive; font-size: clamp(1rem, 4.4vw, 1.22rem); color: #9fe0ff; transition: opacity 900ms var(--suave) 250ms; }
+.md-frase.is-fuera { opacity: 0; transform: translateY(8px); filter: blur(5px); }
+.md-firma.is-fuera { opacity: 0; transition-delay: 0ms; }
 </style>
 </head>
 <body>
-
-<div class="mar-mundo" id="mundo">
-  <canvas class="md-lienzo" id="lienzo"></canvas>
-  <div class="md-toque" id="toque" aria-hidden="true"></div>
-  <div class="md-ui">
-    <h1 class="md-titulo" id="titulo">Baja despacio</h1>
-    <p class="md-pie" id="pie" role="status" aria-live="polite"></p>
+<div class="md" id="mundo">
+  <canvas id="lienzo"></canvas>
+  <p class="md-titulo">Baja despacio</p>
+  <p class="md-metros" id="metros">0 m</p>
+  <div class="md-pie">
+    <p class="md-frase" id="frase" role="status" aria-live="polite"></p>
+    <p class="md-firma is-fuera" id="firma"></p>
   </div>
-  <div class="md-hondo" id="hondo" aria-hidden="true"></div>
 </div>
 
 <script>
 (() => {
 "use strict";
 
-/* ══════════════════════════════════════════════════════════════════════
-   CONFIGURACIÓN EDITABLE
-   ══════════════════════════════════════════════════════════════════════ */
-
 const CONF = {
-
-  /* ---- LA BAJADA ------------------------------------------------------
-     Arrastrando hacia arriba se baja: el mar pasa por delante. Cada
-     tramo de profundidad tiene su color y su frase.                   */
   metrosPorPantalla: 260,
   tramos: [
     { m: 0,    color: ["#2a6b96", "#154a72"], texto: "La superficie. Se ve el sol si miras arriba.", firma: "Pero abajo hay más." },
@@ -150,18 +85,7 @@ const CONF = {
     { m: 900,  color: ["#071e36", "#030f1e"], texto: "Esto ya es noche todo el año.",                 firma: "Y mira qué bonito." },
     { m: 1400, color: ["#030f1e", "#01060e"], texto: "Aquí abajo no ha estado casi nadie.",           firma: "Tú y yo, y ya." },
   ],
-
-  /* ---- LAS MEDUSAS ----------------------------------------------------
-     Laten solas y suben. Se apartan un poco del dedo, sin huir: no son
-     asustadizas, son curiosas.                                        */
-  cuantas: 15,
-  latido: [0.5, 1.1],      // latidos por segundo
-  empuje: 92,              // lo que avanza cada latido
-  apartarse: 46,           // cuánto se apartan del dedo
-  radioDedo: 120,
-
-  /* ---- LAS FRASES QUE GUARDAN -----------------------------------------
-     Al tocar una, se lee la suya. No se repiten hasta agotarlas.      */
+  cuantas: 38,
   frases: [
     ["Aquí abajo no hace falta hablar.", "Se entiende todo igual."],
     ["Lo único que dan es luz.", "Y no piden nada."],
@@ -171,35 +95,361 @@ const CONF = {
     ["Si la aprietas se rompe.", "Hay cosas que se cuidan solas."],
     ["Brillan sin quemarse.", "Enséñame a hacer eso."],
   ],
-
-  /* ---- EL PLANCTON ----------------------------------------------------- */
-  motas: 130,
+  fondo: 1600,          // metros hasta el fondo
 };
 
-/* ══════════════════════════════════════════════════════════════════════
-   La maquinaria.
-   ══════════════════════════════════════════════════════════════════════ */
-
-const mundo  = document.getElementById("mundo");
+const mundo = document.getElementById("mundo");
 const lienzo = document.getElementById("lienzo");
-const zona   = document.getElementById("toque");
-const elPie  = document.getElementById("pie");
-const elHon  = document.getElementById("hondo");
-const ctx    = lienzo.getContext("2d", { alpha: false });
-
+const g = lienzo.getContext("2d", { alpha: false });
+const elFrase = document.getElementById("frase");
+const elFirma = document.getElementById("firma");
+const elMetros = document.getElementById("metros");
 const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const azar  = (a, b) => a + Math.random() * (b - a);
-const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
-const mez   = (a, b, t) => a + (b - a) * t;
-
-function mezColor(c1, c2, t) {
-  const p = (c) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
-  const [r1, g1, b1] = p(c1), [r2, g2, b2] = p(c2);
-  return `rgb(${Math.round(mez(r1, r2, t))},${Math.round(mez(g1, g2, t))},${Math.round(mez(b1, b2, t))})`;
-}
+const TAU = Math.PI * 2;
+const azar = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const acercar = (v, o, k, dt) => o + (v - o) * Math.exp(-k * dt);
+const hexA = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const mezcla = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 
 let A = 0, H = 0, dpr = 1;
+const TECHO = 0;
+let prof = TECHO, vProf = 0;    // metros y metros por segundo
+
+/* ══════════════════════════════════════════════════════════════════════
+   LAS MEDUSAS
+   Viven en el mundo (x en pantalla, y en metros). Cada una late: la
+   campana se cierra, empuja, y se abre despacio. Sus tentáculos son
+   cadenas de puntos que se quedan atrás al subir.
+   ══════════════════════════════════════════════════════════════════════ */
+const PALETAS = [[255, 160, 210], [150, 210, 255], [190, 160, 255], [255, 200, 150], [140, 255, 220]];
+const medusas = [];
+function nuevaMedusa(yMundo) {
+  const tam = azar(22, 52);
+  const m = {
+    x: Math.random() * A, y: yMundo, vx: 0, vy: 0,
+    tam, z: azar(0.5, 1.15),
+    fase: Math.random() * TAU, ritmo: azar(0.55, 1.05),
+    col: PALETAS[Math.floor(Math.random() * PALETAS.length)],
+    brillo: 0, tentaculos: [],
+  };
+  const n = 6;
+  for (let t = 0; t < n; t++) {
+    const puntos = [];
+    for (let k = 0; k < 10; k++) puntos.push({ x: m.x, y: 0, px: m.x, py: 0 });
+    m.tentaculos.push({ off: (t / (n - 1) - 0.5) * tam * 1.4, puntos, largo: tam * azar(0.18, 0.3) });
+  }
+  return m;
+}
+function sembrar() {
+  medusas.length = 0;
+  for (let i = 0; i < CONF.cuantas; i++) medusas.push(nuevaMedusa(azar(60, CONF.fondo)));
+}
+
+/* La nieve marina, en tres capas de profundidad para el paralaje. */
+const nieve = [];
+function sembrarNieve() {
+  nieve.length = 0;
+  for (let i = 0; i < 220; i++) nieve.push({ x: Math.random(), y: Math.random(), capa: i % 3, r: azar(0.4, 1.8), f: Math.random() * TAU });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL SONIDO: un fondo de mar muy grave y el «tin» de las medusas
+   ══════════════════════════════════════════════════════════════════════ */
+let ac = null, salida = null, mar = null;
+function despertar() {
+  if (ac) { if (ac.state === "suspended") ac.resume(); return ac; }
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+  salida = ac.createGain(); salida.gain.value = 0.9; salida.connect(ac.destination);
+  const n = ac.sampleRate * 3;
+  const b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  let u = 0;
+  for (let i = 0; i < n; i++) { u = (u + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = u * 3; }
+  const s = ac.createBufferSource(); s.buffer = b; s.loop = true;
+  const f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 300;
+  const gg = ac.createGain(); gg.gain.value = 0;
+  s.connect(f).connect(gg);
+  if (window.LibroSonido) window.LibroSonido.ambiente(gg); else gg.connect(ac.destination);
+  s.start();
+  gg.gain.setTargetAtTime(0.12, ac.currentTime, 2);
+  mar = { f, gg };
+  return ac;
+}
+function tin(col) {
+  if (!ac) return;
+  const t = ac.currentTime, base = [523.25, 587.33, 659.25, 783.99, 880][Math.floor(Math.random() * 5)];
+  for (const [m, a] of [[1, 1], [2.01, 0.3], [4.02, 0.08]]) {
+    const o = ac.createOscillator(), gg = ac.createGain();
+    o.frequency.value = base * m;
+    gg.gain.setValueAtTime(0, t);
+    gg.gain.linearRampToValueAtTime(0.04 * a, t + 0.05);
+    gg.gain.exponentialRampToValueAtTime(0.0001, t + 3 / m);
+    o.connect(gg).connect(salida);
+    o.start(t); o.stop(t + 3.1);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS TEXTOS
+   ══════════════════════════════════════════════════════════════════════ */
+let bloqueo = 0, tramoDicho = -1, nFrase = 0;
+function decir(f, s, importante) {
+  const ahora = performance.now();
+  if (!importante && ahora < bloqueo) return;
+  bloqueo = ahora + 4200;
+  elFrase.classList.add("is-fuera"); elFirma.classList.add("is-fuera");
+  setTimeout(() => {
+    elFrase.textContent = f; elFrase.classList.remove("is-fuera");
+    elFirma.textContent = s || ""; elFirma.classList.toggle("is-fuera", !s);
+  }, suave ? 20 : 500);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL DEDO: arrastrar baja (con inercia); tocar una medusa la hace brillar
+   ══════════════════════════════════════════════════════════════════════ */
+let dedo = null;
+mundo.addEventListener("pointerdown", (e) => {
+  despertar();
+  const r = mundo.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  dedo = { id: e.pointerId, x, y, y0: y, x0: x, t: performance.now(), tm: performance.now(), movido: false };
+  vProf = 0;
+  try { mundo.setPointerCapture(e.pointerId); } catch { /* nada */ }
+});
+mundo.addEventListener("pointermove", (e) => {
+  if (!dedo || e.pointerId !== dedo.id) return;
+  const r = mundo.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  const dy = y - dedo.y;
+  if (Math.hypot(x - dedo.x0, y - dedo.y0) > 8) dedo.movido = true;
+  const mPorPx = CONF.metrosPorPantalla / H;
+  prof = clamp(prof - dy * mPorPx, TECHO, CONF.fondo);
+  const ahora = performance.now(), dtm = Math.max(8, ahora - dedo.tm) / 1000;
+  dedo.tm = ahora;
+  vProf = clamp(acercar(vProf, -dy * mPorPx / dtm, 10, dtm), -260, 260);
+  dedo.x = x; dedo.y = y;
+});
+function soltar(e) {
+  if (!dedo || e.pointerId !== dedo.id) return;
+  const d = dedo;
+  dedo = null;
+  if (!d.movido && performance.now() - d.t < 350) tocar(d.x, d.y);
+}
+mundo.addEventListener("pointerup", soltar);
+mundo.addEventListener("pointercancel", soltar);
+
+function aPantallaY(yMundo) { return (yMundo - prof) / CONF.metrosPorPantalla * H + H * 0.14; }
+function tocar(x, y) {
+  let mejor = null, dmin = Infinity;
+  for (const m of medusas) {
+    const d = Math.hypot(m.x - x, aPantallaY(m.y) - y);
+    if (d < m.tam * 1.6 && d < dmin) { dmin = d; mejor = m; }
+  }
+  if (mejor) {
+    mejor.brillo = 1;
+    mejor.vy -= 22;
+    tin(mejor.col);
+    const [f, s] = CONF.frases[nFrase++ % CONF.frases.length];
+    decir(f, s, true);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+let t0 = performance.now(), reloj = 0;
+function colorAgua(m) {
+  const T = CONF.tramos;
+  let i = 0;
+  while (i < T.length - 1 && m > T[i + 1].m) i++;
+  const a = T[i], b = T[Math.min(i + 1, T.length - 1)];
+  const k = b === a ? 0 : clamp((m - a.m) / (b.m - a.m), 0, 1);
+  return [mezcla(hexA(a.color[0]), hexA(b.color[0]), k), mezcla(hexA(a.color[1]), hexA(b.color[1]), k)];
+}
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A) return;
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.1) dt = 1 / 60;
+  reloj += dt;
+
+  // La bajada sigue sola un poco (el agua frena), y nunca pasa del fondo.
+  if (!dedo) { prof = clamp(prof + vProf * dt, TECHO, CONF.fondo); vProf *= Math.exp(-dt * 1.8); }
+  elMetros.textContent = `${Math.max(0, Math.round(prof))} m`;
+  const luz = clamp(1 - prof / 700, 0, 1);
+  if (mar && ac) mar.f.frequency.setTargetAtTime(300 - (1 - luz) * 180, ac.currentTime, 0.5);
+
+  // Cada tramo dice lo suyo al llegar.
+  for (let i = CONF.tramos.length - 1; i >= 0; i--) {
+    if (prof >= CONF.tramos[i].m - 10) { if (tramoDicho !== i) { tramoDicho = i; decir(CONF.tramos[i].texto, CONF.tramos[i].firma, true); } break; }
+  }
+
+  // El agua.
+  const [c1, c2] = colorAgua(prof);
+  const agua = g.createLinearGradient(0, 0, 0, H);
+  agua.addColorStop(0, `rgb(${c1})`);
+  agua.addColorStop(1, `rgb(${c2})`);
+  g.fillStyle = agua;
+  g.fillRect(0, 0, A, H);
+
+  // La superficie y los rayos de sol, sólo cerca de arriba.
+  const ySup = aPantallaY(0);
+  if (luz > 0.02) {
+    g.save();
+    g.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 7; i++) {
+      const x = A * (0.1 + i * 0.14) + Math.sin(reloj * 0.3 + i * 1.7) * 30;
+      const w = 30 + Math.sin(reloj * 0.5 + i) * 18;
+      const gr = g.createLinearGradient(0, Math.max(0, ySup), 0, Math.max(0, ySup) + H * 1.2);
+      gr.addColorStop(0, `rgba(200,240,255,${0.16 * luz})`);
+      gr.addColorStop(1, "rgba(200,240,255,0)");
+      g.fillStyle = gr;
+      g.beginPath();
+      g.moveTo(x - w * 0.3, Math.max(0, ySup));
+      g.lineTo(x + w * 0.3, Math.max(0, ySup));
+      g.lineTo(x + w * 2 + 80, H * 1.3);
+      g.lineTo(x - w * 0.5 + 80, H * 1.3);
+      g.fill();
+    }
+    g.restore();
+    if (ySup > -20) {
+      // La superficie vista desde abajo: ondas de luz.
+      g.fillStyle = `rgba(210,245,255,${0.35 * luz})`;
+      for (let x = 0; x < A; x += 6) {
+        const y = ySup + Math.sin(x * 0.04 + reloj * 2) * 4 + Math.sin(x * 0.11 - reloj * 3) * 2;
+        g.fillRect(x, y, 6, 2);
+      }
+      const brillo = g.createLinearGradient(0, ySup - 40, 0, ySup + 30);
+      brillo.addColorStop(0, "rgba(255,255,255,0)");
+      brillo.addColorStop(0.6, `rgba(220,245,255,${0.25 * luz})`);
+      brillo.addColorStop(1, "rgba(255,255,255,0)");
+      g.fillStyle = brillo;
+      g.fillRect(0, ySup - 40, A, 70);
+    }
+  }
+
+  // El fondo del mar, con sus algas, al llegar abajo.
+  const yFondo = aPantallaY(CONF.fondo + 40);
+  if (yFondo < H + 40) {
+    const arena = g.createLinearGradient(0, yFondo, 0, H);
+    arena.addColorStop(0, "#0a1624"); arena.addColorStop(1, "#050b14");
+    g.fillStyle = arena;
+    g.beginPath(); g.moveTo(0, H);
+    for (let x = 0; x <= A; x += 12) g.lineTo(x, yFondo + Math.sin(x * 0.02) * 10);
+    g.lineTo(A, H); g.fill();
+    for (let i = 0; i < 12; i++) {
+      const x = (i + 0.5) / 12 * A, h = 40 + (i * 37) % 60;
+      g.strokeStyle = `rgba(80,${160 + i * 6},170,.35)`; g.lineWidth = 3;
+      g.beginPath(); g.moveTo(x, yFondo + 6);
+      for (let k = 1; k <= 6; k++) g.lineTo(x + Math.sin(reloj * 1.2 + i + k * 0.6) * k * 2.4, yFondo + 6 - h * k / 6);
+      g.stroke();
+    }
+  }
+
+  // Nieve marina: capas a distinta distancia, cada una se mueve distinto.
+  for (const n of nieve) {
+    const par = [0.4, 0.75, 1.15][n.capa];
+    let y = (n.y * H - (prof * par / CONF.metrosPorPantalla) * H - reloj * (4 + n.capa * 3)) % H;
+    if (y < 0) y += H;
+    const x = (n.x * A + Math.sin(reloj * 0.3 + n.f) * 8 + A) % A;
+    const a = (0.15 + n.capa * 0.12) * (0.6 + 0.4 * Math.sin(reloj + n.f));
+    g.fillStyle = luz > 0.3 ? `rgba(230,245,255,${a})` : `rgba(160,230,255,${a * 1.3})`;
+    g.beginPath(); g.arc(x, y, n.r * (0.6 + n.capa * 0.5), 0, TAU); g.fill();
+  }
+
+  // Las medusas, de lejos a cerca.
+  medusas.sort((a, b) => a.z - b.z);
+  for (const m of medusas) {
+    const lat = (Math.sin(reloj * m.ritmo * TAU + m.fase) + 1) / 2;       // 0 abierta, 1 cerrada
+    const empuje = Math.max(0, Math.cos(reloj * m.ritmo * TAU + m.fase)) * 22;
+    m.vy = acercar(m.vy, -empuje * 0.6, 1.4, dt);
+    m.vx = acercar(m.vx, Math.sin(reloj * 0.2 + m.fase) * 6, 0.5, dt);
+    const sy = aPantallaY(m.y);
+    if (dedo && Math.hypot(dedo.x - m.x, dedo.y - sy) < 120) {
+      const dx = m.x - dedo.x, dy = sy - dedo.y, d = Math.hypot(dx, dy) || 1;
+      m.vx += dx / d * 40 * dt; m.vy += dy / d * 40 * dt * (CONF.metrosPorPantalla / H);
+    }
+    m.x += m.vx * dt; m.y += m.vy * dt * 0.35;
+    if (m.x < -60) m.x = A + 50; if (m.x > A + 60) m.x = -50;
+    if (m.y < 20) m.y = CONF.fondo - 20;
+    if (m.y > CONF.fondo) m.y = 40;
+    m.brillo = Math.max(0, m.brillo - dt * 0.4);
+    if (sy < -120 || sy > H + 160) { for (const t of m.tentaculos) for (const p of t.puntos) { p.x = p.px = m.x + t.off; p.y = p.py = sy; } continue; }
+
+    const esc = m.z;
+    const ancho = m.tam * esc * (1 + lat * -0.18), alto = m.tam * esc * (0.8 + lat * 0.25);
+    const glow = 0.35 + (1 - luz) * 0.5 + m.brillo * 0.6;
+    const [r, gg, b] = m.col;
+
+    // Los tentáculos: caen y se quedan atrás.
+    for (const t of m.tentaculos) {
+      const p0 = t.puntos[0];
+      p0.x = m.x + t.off * esc * (1 - lat * 0.3); p0.y = sy + alto * 0.1;
+      for (let k = 1; k < t.puntos.length; k++) {
+        const p = t.puntos[k];
+        const vx = (p.x - p.px) * 0.9, vy = (p.y - p.py) * 0.9;
+        p.px = p.x; p.py = p.y;
+        p.x += vx + Math.sin(reloj * 2 + k * 0.5 + t.off) * 0.25;
+        p.y += vy + 0.35;
+      }
+      for (let it = 0; it < 3; it++) {
+        for (let k = 1; k < t.puntos.length; k++) {
+          const a = t.puntos[k - 1], p = t.puntos[k];
+          const dx = p.x - a.x, dy = p.y - a.y, d = Math.hypot(dx, dy) || 1;
+          const l = t.largo * esc * 0.9;
+          const f = (d - l) / d;
+          p.x -= dx * f; p.y -= dy * f;
+        }
+      }
+      g.strokeStyle = `rgba(${r},${gg},${b},${0.35 * glow})`;
+      g.lineWidth = 1.1 * esc;
+      g.beginPath(); g.moveTo(t.puntos[0].x, t.puntos[0].y);
+      for (let k = 1; k < t.puntos.length; k++) g.lineTo(t.puntos[k].x, t.puntos[k].y);
+      g.stroke();
+    }
+    // El halo de luz.
+    g.globalCompositeOperation = "lighter";
+    const halo = g.createRadialGradient(m.x, sy, 0, m.x, sy, ancho * 2.4);
+    halo.addColorStop(0, `rgba(${r},${gg},${b},${0.3 * glow})`);
+    halo.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+    g.fillStyle = halo;
+    g.fillRect(m.x - ancho * 2.4, sy - ancho * 2.4, ancho * 4.8, ancho * 4.8);
+    // La campana translúcida.
+    const campana = g.createRadialGradient(m.x, sy - alto * 0.5, 0, m.x, sy - alto * 0.2, ancho);
+    campana.addColorStop(0, `rgba(255,255,255,${0.35 * glow})`);
+    campana.addColorStop(0.5, `rgba(${r},${gg},${b},${0.3 * glow})`);
+    campana.addColorStop(1, `rgba(${r},${gg},${b},${0.08 * glow})`);
+    g.fillStyle = campana;
+    g.beginPath();
+    g.moveTo(m.x - ancho, sy);
+    g.bezierCurveTo(m.x - ancho, sy - alto * 1.25, m.x + ancho, sy - alto * 1.25, m.x + ancho, sy);
+    // El borde ondulado de abajo.
+    for (let k = 6; k >= 0; k--) {
+      const xx = m.x - ancho + k / 6 * ancho * 2;
+      g.lineTo(xx, sy + (k % 2 ? alto * 0.12 : 0) + Math.sin(reloj * 3 + k) * 1.5);
+    }
+    g.fill();
+    g.strokeStyle = `rgba(255,255,255,${0.25 * glow})`;
+    g.lineWidth = 1;
+    g.stroke();
+    // Las cuatro «flores» de dentro.
+    g.fillStyle = `rgba(${r},${gg},${b},${0.4 * glow})`;
+    for (let k = 0; k < 4; k++) {
+      const a = k / 4 * TAU + reloj * 0.3;
+      g.beginPath(); g.ellipse(m.x + Math.cos(a) * ancho * 0.3, sy - alto * 0.45 + Math.sin(a) * alto * 0.12, ancho * 0.16, alto * 0.1, a, 0, TAU); g.fill();
+    }
+    g.globalCompositeOperation = "source-over";
+  }
+
+  // Viñeta de profundidad.
+  const vin = g.createRadialGradient(A / 2, H / 2, Math.min(A, H) * 0.3, A / 2, H / 2, Math.max(A, H) * 0.75);
+  vin.addColorStop(0, "rgba(0,0,0,0)");
+  vin.addColorStop(1, `rgba(0,4,12,${0.35 + (1 - luz) * 0.35})`);
+  g.fillStyle = vin;
+  g.fillRect(0, 0, A, H);
+}
 
 function medir() {
   const r = mundo.getBoundingClientRect();
@@ -207,506 +457,14 @@ function medir() {
   const primera = !A;
   A = r.width; H = r.height;
   dpr = Math.min(window.devicePixelRatio || 1, 2);
-  lienzo.width  = Math.round(A * dpr);
-  lienzo.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  if (primera) sembrar();
+  lienzo.width = Math.round(A * dpr); lienzo.height = Math.round(H * dpr);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (primera) { sembrar(); sembrarNieve(); }
 }
-new ResizeObserver(medir).observe(mundo);
-
-/* ---- La profundidad -------------------------------------------------------
-   Todo sale de `hondo`, los metros que llevamos bajados. El color del
-   agua, la luz que queda y qué frase toca salen de ahí.                 */
-
-let hondo = 0;
-let hondoObj = 0;
-let arrastre = null;
-
-function tramoEn(m) {
-  const T = CONF.tramos;
-  for (let i = T.length - 1; i >= 0; i--) {
-    if (m >= T[i].m) {
-      const j = Math.min(i + 1, T.length - 1);
-      const span = Math.max(1, T[j].m - T[i].m);
-      return { a: T[i], b: T[j], k: clamp((m - T[i].m) / span, 0, 1), i };
-    }
-  }
-  return { a: T[0], b: T[0], k: 0, i: 0 };
-}
-
-function enPantalla(e) {
-  const r = mundo.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
-}
-
-/* ---- Las medusas ----------------------------------------------------------
-   Cada una guarda su posición, su fase de latido y una cola de campanas
-   anteriores para dibujar los tentáculos: los tentáculos de una medusa
-   son, literalmente, por dónde ha pasado.                               */
-
-let medusas = [];
-
-function nuevaMedusa(y) {
-  const esc = azar(0.5, 1.4);
-  return {
-    x: azar(0.08, 0.92) * A,
-    y: y ?? azar(-0.2, 1.2) * H,
-    esc,
-    fase: Math.random() * 6.283,
-    vel: azar(CONF.latido[0], CONF.latido[1]),
-    vx: azar(-8, 8),
-    vy: 0,
-    tono: Math.random(),          // 0 rosa · 1 azul
-    brillo: 0,
-    tocada: false,
-    /* El rastro: veinte puntos por donde ha pasado la campana. */
-    rastro: Array.from({ length: 20 }, () => ({ x: 0, y: 0 })),
-    listo: false,
-  };
-}
-
-function sembrar() {
-  const n = A * H < 200000 ? Math.round(CONF.cuantas * 0.7) : CONF.cuantas;
-  medusas = Array.from({ length: n }, () => nuevaMedusa());
-}
-
-/* ---- El plancton ----------------------------------------------------------- */
-
-let motas = [];
-function sembrarMotas() {
-  const n = A * H < 200000 ? Math.round(CONF.motas * 0.6) : CONF.motas;
-  motas = Array.from({ length: n }, () => ({
-    x: Math.random() * A, y: Math.random() * H,
-    r: azar(0.4, 1.5), f: Math.random() * 6.283, v: azar(0.4, 1.6),
-    vy: azar(-3, 3),
-  }));
-}
-
-/* ---- El dedo ---------------------------------------------------------------- */
-
-const dedo = { x: -999, y: -999, dentro: false };
-let frasesLibres = [];
-
-zona.addEventListener("pointerdown", (e) => {
-  if (e.pointerType === "mouse" && e.button !== 0) return;
-  zona.setPointerCapture(e.pointerId);
-  const p = enPantalla(e);
-  dedo.x = p.x; dedo.y = p.y; dedo.dentro = true;
-  arrastre = { id: e.pointerId, y: p.y, desde: hondoObj, movido: 0 };
-  tocarMedusa(p);
-});
-
-zona.addEventListener("pointermove", (e) => {
-  const p = enPantalla(e);
-  dedo.x = p.x; dedo.y = p.y; dedo.dentro = true;
-  if (!arrastre || e.pointerId !== arrastre.id) return;
-  const d = arrastre.y - p.y;          // hacia arriba = bajar
-  arrastre.movido = Math.abs(d);
-  hondoObj = Math.max(0, arrastre.desde + d / H * CONF.metrosPorPantalla * 2.2);
-});
-
-function soltar() {
-  arrastre = null;
-  dedo.dentro = false;
-  dedo.x = -999; dedo.y = -999;
-}
-zona.addEventListener("pointerup", soltar);
-zona.addEventListener("pointercancel", soltar);
-
-function tocarMedusa(p) {
-  let mejor = null, dMin = Infinity;
-  for (const m of medusas) {
-    const r = 26 * m.esc;
-    const d = Math.hypot(m.x - p.x, m.y - p.y);
-    if (d < r * 2.2 && d < dMin) { dMin = d; mejor = m; }
-  }
-  if (!mejor) return;
-  mejor.brillo = 1.6;
-  mejor.vy -= 60;
-  if (!frasesLibres.length) frasesLibres = CONF.frases.slice();
-  const i = Math.floor(Math.random() * frasesLibres.length);
-  const [t, f] = frasesLibres.splice(i, 1)[0];
-  decir(t, f, true);
-  campanita(azar(700, 1400));
-  tocadas++;
-  mirarSecretos(mejor);
-}
-
-/* ---- Los textos ------------------------------------------------------------- */
-
-let pidiendo = null;
-let bloqueado = 0;
-let dichoTramo = -1;
-
-function decir(texto, firma, importante) {
-  const ahora = performance.now();
-  if (!importante && ahora < bloqueado) return;
-  if (pidiendo === texto) return;
-  pidiendo = texto;
-  if (importante) bloqueado = ahora + 4200;
-  elPie.classList.remove("is-visible");
-  setTimeout(() => {
-    elPie.textContent = texto;
-    if (firma) {
-      const em = document.createElement("em");
-      em.textContent = firma;
-      elPie.append(em);
-    }
-    elPie.classList.add("is-visible");
-  }, suave ? 10 : 290);
-}
-
-/* ---- Sonido ------------------------------------------------------------------ */
-
-let audio = null;
-function campanita(hz) {
-  try {
-    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
-    if (audio.state === "suspended") audio.resume();
-    const t = audio.currentTime;
-    /* Muy filtrado y con mucha cola: debajo del agua los agudos no
-       llegan y todo suena redondo. */
-    const o = audio.createOscillator();
-    const g = audio.createGain();
-    const f = audio.createBiquadFilter();
-    f.type = "lowpass";
-    f.frequency.value = 1400;
-    o.type = "sine";
-    o.frequency.setValueAtTime(hz, t);
-    o.frequency.exponentialRampToValueAtTime(hz * 0.7, t + 1.4);
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.07, t + 0.05);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
-    o.connect(f).connect(g).connect(audio.destination);
-    o.start(t); o.stop(t + 1.9);
-  } catch { /* sin sonido brillan igual */ }
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   LOS SECRETOS
-   ══════════════════════════════════════════════════════════════════════ */
-
-/* 1. Pasar de los mil quinientos metros: aparece UNA medusa enorme, muy
-      despacio, y es la única que no se aparta del dedo.               */
-let laGrande = null;
-let grandeDicha = false;
-
-/* 2. Tocar siete medusas: las que queden se ponen a latir a la vez y
-      dibujan una luz que sube.                                        */
-let tocadas = 0;
-let sincronia = 0;
-
-/* 3. Quedarse quieta en el fondo: pasa un banco de luces lejano, de
-      lado a lado, sin acercarse.                                      */
-let quieta = 0;
-let banco = null;
-
-function mirarSecretos() {
-  if (tocadas === 7 && sincronia <= 0) {
-    sincronia = 1;
-    for (const m of medusas) m.fase = 0;
-    decir("Se han puesto a latir todas a la vez.", "Como cuando respiramos igual sin darnos cuenta.", true);
-    campanita(392);
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   EL BUCLE
-   ══════════════════════════════════════════════════════════════════════ */
-
-let t0 = performance.now();
-let reloj = 0;
-
-function paso(ahora) {
-  requestAnimationFrame(paso);
-  if (!A || !H) return;
-  if (!motas.length) sembrarMotas();
-
-  let dt = (ahora - t0) / 1000;
-  t0 = ahora;
-  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
-  else if (dt > 0.1) dt = 0.1;
-  reloj += dt;
-
-  hondo = damp(hondo, hondoObj, 3.4, dt);
-  elHon.textContent = `${Math.round(hondo)} m`;
-
-  /* Si nadie arrastra, se sigue bajando muy despacio: el mar no para. */
-  if (!arrastre) hondoObj += 5 * dt;
-
-  quieta = arrastre ? 0 : quieta + dt;
-  if (hondo > 1200 && quieta > 12 && !banco) {
-    quieta = -30;
-    banco = { x: -60, y: azar(H * 0.2, H * 0.7), n: 14 };
-    decir("Ha pasado algo grande ahí al fondo.", "No se ha acercado. Mejor.", true);
-  }
-
-  if (hondo > 1500 && !laGrande) {
-    laGrande = { x: A * 0.5, y: H * 1.4, esc: 4.2, fase: 0, vel: 0.24 };
-    grandeDicha = false;
-  }
-
-  if (sincronia > 0) sincronia = Math.max(0, sincronia - dt * 0.12);
-
-  const tr = tramoEn(hondo);
-  if (tr.i !== dichoTramo) {
-    dichoTramo = tr.i;
-    decir(tr.a.texto, tr.a.firma, true);
-  }
-
-  dibujar(dt, tr);
-}
-
-function dibujar(dt, tr) {
-  /* --- el agua --- */
-  const c0 = mezColor(tr.a.color[0], tr.b.color[0], tr.k);
-  const c1 = mezColor(tr.a.color[1], tr.b.color[1], tr.k);
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, c0);
-  g.addColorStop(1, c1);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, A, H);
-
-  /* La luz del sol, que se va apagando con la profundidad. Es una sola
-     cuenta y hace toda la sensación de bajar. */
-  const luz = clamp(1 - hondo / 700, 0, 1);
-  if (luz > 0.01) {
-    const s = ctx.createRadialGradient(A * 0.5, -H * 0.2, 0, A * 0.5, -H * 0.2, H * 1.1);
-    s.addColorStop(0, `rgba(150, 220, 255, ${0.3 * luz})`);
-    s.addColorStop(1, "rgba(150, 220, 255, 0)");
-    ctx.fillStyle = s;
-    ctx.fillRect(0, 0, A, H);
-    /* Y los rayos que se cuelan, que se mueven despacio.
-
-       Con un degradado que se apaga hacia abajo, no con un relleno
-       plano: un relleno plano acaba de golpe a media pantalla y deja
-       una raya horizontal que se ve a la legua. Un rayo de sol dentro
-       del agua no acaba, se deshace. */
-    for (let i = 0; i < 5; i++) {
-      const x = A * (0.12 + i * 0.19) + Math.sin(reloj * 0.35 + i) * 24;
-      const gr = ctx.createLinearGradient(0, -10, 0, H * 0.95);
-      gr.addColorStop(0, `rgba(191, 234, 255, ${0.11 * luz})`);
-      gr.addColorStop(0.45, `rgba(191, 234, 255, ${0.06 * luz})`);
-      gr.addColorStop(1, "rgba(191, 234, 255, 0)");
-      ctx.fillStyle = gr;
-      ctx.beginPath();
-      ctx.moveTo(x - 10, -10);
-      ctx.lineTo(x + 10, -10);
-      ctx.lineTo(x + 72, H * 0.95);
-      ctx.lineTo(x - 54, H * 0.95);
-      ctx.closePath();
-      ctx.fill();
-    }
-  }
-
-  /* --- el plancton --- */
-  ctx.globalCompositeOperation = "lighter";
-  for (const m of motas) {
-    m.y += (m.vy - 6) * dt;
-    m.x += Math.sin(reloj * m.v + m.f) * 7 * dt;
-    if (m.y < -4) { m.y = H + 4; m.x = Math.random() * A; }
-    const b = 0.2 + 0.3 * Math.sin(reloj * m.v * 2 + m.f);
-    ctx.globalAlpha = b;
-    ctx.fillStyle = "#9fd8f2";
-    ctx.beginPath();
-    ctx.arc(m.x, m.y, m.r, 0, 6.283);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-
-  /* --- el banco lejano (secreto 3) --- */
-  if (banco) {
-    banco.x += 46 * dt;
-    for (let i = 0; i < banco.n; i++) {
-      const x = banco.x + i * 22 + Math.sin(reloj * 1.4 + i) * 7;
-      const y = banco.y + Math.sin(reloj * 0.9 + i * 0.6) * 20;
-      ctx.globalAlpha = 0.24;
-      ctx.fillStyle = "#7fd0e8";
-      ctx.beginPath();
-      ctx.ellipse(x, y, 5, 2.2, 0, 0, 6.283);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    if (banco.x > A + 340) banco = null;
-  }
-
-  /* --- las medusas --- */
-  let cerca = 0;
-  for (const m of medusas) {
-    moverMedusa(m, dt);
-    if (dedo.dentro && Math.hypot(m.x - dedo.x, m.y - dedo.y) < CONF.radioDedo) cerca++;
-    dibujarMedusa(m);
-  }
-  mundo.classList.toggle("is-cerca", cerca > 0);
-
-  /* --- la grande (secreto 1) --- */
-  if (laGrande) {
-    laGrande.y -= 11 * dt;
-    laGrande.fase += laGrande.vel * dt * 6.283;
-    laGrande.x += Math.sin(reloj * 0.2) * 9 * dt;
-    dibujarMedusa({
-      ...laGrande, tono: 0.25, brillo: 0.5, rastro: null, listo: false,
-    }, true);
-    if (!grandeDicha && laGrande.y < H * 0.8) {
-      grandeDicha = true;
-      decir("Ésa es de las que no se ven casi nunca.", "Y no se aparta de ti. Fíjate.", true);
-      campanita(262);
-    }
-    if (laGrande.y < -H * 0.6) laGrande = null;
-  }
-  ctx.globalCompositeOperation = "source-over";
-}
-
-/* ---- Una medusa ------------------------------------------------------------- */
-
-function moverMedusa(m, dt) {
-  const antes = m.fase;
-  m.fase += (sincronia > 0.1 ? 0.8 : m.vel) * dt * 6.283;
-
-  /* El latido: la campana se cierra de golpe y se abre despacio, y el
-     empujón sale justo al cerrarse. Por eso una medusa avanza a tirones
-     y no de forma continua, que es lo que la hace medusa. */
-  const cerro = Math.floor(m.fase / 6.283) > Math.floor(antes / 6.283);
-  if (cerro) m.vy -= CONF.empuje;
-
-  /* Se apartan del dedo: no huyen, se retiran. */
-  if (dedo.dentro) {
-    const dx = m.x - dedo.x, dy = m.y - dedo.y;
-    const d = Math.hypot(dx, dy) || 1;
-    if (d < CONF.radioDedo) {
-      const k = 1 - d / CONF.radioDedo;
-      m.vx += (dx / d) * CONF.apartarse * k * dt * 4;
-      m.vy += (dy / d) * CONF.apartarse * k * dt * 4;
-      m.brillo = Math.max(m.brillo, k * 0.8);
-    }
-  }
-
-  m.vx += Math.sin(reloj * 0.4 + m.fase) * 8 * dt;
-  m.vx *= Math.exp(-1.1 * dt);
-  m.vy *= Math.exp(-1.6 * dt);
-  m.x += m.vx * dt;
-  m.y += m.vy * dt;
-  /* Y la corriente de la bajada: al bajar, todo sube por la pantalla. */
-  m.y += (hondoObj - hondo) * 0.9;
-
-  m.brillo = damp(m.brillo, 0, 1.6, dt);
-
-  if (m.x < -60) m.x = A + 60;
-  if (m.x > A + 60) m.x = -60;
-  if (m.y < -H * 0.35) { Object.assign(m, nuevaMedusa(H * 1.25)); }
-  if (m.y > H * 1.4) { Object.assign(m, nuevaMedusa(-H * 0.2)); }
-
-  /* El rastro. Se guarda la posición de la campana en cada cuadro y de
-     ahí salen los tentáculos: van por donde ella ha pasado, con
-     retraso. */
-  if (m.rastro) {
-    if (!m.listo) { for (const p of m.rastro) { p.x = m.x; p.y = m.y; } m.listo = true; }
-    for (let i = m.rastro.length - 1; i > 0; i--) {
-      m.rastro[i].x += (m.rastro[i - 1].x - m.rastro[i].x) * Math.min(1, 9 * dt);
-      m.rastro[i].y += (m.rastro[i - 1].y - m.rastro[i].y) * Math.min(1, 9 * dt);
-    }
-    m.rastro[0].x = m.x;
-    m.rastro[0].y = m.y;
-  }
-}
-
-function dibujarMedusa(m, grande) {
-  const r = 26 * m.esc;
-  /* El latido, de 0 (abierta) a 1 (cerrada). Con una potencia: cierra
-     rápido y abre despacio. */
-  const ciclo = ((m.fase % 6.283) + 6.283) % 6.283 / 6.283;
-  const latido = Math.pow(Math.sin(ciclo * Math.PI), 2.2);
-  const ancho = r * (1.12 - latido * 0.34);
-  const alto  = r * (0.68 + latido * 0.38);
-
-  const rosa = [255, 150, 210], azul = [130, 200, 255];
-  const col = rosa.map((c, i) => Math.round(mez(c, azul[i], m.tono)));
-  const rgb = col.join(",");
-  const luz = 0.6 + m.brillo * 0.7 + latido * 0.25;
-
-  ctx.globalCompositeOperation = "lighter";
-
-  /* Los tentáculos, del rastro. Cuatro hilos, cada uno saliendo de un
-     punto distinto de la campana. */
-  if (m.rastro) {
-    ctx.lineCap = "round";
-    for (let k = 0; k < 4; k++) {
-      const off = (k - 1.5) * ancho * 0.36;
-      ctx.strokeStyle = `rgba(${rgb}, ${0.2 * luz})`;
-      ctx.lineWidth = Math.max(1, r * (0.1 - k * 0.012));
-      ctx.beginPath();
-      for (let i = 0; i < m.rastro.length; i++) {
-        const p = m.rastro[i];
-        const t = i / m.rastro.length;
-        const x = p.x + off * (1 - t * 0.5) + Math.sin(reloj * 1.5 + k + i * 0.4) * r * 0.1 * t;
-        const y = p.y + alto * 0.6 + i * r * 0.14;
-        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-      }
-      ctx.stroke();
-    }
-    /* Y los brazos gordos de dentro, más cortos y ondulados. */
-    for (let k = 0; k < 3; k++) {
-      ctx.strokeStyle = `rgba(${rgb}, ${0.3 * luz})`;
-      ctx.lineWidth = r * 0.14;
-      ctx.beginPath();
-      ctx.moveTo(m.x + (k - 1) * ancho * 0.22, m.y + alto * 0.5);
-      for (let i = 1; i <= 5; i++) {
-        const t = i / 5;
-        ctx.lineTo(
-          m.x + (k - 1) * ancho * 0.22 + Math.sin(reloj * 2.2 + k + t * 3) * r * 0.2 * t,
-          m.y + alto * 0.5 + t * r * 1.1);
-      }
-      ctx.stroke();
-    }
-  }
-
-  /* El halo. */
-  const gl = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, r * 3);
-  gl.addColorStop(0, `rgba(${rgb}, ${0.22 * luz})`);
-  gl.addColorStop(1, `rgba(${rgb}, 0)`);
-  ctx.fillStyle = gl;
-  ctx.beginPath(); ctx.arc(m.x, m.y, r * 3, 0, 6.283); ctx.fill();
-
-  /* La campana: media elipse por arriba y un canto ondulado por abajo. */
-  ctx.beginPath();
-  ctx.ellipse(m.x, m.y, ancho, alto, 0, Math.PI, 0);
-  for (let i = 0; i <= 12; i++) {
-    const t = i / 12;
-    const x = m.x + ancho - t * ancho * 2;
-    const y = m.y + Math.sin(t * Math.PI * 3) * r * 0.07 * (1 - latido);
-    ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  const gc = ctx.createLinearGradient(m.x, m.y - alto, m.x, m.y + alto * 0.4);
-  gc.addColorStop(0, `rgba(${rgb}, ${0.5 * luz})`);
-  gc.addColorStop(0.55, `rgba(${rgb}, ${0.26 * luz})`);
-  gc.addColorStop(1, `rgba(${rgb}, ${0.08 * luz})`);
-  ctx.fillStyle = gc;
-  ctx.fill();
-
-  /* El canto encendido, que es lo que se ve de verdad de una medusa. */
-  ctx.strokeStyle = `rgba(255, 255, 255, ${0.35 * luz})`;
-  ctx.lineWidth = Math.max(1, r * 0.05);
-  ctx.beginPath();
-  ctx.ellipse(m.x, m.y, ancho, alto, 0, Math.PI, 0);
-  ctx.stroke();
-
-  /* Los cuatro anillos de dentro: el dibujo que tienen en la campana. */
-  ctx.strokeStyle = `rgba(255, 255, 255, ${0.2 * luz})`;
-  ctx.lineWidth = Math.max(0.8, r * 0.03);
-  for (let k = 1; k <= 2; k++) {
-    ctx.beginPath();
-    ctx.ellipse(m.x, m.y - alto * 0.1, ancho * (0.3 + k * 0.22), alto * (0.28 + k * 0.2), 0, Math.PI, 0);
-    ctx.stroke();
-  }
-}
-
-/* ---- Arranque ---------------------------------------------------------------- */
-
+new ResizeObserver(() => requestAnimationFrame(medir)).observe(mundo);
 medir();
-decir("Arrastra hacia arriba para bajar. No hay prisa.");
+setTimeout(() => decir("Arrastra hacia arriba para bajar.", "no hay prisa", true), 300);
 requestAnimationFrame(paso);
-
 })();
 </script>
 </body>
