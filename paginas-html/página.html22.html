@@ -3,245 +3,271 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
 <title>La carta doblada</title>
+<script src="sonido-libro.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Caveat:wght@500;700&family=Pinyon+Script&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
-   Todo dentro de .carta-mundo, con prefijo `ct-` en cada clase.
+   LA CARTA DOBLADA — «Rompe el lacre»
+   Un sobre en el escritorio, a la luz de una vela, cerrado con lacre.
+   Cada toque lo agrieta; al tercero revienta en pedazos y migas de cera,
+   se abre la solapa y sale la carta, que se despliega pliegue a pliegue.
+   Prefijo `lc-`.
    ══════════════════════════════════════════════════════════════════════ */
-
-html, body { margin: 0; height: 100%; }
-
-.carta-mundo {
-  position: absolute;
+html, body { margin: 0; height: 100%; overflow: hidden; background: #1a0f0a; }
+.lc {
+  position: fixed;
   inset: 0;
   overflow: hidden;
-  isolation: isolate;
-  contain: layout paint;
-  background:
-    radial-gradient(ellipse 110% 70% at 50% 6%, #efe2d0, transparent 60%),
-    linear-gradient(170deg, #e2d2bc 0%, #d2bda4 58%, #bfa78c 100%);
-  color: #43362a;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  touch-action: none;
-
-  --papel-c: #fdf7ea;
-  --papel-m: #f4ebd8;
-  --papel-h: #e6d9c0;
-  --lacre: #a8324a;
-
-  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
-  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  font-family: "Cormorant Garamond", Georgia, serif;
+  color: #f6e6d6;
+  background:
+    radial-gradient(ellipse 70% 55% at 22% 18%, rgba(255, 180, 100, 0.28), transparent 70%),
+    repeating-linear-gradient(92deg, rgba(0, 0, 0, 0.12) 0 2px, transparent 2px 9px, rgba(255, 210, 160, 0.03) 9px 10px, transparent 10px 23px),
+    linear-gradient(175deg, #4a2a1a, #2e180e 60%, #1a0c06);
+  --seg-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seg-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
   --barra: var(--hueco-barra, 0rem);
-  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
-  --e-papel: cubic-bezier(0.3, 1.25, 0.5, 1);
+  --suave: cubic-bezier(0.22, 1, 0.36, 1);
+  --muelle: cubic-bezier(0.34, 1.4, 0.5, 1);
+  --luz: 1;
 }
-
-/* El tapete de la mesa. */
-.carta-mundo::before {
-  content: "";
+.lc-lienzo, .lc-vela { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; z-index: 5; }
+.lc-vela { z-index: 1; }
+.lc-titulo {
   position: absolute;
-  inset: 0;
-  background-image: repeating-linear-gradient(48deg, rgba(120, 90, 60, 0.035) 0 2px, transparent 2px 6px);
-  pointer-events: none;
-}
-
-.carta-mundo .mesa {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  z-index: 2;
-  padding: calc(var(--seguro-t) + 58px) 16px calc(var(--seguro-b) + var(--barra) + 76px);
-  box-sizing: border-box;
-}
-
-/* ---- La carta ---------------------------------------------------------- */
-
-.carta-mundo .ct-carta {
-  position: relative;
-  width: min(84vw, 300px);
-  border-radius: 2px;
-  background: linear-gradient(168deg, var(--papel-c) 0%, var(--papel-m) 62%, var(--papel-h) 100%);
-  box-shadow:
-    0 1px 2px rgba(70, 50, 30, 0.2),
-    0 16px 34px rgba(70, 50, 30, 0.3);
-  transition: width 700ms var(--e-papel);
-  cursor: pointer;
-  touch-action: none;
-  /* La fibra del papel: tres tramas finísimas, sin descargar nada. */
-  background-image:
-    repeating-linear-gradient(92deg, rgba(150, 125, 90, 0.045) 0 1px, transparent 1px 4px),
-    repeating-linear-gradient(2deg, rgba(150, 125, 90, 0.035) 0 1px, transparent 1px 5px),
-    linear-gradient(168deg, var(--papel-c) 0%, var(--papel-m) 62%, var(--papel-h) 100%);
-}
-
-/* Cada pliegue es una hoja que se despliega hacia abajo. Se abren de uno
-   en uno, y cada uno deja ver el siguiente. */
-.carta-mundo .ct-hoja {
-  position: relative;
-  overflow: hidden;
-  max-height: 0;
-  opacity: 0;
-  transition:
-    max-height 780ms var(--e-papel),
-    opacity 520ms var(--e-suave) 120ms,
-    padding 780ms var(--e-papel);
-  padding: 0 20px;
-}
-.carta-mundo .ct-hoja.is-abierta {
-  max-height: 340px;
-  opacity: 1;
-  padding: 16px 20px;
-}
-
-/* La marca del doblez: la raya que queda en el papel al desdoblarlo. */
-.carta-mundo .ct-hoja::before {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; top: 0;
-  height: 2px;
-  background: linear-gradient(90deg,
-    transparent, rgba(150, 120, 80, 0.32) 12%, rgba(150, 120, 80, 0.32) 88%, transparent);
-  opacity: 0;
-  transition: opacity 600ms var(--e-suave) 500ms;
-}
-.carta-mundo .ct-hoja.is-abierta::before { opacity: 1; }
-.carta-mundo .ct-hoja:first-child::before { display: none; }
-
-.carta-mundo .ct-hoja p {
-  margin: 0 0 0.7em;
-  font-family: var(--tipo-mano, "Segoe Script", cursive);
-  font-size: clamp(0.94rem, 4vw, 1.1rem);
-  line-height: 1.7;
-  color: #3e3228;
-}
-.carta-mundo .ct-hoja p:last-child { margin-bottom: 0; }
-.carta-mundo .ct-hoja .ct-pequeno {
-  font-size: 0.86em;
-  opacity: 0.72;
-  font-style: italic;
-}
-
-/* La primera hoja siempre está abierta: es la cara de fuera. */
-.carta-mundo .ct-fuera {
-  padding: 22px 20px 20px;
-  text-align: center;
-}
-.carta-mundo .ct-para {
+  top: calc(var(--seg-t) + 14px);
+  left: 0; right: 0;
   margin: 0;
-  font-family: var(--tipo-mano, "Segoe Script", cursive);
-  font-size: clamp(1.1rem, 5vw, 1.4rem);
-  color: #3e3228;
+  text-align: center;
+  font-weight: 600;
+  font-size: clamp(0.66rem, 2.8vw, 0.78rem);
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: rgba(255, 220, 180, 0.7);
+  z-index: 6;
+  pointer-events: none;
+  transition: opacity 800ms ease;
 }
-.carta-mundo .ct-sello-texto {
-  margin: 6px 0 0;
-  font-size: 0.7rem;
+.lc.is-leyendo .lc-titulo { opacity: 0; }
+.lc-pista {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(var(--seg-b) + var(--barra) + 14px);
+  margin: 0;
+  text-align: center;
+  font-size: clamp(0.62rem, 2.6vw, 0.72rem);
+  font-weight: 600;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: #8a7458;
+  color: rgba(255, 220, 180, 0.72);
+  z-index: 6;
+  pointer-events: none;
+  transition: opacity 600ms ease;
 }
 
-/* ---- El lacre ---------------------------------------------------------- */
-
-.carta-mundo .ct-lacre {
-  position: absolute;
-  left: 50%;
-  bottom: -20px;
-  width: 58px; height: 58px;
-  margin-left: -29px;
-  border-radius: 48% 52% 50% 46% / 50% 46% 54% 50%;
-  background:
-    radial-gradient(circle at 36% 30%, #d4536c, var(--lacre) 52%, #6e1c30 100%);
-  box-shadow: 0 3px 9px rgba(60, 12, 24, 0.45), inset 0 -3px 8px rgba(60, 12, 24, 0.5);
-  display: grid;
-  place-items: center;
-  z-index: 3;
+/* ---- El sobre ------------------------------------------------------------ */
+.lc-escena { position: absolute; inset: 0; display: grid; place-items: center; perspective: 1100px; z-index: 2; }
+.lc-sobre {
+  position: relative;
+  width: min(80vw, 340px);
+  aspect-ratio: 1.55;
+  transform: rotate(-3deg);
+  transform-style: preserve-3d;
+  transition: transform 1.2s var(--suave), opacity 900ms ease;
   cursor: pointer;
-  transition: transform 520ms var(--e-papel), opacity 420ms var(--e-suave);
 }
-.carta-mundo .ct-lacre span {
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-size: 1.05rem;
-  letter-spacing: 0.02em;
-  color: rgba(70, 14, 28, 0.62);
-  text-shadow: 0 1px 0 rgba(255, 180, 195, 0.36);
-}
-.carta-mundo.is-abierta .ct-lacre {
-  transform: translate(46px, 26px) rotate(38deg) scale(0.88);
-  opacity: 0.9;
-}
-
-/* ---- Lo que se lee ------------------------------------------------------ */
-
-.carta-mundo .ct-ui {
+.lc-sobre.is-abierto { transform: translateY(34vh) rotate(-1deg) scale(0.92); }
+.lc-sobre.is-fuera { opacity: 0; pointer-events: none; }
+.lc-papel {
   position: absolute;
   inset: 0;
-  pointer-events: none;
-  z-index: 4;
-  padding:
-    calc(var(--seguro-t) + 18px) 22px
-    calc(var(--seguro-b) + var(--barra) + 14px) 22px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
+  border-radius: 4px;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.5), transparent 60%),
+    linear-gradient(160deg, #fbf1dd, #efdcbc);
+  box-shadow: 0 22px 40px -16px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(160, 110, 60, 0.25);
+}
+/* Los pliegues del sobre por detrás: dos triángulos laterales y el de abajo. */
+.lc-papel::before, .lc-papel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+}
+.lc-papel::before {
+  background:
+    linear-gradient(to top right, transparent 49.6%, rgba(150, 100, 50, 0.18) 50%, transparent 50.4%),
+    linear-gradient(to top left, transparent 49.6%, rgba(150, 100, 50, 0.18) 50%, transparent 50.4%);
+}
+.lc-para {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 13%;
+  margin: 0;
   text-align: center;
+  font-family: "Pinyon Script", "Snell Roundhand", cursive;
+  font-size: clamp(1.4rem, 7vw, 2.1rem);
+  color: #5a2a1e;
 }
-
-.carta-mundo .ct-titulo {
-  margin: 0;
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-size: clamp(0.98rem, 4.2vw, 1.3rem);
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  color: #7a6448;
-  opacity: 0.85;
-  transition: opacity 800ms var(--e-suave);
+/* La solapa, que se abre hacia arriba. */
+.lc-solapa {
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 58%;
+  transform-origin: 50% 0;
+  transform: rotateX(0deg);
+  transition: transform 1s var(--suave) 0.15s;
+  transform-style: preserve-3d;
 }
-.carta-mundo.is-abierta .ct-titulo { opacity: 0.22; }
-
-.carta-mundo .ct-pista {
-  margin: 0;
-  min-height: 2.6em;
-  font-size: clamp(0.76rem, 3.2vw, 0.9rem);
-  line-height: 1.5;
-  color: #6b5742;
+.lc-solapa::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background: linear-gradient(180deg, #f3e2c4, #e2c79c);
+  filter: drop-shadow(0 3px 3px rgba(90, 50, 20, 0.35));
+}
+.lc-sobre.is-abierto .lc-solapa { transform: rotateX(178deg); }
+.lc-luz-dentro {
+  position: absolute;
+  left: 8%; right: 8%; top: 0;
+  height: 60%;
+  background: radial-gradient(ellipse at 50% 10%, rgba(255, 230, 170, 0.9), transparent 70%);
   opacity: 0;
-  transform: translateY(6px);
-  transition: opacity 560ms var(--e-suave), transform 560ms var(--e-suave);
+  transition: opacity 900ms ease 0.3s;
+  mix-blend-mode: screen;
 }
-.carta-mundo .ct-pista.is-visible { opacity: 0.9; transform: none; }
+.lc-sobre.is-abierto .lc-luz-dentro { opacity: 1; }
 
-@media (prefers-reduced-motion: reduce) {
-  .carta-mundo * { transition-duration: 1ms !important; }
+/* El lacre. */
+.lc-lacre {
+  position: absolute;
+  left: 50%; top: 58%;
+  width: 26%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  transition: transform 200ms var(--muelle);
+  filter: drop-shadow(0 4px 5px rgba(60, 0, 10, 0.55));
 }
+.lc-lacre svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.lc-lacre.is-golpe { transform: translate(-50%, -50%) scale(0.92); }
+.lc-lacre.is-roto { visibility: hidden; }
+.lc-grieta { fill: none; stroke: #3a0008; stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 90; stroke-dashoffset: 90; transition: stroke-dashoffset 380ms ease-out; }
+.lc-grieta.is-ve { stroke-dashoffset: 0; }
+
+/* ---- La carta ------------------------------------------------------------ */
+.lc-lectura {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: calc(var(--seg-t) + 26px) 0 calc(var(--seg-b) + var(--barra) + 70px);
+  box-sizing: border-box;
+  perspective: 1400px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 700ms ease;
+  touch-action: pan-y;
+}
+.lc-lectura::-webkit-scrollbar { display: none; }
+.lc.is-leyendo .lc-lectura { pointer-events: auto; opacity: 1; }
+.lc-carta {
+  width: min(88vw, 400px);
+  margin: 14vh auto 0;
+  transform: translateY(40vh) scale(0.8) rotate(4deg);
+  transition: transform 1.3s var(--suave);
+  transform-style: preserve-3d;
+}
+.lc.is-leyendo .lc-carta { transform: none; }
+.lc-pliegue {
+  position: relative;
+  overflow: hidden;
+  transform-origin: 50% 0;
+  transition: transform 1s var(--suave), max-height 1s var(--suave), opacity 700ms ease, filter 1s ease;
+  box-shadow: 0 16px 30px -18px rgba(0, 0, 0, 0.7);
+}
+/* Doblado: plegado hacia atrás sobre la línea de arriba, sin alto. */
+.lc-pliegue.is-doblado { transform: rotateX(-88deg); max-height: 0 !important; opacity: 0.2; filter: brightness(0.6); }
+.lc-cara {
+  position: relative;
+  padding: 18px 24px 16px;
+  min-height: 108px;
+  box-sizing: border-box;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 29px, rgba(120, 80, 60, 0.12) 29px 30px),
+    linear-gradient(170deg, #fffaf0, #f7ead4);
+  color: #3a2016;
+  backface-visibility: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.lc-cara::before {
+  /* El pliegue marcado entre una cara y la siguiente. */
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 10px;
+  background: linear-gradient(0deg, rgba(120, 80, 50, 0.16), transparent);
+}
+.lc-pliegue:first-child > .lc-cara { border-radius: 3px 3px 0 0; }
+.lc-cara p {
+  margin: 0 0 6px;
+  font-family: "Caveat", "Segoe Print", cursive;
+  font-weight: 500;
+  font-size: clamp(1.28rem, 5.6vw, 1.55rem);
+  line-height: 1.24;
+}
+.lc-cara p.lc-nota { font-family: "Cormorant Garamond", Georgia, serif; font-style: italic; font-size: clamp(0.98rem, 4.2vw, 1.1rem); color: #7a4a36; }
+.lc-cara .lc-firma { text-align: right; font-family: "Pinyon Script", cursive; font-size: clamp(1.4rem, 6vw, 1.8rem); color: #8a1f36; margin-top: 4px; }
+
 </style>
 </head>
 <body>
+<div class="lc" id="mundo">
+  <canvas class="lc-vela" id="vela"></canvas>
+  <p class="lc-titulo">Rompe el lacre</p>
 
-<div class="carta-mundo" id="mundo">
-  <canvas class="ct-polvo" id="polvo" aria-hidden="true"
-          style="position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;z-index:1"></canvas>
-
-  <div class="mesa">
-    <article class="ct-carta" id="carta" role="button" tabindex="0"
-             aria-label="Abrir la carta">
-      <div class="ct-hoja is-abierta ct-fuera">
-        <p class="ct-para" id="para">Para ti</p>
-        <p class="ct-sello-texto" id="selloTexto">no la abras hasta que la necesites</p>
+  <div class="lc-escena">
+    <div class="lc-sobre" id="sobre" role="button" tabindex="0" aria-label="Romper el lacre">
+      <div class="lc-papel"></div>
+      <p class="lc-para">para ti</p>
+      <div class="lc-solapa" id="solapa"><div class="lc-luz-dentro"></div></div>
+      <div class="lc-lacre" id="lacre" aria-hidden="true">
+        <svg viewBox="-60 -60 120 120">
+          <defs>
+            <radialGradient id="cera" cx="38%" cy="32%" r="75%">
+              <stop offset="0" stop-color="#e2445a"/>
+              <stop offset="0.55" stop-color="#a3122c"/>
+              <stop offset="1" stop-color="#5c0414"/>
+            </radialGradient>
+          </defs>
+          <path id="borde" fill="url(#cera)" d=""/>
+          <circle r="34" fill="none" stroke="rgba(40,0,8,.45)" stroke-width="2.4"/>
+          <circle r="34" fill="none" stroke="rgba(255,170,180,.25)" stroke-width="1" transform="translate(-0.8 -0.8)"/>
+          <text id="iniciales" y="9" text-anchor="middle" font-family="'Pinyon Script', cursive" font-size="30" fill="#6e0a1e" stroke="rgba(255,160,170,.35)" stroke-width="0.6">y.m</text>
+          <ellipse cx="-16" cy="-20" rx="12" ry="6" fill="rgba(255,255,255,.28)" transform="rotate(-30 -16 -20)"/>
+          <path class="lc-grieta" id="g1" d="M-4,-44 L2,-26 L-6,-12 L4,2"/>
+          <path class="lc-grieta" id="g2" d="M4,2 L22,10 L30,26 L42,30"/>
+          <path class="lc-grieta" id="g3" d="M4,2 L-14,16 L-20,34 L-34,40 M-6,-12 L-26,-18 L-44,-12"/>
+        </svg>
       </div>
-      <div class="ct-lacre" id="lacre" aria-hidden="true"><span id="lacreIni">y.m</span></div>
-    </article>
+    </div>
   </div>
 
-  <div class="ct-ui">
-    <h1 class="ct-titulo" id="titulo">Rompe el lacre</h1>
-    <p class="ct-pista" id="pista" role="status" aria-live="polite"></p>
+  <div class="lc-lectura" id="lectura">
+    <div class="lc-carta" id="carta"></div>
   </div>
+
+  <canvas class="lc-lienzo" id="lienzo"></canvas>
+  <p class="lc-pista" id="pista">tócalo para romperlo</p>
 </div>
 
 <script>
@@ -249,21 +275,12 @@ html, body { margin: 0; height: 100%; }
 "use strict";
 
 /* ══════════════════════════════════════════════════════════════════════
-   CONFIGURACIÓN EDITABLE
+   LA CARTA
+   Cada entrada es UN PLIEGUE. El párrafo que empiece por «·» sale más
+   pequeño y en cursiva, como una nota al margen.
    ══════════════════════════════════════════════════════════════════════ */
-
 const CONF = {
-
-  /* ---- LAS INICIALES DEL LACRE ---------------------------------------- */
   iniciales: "y.m",
-
-  /* ---- LA CARTA -------------------------------------------------------
-     Cada entrada es UN PLIEGUE. Se abren de uno en uno, tocando. El
-     texto va en párrafos; el que empiece por "·" sale más pequeño y en
-     cursiva, como una nota al margen.                                  */
-  para: "Para ti",
-  sello: "no la abras hasta que la necesites",
-
   pliegues: [
     [
       "No sé escribir cartas. Esto va a salir raro.",
@@ -283,403 +300,420 @@ const CONF = {
     ],
     [
       "Te quiero. Con todas las letras y sin abreviar.",
-      "· Guarda esta carta. Vuelve cuando la necesites.",
     ],
   ],
-
-  /* ---- LO QUE SE LEE ABAJO -------------------------------------------- */
-  pistas: [
-    "Sigue tocando. Queda más doblado.",
-    "Otro pliegue.",
-    "Ya casi.",
-    "El último.",
-    "Se acabó la carta. Pero puedes volver a doblarla.",
-  ],
-  alRomper: "Ya está rota. Ábrela.",
-
-  /* ---- EL POLVO EN EL AIRE -------------------------------------------- */
-  motas: 40,
+  firma: "Siempre tuyo",
+  pistas: ["tócalo para romperlo", "otra vez", "una más", "toca para desdoblar", "ya casi", "el último", "", "toca para volver a doblarla"],
 };
 
-/* ══════════════════════════════════════════════════════════════════════
-   La maquinaria.
-   ══════════════════════════════════════════════════════════════════════ */
-
-const mundo  = document.getElementById("mundo");
-const carta  = document.getElementById("carta");
-const lacre  = document.getElementById("lacre");
+/* ══════════════════════════════════════════════════════════════════════ */
+const mundo = document.getElementById("mundo");
+const sobre = document.getElementById("sobre");
+const lacre = document.getElementById("lacre");
+const lectura = document.getElementById("lectura");
+const carta = document.getElementById("carta");
 const elPista = document.getElementById("pista");
-const elTit  = document.getElementById("titulo");
-const polvo  = document.getElementById("polvo");
-const cp     = polvo.getContext("2d");
-
-document.getElementById("para").textContent = CONF.para;
-document.getElementById("selloTexto").textContent = CONF.sello;
-document.getElementById("lacreIni").textContent = CONF.iniciales;
-
+const lienzo = document.getElementById("lienzo");
+const g = lienzo.getContext("2d");
+const velaC = document.getElementById("vela");
+const gv = velaC.getContext("2d");
 const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const azar  = (a, b) => a + Math.random() * (b - a);
+const TAU = Math.PI * 2;
+const azar = (a, b) => a + Math.random() * (b - a);
 
-/* ---- Los pliegues, creados una vez --------------------------------------- */
+document.getElementById("iniciales").textContent = CONF.iniciales;
 
-const hojas = [];
-CONF.pliegues.forEach((parrafos) => {
-  const h = document.createElement("div");
-  h.className = "ct-hoja";
-  for (const p of parrafos) {
-    const el = document.createElement("p");
-    if (p.startsWith("·")) {
-      el.className = "ct-pequeno";
-      el.textContent = p.slice(1).trim();
-    } else {
-      el.textContent = p;
-    }
-    h.append(el);
+/* El borde del lacre: un círculo que no es círculo, como la cera de verdad. */
+{
+  let d = "";
+  for (let i = 0; i <= 48; i++) {
+    const a = i / 48 * TAU;
+    const r = 50 + Math.sin(a * 5 + 1) * 3 + Math.sin(a * 11) * 1.8 + (Math.random() - 0.5) * 2.4;
+    d += (i ? "L" : "M") + (Math.cos(a) * r).toFixed(1) + "," + (Math.sin(a) * r).toFixed(1);
   }
-  carta.append(h);
-  hojas.push(h);
-});
-
-/* ---- Abrir ---------------------------------------------------------------- */
-
-let rota = false;
-let abiertos = 0;
-
-function tocar() {
-  if (!rota) { romper(); return; }
-  if (abiertos < hojas.length) { desdoblar(); return; }
-  volverADoblar();
+  document.getElementById("borde").setAttribute("d", d + "Z");
 }
 
-carta.addEventListener("click", tocar);
-carta.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tocar(); }
-});
-lacre.addEventListener("click", (e) => { e.stopPropagation(); tocar(); });
+/* ══════════════════════════════════════════════════════════════════════
+   LA CARTA, PLIEGUE A PLIEGUE
+   Cada pliegue va DENTRO del anterior, colgado de su borde de abajo: así
+   al desdoblarse gira sobre esa línea, como el papel de verdad.
+   ══════════════════════════════════════════════════════════════════════ */
+const pliegues = [];
+{
+  CONF.pliegues.forEach((parrafos, i) => {
+    const pl = document.createElement("div");
+    pl.className = "lc-pliegue" + (i > 0 ? " is-doblado" : "");
+    const cara = document.createElement("div");
+    cara.className = "lc-cara";
+    for (const t of parrafos) {
+      const p = document.createElement("p");
+      if (t.startsWith("·")) { p.className = "lc-nota"; p.textContent = t.replace(/^·\s*/, ""); }
+      else p.textContent = t;
+      cara.append(p);
+    }
+    if (i === CONF.pliegues.length - 1) {
+      const f = document.createElement("p");
+      f.className = "lc-firma";
+      f.textContent = CONF.firma;
+      cara.append(f);
+    }
+    pl.append(cara);
+    carta.append(pl);
+    pliegues.push(pl);
+  });
+}
+function abrirPliegue(pl) {
+  pl.style.maxHeight = pl.scrollHeight + 40 + "px";
+  pl.classList.remove("is-doblado");
+}
+function doblarPliegue(pl) {
+  pl.style.maxHeight = pl.scrollHeight + "px";
+  void pl.offsetHeight;
+  pl.classList.add("is-doblado");
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL SONIDO
+   ══════════════════════════════════════════════════════════════════════ */
+let ac = null, salida = null;
+function despertar() {
+  if (ac) { if (ac.state === "suspended") ac.resume(); return ac; }
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+  salida = ac.createGain();
+  salida.gain.value = 0.9;
+  salida.connect(ac.destination);
+  return ac;
+}
+function ruido(dur, curva = 3) {
+  const n = Math.max(1, Math.floor(ac.sampleRate * dur));
+  const b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, curva);
+  const s = ac.createBufferSource(); s.buffer = b; return s;
+}
+function crujido(fuerza) {
+  if (!despertar()) return;
+  const t = ac.currentTime;
+  // Varios chasquidos seguidos, secos y agudos: la cera rompiéndose.
+  const n = 3 + Math.round(fuerza * 5);
+  for (let i = 0; i < n; i++) {
+    const s = ruido(azar(0.01, 0.04), 6);
+    const f = ac.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = azar(1800, 4200); f.Q.value = 2;
+    const gg = ac.createGain(); gg.gain.value = 0.25 * fuerza * azar(0.5, 1);
+    s.connect(f).connect(gg).connect(salida);
+    s.start(t + i * azar(0.012, 0.035));
+  }
+  const o = ac.createOscillator(), go = ac.createGain();
+  o.frequency.setValueAtTime(160, t);
+  o.frequency.exponentialRampToValueAtTime(60, t + 0.12);
+  go.gain.setValueAtTime(0.0001, t);
+  go.gain.exponentialRampToValueAtTime(0.18 * fuerza, t + 0.005);
+  go.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+  o.connect(go).connect(salida);
+  o.start(t); o.stop(t + 0.2);
+}
+function migas() {
+  if (!ac) return;
+  const t = ac.currentTime;
+  for (let i = 0; i < 14; i++) {
+    const tt = t + 0.25 + i * azar(0.03, 0.09);
+    const s = ruido(0.012, 6), f = ac.createBiquadFilter(), gg = ac.createGain();
+    f.type = "highpass"; f.frequency.value = 3000;
+    gg.gain.value = azar(0.04, 0.1);
+    s.connect(f).connect(gg).connect(salida);
+    s.start(tt);
+  }
+}
+function papel(dur = 0.5, v = 0.08) {
+  if (!ac) return;
+  const t = ac.currentTime, s = ruido(dur, 1.4);
+  const f = ac.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 2600; f.Q.value = 0.6;
+  const gg = ac.createGain(); gg.gain.value = v;
+  s.connect(f).connect(gg).connect(salida);
+  s.start(t);
+}
+function acorde() {
+  if (!ac) return;
+  const t = ac.currentTime + 0.35;
+  [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => {
+    for (const [m, a] of [[1, 1], [2, 0.2]]) {
+      const o = ac.createOscillator(), gg = ac.createGain();
+      o.frequency.value = f * m;
+      gg.gain.setValueAtTime(0, t + i * 0.09);
+      gg.gain.linearRampToValueAtTime(0.035 * a, t + i * 0.09 + 0.02);
+      gg.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.09 + 2.4);
+      o.connect(gg).connect(salida);
+      o.start(t + i * 0.09); o.stop(t + i * 0.09 + 2.5);
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ROMPER EL LACRE
+   ══════════════════════════════════════════════════════════════════════ */
+let golpes = 0, roto = false, abiertos = 1, apretando = null;
+
+function golpe() {
+  if (roto) return;
+  despertar();
+  golpes++;
+  lacre.classList.remove("is-golpe"); void lacre.offsetWidth; lacre.classList.add("is-golpe");
+  setTimeout(() => lacre.classList.remove("is-golpe"), 160);
+  const g1 = document.getElementById("g" + Math.min(3, golpes));
+  if (g1) g1.classList.add("is-ve");
+  crujido(0.35 + golpes * 0.2);
+  // Unas migas en cada golpe, y el sobre tiembla.
+  const [x, y] = centroLacre();
+  for (let i = 0; i < 6 + golpes * 4; i++) miga(x + azar(-10, 10), y + azar(-10, 10), azar(40, 150), false);
+  sobre.animate([{ transform: "rotate(-3deg) translateX(0)" }, { transform: "rotate(-3.6deg) translateX(-3px)" }, { transform: "rotate(-2.4deg) translateX(2px)" }, { transform: "rotate(-3deg) translateX(0)" }], { duration: 220 });
+  elPista.textContent = CONF.pistas[Math.min(golpes, 2)];
+  if (golpes >= 3) setTimeout(romper, 260);
+}
 
 function romper() {
-  rota = true;
-  mundo.classList.add("is-abierta");
-  elTit.textContent = "La carta";
-  carta.setAttribute("aria-label", "Desdoblar la carta");
-  decir(CONF.alRomper);
-  crujido();
-  /* Los trocitos de lacre que saltan. */
-  const r = lacre.getBoundingClientRect();
-  const m = mundo.getBoundingClientRect();
-  for (let i = 0; i < 16; i++) {
-    trozos.push({
-      x: r.left - m.left + r.width / 2 + azar(-10, 10),
-      y: r.top - m.top + r.height / 2 + azar(-10, 10),
-      vx: azar(-110, 110), vy: azar(-170, -40),
-      g: azar(0, 6.283), vg: azar(-5, 5),
-      r: azar(1.6, 4.2), v: 1,
-    });
+  roto = true;
+  lacre.classList.add("is-roto");
+  crujido(1.3);
+  migas();
+  papel(0.8, 0.1);
+  acorde();
+  const [x, y] = centroLacre();
+  const r = lacre.getBoundingClientRect().width / 2;
+  // Tres pedazos de lacre que salen volando con su giro.
+  const cortes = [[-0.4, 1.9], [1.9, 3.9], [3.9, 5.9]];
+  for (const [a0, a1] of cortes) {
+    const am = (a0 + a1) / 2;
+    pedazos.push({ x, y, vx: Math.cos(am) * azar(90, 160), vy: Math.sin(am) * azar(60, 140) - 260, giro: 0, vg: azar(-8, 8), a0, a1, r, t: 0 });
   }
-  mirarSecretos();
-}
-
-function desdoblar() {
-  const h = hojas[abiertos];
-  h.classList.add("is-abierta");
-  abiertos++;
-  papel();
-  decir(CONF.pistas[Math.min(abiertos - 1, CONF.pistas.length - 1)]);
-  /* La carta se ensancha un pelín con cada pliegue: se nota que crece. */
-  carta.style.width = `min(${84 + abiertos * 1.2}vw, ${300 + abiertos * 5}px)`;
-  mirarSecretos();
-}
-
-function volverADoblar() {
-  for (const h of hojas) h.classList.remove("is-abierta");
-  abiertos = 0;
-  carta.style.width = "";
-  papel();
-  decir("La has vuelto a doblar. Está igual que estaba.");
-  dobleces++;
-  mirarSecretos();
-}
-
-/* ---- Los textos ----------------------------------------------------------- */
-
-let pidiendo = null;
-function decir(texto) {
-  if (pidiendo === texto) return;
-  pidiendo = texto;
-  elPista.classList.remove("is-visible");
+  // Una lluvia de migas y chispas doradas.
+  for (let i = 0; i < 70; i++) miga(x, y, azar(80, 420), false);
+  for (let i = 0; i < 60; i++) chispa(x, y);
+  destello = 1;
   setTimeout(() => {
-    elPista.textContent = texto;
-    elPista.classList.add("is-visible");
-  }, suave ? 10 : 260);
+    sobre.classList.add("is-abierto");
+    papel(0.6, 0.08);
+    for (let i = 0; i < 40; i++) setTimeout(() => chispa(x + azar(-r * 3, r * 3), y - r * 2), i * 25);
+  }, 380);
+  setTimeout(() => {
+    mundo.classList.add("is-leyendo");
+    sobre.classList.add("is-fuera");
+    elPista.textContent = CONF.pistas[3];
+    papel(0.9, 0.09);
+  }, 1500);
 }
 
-/* ---- Sonido --------------------------------------------------------------- */
-
-let audio = null;
-function despertar() {
-  try {
-    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
-    if (audio.state === "suspended") audio.resume();
-  } catch { audio = null; }
-  return audio;
+function centroLacre() {
+  const r = lacre.getBoundingClientRect();
+  return [r.left + r.width / 2, r.top + r.height / 2];
 }
 
-/** Papel que se desdobla: ruido corto y agudo, con una cola suave. */
-function papel() {
-  if (!despertar()) return;
-  const t = audio.currentTime;
-  const n = Math.floor(audio.sampleRate * 0.3);
-  const buf = audio.createBuffer(1, n, audio.sampleRate);
-  const d = buf.getChannelData(0);
-  /* El sobre de un papel no es un golpe: sube y baja. Por eso la
-     envolvente va con un seno y no con una caída seca. */
-  for (let i = 0; i < n; i++) {
-    const k = i / n;
-    d[i] = (Math.random() * 2 - 1) * Math.sin(k * Math.PI) * (0.4 + 0.6 * Math.random());
-  }
-  const src = audio.createBufferSource();
-  src.buffer = buf;
-  const f = audio.createBiquadFilter();
-  f.type = "highpass";
-  f.frequency.value = 2200;
-  const g = audio.createGain();
-  g.gain.value = 0.11;
-  src.connect(f).connect(g).connect(audio.destination);
-  src.start(t);
-}
-
-/** El lacre al romperse: un chasquido seco y un poso grave. */
-function crujido() {
-  if (!despertar()) return;
-  const t = audio.currentTime;
-  const n = Math.floor(audio.sampleRate * 0.07);
-  const buf = audio.createBuffer(1, n, audio.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 1.6);
-  const src = audio.createBufferSource();
-  src.buffer = buf;
-  const f = audio.createBiquadFilter();
-  f.type = "bandpass";
-  f.frequency.value = 1400;
-  const g = audio.createGain();
-  g.gain.value = 0.26;
-  src.connect(f).connect(g).connect(audio.destination);
-  src.start(t);
-  const o = audio.createOscillator();
-  const og = audio.createGain();
-  o.type = "sine";
-  o.frequency.setValueAtTime(140, t);
-  o.frequency.exponentialRampToValueAtTime(60, t + 0.12);
-  og.gain.setValueAtTime(0.1, t);
-  og.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
-  o.connect(og).connect(audio.destination);
-  o.start(t); o.stop(t + 0.25);
-}
-
-function campana(hz) {
-  if (!despertar()) return;
-  const t = audio.currentTime;
-  const o = audio.createOscillator();
-  const g = audio.createGain();
-  o.type = "triangle";
-  o.frequency.setValueAtTime(hz, t);
-  g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.08, t + 0.012);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
-  o.connect(g).connect(audio.destination);
-  o.start(t); o.stop(t + 1.6);
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   LOS SECRETOS
-   ══════════════════════════════════════════════════════════════════════ */
-
-/* 1. Al desdoblarla entera, aparece UNA POSDATA que no estaba: escrita a
-      lápiz, torcida, en el canto de abajo.                            */
-let posdata = null;
-
-/* 2. Doblarla y desdoblarla tres veces: el papel se gasta y sale una
-      línea más, la que sólo se escribe cuando ya no queda sitio.      */
-let dobleces = 0;
-let gastadaDicha = false;
-
-/* 3. Mantener el dedo sobre el lacre tres segundos ANTES de romperlo:
-      en vez de romperse, se lee lo que pone alrededor.                */
-let apretando = null;
-
-lacre.addEventListener("pointerdown", (e) => {
-  if (rota) return;
-  e.stopPropagation();
-  apretando = setTimeout(() => {
-    apretando = null;
-    decir("Alrededor del sello pone una fecha. La nuestra.");
-    lacre.style.transform = "scale(1.14)";
-    lacre.style.transition = "transform 900ms var(--e-papel)";
-    setTimeout(() => { lacre.style.transform = ""; }, 2200);
-    campana(523);
-    anillo = 1;
-  }, 3000);
+sobre.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  golpe();
+  // Si se deja apretado, se va agrietando solo.
+  clearInterval(apretando);
+  apretando = setInterval(() => { if (!roto) golpe(); else clearInterval(apretando); }, 520);
 });
-const soltarLacre = () => { clearTimeout(apretando); apretando = null; };
-lacre.addEventListener("pointerup", soltarLacre);
-lacre.addEventListener("pointercancel", soltarLacre);
-lacre.addEventListener("pointerleave", soltarLacre);
-let anillo = 0;
-
-function mirarSecretos() {
-  /* — la posdata — */
-  if (abiertos >= hojas.length && !posdata) {
-    posdata = document.createElement("div");
-    posdata.className = "ct-hoja";
-    const p = document.createElement("p");
-    p.className = "ct-pequeno";
-    p.style.fontSize = "0.8em";
-    p.style.transform = "rotate(-1.4deg)";
-    p.style.opacity = "0.78";
-    p.textContent = `P. D. — esto lo escribí después, a lápiz, porque no me cabía: ${CONF.iniciales}, y ya está.`;
-    posdata.append(p);
-    carta.append(posdata);
-    setTimeout(() => {
-      posdata.classList.add("is-abierta");
-      papel();
-      decir("Espera. Hay algo escrito a lápiz en el canto.");
-    }, 1500);
-  }
-
-  /* — el papel gastado — */
-  if (dobleces >= 3 && !gastadaDicha) {
-    gastadaDicha = true;
-    carta.style.filter = "sepia(0.18)";
-    const h = document.createElement("div");
-    h.className = "ct-hoja";
-    const p = document.createElement("p");
-    p.textContent = "De tanto doblarla se va a romper por el medio.";
-    const q = document.createElement("p");
-    q.className = "ct-pequeno";
-    q.textContent = "Mejor. Así te escribo otra.";
-    h.append(p, q);
-    carta.append(h);
-    setTimeout(() => { h.classList.add("is-abierta"); papel(); }, 400);
-    decir("El papel ya está blando de tanto doblarlo.");
-    campana(392);
-  }
-}
+const soltar = () => clearInterval(apretando);
+sobre.addEventListener("pointerup", soltar);
+sobre.addEventListener("pointercancel", soltar);
+sobre.addEventListener("pointerleave", soltar);
+sobre.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); golpe(); } });
 
 /* ══════════════════════════════════════════════════════════════════════
-   EL POLVO EN EL AIRE
+   DESDOBLAR LA CARTA
    ══════════════════════════════════════════════════════════════════════ */
+lectura.addEventListener("click", () => {
+  if (!mundo.classList.contains("is-leyendo")) return;
+  despertar();
+  if (abiertos < pliegues.length) {
+    abrirPliegue(pliegues[abiertos]);
+    abiertos++;
+    papel(0.45, 0.07);
+    elPista.textContent = abiertos === pliegues.length ? CONF.pistas[7] : abiertos === pliegues.length - 1 ? CONF.pistas[5] : CONF.pistas[4];
+    // La carta sube para que se lea lo nuevo.
+    setTimeout(() => {
+      const ult = pliegues[abiertos - 1].querySelector(".lc-cara");
+      const r = ult.getBoundingClientRect(), rl = lectura.getBoundingClientRect();
+      const falta = r.bottom - (rl.bottom - 90);
+      if (falta > 0) lectura.scrollBy({ top: falta, behavior: suave ? "auto" : "smooth" });
+    }, 420);
+    if (abiertos === pliegues.length) {
+      setTimeout(() => { acorde(); for (let i = 0; i < 20; i++) setTimeout(corazon, i * 140); }, 700);
+    }
+  } else {
+    // Volver a doblarla, del último al primero.
+    for (let i = pliegues.length - 1; i >= 1; i--) setTimeout(() => doblarPliegue(pliegues[i]), (pliegues.length - 1 - i) * 160);
+    abiertos = 1;
+    papel(0.9, 0.08);
+    lectura.scrollTo({ top: 0, behavior: suave ? "auto" : "smooth" });
+    elPista.textContent = CONF.pistas[3];
+  }
+});
 
-let A = 0, H = 0;
-let motas = [];
-const trozos = [];
-
+/* ══════════════════════════════════════════════════════════════════════
+   PARTÍCULAS: migas de cera, pedazos, chispas y la llama de la vela
+   ══════════════════════════════════════════════════════════════════════ */
+let A = 0, H = 0, dpr = 1, destello = 0;
+const migasL = [], pedazos = [], chispas = [], corazones = [];
+function miga(x, y, v, _) {
+  const a = azar(-Math.PI, 0) + azar(-0.6, 0.6);
+  migasL.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: azar(1, 3.4), giro: Math.random() * TAU, vg: azar(-10, 10), vida: 1, suelo: y + azar(40, 140), col: Math.random() < 0.7 ? "#a3122c" : "#6e0a1e" });
+  if (migasL.length > 260) migasL.shift();
+}
+function chispa(x, y) {
+  const a = Math.random() * TAU, v = azar(40, 260);
+  chispas.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, vida: 1, dur: azar(0.6, 1.6), r: azar(1, 2.6) });
+}
+function corazon() {
+  corazones.push({ x: azar(A * 0.2, A * 0.8), y: H + 10, vy: azar(-60, -110), f: Math.random() * TAU, r: azar(5, 10), t: 0, col: ["#e2445a", "#ff9fb2", "#ffd0da"][Math.floor(Math.random() * 3)] });
+}
 function medir() {
   const r = mundo.getBoundingClientRect();
-  if (!r.width || !r.height) return;
   A = r.width; H = r.height;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  polvo.width = Math.round(A * dpr);
-  polvo.height = Math.round(H * dpr);
-  cp.setTransform(dpr, 0, 0, dpr, 0, 0);
-  motas = [];
-  const n = A * H < 200000 ? Math.round(CONF.motas * 0.6) : CONF.motas;
-  for (let i = 0; i < n; i++) {
-    motas.push({
-      x: Math.random() * A, y: Math.random() * H,
-      r: azar(0.6, 2), vy: azar(-16, -5), vx: azar(-5, 5),
-      f: Math.random() * 6.283, w: azar(0.5, 1.5),
-    });
-  }
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  for (const c of [lienzo, velaC]) { c.width = Math.round(A * dpr); c.height = Math.round(H * dpr); }
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  gv.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 new ResizeObserver(medir).observe(mundo);
+medir();
 
-let t0 = performance.now();
-let reloj = 0;
-
+let t0 = performance.now(), reloj = 0;
 function paso(ahora) {
   requestAnimationFrame(paso);
-  if (!A || !H) return;
-
   let dt = (ahora - t0) / 1000;
   t0 = ahora;
-  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
-  else if (dt > 0.1) dt = 0.1;
+  if (!(dt > 0) || dt > 0.1) dt = 1 / 60;
   reloj += dt;
+  g.clearRect(0, 0, A, H);
 
-  cp.clearRect(0, 0, A, H);
+  gv.clearRect(0, 0, A, H);
+  // La vela, en la esquina: su llama baila y su luz respira.
+  const vx = A * 0.12, vy = H * 0.28;
+  const parpadeo = 0.85 + Math.sin(reloj * 11) * 0.05 + Math.sin(reloj * 17.3) * 0.05 + Math.random() * 0.04;
+  mundo.style.setProperty("--luz", parpadeo.toFixed(3));
+  const halo = gv.createRadialGradient(vx, vy - 18, 0, vx, vy - 18, Math.min(A, H) * 0.55);
+  halo.addColorStop(0, `rgba(255,190,110,${0.28 * parpadeo})`);
+  halo.addColorStop(1, "rgba(255,190,110,0)");
+  gv.fillStyle = halo;
+  gv.fillRect(0, 0, A, H);
+  const cuerpo = gv.createLinearGradient(vx - 10, 0, vx + 10, 0);
+  cuerpo.addColorStop(0, "#d8c8b0"); cuerpo.addColorStop(0.5, "#fff6e8"); cuerpo.addColorStop(1, "#c8b498");
+  gv.fillStyle = cuerpo;
+  gv.fillRect(vx - 10, vy, 20, H * 0.12);
+  gv.strokeStyle = "#2a1a10"; gv.lineWidth = 1.4;
+  gv.beginPath(); gv.moveTo(vx, vy); gv.lineTo(vx, vy - 5); gv.stroke();
+  const ly = vy - 6, lh = 20 * parpadeo, lean = Math.sin(reloj * 3.1) * 2;
+  const llama = gv.createRadialGradient(vx, ly - lh * 0.3, 0, vx, ly - lh * 0.3, lh);
+  llama.addColorStop(0, "rgba(255,255,230,1)");
+  llama.addColorStop(0.4, "rgba(255,200,90,.95)");
+  llama.addColorStop(1, "rgba(255,120,40,0)");
+  gv.fillStyle = llama;
+  gv.beginPath();
+  gv.moveTo(vx, ly);
+  gv.quadraticCurveTo(vx - 7, ly - lh * 0.4, vx + lean, ly - lh);
+  gv.quadraticCurveTo(vx + 7, ly - lh * 0.4, vx, ly);
+  gv.fill();
 
-  for (const m of motas) {
-    m.y += m.vy * dt;
-    m.x += (m.vx + Math.sin(reloj * m.w + m.f) * 10) * dt;
-    if (m.y < -6) { m.y = H + 6; m.x = Math.random() * A; }
-    if (m.x < -6) m.x = A + 6;
-    if (m.x > A + 6) m.x = -6;
-    cp.globalAlpha = 0.14 + 0.16 * Math.sin(reloj * 1.6 + m.f);
-    cp.fillStyle = "#fff0d8";
-    cp.beginPath();
-    cp.arc(m.x, m.y, m.r, 0, 6.283);
-    cp.fill();
-  }
-  cp.globalAlpha = 1;
-
-  /* Los trozos de lacre. */
-  for (let i = trozos.length - 1; i >= 0; i--) {
-    const c = trozos[i];
-    c.v -= dt * 0.7;
-    if (c.v <= 0) { trozos.splice(i, 1); continue; }
-    c.x += c.vx * dt;
-    c.y += c.vy * dt;
-    c.vy += 620 * dt;
-    c.g += c.vg * dt;
-    cp.save();
-    cp.translate(c.x, c.y);
-    cp.rotate(c.g);
-    cp.globalAlpha = Math.min(1, c.v * 1.4);
-    cp.fillStyle = "#a8324a";
-    cp.fillRect(-c.r, -c.r * 0.7, c.r * 2, c.r * 1.4);
-    cp.restore();
-  }
-  cp.globalAlpha = 1;
-
-  /* El anillo del secreto del sello: la fecha alrededor del lacre. */
-  if (anillo > 0) {
-    anillo = Math.max(0, anillo - dt * 0.28);
-    const r = lacre.getBoundingClientRect();
-    const m = mundo.getBoundingClientRect();
-    const lx = r.left - m.left + r.width / 2;
-    const ly = r.top - m.top + r.height / 2;
-    const rr = r.width * 0.86;
-    cp.save();
-    cp.globalAlpha = Math.min(1, anillo * 1.6) * 0.85;
-    cp.translate(lx, ly);
-    cp.fillStyle = "#6e1c30";
-    cp.font = `600 ${Math.round(rr * 0.2)}px Georgia, serif`;
-    cp.textAlign = "center";
-    cp.textBaseline = "middle";
-    /* Letra a letra alrededor del círculo: es como va escrito un sello
-       de verdad, y a mano es media docena de líneas. */
-    const texto = "· SIEMPRE · CONTIGO ";
-    for (let i = 0; i < texto.length; i++) {
-      const a = (i / texto.length) * 6.283 - Math.PI / 2;
-      cp.save();
-      cp.rotate(a);
-      cp.translate(0, -rr);
-      cp.rotate(Math.PI / 2 - 0.0);
-      cp.rotate(-Math.PI / 2);
-      cp.fillText(texto[i], 0, 0);
-      cp.restore();
+  // Los pedazos de lacre.
+  for (let i = pedazos.length - 1; i >= 0; i--) {
+    const p = pedazos[i];
+    p.t += dt;
+    p.vy += 900 * dt;
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.giro += p.vg * dt;
+    if (p.y > H + 60) { pedazos.splice(i, 1); continue; }
+    g.save();
+    g.translate(p.x, p.y);
+    g.rotate(p.giro);
+    const gr = g.createRadialGradient(-p.r * 0.3, -p.r * 0.3, 0, 0, 0, p.r);
+    gr.addColorStop(0, "#e2445a"); gr.addColorStop(0.6, "#a3122c"); gr.addColorStop(1, "#5c0414");
+    g.fillStyle = gr;
+    g.beginPath();
+    g.moveTo(0, 0);
+    for (let k = 0; k <= 10; k++) {
+      const a = p.a0 + (p.a1 - p.a0) * k / 10;
+      const rr = p.r * (0.95 + Math.sin(a * 5 + 1) * 0.05);
+      g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
     }
-    cp.restore();
-    cp.globalAlpha = 1;
+    g.closePath();
+    g.fill();
+    g.strokeStyle = "rgba(40,0,8,.6)"; g.lineWidth = 1.2; g.stroke();
+    g.restore();
   }
+
+  // Las migas: saltan, caen al escritorio, rebotan un poco y se quedan.
+  for (let i = migasL.length - 1; i >= 0; i--) {
+    const m = migasL[i];
+    if (m.vida < 1 || m.y < m.suelo || Math.abs(m.vy) > 20) {
+      m.vy += 900 * dt;
+      m.x += m.vx * dt; m.y += m.vy * dt;
+      m.vx *= Math.exp(-dt * 0.8);
+      m.giro += m.vg * dt;
+      if (m.y > m.suelo) { m.y = m.suelo; m.vy *= -0.35; m.vx *= 0.6; m.vg *= 0.5; }
+    }
+    if (roto && mundo.classList.contains("is-leyendo")) m.vida -= dt * 0.25;
+    if (m.vida <= 0) { migasL.splice(i, 1); continue; }
+    g.save();
+    g.translate(m.x, m.y);
+    g.rotate(m.giro);
+    g.globalAlpha = Math.min(1, m.vida * 2);
+    g.fillStyle = m.col;
+    g.fillRect(-m.r, -m.r * 0.7, m.r * 2, m.r * 1.4);
+    g.restore();
+  }
+  g.globalAlpha = 1;
+
+  // Las chispas doradas.
+  g.globalCompositeOperation = "lighter";
+  for (let i = chispas.length - 1; i >= 0; i--) {
+    const c = chispas[i];
+    c.vida -= dt / c.dur;
+    if (c.vida <= 0) { chispas.splice(i, 1); continue; }
+    c.vx *= Math.exp(-dt * 2); c.vy = c.vy * Math.exp(-dt * 2) - 20 * dt;
+    c.x += c.vx * dt; c.y += c.vy * dt;
+    const r = c.r * (0.6 + c.vida);
+    const gr = g.createRadialGradient(c.x, c.y, 0, c.x, c.y, r * 4);
+    gr.addColorStop(0, `rgba(255,236,180,${c.vida})`);
+    gr.addColorStop(1, "rgba(255,200,120,0)");
+    g.fillStyle = gr;
+    g.fillRect(c.x - r * 4, c.y - r * 4, r * 8, r * 8);
+  }
+  if (destello > 0.01) {
+    const [x, y] = roto ? [A / 2, H / 2] : centroLacre();
+    const gr = g.createRadialGradient(x, y, 0, x, y, Math.max(A, H) * 0.6);
+    gr.addColorStop(0, `rgba(255,220,160,${destello * 0.6})`);
+    gr.addColorStop(1, "rgba(255,200,140,0)");
+    g.fillStyle = gr;
+    g.fillRect(0, 0, A, H);
+    destello *= Math.exp(-dt * 3.5);
+  }
+  g.globalCompositeOperation = "source-over";
+
+  // Los corazones del final.
+  for (let i = corazones.length - 1; i >= 0; i--) {
+    const c = corazones[i];
+    c.t += dt;
+    c.y += c.vy * dt;
+    c.x += Math.sin(reloj * 1.6 + c.f) * 22 * dt;
+    if (c.y < -20) { corazones.splice(i, 1); continue; }
+    g.save();
+    g.translate(c.x, c.y);
+    g.rotate(Math.sin(reloj * 2 + c.f) * 0.3);
+    g.globalAlpha = Math.min(1, c.t) * 0.85;
+    g.fillStyle = c.col;
+    const r = c.r;
+    g.beginPath();
+    g.moveTo(0, r * 0.8);
+    g.bezierCurveTo(-r * 1.4, -r * 0.1, -r * 0.55, -r * 1.05, 0, -r * 0.35);
+    g.bezierCurveTo(r * 0.55, -r * 1.05, r * 1.4, -r * 0.1, 0, r * 0.8);
+    g.fill();
+    g.restore();
+  }
+  g.globalAlpha = 1;
 }
-
-/* ---- Arranque -------------------------------------------------------------- */
-
-medir();
-decir("Está cerrada con lacre. Tócalo.");
 requestAnimationFrame(paso);
-
 })();
 </script>
 </body>

@@ -4,130 +4,92 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>La cometa</title>
+<script src="sonido-libro.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Caveat:wght@500&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
-   Todo dentro de .cometa-mundo, con prefijo `cm-` en cada clase.
+   LA COMETA
+   Una tarde de viento en el campo. La cometa vuela sola, con su cuerda y
+   su cola de moños: sube con las rachas, cabecea, se cae un poco cuando
+   el aire afloja y da vueltas si sopla fuerte. Con el dedo llevas el
+   carrete y das tirones; tocando el cielo mandas una ráfaga. Prefijo `ct-`.
    ══════════════════════════════════════════════════════════════════════ */
-
-html, body { margin: 0; height: 100%; }
-
-.cometa-mundo {
-  position: absolute;
+html, body { margin: 0; height: 100%; overflow: hidden; background: #f7d9c4; }
+.ct {
+  position: fixed;
   inset: 0;
   overflow: hidden;
-  isolation: isolate;
-  contain: layout paint;
-  background: linear-gradient(184deg, #7fc4e8 0%, #b8dcf0 40%, #e8eec8 78%, #f2e0c0 100%);
-  color: #3a4340;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
-
-  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
-  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  font-family: "Cormorant Garamond", Georgia, serif;
+  color: #5a2c3a;
+  --seg-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seg-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
   --barra: var(--hueco-barra, 0rem);
-  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+  --suave: cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.cometa-mundo .cm-lienzo {
+.ct canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.ct-cabeza {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  /* Los toques los recoge `.cm-toque`, que va justo encima. */
+  top: calc(var(--seg-t) + 14px);
+  left: 0; right: 0;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 0 20px;
   pointer-events: none;
-}
-
-/* El cielo entero. El libro sólo se queda el barrido que empieza en sus
-   24-44 px de borde. */
-.cometa-mundo .cm-toque {
-  position: absolute;
-  inset: 0;
-  touch-action: none;
-  z-index: 2;
-  cursor: grab;
-}
-.cometa-mundo.is-volando .cm-toque { cursor: grabbing; }
-
-.cometa-mundo .cm-ui {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-  padding:
-    calc(var(--seguro-t) + 20px) 22px
-    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
   text-align: center;
 }
-
-.cometa-mundo .cm-titulo {
+.ct-titulo {
   margin: 0;
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-size: clamp(1rem, 4.4vw, 1.4rem);
+  font-weight: 600;
+  font-size: clamp(0.66rem, 2.8vw, 0.78rem);
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: rgba(110, 50, 70, 0.7);
+}
+.ct-frase {
+  margin: 0;
+  max-width: 20em;
+  min-height: 1.3em;
+  font-style: italic;
   font-weight: 500;
-  letter-spacing: 0.05em;
-  color: #3f6a84;
-  opacity: 0.85;
-  transition: opacity 800ms var(--e-suave);
+  font-size: clamp(1.06rem, 4.8vw, 1.32rem);
+  line-height: 1.3;
+  color: #6a2c40;
+  text-shadow: 0 1px 10px rgba(255, 240, 230, 0.8);
+  transition: opacity 700ms var(--suave), transform 700ms var(--suave);
 }
-.cometa-mundo.is-volando .cm-titulo { opacity: 0.2; }
-
-.cometa-mundo .cm-pie {
-  margin: 0;
-  min-height: 3.6em;
-  max-width: 23em;
-  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
-  line-height: 1.55;
-  color: #3a4b44;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 660ms var(--e-suave), transform 660ms var(--e-suave);
-  text-shadow: 0 1px 8px rgba(255, 255, 255, 0.6);
-}
-.cometa-mundo .cm-pie.is-visible { opacity: 0.94; transform: none; }
-.cometa-mundo .cm-pie em {
-  display: block;
-  margin-top: 0.3em;
-  font-family: var(--tipo-mano, "Segoe Script", cursive);
-  font-size: 1.16em;
-  font-style: normal;
-  color: #c2506a;
-}
-
-.cometa-mundo .cm-altura {
+.ct-frase.is-fuera { opacity: 0; transform: translateY(-6px); }
+.ct-pista {
   position: absolute;
-  right: 20px;
-  top: calc(var(--seguro-t) + 20px);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.74rem;
-  letter-spacing: 0.14em;
-  color: #4d7a94;
-  opacity: 0.85;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cometa-mundo * { transition-duration: 1ms !important; }
+  left: 0; right: 0;
+  bottom: calc(var(--seg-b) + var(--barra) + 12px);
+  margin: 0;
+  text-align: center;
+  pointer-events: none;
+  font-size: clamp(0.58rem, 2.4vw, 0.68rem);
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(255, 250, 240, 0.8);
+  text-shadow: 0 1px 6px rgba(40, 60, 20, 0.6);
 }
 </style>
 </head>
 <body>
-
-<div class="cometa-mundo" id="mundo">
-  <canvas class="cm-lienzo" id="lienzo"></canvas>
-  <div class="cm-toque" id="toque" aria-hidden="true"></div>
-  <div class="cm-ui">
-    <h1 class="cm-titulo" id="titulo">Arrastra para volarla</h1>
-    <p class="cm-pie" id="pie" role="status" aria-live="polite"></p>
+<div class="ct" id="mundo">
+  <canvas id="lienzo"></canvas>
+  <div class="ct-cabeza">
+    <p class="ct-titulo">La cometa</p>
+    <p class="ct-frase" id="frase" role="status" aria-live="polite">Hoy hace buen viento.</p>
   </div>
-  <div class="cm-altura" id="altura" aria-hidden="true"></div>
+  <p class="ct-pista">arrastra el carrete · toca el cielo para soplar</p>
 </div>
 
 <script>
@@ -135,69 +97,588 @@ html, body { margin: 0; height: 100%; }
 "use strict";
 
 /* ══════════════════════════════════════════════════════════════════════
-   CONFIGURACIÓN EDITABLE
+   LO QUE SE PUEDE CAMBIAR
    ══════════════════════════════════════════════════════════════════════ */
-
 const CONF = {
-
-  /* ---- LA COMETA ------------------------------------------------------
-     No se arrastra la cometa: se arrastra EL CARRETE. La cometa va
-     atada a una cuerda, y la cuerda hace el resto. Es lo que convierte
-     «mover un dibujo» en «volar algo».                                 */
-  /* El largo de la cuerda es una PARTE DE LA HOJA, no un número de
-     píxeles: con 250 px fijos, en un móvil alto la cometa no pasaba del
-     tercio de abajo por mucho que corrieras, y la página parecía rota.
-     Así llega arriba del todo en cualquier pantalla. */
-  cuerda: 0.82,          // del alto de la hoja
-  nudos: 22,             // en cuántos trozos se parte para simularla
-  gravedad: 900,
-  viento: 420,           // cuánto empuja el aire de lado
-  /* Tiene que poder MÁS que la gravedad, o la cometa no despega nunca.
-     Con el multiplicador de reposo (0.82) ya vuela sola, y correr con el
-     carrete es lo que la sube del todo. */
-  sustentacion: 2100,
-  sustentacionQuieta: 0.82,   // cuánto de eso queda al soltar el dedo
-
-  /* ---- LO QUE SE LEE --------------------------------------------------
-     Van saliendo según sube. `alturaMin` es la parte de la hoja que hay
-     que haber subido (0 abajo del todo, 1 arriba del todo).           */
-  hitos: [
-    { alt: 0.30, texto: "Ya coge aire.", firma: "No tires tan fuerte, déjala." },
-    { alt: 0.50, texto: "Mira cómo se sostiene sola.", firma: "Las cosas que funcionan no hay que forzarlas." },
-    { alt: 0.68, texto: "Más arriba que los pájaros.", firma: "Y aún tienes cuerda." },
-    { alt: 0.82, texto: "Casi no se ve.", firma: "Pero la notas en la mano. Eso es lo bueno." },
-    { alt: 0.92, texto: "Ahí está, en lo alto del todo.", firma: "Igual que yo cuando me escribes." },
-  ],
-
-  /* ---- EL LAZO DE LA COLA ---------------------------------------------
-     Cada lazo lleva algo escrito. Se leen cuando la cometa pasa cerca
-     del dedo.                                                         */
-  lazos: [
-    "contigo", "siempre", "vuelve", "mírame", "quédate", "gracias", "tú",
-  ],
-
-  /* ---- EL SUELO -------------------------------------------------------- */
-  nubes: 5,
+  frases: {
+    alta: ["Mírala, qué alto llega.", "Así me tienes: en las nubes."],
+    vuelta: ["¡Dio una vuelta completa!", "Tú también me haces dar vueltas así."],
+    tiron: ["Mientras yo la sostenga, no se cae.", "Aunque sople fuerte, no te suelto."],
+    baja: ["Se cansó un poquito…", "ahorita vuelve el viento"],
+  },
+  colores: ["#e8436b", "#ffd3dc", "#b3265a", "#ffb4c4"],
 };
 
-/* ══════════════════════════════════════════════════════════════════════
-   La maquinaria.
-   ══════════════════════════════════════════════════════════════════════ */
-
-const mundo  = document.getElementById("mundo");
+/* ══════════════════════════════════════════════════════════════════════ */
+const mundo = document.getElementById("mundo");
 const lienzo = document.getElementById("lienzo");
-const zona   = document.getElementById("toque");
-const elPie  = document.getElementById("pie");
-const elAlt  = document.getElementById("altura");
-const ctx    = lienzo.getContext("2d", { alpha: false });
-
+const g = lienzo.getContext("2d", { alpha: false });
+const elFrase = document.getElementById("frase");
 const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const azar  = (a, b) => a + Math.random() * (b - a);
-const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
 
-let A = 0, H = 0, dpr = 1;
-let suelo = 0;
+const TAU = Math.PI * 2;
+const azar = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const acercar = (v, o, k, dt) => o + (v - o) * Math.exp(-k * dt);
+const angDif = (a, b) => { let d = b - a; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU; return d; };
+
+let A = 0, H = 0, dpr = 1, suelo = 0, escala = 1, techo = 0;
+let fondo = null;
+
+/* Un ruido suave para el viento: suma de senos con fases raras. */
+const ruido = (t, s) => Math.sin(t * 0.31 + s) * 0.5 + Math.sin(t * 0.73 + s * 2.1) * 0.3 + Math.sin(t * 1.9 + s * 3.7) * 0.2;
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL PAISAJE
+   ══════════════════════════════════════════════════════════════════════ */
+let sol = { x: 0, y: 0 };
+const nubes = [];
+const hierba = [];
+const semillas = [];
+const pajaros = [];
+
+function pintarFondo() {
+  const c = document.createElement("canvas");
+  c.width = Math.round(A * dpr); c.height = Math.round(H * dpr);
+  const x = c.getContext("2d");
+  x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cielo = x.createLinearGradient(0, 0, 0, suelo);
+  cielo.addColorStop(0, "#8fbde6");
+  cielo.addColorStop(0.45, "#c8d8ec");
+  cielo.addColorStop(0.75, "#f6d3c6");
+  cielo.addColorStop(1, "#ffd6a8");
+  x.fillStyle = cielo;
+  x.fillRect(0, 0, A, H);
+  sol = { x: A * 0.78, y: suelo - H * 0.16 };
+  const halo = x.createRadialGradient(sol.x, sol.y, 0, sol.x, sol.y, Math.max(A, H) * 0.55);
+  halo.addColorStop(0, "rgba(255,236,190,.95)");
+  halo.addColorStop(0.08, "rgba(255,220,170,.6)");
+  halo.addColorStop(1, "rgba(255,210,170,0)");
+  x.fillStyle = halo;
+  x.fillRect(0, 0, A, H);
+  x.fillStyle = "#fff4dc";
+  x.beginPath(); x.arc(sol.x, sol.y, Math.min(A, H) * 0.045, 0, TAU); x.fill();
+  // Lomas lejanas, azuladas por el aire.
+  for (const [k, col] of [[0, "#b9b9d6"], [1, "#9fb99a"], [2, "#86a878"]]) {
+    x.fillStyle = col;
+    x.beginPath();
+    x.moveTo(0, H);
+    const base = suelo - H * (0.09 - k * 0.03);
+    for (let i = 0; i <= 24; i++) x.lineTo(A * i / 24, base + Math.sin(i * 0.8 + k * 1.7) * H * 0.018 + Math.sin(i * 0.23 + k) * H * 0.02);
+    x.lineTo(A, H);
+    x.fill();
+  }
+  // Un árbol solito en la loma.
+  const ax = A * 0.16, ay = suelo - H * 0.035;
+  x.fillStyle = "#5a7a4a";
+  x.fillRect(ax - 2, ay - H * 0.04, 4, H * 0.04);
+  for (const [dx, dy, r] of [[0, -0.06, 0.035], [-0.02, -0.05, 0.025], [0.02, -0.05, 0.027]]) {
+    x.beginPath(); x.arc(ax + dx * H, ay + dy * H, r * H, 0, TAU); x.fill();
+  }
+  const pasto = x.createLinearGradient(0, suelo, 0, H);
+  pasto.addColorStop(0, "#8ab86a");
+  pasto.addColorStop(1, "#4f7f3c");
+  x.fillStyle = pasto;
+  x.fillRect(0, suelo, A, H - suelo);
+  fondo = c;
+}
+
+function sembrar() {
+  nubes.length = 0;
+  for (let i = 0; i < 7; i++) {
+    const lejos = i < 3;
+    nubes.push({ x: Math.random() * A * 1.4 - A * 0.2, y: azar(H * 0.08, suelo * (lejos ? 0.55 : 0.75)), s: azar(0.7, 1.4) * (lejos ? 0.6 : 1), lejos, bolas: Array.from({ length: 6 }, () => [azar(-1, 1), azar(-0.3, 0.2), azar(0.35, 0.7)]) });
+  }
+  hierba.length = 0;
+  for (let i = 0; i < A / 3.5; i++) hierba.push({ x: i * 3.5 + azar(-2, 2), alto: azar(8, 26) * escala, f: Math.random() * TAU, tono: Math.random() < 0.5 ? "#3f6e30" : "#5b8f45", flor: Math.random() < 0.05 ? ["#ffffff", "#ffd1dc", "#ffe066"][Math.floor(Math.random() * 3)] : null });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LA COMETA, SU CUERDA Y SU COLA
+   ══════════════════════════════════════════════════════════════════════ */
+const K = { x: 0, y: 0, vx: 0, vy: 0, ang: 0, va: 0, tam: 44 };
+const carrete = { x: 0, y: 0, ox: 0, oy: 0 };
+let largo = 0, largoMax = 0;
+const N_CUERDA = 28, N_COLA = 16;
+let cuerda = [], cola = [];
+
+function punto(x, y) { return { x, y, px: x, py: y }; }
+function armar() {
+  largoMax = Math.hypot(A * 0.4, suelo * 0.85);
+  largo = largoMax * 0.75;
+  K.tam = clamp(Math.min(A, H) * 0.11, 30, 60);
+  K.x = carrete.x + A * 0.1; K.y = suelo * 0.35; K.vx = K.vy = 0; K.ang = 0.1; K.va = 0;
+  cuerda = Array.from({ length: N_CUERDA + 1 }, (_, i) => punto(carrete.x + (K.x - carrete.x) * i / N_CUERDA, carrete.y + (K.y - carrete.y) * i / N_CUERDA));
+  const [bx, by] = bajoCometa();
+  cola = Array.from({ length: N_COLA }, (_, i) => punto(bx, by + i * K.tam * 0.28));
+}
+function arribaCometa() { return [Math.sin(K.ang), -Math.cos(K.ang)]; }
+function bajoCometa() { const [ux, uy] = arribaCometa(); return [K.x - ux * K.tam * 1.05, K.y - uy * K.tam * 1.05]; }
+function bridaCometa() { const [ux, uy] = arribaCometa(); return [K.x - ux * K.tam * 0.25, K.y - uy * K.tam * 0.25]; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL VIENTO
+   ══════════════════════════════════════════════════════════════════════ */
+let viento = 1, vientoX = 0, rafaga = 0;
+function soplar(x, y) {
+  rafaga = 1;
+  K.va += (x < K.x ? 1 : -1) * azar(3, 6);
+  K.vx += (K.x - x) * 0.6;
+  K.vy -= 80;
+  for (let i = 0; i < 26; i++) {
+    const a = Math.random() * TAU;
+    semillas.push({ x, y, vx: Math.cos(a) * azar(60, 220), vy: Math.sin(a) * azar(60, 220), vida: 1, tipo: Math.random() < 0.5 ? "semilla" : "petalo", giro: Math.random() * TAU });
+  }
+  sonidoRafaga();
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL SONIDO
+   ══════════════════════════════════════════════════════════════════════ */
+let ac = null, salida = null, aire = null;
+function despertar() {
+  if (ac) { if (ac.state === "suspended") ac.resume(); return ac; }
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+  salida = ac.createGain();
+  salida.gain.value = 0.9;
+  salida.connect(ac.destination);
+  // El aire: ruido que sube y baja con el viento. Es ambiente.
+  const n = ac.sampleRate * 2;
+  const b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  const s = ac.createBufferSource(); s.buffer = b; s.loop = true;
+  const f = ac.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 500; f.Q.value = 0.6;
+  const gg = ac.createGain(); gg.gain.value = 0;
+  s.connect(f).connect(gg);
+  if (window.LibroSonido) window.LibroSonido.ambiente(gg); else gg.connect(ac.destination);
+  s.start();
+  aire = { f, gg };
+  return ac;
+}
+function ruidoCorto(dur) {
+  const n = Math.max(1, Math.floor(ac.sampleRate * dur));
+  const b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / n);
+  const s = ac.createBufferSource(); s.buffer = b; return s;
+}
+function sonidoRafaga() {
+  if (!despertar()) return;
+  const t = ac.currentTime, s = ruidoCorto(1.1);
+  const f = ac.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 0.8;
+  f.frequency.setValueAtTime(400, t); f.frequency.exponentialRampToValueAtTime(1800, t + 0.5); f.frequency.exponentialRampToValueAtTime(500, t + 1.1);
+  const gg = ac.createGain(); gg.gain.value = 0.22;
+  s.connect(f).connect(gg).connect(salida);
+  s.start(t);
+}
+function sonidoTiron() {
+  if (!despertar()) return;
+  const t = ac.currentTime;
+  const o = ac.createOscillator(), gg = ac.createGain();
+  o.type = "triangle";
+  o.frequency.setValueAtTime(180, t);
+  o.frequency.exponentialRampToValueAtTime(330, t + 0.08);
+  o.frequency.exponentialRampToValueAtTime(240, t + 0.3);
+  gg.gain.setValueAtTime(0.0001, t);
+  gg.gain.exponentialRampToValueAtTime(0.08, t + 0.01);
+  gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+  o.connect(gg).connect(salida);
+  o.start(t); o.stop(t + 0.4);
+}
+let ultimoAleteo = 0;
+function aleteo(fuerza) {
+  if (!ac || performance.now() - ultimoAleteo < 70) return;
+  ultimoAleteo = performance.now();
+  const t = ac.currentTime, s = ruidoCorto(0.04);
+  const f = ac.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 1500;
+  const gg = ac.createGain(); gg.gain.value = Math.min(0.06, fuerza * 0.02);
+  s.connect(f).connect(gg);
+  if (window.LibroSonido) window.LibroSonido.ambiente(gg); else gg.connect(ac.destination);
+  s.start(t);
+}
+function campanitas() {
+  if (!ac) return;
+  const t = ac.currentTime;
+  [783.99, 987.77, 1174.66, 1567.98].forEach((fr, i) => {
+    const o = ac.createOscillator(), gg = ac.createGain();
+    o.frequency.value = fr;
+    gg.gain.setValueAtTime(0, t + i * 0.1);
+    gg.gain.linearRampToValueAtTime(0.035, t + i * 0.1 + 0.01);
+    gg.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.1 + 1.5);
+    o.connect(gg).connect(salida);
+    o.start(t + i * 0.1); o.stop(t + i * 0.1 + 1.6);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS TEXTOS
+   ══════════════════════════════════════════════════════════════════════ */
+let bloqueo = 0;
+function decir(par) {
+  const ahora = performance.now();
+  if (ahora < bloqueo) return;
+  bloqueo = ahora + 7000;
+  const t = par[Math.floor(Math.random() * par.length)];
+  elFrase.classList.add("is-fuera");
+  setTimeout(() => { elFrase.textContent = t; elFrase.classList.remove("is-fuera"); }, suave ? 20 : 450);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL DEDO
+   ══════════════════════════════════════════════════════════════════════ */
+let dedo = null;
+mundo.addEventListener("pointerdown", (e) => {
+  despertar();
+  const r = mundo.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  dedo = { id: e.pointerId, x, y, x0: x, y0: y, t: performance.now(), movido: false, lleva: y > suelo - H * 0.2 || Math.hypot(x - carrete.x, y - carrete.y) < 90, cx0: carrete.ox, cy0: carrete.oy, hist: [[y, performance.now()]] };
+  try { mundo.setPointerCapture(e.pointerId); } catch { /* nada */ }
+});
+mundo.addEventListener("pointermove", (e) => {
+  if (!dedo || e.pointerId !== dedo.id) return;
+  const r = mundo.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  if (Math.hypot(x - dedo.x0, y - dedo.y0) > 10) { dedo.movido = true; dedo.lleva = true; }
+  dedo.x = x; dedo.y = y;
+  dedo.hist.push([y, performance.now()]);
+  if (dedo.hist.length > 6) dedo.hist.shift();
+  if (dedo.lleva) {
+    carrete.ox = clamp(dedo.cx0 + (x - dedo.x0), -A * 0.4, A * 0.4);
+    carrete.oy = clamp(dedo.cy0 + (y - dedo.y0), -H * 0.18, H * 0.06);
+  }
+});
+function soltar(e) {
+  if (!dedo || e.pointerId !== dedo.id) return;
+  const d = dedo;
+  dedo = null;
+  // ¿Fue un tirón hacia abajo? Entonces la cometa sube de golpe.
+  const [y0, t0] = d.hist[0], [y1, t1] = d.hist[d.hist.length - 1];
+  const vy = (y1 - y0) / Math.max(0.016, (t1 - t0) / 1000);
+  if (d.movido && vy > 700) {
+    const [ux, uy] = [K.x - carrete.x, K.y - carrete.y];
+    const n = Math.hypot(ux, uy) || 1;
+    K.vx += ux / n * 260; K.vy += uy / n * 260 - 140;
+    sonidoTiron();
+    decir(CONF.frases.tiron);
+  }
+  if (!d.movido && performance.now() - d.t < 350 && d.y < suelo - H * 0.2) soplar(d.x, d.y);
+  // El carrete vuelve despacio a su sitio.
+}
+mundo.addEventListener("pointerup", soltar);
+mundo.addEventListener("pointercancel", soltar);
+
+/* ══════════════════════════════════════════════════════════════════════
+   LA FÍSICA
+   ══════════════════════════════════════════════════════════════════════ */
+let giroAcum = 0, relojBaja = 0, relojAlta = 0;
+
+function fisica(dt, t) {
+  // El viento: base suave, rachas que van y vienen, y la ráfaga del dedo.
+  rafaga = Math.max(0, rafaga - dt * 0.6);
+  viento = 0.95 + ruido(t * 0.6, 1) * 0.45 + Math.max(0, ruido(t * 1.3, 7)) * 0.5 + rafaga * 0.9;
+  vientoX = ruido(t * 0.4, 3) * 70 + rafaga * 40 * Math.sign(Math.sin(t));
+
+  // El carrete sigue a la mano (o vuelve a su sitio si no hay mano).
+  if (!dedo) { carrete.ox = acercar(carrete.ox, carrete.ox * 0.6, 0.8, dt); carrete.oy = acercar(carrete.oy, 0, 2, dt); }
+  carrete.x = A * 0.5 + carrete.ox;
+  carrete.y = suelo + H * 0.06 + carrete.oy;
+
+  // Se suelta cuerda si tira fuerte, y se recoge un poco si afloja.
+  const tension = Math.hypot(K.x - carrete.x, K.y - carrete.y) / largo;
+  largo = clamp(largo + (viento > 1.1 && tension > 0.98 ? 40 : -12) * dt, largoMax * 0.45, largoMax);
+
+  // Fuerzas sobre la cometa.
+  const [ux, uy] = arribaCometa();
+  const sust = viento * viento * 170 * escala;
+  let fx = ux * sust + vientoX * 0.9;
+  let fy = uy * sust - viento * viento * 60 * escala + 150 * escala;     // la gravedad, abajo
+  fx -= K.vx * 1.1; fy -= K.vy * 1.1;                                      // el aire la frena
+  K.vx += fx * dt; K.vy += fy * dt;
+  K.x += K.vx * dt; K.y += K.vy * dt;
+
+  // La cuerda no se estira: si la cometa se pasa, vuelve al círculo.
+  const dx = K.x - carrete.x, dy = K.y - carrete.y, d = Math.hypot(dx, dy);
+  if (d > largo) {
+    const nx = dx / d, ny = dy / d;
+    K.x = carrete.x + nx * largo; K.y = carrete.y + ny * largo;
+    const vn = K.vx * nx + K.vy * ny;
+    if (vn > 0) { K.vx -= vn * nx; K.vy -= vn * ny; }
+  }
+  // El techo y el suelo.
+  if (K.y < techo) { K.y = techo; K.vy = Math.abs(K.vy) * 0.3; }
+  if (K.y > suelo - K.tam * 0.4) { K.y = suelo - K.tam * 0.4; K.vy = -Math.abs(K.vy) * 0.4; K.va += azar(-2, 2); }
+  if (K.x < K.tam) { K.x = K.tam; K.vx = Math.abs(K.vx) * 0.5; }
+  if (K.x > A - K.tam) { K.x = A - K.tam; K.vx = -Math.abs(K.vx) * 0.5; }
+
+  // El giro: la cuerda la endereza hacia su dirección, la cola la frena y
+  // las rachas la hacen cabecear. Con una racha fuerte, da la vuelta.
+  const angCuerda = Math.atan2(dx, -dy);
+  const torque = angDif(K.ang, angCuerda) * 7 - K.va * 2.2 + ruido(t * 2.3, 11) * viento * 3.2 + rafaga * ruido(t * 5, 2) * 12;
+  K.va += torque * dt;
+  K.ang += K.va * dt;
+  giroAcum += K.va * dt;
+  if (Math.abs(giroAcum) > TAU) { giroAcum = 0; decir(CONF.frases.vuelta); campanitas(); }
+  giroAcum *= Math.exp(-dt * 0.25);
+  if (Math.abs(K.va) > 2.5) aleteo(Math.abs(K.va));
+
+  // La cuerda: puntos con verlet, atados al carrete y a la brida.
+  const [bx, by] = bridaCometa();
+  const seg = largo / N_CUERDA;
+  for (let i = 1; i < N_CUERDA; i++) {
+    const p = cuerda[i];
+    const vx = (p.x - p.px) * 0.98, vy = (p.y - p.py) * 0.98;
+    p.px = p.x; p.py = p.y;
+    p.x += vx + vientoX * 0.002; p.y += vy + 260 * dt * dt;
+  }
+  cuerda[0].x = carrete.x; cuerda[0].y = carrete.y;
+  cuerda[N_CUERDA].x = bx; cuerda[N_CUERDA].y = by;
+  for (let it = 0; it < 12; it++) {
+    for (let i = 0; i < N_CUERDA; i++) {
+      const a = cuerda[i], b = cuerda[i + 1];
+      const ddx = b.x - a.x, ddy = b.y - a.y, dd = Math.hypot(ddx, ddy) || 0.001;
+      if (dd <= seg) continue;
+      const k = (dd - seg) / dd * 0.5;
+      if (i > 0) { a.x += ddx * k; a.y += ddy * k; }
+      if (i + 1 < N_CUERDA) { b.x -= ddx * k; b.y -= ddy * k; }
+    }
+    cuerda[0].x = carrete.x; cuerda[0].y = carrete.y;
+    cuerda[N_CUERDA].x = bx; cuerda[N_CUERDA].y = by;
+  }
+
+  // La cola: una cadena que cuelga, ondea y se queda atrás.
+  const [cx0, cy0] = bajoCometa();
+  cola[0].x = cx0; cola[0].y = cy0;
+  const eslabon = K.tam * 0.3;
+  for (let i = 1; i < N_COLA; i++) {
+    const p = cola[i];
+    const vx = (p.x - p.px) * 0.94, vy = (p.y - p.py) * 0.94;
+    p.px = p.x; p.py = p.y;
+    const ondea = Math.sin(t * 9 - i * 0.7) * viento * 30 * dt * dt * 60;
+    p.x += vx + ondea + vientoX * 0.004 * i / N_COLA; p.y += vy + 220 * dt * dt;
+  }
+  for (let it = 0; it < 6; it++) {
+    for (let i = 0; i < N_COLA - 1; i++) {
+      const a = cola[i], b = cola[i + 1];
+      const ddx = b.x - a.x, ddy = b.y - a.y, dd = Math.hypot(ddx, ddy) || 0.001;
+      const k = (dd - eslabon) / dd;
+      if (i === 0) { b.x -= ddx * k; b.y -= ddy * k; }
+      else { a.x += ddx * k * 0.5; a.y += ddy * k * 0.5; b.x -= ddx * k * 0.5; b.y -= ddy * k * 0.5; }
+    }
+    cola[0].x = cx0; cola[0].y = cy0;
+  }
+
+  // Lo que se dice según cómo vuela.
+  if (K.y < suelo * 0.22) { relojAlta += dt; if (relojAlta > 2) { relojAlta = -10; decir(CONF.frases.alta); } } else relojAlta = Math.max(0, relojAlta - dt);
+  if (K.y > suelo * 0.8) { relojBaja += dt; if (relojBaja > 1.5) { relojBaja = -12; decir(CONF.frases.baja); } } else relojBaja = Math.max(0, relojBaja - dt);
+
+  if (aire && ac) {
+    aire.gg.gain.setTargetAtTime(clamp(viento - 0.5, 0, 1.5) * 0.05, ac.currentTime, 0.3);
+    aire.f.frequency.setTargetAtTime(350 + viento * 400, ac.currentTime, 0.3);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PINTAR
+   ══════════════════════════════════════════════════════════════════════ */
+/* Cada nube se pinta una vez, suave, con muchas bolitas difuminadas. */
+function hacerNube(n) {
+  const s = n.s * Math.min(A, H) * 0.13;
+  const w = s * 4.4, h = s * 2;
+  const c = document.createElement("canvas");
+  c.width = Math.ceil(w * dpr); c.height = Math.ceil(h * dpr);
+  const x = c.getContext("2d");
+  x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  for (let i = 0; i < 26; i++) {
+    const bx = w / 2 + azar(-1, 1) * s * 1.5, by = h * 0.58 + azar(-0.45, 0.15) * s * (1 - Math.abs(bx - w / 2) / (s * 2));
+    const br = azar(0.35, 0.7) * s;
+    const gr = x.createRadialGradient(bx, by, 0, bx, by, br);
+    gr.addColorStop(0, "rgba(255,255,255,.95)");
+    gr.addColorStop(0.6, "rgba(255,255,255,.6)");
+    gr.addColorStop(1, "rgba(255,255,255,0)");
+    x.fillStyle = gr;
+    x.fillRect(bx - br, by - br, br * 2, br * 2);
+  }
+  // Abajo, el tono rosado del atardecer.
+  x.globalCompositeOperation = "source-atop";
+  const sombra = x.createLinearGradient(0, h * 0.3, 0, h);
+  sombra.addColorStop(0, "rgba(255,210,200,0)");
+  sombra.addColorStop(1, "rgba(250,190,190,.55)");
+  x.fillStyle = sombra;
+  x.fillRect(0, 0, w, h);
+  n.img = c; n.w = w; n.h = h;
+}
+function nube(n) {
+  if (!n.img) hacerNube(n);
+  g.globalAlpha = n.lejos ? 0.6 : 0.92;
+  g.drawImage(n.img, n.x - n.w / 2, n.y - n.h / 2, n.w, n.h);
+  g.globalAlpha = 1;
+}
+
+function pintarCometa() {
+  const tam = K.tam;
+  // Un poco de «giro» 3D: se estrecha cuando cabecea rápido.
+  const ladeo = clamp(Math.abs(K.va) * 0.08, 0, 0.45);
+  g.save();
+  g.translate(K.x, K.y);
+  g.rotate(K.ang);
+  g.scale(1 - ladeo, 1);
+  const P = [[0, -tam], [tam * 0.72, -tam * 0.18], [0, tam * 1.05], [-tam * 0.72, -tam * 0.18]];
+  const centro = [0, -tam * 0.18];
+  // Los cuatro paños, cada uno de un color, con su sombrita.
+  const panos = [[P[0], P[1]], [P[1], P[2]], [P[2], P[3]], [P[3], P[0]]];
+  panos.forEach(([a, b], i) => {
+    const onda = Math.sin(reloj * 6 + i) * tam * 0.02 * viento;
+    g.fillStyle = CONF.colores[i];
+    g.beginPath();
+    g.moveTo(centro[0], centro[1]);
+    g.lineTo(a[0], a[1]);
+    g.quadraticCurveTo((a[0] + b[0]) / 2 * 1.05 + onda, (a[1] + b[1]) / 2 * 1.05, b[0], b[1]);
+    g.closePath();
+    g.fill();
+    const sombra = g.createLinearGradient(centro[0], centro[1], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+    sombra.addColorStop(0, "rgba(255,255,255,.18)");
+    sombra.addColorStop(1, "rgba(80,0,30,.2)");
+    g.fillStyle = sombra;
+    g.fill();
+  });
+  // Las varillas.
+  g.strokeStyle = "rgba(90,50,30,.8)";
+  g.lineWidth = 1.6;
+  g.beginPath(); g.moveTo(P[0][0], P[0][1]); g.lineTo(P[2][0], P[2][1]); g.stroke();
+  g.beginPath(); g.moveTo(P[3][0], P[3][1]); g.lineTo(P[1][0], P[1][1]); g.stroke();
+  // El corazón del medio.
+  g.fillStyle = "#fff5f7";
+  const hs = tam * 0.2, hy = -tam * 0.18;
+  g.beginPath();
+  g.moveTo(0, hy + hs * 0.8);
+  g.bezierCurveTo(-hs * 1.4, hy - hs * 0.1, -hs * 0.55, hy - hs * 1.05, 0, hy - hs * 0.35);
+  g.bezierCurveTo(hs * 0.55, hy - hs * 1.05, hs * 1.4, hy - hs * 0.1, 0, hy + hs * 0.8);
+  g.fill();
+  g.strokeStyle = "rgba(255,255,255,.7)";
+  g.lineWidth = 1;
+  g.beginPath(); g.moveTo(P[0][0], P[0][1]); g.lineTo(P[1][0], P[1][1]); g.lineTo(P[2][0], P[2][1]); g.lineTo(P[3][0], P[3][1]); g.closePath(); g.stroke();
+  g.restore();
+}
+
+function pintarCola() {
+  g.strokeStyle = "#8a2a44";
+  g.lineWidth = 1.4;
+  g.beginPath();
+  g.moveTo(cola[0].x, cola[0].y);
+  for (let i = 1; i < N_COLA; i++) g.lineTo(cola[i].x, cola[i].y);
+  g.stroke();
+  // Los moñitos, uno cada dos eslabones.
+  for (let i = 2; i < N_COLA; i += 2) {
+    const a = cola[i - 1], b = cola[i];
+    const ang = Math.atan2(b.y - a.y, b.x - a.x) + Math.PI / 2;
+    const s = K.tam * 0.18 * (1 - i / N_COLA * 0.3);
+    g.save();
+    g.translate(b.x, b.y);
+    g.rotate(ang + Math.sin(reloj * 8 + i) * 0.3);
+    g.fillStyle = CONF.colores[(i / 2) % CONF.colores.length];
+    g.beginPath();
+    g.moveTo(0, 0); g.lineTo(-s, -s * 0.6); g.lineTo(-s, s * 0.6); g.closePath();
+    g.moveTo(0, 0); g.lineTo(s, -s * 0.6); g.lineTo(s, s * 0.6); g.closePath();
+    g.fill();
+    g.restore();
+  }
+}
+
+let t0 = performance.now(), reloj = 0;
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A) return;
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.05) dt = 1 / 60;
+  reloj += dt;
+  fisica(dt, reloj);
+
+  g.drawImage(fondo, 0, 0, A, H);
+
+  // Las nubes lejanas, y los pájaros.
+  for (const n of nubes) {
+    n.x += (n.lejos ? 5 : 14) * viento * dt + vientoX * 0.02 * dt;
+    if (n.x > A * 1.3) n.x = -A * 0.3;
+    if (n.lejos) nube(n);
+  }
+  if (Math.random() < dt * 0.05 && pajaros.length === 0) {
+    const y = azar(H * 0.1, suelo * 0.5);
+    for (let i = 0; i < 5; i++) pajaros.push({ x: -20 - i * 18 - Math.random() * 10, y: y + (i % 2) * 10 + azar(-4, 4), f: Math.random() * TAU });
+  }
+  g.strokeStyle = "rgba(70,60,80,.7)";
+  g.lineWidth = 1.3;
+  for (let i = pajaros.length - 1; i >= 0; i--) {
+    const p = pajaros[i];
+    p.x += 55 * dt; p.y += Math.sin(reloj * 2 + p.f) * 6 * dt;
+    if (p.x > A + 40) { pajaros.splice(i, 1); continue; }
+    const al = Math.sin(reloj * 10 + p.f) * 3;
+    g.beginPath(); g.moveTo(p.x - 5, p.y - al); g.quadraticCurveTo(p.x - 2, p.y - 2, p.x, p.y); g.quadraticCurveTo(p.x + 2, p.y - 2, p.x + 5, p.y - al); g.stroke();
+  }
+
+  // La cuerda.
+  g.strokeStyle = "rgba(255,255,255,.85)";
+  g.lineWidth = 1.1;
+  g.beginPath();
+  g.moveTo(cuerda[0].x, cuerda[0].y);
+  for (let i = 1; i <= N_CUERDA; i++) g.lineTo(cuerda[i].x, cuerda[i].y);
+  g.stroke();
+  pintarCola();
+  pintarCometa();
+
+  // Las nubes cercanas pasan por delante de la cometa a veces.
+  for (const n of nubes) if (!n.lejos) nube(n);
+
+  // La hierba, que se peina con el viento.
+  const empuje = viento * 0.25 + vientoX * 0.002;
+  for (const h of hierba) {
+    const ang = empuje + Math.sin(reloj * 2.2 + h.x * 0.03 + h.f) * 0.12 * viento;
+    const px = h.x + Math.sin(ang) * h.alto, py = H - (H - suelo) * 0.1 - Math.cos(ang) * h.alto;
+    g.strokeStyle = h.tono;
+    g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(h.x, H); g.quadraticCurveTo(h.x + Math.sin(ang) * h.alto * 0.3, py + h.alto * 0.4, px, py); g.stroke();
+    if (h.flor) { g.fillStyle = h.flor; g.beginPath(); g.arc(px, py, 2.4, 0, TAU); g.fill(); }
+  }
+
+  // El carrete de madera, con su cuerda enrollada.
+  g.save();
+  g.translate(carrete.x, carrete.y);
+  g.rotate(reloj * (largo > largoMax * 0.99 ? 0 : 2));
+  g.fillStyle = "#8a5a3a";
+  g.beginPath(); g.arc(0, 0, 13 * escala, 0, TAU); g.fill();
+  g.fillStyle = "#f3ece2";
+  g.beginPath(); g.arc(0, 0, 9 * escala, 0, TAU); g.fill();
+  g.strokeStyle = "rgba(160,120,90,.6)";
+  g.lineWidth = 0.8;
+  for (let k = 0; k < 4; k++) { g.beginPath(); g.arc(0, 0, 4 * escala + k * 1.3, 0, TAU); g.stroke(); }
+  g.fillStyle = "#5a3a22";
+  g.beginPath(); g.arc(0, 0, 2.6 * escala, 0, TAU); g.fill();
+  g.restore();
+
+  // Semillas y pétalos que van con el viento.
+  if (Math.random() < dt * (1.5 + viento * 2)) semillas.push({ x: -10, y: azar(H * 0.15, suelo), vx: 0, vy: 0, vida: 1, tipo: Math.random() < 0.6 ? "semilla" : "petalo", giro: Math.random() * TAU });
+  for (let i = semillas.length - 1; i >= 0; i--) {
+    const s = semillas[i];
+    s.vx += (60 * viento + vientoX - s.vx) * dt * 0.8;
+    s.vy += (Math.sin(reloj * 2 + s.giro) * 20 - s.vy) * dt * 0.8;
+    s.x += s.vx * dt; s.y += s.vy * dt;
+    s.giro += dt * 2;
+    s.vida -= dt * 0.08;
+    if (s.x > A + 20 || s.vida <= 0) { semillas.splice(i, 1); continue; }
+    g.globalAlpha = Math.min(1, s.vida * 2) * 0.9;
+    if (s.tipo === "semilla") {
+      g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 0.7;
+      for (let k = 0; k < 6; k++) {
+        const a = k / 6 * TAU + s.giro;
+        g.beginPath(); g.moveTo(s.x, s.y); g.lineTo(s.x + Math.cos(a) * 4, s.y + Math.sin(a) * 4); g.stroke();
+      }
+    } else {
+      g.fillStyle = "#ffb8c8";
+      g.beginPath(); g.ellipse(s.x, s.y, 3.4, 1.8 * Math.abs(Math.sin(s.giro)) + 0.4, s.giro, 0, TAU); g.fill();
+    }
+  }
+  g.globalAlpha = 1;
+  if (semillas.length > 120) semillas.splice(0, semillas.length - 120);
+}
 
 function medir() {
   const r = mundo.getBoundingClientRect();
@@ -205,561 +686,23 @@ function medir() {
   const primera = !A;
   A = r.width; H = r.height;
   dpr = Math.min(window.devicePixelRatio || 1, 2);
-  lienzo.width  = Math.round(A * dpr);
+  lienzo.width = Math.round(A * dpr);
   lienzo.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  suelo = H * 0.9;
-  if (primera) arrancar();
-  else {
-    carrete.x = clamp(carrete.x, 20, A - 20);
-    carrete.y = suelo - 14;
-  }
-  sembrarNubes();
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  escala = clamp(Math.min(A, H) / 390, 0.8, 1.5);
+  const segB = parseFloat(getComputedStyle(mundo).getPropertyValue("--seguro-abajo")) || 0;
+  suelo = H - Math.max(90, H * 0.16) - segB;
+  pintarFondo();
+  sembrar();
+  carrete.x = A * 0.5; carrete.y = suelo + H * 0.06;
+  // La cometa no sube por encima del título: ahí se lee.
+  const cab = document.querySelector(".ct-cabeza").getBoundingClientRect();
+  techo = cab.bottom - r.top + clamp(Math.min(A, H) * 0.11, 30, 60) * 1.05;
+  armar();
 }
-new ResizeObserver(medir).observe(mundo);
-
-/* ---- La cuerda ----------------------------------------------------------
-   Una cadena de nudos: cada uno con su posición y la de antes. Se mueve
-   por Verlet —posición menos posición anterior es la velocidad— y luego
-   se corrigen las distancias unas cuantas veces. Es la forma más corta
-   de que una cuerda se comporte como una cuerda.                         */
-
-const nudos = [];
-const carrete = { x: 0, y: 0 };
-const cometa = { x: 0, y: 0, px: 0, py: 0, ang: 0 };
-
-/** El largo de la cuerda, en píxeles, para la hoja que haya ahora. */
-function largoCuerda() { return H * CONF.cuerda; }
-
-function arrancar() {
-  carrete.x = A * 0.5;
-  carrete.y = suelo - 14;
-  cometa.x = carrete.x;
-  cometa.y = carrete.y - 40;
-  cometa.px = cometa.x;
-  cometa.py = cometa.y;
-  nudos.length = 0;
-  for (let i = 0; i < CONF.nudos; i++) {
-    const t = i / (CONF.nudos - 1);
-    const x = carrete.x;
-    const y = carrete.y - t * 40;
-    nudos.push({ x, y, px: x, py: y });
-  }
-}
-
-/* ---- El dedo ------------------------------------------------------------- */
-
-let llevando = null;
-let dedoVX = 0;
-
-function enPantalla(e) {
-  const r = mundo.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
-}
-
-zona.addEventListener("pointerdown", (e) => {
-  if (e.pointerType === "mouse" && e.button !== 0) return;
-  zona.setPointerCapture(e.pointerId);
-  const p = enPantalla(e);
-  llevando = { id: e.pointerId, x: p.x, y: p.y };
-  mundo.classList.add("is-volando");
-});
-
-zona.addEventListener("pointermove", (e) => {
-  if (!llevando || e.pointerId !== llevando.id) return;
-  const p = enPantalla(e);
-  dedoVX = p.x - llevando.x;
-  llevando.x = p.x; llevando.y = p.y;
-  /* El carrete sigue al dedo a lo ancho y se queda pegado al suelo.
-     Correr con el carrete es lo que le da aire a la cometa: de eso va. */
-  carrete.x = clamp(p.x, 18, A - 18);
-});
-
-const soltar = () => {
-  llevando = null;
-  dedoVX = 0;
-  mundo.classList.remove("is-volando");
-};
-zona.addEventListener("pointerup", soltar);
-zona.addEventListener("pointercancel", soltar);
-
-/* ---- Los textos ----------------------------------------------------------- */
-
-let pidiendo = null;
-let bloqueado = 0;
-
-function decir(texto, firma, importante) {
-  const ahora = performance.now();
-  if (!importante && ahora < bloqueado) return;
-  if (pidiendo === texto) return;
-  pidiendo = texto;
-  if (importante) bloqueado = ahora + 4000;
-  elPie.classList.remove("is-visible");
-  setTimeout(() => {
-    elPie.textContent = texto;
-    if (firma) {
-      const em = document.createElement("em");
-      em.textContent = firma;
-      elPie.append(em);
-    }
-    elPie.classList.add("is-visible");
-  }, suave ? 10 : 280);
-}
-
-/* ---- Sonido: el viento ---------------------------------------------------- */
-
-let audio = null, vientoNodo = null, vientoGain = null, vientoFiltro = null;
-
-function despertar() {
-  try {
-    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
-    if (audio.state === "suspended") audio.resume();
-  } catch { audio = null; }
-  return audio;
-}
-
-function arrancarViento() {
-  if (!despertar() || vientoNodo) return;
-  const n = audio.sampleRate * 2;
-  const buf = audio.createBuffer(1, n, audio.sampleRate);
-  const d = buf.getChannelData(0);
-  /* Ruido rosa de pobre: ruido blanco pasado por un filtro de un polo.
-     Suena mucho más a viento que el blanco, que suena a estática. */
-  let ultimo = 0;
-  for (let i = 0; i < n; i++) {
-    const blanco = Math.random() * 2 - 1;
-    ultimo = 0.98 * ultimo + 0.02 * blanco;
-    d[i] = ultimo * 8;
-  }
-  vientoNodo = audio.createBufferSource();
-  vientoNodo.buffer = buf;
-  vientoNodo.loop = true;
-  vientoFiltro = audio.createBiquadFilter();
-  vientoFiltro.type = "lowpass";
-  vientoFiltro.frequency.value = 500;
-  vientoGain = audio.createGain();
-  vientoGain.gain.value = 0.02;
-  vientoNodo.connect(vientoFiltro).connect(vientoGain).connect(audio.destination);
-  vientoNodo.start();
-}
-
-function campana(hz) {
-  if (!despertar()) return;
-  const t = audio.currentTime;
-  const o = audio.createOscillator();
-  const g = audio.createGain();
-  o.type = "triangle";
-  o.frequency.setValueAtTime(hz, t);
-  g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.07, t + 0.01);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.3);
-  o.connect(g).connect(audio.destination);
-  o.start(t); o.stop(t + 1.4);
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   LOS SECRETOS
-   ══════════════════════════════════════════════════════════════════════ */
-
-/* 1. Subir la cometa hasta el borde de arriba y aguantarla ahí: se
-      engancha en una nube y hay que tirar para soltarla.               */
-let enganchada = 0;
-let enganchadaDicha = false;
-
-/* 2. Dejar de tocar con la cometa arriba: baja sola dando vueltas, y
-      mientras baja se lee algo.                                        */
-let cayendo = 0;
-
-/* 3. Cruzar el cielo de lado a lado corriendo con el carrete: la cometa
-      hace un rizo entero.                                              */
-let rizos = 0, ultimoLado = -1, tLado = 0, rizando = 0;
-
-function mirarRizo() {
-  const lado = carrete.x < A * 0.22 ? 0 : carrete.x > A * 0.78 ? 1 : -1;
-  if (lado < 0) return;
-  const ahora = performance.now();
-  if (ahora - tLado > 3400) rizos = 0;
-  if (lado !== ultimoLado) { rizos++; ultimoLado = lado; tLado = ahora; }
-  if (rizos >= 3 && rizando <= 0) {
-    rizos = 0;
-    rizando = 1;
-    decir("¡Un rizo entero!", "Ya sabes volarla mejor que yo.", true);
-    campana(784);
-  }
-}
-
-/* ---- Los hitos ------------------------------------------------------------ */
-
-let hitosDichos = 0;
-let maxAltura = 0;
-
-/* ---- Las nubes ------------------------------------------------------------ */
-
-let nubes = [];
-function sembrarNubes() {
-  nubes = [];
-  for (let i = 0; i < CONF.nubes; i++) {
-    nubes.push({
-      x: Math.random(),
-      y: azar(0.06, 0.4),
-      esc: azar(0.7, 1.6),
-      v: azar(0.004, 0.012),
-      bultos: Array.from({ length: 4 }, (_, k) => ({
-        dx: (k - 1.5) * 0.55 + azar(-0.12, 0.12),
-        dy: azar(-0.09, 0.1),
-        r: azar(0.55, 1),
-      })),
-    });
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   EL BUCLE
-   ══════════════════════════════════════════════════════════════════════ */
-
-let t0 = performance.now();
-let reloj = 0;
-
-function paso(ahora) {
-  requestAnimationFrame(paso);
-  if (!A || !H) return;
-
-  let dt = (ahora - t0) / 1000;
-  t0 = ahora;
-  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
-  else if (dt > 0.1) dt = 0.1;
-  reloj += dt;
-
-  fisica(dt);
-  dibujar(dt);
-
-  /* La altura, en metros inventados. */
-  const alt = clamp(1 - cometa.y / (suelo - 20), 0, 1);
-  maxAltura = Math.max(maxAltura, alt);
-  elAlt.textContent = `${Math.round(alt * 140)} m`;
-
-  /* Los hitos, según sube. */
-  while (hitosDichos < CONF.hitos.length && maxAltura >= CONF.hitos[hitosDichos].alt) {
-    const h = CONF.hitos[hitosDichos];
-    hitosDichos++;
-    decir(h.texto, h.firma, true);
-    campana(523 + hitosDichos * 60);
-  }
-
-  mirarRizo();
-
-  /* El secreto de la nube. */
-  if (alt > 0.93 && llevando) {
-    enganchada = Math.min(1, enganchada + dt * 0.5);
-    if (enganchada >= 1 && !enganchadaDicha) {
-      enganchadaDicha = true;
-      decir("Se ha enganchado en una nube.", "Tira flojito, que no se rompa.", true);
-      campana(392);
-    }
-  } else if (!llevando) {
-    if (enganchada > 0) enganchada = Math.max(0, enganchada - dt * 1.4);
-    if (enganchadaDicha && enganchada <= 0) {
-      enganchadaDicha = false;
-      decir("Ya está suelta.", "Menos mal. Le tengo cariño.", true);
-    }
-  }
-
-  /* El secreto de la caída. */
-  if (!llevando && alt > 0.5) {
-    cayendo += dt;
-    if (cayendo > 2.5 && cayendo < 2.6) {
-      decir("Está bajando sola, dando vueltas.", "No pasa nada. Vuelve a subirla cuando quieras.", true);
-    }
-  } else cayendo = 0;
-
-  if (rizando > 0) rizando = Math.max(0, rizando - dt * 0.5);
-}
-
-/* Verlet quiere un paso FIJO.
-
-   Con el paso variable del navegador, la fórmula `x += (x - anterior)` ya
-   no significa lo mismo de un cuadro a otro: un cuadro largo mete de
-   golpe una velocidad enorme, la cuerda tira para corregirla y la cometa
-   sale disparada. Eso es lo que pasaba: subía, daba un latigazo y se
-   estrellaba. Aquí se camina el dt real en pasos de 1/120 s, con un tope
-   para que un parón no obligue a dar cien pasos seguidos. */
-const PASO = 1 / 120;
-let sobra = 0;
-
-function fisica(dtReal) {
-  sobra = Math.min(sobra + dtReal, 0.25);
-  let vueltas = 0;
-  while (sobra >= PASO && vueltas < 30) {
-    unPaso(PASO);
-    sobra -= PASO;
-    vueltas++;
-  }
-  dedoVX = damp(dedoVX, 0, 6, dtReal);
-}
-
-function unPaso(dt) {
-  /* --- el viento --- */
-  /* Sopla de un lado, con rachas. Y correr con el carrete cuenta como
-     viento de cara, que es exactamente por lo que se corre. */
-  const racha = Math.sin(reloj * 0.6) * 0.4 + Math.sin(reloj * 1.7) * 0.25;
-  const vientoX = CONF.viento * (0.45 + racha) - dedoVX * 22;
-  const sube = CONF.sustentacion * (0.62 + Math.abs(dedoVX) * 0.06 + racha * 0.22)
-             * (llevando ? 1 : CONF.sustentacionQuieta);
-
-  /* --- la cometa, por Verlet --- */
-  const vx = (cometa.x - cometa.px) * 0.985;
-  const vy = (cometa.y - cometa.py) * 0.985;
-  cometa.px = cometa.x;
-  cometa.py = cometa.y;
-
-  let ax = vientoX;
-  let ay = CONF.gravedad - sube;
-  /* Enganchada en la nube: deja de subir y se queda clavada. */
-  if (enganchada > 0.9) { ay = 0; ax *= 0.2; }
-  /* Rizando: se le mete una vuelta entera por la fuerza. */
-  if (rizando > 0) {
-    const a = (1 - rizando) * 12.6;
-    ax += Math.cos(a) * 900;
-    ay += Math.sin(a) * 900;
-  }
-
-  /* Verlet de libro: desplazamiento anterior más aceleración por dt al
-     cuadrado. Sin factores de más: el `* 60` que había aquí multiplicaba
-     la aceleración por sesenta y la cometa se volvía loca en un segundo. */
-  cometa.x += vx + ax * dt * dt;
-  cometa.y += vy + ay * dt * dt;
-
-  /* --- el tirón de la cuerda ---
-     La cuerda NO empuja a la cometa: sólo le impide alejarse más de lo
-     que mide. Mientras haya cuerda de sobra, la cometa vuela a su aire;
-     cuando se acaba, se queda en el círculo y se le quita la velocidad
-     que la sacaría de él.
-
-     Ésta fue la segunda vuelta al problema. La primera hacía la cuerda
-     entera con nudos con peso y ataba la cometa al último: físicamente
-     más fino, y en la práctica la cuerda pesaba tanto que la cometa
-     subía trece metros de ciento cuarenta por mucho que corrieras. Una
-     cuerda de cometa es un hilo, y un hilo no tira hacia abajo. */
-  const L = largoCuerda();
-  let dx = cometa.x - carrete.x, dy = cometa.y - carrete.y;
-  let d = Math.hypot(dx, dy);
-  if (d > L) {
-    const nx = dx / d, ny = dy / d;
-    cometa.x = carrete.x + nx * L;
-    cometa.y = carrete.y + ny * L;
-    /* Se anula sólo la componente que se va hacia fuera; la de girar
-       alrededor del carrete se conserva, y por eso la cometa barre el
-       cielo en arco cuando corres, en vez de frenar en seco. */
-    const rvx = cometa.x - cometa.px, rvy = cometa.y - cometa.py;
-    const radial = rvx * nx + rvy * ny;
-    if (radial > 0) {
-      cometa.px += nx * radial;
-      cometa.py += ny * radial;
-    }
-  }
-
-  /* --- la cuerda, para dibujarla ---
-     Los nudos ya no sujetan nada: sólo cuelgan entre el carrete y la
-     cometa para que la línea tenga panza y ondee. Su física es suya y
-     no le llega a la cometa. */
-  const tramo = L / (CONF.nudos - 1);
-  for (let i = 1; i < nudos.length - 1; i++) {
-    const n = nudos[i];
-    const nvx = (n.x - n.px) * 0.98;
-    const nvy = (n.y - n.py) * 0.98;
-    n.px = n.x; n.py = n.y;
-    n.x += nvx + vientoX * 0.4 * dt * dt;
-    n.y += nvy + CONF.gravedad * 0.16 * dt * dt;
-  }
-  for (let pasada = 0; pasada < 5; pasada++) {
-    nudos[0].x = carrete.x;
-    nudos[0].y = carrete.y;
-    const ult = nudos[nudos.length - 1];
-    ult.x = cometa.x;
-    ult.y = cometa.y;
-    for (let i = 0; i < nudos.length - 1; i++) {
-      const a = nudos[i], b = nudos[i + 1];
-      const ax2 = b.x - a.x, ay2 = b.y - a.y;
-      const dd = Math.hypot(ax2, ay2) || 0.0001;
-      if (dd <= tramo) continue;          // la cuerda floja no empuja
-      const corrige = (dd - tramo) / dd * 0.5;
-      const cxd = ax2 * corrige, cyd = ay2 * corrige;
-      if (i > 0) { a.x += cxd; a.y += cyd; }
-      if (i + 1 < nudos.length - 1) { b.x -= cxd; b.y -= cyd; }
-    }
-  }
-
-  /* --- límites --- */
-  cometa.x = clamp(cometa.x, 14, A - 14);
-  if (cometa.y > suelo - 16) {
-    cometa.y = suelo - 16;
-    cometa.py = cometa.y + 2;
-  }
-  /* El techo deja sitio para la cometa ENTERA, no para su centro: con un
-     tope de 22 px el morro se salía por arriba de la hoja. */
-  const alto = Math.min(A, H) * 0.075 * 1.6 + 16;
-  if (cometa.y < alto) { cometa.y = alto; cometa.py = cometa.y - 1; }
-
-  /* El morro apunta a donde tira la cuerda. */
-  const ant = nudos[nudos.length - 2];
-  cometa.ang = Math.atan2(cometa.y - ant.y, cometa.x - ant.x) + Math.PI / 2;
-}
-
-function dibujar(dt) {
-  /* --- el cielo --- */
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, "#7fc4e8");
-  g.addColorStop(0.42, "#b8dcf0");
-  g.addColorStop(0.8, "#e8eec8");
-  g.addColorStop(1, "#f2e0c0");
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, A, H);
-
-  /* --- el sol --- */
-  const sg = ctx.createRadialGradient(A * 0.2, H * 0.14, 0, A * 0.2, H * 0.14, Math.min(A, H) * 0.42);
-  sg.addColorStop(0, "rgba(255, 250, 220, 0.75)");
-  sg.addColorStop(1, "rgba(255, 250, 220, 0)");
-  ctx.fillStyle = sg;
-  ctx.fillRect(0, 0, A, H);
-
-  /* --- las nubes --- */
-  for (const n of nubes) {
-    n.x += n.v * dt;
-    if (n.x > 1.3) n.x = -0.3;
-    const ncx = n.x * A, ncy = n.y * H, r = Math.min(A, H) * 0.085 * n.esc;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-    for (const b of n.bultos) {
-      ctx.beginPath();
-      ctx.arc(ncx + b.dx * r * 1.8, ncy + b.dy * r, r * b.r, 0, 6.283);
-      ctx.fill();
-    }
-  }
-
-  /* --- el prado --- */
-  const pg = ctx.createLinearGradient(0, suelo - 10, 0, H);
-  pg.addColorStop(0, "#9cc27e");
-  pg.addColorStop(1, "#6f9a58");
-  ctx.fillStyle = pg;
-  ctx.beginPath();
-  ctx.moveTo(0, H);
-  ctx.lineTo(0, suelo);
-  for (let x = 0; x <= A; x += 14) ctx.lineTo(x, suelo - Math.sin(x * 0.014) * 7);
-  ctx.lineTo(A, H);
-  ctx.closePath();
-  ctx.fill();
-
-  /* --- la cuerda --- */
-  ctx.strokeStyle = "rgba(90, 80, 70, 0.55)";
-  ctx.lineWidth = 1.3;
-  ctx.beginPath();
-  ctx.moveTo(nudos[0].x, nudos[0].y);
-  for (let i = 1; i < nudos.length; i++) ctx.lineTo(nudos[i].x, nudos[i].y);
-  ctx.stroke();
-
-  /* --- el carrete y la manita --- */
-  ctx.fillStyle = "#8f6a4a";
-  ctx.fillRect(carrete.x - 6, carrete.y, 12, 16);
-  ctx.fillStyle = "#c2907e";
-  ctx.beginPath();
-  ctx.arc(carrete.x, carrete.y + 2, 7, 0, 6.283);
-  ctx.fill();
-
-  /* --- la cometa --- */
-  dibujarCometa();
-
-  /* --- el enganchón --- */
-  if (enganchada > 0.9) {
-    const gl = ctx.createRadialGradient(cometa.x, cometa.y, 0, cometa.x, cometa.y, 52);
-    gl.addColorStop(0, "rgba(255, 255, 255, 0.7)");
-    gl.addColorStop(1, "rgba(255, 255, 255, 0)");
-    ctx.fillStyle = gl;
-    ctx.beginPath(); ctx.arc(cometa.x, cometa.y, 52, 0, 6.283); ctx.fill();
-  }
-}
-
-function dibujarCometa() {
-  const R = Math.min(A, H) * 0.075;
-  ctx.save();
-  ctx.translate(cometa.x, cometa.y);
-  ctx.rotate(cometa.ang);
-
-  /* El rombo, en cuatro cuartos de dos colores: es lo que hace que se
-     vea girar. Una cometa de un solo color parece una pegatina. */
-  const cuartos = [
-    [[0, -R], [R * 0.62, 0], [0, 0], "#ff8aa8"],
-    [[0, -R], [-R * 0.62, 0], [0, 0], "#ffd473"],
-    [[0, R * 1.5], [R * 0.62, 0], [0, 0], "#ffd473"],
-    [[0, R * 1.5], [-R * 0.62, 0], [0, 0], "#ff8aa8"],
-  ];
-  for (const [p1, p2, p3, col] of cuartos) {
-    ctx.fillStyle = col;
-    ctx.beginPath();
-    ctx.moveTo(p1[0], p1[1]);
-    ctx.lineTo(p2[0], p2[1]);
-    ctx.lineTo(p3[0], p3[1]);
-    ctx.closePath();
-    ctx.fill();
-  }
-  /* Las varillas. */
-  ctx.strokeStyle = "rgba(110, 80, 60, 0.6)";
-  ctx.lineWidth = 1.4;
-  ctx.beginPath();
-  ctx.moveTo(0, -R); ctx.lineTo(0, R * 1.5);
-  ctx.moveTo(-R * 0.62, 0); ctx.lineTo(R * 0.62, 0);
-  ctx.stroke();
-  ctx.restore();
-
-  /* La cola con sus lazos, colgando hacia abajo y ondeando. Se dibuja
-     FUERA del giro: una cola cuelga, no gira con la cometa. */
-  ctx.strokeStyle = "rgba(120, 100, 90, 0.5)";
-  ctx.lineWidth = 1.1;
-  ctx.beginPath();
-  const largoCola = R * 3.4;
-  const puntos = [];
-  for (let i = 0; i <= 9; i++) {
-    const t = i / 9;
-    const x = cometa.x + Math.sin(reloj * 2.4 + t * 5) * R * 0.55 * t
-            - Math.sin(cometa.ang) * largoCola * t * 0.4;
-    const y = cometa.y + largoCola * t + Math.cos(cometa.ang) * R * 1.5 * t * 0.3;
-    puntos.push([x, y]);
-    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-  }
-  ctx.stroke();
-
-  CONF.lazos.forEach((texto, i) => {
-    const p = puntos[i + 1];
-    if (!p) return;
-    ctx.save();
-    ctx.translate(p[0], p[1]);
-    ctx.rotate(Math.sin(reloj * 2.6 + i) * 0.5);
-    ctx.fillStyle = ["#ff9ec0", "#ffd473", "#a8e0c0", "#a9c8f5", "#e0b4f0", "#ffb8a8", "#ff9ec0"][i % 7];
-    ctx.beginPath();
-    ctx.moveTo(-6, 0); ctx.lineTo(0, -3.4); ctx.lineTo(6, 0); ctx.lineTo(0, 3.4);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  });
-
-  /* Y si el dedo pasa cerca de un lazo, se lee lo que pone. */
-  if (llevando) {
-    for (let i = 0; i < CONF.lazos.length; i++) {
-      const p = puntos[i + 1];
-      if (!p) continue;
-      if (Math.hypot(p[0] - llevando.x, p[1] - llevando.y) < 26) {
-        decir(`En este lazo pone «${CONF.lazos[i]}».`, "Los escribí antes de atarlos.");
-        break;
-      }
-    }
-  }
-}
-
-/* ---- Arranque -------------------------------------------------------------- */
-
+new ResizeObserver(() => requestAnimationFrame(medir)).observe(mundo);
 medir();
-decir("Corre con el carrete. El viento hace el resto.");
-zona.addEventListener("pointerdown", arrancarViento, { once: true });
 requestAnimationFrame(paso);
-
 })();
 </script>
 </body>

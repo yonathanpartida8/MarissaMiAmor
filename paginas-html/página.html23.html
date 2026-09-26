@@ -4,129 +4,97 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>El café de las siete</title>
+<script src="sonido-libro.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Caveat:wght@500&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
-   Todo dentro de .cafe-mundo, con prefijo `cf-` en cada clase.
+   EL CAFÉ — «Echa la leche despacio»
+   Una taza de café recién hecho, vista desde arriba. Con el dedo se echa
+   la leche: entra donde apuntas, empuja la crema y se abre como en una
+   cafetería de verdad; si mueves la jarra, la arrastra y dibuja. Por
+   debajo hay un simulador de fluidos pequeñito. Prefijo `cf-`.
    ══════════════════════════════════════════════════════════════════════ */
-
-html, body { margin: 0; height: 100%; }
-
-.cafe-mundo {
-  position: absolute;
+html, body { margin: 0; height: 100%; overflow: hidden; background: #d9c6ae; }
+.cf {
+  position: fixed;
   inset: 0;
   overflow: hidden;
-  isolation: isolate;
-  contain: layout paint;
-  background:
-    radial-gradient(ellipse 120% 70% at 50% 4%, #f6e9d8, transparent 58%),
-    linear-gradient(172deg, #ead9c4 0%, #d9c2a8 56%, #c2a68c 100%);
-  color: #45352a;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
-
-  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
-  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  font-family: "Cormorant Garamond", Georgia, serif;
+  color: #4a2c1e;
+  --seg-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seg-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
   --barra: var(--hueco-barra, 0rem);
-  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+  --suave: cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.cafe-mundo .cf-lienzo {
+.cf canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.cf-cabeza {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  /* Los toques los recoge `.cf-toque`, que va justo encima. */
+  top: calc(var(--seg-t) + 14px);
+  left: 0; right: 0;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 0 20px;
   pointer-events: none;
-}
-
-/* La mesa entera. El libro sólo se queda el barrido que empieza en sus
-   24-44 px de borde. */
-.cafe-mundo .cf-toque {
-  position: absolute;
-  inset: 0;
-  touch-action: none;
-  z-index: 2;
-  cursor: crosshair;
-}
-
-.cafe-mundo .cf-ui {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-  padding:
-    calc(var(--seguro-t) + 20px) 22px
-    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
   text-align: center;
 }
-
-.cafe-mundo .cf-titulo {
+.cf-titulo { margin: 0; font-weight: 600; font-size: clamp(0.66rem, 2.8vw, 0.78rem); letter-spacing: 0.36em; text-transform: uppercase; color: rgba(90, 50, 30, 0.7); }
+.cf-frase {
   margin: 0;
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-size: clamp(1rem, 4.4vw, 1.4rem);
+  max-width: 20em;
+  min-height: 1.3em;
+  font-style: italic;
   font-weight: 500;
-  letter-spacing: 0.06em;
-  color: #7d5c42;
-  opacity: 0.88;
-  transition: opacity 800ms var(--e-suave);
+  font-size: clamp(1.06rem, 4.8vw, 1.32rem);
+  line-height: 1.3;
+  color: #4a2618;
+  text-shadow: 0 1px 8px rgba(255, 245, 230, 0.8);
+  transition: opacity 700ms var(--suave), transform 700ms var(--suave);
 }
-.cafe-mundo.is-servido .cf-titulo { opacity: 0.22; }
-
-.cafe-mundo .cf-pie {
-  margin: 0;
-  min-height: 3.8em;
-  max-width: 23em;
-  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
-  line-height: 1.55;
-  color: #4d3b2e;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 640ms var(--e-suave), transform 640ms var(--e-suave);
-}
-.cafe-mundo .cf-pie.is-visible { opacity: 0.94; transform: none; }
-.cafe-mundo .cf-pie em {
-  display: block;
-  margin-top: 0.3em;
-  font-family: var(--tipo-mano, "Segoe Script", cursive);
-  font-size: 1.16em;
-  font-style: normal;
-  color: #b0603a;
-}
-
-/* La jarrita de leche, que se inclina. */
-.cafe-mundo .cf-jarra {
+.cf-frase.is-fuera { opacity: 0; transform: translateY(-6px); }
+.cf-pista {
   position: absolute;
-  z-index: 4;
-  width: 62px; height: 52px;
+  left: 0; right: 0;
+  bottom: calc(var(--seg-b) + var(--barra) + 14px);
+  margin: 0;
+  text-align: center;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 320ms var(--e-suave);
+  font-size: clamp(0.6rem, 2.5vw, 0.7rem);
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(80, 45, 25, 0.7);
 }
-.cafe-mundo.is-vertiendo .cf-jarra { opacity: 1; }
-
-@media (prefers-reduced-motion: reduce) {
-  .cafe-mundo * { transition-duration: 1ms !important; }
+.cf-nivel {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--seg-b) + var(--barra) + 38px);
+  width: 120px; height: 4px;
+  margin-left: -60px;
+  border-radius: 2px;
+  background: rgba(90, 50, 30, 0.18);
+  overflow: hidden;
+  pointer-events: none;
 }
+.cf-nivel i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #c9a27a, #fff8ee); transition: width 200ms linear; }
 </style>
 </head>
 <body>
-
-<div class="cafe-mundo" id="mundo">
-  <canvas class="cf-lienzo" id="lienzo"></canvas>
-  <div class="cf-toque" id="toque" aria-hidden="true"></div>
-  <div class="cf-ui">
-    <h1 class="cf-titulo" id="titulo">Echa la leche despacio</h1>
-    <p class="cf-pie" id="pie" role="status" aria-live="polite"></p>
+<div class="cf" id="mundo">
+  <canvas id="lienzo"></canvas>
+  <div class="cf-cabeza">
+    <p class="cf-titulo">Echa la leche despacio</p>
+    <p class="cf-frase" id="frase" role="status" aria-live="polite">Una taza recién hecha, para ti.</p>
   </div>
+  <div class="cf-nivel" aria-hidden="true"><i id="nivel"></i></div>
+  <p class="cf-pista" id="pista">apoya el dedo sobre la taza y muévelo despacito</p>
 </div>
 
 <script>
@@ -134,648 +102,501 @@ html, body { margin: 0; height: 100%; }
 "use strict";
 
 /* ══════════════════════════════════════════════════════════════════════
-   CONFIGURACIÓN EDITABLE
+   LO QUE SE PUEDE CAMBIAR
    ══════════════════════════════════════════════════════════════════════ */
-
 const CONF = {
-
-  /* ---- LAS INICIALES --------------------------------------------------
-     Lo que sale dibujado en la espuma cuando el café está bien hecho. */
-  iniciales: "y.m",
-
-  /* ---- LA LECHE -------------------------------------------------------
-     Se echa arrastrando el dedo. Cuanto más despacio, más blanca sale la
-     línea: eso es lo que hace de verdad un barista, y es lo que
-     convierte «pintar» en «servir».                                   */
-  chorro: 17,            // lo gordo que es el chorro, en px
-  lentoIdeal: 90,        // px/s del dedo para el blanco más limpio
-  leche: 0.9,            // cuánta leche cabe (0..1); al llenarse, rebosa
-
-  /* ---- LAS FRASES -----------------------------------------------------
-     Se van leyendo mientras se sirve.                                  */
-  frases: [
-    ["Despacito, que si vas rápido se corta.", "Como todo."],
-    ["Ahí. Así sale la flor.", "Te está quedando bien."],
-    ["Un poco más de leche.", "A ti te gusta con mucha, ya lo sé."],
-    ["Mira qué dibujo.", "No sabía que sabías."],
-    ["Éste ya es el bueno.", "Éste me lo tomo yo."],
-  ],
-
-  /* ---- LA TAZA --------------------------------------------------------- */
-  cafe: ["#6b3f22", "#3e2312"],
-  crema: "#c49a6a",
+  frases: {
+    sirviendo: ["Despacito…", "Así, dibújale algo bonito.", "Mira cómo se abre la espuma."],
+    llena: "Listo. Un café hecho con cariño, como te mereces.",
+    otra: "Otra taza, recién hecha.",
+  },
+  capacidad: 1,       // cuánta leche cabe (en «tazas»)
+  leche: 2.4,         // lo blanca que sale la leche en el chorro
+  empuje: 0.55,       // lo que empuja el chorro hacia fuera (lo rápido que se abre)
 };
 
-/* ══════════════════════════════════════════════════════════════════════
-   La maquinaria.
-   ══════════════════════════════════════════════════════════════════════ */
-
-const mundo  = document.getElementById("mundo");
+/* ══════════════════════════════════════════════════════════════════════ */
+const mundo = document.getElementById("mundo");
 const lienzo = document.getElementById("lienzo");
-const zona   = document.getElementById("toque");
-const elPie  = document.getElementById("pie");
-const ctx    = lienzo.getContext("2d");
-
+const g = lienzo.getContext("2d", { alpha: false });
+const elFrase = document.getElementById("frase");
+const elPista = document.getElementById("pista");
+const elNivel = document.getElementById("nivel");
 const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const azar  = (a, b) => a + Math.random() * (b - a);
-const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
+const TAU = Math.PI * 2;
+const azar = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const acercar = (v, o, k, dt) => o + (v - o) * Math.exp(-k * dt);
 
 let A = 0, H = 0, dpr = 1;
-let cx = 0, cy = 0, R = 0;        // la boca de la taza
+let T = { x: 0, y: 0, R: 0 };        // la taza: centro y radio del café
 
-/* La superficie del café vive en su propio lienzo, del tamaño de la boca
-   de la taza. Se pinta la leche ahí y luego se estampa recortada en
-   redondo: así la leche NUNCA se sale del borde, por mucho que el dedo
-   se vaya, y no hace falta comprobar nada en cada trazo. */
-const sup = document.createElement("canvas");
-const cs = sup.getContext("2d");
-let ladoSup = 0;
+/* ══════════════════════════════════════════════════════════════════════
+   EL FLUIDO (fluidos estables, a lo Jos Stam, en una rejilla chiquita)
+   `leche` es cuánta leche hay en cada celda; `u` y `v`, hacia dónde se
+   mueve el café. La leche que entra es una FUENTE: empuja todo hacia
+   fuera desde el chorro, que es lo que hace que se abra la flor.
+   ══════════════════════════════════════════════════════════════════════ */
+const N = 104, W = N + 2, TAM = W * W;
+const IX = (i, j) => i + W * j;
+let u = new Float32Array(TAM), v = new Float32Array(TAM);
+let u0 = new Float32Array(TAM), v0 = new Float32Array(TAM);
+let leche = new Float32Array(TAM), leche0 = new Float32Array(TAM);
+const presion = new Float32Array(TAM), div = new Float32Array(TAM), fuente = new Float32Array(TAM);
+const dentro = new Uint8Array(TAM);
+const crema = new Float32Array(TAM);        // el dibujo de la crema (0..1)
+for (let j = 1; j <= N; j++) for (let i = 1; i <= N; i++) {
+  const dx = (i - 0.5) / N * 2 - 1, dy = (j - 0.5) / N * 2 - 1;
+  dentro[IX(i, j)] = dx * dx + dy * dy < 0.98 ? 1 : 0;
+}
+function hacerCrema() {
+  // Motas de la crema del espresso: manchitas claras y oscuras, suaves.
+  const motas = Array.from({ length: 40 }, () => [Math.random(), Math.random(), azar(0.03, 0.12), azar(-0.35, 0.35)]);
+  for (let j = 1; j <= N; j++) for (let i = 1; i <= N; i++) {
+    const x = i / N, y = j / N;
+    let n = 0;
+    for (const [mx, my, mr, a] of motas) n += a * Math.exp(-((x - mx) ** 2 + (y - my) ** 2) / (mr * mr));
+    n += (Math.random() - 0.5) * 0.18;
+    const dx = x * 2 - 1, dy = y * 2 - 1, r = Math.sqrt(dx * dx + dy * dy);
+    crema[IX(i, j)] = clamp(0.55 + n - r * r * 0.35, 0, 1);
+  }
+}
+hacerCrema();
+
+function advectar(d, d0, uu, vv, dt) {
+  const dt0 = dt * N;
+  for (let j = 1; j <= N; j++) for (let i = 1; i <= N; i++) {
+    const k = IX(i, j);
+    if (!dentro[k]) { d[k] = 0; continue; }
+    let x = i - dt0 * uu[k], y = j - dt0 * vv[k];
+    x = clamp(x, 0.5, N + 0.5); y = clamp(y, 0.5, N + 0.5);
+    const i0 = x | 0, j0 = y | 0, s1 = x - i0, t1 = y - j0;
+    d[k] = (1 - s1) * ((1 - t1) * d0[IX(i0, j0)] + t1 * d0[IX(i0, j0 + 1)]) + s1 * ((1 - t1) * d0[IX(i0 + 1, j0)] + t1 * d0[IX(i0 + 1, j0 + 1)]);
+  }
+}
+function proyectar() {
+  const h = 1 / N;
+  for (let j = 1; j <= N; j++) for (let i = 1; i <= N; i++) {
+    const k = IX(i, j);
+    div[k] = dentro[k] ? -0.5 * h * (u[k + 1] - u[k - 1] + v[k + W] - v[k - W]) + fuente[k] * h : 0;
+    presion[k] = 0;
+  }
+  for (let it = 0; it < 18; it++) {
+    for (let j = 1; j <= N; j++) for (let i = 1; i <= N; i++) {
+      const k = IX(i, j);
+      if (!dentro[k]) continue;
+      // Las paredes de la taza: donde no hay café, la presión es la de al lado.
+      const pl = dentro[k - 1] ? presion[k - 1] : presion[k], pr = dentro[k + 1] ? presion[k + 1] : presion[k];
+      const pd = dentro[k - W] ? presion[k - W] : presion[k], pu = dentro[k + W] ? presion[k + W] : presion[k];
+      presion[k] = (div[k] + pl + pr + pd + pu) / 4;
+    }
+  }
+  for (let j = 1; j <= N; j++) for (let i = 1; i <= N; i++) {
+    const k = IX(i, j);
+    if (!dentro[k]) { u[k] = v[k] = 0; continue; }
+    const pl = dentro[k - 1] ? presion[k - 1] : presion[k], pr = dentro[k + 1] ? presion[k + 1] : presion[k];
+    const pd = dentro[k - W] ? presion[k - W] : presion[k], pu = dentro[k + W] ? presion[k + W] : presion[k];
+    u[k] -= 0.5 * (pr - pl) * N;
+    v[k] -= 0.5 * (pu - pd) * N;
+  }
+}
+function pasoFluido(dt) {
+  // Velocidad: se lleva a sí misma, se frena un poco y queda sin divergencia
+  // (salvo la del chorro, que es la que abre la leche).
+  proyectar();
+  u0.set(u); v0.set(v);
+  advectar(u, u0, u0, v0, dt);
+  advectar(v, v0, u0, v0, dt);
+  const roce = Math.exp(-dt * 1.3);
+  for (let k = 0; k < TAM; k++) { u[k] *= roce; v[k] *= roce; }
+  proyectar();
+  leche0.set(leche);
+  advectar(leche, leche0, u, v, dt);
+  fuente.fill(0);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ECHAR LA LECHE
+   ══════════════════════════════════════════════════════════════════════ */
+let dedo = null, vertido = 0, llena = false, nFrase = 0, relojFrase = 0;
+function aRejilla(x, y) { return [((x - T.x) / T.R + 1) / 2 * N + 0.5, ((y - T.y) / T.R + 1) / 2 * N + 0.5]; }
+function echar(x, y, vx, vy, dt) {
+  if (llena) return;
+  const [gi, gj] = aRejilla(x, y);
+  const radio = 3.2;
+  const caudal = 1;
+  for (let j = Math.max(1, gj - 6 | 0); j <= Math.min(N, gj + 6 | 0); j++) {
+    for (let i = Math.max(1, gi - 6 | 0); i <= Math.min(N, gi + 6 | 0); i++) {
+      const k = IX(i, j);
+      if (!dentro[k]) continue;
+      const d2 = (i - gi) ** 2 + (j - gj) ** 2;
+      const w = Math.exp(-d2 / (radio * radio));
+      leche[k] = Math.min(1.2, leche[k] + w * caudal * dt * CONF.leche);
+      fuente[k] += w * caudal * CONF.empuje;
+      // La jarra en movimiento arrastra el café.
+      u[k] += vx * w * 0.0042;
+      v[k] += vy * w * 0.0042;
+    }
+  }
+  vertido += caudal * dt / 9 * CONF.capacidad;
+  elNivel.style.width = `${Math.min(100, vertido * 100)}%`;
+  if (vertido >= 1) {
+    llena = true;
+    pararChorro();
+    decir(CONF.frases.llena);
+    elPista.textContent = "toca para otra taza";
+    campanita();
+  }
+}
+mundo.addEventListener("pointerdown", (e) => {
+  despertar();
+  const r = mundo.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  if (llena) { otraTaza(); return; }
+  dedo = { id: e.pointerId, x, y, px: x, py: y, vx: 0, vy: 0 };
+  try { mundo.setPointerCapture(e.pointerId); } catch { /* nada */ }
+});
+mundo.addEventListener("pointermove", (e) => {
+  if (!dedo || e.pointerId !== dedo.id) return;
+  const r = mundo.getBoundingClientRect();
+  dedo.x = e.clientX - r.left; dedo.y = e.clientY - r.top;
+});
+const soltar = (e) => { if (dedo && e.pointerId === dedo.id) { dedo = null; pararChorro(); } };
+mundo.addEventListener("pointerup", soltar);
+mundo.addEventListener("pointercancel", soltar);
+
+let vaciando = 0;
+function otraTaza() {
+  vaciando = 1;
+  clink();
+  setTimeout(() => {
+    leche.fill(0); u.fill(0); v.fill(0);
+    hacerCrema();
+    vertido = 0; llena = false;
+    elNivel.style.width = "0%";
+    decir(CONF.frases.otra);
+    elPista.textContent = "apoya el dedo sobre la taza y muévelo despacito";
+  }, 450);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL SONIDO: el chorro de leche y la cucharita
+   ══════════════════════════════════════════════════════════════════════ */
+let ac = null, salida = null, chorro = null;
+function despertar() {
+  if (ac) { if (ac.state === "suspended") ac.resume(); return ac; }
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+  salida = ac.createGain();
+  salida.gain.value = 0.9;
+  salida.connect(ac.destination);
+  return ac;
+}
+function empezarChorro() {
+  if (!ac || chorro) return;
+  const n = ac.sampleRate * 2;
+  const b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  const s = ac.createBufferSource(); s.buffer = b; s.loop = true;
+  const f = ac.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 900; f.Q.value = 1.4;
+  const lfo = ac.createOscillator(), lg = ac.createGain();
+  lfo.frequency.value = 7; lg.gain.value = 300;
+  lfo.connect(lg).connect(f.frequency);
+  const gg = ac.createGain(); gg.gain.value = 0;
+  s.connect(f).connect(gg).connect(salida);
+  s.start(); lfo.start();
+  gg.gain.setTargetAtTime(0.09, ac.currentTime, 0.08);
+  chorro = { s, gg, lfo, f };
+}
+function pararChorro() {
+  if (!chorro) return;
+  const t = ac.currentTime, c = chorro;
+  c.gg.gain.setTargetAtTime(0, t, 0.08);
+  c.s.stop(t + 0.5); c.lfo.stop(t + 0.5);
+  chorro = null;
+}
+function clink() {
+  if (!despertar()) return;
+  const t = ac.currentTime;
+  for (const [f, a] of [[2900, 1], [4600, 0.5], [7100, 0.25]]) {
+    const o = ac.createOscillator(), gg = ac.createGain();
+    o.frequency.value = f;
+    gg.gain.setValueAtTime(0, t);
+    gg.gain.linearRampToValueAtTime(0.06 * a, t + 0.002);
+    gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+    o.connect(gg).connect(salida);
+    o.start(t); o.stop(t + 0.55);
+  }
+}
+function campanita() {
+  if (!ac) return;
+  const t = ac.currentTime;
+  [659.25, 783.99, 987.77, 1318.5].forEach((f, i) => {
+    const o = ac.createOscillator(), gg = ac.createGain();
+    o.frequency.value = f;
+    gg.gain.setValueAtTime(0, t + i * 0.12);
+    gg.gain.linearRampToValueAtTime(0.035, t + i * 0.12 + 0.01);
+    gg.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.12 + 1.6);
+    o.connect(gg).connect(salida);
+    o.start(t + i * 0.12); o.stop(t + i * 0.12 + 1.7);
+  });
+}
+
+function decir(t) {
+  elFrase.classList.add("is-fuera");
+  setTimeout(() => { elFrase.textContent = t; elFrase.classList.remove("is-fuera"); }, suave ? 20 : 420);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PINTAR
+   ══════════════════════════════════════════════════════════════════════ */
+let mesa = null;
+const imgFluido = document.createElement("canvas");
+imgFluido.width = N; imgFluido.height = N;
+const gF = imgFluido.getContext("2d");
+const datos = gF.createImageData(N, N);
+const burbujas = Array.from({ length: 70 }, () => ({ x: azar(-1, 1), y: azar(-1, 1), r: azar(0.004, 0.012) }));
+const vapor = [];
+
+function pintarMesa() {
+  const c = document.createElement("canvas");
+  c.width = Math.round(A * dpr); c.height = Math.round(H * dpr);
+  const x = c.getContext("2d");
+  x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // Madera clara de mesa, con sus vetas.
+  const gr = x.createLinearGradient(0, 0, A, H);
+  gr.addColorStop(0, "#e2cdb0");
+  gr.addColorStop(1, "#c9ab88");
+  x.fillStyle = gr;
+  x.fillRect(0, 0, A, H);
+  for (let i = 0; i < 60; i++) {
+    const y = Math.random() * H;
+    x.strokeStyle = `rgba(120,80,50,${azar(0.04, 0.12)})`;
+    x.lineWidth = azar(0.6, 2.4);
+    x.beginPath(); x.moveTo(0, y); x.bezierCurveTo(A * 0.3, y + azar(-20, 20), A * 0.7, y + azar(-20, 20), A, y + azar(-10, 10)); x.stroke();
+  }
+  // La luz de la mañana entrando por la ventana, en diagonal.
+  x.save();
+  x.globalCompositeOperation = "screen";
+  for (let k = 0; k < 3; k++) {
+    x.fillStyle = `rgba(255,240,210,${0.18 - k * 0.04})`;
+    x.beginPath();
+    const off = k * A * 0.28;
+    x.moveTo(-A * 0.2 + off, 0); x.lineTo(A * 0.05 + off, 0); x.lineTo(A * 0.6 + off, H); x.lineTo(A * 0.35 + off, H);
+    x.fill();
+  }
+  x.restore();
+  // Unos granos de café sueltos.
+  for (let i = 0; i < 7; i++) {
+    const gx = azar(0.05, 0.95) * A, gy = (Math.random() < 0.5 ? azar(0.72, 0.92) : azar(0.16, 0.26)) * H;
+    x.save();
+    x.translate(gx, gy); x.rotate(Math.random() * TAU);
+    x.fillStyle = "#4a2614";
+    x.beginPath(); x.ellipse(0, 0, 7, 5, 0, 0, TAU); x.fill();
+    x.strokeStyle = "#2a1208"; x.lineWidth = 1.2;
+    x.beginPath(); x.moveTo(-5, 0); x.quadraticCurveTo(0, 2, 5, 0); x.stroke();
+    x.fillStyle = "rgba(255,255,255,.25)";
+    x.beginPath(); x.ellipse(-2, -2, 2.5, 1.2, -0.4, 0, TAU); x.fill();
+    x.restore();
+  }
+  // El plato.
+  const pr = T.R * 1.62;
+  x.fillStyle = "rgba(80,50,30,.25)";
+  x.beginPath(); x.ellipse(T.x + 6, T.y + 10, pr, pr, 0, 0, TAU); x.fill();
+  const plato = x.createRadialGradient(T.x - pr * 0.3, T.y - pr * 0.3, pr * 0.2, T.x, T.y, pr);
+  plato.addColorStop(0, "#ffffff");
+  plato.addColorStop(0.8, "#f1ece6");
+  plato.addColorStop(1, "#d8d0c6");
+  x.fillStyle = plato;
+  x.beginPath(); x.arc(T.x, T.y, pr, 0, TAU); x.fill();
+  x.strokeStyle = "rgba(160,130,110,.35)"; x.lineWidth = 1.5;
+  x.beginPath(); x.arc(T.x, T.y, pr * 0.8, 0, TAU); x.stroke();
+  x.strokeStyle = "#c79a5a"; x.lineWidth = 1.2;
+  x.beginPath(); x.arc(T.x, T.y, pr * 0.97, 0, TAU); x.stroke();
+  // La cucharita.
+  x.save();
+  x.translate(T.x + pr * 0.62, T.y + pr * 0.5); x.rotate(-0.6);
+  const metal = x.createLinearGradient(-4, 0, 4, 0);
+  metal.addColorStop(0, "#8a8f96"); metal.addColorStop(0.5, "#f4f6f8"); metal.addColorStop(1, "#9aa0a8");
+  x.fillStyle = metal;
+  x.beginPath(); x.ellipse(0, -T.R * 0.2, T.R * 0.1, T.R * 0.15, 0, 0, TAU); x.fill();
+  x.fillRect(-2.5, -T.R * 0.08, 5, T.R * 0.5);
+  x.restore();
+  // Una galletita en forma de corazón.
+  x.save();
+  x.translate(T.x - pr * 0.66, T.y + pr * 0.42); x.rotate(0.3);
+  const hs = T.R * 0.2;
+  x.fillStyle = "#d9a060";
+  x.beginPath();
+  x.moveTo(0, hs * 0.8);
+  x.bezierCurveTo(-hs * 1.4, -hs * 0.1, -hs * 0.55, -hs * 1.05, 0, -hs * 0.35);
+  x.bezierCurveTo(hs * 0.55, -hs * 1.05, hs * 1.4, -hs * 0.1, 0, hs * 0.8);
+  x.fill();
+  x.fillStyle = "rgba(255,240,220,.6)";
+  for (let k = 0; k < 6; k++) { x.beginPath(); x.arc(azar(-hs * 0.5, hs * 0.5), azar(-hs * 0.4, hs * 0.3), 1.2, 0, TAU); x.fill(); }
+  x.restore();
+  // La taza: el asa y el borde de loza.
+  x.fillStyle = "#f7f3ee";
+  x.beginPath(); x.ellipse(T.x + T.R * 1.28, T.y + T.R * 0.1, T.R * 0.32, T.R * 0.2, 0.15, 0, TAU); x.fill();
+  x.fillStyle = "#e9e2d8";
+  x.beginPath(); x.ellipse(T.x + T.R * 1.3, T.y + T.R * 0.1, T.R * 0.17, T.R * 0.09, 0.15, 0, TAU); x.fill();
+  const loza = x.createRadialGradient(T.x - T.R * 0.4, T.y - T.R * 0.4, T.R * 0.4, T.x, T.y, T.R * 1.2);
+  loza.addColorStop(0, "#ffffff");
+  loza.addColorStop(1, "#e6ded2");
+  x.fillStyle = loza;
+  x.beginPath(); x.arc(T.x, T.y, T.R * 1.16, 0, TAU); x.fill();
+  mesa = c;
+}
+
+function pintarFluido() {
+  const d = datos.data;
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const k = IX(i + 1, j + 1), p = (i + j * N) * 4;
+    const l = clamp(leche[k], 0, 1.2);
+    const c = crema[k];
+    // La crema: de avellana a chocolate, con sus vetas.
+    let r = 110 + c * 90, gg = 62 + c * 60, b = 30 + c * 35;
+    // El borde de la leche se oscurece apenas: ahí se dibuja la silueta.
+    const borde = Math.exp(-((l - 0.32) ** 2) / 0.004) * 0.25;
+    r *= 1 - borde; gg *= 1 - borde; b *= 1 - borde;
+    // La leche: blanco cremoso, más puro cuanto más espesa.
+    const k2 = clamp((l - 0.22) / 0.4, 0, 1);
+    const m = k2 * k2 * (3 - 2 * k2);
+    const blanco = 238 + Math.min(1, l) * 14;
+    d[p] = r + (blanco - r) * m;
+    d[p + 1] = gg + (blanco - 6 - gg) * m;
+    d[p + 2] = b + (blanco - 22 - b) * m;
+    d[p + 3] = 255;
+  }
+  gF.putImageData(datos, 0, 0);
+}
+
+let t0 = performance.now(), reloj = 0;
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A) return;
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.05) dt = 1 / 60;
+  reloj += dt;
+
+  // El chorro: la jarra está un poco por encima del dedo para que se vea.
+  let pour = null;
+  if (dedo && !llena) {
+    const ox = dedo.x, oy = dedo.y - Math.min(60, T.R * 0.45);
+    const vx = (dedo.x - dedo.px) / dt, vy = (dedo.y - dedo.py) / dt;
+    dedo.vx = acercar(dedo.vx, vx, 12, dt); dedo.vy = acercar(dedo.vy, vy, 12, dt);
+    dedo.px = dedo.x; dedo.py = dedo.y;
+    if (Math.hypot(ox - T.x, oy - T.y) < T.R * 0.95) {
+      echar(ox, oy, dedo.vx, dedo.vy, dt);
+      empezarChorro();
+      pour = [ox, oy];
+      relojFrase += dt;
+      if (relojFrase > 3.5) { relojFrase = 0; decir(CONF.frases.sirviendo[nFrase++ % CONF.frases.sirviendo.length]); }
+    } else pararChorro();
+  }
+  pasoFluido(dt);
+  // Muy despacio, la leche se difumina con la crema (se asienta).
+  if (vaciando > 0) {
+    vaciando = Math.max(0, vaciando - dt * 2);
+    for (let k = 0; k < TAM; k++) leche[k] *= 0.9;
+  }
+
+  g.drawImage(mesa, 0, 0, A, H);
+
+  // El café.
+  pintarFluido();
+  g.save();
+  g.beginPath(); g.arc(T.x, T.y, T.R, 0, TAU); g.clip();
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = "high";
+  g.drawImage(imgFluido, T.x - T.R, T.y - T.R, T.R * 2, T.R * 2);
+  // Burbujitas finas de la espuma.
+  g.fillStyle = "rgba(255,255,255,.18)";
+  for (const bb of burbujas) {
+    g.beginPath(); g.arc(T.x + bb.x * T.R, T.y + bb.y * T.R, bb.r * T.R, 0, TAU); g.fill();
+  }
+  // La sombra del borde de la taza sobre el café y el brillo de la ventana.
+  const sombra = g.createRadialGradient(T.x + T.R * 0.08, T.y + T.R * 0.08, T.R * 0.75, T.x, T.y, T.R * 1.02);
+  sombra.addColorStop(0, "rgba(40,20,10,0)");
+  sombra.addColorStop(1, "rgba(40,20,10,.55)");
+  g.fillStyle = sombra;
+  g.fillRect(T.x - T.R, T.y - T.R, T.R * 2, T.R * 2);
+  g.globalCompositeOperation = "screen";
+  const brillo = g.createRadialGradient(T.x - T.R * 0.45, T.y - T.R * 0.5, 0, T.x - T.R * 0.45, T.y - T.R * 0.5, T.R * 0.35);
+  brillo.addColorStop(0, "rgba(255,250,240,.35)");
+  brillo.addColorStop(1, "rgba(255,250,240,0)");
+  g.fillStyle = brillo;
+  g.fillRect(T.x - T.R, T.y - T.R, T.R * 2, T.R * 2);
+  g.globalCompositeOperation = "source-over";
+  g.restore();
+  g.strokeStyle = "rgba(170,150,130,.5)"; g.lineWidth = 1.5;
+  g.beginPath(); g.arc(T.x, T.y, T.R + 0.5, 0, TAU); g.stroke();
+
+  // La jarra de acero y su chorro.
+  if (pour) {
+    const [px, py] = pour;
+    g.fillStyle = "rgba(255,255,255,.95)";
+    g.beginPath(); g.arc(px, py, 4 + Math.sin(reloj * 40) * 0.6, 0, TAU); g.fill();
+    g.strokeStyle = "rgba(255,255,255,.5)"; g.lineWidth = 1;
+    const onda = (reloj * 3) % 1;
+    g.globalAlpha = 1 - onda;
+    g.beginPath(); g.arc(px, py, 5 + onda * 10, 0, TAU); g.stroke();
+    g.globalAlpha = 1;
+  }
+  if (dedo) {
+    const jx = dedo.x, jy = dedo.y - Math.min(60, T.R * 0.45);
+    const inclina = clamp(dedo.vx * 0.0008, -0.3, 0.3);
+    g.save();
+    g.translate(jx, jy - 22);
+    g.rotate(inclina);
+    const jarra = g.createLinearGradient(-26, 0, 26, 0);
+    jarra.addColorStop(0, "#8b9098"); jarra.addColorStop(0.35, "#eef1f4"); jarra.addColorStop(0.6, "#b8bec6"); jarra.addColorStop(1, "#7a8088");
+    g.shadowColor = "rgba(60,40,20,.35)"; g.shadowBlur = 12; g.shadowOffsetY = 10;
+    g.fillStyle = jarra;
+    g.beginPath();
+    g.moveTo(-24, -34); g.lineTo(24, -34); g.lineTo(20, 8); g.quadraticCurveTo(0, 26, -20, 8); g.closePath();
+    g.fill();
+    g.shadowColor = "transparent";
+    g.fillStyle = "#dfe3e8";
+    g.beginPath(); g.moveTo(-6, 14); g.lineTo(0, 24); g.lineTo(6, 14); g.fill();
+    g.fillStyle = "#fffaf2";
+    g.beginPath(); g.ellipse(0, -34, 23, 7, 0, 0, TAU); g.fill();
+    g.strokeStyle = "#9aa0a8"; g.lineWidth = 1.5;
+    g.beginPath(); g.ellipse(0, -34, 23, 7, 0, 0, TAU); g.stroke();
+    g.restore();
+  }
+
+  // El vapor que sube del café.
+  if (Math.random() < dt * 2.6) vapor.push({ x: T.x + azar(-T.R * 0.5, T.R * 0.5), y: T.y + azar(-T.R * 0.2, T.R * 0.4), t: 0, f: Math.random() * TAU, dur: azar(3, 5) });
+  for (let i = vapor.length - 1; i >= 0; i--) {
+    const s = vapor[i];
+    s.t += dt;
+    if (s.t > s.dur) { vapor.splice(i, 1); continue; }
+    const k = s.t / s.dur;
+    const x = s.x + Math.sin(s.t * 1.5 + s.f) * 14 * k, y = s.y - s.t * 26;
+    const gr = g.createRadialGradient(x, y, 0, x, y, 14 + k * 30);
+    gr.addColorStop(0, `rgba(255,255,255,${0.14 * Math.sin(k * Math.PI)})`);
+    gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = gr;
+    g.fillRect(x - 50, y - 50, 100, 100);
+  }
+}
 
 function medir() {
   const r = mundo.getBoundingClientRect();
   if (!r.width || !r.height) return;
-  const primera = !A;
   A = r.width; H = r.height;
   dpr = Math.min(window.devicePixelRatio || 1, 2);
-  lienzo.width  = Math.round(A * dpr);
+  lienzo.width = Math.round(A * dpr);
   lienzo.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  R = Math.min(A * 0.36, H * 0.24);
-  cx = A / 2;
-  cy = H * 0.50;
-
-  const nuevo = Math.max(64, Math.round(R * 2));
-  if (nuevo !== ladoSup) {
-    ladoSup = nuevo;
-    sup.width = Math.round(ladoSup * dpr);
-    sup.height = Math.round(ladoSup * dpr);
-    cs.setTransform(dpr, 0, 0, dpr, 0, 0);
-    servirCafe();
-  }
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const apaisado = A > H * 1.2;
+  T = { x: A / 2, y: H * (apaisado ? 0.55 : 0.5), R: apaisado ? H * 0.26 : Math.min(A * 0.33, H * 0.22) };
+  pintarMesa();
 }
-new ResizeObserver(medir).observe(mundo);
-
-/* ---- La superficie del café ---------------------------------------------- */
-
-function servirCafe() {
-  const L = ladoSup;
-  cs.globalCompositeOperation = "source-over";
-  cs.clearRect(0, 0, L, L);
-  /* El café: hondo por el centro y con la crema más clara por el canto,
-     que es como se ve una taza recién puesta. */
-  const g = cs.createRadialGradient(L * 0.42, L * 0.38, L * 0.05, L / 2, L / 2, L / 2);
-  g.addColorStop(0, CONF.cafe[0]);
-  g.addColorStop(0.62, CONF.cafe[1]);
-  g.addColorStop(1, "#2a160a");
-  cs.fillStyle = g;
-  cs.fillRect(0, 0, L, L);
-  /* La crema, en un anillo irregular. */
-  cs.globalAlpha = 0.5;
-  cs.strokeStyle = CONF.crema;
-  cs.lineWidth = L * 0.06;
-  cs.beginPath();
-  for (let i = 0; i <= 40; i++) {
-    const a = (i / 40) * 6.283;
-    const rr = L * 0.42 + Math.sin(a * 3.1) * L * 0.012;
-    const x = L / 2 + Math.cos(a) * rr;
-    const y = L / 2 + Math.sin(a) * rr;
-    i ? cs.lineTo(x, y) : cs.moveTo(x, y);
-  }
-  cs.closePath();
-  cs.stroke();
-  cs.globalAlpha = 1;
-  llenado = 0;
-  dibujado = 0;
-  hechas = 0;
-  rebosado = false;
-  mundo.classList.remove("is-servido");
-}
-
-/* Cuánta leche se ha echado, de 0 a 1. */
-let llenado = 0;
-let dibujado = 0;      // cuánta superficie se ha cubierto, más o menos
-
-/* ---- Echar la leche -------------------------------------------------------- */
-
-let echando = null;
-let velocidadDedo = 0;
-
-function enPantalla(e) {
-  const r = mundo.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
-}
-
-/** De coordenadas de la hoja a coordenadas de la superficie del café. */
-function aSup(p) {
-  return { x: (p.x - cx) / R * (ladoSup / 2) + ladoSup / 2,
-           y: (p.y - cy) / R * (ladoSup / 2) + ladoSup / 2 };
-}
-
-zona.addEventListener("pointerdown", (e) => {
-  if (e.pointerType === "mouse" && e.button !== 0) return;
-  zona.setPointerCapture(e.pointerId);
-  const p = enPantalla(e);
-  echando = { id: e.pointerId, x: p.x, y: p.y, px: p.x, py: p.y, rastro: [] };
-  mundo.classList.add("is-vertiendo");
-  verter();
-  echarLeche(p, p);
-});
-
-zona.addEventListener("pointermove", (e) => {
-  if (!echando || e.pointerId !== echando.id) return;
-  const p = enPantalla(e);
-  echarLeche({ x: echando.x, y: echando.y }, p);
-  echando.px = echando.x; echando.py = echando.y;
-  echando.x = p.x; echando.y = p.y;
-  echando.rastro.push({ x: p.x, y: p.y });
-  if (echando.rastro.length > 260) echando.rastro.shift();
-});
-
-function soltar() {
-  if (!echando) return;
-  mirarSecretos(echando.rastro);
-  echando = null;
-  mundo.classList.remove("is-vertiendo");
-  pararVerter();
-}
-zona.addEventListener("pointerup", soltar);
-zona.addEventListener("pointercancel", soltar);
-
-function echarLeche(desde, hasta) {
-  if (llenado >= CONF.leche) { rebosar(); return; }
-
-  const d = Math.hypot(hasta.x - desde.x, hasta.y - desde.y);
-  /* La velocidad manda en el color: despacio sale blanco limpio, deprisa
-     sale una raya sucia que se mezcla con el café. Es LO ÚNICO que hay
-     que saber para servir bien, y está en una línea. */
-  velocidadDedo = damp(velocidadDedo, d * 60, 9, 1 / 60);
-  const limpieza = clamp(1 - (velocidadDedo - CONF.lentoIdeal) / 420, 0.22, 1);
-
-  const a = aSup(desde), b = aSup(hasta);
-  const esc = ladoSup / (R * 2);
-
-  cs.globalCompositeOperation = "source-over";
-  cs.lineCap = "round";
-  cs.lineJoin = "round";
-  /* El chorro se ensancha cuando va despacio: la leche se acumula. */
-  cs.lineWidth = CONF.chorro * esc * (0.7 + limpieza * 0.7);
-  cs.strokeStyle = `rgba(250, 240, 224, ${0.30 + limpieza * 0.55})`;
-  cs.beginPath();
-  cs.moveTo(a.x, a.y);
-  cs.lineTo(b.x, b.y);
-  cs.stroke();
-  /* Y un borde más tenue alrededor, que es la leche que se difumina. */
-  cs.lineWidth = CONF.chorro * esc * (1.5 + limpieza * 0.8);
-  cs.strokeStyle = `rgba(226, 198, 164, ${0.09 + limpieza * 0.1})`;
-  cs.stroke();
-
-  llenado = Math.min(1, llenado + (d + 4) * 0.00016);
-  dibujado = Math.min(1, dibujado + (d + 4) * 0.0009);
-  mundo.classList.add("is-servido");
-  mirarFrases();
-}
-
-/* ---- Rebosar ---------------------------------------------------------------- */
-
-let rebosado = false;
-const gotas = [];
-
-function rebosar() {
-  if (rebosado) return;
-  rebosado = true;
-  decir("Ya no cabe más.", "Se ha salido un poquito. No pasa nada.", true);
-  for (let i = 0; i < 10; i++) {
-    const a = azar(0, 6.283);
-    gotas.push({
-      x: cx + Math.cos(a) * R * 0.95,
-      y: cy + Math.sin(a) * R * 0.95 * 0.42 + R * 0.2,
-      vx: Math.cos(a) * azar(10, 40), vy: azar(10, 40), v: 1,
-    });
-  }
-  setTimeout(() => { rebosado = false; }, 4000);
-}
-
-/* ---- Los textos --------------------------------------------------------- */
-
-let hechas = 0;
-let pidiendo = null;
-let bloqueado = 0;
-
-function mirarFrases() {
-  const paso = Math.floor(dibujado * CONF.frases.length);
-  if (paso <= hechas || paso > CONF.frases.length) return;
-  hechas = paso;
-  const [t, f] = CONF.frases[paso - 1];
-  decir(t, f);
-}
-
-function decir(texto, firma, importante) {
-  const ahora = performance.now();
-  if (!importante && ahora < bloqueado) return;
-  if (pidiendo === texto) return;
-  pidiendo = texto;
-  if (importante) bloqueado = ahora + 3800;
-  elPie.classList.remove("is-visible");
-  setTimeout(() => {
-    elPie.textContent = texto;
-    if (firma) {
-      const em = document.createElement("em");
-      em.textContent = firma;
-      elPie.append(em);
-    }
-    elPie.classList.add("is-visible");
-  }, suave ? 10 : 270);
-}
-
-/* ---- Sonido: el chorro --------------------------------------------------- */
-
-let audio = null, chorroNodo = null, chorroGain = null, chorroFiltro = null;
-
-function despertar() {
-  try {
-    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
-    if (audio.state === "suspended") audio.resume();
-  } catch { audio = null; }
-  return audio;
-}
-
-function verter() {
-  if (!despertar() || chorroNodo) return;
-  const n = audio.sampleRate * 1.5;
-  const buf = audio.createBuffer(1, n, audio.sampleRate);
-  const d = buf.getChannelData(0);
-  let ult = 0;
-  for (let i = 0; i < n; i++) {
-    const blanco = Math.random() * 2 - 1;
-    ult = 0.94 * ult + 0.06 * blanco;
-    d[i] = ult * 4;
-  }
-  chorroNodo = audio.createBufferSource();
-  chorroNodo.buffer = buf;
-  chorroNodo.loop = true;
-  chorroFiltro = audio.createBiquadFilter();
-  chorroFiltro.type = "bandpass";
-  chorroFiltro.frequency.value = 900;
-  chorroFiltro.Q.value = 0.8;
-  chorroGain = audio.createGain();
-  chorroGain.gain.value = 0;
-  chorroGain.gain.linearRampToValueAtTime(0.09, audio.currentTime + 0.12);
-  chorroNodo.connect(chorroFiltro).connect(chorroGain).connect(audio.destination);
-  chorroNodo.start();
-}
-
-function pararVerter() {
-  if (!chorroNodo) return;
-  try {
-    chorroGain.gain.linearRampToValueAtTime(0, audio.currentTime + 0.14);
-    chorroNodo.stop(audio.currentTime + 0.2);
-  } catch { /* ya estaba parado */ }
-  chorroNodo = null;
-}
-
-function campana(hz) {
-  if (!despertar()) return;
-  const t = audio.currentTime;
-  const o = audio.createOscillator();
-  const g = audio.createGain();
-  o.type = "triangle";
-  o.frequency.setValueAtTime(hz, t);
-  g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.08, t + 0.012);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
-  o.connect(g).connect(audio.destination);
-  o.start(t); o.stop(t + 1.5);
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   LOS SECRETOS
-   ══════════════════════════════════════════════════════════════════════ */
-
-/* 1. Dibujar un corazón con la leche: la espuma se recompone sola y sale
-      un corazón LIMPIO, con las iniciales debajo.                     */
-let corazonHecho = 0;
-
-function pareceCorazon(rastro) {
-  if (rastro.length < 22) return false;
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  for (const p of rastro) {
-    if (p.x < minX) minX = p.x;
-    if (p.x > maxX) maxX = p.x;
-    if (p.y < minY) minY = p.y;
-    if (p.y > maxY) maxY = p.y;
-  }
-  const w = maxX - minX, h = maxY - minY;
-  if (w < R * 0.4 || h < R * 0.4) return false;
-  const a = rastro[0], z = rastro[rastro.length - 1];
-  if (Math.hypot(a.x - z.x, a.y - z.y) > w * 0.45) return false;
-  let bajoX = 0, bajoY = -Infinity;
-  for (const p of rastro) if (p.y > bajoY) { bajoY = p.y; bajoX = p.x; }
-  return Math.abs(bajoX - (minX + w / 2)) < w * 0.3;
-}
-
-/* 2. Dar tres vueltas seguidas al mismo sitio: la leche hace la roseta
-      de verdad, la de las hojitas.                                    */
-let roseta = 0;
-
-function vueltasDe(rastro) {
-  if (rastro.length < 30) return 0;
-  let mx = 0, my = 0;
-  for (const p of rastro) { mx += p.x; my += p.y; }
-  mx /= rastro.length; my /= rastro.length;
-  let total = 0;
-  let ant = Math.atan2(rastro[0].y - my, rastro[0].x - mx);
-  for (let i = 1; i < rastro.length; i++) {
-    const a = Math.atan2(rastro[i].y - my, rastro[i].x - mx);
-    let d = a - ant;
-    while (d > Math.PI) d -= Math.PI * 2;
-    while (d < -Math.PI) d += Math.PI * 2;
-    total += d;
-    ant = a;
-  }
-  return Math.abs(total) / (Math.PI * 2);
-}
-
-/* 3. Tocar la taza y no moverse: se ve el reflejo de una cara en el
-      café, muy poquito, y se va al mover el dedo.                     */
-let quieto = 0;
-let reflejo = 0;
-
-function mirarSecretos(rastro) {
-  if (pareceCorazon(rastro)) {
-    corazonHecho = 1;
-    decir("Has hecho un corazón sin querer.", `Le pongo un ${CONF.iniciales} debajo y ya es nuestro.`, true);
-    campana(659);
-    setTimeout(() => campana(880), 220);
-    return;
-  }
-  if (vueltasDe(rastro) >= 3) {
-    roseta = 1;
-    decir("Una roseta. La de verdad.", "Con sus hojitas y todo. Quién te ha enseñado.", true);
-    campana(523);
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   EL BUCLE
-   ══════════════════════════════════════════════════════════════════════ */
-
-let t0 = performance.now();
-let reloj = 0;
-let vapor = [];
-
-function paso(ahora) {
-  requestAnimationFrame(paso);
-  if (!A || !H) return;
-
-  let dt = (ahora - t0) / 1000;
-  t0 = ahora;
-  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
-  else if (dt > 0.1) dt = 0.1;
-  reloj += dt;
-
-  quieto = echando ? 0 : quieto + dt;
-  reflejo = damp(reflejo, quieto > 5 ? 1 : 0, 1.2, dt);
-  if (quieto > 5 && quieto < 5.1) {
-    decir("Si te quedas quieta se ve algo en el café.", "Mira bien.");
-  }
-
-  if (corazonHecho > 0) corazonHecho = Math.min(1, corazonHecho + dt * 0.6);
-  if (roseta > 0) roseta = Math.min(1, roseta + dt * 0.6);
-
-  ctx.clearRect(0, 0, A, H);
-
-  dibujarPlato();
-  dibujarTaza();
-  dibujarVapor(dt);
-  dibujarGotas(dt);
-  dibujarJarra();
-}
-
-/* ---- La taza ------------------------------------------------------------- */
-
-function dibujarPlato() {
-  const py = cy + R * 0.5;
-  ctx.fillStyle = "rgba(80, 55, 38, 0.2)";
-  ctx.beginPath();
-  ctx.ellipse(cx, py + R * 0.2, R * 1.7, R * 0.42, 0, 0, 6.283);
-  ctx.fill();
-  const g = ctx.createLinearGradient(cx - R * 1.6, py, cx + R * 1.6, py + R * 0.5);
-  g.addColorStop(0, "#fdf7ec");
-  g.addColorStop(0.5, "#eee2d2");
-  g.addColorStop(1, "#d6c4b0");
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.ellipse(cx, py, R * 1.62, R * 0.4, 0, 0, 6.283);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(180, 150, 120, 0.4)";
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.ellipse(cx, py, R * 1.3, R * 0.32, 0, 0, 6.283);
-  ctx.stroke();
-}
-
-function dibujarTaza() {
-  /* El asa, por detrás de la taza. */
-  ctx.strokeStyle = "#e8dcc8";
-  ctx.lineWidth = R * 0.14;
-  ctx.beginPath();
-  ctx.arc(cx + R * 1.14, cy + R * 0.16, R * 0.3, -1.1, 1.1);
-  ctx.stroke();
-  ctx.strokeStyle = "#cbb9a2";
-  ctx.lineWidth = R * 0.05;
-  ctx.beginPath();
-  ctx.arc(cx + R * 1.14, cy + R * 0.16, R * 0.3, -1.1, 1.1);
-  ctx.stroke();
-
-  /* El cuerpo. */
-  const g = ctx.createLinearGradient(cx - R, cy, cx + R, cy + R * 0.7);
-  g.addColorStop(0, "#fdf8ee");
-  g.addColorStop(0.45, "#f2e8da");
-  g.addColorStop(1, "#d4c2ab");
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.moveTo(cx - R, cy);
-  ctx.quadraticCurveTo(cx - R * 0.94, cy + R * 0.66, cx, cy + R * 0.7);
-  ctx.quadraticCurveTo(cx + R * 0.94, cy + R * 0.66, cx + R, cy);
-  ctx.closePath();
-  ctx.fill();
-
-  /* La boca: un óvalo, porque la taza se ve en escorzo. */
-  ctx.fillStyle = "#e8dcc8";
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, R, R * 0.42, 0, 0, 6.283);
-  ctx.fill();
-
-  /* El café, recortado dentro de la boca. */
-  ctx.save();
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, R * 0.93, R * 0.39, 0, 0, 6.283);
-  ctx.clip();
-  /* La superficie es cuadrada y la boca ovalada: se aplasta al dibujar,
-     y así el dibujo de la leche se ve en escorzo como todo lo demás. */
-  ctx.drawImage(sup, cx - R * 0.93, cy - R * 0.39, R * 1.86, R * 0.78);
-
-  /* El corazón limpio del secreto 1. */
-  if (corazonHecho > 0) {
-    ctx.globalAlpha = corazonHecho * 0.94;
-    ctx.fillStyle = "#f8efe0";
-    ctx.beginPath();
-    const rr = R * 0.4;
-    for (let i = 0; i <= 44; i++) {
-      const t = (i / 44) * 6.283;
-      const hx = cx + Math.pow(Math.sin(t), 3) * rr;
-      const hy = cy - ((13 * Math.cos(t) - 5 * Math.cos(2 * t)
-              - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16) * rr * 0.42;
-      i ? ctx.lineTo(hx, hy) : ctx.moveTo(hx, hy);
-    }
-    ctx.closePath();
-    ctx.fill();
-    /* LAS INICIALES, debajo del corazón, con la leche más clara. */
-    ctx.fillStyle = "rgba(62, 35, 18, 0.7)";
-    ctx.font = `600 ${Math.round(R * 0.16)}px Georgia, "Times New Roman", serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(CONF.iniciales, cx, cy + R * 0.2);
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-    ctx.globalAlpha = 1;
-  }
-
-  /* La roseta del secreto 2. */
-  if (roseta > 0) {
-    ctx.globalAlpha = roseta * 0.9;
-    ctx.fillStyle = "#f8efe0";
-    for (let i = 0; i < 9; i++) {
-      const t = i / 8;
-      const y = cy - R * 0.22 + t * R * 0.42;
-      const w = R * 0.52 * (1 - t * 0.6);
-      ctx.beginPath();
-      ctx.ellipse(cx, y, w, R * 0.05, 0, 0, 6.283);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  /* El reflejo del secreto 3: una cara insinuada en el café. */
-  if (reflejo > 0.02) {
-    ctx.globalAlpha = reflejo * 0.16;
-    ctx.fillStyle = "#fff0d8";
-    ctx.beginPath();
-    ctx.ellipse(cx, cy - R * 0.04, R * 0.2, R * 0.12, 0, 0, 6.283);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(cx, cy + R * 0.16, R * 0.34, R * 0.1, 0, 0, 6.283);
-    ctx.fill();
-    ctx.globalAlpha = reflejo * 0.3;
-    ctx.beginPath();
-    ctx.arc(cx - R * 0.08, cy - R * 0.06, R * 0.018, 0, 6.283);
-    ctx.arc(cx + R * 0.08, cy - R * 0.06, R * 0.018, 0, 6.283);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-  ctx.restore();
-
-  /* El canto de la boca, por encima de todo. */
-  ctx.strokeStyle = "rgba(255, 252, 244, 0.9)";
-  ctx.lineWidth = R * 0.05;
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, R * 0.96, R * 0.405, 0, 0, 6.283);
-  ctx.stroke();
-}
-
-/* ---- El vapor -------------------------------------------------------------- */
-
-function dibujarVapor(dt) {
-  if (Math.random() < 0.5) {
-    vapor.push({
-      x: cx + azar(-R * 0.5, R * 0.5),
-      y: cy - R * 0.1,
-      v: 1, r: azar(6, 16), vy: azar(-22, -44), f: Math.random() * 6.283,
-    });
-    if (vapor.length > 60) vapor.shift();
-  }
-  for (let i = vapor.length - 1; i >= 0; i--) {
-    const s = vapor[i];
-    s.v -= dt * 0.38;
-    if (s.v <= 0) { vapor.splice(i, 1); continue; }
-    s.y += s.vy * dt;
-    s.x += Math.sin(reloj * 1.1 + s.f) * 16 * dt;
-    s.r += 11 * dt;
-    ctx.globalAlpha = s.v * 0.14;
-    ctx.fillStyle = "#fff8ec";
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, s.r, 0, 6.283);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-}
-
-function dibujarGotas(dt) {
-  for (let i = gotas.length - 1; i >= 0; i--) {
-    const g = gotas[i];
-    g.v -= dt * 0.8;
-    if (g.v <= 0) { gotas.splice(i, 1); continue; }
-    g.x += g.vx * dt;
-    g.y += g.vy * dt;
-    g.vy += 260 * dt;
-    ctx.globalAlpha = g.v;
-    ctx.fillStyle = "#f2e2cc";
-    ctx.beginPath();
-    ctx.ellipse(g.x, g.y, 2.4, 3.6, 0, 0, 6.283);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-}
-
-/* ---- La jarrita, dibujada donde esté el dedo ------------------------------ */
-
-function dibujarJarra() {
-  if (!echando) return;
-  const x = echando.x, y = echando.y;
-  const s = R * 0.3;
-  ctx.save();
-  ctx.translate(x, y - s * 2.2);
-  /* Se inclina hacia donde va el dedo: la leche cae desde el pico. */
-  const dir = clamp((echando.x - echando.px) * 0.06, -0.5, 0.5);
-  ctx.rotate(0.5 + dir);
-  const g = ctx.createLinearGradient(-s, -s, s, s);
-  g.addColorStop(0, "#f2f2f0");
-  g.addColorStop(0.5, "#cfd2d4");
-  g.addColorStop(1, "#8f9498");
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.moveTo(-s * 0.7, -s * 0.8);
-  ctx.lineTo(s * 0.5, -s * 0.8);
-  ctx.lineTo(s * 1.25, -s * 0.2);      // el pico
-  ctx.lineTo(s * 0.45, s * 0.9);
-  ctx.lineTo(-s * 0.6, s * 0.9);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = "#8f9498";
-  ctx.lineWidth = s * 0.16;
-  ctx.beginPath();
-  ctx.arc(-s * 0.85, s * 0.05, s * 0.4, -1.2, 1.2);
-  ctx.stroke();
-  ctx.restore();
-
-  /* El chorrito, del pico al dedo. */
-  ctx.strokeStyle = "rgba(252, 246, 234, 0.85)";
-  ctx.lineWidth = 3;
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  ctx.moveTo(x + s * 0.5, y - s * 2.2);
-  ctx.quadraticCurveTo(x + s * 0.2, y - s, x, y);
-  ctx.stroke();
-}
-
-/* ---- Arranque -------------------------------------------------------------- */
-
+new ResizeObserver(() => requestAnimationFrame(medir)).observe(mundo);
 medir();
-decir("Una taza recién puesta. Echa la leche arrastrando el dedo, despacio.");
 requestAnimationFrame(paso);
-
 })();
 </script>
 </body>

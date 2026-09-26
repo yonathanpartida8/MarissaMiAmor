@@ -4,126 +4,127 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>El reloj de nosotros</title>
+<script src="sonido-libro.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,500&family=Pinyon+Script&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
-   Todo dentro de .reloj-mundo, con prefijo `rl-` en cada clase.
+   EL RELOJ DE NOSOTROS
+   Un reloj de péndulo en la pared. Marca la hora de verdad y, si giras
+   sus agujas, la luz del cuarto pasa por todo el día. Da igual la hora:
+   dice siempre lo mismo. En cada hora en punto, en vez de un cucú, sale
+   un corazón por su puertita. Prefijo `rj-`.
    ══════════════════════════════════════════════════════════════════════ */
-
-html, body { margin: 0; height: 100%; }
-
-.reloj-mundo {
-  position: absolute;
+html, body { margin: 0; height: 100%; overflow: hidden; background: #2a2038; }
+.rj {
+  position: fixed;
   inset: 0;
   overflow: hidden;
-  isolation: isolate;
-  contain: layout paint;
-  background: #1a1620;
-  color: #e8dcc8;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
-
-  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
-  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  font-family: "Cormorant Garamond", Georgia, serif;
+  --pared-a: #f6ecd8;
+  --pared-b: #e8d6bd;
+  --tinta: #4a2a24;
+  background: linear-gradient(180deg, var(--pared-a), var(--pared-b));
+  --seg-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seg-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
   --barra: var(--hueco-barra, 0rem);
-  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+  --suave: cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.reloj-mundo .rl-lienzo {
+.rj canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+/* El papel tapiz: rayas muy finas. */
+.rj::before {
+  content: "";
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  /* Los toques los recoge `.rl-toque`, que va justo encima. */
+  background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.025) 0 1px, transparent 1px 22px, rgba(255, 255, 255, 0.05) 22px 23px, transparent 23px 44px);
   pointer-events: none;
 }
-
-/* La esfera entera se agarra para mover las agujas. El libro sólo se
-   queda el barrido que empieza en sus 24-44 px de borde. */
-.reloj-mundo .rl-toque {
+.rj-escena {
   position: absolute;
   inset: 0;
-  touch-action: none;
-  z-index: 2;
-  cursor: grab;
-}
-.reloj-mundo.is-girando .rl-toque { cursor: grabbing; }
-
-.reloj-mundo .rl-ui {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-  padding:
-    calc(var(--seguro-t) + 20px) 22px
-    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   align-items: center;
-  text-align: center;
+  padding: calc(var(--seg-t) + 12px) 16px calc(var(--seg-b) + var(--barra) + 12px);
+  box-sizing: border-box;
 }
-
-.reloj-mundo .rl-hora {
+.rj-reloj {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+.rj-svg {
+  height: 100%;
+  max-height: 62vh;
+  max-width: 88vw;
+  overflow: visible;
+  filter: drop-shadow(0 18px 26px rgba(40, 20, 10, 0.4));
+  touch-action: none;
+}
+.rj-textos { flex: 0 0 auto; text-align: center; min-height: 6.6rem; display: grid; align-content: start; gap: 2px; }
+.rj-uno {
   margin: 0;
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-size: clamp(1.6rem, 8vw, 2.6rem);
-  font-weight: 400;
-  letter-spacing: 0.06em;
-  font-variant-numeric: tabular-nums;
-  color: #f2e2c4;
-  text-shadow: 0 0 26px rgba(255, 210, 150, 0.35);
-  transition: color 700ms var(--e-suave);
+  font-family: "Pinyon Script", "Snell Roundhand", "Apple Chancery", cursive;
+  font-size: clamp(1.6rem, 7.6vw, 2.5rem);
+  line-height: 1.15;
+  color: var(--tinta);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: color 1.2s ease;
 }
-.reloj-mundo .rl-hora small {
-  display: block;
-  margin-top: 0.15em;
-  font-family: var(--tipo, inherit);
-  font-size: 0.32em;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  opacity: 0.55;
-}
-
-.reloj-mundo .rl-pie {
-  margin: 0;
-  min-height: 4em;
-  max-width: 23em;
-  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
-  line-height: 1.55;
-  color: #e6dac6;
+.rj-palabra { display: inline-block; white-space: nowrap; }
+.rj-palabra span { display: inline-block; opacity: 0; transform: translateY(8px); filter: blur(4px); transition: opacity 900ms var(--suave), transform 900ms var(--suave), filter 900ms var(--suave); }
+.rj-uno.is-ve .rj-palabra span { opacity: 1; transform: none; filter: none; }
+.rj-dos {
+  margin: 4px 0 0;
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(1rem, 4.4vw, 1.22rem);
+  letter-spacing: 0.02em;
+  color: var(--tinta);
   opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 640ms var(--e-suave), transform 640ms var(--e-suave);
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.8);
+  transform: translateY(6px);
+  transition: opacity 1.4s var(--suave), transform 1.4s var(--suave), color 1.2s ease;
 }
-.reloj-mundo .rl-pie.is-visible { opacity: 0.94; transform: none; }
-.reloj-mundo .rl-pie em {
-  display: block;
-  margin-top: 0.3em;
-  font-family: var(--tipo-mano, "Segoe Script", cursive);
-  font-size: 1.16em;
-  font-style: normal;
-  color: #ffbe86;
+.rj-dos::before, .rj-dos::after { content: "~"; margin: 0 0.5em; opacity: 0.5; }
+.rj-dos.is-ve { opacity: 0.92; transform: none; }
+.rj-pista {
+  margin: 6px 0 0;
+  font-size: clamp(0.58rem, 2.4vw, 0.68rem);
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--tinta);
+  opacity: 0.55;
+  transition: color 1.2s ease;
 }
+.rj.is-noche { --tinta: #f6e8e0; }
 
-@media (prefers-reduced-motion: reduce) {
-  .reloj-mundo * { transition-duration: 1ms !important; }
+@media (orientation: landscape) and (max-height: 540px) {
+  .rj-escena { flex-direction: row; justify-content: center; gap: 24px; }
+  .rj-reloj { width: 46%; height: 100%; }
+  .rj-svg { max-height: 92vh; }
+  .rj-textos { align-content: center; min-height: 0; max-width: 46%; }
 }
 </style>
 </head>
 <body>
-
-<div class="reloj-mundo" id="mundo">
-  <canvas class="rl-lienzo" id="lienzo"></canvas>
-  <div class="rl-toque" id="toque" aria-hidden="true"></div>
-  <div class="rl-ui">
-    <p class="rl-hora" id="hora" aria-live="polite">00:00<small>gira las agujas</small></p>
-    <p class="rl-pie" id="pie" role="status" aria-live="polite"></p>
+<div class="rj" id="mundo">
+  <canvas id="luz"></canvas>
+  <div class="rj-escena">
+    <div class="rj-reloj"><svg class="rj-svg" id="reloj" viewBox="0 0 300 560" aria-label="Un reloj de péndulo"></svg></div>
+    <div class="rj-textos">
+      <p class="rj-uno" id="uno" role="status" aria-live="polite"></p>
+      <p class="rj-dos" id="dos">Siempre pienso en ti a todas horas.</p>
+      <p class="rj-pista" id="pista">gira las agujas</p>
+    </div>
   </div>
 </div>
 
@@ -132,588 +133,370 @@ html, body { margin: 0; height: 100%; }
 "use strict";
 
 /* ══════════════════════════════════════════════════════════════════════
-   CONFIGURACIÓN EDITABLE
+   LO QUE DICE. Sólo esto.
    ══════════════════════════════════════════════════════════════════════ */
+const FRASE_UNO = "Solo pensando en ti, todo el tiempo.";
+const FRASE_DOS = "Siempre pienso en ti a todas horas.";
 
-const CONF = {
-
-  /* ---- LAS DOCE HORAS -------------------------------------------------
-     Una por cada número de la esfera. Al parar la aguja encima de una,
-     se lee lo suyo. `luz` es el color del cielo a esa hora: de ahí sale
-     el amanecer, el mediodía y la noche sin escribir ninguna regla.   */
-  horas: [
-    { h: 12, luz: ["#0e1428", "#1c2340"], texto: "Las doce de la noche. Seguimos hablando.",        firma: "Mañana los dos con sueño, y compensa." },
-    { h: 1,  luz: ["#101630", "#1e2646"], texto: "La una. Ya no sé de qué hablamos.",               firma: "Y no quiero colgar." },
-    { h: 2,  luz: ["#121a36", "#222a50"], texto: "Las dos. A esta hora te pienso más.",             firma: "No sé por qué, pero es así." },
-    { h: 3,  luz: ["#1c2246", "#3a3560"], texto: "Las tres. El mundo callado.",                      firma: "Duerme, anda." },
-    { h: 4,  luz: ["#2e2a52", "#6b4560"], texto: "Las cuatro. Empieza a clarear por ahí detrás.",    firma: "Aguanta un poco." },
-    { h: 5,  luz: ["#6b4560", "#c47a68"], texto: "Las cinco. El cielo se pone de tu color.",         firma: "Rosa, como siempre." },
-    { h: 6,  luz: ["#c47a68", "#f0b878"], texto: "Las seis. Amanece.",                               firma: "Otro día, y menos mal." },
-    { h: 7,  luz: ["#f0b878", "#f6d8a0"], texto: "Las siete. El primer café.",                       firma: "Te lo dejo hecho." },
-    { h: 8,  luz: ["#a8cfe8", "#dcecf4"], texto: "Las ocho. Cada uno a lo suyo.",                    firma: "Nos vemos luego, que es lo bueno." },
-    { h: 9,  luz: ["#8fc4e4", "#cfe6f2"], texto: "Las nueve. Trabajando y mirando el móvil.",        firma: "No disimulas nada." },
-    { h: 10, luz: ["#5c8cc4", "#a8c8e4"], texto: "Las diez. La noche de los planes que no cumplimos.", firma: "Mañana sí, ¿vale?" },
-    { h: 11, luz: ["#22305c", "#3a4a78"], texto: "Las once. A esta hora te da por contarme cosas.",  firma: "Mis favoritas." },
-  ],
-
-  /* ---- LAS INICIALES --------------------------------------------------
-     Van grabadas en la chapa del péndulo, muy pequeñitas. Están para que
-     se vean si te acercas, no para que salten a la vista.             */
-  iniciales: "y.m",
-
-  /* ---- EL RELOJ -------------------------------------------------------- */
-  arrastrePorHora: 46,    // px de arrastre que vale una hora entera
-  solo: true,             // si nadie lo toca, anda solo
-  velocidadSola: 0.28,    // horas por segundo cuando anda solo
-};
-
-/* ══════════════════════════════════════════════════════════════════════
-   La maquinaria.
-   ══════════════════════════════════════════════════════════════════════ */
-
-const mundo  = document.getElementById("mundo");
-const lienzo = document.getElementById("lienzo");
-const zona   = document.getElementById("toque");
-const elPie  = document.getElementById("pie");
-const elHora = document.getElementById("hora");
-const ctx    = lienzo.getContext("2d", { alpha: false });
-
+const mundo = document.getElementById("mundo");
+const svg = document.getElementById("reloj");
+const luz = document.getElementById("luz");
+const gl = luz.getContext("2d");
+const elUno = document.getElementById("uno");
+const elDos = document.getElementById("dos");
+const elPista = document.getElementById("pista");
 const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const azar  = (a, b) => a + Math.random() * (b - a);
-const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
-const mez   = (a, b, t) => a + (b - a) * t;
+const TAU = Math.PI * 2;
+const NS = "http://www.w3.org/2000/svg";
+const s = (tag, attrs, padre) => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (padre) padre.appendChild(e);
+  return e;
+};
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const azar = (a, b) => a + Math.random() * (b - a);
 
-function mezColor(c1, c2, t) {
-  const p = (c) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
-  const [r1, g1, b1] = p(c1), [r2, g2, b2] = p(c2);
-  return `rgb(${Math.round(mez(r1, r2, t))},${Math.round(mez(g1, g2, t))},${Math.round(mez(b1, b2, t))})`;
-}
-
-let A = 0, H = 0, dpr = 1;
-let cx = 0, cy = 0, R = 0;
-
-function medir() {
-  const r = mundo.getBoundingClientRect();
-  if (!r.width || !r.height) return;
-  A = r.width; H = r.height;
-  dpr = Math.min(window.devicePixelRatio || 1, 2);
-  lienzo.width  = Math.round(A * dpr);
-  lienzo.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  /* Todo el reloj se mide contra R, y R contra la hoja: la esfera, la
-     caja y el péndulo. Los números están elegidos para que el péndulo
-     quede DENTRO de la caja y la caja por encima del texto de abajo, en
-     cualquier pantalla. */
-  R = Math.min(A * 0.40, H * 0.25);
-  cx = A / 2;
-  cy = H * 0.42;
-}
-new ResizeObserver(medir).observe(mundo);
-
-/* ---- El tiempo -----------------------------------------------------------
-   TODO sale de un solo número: `t`, las horas desde las doce, con
-   decimales. La aguja grande, la pequeña, el cielo, la frase y hasta el
-   péndulo salen de él. Con un número para todo no hay manera de que dos
-   cosas se desincronicen.                                               */
-
-let t = 0;              // 0..12
-let tObj = 0;
-let arrastre = null;
-let quieta = 0;
-
-function hh() {
-  const h = Math.floor(((t % 12) + 12) % 12);
-  return h === 0 ? 12 : h;
-}
-function mm() {
-  const f = ((t % 1) + 1) % 1;
-  return Math.floor(f * 60);
-}
-
-function enPantalla(e) {
-  const r = mundo.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
-}
-
-zona.addEventListener("pointerdown", (e) => {
-  if (e.pointerType === "mouse" && e.button !== 0) return;
-  zona.setPointerCapture(e.pointerId);
-  const p = enPantalla(e);
-  /* Si el dedo cae dentro de la esfera, se gira POR EL ÁNGULO: la aguja
-     sigue al dedo como si la agarraras de verdad. Fuera de la esfera se
-     gira arrastrando de lado, que es más cómodo con el pulgar. */
-  const dentro = Math.hypot(p.x - cx, p.y - cy) < R * 1.08;
-  arrastre = {
-    id: e.pointerId, x: p.x, desde: tObj, movido: 0,
-    modo: dentro ? "angulo" : "lado",
-    ang0: Math.atan2(p.y - cy, p.x - cx),
-  };
-  mundo.classList.add("is-girando");
-  tic();
-});
-
-zona.addEventListener("pointermove", (e) => {
-  if (!arrastre || e.pointerId !== arrastre.id) return;
-  const p = enPantalla(e);
-  if (arrastre.modo === "angulo") {
-    const a = Math.atan2(p.y - cy, p.x - cx);
-    let d = a - arrastre.ang0;
-    while (d > Math.PI) d -= Math.PI * 2;
-    while (d < -Math.PI) d += Math.PI * 2;
-    arrastre.ang0 = a;
-    arrastre.desde += d / (Math.PI * 2) * 12;
-    tObj = arrastre.desde;
-    arrastre.movido += Math.abs(d) * 60;
-  } else {
-    const d = p.x - arrastre.x;
-    arrastre.movido = Math.abs(d);
-    tObj = arrastre.desde + d / CONF.arrastrePorHora;
-  }
-});
-
-function soltar() {
-  if (!arrastre) return;
-  /* Al soltar se encaja en la hora en punto: así siempre se para en un
-     recuerdo y nunca a las siete y veinte, que no dice nada. */
-  tObj = Math.round(tObj);
-  arrastre = null;
-  mundo.classList.remove("is-girando");
-}
-zona.addEventListener("pointerup", soltar);
-zona.addEventListener("pointercancel", soltar);
-
-/* ---- Los textos ----------------------------------------------------------- */
-
-let dicha = -1;
-let pidiendo = null;
-
-function anunciar() {
-  const i = ((Math.round(t) % 12) + 12) % 12;
-  if (dicha === i) return;
-  dicha = i;
-  const h = CONF.horas[i];
-  decir(h.texto, h.firma);
-  campanada(i);
-  contarHoras(i);
-}
-
-function decir(texto, firma) {
-  if (pidiendo === texto) return;
-  pidiendo = texto;
-  elPie.classList.remove("is-visible");
-  setTimeout(() => {
-    elPie.textContent = texto;
-    if (firma) {
-      const em = document.createElement("em");
-      em.textContent = firma;
-      elPie.append(em);
+/* La frase principal, letra por letra, para que aparezca con cariño. */
+{
+  // Cada palabra junta (para que no se parta al cambiar de renglón) y
+  // cada letra con su retrasito.
+  let i = 0;
+  const partes = [];
+  FRASE_UNO.split(" ").forEach((palabra, k) => {
+    if (k) partes.push(document.createTextNode(" "));
+    const w = document.createElement("span");
+    w.className = "rj-palabra";
+    for (const c of palabra) {
+      const sp = document.createElement("span");
+      sp.textContent = c;
+      sp.style.transitionDelay = `${i++ * 38}ms`;
+      w.append(sp);
     }
-    elPie.classList.add("is-visible");
-  }, suave ? 10 : 290);
+    i++;
+    partes.push(w);
+  });
+  elUno.replaceChildren(...partes);
 }
+elDos.textContent = FRASE_DOS;
 
-/* ---- Sonido --------------------------------------------------------------- */
+/* ══════════════════════════════════════════════════════════════════════
+   EL RELOJ, en SVG
+   ══════════════════════════════════════════════════════════════════════ */
+const defs = s("defs", {}, svg);
+function degr(id, paradas, attrs, tipo = "linearGradient") {
+  const gg = s(tipo, Object.assign({ id }, attrs), defs);
+  for (const [o, c] of paradas) s("stop", { offset: o, "stop-color": c }, gg);
+}
+degr("oro", [[0, "#fff1c4"], [0.25, "#c8952e"], [0.5, "#ffe08a"], [0.75, "#9a6a1c"], [1, "#e9c46a"]], { x1: 0, y1: 0, x2: 1, y2: 1 });
+degr("caoba", [[0, "#6a2a1a"], [0.5, "#8e3c22"], [1, "#4a1a10"]], { x1: 0, y1: 0, x2: 1, y2: 0 });
+degr("esmalte", [[0, "#fffdf6"], [0.8, "#f5ecd8"], [1, "#e2d2b0"]], { cx: 0.45, cy: 0.4, r: 0.65 }, "radialGradient");
+degr("vidrio", [[0, "rgba(255,255,255,.28)"], [0.4, "rgba(255,255,255,.05)"], [1, "rgba(255,255,255,0)"]], { x1: 0, y1: 0, x2: 1, y2: 1 });
+degr("fondoCaja", [[0, "#2a0e08"], [1, "#4a1c10"]], { x1: 0, y1: 0, x2: 0, y2: 1 });
+degr("acero", [[0, "#2a3a6a"], [0.5, "#16204a"], [1, "#2c3c70"]], { x1: 0, y1: 0, x2: 1, y2: 0 });
 
-let audio = null;
-let ultimoTic = 0;
+const cx = 150, cy = 178, R = 104;
+// La corona, con su puertita.
+s("path", { d: "M58,120 Q58,40 150,26 Q242,40 242,120 Z", fill: "url(#caoba)", stroke: "url(#oro)", "stroke-width": 3 }, svg);
+s("path", { d: "M78,112 Q80,56 150,44 Q220,56 222,112", fill: "none", stroke: "url(#oro)", "stroke-width": 1.2, opacity: 0.7 }, svg);
+for (const sx of [-1, 1]) {
+  s("path", { d: `M${150 + sx * 18},32 q${sx * 22},-4 ${sx * 34},10 q${sx * 8},10 ${sx * -2},16 q${sx * -8},4 ${sx * -10},-4`, fill: "none", stroke: "url(#oro)", "stroke-width": 2.4, "stroke-linecap": "round" }, svg);
+}
+s("circle", { cx: 150, cy: 20, r: 6, fill: "url(#oro)" }, svg);
+const hueco = s("g", {}, svg);
+s("rect", { x: 132, y: 52, width: 36, height: 34, rx: 16, fill: "#1a0806" }, hueco);
+// El corazón que sale por la puertita (vive detrás de ella).
+const corazonCucu = s("g", { transform: "translate(150 76)" }, svg);
+s("rect", { x: -1.2, y: 0, width: 2.4, height: 30, fill: "url(#oro)" }, corazonCucu);
+s("path", { d: "M0,6 C-12,-2 -8,-13 0,-7 C8,-13 12,-2 0,6 Z", fill: "#d62a4e", stroke: "#8a1030", "stroke-width": 0.8 }, corazonCucu);
+s("circle", { cx: -3.4, cy: -5.4, r: 1.6, fill: "rgba(255,255,255,.7)" }, corazonCucu);
+const puerta = s("g", {}, svg);
+const hojaIzq = s("rect", { x: 132, y: 52, width: 18, height: 34, rx: 3, fill: "url(#caoba)", stroke: "url(#oro)", "stroke-width": 1.2 }, puerta);
+const hojaDer = s("rect", { x: 150, y: 52, width: 18, height: 34, rx: 3, fill: "url(#caoba)", stroke: "url(#oro)", "stroke-width": 1.2 }, puerta);
+// La caja del reloj.
+s("rect", { x: 42, y: 70, width: 216, height: 216, rx: 22, fill: "url(#caoba)", stroke: "url(#oro)", "stroke-width": 3 }, svg);
+// El tronco con su ventanita, donde se mueve el péndulo.
+s("path", { d: "M84,280 L216,280 L206,500 Q150,520 94,500 Z", fill: "url(#caoba)", stroke: "url(#oro)", "stroke-width": 3 }, svg);
+s("path", { d: "M102,300 L198,300 L190,478 Q150,492 110,478 Z", fill: "url(#fondoCaja)" }, svg);
+const pendulo = s("g", {}, svg);
+s("rect", { x: 148.6, y: 286, width: 2.8, height: 150, fill: "url(#oro)" }, pendulo);
+s("circle", { cx: 150, cy: 444, r: 24, fill: "url(#oro)", stroke: "#8a5a14", "stroke-width": 1 }, pendulo);
+s("circle", { cx: 150, cy: 444, r: 17, fill: "none", stroke: "#fff2c0", "stroke-width": 0.8, opacity: 0.7 }, pendulo);
+s("path", { d: "M150,452 C138,444 142,432 150,438 C158,432 162,444 150,452 Z", fill: "#b8284c" }, pendulo);
+s("path", { d: "M102,300 L198,300 L190,478 Q150,492 110,478 Z", fill: "url(#vidrio)", stroke: "url(#oro)", "stroke-width": 1.4 }, svg);
+s("rect", { x: 70, y: 504, width: 160, height: 12, rx: 5, fill: "url(#oro)" }, svg);
+// El bisel y la esfera.
+s("circle", { cx, cy, r: R + 10, fill: "url(#oro)" }, svg);
+s("circle", { cx, cy, r: R + 3, fill: "none", stroke: "#7a4a10", "stroke-width": 1 }, svg);
+s("circle", { cx, cy, r: R, fill: "url(#esmalte)" }, svg);
+// Guirnalda de corazoncitos en el borde de la esfera.
+for (let i = 0; i < 60; i++) {
+  const a = i / 60 * TAU - Math.PI / 2;
+  const hora = i % 5 === 0;
+  const r1 = R - (hora ? 12 : 7), r2 = R - 3;
+  s("line", { x1: cx + Math.cos(a) * r1, y1: cy + Math.sin(a) * r1, x2: cx + Math.cos(a) * r2, y2: cy + Math.sin(a) * r2, stroke: hora ? "#6a3a1a" : "#b89468", "stroke-width": hora ? 2 : 0.8, "stroke-linecap": "round" }, svg);
+}
+const numeros = s("g", { "font-family": "'Cormorant Garamond', Georgia, serif", "font-size": 19, "font-weight": 600, fill: "#4a2a1a", "text-anchor": "middle" }, svg);
+for (let h = 1; h <= 12; h++) {
+  const a = h / 12 * TAU - Math.PI / 2;
+  const t = s("text", { x: cx + Math.cos(a) * (R - 28), y: cy + Math.sin(a) * (R - 28) + 6.5 }, numeros);
+  t.textContent = h;
+}
+// Una rueda de corazoncitos dorados que gira en el centro, como un volante.
+const volante = s("g", {}, svg);
+for (let i = 0; i < 8; i++) {
+  const a = i / 8 * TAU;
+  s("path", { d: `M${cx + Math.cos(a) * 24},${cy + Math.sin(a) * 24 + 3} c-4,-3 -3,-7 0,-5 c3,-2 4,2 0,5 z`, fill: "#c99a44", opacity: 0.55 }, volante);
+}
+s("circle", { cx, cy, r: 30, fill: "none", stroke: "#c99a44", "stroke-width": 0.6, opacity: 0.5 }, svg);
+// Las agujas.
+const aHora = s("path", { d: `M${cx - 3.2},${cy + 12} L${cx - 2},${cy - 44} Q${cx},${cy - 60} ${cx + 2},${cy - 44} L${cx + 3.2},${cy + 12} Z`, fill: "url(#acero)" }, svg);
+const aMin = s("path", { d: `M${cx - 2.2},${cy + 16} L${cx - 1.2},${cy - 70} Q${cx},${cy - 86} ${cx + 1.2},${cy - 70} L${cx + 2.2},${cy + 16} Z`, fill: "url(#acero)" }, svg);
+const aSeg = s("g", {}, svg);
+s("line", { x1: cx, y1: cy + 20, x2: cx, y2: cy - 84, stroke: "#b8284c", "stroke-width": 1.1 }, aSeg);
+s("path", { d: `M${cx},${cy - 60} c-5,-4 -3.5,-9 0,-6.5 c3.5,-2.5 5,2.5 0,6.5 z`, fill: "#b8284c" }, aSeg);
+s("circle", { cx, cy, r: 5, fill: "url(#oro)" }, svg);
+s("path", { d: `M${cx - 70},${cy - 72} A100,100 0 0 1 ${cx + 40},${cy - 92}`, fill: "none", stroke: "rgba(255,255,255,.55)", "stroke-width": 5, "stroke-linecap": "round", opacity: 0.5 }, svg);
 
+/* ══════════════════════════════════════════════════════════════════════
+   LA HORA
+   Empieza en la hora de verdad y corre como un reloj normal. Si giras
+   el minutero, mandas tú.
+   ══════════════════════════════════════════════════════════════════════ */
+const ahora0 = new Date();
+let minutos = ahora0.getHours() * 60 + ahora0.getMinutes() + ahora0.getSeconds() / 60;
+let girado = 0;                     // minutos que has hecho girar tú
+let dosDicho = false;
+let dedo = null;
+
+function centroEnPantalla() {
+  const r = svg.getBoundingClientRect();
+  const k = r.height / 560;
+  const ancho = 300 * k;
+  const x0 = r.left + (r.width - ancho) / 2;
+  return [x0 + cx * k, r.top + cy * k, k];
+}
+svg.addEventListener("pointerdown", (e) => {
+  despertar();
+  const [x, y] = centroEnPantalla();
+  dedo = { id: e.pointerId, ang: Math.atan2(e.clientY - y, e.clientX - x) };
+  try { svg.setPointerCapture(e.pointerId); } catch { /* nada */ }
+});
+svg.addEventListener("pointermove", (e) => {
+  if (!dedo || e.pointerId !== dedo.id) return;
+  const [x, y] = centroEnPantalla();
+  const ang = Math.atan2(e.clientY - y, e.clientX - x);
+  let d = ang - dedo.ang;
+  if (d > Math.PI) d -= TAU; else if (d < -Math.PI) d += TAU;
+  dedo.ang = ang;
+  const m = d / TAU * 60;
+  minutos += m;
+  girado += Math.abs(m);
+  tic(Math.abs(m));
+});
+const soltar = (e) => { if (dedo && e.pointerId === dedo.id) dedo = null; };
+svg.addEventListener("pointerup", soltar);
+svg.addEventListener("pointercancel", soltar);
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL SONIDO: el tic-tac, el trinquete al girar y la campana de la hora
+   ══════════════════════════════════════════════════════════════════════ */
+let ac = null, salida = null;
 function despertar() {
-  try {
-    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
-    if (audio.state === "suspended") audio.resume();
-  } catch { audio = null; }
-  return audio;
+  if (ac) { if (ac.state === "suspended") ac.resume(); return ac; }
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+  salida = ac.createGain();
+  salida.gain.value = 0.9;
+  salida.connect(ac.destination);
+  return ac;
 }
-
-/** El tic: un chasquido cortísimo de madera. */
-function tic() {
-  const ahora = performance.now();
-  if (ahora - ultimoTic < 55) return;
-  ultimoTic = ahora;
-  if (!despertar()) return;
-  const t0 = audio.currentTime;
-  const n = Math.floor(audio.sampleRate * 0.02);
-  const buf = audio.createBuffer(1, n, audio.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
-  const src = audio.createBufferSource();
-  src.buffer = buf;
-  const f = audio.createBiquadFilter();
-  f.type = "bandpass";
-  f.frequency.value = azar(2200, 3400);
-  const g = audio.createGain();
-  g.gain.value = 0.07;
-  src.connect(f).connect(g).connect(audio.destination);
-  src.start(t0);
+function click(t, tono, v, ambiente) {
+  const n = Math.floor(ac.sampleRate * 0.012);
+  const b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 5);
+  const src = ac.createBufferSource(); src.buffer = b;
+  const f = ac.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = tono; f.Q.value = 5;
+  const gg = ac.createGain(); gg.gain.value = v;
+  src.connect(f).connect(gg);
+  if (ambiente && window.LibroSonido) window.LibroSonido.ambiente(gg); else gg.connect(salida);
+  src.start(t);
 }
-
-/** La campanada de la hora: grave, larga, con su armónico. */
-function campanada(i) {
-  if (!despertar()) return;
-  const t0 = audio.currentTime;
-  /* Más grave de madrugada y más clara de día: se reconoce la hora sin
-     mirar el número. */
-  const base = 196 * Math.pow(2, ((i + 7) % 12) / 20);
-  for (const [mult, amp, largo] of [[1, 0.09, 3.2], [2.02, 0.035, 1.9], [3.01, 0.018, 1.2]]) {
-    const o = audio.createOscillator();
-    const g = audio.createGain();
-    o.type = "sine";
-    o.frequency.setValueAtTime(base * mult, t0);
-    g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(amp, t0 + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + largo);
-    o.connect(g).connect(audio.destination);
-    o.start(t0); o.stop(t0 + largo + 0.1);
+let acumTic = 0;
+function tic(m) {
+  if (!ac) return;
+  acumTic += m;
+  if (acumTic < 1) return;
+  acumTic = 0;
+  click(ac.currentTime, 3200, 0.1, false);
+}
+function campanada(n) {
+  if (!ac) return;
+  const t = ac.currentTime;
+  for (let k = 0; k < n; k++) {
+    for (const [m, a, dur] of [[1, 1, 3], [2.4, 0.35, 1.6], [3.9, 0.15, 0.9], [0.5, 0.3, 3.5]]) {
+      const o = ac.createOscillator(), gg = ac.createGain();
+      o.frequency.value = 523.25 * m;
+      const t0 = t + k * 0.55;
+      gg.gain.setValueAtTime(0, t0);
+      gg.gain.linearRampToValueAtTime(0.05 * a, t0 + 0.005);
+      gg.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(gg).connect(salida);
+      o.start(t0); o.stop(t0 + dur + 0.05);
+    }
   }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   LOS SECRETOS
+   LA LUZ DEL CUARTO SEGÚN LA HORA
    ══════════════════════════════════════════════════════════════════════ */
-
-/* 1. Pasar por las doce horas: la chapa del péndulo se da la vuelta y se
-      ven las iniciales grabadas, con su fecha.                        */
-const pasadas = new Set();
-let chapa = 0;
-let chapaDicha = false;
-
-function contarHoras(i) {
-  pasadas.add(i);
-  if (pasadas.size >= 12 && chapa <= 0) {
-    chapa = 0.001;
-    setTimeout(() => {
-      decir("Las doce horas. El día entero.", "Mira lo que hay grabado en el péndulo.");
-      chapaDicha = true;
-    }, 1500);
+const CIELO = [
+  [0, "#1b1a38", "#2a2448"], [5, "#3a2e5a", "#7a5270"], [6.5, "#f3b69a", "#e8a07a"],
+  [9, "#f7ecd6", "#ead8bc"], [13, "#fbf3e2", "#efe0c4"], [17, "#f8d6b0", "#eab48a"],
+  [19, "#c9788a", "#6a4468"], [21, "#2c2650", "#1e1a3a"], [24, "#1b1a38", "#2a2448"],
+];
+const hexA = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+function colorHora(h, cual) {
+  for (let i = 0; i < CIELO.length - 1; i++) {
+    const [h0, a0, b0] = CIELO[i], [h1, a1, b1] = CIELO[i + 1];
+    if (h >= h0 && h <= h1) {
+      const t = (h - h0) / (h1 - h0);
+      const c0 = hexA(cual ? b0 : a0), c1 = hexA(cual ? b1 : a1);
+      return `rgb(${c0.map((v, k) => Math.round(v + (c1[k] - v) * t)).join(",")})`;
+    }
   }
+  return "#000";
 }
-
-/* 2. Dejarlo EXACTAMENTE a las 12:00 y no tocarlo: a los ocho segundos
-      se para el péndulo y se hace el silencio.                        */
-let enPunto = 0;
-let paradoDicho = false;
-
-/* 3. Girar muy deprisa, más de dos vueltas seguidas: el reloj se marea y
-      va hacia atrás un rato.                                          */
-let giroRapido = 0;
-let atras = 0;
 
 /* ══════════════════════════════════════════════════════════════════════
    EL BUCLE
    ══════════════════════════════════════════════════════════════════════ */
+let A = 0, H = 0, dpr = 1;
+let t0 = performance.now(), reloj = 0;
+let ultimaHora = Math.floor(minutos / 60), cucu = 0, relojTic = 0;
+const motas = Array.from({ length: 40 }, () => ({ x: Math.random(), y: Math.random(), v: azar(0.004, 0.012), f: Math.random() * TAU }));
+const corazones = [];
 
-let t0f = performance.now();
-let reloj = 0;
-let pendulo = 0;
-let ticAnterior = 0;
+function medir() {
+  const r = mundo.getBoundingClientRect();
+  A = r.width; H = r.height;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  luz.width = Math.round(A * dpr); luz.height = Math.round(H * dpr);
+  gl.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+new ResizeObserver(medir).observe(mundo);
+medir();
 
 function paso(ahora) {
   requestAnimationFrame(paso);
-  if (!A || !H) return;
-
-  let dt = (ahora - t0f) / 1000;
-  t0f = ahora;
-  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
-  else if (dt > 0.1) dt = 0.1;
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.25) dt = 1 / 60;
   reloj += dt;
 
-  const antes = t;
-  t = damp(t, tObj, 6, dt);
+  if (!dedo) minutos += dt / 60;             // corre como un reloj de verdad
+  const hDia = (((minutos / 60) % 24) + 24) % 24;
 
-  /* Un tic por cada minuto que pasa: sin esto el reloj es mudo mientras
-     se gira, y el tic es medio reloj. */
-  const min = Math.floor(t * 60);
-  if (min !== ticAnterior && arrastre) { ticAnterior = min; tic(); }
+  // Las agujas.
+  const m = ((minutos % 60) + 60) % 60, h12 = ((minutos / 60) % 12 + 12) % 12;
+  const seg = dedo ? (m * 60) % 60 : (new Date().getSeconds() + new Date().getMilliseconds() / 1000);
+  aMin.setAttribute("transform", `rotate(${(m * 6).toFixed(2)} ${cx} ${cy})`);
+  aHora.setAttribute("transform", `rotate(${(h12 * 30).toFixed(2)} ${cx} ${cy})`);
+  aSeg.setAttribute("transform", `rotate(${(seg * 6).toFixed(2)} ${cx} ${cy})`);
+  volante.setAttribute("transform", `rotate(${(reloj * 18 + minutos * 3).toFixed(2)} ${cx} ${cy})`);
 
-  /* --- anda solo --- */
-  quieta = arrastre ? 0 : quieta + dt;
-  if (CONF.solo && quieta > 3.5 && atras <= 0) {
-    tObj += CONF.velocidadSola * dt;
+  // El péndulo: dos segundos de ida y vuelta.
+  const angP = Math.sin(reloj * Math.PI) * 9;
+  pendulo.setAttribute("transform", `rotate(${angP.toFixed(2)} 150 286)`);
+  const tick = Math.floor(reloj);
+  if (tick !== relojTic) { relojTic = tick; if (ac) click(ac.currentTime, tick % 2 ? 2100 : 2600, 0.05, true); }
+
+  // Cada hora en punto: campanada y un corazón que sale por la puertita.
+  const hora = Math.floor(minutos / 60);
+  if (hora !== ultimaHora) {
+    if (hora > ultimaHora || dedo) { cucu = 1; campanada(dedo ? 1 : Math.min(3, ((hora % 12) + 12) % 12 || 12)); soltarCorazones(); }
+    ultimaHora = hora;
   }
+  cucu = Math.max(0, cucu - dt * 0.45);
+  const abre = cucu > 0.8 ? (1 - cucu) / 0.2 : cucu > 0.25 ? 1 : cucu / 0.25;
+  // Cada hoja de la puertita gira sobre su bisagra.
+  const k = (1 - abre * 0.85).toFixed(3);
+  hojaIzq.setAttribute("transform", `translate(132 0) scale(${k} 1) translate(-132 0)`);
+  hojaDer.setAttribute("transform", `translate(168 0) scale(${k} 1) translate(-168 0)`);
+  const sale = abre * (1 + Math.sin(reloj * 14) * 0.05 * abre);
+  corazonCucu.setAttribute("transform", `translate(150 ${(76 - sale * 40).toFixed(2)}) scale(${(0.8 + sale * 0.4).toFixed(3)})`);
 
-  /* --- el secreto del mareo --- */
-  if (arrastre) {
-    const v = Math.abs(t - antes) / dt;
-    giroRapido = v > 9 ? giroRapido + dt : Math.max(0, giroRapido - dt);
-    if (giroRapido > 1.1 && atras <= 0) {
-      giroRapido = 0;
-      atras = 4;
-      decir("Se ha mareado.", "Ahora va hacia atrás. Deja que se le pase.");
-    }
+  // La luz del cuarto.
+  mundo.style.setProperty("--pared-a", colorHora(hDia, 0));
+  mundo.style.setProperty("--pared-b", colorHora(hDia, 1));
+  const noche = hDia < 6 || hDia > 19.8;
+  mundo.classList.toggle("is-noche", noche);
+
+  gl.clearRect(0, 0, A, H);
+  // El rayo de sol (o de luna) que cruza la pared con la hora.
+  const dia = clamp((hDia - 6) / 13, 0, 1);
+  const bx = A * (1.1 - dia * 1.2), fuerza = noche ? 0.12 : Math.sin(dia * Math.PI) * 0.35 + 0.08;
+  gl.save();
+  gl.translate(bx, H * 0.1);
+  gl.rotate(0.45);
+  const rayo = gl.createLinearGradient(-A * 0.25, 0, A * 0.25, 0);
+  const col = noche ? "190,205,255" : hDia > 16 ? "255,180,120" : "255,240,200";
+  rayo.addColorStop(0, `rgba(${col},0)`);
+  rayo.addColorStop(0.5, `rgba(${col},${fuerza})`);
+  rayo.addColorStop(1, `rgba(${col},0)`);
+  gl.fillStyle = rayo;
+  gl.fillRect(-A * 0.25, -H * 0.3, A * 0.5, H * 1.8);
+  gl.restore();
+  // El polvito que flota en la luz.
+  for (const p of motas) {
+    p.y -= p.v * dt; p.x += Math.sin(reloj * 0.5 + p.f) * 0.002 * dt;
+    if (p.y < -0.02) { p.y = 1.02; p.x = Math.random(); }
+    const b = 0.3 + 0.7 * Math.abs(Math.sin(reloj + p.f));
+    gl.fillStyle = `rgba(${col},${(fuerza * b * 1.8).toFixed(3)})`;
+    gl.beginPath(); gl.arc(p.x * A, p.y * H, 1.1, 0, TAU); gl.fill();
   }
-  if (atras > 0) {
-    atras -= dt;
-    tObj -= 1.6 * dt;
-    if (atras <= 0) decir("Ya está.", "Perdona, es que le has dado mucha cuerda.");
+  // Los corazones que suben después del cucú.
+  for (let i = corazones.length - 1; i >= 0; i--) {
+    const c = corazones[i];
+    c.t += dt;
+    if (c.t > c.dur) { corazones.splice(i, 1); continue; }
+    c.x += c.vx * dt; c.y += c.vy * dt; c.vy += 10 * dt;
+    const a = Math.sin(c.t / c.dur * Math.PI);
+    gl.save();
+    gl.translate(c.x, c.y);
+    gl.rotate(Math.sin(reloj * 2 + c.f) * 0.3);
+    gl.globalAlpha = a;
+    gl.fillStyle = c.col;
+    const r = c.r;
+    gl.beginPath();
+    gl.moveTo(0, r * 0.8);
+    gl.bezierCurveTo(-r * 1.4, -r * 0.1, -r * 0.55, -r * 1.05, 0, -r * 0.35);
+    gl.bezierCurveTo(r * 0.55, -r * 1.05, r * 1.4, -r * 0.1, 0, r * 0.8);
+    gl.fill();
+    gl.restore();
   }
+  gl.globalAlpha = 1;
 
-  /* --- el secreto de las doce en punto --- */
-  const cerca = Math.abs(t - Math.round(t)) < 0.01 && (((Math.round(t) % 12) + 12) % 12) === 0;
-  enPunto = cerca && !arrastre ? enPunto + dt : 0;
-  if (enPunto > 8 && !paradoDicho) {
-    paradoDicho = true;
-    decir("Se ha parado el péndulo.", "A las doce en punto no hace falta que pase nada.");
-    setTimeout(() => { paradoDicho = false; }, 30000);
-  }
-  const parado = enPunto > 8;
-
-  /* El péndulo: un balanceo de dos segundos, que es lo que tarda uno de
-     verdad. Se frena hasta pararse en el secreto. */
-  pendulo = parado ? damp(pendulo, 0, 1.2, dt) : Math.sin(reloj * Math.PI) * 0.34;
-
-  if (chapa > 0) chapa = Math.min(1, chapa + dt * 0.5);
-
-  anunciar();
-  const hs = String(hh()).padStart(2, "0");
-  const ms = String(mm()).padStart(2, "0");
-  elHora.textContent = "";
-  elHora.append(document.createTextNode(`${hs}:${ms}`));
-  const s = document.createElement("small");
-  s.textContent = arrastre ? "sigue girando" : parado ? "en silencio" : "gira las agujas";
-  elHora.append(s);
-
-  dibujar(dt, parado);
-}
-
-function dibujar(dt, parado) {
-  /* --- el cielo, sacado de la hora --- */
-  const i = ((Math.floor(t) % 12) + 12) % 12;
-  const j = (i + 1) % 12;
-  const k = ((t % 1) + 1) % 1;
-  const c0 = mezColor(CONF.horas[i].luz[0], CONF.horas[j].luz[0], k);
-  const c1 = mezColor(CONF.horas[i].luz[1], CONF.horas[j].luz[1], k);
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, c0);
-  g.addColorStop(1, c1);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, A, H);
-
-  /* Las estrellas sólo de noche: se apagan solas al amanecer porque su
-     opacidad sale de lo claro que esté el cielo. */
-  const noche = clamp(1 - (Math.abs(((t + 6) % 12) - 6) / 6), 0, 1);
-  if (noche > 0.02) {
-    for (let s = 0; s < 70; s++) {
-      const sx = ((s * 61) % 100) / 100 * A;
-      const sy = ((s * 37) % 100) / 100 * H * 0.75;
-      ctx.globalAlpha = noche * (0.3 + 0.4 * Math.sin(reloj * 1.4 + s));
-      ctx.fillStyle = "#e0e8ff";
-      ctx.beginPath();
-      ctx.arc(sx, sy, 0.7 + (s % 3) * 0.5, 0, 6.283);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  dibujarCaja();
-  dibujarEsfera();
-  dibujarPendulo(parado);
-}
-
-function dibujarCaja() {
-  /* La caja de madera del reloj, detrás de todo. */
-  const w = R * 2.5, hAlto = R * 4.0;
-  const x = cx - w / 2, y = cy - R * 1.5;
-  const g = ctx.createLinearGradient(x, y, x + w, y + hAlto);
-  g.addColorStop(0, "#5c3a28");
-  g.addColorStop(0.5, "#42291c");
-  g.addColorStop(1, "#2a1810");
-  ctx.fillStyle = g;
-  /* La coronita de arriba: dos curvas y un remate. */
-  ctx.beginPath();
-  ctx.moveTo(x, y + R * 0.5);
-  ctx.quadraticCurveTo(cx, y - R * 0.42, x + w, y + R * 0.5);
-  ctx.lineTo(x + w, y + hAlto);
-  ctx.lineTo(x, y + hAlto);
-  ctx.closePath();
-  ctx.fill();
-  /* El filete dorado del canto. */
-  ctx.strokeStyle = "rgba(214, 164, 92, 0.42)";
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.moveTo(x + 7, y + R * 0.56);
-  ctx.quadraticCurveTo(cx, y - R * 0.3, x + w - 7, y + R * 0.56);
-  ctx.lineTo(x + w - 7, y + hAlto - 7);
-  ctx.lineTo(x + 7, y + hAlto - 7);
-  ctx.closePath();
-  ctx.stroke();
-  /* El remate de arriba del todo. */
-  ctx.fillStyle = "#d6a45c";
-  ctx.beginPath();
-  ctx.arc(cx, y - R * 0.34, R * 0.07, 0, 6.283);
-  ctx.fill();
-}
-
-function dibujarEsfera() {
-  /* El cristal y el fondo de la esfera. */
-  const g = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.35, R * 0.1, cx, cy, R);
-  g.addColorStop(0, "#fbf2dc");
-  g.addColorStop(0.72, "#eddcbc");
-  g.addColorStop(1, "#d4bf9a");
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.fill();
-
-  ctx.strokeStyle = "#d6a45c";
-  ctx.lineWidth = R * 0.055;
-  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.stroke();
-  ctx.strokeStyle = "rgba(90, 60, 30, 0.35)";
-  ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.arc(cx, cy, R * 0.9, 0, 6.283); ctx.stroke();
-
-  /* Los números en romano, que es lo que pide un reloj así. */
-  const romanos = ["XII", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI"];
-  ctx.fillStyle = "#4a3320";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.font = `600 ${Math.round(R * 0.13)}px Georgia, "Times New Roman", serif`;
-  for (let i = 0; i < 12; i++) {
-    const a = (i / 12) * 6.283 - Math.PI / 2;
-    const rx = cx + Math.cos(a) * R * 0.76;
-    const ry = cy + Math.sin(a) * R * 0.76;
-    /* La hora en la que está la aguja se enciende. */
-    const esta = (((Math.round(t) % 12) + 12) % 12) === i;
-    if (esta) {
-      const gl = ctx.createRadialGradient(rx, ry, 0, rx, ry, R * 0.2);
-      gl.addColorStop(0, "rgba(255, 190, 110, 0.6)");
-      gl.addColorStop(1, "rgba(255, 190, 110, 0)");
-      ctx.fillStyle = gl;
-      ctx.beginPath(); ctx.arc(rx, ry, R * 0.2, 0, 6.283); ctx.fill();
-      ctx.fillStyle = "#9c5220";
-    } else {
-      ctx.fillStyle = "#4a3320";
-    }
-    ctx.fillText(romanos[i], rx, ry);
-  }
-  /* Las rayitas de los minutos. */
-  for (let i = 0; i < 60; i++) {
-    if (i % 5 === 0) continue;
-    const a = (i / 60) * 6.283 - Math.PI / 2;
-    ctx.strokeStyle = "rgba(90, 60, 30, 0.34)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(cx + Math.cos(a) * R * 0.86, cy + Math.sin(a) * R * 0.86);
-    ctx.lineTo(cx + Math.cos(a) * R * 0.9, cy + Math.sin(a) * R * 0.9);
-    ctx.stroke();
-  }
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-
-  /* Las agujas. */
-  const aH = (t / 12) * 6.283 - Math.PI / 2;
-  const aM = ((t % 1) * 6.283) - Math.PI / 2;
-  aguja(aH, R * 0.48, R * 0.035, "#3a2718");
-  aguja(aM, R * 0.74, R * 0.022, "#3a2718");
-  /* Y el segundero, fino y rojo, que va solo siempre. */
-  const aS = (reloj % 60) / 60 * 6.283 - Math.PI / 2;
-  aguja(aS, R * 0.8, R * 0.008, "#b03a2a");
-
-  ctx.fillStyle = "#d6a45c";
-  ctx.beginPath(); ctx.arc(cx, cy, R * 0.045, 0, 6.283); ctx.fill();
-  ctx.fillStyle = "#3a2718";
-  ctx.beginPath(); ctx.arc(cx, cy, R * 0.02, 0, 6.283); ctx.fill();
-
-  /* El reflejo del cristal, en media luna. */
-  ctx.save();
-  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.clip();
-  ctx.globalAlpha = 0.14;
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.ellipse(cx - R * 0.35, cy - R * 0.45, R * 0.55, R * 0.32, -0.6, 0, 6.283);
-  ctx.fill();
-  ctx.restore();
-  ctx.globalAlpha = 1;
-}
-
-function aguja(a, largo, grosor, color) {
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(a);
-  ctx.fillStyle = color;
-  /* Con una colita hacia atrás: una aguja de reloj no sale del centro,
-     lo cruza. */
-  ctx.beginPath();
-  ctx.moveTo(-largo * 0.16, -grosor);
-  ctx.lineTo(largo * 0.86, -grosor * 0.4);
-  ctx.lineTo(largo, 0);
-  ctx.lineTo(largo * 0.86, grosor * 0.4);
-  ctx.lineTo(-largo * 0.16, grosor);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-}
-
-function dibujarPendulo(parado) {
-  const colgadoY = cy + R * 1.14;
-  const largo = R * 1.0;
-  const a = pendulo;
-  const px = cx + Math.sin(a) * largo;
-  const py = colgadoY + Math.cos(a) * largo;
-
-  /* La varilla. */
-  ctx.strokeStyle = "#8f7048";
-  ctx.lineWidth = R * 0.022;
-  ctx.beginPath();
-  ctx.moveTo(cx, colgadoY);
-  ctx.lineTo(px, py);
-  ctx.stroke();
-
-  /* La chapa. Se da la vuelta cuando se han visto las doce horas: el
-     giro se finge estrechándola, que es lo que hace una chapa plana al
-     darse la vuelta, y así nunca desaparece del todo. */
-  const rr = R * 0.22;
-  const vuelta = chapa > 0 ? Math.min(1, chapa) : 0;
-  const ancho = vuelta > 0 ? Math.abs(Math.cos(vuelta * Math.PI)) * 0.78 + 0.22 : 1;
-  const detras = vuelta > 0.5;
-
-  ctx.save();
-  ctx.translate(px, py);
-  ctx.scale(ancho, 1);
-  const g = ctx.createRadialGradient(-rr * 0.3, -rr * 0.35, rr * 0.1, 0, 0, rr);
-  g.addColorStop(0, "#f2cd86");
-  g.addColorStop(0.6, "#d6a45c");
-  g.addColorStop(1, "#8f6a2c");
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.arc(0, 0, rr, 0, 6.283); ctx.fill();
-  ctx.strokeStyle = "rgba(90, 60, 20, 0.5)";
-  ctx.lineWidth = 1.4;
-  ctx.beginPath(); ctx.arc(0, 0, rr * 0.82, 0, 6.283); ctx.stroke();
-
-  if (detras) {
-    /* LAS INICIALES. Grabadas, no pintadas: una sombra clara debajo y el
-       trazo oscuro encima, que es como se ve algo hundido en metal. */
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = `600 ${Math.round(rr * 0.62)}px Georgia, "Times New Roman", serif`;
-    ctx.fillStyle = "rgba(255, 240, 200, 0.55)";
-    ctx.fillText(CONF.iniciales, 0.8, -rr * 0.06);
-    ctx.fillStyle = "rgba(80, 50, 10, 0.85)";
-    ctx.fillText(CONF.iniciales, 0, -rr * 0.08);
-    ctx.font = `400 ${Math.round(rr * 0.2)}px ui-sans-serif, system-ui, sans-serif`;
-    ctx.fillStyle = "rgba(80, 50, 10, 0.6)";
-    ctx.fillText("siempre", 0, rr * 0.42);
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-  }
-  ctx.restore();
-
-  /* Y cuando está parado, un halo quietísimo alrededor. */
-  if (parado) {
-    const gl = ctx.createRadialGradient(px, py, 0, px, py, rr * 4);
-    gl.addColorStop(0, "rgba(255, 210, 150, 0.16)");
-    gl.addColorStop(1, "rgba(255, 210, 150, 0)");
-    ctx.fillStyle = gl;
-    ctx.beginPath(); ctx.arc(px, py, rr * 4, 0, 6.283); ctx.fill();
+  // La segunda frase, cuando has recorrido medio día con las agujas.
+  if (!dosDicho && girado > 12 * 60) {
+    dosDicho = true;
+    elDos.classList.add("is-ve");
+    elPista.textContent = "a cualquier hora";
+    campanada(3);
+    for (let k = 0; k < 3; k++) setTimeout(soltarCorazones, k * 400);
   }
 }
 
-/* ---- Arranque -------------------------------------------------------------- */
+function soltarCorazones() {
+  const r = svg.getBoundingClientRect(), m = mundo.getBoundingClientRect();
+  const k = r.height / 560;
+  const x = r.left - m.left + (r.width - 300 * k) / 2 + 150 * k, y = r.top - m.top + 40 * k;
+  for (let i = 0; i < 9; i++) {
+    corazones.push({ x, y, vx: azar(-40, 40), vy: azar(-70, -30), t: 0, dur: azar(2.2, 3.4), r: azar(4, 8), f: Math.random() * TAU, col: ["#d62a4e", "#ff8fa8", "#e9557f"][i % 3] });
+  }
+}
 
-medir();
-tObj = 7;   // empieza a las siete, en el primer café
-t = 7;
-decir("Gira las agujas. Cada hora tiene la suya.");
 requestAnimationFrame(paso);
-
+setTimeout(() => elUno.classList.add("is-ve"), suave ? 0 : 500);
 })();
 </script>
 </body>
