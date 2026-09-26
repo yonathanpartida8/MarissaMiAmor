@@ -216,9 +216,13 @@ function ruidoBlanco(seg) {
 function despertar() {
   if (ac) { if (ac.state === "suspended") ac.resume(); return ac; }
   try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
-  salida = ac.createGain(); salida.gain.value = 0.95;
+  // Los truenos van fuertes: un compresor suave que sólo evita que
+  // revienten, y ganancia de sobra detrás.
+  salida = ac.createGain(); salida.gain.value = 1.6;
   const comp = ac.createDynamicsCompressor();
-  salida.connect(comp).connect(ac.destination);
+  comp.threshold.value = -8; comp.knee.value = 8; comp.ratio.value = 3; comp.attack.value = 0.004; comp.release.value = 0.25;
+  const final = ac.createGain(); final.gain.value = 1.35;
+  salida.connect(comp).connect(final).connect(ac.destination);
   // La lluvia y el viento son ambiente: no apartan la canción del libro.
   const conectar = (n) => { if (window.LibroSonido) window.LibroSonido.ambiente(n); else n.connect(ac.destination); };
   const s = ac.createBufferSource(); s.buffer = ruidoBlanco(3); s.loop = true;
@@ -246,19 +250,26 @@ function trueno(cerca) {
   lp.frequency.exponentialRampToValueAtTime(90 + cerca * 60, t + dur);
   const gg = ac.createGain();
   gg.gain.setValueAtTime(0.0001, t);
-  gg.gain.exponentialRampToValueAtTime(0.5 + cerca * 0.9, t + 0.08 + (1 - cerca) * 0.5);
+  gg.gain.exponentialRampToValueAtTime(0.9 + cerca * 1.5, t + 0.08 + (1 - cerca) * 0.5);
   // Retumba: sube y baja varias veces mientras se apaga.
   let k = t + 0.3;
-  while (k < t + dur) { gg.gain.linearRampToValueAtTime((0.2 + Math.random() * 0.6) * (1 - (k - t) / dur) * (0.6 + cerca), k); k += azar(0.15, 0.5); }
+  while (k < t + dur) { gg.gain.linearRampToValueAtTime((0.4 + Math.random() * 0.9) * (1 - (k - t) / dur) * (0.8 + cerca), k); k += azar(0.15, 0.5); }
   gg.gain.linearRampToValueAtTime(0.0001, t + dur);
   const pan = ac.createStereoPanner ? ac.createStereoPanner() : null;
   if (pan) { pan.pan.value = azar(-0.5, 0.5); s.connect(lp).connect(gg).connect(pan).connect(salida); } else s.connect(lp).connect(gg).connect(salida);
   s.start(t);
-  if (cerca > 0.55) {
-    const c = ac.createBufferSource(); c.buffer = ruidoBlanco(0.4);
-    const hp = ac.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 1500;
+  // El golpe grave que se siente en el pecho.
+  const sub = ac.createOscillator(), sg = ac.createGain();
+  sub.type = "sine"; sub.frequency.setValueAtTime(58, t); sub.frequency.exponentialRampToValueAtTime(26, t + 1.8);
+  sg.gain.setValueAtTime(0.0001, t); sg.gain.exponentialRampToValueAtTime(0.5 + cerca * 0.9, t + 0.06 + (1 - cerca) * 0.4);
+  sg.gain.exponentialRampToValueAtTime(0.0001, t + 2.2 + cerca * 1.5);
+  sub.connect(sg).connect(salida); sub.start(t); sub.stop(t + 4);
+  if (cerca > 0.35) {
+    // El chasquido seco del rayo cuando cae cerca.
+    const c = ac.createBufferSource(); c.buffer = ruidoBlanco(0.5);
+    const hp = ac.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 1200;
     const cg = ac.createGain();
-    cg.gain.setValueAtTime(0.9 * cerca, t); cg.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+    cg.gain.setValueAtTime(1.4 * cerca, t); cg.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
     c.connect(hp).connect(cg).connect(salida); c.start(t);
   }
 }
