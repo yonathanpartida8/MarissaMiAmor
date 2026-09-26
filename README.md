@@ -526,7 +526,7 @@ barra y en el índice.
 **El sonido**: si tu página suena, la música del libro baja sola y vuelve
 despacio al terminar (lo hace `paginas-html/sonido-libro.js`). La canción de
 la caja de música es `paginas-html/ojos.mp3`, y las del tocadiscos van en la
-carpeta `tocadiscos musica/` como `musica1.mp3` … `musica5.mp3`.
+carpeta `tocadiscos musica/` como `musica1.mp3` … `musica5.mp3`. Las de la radio, en `la radio/` como `music1.mp3`, `music2.mp3`… (las que quieras).
 
 **Los colores del libro, si los quieres**: `var(--acento)`, `var(--papel)`,
 `var(--texto)`, `var(--tipo-titulo)`, `var(--hueco-barra)`… la lista entera

@@ -166,6 +166,7 @@ y los apunta en `archivos.js`:
 - `ojos.mp3` (aquí mismo, en `paginas-html/`) — la canción de la caja de música.
 - `tocadiscos musica/musica1.mp3` … `musica5.mp3` (la carpeta está en la raíz del proyecto) — las del tocadiscos, una por surco.
   Si falta alguna, ese surco toca una melodía hecha en el momento.
+- `la radio/music1.mp3`, `music2.mp3`… (carpeta en la raíz) — las canciones de la radio, una por emisora; puedes poner las que quieras.
 
 ---
 
@@ -202,12 +203,12 @@ archivo y sin descargar nada de fuera.
 | `página.html10.html` | **Tira una piedra.** Rebota en el lago y escribe con luz «Te amo» o «Siempre tuyo». |
 | `página.html11.html` | **Las polaroids.** Seis fotos sin revelar que se frotan con el dedo: las fotos que todavía nos debemos. |
 | `página.html12.html` | **El tren de noche.** Pasa otro tren seguido, la ventanilla se empaña y se aclara, y se puede escribir en el vaho. |
-| `página.html13.html` | **Los globos.** Cada uno se lleva un deseo escrito. |
+| `página.html13.html` | **Los globos.** Un atardecer sobre el pueblo: mantienes el dedo y el globo se infla; lo sueltas y se va con su deseo. Hay globos de corazón, y si tocas uno en el aire revienta en confeti. |
 | `página.html14.html` | **Agítala.** Una bola de nieve que se agita con el sensor de movimiento del teléfono (o arrastrando, si no hay sensor). |
 | `página.html15.html` | **Coge las que quieras.** Se escogen flores y se arma un ramo con su papel, su listón y su tarjeta. |
-| `página.html16.html` | **La radio.** Se enciende, se busca en el dial, y cada emisora dice lo suyo con su sintonía. |
-| `página.html17.html` | **Toca un alfiler.** Un mapa con cinco alfileres; cada uno abre su momento y el camino se va entintando. |
-| `página.html18.html` | **El caleidoscopio.** Se gira con el dedo o inclinando el teléfono y los cristales caen por los espejos. |
+| `página.html16.html` | **La radio.** Una radio de capilla de madera: se prende, se calientan los bulbos y cada emisora del dial toca una canción de la carpeta `la radio/` (music1, music2…), en vivo. |
+| `página.html17.html` | **Toca un alfiler.** Un mapa con cinco alfileres (donde te vi, el primer contacto, el 23 de agosto, el primer beso y el futuro); cada uno abre su momento y el camino se va entintando. |
+| `página.html18.html` | **El caleidoscopio.** Se gira con el dedo o inclinando el teléfono; cada vuelta suelta un piropo. |
 | `página.html19.html` | **El árbol de las estaciones.** Se arrastra de lado y pasa el año entero encima del mismo árbol. |
 | `página.html20.html` | **La cometa.** Con física de verdad: cuerda, cola y viento. |
 | `página.html21.html` | **El reloj.** De péndulo, con la hora real; cada hora sale un corazón por la puertita. |
@@ -215,7 +216,7 @@ archivo y sin descargar nada de fuera.
 | `página.html23.html` | **El café.** La leche se vierte con fluidos de verdad y se dibuja con el dedo. |
 | `página.html24.html` | **El tocadiscos.** Cinco surcos, cinco canciones (`tocadiscos musica/musica1…5`); la aguja salta entre ellas con fundido. |
 | `página.html25.html` | **Baja despacio.** Se baja al fondo del mar entre medusas; cuanto más hondo, menos luz. |
-| `página.html26.html` | **Enciende las luces.** Veinticuatro ventanas, cada una con su escena distinta, y fuegos artificiales al final. |
+| `página.html26.html` | **Enciende las luces.** Una calle entera que se recorre deslizando: 41 escenas en sus ventanas (se repiten si las apagas y prendes), y cosas que pasan en la calle y en el cielo. |
 | `página.html27.html` | **Sigue los puntos.** Un bastidor: se borda siguiendo los puntos y al terminar florece. |
 | `página.html28.html` | **Cuenta hasta el trueno.** Primero la tormenta llega, luego se cuenta desde el rayo hasta el trueno y se va acercando. |
 | `página.html29.html` | **Dale al quemador.** El globo sube del prado a las nubes, ve la curva de la Tierra y llega al espacio. |
