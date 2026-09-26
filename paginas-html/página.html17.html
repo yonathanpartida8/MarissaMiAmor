@@ -4,136 +4,228 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>El mapa de nosotros</title>
+<script src="sonido-libro.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Caveat:wght@500;700&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
-   Todo dentro de .mapa-mundo, con prefijo `mp-` en cada clase.
+   EL MAPA DE NOSOTROS — «Toca un alfiler»
+   Un mapa dibujado a mano con un camino punteado y cinco alfileres, en
+   orden: lo nuestro, desde el principio. Cada alfiler abre su nota; el
+   camino se va entintando conforme lo recorres. Prefijo `mp-`.
    ══════════════════════════════════════════════════════════════════════ */
-
-html, body { margin: 0; height: 100%; }
-
-.mapa-mundo {
-  position: absolute;
+html, body { margin: 0; height: 100%; overflow: hidden; background: #efe0c4; }
+.mp {
+  position: fixed;
   inset: 0;
   overflow: hidden;
-  isolation: isolate;
-  contain: layout paint;
-  background: #e6d9bd;
-  color: #4a3c28;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  touch-action: none;
-
-  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
-  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  touch-action: manipulation;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  color: #4a2a20;
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 20%, rgba(255, 248, 230, 0.8), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 80% 90%, rgba(196, 150, 100, 0.25), transparent 70%),
+    linear-gradient(160deg, #f5e8cf, #ead6b2 55%, #dcc398);
+  --seg-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seg-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
   --barra: var(--hueco-barra, 0rem);
-  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+  --suave: cubic-bezier(0.22, 1, 0.36, 1);
+  --tinta: #7a3b2e;
 }
+/* Las orillas del papel, tostadas por el tiempo. */
+.mp::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 70px rgba(120, 70, 30, 0.45), inset 0 0 18px rgba(90, 50, 20, 0.35);
+}
+.mp-grano { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0.55; mix-blend-mode: multiply; }
 
-.mapa-mundo .mp-lienzo {
+.mp-mapa {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  display: block;
-  /* Los toques los recoge `.mp-toque`, que va justo encima. */
+  overflow: visible;
+}
+.mp-lienzo { transition: transform 1100ms var(--suave); transform-origin: 0 0; }
+
+.mp-deco { fill: none; stroke: var(--tinta); stroke-linecap: round; stroke-linejoin: round; opacity: 0.35; }
+.mp-camino-fondo { fill: none; stroke: rgba(122, 59, 46, 0.35); stroke-width: 0.55; stroke-dasharray: 0.2 1.6; stroke-linecap: round; }
+.mp-camino-tinta { fill: none; stroke: #b3263e; stroke-width: 0.8; stroke-dasharray: 1.8 1.3; stroke-linecap: round; }
+.mp-icono { fill: none; stroke: var(--tinta); stroke-width: 0.45; stroke-linecap: round; stroke-linejoin: round; opacity: 0.8; transition: opacity 600ms ease; }
+.mp-alfiler { cursor: pointer; outline: none; }
+.mp-alfiler:focus-visible .mp-bola { stroke: #fff; stroke-width: 0.5; }
+.mp-alfiler .mp-cabeza { transition: transform 500ms var(--suave); transform-box: fill-box; transform-origin: 50% 100%; }
+.mp-alfiler.is-visto .mp-bola { fill: url(#bolaVista); }
+.mp-alfiler.is-actual .mp-cabeza { animation: mp-salta 900ms var(--suave); }
+@keyframes mp-salta {
+  0% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-2.4px) scale(1.12, 0.92); }
+  60% { transform: translateY(0) scale(0.94, 1.06); }
+  100% { transform: translateY(0) scale(1); }
+}
+.mp-num { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 600; fill: #fff6ef; text-anchor: middle; pointer-events: none; }
+.mp-onda { fill: none; stroke: #b3263e; stroke-width: 0.35; opacity: 0; }
+.mp-alfiler.is-llamando .mp-onda { animation: mp-onda 2.2s ease-out infinite; }
+@keyframes mp-onda { 0% { opacity: 0.7; r: 1.4; } 100% { opacity: 0; r: 5.5; } }
+
+.mp-cartela {
+  position: absolute;
+  top: calc(var(--seg-t) + 12px);
+  left: 50%;
+  transform: translateX(-50%) rotate(-1.2deg);
+  margin: 0;
+  padding: 6px 18px 8px;
+  font-family: "Caveat", "Segoe Print", cursive;
+  font-weight: 700;
+  font-size: clamp(1.4rem, 6.4vw, 1.9rem);
+  color: #7a3b2e;
+  background: rgba(255, 248, 232, 0.72);
+  border: 1px solid rgba(122, 59, 46, 0.35);
+  border-radius: 3px;
+  box-shadow: 0 6px 16px -10px rgba(80, 40, 20, 0.6);
+  white-space: nowrap;
   pointer-events: none;
 }
+.mp-cartela small {
+  display: block;
+  margin-top: -2px;
+  text-align: center;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-weight: 600;
+  font-size: 0.34em;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(122, 59, 46, 0.7);
+}
 
-/* El mapa entero. El libro sólo se queda el barrido que empieza en sus
-   24-44 px de borde. */
-.mapa-mundo .mp-toque {
+/* ---- La nota que se abre ---------------------------------------------- */
+.mp-nota {
   position: absolute;
-  inset: 0;
-  touch-action: none;
-  z-index: 2;
+  left: 50%;
+  bottom: calc(var(--seg-b) + var(--barra) + 12px);
+  width: min(92vw, 420px);
+  max-height: 46%;
+  box-sizing: border-box;
+  padding: 18px 20px 14px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 25px, rgba(122, 59, 46, 0.08) 25px 26px),
+    linear-gradient(170deg, #fffaf0, #fbefdc);
+  border-radius: 4px;
+  box-shadow: 0 18px 40px -18px rgba(70, 30, 10, 0.7), 0 2px 0 rgba(255, 255, 255, 0.8) inset;
+  transform: translate(-50%, 120%) rotate(3deg);
+  opacity: 0;
+  transition: transform 800ms var(--suave), opacity 500ms ease;
+  overflow: auto;
+  scrollbar-width: none;
+}
+.mp-nota::-webkit-scrollbar { display: none; }
+.mp-nota.is-abierta { transform: translate(-50%, 0) rotate(var(--giro, -0.8deg)); opacity: 1; }
+/* Un pedazo de cinta, sujetando la nota. */
+.mp-nota::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 84px;
+  height: 20px;
+  transform: translateX(-50%) rotate(-3deg);
+  background: rgba(240, 190, 190, 0.7);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+.mp-nota h2 {
+  margin: 0 0 6px;
+  font-family: "Caveat", "Segoe Print", cursive;
+  font-weight: 700;
+  font-size: clamp(1.5rem, 6.8vw, 1.95rem);
+  line-height: 1.05;
+  color: #a3243c;
+}
+.mp-nota p {
+  margin: 0 0 8px;
+  font-size: clamp(1.02rem, 4.4vw, 1.18rem);
+  line-height: 1.42;
+  color: #3e2419;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 700ms ease, transform 700ms var(--suave);
+}
+.mp-nota p.is-ve { opacity: 1; transform: none; }
+.mp-mando {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+.mp-mando button {
+  width: 40px; height: 40px;
+  border: 1px solid rgba(122, 59, 46, 0.3);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  color: #7a3b2e;
+  font: 600 1.3rem/1 "Cormorant Garamond", Georgia, serif;
   cursor: pointer;
 }
+.mp-mando button:disabled { opacity: 0.25; }
+.mp-puntos { display: flex; gap: 7px; }
+.mp-puntos i { width: 7px; height: 7px; border-radius: 50%; background: rgba(163, 36, 60, 0.25); transition: background 400ms ease, transform 400ms ease; }
+.mp-puntos i.is-actual { background: #a3243c; transform: scale(1.3); }
 
-.mapa-mundo .mp-ui {
+.mp-pista {
   position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-  padding:
-    calc(var(--seguro-t) + 18px) 22px
-    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
+  left: 0; right: 0;
+  bottom: calc(var(--seg-b) + var(--barra) + 18px);
+  margin: 0;
   text-align: center;
+  pointer-events: none;
+  font-size: clamp(0.6rem, 2.5vw, 0.7rem);
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(122, 59, 46, 0.7);
+  transition: opacity 600ms ease;
 }
+.mp.is-leyendo .mp-pista { opacity: 0; }
 
-.mapa-mundo .mp-titulo {
-  margin: 0;
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-size: clamp(1rem, 4.4vw, 1.4rem);
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  color: #7a6444;
-  opacity: 0.85;
-  transition: opacity 800ms var(--e-suave);
-}
-.mapa-mundo.is-mirando .mp-titulo { opacity: 0.22; }
-
-.mapa-mundo .mp-pie {
-  margin: 0;
-  min-height: 3.8em;
-  max-width: 23em;
-  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
-  line-height: 1.55;
-  color: #4e402c;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 660ms var(--e-suave), transform 660ms var(--e-suave);
-}
-.mapa-mundo .mp-pie.is-visible { opacity: 0.94; transform: none; }
-.mapa-mundo .mp-pie strong {
-  display: block;
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-weight: 500;
-  font-size: 1.1em;
-  letter-spacing: 0.06em;
-  color: #9c4a34;
-  margin-bottom: 0.15em;
-}
-.mapa-mundo .mp-pie em {
-  display: block;
-  margin-top: 0.3em;
-  font-family: var(--tipo-mano, "Segoe Script", cursive);
-  font-size: 1.16em;
-  font-style: normal;
-  color: #9c4a34;
-}
-
-.mapa-mundo .mp-cuenta {
-  position: absolute;
-  right: 20px;
-  top: calc(var(--seguro-t) + 18px);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
-  color: #8a7454;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mapa-mundo * { transition-duration: 1ms !important; }
+@media (orientation: landscape) and (max-height: 540px) {
+  .mp-nota {
+    left: auto;
+    right: calc(var(--seguro-lado, 0px) + 16px);
+    bottom: auto;
+    top: 50%;
+    width: min(44vw, 380px);
+    max-height: 84%;
+    transform: translate(120%, -50%) rotate(3deg);
+  }
+  .mp-nota.is-abierta { transform: translate(0, -50%) rotate(var(--giro, -0.8deg)); }
 }
 </style>
 </head>
 <body>
-
-<div class="mapa-mundo" id="mundo">
-  <canvas class="mp-lienzo" id="lienzo"></canvas>
-  <div class="mp-toque" id="toque" aria-hidden="true"></div>
-  <div class="mp-ui">
-    <h1 class="mp-titulo" id="titulo">Toca un alfiler</h1>
-    <p class="mp-pie" id="pie" role="status" aria-live="polite"></p>
-  </div>
-  <div class="mp-cuenta" id="cuenta" aria-hidden="true"></div>
+<div class="mp" id="mundo">
+  <svg class="mp-grano" aria-hidden="true">
+    <filter id="grano"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.3  0 0 0 0 0.18  0 0 0 0.35 0"/></filter>
+    <rect width="100%" height="100%" filter="url(#grano)"/>
+  </svg>
+  <svg class="mp-mapa" id="mapa" aria-label="El mapa de nosotros"></svg>
+  <p class="mp-cartela">El mapa de nosotros<small>toca un alfiler</small></p>
+  <p class="mp-pista" id="pista">empieza por el primero</p>
+  <article class="mp-nota" id="nota" aria-live="polite">
+    <h2 id="notaTitulo"></h2>
+    <div id="notaTexto"></div>
+    <div class="mp-mando">
+      <button type="button" id="antes" aria-label="Anterior">‹</button>
+      <div class="mp-puntos" id="puntos"></div>
+      <button type="button" id="despues" aria-label="Siguiente">›</button>
+    </div>
+  </article>
 </div>
 
 <script>
@@ -141,539 +233,412 @@ html, body { margin: 0; height: 100%; }
 "use strict";
 
 /* ══════════════════════════════════════════════════════════════════════
-   CONFIGURACIÓN EDITABLE
+   LO QUE HAY EN EL MAPA. Sólo esto, en este orden, con sus palabras.
    ══════════════════════════════════════════════════════════════════════ */
+const MOMENTOS = [
+  {
+    titulo: "Donde te vi:",
+    textos: ["En mi casa. Estabas tan bonita, sentada en mi sillón."],
+    icono: "sillon",
+  },
+  {
+    titulo: "Nuestro primer contacto:",
+    textos: [
+      "Tú me diste discos de videojuegos y yo me puse muy feliz.",
+      "Después hablamos por TikTok, nos tuvimos agregados en TikTok y yo te mandaba videos graciosos. Era mi manera rara de mostrar interés.",
+      "Rompí el hielo y te mostré todo mi cariño de una. Casi no sabía cómo retenerlo.",
+    ],
+    icono: "disco",
+  },
+  {
+    titulo: "23 de agosto de 2025:",
+    textos: ["Te pedí que fueras mi novia.", "Realmente te amo muchísimo."],
+    icono: "corazon",
+  },
+  {
+    titulo: "Después, nuestro primer beso.",
+    textos: ["Aunque fue algo chistoso, casi me desmayo. No dormí por horas."],
+    icono: "beso",
+  },
+  {
+    titulo: "El viaje.",
+    textos: ["Vivir en Morelia y consentirte tan lindo."],
+    icono: "maleta",
+  },
+];
 
-const CONF = {
-
-  /* ---- LOS SITIOS -----------------------------------------------------
-     Cada alfiler es un recuerdo. `x` e `y` van de 0 a 1 sobre el mapa,
-     así que valen igual en un móvil que en una tableta.
-
-     El ORDEN importa: la línea de puntos los une en este orden, y es la
-     que cuenta el viaje.                                               */
-  sitios: [
-    { x: 0.22, y: 0.30, nombre: "Donde te vi",
-      texto: "Estabas de espaldas y te reías de algo que no oí.",
-      firma: "Todavía me pregunto de qué." },
-    { x: 0.46, y: 0.22, nombre: "El primer café",
-      texto: "Pediste algo rarísimo y luego no te lo bebiste.",
-      firma: "Sigues haciéndolo." },
-    { x: 0.70, y: 0.34, nombre: "La cuesta",
-      texto: "Subimos hablando y no nos dimos cuenta de la cuesta.",
-      firma: "Contigo todo es menos cuesta." },
-    { x: 0.80, y: 0.55, nombre: "El banco",
-      texto: "Ese banco en el que se nos hizo de noche.",
-      firma: "Nos echaron del parque." },
-    { x: 0.56, y: 0.66, nombre: "La estación",
-      texto: "La primera vez que me costó irme.",
-      firma: "Y la última, y todas." },
-    { x: 0.30, y: 0.62, nombre: "Tu portal",
-      texto: "El sitio donde tardo media hora en despedirme.",
-      firma: "Ya lo sabes, no disimulo." },
-    { x: 0.17, y: 0.80, nombre: "Casa",
-      texto: "Ésta la pusimos entre los dos.",
-      firma: "Y es la única que no pienso mover." },
-  ],
-
-  /* ---- EL MAPA -------------------------------------------------------- */
-  rios: 2,
-  bosques: 7,
-  pueblos: 11,
-
-  /* ---- LA ROSA DE LOS VIENTOS ----------------------------------------- */
-  rosa: { x: 0.85, y: 0.14, r: 0.075 },
+/* ══════════════════════════════════════════════════════════════════════ */
+const mundo = document.getElementById("mundo");
+const mapa = document.getElementById("mapa");
+const nota = document.getElementById("nota");
+const elTitulo = document.getElementById("notaTitulo");
+const elTexto = document.getElementById("notaTexto");
+const btnAntes = document.getElementById("antes");
+const btnDespues = document.getElementById("despues");
+const elPuntos = document.getElementById("puntos");
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const NS = "http://www.w3.org/2000/svg";
+const s = (tag, attrs, padre) => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (padre) padre.appendChild(e);
+  return e;
 };
 
 /* ══════════════════════════════════════════════════════════════════════
-   La maquinaria.
+   LOS DIBUJITOS (a pluma): el sillón, el disco, el corazón, el beso y la
+   maleta. Cada uno en un cuadrito de 10×10, centrado en 0,0.
    ══════════════════════════════════════════════════════════════════════ */
-
-const mundo  = document.getElementById("mundo");
-const lienzo = document.getElementById("lienzo");
-const zona   = document.getElementById("toque");
-const elPie  = document.getElementById("pie");
-const elCue  = document.getElementById("cuenta");
-const ctx    = lienzo.getContext("2d", { alpha: false });
-
-const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const azar  = (a, b) => a + Math.random() * (b - a);
-const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
-
-let A = 0, H = 0, dpr = 1;
-
-/* El mapa dibujado se guarda en su propio lienzo y se pinta UNA VEZ.
-   Es un dibujo fijo: redibujar cada fotograma los ríos, los bosques y
-   los once pueblos sería tirar el presupuesto de la GPU en algo que no
-   se mueve. Lo que se repinta en cada cuadro son sólo los alfileres y
-   la línea, que sí cambian. */
-const fondo = document.createElement("canvas");
-const cf = fondo.getContext("2d");
-
-function medir() {
-  const r = mundo.getBoundingClientRect();
-  if (!r.width || !r.height) return;
-  A = r.width; H = r.height;
-  dpr = Math.min(window.devicePixelRatio || 1, 2);
-  for (const l of [lienzo, fondo]) {
-    l.width = Math.round(A * dpr);
-    l.height = Math.round(H * dpr);
-  }
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  cf.setTransform(dpr, 0, 0, dpr, 0, 0);
-  pintarMapa();
-}
-new ResizeObserver(medir).observe(mundo);
-
-/* ---- El mapa de fondo ---------------------------------------------------- */
-
-/** Un azar REPETIBLE: el mismo mapa cada vez que se mide, no uno nuevo. */
-let semilla = 20240214;
-function rnd() {
-  semilla = (semilla * 1664525 + 1013904223) % 4294967296;
-  return semilla / 4294967296;
-}
-
-function pintarMapa() {
-  semilla = 20240214;
-  const c = cf;
-
-  /* El papel. */
-  c.fillStyle = "#e6d9bd";
-  c.fillRect(0, 0, A, H);
-  /* Las manchas de la edad. */
-  for (let i = 0; i < 60; i++) {
-    const x = rnd() * A, y = rnd() * H, r = 8 + rnd() * 46;
-    const g = c.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(160, 130, 80, ${0.02 + rnd() * 0.035})`);
-    g.addColorStop(1, "rgba(160, 130, 80, 0)");
-    c.fillStyle = g;
-    c.fillRect(x - r, y - r, r * 2, r * 2);
-  }
-  /* La cuadrícula del cartógrafo. */
-  c.strokeStyle = "rgba(120, 95, 60, 0.13)";
-  c.lineWidth = 1;
-  for (let i = 1; i < 8; i++) {
-    c.beginPath(); c.moveTo(A * i / 8, 0); c.lineTo(A * i / 8, H); c.stroke();
-    c.beginPath(); c.moveTo(0, H * i / 8); c.lineTo(A, H * i / 8); c.stroke();
-  }
-
-  /* La costa: una orilla que cruza abajo a la derecha. */
-  c.fillStyle = "#bcd2c8";
-  c.beginPath();
-  c.moveTo(A, H * 0.86);
-  for (let x = A; x >= 0; x -= 14) {
-    const t = x / A;
-    c.lineTo(x, H * (0.86 + Math.sin(t * 7) * 0.035 + Math.sin(t * 2.3) * 0.05));
-  }
-  c.lineTo(0, H); c.lineTo(A, H);
-  c.closePath(); c.fill();
-  /* Las rayitas del agua, paralelas a la orilla. */
-  c.strokeStyle = "rgba(110, 145, 135, 0.4)";
-  for (let k = 1; k <= 3; k++) {
-    c.beginPath();
-    for (let x = 0; x <= A; x += 14) {
-      const t = x / A;
-      const y = H * (0.86 + Math.sin(t * 7) * 0.035 + Math.sin(t * 2.3) * 0.05) + k * 9;
-      x ? c.lineTo(x, y) : c.moveTo(x, y);
-    }
-    c.stroke();
-  }
-
-  /* Los ríos. */
-  c.strokeStyle = "rgba(120, 160, 175, 0.75)";
-  c.lineCap = "round";
-  for (let i = 0; i < CONF.rios; i++) {
-    let x = rnd() * A, y = -10;
-    c.lineWidth = 3.4;
-    c.beginPath();
-    c.moveTo(x, y);
-    while (y < H * 0.88) {
-      x += (rnd() - 0.5) * 60;
-      y += 26 + rnd() * 18;
-      c.lineTo(clamp(x, 6, A - 6), y);
-    }
-    c.stroke();
-  }
-
-  /* Los bosques: grupos de arbolitos. */
-  for (let i = 0; i < CONF.bosques; i++) {
-    const bx = rnd() * A, by = rnd() * H * 0.82;
-    const n = 4 + Math.floor(rnd() * 6);
-    for (let k = 0; k < n; k++) {
-      const x = bx + (rnd() - 0.5) * 60;
-      const y = by + (rnd() - 0.5) * 40;
-      c.fillStyle = "rgba(96, 124, 82, 0.62)";
-      c.beginPath();
-      c.moveTo(x, y - 7);
-      c.lineTo(x - 4.5, y + 3);
-      c.lineTo(x + 4.5, y + 3);
-      c.closePath(); c.fill();
-      c.fillStyle = "rgba(120, 95, 60, 0.6)";
-      c.fillRect(x - 0.8, y + 3, 1.6, 3);
-    }
-  }
-
-  /* Los pueblos: un cuadradito y su nombre fingido en rayitas. */
-  for (let i = 0; i < CONF.pueblos; i++) {
-    const x = 20 + rnd() * (A - 40), y = 20 + rnd() * (H * 0.8);
-    c.fillStyle = "rgba(120, 95, 60, 0.7)";
-    c.fillRect(x - 2.5, y - 2.5, 5, 5);
-    c.strokeStyle = "rgba(120, 95, 60, 0.35)";
-    c.lineWidth = 1.4;
-    c.beginPath();
-    c.moveTo(x + 6, y + 1);
-    c.lineTo(x + 6 + 10 + rnd() * 16, y + 1);
-    c.stroke();
-  }
-
-  /* Las montañas, arriba a la izquierda. */
-  for (let i = 0; i < 9; i++) {
-    const x = A * (0.05 + rnd() * 0.3), y = H * (0.06 + rnd() * 0.14);
-    const w = 9 + rnd() * 10;
-    c.strokeStyle = "rgba(120, 95, 60, 0.6)";
-    c.lineWidth = 1.6;
-    c.beginPath();
-    c.moveTo(x - w, y + w * 0.6);
-    c.lineTo(x, y - w * 0.6);
-    c.lineTo(x + w, y + w * 0.6);
-    c.stroke();
-  }
-
-  /* La rosa de los vientos. */
-  const rx = CONF.rosa.x * A, ry = CONF.rosa.y * H, rr = Math.min(A, H) * CONF.rosa.r;
-  c.strokeStyle = "rgba(120, 95, 60, 0.55)";
-  c.lineWidth = 1.2;
-  c.beginPath(); c.arc(rx, ry, rr, 0, 6.283); c.stroke();
-  c.beginPath(); c.arc(rx, ry, rr * 0.72, 0, 6.283); c.stroke();
-  for (let i = 0; i < 4; i++) {
-    const a = (i / 4) * 6.283 - Math.PI / 2;
-    c.fillStyle = i === 0 ? "rgba(156, 74, 52, 0.85)" : "rgba(120, 95, 60, 0.7)";
-    c.beginPath();
-    c.moveTo(rx + Math.cos(a) * rr, ry + Math.sin(a) * rr);
-    c.lineTo(rx + Math.cos(a + 1.4) * rr * 0.26, ry + Math.sin(a + 1.4) * rr * 0.26);
-    c.lineTo(rx + Math.cos(a - 1.4) * rr * 0.26, ry + Math.sin(a - 1.4) * rr * 0.26);
-    c.closePath(); c.fill();
-  }
-  c.fillStyle = "rgba(156, 74, 52, 0.9)";
-  c.font = `600 ${Math.round(rr * 0.34)}px ui-sans-serif, system-ui, sans-serif`;
-  c.textAlign = "center";
-  c.fillText("N", rx, ry - rr * 1.22);
-  c.textAlign = "left";
-
-  /* Y el borde del papel, con su sombra hacia dentro. */
-  const b = c.createRadialGradient(A / 2, H / 2, Math.min(A, H) * 0.3, A / 2, H / 2, Math.max(A, H) * 0.72);
-  b.addColorStop(0, "rgba(90, 66, 34, 0)");
-  b.addColorStop(1, "rgba(90, 66, 34, 0.26)");
-  c.fillStyle = b;
-  c.fillRect(0, 0, A, H);
-}
-
-/* ---- Los alfileres -------------------------------------------------------- */
-
-const vistos = new Set();
-let elegido = -1;
-let brillo = [];
-
-function puntos() {
-  return CONF.sitios.map((s) => ({ x: s.x * A, y: s.y * H }));
-}
-
-function enPantalla(e) {
-  const r = mundo.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
-}
-
-zona.addEventListener("pointerdown", (e) => {
-  if (e.pointerType === "mouse" && e.button !== 0) return;
-  const p = enPantalla(e);
-  const ps = puntos();
-  let mejor = -1, dMin = Infinity;
-  for (let i = 0; i < ps.length; i++) {
-    const d = Math.hypot(ps[i].x - p.x, ps[i].y - p.y - 10);
-    if (d < 38 && d < dMin) { dMin = d; mejor = i; }
-  }
-  if (mejor < 0) { tocarMapa(p); return; }
-
-  elegido = mejor;
-  brillo[mejor] = 1.6;
-  vistos.add(mejor);
-  mundo.classList.add("is-mirando");
-  const s = CONF.sitios[mejor];
-  decir(s.texto, s.firma, s.nombre);
-  chincheta();
-  pintarCuenta();
-  mirarSecretos(mejor);
-});
-
-function pintarCuenta() {
-  elCue.textContent = `${vistos.size} / ${CONF.sitios.length}`;
-}
-
-/* ---- Los textos ----------------------------------------------------------- */
-
-let pidiendo = null;
-
-function decir(texto, firma, nombre) {
-  if (pidiendo === texto) return;
-  pidiendo = texto;
-  elPie.classList.remove("is-visible");
-  setTimeout(() => {
-    elPie.textContent = "";
-    if (nombre) {
-      const st = document.createElement("strong");
-      st.textContent = nombre;
-      elPie.append(st);
-    }
-    elPie.append(document.createTextNode(texto));
-    if (firma) {
-      const em = document.createElement("em");
-      em.textContent = firma;
-      elPie.append(em);
-    }
-    elPie.classList.add("is-visible");
-  }, suave ? 10 : 290);
-}
-
-/* ---- Sonido --------------------------------------------------------------- */
-
-let audio = null;
-function chincheta() {
-  try {
-    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
-    if (audio.state === "suspended") audio.resume();
-    const t = audio.currentTime;
-    /* Un golpecito de madera: tono medio que cae rapidísimo. */
-    const o = audio.createOscillator();
-    const g = audio.createGain();
-    o.type = "triangle";
-    o.frequency.setValueAtTime(azar(520, 700), t);
-    o.frequency.exponentialRampToValueAtTime(180, t + 0.06);
-    g.gain.setValueAtTime(0.14, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-    o.connect(g).connect(audio.destination);
-    o.start(t); o.stop(t + 0.15);
-  } catch { /* sin sonido se clava igual */ }
-}
-
-function campana(hz) {
-  try {
-    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
-    const t = audio.currentTime;
-    const o = audio.createOscillator();
-    const g = audio.createGain();
-    o.type = "sine";
-    o.frequency.setValueAtTime(hz, t);
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.09, t + 0.015);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
-    o.connect(g).connect(audio.destination);
-    o.start(t); o.stop(t + 1.5);
-  } catch { /* nada */ }
-}
+const ICONOS = {
+  sillon: "M-4,1 L-4,-2 Q-4,-4 -2,-4 L2,-4 Q4,-4 4,-2 L4,1 M-5,1 L5,1 L5,3 L-5,3 Z M-4,3 L-4,4.5 M4,3 L4,4.5 M-5,1 Q-5.6,-0.5 -4,-0.6 M5,1 Q5.6,-0.5 4,-0.6",
+  disco: "M0,-4.5 A4.5,4.5 0 1 1 -0.01,-4.5 Z M0,-1.2 A1.2,1.2 0 1 1 -0.01,-1.2 Z M-2.8,-2 Q-1.8,-3.2 -0.4,-3.4 M2.6,2.2 Q1.8,3.2 0.6,3.4",
+  corazon: "M0,4 C-6,0 -4.5,-4.6 -1.6,-4 C-0.6,-3.8 0,-3 0,-2.3 C0,-3 0.6,-3.8 1.6,-4 C4.5,-4.6 6,0 0,4 Z M-2.2,-2.2 Q-3,-1 -2.2,0.4",
+  beso: "M-5,0 Q-2.5,-3.2 0,-1.4 Q2.5,-3.2 5,0 Q2.5,3.6 0,3.2 Q-2.5,3.6 -5,0 Z M-5,0 Q0,0.8 5,0",
+  maleta: "M-5,-2 L5,-2 L5,4 L-5,4 Z M-2,-2 L-2,-4 L2,-4 L2,-2 M-5,1 L5,1 M-3,-2 L-3,4 M3,-2 L3,4",
+};
 
 /* ══════════════════════════════════════════════════════════════════════
-   LOS SECRETOS
+   EL MAPA
    ══════════════════════════════════════════════════════════════════════ */
+let W = 100, Hh = 160;
+let pines = [], caminoTinta = null, largoTotal = 0, largos = [], lienzoMapa = null;
+let actual = -1, vistoHasta = -1;
 
-/* 1. Al verlos todos, la línea de puntos se completa y se recorre sola
-      de principio a fin, con una luz que va pasando por encima.       */
-let recorrido = -1;
+function posiciones(apaisado) {
+  if (apaisado) return [[0.1, 0.36], [0.3, 0.68], [0.5, 0.34], [0.7, 0.66], [0.88, 0.38]];
+  return [[0.26, 0.2], [0.72, 0.33], [0.3, 0.49], [0.7, 0.64], [0.36, 0.8]];
+}
 
-/* 2. Tocar la rosa de los vientos: la aguja gira sola y se queda
-      apuntando al último alfiler, no al norte.                        */
-let rosaGiro = 0, rosaApunta = false;
+/* Una curva suave que pasa por todos los puntos (Catmull-Rom). */
+function curva(puntos) {
+  let d = `M${puntos[0][0]},${puntos[0][1]}`;
+  for (let i = 0; i < puntos.length - 1; i++) {
+    const p0 = puntos[i - 1] || puntos[i], p1 = puntos[i], p2 = puntos[i + 1], p3 = puntos[i + 2] || p2;
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += ` C${c1[0].toFixed(2)},${c1[1].toFixed(2)} ${c2[0].toFixed(2)},${c2[1].toFixed(2)} ${p2[0].toFixed(2)},${p2[1].toFixed(2)}`;
+  }
+  return d;
+}
 
-/* 3. Tocar el mar tres veces: sale un barquito que cruza la costa.    */
-let toquesMar = 0;
-let barco = null;
+function construir() {
+  const r = mundo.getBoundingClientRect();
+  const apaisado = r.width > r.height * 1.2;
+  W = 100; Hh = 100 * r.height / r.width;
+  mapa.setAttribute("viewBox", `0 0 ${W} ${Hh.toFixed(2)}`);
+  mapa.replaceChildren();
+  const defs = s("defs", {}, mapa);
+  const bola = s("radialGradient", { id: "bola", cx: "35%", cy: "30%", r: "70%" }, defs);
+  s("stop", { offset: "0", "stop-color": "#ff8f9f" }, bola);
+  s("stop", { offset: "0.55", "stop-color": "#d42a48" }, bola);
+  s("stop", { offset: "1", "stop-color": "#7e0f24" }, bola);
+  const bolaV = s("radialGradient", { id: "bolaVista", cx: "35%", cy: "30%", r: "70%" }, defs);
+  s("stop", { offset: "0", "stop-color": "#ffd28a" }, bolaV);
+  s("stop", { offset: "0.55", "stop-color": "#e0a030" }, bolaV);
+  s("stop", { offset: "1", "stop-color": "#8a5a10" }, bolaV);
+  const mascara = s("mask", { id: "revela", maskUnits: "userSpaceOnUse" }, defs);
 
-function tocarMapa(p) {
-  /* ¿la rosa? */
-  const rx = CONF.rosa.x * A, ry = CONF.rosa.y * H, rr = Math.min(A, H) * CONF.rosa.r;
-  if (Math.hypot(p.x - rx, p.y - ry) < rr * 1.25) {
-    rosaGiro = 0.001;
-    rosaApunta = false;
-    decir("La aguja se ha vuelto loca.", "Ya no marca el norte. Marca otra cosa.", "La rosa");
-    campana(440);
+  lienzoMapa = s("g", { class: "mp-lienzo" }, mapa);
+
+  // ---- Adornos del mapa: rosa de los vientos, olitas, montes y arbolitos.
+  const deco = s("g", { class: "mp-deco", "stroke-width": 0.35 }, lienzoMapa);
+  const [rx, ry] = apaisado ? [W * 0.9, Hh * 0.82] : [W * 0.84, Hh * 0.9];
+  const rr = apaisado ? 5 : 6.5;
+  s("circle", { cx: rx, cy: ry, r: rr }, deco);
+  s("circle", { cx: rx, cy: ry, r: rr * 0.72, "stroke-dasharray": "0.3 0.8" }, deco);
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4, l = i % 2 ? rr * 0.6 : rr * 1.15;
+    const ax = Math.cos(a - Math.PI / 2), ay = Math.sin(a - Math.PI / 2);
+    const px = Math.cos(a), py = Math.sin(a);
+    s("path", { d: `M${rx},${ry} L${rx + ax * l},${ry + ay * l} M${rx + px * 0.8},${ry + py * 0.8} L${rx + ax * l},${ry + ay * l} L${rx - px * 0.8},${ry - py * 0.8}` }, deco);
+  }
+  const n = s("text", { x: rx, y: ry - rr * 1.35, "font-size": 2.4, "text-anchor": "middle", fill: "#7a3b2e", stroke: "none", "font-family": "Cormorant Garamond, serif", "font-weight": 600 }, deco);
+  n.textContent = "N";
+  // Olitas en una esquina.
+  for (let k = 0; k < 4; k++) {
+    const oy = (apaisado ? Hh * 0.12 : Hh * 0.06) + k * 2.2 + (apaisado ? 0 : Hh * 0.03);
+    const ox = apaisado ? W * 0.56 : W * 0.06;
+    let d = `M${ox},${oy}`;
+    for (let j = 0; j < 5; j++) d += ` q1.2,-1 2.4,0 t2.4,0`;
+    s("path", { d }, deco);
+  }
+  // Montañitas.
+  const montes = apaisado ? [[W * 0.2, Hh * 0.14], [W * 0.26, Hh * 0.16], [W * 0.62, Hh * 0.9]] : [[W * 0.6, Hh * 0.1], [W * 0.68, Hh * 0.115], [W * 0.1, Hh * 0.62], [W * 0.84, Hh * 0.46]];
+  for (const [mx, my] of montes) {
+    s("path", { d: `M${mx - 4},${my + 3} L${mx},${my - 3} L${mx + 4},${my + 3} M${mx - 1},${my - 1.5} L${mx + 0.6},${my - 0.4} L${mx + 1.6},${my - 1.2}` }, deco);
+  }
+  // Arbolitos.
+  const arboles = apaisado ? [[W * 0.42, Hh * 0.82], [W * 0.45, Hh * 0.86], [W * 0.78, Hh * 0.18]] : [[W * 0.12, Hh * 0.36], [W * 0.16, Hh * 0.39], [W * 0.88, Hh * 0.22], [W * 0.56, Hh * 0.75], [W * 0.6, Hh * 0.78]];
+  for (const [ax, ay] of arboles) {
+    s("circle", { cx: ax, cy: ay - 1.6, r: 1.4 }, deco);
+    s("path", { d: `M${ax},${ay - 0.2} L${ax},${ay + 1.6}` }, deco);
+  }
+  // Un río que serpentea.
+  const rio = apaisado
+    ? `M0,${Hh * 0.9} C${W * 0.2},${Hh * 0.8} ${W * 0.3},${Hh * 0.98} ${W * 0.5},${Hh * 0.92} S${W * 0.8},${Hh * 0.98} ${W},${Hh * 0.9}`
+    : `M${W},${Hh * 0.42} C${W * 0.8},${Hh * 0.4} ${W * 0.86},${Hh * 0.52} ${W * 0.7},${Hh * 0.55} S${W * 0.5},${Hh * 0.56} ${W * 0.52},${Hh * 0.6}`;
+  s("path", { d: rio, "stroke-width": 0.5 }, deco);
+  s("path", { d: rio, "stroke-width": 0.25, transform: "translate(0.9 0.6)" }, deco);
+  // Corazoncitos sueltos, apenas.
+  for (let i = 0; i < 7; i++) {
+    const hx = Math.random() * W, hy = Hh * (0.12 + Math.random() * 0.8);
+    s("path", { d: `M${hx},${hy + 0.8} c-1.3,-0.9 -0.9,-2 0,-1.5 c0.9,-0.5 1.3,0.6 0,1.5 z`, "stroke-width": 0.25, opacity: 0.6 }, deco);
+  }
+  // Un marco punteado.
+  s("rect", { x: 2.2, y: 2.2, width: W - 4.4, height: Hh - 4.4, rx: 1.2, "stroke-dasharray": "0.3 1.2", "stroke-width": 0.35 }, deco);
+
+  // ---- El camino.
+  const pos = posiciones(apaisado).map(([fx, fy]) => [fx * W, fy * Hh]);
+  const d = curva(pos);
+  s("path", { d, class: "mp-camino-fondo" }, lienzoMapa);
+  caminoTinta = s("path", { d, class: "mp-camino-tinta", mask: "url(#revela)" }, lienzoMapa);
+  const revelador = s("path", { d, fill: "none", stroke: "#fff", "stroke-width": 3, "stroke-linecap": "round" }, mascara);
+  largoTotal = revelador.getTotalLength();
+  revelador.style.strokeDasharray = `${largoTotal} ${largoTotal}`;
+  revelador.style.strokeDashoffset = `${largoTotal}`;
+  caminoTinta.revelador = revelador;
+  // El largo del camino hasta cada alfiler.
+  largos = pos.map(([px, py]) => {
+    let mejor = 0, dmin = Infinity;
+    for (let l = 0; l <= largoTotal; l += 0.25) {
+      const q = revelador.getPointAtLength(l);
+      const dd = Math.hypot(q.x - px, q.y - py);
+      if (dd < dmin) { dmin = dd; mejor = l; }
+    }
+    return mejor;
+  });
+
+  // ---- Los alfileres, con su dibujito al lado.
+  pines = pos.map(([px, py], i) => {
+    const lado = px > W / 2 ? -1 : 1;
+    const ic = s("g", { class: "mp-icono", transform: `translate(${(px + lado * 8.5).toFixed(2)} ${(py - 2).toFixed(2)}) scale(0.8)` }, lienzoMapa);
+    s("path", { d: ICONOS[MOMENTOS[i].icono] }, ic);
+    const gp = s("g", { class: "mp-alfiler", transform: `translate(${px.toFixed(2)} ${py.toFixed(2)})`, role: "button", tabindex: 0, "aria-label": MOMENTOS[i].titulo }, lienzoMapa);
+    s("circle", { class: "mp-onda", cx: 0, cy: 0, r: 1.4 }, gp);
+    s("ellipse", { cx: 0.9, cy: 0.4, rx: 1.6, ry: 0.55, fill: "rgba(60,30,10,.28)" }, gp);
+    const cab = s("g", { class: "mp-cabeza" }, gp);
+    s("path", { d: "M0,0 L-0.25,-3.6 L0.25,-3.6 Z", fill: "#8a8f96" }, cab);
+    s("circle", { class: "mp-bola", cx: 0, cy: -4.6, r: 2.1, fill: "url(#bola)", stroke: "#5a0a18", "stroke-width": 0.15 }, cab);
+    s("circle", { cx: -0.7, cy: -5.3, r: 0.55, fill: "rgba(255,255,255,.75)" }, cab);
+    const t = s("text", { class: "mp-num", x: 0, y: -3.95, "font-size": 2.3 }, cab);
+    t.textContent = i + 1;
+    // Zona de toque generosa, invisible.
+    s("circle", { cx: 0, cy: -3, r: 5.5, fill: "transparent" }, gp);
+    gp.addEventListener("click", () => abrir(i));
+    gp.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrir(i); } });
+    return { g: gp, x: px, y: py };
+  });
+  marcar();
+  pintarRevelado(vistoHasta >= 0 ? largos[vistoHasta] : 0, false);
+  if (actual >= 0) enfocar(actual, false);
+}
+
+function marcar() {
+  pines.forEach((p, i) => {
+    p.g.classList.toggle("is-visto", i <= vistoHasta);
+    p.g.classList.toggle("is-llamando", i === vistoHasta + 1 && actual < 0 || (actual >= 0 && i === actual + 1 && i > vistoHasta));
+  });
+}
+
+/* El camino se entinta hasta un largo, despacio, como a pluma. */
+let largoPintado = 0;
+function pintarRevelado(hasta, animar = true) {
+  const rv = caminoTinta?.revelador;
+  if (!rv) return;
+  if (!animar || suave) {
+    largoPintado = hasta;
+    rv.style.strokeDashoffset = `${largoTotal - hasta}`;
     return;
   }
-  /* ¿el mar? */
-  const orilla = H * (0.86 + Math.sin((p.x / A) * 7) * 0.035 + Math.sin((p.x / A) * 2.3) * 0.05);
-  if (p.y > orilla) {
-    toquesMar++;
-    if (toquesMar === 3 && !barco) {
-      barco = { x: -40, y: orilla + 22 };
-      decir("Ha salido un barco de alguna parte.", "Va hacia donde vamos nosotros.", "El mar");
-      campana(523);
-    }
-  }
+  const desde = largoPintado, t0 = performance.now(), dur = 900 + Math.abs(hasta - desde) * 18;
+  const paso = (ahora) => {
+    const k = Math.min(1, (ahora - t0) / dur);
+    const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    largoPintado = desde + (hasta - desde) * e;
+    rv.style.strokeDashoffset = `${largoTotal - largoPintado}`;
+    if (k < 1) requestAnimationFrame(paso);
+  };
+  requestAnimationFrame(paso);
+  if (hasta > desde) pluma(dur / 1000);
 }
 
-function mirarSecretos() {
-  if (vistos.size === CONF.sitios.length && recorrido < 0) {
-    recorrido = 0;
-    setTimeout(() => {
-      decir("Ya están todos.", "Mira el camino entero. Empieza allí y acaba aquí.", "El viaje");
-      campana(659);
-    }, 1800);
-  }
+/* Acerca el mapa al alfiler, dejándolo a la vista por encima de la nota. */
+function enfocar(i, animar = true) {
+  const r = mundo.getBoundingClientRect();
+  const apaisado = r.width > r.height * 1.2;
+  const esc = 1.35;
+  const p = pines[i];
+  // Todo en unidades del dibujo (el mapa mide W×Hh), no en píxeles.
+  const objX = apaisado ? W * 0.3 : W * 0.5;
+  const objY = apaisado ? Hh * 0.5 : Hh * 0.3;
+  let tx = objX - p.x * esc, ty = objY - p.y * esc;
+  tx = Math.min(0, Math.max(W - W * esc, tx));
+  ty = Math.min(0, Math.max(Hh - Hh * esc, ty));
+  lienzoMapa.style.transition = animar ? "" : "none";
+  lienzoMapa.style.transform = `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${esc})`;
+}
+function alejar() {
+  lienzoMapa.style.transform = "";
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   EL BUCLE
+   LA NOTA
    ══════════════════════════════════════════════════════════════════════ */
+function abrir(i) {
+  despertar();
+  const nuevo = i > vistoHasta;
+  const salto = actual >= 0 && actual !== i;
+  actual = i;
+  if (nuevo) vistoHasta = Math.max(vistoHasta, i);
+  pines.forEach((p, k) => p.g.classList.toggle("is-actual", k === i));
+  // Reinicia la animación del saltito.
+  const cab = pines[i].g;
+  cab.classList.remove("is-actual"); void cab.getBBox(); cab.classList.add("is-actual");
+  marcar();
+  enfocar(i);
+  pintarRevelado(largos[vistoHasta]);
+  sonidoAlfiler(i);
+  mundo.classList.add("is-leyendo");
+  const poner = () => {
+    const m = MOMENTOS[i];
+    elTitulo.textContent = m.titulo;
+    elTexto.replaceChildren();
+    m.textos.forEach((t, k) => {
+      const p = document.createElement("p");
+      p.textContent = t;
+      elTexto.append(p);
+      setTimeout(() => p.classList.add("is-ve"), (suave ? 0 : 380) + k * (suave ? 0 : 520));
+    });
+    nota.style.setProperty("--giro", `${(i % 2 ? 0.9 : -1.1)}deg`);
+    nota.scrollTop = 0;
+    btnAntes.disabled = i === 0;
+    btnDespues.disabled = i === MOMENTOS.length - 1;
+    elPuntos.replaceChildren(...MOMENTOS.map((_, k) => { const d = document.createElement("i"); if (k === i) d.className = "is-actual"; return d; }));
+    nota.classList.add("is-abierta");
+    papel();
+  };
+  if (salto && nota.classList.contains("is-abierta")) {
+    nota.classList.remove("is-abierta");
+    setTimeout(poner, suave ? 0 : 380);
+  } else poner();
+  if (vistoHasta === MOMENTOS.length - 1 && nuevo) setTimeout(final, 1600);
+}
+function cerrar() {
+  nota.classList.remove("is-abierta");
+  mundo.classList.remove("is-leyendo");
+  pines.forEach((p) => p.g.classList.remove("is-actual"));
+  actual = -1;
+  marcar();
+  alejar();
+}
+btnAntes.addEventListener("click", (e) => { e.stopPropagation(); if (actual > 0) abrir(actual - 1); });
+btnDespues.addEventListener("click", (e) => { e.stopPropagation(); if (actual < MOMENTOS.length - 1) abrir(actual + 1); });
+nota.addEventListener("click", (e) => e.stopPropagation());
+mundo.addEventListener("click", (e) => {
+  if (e.target.closest(".mp-alfiler, .mp-nota")) return;
+  if (actual >= 0) cerrar();
+});
 
-let t0 = performance.now();
-let reloj = 0;
-
-function paso(ahora) {
-  requestAnimationFrame(paso);
-  if (!A || !H) return;
-
-  let dt = (ahora - t0) / 1000;
-  t0 = ahora;
-  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
-  else if (dt > 0.1) dt = 0.1;
-  reloj += dt;
-
-  /* El mapa ya está pintado: se copia y se dibuja lo que se mueve. */
-  ctx.drawImage(fondo, 0, 0, A, H);
-
-  const ps = puntos();
-
-  /* --- la línea del viaje --- */
-  ctx.setLineDash([2, 6]);
-  ctx.lineWidth = 2;
-  ctx.lineCap = "round";
-  for (let i = 0; i < ps.length - 1; i++) {
-    /* Un tramo se dibuja entero sólo si se han visto sus dos puntas: el
-       camino se va descubriendo, no está dado. */
-    const hecho = vistos.has(i) && vistos.has(i + 1);
-    ctx.strokeStyle = hecho ? "rgba(156, 74, 52, 0.8)" : "rgba(140, 112, 76, 0.22)";
-    ctx.beginPath();
-    /* Curvado, que un viaje no va en línea recta. */
-    const mx = (ps[i].x + ps[i + 1].x) / 2;
-    const my = (ps[i].y + ps[i + 1].y) / 2 - Math.hypot(ps[i + 1].x - ps[i].x, ps[i + 1].y - ps[i].y) * 0.16;
-    ctx.moveTo(ps[i].x, ps[i].y);
-    ctx.quadraticCurveTo(mx, my, ps[i + 1].x, ps[i + 1].y);
-    ctx.stroke();
+/* Al llegar al último: el camino entero brilla y salen corazoncitos. */
+let yaFinal = false;
+function final() {
+  if (yaFinal) return;
+  yaFinal = true;
+  caminoTinta.style.transition = "stroke 1.2s ease, stroke-width 1.2s ease";
+  caminoTinta.style.stroke = "#d4193f";
+  caminoTinta.style.strokeWidth = "1";
+  const brillo = s("path", { d: caminoTinta.getAttribute("d"), fill: "none", stroke: "#ffb3c2", "stroke-width": 2.6, "stroke-linecap": "round", opacity: 0, mask: "url(#revela)" }, lienzoMapa);
+  lienzoMapa.insertBefore(brillo, caminoTinta);
+  brillo.animate([{ opacity: 0 }, { opacity: 0.55 }, { opacity: 0.18 }], { duration: 2400, fill: "forwards", easing: "ease-out" });
+  for (let k = 0; k < 14; k++) {
+    const l = Math.random() * largoTotal;
+    const q = caminoTinta.revelador.getPointAtLength(l);
+    const h = s("path", { d: `M${q.x},${q.y + 0.9} c-1.5,-1 -1,-2.3 0,-1.7 c1,-0.6 1.5,0.7 0,1.7 z`, fill: "#e0385a", opacity: 0 }, lienzoMapa);
+    h.animate([
+      { opacity: 0, transform: "translate(0,0) scale(0.4)" },
+      { opacity: 0.9, transform: "translate(0,-2px) scale(1)", offset: 0.3 },
+      { opacity: 0, transform: `translate(${(Math.random() * 4 - 2).toFixed(1)}px,-9px) scale(0.8)` },
+    ], { duration: 2600 + Math.random() * 1400, delay: k * 120, easing: "ease-out", fill: "forwards" });
   }
-  ctx.setLineDash([]);
-
-  /* --- la luz que recorre el camino (secreto 1) --- */
-  if (recorrido >= 0) {
-    recorrido += dt * 0.22;
-    if (recorrido > 1.3) recorrido = 0;
-    const t = clamp(recorrido, 0, 1) * (ps.length - 1);
-    const i = Math.min(ps.length - 2, Math.floor(t));
-    const k = t - i;
-    const mx = (ps[i].x + ps[i + 1].x) / 2;
-    const my = (ps[i].y + ps[i + 1].y) / 2 - Math.hypot(ps[i + 1].x - ps[i].x, ps[i + 1].y - ps[i].y) * 0.16;
-    /* Bézier cuadrática evaluada a mano: es dónde está la luz. */
-    const u = 1 - k;
-    const lx = u * u * ps[i].x + 2 * u * k * mx + k * k * ps[i + 1].x;
-    const ly = u * u * ps[i].y + 2 * u * k * my + k * k * ps[i + 1].y;
-    const g = ctx.createRadialGradient(lx, ly, 0, lx, ly, 22);
-    g.addColorStop(0, "rgba(255, 190, 110, 0.9)");
-    g.addColorStop(1, "rgba(255, 190, 110, 0)");
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(lx, ly, 22, 0, 6.283); ctx.fill();
-  }
-
-  /* --- la rosa que gira (secreto 2) --- */
-  if (rosaGiro > 0) {
-    const rx = CONF.rosa.x * A, ry = CONF.rosa.y * H, rr = Math.min(A, H) * CONF.rosa.r;
-    rosaGiro += dt;
-    /* Gira deprisa y va frenando; al parar, apunta al último alfiler
-       que se tocó, que es lo que hace el chiste. */
-    const objetivo = elegido >= 0
-      ? Math.atan2(ps[elegido].y - ry, ps[elegido].x - rx)
-      : -Math.PI / 2;
-    const frena = Math.min(1, rosaGiro / 2.6);
-    const ang = objetivo + (1 - frena) * rosaGiro * 9;
-    ctx.strokeStyle = "rgba(156, 74, 52, 0.9)";
-    ctx.lineWidth = 2.4;
-    ctx.beginPath();
-    ctx.moveTo(rx - Math.cos(ang) * rr * 0.5, ry - Math.sin(ang) * rr * 0.5);
-    ctx.lineTo(rx + Math.cos(ang) * rr * 0.92, ry + Math.sin(ang) * rr * 0.92);
-    ctx.stroke();
-    ctx.fillStyle = "rgba(156, 74, 52, 0.9)";
-    ctx.beginPath(); ctx.arc(rx, ry, 3, 0, 6.283); ctx.fill();
-    if (frena >= 1 && !rosaApunta) {
-      rosaApunta = true;
-      decir("Se ha quedado apuntando ahí.", "Al final, el norte es donde estés.", "La rosa");
-    }
-  }
-
-  /* --- el barco (secreto 3) --- */
-  if (barco) {
-    barco.x += 42 * dt;
-    barco.y = H * (0.86 + Math.sin((barco.x / A) * 7) * 0.035 + Math.sin((barco.x / A) * 2.3) * 0.05) + 22;
-    ctx.fillStyle = "rgba(120, 95, 60, 0.85)";
-    ctx.beginPath();
-    ctx.moveTo(barco.x - 11, barco.y);
-    ctx.lineTo(barco.x + 11, barco.y);
-    ctx.lineTo(barco.x + 6, barco.y + 6);
-    ctx.lineTo(barco.x - 6, barco.y + 6);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = "rgba(250, 244, 226, 0.9)";
-    ctx.beginPath();
-    ctx.moveTo(barco.x, barco.y - 2);
-    ctx.lineTo(barco.x, barco.y - 18);
-    ctx.lineTo(barco.x + 11, barco.y - 2);
-    ctx.closePath(); ctx.fill();
-    if (barco.x > A + 40) barco = null;
-  }
-
-  /* --- los alfileres --- */
-  for (let i = 0; i < ps.length; i++) {
-    brillo[i] = damp(brillo[i] || 0, 0, 2.2, dt);
-    dibujarAlfiler(ps[i].x, ps[i].y, vistos.has(i), brillo[i], i === elegido);
-  }
+  campanitas();
 }
 
-function dibujarAlfiler(x, y, visto, brillo, elegido) {
-  /* La sombra en el papel. */
-  ctx.fillStyle = "rgba(90, 66, 34, 0.22)";
-  ctx.beginPath();
-  ctx.ellipse(x + 3, y + 2, 5, 2.4, 0, 0, 6.283);
-  ctx.fill();
-
-  /* La aguja. */
-  ctx.strokeStyle = "rgba(90, 80, 74, 0.85)";
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x + 3, y - 13);
-  ctx.stroke();
-
-  /* La cabeza, que late si acabas de tocarla. */
-  const r = 6 + brillo * 3 + (elegido ? 1 + Math.sin(reloj * 3.4) * 0.8 : 0);
-  if (brillo > 0.02) {
-    const g = ctx.createRadialGradient(x + 3, y - 14, 0, x + 3, y - 14, r * 3.4);
-    g.addColorStop(0, `rgba(230, 110, 80, ${0.5 * brillo})`);
-    g.addColorStop(1, "rgba(230, 110, 80, 0)");
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(x + 3, y - 14, r * 3.4, 0, 6.283); ctx.fill();
+/* ══════════════════════════════════════════════════════════════════════
+   EL SONIDO
+   ══════════════════════════════════════════════════════════════════════ */
+let ac = null, salida = null;
+function despertar() {
+  if (ac) { if (ac.state === "suspended") ac.resume(); return ac; }
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+  salida = ac.createGain();
+  salida.gain.value = 0.9;
+  salida.connect(ac.destination);
+  return ac;
+}
+function ruido(dur, curva = 2) {
+  const n = Math.max(1, Math.floor(ac.sampleRate * dur));
+  const b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, curva);
+  const x = ac.createBufferSource(); x.buffer = b; return x;
+}
+const ESCALA = [392, 440, 523.25, 587.33, 659.25, 783.99];
+function sonidoAlfiler(i) {
+  if (!ac) return;
+  const t = ac.currentTime;
+  const o = ac.createOscillator(), gg = ac.createGain();
+  o.frequency.setValueAtTime(900, t);
+  o.frequency.exponentialRampToValueAtTime(300, t + 0.06);
+  gg.gain.setValueAtTime(0.0001, t);
+  gg.gain.exponentialRampToValueAtTime(0.1, t + 0.004);
+  gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+  o.connect(gg).connect(salida);
+  o.start(t); o.stop(t + 0.1);
+  for (const [k, dd] of [[0, 0.05], [2, 0.16]]) {
+    const f = ESCALA[(i + k) % ESCALA.length] * 2;
+    const n = ac.createOscillator(), gn = ac.createGain();
+    n.frequency.value = f;
+    gn.gain.setValueAtTime(0, t + dd);
+    gn.gain.linearRampToValueAtTime(0.04, t + dd + 0.01);
+    gn.gain.exponentialRampToValueAtTime(0.0001, t + dd + 1.2);
+    n.connect(gn).connect(salida);
+    n.start(t + dd); n.stop(t + dd + 1.3);
   }
-  const g = ctx.createRadialGradient(x + 1.6, y - 15.6, 0.5, x + 3, y - 14, r);
-  g.addColorStop(0, visto ? "#ffb49a" : "#d8cbb0");
-  g.addColorStop(0.55, visto ? "#d4523a" : "#a8987a");
-  g.addColorStop(1, visto ? "#8f2e1e" : "#7a6a4e");
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.arc(x + 3, y - 14, r, 0, 6.283); ctx.fill();
+}
+function papel() {
+  if (!ac) return;
+  const t = ac.currentTime, x = ruido(0.35, 1.5);
+  const f = ac.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 2200;
+  const gg = ac.createGain(); gg.gain.value = 0.05;
+  x.connect(f).connect(gg).connect(salida);
+  x.start(t);
+}
+function pluma(seg) {
+  if (!ac) return;
+  const t = ac.currentTime;
+  for (let k = 0; k < seg * 7; k++) {
+    const x = ruido(0.05, 3), f = ac.createBiquadFilter(), gg = ac.createGain();
+    f.type = "bandpass"; f.frequency.value = 3800 + Math.random() * 1500; f.Q.value = 3;
+    gg.gain.value = 0.03;
+    x.connect(f).connect(gg).connect(salida);
+    x.start(t + k / 7 + Math.random() * 0.05);
+  }
+}
+function campanitas() {
+  if (!ac) return;
+  const t = ac.currentTime;
+  [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => {
+    const o = ac.createOscillator(), gg = ac.createGain();
+    o.frequency.value = f;
+    gg.gain.setValueAtTime(0, t + i * 0.15);
+    gg.gain.linearRampToValueAtTime(0.04, t + i * 0.15 + 0.01);
+    gg.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.15 + 2);
+    o.connect(gg).connect(salida);
+    o.start(t + i * 0.15); o.stop(t + i * 0.15 + 2.1);
+  });
 }
 
-/* ---- Arranque -------------------------------------------------------------- */
-
-brillo = CONF.sitios.map(() => 0);
-medir();
-pintarCuenta();
-decir("Siete sitios nuestros. Toca los alfileres.");
-requestAnimationFrame(paso);
-
+new ResizeObserver(() => requestAnimationFrame(construir)).observe(mundo);
+construir();
 })();
 </script>
 </body>
