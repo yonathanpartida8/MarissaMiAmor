@@ -112,9 +112,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #efe0c4; }
   left: 50%;
   bottom: calc(var(--seg-b) + var(--barra) + 12px);
   width: min(92vw, 420px);
-  max-height: 46%;
+  max-height: 56%;
   box-sizing: border-box;
   padding: 18px 20px 14px;
+  /* El texto se desplaza dentro; los botones quedan siempre abajo. */
+  display: flex;
+  flex-direction: column;
   background:
     repeating-linear-gradient(0deg, transparent 0 25px, rgba(122, 59, 46, 0.08) 25px 26px),
     linear-gradient(170deg, #fffaf0, #fbefdc);
@@ -123,10 +126,19 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #efe0c4; }
   transform: translate(-50%, 120%) rotate(3deg);
   opacity: 0;
   transition: transform 800ms var(--suave), opacity 500ms ease;
-  overflow: auto;
-  scrollbar-width: none;
+  overflow: hidden;
 }
-.mp-nota::-webkit-scrollbar { display: none; }
+#notaTexto {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 88%, transparent);
+  mask-image: linear-gradient(180deg, #000 88%, transparent);
+  padding-bottom: 10px;
+}
+#notaTexto::-webkit-scrollbar { display: none; }
 .mp-nota.is-abierta { transform: translate(-50%, 0) rotate(var(--giro, -0.8deg)); opacity: 1; }
 /* Un pedazo de cinta, sujetando la nota. */
 .mp-nota::before {
@@ -150,8 +162,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #efe0c4; }
 }
 .mp-nota p {
   margin: 0 0 8px;
-  font-size: clamp(1.02rem, 4.4vw, 1.18rem);
-  line-height: 1.42;
+  font-size: clamp(0.98rem, 4.1vw, 1.14rem);
+  line-height: 1.4;
   color: #3e2419;
   opacity: 0;
   transform: translateY(6px);
@@ -159,6 +171,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #efe0c4; }
 }
 .mp-nota p.is-ve { opacity: 1; transform: none; }
 .mp-mando {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -245,8 +258,8 @@ const MOMENTOS = [
     titulo: "Nuestro primer contacto:",
     textos: [
       "Tú me diste discos de videojuegos y yo me puse muy feliz.",
-      "Después hablamos por TikTok, nos tuvimos agregados en TikTok y yo te mandaba videos graciosos. Era mi manera rara de mostrar interés.",
-      "Rompí el hielo y te mostré todo mi cariño de una. Casi no sabía cómo retenerlo.",
+      "Ya después de un tiempo, nos tuvimos agregados en TikTok y yo te mandaba videos graciosos. Era mi manera rara de mostrar interés.",
+      "Después yo rompí el hielo y te mostré una parte pequeña de todo mi cariño de una. Neta me tenías enamorado, y aún lo estoy y lo estaré por siempre.",
     ],
     icono: "disco",
   },
@@ -256,14 +269,20 @@ const MOMENTOS = [
     icono: "corazon",
   },
   {
-    titulo: "Después, nuestro primer beso.",
-    textos: ["Aunque fue algo chistoso, casi me desmayo. No dormí por horas."],
+    titulo: "Nuestro primer beso.",
+    textos: [
+      "Aunque fue algo chistoso, lo sentí súper íntimo, me encantó muchi, y casi me desmayo.",
+      "No dormí por horas de lo chiveado que estaba.",
+    ],
     icono: "beso",
   },
   {
-    titulo: "El viaje.",
-    textos: ["Vivir en Morelia y consentirte tan lindo."],
-    icono: "maleta",
+    titulo: "Futuro.",
+    textos: [
+      "Vivir en Morelia, apoyarte en todo, consentirte tan lindo y darte una vida estable.",
+      "Lo deseo.",
+    ],
+    icono: "casa",
   },
 ];
 
@@ -294,6 +313,7 @@ const ICONOS = {
   disco: "M0,-4.5 A4.5,4.5 0 1 1 -0.01,-4.5 Z M0,-1.2 A1.2,1.2 0 1 1 -0.01,-1.2 Z M-2.8,-2 Q-1.8,-3.2 -0.4,-3.4 M2.6,2.2 Q1.8,3.2 0.6,3.4",
   corazon: "M0,4 C-6,0 -4.5,-4.6 -1.6,-4 C-0.6,-3.8 0,-3 0,-2.3 C0,-3 0.6,-3.8 1.6,-4 C4.5,-4.6 6,0 0,4 Z M-2.2,-2.2 Q-3,-1 -2.2,0.4",
   beso: "M-5,0 Q-2.5,-3.2 0,-1.4 Q2.5,-3.2 5,0 Q2.5,3.6 0,3.2 Q-2.5,3.6 -5,0 Z M-5,0 Q0,0.8 5,0",
+  casa: "M-5,0 L0,-4.6 L5,0 M-3.8,-1 L-3.8,4 L3.8,4 L3.8,-1 M-1,4 L-1,1.2 L1,1.2 L1,4 M1.8,-0.6 L3,-0.6 L3,0.6 L1.8,0.6 Z M2.6,-2.4 L2.6,-4 L3.6,-4 L3.6,-1.5",
   maleta: "M-5,-2 L5,-2 L5,4 L-5,4 Z M-2,-2 L-2,-4 L2,-4 L2,-2 M-5,1 L5,1 M-3,-2 L-3,4 M3,-2 L3,4",
 };
 
@@ -510,7 +530,7 @@ function abrir(i) {
       setTimeout(() => p.classList.add("is-ve"), (suave ? 0 : 380) + k * (suave ? 0 : 520));
     });
     nota.style.setProperty("--giro", `${(i % 2 ? 0.9 : -1.1)}deg`);
-    nota.scrollTop = 0;
+    elTexto.scrollTop = 0;
     btnAntes.disabled = i === 0;
     btnDespues.disabled = i === MOMENTOS.length - 1;
     elPuntos.replaceChildren(...MOMENTOS.map((_, k) => { const d = document.createElement("i"); if (k === i) d.className = "is-actual"; return d; }));

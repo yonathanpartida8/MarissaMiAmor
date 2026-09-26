@@ -8,7 +8,7 @@
 <script src="sonido-libro.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,500&family=Caveat:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,500&family=Caveat:wght@500&family=Great+Vibes&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
@@ -70,6 +70,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0e0710; }
   text-shadow: 0 2px 16px rgba(0, 0, 0, 0.8);
   transition: opacity 800ms var(--suave), transform 800ms var(--suave), filter 800ms var(--suave);
 }
+.cl-frase.is-piropo {
+  font-family: "Great Vibes", "Caveat", cursive;
+  font-style: normal;
+  font-size: clamp(2rem, 10vw, 2.8rem);
+  line-height: 1.1;
+  color: #ffe3ec;
+  text-shadow: 0 0 18px rgba(255, 120, 170, 0.75), 0 2px 12px rgba(0, 0, 0, 0.8);
+}
 .cl-frase.is-fuera { opacity: 0; transform: translateY(6px); filter: blur(4px); }
 @media (orientation: landscape) and (max-height: 540px) {
   .cl-pie { left: 58%; right: 0; top: 0; bottom: 0; align-content: center; }
@@ -104,12 +112,14 @@ const CONF = {
   espejos: 6,          // cuántas veces se repite (6 = una flor de 12 pétalos)
   cristales: 66,       // los que hay al empezar
   maximo: 96,          // los que caben
+  /* Cada vuelta y media, un piropo. Salen barajados, sin repetirse
+     hasta que se acaban todos. */
   frases: [
-    "Por más vueltas que le doy, siempre acabo en ti.",
-    "Cada vuelta te dibuja distinta, y siempre bonita.",
-    "Así de bonito se ve todo desde que estás.",
-    "Ninguna figura se repite, como ningún día contigo.",
-    "Mira cuántos colores caben en un te quiero.",
+    "Linda.", "Chula.", "Hermosa.", "Preciosa.", "Bonita.", "Bella.",
+    "Guapísima.", "Divina.", "Una chulada.", "Hermosura.", "Mi niña bonita.",
+    "Encantadora.", "Qué linda eres.", "Estás bien chula.", "Preciosísima.",
+    "Mi reina.", "Mi cielo.", "Lo más bonito que existe.", "Mi princesa.",
+    "Mi muñeca.", "Hermosa por dentro y por fuera.", "La más bonita de todas.",
   ],
   colores: ["#ff4d7d", "#ff8fb1", "#c2185b", "#ffb347", "#ffd86b", "#b388ff", "#e1bee7", "#ff6f61", "#fff0f5", "#7ee0c9"],
 };
@@ -287,9 +297,18 @@ function echarCristal() {
 }
 const rot = (x, y, a) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
 
+/* Barajados: no se repite ninguno hasta haber dicho todos. */
+let bolsa = [];
+function piropo() {
+  if (!bolsa.length) {
+    bolsa = CONF.frases.slice();
+    for (let i = bolsa.length - 1; i > 0; i--) { const k = Math.floor(Math.random() * (i + 1)); [bolsa[i], bolsa[k]] = [bolsa[k], bolsa[i]]; }
+  }
+  return bolsa.pop();
+}
 function decir(t) {
   elFrase.classList.add("is-fuera");
-  setTimeout(() => { elFrase.textContent = t; elFrase.classList.remove("is-fuera"); }, suave ? 20 : 600);
+  setTimeout(() => { elFrase.textContent = t; elFrase.classList.add("is-piropo"); elFrase.classList.remove("is-fuera"); }, suave ? 20 : 600);
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -409,9 +428,9 @@ function paso(ahora) {
     giro += dt * 0.06;
   } else vGiro *= Math.exp(-dt * 10);
   giroAcumulado += Math.abs(giro - antes);
-  if (giroAcumulado > TAU * 1.6) {
+  if (giroAcumulado > TAU * 0.9) {
     giroAcumulado = 0;
-    decir(CONF.frases[nFrase++ % CONF.frases.length]);
+    decir(piropo());
     campana(0, 0.03); setTimeout(() => campana(2, 0.03), 160); setTimeout(() => campana(4, 0.03), 320);
   }
 
