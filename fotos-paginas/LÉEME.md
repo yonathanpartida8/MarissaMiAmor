@@ -6,6 +6,11 @@ Cada carpeta es una página del libro, en el mismo orden en que salen.
   (`imagen1.png`, `imagen2.jpg`…). Vale .png, .jpg, .jpeg, .webp y .gif.
 - **Poner más o menos fotos:** añade `imagen9`, `imagen10`… o bórralas.
   La página enseña las que haya, en orden (las de una sola foto usan `imagen1`).
+- **Si una carpeta se queda sin fotos, la página NO desaparece:** enseña
+  unos recuadros que dicen «Aquí va la foto 1», «la foto 2»… con el nombre
+  del archivo que hay que subir. Sube tu foto con ese nombre y listo.
+- **Para vaciar una carpeta sin que se borre**, deja dentro su `LÉEME.md`
+  (GitHub borra las carpetas que se quedan sin ningún archivo).
 - No hay que tocar código: GitHub rehace la lista solo a cada subida.
 
 El icono de la app es `icono/icono.png`.
@@ -13,8 +18,8 @@ El icono de la app es `icono/icono.png`.
 | Carpeta | Fotos ahora |
 | --- | --- |
 | `01-portada` | 1 |
-| `02-las-tres-de-la-manana` | 1 |
-| `03-lo-que-no-te-dije-ese-dia` | 1 |
+| `02-las-tres-de-la-manana` | 0 — sale «Aquí va la foto 1» |
+| `03-lo-que-no-te-dije-ese-dia` | 0 — sale «Aquí va la foto 1» |
 | `04-postal-desde-aqui` | 1 |
 | `05-como-dices-mi-nombre` | 1 |
 | `06-recuerdos` | 8 |

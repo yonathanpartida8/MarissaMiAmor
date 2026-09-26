@@ -133,6 +133,8 @@ export default {
     "01-portada": [
       "imagen1.png"
     ],
+    "02-las-tres-de-la-manana": [],
+    "03-lo-que-no-te-dije-ese-dia": [],
     "04-postal-desde-aqui": [
       "imagen1.png"
     ],

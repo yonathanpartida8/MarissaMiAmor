@@ -135,3 +135,131 @@ html[data-orientation="landscape"][data-device="phone"] .depth__veil {
     rgba(11, 3, 5, 0.95) 100%
   );
 }
+
+/* ---- Sin foto: el recuadro «Aquí va la foto 1» -------------------
+   Flota arriba, en el hueco que deja la tarjeta, ladeado como una
+   foto puesta sobre la mesa y con el mismo paralaje que la ilustración. */
+.depth.is-hueco .depth__fallback {
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 22%, color-mix(in srgb, var(--accent) 34%, transparent), transparent 70%),
+    linear-gradient(180deg, #2a1422 0%, #160a12 100%);
+}
+
+.depth__hueco {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: calc(var(--pad-t) + 1.5vh);
+  width: min(62vw, 31vh, 330px);
+  aspect-ratio: 1;
+  border-radius: 16px;
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.65), 0 0 0 6px rgba(255, 250, 247, 0.9);
+  transform: translate3d(calc(-50% + var(--fb-x, 0px)), var(--fb-y, 0px), 0) rotate(-3deg);
+  opacity: 0;
+  transition: opacity 900ms var(--e-out) 120ms;
+}
+
+.depth.is-entered .depth__hueco {
+  opacity: 1;
+}
+
+html[data-orientation="landscape"][data-device="phone"] .depth__hueco {
+  left: 24%;
+  top: 50%;
+  width: min(36vw, 62vh);
+  transform: translate3d(calc(-50% + var(--fb-x, 0px)), calc(-50% + var(--fb-y, 0px)), 0) rotate(-3deg);
+}
+
+/* ---- El reloj de la hora del capítulo ---------------------------- */
+.depth__cabeza {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.depth__reloj {
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  color: #fff;
+  padding: 0.18em 0.6em;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 30%, rgba(0, 0, 0, 0.35));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent);
+  white-space: nowrap;
+}
+
+.depth__reloj i {
+  font-style: normal;
+  animation: depth-parpadeo 1s steps(1) infinite;
+}
+
+@keyframes depth-parpadeo {
+  50% { opacity: 0.15; }
+}
+
+/* ---- La platiquita que no se termina de despedir ------------------ */
+.depth__platica {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+  margin: 1.1rem 0 0.4rem;
+}
+
+.depth__burbuja {
+  max-width: 78%;
+  padding: 0.42rem 0.8rem 0.46rem;
+  border-radius: 16px;
+  font-family: var(--font-ui);
+  font-size: 0.86rem;
+  line-height: 1.3;
+  color: #fff;
+  opacity: 0;
+  transform: translateY(6px) scale(0.96);
+  transition: opacity 380ms var(--e-out), transform 480ms var(--e-out);
+}
+
+.depth__burbuja.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.depth__burbuja--tu {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.14);
+  border-bottom-left-radius: 5px;
+}
+
+.depth__burbuja--yo {
+  align-self: flex-end;
+  background: color-mix(in srgb, var(--accent) 62%, #3a1024);
+  border-bottom-right-radius: 5px;
+}
+
+.depth__burbuja.is-escribe {
+  display: flex;
+  gap: 4px;
+  padding: 0.62rem 0.8rem;
+}
+
+.depth__burbuja.is-escribe i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.4;
+  animation: depth-escribe 1.1s ease-in-out infinite;
+}
+
+.depth__burbuja.is-escribe i:nth-child(2) { animation-delay: 0.16s; }
+.depth__burbuja.is-escribe i:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes depth-escribe {
+  40% { opacity: 1; transform: translateY(-2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .depth__reloj i, .depth__burbuja.is-escribe i { animation: none; }
+}

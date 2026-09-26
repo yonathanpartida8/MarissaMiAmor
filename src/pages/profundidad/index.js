@@ -35,21 +35,43 @@ export default class DepthPage extends BasePage {
     // sólo que sin profundidad. Nunca una página vacía.
     this.fallback = el("div.depth__fallback");
 
+    // Un reloj que marca la hora del capítulo (si la tiene) y sigue
+    // corriendo mientras lees: ni así se duerme nadie.
+    const cabeza = [el("span.kicker.depth__kicker", { text: ch?.kicker || "" })];
+    if (ch?.reloj) {
+      this.reloj = el("span.depth__reloj", { "aria-hidden": "true" });
+      cabeza.push(this.reloj);
+    }
+
+    // Y una platiquita que se despide y no se va, si el capítulo la trae.
+    const lectura = [this.proseEl];
+    if (ch?.platica?.length) {
+      this.burbujas = ch.platica.map((m) =>
+        el(`div.depth__burbuja.depth__burbuja--${m.de}${m.t === "…" ? ".is-escribe" : ""}`, {},
+          m.t === "…" ? [el("i"), el("i"), el("i")] : [document.createTextNode(m.t)]));
+      lectura.push(el("div.depth__platica", { "aria-hidden": "true" }, this.burbujas));
+    }
+
     this.card = el("div.depth__card.hueco-barra", {}, [
-      el("span.kicker.depth__kicker", { text: ch?.kicker || "" }),
+      el("div.depth__cabeza", {}, cabeza),
       el("h2.title.depth__title", { text: ch?.title || "" }),
       el("hr.rule.depth__rule"),
-      el("div.lectura.depth__scroll", {}, [this.proseEl]),
+      el("div.lectura.depth__scroll", {}, lectura),
     ]);
 
-    this.root.append(this.fallback, el("div.depth__veil"), this.card);
+    // Si su carpeta de fotos está vacía, en vez de la ilustración sale un
+    // recuadro: «Aquí va la foto 1».
+    this.hueco = this.photos[0]?.hueco ? el("img.depth__hueco", { src: this.photos[0].src, alt: "Aquí va la foto 1" }) : null;
+    if (this.hueco) this.root.classList.add("is-hueco");
+
+    this.root.append(this.fallback, ...(this.hueco ? [this.hueco] : []), el("div.depth__veil"), this.card);
     return this.root;
   }
 
   async enter(direction) {
     await super.enter(direction);
 
-    const photo = this.photos[0];
+    const photo = this.photos[0]?.hueco ? null : this.photos[0];
     const img = photo ? await this.ctx.assets.load(photo.src).catch(() => null) : null;
 
     if (img) this.fallback.style.backgroundImage = `url("${photo.src}")`;
@@ -70,7 +92,34 @@ export default class DepthPage extends BasePage {
     this.reveal = 0;
     this.px = 0;
     this.py = 0;
+    this.minuto = 0;
+    this.relojT = 0;
+    this.platicaT = -2.6;
     this.addTicker((dt, t) => this.#frame(dt, t), 12);
+  }
+
+  /** 3:00, 3:01, 3:02… (los dos puntos parpadean solos, en CSS). */
+  #reloj(dt) {
+    if (!this.reloj) return;
+    this.relojT += dt;
+    if (this.relojT > 12) { this.relojT = 0; this.minuto = Math.min(59, this.minuto + 1); }
+    const [h, m0] = String(this.chapter.reloj).split(":").map(Number);
+    const m = String(Math.min(59, (m0 || 0) + this.minuto)).padStart(2, "0");
+    if (m === this.relojTexto) return;
+    this.relojTexto = m;
+    this.reloj.replaceChildren(String(h), el("i", { text: ":" }), `${m} a. m.`);
+  }
+
+  /** Los mensajes salen de uno en uno, se quedan un rato y vuelta a empezar. */
+  #platica(dt) {
+    if (!this.burbujas) return;
+    this.platicaT += dt;
+    const paso = 1.7, n = this.burbujas.length, total = n * paso + 3.4;
+    if (this.platicaT > total) this.platicaT = -0.8;
+    const visibles = this.platicaT < 0 ? 0 : this.platicaT > n * paso + 2.6 ? 0 : Math.floor(this.platicaT / paso) + 1;
+    if (visibles === this.visibles) return;
+    this.visibles = visibles;
+    this.burbujas.forEach((b, i) => b.classList.toggle("is-visible", i < visibles));
   }
 
   #mountPlane(img) {
@@ -117,6 +166,8 @@ export default class DepthPage extends BasePage {
 
   #frame(dt, time) {
     this.reveal = clamp01(this.reveal + dt * 0.85);
+    this.#reloj(dt);
+    this.#platica(dt);
 
     const p = this.ctx.pointer.influence;
     this.px = damp(this.px, p.x, 3.2, dt);

@@ -86,7 +86,19 @@ export const chapters = [
     act: "encontrarte",
     title: "Las tres de la mañana",
     kicker: "nuestra hora",
-    text: "Hay una hora en la que parece que el mundo se vuelve raro, y nosotros cambiamos: a partir de las 3 de la mañana, hora de acá, ¡nos ponemos raros!\nA veces sólo quedamos nosotros a través de la pantalla encendida. Charlando, pero hay algo raro lindo, pues nuestro amor no sólo sube, sino que nos solemos poner raros: a veces yo con los ojos cerrándose, tú diciendo que ya nos durmamos, y ninguno de los dos lo hace. Aunque nos despidamos varias veces, solemos tener pláticas más íntimas y curiosas.\nDe verdad me gusta y neta siempre más te amo a todas horas <: en ese rato raro en el que ya no queda nada que decir y aun así nadie se va, sino que nos despedimos una y otra vez 😭",
+    text: "Hay una hora en la que el mundo se vuelve raro, y nosotros también: a partir de las 3 de la mañana, hora de acá, ¡nos ponemos raros!\nA veces ya sólo quedamos nosotros, cada uno del otro lado de la pantalla encendida. Seguimos platicando, pero pasa algo raro y lindo: el amor no sólo sube, sino que nos ponemos más raros. Yo con los ojos cerrándose, tú diciendo que ya nos durmamos… y ninguno de los dos lo hace. Nos despedimos varias veces y, justo ahí, salen nuestras pláticas más íntimas y más curiosas.\nDe verdad me encanta, y neta te amo más a todas horas <:, pero sobre todo en ese rato raro en el que ya no queda nada que decir y aun así nadie se va, y nos despedimos una y otra vez 😭",
+    // El reloj de la esquina (sigue corriendo mientras lees) y la
+    // platiquita que sale debajo del texto. `de`: "tu" (ella) o "yo".
+    reloj: "3:00",
+    platica: [
+      { de: "tu", t: "ya hay que dormirnos 😴" },
+      { de: "yo", t: "sí, ya… buenas noches, amor 🤍" },
+      { de: "tu", t: "buenas noches 🥺" },
+      { de: "yo", t: "…" },
+      { de: "yo", t: "¿sigues ahí? 👀" },
+      { de: "tu", t: "sí jajaja" },
+      { de: "yo", t: "yo tampoco me voy <:" },
+    ],
     palette: "vino",
     mood: "night",
   },
