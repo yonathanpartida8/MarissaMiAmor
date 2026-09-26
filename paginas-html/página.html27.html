@@ -4,153 +4,53 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>El bordado</title>
+<script src="sonido-libro.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Caveat:wght@500;700&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
-   Todo dentro de .bordado-mundo, con prefijo `bd-` en cada clase.
+   EL BORDADO — «Sigue los puntos»
+   Un bastidor con tela y un dibujo marcado con puntitos numerados. Se
+   pasa el dedo de punto en punto y la aguja va bordando; cada puntada
+   suena un poquito más aguda. Al terminar, la figura se rellena de hilo
+   brillante y cobra vida. Son cuatro dibujos. Prefijo `bd-`.
    ══════════════════════════════════════════════════════════════════════ */
-
-html, body { margin: 0; height: 100%; }
-
-.bordado-mundo {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  isolation: isolate;
-  contain: layout paint;
-  background:
-    radial-gradient(ellipse 110% 70% at 50% 4%, #f2e6d6, transparent 58%),
-    linear-gradient(172deg, #e4d2bc 0%, #d0b8a0 58%, #b89c84 100%);
-  color: #45362c;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: none;
-
-  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
-  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+html, body { margin: 0; height: 100%; overflow: hidden; background: #efe2d6; }
+.bd {
+  position: fixed; inset: 0; overflow: hidden;
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: none;
+  font-family: "Cormorant Garamond", Georgia, serif; color: #4a2a2e;
+  --seg-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seg-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
   --barra: var(--hueco-barra, 0rem);
-  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+  --suave: cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.bordado-mundo .bd-lienzo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  /* Los toques los recoge `.bd-toque`, que va justo encima. */
-  pointer-events: none;
-}
-
-/* El bastidor entero. El libro sólo se queda el barrido que empieza en
-   sus 24-44 px de borde. */
-.bordado-mundo .bd-toque {
-  position: absolute;
-  inset: 0;
-  touch-action: none;
-  z-index: 2;
-  cursor: crosshair;
-}
-
-.bordado-mundo .bd-ui {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-  padding:
-    calc(var(--seguro-t) + 18px) 22px
-    calc(var(--seguro-b) + var(--barra) + 14px) 22px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  text-align: center;
-}
-
-.bordado-mundo .bd-titulo {
-  margin: 0;
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-size: clamp(1rem, 4.4vw, 1.4rem);
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  color: #7d6048;
-  opacity: 0.88;
-  transition: opacity 800ms var(--e-suave);
-}
-.bordado-mundo.is-bordando .bd-titulo { opacity: 0.22; }
-
-.bordado-mundo .bd-pie {
-  margin: 0;
-  min-height: 3.6em;
-  max-width: 23em;
-  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
-  line-height: 1.55;
-  color: #4d3c30;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 640ms var(--e-suave), transform 640ms var(--e-suave);
-}
-.bordado-mundo .bd-pie.is-visible { opacity: 0.94; transform: none; }
-.bordado-mundo .bd-pie em {
-  display: block;
-  margin-top: 0.3em;
-  font-family: var(--tipo-mano, "Segoe Script", cursive);
-  font-size: 1.16em;
-  font-style: normal;
-  color: #b04a62;
-}
-
-/* Los hilos de colores, abajo. */
-.bordado-mundo .bd-hilos {
-  position: absolute;
-  left: 0; right: 0;
-  /* Por encima del texto de abajo, no encima de él. */
-  bottom: calc(var(--seguro-b) + var(--barra) + 108px);
-  display: flex;
-  justify-content: center;
-  gap: 9px;
-  z-index: 4;
-}
-.bordado-mundo .bd-hilo {
-  width: 26px; height: 34px;
-  border: 0; padding: 0;
-  border-radius: 5px 5px 8px 8px;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(60, 40, 28, 0.32), inset 0 -6px 10px rgba(0, 0, 0, 0.18);
-  transition: transform 220ms var(--e-suave), box-shadow 220ms var(--e-suave);
-  position: relative;
-}
-.bordado-mundo .bd-hilo::after {
-  content: "";
-  position: absolute;
-  left: 50%; top: -7px;
-  width: 2px; height: 10px;
-  margin-left: -1px;
-  background: currentColor;
-  border-radius: 1px;
-}
-.bordado-mundo .bd-hilo.is-elegido {
-  transform: translateY(-9px) scale(1.1);
-  box-shadow: 0 7px 14px rgba(60, 40, 28, 0.4), inset 0 -6px 10px rgba(0, 0, 0, 0.18);
-}
-.bordado-mundo .bd-hilo:focus-visible { outline: 2px solid #8a5c40; outline-offset: 3px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .bordado-mundo * { transition-duration: 1ms !important; }
-}
+.bd canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.bd-cabeza { position: absolute; top: calc(var(--seg-t) + 12px); left: 0; right: 0; display: grid; justify-items: center; gap: 2px; pointer-events: none; text-align: center; padding: 0 18px; }
+.bd-titulo { margin: 0; font-weight: 600; font-size: clamp(0.66rem, 2.8vw, 0.78rem); letter-spacing: 0.36em; text-transform: uppercase; color: rgba(110, 50, 60, 0.7); }
+.bd-dibujos { display: flex; gap: 8px; margin-top: 4px; }
+.bd-dibujos i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid rgba(160, 60, 80, 0.5); transition: background 500ms ease, transform 500ms ease; }
+.bd-dibujos i.is-hecho { background: #c03a52; }
+.bd-dibujos i.is-actual { transform: scale(1.35); border-color: #c03a52; }
+.bd-pie { position: absolute; left: 0; right: 0; bottom: calc(var(--seg-b) + var(--barra) + 14px); display: grid; justify-items: center; gap: 2px; padding: 0 22px; pointer-events: none; text-align: center; }
+.bd-frase { margin: 0; max-width: 20em; font-style: italic; font-weight: 500; font-size: clamp(1.05rem, 4.8vw, 1.3rem); line-height: 1.3; transition: opacity 600ms var(--suave), transform 600ms var(--suave); }
+.bd-firma { margin: 0; font-family: "Caveat", cursive; font-size: clamp(1.05rem, 4.6vw, 1.25rem); color: #b8364e; transition: opacity 600ms var(--suave) 200ms; }
+.bd-frase.is-fuera { opacity: 0; transform: translateY(6px); }
+.bd-firma.is-fuera { opacity: 0; transition-delay: 0ms; }
 </style>
 </head>
 <body>
-
-<div class="bordado-mundo" id="mundo">
-  <canvas class="bd-lienzo" id="lienzo"></canvas>
-  <div class="bd-toque" id="toque" aria-hidden="true"></div>
-  <div class="bd-hilos" id="hilos" role="group" aria-label="Hilos"></div>
-  <div class="bd-ui">
-    <h1 class="bd-titulo" id="titulo">Sigue los puntos</h1>
-    <p class="bd-pie" id="pie" role="status" aria-live="polite"></p>
+<div class="bd" id="mundo">
+  <canvas id="lienzo"></canvas>
+  <div class="bd-cabeza">
+    <p class="bd-titulo">Sigue los puntos</p>
+    <div class="bd-dibujos" id="dibujos"></div>
+  </div>
+  <div class="bd-pie">
+    <p class="bd-frase" id="frase" role="status" aria-live="polite">Empieza por el uno y ve de punto en punto.</p>
+    <p class="bd-firma is-fuera" id="firma"></p>
   </div>
 </div>
 
@@ -159,625 +59,397 @@ html, body { margin: 0; height: 100%; }
 "use strict";
 
 /* ══════════════════════════════════════════════════════════════════════
-   CONFIGURACIÓN EDITABLE
+   LOS DIBUJOS. Puntos de 0 a 1 dentro del bastidor; `null` es levantar
+   la aguja y seguir en otro sitio.
    ══════════════════════════════════════════════════════════════════════ */
+const corazon = Array.from({ length: 20 }, (_, i) => {
+  const t = (i / 20) * Math.PI * 2;
+  return [0.5 + Math.pow(Math.sin(t), 3) * 0.3, 0.47 - ((13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16) * 0.32];
+});
+const estrella = Array.from({ length: 10 }, (_, i) => {
+  const a = -Math.PI / 2 + i / 10 * Math.PI * 2, r = i % 2 ? 0.14 : 0.33;
+  return [0.5 + Math.cos(a) * r, 0.52 + Math.sin(a) * r];
+});
+const DIBUJOS = [
+  { cerrada: true, hilo: 0, puntos: corazon, texto: "Un corazón. Lo más fácil y lo que más cuesta.", firma: "como todo lo importante" },
+  { cerrada: true, hilo: 3, puntos: estrella, texto: "Una estrella, para cuando no se vean las de verdad.", firma: "esta no se apaga" },
+  { cerrada: false, hilo: 1, puntos: [[0.5, 0.82], [0.5, 0.55], null, [0.5, 0.58], [0.38, 0.5], [0.33, 0.36], [0.4, 0.24], [0.46, 0.32], [0.5, 0.2], [0.54, 0.32], [0.6, 0.24], [0.67, 0.36], [0.62, 0.5], [0.5, 0.58], null, [0.5, 0.72], [0.36, 0.62], [0.42, 0.74], [0.5, 0.72], [0.64, 0.62], [0.58, 0.74], [0.5, 0.72]], texto: "Un tulipán que no se marchita nunca.", firma: "para ti" },
+  { cerrada: false, hilo: 4, puntos: [[0.3, 0.28], [0.38, 0.46], [0.46, 0.28], null, [0.38, 0.46], [0.38, 0.72], null, [0.5, 0.66], [0.52, 0.7], [0.5, 0.74], [0.48, 0.7], [0.5, 0.66], null, [0.56, 0.72], [0.56, 0.3], [0.64, 0.5], [0.72, 0.3], [0.72, 0.72]], texto: "Y la firma: y punto m.", firma: "nosotros" },
+];
+const HILOS = [
+  { color: "#c03a52", claro: "#ef7890" }, { color: "#e07a9c", claro: "#ffb8cf" }, { color: "#5c9a6a", claro: "#9fd8ac" },
+  { color: "#c99a3a", claro: "#ffd77a" }, { color: "#4a72a8", claro: "#94b8e8" },
+];
+const AL_ACABAR = ["Ya está. Lo has bordado tú todo.", "los bordados no se deshacen"];
 
-const CONF = {
-
-  /* ---- LO QUE HAY QUE BORDAR ------------------------------------------
-     Un dibujo marcado a lápiz en la tela: se pasa el dedo por encima y
-     se va bordando. Cada figura tiene sus puntos, en coordenadas de 0 a
-     1 dentro del bastidor.                                             */
-  figuras: [
-    {
-      nombre: "el corazón",
-      cerrada: true,
-      hilo: 0,
-      texto: "Un corazón. Lo más fácil y lo que más cuesta.",
-      firma: "Como todo lo importante.",
-      /* Se genera con la fórmula de siempre, pero se guarda como puntos
-         para que el resto del código no sepa de fórmulas. */
-      puntos: Array.from({ length: 36 }, (_, i) => {
-        const t = (i / 36) * Math.PI * 2;
-        return [
-          0.5 + Math.pow(Math.sin(t), 3) * 0.26,
-          0.46 - ((13 * Math.cos(t) - 5 * Math.cos(2 * t)
-                 - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16) * 0.28,
-        ];
-      }),
-    },
-    {
-      nombre: "la y",
-      cerrada: false,
-      hilo: 2,
-      texto: "Una y. La primera letra.",
-      firma: "Ya sabes de quién.",
-      puntos: [[0.34, 0.26], [0.42, 0.44], [0.50, 0.26], null,
-               [0.42, 0.44], [0.42, 0.72]],
-    },
-    {
-      nombre: "el punto",
-      cerrada: true,
-      hilo: 3,
-      texto: "Un punto. Pequeñito, pero hace falta.",
-      firma: "Está entre las dos.",
-      puntos: Array.from({ length: 10 }, (_, i) => {
-        const t = (i / 10) * Math.PI * 2;
-        return [0.5 + Math.cos(t) * 0.022, 0.70 + Math.sin(t) * 0.022];
-      }),
-    },
-    {
-      nombre: "la eme",
-      cerrada: false,
-      hilo: 1,
-      texto: "Y una eme. Ya está la firma entera.",
-      firma: "y punto m. Nosotros.",
-      puntos: [[0.56, 0.72], [0.56, 0.26], [0.64, 0.46], [0.72, 0.26], [0.72, 0.72]],
-    },
-  ],
-
-  /* ---- LOS HILOS ------------------------------------------------------- */
-  hilos: [
-    { nombre: "rojo",   color: "#c03a52", claro: "#e8677c" },
-    { nombre: "rosa",   color: "#e07a9c", claro: "#f7a8c2" },
-    { nombre: "verde",  color: "#5c9a6a", claro: "#8fc99c" },
-    { nombre: "dorado", color: "#c99a3a", claro: "#f0c468" },
-    { nombre: "azul",   color: "#4a72a8", claro: "#86a8d8" },
-  ],
-
-  /* ---- CÓMO SE BORDA --------------------------------------------------- */
-  largoPunto: 15,        // px que mide cada puntada
-  margenAguja: 30,       // cómo de cerca hay que pasar del trazo marcado
-
-  /* ---- AL TERMINAR ------------------------------------------------------ */
-  alAcabar: {
-    texto: "Ya está. Lo has bordado tú entero.",
-    firma: "Esto no se deshace. Los bordados no se deshacen.",
-  },
-};
-
-/* ══════════════════════════════════════════════════════════════════════
-   La maquinaria.
-   ══════════════════════════════════════════════════════════════════════ */
-
-const mundo  = document.getElementById("mundo");
+const mundo = document.getElementById("mundo");
 const lienzo = document.getElementById("lienzo");
-const zona   = document.getElementById("toque");
-const elPie  = document.getElementById("pie");
-const elHilos = document.getElementById("hilos");
-const ctx    = lienzo.getContext("2d", { alpha: false });
-
+const g = lienzo.getContext("2d", { alpha: false });
+const elFrase = document.getElementById("frase");
+const elFirma = document.getElementById("firma");
+const elDibujos = document.getElementById("dibujos");
 const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const azar  = (a, b) => a + Math.random() * (b - a);
-const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const TAU = Math.PI * 2;
+const azar = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const acercar = (v, o, k, dt) => o + (v - o) * Math.exp(-k * dt);
 
 let A = 0, H = 0, dpr = 1;
-let cx = 0, cy = 0, R = 0;       // el aro del bastidor
+let B = { x: 0, y: 0, R: 0 };           // el bastidor
+let tela = null;
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL ESTADO
+   ══════════════════════════════════════════════════════════════════════ */
+let nDibujo = 0, siguiente = 0, puntadas = [], hecho = false, relleno = 0, vida = 0;
+const flores = [];            // los detallitos que salen alrededor al terminar
+function pts() { return DIBUJOS[nDibujo].puntos; }
+function aP(p) { return [B.x - B.R * 0.72 + p[0] * B.R * 1.44, B.y - B.R * 0.72 + p[1] * B.R * 1.44]; }
+function pintarPuntos() {
+  elDibujos.replaceChildren(...DIBUJOS.map((_, i) => { const e = document.createElement("i"); if (i < nDibujo) e.className = "is-hecho"; if (i === nDibujo) e.className = "is-actual"; return e; }));
+}
+function empezar(n) {
+  nDibujo = n % DIBUJOS.length;
+  siguiente = 0; puntadas = []; hecho = false; relleno = 0; vida = 0;
+  pintarPuntos();
+}
+/* El índice del siguiente punto de verdad (saltando los `null`). */
+function sig() { const P = pts(); let i = siguiente; while (i < P.length && !P[i]) i++; return i; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   LA AGUJA Y SU HILO
+   ══════════════════════════════════════════════════════════════════════ */
+const hilo = Array.from({ length: 14 }, () => ({ x: 0, y: 0, px: 0, py: 0 }));
+let aguja = { x: 0, y: 0, ver: 0 }, dedo = null;
+function ultimoPunto() {
+  const P = pts();
+  for (let i = siguiente - 1; i >= 0; i--) { if (!P[i]) return null; return aP(P[i]); }
+  return null;
+}
+mundo.addEventListener("pointerdown", (e) => {
+  despertar();
+  const r = mundo.getBoundingClientRect();
+  dedo = { id: e.pointerId, x: e.clientX - r.left, y: e.clientY - r.top };
+  try { mundo.setPointerCapture(e.pointerId); } catch { /* nada */ }
+  if (hecho && vida > 2.5) { empezar(nDibujo + 1); decir("Otro dibujo. Empieza por el uno.", ""); return; }
+  mirar();
+});
+mundo.addEventListener("pointermove", (e) => {
+  if (!dedo || e.pointerId !== dedo.id) return;
+  const r = mundo.getBoundingClientRect();
+  const nx = e.clientX - r.left, ny = e.clientY - r.top;
+  // Se mira todo el camino del dedo, no sólo dónde acaba: así, aunque vaya
+  // rápido, no se salta ningún punto.
+  const pasos = Math.ceil(Math.hypot(nx - dedo.x, ny - dedo.y) / 8);
+  for (let k = 1; k <= pasos; k++) { dedo.x += (nx - dedo.x) / (pasos - k + 1); dedo.y += (ny - dedo.y) / (pasos - k + 1); mirar(); }
+  dedo.x = nx; dedo.y = ny;
+});
+const soltar = (e) => { if (dedo && e.pointerId === dedo.id) dedo = null; };
+mundo.addEventListener("pointerup", soltar);
+mundo.addEventListener("pointercancel", soltar);
+
+function mirar() {
+  if (hecho || !dedo) return;
+  const P = pts(), i = sig();
+  if (i >= P.length) return;
+  const [x, y] = aP(P[i]);
+  if (Math.hypot(dedo.x - x, dedo.y - y) < Math.max(22, B.R * 0.09)) {
+    const desde = siguiente > 0 && P[siguiente - 1] ? aP(P[siguiente - 1]) : null;
+    if (desde) puntadas.push({ a: desde, b: [x, y], t: 0 });
+    siguiente = i + 1;
+    puntada(siguiente);
+    brotes(x, y, 6);
+    if (sig() >= P.length) {
+      if (DIBUJOS[nDibujo].cerrada) puntadas.push({ a: [x, y], b: aP(P[0]), t: 0 });
+      terminar();
+    }
+  }
+}
+
+function terminar() {
+  hecho = true;
+  const d = DIBUJOS[nDibujo];
+  setTimeout(() => {
+    decir(d.texto, d.firma);
+    campanitas();
+    for (let i = 0; i < 40; i++) setTimeout(() => { const a = Math.random() * TAU, r = B.R * azar(0.2, 0.9); brotes(B.x + Math.cos(a) * r, B.y + Math.sin(a) * r, 3); }, i * 30);
+    for (let i = 0; i < 7; i++) flores.push({ a: i / 7 * TAU + Math.random() * 0.4, r: B.R * azar(0.86, 0.93), t: -i * 0.15, col: HILOS[(i + nDibujo) % HILOS.length] });
+    if (nDibujo === DIBUJOS.length - 1) setTimeout(() => decir(...AL_ACABAR), 4200);
+  }, 400);
+  pintarPuntos();
+  const e = elDibujos.children[nDibujo];
+  if (e) e.className = "is-hecho";
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL SONIDO: la aguja entrando en la tela y las notas que suben
+   ══════════════════════════════════════════════════════════════════════ */
+let ac = null, salida = null;
+function despertar() {
+  if (ac) { if (ac.state === "suspended") ac.resume(); return ac; }
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+  salida = ac.createGain(); salida.gain.value = 0.9; salida.connect(ac.destination);
+  return ac;
+}
+const ESCALA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5, 1567.98, 1760];
+function puntada(n) {
+  if (!ac) return;
+  const t = ac.currentTime;
+  const b = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.03), ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 4);
+  const s = ac.createBufferSource(); s.buffer = b;
+  const f = ac.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 2500;
+  const gg = ac.createGain(); gg.gain.value = 0.12;
+  s.connect(f).connect(gg).connect(salida); s.start(t);
+  const fr = ESCALA[n % ESCALA.length] * (n >= ESCALA.length ? 2 : 1);
+  const o = ac.createOscillator(), go = ac.createGain();
+  o.frequency.value = fr;
+  go.gain.setValueAtTime(0, t); go.gain.linearRampToValueAtTime(0.04, t + 0.01); go.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+  o.connect(go).connect(salida); o.start(t); o.stop(t + 1);
+}
+function campanitas() {
+  if (!ac) return;
+  const t = ac.currentTime;
+  [523.25, 659.25, 783.99, 1046.5, 1318.5, 1567.98].forEach((f, i) => {
+    const o = ac.createOscillator(), gg = ac.createGain();
+    o.frequency.value = f;
+    gg.gain.setValueAtTime(0, t + i * 0.1); gg.gain.linearRampToValueAtTime(0.04, t + i * 0.1 + 0.01); gg.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.1 + 1.8);
+    o.connect(gg).connect(salida); o.start(t + i * 0.1); o.stop(t + i * 0.1 + 1.9);
+  });
+}
+
+function decir(f, s) {
+  elFrase.classList.add("is-fuera"); elFirma.classList.add("is-fuera");
+  setTimeout(() => { elFrase.textContent = f; elFrase.classList.remove("is-fuera"); elFirma.textContent = s || ""; elFirma.classList.toggle("is-fuera", !s); }, suave ? 20 : 350);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PINTAR
+   ══════════════════════════════════════════════════════════════════════ */
+const chispas = [];
+function brotes(x, y, n) {
+  for (let i = 0; i < n; i++) { const a = Math.random() * TAU, v = azar(20, 80); chispas.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0, dur: azar(0.5, 1) }); }
+}
+function pintarTela() {
+  const c = document.createElement("canvas");
+  c.width = Math.round(A * dpr); c.height = Math.round(H * dpr);
+  const x = c.getContext("2d");
+  x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // La mesa: un mantel de lino con flores apenas.
+  const mesa = x.createLinearGradient(0, 0, A, H);
+  mesa.addColorStop(0, "#f4e8dc"); mesa.addColorStop(1, "#e2cfc0");
+  x.fillStyle = mesa; x.fillRect(0, 0, A, H);
+  for (let i = 0; i < A; i += 3) { x.fillStyle = `rgba(150,110,90,${azar(0.02, 0.05)})`; x.fillRect(i, 0, 1, H); }
+  for (let j = 0; j < H; j += 3) { x.fillStyle = `rgba(150,110,90,${azar(0.015, 0.04)})`; x.fillRect(0, j, A, 1); }
+  // La sombra del bastidor.
+  x.fillStyle = "rgba(90,50,40,.25)";
+  x.beginPath(); x.ellipse(B.x + 8, B.y + 14, B.R * 1.06, B.R * 1.06, 0, 0, TAU); x.fill();
+  // La tela tensa, con su trama.
+  x.save();
+  x.beginPath(); x.arc(B.x, B.y, B.R, 0, TAU); x.clip();
+  const lienzoT = x.createRadialGradient(B.x - B.R * 0.3, B.y - B.R * 0.3, 0, B.x, B.y, B.R);
+  lienzoT.addColorStop(0, "#fffaf2"); lienzoT.addColorStop(1, "#efe4d4");
+  x.fillStyle = lienzoT; x.fillRect(B.x - B.R, B.y - B.R, B.R * 2, B.R * 2);
+  for (let i = -B.R; i < B.R; i += 2.2) {
+    x.fillStyle = "rgba(160,130,100,.07)";
+    x.fillRect(B.x + i, B.y - B.R, 0.8, B.R * 2);
+    x.fillRect(B.x - B.R, B.y + i, B.R * 2, 0.8);
+  }
+  x.restore();
+  // El aro de madera y su tornillo.
+  for (const [r, w, col] of [[B.R + 7, 14, "#b07a4a"], [B.R + 7, 2, "rgba(255,220,180,.6)"], [B.R + 14, 1.5, "rgba(90,50,20,.5)"]]) {
+    x.strokeStyle = col; x.lineWidth = w; x.beginPath(); x.arc(B.x, B.y, r, 0, TAU); x.stroke();
+  }
+  x.fillStyle = "#c8a070"; x.fillRect(B.x - 10, B.y - B.R - 26, 20, 14);
+  x.fillStyle = "#8a8f96"; x.beginPath(); x.arc(B.x, B.y - B.R - 30, 6, 0, TAU); x.fill();
+  // Unos carretes de hilo al lado.
+  HILOS.forEach((h, i) => {
+    const cx = A * 0.12 + i * Math.min(38, A * 0.1), cy = H - (parseFloat(getComputedStyle(mundo).getPropertyValue("--seguro-abajo")) || 0) - 110;
+    if (cy < B.y + B.R + 30) return;
+    x.fillStyle = "#e8d8c0"; x.fillRect(cx - 12, cy - 16, 24, 4); x.fillRect(cx - 12, cy + 12, 24, 4);
+    x.fillStyle = h.color; x.fillRect(cx - 10, cy - 12, 20, 24);
+    x.fillStyle = "rgba(255,255,255,.25)"; for (let k = -10; k < 12; k += 3) x.fillRect(cx - 10, cy + k, 20, 1);
+  });
+  tela = c;
+}
+
+let t0 = performance.now(), reloj = 0;
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A) return;
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.1) dt = 1 / 60;
+  reloj += dt;
+  if (hecho) { vida += dt; relleno = Math.min(1, relleno + dt * 0.6); }
+
+  g.drawImage(tela, 0, 0, A, H);
+  const d = DIBUJOS[nDibujo], P = d.puntos, hl = HILOS[d.hilo];
+
+  g.save();
+  g.beginPath(); g.arc(B.x, B.y, B.R, 0, TAU); g.clip();
+  // Al terminar, el relleno de hilo satinado que crece desde el centro.
+  if (hecho && d.cerrada && relleno > 0) {
+    g.save();
+    g.beginPath();
+    P.forEach((p, i) => { const [x, y] = aP(p); if (i) g.lineTo(x, y); else g.moveTo(x, y); });
+    g.closePath();
+    g.clip();
+    const lat = 1 + Math.sin(vida * 5) * 0.03 * (d.hilo === 0 ? 1 : 0);
+    const r = B.R * relleno * 1.1 * lat;
+    g.fillStyle = hl.color;
+    g.beginPath(); g.arc(B.x, B.y, r, 0, TAU); g.fill();
+    g.strokeStyle = hl.claro; g.lineWidth = 1;
+    for (let k = -B.R; k < B.R; k += 3.2) { g.globalAlpha = 0.35; g.beginPath(); g.moveTo(B.x + k, B.y - B.R); g.lineTo(B.x + k + B.R * 0.5, B.y + B.R); g.stroke(); }
+    g.globalAlpha = 1;
+    const brillo = g.createLinearGradient(B.x - B.R, B.y - B.R, B.x + B.R, B.y + B.R);
+    const k = (vida * 0.4) % 1.6 - 0.3;
+    brillo.addColorStop(clamp(k - 0.1, 0, 1), "rgba(255,255,255,0)");
+    brillo.addColorStop(clamp(k, 0, 1), "rgba(255,255,255,.4)");
+    brillo.addColorStop(clamp(k + 0.1, 0, 1), "rgba(255,255,255,0)");
+    g.fillStyle = brillo; g.fillRect(B.x - B.R, B.y - B.R, B.R * 2, B.R * 2);
+    g.restore();
+  }
+  // El dibujo marcado a lápiz, punteado.
+  g.setLineDash([2, 5]);
+  g.strokeStyle = "rgba(90,90,120,.35)"; g.lineWidth = 1;
+  g.beginPath();
+  let abierto = false;
+  P.forEach((p) => { if (!p) { abierto = false; return; } const [x, y] = aP(p); if (abierto) g.lineTo(x, y); else g.moveTo(x, y); abierto = true; });
+  if (d.cerrada) { const [x, y] = aP(P[0]); g.lineTo(x, y); }
+  g.stroke();
+  g.setLineDash([]);
+  // Las puntadas hechas: cada una se «cose» en un momentito.
+  for (const s of puntadas) {
+    s.t = Math.min(1, s.t + dt * 5);
+    const [ax, ay] = s.a, [bx, by] = s.b;
+    const L = Math.hypot(bx - ax, by - ay), n = Math.max(1, Math.round(L / 9));
+    for (let k = 0; k < n * s.t; k++) {
+      const t1 = k / n, t2 = Math.min(s.t, (k + 0.78) / n);
+      if (t2 <= t1) continue;
+      const x1 = ax + (bx - ax) * t1, y1 = ay + (by - ay) * t1, x2 = ax + (bx - ax) * t2, y2 = ay + (by - ay) * t2;
+      g.strokeStyle = "rgba(60,20,20,.25)"; g.lineWidth = 3.4; g.lineCap = "round";
+      g.beginPath(); g.moveTo(x1 + 0.8, y1 + 1); g.lineTo(x2 + 0.8, y2 + 1); g.stroke();
+      g.strokeStyle = hl.color; g.lineWidth = 3;
+      g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+      g.strokeStyle = hl.claro; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x1, y1 - 0.6); g.lineTo(x2, y2 - 0.6); g.stroke();
+    }
+  }
+  // Las florecitas bordadas que salen alrededor al terminar.
+  for (const f of flores) {
+    f.t += dt;
+    const k = clamp(f.t / 0.6, 0, 1);
+    if (k <= 0) continue;
+    const x = B.x + Math.cos(f.a) * f.r, y = B.y + Math.sin(f.a) * f.r;
+    for (let p = 0; p < 5; p++) {
+      const a = p / 5 * TAU + f.a;
+      g.fillStyle = f.col.color;
+      g.beginPath(); g.ellipse(x + Math.cos(a) * 5 * k, y + Math.sin(a) * 5 * k, 4 * k, 2.4 * k, a, 0, TAU); g.fill();
+    }
+    g.fillStyle = "#ffd77a"; g.beginPath(); g.arc(x, y, 2 * k, 0, TAU); g.fill();
+  }
+  g.restore();
+
+  // Los puntos numerados que faltan, y el siguiente que late.
+  if (!hecho) {
+    const i0 = sig();
+    let num = 0;
+    P.forEach((p, i) => {
+      if (!p) return;
+      num++;
+      const [x, y] = aP(p);
+      const hechoP = i < siguiente;
+      const es = i === i0;
+      const r = es ? 6 + Math.sin(reloj * 6) * 1.6 : 4;
+      if (es) {
+        const h = g.createRadialGradient(x, y, 0, x, y, 22);
+        h.addColorStop(0, "rgba(255,120,150,.4)"); h.addColorStop(1, "rgba(255,120,150,0)");
+        g.fillStyle = h; g.fillRect(x - 22, y - 22, 44, 44);
+      }
+      g.fillStyle = hechoP ? hl.color : es ? "#e0405e" : "rgba(80,60,80,.55)";
+      g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+      if (!hechoP && (es || i < i0 + 4)) {
+        g.fillStyle = es ? "#b8284c" : "rgba(80,60,80,.6)";
+        g.font = `600 ${es ? 13 : 10}px "Cormorant Garamond", serif`;
+        g.textAlign = "center"; g.textBaseline = "bottom";
+        g.fillText(String(num), x, y - r - 2);
+      }
+    });
+  }
+
+  // La aguja con su hilo, que sigue al dedo.
+  const objetivo = dedo ? [dedo.x, dedo.y] : null;
+  aguja.ver = acercar(aguja.ver, objetivo && !hecho ? 1 : 0, 8, dt);
+  if (objetivo) { aguja.x = acercar(aguja.x, objetivo[0], 25, dt); aguja.y = acercar(aguja.y, objetivo[1], 25, dt); }
+  const ult = ultimoPunto();
+  if (aguja.ver > 0.02 && ult) {
+    hilo[0].x = ult[0]; hilo[0].y = ult[1];
+    for (let i = 1; i < hilo.length; i++) { const p = hilo[i]; const vx = (p.x - p.px) * 0.9, vy = (p.y - p.py) * 0.9; p.px = p.x; p.py = p.y; p.x += vx; p.y += vy + 0.4; }
+    const L = Math.hypot(aguja.x - ult[0], aguja.y - ult[1]) / (hilo.length - 1) * 1.1 + 1;
+    for (let it = 0; it < 6; it++) {
+      hilo[hilo.length - 1].x = aguja.x; hilo[hilo.length - 1].y = aguja.y;
+      for (let i = 1; i < hilo.length; i++) { const a = hilo[i - 1], b = hilo[i]; const dx = b.x - a.x, dy = b.y - a.y, dd = Math.hypot(dx, dy) || 1, f = (dd - L) / dd; if (i > 1) { a.x += dx * f * 0.5; a.y += dy * f * 0.5; } b.x -= dx * f * (i > 1 ? 0.5 : 1); b.y -= dy * f * (i > 1 ? 0.5 : 1); }
+      hilo[0].x = ult[0]; hilo[0].y = ult[1];
+    }
+    g.globalAlpha = aguja.ver;
+    g.strokeStyle = hl.color; g.lineWidth = 1.4;
+    g.beginPath(); g.moveTo(hilo[0].x, hilo[0].y); for (const p of hilo) g.lineTo(p.x, p.y); g.stroke();
+    g.globalAlpha = 1;
+  } else for (const p of hilo) { p.x = p.px = aguja.x; p.y = p.py = aguja.y; }
+  if (aguja.ver > 0.02) {
+    g.save();
+    g.globalAlpha = aguja.ver;
+    g.translate(aguja.x, aguja.y);
+    g.rotate(-0.7);
+    const m = g.createLinearGradient(-2, 0, 2, 0);
+    m.addColorStop(0, "#8a8f96"); m.addColorStop(0.5, "#f4f6f8"); m.addColorStop(1, "#8a8f96");
+    g.fillStyle = m;
+    g.beginPath(); g.moveTo(0, 0); g.lineTo(2.2, -34); g.lineTo(-2.2, -34); g.closePath(); g.fill();
+    g.fillStyle = "#efe4d4"; g.beginPath(); g.ellipse(0, -29, 0.8, 3, 0, 0, TAU); g.fill();
+    g.restore();
+  }
+
+  // Chispitas.
+  for (let i = chispas.length - 1; i >= 0; i--) {
+    const c = chispas[i];
+    c.t += dt;
+    if (c.t > c.dur) { chispas.splice(i, 1); continue; }
+    c.x += c.vx * dt; c.y += c.vy * dt; c.vx *= 0.96; c.vy *= 0.96;
+    const k = 1 - c.t / c.dur;
+    g.fillStyle = `rgba(255,${190 + k * 50 | 0},120,${k})`;
+    g.beginPath(); g.arc(c.x, c.y, 1.6 * k + 0.4, 0, TAU); g.fill();
+  }
+
+  if (hecho && vida > 2.5 && Math.sin(reloj * 3) > 0) {
+    g.fillStyle = "rgba(120,60,70,.6)";
+    g.font = `600 11px "Cormorant Garamond", serif`;
+    g.textAlign = "center";
+    g.fillText("TOCA PARA OTRO DIBUJO", B.x, B.y + B.R + 40);
+  }
+}
 
 function medir() {
   const r = mundo.getBoundingClientRect();
   if (!r.width || !r.height) return;
   A = r.width; H = r.height;
   dpr = Math.min(window.devicePixelRatio || 1, 2);
-  lienzo.width  = Math.round(A * dpr);
-  lienzo.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  R = Math.min(A * 0.40, H * 0.27);
-  cx = A / 2;
-  cy = H * 0.42;
+  lienzo.width = Math.round(A * dpr); lienzo.height = Math.round(H * dpr);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const apaisado = A > H * 1.2;
+  B = { x: A / 2, y: H * (apaisado ? 0.52 : 0.46), R: apaisado ? H * 0.34 : Math.min(A * 0.42, H * 0.28) };
+  pintarTela();
+  // Las puntadas se vuelven a colocar con la medida nueva.
+  const P = pts();
+  puntadas = [];
+  for (let i = 1; i < siguiente; i++) if (P[i] && P[i - 1]) puntadas.push({ a: aP(P[i - 1]), b: aP(P[i]), t: 1 });
+  if (hecho && DIBUJOS[nDibujo].cerrada) puntadas.push({ a: aP(P[P.length - 1]), b: aP(P[0]), t: 1 });
 }
-new ResizeObserver(medir).observe(mundo);
-
-/** De coordenadas de la figura (0..1) a píxeles dentro del aro. */
-function aPixel(p) {
-  const lado = R * 1.5;
-  return { x: cx + (p[0] - 0.5) * lado, y: cy + (p[1] - 0.5) * lado };
-}
-
-/* ---- Las puntadas --------------------------------------------------------
-   Cada figura se parte en puntadas de largo fijo. Una puntada se da
-   cuando el dedo pasa cerca de ella, y queda dada para siempre.        */
-
-const puntadas = [];
-
-function prepararPuntadas() {
-  puntadas.length = 0;
-  CONF.figuras.forEach((f, fi) => {
-    const pts = f.puntos.slice();
-    if (f.cerrada) pts.push(f.puntos[0]);
-    let anterior = null;
-    for (const p of pts) {
-      if (p === null) { anterior = null; continue; }   // levantar la aguja
-      const q = aPixel(p);
-      if (anterior) repartir(anterior, q, fi, f.hilo);
-      anterior = q;
-    }
-  });
-}
-
-function repartir(a, b, figura, hilo) {
-  const d = Math.hypot(b.x - a.x, b.y - a.y);
-  const n = Math.max(1, Math.round(d / CONF.largoPunto));
-  for (let i = 0; i < n; i++) {
-    const t0 = i / n, t1 = (i + 1) / n;
-    puntadas.push({
-      x0: a.x + (b.x - a.x) * t0, y0: a.y + (b.y - a.y) * t0,
-      x1: a.x + (b.x - a.x) * t1, y1: a.y + (b.y - a.y) * t1,
-      figura, hilo,
-      dada: false, crece: 0,
-      /* Ni una puntada es igual que otra: un bordado a mano tiene
-         siempre un poco de temblor, y sin él parece impreso. */
-      tiembla: azar(-1.6, 1.6),
-      giro: azar(-0.09, 0.09),
-    });
-  }
-}
-
-/* ---- Bordar --------------------------------------------------------------- */
-
-let hiloElegido = 0;
-let bordando = false;
-
-function enPantalla(e) {
-  const r = mundo.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
-}
-
-zona.addEventListener("pointerdown", (e) => {
-  if (e.pointerType === "mouse" && e.button !== 0) return;
-  zona.setPointerCapture(e.pointerId);
-  bordando = true;
-  mundo.classList.add("is-bordando");
-  pasar(enPantalla(e));
-});
-
-zona.addEventListener("pointermove", (e) => {
-  const p = enPantalla(e);
-  aguja.x = p.x; aguja.y = p.y; aguja.dentro = true;
-  if (bordando) pasar(p);
-});
-
-function soltar() {
-  bordando = false;
-  aguja.dentro = false;
-}
-zona.addEventListener("pointerup", soltar);
-zona.addEventListener("pointercancel", soltar);
-zona.addEventListener("pointerleave", () => { aguja.dentro = false; });
-
-const aguja = { x: -999, y: -999, dentro: false };
-
-function pasar(p) {
-  aguja.x = p.x; aguja.y = p.y; aguja.dentro = true;
-  let algo = false;
-  for (const s of puntadas) {
-    if (s.dada) continue;
-    const mx = (s.x0 + s.x1) / 2, my = (s.y0 + s.y1) / 2;
-    if (Math.hypot(mx - p.x, my - p.y) > CONF.margenAguja) continue;
-    s.dada = true;
-    s.hilo = hiloElegido;
-    s.crece = 0.001;
-    algo = true;
-    dadas++;
-  }
-  if (algo) {
-    pinchazo();
-    mirarFiguras();
-  }
-}
-
-/* ---- Los hilos ------------------------------------------------------------- */
-
-CONF.hilos.forEach((h, i) => {
-  const b = document.createElement("button");
-  b.type = "button";
-  b.className = "bd-hilo" + (i === 0 ? " is-elegido" : "");
-  b.style.background = `linear-gradient(170deg, ${h.claro}, ${h.color})`;
-  b.style.color = h.color;
-  b.setAttribute("aria-label", `Hilo ${h.nombre}`);
-  b.addEventListener("click", () => {
-    hiloElegido = i;
-    [...elHilos.children].forEach((c, k) => c.classList.toggle("is-elegido", k === i));
-    decir(`Hilo ${h.nombre}.`);
-    colorines++;
-    mirarSecretos();
-  });
-  elHilos.append(b);
-});
-
-/* ---- Contar y decir --------------------------------------------------------- */
-
-let dadas = 0;
-const hechas = new Set();
-
-function mirarFiguras() {
-  CONF.figuras.forEach((f, fi) => {
-    if (hechas.has(fi)) return;
-    const suyas = puntadas.filter((s) => s.figura === fi);
-    if (suyas.some((s) => !s.dada)) return;
-    hechas.add(fi);
-    decir(f.texto, f.firma, true);
-    campana(523 + hechas.size * 90);
-    if (hechas.size === CONF.figuras.length) {
-      setTimeout(() => {
-        decir(CONF.alAcabar.texto, CONF.alAcabar.firma, true);
-        firma = 0.001;
-        campana(880);
-      }, 2400);
-    }
-  });
-  mirarSecretos();
-}
-
-let pidiendo = null;
-let bloqueado = 0;
-
-function decir(texto, firma2, importante) {
-  const ahora = performance.now();
-  if (!importante && ahora < bloqueado) return;
-  if (pidiendo === texto) return;
-  pidiendo = texto;
-  if (importante) bloqueado = ahora + 4000;
-  elPie.classList.remove("is-visible");
-  setTimeout(() => {
-    elPie.textContent = texto;
-    if (firma2) {
-      const em = document.createElement("em");
-      em.textContent = firma2;
-      elPie.append(em);
-    }
-    elPie.classList.add("is-visible");
-  }, suave ? 10 : 270);
-}
-
-/* ---- Sonido ----------------------------------------------------------------- */
-
-let audio = null;
-let ultimoPinchazo = 0;
-
-function pinchazo() {
-  const ahora = performance.now();
-  if (ahora - ultimoPinchazo < 70) return;
-  ultimoPinchazo = ahora;
-  try {
-    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
-    if (audio.state === "suspended") audio.resume();
-    const t = audio.currentTime;
-    /* La aguja entrando en la tela: un roce cortísimo y agudo. */
-    const n = Math.floor(audio.sampleRate * 0.03);
-    const buf = audio.createBuffer(1, n, audio.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < n; i++) {
-      const k = i / n;
-      d[i] = (Math.random() * 2 - 1) * Math.sin(k * Math.PI) * 0.9;
-    }
-    const src = audio.createBufferSource();
-    src.buffer = buf;
-    const f = audio.createBiquadFilter();
-    f.type = "highpass";
-    f.frequency.value = 3200;
-    const g = audio.createGain();
-    g.gain.value = 0.09;
-    src.connect(f).connect(g).connect(audio.destination);
-    src.start(t);
-  } catch { /* sin sonido se borda igual */ }
-}
-
-function campana(hz) {
-  try {
-    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
-    const t = audio.currentTime;
-    const o = audio.createOscillator();
-    const g = audio.createGain();
-    o.type = "triangle";
-    o.frequency.setValueAtTime(hz, t);
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.08, t + 0.012);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
-    o.connect(g).connect(audio.destination);
-    o.start(t); o.stop(t + 1.5);
-  } catch { /* nada */ }
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   LOS SECRETOS
-   ══════════════════════════════════════════════════════════════════════ */
-
-/* 1. Al acabarlo todo, aparece bordada una fecha diminuta en el canto de
-      abajo, como firman los bordados de verdad.                        */
-let firma = 0;
-
-/* 2. Usar los cinco hilos: la tela se tiñe un poco de cada color, como
-      si se hubieran destreñido.                                       */
-let colorines = 0;
-const usados = new Set();
-let destenyido = 0;
-
-/* 3. Bordar dando vueltas por FUERA del dibujo (donde no hay nada
-      marcado): a las tres vueltas sale un rulito de hilo suelto que se
-      queda ahí colgando.                                              */
-const sueltos = [];
-let fueraSeguidas = 0;
-
-function mirarSecretos() {
-  usados.add(hiloElegido);
-  if (usados.size >= CONF.hilos.length && destenyido <= 0) {
-    destenyido = 0.001;
-    decir("Has usado los cinco.", "La tela se ha teñido un poco de todos. Mejor así.", true);
-    campana(392);
-  }
-}
-
-zona.addEventListener("pointermove", (e) => {
-  if (!bordando) { fueraSeguidas = 0; return; }
-  const p = enPantalla(e);
-  /* ¿Está lejos de TODA puntada sin dar? Entonces está bordando al aire. */
-  let cerca = false;
-  for (const s of puntadas) {
-    const mx = (s.x0 + s.x1) / 2, my = (s.y0 + s.y1) / 2;
-    if (Math.hypot(mx - p.x, my - p.y) < CONF.margenAguja * 1.6) { cerca = true; break; }
-  }
-  const dentroAro = Math.hypot(p.x - cx, p.y - cy) < R * 0.9;
-  if (!cerca && dentroAro) {
-    fueraSeguidas++;
-    if (fueraSeguidas === 90) {
-      sueltos.push({ x: p.x, y: p.y, hilo: hiloElegido, f: Math.random() * 6.283, largo: azar(18, 34) });
-      if (sueltos.length > 8) sueltos.shift();
-      decir("Se te ha quedado un hilo suelto.", "Déjalo. A mí me gusta que se note la mano.", true);
-      campana(659);
-      fueraSeguidas = 0;
-    }
-  } else {
-    fueraSeguidas = 0;
-  }
-});
-
-/* ══════════════════════════════════════════════════════════════════════
-   EL BUCLE
-   ══════════════════════════════════════════════════════════════════════ */
-
-let t0 = performance.now();
-let reloj = 0;
-let preparado = false;
-
-function paso(ahora) {
-  requestAnimationFrame(paso);
-  if (!A || !H) return;
-  if (!preparado) { prepararPuntadas(); preparado = true; }
-
-  let dt = (ahora - t0) / 1000;
-  t0 = ahora;
-  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
-  else if (dt > 0.1) dt = 0.1;
-  reloj += dt;
-
-  for (const s of puntadas) if (s.crece > 0 && s.crece < 1) s.crece = Math.min(1, s.crece + dt * 5);
-  if (destenyido > 0) destenyido = Math.min(1, destenyido + dt * 0.4);
-  if (firma > 0) firma = Math.min(1, firma + dt * 0.35);
-
-  dibujar(dt);
-}
-
-function dibujar(dt) {
-  /* --- la mesa --- */
-  ctx.fillStyle = "#d0b8a0";
-  ctx.fillRect(0, 0, A, H);
-  const fondo = ctx.createLinearGradient(0, 0, 0, H);
-  fondo.addColorStop(0, "rgba(242, 230, 214, 0.9)");
-  fondo.addColorStop(0.55, "rgba(208, 184, 160, 0.4)");
-  fondo.addColorStop(1, "rgba(150, 122, 100, 0.5)");
-  ctx.fillStyle = fondo;
-  ctx.fillRect(0, 0, A, H);
-
-  /* --- la sombra del bastidor --- */
-  ctx.fillStyle = "rgba(90, 64, 44, 0.22)";
-  ctx.beginPath();
-  ctx.ellipse(cx + R * 0.06, cy + R * 0.1, R * 1.06, R * 1.02, 0, 0, 6.283);
-  ctx.fill();
-
-  /* --- la tela --- */
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, R * 0.96, 0, 6.283);
-  ctx.clip();
-
-  ctx.fillStyle = "#f6efdf";
-  ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
-  /* La trama del lino: dos rejillas finísimas. Es lo que hace que se vea
-     TELA y no papel. */
-  const paso = Math.max(3, R * 0.022);
-  ctx.strokeStyle = "rgba(180, 160, 130, 0.35)";
-  ctx.lineWidth = 1;
-  for (let x = cx - R; x < cx + R; x += paso) {
-    ctx.beginPath(); ctx.moveTo(x, cy - R); ctx.lineTo(x, cy + R); ctx.stroke();
-  }
-  for (let y = cy - R; y < cy + R; y += paso) {
-    ctx.beginPath(); ctx.moveTo(cx - R, y); ctx.lineTo(cx + R, y); ctx.stroke();
-  }
-
-  /* El teñido del secreto 2. */
-  if (destenyido > 0) {
-    for (let i = 0; i < CONF.hilos.length; i++) {
-      const a = (i / CONF.hilos.length) * 6.283 + reloj * 0.04;
-      const gx = cx + Math.cos(a) * R * 0.55;
-      const gy = cy + Math.sin(a) * R * 0.55;
-      const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, R * 0.8);
-      g.addColorStop(0, hexA(CONF.hilos[i].claro, 0.1 * destenyido));
-      g.addColorStop(1, hexA(CONF.hilos[i].claro, 0));
-      ctx.fillStyle = g;
-      ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
-    }
-  }
-
-  /* --- el dibujo marcado a lápiz --- */
-  ctx.setLineDash([3, 5]);
-  ctx.strokeStyle = "rgba(140, 118, 96, 0.5)";
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  for (const s of puntadas) {
-    if (s.dada) continue;
-    ctx.moveTo(s.x0, s.y0);
-    ctx.lineTo(s.x1, s.y1);
-  }
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  /* --- las puntadas dadas --- */
-  ctx.lineCap = "round";
-  for (const s of puntadas) {
-    if (!s.dada) continue;
-    const h = CONF.hilos[s.hilo];
-    const k = s.crece;
-    const mx = (s.x0 + s.x1) / 2, my = (s.y0 + s.y1) / 2;
-    const dx = (s.x1 - s.x0) * 0.5 * k, dy = (s.y1 - s.y0) * 0.5 * k;
-    /* El temblor y el giro propios de cada puntada. */
-    const nx = -(s.y1 - s.y0), ny = (s.x1 - s.x0);
-    const nl = Math.hypot(nx, ny) || 1;
-    const ox = nx / nl * s.tiembla, oy = ny / nl * s.tiembla;
-
-    /* La sombra del hilo sobre la tela: un hilo tiene grosor y pesa. */
-    ctx.strokeStyle = "rgba(90, 66, 44, 0.16)";
-    ctx.lineWidth = 4.6;
-    ctx.beginPath();
-    ctx.moveTo(mx - dx + ox + 1, my - dy + oy + 1.4);
-    ctx.lineTo(mx + dx + ox + 1, my + dy + oy + 1.4);
-    ctx.stroke();
-
-    ctx.strokeStyle = h.color;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(mx - dx + ox, my - dy + oy);
-    ctx.lineTo(mx + dx + ox, my + dy + oy);
-    ctx.stroke();
-
-    /* Y el brillo del hilo de algodón, una raya más fina y clara encima
-       y un poco desplazada. */
-    ctx.strokeStyle = h.claro;
-    ctx.lineWidth = 1.3;
-    ctx.beginPath();
-    ctx.moveTo(mx - dx * 0.75 + ox - 0.6, my - dy * 0.75 + oy - 0.8);
-    ctx.lineTo(mx + dx * 0.75 + ox - 0.6, my + dy * 0.75 + oy - 0.8);
-    ctx.stroke();
-  }
-
-  /* --- los hilos sueltos (secreto 3) --- */
-  for (const s of sueltos) {
-    const h = CONF.hilos[s.hilo];
-    ctx.strokeStyle = h.color;
-    ctx.lineWidth = 2.4;
-    ctx.beginPath();
-    ctx.moveTo(s.x, s.y);
-    for (let i = 1; i <= 6; i++) {
-      const t = i / 6;
-      ctx.lineTo(
-        s.x + Math.sin(reloj * 1.2 + s.f + t * 5) * 9 * t,
-        s.y + t * s.largo);
-    }
-    ctx.stroke();
-  }
-
-  /* --- la firma del secreto 1 --- */
-  if (firma > 0) {
-    ctx.globalAlpha = firma * 0.85;
-    ctx.strokeStyle = CONF.hilos[3].color;
-    ctx.lineWidth = 1.8;
-    ctx.lineCap = "round";
-    /* Escrita a puntaditas: una raya corta por cada trocito. */
-    const texto = "y.m";
-    ctx.font = `600 ${Math.round(R * 0.13)}px Georgia, serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = CONF.hilos[3].color;
-    ctx.fillText(texto, cx, cy + R * 0.62);
-    ctx.font = `400 ${Math.round(R * 0.055)}px ui-sans-serif, system-ui, sans-serif`;
-    ctx.fillStyle = "rgba(160, 120, 40, 0.8)";
-    ctx.fillText("hecho a mano", cx, cy + R * 0.73);
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-    ctx.globalAlpha = 1;
-  }
-
-  ctx.restore();
-
-  /* --- el aro --- */
-  const aro = ctx.createLinearGradient(cx - R, cy - R, cx + R, cy + R);
-  aro.addColorStop(0, "#c49a68");
-  aro.addColorStop(0.45, "#9a6f42");
-  aro.addColorStop(1, "#6b4526");
-  ctx.strokeStyle = aro;
-  ctx.lineWidth = R * 0.085;
-  ctx.beginPath();
-  ctx.arc(cx, cy, R * 0.99, 0, 6.283);
-  ctx.stroke();
-  ctx.strokeStyle = "rgba(255, 228, 190, 0.28)";
-  ctx.lineWidth = 1.4;
-  ctx.beginPath();
-  ctx.arc(cx, cy, R * 0.96, 0, 6.283);
-  ctx.stroke();
-
-  /* El tornillo de arriba del aro. */
-  ctx.fillStyle = "#8f7048";
-  ctx.fillRect(cx - R * 0.09, cy - R * 1.12, R * 0.18, R * 0.16);
-  ctx.fillStyle = "#c9ab7c";
-  ctx.beginPath();
-  ctx.arc(cx, cy - R * 1.04, R * 0.035, 0, 6.283);
-  ctx.fill();
-
-  /* --- la aguja --- */
-  if (aguja.dentro) dibujarAguja();
-}
-
-function dibujarAguja() {
-  const h = CONF.hilos[hiloElegido];
-  const x = aguja.x, y = aguja.y;
-  const L = Math.max(22, R * 0.2);
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(-0.85);
-  /* La aguja: una raya plateada con punta. */
-  const g = ctx.createLinearGradient(0, 0, 0, -L);
-  g.addColorStop(0, "#f2f4f6");
-  g.addColorStop(0.5, "#a8b0b6");
-  g.addColorStop(1, "#e2e6ea");
-  ctx.strokeStyle = g;
-  ctx.lineWidth = 2.4;
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(0, -L);
-  ctx.stroke();
-  /* El ojo. */
-  ctx.strokeStyle = "#8f979c";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.ellipse(0, -L * 0.86, 1.6, 3.4, 0, 0, 6.283);
-  ctx.stroke();
-  /* Y el hilo enhebrado, colgando. */
-  ctx.strokeStyle = h.color;
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.moveTo(0, -L * 0.86);
-  for (let i = 1; i <= 5; i++) {
-    const t = i / 5;
-    ctx.lineTo(Math.sin(reloj * 3 + t * 4) * 5 * t, -L * 0.86 - t * L * 0.8);
-  }
-  ctx.stroke();
-  ctx.restore();
-}
-
-function hexA(hex, a) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${a})`;
-}
-
-/* ---- Arranque ---------------------------------------------------------------- */
-
+new ResizeObserver(() => requestAnimationFrame(medir)).observe(mundo);
+empezar(0);
+window.__bordado = () => pts().filter(Boolean).map(aP);
 medir();
-decir("Está marcado a lápiz. Pasa el dedo por encima y se borda solo.");
 requestAnimationFrame(paso);
-
 })();
 </script>
 </body>
