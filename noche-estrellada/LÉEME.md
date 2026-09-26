@@ -31,7 +31,6 @@ noche-estrellada/
 │   ├── trueno2.mp3            (pon los que quieras, la lista
 │   ├── trueno3.mp3             se lee entera)
 │   ├── disparo.mp3
-│   ├── recarga.mp3
 │   ├── pasos.mp3
 │   ├── buho.mp3
 │   └── puerta.mp3
@@ -80,7 +79,7 @@ conviene que empiecen y acaben parecido para que no se note el salto.
 Los cinco de `Cabaña/` suenan **una sola vez y en orden**, esperando
 cada uno a que termine el anterior.
 
-Los demás de `audio/` —los truenos, el disparo, la recarga, los pasos,
+Los demás de `audio/` —los truenos, el disparo, los pasos,
 el búho, la puerta— son **sueltos**: suenan una vez, cuando pasa lo que
 tiene que pasar, con dos milisegundos de rampa a cada lado para que no
 hagan «clac». No hace falta que estén todos: los que falten se
@@ -146,7 +145,8 @@ Una sola, y no avisa de que es una pista.)
 Al recogerla se abre el cielo. Llueve, oscurece, y del bosque sale de
 todo en **diez rondas** cada vez más grandes. Se tienen **cinco
 vidas**, arriba y por el centro. Se dispara tocando: el dedo es el
-gatillo, y ese mismo dedo, arrastrando, te mueve por el bosque. No hay
+gatillo —sin esperas ni recargas: cada toque es un tiro, tan rápido
+como toques—, y ese mismo dedo, arrastrando, te mueve por el bosque. No hay
 botones de andar: se desliza y ya. Al que le das no se muere,
 **revienta en luz**.
 

@@ -912,7 +912,6 @@ const CONF = {
         "audio/trueno3.mp3",
       ],
       disparo:  "audio/disparo.mp3",
-      recarga:  "audio/recarga.mp3",
       pasos:    "audio/pasos.mp3",
       buho:     "audio/buho.mp3",
       puerta:   "audio/puerta.mp3",
@@ -3470,7 +3469,8 @@ function dibujarParticulas() {
       ctx.translate(px[i], py[i]);
       ctx.rotate(pgiro[i]);
       ctx.globalAlpha = k * 0.7;
-      ctx.fillStyle = pton[i] < 0.5 ? "#3e6b44" : "#5c7a3e";
+      /* tono 2: una pluma del búho, clarita. */
+      ctx.fillStyle = pton[i] >= 2 ? "#d9cbb2" : pton[i] < 0.5 ? "#3e6b44" : "#5c7a3e";
       ctx.beginPath();
       ctx.ellipse(0, 0, ptam[i], ptam[i] * 0.45, 0, 0, 6.283);
       ctx.fill();
@@ -9467,6 +9467,71 @@ let montanas = [];
 let hierbas = [];
 let buho = null;
 
+/* ---- El cielo de fondo, pintado una vez ------------------------------- */
+
+let _spriteEstrella = null;
+/** Un destello blanco: halo suave y una cruz fina, como en las fotos. */
+function spriteEstrella() {
+  if (_spriteEstrella) return _spriteEstrella;
+  const n = 64, c = document.createElement("canvas");
+  c.width = c.height = n;
+  const g = c.getContext("2d");
+  const h = g.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2);
+  h.addColorStop(0, "rgba(255,255,255,0.55)");
+  h.addColorStop(0.18, "rgba(210,220,255,0.18)");
+  h.addColorStop(1, "rgba(200,210,255,0)");
+  g.fillStyle = h; g.fillRect(0, 0, n, n);
+  for (const [w, hh] of [[n, 1.4], [1.4, n]]) {
+    const l = g.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2);
+    l.addColorStop(0, "rgba(255,255,255,0.7)"); l.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = l; g.fillRect(n / 2 - w / 2, n / 2 - hh / 2, w, hh);
+  }
+  _spriteEstrella = c;
+  return c;
+}
+
+/** La textura de la vía láctea: polvo de estrellas y nubecitas de color
+    a lo largo de la diagonal, con una grieta oscura por el medio. */
+function pintarViaLactea() {
+  const ancho = A, alto = sitio.horizonte;
+  const c = document.createElement("canvas");
+  const k = Math.min(1.5, window.devicePixelRatio || 1);
+  c.width = Math.max(1, Math.round(ancho * k)); c.height = Math.max(1, Math.round(alto * k));
+  const g = c.getContext("2d");
+  g.scale(k, k);
+  /* La banda va de abajo a la izquierda a arriba a la derecha. */
+  const punto = (t, off) => {
+    const x = mez(-ancho * 0.1, ancho * 1.1, t), y = mez(alto * 1.0, -alto * 0.1, t);
+    return [x + off * 0.45 * alto * 0.35, y + off * 0.9 * alto * 0.35];
+  };
+  const n = flojo ? 30 : 60;
+  for (let i = 0; i < n; i++) {
+    const [x, y] = punto(Math.random(), (Math.random() - 0.5) * 0.8);
+    const r = alto * azar(0.06, 0.16);
+    const col = Math.random() < 0.5 ? "120,110,190" : Math.random() < 0.5 ? "150,120,170" : "100,130,200";
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, `rgba(${col},0.07)`); gr.addColorStop(1, `rgba(${col},0)`);
+    g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  const m = flojo ? 500 : 1400;
+  for (let i = 0; i < m; i++) {
+    const off = (Math.random() + Math.random() + Math.random() - 1.5) * 0.7;
+    const [x, y] = punto(Math.random(), off);
+    g.fillStyle = `rgba(225,228,255,${azar(0.08, 0.4) * (1 - Math.abs(off))})`;
+    g.fillRect(x, y, azar(0.5, 1.2), azar(0.5, 1.2));
+  }
+  /* La grieta de polvo oscuro que corre por dentro de la banda. */
+  g.globalCompositeOperation = "destination-out";
+  for (let i = 0; i < (flojo ? 14 : 26); i++) {
+    const [x, y] = punto(Math.random() * 0.8 + 0.1, azar(-0.08, 0.1));
+    const r = alto * azar(0.03, 0.07);
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, "rgba(0,0,0,0.5)"); gr.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  return { lienzo: c, ancho, alto };
+}
+
 function construirMundo() {
   colocarSitios();
   sembrar(20240214);
@@ -9475,13 +9540,22 @@ function construirMundo() {
   const nE = flojo ? CONF.perf.estrellasFlojo : CONF.perf.estrellas;
   cielo.estrellas = [];
   for (let i = 0; i < nE; i++) {
+    /* Tres profundidades: la mayoría lejísimos (chiquitas, quietas),
+       unas cuantas más cerca (más grandes, más vivas, y se mueven un
+       poquito más con el parallax). Eso es lo que le da fondo al cielo. */
+    const z = rnd() < 0.7 ? rnd() * 0.35 : rnd() < 0.8 ? mez(0.35, 0.75, rnd()) : mez(0.75, 1, rnd());
+    const tipo = rnd();
     cielo.estrellas.push({
       x: rnd() * A,
-      y: rnd() * sitio.horizonte * 1.02,
-      r: azar(0.4, 1.7),
-      b: azar(0.2, 0.95),
+      y: Math.pow(rnd(), 1.25) * sitio.horizonte * 1.02,
+      z,
+      r: mez(0.35, 1.9, z) * azar(0.8, 1.15),
+      b: mez(0.25, 1, z) * azar(0.7, 1),
       v: azar(0.4, 2.2),
       f: rnd() * 6.283,
+      /* El color según lo caliente que sea: casi todas blancas, algunas
+         azuladas y otras doradas o rojizas. */
+      col: tipo < 0.14 ? [180, 205, 255] : tipo < 0.24 ? [255, 222, 170] : tipo < 0.28 ? [255, 176, 150] : [232, 236, 255],
       /* Una de cada doce responde si la tocas. No se sabe cuál. */
       viva: rnd() < 0.085,
       pulso: 0,
@@ -9676,7 +9750,8 @@ function dibujarBosque(dt) {
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, A, H);
 
-  /* La vía láctea, en diagonal y muy tenue. */
+  /* La vía láctea: la banda suave de siempre y, encima, su textura de
+     polvo y nubecitas (pintada una sola vez en `cielo.via`). */
   const vl = ctx.createLinearGradient(0, sitio.horizonte, A, 0);
   vl.addColorStop(0.00, "rgba(40, 50, 100, 0)");
   vl.addColorStop(0.42, "rgba(66, 66, 128, 0.26)");
@@ -9684,13 +9759,28 @@ function dibujarBosque(dt) {
   vl.addColorStop(1.00, "rgba(40, 50, 100, 0)");
   ctx.fillStyle = vl;
   ctx.fillRect(0, 0, A, sitio.horizonte);
+  if (!cielo.via || cielo.via.ancho !== A || cielo.via.alto !== sitio.horizonte) cielo.via = pintarViaLactea();
+  const dV = desplazar(0.08);
+  ctx.globalCompositeOperation = "lighter";
+  ctx.globalAlpha = 0.9 * (1 - Math.max(clima.lluvia, clima.tormenta) * 0.7);
+  ctx.drawImage(cielo.via.lienzo, dV.x - U * 2, dV.y - U * 2, A + U * 4, sitio.horizonte + U * 4);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
 
-  /* ---- 2. ESTRELLAS ---- */
-  const dE = desplazar(0.18);
+  /* ---- 2. ESTRELLAS ----
+     Cada una se mueve con el dedo según lo cerca que esté (las de
+     delante un poco más), titila más cerca del horizonte —ahí hay más
+     aire en medio— y se apaga un poco al bajar. Las más brillantes
+     llevan un halo y una crucecita de luz. */
+  const sprite = spriteEstrella();
   for (const s of cielo.estrellas) {
     s.pulso = Math.max(0, s.pulso - dt * 1.8);
-    const b = s.b * (0.62 + 0.38 * Math.sin(reloj * s.v + s.f)) + s.pulso;
+    const bajo = clamp01(s.y / Math.max(1, sitio.horizonte));
+    const titila = 0.38 + bajo * 0.3;
+    const b = s.b * (1 - titila + titila * Math.sin(reloj * s.v * (1 + bajo) + s.f)) * (1 - bajo * 0.45) + s.pulso;
+    const dE = desplazar(0.1 + (s.z || 0) * 0.3);
     const x = s.x + dE.x, y = s.y + dE.y;
+    const [cr, cg, cb] = s.col || [228, 234, 255];
     if (s.pulso > 0.02) {
       ctx.globalCompositeOperation = "lighter";
       const gp = ctx.createRadialGradient(x, y, 0, x, y, U * 4 * s.pulso);
@@ -9700,7 +9790,16 @@ function dibujarBosque(dt) {
       ctx.beginPath(); ctx.arc(x, y, U * 4 * s.pulso, 0, 6.283); ctx.fill();
       ctx.globalCompositeOperation = "source-over";
     }
-    ctx.fillStyle = `rgba(228,234,255,${clamp01(b)})`;
+    if ((s.z || 0) > 0.72 || s.pulso > 0.1) {
+      /* Las de delante: halo y cruz, del color de la estrella. */
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = clamp01(b) * 0.85;
+      const t = U * (1.6 + s.r * 1.4) * (1 + s.pulso);
+      ctx.drawImage(sprite, x - t, y - t, t * 2, t * 2);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
+    }
+    ctx.fillStyle = `rgba(${cr},${cg},${cb},${clamp01(b)})`;
     ctx.beginPath();
     ctx.arc(x, y, s.r * (1 + s.pulso), 0, 6.283);
     ctx.fill();
@@ -10448,7 +10547,7 @@ function construirBuho() {
     x: 0, y: 0, r: U * 2.7,
     /* Cuánto asoma, de 0 (escondido del todo) a 1. */
     salida: 0, salidaObj: 0,
-    relojAsomo: azar(3, 9),
+    relojAsomo: antes ? antes.relojAsomo : 20,
     /* El parpadeo. `guino` es cerrar sólo el ojo izquierdo. */
     parpadeo: 0, guino: 0, relojParpadeo: azar(1.5, 5),
     /* El giro de la cabeza: -1 mira a su izquierda, 1 a su derecha. */
@@ -10468,7 +10567,39 @@ function construirBuho() {
      que estaba, que es lo que se espera al girar el teléfono. */
   if (!antes) buho.escondite = Math.floor(rnd() * Math.max(1, buho.perchas.length));
   colocarBuhoEn(buho.escondite);
-  if (antes) { buho.salida = antes.salida; buho.salidaObj = antes.salidaObj; }
+  if (antes) {
+    buho.salida = antes.salida; buho.salidaObj = antes.salidaObj;
+    /* Si iba volando, sigue volando, pero hacia donde queda ahora su
+       rama. Sin esto, al remedir en pleno vuelo se quedaba escondido. */
+    if (antes.vuelo) {
+      const v = antes.vuelo;
+      const q = dondeQuedaBuho(v.destino);
+      buho.vuelo = { ...v, x1: q.x, y1: q.y };
+      if (v.llegada) buho.vuelo.x0 = A * 0.22;
+    }
+  } else if (buho.perchas.length) {
+    /* ---- LA LLEGADA ----
+       Al rato de estar en el claro, el búho llega volando desde la luna,
+       planea, se posa en su rama con un aleteo y se queda un buen rato a
+       la vista. Así se sabe desde el principio que en este bosque hay
+       un búho, y que vale la pena buscarlo después. */
+    buho.vuelo = {
+      t: -azar(2.5, 4), dur: 2.6,
+      x0: A * 0.22, y0: -U * 12,
+      x1: buho.x, y1: buho.y,
+      arco: U * 10, destino: buho.escondite, llegada: true,
+    };
+  }
+}
+
+/** Dónde quedaría el búho posado en el escondite `i`, sin moverlo. */
+function dondeQuedaBuho(i) {
+  const g = { x: buho.x, y: buho.y, r: buho.r, arbol: buho.arbol, relX: buho.relX, relY: buho.relY,
+    escondite: buho.escondite, enRama: buho.enRama };
+  colocarBuhoEn(i);
+  const q = { x: buho.x, y: buho.y };
+  Object.assign(buho, g);
+  return q;
 }
 
 /**
@@ -10484,38 +10615,27 @@ function construirBuho() {
  * mejor que repetirlos.
  */
 function elegirPerchas() {
-  const cab = sitio.cabana;
-  const vale = (t) => {
-    /* Los de lejos no: son demasiado pequeños para que quepa un búho
-       encima sin parecer un pájaro gigante. */
-    if (t.banda === 0) return false;
-    /* Los que caen sobre la cabaña tampoco: quedan tapados por ella, o
-       peor, encima del tejado. */
-    if (Math.abs(t.x - cab.x) < cab.w * 0.5) return false;
-    /* Los de en medio pegados a la fogata, tampoco: ahí hay luz de
-       sobra y un búho que se ve a la primera deja de ser un secreto. */
-    if (t.banda === 1 && Math.abs(t.x - sitio.fogata.x) < A * 0.1) return false;
-    /* Y los de cerca cuyo tronco está fuera de la pantalla: el búho
-       quedaría flotando lejos de su propio árbol. */
-    if (t.banda === 2 && (t.x < -U * 2 || t.x > A + U * 2)) return false;
-    return true;
-  };
+  /* ---- SÓLO EN LAS RAMAS DE CERCA ----
+     Antes se posaba también en los árboles de en medio, y ahí la niebla
+     y los troncos de delante lo dejaban invisible: estaba, pero no se
+     veía, y parecía que el búho se había ido del bosque. Las ramas de
+     los árboles de cerca, en cambio, se recortan contra el cielo y la
+     luna: ahí se ve siempre, y sigue sin estar en el centro de nada.
 
-  const libres = arboles.filter(vale);
+     Cada rama visible es un escondite (un árbol puede tener dos). Se
+     guardan como mucho tantos como escondites diga `CONF`. */
   const perchas = [];
-  for (const [fx, fy] of CONF.buho.escondites) {
-    const px = fx * A;
-    let mejor = -1, mejorD = Infinity;
-    for (let i = 0; i < libres.length; i++) {
-      if (!libres[i]) continue;
-      const d = Math.abs(libres[i].x - px);
-      if (d < mejorD) { mejorD = d; mejor = i; }
+  for (const t of arboles) {
+    if (t.banda !== 2 || !t.ramas) continue;
+    for (const rm of t.ramas) {
+      const q = puntoDeRama(t, rm, 0.82, 0);
+      if (q.x < U * 7 || q.x > A - U * 7) continue;
+      if (q.y < U * 11 || q.y > sitio.horizonte) continue;
+      perchas.push({ arbol: t, fy: q.y / H, x: q.x });
     }
-    if (mejor < 0) break;
-    perchas.push({ arbol: libres[mejor], fy });
-    libres[mejor] = null;
   }
-  return perchas;
+  perchas.sort((a, b) => a.x - b.x);
+  return perchas.slice(0, Math.max(2, CONF.buho.escondites.length));
 }
 
 /** Posa el búho en el escondite número `i`. */
@@ -10688,14 +10808,18 @@ function moverBuho(dt) {
     b.ala += dt * 17;
     b.giro = mez(b.giro, v.x1 > v.x0 ? 0.6 : -0.6, 0.1);
     b.salida = 1;
+    if (v.t < 0) { b.salida = 0; return; }   // todavía no llega
     if (k >= 1) {
       b.vuelo = null;
       b.aleteo = 0;
       colocarBuhoEn(v.destino);
-      /* Al llegar se mete entre las ramas y tarda un rato en asomar:
-         que no esté esperándote ya con los ojos encendidos. */
-      b.salida = 0; b.salidaObj = 0;
-      b.relojAsomo = azar(8, 18);
+      /* Se posa con un aleteo y unas plumitas; se queda a la vista un
+         buen rato y luego ya se esconde a su aire. */
+      b.salida = 1; b.salidaObj = 1;
+      b.relojAsomo = v.llegada ? azar(18, 26) : azar(10, 16);
+      b.aleteo = 0.8; b.parpadeo = 1;
+      plumasBuho(b.x, b.y, 6);
+      if (v.llegada) sonarMisterio(0.4);
     }
     return;
   }
@@ -10703,10 +10827,10 @@ function moverBuho(dt) {
   /* ---- Asomarse y volver a esconderse ---- */
   b.relojAsomo -= dt;
   if (b.relojAsomo <= 0) {
-    if (b.salidaObj > 0.5) { b.salidaObj = 0; b.relojAsomo = azar(10, 24); }
+    if (b.salidaObj > 0.5) { b.salidaObj = 0; b.relojAsomo = azar(5, 10); }
     else {
       b.salidaObj = 1;
-      b.relojAsomo = azar(9, 20);
+      b.relojAsomo = azar(14, 24);
       /* Una de cada seis veces que se asoma, además canta. Y sólo si la
          tormenta no está tapándolo todo: un búho no ulula bajo un
          diluvio, y encima no se oiría. */
@@ -10780,6 +10904,13 @@ function tocarBuho() {
 
   sonarMisterio(0.55);
   soltarBrillos(b.x, b.y, 8, 140);
+  /* Un corazoncito de luz verde que se abre alrededor, y plumas. */
+  for (let i = 0; i < 22; i++) {
+    const t = (i / 22) * 6.283;
+    const hx = 16 * Math.sin(t) ** 3, hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+    soltar(b.x, b.y - U * 2, { vx: hx * 3.2, vy: hy * 3.2, vida: azar(1.2, 1.8), tam: azar(1.2, 2.2), tipo: TIPO.BRILLO, tono: 140 });
+  }
+  plumasBuho(b.x, b.y, 5);
 
   const dice = b.veces <= 1
     ? CONF.buho.dice[0]
@@ -10814,7 +10945,8 @@ function tocarBuho() {
       tirada -= pesos[i];
     }
     if (destino === buho.escondite) destino = (buho.escondite + 1) % lista.length;
-    const px = lista[destino].arbol.x, py = lista[destino].fy * H;
+    const q = dondeQuedaBuho(destino);
+    const px = q.x, py = q.y;
     buho.vuelo = {
       t: 0,
       dur: 1.25 + Math.abs(px - buho.x) / A * 0.9,
@@ -15859,7 +15991,8 @@ function radioBuhoCaza(o) {
 /* ---- Disparar ----------------------------------------------------------- */
 
 function dispararEscopeta(p) {
-  if (caza.disparo > 0) return true;
+  /* Sin espera y sin recargar: cada toque es un tiro, tan rápido como
+     se toque. `caza.disparo` ya sólo es el tiempo del brillo del cañón. */
 
   /* ---- DESDE DETRÁS DE LA ROCA NO SE DISPARA ----
      Es la otra mitad del trato. La piedra te protege de todo —del fuego
@@ -15928,9 +16061,6 @@ function dispararEscopeta(p) {
     if (ok) return;
     golpe(0.2, 160, 0.42, "lowpass");
     golpe(0.06, 900, 0.3, "bandpass");
-  });
-  sonarSuelto(CONF.rutas.sueltos.recarga, 0.5, 0.26).then((ok) => {
-    if (!ok) setTimeout(() => golpe(0.03, 2200, 0.12, "bandpass"), 260);
   });
 
   /* ---- A qué le ha dado ----
@@ -16860,10 +16990,9 @@ function dibujarEscopetaEnMano() {
   ctx.fill();
   ctx.restore();
 
-  /* ---- EL ARMA VACÍA ----
-     Los dos cañones se ponen rojos un momento después de disparar. Es
-     la única forma de ver, sin contadores ni números, que acabas de
-     tirar y que todavía no puedes volver a hacerlo. */
+  /* ---- EL CAÑÓN CALIENTE ----
+     Los dos cañones se ponen rojos un momento después de cada tiro.
+     No frena nada: sólo se ve que está caliente. */
   if (caza.disparo > 0.04) {
     const cal = clamp01(caza.disparo / 0.42);
     ctx.save();
@@ -20216,6 +20345,16 @@ function dibujarSustoVentana(x, y, w, h) {
   ctx.globalCompositeOperation = "source-over";
   ctx.globalAlpha = 1;
   ctx.restore();
+}
+
+/** Plumitas que caen meciéndose cuando el búho aletea. */
+function plumasBuho(x, y, n) {
+  for (let i = 0; i < n; i++) {
+    soltar(x + azar(-U * 2, U * 2), y + azar(-U, U * 2), {
+      vx: azar(-30, 30), vy: azar(-40, 5), vida: azar(1.8, 3), tam: U * azar(0.45, 0.75),
+      tipo: TIPO.HOJA, tono: 2, giro: azar(0, 6.283), giroV: azar(-3, 3),
+    });
+  }
 }
 
 function soltarBrillos(x, y, n, tono2) {
