@@ -61,13 +61,27 @@ const sorpresas = Object.fromEntries(
 // ni acentos: «corazón.mp3», «Corazon.MP3» y «corazon.m4a» valen igual.
 const sinAcentos = (s) => nfc(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const buscarSonido = (nombre) => {
-  for (const dir of ["assets/audio", "mis-sonidos", ""]) {
+  for (const dir of ["assets/audio", "mis-sonidos", "paginas-html", ""]) {
     const f = (dir ? leer(dir) : readdirSync(RAIZ)).find((f) => sinAcentos(f).replace(/\.(mp3|m4a|ogg|wav|aac)$/, "") === nombre && /\.(mp3|m4a|ogg|wav|aac)$/i.test(f));
     if (f) return dir ? `${dir}/${nfc(f)}` : nfc(f);
   }
   return null;
 };
-const sonidos = { corazon: buscarSonido("corazon") };
+const sonidos = { corazon: buscarSonido("corazon"), ojos: buscarSonido("ojos") };
+
+// La música del tocadiscos: `tocadiscos musica/musica1.mp3` … `musica5.mp3`,
+// una por zona del disco. Da igual si la carpeta se escribe con guion, con
+// tilde o con mayúsculas. Donde falte una, el tocadiscos pone su melodía.
+const carpetaTocadiscos = readdirSync(RAIZ).find(
+  (f) => sinAcentos(f).replace(/[\s_-]+/g, "") === "tocadiscosmusica" && !f.includes(".")
+);
+const tocadiscos = [1, 2, 3, 4, 5].map((n) => {
+  if (!carpetaTocadiscos) return null;
+  const f = leer(carpetaTocadiscos).find(
+    (f) => sinAcentos(f).replace(/\.(mp3|m4a|ogg|wav|aac)$/, "") === `musica${n}` && /\.(mp3|m4a|ogg|wav|aac)$/i.test(f)
+  );
+  return f ? `${nfc(carpetaTocadiscos)}/${nfc(f)}` : null;
+});
 
 // Los vales de «Vales de amor», uno por línea, en `mis-vales/vales.txt`.
 // Las líneas que empiezan por # son notas y no salen; la que empieza por
@@ -112,7 +126,18 @@ const archivosNoche = [
   ...recorrer("noche-estrellada").filter((f) => SONIDO.test(f)),
   ...leer("assets/audio").filter((f) => SONIDO.test(f)).map((f) => `../assets/audio/${f}`),
 ].map(nfc).sort();
+// Lo que las páginas HTML pueden hacer sonar, visto desde `paginas-html/`.
+const desdePaginas = (r) => (r ? encodeURI(r.startsWith("paginas-html/") ? r.slice(13) : `../${r}`) : null);
+const archivosPaginas = {
+  ojos: desdePaginas(sonidos.ojos),
+  tocadiscos: tocadiscos.map(desdePaginas),
+};
+
 const SALIDAS = {
+  "paginas-html/archivos.js":
+    "// GENERADO por `node herramientas/contenido.mjs`: los sonidos que existen.\n" +
+    "// ojos.mp3 (la caja de música) y tocadiscos musica/musica1..5 (el tocadiscos).\n" +
+    `window.LIBRO_ARCHIVOS = ${JSON.stringify(archivosPaginas, null, 2)};\n`,
   "noche-estrellada/archivos.js":
     "// GENERADO por `node herramientas/contenido.mjs`: los sonidos que existen.\n" +
     `window.NOCHE_ARCHIVOS = ${JSON.stringify(archivosNoche, null, 2)};\n`,
@@ -139,5 +164,6 @@ for (const [ruta, texto] of Object.entries(SALIDAS)) writeFileSync(join(RAIZ, ru
 console.log(
   `contenido: ${paginasHtml.length} páginas html · ${amores.length} fotos de amores · ` +
     `${misVideos.length} vídeos · ${misFotos.length} fotos · icono ${icono || "—"} · noche ${contenido.noche} · ${archivosNoche.length} sonidos de la noche · ` +
-    `corazón ${sonidos.corazon || "—"} · ${vales ? vales.lista.length : 0} vales`
+    `corazón ${sonidos.corazon || "—"} · ojos ${sonidos.ojos || "—"} · tocadiscos ${tocadiscos.filter(Boolean).length}/5 · ` +
+    `${vales ? vales.lista.length : 0} vales`
 );

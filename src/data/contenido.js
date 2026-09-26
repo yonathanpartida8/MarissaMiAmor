@@ -278,7 +278,8 @@ export default {
   },
   "sorpresas": {},
   "sonidos": {
-    "corazon": null
+    "corazon": null,
+    "ojos": null
   },
   "vales": {
     "lista": [

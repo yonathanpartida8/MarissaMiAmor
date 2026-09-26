@@ -320,7 +320,10 @@ export class AudioBus extends Emitter {
     this.#ponerVolMusica(track, 0);
     track.el
       .play()
-      .then(() => this.#fadeMusica(track, track.base * this.#nivelApartado(), fade))
+      .then(() => {
+        this.#nivelPuesto = this.#nivelApartado();
+        this.#fadeMusica(track, track.base * this.#nivelPuesto, fade);
+      })
       .catch(() => {
         this.playingMusic = false;
       });
@@ -358,11 +361,26 @@ export class AudioBus extends Emitter {
     const vigente = ahora < this.#apartadaHasta;
     this.#nivel = vigente ? Math.min(this.#nivel, cuanto) : cuanto;
     this.#apartadaHasta = Math.max(vigente ? this.#apartadaHasta : 0, ahora + ms);
-    const track = this.tracks.get("music");
-    if (!track || !this.playingMusic) return;
     clearTimeout(this.#duckTimer);
-    this.#fadeMusica(track, track.base * this.#nivel, 260);
-    this.#duckTimer = setTimeout(() => this.#devolver(), this.#apartadaHasta - ahora);
+    this.#duckTimer = setTimeout(() => this.#aplicar(), this.#apartadaHasta - ahora + 16);
+    this.#aplicar();
+  }
+
+  /**
+   * Aparta la música MIENTRAS algo siga sonando, sin reloj.
+   *
+   * Es lo que usan las páginas HTML: ellas saben cuándo empiezan y cuándo
+   * acaban sus sonidos (una canción de tres minutos, una tormenta que dura
+   * lo que tú quieras), así que la música se queda abajo lo que haga falta
+   * y vuelve cuando se llama a `soltar` con la misma clave.
+   */
+  mantener(clave, cuanto = 0.3) {
+    this.#retenidas.set(clave, clamp01(cuanto));
+    this.#aplicar();
+  }
+
+  soltar(clave) {
+    if (this.#retenidas.delete(clave)) this.#aplicar();
   }
 
   /** Lo de antes, con su nombre de antes: `duck(1, 0)` la devuelve ya. */
@@ -375,17 +393,45 @@ export class AudioBus extends Emitter {
     clearTimeout(this.#duckTimer);
     this.#apartadaHasta = 0;
     this.#nivel = 1;
-    const track = this.tracks.get("music");
-    if (track && this.playingMusic) this.#fadeMusica(track, track.base, 1100);
+    this.#aplicar();
   }
 
+  /** El volumen que le toca a la música ahora, de 0 a 1 de su volumen normal. */
   #nivelApartado() {
-    return performance.now() < this.#apartadaHasta ? this.#nivel : 1;
+    let n = performance.now() < this.#apartadaHasta ? this.#nivel : 1;
+    for (const v of this.#retenidas.values()) n = Math.min(n, v);
+    return n;
+  }
+
+  /**
+   * Lleva la música a donde le toca, con un fundido que se nota lo justo.
+   *
+   * Bajar es rápido pero nunca seco: casi medio segundo, para que el sonido
+   * que llega se oiga claro sin que la canción desaparezca de golpe. Subir es
+   * lento a propósito —dos segundos largos—: la canción vuelve como quien
+   * entra en un cuarto sin hacer ruido, y si otro sonido llega mientras
+   * tanto, se da la vuelta desde donde esté, sin saltos.
+   */
+  #aplicar() {
+    const n = this.#nivelApartado();
+    const track = this.tracks.get("music");
+    if (!track || !this.playingMusic) {
+      this.#nivelPuesto = n;
+      return;
+    }
+    if (Math.abs(n - this.#nivelPuesto) < 0.004) return;
+    const baja = n < this.#nivelPuesto;
+    const salto = Math.abs(n - this.#nivelPuesto);
+    this.#nivelPuesto = n;
+    const ms = baja ? 320 + 260 * salto : 1500 + 1200 * salto;
+    this.#fadeMusica(track, track.base * n, ms);
   }
 
   #duckTimer = 0;
   #nivel = 1;
   #apartadaHasta = 0;
+  #nivelPuesto = 1;
+  #retenidas = new Map();
   #fades = new WeakMap();
 
   #ponerVolMusica(track, v) {
@@ -395,20 +441,30 @@ export class AudioBus extends Emitter {
     } else track.el.volume = clamp01(v);
   }
 
-  /** Fundido de la música, por el camino que le toque. */
+  /**
+   * Fundido de la música, por el camino que le toque.
+   *
+   * Por WebAudio va con `setTargetAtTime`, que se acerca al volumen nuevo
+   * como se apaga una nota: rápido al principio y cada vez más suave. Es la
+   * curva que el oído entiende como natural, y además se puede interrumpir
+   * a medias sin que haya un escalón.
+   */
   #fadeMusica(track, to, ms, onDone) {
     if (!track.enrutada) return this.#fade(track.el, to, ms, onDone);
     const g = this.volumenMusica.gain;
     const t = this.ac.currentTime;
+    const destino = clamp01(to);
     g.cancelScheduledValues(t);
     g.setValueAtTime(g.value, t);
-    g.linearRampToValueAtTime(clamp01(to), t + Math.max(0.01, ms / 1000));
+    if (destino <= 0.0001) g.linearRampToValueAtTime(0, t + Math.max(0.01, ms / 1000));
+    else g.setTargetAtTime(destino, t, Math.max(0.01, ms / 1000 / 3.2));
     clearTimeout(this.#finFundido);
     if (onDone) this.#finFundido = setTimeout(onDone, ms);
   }
 
   #finFundido = 0;
 
+  /** Fundido del volumen del elemento, en curva suave de entrada y salida. */
   #fade(el, to, ms, onDone) {
     cancelAnimationFrame(this.#fades.get(el) || 0);
     const from = el.volume;
@@ -418,9 +474,10 @@ export class AudioBus extends Emitter {
       onDone?.();
       return;
     }
+    const curva = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
     const step = (now) => {
       const t = Math.min(1, (now - start) / ms);
-      el.volume = clamp01(from + (to - from) * t);
+      el.volume = clamp01(from + (to - from) * curva(t));
       if (t < 1) this.#fades.set(el, requestAnimationFrame(step));
       else onDone?.();
     };

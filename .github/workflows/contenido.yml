@@ -18,6 +18,8 @@ on:
       - "assets/audio/**"
       - "mis-sonidos/**"
       - "mis-vales/**"
+      - "tocadiscos musica/**"
+      - "tocadiscos-musica/**"
       - "*.mp3"
       - "*.m4a"
       - "herramientas/contenido.mjs"
@@ -37,12 +39,12 @@ jobs:
       - run: node herramientas/contenido.mjs
       - name: Guardar la lista si cambió
         run: |
-          if git diff --quiet -- src/data/contenido.js noche-estrellada/archivos.js; then
+          if git diff --quiet -- src/data/contenido.js noche-estrellada/archivos.js paginas-html/archivos.js; then
             echo "La lista ya estaba al día."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/data/contenido.js noche-estrellada/archivos.js
+          git add src/data/contenido.js noche-estrellada/archivos.js paginas-html/archivos.js
           git commit -m "Lista de contenido al día"
           git push

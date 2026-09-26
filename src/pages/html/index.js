@@ -239,8 +239,9 @@ export default class HtmlPage extends BasePage {
       loading: "lazy",
       referrerpolicy: "no-referrer",
       // `allow` con la lista vacía: nada de cámara, micrófono ni ubicación.
-      // El sonido y la pantalla completa sí, que es lo que puede querer.
-      allow: "autoplay *; fullscreen *",
+      // El sonido, la pantalla completa y los sensores de movimiento sí (la
+      // bola de nieve se agita moviendo el teléfono de verdad).
+      allow: "autoplay *; fullscreen *; accelerometer *; gyroscope *; magnetometer *",
     });
 
     this.root.append(this.fondo, this.marco);
@@ -253,6 +254,7 @@ export default class HtmlPage extends BasePage {
     await super.enter(direction);
 
     this.roto = false;
+    this.#oirSonidos();
     await this.#encender();
 
     // Y ya con el documento dentro, el nombre de verdad. Se hace ANTES de
@@ -304,6 +306,7 @@ export default class HtmlPage extends BasePage {
 
         try { this.#acomodar(); } catch { /* otro origen */ }
         try { this.#prestarGestos(); } catch { /* otro origen */ }
+        try { this.#ponerPuenteDeSonido(); } catch { /* otro origen */ }
         // Si el archivo tardó tanto que ya se había dado por perdido, ahora
         // que ha llegado se retira el aviso: mejor tarde que un cartel de
         // error encima de una página que sí funciona.
@@ -330,6 +333,7 @@ export default class HtmlPage extends BasePage {
    */
   #apagar() {
     this.#soltarGestos();
+    this.#dejarDeOir();
     this.root?.classList.remove("is-lista");
     if (!this.marco) return;
     try {
@@ -658,6 +662,61 @@ export default class HtmlPage extends BasePage {
       // El documento ya no está. Perfecto: no había nada que soltar.
     }
     this.soltarGestos = null;
+  }
+
+  // ---- El puente del sonido ---------------------------------------------
+
+  /**
+   * Cuando la página de dentro suena, la canción del libro se aparta.
+   *
+   * La página no puede tocar la música del libro: vive en su propio
+   * documento. Lo que hace es CONTARLO —`paginas-html/sonido-libro.js` mide
+   * lo que sale por sus altavoces y manda un mensaje con el nivel que le
+   * toca a la canción—, y aquí se escucha y se le pasa al bus de audio.
+   *
+   * Va por `postMessage` y no leyendo el documento porque así también
+   * funciona con el libro abierto como archivo, donde el iframe cuenta como
+   * de otro origen y no se deja tocar.
+   */
+  #oirSonidos() {
+    this.#dejarDeOir();
+    const clave = `html:${this.id}`;
+    const oir = (e) => {
+      const d = e.data;
+      if (!d || d.libro !== "audio") return;
+      if (!this.marco || e.source !== this.marco.contentWindow) return;
+      const nivel = Number(d.nivel);
+      if (!Number.isFinite(nivel) || nivel >= 0.999) this.ctx.audio?.soltar?.(clave);
+      else this.ctx.audio?.mantener?.(clave, Math.max(0, nivel));
+    };
+    window.addEventListener("message", oir);
+    this.dejarDeOir = () => {
+      window.removeEventListener("message", oir);
+      // Al irse, la canción vuelve entera aunque la página se fuera sonando.
+      this.ctx.audio?.soltar?.(clave);
+    };
+  }
+
+  #dejarDeOir() {
+    this.dejarDeOir?.();
+    this.dejarDeOir = null;
+  }
+
+  /**
+   * Un HTML suelto que no trae el puente también aparta la música.
+   *
+   * Las páginas de la carpeta lo cargan ellas mismas, lo primero de todo. Si
+   * él deja aquí un archivo cualquiera que no lo carga, se le pone desde
+   * fuera: coge los sonidos que empiecen a partir de ahora, que son los que
+   * salen al tocar algo.
+   */
+  #ponerPuenteDeSonido() {
+    const ventana = this.marco?.contentWindow;
+    const doc = this.#documento();
+    if (!ventana || !doc?.head || ventana.__libroSonido) return;
+    const s = doc.createElement("script");
+    s.src = new URL("paginas-html/sonido-libro.js", location.href).href;
+    doc.head.append(s);
   }
 
   // ---- Cuando algo va mal ------------------------------------------------

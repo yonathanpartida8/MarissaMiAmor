@@ -4,448 +4,272 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>La caja de música</title>
+<!-- Lo primero: el puente que baja la música del libro mientras esta suena. -->
+<script src="sonido-libro.js"></script>
+<!-- La lista de sonidos que existen (ojos.mp3), para no pedir uno que falte. -->
+<script src="archivos.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Pinyon+Script&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
-   Todo dentro de .caja-mundo, con prefijo `cj-` en cada clase.
+   LA CAJA DE MÚSICA
+   Arriba, papel crema moteado; abajo, terciopelo rojo. En medio, un marco
+   barroco de plata en forma de rombo con un reloj dentro. Se toca el reloj
+   y suena «ojos.mp3». Todo va con prefijo `cm-`.
    ══════════════════════════════════════════════════════════════════════ */
 
-html, body { margin: 0; height: 100%; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #4a0810; }
 
-.caja-mundo {
-  position: absolute;
+.cm {
+  position: fixed;
   inset: 0;
   overflow: hidden;
   isolation: isolate;
-  contain: layout paint;
-  background:
-    radial-gradient(ellipse 120% 90% at 50% 8%, #fdf0e2, transparent 62%),
-    linear-gradient(170deg, #f7e6d6 0%, #eed6c6 55%, #e2c3b4 100%);
-  color: #4a2f2b;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
+  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  color: #fff6f1;
 
-  --madera: #8d5a43;
-  --madera-h: #6b402e;
-  --oro: #d9a441;
-  --terciopelo: #b3405e;
-
-  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
-  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --costura: 50%;
+  --lado: min(84vw, 48vh, 440px);
+  --seg-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seg-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
   --barra: var(--hueco-barra, 0rem);
-  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
-  --e-tapa: cubic-bezier(0.34, 1.4, 0.5, 1);
+  --suave: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.caja-mundo .cj-lienzo {
+.cm canvas { display: block; }
+.cm-fondo, .cm-pelo, .cm-brillos {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  display: block;
   pointer-events: none;
 }
+.cm-fondo { z-index: 0; }
+.cm-pelo { z-index: 1; mix-blend-mode: screen; }
+.cm-brillos { z-index: 6; }
 
-/* ---- La caja -------------------------------------------------------- */
-
-.caja-mundo .cj-escena {
+/* El brillo que se pasea por el terciopelo, como cuando mueves la tela. */
+.cm-lustre {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(78vw, 300px);
-  z-index: 2;
-  perspective: 700px;
-}
-
-/* LA VETA DE LA MADERA.
-   Se hace con degradados repetidos en diagonal, no con una imagen: pesa
-   cero, se ve nítida a cualquier tamaño y va a juego con el resto del
-   libro, que tampoco descarga nada. Son tres capas con pasos distintos
-   (7, 13 y 23 px) para que el dibujo no se repita a ojo. */
-.caja-mundo .cj-veta {
-  background-image:
-    repeating-linear-gradient(94deg,
-      rgba(58, 30, 18, 0.22) 0 1px, transparent 1px 7px),
-    repeating-linear-gradient(92deg,
-      rgba(255, 216, 176, 0.09) 0 1px, transparent 1px 13px),
-    repeating-linear-gradient(96deg,
-      rgba(40, 20, 12, 0.14) 0 2px, transparent 2px 23px);
-}
-
-.caja-mundo .cj-tapa {
-  position: relative;
-  height: 86px;
-  border-radius: 12px 12px 3px 3px;
-  background:
-    repeating-linear-gradient(94deg,
-      rgba(58, 30, 18, 0.22) 0 1px, transparent 1px 7px),
-    repeating-linear-gradient(92deg,
-      rgba(255, 216, 176, 0.09) 0 1px, transparent 1px 13px),
-    linear-gradient(175deg, #a06b50 0%, var(--madera) 46%, var(--madera-h) 100%);
-  box-shadow:
-    inset 0 2px 0 rgba(255, 228, 200, 0.4),
-    inset 0 -8px 16px rgba(0, 0, 0, 0.28),
-    0 10px 26px rgba(74, 40, 30, 0.35);
-  transform-origin: 50% 100%;
-  transform: rotateX(0deg);
-  transition: transform 1100ms var(--e-tapa);
-  cursor: pointer;
-  z-index: 3;
-}
-.caja-mundo.is-abierta .cj-tapa { transform: rotateX(-108deg); }
-
-/* El filete dorado de la tapa. */
-.caja-mundo .cj-tapa::after {
-  content: "";
-  position: absolute;
-  inset: 9px;
-  border-radius: 7px;
-  border: 1.5px solid rgba(217, 164, 65, 0.5);
-  box-shadow: inset 0 0 14px rgba(217, 164, 65, 0.18);
-}
-
-/* El cierre dorado del frente. Cuelga de la tapa y se abre con ella, que
-   es lo que hace que la tapa parezca una tapa y no un panel suelto. */
-.caja-mundo .cj-cierre {
-  position: absolute;
-  left: 50%;
-  bottom: -9px;
-  width: 26px;
-  height: 18px;
-  margin-left: -13px;
-  border-radius: 3px 3px 5px 5px;
-  background: linear-gradient(180deg, #f0c86a, var(--oro) 55%, #a8741f);
-  box-shadow: 0 1px 3px rgba(40, 20, 8, 0.5), inset 0 1px 0 rgba(255, 245, 210, 0.7);
-  z-index: 4;
-}
-.caja-mundo .cj-cierre::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 7px;
-  width: 5px;
-  height: 7px;
-  margin-left: -2.5px;
-  border-radius: 2px 2px 40% 40%;
-  background: #5c3a10;
-}
-
-.caja-mundo .cj-cuerpo {
-  position: relative;
-  /* Lo justo para que la bailarina (104 px) no toque el techo: el hueco
-     útil son estos 196 menos los 10 de arriba y los 54 de las teclas. */
-  height: 196px;
-  margin-top: -3px;
-  border-radius: 3px 3px 14px 14px;
-  background:
-    repeating-linear-gradient(94deg,
-      rgba(50, 26, 16, 0.2) 0 1px, transparent 1px 7px),
-    repeating-linear-gradient(96deg,
-      rgba(255, 216, 176, 0.07) 0 1px, transparent 1px 17px),
-    linear-gradient(180deg, var(--madera-h) 0%, var(--madera) 26%, #5c3626 100%);
-  box-shadow:
-    inset 0 10px 22px rgba(0, 0, 0, 0.45),
-    0 22px 40px rgba(74, 40, 30, 0.4);
-  overflow: hidden;
-}
-
-/* Las cuatro patas, cortitas. Levantan la caja del suelo y le quitan el
-   aspecto de bloque apoyado. */
-.caja-mundo .cj-patas {
-  position: relative;
-  height: 9px;
-  margin: 0 14px;
-  display: flex;
-  justify-content: space-between;
-}
-.caja-mundo .cj-patas i {
-  width: 16px;
-  height: 100%;
-  border-radius: 0 0 5px 5px;
-  background: linear-gradient(180deg, #5c3626, #3d2118);
-  box-shadow: 0 4px 10px rgba(50, 24, 16, 0.5);
-}
-
-/* La manivela del costado. Gira mientras suena, y sólo mientras suena:
-   es el aviso de que la música viene de la caja y no de otro sitio. */
-.caja-mundo .cj-manivela {
-  position: absolute;
-  right: -20px;
-  top: 118px;
-  width: 34px;
-  height: 34px;
+  left: 0; right: 0; bottom: 0;
+  top: var(--costura);
   z-index: 1;
-  animation: cj-manivela 2.1s linear infinite paused;
-}
-.caja-mundo.is-sonando .cj-manivela { animation-play-state: running; }
-@keyframes cj-manivela { to { transform: rotate(360deg); } }
-
-.caja-mundo .cj-manivela::before {
-  content: "";
-  position: absolute;
-  left: 50%; top: 50%;
-  width: 15px; height: 3px;
-  margin: -1.5px 0 0 0;
-  border-radius: 2px;
-  background: linear-gradient(90deg, var(--oro), #a8741f);
-}
-.caja-mundo .cj-manivela::after {
-  content: "";
-  position: absolute;
-  left: calc(50% + 13px); top: 50%;
-  width: 8px; height: 8px;
-  margin: -4px 0 0 0;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #f7dc9a, var(--oro) 60%, #8f6318);
-}
-
-/* El terciopelo del interior. */
-.caja-mundo .cj-interior {
-  position: absolute;
-  inset: 10px 10px 54px 10px;
-  border-radius: 6px;
-  background:
-    radial-gradient(ellipse 110% 80% at 50% 0%, #d4587a, transparent 66%),
-    linear-gradient(180deg, #8e2f49 0%, var(--terciopelo) 40%, #6e2038 100%);
-  box-shadow: inset 0 6px 18px rgba(0, 0, 0, 0.5);
-  display: grid;
-  place-items: center;
-  opacity: 0;
-  transition: opacity 500ms var(--e-suave) 320ms;
-}
-.caja-mundo.is-abierta .cj-interior { opacity: 1; }
-
-/* La bailarina.
-
-   GIRA SIN VOLUMEN, y esto no es un capricho. El primer intento la hacía
-   dar vueltas de verdad con `rotateY` y `preserve-3d`, y el problema de
-   una figura plana girando en 3D es que a los 90 grados se ve DE CANTO:
-   desaparece del todo, dos veces por vuelta. Lo que se veía era una
-   bailarina parpadeando.
-
-   Así que el giro se finge estrechándola y ensanchándola, que es
-   exactamente lo que le pasa a una silueta cuando se da la vuelta, y
-   nunca baja del 22%: siempre hay algo que mirar. El resto lo pone el
-   balanceo, que va al doble de velocidad porque en cada media vuelta
-   pasa una vez por el centro. */
-.caja-mundo .cj-bailarina {
-  width: 64px;
-  height: 104px;
-  position: relative;
-  animation: cj-girar 4.2s ease-in-out infinite paused;
-}
-.caja-mundo.is-sonando .cj-bailarina { animation-play-state: running; }
-
-@keyframes cj-girar {
-  0%   { transform: scaleX(1)    translateX(0)   rotate(0deg); }
-  25%  { transform: scaleX(0.22) translateX(3px) rotate(2.5deg); }
-  50%  { transform: scaleX(-1)   translateX(0)   rotate(0deg); }
-  75%  { transform: scaleX(-0.22) translateX(-3px) rotate(-2.5deg); }
-  100% { transform: scaleX(1)    translateX(0)   rotate(0deg); }
-}
-
-/* El tutú, con su vuelo: ancho abajo y recogido en la cintura. */
-.caja-mundo .cj-falda {
-  position: absolute;
-  left: 50%; bottom: 14px;
-  width: 58px; height: 34px;
-  margin-left: -29px;
-  border-radius: 50% 50% 44% 44% / 84% 84% 26% 26%;
-  background:
-    radial-gradient(ellipse 70% 100% at 50% 100%, rgba(255,255,255,0.5), transparent 62%),
-    linear-gradient(180deg, #fff3f8 0%, #ffc4dc 58%, #f08cb6 100%);
-  box-shadow: 0 4px 12px rgba(110, 30, 60, 0.45);
-}
-/* Las dos piernas, juntas y en punta: es lo que la pone de pie. */
-.caja-mundo .cj-falda::after {
-  content: "";
-  position: absolute;
-  left: 50%; top: 100%;
-  width: 7px; height: 16px;
-  margin-left: -3.5px;
-  border-radius: 3px 3px 1px 1px;
-  background: linear-gradient(180deg, #ffe0ce, #f0c2a8);
-}
-.caja-mundo .cj-torso {
-  position: absolute;
-  left: 50%; bottom: 44px;
-  width: 16px; height: 30px;
-  margin-left: -8px;
-  border-radius: 8px 8px 4px 4px;
-  background: linear-gradient(180deg, #ffdcea, #f7a8c6);
-}
-.caja-mundo .cj-cabeza {
-  position: absolute;
-  left: 50%; bottom: 70px;
-  width: 21px; height: 22px;
-  margin-left: -10.5px;
-  border-radius: 50% 50% 46% 46%;
-  background: radial-gradient(circle at 35% 32%, #fff6ea, #efc6aa 72%);
-}
-/* El moño, con su lazo. */
-.caja-mundo .cj-monyo {
-  position: absolute;
-  left: 50%; bottom: 86px;
-  width: 22px; height: 13px;
-  margin-left: -11px;
-  border-radius: 50% 50% 34% 34%;
-  background: linear-gradient(180deg, #7a4a34, #5c3524);
-}
-.caja-mundo .cj-monyo::after {
-  content: "";
-  position: absolute;
-  left: 50%; top: -4px;
-  width: 11px; height: 7px;
-  margin-left: -5.5px;
-  border-radius: 50%;
-  background: #ff9ec2;
-}
-/* Los brazos en corona, que es la postura de siempre. */
-.caja-mundo .cj-brazos {
-  position: absolute;
-  left: 50%; bottom: 62px;
-  width: 40px; height: 22px;
-  margin-left: -20px;
-  border: 3px solid #f9c2d6;
-  border-bottom-color: transparent;
-  border-radius: 50% 50% 0 0;
-}
-
-/* El espejo del fondo, que la duplica. */
-.caja-mundo .cj-espejo {
-  position: absolute;
-  inset: 12px 12px 56px 12px;
-  border-radius: 5px;
-  background: linear-gradient(160deg, rgba(255,255,255,0.14), rgba(255,255,255,0.02));
   pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 42% at var(--lx, 30%) var(--ly, 40%), rgba(255, 96, 118, 0.22), transparent 70%),
+    radial-gradient(ellipse 40% 30% at calc(100% - var(--lx, 30%)) 85%, rgba(255, 140, 150, 0.08), transparent 70%);
+  mix-blend-mode: screen;
 }
 
-/* ---- Las teclas ------------------------------------------------------- */
-
-.caja-mundo .cj-teclas {
-  position: absolute;
-  left: 10px; right: 10px; bottom: 10px;
-  height: 40px;
-  display: flex;
-  gap: 3px;
-  opacity: 0;
-  transition: opacity 500ms var(--e-suave) 420ms;
-}
-.caja-mundo.is-abierta .cj-teclas { opacity: 1; }
-
-.caja-mundo .cj-tecla {
-  flex: 1;
-  border: 0;
-  padding: 0;
-  border-radius: 3px 3px 6px 6px;
-  background: linear-gradient(180deg, #fffaf2 0%, #f0e2d0 72%, #d9c3ad 100%);
-  box-shadow: 0 3px 0 #a98a6e, inset 0 1px 0 #fff;
-  cursor: pointer;
-  transition: transform 90ms ease, box-shadow 90ms ease, background 260ms ease;
-  font: inherit;
-  color: #8a6a53;
-  font-size: 0.6rem;
-}
-.caja-mundo .cj-tecla:active,
-.caja-mundo .cj-tecla.is-pulsada {
-  transform: translateY(3px);
-  box-shadow: 0 0 0 #a98a6e, inset 0 1px 0 #fff;
-  background: linear-gradient(180deg, #ffe8c8, #e8cfa8);
-}
-.caja-mundo .cj-tecla:focus-visible {
-  outline: 2px solid var(--oro);
-  outline-offset: 2px;
-}
-
-/* ---- Lo que se lee ---------------------------------------------------- */
-
-.caja-mundo .cj-ui {
+/* ---- El orden de las cosas ------------------------------------------- */
+.cm-escena {
   position: absolute;
   inset: 0;
-  pointer-events: none;
-  z-index: 4;
-  padding:
-    calc(var(--seguro-t) + 20px) 22px
-    calc(var(--seguro-b) + var(--barra) + 18px) 22px;
+  z-index: 3;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   align-items: center;
+  padding:
+    calc(var(--seg-t) + 18px) 18px
+    calc(var(--seg-b) + var(--barra) + 16px);
+  box-sizing: border-box;
+}
+
+.cm-cabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  margin: 0;
+  font-size: clamp(0.66rem, 2.9vw, 0.8rem);
+  font-weight: 600;
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: #5a3b30;
+  opacity: 0;
+  transform: translateY(-6px);
+  animation: cm-aparece 1.4s var(--suave) 0.2s forwards;
+}
+.cm-cabeza::before, .cm-cabeza::after {
+  content: "";
+  width: clamp(18px, 8vw, 46px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(90, 59, 48, 0.6));
+}
+.cm-cabeza::after { transform: scaleX(-1); }
+.cm-cabeza span { padding-left: 0.36em; }
+
+.cm-centro {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.cm-escenario {
+  display: grid;
+  place-items: center;
+}
+
+.cm-flota {
+  position: relative;
+  width: var(--lado);
+  height: var(--lado);
+  /* Sitio para las crestas de arriba y para la llave de abajo, que se
+     salen del rombo. */
+  margin: calc(var(--lado) * 0.1) 0 calc(var(--lado) * 0.14);
+  animation: cm-flota 7s ease-in-out infinite;
+}
+@keyframes cm-flota {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* La sombra del marco, aparte y quieta: así la plata puede cambiar de luz
+   en cada fotograma sin que el navegador tenga que volver a difuminarla. */
+.cm-sombra {
+  position: absolute;
+  inset: 6%;
+  top: 11%;
+  background: #1a0206;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  filter: blur(14px);
+  opacity: 0.62;
+  transform: scale(1.02);
+}
+
+.cm-svg {
+  position: absolute;
+  left: -12.5%;
+  top: -12.5%;
+  width: 125%;
+  height: 125%;
+  overflow: visible;
+  opacity: 0;
+  transform: scale(0.94);
+  animation: cm-entra 1.6s var(--suave) 0.1s forwards;
+}
+@keyframes cm-entra { to { opacity: 1; transform: none; } }
+@keyframes cm-aparece { to { opacity: 1; transform: none; } }
+
+.cm.is-sonando .cm-flota { animation-duration: 4.2s; }
+
+/* ---- El mecanismo, detrás de un cristal ------------------------------- */
+.cm-meca {
+  position: relative;
+  flex: 0 0 auto;
+  width: min(62vw, 260px);
+  height: clamp(38px, 7vh, 56px);
+  margin-top: 6px;
+  padding: 4px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #f4f6f8, #8f989f 28%, #eef1f3 50%, #6a727a 74%, #d8dde1);
+  box-shadow: 0 10px 22px -10px rgba(20, 0, 4, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  opacity: 0;
+  animation: cm-aparece 1.4s var(--suave) 0.6s forwards;
+  transform: translateY(6px);
+}
+.cm-meca canvas { width: 100%; height: 100%; border-radius: 8px; background: #140807; }
+.cm-meca::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 8px;
+  pointer-events: none;
+  background:
+    linear-gradient(172deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0) 42%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.4), transparent 34%);
+}
+
+/* ---- Lo que se lee, en blanco y en cursiva ---------------------------- */
+.cm-pie {
+  flex: 0 0 auto;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  margin-top: 8px;
+  min-height: 5.2rem;
   text-align: center;
 }
-
-.caja-mundo .cj-titulo {
+.cm-frase {
   margin: 0;
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-size: clamp(1rem, 4.4vw, 1.4rem);
-  font-weight: 500;
-  letter-spacing: 0.05em;
-  color: #7a4d3c;
-  opacity: 0.9;
-  transition: opacity 700ms var(--e-suave);
+  max-width: 17em;
+  font-family: "Pinyon Script", "Snell Roundhand", "Apple Chancery", cursive;
+  font-weight: 400;
+  font-size: clamp(1.55rem, 7.4vw, 2.35rem);
+  line-height: 1.1;
+  color: #fff8f4;
+  text-shadow: 0 2px 14px rgba(30, 0, 6, 0.65), 0 0 2px rgba(255, 255, 255, 0.25);
+  transition: opacity 700ms var(--suave), filter 700ms var(--suave), transform 700ms var(--suave);
 }
-.caja-mundo.is-abierta .cj-titulo { opacity: 0.32; }
-
-.caja-mundo .cj-pie {
+.cm-frase.is-fuera { opacity: 0; filter: blur(6px); transform: translateY(6px); }
+.cm-pista {
   margin: 0;
-  min-height: 3.6em;
-  max-width: 23em;
-  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
-  line-height: 1.55;
-  color: #5b3a31;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 640ms var(--e-suave), transform 640ms var(--e-suave);
+  font-size: clamp(0.62rem, 2.6vw, 0.74rem);
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(255, 214, 220, 0.72);
+  transition: opacity 600ms var(--suave);
 }
-.caja-mundo .cj-pie.is-visible { opacity: 0.94; transform: none; }
-.caja-mundo .cj-pie em {
-  display: block;
-  margin-top: 0.3em;
-  font-family: var(--tipo-mano, "Segoe Script", cursive);
-  font-size: 1.16em;
-  font-style: normal;
-  color: #a8365c;
+.cm-pista.is-fuera { opacity: 0; }
+
+/* Teléfono de lado: el reloj a la izquierda y lo demás a su derecha. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .cm { --lado: min(70vh, 44vw, 380px); }
+  .cm-cabeza { position: absolute; right: 0; width: 48%; justify-content: center; }
+  .cm-centro {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-rows: 54% auto auto 1fr;
+    column-gap: 18px;
+  }
+  .cm-escenario { grid-column: 1; grid-row: 1 / -1; }
+  .cm-meca { grid-column: 2; grid-row: 2; justify-self: center; width: min(36vw, 240px); }
+  .cm-pie { grid-column: 2; grid-row: 3; }
+  .cm-frase { font-size: clamp(1.3rem, 4.2vw, 2rem); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .caja-mundo * { transition-duration: 1ms !important; animation: none !important; }
+  .cm * { animation-duration: 1ms !important; transition-duration: 1ms !important; }
 }
 </style>
 </head>
 <body>
 
-<div class="caja-mundo" id="mundo">
-  <canvas class="cj-lienzo" id="lienzo"></canvas>
+<div class="cm" id="mundo">
+  <canvas class="cm-fondo" id="fondo"></canvas>
+  <div class="cm-lustre" id="lustre"></div>
+  <canvas class="cm-pelo" id="pelo"></canvas>
 
-  <div class="cj-escena">
-    <div class="cj-tapa" id="tapa" role="button" tabindex="0" aria-label="Abrir la caja de música">
-      <span class="cj-cierre" aria-hidden="true"></span>
-    </div>
-    <div class="cj-cuerpo">
-      <div class="cj-interior">
-        <div class="cj-espejo"></div>
-        <div class="cj-bailarina" id="bailarina" aria-hidden="true">
-          <div class="cj-falda"></div>
-          <div class="cj-torso"></div>
-          <div class="cj-brazos"></div>
-          <div class="cj-cabeza"></div>
-          <div class="cj-monyo"></div>
+  <div class="cm-escena">
+    <p class="cm-cabeza"><span>La caja de música</span></p>
+
+    <div class="cm-centro">
+      <div class="cm-escenario">
+        <div class="cm-flota" id="flota">
+          <div class="cm-sombra"></div>
+          <svg class="cm-svg" id="marco" viewBox="-50 -50 500 500" aria-hidden="true"></svg>
         </div>
       </div>
-      <div class="cj-teclas" id="teclas" role="group" aria-label="Notas"></div>
+
+      <div class="cm-meca" aria-hidden="true"><canvas id="meca"></canvas></div>
+
+      <div class="cm-pie">
+        <p class="cm-frase" id="frase" role="status" aria-live="polite">Tócala y escucha.</p>
+        <p class="cm-pista" id="pista">toca el reloj</p>
+      </div>
     </div>
-    <div class="cj-patas" aria-hidden="true"><i></i><i></i></div>
-    <div class="cj-manivela" aria-hidden="true"></div>
   </div>
 
-  <div class="cj-ui">
-    <h1 class="cj-titulo" id="titulo">Levanta la tapa</h1>
-    <p class="cj-pie" id="pie" role="status" aria-live="polite"></p>
-  </div>
+  <canvas class="cm-brillos" id="brillos"></canvas>
 </div>
 
 <script>
@@ -453,394 +277,1217 @@ html, body { margin: 0; height: 100%; }
 "use strict";
 
 /* ══════════════════════════════════════════════════════════════════════
-   CONFIGURACIÓN EDITABLE
+   LO QUE SE PUEDE CAMBIAR
    ══════════════════════════════════════════════════════════════════════ */
-
 const CONF = {
+  /* Lo que se lee abajo, en cada momento. */
+  textos: {
+    inicio:   ["Tócala y escucha.", "toca el reloj"],
+    cuerda:   ["Dándole cuerda…", ""],
+    sonando: [
+      "Cierra los ojos un ratito.",
+      "Así suenas tú en mi cabeza.",
+      "Te la dejo sonando para cuando me extrañes.",
+      "Cada vuelta es un te quiero chiquito.",
+    ],
+    pistaSonando: "gira las manecillas",
+    pausa:    ["Se quedó esperándote.", "tócala otra vez para seguir"],
+    fin:      ["Dale cuerda cuando quieras.", "toca el reloj"],
+    buscando: ["Busca tu parte favorita.", "suelta para escuchar"],
+  },
 
-  /* ---- LA MELODÍA ----------------------------------------------------
-     Se toca sola al abrir la caja. Cada entrada es [nota, duración].
-     Las notas van en el nombre de siempre: C4 es el do central, y una `s`
-     detrás quiere decir sostenido (Cs4 = do sostenido). La duración va en
-     negras: 1 es una negra, 0.5 una corchea, 2 una blanca.              */
+  /* Si todavía no está ojos.mp3, la caja toca esta melodía suya.
+     [nota, duración en negras]. */
   melodia: [
     ["G4",0.5],["C5",0.5],["E5",1],["D5",0.5],["C5",0.5],["D5",1],
     ["E5",0.5],["G5",0.5],["E5",1],["C5",0.5],["A4",0.5],["C5",1.5],
     ["G4",0.5],["C5",0.5],["E5",1],["G5",0.5],["F5",0.5],["E5",1],
     ["D5",0.5],["C5",0.5],["D5",1],["C5",2],
   ],
-  compas: 132,              // pulsaciones por minuto
-
-  /* ---- LAS TECLAS ----------------------------------------------------
-     Las que ella puede tocar. Cada una lleva una frase: la primera vez
-     que se pulsa, se lee.                                               */
-  teclas: [
-    { nota: "C5", letra: "do",  frase: "Do, de donde" },
-    { nota: "D5", letra: "re",  frase: "Re, de recuerdo" },
-    { nota: "E5", letra: "mi",  frase: "Mi, de mía" },
-    { nota: "F5", letra: "fa",  frase: "Fa, de falta (cuando no estás)" },
-    { nota: "G5", letra: "sol", frase: "Sol, de las mañanas" },
-    { nota: "A5", letra: "la",  frase: "La, de la única" },
-    { nota: "B5", letra: "si",  frase: "Si, de sí. Siempre sí." },
-  ],
-
-  /* ---- LO QUE SE LEE -------------------------------------------------- */
-  alAbrir:  { texto: "La guardé para cuando la necesitaras.", firma: "Suena cuando tú quieras." },
-  alCerrar: { texto: "Aquí sigue. No se gasta.", firma: "Vuelve cuando quieras." },
-  alAcabar: { texto: "Esa es la que tarareo sin darme cuenta.", firma: "Ya la conoces." },
-  alJugar:  "Toca las teclas. No hay forma de hacerlo mal.",
-
-  /* ---- ADORNO --------------------------------------------------------- */
-  motas: 46,                // cuántas motas de polvo dorado flotan
+  bajos: [["C4",0],["G3",2],["C4",4],["G3",6.5],["A3",8.5],["E3",10.5],["F3",12.5],["G3",14.5]],
+  compas: 104,
+  vueltas: 3,
 };
 
-/* ══════════════════════════════════════════════════════════════════════
-   La maquinaria.
-   ══════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════ */
 
-const mundo  = document.getElementById("mundo");
-const lienzo = document.getElementById("lienzo");
-const tapa   = document.getElementById("tapa");
-const elTec  = document.getElementById("teclas");
-const elPie  = document.getElementById("pie");
-const elTit  = document.getElementById("titulo");
-const ctx    = lienzo.getContext("2d");
-
+const $ = (id) => document.getElementById(id);
+const mundo = $("mundo"), fondo = $("fondo"), pelo = $("pelo"), brillos = $("brillos");
+const marco = $("marco"), flota = $("flota"), meca = $("meca"), lustre = $("lustre");
+const elFrase = $("frase"), elPista = $("pista");
 const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const ARCHIVOS = window.LIBRO_ARCHIVOS || {};
+if (window.LibroSonido) window.LibroSonido.cuanto = 0.1;
 
-/* ---- Notas ------------------------------------------------------------ */
+const TAU = Math.PI * 2;
+const azar = (a, b) => a + Math.random() * (b - a);
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const acercar = (v, obj, vel, dt) => v + (obj - v) * (1 - Math.exp(-vel * dt));
 
-const SEMI = { C:0, Cs:1, D:2, Ds:3, E:4, F:5, Fs:6, G:7, Gs:8, A:9, As:10, B:11 };
+/* ══════════════════════════════════════════════════════════════════════
+   EL MARCO DE PLATA, en SVG
+   Se construye con código porque es simétrico: cada adorno se dibuja una
+   vez y se gira a las cuatro puntas del rombo.
+   ══════════════════════════════════════════════════════════════════════ */
+const NS = "http://www.w3.org/2000/svg";
+function s(tag, attrs, padre) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (padre) padre.appendChild(e);
+  return e;
+}
+const rombo = (h) => `M200,${200 - h} L${200 + h},200 L200,${200 + h} L${200 - h},200 Z`;
 
-/** "Cs5" → los hercios que le tocan, con el la4 a 440. */
-function hz(nombre) {
-  const m = /^([A-G]s?)(-?\d)$/.exec(nombre);
-  if (!m) return 440;
-  const n = SEMI[m[1]] + (Number(m[2]) + 1) * 12;   // número MIDI
-  return 440 * Math.pow(2, (n - 69) / 12);
+const defs = s("defs", {}, marco);
+function degradado(id, paradas, attrs, tipo = "linearGradient") {
+  const g = s(tipo, Object.assign({ id }, attrs), defs);
+  for (const [o, c, a] of paradas) s("stop", { offset: o, "stop-color": c, "stop-opacity": a ?? 1 }, g);
+  return g;
+}
+/* La plata: bandas claras y oscuras alternas, que es lo que el ojo lee como
+   metal pulido. Está en coordenadas del dibujo, así que al girarla la luz
+   se pasea por TODO el marco a la vez, como si movieras la caja. */
+const plata = degradado("plata", [
+  [0, "#f7f9fb"], [0.1, "#c3cad1"], [0.21, "#737c86"], [0.32, "#e9edf0"], [0.42, "#ffffff"],
+  [0.52, "#a2abb4"], [0.63, "#5e666f"], [0.74, "#d6dce1"], [0.86, "#8e979f"], [1, "#eef1f4"],
+], { gradientUnits: "userSpaceOnUse", x1: -50, y1: 0, x2: 450, y2: 400 });
+degradado("plataHonda", [[0, "#2f343a"], [0.5, "#8a939c"], [1, "#262a2f"]],
+  { gradientUnits: "userSpaceOnUse", x1: 0, y1: 0, x2: 400, y2: 400 });
+degradado("esfera", [[0, "#fffbf2"], [0.62, "#f4ead7"], [0.9, "#e4d4b8"], [1, "#cdb898"]],
+  { gradientUnits: "userSpaceOnUse", cx: 192, cy: 186, r: 112 }, "radialGradient");
+degradado("rojo", [[0, "#971c29"], [0.55, "#620b15"], [1, "#2e0309"]],
+  { gradientUnits: "userSpaceOnUse", cx: 200, cy: 170, r: 190 }, "radialGradient");
+degradado("resplandor", [[0, "#fff4dc", 0.9], [0.55, "#ffe2b8", 0.35], [1, "#ffd9a0", 0]],
+  { gradientUnits: "userSpaceOnUse", cx: 200, cy: 200, r: 96 }, "radialGradient");
+degradado("cristal", [[0, "#ffffff", 0.5], [0.45, "#ffffff", 0.06], [1, "#ffffff", 0]],
+  { gradientUnits: "userSpaceOnUse", x1: 150, y1: 110, x2: 230, y2: 230 });
+degradado("manecilla", [[0, "#3a3338"], [0.5, "#141114"], [1, "#2a2327"]],
+  { x1: 0, y1: 0, x2: 1, y2: 0 });
+const recorte = s("clipPath", { id: "recEsfera" }, defs);
+s("circle", { cx: 200, cy: 200, r: 95 }, recorte);
+
+/* 1. El fondo del rombo: terciopelo, como el de abajo. */
+s("path", { d: rombo(150), fill: "url(#rojo)" }, marco);
+
+/* 2. La filigrana de las cuatro esquinas de dentro. */
+const filigrana = s("g", { fill: "none", stroke: "url(#plata)", "stroke-width": 1.6, "stroke-linecap": "round", opacity: 0.9 }, marco);
+for (let k = 0; k < 4; k++) {
+  const g = s("g", { transform: `rotate(${k * 90} 200 200)` }, filigrana);
+  s("path", { d: "M200,97 C196,86 196,74 200,62 C204,74 204,86 200,97 Z", fill: "url(#plata)", stroke: "none", opacity: 0.85 }, g);
+  s("path", { d: "M199,92 C188,90 180,82 181,73 C182,66 190,65 192,71 C193,75 189,77 187,75" }, g);
+  s("path", { d: "M201,92 C212,90 220,82 219,73 C218,66 210,65 208,71 C207,75 211,77 213,75" }, g);
+  s("circle", { cx: 200, cy: 57, r: 2.2, fill: "url(#plata)", stroke: "none" }, g);
+  s("circle", { cx: 186, cy: 98, r: 1.3, fill: "url(#plata)", stroke: "none" }, g);
+  s("circle", { cx: 214, cy: 98, r: 1.3, fill: "url(#plata)", stroke: "none" }, g);
 }
 
-/* ---- Sonido: una caja de música de verdad se sintetiza ---------------- */
+/* 3. La moldura: dos rombos, uno dentro de otro, y la plata entre los dos. */
+s("path", { d: rombo(177) + " " + rombo(148), fill: "url(#plata)", "fill-rule": "evenodd", stroke: "#23282d", "stroke-width": 1 }, marco);
+s("path", { d: rombo(162), fill: "none", stroke: "url(#plataHonda)", "stroke-width": 9 }, marco);
+/* Las perlas del canal. */
+s("path", { d: rombo(162), fill: "none", stroke: "#3b4148", "stroke-width": 5.4, "stroke-dasharray": "0 8.1", "stroke-linecap": "round", transform: "translate(0.8 1)" }, marco);
+s("path", { d: rombo(162), fill: "none", stroke: "url(#plata)", "stroke-width": 4.6, "stroke-dasharray": "0 8.1", "stroke-linecap": "round" }, marco);
+s("path", { d: rombo(172.5), fill: "none", stroke: "rgba(255,255,255,.55)", "stroke-width": 0.8 }, marco);
+s("path", { d: rombo(151.5), fill: "none", stroke: "rgba(20,24,28,.6)", "stroke-width": 1 }, marco);
 
-let audio = null, maestro = null;
-
-function despertarAudio() {
-  if (audio) { if (audio.state === "suspended") audio.resume(); return audio; }
-  try {
-    audio = new (window.AudioContext || window.webkitAudioContext)();
-    maestro = audio.createGain();
-    maestro.gain.value = 0.5;
-    maestro.connect(audio.destination);
-  } catch { audio = null; }
-  return audio;
-}
-
-/**
- * Una púa de caja de música: un golpe cortito, brillante, que se apaga
- * enseguida. Se hace con el fundamental y dos armónicos inarmónicos (una
- * lámina de metal no vibra en múltiplos exactos, y por eso suena a metal
- * y no a flauta).
- */
-function pua(frecuencia, cuando, fuerza) {
-  if (!audio) return;
-  const t = cuando ?? audio.currentTime;
-  const v = fuerza ?? 1;
-  const parciales = [[1, 1], [2.76, 0.32], [5.4, 0.13]];
-  for (const [mult, amp] of parciales) {
-    const o = audio.createOscillator();
-    const g = audio.createGain();
-    o.type = "sine";
-    o.frequency.setValueAtTime(frecuencia * mult, t);
-    /* Los armónicos se apagan antes que el fundamental: eso es lo que hace
-       que el golpe suene metálico al principio y dulce al final. */
-    const largo = 2.1 / mult;
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.16 * amp * v, t + 0.004);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + largo);
-    o.connect(g).connect(maestro);
-    o.start(t); o.stop(t + largo + 0.05);
+/* 4. Las rosetas en la mitad de cada lado. */
+for (const [x, y] of [[113, 113], [287, 113], [287, 287], [113, 287]]) {
+  const g = s("g", { transform: `translate(${x} ${y})` }, marco);
+  s("circle", { r: 9.5, fill: "#2c3136" }, g);
+  for (let p = 0; p < 8; p++) {
+    s("ellipse", { cx: 0, cy: -5.4, rx: 2.6, ry: 4.6, fill: "url(#plata)", stroke: "#262b30", "stroke-width": 0.5, transform: `rotate(${p * 45})` }, g);
   }
+  s("circle", { r: 2.8, fill: "url(#plata)", stroke: "#262b30", "stroke-width": 0.6 }, g);
 }
 
-/* ---- La melodía ------------------------------------------------------- */
-
-let sonando = false;
-let relojMelodia = null;
-
-function tocarMelodia() {
-  if (!despertarAudio()) { alTerminarMelodia(); return; }
-  sonando = true;
-  mundo.classList.add("is-sonando");
-
-  const negra = 60 / CONF.compas;
-  let t = audio.currentTime + 0.25;
-  let total = 0;
-  for (const [nota, dur] of CONF.melodia) {
-    pua(hz(nota), t, 0.9);
-    /* Y su reflejo una octava abajo, muy flojito: le da cuerpo sin
-       ensuciar. */
-    pua(hz(nota) / 2, t + 0.012, 0.22);
-    const d = dur * negra;
-    t += d; total += d;
+/* 5. Las crestas barrocas de las puntas: concha, volutas y hojas. */
+function cresta(padre, escala) {
+  const g = s("g", { transform: `translate(200 23) scale(${escala})` }, padre);
+  const trazo = { fill: "none", stroke: "url(#plata)", "stroke-width": 3.4, "stroke-linecap": "round" };
+  const sombra = { fill: "none", stroke: "#1f2327", "stroke-width": 4.6, "stroke-linecap": "round", opacity: 0.55, transform: "translate(0.9 1.2)" };
+  // Hojas que abrazan la moldura hacia los dos lados.
+  for (const sx of [1, -1]) {
+    const h = s("g", { transform: `scale(${sx} 1)` }, g);
+    s("path", { d: "M-5,5 C-16,9 -24,18 -38,22 C-29,24 -20,20 -13,13 C-18,19 -24,24 -30,31 C-18,27 -10,17 -5,8 Z", fill: "url(#plata)", stroke: "#262b30", "stroke-width": 0.7 }, h);
+    s("path", { d: "M-4,-5 C-15,-3 -27,-9 -31,-20 C-34,-30 -26,-36 -19.5,-31.5 C-14.5,-28 -17.5,-21.5 -23,-23.5", ...sombra }, h);
+    s("path", { d: "M-4,-5 C-15,-3 -27,-9 -31,-20 C-34,-30 -26,-36 -19.5,-31.5 C-14.5,-28 -17.5,-21.5 -23,-23.5", ...trazo }, h);
+    s("circle", { cx: -23, cy: -23.5, r: 2.1, fill: "url(#plata)" }, h);
   }
-  clearTimeout(relojMelodia);
-  relojMelodia = setTimeout(alTerminarMelodia, (total + 1.4) * 1000);
-}
-
-function alTerminarMelodia() {
-  sonando = false;
-  mundo.classList.remove("is-sonando");
-  decir(CONF.alAcabar.texto, CONF.alAcabar.firma);
-  setTimeout(() => { if (abierta && !sonando) decir(CONF.alJugar); }, suave ? 600 : 4200);
-}
-
-/* ---- La tapa ---------------------------------------------------------- */
-
-let abierta = false;
-
-function alternar() {
-  abierta = !abierta;
-  mundo.classList.toggle("is-abierta", abierta);
-  tapa.setAttribute("aria-label", abierta ? "Cerrar la caja de música" : "Abrir la caja de música");
-  elTit.textContent = abierta ? "La caja de música" : "Levanta la tapa";
-  if (abierta) {
-    despertarAudio();
-    decir(CONF.alAbrir.texto, CONF.alAbrir.firma);
-    brilloMotas = 1;
-    setTimeout(() => { if (abierta) tocarMelodia(); }, suave ? 200 : 1150);
-    contarAperturas();
-  } else {
-    clearTimeout(relojMelodia);
-    sonando = false;
-    mundo.classList.remove("is-sonando");
-    decir(CONF.alCerrar.texto, CONF.alCerrar.firma);
+  // La concha: un abanico con el borde festoneado y sus nervios.
+  const pts = [];
+  for (let i = 0; i <= 8; i++) {
+    const a = (165 - i * 18.75) * Math.PI / 180;
+    pts.push([22 * Math.cos(a), -9 - 22 * Math.sin(a), a]);
   }
+  let d = `M0,-4 L${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < 8; i++) {
+    const am = (pts[i][2] + pts[i + 1][2]) / 2;
+    d += ` Q${(27 * Math.cos(am)).toFixed(1)},${(-9 - 27 * Math.sin(am)).toFixed(1)} ${pts[i + 1][0].toFixed(1)},${pts[i + 1][1].toFixed(1)}`;
+  }
+  d += " Z";
+  s("path", { d, fill: "#1f2327", opacity: 0.5, transform: "translate(1 1.4)" }, g);
+  s("path", { d, fill: "url(#plata)", stroke: "#262b30", "stroke-width": 0.8 }, g);
+  for (let i = 1; i < 8; i++) {
+    s("line", { x1: 0, y1: -5, x2: (pts[i][0] * 0.9).toFixed(1), y2: (-9 + (pts[i][1] + 9) * 0.9).toFixed(1), stroke: "#3a4047", "stroke-width": 0.8, opacity: 0.7 }, g);
+  }
+  s("circle", { cx: 0, cy: -5, r: 4, fill: "url(#plata)", stroke: "#262b30", "stroke-width": 0.7 }, g);
+  // El remate de arriba.
+  s("circle", { cx: 0, cy: -38, r: 3.4, fill: "url(#plata)", stroke: "#262b30", "stroke-width": 0.6 }, g);
+  s("path", { d: "M0,-49 L2.4,-41.5 L-2.4,-41.5 Z", fill: "url(#plata)" }, g);
+  return g;
+}
+const crestas = [];
+for (const [ang, esc] of [[0, 1], [90, 0.82], [180, 0.86], [270, 0.82]]) {
+  const g = s("g", { transform: `rotate(${ang} 200 200)` }, marco);
+  crestas.push({ g: cresta(g, esc), ang });
 }
 
-tapa.addEventListener("click", alternar);
-tapa.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); alternar(); }
+/* 6. La llave de dar cuerda, colgando de la punta de abajo. */
+const llave = s("g", { transform: "translate(200 416)" }, marco);
+s("rect", { x: -2.4, y: -14, width: 4.8, height: 14, rx: 1.4, fill: "url(#plata)", stroke: "#262b30", "stroke-width": 0.6 }, llave);
+const lazo = s("g", { transform: "translate(0 12)" }, llave);
+const lazoGiro = s("g", {}, lazo);
+s("path", { d: "M0,-3 C-8,-14 -20,-10 -18,0 C-20,10 -8,14 0,3 C8,14 20,10 18,0 C20,-10 8,-14 0,-3 Z", fill: "url(#plata)", stroke: "#262b30", "stroke-width": 0.8 }, lazoGiro);
+s("path", { d: "M-4,-1 C-9,-7 -14,-5 -13,0 C-14,5 -9,7 -4,1 M4,-1 C9,-7 14,-5 13,0 C14,5 9,7 4,1", fill: "none", stroke: "#3a4047", "stroke-width": 0.9 }, lazoGiro);
+s("circle", { r: 3, fill: "url(#plata)", stroke: "#262b30", "stroke-width": 0.6 }, lazo);
+
+/* 7. El bisel del reloj. */
+s("circle", { cx: 200, cy: 200, r: 106, fill: "url(#plata)", stroke: "#23282d", "stroke-width": 1 }, marco);
+s("circle", { cx: 200, cy: 200, r: 101.5, fill: "none", stroke: "url(#plataHonda)", "stroke-width": 4 }, marco);
+s("circle", { cx: 200, cy: 200, r: 101.5, fill: "none", stroke: "url(#plata)", "stroke-width": 2.6, "stroke-dasharray": "0 5.3", "stroke-linecap": "round" }, marco);
+
+/* 8. La esfera, con su guilloché: anillos y un sol de rayas que gira despacio. */
+s("circle", { cx: 200, cy: 200, r: 96, fill: "url(#esfera)" }, marco);
+const guilloche = s("g", { "clip-path": "url(#recEsfera)" }, marco);
+for (let r = 12; r < 60; r += 2.4) {
+  s("circle", { cx: 200, cy: 200, r, fill: "none", stroke: "rgba(140,104,70,.11)", "stroke-width": 0.5 }, guilloche);
+}
+const sol = s("g", {}, guilloche);
+for (let i = 0; i < 96; i++) {
+  const a = i / 96 * TAU;
+  s("line", { x1: 200, y1: 200, x2: 200 + Math.cos(a) * 60, y2: 200 + Math.sin(a) * 60, stroke: "rgba(150,112,76,.12)", "stroke-width": 0.55 }, sol);
+}
+s("circle", { cx: 200, cy: 200, r: 60, fill: "none", stroke: "rgba(120,86,56,.35)", "stroke-width": 0.7 }, marco);
+
+/* 9. La pista de los minutos y los números romanos. */
+s("circle", { cx: 200, cy: 200, r: 90, fill: "none", stroke: "#3a2a22", "stroke-width": 0.8 }, marco);
+s("circle", { cx: 200, cy: 200, r: 84.5, fill: "none", stroke: "#3a2a22", "stroke-width": 0.5 }, marco);
+for (let i = 0; i < 60; i++) {
+  const a = i / 60 * TAU - Math.PI / 2;
+  const larga = i % 5 === 0;
+  const r1 = larga ? 83 : 85.5, r2 = 90;
+  s("line", {
+    x1: 200 + Math.cos(a) * r1, y1: 200 + Math.sin(a) * r1,
+    x2: 200 + Math.cos(a) * r2, y2: 200 + Math.sin(a) * r2,
+    stroke: larga ? "#2b1f1a" : "#5a463a", "stroke-width": larga ? 1.6 : 0.6,
+  }, marco);
+}
+const ROMANOS = ["XII", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI"];
+const numeros = s("g", { "font-family": "'Cormorant Garamond', Georgia, serif", "font-size": 15.5, "font-weight": 600, fill: "#2a1f1b", "text-anchor": "middle" }, marco);
+ROMANOS.forEach((r, i) => {
+  const a = i / 12 * TAU - Math.PI / 2;
+  const t = s("text", { x: 200 + Math.cos(a) * 71, y: 200 + Math.sin(a) * 71 + 5.2 }, numeros);
+  t.textContent = r;
 });
+const firma = s("text", { x: 200, y: 239, "text-anchor": "middle", "font-family": "'Pinyon Script', cursive", "font-size": 14, fill: "#8c1f30" }, marco);
+firma.textContent = "para ti";
 
-/* ---- Las teclas ------------------------------------------------------- */
+/* 10. El resplandor que late con la música. */
+const resplandor = s("circle", { cx: 200, cy: 200, r: 95, fill: "url(#resplandor)", opacity: 0 }, marco);
 
-const dichas = new Set();
-let ultimasNotas = [];
-
-CONF.teclas.forEach((t, i) => {
-  const b = document.createElement("button");
-  b.type = "button";
-  b.className = "cj-tecla";
-  b.textContent = t.letra;
-  b.setAttribute("aria-label", t.letra);
-  b.addEventListener("pointerdown", (e) => { e.preventDefault(); pulsar(i, b); });
-  b.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pulsar(i, b); }
-  });
-  elTec.append(b);
-});
-
-function pulsar(i, boton) {
-  const t = CONF.teclas[i];
-  despertarAudio();
-  pua(hz(t.nota), undefined, 1);
-  boton.classList.add("is-pulsada");
-  setTimeout(() => boton.classList.remove("is-pulsada"), 120);
-  chispear(boton);
-  if (!dichas.has(i)) { dichas.add(i); decir(t.frase); }
-  if (dichas.size === CONF.teclas.length && !dichoTodas) {
-    dichoTodas = true;
-    setTimeout(() => decir("Do re mi fa sol la si.", "Todo eso y no me llega para decirlo."), 900);
-  }
-  vigilarSecreto(t.letra);
+/* 11. Las manecillas. Estilo Breguet: con su anillo hueco cerca de la punta. */
+const manos = s("g", {}, marco);
+function manecilla(partes) {
+  const g = s("g", {}, manos);
+  for (const [tag, attrs] of partes) s(tag, attrs, g);
+  return g;
 }
-let dichoTodas = false;
+const tinta = { fill: "url(#manecilla)", stroke: "#0b090b", "stroke-width": 0.4 };
+const mHora = manecilla([
+  ["path", { d: "M197.4,214 L202.6,214 L201.5,153 L198.5,153 Z", ...tinta }],
+  ["circle", { cx: 200, cy: 146.5, r: 6.2, fill: "none", stroke: "#161316", "stroke-width": 2.4 }],
+  ["path", { d: "M200,127 L203.4,141 L196.6,141 Z", ...tinta }],
+  ["circle", { cx: 200, cy: 216, r: 3.4, ...tinta }],
+]);
+const mMin = manecilla([
+  ["path", { d: "M198.3,222 L201.7,222 L200.9,131 L199.1,131 Z", ...tinta }],
+  ["circle", { cx: 200, cy: 126, r: 4.6, fill: "none", stroke: "#161316", "stroke-width": 1.8 }],
+  ["path", { d: "M200,106 L202.6,121 L197.4,121 Z", ...tinta }],
+]);
+const mSeg = manecilla([
+  ["line", { x1: 200, y1: 222, x2: 200, y2: 110, stroke: "#9c1a30", "stroke-width": 1.2, "stroke-linecap": "round" }],
+  ["path", { d: "M200,236 C196,231.5 192.5,228.5 194.5,225.2 C196,222.8 199,223.6 200,225.6 C201,223.6 204,222.8 205.5,225.2 C207.5,228.5 204,231.5 200,236 Z", fill: "#9c1a30" }],
+]);
+s("circle", { cx: 200, cy: 200, r: 5.6, fill: "url(#plata)", stroke: "#23282d", "stroke-width": 0.7 }, manos);
+s("circle", { cx: 200, cy: 200, r: 1.9, fill: "#9c1a30" }, manos);
 
-/* ---- Los textos ------------------------------------------------------- */
+/* 12. El cristal del reloj: un reflejo quieto. */
+s("path", { d: "M130,160 A82,82 0 0 1 238,122 A96,96 0 0 0 140,178 Z", fill: "url(#cristal)", "pointer-events": "none" }, marco);
 
-let pidiendo = null;
-function decir(texto, firma) {
-  if (pidiendo === texto) return;
-  pidiendo = texto;
-  elPie.classList.remove("is-visible");
-  setTimeout(() => {
-    elPie.textContent = texto;
-    if (firma) {
-      const em = document.createElement("em");
-      em.textContent = firma;
-      elPie.append(em);
-    }
-    elPie.classList.add("is-visible");
-  }, suave ? 10 : 300);
+/* ══════════════════════════════════════════════════════════════════════
+   EL FONDO: papel crema moteado arriba, terciopelo rojo abajo
+   ══════════════════════════════════════════════════════════════════════ */
+let A = 0, H = 0, dpr = 1, costura = 0;
+const gFondo = fondo.getContext("2d");
+const gPelo = pelo.getContext("2d");
+const gBr = brillos.getContext("2d");
+
+function pintarFondo() {
+  const g = gFondo;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const yc = costura;
+
+  // El papel.
+  let gr = g.createLinearGradient(0, 0, 0, yc);
+  gr.addColorStop(0, "#f4ecdc");
+  gr.addColorStop(1, "#e8dac1");
+  g.fillStyle = gr;
+  g.fillRect(0, 0, A, yc);
+  for (let i = 0; i < 12; i++) {
+    const x = Math.random() * A, y = Math.random() * yc, r = azar(50, 170);
+    const m = g.createRadialGradient(x, y, 0, x, y, r);
+    const claro = Math.random() < 0.8;
+    m.addColorStop(0, claro ? "rgba(255,252,244,.3)" : "rgba(226,196,150,.07)");
+    m.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = m;
+    g.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  // Las motas: muchas finísimas y unas pocas más gordas, como el papel de la portada.
+  const n = Math.round(A * yc / 90);
+  for (let i = 0; i < n; i++) {
+    const x = Math.random() * A, y = Math.random() * yc;
+    const r = Math.pow(Math.random(), 3.2) * 1.7 + 0.22;
+    const tono = Math.random();
+    g.fillStyle = tono < 0.7 ? `rgba(46,30,22,${azar(0.25, 0.75)})` : tono < 0.9 ? `rgba(120,76,52,${azar(0.2, 0.5)})` : `rgba(150,40,40,${azar(0.15, 0.4)})`;
+    g.beginPath();
+    g.ellipse(x, y, r, r * azar(0.6, 1), Math.random() * 3, 0, TAU);
+    g.fill();
+  }
+  // Fibras del papel.
+  g.lineWidth = 0.5;
+  for (let i = 0; i < A * yc / 2600; i++) {
+    const x = Math.random() * A, y = Math.random() * yc, l = azar(4, 14), a = Math.random() * TAU;
+    g.strokeStyle = `rgba(120,96,70,${azar(0.05, 0.12)})`;
+    g.beginPath();
+    g.moveTo(x, y);
+    g.quadraticCurveTo(x + Math.cos(a) * l * 0.5 + azar(-2, 2), y + Math.sin(a) * l * 0.5 + azar(-2, 2), x + Math.cos(a) * l, y + Math.sin(a) * l);
+    g.stroke();
+  }
+
+  // El terciopelo.
+  gr = g.createLinearGradient(0, yc, 0, H);
+  gr.addColorStop(0, "#7b111c");
+  gr.addColorStop(0.45, "#5f0a14");
+  gr.addColorStop(1, "#37040b");
+  g.fillStyle = gr;
+  g.fillRect(0, yc, A, H - yc);
+  // Pliegues suaves: franjas de luz y sombra que van de arriba abajo.
+  const f1 = azar(0.006, 0.01), f2 = azar(0.017, 0.024), fase = Math.random() * 6;
+  for (let x = 0; x < A; x += 2) {
+    const v = Math.sin(x * f1 + fase) * 0.6 + Math.sin(x * f2 + fase * 2) * 0.4;
+    g.fillStyle = v > 0 ? `rgba(255,110,125,${(v * 0.07).toFixed(3)})` : `rgba(10,0,2,${(-v * 0.18).toFixed(3)})`;
+    g.fillRect(x, yc, 2, H - yc);
+  }
+  // El pelo del terciopelo: un grano muy fino.
+  for (let i = 0; i < A * (H - yc) / 22; i++) {
+    const x = Math.random() * A, y = yc + Math.random() * (H - yc);
+    g.fillStyle = Math.random() < 0.5 ? "rgba(255,120,135,.05)" : "rgba(0,0,0,.09)";
+    g.fillRect(x, y, 1, azar(1, 2.5));
+  }
+  // La costura: el papel proyecta una sombrita sobre la tela.
+  gr = g.createLinearGradient(0, yc, 0, yc + 16);
+  gr.addColorStop(0, "rgba(20,0,4,.55)");
+  gr.addColorStop(1, "rgba(20,0,4,0)");
+  g.fillStyle = gr;
+  g.fillRect(0, yc, A, 16);
+  g.fillStyle = "rgba(255,248,236,.5)";
+  g.fillRect(0, yc - 1, A, 1);
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   LOS SECRETOS
+   MEDIDAS
    ══════════════════════════════════════════════════════════════════════ */
-
-/* 1. Tocar «mi-la-mi» seguidas: la bailarina se acelera y suelta un giro
-      bueno. Porque «mi la mi» es «mírame» mal escrito, y porque sí.      */
-const SECRETO_NOTAS = ["mi", "la", "mi"];
-
-function vigilarSecreto(letra) {
-  ultimasNotas.push(letra);
-  if (ultimasNotas.length > 6) ultimasNotas.shift();
-  const fin = ultimasNotas.slice(-SECRETO_NOTAS.length).join(" ");
-  if (fin === SECRETO_NOTAS.join(" ")) {
-    ultimasNotas.length = 0;
-    const b = document.getElementById("bailarina");
-    b.style.animationDuration = "1.1s";
-    mundo.classList.add("is-sonando");
-    brilloMotas = 1;
-    decir("Mi. La. Mi.", "Mírame, que es lo único que te pido.");
-    for (let k = 0; k < 7; k++) {
-      setTimeout(() => pua(hz(["E5","A5","E6","A5","C6","E6","A6"][k]), undefined, 0.7), k * 150);
-    }
-    setTimeout(() => {
-      b.style.animationDuration = "";
-      if (!sonando) mundo.classList.remove("is-sonando");
-    }, 5200);
-  }
-}
-
-/* 2. Abrir y cerrar la caja siete veces: se queda abierta y lo dice. */
-let aperturas = 0;
-function contarAperturas() {
-  aperturas++;
-  if (aperturas === 7) {
-    setTimeout(() => decir("Siete veces la has abierto.", "Y yo te la abriría setenta más."), 1600);
-    brilloMotas = 1;
-  }
-}
-
-/* 3. Mantener la tapa pulsada tres segundos con la caja abierta: sale una
-      nota que no está en ninguna tecla, la más grave de todas.           */
-let apretando = null;
-tapa.addEventListener("pointerdown", () => {
-  apretando = setTimeout(() => {
-    if (!abierta) return;
-    despertarAudio();
-    pua(hz("C3"), undefined, 1.1);
-    pua(hz("G3"), audio ? audio.currentTime + 0.25 : undefined, 0.8);
-    decir("Esa nota no está en ninguna tecla.", "Como algunas cosas que te digo.");
-    brilloMotas = 1;
-  }, 3000);
-});
-const soltarTapa = () => { clearTimeout(apretando); apretando = null; };
-tapa.addEventListener("pointerup", soltarTapa);
-tapa.addEventListener("pointercancel", soltarTapa);
-tapa.addEventListener("pointerleave", soltarTapa);
-
-/* ══════════════════════════════════════════════════════════════════════
-   EL POLVO DORADO
-   ══════════════════════════════════════════════════════════════════════ */
-
-let A = 0, H = 0, dpr = 1;
-let motas = [];
-let brilloMotas = 0;
+let wMeca = 0, hMeca = 0;
+const gMeca = meca.getContext("2d");
 
 function medir() {
   const r = mundo.getBoundingClientRect();
   if (!r.width || !r.height) return;
   A = r.width; H = r.height;
   dpr = Math.min(window.devicePixelRatio || 1, 2);
-  lienzo.width  = Math.round(A * dpr);
-  lienzo.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  sembrar();
+  for (const c of [fondo, pelo, brillos]) {
+    c.width = Math.round(A * dpr);
+    c.height = Math.round(H * dpr);
+  }
+  const rf = flota.getBoundingClientRect();
+  costura = rf.top - r.top + rf.height / 2;
+  mundo.style.setProperty("--costura", costura + "px");
+  pintarFondo();
+  gPelo.setTransform(dpr, 0, 0, dpr, 0, 0);
+  gBr.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const rm = meca.getBoundingClientRect();
+  wMeca = rm.width; hMeca = rm.height;
+  meca.width = Math.round(wMeca * dpr);
+  meca.height = Math.round(hMeca * dpr);
+  gMeca.setTransform(dpr, 0, 0, dpr, 0, 0);
+  sembrarMotas();
 }
-new ResizeObserver(medir).observe(mundo);
+new ResizeObserver(() => requestAnimationFrame(medir)).observe(mundo);
 
-const azar = (a, b) => a + Math.random() * (b - a);
+/* De la pantalla al dibujo del marco (viewBox -50..450). */
+function aMarco(cx, cy) {
+  const r = marco.getBoundingClientRect();
+  return [(cx - r.left) / r.width * 500 - 50, (cy - r.top) / r.height * 500 - 50];
+}
+function aPantalla(x, y) {
+  const r = marco.getBoundingClientRect(), m = mundo.getBoundingClientRect();
+  return [r.left - m.left + (x + 50) / 500 * r.width, r.top - m.top + (y + 50) / 500 * r.height];
+}
 
-function sembrar() {
-  const n = A * H < 200000 ? Math.round(CONF.motas * 0.6) : CONF.motas;
-  motas = new Array(n);
-  for (let i = 0; i < n; i++) {
-    motas[i] = {
-      x: Math.random() * A,
-      y: Math.random() * H,
-      r: azar(0.6, 2.1),
-      vy: azar(-9, -26),
-      vx: azar(-5, 5),
-      f: Math.random() * 6.283,
-      w: azar(0.6, 1.7),
+/* ══════════════════════════════════════════════════════════════════════
+   EL SONIDO
+   ══════════════════════════════════════════════════════════════════════ */
+let ac = null, salida = null, eco = null;
+
+function despertar() {
+  if (ac) { if (ac.state === "suspended") ac.resume(); return ac; }
+  try {
+    ac = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
+  } catch { ac = null; return null; }
+  salida = ac.createGain();
+  salida.gain.value = 0.9;
+  salida.connect(ac.destination);
+  // Una reverberación pequeñita, de cuarto de madera: le da aire a la caja.
+  const largo = Math.floor(ac.sampleRate * 1.8);
+  const ir = ac.createBuffer(2, largo, ac.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const d = ir.getChannelData(c);
+    for (let i = 0; i < largo; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / largo, 3.2);
+  }
+  eco = ac.createConvolver();
+  eco.buffer = ir;
+  const mezcla = ac.createGain();
+  mezcla.gain.value = 0.28;
+  eco.connect(mezcla).connect(salida);
+  return ac;
+}
+
+const SEMI = { C: 0, Cs: 1, D: 2, Ds: 3, E: 4, F: 5, Fs: 6, G: 7, Gs: 8, A: 9, As: 10, B: 11 };
+const midi = (n) => { const m = /^([A-G]s?)(-?\d)$/.exec(n); return m ? SEMI[m[1]] + (+m[2] + 1) * 12 : 69; };
+const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
+
+/* Una púa de caja de música: lámina de metal, armónicos que no son
+   múltiplos exactos, golpe brillante y cola dulce. */
+function pua(f, t, v = 1) {
+  if (!ac) return;
+  const parciales = [[1, 1, 2.4], [2.02, 0.18, 1.4], [2.76, 0.3, 0.9], [5.4, 0.12, 0.35], [8.9, 0.05, 0.12]];
+  const bus = ac.createGain();
+  bus.gain.value = v * 0.2;
+  bus.connect(salida);
+  bus.connect(eco);
+  for (const [mult, amp, dur] of parciales) {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = "sine";
+    o.frequency.value = f * mult * (1 + azar(-0.0015, 0.0015));
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(amp, t + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(bus);
+    o.start(t);
+    o.stop(t + dur + 0.05);
+  }
+}
+
+/* Un clic de trinquete, para la cuerda y para las manecillas. */
+function clic(t, v = 1, tono = 1) {
+  if (!ac) return;
+  const n = Math.floor(ac.sampleRate * 0.02);
+  const b = ac.createBuffer(1, n, ac.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 6);
+  const src = ac.createBufferSource();
+  src.buffer = b;
+  const bp = ac.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.frequency.value = 3200 * tono;
+  bp.Q.value = 4;
+  const g = ac.createGain();
+  g.gain.value = 0.35 * v;
+  src.connect(bp).connect(g).connect(salida);
+  src.start(t);
+}
+
+/* Una campanita de plata, para las crestas del marco. */
+function campanita(nota) {
+  if (!despertar()) return;
+  const t = ac.currentTime + 0.01, f = hz(nota);
+  for (const [m, a, d] of [[1, 1, 2.6], [2.4, 0.4, 1.6], [4.6, 0.2, 0.9], [6.9, 0.1, 0.5]]) {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.value = f * m;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.07 * a, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g);
+    g.connect(salida);
+    g.connect(eco);
+    o.start(t);
+    o.stop(t + d + 0.05);
+  }
+}
+
+/* ---- ojos.mp3 --------------------------------------------------------- */
+let cancion = null, volCancion = null, medidor = null, datosMedidor = null, rutaFallida = false;
+
+function prepararCancion() {
+  if (cancion || !ARCHIVOS.ojos || rutaFallida) return cancion;
+  cancion = new Audio();
+  cancion.preload = "auto";
+  cancion.src = ARCHIVOS.ojos;
+  cancion.setAttribute("data-libro-cuanto", "0.06");
+  cancion.preservesPitch = false;
+  cancion.mozPreservesPitch = false;
+  cancion.webkitPreservesPitch = false;
+  cancion.addEventListener("ended", alAcabar);
+  cancion.addEventListener("error", () => {
+    rutaFallida = true;
+    const eraYo = modo === "cancion" && (estado === "sonando" || estado === "cuerda");
+    cancion = null;
+    if (eraYo) aLaMelodia();
+  });
+  // Por WebAudio sólo con el libro publicado: abierto como archivo, el
+  // navegador la daría por «ajena» y la dejaría muda.
+  if (/^https?:$/.test(location.protocol) && despertar()) {
+    try {
+      const fuente = ac.createMediaElementSource(cancion);
+      volCancion = ac.createGain();
+      volCancion.gain.value = 0;
+      medidor = ac.createAnalyser();
+      medidor.fftSize = 1024;
+      datosMedidor = new Uint8Array(medidor.frequencyBinCount);
+      fuente.connect(volCancion);
+      volCancion.connect(medidor);
+      volCancion.connect(ac.destination);
+    } catch { volCancion = null; medidor = null; }
+  }
+  return cancion;
+}
+function volumenCancion(v, seg) {
+  if (!cancion) return;
+  if (volCancion) {
+    const g = volCancion.gain, t = ac.currentTime;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(v, t + seg);
+  } else {
+    const desde = cancion.volume, t0 = performance.now();
+    const paso = (ahora) => {
+      const k = Math.min(1, (ahora - t0) / (seg * 1000));
+      try { cancion.volume = clamp(desde + (v - desde) * k, 0, 1); } catch { /* iOS */ }
+      if (k < 1) requestAnimationFrame(paso);
     };
+    requestAnimationFrame(paso);
   }
 }
 
-/* Un destello donde se ha pulsado una tecla. */
+/* ---- La melodía propia, por si falta ojos.mp3 ------------------------- */
+const NEGRAS = CONF.melodia.reduce((t, [, d]) => t + d, 0);
+const notas = [];
+{
+  let b = 0;
+  for (const [n, d] of CONF.melodia) { notas.push({ b, m: midi(n), v: 0.9 }); b += d; }
+  for (const [n, b2] of CONF.bajos) notas.push({ b: b2, m: midi(n), v: 0.42 });
+  notas.sort((x, y) => x.b - y.b);
+}
+const TOTAL = NEGRAS * CONF.vueltas;
+const mel = { beat: 0, hasta: 0, ritmo: 1 };
+
+function arrancarMelodia(desde) {
+  mel.beat = desde * TOTAL;
+  mel.hasta = mel.beat;
+  mel.ritmo = 1;
+}
+/* Programa las notas que caen en los próximos 150 ms. Se llama cada
+   fotograma, así que pausar es tan fácil como dejar de llamarla. */
+function programarMelodia(dt) {
+  const bps = CONF.compas / 60;
+  // En la última vuelta se le va acabando la cuerda: cada vez más despacio.
+  const ultima = mel.beat > TOTAL - NEGRAS ? (mel.beat - (TOTAL - NEGRAS)) / NEGRAS : 0;
+  const objetivo = estado === "parando" ? 0.35 : 1 - ultima * 0.2;
+  mel.ritmo = acercar(mel.ritmo, objetivo, estado === "parando" ? 2.2 : 1, dt);
+  mel.beat += dt * bps * mel.ritmo;
+  const ventana = mel.beat + 0.15 * bps * mel.ritmo;
+  while (mel.hasta < ventana && mel.hasta < TOTAL) {
+    const vuelta = Math.floor(mel.hasta / NEGRAS);
+    const dentro = mel.hasta - vuelta * NEGRAS;
+    let sig = null;
+    for (const n of notas) if (n.b >= dentro - 1e-6) { sig = n; break; }
+    const bNota = sig ? vuelta * NEGRAS + sig.b : (vuelta + 1) * NEGRAS;
+    if (bNota >= ventana || bNota >= TOTAL) { mel.hasta = Math.min(ventana, TOTAL); break; }
+    if (sig) {
+      const t = ac.currentTime + Math.max(0, (bNota - mel.beat) / (bps * mel.ritmo));
+      const baja = 0.94 + 0.06 * mel.ritmo;
+      for (const n of notas) if (Math.abs(n.b - sig.b) < 1e-6) pua(hz(n.m) * baja, t, n.v);
+      mel.hasta = bNota + 1e-4;
+    } else mel.hasta = bNota;
+  }
+  if (mel.beat >= TOTAL + 0.5 && estado === "sonando") alAcabar();
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL ESTADO
+   quieta → cuerda → sonando ⇄ parando → pausa … → fin
+   ══════════════════════════════════════════════════════════════════════ */
+let estado = "quieta";
+let modo = ARCHIVOS.ojos ? "cancion" : "melodia";
+let relojEstado = 0;
+let fraseN = 0, relojFrase = 0;
+
+function progreso() {
+  if (modo === "cancion" && cancion && cancion.duration > 0) return clamp(cancion.currentTime / cancion.duration, 0, 1);
+  return clamp(mel.beat / TOTAL, 0, 1);
+}
+function duracion() {
+  if (modo === "cancion" && cancion && cancion.duration > 0) return cancion.duration;
+  return TOTAL * 60 / CONF.compas;
+}
+
+function decir(frase, pista) {
+  elFrase.classList.add("is-fuera");
+  if (pista !== undefined) elPista.classList.add("is-fuera");
+  setTimeout(() => {
+    elFrase.textContent = frase;
+    elFrase.classList.remove("is-fuera");
+    if (pista !== undefined) {
+      elPista.textContent = pista;
+      elPista.classList.toggle("is-fuera", !pista);
+    }
+  }, suave ? 20 : 420);
+}
+
+let posCuerda = 0, desbloqueada = false, arrancadaEnCuerda = false;
+function darCuerda() {
+  if (!despertar()) return;
+  if (modo === "cancion") prepararCancion();
+  /* La canción arranca YA, dentro del toque —el iPhone no deja que un audio
+     empiece solo después—, pero callada: mientras suena la cuerda se queda
+     sin volumen y luego vuelve al punto donde estaba. */
+  if (modo === "cancion" && cancion && !desbloqueada) {
+    const acabada = cancion.ended || (cancion.duration > 0 && cancion.currentTime >= cancion.duration - 0.2);
+    posCuerda = acabada ? 0 : cancion.currentTime;
+    if (volCancion) volumenCancion(0, 0.01); else cancion.muted = true;
+    cancion.playbackRate = 1;
+    const pr = cancion.play();
+    if (pr && pr.then) pr.then(() => { desbloqueada = true; }, () => {});
+    arrancadaEnCuerda = true;
+  }
+  estado = "cuerda";
+  relojEstado = 0;
+  mundo.classList.add("is-sonando");
+  decir(...CONF.textos.cuerda);
+  // La cuerda: siete clics que van subiendo, y la llave girando.
+  const t = ac.currentTime + 0.02;
+  for (let i = 0; i < 7; i++) clic(t + i * 0.075, 0.7 + i * 0.05, 0.85 + i * 0.03);
+  giroLlaveObj += TAU * 1.5;
+  destello(200, 200, 26);
+}
+
+function aLaMelodia() {
+  modo = "melodia";
+  pinosDeMelodia();
+  arrancarMelodia(0);
+}
+function empezarASonar() {
+  const venia = estado;
+  estado = "sonando";
+  relojFrase = 0;
+  if (modo === "cancion" && cancion) {
+    if (venia === "cuerda" && arrancadaEnCuerda) { try { cancion.currentTime = posCuerda; } catch { /* aún cargando */ } }
+    arrancadaEnCuerda = false;
+    if (!volCancion) { try { cancion.volume = 0; } catch { /* iOS */ } }
+    cancion.muted = false;
+    cancion.playbackRate = 1;
+    if (cancion.paused) {
+      const p = cancion.play();
+      if (p && p.then) p.then(() => { desbloqueada = true; }, () => aLaMelodia());
+    }
+    volumenCancion(1, 0.9);
+  } else {
+    if (mel.beat >= TOTAL) arrancarMelodia(0);
+    mel.ritmo = 1;
+  }
+  decir(CONF.textos.sonando[fraseN % CONF.textos.sonando.length], CONF.textos.pistaSonando);
+  fraseN++;
+}
+
+function parar() {
+  estado = "parando";
+  relojEstado = 0;
+  if (modo === "cancion" && cancion) volumenCancion(0, 1.1);
+}
+function quedarseEnPausa() {
+  estado = "pausa";
+  mundo.classList.remove("is-sonando");
+  if (modo === "cancion" && cancion) { cancion.pause(); cancion.playbackRate = 1; }
+  decir(...CONF.textos.pausa);
+}
+function alAcabar() {
+  if (estado === "fin") return;
+  estado = "fin";
+  mundo.classList.remove("is-sonando");
+  if (modo === "cancion" && cancion) { volumenCancion(0, 0.3); }
+  decir(...CONF.textos.fin);
+  for (let i = 0; i < 3; i++) setTimeout(() => destello(200, 200, 30), i * 260);
+}
+
+function tocarReloj() {
+  if (estado === "quieta" || estado === "pausa" || estado === "fin") {
+    if (estado === "fin") { if (modo === "cancion" && cancion) cancion.currentTime = 0; else arrancarMelodia(0); }
+    darCuerda();
+  } else if (estado === "sonando" || estado === "cuerda") {
+    parar();
+  } else if (estado === "parando") {
+    // Se arrepintió a medio parar: vuelve a sonar desde donde iba.
+    empezarASonar();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LAS MANOS SOBRE EL RELOJ
+   Un toque suena o para; arrastrar alrededor mueve las manecillas y busca
+   otra parte de la canción; tocar una cresta suena a campanita; arrastrar
+   por el terciopelo le cambia el pelo, como a la tela de verdad.
+   ══════════════════════════════════════════════════════════════════════ */
+let dedo = null;
+let buscando = false, buscaP = 0, ultimoClicAng = 0, ultimoBusca = 0;
+let luzX = 0.3, luzY = 0.4, luzObjX = 0.3, luzObjY = 0.4;
+const NOTAS_CRESTA = ["E6", "B5", "G6", "D6"];
+
+mundo.addEventListener("pointerdown", (e) => {
+  despertar();
+  const [x, y] = aMarco(e.clientX, e.clientY);
+  const dx = x - 200, dy = y - 200, r = Math.hypot(dx, dy);
+  const m = mundo.getBoundingClientRect();
+  const px = e.clientX - m.left, py = e.clientY - m.top;
+  let zona = "fuera";
+  if (r < 104) zona = "reloj";
+  else if (Math.abs(dx) + Math.abs(dy) < 182) zona = "marco";
+  else {
+    for (let k = 0; k < 4; k++) {
+      const a = k * Math.PI / 2 - Math.PI / 2;
+      const cx = 200 + Math.cos(a) * 205, cy = 200 + Math.sin(a) * 205;
+      if (Math.hypot(x - cx, y - cy) < 34) zona = "cresta" + k;
+    }
+    if (Math.hypot(x - 200, y - 428) < 22) zona = "llave";
+  }
+  dedo = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), zona, movido: false, px, py, ang0: Math.atan2(dy, dx) };
+  try { mundo.setPointerCapture(e.pointerId); } catch { /* nada */ }
+  luzObjX = px / A; luzObjY = (py - costura) / Math.max(1, H - costura);
+  if (zona.startsWith("cresta")) {
+    const k = +zona.slice(6);
+    campanita(NOTAS_CRESTA[k]);
+    const a = k * Math.PI / 2 - Math.PI / 2;
+    destello(200 + Math.cos(a) * 205, 200 + Math.sin(a) * 205, 16);
+  } else if (zona === "llave") {
+    giroLlaveObj += TAU;
+    const t = ac ? ac.currentTime : 0;
+    for (let i = 0; i < 4; i++) clic(t + i * 0.07, 0.6, 1.1);
+  }
+});
+
+mundo.addEventListener("pointermove", (e) => {
+  const m = mundo.getBoundingClientRect();
+  const px = e.clientX - m.left, py = e.clientY - m.top;
+  luzObjX = px / A; luzObjY = (py - costura) / Math.max(1, H - costura);
+  if (!dedo || e.pointerId !== dedo.id) return;
+  if (!dedo.movido && Math.hypot(e.clientX - dedo.x0, e.clientY - dedo.y0) > 9) dedo.movido = true;
+  if (!dedo.movido) return;
+
+  if (dedo.zona === "reloj" || buscando) {
+    // Las manecillas bajo el dedo.
+    const [x, y] = aMarco(e.clientX, e.clientY);
+    let ang = Math.atan2(y - 200, x - 200) + Math.PI / 2;
+    if (ang < 0) ang += TAU;
+    if (!buscando) {
+      buscando = true;
+      decir(...CONF.textos.buscando);
+    }
+    buscaP = ang / TAU;
+    if (Math.abs(ang - ultimoClicAng) > TAU / 60) {
+      ultimoClicAng = ang;
+      if (ac) clic(ac.currentTime, 0.45, 1.3);
+    }
+    const ahora = performance.now();
+    if (ahora - ultimoBusca > 140) { ultimoBusca = ahora; irA(buscaP, false); }
+  } else if (py > costura) {
+    // Cepillar el terciopelo.
+    cepillar(dedo.px, dedo.py, px, py);
+    dedo.px = px; dedo.py = py;
+  } else {
+    // En el papel, el polvo se aparta del dedo.
+    soplarMotas(px, py);
+    dedo.px = px; dedo.py = py;
+  }
+});
+
+function soltar(e) {
+  if (!dedo || e.pointerId !== dedo.id) return;
+  const d = dedo;
+  dedo = null;
+  if (buscando) {
+    buscando = false;
+    irA(buscaP, true);
+    if (estado === "sonando") decir(CONF.textos.sonando[fraseN++ % CONF.textos.sonando.length], CONF.textos.pistaSonando);
+    else if (estado === "pausa" || estado === "fin" || estado === "quieta") {
+      if (estado === "fin") estado = "pausa";
+      decir(...CONF.textos.pausa);
+    }
+    return;
+  }
+  if (!d.movido && d.zona === "reloj" && performance.now() - d.t0 < 600) tocarReloj();
+  else if (!d.movido && d.zona === "marco") {
+    campanita(["C6", "E6", "G6"][Math.floor(Math.random() * 3)]);
+    const [x, y] = aMarco(e.clientX, e.clientY);
+    destello(x, y, 12);
+  }
+}
+mundo.addEventListener("pointerup", soltar);
+mundo.addEventListener("pointercancel", soltar);
+
+function irA(p, fin) {
+  if (modo === "cancion" && cancion && cancion.duration > 0) {
+    try { cancion.currentTime = clamp(p, 0, 0.999) * cancion.duration; } catch { /* aún cargando */ }
+  } else {
+    mel.beat = clamp(p, 0, 0.999) * TOTAL;
+    mel.hasta = mel.beat;
+  }
+  if (fin && estado === "quieta") estado = "pausa";
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PARTÍCULAS: polvo en el papel, chispas de plata y notas que suben
+   ══════════════════════════════════════════════════════════════════════ */
+let motas = [];
+function sembrarMotas() {
+  const n = suave ? 20 : Math.round(clamp(A * H / 9000, 28, 70));
+  motas = [];
+  for (let i = 0; i < n; i++) motas.push(nuevaMota(true));
+}
+function nuevaMota(inicio) {
+  const oro = Math.random() < 0.35;
+  return {
+    x: Math.random() * A,
+    y: inicio ? Math.random() * H : H + 10,
+    r: oro ? azar(0.8, 2.2) : azar(0.4, 1.1),
+    vx: azar(-4, 4), vy: azar(-4, -14),
+    f: Math.random() * TAU, w: azar(0.4, 1.3),
+    oro,
+    ex: 0, ey: 0,
+  };
+}
+function soplarMotas(px, py) {
+  for (const m of motas) {
+    const dx = m.x - px, dy = m.y - py, d = Math.hypot(dx, dy);
+    if (d < 70 && d > 0.1) { m.ex += dx / d * 90 * (1 - d / 70); m.ey += dy / d * 90 * (1 - d / 70); }
+  }
+}
+
 const chispas = [];
-function chispear(boton) {
-  const rb = boton.getBoundingClientRect();
-  const rm = mundo.getBoundingClientRect();
-  const x = rb.left - rm.left + rb.width / 2;
-  const y = rb.top - rm.top;
-  for (let i = 0; i < 7; i++) {
-    chispas.push({
-      x, y,
-      vx: azar(-42, 42),
-      vy: azar(-110, -40),
-      v: 1,
-    });
+function destello(x, y, n) {
+  const [sx, sy] = aPantalla(x, y);
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * TAU, v = azar(20, 120);
+    chispas.push({ x: sx, y: sy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 20, vida: 1, dur: azar(0.6, 1.3), r: azar(1.5, 3.8) });
   }
-  if (chispas.length > 90) chispas.splice(0, chispas.length - 90);
+  if (chispas.length > 220) chispas.splice(0, chispas.length - 220);
+}
+/* Los destellos quietos que aparecen y se apagan sobre la plata. */
+const titilos = [];
+function puntoEnLaPlata() {
+  const k = Math.random();
+  if (k < 0.62) {
+    // En la moldura.
+    const lado = Math.floor(Math.random() * 4), t = Math.random();
+    const h = azar(150, 176);
+    const P = [[200, 200 - h], [200 + h, 200], [200, 200 + h], [200 - h, 200]];
+    const a = P[lado], b = P[(lado + 1) % 4];
+    return [lerp(a[0], b[0], t), lerp(a[1], b[1], t)];
+  }
+  if (k < 0.85) {
+    const a = Math.random() * TAU;
+    return [200 + Math.cos(a) * 104, 200 + Math.sin(a) * 104];
+  }
+  const c = Math.floor(Math.random() * 4) * Math.PI / 2 - Math.PI / 2;
+  return [200 + Math.cos(c) * azar(185, 215) + azar(-18, 18), 200 + Math.sin(c) * azar(185, 215) + azar(-18, 18)];
 }
 
-let t0 = performance.now();
-let reloj = 0;
+/* Las notas que salen del reloj mientras suena. Se dibujan una vez en su
+   propio lienzo con su halo, y luego sólo se estampan: un `shadowBlur` por
+   nota y por fotograma se comería el teléfono. */
+const GLIFOS = ["♪", "♫", "♩", "♬"];
+const sellos = GLIFOS.map((gl) => {
+  const c = document.createElement("canvas");
+  const t = 64;
+  c.width = c.height = t;
+  const g = c.getContext("2d");
+  g.font = `${t * 0.62}px "Cormorant Garamond", Georgia, serif`;
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.shadowColor = "rgba(255,210,220,.9)";
+  g.shadowBlur = 10;
+  g.fillStyle = "#fffaf6";
+  g.fillText(gl, t / 2, t / 2 + 2);
+  return c;
+});
+const notasVuelo = [];
+function soltarNota(fuerza = 1) {
+  const lado = Math.random() < 0.5 ? -1 : 1;
+  const [x, y] = aPantalla(200 + lado * azar(40, 150), azar(70, 150));
+  notasVuelo.push({
+    x, y, vx: lado * azar(8, 26), vy: azar(-38, -60) * (0.8 + fuerza * 0.4),
+    rot: azar(-0.4, 0.4), vr: azar(-0.6, 0.6),
+    t: 0, dur: azar(3.2, 5.2), tam: azar(14, 24) * (0.8 + fuerza * 0.3),
+    s: sellos[Math.floor(Math.random() * sellos.length)], f: Math.random() * TAU,
+  });
+  if (notasVuelo.length > 40) notasVuelo.shift();
+}
+
+/* Un sello redondo y suave para cepillar el terciopelo. */
+const brocha = (() => {
+  const c = document.createElement("canvas");
+  c.width = c.height = 64;
+  const g = c.getContext("2d");
+  const r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, "rgba(255,138,150,.075)");
+  r.addColorStop(1, "rgba(255,138,150,0)");
+  g.fillStyle = r;
+  g.fillRect(0, 0, 64, 64);
+  return c;
+})();
+let peloVivo = 0;
+function cepillar(x0, y0, x1, y1) {
+  const d = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(d / 5));
+  gPelo.globalCompositeOperation = "lighter";
+  for (let i = 0; i <= n; i++) {
+    const x = lerp(x0, x1, i / n), y = lerp(y0, y1, i / n);
+    if (y < costura + 6) continue;
+    gPelo.drawImage(brocha, x - 26, y - 26, 52, 52);
+  }
+  peloVivo = 7;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL MECANISMO: el cilindro de púas y el peine de acero
+   ══════════════════════════════════════════════════════════════════════ */
+const DIENTES = 18;
+const dientes = Array.from({ length: DIENTES }, (_, i) => ({ v: 0, f: 30 + i * 2.2 }));
+const CORTE = -1.15;                // donde las púas pellizcan el peine
+let pinos = [];
+function pinosDeMelodia() {
+  const ms = notas.map((n) => n.m), lo = Math.min(...ms), hi = Math.max(...ms);
+  pinos = notas.map((n) => ({
+    d: Math.round((n.m - lo) / Math.max(1, hi - lo) * (DIENTES - 1)),
+    a: n.b / NEGRAS * TAU,
+    antes: 0,
+  }));
+}
+function pinosAlAzar() {
+  pinos = [];
+  for (let i = 0; i < 110; i++) pinos.push({ d: Math.floor(Math.random() * DIENTES), a: Math.random() * TAU, antes: 0 });
+}
+if (modo === "melodia") pinosDeMelodia(); else pinosAlAzar();
+let giroCil = 0;
+
+function dibujarMeca(dt, t) {
+  if (!wMeca) return;
+  const g = gMeca, W = wMeca, Hh = hMeca;
+  g.clearRect(0, 0, W, Hh);
+  let gr = g.createLinearGradient(0, 0, 0, Hh);
+  gr.addColorStop(0, "#23100c");
+  gr.addColorStop(1, "#0e0504");
+  g.fillStyle = gr;
+  g.fillRect(0, 0, W, Hh);
+
+  const x0 = W * 0.07, x1 = W * 0.93, cy = Hh * 0.33, r = Hh * 0.27;
+  // El cilindro de latón.
+  gr = g.createLinearGradient(0, cy - r, 0, cy + r);
+  gr.addColorStop(0, "#3a2810");
+  gr.addColorStop(0.28, "#c79b48");
+  gr.addColorStop(0.45, "#f7de96");
+  gr.addColorStop(0.7, "#a57a31");
+  gr.addColorStop(1, "#2e1f0b");
+  g.fillStyle = gr;
+  g.fillRect(x0, cy - r, x1 - x0, r * 2);
+  g.fillStyle = "#5a4219";
+  g.fillRect(x0 - 5, cy - r - 2, 5, r * 2 + 4);
+  g.fillRect(x1, cy - r - 2, 5, r * 2 + 4);
+
+  // Las púas.
+  const paso = (x1 - x0) / DIENTES;
+  for (const p of pinos) {
+    let fi = p.a - giroCil;
+    fi = ((fi + Math.PI) % TAU + TAU) % TAU - Math.PI;
+    if (p.antes > CORTE && fi <= CORTE && fi > CORTE - 0.6) {
+      dientes[p.d].v = 1;
+      if (modo === "cancion" && Math.random() < 0.08) soltarNota(0.7);
+    }
+    p.antes = fi;
+    const frente = Math.cos(fi);
+    if (frente <= 0) continue;
+    const y = cy - Math.sin(fi) * r;
+    g.fillStyle = `rgba(255,244,210,${0.35 + frente * 0.65})`;
+    g.beginPath();
+    g.arc(x0 + (p.d + 0.5) * paso, y, 0.6 + frente * 1.1, 0, TAU);
+    g.fill();
+  }
+
+  // El peine de acero.
+  const base = Hh * 0.92, punta = cy + r * 0.72;
+  gr = g.createLinearGradient(0, punta, 0, base);
+  gr.addColorStop(0, "#e9edf1");
+  gr.addColorStop(0.5, "#8d969f");
+  gr.addColorStop(1, "#4b525a");
+  for (let i = 0; i < DIENTES; i++) {
+    const dn = dientes[i];
+    dn.v *= Math.exp(-dt * 5.5);
+    const x = x0 + (i + 0.5) * paso;
+    const w = paso * 0.56;
+    const largo = (base - punta) * (1 - (i / DIENTES) * 0.18);
+    const off = Math.sin(t * dn.f) * dn.v * 2.4;
+    g.fillStyle = gr;
+    g.beginPath();
+    g.moveTo(x - w / 2, base);
+    g.lineTo(x - w / 2 + off, base - largo);
+    g.lineTo(x + w / 2 + off, base - largo);
+    g.lineTo(x + w / 2, base);
+    g.closePath();
+    g.fill();
+    if (dn.v > 0.05) {
+      g.fillStyle = `rgba(255,236,200,${dn.v * 0.7})`;
+      g.fillRect(x - w / 2 + off, base - largo, w, 2);
+    }
+  }
+  g.fillStyle = "#6c747c";
+  g.fillRect(x0 - 4, base, x1 - x0 + 8, Hh - base);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+let t0 = performance.now(), reloj = 0;
+let aHora = 305, aMin = 60, aSeg = 0;          // las 10:10 de los relojes bonitos
+let giroSeg = 0, giroLlave = 0, giroLlaveObj = 0, velCil = 0;
+let pulso = 0, energiaMedia = 0, ultimoGolpe = 0, relojNota = 0;
+let giroSol = 0, angLuz = 0;
+
+function angCerca(a, b) { let d = ((b - a) % 360 + 540) % 360 - 180; return d; }
 
 function paso(ahora) {
   requestAnimationFrame(paso);
-  if (!A || !H) return;
-
+  if (!A) return;
   let dt = (ahora - t0) / 1000;
   t0 = ahora;
-  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
-  else if (dt > 0.1) dt = 0.1;
+  if (!(dt > 0) || dt > 0.25) dt = 1 / 60;
   reloj += dt;
+  relojEstado += dt;
 
-  ctx.clearRect(0, 0, A, H);
+  const sonando = estado === "sonando" || estado === "parando";
 
-  brilloMotas = brilloMotas + (0 - brilloMotas) * (1 - Math.exp(-1.2 * dt));
-  const base = abierta ? 0.42 : 0.16;
-  const fuerza = base + brilloMotas * 0.55;
+  /* ---- El sonido y sus estados ---- */
+  if (estado === "cuerda" && relojEstado > 0.62) empezarASonar();
+  if (modo === "melodia" && ac && sonando && !buscando) programarMelodia(dt);
+  if (modo === "melodia" && ac && sonando && buscando) mel.hasta = mel.beat;
+  if (estado === "parando") {
+    if (modo === "cancion" && cancion) {
+      try { cancion.playbackRate = Math.max(0.6, 1 - relojEstado * 0.34); } catch { /* nada */ }
+    }
+    if (relojEstado > 1.15) quedarseEnPausa();
+  }
+  if (estado === "sonando") {
+    relojFrase += dt;
+    if (relojFrase > 11 && !buscando) {
+      relojFrase = 0;
+      decir(CONF.textos.sonando[fraseN++ % CONF.textos.sonando.length]);
+    }
+  }
+
+  /* ---- Cuánto «late» ahora la música ---- */
+  let energia = 0;
+  if (medidor && modo === "cancion" && sonando) {
+    medidor.getByteFrequencyData(datosMedidor);
+    let suma = 0;
+    for (let i = 2; i < 48; i++) suma += datosMedidor[i];
+    energia = suma / (46 * 255);
+  } else if (sonando) {
+    energia = 0.35 + 0.25 * Math.max(0, Math.sin(reloj * 7.3)) * Math.max(0, Math.sin(reloj * 2.1));
+  }
+  energiaMedia = acercar(energiaMedia, energia, 1.6, dt);
+  if (sonando && energia > energiaMedia * 1.22 + 0.02 && reloj - ultimoGolpe > 0.16) {
+    ultimoGolpe = reloj;
+    pulso = Math.min(1, pulso + 0.5);
+    if (modo === "cancion") dientes[Math.floor(Math.random() * DIENTES)].v = 1;
+    if (Math.random() < 0.45) soltarNota(energia * 2);
+  }
+  pulso *= Math.exp(-dt * 3.2);
+  if (sonando) {
+    relojNota += dt;
+    if (relojNota > (modo === "melodia" ? 0.75 : 1.4)) { relojNota = 0; soltarNota(0.6); }
+  }
+
+  /* ---- Las manecillas ---- */
+  const p = buscando ? buscaP : progreso();
+  let objHora, objMin;
+  if (estado === "quieta" && !buscando) { objHora = 305; objMin = 60; }
+  else { objHora = p * 360; objMin = (p * 360 * 12) % 360; }
+  aHora += angCerca(aHora, objHora) * (1 - Math.exp(-(buscando ? 18 : 7) * dt));
+  aMin += angCerca(aMin, objMin) * (1 - Math.exp(-(buscando ? 14 : 6) * dt));
+  if (sonando && estado !== "parando") giroSeg += dt * 6 * (modo === "melodia" ? mel.ritmo : 1);
+  else if (estado === "parando") giroSeg += dt * 6 * Math.max(0, 1 - relojEstado);
+  aSeg = giroSeg % 360;
+  mHora.setAttribute("transform", `rotate(${aHora.toFixed(2)} 200 200)`);
+  mMin.setAttribute("transform", `rotate(${aMin.toFixed(2)} 200 200)`);
+  mSeg.setAttribute("transform", `rotate(${aSeg.toFixed(2)} 200 200)`);
+
+  /* ---- La llave, el sol del guilloché y el cilindro ---- */
+  if (sonando) giroLlaveObj += dt * (estado === "parando" ? 1.2 : 2.2);
+  giroLlave = acercar(giroLlave, giroLlaveObj, 5, dt);
+  lazoGiro.setAttribute("transform", `scale(${Math.cos(giroLlave).toFixed(3)} 1)`);
+  giroSol += dt * (sonando ? 9 : 1.2);
+  sol.setAttribute("transform", `rotate(${giroSol.toFixed(2)} 200 200)`);
+  const velObj = !sonando ? 0 : modo === "melodia" ? TAU * (CONF.compas / 60) * mel.ritmo / NEGRAS : TAU / 9 * (estado === "parando" ? Math.max(0, 1 - relojEstado) : 1);
+  velCil = acercar(velCil, velObj, 6, dt);
+  if (modo === "melodia" && sonando) giroCil = ((mel.beat % NEGRAS) / NEGRAS) * TAU - CORTE;
+  else giroCil += velCil * dt;
+  dibujarMeca(dt, reloj);
+
+  /* ---- La luz sobre la plata y el terciopelo ---- */
+  luzX = acercar(luzX, luzObjX, 1.4, dt);
+  luzY = acercar(luzY, luzObjY, 1.4, dt);
+  angLuz = Math.sin(reloj * 0.23) * 26 + (luzX - 0.5) * 50 + inclinacion * 0.9;
+  plata.setAttribute("gradientTransform", `rotate(${angLuz.toFixed(2)} 200 200)`);
+  lustre.style.setProperty("--lx", `${(luzX * 100 + Math.sin(reloj * 0.31) * 8).toFixed(1)}%`);
+  lustre.style.setProperty("--ly", `${(clamp(luzY, 0, 1) * 100).toFixed(1)}%`);
+  resplandor.setAttribute("opacity", (0.12 * (sonando ? 1 : 0) + pulso * 0.42).toFixed(3));
+
+  /* ---- El terciopelo cepillado se va asentando ---- */
+  if (peloVivo > 0) {
+    peloVivo -= dt;
+    gPelo.globalCompositeOperation = "destination-out";
+    gPelo.fillStyle = `rgba(0,0,0,${Math.min(1, dt * 0.55)})`;
+    gPelo.fillRect(0, 0, A, H);
+    gPelo.globalCompositeOperation = "source-over";
+    if (peloVivo <= 0) gPelo.clearRect(0, 0, A, H);
+  }
+
+  /* ---- Partículas ---- */
+  const g = gBr;
+  g.clearRect(0, 0, A, H);
 
   for (const m of motas) {
-    m.y += m.vy * dt;
-    m.x += (m.vx + Math.sin(reloj * m.w + m.f) * 11) * dt;
-    if (m.y < -8) { m.y = H + 8; m.x = Math.random() * A; }
-    if (m.x < -8) m.x = A + 8;
-    if (m.x > A + 8) m.x = -8;
-    const b = fuerza * (0.45 + 0.55 * Math.sin(reloj * 1.7 + m.f));
-    if (b <= 0.01) continue;
-    ctx.globalAlpha = b;
-    ctx.fillStyle = "#e8b95c";
-    ctx.beginPath();
-    ctx.arc(m.x, m.y, m.r, 0, 6.283);
-    ctx.fill();
+    m.ex *= Math.exp(-dt * 2.5);
+    m.ey *= Math.exp(-dt * 2.5);
+    m.x += (m.vx + Math.sin(reloj * m.w + m.f) * 7 + m.ex) * dt;
+    m.y += (m.vy * (sonando ? 1.6 : 1) + m.ey) * dt;
+    if (m.y < -10 || m.x < -20 || m.x > A + 20) Object.assign(m, nuevaMota(false));
+    const enPapel = m.y < costura;
+    const b = (0.45 + 0.55 * Math.sin(reloj * 1.6 + m.f)) * (m.oro ? (sonando ? 0.85 : 0.5) : 0.4);
+    if (b < 0.02) continue;
+    g.globalAlpha = b;
+    g.fillStyle = m.oro ? (enPapel ? "#c99a4a" : "#ffd6a6") : (enPapel ? "#3b2a22" : "#ffb3bf");
+    g.beginPath();
+    g.arc(m.x, m.y, m.r, 0, TAU);
+    g.fill();
   }
 
+  // Titilos sobre la plata.
+  if (Math.random() < dt * (sonando ? 7 : 2.4) * (suave ? 0.3 : 1)) {
+    const [x, y] = puntoEnLaPlata();
+    const [sx, sy] = aPantalla(x, y);
+    titilos.push({ x: sx, y: sy, t: 0, dur: azar(0.5, 1.1), tam: azar(4, 9) });
+  }
+  g.globalCompositeOperation = "lighter";
+  for (let i = titilos.length - 1; i >= 0; i--) {
+    const ti = titilos[i];
+    ti.t += dt;
+    if (ti.t > ti.dur) { titilos.splice(i, 1); continue; }
+    const k = Math.sin(ti.t / ti.dur * Math.PI);
+    estrella(g, ti.x, ti.y, ti.tam * k, k * 0.95, ti.t * 1.4);
+  }
   for (let i = chispas.length - 1; i >= 0; i--) {
     const c = chispas[i];
-    c.v -= dt * 1.5;
-    if (c.v <= 0) { chispas.splice(i, 1); continue; }
+    c.vida -= dt / c.dur;
+    if (c.vida <= 0) { chispas.splice(i, 1); continue; }
+    c.vx *= Math.exp(-dt * 1.6);
+    c.vy = c.vy * Math.exp(-dt * 1.6) + 30 * dt;
     c.x += c.vx * dt;
     c.y += c.vy * dt;
-    c.vy += 190 * dt;
-    ctx.globalAlpha = c.v * 0.8;
-    ctx.fillStyle = "#ffd98a";
-    ctx.beginPath();
-    ctx.arc(c.x, c.y, 1 + c.v * 1.6, 0, 6.283);
-    ctx.fill();
+    estrella(g, c.x, c.y, c.r * (0.5 + c.vida), c.vida, c.vida * 3);
   }
-  ctx.globalAlpha = 1;
+  g.globalCompositeOperation = "source-over";
+
+  for (let i = notasVuelo.length - 1; i >= 0; i--) {
+    const n = notasVuelo[i];
+    n.t += dt;
+    if (n.t > n.dur) { notasVuelo.splice(i, 1); continue; }
+    n.x += (n.vx + Math.sin(reloj * 1.8 + n.f) * 14) * dt;
+    n.y += n.vy * dt;
+    n.vy *= Math.exp(-dt * 0.25);
+    n.rot += n.vr * dt;
+    const k = n.t / n.dur;
+    const alfa = Math.min(1, n.t * 3) * (1 - k * k);
+    g.globalAlpha = alfa * 0.95;
+    g.save();
+    g.translate(n.x, n.y);
+    g.rotate(n.rot + Math.sin(reloj * 2 + n.f) * 0.15);
+    const tam = n.tam * (0.8 + 0.2 * Math.sin(k * Math.PI));
+    g.drawImage(n.s, -tam, -tam, tam * 2, tam * 2);
+    g.restore();
+  }
+  g.globalAlpha = 1;
 }
 
-medir();
-decir("Está cerrada, pero no con llave.");
-requestAnimationFrame(paso);
+/* Una estrellita de cuatro puntas, con su centro redondo. */
+function estrella(g, x, y, r, a, giro) {
+  if (r <= 0.2 || a <= 0.01) return;
+  g.globalAlpha = Math.min(1, a);
+  g.fillStyle = "#fffdf8";
+  g.save();
+  g.translate(x, y);
+  g.rotate(giro * 0.3);
+  g.beginPath();
+  g.moveTo(0, -r);
+  g.quadraticCurveTo(r * 0.12, -r * 0.12, r, 0);
+  g.quadraticCurveTo(r * 0.12, r * 0.12, 0, r);
+  g.quadraticCurveTo(-r * 0.12, r * 0.12, -r, 0);
+  g.quadraticCurveTo(-r * 0.12, -r * 0.12, 0, -r);
+  g.fill();
+  g.globalAlpha = Math.min(1, a) * 0.35;
+  g.beginPath();
+  g.arc(0, 0, r * 0.45, 0, TAU);
+  g.fill();
+  g.restore();
+}
 
+/* La luz también se mueve si inclinas el teléfono (donde se deja). */
+let inclinacion = 0;
+window.addEventListener("deviceorientation", (e) => {
+  if (typeof e.gamma === "number") inclinacion = clamp(e.gamma, -40, 40);
+});
+
+/* Si se va la pestaña, la caja se para con cariño y no a lo bruto. */
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && (estado === "sonando" || estado === "cuerda")) {
+    parar();
+    quedarseEnPausa();
+  }
+});
+
+medir();
+requestAnimationFrame(paso);
+// Las fuentes llegan un pelín después: se vuelve a medir para que la costura
+// caiga justo en el centro del reloj.
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(medir));
 })();
 </script>
 </body>
