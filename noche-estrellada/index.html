@@ -499,6 +499,7 @@ html, body {
 /* Se va en cuanto se usa una piedra… y también en cuanto se sale del
    bosque: dentro de la cabaña no hay piedras que tocar, y el rótulo se
    quedaba ahí explicando algo que no está. */
+.noche.is-panel-cerrado .ne-pista-panel,
 .noche.is-panel-usado .ne-pista-panel,
 .noche.is-espesura .ne-pista-panel,
 .noche.is-habitacion .ne-pista-panel,
@@ -652,6 +653,35 @@ html, body {
 .noche .ne-dormir:hover { background: rgba(28, 36, 62, 0.62); }
 .noche .ne-dormir:focus-visible { outline: 2px solid #9fb8ff; outline-offset: 3px; }
 
+/* ── El botón de los sonidos ─────────────────────────────────────────── */
+.noche .ne-sonidos {
+  position: absolute;
+  right: calc(var(--seguro-r, 0px) + 14px);
+  top: calc(var(--seguro-t) + 14px);
+  z-index: 22;
+  display: flex; align-items: center; gap: 6px;
+  height: 36px; padding: 0 12px 0 10px;
+  border: 1px solid rgba(190, 205, 255, 0.22);
+  border-radius: 18px;
+  background: rgba(12, 16, 30, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #dfe6ff;
+  font: 600 0.62rem/1 var(--tipo-ui, system-ui, sans-serif);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0; visibility: hidden;
+  transition: opacity 700ms var(--e-suave), visibility 700ms, background 300ms, border-color 300ms;
+}
+.noche .ne-sonidos-ico { font-size: 1rem; letter-spacing: 0; }
+.noche.is-dentro:not(.is-espesura):not(.is-habitacion):not(.is-durmiendo) .ne-sonidos { opacity: 1; visibility: visible; }
+.noche .ne-sonidos[aria-pressed="true"] { background: rgba(255, 170, 90, 0.22); border-color: rgba(255, 190, 120, 0.5); }
+/* Hasta que se usa por primera vez, late un poquito: está ahí. */
+.noche:not(.is-sonidos-visto) .ne-sonidos-ico { animation: ne-late 1.8s ease-in-out infinite; }
+@keyframes ne-late { 50% { transform: scale(1.25); } }
+.noche .ne-sonidos:focus-visible { outline: 2px solid #9fb8ff; outline-offset: 3px; }
+
 /* ── Regresar al bosque ────────────────────────────────────────────────── */
 
 .noche .ne-volver {
@@ -778,6 +808,12 @@ html, body {
   <p class="ne-sr" id="vivo" role="status" aria-live="polite"></p>
 
   <p class="ne-pista-panel" id="pistaPanel">toca para prender · arrastra el volumen</p>
+
+  <!-- Saca y esconde la fila de sonidos. Arriba a la derecha, lejos de
+       los botones del librito, que van abajo. -->
+  <button class="ne-sonidos" id="btnSonidos" type="button" aria-label="Mostrar los sonidos" aria-pressed="false">
+    <span class="ne-sonidos-ico">♫</span><span class="ne-sonidos-txt">sonidos</span>
+  </button>
 
   <button class="ne-volver" id="volver" type="button" aria-label="Regresar al bosque">‹</button>
 
@@ -917,6 +953,8 @@ const CONF = {
       lluvia:     "audio/lluvia.mp3",
       relampagos: "audio/relampagos.mp3",
       bosque:     "audio/bosque.mp3",
+      buhos:      "audio/buhos.mp3",
+      rio:        "audio/rio.mp3",
     },
 
     /* ---- SONIDOS SUELTOS ------------------------------------------
@@ -945,13 +983,19 @@ const CONF = {
   /* ---- LOS AMBIENTES DEL PANEL ----------------------------------------
      El orden de aquí es el orden de las piedras alrededor de la fogata.
      `on` dice cuáles empiezan sonando, y `vol` con cuánto volumen.     */
+  /* Ordenados de lo más cercano a lo más lejano: el fuego, los bichos,
+     el aire y el bosque, el agua, y al final el tiempo que hace.
+     `carpeta` es la carpeta propia de cada sonido dentro de `sonidos/`:
+     lo que dejes ahí (uno o varios .mp3) es lo que suena. */
   ambientes: [
-    { id: "fogata",     icono: "🔥", nombre: "Fogata",   on: true,  vol: 0.55, color: "#ff9a4a" },
-    { id: "grillos",    icono: "🦗", nombre: "Grillos",  on: true,  vol: 0.40, color: "#9fe08a" },
-    { id: "aire",       icono: "🌬️", nombre: "Aire",     on: true,  vol: 0.30, color: "#a8c8f0" },
-    { id: "bosque",     icono: "🌲", nombre: "Bosque",   on: false, vol: 0.35, color: "#6fb88a" },
-    { id: "lluvia",     icono: "🌧️", nombre: "Lluvia",   on: false, vol: 0.40, color: "#8fb4e0" },
-    { id: "relampagos", icono: "⚡", nombre: "Tormenta", on: false, vol: 0.45, color: "#e0d08a" },
+    { id: "fogata",     carpeta: "fogata",   icono: "🔥", nombre: "Fogata",   on: true,  vol: 0.55, color: "#ff9a4a" },
+    { id: "grillos",    carpeta: "grillos",  icono: "🦗", nombre: "Grillos",  on: true,  vol: 0.40, color: "#9fe08a" },
+    { id: "buhos",      carpeta: "buhos",    icono: "🦉", nombre: "Búhos",    on: false, vol: 0.35, color: "#d8c89a" },
+    { id: "aire",       carpeta: "aire",     icono: "🌬️", nombre: "Aire",     on: true,  vol: 0.30, color: "#a8c8f0" },
+    { id: "bosque",     carpeta: "bosque",   icono: "🌲", nombre: "Bosque",   on: false, vol: 0.35, color: "#6fb88a" },
+    { id: "rio",        carpeta: "rio",      icono: "💧", nombre: "Río",      on: false, vol: 0.35, color: "#7ad0e0" },
+    { id: "lluvia",     carpeta: "lluvia",   icono: "🌧️", nombre: "Lluvia",   on: false, vol: 0.40, color: "#8fb4e0" },
+    { id: "relampagos", carpeta: "tormenta", icono: "⚡", nombre: "Tormenta", on: false, vol: 0.45, color: "#e0d08a" },
   ],
 
   /* Cuánto tardan los volúmenes en subir y bajar. Nunca de golpe: un
@@ -2685,6 +2729,67 @@ const sintetizar = {
     return salida;
   },
 
+  buhos() {
+    const c = audio.ctx;
+    const salida = c.createGain();
+    /* Un búho lejano: «hu… huuu», dos notas graves con un poco de
+       vibrato, y otro que contesta más lejos. */
+    const ulular = (t, hz, lejos) => {
+      for (const [k, dur, v] of [[0, 0.22, 1], [0.34, 0.7, 0.9]]) {
+        const o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
+        const vib = c.createOscillator(), vg = c.createGain();
+        o.type = "sine"; o.frequency.setValueAtTime(hz * (k ? 0.96 : 1.04), t + k);
+        o.frequency.linearRampToValueAtTime(hz * (k ? 0.9 : 1), t + k + dur);
+        vib.frequency.value = 5; vg.gain.value = hz * 0.012; vib.connect(vg).connect(o.frequency);
+        f.type = "lowpass"; f.frequency.value = lejos ? 700 : 1100;
+        g.gain.setValueAtTime(0, t + k);
+        g.gain.linearRampToValueAtTime(0.06 * v * (lejos ? 0.5 : 1), t + k + 0.06);
+        g.gain.linearRampToValueAtTime(0, t + k + dur);
+        o.connect(f).connect(g).connect(salida);
+        o.start(t + k); vib.start(t + k); o.stop(t + k + dur + 0.05); vib.stop(t + k + dur + 0.05);
+      }
+    };
+    const reloj = setInterval(() => {
+      if (!audio.ctx || Math.random() > 0.6) return;
+      const t = c.currentTime + 0.1, hz = azar(340, 420);
+      ulular(t, hz, false);
+      if (Math.random() < 0.6) ulular(t + azar(1.6, 2.6), hz * azar(0.85, 0.95), true);
+    }, 4200);
+    salida._parar = () => clearInterval(reloj);
+    return salida;
+  },
+
+  rio() {
+    const c = audio.ctx;
+    const salida = c.createGain();
+    /* El agua corriendo: ruido rosa por un pasa-banda que respira, y
+       burbujitas agudas que suben de tono, de vez en cuando. */
+    const src = c.createBufferSource();
+    src.buffer = bufferRosa(5, 0.92);
+    src.loop = true;
+    const f = c.createBiquadFilter();
+    f.type = "bandpass"; f.frequency.value = 900; f.Q.value = 0.7;
+    const g = c.createGain(); g.gain.value = 0.7;
+    const lfo = c.createOscillator(), lg = c.createGain();
+    lfo.frequency.value = 0.21; lg.gain.value = 0.25; lfo.connect(lg).connect(g.gain);
+    src.connect(f).connect(g).connect(salida);
+    src.start(); lfo.start();
+    const reloj = setInterval(() => {
+      if (!audio.ctx) return;
+      const cuantas = 1 + Math.floor(Math.random() * 3);
+      for (let k = 0; k < cuantas; k++) {
+        const t = c.currentTime + Math.random() * 0.5;
+        const o = c.createOscillator(), gg = c.createGain();
+        const hz = azar(600, 1400);
+        o.type = "sine"; o.frequency.setValueAtTime(hz, t); o.frequency.exponentialRampToValueAtTime(hz * 1.8, t + 0.05);
+        gg.gain.setValueAtTime(0, t); gg.gain.linearRampToValueAtTime(0.02, t + 0.005); gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+        o.connect(gg).connect(salida); o.start(t); o.stop(t + 0.08);
+      }
+    }, 380);
+    salida._parar = () => { clearInterval(reloj); try { src.stop(); lfo.stop(); } catch {} };
+    return salida;
+  },
+
   lluvia() {
     const c = audio.ctx;
     const salida = c.createGain();
@@ -2760,6 +2865,19 @@ function truenoSintetizado(destino, fuerza) {
    Un canal por ambiente, con su ganancia propia. Encender y apagar es
    mover esa ganancia con una rampa, nunca de golpe.                   */
 
+/** El archivo de un ambiente: cualquiera de los que haya en su carpeta
+    (si hay varios, uno al azar), o el de `audio/` de siempre. */
+function rutaAmbiente(id) {
+  const conf = CONF.ambientes.find((a) => a.id === id);
+  const hay = window.NOCHE_ARCHIVOS;
+  if (conf && Array.isArray(hay)) {
+    const base = `sonidos/${conf.carpeta || id}/`;
+    const suyos = hay.filter((f) => String(f).normalize("NFC").toLowerCase().startsWith(base));
+    if (suyos.length) return suyos[Math.floor(Math.random() * suyos.length)];
+  }
+  return CONF.rutas.ambientes[id];
+}
+
 async function abrirCanal(id) {
   if (!despertarAudio()) return null;
   if (audio.canales.has(id)) return audio.canales.get(id);
@@ -2772,8 +2890,10 @@ async function abrirCanal(id) {
   const canal = { gain, fuente: null, vol: conf ? conf.vol : 0.5, on: false, sintetico: false };
   audio.canales.set(id, canal);
 
-  /* Primero el archivo. Si está, manda. */
-  const ruta = CONF.rutas.ambientes[id];
+  /* Primero el archivo. Si está, manda. Se busca en su carpeta propia
+     (`sonidos/grillos/`, `sonidos/tormenta/`…) y, si no hay nada ahí, en
+     el nombre de siempre de `audio/`. */
+  const ruta = rutaAmbiente(id);
   const buf = ruta ? await traerBuffer(ruta) : null;
 
   if (buf) {
@@ -5030,6 +5150,10 @@ const panel = {
   piedras: [],
   arrastrando: null,
   usado: false,
+  /* Se esconde y se saca con el botón ♫ de arriba, para que la fila no
+     se quede debajo de los botones del librito. `ver` va de 0 a 1. */
+  abierto: false,
+  ver: 0,
 };
 
 /**
@@ -5104,6 +5228,7 @@ function construirPanel() {
 }
 
 function moverPanel(dt) {
+  panel.ver = damp(panel.ver, panel.abierto ? 1 : 0, 7, dt);
   for (const p of panel.piedras) {
     p.luz = damp(p.luz, p.on ? 1 : 0, 3, dt);
     p.pulso = Math.max(0, p.pulso - dt * 2.2);
@@ -5202,6 +5327,29 @@ function icono(id, s, col, alfa) {
       ctx.stroke();
     }
 
+  } else if (id === "buhos") {
+    /* Una carita de búho: dos orejas, dos ojos grandes y el pico. */
+    ctx.beginPath();
+    ctx.moveTo(-0.3, -0.18); ctx.lineTo(-0.26, -0.42); ctx.lineTo(-0.1, -0.26);
+    ctx.lineTo(0.1, -0.26); ctx.lineTo(0.26, -0.42); ctx.lineTo(0.3, -0.18);
+    ctx.quadraticCurveTo(0.36, 0.3, 0, 0.4);
+    ctx.quadraticCurveTo(-0.36, 0.3, -0.3, -0.18);
+    ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = alfa * 0.45;
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(-0.12, -0.06, 0.1, 0, 6.283); ctx.arc(0.12, -0.06, 0.1, 0, 6.283); ctx.fill();
+
+  } else if (id === "rio") {
+    /* Tres ondas de agua, cada una un poco más corta. */
+    for (let i = 0; i < 3; i++) {
+      const y = -0.2 + i * 0.2, a = 0.42 - i * 0.06;
+      ctx.beginPath();
+      ctx.moveTo(-a, y);
+      ctx.bezierCurveTo(-a * 0.5, y - 0.12, -a * 0.2, y + 0.12, 0, y);
+      ctx.bezierCurveTo(a * 0.2, y - 0.12, a * 0.5, y + 0.12, a, y);
+      ctx.stroke();
+    }
+
   } else if (id === "lluvia") {
     /* Una nube con tres gotas. La nube son tres arcos, no un óvalo:
        un óvalo se lee como una piedra flotando. */
@@ -5259,6 +5407,16 @@ function icono(id, s, col, alfa) {
    reojo, y todas juntas se comparan entre sí de un vistazo. */
 
 function dibujarPanel() {
+  /* Cerrada, la fila se baja fuera de la pantalla y no se pinta. */
+  if (panel.ver < 0.01) return;
+  const fila = panel.piedras[0];
+  ctx.save();
+  if (fila) ctx.translate(0, (1 - panel.ver) * (H - fila.y + fila.h * 2));
+  dibujarPanelDentro();
+  ctx.restore();
+}
+
+function dibujarPanelDentro() {
   const d = desplazar(2.1);
 
   for (const p of panel.piedras) {
@@ -5432,6 +5590,18 @@ function sincronizarClima() {
     if (piedra.conf.id === "relampagos") clima.tormentaObj = piedra.on ? 0.8 : 0;
   }
 }
+
+const btnSonidos = document.getElementById("btnSonidos");
+function abrirPanelSonidos(abrir) {
+  panel.abierto = abrir;
+  raiz.classList.toggle("is-panel-cerrado", !abrir);
+  raiz.classList.add("is-sonidos-visto");
+  btnSonidos.setAttribute("aria-pressed", String(abrir));
+  btnSonidos.setAttribute("aria-label", abrir ? "Esconder los sonidos" : "Mostrar los sonidos");
+  tono(abrir ? 620 : 440, 0.25, "sine", 0.04);
+}
+btnSonidos.addEventListener("click", (e) => { e.stopPropagation(); despertarAudio(); abrirPanelSonidos(!panel.abierto); });
+raiz.classList.add("is-panel-cerrado");
 
 function marcarPanelUsado() {
   if (panel.usado) return;
@@ -11995,8 +12165,8 @@ function volverAlClaro() {
 function cruzarAmbientes(destino, seg) {
   const aEspesura = destino === "espesura";
   const objetivos = aEspesura
-    ? { fogata: 0, grillos: 0.22, aire: 0.5, bosque: 0.6, lluvia: null, relampagos: null }
-    : { fogata: 0.55, grillos: 0.4, aire: 0.3, bosque: 0.2, lluvia: null, relampagos: null };
+    ? { fogata: 0, grillos: 0.22, buhos: 0.3, aire: 0.5, bosque: 0.6, rio: null, lluvia: null, relampagos: null }
+    : { fogata: 0.55, grillos: 0.4, buhos: null, aire: 0.3, bosque: 0.2, rio: null, lluvia: null, relampagos: null };
 
   for (const piedra of panel.piedras) {
     const obj = objetivos[piedra.conf.id];
@@ -20168,7 +20338,7 @@ function tocarEnBosque(p, e) {
      esquinas se quedaban fuera. Y se estira hacia abajo, que es por
      donde falla el dedo en un móvil. */
   const dPan = desplazar(2.1);
-  for (const piedra of panel.piedras) {
+  if (panel.ver > 0.6) for (const piedra of panel.piedras) {
     const dx = p.x - (piedra.x + dPan.x);
     const dy = p.y - (piedra.y + dPan.y);
     if (Math.abs(dx) < piedra.w * 0.58 && dy > -piedra.h * 0.62 && dy < piedra.h * 0.78) {

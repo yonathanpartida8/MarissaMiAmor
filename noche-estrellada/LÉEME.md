@@ -19,7 +19,17 @@ noche-estrellada/
 ├── misterio.mp3            ← el búho
 ├── rag.mp3                 ← lo que se oye en el bosque
 │
-├── audio/
+├── sonidos/                ← UNA CARPETA POR SONIDO de la fila (en bucle)
+│   ├── fogata/                (deja ahí uno o varios audios con el nombre
+│   ├── grillos/                que quieras; si hay varios, suena uno al azar)
+│   ├── buhos/
+│   ├── aire/
+│   ├── bosque/
+│   ├── rio/
+│   ├── lluvia/
+│   └── tormenta/
+│
+├── audio/                  ← lo de siempre, por si la carpeta está vacía
 │   ├── fogata.mp3          ← en bucle
 │   ├── grillos.mp3         ← en bucle
 │   ├── aire.mp3            ← en bucle
@@ -45,6 +55,11 @@ noche-estrellada/
 
 **Deja tus archivos ahí con esos nombres y ya está.** No hay que tocar
 ni una línea de código.
+
+**La fila de sonidos** de la cabaña ya no está siempre abajo: se saca y
+se esconde con el botón **♫ sonidos** de arriba a la derecha, así no se
+cruza con los botones de pasar página del librito. Van en este orden:
+fogata, grillos, búhos, aire, bosque, río, lluvia y tormenta.
 
 > **La cajita musical, además**, mira en `assets/audio/musica.mp3` si no
 > encuentra `noche-estrellada/musica.mp3`. Es para que una canción que ya

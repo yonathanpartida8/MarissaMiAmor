@@ -1,0 +1,9 @@
+Aquí va el sonido de los grillos.
+
+Deja en esta carpeta uno o varios archivos de audio (.mp3, .m4a, .ogg o
+.wav), con el nombre que quieras. Suena en bucle cuando se prende su
+botón en la fila de sonidos de la cabaña (el botón ♫ de arriba a la
+derecha la saca y la esconde).
+
+Si pones varios, cada vez que se abre la noche suena uno al azar.
+Si no hay ninguno, suena el que se hace en el momento, sin archivo.
