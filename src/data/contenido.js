@@ -279,7 +279,7 @@ export default {
   "sorpresas": {},
   "sonidos": {
     "corazon": null,
-    "ojos": null
+    "ojos": "paginas-html/ojos.mp3"
   },
   "vales": {
     "lista": [
