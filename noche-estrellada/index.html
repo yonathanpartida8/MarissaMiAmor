@@ -382,23 +382,47 @@ html, body {
   border-bottom: 1px solid rgba(180, 196, 255, 0.2);
 }
 
+/* Lo que digo yo: en azul. */
 .noche .ne-dicho.ne-mimo {
   font-family: var(--tipo-mano);
   font-size: clamp(0.94rem, 4.1vw, 1.14rem);
-  color: #ffdcea;
-  border-color: rgba(255, 180, 210, 0.3);
+  color: #d8ecff;
+  border-color: rgba(130, 190, 255, 0.4);
   background:
     linear-gradient(to bottom,
-      rgba(58, 34, 56, 0.72) 0%,
-      rgba(28, 16, 32, 0.76) 55%,
-      rgba(16, 9, 20, 0.8) 100%);
+      rgba(30, 56, 104, 0.76) 0%,
+      rgba(16, 30, 64, 0.8) 55%,
+      rgba(9, 18, 42, 0.84) 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 214, 234, 0.16),
-    0 6px 30px rgba(40, 4, 24, 0.5);
+    inset 0 1px 0 rgba(200, 228, 255, 0.2),
+    0 0 18px rgba(80, 150, 255, 0.18),
+    0 6px 30px rgba(4, 12, 40, 0.5);
 }
 .noche .ne-dicho.ne-mimo::after {
-  background: rgba(16, 9, 20, 0.8);
-  border-color: rgba(255, 180, 210, 0.3);
+  background: rgba(9, 18, 42, 0.84);
+  border-color: rgba(130, 190, 255, 0.4);
+}
+
+/* Lo que dice el búho: en verde, como sus ojos. */
+.noche .ne-dicho.ne-buho {
+  font-family: var(--tipo-mano);
+  font-size: clamp(0.94rem, 4.1vw, 1.14rem);
+  color: #d9ffd2;
+  border-color: rgba(120, 255, 140, 0.42);
+  background:
+    linear-gradient(to bottom,
+      rgba(22, 78, 38, 0.78) 0%,
+      rgba(12, 46, 22, 0.82) 55%,
+      rgba(6, 28, 12, 0.86) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(200, 255, 200, 0.2),
+    0 0 20px rgba(80, 255, 120, 0.22),
+    0 6px 30px rgba(2, 20, 6, 0.55);
+  text-shadow: 0 0 10px rgba(120, 255, 140, 0.35), 0 1px 8px rgba(0, 0, 0, 0.8);
+}
+.noche .ne-dicho.ne-buho::after {
+  background: rgba(6, 28, 12, 0.86);
+  border-color: rgba(120, 255, 140, 0.42);
 }
 
 /* ── La burbuja del misterio ──────────────────────────────────────────
@@ -1375,6 +1399,25 @@ const CONF = {
        el texto, para poder cambiar el texto sin romper nada. */
     elRuido: "Shhh… ¿oyes eso?",
     alRevelar: "…no debiste tocarlo.",
+    /* Lo que platica mientras vuela contigo: [lo que dice él, lo que
+       le contesto yo]. Si lo segundo va vacío, no contesto. */
+    acompana: [
+      ["Aquí sigo, no me voy.", "Ese búho ya te adoptó."],
+      ["Te acompaño, no tengas miedo.", "Qué buen guardaespaldas te conseguiste."],
+      ["¿A dónde vamos ahora?", "Tú dile, mi amor, que el bosque es tuyo."],
+      ["Me gusta volar contigo.", "Oye, búho, no te enamores, que ya tiene novio."],
+      ["Mira qué bonita está la luna.", "No tanto como tú."],
+      ["Tú tranquila, yo vigilo.", "Y yo te cuido desde aquí, aunque esté lejos."],
+      ["Hay algo enterrado por aquí…", "¿Y si buscamos la pala?"],
+      ["Shhh, camina despacito.", ""],
+      ["Uy, ¿oíste eso? …No, nada.", "Ese búho me pone nervioso."],
+      ["Este bosque es más bonito contigo.", "Eso mismo digo yo de todo."],
+      ["No te pierdas, ¿eh?", ""],
+      ["Si te cansas, aquí me quedo contigo.", "Yo también me quedo, siempre."],
+      ["Cuidado con los ojos rojos del fondo.", "¿Cuáles ojos rojos? …No me asustes."],
+      ["¿Ya viste la X del suelo?", ""],
+      ["Las luciérnagas te siguen a ti, no a mí.", "Normal, brillas más que ellas."],
+    ],
   },
 
   /* ---- CAVAR -----------------------------------------------------------
@@ -2189,7 +2232,8 @@ function decir(x, y, texto, op = {}) {
      ancho de cero y la frase se coloca en el sitio equivocado. Así que
      se pone completa, se mide, y luego se recorta. */
   ponerTexto(el, texto);
-  el.classList.toggle("ne-mimo", !!op.mimo);
+  el.classList.toggle("ne-mimo", !!op.mimo && !op.buho);
+  el.classList.toggle("ne-buho", !!op.buho);
   el.classList.toggle("ne-misterio", !!op.misterio);
   el.querySelector(".ne-cursor").hidden = !op.misterio;
   el.style.opacity = "0";
@@ -10915,7 +10959,7 @@ function tocarBuho() {
   const dice = b.veces <= 1
     ? CONF.buho.dice[0]
     : (b.veces >= 4 ? diceBuhoOtraVez() : diceBuho());
-  decir(b.x, b.y - U * 6, dice, { mimo: true, importante: true });
+  decir(b.x, b.y - U * 6, dice, { buho: true, importante: true });
   contarLogro("buho");
 
   /* Se va a otro escondite. Nunca al mismo, y con preferencia por uno
@@ -11140,16 +11184,19 @@ function dibujarBuho(banda) {
          parecen dos ojos encendidos dentro de una cara oscura, que es
          justo lo que tiene que parecer. */
       const halo = r * 0.72;
+      /* Verdes siempre… salvo después del misterio: entonces cambian
+         solos, rojo, verde y blanco. */
+      const cc = ojosQueCambian() || [140, 255, 190];
       const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, halo);
-      g.addColorStop(0,    `rgba(150,255,190,${(0.62 * ab + b.visto * 0.38) * brillo})`);
-      g.addColorStop(0.3,  `rgba(40,240,140,${0.34 * ab * brillo})`);
+      g.addColorStop(0,    `rgba(${cc[0]},${cc[1]},${cc[2]},${(0.62 * ab + b.visto * 0.38) * brillo})`);
+      g.addColorStop(0.3,  `rgba(${Math.round(cc[0] * 0.5)},${Math.round(cc[1] * 0.94)},${Math.round(cc[2] * 0.7)},${0.34 * ab * brillo})`);
       g.addColorStop(1,    "rgba(20,210,110,0)");
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(ex, ey, halo, 0, 6.283); ctx.fill();
 
       /* El iris y, dentro, la pupila negra. La pupila NO brilla: es lo
          que le da profundidad al ojo. */
-      ctx.fillStyle = `rgba(140,255,190,${0.98 * ab * mez(0.4, 1, sal)})`;
+      ctx.fillStyle = `rgba(${cc[0]},${cc[1]},${cc[2]},${0.98 * ab * mez(0.4, 1, sal)})`;
       ctx.beginPath();
       ctx.ellipse(ex, ey, r * 0.22, r * 0.22 * ab, 0, 0, 6.283);
       ctx.fill();
@@ -14426,6 +14473,29 @@ function moverBuhoEsp(dt) {
   }
   b.rojo = damp(b.rojo, b.rojoObj, b.rojoObj > 0.5 ? 14 : 2.2, dt);
 
+  /* ---- CONMIGO, VOLANDO ----
+     En la espesura ya no se queda quieto en su rama: te acompaña
+     volando por arriba, sin parar, siempre a la vista, y se adelanta un
+     poco hacia donde caminas. Durante la cacería se aparta, que ahí lo
+     que vuela es lo que se dispara. */
+  const acompana = (b.modo === "normal" || b.modo === "verde") && !enCombate();
+  b.vuela = acompana;
+  if (acompana) {
+    b.salObj = 1;
+    b.tVuelo = (b.tVuelo || 0) + dt;
+    const tv = b.tVuelo;
+    const hacia = clamp(-espesura.vx * 0.08, -A * 0.16, A * 0.16);
+    const objSx = A * 0.5 + Math.sin(tv * 0.31) * A * 0.24 + Math.sin(tv * 0.83 + 1) * A * 0.05 + hacia;
+    const objY = H * 0.22 + Math.sin(tv * 0.57) * H * 0.05 + Math.sin(tv * 1.9) * H * 0.012;
+    b.sxv = b.sxv === undefined ? objSx : damp(b.sxv, objSx, 1.5, dt);
+    b.x = b.sxv + espesura.x * 0.52;
+    b.y = damp(b.y, objY, 1.5, dt);
+    b.aleteo = Math.max(b.aleteo, 0.7);
+  } else if (enCombate() && (b.modo === "normal" || b.modo === "verde")) {
+    b.salObj = 0;
+    b.sxv = undefined;
+  }
+
   /* La cabeza sigue al dedo si anda cerca. */
   const sx = enPantalla(b.x, 0.52);
   const cerca = dedo.dentro && Math.hypot(dedo.x - sx, dedo.y - b.y) < U * 34;
@@ -14450,8 +14520,10 @@ function moverBuhoEsp(dt) {
 
   b.relojDice -= dt;
   if (b.relojDice <= 0 && sx > A * 0.1 && sx < A * 0.9 && !bloqueado) {
-    b.relojDice = azar(11, 26);
-    hablarElBuho();
+    b.relojDice = azar(11, 22);
+    /* Volando contigo habla de lo que vamos viendo, y a veces le
+       contesto. Posado, dice lo suyo de siempre. */
+    if (b.vuela && Math.random() < 0.65) platicaConElBuho(); else hablarElBuho();
   }
 
   /* ---- Volver a dar con él después de la cacería ----
@@ -14461,11 +14533,32 @@ function moverBuhoEsp(dt) {
   if (historia.hecho("caceria") && b.sal > 0.5 && !b.saludado
       && sx > A * 0.15 && sx < A * 0.85 && !bloqueado && caza.fase === "no") {
     b.saludado = true;
-    decir(sx, b.y - b.r * 3, diceVerlo(), { misterio: true, dur: 4.5 });
+    decir(sx, b.y + b.r * 2.6, diceVerlo(), { buho: true, dur: 4.5 });
   }
 
   /* Los mini búhos, si los hay. */
   moverMinis(dt);
+}
+
+/** Mientras me acompaña: una frase suya (verde) y, a veces, la mía (azul). */
+const platicas = barajador(CONF.buhoEsp.acompana);
+function platicaConElBuho() {
+  const b = buhoEsp;
+  const [suya, mia] = platicas();
+  const sx = enPantalla(b.x, 0.52);
+  decir(clamp(sx, A * 0.2, A * 0.8), b.y + b.r * 2.6, suya, { buho: true, dur: 3.4 });
+  tono(azar(320, 440), 0.35, "sine", 0.03);
+  if (mia) setTimeout(() => { if (!bloqueado) decir(A * 0.5, H * 0.62, mia, { mimo: true, importante: true, dur: 3.2 }); }, 2200);
+}
+
+/** El color de los ojos del búho. Después de tocar el misterio, cambia
+    seguido: rojo, verde, blanco… y otra vez. Devuelve null si no toca. */
+const OJOS_CICLO = [[255, 60, 50], [120, 255, 170], [248, 248, 255]];
+function ojosQueCambian() {
+  if (!historia.hecho("revelado")) return null;
+  const f = reloj * 1.25, i = Math.floor(f) % 3, k = clamp01(((f % 1) - 0.72) / 0.28);
+  const a = OJOS_CICLO[i], b = OJOS_CICLO[(i + 1) % 3];
+  return [0, 1, 2].map((c) => Math.round(mez(a[c], b[c], k * k * (3 - 2 * k))));
 }
 
 /** Una frase, elegida por lo que haya pasado ya. */
@@ -14483,8 +14576,8 @@ function hablarElBuho(forzada) {
      Se reconoce por la marca, no por el texto, para poder cambiar el
      texto sin romper nada. */
   const esElRuido = frase === CONF.buhoEsp.elRuido;
-  decir(clamp(sx, A * 0.2, A * 0.8), b.y - U * 7, frase,
-    { misterio: esElRuido || historia.hecho("revelado"), importante: esElRuido, dur: esElRuido ? 4 : 3.6 });
+  decir(clamp(sx, A * 0.2, A * 0.8), b.y + b.r * 2.6, frase,
+    { buho: true, importante: esElRuido, dur: esElRuido ? 4 : 3.6 });
 
   if (esElRuido) {
     b.giroObj = 0;
@@ -14781,6 +14874,28 @@ function dibujarRamaDelBuho(b, r, sal) {
   const y0 = r * 1.16;
 
   ctx.save();
+  /* ---- EL TRONCO DEL QUE SALE ----
+     Una rama suelta flotando no viene de ningún sitio. Así que se pinta
+     también el tronco al que está pegada: sube desde abajo, pasa por el
+     arranque de la rama y se pierde arriba, con su corteza. */
+  {
+    const tx = -lado * largo, ancho = r * 0.95;
+    const arriba = -(b.y || 0) - r * 2, abajo = H - (b.y || 0) + r;
+    const gt = ctx.createLinearGradient(tx - ancho, 0, tx + ancho, 0);
+    gt.addColorStop(0, `rgba(4,7,7,${0.96 * sal})`);
+    gt.addColorStop(0.6, `rgba(10,16,15,${0.96 * sal})`);
+    gt.addColorStop(1, `rgba(4,7,7,${0.96 * sal})`);
+    ctx.fillStyle = gt;
+    ctx.beginPath();
+    ctx.moveTo(tx - ancho * 0.8, arriba);
+    ctx.lineTo(tx + ancho * 0.8, arriba);
+    ctx.lineTo(tx + ancho * 1.15, abajo);
+    ctx.lineTo(tx - ancho * 1.15, abajo);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = `rgba(150,186,246,${0.08 * sal})`;
+    ctx.lineWidth = 1;
+    for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(tx + k * ancho * 0.4, arriba); ctx.lineTo(tx + k * ancho * 0.5, abajo); ctx.stroke(); }
+  }
   ctx.fillStyle = `rgba(6,10,9,${0.94 * sal})`;
   ctx.beginPath();
   /* El canto de arriba: del tronco hasta la punta, hundiéndose donde
@@ -14874,10 +14989,12 @@ function dibujarBuhoEsp() {
   const cerrado = Math.sin(clamp01(b.parpadeo) * Math.PI);
   const abierto = clamp01(1 - cerrado);
 
-  /* El color de los ojos: verde o rojo, mezclado. */
-  const rr = Math.round(mez(170, 255, b.rojo));
-  const gg2 = Math.round(mez(255, 60, b.rojo));
-  const bb = Math.round(mez(205, 50, b.rojo));
+  /* El color de los ojos: verde o rojo, mezclado; y después del
+     misterio, cambiando solo entre rojo, verde y blanco. */
+  const ciclo = ojosQueCambian();
+  const rr = ciclo ? ciclo[0] : Math.round(mez(170, 255, b.rojo));
+  const gg2 = ciclo ? ciclo[1] : Math.round(mez(255, 60, b.rojo));
+  const bb = ciclo ? ciclo[2] : Math.round(mez(205, 50, b.rojo));
 
   ctx.save();
   ctx.translate(x, y);
@@ -14893,7 +15010,7 @@ function dibujarBuhoEsp() {
      afina hacia la punta. Y se comba con el peso: `pesa` es cuánto la
      hunde el búho, y sube y baja despacito con la respiración. Una
      rama que no cede no está aguantando nada. */
-  if (b.ataque < 0) dibujarRamaDelBuho(b, r, sal);
+  if (b.ataque < 0 && !b.vuela) dibujarRamaDelBuho(b, r, sal);
 
   /* Las alas. */
   const abre = 0.12 + b.aleteo * (0.5 + Math.sin(b.ala) * 0.5) * 1.2;
@@ -19747,6 +19864,14 @@ function salirElMisterio(q) {
     { misterio: true, importante: true, dur: 6 }), 900);
 }
 
+function desatarTormenta() {
+  clima.lluviaObj = 1;
+  clima.tormentaObj = 1;
+  clima.crece = Math.max(clima.crece, 0.6);
+  clima.relojRayo = Math.min(clima.relojRayo, 0.6);
+  sacudir(0.35);
+}
+
 function tocarReliquia(q, s) {
   q.pulso = 1;
   espesura.onda = 1;
@@ -19762,6 +19887,10 @@ function tocarReliquia(q, s) {
       tipo: TIPO.BRILLO, tono: 0.45,
     });
   }
+
+  /* Tocar el misterio desata la tormenta: lluvia fuerte, rayos y
+     relámpagos, y el primer rayo cae casi en seguida. */
+  desatarTormenta();
 
   if (historia.marcar("revelado")) {
     /* La primera vez: el bosque entero se entera. */
