@@ -171,7 +171,7 @@
   line-height: 1.62;
   color: #4a1a2e;
   text-align: left;
-  hyphens: auto;
+  hyphens: manual;
 }
 
 /* ---- Flechas, puntos y contador --------------------------------------- */

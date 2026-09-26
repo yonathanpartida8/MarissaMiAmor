@@ -96,7 +96,7 @@
   color: rgba(246, 238, 232, 0.9);
   text-align: left;
   text-wrap: pretty;
-  hyphens: auto;
+  hyphens: manual;
   /* El texto está tan velado como la imagen hasta que se descubre. */
   opacity: 0.3;
   filter: blur(1.6px);

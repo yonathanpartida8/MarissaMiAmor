@@ -580,7 +580,7 @@
   color: var(--paper-ink);
   text-align: left;
   text-wrap: pretty;
-  hyphens: auto;
+  hyphens: manual;
   white-space: pre-line;
 }
 

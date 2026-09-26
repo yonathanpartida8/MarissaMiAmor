@@ -35,7 +35,7 @@ export default {
   "todo-lo-que-guardo": { frase: "Todo lo que guardo huele un poquito a ti.", escena: ["🗃️", "🌸", "🎀", "💫"] },
   "en-voz-baja":        { frase: "Te lo digo bajito: eres lo más bonito que me ha pasado.", escena: ["🤫", "💗", "🌙", "✨"] },
   "regalo":             { frase: "Y un abrazo gigante de regalo extra.", escena: ["🎁", "🛍️", "🎂", "🎉"] },
-  "cupones":            { frase: "Vale extra, escondido: por un «te extraño» cuando lo necesites.", escena: ["🎟️", "🤗", "📞", "💋"] },
+  "cupones":            { frase: "Vale secreto, escondidito: por un «me haces muchísima falta» cuando lo necesites.", escena: ["🎟️", "🤗", "📞", "💋"] },
   "la-distancia":       { frase: "Cada kilómetro que falta, lo cuento hacia atrás.", escena: ["✈️", "🌎", "📍", "💞"] },
   "mi-pulso":           { frase: "Mi corazón hace tu nombre en morse.", escena: ["💓", "📈", "⚡", "💗"] },
   "mismo-cielo":        { frase: "Esta noche busca la estrella más bonita. Esa es mía, te la regalo.", escena: ["🌠", "🔭", "🌌", "💫"] },

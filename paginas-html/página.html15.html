@@ -11,7 +11,7 @@
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
-   EL RAMO — «Coge las que quieras»
+   EL RAMO — «Escoge las que quieras»
    Un campo lleno de flores de todas clases. Cada una que tocas se arranca
    y vuela a tu ramo, que se va armando abajo, envuelto en papel. Cuando
    ya tiene suficientes, se amarra con su listón. Prefijo `rm-`.
@@ -77,8 +77,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #f6e4dc; }
 <div class="rm" id="mundo">
   <canvas id="lienzo"></canvas>
   <div class="rm-cabeza">
-    <p class="rm-titulo">Coge las que quieras</p>
-    <p class="rm-frase" id="frase" role="status" aria-live="polite">Todas son para ti. Tócalas y arma tu ramo.</p>
+    <p class="rm-titulo">Escoge las que quieras</p>
+    <p class="rm-frase" id="frase" role="status" aria-live="polite">Todas son para ti, mi amor. Escoge tus favoritas y arma tu ramo.</p>
     <p class="rm-pista" id="pista">toca una flor</p>
   </div>
 </div>
@@ -91,10 +91,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #f6e4dc; }
    LAS FLORES: su nombre, sus colores y lo que quieren decir
    ══════════════════════════════════════════════════════════════════════ */
 const FLORES = {
-  rosa:       { nombre: "Rosa", colores: ["#c81d3f", "#f07aa2", "#fff1ea", "#ffab86"], dice: "te quiero, así de simple" },
+  rosa:       { nombre: "Rosa", colores: ["#c81d3f", "#f07aa2", "#fff1ea", "#ffab86"], dice: "te amo, así de simple" },
   tulipan:    { nombre: "Tulipán", colores: ["#e0304e", "#f7a3c0", "#ffd34f", "#9b5cc9"], dice: "un amor que no se esconde" },
   girasol:    { nombre: "Girasol", colores: ["#ffc21a"], dice: "porque yo siempre te busco, como él al sol" },
-  margarita:  { nombre: "Margarita", colores: ["#ffffff"], dice: "me quiere… me quiere muchísimo" },
+  margarita:  { nombre: "Margarita", colores: ["#ffffff"], dice: "me ama… me ama muchísimo" },
   lavanda:    { nombre: "Lavanda", colores: ["#9a7ad6"], dice: "para que descanses bonito" },
   peonia:     { nombre: "Peonía", colores: ["#f6a6c1", "#ffd6de", "#e9557f"], dice: "para lo bonito que me haces sentir" },
   clavel:     { nombre: "Clavel", colores: ["#ff5d7a", "#ffc0cf", "#d61f45"], dice: "de mí para ti, con el corazón" },
@@ -472,7 +472,7 @@ function deshacer() {
   ramo.length = 0;
   amarrado = 0;
   amarrando = false;
-  decir("Otra vez, todas son tuyas.", "toca las flores");
+  decir("Otra vez, escoge las que quieras: todas son tuyas.", "toca las flores");
 }
 
 function puntaEnRamo(f) {

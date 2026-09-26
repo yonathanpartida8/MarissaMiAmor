@@ -274,7 +274,7 @@
   color: rgba(246, 238, 232, 0.92);
   text-align: left;
   text-wrap: pretty;
-  hyphens: auto;
+  hyphens: manual;
 }
 
 /* La frase del final no ocupa hasta que existe. Con `opacity: 0` a secas

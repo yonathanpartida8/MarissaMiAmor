@@ -204,5 +204,5 @@
   color: rgba(246, 238, 232, 0.92);
   text-align: left;
   text-wrap: pretty;
-  hyphens: auto;
+  hyphens: manual;
 }

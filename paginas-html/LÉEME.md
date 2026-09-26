@@ -205,7 +205,7 @@ archivo y sin descargar nada de fuera.
 | `página.html12.html` | **El tren de noche.** Pasa otro tren seguido, la ventanilla se empaña y se aclara, y se puede escribir en el vaho. |
 | `página.html13.html` | **Los globos.** Un atardecer sobre el pueblo: mantienes el dedo y el globo se infla; lo sueltas y se va con su deseo. Hay globos de corazón, y si tocas uno en el aire revienta en confeti. |
 | `página.html14.html` | **Agítala.** Una bola de nieve que se agita con el sensor de movimiento del teléfono (o arrastrando, si no hay sensor). |
-| `página.html15.html` | **Coge las que quieras.** Se escogen flores y se arma un ramo con su papel, su listón y su tarjeta. |
+| `página.html15.html` | **Escoge las que quieras.** Se escogen flores y se arma un ramo con su papel, su listón y su tarjeta. |
 | `página.html16.html` | **La radio.** Una radio de capilla de madera: se prende, se calientan los bulbos y cada emisora del dial toca una canción de la carpeta `la radio/` (music1, music2…), en vivo. |
 | `página.html17.html` | **Toca un alfiler.** Un mapa con cinco alfileres (donde te vi, el primer contacto, el 23 de agosto, el primer beso y el futuro); cada uno abre su momento y el camino se va entintando. |
 | `página.html18.html` | **El caleidoscopio.** Se gira con el dedo o inclinando el teléfono; cada vuelta suelta un piropo. |

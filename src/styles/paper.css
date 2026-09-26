@@ -122,8 +122,8 @@
   color: var(--paper-ink);
   text-align: left;
   text-wrap: pretty;
-  hyphens: auto;
-  -webkit-hyphens: auto;
+  hyphens: manual;
+  -webkit-hyphens: manual;
   text-wrap: pretty;
 }
 

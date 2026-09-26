@@ -79,7 +79,7 @@
   color: rgba(246, 238, 232, 0.9);
   text-align: left;
   text-wrap: pretty;
-  hyphens: auto;
+  hyphens: manual;
   --word-delay: 200ms;
 }
 

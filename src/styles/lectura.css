@@ -97,8 +97,8 @@
 }
 .page :is(p, li, blockquote, .prose) {
   text-wrap: pretty;
-  hyphens: auto;
-  -webkit-hyphens: auto;
+  hyphens: manual;
+  -webkit-hyphens: manual;
   overflow-wrap: break-word;
 }
 .page :is(.kicker, [class*="kicker"]) {

@@ -34,7 +34,7 @@ const NOTITAS = [
   "Hoy sonreí por ti sin que estuvieras. Pasa seguido.",
   "Eres mi lugar seguro, aunque estés a kilómetros.",
   "Tengo guardado un «te amo» para cada día del año. Éste es el de hoy.",
-  "Qué bonito es quererte sin prisa.",
+  "Qué bonito es amarte sin prisa.",
   "Nuestras madrugadas raras son de mis cosas favoritas del mundo.",
   "Hoy te toca consentirte. Órdenes de tu novio.",
   "Si hoy dudas de algo, que no sea de mí.",
