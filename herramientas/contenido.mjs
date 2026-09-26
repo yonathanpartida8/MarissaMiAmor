@@ -83,6 +83,19 @@ const tocadiscos = [1, 2, 3, 4, 5].map((n) => {
   return f ? `${nfc(carpetaTocadiscos)}/${nfc(f)}` : null;
 });
 
+// Las canciones de la radio: `la radio/music1.mp3`, `music2.mp3`… (también
+// vale `musica1`). Las que haya, en orden; cada una es una emisora.
+const carpetaRadio = readdirSync(RAIZ).find(
+  (f) => ["laradio", "radio"].includes(sinAcentos(f).replace(/[\s_-]+/g, "")) && !f.includes(".")
+);
+const radio = carpetaRadio
+  ? leer(carpetaRadio)
+      .map((f) => ({ f, m: sinAcentos(f).match(/^musica?\s*(\d+)\.(mp3|m4a|ogg|wav|aac)$/) }))
+      .filter((x) => x.m)
+      .sort((a, b) => Number(a.m[1]) - Number(b.m[1]))
+      .map((x) => `${nfc(carpetaRadio)}/${nfc(x.f)}`)
+  : [];
+
 // Los vales de «Vales de amor», uno por línea, en `mis-vales/vales.txt`.
 // Las líneas que empiezan por # son notas y no salen; la que empieza por
 // «dorado:» es el vale dorado del final.
@@ -131,12 +144,14 @@ const desdePaginas = (r) => (r ? encodeURI(r.startsWith("paginas-html/") ? r.sli
 const archivosPaginas = {
   ojos: desdePaginas(sonidos.ojos),
   tocadiscos: tocadiscos.map(desdePaginas),
+  radio: radio.map(desdePaginas),
 };
 
 const SALIDAS = {
   "paginas-html/archivos.js":
     "// GENERADO por `node herramientas/contenido.mjs`: los sonidos que existen.\n" +
-    "// ojos.mp3 (la caja de música) y tocadiscos musica/musica1..5 (el tocadiscos).\n" +
+    "// ojos.mp3 (la caja de música), tocadiscos musica/musica1..5 (el tocadiscos)\n" +
+    "// y la radio/music1..N (la radio).\n" +
     `window.LIBRO_ARCHIVOS = ${JSON.stringify(archivosPaginas, null, 2)};\n`,
   "noche-estrellada/archivos.js":
     "// GENERADO por `node herramientas/contenido.mjs`: los sonidos que existen.\n" +
@@ -164,6 +179,6 @@ for (const [ruta, texto] of Object.entries(SALIDAS)) writeFileSync(join(RAIZ, ru
 console.log(
   `contenido: ${paginasHtml.length} páginas html · ${amores.length} fotos de amores · ` +
     `${misVideos.length} vídeos · ${misFotos.length} fotos · icono ${icono || "—"} · noche ${contenido.noche} · ${archivosNoche.length} sonidos de la noche · ` +
-    `corazón ${sonidos.corazon || "—"} · ojos ${sonidos.ojos || "—"} · tocadiscos ${tocadiscos.filter(Boolean).length}/5 · ` +
+    `corazón ${sonidos.corazon || "—"} · ojos ${sonidos.ojos || "—"} · tocadiscos ${tocadiscos.filter(Boolean).length}/5 · radio ${radio.length} · ` +
     `${vales ? vales.lista.length : 0} vales`
 );
