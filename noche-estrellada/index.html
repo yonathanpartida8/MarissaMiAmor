@@ -15635,6 +15635,10 @@ const caza = {
   apunta: -1.15, apuntaObj: -1.15,
   culatazo: 0,
   casquillos: [],
+  /* Los perdigones que van en el aire, el destello y la marca del tiro. */
+  trazos: [],
+  destello: 0,
+  marca: null,
   /* Cuánto se ha oscurecido el bosque. */
   oscuro: 0, oscuroObj: 0,
   /* Lo que había antes, para devolverlo al acabar. */
@@ -15844,6 +15848,9 @@ function moverCaceria(dt) {
     if (a.t > a.dur) caza.anillos.splice(i, 1);
   }
   caza.disparo = Math.max(0, caza.disparo - dt);
+  caza.destello = Math.max(0, caza.destello - dt * 7);
+  for (let i = caza.trazos.length - 1; i >= 0; i--) { caza.trazos[i].t += dt; if (caza.trazos[i].t > 0.16) caza.trazos.splice(i, 1); }
+  if (caza.marca) { caza.marca.t += dt; if (caza.marca.t > 0.45) caza.marca = null; }
   caza.fogonazo = Math.max(0, caza.fogonazo - dt * 6);
   caza.oscuro = damp(caza.oscuro, caza.oscuroObj, 1.1, dt);
   /* El arma vuelve sola al apoyo y el culatazo se le pasa. */
@@ -16027,6 +16034,23 @@ function dispararEscopeta(p) {
 
   /* El humo del cañón, en la boca y no en el centro de la pantalla. */
   const boca = bocaDelCanon();
+
+  /* ---- LOS PERDIGONES, EL DESTELLO Y LA MARCA ----
+     Seis rayitas de luz que salen de la boca y se abren un poco hacia
+     donde tocaste, un destello cálido que ilumina un instante todo, y en
+     el punto tocado una marca que se pone roja si le diste a algo. Es lo
+     que hace que cada tiro se SIENTA, aunque no le des a nada. */
+  const abre = U * 3.5;
+  for (let i = 0; i < (flojo ? 4 : 7); i++) {
+    caza.trazos.push({ x0: boca.x, y0: boca.y, x1: p.x + azar(-abre, abre), y1: p.y + azar(-abre, abre), t: 0 });
+  }
+  if (caza.trazos.length > 40) caza.trazos.splice(0, caza.trazos.length - 40);
+  caza.destello = 1;
+  caza.marca = { x: p.x, y: p.y, t: 0, acierto: false };
+  for (let i = 0; i < (flojo ? 3 : 7); i++) {
+    const a2 = azar(0, 6.283);
+    soltar(p.x, p.y, { vx: Math.cos(a2) * azar(40, 140), vy: Math.sin(a2) * azar(40, 140) - 30, vida: azar(0.2, 0.45), tam: azar(0.8, 1.6), tipo: TIPO.CHISPA, tono: 0.12 });
+  }
   for (let i = 0; i < (flojo ? 3 : 7); i++) {
     soltar(boca.x + azar(-U, U), boca.y + azar(-U, U), {
       vx: Math.cos(caza.apunta) * azar(30, 90) + azar(-20, 20),
@@ -16062,6 +16086,9 @@ function dispararEscopeta(p) {
     golpe(0.2, 160, 0.42, "lowpass");
     golpe(0.06, 900, 0.3, "bandpass");
   });
+  /* Y el eco que regresa del bosque, más apagado. */
+  setTimeout(() => golpe(0.07, 140, 0.5, "lowpass"), 170);
+  setTimeout(() => golpe(0.035, 120, 0.6, "lowpass"), 390);
 
   /* ---- A qué le ha dado ----
      Al MÁS CERCANO de los que caen dentro del tiro, no al primero de la
@@ -16082,6 +16109,7 @@ function dispararEscopeta(p) {
        pone rojo, acelera y se le nota, que es lo que avisa de que ese
        bicho sigue viniendo y hay que volver a darle. Un enemigo con más
        vida y sin señal ninguna sólo parece que el tiro ha fallado. */
+    caza.marca.acierto = true;
     mejor.vida = (mejor.vida ?? 1) - 1;
     if (mejor.vida > 0) {
       mejor.furia = 1;
@@ -16105,6 +16133,7 @@ function dispararEscopeta(p) {
      él, se le da al pequeño. Es lo que haría cualquiera. */
   if (jefe.vivo && jefe.entrada > 0.5
       && Math.hypot(p.x - jefe.x, p.y - jefe.y) < U * 13) {
+    caza.marca.acierto = true;
     herirJefe();
     return true;
   }
@@ -16780,6 +16809,49 @@ function refrescarVidas(encender) {
 
 /* ---- Dibujar ------------------------------------------------------------ */
 
+/** Los perdigones, el destello de la boca y la marca en donde tocaste. */
+function dibujarTiro() {
+  if (caza.destello > 0.01) {
+    const b = bocaDelCanon();
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const gd = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, Math.max(A, H) * 0.7);
+    gd.addColorStop(0, `rgba(255,220,150,${0.35 * caza.destello})`);
+    gd.addColorStop(0.3, `rgba(255,170,90,${0.12 * caza.destello})`);
+    gd.addColorStop(1, "rgba(255,150,80,0)");
+    ctx.fillStyle = gd; ctx.fillRect(0, 0, A, H);
+    ctx.restore();
+  }
+  if (caza.trazos.length) {
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.lineCap = "round";
+    for (const tz of caza.trazos) {
+      const k = tz.t / 0.16;
+      const a0 = clamp01(k * 1.6 - 0.35), a1 = clamp01(k * 1.6);
+      const x0 = mez(tz.x0, tz.x1, a0), y0 = mez(tz.y0, tz.y1, a0);
+      const x1 = mez(tz.x0, tz.x1, a1), y1 = mez(tz.y0, tz.y1, a1);
+      ctx.strokeStyle = `rgba(255,230,170,${0.85 * (1 - k)})`;
+      ctx.lineWidth = Math.max(1, U * 0.35);
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  const m = caza.marca;
+  if (m) {
+    const k = m.t / 0.45, r = U * (2.2 + k * 2.2);
+    ctx.save();
+    ctx.globalAlpha = 1 - k;
+    ctx.strokeStyle = m.acierto ? "#ff5a5a" : "#fff4dc";
+    ctx.lineWidth = Math.max(1.5, U * 0.4);
+    ctx.lineCap = "round";
+    for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      ctx.beginPath(); ctx.moveTo(m.x + dx * r * 0.45, m.y + dy * r * 0.45); ctx.lineTo(m.x + dx * r, m.y + dy * r); ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
 function dibujarCaceria() {
   /* ---- El bosque mojado ----
      Dos capas y no una. La primera MULTIPLICA un azul frío: eso no
@@ -16803,6 +16875,7 @@ function dibujarCaceria() {
 
   for (const o of caza.buhos) dibujarBuhoCaza(o);
   dibujarCorazonesCaza();
+  dibujarTiro();
 
   /* Y el jefe, por detrás de los búhos normales: es más grande y está
      más lejos, así que los pequeños le pasan por delante. */
@@ -19664,6 +19737,8 @@ function salirElMisterio(q) {
   const s = puntoEnPantalla(q);
   cam.oz = 1.28;
   cam.oy = (H * 0.46 - s.y) * 0.5;
+  /* Y vuelve a su sitio: antes se quedaba acercada para siempre. */
+  setTimeout(() => { cam.oz = 1; cam.ox = 0; cam.oy = 0; }, 5200);
 
   const r = puntos.lista.find((x) => x.id === "reliquia");
   if (r) { r.salida = 0; r.pulso = 1; }
@@ -19732,7 +19807,24 @@ let arrastrePanel = null;
 
 function local(e) {
   const r = raiz.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
+  return pantallaAMundo(e.clientX - r.left, e.clientY - r.top);
+}
+
+/**
+ * Del punto de la PANTALLA al punto del MUNDO que se ve ahí.
+ *
+ * Todo se dibuja dentro de la cámara (zoom, desplazamiento y sacudida).
+ * Si la cámara no está en su sitio —se queda acercada un momento al
+ * salir el misterio, o tiembla con el disparo—, lo que se ve en un
+ * punto no está en ese mismo punto del mundo. Comparar el dedo sin
+ * deshacer la cámara era justo el fallo de la cacería: los búhos no
+ * reventaban donde se tocaban, sino un poco más allá.
+ */
+function pantallaAMundo(sx, sy) {
+  const mx = Math.sin(meneo.t * 43) * meneo.fuerza * U * 1.2;
+  const my = Math.cos(meneo.t * 37) * meneo.fuerza * U * 1.1;
+  const z = cam.z || 1;
+  return { x: (sx - A / 2 - mx - cam.x) / z + A / 2, y: (sy - H / 2 - my - cam.y) / z + H / 2 };
 }
 
 /** ¿El punto (x,y) cae dentro del círculo? */
