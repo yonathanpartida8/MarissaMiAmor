@@ -3,133 +3,58 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
 <title>El globo</title>
+<script src="sonido-libro.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Caveat:wght@500&family=Great+Vibes&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
-   Todo dentro de .globo-mundo, con prefijo `gl-` en cada clase.
+   EL GLOBO — «Dale al quemador»
+   Mantén el dedo para calentar el aire: el globo sube del prado a los
+   pájaros, cruza las nubes, ve la curva de la Tierra y llega al espacio.
+   Prefijo `gl-`.
    ══════════════════════════════════════════════════════════════════════ */
-
-html, body { margin: 0; height: 100%; }
-
-.globo-mundo {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  isolation: isolate;
-  contain: layout paint;
-  background: #b8dcf0;
-  color: #3a4450;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: none;
-
-  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
-  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+html, body { margin: 0; height: 100%; overflow: hidden; background: #9fd2ee; }
+.gl {
+  position: fixed; inset: 0; overflow: hidden;
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: none;
+  font-family: "Cormorant Garamond", Georgia, serif; color: #2e3c4c;
+  --seg-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seg-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
   --barra: var(--hueco-barra, 0rem);
-  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+  --suave: cubic-bezier(0.22, 1, 0.36, 1);
+  --tinta: #2e3c4c; --firma: #c2506a; --tenue: rgba(46, 60, 76, 0.6);
+  transition: color 1.2s;
 }
-
-.globo-mundo .gl-lienzo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  /* Los toques los recoge `.gl-toque`, que va justo encima. */
-  pointer-events: none;
-}
-
-/* El cielo entero. El libro sólo se queda el barrido que empieza en sus
-   24-44 px de borde. */
-.globo-mundo .gl-toque {
-  position: absolute;
-  inset: 0;
-  touch-action: none;
-  z-index: 2;
-  cursor: pointer;
-}
-
-.globo-mundo .gl-ui {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-  padding:
-    calc(var(--seguro-t) + 20px) 22px
-    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  text-align: center;
-}
-
-.globo-mundo .gl-titulo {
-  margin: 0;
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-size: clamp(1rem, 4.4vw, 1.4rem);
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  color: #4a6a80;
-  opacity: 0.85;
-  transition: opacity 800ms var(--e-suave), color 1200ms var(--e-suave);
-}
-.globo-mundo.is-subiendo .gl-titulo { opacity: 0.2; }
-
-.globo-mundo .gl-pie {
-  margin: 0;
-  min-height: 3.8em;
-  max-width: 23em;
-  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
-  line-height: 1.55;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 660ms var(--e-suave), transform 660ms var(--e-suave), color 1200ms var(--e-suave);
-  color: #3f4b56;
-}
-.globo-mundo .gl-pie.is-visible { opacity: 0.94; transform: none; }
-.globo-mundo .gl-pie em {
-  display: block;
-  margin-top: 0.3em;
-  font-family: var(--tipo-mano, "Segoe Script", cursive);
-  font-size: 1.16em;
-  font-style: normal;
-  color: #c2506a;
-}
-
-.globo-mundo .gl-altura {
-  position: absolute;
-  right: 20px;
-  top: calc(var(--seguro-t) + 20px);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.74rem;
-  letter-spacing: 0.14em;
-  color: #4a6a80;
-  opacity: 0.85;
-  transition: color 1200ms var(--e-suave);
-}
-.globo-mundo.is-alto .gl-altura,
-.globo-mundo.is-alto .gl-titulo { color: #cfe0f4; }
-.globo-mundo.is-alto .gl-pie { color: #e4ecf8; }
-
-@media (prefers-reduced-motion: reduce) {
-  .globo-mundo * { transition-duration: 1ms !important; }
-}
+.gl.is-alto { --tinta: #eef3ff; --firma: #ffb8c8; --tenue: rgba(220, 230, 255, 0.6); }
+.gl canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.gl-cabeza { position: absolute; top: calc(var(--seg-t) + 12px); left: 0; right: 0; display: grid; justify-items: center; gap: 2px; pointer-events: none; text-align: center; }
+.gl-titulo { margin: 0; font-weight: 600; font-size: clamp(0.66rem, 2.8vw, 0.78rem); letter-spacing: 0.36em; text-transform: uppercase; color: var(--tenue); transition: color 1.2s; }
+.gl-altura { margin: 0; font-variant-numeric: tabular-nums; font-size: 0.8rem; letter-spacing: 0.16em; color: var(--tenue); transition: color 1.2s; }
+.gl-pie { position: absolute; left: 0; right: 0; bottom: calc(var(--seg-b) + var(--barra) + 16px); display: grid; justify-items: center; gap: 3px; padding: 0 22px; pointer-events: none; text-align: center; }
+.gl-pie::before { content: ""; position: absolute; inset: -40px 0 -30px; z-index: -1; background: radial-gradient(60% 70% at 50% 60%, rgba(255, 255, 255, 0.45), transparent 75%); transition: opacity 1.2s; }
+.gl.is-alto .gl-pie::before { background: radial-gradient(60% 70% at 50% 60%, rgba(0, 8, 30, 0.7), transparent 78%); }
+.gl-frase { margin: 0; max-width: 20em; font-style: italic; font-weight: 500; font-size: clamp(1.05rem, 4.8vw, 1.3rem); line-height: 1.3; color: var(--tinta); text-shadow: 0 1px 10px rgba(255, 255, 255, 0.35); transition: opacity 700ms var(--suave), transform 700ms var(--suave), color 1.2s; }
+.gl.is-alto .gl-frase { text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8); }
+.gl-firma { margin: 0; font-family: "Caveat", cursive; font-size: clamp(1rem, 4.4vw, 1.22rem); color: var(--firma); transition: opacity 700ms var(--suave) 200ms, color 1.2s; }
+.gl-frase.is-fuera { opacity: 0; transform: translateY(6px); }
+.gl-firma.is-fuera { opacity: 0; transition-delay: 0ms; }
+.gl-pista { margin: 4px 0 0; font-size: clamp(0.58rem, 2.4vw, 0.68rem); font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: var(--tenue); transition: opacity 600ms, color 1.2s; }
+.gl-pista.is-fuera { opacity: 0; }
 </style>
 </head>
 <body>
-
-<div class="globo-mundo" id="mundo">
-  <canvas class="gl-lienzo" id="lienzo"></canvas>
-  <div class="gl-toque" id="toque" aria-hidden="true"></div>
-  <div class="gl-ui">
-    <h1 class="gl-titulo" id="titulo">Dale al quemador</h1>
-    <p class="gl-pie" id="pie" role="status" aria-live="polite"></p>
+<div class="gl" id="mundo">
+  <canvas id="lienzo"></canvas>
+  <div class="gl-cabeza"><p class="gl-titulo">Dale al quemador</p><p class="gl-altura" id="altura">0 m</p></div>
+  <div class="gl-pie">
+    <p class="gl-frase" id="frase" role="status" aria-live="polite">Todavía se oye el pueblo.</p>
+    <p class="gl-firma" id="firma">agárrate, que ya nos vamos</p>
+    <p class="gl-pista" id="pista">mantén el dedo para encender el fuego</p>
   </div>
-  <div class="gl-altura" id="altura" aria-hidden="true"></div>
 </div>
 
 <script>
@@ -139,595 +64,493 @@ html, body { margin: 0; height: 100%; }
 /* ══════════════════════════════════════════════════════════════════════
    CONFIGURACIÓN EDITABLE
    ══════════════════════════════════════════════════════════════════════ */
-
 const CONF = {
-
-  /* ---- LAS INICIALES --------------------------------------------------
-     Van cosidas en la tela del globo, en el gajo del medio.           */
-  iniciales: "y.m",
-
-  /* ---- EL VUELO -------------------------------------------------------
-     Se toca para dar gas: el globo sube. Sin gas, baja solo. Y el aire
-     se enfría, así que hay que ir dándole de vez en cuando.           */
-  empuje: 320,          // lo que sube por cada toque
-  enfria: 0.55,         // cuánto pierde por segundo
-  bajaSola: 120,        // a qué velocidad cae sin gas
-
-  /* ---- LAS CAPAS DEL CIELO --------------------------------------------
-     Todo el viaje es UN número, los metros. Los colores, lo que se ve
-     por la ventana y lo que se lee salen de él.                       */
+  iniciales: "y.m",                 // cosidas en la tela del globo
+  colores: ["#e25d78", "#f7e7d4"],  // los gajos del globo, alternados
+  techo: 100000,                    // metros: aquí empieza el espacio
   capas: [
-    { m: 0,    cielo: ["#8fd0ee", "#e8f0d8"], texto: "Todavía se oye el pueblo.",               firma: "Agárrate, que vamos." },
-    { m: 400,  cielo: ["#7ac4ea", "#c8e4f2"], texto: "Ya se ven los tejados pequeñitos.",       firma: "El tuyo es ese de ahí." },
-    { m: 1200, cielo: ["#5fa8de", "#a8d0ec"], texto: "Estamos a la altura de los pájaros.",      firma: "Nos están mirando raro." },
-    { m: 2400, cielo: ["#3f7fc4", "#7fb4e0"], texto: "Aquí arriba hace un frío estupendo.",      firma: "Ven, que te tapo." },
-    { m: 4000, cielo: ["#2a5296", "#4d82c4"], texto: "Esa nube de ahí la hemos atravesado.",     firma: "Sabías tú que no se moja." },
-    { m: 6500, cielo: ["#152e64", "#2a4f96"], texto: "Ya casi no hay aire.",                     firma: "Respira despacio." },
-    { m: 9000, cielo: ["#07132e", "#12265c"], texto: "Se ve la curva de la Tierra.",             firma: "Y sigue siendo pequeña comparada." },
-    { m: 12000, cielo: ["#020610", "#070f28"], texto: "Esto ya no es cielo. Esto es lo otro.",   firma: "No teníamos que haber llegado tan lejos, y mira." },
+    { m: 0,      texto: "Todavía se oye el pueblo.",           firma: "agárrate, que ya nos vamos" },
+    { m: 250,    texto: "Ya se ven los techos chiquitos.",     firma: "desde aquí todo se ve tranquilo" },
+    { m: 1000,   texto: "Vamos a la altura de los pájaros.",   firma: "nos están mirando raro" },
+    { m: 2600,   texto: "Estamos cruzando las nubes.",         firma: "¿sabías que no mojan?" },
+    { m: 8000,   texto: "Aquí arriba ya casi no hay aire.",    firma: "respira despacito, conmigo" },
+    { m: 20000,  texto: "Ya se ve la curva de la Tierra.",     firma: "y tú sigues siendo lo más bonito que veo" },
+    { m: 50000,  texto: "El cielo se puso negro.",             firma: "y salieron las estrellas a vernos" },
+    { m: 100000, texto: "Llegamos al espacio.",                firma: "hasta aquí te llevaría, y más lejos" },
   ],
-
-  /* ---- LAS NUBES ------------------------------------------------------- */
-  nubes: 16,
+  cesta: ["En la cesta llevamos una manta y un termo.", "y el termo está lleno, ya lo revisé"],
+  bajar: ["Ya estamos otra vez en el prado.", "¿otra vuelta?"],
 };
 
-/* ══════════════════════════════════════════════════════════════════════
-   La maquinaria.
-   ══════════════════════════════════════════════════════════════════════ */
-
-const mundo  = document.getElementById("mundo");
+const mundo = document.getElementById("mundo");
 const lienzo = document.getElementById("lienzo");
-const zona   = document.getElementById("toque");
-const elPie  = document.getElementById("pie");
-const elAlt  = document.getElementById("altura");
-const ctx    = lienzo.getContext("2d", { alpha: false });
+const g = lienzo.getContext("2d", { alpha: false });
+const elFrase = document.getElementById("frase");
+const elFirma = document.getElementById("firma");
+const elPista = document.getElementById("pista");
+const elAlt = document.getElementById("altura");
+const TAU = Math.PI * 2;
+const azar = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const mezcla = (a, b, t) => a + (b - a) * t;
+const acercar = (v, o, k, dt) => o + (v - o) * Math.exp(-k * dt);
+const suaveT = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+function hex(c) { const n = parseInt(c.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+function mezHex(c1, c2, t) { const a = hex(c1), b = hex(c2); return `rgb(${a.map((v, i) => Math.round(mezcla(v, b[i], t))).join(",")})`; }
 
-const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const azar  = (a, b) => a + Math.random() * (b - a);
-const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
-const mez   = (a, b, t) => a + (b - a) * t;
+/* ══════════════════════════════════════════════════════════════════════
+   LA ALTURA
+   Todo el viaje se mide en L = ln(1 + metros/100): así cada tramo del
+   cielo (el pueblo, los pájaros, las nubes, el espacio) ocupa más o
+   menos lo mismo en pantalla aunque las distancias reales sean enormes.
+   ══════════════════════════════════════════════════════════════════════ */
+const aL = (m) => Math.log(1 + m / 100);
+const aM = (L) => (Math.exp(L) - 1) * 100;
+const LTECHO = aL(CONF.techo);
 
-function mezColor(c1, c2, t) {
-  const p = (c) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
-  const [r1, g1, b1] = p(c1), [r2, g2, b2] = p(c2);
-  return `rgb(${Math.round(mez(r1, r2, t))},${Math.round(mez(g1, g2, t))},${Math.round(mez(b1, b2, t))})`;
+let A = 0, H = 0, dpr = 1, uL = 0;     // uL: píxeles por unidad de L
+let L = 0, vL = 0, calor = 0.2, apretando = false;
+let ang = 0, vAng = 0;                 // el balanceo del globo
+let fase = "vuelo";                    // vuelo · espacio · bajando
+let reloj = 0, tEspacio = 0, capaDicha = 0, cestaAbierta = 0;
+
+/* El cielo según la altura: de celeste a azul profundo a negro. */
+const CIELO = [
+  [0,    "#8fd0ee", "#eef3dc"],
+  [3,    "#62a9e0", "#b8dcf2"],
+  [4.5,  "#2f68b4", "#6fa8dc"],
+  [5.5,  "#12275e", "#3a70b8"],
+  [6.2,  "#040a1e", "#18306a"],
+  [6.9,  "#010208", "#070e26"],
+];
+function cieloEn(L) {
+  for (let i = 0; i < CIELO.length - 1; i++) {
+    const a = CIELO[i], b = CIELO[i + 1];
+    if (L <= b[0]) { const t = suaveT(a[0], b[0], L); return [mezHex(a[1], b[1], t), mezHex(a[2], b[2], t)]; }
+  }
+  const u = CIELO[CIELO.length - 1]; return [u[1], u[2]];
 }
 
-let A = 0, H = 0, dpr = 1;
-let gx = 0, gy = 0, gr = 0;     // el globo: centro y radio
+/* ══════════════════════════════════════════════════════════════════════
+   LO QUE HAY EN EL CIELO (cada cosa a su altura)
+   ══════════════════════════════════════════════════════════════════════ */
+let nubes = [], pajaros = [], estrellas = [], casas = [], arboles = [], chispas = [], fugaces = [];
+let avion = null, satelite = null, continentes = [];
+function sembrar() {
+  nubes = [];
+  for (let i = 0; i < 17; i++) nubes.push({ L: azar(aL(1500), aL(7000)), x: Math.random(), s: azar(0.6, 1.5), v: azar(0.004, 0.012), bolas: Array.from({ length: 6 + (i % 4) }, () => [azar(-1, 1), azar(-0.3, 0.2), azar(0.35, 0.7)]) });
+  pajaros = [];
+  for (let i = 0; i < 3; i++) {
+    const L0 = azar(aL(500), aL(1600)), x0 = Math.random();
+    for (let j = 0; j < 5; j++) pajaros.push({ L: L0 + (j % 2 ? 0.03 : -0.03) * j * 0.3, x: x0 - j * 0.04, dx: j * 0.04, f: Math.random() * TAU, v: azar(0.02, 0.035) });
+  }
+  estrellas = Array.from({ length: 260 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() ** 3 * 1.6 + 0.3, f: Math.random() * TAU, c: Math.random() < 0.15 ? "#ffe2c0" : Math.random() < 0.3 ? "#c8d8ff" : "#ffffff" }));
+  casas = Array.from({ length: 11 }, (_, i) => ({ x: (i + 0.5) / 11 + azar(-0.02, 0.02), w: azar(26, 40), h: azar(18, 30), c: ["#e8d6c0", "#f0e2d0", "#dcc6b0", "#f4e8dc"][i % 4], t: ["#b8574a", "#9c4a44", "#c46a50"][i % 3], lejos: i % 2 }));
+  arboles = Array.from({ length: 16 }, () => ({ x: Math.random(), r: azar(9, 17), lejos: Math.random() < 0.5 }));
+  continentes = Array.from({ length: 10 }, (_, i) => ({ x: Math.random(), y: azar(0.15, 1), nube: i % 3 === 0, tono: ["rgba(84,130,70,.85)", "rgba(150,132,84,.8)", "rgba(96,140,78,.85)"][i % 3], bolas: Array.from({ length: 7 }, () => [azar(-1, 1), azar(-1, 1), azar(0.3, 0.9)]) }));
+  avion = { L: aL(10500), x: -0.2, v: 0.03 };
+  satelite = { L: aL(80000), x: 1.2, v: -0.02 };
+}
+// Posición en pantalla de algo que está a la altura Lo: el globo queda
+// fijo un poco arriba del centro y el mundo se desliza.
+const yGlobo = () => H * 0.44;
+const aPantalla = (Lo) => yGlobo() + (L - Lo) * uL;
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL SONIDO: el rugido del quemador y el viento que se va apagando
+   ══════════════════════════════════════════════════════════════════════ */
+let ac = null, fuegoG = null, vientoG = null, silbidoG = null;
+function despertar() {
+  if (ac) { if (ac.state === "suspended") ac.resume(); return; }
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return; }
+  const n = ac.sampleRate * 2, b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  let u = 0;
+  for (let i = 0; i < n; i++) { const w = Math.random() * 2 - 1; u = (u + 0.03 * w) / 1.03; d[i] = u * 2.5 + w * 0.15; }
+  const hacer = (tipo, f, q) => { const s = ac.createBufferSource(); s.buffer = b; s.loop = true; const fl = ac.createBiquadFilter(); fl.type = tipo; fl.frequency.value = f; fl.Q.value = q; const gg = ac.createGain(); gg.gain.value = 0; s.connect(fl).connect(gg); s.start(); return gg; };
+  // El quemador es un sonido de verdad: aparta la música mientras ruge.
+  fuegoG = hacer("lowpass", 520, 0.9); fuegoG.connect(ac.destination);
+  silbidoG = hacer("bandpass", 2400, 1.2); silbidoG.connect(ac.destination);
+  // El viento es ambiente: no la aparta.
+  vientoG = hacer("bandpass", 380, 0.6);
+  if (window.LibroSonido) window.LibroSonido.ambiente(vientoG); else vientoG.connect(ac.destination);
+}
+function campanita(hz) {
+  if (!ac) return;
+  const t = ac.currentTime;
+  [1, 2.01, 3.02].forEach((k, i) => {
+    const o = ac.createOscillator(), gg = ac.createGain();
+    o.type = "sine"; o.frequency.value = hz * k;
+    gg.gain.setValueAtTime(0.0001, t); gg.gain.exponentialRampToValueAtTime(0.14 / (i + 1), t + 0.02); gg.gain.exponentialRampToValueAtTime(0.0001, t + 2.4);
+    o.connect(gg).connect(ac.destination); o.start(t); o.stop(t + 2.5);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS TEXTOS
+   ══════════════════════════════════════════════════════════════════════ */
+function decir(f, s) {
+  elFrase.classList.add("is-fuera"); elFirma.classList.add("is-fuera");
+  setTimeout(() => { elFrase.textContent = f; elFirma.textContent = s || ""; elFrase.classList.remove("is-fuera"); elFirma.classList.toggle("is-fuera", !s); }, 380);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL DEDO
+   ══════════════════════════════════════════════════════════════════════ */
+function enCesta(e) {
+  const r = mundo.getBoundingClientRect(), R = radioGlobo();
+  const cx = A / 2 + Math.sin(ang) * R * 1.9, cy = yGlobo() + R * 1.9;
+  return Math.hypot(e.clientX - r.left - cx, e.clientY - r.top - cy) < R * 0.42 && L < 0.2;
+}
+mundo.addEventListener("pointerdown", (e) => {
+  despertar();
+  if (fase === "espacio" && tEspacio > 4) { fase = "bajando"; elPista.textContent = "bajando despacito…"; return; }
+  if (enCesta(e)) { cestaAbierta = cestaAbierta > 0.5 ? 0 : 1; if (cestaAbierta) { decir(...CONF.cesta); campanita(523); } return; }
+  apretando = true;
+  try { mundo.setPointerCapture(e.pointerId); } catch {}
+  elPista.classList.add("is-fuera");
+});
+const soltar = () => { apretando = false; };
+mundo.addEventListener("pointerup", soltar);
+mundo.addEventListener("pointercancel", soltar);
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL VUELO
+   ══════════════════════════════════════════════════════════════════════ */
+function volar(dt) {
+  const fuego = apretando && fase === "vuelo";
+  // El aire de dentro se calienta con el fuego y se enfría solo.
+  calor = clamp(calor + (fuego ? 0.7 : -0.1) * dt, 0, 1);
+  let objetivo;
+  if (fase === "bajando") objetivo = -Math.max(0.25, L * 0.12);
+  else if (fase === "espacio") objetivo = 0;
+  else objetivo = (calor - 0.32) * 0.42;
+  vL = acercar(vL, objetivo, 1.4, dt);
+  const antes = vL;
+  L = Math.min(LTECHO, L + vL * dt);
+  if (L <= 0) {
+    L = 0; vL = Math.max(0, vL);
+    if (fase === "bajando") { fase = "vuelo"; calor = 0.2; capaDicha = 0; decir(...CONF.bajar); elPista.textContent = "mantén el dedo para encender el fuego"; elPista.classList.remove("is-fuera"); }
+  }
+  if (L >= LTECHO && fase === "vuelo") {
+    L = LTECHO; fase = "espacio"; tEspacio = 0; calor = 0.4;
+    for (let i = 0; i < 16; i++) setTimeout(() => lanzarFugaz(), 400 + i * 380);
+    campanita(659); setTimeout(() => campanita(784), 380); setTimeout(() => campanita(988), 760);
+    setTimeout(() => { elPista.textContent = "toca para volver a bajar"; elPista.classList.remove("is-fuera"); }, 5000);
+  }
+  // Balanceo: un péndulo que se agita cuando cambia la velocidad.
+  vAng += (-ang * 5 - vAng * 1.6 + (antes - vL) * 30 + Math.sin(reloj * 0.7) * 0.03 * (L < 5 ? 1 : 0.2)) * dt;
+  ang += vAng * dt;
+  ang = clamp(ang, -0.25, 0.25);
+
+  // Los textos, uno por capa del cielo, al subir.
+  const m = aM(L);
+  if (fase === "vuelo") {
+    let k = 0;
+    for (let i = 0; i < CONF.capas.length; i++) if (m >= CONF.capas[i].m * 0.98) k = i;
+    if (k > capaDicha) { capaDicha = k; decir(CONF.capas[k].texto, CONF.capas[k].firma); }
+  }
+  elAlt.textContent = m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(m < 10000 ? 1 : 0)} km`;
+  mundo.classList.toggle("is-alto", L > 4.6);
+
+  // Sonido.
+  if (ac) {
+    const t = ac.currentTime;
+    fuegoG.gain.setTargetAtTime(fuego ? 0.55 : 0, t, fuego ? 0.05 : 0.18);
+    silbidoG.gain.setTargetAtTime(fuego ? 0.05 : 0, t, 0.08);
+    // El viento sube con la altura y desaparece donde ya no hay aire.
+    const aire = 1 - suaveT(4.8, 6.2, L);
+    vientoG.gain.setTargetAtTime((0.04 + Math.min(0.12, Math.abs(vL) * 0.3) + suaveT(0.5, 3.5, L) * 0.08) * aire, t, 0.4);
+  }
+}
+function lanzarFugaz() {
+  fugaces.push({ x: azar(0.1, 1.1) * A, y: azar(0, 0.45) * H, vx: -azar(300, 520), vy: azar(120, 240), t: 0 });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL DIBUJO
+   ══════════════════════════════════════════════════════════════════════ */
+const radioGlobo = () => Math.min(A * 0.2, H * 0.12);
+
+function pintarCielo() {
+  const [arriba, abajo] = cieloEn(L + 0.4);
+  const cg = g.createLinearGradient(0, 0, 0, H);
+  cg.addColorStop(0, arriba); cg.addColorStop(1, abajo);
+  g.fillStyle = cg; g.fillRect(0, 0, A, H);
+  // El sol: primero cálido y con halo, arriba ya blanco y duro.
+  const sx = A * 0.82, sy = H * 0.12, alto = suaveT(4.5, 6.4, L);
+  const halo = g.createRadialGradient(sx, sy, 0, sx, sy, A * (0.5 - alto * 0.35));
+  halo.addColorStop(0, `rgba(255,248,220,${0.9 - alto * 0.3})`);
+  halo.addColorStop(0.08, `rgba(255,240,200,${0.5 - alto * 0.2})`);
+  halo.addColorStop(1, "rgba(255,240,200,0)");
+  g.fillStyle = halo; g.fillRect(0, 0, A, H);
+  g.fillStyle = "#fffdf4"; g.beginPath(); g.arc(sx, sy, 9 + alto * 3, 0, TAU); g.fill();
+  // Las estrellas salen cuando el cielo se oscurece.
+  const ve = suaveT(5.0, 6.4, L);
+  if (ve > 0.01) {
+    for (const s of estrellas) {
+      const brillo = ve * (0.55 + 0.45 * Math.sin(reloj * (1 + s.r) + s.f));
+      g.globalAlpha = brillo; g.fillStyle = s.c;
+      g.beginPath(); g.arc(s.x * A, s.y * H, s.r, 0, TAU); g.fill();
+    }
+    g.globalAlpha = 1;
+    // Un poquito de vía láctea.
+    g.globalAlpha = ve * 0.25;
+    const vl = g.createLinearGradient(0, H * 0.1, A, H * 0.6);
+    vl.addColorStop(0, "rgba(160,170,255,0)"); vl.addColorStop(0.5, "rgba(200,190,255,.5)"); vl.addColorStop(1, "rgba(160,170,255,0)");
+    g.fillStyle = vl; g.fillRect(0, 0, A, H);
+    g.globalAlpha = 1;
+  }
+}
+
+/* La Tierra vista desde arriba: una curva que se va cerrando, con su
+   borde azul de atmósfera. */
+function pintarTierra() {
+  const ve = suaveT(4.4, 5.6, L);
+  if (ve <= 0) return;
+  const k = suaveT(4.4, LTECHO, L);
+  const R = mezcla(A * 6, A * 1.15, k);
+  const asoma = mezcla(H * 0.05, H * 0.3, k);
+  const cx = A / 2, cy = H - asoma + R;
+  g.save();
+  g.globalAlpha = ve;
+  // Atmósfera: un halo azul alrededor del borde.
+  const atm = g.createRadialGradient(cx, cy, R * 0.98, cx, cy, R + H * 0.07);
+  atm.addColorStop(0, "rgba(120,190,255,0.95)");
+  atm.addColorStop(0.3, "rgba(80,150,255,0.45)");
+  atm.addColorStop(1, "rgba(60,120,255,0)");
+  g.fillStyle = atm; g.beginPath(); g.arc(cx, cy, R + H * 0.07, 0, TAU); g.fill();
+  // El planeta: océano, tierra y nubes, iluminado de lado.
+  g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.clip();
+  const mar = g.createLinearGradient(0, cy - R, 0, cy - R + asoma * 1.2);
+  mar.addColorStop(0, "#3d8fd6"); mar.addColorStop(1, "#123f7c");
+  g.fillStyle = mar; g.fillRect(0, cy - R - 2, A, asoma + 4);
+  // Continentes y remolinos de nubes, aplastados cerca del horizonte.
+  const giro = reloj * 4;
+  for (const c of continentes) {
+    const x = ((c.x * A * 1.8 + giro) % (A * 1.8)) - A * 0.4;
+    const y = cy - R + asoma * c.y;
+    const aplasta = 0.25 + c.y * 0.9;
+    for (const [bx, by, br] of c.bolas) {
+      g.fillStyle = c.nube ? "rgba(255,255,255,.28)" : c.tono;
+      const ex = c.nube ? 1.9 : 1, ey = c.nube ? 0.35 : 1;
+      g.beginPath(); g.ellipse(x + bx * A * 0.1 * ex, y + by * asoma * 0.08 * aplasta, br * A * 0.06 * ex, br * asoma * 0.07 * aplasta * ey, 0, 0, TAU); g.fill();
+    }
+  }
+  const sombra = g.createLinearGradient(0, 0, A, 0);
+  sombra.addColorStop(0, "rgba(0,0,20,.45)"); sombra.addColorStop(0.6, "rgba(0,0,20,0)"); sombra.addColorStop(1, "rgba(255,250,230,.12)");
+  g.fillStyle = sombra; g.fillRect(0, cy - R, A, asoma + 4);
+  g.restore();
+}
+
+/* El suelo: prado, pueblo, árboles, cerros. Se queda abajo al subir. */
+function pintarSuelo() {
+  const base = aPantalla(0) + radioGlobo() * 2.3;
+  if (H * 0.62 + L * uL * 0.3 - H * 0.1 > H) return;
+  // Montañas lejanas: bajan más despacio (están lejos).
+  const yM = H * 0.62 + L * uL * 0.3;
+  g.fillStyle = "#9cb8cc";
+  g.beginPath(); g.moveTo(0, H + 400);
+  for (let i = 0; i <= 12; i++) g.lineTo(A * i / 12, yM - (Math.sin(i * 1.7) * 0.5 + 0.7) * H * 0.07);
+  g.lineTo(A, H + 400); g.fill();
+  g.fillStyle = "#8db36a";
+  g.beginPath(); g.moveTo(0, H + 400);
+  for (let i = 0; i <= 16; i++) g.lineTo(A * i / 16, base - H * 0.08 - Math.sin(i * 0.9 + 1) * H * 0.018);
+  g.lineTo(A, H + 400); g.fill();
+  // Casitas lejanas y árboles.
+  for (const a of arboles) if (a.lejos) { g.fillStyle = "#5f8f4e"; g.beginPath(); g.arc(a.x * A, base - H * 0.075, a.r * 0.6, 0, TAU); g.fill(); }
+  for (const c of casas) if (c.lejos) casa(c, base - H * 0.07, 0.6);
+  const prado = g.createLinearGradient(0, base - 20, 0, base + H * 0.3);
+  prado.addColorStop(0, "#9ccc6e"); prado.addColorStop(1, "#6fa152");
+  g.fillStyle = prado;
+  g.beginPath(); g.moveTo(0, H + 400); g.lineTo(0, base - 14);
+  g.quadraticCurveTo(A / 2, base - 30, A, base - 10); g.lineTo(A, H + 400); g.fill();
+  for (const c of casas) if (!c.lejos) casa(c, base - 8, 1);
+  for (const a of arboles) if (!a.lejos) {
+    g.fillStyle = "#6d4c36"; g.fillRect(a.x * A - 2, base - 16, 4, 12);
+    g.fillStyle = "#4f8a44"; g.beginPath(); g.arc(a.x * A, base - 22, a.r, 0, TAU); g.fill();
+    g.fillStyle = "rgba(255,255,255,.15)"; g.beginPath(); g.arc(a.x * A - a.r * 0.3, base - 22 - a.r * 0.3, a.r * 0.5, 0, TAU); g.fill();
+  }
+  // La sombra del globo en el prado, que se achica al subir.
+  const sb = Math.max(0, 1 - L * 1.5);
+  if (sb > 0) { g.fillStyle = `rgba(30,60,20,${0.25 * sb})`; g.beginPath(); g.ellipse(A / 2, base + 12, radioGlobo() * 0.8 * sb, 6 * sb, 0, 0, TAU); g.fill(); }
+}
+function casa(c, y, k) {
+  const x = c.x * A, w = c.w * k, h = c.h * k;
+  g.fillStyle = c.c; g.fillRect(x - w / 2, y - h, w, h);
+  g.fillStyle = c.t; g.beginPath(); g.moveTo(x - w / 2 - 3 * k, y - h); g.lineTo(x, y - h - h * 0.7); g.lineTo(x + w / 2 + 3 * k, y - h); g.fill();
+  g.fillStyle = "#7aa6c8"; g.fillRect(x - w * 0.3, y - h * 0.7, w * 0.2, h * 0.3); g.fillRect(x + w * 0.1, y - h * 0.7, w * 0.2, h * 0.3);
+  // Humo de chimenea.
+  if (k === 1) for (let i = 0; i < 3; i++) { const t = (reloj * 0.4 + i / 3) % 1; g.fillStyle = `rgba(255,255,255,${0.35 * (1 - t)})`; g.beginPath(); g.arc(x + w * 0.3 + t * 10, y - h - h * 0.6 - t * 30, 3 + t * 6, 0, TAU); g.fill(); }
+}
+
+function pintarNube(n, y) {
+  const x = ((n.x + reloj * n.v) % 1.4) * A - A * 0.2, s = radioGlobo() * n.s;
+  const brillo = 1 - suaveT(4.3, 5.0, L) * 0.7;
+  for (const [bx, by, br] of n.bolas) {
+    const gr = g.createRadialGradient(x + bx * s, y + by * s - br * s * 0.3, 0, x + bx * s, y + by * s, br * s * 1.4);
+    gr.addColorStop(0, `rgba(255,255,255,${0.85 * brillo})`);
+    gr.addColorStop(0.6, `rgba(236,242,250,${0.55 * brillo})`);
+    gr.addColorStop(1, "rgba(220,230,245,0)");
+    g.fillStyle = gr; g.beginPath(); g.arc(x + bx * s, y + by * s, br * s * 1.4, 0, TAU); g.fill();
+  }
+}
+function pintarPajaro(p, y) {
+  const x = ((p.x + reloj * p.v) % 1.3 + 1.3) % 1.3 * A - A * 0.15;
+  const ala = Math.sin(reloj * 9 + p.f) * 5;
+  g.strokeStyle = "rgba(40,50,60,.75)"; g.lineWidth = 1.6; g.lineCap = "round";
+  g.beginPath(); g.moveTo(x - 7, y - ala); g.quadraticCurveTo(x - 3, y - 2, x, y); g.quadraticCurveTo(x + 3, y - 2, x + 7, y - ala); g.stroke();
+}
+
+/* El globo: gajos con sombreado redondo, las iniciales, el quemador y la
+   cesta de mimbre colgando de sus cuerdas. */
+function pintarGlobo() {
+  const R = radioGlobo(), cx = A / 2, cy = yGlobo();
+  const bob = Math.sin(reloj * 1.3) * 3;
+  g.save();
+  g.translate(cx, cy + bob);
+  g.rotate(ang);
+  const forma = () => {
+    g.beginPath();
+    g.moveTo(-R * 0.36, R * 1.15);
+    g.bezierCurveTo(-R * 1.25, R * 0.3, -R * 1.15, -R * 1.05, 0, -R * 1.08);
+    g.bezierCurveTo(R * 1.15, -R * 1.05, R * 1.25, R * 0.3, R * 0.36, R * 1.15);
+    g.closePath();
+  };
+  // Cuerdas.
+  g.strokeStyle = "rgba(70,50,40,.8)"; g.lineWidth = 1;
+  for (const k of [-1, -0.35, 0.35, 1]) { g.beginPath(); g.moveTo(k * R * 0.34, R * 1.14); g.lineTo(k * R * 0.26, R * 1.72); g.stroke(); }
+  // Gajos.
+  g.save(); forma(); g.clip();
+  const N = 12;
+  for (let i = 0; i < N; i++) {
+    const a0 = -Math.PI / 2 + (i / N) * Math.PI, a1 = -Math.PI / 2 + ((i + 1) / N) * Math.PI;
+    const x0 = Math.sin(a0) * R * 1.2, x1 = Math.sin(a1) * R * 1.2;
+    g.fillStyle = CONF.colores[i % 2];
+    g.beginPath(); g.moveTo(x0 * 0.3, R * 1.2); g.bezierCurveTo(x0 * 1.1, R * 0.2, x0, -R, 0, -R * 1.1); g.bezierCurveTo(x1, -R, x1 * 1.1, R * 0.2, x1 * 0.3, R * 1.2); g.fill();
+  }
+  // Una faja dorada y las iniciales.
+  g.fillStyle = "#e9b85a"; g.fillRect(-R * 1.3, R * 0.62, R * 2.6, R * 0.1);
+  g.fillStyle = "#e9b85a"; g.fillRect(-R * 1.3, -R * 0.02, R * 2.6, R * 0.04);
+  g.font = `${Math.round(R * 0.46)}px "Great Vibes", cursive`; g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillStyle = "rgba(110,30,50,.85)"; g.fillText(CONF.iniciales, 0, R * 0.32);
+  // Sombreado redondo, luz del sol arriba a la derecha.
+  const luz = g.createRadialGradient(R * 0.4, -R * 0.5, R * 0.1, 0, 0, R * 1.5);
+  luz.addColorStop(0, "rgba(255,255,255,.35)"); luz.addColorStop(0.5, "rgba(255,255,255,0)"); luz.addColorStop(1, "rgba(40,10,40,.45)");
+  g.fillStyle = luz; g.fillRect(-R * 1.4, -R * 1.2, R * 2.8, R * 2.5);
+  // El fuego se ve a través de la tela, desde abajo.
+  const brasa = apretando && fase === "vuelo" ? 0.55 + Math.random() * 0.12 : calor * 0.18;
+  const dentro = g.createRadialGradient(0, R * 1.1, 0, 0, R * 0.8, R * 1.3);
+  dentro.addColorStop(0, `rgba(255,170,60,${brasa})`); dentro.addColorStop(1, "rgba(255,120,40,0)");
+  g.globalCompositeOperation = "lighter"; g.fillStyle = dentro; g.fillRect(-R * 1.4, -R * 0.4, R * 2.8, R * 1.8);
+  g.restore();
+  g.globalCompositeOperation = "source-over";
+  forma(); g.strokeStyle = "rgba(90,30,40,.35)"; g.lineWidth = 1.2; g.stroke();
+  // El quemador y su llama.
+  g.fillStyle = "#555"; g.fillRect(-R * 0.13, R * 1.6, R * 0.26, R * 0.08);
+  if (apretando && fase === "vuelo") {
+    g.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 3; i++) {
+      const alto = R * (0.5 + Math.random() * 0.25) * (1 - i * 0.25), ancho = R * 0.12 * (1 - i * 0.25);
+      g.fillStyle = ["rgba(255,120,30,.8)", "rgba(255,200,80,.85)", "rgba(200,230,255,.9)"][i];
+      g.beginPath(); g.moveTo(-ancho, R * 1.6); g.quadraticCurveTo(-ancho * 1.2, R * 1.6 - alto * 0.5, 0, R * 1.6 - alto); g.quadraticCurveTo(ancho * 1.2, R * 1.6 - alto * 0.5, ancho, R * 1.6); g.fill();
+    }
+    const brillo = g.createRadialGradient(0, R * 1.4, 0, 0, R * 1.4, R * 0.8);
+    brillo.addColorStop(0, "rgba(255,180,80,.5)"); brillo.addColorStop(1, "rgba(255,180,80,0)");
+    g.fillStyle = brillo; g.fillRect(-R, R * 0.6, R * 2, R * 1.6);
+    g.globalCompositeOperation = "source-over";
+    if (Math.random() < 0.6) chispas.push({ x: cx + azar(-4, 4), y: cy + R * 1.35, vx: azar(-20, 20), vy: -azar(40, 90), t: 0 });
+  }
+  // La cesta de mimbre (y, si se abre, la manta que asoma).
+  const bw = R * 0.56, bh = R * 0.42, by = R * 1.7;
+  g.fillStyle = "#a0703e"; g.fillRect(-bw / 2, by, bw, bh);
+  g.strokeStyle = "rgba(90,55,25,.8)"; g.lineWidth = 1;
+  for (let i = 1; i < 5; i++) { g.beginPath(); g.moveTo(-bw / 2, by + bh * i / 5); g.lineTo(bw / 2, by + bh * i / 5); g.stroke(); }
+  for (let i = 1; i < 6; i++) { g.beginPath(); g.moveTo(-bw / 2 + bw * i / 6, by); g.lineTo(-bw / 2 + bw * i / 6, by + bh); g.stroke(); }
+  g.fillStyle = "#6e4a26"; g.fillRect(-bw / 2 - 2, by - 3, bw + 4, 5);
+  if (cestaAbierta > 0.02) {
+    g.fillStyle = `rgba(214,90,110,${cestaAbierta})`;
+    g.beginPath(); g.moveTo(-bw * 0.45, by); g.quadraticCurveTo(-bw * 0.6, by + bh * 0.8, -bw * 0.3, by + bh * 0.9); g.lineTo(-bw * 0.2, by); g.fill();
+    g.fillStyle = `rgba(80,110,140,${cestaAbierta})`; g.fillRect(bw * 0.15, by - bh * 0.35, bw * 0.12, bh * 0.4);
+  }
+  g.restore();
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+let t0 = performance.now();
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A) return;
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.1) dt = 1 / 60;
+  reloj += dt;
+  if (fase === "espacio") tEspacio += dt;
+  volar(dt);
+  cestaAbierta = acercar(cestaAbierta, cestaAbierta > 0.5 ? 1 : 0, 6, dt);
+
+  pintarCielo();
+  pintarTierra();
+  pintarSuelo();
+  // Lo que queda detrás del globo: nubes lejanas, pájaros, el avión.
+  for (const n of nubes) { const y = aPantalla(n.L); if (y > -200 && y < H + 200 && n.s < 1.05) pintarNube(n, y); }
+  for (const p of pajaros) { const y = aPantalla(p.L); if (y > -20 && y < H + 20) pintarPajaro(p, y); }
+  { const y = aPantalla(avion.L); if (y > -40 && y < H + 40) {
+    avion.x += avion.v * dt; if (avion.x > 1.3) avion.x = -0.3;
+    const x = avion.x * A;
+    g.strokeStyle = "rgba(255,255,255,.6)"; g.lineWidth = 3; g.beginPath(); g.moveTo(x - A * 0.5, y + 1); g.lineTo(x - 8, y); g.stroke();
+    g.fillStyle = "#dfe6ee"; g.beginPath(); g.ellipse(x, y, 9, 2.2, 0, 0, TAU); g.fill(); g.fillRect(x - 3, y - 6, 3, 12);
+  } }
+  { const y = aPantalla(satelite.L); if (y > -40 && y < H + 40) {
+    satelite.x += satelite.v * dt; if (satelite.x < -0.3) satelite.x = 1.3;
+    const x = satelite.x * A;
+    g.fillStyle = "#c9ced8"; g.fillRect(x - 3, y - 3, 6, 6);
+    g.fillStyle = "#3a5fa8"; g.fillRect(x - 16, y - 2, 11, 4); g.fillRect(x + 5, y - 2, 11, 4);
+    if (Math.sin(reloj * 4) > 0.9) { g.fillStyle = "#ff6070"; g.beginPath(); g.arc(x, y - 5, 1.5, 0, TAU); g.fill(); }
+  } }
+  // Las chispas del quemador.
+  g.globalCompositeOperation = "lighter";
+  for (let i = chispas.length - 1; i >= 0; i--) {
+    const c = chispas[i];
+    c.t += dt; c.x += c.vx * dt; c.y += c.vy * dt;
+    if (c.t > 0.7) { chispas.splice(i, 1); continue; }
+    g.fillStyle = `rgba(255,${180 - c.t * 120},60,${1 - c.t / 0.7})`;
+    g.fillRect(c.x, c.y, 2, 2);
+  }
+  g.globalCompositeOperation = "source-over";
+  pintarGlobo();
+  // Las nubes grandes pasan por delante del globo.
+  for (const n of nubes) { const y = aPantalla(n.L); if (y > -200 && y < H + 200 && n.s >= 1.05) pintarNube(n, y); }
+  // Estrellas fugaces al llegar.
+  g.globalCompositeOperation = "lighter";
+  for (let i = fugaces.length - 1; i >= 0; i--) {
+    const f = fugaces[i];
+    f.t += dt; f.x += f.vx * dt; f.y += f.vy * dt;
+    if (f.t > 1.4) { fugaces.splice(i, 1); continue; }
+    const a = Math.min(1, f.t * 4) * (1 - f.t / 1.4);
+    const cola = g.createLinearGradient(f.x, f.y, f.x - f.vx * 0.18, f.y - f.vy * 0.18);
+    cola.addColorStop(0, `rgba(255,255,255,${a})`); cola.addColorStop(1, "rgba(180,200,255,0)");
+    g.strokeStyle = cola; g.lineWidth = 2; g.beginPath(); g.moveTo(f.x, f.y); g.lineTo(f.x - f.vx * 0.18, f.y - f.vy * 0.18); g.stroke();
+  }
+  g.globalCompositeOperation = "source-over";
+  if (fase === "espacio" && Math.random() < dt * 0.4) lanzarFugaz();
+}
 
 function medir() {
   const r = mundo.getBoundingClientRect();
   if (!r.width || !r.height) return;
   A = r.width; H = r.height;
   dpr = Math.min(window.devicePixelRatio || 1, 2);
-  lienzo.width  = Math.round(A * dpr);
-  lienzo.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  gr = Math.min(A * 0.26, H * 0.17);
-  gx = A * 0.5;
-  gy = H * 0.36;
-  sembrarNubes();
+  lienzo.width = Math.round(A * dpr); lienzo.height = Math.round(H * dpr);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  uL = H * 0.75;
 }
-new ResizeObserver(medir).observe(mundo);
-
-/* ---- La altura -------------------------------------------------------------- */
-
-let metros = 0;
-let velocidad = 0;
-let gas = 0;                 // cuánto calor le queda, 0..1
-let llama = 0;
-
-function capaEn(m) {
-  const C = CONF.capas;
-  for (let i = C.length - 1; i >= 0; i--) {
-    if (m >= C[i].m) {
-      const j = Math.min(i + 1, C.length - 1);
-      const span = Math.max(1, C[j].m - C[i].m);
-      return { a: C[i], b: C[j], k: clamp((m - C[i].m) / span, 0, 1), i };
-    }
-  }
-  return { a: C[0], b: C[0], k: 0, i: 0 };
-}
-
-/* ---- El quemador ------------------------------------------------------------- */
-
-function enPantalla(e) {
-  const r = mundo.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
-}
-
-let apretando = false;
-
-zona.addEventListener("pointerdown", (e) => {
-  if (e.pointerType === "mouse" && e.button !== 0) return;
-  zona.setPointerCapture(e.pointerId);
-  apretando = true;
-  despertar();
-  mundo.classList.add("is-subiendo");
-  mirarSecretos(enPantalla(e));
-});
-
-const soltar = () => { apretando = false; pararLlama(); };
-zona.addEventListener("pointerup", soltar);
-zona.addEventListener("pointercancel", soltar);
-
-/* ---- Las nubes ---------------------------------------------------------------
-   Cada nube tiene SU altura en metros, no su posición en pantalla. Al
-   subir, se calcula dónde cae: así el cielo es infinito y no hay que
-   reciclar nada a mano.                                                    */
-
-let nubes = [];
-
-function sembrarNubes() {
-  nubes = [];
-  for (let i = 0; i < CONF.nubes; i++) {
-    nubes.push({
-      x: Math.random(),
-      m: azar(-200, 7000),
-      esc: azar(0.6, 2.1),
-      v: azar(-0.004, 0.004),
-      bultos: Array.from({ length: 5 }, (_, k) => ({
-        dx: (k - 2) * 0.5 + azar(-0.14, 0.14),
-        dy: azar(-0.1, 0.12),
-        r: azar(0.5, 1),
-      })),
-    });
-  }
-}
-
-/* ---- Los textos --------------------------------------------------------------- */
-
-let pidiendo = null;
-let bloqueado = 0;
-let dichaCapa = -1;
-
-function decir(texto, firma, importante) {
-  const ahora = performance.now();
-  if (!importante && ahora < bloqueado) return;
-  if (pidiendo === texto) return;
-  pidiendo = texto;
-  if (importante) bloqueado = ahora + 4200;
-  elPie.classList.remove("is-visible");
-  setTimeout(() => {
-    elPie.textContent = texto;
-    if (firma) {
-      const em = document.createElement("em");
-      em.textContent = firma;
-      elPie.append(em);
-    }
-    elPie.classList.add("is-visible");
-  }, suave ? 10 : 290);
-}
-
-/* ---- Sonido: el quemador ------------------------------------------------------ */
-
-let audio = null, maestro = null;
-let llamaNodo = null, llamaGain = null;
-
-function despertar() {
-  try {
-    if (!audio) {
-      audio = new (window.AudioContext || window.webkitAudioContext)();
-      maestro = audio.createGain();
-      maestro.gain.value = 0.6;
-      maestro.connect(audio.destination);
-    }
-    if (audio.state === "suspended") audio.resume();
-  } catch { audio = null; }
-  return audio;
-}
-
-/** El rugido del quemador: ruido grave y fuerte, con un poco de sibilante. */
-function arrancarLlama() {
-  if (!despertar() || llamaNodo) return;
-  const n = audio.sampleRate * 2;
-  const buf = audio.createBuffer(1, n, audio.sampleRate);
-  const d = buf.getChannelData(0);
-  let ult = 0;
-  for (let i = 0; i < n; i++) {
-    const blanco = Math.random() * 2 - 1;
-    ult = 0.88 * ult + 0.12 * blanco;
-    d[i] = ult * 3.4;
-  }
-  llamaNodo = audio.createBufferSource();
-  llamaNodo.buffer = buf;
-  llamaNodo.loop = true;
-  const f = audio.createBiquadFilter();
-  f.type = "lowpass";
-  f.frequency.value = 900;
-  llamaGain = audio.createGain();
-  llamaGain.gain.value = 0;
-  llamaGain.gain.linearRampToValueAtTime(0.22, audio.currentTime + 0.08);
-  llamaNodo.connect(f).connect(llamaGain).connect(maestro);
-  llamaNodo.start();
-}
-
-function pararLlama() {
-  if (!llamaNodo) return;
-  try {
-    llamaGain.gain.linearRampToValueAtTime(0, audio.currentTime + 0.18);
-    llamaNodo.stop(audio.currentTime + 0.25);
-  } catch { /* ya estaba */ }
-  llamaNodo = null;
-}
-
-function campana(hz) {
-  if (!despertar()) return;
-  const t = audio.currentTime;
-  const o = audio.createOscillator();
-  const g = audio.createGain();
-  o.type = "triangle";
-  o.frequency.setValueAtTime(hz, t);
-  g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.07, t + 0.012);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
-  o.connect(g).connect(maestro);
-  o.start(t); o.stop(t + 1.6);
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   LOS SECRETOS
-   ══════════════════════════════════════════════════════════════════════ */
-
-/* 1. Pasar de los doce mil: se apagan las nubes, salen las estrellas y
-      se ve la Tierra redonda ahí abajo.                               */
-let espacio = 0;
-let espacioDicho = false;
-
-/* 2. Tocar la cesta (abajo del globo): sale lo que llevamos dentro, que
-      es una manta, un termo y poco más.                               */
-let cestaAbierta = 0;
-
-/* 3. Bajar del todo después de haber subido mucho: aterriza en el mismo
-      prado y lo dice.                                                 */
-let subioMucho = false;
-let aterrizado = false;
-
-function mirarSecretos(p) {
-  const cy = gy + gr * 1.95;
-  if (p && Math.hypot(p.x - gx, p.y - cy) < gr * 0.45) {
-    cestaAbierta = cestaAbierta > 0.5 ? 0 : 1;
-    if (cestaAbierta) {
-      decir("En la cesta llevamos una manta y un termo.", "Y el termo está lleno. Lo he mirado.", true);
-      campana(523);
-    }
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   EL BUCLE
-   ══════════════════════════════════════════════════════════════════════ */
-
-let t0 = performance.now();
-let reloj = 0;
-
-function paso(ahora) {
-  requestAnimationFrame(paso);
-  if (!A || !H) return;
-
-  let dt = (ahora - t0) / 1000;
-  t0 = ahora;
-  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
-  else if (dt > 0.1) dt = 0.1;
-  reloj += dt;
-
-  /* El gas: sube apretando y se enfría solo. Que se enfríe es lo que
-     obliga a estar pendiente, y eso es de lo que va volar en globo. */
-  if (apretando) {
-    gas = Math.min(1, gas + dt * 1.5);
-    arrancarLlama();
-  }
-  gas = Math.max(0, gas - CONF.enfria * dt);
-  llama = damp(llama, apretando ? 1 : 0, 7, dt);
-
-  const sube = gas * CONF.empuje - CONF.bajaSola;
-  velocidad = damp(velocidad, sube, 1.1, dt);
-  metros = Math.max(0, metros + velocidad * dt);
-
-  elAlt.textContent = `${Math.round(metros)} m`;
-  mundo.classList.toggle("is-alto", metros > 5200);
-  if (!apretando && velocidad < -20) mundo.classList.remove("is-subiendo");
-
-  if (metros > 4000) subioMucho = true;
-  if (subioMucho && metros < 30 && !aterrizado) {
-    aterrizado = true;
-    decir("Hemos aterrizado en el mismo prado.", "Todo ese viaje para volver aquí. Perfecto.", true);
-    campana(392);
-  }
-  if (metros > 200) aterrizado = false;
-
-  if (metros > 12000) {
-    espacio = Math.min(1, espacio + dt * 0.3);
-    if (!espacioDicho && espacio > 0.6) {
-      espacioDicho = true;
-      decir("Mira hacia abajo.", "Eso redondo de ahí es todo lo demás. Y estamos aquí.", true);
-      campana(880);
-    }
-  } else {
-    espacio = Math.max(0, espacio - dt * 0.6);
-  }
-
-  if (cestaAbierta > 0 && cestaAbierta < 1) cestaAbierta = Math.min(1, cestaAbierta + dt * 3);
-
-  const c = capaEn(metros);
-  if (c.i !== dichaCapa) {
-    dichaCapa = c.i;
-    decir(c.a.texto, c.a.firma, true);
-  }
-
-  dibujar(dt, c);
-}
-
-function dibujar(dt, c) {
-  /* --- el cielo --- */
-  const c0 = mezColor(c.a.cielo[0], c.b.cielo[0], c.k);
-  const c1 = mezColor(c.a.cielo[1], c.b.cielo[1], c.k);
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, c0);
-  g.addColorStop(1, c1);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, A, H);
-
-  /* --- las estrellas, que sólo se ven muy arriba --- */
-  const noche = clamp((metros - 5500) / 5000, 0, 1);
-  if (noche > 0.02) {
-    for (let i = 0; i < 110; i++) {
-      const sx = ((i * 61) % 100) / 100 * A;
-      const sy = ((i * 37) % 100) / 100 * H;
-      ctx.globalAlpha = noche * (0.3 + 0.5 * Math.sin(reloj * 1.3 + i));
-      ctx.fillStyle = "#e4ecff";
-      ctx.beginPath();
-      ctx.arc(sx, sy, 0.7 + (i % 3) * 0.5, 0, 6.283);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  /* --- el sol --- */
-  ctx.globalAlpha = 1 - noche * 0.5;
-  const sg = ctx.createRadialGradient(A * 0.8, H * 0.15, 0, A * 0.8, H * 0.15, Math.min(A, H) * 0.45);
-  sg.addColorStop(0, "rgba(255, 250, 220, 0.6)");
-  sg.addColorStop(1, "rgba(255, 250, 220, 0)");
-  ctx.fillStyle = sg;
-  ctx.fillRect(0, 0, A, H);
-  ctx.globalAlpha = 1;
-
-  /* --- el suelo, que se aleja --- */
-  dibujarSuelo();
-
-  /* --- las nubes --- */
-  for (const n of nubes) {
-    n.x += n.v * dt;
-    if (n.x > 1.25) n.x = -0.25;
-    if (n.x < -0.25) n.x = 1.25;
-    /* Su altura en pantalla sale de la diferencia con la nuestra. */
-    const dy = (n.m - metros) * -0.22;
-    const y = H * 0.5 + dy;
-    if (y < -H * 0.4 || y > H * 1.4) continue;
-    const r = Math.min(A, H) * 0.1 * n.esc;
-    ctx.globalAlpha = clamp(1 - noche * 1.2, 0, 1) * 0.82;
-    ctx.fillStyle = "#ffffff";
-    for (const b of n.bultos) {
-      ctx.beginPath();
-      ctx.arc(n.x * A + b.dx * r * 1.7, y + b.dy * r, r * b.r, 0, 6.283);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  /* --- el globo --- */
-  dibujarGlobo();
-}
-
-function dibujarSuelo() {
-  /* El prado se hunde según subimos, y a partir de cierta altura se
-     convierte en la curva de la Tierra. Un solo número lo lleva. */
-  const baja = metros * 0.22;
-  const y = H * 0.9 + baja;
-  if (y > H * 1.6 && espacio < 0.02) return;
-
-  if (espacio > 0.02) {
-    /* La Tierra, redonda. El radio crece con la altura, así que la curva
-       se va viendo cada vez más. */
-    const R = Math.max(A, H) * (2.6 - espacio * 1.2);
-    const cyT = H * 0.92 + R;
-    const gg = ctx.createRadialGradient(A * 0.3, cyT - R * 0.9, 0, A * 0.5, cyT, R);
-    gg.addColorStop(0, "#8fd0ee");
-    gg.addColorStop(0.5, "#4a8fb8");
-    gg.addColorStop(1, "#1e4a6e");
-    ctx.globalAlpha = espacio;
-    ctx.fillStyle = gg;
-    ctx.beginPath();
-    ctx.arc(A * 0.5, cyT, R, 0, 6.283);
-    ctx.fill();
-    /* El halo de atmósfera en el canto. */
-    ctx.strokeStyle = "rgba(160, 220, 255, 0.5)";
-    ctx.lineWidth = 7;
-    ctx.beginPath();
-    ctx.arc(A * 0.5, cyT, R + 3, Math.PI * 1.15, Math.PI * 1.85);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    return;
-  }
-
-  ctx.globalAlpha = clamp(1 - metros / 9000, 0, 1);
-  const gg = ctx.createLinearGradient(0, y, 0, y + H * 0.4);
-  gg.addColorStop(0, "#9cc27e");
-  gg.addColorStop(1, "#6f9a58");
-  ctx.fillStyle = gg;
-  ctx.beginPath();
-  ctx.moveTo(0, H * 2);
-  ctx.lineTo(0, y);
-  for (let x = 0; x <= A; x += 14) ctx.lineTo(x, y - Math.sin(x * 0.012) * 8);
-  ctx.lineTo(A, H * 2);
-  ctx.closePath();
-  ctx.fill();
-
-  /* Las casitas y los campos, que se hacen pequeños al subir. */
-  const esc = clamp(1 - metros / 2600, 0.12, 1);
-  for (let i = 0; i < 12; i++) {
-    const x = ((i * 47) % 100) / 100 * A;
-    const w = A * 0.05 * esc;
-    const h = H * 0.02 * esc;
-    ctx.fillStyle = i % 3 ? "rgba(140, 110, 90, 0.7)" : "rgba(170, 140, 110, 0.7)";
-    ctx.fillRect(x, y + H * 0.03 - h, w, h);
-  }
-  ctx.globalAlpha = 1;
-}
-
-function dibujarGlobo() {
-  /* La cesta se balancea un poco detrás del globo: el globo tira y la
-     cesta sigue, con retraso. Es lo que hace que se vea que cuelga. */
-  const meneo = Math.sin(reloj * 0.7) * 0.05 + Math.sin(reloj * 1.3) * 0.02;
-  const bx = gx + Math.sin(meneo) * gr * 1.9;
-  const by = gy + Math.cos(meneo) * gr * 1.95;
-
-  /* --- la llama, dentro del globo --- */
-  if (llama > 0.02) {
-    const fy = gy + gr * 1.05;
-    const gl = ctx.createRadialGradient(gx, fy, 0, gx, fy, gr * 0.7);
-    gl.addColorStop(0, `rgba(255, 230, 140, ${0.85 * llama})`);
-    gl.addColorStop(0.4, `rgba(255, 150, 50, ${0.5 * llama})`);
-    gl.addColorStop(1, "rgba(255, 120, 40, 0)");
-    ctx.fillStyle = gl;
-    ctx.beginPath(); ctx.arc(gx, fy, gr * 0.7, 0, 6.283); ctx.fill();
-  }
-
-  /* --- la tela --- */
-  /* Ocho gajos, cada uno una tajada de elipse con su color. Es lo que
-     hace que se lea como un globo de tela y no como un huevo. */
-  const gajos = 8;
-  const colores = ["#e8536a", "#f2a03a", "#f2d24a", "#5cb46a"];
-  for (let i = 0; i < gajos; i++) {
-    const a0 = (i / gajos) * 6.283 - Math.PI / 2;
-    const a1 = ((i + 1) / gajos) * 6.283 - Math.PI / 2;
-    const col = colores[i % colores.length];
-    ctx.beginPath();
-    /* La forma del globo: una elipse con la parte de abajo recogida en
-       punta hacia la cesta. */
-    for (let k = 0; k <= 12; k++) {
-      const t = a0 + (a1 - a0) * (k / 12);
-      const p = puntoGlobo(t);
-      k ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y);
-    }
-    ctx.lineTo(gx, gy + gr * 1.5);
-    ctx.closePath();
-    /* Los gajos que miran a la luz salen más claros. */
-    const luz = 0.5 + 0.5 * Math.cos(a0 + 0.6);
-    const g2 = ctx.createLinearGradient(gx - gr, gy - gr, gx + gr, gy + gr);
-    g2.addColorStop(0, aclarar(col, 0.3 * luz));
-    g2.addColorStop(1, aclarar(col, -0.28 + 0.2 * luz));
-    ctx.fillStyle = g2;
-    ctx.fill();
-  }
-
-  /* LAS INICIALES, cosidas en el gajo de delante. */
-  ctx.save();
-  ctx.fillStyle = "rgba(255, 250, 235, 0.92)";
-  ctx.font = `600 ${Math.round(gr * 0.34)}px Georgia, "Times New Roman", serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(CONF.iniciales, gx, gy + gr * 0.1);
-  ctx.strokeStyle = "rgba(120, 70, 40, 0.28)";
-  ctx.lineWidth = 1;
-  ctx.strokeText(CONF.iniciales, gx, gy + gr * 0.1);
-  ctx.restore();
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-
-  /* El canto de abajo del globo. */
-  ctx.strokeStyle = "rgba(90, 60, 40, 0.3)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.ellipse(gx, gy + gr * 0.98, gr * 0.42, gr * 0.12, 0, 0, 6.283);
-  ctx.stroke();
-
-  /* --- las cuerdas --- */
-  ctx.strokeStyle = "rgba(90, 70, 50, 0.7)";
-  ctx.lineWidth = 1.4;
-  for (let i = -1; i <= 1; i += 2) {
-    ctx.beginPath();
-    ctx.moveTo(gx + i * gr * 0.4, gy + gr * 1.02);
-    ctx.lineTo(bx + i * gr * 0.3, by - gr * 0.2);
-    ctx.stroke();
-  }
-
-  /* --- la cesta --- */
-  const cw = gr * 0.72, ch = gr * 0.5;
-  const g3 = ctx.createLinearGradient(bx - cw / 2, by - ch / 2, bx + cw / 2, by + ch / 2);
-  g3.addColorStop(0, "#c49a5c");
-  g3.addColorStop(0.5, "#a07840");
-  g3.addColorStop(1, "#6e4e26");
-  ctx.fillStyle = g3;
-  ctx.fillRect(bx - cw / 2, by - ch / 2, cw, ch);
-  /* El trenzado del mimbre: dos rejillas. */
-  ctx.strokeStyle = "rgba(70, 48, 22, 0.4)";
-  ctx.lineWidth = 1;
-  for (let i = 1; i < 5; i++) {
-    const y = by - ch / 2 + (i / 5) * ch;
-    ctx.beginPath(); ctx.moveTo(bx - cw / 2, y); ctx.lineTo(bx + cw / 2, y); ctx.stroke();
-  }
-  for (let i = 1; i < 7; i++) {
-    const x = bx - cw / 2 + (i / 7) * cw;
-    ctx.beginPath(); ctx.moveTo(x, by - ch / 2); ctx.lineTo(x, by + ch / 2); ctx.stroke();
-  }
-  ctx.strokeStyle = "rgba(60, 40, 18, 0.6)";
-  ctx.lineWidth = 2.4;
-  ctx.strokeRect(bx - cw / 2, by - ch / 2, cw, ch);
-
-  /* Lo que lleva dentro (secreto 2). */
-  if (cestaAbierta > 0.02) {
-    ctx.globalAlpha = cestaAbierta;
-    /* La manta doblada. */
-    ctx.fillStyle = "#c2506a";
-    ctx.fillRect(bx - cw * 0.38, by - ch * 0.12, cw * 0.32, ch * 0.3);
-    ctx.fillStyle = "#e07a90";
-    ctx.fillRect(bx - cw * 0.38, by - ch * 0.12, cw * 0.32, ch * 0.1);
-    /* El termo. */
-    ctx.fillStyle = "#4a7fa8";
-    ctx.fillRect(bx + cw * 0.08, by - ch * 0.22, cw * 0.16, ch * 0.44);
-    ctx.fillStyle = "#8fb8d8";
-    ctx.fillRect(bx + cw * 0.08, by - ch * 0.28, cw * 0.16, ch * 0.08);
-    ctx.globalAlpha = 1;
-  }
-
-  /* --- las dos cabecitas asomando --- */
-  ctx.fillStyle = "#3e2a20";
-  ctx.beginPath();
-  ctx.arc(bx - cw * 0.16, by - ch * 0.5, gr * 0.08, 0, 6.283);
-  ctx.fill();
-  ctx.fillStyle = "#5c3a28";
-  ctx.beginPath();
-  ctx.arc(bx + cw * 0.16, by - ch * 0.5, gr * 0.08, 0, 6.283);
-  ctx.fill();
-}
-
-/** El contorno del globo: una elipse que se recoge hacia abajo. */
-function puntoGlobo(a) {
-  const c = Math.cos(a), s = Math.sin(a);
-  /* El 0.62 de abajo es lo que le da la forma de pera: sin él es un
-     huevo y no parece un globo. */
-  const rx = gr * (s > 0 ? 1 - s * 0.38 : 1);
-  const ry = gr * (s > 0 ? 1.18 : 1.02);
-  return { x: gx + c * rx, y: gy + s * ry };
-}
-
-function aclarar(hex, k) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const f = (v) => clamp(Math.round(v + 255 * k), 0, 255);
-  return `rgb(${f(r)},${f(g)},${f(b)})`;
-}
-
-/* ---- Arranque ---------------------------------------------------------------- */
-
+window.__globo = { ir: (m) => { L = aL(m); capaDicha = 0; }, estado: () => ({ L, m: aM(L), fase }) };
+sembrar();
+new ResizeObserver(() => requestAnimationFrame(medir)).observe(mundo);
 medir();
-decir("Aprieta y no sueltes. El aire caliente hace lo demás.");
 requestAnimationFrame(paso);
-
 })();
 </script>
 </body>
