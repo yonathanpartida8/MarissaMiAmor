@@ -37,9 +37,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #070a18; }
   position: absolute; left: 50%; bottom: calc(var(--seg-b) + var(--barra) + 14px);
   transform: translateX(-50%); width: min(90vw, 440px); box-sizing: border-box;
   margin: 0; padding: 9px 16px 11px; border-radius: 14px;
-  background: rgba(16, 14, 34, 0.78); border: 1px solid rgba(255, 220, 180, 0.2);
+  background: rgba(16, 14, 34, 0.9); border: 1px solid rgba(255, 220, 180, 0.2);
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
-  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   font-family: "Caveat", "Segoe Print", cursive; font-weight: 600;
   font-size: clamp(1.2rem, 5.4vw, 1.5rem); line-height: 1.18; text-align: center; color: #ffeede;
   transition: opacity 400ms var(--suave), transform 400ms var(--suave);
@@ -58,7 +57,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #070a18; }
     <p class="cd-cuenta" id="cuenta"></p>
   </div>
   <p class="cd-pista" id="pista">desliza para recorrer la calle · toca una ventana</p>
-  <p class="cd-dialogo" id="dialogo" role="status" aria-live="polite">Toda la ciudad está dormida. Toca una ventana.</p>
+  <p class="cd-dialogo" id="dialogo" role="status" aria-live="polite">Toda la ciudad está dormida. Toca una ventana, amor :&gt;</p>
 </div>
 
 <script>
@@ -67,59 +66,101 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #070a18; }
 
 /* ══════════════════════════════════════════════════════════════════════
    LO QUE PASA EN CADA VENTANA
-   `dice` es lo que te digo yo al verla; `grita`, lo que sale en un
-   globito desde dentro. Cada escena se dibuja con su función de abajo.
+   `dice` es lo que te digo yo al verla (una frase, o varias que se van
+   turnando cada vez que la prendes); `grita`, lo que sale en un globito
+   desde dentro. Cada escena se dibuja con su función de abajo, y NO hay
+   ventanas vacías: si la calle trae más ventanas que escenas, las que
+   sobran se tapan antes de pintarla.
    ══════════════════════════════════════════════════════════════════════ */
 const ESCENAS = [
-  { id: "rgb", dice: "Wow, esa tiene luces RGB." },
-  { id: "fiesta", dice: "Wow, en esa tienen una fiesta." },
-  { id: "grito", grita: "¡AAAAH!", dice: "¿Escuchaste? ¡Está loco!" },
-  { id: "saluda", dice: "Nos está saludando, ush, no saludes, me da celos." },
-  { id: "gato", dice: "Mira, un gatito. Nos está viendo." },
-  { id: "baile", dice: "Esos dos están bailando lentito. Así te voy a sacar a bailar." },
-  { id: "cocina", dice: "Alguien está cocinando a esta hora. Huele rico." },
-  { id: "tele", dice: "Ese se quedó dormido viendo la tele." },
-  { id: "plantas", dice: "Cuántas plantitas tiene esa ventana." },
-  { id: "lee", dice: "Alguien leyendo con su lamparita. Qué paz." },
-  { id: "perro", grita: "¡Guau!", dice: "¡Un perrito! Nos ladró." },
-  { id: "sombras", dice: "Está haciendo sombras con las manos. Es un pajarito." },
-  { id: "guitarra", dice: "Alguien toca la guitarra. Escúchalo." },
-  { id: "navidad", dice: "Esa tiene lucecitas de navidad todo el año." },
-  { id: "cortina", dice: "Uy, cerró la cortina. Nos vio." },
-  { id: "telescopio", dice: "Ese está viendo las estrellas con telescopio." },
-  { id: "ejercicio", dice: "Alguien haciendo ejercicio a medianoche." },
-  { id: "pastel", dice: "Ahí están festejando un cumpleaños." },
-  { id: "pecera", dice: "Una pecera. Qué bonita luz da." },
-  { id: "pintor", dice: "Alguien pintando un cuadro. Le salió un corazón." },
-  { id: "telefono", dice: "Alguien habla por teléfono, como yo contigo." },
-  { id: "corazon", dice: "Alguien dibujó un corazón en el vidrio." },
-  { id: "brinca", dice: "Un niño brincando en la cama. Ya duérmete." },
-  { id: "burbujas", dice: "Están haciendo burbujas de jabón." },
-  { id: "videollamada", dice: "Una videollamada. Así nos vemos tú y yo, a la distancia." },
-  { id: "karaoke", grita: "♪ ¡Laaa laaa! ♪", dice: "Está cantando karaoke… y bien desafinado." },
-  { id: "fantasma", dice: "¿Viste eso? Dime que tú también lo viste…" },
-  { id: "ojos", dice: "Esa prendió… pero no hay nadie. Solo dos ojitos." },
-  { id: "lampara", dice: "Esa luz parpadea sola. Mejor sigamos." },
-  { id: "abuelitos", dice: "Unos abuelitos tomados de la mano. Así quiero que lleguemos tú y yo." },
-  { id: "bebe", dice: "Shhh, ahí hay un bebé dormido." },
-  { id: "videojuegos", dice: "Ese está jugando videojuegos. Seguro va perdiendo." },
-  { id: "tiktok", dice: "Ese está grabando un TikTok. Qué pena ajena." },
-  { id: "carta", dice: "Alguien escribiendo una carta. Seguro está enamorado, como yo." },
-  { id: "disco", dice: "¡Una bola disco! Ahí sí saben." },
-  { id: "canario", grita: "¡Pío, pío!", dice: "Un pajarito cantando a medianoche." },
-  { id: "tejiendo", dice: "Una abuelita tejiendo una bufanda. Qué ternura." },
-  { id: "yoga", dice: "Alguien haciendo yoga. Namasté." },
-  { id: "cafe", dice: "Alguien tomando cafecito a esta hora. No va a dormir." },
-  { id: "estrellitas", dice: "Tiene estrellitas que brillan en el techo." },
-  { id: "trompeta", grita: "♪ ¡Tururú! ♪", dice: "¡Uno practicando la trompeta! A esta hora…" },
+  { id: "rgb", dice: ["Mira, amor, esa tiene luces RGB. Seguro es gamer :>", "Otra vez las lucecitas de colores… ya parece antro jajaja"] },
+  { id: "fiesta", dice: ["¡Uy, en esa tienen fiestota! ¿Nos colamos? :>", "Siguen de fiesta… y ni nos invitaron, qué groseros 😤"] },
+  { id: "grito", grita: "¡AAAAH!", dice: ["¿Escuchaste, amor? ¡Está loco! 😳", "Otra vez gritó… ya no le prendas jajaja"] },
+  { id: "saluda", dice: ["Nos está saludando, ush, no saludes, me da celos.", "Otra vez saludando… ya, señor, ella es mi novia 😤"] },
+  { id: "gato", dice: ["Mira, un gatito. Nos está viendo, aww 🥹", "El michi sigue ahí, juzgándonos :>"] },
+  { id: "baile", dice: ["Esos dos bailan lentito… así te voy a sacar a bailar, eh 🤍", "Siguen bailando, aww 🥹 Me debes un baile, ¿eh?"] },
+  { id: "cocina", dice: ["Alguien cocinando a esta hora. Huele rico… ¿te preparo algo, amor? :>", "Sigue cocinando. Ya me dio hambre jajaja"] },
+  { id: "tele", dice: ["Ese se quedó dormido viendo la tele, pobrecito jajaja", "Ni se enteró de que lo prendimos :>"] },
+  { id: "plantas", dice: ["Cuántas plantitas. Tú serías la flor más bonita de todas 🌷", "Qué verde está todo ahí, aww 🌿"] },
+  { id: "lee", dice: ["Alguien leyendo con su lamparita. Qué paz, ¿verdad? 🤍", "Sigue leyendo… ha de estar bien bueno ese libro :>"] },
+  { id: "perro", grita: "¡Guau!", dice: ["¡Un perrito! Nos ladró 🥹", "Otra vez nos ladró… ya lo hicimos enojar jajaja"] },
+  { id: "sombras", dice: ["Está haciendo sombras con las manos… ¡es un pajarito! :>", "Ahora el pajarito aletea, aww 🕊️"] },
+  { id: "guitarra", dice: ["Alguien toca la guitarra. Imagínate que es una serenata para ti 🎶🤍", "Otra canción… esta te la dedico yo :>"] },
+  { id: "navidad", dice: ["Esa tiene lucecitas de navidad todo el año. Me cae bien :>", "Navidad en cualquier mes, así me siento contigo 🎄🤍"] },
+  { id: "cortina", dice: ["Uy, cerró la cortina. Nos vio jajaja 🙈", "¡Otra vez nos cachó! 🙈"] },
+  { id: "telescopio", dice: ["Ese ve las estrellas con telescopio. Yo prefiero verte a ti 🤍", "Busca estrellas y la más bonita está aquí conmigo :>"] },
+  { id: "ejercicio", dice: ["Alguien haciendo ejercicio a medianoche… ¿quién hace eso? 😂", "Sigue y sigue… me cansé nomás de verlo jajaja"] },
+  { id: "pastel", dice: ["¡Están festejando un cumpleaños! Feliz cumple, desconocido 🎂", "Ya partieron el pastel… ¿nos guardarán una rebanada? :>"] },
+  { id: "pecera", dice: ["Una pecera. Qué bonita luz da, aww 🐟", "Los pescaditos nadan en círculos, como yo pensando en ti :>"] },
+  { id: "pintor", dice: ["Alguien pinta un cuadro… le salió un corazón. También está enamorado :>", "Otro corazón. Yo te pintaría a ti, pero no me saldría tan bonita 🥹"] },
+  { id: "telefono", dice: ["Alguien habla por teléfono, como yo contigo 🥹📱", "Sigue en la llamada… ojalá fuera la nuestra 🤍"] },
+  { id: "corazon", dice: ["Alguien dibujó un corazón en el vidrio, aww 🥹🤍", "Ese corazón es para ti, que conste :>"] },
+  { id: "brinca", dice: ["Un niño brincando en la cama. ¡Ya duérmete, chamaco! 😂", "Sigue brincando… mañana no se levanta jajaja"] },
+  { id: "burbujas", dice: ["Están haciendo burbujas de jabón. Qué bonito :>", "Más burbujitas, aww 🫧"] },
+  { id: "videollamada", dice: ["Una videollamada. Así nos vemos tú y yo, a la distancia 🥹🤍", "Se mandan corazones… como nosotros, aww 🥹"] },
+  { id: "karaoke", grita: "♪ ¡Laaa laaa! ♪", dice: ["Está cantando karaoke… y bien desafinado jajaja", "Tú cantas más bonito, eh :>"] },
+  { id: "fantasma", dice: ["¿Viste eso? Dime que tú también lo viste… 👻", "Amor, ya no prendas esa, me da miedito 😳"] },
+  { id: "ojos", dice: ["Esa prendió… pero no hay nadie. Solo dos ojitos 👀", "Siguen ahí los ojitos… agárrame la mano 😬"] },
+  { id: "lampara", dice: ["Esa luz parpadea sola. Mejor sigamos, ¿no? 😬", "Otra vez parpadea… no me gusta nada jajaja"] },
+  { id: "abuelitos", dice: ["Unos abuelitos tomados de la mano. Así quiero que lleguemos tú y yo 🥹🤍", "Siguen agarraditos, aww 🥹 Así, siempre."] },
+  { id: "bebe", dice: ["Shhh, ahí hay un bebé dormido. Aww 🥹", "Shhh… que no se despierte :>"] },
+  { id: "videojuegos", dice: ["Ese está jugando videojuegos. Seguro va perdiendo jajaja 🎮", "Ya perdió otra vez, se nota en su cara 😂"] },
+  { id: "tiktok", dice: ["Ese está grabando un TikTok… qué pena ajena jajaja", "Ahora le salió otro bailecito 😂"] },
+  { id: "carta", dice: ["Alguien escribiendo una carta. Seguro está enamorado, como yo de ti 💌", "Sigue escribiendo… yo te escribiría mil :>"] },
+  { id: "disco", dice: ["¡Una bola disco! Ahí sí saben 🪩", "Siguen bailando… ¿nos animamos? :>"] },
+  { id: "canario", grita: "¡Pío, pío!", dice: ["Un pajarito cantando a medianoche. Te está cantando a ti :>", "Otra vez cantó, aww 🐤"] },
+  { id: "tejiendo", dice: ["Una abuelita tejiendo una bufanda. Qué ternura 🧶", "La bufanda ya va más larga, aww 🥹"] },
+  { id: "yoga", dice: ["Alguien haciendo yoga. Namasté 🧘", "Qué flexible… yo me quiebro jajaja"] },
+  { id: "cafe", dice: ["Alguien tomando cafecito a esta hora. No va a dormir jajaja ☕", "Otro cafecito… ese ya no duerme 😂"] },
+  { id: "estrellitas", dice: ["Tiene estrellitas que brillan en el techo, aww ✨", "Como las que te bajaría si pudiera :>"] },
+  { id: "trompeta", grita: "♪ ¡Tururú! ♪", dice: ["¡Uno practicando la trompeta! ¿A esta hora? 😂", "Pobres vecinos jajaja"] },
+  { id: "pizza", dice: ["Alguien comiendo pizza a medianoche. Se me antojó… ¿compartimos? 🍕", "Otra rebanada. Ese sí sabe vivir :>"] },
+  { id: "almohadas", grita: "¡Toma!", dice: ["¡Guerra de almohadas! Yo te ganaría, eh :>", "Hay plumas por todos lados jajaja"] },
+  { id: "mariachi", grita: "♪ ¡Ay, ay, ay, ay! ♪", dice: ["¡Un mariachi en la sala! Esa serenata es para ti 🤍", "Otra canción… ¡cántale, mariachi! :>"] },
+  { id: "pinata", grita: "¡Dale, dale, dale!", dice: ["¡Rompieron la piñata! Ahí van los dulces 🪅", "Otra piñata… yo me agarro los dulces jajaja"] },
+  { id: "luchador", dice: ["Un luchador entrenando con máscara y todo 😂 Yo igual te defiendo, eh.", "Sigue sacando músculo jajaja"] },
+  { id: "trastes", dice: ["Alguien lavando trastes a medianoche. Qué responsable :>", "Ojalá yo fuera así de juicioso jajaja"] },
+  { id: "planchando", dice: ["Alguien planchando a esta hora… ¿quién plancha de noche? 😂", "Sigue planchando. Mañana va bien guapo :>"] },
+  { id: "ronca", grita: "¡Zzzrrr!", dice: ["¡Cómo ronca! Hasta acá se escucha jajaja", "Otra vez… parece motor 😂"] },
+  { id: "beso", dice: ["Uy, se están besando 🙈 …me debes uno, eh :>", "Siguen de románticos, aww 🥹🤍"] },
+  { id: "espejo", dice: ["Alguien arreglándose frente al espejo. Tú ni lo necesitas, ya eres hermosa 🤍", "Sigue arreglándose… tú así como estás, perfecta :>"] },
+  { id: "gatocaja", dice: ["Un gatito metido en una caja. Lo más lindo que he visto hoy… después de ti :>", "Se volvió a esconder, aww 🥹"] },
+  { id: "hamster", dice: ["Un hámster corriendo en su ruedita. Así corro yo para verte 🥹", "No se cansa, aww 🐹"] },
+  { id: "loro", grita: "¡Te amo! ¡Te amo!", dice: ["¡Ese loro dice «te amo»! Seguro se lo enseñé yo :>", "Lo volvió a decir… tiene razón 🤍"] },
+  { id: "miedo", grita: "¡AAAH!", dice: ["Están viendo película de miedo… yo te abrazaría fuerte 🙈", "¡Otro susto! Ven, aquí conmigo 🤍"] },
+  { id: "palomitas", dice: ["Palomitas y peli. Plan perfecto contigo 🍿🤍", "Siguen saltando las palomitas :>"] },
+  { id: "pijamada", dice: ["Una pijamada con mascarillas… ¿esas son rodajas de pepino? jajaja", "Qué relajados se ven, aww 🥒"] },
+  { id: "robot", dice: ["¡Un robotito caminando solo! ¿Quién lo prendió? 🤖", "Sigue caminando… ya tiene vida propia jajaja"] },
+  { id: "mago", dice: ["Un mago sacó un conejo del sombrero. Yo nomás sé sacarte sonrisas :>", "¡Otra vez el conejito! 🐰"] },
+  { id: "malabares", dice: ["Alguien haciendo malabares. Yo con tres pelotas ya me pego jajaja", "No se le cae ninguna, qué pro :>"] },
+  { id: "globos", dice: ["Un cuarto lleno de globos, aww 🎈", "Alguien va a tener una sorpresa bonita :>"] },
+  { id: "dj", dice: ["Un DJ practicando… se cree de festival jajaja 🎧", "Subió el volumen, ya se prendió 😂"] },
+  { id: "bateria", grita: "¡Pum, pum, tsss!", dice: ["¡Uno tocando la batería! Los vecinos lo odian 😂", "Otra vez… ya, señor, son las 3 de la mañana jajaja"] },
+  { id: "violin", dice: ["Alguien tocando el violín bien bonito. Se siente como película 🎻🤍", "Esa canción suena a ti :>"] },
+  { id: "piano", dice: ["Alguien toca el piano. Si yo supiera, te tocaría una canción :>", "Qué bonito toca, aww 🥹🎹"] },
+  { id: "astronauta", dice: ["Un niño disfrazado de astronauta. Nivel de ternura: infinito 🚀", "Ya va rumbo a la luna, aww 🥹"] },
+  { id: "dino", grita: "¡Rawr!", dice: ["¿Eso es… un dinosaurio bailando? JAJAJA 🦖", "Sigue bailando el dino, no puedo 😂"] },
+  { id: "alien", dice: ["Amor… ese no es de aquí 👽 Y también nos saluda.", "Sigue saludando el alien… ush, a ese sí le perdono :>"] },
+  { id: "bruja", dice: ["¿Una bruja en escoba? Ya me dio miedito… agárrame la mano 🧹", "¡Pasó otra vez! 😳"] },
+  { id: "sombra", dice: ["Esa sombra no se mueve… ni parpadea. Siguiente ventana, por favor 😬", "Sigue ahí… parada. No me gusta jajaja"] },
+  { id: "cuadro", dice: ["Ese cuadro nos sigue con los ojos… ¿o nomás yo lo veo? 👀", "Ya, ya, no nos veas así 😳"] },
+  { id: "oso", dice: ["Un osote de peluche gigante. Te mereces uno así, pero más grande 🧸🤍", "El osito te manda un abrazo :>"] },
+  { id: "rosas", dice: ["Un ramo de rosas en la mesa. Algún día te voy a llenar la casa de flores 🌹", "Se cayó un pétalo, aww 🥹"] },
+  { id: "pandulce", dice: ["Alguien cenando pan dulce con cafecito. Conchita de vainilla, seguro :>", "Ya se va a acabar la concha jajaja"] },
+  { id: "tacos", dice: ["¡Están cenando tacos! Ahora sí tengo hambre 🌮", "Otro tacote… ¿con todo? :>"] },
+  { id: "loteria", grita: "¡Lotería!", dice: ["¡Están jugando lotería! Y ya ganó uno jajaja", "¡Otra vez! Ese hace trampa 😂"] },
+  { id: "gol", grita: "¡GOOOL!", dice: ["¡Metieron gol! Ese grito se escuchó hasta tu casa 😂", "¡Otro gol! Qué emoción jajaja"] },
+  { id: "gatocompu", dice: ["Un gatito caminando sobre la compu… ahí va el trabajo de alguien jajaja", "Ya escribió «asdfgh», qué inteligente :>"] },
+  { id: "mudanza", dice: ["Puras cajas… alguien se está mudando. Algún día nosotros también, juntitos 🥹🏠", "Una caja tiene un corazón, aww 🤍"] },
+  { id: "calendario", dice: ["Alguien tachando días en su calendario. Como yo, contando los días para verte 🥹🤍", "Ya falta menos :>"] },
+  { id: "avioncito", dice: ["Aventó un avioncito de papel. Si llegara hasta tu casa, te mandaba uno 🤍", "Otro avioncito… este sí llega :>"] },
+  { id: "foco", dice: ["A ese se le prendió el foco 💡 Literal jajaja", "Otra idea… ¿será buena? :>"] },
+  { id: "aspiradora", dice: ["Un gato montado en la aspiradora robot. Qué nivel 😂", "Ahí va otra vuelta, de lo más tranquilo jajaja"] },
 ];
-/* Las ventanas que no tienen escena: se prenden igual y dicen algo. */
-const VACIAS = [
-  "Esa está vacía… por ahora.", "Nadie. Pero qué bonito cuarto.", "Aquí vive alguien muy ordenado.",
-  "Uy, ahí no hay nadie.", "Se ve calientito ese cuarto.", "Esa es puro adorno.",
-  "Alguien dejó la luz prendida y se fue.", "Qué bonitas cortinas.",
-];
-const FINAL = "Mira, ya despertaste a toda la ciudad.";
+/* Lo que dice cada vez que se prende: la primera frase, luego la otra, y
+   así, dando vueltas. */
+const linea = (x, vez) => (Array.isArray(x) ? x[(Math.max(1, vez) - 1) % x.length] : x);
+const FINAL = "Mira, amor, despertaste a toda la ciudad 🥹🤍";
 
 /* ══════════════════════════════════════════════════════════════════════ */
 const mundo = document.getElementById("mundo");
@@ -137,7 +178,7 @@ const elegir = (l) => l[Math.floor(Math.random() * l.length)];
 let A = 0, H = 0, dpr = 1, calle = 0, techo = 0, MW = 0;   // MW: ancho del mundo
 let cielo = null, lejos = null, fachada = null;
 let camX = 0, velCam = 0;
-const edificios = [], ventanas = [], faroles = [], arboles = [];
+const edificios = [], ventanas = [], faroles = [], arboles = [], tapadas = [];
 
 /* ══════════════════════════════════════════════════════════════════════
    LA CIUDAD
@@ -197,12 +238,15 @@ function construir() {
       x += w + huecos;
     }
 
-    if (ventanas.length >= ESCENAS.length + 14) break;
+    if (ventanas.length >= ESCENAS.length) break;
   }
-  // Las escenas se reparten entre ventanas al azar; las que sobran quedan
-  // como ventanas «de adorno» que también se prenden.
-  const orden = ventanas.map((_, i) => i).sort(() => Math.random() - 0.5);
-  ESCENAS.forEach((s, k) => { if (orden[k] !== undefined) ventanas[orden[k]].escena = s; });
+  // Ni una ventana sin su escena: las que sobran se tapan (un aire
+  // acondicionado, una maceta, un corazón pintado) y dejan de ser ventana.
+  tapadas.length = 0;
+  while (ventanas.length > ESCENAS.length) tapadas.push(ventanas.splice(Math.floor(Math.random() * ventanas.length), 1)[0]);
+  // Y las escenas se reparten al azar: cada vez, la ciudad es otra.
+  const mezcla = [...ESCENAS].sort(() => Math.random() - 0.5);
+  ventanas.forEach((v, k) => { v.escena = mezcla[k]; });
   // Faroles y arbolitos en la banqueta.
   for (let fx = 70; fx < MW; fx += Math.max(220, A * 0.6)) faroles.push({ x: fx, on: true });
   for (let tx = 150; tx < MW; tx += Math.max(260, A * 0.7)) arboles.push({ x: tx + azar(-30, 30), f: Math.random() * TAU });
@@ -299,6 +343,25 @@ function pintarFachada() {
       x.fillStyle = "rgba(255,200,120,.3)"; x.fillRect(px - 2, calle - ph - 3, pw + 4, 2);
       x.fillStyle = "rgba(255,230,190,.5)"; x.font = "9px sans-serif"; x.fillText(String(100 + e.i * 7), px + pw + 4, calle - ph + 10);
     }
+    // Donde había una ventana de más: algo que se ve desde la calle.
+    for (const [k, v] of tapadas.entries()) {
+      if (v.e !== e) continue;
+      const cx = v.x + v.w / 2, cy = v.y + v.h / 2;
+      if (k % 3 === 0) {
+        x.fillStyle = "#b8bcc8"; x.fillRect(v.x + v.w * 0.1, cy - v.h * 0.14, v.w * 0.8, v.h * 0.3);
+        x.strokeStyle = "rgba(40,40,60,.6)"; x.lineWidth = 1;
+        for (let r = 1; r < 5; r++) { x.beginPath(); x.moveTo(v.x + v.w * 0.14, cy - v.h * 0.14 + r * v.h * 0.06); x.lineTo(v.x + v.w * 0.86, cy - v.h * 0.14 + r * v.h * 0.06); x.stroke(); }
+        x.fillStyle = "rgba(160,200,255,.35)"; x.fillRect(v.x + v.w * 0.5, cy + v.h * 0.16, 1, v.h * 0.3);
+      } else if (k % 3 === 1) {
+        x.fillStyle = "#a85a3a"; x.fillRect(cx - v.w * 0.2, cy + v.h * 0.1, v.w * 0.4, v.h * 0.22);
+        x.fillStyle = "#2f7a3a"; x.beginPath(); x.arc(cx, cy + v.h * 0.02, v.w * 0.26, 0, TAU); x.fill();
+        x.fillStyle = "#ff8ab0"; x.beginPath(); x.arc(cx - v.w * 0.1, cy - v.h * 0.04, 2.5, 0, TAU); x.arc(cx + v.w * 0.12, cy + v.h * 0.02, 2.5, 0, TAU); x.fill();
+      } else {
+        x.fillStyle = "rgba(255,120,160,.55)";
+        x.beginPath(); const r = v.w * 0.22;
+        x.moveTo(cx, cy + r * 0.8); x.bezierCurveTo(cx - r * 1.4, cy - r * 0.1, cx - r * 0.55, cy - r * 1.05, cx, cy - r * 0.35); x.bezierCurveTo(cx + r * 0.55, cy - r * 1.05, cx + r * 1.4, cy - r * 0.1, cx, cy + r * 0.8); x.fill();
+      }
+    }
     // Escalera de incendios en los de ladrillo.
     if (e.tipo === "ladrillo") {
       const vs = ventanas.filter((v) => v.e === e);
@@ -328,6 +391,9 @@ function corazonEn(x, y, r) {
   g.bezierCurveTo(x - r * 1.4, y - r * 0.1, x - r * 0.55, y - r * 1.05, x, y - r * 0.35);
   g.bezierCurveTo(x + r * 0.55, y - r * 1.05, x + r * 1.4, y - r * 0.1, x, y + r * 0.8);
 }
+/* Lo mismo que se dibuje dentro, pero visto en el espejo alrededor de `x`:
+   el segundo de una pareja, o el otro brazo de alguien. */
+function reflejado(x, dibujar) { g.save(); g.translate(x * 2, 0); g.scale(-1, 1); dibujar(); g.restore(); }
 const fondoCalido = (w, h, c = "#ffd89a") => { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, c); gr.addColorStop(1, "#e8a860"); g.fillStyle = gr; g.fillRect(0, 0, w, h); };
 const letra = (tx, x, y, tam, col) => { g.fillStyle = col; g.font = `${tam}px serif`; g.fillText(tx, x, y); };
 const DIBUJOS = {
@@ -640,17 +706,416 @@ const DIBUJOS = {
     g.fillStyle = "#e8c040"; g.save(); g.translate(w * 0.42, h * 0.42); g.rotate(-0.15); g.fillRect(0, -2, w * 0.3, 4); g.beginPath(); g.moveTo(w * 0.3, -2); g.lineTo(w * 0.42, -7); g.lineTo(w * 0.42, 7); g.lineTo(w * 0.3, 2); g.fill(); g.restore();
     letra("♪", w * 0.8, h * (0.35 - (t * 0.4) % 0.3), h * 0.2, "#5a2a1a");
   },
+  pizza(w, h, t) {
+    fondoCalido(w, h, "#ffd8a0");
+    persona(w * 0.34, h, h * 0.62, "#2a1a20", 1.25 + Math.sin(t * 3) * 0.15);
+    const m = Math.sin(t * 3) * h * 0.02;
+    g.fillStyle = "#f2c14e"; g.beginPath(); g.moveTo(w * 0.52, h * 0.34 + m); g.lineTo(w * 0.82, h * 0.3 + m); g.lineTo(w * 0.64, h * 0.56 + m); g.fill();
+    g.fillStyle = "#c8342a"; for (const [a, b] of [[0.62, 0.36], [0.7, 0.35], [0.65, 0.44]]) { g.beginPath(); g.arc(w * a, h * b + m, 1.6, 0, TAU); g.fill(); }
+    g.fillStyle = "#e8d8b8"; g.fillRect(w * 0.55, h * 0.84, w * 0.4, h * 0.06);
+  },
+  almohadas(w, h, t) {
+    fondoCalido(w, h, "#ffe2c0");
+    const s = Math.sin(t * 6);
+    persona(w * 0.28, h, h * 0.58, "#2a1a30", 1 + s * 0.6);
+    reflejado(w * 0.74, () => persona(w * 0.74, h, h * 0.55, "#3a1a28", 1 - s * 0.6));
+    g.fillStyle = "#fff";
+    g.beginPath(); g.roundRect(w * 0.36, h * (0.28 - s * 0.06), w * 0.18, h * 0.1, 3); g.fill();
+    g.beginPath(); g.roundRect(w * 0.48, h * (0.3 + s * 0.06), w * 0.18, h * 0.1, 3); g.fill();
+    for (let i = 0; i < 7; i++) { const k = (t * 0.35 + i / 7) % 1; g.fillStyle = `rgba(255,255,255,${0.9 * (1 - k)})`; g.beginPath(); g.ellipse(w * (0.15 + i * 0.12) + Math.sin(t * 3 + i) * 3, h * (0.08 + k * 0.85), 2, 1, t + i, 0, TAU); g.fill(); }
+  },
+  mariachi(w, h, t) {
+    fondoCalido(w, h, "#ffb070");
+    const s = h * 0.66, x = w * 0.42, cab = h - s * 0.95;
+    persona(x, h, s, "#1a1010");
+    g.fillStyle = "#1a1010"; g.beginPath(); g.ellipse(x, cab - s * 0.14, w * 0.3, h * 0.04, 0, 0, TAU); g.fill();
+    g.beginPath(); g.arc(x, cab - s * 0.14, s * 0.2, Math.PI, 0); g.fill();
+    g.strokeStyle = "#e8c040"; g.lineWidth = 1.2; g.beginPath(); g.ellipse(x, cab - s * 0.14, w * 0.3, h * 0.04, 0, 0, TAU); g.stroke();
+    g.fillStyle = "#e8c040"; g.save(); g.translate(x + s * 0.12, cab + s * 0.12); g.rotate(-0.2 + Math.sin(t * 5) * 0.05); g.fillRect(0, -2, w * 0.3, 4); g.beginPath(); g.moveTo(w * 0.3, -2); g.lineTo(w * 0.42, -7); g.lineTo(w * 0.42, 7); g.lineTo(w * 0.3, 2); g.fill(); g.restore();
+    letra("♪", w * 0.78, h * (0.3 - (t * 0.4) % 0.25), h * 0.18, "#5a1a0a");
+  },
+  pinata(w, h, t) {
+    fondoCalido(w, h, "#ffcfe0");
+    const rota = t > 2.4;
+    const a = Math.sin(t * 5) * 0.4, px = w * 0.55 + Math.sin(a) * w * 0.2, py = h * 0.32;
+    g.strokeStyle = "#5a3a2a"; g.lineWidth = 1; g.beginPath(); g.moveTo(w * 0.55, 0); g.lineTo(px, py); g.stroke();
+    if (!rota) {
+      g.fillStyle = "#ffd23a"; g.beginPath(); g.arc(px, py, w * 0.09, 0, TAU); g.fill();
+      const c = ["#ff4a7a", "#3ac8ff", "#6ae06a", "#ff9a2a", "#b06aff"];
+      for (let k = 0; k < 5; k++) { const an = k * TAU / 5 + t; g.fillStyle = c[k]; g.beginPath(); g.moveTo(px + Math.cos(an - 0.3) * w * 0.08, py + Math.sin(an - 0.3) * w * 0.08); g.lineTo(px + Math.cos(an) * w * 0.2, py + Math.sin(an) * w * 0.2); g.lineTo(px + Math.cos(an + 0.3) * w * 0.08, py + Math.sin(an + 0.3) * w * 0.08); g.fill(); }
+    } else {
+      for (let i = 0; i < 12; i++) { const k = clamp((t - 2.4) * 0.9 - i * 0.02, 0, 1); g.fillStyle = ["#ff4a7a", "#3ac8ff", "#ffd23a", "#6ae06a"][i % 4]; g.fillRect(px + (i - 6) * w * 0.035 * (1 + k), py + k * h * 0.55, 3, 3); }
+    }
+    persona(w * 0.22, h, h * 0.5, "#2a1a30", 1.1 + Math.abs(Math.sin(t * 6)) * 0.7);
+  },
+  luchador(w, h, t) {
+    fondoCalido(w, h, "#ffd0a0");
+    const s = h * 0.7, x = w * 0.5, fl = 1.5 + Math.sin(t * 4) * 0.25;
+    persona(x, h, s, "#2a1a3a", fl);
+    reflejado(x, () => persona(x, h, s, "#2a1a3a", fl));
+    const cy = h - s * 0.95, r = s * 0.22;
+    g.fillStyle = "#d8283a"; g.beginPath(); g.arc(x, cy, r, 0, TAU); g.fill();
+    g.fillStyle = "#ffe36a"; g.fillRect(x - 1, cy - r, 2, r * 2);
+    g.fillStyle = "#fff"; g.beginPath(); g.ellipse(x - r * 0.4, cy - r * 0.1, r * 0.25, r * 0.15, 0, 0, TAU); g.ellipse(x + r * 0.4, cy - r * 0.1, r * 0.25, r * 0.15, 0, 0, TAU); g.fill();
+  },
+  trastes(w, h, t) {
+    fondoCalido(w, h, "#e8f4ff");
+    g.strokeStyle = "rgba(120,150,190,.25)"; g.lineWidth = 1; for (let y = h * 0.1; y < h * 0.7; y += h * 0.1) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+    persona(w * 0.36, h, h * 0.62, "#2a2030", 0.25 + Math.sin(t * 8) * 0.15);
+    g.fillStyle = "#b8c4d0"; g.fillRect(w * 0.48, h * 0.7, w * 0.48, h * 0.08);
+    g.fillStyle = "#fff"; for (let k = 0; k < 3; k++) { g.beginPath(); g.ellipse(w * 0.82, h * (0.66 - k * 0.04), w * 0.1, h * 0.015, 0, 0, TAU); g.fill(); }
+    for (let i = 0; i < 4; i++) { const k = (t * 0.6 + i / 4) % 1; g.strokeStyle = `rgba(160,200,255,${0.8 * (1 - k)})`; g.beginPath(); g.arc(w * (0.58 + i * 0.05), h * (0.68 - k * 0.3), 1.5 + k * 2, 0, TAU); g.stroke(); }
+  },
+  planchando(w, h, t) {
+    fondoCalido(w, h, "#fff0d8");
+    persona(w * 0.3, h, h * 0.62, "#302030", 0.2);
+    g.fillStyle = "#6a8ad0"; g.beginPath(); g.roundRect(w * 0.4, h * 0.7, w * 0.56, h * 0.05, 3); g.fill();
+    g.strokeStyle = "#555"; g.lineWidth = 1.2; g.beginPath(); g.moveTo(w * 0.55, h * 0.75); g.lineTo(w * 0.8, h); g.moveTo(w * 0.8, h * 0.75); g.lineTo(w * 0.55, h); g.stroke();
+    const ix = w * (0.52 + (Math.sin(t * 3) + 1) * 0.14);
+    g.fillStyle = "#e0e4ec"; g.beginPath(); g.moveTo(ix - w * 0.08, h * 0.7); g.lineTo(ix + w * 0.1, h * 0.7); g.lineTo(ix + w * 0.06, h * 0.63); g.lineTo(ix - w * 0.06, h * 0.63); g.fill();
+    for (let i = 0; i < 2; i++) { const k = (t * 0.8 + i / 2) % 1; g.fillStyle = `rgba(255,255,255,${0.6 * (1 - k)})`; g.beginPath(); g.arc(ix + Math.sin(k * 5) * 3, h * (0.6 - k * 0.3), 2 + k * 3, 0, TAU); g.fill(); }
+  },
+  ronca(w, h, t) {
+    g.fillStyle = "#2a2a50"; g.fillRect(0, 0, w, h);
+    const lz = g.createRadialGradient(w * 0.8, h * 0.2, 0, w * 0.8, h * 0.2, w * 0.7); lz.addColorStop(0, "rgba(255,220,160,.55)"); lz.addColorStop(1, "rgba(255,220,160,0)"); g.fillStyle = lz; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#e8e0ff"; g.fillRect(w * 0.06, h * 0.74, w * 0.88, h * 0.2);
+    g.fillStyle = "#fff"; g.beginPath(); g.ellipse(w * 0.22, h * 0.72, w * 0.14, h * 0.05, 0, 0, TAU); g.fill();
+    g.fillStyle = "#1a1420"; g.beginPath(); g.arc(w * 0.24, h * 0.66, w * 0.09, 0, TAU); g.fill();
+    const r = 1 + Math.sin(t * 2.5) * 0.12;
+    g.fillStyle = "#8a6ad0"; g.beginPath(); g.ellipse(w * 0.6, h * 0.74, w * 0.3, h * 0.07 * r, 0, Math.PI, 0); g.fill();
+    for (let i = 0; i < 3; i++) { const k = (t * 0.5 + i / 3) % 1; letra("Z", w * (0.36 + k * 0.3), h * (0.52 - k * 0.4), h * (0.1 + k * 0.1), `rgba(255,255,255,${1 - k})`); }
+  },
+  beso(w, h, t) {
+    fondoCalido(w, h, "#ffb8c8");
+    const a = Math.min(1, t / 1) * w * 0.05;
+    persona(w * 0.36 + a, h, h * 0.66, "#3a1020");
+    reflejado(w * 0.64 - a, () => persona(w * 0.64 - a, h, h * 0.6, "#3a1020"));
+    if (t > 0.9) { const k = (t - 0.9) % 2; g.fillStyle = `rgba(255,74,122,${1 - k / 2})`; corazonEn(w * 0.5, h * 0.22 - k * h * 0.08, w * 0.09); g.fill(); }
+  },
+  espejo(w, h, t) {
+    fondoCalido(w, h, "#ffe0f0");
+    g.fillStyle = "#cfe6ff"; g.beginPath(); g.ellipse(w * 0.7, h * 0.45, w * 0.17, h * 0.22, 0, 0, TAU); g.fill();
+    g.strokeStyle = "#d8a84a"; g.lineWidth = 2.5; g.stroke();
+    g.save(); g.beginPath(); g.ellipse(w * 0.7, h * 0.45, w * 0.16, h * 0.21, 0, 0, TAU); g.clip();
+    persona(w * 0.7, h * 0.72, h * 0.3, "rgba(60,30,60,.45)"); g.restore();
+    persona(w * 0.34, h, h * 0.6, "#2a1428", 1.8 + Math.sin(t * 6) * 0.25);
+    if (Math.sin(t * 2) > 0.7) { g.fillStyle = "#fff"; g.beginPath(); g.arc(w * 0.62, h * 0.32, 1.8, 0, TAU); g.fill(); }
+  },
+  gatocaja(w, h, t) {
+    fondoCalido(w, h, "#ffe4b8");
+    const sale = Math.max(0, Math.sin(t * 1.4)) * h * 0.1;
+    g.fillStyle = "#231820";
+    g.beginPath(); g.arc(w * 0.5, h * 0.6 - sale, w * 0.13, 0, TAU); g.fill();
+    g.beginPath(); g.moveTo(w * 0.39, h * 0.56 - sale); g.lineTo(w * 0.41, h * 0.44 - sale); g.lineTo(w * 0.47, h * 0.52 - sale); g.moveTo(w * 0.53, h * 0.52 - sale); g.lineTo(w * 0.59, h * 0.44 - sale); g.lineTo(w * 0.61, h * 0.56 - sale); g.fill();
+    const p = Math.sin(t * 1.9) > 0.94 ? 0.2 : 1;
+    g.fillStyle = "#9cff7a"; g.beginPath(); g.ellipse(w * 0.45, h * 0.6 - sale, 1.8, 2 * p, 0, 0, TAU); g.ellipse(w * 0.55, h * 0.6 - sale, 1.8, 2 * p, 0, 0, TAU); g.fill();
+    g.fillStyle = "#c89058"; g.fillRect(w * 0.24, h * 0.64, w * 0.52, h * 0.3);
+    g.fillStyle = "#a87038"; g.beginPath(); g.moveTo(w * 0.24, h * 0.64); g.lineTo(w * 0.14, h * 0.56); g.lineTo(w * 0.3, h * 0.56); g.fill(); g.beginPath(); g.moveTo(w * 0.76, h * 0.64); g.lineTo(w * 0.86, h * 0.56); g.lineTo(w * 0.7, h * 0.56); g.fill();
+  },
+  hamster(w, h, t) {
+    fondoCalido(w, h, "#fff0d0");
+    const cx = w * 0.5, cy = h * 0.6, r = w * 0.27;
+    g.strokeStyle = "#8a8aa0"; g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, r, 0, TAU); g.stroke();
+    g.lineWidth = 1; for (let k = 0; k < 6; k++) { const a = t * 6 + k * TAU / 6; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); g.stroke(); }
+    g.fillStyle = "#6a6a80"; g.fillRect(cx - 1.5, cy, 3, h - cy);
+    const b = Math.abs(Math.sin(t * 14)) * 2;
+    g.fillStyle = "#d8a060"; g.beginPath(); g.ellipse(cx, cy + r - 5 - b, w * 0.1, h * 0.04, 0, 0, TAU); g.fill();
+    g.fillStyle = "#fff0e0"; g.beginPath(); g.arc(cx + w * 0.08, cy + r - 6 - b, 2.5, 0, TAU); g.fill();
+  },
+  loro(w, h, t) {
+    fondoCalido(w, h, "#e0ffe0");
+    g.fillStyle = "#7a4a2a"; g.fillRect(w * 0.15, h * 0.72, w * 0.7, 3);
+    const b = Math.sin(t * 6) * h * 0.02, x = w * 0.5, y = h * 0.52 + b;
+    g.fillStyle = "#2ec85a"; g.beginPath(); g.ellipse(x, y, w * 0.11, h * 0.16, 0.15, 0, TAU); g.fill();
+    g.beginPath(); g.arc(x + w * 0.04, y - h * 0.15, w * 0.09, 0, TAU); g.fill();
+    g.fillStyle = "#e83a3a"; g.beginPath(); g.ellipse(x - w * 0.04, y + h * 0.02, w * 0.06, h * 0.1, 0.3, 0, TAU); g.fill();
+    g.fillStyle = "#ffb020"; g.beginPath(); g.moveTo(x + w * 0.11, y - h * 0.16); g.lineTo(x + w * 0.19, y - h * 0.12); g.lineTo(x + w * 0.11, y - h * 0.1); g.fill();
+    g.fillStyle = "#111"; g.beginPath(); g.arc(x + w * 0.07, y - h * 0.17, 1.5, 0, TAU); g.fill();
+    g.fillStyle = "#1a8a3a"; g.fillRect(x - w * 0.02, y + h * 0.15, w * 0.04, h * 0.1);
+  },
+  miedo(w, h, t) {
+    const susto = (t % 3) > 2.4;
+    const b = 0.5 + 0.5 * Math.sin(t * 11) * Math.sin(t * 5);
+    g.fillStyle = susto ? "#e8ecff" : `rgb(${30 + b * 20},${40 + b * 30},${90 + b * 40})`; g.fillRect(0, 0, w, h);
+    if (susto) { g.fillStyle = "#101018"; g.beginPath(); g.arc(w * 0.4, h * 0.3, 3, 0, TAU); g.arc(w * 0.6, h * 0.3, 3, 0, TAU); g.fill(); g.beginPath(); g.ellipse(w * 0.5, h * 0.42, 4, 6, 0, 0, TAU); g.fill(); }
+    const tiembla = susto ? Math.sin(t * 60) * 2 : 0;
+    g.fillStyle = "#6a5a9a"; g.beginPath(); g.ellipse(w * 0.5 + tiembla, h * 0.86, w * 0.36, h * 0.2, 0, Math.PI, 0); g.fill();
+    g.fillStyle = "#fff"; g.beginPath(); g.arc(w * 0.45 + tiembla, h * 0.76, 2, 0, TAU); g.arc(w * 0.55 + tiembla, h * 0.76, 2, 0, TAU); g.fill();
+  },
+  palomitas(w, h, t) {
+    const b = 0.5 + 0.5 * Math.sin(t * 7);
+    fondoCalido(w, h, `rgb(${220 + b * 20},${200 + b * 20},${160 + b * 30})`);
+    persona(w * 0.3, h, h * 0.55, "#2a1a20", 1.0);
+    const bx = w * 0.6, by = h * 0.72;
+    for (let k = 0; k < 5; k++) { g.fillStyle = k % 2 ? "#fff" : "#e8283a"; g.beginPath(); g.moveTo(bx + k * w * 0.06, by); g.lineTo(bx + (k + 1) * w * 0.06, by); g.lineTo(bx + (k + 0.9) * w * 0.055, h); g.lineTo(bx + k * w * 0.055, h); g.fill(); }
+    g.fillStyle = "#fff8e0"; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(bx + w * 0.03 + i * w * 0.045, by - 2, 3, 0, TAU); g.fill(); }
+    for (let i = 0; i < 3; i++) { const k = (t * 1.2 + i / 3) % 1; g.beginPath(); g.arc(bx + w * (0.06 + i * 0.08), by - Math.sin(k * Math.PI) * h * 0.25, 2.5, 0, TAU); g.fill(); }
+  },
+  pijamada(w, h, t) {
+    fondoCalido(w, h, "#ffd8f0");
+    for (const [x, s] of [[0.3, 0.6], [0.7, 0.56]]) {
+      const px = w * x + Math.sin(t * 2 + x * 9) * 1.5, ps = h * s;
+      persona(px, h, ps, "#3a2a40");
+      const cy = h - ps * 0.95, r = ps * 0.22;
+      g.fillStyle = "#9ad89a"; g.beginPath(); g.arc(px, cy, r, 0, TAU); g.fill();
+      g.fillStyle = "#4aa84a"; g.beginPath(); g.arc(px - r * 0.4, cy - r * 0.1, r * 0.32, 0, TAU); g.arc(px + r * 0.4, cy - r * 0.1, r * 0.32, 0, TAU); g.fill();
+      g.fillStyle = "#dff5c8"; g.beginPath(); g.arc(px - r * 0.4, cy - r * 0.1, r * 0.18, 0, TAU); g.arc(px + r * 0.4, cy - r * 0.1, r * 0.18, 0, TAU); g.fill();
+    }
+  },
+  robot(w, h, t) {
+    g.fillStyle = "#303a5a"; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#454f70"; g.fillRect(0, h * 0.82, w, h * 0.18);
+    const k = (t * 0.18) % 1, x = w * (0.15 + (k < 0.5 ? k * 2 : 2 - k * 2) * 0.7), p = Math.sin(t * 10) * 2;
+    g.fillStyle = "#c0c8d8"; g.fillRect(x - w * 0.1, h * 0.56, w * 0.2, h * 0.18); g.fillRect(x - w * 0.07, h * 0.44, w * 0.14, h * 0.11);
+    g.fillStyle = "#5af0ff"; g.fillRect(x - w * 0.045, h * 0.48, 3, 3); g.fillRect(x + w * 0.02, h * 0.48, 3, 3);
+    g.strokeStyle = "#c0c8d8"; g.lineWidth = 1; g.beginPath(); g.moveTo(x, h * 0.44); g.lineTo(x, h * 0.38); g.stroke();
+    g.fillStyle = Math.sin(t * 8) > 0 ? "#ff3a3a" : "#6a2020"; g.beginPath(); g.arc(x, h * 0.37, 2, 0, TAU); g.fill();
+    g.fillStyle = "#8a92a8"; g.fillRect(x - w * 0.07, h * 0.74, 3, h * 0.08 + p); g.fillRect(x + w * 0.04, h * 0.74, 3, h * 0.08 - p);
+  },
+  mago(w, h, t) {
+    fondoCalido(w, h, "#e0c8ff");
+    persona(w * 0.32, h, h * 0.62, "#1a1030", 0.9);
+    const sale = clamp((t % 4) / 1.2, 0, 1);
+    g.fillStyle = "#fff"; g.beginPath(); g.ellipse(w * 0.64, h * (0.62 - sale * 0.12), w * 0.07, h * 0.06, 0, 0, TAU); g.fill();
+    g.beginPath(); g.ellipse(w * 0.61, h * (0.52 - sale * 0.12), w * 0.02, h * 0.07, -0.2, 0, TAU); g.ellipse(w * 0.67, h * (0.52 - sale * 0.12), w * 0.02, h * 0.07, 0.2, 0, TAU); g.fill();
+    g.fillStyle = "#101018"; g.fillRect(w * 0.52, h * 0.64, w * 0.24, h * 0.2); g.fillRect(w * 0.47, h * 0.64, w * 0.34, h * 0.03);
+    g.fillStyle = "#d83a5a"; g.fillRect(w * 0.52, h * 0.78, w * 0.24, h * 0.03);
+    for (let i = 0; i < 4; i++) if (Math.sin(t * 5 + i * 2) > 0.3) { g.fillStyle = "#fff6a0"; g.fillRect(w * (0.5 + i * 0.1), h * (0.35 + (i % 2) * 0.1), 2, 2); }
+  },
+  malabares(w, h, t) {
+    fondoCalido(w, h, "#fff0c8");
+    persona(w * 0.5, h, h * 0.6, "#2a1a2a", 1.1 + Math.sin(t * 8) * 0.2);
+    reflejado(w * 0.5, () => persona(w * 0.5, h, h * 0.6, "#2a1a2a", 1.1 - Math.sin(t * 8) * 0.2));
+    const c = ["#ff4a6a", "#4ab4ff", "#ffd24a"];
+    for (let i = 0; i < 3; i++) { const ph = t * 4 + i * TAU / 3; g.fillStyle = c[i]; g.beginPath(); g.arc(w * 0.5 + Math.cos(ph) * w * 0.24, h * 0.34 - Math.abs(Math.sin(ph)) * h * 0.2, 3, 0, TAU); g.fill(); }
+  },
+  globos(w, h, t) {
+    fondoCalido(w, h, "#ffe8f0");
+    const c = ["#ff5a8a", "#ffd24a", "#6ab4ff", "#b06aff", "#ff8a4a"];
+    for (let i = 0; i < 5; i++) {
+      const x = w * (0.14 + i * 0.18), y = h * (0.26 + (i % 2) * 0.1) + Math.sin(t * 1.6 + i) * h * 0.03;
+      g.strokeStyle = "rgba(90,60,80,.6)"; g.lineWidth = 0.8; g.beginPath(); g.moveTo(x, y + h * 0.08); g.quadraticCurveTo(x + 3, y + h * 0.3, x, h * 0.9); g.stroke();
+      g.fillStyle = c[i]; g.beginPath(); g.ellipse(x, y, w * 0.08, h * 0.08, 0, 0, TAU); g.fill();
+      g.fillStyle = "rgba(255,255,255,.5)"; g.beginPath(); g.arc(x - w * 0.025, y - h * 0.03, 1.5, 0, TAU); g.fill();
+    }
+  },
+  dj(w, h, t) {
+    g.fillStyle = `hsl(${270 + Math.sin(t * 2) * 30},60%,${22 + Math.abs(Math.sin(t * 8)) * 12}%)`; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 3; i++) { g.fillStyle = `hsla(${(t * 90 + i * 120) % 360},100%,65%,.25)`; g.beginPath(); g.moveTo(w * 0.5, 0); g.lineTo(w * (0.1 + i * 0.4) + Math.sin(t * 2 + i) * w * 0.2, h); g.lineTo(w * (0.25 + i * 0.4) + Math.sin(t * 2 + i) * w * 0.2, h); g.fill(); }
+    const s = h * 0.66, x = w * 0.5;
+    persona(x, h * 1.02 - Math.abs(Math.sin(t * 8)) * h * 0.03, s, "#0a0616", 1.7);
+    g.strokeStyle = "#ff3aa0"; g.lineWidth = 2; g.beginPath(); g.arc(x, h * 1.02 - s * 0.95 - Math.abs(Math.sin(t * 8)) * h * 0.03, s * 0.26, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
+    g.fillStyle = "#1a1a2a"; g.fillRect(w * 0.1, h * 0.8, w * 0.8, h * 0.2);
+    g.strokeStyle = "#8a8aa8"; g.lineWidth = 1; g.beginPath(); g.arc(w * 0.3, h * 0.88, w * 0.08, t * 8, t * 8 + 4); g.stroke();
+  },
+  bateria(w, h, t) {
+    fondoCalido(w, h, "#ffc0a0");
+    const golpe = Math.abs(Math.sin(t * 10));
+    persona(w * 0.5, h * 0.95, h * 0.6, "#1a1018", 1.3 + golpe * 0.7);
+    reflejado(w * 0.5, () => persona(w * 0.5, h * 0.95, h * 0.6, "#1a1018", 1.3 + (1 - golpe) * 0.7));
+    g.fillStyle = "#c83a3a"; g.beginPath(); g.ellipse(w * 0.5, h * 0.86, w * 0.2, h * 0.1, 0, 0, TAU); g.fill();
+    g.fillStyle = "#fff"; g.beginPath(); g.ellipse(w * 0.5, h * 0.86, w * 0.13, h * 0.065, 0, 0, TAU); g.fill();
+    g.save(); g.translate(w * 0.82, h * 0.55); g.rotate(Math.sin(t * 22) * 0.18); g.fillStyle = "#e8c040"; g.fillRect(-w * 0.14, -1.5, w * 0.28, 3); g.restore();
+    g.save(); g.translate(w * 0.18, h * 0.6); g.rotate(-Math.sin(t * 18) * 0.15); g.fillStyle = "#e8c040"; g.fillRect(-w * 0.12, -1.5, w * 0.24, 3); g.restore();
+  },
+  violin(w, h, t) {
+    fondoCalido(w, h, "#f4d8b8");
+    const s = h * 0.66, x = w * 0.42, cy = h - s * 0.95;
+    persona(x, h, s, "#2a1818");
+    g.save(); g.translate(x + s * 0.18, cy + s * 0.2); g.rotate(0.5);
+    g.fillStyle = "#9a4a1a"; g.beginPath(); g.ellipse(0, 0, w * 0.07, w * 0.11, 0, 0, TAU); g.fill();
+    g.fillStyle = "#2a1008"; g.fillRect(-1, -w * 0.24, 2, w * 0.14); g.restore();
+    const arco = Math.sin(t * 5) * w * 0.12;
+    g.strokeStyle = "#e8d8b0"; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x + s * 0.02 + arco, cy + s * 0.45); g.lineTo(x + s * 0.5 + arco, cy + s * 0.05); g.stroke();
+    letra("♫", w * 0.76, h * (0.32 - (t * 0.35) % 0.22), h * 0.17, "#6a2a1a");
+  },
+  piano(w, h, t) {
+    fondoCalido(w, h, "#f0e0d0");
+    g.fillStyle = "#101014"; g.fillRect(w * 0.4, h * 0.46, w * 0.58, h * 0.4); g.fillRect(w * 0.42, h * 0.86, 3, h * 0.14); g.fillRect(w * 0.92, h * 0.86, 3, h * 0.14);
+    g.fillStyle = "#fff"; g.fillRect(w * 0.42, h * 0.62, w * 0.54, h * 0.06);
+    g.fillStyle = "#101014"; for (let k = 0; k < 7; k++) g.fillRect(w * (0.45 + k * 0.075), h * 0.62, 2, h * 0.035);
+    persona(w * 0.28, h, h * 0.58, "#2a1a24", 0.1 + Math.abs(Math.sin(t * 6)) * 0.2);
+    letra("♪", w * (0.6 + Math.sin(t) * 0.1), h * (0.36 - (t * 0.3) % 0.2), h * 0.16, "#4a2a3a");
+  },
+  astronauta(w, h, t) {
+    g.fillStyle = "#1a2248"; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 8; i++) { g.fillStyle = `rgba(255,255,255,${0.4 + 0.4 * Math.sin(t * 3 + i)})`; g.fillRect((i * 41 % 100) / 100 * w, (i * 29 % 70) / 100 * h, 1.5, 1.5); }
+    const y = h * 0.95 + Math.sin(t * 1.5) * h * 0.05, s = h * 0.5, cy = y - s * 0.95;
+    persona(w * 0.5, y, s, "#e8eef8", 1.4 + Math.sin(t * 2) * 0.3);
+    g.fillStyle = "#6ac8ff"; g.beginPath(); g.arc(w * 0.5, cy, s * 0.16, 0, TAU); g.fill();
+    g.strokeStyle = "#fff"; g.lineWidth = 1.5; g.beginPath(); g.arc(w * 0.5, cy, s * 0.27, 0, TAU); g.stroke();
+    g.fillStyle = "#ff5a5a"; g.fillRect(w * 0.46, y - s * 0.5, 3, 3);
+  },
+  dino(w, h, t) {
+    fondoCalido(w, h, "#d8ffc8");
+    const b = Math.abs(Math.sin(t * 6)) * h * 0.05, x = w * 0.46, y = h * 0.78 - b;
+    g.fillStyle = "#3aa85a";
+    g.beginPath(); g.ellipse(x, y, w * 0.2, h * 0.16, 0, 0, TAU); g.fill();
+    g.beginPath(); g.moveTo(x - w * 0.16, y + h * 0.04); g.quadraticCurveTo(x - w * 0.4, y + h * 0.1, x - w * 0.42, y + h * 0.18); g.lineTo(x - w * 0.12, y + h * 0.12); g.fill();
+    g.beginPath(); g.ellipse(x + w * 0.18, y - h * 0.2, w * 0.14, h * 0.08, -0.2, 0, TAU); g.fill();
+    g.fillStyle = "#2a8a4a"; for (let k = 0; k < 4; k++) { const sx = x - w * 0.14 + k * w * 0.09; g.beginPath(); g.moveTo(sx, y - h * 0.13 + Math.abs(k - 1.5) * h * 0.02); g.lineTo(sx + w * 0.04, y - h * 0.22 + Math.abs(k - 1.5) * h * 0.02); g.lineTo(sx + w * 0.08, y - h * 0.13 + Math.abs(k - 1.5) * h * 0.02); g.fill(); }
+    g.strokeStyle = "#3aa85a"; g.lineWidth = 2.5; g.lineCap = "round"; g.beginPath(); g.moveTo(x + w * 0.14, y - h * 0.04); g.lineTo(x + w * 0.22, y - h * (0.08 + Math.sin(t * 12) * 0.04)); g.stroke();
+    g.fillStyle = "#101018"; g.beginPath(); g.arc(x + w * 0.22, y - h * 0.22, 1.6, 0, TAU); g.fill();
+    g.fillStyle = "#fff"; g.fillRect(x + w * 0.24, y - h * 0.17, 2, 2); g.fillRect(x + w * 0.28, y - h * 0.17, 2, 2);
+  },
+  alien(w, h, t) {
+    g.fillStyle = "#102a20"; g.fillRect(0, 0, w, h);
+    const lz = g.createRadialGradient(w * 0.5, h * 0.5, 0, w * 0.5, h * 0.5, w * 0.7); lz.addColorStop(0, "rgba(120,255,160,.45)"); lz.addColorStop(1, "rgba(120,255,160,0)"); g.fillStyle = lz; g.fillRect(0, 0, w, h);
+    const x = w * 0.46;
+    g.fillStyle = "#8aff9a";
+    g.beginPath(); g.ellipse(x, h * 0.46, w * 0.17, h * 0.15, 0, 0, TAU); g.fill();
+    g.beginPath(); g.moveTo(x - w * 0.12, h); g.quadraticCurveTo(x, h * 0.6, x + w * 0.12, h); g.fill();
+    g.fillStyle = "#081008"; g.beginPath(); g.ellipse(x - w * 0.07, h * 0.47, w * 0.05, h * 0.03, 0.5, 0, TAU); g.ellipse(x + w * 0.07, h * 0.47, w * 0.05, h * 0.03, -0.5, 0, TAU); g.fill();
+    g.strokeStyle = "#8aff9a"; g.lineWidth = 2.5; g.lineCap = "round"; const a = -1.2 + Math.sin(t * 8) * 0.4;
+    g.beginPath(); g.moveTo(x + w * 0.1, h * 0.72); g.lineTo(x + w * 0.1 + Math.cos(a) * w * 0.2, h * 0.72 + Math.sin(a) * w * 0.2); g.stroke();
+  },
+  bruja(w, h, t) {
+    g.fillStyle = "#2a1a40"; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#fff4c8"; g.beginPath(); g.arc(w * 0.6, h * 0.36, w * 0.24, 0, TAU); g.fill();
+    const k = (t * 0.35) % 1.6, x = w * (-0.4 + k * 1.2), y = h * (0.5 - Math.sin(k * 2) * 0.1);
+    g.fillStyle = "#120a1a";
+    g.fillRect(x - w * 0.22, y + 2, w * 0.44, 2);
+    g.beginPath(); g.moveTo(x - w * 0.22, y); g.lineTo(x - w * 0.34, y - 4); g.lineTo(x - w * 0.34, y + 8); g.fill();
+    g.beginPath(); g.moveTo(x - w * 0.08, y + 2); g.quadraticCurveTo(x, y - h * 0.16, x + w * 0.06, y + 2); g.fill();
+    g.beginPath(); g.arc(x, y - h * 0.16, w * 0.045, 0, TAU); g.fill();
+    g.beginPath(); g.moveTo(x - w * 0.08, y - h * 0.18); g.lineTo(x + w * 0.08, y - h * 0.18); g.lineTo(x + w * 0.02, y - h * 0.32); g.fill();
+  },
+  sombra(w, h, t) {
+    fondoCalido(w, h, "#d8b890");
+    g.fillStyle = "rgba(0,0,0,.35)"; g.fillRect(0, 0, w, h);
+    const s = h * 0.82;
+    persona(w * 0.5, h * 1.02, s, "#050305");
+    g.fillStyle = "#050305"; g.fillRect(w * 0.5 - s * 0.24, h * 1.02 - s * 1.14, s * 0.48, 2.5); g.fillRect(w * 0.5 - s * 0.15, h * 1.02 - s * 1.36, s * 0.3, s * 0.22);
+    if (t > 1.5 && (t % 3) < 2.7) { g.fillStyle = "#fff"; g.fillRect(w * 0.5 - s * 0.08, h * 1.02 - s * 0.98, 2, 1.5); g.fillRect(w * 0.5 + s * 0.05, h * 1.02 - s * 0.98, 2, 1.5); }
+  },
+  cuadro(w, h, t) {
+    fondoCalido(w, h, "#e0c8a0");
+    g.fillStyle = "#6a4020"; g.fillRect(w * 0.2, h * 0.14, w * 0.6, h * 0.62);
+    g.fillStyle = "#2a3a4a"; g.fillRect(w * 0.26, h * 0.2, w * 0.48, h * 0.5);
+    g.fillStyle = "#e8c8a0"; g.beginPath(); g.ellipse(w * 0.5, h * 0.4, w * 0.12, h * 0.12, 0, 0, TAU); g.fill();
+    g.fillStyle = "#1a1010"; g.beginPath(); g.moveTo(w * 0.3, h * 0.7); g.quadraticCurveTo(w * 0.5, h * 0.44, w * 0.7, h * 0.7); g.fill();
+    const o = Math.sin(t * 0.9) * 2.2;
+    g.fillStyle = "#fff"; g.beginPath(); g.arc(w * 0.46, h * 0.38, 2.4, 0, TAU); g.arc(w * 0.54, h * 0.38, 2.4, 0, TAU); g.fill();
+    g.fillStyle = "#101010"; g.beginPath(); g.arc(w * 0.46 + o, h * 0.38, 1.2, 0, TAU); g.arc(w * 0.54 + o, h * 0.38, 1.2, 0, TAU); g.fill();
+  },
+  oso(w, h, t) {
+    fondoCalido(w, h, "#ffe0e8");
+    const a = Math.sin(t * 1.5) * 0.06, x = w * 0.5, y = h * 0.64;
+    g.save(); g.translate(x, h); g.rotate(a); g.translate(-x, -h);
+    g.fillStyle = "#b07850";
+    g.beginPath(); g.ellipse(x, y + h * 0.14, w * 0.26, h * 0.22, 0, 0, TAU); g.fill();
+    g.beginPath(); g.arc(x, y - h * 0.16, w * 0.2, 0, TAU); g.fill();
+    g.beginPath(); g.arc(x - w * 0.16, y - h * 0.3, w * 0.08, 0, TAU); g.arc(x + w * 0.16, y - h * 0.3, w * 0.08, 0, TAU); g.fill();
+    g.fillStyle = "#e8c8a0"; g.beginPath(); g.ellipse(x, y - h * 0.1, w * 0.09, h * 0.05, 0, 0, TAU); g.fill();
+    g.fillStyle = "#1a1010"; g.beginPath(); g.arc(x - w * 0.07, y - h * 0.2, 1.8, 0, TAU); g.arc(x + w * 0.07, y - h * 0.2, 1.8, 0, TAU); g.arc(x, y - h * 0.12, 1.8, 0, TAU); g.fill();
+    g.fillStyle = "#ff4a7a"; corazonEn(x, y + h * 0.12, w * 0.08); g.fill();
+    g.restore();
+  },
+  rosas(w, h, t) {
+    fondoCalido(w, h, "#ffe8e0");
+    g.fillStyle = "#5a8ac8"; g.beginPath(); g.moveTo(w * 0.38, h * 0.62); g.lineTo(w * 0.62, h * 0.62); g.lineTo(w * 0.58, h * 0.9); g.lineTo(w * 0.42, h * 0.9); g.fill();
+    g.strokeStyle = "#2f7a3a"; g.lineWidth = 1.5;
+    const flores = [[0.36, 0.3], [0.5, 0.24], [0.64, 0.3], [0.43, 0.4], [0.58, 0.4]];
+    for (const [fx, fy] of flores) { g.beginPath(); g.moveTo(w * 0.5, h * 0.64); g.lineTo(w * fx, h * fy); g.stroke(); }
+    for (const [fx, fy] of flores) { g.fillStyle = "#d81d3f"; g.beginPath(); g.arc(w * fx, h * fy, w * 0.07, 0, TAU); g.fill(); g.strokeStyle = "#8a0a20"; g.lineWidth = 0.8; g.beginPath(); g.arc(w * fx, h * fy, w * 0.035, 0, 5); g.stroke(); g.strokeStyle = "#2f7a3a"; g.lineWidth = 1.5; }
+    const k = (t * 0.3) % 1; g.fillStyle = `rgba(216,29,63,${1 - k})`; g.beginPath(); g.ellipse(w * (0.64 + Math.sin(k * 6) * 0.05), h * (0.36 + k * 0.55), 2.5, 1.5, k * 5, 0, TAU); g.fill();
+  },
+  pandulce(w, h, t) {
+    fondoCalido(w, h, "#ffe0b0");
+    persona(w * 0.28, h, h * 0.58, "#2a1a1a", 1.0);
+    g.fillStyle = "#8a5a3a"; g.fillRect(w * 0.38, h * 0.76, w * 0.58, h * 0.05);
+    g.fillStyle = "#f4dcb8"; g.beginPath(); g.ellipse(w * 0.58, h * 0.76, w * 0.14, h * 0.09, 0, Math.PI, 0); g.fill();
+    g.strokeStyle = "#c8a078"; g.lineWidth = 0.8; for (let k = -2; k <= 2; k++) { g.beginPath(); g.moveTo(w * (0.58 + k * 0.045), h * 0.76); g.lineTo(w * (0.58 + k * 0.03), h * 0.68); g.stroke(); }
+    g.fillStyle = "#fff"; g.fillRect(w * 0.8, h * 0.66, w * 0.1, h * 0.1);
+    for (let i = 0; i < 2; i++) { const k = (t * 0.5 + i / 2) % 1; g.strokeStyle = `rgba(255,255,255,${0.7 * (1 - k)})`; g.lineWidth = 1; g.beginPath(); g.moveTo(w * 0.84 + i * 3, h * 0.64 - k * h * 0.2); g.quadraticCurveTo(w * 0.82 + Math.sin(k * 6) * 3, h * 0.58 - k * h * 0.2, w * 0.85, h * 0.54 - k * h * 0.2); g.stroke(); }
+  },
+  tacos(w, h, t) {
+    fondoCalido(w, h, "#ffd890");
+    persona(w * 0.22, h, h * 0.56, "#2a1a1a", 1.1 + Math.sin(t * 3) * 0.2);
+    reflejado(w * 0.78, () => persona(w * 0.78, h, h * 0.52, "#3a2020", 0.6));
+    g.fillStyle = "#fff"; g.beginPath(); g.ellipse(w * 0.5, h * 0.82, w * 0.24, h * 0.05, 0, 0, TAU); g.fill();
+    for (let k = 0; k < 3; k++) { const x = w * (0.38 + k * 0.12); g.fillStyle = "#f2c860"; g.beginPath(); g.arc(x, h * 0.8, w * 0.06, Math.PI, 0); g.fill(); g.fillStyle = k % 2 ? "#c8342a" : "#3aa04a"; g.fillRect(x - w * 0.04, h * 0.77, w * 0.08, 2); }
+  },
+  loteria(w, h, t) {
+    fondoCalido(w, h, "#ffe8c0");
+    const gana = (t % 4) > 3;
+    persona(w * 0.22, h, h * 0.55, "#2a1a24", gana ? 1.6 + Math.sin(t * 14) * 0.3 : 0.2);
+    persona(w * 0.8, h, h * 0.5, "#3a2a1a");
+    g.fillStyle = "#8a5a3a"; g.fillRect(w * 0.3, h * 0.78, w * 0.45, h * 0.05);
+    for (let k = 0; k < 2; k++) { const x = w * (0.36 + k * 0.2); g.fillStyle = "#fff"; g.fillRect(x, h * 0.62, w * 0.14, h * 0.15); for (let i = 0; i < 4; i++) { g.fillStyle = ["#ff5a5a", "#5a8aff", "#ffd24a", "#5ac85a"][i]; g.fillRect(x + (i % 2) * w * 0.07 + 1, h * 0.63 + Math.floor(i / 2) * h * 0.07, w * 0.06, h * 0.06); } g.fillStyle = "#3a1a0a"; g.beginPath(); g.arc(x + w * 0.035, h * 0.66, 1.3, 0, TAU); g.arc(x + w * 0.105, h * 0.73, 1.3, 0, TAU); g.fill(); }
+  },
+  gol(w, h, t) {
+    g.fillStyle = "#1a2a1a"; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#3aa84a"; g.fillRect(w * 0.12, h * 0.22, w * 0.76, h * 0.34);
+    g.strokeStyle = "rgba(255,255,255,.7)"; g.lineWidth = 1; g.strokeRect(w * 0.14, h * 0.24, w * 0.72, h * 0.3); g.beginPath(); g.moveTo(w * 0.5, h * 0.24); g.lineTo(w * 0.5, h * 0.54); g.stroke();
+    const k = (t * 0.5) % 1; g.fillStyle = "#fff"; g.beginPath(); g.arc(w * (0.2 + k * 0.6), h * (0.4 - Math.sin(k * Math.PI) * 0.1), 2, 0, TAU); g.fill();
+    const grito = (t % 2) > 1.5, s = h * 0.5, y = h * 1.02 - (grito ? h * 0.08 : 0);
+    persona(w * 0.5, y, s, "#0c0e1e", grito ? 1.3 : 0.2);
+    if (grito) reflejado(w * 0.5, () => persona(w * 0.5, y, s, "#0c0e1e", 1.3));
+  },
+  gatocompu(w, h, t) {
+    fondoCalido(w, h, "#e8f0ff");
+    g.fillStyle = "#3a3a4a"; g.fillRect(w * 0.2, h * 0.36, w * 0.6, h * 0.34);
+    g.fillStyle = "#8ac8ff"; g.fillRect(w * 0.24, h * 0.4, w * 0.52, h * 0.26);
+    g.fillStyle = "#2a3a5a"; const n = Math.floor(t * 4) % 8; for (let k = 0; k < n; k++) g.fillRect(w * (0.27 + (k % 4) * 0.12), h * (0.44 + Math.floor(k / 4) * 0.06), w * 0.08, 2);
+    g.fillStyle = "#5a5a6a"; g.fillRect(w * 0.14, h * 0.7, w * 0.72, h * 0.06);
+    const x = w * (0.2 + (Math.sin(t * 0.9) + 1) * 0.3);
+    g.fillStyle = "#231820"; g.beginPath(); g.ellipse(x, h * 0.66, w * 0.12, h * 0.05, 0, 0, TAU); g.fill();
+    g.beginPath(); g.arc(x + w * 0.11, h * 0.6, w * 0.06, 0, TAU); g.fill();
+    g.beginPath(); g.moveTo(x + w * 0.07, h * 0.57); g.lineTo(x + w * 0.08, h * 0.51); g.lineTo(x + w * 0.11, h * 0.56); g.moveTo(x + w * 0.12, h * 0.56); g.lineTo(x + w * 0.15, h * 0.51); g.lineTo(x + w * 0.16, h * 0.58); g.fill();
+    g.strokeStyle = "#231820"; g.lineWidth = 2; g.beginPath(); g.moveTo(x - w * 0.12, h * 0.66); g.quadraticCurveTo(x - w * 0.2, h * (0.56 + Math.sin(t * 3) * 0.04), x - w * 0.16, h * 0.48); g.stroke();
+  },
+  mudanza(w, h, t) {
+    fondoCalido(w, h, "#f0e0c8");
+    const cajas = [[0.08, 0.72, 0.3, 0.22], [0.12, 0.52, 0.24, 0.2], [0.62, 0.7, 0.32, 0.24]];
+    for (const [x, y, cw, ch] of cajas) { g.fillStyle = "#c89058"; g.fillRect(w * x, h * y, w * cw, h * ch); g.fillStyle = "#e8d8a8"; g.fillRect(w * (x + cw / 2) - 1.5, h * y, 3, h * ch); }
+    g.fillStyle = "#e8405a"; corazonEn(w * 0.78, h * 0.8, w * 0.04); g.fill();
+    const x = w * (0.42 + Math.sin(t * 1.2) * 0.08);
+    persona(x, h, h * 0.58, "#2a2030", 1.5);
+    g.fillStyle = "#c89058"; g.fillRect(x - w * 0.02, h * 0.3, w * 0.18, h * 0.14);
+  },
+  calendario(w, h, t) {
+    fondoCalido(w, h, "#fff4e0");
+    g.fillStyle = "#fff"; g.fillRect(w * 0.44, h * 0.12, w * 0.46, h * 0.5);
+    g.fillStyle = "#e8405a"; g.fillRect(w * 0.44, h * 0.12, w * 0.46, h * 0.08);
+    const n = Math.min(11, Math.floor(t * 2.2));
+    for (let k = 0; k < 12; k++) {
+      const cx = w * (0.48 + (k % 3) * 0.14), cy = h * (0.25 + Math.floor(k / 3) * 0.09);
+      if (k === 11) { g.fillStyle = "#e8405a"; corazonEn(cx + w * 0.03, cy + h * 0.02, w * 0.03); g.fill(); continue; }
+      g.fillStyle = "#d8d0c8"; g.fillRect(cx, cy, w * 0.07, h * 0.05);
+      if (k < n) { g.strokeStyle = "#e8405a"; g.lineWidth = 1.2; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + w * 0.07, cy + h * 0.05); g.moveTo(cx + w * 0.07, cy); g.lineTo(cx, cy + h * 0.05); g.stroke(); }
+    }
+    persona(w * 0.24, h, h * 0.6, "#2a1a28", 0.6 + Math.sin(t * 5) * 0.1);
+  },
+  avioncito(w, h, t) {
+    fondoCalido(w, h, "#e8f4ff");
+    persona(w * 0.2, h, h * 0.58, "#2a1a28", 0.8);
+    const k = (t * 0.45) % 1, x = w * (0.28 + k * 0.72), y = h * (0.45 - Math.sin(k * Math.PI) * 0.22);
+    g.fillStyle = "#fff"; g.strokeStyle = "#9ab"; g.lineWidth = 0.8;
+    g.beginPath(); g.moveTo(x + w * 0.1, y); g.lineTo(x - w * 0.06, y - h * 0.04); g.lineTo(x - w * 0.02, y); g.lineTo(x - w * 0.06, y + h * 0.03); g.closePath(); g.fill(); g.stroke();
+  },
+  foco(w, h, t) {
+    const on = (t % 2) > 1;
+    if (on) fondoCalido(w, h, "#fff4c0"); else { g.fillStyle = "#2a2a3a"; g.fillRect(0, 0, w, h); }
+    const s = h * 0.6, x = w * 0.5, cy = h - s * 0.95;
+    persona(x, h, s, on ? "#2a1a1a" : "#12121c", on ? 1.7 : 0.4);
+    const by = cy - s * 0.42;
+    if (on) { const lz = g.createRadialGradient(x, by, 0, x, by, w * 0.3); lz.addColorStop(0, "rgba(255,240,140,.9)"); lz.addColorStop(1, "rgba(255,240,140,0)"); g.fillStyle = lz; g.fillRect(0, 0, w, h); }
+    g.fillStyle = on ? "#ffe860" : "#555"; g.beginPath(); g.arc(x, by, w * 0.07, 0, TAU); g.fill();
+    g.fillStyle = "#888"; g.fillRect(x - w * 0.035, by + w * 0.06, w * 0.07, w * 0.05);
+  },
+  aspiradora(w, h, t) {
+    fondoCalido(w, h, "#f0f0ff");
+    g.fillStyle = "#d8d0e0"; g.fillRect(0, h * 0.84, w, h * 0.16);
+    const k = (t * 0.2) % 1, x = w * (0.2 + (k < 0.5 ? k * 2 : 2 - k * 2) * 0.6);
+    g.fillStyle = "#2a2a3a"; g.beginPath(); g.ellipse(x, h * 0.84, w * 0.18, h * 0.05, 0, 0, TAU); g.fill();
+    g.fillStyle = Math.sin(t * 6) > 0 ? "#5aff8a" : "#1a5a2a"; g.beginPath(); g.arc(x + w * 0.1, h * 0.83, 1.5, 0, TAU); g.fill();
+    g.fillStyle = "#e8a060"; g.beginPath(); g.ellipse(x, h * 0.74, w * 0.09, h * 0.07, 0, 0, TAU); g.fill();
+    g.beginPath(); g.arc(x + w * 0.05, h * 0.64, w * 0.06, 0, TAU); g.fill();
+    g.beginPath(); g.moveTo(x + w * 0.01, h * 0.62); g.lineTo(x + w * 0.02, h * 0.56); g.lineTo(x + w * 0.05, h * 0.6); g.moveTo(x + w * 0.06, h * 0.6); g.lineTo(x + w * 0.09, h * 0.56); g.lineTo(x + w * 0.1, h * 0.62); g.fill();
+    g.fillStyle = "#101010"; g.fillRect(x + w * 0.03, h * 0.63, 1.5, 1.5); g.fillRect(x + w * 0.07, h * 0.63, 1.5, 1.5);
+  },
 };
-/* El interior de las ventanas «de adorno». */
-function interiorVacio(w, h, d) {
-  const tonos = ["#ffe0a8", "#ffd0b0", "#f0e0c0", "#ffe8c8", "#e8d0ff"];
-  fondoCalido(w, h, tonos[Math.floor(d * tonos.length)]);
-  g.fillStyle = "rgba(60,30,30,.5)";
-  if (d < 0.33) { g.fillRect(w * 0.1, h * 0.55, w * 0.35, h * 0.45); g.fillRect(w * 0.12, h * 0.6, w * 0.31, 2); }
-  else if (d < 0.66) { g.fillRect(w * 0.7, h * 0.45, 2, h * 0.55); g.beginPath(); g.moveTo(w * 0.62, h * 0.45); g.lineTo(w * 0.78, h * 0.45); g.lineTo(w * 0.73, h * 0.32); g.lineTo(w * 0.67, h * 0.32); g.fill(); }
-  else { g.fillStyle = "#b8405a"; g.fillRect(0, 0, w * 0.22, h); g.fillRect(w * 0.78, 0, w * 0.22, h); }
-}
-
 /* ══════════════════════════════════════════════════════════════════════
    EL SONIDO
    ══════════════════════════════════════════════════════════════════════ */
@@ -698,6 +1163,15 @@ function voz(f0, f1, dur, v = 0.12, tipo = "sawtooth", q = 2, fc = 900, retraso 
   gg.gain.setValueAtTime(0, t); gg.gain.linearRampToValueAtTime(v, t + 0.03); gg.gain.setValueAtTime(v, t + dur * 0.8); gg.gain.linearRampToValueAtTime(0, t + dur);
   o.connect(fl).connect(gg).connect(salida); o.start(t); o.stop(t + dur + 0.05);
 }
+let bufRuido = null;
+function ruido(dur, fc = 1200, q = 1, v = 0.1, retraso = 0, tipo = "bandpass") {
+  const t = ac.currentTime + retraso;
+  if (!bufRuido) { const n = ac.sampleRate; bufRuido = ac.createBuffer(1, n, ac.sampleRate); const d = bufRuido.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; }
+  const s = ac.createBufferSource(); s.buffer = bufRuido; s.loop = true;
+  const fl = ac.createBiquadFilter(); fl.type = tipo; fl.frequency.value = fc; fl.Q.value = q;
+  const gg = ac.createGain(); gg.gain.setValueAtTime(0, t); gg.gain.linearRampToValueAtTime(v, t + 0.01); gg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(fl).connect(gg).connect(salida); s.start(t); s.stop(t + dur + 0.05);
+}
 const SONIDOS = {
   grito() { voz(420, 380, 1.1, 0.14, "sawtooth", 2, 900, 0.2); },
   perro() { voz(500, 260, 0.14, 0.15, "sawtooth", 1.5, 1100, 0.1); voz(500, 260, 0.14, 0.15, "sawtooth", 1.5, 1100, 0.38); },
@@ -717,6 +1191,48 @@ const SONIDOS = {
   telefono() { const t = ac.currentTime; nota(440, t, 0.2, 0.03); nota(480, t, 0.2, 0.03); },
   tiktok() { const t = ac.currentTime; for (let i = 0; i < 6; i++) nota(i % 2 ? 330 : 440, t + i * 0.15, 0.12, 0.05, "square"); },
   lampara() { const t = ac.currentTime; nota(120, t, 1.2, 0.04, "sawtooth"); },
+  pizza() { const t = ac.currentTime; nota(660, t, 0.12, 0.03, "triangle"); nota(880, t + 0.1, 0.18, 0.03, "triangle"); },
+  almohadas() { [0, 0.34, 0.68].forEach((r) => ruido(0.16, 320, 0.8, 0.22, r, "lowpass")); },
+  mariachi() { const n = [659, 784, 880, 784, 659, 587, 659]; n.forEach((f, i) => voz(f, f, 0.2, 0.07, "sawtooth", 1, 1500, i * 0.22)); const t = ac.currentTime; [196, 246.94, 293.66].forEach((f, i) => nota(f, t + i * 0.02, 1.6, 0.04, "triangle")); },
+  pinata() { [0, 0.3, 0.6, 1.1, 1.4, 1.7].forEach((r) => voz(420, 380, 0.16, 0.08, "sawtooth", 2, 900, r)); ruido(0.35, 900, 0.7, 0.25, 2.4); const t = ac.currentTime; [1046, 1318, 1568].forEach((f, i) => nota(f, t + 2.5 + i * 0.08, 0.5, 0.03)); },
+  luchador() { ruido(1.2, 1200, 0.4, 0.07, 0, "bandpass"); voz(180, 240, 0.6, 0.08, "sawtooth", 2, 700, 0.2); },
+  trastes() { const t = ac.currentTime; [0, 0.28, 0.5, 0.9].forEach((r, i) => nota(2400 + i * 180, t + r, 0.18, 0.03, "triangle")); ruido(0.8, 3000, 0.6, 0.02, 0, "highpass"); },
+  planchando() { ruido(0.6, 5000, 0.8, 0.06, 0.3, "highpass"); ruido(0.4, 5000, 0.8, 0.05, 1.3, "highpass"); },
+  ronca() { voz(90, 70, 1.0, 0.14, "sawtooth", 2, 380, 0.1); ruido(0.7, 2600, 1, 0.03, 1.2, "highpass"); },
+  beso() { ruido(0.05, 2500, 2, 0.25, 0.9); voz(900, 1400, 0.1, 0.05, "sine", 1, 1200, 0.93); },
+  espejo() { const t = ac.currentTime; [1568, 2093, 2637].forEach((f, i) => nota(f, t + i * 0.09, 0.6, 0.025)); },
+  gatocaja() { SONIDOS.gato(); },
+  hamster() { [0, 0.15, 0.3].forEach((r) => voz(2200, 2800, 0.06, 0.04, "sine", 1, 2500, r)); ruido(1.2, 700, 2, 0.02, 0, "bandpass"); },
+  loro() { [0, 0.5].forEach((r) => { voz(900, 1300, 0.16, 0.08, "square", 3, 1500, r); voz(1300, 1000, 0.18, 0.08, "square", 3, 1500, r + 0.18); }); },
+  miedo() { const t = ac.currentTime; nota(55, t, 2.4, 0.08); nota(58, t, 2.4, 0.06); voz(900, 1300, 0.6, 0.1, "sawtooth", 3, 1400, 2.4); },
+  palomitas() { for (let i = 0; i < 10; i++) ruido(0.03, 1800, 3, 0.22, Math.random() * 1.6); },
+  pijamada() { [0, 0.14, 0.28, 0.42].forEach((r, i) => voz(520 - i * 20, 480 - i * 20, 0.1, 0.05, "triangle", 2, 1000, r)); },
+  robot() { const t = ac.currentTime; [880, 660, 990, 740].forEach((f, i) => nota(f, t + i * 0.16, 0.12, 0.04, "square")); },
+  mago() { const t = ac.currentTime; [523, 659, 784, 1046, 1318].forEach((f, i) => nota(f, t + i * 0.07, 0.5, 0.035)); [523, 659, 784].forEach((f) => nota(f, t + 0.55, 0.9, 0.03, "triangle")); },
+  malabares() { const t = ac.currentTime; [0, 0.25, 0.5].forEach((r, i) => nota(700 + i * 120, t + r, 0.1, 0.03, "sine")); },
+  globos() { voz(700, 1100, 0.2, 0.04, "triangle", 2, 900); voz(900, 1300, 0.2, 0.04, "triangle", 2, 900, 0.3); },
+  dj() { const t = ac.currentTime; for (let i = 0; i < 8; i++) nota(55, t + i * 0.22, 0.16, 0.3); voz(200, 900, 0.15, 0.06, "sawtooth", 3, 1200, 0.9); voz(900, 200, 0.15, 0.06, "sawtooth", 3, 1200, 1.05); },
+  bateria() { const t = ac.currentTime; for (let i = 0; i < 6; i++) { nota(60, t + i * 0.18, 0.15, 0.3); if (i % 2) ruido(0.1, 1800, 0.8, 0.16, i * 0.18); ruido(0.04, 8000, 1, 0.05, i * 0.18 + 0.09, "highpass"); } ruido(0.7, 7000, 0.6, 0.08, 1.1, "highpass"); },
+  violin() { [659, 698, 784, 880, 784].forEach((f, i) => voz(f, f * 1.005, 0.36, 0.05, "sawtooth", 1, 2200, i * 0.36)); },
+  piano() { const t = ac.currentTime; [523, 659, 784, 1046, 784, 659, 523].forEach((f, i) => nota(f, t + i * 0.2, 0.9, 0.04, "triangle")); },
+  astronauta() { voz(200, 800, 1.1, 0.04, "sine", 1, 700); const t = ac.currentTime; nota(1760, t + 1.2, 0.1, 0.03, "square"); nota(1760, t + 1.4, 0.1, 0.03, "square"); },
+  dino() { voz(170, 90, 0.8, 0.16, "sawtooth", 1.2, 480, 0.1); },
+  alien() { voz(600, 950, 0.8, 0.05, "sine", 1, 900); voz(950, 500, 0.8, 0.05, "sine", 1, 900, 0.8); },
+  bruja() { for (let i = 0; i < 6; i++) voz(760 + (i % 2) * 140, 700 + (i % 2) * 140, 0.09, 0.05, "sawtooth", 3, 1300, i * 0.11); },
+  sombra() { const t = ac.currentTime; nota(49, t, 2.6, 0.1); nota(52, t + 0.2, 2.4, 0.06); },
+  cuadro() { voz(120, 170, 0.9, 0.08, "sawtooth", 8, 300); },
+  oso() { const t = ac.currentTime; [784, 988, 1175].forEach((f, i) => nota(f, t + i * 0.12, 0.7, 0.03)); },
+  rosas() { const t = ac.currentTime; [1318, 1568, 2093].forEach((f, i) => nota(f, t + i * 0.1, 0.8, 0.025)); },
+  pandulce() { const t = ac.currentTime; nota(1046, t, 0.2, 0.025, "triangle"); nota(1318, t + 0.12, 0.3, 0.025, "triangle"); },
+  tacos() { ruido(1.2, 6000, 0.5, 0.04, 0, "highpass"); },
+  loteria() { [0, 0.16, 0.32, 0.48].forEach((r, i) => voz(380 + i * 30, 360 + i * 30, 0.14, 0.09, "sawtooth", 2, 1000, r)); },
+  gol() { ruido(1.8, 1100, 0.4, 0.1, 0, "bandpass"); voz(300, 380, 1.5, 0.1, "sawtooth", 2, 900, 0.1); },
+  gatocompu() { for (let i = 0; i < 9; i++) ruido(0.02, 4000, 2, 0.12, i * 0.1); SONIDOS.gato(); },
+  mudanza() { ruido(0.16, 220, 1, 0.25, 0.1, "lowpass"); ruido(0.16, 220, 1, 0.2, 0.6, "lowpass"); },
+  calendario() { [0, 0.45, 0.9, 1.35].forEach((r) => ruido(0.1, 3200, 2, 0.06, r)); },
+  avioncito() { ruido(0.8, 1500, 0.7, 0.07, 0, "bandpass"); },
+  foco() { const t = ac.currentTime; nota(1568, t + 1, 0.8, 0.05); nota(2093, t + 1.08, 0.8, 0.035); },
+  aspiradora() { voz(110, 116, 2, 0.035, "sawtooth", 1, 600); },
 };
 function campanitas() { const t = ac.currentTime; [523.25, 659.25, 783.99, 1046.5, 1318.5, 1567.98].forEach((f, i) => nota(f, t + i * 0.12, 1.6, 0.04)); }
 function pitido() { if (!ac) return; const t = ac.currentTime; nota(440, t, 0.25, 0.06, "square"); nota(554, t, 0.25, 0.04, "square"); }
@@ -741,27 +1257,27 @@ let vendedor = null, ovni = null, gatoTecho = null, linterna = null, apagon = 0;
 let fuegos = 0, relojEvento = 6, ultimoEvento = "";
 const luna = { x: 0, y: 0, r: 0, guino: 0 };
 const EVENTOS = {
-  fierro() { vendedor = { tipo: "fierro", x: camX - 80, dir: 1, v: 38, grito: 0 }; decir("Hasta aquí se escucha el del fierro viejo."); },
-  tamales() { vendedor = { tipo: "tamales", x: camX + A + 60, dir: -1, v: 30, grito: 0 }; decir("Ya pasó el de los tamales. ¿Se te antoja uno?"); },
+  fierro() { vendedor = { tipo: "fierro", x: camX - 80, dir: 1, v: 38, grito: 0 }; decir("Hasta aquí se escucha el del fierro viejo jajaja"); },
+  tamales() { vendedor = { tipo: "tamales", x: camX + A + 60, dir: -1, v: 30, grito: 0 }; decir("Ya pasó el de los tamales. ¿Se te antoja uno, amor? :>"); },
   fugaz() {
     fugaces.push({ x: azar(A * 0.3, A * 1.1), y: azar(20, techo + (calle - techo) * 0.2), t: 0 });
-    decir("¡Una estrella fugaz! Pide un deseo… yo ya pedí el mío.");
+    decir("¡Una estrella fugaz! Pide un deseo… yo ya pedí el mío 🤍");
     if (ac) { const t = ac.currentTime; [1568, 2093, 2637].forEach((f, i) => nota(f, t + i * 0.08, 0.8, 0.03)); }
   },
   ovni() {
     ovni = { x: -40, y: azar(techo * 0.7, techo + (calle - techo) * 0.2), t: 0, huye: false };
-    decir("¿Eso es un ovni? Tócalo, a ver qué hace.");
+    decir("¿Eso es un ovni? 👽 Tócalo, a ver qué hace.");
     if (ac) voz(600, 900, 1.6, 0.03, "sine", 1, 800);
   },
   apagon() {
     apagon = 1.6;
     if (ac) { const t = ac.currentTime; const o = ac.createOscillator(), gg = ac.createGain(); o.type = "sawtooth"; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(30, t + 0.6); gg.gain.setValueAtTime(0.06, t); gg.gain.linearRampToValueAtTime(0, t + 0.6); o.connect(gg).connect(salida); o.start(t); o.stop(t + 0.7); }
-    setTimeout(() => decir("¿Se fue la luz? …Ah, no, ya volvió. Qué susto."), 400);
+    setTimeout(() => decir("¿Se fue la luz? …Ah, no, ya volvió. Qué susto 😳"), 400);
   },
   gato() { gatoTecho = { x: camX - 20, y: 0, t: 0, brinca: 0 }; },
   perro() { paseantes.push({ x: camX + A + 40, dir: -1, v: 22, t: 0 }); },
-  farolito() { farolitos.push({ x: azar(A * 0.2, A * 0.8), y: calle, t: 0, f: Math.random() * TAU }); decir("Alguien soltó un farolito. Qué bonito."); },
-  linterna() { linterna = { x: camX + azar(A * 0.2, A * 0.8), t: 0 }; decir("Hay alguien con linterna allá abajo… ¿quién anda ahí?"); },
+  farolito() { farolitos.push({ x: azar(A * 0.2, A * 0.8), y: calle, t: 0, f: Math.random() * TAU }); decir("Alguien soltó un farolito. Qué bonito, aww 🥹"); },
+  linterna() { linterna = { x: camX + azar(A * 0.2, A * 0.8), t: 0 }; decir("Hay alguien con linterna allá abajo… ¿quién anda ahí? 😬"); },
 };
 function lanzarEvento() {
   const nombres = Object.keys(EVENTOS).filter((n) => n !== ultimoEvento &&
@@ -810,26 +1326,31 @@ mundo.addEventListener("pointercancel", () => { dedo = null; });
 function tocar(sx, sy) {
   const wx = sx + camX, wy = sy;
   // Primero lo que se mueve o brilla: el ovni, la luna, el gato, los coches…
-  if (ovni && !ovni.huye && Math.hypot(sx - ovni.x, sy - ovni.y) < 30) { ovni.huye = true; decir("Se fue… nos vio. No le digas a nadie."); if (ac) voz(300, 1400, 0.6, 0.06, "sine", 1, 1000); return; }
-  if (Math.hypot(sx - luna.x, sy - luna.y) < luna.r * 1.5) { luna.guino = 1.2; decir(elegir(["La luna te manda un beso.", "Te guiñó el ojo. Ni a mí me hace eso.", "Hasta la luna sabe que eres bonita."])); if (ac) campanitas(); return; }
-  if (gatoTecho && Math.hypot(wx - gatoTecho.x, wy - gatoTecho.y) < 26) { gatoTecho.brinca = 1; decir("Miau. Ese gatito anda paseando por los techos."); if (ac) SONIDOS.gato(); return; }
-  if (vendedor && Math.abs(wx - vendedor.x) < 36 && wy > calle + 10) { vendedor.grito = 0; decir(vendedor.tipo === "fierro" ? "No, señor, no vendemos nada." : "¡Uno de rajas, por favor!"); return; }
-  for (const c of coches) if (Math.abs(wx - c.x) < 34 && wy > calle + 24 && wy < calle + 64) { pitido(); decir(elegir(["Ese va con prisa.", "¡Piii! Qué genio.", "Ese seguro va a ver a su novia. Como yo quisiera ir a verte."])); return; }
-  for (const p of paseantes) if (Math.abs(wx - p.x + 14) < 30 && wy > calle - 40 && wy < calle + 20) { if (ac) SONIDOS.perro(); globito(p.x - 30, calle - 6, "¡Guau!"); decir("Un señor paseando a su perrito a esta hora."); return; }
-  for (const f of faroles) if (Math.abs(wx - f.x - 4) < 16 && wy > calle - 80 && wy < calle + 10) { f.on = !f.on; interruptor(f.on); decir(f.on ? "Otra vez prendida." : "Esa farola ya estaba cansada."); return; }
+  if (ovni && !ovni.huye && Math.hypot(sx - ovni.x, sy - ovni.y) < 30) { ovni.huye = true; decir("Se fue… nos vio. No le digas a nadie 🤫"); if (ac) voz(300, 1400, 0.6, 0.06, "sine", 1, 1000); return; }
+  if (gatoTecho && Math.hypot(wx - gatoTecho.x, wy - gatoTecho.y) < 26) { gatoTecho.brinca = 1; decir("Miau. Ese gatito anda paseando por los techos :>"); if (ac) SONIDOS.gato(); return; }
+  if (vendedor && Math.abs(wx - vendedor.x) < 36 && wy > calle + 10) { vendedor.grito = 0; decir(vendedor.tipo === "fierro" ? "No, señor, no vendemos nada jajaja" : "¡Uno de rajas, por favor! Y uno de dulce para ti :>"); return; }
+  for (const c of coches) if (Math.abs(wx - c.x) < 34 && wy > calle + 24 && wy < calle + 64) { pitido(); decir(elegir(["Ese va con prisa.", "¡Piii! Qué genio 😂", "Ese seguro va a ver a su novia. Como yo quisiera ir a verte 🥹"])); return; }
+  for (const p of paseantes) if (Math.abs(wx - p.x + 14) < 30 && wy > calle - 40 && wy < calle + 20) { if (ac) SONIDOS.perro(); globito(p.x - 30, calle - 6, "¡Guau!"); decir("Un señor paseando a su perrito a esta hora, aww 🐶"); return; }
   // Las ventanas.
   const v = ventanas.find((w) => wx > w.x - 5 && wx < w.x + w.w + 5 && wy > w.y - 5 && wy < w.y + w.h + 5);
-  if (!v) return;
+  // La luna va detrás de los edificios: sólo se toca donde no hay ventana.
+  if (!v) {
+    for (const f of faroles) if (Math.abs(wx - f.x - 4) < 16 && wy > calle - 80 && wy < calle + 10) { f.on = !f.on; interruptor(f.on); decir(f.on ? "Otra vez prendida :>" : "Esa farola ya estaba cansada jajaja"); return; }
+    if (Math.hypot(sx - luna.x, sy - luna.y) < luna.r * 1.5) { luna.guino = 1.2; decir(elegir(["La luna te manda un beso 🌙", "Te guiñó el ojo. Ni a mí me hace eso 😤", "Hasta la luna sabe que eres bonita 🤍"])); if (ac) campanitas(); }
+    return;
+  }
   interruptor(!v.encendida);
   if (!v.encendida) {
     v.encendida = true; v.t = 0; v.vez++;
-    // Cada vez que se prende vuelve a pasar lo mismo: su sonido, su globito y lo que digo.
-    if (v.escena) {
-      const s = v.escena;
-      if (s.grita) globito(v.x + v.w / 2, v.y - 6, s.grita);
-      setTimeout(() => { if (v.encendida) decir(s.dice); }, s.grita ? 1000 : 320);
+    // Cada vez que se prende vuelve a pasar: su sonido, su globito y lo que
+    // te digo (que va cambiando de frase de una vez a la otra).
+    const s = v.escena;
+    if (s) {
+      const grito = linea(s.grita, v.vez), dice = linea(s.dice, v.vez);
+      if (grito) globito(v.x + v.w / 2, v.y - 6, grito);
+      setTimeout(() => { if (v.encendida) decir(dice); }, grito ? 1000 : 320);
       if (SONIDOS[s.id] && ac) SONIDOS[s.id]();
-    } else decir(elegir(VACIAS));
+    }
     const n = encendidasEscena();
     elCuenta.textContent = `${n} de ${totalEscenas}`;
     if (n === totalEscenas && !fuegos) setTimeout(() => { decir(FINAL); if (ac) campanitas(); fuegos = 1; }, 2600);
@@ -951,7 +1472,7 @@ function paso(ahora) {
       g.globalAlpha = luz;
       g.translate(v.x, v.y);
       if (v.escena) DIBUJOS[v.escena.id](v.w, v.h, v.t, v);
-      else interiorVacio(v.w, v.h, v.deco);
+      else fondoCalido(v.w, v.h);
       g.globalAlpha = 1;
       g.translate(-v.x, -v.y);
     }

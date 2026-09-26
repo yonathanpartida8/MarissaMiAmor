@@ -216,7 +216,7 @@ archivo y sin descargar nada de fuera.
 | `página.html23.html` | **El café.** La leche se vierte con fluidos de verdad y se dibuja con el dedo. |
 | `página.html24.html` | **El tocadiscos.** Cinco surcos, cinco canciones (`tocadiscos musica/musica1…5`); la aguja salta entre ellas con fundido. |
 | `página.html25.html` | **Baja despacio.** Se baja al fondo del mar entre medusas; cuanto más hondo, menos luz. |
-| `página.html26.html` | **Enciende las luces.** Una calle entera que se recorre deslizando: 41 escenas en sus ventanas (se repiten si las apagas y prendes), y cosas que pasan en la calle y en el cielo. |
+| `página.html26.html` | **Enciende las luces.** Una calle entera que se recorre deslizando: 83 escenas, una distinta en cada ventana y ninguna vacía, con lo que le voy diciendo a ella (cambia de frase cada vez que la vuelves a prender), y cosas que pasan en la calle y en el cielo. |
 | `página.html27.html` | **Sigue los puntos.** Un bastidor: se borda siguiendo los puntos y al terminar florece. |
 | `página.html28.html` | **Cuenta hasta el trueno.** Primero la tormenta llega, luego se cuenta desde el rayo hasta el trueno y se va acercando. |
 | `página.html29.html` | **Dale al quemador.** El globo sube del prado a las nubes, ve la curva de la Tierra y llega al espacio. |
