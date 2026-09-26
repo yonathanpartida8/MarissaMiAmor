@@ -5,128 +5,56 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>La ciudad dormida</title>
+<script src="sonido-libro.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Caveat:wght@600;700&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
-   Todo dentro de .ciudad-mundo, con prefijo `cd-` en cada clase.
+   LA CIUDAD DORMIDA — «Enciende las luces»
+   Una calle de noche con cuatro edificios y todas las ventanas apagadas.
+   Cada ventana que tocas se enciende y dentro pasa algo distinto: luces
+   RGB, una fiesta, alguien que se asoma a gritar, un gato, un perro…
+   Ninguna se repite. Prefijo `cd-`.
    ══════════════════════════════════════════════════════════════════════ */
-
-html, body { margin: 0; height: 100%; }
-
-.ciudad-mundo {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  isolation: isolate;
-  contain: layout paint;
-  background: #070a16;
-  color: #dbe2f2;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: none;
-
-  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
-  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+html, body { margin: 0; height: 100%; overflow: hidden; background: #070a18; }
+.cd {
+  position: fixed; inset: 0; overflow: hidden;
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: none;
+  font-family: "Cormorant Garamond", Georgia, serif; color: #f2ecff;
+  --seg-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seg-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
   --barra: var(--hueco-barra, 0rem);
-  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+  --suave: cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.ciudad-mundo .cd-lienzo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  /* Los toques los recoge `.cd-toque`, que va justo encima. */
+.cd canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.cd-cabeza { position: absolute; top: calc(var(--seg-t) + 12px); left: 0; right: 0; display: grid; justify-items: center; gap: 2px; pointer-events: none; text-align: center; padding: 0 18px; }
+.cd-titulo { margin: 0; font-weight: 600; font-size: clamp(0.66rem, 2.8vw, 0.78rem); letter-spacing: 0.36em; text-transform: uppercase; color: rgba(220, 215, 255, 0.72); }
+.cd-cuenta { margin: 0; font-size: 0.72rem; letter-spacing: 0.2em; color: rgba(255, 220, 160, 0.7); }
+.cd-dialogo {
+  position: absolute; left: 50%; bottom: calc(var(--seg-b) + var(--barra) + 16px);
+  transform: translateX(-50%); width: min(90vw, 420px); box-sizing: border-box;
+  margin: 0; padding: 10px 16px 12px; border-radius: 14px;
+  background: rgba(16, 14, 34, 0.72); border: 1px solid rgba(255, 220, 180, 0.2);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  font-family: "Caveat", "Segoe Print", cursive; font-weight: 600;
+  font-size: clamp(1.25rem, 5.6vw, 1.55rem); line-height: 1.2; text-align: center; color: #ffeede;
+  transition: opacity 400ms var(--suave), transform 400ms var(--suave);
   pointer-events: none;
 }
-
-/* La ciudad entera. El libro sólo se queda el barrido que empieza en sus
-   24-44 px de borde. */
-.ciudad-mundo .cd-toque {
-  position: absolute;
-  inset: 0;
-  touch-action: none;
-  z-index: 2;
-  cursor: pointer;
-}
-
-.ciudad-mundo .cd-ui {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-  padding:
-    calc(var(--seguro-t) + 20px) 22px
-    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  text-align: center;
-}
-
-.ciudad-mundo .cd-titulo {
-  margin: 0;
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-size: clamp(1rem, 4.4vw, 1.4rem);
-  font-weight: 500;
-  letter-spacing: 0.07em;
-  color: #8fa4cc;
-  opacity: 0.8;
-  transition: opacity 900ms var(--e-suave);
-}
-.ciudad-mundo.is-jugando .cd-titulo { opacity: 0.18; }
-
-.ciudad-mundo .cd-pie {
-  margin: 0;
-  min-height: 3.8em;
-  max-width: 23em;
-  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
-  line-height: 1.55;
-  color: #dde4f4;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 680ms var(--e-suave), transform 680ms var(--e-suave);
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
-}
-.ciudad-mundo .cd-pie.is-visible { opacity: 0.94; transform: none; }
-.ciudad-mundo .cd-pie em {
-  display: block;
-  margin-top: 0.3em;
-  font-family: var(--tipo-mano, "Segoe Script", cursive);
-  font-size: 1.16em;
-  font-style: normal;
-  color: #ffcf8a;
-}
-
-.ciudad-mundo .cd-cuenta {
-  position: absolute;
-  right: 20px;
-  top: calc(var(--seguro-t) + 20px);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
-  color: #7d90b8;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ciudad-mundo * { transition-duration: 1ms !important; }
-}
+.cd-dialogo.is-fuera { opacity: 0; transform: translate(-50%, 8px); }
 </style>
 </head>
 <body>
-
-<div class="ciudad-mundo" id="mundo">
-  <canvas class="cd-lienzo" id="lienzo"></canvas>
-  <div class="cd-toque" id="toque" aria-hidden="true"></div>
-  <div class="cd-ui">
-    <h1 class="cd-titulo" id="titulo">Enciende las ventanas</h1>
-    <p class="cd-pie" id="pie" role="status" aria-live="polite"></p>
+<div class="cd" id="mundo">
+  <canvas id="lienzo"></canvas>
+  <div class="cd-cabeza">
+    <p class="cd-titulo">Enciende las luces</p>
+    <p class="cd-cuenta" id="cuenta">0 de 24</p>
   </div>
-  <div class="cd-cuenta" id="cuenta" aria-hidden="true"></div>
+  <p class="cd-dialogo" id="dialogo" role="status" aria-live="polite">Toda la ciudad está dormida. Toca una ventana.</p>
 </div>
 
 <script>
@@ -134,637 +62,579 @@ html, body { margin: 0; height: 100%; }
 "use strict";
 
 /* ══════════════════════════════════════════════════════════════════════
-   CONFIGURACIÓN EDITABLE
+   LO QUE PASA EN CADA VENTANA
+   `dice` es lo que digo yo al verla; `grita`, lo que sale en un globito
+   desde dentro de la ventana. Cada escena se dibuja con su función.
    ══════════════════════════════════════════════════════════════════════ */
+const ESCENAS = [
+  { id: "rgb", dice: "Wow, esa tiene luces RGB." },
+  { id: "fiesta", dice: "Wow, en esa tienen una fiesta." },
+  { id: "grito", grita: "¡AAAAH!", dice: "¿Escuchaste? ¡Está loco!" },
+  { id: "gato", dice: "Mira, un gatito. Nos está viendo." },
+  { id: "saluda", dice: "¡Nos está saludando! Salúdalo." },
+  { id: "baile", dice: "Esos dos están bailando lentito." },
+  { id: "cocina", dice: "Alguien está cocinando a esta hora. Huele rico." },
+  { id: "tele", dice: "Ese se quedó dormido viendo la tele." },
+  { id: "plantas", dice: "Cuántas plantitas tiene esa ventana." },
+  { id: "lee", dice: "Alguien leyendo con su lamparita. Qué paz." },
+  { id: "perro", grita: "¡Guau!", dice: "¡Un perrito! Nos ladró." },
+  { id: "sombras", dice: "Está haciendo sombras con las manos. Es un pajarito." },
+  { id: "guitarra", dice: "Alguien toca la guitarra. Escúchalo." },
+  { id: "navidad", dice: "Esa tiene lucecitas de navidad todo el año." },
+  { id: "cortina", dice: "Uy, cerró la cortina. Nos vio." },
+  { id: "telescopio", dice: "Ese está viendo las estrellas con telescopio." },
+  { id: "ejercicio", dice: "Alguien haciendo ejercicio a medianoche." },
+  { id: "pastel", dice: "Ahí están festejando un cumpleaños." },
+  { id: "pecera", dice: "Una pecera. Qué bonita luz da." },
+  { id: "pintor", dice: "Alguien pintando un cuadro." },
+  { id: "telefono", dice: "Alguien habla por teléfono, como yo contigo." },
+  { id: "corazon", dice: "Alguien dibujó un corazón en el vidrio." },
+  { id: "brinca", dice: "Un niño brincando en la cama. Ya duérmete." },
+  { id: "burbujas", dice: "Están haciendo burbujas de jabón." },
+];
+const FINAL = "Mira, ya despertaste a toda la ciudad.";
 
-const CONF = {
+const mundo = document.getElementById("mundo");
+const lienzo = document.getElementById("lienzo");
+const g = lienzo.getContext("2d", { alpha: false });
+const elDialogo = document.getElementById("dialogo");
+const elCuenta = document.getElementById("cuenta");
+const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const TAU = Math.PI * 2;
+const azar = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
-  /* ---- LO QUE ESCRIBEN LAS VENTANAS -----------------------------------
-     Si se encienden las de la torre del medio siguiendo el dibujo, sale
-     esto escrito en la fachada. Cada letra es una rejilla de 5 de ancho
-     por 7 de alto; un `#` es ventana encendida.                        */
-  mensaje: "y.m",
-  letras: {
-    y: [
-      "#...#",
-      "#...#",
-      ".#.#.",
-      "..#..",
-      "..#..",
-      "..#..",
-      "..#..",
-    ],
-    ".": [
-      ".....",
-      ".....",
-      ".....",
-      ".....",
-      ".....",
-      ".....",
-      "..#..",
-    ],
-    m: [
-      "#...#",
-      "##.##",
-      "#.#.#",
-      "#.#.#",
-      "#...#",
-      "#...#",
-      "#...#",
-    ],
+let A = 0, H = 0, dpr = 1, calle = 0;
+let fondo = null;
+const edificios = [];
+const ventanas = [];
+
+/* ══════════════════════════════════════════════════════════════════════
+   LA CIUDAD
+   ══════════════════════════════════════════════════════════════════════ */
+function construir() {
+  edificios.length = 0;
+  ventanas.length = 0;
+  const cab = document.querySelector(".cd-cabeza").getBoundingClientRect();
+  const dia = elDialogo.getBoundingClientRect();
+  calle = dia.top - mundo.getBoundingClientRect().top - 18;
+  const techo = cab.bottom + 30;
+  const n = 4, hueco = A * 0.02;
+  const anchoTotal = A - hueco * (n + 1);
+  const pesos = [1, 1.15, 0.95, 1.05];
+  const suma = pesos.reduce((a, b) => a + b, 0);
+  let x = hueco;
+  const altos = [0.78, 1, 0.7, 0.88];
+  const colores = ["#1d2140", "#231a3a", "#1a2436", "#2a1f38"];
+  const orden = ESCENAS.map((_, i) => i).sort(() => Math.random() - 0.5);
+  let k = 0;
+  for (let i = 0; i < n; i++) {
+    const w = anchoTotal * pesos[i] / suma;
+    const h = (calle - techo) * altos[i];
+    const e = { x, y: calle - h, w, h, color: colores[i], techo: i % 2 ? "tanque" : "antena" };
+    edificios.push(e);
+    const cols = 2, filas = 3;
+    const mx = w * 0.12, my = h * 0.08;
+    const vw = (w - mx * 2 - mx * 0.7) / cols, vh = Math.min(vw * 1.25, (h - my * 2 - h * 0.18) / filas - my * 0.6);
+    for (let f = 0; f < filas; f++) for (let c = 0; c < cols; c++) {
+      const vx = x + mx + c * (vw + mx * 0.7);
+      const vy = e.y + my + f * (vh + my * 0.8);
+      ventanas.push({ x: vx, y: vy, w: vw, h: vh, escena: ESCENAS[orden[k++]], luz: 0, encendida: false, t: 0, vista: false, cortina: 0 });
+    }
+    x += w + hueco;
+  }
+  pintarFondo();
+}
+
+function pintarFondo() {
+  const c = document.createElement("canvas");
+  c.width = Math.round(A * dpr); c.height = Math.round(H * dpr);
+  const x = c.getContext("2d");
+  x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cielo = x.createLinearGradient(0, 0, 0, calle);
+  cielo.addColorStop(0, "#050817"); cielo.addColorStop(0.7, "#141a3c"); cielo.addColorStop(1, "#2c2350");
+  x.fillStyle = cielo; x.fillRect(0, 0, A, H);
+  for (let i = 0; i < A * H / 1500; i++) {
+    x.fillStyle = `rgba(230,235,255,${azar(0.2, 0.8)})`;
+    x.fillRect(Math.random() * A, Math.random() * calle * 0.7, azar(0.6, 1.4), azar(0.6, 1.4));
+  }
+  // La luna.
+  const lx = A * 0.82, ly = H * 0.14, lr = Math.min(A, H) * 0.05;
+  const halo = x.createRadialGradient(lx, ly, lr, lx, ly, lr * 6);
+  halo.addColorStop(0, "rgba(255,240,210,.3)"); halo.addColorStop(1, "rgba(255,240,210,0)");
+  x.fillStyle = halo; x.fillRect(0, 0, A, H);
+  x.fillStyle = "#fff4dc"; x.beginPath(); x.arc(lx, ly, lr, 0, TAU); x.fill();
+  // Edificios lejanos con sus ventanitas al azar.
+  for (let i = 0; i < 14; i++) {
+    const w = azar(20, 50), h = azar(calle * 0.2, calle * 0.5), bx = Math.random() * A;
+    x.fillStyle = "#0f1330"; x.fillRect(bx, calle - h, w, h);
+    for (let yy = calle - h + 6; yy < calle - 6; yy += 8) for (let xx = bx + 3; xx < bx + w - 4; xx += 6) {
+      if (Math.random() < 0.12) { x.fillStyle = `rgba(255,${azar(190, 230) | 0},140,${azar(0.3, 0.7)})`; x.fillRect(xx, yy, 2.5, 3.5); }
+    }
+  }
+  // Los cuatro edificios.
+  for (const e of edificios) {
+    const gr = x.createLinearGradient(e.x, 0, e.x + e.w, 0);
+    gr.addColorStop(0, e.color); gr.addColorStop(1, "#0c0e22");
+    x.fillStyle = gr; x.fillRect(e.x, e.y, e.w, e.h);
+    x.fillStyle = "rgba(255,255,255,.05)"; x.fillRect(e.x, e.y, e.w, 3);
+    // Ladrillitos suaves.
+    for (let yy = e.y + 6; yy < calle; yy += 7) { x.fillStyle = "rgba(0,0,0,.08)"; x.fillRect(e.x, yy, e.w, 1); }
+    if (e.techo === "tanque") {
+      x.fillStyle = "#15182e";
+      x.fillRect(e.x + e.w * 0.6, e.y - 22, e.w * 0.22, 18);
+      x.fillRect(e.x + e.w * 0.62, e.y - 4, 3, 4); x.fillRect(e.x + e.w * 0.78, e.y - 4, 3, 4);
+      x.beginPath(); x.moveTo(e.x + e.w * 0.58, e.y - 22); x.lineTo(e.x + e.w * 0.71, e.y - 32); x.lineTo(e.x + e.w * 0.84, e.y - 22); x.fill();
+    } else {
+      x.strokeStyle = "#20243e"; x.lineWidth = 2;
+      x.beginPath(); x.moveTo(e.x + e.w * 0.3, e.y); x.lineTo(e.x + e.w * 0.3, e.y - 30); x.stroke();
+      x.beginPath(); x.moveTo(e.x + e.w * 0.3 - 8, e.y - 22); x.lineTo(e.x + e.w * 0.3 + 8, e.y - 22); x.stroke();
+    }
+    // La puerta.
+    x.fillStyle = "#0a0b18"; x.fillRect(e.x + e.w * 0.4, calle - e.h * 0.12, e.w * 0.2, e.h * 0.12);
+    x.fillStyle = "rgba(255,200,120,.35)"; x.fillRect(e.x + e.w * 0.4, calle - e.h * 0.12 - 3, e.w * 0.2, 3);
+  }
+  // La banqueta y la calle.
+  x.fillStyle = "#1a1a2a"; x.fillRect(0, calle, A, H - calle);
+  x.fillStyle = "#2a2a3e"; x.fillRect(0, calle, A, 5);
+  fondo = c;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LAS ESCENAS: cada una se pinta dentro de su ventana
+   ══════════════════════════════════════════════════════════════════════ */
+function persona(x, y, s, col = "#1a1020", brazo = 0) {
+  g.fillStyle = col;
+  g.beginPath(); g.arc(x, y - s * 0.95, s * 0.22, 0, TAU); g.fill();
+  g.beginPath(); g.moveTo(x - s * 0.3, y); g.quadraticCurveTo(x - s * 0.32, y - s * 0.7, x, y - s * 0.72); g.quadraticCurveTo(x + s * 0.32, y - s * 0.7, x + s * 0.3, y); g.fill();
+  if (brazo) { g.strokeStyle = col; g.lineWidth = s * 0.1; g.lineCap = "round"; g.beginPath(); g.moveTo(x + s * 0.2, y - s * 0.6); g.lineTo(x + s * 0.2 + Math.cos(brazo) * s * 0.45, y - s * 0.6 - Math.sin(brazo) * s * 0.45); g.stroke(); }
+}
+function corazonEn(x, y, r) {
+  g.beginPath();
+  g.moveTo(x, y + r * 0.8);
+  g.bezierCurveTo(x - r * 1.4, y - r * 0.1, x - r * 0.55, y - r * 1.05, x, y - r * 0.35);
+  g.bezierCurveTo(x + r * 0.55, y - r * 1.05, x + r * 1.4, y - r * 0.1, x, y + r * 0.8);
+}
+const tibia = "#ffcf85";
+const DIBUJOS = {
+  rgb(w, h, t) {
+    const hue = (t * 120) % 360;
+    g.fillStyle = `hsl(${hue},90%,55%)`; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 6; i++) { g.fillStyle = `hsl(${(hue + i * 60) % 360},100%,65%)`; g.fillRect(i * w / 6, 0, w / 6, h * 0.08); }
+    g.fillStyle = "#0a0a14"; g.fillRect(w * 0.2, h * 0.55, w * 0.6, h * 0.25);
+    g.fillStyle = `hsl(${(hue + 180) % 360},100%,60%)`; g.fillRect(w * 0.25, h * 0.6, w * 0.5, h * 0.12);
   },
-
-  /* ---- LO QUE SE LEE EN CADA VENTANA ----------------------------------
-     Una escena distinta en cada casa. Se sortean sin repetir.         */
-  escenas: [
-    ["En el tercero hay alguien que tampoco duerme.", "Como nosotros."],
-    ["En ése están viendo una película que ya han visto.", "Y está bien."],
-    ["Ahí dentro huele a cena.", "Se les ha hecho tarde hablando."],
-    ["Ése acaba de llegar y aún no se ha quitado el abrigo.", "Ha sido un día largo."],
-    ["En ése hay alguien leyendo.", "Va por la mitad y no puede parar."],
-    ["Ahí están discutiendo por una tontería.", "Se les pasa antes de las doce."],
-    ["En esa ventana hay una planta que alguien riega mucho.", "Se nota."],
-    ["Ahí dentro alguien está escribiendo algo.", "Igual una carta. Igual como ésta."],
-    ["En ése se han quedado dormidos con la tele puesta.", "Los dos."],
-    ["Ahí hay una fiesta pequeña.", "De las buenas, de cinco personas."],
-    ["Ésa está vacía y la luz se quedó puesta.", "Vuelven mañana."],
-    ["Ahí dentro alguien está pensando en alguien.", "Igual en ti, quién sabe."],
-  ],
-
-  /* ---- LOS HITOS ------------------------------------------------------- */
-  hitos: [
-    { n: 5,  texto: "Cinco ventanas.", firma: "La ciudad se despierta despacio." },
-    { n: 20, texto: "Veinte. Ya no está tan dormida.", firma: "Y todo porque tú vas tocando." },
-    { n: 45, texto: "Cuarenta y cinco.", firma: "Como si la hubieras despertado de golpe." },
-  ],
-
-  /* ---- LA CIUDAD ------------------------------------------------------- */
-  planos: 3,
-  torreMedio: true,     // la torre alta donde se puede escribir
+  fiesta(w, h, t) {
+    const c = ["#ff2d7a", "#2de2ff", "#ffe02d", "#8a2dff", "#2dff8a"];
+    g.fillStyle = c[Math.floor(t * 8) % c.length]; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 9; i++) { g.fillStyle = Math.sin(t * 20 + i * 2) > 0.3 ? "#fff" : c[i % 5]; g.beginPath(); g.arc((i + 0.5) * w / 9, h * 0.1, 2, 0, TAU); g.fill(); }
+    for (let i = 0; i < 3; i++) persona(w * (0.25 + i * 0.25), h - Math.abs(Math.sin(t * 9 + i)) * h * 0.1, h * 0.5, "rgba(20,5,30,.9)", Math.sin(t * 9 + i) + 1.5);
+  },
+  grito(w, h, t, v) {
+    g.fillStyle = tibia; g.fillRect(0, 0, w, h);
+    const sale = clamp(t < 1.6 ? Math.sin(Math.min(1, t / 0.4) * Math.PI / 2) : 1 - (t - 1.6) / 0.6, 0, 1);
+    persona(w / 2, h + h * 0.1 - sale * h * 0.2, h * (0.6 + sale * 0.35), "#2a1422");
+    if (sale > 0.5) { g.fillStyle = "#2a1422"; g.beginPath(); g.ellipse(w / 2, h * 0.45 - sale * h * 0.1, w * 0.06, h * 0.08, 0, 0, TAU); g.fill(); }
+  },
+  gato(w, h, t) {
+    g.fillStyle = "#ffd89a"; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#231820";
+    g.beginPath(); g.ellipse(w * 0.5, h * 0.84, w * 0.24, h * 0.12, 0, 0, TAU); g.fill();
+    g.beginPath(); g.arc(w * 0.62, h * 0.66, w * 0.12, 0, TAU); g.fill();
+    g.beginPath(); g.moveTo(w * 0.53, h * 0.6); g.lineTo(w * 0.56, h * 0.48); g.lineTo(w * 0.61, h * 0.57); g.fill();
+    g.beginPath(); g.moveTo(w * 0.65, h * 0.57); g.lineTo(w * 0.7, h * 0.48); g.lineTo(w * 0.72, h * 0.6); g.fill();
+    g.strokeStyle = "#231820"; g.lineWidth = w * 0.05; g.lineCap = "round";
+    g.beginPath(); g.moveTo(w * 0.28, h * 0.84); g.quadraticCurveTo(w * 0.12, h * (0.7 + Math.sin(t * 3) * 0.1), w * 0.2, h * 0.52); g.stroke();
+    const parpadea = Math.sin(t * 1.7) > 0.95 ? 0.2 : 1;
+    g.fillStyle = "#9cff7a"; g.beginPath(); g.ellipse(w * 0.58, h * 0.66, 2, 2 * parpadea, 0, 0, TAU); g.ellipse(w * 0.66, h * 0.66, 2, 2 * parpadea, 0, 0, TAU); g.fill();
+  },
+  saluda(w, h, t) {
+    g.fillStyle = "#ffe0a8"; g.fillRect(0, 0, w, h);
+    persona(w * 0.45, h * 1.02, h * 0.75, "#2a1a30", 1.3 + Math.sin(t * 10) * 0.5);
+  },
+  baile(w, h, t) {
+    g.fillStyle = "#ffb4a0"; g.fillRect(0, 0, w, h);
+    const a = Math.sin(t * 1.5) * w * 0.06;
+    persona(w * 0.4 + a, h, h * 0.7, "#3a1020");
+    persona(w * 0.58 + a, h, h * 0.62, "#3a1020");
+  },
+  cocina(w, h, t) {
+    g.fillStyle = "#fff0c0"; g.fillRect(0, 0, w, h);
+    persona(w * 0.35, h, h * 0.65, "#2a2020", 0.3);
+    g.fillStyle = "#333"; g.fillRect(w * 0.55, h * 0.72, w * 0.35, h * 0.06);
+    for (let i = 0; i < 3; i++) { const k = (t * 0.6 + i / 3) % 1; g.fillStyle = `rgba(255,255,255,${0.5 * (1 - k)})`; g.beginPath(); g.arc(w * 0.72 + Math.sin(k * 6 + i) * 4, h * 0.7 - k * h * 0.5, 3 + k * 4, 0, TAU); g.fill(); }
+  },
+  tele(w, h, t) {
+    const b = 0.5 + 0.5 * Math.sin(t * 13) * Math.sin(t * 7);
+    g.fillStyle = `rgb(${60 + b * 40},${90 + b * 60},${170 + b * 60})`; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#101428"; g.fillRect(w * 0.1, h * 0.6, w * 0.8, h * 0.4);
+    persona(w * 0.5, h * 1.05, h * 0.5, "#0c0e1e");
+    g.fillStyle = "#fff"; g.font = `${h * 0.18}px serif`; g.fillText("z", w * 0.62, h * (0.4 - (t % 2) * 0.1));
+  },
+  plantas(w, h, t) {
+    g.fillStyle = "#ffe6b0"; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 3; i++) {
+      const x = w * (0.2 + i * 0.3);
+      g.fillStyle = "#b0603a"; g.fillRect(x - w * 0.08, h * 0.8, w * 0.16, h * 0.2);
+      g.strokeStyle = "#2f7a3a"; g.lineWidth = 2;
+      for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(x, h * 0.8); g.quadraticCurveTo(x + (k - 1.5) * w * 0.06, h * 0.6, x + (k - 1.5) * w * 0.08 + Math.sin(t * 2 + k) * 2, h * (0.45 + (k % 2) * 0.08)); g.stroke(); }
+    }
+  },
+  lee(w, h, t) {
+    g.fillStyle = "#3a2a3a"; g.fillRect(0, 0, w, h);
+    const lz = g.createRadialGradient(w * 0.3, h * 0.35, 0, w * 0.3, h * 0.35, w * 0.8);
+    lz.addColorStop(0, "#ffe6a8"); lz.addColorStop(1, "rgba(255,230,168,0)");
+    g.fillStyle = lz; g.fillRect(0, 0, w, h);
+    persona(w * 0.55, h, h * 0.6, "#241624");
+    g.fillStyle = "#fff8e8"; g.fillRect(w * 0.6, h * 0.62, w * 0.2, h * 0.12);
+  },
+  perro(w, h, t, v) {
+    g.fillStyle = "#ffdca0"; g.fillRect(0, 0, w, h);
+    const salto = Math.max(0, Math.sin(t * 6)) * h * 0.05 * (t < 2 ? 1 : 0.2);
+    g.fillStyle = "#6a3a1a";
+    g.beginPath(); g.ellipse(w * 0.45, h * 0.82 - salto, w * 0.22, h * 0.12, 0, 0, TAU); g.fill();
+    g.beginPath(); g.arc(w * 0.66, h * 0.66 - salto, w * 0.12, 0, TAU); g.fill();
+    g.beginPath(); g.ellipse(w * 0.6, h * 0.66 - salto, w * 0.04, h * 0.1, 0.4, 0, TAU); g.fill();
+    g.strokeStyle = "#6a3a1a"; g.lineWidth = 3; g.beginPath(); g.moveTo(w * 0.24, h * 0.8 - salto); g.lineTo(w * 0.14, h * (0.66 + Math.sin(t * 20) * 0.05) - salto); g.stroke();
+  },
+  sombras(w, h, t) {
+    g.fillStyle = "#fff0d0"; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#2a1a1a";
+    const al = Math.sin(t * 5) * 0.4;
+    g.beginPath(); g.ellipse(w * 0.5, h * 0.55, w * 0.1, h * 0.08, 0, 0, TAU); g.fill();
+    g.beginPath(); g.moveTo(w * 0.45, h * 0.52); g.quadraticCurveTo(w * 0.2, h * (0.3 - al * 0.3), w * 0.12, h * (0.4 - al * 0.2)); g.quadraticCurveTo(w * 0.3, h * 0.55, w * 0.45, h * 0.58); g.fill();
+    g.beginPath(); g.moveTo(w * 0.55, h * 0.52); g.quadraticCurveTo(w * 0.8, h * (0.3 - al * 0.3), w * 0.88, h * (0.4 - al * 0.2)); g.quadraticCurveTo(w * 0.7, h * 0.55, w * 0.55, h * 0.58); g.fill();
+  },
+  guitarra(w, h, t) {
+    g.fillStyle = "#f0c890"; g.fillRect(0, 0, w, h);
+    persona(w * 0.45, h, h * 0.68, "#2a1a1a");
+    g.fillStyle = "#8a4a1a"; g.beginPath(); g.ellipse(w * 0.55, h * 0.78, w * 0.12, h * 0.08, -0.4, 0, TAU); g.fill();
+    g.fillStyle = "#3a2010"; g.save(); g.translate(w * 0.55, h * 0.78); g.rotate(-0.4); g.fillRect(0, -2, w * 0.35, 4); g.restore();
+    g.fillStyle = "#5a2a1a"; g.font = `${h * 0.2}px serif`; g.fillText("♪", w * 0.7, h * (0.4 - (t * 0.3) % 0.3));
+  },
+  navidad(w, h, t) {
+    g.fillStyle = "#3a2030"; g.fillRect(0, 0, w, h);
+    const c = ["#ff4a4a", "#ffd24a", "#4aff7a", "#4ab4ff"];
+    for (let i = 0; i < 10; i++) {
+      const x = (i + 0.5) / 10 * w, y = h * 0.15 + Math.sin(i / 9 * Math.PI) * h * 0.15;
+      const on = Math.sin(t * 3 + i * 1.3) > 0;
+      g.fillStyle = on ? c[i % 4] : "#40303a";
+      g.beginPath(); g.arc(x, y, 2.6, 0, TAU); g.fill();
+      if (on) { g.fillStyle = c[i % 4] + "44"; g.beginPath(); g.arc(x, y, 7, 0, TAU); g.fill(); }
+    }
+    g.fillStyle = "#1e5a2a"; g.beginPath(); g.moveTo(w * 0.5, h * 0.35); g.lineTo(w * 0.72, h * 0.95); g.lineTo(w * 0.28, h * 0.95); g.fill();
+  },
+  cortina(w, h, t, v) {
+    g.fillStyle = "#ffe0a0"; g.fillRect(0, 0, w, h);
+    persona(w * 0.5, h, h * 0.7, "#2a1a28");
+    const c = clamp((t - 0.7) / 0.6, 0, 1);
+    g.fillStyle = "#b8405a";
+    g.fillRect(0, 0, w * 0.5 * c, h); g.fillRect(w - w * 0.5 * c, 0, w * 0.5 * c, h);
+    g.fillStyle = "rgba(0,0,0,.2)"; for (let i = 0; i < 6; i++) g.fillRect(i * w / 12 * c, 0, 1.5, h);
+  },
+  telescopio(w, h, t) {
+    g.fillStyle = "#2a3050"; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#ffe4a0"; g.fillRect(0, h * 0.85, w, h * 0.15);
+    persona(w * 0.35, h, h * 0.62, "#101020");
+    g.save(); g.translate(w * 0.45, h * 0.55); g.rotate(-0.7 + Math.sin(t * 0.5) * 0.1);
+    g.fillStyle = "#c8ccd8"; g.fillRect(0, -3, w * 0.45, 6); g.restore();
+  },
+  ejercicio(w, h, t) {
+    g.fillStyle = "#e8f0ff"; g.fillRect(0, 0, w, h);
+    const s = Math.abs(Math.sin(t * 5));
+    persona(w * 0.5, h - s * h * 0.12, h * 0.62, "#20243a", 1.2 + s);
+  },
+  pastel(w, h, t) {
+    g.fillStyle = "#ffcf90"; g.fillRect(0, 0, w, h);
+    persona(w * 0.22, h, h * 0.55, "#3a2030"); persona(w * 0.8, h, h * 0.5, "#3a2030");
+    g.fillStyle = "#fff4f0"; g.fillRect(w * 0.35, h * 0.68, w * 0.3, h * 0.2);
+    g.fillStyle = "#ff8fb0"; g.fillRect(w * 0.35, h * 0.68, w * 0.3, h * 0.05);
+    for (let i = 0; i < 3; i++) { const x = w * (0.42 + i * 0.08); g.fillStyle = "#fff"; g.fillRect(x - 1, h * 0.6, 2, h * 0.08); g.fillStyle = "#ffcc33"; g.beginPath(); g.ellipse(x, h * 0.58 + Math.sin(t * 12 + i) * 1, 2, 3.5, 0, 0, TAU); g.fill(); }
+  },
+  pecera(w, h, t) {
+    g.fillStyle = "#1a2a48"; g.fillRect(0, 0, w, h);
+    const agua = g.createLinearGradient(0, h * 0.35, 0, h);
+    agua.addColorStop(0, "#3aa8ff"); agua.addColorStop(1, "#1a5aa8");
+    g.fillStyle = agua; g.fillRect(w * 0.15, h * 0.4, w * 0.7, h * 0.5);
+    for (let i = 0; i < 3; i++) { const x = w * (0.3 + ((t * 0.15 + i * 0.3) % 0.5)), y = h * (0.55 + i * 0.1); g.fillStyle = ["#ff8a2a", "#ffd02a", "#ff5a8a"][i]; g.beginPath(); g.ellipse(x, y, 5, 3, 0, 0, TAU); g.fill(); g.beginPath(); g.moveTo(x - 5, y); g.lineTo(x - 9, y - 3); g.lineTo(x - 9, y + 3); g.fill(); }
+    g.fillStyle = "rgba(255,255,255,.6)"; for (let i = 0; i < 3; i++) { const k = (t * 0.4 + i / 3) % 1; g.beginPath(); g.arc(w * 0.7, h * 0.88 - k * h * 0.45, 1.5, 0, TAU); g.fill(); }
+  },
+  pintor(w, h, t) {
+    g.fillStyle = "#fff4e0"; g.fillRect(0, 0, w, h);
+    persona(w * 0.3, h, h * 0.62, "#2a1a24", 0.2 + Math.sin(t * 4) * 0.3);
+    g.fillStyle = "#fff"; g.fillRect(w * 0.55, h * 0.4, w * 0.32, h * 0.38);
+    g.strokeStyle = "#8a5a3a"; g.lineWidth = 1.5; g.strokeRect(w * 0.55, h * 0.4, w * 0.32, h * 0.38);
+    const k = Math.min(1, t / 3);
+    g.fillStyle = "#ff8fa0"; corazonEn(w * 0.71, h * 0.58, w * 0.07 * k); g.fill();
+  },
+  telefono(w, h, t) {
+    g.fillStyle = "#ffd8b0"; g.fillRect(0, 0, w, h);
+    const x = w * (0.3 + (Math.sin(t * 0.8) + 1) * 0.2);
+    persona(x, h, h * 0.66, "#2a1a28");
+    g.fillStyle = "#e8f4ff"; g.fillRect(x + h * 0.08, h * 0.32, 4, 8);
+  },
+  corazon(w, h, t) {
+    g.fillStyle = "#c8b4d8"; g.fillRect(0, 0, w, h);
+    g.fillStyle = "rgba(255,255,255,.35)"; g.fillRect(0, 0, w, h);
+    const k = Math.min(1, t / 1.4);
+    g.strokeStyle = "#ffc0d0"; g.lineWidth = 3; g.lineCap = "round";
+    g.setLineDash([k * 200, 400]);
+    corazonEn(w * 0.5, h * 0.5, w * 0.22); g.stroke();
+    g.setLineDash([]);
+  },
+  brinca(w, h, t) {
+    g.fillStyle = "#ffe4b0"; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#6a8aff"; g.fillRect(w * 0.1, h * 0.85, w * 0.8, h * 0.15);
+    const s = Math.abs(Math.sin(t * 5));
+    persona(w * 0.5, h * 0.88 - s * h * 0.3, h * 0.42, "#2a1a28", 1.5 + s);
+  },
+  burbujas(w, h, t) {
+    g.fillStyle = "#fff0d8"; g.fillRect(0, 0, w, h);
+    persona(w * 0.3, h, h * 0.6, "#2a1a28", 0.8);
+    for (let i = 0; i < 5; i++) { const k = (t * 0.5 + i / 5) % 1; g.strokeStyle = `rgba(120,160,255,${0.8 * (1 - k)})`; g.lineWidth = 1.2; g.beginPath(); g.arc(w * (0.45 + k * 0.45), h * (0.5 - Math.sin(k * 3 + i) * 0.2), 3 + i % 3 * 2, 0, TAU); g.stroke(); }
+  },
 };
 
 /* ══════════════════════════════════════════════════════════════════════
-   La maquinaria.
+   EL SONIDO
    ══════════════════════════════════════════════════════════════════════ */
+let ac = null, salida = null;
+function despertar() {
+  if (ac) { if (ac.state === "suspended") ac.resume(); return ac; }
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+  salida = ac.createGain(); salida.gain.value = 0.9; salida.connect(ac.destination);
+  return ac;
+}
+function interruptor() {
+  if (!ac) return;
+  const t = ac.currentTime, n = Math.floor(ac.sampleRate * 0.02);
+  const b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 6);
+  const s = ac.createBufferSource(); s.buffer = b;
+  const f = ac.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 2500; f.Q.value = 3;
+  const gg = ac.createGain(); gg.gain.value = 0.3;
+  s.connect(f).connect(gg).connect(salida); s.start(t);
+}
+function nota(f, t, dur, v = 0.05, tipo = "sine") {
+  const o = ac.createOscillator(), gg = ac.createGain();
+  o.type = tipo; o.frequency.value = f;
+  gg.gain.setValueAtTime(0, t); gg.gain.linearRampToValueAtTime(v, t + 0.01); gg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(gg).connect(salida); o.start(t); o.stop(t + dur + 0.05);
+}
+const SONIDOS = {
+  grito() {
+    const t = ac.currentTime + 0.2;
+    const o = ac.createOscillator(), gg = ac.createGain(), f = ac.createBiquadFilter(), vib = ac.createOscillator(), vg = ac.createGain();
+    o.type = "sawtooth"; o.frequency.setValueAtTime(420, t); o.frequency.linearRampToValueAtTime(520, t + 0.3); o.frequency.linearRampToValueAtTime(380, t + 1.1);
+    vib.frequency.value = 7; vg.gain.value = 14; vib.connect(vg).connect(o.frequency);
+    f.type = "bandpass"; f.frequency.value = 900; f.Q.value = 2;
+    gg.gain.setValueAtTime(0, t); gg.gain.linearRampToValueAtTime(0.14, t + 0.05); gg.gain.setValueAtTime(0.14, t + 0.9); gg.gain.linearRampToValueAtTime(0, t + 1.2);
+    o.connect(f).connect(gg).connect(salida); o.start(t); vib.start(t); o.stop(t + 1.3); vib.stop(t + 1.3);
+  },
+  perro() {
+    for (let k = 0; k < 2; k++) {
+      const t = ac.currentTime + 0.1 + k * 0.28;
+      const o = ac.createOscillator(), gg = ac.createGain(), f = ac.createBiquadFilter();
+      o.type = "sawtooth"; o.frequency.setValueAtTime(500, t); o.frequency.exponentialRampToValueAtTime(260, t + 0.12);
+      f.type = "bandpass"; f.frequency.value = 1100; f.Q.value = 1.5;
+      gg.gain.setValueAtTime(0, t); gg.gain.linearRampToValueAtTime(0.15, t + 0.01); gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      o.connect(f).connect(gg).connect(salida); o.start(t); o.stop(t + 0.2);
+    }
+  },
+  guitarra() { const t = ac.currentTime; [196, 246.94, 293.66, 392, 493.88].forEach((f, i) => nota(f, t + i * 0.03, 2.2, 0.05, "triangle")); },
+  fiesta() { const t = ac.currentTime; for (let i = 0; i < 8; i++) { nota(60, t + i * 0.25, 0.2, 0.25); nota(i % 2 ? 880 : 660, t + i * 0.25 + 0.12, 0.1, 0.03, "square"); } },
+  pastel() { const t = ac.currentTime; [392, 392, 440, 392, 523.25, 493.88].forEach((f, i) => nota(f, t + i * 0.3, 0.4, 0.05, "triangle")); },
+  rgb() { const t = ac.currentTime; nota(220, t, 0.6, 0.04, "sawtooth"); nota(330, t + 0.1, 0.6, 0.03, "sawtooth"); },
+  gato() { const t = ac.currentTime; const o = ac.createOscillator(), gg = ac.createGain(); o.type = "triangle"; o.frequency.setValueAtTime(700, t); o.frequency.linearRampToValueAtTime(1000, t + 0.2); o.frequency.linearRampToValueAtTime(600, t + 0.5); gg.gain.setValueAtTime(0, t); gg.gain.linearRampToValueAtTime(0.05, t + 0.05); gg.gain.linearRampToValueAtTime(0, t + 0.5); o.connect(gg).connect(salida); o.start(t); o.stop(t + 0.55); },
+};
+function campanitas() { const t = ac.currentTime; [523.25, 659.25, 783.99, 1046.5, 1318.5, 1567.98].forEach((f, i) => nota(f, t + i * 0.12, 1.6, 0.04)); }
 
-const mundo  = document.getElementById("mundo");
-const lienzo = document.getElementById("lienzo");
-const zona   = document.getElementById("toque");
-const elPie  = document.getElementById("pie");
-const elCue  = document.getElementById("cuenta");
-const ctx    = lienzo.getContext("2d", { alpha: false });
+/* ══════════════════════════════════════════════════════════════════════
+   TOCAR UNA VENTANA
+   ══════════════════════════════════════════════════════════════════════ */
+let encendidas = 0, relojDialogo = null;
+function decir(t) {
+  clearTimeout(relojDialogo);
+  elDialogo.classList.add("is-fuera");
+  relojDialogo = setTimeout(() => { elDialogo.textContent = t; elDialogo.classList.remove("is-fuera"); }, suave ? 20 : 260);
+}
+mundo.addEventListener("pointerdown", (e) => {
+  despertar();
+  const r = mundo.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  const v = ventanas.find((w) => x > w.x - 6 && x < w.x + w.w + 6 && y > w.y - 6 && y < w.y + w.h + 6);
+  if (!v) return;
+  interruptor();
+  if (!v.encendida) {
+    v.encendida = true; v.t = 0;
+    encendidas++;
+    elCuenta.textContent = `${encendidas} de ${ventanas.length}`;
+    if (!v.vista) {
+      v.vista = true;
+      const s = v.escena;
+      const tarde = s.grita ? 1100 : 350;
+      if (s.grita) globos.push({ v, texto: s.grita, t: 0 });
+      setTimeout(() => decir(s.dice), tarde);
+      if (SONIDOS[s.id]) SONIDOS[s.id]();
+    }
+    if (encendidas === ventanas.length) setTimeout(() => { decir(FINAL); campanitas(); fuegos = 1; }, 2600);
+  } else {
+    v.encendida = false;
+    encendidas--;
+    elCuenta.textContent = `${encendidas} de ${ventanas.length}`;
+  }
+});
 
-const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const azar  = (a, b) => a + Math.random() * (b - a);
-const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+const globos = [], coches = [], cohetes = [];
+let fuegos = 0, t0 = performance.now(), reloj = 0, relojCoche = 2, avion = null;
 
-let A = 0, H = 0, dpr = 1;
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A) return;
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.1) dt = 1 / 60;
+  reloj += dt;
 
-/* Azar repetible: la misma ciudad cada vez que se mide la hoja. Con
-   Math.random, girar el móvil reconstruía otra ciudad distinta y las
-   ventanas encendidas cambiaban de sitio. */
-let semilla = 31415926;
-function rnd() {
-  semilla = (semilla * 1664525 + 1013904223) % 4294967296;
-  return semilla / 4294967296;
+  g.drawImage(fondo, 0, 0, A, H);
+
+  // Un avión que cruza de vez en cuando, con su lucecita.
+  if (!avion && Math.random() < dt * 0.04) avion = { x: -20, y: azar(H * 0.1, H * 0.25) };
+  if (avion) {
+    avion.x += 30 * dt;
+    if (Math.sin(reloj * 6) > 0.6) { g.fillStyle = "#ff5a5a"; g.beginPath(); g.arc(avion.x, avion.y, 1.8, 0, TAU); g.fill(); }
+    g.fillStyle = "rgba(255,255,255,.8)"; g.fillRect(avion.x - 3, avion.y, 1.5, 1.5);
+    if (avion.x > A + 20) avion = null;
+  }
+
+  // Las ventanas.
+  for (const v of ventanas) {
+    v.luz = clamp(v.luz + (v.encendida ? dt * 4 : -dt * 3), 0, 1);
+    if (v.encendida) v.t += dt;
+    g.save();
+    g.beginPath(); g.rect(v.x, v.y, v.w, v.h); g.clip();
+    g.fillStyle = "#0c0f22"; g.fillRect(v.x, v.y, v.w, v.h);
+    if (v.luz > 0) {
+      g.globalAlpha = v.luz;
+      g.translate(v.x, v.y);
+      DIBUJOS[v.escena.id](v.w, v.h, v.t, v);
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.globalAlpha = 1;
+    }
+    // Reflejo del vidrio.
+    g.fillStyle = "rgba(255,255,255,.06)";
+    g.beginPath(); g.moveTo(v.x, v.y + v.h * 0.6); g.lineTo(v.x + v.w * 0.5, v.y); g.lineTo(v.x + v.w * 0.7, v.y); g.lineTo(v.x, v.y + v.h); g.fill();
+    g.restore();
+    // El marco y el alféizar.
+    g.strokeStyle = "#3a3656"; g.lineWidth = 2; g.strokeRect(v.x, v.y, v.w, v.h);
+    g.beginPath(); g.moveTo(v.x + v.w / 2, v.y); g.lineTo(v.x + v.w / 2, v.y + v.h); g.stroke();
+    g.fillStyle = "#4a4668"; g.fillRect(v.x - 3, v.y + v.h, v.w + 6, 3);
+    // La luz que sale hacia fuera.
+    if (v.luz > 0.05) {
+      g.globalCompositeOperation = "lighter";
+      const halo = g.createRadialGradient(v.x + v.w / 2, v.y + v.h / 2, 0, v.x + v.w / 2, v.y + v.h / 2, v.w * 1.2);
+      halo.addColorStop(0, `rgba(255,210,140,${0.16 * v.luz})`); halo.addColorStop(1, "rgba(255,210,140,0)");
+      g.fillStyle = halo; g.fillRect(v.x - v.w, v.y - v.w, v.w * 3, v.h + v.w * 2);
+      g.globalCompositeOperation = "source-over";
+    }
+  }
+  // Una pista suave: las apagadas «respiran» apenas al principio.
+  if (encendidas === 0) {
+    const k = (Math.sin(reloj * 2) + 1) / 2;
+    for (const v of ventanas) { g.strokeStyle = `rgba(255,220,160,${0.06 + k * 0.08})`; g.lineWidth = 1; g.strokeRect(v.x + 2, v.y + 2, v.w - 4, v.h - 4); }
+  }
+
+  // Los globitos de lo que gritan desde dentro.
+  for (let i = globos.length - 1; i >= 0; i--) {
+    const b = globos[i];
+    b.t += dt;
+    if (b.t > 2.2) { globos.splice(i, 1); continue; }
+    const k = Math.min(1, b.t / 0.2) * (b.t > 1.8 ? (2.2 - b.t) / 0.4 : 1);
+    const x = b.v.x + b.v.w / 2, y = b.v.y - 12 - (1 - k) * 8;
+    g.save();
+    g.globalAlpha = k;
+    g.font = `700 ${Math.round(Math.max(16, b.v.w * 0.3))}px "Caveat", cursive`;
+    const tw = g.measureText(b.texto).width + 16;
+    const bx = clamp(x - tw / 2, 6, A - tw - 6);
+    g.fillStyle = "#fffaf2";
+    g.beginPath(); g.roundRect(bx, y - 30, tw, 30, 10); g.fill();
+    g.beginPath(); g.moveTo(x - 6, y); g.lineTo(x + 2, y + 9); g.lineTo(x + 6, y); g.fill();
+    g.fillStyle = "#2a1428"; g.textAlign = "left"; g.textBaseline = "middle";
+    g.save(); g.translate(Math.sin(b.t * 60) * 1.2, 0);
+    g.fillText(b.texto, bx + 8, y - 14);
+    g.restore();
+    g.restore();
+  }
+
+  // La calle: coches con sus faros y una farola.
+  relojCoche -= dt;
+  if (relojCoche <= 0) { relojCoche = azar(3, 7); const dir = Math.random() < 0.5 ? 1 : -1; coches.push({ x: dir > 0 ? -60 : A + 60, dir, v: azar(60, 120), col: ["#c8384a", "#3a6ac8", "#e8e0d0", "#2a2a3a"][Math.floor(Math.random() * 4)] }); }
+  const cy = calle + 16;
+  for (let i = coches.length - 1; i >= 0; i--) {
+    const c = coches[i];
+    c.x += c.dir * c.v * dt;
+    if (c.x < -80 || c.x > A + 80) { coches.splice(i, 1); continue; }
+    g.fillStyle = c.col;
+    g.beginPath(); g.roundRect(c.x - 24, cy - 12, 48, 12, 4); g.fill();
+    g.beginPath(); g.roundRect(c.x - 14, cy - 20, 28, 10, 4); g.fill();
+    g.fillStyle = "#101018"; g.beginPath(); g.arc(c.x - 14, cy, 4, 0, TAU); g.arc(c.x + 14, cy, 4, 0, TAU); g.fill();
+    const fx = c.x + c.dir * 24;
+    const faro = g.createLinearGradient(fx, 0, fx + c.dir * 90, 0);
+    faro.addColorStop(0, "rgba(255,245,200,.45)"); faro.addColorStop(1, "rgba(255,245,200,0)");
+    g.fillStyle = faro;
+    g.beginPath(); g.moveTo(fx, cy - 8); g.lineTo(fx + c.dir * 90, cy - 16); g.lineTo(fx + c.dir * 90, cy + 4); g.closePath(); g.fill();
+    g.fillStyle = "rgba(255,60,60,.8)"; g.fillRect(c.x - c.dir * 24 - 2, cy - 9, 4, 3);
+  }
+  const fx = A * 0.08;
+  g.fillStyle = "#1a1a28"; g.fillRect(fx - 2, calle - 70, 4, 76);
+  const farola = g.createRadialGradient(fx, calle - 72, 0, fx, calle - 72, 90);
+  farola.addColorStop(0, "rgba(255,210,140,.35)"); farola.addColorStop(1, "rgba(255,210,140,0)");
+  g.fillStyle = farola; g.fillRect(fx - 90, calle - 160, 180, 200);
+  g.fillStyle = "#ffe0a0"; g.beginPath(); g.arc(fx, calle - 72, 4, 0, TAU); g.fill();
+
+  // Con toda la ciudad encendida, fuegos artificiales.
+  if (fuegos > 0 && Math.random() < dt * 1.4) cohetes.push({ x: azar(A * 0.15, A * 0.85), y: calle, vy: -azar(260, 360), t: 0, estalla: azar(0.9, 1.3), col: `hsl(${Math.random() * 360},90%,65%)`, chispas: null });
+  for (let i = cohetes.length - 1; i >= 0; i--) {
+    const c = cohetes[i];
+    c.t += dt;
+    if (!c.chispas) {
+      c.y += c.vy * dt; c.vy += 120 * dt;
+      g.fillStyle = "#fff"; g.fillRect(c.x - 1, c.y, 2, 5);
+      if (c.t > c.estalla) { c.chispas = Array.from({ length: 40 }, (_, k) => { const a = k / 40 * TAU; return { x: c.x, y: c.y, vx: Math.cos(a) * azar(60, 120), vy: Math.sin(a) * azar(60, 120) }; }); c.t = 0; }
+    } else {
+      if (c.t > 1.6) { cohetes.splice(i, 1); continue; }
+      g.globalCompositeOperation = "lighter";
+      g.fillStyle = c.col;
+      g.globalAlpha = 1 - c.t / 1.6;
+      for (const s of c.chispas) { s.vy += 60 * dt; s.x += s.vx * dt; s.y += s.vy * dt; g.fillRect(s.x, s.y, 2, 2); }
+      g.globalAlpha = 1;
+      g.globalCompositeOperation = "source-over";
+    }
+  }
 }
 
 function medir() {
   const r = mundo.getBoundingClientRect();
   if (!r.width || !r.height) return;
+  const antes = ventanas.map((v) => ({ id: v.escena.id, encendida: v.encendida, vista: v.vista, t: v.t }));
   A = r.width; H = r.height;
   dpr = Math.min(window.devicePixelRatio || 1, 2);
-  lienzo.width  = Math.round(A * dpr);
-  lienzo.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  lienzo.width = Math.round(A * dpr); lienzo.height = Math.round(H * dpr);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
   construir();
-}
-new ResizeObserver(medir).observe(mundo);
-
-/* ---- La ciudad ------------------------------------------------------------- */
-
-let edificios = [];
-let ventanas = [];          // todas, de todos los edificios
-let torre = null;           // la del medio, la que escribe
-
-function construir() {
-  semilla = 31415926;
-  edificios = [];
-  ventanas = [];
-  torre = null;
-
-  const suelo = H * 0.94;
-
-  /* Tres planos, del fondo al frente. Cada plano más oscuro, más alto y
-     con las ventanas más grandes: eso es toda la profundidad. */
-  for (let p = 0; p < CONF.planos; p++) {
-    const z = p / (CONF.planos - 1);          // 0 lejos · 1 cerca
-    const ancho = A * (0.1 + z * 0.09);
-    const n = Math.ceil(A / ancho) + 1;
-    const base = suelo - (1 - z) * H * 0.05;
-    for (let i = 0; i < n; i++) {
-      const x = i * ancho - ancho * 0.3 + rnd() * ancho * 0.3;
-      const w = ancho * (0.72 + rnd() * 0.3);
-      /* Mucha variedad de altura a propósito: si todos miden parecido,
-         la ciudad es un bloque negro con una raya recta arriba. Lo que
-         se lee como ciudad es el PERFIL, con sus huecos. */
-      const h = H * (0.09 + z * 0.09) * (0.35 + rnd() * rnd() * 3.2);
-      const e = {
-        x, y: base - h, w, h, z, p,
-        /* Casi negros, y los del fondo un pelín MÁS CLAROS que los de
-           delante: la bruma de la ciudad lava lo que está lejos. Es al
-           revés de lo que parece, y es lo que da profundidad.
-
-           Y muy oscuros de verdad: el primer intento los dejó casi del
-           color del cielo y lo que se veía eran ventanas flotando en la
-           nada. Una ciudad de noche es SILUETA. */
-        col: `rgb(${Math.round(20 - z * 13)},${Math.round(24 - z * 15)},${Math.round(40 - z * 24)})`,
-        antena: rnd() < 0.24,
-        deposito: rnd() < 0.2,
-      };
-      edificios.push(e);
-      sembrarVentanas(e);
-    }
-  }
-
-  /* La torre del medio: más alta que todas y con la rejilla justa para
-     que quepa el mensaje. Es la que guarda el secreto. */
-  if (CONF.torreMedio) {
-    const cols = CONF.mensaje.length * 5 + (CONF.mensaje.length - 1);
-    const filas = 7;
-    const cw = Math.min(A * 0.055, 16);
-    const w = cols * cw * 1.5;
-    const h = H * 0.40;
-    const x = (A - w) / 2;
-    const y = suelo - h;
-    torre = {
-      x, y, w, h, cols, filas, cw,
-      col: "rgb(16,20,34)",
-      ventanas: [],
-    };
-    const mx = w / cols;
-    const my = (h * 0.72) / filas;
-    for (let f = 0; f < filas; f++) {
-      for (let c = 0; c < cols; c++) {
-        const v = {
-          x: x + c * mx + mx * 0.22,
-          y: y + h * 0.16 + f * my + my * 0.2,
-          w: mx * 0.56,
-          h: my * 0.58,
-          on: 0, objetivo: 0,
-          torre: true, fila: f, col_: c,
-          escena: -1,
-          calor: rnd(),
-        };
-        torre.ventanas.push(v);
-        ventanas.push(v);
-      }
-    }
-    edificios.push(torre);
-  }
-
-  /* Unas cuantas encendidas de salida: una ciudad del todo apagada
-     parece rota. */
-  let ya = 0;
-  for (const v of ventanas) {
-    if (v.torre) continue;
-    if (rnd() < 0.07) { v.on = v.objetivo = 1; ya++; }
-  }
-  encendidas = ya;
-  pintarCuenta();
-}
-
-function sembrarVentanas(e) {
-  const cw = Math.max(4, e.w * 0.17);
-  const ch = Math.max(5, cw * 1.25);
-  const cols = Math.max(1, Math.floor(e.w / (cw * 1.7)));
-  const filas = Math.max(1, Math.floor(e.h / (ch * 1.9)));
-  const mx = e.w / cols, my = e.h / (filas + 0.6);
-  for (let f = 0; f < filas; f++) {
-    for (let c = 0; c < cols; c++) {
-      ventanas.push({
-        x: e.x + c * mx + (mx - cw) / 2,
-        y: e.y + my * 0.7 + f * my,
-        w: cw, h: ch,
-        on: 0, objetivo: 0,
-        z: e.z,
-        escena: -1,
-        calor: rnd(),
-      });
-    }
+  // Al girar el teléfono, cada ventana conserva su escena y su luz.
+  if (antes.length) {
+    const porId = Object.fromEntries(antes.map((a) => [a.id, a]));
+    const libres = antes.map((a) => a.id);
+    ventanas.forEach((v, i) => { const a = porId[libres[i]]; v.escena = ESCENAS.find((s) => s.id === a.id); v.encendida = a.encendida; v.vista = a.vista; v.t = a.t; v.luz = a.encendida ? 1 : 0; });
   }
 }
-
-/* ---- Tocar ----------------------------------------------------------------- */
-
-let encendidas = 0;
-let escenasLibres = [];
-let siguienteHito = 0;
-let arrastrando = false;
-let ultimo = 0;
-
-function enPantalla(e) {
-  const r = mundo.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
-}
-
-zona.addEventListener("pointerdown", (e) => {
-  if (e.pointerType === "mouse" && e.button !== 0) return;
-  zona.setPointerCapture(e.pointerId);
-  arrastrando = true;
-  tocar(enPantalla(e), false);
-});
-
-/* Arrastrando se encienden en fila, como pasando la mano. Pero sin
-   contar frase en cada una: si no, es un aluvión ilegible. */
-zona.addEventListener("pointermove", (e) => {
-  if (!arrastrando) return;
-  const ahora = performance.now();
-  if (ahora - ultimo < 45) return;
-  ultimo = ahora;
-  tocar(enPantalla(e), true);
-});
-
-const soltar = () => { arrastrando = false; };
-zona.addEventListener("pointerup", soltar);
-zona.addEventListener("pointercancel", soltar);
-
-function tocar(p, callado) {
-  /* La ventana más cercana con un margen generoso, y las de delante
-     ganan: son las que se ven. */
-  let mejor = null, mejorZ = -1, dMin = Infinity;
-  for (const v of ventanas) {
-    const cx = v.x + v.w / 2, cy = v.y + v.h / 2;
-    const d = Math.hypot(cx - p.x, cy - p.y);
-    const r = Math.max(v.w, v.h) * 1.6 + 8;
-    if (d > r) continue;
-    const z = v.torre ? 2 : (v.z || 0);
-    if (z > mejorZ || (z === mejorZ && d < dMin)) { mejor = v; mejorZ = z; dMin = d; }
-  }
-  if (!mejor) return;
-
-  mundo.classList.add("is-jugando");
-  const antes = mejor.objetivo;
-  mejor.objetivo = antes > 0.5 ? 0 : 1;
-  encendidas += mejor.objetivo > 0.5 ? 1 : -1;
-  pintarCuenta();
-  clic(mejor.objetivo > 0.5);
-
-  if (!callado && mejor.objetivo > 0.5) {
-    if (mejor.escena < 0) {
-      if (!escenasLibres.length) escenasLibres = CONF.escenas.map((_, i) => i);
-      const k = Math.floor(Math.random() * escenasLibres.length);
-      mejor.escena = escenasLibres.splice(k, 1)[0];
-    }
-    const [t, f] = CONF.escenas[mejor.escena];
-    decir(t, f);
-  }
-
-  /* Los hitos mandan. */
-  while (siguienteHito < CONF.hitos.length && encendidas >= CONF.hitos[siguienteHito].n) {
-    const h = CONF.hitos[siguienteHito];
-    siguienteHito++;
-    decir(h.texto, h.firma, true);
-    campana(440 + siguienteHito * 70);
-  }
-
-  mirarSecretos();
-}
-
-function pintarCuenta() {
-  elCue.textContent = `${Math.max(0, encendidas)} luces`;
-}
-
-/* ---- Los textos ------------------------------------------------------------- */
-
-let pidiendo = null;
-let bloqueado = 0;
-
-function decir(texto, firma, importante) {
-  const ahora = performance.now();
-  if (!importante && ahora < bloqueado) return;
-  if (pidiendo === texto) return;
-  pidiendo = texto;
-  if (importante) bloqueado = ahora + 4000;
-  elPie.classList.remove("is-visible");
-  setTimeout(() => {
-    elPie.textContent = texto;
-    if (firma) {
-      const em = document.createElement("em");
-      em.textContent = firma;
-      elPie.append(em);
-    }
-    elPie.classList.add("is-visible");
-  }, suave ? 10 : 280);
-}
-
-/* ---- Sonido ----------------------------------------------------------------- */
-
-let audio = null;
-function clic(encendiendo) {
-  try {
-    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
-    if (audio.state === "suspended") audio.resume();
-    const t = audio.currentTime;
-    /* El clac de un interruptor: dos golpes muy cortos, el segundo más
-       flojo. Al apagar van al revés. */
-    const orden = encendiendo ? [[0, 0.18], [0.035, 0.07]] : [[0, 0.12], [0.03, 0.05]];
-    for (const [retraso, v] of orden) {
-      const n = Math.floor(audio.sampleRate * 0.015);
-      const buf = audio.createBuffer(1, n, audio.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
-      const src = audio.createBufferSource();
-      src.buffer = buf;
-      const f = audio.createBiquadFilter();
-      f.type = "bandpass";
-      f.frequency.value = encendiendo ? 2600 : 1700;
-      const g = audio.createGain();
-      g.gain.value = v;
-      src.connect(f).connect(g).connect(audio.destination);
-      src.start(t + retraso);
-    }
-  } catch { /* sin sonido se encienden igual */ }
-}
-
-function campana(hz) {
-  try {
-    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
-    const t = audio.currentTime;
-    const o = audio.createOscillator();
-    const g = audio.createGain();
-    o.type = "triangle";
-    o.frequency.setValueAtTime(hz, t);
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.08, t + 0.012);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
-    o.connect(g).connect(audio.destination);
-    o.start(t); o.stop(t + 1.6);
-  } catch { /* nada */ }
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   LOS SECRETOS
-   ══════════════════════════════════════════════════════════════════════ */
-
-/* 1. EL GRANDE. Si en la torre del medio quedan encendidas exactamente
-      las ventanas del dibujo —y ninguna más—, la fachada escribe las
-      iniciales y se queda así.                                        */
-let escrito = false;
-
-/** ¿Va encendida esta ventana de la torre, según el mensaje? */
-function tocaEncendida(fila, col) {
-  const anchoLetra = 5;
-  const letraI = Math.floor(col / (anchoLetra + 1));
-  const dentro = col % (anchoLetra + 1);
-  if (dentro === anchoLetra) return false;        // el hueco entre letras
-  const ch = CONF.mensaje[letraI];
-  const L = CONF.letras[ch];
-  if (!L) return false;
-  return L[fila][dentro] === "#";
-}
-
-function mirarSecretos() {
-  if (escrito || !torre) return;
-  let bien = true;
-  for (const v of torre.ventanas) {
-    const debe = tocaEncendida(v.fila, v.col_);
-    if ((v.objetivo > 0.5) !== debe) { bien = false; break; }
-  }
-  if (!bien) return;
-  escrito = true;
-  decir(`Ahí está. ${CONF.mensaje}, en la fachada.`,
-        "Toda la ciudad lo puede leer y me da exactamente igual.", true);
-  campana(523);
-  setTimeout(() => campana(659), 220);
-  setTimeout(() => campana(784), 440);
-  fuegos = 1;
-}
-
-/* 2. Encender TODA la ciudad: amanece.                               */
-let amanece = 0;
-let amaneceDicho = false;
-
-/* 3. Apagarlo todo: se ven las estrellas, que con las luces no se
-      veían.                                                          */
-let estrellasDichas = false;
-
-/* ══════════════════════════════════════════════════════════════════════
-   EL BUCLE
-   ══════════════════════════════════════════════════════════════════════ */
-
-let t0 = performance.now();
-let reloj = 0;
-let fuegos = 0;
-const chispas = [];
-
-function paso(ahora) {
-  requestAnimationFrame(paso);
-  if (!A || !H) return;
-
-  let dt = (ahora - t0) / 1000;
-  t0 = ahora;
-  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
-  else if (dt > 0.1) dt = 0.1;
-  reloj += dt;
-
-  /* Las ventanas se encienden con un retraso propio: una bombilla
-     tarda, y que tarden distinto es lo que hace que parezcan casas y no
-     píxeles. */
-  for (const v of ventanas) {
-    const k = v.objetivo > v.on ? 7 + v.calor * 6 : 3.4;
-    v.on += (v.objetivo - v.on) * Math.min(1, k * dt);
-  }
-
-  const total = ventanas.length;
-  const prop = clamp(encendidas / Math.max(1, total), 0, 1);
-  if (prop > 0.93 && !amaneceDicho) {
-    amaneceDicho = true;
-    amanece = 0.001;
-    decir("Las has encendido todas.", "Ya no es de noche. Eso lo has hecho tú.", true);
-    campana(880);
-  }
-  if (amanece > 0) amanece = Math.min(1, amanece + dt * 0.12);
-
-  if (encendidas <= 0 && !estrellasDichas) {
-    estrellasDichas = true;
-    decir("Todo apagado.", "Y entonces sí se ven las estrellas. Nunca están las dos cosas.", true);
-    campana(330);
-    setTimeout(() => { estrellasDichas = false; }, 30000);
-  }
-
-  if (fuegos > 0) {
-    fuegos = Math.max(0, fuegos - dt * 0.2);
-    if (Math.random() < 0.35) lanzarChispa();
-  }
-
-  dibujar(dt, prop);
-}
-
-function lanzarChispa() {
-  const x = azar(A * 0.1, A * 0.9);
-  const y = azar(H * 0.06, H * 0.3);
-  const col = ["#ffd08a", "#ff9ec0", "#a8e0ff", "#c9ffd0"][Math.floor(Math.random() * 4)];
-  for (let i = 0; i < 22; i++) {
-    const a = (i / 22) * 6.283;
-    const s = azar(50, 130);
-    chispas.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, v: 1, col });
-  }
-  if (chispas.length > 400) chispas.splice(0, chispas.length - 400);
-}
-
-function dibujar(dt, prop) {
-  /* --- el cielo --- */
-  const dia = amanece;
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  if (dia > 0.01) {
-    g.addColorStop(0, `rgb(${Math.round(7 + dia * 130)},${Math.round(10 + dia * 150)},${Math.round(22 + dia * 170)})`);
-    g.addColorStop(0.62, `rgb(${Math.round(16 + dia * 220)},${Math.round(20 + dia * 170)},${Math.round(40 + dia * 120)})`);
-    g.addColorStop(1, `rgb(${Math.round(24 + dia * 210)},${Math.round(26 + dia * 150)},${Math.round(48 + dia * 90)})`);
-  } else {
-    /* El cielo se ACLARA hacia abajo, y bastante: es la luz de la propia
-       ciudad rebotando en el aire. Sin ese halo no hay contra qué
-       recortar los edificios y no se ve ninguno. */
-    /* El resplandor va donde está la LÍNEA DE TEJADOS, no abajo del
-       todo: abajo lo tapan los propios edificios y no sirve de nada.
-       Puesto a media altura, las siluetas se recortan contra él. */
-    g.addColorStop(0.00, "#04060f");
-    g.addColorStop(0.30, "#0b1022");
-    g.addColorStop(0.50, "#22284a");
-    g.addColorStop(0.62, "#3e3c62");
-    g.addColorStop(0.72, "#2a2a48");
-    g.addColorStop(1.00, "#14162a");
-  }
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, A, H);
-
-  /* --- las estrellas: sólo se ven con la ciudad apagada --- */
-  const verEstrellas = clamp(1 - prop * 5, 0, 1) * (1 - dia);
-  if (verEstrellas > 0.02) {
-    for (let i = 0; i < 90; i++) {
-      const sx = ((i * 61) % 100) / 100 * A;
-      const sy = ((i * 37) % 100) / 100 * H * 0.6;
-      ctx.globalAlpha = verEstrellas * (0.25 + 0.45 * Math.sin(reloj * 1.5 + i));
-      ctx.fillStyle = "#dfe8ff";
-      ctx.beginPath();
-      ctx.arc(sx, sy, 0.7 + (i % 3) * 0.5, 0, 6.283);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  /* --- la luna --- */
-  const lx = A * 0.8, ly = H * 0.13, lr = Math.min(A, H) * 0.05;
-  ctx.globalAlpha = 1 - dia * 0.9;
-  const gl = ctx.createRadialGradient(lx, ly, 0, lx, ly, lr * 4);
-  gl.addColorStop(0, "rgba(226, 236, 255, 0.34)");
-  gl.addColorStop(1, "rgba(226, 236, 255, 0)");
-  ctx.fillStyle = gl;
-  ctx.beginPath(); ctx.arc(lx, ly, lr * 4, 0, 6.283); ctx.fill();
-  ctx.fillStyle = "#e8f0ff";
-  ctx.beginPath(); ctx.arc(lx, ly, lr, 0, 6.283); ctx.fill();
-  ctx.globalAlpha = 1;
-
-  /* --- los edificios --- */
-  for (const e of edificios) {
-    ctx.fillStyle = e === torre ? "rgb(5,7,14)" : e.col;
-    ctx.fillRect(e.x, e.y, e.w, e.h);
-    /* Un filo de luz en el canto de arriba: el resplandor del cielo
-       rozando la azotea. Un píxel, y es lo que despega el edificio del
-       de atrás. */
-    ctx.fillStyle = "rgba(150, 165, 210, 0.16)";
-    ctx.fillRect(e.x, e.y, e.w, 1);
-    if (e.antena) {
-      ctx.strokeStyle = e.col;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(e.x + e.w * 0.5, e.y);
-      ctx.lineTo(e.x + e.w * 0.5, e.y - e.h * 0.18);
-      ctx.stroke();
-      /* La lucecita roja de la antena, que parpadea. */
-      ctx.fillStyle = `rgba(255, 90, 70, ${0.4 + 0.6 * Math.abs(Math.sin(reloj * 1.1 + e.x))})`;
-      ctx.beginPath();
-      ctx.arc(e.x + e.w * 0.5, e.y - e.h * 0.18, 2, 0, 6.283);
-      ctx.fill();
-    }
-    if (e.deposito) {
-      ctx.fillStyle = e.col;
-      ctx.fillRect(e.x + e.w * 0.6, e.y - e.h * 0.07, e.w * 0.26, e.h * 0.07);
-    }
-  }
-
-  /* El remate de la torre: una azotea con su pretil. */
-  if (torre) {
-    ctx.fillStyle = "rgb(20,25,42)";
-    ctx.fillRect(torre.x - 5, torre.y - 7, torre.w + 10, 7);
-  }
-
-  /* --- las ventanas --- */
-  ctx.globalCompositeOperation = "lighter";
-  for (const v of ventanas) {
-    if (v.on < 0.02) continue;
-    /* El color de la luz: unas más amarillas y otras más azuladas, según
-       su `calor`. Una ciudad donde todas las bombillas son iguales
-       parece una hoja de cálculo. */
-    const r = Math.round(mezcla(255, 190, v.calor));
-    const gg = Math.round(mezcla(206, 220, v.calor));
-    const b = Math.round(mezcla(120, 255, v.calor));
-    const parpadeo = 0.9 + 0.1 * Math.sin(reloj * (1.4 + v.calor) + v.x);
-    ctx.globalAlpha = v.on * parpadeo;
-    ctx.fillStyle = `rgb(${r},${gg},${b})`;
-    ctx.fillRect(v.x, v.y, v.w, v.h);
-    /* El resplandor alrededor. */
-    ctx.globalAlpha = v.on * 0.3 * parpadeo;
-    const rad = Math.max(v.w, v.h) * 2.4;
-    const gr = ctx.createRadialGradient(v.x + v.w / 2, v.y + v.h / 2, 0, v.x + v.w / 2, v.y + v.h / 2, rad);
-    gr.addColorStop(0, `rgba(${r},${gg},${b},0.7)`);
-    gr.addColorStop(1, `rgba(${r},${gg},${b},0)`);
-    ctx.fillStyle = gr;
-    ctx.fillRect(v.x + v.w / 2 - rad, v.y + v.h / 2 - rad, rad * 2, rad * 2);
-  }
-  ctx.globalCompositeOperation = "source-over";
-  ctx.globalAlpha = 1;
-
-  /* --- las chispas del secreto 1 --- */
-  for (let i = chispas.length - 1; i >= 0; i--) {
-    const c = chispas[i];
-    c.v -= dt * 0.55;
-    if (c.v <= 0) { chispas.splice(i, 1); continue; }
-    c.x += c.vx * dt;
-    c.y += c.vy * dt;
-    c.vy += 90 * dt;
-    c.vx *= 0.985; c.vy *= 0.985;
-    ctx.globalAlpha = c.v;
-    ctx.fillStyle = c.col;
-    ctx.beginPath();
-    ctx.arc(c.x, c.y, 1.4 + c.v, 0, 6.283);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-
-  /* --- la pista del secreto de la torre --- */
-  if (!escrito && torre && encendidas > 12) {
-    /* Se insinúa el dibujo con un contorno finísimo: no lo dice, pero
-       si te fijas está ahí. */
-    ctx.globalAlpha = 0.055 + 0.03 * Math.sin(reloj * 0.9);
-    ctx.strokeStyle = "#ffd08a";
-    ctx.lineWidth = 1;
-    for (const v of torre.ventanas) {
-      if (!tocaEncendida(v.fila, v.col_)) continue;
-      ctx.strokeRect(v.x, v.y, v.w, v.h);
-    }
-    ctx.globalAlpha = 1;
-  }
-}
-
-function mezcla(a, b, t) { return a + (b - a) * t; }
-
-/* ---- Arranque ---------------------------------------------------------------- */
-
+new ResizeObserver(() => requestAnimationFrame(medir)).observe(mundo);
 medir();
-decir("Está todo el mundo durmiendo. Toca las ventanas.");
 requestAnimationFrame(paso);
-
 })();
 </script>
 </body>
