@@ -5,118 +5,55 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>El lago de los deseos</title>
+<script src="sonido-libro.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:wght@500&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
-   Todo dentro de .lago-mundo, con prefijo `lg-` en cada clase.
+   EL LAGO DE LOS DESEOS
+   Un lago de noche con la luna encima. Se desliza el dedo y se tira una
+   piedra: si va rápida y rasante, rebota; cuando por fin se hunde, del
+   agua sube la luz y escribe «Te amo» o «Siempre tuyo». Nada más.
+   Todo con prefijo `lg-`.
    ══════════════════════════════════════════════════════════════════════ */
-
-html, body { margin: 0; height: 100%; }
-
-.lago-mundo {
-  position: absolute;
+html, body { margin: 0; height: 100%; overflow: hidden; background: #03060d; }
+.lg {
+  position: fixed;
   inset: 0;
   overflow: hidden;
-  isolation: isolate;
-  contain: layout paint;
-  background: #071722;
-  color: #d8ecf2;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
-
-  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
-  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  --seg-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seg-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
   --barra: var(--hueco-barra, 0rem);
-  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.lago-mundo .lg-lienzo {
+.lg canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.lg-pista {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  /* Los toques los recoge `.lg-toque`, que va justo encima. */
-  pointer-events: none;
-}
-
-/* El agua entera. El libro sólo se queda el barrido que empieza en sus
-   24-44 px de borde, así que se pueden tirar piedras hasta la esquina. */
-.lago-mundo .lg-toque {
-  position: absolute;
-  inset: 0;
-  touch-action: none;
-  z-index: 2;
-  cursor: pointer;
-}
-
-.lago-mundo .lg-ui {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-  padding:
-    calc(var(--seguro-t) + 20px) 22px
-    calc(var(--seguro-b) + var(--barra) + 18px) 22px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
+  left: 0; right: 0;
+  bottom: calc(var(--seg-b) + var(--barra) + 18px);
+  margin: 0;
   text-align: center;
-}
-
-.lago-mundo .lg-titulo {
-  margin: 0;
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-size: clamp(1rem, 4.4vw, 1.4rem);
+  pointer-events: none;
+  font-family: "Cormorant Garamond", Georgia, serif;
   font-weight: 500;
-  letter-spacing: 0.06em;
-  color: #9fd2e2;
-  opacity: 0.82;
-  text-shadow: 0 0 18px rgba(80, 170, 200, 0.4);
-  transition: opacity 900ms var(--e-suave);
+  font-size: clamp(0.6rem, 2.6vw, 0.72rem);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(206, 222, 255, 0.6);
+  transition: opacity 1.2s ease;
 }
-.lago-mundo.is-jugando .lg-titulo { opacity: 0.18; }
-
-.lago-mundo .lg-pie {
-  margin: 0;
-  min-height: 3.6em;
-  max-width: 23em;
-  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
-  line-height: 1.55;
-  color: #ddf0f6;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 700ms var(--e-suave), transform 700ms var(--e-suave);
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85);
-}
-.lago-mundo .lg-pie.is-visible { opacity: 0.94; transform: none; }
-.lago-mundo .lg-pie em {
-  display: block;
-  margin-top: 0.3em;
-  font-family: var(--tipo-mano, "Segoe Script", cursive);
-  font-size: 1.16em;
-  font-style: normal;
-  color: #ffd2b0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lago-mundo * { transition-duration: 1ms !important; }
-}
+.lg-pista.is-fuera { opacity: 0; }
 </style>
 </head>
 <body>
-
-<div class="lago-mundo" id="mundo">
-  <canvas class="lg-lienzo" id="lienzo"></canvas>
-  <div class="lg-toque" id="toque" aria-hidden="true"></div>
-  <div class="lg-ui">
-    <h1 class="lg-titulo" id="titulo">Tira una piedra</h1>
-    <p class="lg-pie" id="pie" role="status" aria-live="polite"></p>
-  </div>
+<div class="lg" id="mundo">
+  <canvas id="lienzo"></canvas>
+  <p class="lg-pista" id="pista">desliza hacia arriba y tira una piedra</p>
 </div>
 
 <script>
@@ -124,55 +61,736 @@ html, body { margin: 0; height: 100%; }
 "use strict";
 
 /* ══════════════════════════════════════════════════════════════════════
-   CONFIGURACIÓN EDITABLE
+   LO QUE SE PUEDE CAMBIAR
+   Las dos únicas frases del lago. Salen una y otra, por turnos.
    ══════════════════════════════════════════════════════════════════════ */
+const FRASES = ["Te amo", "Siempre tuyo"];
 
-const CONF = {
-
-  /* ---- LOS DESEOS -----------------------------------------------------
-     Cada piedra saca uno. Se reparten sin repetir hasta agotarlos.     */
-  deseos: [
-    ["Que no se nos acabe la conversación.", "Llevamos años y aún no."],
-    ["Que sigas riéndote así.", "Sobre todo de mí."],
-    ["Un domingo sin plan, contigo.", "Ése es todo el deseo."],
-    ["Que el café de mañana también sea de dos.", "Y el de pasado."],
-    ["Que nunca te canses de contarme cosas.", "Ni las que ya me contaste."],
-    ["Llegar a viejos y seguir con estas tonterías.", "Sobre todo con estas."],
-    ["Que cuando estés mal me lo digas.", "Para eso estoy."],
-    ["Un sitio con ventana y luz, y tú dentro.", "Ya está, no pido más."],
-    ["Que se te quiten los pies fríos.", "Aunque me gusta calentártelos."],
-    ["Que esto siga siendo fácil.", "Contigo lo es."],
-    ["Verte dormir un rato más.", "No te despierto, tranquila."],
-    ["Que el mundo te trate como te trato yo.", "Ni un poco menos."],
-  ],
-
-  /* ---- EL AGUA -------------------------------------------------------- */
-  ondas: 26,            // círculos a la vez como mucho
-  velocidadOnda: 175,   // px/s a los que crece cada círculo
-  vidaOnda: 3.4,        // segundos hasta que se apaga
-
-  /* ---- LOS PECES ------------------------------------------------------ */
-  peces: 7,
-  miedoPez: 130,        // a qué distancia de una piedra se asustan
-
-  /* ---- EL CIELO REFLEJADO --------------------------------------------- */
-  estrellas: 90,
-  luna: { x: 0.74, y: 0.2, r: 0.085 },
-};
-
-/* ══════════════════════════════════════════════════════════════════════
-   La maquinaria.
-   ══════════════════════════════════════════════════════════════════════ */
-
-const mundo  = document.getElementById("mundo");
+const mundo = document.getElementById("mundo");
 const lienzo = document.getElementById("lienzo");
-const zona   = document.getElementById("toque");
-const elPie  = document.getElementById("pie");
-const ctx    = lienzo.getContext("2d", { alpha: false });
-
+const g = lienzo.getContext("2d", { alpha: false });
+const elPista = document.getElementById("pista");
 const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-let A = 0, H = 0, dpr = 1;
+const TAU = Math.PI * 2;
+const azar = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const acercar = (v, o, k, dt) => o + (v - o) * Math.exp(-k * dt);
+
+let A = 0, H = 0, dpr = 1, horizonte = 0, C = 0, F = 0;
+
+/* ══════════════════════════════════════════════════════════════════════
+   LA PERSPECTIVA
+   El agua es un plano: `x` va de lado a lado (-1..1 en la orilla de
+   delante) y `z` es la distancia (1 delante, 14 al fondo). Todo lo que
+   pasa en el agua —las ondas, los rebotes, los peces— vive ahí, y sólo al
+   pintarlo se pasa a la pantalla. Por eso las ondas de lejos salen
+   aplastadas y chiquitas, como en un lago de verdad.
+   ══════════════════════════════════════════════════════════════════════ */
+const ZMAX = 14;
+const aPantalla = (x, z, h = 0) => [A / 2 + x * F / z, horizonte + C / z - h * F / z];
+function aAgua(sx, sy) {
+  const z = C / Math.max(1, sy - horizonte);
+  return [(sx - A / 2) * z / F, clamp(z, 1, ZMAX)];
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LO QUE NO SE MUEVE: cielo, luna, orilla del fondo
+   ══════════════════════════════════════════════════════════════════════ */
+let cielo = null, orilla = null, luna = { x: 0, y: 0, r: 0 };
+const estrellas = [];
+
+function lienzoNuevo(w, h) {
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w * dpr));
+  c.height = Math.max(1, Math.round(h * dpr));
+  const x = c.getContext("2d");
+  x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return [c, x];
+}
+function pintarFijo() {
+  let x;
+  [cielo, x] = lienzoNuevo(A, horizonte + 2);
+  const gr = x.createLinearGradient(0, 0, 0, horizonte);
+  gr.addColorStop(0, "#050a1c");
+  gr.addColorStop(0.6, "#0e1a3a");
+  gr.addColorStop(1, "#27335a");
+  x.fillStyle = gr;
+  x.fillRect(0, 0, A, horizonte + 2);
+  // La Vía Láctea, apenas.
+  for (let i = 0; i < 900; i++) {
+    const t = Math.random();
+    const px = A * (0.05 + t * 0.95) + azar(-1, 1) * azar(0, 46), py = horizonte * (0.02 + t * 0.6) + azar(-1, 1) * azar(0, 30);
+    x.fillStyle = `rgba(205,212,255,${azar(0.012, 0.035)})`;
+    x.beginPath(); x.arc(px, py, azar(2, 7), 0, TAU); x.fill();
+    if (i % 3 === 0) {
+      x.fillStyle = `rgba(235,238,255,${azar(0.2, 0.6)})`;
+      x.fillRect(px + azar(-10, 10), py + azar(-8, 8), 0.8, 0.8);
+    }
+  }
+  estrellas.length = 0;
+  for (let i = 0; i < A * horizonte / 1500; i++) {
+    const s = { x: Math.random() * A, y: Math.pow(Math.random(), 1.3) * horizonte * 0.92, r: azar(0.4, 1.4), f: Math.random() * TAU };
+    estrellas.push(s);
+  }
+  luna = { x: A * 0.7, y: horizonte * 0.34, r: Math.min(A, H) * 0.06 };
+  const halo = x.createRadialGradient(luna.x, luna.y, luna.r, luna.x, luna.y, luna.r * 8);
+  halo.addColorStop(0, "rgba(255,244,220,.3)");
+  halo.addColorStop(1, "rgba(255,244,220,0)");
+  x.fillStyle = halo;
+  x.fillRect(0, 0, A, horizonte + 2);
+  const disco = x.createRadialGradient(luna.x - luna.r * 0.3, luna.y - luna.r * 0.3, 0, luna.x, luna.y, luna.r);
+  disco.addColorStop(0, "#fffdf2");
+  disco.addColorStop(1, "#e9dfc4");
+  x.fillStyle = disco;
+  x.beginPath(); x.arc(luna.x, luna.y, luna.r, 0, TAU); x.fill();
+  x.fillStyle = "rgba(190,178,150,.28)";
+  for (const [dx, dy, rr] of [[-0.3, -0.1, 0.2], [0.25, 0.3, 0.15], [0.12, -0.35, 0.11]]) {
+    x.beginPath(); x.arc(luna.x + dx * luna.r, luna.y + dy * luna.r, rr * luna.r, 0, TAU); x.fill();
+  }
+
+  // La orilla de enfrente: colinas y árboles.
+  const alto = horizonte * 0.26;
+  [orilla, x] = lienzoNuevo(A, alto);
+  x.fillStyle = "#0a1022";
+  x.beginPath();
+  x.moveTo(0, alto);
+  for (let i = 0; i <= 16; i++) x.lineTo(A * i / 16, alto * (0.45 + Math.sin(i * 1.1) * 0.12 + Math.sin(i * 0.4) * 0.1));
+  x.lineTo(A, alto); x.closePath(); x.fill();
+  x.fillStyle = "#060a17";
+  for (let i = 0; i < A / 9; i++) {
+    const cx = i * 9 + azar(-4, 4), h = azar(alto * 0.25, alto * 0.62), w = azar(4, 8);
+    x.beginPath();
+    x.moveTo(cx - w, alto);
+    x.lineTo(cx - w * 0.4, alto - h * 0.6);
+    x.lineTo(cx, alto - h);
+    x.lineTo(cx + w * 0.4, alto - h * 0.6);
+    x.lineTo(cx + w, alto);
+    x.fill();
+  }
+  // Unas lucecitas lejanas en la orilla, como de casitas.
+  for (let i = 0; i < 4; i++) {
+    const cx = azar(A * 0.08, A * 0.92), cy = alto * azar(0.8, 0.95);
+    const r = x.createRadialGradient(cx, cy, 0, cx, cy, 6);
+    r.addColorStop(0, "rgba(255,210,140,.9)");
+    r.addColorStop(1, "rgba(255,210,140,0)");
+    x.fillStyle = r;
+    x.fillRect(cx - 6, cy - 6, 12, 12);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LO QUE VIVE EN EL AGUA
+   ══════════════════════════════════════════════════════════════════════ */
+const ondas = [];         // { x, z, r, v, vida, fuerza }
+const gotas = [];         // salpicaduras, en el mundo
+const nenufares = [];
+const peces = [];
+const luces = [];         // luciérnagas sobre el agua
+const juncos = [];
+
+function sembrar() {
+  nenufares.length = 0;
+  const sitios = [[-0.9, 2.2], [-0.55, 3.4], [0.75, 2.6], [0.95, 4.6], [-1.3, 6.5], [1.6, 7.5], [-0.2, 9.5], [0.4, 5.6]];
+  for (const [x, z] of sitios) {
+    nenufares.push({ x: x * azar(0.9, 1.1), z: z * azar(0.9, 1.1), r: azar(0.12, 0.2), giro: Math.random() * TAU, flor: Math.random() < 0.45, abre: 0, bote: 0, vb: 0, brillo: 0 });
+  }
+  peces.length = 0;
+  for (let i = 0; i < 5; i++) {
+    peces.push({ x: azar(-1, 1), z: azar(2, 7), a: Math.random() * TAU, v: azar(0.15, 0.35), susto: 0, curioso: null, fase: Math.random() * TAU, color: i % 2 ? "#ff9a5c" : "#fff0e0" });
+  }
+  luces.length = 0;
+  for (let i = 0; i < 9; i++) luces.push({ x: azar(-2, 2), z: azar(1.5, 9), h: azar(0.15, 0.6), f: Math.random() * TAU, v: azar(0.4, 1) });
+  juncos.length = 0;
+  for (let i = 0; i < 26; i++) {
+    const izq = i < 13;
+    juncos.push({ x: izq ? azar(-0.02, 0.2) * A : A - azar(-0.02, 0.2) * A, alto: azar(0.12, 0.3) * H, f: Math.random() * TAU, cola: Math.random() < 0.35, doblez: 0, v: 0 });
+  }
+}
+
+/* Qué tan alto está el agua en (x, z) por las ondas que pasan. */
+function alturaAgua(x, z, t) {
+  let h = 0;
+  for (const o of ondas) {
+    const d = Math.hypot(x - o.x, z - o.z);
+    const k = d - o.r;
+    if (Math.abs(k) < 0.35) h += Math.cos(k * 18) * (1 - Math.abs(k) / 0.35) * o.vida * o.fuerza * 0.04;
+  }
+  return h;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL SONIDO
+   ══════════════════════════════════════════════════════════════════════ */
+let ac = null, salida = null;
+function despertar() {
+  if (ac) { if (ac.state === "suspended") ac.resume(); return ac; }
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+  salida = ac.createGain();
+  salida.gain.value = 0.9;
+  salida.connect(ac.destination);
+  return ac;
+}
+function ruido(dur) {
+  const n = Math.max(1, Math.floor(ac.sampleRate * dur));
+  const b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+  const s = ac.createBufferSource(); s.buffer = b; return s;
+}
+function zas(fuerza) {
+  if (!despertar()) return;
+  const t = ac.currentTime, s = ruido(0.28);
+  const f = ac.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 1.4;
+  f.frequency.setValueAtTime(700, t); f.frequency.exponentialRampToValueAtTime(2600, t + 0.2);
+  const gg = ac.createGain(); gg.gain.value = 0.05 + fuerza * 0.06;
+  s.connect(f).connect(gg).connect(salida); s.start(t);
+}
+/* El «plop»: una gota que se hunde. Más grave cuanto más grande. */
+function plop(grande, lejos) {
+  if (!despertar()) return;
+  const t = ac.currentTime;
+  const vol = (grande ? 0.3 : 0.16) * (1.2 - Math.min(1, lejos / ZMAX));
+  const o = ac.createOscillator(), gg = ac.createGain();
+  const f0 = grande ? azar(420, 520) : azar(900, 1300);
+  o.frequency.setValueAtTime(f0 * 0.6, t);
+  o.frequency.exponentialRampToValueAtTime(f0, t + 0.03);
+  o.frequency.exponentialRampToValueAtTime(f0 * 0.35, t + (grande ? 0.22 : 0.09));
+  gg.gain.setValueAtTime(0.0001, t);
+  gg.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+  gg.gain.exponentialRampToValueAtTime(0.0001, t + (grande ? 0.3 : 0.12));
+  o.connect(gg).connect(salida);
+  o.start(t); o.stop(t + 0.35);
+  const s = ruido(grande ? 0.35 : 0.1);
+  const f = ac.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 1800;
+  const gn = ac.createGain(); gn.gain.value = vol * 0.35;
+  s.connect(f).connect(gn).connect(salida); s.start(t);
+  if (grande) {
+    // Y las gotitas que caen después.
+    for (let i = 0; i < 5; i++) {
+      const tt = t + 0.18 + i * azar(0.05, 0.11);
+      const o2 = ac.createOscillator(), g2 = ac.createGain();
+      const f2 = azar(1400, 2600);
+      o2.frequency.setValueAtTime(f2, tt);
+      o2.frequency.exponentialRampToValueAtTime(f2 * 0.5, tt + 0.05);
+      g2.gain.setValueAtTime(0.0001, tt);
+      g2.gain.exponentialRampToValueAtTime(vol * 0.2, tt + 0.005);
+      g2.gain.exponentialRampToValueAtTime(0.0001, tt + 0.07);
+      o2.connect(g2).connect(salida);
+      o2.start(tt); o2.stop(tt + 0.1);
+    }
+  }
+}
+function acorde(notas) {
+  if (!despertar()) return;
+  const t = ac.currentTime;
+  notas.forEach((f, i) => {
+    for (const [m, a] of [[1, 1], [2, 0.3], [3.01, 0.1]]) {
+      const o = ac.createOscillator(), gg = ac.createGain();
+      o.frequency.value = f * m;
+      const t0 = t + i * 0.14;
+      gg.gain.setValueAtTime(0, t0);
+      gg.gain.linearRampToValueAtTime(0.045 * a, t0 + 0.02);
+      gg.gain.exponentialRampToValueAtTime(0.0001, t0 + 3.2 / m);
+      o.connect(gg).connect(salida);
+      o.start(t0); o.stop(t0 + 3.3);
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LA PIEDRA
+   ══════════════════════════════════════════════════════════════════════ */
+const piedras = [];
+let tiradas = 0;
+
+function tirar(x0, z0, vx, vz, vh, rebota) {
+  piedras.push({ x: x0, z: z0, h: 0.35, vx, vz, vh, giro: 0, rebotes: 0, puedeRebotar: rebota, forma: azar(0.7, 0.9) });
+  zas(Math.min(1, Math.hypot(vx, vz) / 8));
+}
+
+function tocarAgua(p, x, z, final) {
+  const fuerza = final ? 1 : 0.6;
+  ondas.push({ x, z, r: 0.02, v: final ? 0.5 : 0.42, vida: 1, fuerza });
+  if (final) setTimeout(() => ondas.push({ x, z, r: 0.02, v: 0.38, vida: 0.8, fuerza: 0.6 }), 180);
+  const n = final ? 26 : 10;
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * TAU, v = azar(0.2, final ? 0.9 : 0.5);
+    gotas.push({ x, z, h: 0.01, vx: Math.cos(a) * v * 0.4 + p.vx * 0.08, vz: Math.sin(a) * v * 0.4 + p.vz * 0.05, vh: azar(0.6, final ? 2.2 : 1.3), vida: 1 });
+  }
+  plop(final, z);
+  // Los nenúfares de cerca se bambolean; si le cae encima, se abre la flor.
+  for (const n2 of nenufares) {
+    const d = Math.hypot(n2.x - x, n2.z - z);
+    if (d < n2.r * 1.3) { n2.vb -= 3; n2.brillo = 1; if (n2.flor) n2.abre = 1; }
+  }
+  // Los peces se asustan... y luego vuelven a ver qué fue.
+  for (const f of peces) {
+    const d = Math.hypot(f.x - x, f.z - z);
+    if (d < 2.4) {
+      f.susto = 1;
+      f.a = Math.atan2(f.z - z, f.x - x) + azar(-0.4, 0.4);
+      f.curioso = { x, z, t: azar(2.2, 3.4) };
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LAS PALABRAS DE LUZ
+   Se escribe la frase en un lienzo escondido y se leen sus píxeles: cada
+   punto de tinta es el sitio de una chispa. Las chispas suben del sitio
+   donde se hundió la piedra y van a su letra.
+   ══════════════════════════════════════════════════════════════════════ */
+let palabra = null;       // { chispas, t, sy (línea del agua), fin }
+
+function escribir(frase, sx, sy) {
+  const LETRA = '"Great Vibes", "Snell Roundhand", "Apple Chancery", cursive';
+  let tam = clamp(Math.min(A * 0.2, H * 0.11), 44, 104);
+  const c = document.createElement("canvas");
+  let x = c.getContext("2d");
+  // Que quepa siempre de lado a lado, con aire.
+  x.font = `${tam}px ${LETRA}`;
+  const ancho0 = x.measureText(frase).width;
+  if (ancho0 > A * 0.86) tam *= (A * 0.86) / ancho0;
+  const w = Math.ceil(Math.min(ancho0, A * 0.86) + tam * 0.8), h = Math.ceil(tam * 1.7);
+  c.width = w; c.height = h;
+  x = c.getContext("2d");
+  x.font = `${tam}px ${LETRA}`;
+  x.textAlign = "center";
+  x.textBaseline = "middle";
+  x.fillStyle = "#fff";
+  x.fillText(frase, w / 2, h / 2);
+  const datos = x.getImageData(0, 0, w, h).data;
+  const puntos = [];
+  const paso = Math.max(2, Math.round(tam / 26));
+  for (let yy = 0; yy < h; yy += paso) {
+    for (let xx = 0; xx < w; xx += paso) {
+      if (datos[(yy * w + xx) * 4 + 3] > 120) puntos.push([xx - w / 2, yy - h / 2]);
+    }
+  }
+  // Dónde va la frase: encima del sitio de la piedra, sin salirse.
+  let medido = x.measureText(frase).width;
+  const cx = clamp(sx, medido / 2 + 16, A - medido / 2 - 16);
+  const cy = clamp(sy - tam * 0.85, tam, horizonte + (H - horizonte) * 0.55);
+  const lim = suave ? 260 : 620;
+  while (puntos.length > lim) puntos.splice(Math.floor(Math.random() * puntos.length), 1);
+  const chispas = puntos.map(([px, py]) => ({
+    x: sx + azar(-6, 6), y: sy + azar(-4, 4),
+    tx: cx + px, ty: cy + py,
+    vx: azar(-40, 40), vy: azar(-160, -40),
+    retraso: azar(0, 0.55) + (px + medido / 2) / Math.max(1, medido) * 0.5,
+    f: Math.random() * TAU,
+  }));
+  palabra = { chispas, t: 0, linea: sy, cx, cy, tam };
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL DEDO
+   ══════════════════════════════════════════════════════════════════════ */
+let dedo = null;
+const estela = [];
+mundo.addEventListener("pointerdown", (e) => {
+  despertar();
+  const r = mundo.getBoundingClientRect();
+  dedo = { id: e.pointerId, x: e.clientX - r.left, y: e.clientY - r.top, t: performance.now(), hist: [] };
+  dedo.hist.push([dedo.x, dedo.y, dedo.t]);
+  try { mundo.setPointerCapture(e.pointerId); } catch { /* nada */ }
+});
+mundo.addEventListener("pointermove", (e) => {
+  if (!dedo || e.pointerId !== dedo.id) return;
+  const r = mundo.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top, t = performance.now();
+  dedo.hist.push([x, y, t]);
+  if (dedo.hist.length > 8) dedo.hist.shift();
+  estela.push({ x, y, vida: 1 });
+});
+function soltar(e) {
+  if (!dedo || e.pointerId !== dedo.id) return;
+  const d = dedo;
+  dedo = null;
+  const ult = d.hist[d.hist.length - 1];
+  const pri = d.hist[0];
+  const dx = ult[0] - pri[0], dy = ult[1] - pri[1];
+  const dtt = Math.max(16, ult[2] - pri[2]) / 1000;
+  const recorrido = Math.hypot(dx, dy);
+  elPista.classList.add("is-fuera");
+  if (recorrido < 14) {
+    // Un toque: la piedra va en globo justo a ese sitio.
+    if (d.y <= horizonte + 6) return;
+    const [tx, tz] = aAgua(d.x, d.y);
+    const tVuelo = 0.9 + tz * 0.03;
+    tirar(tx * 0.3, 0.7, (tx - tx * 0.3) / tVuelo, (tz - 0.7) / tVuelo, 0, false);
+    const p = piedras[piedras.length - 1];
+    p.vh = (9.8 * tVuelo) / 2 - 0.35 / tVuelo;
+    return;
+  }
+  // Un deslizamiento: la fuerza del dedo es la de la piedra.
+  const vel = recorrido / dtt;                      // px/s
+  if (dy > -10) return;                             // hacia abajo no se tira nada
+  const fuerza = clamp(vel / 1400, 0.15, 1.6);
+  const dir = Math.atan2(dx, -dy);                  // 0 = recto hacia el fondo
+  const v = 2.2 + fuerza * 7.5;
+  const origen = aAgua(clamp(d.hist[0][0], 0, A), Math.max(horizonte + 20, H - 10));
+  tirar(clamp(origen[0], -0.8, 0.8), 0.9, Math.sin(dir) * v * 0.45, Math.cos(dir) * v, 1.1 + (1 - Math.min(1, fuerza)) * 1.6, fuerza > 0.45);
+}
+mundo.addEventListener("pointerup", soltar);
+mundo.addEventListener("pointercancel", soltar);
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+let t0 = performance.now(), reloj = 0;
+const sellos = {};
+function sello(nombre, paradas, tam = 64) {
+  const c = document.createElement("canvas");
+  c.width = c.height = tam;
+  const x = c.getContext("2d");
+  const r = x.createRadialGradient(tam / 2, tam / 2, 0, tam / 2, tam / 2, tam / 2);
+  for (const [o, col] of paradas) r.addColorStop(o, col);
+  x.fillStyle = r; x.fillRect(0, 0, tam, tam);
+  sellos[nombre] = c;
+}
+sello("oro", [[0, "rgba(255,250,225,1)"], [0.15, "rgba(255,226,150,.85)"], [0.4, "rgba(255,196,110,.25)"], [1, "rgba(255,180,90,0)"]]);
+sello("luna", [[0, "rgba(240,246,255,.9)"], [0.3, "rgba(200,220,255,.3)"], [1, "rgba(180,200,255,0)"]]);
+sello("verde", [[0, "rgba(240,255,200,1)"], [0.2, "rgba(190,255,140,.6)"], [1, "rgba(160,240,120,0)"]]);
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A) return;
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.25) dt = 1 / 60;
+  reloj += dt;
+
+  /* ---- Física de las piedras ---- */
+  for (let i = piedras.length - 1; i >= 0; i--) {
+    const p = piedras[i];
+    p.vh -= 9.8 * dt;
+    p.x += p.vx * dt; p.z += p.vz * dt; p.h += p.vh * dt;
+    p.giro += dt * 14;
+    if (p.z > ZMAX - 0.6) { p.z = ZMAX - 0.6; p.vz = 0; }
+    if (p.h <= 0) {
+      const horiz = Math.hypot(p.vx, p.vz);
+      if (p.puedeRebotar && horiz > 3.2 && p.rebotes < 7 && p.z < ZMAX - 1.5) {
+        // ¡Rebota! Cada rebote le quita velocidad y altura.
+        p.rebotes++;
+        tocarAgua(p, p.x, p.z, false);
+        p.h = 0.001;
+        p.vh = Math.max(0.8, Math.abs(p.vh) * 0.55) * (0.8 + horiz / 12);
+        p.vx *= 0.8; p.vz *= 0.78;
+      } else {
+        tocarAgua(p, p.x, p.z, true);
+        const [sx, sy] = aPantalla(p.x, p.z);
+        piedras.splice(i, 1);
+        const frase = FRASES[tiradas % FRASES.length];
+        tiradas++;
+        setTimeout(() => {
+          escribir(frase, sx, sy);
+          acorde(frase === FRASES[0] ? [523.25, 659.25, 783.99, 1046.5] : [349.23, 440, 523.25, 698.46]);
+        }, 650);
+      }
+    }
+  }
+
+  /* ---- El cielo ---- */
+  g.drawImage(cielo, 0, 0, A, horizonte + 2);
+  for (const s of estrellas) {
+    const b = 0.5 + 0.5 * Math.sin(reloj * 1.3 + s.f);
+    g.fillStyle = `rgba(235,240,255,${0.3 + b * 0.6})`;
+    g.fillRect(s.x, s.y, s.r, s.r);
+  }
+  const altoOrilla = horizonte * 0.26;
+  g.drawImage(orilla, 0, horizonte - altoOrilla, A, altoOrilla);
+
+  /* ---- El agua ---- */
+  const agua = g.createLinearGradient(0, horizonte, 0, H);
+  agua.addColorStop(0, "#1a2548");
+  agua.addColorStop(0.18, "#0e1731");
+  agua.addColorStop(1, "#040814");
+  g.fillStyle = agua;
+  g.fillRect(0, horizonte, A, H - horizonte);
+
+  // El reflejo de la orilla, al revés y temblando.
+  const franja = 3;
+  for (let yy = 0; yy < altoOrilla * 0.9; yy += franja) {
+    const k = yy / altoOrilla;
+    const off = Math.sin(reloj * 1.4 + yy * 0.35) * (0.6 + k * 3);
+    g.globalAlpha = 0.5 * (1 - k);
+    g.drawImage(orilla, 0, (altoOrilla - yy - franja) * dpr, orilla.width, franja * dpr, off, horizonte + yy, A, franja);
+  }
+  g.globalAlpha = 1;
+
+  // Las estrellas, también en el agua.
+  for (const s of estrellas) {
+    const ry = horizonte + (horizonte - s.y) * 0.7;
+    if (ry > H) continue;
+    const b = 0.5 + 0.5 * Math.sin(reloj * 2.1 + s.f);
+    g.fillStyle = `rgba(210,220,255,${(0.08 + b * 0.18) * (1 - (ry - horizonte) / (H - horizonte))})`;
+    g.fillRect(s.x + Math.sin(reloj * 2 + s.y) * 1.5, ry, s.r * 1.6, s.r * 0.6);
+  }
+
+  // El camino de la luna: rayitas de luz que se mueven con el agua.
+  g.globalCompositeOperation = "lighter";
+  for (let i = 0; i < 120; i++) {
+    const k = i / 120;
+    const y = horizonte + 2 + Math.pow(k, 1.6) * (H - horizonte) * 0.95;
+    const z = C / Math.max(1, y - horizonte);
+    const ancho = (6 + k * 60) * (0.5 + 0.5 * Math.sin(reloj * 1.7 + i * 1.3));
+    const [xw] = aAgua(luna.x, y);
+    const olas = alturaAgua(xw, z, reloj) * 900;
+    const x = luna.x + Math.sin(reloj * 1.1 + i * 0.9) * (3 + k * 18) + olas;
+    g.fillStyle = `rgba(255,240,205,${(0.4 - k * 0.3) * (0.4 + 0.6 * Math.abs(Math.sin(reloj * 0.9 + i)))})`;
+    g.fillRect(x - ancho / 2, y, ancho, 0.8 + k * 1.8);
+  }
+  g.globalAlpha = 0.28;
+  g.drawImage(sellos.luna, luna.x - luna.r * 3, horizonte + (horizonte - luna.y) * 0.5 - luna.r * 1.2, luna.r * 6, luna.r * 2.4);
+  g.globalAlpha = 1;
+  g.globalCompositeOperation = "source-over";
+
+  /* ---- Los peces, debajo del agua ---- */
+  for (const f of peces) {
+    f.fase += dt * 6;
+    if (f.curioso) {
+      f.curioso.t -= dt;
+      if (f.curioso.t <= 0) {
+        const a = Math.atan2(f.curioso.z - f.z, f.curioso.x - f.x);
+        f.a += Math.atan2(Math.sin(a - f.a), Math.cos(a - f.a)) * dt * 2;
+        if (Math.hypot(f.curioso.z - f.z, f.curioso.x - f.x) < 0.3) f.curioso = null;
+      }
+    } else f.a += Math.sin(reloj * 0.4 + f.fase * 0.05) * dt * 0.6;
+    f.susto = Math.max(0, f.susto - dt * 0.8);
+    const v = f.v * (1 + f.susto * 5);
+    f.x += Math.cos(f.a) * v * dt;
+    f.z += Math.sin(f.a) * v * dt;
+    if (f.x < -1.6 || f.x > 1.6) f.a = Math.PI - f.a;
+    if (f.z < 1.4 || f.z > 9) f.a = -f.a;
+    f.x = clamp(f.x, -1.7, 1.7); f.z = clamp(f.z, 1.3, 9.2);
+    const [sx, sy] = aPantalla(f.x, f.z);
+    const esc = F / f.z * 0.12;
+    const ang = Math.atan2(Math.sin(f.a) * (C / f.z / (F)), Math.cos(f.a));
+    g.save();
+    g.translate(sx, sy + esc * 0.6);
+    g.rotate(ang);
+    g.scale(1, 0.55);
+    g.globalAlpha = 0.28;
+    g.fillStyle = f.color;
+    g.beginPath();
+    g.ellipse(0, 0, esc, esc * 0.32, 0, 0, TAU);
+    g.fill();
+    const cola = Math.sin(f.fase) * 0.4;
+    g.beginPath();
+    g.moveTo(-esc * 0.9, 0);
+    g.lineTo(-esc * 1.45, -esc * 0.3 + cola * esc * 0.3);
+    g.lineTo(-esc * 1.45, esc * 0.3 + cola * esc * 0.3);
+    g.fill();
+    g.restore();
+  }
+  g.globalAlpha = 1;
+
+  /* ---- Las ondas ---- */
+  for (let i = ondas.length - 1; i >= 0; i--) {
+    const o = ondas[i];
+    o.r += o.v * dt * (1 - o.r * 0.12);
+    o.vida -= dt / 3.4;
+    if (o.vida <= 0) { ondas.splice(i, 1); continue; }
+    const [sx, sy] = aPantalla(o.x, o.z);
+    for (let k = 0; k < 3; k++) {
+      const r = o.r - k * 0.09;
+      if (r <= 0.01) continue;
+      const rx = r * F / o.z, ry = r * C / (o.z * o.z);
+      const a = o.vida * o.fuerza * (1 - k * 0.28);
+      g.lineWidth = Math.max(0.6, 2.2 * F / o.z / 200);
+      g.strokeStyle = `rgba(0,0,10,${a * 0.35})`;
+      g.beginPath(); g.ellipse(sx, sy + 1.2, rx, Math.max(0.5, ry), 0, 0, TAU); g.stroke();
+      g.strokeStyle = `rgba(200,220,255,${a * 0.42})`;
+      g.beginPath(); g.ellipse(sx, sy, rx, Math.max(0.5, ry), 0, 0, TAU); g.stroke();
+    }
+  }
+  if (ondas.length > 40) ondas.splice(0, ondas.length - 40);
+
+  /* ---- Los nenúfares ---- */
+  const orden = nenufares.slice().sort((a, b) => b.z - a.z);
+  for (const n of orden) {
+    n.vb += (-n.bote * 40 - n.vb * 4) * dt;
+    n.bote += n.vb * dt;
+    n.brillo = Math.max(0, n.brillo - dt * 0.5);
+    const hA = alturaAgua(n.x, n.z, reloj);
+    const [sx, sy0] = aPantalla(n.x, n.z);
+    const sy = sy0 - (hA + n.bote * 0.02) * F / n.z * 2;
+    const rx = n.r * F / n.z, ry = n.r * C / (n.z * n.z);
+    g.save();
+    g.translate(sx, sy);
+    g.fillStyle = "rgba(0,0,0,.35)";
+    g.beginPath(); g.ellipse(0, ry * 0.25, rx, ry, 0, 0, TAU); g.fill();
+    const gr = g.createLinearGradient(-rx, -ry, rx, ry);
+    gr.addColorStop(0, "#2f5a3a");
+    gr.addColorStop(1, "#0f2a1c");
+    g.fillStyle = gr;
+    g.beginPath();
+    const muesca = n.giro;
+    g.moveTo(0, 0);
+    g.ellipse(0, 0, rx, ry, 0, muesca + 0.22, muesca + TAU - 0.22);
+    g.closePath();
+    g.fill();
+    g.strokeStyle = "rgba(160,220,170,.18)";
+    g.lineWidth = 0.8;
+    g.stroke();
+    if (n.flor) {
+      n.abre = Math.max(n.abre - dt * 0.05, 0);
+      const abierta = 0.55 + n.abre * 0.45;
+      const fr = rx * 0.42;
+      for (let p = 0; p < 8; p++) {
+        const a = (p / 8) * TAU + reloj * 0.05;
+        const px = Math.cos(a) * fr * 0.3 * abierta, py = Math.sin(a) * fr * 0.12;
+        g.fillStyle = p % 2 ? "#f6b7cf" : "#ffd6e6";
+        g.beginPath();
+        g.ellipse(px, py - fr * 0.4 * abierta, fr * 0.22, fr * 0.55 * abierta, a * 0.25 + Math.cos(a) * 0.5, 0, TAU);
+        g.fill();
+      }
+      g.fillStyle = "#ffe58a";
+      g.beginPath(); g.arc(0, -fr * 0.45, fr * 0.14, 0, TAU); g.fill();
+      if (n.abre > 0.02 || n.brillo > 0.02) {
+        g.globalCompositeOperation = "lighter";
+        g.globalAlpha = Math.max(n.abre, n.brillo) * 0.8;
+        g.drawImage(sellos.oro, -fr * 1.6, -fr * 2, fr * 3.2, fr * 3.2);
+        g.globalAlpha = 1;
+        g.globalCompositeOperation = "source-over";
+      }
+    }
+    g.restore();
+  }
+
+  /* ---- Las piedras en el aire, con su sombra ---- */
+  for (const p of piedras) {
+    const [sx, sy] = aPantalla(p.x, p.z);
+    const [, syA] = aPantalla(p.x, p.z, p.h);
+    const tam = Math.max(2, 0.085 * F / p.z);
+    g.fillStyle = `rgba(0,0,0,${0.3 * Math.max(0, 1 - p.h)})`;
+    g.beginPath(); g.ellipse(sx, sy, tam, tam * 0.3, 0, 0, TAU); g.fill();
+    g.save();
+    g.translate(sx, syA);
+    g.rotate(p.giro);
+    const gr = g.createRadialGradient(-tam * 0.3, -tam * 0.3, 0, 0, 0, tam);
+    gr.addColorStop(0, "#c9c3bc");
+    gr.addColorStop(1, "#4a4541");
+    g.fillStyle = gr;
+    g.beginPath(); g.ellipse(0, 0, tam, tam * p.forma * 0.6, 0, 0, TAU); g.fill();
+    g.restore();
+  }
+
+  /* ---- Las gotas ---- */
+  g.fillStyle = "rgba(220,232,255,.85)";
+  for (let i = gotas.length - 1; i >= 0; i--) {
+    const d = gotas[i];
+    d.vh -= 9.8 * dt;
+    d.x += d.vx * dt; d.z += d.vz * dt; d.h += d.vh * dt;
+    if (d.h <= 0) {
+      if (Math.random() < 0.3) ondas.push({ x: d.x, z: d.z, r: 0.01, v: 0.25, vida: 0.5, fuerza: 0.3 });
+      gotas.splice(i, 1);
+      continue;
+    }
+    const [sx, sy] = aPantalla(d.x, d.z, d.h);
+    const r = Math.max(0.6, 0.012 * F / d.z);
+    g.beginPath(); g.arc(sx, sy, r, 0, TAU); g.fill();
+  }
+
+  /* ---- Las luciérnagas del lago, con su reflejo ---- */
+  g.globalCompositeOperation = "lighter";
+  for (const l of luces) {
+    l.f += dt * l.v;
+    l.x += Math.cos(l.f * 0.7) * dt * 0.1;
+    l.z += Math.sin(l.f * 0.5) * dt * 0.15;
+    l.z = clamp(l.z, 1.3, 10);
+    const h = l.h + Math.sin(l.f * 1.3) * 0.05;
+    const [sx, sy] = aPantalla(l.x, l.z, h);
+    const [, ry] = aPantalla(l.x, l.z, -h);
+    const b = Math.pow(0.5 + 0.5 * Math.sin(l.f * 2), 2);
+    const r = Math.max(4, 0.12 * F / l.z);
+    g.globalAlpha = b;
+    g.drawImage(sellos.verde, sx - r, sy - r, r * 2, r * 2);
+    g.globalAlpha = b * 0.3;
+    g.drawImage(sellos.verde, sx - r + Math.sin(reloj * 3) * 2, ry - r * 0.5, r * 2, r);
+  }
+  g.globalAlpha = 1;
+
+  /* ---- Las palabras de luz ---- */
+  if (palabra) {
+    palabra.t += dt;
+    const P = palabra;
+    const fin = P.t > 5.2;
+    for (const c of P.chispas) {
+      const t = P.t - c.retraso;
+      if (t < 0) continue;
+      if (!fin) {
+        const k = Math.min(1, t / 0.9);
+        c.vx += ((c.tx - c.x) * 30 * k - c.vx * 6 * k) * dt;
+        c.vy += ((c.ty - c.y) * 30 * k - c.vy * 6 * k) * dt;
+        if (k < 0.3) c.vy -= 60 * dt;
+      } else {
+        // Al final, se van cayendo al agua como una lluvia de luz.
+        c.vy += 180 * dt;
+        c.vx *= Math.exp(-dt);
+      }
+      c.x += c.vx * dt;
+      c.y += c.vy * dt;
+      const titila = 0.75 + 0.25 * Math.sin(reloj * 6 + c.f);
+      const alfa = fin ? Math.max(0, 1 - (P.t - 5.2) / 1.6) : Math.min(1, t * 2);
+      const r = (P.tam / 13) * titila;
+      g.globalAlpha = alfa * 0.9;
+      g.drawImage(sellos.oro, c.x - r, c.y - r, r * 2, r * 2);
+      // Y su reflejo en el agua, debajo de la línea del agua.
+      const ry = P.linea + (P.linea - c.y) * 0.8;
+      if (ry > P.linea && ry < H) {
+        g.globalAlpha = alfa * 0.22;
+        g.drawImage(sellos.oro, c.x - r + Math.sin(reloj * 2.4 + ry * 0.1) * 3, ry - r * 0.5, r * 2, r);
+      }
+    }
+    if (fin && P.t > 6.9) palabra = null;
+  }
+  g.globalAlpha = 1;
+  g.globalCompositeOperation = "source-over";
+
+  /* ---- Los juncos de delante ---- */
+  const viento = Math.sin(reloj * 0.6) * 0.06 + Math.sin(reloj * 1.7) * 0.02;
+  for (const j of juncos) {
+    j.v += ((viento + Math.sin(reloj * 1.2 + j.f) * 0.03) - j.doblez) * 20 * dt;
+    j.v *= Math.exp(-dt * 3);
+    j.doblez += j.v * dt;
+    const px = j.x + j.doblez * j.alto, py = H - j.alto;
+    g.strokeStyle = "#02040a";
+    g.lineWidth = 3;
+    g.beginPath();
+    g.moveTo(j.x, H + 4);
+    g.quadraticCurveTo(j.x + j.doblez * j.alto * 0.2, H - j.alto * 0.5, px, py);
+    g.stroke();
+    if (j.cola) {
+      g.fillStyle = "#1a120c";
+      g.beginPath();
+      g.ellipse(px - j.doblez * 8, py + 14, 3.4, 12, j.doblez, 0, TAU);
+      g.fill();
+    }
+  }
+
+  /* ---- El rastro del dedo ---- */
+  for (let i = estela.length - 1; i >= 0; i--) {
+    const e = estela[i];
+    e.vida -= dt * 3;
+    if (e.vida <= 0) { estela.splice(i, 1); continue; }
+    g.fillStyle = `rgba(200,220,255,${e.vida * 0.25})`;
+    g.beginPath(); g.arc(e.x, e.y, 3 * e.vida, 0, TAU); g.fill();
+  }
+
+  /* ---- La bruma sobre el agua y la viñeta ---- */
+  const bruma = g.createLinearGradient(0, horizonte - 10, 0, horizonte + (H - horizonte) * 0.3);
+  bruma.addColorStop(0, "rgba(150,170,220,.16)");
+  bruma.addColorStop(1, "rgba(150,170,220,0)");
+  g.fillStyle = bruma;
+  g.fillRect(0, horizonte - 10, A, (H - horizonte) * 0.3 + 10);
+  const vin = g.createRadialGradient(A / 2, H * 0.5, Math.min(A, H) * 0.3, A / 2, H * 0.5, Math.max(A, H) * 0.78);
+  vin.addColorStop(0, "rgba(0,0,0,0)");
+  vin.addColorStop(1, "rgba(0,0,0,.5)");
+  g.fillStyle = vin;
+  g.fillRect(0, 0, A, H);
+}
 
 function medir() {
   const r = mundo.getBoundingClientRect();
@@ -180,528 +798,20 @@ function medir() {
   const primera = !A;
   A = r.width; H = r.height;
   dpr = Math.min(window.devicePixelRatio || 1, 2);
-  lienzo.width  = Math.round(A * dpr);
+  lienzo.width = Math.round(A * dpr);
   lienzo.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  sembrarCielo();
-  if (primera) sembrarPeces();
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  horizonte = H * (A > H ? 0.36 : 0.4);
+  C = H - horizonte;
+  F = A * 0.5;
+  pintarFijo();
+  if (primera) sembrar();
 }
-new ResizeObserver(medir).observe(mundo);
-
-const azar  = (a, b) => a + Math.random() * (b - a);
-const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
-
-/* ---- El cielo reflejado ------------------------------------------------ */
-
-let estrellas = [];
-
-function sembrarCielo() {
-  const n = A * H < 200000 ? Math.round(CONF.estrellas * 0.6) : CONF.estrellas;
-  estrellas = new Array(n);
-  for (let i = 0; i < n; i++) {
-    estrellas[i] = {
-      x: Math.random() * A,
-      y: Math.random() * H,
-      r: azar(0.5, 1.7),
-      b: azar(0.25, 0.8),
-      f: Math.random() * 6.283,
-      v: azar(0.5, 1.8),
-    };
-  }
-}
-
-/* ---- Las ondas --------------------------------------------------------
-   Arrays planos y un cursor: no se crea ni un objeto por toque.         */
-
-const O = CONF.ondas;
-const ox = new Float32Array(O), oy = new Float32Array(O);
-const ot = new Float32Array(O);        // edad, en segundos
-const of_ = new Float32Array(O);       // fuerza inicial
-const ov = new Float32Array(O);        // 0 = libre
-let curO = 0;
-
-function onda(x, y, fuerza) {
-  let k = -1;
-  for (let j = 0; j < O; j++) {
-    const c = (curO + j) % O;
-    if (ov[c] <= 0) { k = c; curO = (c + 1) % O; break; }
-  }
-  if (k < 0) { k = curO; curO = (curO + 1) % O; }
-  ox[k] = x; oy[k] = y; ot[k] = 0; of_[k] = fuerza; ov[k] = 1;
-}
-
-/** Cuánto sube el agua en (x,y) ahora mismo, sumando todas las ondas. */
-function alturaAgua(x, y) {
-  let h = 0;
-  for (let i = 0; i < O; i++) {
-    if (ov[i] <= 0) continue;
-    const d = Math.hypot(x - ox[i], y - oy[i]);
-    const r = ot[i] * CONF.velocidadOnda;
-    const anillo = Math.abs(d - r);
-    if (anillo > 30) continue;
-    const decae = Math.max(0, 1 - ot[i] / CONF.vidaOnda);
-    h += Math.cos(anillo * 0.22) * Math.exp(-anillo * 0.09) * decae * of_[i];
-  }
-  return h;
-}
-
-/* ---- Los peces --------------------------------------------------------- */
-
-let peces = [];
-
-function sembrarPeces() {
-  const n = A * H < 200000 ? Math.max(3, CONF.peces - 3) : CONF.peces;
-  peces = new Array(n);
-  for (let i = 0; i < n; i++) {
-    peces[i] = {
-      x: Math.random() * A,
-      y: azar(H * 0.15, H * 0.9),
-      a: Math.random() * 6.283,
-      v: azar(22, 46),
-      cola: Math.random() * 6.283,
-      esc: azar(0.75, 1.3),
-      susto: 0,
-    };
-  }
-}
-
-/* ---- Toque ------------------------------------------------------------- */
-
-function enPantalla(e) {
-  const r = mundo.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
-}
-
-let deseosLibres = [];
-let piedras = 0;
-let arrastrando = false;
-let ultimoArrastre = 0;
-
-zona.addEventListener("pointerdown", (e) => {
-  if (e.pointerType === "mouse" && e.button !== 0) return;
-  zona.setPointerCapture(e.pointerId);
-  arrastrando = true;
-  const p = enPantalla(e);
-  tirarPiedra(p.x, p.y);
-});
-
-/* Arrastrar deja un reguero de gotitas, no piedras: una piedra por
-   toque, y las gotas sólo rizan el agua. Es lo que hace que arrastrar
-   el dedo por el lago sea agradable sin agotar los deseos. */
-zona.addEventListener("pointermove", (e) => {
-  if (!arrastrando) return;
-  const ahora = performance.now();
-  if (ahora - ultimoArrastre < 55) return;
-  ultimoArrastre = ahora;
-  const p = enPantalla(e);
-  onda(p.x, p.y, 0.32);
-  asustarPeces(p.x, p.y, 0.45);
-});
-
-const soltar = () => { arrastrando = false; };
-zona.addEventListener("pointerup", soltar);
-zona.addEventListener("pointercancel", soltar);
-
-function tirarPiedra(x, y) {
-  piedras++;
-  mundo.classList.add("is-jugando");
-  onda(x, y, 1);
-  /* Las dos ondas de detrás: una piedra no hace un solo círculo, hace
-     tres que salen uno detrás de otro. Es el detalle que separa «un
-     círculo creciendo» de «algo ha caído al agua». */
-  setTimeout(() => onda(x, y, 0.55), 90);
-  setTimeout(() => onda(x, y, 0.3), 190);
-  salpicar(x, y);
-  asustarPeces(x, y, 1);
-  plof();
-
-  if (!deseosLibres.length) deseosLibres = CONF.deseos.slice();
-  const i = Math.floor(Math.random() * deseosLibres.length);
-  const [texto, firma] = deseosLibres.splice(i, 1)[0];
-  decir(texto, firma);
-
-  mirarSecretos(x, y);
-}
-
-/* ---- Salpicaduras ------------------------------------------------------ */
-
-const gotas = [];
-function salpicar(x, y) {
-  for (let i = 0; i < 12; i++) {
-    const a = azar(0, Math.PI * 2);
-    const s = azar(50, 170);
-    gotas.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 60, v: 1, r: azar(1, 2.6) });
-  }
-  if (gotas.length > 160) gotas.splice(0, gotas.length - 160);
-}
-
-function asustarPeces(x, y, fuerza) {
-  for (const p of peces) {
-    const d = Math.hypot(p.x - x, p.y - y);
-    if (d > CONF.miedoPez) continue;
-    p.a = Math.atan2(p.y - y, p.x - x);
-    p.susto = Math.max(p.susto, fuerza * (1 - d / CONF.miedoPez));
-  }
-}
-
-/* ---- Los textos -------------------------------------------------------- */
-
-let pidiendo = null;
-let bloqueado = 0;
-
-function decir(texto, firma, importante) {
-  const ahora = performance.now();
-  if (!importante && ahora < bloqueado) return;
-  if (pidiendo === texto) return;
-  pidiendo = texto;
-  if (importante) bloqueado = ahora + 4000;
-  elPie.classList.remove("is-visible");
-  setTimeout(() => {
-    elPie.textContent = texto;
-    if (firma) {
-      const em = document.createElement("em");
-      em.textContent = firma;
-      elPie.append(em);
-    }
-    elPie.classList.add("is-visible");
-  }, suave ? 10 : 300);
-}
-
-/* ---- Sonido: un plof de verdad ----------------------------------------- */
-
-let audio = null;
-function plof() {
-  try {
-    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
-    if (audio.state === "suspended") audio.resume();
-    const t = audio.currentTime;
-    /* Un «plop» es un tono que CAE muy deprisa. Con uno fijo suena a
-       videojuego; cayendo de 700 a 90 Hz en una décima suena a agua. */
-    const o = audio.createOscillator();
-    const g = audio.createGain();
-    o.type = "sine";
-    o.frequency.setValueAtTime(azar(620, 820), t);
-    o.frequency.exponentialRampToValueAtTime(azar(80, 120), t + 0.11);
-    g.gain.setValueAtTime(0.16, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
-    o.connect(g).connect(audio.destination);
-    o.start(t); o.stop(t + 0.35);
-  } catch { /* sin sonido se moja igual */ }
-}
-
-function campana(hz) {
-  try {
-    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
-    const t = audio.currentTime;
-    const o = audio.createOscillator();
-    const g = audio.createGain();
-    o.type = "triangle";
-    o.frequency.setValueAtTime(hz, t);
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.09, t + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
-    o.connect(g).connect(audio.destination);
-    o.start(t); o.stop(t + 1.6);
-  } catch { /* nada */ }
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   LOS SECRETOS
-   ══════════════════════════════════════════════════════════════════════ */
-
-/* 1. Tirar una piedra justo encima del reflejo de la luna: se rompe en
-      mil trozos y se vuelve a juntar despacio.                          */
-let lunaRota = 0;
-
-/* 2. Tres piedras muy seguidas en el mismo sitio: sale una flor de loto
-      que se queda flotando ahí.                                         */
-const lotos = [];
-let golpes = { x: 0, y: 0, n: 0, t: 0 };
-
-/* 3. A las veintiuna piedras, un pez salta de verdad fuera del agua. */
-let saltador = null;
-
-function mirarSecretos(x, y) {
-  /* — la luna — */
-  const lx = CONF.luna.x * A, ly = CONF.luna.y * H;
-  if (Math.hypot(x - lx, y - ly) < Math.min(A, H) * CONF.luna.r * 1.5) {
-    lunaRota = 1;
-    decir("Has roto la luna.", "Tranquila, se recompone. Todo se recompone.", true);
-    campana(330);
-  }
-
-  /* — el loto — */
-  const ahora = performance.now();
-  if (Math.hypot(x - golpes.x, y - golpes.y) < 60 && ahora - golpes.t < 1400) {
-    golpes.n++;
-  } else {
-    golpes.n = 1;
-  }
-  golpes.x = x; golpes.y = y; golpes.t = ahora;
-  if (golpes.n >= 3) {
-    golpes.n = 0;
-    lotos.push({ x, y, abre: 0, giro: azar(0, 6.283), mece: Math.random() * 6.283 });
-    if (lotos.length > 6) lotos.shift();
-    decir("Ha salido una flor donde insististe.", "Casi siempre funciona así.", true);
-    campana(523);
-  }
-
-  /* — el salto — */
-  if (piedras === 21 && !saltador) {
-    const p = peces[0];
-    saltador = { x: p.x, y: p.y, t: 0, desde: p.y };
-    decir("¿Has visto eso?", "Dicen que si lo ves, se cumple.", true);
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   EL BUCLE
-   ══════════════════════════════════════════════════════════════════════ */
-
-let t0 = performance.now();
-let reloj = 0;
-
-function paso(ahora) {
-  requestAnimationFrame(paso);
-  if (!A || !H) return;
-
-  let dt = (ahora - t0) / 1000;
-  t0 = ahora;
-  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
-  else if (dt > 0.1) dt = 0.1;
-  reloj += dt;
-
-  /* --- el agua --- */
-  ctx.fillStyle = "#071722";
-  ctx.fillRect(0, 0, A, H);
-  const hondo = ctx.createLinearGradient(0, 0, 0, H);
-  hondo.addColorStop(0, "rgba(22, 58, 78, 0.9)");
-  hondo.addColorStop(0.5, "rgba(10, 30, 44, 0.7)");
-  hondo.addColorStop(1, "rgba(5, 16, 24, 0.9)");
-  ctx.fillStyle = hondo;
-  ctx.fillRect(0, 0, A, H);
-
-  /* --- envejecer las ondas --- */
-  for (let i = 0; i < O; i++) {
-    if (ov[i] <= 0) continue;
-    ot[i] += dt;
-    if (ot[i] > CONF.vidaOnda) ov[i] = 0;
-  }
-
-  /* --- el cielo reflejado, ondulado por el agua --- */
-  for (const s of estrellas) {
-    /* El reflejo se DESPLAZA con la onda: eso es lo que hace que el agua
-       parezca agua. Una estrella pintada quieta sobre unos círculos es
-       un dibujo; una que se retuerce cuando pasa la onda es un reflejo. */
-    const h = alturaAgua(s.x, s.y);
-    const dx = h * 16;
-    const dy = h * 9;
-    const b = s.b * (0.7 + 0.3 * Math.sin(reloj * s.v + s.f)) * (1 - Math.abs(h) * 0.35);
-    ctx.globalAlpha = clamp(b, 0, 1);
-    ctx.fillStyle = "#cfe8f4";
-    ctx.beginPath();
-    ctx.ellipse(s.x + dx, s.y + dy, s.r, s.r * (1 + Math.abs(h) * 1.4), 0, 0, 6.283);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-
-  /* --- la luna reflejada --- */
-  lunaRota = Math.max(0, lunaRota - dt * 0.32);
-  const lx = CONF.luna.x * A, ly = CONF.luna.y * H;
-  const lr = Math.min(A, H) * CONF.luna.r;
-  const hL = alturaAgua(lx, ly);
-  const temblor = Math.abs(hL) + lunaRota;
-  /* La silueta se recorre de arriba abajo por el canto izquierdo y vuelve
-     por el derecho, y cada punto se desplaza a lo ancho según lo que suba
-     el agua a esa altura. Cuando pasa una onda, la luna se retuerce y se
-     parte; al calmarse, se recompone sola. Eso es un reflejo, y no una
-     imagen pegada encima.
-
-     Se hace con UN SOLO trazado cerrado y no con tiras horizontales, que
-     fue el primer intento: las tiras hay que solaparlas para que no se
-     vean las juntas, y al ser translúcidas el solape suma dos veces el
-     color y salen rayas. Un trazado no tiene juntas. */
-  const pasos = 40;
-  const desvio = (ty) => alturaAgua(lx, ty) * 26
-    + Math.sin(reloj * 1.5 + ty * 0.08) * (1.6 + lunaRota * 22);
-
-  ctx.globalAlpha = clamp(0.4 * (1 - temblor * 0.5), 0, 1);
-  const gl = ctx.createRadialGradient(lx, ly - lr * 0.2, 0, lx, ly, lr * 1.15);
-  gl.addColorStop(0, "#f4fbff");
-  gl.addColorStop(0.7, "#dceefc");
-  gl.addColorStop(1, "rgba(190, 220, 240, 0.35)");
-  ctx.fillStyle = gl;
-  ctx.beginPath();
-  for (let i = 0; i <= pasos; i++) {       // canto izquierdo, bajando
-    const ty = ly - lr + (i / pasos) * lr * 2;
-    const dentro = Math.sqrt(Math.max(0, lr * lr - (ty - ly) * (ty - ly)));
-    const x = lx - dentro + desvio(ty);
-    i ? ctx.lineTo(x, ty) : ctx.moveTo(x, ty);
-  }
-  for (let i = pasos; i >= 0; i--) {       // canto derecho, subiendo
-    const ty = ly - lr + (i / pasos) * lr * 2;
-    const dentro = Math.sqrt(Math.max(0, lr * lr - (ty - ly) * (ty - ly)));
-    ctx.lineTo(lx + dentro + desvio(ty), ty);
-  }
-  ctx.closePath();
-  ctx.fill();
-  ctx.globalAlpha = 1;
-
-  /* --- los peces, por debajo del agua --- */
-  for (const p of peces) {
-    p.susto = damp(p.susto, 0, 1.4, dt);
-    const v = p.v * (1 + p.susto * 3.4);
-    p.x += Math.cos(p.a) * v * dt;
-    p.y += Math.sin(p.a) * v * dt;
-    p.a += Math.sin(reloj * 0.7 + p.cola) * 0.5 * dt;
-    p.cola += dt * (5 + p.susto * 14);
-
-    if (p.x < 20) p.a = damp(p.a, 0, 3, dt);
-    if (p.x > A - 20) p.a = damp(p.a, Math.PI, 3, dt);
-    if (p.y < H * 0.1) p.a = damp(p.a, Math.PI / 2, 3, dt);
-    if (p.y > H - 20) p.a = damp(p.a, -Math.PI / 2, 3, dt);
-    p.x = clamp(p.x, -30, A + 30);
-    p.y = clamp(p.y, H * 0.05, H - 8);
-
-    dibujarPez(p, 0.2 + p.susto * 0.18);
-  }
-
-  /* --- las ondas, dibujadas --- */
-  ctx.lineCap = "round";
-  for (let i = 0; i < O; i++) {
-    if (ov[i] <= 0) continue;
-    const r = ot[i] * CONF.velocidadOnda;
-    const k = 1 - ot[i] / CONF.vidaOnda;
-    const a = k * k * 0.55 * of_[i];
-    if (a < 0.01) continue;
-    /* Dos anillos: el de fuera es la cresta y el de dentro, el valle.
-       Con uno solo parece un aro que crece; con dos, agua. */
-    ctx.strokeStyle = `rgba(190, 232, 248, ${a})`;
-    ctx.lineWidth = 1.6 * of_[i] + k * 1.2;
-    ctx.beginPath();
-    ctx.arc(ox[i], oy[i], r, 0, 6.283);
-    ctx.stroke();
-    if (r > 16) {
-      ctx.strokeStyle = `rgba(120, 180, 210, ${a * 0.45})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(ox[i], oy[i], r - 11, 0, 6.283);
-      ctx.stroke();
-    }
-  }
-
-  /* --- los lotos (secreto 2) --- */
-  for (const f of lotos) {
-    f.abre = Math.min(1, f.abre + dt * 0.8);
-    f.mece += dt * 0.8;
-    const h = alturaAgua(f.x, f.y);
-    dibujarLoto(f.x + h * 10, f.y + h * 6, 16 + f.abre * 10, f.giro + Math.sin(f.mece) * 0.1, f.abre);
-  }
-
-  /* --- el pez que salta (secreto 3) --- */
-  if (saltador) {
-    saltador.t += dt;
-    const k = saltador.t / 1.1;
-    if (k >= 1) {
-      onda(saltador.x, saltador.desde, 0.8);
-      salpicar(saltador.x, saltador.desde);
-      plof();
-      saltador = null;
-    } else {
-      const alto = Math.sin(k * Math.PI) * 90;
-      const px = saltador.x + k * 46;
-      const py = saltador.desde - alto;
-      ctx.save();
-      ctx.translate(px, py);
-      ctx.rotate(-Math.cos(k * Math.PI) * 0.8);
-      ctx.globalAlpha = 0.95;
-      ctx.fillStyle = "#cfe8f4";
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 15, 6, 0, 0, 6.283);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(-13, 0);
-      ctx.lineTo(-23, -7);
-      ctx.lineTo(-23, 7);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-      ctx.globalAlpha = 1;
-    }
-  }
-
-  /* --- las gotas --- */
-  for (let i = gotas.length - 1; i >= 0; i--) {
-    const g = gotas[i];
-    g.v -= dt * 1.5;
-    if (g.v <= 0) { gotas.splice(i, 1); continue; }
-    g.x += g.vx * dt;
-    g.y += g.vy * dt;
-    g.vy += 340 * dt;
-    ctx.globalAlpha = g.v * 0.8;
-    ctx.fillStyle = "#dff2fb";
-    ctx.beginPath();
-    ctx.arc(g.x, g.y, g.r * g.v, 0, 6.283);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-}
-
-function dibujarPez(p, alfa) {
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  ctx.rotate(p.a);
-  ctx.globalAlpha = alfa;
-  ctx.fillStyle = "#7fb8cf";
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 11 * p.esc, 4.4 * p.esc, 0, 0, 6.283);
-  ctx.fill();
-  /* La cola se mueve: es lo único que hace falta para que nade. */
-  const c = Math.sin(p.cola) * 0.6;
-  ctx.beginPath();
-  ctx.moveTo(-9 * p.esc, 0);
-  ctx.lineTo(-17 * p.esc, -5 * p.esc + c * 5);
-  ctx.lineTo(-17 * p.esc, 5 * p.esc + c * 5);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-  ctx.globalAlpha = 1;
-}
-
-function dibujarLoto(x, y, r, giro, abre) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(giro);
-  const petalos = 8;
-  for (let i = 0; i < petalos; i++) {
-    const a = (i / petalos) * Math.PI * 2;
-    const largo = r * (0.7 + 0.3 * abre);
-    ctx.save();
-    ctx.rotate(a);
-    ctx.globalAlpha = 0.8 * abre;
-    const g = ctx.createLinearGradient(0, 0, 0, -largo);
-    g.addColorStop(0, "#ffd6e6");
-    g.addColorStop(1, "#f58cb4");
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(0, -largo * 0.55, largo * 0.26, largo * 0.55, 0, 0, 6.283);
-    ctx.fill();
-    ctx.restore();
-  }
-  ctx.globalAlpha = 0.95 * abre;
-  ctx.fillStyle = "#ffe9a8";
-  ctx.beginPath();
-  ctx.arc(0, 0, r * 0.2, 0, 6.283);
-  ctx.fill();
-  ctx.restore();
-  ctx.globalAlpha = 1;
-}
-
+new ResizeObserver(() => requestAnimationFrame(medir)).observe(mundo);
 medir();
-decir("El agua está quieta. Tira algo y pide.");
+// La letra de las frases tiene que estar lista antes de escribir con luz.
+try { document.fonts && document.fonts.load('60px "Great Vibes"'); } catch { /* sin fuentes */ }
 requestAnimationFrame(paso);
-
 })();
 </script>
 </body>

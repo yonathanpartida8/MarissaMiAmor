@@ -28,6 +28,10 @@
  *   LibroSonido.mantener(clave, c)    mientras no se suelte
  *   LibroSonido.soltar(clave)
  *   <audio data-libro-cuanto="0.05">  ese audio concreto la baja más
+ *   LibroSonido.ambiente(nodo)        conecta un sonido de ambiente (un
+ *                                     traqueteo, la lluvia) a los altavoces
+ *                                     SIN medirlo: el fondo que no para no
+ *                                     debe tener la canción apartada siempre
  *
  * El nivel es la parte de volumen que se le deja a la canción: 1 es entera,
  * 0.2 es un susurro, 0 es nada.
@@ -54,8 +58,13 @@
     mantener: function (clave, cuanto) { retenidos[clave] = cuanto == null ? L.cuanto : cuanto; revisar(); },
     soltar: function (clave) { delete retenidos[clave]; revisar(); },
   };
+  L.ambiente = function (nodo) {
+    try { return conectarReal.call(nodo, nodo.context.destination); }
+    catch (e) { return nodo.connect(nodo.context.destination); }
+  };
   window.__libroSonido = L;
   window.LibroSonido = L;
+  var conectarReal = window.AudioNode && AudioNode.prototype.connect;
 
   var retenidos = {};
   var pedidoHasta = 0, pedidoNivel = 1;
