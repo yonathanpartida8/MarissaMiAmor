@@ -5,126 +5,77 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>El tocadiscos</title>
+<script src="sonido-libro.js"></script>
+<script src="archivos.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Pinyon+Script&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
-   Todo dentro de .disco-mundo, con prefijo `ds-` en cada clase.
+   EL TOCADISCOS
+   Un tocadiscos visto desde arriba. El disco tiene cinco surcos y cada
+   uno es una canción: la que suena depende de dónde apoyes la aguja
+   (`tocadiscos musica/musica1.mp3` … `musica5.mp3`). Al cambiar de surco
+   las canciones se funden, sin cortes. Prefijo `td-`.
    ══════════════════════════════════════════════════════════════════════ */
-
-html, body { margin: 0; height: 100%; }
-
-.disco-mundo {
-  position: absolute;
+html, body { margin: 0; height: 100%; overflow: hidden; background: #1c120e; }
+.td {
+  position: fixed;
   inset: 0;
   overflow: hidden;
-  isolation: isolate;
-  contain: layout paint;
-  background:
-    radial-gradient(ellipse 110% 66% at 50% 8%, #2e2620, transparent 60%),
-    linear-gradient(174deg, #211b16 0%, #17120f 58%, #0e0b09 100%);
-  color: #e4d8c4;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
-
-  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
-  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+  font-family: "Cormorant Garamond", Georgia, serif;
+  color: #f6e7d6;
+  --seg-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seg-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
   --barra: var(--hueco-barra, 0rem);
-  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+  --suave: cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.disco-mundo .ds-lienzo {
+.td canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.td-cabeza {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  /* Los toques los recoge `.ds-toque`, que va justo encima. */
+  top: calc(var(--seg-t) + 14px);
+  left: 0; right: 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
   pointer-events: none;
-}
-
-/* El plato entero. El libro sólo se queda el barrido que empieza en sus
-   24-44 px de borde. */
-.disco-mundo .ds-toque {
-  position: absolute;
-  inset: 0;
-  touch-action: none;
-  z-index: 2;
-  cursor: grab;
-}
-.disco-mundo.is-rascando .ds-toque { cursor: grabbing; }
-
-.disco-mundo .ds-ui {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-  padding:
-    calc(var(--seguro-t) + 18px) 22px
-    calc(var(--seguro-b) + var(--barra) + 14px) 22px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
   text-align: center;
 }
-
-.disco-mundo .ds-cancion {
+.td-titulo { margin: 0; font-weight: 600; font-size: clamp(0.66rem, 2.8vw, 0.78rem); letter-spacing: 0.36em; text-transform: uppercase; color: rgba(255, 220, 190, 0.72); }
+.td-pie {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(var(--seg-b) + var(--barra) + 14px);
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  pointer-events: none;
+  text-align: center;
+}
+.td-cancion {
   margin: 0;
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-size: clamp(1rem, 4.6vw, 1.42rem);
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  color: #f0dfc2;
-  transition: opacity 600ms var(--e-suave);
+  font-family: "Pinyon Script", "Snell Roundhand", cursive;
+  font-size: clamp(1.5rem, 7vw, 2.1rem);
+  color: #ffe9d6;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+  transition: opacity 600ms var(--suave), transform 600ms var(--suave);
 }
-.disco-mundo .ds-cancion small {
-  display: block;
-  margin-top: 0.3em;
-  font-family: var(--tipo, inherit);
-  font-size: 0.5em;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  opacity: 0.5;
-}
-
-.disco-mundo .ds-pie {
-  margin: 0;
-  min-height: 3.8em;
-  max-width: 23em;
-  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
-  line-height: 1.55;
-  color: #e6dac6;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 640ms var(--e-suave), transform 640ms var(--e-suave);
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
-}
-.disco-mundo .ds-pie.is-visible { opacity: 0.94; transform: none; }
-.disco-mundo .ds-pie em {
-  display: block;
-  margin-top: 0.3em;
-  font-family: var(--tipo-mano, "Segoe Script", cursive);
-  font-size: 1.16em;
-  font-style: normal;
-  color: #e8a05c;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .disco-mundo * { transition-duration: 1ms !important; }
-}
+.td-cancion.is-fuera { opacity: 0; transform: translateY(6px); }
+.td-pista { margin: 0; font-size: clamp(0.6rem, 2.5vw, 0.7rem); font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: rgba(255, 215, 185, 0.6); }
 </style>
 </head>
 <body>
-
-<div class="disco-mundo" id="mundo">
-  <canvas class="ds-lienzo" id="lienzo"></canvas>
-  <div class="ds-toque" id="toque" aria-hidden="true"></div>
-  <div class="ds-ui">
-    <p class="ds-cancion" id="cancion" aria-live="polite">—<small>baja la aguja</small></p>
-    <p class="ds-pie" id="pie" role="status" aria-live="polite"></p>
+<div class="td" id="mundo">
+  <canvas id="lienzo"></canvas>
+  <div class="td-cabeza"><p class="td-titulo">El tocadiscos</p></div>
+  <div class="td-pie">
+    <p class="td-cancion" id="cancion">Cada surco, una canción.</p>
+    <p class="td-pista" id="pista">arrastra la aguja sobre el disco</p>
   </div>
 </div>
 
@@ -132,697 +83,524 @@ html, body { margin: 0; height: 100%; }
 (() => {
 "use strict";
 
-/* ══════════════════════════════════════════════════════════════════════
-   CONFIGURACIÓN EDITABLE
-   ══════════════════════════════════════════════════════════════════════ */
+const ARCH = (window.LIBRO_ARCHIVOS && window.LIBRO_ARCHIVOS.tocadiscos) || [];
+const SURCOS = 5;
+const NOMBRES = ["Canción uno", "Canción dos", "Canción tres", "Canción cuatro", "Canción cinco"];
+if (window.LibroSonido) window.LibroSonido.cuanto = 0.08;
 
-const CONF = {
-
-  /* ---- LA ETIQUETA DEL CENTRO ----------------------------------------- */
-  sello: "y.m",
-  sub: "grabaciones",
-
-  /* ---- LAS CANCIONES --------------------------------------------------
-     El disco tiene surcos: cada uno es una canción. Se elige bajando la
-     aguja más cerca o más lejos del centro, como en uno de verdad.
-
-     `desde` y `hasta` son la parte del radio que ocupa (0 el centro, 1 el
-     canto). `notas` es la melodía: nombre de nota y duración en negras.
-     Una `s` detrás de la letra es sostenido.                           */
-  canciones: [
-    {
-      titulo: "La que sonaba",
-      lado: "cara a · surco 1",
-      texto: "La que sonaba en el coche aquella noche.",
-      firma: "Ni te acuerdas, y yo sí.",
-      desde: 0.86, hasta: 0.98, compas: 96,
-      notas: [["E4",1],["G4",0.5],["A4",1.5],["G4",0.5],["E4",1],["D4",1],["E4",2]],
-    },
-    {
-      titulo: "Domingo por la tarde",
-      lado: "cara a · surco 2",
-      texto: "Ésta es de estar tirados sin hacer nada.",
-      firma: "Mi favorita, ya lo sabes.",
-      desde: 0.72, hasta: 0.85, compas: 76,
-      notas: [["C4",1.5],["E4",0.5],["G4",1],["F4",1],["E4",1.5],["D4",0.5],["C4",2]],
-    },
-    {
-      titulo: "Lo que no te dije",
-      lado: "cara b · surco 1",
-      texto: "Ésta la puse muchas veces sin decirte nada.",
-      firma: "Ahora ya lo sabes.",
-      desde: 0.58, hasta: 0.71, compas: 66,
-      notas: [["A3",1],["C4",1],["E4",1.5],["D4",0.5],["C4",1],["B3",1],["A3",2.5]],
-    },
-    {
-      titulo: "Y luego tú",
-      lado: "cara b · surco 2",
-      texto: "Y en medio de todo aquello, apareciste.",
-      firma: "Y se acabó el disco anterior.",
-      desde: 0.44, hasta: 0.57, compas: 108,
-      notas: [["G4",0.5],["A4",0.5],["B4",1],["D5",1],["B4",0.5],["A4",0.5],["G4",1.5],["D4",1]],
-    },
-  ],
-
-  /* ---- EL PLATO -------------------------------------------------------- */
-  rpm: 33.3,
-  surcos: 90,        // cuántas rayitas de surco se dibujan
-};
-
-/* ══════════════════════════════════════════════════════════════════════
-   La maquinaria.
-   ══════════════════════════════════════════════════════════════════════ */
-
-const mundo  = document.getElementById("mundo");
+const mundo = document.getElementById("mundo");
 const lienzo = document.getElementById("lienzo");
-const zona   = document.getElementById("toque");
-const elPie  = document.getElementById("pie");
-const elCanc = document.getElementById("cancion");
-const ctx    = lienzo.getContext("2d", { alpha: false });
-
+const g = lienzo.getContext("2d", { alpha: false });
+const elCancion = document.getElementById("cancion");
+const elPista = document.getElementById("pista");
 const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const azar  = (a, b) => a + Math.random() * (b - a);
-const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
+const TAU = Math.PI * 2;
+const azar = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const acercar = (v, o, k, dt) => o + (v - o) * Math.exp(-k * dt);
 
 let A = 0, H = 0, dpr = 1;
-let cx = 0, cy = 0, R = 0;
-/* El eje del brazo: a la derecha y un poco por encima del plato. */
-let bx = 0, by = 0, bl = 0;
+let D = { x: 0, y: 0, R: 0 };            // el disco
+let P = { x: 0, y: 0, L: 0 };            // el pivote del brazo
+let base = null, vinilo = null;
+const R_IN = 0.36, R_OUT = 0.96;          // dónde empiezan y acaban los surcos (en radios)
+
+/* De qué surco es un radio (0 fuera … 4 dentro) y en qué punto de él va. */
+function surcoDe(rr) {
+  const k = clamp((R_OUT - rr) / (R_OUT - R_IN), 0, 0.9999);
+  const s = Math.floor(k * SURCOS);
+  return [s, k * SURCOS - s];
+}
+function radioDe(s, avance) { return R_OUT - (s + avance) / SURCOS * (R_OUT - R_IN); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   PINTAR LO QUIETO: la madera y el vinilo (el vinilo gira luego entero)
+   ══════════════════════════════════════════════════════════════════════ */
+function lienzoNuevo(w, h) {
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w * dpr)); c.height = Math.max(1, Math.round(h * dpr));
+  const x = c.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return [c, x];
+}
+function pintarBase() {
+  let x;
+  [base, x] = lienzoNuevo(A, H);
+  const pared = x.createRadialGradient(A * 0.3, H * 0.2, 0, A * 0.5, H * 0.5, Math.max(A, H));
+  pared.addColorStop(0, "#3a2418"); pared.addColorStop(1, "#140a06");
+  x.fillStyle = pared; x.fillRect(0, 0, A, H);
+  // El mueble de nogal.
+  const m = D.R * 0.2;
+  const bx = D.x - D.R - m, by = D.y - D.R - m, bw = D.R * 2 + m * 2 + D.R * 0.62, bh = D.R * 2 + m * 2;
+  x.shadowColor = "rgba(0,0,0,.6)"; x.shadowBlur = 30; x.shadowOffsetY = 16;
+  const nogal = x.createLinearGradient(bx, by, bx + bw, by + bh);
+  nogal.addColorStop(0, "#7a4a2a"); nogal.addColorStop(0.5, "#5a321c"); nogal.addColorStop(1, "#3e2010");
+  x.fillStyle = nogal;
+  x.beginPath(); x.roundRect(bx, by, bw, bh, 14); x.fill();
+  x.shadowColor = "transparent";
+  for (let i = 0; i < 70; i++) {
+    x.strokeStyle = `rgba(${Math.random() < 0.5 ? "0,0,0" : "255,200,150"},${azar(0.03, 0.09)})`;
+    x.lineWidth = azar(0.5, 2);
+    const yy = by + Math.random() * bh;
+    x.beginPath(); x.moveTo(bx, yy); x.bezierCurveTo(bx + bw * 0.3, yy + azar(-8, 8), bx + bw * 0.7, yy + azar(-8, 8), bx + bw, yy + azar(-4, 4)); x.stroke();
+  }
+  x.strokeStyle = "rgba(255,210,160,.25)"; x.lineWidth = 1.5;
+  x.beginPath(); x.roundRect(bx + 4, by + 4, bw - 8, bh - 8, 11); x.stroke();
+  // El plato de aluminio, con sus puntitos estroboscópicos.
+  const plato = x.createRadialGradient(D.x - D.R * 0.3, D.y - D.R * 0.3, 0, D.x, D.y, D.R * 1.06);
+  plato.addColorStop(0, "#e6e8ea"); plato.addColorStop(1, "#8a8e94");
+  x.fillStyle = plato;
+  x.beginPath(); x.arc(D.x, D.y, D.R * 1.05, 0, TAU); x.fill();
+  // Las perillas.
+  for (const [k, lab] of [[0, "33"], [1, "45"]]) {
+    const kx = bx + bw - D.R * 0.3, ky = by + bh - D.R * (0.25 + k * 0.28);
+    const pr = x.createRadialGradient(kx - 4, ky - 4, 0, kx, ky, D.R * 0.09);
+    pr.addColorStop(0, "#f4f4f4"); pr.addColorStop(1, "#6a6e74");
+    x.fillStyle = pr; x.beginPath(); x.arc(kx, ky, D.R * 0.09, 0, TAU); x.fill();
+    x.fillStyle = "rgba(255,230,200,.6)";
+    x.font = `600 ${Math.round(D.R * 0.07)}px "Cormorant Garamond", serif`;
+    x.textAlign = "right"; x.textBaseline = "middle";
+    x.fillText(lab, kx - D.R * 0.13, ky);
+  }
+}
+function pintarVinilo() {
+  const S = D.R * 2;
+  let x;
+  [vinilo, x] = lienzoNuevo(S, S);
+  x.translate(D.R, D.R);
+  const R = D.R;
+  x.fillStyle = "#0c0b0d";
+  x.beginPath(); x.arc(0, 0, R, 0, TAU); x.fill();
+  // Surcos finísimos.
+  for (let r = R * 0.34; r < R * 0.985; r += 1.15) {
+    x.strokeStyle = `rgba(255,255,255,${azar(0.015, 0.05)})`;
+    x.lineWidth = 0.5;
+    x.beginPath(); x.arc(0, 0, r, 0, TAU); x.stroke();
+  }
+  // El hueco liso entre canción y canción.
+  for (let s = 1; s < SURCOS; s++) {
+    const r = radioDe(s, 0) * R;
+    x.strokeStyle = "rgba(255,255,255,.1)"; x.lineWidth = 2.4;
+    x.beginPath(); x.arc(0, 0, r, 0, TAU); x.stroke();
+    x.strokeStyle = "#060507"; x.lineWidth = 1.2;
+    x.beginPath(); x.arc(0, 0, r, 0, TAU); x.stroke();
+  }
+  // La etiqueta de papel, en rojo vino.
+  const et = x.createRadialGradient(-R * 0.08, -R * 0.08, 0, 0, 0, R * 0.3);
+  et.addColorStop(0, "#c8344e"); et.addColorStop(1, "#7a1428");
+  x.fillStyle = et;
+  x.beginPath(); x.arc(0, 0, R * 0.3, 0, TAU); x.fill();
+  x.strokeStyle = "rgba(255,220,200,.5)"; x.lineWidth = 1;
+  x.beginPath(); x.arc(0, 0, R * 0.26, 0, TAU); x.stroke();
+  x.fillStyle = "#ffeede";
+  x.textAlign = "center"; x.textBaseline = "middle";
+  x.font = `${Math.round(R * 0.11)}px "Pinyon Script", cursive`;
+  x.fillText("para ti", 0, -R * 0.12);
+  x.font = `600 ${Math.round(R * 0.045)}px "Cormorant Garamond", serif`;
+  x.fillText("LADO A · 33⅓", 0, R * 0.13);
+  // Un corazoncito en la etiqueta: se ve girar.
+  x.fillStyle = "#ffd0da";
+  const hs = R * 0.04, hy = R * 0.2;
+  x.beginPath();
+  x.moveTo(0, hy + hs * 0.8);
+  x.bezierCurveTo(-hs * 1.4, hy - hs * 0.1, -hs * 0.55, hy - hs * 1.05, 0, hy - hs * 0.35);
+  x.bezierCurveTo(hs * 0.55, hy - hs * 1.05, hs * 1.4, hy - hs * 0.1, 0, hy + hs * 0.8);
+  x.fill();
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL SONIDO: las canciones (archivos o melodías propias) y el vinilo
+   ══════════════════════════════════════════════════════════════════════ */
+let ac = null, salida = null, crujido = null;
+function despertar() {
+  if (ac) { if (ac.state === "suspended") ac.resume(); return ac; }
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+  salida = ac.createGain(); salida.gain.value = 0.95;
+  // Un filtro «de disco viejo» para las melodías propias.
+  salida.connect(ac.destination);
+  return ac;
+}
+function ruido(dur, curva = 3) {
+  const n = Math.max(1, Math.floor(ac.sampleRate * dur));
+  const b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, curva);
+  const s = ac.createBufferSource(); s.buffer = b; return s;
+}
+/* El crepitar del vinilo mientras gira con la aguja puesta. */
+function empezarCrujido() {
+  if (!ac || crujido) return;
+  const n = ac.sampleRate * 3;
+  const b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() < 0.0009 ? (Math.random() * 2 - 1) : 0) + (Math.random() * 2 - 1) * 0.01;
+  const s = ac.createBufferSource(); s.buffer = b; s.loop = true;
+  const f = ac.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 1200;
+  const gg = ac.createGain(); gg.gain.value = 0;
+  s.connect(f).connect(gg);
+  if (window.LibroSonido) window.LibroSonido.ambiente(gg); else gg.connect(ac.destination);
+  s.start();
+  gg.gain.setTargetAtTime(0.35, ac.currentTime, 0.2);
+  crujido = { s, gg };
+}
+function pararCrujido() {
+  if (!crujido) return;
+  crujido.gg.gain.setTargetAtTime(0, ac.currentTime, 0.2);
+  crujido.s.stop(ac.currentTime + 1);
+  crujido = null;
+}
+function golpeAguja() {
+  if (!ac) return;
+  const t = ac.currentTime, s = ruido(0.06, 5);
+  const f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 900;
+  const gg = ac.createGain(); gg.gain.value = 0.35;
+  s.connect(f).connect(gg).connect(salida); s.start(t);
+}
+
+/* ---- Las melodías propias, por si falta el archivo de un surco ---- */
+const SEMI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+const hz = (n) => { const m = /^([A-G])(b|#)?(\d)$/.exec(n); const s = SEMI[m[1]] + (m[2] === "#" ? 1 : m[2] === "b" ? -1 : 0); return 440 * Math.pow(2, (s + (+m[3] + 1) * 12 - 69) / 12); };
+const MELODIAS = [
+  { bpm: 84, tipo: "triangle", notas: "E5 D5 C5 D5 E5 E5 E5 - D5 D5 D5 - E5 G5 G5 -", bajos: "C3 G3 C3 G3" },
+  { bpm: 72, tipo: "sine", notas: "A4 C5 E5 A5 G5 E5 C5 - F4 A4 C5 F5 E5 C5 A4 -", bajos: "A2 F2 A2 F2" },
+  { bpm: 96, tipo: "triangle", notas: "G4 B4 D5 G5 F#5 D5 B4 A4 G4 - B4 D5 - A4 -", bajos: "G2 D3 G2 D3" },
+  { bpm: 66, tipo: "sine", notas: "C5 E5 G5 E5 F5 A5 G5 - E5 C5 D5 E5 C5 - - -", bajos: "C3 F3 C3 G2" },
+  { bpm: 88, tipo: "triangle", notas: "D5 F#5 A5 F#5 G5 E5 C#5 - D5 A4 B4 C#5 D5 - - -", bajos: "D3 A2 D3 A2" },
+];
+function voz(f, t, dur, tipo, vol, destino) {
+  const o = ac.createOscillator(), gg = ac.createGain(), lp = ac.createBiquadFilter();
+  o.type = tipo; o.frequency.value = f;
+  lp.type = "lowpass"; lp.frequency.value = 2400;
+  gg.gain.setValueAtTime(0, t);
+  gg.gain.linearRampToValueAtTime(vol, t + 0.02);
+  gg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(lp).connect(gg).connect(destino);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+
+/* Cada surco tiene su «pista»: un audio o una melodía, con su volumen. */
+const pistas = Array.from({ length: SURCOS }, (_, i) => ({ i, audio: null, vol: null, mel: null, fallo: !ARCH[i] }));
+let actual = -1;
+
+function prepararPista(p) {
+  if (!p.fallo && !p.audio) {
+    const a = new Audio();
+    a.preload = "auto";
+    a.src = ARCH[p.i];
+    a.loop = false;
+    a.setAttribute("data-libro-cuanto", "0.06");
+    a.addEventListener("error", () => { p.fallo = true; if (actual === p.i) arrancarMelodia(p, 0); });
+    a.addEventListener("ended", () => { if (actual === p.i) siguienteSurco(); });
+    p.audio = a;
+    if (/^https?:$/.test(location.protocol) && ac) {
+      try { const src = ac.createMediaElementSource(a); p.vol = ac.createGain(); p.vol.gain.value = 0; src.connect(p.vol).connect(ac.destination); } catch { p.vol = null; }
+    }
+  }
+}
+function volumen(p, v, seg) {
+  if (p.vol) { const gg = p.vol.gain, t = ac.currentTime; gg.cancelScheduledValues(t); gg.setValueAtTime(gg.value, t); gg.linearRampToValueAtTime(v, t + seg); }
+  else if (p.audio) {
+    const desde = p.audio.volume, t0 = performance.now();
+    const f = (ahora) => { const k = Math.min(1, (ahora - t0) / (seg * 1000)); try { p.audio.volume = clamp(desde + (v - desde) * k, 0, 1); } catch { /* iOS */ } if (k < 1) requestAnimationFrame(f); };
+    requestAnimationFrame(f);
+  }
+  if (p.mel) { const gg = p.mel.gg.gain, t = ac.currentTime; gg.cancelScheduledValues(t); gg.setValueAtTime(gg.value, t); gg.linearRampToValueAtTime(v * 0.9, t + seg); }
+}
+function arrancarMelodia(p, avance) {
+  if (!p.mel) {
+    const gg = ac.createGain(); gg.gain.value = 0;
+    gg.connect(salida);
+    const M = MELODIAS[p.i];
+    p.mel = { gg, M, beat: avance * 16, hasta: avance * 16, activa: true };
+  }
+  p.mel.activa = true;
+  volumen(p, 1, 1.2);
+}
+function programarMelodias(dt) {
+  for (const p of pistas) {
+    const m = p.mel;
+    if (!m || !m.activa) continue;
+    const bps = m.M.bpm / 60;
+    m.beat += dt * bps * velGiro;
+    const notas = m.M.notas.split(" "), bajos = m.M.bajos.split(" ");
+    const ventana = m.beat + 0.2 * bps;
+    while (m.hasta < ventana) {
+      const b = Math.ceil(m.hasta - 1e-6);
+      if (b >= ventana) break;
+      const t = ac.currentTime + Math.max(0, (b - m.beat) / bps);
+      const n = notas[((b % notas.length) + notas.length) % notas.length];
+      if (n !== "-") voz(hz(n), t, 1.2 / bps + 0.5, m.M.tipo, 0.07, m.gg);
+      if (b % 4 === 0) {
+        voz(hz(bajos[(b / 4) % bajos.length]), t, 3.6 / bps, "sine", 0.08, m.gg);
+        voz(hz(bajos[(b / 4) % bajos.length]) * 1.5, t + 1 / bps, 2 / bps, "sine", 0.03, m.gg);
+      }
+      m.hasta = b + 1;
+    }
+  }
+}
+
+/* Poner la aguja en un surco: la canción de ese surco entra y las demás se van. */
+function sonarSurco(s, avance) {
+  despertar();
+  const p = pistas[s];
+  if (actual !== s) {
+    const vieja = pistas[actual];
+    if (vieja) {
+      volumen(vieja, 0, 1.2);
+      setTimeout(() => { if (actual !== vieja.i) { if (vieja.audio) vieja.audio.pause(); if (vieja.mel) vieja.mel.activa = false; } }, 1300);
+    }
+    actual = s;
+    elCancion.classList.add("is-fuera");
+    setTimeout(() => { elCancion.textContent = NOMBRES[s]; elCancion.classList.remove("is-fuera"); }, 350);
+  }
+  prepararPista(p);
+  if (p.audio && !p.fallo) {
+    const irA = () => { if (p.audio.duration > 0) try { p.audio.currentTime = avance * p.audio.duration; } catch { /* nada */ } };
+    if (p.audio.readyState >= 1) irA(); else p.audio.addEventListener("loadedmetadata", irA, { once: true });
+    if (!p.vol) { try { p.audio.volume = 0; } catch { /* iOS */ } }
+    p.audio.playbackRate = 1;
+    const pr = p.audio.play();
+    if (pr && pr.catch) pr.catch(() => { p.fallo = true; arrancarMelodia(p, avance); });
+    volumen(p, 1, 1.2);
+  } else arrancarMelodia(p, avance);
+  empezarCrujido();
+}
+function callar() {
+  const p = pistas[actual];
+  if (p) {
+    volumen(p, 0, 0.9);
+    setTimeout(() => { if (!agujaPuesta) { if (p.audio) p.audio.pause(); if (p.mel) p.mel.activa = false; } }, 1000);
+  }
+  actual = -1;
+  pararCrujido();
+  elCancion.classList.add("is-fuera");
+  setTimeout(() => { elCancion.textContent = "Cada surco, una canción."; elCancion.classList.remove("is-fuera"); }, 350);
+}
+function siguienteSurco() {
+  if (actual < SURCOS - 1) { const s = actual + 1; agujaR = radioDe(s, 0.001); sonarSurco(s, 0); }
+  else { levantar(); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BRAZO Y LA AGUJA
+   El brazo gira sobre su pivote; la aguja está en su punta. Se arrastra
+   la aguja: si se suelta sobre el disco, baja y suena; fuera, descansa.
+   ══════════════════════════════════════════════════════════════════════ */
+let angBrazo = 0, angReposo = 0, agujaPuesta = false, agujaR = 0, altura = 1, arrastrando = null;
+let giro = 0, velGiro = 0;
+
+function puntaDe(ang) { return [P.x + Math.cos(ang) * P.L, P.y + Math.sin(ang) * P.L]; }
+function angParaRadio(rr) {
+  // El ángulo del brazo que deja la aguja a `rr` radios del centro.
+  const dx = D.x - P.x, dy = D.y - P.y, d = Math.hypot(dx, dy), r = rr * D.R;
+  const c = clamp((P.L * P.L + d * d - r * r) / (2 * P.L * d), -1, 1);
+  return Math.atan2(dy, dx) + Math.acos(c);
+}
+function levantar() {
+  agujaPuesta = false;
+  callar();
+}
+
+mundo.addEventListener("pointerdown", (e) => {
+  despertar();
+  const r = mundo.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  const [px, py] = puntaDe(angBrazo);
+  const dBrazo = distSegmento(x, y, P.x, P.y, px, py);
+  if (Math.hypot(x - px, y - py) < 46 || dBrazo < 18) {
+    arrastrando = { id: e.pointerId };
+    try { mundo.setPointerCapture(e.pointerId); } catch { /* nada */ }
+    if (agujaPuesta) { agujaPuesta = false; golpeAguja(); }
+    moverA(x, y);
+  } else if (Math.hypot(x - D.x, y - D.y) < D.R) {
+    // Tocar el disco con la aguja fuera: la aguja va sola a ese surco.
+    const rr = Math.hypot(x - D.x, y - D.y) / D.R;
+    if (rr > R_IN && rr < R_OUT) { agujaR = rr; angBrazo = angParaRadio(rr); bajar(); }
+  }
+});
+mundo.addEventListener("pointermove", (e) => {
+  if (!arrastrando || e.pointerId !== arrastrando.id) return;
+  const r = mundo.getBoundingClientRect();
+  moverA(e.clientX - r.left, e.clientY - r.top);
+});
+function soltar(e) {
+  if (!arrastrando || e.pointerId !== arrastrando.id) return;
+  arrastrando = null;
+  const [px, py] = puntaDe(angBrazo);
+  const rr = Math.hypot(px - D.x, py - D.y) / D.R;
+  if (rr > R_IN && rr < R_OUT) { agujaR = rr; bajar(); }
+  else levantar();
+}
+mundo.addEventListener("pointerup", soltar);
+mundo.addEventListener("pointercancel", soltar);
+function moverA(x, y) {
+  let a = Math.atan2(y - P.y, x - P.x);
+  const lo = angReposo - 0.05, hi = angParaRadio(R_IN * 0.9) + 0.02;
+  const lim = (v) => { while (v < lo - Math.PI) v += TAU; while (v > lo + Math.PI) v -= TAU; return clamp(v, Math.min(lo, hi), Math.max(lo, hi)); };
+  angBrazo = lim(a);
+}
+function bajar() {
+  agujaPuesta = true;
+  golpeAguja();
+  const [s, av] = surcoDe(agujaR);
+  sonarSurco(s, av);
+  elPista.textContent = "arrástrala a otro surco para cambiar";
+}
+function distSegmento(x, y, x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1, l = dx * dx + dy * dy || 1;
+  const t = clamp(((x - x1) * dx + (y - y1) * dy) / l, 0, 1);
+  return Math.hypot(x - (x1 + t * dx), y - (y1 + t * dy));
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+let t0 = performance.now(), reloj = 0;
+const notasVuelo = [], polvo = Array.from({ length: 30 }, () => ({ x: Math.random(), y: Math.random(), v: azar(0.005, 0.02), f: Math.random() * TAU }));
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A) return;
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.1) dt = 1 / 60;
+  reloj += dt;
+
+  // El plato gira a 33⅓ con la aguja puesta; al levantarla se frena despacio.
+  velGiro = acercar(velGiro, agujaPuesta ? 1 : 0, agujaPuesta ? 2.5 : 0.7, dt);
+  giro += velGiro * (33.333 / 60) * TAU * dt;
+  altura = acercar(altura, agujaPuesta ? 0 : 1, 10, dt);
+  if (ac) programarMelodias(dt);
+
+  // La aguja avanza hacia dentro lo que avanza la canción.
+  if (agujaPuesta && !arrastrando && actual >= 0) {
+    const p = pistas[actual];
+    let av;
+    if (p.audio && !p.fallo && p.audio.duration > 0) av = p.audio.currentTime / p.audio.duration;
+    else if (p.mel) { av = (p.mel.beat / 64) % 1; if (p.mel.beat >= 64 * 1) { p.mel.beat = 0; p.mel.hasta = 0; siguienteSurco(); } }
+    if (av !== undefined) { agujaR = radioDe(actual, clamp(av, 0, 0.999)); angBrazo = acercar(angBrazo, angParaRadio(agujaR), 6, dt); }
+  } else if (!arrastrando && !agujaPuesta) angBrazo = acercar(angBrazo, angReposo, 3, dt);
+  // Si se arrastra por encima del disco, se ve en qué canción caería.
+  if (arrastrando) {
+    const [px, py] = puntaDe(angBrazo);
+    const rr = Math.hypot(px - D.x, py - D.y) / D.R;
+    if (rr > R_IN && rr < R_OUT) { const [s] = surcoDe(rr); elPista.textContent = `suéltala para escuchar la ${["primera", "segunda", "tercera", "cuarta", "quinta"][s]}`; }
+    else elPista.textContent = "llévala al disco";
+  }
+
+  g.drawImage(base, 0, 0, A, H);
+
+  // El vinilo, girando.
+  g.save();
+  g.translate(D.x, D.y);
+  g.rotate(giro);
+  g.drawImage(vinilo, -D.R, -D.R, D.R * 2, D.R * 2);
+  g.restore();
+  // El brillo de la luz sobre los surcos: no gira, como en la vida real.
+  g.save();
+  g.beginPath(); g.arc(D.x, D.y, D.R * 0.99, 0, TAU); g.arc(D.x, D.y, D.R * 0.31, 0, TAU, true); g.clip();
+  const conico = g.createConicGradient ? g.createConicGradient(-0.6, D.x, D.y) : null;
+  if (conico) {
+    conico.addColorStop(0, "rgba(255,255,255,0)");
+    conico.addColorStop(0.08, "rgba(255,240,220,.16)");
+    conico.addColorStop(0.16, "rgba(255,255,255,0)");
+    conico.addColorStop(0.5, "rgba(255,255,255,0)");
+    conico.addColorStop(0.58, "rgba(200,220,255,.12)");
+    conico.addColorStop(0.66, "rgba(255,255,255,0)");
+    conico.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = conico;
+    g.fillRect(D.x - D.R, D.y - D.R, D.R * 2, D.R * 2);
+  }
+  // El surco que suena, iluminado apenas.
+  if (actual >= 0) {
+    g.strokeStyle = `rgba(255,190,150,${0.12 + 0.05 * Math.sin(reloj * 3)})`;
+    g.lineWidth = (R_OUT - R_IN) / SURCOS * D.R * 0.9;
+    g.beginPath(); g.arc(D.x, D.y, radioDe(actual, 0.5) * D.R, 0, TAU); g.stroke();
+  }
+  g.restore();
+  // El eje del centro.
+  g.fillStyle = "#d8dce0";
+  g.beginPath(); g.arc(D.x, D.y, D.R * 0.025, 0, TAU); g.fill();
+
+  // El brazo: sombra, tubo plateado, contrapeso y la cápsula con su aguja.
+  const [px, py] = puntaDe(angBrazo);
+  const sombra = 6 + altura * 10;
+  g.lineCap = "round";
+  g.strokeStyle = "rgba(0,0,0,.35)"; g.lineWidth = 7;
+  g.beginPath(); g.moveTo(P.x + sombra, P.y + sombra); g.lineTo(px + sombra, py + sombra); g.stroke();
+  const tubo = g.createLinearGradient(P.x, P.y, px, py);
+  tubo.addColorStop(0, "#f4f6f8"); tubo.addColorStop(0.5, "#9aa0a8"); tubo.addColorStop(1, "#e6e9ec");
+  g.strokeStyle = tubo; g.lineWidth = 5;
+  g.beginPath(); g.moveTo(P.x, P.y); g.lineTo(px, py); g.stroke();
+  // Contrapeso.
+  const [cxw, cyw] = [P.x - Math.cos(angBrazo) * D.R * 0.18, P.y - Math.sin(angBrazo) * D.R * 0.18];
+  g.strokeStyle = "#5a5e64"; g.lineWidth = 3;
+  g.beginPath(); g.moveTo(P.x, P.y); g.lineTo(cxw, cyw); g.stroke();
+  g.fillStyle = "#2a2c30";
+  g.beginPath(); g.arc(cxw, cyw, D.R * 0.07, 0, TAU); g.fill();
+  g.fillStyle = "#c8ccd2";
+  g.beginPath(); g.arc(P.x, P.y, D.R * 0.08, 0, TAU); g.fill();
+  g.fillStyle = "#6a6e74";
+  g.beginPath(); g.arc(P.x, P.y, D.R * 0.04, 0, TAU); g.fill();
+  g.save();
+  g.translate(px, py);
+  g.rotate(angBrazo);
+  const esc = 1 + altura * 0.08;
+  g.scale(esc, esc);
+  g.fillStyle = "#1e1f22";
+  g.fillRect(-4, -9, 22, 18);
+  g.fillStyle = "#b8284c";
+  g.fillRect(12, -9, 6, 18);
+  g.fillStyle = "#e6e9ec";
+  g.fillRect(-2, -12, 6, 4);
+  g.restore();
+  // Una lucecita donde apoya la aguja.
+  if (agujaPuesta) {
+    const lz = g.createRadialGradient(px, py, 0, px, py, 26);
+    lz.addColorStop(0, "rgba(255,210,170,.28)"); lz.addColorStop(1, "rgba(255,210,170,0)");
+    g.fillStyle = lz; g.fillRect(px - 26, py - 26, 52, 52);
+  }
+
+  // Notas que salen del disco mientras suena, y el polvito en la luz.
+  if (agujaPuesta && Math.random() < dt * 1.6) notasVuelo.push({ x: px, y: py, vx: azar(-20, 20), vy: azar(-40, -26), t: 0, gl: ["♪", "♫", "♩"][Math.floor(Math.random() * 3)], f: Math.random() * TAU });
+  g.textAlign = "center"; g.textBaseline = "middle";
+  for (let i = notasVuelo.length - 1; i >= 0; i--) {
+    const n = notasVuelo[i];
+    n.t += dt;
+    if (n.t > 3.4) { notasVuelo.splice(i, 1); continue; }
+    n.x += (n.vx + Math.sin(reloj * 2 + n.f) * 16) * dt; n.y += n.vy * dt;
+    g.globalAlpha = Math.sin(n.t / 3.4 * Math.PI) * 0.8;
+    g.fillStyle = "#ffe0c8";
+    g.font = `${18 + n.t * 3}px "Cormorant Garamond", serif`;
+    g.fillText(n.gl, n.x, n.y);
+  }
+  g.globalAlpha = 1;
+  for (const d of polvo) {
+    d.y -= d.v * dt; d.x += Math.sin(reloj * 0.4 + d.f) * 0.003 * dt;
+    if (d.y < 0) { d.y = 1; d.x = Math.random(); }
+    g.fillStyle = `rgba(255,220,180,${0.25 + 0.25 * Math.sin(reloj + d.f)})`;
+    g.beginPath(); g.arc(d.x * A, d.y * H, 1, 0, TAU); g.fill();
+  }
+}
 
 function medir() {
   const r = mundo.getBoundingClientRect();
   if (!r.width || !r.height) return;
   A = r.width; H = r.height;
   dpr = Math.min(window.devicePixelRatio || 1, 2);
-  lienzo.width  = Math.round(A * dpr);
-  lienzo.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  R = Math.min(A * 0.37, H * 0.25);
-  cx = A * 0.44;
-  cy = H * 0.46;
-  bx = cx + R * 1.16;
-  by = cy - R * 0.86;
-  bl = R * 1.42;
+  lienzo.width = Math.round(A * dpr); lienzo.height = Math.round(H * dpr);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const apaisado = A > H * 1.2;
+  const R = apaisado ? H * 0.34 : Math.min(A * 0.32, H * 0.26);
+  D = { x: A / 2 - R * 0.3, y: H * (apaisado ? 0.5 : 0.47), R };
+  P = { x: D.x + R * 1.18, y: D.y - R * 0.86 };
+  P.L = Math.hypot(D.x - P.x, D.y - P.y) * 1.02;
+  angReposo = Math.atan2(D.y + R * 1.05 - P.y, D.x + R * 1.12 - P.x);
+  if (!agujaPuesta) angBrazo = angReposo; else angBrazo = angParaRadio(agujaR);
+  pintarBase();
+  pintarVinilo();
 }
-new ResizeObserver(medir).observe(mundo);
-
-/* ---- El disco ------------------------------------------------------------- */
-
-let giro = 0;            // radianes
-let velocidad = 0;       // rad/s
-let objetivo = 0;
-let sonando = -1;        // qué canción
-let aguja = 0;           // dónde está la punta, en parte del radio (0..1)
-let agujaObj = 1.12;     // fuera del disco
-let bajada = false;
-
-/* ---- El brazo -------------------------------------------------------------- */
-
-function enPantalla(e) {
-  const r = mundo.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
-}
-
-let modo = null;   // "aguja" o "rascar"
-
-zona.addEventListener("pointerdown", (e) => {
-  if (e.pointerType === "mouse" && e.button !== 0) return;
-  zona.setPointerCapture(e.pointerId);
-  const p = enPantalla(e);
-  const d = Math.hypot(p.x - cx, p.y - cy);
-  despertar();
-  if (d < R * 1.06) {
-    /* Encima del disco: se baja la aguja ahí, y si ya está bajada, se
-       rasca. Que es lo que se hace con un disco. */
-    if (!bajada) { bajarAguja(d / R); modo = "aguja"; }
-    else { modo = "rascar"; rascando = { ang: Math.atan2(p.y - cy, p.x - cx), v: 0 }; mundo.classList.add("is-rascando"); }
-  } else {
-    /* Fuera del disco: se levanta. */
-    levantarAguja();
-    modo = null;
-  }
-});
-
-let rascando = null;
-
-zona.addEventListener("pointermove", (e) => {
-  const p = enPantalla(e);
-  if (modo === "aguja") {
-    const d = Math.hypot(p.x - cx, p.y - cy);
-    bajarAguja(clamp(d / R, 0.4, 1.02), true);
-  } else if (modo === "rascar" && rascando) {
-    const a = Math.atan2(p.y - cy, p.x - cx);
-    let dd = a - rascando.ang;
-    while (dd > Math.PI) dd -= Math.PI * 2;
-    while (dd < -Math.PI) dd += Math.PI * 2;
-    rascando.ang = a;
-    rascando.v = dd;
-    giro += dd;
-    /* Rascar cambia el tono de lo que suena, como en un disco de verdad:
-       el surco pasa más deprisa o más despacio por la aguja. */
-    if (fuenteActual) {
-      const k = clamp(1 + dd * 9, 0.25, 3.4);
-      try { fuenteActual.playbackRate.setTargetAtTime(k, audio.currentTime, 0.02); } catch { /* nada */ }
-    }
-    rascadas++;
-    mirarSecretos();
-  }
-});
-
-function soltar() {
-  if (modo === "rascar" && fuenteActual) {
-    try { fuenteActual.playbackRate.setTargetAtTime(1, audio.currentTime, 0.12); } catch { /* nada */ }
-  }
-  modo = null;
-  rascando = null;
-  mundo.classList.remove("is-rascando");
-}
-zona.addEventListener("pointerup", soltar);
-zona.addEventListener("pointercancel", soltar);
-
-function cancionEn(r) {
-  for (let i = 0; i < CONF.canciones.length; i++) {
-    const c = CONF.canciones[i];
-    if (r >= c.desde && r <= c.hasta) return i;
-  }
-  return -1;
-}
-
-function bajarAguja(r, arrastrando) {
-  agujaObj = r;
-  bajada = true;
-  objetivo = (CONF.rpm / 60) * Math.PI * 2;
-  const i = cancionEn(r);
-  if (i === sonando) return;
-  sonando = i;
-  pararCancion();
-  if (i < 0) {
-    elCanc.textContent = "";
-    elCanc.append(document.createTextNode("entre surcos"));
-    const s = document.createElement("small");
-    s.textContent = "mueve la aguja";
-    elCanc.append(s);
-    decir("Ahí no hay nada grabado.", "Sólo el ruido del vinilo.");
-    return;
-  }
-  const c = CONF.canciones[i];
-  elCanc.textContent = "";
-  elCanc.append(document.createTextNode(c.titulo));
-  const s = document.createElement("small");
-  s.textContent = c.lado;
-  elCanc.append(s);
-  decir(c.texto, c.firma, true);
-  tocarCancion(c);
-  oidas.add(i);
-  mirarSecretos();
-  if (!arrastrando) ploc();
-}
-
-function levantarAguja() {
-  if (!bajada) return;
-  bajada = false;
-  agujaObj = 1.12;
-  objetivo = 0;
-  sonando = -1;
-  pararCancion();
-  elCanc.textContent = "";
-  elCanc.append(document.createTextNode("—"));
-  const s = document.createElement("small");
-  s.textContent = "baja la aguja";
-  elCanc.append(s);
-  decir("Levantada.", "Vuelve a bajarla donde quieras.");
-}
-
-/* ---- Los textos ----------------------------------------------------------- */
-
-let pidiendo = null;
-let bloqueado = 0;
-
-function decir(texto, firma, importante) {
-  const ahora = performance.now();
-  if (!importante && ahora < bloqueado) return;
-  if (pidiendo === texto) return;
-  pidiendo = texto;
-  if (importante) bloqueado = ahora + 3600;
-  elPie.classList.remove("is-visible");
-  setTimeout(() => {
-    elPie.textContent = texto;
-    if (firma) {
-      const em = document.createElement("em");
-      em.textContent = firma;
-      elPie.append(em);
-    }
-    elPie.classList.add("is-visible");
-  }, suave ? 10 : 280);
-}
-
-/* ---- Sonido ---------------------------------------------------------------- */
-
-const SEMI = { C:0, Cs:1, D:2, Ds:3, E:4, F:5, Fs:6, G:7, Gs:8, A:9, As:10, B:11 };
-function hz(n) {
-  const m = /^([A-G]s?)(-?\d)$/.exec(n);
-  if (!m) return 440;
-  const k = SEMI[m[1]] + (Number(m[2]) + 1) * 12;
-  return 440 * Math.pow(2, (k - 69) / 12);
-}
-
-let audio = null, maestro = null;
-let ruidoNodo = null, ruidoGain = null;
-let fuenteActual = null;
-
-function despertar() {
-  try {
-    if (!audio) {
-      audio = new (window.AudioContext || window.webkitAudioContext)();
-      maestro = audio.createGain();
-      maestro.gain.value = 0.55;
-      maestro.connect(audio.destination);
-      arrancarRuido();
-    }
-    if (audio.state === "suspended") audio.resume();
-  } catch { audio = null; }
-  return audio;
-}
-
-/** El ruido del vinilo: soplido grave con chasquidos, en bucle. */
-function arrancarRuido() {
-  const seg = 3;
-  const n = audio.sampleRate * seg;
-  const buf = audio.createBuffer(1, n, audio.sampleRate);
-  const d = buf.getChannelData(0);
-  let ult = 0;
-  for (let i = 0; i < n; i++) {
-    const blanco = Math.random() * 2 - 1;
-    ult = 0.96 * ult + 0.04 * blanco;
-    d[i] = ult * 3;
-  }
-  /* Y los chasquidos: unos cuantos picos sueltos repartidos por el
-     bucle. Es lo que hace que suene a vinilo y no a radio. */
-  for (let k = 0; k < 42; k++) {
-    const i = Math.floor(Math.random() * (n - 200));
-    const fuerza = azar(0.25, 0.9);
-    for (let j = 0; j < 90; j++) d[i + j] += (Math.random() * 2 - 1) * fuerza * Math.pow(1 - j / 90, 3);
-  }
-  ruidoNodo = audio.createBufferSource();
-  ruidoNodo.buffer = buf;
-  ruidoNodo.loop = true;
-  const f = audio.createBiquadFilter();
-  f.type = "lowpass";
-  f.frequency.value = 5200;
-  ruidoGain = audio.createGain();
-  ruidoGain.gain.value = 0;
-  ruidoNodo.connect(f).connect(ruidoGain).connect(maestro);
-  ruidoNodo.start();
-}
-
-let relojCancion = null;
-
-/** Toca una melodía entera y la deja sonando en bucle. */
-function tocarCancion(c) {
-  if (!despertar()) return;
-  /* Se renderiza la melodía a un buffer y se toca como una sola fuente:
-     así rascar puede cambiar el `playbackRate` de TODO a la vez, que es
-     justo lo que hace la mano en un plato. Con notas sueltas no habría
-     manera de retorcerlas juntas. */
-  const negra = 60 / c.compas;
-  let total = 0;
-  for (const [, dur] of c.notas) total += dur * negra;
-  total += 0.6;
-
-  const sr = audio.sampleRate;
-  const buf = audio.createBuffer(1, Math.ceil(sr * total), sr);
-  const d = buf.getChannelData(0);
-
-  let t = 0.05;
-  for (const [nota, dur] of c.notas) {
-    const f = hz(nota);
-    const largo = dur * negra;
-    const i0 = Math.floor(t * sr);
-    const n = Math.floor(largo * sr);
-    for (let i = 0; i < n; i++) {
-      const k = i / n;
-      /* Envolvente de cuerda pulsada: sube rápido y cae despacio. */
-      const env = Math.min(1, k * 40) * Math.pow(1 - k, 1.5);
-      const fase = (i0 + i) / sr * f * 6.283;
-      /* Fundamental más dos armónicos suaves: suena a instrumento sin
-         llegar a sonar a sintetizador. */
-      d[i0 + i] += (Math.sin(fase) + Math.sin(fase * 2) * 0.28
-                 + Math.sin(fase * 3) * 0.12) * env * 0.22;
-    }
-    t += largo;
-  }
-
-  pararCancion();
-  const src = audio.createBufferSource();
-  src.buffer = buf;
-  src.loop = true;
-  const filtro = audio.createBiquadFilter();
-  /* Un pasa-bajos suave: el vinilo se come los agudos, y por eso suena
-     caliente. */
-  filtro.type = "lowpass";
-  filtro.frequency.value = 3400;
-  const g = audio.createGain();
-  g.gain.value = 0.85;
-  src.connect(filtro).connect(g).connect(maestro);
-  src.start();
-  fuenteActual = src;
-}
-
-function pararCancion() {
-  if (!fuenteActual) return;
-  try { fuenteActual.stop(); } catch { /* ya estaba */ }
-  fuenteActual = null;
-}
-
-/** El golpe de la aguja al posarse. */
-function ploc() {
-  if (!despertar()) return;
-  const t = audio.currentTime;
-  const n = Math.floor(audio.sampleRate * 0.05);
-  const buf = audio.createBuffer(1, n, audio.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
-  const src = audio.createBufferSource();
-  src.buffer = buf;
-  const g = audio.createGain();
-  g.gain.value = 0.3;
-  src.connect(g).connect(maestro);
-  src.start(t);
-}
-
-function campana(hzz) {
-  if (!despertar()) return;
-  const t = audio.currentTime;
-  const o = audio.createOscillator();
-  const g = audio.createGain();
-  o.type = "triangle";
-  o.frequency.setValueAtTime(hzz, t);
-  g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.08, t + 0.012);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
-  o.connect(g).connect(maestro);
-  o.start(t); o.stop(t + 1.5);
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   LOS SECRETOS
-   ══════════════════════════════════════════════════════════════════════ */
-
-/* 1. Oír los cuatro surcos: aparece un quinto, escondidísimo, pegado a
-      la etiqueta. Es el que no estaba en la funda.                    */
-const oidas = new Set();
-let elQuinto = false;
-
-/* 2. Rascar mucho: se raya el disco y a partir de ahí salta siempre en
-      el mismo sitio, con su clac.                                     */
-let rascadas = 0;
-let rayado = 0;
-let saltoReloj = 0;
-
-/* 3. Dejarlo sonando sin tocar nada tres minutos: al acabar la cara se
-      levanta el brazo solo, como hacen los buenos.                    */
-let solo = 0;
-
-function mirarSecretos() {
-  if (oidas.size >= CONF.canciones.length && !elQuinto) {
-    elQuinto = true;
-    CONF.canciones.push({
-      titulo: "Sin título",
-      lado: "surco escondido",
-      texto: "Éste no está en la funda. No tiene nombre.",
-      firma: `Lo grabé yo. Firmado ${CONF.sello}, muy pequeñito.`,
-      desde: 0.30, hasta: 0.42, compas: 58,
-      notas: [["C4",2],["E4",1],["G4",1],["C5",3],["B4",1],["G4",2]],
-    });
-    setTimeout(() => {
-      decir("Queda sitio entre el último surco y la etiqueta.", "Baja ahí la aguja.", true);
-      campana(880);
-    }, 2600);
-  }
-
-  if (rascadas > 240 && rayado <= 0) {
-    rayado = 1;
-    decir("Lo has rayado.", "Da igual. Los discos rayados son los que más se han querido.", true);
-    campana(330);
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   EL BUCLE
-   ══════════════════════════════════════════════════════════════════════ */
-
-let t0 = performance.now();
-let reloj = 0;
-
-function paso(ahora) {
-  requestAnimationFrame(paso);
-  if (!A || !H) return;
-
-  let dt = (ahora - t0) / 1000;
-  t0 = ahora;
-  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
-  else if (dt > 0.1) dt = 0.1;
-  reloj += dt;
-
-  /* El plato tiene inercia: arranca despacio y se para despacio. Eso es
-     media personalidad de un tocadiscos. */
-  velocidad = damp(velocidad, objetivo, 1.4, dt);
-  if (!rascando) giro += velocidad * dt;
-  aguja = damp(aguja, agujaObj, 5, dt);
-
-  if (ruidoGain) {
-    /* El ruido del vinilo sólo se oye con la aguja puesta, y sube un
-       poquito cuando está rayado. */
-    const v = bajada ? 0.035 + rayado * 0.02 : 0;
-    ruidoGain.gain.setTargetAtTime(v, audio.currentTime, 0.1);
-  }
-
-  /* El salto del disco rayado. */
-  if (rayado > 0 && bajada && sonando >= 0) {
-    saltoReloj -= dt;
-    if (saltoReloj <= 0) {
-      saltoReloj = azar(2.2, 4.4);
-      ploc();
-      if (fuenteActual) {
-        try { fuenteActual.playbackRate.setValueAtTime(1.6, audio.currentTime);
-              fuenteActual.playbackRate.setTargetAtTime(1, audio.currentTime + 0.06, 0.04); } catch { /* nada */ }
-      }
-    }
-  }
-
-  /* El secreto de dejarlo sonar. */
-  solo = (bajada && !modo) ? solo + dt : 0;
-  if (solo > 150 && bajada) {
-    solo = 0;
-    levantarAguja();
-    decir("Se ha acabado la cara.", "El brazo se levanta solo. Para eso lo pagué.", true);
-  }
-
-  dibujar(dt);
-}
-
-function dibujar(dt) {
-  /* --- el mueble --- */
-  ctx.fillStyle = "#17120f";
-  ctx.fillRect(0, 0, A, H);
-  const g = ctx.createLinearGradient(0, cy - R * 1.6, 0, cy + R * 1.8);
-  g.addColorStop(0, "#4e3a28");
-  g.addColorStop(0.45, "#3a2a1d");
-  g.addColorStop(1, "#241a12");
-  ctx.fillStyle = g;
-  const mx = cx - R * 1.5, my = cy - R * 1.5;
-  const mw = R * 3.0, mh = R * 3.0;
-  redondo(mx, my, mw, mh, R * 0.1);
-  ctx.fill();
-  /* La veta del mueble. */
-  ctx.globalAlpha = 0.14;
-  ctx.strokeStyle = "#8f6a44";
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 22; i++) {
-    const y = my + (i / 22) * mh;
-    ctx.beginPath();
-    ctx.moveTo(mx, y);
-    ctx.bezierCurveTo(mx + mw * 0.3, y + 3, mx + mw * 0.7, y - 3, mx + mw, y);
-    ctx.stroke();
-  }
-  ctx.globalAlpha = 1;
-
-  /* --- el fieltro del plato --- */
-  ctx.fillStyle = "#2a2018";
-  ctx.beginPath(); ctx.arc(cx, cy, R * 1.06, 0, 6.283); ctx.fill();
-
-  /* --- el disco --- */
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(giro);
-
-  ctx.fillStyle = "#13100e";
-  ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.283); ctx.fill();
-
-  /* Los surcos. Se dibujan como anillos y con una franja brillante que
-     gira: es el reflejo del vinilo, y sin él parece un cartón negro. */
-  for (let i = 0; i < CONF.surcos; i++) {
-    const t = i / CONF.surcos;
-    const rr = R * (0.3 + t * 0.68);
-    /* Los bordes de cada canción se marcan un poco más: son los huecos
-       por donde se baja la aguja. */
-    let borde = false;
-    for (const c of CONF.canciones) {
-      if (Math.abs(rr / R - c.desde) < 0.008 || Math.abs(rr / R - c.hasta) < 0.008) borde = true;
-    }
-    ctx.strokeStyle = borde ? "rgba(150, 130, 110, 0.4)" : `rgba(90, 80, 72, ${0.1 + (i % 3) * 0.035})`;
-    ctx.lineWidth = borde ? 1.4 : 0.8;
-    ctx.beginPath(); ctx.arc(0, 0, rr, 0, 6.283); ctx.stroke();
-  }
-
-  /* El brillo: dos cuñas opuestas. */
-  for (const a of [0, Math.PI]) {
-    const gl = ctx.createRadialGradient(0, 0, R * 0.3, 0, 0, R);
-    gl.addColorStop(0, "rgba(255, 228, 190, 0)");
-    gl.addColorStop(0.6, "rgba(255, 228, 190, 0.09)");
-    gl.addColorStop(1, "rgba(255, 228, 190, 0)");
-    ctx.fillStyle = gl;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.arc(0, 0, R, a - 0.42, a + 0.42);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  /* La raya del secreto 2. */
-  if (rayado > 0) {
-    ctx.strokeStyle = "rgba(210, 200, 190, 0.4)";
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.moveTo(R * 0.34, -R * 0.1);
-    ctx.lineTo(R * 0.92, R * 0.06);
-    ctx.stroke();
-  }
-
-  /* --- la etiqueta, con las iniciales --- */
-  const er = R * 0.29;
-  const eg = ctx.createRadialGradient(-er * 0.3, -er * 0.35, er * 0.1, 0, 0, er);
-  eg.addColorStop(0, "#e8b878");
-  eg.addColorStop(0.55, "#c98a48");
-  eg.addColorStop(1, "#8f5c28");
-  ctx.fillStyle = eg;
-  ctx.beginPath(); ctx.arc(0, 0, er, 0, 6.283); ctx.fill();
-  ctx.strokeStyle = "rgba(60, 34, 12, 0.4)";
-  ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.arc(0, 0, er * 0.86, 0, 6.283); ctx.stroke();
-
-  ctx.fillStyle = "#4e2c10";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.font = `600 ${Math.round(er * 0.5)}px Georgia, "Times New Roman", serif`;
-  ctx.fillText(CONF.sello, 0, -er * 0.12);
-  ctx.font = `400 ${Math.round(er * 0.16)}px ui-sans-serif, system-ui, sans-serif`;
-  ctx.fillStyle = "rgba(78, 44, 16, 0.75)";
-  ctx.fillText(CONF.sub, 0, er * 0.34);
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-
-  /* El agujero del centro. */
-  ctx.fillStyle = "#2a2018";
-  ctx.beginPath(); ctx.arc(0, 0, R * 0.026, 0, 6.283); ctx.fill();
-
-  ctx.restore();
-
-  /* --- el eje --- */
-  ctx.fillStyle = "#b8a890";
-  ctx.beginPath(); ctx.arc(cx, cy, R * 0.022, 0, 6.283); ctx.fill();
-
-  /* --- el brazo --- */
-  dibujarBrazo();
-}
-
-function dibujarBrazo() {
-  /* El ángulo del brazo sale de dónde está la aguja: se resuelve el
-     triángulo entre el eje del brazo, el centro del plato y la punta.
-     Así el brazo SIEMPRE apunta al surco, sin ajustar nada a mano. */
-  const objetivoR = aguja * R;
-  const dxc = cx - bx, dyc = cy - by;
-  const dc = Math.hypot(dxc, dyc);
-  /* Ley del coseno: el ángulo entre la recta al centro y el brazo. */
-  const cosA = clamp((bl * bl + dc * dc - objetivoR * objetivoR) / (2 * bl * dc), -1, 1);
-  const base = Math.atan2(dyc, dxc);
-  const ang = base - Math.acos(cosA);
-
-  const px = bx + Math.cos(ang) * bl;
-  const py = by + Math.sin(ang) * bl;
-
-  /* El contrapeso y el eje. */
-  ctx.fillStyle = "#3a332c";
-  ctx.beginPath(); ctx.arc(bx, by, R * 0.1, 0, 6.283); ctx.fill();
-  ctx.fillStyle = "#6b6157";
-  ctx.beginPath(); ctx.arc(bx, by, R * 0.07, 0, 6.283); ctx.fill();
-  ctx.strokeStyle = "#8f857a";
-  ctx.lineWidth = R * 0.05;
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  ctx.moveTo(bx - Math.cos(ang) * R * 0.28, by - Math.sin(ang) * R * 0.28);
-  ctx.lineTo(px, py);
-  ctx.stroke();
-  ctx.strokeStyle = "#c2b8aa";
-  ctx.lineWidth = R * 0.022;
-  ctx.beginPath();
-  ctx.moveTo(bx - Math.cos(ang) * R * 0.28, by - Math.sin(ang) * R * 0.28);
-  ctx.lineTo(px, py);
-  ctx.stroke();
-  /* El contrapeso del otro lado. */
-  ctx.fillStyle = "#2e2822";
-  ctx.beginPath();
-  ctx.arc(bx - Math.cos(ang) * R * 0.3, by - Math.sin(ang) * R * 0.3, R * 0.06, 0, 6.283);
-  ctx.fill();
-
-  /* La cápsula, torcida como las de verdad. */
-  ctx.save();
-  ctx.translate(px, py);
-  ctx.rotate(ang + 0.35);
-  ctx.fillStyle = "#4a4038";
-  redondo(-R * 0.07, -R * 0.05, R * 0.15, R * 0.1, R * 0.02);
-  ctx.fill();
-  ctx.fillStyle = bajada ? "#e8b878" : "#8f857a";
-  ctx.beginPath();
-  ctx.moveTo(R * 0.05, R * 0.04);
-  ctx.lineTo(R * 0.08, R * 0.04);
-  ctx.lineTo(R * 0.065, R * 0.1);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-
-  /* Y cuando está bajada, el puntito de luz en el surco. */
-  if (bajada && aguja <= 1.02) {
-    const gl = ctx.createRadialGradient(px, py, 0, px, py, R * 0.1);
-    gl.addColorStop(0, "rgba(255, 210, 150, 0.5)");
-    gl.addColorStop(1, "rgba(255, 210, 150, 0)");
-    ctx.fillStyle = gl;
-    ctx.beginPath(); ctx.arc(px, py, R * 0.1, 0, 6.283); ctx.fill();
-  }
-}
-
-function redondo(x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
-/* ---- Arranque -------------------------------------------------------------- */
-
+new ResizeObserver(() => requestAnimationFrame(medir)).observe(mundo);
 medir();
-aguja = agujaObj;
-decir("Un disco puesto y sin sonar. Toca donde quieras empezar.");
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(medir));
 requestAnimationFrame(paso);
-
 })();
 </script>
 </body>
