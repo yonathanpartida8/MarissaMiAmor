@@ -5,142 +5,58 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>La tormenta</title>
+<script src="sonido-libro.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Caveat:wght@500&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
-   Todo dentro de .tormenta-mundo, con prefijo `tm-` en cada clase.
+   LA TORMENTA — «Cuenta hasta el trueno»
+   Primero llega el ambiente: el viento, la lluvia, destellos lejos.
+   Luego, cada relámpago: cuentas los segundos y tocas cuando suena el
+   trueno. Si aciertas, la tormenta se acerca… hasta que pasa por encima.
+   Prefijo `tm-`.
    ══════════════════════════════════════════════════════════════════════ */
-
-html, body { margin: 0; height: 100%; }
-
-.tormenta-mundo {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  isolation: isolate;
-  contain: layout paint;
-  background: #0a0e18;
-  color: #d8e0f0;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: none;
-
-  --seguro-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
-  --seguro-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
+html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0c16; }
+.tm {
+  position: fixed; inset: 0; overflow: hidden;
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: none;
+  font-family: "Cormorant Garamond", Georgia, serif; color: #eef0ff;
+  --seg-t: var(--seguro-arriba, env(safe-area-inset-top, 0px));
+  --seg-b: var(--seguro-abajo, env(safe-area-inset-bottom, 0px));
   --barra: var(--hueco-barra, 0rem);
-  --e-suave: cubic-bezier(0.22, 1, 0.36, 1);
+  --suave: cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.tormenta-mundo .tm-lienzo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  /* Los toques los recoge `.tm-toque`, que va justo encima. */
-  pointer-events: none;
+.tm canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.tm-cabeza { position: absolute; top: calc(var(--seg-t) + 12px); left: 0; right: 0; display: grid; justify-items: center; gap: 2px; pointer-events: none; text-align: center; }
+.tm-titulo { margin: 0; font-weight: 600; font-size: clamp(0.66rem, 2.8vw, 0.78rem); letter-spacing: 0.36em; text-transform: uppercase; color: rgba(210, 220, 255, 0.7); }
+.tm-distancia { margin: 0; font-size: 0.74rem; letter-spacing: 0.2em; color: rgba(200, 215, 255, 0.55); }
+.tm-cuenta {
+  position: absolute; left: 0; right: 0; top: 34%; margin: 0; text-align: center; pointer-events: none;
+  font-weight: 500; font-size: clamp(3.4rem, 22vw, 6rem); line-height: 1; color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 0 30px rgba(170, 190, 255, 0.6);
+  opacity: 0; transform: scale(0.8);
+  transition: opacity 200ms ease, transform 300ms var(--suave);
 }
-
-/* El cielo entero. El libro sólo se queda el barrido que empieza en sus
-   24-44 px de borde. */
-.tormenta-mundo .tm-toque {
-  position: absolute;
-  inset: 0;
-  touch-action: none;
-  z-index: 2;
-  cursor: pointer;
-}
-
-.tormenta-mundo .tm-ui {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-  padding:
-    calc(var(--seguro-t) + 20px) 22px
-    calc(var(--seguro-b) + var(--barra) + 16px) 22px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  text-align: center;
-}
-
-.tormenta-mundo .tm-titulo {
-  margin: 0;
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-size: clamp(1rem, 4.4vw, 1.4rem);
-  font-weight: 500;
-  letter-spacing: 0.07em;
-  color: #8e9ec4;
-  opacity: 0.8;
-  transition: opacity 900ms var(--e-suave);
-}
-.tormenta-mundo.is-contando .tm-titulo { opacity: 0.16; }
-
-.tormenta-mundo .tm-pie {
-  margin: 0;
-  min-height: 3.8em;
-  max-width: 23em;
-  font-size: clamp(0.82rem, 3.4vw, 0.97rem);
-  line-height: 1.55;
-  color: #dde4f4;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 680ms var(--e-suave), transform 680ms var(--e-suave);
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
-}
-.tormenta-mundo .tm-pie.is-visible { opacity: 0.94; transform: none; }
-.tormenta-mundo .tm-pie em {
-  display: block;
-  margin-top: 0.3em;
-  font-family: var(--tipo-mano, "Segoe Script", cursive);
-  font-size: 1.16em;
-  font-style: normal;
-  color: #ffd08a;
-}
-
-/* La cuenta de segundos, grandísima y en el medio. */
-.tormenta-mundo .tm-cuenta {
-  position: absolute;
-  left: 50%; top: 44%;
-  transform: translate(-50%, -50%) scale(0.86);
-  font-family: var(--tipo-titulo, Georgia, serif);
-  font-size: clamp(3rem, 16vw, 5.4rem);
-  font-variant-numeric: tabular-nums;
-  color: rgba(226, 236, 255, 0.9);
-  text-shadow: 0 0 36px rgba(150, 190, 255, 0.5);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 3;
-  transition: opacity 260ms var(--e-suave), transform 420ms var(--e-suave);
-}
-.tormenta-mundo .tm-cuenta.is-visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-.tormenta-mundo .tm-cuenta small {
-  display: block;
-  font-family: var(--tipo, inherit);
-  font-size: 0.2em;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  opacity: 0.6;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tormenta-mundo * { transition-duration: 1ms !important; }
-}
+.tm-cuenta.is-ve { opacity: 1; transform: none; }
+.tm-pie { position: absolute; left: 0; right: 0; bottom: calc(var(--seg-b) + var(--barra) + 16px); display: grid; justify-items: center; gap: 3px; padding: 0 22px; pointer-events: none; text-align: center; }
+.tm-frase { margin: 0; max-width: 20em; font-style: italic; font-weight: 500; font-size: clamp(1.05rem, 4.8vw, 1.32rem); line-height: 1.3; color: #f4f6ff; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9); transition: opacity 700ms var(--suave), transform 700ms var(--suave); }
+.tm-firma { margin: 0; font-family: "Caveat", cursive; font-size: clamp(1rem, 4.4vw, 1.22rem); color: #b8c8ff; transition: opacity 700ms var(--suave) 200ms; }
+.tm-frase.is-fuera { opacity: 0; transform: translateY(6px); }
+.tm-firma.is-fuera { opacity: 0; transition-delay: 0ms; }
+.tm-pista { margin: 4px 0 0; font-size: clamp(0.58rem, 2.4vw, 0.68rem); font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: rgba(200, 215, 255, 0.55); }
 </style>
 </head>
 <body>
-
-<div class="tormenta-mundo" id="mundo">
-  <canvas class="tm-lienzo" id="lienzo"></canvas>
-  <div class="tm-toque" id="toque" aria-hidden="true"></div>
-  <p class="tm-cuenta" id="cuenta" aria-hidden="true">0<small>segundos</small></p>
-  <div class="tm-ui">
-    <h1 class="tm-titulo" id="titulo">Cuenta hasta el trueno</h1>
-    <p class="tm-pie" id="pie" role="status" aria-live="polite"></p>
+<div class="tm" id="mundo">
+  <canvas id="lienzo"></canvas>
+  <div class="tm-cabeza"><p class="tm-titulo">Cuenta hasta el trueno</p><p class="tm-distancia" id="distancia"></p></div>
+  <p class="tm-cuenta" id="cuenta"></p>
+  <div class="tm-pie">
+    <p class="tm-frase" id="frase" role="status" aria-live="polite">Escucha… se está armando.</p>
+    <p class="tm-firma is-fuera" id="firma"></p>
+    <p class="tm-pista" id="pista">toca la pantalla para empezar</p>
   </div>
 </div>
 
@@ -148,607 +64,431 @@ html, body { margin: 0; height: 100%; }
 (() => {
 "use strict";
 
-/* ══════════════════════════════════════════════════════════════════════
-   CONFIGURACIÓN EDITABLE
-   ══════════════════════════════════════════════════════════════════════ */
-
 const CONF = {
-
-  /* ---- LA REGLA DEL JUEGO ---------------------------------------------
-     Se cuenta desde el relámpago hasta el trueno, y esos segundos por
-     343 metros dan lo lejos que está. Es de verdad: el sonido va a esa
-     velocidad. Aquí, además, la tormenta SE ACERCA cada vez que lo
-     aciertas, y por eso los números bajan.                             */
   metrosPorSegundo: 343,
-  distanciaInicial: 12,      // segundos de partida
-  seAcerca: 1.6,             // cuánto se acerca en cada rayo acertado
-  margenAcierto: 0.9,        // segundos de margen para darlo por bueno
-
-  /* ---- LO QUE SE DICE SEGÚN SE ACERCA ---------------------------------- */
+  distanciaInicial: 11,
+  seAcerca: 2,
+  margenAcierto: 0.9,
   tramos: [
-    { s: 10, texto: "Está lejísimos. Ni se oye bien.",           firma: "Tenemos tiempo." },
-    { s: 7,  texto: "Se acerca. Ya se nota el aire raro.",       firma: "Huele a lluvia." },
-    { s: 4,  texto: "Ahí está, encima del pueblo de al lado.",   firma: "Entra, anda." },
-    { s: 2,  texto: "Justo encima. Se oye a la vez.",            firma: "Aquí dentro no pasa nada." },
-    { s: 0,  texto: "Ya está pasando.",                          firma: "Como todas. Siempre pasa." },
+    { s: 10, texto: "Está lejísimos. Apenas se oye.", firma: "tenemos tiempo" },
+    { s: 7, texto: "Se acerca. El aire ya huele a lluvia.", firma: "cuenta conmigo" },
+    { s: 4, texto: "Ya está más cerca.", firma: "no tengas miedo" },
+    { s: 2, texto: "Justo encima. Suenan casi juntos.", firma: "aquí estoy contigo" },
   ],
-
-  /* ---- LO QUE SE LEE AL ACERTAR ---------------------------------------- */
   aciertos: [
-    ["Justo. Eso es lo que está de lejos.", "Me lo enseñaste tú."],
-    ["Otra vez clavado.", "Contando juntos no falla."],
-    ["Se te da mejor que a mí.", "Cuento demasiado rápido, dices."],
-    ["Un segundo menos.", "Cada vez más cerca y cada vez menos miedo."],
-    ["Ya casi no hay que contar.", "Es lo que tiene estar dentro."],
+    ["¡Justo! Así de lejos está.", "contando juntos no falla"],
+    ["Otra vez clavado.", "eres buenísima para esto"],
+    ["Un segundo menos.", "cada vez más cerca y menos miedo"],
+    ["Ya casi no hay que contar.", "agárrate fuerte"],
   ],
-  falloLargo: "Te has pasado contando. Ya había sonado.",
-  falloCorto: "Demasiado pronto. Espera a oírlo.",
-
-  /* ---- LA LLUVIA -------------------------------------------------------- */
-  gotas: 230,
-  viento: 0.32,
+  falloLargo: "Te pasaste contando. Ya había sonado.",
+  falloCorto: "Muy pronto. Espera a oírlo.",
+  final: ["Ya pasó la tormenta.", "y yo sigo aquí contigo"],
 };
 
-/* ══════════════════════════════════════════════════════════════════════
-   La maquinaria.
-   ══════════════════════════════════════════════════════════════════════ */
-
-const mundo  = document.getElementById("mundo");
+const mundo = document.getElementById("mundo");
 const lienzo = document.getElementById("lienzo");
-const zona   = document.getElementById("toque");
-const elPie  = document.getElementById("pie");
-const elCue  = document.getElementById("cuenta");
-const ctx    = lienzo.getContext("2d", { alpha: false });
-
+const g = lienzo.getContext("2d", { alpha: false });
+const elFrase = document.getElementById("frase");
+const elFirma = document.getElementById("firma");
+const elPista = document.getElementById("pista");
+const elCuenta = document.getElementById("cuenta");
+const elDist = document.getElementById("distancia");
 const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const azar  = (a, b) => a + Math.random() * (b - a);
-const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-const damp  = (act, obj, k, dt) => obj + (act - obj) * Math.exp(-k * dt);
+const TAU = Math.PI * 2;
+const azar = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const acercar = (v, o, k, dt) => o + (v - o) * Math.exp(-k * dt);
 
-let A = 0, H = 0, dpr = 1;
+let A = 0, H = 0, dpr = 1, horizonte = 0;
+let paisaje = null, nubesLejos = null, nubesCerca = null;
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL PAISAJE Y LAS NUBES (pintados una vez)
+   ══════════════════════════════════════════════════════════════════════ */
+function lienzoNuevo(w, h) {
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w * dpr)); c.height = Math.max(1, Math.round(h * dpr));
+  const x = c.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return [c, x];
+}
+function capaNubes(w, h, n, tono, alfa) {
+  // Manchas suaves que no tocan los bordes de arriba/abajo y se repiten
+  // a los lados, para que la capa se pueda desplazar sin costuras.
+  const [c, x] = lienzoNuevo(w, h);
+  for (let i = 0; i < n; i++) {
+    const r = azar(h * 0.14, h * 0.34);
+    const cx = Math.random() * w, cy = azar(r * 0.3, h - r);
+    for (const dx of [-w, 0, w]) {
+      const gr = x.createRadialGradient(cx + dx, cy, 0, cx + dx, cy, r);
+      gr.addColorStop(0, `rgba(${tono},${alfa})`);
+      gr.addColorStop(0.55, `rgba(${tono},${alfa * 0.45})`);
+      gr.addColorStop(1, `rgba(${tono},0)`);
+      x.fillStyle = gr; x.fillRect(cx + dx - r, cy - r, r * 2, r * 2);
+    }
+  }
+  return c;
+}
+function pintarPaisaje() {
+  let x;
+  [paisaje, x] = lienzoNuevo(A, H);
+  // Colinas, un árbol solo y una casita con su ventana encendida.
+  x.fillStyle = "#0b0e1a";
+  x.beginPath(); x.moveTo(0, H);
+  for (let i = 0; i <= 20; i++) x.lineTo(A * i / 20, horizonte + Math.sin(i * 0.7) * H * 0.02 + Math.sin(i * 0.23) * H * 0.03);
+  x.lineTo(A, H); x.fill();
+  x.fillStyle = "#07090f";
+  x.beginPath(); x.moveTo(0, H);
+  for (let i = 0; i <= 20; i++) x.lineTo(A * i / 20, horizonte + H * 0.07 + Math.sin(i * 1.1 + 2) * H * 0.02);
+  x.lineTo(A, H); x.fill();
+  const ax = A * 0.22, ay = horizonte + H * 0.05;
+  x.strokeStyle = "#07090f"; x.lineWidth = 6; x.lineCap = "round";
+  x.beginPath(); x.moveTo(ax, ay + 10); x.lineTo(ax, ay - H * 0.09); x.stroke();
+  x.lineWidth = 2.4;
+  for (const [dx, dy, l] of [[-1, -0.07, 0.05], [1, -0.08, 0.06], [-1, -0.05, 0.04], [1, -0.04, 0.035]]) {
+    x.beginPath(); x.moveTo(ax, ay + dy * H); x.lineTo(ax + dx * l * H, ay + (dy - 0.035) * H); x.stroke();
+  }
+  const hx = A * 0.7, hy = horizonte + H * 0.06;
+  x.fillStyle = "#06080e";
+  x.fillRect(hx - 22, hy - 18, 44, 20);
+  x.beginPath(); x.moveTo(hx - 28, hy - 18); x.lineTo(hx, hy - 36); x.lineTo(hx + 28, hy - 18); x.fill();
+  x.fillStyle = "#ffcf7a"; x.fillRect(hx - 12, hy - 12, 8, 7);
+  const vv = x.createRadialGradient(hx - 8, hy - 8, 0, hx - 8, hy - 8, 26);
+  vv.addColorStop(0, "rgba(255,200,110,.35)"); vv.addColorStop(1, "rgba(255,200,110,0)");
+  x.fillStyle = vv; x.fillRect(hx - 40, hy - 40, 64, 64);
+  nubesLejos = capaNubes(A * 2, horizonte * 1.05, 46, "70,78,110", 0.5);
+  nubesCerca = capaNubes(A * 2, horizonte * 0.8, 34, "30,34,54", 0.85);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL RAYO: una línea que se quiebra al azar y echa ramas
+   ══════════════════════════════════════════════════════════════════════ */
+function hacerRayo(x0, y0, x1, y1, grosor, prof) {
+  let pts = [[x0, y0], [x1, y1]];
+  let desv = Math.hypot(x1 - x0, y1 - y0) * 0.22;
+  for (let n = 0; n < 7; n++) {
+    const nuevos = [pts[0]];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+      nuevos.push([(ax + bx) / 2 + azar(-desv, desv), (ay + by) / 2 + azar(-desv, desv) * 0.3], pts[i + 1]);
+    }
+    pts = nuevos;
+    desv *= 0.55;
+  }
+  const ramas = [];
+  if (prof < 2) {
+    for (let i = 4; i < pts.length - 6; i += 3) {
+      if (Math.random() < 0.18) {
+        const [bx, by] = pts[i];
+        const l = azar(0.1, 0.3) * (y1 - y0);
+        ramas.push(hacerRayo(bx, by, bx + azar(-1, 1) * l * 0.7, by + l, grosor * 0.5, prof + 1));
+      }
+    }
+  }
+  return { pts, grosor, ramas };
+}
+function pintarRayo(r, alfa) {
+  for (const [ancho, col] of [[r.grosor * 7, `rgba(140,160,255,${0.12 * alfa})`], [r.grosor * 3, `rgba(190,205,255,${0.35 * alfa})`], [r.grosor, `rgba(255,255,255,${alfa})`]]) {
+    g.strokeStyle = col; g.lineWidth = ancho; g.lineJoin = "round"; g.lineCap = "round";
+    g.beginPath(); g.moveTo(r.pts[0][0], r.pts[0][1]);
+    for (const p of r.pts) g.lineTo(p[0], p[1]);
+    g.stroke();
+  }
+  for (const b of r.ramas) pintarRayo(b, alfa * 0.8);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL SONIDO: lluvia, viento y truenos de verdad
+   ══════════════════════════════════════════════════════════════════════ */
+let ac = null, salida = null, lluviaS = null, vientoS = null;
+function ruidoMarron(seg) {
+  const n = Math.floor(ac.sampleRate * seg);
+  const b = ac.createBuffer(2, n, ac.sampleRate);
+  for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); let u = 0; for (let i = 0; i < n; i++) { u = (u + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = u * 3.5; } }
+  return b;
+}
+function ruidoBlanco(seg) {
+  const n = Math.floor(ac.sampleRate * seg);
+  const b = ac.createBuffer(2, n, ac.sampleRate);
+  for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; }
+  return b;
+}
+function despertar() {
+  if (ac) { if (ac.state === "suspended") ac.resume(); return ac; }
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+  salida = ac.createGain(); salida.gain.value = 0.95;
+  const comp = ac.createDynamicsCompressor();
+  salida.connect(comp).connect(ac.destination);
+  // La lluvia y el viento son ambiente: no apartan la canción del libro.
+  const conectar = (n) => { if (window.LibroSonido) window.LibroSonido.ambiente(n); else n.connect(ac.destination); };
+  const s = ac.createBufferSource(); s.buffer = ruidoBlanco(3); s.loop = true;
+  const hp = ac.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 900;
+  const lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 7000;
+  const gg = ac.createGain(); gg.gain.value = 0;
+  s.connect(hp).connect(lp).connect(gg); conectar(gg); s.start();
+  lluviaS = gg;
+  const v = ac.createBufferSource(); v.buffer = ruidoMarron(4); v.loop = true;
+  const vf = ac.createBiquadFilter(); vf.type = "bandpass"; vf.frequency.value = 400; vf.Q.value = 0.5;
+  const vg = ac.createGain(); vg.gain.value = 0;
+  v.connect(vf).connect(vg); conectar(vg); v.start();
+  vientoS = { vg, vf };
+  return ac;
+}
+/* El trueno: `cerca` va de 0 (lejísimos, un rumor grave) a 1 (encima:
+   un chasquido seco y luego el retumbo que llena todo). */
+function trueno(cerca) {
+  if (!ac) return;
+  const t = ac.currentTime;
+  const dur = 3.5 + cerca * 3;
+  const s = ac.createBufferSource(); s.buffer = ruidoMarron(dur + 0.5);
+  const lp = ac.createBiquadFilter(); lp.type = "lowpass";
+  lp.frequency.setValueAtTime(180 + cerca * 900, t);
+  lp.frequency.exponentialRampToValueAtTime(90 + cerca * 60, t + dur);
+  const gg = ac.createGain();
+  gg.gain.setValueAtTime(0.0001, t);
+  gg.gain.exponentialRampToValueAtTime(0.5 + cerca * 0.9, t + 0.08 + (1 - cerca) * 0.5);
+  // Retumba: sube y baja varias veces mientras se apaga.
+  let k = t + 0.3;
+  while (k < t + dur) { gg.gain.linearRampToValueAtTime((0.2 + Math.random() * 0.6) * (1 - (k - t) / dur) * (0.6 + cerca), k); k += azar(0.15, 0.5); }
+  gg.gain.linearRampToValueAtTime(0.0001, t + dur);
+  const pan = ac.createStereoPanner ? ac.createStereoPanner() : null;
+  if (pan) { pan.pan.value = azar(-0.5, 0.5); s.connect(lp).connect(gg).connect(pan).connect(salida); } else s.connect(lp).connect(gg).connect(salida);
+  s.start(t);
+  if (cerca > 0.55) {
+    const c = ac.createBufferSource(); c.buffer = ruidoBlanco(0.4);
+    const hp = ac.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 1500;
+    const cg = ac.createGain();
+    cg.gain.setValueAtTime(0.9 * cerca, t); cg.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+    c.connect(hp).connect(cg).connect(salida); c.start(t);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL JUEGO
+   ══════════════════════════════════════════════════════════════════════ */
+let fase = "espera";                 // espera · ambiente · calma · contar · pasada
+let distancia = CONF.distanciaInicial;
+let intensidad = 0, intObj = 0;      // de la lluvia
+let relojFase = 0, relojRayo = 0, tRayo = 0, tocado = false, nAcierto = 0;
+let rayos = [], fogonazo = 0, lejanos = 0;
+
+function decir(f, s) {
+  elFrase.classList.add("is-fuera"); elFirma.classList.add("is-fuera");
+  setTimeout(() => { elFrase.textContent = f; elFrase.classList.remove("is-fuera"); elFirma.textContent = s || ""; elFirma.classList.toggle("is-fuera", !s); }, suave ? 20 : 400);
+}
+function mostrarDistancia() { elDist.textContent = distancia > 0 ? `a unos ${Math.round(distancia * CONF.metrosPorSegundo / 100) / 10} km` : ""; }
+
+function relampago(cerca) {
+  const x0 = azar(A * 0.15, A * 0.85);
+  const destino = cerca > 0.8 ? H * 0.92 : horizonte + azar(-10, 30);
+  rayos.push({ r: hacerRayo(x0, azar(0, horizonte * 0.25), x0 + azar(-A * 0.25, A * 0.25), destino, 1.2 + cerca * 2.8, 0), t: 0, cerca });
+  fogonazo = 0.5 + cerca * 0.6;
+}
+
+window.__tormenta = { rayo: (c) => relampago(c) };
+mundo.addEventListener("pointerdown", () => {
+  despertar();
+  if (fase === "espera") {
+    fase = "ambiente"; relojFase = 0; intObj = 0.3;
+    elPista.textContent = "escucha…";
+    return;
+  }
+  if (fase === "contar" && !tocado) {
+    tocado = true;
+    const pasado = relojFase;
+    const dif = pasado - distancia;
+    if (Math.abs(dif) <= CONF.margenAcierto) {
+      nAcierto++;
+      decir(...CONF.aciertos[(nAcierto - 1) % CONF.aciertos.length]);
+      distancia = Math.max(0, distancia - CONF.seAcerca);
+      contar.acerto = true;
+    } else if (dif > 0) decir(CONF.falloLargo);
+    else decir(CONF.falloCorto);
+  }
+  if (fase === "pasada" && relojFase > 2) { fase = "espera"; contar.ultimo = null; distancia = CONF.distanciaInicial; nAcierto = 0; mostrarDistancia(); decir("Otra tormenta a lo lejos…"); elPista.textContent = "toca para empezar"; }
+});
+
+function avanzar(dt) {
+  relojFase += dt;
+  if (fase === "ambiente") {
+    // Primero el ambiente: el viento, la lluvia creciendo y destellos lejos.
+    intObj = Math.min(0.55, 0.3 + relojFase * 0.05);
+    if (Math.random() < dt * 0.6) lejanos = 1;
+    if (relojFase > 5.5) { fase = "calma"; relojFase = 0; relojRayo = azar(1, 2.5); decir("Ahora cuenta desde el relámpago…", "y toca cuando suene el trueno"); elPista.textContent = "cuenta en voz bajita"; mostrarDistancia(); }
+  } else if (fase === "calma") {
+    relojRayo -= dt;
+    if (Math.random() < dt * 0.3) lejanos = 0.6;
+    if (relojRayo <= 0) {
+      const cerca = 1 - distancia / CONF.distanciaInicial;
+      relampago(cerca);
+      relojFase = 0; tocado = false;
+      tRayo = distancia;
+      if (distancia <= 0.01) { fase = "fin"; trueno(1); final(); }
+      else fase = "contar";
+    }
+  } else if (fase === "contar") {
+    // Los segundos van apareciendo, uno por uno, hasta que suena.
+    const seg = Math.floor(relojFase);
+    if (!contar.sonado && seg >= 1) { elCuenta.textContent = String(seg); elCuenta.classList.add("is-ve"); }
+    if (relojFase >= tRayo && !contar.sonado) {
+      contar.sonado = true;
+      trueno(1 - distancia / CONF.distanciaInicial);
+      sacudida = 0.4 + (1 - distancia / CONF.distanciaInicial) * 0.6;
+      elCuenta.classList.remove("is-ve");
+    }
+    if (relojFase > tRayo + 1.8) {
+      contar.sonado = false;
+      if (!tocado) decir("Sonó en el " + Math.round(tRayo) + ".", "a la próxima cuentas conmigo");
+      // Aunque no acierte, la tormenta sigue viniendo, solo más despacio.
+      if (!tocado || !contar.acerto) distancia = Math.max(0, distancia - 1);
+      contar.acerto = false;
+      const tr = CONF.tramos.filter((x) => x.s >= distancia - 0.01).pop() || CONF.tramos[CONF.tramos.length - 1];
+      if (tr !== contar.ultimo) { contar.ultimo = tr; setTimeout(() => decir(tr.texto, tr.firma), 1800); }
+      mostrarDistancia();
+      intObj = 0.4 + (1 - distancia / CONF.distanciaInicial) * 0.6;
+      fase = "calma"; relojFase = 0; relojRayo = azar(3, 6);
+    }
+  } else if (fase === "pasada") {
+    intObj = Math.max(0, 0.6 - relojFase * 0.08);
+  }
+}
+const contar = { sonado: false, ultimo: null };
+let sacudida = 0, estrellasVer = 0;
+function final() {
+  sacudida = 1;
+  setTimeout(() => {
+    fase = "pasada"; relojFase = 0;
+    decir(...CONF.final);
+    elPista.textContent = "toca para otra tormenta";
+    elDist.textContent = "";
+  }, 3500);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL BUCLE
+   ══════════════════════════════════════════════════════════════════════ */
+const gotas = [], salpicas = [];
+let t0 = performance.now(), reloj = 0;
+
+function paso(ahora) {
+  requestAnimationFrame(paso);
+  if (!A) return;
+  let dt = (ahora - t0) / 1000;
+  t0 = ahora;
+  if (!(dt > 0) || dt > 0.1) dt = 1 / 60;
+  reloj += dt;
+  avanzar(dt);
+  intensidad = acercar(intensidad, intObj, 0.5, dt);
+  if (lluviaS && ac) {
+    lluviaS.gain.setTargetAtTime(intensidad * 0.22, ac.currentTime, 0.4);
+    vientoS.vg.gain.setTargetAtTime(0.05 + intensidad * 0.18 * (0.6 + 0.4 * Math.sin(reloj * 0.5)), ac.currentTime, 0.6);
+    vientoS.vf.frequency.setTargetAtTime(300 + Math.sin(reloj * 0.3) * 150, ac.currentTime, 0.5);
+  }
+  fogonazo *= Math.exp(-dt * 5);
+  lejanos *= Math.exp(-dt * 6);
+  sacudida *= Math.exp(-dt * 4);
+  const viento = 0.25 + intensidad * 0.35;
+
+  g.save();
+  if (sacudida > 0.02) g.translate(azar(-1, 1) * sacudida * 6, azar(-1, 1) * sacudida * 4);
+
+  // El cielo: más oscuro y cerrado cuanto más cerca está la tormenta.
+  const cerrado = fase === "pasada" ? Math.max(0, 1 - relojFase / 6) : 0.4 + intensidad * 0.6;
+  const cielo = g.createLinearGradient(0, 0, 0, horizonte);
+  cielo.addColorStop(0, `rgb(${12 + (1 - cerrado) * 10},${14 + (1 - cerrado) * 14},${28 + (1 - cerrado) * 30})`);
+  cielo.addColorStop(1, `rgb(${40 - cerrado * 14},${44 - cerrado * 14},${70 - cerrado * 20})`);
+  g.fillStyle = cielo; g.fillRect(-10, -10, A + 20, H + 20);
+  // Al pasar la tormenta, salen las estrellas y la luna.
+  estrellasVer = acercar(estrellasVer, fase === "pasada" ? 1 : 0, 0.4, dt);
+  if (estrellasVer > 0.02) {
+    for (let i = 0; i < 80; i++) { const sx = (i * 97.3) % A, sy = (i * 53.7) % (horizonte * 0.8); g.fillStyle = `rgba(255,255,255,${estrellasVer * (0.4 + 0.5 * Math.sin(reloj * 2 + i))})`; g.fillRect(sx, sy, 1.3, 1.3); }
+    g.fillStyle = `rgba(255,246,220,${estrellasVer})`; g.beginPath(); g.arc(A * 0.8, horizonte * 0.25, Math.min(A, H) * 0.045, 0, TAU); g.fill();
+  }
+  // Nubes, iluminadas desde dentro con cada destello.
+  const luzN = fogonazo + lejanos * 0.35;
+  const offL = (reloj * 6 * (1 + intensidad)) % (A * 2), offC = (reloj * 14 * (1 + intensidad)) % (A * 2);
+  g.globalAlpha = cerrado;
+  for (const k of [0, A * 2]) {
+    g.drawImage(nubesLejos, k - offL, 0, A * 2, horizonte * 1.05);
+    g.drawImage(nubesCerca, k - offC, -horizonte * 0.08, A * 2, horizonte * 0.8);
+  }
+  g.globalAlpha = 1;
+  if (luzN > 0.02) {
+    g.globalCompositeOperation = "lighter";
+    const lx = rayos.length ? rayos[rayos.length - 1].r.pts[0][0] : A * azar(0.2, 0.8);
+    const gl = g.createRadialGradient(lx, horizonte * 0.3, 0, lx, horizonte * 0.3, A * 0.9);
+    gl.addColorStop(0, `rgba(170,180,255,${luzN * 0.8})`); gl.addColorStop(1, "rgba(170,180,255,0)");
+    g.fillStyle = gl; g.fillRect(0, 0, A, horizonte * 1.3);
+    g.globalCompositeOperation = "source-over";
+  }
+
+  // Los rayos: parpadean un par de veces antes de apagarse.
+  for (let i = rayos.length - 1; i >= 0; i--) {
+    const r = rayos[i];
+    r.t += dt;
+    if (r.t > 0.6) { rayos.splice(i, 1); continue; }
+    const alfa = r.t < 0.08 ? 1 : r.t < 0.14 ? 0.2 : r.t < 0.22 ? 0.9 : Math.max(0, 1 - (r.t - 0.22) / 0.38);
+    g.globalCompositeOperation = "lighter";
+    pintarRayo(r.r, alfa);
+    g.globalCompositeOperation = "source-over";
+  }
+
+  g.drawImage(paisaje, 0, 0, A, H);
+  // Con el fogonazo, el paisaje se ve un instante.
+  if (fogonazo > 0.03) {
+    g.fillStyle = `rgba(200,210,255,${fogonazo * 0.28})`;
+    g.fillRect(0, horizonte - 40, A, H);
+  }
+
+  // La lluvia, inclinada por el viento, y sus salpicaduras.
+  const nObj = Math.floor(intensidad * 420);
+  while (gotas.length < nObj) gotas.push({ x: Math.random() * A * 1.3 - A * 0.15, y: Math.random() * -H, v: azar(700, 1100), l: azar(10, 22), z: Math.random() });
+  if (gotas.length > nObj) gotas.length = nObj;
+  g.strokeStyle = `rgba(190,205,240,${0.25 + fogonazo * 0.4})`;
+  g.lineWidth = 1;
+  g.beginPath();
+  for (const d of gotas) {
+    d.y += d.v * dt * (0.6 + d.z * 0.5);
+    d.x += d.v * viento * dt * 0.35;
+    const suelo = horizonte + H * 0.08 + d.z * (H - horizonte - H * 0.08);
+    if (d.y > suelo) {
+      if (Math.random() < 0.3) salpicas.push({ x: d.x, y: suelo, t: 0 });
+      d.y = azar(-80, -10); d.x = Math.random() * A * 1.3 - A * 0.15;
+    }
+    g.moveTo(d.x, d.y);
+    g.lineTo(d.x - viento * d.l * 0.35, d.y - d.l * (0.6 + d.z * 0.6));
+  }
+  g.stroke();
+  g.strokeStyle = "rgba(200,215,245,.4)";
+  for (let i = salpicas.length - 1; i >= 0; i--) {
+    const s = salpicas[i];
+    s.t += dt;
+    if (s.t > 0.25) { salpicas.splice(i, 1); continue; }
+    const k = s.t / 0.25;
+    g.globalAlpha = 1 - k;
+    g.beginPath(); g.ellipse(s.x, s.y, 1 + k * 5, 0.5 + k * 1.2, 0, Math.PI, TAU); g.stroke();
+  }
+  g.globalAlpha = 1;
+  if (salpicas.length > 200) salpicas.splice(0, salpicas.length - 200);
+
+  // El destello final, que llena toda la pantalla.
+  if (fogonazo > 0.5) { g.fillStyle = `rgba(235,240,255,${(fogonazo - 0.5) * 0.9})`; g.fillRect(-10, -10, A + 20, H + 20); }
+  g.restore();
+}
 
 function medir() {
   const r = mundo.getBoundingClientRect();
   if (!r.width || !r.height) return;
   A = r.width; H = r.height;
   dpr = Math.min(window.devicePixelRatio || 1, 2);
-  lienzo.width  = Math.round(A * dpr);
-  lienzo.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  sembrarLluvia();
+  lienzo.width = Math.round(A * dpr); lienzo.height = Math.round(H * dpr);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  horizonte = H * 0.62;
+  pintarPaisaje();
 }
-new ResizeObserver(medir).observe(mundo);
-
-/* ---- La lluvia, en arrays planos ------------------------------------------ */
-
-let N = 0;
-let gx, gy, gv, gl;
-
-function sembrarLluvia() {
-  N = A * H < 200000 ? Math.round(CONF.gotas * 0.6) : CONF.gotas;
-  gx = new Float32Array(N); gy = new Float32Array(N);
-  gv = new Float32Array(N); gl = new Float32Array(N);
-  for (let i = 0; i < N; i++) {
-    gx[i] = Math.random() * A * 1.4 - A * 0.2;
-    gy[i] = Math.random() * H;
-    gv[i] = azar(700, 1500);
-    gl[i] = azar(9, 24);
-  }
-}
-
-/* ---- El ciclo del rayo ----------------------------------------------------
-   Todo gira alrededor de un estado: esperando · relámpago · contando ·
-   trueno. Con un estado y un reloj se lleva toda la página.            */
-
-let estado = "esperando";
-let reloj = 0;
-let esperaRayo = azar(2.5, 5);
-let distancia = CONF.distanciaInicial;    // en segundos hasta el trueno
-let cuenta = 0;                           // lo que lleva contado ella
-let contando = false;
-let aciertos = 0;
-let iAcierto = 0;
-let relampago = 0;                        // 0..1, el fogonazo
-let rayo = null;                          // el dibujo del rayo
-let dichoTramo = -1;
-
-function enPantalla(e) {
-  const r = mundo.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
-}
-
-/* Se mantiene el dedo apretado mientras se cuenta y se suelta al oír el
-   trueno. Es el gesto de verdad: contar es aguantar. */
-zona.addEventListener("pointerdown", (e) => {
-  if (e.pointerType === "mouse" && e.button !== 0) return;
-  zona.setPointerCapture(e.pointerId);
-  despertar();
-  if (estado === "contando" && !contando) {
-    contando = true;
-    cuenta = 0;
-    mundo.classList.add("is-contando");
-    elCue.classList.add("is-visible");
-  } else if (estado === "esperando") {
-    /* Tocar mientras no hay nada: se ve el pueblo iluminarse un
-       segundito, y a veces se adelanta el rayo. */
-    if (Math.random() < 0.35) esperaRayo = Math.min(esperaRayo, 0.4);
-    decir("Aún no. Mira al cielo.");
-  }
-  mirarSecretos(enPantalla(e));
-});
-
-zona.addEventListener("pointerup", () => {
-  if (!contando) return;
-  contando = false;
-  mundo.classList.remove("is-contando");
-  elCue.classList.remove("is-visible");
-  juzgar();
-});
-zona.addEventListener("pointercancel", () => {
-  contando = false;
-  elCue.classList.remove("is-visible");
-});
-
-function juzgar() {
-  const d = cuenta - distancia;
-  if (Math.abs(d) <= CONF.margenAcierto) {
-    aciertos++;
-    const [t, f] = CONF.aciertos[iAcierto % CONF.aciertos.length];
-    iAcierto++;
-    const km = (distancia * CONF.metrosPorSegundo / 1000).toFixed(1);
-    decir(`${t} ${km} km.`, f, true);
-    distancia = Math.max(0.4, distancia - CONF.seAcerca);
-    campana(659);
-    mirarSecretos();
-  } else if (d > 0) {
-    decir(CONF.falloLargo, "No pasa nada, viene otro.", true);
-  } else {
-    decir(CONF.falloCorto, "Hay que aguantar hasta oírlo.", true);
-  }
-}
-
-/* ---- Los textos ------------------------------------------------------------- */
-
-let pidiendo = null;
-let bloqueado = 0;
-
-function decir(texto, firma, importante) {
-  const ahora = performance.now();
-  if (!importante && ahora < bloqueado) return;
-  if (pidiendo === texto) return;
-  pidiendo = texto;
-  if (importante) bloqueado = ahora + 4200;
-  elPie.classList.remove("is-visible");
-  setTimeout(() => {
-    elPie.textContent = texto;
-    if (firma) {
-      const em = document.createElement("em");
-      em.textContent = firma;
-      elPie.append(em);
-    }
-    elPie.classList.add("is-visible");
-  }, suave ? 10 : 280);
-}
-
-/* ---- Sonido ----------------------------------------------------------------- */
-
-let audio = null, maestro = null;
-let lluviaNodo = null, lluviaGain = null, lluviaFiltro = null;
-
-function despertar() {
-  try {
-    if (!audio) {
-      audio = new (window.AudioContext || window.webkitAudioContext)();
-      maestro = audio.createGain();
-      maestro.gain.value = 0.6;
-      maestro.connect(audio.destination);
-      arrancarLluvia();
-    }
-    if (audio.state === "suspended") audio.resume();
-  } catch { audio = null; }
-  return audio;
-}
-
-/** La lluvia: ruido rosa filtrado, en bucle. */
-function arrancarLluvia() {
-  const n = audio.sampleRate * 3;
-  const buf = audio.createBuffer(1, n, audio.sampleRate);
-  const d = buf.getChannelData(0);
-  let ult = 0;
-  for (let i = 0; i < n; i++) {
-    const blanco = Math.random() * 2 - 1;
-    ult = 0.9 * ult + 0.1 * blanco;
-    d[i] = ult * 3;
-  }
-  lluviaNodo = audio.createBufferSource();
-  lluviaNodo.buffer = buf;
-  lluviaNodo.loop = true;
-  lluviaFiltro = audio.createBiquadFilter();
-  lluviaFiltro.type = "bandpass";
-  lluviaFiltro.frequency.value = 1800;
-  lluviaFiltro.Q.value = 0.5;
-  lluviaGain = audio.createGain();
-  lluviaGain.gain.value = 0.07;
-  lluviaNodo.connect(lluviaFiltro).connect(lluviaGain).connect(maestro);
-  lluviaNodo.start();
-}
-
-/**
- * El trueno.
- *
- * Un trueno no es un golpe: es un ruido grave que RUEDA. Se hace con
- * ruido filtrado muy abajo y una envolvente larga con dos o tres
- * picos —los rebotes en las nubes—, y cuanto más lejos está, más
- * grave y más largo, porque el aire se come los agudos antes.
- */
-function trueno(lejos) {
-  if (!despertar()) return;
-  const t = audio.currentTime;
-  const dur = 1.6 + lejos * 0.32;
-  const n = Math.floor(audio.sampleRate * dur);
-  const buf = audio.createBuffer(1, n, audio.sampleRate);
-  const d = buf.getChannelData(0);
-  let ult = 0, ult2 = 0;
-  for (let i = 0; i < n; i++) {
-    const k = i / n;
-    const blanco = Math.random() * 2 - 1;
-    /* Dos filtros de un polo encadenados: ruido muy grave, que es el
-       cuerpo del trueno. */
-    ult = 0.96 * ult + 0.04 * blanco;
-    ult2 = 0.9 * ult2 + 0.1 * ult;
-    /* La envolvente: un golpe seco y luego dos rodadas. */
-    const golpe = Math.exp(-k * 14);
-    const rueda = Math.exp(-k * 2.2) * (0.6 + 0.4 * Math.sin(k * 22));
-    const rueda2 = Math.exp(-k * 1.1) * 0.45 * (0.5 + 0.5 * Math.sin(k * 9));
-    d[i] = ult2 * 14 * (golpe * (1 - lejos * 0.06) + rueda + rueda2);
-  }
-  const src = audio.createBufferSource();
-  src.buffer = buf;
-  const f = audio.createBiquadFilter();
-  f.type = "lowpass";
-  /* Cuanto más lejos, más apagado. */
-  f.frequency.value = clamp(900 - lejos * 55, 130, 900);
-  const g = audio.createGain();
-  g.gain.value = clamp(0.9 - lejos * 0.04, 0.22, 0.9);
-  src.connect(f).connect(g).connect(maestro);
-  src.start(t);
-}
-
-function campana(hz) {
-  if (!despertar()) return;
-  const t = audio.currentTime;
-  const o = audio.createOscillator();
-  const g = audio.createGain();
-  o.type = "triangle";
-  o.frequency.setValueAtTime(hz, t);
-  g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.07, t + 0.012);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.3);
-  o.connect(g).connect(maestro);
-  o.start(t); o.stop(t + 1.4);
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   LOS SECRETOS
-   ══════════════════════════════════════════════════════════════════════ */
-
-/* 1. Acertar cinco veces seguidas: la tormenta llega justo encima, cae
-      un rayo enorme y después escampa del todo: sale el arcoíris de
-      noche, que existe y casi nadie ha visto uno.                     */
-let escampa = 0;
-let arcoiris = 0;
-
-/* 2. Tocar la ventanita encendida de la casa de abajo: se apaga y se
-      enciende, y alguien saluda.                                     */
-let casaTocada = 0;
-let saluda = 0;
-
-/* 3. No soltar el dedo NUNCA durante una cuenta larguísima (más de
-      treinta): se lo toma como que te has quedado dormida contando.  */
-let dormidaDicha = false;
-
-function mirarSecretos(p) {
-  if (aciertos >= 5 && escampa <= 0) {
-    escampa = 0.001;
-    distancia = 0.3;
-    decir("Se ha puesto justo encima.", "Y en cuanto pase, verás lo que sale.", true);
-  }
-
-  if (p) {
-    /* ¿la ventana de la casa? */
-    const vx = A * 0.5, vy = H * 0.845;
-    if (Math.hypot(p.x - vx, p.y - vy) < Math.min(A, H) * 0.07) {
-      casaTocada = 1;
-      saluda = 1;
-      decir("Hay alguien ahí dentro.", "Te ha saludado. Salúdale tú.", true);
-      campana(523);
-    }
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   EL BUCLE
-   ══════════════════════════════════════════════════════════════════════ */
-
-let t0 = performance.now();
-
-function paso(ahora) {
-  requestAnimationFrame(paso);
-  if (!A || !H || !gx) return;
-
-  let dt = (ahora - t0) / 1000;
-  t0 = ahora;
-  if (!(dt > 0) || dt > 0.5) dt = 1 / 60;
-  else if (dt > 0.1) dt = 0.1;
-  reloj += dt;
-
-  /* --- la máquina de estados --- */
-  if (estado === "esperando") {
-    esperaRayo -= dt;
-    if (esperaRayo <= 0) {
-      estado = "contando";
-      relampago = 1;
-      rayo = nuevoRayo();
-      tiempoTrueno = distancia;
-      decir("Ahí. Empieza a contar.", "Aprieta y no sueltes hasta oírlo.");
-    }
-  } else if (estado === "contando") {
-    tiempoTrueno -= dt;
-    if (contando) cuenta += dt;
-    if (tiempoTrueno <= 0) {
-      estado = "esperando";
-      esperaRayo = azar(3.4, 6.5);
-      trueno(distancia);
-      sacudida = 1;
-      if (contando) {
-        /* Si sigue apretando cuando suena, se le da por bueno al soltar:
-           `juzgar` ya compara contra `distancia`. */
-      }
-      if (escampa > 0) {
-        escampa = 1;
-        setTimeout(() => {
-          arcoiris = 0.001;
-          decir("Un arcoíris de noche.", "Casi nadie ha visto uno. Nosotros sí.", true);
-          campana(880);
-        }, 2400);
-      }
-    }
-  }
-
-  if (contando) {
-    elCue.textContent = "";
-    elCue.append(document.createTextNode(String(Math.floor(cuenta))));
-    const s = document.createElement("small");
-    s.textContent = "segundos";
-    elCue.append(s);
-    if (cuenta > 30 && !dormidaDicha) {
-      dormidaDicha = true;
-      decir("¿Te has dormido contando?", "No sería la primera vez. Descansa.", true);
-    }
-  }
-
-  relampago = Math.max(0, relampago - dt * 2.6);
-  sacudida = Math.max(0, sacudida - dt * 1.6);
-  if (casaTocada > 0) casaTocada = Math.max(0, casaTocada - dt * 0.5);
-  if (saluda > 0) saluda = Math.max(0, saluda - dt * 0.25);
-  if (escampa > 0 && escampa < 1) escampa = Math.min(1, escampa + dt * 0.2);
-  if (arcoiris > 0) arcoiris = Math.min(1, arcoiris + dt * 0.25);
-
-  /* La lluvia amaina cuando escampa. */
-  const fuerzaLluvia = escampa >= 1 ? Math.max(0, 1 - arcoiris * 1.4) : 1;
-  if (lluviaGain) lluviaGain.gain.setTargetAtTime(0.07 * fuerzaLluvia, audio.currentTime, 0.4);
-
-  /* El tramo que toca decir. */
-  const tr = CONF.tramos.findIndex((t) => distancia >= t.s);
-  const i = tr < 0 ? CONF.tramos.length - 1 : tr;
-  if (i !== dichoTramo && estado === "esperando") {
-    dichoTramo = i;
-    decir(CONF.tramos[i].texto, CONF.tramos[i].firma);
-  }
-
-  dibujar(dt, fuerzaLluvia);
-}
-
-let tiempoTrueno = 0;
-let sacudida = 0;
-
-function nuevoRayo() {
-  /* Un rayo es una línea quebrada que se parte en dos un par de veces.
-     Se guarda como lista de segmentos para no recalcularla cada cuadro:
-     un rayo no cambia de forma mientras dura. */
-  const ramas = [];
-  const x0 = azar(A * 0.15, A * 0.85);
-  bajar(x0, 0, H * 0.62, 1, ramas, 0);
-  return { ramas, t: 0 };
-}
-
-function bajar(x, y, hasta, grosor, ramas, nivel) {
-  let cx = x, cy = y;
-  while (cy < hasta) {
-    const nx = cx + azar(-26, 26);
-    const ny = cy + azar(14, 34);
-    ramas.push({ x0: cx, y0: cy, x1: nx, y1: ny, grosor });
-    cx = nx; cy = ny;
-    if (nivel < 2 && Math.random() < 0.13) {
-      bajar(cx, cy, cy + azar(H * 0.08, H * 0.22), grosor * 0.5, ramas, nivel + 1);
-    }
-  }
-}
-
-function dibujar(dt, fuerzaLluvia) {
-  /* --- el cielo --- */
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  const claro = escampa >= 1 ? arcoiris * 0.5 : 0;
-  g.addColorStop(0, `rgb(${Math.round(10 + claro * 40)},${Math.round(14 + claro * 50)},${Math.round(24 + claro * 70)})`);
-  g.addColorStop(0.55, `rgb(${Math.round(22 + claro * 50)},${Math.round(26 + claro * 56)},${Math.round(42 + claro * 74)})`);
-  g.addColorStop(1, `rgb(${Math.round(14 + claro * 60)},${Math.round(18 + claro * 60)},${Math.round(30 + claro * 70)})`);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, A, H);
-
-  /* --- las nubes: bultos oscuros arriba --- */
-  for (let i = 0; i < 9; i++) {
-    const x = ((i * 37) % 100) / 100 * A + Math.sin(reloj * 0.08 + i) * 16;
-    const y = H * (0.04 + ((i * 23) % 5) * 0.035);
-    const r = Math.min(A, H) * (0.09 + ((i * 17) % 4) * 0.03);
-    ctx.fillStyle = `rgba(${18 + i},${20 + i},${34 + i * 2},0.92)`;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, 6.283);
-    ctx.fill();
-  }
-
-  /* --- el arcoíris de noche (secreto 1) --- */
-  if (arcoiris > 0.02) {
-    const cxA = A * 0.5, cyA = H * 0.95, rA = Math.min(A, H) * 0.62;
-    const colores = ["#c46a7a", "#c49a6a", "#bcc46a", "#6ac47a", "#6a9ac4", "#8a6ac4"];
-    ctx.lineWidth = Math.max(4, rA * 0.03);
-    colores.forEach((c, k) => {
-      ctx.globalAlpha = arcoiris * 0.2;
-      ctx.strokeStyle = c;
-      ctx.beginPath();
-      ctx.arc(cxA, cyA, rA - k * ctx.lineWidth, Math.PI, 0);
-      ctx.stroke();
-    });
-    ctx.globalAlpha = 1;
-  }
-
-  /* --- el rayo --- */
-  if (relampago > 0.02 && rayo) {
-    ctx.globalCompositeOperation = "lighter";
-    for (const r of rayo.ramas) {
-      ctx.strokeStyle = `rgba(200, 225, 255, ${relampago * 0.5})`;
-      ctx.lineWidth = r.grosor * 8;
-      ctx.lineCap = "round";
-      ctx.beginPath(); ctx.moveTo(r.x0, r.y0); ctx.lineTo(r.x1, r.y1); ctx.stroke();
-      ctx.strokeStyle = `rgba(255, 255, 255, ${relampago})`;
-      ctx.lineWidth = r.grosor * 2.2;
-      ctx.beginPath(); ctx.moveTo(r.x0, r.y0); ctx.lineTo(r.x1, r.y1); ctx.stroke();
-    }
-    ctx.globalCompositeOperation = "source-over";
-  }
-
-  /* --- el fogonazo que lo ilumina todo --- */
-  if (relampago > 0.01) {
-    ctx.fillStyle = `rgba(190, 215, 255, ${relampago * 0.34})`;
-    ctx.fillRect(0, 0, A, H);
-  }
-
-  /* --- el pueblo --- */
-  dibujarPueblo();
-
-  /* --- la lluvia --- */
-  if (fuerzaLluvia > 0.02) {
-    ctx.strokeStyle = `rgba(180, 210, 245, ${0.32 * fuerzaLluvia})`;
-    ctx.lineWidth = 1.1;
-    ctx.beginPath();
-    for (let i = 0; i < N; i++) {
-      gy[i] += gv[i] * dt * fuerzaLluvia;
-      gx[i] += gv[i] * CONF.viento * dt * fuerzaLluvia;
-      if (gy[i] > H) { gy[i] = -20; gx[i] = Math.random() * A * 1.4 - A * 0.2; }
-      if (gx[i] > A + 30) gx[i] = -30;
-      ctx.moveTo(gx[i], gy[i]);
-      ctx.lineTo(gx[i] - gl[i] * CONF.viento, gy[i] - gl[i]);
-    }
-    ctx.stroke();
-  }
-}
-
-function dibujarPueblo() {
-  const base = H * 0.9;
-  /* La colina. */
-  ctx.fillStyle = "#0b0f1a";
-  ctx.beginPath();
-  ctx.moveTo(0, H);
-  ctx.lineTo(0, base);
-  for (let x = 0; x <= A; x += 14) {
-    ctx.lineTo(x, base - Math.sin(x * 0.008) * H * 0.02);
-  }
-  ctx.lineTo(A, H);
-  ctx.closePath();
-  ctx.fill();
-
-  /* Las casitas del fondo. */
-  ctx.fillStyle = "#080c15";
-  for (let i = 0; i < 9; i++) {
-    const x = (i / 9) * A + 12;
-    const w = A * 0.07;
-    const h = H * (0.03 + ((i * 13) % 4) * 0.012);
-    if (Math.abs(x - A * 0.5) < A * 0.14) continue;   // el hueco de la casa grande
-    ctx.fillRect(x, base - h, w, h + 20);
-    ctx.beginPath();
-    ctx.moveTo(x - 3, base - h);
-    ctx.lineTo(x + w / 2, base - h - h * 0.5);
-    ctx.lineTo(x + w + 3, base - h);
-    ctx.closePath();
-    ctx.fill();
-    /* Alguna ventana encendida. */
-    if ((i * 7) % 3 === 0) {
-      ctx.fillStyle = "rgba(255, 200, 120, 0.7)";
-      ctx.fillRect(x + w * 0.3, base - h * 0.6, w * 0.22, h * 0.26);
-      ctx.fillStyle = "#080c15";
-    }
-  }
-
-  /* La casa del medio, la nuestra. */
-  const cw = A * 0.2, ch = H * 0.075;
-  const cxx = A * 0.5 - cw / 2, cyy = base - ch;
-  ctx.fillStyle = "#0a0e18";
-  ctx.fillRect(cxx, cyy, cw, ch + 20);
-  ctx.beginPath();
-  ctx.moveTo(cxx - 8, cyy);
-  ctx.lineTo(A * 0.5, cyy - ch * 0.62);
-  ctx.lineTo(cxx + cw + 8, cyy);
-  ctx.closePath();
-  ctx.fill();
-
-  /* La ventana encendida. Es la que se puede tocar. */
-  const vw = cw * 0.3, vh = ch * 0.42;
-  const vx = A * 0.5 - vw / 2, vy = cyy + ch * 0.22;
-  const parpadeo = 0.78 + 0.22 * Math.sin(reloj * 1.7);
-  const apagada = casaTocada > 0.5 ? 0.12 : 1;
-  ctx.fillStyle = `rgba(255, 202, 120, ${parpadeo * apagada})`;
-  ctx.fillRect(vx, vy, vw, vh);
-  /* El resplandor de la ventana. */
-  const gr = ctx.createRadialGradient(A * 0.5, vy + vh / 2, 0, A * 0.5, vy + vh / 2, vw * 2.6);
-  gr.addColorStop(0, `rgba(255, 202, 120, ${0.3 * parpadeo * apagada})`);
-  gr.addColorStop(1, "rgba(255, 202, 120, 0)");
-  ctx.fillStyle = gr;
-  ctx.fillRect(A * 0.5 - vw * 2.6, vy + vh / 2 - vw * 2.6, vw * 5.2, vw * 5.2);
-  /* La cruz del marco. */
-  ctx.strokeStyle = "rgba(20, 16, 12, 0.8)";
-  ctx.lineWidth = 1.4;
-  ctx.beginPath();
-  ctx.moveTo(A * 0.5, vy); ctx.lineTo(A * 0.5, vy + vh);
-  ctx.moveTo(vx, vy + vh / 2); ctx.lineTo(vx + vw, vy + vh / 2);
-  ctx.stroke();
-
-  /* La silueta que saluda (secreto 2). */
-  if (saluda > 0.02) {
-    ctx.globalAlpha = Math.min(1, saluda * 1.5);
-    ctx.fillStyle = "rgba(30, 22, 16, 0.85)";
-    ctx.beginPath();
-    ctx.arc(A * 0.5, vy + vh * 0.42, vh * 0.2, 0, 6.283);
-    ctx.fill();
-    ctx.fillRect(A * 0.5 - vh * 0.22, vy + vh * 0.58, vh * 0.44, vh * 0.42);
-    /* El brazo, que se mueve. */
-    ctx.strokeStyle = "rgba(30, 22, 16, 0.85)";
-    ctx.lineWidth = vh * 0.1;
-    ctx.lineCap = "round";
-    const a = -0.6 + Math.sin(reloj * 7) * 0.5;
-    ctx.beginPath();
-    ctx.moveTo(A * 0.5 + vh * 0.18, vy + vh * 0.66);
-    ctx.lineTo(A * 0.5 + vh * 0.18 + Math.cos(a) * vh * 0.4,
-               vy + vh * 0.66 + Math.sin(a) * vh * 0.4);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-  }
-}
-
-/* ---- Arranque ---------------------------------------------------------------- */
-
+new ResizeObserver(() => requestAnimationFrame(medir)).observe(mundo);
 medir();
-decir("Hay tormenta. Cuando veas el rayo, aprieta y cuenta.");
 requestAnimationFrame(paso);
-
 })();
 </script>
 </body>
