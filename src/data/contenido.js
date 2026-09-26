@@ -130,7 +130,9 @@ export default {
   "misFotos": [],
   "icono": "icono/icono.png",
   "fotosPaginas": {
-    "01-portada": [],
+    "01-portada": [
+      "imagen1.png"
+    ],
     "02-las-tres-de-la-manana": [
       "imagen1.png"
     ],
