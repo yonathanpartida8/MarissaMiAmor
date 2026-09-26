@@ -210,9 +210,8 @@ html[data-orientation="landscape"][data-device="phone"] .page {
   --bar-space: max(0rem, calc(var(--touch) + 20px - var(--pad-page)));
 }
 
-/* La portada y el final se ven sin barra: no hay nada que esquivar. */
-html[data-device="phone"] .page.cover,
-html[data-device="phone"] .page.finale {
+/* La portada se ve sin barra: no hay nada que esquivar. */
+html[data-device="phone"] .page.cover {
   --bar-space: 0rem;
 }
 

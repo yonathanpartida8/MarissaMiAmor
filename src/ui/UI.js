@@ -238,8 +238,9 @@ export class UI {
     qs(".bar__btn--next", this.bar).disabled = this.ctx.router.atEnd;
     this.edges?.refresh();
 
-    // La portada y el final se ven mejor sin cromo alrededor.
-    const bare = entry.type === "cover" || entry.type === "finale";
+    // La portada se ve mejor sin cromo alrededor. El final no: ahí sí hacen
+    // falta los botones de pasar página, que detrás vienen más cosas.
+    const bare = entry.type === "cover";
     this.root.classList.toggle("is-bare", bare);
 
     this.currentHint = entry.hint || "";

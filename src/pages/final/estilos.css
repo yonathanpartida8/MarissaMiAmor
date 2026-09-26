@@ -5,7 +5,8 @@
 .finale {
   display: grid;
   place-items: center;
-  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  /* Abajo deja el hueco de la barra: aquí también se pasa de página. */
+  padding: var(--pad-t) var(--pad-x) calc(var(--pad-b) + var(--bar-space, 0rem));
   background: transparent;
   overflow: hidden;
   --beat: 0;
@@ -59,7 +60,7 @@
      carta es larga, se desplaza dentro de su hueco en vez de salirse de
      la pantalla (y con ella el botón de seguir). */
   align-self: end;
-  max-height: 66%;
+  max-height: 72%;
   min-height: 0;
   /* Debajo va el balance de secretos: que no se monte en el botón. */
   padding-bottom: 1.6rem;
@@ -73,6 +74,48 @@
 .finale__scroll {
   flex: 0 1 auto;
   width: 100%;
+}
+
+/* La carta sí recibe el dedo, para poder desplazarla y leerla entera. */
+.finale.is-formed .finale__carta {
+  pointer-events: auto;
+}
+
+.finale__mas {
+  display: block;
+  margin: 0.2rem auto 0;
+  font-family: var(--font-ui);
+  font-size: 0.58rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(255, 214, 226, 0.7);
+  opacity: 0;
+  transition: opacity 600ms var(--e-out);
+  pointer-events: none;
+}
+.finale__mas::after { content: " ↓"; display: inline-block; animation: finale-flecha 1.4s ease-in-out infinite; }
+@keyframes finale-flecha { 50% { transform: translateY(3px); } }
+.finale.is-formed .finale__carta:has(.finale__scroll[data-mas="abajo"]) .finale__mas,
+.finale.is-formed .finale__carta:has(.finale__scroll[data-mas="ambos"]) .finale__mas { opacity: 1; }
+
+/* Corazoncitos que suben, muy suaves, detrás de todo. */
+.finale__flotan { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.finale__flota {
+  position: absolute;
+  left: var(--x);
+  bottom: -30px;
+  font-size: calc(14px * var(--s));
+  color: color-mix(in srgb, var(--accent) 70%, #fff);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 80%, transparent);
+  opacity: 0;
+}
+.finale.is-formed .finale__flota { animation: finale-sube var(--t) linear var(--d) infinite; }
+@keyframes finale-sube {
+  0% { opacity: 0; transform: translate(0, 0) rotate(-8deg); }
+  10% { opacity: 0.7; }
+  50% { transform: translate(14px, -50vh) rotate(8deg); }
+  90% { opacity: 0.4; }
+  100% { opacity: 0; transform: translate(-10px, -100vh) rotate(-6deg); }
 }
 
 .finale.is-formed .finale__content {
@@ -144,7 +187,11 @@
   padding: 0.9rem 1rem 0.6rem;
   border-radius: 18px;
   background: linear-gradient(180deg, rgba(40, 8, 22, 0.55), rgba(24, 4, 14, 0.78));
-  box-shadow: inset 0 1px 0 rgba(255, 220, 232, 0.12), 0 20px 40px -24px rgba(0, 0, 0, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 232, 0.12),
+    0 20px 40px -24px rgba(0, 0, 0, 0.9),
+    /* Un brillo que late con el corazón. */
+    0 0 calc(10px + var(--beat) * 26px) color-mix(in srgb, var(--accent) calc(var(--beat) * 40%), transparent);
   border: 1px solid rgba(255, 200, 220, 0.1);
   opacity: 0;
   transform: translateY(14px);
@@ -269,7 +316,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(var(--safe-b) + 3.4rem);
+  bottom: calc(var(--safe-b) + 3.4rem + var(--bar-space, 0rem));
   z-index: 3;
   text-align: center;
   font-family: var(--font-ui);
@@ -292,7 +339,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(var(--safe-b) + 1.2rem);
+  bottom: calc(var(--safe-b) + 1.2rem + var(--bar-space, 0rem));
   z-index: 3;
   text-align: center;
   font-family: var(--font-ui);
@@ -325,6 +372,19 @@ html[data-orientation="landscape"][data-device="phone"] .finale.is-formed .final
   transform: none;
 }
 
+/* En apaisado la carta ocupa todo el alto que sobra, para leer más de un
+   vistazo, y el resto se desplaza. */
+html[data-orientation="landscape"][data-device="phone"] .finale__content {
+  align-self: stretch;
+  padding-bottom: 1.2rem;
+}
+html[data-orientation="landscape"][data-device="phone"] .finale__carta {
+  flex: 1 1 auto;
+}
+html[data-orientation="landscape"][data-device="phone"] .finale__scroll {
+  flex: 1 1 auto;
+}
+
 html[data-orientation="landscape"][data-device="phone"] .finale__body {
   font-size: clamp(0.76rem, calc(3.2 * var(--vw)), 0.92rem);
   line-height: 1.45;
@@ -353,5 +413,5 @@ html[data-orientation="landscape"][data-device="phone"] .finale__secrets {
 .finale__prompt { color: rgba(253, 238, 233, 0.66); }
 
 @media (prefers-reduced-motion: reduce) {
-  .finale__fugaz, .finale__continuara::after { animation: none !important; }
+  .finale__fugaz, .finale__continuara::after, .finale__flota, .finale__mas::after { animation: none !important; }
 }

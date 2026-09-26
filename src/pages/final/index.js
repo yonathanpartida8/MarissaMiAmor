@@ -124,6 +124,15 @@ export default class FinalePage extends BasePage {
       el("div.finale__touch"),
       // Estrellas fugaces que cruzan el cielo cuando ya se formó el corazón.
       el("div.finale__fugaces", { "aria-hidden": "true" }, [0, 1, 2].map(() => el("span.finale__fugaz"))),
+      // Corazoncitos que suben despacio desde abajo cuando ya está formado.
+      el("div.finale__flotan", { "aria-hidden": "true" }, Array.from({ length: 14 }, (_, i) => {
+        const c = el("span.finale__flota", { text: "♥" });
+        c.style.setProperty("--x", `${(i * 37) % 100}%`);
+        c.style.setProperty("--d", `${(i * 1.7) % 11}s`);
+        c.style.setProperty("--t", `${9 + (i % 5) * 1.8}s`);
+        c.style.setProperty("--s", `${0.6 + ((i * 7) % 5) * 0.18}`);
+        return c;
+      })),
       el("div.finale__content", {}, [
         el("p.finale__kicker", { text: finale.kicker }),
         el("h2.finale__line.finale__line--1", { text: finale.lines[0] }),
@@ -143,6 +152,8 @@ export default class FinalePage extends BasePage {
             el("p.finale__sign", {}, [textoPlano(finale.sign)]),
             el("p.finale__continuara", { text: finale.continuara || "continuará" }),
           ]),
+          // Si la carta no cabe, una flechita avisa de que sigue abajo.
+          el("span.finale__mas", { "aria-hidden": "true", text: "desliza para leer más" }),
         ]),
         el("button.finale__again", {
           type: "button",
