@@ -51,7 +51,21 @@ export default class HuellasPage extends BasePage {
       svg("rect", { class: "hue__banca-toque", x: "-24", y: "-20", width: "48", height: "30", fill: "transparent" }),
     ]);
 
+    // Las banderitas del camino (nuestros momentos), el corazón que sale
+    // cuando te cargo y el que se dibuja al llegar.
+    this.hitos = svg("g", { class: "hue__hitos" });
+    this.cargo = svg("path", { class: "hue__cargo", d: "M0,3 C-6,-1 -5,-6 -2.4,-6 C-1,-6 0,-5 0,-4 C0,-5 1,-6 2.4,-6 C5,-6 6,-1 0,3 Z" });
+    this.sol = svg("circle", { class: "hue__sol", cx: "100", cy: "10", r: "70" });
+    this.corazonFinal = svg("path", { class: "hue__final", pathLength: "1", d: "M100,40 C70,20 66,-4 84,-8 C92,-10 98,-4 100,2 C102,-4 108,-10 116,-8 C134,-4 130,20 100,40 Z" });
+
     this.lienzo = svg("svg", { class: "hue__lienzo", viewBox: "0 0 200 400", preserveAspectRatio: "xMidYMid meet", "aria-hidden": "true" }, [
+      svg("defs", {}, [
+        svg("radialGradient", { id: `hue-sol-${this.id}` }, [
+          svg("stop", { offset: "0", "stop-color": "#ffd7a0", "stop-opacity": "0.75" }),
+          svg("stop", { offset: "1", "stop-color": "#ff9cb8", "stop-opacity": "0" }),
+        ]),
+      ]),
+      this.sol,
       this.orillas,
       svg("path", { class: "hue__orilla", d: CAMINO }),
       this.camino,
@@ -59,10 +73,14 @@ export default class HuellasPage extends BasePage {
       svg("path", { class: "hue__centro", d: CAMINO }),
       this.piedras,
       this.huellas,
+      this.hitos,
+      this.corazonFinal,
       this.banca,
       this.tuLuz,
       this.miLuz,
+      this.cargo,
     ]);
+    this.sol.setAttribute("fill", `url(#hue-sol-${this.id})`);
 
     this.escena = el("div.hue__escena", { "data-claim-drag": "", role: "slider", "aria-label": "Camina conmigo: desliza hacia arriba", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": "0" }, [this.lienzo]);
     this.frase = el("p.hue__frase.escena__reveal", { "aria-live": "polite" });
@@ -103,6 +121,7 @@ export default class HuellasPage extends BasePage {
           onPan: (e) => avanzar(e.y),
           onTap: (e) => {
             if (this.#tocaBanca(e)) return;
+            if (this.#tocaLuces(e)) return;
             this.meta = clamp(this.meta + 0.035, 0, 1);
           },
         },
@@ -181,6 +200,20 @@ export default class HuellasPage extends BasePage {
       }
     }
 
+    // Las banderitas: salen al pasar junto a ellas, del lado con más sitio.
+    this.banderas = (this.chapter?.hitos || []).map((h, k) => {
+      const { x, y } = this.#punto(h.f * this.largo);
+      const lado = x < 100 ? 1 : -1;
+      const px = clamp(x + lado * 31, 26, 174);
+      const g = svg("g", { class: "hue__hito", transform: `translate(${px.toFixed(1)} ${y.toFixed(1)})`, style: `--k:${k}` }, [
+        svg("line", { x1: "0", y1: "4", x2: "0", y2: "-9" }),
+        svg("path", { class: "hue__banderin", d: "M0,-9 L8,-6.5 L0,-4 Z" }),
+        svg("text", { x: "0", y: "-12", "text-anchor": "middle" }, [document.createTextNode(h.t)]),
+      ]);
+      this.hitos.append(g);
+      return { f: h.f, g, visto: false };
+    });
+
     // Para pasar de la altura del dedo a un punto del camino.
     this.tabla = [];
     for (let k = 0; k <= 200; k++) this.tabla.push(this.camino.getPointAtLength((k / 200) * this.largo).y);
@@ -217,6 +250,20 @@ export default class HuellasPage extends BasePage {
     return true;
   }
 
+  /** Tocar las lucecitas: un corazón, que van de la mano. */
+  #tocaLuces(e) {
+    for (const luz of [this.tuLuz, this.miLuz]) {
+      const r = luz.getBoundingClientRect();
+      if (Math.hypot(e.x - (r.left + r.width / 2), e.y - (r.top + r.height / 2)) < 30) {
+        const frases = ["de la manita 🤍", "tú y yo :>", "a tu paso, siempre", "no te suelto"];
+        this.corazon(e.x, e.y, frases[(this.toquesLuz = (this.toquesLuz || 0) + 1) % frases.length]);
+        this.ctx.haptics.play("tap");
+        return true;
+      }
+    }
+    return false;
+  }
+
   #tick(dt) {
     const antes = this.v;
     this.v = damp(this.v, this.meta, 3.2, dt);
@@ -242,6 +289,14 @@ export default class HuellasPage extends BasePage {
     this.miLuz.setAttribute("cx", (x + nx * lado).toFixed(2));
     this.miLuz.setAttribute("cy", (y + ny * lado).toFixed(2));
     this.root.classList.toggle("is-dificil", dificil);
+    this.cargo.setAttribute("transform", `translate(${x.toFixed(2)} ${(y - 9).toFixed(2)})`);
+    for (const b of this.banderas || []) {
+      if (!b.visto && v >= b.f) {
+        b.visto = true;
+        b.g.classList.add("is-visto");
+        this.ctx.haptics.play("tap");
+      }
+    }
     setVars(this.root, { "--avance": v.toFixed(3) });
     this.escena.setAttribute("aria-valuenow", String(Math.round(v * 100)));
 

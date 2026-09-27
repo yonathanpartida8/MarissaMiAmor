@@ -28,8 +28,12 @@ export default class PetalsPage extends BasePage {
       "aria-label": ch?.title,
     });
 
+    // Las frases se reparten por rondas: si vuelve a crecer la margarita,
+    // salen las siguientes, no las mismas.
     this.lines = (ch?.lines || []).slice();
-    const count = Math.max(4, this.lines.length);
+    const count = Math.max(4, Math.min(ch?.petalos || 10, this.lines.length || 10));
+    this.ronda = 0;
+    this.finales = ch?.finales?.length ? ch.finales : [ch?.reveal || "Siempre sale lo mismo."];
     const rng = seeded(`petalos-${this.id}`);
 
     this.flower = el("div.petals__flower");
@@ -45,7 +49,7 @@ export default class PetalsPage extends BasePage {
 
       petal.style.setProperty("--a", `${angle}deg`);
       petal.style.setProperty("--i", String(i));
-      petal.style.setProperty("--tint", rng.range(0.86, 1.06).toFixed(2));
+      petal.style.setProperty("--tint", rng.range(0.94, 1.02).toFixed(2));
 
       this.flower.append(petal);
       this.petals.push({
@@ -57,9 +61,9 @@ export default class PetalsPage extends BasePage {
       });
     }
 
-    this.flower.append(
-      el("div.petals__core", {}, [el("span.petals__heart")])
-    );
+    this.core = el("div.petals__core", { role: "button", "aria-label": "Otra margarita" }, [el("span.petals__heart")]);
+    this.flower.append(this.core);
+    this.otra = el("span.petals__otra", { text: "toca el centro: otra margarita 🌼" });
 
     this.said = el("p.petals__said", { "aria-live": "polite" });
     this.counter = el("span.petals__count", { text: `${count}` });
@@ -70,7 +74,7 @@ export default class PetalsPage extends BasePage {
         el("span.kicker", { text: ch?.kicker || "" }),
         el("h2.title.petals__title", { text: ch?.title || "" }),
       ]),
-      el("div.petals__field", {}, [this.flower]),
+      (this.campo = el("div.petals__field", {}, [this.flower, this.otra])),
       el("footer.petals__foot", {}, [
         this.said,
         el("span.petals__left", {}, [this.counter, el("i", { text: " que quedan" })]),
@@ -92,6 +96,7 @@ export default class PetalsPage extends BasePage {
     this.finished = false;
 
     for (const petal of this.petals) this.#bind(petal);
+    this.on(this.core, "click", (e) => this.#otraMargarita(e));
 
     this.fieldHeight = 0;
     // Si gira el teléfono, el suelo cambia de sitio: se vuelve a medir, pero
@@ -157,10 +162,67 @@ export default class PetalsPage extends BasePage {
     this.ctx.haptics.play("reveal");
     this.ctx.audio.play("turn", { volume: 0.2, rate: 1.7 + Math.random() * 0.3 });
 
-    this.#say(petal.line);
+    const k = this.petals.indexOf(petal) + this.ronda * this.petals.length;
+    const linea = this.lines.length ? this.lines[k % this.lines.length] : "me ama";
+    this.#say(linea);
+    this.#flota(petal, linea);
+    this.#polen();
     this.counter.textContent = String(this.remaining);
 
     if (this.remaining <= 0) this.#finish();
+  }
+
+  /** La frase sale volando desde donde estaba el pétalo. */
+  #flota(petal, texto) {
+    if (this.ctx.caps.reducedMotion) return;
+    const c = this.campo.getBoundingClientRect();
+    const p = petal.node.getBoundingClientRect();
+    const f = el("span.petals__flota", { text: `${texto} ♥` });
+    setVars(f, {
+      "--x": `${Math.round(Math.min(c.width - 70, Math.max(70, p.left + p.width / 2 - c.left)))}px`,
+      "--y": `${Math.round(p.top + p.height / 2 - c.top)}px`,
+      "--d": `${Math.round((Math.random() - 0.5) * 40)}px`,
+    });
+    this.campo.append(f);
+    this.later(() => f.remove(), 2300);
+  }
+
+  /** Un soplo de polen dorado desde el centro. */
+  #polen() {
+    if (this.ctx.caps.reducedMotion) return;
+    for (let i = 0; i < 7; i++) {
+      const g = el("i.petals__polen");
+      const a = Math.random() * Math.PI * 2, r = 30 + Math.random() * 46;
+      setVars(g, { "--px": `${(Math.cos(a) * r).toFixed(0)}px`, "--py": `${(Math.sin(a) * r - 20).toFixed(0)}px`, "--pd": `${(Math.random() * 120).toFixed(0)}ms` });
+      this.core.append(g);
+      this.later(() => g.remove(), 1200);
+    }
+  }
+
+  /** Vuelve a crecer la margarita, con las frases siguientes. */
+  #otraMargarita(e) {
+    if (!this.finished) {
+      this.corazon(e.clientX, e.clientY);
+      this.ctx.haptics.play("tap");
+      return;
+    }
+    this.ronda++;
+    this.finished = false;
+    this.remaining = this.petals.length;
+    this.root.classList.remove("is-bare", "is-finished");
+    for (const petal of this.petals) {
+      Object.assign(petal, { taken: false, landed: false, x: 0, y: 0, vx: 0, vy: 0, rot: 0, vrot: 0 });
+      petal.node.style.display = "";
+      petal.node.classList.remove("is-taken", "is-pulling");
+      setVars(petal.node, { "--fx": "0px", "--fy": "0px", "--fr": "0deg", "--pull": "0", "--px": "0px", "--py": "0px" });
+      petal.node.style.animation = "none";
+      void petal.node.offsetWidth;
+      petal.node.style.animation = "";
+    }
+    this.counter.textContent = String(this.remaining);
+    this.#say(["A ver otra, por si acaso…", "Una más, ¿eh? 🤭", "Esta seguro dice algo distinto… (no)"][(this.ronda - 1) % 3]);
+    this.ctx.haptics.play("reveal");
+    this.ctx.audio.play("open", { volume: 0.3, rate: 1.3 });
   }
 
   /** Cambia la frase de abajo con un relevo suave. */
@@ -178,7 +240,11 @@ export default class PetalsPage extends BasePage {
     this.root.classList.add("is-bare");
 
     await wait(700);
-    this.#say(this.reveal || "Siempre sale lo mismo.");
+    this.#say(this.finales[(this.ronda) % this.finales.length]);
+    for (let k = 0; k < 6; k++) this.later(() => {
+      const r = this.core.getBoundingClientRect();
+      this.corazon(r.left + r.width / 2 + (Math.random() - 0.5) * 60, r.top + r.height / 2);
+    }, k * 140);
     this.root.classList.add("is-finished");
     this.ctx.haptics.play("heart");
     this.ctx.gl?.pulse(0.8);

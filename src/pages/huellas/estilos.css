@@ -99,7 +99,51 @@ html[data-tema="pastel"] .hue__luz { fill: #fffaf2; }
 .hue__guia { margin: 0; transition: opacity 500ms var(--e-out); }
 .hue__guia.is-fuera { opacity: 0; }
 
+/* ---- Banderitas con nuestros momentos -------------------------------- */
+.hue__hito { opacity: 0; transform-box: fill-box; }
+.hue__hito line { stroke: var(--pisada); stroke-width: 0.9; stroke-linecap: round; }
+.hue__banderin { fill: var(--accent); }
+.hue__hito text {
+  font-family: var(--font-hand);
+  font-size: 9px;
+  fill: var(--hito, #fff4ea);
+  paint-order: stroke;
+  stroke: rgba(20, 6, 14, 0.55);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+}
+html[data-tema="pastel"] .hue__hito text { --hito: #7a2a46; stroke: rgba(255, 250, 244, 0.9); }
+.hue__hito.is-visto { animation: hue-hito 900ms var(--e-spring) forwards; }
+@keyframes hue-hito {
+  0% { opacity: 0; translate: 0 6px; }
+  60% { opacity: 1; translate: 0 -2px; }
+  100% { opacity: 1; translate: 0 0; }
+}
+
+/* ---- Te cargo: el corazón sobre la lucecita del tramo difícil -------- */
+.hue__cargo { fill: #ff7aa2; opacity: 0; transition: opacity 500ms var(--e-out); filter: drop-shadow(0 0 3px #ff7aa2); }
+.huellas.is-dificil .hue__cargo { opacity: 1; animation: hue-late-cargo 1s ease-in-out infinite; }
+@keyframes hue-late-cargo { 50% { scale: 1.2; } }
+.hue__cargo { transform-box: fill-box; transform-origin: 50% 50%; }
+
+/* ---- Al llegar: amanecer y un corazón que se dibuja ------------------ */
+.hue__sol { opacity: 0; transition: opacity 2.4s var(--e-out); }
+.huellas.is-llegamos .hue__sol { opacity: 1; }
+.hue__final {
+  fill: none;
+  stroke: #ff8fb0;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  filter: drop-shadow(0 0 3px #ff8fb0);
+}
+.huellas.is-llegamos .hue__final { animation: hue-dibuja 2.2s var(--e-out) 0.4s forwards; }
+@keyframes hue-dibuja { to { stroke-dashoffset: 0; } }
+
 @media (prefers-reduced-motion: reduce) {
+  .hue__hito.is-visto { animation: none; opacity: 1; }
+  .hue__cargo { animation: none !important; }
   .hue__huella.is-puesta { animation: none; opacity: 0.72; }
   .hue__luz { animation: none !important; }
 }

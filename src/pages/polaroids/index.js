@@ -15,19 +15,14 @@ import { el, qs, splitWords } from "../../utils/dom.js";
 import { seeded } from "../../utils/rng.js";
 import { clamp } from "../../utils/math.js";
 
-/** Lo que hay escrito por detrás. Corto, como se escribe en una foto. */
+/** Lo que hay escrito por detrás, si el capítulo no trae lo suyo. */
 const BACK_NOTES = [
-  "aquí me acordé de ti",
-  "esta me gusta mucho",
-  "quiero un día así contigo",
-  "mírame cómo te miro",
-  "guardé esta para el final",
+  "mírate nomás, qué hermosa",
   "te amo, así de simple",
-  "esto somos nosotros",
-  "para cuando estés triste",
-  "no la borres nunca",
   "mi favorita 🤍",
+  "la más bonita del mundo",
 ];
+const PIROPOS = ["Qué bonita sales, mi amor 🥹", "Te amo muchísimo", "Eres preciosa, neta"];
 
 const FRICTION = 2.6;   // amortiguación al soltar
 const BOUNCE = 0.42;    // energía que conserva al chocar
@@ -47,8 +42,10 @@ export default class PolaroidsPage extends BasePage {
     this.field = el("div.pola__field");
     this.cards = [];
 
+    const notas = ch?.lines?.length ? ch.lines : BACK_NOTES;
+    this.piropos = ch?.piropos?.length ? ch.piropos : PIROPOS;
     this.photos.forEach((photo, i) => {
-      const note = BACK_NOTES[i % BACK_NOTES.length];
+      const note = notas[i % notas.length];
       const card = el("figure.pola", { "data-claim-drag": "", tabindex: "0" }, [
         el("div.pola__inner", {}, [
           el("div.pola__face.pola__face--front", {}, [
@@ -173,11 +170,37 @@ export default class PolaroidsPage extends BasePage {
             card.vrot = e.vx * 40;
             this.ctx.haptics.play("tap");
           },
+          onTap: (e) => this.#piropo(card, e),
           onDoubleTap: () => this.#flip(card),
         },
         { exclusive: true, threshold: 5 }
       )
     );
+  }
+
+  /**
+   * Un toque, un piropo: sale en un globito encima de la foto y sube.
+   * Se barajan para no repetir hasta haberlos dicho todos.
+   */
+  #piropo(card, e) {
+    if (!this.mazo?.length) this.mazo = this.piropos.slice().sort(() => Math.random() - 0.5);
+    const texto = this.mazo.pop();
+    const w = this.bounds?.width || 0;
+    const h = this.bounds?.height || 0;
+    const alto = card.node.offsetHeight || 150;
+    const x = Math.min(w - 90, Math.max(90, w / 2 + card.x * w));
+    const y = Math.max(34, h / 2 + card.y * h - alto * 0.62);
+    this.globo?.remove();
+    const g = el("span.pola__piropo", { text: texto });
+    g.style.left = `${x.toFixed(0)}px`;
+    g.style.top = `${y.toFixed(0)}px`;
+    this.field.append(g);
+    this.globo = g;
+    this.later(() => g.remove(), 2600);
+    this.corazon(e.x, e.y);
+    card.vrot = (Math.random() - 0.5) * 30;
+    this.ctx.haptics.play("tap");
+    this.ctx.audio.play("turn", { volume: 0.16, rate: 2 + Math.random() * 0.4 });
   }
 
   #raise(card) {
