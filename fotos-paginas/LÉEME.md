@@ -18,8 +18,8 @@ El icono de la app es `icono/icono.png`.
 | Carpeta | Fotos ahora |
 | --- | --- |
 | `01-portada` | 1 |
-| `02-las-tres-de-la-manana` | 0 — sale «Aquí va la foto 1» |
-| `03-lo-que-no-te-dije-ese-dia` | 0 — sale «Aquí va la foto 1» |
+| `02-las-tres-de-la-manana` | 1 |
+| `03-lo-que-no-te-dije-ese-dia` | 1 |
 | `04-postal-desde-aqui` | 1 |
 | `05-como-dices-mi-nombre` | 1 |
 | `06-recuerdos` | 8 |
@@ -28,7 +28,7 @@ El icono de la app es `icono/icono.png`.
 | `09-te-fui-armando` | 1 |
 | `10-contigo-me-caigo-mejor` | 1 |
 | `11-pines-que-me-recordaron-a-ti` | 10 |
-| `11b-pines-que-te-dedico` | 0 — sube aquí los pines que le dedicas |
+| `11b-pines-que-te-dedico` | 99 |
 | `12-solo-tu-sabes-abrirlo` | 1 |
 | `13-mi-norte` | 1 |
 | `14-todo-lo-que-guardo` | 16 |

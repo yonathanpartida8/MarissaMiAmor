@@ -28,6 +28,12 @@ export default class PinesPage extends BasePage {
     return this.photos.slice(0, 3).map((p) => p.src);
   }
 
+  // Las demás las va pidiendo el carrusel conforme se acercan: con cien
+  // pines, precargarlas todas al entrar eran más de diez megas de golpe.
+  get deferredAssets() {
+    return [];
+  }
+
   build() {
     const ch = this.chapter;
     this.root = el("section.page.pines", { "data-page": this.id, "aria-label": ch?.title });
@@ -74,7 +80,11 @@ export default class PinesPage extends BasePage {
     setVars(this.carta, { "--chincheta": "#ff5c8a", "--giro": "1.5deg" });
     this.reel.append(this.carta);
 
-    this.puntos = el("div.pin__puntos", { "aria-hidden": "true" }, [...this.reel.children].map(() => el("span")));
+    // Con muchos pines, una barrita en vez de cien puntitos.
+    const muchos = this.reel.children.length > 16;
+    this.puntos = muchos
+      ? el("div.pin__barra", { "aria-hidden": "true" }, [(this.relleno = el("span"))])
+      : el("div.pin__puntos", { "aria-hidden": "true" }, [...this.reel.children].map(() => el("span")));
     this.contador = el("span.pin__contador");
 
     this.root.append(
@@ -177,10 +187,16 @@ export default class PinesPage extends BasePage {
     const centro = this.reel.scrollLeft + this.reel.clientWidth / 2;
     let mejor = 0;
     let menor = Infinity;
+    // Sólo se escribe en los pines que cambian: con cien, tocarlos todos
+    // en cada cuadro del deslizamiento se notaba.
+    this.cercas ??= new Map();
     this.#nodos.forEach((nodo, i) => {
       const d = Math.abs(nodo.offsetLeft + nodo.offsetWidth / 2 - centro);
       if (d < menor) { menor = d; mejor = i; }
-      nodo.style.setProperty("--cerca", Math.max(0, 1 - d / (nodo.offsetWidth * 1.1)).toFixed(3));
+      const c = Math.max(0, 1 - d / (nodo.offsetWidth * 1.1)).toFixed(3);
+      if (this.cercas.get(nodo) === c) return;
+      this.cercas.set(nodo, c);
+      nodo.style.setProperty("--cerca", c);
     });
     if (mejor !== this.activo) {
       this.activo = mejor;
@@ -194,7 +210,8 @@ export default class PinesPage extends BasePage {
     this.root.classList.toggle("en-principio", i <= 0);
     this.root.classList.toggle("en-final", enCarta);
     this.contador.textContent = enCarta ? "la carta" : total ? `${i + 1} de ${total}` : "";
-    [...this.puntos.children].forEach((p, k) => p.classList.toggle("is-ahora", k === i));
+    if (this.relleno) this.relleno.style.width = `${(((i + 1) / this.#nodos.length) * 100).toFixed(1)}%`;
+    else [...this.puntos.children].forEach((p, k) => p.classList.toggle("is-ahora", k === i));
     this.ctx.haptics.play("tick");
     this.#cargarCerca(i);
     if (enCarta) {

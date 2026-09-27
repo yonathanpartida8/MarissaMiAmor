@@ -208,6 +208,8 @@
 }
 .pin__puntos span.is-ahora { width: 18px; background: var(--accent); }
 .pin__puntos span:last-child { border-radius: 2px; }
+.pin__barra { width: min(70%, 260px); height: 4px; border-radius: 99px; overflow: hidden; background: color-mix(in srgb, var(--text) 18%, transparent); }
+.pin__barra span { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 60%, #fff), var(--accent)); transition: width 320ms var(--e-out); }
 .pin__contador { font-family: var(--font-ui); font-size: var(--fs-micro); letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-soft); }
 
 /* ---- La foto en grande ---------------------------------------------- */

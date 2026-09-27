@@ -155,7 +155,9 @@ export default {
       "imagen7.png",
       "imagen8.png"
     ],
-    "07-cuando-llueve-alla": [],
+    "07-cuando-llueve-alla": [
+      "imagen1.jpg"
+    ],
     "08-cosas-que-todavia-no-se-de-ti": [
       "imagen1.png",
       "imagen2.png"
@@ -165,6 +167,18 @@ export default {
     ],
     "10-contigo-me-caigo-mejor": [
       "imagen1.png"
+    ],
+    "11-pines-que-me-recordaron-a-ti": [
+      "imagen1.png",
+      "imagen2.png",
+      "imagen3.png",
+      "imagen4.png",
+      "imagen5.png",
+      "imagen6.jpg",
+      "imagen7.png",
+      "imagen8.png",
+      "imagen9.png",
+      "imagen10.png"
     ],
     "11b-pines-que-te-dedico": [
       "imagen1.png",
@@ -212,6 +226,7 @@ export default {
       "imagen43.png",
       "imagen44.png",
       "imagen45.png",
+      "imagen46.png",
       "imagen47.png",
       "imagen48.png",
       "imagen49.png",
@@ -250,12 +265,28 @@ export default {
       "imagen82.png",
       "imagen83.png",
       "imagen84.png",
-      "imagen85.png"
+      "imagen85.jpg",
+      "imagen86.jpg",
+      "imagen87.jpg",
+      "imagen88.jpg",
+      "imagen89.jpg",
+      "imagen90.jpg",
+      "imagen91.jpg",
+      "imagen92.jpg",
+      "imagen93.jpg",
+      "imagen94.jpg",
+      "imagen95.jpg",
+      "imagen96.jpg",
+      "imagen97.jpg",
+      "imagen98.jpg",
+      "imagen99.jpg"
     ],
     "12-solo-tu-sabes-abrirlo": [
       "imagen1.png"
     ],
-    "13-mi-norte": [],
+    "13-mi-norte": [
+      "imagen1.jpg"
+    ],
     "14-todo-lo-que-guardo": [
       "imagen1.png",
       "imagen2.png",
@@ -292,7 +323,9 @@ export default {
       "imagen9.png",
       "imagen10.png"
     ],
-    "18-otra-postal": [],
+    "18-otra-postal": [
+      "imagen1.jpg"
+    ],
     "19-nada-del-otro-mundo": [
       "imagen1.png"
     ],
