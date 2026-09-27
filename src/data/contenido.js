@@ -373,6 +373,7 @@ export default {
     "fotos-paginas/06-recuerdos/imagen7.png": "2c6b8be1",
     "fotos-paginas/06-recuerdos/imagen8.png": "a9c392b7",
     "fotos-paginas/07-cuando-llueve-alla/imagen1.jpg": "c3955f24",
+    "fotos-paginas/08-cosas-que-todavia-no-se-de-ti/3aa7bae2999f3a53748c99534663c802.jpg": "9dc6924a",
     "fotos-paginas/09-te-fui-armando/imagen1.png": "83836c29",
     "fotos-paginas/10-contigo-me-caigo-mejor/imagen1.png": "e560c88e",
     "fotos-paginas/11-pines-que-me-recordaron-a-ti/imagen1.png": "4bffda0c",
