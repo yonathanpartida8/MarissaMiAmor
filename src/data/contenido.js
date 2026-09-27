@@ -136,7 +136,9 @@ export default {
     "02-las-tres-de-la-manana": [
       "imagen1.png"
     ],
-    "03-lo-que-no-te-dije-ese-dia": [],
+    "03-lo-que-no-te-dije-ese-dia": [
+      "imagen1.png"
+    ],
     "04-postal-desde-aqui": [
       "imagen1.png"
     ],
