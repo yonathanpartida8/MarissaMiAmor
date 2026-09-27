@@ -516,6 +516,7 @@ export default {
     "fotos-paginas/21-sin-adornos/fe104f6ae125aa0f77f5ba0ba54c49c8.jpg": "1bce182b",
     "fotos-paginas/22-aburridos-juntos/fe104f6ae125aa0f77f5ba0ba54c49c8.jpg": "1bce182b",
     "fotos-paginas/23-no-como-alguien-perfecto/77ef8bd9f0438620fdafb28cc0c1167d.jpg": "ad167a16",
+    "fotos-paginas/24-lo-que-quiero-de-ti/3aa7bae2999f3a53748c99534663c802.jpg": "9dc6924a",
     "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen1.png": "1184f825",
     "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen2.png": "bb4d6560",
     "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen3.png": "1c31c2a2",
