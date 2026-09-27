@@ -371,7 +371,7 @@ export default {
   "sonidos": {
     "corazon": null,
     "ojos": "paginas-html/ojos.mp3",
-    "voz": null
+    "voz": "audio/audio.mp3"
   },
   "vales": {
     "lista": [
