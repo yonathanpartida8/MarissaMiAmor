@@ -178,6 +178,12 @@ const CONF = {
     "Porque contigo lo quiero todo.",
     "Porque me enseñas a amar bonito.",
     "Por lo que no te digo y sabes igual.",
+    "Porque eres preciosa, y lo sabes (y si no, te lo digo yo).",
+    "Por tus ojitos cuando te ríes.",
+    "Porque te amo más de lo que cabe en mil grullas.",
+    "Por nuestras llamadas que nunca se acaban.",
+    "Porque contigo hasta lo aburrido es bonito.",
+    "Por la persona tan linda que eres.",
   ],
 
   /* ---- LOS HITOS ------------------------------------------------------
@@ -299,9 +305,9 @@ function tocar(x, y) {
      rato agradable y no una tarea. */
   const cuantas = clamp(CONF.porToque + Math.floor(racha * 0.9), 1, CONF.rachaMax);
   const visibles = Math.min(cuantas, 6);   // en pantalla no hacen falta más
-  for (let i = 0; i < visibles; i++) {
-    soltarGrulla(x + azar(-16, 16), y + azar(-12, 12));
-  }
+  /* Primero se dobla el papelito donde tocaste, y de ahí despegan. */
+  if (pliegues.length < 8 && !suave) pliegues.push({ x, y, t: 0, col: Math.floor(Math.random() * CONF.papeles.length), n: visibles });
+  else for (let i = 0; i < visibles; i++) soltarGrulla(x + azar(-16, 16), y + azar(-12, 12));
 
   const antes = total;
   total = Math.min(CONF.meta, total + cuantas);
@@ -324,6 +330,7 @@ function tocar(x, y) {
     deseoDicho = true;
     decir(CONF.deseo.texto, CONF.deseo.firma, true);
     lluviaDeGrullas();
+    formarCorazon();
   } else if (hito) {
     decir(hito.texto, hito.firma, true);
   } else {
@@ -331,6 +338,67 @@ function tocar(x, y) {
   }
 
   vigilarSecretos(x, y);
+}
+
+const pliegues = [];
+const DOBLAR = 0.34;   // segundos que tarda en doblarse
+
+/* El papel doblándose: un cuadrado que gira a rombo, se dobla por la
+   mitad y se cierra en triangulito antes de ser grulla. */
+function pliegue(p) {
+  const k = clamp(p.t / DOBLAR, 0, 1);
+  const [claro, hondo] = CONF.papeles[p.col];
+  const t = 26 * Math.min(1, k * 3);
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(Math.PI / 4 * Math.min(1, k * 2.4));
+  const dobla = Math.cos(clamp((k - 0.35) / 0.45, 0, 1) * Math.PI);   // 1 → -1
+  ctx.globalAlpha = 1 - clamp((k - 0.85) / 0.15, 0, 1);
+  // Mitad de abajo, fija.
+  ctx.fillStyle = claro;
+  ctx.beginPath(); ctx.moveTo(-t / 2, 0); ctx.lineTo(t / 2, 0); ctx.lineTo(t / 2, t / 2); ctx.lineTo(-t / 2, t / 2); ctx.closePath(); ctx.fill();
+  // Mitad de arriba, que se dobla hacia abajo por el pliegue.
+  ctx.scale(1, dobla);
+  ctx.fillStyle = dobla < 0 ? hondo : claro;
+  ctx.beginPath(); ctx.moveTo(-t / 2, 0); ctx.lineTo(t / 2, 0); ctx.lineTo(t / 2, -t / 2); ctx.lineTo(-t / 2, -t / 2); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = hondo; ctx.lineWidth = 1; ctx.globalAlpha *= 0.6;
+  ctx.beginPath(); ctx.moveTo(-t / 2, 0); ctx.lineTo(t / 2, 0); ctx.stroke();
+  ctx.restore();
+}
+
+/* Las guirnaldas de mil grullas (senbazuru): una por cada cien, colgando
+   de los bordes. Así se ve lo que llevas sin mirar el número. */
+function guirnaldas() {
+  const n = Math.min(10, Math.floor(total / 100));
+  const xs = [0.05, 0.95, 0.12, 0.88, 0.19, 0.81, 0.26, 0.74, 0.33, 0.67];
+  for (let g = 0; g < n; g++) {
+    const x = xs[g] * A, largo = H * (0.22 + (g % 3) * 0.05);
+    const vaiven = Math.sin(reloj * 0.9 + g) * 4;
+    ctx.strokeStyle = "rgba(120, 80, 100, 0.35)";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.quadraticCurveTo(x + vaiven, largo / 2, x + vaiven * 1.6, largo); ctx.stroke();
+    for (let k = 1; k <= 6; k++) {
+      const u = k / 6.4;
+      grulla(x + vaiven * 1.6 * u, largo * u, 0.36, Math.PI / 2 + Math.sin(reloj * 1.6 + k + g) * 0.25, Math.sin(reloj + k) * 0.1, (g + k) % CONF.papeles.length, 0.85);
+    }
+    ctx.fillStyle = "#e0a0b8";
+    ctx.beginPath(); ctx.arc(x + vaiven * 1.6, largo + 4, 2.4, 0, 6.283); ctx.fill();
+  }
+}
+
+/* A las mil: las grullas vuelan a formar un corazón enorme. */
+let formacion = null;
+function formarCorazon() {
+  const cx = A / 2, cy = H * 0.44, esc = Math.min(A, H) * 0.021;
+  const piezas = [];
+  const M = 46;
+  for (let k = 0; k < M; k++) {
+    const a = (k / M) * Math.PI * 2;
+    const tx = cx + 16 * Math.pow(Math.sin(a), 3) * esc;
+    const ty = cy - (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) * esc;
+    piezas.push({ x: azar(0, A), y: H + azar(20, 140), tx, ty, ale: Math.random() * 6.28, col: k % CONF.papeles.length, d: azar(0, 0.8) });
+  }
+  formacion = { t: 0, piezas };
 }
 
 function pintarCuenta() {
@@ -363,8 +431,34 @@ zona.addEventListener("pointerdown", (e) => {
   zona.setPointerCapture(e.pointerId);
   arrastrando = true;
   const p = enPantalla(e);
+  if (atrapar(p.x, p.y)) return;
   tocar(p.x, p.y);
 });
+
+/* Tocar una grulla que ya va volando: da un brinco y suelta corazones. */
+const FRASES_ATRAPADA = [
+  "¡La atrapaste! Esa lleva tu nombre 🥹",
+  "Esa quería un abrazo tuyo 🤍",
+  "Te eligió a ti, como yo.",
+  "Mira, te dejó corazoncitos.",
+];
+let atrapadas = 0;
+function atrapar(x, y) {
+  for (let i = 0; i < N; i++) {
+    if (gvid[i] <= 0 || gnac[i] < 1) continue;
+    const r = 24 * gesc[i];
+    if (Math.hypot(x - gx[i], y - (gy[i] - 8 * gesc[i])) < r) {
+      gvy[i] = -260;
+      gvel[i] = 16;
+      for (let k = 0; k < 7; k++) corazones.push({ x: gx[i], y: gy[i], vx: azar(-60, 60), vy: azar(-120, -40), t: 0, r: azar(5, 9) });
+      decir(FRASES_ATRAPADA[atrapadas++ % FRASES_ATRAPADA.length], "", true);
+      campanita(12);
+      return true;
+    }
+  }
+  return false;
+}
+const corazones = [];
 
 /* Arrastrando también salen, pero con freno: si no, un dedo que cruza la
    pantalla contaba doscientas de golpe y se acababa el juego. */
@@ -603,6 +697,21 @@ function paso(ahora) {
 
   ctx.clearRect(0, 0, A, H);
 
+  /* --- las guirnaldas de los bordes --- */
+  guirnaldas();
+
+  /* --- los papelitos doblándose --- */
+  for (let i = pliegues.length - 1; i >= 0; i--) {
+    const p = pliegues[i];
+    p.t += dt;
+    if (p.t >= DOBLAR) {
+      for (let k = 0; k < p.n; k++) soltarGrulla(p.x + azar(-16, 16), p.y + azar(-12, 12));
+      pliegues.splice(i, 1);
+      continue;
+    }
+    pliegue(p);
+  }
+
   /* --- las grullas --- */
   for (let i = 0; i < N; i++) {
     if (gvid[i] <= 0) continue;
@@ -662,6 +771,35 @@ function paso(ahora) {
     solitaria.ale += dt * 3.1;
     grulla(solitaria.x, solitaria.y, solitaria.esc, solitaria.ale, -0.06, 3, 0.85);
     if (solitaria.x > A + 80) solitaria = null;
+  }
+
+  /* --- el corazón de las mil --- */
+  if (formacion) {
+    formacion.t += dt;
+    const ft = formacion.t;
+    for (const p of formacion.piezas) {
+      p.ale += dt * 6;
+      const k = clamp((ft - p.d) / 2.4, 0, 1), e = 1 - Math.pow(1 - k, 3);
+      let x = p.x + (p.tx - p.x) * e, y = p.y + (p.ty - p.y) * e;
+      if (ft > 8) { y -= (ft - 8) * 160; x += Math.sin(p.ale) * 10; }
+      else if (k >= 1) { y += Math.sin(ft * 2 + p.tx * 0.05) * 2; }
+      grulla(x, y, 0.62, p.ale, 0, p.col, 1);
+    }
+    if (ft > 11) formacion = null;
+  }
+
+  /* --- los corazones de las grullas atrapadas --- */
+  for (let i = corazones.length - 1; i >= 0; i--) {
+    const c = corazones[i];
+    c.t += dt; c.vy += 90 * dt; c.x += c.vx * dt; c.y += c.vy * dt;
+    if (c.t > 1.4) { corazones.splice(i, 1); continue; }
+    ctx.globalAlpha = 1 - c.t / 1.4;
+    ctx.fillStyle = "#ff6f9a";
+    ctx.beginPath();
+    ctx.moveTo(c.x, c.y + c.r * 0.8);
+    ctx.bezierCurveTo(c.x - c.r * 1.4, c.y - c.r * 0.1, c.x - c.r * 0.55, c.y - c.r * 1.05, c.x, c.y - c.r * 0.35);
+    ctx.bezierCurveTo(c.x + c.r * 0.55, c.y - c.r * 1.05, c.x + c.r * 1.4, c.y - c.r * 0.1, c.x, c.y + c.r * 0.8);
+    ctx.fill();
   }
 
   ctx.globalAlpha = 1;

@@ -95,6 +95,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0f1c; }
 }
 .vh-puntos button.is-actual::before { background: #ffe7cc; transform: scale(1.35); box-shadow: 0 0 10px rgba(255, 210, 160, 0.8); }
 .vh-puntos button.is-visto::before { background: rgba(255, 230, 205, 0.6); }
+.vh-puntos button.vh-corazon { width: 28px; color: rgba(255, 190, 210, 0.75); font-size: 18px; line-height: 1; }
+.vh-puntos button.vh-corazon::before { display: none; }
+.vh-puntos button.vh-corazon.is-actual { color: #ff9dbd; text-shadow: 0 0 10px rgba(255, 140, 180, 0.9); transform: scale(1.2); }
 .vh-ui.is-inicio .vh-puntos { opacity: 0; pointer-events: none; }
 .vh-ui:not(.is-inicio) .vh-pista { position: absolute; bottom: calc(100% + 2px); }
 </style>
@@ -123,6 +126,34 @@ const LUGARES = [
   ["Morelia", "Tenemos que ir."],
   ["Nuestro futuro", "Me da miedo pensarlo, pero estoy seguro de lo que quiero contigo, así que eso me da menos miedo."],
 ];
+
+/* Y después de los lugares, lo que el dedo escribe para ti: piropos para
+   que te veas como yo te veo. Salen en desorden y no se repiten hasta
+   haberlos escrito todos. Cambia o añade los que quieras. */
+const PIROPOS = [
+  ["Eres preciosa ♥", "Y no lo digo por decirlo: lo eres, completita."],
+  ["Qué bonita eres", "Por dentro y por fuera, mi amor."],
+  ["Eres suficiente", "Siempre lo has sido. No tienes que demostrarle nada a nadie."],
+  ["Tu sonrisa", "Es mi cosa favorita en todo el mundo."],
+  ["Eres inteligentísima", "Me encanta cómo piensas y cómo ves las cosas."],
+  ["Eres fuerte", "Más de lo que tú crees. Yo te he visto."],
+  ["Tus ojitos", "Podría quedarme viéndolos toda la vida."],
+  ["Eres mi orgullo", "Estoy tan orgulloso de ti, de verdad."],
+  ["Nadie como tú", "Eres única, y qué suerte tengo yo."],
+  ["Te amo ♥", "Así, en el vidrio, para que lo leas cada vez que se empañe."],
+  ["Eres hermosa", "Hasta recién despertada. Y más así."],
+  ["Mereces todo", "Todo lo bonito del mundo, y yo te lo quiero dar."],
+  ["Brillas ✨", "Aunque tú no lo veas, iluminas todo donde llegas."],
+  ["Eres mi paz", "Contigo todo se siente en calma."],
+  ["Me encantas", "Tu forma de ser, tu voz, tus manías. Toda tú."],
+  ["Eres arte", "Cada detallito tuyo está hecho con cariño."],
+  ["Mírate al espejo", "Y dile: «soy preciosa». Porque es verdad."],
+  ["Mi niña linda", "La más bonita detrás de todas las ventanas del mundo."],
+  ["Vales muchísimo", "En los días buenos y en los días feos también."],
+  ["Estoy contigo", "Siempre, aunque sea desde lejitos. Te amo."],
+];
+const mezclados = PIROPOS.slice().sort(() => Math.random() - 0.5);
+const TODOS = LUGARES.concat(mezclados);
 
 const mundo = document.getElementById("mundo");
 const lienzo = document.getElementById("lienzo");
@@ -322,7 +353,7 @@ function partir(texto, fuente, ancho) {
 }
 
 function componer(i) {
-  const [nombre, frase] = LUGARES[i];
+  const [nombre, frase] = TODOS[i];
   const ancho = A * S * 0.8;
   let tN = Math.min(A * 0.13, H * 0.075, 60) * S;
   let tF = Math.min(A * 0.078, H * 0.046, 34) * S;
@@ -382,7 +413,11 @@ function escribirPaso(dt) {
     soltarGotasDeLetras();
     setTimeout(() => {
       if (!escritura) {
-        elPista.textContent = actual < LUGARES.length - 1 ? "toca el cristal para el siguiente" : "toca el cristal para volver a empezar";
+        elPista.textContent = actual < LUGARES.length - 1
+          ? "toca el cristal para el siguiente"
+          : actual < TODOS.length - 1
+            ? "toca el cristal: te tengo más cositas 🤍"
+            : "toca el cristal para volver a empezar";
         elPista.classList.remove("is-fuera");
       }
     }, 2200);
@@ -512,7 +547,7 @@ function limpiar(x0, y0, x1, y1) {
 
 function siguiente() {
   if (escritura || cambiando > 0) return;
-  const prox = (actual + 1) % LUGARES.length;
+  const prox = (actual + 1) % TODOS.length;
   if (actual < 0) escribirLugar(prox);
   else irA(prox);
 }
@@ -535,6 +570,17 @@ function pintarPuntos() {
     b.addEventListener("click", () => { despertar(); if (i !== actual) irA(i); });
     elPuntos.append(b);
   });
+  // Y un corazoncito: lleva a los piropos.
+  const c = document.createElement("button");
+  c.type = "button";
+  c.className = "vh-corazon" + (actual >= LUGARES.length ? " is-actual" : "");
+  c.setAttribute("aria-label", "Lo que te quiero decir");
+  c.textContent = "♡";
+  c.addEventListener("click", () => {
+    despertar();
+    irA(actual >= LUGARES.length ? LUGARES.length + ((actual - LUGARES.length + 1) % PIROPOS.length) : LUGARES.length);
+  });
+  elPuntos.append(c);
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -624,10 +670,11 @@ function paso(ahora) {
     g.drawImage(tinta, 0, 0, A, H);
     g.globalAlpha = 1;
   }
-  // El filo mojado de las letras, que brilla un poquito.
+  // El filo mojado de las letras, que brilla un poquito (y en los
+  // piropos, un poco más, como si tuvieran lucecita propia).
   if (secado > 0) {
     g.globalCompositeOperation = "lighter";
-    g.globalAlpha = secado * 0.2;
+    g.globalAlpha = secado * (actual >= LUGARES.length ? 0.34 : 0.2);
     g.drawImage(bordes, 0, 0, A, H);
     g.globalAlpha = 1;
     g.globalCompositeOperation = "source-over";

@@ -238,10 +238,11 @@ export default class HtmlPage extends BasePage {
       title: this.chapter?.title || this.id,
       loading: "lazy",
       referrerpolicy: "no-referrer",
-      // `allow` con la lista vacía: nada de cámara, micrófono ni ubicación.
-      // El sonido, la pantalla completa y los sensores de movimiento sí (la
-      // bola de nieve se agita moviendo el teléfono de verdad).
-      allow: "autoplay *; fullscreen *; accelerometer *; gyroscope *; magnetometer *",
+      // Nada de cámara ni ubicación. El sonido, la pantalla completa y los
+      // sensores de movimiento sí (la bola de nieve se agita moviendo el
+      // teléfono de verdad), y el micrófono sólo si ella toca el botón de
+      // soplar de la cometa (el navegador pide permiso antes).
+      allow: "autoplay *; fullscreen *; accelerometer *; gyroscope *; magnetometer *; microphone *",
     });
 
     this.root.append(this.fondo, this.marco);

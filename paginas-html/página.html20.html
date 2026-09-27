@@ -7,7 +7,7 @@
 <script src="sonido-libro.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Caveat:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Caveat:wght@500;700&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
@@ -66,6 +66,29 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #f7d9c4; }
   transition: opacity 700ms var(--suave), transform 700ms var(--suave);
 }
 .ct-frase.is-fuera { opacity: 0; transform: translateY(-6px); }
+.ct-sopla {
+  position: absolute;
+  right: calc(12px + env(safe-area-inset-right, 0px));
+  top: calc(var(--seg-t) + 58px);
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: rgba(255, 250, 244, 0.72);
+  box-shadow: 0 6px 16px -8px rgba(110, 40, 60, 0.6), inset 0 0 0 1.5px rgba(232, 67, 107, 0.35);
+  font-size: 22px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 200ms var(--suave), background 300ms;
+}
+.ct-sopla:active { transform: scale(0.92); }
+.ct-sopla span { position: relative; z-index: 1; }
+.ct-sopla i { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(232, 67, 107, 0.35); transition: height 80ms linear; }
+.ct-sopla.is-oyendo { background: rgba(255, 236, 242, 0.92); box-shadow: 0 0 0 4px rgba(232, 67, 107, 0.25), 0 6px 16px -8px rgba(110, 40, 60, 0.6); }
 .ct-pista {
   position: absolute;
   left: 0; right: 0;
@@ -89,7 +112,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #f7d9c4; }
     <p class="ct-titulo">La cometa</p>
     <p class="ct-frase" id="frase" role="status" aria-live="polite">Hoy hace buen viento.</p>
   </div>
-  <p class="ct-pista">arrastra el carrete · toca el cielo para soplar</p>
+  <p class="ct-pista" id="pista">arrastra el carrete · toca el cielo · inclínalo</p>
+  <button class="ct-sopla" id="sopla" type="button" aria-label="Soplar con el micrófono"><span>🌬️</span><i id="nivel"></i></button>
 </div>
 
 <script>
@@ -105,7 +129,12 @@ const CONF = {
     vuelta: ["¡Dio una vuelta completa!", "Tú también me haces dar vueltas así."],
     tiron: ["Mientras yo la sostenga, no se cae.", "Aunque sople fuerte, no te suelto."],
     baja: ["Se cansó un poquito…", "ahorita vuelve el viento"],
+    sopla: ["¡Eso! Tu aire la hace volar 🥹", "Sopla más, que le encanta", "Hasta tu aire me enamora"],
+    inclina: ["Se va para donde tú la llevas", "Te sigue a ti, como yo"],
+    sacude: ["¡Qué ventarrón! 😳", "Uy, eso fue un buen sacudón"],
   },
+  // Lo que dice la banderita de la cola.
+  banderita: "te amo",
   colores: ["#e8436b", "#ffd3dc", "#b3265a", "#ffb4c4"],
 };
 
@@ -328,6 +357,7 @@ function decir(par) {
 let dedo = null;
 mundo.addEventListener("pointerdown", (e) => {
   despertar();
+  pedirSensores();
   const r = mundo.getBoundingClientRect();
   const x = e.clientX - r.left, y = e.clientY - r.top;
   dedo = { id: e.pointerId, x, y, x0: x, y0: y, t: performance.now(), movido: false, lleva: y > suelo - H * 0.2 || Math.hypot(x - carrete.x, y - carrete.y) < 90, cx0: carrete.ox, cy0: carrete.oy, hist: [[y, performance.now()]] };
@@ -367,6 +397,97 @@ mundo.addEventListener("pointerup", soltar);
 mundo.addEventListener("pointercancel", soltar);
 
 /* ══════════════════════════════════════════════════════════════════════
+   TU MOVIMIENTO Y TU AIRE
+   · Inclinar el teléfono cambia hacia dónde sopla el viento.
+   · Sacudirlo es un ventarrón.
+   · Con el botón 🌬️, se sopla al micrófono de verdad y la cometa sube.
+   ══════════════════════════════════════════════════════════════════════ */
+let inclinacion = 0, relojInclina = 0;
+function alInclinar(e) {
+  if (e.gamma == null) return;
+  const o = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+  const lado = o === 90 ? e.beta : o === -90 || o === 270 ? -e.beta : e.gamma;
+  inclinacion = clamp((lado || 0) / 35, -1, 1);
+}
+let ultimaSacudida = 0;
+function alMoverse(e) {
+  const a = e.acceleration || {};
+  const m = Math.hypot(a.x || 0, a.y || 0, a.z || 0);
+  const ahora = performance.now();
+  if (m > 14 && ahora - ultimaSacudida > 900) {
+    ultimaSacudida = ahora;
+    rafaga = 1;
+    K.vy -= 120; K.va += azar(-5, 5);
+    sonidoRafaga();
+    decir(CONF.frases.sacude);
+  }
+}
+let sensoresPedidos = false;
+function pedirSensores() {
+  if (sensoresPedidos) return;
+  sensoresPedidos = true;
+  const encender = () => {
+    window.addEventListener("deviceorientation", alInclinar);
+    window.addEventListener("devicemotion", alMoverse);
+  };
+  const DOE = window.DeviceOrientationEvent;
+  if (DOE && typeof DOE.requestPermission === "function") {
+    DOE.requestPermission().then((r) => { if (r === "granted") encender(); }).catch(() => {});
+    const DME = window.DeviceMotionEvent;
+    if (DME && typeof DME.requestPermission === "function") DME.requestPermission().catch(() => {});
+  } else encender();
+}
+
+let mic = null, nivelSoplo = 0;
+const elSopla = document.getElementById("sopla");
+const elNivel = document.getElementById("nivel");
+elSopla.addEventListener("pointerdown", (e) => e.stopPropagation());
+elSopla.addEventListener("click", async (e) => {
+  e.stopPropagation();
+  despertar();
+  if (mic) { apagarMic(); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    const src = ac.createMediaStreamSource(stream);
+    const an = ac.createAnalyser();
+    an.fftSize = 512;
+    src.connect(an);
+    mic = { stream, an, datos: new Uint8Array(an.fftSize) };
+    elSopla.classList.add("is-oyendo");
+    elFrase.textContent = "Sopla al teléfono… 🌬️";
+  } catch {
+    elFrase.textContent = "Sin micrófono… pero toca el cielo y soplo yo 🤍";
+  }
+});
+function apagarMic() {
+  if (!mic) return;
+  mic.stream.getTracks().forEach((t) => t.stop());
+  mic = null;
+  nivelSoplo = 0;
+  elNivel.style.height = "0";
+  elSopla.classList.remove("is-oyendo");
+}
+addEventListener("pagehide", apagarMic);
+document.addEventListener("visibilitychange", () => { if (document.hidden) apagarMic(); });
+let relojSoplo = 0;
+function oirSoplo(dt) {
+  if (!mic) return;
+  mic.an.getByteTimeDomainData(mic.datos);
+  let suma = 0;
+  for (const v of mic.datos) { const x = (v - 128) / 128; suma += x * x; }
+  const rms = Math.sqrt(suma / mic.datos.length);
+  nivelSoplo = acercar(nivelSoplo, clamp((rms - 0.04) / 0.22, 0, 1), rms > nivelSoplo ? 18 : 4, dt);
+  elNivel.style.height = `${Math.round(nivelSoplo * 100)}%`;
+  if (nivelSoplo > 0.12) {
+    rafaga = Math.max(rafaga, nivelSoplo);
+    K.vy -= 260 * nivelSoplo * dt;
+    if (Math.random() < dt * 12 * nivelSoplo) semillas.push({ x: azar(0, A * 0.3), y: azar(H * 0.3, suelo), vx: azar(120, 260), vy: azar(-80, 20), vida: 1, tipo: Math.random() < 0.5 ? "semilla" : "petalo", giro: Math.random() * TAU });
+    relojSoplo += dt;
+    if (relojSoplo > 1.2) { relojSoplo = -6; decir(CONF.frases.sopla); }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
    LA FÍSICA
    ══════════════════════════════════════════════════════════════════════ */
 let giroAcum = 0, relojBaja = 0, relojAlta = 0;
@@ -374,8 +495,10 @@ let giroAcum = 0, relojBaja = 0, relojAlta = 0;
 function fisica(dt, t) {
   // El viento: base suave, rachas que van y vienen, y la ráfaga del dedo.
   rafaga = Math.max(0, rafaga - dt * 0.6);
-  viento = 0.95 + ruido(t * 0.6, 1) * 0.45 + Math.max(0, ruido(t * 1.3, 7)) * 0.5 + rafaga * 0.9;
-  vientoX = ruido(t * 0.4, 3) * 70 + rafaga * 40 * Math.sign(Math.sin(t));
+  oirSoplo(dt);
+  viento = 0.95 + ruido(t * 0.6, 1) * 0.45 + Math.max(0, ruido(t * 1.3, 7)) * 0.5 + rafaga * 0.9 + nivelSoplo * 0.8;
+  vientoX = ruido(t * 0.4, 3) * 70 + rafaga * 40 * Math.sign(Math.sin(t)) + inclinacion * 170;
+  if (Math.abs(inclinacion) > 0.55) { relojInclina += dt; if (relojInclina > 1.4) { relojInclina = -10; decir(CONF.frases.inclina); } } else relojInclina = Math.max(0, relojInclina - dt);
 
   // El carrete sigue a la mano (o vuelve a su sitio si no hay mano).
   if (!dedo) { carrete.ox = acercar(carrete.ox, carrete.ox * 0.6, 0.8, dt); carrete.oy = acercar(carrete.oy, 0, 2, dt); }
@@ -559,6 +682,32 @@ function pintarCometa() {
   g.restore();
 }
 
+function pintarBanderita() {
+  const a = cola[N_COLA - 2], b = cola[N_COLA - 1];
+  if (!a || !b) return;
+  const ang = Math.atan2(b.y - a.y, b.x - a.x);
+  const tam = Math.max(11, K.tam * 0.34);
+  g.save();
+  g.translate(b.x, b.y);
+  g.rotate(ang - Math.PI / 2);
+  g.font = `700 ${tam}px "Caveat", "Segoe Script", cursive`;
+  const w = g.measureText(CONF.banderita).width + tam * 0.8, h = tam * 1.25;
+  // La tela ondea: cuatro tiras con fase distinta.
+  const tiras = 6;
+  for (let k = 0; k < tiras; k++) {
+    const y0 = (k / tiras) * w, y1 = ((k + 1) / tiras) * w;
+    const off = Math.sin(reloj * 8 - k * 0.9) * tam * 0.18 * (k / tiras);
+    g.fillStyle = k % 2 ? "#fff3f6" : "#ffe6ee";
+    g.fillRect(-h / 2 + off, y0, h, y1 - y0 + 0.5);
+  }
+  g.rotate(Math.PI / 2);
+  g.fillStyle = "#c8284e";
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.fillText(CONF.banderita, w / 2, Math.sin(reloj * 8 - 3) * tam * 0.08);
+  g.restore();
+}
+
 function pintarCola() {
   g.strokeStyle = "#8a2a44";
   g.lineWidth = 1.4;
@@ -623,6 +772,7 @@ function paso(ahora) {
   for (let i = 1; i <= N_CUERDA; i++) g.lineTo(cuerda[i].x, cuerda[i].y);
   g.stroke();
   pintarCola();
+  pintarBanderita();
   pintarCometa();
 
   // Las nubes cercanas pasan por delante de la cometa a veces.

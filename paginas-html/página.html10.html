@@ -8,7 +8,7 @@
 <script src="sonido-libro.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Caveat:wght@600&family=Cormorant+Garamond:wght@500&display=swap">
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
@@ -48,12 +48,33 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #03060d; }
   transition: opacity 1.2s ease;
 }
 .lg-pista.is-fuera { opacity: 0; }
+.lg-frase {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--seg-b) + var(--barra) + 44px);
+  width: min(88vw, 420px);
+  margin: 0;
+  translate: -50% 0;
+  text-align: center;
+  pointer-events: none;
+  font-family: "Caveat", "Segoe Script", cursive;
+  font-size: clamp(1.25rem, 5.6vw, 1.6rem);
+  line-height: 1.2;
+  color: #fff4dc;
+  text-shadow: 0 0 18px rgba(255, 214, 150, 0.55), 0 2px 10px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  transform: translateY(10px);
+  filter: blur(4px);
+  transition: opacity 900ms ease, transform 900ms ease, filter 900ms ease;
+}
+.lg-frase.is-visible { opacity: 1; transform: none; filter: none; }
 </style>
 </head>
 <body>
 <div class="lg" id="mundo">
   <canvas id="lienzo"></canvas>
   <p class="lg-pista" id="pista">desliza hacia arriba y tira una piedra</p>
+  <p class="lg-frase" id="frase" role="status" aria-live="polite"></p>
 </div>
 
 <script>
@@ -62,14 +83,55 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #03060d; }
 
 /* ══════════════════════════════════════════════════════════════════════
    LO QUE SE PUEDE CAMBIAR
-   Las dos únicas frases del lago. Salen una y otra, por turnos.
+   Cada piedra que se hunde es un deseo: del agua sube la PALABRA escrita
+   con luz, y debajo sale su frase. Van en desorden y no se repiten hasta
+   haber salido todas (la primera siempre es «Te amo»).
+   La palabra, cortita (una o dos palabras), que es la que se escribe grande.
    ══════════════════════════════════════════════════════════════════════ */
-const FRASES = ["Te amo", "Siempre tuyo"];
+const DESEOS = [
+  ["Te amo", "Así, completita, tal como eres."],
+  ["Preciosa", "Me encanta todo de ti, de pies a cabeza."],
+  ["Tus ojos", "Son lo más bonito que he visto en mi vida."],
+  ["Tu sonrisa", "Me derrite cada vez, no sabes cuánto."],
+  ["Tu cuerpo", "Me encanta tal como es: es perfecto para mí."],
+  ["Tus manos", "Me muero por tomarlas y no soltarlas nunca."],
+  ["Tus labios", "Me encantan… y ya sabes para qué 😳"],
+  ["Tu cintura", "Me encanta abrazarte justo de ahí."],
+  ["Tus curvas", "Me encantan todas, una por una."],
+  ["Tu piel", "Suavecita, como tú."],
+  ["Tu cabello", "Me encanta cómo se te ve, siempre."],
+  ["Hermosa", "Arreglada, sin arreglar, en pijama… siempre."],
+  ["Mi reina", "Eres perfecta así como eres. No cambies nada."],
+  ["Guapísima", "No hay nadie más bonita que tú, neta."],
+  ["Tu voz", "Mi sonido favorito del mundo."],
+  ["Me encantas", "Toda tú: tu forma de ser, tu cuerpo, tu corazón."],
+  ["Siempre tuyo", "Hoy, mañana y todos los días que vengan."],
+];
+let mazo = [];
+function siguienteDeseo() {
+  if (!mazo.length) {
+    const [primero, ...resto] = DESEOS;
+    mazo = resto.sort(() => Math.random() - 0.5);
+    if (!tiradas) mazo.unshift(primero); else mazo.push(primero);
+  }
+  return mazo.shift();
+}
 
 const mundo = document.getElementById("mundo");
 const lienzo = document.getElementById("lienzo");
 const g = lienzo.getContext("2d", { alpha: false });
 const elPista = document.getElementById("pista");
+const elFrase = document.getElementById("frase");
+let relojFrase = null;
+function decirFrase(t) {
+  clearTimeout(relojFrase);
+  elFrase.classList.remove("is-visible");
+  relojFrase = setTimeout(() => {
+    elFrase.textContent = t;
+    elFrase.classList.add("is-visible");
+    relojFrase = setTimeout(() => elFrase.classList.remove("is-visible"), 5200);
+  }, 350);
+}
 const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const TAU = Math.PI * 2;
@@ -481,12 +543,14 @@ function paso(ahora) {
         tocarAgua(p, p.x, p.z, true);
         const [sx, sy] = aPantalla(p.x, p.z);
         piedras.splice(i, 1);
-        const frase = FRASES[tiradas % FRASES.length];
+        const [frase, sub] = siguienteDeseo();
+        const par = tiradas % 2 === 0;
         tiradas++;
         setTimeout(() => {
           escribir(frase, sx, sy);
-          acorde(frase === FRASES[0] ? [523.25, 659.25, 783.99, 1046.5] : [349.23, 440, 523.25, 698.46]);
+          acorde(par ? [523.25, 659.25, 783.99, 1046.5] : [349.23, 440, 523.25, 698.46]);
         }, 650);
+        setTimeout(() => decirFrase(sub), 1900);
       }
     }
   }

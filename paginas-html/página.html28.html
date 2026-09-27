@@ -40,6 +40,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0c16; }
   transition: opacity 200ms ease, transform 300ms var(--suave);
 }
 .tm-cuenta.is-ve { opacity: 1; transform: none; }
+.tm-cuenta.is-late { animation: tm-late 600ms var(--suave); }
+@keyframes tm-late { 0% { transform: scale(1.25); text-shadow: 0 0 50px rgba(200, 215, 255, 0.9); } 100% { transform: none; } }
+.tm-cuenta.is-bien { color: #ff8fb0; text-shadow: 0 0 40px rgba(255, 120, 170, 0.9); }
 .tm-pie { position: absolute; left: 0; right: 0; bottom: calc(var(--seg-b) + var(--barra) + 16px); display: grid; justify-items: center; gap: 3px; padding: 0 22px; pointer-events: none; text-align: center; }
 .tm-frase { margin: 0; max-width: 20em; font-style: italic; font-weight: 500; font-size: clamp(1.05rem, 4.8vw, 1.32rem); line-height: 1.3; color: #f4f6ff; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9); transition: opacity 700ms var(--suave), transform 700ms var(--suave); }
 .tm-firma { margin: 0; font-family: "Caveat", cursive; font-size: clamp(1rem, 4.4vw, 1.22rem); color: #b8c8ff; transition: opacity 700ms var(--suave) 200ms; }
@@ -66,14 +69,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0c16; }
 
 const CONF = {
   metrosPorSegundo: 343,
-  distanciaInicial: 11,
+  distanciaInicial: 6,
   seAcerca: 2,
   margenAcierto: 0.9,
   tramos: [
-    { s: 10, texto: "Está lejísimos. Apenas se oye.", firma: "tenemos tiempo" },
-    { s: 7, texto: "Se acerca. El aire ya huele a lluvia.", firma: "cuenta conmigo" },
-    { s: 4, texto: "Ya está más cerca.", firma: "no tengas miedo" },
-    { s: 2, texto: "Justo encima. Suenan casi juntos.", firma: "aquí estoy contigo" },
+    { s: 6, texto: "Está lejos todavía. Apenas se oye.", firma: "tenemos tiempo" },
+    { s: 4, texto: "Se acerca. El aire ya huele a lluvia.", firma: "cuenta conmigo" },
+    { s: 2, texto: "Ya está muy cerquita.", firma: "no tengas miedo, aquí estoy" },
+    { s: 1, texto: "Justo encima. Suenan casi juntos.", firma: "abrázame fuerte" },
   ],
   aciertos: [
     ["¡Justo! Así de lejos está.", "contando juntos no falla"],
@@ -82,8 +85,9 @@ const CONF = {
     ["Ya casi no hay que contar.", "agárrate fuerte"],
   ],
   falloLargo: "Te pasaste contando. Ya había sonado.",
-  falloCorto: "Muy pronto. Espera a oírlo.",
-  final: ["Ya pasó la tormenta.", "y yo sigo aquí contigo"],
+  falloCorto: "Todavía no… espera a oírlo 🤫",
+  final: ["Ya pasó la tormenta.", "y yo sigo aquí contigo, como siempre 🤍"],
+  paraguas: ["Bajo el paraguas, contigo ☂️", "aquí no te mojas"],
 };
 
 const mundo = document.getElementById("mundo");
@@ -274,6 +278,24 @@ function trueno(cerca) {
   }
 }
 
+/* Un tic bajito por segundo, para contar juntos. */
+function tic(fuerte) {
+  if (!ac) return;
+  const t = ac.currentTime, o = ac.createOscillator(), gg = ac.createGain();
+  o.type = "sine"; o.frequency.value = fuerte ? 1180 : 880;
+  gg.gain.setValueAtTime(0.0001, t); gg.gain.exponentialRampToValueAtTime(0.05, t + 0.005); gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+  o.connect(gg).connect(ac.destination); o.start(t); o.stop(t + 0.15);
+}
+/* Una gota que salpica donde tocas. */
+function plic() {
+  if (!ac) return;
+  const t = ac.currentTime, o = ac.createOscillator(), gg = ac.createGain();
+  const f = azar(1400, 2400);
+  o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.5, t + 0.07);
+  gg.gain.setValueAtTime(0.0001, t); gg.gain.exponentialRampToValueAtTime(0.06, t + 0.004); gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+  o.connect(gg).connect(ac.destination); o.start(t); o.stop(t + 0.1);
+}
+
 /* ══════════════════════════════════════════════════════════════════════
    EL JUEGO
    ══════════════════════════════════════════════════════════════════════ */
@@ -297,26 +319,49 @@ function relampago(cerca) {
 }
 
 window.__tormenta = { rayo: (c) => relampago(c) };
-mundo.addEventListener("pointerdown", () => {
+const dedo = { abajo: false, x: 0, y: 0, x0: 0, t0: 0, vx: 0 };
+let paraguas = 0, paraguasDicho = false;
+const circulos = [];
+mundo.addEventListener("pointermove", (e) => {
+  if (!dedo.abajo) return;
+  const r = mundo.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  dedo.vx = acercar(dedo.vx, (x - dedo.x) * 60, 6, 1 / 60);
+  dedo.x = x; dedo.y = y;
+});
+const soltarDedo = () => { dedo.abajo = false; };
+mundo.addEventListener("pointerup", soltarDedo);
+mundo.addEventListener("pointercancel", soltarDedo);
+mundo.addEventListener("pointerdown", (e) => {
   despertar();
+  const r0 = mundo.getBoundingClientRect();
+  Object.assign(dedo, { abajo: true, x: e.clientX - r0.left, y: e.clientY - r0.top, t0: performance.now(), vx: 0 });
+  dedo.x0 = dedo.x;
+  circulos.push({ x: dedo.x, y: dedo.y, t: 0 });
+  for (let i = 0; i < 8; i++) salpicas.push({ x: dedo.x + azar(-14, 14), y: dedo.y + azar(-6, 6), t: azar(-0.1, 0) });
+  plic();
   if (fase === "espera") {
     fase = "ambiente"; relojFase = 0; intObj = 0.3;
-    elPista.textContent = "escucha…";
+    elPista.textContent = "escucha… · mantén el dedo para el paraguas";
     return;
   }
   if (fase === "contar" && !tocado) {
-    tocado = true;
     const pasado = relojFase;
     const dif = pasado - distancia;
     if (Math.abs(dif) <= CONF.margenAcierto) {
+      tocado = true;
       nAcierto++;
       decir(...CONF.aciertos[(nAcierto - 1) % CONF.aciertos.length]);
       distancia = Math.max(0, distancia - CONF.seAcerca);
       contar.acerto = true;
-    } else if (dif > 0) decir(CONF.falloLargo);
-    else decir(CONF.falloCorto);
+      elCuenta.textContent = "♥";
+      elCuenta.classList.add("is-ve", "is-bien");
+      setTimeout(() => elCuenta.classList.remove("is-ve", "is-bien"), 900);
+    } else if (dif > 0) { tocado = true; decir(CONF.falloLargo); }
+    // Si tocó antes de tiempo no pierde el turno: puede tocar cuando suene.
+    else if (!contar.avisado) { contar.avisado = true; decir(CONF.falloCorto); }
   }
-  if (fase === "pasada" && relojFase > 2) { fase = "espera"; contar.ultimo = null; distancia = CONF.distanciaInicial; nAcierto = 0; mostrarDistancia(); decir("Otra tormenta a lo lejos…"); elPista.textContent = "toca para empezar"; }
+  if (fase === "pasada" && relojFase > 2) { fase = "espera"; paraguasDicho = false; contar.ultimo = null; distancia = CONF.distanciaInicial; nAcierto = 0; mostrarDistancia(); decir("Otra tormenta a lo lejos…"); elPista.textContent = "toca para empezar"; }
 });
 
 function avanzar(dt) {
@@ -325,7 +370,7 @@ function avanzar(dt) {
     // Primero el ambiente: el viento, la lluvia creciendo y destellos lejos.
     intObj = Math.min(0.55, 0.3 + relojFase * 0.05);
     if (Math.random() < dt * 0.6) lejanos = 1;
-    if (relojFase > 5.5) { fase = "calma"; relojFase = 0; relojRayo = azar(1, 2.5); decir("Ahora cuenta desde el relámpago…", "y toca cuando suene el trueno"); elPista.textContent = "cuenta en voz bajita"; mostrarDistancia(); }
+    if (relojFase > 4) { fase = "calma"; relojFase = 0; relojRayo = azar(1, 2); decir("Ahora cuenta desde el relámpago…", "y toca cuando suene el trueno"); elPista.textContent = "cuenta en voz bajita"; mostrarDistancia(); }
   } else if (fase === "calma") {
     relojRayo -= dt;
     if (Math.random() < dt * 0.3) lejanos = 0.6;
@@ -340,7 +385,12 @@ function avanzar(dt) {
   } else if (fase === "contar") {
     // Los segundos van apareciendo, uno por uno, hasta que suena.
     const seg = Math.floor(relojFase);
-    if (!contar.sonado && seg >= 1) { elCuenta.textContent = String(seg); elCuenta.classList.add("is-ve"); }
+    if (!contar.sonado && seg >= 1 && seg !== contar.seg) {
+      contar.seg = seg;
+      elCuenta.textContent = String(seg);
+      elCuenta.classList.remove("is-late"); void elCuenta.offsetWidth; elCuenta.classList.add("is-ve", "is-late");
+      tic(false);
+    }
     if (relojFase >= tRayo && !contar.sonado) {
       contar.sonado = true;
       trueno(1 - distancia / CONF.distanciaInicial);
@@ -349,6 +399,8 @@ function avanzar(dt) {
     }
     if (relojFase > tRayo + 1.8) {
       contar.sonado = false;
+      contar.seg = 0;
+      contar.avisado = false;
       if (!tocado) decir("Sonó en el " + Math.round(tRayo) + ".", "a la próxima cuentas conmigo");
       // Aunque no acierte, la tormenta sigue viniendo, solo más despacio.
       if (!tocado || !contar.acerto) distancia = Math.max(0, distancia - 1);
@@ -357,7 +409,7 @@ function avanzar(dt) {
       if (tr !== contar.ultimo) { contar.ultimo = tr; setTimeout(() => decir(tr.texto, tr.firma), 1800); }
       mostrarDistancia();
       intObj = 0.4 + (1 - distancia / CONF.distanciaInicial) * 0.6;
-      fase = "calma"; relojFase = 0; relojRayo = azar(3, 6);
+      fase = "calma"; relojFase = 0; relojRayo = azar(2, 3.5);
     }
   } else if (fase === "pasada") {
     intObj = Math.max(0, 0.6 - relojFase * 0.08);
@@ -398,7 +450,13 @@ function paso(ahora) {
   fogonazo *= Math.exp(-dt * 5);
   lejanos *= Math.exp(-dt * 6);
   sacudida *= Math.exp(-dt * 4);
-  const viento = 0.25 + intensidad * 0.35;
+  // El dedo, si se arrastra, empuja el viento; si se queda quieto, abre
+  // un paraguas donde está.
+  const quieto = dedo.abajo && Math.abs(dedo.x - dedo.x0) < 14 && performance.now() - dedo.t0 > 550;
+  paraguas = acercar(paraguas, quieto ? 1 : 0, quieto ? 6 : 4, dt);
+  if (quieto && !paraguasDicho && intensidad > 0.2) { paraguasDicho = true; decir(...CONF.paraguas); }
+  dedo.vx *= Math.exp(-dt * 2);
+  const viento = 0.25 + intensidad * 0.35 + clamp(dedo.vx / 900, -0.9, 0.9);
 
   g.save();
   if (sacudida > 0.02) g.translate(azar(-1, 1) * sacudida * 6, azar(-1, 1) * sacudida * 4);
@@ -462,6 +520,11 @@ function paso(ahora) {
     d.y += d.v * dt * (0.6 + d.z * 0.5);
     d.x += d.v * viento * dt * 0.35;
     const suelo = horizonte + H * 0.08 + d.z * (H - horizonte - H * 0.08);
+    // El paraguas: la lluvia que le cae encima escurre por los lados.
+    if (paraguas > 0.3) {
+      const r = 58 * paraguas, dx = d.x - dedo.x, dy = d.y - (dedo.y - 40);
+      if (dy > -6 && dy < 8 && Math.abs(dx) < r) { if (Math.random() < 0.4) salpicas.push({ x: d.x, y: dedo.y - 40 - Math.sqrt(Math.max(0, r * r - dx * dx)) * 0.5, t: 0 }); d.y = azar(-80, -10); d.x = Math.random() * A * 1.3 - A * 0.15; continue; }
+    }
     if (d.y > suelo) {
       if (Math.random() < 0.3) salpicas.push({ x: d.x, y: suelo, t: 0 });
       d.y = azar(-80, -10); d.x = Math.random() * A * 1.3 - A * 0.15;
@@ -475,12 +538,48 @@ function paso(ahora) {
     const s = salpicas[i];
     s.t += dt;
     if (s.t > 0.25) { salpicas.splice(i, 1); continue; }
+    if (s.t < 0) continue;
     const k = s.t / 0.25;
     g.globalAlpha = 1 - k;
     g.beginPath(); g.ellipse(s.x, s.y, 1 + k * 5, 0.5 + k * 1.2, 0, Math.PI, TAU); g.stroke();
   }
   g.globalAlpha = 1;
   if (salpicas.length > 200) salpicas.splice(0, salpicas.length - 200);
+
+  // Los círculos de agua donde tocas.
+  for (let i = circulos.length - 1; i >= 0; i--) {
+    const c = circulos[i];
+    c.t += dt;
+    if (c.t > 0.9) { circulos.splice(i, 1); continue; }
+    const k = c.t / 0.9;
+    g.strokeStyle = `rgba(200,215,255,${0.6 * (1 - k)})`;
+    g.lineWidth = 1.5;
+    g.beginPath(); g.ellipse(c.x, c.y, 6 + k * 46, 3 + k * 16, 0, 0, TAU); g.stroke();
+    if (k > 0.2) { g.beginPath(); g.ellipse(c.x, c.y, (k - 0.2) * 40, (k - 0.2) * 14, 0, 0, TAU); g.stroke(); }
+  }
+
+  // El paraguas.
+  if (paraguas > 0.03) {
+    const px = dedo.x, py = dedo.y - 40, r = 58 * paraguas;
+    g.save();
+    g.globalAlpha = Math.min(1, paraguas * 1.3);
+    g.strokeStyle = "#2a1a24"; g.lineWidth = 3; g.lineCap = "round";
+    g.beginPath(); g.moveTo(px, py); g.lineTo(px, py + 44); g.arc(px - 7, py + 44, 7, 0, Math.PI); g.stroke();
+    const tela = g.createLinearGradient(px - r, py - r * 0.5, px + r, py);
+    tela.addColorStop(0, "#ff6f9a"); tela.addColorStop(1, "#c8284e");
+    g.fillStyle = tela;
+    g.beginPath(); g.moveTo(px - r, py);
+    g.quadraticCurveTo(px - r, py - r * 0.75, px, py - r * 0.75);
+    g.quadraticCurveTo(px + r, py - r * 0.75, px + r, py);
+    for (let k = 4; k >= 0; k--) { const x1 = px - r + (k + 0.5) * (2 * r / 5), x2 = px - r + k * (2 * r / 5); g.quadraticCurveTo(x1, py - r * 0.12, x2, py); }
+    g.fill();
+    g.fillStyle = "rgba(255,255,255,.9)";
+    const hs = r * 0.16, hy = py - r * 0.36;
+    g.beginPath(); g.moveTo(px, hy + hs * 0.8);
+    g.bezierCurveTo(px - hs * 1.4, hy - hs * 0.1, px - hs * 0.55, hy - hs * 1.05, px, hy - hs * 0.35);
+    g.bezierCurveTo(px + hs * 0.55, hy - hs * 1.05, px + hs * 1.4, hy - hs * 0.1, px, hy + hs * 0.8); g.fill();
+    g.restore();
+  }
 
   // El destello final, que llena toda la pantalla.
   if (fogonazo > 0.5) { g.fillStyle = `rgba(235,240,255,${(fogonazo - 0.5) * 0.9})`; g.fillRect(-10, -10, A + 20, H + 20); }
