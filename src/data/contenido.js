@@ -142,9 +142,7 @@ export default {
     "04-postal-desde-aqui": [
       "imagen1.png"
     ],
-    "05-como-dices-mi-nombre": [
-      "imagen1.png"
-    ],
+    "05-como-dices-mi-nombre": [],
     "06-recuerdos": [
       "imagen1.png",
       "imagen2.png",
