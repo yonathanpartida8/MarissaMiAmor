@@ -11,5 +11,6 @@ window.NOCHE_ARCHIVOS = [
   "sonidos/buhos/SONIDO DE BUHO 🦉(MP3_160K).mp3",
   "sonidos/fogata/CHIMENEA NAVIDEÑA 4K 🔥 Fuego para Dormir_ Relajarse y Ambiente Acogedor _ 3 HORAS(MP3_160K).mp3",
   "sonidos/lluvia/Sonido de Lluvia sin Truenos Para Dormir(MP3_160K).mp3",
-  "sonidos/rio/Sonido de río relajante_ alivio de acúfenos y tinnitus(MP3_160K).mp3"
+  "sonidos/rio/Sonido de río relajante_ alivio de acúfenos y tinnitus(MP3_160K).mp3",
+  "sonidos/tormenta/Sonidos de Truenos(MP3_160K).mp3"
 ];
