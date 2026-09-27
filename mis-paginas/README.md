@@ -18,6 +18,17 @@ Cualquier vídeo que dejes en `mis-paginas/videos/` y cualquier foto que dejes
 en `mis-paginas/fotos/` sale **sola** como una página, sin escribir nada.
 Si además la pones en `paginas.js` (con título, texto…), sale sólo esa.
 
+**Para cambiarle el título y el texto sin tocar código**, deja al lado un
+`.txt` con el mismo nombre (`video.mp4` → `video.txt`):
+
+```
+titulo: Te dedico este video
+arriba: dale play 🤍
+texto: ¡Míralo completo! 🤍
+```
+
+Lo que diga el `.txt` manda sobre todo lo demás (también sobre `paginas.js`).
+
 La lista de lo que hay en las carpetas (`src/data/contenido.js`) la rehace
 GitHub solo a cada subida. Si trabajas en el ordenador: `node herramientas/contenido.mjs`.
 
@@ -132,7 +143,8 @@ Los vídeos pesan mucho y esto se abre desde el móvil, muchas veces con datos.
 - **Menos de 15 MB** por vídeo, idealmente menos de 8.
 - **`.mp4` (H.264)** es lo que reproduce todo. `.webm` no funciona en iPhones
   antiguos.
-- **Vertical** (9:16) si es para verlo en el móvil.
+- **Vertical u horizontal**, da igual: el marco toma la forma del vídeo y
+  los acostados traen un botón para verlos en pantalla completa.
 - Pon siempre un `poster`: es lo que se ve mientras carga.
 - GitHub avisa a partir de 50 MB por archivo y rechaza a partir de 100 MB.
 

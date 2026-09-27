@@ -1,0 +1,3 @@
+titulo: El mismo cielo
+arriba: une los puntos
+texto: Me dijeron una vez que las constelaciones no existen: que son estrellas sueltas, a distancias imposibles unas de otras, y que la figura la pone quien mira. Me pareció la cosa más romántica que he oído. Nosotros también estamos lejísimos y también hacemos figura.

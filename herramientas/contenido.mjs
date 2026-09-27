@@ -138,6 +138,112 @@ for (const dir of ["fotos-paginas", "sorpresas", "images/amores", "mis-paginas/f
   if (existsSync(join(RAIZ, dir))) recorrerFotos(dir);
 }
 
+// ── TEXTOS EN .txt ───────────────────────────────────────────────────
+// La forma fácil de cambiar títulos y textos, sin tocar código:
+//   · al lado de un vídeo o foto de `mis-paginas/`, un .txt con su mismo
+//     nombre (`video.mp4` → `video.txt`);
+//   · en cualquier carpeta de `fotos-paginas/`, un `textos.txt`.
+// Dentro, una línea por cosa:
+//   titulo: Te dedico este video
+//   arriba: dale play 🤍
+//   texto: ¡Míralo completo!
+// (el texto puede seguir en las líneas de abajo). Sin «titulo:» ni nada,
+// la primera línea es el título y el resto, el texto.
+const CLAVES = { titulo: "titulo", "título": "titulo", title: "titulo", arriba: "arriba", encima: "arriba", texto: "texto", text: "texto" };
+function leerTextos(ruta) {
+  let crudo;
+  try {
+    crudo = readFileSync(join(RAIZ, ruta), "utf8");
+  } catch {
+    return null;
+  }
+  crudo = crudo.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").trim();
+  if (!crudo) return null;
+  const campos = {};
+  let actual = null;
+  let conClaves = false;
+  for (const linea of crudo.split("\n")) {
+    const m = /^\s*(t[ií]tulo|title|arriba|encima|texto|text)\s*:\s*(.*)$/i.exec(linea);
+    if (m) {
+      conClaves = true;
+      actual = CLAVES[m[1].toLowerCase()];
+      campos[actual] = m[2];
+    } else if (actual) {
+      campos[actual] += "\n" + linea;
+    }
+  }
+  if (!conClaves) {
+    const [primera, ...resto] = crudo.split("\n");
+    campos.titulo = primera;
+    campos.texto = resto.join("\n");
+  }
+  for (const k of Object.keys(campos)) {
+    // Una línea en blanco (o varias) entre párrafos = un párrafo nuevo.
+    campos[k] = campos[k].replace(/[ \t]+\n/g, "\n").replace(/\n\s*\n+/g, "\n").trim();
+    if (!campos[k]) delete campos[k];
+  }
+  return Object.keys(campos).length ? campos : null;
+}
+
+const conTxt = (dir, archivos) =>
+  Object.fromEntries(
+    archivos
+      .map((f) => {
+        const base = f.replace(/\.[^.]+$/, "");
+        const txt = leer(dir).find((x) => x.normalize("NFC").toLowerCase() === `${base}.txt`.normalize("NFC").toLowerCase());
+        const t = txt && leerTextos(`${dir}/${txt}`);
+        return t ? [`${dir}/${f}`, t] : null;
+      })
+      .filter(Boolean)
+  );
+const textosMios = { ...conTxt("mis-paginas/videos", misVideos), ...conTxt("mis-paginas/fotos", misFotos) };
+const textosPaginas = Object.fromEntries(
+  Object.keys(fotosPaginas)
+    .map((c) => {
+      const txt = leer(`fotos-paginas/${c}`).find((x) => /^textos\.txt$/i.test(x));
+      const t = txt && leerTextos(`fotos-paginas/${c}/${txt}`);
+      return t ? [c, t] : null;
+    })
+    .filter(Boolean)
+);
+
+// ── LA FORMA DE CADA VÍDEO ───────────────────────────────────────────
+// Ancho y alto (ya girados si el teléfono lo grabó de lado) y duración,
+// leídos del propio .mp4: así la página sabe desde el principio si el
+// vídeo es acostado o de pie y el marco no salta al cargar.
+function formaVideo(ruta) {
+  let d;
+  try {
+    d = readFileSync(join(RAIZ, ruta));
+  } catch {
+    return null;
+  }
+  let w = 0, h = 0, dur = 0;
+  for (let i = d.indexOf("tkhd"); i > 0; i = d.indexOf("tkhd", i + 4)) {
+    const v = d[i + 4];
+    const base = i + 4;
+    const mat = base + (v === 1 ? 52 : 40);
+    const tw = d.readUInt32BE(base + (v === 1 ? 88 : 76)) / 65536;
+    const th = d.readUInt32BE(base + (v === 1 ? 92 : 80)) / 65536;
+    if (!tw || !th) continue;
+    const a = d.readInt32BE(mat), b = d.readInt32BE(mat + 4);
+    const girado = a === 0 && Math.abs(b) === 65536;
+    [w, h] = girado ? [th, tw] : [tw, th];
+    break;
+  }
+  const m = d.indexOf("mvhd");
+  if (m > 0) {
+    const v = d[m + 4];
+    const escala = d.readUInt32BE(m + 4 + (v === 1 ? 20 : 12));
+    const larga = v === 1 ? Number(d.readBigUInt64BE(m + 4 + 24)) : d.readUInt32BE(m + 4 + 16);
+    if (escala) dur = Math.round((larga / escala) * 10) / 10;
+  }
+  return w && h ? { w: Math.round(w), h: Math.round(h), dur } : null;
+}
+const videosForma = Object.fromEntries(
+  misVideos.map((f) => [`mis-paginas/videos/${f}`, formaVideo(`mis-paginas/videos/${f}`)]).filter(([, x]) => x)
+);
+
 const contenido = {
   paginasHtml,
   amores,
@@ -150,6 +256,9 @@ const contenido = {
   vales,
   noche: existsSync(join(RAIZ, "noche-estrellada/index.html")),
   huellas,
+  textosMios,
+  textosPaginas,
+  videosForma,
 };
 
 // Y los sonidos que la noche puede usar, para que no pida los que faltan.
@@ -198,6 +307,50 @@ const SALIDAS = {
     "// y, en GitHub, la acción `.github/workflows/contenido.yml` a cada subida.\n" +
     `export default ${JSON.stringify(contenido, null, 2)};\n`,
 };
+
+// La reserva de la portada en `index.html`: tiene que pedir EXACTAMENTE la
+// misma dirección que el libro (con su huella), o la foto se baja dos veces.
+{
+  const portada = fotosPaginas["01-portada"]?.[0];
+  const html = readFileSync(join(RAIZ, "index.html"), "utf8");
+  const re = /<link rel="preload" as="image" href="[^"]*"( data-portada)?>/;
+  if (portada && re.test(html)) {
+    const ruta = `fotos-paginas/01-portada/${portada}`;
+    const h = huellas[nfc(ruta)];
+    const href = `fotos-paginas/01-portada/${encodeURIComponent(portada)}${h ? `?v=${h}` : ""}`;
+    SALIDAS["index.html"] = html.replace(re, `<link rel="preload" as="image" href="${href}" data-portada>`);
+  }
+}
+
+// Los módulos que el libro necesita para arrancar (todo lo que `src/main.js`
+// importa, directa o indirectamente, sin contar las páginas, que se piden
+// al llegar a ellas): van como `modulepreload` en `index.html` para que el
+// teléfono los pida todos juntos y no en seis tandas seguidas.
+{
+  const MAPA = { three: "vendor/three/three.module.min.js" };
+  const vistos = new Set();
+  const visitar = (rel) => {
+    if (vistos.has(rel) || !existsSync(join(RAIZ, rel))) return;
+    vistos.add(rel);
+    const src = readFileSync(join(RAIZ, rel), "utf8");
+    const re = /(?:^|[;\n])\s*(?:import\s+(?:[^'"()]*?\s+from\s+)?|export\s+(?:\*|\{[^}]*\})\s+from\s+)["']([^"']+)["']/g;
+    for (let m; (m = re.exec(src)); ) {
+      let d = m[1];
+      if (MAPA[d]) d = MAPA[d];
+      else if (d.startsWith(".")) d = join(rel, "..", d).replace(/\\/g, "/");
+      else continue;
+      visitar(d);
+    }
+  };
+  visitar("src/main.js");
+  vistos.delete("src/main.js");
+  const html = SALIDAS["index.html"] ?? readFileSync(join(RAIZ, "index.html"), "utf8");
+  const re = /<!-- modulos:inicio -->[\s\S]*?<!-- modulos:fin -->/;
+  if (re.test(html)) {
+    const lista = [...vistos].sort().map((m) => `<link rel="modulepreload" href="${m}">`).join("\n");
+    SALIDAS["index.html"] = html.replace(re, `<!-- modulos:inicio -->\n${lista}\n<!-- modulos:fin -->`);
+  }
+}
 
 // Con `--comprobar` no escribe nada: sólo dice si las listas están al día.
 if (process.argv.includes("--comprobar")) {

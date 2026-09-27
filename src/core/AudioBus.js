@@ -76,7 +76,7 @@ export class AudioBus extends Emitter {
       if (document.hidden) music.el.pause();
       else {
         this.ac?.resume?.().catch?.(() => {});
-        if (this.playingMusic && !this.muted) music.el.play().catch(() => {});
+        if (this.playingMusic && !this.muted && !this.#enPausa) music.el.play().catch(() => {});
       }
     });
 
@@ -100,6 +100,8 @@ export class AudioBus extends Emitter {
     if (e?.target?.closest?.('[data-role="music"]')) return;
     const track = this.tracks.get("music");
     if (!track || !this.playingMusic || this.muted || !track.el.paused || document.hidden) return;
+    // En pausa a propósito (una página pidió silencio): no se despierta.
+    if (this.#enPausa) return;
     track.el.play().then(() => {
       if (!this.playingMusic) return track.el.pause();
       this.#nivelPuesto = this.#nivelApartado();
@@ -455,6 +457,25 @@ export class AudioBus extends Emitter {
       this.#nivelPuesto = n;
       return;
     }
+
+    // NIVEL CERO = PAUSA. Una página que pide silencio total (la cajita
+    // musical) no quiere la canción ni en susurro: se apaga suave, se pausa
+    // y, cuando vuelve el silencio, sigue desde donde iba.
+    if (n <= 0.001) {
+      if (this.#enPausa) return;
+      this.#enPausa = true;
+      this.#nivelPuesto = 0;
+      this.#fadeMusica(track, 0, 420, () => {
+        if (this.#enPausa) track.el.pause();
+      });
+      return;
+    }
+    if (this.#enPausa) {
+      this.#enPausa = false;
+      this.#nivelPuesto = 0;
+      if (track.el.paused && !this.muted && !document.hidden) track.el.play().catch(() => {});
+    }
+
     if (Math.abs(n - this.#nivelPuesto) < 0.004) return;
     const baja = n < this.#nivelPuesto;
     const salto = Math.abs(n - this.#nivelPuesto);
@@ -464,6 +485,7 @@ export class AudioBus extends Emitter {
   }
 
   #duckTimer = 0;
+  #enPausa = false;
   #nivel = 1;
   #apartadaHasta = 0;
   #nivelPuesto = 1;

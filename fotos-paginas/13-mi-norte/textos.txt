@@ -1,0 +1,3 @@
+titulo: Mi norte
+arriba: gírala, muévela, da igual
+texto: Hay días en los que no sé muy bien hacia dónde voy. Pero en cuanto pienso en ti se me acomoda todo. Puedes darle todas las vueltas que quieras.

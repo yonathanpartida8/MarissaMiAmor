@@ -28,6 +28,9 @@
  *   LibroSonido.mantener(clave, c)    mientras no se suelte
  *   LibroSonido.soltar(clave)
  *   <audio data-libro-cuanto="0.05">  ese audio concreto la baja más
+ *   LibroSonido.pausar = true         la canción no se baja: se PAUSA
+ *                                     mientras aquí suene algo, y sigue
+ *                                     donde iba cuando vuelve el silencio
  *   LibroSonido.ambiente(nodo)        conecta un sonido de ambiente (un
  *                                     traqueteo, la lluvia) a los altavoces
  *                                     SIN medirlo: el fondo que no para no
@@ -56,6 +59,7 @@
 
   var L = {
     cuanto: POR_EFECTO,
+    pausar: false,
     apartar: function (ms, cuanto) { pedir(cuanto == null ? L.cuanto : cuanto, ms || 1200); },
     mantener: function (clave, cuanto) { retenidos[clave] = cuanto == null ? L.cuanto : cuanto; revisar(); },
     soltar: function (clave) { delete retenidos[clave]; revisar(); },
@@ -236,6 +240,11 @@
     if (wa < 1) historia.push([t, wa]);
     while (historia.length && t - historia[0][0] > COLA) historia.shift();
     for (var h = 0; h < historia.length; h++) nivel = Math.min(nivel, historia[h][1]);
+
+    /* Con `pausar`, cualquier cosa que suene es silencio total para la
+       canción (el libro la pausa); el segundo de cola de arriba hace que no
+       vuelva hasta que de verdad se calle todo. */
+    if (L.pausar && nivel < 0.985) nivel = 0;
 
     /* En escalones de 5 %: el libro recibe un aviso cuando algo cambia de
        verdad, no uno por cada décima de volumen. */

@@ -1,0 +1,3 @@
+titulo: Postal desde aquí
+arriba: date la vuelta
+texto: Hoy hizo un día bonito y lo primero que se me ocurrió fue que te lo quería contar. Ni siquiera pasó nada especial. Sólo hizo bonito, tú no estabas, y eso ya me pareció motivo suficiente para escribirte.

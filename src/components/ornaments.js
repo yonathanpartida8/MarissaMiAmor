@@ -41,7 +41,15 @@ function medallion(ctx, { photo, accent }) {
   return {
     node,
     async enter() {
-      await frame.load();
+      const img = await frame.load();
+      // Una foto acostada (con letras, casi siempre) no cabe en un óvalo
+      // sin perder las orillas: el marco toma su forma y se ve entera.
+      const w = img?.naturalWidth, h = img?.naturalHeight;
+      if (w && h && w > h * 1.12) {
+        frame.node.dataset.shape = "rect";
+        frame.node.style.setProperty("--ratio", `${w} / ${h}`);
+        node.classList.add("is-acostada");
+      }
       node.classList.add("is-developing");
     },
     tick(dt, time) {

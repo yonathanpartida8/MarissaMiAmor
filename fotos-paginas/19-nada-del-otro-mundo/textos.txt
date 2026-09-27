@@ -1,0 +1,3 @@
+titulo: Nada del otro mundo
+arriba: acércate
+texto: No tengo una frase enorme para hoy. Sólo esto: me gusta que existas, y me gusta que existas hoy también.

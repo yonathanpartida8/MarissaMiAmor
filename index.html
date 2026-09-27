@@ -118,7 +118,7 @@
 
 <!-- Sin `crossorigin`: la portada se pide como cualquier imagen de casa, y
      así esta reserva sirve de verdad en vez de descargarla por segunda vez. -->
-<link rel="preload" as="image" href="fotos-paginas/01-portada/imagen1.png">
+<link rel="preload" as="image" href="fotos-paginas/01-portada/imagen1.png?v=1d30b347" data-portada>
 
 <script type="importmap">
 {
@@ -127,6 +127,59 @@
   }
 }
 </script>
+<!-- Los módulos del arranque, pedidos todos a la vez en lugar de uno tras
+     otro (seis tandas seguidas en un teléfono con datos). La lista la
+     rehace `node herramientas/contenido.mjs`. -->
+<!-- modulos:inicio -->
+<link rel="modulepreload" href="src/components/Verso.js">
+<link rel="modulepreload" href="src/components/textures.js">
+<link rel="modulepreload" href="src/core/App.js">
+<link rel="modulepreload" href="src/core/AssetLoader.js">
+<link rel="modulepreload" href="src/core/AudioBus.js">
+<link rel="modulepreload" href="src/core/Capabilities.js">
+<link rel="modulepreload" href="src/core/Context.js">
+<link rel="modulepreload" href="src/core/Emitter.js">
+<link rel="modulepreload" href="src/core/Gestures.js">
+<link rel="modulepreload" href="src/core/Haptics.js">
+<link rel="modulepreload" href="src/core/Instalable.js">
+<link rel="modulepreload" href="src/core/Loop.js">
+<link rel="modulepreload" href="src/core/Pointer.js">
+<link rel="modulepreload" href="src/core/Router.js">
+<link rel="modulepreload" href="src/core/Store.js">
+<link rel="modulepreload" href="src/core/Viewport.js">
+<link rel="modulepreload" href="src/data/amores.js">
+<link rel="modulepreload" href="src/data/chapters.js">
+<link rel="modulepreload" href="src/data/contenido.js">
+<link rel="modulepreload" href="src/data/custom.js">
+<link rel="modulepreload" href="src/data/fotos.js">
+<link rel="modulepreload" href="src/data/huella.js">
+<link rel="modulepreload" href="src/data/manifest.js">
+<link rel="modulepreload" href="src/data/noche.js">
+<link rel="modulepreload" href="src/data/paginas-html.js">
+<link rel="modulepreload" href="src/data/paletas.js">
+<link rel="modulepreload" href="src/data/razones.js">
+<link rel="modulepreload" href="src/data/sorpresas.js">
+<link rel="modulepreload" href="src/gl/GLStage.js">
+<link rel="modulepreload" href="src/gl/shaders/atmosphere.js">
+<link rel="modulepreload" href="src/gl/shaders/dust.js">
+<link rel="modulepreload" href="src/pages/amor/textos.js">
+<link rel="modulepreload" href="src/pages/html/textos.js">
+<link rel="modulepreload" href="src/pages/registry.js">
+<link rel="modulepreload" href="src/transitions/PageFlip.js">
+<link rel="modulepreload" href="src/transitions/effects.js">
+<link rel="modulepreload" href="src/ui/EdgeNav.js">
+<link rel="modulepreload" href="src/ui/Extras.js">
+<link rel="modulepreload" href="src/ui/Index.js">
+<link rel="modulepreload" href="src/ui/UI.js">
+<link rel="modulepreload" href="src/utils/color.js">
+<link rel="modulepreload" href="src/utils/dom.js">
+<link rel="modulepreload" href="src/utils/easing.js">
+<link rel="modulepreload" href="src/utils/luz.js">
+<link rel="modulepreload" href="src/utils/math.js">
+<link rel="modulepreload" href="src/utils/rng.js">
+<link rel="modulepreload" href="src/utils/temas.js">
+<link rel="modulepreload" href="vendor/three/three.module.min.js">
+<!-- modulos:fin -->
 </head>
 <body>
 

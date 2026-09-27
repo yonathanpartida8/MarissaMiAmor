@@ -57,6 +57,25 @@ function sueltos(raw) {
   ];
 }
 
+/**
+ * Lo que diga el .txt de al lado de un vídeo o foto (`video.mp4` →
+ * `video.txt`) manda sobre todo lo demás: es la forma fácil de cambiar el
+ * título, la línea de arriba y el texto sin tocar código.
+ */
+function conSuTxt(item) {
+  const textos = contenido?.textosMios || {};
+  const archivo = [].concat(item?.video ?? item?.foto ?? item?.fotos ?? [])[0];
+  const ruta = typeof archivo === "string" ? archivo.trim() : archivo?.src;
+  const t = ruta && textos[ruta];
+  if (!t) return item;
+  return {
+    ...item,
+    ...(t.titulo ? { titulo: t.titulo } : {}),
+    ...(t.arriba ? { arriba: t.arriba } : {}),
+    ...(t.texto ? { texto: t.texto } : {}),
+  };
+}
+
 /** Nombres cómodos → tipos internos de página. */
 const TYPE_ALIASES = {
   foto: "photo",
@@ -258,7 +277,7 @@ export async function loadCustomPages() {
     raw = [];
   }
 
-  raw = raw.concat(sueltos(raw));
+  raw = raw.concat(sueltos(raw)).map(conSuTxt);
 
   const entries = [];
   const chapters = [];

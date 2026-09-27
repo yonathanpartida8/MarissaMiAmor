@@ -124,10 +124,19 @@ self.addEventListener("fetch", (e) => {
   e.respondWith(
     caches.open(VERSION).then(async (c) => {
       const guardada = await c.match(req);
+      // Con huella (`?v=…`) el archivo no cambia nunca: lo guardado vale
+      // para siempre y no se gasta red en volver a preguntar. Sin huella,
+      // se pregunta una sola vez por sesión, no en cada vistazo.
+      if (guardada && (url.searchParams.has("v") || revisadas.has(req.url))) return guardada;
+      revisadas.add(req.url);
       const red = fetch(req).then((r) => {
         /* Sólo se guarda lo que ha ido bien, y entero. Guardar un 404 es
            guardar el error para siempre, y un trozo no se puede guardar. */
-        if (r && r.status === 200 && r.type === "basic") c.put(req, r.clone()).catch(() => {});
+        if (r && r.status === 200 && r.type === "basic") {
+          c.put(req, r.clone()).catch(() => {});
+          // Una foto con huella nueva: la de la huella vieja ya no hace falta.
+          if (url.searchParams.has("v")) podarViejas(c, url);
+        }
         return r;
       }).catch(() => null);
       if (guardada) {
@@ -138,6 +147,19 @@ self.addEventListener("fetch", (e) => {
     }),
   );
 });
+
+/** Borra las copias de la misma foto con otra huella. */
+function podarViejas(cache, url) {
+  cache.keys().then((ks) => {
+    for (const k of ks) {
+      const u = new URL(k.url);
+      if (u.pathname === url.pathname && u.searchParams.get("v") !== url.searchParams.get("v")) cache.delete(k);
+    }
+  }).catch(() => {});
+}
+
+/** Lo que ya se revisó contra la red desde que se abrió el libro. */
+const revisadas = new Set();
 
 /** Un pedazo (206) sacado de una respuesta entera guardada. */
 async function recortar(resp, rango) {

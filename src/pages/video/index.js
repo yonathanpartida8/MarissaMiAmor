@@ -17,6 +17,10 @@ import { Gestures } from "../../core/Gestures.js";
 import { createSparkles } from "../../components/Sparkles.js";
 import { el, splitWords, setVars } from "../../utils/dom.js";
 import { clamp01 } from "../../utils/math.js";
+import contenido from "../../data/contenido.js";
+
+/** mm:ss */
+const reloj = (s) => `${Math.floor(s / 60)}:${String(Math.round(s) % 60).padStart(2, "0")}`;
 
 export default class VideoPage extends BasePage {
   static type = "video";
@@ -86,7 +90,26 @@ export default class VideoPage extends BasePage {
 
     this.sparkles = createSparkles(this.ctx, { seed: `vid-${this.id}`, scale: 0.5 });
 
+    // EL COLOR DEL VÍDEO. Una muestra diminuta del fotograma se pinta aquí
+    // detrás, agrandada muchísimo: queda una luz suave del mismo color que
+    // lo que se está viendo, y va cambiando con él. El velo de encima la
+    // oscurece por los bordes para que el texto se siga leyendo.
+    this.ambiente = el("canvas.vid__ambiente", { width: 48, height: 48, "aria-hidden": "true" });
+    this.muestra = document.createElement("canvas");
+    this.muestra.width = 8;
+    this.muestra.height = 8;
+
+    // La forma del vídeo se sabe desde antes de cargarlo (la mide
+    // `contenido.mjs`): el marco nace ya acostado o de pie, sin saltos.
+    const forma = contenido?.videosForma?.[this.src];
+    if (forma) {
+      this.#forma(forma.w, forma.h);
+      if (forma.dur) this.badge.textContent = reloj(forma.dur);
+    }
+
     this.root.append(
+      this.ambiente,
+      el("div.vid__velo", { "aria-hidden": "true" }),
       el("div.mine__stage", {}, [
         this.frame,
         el("p.vid__pista", { text: "toca ⤢ para verlo en grande, o gira tu teléfono" }),
@@ -143,15 +166,28 @@ export default class VideoPage extends BasePage {
     });
     this.on(this.video, "loadedmetadata", () => {
       const secs = Math.round(this.video.duration || 0);
-      if (secs) this.badge.textContent = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+      if (secs) this.badge.textContent = reloj(secs);
       // El marco toma la forma del vídeo: uno acostado no se recorta a una
       // tira vertical, se ve entero.
       const w = this.video.videoWidth, h = this.video.videoHeight;
-      if (w && h) {
-        this.frame.style.aspectRatio = `${w} / ${h}`;
-        this.root.classList.toggle("is-acostado", w > h * 1.05);
-      }
+      if (w && h) this.#forma(w, h);
     });
+    // El primer fotograma ya pinta el color de fondo, antes de darle play.
+    this.on(this.video, "loadeddata", () => this.#pintarAmbiente(true));
+    this.on(this.video, "seeked", () => this.#pintarAmbiente(true));
+    if (this.poster) this.#ambienteDePoster();
+
+    this.#encajar();
+    this.track(this.ctx.viewport.on("resize", () => this.#encajar()));
+    this.ambT = 0;
+    this.colorT = 0;
+    this.addTicker((dt) => {
+      if (!this.playing) return;
+      this.ambT += dt;
+      if (this.ambT < 0.12) return;
+      this.ambT = 0;
+      this.#pintarAmbiente(false);
+    }, 20);
     this.grandeBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
     this.on(this.grandeBtn, "click", (e) => {
       e.stopPropagation();
@@ -217,6 +253,81 @@ export default class VideoPage extends BasePage {
         this.badge.textContent = "este vídeo no se pudo abrir";
       }
     }
+  }
+
+  /** Guarda la forma del vídeo y vuelve a encajar el marco. */
+  #forma(w, h) {
+    this.ar = w / h;
+    this.root.classList.toggle("is-acostado", w > h * 1.05);
+    this.root.classList.toggle("is-parado", h > w * 1.05);
+    this.frame.style.aspectRatio = `${w} / ${h}`;
+    if (this.active) this.#encajar();
+  }
+
+  /**
+   * El marco, a la medida exacta: la forma del vídeo, lo más grande que
+   * quepa en su hueco. Acostado ocupa todo el ancho; de pie, todo el alto.
+   */
+  #encajar() {
+    const stage = this.frame.parentElement;
+    const r = stage?.getBoundingClientRect();
+    if (r?.width && r?.height && this.ar) {
+      const pista = this.root.classList.contains("is-acostado") ? 34 : 0;
+      const maxW = Math.min(r.width, this.ar >= 1 ? 720 : 460);
+      const maxH = r.height - pista;
+      let w = maxW, h = w / this.ar;
+      if (h > maxH) { h = maxH; w = h * this.ar; }
+      this.frame.style.width = `${Math.floor(w)}px`;
+      this.frame.style.height = `${Math.floor(h)}px`;
+    }
+    // La luz del fondo cubre la hoja entera, se gire como se gire.
+    const p = this.root.getBoundingClientRect();
+    setVars(this.root, { "--amb-escala": ((Math.max(p.width, p.height) * 1.35) / 48).toFixed(2) });
+  }
+
+  /** Pasa el fotograma actual a la luz de fondo (y a su color medio). */
+  #pintarAmbiente(deGolpe) {
+    const v = this.video;
+    if (!v || v.readyState < 2 || !v.videoWidth) return;
+    try {
+      this.#mezclar(v, deGolpe);
+    } catch {
+      /* un fotograma que no se deja leer: se queda el color de antes */
+    }
+  }
+
+  #ambienteDePoster() {
+    const img = new Image();
+    img.onload = () => {
+      try { this.#mezclar(img, true); } catch { /* nada */ }
+    };
+    img.src = this.poster;
+  }
+
+  #mezclar(fuente, deGolpe) {
+    const m = (this.mCtx ||= this.muestra.getContext("2d", { willReadFrequently: true }));
+    m.drawImage(fuente, 0, 0, 8, 8);
+    const a = (this.aCtx ||= this.ambiente.getContext("2d"));
+    a.imageSmoothingEnabled = true;
+    a.imageSmoothingQuality = "high";
+    // Poco a poco: cada fotograma se funde con los anteriores, así el
+    // color cambia con el vídeo pero nunca de golpe.
+    a.globalAlpha = deGolpe ? 1 : 0.22;
+    a.drawImage(this.muestra, 0, 0, 48, 48);
+    this.root.classList.add("con-ambiente");
+
+    // El color medio, para el brillo alrededor del marco (cada medio segundo).
+    const ahora = performance.now();
+    if (!deGolpe && ahora - (this.colorT || 0) < 500) return;
+    this.colorT = ahora;
+    const d = m.getImageData(0, 0, 8, 8).data;
+    let r = 0, g = 0, b = 0;
+    for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; }
+    const n = d.length / 4;
+    // Un pelín más vivo que el medio real, que suele salir grisáceo.
+    const lum = (r + g + b) / (3 * n);
+    const viva = (c) => Math.round(Math.max(0, Math.min(255, lum + (c / n - lum) * 1.5)));
+    setVars(this.root, { "--amb": `rgb(${viva(r)}, ${viva(g)}, ${viva(b)})` });
   }
 
   /**

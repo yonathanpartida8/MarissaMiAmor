@@ -1,8 +1,21 @@
-Aquí van tus vídeos (.mp4 de preferencia; menos de 15 MB cada uno).
+Aquí van tus vídeos (.mp4 de preferencia).
 
-Con sólo dejarlo aquí, cada vídeo sale SOLO como una página del libro
-(«Un videíto para ti»), antes del final. No hace falta tocar código.
+Con sólo dejarlo aquí, cada vídeo sale SOLO como una página del libro,
+antes del final. No hace falta tocar código. Da igual si es acostado
+(horizontal) o de pie (vertical): el marco toma su forma solo, y el fondo
+de la página se pinta del color de lo que se está viendo.
 
-Si quieres ponerle título, texto o carátula, añádelo en paginas.js:
-  { titulo: "Nuestro día", texto: "…", video: "mis-paginas/videos/nombre.mp4" }
-y entonces ya no sale repetido.
+── PARA CAMBIAR EL TÍTULO Y EL TEXTO (lo fácil) ─────────────────────────
+Al lado del vídeo, un .txt con el MISMO nombre:
+
+    video.mp4   →   video.txt
+
+y dentro, una línea por cosa:
+
+    titulo: Te dedico este video
+    arriba: dale play 🤍
+    texto: ¡Míralo completo! 🤍
+
+«arriba» es la línea chiquita de encima del título. El texto puede seguir
+en las líneas de abajo; una línea en blanco empieza un párrafo nuevo.
+En GitHub: abre el .txt, toca el lápiz, cambia lo que quieras y guarda.

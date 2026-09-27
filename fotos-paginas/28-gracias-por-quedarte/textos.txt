@@ -1,0 +1,3 @@
+titulo: Gracias por quedarte
+arriba: esto sí es serio
+texto: Por los días en que no fui fácil. Por esperar sin echármelo en cara. Por no irte cuando tenías todo el derecho de hacerlo. No sé si te lo he dicho con estas palabras, así que aquí quedan escritas: gracias por quedarte.

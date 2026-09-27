@@ -1,0 +1,3 @@
+titulo: Otra postal
+arriba: date la vuelta
+texto: Aquí son las once y pico y estoy pensando en ti otra vez, que es una noticia poco original. Te la mando igual.

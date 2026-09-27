@@ -1,0 +1,3 @@
+titulo: Te fui armando
+arriba: toca cada pieza
+texto: No te conocí de golpe. Fue por pedacitos: una manía aquí, una historia allá, un día en que te enojaste y aprendí algo nuevo. Y lo raro es que cada pedazo que aparecía me gustaba más que el anterior. Todavía me faltan piezas. Ojalá me falten siempre algunas.

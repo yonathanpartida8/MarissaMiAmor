@@ -240,6 +240,53 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #4a0810; }
 @media (prefers-reduced-motion: reduce) {
   .cm * { animation-duration: 1ms !important; transition-duration: 1ms !important; }
 }
+
+/* ---- Claro / oscuro ---------------------------------------------------
+   El botón de arriba a la derecha. En claro, el terciopelo se vuelve rosa
+   palo y las letras se escriben en vino: se ven mucho mejor la plata, el
+   reloj y el mecanismo. Se acuerda de lo último que eligió.            */
+.cm-modo {
+  position: absolute;
+  top: calc(var(--seg-t) + 46px);
+  right: 12px;
+  z-index: 8;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.42em 0.85em 0.42em 0.7em;
+  border: 1px solid rgba(90, 59, 48, 0.28);
+  border-radius: 999px;
+  font: 600 clamp(0.62rem, 2.7vw, 0.74rem) / 1 "Cormorant Garamond", Georgia, serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #5a3b30;
+  background: rgba(255, 250, 242, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 4px 14px -6px rgba(60, 20, 20, 0.45);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0;
+  animation: cm-aparece 1.2s var(--suave) 0.9s forwards;
+  transition: transform 180ms var(--suave), background 400ms;
+}
+.cm-modo:active { transform: scale(0.94); }
+.cm-modo i { font-style: normal; font-size: 1.25em; line-height: 1; }
+
+html.is-claro, html.is-claro body { background: #f1c6cd; }
+.cm.is-claro .cm-sombra { background: #8a3a4a; opacity: 0.32; }
+.cm.is-claro .cm-lustre {
+  background:
+    radial-gradient(ellipse 55% 42% at var(--lx, 30%) var(--ly, 40%), rgba(255, 255, 255, 0.35), transparent 70%),
+    radial-gradient(ellipse 40% 30% at calc(100% - var(--lx, 30%)) 85%, rgba(255, 240, 244, 0.2), transparent 70%);
+}
+.cm.is-claro .cm-frase {
+  color: #5c1424;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55), 0 0 18px rgba(255, 240, 244, 0.7);
+}
+.cm.is-claro .cm-pista { color: rgba(110, 32, 52, 0.78); }
+.cm.is-claro .cm-meca { box-shadow: 0 10px 22px -10px rgba(120, 40, 60, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+.cm.is-claro .cm-meca canvas { background: #3a2418; }
 </style>
 </head>
 <body>
@@ -250,6 +297,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #4a0810; }
   <canvas class="cm-pelo" id="pelo"></canvas>
 
   <div class="cm-escena">
+    <button class="cm-modo" id="modo" type="button" aria-label="Cambiar a modo claro"><i>☀︎</i><span>claro</span></button>
     <p class="cm-cabeza"><span>La caja de música</span></p>
 
     <div class="cm-centro">
@@ -529,6 +577,30 @@ s("path", { d: "M130,160 A82,82 0 0 1 238,122 A96,96 0 0 0 140,178 Z", fill: "ur
    EL FONDO: papel crema moteado arriba, terciopelo rojo abajo
    ══════════════════════════════════════════════════════════════════════ */
 let A = 0, H = 0, dpr = 1, costura = 0;
+
+/* La música del libro no se baja: se PAUSA mientras la caja suene, y
+   vuelve desde donde iba cuando todo se queda en silencio. */
+if (window.LibroSonido) LibroSonido.pausar = true;
+
+/* Claro u oscuro, y se acuerda. */
+const botonModo = $("modo");
+let claro = false;
+try { claro = localStorage.getItem("cajita-modo") === "claro"; } catch (e) { /* sin memoria */ }
+function ponerModo(siClaro, repintar) {
+  claro = siClaro;
+  mundo.classList.toggle("is-claro", claro);
+  document.documentElement.classList.toggle("is-claro", claro);
+  botonModo.innerHTML = claro ? "<i>☾</i><span>oscuro</span>" : "<i>☀︎</i><span>claro</span>";
+  botonModo.setAttribute("aria-label", claro ? "Cambiar a modo oscuro" : "Cambiar a modo claro");
+  try { localStorage.setItem("cajita-modo", claro ? "claro" : "oscuro"); } catch (e) { /* nada */ }
+  if (repintar && A) pintarFondo();
+}
+ponerModo(claro, false);
+botonModo.addEventListener("pointerdown", (e) => e.stopPropagation());
+botonModo.addEventListener("click", (e) => {
+  e.stopPropagation();
+  ponerModo(!claro, true);
+});
 const gFondo = fondo.getContext("2d");
 const gPelo = pelo.getContext("2d");
 const gBr = brillos.getContext("2d");
@@ -575,30 +647,40 @@ function pintarFondo() {
     g.stroke();
   }
 
-  // El terciopelo.
+  // El terciopelo: rojo vino en oscuro, rosa palo en claro.
   gr = g.createLinearGradient(0, yc, 0, H);
-  gr.addColorStop(0, "#7b111c");
-  gr.addColorStop(0.45, "#5f0a14");
-  gr.addColorStop(1, "#37040b");
+  if (claro) {
+    gr.addColorStop(0, "#f2c2cb");
+    gr.addColorStop(0.45, "#e9aab7");
+    gr.addColorStop(1, "#dc95a5");
+  } else {
+    gr.addColorStop(0, "#7b111c");
+    gr.addColorStop(0.45, "#5f0a14");
+    gr.addColorStop(1, "#37040b");
+  }
   g.fillStyle = gr;
   g.fillRect(0, yc, A, H - yc);
   // Pliegues suaves: franjas de luz y sombra que van de arriba abajo.
   const f1 = azar(0.006, 0.01), f2 = azar(0.017, 0.024), fase = Math.random() * 6;
   for (let x = 0; x < A; x += 2) {
     const v = Math.sin(x * f1 + fase) * 0.6 + Math.sin(x * f2 + fase * 2) * 0.4;
-    g.fillStyle = v > 0 ? `rgba(255,110,125,${(v * 0.07).toFixed(3)})` : `rgba(10,0,2,${(-v * 0.18).toFixed(3)})`;
+    g.fillStyle = claro
+      ? (v > 0 ? `rgba(255,255,255,${(v * 0.16).toFixed(3)})` : `rgba(140,40,64,${(-v * 0.1).toFixed(3)})`)
+      : (v > 0 ? `rgba(255,110,125,${(v * 0.07).toFixed(3)})` : `rgba(10,0,2,${(-v * 0.18).toFixed(3)})`);
     g.fillRect(x, yc, 2, H - yc);
   }
   // El pelo del terciopelo: un grano muy fino.
   for (let i = 0; i < A * (H - yc) / 22; i++) {
     const x = Math.random() * A, y = yc + Math.random() * (H - yc);
-    g.fillStyle = Math.random() < 0.5 ? "rgba(255,120,135,.05)" : "rgba(0,0,0,.09)";
+    g.fillStyle = claro
+      ? (Math.random() < 0.5 ? "rgba(255,255,255,.12)" : "rgba(150,50,70,.06)")
+      : (Math.random() < 0.5 ? "rgba(255,120,135,.05)" : "rgba(0,0,0,.09)");
     g.fillRect(x, y, 1, azar(1, 2.5));
   }
   // La costura: el papel proyecta una sombrita sobre la tela.
   gr = g.createLinearGradient(0, yc, 0, yc + 16);
-  gr.addColorStop(0, "rgba(20,0,4,.55)");
-  gr.addColorStop(1, "rgba(20,0,4,0)");
+  gr.addColorStop(0, claro ? "rgba(120,40,60,.22)" : "rgba(20,0,4,.55)");
+  gr.addColorStop(1, claro ? "rgba(120,40,60,0)" : "rgba(20,0,4,0)");
   g.fillStyle = gr;
   g.fillRect(0, yc, A, 16);
   g.fillStyle = "rgba(255,248,236,.5)";
@@ -1394,7 +1476,9 @@ function paso(ahora) {
     const b = (0.45 + 0.55 * Math.sin(reloj * 1.6 + m.f)) * (m.oro ? (sonando ? 0.85 : 0.5) : 0.4);
     if (b < 0.02) continue;
     g.globalAlpha = b;
-    g.fillStyle = m.oro ? (enPapel ? "#c99a4a" : "#ffd6a6") : (enPapel ? "#3b2a22" : "#ffb3bf");
+    g.fillStyle = m.oro
+      ? (enPapel || claro ? "#c99a4a" : "#ffd6a6")
+      : (enPapel ? "#3b2a22" : claro ? "#b24a64" : "#ffb3bf");
     g.beginPath();
     g.arc(m.x, m.y, m.r, 0, TAU);
     g.fill();

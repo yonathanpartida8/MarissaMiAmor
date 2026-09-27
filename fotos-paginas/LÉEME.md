@@ -15,6 +15,24 @@ Cada carpeta es una página del libro, en el mismo orden en que salen.
   (GitHub borra las carpetas que se quedan sin ningún archivo).
 - No hay que tocar código: GitHub rehace la lista solo a cada subida.
 
+## Cambiar el título y el texto de una página
+
+Cada carpeta trae un **`textos.txt`** con lo que dice su página ahora
+mismo. Ábrelo en GitHub, toca el lápiz, cambia lo que quieras y guarda:
+
+```
+titulo: Te elijo
+arriba: y mañana otra vez
+texto: No porque me falte nada…
+
+Una línea en blanco empieza un párrafo nuevo.
+```
+
+- `titulo` es el título grande; `arriba`, la línea chiquita de encima.
+- Si borras una línea (por ejemplo `arriba:`), esa parte se queda como
+  estaba en el libro.
+- Si borras el `textos.txt` entero, la página vuelve a su texto original.
+
 El icono de la app es `icono/icono.png`.
 
 | Carpeta | Fotos ahora |

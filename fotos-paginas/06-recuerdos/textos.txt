@@ -1,0 +1,5 @@
+titulo: Recuerdos
+arriba: muévelas donde quieras
+texto: Nunca hemos necesitado tener todo planeado. Muchas de nuestras mejores cosas simplemente pasan: se nos ocurre algo de la nada, terminamos haciéndolo a nuestra manera, nos reímos y al final se convierte en otro recuerdo que quiero guardar contigo.
+
+Por eso estos recuerdos están así, sin ningún orden. Porque así los guardo yo también: todos revueltos en mi cabeza, apareciendo de repente, pero cada uno con algo que me hace sonreír. Y aunque sean pequeños, todos tienen algo en común: tú estás en ellos.

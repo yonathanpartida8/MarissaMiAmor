@@ -1,5 +1,8 @@
-Aquí van tus fotos (.jpg, .png, .webp).
+Aquí van fotos sueltas: cada una sale sola como una página del libro.
 
-Con sólo dejarla aquí, cada foto sale SOLA como una página del libro,
-antes del final. Si la usas en paginas.js (foto: "mis-paginas/fotos/…"),
-ya no sale repetida.
+Para ponerle título y texto, un .txt con el MISMO nombre que la foto
+(nuestra-tarde.jpg → nuestra-tarde.txt) con:
+
+    titulo: Nuestra tarde
+    arriba: una de tantas
+    texto: Lo que quieras contar de esta foto.

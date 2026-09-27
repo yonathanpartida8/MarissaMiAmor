@@ -14,8 +14,18 @@ import { Gestures } from "../../core/Gestures.js";
 import { el, splitWords, setVars, wait } from "../../utils/dom.js";
 import { seeded } from "../../utils/rng.js";
 
-/** Rejilla según el tamaño de pantalla: piezas siempre cómodas de tocar. */
-const GRID = { phone: [3, 4], tablet: [4, 5], desktop: [4, 5] };
+/** Cuántas piezas, según el tamaño de pantalla: siempre cómodas de tocar. */
+const PIEZAS = { phone: 12, tablet: 20, desktop: 20 };
+
+/**
+ * Columnas y filas para una foto de proporción `ar` (ancho / alto): las
+ * piezas salen lo más cuadradas posible, sea la foto de pie o acostada.
+ */
+function rejilla(ar, n) {
+  let cols = Math.max(2, Math.min(6, Math.round(Math.sqrt(n * ar))));
+  let rows = Math.max(2, Math.min(7, Math.round(n / cols)));
+  return [cols, rows];
+}
 
 export default class MosaicPage extends BasePage {
   static type = "mosaic";
@@ -57,20 +67,25 @@ export default class MosaicPage extends BasePage {
     await super.enter(direction);
 
     const photo = this.photos[0];
+    // El tablero toma la forma de la foto: antes era siempre de 3×4 y la
+    // foto se estiraba para caber, así que salía deformada.
+    this.ar = 3 / 4;
     if (photo) {
-      await this.ctx.assets.load(photo.src).catch(() => {});
+      const img = await this.ctx.assets.load(photo.src).catch(() => null);
       this.src = photo.src;
       this.wholeEl.style.backgroundImage = `url("${photo.src}")`;
+      if (img?.naturalWidth && img?.naturalHeight) this.ar = img.naturalWidth / img.naturalHeight;
     }
 
     const device = document.documentElement.dataset.device || "phone";
-    const [cols, rows] = GRID[device] || GRID.phone;
+    const [cols, rows] = rejilla(this.ar, PIEZAS[device] || PIEZAS.phone);
     this.total = cols * rows;
     this.turned = 0;
 
     setVars(this.board, { "--cols": String(cols), "--rows": String(rows) });
 
     // Orden de aparición sembrado: siempre el mismo, pero sin patrón visible.
+    this.board.replaceChildren();
     const rng = seeded(`mosaico-${this.id}`);
     const order = rng.shuffle([...Array(this.total).keys()]);
 
@@ -90,11 +105,9 @@ export default class MosaicPage extends BasePage {
 
       const face = tile.querySelector(".mos__face--front");
       if (this.src) {
+        // Cada pieza enseña su recorte exacto de la imagen completa. El
+        // tamaño y la posición van en píxeles del tablero (ver #layout).
         face.style.backgroundImage = `url("${this.src}")`;
-        // Cada pieza enseña su recorte exacto de la imagen completa.
-        face.style.backgroundSize = `${cols * 100}% ${rows * 100}%`;
-        face.style.backgroundPosition =
-          `${cols > 1 ? (col / (cols - 1)) * 100 : 0}% ${rows > 1 ? (row / (rows - 1)) * 100 : 0}%`;
       }
 
       tile.style.setProperty("--d", String(order.indexOf(i)));
@@ -106,6 +119,12 @@ export default class MosaicPage extends BasePage {
     this.rows = rows;
     this.#layout();
     this.track(this.ctx.viewport.on("resize", () => this.#layout()));
+
+    // Si ya se armó en una visita anterior, se queda armada.
+    if (this.completado) {
+      for (const t of this.tiles) { t.turned = true; t.node.classList.add("is-turned"); }
+      this.turned = this.total;
+    }
 
     this.#updateCount();
     requestAnimationFrame(() => this.root.classList.add("is-entered"));
@@ -140,17 +159,29 @@ export default class MosaicPage extends BasePage {
     const rect = stage?.getBoundingClientRect();
     if (!rect?.width || !rect?.height) return;
 
-    const ratio = this.cols / this.rows;
+    const ratio = this.ar || this.cols / this.rows;
     let w = rect.width;
     let h = w / ratio;
     if (h > rect.height) {
       h = rect.height;
       w = h * ratio;
     }
+    w = Math.floor(w);
+    h = Math.floor(h);
 
     for (const node of [this.board, this.wholeEl]) {
-      node.style.width = `${Math.floor(w)}px`;
-      node.style.height = `${Math.floor(h)}px`;
+      node.style.width = `${w}px`;
+      node.style.height = `${h}px`;
+    }
+
+    // Cada cara lleva la foto al tamaño del tablero entero, corrida hasta
+    // su trozo: juntas, las piezas son la foto tal cual, sin estirar.
+    if (!this.src) return;
+    const pw = w / this.cols, ph = h / this.rows;
+    for (const t of this.tiles) {
+      const face = t.node.lastElementChild;
+      face.style.backgroundSize = `${w}px ${h}px`;
+      face.style.backgroundPosition = `${(-t.col * pw).toFixed(1)}px ${(-t.row * ph).toFixed(1)}px`;
     }
   }
 
@@ -182,6 +213,7 @@ export default class MosaicPage extends BasePage {
   }
 
   async #complete() {
+    this.completado = true;
     this.root.classList.add("is-joined");
     this.ctx.haptics.play("reveal");
     this.ctx.gl?.pulse(0.7);

@@ -42,6 +42,8 @@
 
 import { razones } from "./razones.js";
 import { resolverPaleta } from "./paletas.js";
+import contenido from "./contenido.js";
+import { carpetaDeCadaPagina } from "./fotos.js";
 
 const acts = [
   { id: "antes", number: 0, title: "Antes de todo" },
@@ -742,6 +744,8 @@ export const chapters = [
   },
   {
     id: "te-elijo",
+    // La foto va entera en un marco (no recortada de fondo): tiene letras.
+    encuadre: "entera",
     act: "elegirte",
     title: "Te elijo",
     kicker: "y mañana otra vez",
@@ -784,6 +788,20 @@ function pintar(chapter) {
 }
 
 chapters.forEach(pintar);
+
+/*
+ * La forma fácil de cambiar el título, la línea de arriba o el texto de una
+ * página con fotos: un `textos.txt` en su carpeta de `fotos-paginas/`
+ * (titulo: …, arriba: …, texto: …). Lo que diga ese archivo manda sobre lo
+ * de aquí arriba. GitHub lo recoge solo al subirlo.
+ */
+for (const c of chapters) {
+  const t = contenido?.textosPaginas?.[carpetaDeCadaPagina[c.id]];
+  if (!t) continue;
+  if (t.titulo) c.title = t.titulo;
+  if (t.arriba) c.kicker = t.arriba;
+  if (t.texto) c.text = t.texto;
+}
 
 export const chapterById = Object.fromEntries(chapters.map((c) => [c.id, c]));
 

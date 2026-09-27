@@ -1,0 +1,3 @@
+titulo: Lo que no se ve de primeras
+arriba: hay cosas escritas entre líneas
+texto: Esto no lo diría fuerte. No porque me dé vergüenza, sino porque hay cosas que se dicen mejor bajito, cuando no las oye nadie más.

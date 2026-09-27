@@ -73,24 +73,25 @@ export const textos = {
   besoMaximo: 420,
 
   /** Lo que va diciendo mientras se acelera, en orden. */
-  besoSubiendo: ["¿eh? 😳", "espérate…", "no, no, no", "¡ay, mi amor!", "ayudaaa 😭"],
+  besoSubiendo: ["¿eh? 😳", "¿un besito? 🥹", "ay, mi amor…", "me late bien fuerte 💗", "¡me vas a derretir! 😭💗"],
 
   /** Quién habla en el diálogo. */
   besoQuien: "mi corazón",
 
   /** El diálogo, una tarjeta tras otra (se pasa tocando). */
   besoDialogo: [
-    "¡Jhsusbsy 😭 me chivié!",
-    "No se vale, eh… me mandaste un besito con los deditos y me fui hasta 420.",
-    "Es que tú no sabes lo que me haces, mi amor 🫠",
-    "Ya, ya… déjame respirar tantito.",
+    "¡Ksjsbs 😭💗 me chivié toditito!",
+    "Me mandaste un besito con tus deditos y mi corazón se fue hasta 420, mi amor ✨",
+    "Es que tú no sabes lo bonito que me haces sentir, mi niña linda 🥹",
+    "Cada besito tuyo me pone así, bien contento 💗",
     "…",
-    "Bueno, ya estoy. Pero ese beso ya es mío y no te lo devuelvo. Te amo, preciosa 🤍",
+    "Ese besito ya es mío y lo guardo aquí, en mi corazón. Te amo, preciosa 💗",
+    "¿Me das otro besito? Pero besa bien tus deditos y de nuevo ponlos en el sensor, ksjsbs 😭💗✨",
   ],
 
   /** Los dos botones del final del diálogo. */
   besoOtraVez: "otro besito 💋",
-  besoCerrar: "ya, respira 🥹",
+  besoCerrar: "guardar mi besito 💗",
 };
 
 export default textos;

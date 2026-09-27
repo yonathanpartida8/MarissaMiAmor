@@ -105,6 +105,18 @@
 
 .orn--medallion.is-developing .medallion__glow { opacity: 0.2; }
 
+/* Foto acostada: rectángulo con su forma y casi sin recorte, para que no
+   se pierdan las letras de las orillas. */
+.orn--medallion.is-acostada .pframe {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+}
+.orn--medallion.is-acostada .pframe__img {
+  inset: -2.5%;
+  transform: translate3d(calc(var(--img-x) * 0.35), calc(var(--img-y) * 0.35), 0) scale(calc(1.01 * var(--zoom)));
+}
+
 /* ══════════════ VENTANA EMPAÑADA ══════════════ */
 .orn--fog {
   border-radius: var(--r-md);

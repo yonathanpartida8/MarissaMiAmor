@@ -10,6 +10,7 @@
 import * as THREE from "three";
 import { BasePage } from "../BasePage.js";
 import { depthVertex, depthFragment } from "../../gl/shaders/depth.js";
+import { Gestures } from "../../core/Gestures.js";
 import { el, splitWords, setVars } from "../../utils/dom.js";
 import { damp, clamp01 } from "../../utils/math.js";
 
@@ -59,7 +60,18 @@ export default class DepthPage extends BasePage {
     this.hueco = this.photos[0]?.hueco ? el("img.depth__hueco", { src: this.photos[0].src, alt: "Aquí va la foto 1" }) : null;
     if (this.hueco) this.root.classList.add("is-hueco");
 
-    this.root.append(this.fallback, ...(this.hueco ? [this.hueco] : []), el("div.depth__veil"), this.card);
+    // Con `encuadre: "entera"` la foto no se recorta de fondo: va entera en
+    // un marco arriba (el fondo es ella misma, desenfocada) y al tocarla se
+    // abre en grande. Para fotos con letras o detalles que no se pueden perder.
+    const foto = this.photos[0];
+    this.entera = ch?.encuadre === "entera" && foto && !foto.hueco;
+    if (this.entera) {
+      this.root.classList.add("is-entera");
+      this.marcoImg = el("img", { src: foto.src, alt: ch?.title || "foto", decoding: "async", draggable: "false" });
+      this.marco = el("figure.depth__marco", { "data-claim-drag": "" }, [this.marcoImg, el("span.depth__lupa-pista", { text: "toca para verla en grande" })]);
+    }
+
+    this.root.append(this.fallback, ...(this.hueco ? [this.hueco] : []), ...(this.marco ? [this.marco] : []), el("div.depth__veil"), this.card);
     return this.root;
   }
 
@@ -72,7 +84,14 @@ export default class DepthPage extends BasePage {
     if (img) this.fallback.style.backgroundImage = `url("${photo.src}")`;
 
     const gl = this.ctx.gl;
-    const useGL = gl?.ready && this.ctx.caps.budget.depthPhotos && img;
+    const useGL = !this.entera && gl?.ready && this.ctx.caps.budget.depthPhotos && img;
+
+    if (this.entera) {
+      this.fotoAr = img?.naturalWidth ? img.naturalWidth / img.naturalHeight : 3 / 4;
+      requestAnimationFrame(() => this.#medirMarco());
+      this.track(this.ctx.viewport.on("resize", () => this.#medirMarco()));
+      this.addGestures(new Gestures(this.marco, { onTap: () => this.#lupa(true) }, { exclusive: true, threshold: 10 }));
+    }
 
     if (useGL) {
       this.#mountPlane(img);
@@ -148,6 +167,39 @@ export default class DepthPage extends BasePage {
     this.escribeEl.classList.toggle("is-visible", si);
     this.estadoEl.textContent = si ? "escribiendo…" : this.estadoBase;
     this.estadoEl.classList.toggle("is-escribe", si);
+  }
+
+  /** El marco ocupa justo el hueco que deja la tarjeta, con la forma de la foto. */
+  #medirMarco() {
+    if (!this.marco || !this.root) return;
+    const r = this.root.getBoundingClientRect();
+    const c = this.card.getBoundingClientRect();
+    const cs = getComputedStyle(this.root);
+    const padT = parseFloat(cs.paddingTop) || 0;
+    const padX = parseFloat(cs.paddingLeft) || 16;
+    const apaisado = document.documentElement.dataset.orientation === "landscape";
+    const maxW = apaisado ? (c.left - r.left) - padX * 2 : r.width - padX * 2;
+    const maxH = apaisado ? r.height - padT * 2 : (c.top - r.top) - padT - 22;
+    let w = maxW, h = w / this.fotoAr;
+    if (h > maxH) { h = maxH; w = h * this.fotoAr; }
+    setVars(this.marco, { "--marco-w": `${Math.max(60, Math.floor(w))}px`, "--marco-h": `${Math.max(80, Math.floor(h))}px` });
+  }
+
+  /** La foto en grande, encima de todo; un toque la cierra. */
+  #lupa(abrir) {
+    if (abrir && !this.lupaEl) {
+      this.ctx.haptics.play("tap");
+      const img = el("img", { src: this.marcoImg.src, alt: this.marcoImg.alt, draggable: "false" });
+      this.lupaEl = el("div.depth__lupa", { role: "dialog", "aria-label": "Foto en grande", "data-claim-drag": "" }, [img, el("span.depth__lupa-cierra", { text: "toca para cerrar" })]);
+      this.root.append(this.lupaEl);
+      requestAnimationFrame(() => this.lupaEl?.classList.add("is-abierta"));
+      this.addGestures(new Gestures(this.lupaEl, { onTap: () => this.#lupa(false) }, { exclusive: true, threshold: 10 }));
+    } else if (!abrir && this.lupaEl) {
+      const l = this.lupaEl;
+      this.lupaEl = null;
+      l.classList.remove("is-abierta");
+      this.later(() => l.remove(), 360);
+    }
   }
 
   /** 3:00, 3:01, 3:02… (los dos puntos parpadean solos, en CSS). */
@@ -278,6 +330,7 @@ export default class DepthPage extends BasePage {
 
   async leave(direction) {
     await super.leave(direction);
+    this.#lupa(false);
     // La ilustración no puede quedarse flotando sobre la página siguiente,
     // pero tampoco desaparecer de golpe: se apaga mientras la hoja se va.
     const unmount = this.unmountGL;

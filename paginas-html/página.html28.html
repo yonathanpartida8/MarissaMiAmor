@@ -12,11 +12,13 @@
 
 <style>
 /* ══════════════════════════════════════════════════════════════════════
-   LA TORMENTA — «Cuenta hasta el trueno»
-   Primero llega el ambiente: el viento, la lluvia, destellos lejos.
-   Luego, cada relámpago: cuentas los segundos y tocas cuando suena el
-   trueno. Si aciertas, la tormenta se acerca… hasta que pasa por encima.
-   Prefijo `tm-`.
+   LA TORMENTA — tú mandas los rayos
+   Tocas el cielo y cae un rayo justo ahí, con su trueno: cerca (abajo)
+   truena al instante y fuerte; lejos (arriba, junto al horizonte) llega
+   después y más grave. Si dejas el dedo quieto, cargas una bola de
+   energía; al soltar, sale disparada en rayos por todos lados. Con dos
+   dedos a la vez, la luna estalla… y se vuelve a armar. Doble toque:
+   un paraguas. Prefijo `tm-`.
    ══════════════════════════════════════════════════════════════════════ */
 html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0c16; }
 .tm {
@@ -31,35 +33,24 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0c16; }
 .tm canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .tm-cabeza { position: absolute; top: calc(var(--seg-t) + 12px); left: 0; right: 0; display: grid; justify-items: center; gap: 2px; pointer-events: none; text-align: center; }
 .tm-titulo { margin: 0; font-weight: 600; font-size: clamp(0.66rem, 2.8vw, 0.78rem); letter-spacing: 0.36em; text-transform: uppercase; color: rgba(210, 220, 255, 0.7); }
-.tm-distancia { margin: 0; font-size: 0.74rem; letter-spacing: 0.2em; color: rgba(200, 215, 255, 0.55); }
-.tm-cuenta {
-  position: absolute; left: 0; right: 0; top: 34%; margin: 0; text-align: center; pointer-events: none;
-  font-weight: 500; font-size: clamp(3.4rem, 22vw, 6rem); line-height: 1; color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 0 30px rgba(170, 190, 255, 0.6);
-  opacity: 0; transform: scale(0.8);
-  transition: opacity 200ms ease, transform 300ms var(--suave);
-}
-.tm-cuenta.is-ve { opacity: 1; transform: none; }
-.tm-cuenta.is-late { animation: tm-late 600ms var(--suave); }
-@keyframes tm-late { 0% { transform: scale(1.25); text-shadow: 0 0 50px rgba(200, 215, 255, 0.9); } 100% { transform: none; } }
-.tm-cuenta.is-bien { color: #ff8fb0; text-shadow: 0 0 40px rgba(255, 120, 170, 0.9); }
+.tm-sub { margin: 0; font-size: 0.74rem; letter-spacing: 0.2em; color: rgba(200, 215, 255, 0.55); }
 .tm-pie { position: absolute; left: 0; right: 0; bottom: calc(var(--seg-b) + var(--barra) + 16px); display: grid; justify-items: center; gap: 3px; padding: 0 22px; pointer-events: none; text-align: center; }
 .tm-frase { margin: 0; max-width: 20em; font-style: italic; font-weight: 500; font-size: clamp(1.05rem, 4.8vw, 1.32rem); line-height: 1.3; color: #f4f6ff; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9); transition: opacity 700ms var(--suave), transform 700ms var(--suave); }
 .tm-firma { margin: 0; font-family: "Caveat", cursive; font-size: clamp(1rem, 4.4vw, 1.22rem); color: #b8c8ff; transition: opacity 700ms var(--suave) 200ms; }
 .tm-frase.is-fuera { opacity: 0; transform: translateY(6px); }
 .tm-firma.is-fuera { opacity: 0; transition-delay: 0ms; }
-.tm-pista { margin: 4px 0 0; font-size: clamp(0.58rem, 2.4vw, 0.68rem); font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: rgba(200, 215, 255, 0.55); }
+.tm-pista { margin: 4px 0 0; font-size: clamp(0.58rem, 2.4vw, 0.68rem); font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(200, 215, 255, 0.6); transition: color 300ms; }
+.tm-pista.is-carga { color: #bfe3ff; text-shadow: 0 0 12px rgba(140, 200, 255, 0.9); }
 </style>
 </head>
 <body>
 <div class="tm" id="mundo">
   <canvas id="lienzo"></canvas>
-  <div class="tm-cabeza"><p class="tm-titulo">Cuenta hasta el trueno</p><p class="tm-distancia" id="distancia"></p></div>
-  <p class="tm-cuenta" id="cuenta"></p>
+  <div class="tm-cabeza"><p class="tm-titulo">La tormenta</p><p class="tm-sub">tú mandas los rayos</p></div>
   <div class="tm-pie">
-    <p class="tm-frase" id="frase" role="status" aria-live="polite">Escucha… se está armando.</p>
-    <p class="tm-firma is-fuera" id="firma"></p>
-    <p class="tm-pista" id="pista">toca la pantalla para empezar</p>
+    <p class="tm-frase" id="frase" role="status" aria-live="polite">Esta tormenta es tuya.</p>
+    <p class="tm-firma" id="firma">toca el cielo y manda un rayo</p>
+    <p class="tm-pista" id="pista">toca · mantén para cargar energía · dos dedos: la luna</p>
   </div>
 </div>
 
@@ -67,27 +58,31 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0c16; }
 (() => {
 "use strict";
 
+/* ══════════════════════════════════════════════════════════════════════
+   LO QUE SE PUEDE CAMBIAR
+   ══════════════════════════════════════════════════════════════════════ */
 const CONF = {
-  metrosPorSegundo: 343,
-  distanciaInicial: 6,
-  seAcerca: 2,
-  margenAcierto: 0.9,
-  tramos: [
-    { s: 6, texto: "Está lejos todavía. Apenas se oye.", firma: "tenemos tiempo" },
-    { s: 4, texto: "Se acerca. El aire ya huele a lluvia.", firma: "cuenta conmigo" },
-    { s: 2, texto: "Ya está muy cerquita.", firma: "no tengas miedo, aquí estoy" },
-    { s: 1, texto: "Justo encima. Suenan casi juntos.", firma: "abrázame fuerte" },
+  /* Cada cuántos rayos sale una frase, y cuáles (en orden, dando vueltas). */
+  cadaCuantos: 3,
+  frasesRayo: [
+    ["¡Eso! Tú mandas aquí ⚡", "la tormenta te hace caso"],
+    ["Así me truena el corazón cuando me escribes", "bien fuerte"],
+    ["Ni mil truenos me quitan las ganas de verte", "ni uno"],
+    ["Qué bonito truena contigo", "y ni miedo me da"],
+    ["Otro, otro ⚡", "que se oiga hasta allá"],
+    ["Si te da miedo, aquí estoy", "abrázame fuerte 🤍"],
+    ["Eres una tormenta bonita", "de las que me gustan"],
   ],
-  aciertos: [
-    ["¡Justo! Así de lejos está.", "contando juntos no falla"],
-    ["Otra vez clavado.", "eres buenísima para esto"],
-    ["Un segundo menos.", "cada vez más cerca y menos miedo"],
-    ["Ya casi no hay que contar.", "agárrate fuerte"],
-  ],
-  falloLargo: "Te pasaste contando. Ya había sonado.",
-  falloCorto: "Todavía no… espera a oírlo 🤫",
-  final: ["Ya pasó la tormenta.", "y yo sigo aquí contigo, como siempre 🤍"],
+  cargando: "cargando energía",
+  descargaChica: ["¡Chispas! ⚡", "pura energía bonita"],
+  descargaGrande: ["¡Bum! Eso fue pura energía de amor ⚡💗", "así de fuerte te amo"],
+  lunaRota: ["¡Rompiste la luna! 🌙💥", "ups… ahorita se arma"],
+  lunaVuelve: ["Mírala, se armó otra vez para ti 🌙✨", "hasta la luna se recompone por ti"],
   paraguas: ["Bajo el paraguas, contigo ☂️", "aquí no te mojas"],
+  calma: ["Ya se calmó…", "y yo sigo aquí contigo 🤍"],
+  pista: "toca · mantén para cargar energía · dos dedos: la luna",
+  /* Cuánto tarda en llenarse la bola de energía (segundos). */
+  cargaSegundos: 2.2,
 };
 
 const mundo = document.getElementById("mundo");
@@ -96,16 +91,16 @@ const g = lienzo.getContext("2d", { alpha: false });
 const elFrase = document.getElementById("frase");
 const elFirma = document.getElementById("firma");
 const elPista = document.getElementById("pista");
-const elCuenta = document.getElementById("cuenta");
-const elDist = document.getElementById("distancia");
 const suave = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const TAU = Math.PI * 2;
 const azar = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const acercar = (v, o, k, dt) => o + (v - o) * Math.exp(-k * dt);
+const vibrar = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) { /* nada */ } };
 
 let A = 0, H = 0, dpr = 1, horizonte = 0;
 let paisaje = null, nubesLejos = null, nubesCerca = null;
+let luna = { x: 0, y: 0, r: 0 };
 
 /* ══════════════════════════════════════════════════════════════════════
    EL PAISAJE Y LAS NUBES (pintados una vez)
@@ -162,7 +157,10 @@ function pintarPaisaje() {
   x.fillStyle = vv; x.fillRect(hx - 40, hy - 40, 64, 64);
   nubesLejos = capaNubes(A * 2, horizonte * 1.05, 46, "70,78,110", 0.5);
   nubesCerca = capaNubes(A * 2, horizonte * 0.8, 34, "30,34,54", 0.85);
+  // Las estrellas, fijas: se pintan una vez y se enseñan según la calma.
+  estrellas = Array.from({ length: 90 }, (_, i) => ({ x: (i * 97.3 + 13) % A, y: (i * 53.7 + 7) % (horizonte * 0.8), f: Math.random() * 6 }));
 }
+let estrellas = [];
 
 /* ══════════════════════════════════════════════════════════════════════
    EL RAYO: una línea que se quiebra al azar y echa ramas
@@ -170,11 +168,13 @@ function pintarPaisaje() {
 function hacerRayo(x0, y0, x1, y1, grosor, prof) {
   let pts = [[x0, y0], [x1, y1]];
   let desv = Math.hypot(x1 - x0, y1 - y0) * 0.22;
+  const nx = -(y1 - y0), ny = x1 - x0, nl = Math.hypot(nx, ny) || 1;
   for (let n = 0; n < 7; n++) {
     const nuevos = [pts[0]];
     for (let i = 0; i < pts.length - 1; i++) {
       const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
-      nuevos.push([(ax + bx) / 2 + azar(-desv, desv), (ay + by) / 2 + azar(-desv, desv) * 0.3], pts[i + 1]);
+      const d = azar(-desv, desv);
+      nuevos.push([(ax + bx) / 2 + (nx / nl) * d, (ay + by) / 2 + (ny / nl) * d], pts[i + 1]);
     }
     pts = nuevos;
     desv *= 0.55;
@@ -184,27 +184,30 @@ function hacerRayo(x0, y0, x1, y1, grosor, prof) {
     for (let i = 4; i < pts.length - 6; i += 3) {
       if (Math.random() < 0.18) {
         const [bx, by] = pts[i];
-        const l = azar(0.1, 0.3) * (y1 - y0);
-        ramas.push(hacerRayo(bx, by, bx + azar(-1, 1) * l * 0.7, by + l, grosor * 0.5, prof + 1));
+        const l = azar(0.1, 0.3) * Math.hypot(x1 - x0, y1 - y0);
+        const a = Math.atan2(y1 - y0, x1 - x0) + azar(-0.9, 0.9);
+        ramas.push(hacerRayo(bx, by, bx + Math.cos(a) * l, by + Math.sin(a) * l, grosor * 0.5, prof + 1));
       }
     }
   }
   return { pts, grosor, ramas };
 }
-function pintarRayo(r, alfa) {
-  for (const [ancho, col] of [[r.grosor * 7, `rgba(140,160,255,${0.12 * alfa})`], [r.grosor * 3, `rgba(190,205,255,${0.35 * alfa})`], [r.grosor, `rgba(255,255,255,${alfa})`]]) {
+function pintarRayo(r, alfa, tinte) {
+  const t = tinte || "140,160,255";
+  for (const [ancho, col] of [[r.grosor * 7, `rgba(${t},${0.12 * alfa})`], [r.grosor * 3, `rgba(190,205,255,${0.35 * alfa})`], [r.grosor, `rgba(255,255,255,${alfa})`]]) {
     g.strokeStyle = col; g.lineWidth = ancho; g.lineJoin = "round"; g.lineCap = "round";
     g.beginPath(); g.moveTo(r.pts[0][0], r.pts[0][1]);
     for (const p of r.pts) g.lineTo(p[0], p[1]);
     g.stroke();
   }
-  for (const b of r.ramas) pintarRayo(b, alfa * 0.8);
+  for (const b of r.ramas) pintarRayo(b, alfa * 0.8, tinte);
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   EL SONIDO: lluvia, viento y truenos de verdad
+   EL SONIDO: lluvia, viento, truenos de verdad, la carga y la luna
    ══════════════════════════════════════════════════════════════════════ */
 let ac = null, salida = null, lluviaS = null, vientoS = null;
+let marron = null, blanco = null;          // ruidos hechos una vez y reusados
 function ruidoMarron(seg) {
   const n = Math.floor(ac.sampleRate * seg);
   const b = ac.createBuffer(2, n, ac.sampleRate);
@@ -227,15 +230,17 @@ function despertar() {
   comp.threshold.value = -8; comp.knee.value = 8; comp.ratio.value = 3; comp.attack.value = 0.004; comp.release.value = 0.25;
   const final = ac.createGain(); final.gain.value = 1.35;
   salida.connect(comp).connect(final).connect(ac.destination);
+  marron = ruidoMarron(8);
+  blanco = ruidoBlanco(2);
   // La lluvia y el viento son ambiente: no apartan la canción del libro.
   const conectar = (n) => { if (window.LibroSonido) window.LibroSonido.ambiente(n); else n.connect(ac.destination); };
-  const s = ac.createBufferSource(); s.buffer = ruidoBlanco(3); s.loop = true;
+  const s = ac.createBufferSource(); s.buffer = blanco; s.loop = true;
   const hp = ac.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 900;
   const lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 7000;
   const gg = ac.createGain(); gg.gain.value = 0;
   s.connect(hp).connect(lp).connect(gg); conectar(gg); s.start();
   lluviaS = gg;
-  const v = ac.createBufferSource(); v.buffer = ruidoMarron(4); v.loop = true;
+  const v = ac.createBufferSource(); v.buffer = marron; v.loop = true;
   const vf = ac.createBiquadFilter(); vf.type = "bandpass"; vf.frequency.value = 400; vf.Q.value = 0.5;
   const vg = ac.createGain(); vg.gain.value = 0;
   v.connect(vf).connect(vg); conectar(vg); v.start();
@@ -243,48 +248,41 @@ function despertar() {
   return ac;
 }
 /* El trueno: `cerca` va de 0 (lejísimos, un rumor grave) a 1 (encima:
-   un chasquido seco y luego el retumbo que llena todo). */
-function trueno(cerca) {
-  if (!ac) return;
+   un chasquido seco y luego el retumbo que llena todo). `fuerza` > 1 para
+   la descarga grande. */
+function trueno(cerca, fuerza = 1) {
+  if (!ac || !marron) return;
   const t = ac.currentTime;
-  const dur = 3.5 + cerca * 3;
-  const s = ac.createBufferSource(); s.buffer = ruidoMarron(dur + 0.5);
+  const dur = Math.min(7.5, 3 + cerca * 3 + (fuerza - 1) * 1.5);
+  const s = ac.createBufferSource(); s.buffer = marron;
   const lp = ac.createBiquadFilter(); lp.type = "lowpass";
-  lp.frequency.setValueAtTime(180 + cerca * 900, t);
+  lp.frequency.setValueAtTime(180 + cerca * 900 + (fuerza - 1) * 500, t);
   lp.frequency.exponentialRampToValueAtTime(90 + cerca * 60, t + dur);
   const gg = ac.createGain();
   gg.gain.setValueAtTime(0.0001, t);
-  gg.gain.exponentialRampToValueAtTime(0.9 + cerca * 1.5, t + 0.08 + (1 - cerca) * 0.5);
+  gg.gain.exponentialRampToValueAtTime((0.9 + cerca * 1.5) * fuerza, t + 0.08 + (1 - cerca) * 0.5);
   // Retumba: sube y baja varias veces mientras se apaga.
   let k = t + 0.3;
-  while (k < t + dur) { gg.gain.linearRampToValueAtTime((0.4 + Math.random() * 0.9) * (1 - (k - t) / dur) * (0.8 + cerca), k); k += azar(0.15, 0.5); }
+  while (k < t + dur) { gg.gain.linearRampToValueAtTime((0.4 + Math.random() * 0.9) * (1 - (k - t) / dur) * (0.8 + cerca) * fuerza, k); k += azar(0.15, 0.5); }
   gg.gain.linearRampToValueAtTime(0.0001, t + dur);
   const pan = ac.createStereoPanner ? ac.createStereoPanner() : null;
   if (pan) { pan.pan.value = azar(-0.5, 0.5); s.connect(lp).connect(gg).connect(pan).connect(salida); } else s.connect(lp).connect(gg).connect(salida);
-  s.start(t);
+  s.start(t, Math.random() * Math.max(0, marron.duration - dur - 0.1), dur + 0.1);
   // El golpe grave que se siente en el pecho.
   const sub = ac.createOscillator(), sg = ac.createGain();
   sub.type = "sine"; sub.frequency.setValueAtTime(58, t); sub.frequency.exponentialRampToValueAtTime(26, t + 1.8);
-  sg.gain.setValueAtTime(0.0001, t); sg.gain.exponentialRampToValueAtTime(0.5 + cerca * 0.9, t + 0.06 + (1 - cerca) * 0.4);
+  sg.gain.setValueAtTime(0.0001, t); sg.gain.exponentialRampToValueAtTime((0.5 + cerca * 0.9) * Math.min(1.6, fuerza), t + 0.06 + (1 - cerca) * 0.4);
   sg.gain.exponentialRampToValueAtTime(0.0001, t + 2.2 + cerca * 1.5);
   sub.connect(sg).connect(salida); sub.start(t); sub.stop(t + 4);
-  if (cerca > 0.35) {
-    // El chasquido seco del rayo cuando cae cerca.
-    const c = ac.createBufferSource(); c.buffer = ruidoBlanco(0.5);
-    const hp = ac.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 1200;
-    const cg = ac.createGain();
-    cg.gain.setValueAtTime(1.4 * cerca, t); cg.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
-    c.connect(hp).connect(cg).connect(salida); c.start(t);
-  }
+  if (cerca > 0.35) chasquido(t, 1.4 * cerca * Math.min(1.5, fuerza));
 }
-
-/* Un tic bajito por segundo, para contar juntos. */
-function tic(fuerte) {
-  if (!ac) return;
-  const t = ac.currentTime, o = ac.createOscillator(), gg = ac.createGain();
-  o.type = "sine"; o.frequency.value = fuerte ? 1180 : 880;
-  gg.gain.setValueAtTime(0.0001, t); gg.gain.exponentialRampToValueAtTime(0.05, t + 0.005); gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-  o.connect(gg).connect(ac.destination); o.start(t); o.stop(t + 0.15);
+/* El chasquido seco del rayo cuando cae cerca. */
+function chasquido(t, fuerza) {
+  const c = ac.createBufferSource(); c.buffer = blanco;
+  const hp = ac.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 1200;
+  const cg = ac.createGain();
+  cg.gain.setValueAtTime(fuerza, t); cg.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+  c.connect(hp).connect(cg).connect(salida); c.start(t, Math.random() * 1.2, 0.5);
 }
 /* Una gota que salpica donde tocas. */
 function plic() {
@@ -295,143 +293,303 @@ function plic() {
   gg.gain.setValueAtTime(0.0001, t); gg.gain.exponentialRampToValueAtTime(0.06, t + 0.004); gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
   o.connect(gg).connect(ac.destination); o.start(t); o.stop(t + 0.1);
 }
+function campana(f, t, vol, dur) {
+  const o = ac.createOscillator(), gg = ac.createGain();
+  o.type = "sine"; o.frequency.value = f;
+  gg.gain.setValueAtTime(0.0001, t); gg.gain.exponentialRampToValueAtTime(vol, t + 0.01); gg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(gg).connect(salida); o.start(t); o.stop(t + dur + 0.05);
+}
+
+/* El zumbido de la carga: sube de tono y de fuerza mientras se llena, con
+   crujidos eléctricos por encima. */
+let zumbido = null;
+function empezarZumbido() {
+  if (!despertar() || zumbido) return;
+  const t = ac.currentTime;
+  const o = ac.createOscillator(); o.type = "sawtooth"; o.frequency.value = 55;
+  const o2 = ac.createOscillator(); o2.type = "square"; o2.frequency.value = 55.7;
+  const lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 300; lp.Q.value = 6;
+  const gg = ac.createGain(); gg.gain.setValueAtTime(0.0001, t); gg.gain.exponentialRampToValueAtTime(0.08, t + 0.25);
+  o.connect(lp); o2.connect(lp); lp.connect(gg).connect(salida);
+  o.start(t); o2.start(t);
+  zumbido = { o, o2, lp, gg };
+}
+function moverZumbido(carga) {
+  if (!zumbido) return;
+  const t = ac.currentTime;
+  zumbido.o.frequency.setTargetAtTime(55 + carga * 200, t, 0.08);
+  zumbido.o2.frequency.setTargetAtTime(55.7 + carga * 203, t, 0.08);
+  zumbido.lp.frequency.setTargetAtTime(300 + carga * 2600, t, 0.08);
+  zumbido.gg.gain.setTargetAtTime(0.08 + carga * 0.2, t, 0.1);
+  if (Math.random() < 0.25 + carga * 0.5) chasquido(t + Math.random() * 0.05, 0.05 + carga * 0.2);
+}
+function pararZumbido() {
+  if (!zumbido) return;
+  const z = zumbido; zumbido = null;
+  const t = ac.currentTime;
+  z.gg.gain.cancelScheduledValues(t); z.gg.gain.setValueAtTime(z.gg.gain.value, t);
+  z.gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+  z.o.stop(t + 0.15); z.o2.stop(t + 0.15);
+}
+
+function sonidoLunaRota() {
+  if (!despertar()) return;
+  const t = ac.currentTime;
+  const o = ac.createOscillator(), gg = ac.createGain();
+  o.type = "sine"; o.frequency.setValueAtTime(90, t); o.frequency.exponentialRampToValueAtTime(24, t + 1.4);
+  gg.gain.setValueAtTime(0.0001, t); gg.gain.exponentialRampToValueAtTime(0.6, t + 0.02); gg.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+  o.connect(gg).connect(salida); o.start(t); o.stop(t + 1.7);
+  const src = ac.createBufferSource(); src.buffer = blanco;
+  const lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.setValueAtTime(5200, t); lp.frequency.exponentialRampToValueAtTime(260, t + 1.5);
+  const gn = ac.createGain(); gn.gain.setValueAtTime(0.5, t); gn.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
+  src.connect(lp).connect(gn).connect(salida); src.start(t, 0, 1.9);
+  for (let i = 0; i < 14; i++) campana(azar(1800, 4200), t + 0.05 + Math.random() * 0.9, 0.02, 0.5);
+}
+function sonidoLunaVuelve() {
+  if (!despertar()) return;
+  const t = ac.currentTime;
+  const src = ac.createBufferSource(); src.buffer = blanco;
+  const bp = ac.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = 0.8;
+  bp.frequency.setValueAtTime(400, t); bp.frequency.exponentialRampToValueAtTime(4200, t + ROTA_VUELVE);
+  const gn = ac.createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.16, t + ROTA_VUELVE);
+  src.connect(bp).connect(gn).connect(salida); src.start(t, 0, ROTA_VUELVE);
+  for (const [f, k] of [[523.25, 0], [659.25, 1], [783.99, 2], [1046.5, 3], [1318.5, 4]]) campana(f, t + ROTA_VUELVE - 0.05 + k * 0.06, 0.04, 2.6);
+}
 
 /* ══════════════════════════════════════════════════════════════════════
-   EL JUEGO
+   LO QUE PASA EN EL CIELO
    ══════════════════════════════════════════════════════════════════════ */
-let fase = "espera";                 // espera · ambiente · calma · contar · pasada
-let distancia = CONF.distanciaInicial;
-let intensidad = 0, intObj = 0;      // de la lluvia
-let relojFase = 0, relojRayo = 0, tRayo = 0, tocado = false, nAcierto = 0;
-let rayos = [], fogonazo = 0, lejanos = 0;
+let empezada = false;
+let intensidad = 0, intObj = 0;      // la lluvia
+let furia = 0, furiaMax = 0;          // cuánto se ha enfurecido la tormenta
+let rayos = [], fogonazo = 0, lejanos = 0, sacudida = 0;
+let nRayos = 0, nFrase = 0;
+const chispas = [], ondas = [], quemaduras = [];
 
 function decir(f, s) {
   elFrase.classList.add("is-fuera"); elFirma.classList.add("is-fuera");
   setTimeout(() => { elFrase.textContent = f; elFrase.classList.remove("is-fuera"); elFirma.textContent = s || ""; elFirma.classList.toggle("is-fuera", !s); }, suave ? 20 : 400);
 }
-function mostrarDistancia() { elDist.textContent = distancia > 0 ? `a unos ${Math.round(distancia * CONF.metrosPorSegundo / 100) / 10} km` : ""; }
+function chispa(x, y, v, color, dur) {
+  if (chispas.length > 600) return;
+  const a = Math.random() * TAU;
+  chispas.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - v * 0.3, t: 0, dur: dur || azar(0.4, 0.9), color });
+}
+function onda(x, y, fuerza) { ondas.push({ x, y, t: 0, fuerza }); }
 
-function relampago(cerca) {
-  const x0 = azar(A * 0.15, A * 0.85);
-  const destino = cerca > 0.8 ? H * 0.92 : horizonte + azar(-10, 30);
-  rayos.push({ r: hacerRayo(x0, azar(0, horizonte * 0.25), x0 + azar(-A * 0.25, A * 0.25), destino, 1.2 + cerca * 2.8, 0), t: 0, cerca });
-  fogonazo = 0.5 + cerca * 0.6;
+/* Un rayo que cae justo donde se toca. Abajo = cerca: más gordo, más
+   fuerte y el trueno sin espera. Arriba, junto al horizonte = lejos: el
+   trueno llega después y más grave, como de verdad. */
+function rayoEn(x, y) {
+  const suelo = y > horizonte * 0.97;
+  const cerca = clamp((y - horizonte * 0.35) / (H - horizonte * 0.35), 0, 1);
+  const x0 = x + azar(-A * 0.18, A * 0.18);
+  rayos.push({ r: hacerRayo(x0, azar(0, horizonte * 0.18), x, y, 1.1 + cerca * 2.6, 0), t: 0 });
+  fogonazo = Math.max(fogonazo, 0.45 + cerca * 0.55);
+  sacudida = Math.max(sacudida, 0.25 + cerca * 0.6);
+  for (let i = 0; i < 14 + cerca * 30; i++) chispa(x, y, azar(60, 260 + cerca * 260), Math.random() < 0.6 ? "blanco" : "azul");
+  onda(x, y, 0.4 + cerca * 0.6);
+  if (suelo) quemaduras.push({ x, y, t: 0, r: 10 + cerca * 26 });
+  setTimeout(() => trueno(cerca), (1 - cerca) * 900);
+  vibrar(Math.round(18 + cerca * 50));
+  furia = Math.min(1, furia + 0.1);
+  furiaMax = Math.max(furiaMax, furia);
+  intObj = Math.min(1, 0.35 + furia * 0.65);
+  nRayos++;
+  if (nRayos % CONF.cadaCuantos === 0) decir(...CONF.frasesRayo[nFrase++ % CONF.frasesRayo.length]);
 }
 
-window.__tormenta = { rayo: (c) => relampago(c) };
-const dedo = { abajo: false, x: 0, y: 0, x0: 0, t0: 0, vx: 0 };
-let paraguas = 0, paraguasDicho = false;
-const circulos = [];
-mundo.addEventListener("pointermove", (e) => {
-  if (!dedo.abajo) return;
-  const r = mundo.getBoundingClientRect();
-  const x = e.clientX - r.left, y = e.clientY - r.top;
-  dedo.vx = acercar(dedo.vx, (x - dedo.x) * 60, 6, 1 / 60);
-  dedo.x = x; dedo.y = y;
-});
-const soltarDedo = () => { dedo.abajo = false; };
-mundo.addEventListener("pointerup", soltarDedo);
-mundo.addEventListener("pointercancel", soltarDedo);
+/* La bola de energía: se carga con el dedo quieto; al soltar, revienta en
+   rayos hacia todos lados y una onda que empuja la lluvia. */
+let carga = null;         // { x, y, k, arcoT, vibT }
+function soltarCarga() {
+  if (!carga) return;
+  const { x, y, k } = carga;
+  carga = null;
+  pararZumbido();
+  elPista.classList.remove("is-carga");
+  elPista.textContent = CONF.pista;
+  if (k < 0.12) { rayoEn(x, y); return; }
+  const n = 3 + Math.round(k * 7);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * TAU + azar(-0.25, 0.25) - Math.PI / 2;
+    const l = Math.max(A, H) * azar(0.45, 0.9) * (0.5 + k * 0.5);
+    rayos.push({ r: hacerRayo(x, y, x + Math.cos(a) * l, y + Math.sin(a) * l, 1.4 + k * 3, 0), t: -i * 0.03, tinte: "150,200,255" });
+  }
+  // Y uno enorme que sube al cielo.
+  rayos.push({ r: hacerRayo(x, y, x + azar(-A * 0.2, A * 0.2), -10, 2 + k * 4, 0), t: 0, tinte: "190,160,255" });
+  fogonazo = 1 + k * 0.6;
+  sacudida = 0.6 + k;
+  for (let i = 0; i < 40 + k * 120; i++) chispa(x, y, azar(120, 420 + k * 500), Math.random() < 0.5 ? "azul" : Math.random() < 0.5 ? "blanco" : "rosa", azar(0.6, 1.3));
+  onda(x, y, 1 + k);
+  setTimeout(() => onda(x, y, 0.6 + k * 0.6), 140);
+  // La lluvia sale volando hacia fuera.
+  for (const d of gotas) {
+    const dx = d.x - x, dy = d.y - y, dist = Math.hypot(dx, dy) || 1;
+    const f = Math.max(0, 1 - dist / (Math.max(A, H) * 0.8)) * (600 + k * 1400);
+    d.px = (d.px || 0) + (dx / dist) * f;
+  }
+  if (y > horizonte * 0.97) quemaduras.push({ x, y, t: 0, r: 30 + k * 50 });
+  trueno(1, 1 + k * 0.8);
+  vibrar(k > 0.6 ? [60, 40, 120, 40, 200] : [40, 30, 90]);
+  furia = Math.min(1, furia + 0.2 + k * 0.3);
+  furiaMax = Math.max(furiaMax, furia);
+  intObj = Math.min(1, 0.4 + furia * 0.6);
+  decir(...(k > 0.6 ? CONF.descargaGrande : CONF.descargaChica));
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LA LUNA: dos dedos a la vez la revientan y se vuelve a armar sola
+   ══════════════════════════════════════════════════════════════════════ */
+let lunaRota = null, lunaBrillo = 0;
+const ROTA_VUELA = 1.8, ROTA_VUELVE = 1.9;
+
+function dibujarLuna(vis) {
+  const { x, y, r } = luna;
+  const h = g.createRadialGradient(x, y, r * 0.8, x, y, r * (6 + lunaBrillo * 4));
+  h.addColorStop(0, `rgba(220,228,255,${(0.22 + lunaBrillo * 0.4) * vis})`);
+  h.addColorStop(1, "rgba(220,228,255,0)");
+  g.fillStyle = h;
+  g.fillRect(x - r * 10, y - r * 10, r * 20, r * 20);
+  const e = 1 + lunaBrillo * 0.12;
+  g.globalAlpha = vis;
+  const disco = g.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r * e);
+  disco.addColorStop(0, "#fffdf2");
+  disco.addColorStop(1, "#d8dcea");
+  g.fillStyle = disco;
+  g.beginPath(); g.arc(x, y, r * e, 0, TAU); g.fill();
+  g.fillStyle = "rgba(150,158,185,.3)";
+  for (const [dx, dy, rr] of [[-0.3, -0.1, 0.22], [0.25, 0.3, 0.16], [0.1, -0.35, 0.12], [-0.15, 0.4, 0.1]]) {
+    g.beginPath(); g.arc(x + dx * r * e, y + dy * r * e, rr * r * e, 0, TAU); g.fill();
+  }
+  g.globalAlpha = 1;
+}
+function romperLuna() {
+  if (lunaRota) return;
+  const piezas = [];
+  for (let i = 0; i < 36; i++) {
+    const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * luna.r * 0.8;
+    const hx = luna.x + Math.cos(a) * d, hy = luna.y + Math.sin(a) * d;
+    const v = azar(160, 540);
+    const lados = 3 + Math.floor(Math.random() * 3);
+    const forma = Array.from({ length: lados }, (_, k) => {
+      const aa = (k / lados) * TAU + azar(-0.3, 0.3);
+      return [Math.cos(aa) * azar(0.6, 1), Math.sin(aa) * azar(0.6, 1)];
+    });
+    piezas.push({ hx, hy, x: hx, y: hy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 80, rot: 0, vr: azar(-9, 9), tam: luna.r * azar(0.18, 0.34), forma, tono: azar(0.82, 1) });
+  }
+  lunaRota = { t: 0, piezas };
+  fogonazo = Math.max(fogonazo, 1.1);
+  sacudida = Math.max(sacudida, 0.9);
+  onda(luna.x, luna.y, 1.2);
+  setTimeout(() => onda(luna.x, luna.y, 0.8), 160);
+  for (let i = 0; i < 110; i++) chispa(luna.x, luna.y, azar(80, 640), Math.random() < 0.6 ? "oro" : "blanco", azar(0.7, 1.4));
+  sonidoLunaRota();
+  vibrar([80, 50, 160]);
+  setTimeout(() => decir(...CONF.lunaRota), 350);
+}
+function pasoLuna(dt, vis) {
+  lunaBrillo = Math.max(0, lunaBrillo - dt * 0.7);
+  if (!lunaRota) { dibujarLuna(vis); return; }
+  const L = lunaRota;
+  L.t += dt;
+  if (L.t > ROTA_VUELA && !L.volviendo) {
+    L.volviendo = true;
+    for (const p of L.piezas) { p.sx = p.x; p.sy = p.y; p.sr = p.rot; }
+    sonidoLunaVuelve();
+  }
+  const kv = L.volviendo ? clamp((L.t - ROTA_VUELA) / ROTA_VUELVE, 0, 1) : 0;
+  const ease = kv < 0.5 ? 4 * kv * kv * kv : 1 - Math.pow(-2 * kv + 2, 3) / 2;
+  if (kv > 0.55) dibujarLuna(vis * (kv - 0.55) / 0.45);
+  for (const p of L.piezas) {
+    if (!L.volviendo) {
+      p.vy += 260 * dt; p.vx *= Math.exp(-dt * 1.1); p.vy *= Math.exp(-dt * 0.6);
+      p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+    } else {
+      p.x = p.sx + (p.hx - p.sx) * ease;
+      p.y = p.sy + (p.hy - p.sy) * ease;
+      p.rot = p.sr * (1 - ease);
+    }
+    if (kv >= 1) continue;
+    g.save();
+    g.translate(p.x, p.y); g.rotate(p.rot);
+    const c = Math.round(215 + 40 * p.tono);
+    g.fillStyle = `rgb(${c - 10},${c - 6},${c})`;
+    g.beginPath();
+    p.forma.forEach(([fx, fy], k) => (k ? g.lineTo(fx * p.tam, fy * p.tam) : g.moveTo(fx * p.tam, fy * p.tam)));
+    g.closePath(); g.fill();
+    g.strokeStyle = "rgba(255,255,250,.55)"; g.lineWidth = 0.8; g.stroke();
+    g.restore();
+  }
+  if (kv >= 1) {
+    lunaRota = null;
+    lunaBrillo = 1;
+    for (let i = 0; i < 44; i++) chispa(luna.x, luna.y, azar(40, 220), "oro", 1.2);
+    onda(luna.x, luna.y, 0.5);
+    decir(...CONF.lunaVuelve);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS DEDOS
+   ══════════════════════════════════════════════════════════════════════ */
+const dedos = new Map();        // id → { x, y, x0, y0, t0, movido, usado }
+const viento = { vx: 0 };
+let paraguas = null;            // { x, y, t, abierto }
+let ultimoToque = { t: -1e9, x: 0, y: 0 };
+
+const posDe = (e) => { const r = mundo.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+
 mundo.addEventListener("pointerdown", (e) => {
   despertar();
-  const r0 = mundo.getBoundingClientRect();
-  Object.assign(dedo, { abajo: true, x: e.clientX - r0.left, y: e.clientY - r0.top, t0: performance.now(), vx: 0 });
-  dedo.x0 = dedo.x;
-  circulos.push({ x: dedo.x, y: dedo.y, t: 0 });
-  for (let i = 0; i < 8; i++) salpicas.push({ x: dedo.x + azar(-14, 14), y: dedo.y + azar(-6, 6), t: azar(-0.1, 0) });
-  plic();
-  if (fase === "espera") {
-    fase = "ambiente"; relojFase = 0; intObj = 0.3;
-    elPista.textContent = "escucha… · mantén el dedo para el paraguas";
+  try { mundo.setPointerCapture(e.pointerId); } catch (err) { /* nada */ }
+  const [x, y] = posDe(e);
+  dedos.set(e.pointerId, { x, y, x0: x, y0: y, t0: performance.now(), movido: false, usado: false });
+  if (!empezada) { empezada = true; intObj = 0.35; }
+  // Dos dedos a la vez: la luna.
+  if (dedos.size >= 2) {
+    for (const d of dedos.values()) d.usado = true;
+    if (carga) { carga = null; pararZumbido(); elPista.classList.remove("is-carga"); elPista.textContent = CONF.pista; }
+    romperLuna();
     return;
   }
-  if (fase === "contar" && !tocado) {
-    const pasado = relojFase;
-    const dif = pasado - distancia;
-    if (Math.abs(dif) <= CONF.margenAcierto) {
-      tocado = true;
-      nAcierto++;
-      decir(...CONF.aciertos[(nAcierto - 1) % CONF.aciertos.length]);
-      distancia = Math.max(0, distancia - CONF.seAcerca);
-      contar.acerto = true;
-      elCuenta.textContent = "♥";
-      elCuenta.classList.add("is-ve", "is-bien");
-      setTimeout(() => elCuenta.classList.remove("is-ve", "is-bien"), 900);
-    } else if (dif > 0) { tocado = true; decir(CONF.falloLargo); }
-    // Si tocó antes de tiempo no pierde el turno: puede tocar cuando suene.
-    else if (!contar.avisado) { contar.avisado = true; decir(CONF.falloCorto); }
-  }
-  if (fase === "pasada" && relojFase > 2) { fase = "espera"; paraguasDicho = false; contar.ultimo = null; distancia = CONF.distanciaInicial; nAcierto = 0; mostrarDistancia(); decir("Otra tormenta a lo lejos…"); elPista.textContent = "toca para empezar"; }
+  plic();
 });
-
-function avanzar(dt) {
-  relojFase += dt;
-  if (fase === "ambiente") {
-    // Primero el ambiente: el viento, la lluvia creciendo y destellos lejos.
-    intObj = Math.min(0.55, 0.3 + relojFase * 0.05);
-    if (Math.random() < dt * 0.6) lejanos = 1;
-    if (relojFase > 4) { fase = "calma"; relojFase = 0; relojRayo = azar(1, 2); decir("Ahora cuenta desde el relámpago…", "y toca cuando suene el trueno"); elPista.textContent = "cuenta en voz bajita"; mostrarDistancia(); }
-  } else if (fase === "calma") {
-    relojRayo -= dt;
-    if (Math.random() < dt * 0.3) lejanos = 0.6;
-    if (relojRayo <= 0) {
-      const cerca = 1 - distancia / CONF.distanciaInicial;
-      relampago(cerca);
-      relojFase = 0; tocado = false;
-      tRayo = distancia;
-      if (distancia <= 0.01) { fase = "fin"; trueno(1); final(); }
-      else fase = "contar";
-    }
-  } else if (fase === "contar") {
-    // Los segundos van apareciendo, uno por uno, hasta que suena.
-    const seg = Math.floor(relojFase);
-    if (!contar.sonado && seg >= 1 && seg !== contar.seg) {
-      contar.seg = seg;
-      elCuenta.textContent = String(seg);
-      elCuenta.classList.remove("is-late"); void elCuenta.offsetWidth; elCuenta.classList.add("is-ve", "is-late");
-      tic(false);
-    }
-    if (relojFase >= tRayo && !contar.sonado) {
-      contar.sonado = true;
-      trueno(1 - distancia / CONF.distanciaInicial);
-      sacudida = 0.4 + (1 - distancia / CONF.distanciaInicial) * 0.6;
-      elCuenta.classList.remove("is-ve");
-    }
-    if (relojFase > tRayo + 1.8) {
-      contar.sonado = false;
-      contar.seg = 0;
-      contar.avisado = false;
-      if (!tocado) decir("Sonó en el " + Math.round(tRayo) + ".", "a la próxima cuentas conmigo");
-      // Aunque no acierte, la tormenta sigue viniendo, solo más despacio.
-      if (!tocado || !contar.acerto) distancia = Math.max(0, distancia - 1);
-      contar.acerto = false;
-      const tr = CONF.tramos.filter((x) => x.s >= distancia - 0.01).pop() || CONF.tramos[CONF.tramos.length - 1];
-      if (tr !== contar.ultimo) { contar.ultimo = tr; setTimeout(() => decir(tr.texto, tr.firma), 1800); }
-      mostrarDistancia();
-      intObj = 0.4 + (1 - distancia / CONF.distanciaInicial) * 0.6;
-      fase = "calma"; relojFase = 0; relojRayo = azar(2, 3.5);
-    }
-  } else if (fase === "pasada") {
-    intObj = Math.max(0, 0.6 - relojFase * 0.08);
+mundo.addEventListener("pointermove", (e) => {
+  const d = dedos.get(e.pointerId);
+  if (!d) return;
+  const [x, y] = posDe(e);
+  viento.vx = acercar(viento.vx, (x - d.x) * 60, 6, 1 / 60);
+  d.x = x; d.y = y;
+  if (!d.movido && Math.hypot(x - d.x0, y - d.y0) > 16) d.movido = true;
+  if (carga && dedos.size === 1) { carga.x = x; carga.y = y; }
+});
+function levantar(e, cancelado) {
+  const d = dedos.get(e.pointerId);
+  if (!d) return;
+  dedos.delete(e.pointerId);
+  if (d.usado || cancelado) { if (carga) { carga = null; pararZumbido(); } return; }
+  if (carga) { soltarCarga(); return; }
+  if (d.movido) return;
+  // Un toque: rayo. Dos seguidos en el mismo sitio: paraguas.
+  const ahora = performance.now();
+  if (ahora - ultimoToque.t < 320 && Math.hypot(d.x - ultimoToque.x, d.y - ultimoToque.y) < 44) {
+    paraguas = { x: d.x, y: d.y, t: 0, abierto: 0 };
+    ultimoToque.t = -1e9;
+    decir(...CONF.paraguas);
+    return;
   }
+  ultimoToque = { t: ahora, x: d.x, y: d.y };
+  rayoEn(d.x, d.y);
 }
-const contar = { sonado: false, ultimo: null };
-let sacudida = 0, estrellasVer = 0;
-function final() {
-  sacudida = 1;
-  setTimeout(() => {
-    fase = "pasada"; relojFase = 0;
-    decir(...CONF.final);
-    elPista.textContent = "toca para otra tormenta";
-    elDist.textContent = "";
-  }, 3500);
-}
+mundo.addEventListener("pointerup", (e) => levantar(e, false));
+mundo.addEventListener("pointercancel", (e) => levantar(e, true));
 
 /* ══════════════════════════════════════════════════════════════════════
    EL BUCLE
    ══════════════════════════════════════════════════════════════════════ */
 const gotas = [], salpicas = [];
-let t0 = performance.now(), reloj = 0;
+let t0 = performance.now(), reloj = 0, calmaDicha = true;
 
 function paso(ahora) {
   requestAnimationFrame(paso);
@@ -440,8 +598,37 @@ function paso(ahora) {
   t0 = ahora;
   if (!(dt > 0) || dt > 0.1) dt = 1 / 60;
   reloj += dt;
-  avanzar(dt);
-  intensidad = acercar(intensidad, intObj, 0.5, dt);
+
+  // ---- La carga: el dedo quieto un momento empieza a juntar energía ----
+  if (dedos.size === 1 && !carga) {
+    const [d] = dedos.values();
+    if (!d.usado && !d.movido && ahora - d.t0 > 280) {
+      carga = { x: d.x, y: d.y, k: 0, vibT: 0 };
+      empezarZumbido();
+      elPista.classList.add("is-carga");
+    }
+  }
+  if (carga) {
+    carga.k = Math.min(1, carga.k + dt / CONF.cargaSegundos);
+    moverZumbido(carga.k);
+    elPista.textContent = `${CONF.cargando} · ${Math.round(carga.k * 100)}%`;
+    carga.vibT -= dt;
+    if (carga.vibT <= 0) { carga.vibT = 0.14 - carga.k * 0.07; vibrar(Math.round(8 + carga.k * 22)); }
+    // Chispitas que se van hacia la bola.
+    if (Math.random() < dt * (20 + carga.k * 60)) {
+      const a = Math.random() * TAU, l = azar(60, 160);
+      chispas.push({ x: carga.x + Math.cos(a) * l, y: carga.y + Math.sin(a) * l, vx: -Math.cos(a) * l * 2.2, vy: -Math.sin(a) * l * 2.2, t: 0, dur: 0.45, color: "azul" });
+    }
+  }
+
+  // ---- La tormenta se calma sola si nadie manda rayos ----
+  furia = Math.max(0, furia - dt * 0.035);
+  if (empezada) intObj = Math.max(intObj - dt * 0.02, 0.18 + furia * 0.7);
+  if (furia > 0.45) calmaDicha = false;
+  if (!calmaDicha && furia < 0.08 && furiaMax > 0.45 && !carga) { calmaDicha = true; furiaMax = 0; decir(...CONF.calma); }
+  if (empezada && Math.random() < dt * (0.15 + furia * 0.5)) lejanos = 0.4 + Math.random() * 0.4;
+
+  intensidad = acercar(intensidad, intObj, 0.6, dt);
   if (lluviaS && ac) {
     lluviaS.gain.setTargetAtTime(intensidad * 0.22, ac.currentTime, 0.4);
     vientoS.vg.gain.setTargetAtTime(0.05 + intensidad * 0.18 * (0.6 + 0.4 * Math.sin(reloj * 0.5)), ac.currentTime, 0.6);
@@ -450,29 +637,26 @@ function paso(ahora) {
   fogonazo *= Math.exp(-dt * 5);
   lejanos *= Math.exp(-dt * 6);
   sacudida *= Math.exp(-dt * 4);
-  // El dedo, si se arrastra, empuja el viento; si se queda quieto, abre
-  // un paraguas donde está.
-  const quieto = dedo.abajo && Math.abs(dedo.x - dedo.x0) < 14 && performance.now() - dedo.t0 > 550;
-  paraguas = acercar(paraguas, quieto ? 1 : 0, quieto ? 6 : 4, dt);
-  if (quieto && !paraguasDicho && intensidad > 0.2) { paraguasDicho = true; decir(...CONF.paraguas); }
-  dedo.vx *= Math.exp(-dt * 2);
-  const viento = 0.25 + intensidad * 0.35 + clamp(dedo.vx / 900, -0.9, 0.9);
+  viento.vx *= Math.exp(-dt * 2);
+  const vto = 0.25 + intensidad * 0.35 + clamp(viento.vx / 900, -0.9, 0.9);
 
   g.save();
-  if (sacudida > 0.02) g.translate(azar(-1, 1) * sacudida * 6, azar(-1, 1) * sacudida * 4);
+  if (sacudida > 0.02 && !suave) g.translate(azar(-1, 1) * sacudida * 7, azar(-1, 1) * sacudida * 5);
 
-  // El cielo: más oscuro y cerrado cuanto más cerca está la tormenta.
-  const cerrado = fase === "pasada" ? Math.max(0, 1 - relojFase / 6) : 0.4 + intensidad * 0.6;
+  // El cielo: más oscuro y cerrado cuanto más furiosa está la tormenta.
+  const cerrado = 0.3 + intensidad * 0.7;
   const cielo = g.createLinearGradient(0, 0, 0, horizonte);
   cielo.addColorStop(0, `rgb(${12 + (1 - cerrado) * 10},${14 + (1 - cerrado) * 14},${28 + (1 - cerrado) * 30})`);
   cielo.addColorStop(1, `rgb(${40 - cerrado * 14},${44 - cerrado * 14},${70 - cerrado * 20})`);
   g.fillStyle = cielo; g.fillRect(-10, -10, A + 20, H + 20);
-  // Al pasar la tormenta, salen las estrellas y la luna.
-  estrellasVer = acercar(estrellasVer, fase === "pasada" ? 1 : 0, 0.4, dt);
-  if (estrellasVer > 0.02) {
-    for (let i = 0; i < 80; i++) { const sx = (i * 97.3) % A, sy = (i * 53.7) % (horizonte * 0.8); g.fillStyle = `rgba(255,255,255,${estrellasVer * (0.4 + 0.5 * Math.sin(reloj * 2 + i))})`; g.fillRect(sx, sy, 1.3, 1.3); }
-    g.fillStyle = `rgba(255,246,220,${estrellasVer})`; g.beginPath(); g.arc(A * 0.8, horizonte * 0.25, Math.min(A, H) * 0.045, 0, TAU); g.fill();
+
+  // Estrellas y luna: se asoman cuando la tormenta afloja.
+  const calma = clamp(1 - intensidad * 1.15, 0, 1);
+  if (calma > 0.02) {
+    for (const s of estrellas) { g.fillStyle = `rgba(255,255,255,${calma * (0.35 + 0.5 * Math.sin(reloj * 2 + s.f))})`; g.fillRect(s.x, s.y, 1.3, 1.3); }
   }
+  pasoLuna(dt, 0.35 + calma * 0.65);
+
   // Nubes, iluminadas desde dentro con cada destello.
   const luzN = fogonazo + lejanos * 0.35;
   const offL = (reloj * 6 * (1 + intensidad)) % (A * 2), offC = (reloj * 14 * (1 + intensidad)) % (A * 2);
@@ -484,53 +668,68 @@ function paso(ahora) {
   g.globalAlpha = 1;
   if (luzN > 0.02) {
     g.globalCompositeOperation = "lighter";
-    const lx = rayos.length ? rayos[rayos.length - 1].r.pts[0][0] : A * azar(0.2, 0.8);
+    const lx = rayos.length ? rayos[rayos.length - 1].r.pts[0][0] : A * 0.5;
     const gl = g.createRadialGradient(lx, horizonte * 0.3, 0, lx, horizonte * 0.3, A * 0.9);
-    gl.addColorStop(0, `rgba(170,180,255,${luzN * 0.8})`); gl.addColorStop(1, "rgba(170,180,255,0)");
+    gl.addColorStop(0, `rgba(170,180,255,${Math.min(1, luzN) * 0.8})`); gl.addColorStop(1, "rgba(170,180,255,0)");
     g.fillStyle = gl; g.fillRect(0, 0, A, horizonte * 1.3);
-    g.globalCompositeOperation = "source-over";
-  }
-
-  // Los rayos: parpadean un par de veces antes de apagarse.
-  for (let i = rayos.length - 1; i >= 0; i--) {
-    const r = rayos[i];
-    r.t += dt;
-    if (r.t > 0.6) { rayos.splice(i, 1); continue; }
-    const alfa = r.t < 0.08 ? 1 : r.t < 0.14 ? 0.2 : r.t < 0.22 ? 0.9 : Math.max(0, 1 - (r.t - 0.22) / 0.38);
-    g.globalCompositeOperation = "lighter";
-    pintarRayo(r.r, alfa);
     g.globalCompositeOperation = "source-over";
   }
 
   g.drawImage(paisaje, 0, 0, A, H);
   // Con el fogonazo, el paisaje se ve un instante.
   if (fogonazo > 0.03) {
-    g.fillStyle = `rgba(200,210,255,${fogonazo * 0.28})`;
+    g.fillStyle = `rgba(200,210,255,${Math.min(1, fogonazo) * 0.28})`;
     g.fillRect(0, horizonte - 40, A, H);
   }
 
+  // Los rayos, delante de las colinas: caen justo donde tocaste, aunque
+  // sea en el suelo. Parpadean un par de veces antes de apagarse.
+  g.globalCompositeOperation = "lighter";
+  for (let i = rayos.length - 1; i >= 0; i--) {
+    const r = rayos[i];
+    r.t += dt;
+    if (r.t > 0.6) { rayos.splice(i, 1); continue; }
+    if (r.t < 0) continue;
+    const alfa = r.t < 0.08 ? 1 : r.t < 0.14 ? 0.2 : r.t < 0.22 ? 0.9 : Math.max(0, 1 - (r.t - 0.22) / 0.38);
+    pintarRayo(r.r, alfa, r.tinte);
+  }
+  g.globalCompositeOperation = "source-over";
+  // Donde cayó un rayo, el suelo queda brillando un ratito.
+  g.globalCompositeOperation = "lighter";
+  for (let i = quemaduras.length - 1; i >= 0; i--) {
+    const q = quemaduras[i];
+    q.t += dt;
+    if (q.t > 3.2) { quemaduras.splice(i, 1); continue; }
+    const k = 1 - q.t / 3.2;
+    const gq = g.createRadialGradient(q.x, q.y, 0, q.x, q.y, q.r * 2);
+    gq.addColorStop(0, `rgba(255,190,120,${0.55 * k})`); gq.addColorStop(0.4, `rgba(255,120,90,${0.22 * k})`); gq.addColorStop(1, "rgba(255,120,90,0)");
+    g.fillStyle = gq; g.beginPath(); g.ellipse(q.x, q.y, q.r * 2, q.r * 0.7, 0, 0, TAU); g.fill();
+  }
+  g.globalCompositeOperation = "source-over";
+
   // La lluvia, inclinada por el viento, y sus salpicaduras.
   const nObj = Math.floor(intensidad * 420);
-  while (gotas.length < nObj) gotas.push({ x: Math.random() * A * 1.3 - A * 0.15, y: Math.random() * -H, v: azar(700, 1100), l: azar(10, 22), z: Math.random() });
+  while (gotas.length < nObj) gotas.push({ x: Math.random() * A * 1.3 - A * 0.15, y: Math.random() * -H, v: azar(700, 1100), l: azar(10, 22), z: Math.random(), px: 0 });
   if (gotas.length > nObj) gotas.length = nObj;
-  g.strokeStyle = `rgba(190,205,240,${0.25 + fogonazo * 0.4})`;
+  const pa = paraguas && paraguas.abierto > 0.3 ? paraguas : null;
+  g.strokeStyle = `rgba(190,205,240,${0.25 + Math.min(1, fogonazo) * 0.4})`;
   g.lineWidth = 1;
   g.beginPath();
   for (const d of gotas) {
     d.y += d.v * dt * (0.6 + d.z * 0.5);
-    d.x += d.v * viento * dt * 0.35;
+    d.x += d.v * vto * dt * 0.35 + (d.px || 0) * dt;
+    if (d.px) d.px *= Math.exp(-dt * 3);
     const suelo = horizonte + H * 0.08 + d.z * (H - horizonte - H * 0.08);
-    // El paraguas: la lluvia que le cae encima escurre por los lados.
-    if (paraguas > 0.3) {
-      const r = 58 * paraguas, dx = d.x - dedo.x, dy = d.y - (dedo.y - 40);
-      if (dy > -6 && dy < 8 && Math.abs(dx) < r) { if (Math.random() < 0.4) salpicas.push({ x: d.x, y: dedo.y - 40 - Math.sqrt(Math.max(0, r * r - dx * dx)) * 0.5, t: 0 }); d.y = azar(-80, -10); d.x = Math.random() * A * 1.3 - A * 0.15; continue; }
+    if (pa) {
+      const r = 58 * pa.abierto, dx = d.x - pa.x, dy = d.y - (pa.y - 40);
+      if (dy > -6 && dy < 8 && Math.abs(dx) < r) { if (Math.random() < 0.4) salpicas.push({ x: d.x, y: pa.y - 40 - Math.sqrt(Math.max(0, r * r - dx * dx)) * 0.5, t: 0 }); d.y = azar(-80, -10); d.x = Math.random() * A * 1.3 - A * 0.15; d.px = 0; continue; }
     }
-    if (d.y > suelo) {
-      if (Math.random() < 0.3) salpicas.push({ x: d.x, y: suelo, t: 0 });
-      d.y = azar(-80, -10); d.x = Math.random() * A * 1.3 - A * 0.15;
+    if (d.y > suelo || d.x < -A * 0.3 || d.x > A * 1.3) {
+      if (d.y > suelo && Math.random() < 0.3) salpicas.push({ x: d.x, y: suelo, t: 0 });
+      d.y = azar(-80, -10); d.x = Math.random() * A * 1.3 - A * 0.15; d.px = 0;
     }
     g.moveTo(d.x, d.y);
-    g.lineTo(d.x - viento * d.l * 0.35, d.y - d.l * (0.6 + d.z * 0.6));
+    g.lineTo(d.x - vto * d.l * 0.35 - (d.px || 0) * 0.02, d.y - d.l * (0.6 + d.z * 0.6));
   }
   g.stroke();
   g.strokeStyle = "rgba(200,215,245,.4)";
@@ -546,23 +745,68 @@ function paso(ahora) {
   g.globalAlpha = 1;
   if (salpicas.length > 200) salpicas.splice(0, salpicas.length - 200);
 
-  // Los círculos de agua donde tocas.
-  for (let i = circulos.length - 1; i >= 0; i--) {
-    const c = circulos[i];
-    c.t += dt;
-    if (c.t > 0.9) { circulos.splice(i, 1); continue; }
-    const k = c.t / 0.9;
-    g.strokeStyle = `rgba(200,215,255,${0.6 * (1 - k)})`;
-    g.lineWidth = 1.5;
-    g.beginPath(); g.ellipse(c.x, c.y, 6 + k * 46, 3 + k * 16, 0, 0, TAU); g.stroke();
-    if (k > 0.2) { g.beginPath(); g.ellipse(c.x, c.y, (k - 0.2) * 40, (k - 0.2) * 14, 0, 0, TAU); g.stroke(); }
+  // Las ondas de choque.
+  for (let i = ondas.length - 1; i >= 0; i--) {
+    const o = ondas[i];
+    o.t += dt;
+    const dur = 0.7 + o.fuerza * 0.4;
+    if (o.t > dur) { ondas.splice(i, 1); continue; }
+    const k = o.t / dur, r = (30 + o.fuerza * 260) * (1 - Math.pow(1 - k, 3));
+    g.strokeStyle = `rgba(200,220,255,${0.7 * (1 - k)})`;
+    g.lineWidth = 1 + o.fuerza * 4 * (1 - k);
+    g.beginPath(); g.arc(o.x, o.y, r, 0, TAU); g.stroke();
   }
 
-  // El paraguas.
-  if (paraguas > 0.03) {
-    const px = dedo.x, py = dedo.y - 40, r = 58 * paraguas;
+  // La bola de energía mientras se carga.
+  if (carga) {
+    const { x, y, k } = carga;
+    const r = 10 + k * 46 + Math.sin(reloj * 30) * (1 + k * 3);
+    g.globalCompositeOperation = "lighter";
+    const halo = g.createRadialGradient(x, y, 0, x, y, r * 3);
+    halo.addColorStop(0, `rgba(170,210,255,${0.35 + k * 0.4})`); halo.addColorStop(0.35, `rgba(120,150,255,${0.15 + k * 0.2})`); halo.addColorStop(1, "rgba(120,150,255,0)");
+    g.fillStyle = halo; g.beginPath(); g.arc(x, y, r * 3, 0, TAU); g.fill();
+    const nucleo = g.createRadialGradient(x, y, 0, x, y, r);
+    nucleo.addColorStop(0, "rgba(255,255,255,1)"); nucleo.addColorStop(0.5, `rgba(190,220,255,${0.8})`); nucleo.addColorStop(1, "rgba(140,170,255,0)");
+    g.fillStyle = nucleo; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+    // Arquitos que chisporrotean alrededor.
+    const nArcos = 2 + Math.round(k * 5);
+    for (let i = 0; i < nArcos; i++) {
+      const a = Math.random() * TAU, l = r * azar(1.2, 2.4);
+      pintarRayo(hacerRayoCorto(x, y, x + Math.cos(a) * l, y + Math.sin(a) * l), azar(0.4, 1), "150,200,255");
+    }
+    g.globalCompositeOperation = "source-over";
+    // Un aro que marca cuánto falta.
+    g.strokeStyle = "rgba(210,230,255,.8)"; g.lineWidth = 2.5; g.lineCap = "round";
+    g.beginPath(); g.arc(x, y, r * 1.9 + 8, -Math.PI / 2, -Math.PI / 2 + k * TAU); g.stroke();
+  }
+
+  // Las chispas.
+  g.globalCompositeOperation = "lighter";
+  for (let i = chispas.length - 1; i >= 0; i--) {
+    const c = chispas[i];
+    c.t += dt;
+    if (c.t > c.dur) { chispas.splice(i, 1); continue; }
+    c.vy += 380 * dt * (c.color === "azul" && carga ? 0 : 1);
+    c.vx *= Math.exp(-dt * 1.6); c.vy *= Math.exp(-dt * 1.2);
+    const px = c.x, py = c.y;
+    c.x += c.vx * dt; c.y += c.vy * dt;
+    const k = 1 - c.t / c.dur;
+    g.strokeStyle = c.color === "oro" ? `rgba(255,214,140,${k})` : c.color === "rosa" ? `rgba(255,150,200,${k})` : c.color === "azul" ? `rgba(150,200,255,${k})` : `rgba(255,255,255,${k})`;
+    g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(px, py); g.lineTo(c.x, c.y); g.stroke();
+  }
+  g.globalCompositeOperation = "source-over";
+
+  // El paraguas (doble toque): se abre, aguanta un rato y se cierra.
+  if (paraguas) {
+    paraguas.t += dt;
+    paraguas.abierto = acercar(paraguas.abierto, paraguas.t < 6 ? 1 : 0, paraguas.t < 6 ? 6 : 4, dt);
+    if (paraguas.t > 6 && paraguas.abierto < 0.03) paraguas = null;
+  }
+  if (paraguas && paraguas.abierto > 0.03) {
+    const px = paraguas.x, py = paraguas.y - 40, r = 58 * paraguas.abierto;
     g.save();
-    g.globalAlpha = Math.min(1, paraguas * 1.3);
+    g.globalAlpha = Math.min(1, paraguas.abierto * 1.3);
     g.strokeStyle = "#2a1a24"; g.lineWidth = 3; g.lineCap = "round";
     g.beginPath(); g.moveTo(px, py); g.lineTo(px, py + 44); g.arc(px - 7, py + 44, 7, 0, Math.PI); g.stroke();
     const tela = g.createLinearGradient(px - r, py - r * 0.5, px + r, py);
@@ -581,9 +825,22 @@ function paso(ahora) {
     g.restore();
   }
 
-  // El destello final, que llena toda la pantalla.
-  if (fogonazo > 0.5) { g.fillStyle = `rgba(235,240,255,${(fogonazo - 0.5) * 0.9})`; g.fillRect(-10, -10, A + 20, H + 20); }
+  // El destello que llena la pantalla con los rayos gordos.
+  if (fogonazo > 0.5) { g.fillStyle = `rgba(235,240,255,${Math.min(0.9, (fogonazo - 0.5) * 0.9)})`; g.fillRect(-10, -10, A + 20, H + 20); }
   g.restore();
+}
+/* Un rayito corto y sin ramas, para los chisporroteos de la carga. */
+function hacerRayoCorto(x0, y0, x1, y1) {
+  let pts = [[x0, y0], [x1, y1]], desv = Math.hypot(x1 - x0, y1 - y0) * 0.3;
+  for (let n = 0; n < 4; n++) {
+    const nuevos = [pts[0]];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+      nuevos.push([(ax + bx) / 2 + azar(-desv, desv), (ay + by) / 2 + azar(-desv, desv)], pts[i + 1]);
+    }
+    pts = nuevos; desv *= 0.5;
+  }
+  return { pts, grosor: 0.9, ramas: [] };
 }
 
 function medir() {
@@ -594,8 +851,10 @@ function medir() {
   lienzo.width = Math.round(A * dpr); lienzo.height = Math.round(H * dpr);
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   horizonte = H * 0.62;
+  luna = { x: A * 0.8, y: horizonte * 0.28, r: Math.min(A, H) * 0.055 };
   pintarPaisaje();
 }
+window.__tormenta = { rayo: (x, y) => rayoEn(x, y), luna: () => romperLuna(), estado: () => ({ furia, intensidad, rayos: rayos.length, carga: carga && carga.k, luna: !!lunaRota }) };
 new ResizeObserver(() => requestAnimationFrame(medir)).observe(mundo);
 medir();
 requestAnimationFrame(paso);
