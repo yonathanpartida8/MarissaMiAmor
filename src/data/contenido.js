@@ -155,9 +155,7 @@ export default {
       "imagen7.png",
       "imagen8.png"
     ],
-    "07-cuando-llueve-alla": [
-      "imagen1.png"
-    ],
+    "07-cuando-llueve-alla": [],
     "08-cosas-que-todavia-no-se-de-ti": [
       "imagen1.png",
       "imagen2.png"
