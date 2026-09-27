@@ -223,10 +223,12 @@ export class BookIndex {
       button.classList.toggle("is-current", index === current);
       // Lo que queda detrás de un candado cerrado lleva su candadito.
       const barrera = this.ctx.router?.barrera;
-      button.classList.toggle("is-cerrada", barrera != null && index > barrera);
-      button.classList.toggle("is-seen", seen);
+      const cerrada = barrera != null && index > barrera;
+      button.classList.toggle("is-cerrada", cerrada);
+      button.classList.toggle("is-seen", seen && !cerrada);
       // Lo que aún no ha visto se queda sin nombre: no le reventamos nada.
-      button.classList.toggle("is-veiled", !seen);
+      // Y lo que está tras el candado, tampoco, aunque ya lo hubiera visto.
+      button.classList.toggle("is-veiled", !seen || cerrada);
 
       // Y el nombre se pone al día.
       //
@@ -236,7 +238,7 @@ export class BookIndex {
       // Sin esto, la que aprendió su nombre después seguía apareciendo aquí
       // con el provisional para siempre.
       const nombre = button.querySelector(".toc__name");
-      const actual = chapterById[entry.chapter]?.title || this.#fallbackName(entry);
+      const actual = cerrada ? "" : chapterById[entry.chapter]?.title || this.#fallbackName(entry);
       if (nombre && nombre.textContent !== actual) nombre.textContent = actual;
 
       const gem = button.querySelector(".toc__gem");

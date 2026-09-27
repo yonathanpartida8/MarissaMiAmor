@@ -11,7 +11,7 @@
  * el nombre de la página (por ejemplo `sorpresas/tu-voz.jpg`).
  */
 export default {
-  "puerta":             { frase: "Sabía que te la sabías. Ese día también es mi favorito.", escena: ["🗝️", "💗", "✨", "📅"] },
+  "puerta":             { frase: "Sabía que te lo sabías. Solo tú y yo, mi amor.", escena: ["🗝️", "💗", "✨", "🔢"] },
   "portada":            { frase: "Lo abriste. Ya empezó lo bonito.", escena: ["📖", "🌷", "✨", "💌"] },
   "abreme":             { frase: "Hasta el sello sabía que era para ti.", escena: ["💌", "🕯️", "🌹", "✨"] },
   "en-voz-alta":        { frase: "Marissa. Lo acabo de decir otra vez, bajito.", escena: ["🗣️", "💬", "💞", "🎶"] },

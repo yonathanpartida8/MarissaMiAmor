@@ -86,12 +86,16 @@ export class Album {
     setVars(this.barra, { "--p": (n / ids.length).toFixed(3) });
 
     this.cuadro.textContent = "";
+    const barrera = this.ctx.router?.barrera;
     ids.forEach((id, i) => {
       const def = sorpresas[id];
       const ok = halladas.has(`sorpresa-${id}`);
+      // Lo que está detrás de un candado cerrado no se nombra ni se enseña.
+      const idx = indexOfPage(id);
+      const cerrada = barrera != null && idx > barrera;
       const titulo = id === "portada" ? "Portada" : id === "final" ? "El final" : chapterById[id]?.title || id;
       const figura = el("div.album__figura");
-      if (ok) {
+      if (ok && !cerrada) {
         const foto = contenido?.sorpresas?.[id];
         if (foto) {
           figura.style.backgroundImage = `url("sorpresas/${encodeURIComponent(foto)}${conHuella(`sorpresas/${foto}`)}")`;
@@ -102,14 +106,15 @@ export class Album {
       } else {
         figura.append(el("span.album__misterio", { text: "?" }));
       }
-      const tarjeta = el(`button.album__carta${ok ? ".is-hallada" : ""}`, { type: "button" }, [
+      const tarjeta = el(`button.album__carta${ok && !cerrada ? ".is-hallada" : ""}`, { type: "button" }, [
         figura,
         el("span.album__num", { text: `#${String(i + 1).padStart(2, "0")}` }),
-        el("span.album__frase", { text: ok ? def.frase : `escondida en «${titulo}»` }),
+        el("span.album__frase", {
+          text: cerrada ? "detrás del candado 🔒" : ok ? def.frase : `escondida en «${titulo}»`,
+        }),
       ]);
       setVars(tarjeta, { "--d": `${Math.min(i, 24) * 22}ms` });
       tarjeta.addEventListener("click", () => {
-        const idx = indexOfPage(id);
         if (idx < 0) return;
         this.cerrar();
         setTimeout(() => this.ctx.router.go(idx, { transition: "iris" }), 240);

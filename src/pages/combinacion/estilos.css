@@ -294,6 +294,24 @@
   color: rgba(255, 244, 216, 0.44);
 }
 
+/* Con código («0159») las ruedas son de una cifra: más grandes y sin el
+   pie de «día, mes, año», que ahí no significa nada. */
+.lock__pie[hidden] { display: none; }
+.lock--codigo .lock__wheel { height: clamp(54px, calc(17 * var(--vw)), 72px); }
+/* Sin el pie, la placa se hace un marco pegado a las ruedas: si no, queda
+   un hueco oscuro debajo que parece un error. */
+.lock--codigo .lock__plate { display: none; }
+.lock--codigo .lock__dial {
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.8),
+    0 0 0 clamp(5px, 1.8vw, 9px) rgba(44, 31, 13, 0.55),
+    0 1px 0 clamp(5px, 1.8vw, 9px) rgba(255, 246, 220, 0.22);
+}
+.lock--codigo .lock__digit {
+  font-size: clamp(1.45rem, calc(6.4 * var(--vw)), 2rem);
+  font-variant-numeric: tabular-nums;
+}
+
 .lock__etiqueta:nth-child(1) { --ancho: 2; }
 .lock__etiqueta:nth-child(2) { --ancho: 3; }
 .lock__etiqueta:nth-child(3) { --ancho: 4; }

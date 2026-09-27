@@ -58,7 +58,7 @@ import { chapterById } from "./chapters.js";
 const pages = [
   // ═══════════════════════════════════════════════════════════════
   //  ANTES DE TODO: `paginas-html/inicio.html1.html`, `…2.html` y el
-  //  candado de la fecha. Hasta que no se abre, no se pasa de ahí.
+  //  candado del código. Hasta que no se abre, no se pasa de ahí.
   // ═══════════════════════════════════════════════════════════════
   {
     id: "inicio-1",
@@ -79,7 +79,7 @@ const pages = [
     type: "puerta",
     chapter: "puerta",
     transition: "zoom",
-    hint: "gira las ruedas hasta nuestra fecha",
+    hint: "solo tú sabes el código",
   },
 
   // ═══════════════════════════════════════════════════════════════

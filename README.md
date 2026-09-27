@@ -65,19 +65,23 @@ la de la noche estrellada y la copia guardada para abrirlo sin internet.
 
 El libro se abre con **`paginas-html/inicio.html1.html`** e
 **`inicio.html2.html`**, dos páginas HTML tuyas (se cambian enteras sin tocar
-nada más). Justo después hay un **candado de fecha**: hasta que no se pone
-**23 · ago · 2025** no se puede pasar, ni deslizando, ni con las flechas, ni
-con la barra, ni desde el índice. Al abrirse pasa sola a la portada y ya no se
-vuelve a pedir.
+nada más). Justo después hay un **candado de código** («Solo tú sabes el
+código»): cuatro ruedas del 0 al 9, y hasta que no se pone **0159** no se puede
+pasar, ni deslizando, ni con las flechas, ni con la barra, ni desde el índice,
+ni desde el álbum de sorpresas, ni recargando. Mientras está cerrado, las
+páginas de detrás ni siquiera se construyen, y en el índice salen con 🔒 y sin
+nombre. Este candado no da pistas (ni se calienta al acercarse ni marca la
+rueda buena): sólo ella sabe el código. Al abrirse pasa sola a la portada y ya
+no se vuelve a pedir… salvo que cambies el código: entonces se vuelve a cerrar
+y tendrá que poner el nuevo.
 
-Hay un **segundo candado** dentro del libro («Sólo tú sabes abrirlo») que
-funciona igual: tampoco deja pasar de él hasta poner la fecha. En el índice,
-lo que queda detrás de un candado cerrado sale con 🔒.
+Hay un **segundo candado** dentro del libro («Sólo tú sabes abrirlo») que se
+abre con **nuestra fecha** y tampoco deja pasar de él hasta ponerla. Ése sí
+ayuda con los intentos (dos pistas y, al final, marcar qué rueda ya está bien).
 
-Las fechas están en `src/pages/puerta/textos.js` y
-`src/pages/combinacion/textos.js`. Ninguno de los dos se abre solo ni se
-rinde: lo único que crece con los intentos es la ayuda (dos pistas y, al
-final, marcar qué rueda ya está bien).
+El código está en `src/pages/puerta/textos.js` (`codigo: "0159"`) y la fecha
+en `src/pages/combinacion/textos.js`. Ninguno de los dos se abre solo ni se
+rinde.
 
 ---
 
@@ -89,7 +93,7 @@ cada subida:
 | Acción | Qué hace |
 | --- | --- |
 | **Lista de contenido** (`.github/workflows/contenido.yml`) | Rehace `src/data/contenido.js`: la lista de fotos, vídeos, páginas HTML y sonidos que hay en las carpetas. Gracias a ella el libro **nunca pide un archivo que no existe** (cero «404») y funciona igual abierto como archivo en el móvil. |
-| **Verificar el libro** (`.github/workflows/verificar.yml`) | Revisa que cada página tenga su tipo, su texto, sus fotos y su sorpresa, que las fechas de los candados existan, que no falte ningún archivo enlazado y que todo el código se pueda leer. Si algo falla, la subida sale con una cruz roja y el registro dice qué y dónde. |
+| **Verificar el libro** (`.github/workflows/verificar.yml`) | Revisa que cada página tenga su tipo, su texto, sus fotos y su sorpresa, que el código y la fecha de los candados estén bien escritos, que no falte ningún archivo enlazado y que todo el código se pueda leer. Si algo falla, la subida sale con una cruz roja y el registro dice qué y dónde. |
 
 En el ordenador se pueden lanzar a mano:
 
@@ -416,10 +420,11 @@ dice el libro es editar esos ficheros y nada más.
 
 Algunos campos que quizá quieras tocar:
 
-- `fecha` en `src/pages/combinacion/textos.js` y en `src/pages/puerta/textos.js`
-  — la fecha de cada candado, como `"23-08-2025"`. Ninguno se abre solo: a los
-  tres fallos sale una pista, a los seis otra, y a los nueve el candado marca
-  qué rueda ya está bien puesta.
+- `codigo` en `src/pages/puerta/textos.js` — el código del candado de entrada,
+  como `"0159"` (una rueda por cifra). No da pistas ni se abre solo.
+- `fecha` en `src/pages/combinacion/textos.js` — la fecha del candado de dentro,
+  como `"23-08-2025"`. No se abre solo: a los tres fallos sale una pista, a los
+  seis otra, y a los nueve el candado marca qué rueda ya está bien puesta.
 - `lines` — las frases que reparte una página (un pétalo, una polaroid, una
   estrella). Cuantas más pongas, más hay que descubrir.
 - `reveal` — lo que aparece **después** de resolver la interacción.

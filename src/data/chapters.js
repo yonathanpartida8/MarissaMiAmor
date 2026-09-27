@@ -60,7 +60,7 @@ export const chapters = [
   // ═══════════════════════════════════════════════════════════════
   { id: "inicio-1", act: "antes", title: "Inicio", palette: "rubor", mood: "night" },
   { id: "inicio-2", act: "antes", title: "Inicio II", palette: "vino", mood: "night" },
-  { id: "puerta", act: "antes", title: "Nuestra fecha", palette: "latido", mood: "cosmos" },
+  { id: "puerta", act: "antes", title: "Solo tú sabes el código", palette: "latido", mood: "cosmos" },
 
   // ═══════════════════════════════════════════════════════════════
   //  ACTO I — ENCONTRARTE

@@ -116,8 +116,13 @@ for (const e of manifest) {
   if (!sorpresas[e.id]) ojo(`«${e.id}» no tiene sorpresa escondida`);
 }
 
-/* ── 6. Candados: fechas bien escritas ─────────────────────────────── */
-for (const f of ["src/pages/combinacion/textos.js", "src/pages/puerta/textos.js"]) {
+/* ── 6. Candados: fechas y códigos bien escritos ──────────────────── */
+{
+  const f = "src/pages/puerta/textos.js";
+  const m = /codigo:\s*"([^"]+)"/.exec(leer(f));
+  if (!m || !/^\d{2,8}$/.test(m[1])) mal(`${f}: el código tiene que ser sólo cifras, como "0159"`);
+}
+for (const f of ["src/pages/combinacion/textos.js"]) {
   const m = /fecha:\s*"([^"]+)"/.exec(leer(f));
   if (!m || !/^\d{2}-\d{2}-\d{4}$/.test(m[1])) mal(`${f}: la fecha tiene que ser "DD-MM-AAAA"`);
   else {

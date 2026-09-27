@@ -133,6 +133,9 @@ export class Router extends Emitter {
   async prepare(index) {
     const entry = this.entries[index];
     if (!entry || this.live.has(index)) return;
+    // Lo que está detrás de un candado cerrado no se construye ni a
+    // escondidas: ni su HTML, ni sus fotos, ni sus sonidos.
+    if (this.#cerrada(index)) return;
     // En gama baja sólo se precocina el papel; lo pesado se construye al llegar.
     if (this.ctx.caps.tierName === "low" && entry.gl) return;
 

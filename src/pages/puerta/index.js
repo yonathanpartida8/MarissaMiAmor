@@ -3,13 +3,19 @@
  *
  * Es el mismo candado de rodillos de `combinacion/`, pero en vez de guardar
  * una carta dentro, guarda el libro entero: el router no deja pasar de esta
- * página (`router.barrera`) hasta que se pone la fecha. Una vez abierto se
- * apunta para siempre y pasa sola a la página siguiente.
+ * página (`router.barrera`) hasta que se pone el código. Una vez abierto se
+ * apunta (con la huella del código, ver `llave.js`) y pasa sola a la página
+ * siguiente.
+ *
+ * Este candado no da pistas: no se calienta al acercarse ni enciende las
+ * ruedas que ya están bien. Si lo hiciera, el código se podría sacar
+ * probando rueda por rueda.
  */
 
 import CombinacionPage from "../combinacion/index.js";
 import { el } from "../../utils/dom.js";
 import textos from "./textos.js";
+import { huellaPuerta, puertaAbierta } from "./llave.js";
 
 export default class PuertaPage extends CombinacionPage {
   static type = "puerta";
@@ -18,12 +24,16 @@ export default class PuertaPage extends CombinacionPage {
     return textos;
   }
 
+  get sinPistas() {
+    return true;
+  }
+
   get yaAbierto() {
-    return !!this.ctx.store.get("puertaAbierta");
+    return puertaAbierta(this.ctx.store);
   }
 
   marcarAbierto() {
-    this.ctx.store.set("puertaAbierta", true);
+    this.ctx.store.set("puertaAbierta", huellaPuerta());
     this.ctx.router.abrirBarrera();
   }
 

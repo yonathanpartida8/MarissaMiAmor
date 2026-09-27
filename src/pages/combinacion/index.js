@@ -101,7 +101,15 @@ export default class CombinacionPage extends BasePage {
       (_, i) => String(fecha.anio - ANIOS_ANTES + i)
     );
 
-    const RODILLOS = [
+    // Con `codigo` ("0159") en vez de fecha: una rueda del 0 al 9 por cifra.
+    const codigo = String(this.t.codigo || "").replace(/\D/g, "");
+    const RODILLOS = codigo ? [...codigo].map((d, i) => ({
+      clave: `c${i}`,
+      etiqueta: "",
+      ancho: 1.3,
+      valores: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+      correcto: +d,
+    })) : [
       {
         clave: "dia",
         etiqueta: "día",
@@ -135,6 +143,7 @@ export default class CombinacionPage extends BasePage {
       "aria-label": this.t.titulo || ch?.title,
     });
     setVars(this.root, { "--accent": this.palette.a });
+    if (codigo) this.root.classList.add("lock--codigo");
 
     // ── Los rodillos ──────────────────────────────────────────────────
     this.wheels = RODILLOS.map((cfg, i) => {
@@ -175,13 +184,13 @@ export default class CombinacionPage extends BasePage {
       };
     });
 
-    this.dial = el("div.lock__dial", { role: "group", "aria-label": "La fecha" },
+    this.dial = el("div.lock__dial", { role: "group", "aria-label": codigo ? "El código" : "La fecha" },
       this.wheels.map((w) => w.node));
 
     // Debajo, en pequeñito, qué es cada rodillo. Sin esto el candado es un
     // acertijo de tres números sueltos; con esto se lee «día, mes, año» de
-    // un vistazo y ya se sabe qué está pidiendo.
-    this.pie = el("div.lock__pie", { "aria-hidden": "true" },
+    // un vistazo y ya se sabe qué está pidiendo. Con código no hace falta.
+    this.pie = el("div.lock__pie", { "aria-hidden": "true", hidden: codigo ? "" : null },
       RODILLOS.map((cfg) => el("span.lock__etiqueta", { text: cfg.etiqueta })));
 
     // ── El candado ────────────────────────────────────────────────────
@@ -456,7 +465,7 @@ export default class CombinacionPage extends BasePage {
       this.#decir(this.t.pista, 5200);
     } else if (this.fallos === FALLOS_PISTA_DOS) {
       this.#decir(this.t.pistaDos, 5200);
-    } else if (this.fallos === FALLOS_SOPLO) {
+    } else if (this.fallos === FALLOS_SOPLO && !this.sinPistas) {
       // A partir de aquí el candado señala qué rodillo ya está bien. Sigue
       // sin decir el valor de los otros dos: ayuda, no resuelve.
       this.soplando = true;
@@ -473,6 +482,9 @@ export default class CombinacionPage extends BasePage {
    * lo que hace que girar rodillos sea un juego y no un formulario.
    */
   #templar() {
+    // Un candado «sin pistas» no se calienta: si no, se podría adivinar el
+    // código probando rueda por rueda.
+    if (this.sinPistas) return;
     const aciertos = this.wheels.reduce((n, w) => n + (w.value === w.cfg.correcto ? 1 : 0), 0);
     // Sólo desde dos: con uno solo bien es casualidad pura y encenderse por
     // eso convertiría el candado en un detector de valores.

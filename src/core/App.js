@@ -9,6 +9,7 @@ import { createContext } from "./Context.js";
 import { Router } from "./Router.js";
 import { GLStage } from "../gl/GLStage.js";
 import { prepararInstalacion } from "./Instalable.js";
+import { puertaAbierta } from "../pages/puerta/llave.js";
 import { UI } from "../ui/UI.js";
 import { installTextures } from "../components/textures.js";
 import {
@@ -148,10 +149,10 @@ export class App {
     setStatus("encuadernando…");
     setProgress(0.9);
     this.ctx.router = new Router(this.ctx, this.stage);
-    // Los dos candados del libro: hasta poner la fecha no se pasa de ellos.
+    // Los candados del libro: hasta ponerles su combinación no se pasa de ellos.
     const store = this.ctx.store;
     this.ctx.router.cerrado = (e) =>
-      (e.type === "puerta" && !store.get("puertaAbierta")) ||
+      (e.type === "puerta" && !puertaAbierta(store)) ||
       (e.type === "lock" && !!e.secret && !store.hasSecret(e.secret));
     this.ctx.router.recalcularBarrera();
     this.ctx.ui = new UI(this.ctx, this.uiRoot);
@@ -361,13 +362,26 @@ export class App {
         // el suyo de siempre.
       });
     };
+    // Mientras estén detrás de un candado cerrado no se piden: sus nombres
+    // no se enseñan ahí, y son treinta descargas que le quitaban aire al
+    // arranque sin servir de nada. Se piden cuando se abra lo que las tapa.
+    const ids = new Set(entries.map((e) => e.id));
+    const cuandoSeVean = () => {
+      const r = this.ctx.router;
+      const primera = r ? r.entries.findIndex((e) => ids.has(e.id)) : -1;
+      if (r && r.barrera != null && primera > r.barrera) {
+        const off = r.on("abierta", () => { off(); cuandoSeVean(); });
+        return;
+      }
+      arrancar();
+    };
     // En cuanto haya un hueco. Sin `requestIdleCallback` —Safari no lo
     // tiene— se espera un par de segundos, que es de sobra para que la
     // portada esté puesta y quieta.
     if (typeof requestIdleCallback === "function") {
-      requestIdleCallback(arrancar, { timeout: 4000 });
+      requestIdleCallback(cuandoSeVean, { timeout: 4000 });
     } else {
-      setTimeout(arrancar, 2200);
+      setTimeout(cuandoSeVean, 2200);
     }
   }
 
@@ -475,7 +489,8 @@ export class App {
       if (Date.now() - avisado < 2500) return;
       avisado = Date.now();
       this.ctx.haptics.play("error");
-      ui.toast("🔒 primero abre el candadito con nuestra fecha", 2400);
+      const puerta = router.entries[router.barrera]?.type === "puerta";
+      ui.toast(puerta ? "🔒 primero pon el código: solo tú lo sabes" : "🔒 primero abre el candadito con nuestra fecha", 2400);
     });
 
     // Si el rendimiento cae, se avisa por lo bajo y se recorta.
