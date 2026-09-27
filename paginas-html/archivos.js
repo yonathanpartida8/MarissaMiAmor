@@ -4,11 +4,11 @@
 window.LIBRO_ARCHIVOS = {
   "ojos": "ojos.mp3",
   "tocadiscos": [
+    "../tocadiscos%20musica/musica1.mp3",
+    "../tocadiscos%20musica/musica2.mp3",
+    "../tocadiscos%20musica/musica3.mp3",
     null,
-    null,
-    null,
-    null,
-    null
+    "../tocadiscos%20musica/musica5.mp3"
   ],
   "radio": [
     "../la%20radio/music1.mp3",
