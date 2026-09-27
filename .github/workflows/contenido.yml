@@ -18,6 +18,7 @@ on:
       - "assets/audio/**"
       - "mis-sonidos/**"
       - "mis-vales/**"
+      - "audio/**"
       - "tocadiscos musica/**"
       - "tocadiscos-musica/**"
       - "la radio/**"

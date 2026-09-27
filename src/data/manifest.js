@@ -415,7 +415,7 @@ const pages = [
     type: "relojes",
     chapter: "relojes",
     transition: "corazon",
-    hint: "gira la manecilla larga hasta las 8:23",
+    hint: "gira la manecilla larga hasta mi hora: voy 2 horas adelante",
     secret: "relojes-juntos",
     sorpresa: false,
   },

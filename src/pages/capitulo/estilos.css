@@ -681,3 +681,56 @@ html[data-orientation="landscape"][data-device="phone"] .chapter__foot {
   color: var(--paper-ink-soft);
   opacity: calc(1 - var(--voice, 0));
 }
+
+/* ---- La nota de voz (onda con audio/audio.mp3) -------------------- */
+.onda__fila { display: flex; align-items: center; gap: 0.6rem; width: 100%; }
+.onda__pad.is-nota {
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 0.55rem 0.95rem 0.55rem 0.55rem;
+  background: color-mix(in srgb, var(--accent) 14%, rgba(255, 255, 255, 0.55));
+  box-shadow: 0 8px 22px -12px color-mix(in srgb, var(--accent) 70%, #000), inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+  transition: transform 200ms var(--e-out);
+}
+.onda__pad.is-nota:active { transform: scale(0.97); }
+.onda__pad.is-nota .onda__hint { position: absolute; left: 0; right: 0; top: calc(100% + 0.4rem); opacity: 0.8; text-align: center; }
+.onda__pad.is-nota .onda__barras { height: 34px; flex: 1; }
+.onda__play {
+  position: relative;
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--accent) 80%, #000);
+}
+.onda__play::before {
+  content: "";
+  position: absolute;
+  left: 54%;
+  top: 50%;
+  translate: -50% -50%;
+  border-style: solid;
+  border-width: 8px 0 8px 13px;
+  border-color: transparent transparent transparent #fff;
+}
+.orn--onda.is-sonando .onda__play::before {
+  left: 50%;
+  width: 12px;
+  height: 15px;
+  border: 0;
+  background: linear-gradient(90deg, #fff 0 4px, transparent 4px 8px, #fff 8px 12px);
+}
+.orn--onda.is-sonando .onda__play { animation: onda-late 1.2s ease-in-out infinite; }
+@keyframes onda-late { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 22%, transparent); } }
+.onda__pad.is-nota .onda__barra { opacity: 0.42; transition: opacity 200ms linear; }
+.onda__pad.is-nota .onda__barra.is-oida { opacity: 1; }
+.onda__tiempo {
+  flex: none;
+  min-width: 2.6em;
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  color: var(--paper-ink-soft);
+}
+@media (prefers-reduced-motion: reduce) { .orn--onda.is-sonando .onda__play { animation: none; } }

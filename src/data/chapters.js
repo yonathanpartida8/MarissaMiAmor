@@ -598,9 +598,11 @@ export const chapters = [
     act: "elegirte",
     title: "Dos relojes",
     kicker: "pon tu reloj a la hora del mío",
+    // Cuántas horas va mi reloj por delante del suyo (negativo si va atrás).
+    diferenciaHoras: 2,
     // Sale cuando los dos relojes se juntan.
-    text: "Tus días y los míos no siempre caminan igual: a veces tú apenas empiezas cuando yo ya voy terminando. Pero siempre encontramos un ratito que es sólo de los dos.",
-    reveal: "Y en ese ratito, el tiempo es nuestro.",
+    text: "Entre tu reloj y el mío hay dos horas: a veces tú apenas vas empezando algo cuando yo ya voy terminando. Pero siempre encontramos un ratito que es sólo de los dos.",
+    reveal: "Y en ese ratito, el tiempo es nuestro. Te amo a todas horas, las tuyas y las mías 🤍",
     palette: "granate",
     mood: "night",
   },

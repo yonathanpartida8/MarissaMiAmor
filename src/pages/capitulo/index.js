@@ -155,6 +155,7 @@ export default class ChapterPage extends BasePage {
   }
 
   async leave(direction) {
+    this.ornament?.leave?.();
     await super.leave(direction);
     this.root?.classList.remove("is-entered");
   }

@@ -67,7 +67,16 @@ const buscarSonido = (nombre) => {
   }
   return null;
 };
-const sonidos = { corazon: buscarSonido("corazon"), ojos: buscarSonido("ojos") };
+// La nota de voz de «Cómo dices mi nombre»: `audio/audio.mp3` (o el primer
+// audio que haya en esa carpeta).
+const carpetaAudio = readdirSync(RAIZ).find((f) => sinAcentos(f) === "audio" && !f.includes("."));
+const voz = (() => {
+  if (!carpetaAudio) return null;
+  const hay = leer(carpetaAudio).filter((f) => /\.(mp3|m4a|ogg|wav|aac)$/i.test(f)).sort(orden);
+  const f = hay.find((f) => sinAcentos(f).startsWith("audio.")) || hay[0];
+  return f ? `${nfc(carpetaAudio)}/${nfc(f)}` : null;
+})();
+const sonidos = { corazon: buscarSonido("corazon"), ojos: buscarSonido("ojos"), voz };
 
 // La música del tocadiscos: `tocadiscos musica/musica1.mp3` … `musica5.mp3`,
 // una por zona del disco. Da igual si la carpeta se escribe con guion, con

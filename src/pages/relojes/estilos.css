@@ -99,32 +99,59 @@ html[data-tema="pastel"] .rel__esfera--mia .rel__aguja--minuto { stroke: color-m
 .relojes.is-juntos .rel__esfera--tuya .rel__eje { opacity: 0; }
 .relojes.is-juntos .rel__esfera--tuya .rel__aguja--hora,
 .relojes.is-juntos .rel__esfera--tuya .rel__aguja--minuto { stroke: transparent; }
-.relojes.is-juntos .rel__pie > :not(.rel__nuestra) { opacity: 0; }
+.relojes.is-juntos .rel__reloj--tuyo .rel__pie > * { opacity: 0; }
 .relojes.is-juntos .rel__esfera--mia .rel__cara { fill: color-mix(in srgb, var(--accent) 22%, transparent); }
 .relojes.is-juntos .rel__esfera--mia .rel__bisel { stroke: var(--accent); opacity: 1; stroke-width: 2.4; }
 .relojes.is-juntos .rel__esfera--mia { animation: rel-late 1.8s ease-in-out 1.4s infinite; filter: drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 55%, transparent)); }
 @keyframes rel-late { 0%, 100% { scale: 1; } 12% { scale: 1.035; } 24% { scale: 1; } 36% { scale: 1.02; } }
 .rel__esfera--mia { transform-origin: center; }
 
-/* Donde estaban «tu hora» y «la mía», al juntarse: la hora de los dos. */
-.rel__pie > .rel__nuestra {
+/* ---- El puentecito de las dos horas ------------------------------ */
+.rel__puente {
   position: absolute;
-  top: 0.4rem;
   left: 50%;
+  top: 4%;
   translate: -50% 0;
-  white-space: nowrap;
-  color: var(--text);
-  opacity: 0;
-  transition: opacity 900ms var(--e-out) 1.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  transition: opacity 700ms var(--e-out);
 }
-.relojes.is-juntos .rel__pie > .rel__nuestra { opacity: 1; }
+.rel__puente i { width: 34px; height: 12px; border-top: 1.5px dashed color-mix(in srgb, var(--accent) 70%, var(--text)); border-radius: 50% 50% 0 0; opacity: 0.7; }
+.rel__puente b {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  padding: 0.2em 0.7em;
+  border-radius: 999px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.relojes.is-juntos .rel__puente { opacity: 0; }
+.rel__icono { font-style: normal; }
 
 /* ---- Los textos --------------------------------------------------- */
 /* Todo ocupa su sitio desde el principio (sólo se enciende), para que los
    relojes no den un brinco cuando sale el texto. */
-.rel__texto { display: grid; gap: 0.45rem; }
-.rel__guia { grid-area: 1 / 1; align-self: center; margin: 0; transition: opacity 500ms var(--e-out); }
-.relojes.is-juntos .rel__guia { opacity: 0; }
+.rel__texto { display: grid; gap: 0.35rem; }
+.rel__falta {
+  grid-area: 1 / 1;
+  margin: 0;
+  min-height: 1.3em;
+  font-family: var(--font-hand);
+  font-size: clamp(1.15rem, calc(5 * var(--vw)), 1.45rem);
+  color: color-mix(in srgb, var(--accent) 35%, var(--text));
+  text-shadow: 0 0 16px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.relojes.is-cerca .rel__falta { animation: rel-casi 0.9s ease-in-out infinite; }
+@keyframes rel-casi { 50% { transform: scale(1.06); } }
+.rel__guia { grid-area: 2 / 1; align-self: center; margin: 0; transition: opacity 500ms var(--e-out); }
+.rel__momento { grid-area: 3 / 1; margin: 0; opacity: 0.8; transition: opacity 500ms var(--e-out); }
+.relojes.is-juntos .rel__guia,
+.relojes.is-juntos .rel__momento { opacity: 0; }
 .rel__cuerpo {
   margin: 0 auto;
   max-width: 34ch;
@@ -132,10 +159,10 @@ html[data-tema="pastel"] .rel__esfera--mia .rel__aguja--minuto { stroke: color-m
   font-size: clamp(0.98rem, calc(4.1 * var(--vw)), 1.12rem);
   line-height: 1.45;
   color: var(--text-soft);
-  grid-area: 1 / 1;
+  grid-area: 2 / 1;
   opacity: 0;
 }
-.rel__reveal { margin: 0; grid-area: 2 / 1; opacity: 0; }
+.rel__reveal { margin: 0; grid-area: 3 / 1; opacity: 0; }
 .relojes.is-juntos .rel__cuerpo,
 .relojes.is-juntos .rel__reveal { animation: rel-aparece 1s var(--e-out) 1.1s both; }
 .relojes.is-juntos .rel__reveal { animation-delay: 1.9s; }

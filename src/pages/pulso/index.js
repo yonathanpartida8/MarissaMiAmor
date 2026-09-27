@@ -431,7 +431,11 @@ export default class PulsoPage extends BasePage {
     this.root.classList.remove("is-holding");
     this.ctx.haptics.stop();
     this.ctx.audio.duck(1, 0);
-    if (!this.finished && this.latidos > 0) this.#decir(textos.suelto);
+    if (!this.finished && this.latidos > 0) {
+      const s = [].concat(textos.suelto || []);
+      this.sueltos = (this.sueltos || 0) + 1;
+      this.#decir(s[(this.sueltos - 1) % s.length]);
+    }
   }
 
   #decir(frase) {
@@ -557,10 +561,20 @@ export default class PulsoPage extends BasePage {
     this.#sonarLatido(periodo);
     this.ctx.gl?.pulse(this.beso ? 0.4 : 0.22);
 
-    // En pleno beso, de vez en cuando se escapa un corazoncito.
-    if (this.beso && this.bpm > 240 && Math.random() < 0.35) {
-      const r = this.pad.getBoundingClientRect();
-      this.corazon(r.left + r.width * (0.25 + Math.random() * 0.5), r.top + r.height * 0.3);
+    // Con cada latido se escapa un corazoncito (en pleno beso, más).
+    if (this.holding || this.beso) {
+      const prob = this.beso && this.bpm > 240 ? 0.45 : 0.5;
+      if (Math.random() < prob) {
+        const r = this.core.getBoundingClientRect();
+        this.corazon(r.left + r.width * (0.3 + Math.random() * 0.4), r.top + r.height * 0.35);
+      }
+    }
+
+    // Quien vuelve a poner el dedo ya leyó la frase: de vez en cuando se le
+    // escapa algo bonito, sin repetir hasta decirlas todas.
+    if (this.finished && this.holding && !this.beso && this.latidos % 4 === 2 && textos.mientras?.length) {
+      if (!this.mazoMientras?.length) this.mazoMientras = textos.mientras.slice().sort(() => Math.random() - 0.5);
+      this.#decir(this.mazoMientras.pop());
     }
 
     // Las frases del principio son de la primera vez. Quien vuelve a poner el
