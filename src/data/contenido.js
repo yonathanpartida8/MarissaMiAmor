@@ -371,7 +371,7 @@ export default {
   "sonidos": {
     "corazon": null,
     "ojos": "paginas-html/ojos.mp3",
-    "voz": "audio/audio.mp3"
+    "voz": "audio/voz-lista.m4a"
   },
   "vales": {
     "lista": [
@@ -564,7 +564,8 @@ export default {
     "fotos-paginas/27-no-se-me-pasa/imagen4.png": "a408e06c",
     "fotos-paginas/27-no-se-me-pasa/imagen5.png": "53fc95b4",
     "fotos-paginas/27-no-se-me-pasa/imagen6.png": "1e7c4659",
-    "fotos-paginas/29-te-elijo/imagen1.jpg": "935d6fd6"
+    "fotos-paginas/29-te-elijo/imagen1.jpg": "935d6fd6",
+    "audio/voz-lista.m4a": "bc6b7e4c"
   },
   "textosMios": {
     "mis-paginas/videos/ssstik.io_@nadie.xd533_1790541937867.mp4": {

@@ -70,7 +70,7 @@
 .chapter[data-ornament="mirror"] { --orn-h: 38%; }
 .chapter[data-ornament="compass"] { --orn-h: 30%; }
 .chapter[data-ornament="vela"] { --orn-h: 30%; }
-.chapter[data-ornament="onda"] { --orn-h: 16%; }
+.chapter[data-ornament="onda"] { --orn-h: 24%; }
 .chapter[data-ornament="whisper"] { --orn-h: 22%; }
 
 /* ══════════════ MEDALLÓN ══════════════ */
@@ -652,7 +652,31 @@ html[data-orientation="landscape"][data-device="phone"] .chapter__foot {
 }
 
 /* ══════════════ ONDA ══════════════ */
-.orn--onda { opacity: 0; transition: opacity 700ms var(--e-out); }
+.orn--onda {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.2rem;
+  opacity: 0;
+  transition: opacity 700ms var(--e-out);
+}
+/* Las líneas de la voz, encima de la nota. */
+.onda__voz {
+  display: block;
+  width: min(92%, 340px);
+  height: clamp(44px, 9vh, 72px);
+  pointer-events: none;
+}
+.orn--onda.is-cargando .onda__play::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--accent);
+  animation: onda-gira 800ms linear infinite;
+}
+@keyframes onda-gira { to { transform: rotate(360deg); } }
 .orn--onda.is-visible { opacity: 1; }
 .onda__pad {
   position: relative;

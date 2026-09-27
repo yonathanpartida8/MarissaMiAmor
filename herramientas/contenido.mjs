@@ -10,9 +10,10 @@
  *
  * En GitHub se ejecuta solo a cada subida (`.github/workflows/contenido.yml`).
  */
-import { readdirSync, existsSync, writeFileSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, existsSync, writeFileSync, readFileSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
+import { extraerAudio, esMp4 } from "./voz.mjs";
 
 const RAIZ = new URL("..", import.meta.url).pathname;
 const leer = (dir) => (existsSync(join(RAIZ, dir)) ? readdirSync(join(RAIZ, dir)) : []);
@@ -71,11 +72,34 @@ const buscarSonido = (nombre) => {
 // La nota de voz de «Cómo dices mi nombre»: `audio/audio.mp3` (o el primer
 // audio que haya en esa carpeta).
 const carpetaAudio = readdirSync(RAIZ).find((f) => sinAcentos(f) === "audio" && !f.includes("."));
+// Si ese «audio» es en realidad un vídeo del teléfono (un .mp4 con otro
+// nombre, o un .m4a con imagen), se saca su sonido tal cual a
+// `voz-lista.m4a`: pesa una fracción, Safari sí lo abre y empieza a sonar
+// al instante. Si es un MP3 de verdad, se usa directo.
+const VOZ_LISTA = "voz-lista.m4a";
+let vozHuella = null;
 const voz = (() => {
   if (!carpetaAudio) return null;
-  const hay = leer(carpetaAudio).filter((f) => /\.(mp3|m4a|ogg|wav|aac)$/i.test(f)).sort(orden);
+  const hay = leer(carpetaAudio).filter((f) => /\.(mp3|m4a|mp4|ogg|wav|aac)$/i.test(f) && f !== VOZ_LISTA).sort(orden);
   const f = hay.find((f) => sinAcentos(f).startsWith("audio.")) || hay[0];
-  return f ? `${nfc(carpetaAudio)}/${nfc(f)}` : null;
+  const lista = join(RAIZ, carpetaAudio, VOZ_LISTA);
+  if (!f) {
+    if (existsSync(lista)) unlinkSync(lista);
+    return null;
+  }
+  const original = `${nfc(carpetaAudio)}/${nfc(f)}`;
+  const datos = readFileSync(join(RAIZ, carpetaAudio, f));
+  if (esMp4(datos)) {
+    const m4a = extraerAudio(datos);
+    if (m4a) {
+      if (!existsSync(lista) || !readFileSync(lista).equals(m4a)) writeFileSync(lista, m4a);
+      vozHuella = createHash("md5").update(m4a).digest("hex").slice(0, 8);
+      return `${nfc(carpetaAudio)}/${VOZ_LISTA}`;
+    }
+  }
+  if (existsSync(lista)) unlinkSync(lista);
+  vozHuella = createHash("md5").update(datos).digest("hex").slice(0, 8);
+  return original;
 })();
 const sonidos = { corazon: buscarSonido("corazon"), ojos: buscarSonido("ojos"), voz };
 
@@ -261,7 +285,7 @@ const contenido = {
   sonidos,
   vales,
   noche: existsSync(join(RAIZ, "noche-estrellada/index.html")),
-  huellas,
+  huellas: { ...huellas, ...(voz && vozHuella ? { [voz]: vozHuella } : {}) },
   textosMios,
   textosPaginas,
   videosForma,

@@ -17,6 +17,7 @@ import { damp, clamp01 } from "../utils/math.js";
 import { seeded } from "../utils/rng.js";
 import { tween, easeOutExpo } from "../utils/easing.js";
 import contenido from "../data/contenido.js";
+import { conHuella } from "../data/huella.js";
 
 /* ══════════════════════════════════════════════════════════════════
    MEDALLÓN — una fotografía que se revela como si se estuviera
@@ -451,6 +452,7 @@ function vela(ctx, { accent, onReveal }) {
    ══════════════════════════════════════════════════════════════════ */
 function onda(ctx, { accent, target, onReveal }) {
   const archivo = contenido?.sonidos?.voz || null;
+  const src = archivo ? archivo.split("/").map(encodeURIComponent).join("/") + conHuella(archivo) : null;
   const N = 27;
   const barras = Array.from({ length: N }, () => el("span.onda__barra"));
   // Una forma de onda fija, como la de un audio de WhatsApp.
@@ -460,13 +462,18 @@ function onda(ctx, { accent, target, onReveal }) {
   const pista = el("div.onda__hint", {
     text: archivo ? "toca para escuchar mi voz 🎧" : "mantén el dedo y escucha",
   });
+  // Las líneas de la voz: unas curvas suaves que ondulan como cuando
+  // alguien habla, y se agitan con cada sílaba.
+  const lienzo = el("canvas.onda__voz", { "aria-hidden": "true" });
   const node = el("div.orn.orn--onda", { style: { "--accent": accent } }, [
+    lienzo,
     el("div.onda__pad" + (archivo ? ".is-nota" : ""), { "data-claim-drag": "", role: archivo ? "button" : null, "aria-label": archivo ? "Escuchar mi nota de voz" : null }, [
       el("div.onda__fila", {}, [archivo ? boton : null, el("div.onda__barras", {}, barras), archivo ? tiempo : null]),
       pista,
     ]),
   ]);
   const pad = qs(".onda__pad", node);
+  const barrasEl = qs(".onda__barras", node);
   let gestures = null;
   let holding = false;
   let volume = 0;
@@ -475,56 +482,140 @@ function onda(ctx, { accent, target, onReveal }) {
   // La nota de voz.
   let voz = null;
   let sonando = false;
+  let arrastrando = false;
   const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
   const parar = () => {
     if (!voz) return;
     voz.pause();
     sonando = false;
-    node.classList.remove("is-sonando");
+    node.classList.remove("is-sonando", "is-cargando");
     ctx.audio?.soltar?.("nota-de-voz");
+  };
+  const crear = () => {
+    if (voz) return;
+    voz = new Audio();
+    voz.preload = "auto";
+    voz.playsInline = true;
+    voz.setAttribute("playsinline", "");
+    voz.addEventListener("loadedmetadata", () => { if (!sonando) tiempo.textContent = fmt(voz.duration || 0); });
+    voz.addEventListener("waiting", () => node.classList.add("is-cargando"));
+    voz.addEventListener("playing", () => node.classList.remove("is-cargando"));
+    voz.addEventListener("ended", () => {
+      parar();
+      voz.currentTime = 0;
+      pista.textContent = "otra vez 🥹";
+      if (!done) {
+        done = true;
+        target?.classList.add("is-heard");
+        onReveal?.();
+      }
+    });
+    voz.addEventListener("error", () => {
+      parar();
+      // Se suelta para que el siguiente toque lo intente de nuevo, limpio.
+      voz = null;
+      pista.textContent = "no se pudo abrir el audio 😢 · toca para intentar otra vez";
+    });
+    voz.src = src;
   };
   const tocar = () => {
     if (!archivo) return;
-    if (!voz) {
-      voz = new Audio(archivo.split("/").map(encodeURIComponent).join("/"));
-      voz.preload = "auto";
-      voz.addEventListener("loadedmetadata", () => { tiempo.textContent = fmt(voz.duration || 0); });
-      voz.addEventListener("ended", () => {
-        parar();
-        voz.currentTime = 0;
-        pista.textContent = "otra vez 🥹";
-        if (!done) {
-          done = true;
-          target?.classList.add("is-heard");
-          onReveal?.();
-        }
-      });
-      voz.addEventListener("error", () => {
-        parar();
-        pista.textContent = "no se pudo abrir el audio 😢";
-      });
-    }
+    crear();
     if (sonando) {
       parar();
       pista.textContent = "toca para seguir escuchando";
       return;
     }
     sonando = true;
-    node.classList.add("is-sonando");
-    ctx.audio?.mantener?.("nota-de-voz", 0.05);
+    node.classList.add("is-sonando", "is-cargando");
+    // La canción del libro se pausa mientras hablo, y vuelve al terminar.
+    ctx.audio?.mantener?.("nota-de-voz", 0);
     pista.textContent = "escuchando… 🤍";
-    voz.play().catch(() => parar());
+    const p = voz.play();
+    if (p?.catch) p.then(() => node.classList.remove("is-cargando")).catch(() => {
+      parar();
+      pista.textContent = "toca otra vez para escuchar 🎧";
+    });
+  };
+  /** Arrastrar sobre las barritas adelanta o regresa la nota. */
+  const buscar = (x) => {
+    if (!voz || !voz.duration || !Number.isFinite(voz.duration)) return;
+    const r = barrasEl.getBoundingClientRect();
+    const k = clamp01((x - r.left) / Math.max(1, r.width));
+    voz.currentTime = k * voz.duration;
+    tiempo.textContent = fmt(Math.max(0, voz.duration - voz.currentTime));
+  };
+
+  // ---- Las líneas de voz --------------------------------------------
+  const g2 = lienzo.getContext("2d");
+  let W = 0, H = 0;
+  const medir = () => {
+    const r = lienzo.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    if (!r.width || !r.height) return;
+    if (Math.round(r.width * dpr) === lienzo.width && Math.round(r.height * dpr) === lienzo.height) return;
+    W = r.width; H = r.height;
+    lienzo.width = Math.round(W * dpr);
+    lienzo.height = Math.round(H * dpr);
+    g2.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  // Un «habla» de mentiritas: sílabas de largo y fuerza distintos, con
+  // pausas cortas y, de vez en cuando, una más larga (como quien respira).
+  const habla = { env: 0, obj: 0, t: 0 };
+  let volPuesto = -1;
+  const COLORES = [
+    [accent, 2.2, 0.95],
+    ["#ff9ec4", 1.7, 0.75],
+    ["#b79cff", 1.4, 0.6],
+    ["#ffd3a8", 1.1, 0.5],
+  ];
+  const dibujar = (time, fuerza) => {
+    if (!W) return;
+    g2.clearRect(0, 0, W, H);
+    const mitad = H / 2;
+    for (let k = 0; k < COLORES.length; k++) {
+      const [color, grosor, alfa] = COLORES[k];
+      const amp = mitad * 0.86 * (0.06 + fuerza * (1 - k * 0.17));
+      const frec = 1.6 + k * 0.55;
+      const fase = time * (2.2 + k * 0.7) * (k % 2 ? -1 : 1) + k * 1.3;
+      g2.beginPath();
+      for (let i = 0; i <= 48; i++) {
+        const u = i / 48;
+        // Se afina en las orillas, como las ondas de un asistente de voz.
+        const orilla = Math.pow(Math.sin(Math.PI * u), 2.2);
+        const y = mitad + Math.sin(u * Math.PI * 2 * frec + fase) * amp * orilla;
+        if (i) g2.lineTo(u * W, y);
+        else g2.moveTo(0, y);
+      }
+      g2.strokeStyle = color;
+      g2.globalAlpha = alfa * (0.35 + fuerza * 0.65);
+      g2.lineWidth = grosor;
+      g2.lineCap = "round";
+      g2.stroke();
+    }
+    g2.globalAlpha = 1;
   };
 
   return {
     node,
     async enter() {
       target?.classList.add("is-whispered");
+      requestAnimationFrame(medir);
       gestures = new Gestures(
         pad,
         archivo
           ? {
-              onTap: () => {
+              // Se decide al soltar y sin prisa: un toque lento o que se
+              // mueve un poquito también cuenta (antes se perdía si duraba
+              // más de un tercio de segundo, y parecía que el botón no iba).
+              onDown: () => { arrastrando = false; },
+              onPan: (e) => {
+                if (!voz?.duration) return;
+                arrastrando = true;
+                buscar(e.x);
+              },
+              onUp: (e) => {
+                if (arrastrando || Math.hypot(e.dx || 0, e.dy || 0) > 28) return;
                 ctx.haptics.play("tap");
                 tocar();
               },
@@ -536,7 +627,7 @@ function onda(ctx, { accent, target, onReveal }) {
               },
               onUp: () => (holding = false),
             },
-        { exclusive: true }
+        { exclusive: true, threshold: archivo ? 22 : 10 }
       );
       requestAnimationFrame(() => node.classList.add("is-visible"));
     },
@@ -544,27 +635,50 @@ function onda(ctx, { accent, target, onReveal }) {
       parar();
     },
     tick(dt, time, realDt = dt) {
-      const habla = archivo ? sonando : holding;
-      volume = clamp01(volume + (habla ? realDt * (archivo ? 0.35 : 0.55) : -realDt * 0.32));
+      const hablaAhora = archivo ? sonando && !node.classList.contains("is-cargando") : holding;
+      volume = clamp01(volume + (hablaAhora ? realDt * (archivo ? 0.35 : 0.55) : -realDt * 0.32));
       if (archivo && (done || sonando)) volume = Math.max(volume, done ? 1 : volume);
-      target?.style.setProperty("--voice", String(volume));
-      node.style.setProperty("--voice", String(volume));
+      if (volume !== volPuesto) {
+        volPuesto = volume;
+        target?.style.setProperty("--voice", String(volume));
+        node.style.setProperty("--voice", String(volume));
+      }
       const avance = voz && voz.duration ? voz.currentTime / voz.duration : 0;
-      if (sonando && voz) tiempo.textContent = fmt(Math.max(0, (voz.duration || 0) - voz.currentTime));
+      if (sonando && voz && voz.duration) tiempo.textContent = fmt(Math.max(0, voz.duration - voz.currentTime));
+
+      // El «habla»: sílabas mientras suena, calma cuando no.
+      habla.t -= realDt;
+      if (habla.t <= 0) {
+        if (hablaAhora) {
+          const pausa = Math.random() < 0.28;
+          const larga = Math.random() < 0.08;
+          habla.obj = pausa ? 0.08 : 0.45 + Math.random() * 0.55;
+          habla.t = larga ? 0.55 + Math.random() * 0.4 : pausa ? 0.06 + Math.random() * 0.16 : 0.1 + Math.random() * 0.2;
+        } else {
+          habla.obj = 0;
+          habla.t = 0.2;
+        }
+      }
+      habla.env = damp(habla.env, habla.obj, hablaAhora ? 14 : 4, realDt);
+      if (!W) medir();
+      dibujar(time, habla.env);
+
       // Las barras respiran siempre un poquito; con la voz, hablan.
       barras.forEach((b, i) => {
         let h;
         if (archivo) {
-          const vivo = sonando ? 0.55 + 0.45 * Math.abs(Math.sin(time * (6 + (i % 4)) + i)) : 1;
+          const vivo = hablaAhora ? 0.45 + 0.55 * habla.env * Math.abs(Math.sin(time * (6 + (i % 4)) + i)) : 1;
           h = forma[i] * vivo;
           b.classList.toggle("is-oida", i / N < avance || (done && !sonando && avance === 0));
         } else {
           const hablando = Math.abs(Math.sin(time * (5.3 + (i % 5)) + i * 0.7)) * (0.35 + 0.65 * Math.abs(Math.sin(time * 1.3 + i)));
           h = 0.12 + volume * 0.88 * hablando + Math.sin(time * 1.6 + i * 0.5) * 0.04;
         }
-        b.style.transform = `scaleY(${Math.max(0.08, h).toFixed(3)})`;
+        // Sólo se escribe si cambió: quietas no le cuestan nada al navegador.
+        const t = `scaleY(${Math.max(0.08, h).toFixed(3)})`;
+        if (b._t !== t) { b._t = t; b.style.transform = t; }
       });
-      if (habla && Math.random() < realDt * 6) ctx.haptics.scrub(volume * 0.6);
+      if (hablaAhora && Math.random() < realDt * 6) ctx.haptics.scrub(volume * 0.6);
       if (!archivo && volume >= 0.99 && !done) {
         done = true;
         target?.classList.add("is-heard");
@@ -574,6 +688,7 @@ function onda(ctx, { accent, target, onReveal }) {
     },
     destroy() {
       parar();
+      if (voz) { voz.removeAttribute("src"); voz.load(); }
       voz = null;
       gestures?.destroy();
       target?.classList.remove("is-whispered");
