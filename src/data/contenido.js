@@ -481,6 +481,7 @@ export default {
     "fotos-paginas/11b-pines-que-te-dedico/imagen97.jpg": "ef3d99fd",
     "fotos-paginas/11b-pines-que-te-dedico/imagen98.jpg": "7a00a86e",
     "fotos-paginas/11b-pines-que-te-dedico/imagen99.jpg": "6f2b20b2",
+    "fotos-paginas/12-solo-tu-sabes-abrirlo/dbd3b3c5d8622dcc05f9e50299838a45.jpg": "bb2bdef7",
     "fotos-paginas/13-mi-norte/imagen1.jpg": "b53e4977",
     "fotos-paginas/14-todo-lo-que-guardo/imagen1.png": "f7b482e1",
     "fotos-paginas/14-todo-lo-que-guardo/imagen10.png": "375ad3f2",
