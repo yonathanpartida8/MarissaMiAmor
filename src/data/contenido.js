@@ -542,6 +542,7 @@ export default {
     "fotos-paginas/27-no-se-me-pasa/imagen3.png": "2aa67d2f",
     "fotos-paginas/27-no-se-me-pasa/imagen4.png": "a408e06c",
     "fotos-paginas/27-no-se-me-pasa/imagen5.png": "53fc95b4",
-    "fotos-paginas/27-no-se-me-pasa/imagen6.png": "1e7c4659"
+    "fotos-paginas/27-no-se-me-pasa/imagen6.png": "1e7c4659",
+    "fotos-paginas/29-te-elijo/421e34017228a5449909de2f8a1eaa75.jpg": "935d6fd6"
   }
 };
