@@ -329,9 +329,7 @@ export default {
     "21-sin-adornos": [
       "imagen1.jpg"
     ],
-    "22-aburridos-juntos": [
-      "imagen1.jpg"
-    ],
+    "22-aburridos-juntos": [],
     "23-no-como-alguien-perfecto": [
       "imagen1.jpg"
     ],
@@ -546,7 +544,6 @@ export default {
     "fotos-paginas/18-otra-postal/imagen1.jpg": "85ed0c83",
     "fotos-paginas/20-debajo-de-esto/imagen1.jpg": "fd0d4ea4",
     "fotos-paginas/21-sin-adornos/imagen1.jpg": "1bce182b",
-    "fotos-paginas/22-aburridos-juntos/imagen1.jpg": "1bce182b",
     "fotos-paginas/23-no-como-alguien-perfecto/imagen1.jpg": "ad167a16",
     "fotos-paginas/24-lo-que-quiero-de-ti/imagen1.jpg": "9dc6924a",
     "fotos-paginas/25-lo-que-estoy-haciendo/imagen1.jpg": "9116d62d",
