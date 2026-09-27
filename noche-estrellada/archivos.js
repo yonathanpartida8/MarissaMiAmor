@@ -7,5 +7,6 @@ window.NOCHE_ARCHIVOS = [
   "../assets/audio/sonido.mp3",
   "musica.mp3",
   "sonidos/aire/aire.mp3",
+  "sonidos/lluvia/Sonido de Lluvia sin Truenos Para Dormir(MP3_160K).mp3",
   "sonidos/rio/Sonido de río relajante_ alivio de acúfenos y tinnitus(MP3_160K).mp3"
 ];
