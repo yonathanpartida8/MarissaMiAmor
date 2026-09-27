@@ -292,9 +292,7 @@ export default {
       "imagen9.png",
       "imagen10.png"
     ],
-    "18-otra-postal": [
-      "imagen1.png"
-    ],
+    "18-otra-postal": [],
     "19-nada-del-otro-mundo": [
       "imagen1.png"
     ],
