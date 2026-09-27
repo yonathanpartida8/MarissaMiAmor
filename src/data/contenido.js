@@ -513,6 +513,7 @@ export default {
     "fotos-paginas/17-el-mismo-cielo/imagen37.png": "d14c8eef",
     "fotos-paginas/18-otra-postal/imagen1.jpg": "85ed0c83",
     "fotos-paginas/20-debajo-de-esto/38ffa1954fc44b6cc0c4f2e422688457.jpg": "fd0d4ea4",
+    "fotos-paginas/21-sin-adornos/fe104f6ae125aa0f77f5ba0ba54c49c8.jpg": "1bce182b",
     "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen1.png": "1184f825",
     "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen2.png": "bb4d6560",
     "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen3.png": "1c31c2a2",
