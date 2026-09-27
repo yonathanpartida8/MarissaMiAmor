@@ -160,7 +160,9 @@ export default {
       "imagen1.png",
       "imagen2.png"
     ],
-    "09-te-fui-armando": [],
+    "09-te-fui-armando": [
+      "imagen1.png"
+    ],
     "10-contigo-me-caigo-mejor": [
       "imagen1.png"
     ],
