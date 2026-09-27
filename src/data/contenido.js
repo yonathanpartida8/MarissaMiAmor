@@ -159,7 +159,10 @@ export default {
     "07-cuando-llueve-alla": [
       "imagen1.jpg"
     ],
-    "08-cosas-que-todavia-no-se-de-ti": [],
+    "08-cosas-que-todavia-no-se-de-ti": [
+      "imagen1.jpg",
+      "imagen2.jpg"
+    ],
     "09-te-fui-armando": [
       "imagen1.png"
     ],
@@ -279,7 +282,9 @@ export default {
       "imagen98.jpg",
       "imagen99.jpg"
     ],
-    "12-solo-tu-sabes-abrirlo": [],
+    "12-solo-tu-sabes-abrirlo": [
+      "imagen1.jpg"
+    ],
     "13-mi-norte": [
       "imagen1.jpg"
     ],
@@ -304,27 +309,50 @@ export default {
     "15-lo-que-no-se-ve-de-primeras": [],
     "16-abrelo": [],
     "17-el-mismo-cielo": [
-      "imagen37.png"
+      "imagen1.jpg",
+      "imagen2.jpg",
+      "imagen3.jpg",
+      "imagen4.jpg",
+      "imagen5.jpg",
+      "imagen6.jpg",
+      "imagen7.jpg",
+      "imagen8.jpg",
+      "imagen9.png"
     ],
     "18-otra-postal": [
       "imagen1.jpg"
     ],
     "19-nada-del-otro-mundo": [],
-    "20-debajo-de-esto": [],
-    "21-sin-adornos": [],
-    "22-aburridos-juntos": [],
-    "23-no-como-alguien-perfecto": [],
-    "24-lo-que-quiero-de-ti": [],
-    "25-lo-que-estoy-haciendo": [],
+    "20-debajo-de-esto": [
+      "imagen1.jpg"
+    ],
+    "21-sin-adornos": [
+      "imagen1.jpg"
+    ],
+    "22-aburridos-juntos": [
+      "imagen1.jpg"
+    ],
+    "23-no-como-alguien-perfecto": [
+      "imagen1.jpg"
+    ],
+    "24-lo-que-quiero-de-ti": [
+      "imagen1.jpg"
+    ],
+    "25-lo-que-estoy-haciendo": [
+      "imagen1.jpg"
+    ],
     "26-unas-de-tantas-fotitos-tuyas": [
       "imagen1.png",
-      "imagen2.png",
-      "imagen3.png",
-      "imagen4.png",
-      "imagen5.png",
-      "imagen6.png",
-      "imagen7.png",
-      "imagen8.png"
+      "imagen2.jpg",
+      "imagen3.jpg",
+      "imagen4.jpg",
+      "imagen5.jpg",
+      "imagen6.jpg",
+      "imagen7.jpg",
+      "imagen8.jpg",
+      "imagen9.jpg",
+      "imagen10.jpg",
+      "imagen11.jpg"
     ],
     "27-no-se-me-pasa": [
       "imagen1.png",
@@ -335,7 +363,9 @@ export default {
       "imagen6.png"
     ],
     "28-gracias-por-quedarte": [],
-    "29-te-elijo": [],
+    "29-te-elijo": [
+      "imagen1.jpg"
+    ],
     "30-el-final": []
   },
   "sorpresas": {},
@@ -373,7 +403,8 @@ export default {
     "fotos-paginas/06-recuerdos/imagen7.png": "2c6b8be1",
     "fotos-paginas/06-recuerdos/imagen8.png": "a9c392b7",
     "fotos-paginas/07-cuando-llueve-alla/imagen1.jpg": "c3955f24",
-    "fotos-paginas/08-cosas-que-todavia-no-se-de-ti/3aa7bae2999f3a53748c99534663c802.jpg": "9dc6924a",
+    "fotos-paginas/08-cosas-que-todavia-no-se-de-ti/imagen1.jpg": "16d9e3f3",
+    "fotos-paginas/08-cosas-que-todavia-no-se-de-ti/imagen2.jpg": "9dc6924a",
     "fotos-paginas/09-te-fui-armando/imagen1.png": "83836c29",
     "fotos-paginas/10-contigo-me-caigo-mejor/imagen1.png": "e560c88e",
     "fotos-paginas/11-pines-que-me-recordaron-a-ti/imagen1.png": "4bffda0c",
@@ -485,7 +516,7 @@ export default {
     "fotos-paginas/11b-pines-que-te-dedico/imagen97.jpg": "ef3d99fd",
     "fotos-paginas/11b-pines-que-te-dedico/imagen98.jpg": "7a00a86e",
     "fotos-paginas/11b-pines-que-te-dedico/imagen99.jpg": "6f2b20b2",
-    "fotos-paginas/12-solo-tu-sabes-abrirlo/dbd3b3c5d8622dcc05f9e50299838a45.jpg": "bb2bdef7",
+    "fotos-paginas/12-solo-tu-sabes-abrirlo/imagen1.jpg": "bb2bdef7",
     "fotos-paginas/13-mi-norte/imagen1.jpg": "b53e4977",
     "fotos-paginas/14-todo-lo-que-guardo/imagen1.png": "f7b482e1",
     "fotos-paginas/14-todo-lo-que-guardo/imagen10.png": "375ad3f2",
@@ -503,48 +534,39 @@ export default {
     "fotos-paginas/14-todo-lo-que-guardo/imagen7.png": "d14c8eef",
     "fotos-paginas/14-todo-lo-que-guardo/imagen8.png": "4ea92209",
     "fotos-paginas/14-todo-lo-que-guardo/imagen9.png": "38fdb943",
-    "fotos-paginas/17-el-mismo-cielo/2118b607a73985c94ef4078e6c867295.jpg": "7c182b43",
-    "fotos-paginas/17-el-mismo-cielo/38eec2a100c45ab467f3a0bb4a07a696.jpg": "d42a24d5",
-    "fotos-paginas/17-el-mismo-cielo/72d34b7d34fb12d4fd94219d0efb3dd9.jpg": "f7982854",
-    "fotos-paginas/17-el-mismo-cielo/787d1543ef0893ff7e91ad52187fadb0.jpg": "d17ccdab",
-    "fotos-paginas/17-el-mismo-cielo/8fb5d0726a0f1ace7d98b55da767cc1e.jpg": "7736d187",
-    "fotos-paginas/17-el-mismo-cielo/a1cb8d65a8f0e76ff5dc80f5a164ab22.jpg": "8c103c39",
-    "fotos-paginas/17-el-mismo-cielo/ef81e3d649814acc9a25aa6d63c9b5ec (1).jpg": "c899550d",
-    "fotos-paginas/17-el-mismo-cielo/ef81e3d649814acc9a25aa6d63c9b5ec.jpg": "c899550d",
-    "fotos-paginas/17-el-mismo-cielo/f0c5cfd007e25cc371e238ed2820c83e.jpg": "99f4191b",
-    "fotos-paginas/17-el-mismo-cielo/imagen37.png": "d14c8eef",
+    "fotos-paginas/17-el-mismo-cielo/imagen1.jpg": "7736d187",
+    "fotos-paginas/17-el-mismo-cielo/imagen2.jpg": "f7982854",
+    "fotos-paginas/17-el-mismo-cielo/imagen3.jpg": "d42a24d5",
+    "fotos-paginas/17-el-mismo-cielo/imagen4.jpg": "c899550d",
+    "fotos-paginas/17-el-mismo-cielo/imagen5.jpg": "99f4191b",
+    "fotos-paginas/17-el-mismo-cielo/imagen6.jpg": "7c182b43",
+    "fotos-paginas/17-el-mismo-cielo/imagen7.jpg": "8c103c39",
+    "fotos-paginas/17-el-mismo-cielo/imagen8.jpg": "d17ccdab",
+    "fotos-paginas/17-el-mismo-cielo/imagen9.png": "d14c8eef",
     "fotos-paginas/18-otra-postal/imagen1.jpg": "85ed0c83",
-    "fotos-paginas/20-debajo-de-esto/38ffa1954fc44b6cc0c4f2e422688457.jpg": "fd0d4ea4",
-    "fotos-paginas/21-sin-adornos/fe104f6ae125aa0f77f5ba0ba54c49c8.jpg": "1bce182b",
-    "fotos-paginas/22-aburridos-juntos/fe104f6ae125aa0f77f5ba0ba54c49c8.jpg": "1bce182b",
-    "fotos-paginas/23-no-como-alguien-perfecto/77ef8bd9f0438620fdafb28cc0c1167d.jpg": "ad167a16",
-    "fotos-paginas/24-lo-que-quiero-de-ti/3aa7bae2999f3a53748c99534663c802.jpg": "9dc6924a",
-    "fotos-paginas/25-lo-que-estoy-haciendo/366f78fbd833626824c97be1ac5cfffc.jpg": "9116d62d",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/IMG-20260905-WA0085.jpg": "4fd1255f",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/IMG-20260914-WA0012.jpg": "41564c22",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/IMG-20260914-WA0026.jpg": "c55ad488",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/IMG-20260915-WA0010.jpg": "6b164896",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/IMG-20260916-WA0140 (1).jpg": "b53e4977",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/IMG-20260917-WA0051 (1).jpg": "78f5d50d",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/IMG-20260921-WA0004.jpg": "d4958722",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/IMG-20260922-WA0054.jpg": "73c744b5",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/IMG-20260927-WA0012.jpg": "9de86a26",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/Screen_Recording_20260914_214227_WhatsApp(4).jpg": "732d7f19",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen1 (1).png": "83836c29",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen1.png": "1184f825",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen2.png": "bb4d6560",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen3.png": "1c31c2a2",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen4.png": "f3ca7cd5",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen5.png": "e8a99073",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen6.png": "1fbb7738",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen7.png": "c9e79bf1",
-    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen8.png": "4f4d3c16",
+    "fotos-paginas/20-debajo-de-esto/imagen1.jpg": "fd0d4ea4",
+    "fotos-paginas/21-sin-adornos/imagen1.jpg": "1bce182b",
+    "fotos-paginas/22-aburridos-juntos/imagen1.jpg": "1bce182b",
+    "fotos-paginas/23-no-como-alguien-perfecto/imagen1.jpg": "ad167a16",
+    "fotos-paginas/24-lo-que-quiero-de-ti/imagen1.jpg": "9dc6924a",
+    "fotos-paginas/25-lo-que-estoy-haciendo/imagen1.jpg": "9116d62d",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen1.png": "83836c29",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen10.jpg": "41564c22",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen11.jpg": "4fd1255f",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen2.jpg": "9de86a26",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen3.jpg": "73c744b5",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen4.jpg": "d4958722",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen5.jpg": "78f5d50d",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen6.jpg": "b53e4977",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen7.jpg": "6b164896",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen8.jpg": "732d7f19",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen9.jpg": "c55ad488",
     "fotos-paginas/27-no-se-me-pasa/imagen1.png": "59d15f77",
     "fotos-paginas/27-no-se-me-pasa/imagen2.png": "1ad9d057",
     "fotos-paginas/27-no-se-me-pasa/imagen3.png": "2aa67d2f",
     "fotos-paginas/27-no-se-me-pasa/imagen4.png": "a408e06c",
     "fotos-paginas/27-no-se-me-pasa/imagen5.png": "53fc95b4",
     "fotos-paginas/27-no-se-me-pasa/imagen6.png": "1e7c4659",
-    "fotos-paginas/29-te-elijo/421e34017228a5449909de2f8a1eaa75.jpg": "935d6fd6"
+    "fotos-paginas/29-te-elijo/imagen1.jpg": "935d6fd6"
   }
 };

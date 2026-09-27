@@ -58,6 +58,14 @@ export default class VideoPage extends BasePage {
     this.progress = el("div.vid__progress", {}, [el("i")]);
     this.progressFill = this.progress.firstElementChild;
 
+    // Pantalla completa: sobre todo para los vídeos acostados, que en el
+    // teléfono de pie se ven chiquitos.
+    this.grandeBtn = el("button.vid__grande", {
+      type: "button",
+      "aria-label": "Ver el vídeo en pantalla completa",
+      html: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    });
+
     this.frame = el("div.vid__frame", { "data-claim-drag": "" }, [
       el("div.vid__poster"),
       this.video,
@@ -65,6 +73,7 @@ export default class VideoPage extends BasePage {
       this.playBtn,
       this.progress,
       el("div.vid__badge", { text: "" }),
+      this.grandeBtn,
     ]);
 
     this.badge = this.frame.querySelector(".vid__badge");
@@ -78,7 +87,10 @@ export default class VideoPage extends BasePage {
     this.sparkles = createSparkles(this.ctx, { seed: `vid-${this.id}`, scale: 0.5 });
 
     this.root.append(
-      el("div.mine__stage", {}, [this.frame]),
+      el("div.mine__stage", {}, [
+        this.frame,
+        el("p.vid__pista", { text: "toca ⤢ para verlo en grande, o gira tu teléfono" }),
+      ]),
       el("div.vidrio.mine__panel.hueco-barra", {}, [
         ch?.kicker ? el("span.kicker", { text: ch.kicker }) : null,
         el("h2.mine__title", { text: ch?.title || "" }),
@@ -124,9 +136,26 @@ export default class VideoPage extends BasePage {
     this.on(this.video, "playing", () => this.root.classList.remove("is-buffering"));
     this.on(this.video, "ended", () => this.#onEnded());
     this.on(this.video, "timeupdate", () => this.#onProgress());
+    this.on(this.video, "pause", () => {
+      // Pausado, la música vuelve poquito a poco; si le da play otra vez,
+      // se vuelve a apartar.
+      if (!this.video.ended) this.ctx.audio.duck(0.12, 2500);
+    });
     this.on(this.video, "loadedmetadata", () => {
       const secs = Math.round(this.video.duration || 0);
       if (secs) this.badge.textContent = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+      // El marco toma la forma del vídeo: uno acostado no se recorta a una
+      // tira vertical, se ve entero.
+      const w = this.video.videoWidth, h = this.video.videoHeight;
+      if (w && h) {
+        this.frame.style.aspectRatio = `${w} / ${h}`;
+        this.root.classList.toggle("is-acostado", w > h * 1.05);
+      }
+    });
+    this.grandeBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
+    this.on(this.grandeBtn, "click", (e) => {
+      e.stopPropagation();
+      this.#pantallaCompleta();
     });
 
     // Sin carátula, se enseña el primer fotograma en vez de un cuadro negro:
@@ -166,7 +195,7 @@ export default class VideoPage extends BasePage {
     }
 
     this.ctx.haptics.play("tap");
-    this.ctx.audio.duck(0.12, 60_000); // la música se aparta mientras suena
+    this.#apartarMusica(); // la música se aparta mientras suena
 
     try {
       await this.video.play();
@@ -190,7 +219,33 @@ export default class VideoPage extends BasePage {
     }
   }
 
+  /**
+   * La música del libro se aparta mientras el vídeo suene, dure lo que
+   * dure: antes se apartaba un minuto fijo y en los vídeos largos volvía a
+   * sonar encima. Se renueva sola mientras avanza (ver #onProgress).
+   */
+  #apartarMusica() {
+    this.ctx.audio.duck(0.12, 30_000);
+    this.apartadaEn = performance.now();
+  }
+
+  async #pantallaCompleta() {
+    const v = this.video;
+    this.ctx.haptics.play("tap");
+    if (!this.playing) await this.#toggle();
+    try {
+      if (v.requestFullscreen) await v.requestFullscreen();
+      else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();   // iPhone
+      else if (this.frame.webkitRequestFullscreen) this.frame.webkitRequestFullscreen();
+      // En el teléfono, si el vídeo es acostado, que la pantalla gire.
+      if (this.root.classList.contains("is-acostado")) screen.orientation?.lock?.("landscape").catch(() => {});
+    } catch {
+      /* si el navegador no deja, se sigue viendo en el libro */
+    }
+  }
+
   #onProgress() {
+    if (this.playing && performance.now() - (this.apartadaEn || 0) > 15_000) this.#apartarMusica();
     const d = this.video.duration;
     if (!d || !Number.isFinite(d)) return;
     this.progressFill.style.transform = `scaleX(${clamp01(this.video.currentTime / d)})`;

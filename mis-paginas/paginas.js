@@ -54,6 +54,22 @@
  */
 
 export default [
+  // ── Los dos videos que te dedico ────────────────────────────────────
+  {
+    tipo: "video",
+    arriba: "dale play 🤍",
+    titulo: "Te dedico un videito",
+    texto: "¡Debes mirarlos completos, los dos! 🤍",
+    video: "mis-paginas/videos/VID-20260915-WA0017.mp4",
+  },
+  {
+    tipo: "video",
+    arriba: "dale play 🤍",
+    titulo: "Te dedico este video",
+    texto: "¡Míralo completo! 🤍",
+    video: "mis-paginas/videos/video.mp4",
+  },
+
   // ── EJEMPLO 1 · una foto con su texto ───────────────────────────────
   // {
   //   tipo: "foto",

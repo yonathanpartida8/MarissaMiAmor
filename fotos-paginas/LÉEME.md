@@ -26,27 +26,27 @@ El icono de la app es `icono/icono.png`.
 | `05-como-dices-mi-nombre` | 1 |
 | `06-recuerdos` | 8 |
 | `07-cuando-llueve-alla` | 1 |
-| `08-cosas-que-todavia-no-se-de-ti` | — (salen los recuadros «Aquí va la foto…») |
+| `08-cosas-que-todavia-no-se-de-ti` | 2 |
 | `09-te-fui-armando` | 1 |
 | `10-contigo-me-caigo-mejor` | 1 |
 | `11-pines-que-me-recordaron-a-ti` | 10 |
 | `11b-pines-que-te-dedico` | 99 |
-| `12-solo-tu-sabes-abrirlo` | — (salen los recuadros «Aquí va la foto…») |
+| `12-solo-tu-sabes-abrirlo` | 1 |
 | `13-mi-norte` | 1 |
 | `14-todo-lo-que-guardo` | 16 |
 | `15-lo-que-no-se-ve-de-primeras` | — (salen los recuadros «Aquí va la foto…») |
 | `16-abrelo` | — (salen los recuadros «Aquí va la foto…») |
-| `17-el-mismo-cielo` | — (salen los recuadros «Aquí va la foto…») |
+| `17-el-mismo-cielo` | 9 |
 | `18-otra-postal` | 1 |
 | `19-nada-del-otro-mundo` | — (salen los recuadros «Aquí va la foto…») |
-| `20-debajo-de-esto` | — (salen los recuadros «Aquí va la foto…») |
-| `21-sin-adornos` | — (salen los recuadros «Aquí va la foto…») |
-| `22-aburridos-juntos` | — (salen los recuadros «Aquí va la foto…») |
-| `23-no-como-alguien-perfecto` | — (salen los recuadros «Aquí va la foto…») |
-| `24-lo-que-quiero-de-ti` | — (salen los recuadros «Aquí va la foto…») |
-| `25-lo-que-estoy-haciendo` | — (salen los recuadros «Aquí va la foto…») |
-| `26-unas-de-tantas-fotitos-tuyas` | 8 |
+| `20-debajo-de-esto` | 1 |
+| `21-sin-adornos` | 1 |
+| `22-aburridos-juntos` | 1 |
+| `23-no-como-alguien-perfecto` | 1 |
+| `24-lo-que-quiero-de-ti` | 1 |
+| `25-lo-que-estoy-haciendo` | 1 |
+| `26-unas-de-tantas-fotitos-tuyas` | 11 |
 | `27-no-se-me-pasa` | 6 |
 | `28-gracias-por-quedarte` | — (salen los recuadros «Aquí va la foto…») |
-| `29-te-elijo` | — (salen los recuadros «Aquí va la foto…») |
+| `29-te-elijo` | 1 |
 | `30-el-final` | — (salen los recuadros «Aquí va la foto…») |

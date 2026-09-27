@@ -322,7 +322,7 @@
 
 .vid__badge {
   position: absolute;
-  right: 8px;
+  left: 8px;
   top: 8px;
   padding: 0.22rem 0.5rem;
   border-radius: var(--r-pill);
@@ -405,6 +405,56 @@ html[data-orientation="landscape"][data-device="phone"] .vid__frame {
   aspect-ratio: 16 / 9;
   width: 100%;
 }
+
+/* Un vídeo acostado (horizontal): el marco toma su forma desde el código
+   y aquí se le deja ocupar todo el ancho, sin recortar nada. */
+.mine--video.is-acostado .vid__frame {
+  width: 100%;
+  max-width: 560px;
+}
+.mine--video.is-acostado .vid__el { object-fit: contain; }
+
+.vid__pista { display: none; }
+.mine--video.is-acostado .mine__stage {
+  grid-template-rows: auto auto;
+  align-content: center;
+  row-gap: 0.8rem;
+}
+.mine--video.is-acostado .vid__pista {
+  display: block;
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  text-align: center;
+}
+html[data-orientation="landscape"] .mine--video.is-acostado .vid__pista { display: none; }
+
+/* Botón de pantalla completa, arriba a la derecha del vídeo. */
+.vid__grande {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 4;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(20, 6, 12, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 200ms var(--e-out), background 200ms;
+}
+.vid__grande svg { width: 18px; height: 18px; }
+.vid__grande:active { transform: scale(0.9); background: rgba(20, 6, 12, 0.7); }
+.mine--video.is-broken .vid__grande { display: none; }
 
 /* Plan B cuando el navegador no puede con el vídeo: abrirlo aparte. */
 .vid__aparte {

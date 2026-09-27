@@ -43,14 +43,9 @@ export default class DepthPage extends BasePage {
       cabeza.push(this.reloj);
     }
 
-    // Y una platiquita que se despide y no se va, si el capítulo la trae.
+    // Y un chat que se despide y no se va, si el capítulo lo trae.
     const lectura = [this.proseEl];
-    if (ch?.platica?.length) {
-      this.burbujas = ch.platica.map((m) =>
-        el(`div.depth__burbuja.depth__burbuja--${m.de}${m.t === "…" ? ".is-escribe" : ""}`, {},
-          m.t === "…" ? [el("i"), el("i"), el("i")] : [document.createTextNode(m.t)]));
-      lectura.push(el("div.depth__platica", { "aria-hidden": "true" }, this.burbujas));
-    }
+    if (ch?.platica?.length) lectura.push(this.#chat(ch));
 
     this.card = el("div.depth__card.hueco-barra", {}, [
       el("div.depth__cabeza", {}, cabeza),
@@ -94,8 +89,65 @@ export default class DepthPage extends BasePage {
     this.py = 0;
     this.minuto = 0;
     this.relojT = 0;
-    this.platicaT = -2.6;
+    this.#reiniciarChat();
+    // El chat sólo corre mientras se ve: quien todavía está leyendo el
+    // texto de arriba no se pierde el principio.
+    if (this.chatEl && "IntersectionObserver" in window) {
+      this.chatVisto = false;
+      const io = new IntersectionObserver(([e]) => { this.chatVisto = e.isIntersecting; }, { threshold: 0.35 });
+      io.observe(this.chatEl);
+      this.track(() => io.disconnect());
+    } else {
+      this.chatVisto = true;
+    }
     this.addTicker((dt, t) => this.#frame(dt, t), 12);
+  }
+
+  /**
+   * El chat: como en el teléfono. Arriba su nombre y «en línea», que pasa
+   * a «escribiendo…» cuando le toca a ella; los mensajes entran de uno en
+   * uno por abajo, con su hora, y los viejos se van por arriba. Un mensaje
+   * `t: "…"` al final es el «escribiendo…» que ya no se va.
+   */
+  #chat(ch) {
+    const datos = ch.chat || {};
+    this.mensajes = ch.platica.filter((m) => m.t !== "…");
+    this.sigue = ch.platica.some((m) => m.t === "…");
+    this.estadoBase = datos.estado || "en línea";
+
+    this.estadoEl = el("span.chat__estado", { text: this.estadoBase });
+    this.escribeEl = el("div.chat__msg.chat__msg--tu.chat__escribe", { "aria-hidden": "true" }, [el("i"), el("i"), el("i")]);
+    this.burbujas = this.mensajes.map((m) =>
+      el(`div.chat__msg.chat__msg--${m.de === "yo" ? "yo" : "tu"}`, {}, [
+        el("span.chat__texto", { text: m.t }),
+        el("span.chat__hora", { text: m.h ? `${m.h} a. m.` : "" },
+          m.de === "yo" ? [el("i.chat__visto", { text: " ✓✓", "aria-label": "visto" })] : []),
+      ]));
+    this.lista = el("div.chat__lista", { role: "log" }, [...this.burbujas, this.escribeEl]);
+
+    this.chatEl = el("div.chat", {}, [
+      el("div.chat__cabeza", {}, [
+        el("span.chat__avatar", { text: "M", "aria-hidden": "true" }),
+        el("div.chat__quien", {}, [el("b.chat__nombre", { text: datos.nombre || "Ella" }), this.estadoEl]),
+      ]),
+      el("div.chat__cuerpo", {}, [this.lista]),
+    ]);
+    return this.chatEl;
+  }
+
+  #reiniciarChat() {
+    if (!this.burbujas) return;
+    this.charla = { i: 0, t: -0.9, fase: "pausa" };
+    this.horaChat = null;
+    this.burbujas.forEach((b) => b.classList.remove("is-visible"));
+    this.lista.classList.remove("is-borrando");
+    this.#escribiendo(false);
+  }
+
+  #escribiendo(si) {
+    this.escribeEl.classList.toggle("is-visible", si);
+    this.estadoEl.textContent = si ? "escribiendo…" : this.estadoBase;
+    this.estadoEl.classList.toggle("is-escribe", si);
   }
 
   /** 3:00, 3:01, 3:02… (los dos puntos parpadean solos, en CSS). */
@@ -103,23 +155,58 @@ export default class DepthPage extends BasePage {
     if (!this.reloj) return;
     this.relojT += dt;
     if (this.relojT > 12) { this.relojT = 0; this.minuto = Math.min(59, this.minuto + 1); }
-    const [h, m0] = String(this.chapter.reloj).split(":").map(Number);
-    const m = String(Math.min(59, (m0 || 0) + this.minuto)).padStart(2, "0");
-    if (m === this.relojTexto) return;
-    this.relojTexto = m;
+    let [h, m0] = String(this.chapter.reloj).split(":").map(Number);
+    m0 = Math.min(59, (m0 || 0) + this.minuto);
+    // Mientras el chat está a la vista, el reloj marca la hora del último
+    // mensaje: se ve pasar la madrugada mientras nadie se va a dormir.
+    if (this.chatVisto && this.horaChat) [h, m0] = this.horaChat;
+    const m = String(m0).padStart(2, "0");
+    const texto = `${h}:${m}`;
+    if (texto === this.relojTexto) return;
+    this.relojTexto = texto;
     this.reloj.replaceChildren(String(h), el("i", { text: ":" }), `${m} a. m.`);
   }
 
-  /** Los mensajes salen de uno en uno, se quedan un rato y vuelta a empezar. */
+  /**
+   * Los mensajes llegan de uno en uno, al ritmo de alguien que escribe:
+   * los largos tardan más, y dos seguidos de la misma persona van casi
+   * pegados. Al final se queda «escribiendo…» un buen rato y vuelta a
+   * empezar, porque así son nuestras despedidas.
+   */
   #platica(dt) {
-    if (!this.burbujas) return;
-    this.platicaT += dt;
-    const paso = 1.7, n = this.burbujas.length, total = n * paso + 3.4;
-    if (this.platicaT > total) this.platicaT = -0.8;
-    const visibles = this.platicaT < 0 ? 0 : this.platicaT > n * paso + 2.6 ? 0 : Math.floor(this.platicaT / paso) + 1;
-    if (visibles === this.visibles) return;
-    this.visibles = visibles;
-    this.burbujas.forEach((b, i) => b.classList.toggle("is-visible", i < visibles));
+    if (!this.burbujas || !this.chatVisto) return;
+    const c = this.charla;
+    c.t += dt;
+    const m = this.mensajes[c.i];
+
+    if (!m) {
+      if (c.fase !== "final") {
+        c.fase = "final";
+        c.t = 0;
+        if (this.sigue) this.later(() => this.#escribiendo(true), 900);
+      } else if (c.t > 8.5) {
+        this.#reiniciarChat();
+      } else if (c.t > 7.6) {
+        this.lista.classList.add("is-borrando");
+      }
+      return;
+    }
+
+    const escribe = m.de !== "yo";
+    const tarda = Math.min(2.8, 0.7 + m.t.length * 0.032);
+    if (c.fase === "pausa" && c.t >= 0) {
+      c.fase = "escribe";
+      c.t = 0;
+      if (escribe) this.#escribiendo(true);
+    } else if (c.fase === "escribe" && c.t >= tarda) {
+      this.#escribiendo(false);
+      this.burbujas[c.i].classList.add("is-visible");
+      if (m.h) this.horaChat = m.h.split(":").map(Number);
+      c.i += 1;
+      c.fase = "pausa";
+      const sig = this.mensajes[c.i];
+      c.t = -(sig && sig.de === m.de ? 0.4 : 1.1);
+    }
   }
 
   #mountPlane(img) {

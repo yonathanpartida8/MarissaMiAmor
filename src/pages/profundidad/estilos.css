@@ -201,50 +201,155 @@ html[data-orientation="landscape"][data-device="phone"] .depth__hueco {
 }
 
 /* ---- La platiquita que no se termina de despedir ------------------ */
-.depth__platica {
-  display: flex;
-  flex-direction: column;
-  gap: 0.38rem;
-  margin: 1.1rem 0 0.4rem;
+/* ---- El chat de las tres de la mañana ----------------------
+   Como una ventanita del teléfono: cabecera con su nombre y «en línea»
+   (o «escribiendo…»), y un cuerpo de alto fijo donde los mensajes entran
+   por abajo y los viejos se desvanecen por arriba. */
+.chat {
+  margin: 1.2rem 0 0.4rem;
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(18, 6, 14, 0.46);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
-.depth__burbuja {
-  max-width: 78%;
-  padding: 0.42rem 0.8rem 0.46rem;
+.chat__cabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.85rem;
+  background: rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.chat__avatar {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: #fff;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.4), transparent 45%),
+    linear-gradient(150deg, #ff9dc0, #d94f84);
+  box-shadow: 0 0 0 2px rgba(255, 180, 210, 0.35);
+}
+
+.chat__quien {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  min-width: 0;
+}
+
+.chat__nombre {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.chat__estado {
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.6);
+  transition: color 240ms;
+}
+
+.chat__estado.is-escribe {
+  color: #ffb3cf;
+  font-style: italic;
+}
+
+.chat__cuerpo {
+  position: relative;
+  height: 17.5rem;
+  padding: 0 0.7rem 0.7rem;
+  overflow: hidden;
+  /* Los mensajes viejos se van desvaneciendo al subir. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 2.6rem);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 2.6rem);
+}
+
+.chat__lista {
+  position: absolute;
+  left: 0.7rem;
+  right: 0.7rem;
+  bottom: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.36rem;
+  transition: opacity 700ms var(--e-out);
+}
+
+.chat__lista.is-borrando { opacity: 0; }
+
+.chat__msg {
+  display: none;
+  max-width: 82%;
+  padding: 0.42rem 0.72rem 0.3rem;
   border-radius: 16px;
   font-family: var(--font-ui);
   font-size: 0.86rem;
-  line-height: 1.3;
+  line-height: 1.32;
   color: #fff;
-  opacity: 0;
-  transform: translateY(6px) scale(0.96);
-  transition: opacity 380ms var(--e-out), transform 480ms var(--e-out);
+  overflow-wrap: anywhere;
 }
 
-.depth__burbuja.is-visible {
-  opacity: 1;
-  transform: none;
+.chat__msg.is-visible {
+  display: block;
+  animation: chat-entra 360ms var(--e-out) both;
 }
 
-.depth__burbuja--tu {
+@keyframes chat-entra {
+  from { opacity: 0; transform: translateY(10px) scale(0.94); }
+}
+
+.chat__msg--tu {
   align-self: flex-start;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.15);
   border-bottom-left-radius: 5px;
+  transform-origin: left bottom;
 }
 
-.depth__burbuja--yo {
+.chat__msg--yo {
   align-self: flex-end;
   background: color-mix(in srgb, var(--accent) 62%, #3a1024);
   border-bottom-right-radius: 5px;
+  transform-origin: right bottom;
 }
 
-.depth__burbuja.is-escribe {
+.chat__texto { display: block; }
+
+.chat__hora {
+  display: block;
+  margin-top: 0.12rem;
+  font-size: 0.62rem;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+}
+
+.chat__visto {
+  font-style: normal;
+  letter-spacing: -0.12em;
+  color: #ffb3cf;
+}
+
+/* Los tres puntitos de «escribiendo…». */
+.chat__escribe.is-visible {
   display: flex;
   gap: 4px;
-  padding: 0.62rem 0.8rem;
+  padding: 0.66rem 0.8rem;
 }
 
-.depth__burbuja.is-escribe i {
+.chat__escribe i {
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -253,13 +358,18 @@ html[data-orientation="landscape"][data-device="phone"] .depth__hueco {
   animation: depth-escribe 1.1s ease-in-out infinite;
 }
 
-.depth__burbuja.is-escribe i:nth-child(2) { animation-delay: 0.16s; }
-.depth__burbuja.is-escribe i:nth-child(3) { animation-delay: 0.32s; }
+.chat__escribe i:nth-child(2) { animation-delay: 0.16s; }
+.chat__escribe i:nth-child(3) { animation-delay: 0.32s; }
 
 @keyframes depth-escribe {
   40% { opacity: 1; transform: translateY(-2px); }
 }
 
+@media (max-height: 700px) {
+  .chat__cuerpo { height: 14rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .depth__reloj i, .depth__burbuja.is-escribe i { animation: none; }
+  .depth__reloj i, .chat__escribe i { animation: none; }
+  .chat__msg.is-visible { animation: none; }
 }
