@@ -15,6 +15,7 @@
  */
 
 import contenido from "./contenido.js";
+import { conHuella } from "./huella.js";
 
 export const CARPETA = "fotos-paginas/";
 
@@ -112,7 +113,7 @@ export function fotosDe(idDePagina) {
   }
   return archivos.map((archivo, i) => ({
     id: `${idDePagina}-${i}`,
-    src: CARPETA + carpeta + "/" + encodeURIComponent(archivo),
+    src: CARPETA + carpeta + "/" + encodeURIComponent(archivo) + conHuella(CARPETA + carpeta + "/" + archivo),
     nombre: archivo,
     pagina: idDePagina,
   }));

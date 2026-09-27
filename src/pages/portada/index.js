@@ -6,6 +6,12 @@
  * luz la recorre según cómo la sujetes, y para abrir el libro no basta con
  * tocar: hay que mantener el dedo sobre el sello hasta que cede, como quien
  * rompe un lacre de verdad.
+ *
+ * Con foto en `fotos-paginas/01-portada/`, la tapa ES la foto: entera, a
+ * color y sin letras encima, como una revista impresa con su cinta, su
+ * sticker y unos destellos alrededor. El nombre va arriba, fuera, para no
+ * taparle la cara. Sin foto, vuelve la tapa de cartón vino con el nombre
+ * grabado en medio.
  */
 
 import { BasePage } from "../BasePage.js";
@@ -30,8 +36,15 @@ export default class CoverPage extends BasePage {
     return "dawn";
   }
 
+  /** La foto de la tapa, si la hay (los recuadros «Aquí va…» no cuentan). */
+  get foto() {
+    if (this._foto === undefined) this._foto = this.photos.find((f) => !f.hueco) || null;
+    return this._foto;
+  }
+
   build() {
-    this.root = el("section.page.cover", {
+    const conFoto = !!this.foto;
+    this.root = el(`section.page.cover${conFoto ? ".cover--foto" : ""}`, {
       "data-page": this.id,
       "data-gl": "true",
       "aria-label": "Portada",
@@ -41,23 +54,42 @@ export default class CoverPage extends BasePage {
     this.photo = el("div.cover__photo");
     this.sheen = el("div.cover__sheen");
 
-    this.card = el("div.cover__card", {}, [
+    const letras = [
+      el("span.cover__kicker", { text: "un librito de amor para" }),
+      el("h1.cover__name", { text: "Marissa" }),
+      el("div.cover__flourish", {
+        html: `<svg viewBox="0 0 120 12" aria-hidden="true">
+          <path d="M2 6 Q 30 0, 58 6 T 118 6" fill="none" stroke="currentColor" stroke-width="0.8"/>
+          <circle cx="60" cy="6" r="2.2" fill="currentColor"/>
+        </svg>`,
+      }),
+      el("span.cover__sub", { text: "mi amorcito" }),
+    ];
+
+    // La tapa: `cover__inner` recorta la foto; la cinta, el sticker y los
+    // destellos cuelgan de `cover__card` para poder salirse del borde.
+    const dentro = el("div.cover__inner", {}, [
       this.photo,
       el("div.cover__grain"),
       this.sheen,
       el("div.cover__border"),
-      el("div.cover__content", {}, [
-        el("span.cover__kicker", { text: "un librito de amor para" }),
-        el("h1.cover__name", { text: "Marissa" }),
-        el("div.cover__flourish", {
-          html: `<svg viewBox="0 0 120 12" aria-hidden="true">
-            <path d="M2 6 Q 30 0, 58 6 T 118 6" fill="none" stroke="currentColor" stroke-width="0.8"/>
-            <circle cx="60" cy="6" r="2.2" fill="currentColor"/>
-          </svg>`,
-        }),
-        el("span.cover__sub", { text: "mi amorcito" }),
-      ]),
     ]);
+    if (!conFoto) dentro.append(el("div.cover__content", {}, letras));
+
+    this.card = el("div.cover__card", {}, [dentro]);
+    if (conFoto) {
+      this.card.append(
+        el("span.cover__tape", { "aria-hidden": "true" }),
+        el("span.cover__sticker", {
+          "aria-hidden": "true",
+          html: `<span>edición</span><b>única</b><i>♥</i>`,
+        }),
+        el("span.cover__sparkles", {
+          "aria-hidden": "true",
+          html: "<i></i><i></i><i></i><i></i><i></i><i></i>",
+        })
+      );
+    }
 
     this.seal = el("button.cover__seal", {
       type: "button",
@@ -73,6 +105,7 @@ export default class CoverPage extends BasePage {
     });
 
     this.root.append(
+      ...(conFoto ? [el("header.cover__head", {}, letras)] : []),
       this.card,
       el("div.cover__sealwrap", {}, [
         this.seal,
@@ -85,7 +118,7 @@ export default class CoverPage extends BasePage {
   }
 
   async preload() {
-    const first = this.photos[0];
+    const first = this.foto;
     if (!first) return;
     await this.ctx.assets.load(first.src).catch(() => null);
   }
@@ -93,7 +126,7 @@ export default class CoverPage extends BasePage {
   async enter(direction) {
     await super.enter(direction);
 
-    const photo = this.photos[0];
+    const photo = this.foto;
     if (photo) this.photo.style.backgroundImage = `url("${photo.src}")`;
 
     this.ctx.gl?.setIntensity(1);
@@ -194,9 +227,12 @@ export default class CoverPage extends BasePage {
       "--sheen-x": `${(this.tiltX * -46).toFixed(1)}px`,
       "--sheen-y": `${(this.tiltY * -40).toFixed(1)}px`,
     });
+    // Con foto a color se mueve menos: va casi a sangre y no debe asomar
+    // el borde al inclinar.
+    const hondo = this.foto ? 0.65 : 1;
     setVars(this.photo, {
-      "--depth-x": `${(this.tiltX * -14).toFixed(1)}px`,
-      "--depth-y": `${(this.tiltY * 10).toFixed(1)}px`,
+      "--depth-x": `${(this.tiltX * -14 * hondo).toFixed(1)}px`,
+      "--depth-y": `${(this.tiltY * 10 * hondo).toFixed(1)}px`,
     });
 
     // ---- Presión sobre el sello ----------------------------------------

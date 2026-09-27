@@ -12,6 +12,7 @@
  */
 import { readdirSync, existsSync, writeFileSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { createHash } from "node:crypto";
 
 const RAIZ = new URL("..", import.meta.url).pathname;
 const leer = (dir) => (existsSync(join(RAIZ, dir)) ? readdirSync(join(RAIZ, dir)) : []);
@@ -120,6 +121,23 @@ const vales = (() => {
 const ICONOS = ["icono/icono.png", "icono/icono.jpg", "icono/icono.jpeg", "icono/icono.webp", "icono/icono.svg", "icono/icon.png"];
 const icono = ICONOS.find((r) => existsSync(join(RAIZ, r))) || null;
 
+// La huella de cada foto (un trocito del hash de su contenido). El libro la
+// pone al final de la dirección (`imagen1.png?v=3fa2c1d0`): si se sube otra
+// foto con el MISMO nombre, la dirección cambia y el teléfono ya no enseña
+// la vieja que tenía guardada.
+const huellas = {};
+for (const dir of ["fotos-paginas", "sorpresas", "images/amores", "mis-paginas/fotos"]) {
+  const recorrerFotos = (d) => leer(d).forEach((f) => {
+    const ruta = `${d}/${f}`;
+    try {
+      if (statSync(join(RAIZ, ruta)).isDirectory()) return recorrerFotos(ruta);
+    } catch { return; }
+    if (!/\.(png|jpe?g|webp|gif|avif)$/i.test(f)) return;
+    huellas[nfc(ruta)] = createHash("md5").update(readFileSync(join(RAIZ, ruta))).digest("hex").slice(0, 8);
+  });
+  if (existsSync(join(RAIZ, dir))) recorrerFotos(dir);
+}
+
 const contenido = {
   paginasHtml,
   amores,
@@ -131,6 +149,7 @@ const contenido = {
   sonidos,
   vales,
   noche: existsSync(join(RAIZ, "noche-estrellada/index.html")),
+  huellas,
 };
 
 // Y los sonidos que la noche puede usar, para que no pida los que faltan.

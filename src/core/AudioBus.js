@@ -79,6 +79,33 @@ export class AudioBus extends Emitter {
         if (this.playingMusic && !this.muted) music.el.play().catch(() => {});
       }
     });
+
+    /* ── LA MÚSICA SE RECUPERA SOLA CON EL SIGUIENTE TOQUE ─────────────
+       El teléfono se bloquea, entra una llamada, se cambia de app: iOS
+       suspende el audio y, al volver, la canción «está puesta» pero no
+       suena (va por WebAudio y el contexto se quedó dormido), o el
+       navegador no la dejó arrancar fuera de un toque. Antes se quedaba
+       así hasta recargar. Ahora cualquier toque la despierta. */
+    const revivir = (e) => this.revivir(e);
+    window.addEventListener("pointerdown", revivir, { capture: true, passive: true });
+    window.addEventListener("touchend", revivir, { capture: true, passive: true });
+    window.addEventListener("keydown", revivir, { capture: true, passive: true });
+  }
+
+  revivir(e) {
+    if (!this.unlocked) return;
+    if (this.ac && this.ac.state !== "running" && this.ac.state !== "closed") this.ac.resume().catch(() => {});
+    // El botón de la música manda él solo: si no, el toque la prendería
+    // aquí y el mismo toque la apagaría en el botón.
+    if (e?.target?.closest?.('[data-role="music"]')) return;
+    const track = this.tracks.get("music");
+    if (!track || !this.playingMusic || this.muted || !track.el.paused || document.hidden) return;
+    track.el.play().then(() => {
+      if (!this.playingMusic) return track.el.pause();
+      this.#nivelPuesto = this.#nivelApartado();
+      this.#fadeMusica(track, track.base * this.#nivelPuesto, 1400);
+      this.emit("music", true);
+    }).catch(() => {});
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -255,10 +282,17 @@ export class AudioBus extends Emitter {
   async unlock() {
     if (this.unlocked) return true;
     const attempts = [...this.tracks.values(), ...this.turnPool.map((el) => ({ el, base: 0 }))];
+    const musica = this.tracks.get("music")?.el;
     const uno = async (track) => {
       try {
         track.el.muted = true;
         await track.el.play();
+        /* OJO: esta prueba puede terminar DESPUÉS de que la música ya
+           arrancó de verdad (si la canción tarda en llegar, el desbloqueo
+           sigue adelante a los 600 ms y `startMusic` la pone). Pausarla
+           entonces la callaba justo al empezar: era el «a veces no
+           suena». Si ya la están tocando, se deja sonar. */
+        if (track.el === musica && this.playingMusic) return;
         track.el.pause();
         track.el.currentTime = 0;
       } catch {
@@ -325,7 +359,9 @@ export class AudioBus extends Emitter {
         this.#fadeMusica(track, track.base * this.#nivelPuesto, fade);
       })
       .catch(() => {
-        this.playingMusic = false;
+        /* El navegador no la dejó sonar todavía (fuera de un toque, o sin
+           datos aún). Se queda con las ganas: `revivir` la arranca con el
+           siguiente toque, y el botón sigue diciendo la verdad. */
       });
     this.emit("music", true);
   }

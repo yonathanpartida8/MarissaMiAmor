@@ -11,6 +11,7 @@
 import { el, setVars } from "../utils/dom.js";
 import sorpresas from "../data/sorpresas.js";
 import contenido from "../data/contenido.js";
+import { conHuella } from "../data/huella.js";
 import { chapterById } from "../data/chapters.js";
 import { indexOfPage } from "../data/manifest.js";
 
@@ -93,7 +94,7 @@ export class Album {
       if (ok) {
         const foto = contenido?.sorpresas?.[id];
         if (foto) {
-          figura.style.backgroundImage = `url("sorpresas/${encodeURIComponent(foto)}")`;
+          figura.style.backgroundImage = `url("sorpresas/${encodeURIComponent(foto)}${conHuella(`sorpresas/${foto}`)}")`;
           figura.classList.add("con-foto");
         } else {
           figura.append(el("span.album__emoji", { text: def.escena[0] }), el("span.album__mini", { text: def.escena.slice(1).join("") }));

@@ -597,6 +597,9 @@ export default class HtmlPage extends BasePage {
 
     const abajo = (e) => {
       gesto = null;
+      // Un toque dentro de la página también despierta la música del libro
+      // si el teléfono la había dormido (el libro no lo ve desde fuera).
+      this.ctx.audio?.revivir?.();
       if (e.pointerType === "mouse" && e.button !== 0) return;
 
       // 1. ¿Empieza en el borde? Si no, no hay nada que hablar: el gesto es

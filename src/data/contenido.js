@@ -158,10 +158,7 @@ export default {
     "07-cuando-llueve-alla": [
       "imagen1.jpg"
     ],
-    "08-cosas-que-todavia-no-se-de-ti": [
-      "imagen1.png",
-      "imagen2.png"
-    ],
+    "08-cosas-que-todavia-no-se-de-ti": [],
     "09-te-fui-armando": [
       "imagen1.png"
     ],
@@ -281,9 +278,7 @@ export default {
       "imagen98.jpg",
       "imagen99.jpg"
     ],
-    "12-solo-tu-sabes-abrirlo": [
-      "imagen1.png"
-    ],
+    "12-solo-tu-sabes-abrirlo": [],
     "13-mi-norte": [
       "imagen1.jpg"
     ],
@@ -305,49 +300,19 @@ export default {
       "imagen15.png",
       "imagen16.png"
     ],
-    "15-lo-que-no-se-ve-de-primeras": [
-      "imagen1.png"
-    ],
-    "16-abrelo": [
-      "imagen1.png"
-    ],
-    "17-el-mismo-cielo": [
-      "imagen1.png",
-      "imagen2.png",
-      "imagen3.png",
-      "imagen4.png",
-      "imagen5.png",
-      "imagen6.png",
-      "imagen7.png",
-      "imagen8.png",
-      "imagen9.png",
-      "imagen10.png"
-    ],
+    "15-lo-que-no-se-ve-de-primeras": [],
+    "16-abrelo": [],
+    "17-el-mismo-cielo": [],
     "18-otra-postal": [
       "imagen1.jpg"
     ],
-    "19-nada-del-otro-mundo": [
-      "imagen1.png"
-    ],
-    "20-debajo-de-esto": [
-      "imagen1.png"
-    ],
-    "21-sin-adornos": [
-      "imagen1.png"
-    ],
-    "22-aburridos-juntos": [
-      "imagen1.png"
-    ],
-    "23-no-como-alguien-perfecto": [
-      "imagen1.png"
-    ],
-    "24-lo-que-quiero-de-ti": [
-      "imagen1.png",
-      "imagen2.png"
-    ],
-    "25-lo-que-estoy-haciendo": [
-      "imagen1.png"
-    ],
+    "19-nada-del-otro-mundo": [],
+    "20-debajo-de-esto": [],
+    "21-sin-adornos": [],
+    "22-aburridos-juntos": [],
+    "23-no-como-alguien-perfecto": [],
+    "24-lo-que-quiero-de-ti": [],
+    "25-lo-que-estoy-haciendo": [],
     "26-unas-de-tantas-fotitos-tuyas": [
       "imagen1.png",
       "imagen2.png",
@@ -366,15 +331,9 @@ export default {
       "imagen5.png",
       "imagen6.png"
     ],
-    "28-gracias-por-quedarte": [
-      "imagen1.png"
-    ],
-    "29-te-elijo": [
-      "imagen1.png"
-    ],
-    "30-el-final": [
-      "imagen1.png"
-    ]
+    "28-gracias-por-quedarte": [],
+    "29-te-elijo": [],
+    "30-el-final": []
   },
   "sorpresas": {},
   "sonidos": {
@@ -395,5 +354,164 @@ export default {
     ],
     "dorado": "Vale por lo que tú quieras, cuando tú quieras. Sin fecha de caducidad."
   },
-  "noche": true
+  "noche": true,
+  "huellas": {
+    "fotos-paginas/01-portada/imagen1.png": "1d30b347",
+    "fotos-paginas/02-las-tres-de-la-manana/imagen1.png": "8c6c07de",
+    "fotos-paginas/03-lo-que-no-te-dije-ese-dia/imagen1.png": "11cd0b0e",
+    "fotos-paginas/04-postal-desde-aqui/imagen1.png": "9e7ce5b9",
+    "fotos-paginas/05-como-dices-mi-nombre/imagen1.png": "07c1c8b7",
+    "fotos-paginas/06-recuerdos/imagen1.png": "a262b8d2",
+    "fotos-paginas/06-recuerdos/imagen2.png": "42facec2",
+    "fotos-paginas/06-recuerdos/imagen3.png": "58d73f54",
+    "fotos-paginas/06-recuerdos/imagen4.png": "2ff4960b",
+    "fotos-paginas/06-recuerdos/imagen5.png": "0cf50fd0",
+    "fotos-paginas/06-recuerdos/imagen6.png": "ca1b9491",
+    "fotos-paginas/06-recuerdos/imagen7.png": "2c6b8be1",
+    "fotos-paginas/06-recuerdos/imagen8.png": "a9c392b7",
+    "fotos-paginas/07-cuando-llueve-alla/imagen1.jpg": "c3955f24",
+    "fotos-paginas/09-te-fui-armando/imagen1.png": "83836c29",
+    "fotos-paginas/10-contigo-me-caigo-mejor/imagen1.png": "e560c88e",
+    "fotos-paginas/11-pines-que-me-recordaron-a-ti/imagen1.png": "4bffda0c",
+    "fotos-paginas/11-pines-que-me-recordaron-a-ti/imagen10.png": "cf2f9d61",
+    "fotos-paginas/11-pines-que-me-recordaron-a-ti/imagen2.png": "214fbc46",
+    "fotos-paginas/11-pines-que-me-recordaron-a-ti/imagen3.png": "f85a51a8",
+    "fotos-paginas/11-pines-que-me-recordaron-a-ti/imagen4.png": "5fd5b314",
+    "fotos-paginas/11-pines-que-me-recordaron-a-ti/imagen5.png": "f2da1e2a",
+    "fotos-paginas/11-pines-que-me-recordaron-a-ti/imagen6.jpg": "e5f95b26",
+    "fotos-paginas/11-pines-que-me-recordaron-a-ti/imagen7.png": "02638f1a",
+    "fotos-paginas/11-pines-que-me-recordaron-a-ti/imagen8.png": "e8823d80",
+    "fotos-paginas/11-pines-que-me-recordaron-a-ti/imagen9.png": "f0a71856",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen1.png": "7fb5abec",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen10.png": "0cf50fd0",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen11.png": "ca1b9491",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen12.png": "2c6b8be1",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen13.png": "a9c392b7",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen14.png": "fda80c3c",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen15.png": "6c62e825",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen16.png": "b0461518",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen17.png": "1ea04573",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen18.png": "fffeaa92",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen19.png": "777157b6",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen2.png": "2ce09378",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen20.png": "4901d7e8",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen21.png": "7cef6e16",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen22.png": "a0639d25",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen23.png": "12b31051",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen24.png": "186e451a",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen25.png": "a9794cb5",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen26.png": "951ae76c",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen27.png": "e53694e2",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen28.png": "12e52f19",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen29.png": "799f05c5",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen3.png": "5a8ddca2",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen30.png": "68119055",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen31.png": "f7b482e1",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen32.png": "543ed9fb",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen33.png": "c7cba0bb",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen34.png": "037b8c83",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen35.png": "71538f9a",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen36.png": "6ddc82d6",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen37.png": "d14c8eef",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen38.png": "4ea92209",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen39.png": "38fdb943",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen4.png": "2c3c5135",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen40.png": "375ad3f2",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen41.png": "a8b7030e",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen42.png": "a3328d5c",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen43.png": "90d17538",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen44.png": "ee34041d",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen45.png": "57cfa910",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen46.png": "60b05bcf",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen47.png": "3498b0d2",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen48.png": "1816242a",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen49.png": "4535e2b4",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen5.png": "954cc0b2",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen50.png": "83c4af82",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen51.png": "e4096f33",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen52.png": "55a80728",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen53.png": "d5d41ad3",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen54.png": "35702c77",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen55.png": "bb6d2f8c",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen56.png": "bba371b0",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen57.png": "7dc213b9",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen58.png": "efd408cd",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen59.png": "c9a49198",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen6.png": "a262b8d2",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen60.png": "7e35bce9",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen61.png": "ec3d36f2",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen62.png": "7b1c0bfc",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen63.png": "09e47a13",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen64.png": "5c414d3d",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen65.png": "8c3c5068",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen66.png": "1adfdfbb",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen67.png": "1184f825",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen68.png": "bb4d6560",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen69.png": "1c31c2a2",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen7.png": "42facec2",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen70.png": "f3ca7cd5",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen71.png": "e8a99073",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen72.png": "1fbb7738",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen73.png": "c9e79bf1",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen74.png": "4f4d3c16",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen75.png": "59d15f77",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen76.png": "1ad9d057",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen77.png": "2aa67d2f",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen78.png": "a408e06c",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen79.png": "53fc95b4",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen8.png": "107a9160",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen80.png": "1e7c4659",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen81.png": "7cc2b042",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen82.png": "52b69f64",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen83.png": "1ce94e34",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen84.png": "b8d03d8b",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen85.jpg": "8d0e0736",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen86.jpg": "7b1c0bfc",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen87.jpg": "b92ce880",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen88.jpg": "e4717160",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen89.jpg": "7f58558f",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen9.png": "2ff4960b",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen90.jpg": "5c903311",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen91.jpg": "5b792ca2",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen92.jpg": "656ea4ee",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen93.jpg": "0ca6cfb3",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen94.jpg": "761214be",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen95.jpg": "27f7cd34",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen96.jpg": "ddae1144",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen97.jpg": "ef3d99fd",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen98.jpg": "7a00a86e",
+    "fotos-paginas/11b-pines-que-te-dedico/imagen99.jpg": "6f2b20b2",
+    "fotos-paginas/13-mi-norte/imagen1.jpg": "b53e4977",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen1.png": "f7b482e1",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen10.png": "375ad3f2",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen11.png": "a8b7030e",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen12.png": "a3328d5c",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen13.png": "90d17538",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen14.png": "ee34041d",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen15.png": "57cfa910",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen16.png": "1816242a",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen2.png": "543ed9fb",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen3.png": "c7cba0bb",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen4.png": "037b8c83",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen5.png": "71538f9a",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen6.png": "6ddc82d6",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen7.png": "d14c8eef",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen8.png": "4ea92209",
+    "fotos-paginas/14-todo-lo-que-guardo/imagen9.png": "38fdb943",
+    "fotos-paginas/18-otra-postal/imagen1.jpg": "85ed0c83",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen1.png": "1184f825",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen2.png": "bb4d6560",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen3.png": "1c31c2a2",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen4.png": "f3ca7cd5",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen5.png": "e8a99073",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen6.png": "1fbb7738",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen7.png": "c9e79bf1",
+    "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen8.png": "4f4d3c16",
+    "fotos-paginas/27-no-se-me-pasa/imagen1.png": "59d15f77",
+    "fotos-paginas/27-no-se-me-pasa/imagen2.png": "1ad9d057",
+    "fotos-paginas/27-no-se-me-pasa/imagen3.png": "2aa67d2f",
+    "fotos-paginas/27-no-se-me-pasa/imagen4.png": "a408e06c",
+    "fotos-paginas/27-no-se-me-pasa/imagen5.png": "53fc95b4",
+    "fotos-paginas/27-no-se-me-pasa/imagen6.png": "1e7c4659"
+  }
 };

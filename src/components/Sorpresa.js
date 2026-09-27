@@ -10,6 +10,7 @@ import { el, setVars } from "../utils/dom.js";
 import { seeded } from "../utils/rng.js";
 import sorpresas from "../data/sorpresas.js";
 import contenido from "../data/contenido.js";
+import { conHuella } from "../data/huella.js";
 
 const ORDEN = Object.keys(sorpresas);
 const TIPOS = ["estrella", "triple", "mantener", "esquina", "tamborilea"];
@@ -147,7 +148,7 @@ function mostrar(page, def, x, y) {
   const img = el("div.sorpresa__img");
   if (archivo) {
     img.classList.add("con-foto");
-    img.style.backgroundImage = `url("sorpresas/${encodeURIComponent(archivo)}")`;
+    img.style.backgroundImage = `url("sorpresas/${encodeURIComponent(archivo)}${conHuella(`sorpresas/${archivo}`)}")`;
   } else {
     const [principal, ...resto] = def.escena;
     img.append(el("span.sorpresa__main", { text: principal }));

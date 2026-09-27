@@ -27,6 +27,7 @@
 
 import textos from "../pages/amor/textos.js";
 import contenido from "./contenido.js";
+import { conHuella } from "./huella.js";
 
 /** Dónde busca. */
 export const CARPETA = "images/amores/";
@@ -135,7 +136,7 @@ export async function descubrirAmores() {
   // saber sus medidas): cero 404.
   if (Array.isArray(contenido?.amores)) {
     const medidas = await Promise.all(
-      contenido.amores.map((f) => probar(CARPETA + encodeURIComponent(f.archivo)))
+      contenido.amores.map((f) => probar(CARPETA + encodeURIComponent(f.archivo) + conHuella(CARPETA + f.archivo)))
     );
     return contenido.amores
       .map((f, i) => medidas[i] && { numero: f.numero, src: medidas[i].ruta, w: medidas[i].w, h: medidas[i].h })

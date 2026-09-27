@@ -159,7 +159,10 @@ export class UI {
     this.temaBtn = qs('[data-role="tema"]', this.bar);
     this.secretsEl = qs('[data-role="secrets"]', this.bar);
 
-    if (this.ctx.store.get("musicOn") !== false) this.musicBtn.classList.add("is-on");
+    if (this.ctx.store.get("musicOn") !== false) {
+      this.musicBtn.classList.add("is-on");
+      this.musicBtn.innerHTML = "♬";
+    }
     this.#pintarTema();
     return this.bar;
   }

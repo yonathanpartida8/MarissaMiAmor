@@ -14,6 +14,7 @@
 
 import { resolverPaleta } from "./paletas.js";
 import contenido from "./contenido.js";
+import { conHuella } from "./huella.js";
 
 /**
  * Título para un archivo suelto. Los nombres que pone el móvil
@@ -130,7 +131,7 @@ function toPhotos(value) {
   return list
     .map((src) => String(src).trim())
     .filter(Boolean)
-    .map((src, i) => ({ id: `mio-${i}-${src}`, src, custom: true }));
+    .map((src, i) => ({ id: `mio-${i}-${src}`, src: src + (src.includes("?") ? "" : conHuella(src)), custom: true }));
 }
 
 /**

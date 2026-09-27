@@ -36,7 +36,10 @@ function esCodigo(url) {
       || url.pathname.endsWith("/");
 }
 
-const VERSION = "marissa-v1";
+/* Cambiar este nombre tira TODO lo guardado en los teléfonos la próxima
+   vez que abran el libro. Se subió a v2 porque la copia vieja seguía
+   enseñando las fotos de antes aunque ya se hubieran cambiado. */
+const VERSION = "marissa-v2";
 const ESENCIALES = [
   "./",
   "./index.html",
@@ -98,18 +101,61 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
+  /* ── LOS TROZOS (audio y vídeo) ──────────────────────────────────
+     Los reproductores piden la canción a pedazos («Range»). Si se les
+     contesta con el archivo ENTERO guardado, Safari no lo acepta y la
+     música no suena: era uno de los «a veces no se reproduce». Los
+     pedazos van a la red; sin red, se recortan de la copia guardada. */
+  if (req.headers.has("range")) {
+    e.respondWith(
+      fetch(req).catch(async () => {
+        const guardada = await caches.match(req.url, { ignoreVary: true });
+        return guardada ? recortar(guardada, req.headers.get("range")) : Response.error();
+      }),
+    );
+    return;
+  }
+
+  /* ── LO DEMÁS (fotos, sonidos enteros) ───────────────────────────
+     Se enseña lo guardado al instante y, de fondo, se pregunta a la red
+     por si cambió: la próxima vez ya sale lo nuevo. Las fotos del libro
+     además llevan su huella en la dirección (`?v=…`), así que una foto
+     cambiada ni siquiera espera: es otra dirección. */
   e.respondWith(
-    caches.match(req).then((guardada) => {
-      if (guardada) return guardada;
-      return fetch(req).then((r) => {
-        /* Sólo se guarda lo que ha ido bien. Guardar un 404 es guardar
-           el error para siempre. */
-        if (r && r.ok && r.type === "basic") {
-          const copia = r.clone();
-          caches.open(VERSION).then((c) => c.put(req, copia)).catch(() => {});
-        }
+    caches.open(VERSION).then(async (c) => {
+      const guardada = await c.match(req);
+      const red = fetch(req).then((r) => {
+        /* Sólo se guarda lo que ha ido bien, y entero. Guardar un 404 es
+           guardar el error para siempre, y un trozo no se puede guardar. */
+        if (r && r.status === 200 && r.type === "basic") c.put(req, r.clone()).catch(() => {});
         return r;
-      }).catch(() => guardada);
+      }).catch(() => null);
+      if (guardada) {
+        e.waitUntil(red);
+        return guardada;
+      }
+      return (await red) || Response.error();
     }),
   );
 });
+
+/** Un pedazo (206) sacado de una respuesta entera guardada. */
+async function recortar(resp, rango) {
+  const datos = await resp.arrayBuffer();
+  const total = datos.byteLength;
+  const m = /bytes=(\d*)-(\d*)/.exec(rango || "");
+  let ini = m && m[1] ? Number(m[1]) : 0;
+  let fin = m && m[2] ? Number(m[2]) : total - 1;
+  if (m && !m[1] && m[2]) { ini = Math.max(0, total - Number(m[2])); fin = total - 1; }
+  fin = Math.min(fin, total - 1);
+  if (ini > fin) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${total}` } });
+  return new Response(datos.slice(ini, fin + 1), {
+    status: 206,
+    headers: {
+      "Content-Type": resp.headers.get("Content-Type") || "application/octet-stream",
+      "Content-Range": `bytes ${ini}-${fin}/${total}`,
+      "Content-Length": String(fin - ini + 1),
+      "Accept-Ranges": "bytes",
+    },
+  });
+}
