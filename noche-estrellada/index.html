@@ -647,20 +647,27 @@ html, body {
   right: calc(var(--seguro-r, 0px) + 14px);
   top: calc(var(--seguro-t) + 14px);
   z-index: 22;
-  display: flex; align-items: center; gap: 6px;
-  height: 36px; padding: 0 12px 0 10px;
-  border: 1px solid rgba(190, 205, 255, 0.22);
-  border-radius: 18px;
-  background: rgba(12, 16, 30, 0.76);
-  color: #dfe6ff;
-  font: 600 0.62rem/1 var(--tipo-ui, system-ui, sans-serif);
+  display: flex; align-items: center; gap: 7px;
+  height: 46px; padding: 0 15px 0 12px;
+  border: 1px solid rgba(255, 200, 140, 0.35);
+  border-radius: 23px;
+  background: linear-gradient(180deg, rgba(34, 30, 48, 0.86), rgba(14, 16, 30, 0.86));
+  box-shadow: 0 8px 22px -10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: #ffe6c8;
+  font: 600 0.72rem/1 var(--tipo-ui, system-ui, sans-serif);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   cursor: pointer;
   opacity: 0; visibility: hidden;
   transition: opacity 700ms var(--e-suave), visibility 700ms, background 300ms, border-color 300ms;
 }
-.noche .ne-sonidos-ico { font-size: 1rem; letter-spacing: 0; }
+.noche .ne-sonidos-ico { display: grid; place-items: center; letter-spacing: 0; }
+.noche .ne-sonidos-ico svg { display: block; }
+.noche .ne-sonidos-flecha { font-size: 1rem; line-height: 0.6; transition: transform 400ms var(--e-suave); }
+.noche .ne-sonidos[aria-pressed="true"] .ne-sonidos-flecha { transform: rotate(180deg); }
+.noche .ne-sonidos[aria-pressed="true"] .ne-onda1 { animation: ne-onda 1.6s ease-in-out infinite; }
+.noche .ne-sonidos[aria-pressed="true"] .ne-onda2 { animation: ne-onda 1.6s ease-in-out 0.25s infinite; }
+@keyframes ne-onda { 50% { opacity: 0.25; } }
 .noche.is-dentro:not(.is-espesura):not(.is-habitacion):not(.is-durmiendo) .ne-sonidos { opacity: 1; visibility: visible; }
 .noche .ne-sonidos[aria-pressed="true"] { background: rgba(255, 170, 90, 0.22); border-color: rgba(255, 190, 120, 0.5); }
 /* Hasta que se usa por primera vez, late un poquito: está ahí. */
@@ -796,7 +803,9 @@ html, body {
   <!-- Saca y esconde la fila de sonidos. Arriba a la derecha, lejos de
        los botones del librito, que van abajo. -->
   <button class="ne-sonidos" id="btnSonidos" type="button" aria-label="Mostrar los sonidos" aria-pressed="false">
-    <span class="ne-sonidos-ico">♫</span><span class="ne-sonidos-txt">sonidos</span>
+    <span class="ne-sonidos-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 9.5h3.2L12 5.6v12.8L7.2 14.5H4z" fill="currentColor"/><path class="ne-onda1" d="M15.2 9.2a4 4 0 0 1 0 5.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="ne-onda2" d="M17.8 6.8a7.4 7.4 0 0 1 0 10.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </span><span class="ne-sonidos-txt">sonidos</span><span class="ne-sonidos-flecha" aria-hidden="true">⌄</span>
   </button>
 
   <button class="ne-volver" id="volver" type="button" aria-label="Regresar al bosque">‹</button>
@@ -972,14 +981,19 @@ const CONF = {
      `carpeta` es la carpeta propia de cada sonido dentro de `sonidos/`:
      lo que dejes ahí (uno o varios .mp3) es lo que suena. */
   ambientes: [
-    { id: "fogata",     carpeta: "fogata",   icono: "🔥", nombre: "Fogata",   on: true,  vol: 0.55, color: "#ff9a4a" },
-    { id: "grillos",    carpeta: "grillos",  icono: "🦗", nombre: "Grillos",  on: true,  vol: 0.40, color: "#9fe08a" },
-    { id: "buhos",      carpeta: "buhos",    icono: "🦉", nombre: "Búhos",    on: false, vol: 0.35, color: "#d8c89a" },
-    { id: "aire",       carpeta: "aire",     icono: "🌬️", nombre: "Aire",     on: true,  vol: 0.30, color: "#a8c8f0" },
-    { id: "bosque",     carpeta: "bosque",   icono: "🌲", nombre: "Bosque",   on: false, vol: 0.35, color: "#6fb88a" },
-    { id: "rio",        carpeta: "rio",      icono: "💧", nombre: "Río",      on: false, vol: 0.35, color: "#7ad0e0" },
-    { id: "lluvia",     carpeta: "lluvia",   icono: "🌧️", nombre: "Lluvia",   on: false, vol: 0.40, color: "#8fb4e0" },
-    { id: "relampagos", carpeta: "tormenta", icono: "⚡", nombre: "Tormenta", on: false, vol: 0.45, color: "#e0d08a" },
+    /* De inicio suenan TODOS los ambientes, en equilibrio: la fogata un
+       poco por delante (es lo que está más cerca) y lo demás de fondo.
+       La lluvia y la tormenta empiezan apagadas porque no son sólo un
+       sonido: encenderlas hace llover de verdad (y la lluvia apaga la
+       fogata) y trae relámpagos. */
+    { id: "fogata",     carpeta: "fogata",   icono: "🔥", nombre: "Fogata",   on: true,  vol: 0.46, color: "#ff9a4a" },
+    { id: "grillos",    carpeta: "grillos",  icono: "🦗", nombre: "Grillos",  on: true,  vol: 0.30, color: "#9fe08a" },
+    { id: "buhos",      carpeta: "buhos",    icono: "🦉", nombre: "Búhos",    on: true,  vol: 0.22, color: "#d8c89a" },
+    { id: "aire",       carpeta: "aire",     icono: "🌬️", nombre: "Aire",     on: true,  vol: 0.24, color: "#a8c8f0" },
+    { id: "bosque",     carpeta: "bosque",   icono: "🌲", nombre: "Bosque",   on: true,  vol: 0.26, color: "#6fb88a" },
+    { id: "rio",        carpeta: "rio",      icono: "💧", nombre: "Río",      on: true,  vol: 0.24, color: "#7ad0e0" },
+    { id: "lluvia",     carpeta: "lluvia",   icono: "🌧️", nombre: "Lluvia",   on: false, vol: 0.34, color: "#8fb4e0" },
+    { id: "relampagos", carpeta: "tormenta", icono: "⚡", nombre: "Tormenta", on: false, vol: 0.40, color: "#e0d08a" },
   ],
 
   /* Cuánto tardan los volúmenes en subir y bajar. Nunca de golpe: un
@@ -2489,21 +2503,201 @@ async function traerBuffer(ruta) {
     return null;
   }
   if (!despertarAudio()) return null;
-  try {
-    const r = await fetch(ruta);
-    if (!r.ok) throw new Error(String(r.status));
-    const datos = await r.arrayBuffer();
+  /* Los archivos LARGOS no se bajan enteros.
+     Un mp3 de diez minutos pesa 11 MB, pero descomprimido para tocarlo son
+     unos 200 MB de memoria: en un teléfono eso congela la página o la
+     cierra. De un ambiente basta con el primer minuto y medio (luego se
+     repite con fundido, ver `bucleSuave`), así que se pide sólo ese
+     trozo; los mp3 se pueden cortar por donde sea y se siguen leyendo. */
+  const TOPE = 1_800_000;
+  const decodificar = (datos) => new Promise((res, rej) => {
     /* Algunos navegadores viejos sólo tienen la forma con callbacks. */
-    const buf = await new Promise((res, rej) => {
-      const p = audio.ctx.decodeAudioData(datos, res, rej);
-      if (p && p.then) p.then(res, rej);
-    });
+    const p = audio.ctx.decodeAudioData(datos, res, rej);
+    if (p && p.then) p.then(res, rej);
+  });
+  try {
+    const r = await fetch(ruta, { headers: { Range: `bytes=0-${TOPE - 1}` } });
+    if (!r.ok) throw new Error(String(r.status));
+    let datos = await r.arrayBuffer();
+    const cortado = datos.byteLength > TOPE || r.status === 206;
+    if (datos.byteLength > TOPE) datos = datos.slice(0, TOPE);
+    let buf;
+    try {
+      buf = await decodificar(datos);
+    } catch (e) {
+      /* Si el navegador no sabe leer el trozo, se intenta entero (sólo si
+         no es enorme). */
+      if (!cortado) throw e;
+      const r2 = await fetch(ruta);
+      const todo = await r2.arrayBuffer();
+      if (todo.byteLength > 6_000_000) throw e;
+      buf = await decodificar(todo);
+    }
     audio.buffers.set(ruta, buf);
     return buf;
   } catch {
     audio.buffers.set(ruta, null);
     return null;
   }
+}
+
+/* ---- LOS ARCHIVOS PESADOS, EN STREAMING ----------------------------------
+   Un ambiente de diez minutos (o una canción entera) no se descomprime en
+   memoria: se toca con dos reproductores normales que se van turnando, y
+   cuando uno llega al final el otro entra con un fundido. Así no se oye
+   el corte y el teléfono no se ahoga. */
+const esPesado = (ruta) => !!(window.NOCHE_PESADOS && window.NOCHE_PESADOS[String(ruta).normalize("NFC")]);
+function cuandoToque(fn) {
+  const una = () => { window.removeEventListener("pointerdown", una, true); fn(); };
+  window.addEventListener("pointerdown", una, true);
+}
+function bucleStreaming(ruta, destino, { entrada = 0.8, cruce = 3, alFallar = null } = {}) {
+  const c = audio.ctx;
+  const bucle = { vivo: true, reloj: null, cruzando: false };
+  const nuevo = () => {
+    const el = new Audio();
+    el.preload = "auto";
+    el.src = ruta;
+    const g = c.createGain();
+    g.gain.value = 0;
+    try { c.createMediaElementSource(el).connect(g); } catch { /* ya conectado */ }
+    g.connect(destino);
+    return { el, g };
+  };
+  const a = nuevo(), b = nuevo();
+  let actual = a, otro = b;
+  bucle.els = [a.el, b.el];
+  const rampa = (p, a1, seg) => {
+    const t = c.currentTime;
+    p.g.gain.cancelScheduledValues(t);
+    p.g.gain.setValueAtTime(p.g.gain.value, t);
+    p.g.gain.linearRampToValueAtTime(a1, t + seg);
+  };
+  const tocar = (p, seg) => {
+    rampa(p, 1, seg);
+    const pr = p.el.play();
+    // Si el navegador no deja sonar todavía, suena al siguiente toque.
+    if (pr && pr.catch) pr.catch(() => cuandoToque(() => { if (bucle.vivo) p.el.play().catch(() => {}); }));
+  };
+  let fallado = false;
+  a.el.addEventListener("error", () => { if (!fallado) { fallado = true; bucle.stop(); alFallar?.(); } }, { once: true });
+  a.el.addEventListener("loadedmetadata", () => {
+    if (a.el.duration > 40) { try { a.el.currentTime = Math.random() * a.el.duration * 0.6; } catch { /* nada */ } }
+  }, { once: true });
+  tocar(a, entrada);
+  bucle.reloj = setInterval(() => {
+    if (!bucle.vivo || bucle.cruzando) return;
+    const el = actual.el;
+    if (el.duration && el.currentTime > el.duration - cruce - 0.4) {
+      bucle.cruzando = true;
+      try { otro.el.currentTime = 0; } catch { /* nada */ }
+      tocar(otro, cruce);
+      rampa(actual, 0, cruce);
+      const viejo = actual;
+      setTimeout(() => { viejo.el.pause(); bucle.cruzando = false; }, (cruce + 0.3) * 1000);
+      [actual, otro] = [otro, actual];
+    }
+  }, 250);
+  bucle.stop = (t) => {
+    bucle.vivo = false;
+    clearInterval(bucle.reloj);
+    const espera = t ? Math.max(0, (t - c.currentTime) * 1000) : 0;
+    setTimeout(() => {
+      for (const p of [a, b]) {
+        try { p.el.pause(); p.el.removeAttribute("src"); p.el.load(); } catch { /* nada */ }
+        try { p.g.disconnect(); } catch { /* nada */ }
+      }
+    }, espera);
+  };
+  return bucle;
+}
+
+/* ---- EL BUCLE SUAVE ------------------------------------------------------
+   Un ambiente en bucle sin que se note dónde empieza y dónde acaba.
+
+   Con `loop = true` a secas, al volver al principio se oye el salto: el
+   mp3 trae un silencio al final y otro al principio, y el sonido de un
+   lado no casa con el del otro. Aquí:
+     · se recortan esos silencios de los bordes;
+     · cada vuelta empieza ANTES de que acabe la anterior y las dos se
+       cruzan con un fundido de igual potencia (sin bajón a la mitad);
+     · la primera entra con un fundido rápido, nunca de golpe;
+     · y arranca en un punto al azar, para que no suene siempre igual. */
+function bordesUtiles(buf) {
+  const d = buf.getChannelData(0), sr = buf.sampleRate, n = d.length;
+  const umbral = 0.004;
+  let ini = 0, fin = n - 1;
+  while (ini < n && Math.abs(d[ini]) < umbral) ini++;
+  while (fin > ini && Math.abs(d[fin]) < umbral) fin--;
+  // Un pelín hacia dentro, por si el borde traía un chasquido.
+  ini = Math.min(n - 1, ini + Math.round(sr * 0.02));
+  fin = Math.max(ini + 1, fin - Math.round(sr * 0.06));
+  return [ini / sr, fin / sr];
+}
+const CURVA_ENTRA = new Float32Array(64).map((_, i) => Math.sin((i / 63) * Math.PI / 2));
+const CURVA_SALE = new Float32Array(64).map((_, i) => Math.cos((i / 63) * Math.PI / 2));
+
+/* Qué tan fuerte suena un archivo (su RMS). Los que tú subes vienen de
+   sitios distintos —uno grabado bajito, otro a tope— y así, con la misma
+   barra, sonarían descompensados. Se mide y se iguala a un nivel común. */
+function nivelDe(buf) {
+  if (buf.__nivel) return buf.__nivel;
+  const d = buf.getChannelData(0);
+  const paso = Math.max(1, Math.floor(d.length / 60000));
+  let suma = 0, n = 0;
+  for (let i = 0; i < d.length; i += paso) { suma += d[i] * d[i]; n++; }
+  buf.__nivel = Math.sqrt(suma / Math.max(1, n)) || 0.05;
+  return buf.__nivel;
+}
+const NIVEL_COMUN = 0.09;
+
+function bucleSuave(buf, destino, { entrada = 0.7, cruce = 2.4, igualar = true } = {}) {
+  const c = audio.ctx;
+  if (igualar) {
+    const k = Math.max(0.3, Math.min(3.2, NIVEL_COMUN / nivelDe(buf)));
+    const norm = c.createGain();
+    norm.gain.value = k;
+    norm.connect(destino);
+    destino = norm;
+  }
+  const [ini, fin] = bordesUtiles(buf);
+  const util = fin - ini;
+  const X = Math.max(0.05, Math.min(cruce, util * 0.3));
+  const bucle = { vivo: true, fuentes: new Set(), reloj: null };
+
+  const lanzar = (cuando, desde, fadeIn) => {
+    if (!bucle.vivo) return;
+    const dur = fin - desde;
+    const fi = Math.max(0.02, Math.min(fadeIn, dur * 0.4));
+    const s = c.createBufferSource();
+    s.buffer = buf;
+    const g = c.createGain();
+    g.gain.value = 0;
+    s.connect(g).connect(destino);
+    try {
+      g.gain.setValueCurveAtTime(CURVA_ENTRA, cuando, fi);
+      if (dur - X > fi + 0.01) g.gain.setValueCurveAtTime(CURVA_SALE, cuando + dur - X, X);
+    } catch {
+      g.gain.setValueAtTime(1, cuando + fi);
+    }
+    s.start(cuando, desde, dur);
+    bucle.fuentes.add(s);
+    s.onended = () => { bucle.fuentes.delete(s); try { g.disconnect(); } catch { /* ya */ } };
+    // La siguiente vuelta empieza cuando ésta empieza a irse.
+    const sig = cuando + dur - X;
+    const espera = Math.max(0, (sig - c.currentTime - 1.2) * 1000);
+    bucle.reloj = setTimeout(() => lanzar(Math.max(sig, c.currentTime + 0.02), ini, X), espera);
+  };
+
+  const desde = util > X * 4 ? ini + Math.random() * (util - X * 3) : ini;
+  lanzar(c.currentTime + 0.03, desde, entrada);
+
+  bucle.stop = (t) => {
+    bucle.vivo = false;
+    clearTimeout(bucle.reloj);
+    for (const s of bucle.fuentes) { try { s.stop(t); } catch { /* ya */ } }
+  };
+  return bucle;
 }
 
 /* ---- SONIDOS SUELTOS DEL JUGADOR ---------------------------------------
@@ -2886,15 +3080,21 @@ async function abrirCanal(id) {
      (`sonidos/grillos/`, `sonidos/tormenta/`…) y, si no hay nada ahí, en
      el nombre de siempre de `audio/`. */
   const ruta = rutaAmbiente(id);
+  const gemelo = () => {
+    if (!sintetizar[id]) return;
+    const nodo = sintetizar[id]();
+    nodo.connect(gain);
+    canal.fuente = nodo;
+    canal.sintetico = true;
+  };
+  if (ruta && esPesado(ruta)) {
+    canal.fuente = bucleStreaming(ruta, gain, { alFallar: gemelo });
+    return canal;
+  }
   const buf = ruta ? await traerBuffer(ruta) : null;
 
   if (buf) {
-    const src = audio.ctx.createBufferSource();
-    src.buffer = buf;
-    src.loop = true;
-    src.connect(gain);
-    src.start();
-    canal.fuente = src;
+    canal.fuente = bucleSuave(buf, gain);
   } else if (sintetizar[id]) {
     /* Y si no, el gemelo. */
     const nodo = sintetizar[id]();
@@ -5144,7 +5344,7 @@ const panel = {
   usado: false,
   /* Se esconde y se saca con el botón ♫ de arriba, para que la fila no
      se quede debajo de los botones del librito. `ver` va de 0 a 1. */
-  abierto: false,
+  abierto: true,
   ver: 0,
 };
 
@@ -5175,10 +5375,12 @@ const panel = {
 function medidaDeLaFila() {
   const n = CONF.ambientes.length;
   const hueco = huecoAbajo();
-  const maxFila = Math.min(A * 0.9, U * 62);
-  const sep = 1.18;                     // separación, en anchos de pastilla
-  const w = Math.min(U * 8.6, maxFila / (n * sep));
-  const h = w * 0.86;
+  /* Grandecitas: casi todo el ancho y poco hueco entre ellas. En un
+     teléfono salían de 25 px y había que atinarle con la uña. */
+  const maxFila = Math.min(A * 0.97, U * 96);
+  const sep = 1.07;                     // separación, en anchos de pastilla
+  const w = Math.min(U * 11.5, maxFila / (n * sep));
+  const h = w * 0.92;
   const paso = w * sep;
   const medio = paso * (n - 1) * 0.5;
   return {
@@ -5586,6 +5788,7 @@ function sincronizarClima() {
 const btnSonidos = document.getElementById("btnSonidos");
 function abrirPanelSonidos(abrir) {
   panel.abierto = abrir;
+  try { localStorage.setItem("noche-panel-cerrado", abrir ? "0" : "1"); } catch { /* nada */ }
   raiz.classList.toggle("is-panel-cerrado", !abrir);
   raiz.classList.add("is-sonidos-visto");
   btnSonidos.setAttribute("aria-pressed", String(abrir));
@@ -5593,7 +5796,11 @@ function abrirPanelSonidos(abrir) {
   tono(abrir ? 620 : 440, 0.25, "sine", 0.04);
 }
 btnSonidos.addEventListener("click", (e) => { e.stopPropagation(); despertarAudio(); abrirPanelSonidos(!panel.abierto); });
-raiz.classList.add("is-panel-cerrado");
+/* La primera vez la fila sale abierta, para que se vea que existe; el
+   botón de arriba la esconde (y se acuerda). */
+try { if (localStorage.getItem("noche-panel-cerrado") === "1") panel.abierto = false; } catch { /* nada */ }
+raiz.classList.toggle("is-panel-cerrado", !panel.abierto);
+btnSonidos.setAttribute("aria-pressed", String(panel.abierto));
 
 function marcarPanelUsado() {
   if (panel.usado) return;
@@ -5673,6 +5880,15 @@ async function abrirCajita() {
   cajita.gain.connect(audio.maestro);
   cajita.gain.gain.linearRampToValueAtTime(0.75, audio.ctx.currentTime + 1.4);
 
+  /* Si la canción pesa, en streaming: entera y sin cortarla. */
+  const hayN = window.NOCHE_ARCHIVOS;
+  const primera = [CONF.rutas.musica, ...(CONF.rutas.musicaTambien || [])]
+    .find((r) => !Array.isArray(hayN) || hayN.includes(String(r).normalize("NFC")));
+  const pesada = primera && esPesado(primera) ? primera : null;
+  if (pesada) {
+    cajita.fuente = bucleStreaming(pesada, cajita.gain, { entrada: 0.4, cruce: 1.5 });
+    return;
+  }
   /* Se prueban las rutas en orden y se coge la primera que exista. */
   let buf = null;
   for (const ruta of [CONF.rutas.musica, ...(CONF.rutas.musicaTambien || [])]) {
@@ -5683,12 +5899,7 @@ async function abrirCajita() {
   if (!cajita.abierta) return;                 // la cerró mientras cargaba
 
   if (buf) {
-    const src = audio.ctx.createBufferSource();
-    src.buffer = buf;
-    src.loop = true;
-    src.connect(cajita.gain);
-    src.start();
-    cajita.fuente = src;
+    cajita.fuente = bucleSuave(buf, cajita.gain, { entrada: 0.4, cruce: 1.2, igualar: false });
   } else {
     /* La nana, en bucle, programada por compases. */
     const negra = 60 / 82;
@@ -16355,13 +16566,8 @@ function dispararEscopeta(p) {
      encima el chasquido del cerrojo un pelín después. Los dos, o suena
      a globo. */
   sonarSuelto(CONF.rutas.sueltos.disparo, 0.85).then((ok) => {
-    if (ok) return;
-    golpe(0.2, 160, 0.42, "lowpass");
-    golpe(0.06, 900, 0.3, "bandpass");
+    if (!ok) estampido();
   });
-  /* Y el eco que regresa del bosque, más apagado. */
-  setTimeout(() => golpe(0.07, 140, 0.5, "lowpass"), 170);
-  setTimeout(() => golpe(0.035, 120, 0.6, "lowpass"), 390);
 
   /* ---- A qué le ha dado ----
      Al MÁS CERCANO de los que caen dentro del tiro, no al primero de la
@@ -16413,6 +16619,93 @@ function dispararEscopeta(p) {
 
   humoDeFallo(p);
   return true;
+}
+
+/* ---- EL ESTAMPIDO DE LA ESCOPETA -------------------------------------
+   Una escopeta no suena a «pum» de globo: son cuatro cosas casi a la vez.
+     1. el CHASQUIDO de la pólvora, brillante y cortísimo;
+     2. el BOMBAZO grave que se siente en el pecho;
+     3. la COLA de ruido que se va apagando, cada vez más oscura;
+     4. y el ECO del bosque que vuelve dos veces, más lejos.
+   Y un poquito después, el «chk-chk» de la corredera al recargar. */
+let bufEstampido = null;
+function estampido() {
+  if (!despertarAudio()) return;
+  const c = audio.ctx, t = c.currentTime;
+  if (!bufEstampido || bufEstampido.sampleRate !== c.sampleRate) {
+    const n = Math.floor(c.sampleRate * 1.6);
+    bufEstampido = c.createBuffer(1, n, c.sampleRate);
+    const d = bufEstampido.getChannelData(0);
+    let marron = 0;
+    for (let i = 0; i < n; i++) {
+      const k = i / c.sampleRate;
+      const blanco = Math.random() * 2 - 1;
+      marron = (marron + 0.04 * blanco) / 1.04;
+      // Ataque instantáneo y caída larga, con la cola más grave.
+      d[i] = blanco * Math.exp(-k * 38) * 0.9 + marron * 7 * Math.exp(-k * 4.2);
+    }
+  }
+  const mezcla = c.createGain();
+  mezcla.gain.value = 0.95;
+  const comp = c.createDynamicsCompressor();
+  comp.threshold.value = -10; comp.ratio.value = 4; comp.attack.value = 0.001; comp.release.value = 0.2;
+  mezcla.connect(comp).connect(audio.maestro);
+  // 1 + 3. El cuerpo del disparo: ruido con un filtro que se va cerrando.
+  const s = c.createBufferSource(); s.buffer = bufEstampido;
+  const lp = c.createBiquadFilter(); lp.type = "lowpass";
+  lp.frequency.setValueAtTime(7000, t); lp.frequency.exponentialRampToValueAtTime(420, t + 0.35); lp.frequency.exponentialRampToValueAtTime(160, t + 1.4);
+  const gs = c.createGain(); gs.gain.setValueAtTime(1, t); gs.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+  s.connect(lp).connect(gs).connect(mezcla); s.start(t);
+  // 2. El bombazo grave.
+  const o = c.createOscillator(), go = c.createGain();
+  o.type = "sine"; o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(38, t + 0.28);
+  go.gain.setValueAtTime(0.0001, t); go.gain.exponentialRampToValueAtTime(0.9, t + 0.004); go.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
+  o.connect(go).connect(mezcla); o.start(t); o.stop(t + 0.45);
+  // 4. El eco del bosque, dos veces, más lejos y más oscuro.
+  for (const [r, v, f] of [[0.23, 0.32, 900], [0.52, 0.16, 600]]) {
+    const e = c.createBufferSource(); e.buffer = bufEstampido;
+    const el = c.createBiquadFilter(); el.type = "lowpass"; el.frequency.value = f;
+    const eg = c.createGain(); eg.gain.value = v;
+    e.connect(el).connect(eg).connect(mezcla); e.start(t + r);
+  }
+  // Y la corredera: dos clics metálicos.
+  for (const [r, hz] of [[0.36, 2600], [0.47, 1900]]) {
+    const n2 = Math.floor(c.sampleRate * 0.03);
+    const b2 = c.createBuffer(1, n2, c.sampleRate), d2 = b2.getChannelData(0);
+    for (let i = 0; i < n2; i++) d2[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n2, 3);
+    const cl = c.createBufferSource(); cl.buffer = b2;
+    const bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = hz; bp.Q.value = 6;
+    const cg = c.createGain(); cg.gain.value = 0.5;
+    cl.connect(bp).connect(cg).connect(audio.maestro); cl.start(t + r);
+  }
+}
+
+/* ---- EL SONIDO DE ELIMINAR UN BÚHO (o lo que sea) --------------------
+   No es un golpe: es un «puf» de magia. Un soplo que se abre, unas
+   campanitas que caen en cascada y un brillo agudo que se apaga. El
+   `tono` cambia un poco con cada uno, para que una racha suene a música. */
+let rachaCaza = 0, ultimaCaza = 0;
+function sonidoEliminar(grande = false) {
+  if (!despertarAudio()) return;
+  const c = audio.ctx, t = c.currentTime;
+  const ahora = performance.now();
+  rachaCaza = ahora - ultimaCaza < 1400 ? Math.min(rachaCaza + 1, 7) : 0;
+  ultimaCaza = ahora;
+  // El soplo que se abre.
+  const n = Math.floor(c.sampleRate * 0.5);
+  const b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.2);
+  const s = c.createBufferSource(); s.buffer = b;
+  const bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = 1.4;
+  bp.frequency.setValueAtTime(500, t); bp.frequency.exponentialRampToValueAtTime(3800, t + 0.35);
+  const gs = c.createGain(); gs.gain.value = grande ? 0.5 : 0.32;
+  s.connect(bp).connect(gs).connect(audio.maestro); s.start(t);
+  // Las campanitas, más agudas cuanto más larga la racha.
+  const base = 660 * Math.pow(2, rachaCaza / 12 * 2);
+  [0, 4, 7, 12, 16].forEach((st, i) => tono(base * Math.pow(2, st / 12), 0.9 - i * 0.1, "triangle", grande ? 0.07 : 0.05, 0.04 + i * 0.05));
+  // El brillo final.
+  tono(base * 4, 0.5, "sine", 0.025, 0.28);
+  if (grande) { golpe(0.4, 90, 0.35, "lowpass"); tono(base / 2, 1.6, "sine", 0.06, 0.05); }
 }
 
 /** Cuando no le da a nada: un poco de humo y hojas, para que se note. */
@@ -16476,8 +16769,7 @@ function reventarBuho(o) {
     });
   }
 
-  magia(azar(520, 700));
-  golpe(0.1, 300, 0.2, "lowpass");
+  sonidoEliminar(false);
 }
 
 
@@ -16706,8 +16998,10 @@ function herirJefe() {
   jefe.vida--;
   jefe.dolor = 1;
   sacudir(0.5);
-  magia(azar(320, 420));
-  golpe(0.1, 240, 0.2, "lowpass");
+  /* Un golpe que se nota: el quejido grave del grandote y un destello. */
+  golpe(0.18, 180, 0.34, "lowpass");
+  tono(azar(140, 170), 0.35, "sawtooth", 0.05);
+  tono(azar(620, 760), 0.4, "triangle", 0.045, 0.05);
   for (let i = 0; i < (flojo ? 6 : 16); i++) {
     const a = azar(0, 6.283);
     soltar(jefe.x, jefe.y, {
@@ -16728,8 +17022,9 @@ function matarJefe() {
   jefe.vivo = false;
   jefe.bolas.length = 0;
   sacudir(2);
-  magia(659);
-  golpe(0.3, 120, 0.5, "lowpass");
+  sonidoEliminar(true);
+  setTimeout(() => sonidoEliminar(true), 260);
+  setTimeout(() => sonidoEliminar(true), 540);
   /* Revienta en grande: el mismo lenguaje que los búhos, a lo bestia. */
   for (let k = 0; k < 3; k++) {
     setTimeout(() => {

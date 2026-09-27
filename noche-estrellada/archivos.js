@@ -14,3 +14,8 @@ window.NOCHE_ARCHIVOS = [
   "sonidos/rio/Sonido de río relajante_ alivio de acúfenos y tinnitus(MP3_160K).mp3",
   "sonidos/tormenta/Sonidos de Truenos(MP3_160K).mp3"
 ];
+// Los que pesan más de 3 MB (se reproducen en streaming, no se cargan enteros).
+window.NOCHE_PESADOS = {
+  "../assets/audio/musica.mp3": 5165704,
+  "sonidos/bosque/aire.mp3": 11264518
+};

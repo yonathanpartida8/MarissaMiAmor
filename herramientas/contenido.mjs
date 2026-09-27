@@ -10,7 +10,7 @@
  *
  * En GitHub se ejecuta solo a cada subida (`.github/workflows/contenido.yml`).
  */
-import { readdirSync, existsSync, writeFileSync, readFileSync } from "node:fs";
+import { readdirSync, existsSync, writeFileSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const RAIZ = new URL("..", import.meta.url).pathname;
@@ -148,6 +148,13 @@ const archivosNoche = [
   ...recorrer("noche-estrellada").filter((f) => SONIDO.test(f)),
   ...leer("assets/audio").filter((f) => SONIDO.test(f)).map((f) => `../assets/audio/${f}`),
 ].map(nfc).sort();
+// Y cuánto pesa cada uno: los largos (más de 3 MB) la noche no los carga
+// enteros en memoria, los reproduce en streaming.
+const pesosNoche = Object.fromEntries(
+  archivosNoche.map((r) => {
+    try { return [r, statSync(join(RAIZ, "noche-estrellada", r)).size]; } catch { return [r, 0]; }
+  }).filter(([, t]) => t > 3_000_000)
+);
 // Lo que las páginas HTML pueden hacer sonar, visto desde `paginas-html/`.
 const desdePaginas = (r) => (r ? encodeURI(r.startsWith("paginas-html/") ? r.slice(13) : `../${r}`) : null);
 const archivosPaginas = {
@@ -164,7 +171,9 @@ const SALIDAS = {
     `window.LIBRO_ARCHIVOS = ${JSON.stringify(archivosPaginas, null, 2)};\n`,
   "noche-estrellada/archivos.js":
     "// GENERADO por `node herramientas/contenido.mjs`: los sonidos que existen.\n" +
-    `window.NOCHE_ARCHIVOS = ${JSON.stringify(archivosNoche, null, 2)};\n`,
+    `window.NOCHE_ARCHIVOS = ${JSON.stringify(archivosNoche, null, 2)};\n` +
+    "// Los que pesan más de 3 MB (se reproducen en streaming, no se cargan enteros).\n" +
+    `window.NOCHE_PESADOS = ${JSON.stringify(pesosNoche, null, 2)};\n`,
   "src/data/contenido.js":
     "// GENERADO: no se edita a mano. Lo rehace `node herramientas/contenido.mjs`\n" +
     "// y, en GitHub, la acción `.github/workflows/contenido.yml` a cada subida.\n" +
