@@ -5,5 +5,6 @@ window.NOCHE_ARCHIVOS = [
   "../assets/audio/musicaa.mp3",
   "../assets/audio/musiyyca.mp3",
   "../assets/audio/sonido.mp3",
-  "musica.mp3"
+  "musica.mp3",
+  "sonidos/aire/aire.mp3"
 ];
