@@ -255,9 +255,7 @@ export default {
     "12-solo-tu-sabes-abrirlo": [
       "imagen1.png"
     ],
-    "13-mi-norte": [
-      "imagen1.png"
-    ],
+    "13-mi-norte": [],
     "14-todo-lo-que-guardo": [
       "imagen1.png",
       "imagen2.png",
