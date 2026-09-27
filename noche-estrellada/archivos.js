@@ -6,6 +6,7 @@ window.NOCHE_ARCHIVOS = [
   "../assets/audio/musiyyca.mp3",
   "../assets/audio/sonido.mp3",
   "musica.mp3",
+  "sonidos/aire/the sound of the wind(MP3_160K).mp3",
   "sonidos/bosque/aire.mp3",
   "sonidos/buhos/SONIDO DE BUHO 🦉(MP3_160K).mp3",
   "sonidos/fogata/CHIMENEA NAVIDEÑA 4K 🔥 Fuego para Dormir_ Relajarse y Ambiente Acogedor _ 3 HORAS(MP3_160K).mp3",
