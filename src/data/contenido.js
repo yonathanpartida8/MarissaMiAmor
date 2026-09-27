@@ -125,7 +125,8 @@ export default {
   ],
   "amores": [],
   "misVideos": [
-    "VID-20260915-WA0017.mp4"
+    "VID-20260915-WA0017.mp4",
+    "video.mp4"
   ],
   "misFotos": [],
   "icono": "icono/icono.png",
