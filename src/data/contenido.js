@@ -166,18 +166,6 @@ export default {
     "10-contigo-me-caigo-mejor": [
       "imagen1.png"
     ],
-    "11-pines-que-me-recordaron-a-ti": [
-      "imagen1.png",
-      "imagen2.png",
-      "imagen3.png",
-      "imagen4.png",
-      "imagen5.png",
-      "imagen6.png",
-      "imagen7.png",
-      "imagen8.png",
-      "imagen9.png",
-      "imagen10.png"
-    ],
     "11b-pines-que-te-dedico": [],
     "12-solo-tu-sabes-abrirlo": [
       "imagen1.png"
