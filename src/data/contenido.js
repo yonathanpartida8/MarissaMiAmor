@@ -139,7 +139,9 @@ export default {
     "03-lo-que-no-te-dije-ese-dia": [
       "imagen1.png"
     ],
-    "04-postal-desde-aqui": [],
+    "04-postal-desde-aqui": [
+      "imagen1.png"
+    ],
     "05-como-dices-mi-nombre": [
       "imagen1.png"
     ],
