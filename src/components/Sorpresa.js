@@ -23,7 +23,7 @@ function pista(tipo, lado) {
     case "triple": return "psst… toca tres veces el título";
     case "mantener": return "psst… deja el dedo quietito sobre las letras de arriba";
     case "esquina": return `psst… toca tres veces la esquina de arriba a la ${lado}`;
-    default: return "psst… tamborilea cinco veces rapidito sobre la página";
+    default: return "psst… toca cinco veces rapidito el título";
   }
 }
 
@@ -38,7 +38,7 @@ export function montarSorpresa(page) {
   const titulo = root.querySelector("h1, h2, .title, [class*='__title'], [class*='titulo']");
   const letras = root.querySelector(".kicker, [class*='kicker']") || titulo;
   let tipo = TIPOS[orden % TIPOS.length];
-  if ((tipo === "triple" && !titulo) || (tipo === "mantener" && !letras)) tipo = "estrella";
+  if ((tipo === "triple" && !titulo) || (tipo === "mantener" && !letras) || (tipo === "tamborilea" && !titulo)) tipo = "estrella";
   const lado = orden % 2 ? "izquierda" : "derecha";
 
   let hecha = false;
@@ -60,16 +60,39 @@ export function montarSorpresa(page) {
   if (tipo === "estrella") {
     const glifo = GLIFOS[orden % GLIFOS.length];
     const btn = el("button.sorpresa-estrella", { type: "button", "aria-label": "Algo brilla aquí", text: glifo });
+    /* ARRIBA, junto al título, y no en medio de la página.
+       Antes caía al azar sobre el contenido, y como es un botón, se
+       quedaba con el toque: tocabas un pétalo, un reloj o una foto que
+       había debajo y en vez de eso salía la sorpresa con sus corazones. */
     setVars(btn, {
-      "--x": `${rng.range(10, 84).toFixed(1)}%`,
-      "--y": `${rng.range(16, 66).toFixed(1)}%`,
+      "--x": `${rng.range(72, 90).toFixed(1)}%`,
+      "--y": `${rng.range(7.5, 12).toFixed(1)}%`,
       "--r": `${rng.range(-25, 25).toFixed(0)}deg`,
     });
     root.append(btn);
     page.track(() => btn.remove());
-    page.on(btn, "click", (e) => {
+    /* La estrellita NO se queda con el toque (pointer-events: none): lo
+       que hay debajo —un lienzo, una foto, un cristal— lo recibe igual.
+       Aquí sólo se mira, desde fuera, si el toque cayó encima de ella. */
+    let abajo = null;
+    page.on(root, "pointerdown", (e) => {
+      const r = btn.getBoundingClientRect();
+      const cerca = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2)) < 22;
+      abajo = cerca ? { x: e.clientX, y: e.clientY, t: performance.now() } : null;
+    }, opts);
+    page.on(root, "pointerup", (e) => {
+      const a = abajo;
+      abajo = null;
+      if (!a || performance.now() - a.t > 450 || Math.hypot(e.clientX - a.x, e.clientY - a.y) > 12) return;
       btn.classList.add("is-hallada");
       revelar(e.clientX, e.clientY);
+    }, opts);
+    // Con teclado sigue siendo un botón.
+    page.on(btn, "click", (e) => {
+      if (e.detail !== 0) return;
+      btn.classList.add("is-hallada");
+      const r = btn.getBoundingClientRect();
+      revelar(r.left + r.width / 2, r.top + r.height / 2);
     });
   } else if (tipo === "triple") {
     const tres = toques(3, 900);
@@ -97,8 +120,11 @@ export function montarSorpresa(page) {
       if (enX && e.clientY < r.top + 110 && tres()) revelar(e.clientX, e.clientY);
     }, opts);
   } else {
+    /* Cinco toques rapiditos, pero EN EL TÍTULO. En toda la página se
+       disparaba sola en las páginas donde se toca rápido (las burbujas,
+       las grullas, el pulso) y tapaba lo que ella estaba haciendo. */
     const cinco = toques(5, 1700);
-    page.on(root, "pointerdown", (e) => cinco() && revelar(e.clientX, e.clientY), opts);
+    page.on(titulo, "pointerdown", (e) => cinco() && revelar(e.clientX, e.clientY), opts);
   }
 
   // Una pista, una sola vez por página y por visita al libro.

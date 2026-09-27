@@ -195,12 +195,12 @@ archivo y sin descargar nada de fuera.
 | `página.html2.html` | **El rincón de arena.** Una playa en perspectiva que se excava con una palita. Once cosas enterradas, cartas que se abren y una llave con su código. |
 | `página.html3.html` | **El hilo rojo.** Dos bolitas unidas por un listón, escribiéndose cartas. Se arrastran, se resisten a juntarse, y al conseguirlo el listón hace un corazón. |
 | `página.html4.html` | **Un jardín para ti.** Se toca la tierra y crece una flor. Cada una guarda una frase. Si plantas bastantes, cae la noche. |
-| `página.html5.html` | **El vaho.** Una mano invisible escribe en el cristal empañado los cinco lugares, uno por uno; se limpia con el dedo. |
+| `página.html5.html` | **El vaho.** Una mano invisible escribe en el cristal empañado los cinco lugares y, después, 20 piropos para subirle la autoestima (el botón ♡ va directo a ellos); se limpia con el dedo. Se editan en `LUGARES` y `PIROPOS`. |
 | `página.html6.html` | **Las constelaciones.** Se unen estrellas arrastrando y aparece una figura con lo que significa. |
 | `página.html7.html` | **La caja de música.** Papel moteado arriba, terciopelo rojo abajo, marco plateado y un reloj. Se le da cuerda y suena `ojos.mp3`; las agujas recorren la canción. |
-| `página.html8.html` | **Mil grullas.** Cada toque dobla una y se va volando. Mil y se concede un deseo. |
-| `página.html9.html` | **Las luciérnagas.** Se juntan en enjambre alrededor del dedo quieto y, al soltar, estallan en un corazón de luz. |
-| `página.html10.html` | **Tira una piedra.** Rebota en el lago y escribe con luz «Te amo» o «Siempre tuyo». |
+| `página.html8.html` | **Mil grullas.** Cada toque dobla un papelito que despega como grulla; tocar una en el aire suelta corazones; cada cien, una guirnalda en los bordes; a las mil, un corazón gigante de grullas. |
+| `página.html9.html` | **Las luciérnagas.** Se juntan en enjambre alrededor del dedo quieto y, al soltar, estallan en un corazón de luz. Si estallan sobre la luna, la luna revienta con estruendo y se vuelve a armar sola. Doble toque: escriben «te amo». |
+| `página.html10.html` | **Tira una piedra.** Rebota en el lago y, al hundirse, escribe con luz una palabra (sus ojos, su sonrisa, su cuerpo…) y debajo su piropo. Se editan en `DESEOS`. |
 | `página.html11.html` | **Las polaroids.** Seis fotos sin revelar que se frotan con el dedo: las fotos que todavía nos debemos. |
 | `página.html12.html` | **El tren de noche.** Pasa otro tren seguido, la ventanilla se empaña y se aclara, y se puede escribir en el vaho. |
 | `página.html13.html` | **Los globos.** Un atardecer sobre el pueblo: mantienes el dedo y el globo se infla; lo sueltas y se va con su deseo. Hay globos de corazón, y si tocas uno en el aire revienta en confeti. |
@@ -210,7 +210,7 @@ archivo y sin descargar nada de fuera.
 | `página.html17.html` | **Toca un alfiler.** Un mapa con cinco alfileres (donde te vi, el primer contacto, el 23 de agosto, el primer beso y el futuro); cada uno abre su momento y el camino se va entintando. |
 | `página.html18.html` | **El caleidoscopio.** Se gira con el dedo o inclinando el teléfono; cada vuelta suelta un piropo. |
 | `página.html19.html` | **El árbol de las estaciones.** Se arrastra de lado y pasa el año entero encima del mismo árbol. |
-| `página.html20.html` | **La cometa.** Con física de verdad: cuerda, cola y viento. |
+| `página.html20.html` | **La cometa.** Con física de verdad: cuerda, cola, viento y una banderita «te amo». Responde a inclinar y sacudir el teléfono, y con el botón 🌬️ se sopla al micrófono de verdad. |
 | `página.html21.html` | **El reloj.** De péndulo, con la hora real; cada hora sale un corazón por la puertita. |
 | `página.html22.html` | **Rompe el lacre.** El sello se agrieta y salta en pedazos; la carta se despliega pliegue a pliegue. |
 | `página.html23.html` | **El café.** La leche se vierte con fluidos de verdad y se dibuja con el dedo. |
@@ -218,7 +218,7 @@ archivo y sin descargar nada de fuera.
 | `página.html25.html` | **Baja despacio.** Se baja al fondo del mar entre medusas; cuanto más hondo, menos luz. |
 | `página.html26.html` | **Enciende las luces.** Una calle entera que se recorre deslizando: 83 escenas, una distinta en cada ventana y ninguna vacía, con lo que le voy diciendo a ella (cambia de frase cada vez que la vuelves a prender), y cosas que pasan en la calle y en el cielo. |
 | `página.html27.html` | **Sigue los puntos.** Un bastidor: se borda siguiendo los puntos y al terminar florece. |
-| `página.html28.html` | **Cuenta hasta el trueno.** Primero la tormenta llega, luego se cuenta desde el rayo hasta el trueno y se va acercando. |
+| `página.html28.html` | **Cuenta hasta el trueno.** La tormenta llega, se cuenta (con un tic por segundo) desde el rayo hasta el trueno y se va acercando. Las gotas salpican al tocar, el viento sigue al dedo y, si lo mantienes, se abre un paraguas. |
 | `página.html29.html` | **Dale al quemador.** El globo sube del prado a las nubes, ve la curva de la Tierra y llega al espacio. |
 | `página.html30.html` | **Dale la vuelta.** Un planeta pequeño que se gira y se planta. Con tres dedos, revienta… y se vuelve a juntar. |
 

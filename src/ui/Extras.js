@@ -166,6 +166,9 @@ export function notitaDelDia(ctx, raiz) {
 /* ─────────────────────────── CORAZONCITOS ─────────────────────────── */
 const NO_TOCAR = "button, a, input, textarea, select, iframe, [role=button], [role=slider], [data-claim-drag], .bar, .toc, .album, .edges, .notita, .notita__carta, .sorpresa";
 
+const FRASES_TOQUE = ["te amo", "mi niña", "preciosa", "te amo más", "mi amor", "tuyo", "hermosa", "mi vida"];
+let toquesDados = 0;
+
 export function corazoncitos(ctx, raiz) {
   if (ctx.caps?.reducedMotion) return;
   const capa = el("div.toques", { "aria-hidden": "true" });
@@ -183,6 +186,9 @@ export function corazoncitos(ctx, raiz) {
     if (!quieto || ahora - ultimo < 140) return;
     ultimo = ahora;
     const c = el("span.toques__corazon", { text: ["♥", "♡", "❤", "✦"][Math.floor(Math.random() * 4)] });
+    // Una de cada tantas, el corazoncito trae algo escrito.
+    toquesDados++;
+    if (toquesDados % 11 === 0) c.append(el("i.toques__frase", { text: FRASES_TOQUE[(toquesDados / 11 - 1) % FRASES_TOQUE.length] }));
     setVars(c, {
       "--x": `${e.clientX}px`,
       "--y": `${e.clientY}px`,

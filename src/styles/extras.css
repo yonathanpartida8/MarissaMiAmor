@@ -166,6 +166,18 @@
 
 /* ---- Corazoncitos al tocar ------------------------------------ */
 .toques { position: absolute; inset: 0; z-index: calc(var(--z-overlay, 50) + 8); pointer-events: none; overflow: hidden; }
+.toques__frase {
+  position: absolute;
+  left: 50%;
+  top: -1.1em;
+  translate: -50% 0;
+  white-space: nowrap;
+  font-style: normal;
+  font-family: var(--font-hand, cursive);
+  font-size: 0.8em;
+  color: #ffd0e0;
+  text-shadow: 0 0 8px rgba(255, 120, 170, 0.8);
+}
 .toques__corazon {
   position: absolute;
   left: var(--x);

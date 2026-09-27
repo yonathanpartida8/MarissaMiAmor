@@ -56,10 +56,30 @@ noche-estrellada/
 **Deja tus archivos ahí con esos nombres y ya está.** No hay que tocar
 ni una línea de código.
 
-**La fila de sonidos** de la cabaña ya no está siempre abajo: se saca y
-se esconde con el botón **♫ sonidos** de arriba a la derecha, así no se
-cruza con los botones de pasar página del librito. Van en este orden:
-fogata, grillos, búhos, aire, bosque, río, lluvia y tormenta.
+**La fila de sonidos** se saca y se esconde con el botón **🔊 sonidos**
+de arriba a la derecha (se acuerda de cómo la dejaste; la primera vez
+sale abierta). Van en este orden: fogata, grillos, búhos, aire, bosque,
+río, lluvia y tormenta, y de inicio suenan todos en equilibrio menos la
+lluvia y la tormenta, que no son sólo sonido: encenderlas hace llover de
+verdad (y la lluvia apaga la fogata) y trae relámpagos.
+
+**Cómo suenan tus archivos:**
+
+- **Sin cortes.** Cada ambiente se repite fundiéndose consigo mismo (la
+  vuelta nueva entra antes de que acabe la anterior) y se le recortan los
+  silencios que traen los mp3 al principio y al final. Todo entra con un
+  fundido rápido, nunca de golpe.
+- **En equilibrio.** Cada archivo se mide y se iguala a un volumen común:
+  da igual si uno venía grabado bajito y otro a tope.
+- **Los largos, en streaming.** Los de más de 3 MB no se cargan enteros
+  en memoria (un audio de 10 minutos descomprimido son ~200 MB y cierra
+  la página en un teléfono): se tocan con dos reproductores que se turnan
+  con fundido. Tu `sonidos/bosque/aire.mp3` es en realidad un `.m4a` de
+  11 MB con otro nombre; suena bien en el teléfono, pero si puedes,
+  súbelo más cortito (1–2 minutos basta, se repite solo).
+- **La escopeta** tiene su estampido propio (chasquido, bombazo, eco del
+  bosque y la corredera) y cada búho que eliminas suena a «puf» mágico.
+  Si prefieres un disparo tuyo, déjalo en `audio/disparo.mp3`.
 
 > **La cajita musical, además**, mira en `assets/audio/musica.mp3` si no
 > encuentra `noche-estrellada/musica.mp3`. Es para que una canción que ya
