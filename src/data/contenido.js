@@ -567,14 +567,22 @@ export default {
     "fotos-paginas/29-te-elijo/imagen1.jpg": "935d6fd6"
   },
   "textosMios": {
+    "mis-paginas/videos/ssstik.io_@nadie.xd533_1790541937867.mp4": {
+      "titulo": "Otro videito para ti 🤍",
+      "arriba": "dale play 🤍",
+      "orden": 3,
+      "texto": "Míralo completito, ¿sí? 🤍"
+    },
     "mis-paginas/videos/VID-20260915-WA0017.mp4": {
       "titulo": "Te dedico un videito",
       "arriba": "dale play 🤍",
-      "texto": "¡Debes mirarlos completos, los dos! 🤍"
+      "orden": 1,
+      "texto": "¡Debes mirarlos completos! 🤍"
     },
     "mis-paginas/videos/video.mp4": {
       "titulo": "Te dedico este video",
       "arriba": "dale play 🤍",
+      "orden": 2,
       "texto": "¡Míralo completo! 🤍"
     }
   },
@@ -726,6 +734,11 @@ export default {
     }
   },
   "videosForma": {
+    "mis-paginas/videos/ssstik.io_@nadie.xd533_1790541937867.mp4": {
+      "w": 772,
+      "h": 576,
+      "dur": 29.1
+    },
     "mis-paginas/videos/VID-20260915-WA0017.mp4": {
       "w": 576,
       "h": 1024,

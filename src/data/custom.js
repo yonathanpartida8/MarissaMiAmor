@@ -22,7 +22,13 @@ import { conHuella } from "./huella.js";
  */
 function nombreBonito(archivo, porDefecto, n, total) {
   const base = archivo.replace(/\.[^.]+$/, "");
-  const deCamara = /^(vid|img|pxl|mvimg|whatsapp|screenshot|captura|video|foto|dsc|mov)[\s_-]*\d/i.test(base) || /^\d[\d\s_-]*$/.test(base);
+  const deCamara =
+    /^(vid|img|pxl|mvimg|whatsapp|screenshot|captura|video|foto|dsc|mov)[\s_-]*\d/i.test(base) ||
+    /^\d[\d\s_-]*$/.test(base) ||
+    // Los que bajan de TikTok, Instagram y compañía: nombres de programa y
+    // números larguísimos que no dicen nada.
+    /ssstik|snaptik|tiktok|musicaldown|savefrom|y2mate|instagram|insta|download|descarga/i.test(base) ||
+    /\d{9,}/.test(base);
   if (deCamara) return total > 1 ? `${porDefecto} · ${n}` : porDefecto;
   const limpio = base.replace(/[_-]+/g, " ").trim();
   return limpio.charAt(0).toUpperCase() + limpio.slice(1);
@@ -41,8 +47,15 @@ function sueltos(raw) {
       usados.add(String(typeof f === "string" ? f : f?.src ?? "").trim());
     }
   }
-  const vids = (contenido?.misVideos || []).map((f) => [f, `mis-paginas/videos/${f}`]).filter(([, r]) => !usados.has(r));
-  const fotos = (contenido?.misFotos || []).map((f) => [f, `mis-paginas/fotos/${f}`]).filter(([, r]) => !usados.has(r));
+  // El orden: el que diga su .txt (`orden: 2`); si no dice, por nombre.
+  const textos = contenido?.textosMios || {};
+  const porOrden = (lista) =>
+    lista
+      .map((x, i) => [x, textos[x[1]]?.orden ?? 1000 + i])
+      .sort((a, b) => a[1] - b[1])
+      .map(([x]) => x);
+  const vids = porOrden((contenido?.misVideos || []).map((f) => [f, `mis-paginas/videos/${f}`]).filter(([, r]) => !usados.has(r)));
+  const fotos = porOrden((contenido?.misFotos || []).map((f) => [f, `mis-paginas/fotos/${f}`]).filter(([, r]) => !usados.has(r)));
   return [
     ...vids.map(([f, r], i) => ({
       titulo: nombreBonito(f, "Un videíto para ti", i + 1, vids.length),

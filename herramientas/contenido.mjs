@@ -149,7 +149,7 @@ for (const dir of ["fotos-paginas", "sorpresas", "images/amores", "mis-paginas/f
 //   texto: ¡Míralo completo!
 // (el texto puede seguir en las líneas de abajo). Sin «titulo:» ni nada,
 // la primera línea es el título y el resto, el texto.
-const CLAVES = { titulo: "titulo", "título": "titulo", title: "titulo", arriba: "arriba", encima: "arriba", texto: "texto", text: "texto" };
+const CLAVES = { titulo: "titulo", "título": "titulo", title: "titulo", arriba: "arriba", encima: "arriba", texto: "texto", text: "texto", orden: "orden" };
 function leerTextos(ruta) {
   let crudo;
   try {
@@ -163,7 +163,7 @@ function leerTextos(ruta) {
   let actual = null;
   let conClaves = false;
   for (const linea of crudo.split("\n")) {
-    const m = /^\s*(t[ií]tulo|title|arriba|encima|texto|text)\s*:\s*(.*)$/i.exec(linea);
+    const m = /^\s*(t[ií]tulo|title|arriba|encima|texto|text|orden)\s*:\s*(.*)$/i.exec(linea);
     if (m) {
       conClaves = true;
       actual = CLAVES[m[1].toLowerCase()];
@@ -181,6 +181,12 @@ function leerTextos(ruta) {
     // Una línea en blanco (o varias) entre párrafos = un párrafo nuevo.
     campos[k] = campos[k].replace(/[ \t]+\n/g, "\n").replace(/\n\s*\n+/g, "\n").trim();
     if (!campos[k]) delete campos[k];
+  }
+  // `orden: 2` → en qué lugar sale, entre los vídeos (o fotos) sueltos.
+  if (campos.orden != null) {
+    const n = parseFloat(campos.orden);
+    if (Number.isFinite(n)) campos.orden = n;
+    else delete campos.orden;
   }
   return Object.keys(campos).length ? campos : null;
 }

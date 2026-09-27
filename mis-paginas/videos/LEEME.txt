@@ -16,6 +16,7 @@ y dentro, una línea por cosa:
     arriba: dale play 🤍
     texto: ¡Míralo completo! 🤍
 
-«arriba» es la línea chiquita de encima del título. El texto puede seguir
+«arriba» es la línea chiquita de encima del título. Con «orden: 1»,
+«orden: 2»… decides en qué orden salen los vídeos. El texto puede seguir
 en las líneas de abajo; una línea en blanco empieza un párrafo nuevo.
 En GitHub: abre el .txt, toca el lápiz, cambia lo que quieras y guarda.
