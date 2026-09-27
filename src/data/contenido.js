@@ -7,10 +7,6 @@ export default {
       "archivo": "página.html1.html"
     },
     {
-      "numero": 2,
-      "archivo": "página.html2.html"
-    },
-    {
       "numero": 3,
       "archivo": "página.html3.html"
     },
