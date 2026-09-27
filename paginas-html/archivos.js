@@ -11,6 +11,7 @@ window.LIBRO_ARCHIVOS = {
     null
   ],
   "radio": [
-    "../la%20radio/music1.mp3"
+    "../la%20radio/music1.mp3",
+    "../la%20radio/music2.mp3"
   ]
 };
