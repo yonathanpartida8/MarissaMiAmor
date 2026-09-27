@@ -302,7 +302,9 @@ export default {
     ],
     "15-lo-que-no-se-ve-de-primeras": [],
     "16-abrelo": [],
-    "17-el-mismo-cielo": [],
+    "17-el-mismo-cielo": [
+      "imagen37.png"
+    ],
     "18-otra-postal": [
       "imagen1.jpg"
     ],
@@ -499,6 +501,16 @@ export default {
     "fotos-paginas/14-todo-lo-que-guardo/imagen7.png": "d14c8eef",
     "fotos-paginas/14-todo-lo-que-guardo/imagen8.png": "4ea92209",
     "fotos-paginas/14-todo-lo-que-guardo/imagen9.png": "38fdb943",
+    "fotos-paginas/17-el-mismo-cielo/2118b607a73985c94ef4078e6c867295.jpg": "7c182b43",
+    "fotos-paginas/17-el-mismo-cielo/38eec2a100c45ab467f3a0bb4a07a696.jpg": "d42a24d5",
+    "fotos-paginas/17-el-mismo-cielo/72d34b7d34fb12d4fd94219d0efb3dd9.jpg": "f7982854",
+    "fotos-paginas/17-el-mismo-cielo/787d1543ef0893ff7e91ad52187fadb0.jpg": "d17ccdab",
+    "fotos-paginas/17-el-mismo-cielo/8fb5d0726a0f1ace7d98b55da767cc1e.jpg": "7736d187",
+    "fotos-paginas/17-el-mismo-cielo/a1cb8d65a8f0e76ff5dc80f5a164ab22.jpg": "8c103c39",
+    "fotos-paginas/17-el-mismo-cielo/ef81e3d649814acc9a25aa6d63c9b5ec (1).jpg": "c899550d",
+    "fotos-paginas/17-el-mismo-cielo/ef81e3d649814acc9a25aa6d63c9b5ec.jpg": "c899550d",
+    "fotos-paginas/17-el-mismo-cielo/f0c5cfd007e25cc371e238ed2820c83e.jpg": "99f4191b",
+    "fotos-paginas/17-el-mismo-cielo/imagen37.png": "d14c8eef",
     "fotos-paginas/18-otra-postal/imagen1.jpg": "85ed0c83",
     "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen1.png": "1184f825",
     "fotos-paginas/26-unas-de-tantas-fotitos-tuyas/imagen2.png": "bb4d6560",
