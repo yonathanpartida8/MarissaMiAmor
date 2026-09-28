@@ -125,7 +125,6 @@ export default {
   ],
   "amores": [],
   "misVideos": [
-    "ssstik.io_@arewedeadaxx_1790563913551.mp4",
     "ssstik.io_@nadie.xd533_1790541937867.mp4",
     "VID-20260915-WA0017.mp4"
   ],
@@ -836,11 +835,6 @@ export default {
     }
   },
   "videosForma": {
-    "mis-paginas/videos/ssstik.io_@arewedeadaxx_1790563913551.mp4": {
-      "w": 720,
-      "h": 720,
-      "dur": 24
-    },
     "mis-paginas/videos/ssstik.io_@nadie.xd533_1790541937867.mp4": {
       "w": 772,
       "h": 576,
