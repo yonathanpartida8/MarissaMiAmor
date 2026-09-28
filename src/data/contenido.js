@@ -126,8 +126,7 @@ export default {
   "amores": [],
   "misVideos": [
     "ssstik.io_@nadie.xd533_1790541937867.mp4",
-    "VID-20260915-WA0017.mp4",
-    "video.mp4"
+    "VID-20260915-WA0017.mp4"
   ],
   "misFotos": [],
   "icono": "icono/icono.png",
@@ -686,12 +685,6 @@ export default {
       "arriba": "dale play 🤍",
       "orden": 1,
       "texto": "¡Debes mirarlos completos! 🤍"
-    },
-    "mis-paginas/videos/video.mp4": {
-      "titulo": "Te dedico este video",
-      "arriba": "dale play 🤍",
-      "orden": 2,
-      "texto": "¡Míralo completo! 🤍"
     }
   },
   "textosPaginas": {
@@ -851,11 +844,6 @@ export default {
       "w": 576,
       "h": 1024,
       "dur": 15.3
-    },
-    "mis-paginas/videos/video.mp4": {
-      "w": 1024,
-      "h": 576,
-      "dur": 78.2
     }
   }
 };
