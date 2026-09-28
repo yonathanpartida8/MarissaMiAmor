@@ -101,6 +101,7 @@ const FLORES = {
   nomeolvides:{ nombre: "Nomeolvides", colores: ["#6fa8ff"], dice: "aunque sé que no me olvidas" },
   nube:       { nombre: "Nube", colores: ["#ffffff"], dice: "para llenar los huecos, como tú en mis días" },
   alcatraz:   { nombre: "Alcatraz", colores: ["#fffaf2", "#ffd9e6"], dice: "elegante, como tú" },
+  gerbera:    { nombre: "Gerbera", colores: ["#ff6a3d", "#ff2d55", "#ffcc33", "#ff8fb8"], dice: "porque sé que son tus favoritas" },
 };
 const TIPOS = Object.keys(FLORES);
 const PARA_AMARRAR = 7;     // desde cuántas se puede amarrar el ramo
@@ -326,6 +327,36 @@ const DIBUJOS = {
     x.fillStyle = "#f2c230";
     x.beginPath(); x.ellipse(m + 2, 56, 4.5, 20, 0.15, 0, TAU); x.fill();
     return "abajo";
+  },
+  gerbera(x, col) {
+    const m = T / 2;
+    // Dos capas de pétalos finos y puntiagudos, la de dentro un poco más clara.
+    for (let capa = 0; capa < 2; capa++) {
+      const n = 22, r0 = 30 - capa * 8;
+      for (let i = 0; i < n; i++) {
+        const a = i / n * TAU + capa * (TAU / n / 2);
+        const gr = x.createLinearGradient(m, m, m + Math.cos(a) * 52, m + Math.sin(a) * 52);
+        gr.addColorStop(0, oscuro(col, 0.1));
+        gr.addColorStop(1, capa ? claro(col, 0.3) : claro(col, 0.05));
+        x.fillStyle = gr;
+        x.beginPath();
+        x.moveTo(m, m);
+        x.quadraticCurveTo(m + Math.cos(a - 0.09) * r0 * 0.6, m + Math.sin(a - 0.09) * r0 * 0.6, m + Math.cos(a) * (r0 + 12), m + Math.sin(a) * (r0 + 12));
+        x.quadraticCurveTo(m + Math.cos(a + 0.09) * r0 * 0.6, m + Math.sin(a + 0.09) * r0 * 0.6, m, m);
+        x.fill();
+      }
+    }
+    // El centro, oscuro y granulado, como el de una gerbera de verdad.
+    const c = x.createRadialGradient(m - 3, m - 3, 1, m, m, 16);
+    c.addColorStop(0, "#4a2a1a");
+    c.addColorStop(1, "#1c0c08");
+    x.fillStyle = c;
+    x.beginPath(); x.arc(m, m, 15, 0, TAU); x.fill();
+    x.fillStyle = "rgba(255,205,150,.4)";
+    for (let i = 0; i < 46; i++) {
+      const r = Math.sqrt(i / 46) * 13, a = i * 2.39996;
+      x.beginPath(); x.arc(m + Math.cos(a) * r, m + Math.sin(a) * r, 1, 0, TAU); x.fill();
+    }
   },
 };
 

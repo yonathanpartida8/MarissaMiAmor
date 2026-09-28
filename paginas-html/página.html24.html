@@ -315,7 +315,7 @@ function prepararPista(p) {
     a.src = ARCH[p.i];
     a.loop = false;
     a.setAttribute("data-libro-cuanto", "0.06");
-    a.addEventListener("error", () => { p.fallo = true; if (actual === p.i) arrancarMelodia(p, 0); });
+    a.addEventListener("error", () => { p.fallo = true; if (actual === p.i) arrancarMelodia(p); });
     a.addEventListener("ended", () => { if (actual === p.i) siguienteSurco(); });
     p.audio = a;
     if (/^https?:$/.test(location.protocol) && ac) {
@@ -332,12 +332,16 @@ function volumen(p, v, seg) {
   }
   if (p.mel) { const gg = p.mel.gg.gain, t = ac.currentTime; gg.cancelScheduledValues(t); gg.setValueAtTime(gg.value, t); gg.linearRampToValueAtTime(v * 0.9, t + seg); }
 }
-function arrancarMelodia(p, avance) {
+function arrancarMelodia(p) {
   if (!p.mel) {
     const gg = ac.createGain(); gg.gain.value = 0;
     gg.connect(salida);
     const M = MELODIAS[p.i];
-    p.mel = { gg, M, beat: avance * 16, hasta: avance * 16, activa: true };
+    // Siempre desde el principio de la melodía, igual que el audio real.
+    p.mel = { gg, M, beat: 0, hasta: 0, activa: true };
+  } else {
+    p.mel.beat = 0;
+    p.mel.hasta = 0;
   }
   p.mel.activa = true;
   volumen(p, 1, 1.2);
@@ -365,8 +369,10 @@ function programarMelodias(dt) {
   }
 }
 
-/* Poner la aguja en un surco: la canción de ese surco entra y las demás se van. */
-function sonarSurco(s, avance) {
+/* Poner la aguja en un surco: la canción de ese surco entra y las demás se van.
+   Siempre suena desde el segundo 0, como un disco de verdad: no importa en
+   qué punto del surco caiga la aguja, la canción empieza otra vez. */
+function sonarSurco(s) {
   despertar();
   const p = pistas[s];
   if (actual !== s) {
@@ -387,15 +393,15 @@ function sonarSurco(s, avance) {
   }
   prepararPista(p);
   if (p.audio && !p.fallo) {
-    const irA = () => { if (p.audio.duration > 0) try { p.audio.currentTime = avance * p.audio.duration; } catch { /* nada */ } };
-    if (p.audio.readyState >= 1) irA(); else p.audio.addEventListener("loadedmetadata", irA, { once: true });
+    const desdeElPrincipio = () => { try { p.audio.currentTime = 0; } catch { /* nada */ } };
+    if (p.audio.readyState >= 1) desdeElPrincipio(); else p.audio.addEventListener("loadedmetadata", desdeElPrincipio, { once: true });
     if (!p.vol) { try { p.audio.volume = 0; } catch { /* iOS */ } }
     if (vel45) p.audio.preservesPitch = p.audio.mozPreservesPitch = p.audio.webkitPreservesPitch = false;
     p.audio.playbackRate = vel45 ? 1.35 : 1;
     const pr = p.audio.play();
-    if (pr && pr.catch) pr.catch(() => { p.fallo = true; arrancarMelodia(p, avance); });
+    if (pr && pr.catch) pr.catch(() => { p.fallo = true; arrancarMelodia(p); });
     volumen(p, 1, 1.2);
-  } else arrancarMelodia(p, avance);
+  } else arrancarMelodia(p);
   empezarCrujido();
 }
 function callar() {
@@ -418,7 +424,7 @@ function callar() {
   elPista.textContent = "toca el disco o lleva la aguja a donde quieras";
 }
 function siguienteSurco() {
-  if (actual < SURCOS - 1) { const s = actual + 1; agujaR = radioDe(s, 0.001); sonarSurco(s, 0); }
+  if (actual < SURCOS - 1) { const s = actual + 1; agujaR = radioDe(s, 0.001); sonarSurco(s); }
   else { levantar(); }
 }
 
@@ -536,8 +542,10 @@ function pausarActual() {
 function bajar() {
   agujaPuesta = true;
   golpeAguja();
-  const [s, av] = surcoDe(agujaR);
-  sonarSurco(s, av);
+  // Sólo importa EN QUÉ surco cae la aguja (qué canción): siempre suena
+  // desde el principio, así que el punto exacto dentro del surco no se usa.
+  const [s] = surcoDe(agujaR);
+  sonarSurco(s);
   elPista.textContent = "toca otro punto del disco para cambiar";
 }
 function distSegmento(x, y, x1, y1, x2, y2) {

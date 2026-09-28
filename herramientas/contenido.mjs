@@ -135,7 +135,11 @@ const tocadiscos = [1, 2, 3, 4, 5].map((n) => {
   const f = leer(carpetaTocadiscos).find(
     (f) => sinAcentos(f).replace(/\.(mp3|m4a|ogg|wav|aac)$/, "") === `musica${n}` && /\.(mp3|m4a|ogg|wav|aac)$/i.test(f)
   );
-  return f ? `${nfc(carpetaTocadiscos)}/${nfc(f)}` : null;
+  // Si el "musicaN.mp3" es en realidad un vídeo (pasa cuando se sube desde
+  // el teléfono con la extensión cambiada a mano), se saca su sonido tal
+  // cual, igual que con la voz y el barquito: si no, ni Safari ni el
+  // iPhone lo reproducen.
+  return f ? soloSonido(`${nfc(carpetaTocadiscos)}/${nfc(f)}`) : null;
 });
 
 // Las canciones de la radio: `la radio/music1.mp3`, `music2.mp3`… (también

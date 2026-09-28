@@ -79,7 +79,7 @@ export default class GraciasPage extends BasePage {
     await super.enter(direction);
     requestAnimationFrame(() => this.root.classList.add("is-entered"));
     const final = contenido?.sonidos?.final;
-    if (final) this.ctx.audio?.cambiarMusica?.(final.split("/").map(encodeURIComponent).join("/"), 0);
+    if (final) this.ctx.audio?.cambiarMusica?.(final.split("/").map(encodeURIComponent).join("/"));
     this.on(this.root, "pointerdown", (e) => {
       this.ctx.haptics?.play?.("tap");
       for (let k = 0; k < 3; k++) this.later(() => this.corazon(e.clientX + (k - 1) * 16, e.clientY - k * 8), k * 90);

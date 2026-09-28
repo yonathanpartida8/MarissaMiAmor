@@ -4,25 +4,16 @@
 window.LIBRO_ARCHIVOS = {
   "ojos": "ojos.mp3",
   "tocadiscos": [
-    "../tocadiscos%20musica/musica1.mp3",
-    "../tocadiscos%20musica/musica2.mp3",
-    "../tocadiscos%20musica/musica3.mp3",
-    null,
-    "../tocadiscos%20musica/musica5.mp3"
+    "../tocadiscos%20musica/musica1-lista.m4a",
+    "../tocadiscos%20musica/musica2-lista.m4a",
+    "../tocadiscos%20musica/musica3-lista.m4a",
+    "../tocadiscos%20musica/musica4-lista.m4a",
+    "../tocadiscos%20musica/musica5-lista.m4a"
   ],
   "tocadiscosNombres": [
-    {
-      "titulo": "Vida En El Espejo",
-      "artista": "Enjambre"
-    },
-    {
-      "titulo": "Califórnica",
-      "artista": "La Gusana Ciega"
-    },
-    {
-      "titulo": "Beso",
-      "artista": "Jósean Log"
-    },
+    null,
+    null,
+    null,
     null,
     null
   ],
