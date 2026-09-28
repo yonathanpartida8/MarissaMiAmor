@@ -761,7 +761,7 @@ html[data-orientation="landscape"][data-device="phone"] .edge {
 
 /* Pasado el punto de no retorno: el botón se enciende. */
 .edge.is-ready .edge__btn {
-  background: color-mix(in srgb, var(--accent) 78%, #1a0710);
+  background: color-mix(in srgb, var(--accent) 78%, #1a1030);
   border-color: rgba(var(--cromo-luz-rgb), 0.5);
   box-shadow: 0 0 22px -2px var(--accent);
 }

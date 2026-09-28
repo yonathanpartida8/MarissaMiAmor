@@ -379,6 +379,22 @@ export class AudioBus extends Emitter {
     const track = this.tracks.get("music");
     if (!track || !url || this.musicaActual === url) return;
     this.musicaActual = url;
+    // Sin fundido: entra de una. Se usa el MISMO <audio> de la música (ya
+    // desbloqueado por un toque, que en iPhone es lo que deja sonar) y sólo
+    // se le cambia la canción; el camino por WebAudio se conserva.
+    if (fade <= 0) {
+      const el = track.el;
+      el.pause();
+      el.src = url;
+      el.loop = true;
+      el.preload = "auto";
+      if (!this.playingMusic || this.muted) return;
+      this.#enPausa = false;
+      this.#nivelPuesto = this.#nivelApartado();
+      this.#ponerVolMusica(track, track.base * this.#nivelPuesto);
+      el.play().catch(() => {});
+      return;
+    }
     // Otro <audio> para la nueva: así las dos se cruzan (una entra mientras
     // la otra se va) y ningún otro fundido puede cortar el cambio a medias.
     const nuevo = new Audio(url);

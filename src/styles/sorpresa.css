@@ -50,7 +50,7 @@
   align-items: center !important;
   justify-content: center !important;
   padding: 1.2rem;
-  background: radial-gradient(ellipse at 50% 45%, rgba(30, 8, 20, 0.35), rgba(12, 3, 8, 0.72));
+  background: radial-gradient(ellipse at 50% 45%, rgba(26, 14, 50, 0.35), rgba(10, 6, 26, 0.72));
   opacity: 0;
   transition: opacity 360ms var(--e-out);
   cursor: pointer;
@@ -84,7 +84,7 @@
   background-size: cover;
   background-position: center;
 }
-.sorpresa__img.con-foto { background-color: #1a0a12; }
+.sorpresa__img.con-foto { background-color: #150d28; }
 .sorpresa__img::after {
   content: "";
   position: absolute;
@@ -100,7 +100,7 @@
 .sorpresa__sat {
   position: absolute;
   line-height: 1;
-  filter: drop-shadow(0 8px 12px rgba(60, 10, 30, 0.35));
+  filter: drop-shadow(0 8px 12px rgba(50, 20, 80, 0.35));
 }
 .sorpresa__main {
   left: 50%;
@@ -133,7 +133,7 @@
   font-family: var(--font-hand, cursive);
   font-size: clamp(1.25rem, 5.6vw, 1.55rem);
   line-height: 1.2;
-  color: #5e1e38;
+  color: #3f2466;
 }
 .sorpresa__cuenta,
 .sorpresa__cerrar {
@@ -142,7 +142,7 @@
   font-size: 0.68rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #a0576f;
+  color: #8a5fa8;
 }
 .sorpresa__cerrar { margin-top: 0.25rem; opacity: 0.6; }
 

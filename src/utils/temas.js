@@ -46,15 +46,15 @@
 
 import { mezclar } from "./color.js";
 
-/** El papel de la noche: crema con una gota de rosa. */
+/** El papel de la noche: marfil cálido, con la tinta en ciruela e índigo. */
 const PAPEL_NOCHE = {
-  claro: "#fffaf4",
-  medio: "#fbf0e8",
-  hondo: "#f3e2da",
-  bajo: "#e7d0c8",
-  borde: "#d4b3ab",
-  tinta: "#3d2a2b",
-  tintaSuave: "#705558",
+  claro: "#fffbf5",
+  medio: "#fdf4ec",
+  hondo: "#f8e9e1",
+  bajo: "#efdad4",
+  borde: "#d9bccb",
+  tinta: "#2e2042",
+  tintaSuave: "#625476",
 };
 
 export const TEMAS = {
@@ -154,57 +154,60 @@ export const TEMAS = {
 
     luzAmbiente: 1,
     esquema: "light",
-    barraSistema: "#fbeaf0",
+    barraSistema: "#fff5ee",
 
     /**
-     * A medio camino, y a propósito más cerca de la luz que de la sombra:
-     * un pastel oscuro es un malva triste. El hondo sube casi tanto como en
-     * el claro, pero conservando bastante más color, y los acentos se
-     * quedan con su saturación: el rosa TIENE que verse, es de lo que va
-     * este modo.
+     * La tarde con luz de verdad. El aire ya NO sale de oscurecer el hondo
+     * del capítulo (eso daba un rosa despintado, grisáceo): sale de su color
+     * VIVO disuelto en crema. Así cada capítulo tiñe la habitación de su
+     * propio tono —durazno, lavanda, menta, rosa— limpio y luminoso, y los
+     * velos conservan casi toda su saturación.
      */
-    fondo: ({ a, b, deep }) => ({
-      a: mezclar(a, "#ffffff", 0.16),
-      b: mezclar(b, "#ffd9e6", 0.46),
-      deep: mezclar(deep, "#ffe9f1", 0.89),
+    fondo: ({ a, b }) => ({
+      a: mezclar(a, "#ffcf9e", 0.34),
+      // El segundo velo se va hacia la lavanda: así la tarde nunca es de
+      // un solo color, sino rosa con lila, durazno con lila, menta con lila.
+      b: mezclar(mezclar(b, "#a58cff", 0.55), "#ffffff", 0.12),
+      deep: mezclar(mezclar(a, "#e9dcff", 0.35), "#fffaf4", 0.84),
     }),
 
     papel: {
-      claro: "#fffdfb",
-      medio: "#fff6f8",
-      hondo: "#ffeaf0",
-      bajo: "#f7d8e2",
-      borde: "#e9bccb",
-      tinta: "#4a2b39",
-      tintaSuave: "#7d5d68",
+      claro: "#fffefb",
+      medio: "#fffaf5",
+      hondo: "#fff2ea",
+      bajo: "#fbe4dc",
+      borde: "#eec3c9",
+      tinta: "#33204a",
+      tintaSuave: "#67557d",
     },
 
     tinte: {
       claro: 0.04,
       medio: 0.07,
-      hondo: 0.11,
-      bajo: 0.16,
+      hondo: 0.1,
+      bajo: 0.15,
       borde: 0.22,
-      tinta: 0.14,
-      tintaSuave: 0.18,
+      tinta: 0.12,
+      tintaSuave: 0.16,
     },
 
-    sombraBase: "#c08fa0",
-    luzBase: "#fffdfe",
+    sombraBase: "#a98bc0",
+    luzBase: "#fffdf8",
 
+    /* Tinta ciruela-índigo: se lee perfecto y no es negro ni café. */
     texto: {
-      base: "#4a2333",
-      suave: "rgba(74, 35, 51, 0.84)",
-      tenue: "rgba(74, 35, 51, 0.74)",
+      base: "#33204a",
+      suave: "rgba(51, 32, 74, 0.84)",
+      tenue: "rgba(51, 32, 74, 0.72)",
     },
 
-    oro: { base: "#8c5730", brillo: "#71421f" },
+    oro: { base: "#b0621a", brillo: "#8f4c0f" },
 
-    cromoLuz: "#8a3a57",
-    cromoMezcla: [0.1, 0.19],
+    cromoLuz: "#5a3a8c",
+    cromoMezcla: [0.1, 0.2],
 
-    vineta: { fuerza: 0.18, sobrePapel: 0.1 },
-    grano: { base: 0.03, alto: 0.04 },
+    vineta: { fuerza: 0.12, sobrePapel: 0.08 },
+    grano: { base: 0.024, alto: 0.032 },
   },
 
   // ══════════════════════════════════════════════════════════════════
@@ -220,10 +223,11 @@ export const TEMAS = {
     /** Los velos SUMAN luz: es un cuarto oscuro con una linterna dentro. */
     luzAmbiente: 0,
     esquema: "dark",
-    barraSistema: "#0a0510",
+    barraSistema: "#0e0b22",
 
-    /** De noche el capítulo se ve tal y como está escrito. */
-    fondo: (paleta) => paleta,
+    /** De noche el capítulo se ve casi como está escrito; su segundo velo
+        se tiñe un poco de violeta, para que la noche sea romántica y no roja. */
+    fondo: ({ a, b, deep }) => ({ a, b: mezclar(b, "#6a4fe0", 0.3), deep }),
 
     papel: PAPEL_NOCHE,
 
@@ -241,23 +245,23 @@ export const TEMAS = {
     },
 
     /** Un pardo cálido y un blanco cálido: la sombra y la luz de la hoja. */
-    sombraBase: "#a8836a",
+    sombraBase: "#8a6fa6",
     luzBase: "#fffdf6",
 
     /* Marfil templado: un blanco frío sobre fondo rosa se ve azulado. */
     texto: {
-      base: "#fdeee9",
-      suave: "rgba(253, 238, 233, 0.68)",
-      tenue: "rgba(253, 238, 233, 0.58)",
+      base: "#fff3ec",
+      suave: "rgba(255, 243, 236, 0.72)",
+      tenue: "rgba(255, 243, 236, 0.6)",
     },
 
-    /* De noche el champán de siempre. */
-    oro: { base: "#e6c08a", brillo: "#ffe2bb" },
+    /* De noche, champán dorado. */
+    oro: { base: "#ffcf8a", brillo: "#ffe6bf" },
 
     cromoLuz: "#ffffff",
     cromoMezcla: [0.22, 0.4],
 
-    vineta: { fuerza: 0.55, sobrePapel: 0.44 },
+    vineta: { fuerza: 0.48, sobrePapel: 0.38 },
     grano: { base: 0.035, alto: 0.05 },
   },
 };

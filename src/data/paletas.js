@@ -25,56 +25,56 @@
  *   b     el hondo. El segundo color de la niebla, más oscuro y saturado.
  *   deep  el fondo. Casi negro, pero nunca negro: siempre queda el rescoldo.
  *
- * Todos son de la misma familia a propósito: rosas, rubores, corales,
- * duraznos, lavandas, ciruela y vino. Ni un azul frío. Ni un verde. Las
- * lavandas están para que el libro no sea un solo rojo de principio a fin:
- * las páginas de noche y de cielo respiran mejor en violeta.
+ * Una paleta romántica con personalidad: rosas vivos y limpios, corales,
+ * albaricoque, champán, lavanda, violeta, un azul de estrellas y una menta
+ * perla para respirar. Las noches (el `deep`) son índigo, añil y ciruela,
+ * nunca un rojo sucio: así los colores brillan limpios encima.
  */
 
 export const paletas = {
   // ── Los claros ────────────────────────────────────────────────────
-  /** Primera luz. El rosa más tierno, el de empezar. */
-  amanecer: { a: "#ffc4d6", b: "#b0406f", deep: "#1d0a14" },
+  /** Primera luz. Rosa fresco sobre frambuesa, con la noche en índigo. */
+  amanecer: { a: "#ffb0cb", b: "#e0457f", deep: "#1a1030" },
 
-  /** Rubor. Cuando algo se dice y sale color a la cara. */
-  rubor: { a: "#ffa9c2", b: "#a02a58", deep: "#1a0712" },
+  /** Rubor. Rosa vivo y limpio, el de cuando algo sale a la cara. */
+  rubor: { a: "#ff9fc3", b: "#d8397a", deep: "#1c0e2e" },
 
-  /** Seda. Rosa pálido con champán: lo suave, lo que se acaricia. */
-  seda: { a: "#ffd1c4", b: "#b86478", deep: "#1f0d15" },
+  /** Seda. Champán y durazno: lo suave, lo que se acaricia. */
+  seda: { a: "#ffd6ae", b: "#ec7a62", deep: "#23142b" },
 
-  /** Nácar. Rosa perla, para los momentos de luz limpia. */
-  nacar: { a: "#ffdce6", b: "#b77391", deep: "#1c0e16" },
+  /** Nácar. Menta perla y aguamarina: la luz limpia, un respiro fresco. */
+  nacar: { a: "#bff3e6", b: "#35a894", deep: "#0d1b2a" },
 
-  /** Melocotón. Durazno tibio sobre rosa terracota: lo cálido, la tarde. */
-  melocoton: { a: "#ffc6a8", b: "#c05a5e", deep: "#1d0c0f" },
+  /** Melocotón. Albaricoque y mandarina: lo cálido, la tarde. */
+  melocoton: { a: "#ffc98f", b: "#f27d4c", deep: "#26142a" },
 
   // ── Los encendidos ────────────────────────────────────────────────
-  /** Azúcar. Rosa de algodón, el juguetón. */
-  azucar: { a: "#ffb7d9", b: "#b0428f", deep: "#1c0a14" },
+  /** Azúcar. Algodón de azúcar y orquídea: el juguetón. */
+  azucar: { a: "#ffa6e3", b: "#c83fb8", deep: "#1c0e30" },
 
-  /** Brasa. Coral encendido sobre rojo hondo: lo que arde despacio. */
-  brasa: { a: "#ffa08c", b: "#b3364a", deep: "#1c0810" },
+  /** Brasa. Coral salmón sobre un rojo claro y limpio: lo que arde. */
+  brasa: { a: "#ffa58a", b: "#ea4a5a", deep: "#221029" },
 
-  /** Latido. El rojo del corazón. El más vivo de todos: úsalo poco. */
-  latido: { a: "#ff7f9a", b: "#b01242", deep: "#1a040c" },
+  /** Latido. El rosa del corazón, el más vivo de todos: úsalo poco. */
+  latido: { a: "#ff82a8", b: "#e2266a", deep: "#1f0b2a" },
 
-  // ── Los de lavanda ────────────────────────────────────────────────
-  /** Lila. Lavanda con rubor: lo tierno y un poco soñado. */
-  lila: { a: "#e8bdff", b: "#8a3fa8", deep: "#150a1c" },
+  // ── Los de lavanda y cielo ────────────────────────────────────────
+  /** Lila. Lavanda y violeta: lo tierno y un poco soñado. */
+  lila: { a: "#d9bdff", b: "#8b5cf0", deep: "#140f33" },
 
-  /** Ciruela. Orquídea sobre ciruela: lo íntimo, con elegancia. */
-  ciruela: { a: "#f4a6d8", b: "#6e1f63", deep: "#140713" },
+  /** Ciruela. Orquídea sobre ciruela clara: lo íntimo, con elegancia. */
+  ciruela: { a: "#f6b0ec", b: "#a13597", deep: "#1a0c2c" },
 
-  /** Medianoche. Lavanda de estrellas sobre un violeta muy hondo: el
-      cielo de las páginas que pasan de noche. */
-  medianoche: { a: "#cdb8ff", b: "#4f2a7d", deep: "#0d0817" },
+  /** Medianoche. Azul de estrellas sobre un añil muy hondo: el cielo de
+      las páginas que pasan de noche. */
+  medianoche: { a: "#b3ccff", b: "#5264e0", deep: "#0b1134" },
 
   // ── Los hondos ────────────────────────────────────────────────────
-  /** Vino. La intimidad, la noche larga, lo que se dice bajito. */
-  vino: { a: "#f3a3bd", b: "#74163a", deep: "#14040b" },
+  /** Vino → baya. Frambuesa madura sobre la noche: lo que se dice bajito. */
+  vino: { a: "#ffa3c9", b: "#b8337a", deep: "#1a0b2c" },
 
-  /** Granate. El más profundo. Para lo que pesa. */
-  granate: { a: "#ec8ea8", b: "#66112f", deep: "#12030a" },
+  /** Granate → rosa de noche. Magenta hondo, para lo que pesa. */
+  granate: { a: "#ffb4d6", b: "#a52c86", deep: "#170b2e" },
 };
 
 /** Si un capítulo no dice de qué color es. */
