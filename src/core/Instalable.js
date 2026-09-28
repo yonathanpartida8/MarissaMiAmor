@@ -97,8 +97,8 @@ export async function prepararInstalacion(ctx) {
   if (im) {
     try {
       const manifiesto = {
-        name: "Marissa · Mi Amorcito",
-        short_name: "Marissa",
+        name: "Marissa×Ynthn-Love.Forever",
+        short_name: "Marissa×Ynthn",
         description: "Un librito de amor interactivo, hecho a mano.",
         lang: "es",
         start_url: "./index.html",
