@@ -371,7 +371,7 @@ export default {
   "sonidos": {
     "corazon": null,
     "ojos": "paginas-html/ojos.mp3",
-    "barquito": null,
+    "barquito": "musica barco/barco.mp3",
     "final": "musica final/musicafinal.mp3",
     "voz": "audio/voz-lista.m4a"
   },
