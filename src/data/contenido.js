@@ -125,6 +125,8 @@ export default {
   ],
   "amores": [],
   "misVideos": [
+    "ssstik.io_@dzen._0_1790564263166.mp4",
+    "ssstik.io_@mrpepegames_1790564341000.mp4",
     "ssstik.io_@nadie.xd533_1790541937867.mp4"
   ],
   "misFotos": [],
@@ -828,6 +830,16 @@ export default {
     }
   },
   "videosForma": {
+    "mis-paginas/videos/ssstik.io_@dzen._0_1790564263166.mp4": {
+      "w": 768,
+      "h": 576,
+      "dur": 21.1
+    },
+    "mis-paginas/videos/ssstik.io_@mrpepegames_1790564341000.mp4": {
+      "w": 1024,
+      "h": 576,
+      "dur": 78.2
+    },
     "mis-paginas/videos/ssstik.io_@nadie.xd533_1790541937867.mp4": {
       "w": 772,
       "h": 576,
