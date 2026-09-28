@@ -144,6 +144,9 @@ export class App {
     await this.#loadNoche(buscandoNoche);
     await this.#loadPaginasHtml(buscandoHtml);
     await this.#loadAmores(buscandoAmores);
+    // Y lo último de lo último: «Te amo, muchas gracias…». Detrás de la
+    // noche estrellada; nada se pone ya después.
+    registerUltima({ id: "te-amo-final", type: "gracias", chapter: "te-amo-final", transition: "dissolve" });
 
     // 6. Router y UI.
     setStatus("encuadernando…");

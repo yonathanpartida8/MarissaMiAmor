@@ -368,6 +368,33 @@ export class AudioBus extends Emitter {
     this.emit("music", true);
   }
 
+  /**
+   * Cambia la canción de fondo por otra (y se queda así hasta recargar).
+   * La de antes se va con un fundido, la nueva entra con otro, en bucle, y
+   * sigue apartándose sola cuando suena algo, como la de siempre. Es el
+   * mismo <audio>, así que el camino por WebAudio (y el volumen en iPhone)
+   * se conserva.
+   */
+  cambiarMusica(url, fade = 1400) {
+    const track = this.tracks.get("music");
+    if (!track || !url || this.musicaActual === url) return;
+    this.musicaActual = url;
+    const poner = () => {
+      track.el.src = url;
+      track.el.loop = true;
+      track.el.preload = "auto";
+      if (!this.playingMusic || this.muted) return;
+      this.#ponerVolMusica(track, 0);
+      this.#enPausa = false;
+      track.el.play().then(() => {
+        this.#nivelPuesto = this.#nivelApartado();
+        this.#fadeMusica(track, track.base * this.#nivelPuesto, 2600);
+      }).catch(() => {});
+    };
+    if (this.playingMusic && !track.el.paused) this.#fadeMusica(track, 0, fade, poner);
+    else poner();
+  }
+
   stopMusic(fade = 800) {
     const track = this.tracks.get("music");
     if (!track) return;

@@ -715,3 +715,160 @@ html[data-orientation="landscape"][data-device="phone"] .cover--foto .cover__sti
 }
 html[data-orientation="landscape"][data-device="phone"] .cover__sticker span { font-size: 0.4rem; letter-spacing: 0.08em; }
 html[data-orientation="landscape"][data-device="phone"] .cover__sticker b { font-size: 0.82rem; }
+
+
+/* ============================================================
+   LOS DETALLES DE LA PORTADA
+   Todo lo que se mueve aquí es `transform` u `opacity`: lo mueve la
+   tarjeta gráfica sin repintar nada, así que la portada, que es lo primero
+   que se abre, sigue siendo ligera.
+   ============================================================ */
+
+/* ---- Corazoncitos que suben por detrás --------------------- */
+.cover__corazones {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.cover__corazones i {
+  position: absolute;
+  left: var(--x);
+  bottom: -8%;
+  font-style: normal;
+  font-size: calc(0.9rem * var(--s));
+  color: rgba(255, 214, 228, 0.55);
+  text-shadow: 0 0 10px rgba(255, 140, 180, 0.5);
+  opacity: 0;
+  animation: cover-sube var(--t) linear var(--d) infinite;
+  will-change: transform, opacity;
+}
+@keyframes cover-sube {
+  0%   { transform: translate3d(0, 0, 0) rotate(-8deg); opacity: 0; }
+  12%  { opacity: 0.9; }
+  50%  { transform: translate3d(14px, -55vh, 0) rotate(8deg); }
+  85%  { opacity: 0.5; }
+  100% { transform: translate3d(-10px, -112vh, 0) rotate(-6deg); opacity: 0; }
+}
+.cover > :not(.cover__corazones) { position: relative; z-index: 1; }
+.cover.is-opening .cover__corazones { opacity: 0; transition: opacity 400ms; }
+
+/* ---- Cabecera de revista ----------------------------------- */
+.cover__issue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  width: min(74vw, 300px);
+  margin: 0.5em 0 0;
+  font-family: var(--font-ui);
+  font-size: clamp(0.5rem, calc(2.3 * var(--vw)), 0.62rem);
+  font-weight: 400;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(255, 238, 230, 0.8);
+  opacity: 0;
+  transition: opacity 900ms var(--e-out) 900ms;
+  order: 3;
+}
+.cover__issue i {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(244, 204, 140, 0.8), transparent);
+}
+.cover__issue span:last-child { letter-spacing: 0; color: #ffc2d6; }
+.cover.is-entered .cover__issue { opacity: 1; }
+
+/* El nombre: un destello dorado que lo cruza de vez en cuando. */
+.cover--foto .cover__name {
+  position: relative;
+  background-size: 220% 100%;
+  background-image: linear-gradient(
+    100deg,
+    #a67a44 0%,
+    var(--gold) 22%,
+    #fff6e8 34%,
+    var(--gold-light) 44%,
+    var(--gold) 62%,
+    #a67a44 100%
+  );
+  animation: cover-oro 7s ease-in-out 2.4s infinite;
+}
+@keyframes cover-oro {
+  0%, 62%, 100% { background-position: 100% 0; }
+  80%           { background-position: 0 0; }
+}
+
+/* ---- La pila de hojas debajo de la revista ------------------ */
+.cover__pila {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.cover__pila i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border-radius: clamp(10px, calc(3 * var(--vw)), 16px);
+  background: linear-gradient(160deg, #fff7f2, #f3dce2);
+  box-shadow: 0 16px 30px -14px rgba(70, 8, 36, 0.45);
+  opacity: 0;
+  transition: opacity 900ms var(--e-out) 700ms, transform 1100ms var(--e-out) 700ms;
+}
+.cover__pila i:first-child { background: linear-gradient(160deg, #ffe3ec, #f5c3d3); }
+.cover.is-entered .cover__pila i:first-child { opacity: 1; transform: rotate(-3deg) translate3d(-6px, 8px, 0) scale(0.98); }
+.cover.is-entered .cover__pila i:last-child  { opacity: 1; transform: rotate(2.2deg) translate3d(6px, 5px, 0) scale(0.985); }
+.cover.is-opening .cover__pila { opacity: 0; transition: opacity 400ms; }
+
+/* ---- Brillo holográfico ------------------------------------ */
+.cover__holo {
+  position: absolute;
+  inset: -10% -60%;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    rgba(255, 190, 220, 0.0) 40%,
+    rgba(255, 214, 236, 0.32) 45%,
+    rgba(214, 236, 255, 0.34) 49%,
+    rgba(255, 246, 214, 0.3) 53%,
+    transparent 60%
+  );
+  mix-blend-mode: normal;
+  transform: translate3d(-70%, 0, 0);
+  animation: cover-holo 6.5s cubic-bezier(0.45, 0, 0.2, 1) 2.8s infinite;
+  will-change: transform;
+}
+@keyframes cover-holo {
+  0%       { transform: translate3d(-70%, 0, 0); }
+  30%, 100% { transform: translate3d(70%, 0, 0); }
+}
+
+/* ---- El sello late esperando el dedo ------------------------ */
+.cover__seal::before {
+  content: "";
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 190, 210, 0.7);
+  opacity: 0;
+  animation: cover-latido 2.4s ease-out 2.2s infinite;
+  pointer-events: none;
+}
+@keyframes cover-latido {
+  0%   { transform: scale(0.8); opacity: 0.8; }
+  70%  { transform: scale(1.45); opacity: 0; }
+  100% { transform: scale(1.45); opacity: 0; }
+}
+.cover__seal.is-pressing::before,
+.cover__seal.is-broken::before { animation: none; opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cover__corazones, .cover__holo { display: none; }
+  .cover--foto .cover__name, .cover__seal::before { animation: none; }
+}
+
+html[data-orientation="landscape"][data-device="phone"] .cover__issue { width: min(40vw, 300px); }

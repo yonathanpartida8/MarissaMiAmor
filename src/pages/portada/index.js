@@ -65,6 +65,17 @@ export default class CoverPage extends BasePage {
       }),
       el("span.cover__sub", { text: "mi amorcito" }),
     ];
+    // Con foto, arriba va como la cabecera de una revista: el número, la
+    // edición y un corazón, entre dos hilos dorados.
+    if (conFoto) {
+      letras.splice(1, 0, el("div.cover__issue", { "aria-hidden": "true" }, [
+        el("span", { text: "Nº 01" }),
+        el("i"),
+        el("span", { text: "edición de amor" }),
+        el("i"),
+        el("span", { text: "♥" }),
+      ]));
+    }
 
     // La tapa: `cover__inner` recorta la foto; la cinta, el sticker y los
     // destellos cuelgan de `cover__card` para poder salirse del borde.
@@ -78,6 +89,11 @@ export default class CoverPage extends BasePage {
 
     this.card = el("div.cover__card", {}, [dentro]);
     if (conFoto) {
+      // Debajo de la revista, otras dos hojas un poco torcidas: como si
+      // estuviera encima de la pila de todo lo que viene después.
+      this.card.prepend(el("span.cover__pila", { "aria-hidden": "true" }, [el("i"), el("i")]));
+      // Un brillo holográfico que cruza la tapa de vez en cuando.
+      dentro.append(el("span.cover__holo", { "aria-hidden": "true" }));
       this.card.append(
         el("span.cover__tape", { "aria-hidden": "true" }),
         el("span.cover__sticker", {
@@ -104,12 +120,26 @@ export default class CoverPage extends BasePage {
         </span>`,
     });
 
+    // Corazoncitos que suben despacio por detrás de todo.
+    const corazones = el("div.cover__corazones", { "aria-hidden": "true" });
+    for (let k = 0; k < 9; k++) {
+      const c = el("i", { text: "♥" });
+      setVars(c, {
+        "--x": `${(6 + ((k * 37) % 88)).toFixed(0)}%`,
+        "--t": `${(9 + (k % 4) * 2.3).toFixed(1)}s`,
+        "--d": `${(-k * 1.7).toFixed(1)}s`,
+        "--s": (0.7 + ((k * 13) % 7) / 10).toFixed(2),
+      });
+      corazones.append(c);
+    }
+
     this.root.append(
+      corazones,
       ...(conFoto ? [el("header.cover__head", {}, letras)] : []),
       this.card,
       el("div.cover__sealwrap", {}, [
         this.seal,
-        el("span.cover__sealtext", { text: "mantén pulsado" }),
+        el("span.cover__sealtext", { text: "mantén pulsado para abrir" }),
       ])
     );
 

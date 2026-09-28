@@ -14,6 +14,7 @@ import { readdirSync, existsSync, writeFileSync, readFileSync, statSync, unlinkS
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { extraerAudio, esMp4 } from "./voz.mjs";
+import { etiquetas } from "./etiquetas.mjs";
 
 const RAIZ = new URL("..", import.meta.url).pathname;
 const leer = (dir) => (existsSync(join(RAIZ, dir)) ? readdirSync(join(RAIZ, dir)) : []);
@@ -62,8 +63,10 @@ const sorpresas = Object.fromEntries(
 // `assets/audio/`, en `mis-sonidos/` y en la raíz, sin importar mayúsculas
 // ni acentos: «corazón.mp3», «Corazon.MP3» y «corazon.m4a» valen igual.
 const sinAcentos = (s) => nfc(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+// La carpeta «musica final» (con o sin tilde, espacios o guion).
+const carpetaFinal = readdirSync(RAIZ).find((f) => sinAcentos(f).replace(/[\s_-]+/g, "") === "musicafinal" && !f.includes("."));
 const buscarSonido = (nombre) => {
-  for (const dir of ["assets/audio", "mis-sonidos", "paginas-html", ""]) {
+  for (const dir of ["assets/audio", "mis-sonidos", "paginas-html", ...(carpetaFinal ? [carpetaFinal] : []), ""]) {
     const f = (dir ? leer(dir) : readdirSync(RAIZ)).find((f) => sinAcentos(f).replace(/\.(mp3|m4a|ogg|wav|aac)$/, "") === nombre && /\.(mp3|m4a|ogg|wav|aac)$/i.test(f));
     if (f) return dir ? `${dir}/${nfc(f)}` : nfc(f);
   }
@@ -101,7 +104,7 @@ const voz = (() => {
   vozHuella = createHash("md5").update(datos).digest("hex").slice(0, 8);
   return original;
 })();
-const sonidos = { corazon: buscarSonido("corazon"), ojos: buscarSonido("ojos"), voz };
+const sonidos = { corazon: buscarSonido("corazon"), ojos: buscarSonido("ojos"), barquito: buscarSonido("papel") || buscarSonido("barquito"), final: buscarSonido("musicafinal"), voz };
 
 // La música del tocadiscos: `tocadiscos musica/musica1.mp3` … `musica5.mp3`,
 // una por zona del disco. Da igual si la carpeta se escribe con guion, con
@@ -140,6 +143,21 @@ const vales = (() => {
   const dorado = lineas.find((l) => /^dorado\s*:/i.test(l));
   const lista = lineas.filter((l) => l !== dorado);
   return lista.length ? { lista, dorado: dorado ? dorado.replace(/^dorado\s*:\s*/i, "") : null } : null;
+})();
+
+// Las razones de «Razones por las que te amo», una por línea, en
+// `mis-razones/razones.txt`. El número de delante («12.») es opcional y se
+// quita; las líneas con # son notas; «final:» es la frase del final.
+const razones = (() => {
+  const ruta = join(RAIZ, "mis-razones/razones.txt");
+  if (!existsSync(ruta)) return null;
+  const lineas = readFileSync(ruta, "utf8").split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
+  const final = lineas.find((l) => /^final\s*:/i.test(l));
+  const lista = lineas
+    .filter((l) => l !== final)
+    .map((l) => l.replace(/^\d+\s*[.)\-–:]\s*/, "").trim())
+    .filter(Boolean);
+  return lista.length ? { lista, final: final ? final.replace(/^final\s*:\s*/i, "") : null } : null;
 })();
 
 const ICONOS = ["icono/icono.png", "icono/icono.jpg", "icono/icono.jpeg", "icono/icono.webp", "icono/icono.svg", "icono/icon.png"];
@@ -284,6 +302,7 @@ const contenido = {
   sorpresas,
   sonidos,
   vales,
+  razones,
   noche: existsSync(join(RAIZ, "noche-estrellada/index.html")),
   huellas: { ...huellas, ...(voz && vozHuella ? { [voz]: vozHuella } : {}) },
   textosMios,
@@ -315,9 +334,15 @@ const pesosNoche = Object.fromEntries(
 );
 // Lo que las páginas HTML pueden hacer sonar, visto desde `paginas-html/`.
 const desdePaginas = (r) => (r ? encodeURI(r.startsWith("paginas-html/") ? r.slice(13) : `../${r}`) : null);
+// El nombre de cada canción del tocadiscos, sacado del propio .mp3.
+const nombreDe = (r) => {
+  if (!r) return null;
+  try { return etiquetas(readFileSync(join(RAIZ, r))); } catch { return null; }
+};
 const archivosPaginas = {
   ojos: desdePaginas(sonidos.ojos),
   tocadiscos: tocadiscos.map(desdePaginas),
+  tocadiscosNombres: tocadiscos.map(nombreDe),
   radio: radio.map(desdePaginas),
 };
 
@@ -400,5 +425,5 @@ console.log(
   `contenido: ${paginasHtml.length} páginas html · ${amores.length} fotos de amores · ` +
     `${misVideos.length} vídeos · ${misFotos.length} fotos · icono ${icono || "—"} · noche ${contenido.noche} · ${archivosNoche.length} sonidos de la noche · ` +
     `corazón ${sonidos.corazon || "—"} · ojos ${sonidos.ojos || "—"} · tocadiscos ${tocadiscos.filter(Boolean).length}/5 · radio ${radio.length} · ` +
-    `${vales ? vales.lista.length : 0} vales`
+    `${vales ? vales.lista.length : 0} vales · ${razones ? razones.lista.length : 0} razones`
 );

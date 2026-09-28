@@ -132,10 +132,13 @@ html, body { margin: 0; height: 100%; background: #060912; }
 }
 
 /* Contador: puntitos que se encienden con el color de la figura. */
+/* Debajo del título, centrado: a la derecha se encimaba con él en los
+   teléfonos angostos. */
 .cielo-mundo .cl-cuenta {
   position: absolute;
-  right: 20px;
-  top: calc(var(--seguro-t) + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(var(--seguro-t) + 58px);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -208,7 +211,7 @@ const CONF = {
     },
     {
       nombre: "La casa",
-      frase: "No es un sitio. Es donde ocurren nuestros besos mas intimos.",
+      frase: "No es un sitio. Es donde ocurren nuestros besos más íntimos.",
       firma: "Donde sea.",
       color: "#ffcf9a",
       puntos: [
@@ -245,7 +248,7 @@ const CONF = {
     {
       nombre: "El barco",
       frase: "Nos subimos sin mapa y resultó que no hacía falta.",
-      firma: "Yo llevo el timón, tu descansa.",
+      firma: "Yo llevo el timón, tú descansa.",
       color: "#9ecdff",
       puntos: [
         [0.26, 0.62], [0.74, 0.62], [0.66, 0.74], [0.34, 0.74],
@@ -256,14 +259,14 @@ const CONF = {
   ],
 
   alUnir: [
-    "Ahí va una.",
-    "Sigue, que va tomando forma.",
-    "Esa me gustaba.",
-    "Un poco más.",
-    "Casi.",
+    "Ahí va una, como mis ganas de verte.",
+    "Sigue, que va quedando preciosa… como tú.",
+    "Qué bonita te está quedando.",
+    "Un poquito más, mi amor.",
+    "Casi, casi.",
   ],
-  alFallar: "Esas dos no van juntas. Prueba otra.",
-  alEmpezar: "Arrastra de una estrella a otra.",
+  alFallar: "Esas dos no van juntas… no como tú y yo. Prueba otra.",
+  alEmpezar: "Arrastra de una estrella a otra, mi amor.",
   alTerminarTodo: {
     nombre: "Todas",
     frase: "Ya no queda cielo por dibujar.",
@@ -621,8 +624,8 @@ zona.addEventListener("pointerdown", (e) => {
     if (golpes.n === 3) {
       golpes.n = 0;
       latiendo = { i, t: 0 };
-      decir("Esa estrella se ha puesto nerviosa.",
-            "Como yo la primera vez.");
+      decir("Esa estrella se puso nerviosa.",
+            "Como yo cada vez que me escribes.");
       sonar(392, 0.4, "triangle");
       vibrar(40);
     }
@@ -827,8 +830,8 @@ function tocarVacio(p) {
       });
     }
     anunciar("Doce");
-    decir("Doce estrellas que no estaban. Las has puesto tú.",
-          "Este cielo ya es medio tuyo.");
+    decir("Doce estrellas nuevas, y todas las pusiste tú.",
+          "Este cielo ya es tuyo, igual que yo.");
     sonar(523, 0.7, "triangle");
     vibrar(80);
   }
@@ -892,8 +895,8 @@ function paso(ahora) {
   if (quieta > SECRETO_QUIETA) {
     quieta = -40;
     fugaz = { x: -40, y: H * 0.42, vx: 300, vy: 40, vida: 1, gorda: true };
-    decir("Ha pasado una. ¿Has pedido algo?",
-          "Yo pido lo mismo siempre.");
+    decir("¡Pasó una fugaz! ¿Pediste algo?",
+          "Yo siempre pido lo mismo: a ti.");
   }
 
   fulgor = damp(fulgor, 0, 1.6, dt);

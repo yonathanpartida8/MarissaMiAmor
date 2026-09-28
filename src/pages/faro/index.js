@@ -6,6 +6,11 @@
  * momento, el barquito enciende su farolito y navega hasta la orilla
  * siguiendo la luz. Entonces sale el texto.
  *
+ * Al encontrarlo suena una música diez segundos: entra con un fundido,
+ * se despide con otro y no se repite. Mientras suena, la canción del libro
+ * se aparta y luego vuelve sola. Es `Papel.mp3` (en la raíz o en
+ * `mis-sonidos/`); si no está, la de la caja de música (`paginas-html/ojos.mp3`).
+ *
  * Escondido: tocar el faro tres veces, y parpadea tres veces: te a-mo.
  */
 
@@ -13,6 +18,10 @@ import { BasePage } from "../BasePage.js";
 import { Gestures } from "../../core/Gestures.js";
 import { el, svgEl as svg, setVars } from "../../utils/dom.js";
 import { clamp, damp } from "../../utils/math.js";
+import contenido from "../../data/contenido.js";
+
+/** La música del barquito: cuánto dura y cuánto tardan sus fundidos. */
+const MUSICA = { dura: 10, entra: 2, sale: 2.6, volumen: 0.9, apartar: 0.12 };
 
 const GRADOS = 180 / Math.PI;
 const ACIERTO = 6; // grados de margen para alumbrarlo
@@ -131,6 +140,7 @@ export default class FaroPage extends BasePage {
         this.mar,
         {
           onDown: (e) => {
+            this.#prepararMusica();
             if (this.#tocaFaro(e)) return;
             apuntar(e);
           },
@@ -200,6 +210,7 @@ export default class FaroPage extends BasePage {
     this.hallado = true;
     this.root.classList.add("is-hallado");
     this.feedback("open", "secret", { volume: 0.35 });
+    this.#musica();
     // Del sitio donde estaba, hasta el pie del faro.
     this.later(() => this.root.classList.add("is-rumbo"), 700);
     this.later(() => {
@@ -208,5 +219,126 @@ export default class FaroPage extends BasePage {
       const r = this.barco.getBoundingClientRect();
       for (let k = 0; k < 4; k++) this.later(() => this.corazon(r.left + r.width / 2, r.top), k * 160);
     }, 700 + 4200);
+  }
+
+  /**
+   * Deja lista la música del barquito, DENTRO de un toque.
+   *
+   * En iPhone un <audio> sólo puede empezar a sonar si alguna vez se le dio
+   * play durante un toque. El barquito se encuentra mientras el dedo se
+   * arrastra, pero el momento exacto lo detecta el reloj de la página, que
+   * ya no cuenta como toque. Así que con el primer toque se le da play en
+   * silencio y se pausa al instante: queda «despierto» para después.
+   */
+  #prepararMusica() {
+    if (this.cancion || this.hallado) return;
+    const archivo = contenido?.sonidos?.barquito || contenido?.sonidos?.ojos;
+    const bus = this.ctx.audio;
+    if (!archivo || !bus) return;
+    const el = new Audio(archivo.split("/").map(encodeURIComponent).join("/"));
+    el.preload = "auto";
+    el.loop = false;
+    el.setAttribute("playsinline", "");
+    const ac = bus.contexto?.();
+    const cancion = { el, ac, gain: null, lista: false };
+    if (ac && bus.salidaEfectos && /^https?:$/.test(location.protocol)) {
+      try {
+        cancion.gain = ac.createGain();
+        cancion.gain.gain.value = 0;
+        ac.createMediaElementSource(el).connect(cancion.gain).connect(bus.salidaEfectos);
+      } catch {
+        cancion.gain = null;
+      }
+    }
+    if (!cancion.gain) el.volume = 0;
+    else el.volume = 1;
+    this.cancion = cancion;
+    el.play()
+      .then(() => {
+        if (!cancion.sonando) {
+          el.pause();
+          el.currentTime = 0;
+        }
+        cancion.lista = true;
+      })
+      .catch(() => {});
+  }
+
+  /**
+   * Diez segundos de música al encontrar el barquito: entra con un fundido,
+   * se va con otro y no se repite.
+   *
+   * Va por WebAudio y no con `audio.volume` porque en iPhone el volumen de
+   * un <audio> no se puede cambiar: el fundido no se oiría. Si no hubiera
+   * WebAudio, se hace con el volumen del elemento (en la compu sí vale).
+   */
+  #musica() {
+    const bus = this.ctx.audio;
+    if (!bus || bus.muted) return this.#callarMusica(0);
+    if (!this.cancion) this.#prepararMusica();
+    const cancion = this.cancion;
+    if (!cancion || cancion.sonando) return;
+    cancion.sonando = true;
+    const { el, ac, gain } = cancion;
+
+    // La canción del libro se aparta mientras dure (y vuelve sola al soltar).
+    bus.mantener?.("barquito", MUSICA.apartar);
+
+    const arrancar = () => {
+      if (this.cancion !== cancion) return;
+      if (gain && ac) {
+        const g = gain.gain, t = ac.currentTime;
+        g.cancelScheduledValues(t);
+        g.setValueAtTime(0.0001, t);
+        g.linearRampToValueAtTime(MUSICA.volumen, t + MUSICA.entra);
+        g.setValueAtTime(MUSICA.volumen, t + MUSICA.dura - MUSICA.sale);
+        g.linearRampToValueAtTime(0.0001, t + MUSICA.dura);
+      } else {
+        const t0 = performance.now();
+        const paso = (ahora) => {
+          if (this.cancion !== cancion) return;
+          const s = (ahora - t0) / 1000;
+          const k = s < MUSICA.entra ? s / MUSICA.entra : s > MUSICA.dura - MUSICA.sale ? (MUSICA.dura - s) / MUSICA.sale : 1;
+          el.volume = clamp(k, 0, 1) * MUSICA.volumen;
+          if (s < MUSICA.dura) requestAnimationFrame(paso);
+        };
+        requestAnimationFrame(paso);
+      }
+      cancion.fin = setTimeout(() => this.#callarMusica(0), MUSICA.dura * 1000 + 80);
+    };
+    try { el.currentTime = 0; } catch { /* aún sin datos: empieza en 0 igual */ }
+    el.play().then(arrancar).catch(() => this.#callarMusica(0));
+  }
+
+  /** Apaga la música del barquito (con un fundido de `ms`) y devuelve la del libro. */
+  #callarMusica(ms = 400) {
+    const cancion = this.cancion;
+    if (!cancion) return;
+    this.cancion = null;
+    clearTimeout(cancion.fin);
+    const { el, ac, gain } = cancion;
+    const parar = () => {
+      el.pause();
+      el.removeAttribute("src");
+      el.load();
+    };
+    if (ms > 0 && gain && ac) {
+      const t = ac.currentTime;
+      gain.gain.cancelScheduledValues(t);
+      gain.gain.setValueAtTime(gain.gain.value, t);
+      gain.gain.linearRampToValueAtTime(0.0001, t + ms / 1000);
+      setTimeout(parar, ms + 40);
+    } else parar();
+    this.ctx.audio?.soltar?.("barquito");
+  }
+
+  async leave(direction) {
+    this.#callarMusica(350);
+    return super.leave(direction);
+  }
+
+  destroy() {
+    this.#callarMusica(0);
+    super.destroy();
   }
 }

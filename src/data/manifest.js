@@ -57,7 +57,17 @@ import { chapterById } from "./chapters.js";
 /** @type {PageEntry[]} */
 const pages = [
   // ═══════════════════════════════════════════════════════════════
-  //  ANTES DE TODO: `paginas-html/inicio.html1.html`, `…2.html` y el
+  //  PORTADA: lo primero de todo. Al romper el sello sigue todo corrido.
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "portada",
+    type: "cover",
+    transition: "none",
+    hint: "mantén el dedo sobre el sello",
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  //  DESPUÉS: `paginas-html/inicio.html1.html`, `…2.html` y el
   //  candado del código. Hasta que no se abre, no se pasa de ahí.
   // ═══════════════════════════════════════════════════════════════
   {
@@ -80,16 +90,6 @@ const pages = [
     chapter: "puerta",
     transition: "zoom",
     hint: "solo tú sabes el código",
-  },
-
-  // ═══════════════════════════════════════════════════════════════
-  //  PORTADA
-  // ═══════════════════════════════════════════════════════════════
-  {
-    id: "portada",
-    type: "cover",
-    transition: "none",
-    hint: "mantén el dedo sobre el sello",
   },
 
   // ═══════════════════════════════════════════════════════════════
@@ -155,7 +155,7 @@ const pages = [
     type: "polaroids",
     chapter: "nuestro-desorden",
     transition: "flip",
-    hint: "arrástralas · tócalas dos veces para verles el reverso",
+    hint: "arrástralos · tócalos dos veces para ver lo que les escribí detrás",
     secret: "desorden-movido",
   },
   {
@@ -553,9 +553,19 @@ export const manifest = decorate(pages.map((entry) => ({ ...entry })));
 /**
  * Inserta las páginas de él. `where` decide dónde va cada una:
  *   "final"  (por defecto) justo antes de la página de cierre
- *   "inicio" después de la portada
- *   número   en esa posición del libro (1 = después de la portada)
+ *   "inicio" al principio del contenido, justo detrás del candado
+ *   número   en esa posición del contenido (1 = la primera tras el candado)
+ *
+ * Nunca delante del candado: lo de antes (portada, inicios y candado) es
+ * la entrada, y todo lo demás tiene que quedar detrás del código.
  */
+function inicioDelContenido() {
+  const puerta = manifest.findIndex((e) => e.type === "puerta");
+  if (puerta >= 0) return puerta + 1;
+  const tapa = manifest.findIndex((e) => e.type === "cover");
+  return tapa + 1;
+}
+
 export function registerCustomPages(entries) {
   if (!entries?.length) return manifest;
 
@@ -563,11 +573,12 @@ export function registerCustomPages(entries) {
     const where = entry.where ?? "final";
     let at;
     let appended = false;
+    const base = inicioDelContenido();
 
     if (where === "inicio") {
-      at = 1;
+      at = base;
     } else if (where !== "final" && Number.isFinite(Number(where))) {
-      at = Math.max(1, Math.min(manifest.length, Math.round(Number(where))));
+      at = Math.max(base, Math.min(manifest.length, base + Math.round(Number(where)) - 1));
     } else {
       // "final": siempre justo antes del cierre, que tiene que quedar último.
       // Se recalcula en cada vuelta porque el manifiesto acaba de crecer.

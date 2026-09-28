@@ -2,13 +2,14 @@
  * ╔══════════════════════════════════════════════════════════════════╗
  * ║  RAZONES POR LAS QUE TE AMO                                       ║
  * ║                                                                  ║
- * ║  Una por línea, entre comillas y con su coma al final.            ║
- * ║  Salen en este orden (y se pueden barajar desde la página).       ║
- * ║  Puedes quitar, cambiar o añadir las que quieras: el mazo se      ║
- * ║  ajusta solo a las que haya.                                      ║
+ * ║  Las de verdad se escriben en `mis-razones/razones.txt`, una por  ║
+ * ║  línea: es mucho más fácil. Éstas de aquí son sólo el respaldo,   ║
+ * ║  por si ese archivo no estuviera.                                 ║
  * ╚══════════════════════════════════════════════════════════════════╝
  */
-export const razones = [
+import contenido from "./contenido.js";
+
+const deSiempre = [
   "Porque me haces reír hasta en mis días grises.",
   "Porque contigo puedo ser yo, sin fingir nada.",
   "Porque me cuidas aunque estés lejos.",
@@ -110,5 +111,11 @@ export const razones = [
   "Porque eres lo mejor que me ha pasado.",
   "Porque eres tú. Y con eso ya es suficiente.",
 ];
+
+/** Las del .txt si las hay; si no, las de siempre. */
+export const razones = contenido?.razones?.lista?.length ? contenido.razones.lista : deSiempre;
+
+/** La frase que sale al acabar el mazo (la línea «final:» del .txt). */
+export const razonesFinal = contenido?.razones?.final || null;
 
 export default razones;

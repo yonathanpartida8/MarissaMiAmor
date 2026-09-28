@@ -40,7 +40,7 @@
  *            cosmos · light
  */
 
-import { razones } from "./razones.js";
+import { razones, razonesFinal } from "./razones.js";
 import { resolverPaleta } from "./paletas.js";
 import contenido from "./contenido.js";
 import { carpetaDeCadaPagina } from "./fotos.js";
@@ -191,47 +191,46 @@ export const chapters = [
   {
     id: "nuestro-desorden",
     act: "encontrarte",
-    title: "Recuerdos",
-    kicker: "muévelas donde quieras",
+    title: "Dibujitos míos para ti",
+    kicker: "muévelos donde quieras",
     text: "Nunca hemos necesitado tener todo planeado. Muchas de nuestras mejores cosas simplemente pasan: se nos ocurre algo de la nada, terminamos haciéndolo a nuestra manera, nos reímos y al final se convierte en otro recuerdo que quiero guardar contigo.\nPor eso estos recuerdos están así, sin ningún orden. Porque así los guardo yo también: todos revueltos en mi cabeza, apareciendo de repente, pero cada uno con algo que me hace sonreír. Y aunque sean pequeños, todos tienen algo en común: tú estás en ellos.",
-    // Lo que está escrito detrás de cada foto (tócala dos veces).
+    // Lo que está escrito detrás de cada dibujito (tócalo dos veces).
     lines: [
-      "mírate nomás, qué hermosa",
-      "mi niña linda 🤍",
-      "esta me la quedo yo",
-      "te amo, así de simple",
-      "la más bonita del mundo",
-      "mi lugar favorito eres tú",
-      "esa sonrisa es mía",
-      "para cuando dudes de lo linda que eres",
+      "lo dibujé pensando en ti 🤍",
+      "cada trazo dice te amo",
+      "para mi niña linda",
+      "te amo más de lo que sé dibujar",
+      "hecho con amor, solo para ti",
+      "eres mi inspiración favorita",
+      "te amo, aunque me salga chueco :>",
+      "guárdalo: es tuyo, como yo",
     ],
-    // Lo que sale al tocar una foto una vez: sólo piropos.
+    // Lo que sale al tocar un dibujito una vez: sólo piropos.
     piropos: [
-      "Qué bonita sales, mi amor 🥹",
-      "Te amo muchísimo",
-      "Mírate nomás, qué hermosa",
-      "Esa sonrisa me derrite 🫠",
+      "Te amo muchísimo, mi amor 🥹",
       "Eres mi persona favorita en todo el mundo",
+      "Esa sonrisa tuya me derrite 🫠",
       "Contigo todo es más bonito",
       "Te amo más que ayer y menos que mañana",
-      "Qué suerte tengo de tenerte",
+      "Qué suerte tengo de amarte",
       "Eres preciosa, neta",
       "Me encantas toda, completita",
       "Tus ojitos son mi lugar favorito",
       "Eres mi niña linda 🤍",
       "Te amo con todo mi corazón",
-      "Eres arte, mi amor",
+      "Eres arte, mi amor; yo nomás intento dibujarlo",
       "Me enamoro de ti otra vez cada día",
       "Nadie brilla como tú ✨",
       "Eres mi sol, mi luna y mis estrellas",
       "Te amo bonito y para siempre",
-      "Qué guapa estás, ¿cómo le haces?",
+      "Todo lo que dibujo termina pareciéndose a ti",
       "Mi corazón es tuyo, completito",
       "Eres la más linda del universo",
       "Te amo, te amo y te amo",
       "Eres mi casualidad más bonita",
       "Qué bendición es amarte",
-      "Hasta en foto me pones nervioso :>",
+      "Pienso en ti y me sale un dibujito :>",
+      "Si dibujara lo que siento, no me alcanzaría el papel",
       "Eres perfecta para mí",
     ],
     palette: "brasa",
@@ -312,9 +311,9 @@ export const chapters = [
     title: "Razones por las que te amo",
     kicker: "desliza cada carta",
     text: "",
-    // Las cien razones están en `src/data/razones.js`.
+    // Las razones están en `mis-razones/razones.txt`, una por línea.
     lines: razones,
-    reveal: "Y eso que sólo cupieron cien. Las razones no se me acaban.",
+    reveal: razonesFinal || "Y eso que aquí no caben todas. Las razones no se me acaban.",
     palette: "rubor",
     mood: "bloom",
   },
@@ -565,6 +564,15 @@ export const chapters = [
     reveal: "Créeme, mi amorcito, te sigo amando muchísimo.",
     palette: "granate",
     mood: "glass",
+  },
+  {
+    id: "te-amo-final",
+    act: null,
+    title: "Te amo",
+    kicker: "por ahora, aquí termina",
+    text: "",
+    palette: "rubor",
+    mood: "bloom",
   },
   {
     id: "faro",

@@ -1,15 +1,16 @@
 /**
- * RAZONES — un mazo de cien cartas: «razones por las que te amo».
+ * RAZONES — un mazo de cartas: «razones por las que te amo».
  *
  * La de arriba se arrastra hacia un lado (o se toca) y sale volando; debajo
  * espera la siguiente. Con doble toque se GUARDA (le sale un sello) y queda
  * en «tus guardadas». El libro se acuerda de por cuál iba: con cien cartas
  * nadie quiere empezar de cero cada vez.
  *
- * En la 25, la 50 y la 75 dice algo. Al acabar el mazo sale la última frase
- * y se puede volver a barajar o repasar sólo las guardadas.
+ * Al cuarto, a la mitad y a los tres cuartos del mazo dice algo. Al acabar
+ * sale la última frase y se puede volver a barajar o repasar las guardadas.
  *
- * Las razones están en `src/data/razones.js`.
+ * Las razones están en `mis-razones/razones.txt`, una por línea: el mazo
+ * tiene tantas cartas como líneas haya.
  */
 
 import { BasePage } from "../BasePage.js";
@@ -21,11 +22,16 @@ import { seeded } from "../../utils/rng.js";
 const VISIBLES = 4;
 const TINTES = ["#ffd9e3", "#ffe8cf", "#f3dcff", "#dcecff", "#ffe0ec", "#e3f5e6"];
 const ADORNOS = ["♥", "✿", "✦", "☾", "❀", "♡"];
-const HITOS = {
-  25: "Ya van 25… y apenas voy calentando.",
-  50: "La mitad. Y todavía me sobran razones.",
-  75: "75. Si te cansas, descansa: aquí siguen.",
-};
+/** Lo que dice al cuarto, a la mitad y a los tres cuartos del mazo. */
+function hitos(n) {
+  if (n < 8) return {};
+  const q = Math.round(n / 4), m = Math.round(n / 2), t = Math.round((n * 3) / 4);
+  return {
+    [q]: `Ya van ${q}… y apenas voy calentando.`,
+    [m]: "La mitad. Y todavía me sobran razones.",
+    [t]: `${t}. Si te cansas, descansa: aquí siguen.`,
+  };
+}
 
 export default class RazonesPage extends BasePage {
   static type = "razones";
@@ -244,7 +250,8 @@ export default class RazonesPage extends BasePage {
     this.#recordar();
     this.#contar();
 
-    if (!this.soloFavoritas && HITOS[this.van]) this.ctx.ui?.toast?.(HITOS[this.van], 3200);
+    const hito = hitos(this.razones.length)[this.van];
+    if (!this.soloFavoritas && hito) this.ctx.ui?.toast?.(hito, 3200);
 
     if (this.van >= this.orden.length) {
       this.root.classList.add("is-acabado");

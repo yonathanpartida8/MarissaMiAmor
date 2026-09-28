@@ -17,12 +17,12 @@ import { clamp } from "../../utils/math.js";
 
 /** Lo que hay escrito por detrás, si el capítulo no trae lo suyo. */
 const BACK_NOTES = [
-  "mírate nomás, qué hermosa",
   "te amo, así de simple",
-  "mi favorita 🤍",
+  "para ti, con todo mi amor 🤍",
+  "eres lo más bonito que tengo",
   "la más bonita del mundo",
 ];
-const PIROPOS = ["Qué bonita sales, mi amor 🥹", "Te amo muchísimo", "Eres preciosa, neta"];
+const PIROPOS = ["Te amo muchísimo, mi amor 🥹", "Eres preciosa, neta", "Eres mi niña linda 🤍"];
 
 const FRICTION = 2.6;   // amortiguación al soltar
 const BOUNCE = 0.42;    // energía que conserva al chocar

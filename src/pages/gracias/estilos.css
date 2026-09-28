@@ -1,0 +1,88 @@
+/* GRACIAS — la última página. */
+.gracias {
+  display: grid;
+  place-items: center;
+  padding: calc(var(--pad-t) + 1rem) var(--pad-x) calc(var(--pad-b) + 1rem);
+  overflow: hidden;
+  text-align: center;
+}
+.gr__brillos { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.gr__brillos i {
+  position: absolute;
+  left: var(--x);
+  bottom: -6%;
+  font-style: normal;
+  font-size: calc(1rem * var(--s));
+  color: var(--accent);
+  opacity: 0;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent);
+  animation: gr-sube var(--t) linear var(--d) infinite;
+}
+@keyframes gr-sube {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  15% { opacity: 0.8; }
+  100% { transform: translate3d(12px, -110vh, 0) rotate(20deg); opacity: 0; }
+}
+.gr__carta {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  max-width: 26rem;
+  max-height: 100%;
+  opacity: 0;
+  transform: translateY(18px) scale(0.97);
+  transition: opacity 1200ms var(--e-out), transform 1400ms var(--e-out);
+}
+.gracias.is-entered .gr__carta { opacity: 1; transform: none; }
+.gr__arriba {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.gr__titulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(3.4rem, calc(20 * var(--vw)), 5.6rem);
+  line-height: 1;
+  background: linear-gradient(170deg, #fff6e8 0%, var(--gold-light) 40%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.3));
+}
+.gr__latido {
+  font-size: 1.8rem;
+  color: var(--accent);
+  animation: gr-late 1.6s ease-in-out infinite;
+}
+@keyframes gr-late {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.25); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.18); }
+}
+.gr__cuerpo {
+  margin: 0.4rem 0 0;
+  font-family: var(--font-body);
+  font-size: clamp(1.1rem, calc(4.8 * var(--vw)), 1.4rem);
+  line-height: 1.55;
+  color: var(--text);
+}
+.gr__emoji { margin: 0; font-size: 1.6rem; }
+.gr__pie {
+  margin: 0.6rem 0 0;
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  animation: gr-respira 3s ease-in-out infinite;
+}
+@keyframes gr-respira { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.85; } }
+@media (prefers-reduced-motion: reduce) {
+  .gr__brillos, .gr__latido, .gr__pie { animation: none; }
+}

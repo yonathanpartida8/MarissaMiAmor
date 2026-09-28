@@ -120,6 +120,9 @@ mis-paginas/            TUS páginas: fotos, vídeos y textos que añadas a mano
   paginas.js            la lista (lo único que se edita)
   fotos/  videos/       tus archivos
 mis-vales/vales.txt     LOS VALES de «Vales de amor», uno por línea
+mis-razones/razones.txt LAS RAZONES POR LAS QUE LA AMAS, una por línea
+musica final/           musicafinal.mp3: suena en bucle desde la última página
+Papel.mp3 (en la raíz)  la música de 10 s del barquito en «Aunque esté oscuro»
 mis-sonidos/            sonidos propios: corazón.mp3 (el latido de «Mi pulso»)
 noche-estrellada/       la escena final (bosque, cabaña, cacería)
 herramientas/
@@ -166,7 +169,7 @@ src/
     chapters.js         LOS TEXTOS de cada página
     fotos.js            qué carpeta de fotos-paginas/ usa cada página
     sorpresas.js        las 46 sorpresas: frase y escena de cada página
-    razones.js          las cien razones por las que te amo
+    razones.js          respaldo de las razones (las de verdad: mis-razones/)
     paletas.js          los trece colores del libro
     contenido.js        GENERADO: lo que hay en las carpetas (sin 404)
     escondidos.js       lo que dicen los ocho escondites
@@ -241,7 +244,7 @@ El orden del libro es siempre éste, y no se mezcla nunca:
 | **Pulso** | Poner el dedo y no quitarlo. El corazón late, la línea lo dibuja, el teléfono vibra con él y **cada latido suena** (`corazón.mp3` si lo subes a `mis-sonidos/`; si no, un «pum-pum» hecho por el libro). No mide nada: es una manera de enseñar cómo se pone. |
 | **Constelación** | Unir las estrellas con el dedo. |
 | **El cajón** | Un cajón de madera con su forro de terciopelo y su tirador de latón, que se abre al llegar. Seis cosas y seis maneras de tocarlas: la huella de un beso (un toque), una carta (dos), un mechón (desenrollarlo), un corazón (sostenerlo), una estrella (doble toque) y un anillo (uno). Cada una encontrada lleva su etiquetita a mano. Si se va a medias y vuelve, lo que ya encontró se queda. |
-| **Razones** | Un mazo de **cien** cartas «razones por las que te amo». Se lanzan con el dedo (o tocando); con **doble toque** se guarda una (le sale un sello) y al final se pueden repasar sólo las guardadas. El libro se acuerda de por cuál iba, dice algo en la 25, la 50 y la 75, y al final se puede barajar. Las razones están en `src/data/razones.js`. |
+| **Razones** | Un mazo de cartas «razones por las que te amo». Se lanzan con el dedo (o tocando); con **doble toque** se guarda una (le sale un sello) y al final se pueden repasar sólo las guardadas. El libro se acuerda de por cuál iba, dice algo al cuarto, a la mitad y a los tres cuartos, y al final se puede barajar. **Las razones se cambian en `mis-razones/razones.txt`** (una por línea; tantas cartas como líneas). |
 | **Vales de amor** | Una libretita de vales que se arrancan. Al arrancar el último aparece el vale dorado. **Los vales se cambian en `mis-vales/vales.txt`** (uno por línea; el dorado en la línea que empieza por `dorado:`). |
 | **Nuestras manos** | Dos manos dibujadas a una sola línea, con un hilo rojo entre los meñiques. Se arrastra la tuya hacia la mía (la mía también se acerca al final); por el camino salen frases y, al tocarse, hay un destello y ondas como un latido. Si se quedan juntas tres segundos se dibuja un corazón. Mi mano saluda si se toca tres veces. |
 | **Farolitos** | Cada toque en el cielo suelta un farolito con un deseo. La luna, tocada tres veces, suelta el dorado. |
@@ -400,6 +403,10 @@ cierre. Junto y en orden.
 **Y dos carpetas para cambiar cosas sin tocar código:**
 
 - **`mis-vales/vales.txt`** — los vales de «Vales de amor», uno por línea.
+- **`mis-razones/razones.txt`** — las razones de «Razones por las que te amo»,
+  una por línea (el número de delante es opcional). Añade, quita o cambia las
+  que quieras: el mazo tiene tantas cartas como líneas. La línea que empieza
+  por `final:` es la frase que sale al terminar.
 - **`mis-sonidos/`** — `corazón.mp3`, el latido de «Mi pulso». Ver
   `mis-sonidos/LÉEME.md`.
 
@@ -412,7 +419,7 @@ llevaron lo suyo dentro:
 | El pulso | `src/pages/pulso/textos.js` |
 | La nota | `src/pages/secreto/textos.js` (las palabras entre `*asteriscos*` son las que esconden algo) |
 | El cajón | `src/pages/ultima-sorpresa/textos.js` |
-| Las cien razones | `src/data/razones.js` |
+| Las razones por las que la amas | `mis-razones/razones.txt` (una por línea) |
 | Tus fotos | `src/pages/amor/textos.js` |
 
 Cada uno lleva arriba un cartelito diciendo qué es cada campo. Cambiar lo que

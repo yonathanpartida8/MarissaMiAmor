@@ -50,6 +50,7 @@ const loaders = {
   relojes: () => import("./relojes/index.js"),
   huellas: () => import("./huellas/index.js"),
   faro: () => import("./faro/index.js"),
+  gracias: () => import("./gracias/index.js"),
   promesas: () => import("./promesas/index.js"),
   undia: () => import("./un-dia/index.js"),
   bottle: () => import("./botella/index.js"),

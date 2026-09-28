@@ -39,7 +39,7 @@ export const escondidos = {
   petalos: "a ése lo dejamos, que se quede",
 
   // ── POLAROIDS · inclinar el móvil de golpe ─────────────────────────
-  polaroids: "se han movido solas, como cuando las tienes en la mano",
+  polaroids: "se han movido solitos, como cuando los tienes en la mano",
 
   // ── CARRETE · seguir tirando hacia atrás en el primer fotograma ────
   carrete: "antes de la primera foto ya me caías bien",

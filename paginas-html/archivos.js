@@ -10,6 +10,25 @@ window.LIBRO_ARCHIVOS = {
     null,
     "../tocadiscos%20musica/musica5.mp3"
   ],
+  "tocadiscosNombres": [
+    {
+      "titulo": "Vida En El Espejo",
+      "artista": "Enjambre"
+    },
+    {
+      "titulo": "Califórnica",
+      "artista": "La Gusana Ciega"
+    },
+    {
+      "titulo": "Beso",
+      "artista": "Jósean Log"
+    },
+    null,
+    {
+      "titulo": "Chachachá",
+      "artista": "Jósean Log"
+    }
+  ],
   "radio": [
     "../la%20radio/music1.mp3",
     "../la%20radio/music2.mp3",

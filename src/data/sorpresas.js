@@ -20,7 +20,7 @@ export default {
   "postal-primera":     { frase: "Si pudiera mandarte el día bonito en un sobre, lo haría.", escena: ["☀️", "✉️", "🌼", "🦋"] },
   "tu-voz":             { frase: "Dilo otra vez. Aunque me regañes.", escena: ["🎙️", "😳", "💕", "🎵"] },
   "deshojando":         { frase: "Todas las margaritas del mundo dicen lo mismo.", escena: ["🌼", "🍃", "💛", "🌸"] },
-  "nuestro-desorden":   { frase: "Nuestro desorden es mi lugar favorito.", escena: ["🧺", "📸", "🎈", "🍓"] },
+  "nuestro-desorden":   { frase: "Cada dibujito es un «te amo» que no cupo en palabras.", escena: ["🖍️", "🎨", "💗", "✨"] },
   "llueve-alla":        { frase: "Llueve allá, y yo aquí me imagino abrazándote.", escena: ["🌧️", "☂️", "🫖", "💞"] },
   "lista-pendiente":    { frase: "Punto uno de la lista: abrazarte muy fuerte.", escena: ["📝", "✅", "🤍", "✏️"] },
   "por-pedacitos":      { frase: "Cada pedacito tuyo encaja conmigo.", escena: ["🧩", "💗", "✨", "🔍"] },
