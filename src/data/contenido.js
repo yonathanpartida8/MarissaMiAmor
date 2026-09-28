@@ -125,8 +125,7 @@ export default {
   ],
   "amores": [],
   "misVideos": [
-    "ssstik.io_@nadie.xd533_1790541937867.mp4",
-    "VID-20260915-WA0017.mp4"
+    "ssstik.io_@nadie.xd533_1790541937867.mp4"
   ],
   "misFotos": [],
   "icono": "icono/icono.png",
@@ -679,12 +678,6 @@ export default {
       "arriba": "dale play 🤍",
       "orden": 3,
       "texto": "Míralo completito, ¿sí? 🤍"
-    },
-    "mis-paginas/videos/VID-20260915-WA0017.mp4": {
-      "titulo": "Te dedico un videito",
-      "arriba": "dale play 🤍",
-      "orden": 1,
-      "texto": "¡Debes mirarlos completos! 🤍"
     }
   },
   "textosPaginas": {
@@ -839,11 +832,6 @@ export default {
       "w": 772,
       "h": 576,
       "dur": 29.1
-    },
-    "mis-paginas/videos/VID-20260915-WA0017.mp4": {
-      "w": 576,
-      "h": 1024,
-      "dur": 15.3
     }
   }
 };
