@@ -675,6 +675,18 @@ export default {
     "audio/voz-lista.m4a": "bc6b7e4c"
   },
   "textosMios": {
+    "mis-paginas/videos/ssstik.io_@dzen._0_1790564263166.mp4": {
+      "titulo": "Te dedico este video",
+      "arriba": "dale play 🤍",
+      "orden": 1,
+      "texto": "¡Míralo completo! 🤍"
+    },
+    "mis-paginas/videos/ssstik.io_@mrpepegames_1790564341000.mp4": {
+      "titulo": "Te dedico un videito",
+      "arriba": "dale play 🤍",
+      "orden": 2,
+      "texto": "¡Debes mirarlos completos! 🤍"
+    },
     "mis-paginas/videos/ssstik.io_@nadie.xd533_1790541937867.mp4": {
       "titulo": "Otro videito para ti 🤍",
       "arriba": "dale play 🤍",
