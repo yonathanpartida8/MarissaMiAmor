@@ -24,10 +24,7 @@ window.LIBRO_ARCHIVOS = {
       "artista": "Jósean Log"
     },
     null,
-    {
-      "titulo": "Chachachá",
-      "artista": "Jósean Log"
-    }
+    null
   ],
   "radio": [
     "../la%20radio/music1.mp3",
