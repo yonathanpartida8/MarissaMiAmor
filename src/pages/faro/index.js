@@ -8,8 +8,7 @@
  *
  * Al encontrarlo suena una música diez segundos: entra con un fundido,
  * se despide con otro y no se repite. Mientras suena, la canción del libro
- * se aparta y luego vuelve sola. Es `Papel.mp3` (en la raíz o en
- * `mis-sonidos/`); si no está, la de la caja de música (`paginas-html/ojos.mp3`).
+ * se aparta y luego vuelve sola. Es `musica barco/barco.mp3`; si no está, la de la caja de música (`paginas-html/ojos.mp3`).
  *
  * Escondido: tocar el faro tres veces, y parpadea tres veces: te a-mo.
  */

@@ -122,7 +122,7 @@ mis-paginas/            TUS páginas: fotos, vídeos y textos que añadas a mano
 mis-vales/vales.txt     LOS VALES de «Vales de amor», uno por línea
 mis-razones/razones.txt LAS RAZONES POR LAS QUE LA AMAS, una por línea
 musica final/           musicafinal.mp3: suena en bucle desde la última página
-Papel.mp3 (en la raíz)  la música de 10 s del barquito en «Aunque esté oscuro»
+musica barco/           barco.mp3: la música de 10 s del barquito («Aunque esté oscuro»)
 mis-sonidos/            sonidos propios: corazón.mp3 (el latido de «Mi pulso»)
 noche-estrellada/       la escena final (bosque, cabaña, cacería)
 herramientas/

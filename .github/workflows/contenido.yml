@@ -20,6 +20,8 @@ on:
       - "mis-vales/**"
       - "mis-razones/**"
       - "musica final/**"
+      - "musica barco/**"
+      - "musica-barco/**"
       - "musica-final/**"
       - "audio/**"
       - "tocadiscos musica/**"

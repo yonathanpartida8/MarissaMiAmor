@@ -65,8 +65,10 @@ const sorpresas = Object.fromEntries(
 const sinAcentos = (s) => nfc(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 // La carpeta «musica final» (con o sin tilde, espacios o guion).
 const carpetaFinal = readdirSync(RAIZ).find((f) => sinAcentos(f).replace(/[\s_-]+/g, "") === "musicafinal" && !f.includes("."));
+// La carpeta «musica barco».
+const carpetaBarco = readdirSync(RAIZ).find((f) => sinAcentos(f).replace(/[\s_-]+/g, "") === "musicabarco" && !f.includes("."));
 const buscarSonido = (nombre) => {
-  for (const dir of ["assets/audio", "mis-sonidos", "paginas-html", ...(carpetaFinal ? [carpetaFinal] : []), ""]) {
+  for (const dir of ["assets/audio", "mis-sonidos", "paginas-html", ...(carpetaFinal ? [carpetaFinal] : []), ...(carpetaBarco ? [carpetaBarco] : []), ""]) {
     const f = (dir ? leer(dir) : readdirSync(RAIZ)).find((f) => sinAcentos(f).replace(/\.(mp3|m4a|ogg|wav|aac)$/, "") === nombre && /\.(mp3|m4a|ogg|wav|aac)$/i.test(f));
     if (f) return dir ? `${dir}/${nfc(f)}` : nfc(f);
   }
@@ -104,7 +106,7 @@ const voz = (() => {
   vozHuella = createHash("md5").update(datos).digest("hex").slice(0, 8);
   return original;
 })();
-const sonidos = { corazon: buscarSonido("corazon"), ojos: buscarSonido("ojos"), barquito: buscarSonido("papel") || buscarSonido("barquito"), final: buscarSonido("musicafinal"), voz };
+const sonidos = { corazon: buscarSonido("corazon"), ojos: buscarSonido("ojos"), barquito: buscarSonido("barco") || buscarSonido("papel") || buscarSonido("barquito"), final: buscarSonido("musicafinal"), voz };
 
 // La música del tocadiscos: `tocadiscos musica/musica1.mp3` … `musica5.mp3`,
 // una por zona del disco. Da igual si la carpeta se escribe con guion, con
