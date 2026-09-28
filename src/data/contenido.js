@@ -379,13 +379,13 @@ export default {
     "lista": [
       "Vale por abrazos y besos infinitos.",
       "Vale por una videollamada hasta que nos quedemos dormidos.",
-      "Vale por Un día completo juntos (canjeable en persona).",
+      "Vale por un día completo juntos (canjeable en persona).",
       "Vale por un día en el que vayamos a una tienda y yo te consienta en todo.",
-      "Vale por una cita, la que tu gustes en donde quieras y pidas todo lo que quieras.",
+      "Vale por una cita, la que tú gustes, donde quieras y pidas todo lo que quieras.",
       "Vale por escucharte sin interrumpirte de madrugada.",
       "Vale por perdonarte que digas mi nombre.",
-      "Vale por un masajito cuando estés cansada. (canjeable en persona)",
-      "Vale por llevarte a donde tu gustes ir y comprarte lo que quieras."
+      "Vale por un masajito cuando estés cansada (canjeable en persona).",
+      "Vale por llevarte a donde tú gustes y comprarte lo que quieras."
     ],
     "dorado": "Vale por lo que tú quieras, cuando tú quieras. Sin fecha de caducidad. (canjeable en persona)"
   },
