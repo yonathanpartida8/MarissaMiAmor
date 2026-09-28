@@ -372,7 +372,7 @@ export default {
     "corazon": null,
     "ojos": "paginas-html/ojos.mp3",
     "barquito": null,
-    "final": null,
+    "final": "musica final/musicafinal.mp3",
     "voz": "audio/voz-lista.m4a"
   },
   "vales": {
