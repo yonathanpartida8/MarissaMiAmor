@@ -68,7 +68,12 @@ html[data-orientation="landscape"][data-device="phone"] #stage {
   width: var(--frame-w);
   height: var(--frame-h);
   border-radius: var(--frame-radius);
-  transform-style: preserve-3d;
+  /* PLANA mientras está quieta. En iPhone (Safari), todo lo que vive dentro
+     de un contexto 3D —`preserve-3d` con caras `backface-visibility:
+     hidden`— deja de desplazarse con el dedo: el texto largo, los
+     `.lectura` y las páginas HTML no hacían scroll. Así que el 3D sólo se
+     enciende mientras la hoja gira (`.leaf--turning`, ver abajo). */
+  transform-style: flat;
   /* El lomo está a la izquierda: la hoja gira sobre él. */
   transform-origin: left center;
   backface-visibility: visible;
@@ -105,10 +110,12 @@ html[data-device="desktop"] .leaf {
   animation-play-state: paused !important;
 }
 
-/* Durante el giro no hay transición CSS: manda el muelle en JS. */
+/* Durante el giro no hay transición CSS: manda el muelle en JS. Y es el
+   único momento en que la hoja es 3D, con sus dos caras. */
 .leaf--turning {
   transition: none;
   z-index: 3;
+  transform-style: preserve-3d;
 }
 
 /* La hoja que se descubre debajo: ligeramente hundida en el libro. */
@@ -128,13 +135,22 @@ html[data-device="desktop"] .leaf {
   inset: 0;
   border-radius: inherit;
   overflow: hidden;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
   transform-style: flat;
 }
 
 .leaf__face--back {
   transform: rotateY(180deg);
+  /* Quieta, el reverso no se ve (y no estorba al dedo). */
+  visibility: hidden;
+}
+
+/* Girando: cada cara sólo por su lado, y el reverso aparece. */
+.leaf--turning .leaf__face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.leaf--turning .leaf__face--back {
+  visibility: visible;
 }
 
 /* Sombreado propio de cada cara mientras gira: el papel se oscurece
