@@ -106,7 +106,23 @@ const voz = (() => {
   vozHuella = createHash("md5").update(datos).digest("hex").slice(0, 8);
   return original;
 })();
-const sonidos = { corazon: buscarSonido("corazon"), ojos: buscarSonido("ojos"), barquito: buscarSonido("barco") || buscarSonido("papel") || buscarSonido("barquito"), final: buscarSonido("musicafinal"), voz };
+// Si un «.mp3» es en realidad un vídeo del teléfono, se saca su sonido
+// tal cual a `<nombre>-lista.m4a` al lado, y se usa ése (en iPhone el
+// vídeo renombrado no suena).
+function soloSonido(ruta) {
+  if (!ruta) return null;
+  const lista = ruta.replace(/\.[^./]+$/, "") + "-lista.m4a";
+  const datos = readFileSync(join(RAIZ, ruta));
+  if (!esMp4(datos)) {
+    if (existsSync(join(RAIZ, lista))) unlinkSync(join(RAIZ, lista));
+    return ruta;
+  }
+  const m4a = extraerAudio(datos);
+  if (!m4a) return ruta;
+  if (!existsSync(join(RAIZ, lista)) || !readFileSync(join(RAIZ, lista)).equals(m4a)) writeFileSync(join(RAIZ, lista), m4a);
+  return lista;
+}
+const sonidos = { corazon: buscarSonido("corazon"), ojos: buscarSonido("ojos"), barquito: soloSonido(buscarSonido("barco") || buscarSonido("papel") || buscarSonido("barquito")), final: soloSonido(buscarSonido("musicafinal")), voz };
 
 // La música del tocadiscos: `tocadiscos musica/musica1.mp3` … `musica5.mp3`,
 // una por zona del disco. Da igual si la carpeta se escribe con guion, con

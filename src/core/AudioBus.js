@@ -375,24 +375,53 @@ export class AudioBus extends Emitter {
    * mismo <audio>, así que el camino por WebAudio (y el volumen en iPhone)
    * se conserva.
    */
-  cambiarMusica(url, fade = 1400) {
+  cambiarMusica(url, fade = 4500) {
     const track = this.tracks.get("music");
     if (!track || !url || this.musicaActual === url) return;
     this.musicaActual = url;
-    const poner = () => {
-      track.el.src = url;
-      track.el.loop = true;
-      track.el.preload = "auto";
-      if (!this.playingMusic || this.muted) return;
-      this.#ponerVolMusica(track, 0);
-      this.#enPausa = false;
-      track.el.play().then(() => {
-        this.#nivelPuesto = this.#nivelApartado();
-        this.#fadeMusica(track, track.base * this.#nivelPuesto, 2600);
-      }).catch(() => {});
+    // Otro <audio> para la nueva: así las dos se cruzan (una entra mientras
+    // la otra se va) y ningún otro fundido puede cortar el cambio a medias.
+    const nuevo = new Audio(url);
+    nuevo.loop = true;
+    nuevo.preload = "auto";
+    nuevo.setAttribute("playsinline", "");
+    const viejo = track.el;
+    const gainViejo = track.enrutada ? this.volumenMusica : null;
+    let gainNuevo = null;
+    if (gainViejo && this.ac) {
+      try {
+        gainNuevo = this.ac.createGain();
+        gainNuevo.gain.value = 0;
+        this.ac.createMediaElementSource(nuevo).connect(gainNuevo).connect(this.ac.destination);
+      } catch { gainNuevo = null; }
+    }
+    // Desde ya, la «principal» es la nueva (hasta recargar).
+    track.el = nuevo;
+    track.enrutada = !!gainNuevo;
+    if (gainNuevo) this.volumenMusica = gainNuevo;
+    else nuevo.volume = 0;
+    const s = fade / 1000;
+    const apagarVieja = () => {
+      if (gainViejo) {
+        const t = this.ac.currentTime;
+        gainViejo.gain.cancelScheduledValues(t);
+        gainViejo.gain.setValueAtTime(gainViejo.gain.value, t);
+        gainViejo.gain.linearRampToValueAtTime(0, t + s);
+      } else this.#fade(viejo, 0, fade);
+      setTimeout(() => viejo.pause(), fade + 100);
     };
-    if (this.playingMusic && !track.el.paused) this.#fadeMusica(track, 0, fade, poner);
-    else poner();
+    if (!this.playingMusic || this.muted) { apagarVieja(); return; }
+    this.#enPausa = false;
+    nuevo.play().then(() => {
+      const meta = track.base * this.#nivelApartado();
+      this.#nivelPuesto = this.#nivelApartado();
+      if (gainNuevo) {
+        const t = this.ac.currentTime;
+        gainNuevo.gain.setValueAtTime(0, t);
+        gainNuevo.gain.linearRampToValueAtTime(meta, t + s);
+      } else this.#fade(nuevo, meta, fade);
+      apagarVieja();
+    }).catch(() => apagarVieja());
   }
 
   stopMusic(fade = 800) {

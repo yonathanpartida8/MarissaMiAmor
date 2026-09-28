@@ -48,12 +48,12 @@ jobs:
       - run: node herramientas/contenido.mjs
       - name: Guardar la lista si cambió
         run: |
-          if [ -z "$(git status --porcelain -- src/data/contenido.js noche-estrellada/archivos.js paginas-html/archivos.js index.html audio)" ]; then
+          if [ -z "$(git status --porcelain -- src/data/contenido.js noche-estrellada/archivos.js paginas-html/archivos.js index.html audio "musica final" "musica barco")" ]; then
             echo "La lista ya estaba al día."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A -- src/data/contenido.js noche-estrellada/archivos.js paginas-html/archivos.js index.html audio
+          git add -A -- src/data/contenido.js noche-estrellada/archivos.js paginas-html/archivos.js index.html audio "musica final" "musica barco"
           git commit -m "Lista de contenido al día"
           git push
