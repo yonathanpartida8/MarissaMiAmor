@@ -120,6 +120,71 @@ html, body { margin: 0; height: 100%; }
   color: #c2567e;
 }
 
+/* ── Los hechizos: una fila de botoncitos abajo ── */
+.grullas-mundo .gr-hechizos {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(var(--seguro-b) + var(--barra) + 12px);
+  z-index: 4;
+  display: flex;
+  gap: 6px;
+  justify-content: safe center;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 6px 14px;
+  pointer-events: none;
+}
+.grullas-mundo .gr-hechizos::-webkit-scrollbar { display: none; }
+.grullas-mundo .gr-hechizos button {
+  pointer-events: auto;
+  flex: none;
+  appearance: none;
+  border: 0;
+  width: 41px; height: 41px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 4px 14px -6px rgba(90, 50, 90, 0.5), inset 0 0 0 1.5px rgba(194, 86, 126, 0.22);
+  font-size: 20px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 220ms var(--e-suave), background 220ms, box-shadow 220ms;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.grullas-mundo .gr-hechizos button:active { transform: scale(0.9); }
+.grullas-mundo .gr-hechizos button.is-activo {
+  background: #ffe0ec;
+  box-shadow: 0 0 0 2px #c2567e, 0 8px 18px -6px rgba(194, 86, 126, 0.7);
+  transform: translateY(-4px);
+}
+.grullas-mundo .gr-hechizos button.is-usado::after {
+  content: "";
+  position: absolute;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #c2567e;
+  transform: translate(15px, -15px);
+}
+.grullas-mundo .gr-ui { padding-bottom: calc(var(--seguro-b) + var(--barra) + 72px); }
+.grullas-mundo .gr-noche {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 120% 60% at 50% 100%, rgba(255, 120, 170, 0.28), transparent 60%),
+    linear-gradient(185deg, #0e1235 0%, #231a4d 50%, #45285e 100%);
+  opacity: 0;
+  transition: opacity 1400ms var(--e-suave);
+  pointer-events: none;
+}
+.grullas-mundo.is-noche .gr-noche { opacity: 1; }
+.grullas-mundo.is-noche .gr-pie,
+.grullas-mundo.is-noche .gr-titulo,
+.grullas-mundo.is-noche .gr-contador { color: #f3e6f5; }
+.grullas-mundo.is-noche .gr-pie em,
+.grullas-mundo.is-noche .gr-contador b { color: #ffb3cf; }
+
 @media (prefers-reduced-motion: reduce) {
   .grullas-mundo * { transition-duration: 1ms !important; }
 }
@@ -128,6 +193,7 @@ html, body { margin: 0; height: 100%; }
 <body>
 
 <div class="grullas-mundo" id="mundo">
+  <div class="gr-noche" aria-hidden="true"></div>
   <canvas class="gr-lienzo" id="lienzo"></canvas>
   <div class="gr-toque" id="toque" aria-hidden="true"></div>
   <div class="gr-ui">
@@ -135,6 +201,16 @@ html, body { margin: 0; height: 100%; }
     <p class="gr-pie" id="pie" role="status" aria-live="polite"></p>
   </div>
   <div class="gr-contador" id="cuenta" aria-hidden="true"><b>0</b>de mil</div>
+  <div class="gr-hechizos" id="hechizos" role="toolbar" aria-label="Hechizos">
+    <button type="button" data-h="grulla" class="is-activo" aria-label="Grullas">🕊️</button>
+    <button type="button" data-h="rayo" aria-label="Rayo">⚡</button>
+    <button type="button" data-h="amor" aria-label="Hechizo de amor">💗</button>
+    <button type="button" data-h="remolino" aria-label="Remolino">🌀</button>
+    <button type="button" data-h="fuegos" aria-label="Fuegos artificiales">🎆</button>
+    <button type="button" data-h="arcoiris" aria-label="Arcoíris">🌈</button>
+    <button type="button" data-h="magia" aria-label="Multiplicar">🪄</button>
+    <button type="button" data-h="noche" aria-label="Noche">🌙</button>
+  </div>
 </div>
 
 <script>
@@ -262,6 +338,9 @@ const ggir = new Float32Array(N);      // inclinación
 const gvid = new Float32Array(N);      // 0 = libre
 const gcol = new Int16Array(N);        // qué papel
 const gnac = new Float32Array(N);      // 0..1, lo que lleva de nacer
+const gbri = new Float32Array(N);      // 0..1, electrizada por un rayo
+const gtx = new Float32Array(N), gty = new Float32Array(N);
+const gtt = new Float32Array(N);       // segundos que le quedan yendo a su sitio del corazón
 let cursor = 0;
 
 function soltarGrulla(x, y) {
@@ -284,7 +363,9 @@ function soltarGrulla(x, y) {
   ggir[k] = 0;
   gvid[k] = 1;
   gnac[k] = 0;
+  gbri[k] = 0; gtt[k] = 0;
   gcol[k] = Math.floor(Math.random() * CONF.papeles.length);
+  return k;
 }
 
 /* ---- Contar ----------------------------------------------------------- */
@@ -431,6 +512,7 @@ zona.addEventListener("pointerdown", (e) => {
   zona.setPointerCapture(e.pointerId);
   arrastrando = true;
   const p = enPantalla(e);
+  if (modo !== "grulla") { lanzar(p.x, p.y); ultimoSoltado = performance.now(); return; }
   if (atrapar(p.x, p.y)) return;
   tocar(p.x, p.y);
 });
@@ -465,15 +547,266 @@ const corazones = [];
 zona.addEventListener("pointermove", (e) => {
   if (!arrastrando) return;
   const ahora = performance.now();
-  if (ahora - ultimoSoltado < 90) return;
+  if (ahora - ultimoSoltado < (modo === "grulla" ? 90 : modo === "rayo" ? 320 : 700)) return;
   ultimoSoltado = ahora;
   const p = enPantalla(e);
+  if (modo !== "grulla") { if (modo !== "amor") lanzar(p.x, p.y); return; }
   tocar(p.x, p.y);
 });
 
 const soltar = () => { arrastrando = false; };
 zona.addEventListener("pointerup", soltar);
 zona.addEventListener("pointercancel", soltar);
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS HECHIZOS
+   Abajo hay una fila de botoncitos. Unos cambian lo que hace el toque
+   (rayo, amor, remolino, fuegos) y otros pasan en el acto (arcoíris,
+   multiplicar, noche). Todos suman grullas.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const HECHIZOS = {
+  grulla:   { nombre: "Modo grullas 🕊️", firma: "Toca y se doblan solitas." },
+  rayo:     { nombre: "Hechizo de rayo ⚡", firma: "Toca el cielo y cae uno.", lanzar: ["¡Zas! ⚡", "Así de fuerte me pegó tu amor."] },
+  amor:     { nombre: "Hechizo de amor 💗", firma: "Toca y las grullas hacen un corazón.", lanzar: ["¡Hechizo de amor! 💗", "Todas las grullas vuelan hacia ti, como yo."] },
+  remolino: { nombre: "Hechizo de remolino 🌀", firma: "Toca y todo da vueltas.", lanzar: ["¡Remolino! 🌀", "Así me pones cuando me hablas bonito."] },
+  fuegos:   { nombre: "Fuegos artificiales 🎆", firma: "Toca y se prende el cielo.", lanzar: ["¡Pum! 🎆", "Para celebrar que existes."] },
+  arcoiris: { nombre: "¡Arcoíris! 🌈", firma: "Todo se pinta de colores cuando estás tú." },
+  magia:    { nombre: "¡Multiplicar! 🪄", firma: "Una grulla por cada vez que pienso en ti… no alcanzarían." },
+  noche:    { nombre: "Hechizo de noche 🌙", firma: "Las grullas se vuelven farolitos." },
+};
+let modo = "grulla";
+const usados = new Set();
+let maestra = false;
+const botones = [...document.querySelectorAll("#hechizos button")];
+const chispas = [], rayos = [], circulos = [], cohetes = [];
+let vortice = null, arcoiris = 0, noche = 0, esNoche = false, destello = 0;
+let estrellasNoche = [];
+/* El brillo de farolito de cada grulla de noche, pintado una sola vez. */
+const farol = document.createElement("canvas");
+farol.width = farol.height = 64;
+(() => { const f = farol.getContext("2d"), gr = f.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,214,150,.9)"); gr.addColorStop(0.4, "rgba(255,170,120,.35)"); gr.addColorStop(1, "rgba(255,150,120,0)"); f.fillStyle = gr; f.fillRect(0, 0, 64, 64); })();
+
+function sumar(n) {
+  const antes = total;
+  total = Math.min(CONF.meta, total + n);
+  pintarCuenta();
+  let hito = null;
+  while (siguienteHito < CONF.hitos.length && CONF.hitos[siguienteHito].n <= total) {
+    if (CONF.hitos[siguienteHito].n > antes) hito = CONF.hitos[siguienteHito];
+    siguienteHito++;
+  }
+  if (total >= CONF.meta && !deseoDicho) {
+    deseoDicho = true;
+    setTimeout(() => { decir(CONF.deseo.texto, CONF.deseo.firma, true); lluviaDeGrullas(); formarCorazon(); }, 1600);
+  } else if (hito) setTimeout(() => decir(hito.texto, hito.firma, true), 3500);
+}
+function chispa(x, y, n, colores, fuerza) {
+  for (let k = 0; k < n; k++) {
+    const a = Math.random() * 6.283, v = azar(fuerza * 0.3, fuerza);
+    chispas.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0, m: azar(0.7, 1.4), c: colores[k % colores.length], r: azar(1.2, 2.8), cor: Math.random() < 0.2 });
+  }
+}
+function usar(h) {
+  if (h === "grulla") return;
+  usados.add(h);
+  const b = botones.find((b) => b.dataset.h === h); if (b) b.classList.add("is-usado");
+  if (!maestra && usados.size >= 7) {
+    maestra = true;
+    setTimeout(() => { decir("¡Maestra de hechizos! 🪄✨", "Pero el hechizo más fuerte de todos eres tú.", true); chispa(A / 2, H * 0.4, 60, ["#ffd166", "#ff8fb8", "#b9a6ff", "#ffffff"], 260); sonar("magia"); }, 2600);
+  }
+}
+function elegir(h) {
+  const d = HECHIZOS[h];
+  sonar("elegir");
+  if (h === "arcoiris") { arcoiris = 10; usar(h); decir(d.nombre, d.firma, true); sonar("arcoiris"); for (let i = 0; i < 4; i++) soltarGrulla(azar(0.2, 0.8) * A, H * azar(0.5, 0.8)); sumar(4); return; }
+  if (h === "magia") { multiplicar(); usar(h); decir(d.nombre, d.firma, true); return; }
+  if (h === "noche") {
+    esNoche = !esNoche; mundo.classList.toggle("is-noche", esNoche); usar(h);
+    if (esNoche) decir(d.nombre, d.firma, true); else decir("Volvió el día ☀️", "Y tú sigues siendo lo más bonito de él.", true);
+    sonar("noche"); return;
+  }
+  modo = h;
+  botones.forEach((b) => b.classList.toggle("is-activo", b.dataset.h === h));
+  decir(d.nombre, d.firma, true);
+}
+botones.forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); elegir(b.dataset.h); }));
+
+function lanzar(x, y) {
+  const d = HECHIZOS[modo];
+  usar(modo);
+  if (d.lanzar) decir(d.lanzar[0], d.lanzar[1], true);
+  if (modo === "rayo") {
+    const pts = [[x + azar(-40, 40), -10]];
+    let px = pts[0][0], py = -10;
+    while (py < y) { py = Math.min(y, py + azar(18, 38)); px += azar(-22, 22) + (x - px) * 0.25; pts.push([px, py]); }
+    pts[pts.length - 1] = [x, y];
+    const ramas = [];
+    for (let r = 0; r < 3; r++) {
+      const i = 1 + Math.floor(Math.random() * (pts.length - 2 || 1)); if (!pts[i]) continue;
+      let [bx, by] = pts[i]; const rama = [[bx, by]], s = Math.random() < 0.5 ? -1 : 1;
+      for (let n = 0; n < 3; n++) { bx += s * azar(10, 26); by += azar(12, 26); rama.push([bx, by]); }
+      ramas.push(rama);
+    }
+    rayos.push({ pts, ramas, t: 0 });
+    destello = 0.55;
+    chispa(x, y, 26, ["#ffffff", "#fff3b0", "#b9a6ff"], 220);
+    sonar("rayo");
+    for (let i = 0; i < N; i++) if (gvid[i] > 0 && Math.hypot(gx[i] - x, gy[i] - y) < 130) { gbri[i] = 1; gvy[i] -= 120; gvel[i] = 18; }
+    for (let k = 0; k < 4; k++) { const j = soltarGrulla(x + azar(-20, 20), y + azar(-10, 10)); gbri[j] = 1; }
+    if (posada && Math.hypot(posada.x - x, posada.y - y) < 140) {
+      const j = soltarGrulla(posada.x, posada.y); gbri[j] = 1; posada = null;
+      setTimeout(() => decir("Hasta la grulla negra despertó ⚡", "Así me despiertas tú cada mañana.", true), 1400);
+    }
+    sumar(5);
+  } else if (modo === "amor") {
+    circulos.push({ x, y, t: 0 });
+    const esc = Math.min(A, H) * 0.012;
+    let libres = [];
+    for (let i = 0; i < N; i++) if (gvid[i] > 0 && Math.hypot(gx[i] - x, gy[i] - y) < 240) libres.push(i);
+    while (libres.length < 16) libres.push(soltarGrulla(x + azar(-30, 30), y + azar(-30, 30)));
+    libres = libres.slice(0, 26);
+    libres.forEach((i, k) => {
+      const a = (k / libres.length) * Math.PI * 2;
+      gtx[i] = x + 16 * Math.pow(Math.sin(a), 3) * esc;
+      gty[i] = y - (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) * esc;
+      gtt[i] = 3.2;
+    });
+    for (let k = 0; k < 10; k++) corazones.push({ x, y, vx: azar(-120, 120), vy: azar(-160, -40), t: 0, r: azar(5, 10) });
+    sonar("amor");
+    sumar(10);
+  } else if (modo === "remolino") {
+    vortice = { x, y, t: 0, r: Math.min(A, H) * 0.55 };
+    for (let k = 0; k < 6; k++) soltarGrulla(x + azar(-40, 40), y + azar(-40, 40));
+    sonar("remolino");
+    sumar(6);
+  } else if (modo === "fuegos") {
+    cohetes.push({ x0: x + azar(-30, 30), x, y, t: 0 });
+    sonar("cohete");
+  }
+}
+function multiplicar() {
+  const vivas = [];
+  for (let i = 0; i < N; i++) if (gvid[i] > 0 && gnac[i] >= 1) vivas.push(i);
+  const n = Math.min(vivas.length, 40);
+  for (let k = 0; k < n; k++) {
+    const i = vivas[k], j = soltarGrulla(gx[i] + azar(-18, 18), gy[i] + azar(-14, 14));
+    gcol[j] = gcol[i]; chispa(gx[i], gy[i], 3, ["#fff3b0", "#ffffff"], 60);
+  }
+  if (!n) for (let k = 0; k < 8; k++) soltarGrulla(azar(0.2, 0.8) * A, H * azar(0.4, 0.8));
+  sonar("magia");
+  sumar(Math.max(8, n));
+}
+function sonar(tipo) {
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+    const t = audio.currentTime, dest = audio.destination;
+    const tono = (f, dur, vol, en = 0, tp = "triangle", fin) => {
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.type = tp; o.frequency.setValueAtTime(f, t + en); if (fin) o.frequency.exponentialRampToValueAtTime(fin, t + en + dur);
+      g.gain.setValueAtTime(0.0001, t + en); g.gain.exponentialRampToValueAtTime(vol, t + en + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + en + dur);
+      o.connect(g).connect(dest); o.start(t + en); o.stop(t + en + dur + 0.05);
+    };
+    const ruido = (dur, vol, f, tipoF = "lowpass", fFin) => {
+      const n = Math.floor(audio.sampleRate * dur), b = audio.createBuffer(1, n, audio.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
+      const s = audio.createBufferSource(); s.buffer = b;
+      const fi = audio.createBiquadFilter(); fi.type = tipoF; fi.frequency.setValueAtTime(f, t); if (fFin) fi.frequency.exponentialRampToValueAtTime(fFin, t + dur);
+      const g = audio.createGain(); g.gain.value = vol;
+      s.connect(fi).connect(g).connect(dest); s.start(t);
+    };
+    if (tipo === "elegir") tono(1320, 0.12, 0.03, 0, "sine");
+    else if (tipo === "rayo") { ruido(0.25, 0.5, 4000, "highpass"); ruido(2.2, 0.55, 500, "lowpass", 60); tono(70, 1.6, 0.18, 0.05, "sine", 35); }
+    else if (tipo === "amor") [523, 659, 784, 1046, 1318, 1568].forEach((f, i) => tono(f, 0.9, 0.05, i * 0.08));
+    else if (tipo === "remolino") { ruido(1.6, 0.25, 300, "bandpass", 2400); tono(200, 1.4, 0.04, 0, "sine", 900); }
+    else if (tipo === "arcoiris") [392, 440, 523, 587, 659, 784, 880, 1046].forEach((f, i) => tono(f, 0.5, 0.04, i * 0.05));
+    else if (tipo === "magia") [1568, 1318, 1760, 2093, 2637].forEach((f, i) => tono(f, 0.6, 0.035, i * 0.06, "sine"));
+    else if (tipo === "noche") { tono(392, 1.6, 0.05, 0, "sine"); tono(587, 1.6, 0.04, 0.2, "sine"); }
+    else if (tipo === "cohete") ruido(0.7, 0.18, 800, "bandpass", 3000);
+    else if (tipo === "pum") { ruido(0.9, 0.45, 900, "lowpass", 90); [1318, 1568, 2093].forEach((f, i) => tono(f, 0.4, 0.02, 0.1 + i * 0.07, "sine")); }
+  } catch { /* sin sonido también hay magia */ }
+}
+function dibujaHechizos(dt) {
+  /* estrellas de la noche */
+  noche += ((esNoche ? 1 : 0) - noche) * Math.min(1, dt * 1.5);
+  if (noche > 0.02) {
+    if (!estrellasNoche.length) for (let k = 0; k < 90; k++) estrellasNoche.push([Math.random(), Math.random() * 0.8, Math.random() * 6, azar(0.6, 1.8)]);
+    for (const [ex, ey, f, r] of estrellasNoche) {
+      ctx.globalAlpha = noche * (0.35 + 0.65 * Math.abs(Math.sin(reloj * 0.9 + f)));
+      ctx.fillStyle = "#fff6fb"; ctx.beginPath(); ctx.arc(ex * A, ey * H, r * 0.8, 0, 6.283); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  /* el remolino */
+  if (vortice) {
+    vortice.t += dt;
+    const a = Math.min(1, vortice.t * 2) * Math.min(1, (4.2 - vortice.t) / 0.8);
+    if (a <= 0) vortice = null;
+    else {
+      ctx.save(); ctx.translate(vortice.x, vortice.y); ctx.globalAlpha = a * 0.5; ctx.lineWidth = 2;
+      for (let k = 0; k < 4; k++) {
+        ctx.strokeStyle = ["#c2567e", "#9a86e8", "#7cc8ff", "#ff9ec4"][k];
+        ctx.beginPath();
+        for (let s = 0; s < 60; s++) { const r = 8 + s * 2.2, q = s * 0.19 - vortice.t * 5 + k * 1.57; s ? ctx.lineTo(Math.cos(q) * r, Math.sin(q) * r * 0.8) : ctx.moveTo(Math.cos(q) * r, Math.sin(q) * r * 0.8); }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+  /* los círculos mágicos del amor */
+  for (let i = circulos.length - 1; i >= 0; i--) {
+    const c = circulos[i]; c.t += dt;
+    if (c.t > 2.6) { circulos.splice(i, 1); continue; }
+    const k = Math.min(1, c.t * 3) * Math.min(1, (2.6 - c.t) * 2), r = 70 + c.t * 14;
+    ctx.save(); ctx.translate(c.x, c.y); ctx.globalAlpha = k; ctx.strokeStyle = "#ff7aa8"; ctx.lineWidth = 2;
+    ctx.shadowColor = "#ff7aa8"; ctx.shadowBlur = 14;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.78, 0, 6.283); ctx.stroke();
+    ctx.rotate(c.t * 1.4); ctx.fillStyle = "#ff7aa8"; ctx.font = "13px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    for (let s = 0; s < 12; s++) { ctx.rotate(6.283 / 12); ctx.fillText(s % 3 ? "✦" : "♥", 0, -r * 0.89); }
+    ctx.restore();
+  }
+  /* los cohetes */
+  for (let i = cohetes.length - 1; i >= 0; i--) {
+    const c = cohetes[i]; c.t += dt;
+    const k = Math.min(1, c.t / 0.7), x = c.x0 + (c.x - c.x0) * k, y = H + 10 + (c.y - H - 10) * (1 - Math.pow(1 - k, 2));
+    ctx.fillStyle = "#fff3b0"; ctx.beginPath(); ctx.arc(x, y, 2.6, 0, 6.283); ctx.fill();
+    chispas.push({ x, y, vx: azar(-10, 10), vy: azar(20, 60), t: 0, m: 0.5, c: "#ffd166", r: 1.4 });
+    if (k >= 1) {
+      cohetes.splice(i, 1);
+      const pal = CONF.papeles[Math.floor(Math.random() * CONF.papeles.length)];
+      chispa(c.x, c.y, 70, [pal[1], pal[0], "#ffffff", "#ff7aa8"], 240);
+      for (let n = 0; n < 5; n++) soltarGrulla(c.x + azar(-20, 20), c.y + azar(-20, 20));
+      destello = 0.18; sonar("pum"); sumar(8);
+    }
+  }
+  /* los rayos */
+  for (let i = rayos.length - 1; i >= 0; i--) {
+    const r = rayos[i]; r.t += dt;
+    if (r.t > 0.55) { rayos.splice(i, 1); continue; }
+    const a = r.t < 0.08 || (r.t > 0.16 && r.t < 0.26) ? 1 : 0.45;
+    ctx.save(); ctx.lineJoin = "round"; ctx.lineCap = "round";
+    const trazo = (pts, w, c) => { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); pts.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke(); };
+    ctx.globalAlpha = a * 0.5; ctx.shadowColor = "#b9a6ff"; ctx.shadowBlur = 20;
+    trazo(r.pts, 7, "#c9b8ff"); r.ramas.forEach((q) => trazo(q, 4, "#c9b8ff"));
+    ctx.globalAlpha = a; ctx.shadowBlur = 8;
+    trazo(r.pts, 2.4, "#ffffff"); r.ramas.forEach((q) => trazo(q, 1.4, "#f1ebff"));
+    ctx.restore();
+  }
+  /* las chispas */
+  for (let i = chispas.length - 1; i >= 0; i--) {
+    const c = chispas[i]; c.t += dt;
+    if (c.t > c.m) { chispas.splice(i, 1); continue; }
+    c.vx *= Math.pow(0.25, dt); c.vy = c.vy * Math.pow(0.25, dt) + 70 * dt; c.x += c.vx * dt; c.y += c.vy * dt;
+    ctx.globalAlpha = 1 - c.t / c.m; ctx.fillStyle = c.c;
+    if (c.cor) { const r = c.r * 2.2; ctx.beginPath(); ctx.moveTo(c.x, c.y + r * 0.8); ctx.bezierCurveTo(c.x - r * 1.4, c.y - r * 0.1, c.x - r * 0.55, c.y - r * 1.05, c.x, c.y - r * 0.35); ctx.bezierCurveTo(c.x + r * 0.55, c.y - r * 1.05, c.x + r * 1.4, c.y - r * 0.1, c.x, c.y + r * 0.8); ctx.fill(); }
+    else { ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, 6.283); ctx.fill(); }
+  }
+  ctx.globalAlpha = 1;
+  if (destello > 0) { destello -= dt * 1.8; ctx.fillStyle = `rgba(245,240,255,${Math.max(0, destello)})`; ctx.fillRect(0, 0, A, H); }
+  if (arcoiris > 0) arcoiris -= dt;
+}
 
 /* ---- Los textos ------------------------------------------------------- */
 
@@ -583,7 +916,7 @@ zona.addEventListener("pointerdown", (e) => {
    ══════════════════════════════════════════════════════════════════════ */
 
 function grulla(x, y, esc, aleteo, giro, papel, alfa) {
-  const [claro, hondo] = CONF.papeles[papel];
+  const [claro, hondo] = Array.isArray(papel) ? papel : CONF.papeles[papel];
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(giro);
@@ -732,6 +1065,13 @@ function paso(ahora) {
       vy = vy * (1 - k) - 40 * k;
     }
 
+    if (vortice) {
+      const dx = gx[i] - vortice.x, dy = gy[i] - vortice.y, d = Math.hypot(dx, dy) || 1;
+      if (d < vortice.r) { const f = (1 - d / vortice.r) * Math.min(1, vortice.t * 2); vx += (-dy / d) * 300 * f - (dx / d) * 60 * f; vy += (dx / d) * 300 * f - (dy / d) * 60 * f; }
+    }
+    if (gtt[i] > 0) { gtt[i] -= dt; vx = (gtx[i] - gx[i]) * 3.2; vy = (gty[i] - gy[i]) * 3.2; if (gtt[i] <= 0) gvy[i] = azar(-60, -100); }
+    if (gbri[i] > 0) gbri[i] = Math.max(0, gbri[i] - dt * 0.35);
+
     gx[i] += vx * dt;
     gy[i] += vy * dt;
     gvy[i] -= 4 * dt;                 // van subiendo cada vez más
@@ -740,8 +1080,12 @@ function paso(ahora) {
     if (gy[i] < -70 || gx[i] < -80 || gx[i] > A + 80) { gvid[i] = 0; continue; }
 
     /* Se desvanecen arriba del todo en vez de cortarse de golpe. */
-    const alfa = Math.min(gnac[i], clamp(gy[i] / (H * 0.22), 0, 1));
-    grulla(gx[i], gy[i], gesc[i] * (0.5 + 0.5 * gnac[i]), gale[i], ggir[i], gcol[i], alfa);
+    const alfa = gtt[i] > 0 ? gnac[i] : Math.min(gnac[i], clamp(gy[i] / (H * 0.22), 0, 1));
+    let papel = gcol[i];
+    if (arcoiris > 0) { const h = (i * 37 + reloj * 140) % 360; papel = [`hsl(${h},95%,84%)`, `hsl(${h},85%,64%)`]; if (Math.random() < dt * 8) chispas.push({ x: gx[i] - 10, y: gy[i], vx: 0, vy: 10, t: 0, m: 0.8, c: `hsl(${h},90%,70%)`, r: 1.6 }); }
+    if (gbri[i] > 0) { papel = ["#fff6c8", "#ffc94a"]; if (Math.random() < dt * 10) chispas.push({ x: gx[i] + azar(-12, 12), y: gy[i] + azar(-14, 6), vx: azar(-30, 30), vy: azar(-30, 30), t: 0, m: 0.35, c: "#fff3b0", r: 1.3 }); }
+    if (noche > 0.05) { const r = 34 * gesc[i]; ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = noche * 0.5 * alfa; ctx.drawImage(farol, gx[i] - r, gy[i] - 8 * gesc[i] - r, r * 2, r * 2); ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over"; }
+    grulla(gx[i], gy[i], gesc[i] * (0.5 + 0.5 * gnac[i]), gale[i], ggir[i], papel, alfa);
   }
 
   /* --- la grulla posada (secreto 1) --- */
@@ -788,6 +1132,8 @@ function paso(ahora) {
     if (ft > 11) formacion = null;
   }
 
+  dibujaHechizos(dt);
+
   /* --- los corazones de las grullas atrapadas --- */
   for (let i = corazones.length - 1; i >= 0; i--) {
     const c = corazones[i];
@@ -807,7 +1153,7 @@ function paso(ahora) {
 
 medir();
 pintarCuenta();
-decir("Toca el papel. Se dobla solo.");
+decir("Toca el papel. Se dobla solo.", "Y abajo hay hechizos ✨ pruébalos todos.");
 requestAnimationFrame(paso);
 
 })();
