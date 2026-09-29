@@ -134,6 +134,12 @@ const CONF = {
     lunaVuelve: ["Mira, se volvió a armar para ti 🌙", "hasta la luna se recompone por ti"],
     lunaToque: ["La luna también te está viendo 🌙", "y dice que eres preciosa"],
     teAmo: ["Mira lo que escribieron…", "te amo, mi amor 🤍"],
+    // Lo que escriben con su luz, uno por cada doble toque.
+    letreros: ["te amo", "Marissa", "mi amor", "eres mi luz", "siempre tú"],
+    lunaDosDedos: ["¡Con dos dedos la reventaste! 🌙💥", "tranqui, ahorita se vuelve a armar"],
+    agujero: ["Todo lo que causa mi amor por ti…", "tengo que dejarlo salir 💥"],
+    agujeroFin: ["Y así, todo vuelve a la calma…", "pero con más luz que antes 🤍"],
+    pistaGestos: "dos dedos: la luna · tres dedos: un secreto",
     pistaLuna: "junta las luciérnagas sobre la luna y suéltalas…",
   },
 };
@@ -451,7 +457,35 @@ function posicion(e) {
   const r = mundo.getBoundingClientRect();
   return [e.clientX - r.left, e.clientY - r.top];
 }
+/* ── Dos dedos: la luna revienta y se vuelve a armar.
+      Tres dedos: el agujero negro. ── */
+const activos = new Map();
+let esperaGesto = null;
+function gestoVarios() {
+  esperaGesto = null;
+  if (agujero) return;
+  const pts = [...activos.values()];
+  if (pts.length >= 3) {
+    const x = pts.reduce((a, p) => a + p[0], 0) / pts.length, y = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+    abrirAgujero(x, y);
+  } else if (pts.length === 2) {
+    if (!lunaRota) { romperLuna(); setTimeout(() => decir(CONF.textos.lunaDosDedos[0], CONF.textos.lunaDosDedos[1], "", true), 380); }
+  }
+}
 mundo.addEventListener("pointerdown", (e) => {
+  activos.set(e.pointerId, posicion(e));
+  if (activos.size >= 2) {
+    // Varios dedos: no es un toque ni un enjambre.
+    dedo.abajo = false; modoEnjambre = false; mundo.classList.remove("is-juntas"); pararCrecer(true);
+    clearTimeout(esperaGesto);
+    esperaGesto = setTimeout(gestoVarios, activos.size >= 3 ? 30 : 200);
+  }
+}, true);
+const quitarActivo = (e) => activos.delete(e.pointerId);
+mundo.addEventListener("pointerup", quitarActivo, true);
+mundo.addEventListener("pointercancel", quitarActivo, true);
+mundo.addEventListener("pointerdown", (e) => {
+  if (activos.size >= 2) return;
   despertar();
   const [x, y] = posicion(e);
   Object.assign(dedo, { abajo: true, x, y, px: x, py: y, vel: 0, t0: performance.now(), x0: x, y0: y, id: e.pointerId });
@@ -466,6 +500,7 @@ mundo.addEventListener("pointerdown", (e) => {
   onda(x, y, 0.35);
 });
 mundo.addEventListener("pointermove", (e) => {
+  if (activos.has(e.pointerId)) activos.set(e.pointerId, posicion(e));
   if (!dedo.abajo || e.pointerId !== dedo.id) return;
   const [x, y] = posicion(e);
   dedo.x = x; dedo.y = y;
@@ -574,6 +609,99 @@ function estallar(x, y, fuerza) {
   setTimeout(() => decir(frase, firma, "", true), 1100);
   carga = 0;
   enjambre = 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EL AGUJERO NEGRO (tres dedos)
+   Aparece donde pusiste los dedos, se traga la luz en espiral, crece,
+   dice lo que tiene que decir… y estalla bonito. Luego, calma.
+   ══════════════════════════════════════════════════════════════════════ */
+const AG_EXPLOTA = 5.6, AG_FIN = 9.5;
+let agujero = null;   // { x, y, t, r }
+let sacude = 0;
+function abrirAgujero(x, y) {
+  x = clamp(x, A * 0.2, A * 0.8); y = clamp(y, H * 0.25, H * 0.62);
+  agujero = { x, y, t: 0, r: 0, exploto: false };
+  letrero = null; for (const b of bichos) b.meta = null;
+  decir(CONF.textos.agujero[0], CONF.textos.agujero[1], "", true);
+  sonidoAgujero();
+}
+function sonidoAgujero() {
+  if (!despertar()) return;
+  const t = ac.currentTime;
+  const o = ac.createOscillator(), o2 = ac.createOscillator(), gg = ac.createGain();
+  o.type = "sine"; o.frequency.setValueAtTime(38, t); o.frequency.exponentialRampToValueAtTime(96, t + AG_EXPLOTA);
+  o2.type = "triangle"; o2.frequency.setValueAtTime(57, t); o2.frequency.exponentialRampToValueAtTime(190, t + AG_EXPLOTA);
+  gg.gain.setValueAtTime(0.0001, t); gg.gain.exponentialRampToValueAtTime(0.22, t + 1.2); gg.gain.linearRampToValueAtTime(0.34, t + AG_EXPLOTA - 0.1); gg.gain.exponentialRampToValueAtTime(0.0001, t + AG_EXPLOTA + 0.05);
+  o.connect(gg); o2.connect(gg); gg.connect(salida);
+  o.start(t); o2.start(t); o.stop(t + AG_EXPLOTA + 0.1); o2.stop(t + AG_EXPLOTA + 0.1);
+  // un zumbido de aire que sube
+  const n = Math.floor(ac.sampleRate * AG_EXPLOTA), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (i / n);
+  const src = ac.createBufferSource(); src.buffer = b;
+  const bp = ac.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.setValueAtTime(200, t); bp.frequency.exponentialRampToValueAtTime(2600, t + AG_EXPLOTA); bp.Q.value = 1.4;
+  const gn = ac.createGain(); gn.gain.value = 0.2;
+  src.connect(bp).connect(gn).connect(salida); src.start(t);
+  for (let i = 0; i < 6; i++) campana(PENTA[i] * 0.5, t + 1 + i * 0.7, 0.03, 2.4);
+}
+function estallarAgujero() {
+  const { x, y } = agujero;
+  agujero.exploto = true;
+  sacude = 1;
+  estallar(x, y, 1.4);
+  sonidoEstallido(1.4);
+  fogonazo = 1.6;
+  for (let k = 0; k < 4; k++) setTimeout(() => onda(x, y, 1.3 - k * 0.2), k * 160);
+  for (let i = 0; i < 320; i++) {
+    const q = Math.random();
+    chispa(x, y, azar(200, 980), q < 0.35 ? "rosa" : q < 0.7 ? "oro" : "verde", { dur: azar(1.2, 2.6), tam: azar(0.9, 1.8) });
+  }
+  // un segundo corazón, enorme
+  const tam = Math.min(A, H) * 0.4;
+  for (const p of puntosCorazon(clamp(x, tam, A - tam), clamp(y, tam * 1.1, H - tam), tam, 80)) chispa(x, y, azar(80, 260), "rosa", { meta: p, dur: 3.2, tam: azar(1.1, 1.7) });
+  for (let i = 0; i < 40 && bichos.length < CONF.maximo; i++) bichos.push(nuevoBicho(x + azar(-30, 30), y + azar(-30, 30), azar(-300, 300), azar(-300, 300), 1));
+  setTimeout(() => decir(CONF.textos.agujeroFin[0], CONF.textos.agujeroFin[1], CONF.textos.pistaGestos, true), 2600);
+}
+function dibujaAgujero(dt) {
+  if (sacude > 0) sacude = Math.max(0, sacude - dt * 1.3);
+  if (!agujero) return;
+  const a = agujero;
+  a.t += dt;
+  if (a.t < AG_EXPLOTA) {
+    const crece = Math.min(1, a.t / 1.3), inquieto = Math.max(0, (a.t - 3.2) / (AG_EXPLOTA - 3.2));
+    a.r = Math.min(A, H) * (0.07 + 0.04 * crece + 0.035 * inquieto) * (1 + Math.sin(a.t * (6 + inquieto * 22)) * 0.05 * (0.3 + inquieto));
+    sacude = Math.max(sacude, inquieto * 0.35);
+    const { x, y, r } = a;
+    // la oscuridad que se come la luz alrededor
+    const os = g.createRadialGradient(x, y, r, x, y, r * 7);
+    os.addColorStop(0, `rgba(0,0,0,${0.55 * crece})`); os.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = os; g.fillRect(0, 0, A, H);
+    g.save(); g.globalCompositeOperation = "lighter";
+    // el halo de luz doblada
+    const halo = g.createRadialGradient(x, y, r * 0.9, x, y, r * (3.4 + inquieto));
+    halo.addColorStop(0, `rgba(255,190,230,${0.75 * crece})`); halo.addColorStop(0.3, `rgba(255,120,190,${0.35 * crece})`); halo.addColorStop(1, "rgba(120,80,255,0)");
+    g.fillStyle = halo; g.fillRect(x - r * 5, y - r * 5, r * 10, r * 10);
+    // el disco que gira, detrás
+    const disco = (desde, hasta) => {
+      for (let k = 0; k < 3; k++) {
+        g.strokeStyle = [`rgba(255,220,160,${0.8 * crece})`, `rgba(255,140,200,${0.6 * crece})`, `rgba(180,150,255,${0.45 * crece})`][k];
+        g.lineWidth = r * (0.34 - k * 0.08);
+        g.beginPath(); g.ellipse(x, y, r * (2.1 + k * 0.45), r * (0.5 + k * 0.1), -0.25, desde + a.t * (2.5 - k * 0.5), hasta + a.t * (2.5 - k * 0.5)); g.stroke();
+      }
+    };
+    disco(Math.PI, Math.PI * 2);
+    g.restore();
+    // el horizonte: negro de verdad, con un filo de luz
+    g.fillStyle = "#000"; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+    g.save(); g.globalCompositeOperation = "lighter";
+    g.strokeStyle = `rgba(255,236,250,${0.9 * crece})`; g.lineWidth = 2.2; g.beginPath(); g.arc(x, y, r * 1.04, 0, TAU); g.stroke();
+    // y la mitad del disco que pasa por delante
+    disco(0, Math.PI);
+    g.restore();
+    // chispitas que caen en espiral
+    if (Math.random() < dt * 30) { const q = Math.random() * TAU, d = r * azar(3, 6); chispa(x + Math.cos(q) * d, y + Math.sin(q) * d, 0, Math.random() < 0.5 ? "rosa" : "oro", { dur: 0.9, tam: 0.8, vx: -Math.sin(q) * 180 - Math.cos(q) * 90, vy: Math.cos(q) * 180 - Math.sin(q) * 90 }); }
+  } else if (!a.exploto) estallarAgujero();
+  else if (a.t > AG_FIN) agujero = null;
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -729,27 +857,40 @@ function sonidoLunaVuelve() {
    «TE AMO», ESCRITO CON LUCIÉRNAGAS (doble toque)
    ══════════════════════════════════════════════════════════════════════ */
 let letrero = null;
+/* Para que se LEA: las letras se muestrean a la medida justa para que
+   haya una luciérnaga por punto (ni amontonadas ni ralas), van más
+   chiquitas mientras escriben y detrás se prende la palabra con un
+   brillo suave. Cada doble toque escribe la siguiente palabra. */
+let nLetrero = 0;
+const FUENTE_LETRERO = `"Caveat", "Segoe Script", cursive`;
 function escribirTeAmo() {
-  if (letrero || !bichos.length) return;
+  if (letrero || !bichos.length || agujero) return;
+  const palabra = CONF.textos.letreros[nLetrero++ % CONF.textos.letreros.length];
   const w = Math.max(1, Math.round(A)), h = Math.max(1, Math.round(H * 0.3));
   const c = document.createElement("canvas");
   c.width = w; c.height = h;
   const x = c.getContext("2d");
-  const tam = Math.min(A * 0.3, H * 0.15);
+  let tam = Math.min(A * 0.34, H * 0.16);
+  x.font = `700 ${tam}px ${FUENTE_LETRERO}`;
+  const ancho = x.measureText(palabra).width;
+  if (ancho > A * 0.86) tam *= (A * 0.86) / ancho;
   x.fillStyle = "#fff"; x.textAlign = "center"; x.textBaseline = "middle";
-  x.font = `700 ${tam}px "Caveat", "Segoe Script", cursive`;
-  x.fillText("te amo", w / 2, h / 2);
+  x.font = `700 ${tam}px ${FUENTE_LETRERO}`;
+  x.fillText(palabra, w / 2, h / 2);
   const datos = x.getImageData(0, 0, w, h).data;
+  let llenos = 0;
+  for (let yy = 0; yy < h; yy += 2) for (let xx = 0; xx < w; xx += 2) if (datos[(yy * w + xx) * 4 + 3] > 140) llenos++;
+  const meta = Math.min(CONF.maximo, 200);
+  const salto = Math.max(3, Math.sqrt((llenos * 4) / meta));
   const pts = [];
-  const salto = Math.max(3, Math.round(tam / 16));
-  for (let yy = 0; yy < h; yy += salto) for (let xx = 0; xx < w; xx += salto) {
-    if (datos[(yy * w + xx) * 4 + 3] > 140) pts.push({ x: xx, y: yy + H * 0.26 });
+  for (let fila = 0, yy = 0; yy < h; yy += salto, fila++) for (let xx = (fila % 2) * salto * 0.5; xx < w; xx += salto) {
+    if (datos[(Math.round(yy) * w + Math.round(xx)) * 4 + 3] > 140) pts.push({ x: xx, y: yy + H * 0.26 });
   }
   pts.sort(() => Math.random() - 0.5);
   // Si hay pocas luciérnagas, nacen las que falten para escribirlo bien.
   while (bichos.length < Math.min(pts.length, CONF.maximo)) bichos.push(nuevoBicho(Math.random() * A, H * azar(0.6, 0.95), 0, 0, 1));
-  bichos.forEach((b, i) => { b.meta = pts[i % pts.length]; });
-  letrero = { t: 0 };
+  bichos.forEach((b, i) => { b.meta = i < pts.length ? pts[i] : null; });
+  letrero = { t: 0, palabra, tam, y: H * 0.26 + h / 2 };
   for (let i = 0; i < 7; i++) campana(PENTA[i % PENTA.length] * 2, (ac ? ac.currentTime : 0) + i * 0.09, 0.03, 1.4);
   decir(CONF.textos.teAmo[0], CONF.textos.teAmo[1], "", true);
 }
@@ -771,7 +912,7 @@ function paso(ahora) {
 
   if (letrero) {
     letrero.t += dt;
-    if (letrero.t > 5.2) { letrero = null; for (const b of bichos) { b.meta = null; b.vx = azar(-60, 60); b.vy = azar(-60, 30); } }
+    if (letrero.t > 7) { letrero = null; for (const b of bichos) { b.meta = null; b.vx = azar(-60, 60); b.vy = azar(-60, 30); } }
   }
 
   /* ---- El dedo: su velocidad, su carga y el enjambre ---- */
@@ -793,6 +934,8 @@ function paso(ahora) {
   enjambre = modoEnjambre ? Math.min(1, enjambre + dt * 0.8) : Math.max(0, enjambre - dt * 1.5);
 
   /* ---- El fondo, con un poco de paralaje ---- */
+  const temblor = sacude > 0 ? sacude * 9 : 0;
+  g.setTransform(dpr, 0, 0, dpr, (Math.random() - 0.5) * temblor * dpr, (Math.random() - 0.5) * temblor * dpr);
   const objetivoPar = dedo.abajo ? (dedo.x / A - 0.5) : Math.sin(reloj * 0.08) * 0.3;
   paralaje = acercar(paralaje, objetivoPar, 1.2, dt);
   g.drawImage(capaCielo, 0, 0, A, H);
@@ -868,6 +1011,15 @@ function paso(ahora) {
     const vmax = enjambre > 0 ? 900 : 650;
     const v = Math.hypot(b.vx, b.vy);
     if (v > vmax) { b.vx *= vmax / v; b.vy *= vmax / v; }
+    if (agujero && agujero.t < AG_EXPLOTA) {
+      const dx = b.x - agujero.x, dy = b.y - agujero.y, d = Math.hypot(dx, dy) || 1;
+      const orbita = agujero.r * (1.5 + (b.fase % 1) * 2.2) * (1 - 0.35 * Math.min(1, agujero.t / AG_EXPLOTA));
+      const giro = (3.4 + agujero.t * 0.9) * Math.min(d, 260);
+      const k = Math.min(1, agujero.t / 1.4);
+      const tvx = (-dy / d) * giro + (dx / d) * (orbita - d) * 2.4, tvy = (dx / d) * giro + (dy / d) * (orbita - d) * 2.4;
+      b.vx += (tvx - b.vx) * Math.min(1, dt * 3.5) * k; b.vy += (tvy - b.vy) * Math.min(1, dt * 3.5) * k;
+      b.luz = 1;
+    }
     if (letrero && b.meta) {
       const k = Math.min(1, letrero.t / 1.1);
       b.vx = b.vx * (1 - k) + (b.meta.x - b.x) * 3.4 * k + Math.cos(reloj * 3 + b.fase) * 6;
@@ -890,6 +1042,20 @@ function paso(ahora) {
     if (v > 160) { b.rastro.push(b.x, b.y); if (b.rastro.length > 12) b.rastro.splice(0, 2); }
     else if (b.rastro.length) b.rastro.splice(0, 2);
   }
+
+  // La palabra que escriben, prendida suavecito detrás, para que se lea.
+  if (letrero) {
+    const k = Math.min(1, Math.max(0, (letrero.t - 0.9) / 1.2)) * Math.min(1, (7 - letrero.t) / 1.2);
+    if (k > 0) {
+      g.save(); g.globalAlpha = k * 0.85; g.textAlign = "center"; g.textBaseline = "middle";
+      g.font = `700 ${letrero.tam}px ${FUENTE_LETRERO}`;
+      g.shadowColor = "rgba(255,230,140,.95)"; g.shadowBlur = 26;
+      g.fillStyle = "rgba(255,246,200,.55)"; g.fillText(letrero.palabra, A / 2, letrero.y);
+      g.shadowBlur = 8; g.fillStyle = "rgba(255,252,235,.5)"; g.fillText(letrero.palabra, A / 2, letrero.y);
+      g.restore();
+    }
+  }
+  dibujaAgujero(dt);
 
   // Las de lejos van detrás de la hierba; las de cerca, delante.
   g.globalCompositeOperation = "lighter";
@@ -1027,6 +1193,7 @@ function paso(ahora) {
     }
   } else relojCerca = Math.max(0, relojCerca - dt);
   if (dedo.abajo && cerca > 0 && Math.random() < dt * cerca * 0.08 && !modoEnjambre) tintineo();
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
 function pintarBicho(b) {
@@ -1048,7 +1215,7 @@ function pintarBicho(b) {
     g.fillRect(b.x - 1, b.y - 1, 2, 2);
     return;
   }
-  const r = (b.dorada ? 22 : 17) * escala;
+  const r = (b.dorada ? 22 : 17) * escala * (letrero && b.meta ? 0.55 : 1);
   g.globalAlpha = luz;
   g.drawImage(COLORES[b.color], b.x - r, b.y - r, r * 2, r * 2);
   if (luz > 0.6) {
@@ -1075,6 +1242,7 @@ function medir() {
 }
 new ResizeObserver(() => requestAnimationFrame(medir)).observe(mundo);
 medir();
+try { if (document.fonts) document.fonts.load(`700 80px "Caveat"`); } catch { /* nada */ }
 decir(CONF.textos.inicio);
 requestAnimationFrame(paso);
 })();
