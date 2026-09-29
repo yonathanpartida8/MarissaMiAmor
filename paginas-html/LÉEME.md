@@ -192,7 +192,7 @@ archivo y sin descargar nada de fuera.
 | archivo | qué es |
 |---|---|
 | `página.html1.html` | **El sencillo.** Un botón y una animación. Cópialo, renómbralo al número siguiente y cámbialo. |
-| `página.html2.html` | **El rincón de arena.** Una playa en perspectiva que se excava con una palita. Once cosas enterradas, cartas que se abren y una llave con su código. |
+| `página.html2.html` | **El rincón de arena.** Una islita de noche en pixel art. La palita sólo escarba si se arrastra y se mueve (y cuesta un poquito). Seis cartitas con piropos, una llave que se arrastra hasta el cofre de la X, tesoritos, canasta, luna que explota y se rearma, barquitos de papel, tiburones, palmeras y faro que se mueven, lluvia con rayos, un cangrejito que platica, objetivos y 7 secretos. Cuando el faro alumbra un barquito suena `musica arena/musica1.mp3`. |
 | `página.html3.html` | **El hilo rojo.** Dos bolitas unidas por un listón, escribiéndose cartas. Se arrastran, se resisten a juntarse, y al conseguirlo el listón hace un corazón. |
 | `página.html4.html` | **Un jardín para ti.** Se toca la tierra y crece una flor. Cada una guarda una frase. Si plantas bastantes, cae la noche. |
 | `página.html5.html` | **El vaho.** Una mano invisible escribe en el cristal empañado los cinco lugares y, después, 20 piropos para subirle la autoestima (el botón ♡ va directo a ellos); se limpia con el dedo. Se editan en `LUGARES` y `PIROPOS`. |

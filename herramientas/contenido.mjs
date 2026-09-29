@@ -142,6 +142,15 @@ const tocadiscos = [1, 2, 3, 4, 5].map((n) => {
   return f ? soloSonido(`${nfc(carpetaTocadiscos)}/${nfc(f)}`) : null;
 });
 
+// La canción del faro de «El rincón de arena»: `musica arena/musica1.mp3`.
+// Suena cuando la luz del faro alumbra un barquito de papel.
+const carpetaArena = readdirSync(RAIZ).find((f) => sinAcentos(f).replace(/[\s_-]+/g, "") === "musicaarena" && !f.includes("."));
+const arena = (() => {
+  if (!carpetaArena) return null;
+  const f = leer(carpetaArena).find((f) => sinAcentos(f).replace(/\.(mp3|m4a|ogg|wav|aac)$/, "") === "musica1" && /\.(mp3|m4a|ogg|wav|aac)$/i.test(f));
+  return f ? soloSonido(`${nfc(carpetaArena)}/${nfc(f)}`) : null;
+})();
+
 // Las canciones de la radio: `la radio/music1.mp3`, `music2.mp3`… (también
 // vale `musica1`). Las que haya, en orden; cada una es una emisora.
 const carpetaRadio = readdirSync(RAIZ).find(
@@ -366,13 +375,14 @@ const archivosPaginas = {
   tocadiscos: tocadiscos.map(desdePaginas),
   tocadiscosNombres: tocadiscos.map(nombreDe),
   radio: radio.map(desdePaginas),
+  arena: desdePaginas(arena),
 };
 
 const SALIDAS = {
   "paginas-html/archivos.js":
     "// GENERADO por `node herramientas/contenido.mjs`: los sonidos que existen.\n" +
     "// ojos.mp3 (la caja de música), tocadiscos musica/musica1..5 (el tocadiscos)\n" +
-    "// y la radio/music1..N (la radio).\n" +
+    "// la radio/music1..N (la radio) y musica arena/musica1 (el faro de la arena).\n" +
     `window.LIBRO_ARCHIVOS = ${JSON.stringify(archivosPaginas, null, 2)};\n`,
   "noche-estrellada/archivos.js":
     "// GENERADO por `node herramientas/contenido.mjs`: los sonidos que existen.\n" +

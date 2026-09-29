@@ -1,6 +1,6 @@
 // GENERADO por `node herramientas/contenido.mjs`: los sonidos que existen.
 // ojos.mp3 (la caja de música), tocadiscos musica/musica1..5 (el tocadiscos)
-// y la radio/music1..N (la radio).
+// la radio/music1..N (la radio) y musica arena/musica1 (el faro de la arena).
 window.LIBRO_ARCHIVOS = {
   "ojos": "ojos.mp3",
   "tocadiscos": [
@@ -21,5 +21,6 @@ window.LIBRO_ARCHIVOS = {
     "../la%20radio/music1.mp3",
     "../la%20radio/music2.mp3",
     "../la%20radio/music3.mp3"
-  ]
+  ],
+  "arena": null
 };
