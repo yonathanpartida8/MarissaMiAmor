@@ -159,7 +159,73 @@ function aAgua(sx, sy) {
 /* ══════════════════════════════════════════════════════════════════════
    LO QUE NO SE MUEVE: cielo, luna, orilla del fondo
    ══════════════════════════════════════════════════════════════════════ */
-let cielo = null, orilla = null, luna = { x: 0, y: 0, r: 0 };
+let cielo = null, orilla = null, luna = { x: 0, y: 0, r: 0 }, lunaCapa = null;
+
+/* ── LA LUNA QUE REVIENTA: dos toques seguidos encima de ella.
+      Sale en pedacitos, brilla, y se vuelve a armar solita. ── */
+let lunaRota = null, lunaBrillo = 0, toqueLuna = 0;
+const LUNA_VUELA = 1.6, LUNA_VUELVE = 1.8;
+function romperLuna() {
+  if (lunaRota) return;
+  despertar();
+  const piezas = [];
+  for (let i = 0; i < 90; i++) {
+    const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * luna.r * 0.9;
+    const hx = luna.x + Math.cos(a) * d, hy = luna.y + Math.sin(a) * d, v = azar(60, 260) * (0.4 + d / luna.r);
+    piezas.push({ hx, hy, x: hx, y: hy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40, rot: 0, vr: azar(-8, 8), tam: luna.r * azar(0.12, 0.26), c: Math.random() < 0.5 ? "#fffdf2" : "#eee3c8", k: Math.floor(azar(3, 6)) });
+  }
+  const brillos = [];
+  for (let i = 0; i < 70; i++) { const a = Math.random() * TAU, v = azar(40, 320); brillos.push({ x: luna.x, y: luna.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: azar(0.6, 1.6), m: 1.6, c: Math.random() < 0.6 ? "255,236,190" : "255,170,210" }); }
+  lunaRota = { t: 0, piezas, brillos };
+  lunaBrillo = 1;
+  if (ac) {
+    const t = ac.currentTime, o = ac.createOscillator(), gg = ac.createGain();
+    o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(38, t + 0.7);
+    gg.gain.setValueAtTime(0.0001, t); gg.gain.exponentialRampToValueAtTime(0.5, t + 0.02); gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+    o.connect(gg).connect(salida); o.start(t); o.stop(t + 1);
+    const s = ruido(1.1), f = ac.createBiquadFilter(), gn = ac.createGain();
+    f.type = "lowpass"; f.frequency.setValueAtTime(2400, t); f.frequency.exponentialRampToValueAtTime(200, t + 1); gn.gain.value = 0.35;
+    s.connect(f).connect(gn).connect(salida); s.start(t);
+  }
+  decirFrase("¡Reventaste la luna! 🌙💥 … tranqui, ahorita se vuelve a armar");
+}
+function dibujaLuna(dt) {
+  lunaBrillo = Math.max(0, lunaBrillo - dt * 0.8);
+  const L = lunaRota;
+  const entera = !L ? 1 : L.t > LUNA_VUELA ? Math.min(1, (L.t - LUNA_VUELA) / LUNA_VUELVE) ** 3 : 0;
+  // el halo
+  const hr = luna.r * (8 + lunaBrillo * 5);
+  const halo = g.createRadialGradient(luna.x, luna.y, luna.r, luna.x, luna.y, hr);
+  halo.addColorStop(0, `rgba(255,244,220,${0.3 * Math.max(entera, 0.25) + lunaBrillo * 0.35})`);
+  halo.addColorStop(1, "rgba(255,244,220,0)");
+  g.fillStyle = halo; g.fillRect(luna.x - hr, luna.y - hr, hr * 2, hr * 2);
+  if (!L) { g.drawImage(lunaCapa, luna.x - luna.r - 2, luna.y - luna.r - 2, luna.r * 2 + 4, luna.r * 2 + 4); return; }
+  L.t += dt;
+  const vuelve = L.t > LUNA_VUELA ? Math.min(1, (L.t - LUNA_VUELA) / LUNA_VUELVE) : 0;
+  const e = vuelve < 0.5 ? 4 * vuelve ** 3 : 1 - Math.pow(-2 * vuelve + 2, 3) / 2;
+  if (entera > 0) { g.globalAlpha = entera; g.drawImage(lunaCapa, luna.x - luna.r - 2, luna.y - luna.r - 2, luna.r * 2 + 4, luna.r * 2 + 4); }
+  g.globalAlpha = 1;
+  for (const p of L.piezas) {
+    if (!vuelve) { p.vx *= Math.exp(-dt * 1.4); p.vy = p.vy * Math.exp(-dt * 1.4) + 30 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; p.sx = p.x; p.sy = p.y; p.sr = p.rot; }
+    const x = vuelve ? p.sx + (p.hx - p.sx) * e : p.x, y = vuelve ? p.sy + (p.hy - p.sy) * e : p.y, rot = vuelve ? p.sr * (1 - e) : p.rot;
+    g.globalAlpha = 1 - entera;
+    g.save(); g.translate(x, y); g.rotate(rot); g.fillStyle = p.c; g.beginPath();
+    for (let k = 0; k < p.k; k++) { const q = (k / p.k) * TAU; g.lineTo(Math.cos(q) * p.tam, Math.sin(q) * p.tam * 0.8); }
+    g.closePath(); g.fill(); g.restore();
+  }
+  g.globalCompositeOperation = "lighter";
+  for (const b of L.brillos) {
+    if (b.t <= 0) continue;
+    b.t -= dt; b.vx *= Math.exp(-dt * 1.8); b.vy = b.vy * Math.exp(-dt * 1.8) + 20 * dt; b.x += b.vx * dt; b.y += b.vy * dt;
+    g.globalAlpha = Math.max(0, b.t / b.m); g.fillStyle = `rgb(${b.c})`; g.beginPath(); g.arc(b.x, b.y, 1.6, 0, TAU); g.fill();
+  }
+  g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
+  if (L.t > LUNA_VUELA + LUNA_VUELVE) {
+    lunaRota = null; lunaBrillo = 1;
+    acorde([523.25, 659.25, 783.99, 1046.5, 1318.5]);
+    decirFrase("Y se volvió a armar… para que la sigamos viendo juntos 🤍");
+  }
+}
 const estrellas = [];
 
 function lienzoNuevo(w, h) {
@@ -196,19 +262,17 @@ function pintarFijo() {
     estrellas.push(s);
   }
   luna = { x: A * 0.7, y: horizonte * 0.34, r: Math.min(A, H) * 0.06 };
-  const halo = x.createRadialGradient(luna.x, luna.y, luna.r, luna.x, luna.y, luna.r * 8);
-  halo.addColorStop(0, "rgba(255,244,220,.3)");
-  halo.addColorStop(1, "rgba(255,244,220,0)");
-  x.fillStyle = halo;
-  x.fillRect(0, 0, A, horizonte + 2);
-  const disco = x.createRadialGradient(luna.x - luna.r * 0.3, luna.y - luna.r * 0.3, 0, luna.x, luna.y, luna.r);
+  // La luna va aparte (ver `dibujaLuna`): con dos toques revienta.
+  [lunaCapa] = lienzoNuevo(luna.r * 2 + 4, luna.r * 2 + 4);
+  const lx = lunaCapa.getContext("2d"), lr = luna.r, lc = lr + 2;
+  const disco = lx.createRadialGradient(lc - lr * 0.3, lc - lr * 0.3, 0, lc, lc, lr);
   disco.addColorStop(0, "#fffdf2");
   disco.addColorStop(1, "#e9dfc4");
-  x.fillStyle = disco;
-  x.beginPath(); x.arc(luna.x, luna.y, luna.r, 0, TAU); x.fill();
-  x.fillStyle = "rgba(190,178,150,.28)";
+  lx.fillStyle = disco;
+  lx.beginPath(); lx.arc(lc, lc, lr, 0, TAU); lx.fill();
+  lx.fillStyle = "rgba(190,178,150,.28)";
   for (const [dx, dy, rr] of [[-0.3, -0.1, 0.2], [0.25, 0.3, 0.15], [0.12, -0.35, 0.11]]) {
-    x.beginPath(); x.arc(luna.x + dx * luna.r, luna.y + dy * luna.r, rr * luna.r, 0, TAU); x.fill();
+    lx.beginPath(); lx.arc(lc + dx * lr, lc + dy * lr, rr * lr, 0, TAU); lx.fill();
   }
 
   // La orilla de enfrente: colinas y árboles.
@@ -476,6 +540,13 @@ function soltar(e) {
   const recorrido = Math.hypot(dx, dy);
   elPista.classList.add("is-fuera");
   if (recorrido < 14) {
+    // Dos toques seguidos en la luna: revienta.
+    if (Math.hypot(d.x - luna.x, d.y - luna.y) < luna.r * 2) {
+      const ahora = performance.now();
+      if (ahora - toqueLuna < 480) { toqueLuna = 0; romperLuna(); }
+      else { toqueLuna = ahora; lunaBrillo = Math.max(lunaBrillo, 0.5); }
+      return;
+    }
     // Un toque: la piedra va en globo justo a ese sitio.
     if (d.y <= horizonte + 6) return;
     const [tx, tz] = aAgua(d.x, d.y);
@@ -557,6 +628,7 @@ function paso(ahora) {
 
   /* ---- El cielo ---- */
   g.drawImage(cielo, 0, 0, A, horizonte + 2);
+  dibujaLuna(dt);
   for (const s of estrellas) {
     const b = 0.5 + 0.5 * Math.sin(reloj * 1.3 + s.f);
     g.fillStyle = `rgba(235,240,255,${0.3 + b * 0.6})`;
@@ -602,7 +674,7 @@ function paso(ahora) {
     const [xw] = aAgua(luna.x, y);
     const olas = alturaAgua(xw, z, reloj) * 900;
     const x = luna.x + Math.sin(reloj * 1.1 + i * 0.9) * (3 + k * 18) + olas;
-    g.fillStyle = `rgba(255,240,205,${(0.4 - k * 0.3) * (0.4 + 0.6 * Math.abs(Math.sin(reloj * 0.9 + i)))})`;
+    g.fillStyle = `rgba(255,240,205,${(0.4 - k * 0.3) * (0.4 + 0.6 * Math.abs(Math.sin(reloj * 0.9 + i))) * (lunaRota ? 0.15 : 1)})`;
     g.fillRect(x - ancho / 2, y, ancho, 0.8 + k * 1.8);
   }
   g.globalAlpha = 0.28;
