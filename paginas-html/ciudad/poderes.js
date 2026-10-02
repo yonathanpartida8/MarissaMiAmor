@@ -1,24 +1,29 @@
 /*
  * EL MODO DIOS Y LOS PODERES.
  *
- * Prender el Modo Dios es una transformación: se abre de brazos, flota un
- * poquito, un destello, el aura y la ciudad entera se entibia de dorado.
- * Con él: volar (saltar en el aire), rayos desde la mano, levantar y
- * aventar cosas y coches, explosión cargada, terremoto, tsunami y la
- * lluvia; y los poderes ocultos que se van descubriendo.
+ * Al tocar ✨ ella dice «Quédate aquí, que necesito ir al baño, ahorita
+ * vuelvo.» y se va. Entonces llega la transformación: se abre de brazos,
+ * flota, un destello de luz de verdad, el aura… Con el Modo Dios: volar
+ * (saltar en el aire), rayos, levantar y aventar cosas y coches, explosión
+ * cargada, terremoto, tsunami, lluvia, tornado, meteoritos, corazones,
+ * detener el tiempo y llamar al ovni. Todos disponibles desde el principio.
  *
- * Al apagarlo todo lo sobrenatural se va desvaneciendo (no de golpe) y
- * ella pregunta si estoy bien.
+ * Al apagarlo, todo lo sobrenatural se desvanece: un fundido suave, y al
+ * volver la ciudad ya está en paz (sin estrellas de caos, sin policía, sin
+ * coches volteados) y yo estoy junto a ella, que acaba de regresar:
+ * «¿Estás bien?» — «Ah, sí, gracias. Solo me quedé pensando de más, jaja.»
  */
-import { J, THREE, rnd, elegir, clamp, lerp, amort, difAng, anunciar, oir, memo, guardar, contar, contorno, TAU } from "./base.js";
+import { J, THREE, rnd, elegir, clamp, lerp, amort, difAng, anunciar, oir, memo, guardar, contar, contorno, TAU, toon } from "./base.js";
 import { son, bucleEn } from "./audio.js";
 import * as fx from "./efectos.js";
-import { E, decir, decirYa, globito, aviso, botonPoder, botonDios, botonBajar, botonSaltar, botonAccion, definirPoderes, caos as hudCaos, cargaGolpe } from "./ui.js";
-import { golpearGente, derribar, rejilla } from "./gente.js";
-import { soltarFisica, golpearCoches } from "./vehiculos.js";
+import { E, decir, decirYa, globito, aviso, botonPoder, botonDios, botonBajar, botonSaltar, botonAccion, definirPoderes, caos as hudCaos, cargaGolpe, fundido, enVivo } from "./ui.js";
+import { golpearGente, derribar, rejilla, calmarTodos } from "./gente.js";
+import { soltarFisica, golpearCoches, restaurarTodos } from "./vehiculos.js";
 import * as objetos from "./objetos.js";
 import { decirElla, lineaElla } from "./jugador.js";
 import { CALLES, alturaSuelo, chocarEdificios } from "./mundo.js";
+import { irAlBano, regresar } from "./pareja.js";
+import { cam } from "./camara.js";
 
 export const PODERES = [
   { id: "rayo", ico: "⚡", nombre: "Rayos" },
@@ -27,20 +32,20 @@ export const PODERES = [
   { id: "terremoto", ico: "🌎", nombre: "Terremoto" },
   { id: "tsunami", ico: "🌊", nombre: "Tsunami" },
   { id: "lluvia", ico: "🌧️", nombre: "Lluvia y tormenta" },
-  { id: "tornado", ico: "🌪️", nombre: "Tornado", oculto: true, como: "Avienta 5 coches" },
-  { id: "meteoros", ico: "☄️", nombre: "Lluvia de meteoritos", oculto: true, como: "Haz 3 explosiones con la carga completita" },
-  { id: "corazones", ico: "💗", nombre: "Lluvia de corazones", oculto: true, como: "Mira de cerca a la pareja del K-drama 3 veces" },
-  { id: "tiempo", ico: "⏳", nombre: "Detener el tiempo", oculto: true, como: "Toca la luna 5 veces con el Modo Dios" },
-  { id: "ovni", ico: "🛸", nombre: "Llamar al ovni", oculto: true, como: "Atrapa al ovni con un rayo" },
+  { id: "tornado", ico: "🌪️", nombre: "Tornado" },
+  { id: "meteoros", ico: "☄️", nombre: "Lluvia de meteoritos" },
+  { id: "corazones", ico: "💗", nombre: "Lluvia de corazones" },
+  { id: "tiempo", ico: "⏳", nombre: "Detener el tiempo" },
+  { id: "ovni", ico: "🛸", nombre: "Llamar al ovni" },
 ];
 let poder = "rayo", burbuja = null;
-J.dios = { on: false, nivel: 0 };
+J.dios = { on: false, nivel: 0, brilla: false };
 
 /* ══════════════════ ARRANCAR ══════════════════ */
 export function iniciar() {
   objetos.iniciar(); armarOla();
   J.nivelAgua = (x) => (J.ola ? nivelAgua(x) : -1);
-  burbuja = new THREE.Mesh(new THREE.SphereGeometry(1.15, 24, 16), contorno(new THREE.MeshStandardMaterial({ color: "#ff9ec8", transparent: true, opacity: 0.18, roughness: 0.1, depthWrite: false }), "#ffc8e0", 1.2, 2));
+  burbuja = new THREE.Mesh(new THREE.SphereGeometry(1.15, 24, 16), contorno(new THREE.MeshToonMaterial({ color: "#ff9ec8", transparent: true, opacity: 0.2, depthWrite: false }), "#ffc8e0", 1.2, 2));
   burbuja.visible = false; J.escena.add(burbuja);
   J.golpear = (h) => { const a = golpearGente(h), b = golpearCoches(h), c = objetos.golpearObjetos(h); return a || b || c; };
   J.objetivoGolpe = (yo, r) => {
@@ -50,69 +55,94 @@ export function iniciar() {
     return m;
   };
   J.explosion = explosion;
-  J.elegirPoder = (id) => { poder = id; pintarBarra(); decir(PODERES.find((p) => p.id === id).nombre + " " + PODERES.find((p) => p.id === id).ico, "dios", 1600); };
-  J.elegirPoderN = (n) => { const lista = PODERES.filter((p) => !p.oculto || memo.poderes[p.id]); if (lista[n] && J.dios.on) J.elegirPoder(lista[n].id); };
-  J.desbloquear = desbloquear;
+  J.elegirPoder = (id) => { poder = id; pintarBarra(); const p = PODERES.find((q) => q.id === id); aviso(p.ico + " " + p.nombre); };
+  J.elegirPoderN = (n) => { if (PODERES[n] && J.dios.on) J.elegirPoder(PODERES[n].id); };
+  J.desbloquear = () => {};   // ya están todos
   J.soltarAgarre = soltarAgarre;
   J.prenderDios = prenderDios; J.apagarDios = apagarDios;
   J.rayoA = (p) => { if (J.dios.on) lanzarRayo(p, null); };
   pintarBarra();
 }
 function pintarBarra() {
-  definirPoderes(PODERES.map((p) => ({ ...p, bloq: p.oculto && !memo.poderes[p.id] })), poder);
+  definirPoderes(PODERES, poder);
   const p = PODERES.find((q) => q.id === poder);
   botonPoder(J.agarrado ? "🫳" : p.ico, J.dios.on);
   botonDios(J.dios.on);
 }
-function desbloquear(id) {
-  if (memo.poderes[id]) return;
-  memo.poderes[id] = true; guardar();
-  const p = PODERES.find((q) => q.id === id);
-  aviso(`🔓 ¡Poder nuevo! ${p.ico} ${p.nombre}`); son("magia");
-  pintarBarra();
-}
 
 /* ══════════════════ EL MODO DIOS ══════════════════ */
-let tokenDios = 0;
+let tokenDios = 0, transicion = false;
 function prenderDios() {
   const yo = J.jugador;
-  if (yo.coche) { decir("Primero bájate del coche, amor 😅", "yo"); return; }
-  J.dios.on = true; tokenDios++; const tok = tokenDios;
-  J.cinematica = true;
-  yo.anim.poder = 1.6; yo.vy = 3; yo.suelo = false;
-  son("magia"); bucleEn("dios", 0.045);
-  fx.onda(yo.x, yo.y, yo.z, 8, 0.8, "#ffe6b0"); fx.onda(yo.x, yo.y + 0.1, yo.z, 5, 0.6, "#ff9ec8");
-  fx.brillos(yo.x, yo.y + 1, yo.z, 40, "oro", 1, 4);
-  setTimeout(() => { fx.destello(yo.x, yo.y + 1.5, yo.z, 14, "#ffd28a", 0.9); J.temblor = Math.max(J.temblor || 0, 0.35); fx.chispas(yo.x, yo.y + 1, yo.z, 40, 9, "oro"); }, 450);
-  setTimeout(() => { J.cinematica = false; }, 1500);
-  J.cinematicaCam({ dur: 2.4, dist: 6.5, pitch: 0.2 });
-  decirYa("Woah… mira, soy todo un héroe…", "dios", 3400);
-  globito(yo, "¡Woah! ✨", "dios", 1.8, 2.3);
-  anunciar({ tipo: "dios", x: yo.x, y: yo.y + 2, z: yo.z, radio: 30, fuerza: 0.5 });
-  setTimeout(() => { if (J.dios.on && tok === tokenDios) { decirElla(lineaElla("dios")); J.novia.saludaT = 0; } }, 2700);
+  if (transicion) return;
+  if (yo.coche || yo.subir || yo.bajar) { decir("Primero bájate del coche 😅", "yo"); return; }
+  if (yo.banca) { yo.banca.ocupada = null; yo.banca = null; }
+  J.dios.on = true; J.dios.brilla = false; tokenDios++; const tok = tokenDios;
+  // ella se va al baño (lo dice primero)
+  irAlBano();
   pintarBarra();
-  if (contar("dios") === 1) setTimeout(() => { if (J.dios.on) aviso("Salta en el aire para volar · ⋯ para elegir poder"); }, 4200);
+  // la transformación, en cuanto ella termina de decirlo
+  setTimeout(() => {
+    if (!J.dios.on || tok !== tokenDios) return;
+    J.cinematica = true; J.dios.brilla = true;
+    yo.anim.poder = 1.6; yo.vy = 3; yo.suelo = false;
+    son("magia"); bucleEn("dios", 0.045);
+    fx.onda(yo.x, yo.y, yo.z, 8, 0.8, "#ffe6b0"); fx.onda(yo.x, yo.y + 0.1, yo.z, 5, 0.6, "#ff9ec8");
+    fx.brillos(yo.x, yo.y + 1, yo.z, 50, "oro", 1, 4); fx.columnaLuz(yo.x, yo.y, yo.z, 1.6);
+    setTimeout(() => { fx.destello(yo.x, yo.y + 1.5, yo.z, 40, "#ffd28a", 0.9); J.destelloPantalla = 0.32; J.temblor = Math.max(J.temblor || 0, 0.35); fx.chispas(yo.x, yo.y + 1, yo.z, 50, 10, "oro"); }, 450);
+    setTimeout(() => { J.cinematica = false; }, 1500);
+    J.cinematicaCam({ dur: 2.6, dist: 6.5, pitch: 0.2 });
+    decirYa("Woah… mira, soy todo un héroe…", "dios", 3400);
+    anunciar({ tipo: "dios", x: yo.x, y: yo.y + 2, z: yo.z, radio: 30, fuerza: 0.5 });
+    if (contar("dios") === 1) setTimeout(() => { if (J.dios.on) aviso("Salta en el aire para volar · ⋯ para elegir poder"); }, 4200);
+  }, 3800);
 }
 function apagarDios() {
-  J.dios.on = false; tokenDios++; const tok = tokenDios;
+  if (transicion) return;
+  J.dios.on = false; J.dios.brilla = false; tokenDios++; const tok = tokenDios;
   const yo = J.jugador;
-  soltarAgarre(); J.cargandoPoder = false; cargaPoder = 0;
+  soltarAgarre(); J.cargandoPoder = false; cargaPoder = 0; if (orbeCarga) { orbeCarga.soltar(); orbeCarga = null; }
   son("apagar"); bucleEn("dios", 0); bucleEn("tk", 0);
-  fx.brillos(yo.x, yo.y + 1, yo.z, 20, "oro", 0.8, 1.5);
-  // todo lo sobrenatural se empieza a ir
+  fx.brillos(yo.x, yo.y + 1, yo.z, 24, "oro", 0.8, 1.5);
+  // todo lo sobrenatural se empieza a ir…
   lluviaObj = 0;
   if (J.sismo) J.sismo.t = Math.max(J.sismo.t, J.sismo.dur - 1.5);
   if (J.ola && J.ola.fase === "avanza") J.ola.fase = "baja";
   for (const t of tornados) t.t = Math.max(t.t, t.dur - 1.2);
   J.congelado = 0; amorT = Math.min(amorT, 1.5);
-  J.alApagarDios && J.alApagarDios();
   if (yo.vuela) { yo.vuela = false; yo.suelo = false; yo.vy = 0; yo.planea = 1.5; }
   pintarBarra();
-  setTimeout(() => { if (!J.dios.on && tok === tokenDios) { J.novia.estado = "sigue"; J.novia.hablando = 3; decirYa("Amorcito, ¿estás bien? ¿Qué estabas pensando?", "ella", 3600); globito(J.novia, "¿Amorcito…? 🥺", "ella", 2.8, 2.1); } }, 2200);
-  setTimeout(() => { if (!J.dios.on && tok === tokenDios) { decirYa("Oh, vaya… creo que… rayos, me quedé disociando. Lo siento, mi niña bella.", "yo", 4800); globito(yo, "Perdón, mi niña bella 🥹", "yo", 3, 2.2); } }, 6400);
-  setTimeout(() => { if (!J.dios.on && tok === tokenDios) { globito(J.novia, "Ay, tontito 🤍", "ella", 2.6, 2.1); J.novia.abrazaT = 3.5; yo.abrazaT = 3.5; fx.corazones(J.novia.x, J.novia.y + 1.6, J.novia.z, 8, 1.6); son("corazon"); } }, 11500);
+  transicion = true; J.cinematica = true;
+  // …y con un fundido suave la ciudad vuelve a la calma y estoy junto a ella
+  setTimeout(() => fundido(true), 700);
+  setTimeout(() => {
+    limpiarCaos();
+    const p = regresar(), ella = J.novia;
+    // yo, a su lado, mirándola
+    const a = Math.atan2(p.x - yo.x, p.z - yo.z);
+    yo.x = p.x - Math.sin(a) * 1.1; yo.z = p.z - Math.cos(a) * 1.1;
+    { const o = { x: yo.x, z: yo.z }; chocarEdificios(o, 0.4, 0); yo.x = o.x; yo.z = o.z; }
+    yo.y = alturaSuelo(yo.x, yo.z, 0.5); yo.vx = yo.vz = yo.vy = 0; yo.suelo = true; yo.vuela = false; yo.planea = 0;
+    yo.ry = Math.atan2(ella.x - yo.x, ella.z - yo.z); ella.ry = yo.ry + Math.PI;
+    cam.x = yo.x; cam.y = yo.y + 1.45; cam.z = yo.z; cam.yawObj = cam.yaw = yo.ry + Math.PI / 2 + 0.3; cam.pitchObj = cam.pitch = 0.22; cam.distObj = cam.dist = 5.5;
+    cam.modo = "seguir";
+  }, 1400);
+  setTimeout(() => { fundido(false); J.cinematica = false; transicion = false; }, 1900);
+  setTimeout(() => { if (!J.dios.on && tok === tokenDios) { J.novia.hablando = 2.5; decir("¿Estás bien?", "ella", 2600, true); } }, 2600);
+  setTimeout(() => { if (!J.dios.on && tok === tokenDios) { decir("Ah, sí, gracias. Solo me quedé pensando de más, jaja.", "yo", 3800, true); } }, 5200);
+  setTimeout(() => { if (!J.dios.on && tok === tokenDios) { J.novia.abrazaT = 2.5; yo.abrazaT = 2.5; fx.corazones(J.novia.x, J.novia.y + 1.6, J.novia.z, 8, 1.6); son("corazon"); } }, 9200);
 }
-
+/* Que no quede nada del caos: estrellas, policía, coches volteados, cosas rotas, grietas, agua… */
+function limpiarCaos() {
+  J.caos = 0; hudCaos(""); enVivo(false);
+  J.sismo = null; J.ola = null; bucleEn("sismo", 0); bucleEn("ola", 0); bucleEn("viento", 0);
+  for (const t of tornados) { J.escena.remove(t.m); t.m.material.dispose(); } tornados.length = 0;
+  for (const p of proyectiles) if (p.orbe) p.orbe.soltar(); if (orbeCarga) orbeCarga.soltar(); orbeCarga = null;
+  proyectiles.length = 0; amorT = 0; lluviaObj = 0; J.lloviendo = J.lluviaNatural || 0; J.congelado = 0;
+  J.limpiarEventos && J.limpiarEventos();
+  restaurarTodos(); objetos.restaurarTodos(); calmarTodos(); fx.limpiar();
+  J.temblor = 0;
+}
 /* ══════════════════ ELEGIR A QUIÉN ══════════════════ */
 /* Lo que el poder apunta: lo que se tocó, o lo más cercano enfrente. */
 function blanco(alcance = 35, soloLevantable = false) {
@@ -140,7 +170,7 @@ J.tocarMundo = (p) => {   // un toque en la pantalla con un poder elegido
 };
 
 /* ══════════════════ LOS PODERES ══════════════════ */
-let cargaPoder = 0, lluviaObj = 0, amorT = 0;
+let cargaPoder = 0, lluviaObj = 0, amorT = 0, orbeCarga = null;
 const tornados = [];
 function usarPoder() {
   const yo = J.jugador;
@@ -197,7 +227,6 @@ function aventar() {
   yo.anim.golpe = { tipo: "lanzar", t: 0, dur: 0.5 };
   son("whoosh", yo.x, yo.z, 1.3);
   J.caos += 5;
-  if (o.m && contar("lanzados") >= 5) desbloquear("tornado");
 }
 function moverAgarrado(dt) {
   const o = J.agarrado; if (!o) return;
@@ -213,6 +242,7 @@ function moverAgarrado(dt) {
 }
 /* ── la explosión ── */
 export function explosion(x, y, z, k, menos = null) {
+  fx.bolaFuego(x, y + 0.4, z, 1.5 + k * 2, 0.5 + k * 0.22);
   fx.fuego(x, y, z, Math.round(16 + k * 18), 1 + k * 0.6);
   fx.humo(x, y + 0.5, z, Math.round(6 + k * 8), 1.4 + k, true);
   fx.chispas(x, y, z, Math.round(16 + k * 20), 10 + k * 7, "fuego2");
@@ -241,14 +271,13 @@ const _c = [];
 const proyectiles = [];
 function soltarCarga() {
   const yo = J.jugador, k = cargaPoder; cargaPoder = 0; J.cargandoPoder = false;
-  if (k < 0.08) return;
+  if (k < 0.08) { if (orbeCarga) orbeCarga.soltar(); orbeCarga = null; return; }
   const b = blanco(40);
   const p = b ? { x: b.x, y: (b.y || 0) + 0.5, z: b.z } : puntoAdelante(18);
   const mano = { x: yo.x + Math.sin(yo.ry) * 0.6, y: yo.y + 1.45, z: yo.z + Math.cos(yo.ry) * 0.6 };
-  proyectiles.push({ ...mano, tx: p.x, ty: p.y, tz: p.z, k });
+  proyectiles.push({ ...mano, tx: p.x, ty: p.y, tz: p.z, k, orbe: orbeCarga }); orbeCarga = null;
   yo.anim.golpe = { tipo: "lanzar", t: 0, dur: 0.45 };
   son("whoosh", yo.x, yo.z, 1);
-  if (k > 0.97 && contar("cargas") >= 3) desbloquear("meteoros");
 }
 /* ── el terremoto ── */
 function terremoto() {
@@ -415,21 +444,20 @@ function meteoros() {
 }
 
 /* ══════════════════ CADA CUADRO ══════════════════ */
-let quietoDios = 0;
 export function actualizar(dt, dtM) {
   const yo = J.jugador, ella = J.novia;
   // el botón ✨
   if (E.dios) { if (J.dios.on) apagarDios(); else prenderDios(); }
-  J.dios.nivel = clamp(J.dios.nivel + (J.dios.on ? dt * 1.4 : -dt * 0.6), 0, 1);
+  J.dios.nivel = clamp(J.dios.nivel + (J.dios.on && J.dios.brilla ? dt * 1.4 : -dt * 0.6), 0, 1);   // el brillo, sólo ya transformado
   // los botones según lo que pasa
-  botonBajar(yo.vuela);
+  botonBajar(yo.vuela || cam.modo === "dron");
   botonSaltar(yo.vuela ? "⤒" : J.dios.on && !yo.suelo ? "🕊️" : "⤒");
   if (yo.planea > 0) { yo.planea -= dt; if (!yo.suelo) yo.vy = Math.max(yo.vy, -3); }
   // el poder
   if (J.dios.on) {
     if (E.poder && poder !== "carga") usarPoder();
     if (poder === "carga") {
-      if (E.poderSostenido) { J.cargandoPoder = true; cargaPoder = Math.min(1, cargaPoder + dt / 1.6); if (Math.random() < dt * 40) { const m = { x: yo.x + Math.sin(yo.ry) * 0.6, y: yo.y + 1.45, z: yo.z + Math.cos(yo.ry) * 0.6 }; fx.brillos(m.x, m.y, m.z, 1, Math.random() < 0.5 ? "oro" : "rosa", 0.6 * (1 - cargaPoder) + 0.15, 0.3); } if (Math.random() < dt * 6) son("carga", yo.x, yo.z, cargaPoder); if (cargaPoder >= 1) J.temblor = Math.max(J.temblor || 0, 0.12); }
+      if (E.poderSostenido) { J.cargandoPoder = true; cargaPoder = Math.min(1, cargaPoder + dt / 1.6); if (!orbeCarga) orbeCarga = fx.orbe("#ffcf8a"); orbeCarga.poner(yo.x + Math.sin(yo.ry) * 0.7, yo.y + 1.5, yo.z + Math.cos(yo.ry) * 0.7, 0.12 + cargaPoder * 0.42 + Math.sin(J.t * 20) * 0.02); if (Math.random() < dt * 40) { const m = { x: yo.x + Math.sin(yo.ry) * 0.6, y: yo.y + 1.45, z: yo.z + Math.cos(yo.ry) * 0.6 }; fx.brillos(m.x, m.y, m.z, 1, Math.random() < 0.5 ? "oro" : "rosa", 0.6 * (1 - cargaPoder) + 0.15, 0.3); } if (Math.random() < dt * 6) son("carga", yo.x, yo.z, cargaPoder); if (cargaPoder >= 1) J.temblor = Math.max(J.temblor || 0, 0.12); }
       else if (J.cargandoPoder || E.poderSuelto) soltarCarga();
     }
     moverAgarrado(dt);
@@ -437,8 +465,9 @@ export function actualizar(dt, dtM) {
   // los proyectiles (la carga y los meteoritos)
   for (let i = proyectiles.length - 1; i >= 0; i--) {
     const p = proyectiles[i], dx = p.tx - p.x, dy = p.ty - p.y, dz = p.tz - p.z, d = Math.hypot(dx, dy, dz), paso = (p.v || 30) * dt;
-    if (d <= paso) { proyectiles.splice(i, 1); explosion(p.tx, p.ty + 0.4, p.tz, 0.3 + p.k * 1.3); if (p.meteoro) J.grieta && J.grieta(p.tx, p.tz, true); continue; }
+    if (d <= paso) { proyectiles.splice(i, 1); if (p.orbe) p.orbe.soltar(); explosion(p.tx, p.ty + 0.4, p.tz, 0.3 + p.k * 1.3); if (p.meteoro) J.grieta && J.grieta(p.tx, p.tz, true); continue; }
     p.x += dx / d * paso; p.y += dy / d * paso; p.z += dz / d * paso;
+    if (p.orbe) p.orbe.poner(p.x, p.y, p.z, 0.15 + p.k * 0.45);
     if (p.meteoro) { fx.fuego(p.x, p.y, p.z, 2, 1.4); fx.humo(p.x, p.y, p.z, 1, 1, true); }
     else fx.brillos(p.x, p.y, p.z, 3, Math.random() < 0.5 ? "oro" : "rosa", 0.25 + p.k * 0.3, 0.5);
   }
@@ -461,8 +490,6 @@ export function actualizar(dt, dtM) {
   if (ella.escudo > 0) ella.escudo -= dt;
   burbuja.visible = ella.escudo > 0 && (!!J.ola || !!J.sismo || tornados.length > 0);
   if (burbuja.visible) { burbuja.position.set(ella.x, ella.y + 0.9, ella.z); burbuja.scale.setScalar(1 + Math.sin(J.t * 3) * 0.03); }
-  // si llevo mucho tiempo en Modo Dios sin hacer nada, ella se acerca a preguntarme
-  if (J.dios.on && !yo.vuela && yo.vel < 0.2 && !E.mag) { quietoDios += dt; if (quietoDios > 40) { quietoDios = 0; decirElla("¿Amor? Ya puedes dejar de brillar, ¿eh? 😅"); } } else quietoDios = 0;
   void botonAccion; void lerp;
 }
 void alturaSuelo; void CALLES; void oir;

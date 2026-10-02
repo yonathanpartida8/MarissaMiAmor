@@ -10,7 +10,7 @@
  *
  * Una malla instanciada por tipo de objeto (siete llamadas para todos).
  */
-import { J, THREE, rnd, elegir, clamp, amort, Juntador, contorno } from "./base.js";
+import { J, THREE, rnd, elegir, clamp, amort, Juntador, contorno, toon } from "./base.js";
 import { MANZANAS, MEDIA, ACERA_Y, chocarEdificios, alturaSuelo } from "./mundo.js";
 import { son } from "./audio.js";
 import { chispas, polvo, escombro, agua, corazones } from "./efectos.js";
@@ -31,7 +31,7 @@ export const objetos = [];
 export function iniciar() {
   for (const [nombre, T] of Object.entries(TIPOS)) {
     const j = new Juntador(); T.armar(j);
-    const im = new THREE.InstancedMesh(j.geometria(), contorno(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6 }), "#a898ff", 0.3), 60);
+    const im = new THREE.InstancedMesh(j.geometria(), contorno(toon({ vertexColors: true }), "#a898ff", 0.3), 60);
     im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); im.castShadow = J.calidad.sombras; im.count = 0; im.frustumCulled = false;
     J.escena.add(im); mallas[nombre] = im;
   }
@@ -87,6 +87,11 @@ export function golpearObjetos(h) {
     pego = true;
   }
   return pego;
+}
+/* Todo de vuelta a su lugar (al apagar el Modo Dios). */
+export function restaurarTodos() {
+  for (const o of objetos) { o.estado = "NORMAL"; o.x = o.ox; o.z = o.oz; o.y = ACERA_Y; o.vx = o.vy = o.vz = 0; o.w.set(0, 0, 0); o.libre = false; o.dano = 0; o.t = 0; o.escala = 1; o.q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), o.ry); }
+  if (J.fuentes) J.fuentes.length = 0;
 }
 export function objetoEn(x, z, r = 1.2) { let m = null, md = 1e9; for (const o of objetos) { if (o.estado === "DESTRUIDO" || o.estado === "RECUPERANDO") continue; const d = Math.hypot(o.x - x, o.z - z); if (d < r + o.T.r && d < md) { md = d; m = o; } } return m; }
 

@@ -8,7 +8,7 @@
  *
  * Y los misterios: cada cosa rara que se descubre queda guardada.
  */
-import { J, THREE, rnd, elegir, clamp, lerp, amort, amortAng, anunciar, oir, memo, guardar, contar, aPantalla, lienzo, textura, brillo, contorno, TAU } from "./base.js";
+import { J, THREE, rnd, elegir, clamp, lerp, amort, amortAng, anunciar, oir, memo, guardar, contar, aPantalla, lienzo, textura, brillo, contorno, toon, capaEfectos, TAU } from "./base.js";
 import { son, bucleEn } from "./audio.js";
 import * as fx from "./efectos.js";
 import { decir, decirYa, globito, aviso, contador, enVivo, abrirTarjeta, anilloLuna } from "./ui.js";
@@ -61,7 +61,7 @@ function armarTrazos() {
   const g = new THREE.BufferGeometry(); trazoPos = new Float32Array(MAXT * 6); trazoCol = new Float32Array(MAXT * 6);
   g.setAttribute("position", new THREE.BufferAttribute(trazoPos, 3)); g.setAttribute("color", new THREE.BufferAttribute(trazoCol, 3));
   trazos = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
-  trazos.frustumCulled = false; J.escena.add(trazos);
+  trazos.frustumCulled = false; J.escena.add(capaEfectos(trazos));
 }
 let trazoI = 0;
 function trazo(a, b) {
@@ -238,28 +238,67 @@ function actualizarPolicia(dt) {
 
 /* ══════════════════ LOS HELICÓPTEROS ══════════════════ */
 const helis = [];
+const focos = [];   // dos reflectores de verdad (helicópteros / ovni)
+let luzPortal = null;
+function armarLucesEventos() {
+  for (let i = 0; i < 2; i++) { const l = new THREE.SpotLight("#eef2ff", 0, 90, 0.2, 0.55, 1.3); l.castShadow = false; J.escena.add(l, l.target); focos.push({ l, de: null }); }
+  luzPortal = new THREE.PointLight("#7aff6a", 0, 18, 1.6); J.escena.add(luzPortal);
+}
+function pedirFoco(de) { const f = focos.find((q) => q.de === de) || focos.find((q) => !q.de); if (f) f.de = de; return f ? f.l : null; }
+function soltarFoco(de) { for (const f of focos) if (f.de === de) { f.de = null; f.l.intensity = 0; } }
 function modeloHeli(tipo) {
-  const g = new THREE.Group();
-  const col = tipo === "policia" ? "#1c2a5a" : "#b82a3a", col2 = "#e8e8f0";
-  const mat = contorno(new THREE.MeshStandardMaterial({ color: col, roughness: 0.4, metalness: 0.4 }), "#c8c0ff", 0.4);
-  const mat2 = new THREE.MeshStandardMaterial({ color: col2, roughness: 0.5 }), oscuro = new THREE.MeshStandardMaterial({ color: "#16161c", roughness: 0.6 });
-  const cuerpo = new THREE.Mesh(new THREE.CapsuleGeometry(1.1, 2.2, 6, 14).rotateX(Math.PI / 2), mat); g.add(cuerpo);
-  const vidrio = new THREE.Mesh(new THREE.SphereGeometry(1.05, 16, 10, 0, TAU, 0, Math.PI / 2).rotateX(Math.PI / 2.4), new THREE.MeshStandardMaterial({ color: "#2a3a5a", roughness: 0.1, metalness: 0.7, emissive: "#1a2440" }));
-  vidrio.position.set(0, 0.25, 1.35); g.add(vidrio);
-  const franja = new THREE.Mesh(new THREE.BoxGeometry(2.24, 0.3, 2.6), mat2); franja.position.y = -0.2; g.add(franja);
-  const cola = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.4, 4.6), mat); cola.position.set(0, 0.3, -3.6); g.add(cola);
-  const aleta = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.2, 0.7), mat2); aleta.position.set(0, 0.85, -5.7); g.add(aleta);
-  for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 3.4), oscuro); p.position.set(s * 0.95, -1.45, 0.2); g.add(p); const pata = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.5, 0.08), oscuro); pata.position.set(s * 0.8, -1.2, 0.6); g.add(pata); const pata2 = pata.clone(); pata2.position.z = -0.4; g.add(pata2); }
-  const rotor = new THREE.Group(); rotor.position.y = 1.35; g.add(rotor);
-  const aspa = new THREE.Mesh(new THREE.BoxGeometry(10, 0.05, 0.32), oscuro); rotor.add(aspa); const aspa2 = aspa.clone(); aspa2.rotation.y = Math.PI / 2; rotor.add(aspa2);
-  const rotorC = new THREE.Group(); rotorC.position.set(0.25, 0.85, -5.7); g.add(rotorC);
-  const ac = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.6, 0.16), oscuro); rotorC.add(ac);
-  const luzR = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), new THREE.MeshBasicMaterial({ color: "#ff3040" })); luzR.position.set(0, -1.15, -1); g.add(luzR);
-  // el reflector: un cono de luz hasta el suelo y su mancha
-  const cono = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 4.2, 1, 24, 1, true).translate(0, -0.5, 0), new THREE.MeshBasicMaterial({ color: tipo === "policia" ? "#e8f0ff" : "#fff0d0", transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-  const mancha = new THREE.Mesh(new THREE.CircleGeometry(4.2, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: brillo([[0, "rgba(255,255,255,.75)"], [0.6, "rgba(255,250,235,.35)"], [1, "rgba(255,250,235,0)"]], 64), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
-  J.escena.add(g, cono, mancha);
-  return { g, rotor, rotorC, luzR, cono, mancha, mat };
+  const g = new THREE.Group(), poli = tipo === "policia";
+  const col = poli ? "#1f3270" : "#c8304a", col2 = "#f2f0f6";
+  const mat = contorno(toon({ color: col }), "#c8c0ff", 0.4), mat2 = toon({ color: col2 }), oscuro = toon({ color: "#22222c" }), metal = toon({ color: "#8a8c98" });
+  const vidrioM = toon({ color: "#6a9ad0", emissive: "#14243e", transparent: true, opacity: 0.88 });
+  // el cuerpo: una gota redondita, más ancha adelante
+  const cuerpo = new THREE.Mesh(new THREE.CapsuleGeometry(1.1, 2.0, 8, 18).rotateX(Math.PI / 2), mat); cuerpo.scale.set(1, 0.95, 1); g.add(cuerpo);
+  const vidrio = new THREE.Mesh(new THREE.SphereGeometry(1.06, 20, 12, 0, TAU, 0, Math.PI * 0.55).rotateX(Math.PI / 2.3), vidrioM); vidrio.position.set(0, 0.22, 1.25); g.add(vidrio);
+  const franja = new THREE.Mesh(new THREE.CylinderGeometry(1.115, 1.115, 1.4, 20, 1, true).rotateX(Math.PI / 2), mat2); franja.scale.set(1, 0.42, 1); franja.position.set(0, -0.32, -0.2); g.add(franja);
+  // el letrero de cada lado (POLICÍA / CANAL 7)
+  const [lc, lx] = lienzo(256, 64); lx.fillStyle = poli ? "#f2f0f6" : "#ffe9a8"; lx.font = "bold 40px system-ui, sans-serif"; lx.textAlign = "center"; lx.textBaseline = "middle"; lx.fillText(poli ? "POLICÍA" : "CANAL 7 📡", 128, 34);
+  const letreroM = new THREE.MeshBasicMaterial({ map: textura(lc), transparent: true, depthWrite: false });
+  for (const sx of [-1, 1]) { const l = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.42), letreroM); l.position.set(sx * 1.13, 0.12, -0.45); l.rotation.y = sx * Math.PI / 2; g.add(l); }
+  // el motor arriba y el mástil
+  const motor = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 1.1, 4, 10).rotateX(Math.PI / 2), mat); motor.position.set(0, 1.0, -0.5); g.add(motor);
+  const toma = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.3, 10), oscuro); toma.rotation.x = Math.PI / 2; toma.position.set(0, 1.0, -1.35); g.add(toma);
+  const mastil = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 0.5, 8), metal); mastil.position.set(0, 1.4, 0); g.add(mastil);
+  // la cola: un tubo que se adelgaza, con su aleta y su estabilizador
+  const cola = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.42, 4.4, 12).rotateX(Math.PI / 2), mat); cola.position.set(0, 0.32, -3.5); g.add(cola);
+  const aleta = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.25, 0.75), mat2); aleta.position.set(0, 0.85, -5.6); aleta.rotation.x = -0.25; g.add(aleta);
+  const estab = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.07, 0.45), mat2); estab.position.set(0, 0.32, -4.9); g.add(estab);
+  // patines con sus soportes
+  for (const s of [-1, 1]) {
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.4, 8).rotateX(Math.PI / 2), oscuro); p.position.set(s * 0.95, -1.42, 0.15); g.add(p);
+    const punta = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.06, 6, 10, Math.PI / 2), oscuro); punta.rotation.y = s > 0 ? -Math.PI / 2 : -Math.PI / 2; punta.position.set(s * 0.95, -1.2, 1.85); g.add(punta);
+    for (const z of [0.75, -0.55]) { const pata = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.62, 6), oscuro); pata.position.set(s * 0.82, -1.15, z); pata.rotation.z = s * 0.35; g.add(pata); }
+  }
+  // el rotor: aspas que giran y, encima, un disco «borroso» como en los dibujos
+  const rotor = new THREE.Group(); rotor.position.y = 1.62; g.add(rotor);
+  const cubo = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 8), metal); rotor.add(cubo);
+  const aspaG = new THREE.BoxGeometry(5, 0.045, 0.3).translate(2.5, 0, 0);
+  for (let i = 0; i < 4; i++) { const a = new THREE.Mesh(aspaG, oscuro); a.rotation.y = i * Math.PI / 2; a.rotation.x = 0.05; rotor.add(a); }
+  const discoM = new THREE.MeshBasicMaterial({ map: brillo([[0, "rgba(40,40,52,0)"], [0.25, "rgba(40,40,52,.06)"], [0.92, "rgba(40,40,52,.16)"], [1, "rgba(40,40,52,0)"]], 128), transparent: true, depthWrite: false, side: THREE.DoubleSide });
+  const disco = new THREE.Mesh(new THREE.CircleGeometry(5.05, 48).rotateX(-Math.PI / 2), discoM); disco.position.y = 1.64; g.add(disco);
+  const rotorC = new THREE.Group(); rotorC.position.set(0.18, 0.95, -5.6); g.add(rotorC);
+  for (let i = 0; i < 2; i++) { const ac = new THREE.Mesh(new THREE.BoxGeometry(0.035, 1.5, 0.14), oscuro); ac.rotation.x = i * Math.PI / 2; rotorC.add(ac); }
+  // lucecitas de navegación (brillan de verdad con el resplandor)
+  const nav = (c, x, y, z) => { const l = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(3) })); l.position.set(x, y, z); g.add(l); return l; };
+  nav("#ff3040", 1.05, -0.5, 0.6); nav("#40ff70", -1.05, -0.5, 0.6);
+  const luzR = nav(poli ? "#ff3040" : "#ffffff", 0, -1.12, -1);
+  const luzA = poli ? nav("#3a6aff", 0, 1.32, -1.25) : null;
+  // el reflector: la lámpara y un haz suave (la luz que pinta el suelo es un SpotLight de verdad)
+  const lampara = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.26, 10), oscuro); lampara.position.set(0, -1.25, 1.1); g.add(lampara);
+  const cono = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 4.2, 1, 24, 1, true).translate(0, -0.5, 0), new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    uniforms: { uC: { value: new THREE.Color(poli ? "#dfe8ff" : "#fff0d0") }, uA: { value: 0 } },
+    vertexShader: "varying vec2 vU; varying vec3 vN; varying vec3 vV; void main(){ vU = uv; vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }",
+    fragmentShader: "uniform vec3 uC; uniform float uA; varying vec2 vU; varying vec3 vN; varying vec3 vV; void main(){ float f = abs(dot(vN, vV)); float a = uA * f * f * (0.25 + 0.75 * vU.y); gl_FragColor = vec4(uC * a, a); }",
+  }));
+  cono.frustumCulled = false;
+  J.escena.add(g, capaEfectos(cono));
+  for (const o of [cuerpo, motor, cola, aleta]) o.castShadow = J.calidad.sombras;
+  return { g, rotor, rotorC, luzR, luzA, cono, mat, disco };
 }
 function llamarHeli(tipo) {
   if (helis.some((h) => h.tipo === tipo)) return;
@@ -295,35 +334,37 @@ function actualizarHelis(dt) {
     const m = h.m, sp = Math.hypot(h.vx, h.vz);
     m.g.position.set(h.x, h.y + Math.sin(h.t * 1.3) * 0.25, h.z);
     m.g.rotation.set(clamp(sp * 0.02, 0, 0.25), h.ry, Math.sin(h.t * 0.9) * 0.04);
-    m.rotor.rotation.y += dt * 28; m.rotorC.rotation.x += dt * 40;
-    m.luzR.visible = Math.sin(h.t * 6) > 0.6;
+    m.rotor.rotation.y += dt * 28; m.rotorC.rotation.x += dt * 40; m.disco.rotation.y -= dt * 3;
+    m.luzR.visible = Math.sin(h.t * 6) > 0.6; if (m.luzA) m.luzA.visible = Math.sin(h.t * 6 + 2.4) > 0.6;
     // el reflector apunta al héroe (el de noticias también, para la toma)
     const piso = Math.max(0, yo.y);
     const ax = h.x, ay = h.y - 1.4, az = h.z, bx = yo.x + Math.sin(h.t * 0.7) * 0.8, bz = yo.z + Math.cos(h.t * 0.6) * 0.8;
     const L = Math.hypot(bx - ax, piso - ay, bz - az);
-    m.cono.visible = m.mancha.visible = h.fase === "orbita";
+    h.foco = amort(h.foco || 0, h.fase === "orbita" ? 1 : 0, 2, dt);
+    m.cono.visible = h.foco > 0.02; m.cono.material.uniforms.uA.value = h.foco * 0.12;
     m.cono.position.set(ax, ay, az); m.cono.scale.set(1, L, 1);
     m.cono.quaternion.setFromUnitVectors(_v.set(0, -1, 0), new THREE.Vector3(bx - ax, piso - ay, bz - az).normalize());
-    m.mancha.position.set(bx, alturaSuelo(bx, bz, piso + 1) + 0.05, bz);
+    const lf = h.foco > 0.02 ? pedirFoco(h) : (soltarFoco(h), null);
+    if (lf) { lf.position.set(ax, ay, az); lf.target.position.set(bx, alturaSuelo(bx, bz, piso + 1), bz); lf.color.set(h.tipo === "policia" ? "#e6ecff" : "#fff0d6"); lf.intensity = h.foco * 260; lf.distance = L + 30; lf.angle = Math.atan(4.4 / L); }
     const d = Math.hypot(h.x - yo.x, h.z - yo.z);
     if (1 - d / 160 > volHeli) { volHeli = Math.max(0, 1 - d / 160); hx = h.x; hz = h.z; }
   }
   bucleEn("heli", volHeli * 0.12, hx, hz);
 }
-function quitarHeli(h) { for (const o of [h.m.g, h.m.cono, h.m.mancha]) J.escena.remove(o); }
-
+function quitarHeli(h) { for (const o of [h.m.g, h.m.cono]) J.escena.remove(o); soltarFoco(h); }
 /* ══════════════════ EL OVNI ══════════════════ */
 let ovni = null;
 function modeloOvni() {
   const g = new THREE.Group();
-  const metal = contorno(new THREE.MeshStandardMaterial({ color: "#9aa0b8", roughness: 0.25, metalness: 0.85 }), "#b8fff0", 0.6);
+  const metal = contorno(toon({ color: "#a8aec6" }), "#b8fff0", 0.6);
   const disco = new THREE.Mesh(new THREE.SphereGeometry(4, 36, 14), metal); disco.scale.set(1, 0.24, 1); g.add(disco);
-  const aro = new THREE.Mesh(new THREE.TorusGeometry(4.05, 0.22, 8, 48).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: "#5a6078", roughness: 0.3, metalness: 0.9 })); g.add(aro);
-  const cupula = new THREE.Mesh(new THREE.SphereGeometry(1.8, 24, 12, 0, TAU, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: "#8affd8", transparent: true, opacity: 0.55, roughness: 0.05, emissive: "#2a8a6a", emissiveIntensity: 0.8 })); cupula.position.y = 0.6; g.add(cupula);
-  const ojos = new THREE.Mesh(new THREE.SphereGeometry(0.7, 12, 10), new THREE.MeshStandardMaterial({ color: "#7ae07a", emissive: "#2a7a2a" })); ojos.position.y = 0.8; g.add(ojos);   // el piloto 👽
-  const fondo = new THREE.Mesh(new THREE.CircleGeometry(1.4, 24).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: "#b8fff0" })); fondo.position.y = -0.95; g.add(fondo);
+  const aro = new THREE.Mesh(new THREE.TorusGeometry(4.05, 0.22, 8, 48).rotateX(Math.PI / 2), toon({ color: "#5e6680" })); g.add(aro);
+  const cupula = new THREE.Mesh(new THREE.SphereGeometry(1.8, 24, 12, 0, TAU, 0, Math.PI / 2), new THREE.MeshToonMaterial({ color: "#8affd8", transparent: true, opacity: 0.55, emissive: "#2a8a6a", emissiveIntensity: 0.9, gradientMap: metal.gradientMap })); cupula.position.y = 0.6; g.add(cupula);
+  const ojos = new THREE.Mesh(new THREE.SphereGeometry(0.7, 12, 10), toon({ color: "#7ae07a", emissive: "#2a7a2a" })); ojos.position.y = 0.8; g.add(ojos);   // el piloto 👽
+  for (const s of [-1, 1]) { const o = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), new THREE.MeshBasicMaterial({ color: "#0a0a12" })); o.scale.set(1, 1.5, 0.6); o.position.set(s * 0.24, 0.95, 0.6); g.add(o); }
+  const fondo = new THREE.Mesh(new THREE.CircleGeometry(1.4, 24).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: new THREE.Color("#b8fff0").multiplyScalar(2.2) })); fondo.position.y = -0.95; g.add(fondo);
   const luces = [], cols = ["#ff5ab0", "#5affd0", "#ffe25a", "#5a9aff"];
-  for (let i = 0; i < 12; i++) { const a = i / 12 * TAU, l = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), new THREE.MeshBasicMaterial({ color: cols[i % 4] })); l.position.set(Math.cos(a) * 3.55, 0.05, Math.sin(a) * 3.55); g.add(l); luces.push(l); }
+  for (let i = 0; i < 12; i++) { const a = i / 12 * TAU, l = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(cols[i % 4]).multiplyScalar(2.6) })); l.position.set(Math.cos(a) * 3.55, 0.05, Math.sin(a) * 3.55); g.add(l); luces.push(l); }
   // el rayo tractor
   const haz = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 3.4, 1, 28, 1, true).translate(0, -0.5, 0), new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
@@ -331,9 +372,8 @@ function modeloOvni() {
     vertexShader: "varying vec2 vU; void main(){ vU = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
     fragmentShader: "uniform float uT, uA; varying vec2 vU; void main(){ float b = 0.55+0.45*sin(vU.y*40.0+uT*9.0); float s = 0.6+0.4*sin(vU.x*60.0-uT*3.0); gl_FragColor = vec4(vec3(0.55,1.0,0.85)*b*s, uA*0.22*(0.4+0.6*vU.y)); }",
   }));
-  const mancha = new THREE.Mesh(new THREE.CircleGeometry(3.6, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: brillo([[0, "rgba(160,255,220,.8)"], [0.7, "rgba(120,255,200,.25)"], [1, "rgba(120,255,200,0)"]], 64), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
-  J.escena.add(g, haz, mancha);
-  return { g, luces, haz, mancha };
+  J.escena.add(g, capaEfectos(haz));
+  return { g, luces, haz };
 }
 function llamarOvni(forzado) {
   if (ovni) { if (forzado) { ovni.fase = "pasea"; ovni.t = 0; } return; }
@@ -408,16 +448,18 @@ function actualizarOvni(dt) {
   // el rayo tractor
   const hz = m.haz.material.uniforms; hz.uT.value = J.t; hz.uA.value = amort(hz.uA.value, o.haz, 3, dt);
   const piso = alturaSuelo(o.x, o.z, 0.5);
-  m.haz.visible = m.mancha.visible = hz.uA.value > 0.02;
+  m.haz.visible = hz.uA.value > 0.02;
   m.haz.position.set(o.x, o.y - 0.9, o.z); m.haz.scale.set(1, Math.max(0.1, o.y - 0.9 - piso), 1);
-  m.mancha.position.set(o.x, piso + 0.06, o.z); m.mancha.material.opacity = hz.uA.value;
+  // el rayo tractor pinta el suelo con una luz verde de verdad
+  const sp = m.haz.visible ? pedirFoco(o) : (soltarFoco(o), null);
+  if (sp) { sp.position.set(o.x, o.y - 1, o.z); sp.target.position.set(o.x + Math.sin(m.haz.rotation.z) * 3, piso, o.z - Math.sin(m.haz.rotation.x) * 3); sp.color.set("#8affc8"); sp.intensity = hz.uA.value * 320; sp.distance = o.y + 20; sp.angle = Math.atan(3.6 / Math.max(4, o.y - piso)); }
   if (o.fase === "escanea") { m.haz.rotation.z = Math.sin(o.t * 1.4) * 0.35; m.haz.rotation.x = Math.cos(o.t * 1.1) * 0.3; } else m.haz.rotation.set(0, 0, 0);
   const dist = Math.hypot(o.x - yo.x, o.z - yo.z);
   bucleEn("ovni", clamp(1 - dist / 90, 0, 1) * 0.05, o.x, o.z);
   // la primera vez que lo veo
   if (!o.visto && dist < 60) { aPantalla(o.x, o.y, o.z, _p); if (_p.visible && _p.x > 0 && _p.x < J.ancho && _p.y > 0 && _p.y < J.alto) { o.visto = true; misterio("ovni"); setTimeout(() => decirElla(lineaElla("ovni")), 500); anunciar({ tipo: "ovni", x: o.x, y: o.y, z: o.z, radio: 50, fuerza: 0.3 }); } }
 }
-function quitarOvni() { if (!ovni) return; const m = ovni.m; for (const x of [m.g, m.haz, m.mancha]) J.escena.remove(x); bucleEn("ovni", 0); ovni = null; proximoGrande = rnd(150, 260); }
+function quitarOvni() { if (!ovni) return; const m = ovni.m; for (const x of [m.g, m.haz]) J.escena.remove(x); soltarFoco(ovni); bucleEn("ovni", 0); ovni = null; proximoGrande = rnd(150, 260); }
 function rayoAlOvni(p) {
   if (!ovni || Math.hypot(p.x - ovni.x, p.y - ovni.y, p.z - ovni.z) > 7) return;
   ovni.golpeado = true; ovni.fase = "huye"; ovni.t = 0;
@@ -554,24 +596,27 @@ function modeloPortal() {
     fragmentShader: `uniform float uT, uA; varying vec2 vU;
       void main(){ float r = length(vU); if (r > 1.0) discard; float a = atan(vU.y, vU.x);
         float rem = sin(a*5.0 + r*14.0 - uT*6.0)*0.5+0.5; float rem2 = sin(a*3.0 - r*9.0 + uT*4.0)*0.5+0.5;
-        vec3 c = mix(vec3(0.15,0.75,0.2), vec3(0.75,1.0,0.35), rem*0.7+rem2*0.3);
+        vec3 c = mix(vec3(0.12,0.62,0.16), vec3(0.75,1.0,0.35), rem*0.7+rem2*0.3);
         c = mix(c, vec3(0.95,1.0,0.8), smoothstep(0.35,0.0,r)*0.6);
-        float borde = smoothstep(1.0,0.82,r); float aro = smoothstep(0.78,0.95,r)*borde;
-        gl_FragColor = vec4(c + aro*0.4, uA*borde*(0.85+0.15*rem)); }`,
+        float borde = smoothstep(1.0,0.82,r); float aro = smoothstep(0.7,0.93,r)*borde;
+        c = c * (1.0 + aro * 1.6) + vec3(0.4,1.2,0.3) * aro * 1.4;
+        gl_FragColor = vec4(c, uA*borde*(0.85+0.15*rem)); }`,
   });
   const g = new THREE.Mesh(new THREE.CircleGeometry(1.6, 48), mat);
-  const luz = new THREE.PointLight("#7aff6a", 0, 14, 1.6);
-  J.escena.add(g, luz);
-  return { g, luz, mat };
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: brillo([[0, "rgba(150,255,120,.55)"], [0.45, "rgba(90,230,80,.18)"], [1, "rgba(60,200,60,0)"]], 128), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: new THREE.Color(1.4, 1.8, 1.2) }));
+  halo.scale.set(6.5, 6.5, 1); g.add(halo);
+  g.renderOrder = 5;
+  J.escena.add(capaEfectos(g));
+  return { g, mat, halo };
 }
 function abrirPortal(x, z, ry) { const m = modeloPortal(); m.g.position.set(x, 1.7 + alturaSuelo(x, z, 1), z); m.g.rotation.y = ry; return { m, x, z, ry, a: 0, cerrar: false }; }
 function moverPortal(p, dt) {
   p.a = amort(p.a, p.cerrar ? 0 : 1, p.cerrar ? 4 : 3, dt);
   p.m.mat.uniforms.uT.value = J.t; p.m.mat.uniforms.uA.value = p.a;
-  p.m.g.scale.setScalar(0.05 + p.a * 0.95); p.m.luz.position.copy(p.m.g.position); p.m.luz.intensity = p.a * 6;
+  p.m.g.scale.setScalar(0.05 + p.a * 0.95); p.m.halo.material.opacity = p.a;
   if (Math.random() < dt * 20 * p.a) fx.brillos(p.x + rnd(-1, 1), p.m.g.position.y + rnd(-1.4, 1.4), p.z + rnd(-1, 1), 1, "verde", 0.4, 0.8);
 }
-function quitarPortal(p) { J.escena.remove(p.m.g, p.m.luz); p.m.mat.dispose(); }
+function quitarPortal(p) { J.escena.remove(p.m.g); p.m.mat.dispose(); p.m.halo.material.dispose(); }
 function caminar(a, x, z, v, dt) {
   const dx = x - a.x, dz = z - a.z, d = Math.hypot(dx, dz);
   if (d < 0.15) { a.vel = 0; return true; }
@@ -591,23 +636,43 @@ function iniciarPortal() {
   if (!ok) return false;
   grande = "portal";
   const ry = Math.atan2(yo.x - x, yo.z - z);
-  portal = { p1: abrirPortal(x, z, ry), p2: null, t: 0, fase: "abre", rick: null, morty: null, paso: 0 };
+  portal = { p1: abrirPortal(x, z, ry), p2: null, t: 0, fase: "abre", rick: null, morty: null, paso: 0, guion: GUIONES[(memo.cuenta.portal || 0) % GUIONES.length] };
   son("portal", x, z); bucleEn("portal", 0.06, x, z);
-  J.cinematicaCam({ dur: 6, dist: 9, pitch: 0.22, mirar: { x, y: 1.4, z } });
+  // la cámara los sigue durante toda la plática (a medias: el dedo todavía puede girarla)
+  J.cinematicaCam({ dur: 24, dist: 9.5, pitch: 0.2, mezcla: 0.75, mirar: { x: (x + yo.x) / 2, y: 1.3, z: (z + yo.z) / 2 } });
   anunciar({ tipo: "portal", x, y: 1.5, z, radio: 30, fuerza: 0.4 });
   return true;
 }
-const GUION = [
+const GUIONES = [[
   [0.0, "rick", () => J.dios.on ? "*burp* Morty, esta no es la C-137… mira, hay un tipo brillando como foco." : "*burp* Morty, esta no es la C-137. Ni siquiera hay un Rick por aquí."],
   [4.2, "morty", () => "R-Rick, ¿y si es una trampa de Rick Prime? Esa pareja se ve sospechosamente… feliz."],
   [8.4, "rick", () => "Nah, Morty. Es una de esas dimensiones donde el amor *burp* sí funciona. Qué asco. Vámonos."],
   [12.6, "morty", () => "¡Perdón por interrumpir! Se ven muy lindos juntos 🥹"],
   [16.2, "rick", () => "Oye, tú. Cuídala. En casi todas las dimensiones la riegas."],
-];
+], [
+  [0.0, "rick", () => "*burp* Morty, esta dimensión huele a… cursilería. Agarramos la semilla y nos vamos."],
+  [4.2, "morty", () => "Rick, mira, esos dos se están viendo como en las películas."],
+  [8.4, "rick", () => "Es una ciudad dormida, Morty. Aquí todos andan de la mano. *burp* Me da urticaria."],
+  [12.6, "morty", () => "¡Perdón! Ya nos vamos, sigan con su cita 🥹"],
+  [16.2, "rick", () => "Y tú, galán: no la hagas esperar. La distancia es sólo un número… *burp* y yo tengo pistola de portales."],
+], [
+  [0.0, "rick", () => "Morty, ¿por qué todos los portales nos traen a esta misma calle?"],
+  [4.2, "morty", () => "¿Será que el universo quiere que veamos algo bonito, Rick?"],
+  [8.4, "rick", () => "El universo no quiere nada, Morty. *burp* …Bueno, ok, se ven bien juntos. No se lo digas a nadie."],
+  [12.6, "morty", () => "¡Hola otra vez! ¡Saludos de la C-137! 👋"],
+  [16.2, "rick", () => "Oye, galán: en casi todas las dimensiones la riegas. En ésta no. No lo arruines."],
+], [
+  [0.0, "morty", () => "¡Rick! ¡Son ellos otra vez! Los de la ciudad bonita."],
+  [4.2, "rick", () => "Ya sé, Morty. *burp* Es la quinta vez. Creo que mi pistola de portales está enamorada."],
+  [8.4, "morty", () => "¿Las pistolas de portales se pueden enamorar?"],
+  [12.6, "rick", () => "En esta dimensión parece que todo se puede, Morty. Hasta amarse de lejos."],
+  [16.2, "morty", () => "¡Cuídense mucho! 💚"],
+]];
 function actualizarPortal(dt) {
   const P = portal; if (!P) return;
   P.t += dt; const yo = J.jugador;
   moverPortal(P.p1, dt); if (P.p2) moverPortal(P.p2, dt);
+  { const q = P.p2 && P.p2.a > P.p1.a ? P.p2 : P.p1; luzPortal.position.set(q.x + Math.sin(q.ry) * 0.6, q.m.g.position.y, q.z + Math.cos(q.ry) * 0.6); luzPortal.intensity = q.a * 46; }
   const { x, z, ry } = P.p1;
   if (P.fase === "abre" && P.t > 1.4) {
     P.fase = "salen"; P.t = 0;
@@ -627,10 +692,11 @@ function actualizarPortal(dt) {
     if (R.vel === 0) R.ry = amortAng(R.ry, Math.atan2(yo.x - R.x, yo.z - R.z), 4, dt);
     if (M.vel === 0) M.ry = amortAng(M.ry, Math.atan2(J.novia.x - M.x, J.novia.z - M.z), 4, dt);
     R.anim.habla = M.anim.habla = 0;
+    const GUION = P.guion;
     while (P.paso < GUION.length && P.t > GUION[P.paso][0] + 0.8) {
       const [, quien, f] = GUION[P.paso++], txt = f(), a = quien === "rick" ? R : M;
-      decirYa(txt, quien, 4000); a.anim.habla = 1;
-      globito(a, quien === "rick" ? "🧪" : "😬", quien, 2, 2.3 * a.escala);
+      a.anim.habla = 1;
+      globito(a, txt, quien, 4, 2.3 * a.escala);
       if (txt.includes("*burp*")) son("eructo", a.x, a.z);
       if (P.paso === 4) setTimeout(() => { globito(J.novia, "Aww 🥹", "ella", 2, 2.1); }, 1400);
     }
@@ -646,7 +712,7 @@ function actualizarPortal(dt) {
     const p2 = P.p2; let dentro = 0;
     for (const a of [P.rick, P.morty]) { if (a.fuera) { dentro++; continue; } if (caminar(a, p2.x, p2.z, 1.8, dt)) { a.fuera = true; son("pop", a.x, a.z); } }
     if (dentro === 2 && !p2.cerrar) { p2.cerrar = true; P.fin = 0; }
-    if (p2.cerrar) { P.fin += dt; if (P.fin > 1.2) { quitarPortal(P.p1); quitarPortal(p2); bucleEn("portal", 0); portal = null; grande = null; proximoGrande = rnd(150, 240); memo.cuenta.portal = (memo.cuenta.portal || 0) + 1; guardar(); } }
+    if (p2.cerrar) { P.fin += dt; if (P.fin > 1.2) { quitarPortal(P.p1); quitarPortal(p2); bucleEn("portal", 0); luzPortal.intensity = 0; portal = null; grande = null; memo.cuenta.portal = (memo.cuenta.portal || 0) + 1; guardar(); } }
   }
   if (portal) bucleEn("portal", 0.06 * P.p1.a, x, z);
 }
@@ -655,9 +721,9 @@ J.forzarPortal = () => { if (!portal && !grande) iniciarPortal(); };
 /* ══════════════════ LO PEQUEÑO: estrellas fugaces y la tormenta ══════════════════ */
 let fugaz = null, porFugaz = rnd(40, 80), porTormenta = rnd(300, 520), tormentaT = 0, porRayo = 0;
 function armarFugaz() {
-  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3)); g.setAttribute("color", new THREE.BufferAttribute(new Float32Array([1, 1, 1, 0, 0, 0]), 3));
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3)); g.setAttribute("color", new THREE.BufferAttribute(new Float32Array([3, 3, 3.4, 0, 0, 0]), 3));
   const l = new THREE.Line(g, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
-  l.frustumCulled = false; l.visible = false; l.renderOrder = -8; cielo.add(l);
+  l.frustumCulled = false; l.visible = false; l.renderOrder = -8; cielo.add(capaEfectos(l));
   return l;
 }
 let fugazLinea;
@@ -702,10 +768,26 @@ function actualizarTormenta(dt) {
 }
 
 /* ══════════════════ EL DIRECTOR ══════════════════ */
-let grande = null, proximoGrande = rnd(70, 120);
+let grande = null, proximoGrande = rnd(70, 120), porPortal = rnd(50, 75);
+function puedePortal() {
+  const yo = J.jugador, ella = J.novia;
+  return !grande && !ovni && !J.cinematica && !yo.coche && !yo.vuela && ella && ella.estado !== "fuera" && ella.estado !== "bano" && Math.hypot(ella.x - yo.x, ella.z - yo.z) < 12;
+}
+/* Al apagar el Modo Dios: fuera policías, patrullas, helicópteros, grietas y transmisión en vivo. */
+function limpiarEventos() {
+  for (const p of patrullas) { for (const a of p.polis) a.fuera = true; p.polis = []; }
+  patrullas.length = 0;
+  for (const c of J.coches) if (c.poli && c !== J.jugador.coche) c.estado = "fuera";
+  for (const h of helis) quitarHeli(h);
+  helis.length = 0;
+  grietas.length = 0; grietaMalla.count = 0; trazoVida.fill(0);
+  enVivo(false); bucleEn("sirena", 0); bucleEn("heli", 0);
+  porPatrulla = 0; sinCaos = 0; dichoRindete = false;
+}
 export function iniciar() {
   J.escena.add(cielo);
-  armarTrazos(); armarGrietas(); armarFragmentos(); fugazLinea = armarFugaz();
+  armarTrazos(); armarGrietas(); armarFragmentos(); armarLucesEventos(); fugazLinea = armarFugaz();
+  J.limpiarEventos = limpiarEventos; J.lanzarFugaz = lanzarFugaz;
   J.cieloSigue = (p) => cielo.position.copy(p);
   J.misterio = misterio; J.abrirMisterios = abrirMisterios;
   J.grieta = grieta; J.lluviaRayos = lluviaRayos;
@@ -726,11 +808,11 @@ export function actualizar(dt, dtM) {
     proximoGrande -= dt;
     if (proximoGrande <= 0) {
       proximoGrande = rnd(90, 160);
-      const r = Math.random(), ratos = (memo.cuenta.portal || 0);
-      if (r < 0.06 / (1 + ratos) && J.t > 180) iniciarPortal();
-      else if (r < 0.5) llamarOvni(false);
+      if (Math.random() < 0.5) llamarOvni(false);
     }
   }
+  // Rick y Morty: el primero al minuto y luego cada dos a cuatro minutos
+  if ((porPortal -= dt) <= 0) porPortal = puedePortal() && iniciarPortal() ? rnd(120, 230) : 8;
   actualizarLuna(dt);
   actualizarPortal(dtM);
   actualizarOvni(dtM);
@@ -740,4 +822,4 @@ export function actualizar(dt, dtM) {
   actualizarTormenta(dt);
   pintarTrazos(dt); pintarGrietas(dtM);
 }
-void clamp; void CALLES; void contorno;
+void clamp; void CALLES; void decirYa;

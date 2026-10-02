@@ -124,6 +124,23 @@ export function contorno(mat, color = "#b8a0ff", fuerza = 0.55, exp = 2.4) {
   return mat;
 }
 
+/* ── El material «de dibujo» ──
+   Sombreado en tres tonos suaves (como un dibujo coloreado a mano) en vez
+   de un degradado fotográfico. Todos comparten la misma rampa. */
+let rampa = null;
+export function rampaToon() {
+  if (!rampa) {
+    const d = new Uint8Array([96, 104, 170, 182, 238, 255]);
+    rampa = new THREE.DataTexture(d, d.length, 1, THREE.RedFormat);
+    rampa.minFilter = rampa.magFilter = THREE.LinearFilter; rampa.generateMipmaps = false; rampa.needsUpdate = true;
+  }
+  return rampa;
+}
+export function toon(o = {}) { return new THREE.MeshToonMaterial({ gradientMap: rampaToon(), ...o }); }
+/* Los efectos transparentes (fuego, humo, haces, portal…) viven en la capa 1: se pintan
+   después de la tinta de los contornos (ver post.js). Las luces van en las dos capas. */
+export function capaEfectos(o) { o.traverse((c) => { if (c.isLight) c.layers.enable(1); else c.layers.set(1); }); return o; }
+
 /* ── Proyectar un punto del mundo a la pantalla (para los globitos) ── */
 const _v = new THREE.Vector3();
 export function aPantalla(x, y, z, fuera) {

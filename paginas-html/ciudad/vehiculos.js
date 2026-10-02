@@ -17,111 +17,166 @@
  * medianos rompen vidrios y sacan humo, los fuertes prenden fuego y los
  * extremos lo hacen explotar. Nada desaparece de golpe.
  */
-import { J, THREE, rnd, elegir, clamp, lerp, amort, amortAng, difAng, anunciar, Juntador, contorno } from "./base.js";
-import { nodosCalle, CALLES, chocarEdificios, edificioEn, ACERA_Y } from "./mundo.js";
+import { J, THREE, rnd, elegir, clamp, lerp, amort, amortAng, difAng, anunciar, Juntador, contorno, toon, capaEfectos } from "./base.js";
+import { nodosCalle, CALLES, chocarEdificios, edificioEn, ACERA_Y, semaforo } from "./mundo.js";
 import { son, bucleEn, motorRpm } from "./audio.js";
 import { chispas, humo, fuego, polvo, escombro, onda, destello, brillos } from "./efectos.js";
 import { derribar, rejilla } from "./gente.js";
 import { E, globito, decir } from "./ui.js";
 
-const PINTURAS = ["#c8384a", "#3a6ac8", "#e8e0d0", "#2a2a3a", "#e0a030", "#4a8a6a", "#8a4ac0", "#7ac8e8", "#f0d060", "#e87a9a"];
+const PINTURAS = ["#e05a6a", "#4a7ad8", "#f2ece0", "#3a3a4e", "#f0a838", "#5aa07a", "#9a5ad0", "#7ad0f0", "#f4d468", "#f08aa8"];
+/* L largo, A ancho, H alto, cab: dónde empieza y acaba la cabina (en z), techo, capó y cajuela, ejes. */
 const TIPOS = {
-  sedan: { L: 4.3, A: 1.8, H: 1.42, cab: [-0.55, 0.85], techo: 1.42, masa: 1.2, pintura: PINTURAS },
-  vocho: { L: 3.7, A: 1.65, H: 1.5, cab: [-0.6, 0.6], techo: 1.5, masa: 0.9, redondo: true, pintura: ["#7ac8e8", "#f0d060", "#e87a9a", "#8ad08a", "#f0f0e8"] },
-  taxi: { L: 4.3, A: 1.8, H: 1.45, cab: [-0.55, 0.85], techo: 1.45, masa: 1.2, pintura: ["#f2c230"], taxi: true },
-  pickup: { L: 4.9, A: 1.95, H: 1.75, cab: [0.1, 1.3], techo: 1.75, masa: 1.6, caja: true, pintura: ["#5a6a7a", "#8a3a2a", "#2a4a3a", "#d8d0c0"] },
-  camion: { L: 9.5, A: 2.5, H: 3.1, cab: [-4.4, 4.4], techo: 3.1, masa: 5, autobus: true, pintura: ["#e8a030", "#3a8ab8", "#c84a3a"] },
-  patrulla: { L: 4.5, A: 1.85, H: 1.5, cab: [-0.55, 0.85], techo: 1.5, masa: 1.3, pintura: ["#14161e"], poli: true },
+  sedan: { L: 4.4, A: 1.84, H: 1.45, cab: [-1.0, 0.85], techo: 1.45, cintura: 0.92, masa: 1.2, pintura: PINTURAS, ejes: [1.4, -1.35] },
+  vocho: { L: 3.9, A: 1.7, H: 1.52, cab: [-0.75, 0.7], techo: 1.52, cintura: 0.86, masa: 0.9, redondo: true, pintura: ["#7ad0f0", "#f4d468", "#f08aa8", "#8ad89a", "#f6f2e8", "#e86a4a"], ejes: [1.2, -1.15] },
+  taxi: { L: 4.4, A: 1.84, H: 1.48, cab: [-1.0, 0.85], techo: 1.48, cintura: 0.92, masa: 1.2, pintura: ["#f6c632"], taxi: true, ejes: [1.4, -1.35] },
+  pickup: { L: 5.0, A: 1.96, H: 1.78, cab: [-0.2, 1.15], techo: 1.78, cintura: 1.05, masa: 1.6, caja: true, pintura: ["#6a7a8e", "#b84a3a", "#3a6a52", "#e2dac8"], ejes: [1.6, -1.55] },
+  camion: { L: 9.5, A: 2.5, H: 3.1, cab: [-4.4, 4.4], techo: 3.1, cintura: 1.25, masa: 5, autobus: true, pintura: ["#f0a838", "#4a9ad0", "#d85a4a"], ejes: [3.2, -3.0] },
+  patrulla: { L: 4.6, A: 1.86, H: 1.52, cab: [-1.0, 0.85], techo: 1.52, cintura: 0.92, masa: 1.3, pintura: ["#1e2234"], poli: true, ejes: [1.45, -1.4] },
 };
 
-/* ══════════════════ LOS MODELOS ══════════════════ */
+/* ══════════════════ LOS MODELOS ══════════════════
+   Todo «de dibujo» (toon). Por tipo se arman una vez las geometrías:
+   · la lámina (con el color de cada coche): perfil lateral con capó,
+     cajuela y los pasos de rueda recortados, extruido con orillas suaves;
+   · la cabina de vidrio, el techo y los postes;
+   · las dos puertas delanteras, que son piezas aparte (se abren);
+   · el resto: defensas, parrilla, interior con asientos y volante,
+     espejos, placas y manijas;
+   · las luces (faros, calaveras y cuartos). */
 const geoCache = {};
-const matVidrio = new THREE.MeshStandardMaterial({ color: "#1a2438", roughness: 0.15, metalness: 0.6, emissive: "#0a0e1a" });
-const matVidrioRoto = new THREE.MeshStandardMaterial({ color: "#3a4458", roughness: 0.9, metalness: 0.1 });
-const matResto = contorno(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0.2 }), "#9a8ac8", 0.3);
+const matVidrio = toon({ color: "#4a5e82", emissive: "#141c2e" });
+const matVidrioRoto = toon({ color: "#6a7488" });
+const matResto = toon({ vertexColors: true });
 const matLuces = new THREE.MeshBasicMaterial({ vertexColors: true });
-const matHaz = new THREE.MeshBasicMaterial({ color: "#fff2c8", transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
-const matQuemado = new THREE.MeshStandardMaterial({ color: "#1c1818", roughness: 1 });
+// el velo de los faros: se desvanece a lo largo y hacia los bordes (sin cortes duros en el piso)
+const matHaz = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+  uniforms: { uA: { value: 0 } },
+  vertexShader: "varying vec2 vU; varying vec3 vN; varying vec3 vV; void main(){ vU = uv; vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }",
+  fragmentShader: "uniform float uA; varying vec2 vU; varying vec3 vN; varying vec3 vV; void main(){ float f = abs(dot(normalize(vN), normalize(vV))); float a = uA * pow(vU.y, 1.8) * f * f; gl_FragColor = vec4(vec3(1.0, 0.94, 0.78) * a, a); }",
+});
+const extruir = (forma, ancho, bisel = 0.07) => { const g = new THREE.ExtrudeGeometry(forma, { depth: ancho, bevelEnabled: true, bevelThickness: bisel, bevelSize: bisel, bevelSegments: 3, curveSegments: 10 }); g.translate(0, 0, -ancho / 2); g.rotateY(-Math.PI / 2); return g; };
 function geometrias(tipo) {
   if (geoCache[tipo]) return geoCache[tipo];
-  const T = TIPOS[tipo], L = T.L, A = T.A;
-  // la carrocería (lleva el color del coche): un perfil redondeado extruido
-  const forma = new THREE.Shape(), h0 = 0.32, h1 = 0.95;
-  if (T.redondo) {
-    forma.moveTo(-L / 2, h0); forma.quadraticCurveTo(-L / 2 - 0.05, h1, -L / 2 + 0.6, h1 + 0.05); forma.quadraticCurveTo(0, T.techo + 0.05, L / 2 - 0.7, h1 + 0.1); forma.quadraticCurveTo(L / 2 + 0.05, h1, L / 2, h0); forma.lineTo(-L / 2, h0);
-  } else if (T.autobus) {
-    forma.moveTo(-L / 2, h0); forma.lineTo(-L / 2, T.H - 0.15); forma.quadraticCurveTo(-L / 2, T.H, -L / 2 + 0.2, T.H); forma.lineTo(L / 2 - 0.3, T.H); forma.quadraticCurveTo(L / 2, T.H, L / 2, T.H - 0.4); forma.lineTo(L / 2, h0); forma.lineTo(-L / 2, h0);
+  const T = TIPOS[tipo], L = T.L, A = T.A, cin = T.cintura, [zf, zr] = T.ejes, R = T.autobus ? 0.52 : 0.38, piso = 0.3;
+  // ── la lámina: el perfil de lado, con los pasos de rueda ──
+  const f = new THREE.Shape();
+  const arco = (zc) => { f.lineTo(zc + R + 0.08, piso); f.absarc(zc, piso, R + 0.08, 0, Math.PI, false); };
+  if (T.autobus) {
+    f.moveTo(-L / 2, piso); f.lineTo(-L / 2, T.H - 0.2); f.quadraticCurveTo(-L / 2, T.H, -L / 2 + 0.25, T.H); f.lineTo(L / 2 - 0.4, T.H); f.quadraticCurveTo(L / 2, T.H, L / 2, T.H - 0.5); f.lineTo(L / 2, piso);
+  } else if (T.redondo) {
+    f.moveTo(-L / 2 + 0.1, piso); f.quadraticCurveTo(-L / 2 - 0.05, cin * 0.75, -L / 2 + 0.35, cin + 0.02);
+    f.quadraticCurveTo(-0.2, T.techo + 0.12, T.cab[1] + 0.2, cin + 0.12); f.quadraticCurveTo(L / 2 - 0.1, cin + 0.02, L / 2, cin * 0.62); f.lineTo(L / 2 - 0.05, piso);
   } else {
-    forma.moveTo(-L / 2, h0); forma.lineTo(-L / 2, h1 - 0.1); forma.quadraticCurveTo(-L / 2, h1, -L / 2 + 0.25, h1);
-    forma.lineTo(L / 2 - 0.35, h1); forma.quadraticCurveTo(L / 2, h1 - 0.05, L / 2, h1 - 0.25); forma.lineTo(L / 2, h0); forma.lineTo(-L / 2, h0);
+    f.moveTo(-L / 2 + 0.05, piso); f.lineTo(-L / 2, cin - 0.18); f.quadraticCurveTo(-L / 2, cin + 0.02, -L / 2 + 0.3, cin + 0.04);
+    f.lineTo(T.cab[0] - 0.2, cin + 0.06); f.lineTo(T.cab[1] + 0.25, cin + 0.04); f.lineTo(L / 2 - 0.35, cin - 0.02);
+    f.quadraticCurveTo(L / 2 + 0.02, cin - 0.06, L / 2, cin - 0.32); f.lineTo(L / 2 - 0.04, piso);
   }
-  const carro = new THREE.ExtrudeGeometry(forma, { depth: A, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 2, curveSegments: 6 });
-  carro.translate(0, 0, -A / 2); carro.rotateY(Math.PI / 2);   // largo sobre z (adelante = +z)
-  // la cabina (techo y pilares) también va pintada
-  if (!T.redondo && !T.autobus) {
-    const [c0, c1] = T.cab, cab = new THREE.Shape(), y0 = h1, y1 = T.techo;
-    cab.moveTo(c0 - 0.35, y0); cab.lineTo(c0 + 0.1, y1); cab.lineTo(c1 - 0.25, y1); cab.lineTo(c1 + 0.35, y0); cab.lineTo(c0 - 0.35, y0);
-    const g = new THREE.ExtrudeGeometry(cab, { depth: A - 0.16, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 2 });
-    g.translate(0, 0, -(A - 0.16) / 2); g.rotateY(Math.PI / 2);
-    carro.userData.cab = g;
+  // por abajo, de adelante hacia atrás, recortando las ruedas
+  arco(zf); arco(zr); f.lineTo(-L / 2 + (T.autobus ? 0 : 0.05), piso);
+  const lamina = extruir(f, A - 0.14, 0.07);
+  const partes = [lamina];
+  // ── techo y postes (también llevan la pintura) ──
+  const [c0, c1] = T.cab, alto = T.techo;
+  if (!T.autobus) {
+    const t = new THREE.Shape(), r0 = c0 + 0.32, r1 = c1 - 0.28;
+    t.moveTo(r0, alto - 0.07); t.lineTo(r1, alto - 0.07); t.quadraticCurveTo(r1 + 0.08, alto, r1 - 0.02, alto); t.lineTo(r0 + 0.02, alto); t.quadraticCurveTo(r0 - 0.08, alto, r0, alto - 0.07);
+    partes.push(extruir(t, A - 0.32, 0.04));
+    for (const s of [-1, 1]) for (const [za, zb] of [[c1 + 0.15, c1 - 0.3], [c0 - 0.1, c0 + 0.34], [(c0 + c1) / 2 + 0.05, (c0 + c1) / 2 + 0.05]]) {
+      const largo = Math.hypot(zb - za, alto - cin), g = new THREE.BoxGeometry(0.07, largo, 0.09);
+      g.rotateX(Math.atan2(zb - za, alto - cin)); g.translate(s * (A / 2 - 0.17), (cin + alto) / 2, (za + zb) / 2); partes.push(g);
+    }
   }
-  const pint = carro.userData.cab ? unir([carro, carro.userData.cab]) : carro;
-  pint.computeVertexNormals();
-  // el resto: llantas, defensas, interior, rejilla, espejos
-  const j = new Juntador(), rueda = new THREE.CylinderGeometry(0.36, 0.36, 0.26, 16).rotateZ(Math.PI / 2), rin = new THREE.CylinderGeometry(0.2, 0.2, 0.28, 10).rotateZ(Math.PI / 2);
-  const ejes = T.autobus ? [L / 2 - 1.6, -L / 2 + 1.8] : [L / 2 - 0.85, -L / 2 + 0.85];
-  const ruedas = [];
-  for (const ez of ejes) for (const s of [-1, 1]) ruedas.push([s * (A / 2 - 0.08), 0.36, ez]);
-  j.caja(0, 0.3, L / 2 + 0.02, A - 0.1, 0.18, 0.12, "#2a2a30"); j.caja(0, 0.3, -L / 2 - 0.02, A - 0.1, 0.18, 0.12, "#2a2a30");
-  j.caja(0, 0.62, L / 2 + 0.04, A * 0.5, 0.18, 0.04, "#1a1a20");
-  j.caja(0, 0.5, 0, A - 0.25, 0.4, L - 0.6, "#18141c");   // el interior oscuro (se ve por los vidrios)
-  if (!T.autobus) { j.caja(0, h1 + 0.12, T.cab[1] - 0.2, A - 0.4, 0.06, 0.4, "#0e0c12"); j.caja(0.35, h1 + 0.25, T.cab[1] - 0.5, 0.2, 0.25, 0.04, "#2a2a30"); }   // tablero y volante
-  for (const s of [-1, 1]) j.caja(s * (A / 2 + 0.08), h1 + 0.1, T.cab[1] + 0.05, 0.12, 0.08, 0.16, "#1a1a20");
-  if (T.caja) { j.caja(0, h1 + 0.2, -L / 2 + 1.1, A - 0.1, 0.4, 0.08, "#3a3a40"); }
-  if (T.taxi) { j.caja(0, T.techo + 0.12, 0.1, 0.55, 0.18, 0.25, "#f8f4e8"); }
-  if (T.poli) { j.caja(0, T.techo + 0.08, 0.15, 1.1, 0.12, 0.3, "#0a0a10"); }
-  if (T.autobus) { for (let k = 0; k < 2; k++) j.caja(-A / 2 - 0.01, 1.4, -1 + k * 4, 0.02, 1.9, 0.95, "#141018"); }
+  const pint = unir(partes); pint.computeVertexNormals();
+  // ── la cabina de vidrio ──
+  let vidrio;
+  if (T.autobus) {
+    const v = new Juntador(); for (const s of [-1, 1]) v.caja(s * (A / 2 - 0.02), 2.15, -0.2, 0.06, 0.95, L - 1.6); v.caja(0, 2.0, L / 2 - 0.02, A - 0.3, 1.25, 0.06); v.caja(0, 2.1, -L / 2 + 0.02, A - 0.4, 0.8, 0.06); vidrio = v.geometria(); vidrio.deleteAttribute("color");
+  } else {
+    const g = new THREE.Shape(), b0 = c0 - 0.15, b1 = c1 + 0.2;
+    g.moveTo(b0, cin); g.lineTo(b1, cin); g.lineTo(c1 - 0.28, alto - 0.06); g.lineTo(c0 + 0.32, alto - 0.06); g.lineTo(b0, cin);
+    vidrio = extruir(g, A - 0.36, 0.03);
+  }
+  // ── las puertas delanteras: piezas aparte, con la bisagra adelante ──
+  const zp1 = T.autobus ? 0 : c1 + 0.1, zp0 = T.autobus ? 0 : (c0 + c1) / 2 + 0.02, lp = zp1 - zp0;
+  const puerta = new THREE.BoxGeometry(0.06, cin - 0.38, lp).translate(0, (cin + 0.38) / 2, -lp / 2);
+  const puertaV = new THREE.BoxGeometry(0.04, (alto - cin) * 0.8, lp * 0.9).translate(-0.01, cin + (alto - cin) * 0.42, -lp / 2);
+  // ── el resto ──
+  const j = new Juntador();
+  const ruedas = []; for (const ez of [zf, zr]) for (const s of [-1, 1]) ruedas.push([s * (A / 2 - 0.12), R, ez]);
+  j.caja(0, 0.38, L / 2 + 0.03, A - 0.06, 0.22, 0.16, "#3e3e48"); j.caja(0, 0.38, -L / 2 - 0.03, A - 0.06, 0.22, 0.16, "#3e3e48");   // defensas
+  if (!T.autobus) { j.caja(0, cin - 0.24, L / 2 + 0.02, A * 0.46, 0.17, 0.05, "#26262e"); for (let k = 0; k < 4; k++) j.caja(0, cin - 0.3 + k * 0.045, L / 2 + 0.05, A * 0.44, 0.012, 0.02, "#8a8a96"); }   // parrilla
+  j.caja(0, 0.46, L / 2 + 0.12, 0.42, 0.12, 0.02, "#f4f4f4"); j.caja(0, 0.5, -L / 2 - 0.12, 0.42, 0.12, 0.02, "#f4f4f4");   // placas
+  // el interior: piso, asientos, tablero, volante
+  j.caja(0, 0.48, 0, A - 0.3, 0.08, L - 1.2, "#3a2c3a");
+  if (!T.autobus) {
+    for (const s of [-1, 1]) { j.caja(s * 0.42, 0.62, -0.05 + (c0 + c1) * 0.18, 0.5, 0.18, 0.55, "#5a3a4a"); j.caja(s * 0.42, 0.95, -0.32 + (c0 + c1) * 0.18, 0.5, 0.6, 0.12, "#5a3a4a"); j.caja(s * 0.42, 1.3, -0.34 + (c0 + c1) * 0.18, 0.28, 0.16, 0.1, "#5a3a4a"); }
+    if (c0 < -0.6) { j.caja(0, 0.62, c0 + 0.45, A - 0.45, 0.18, 0.55, "#5a3a4a"); j.caja(0, 0.95, c0 + 0.2, A - 0.45, 0.6, 0.12, "#5a3a4a"); }
+    j.caja(0, cin + 0.02, c1 - 0.05, A - 0.36, 0.14, 0.42, "#2a2430");
+    const vol = new THREE.TorusGeometry(0.17, 0.025, 6, 16).rotateX(Math.PI / 2 - 0.5).translate(0.42, cin + 0.12, c1 - 0.35);
+    j.meter(vol, new THREE.Matrix4(), "#1e1a22");
+    for (const s of [-1, 1]) { j.caja(s * (A / 2 + 0.06), cin + 0.1, c1 + 0.12, 0.14, 0.09, 0.16, "#2a2a32"); j.caja(s * (A / 2 + 0.035), cin - 0.12, (c0 + c1) / 2 + 0.25, 0.03, 0.03, 0.14, "#c8c8d0"); }
+  }
+  if (T.caja) { j.caja(0, cin + 0.12, -L / 2 + 1.05, A - 0.16, 0.3, 0.08, "#4a4a52"); for (const s of [-1, 1]) j.caja(s * (A / 2 - 0.1), cin + 0.12, -L / 2 + 1.0, 0.08, 0.3, 1.9, "#4a4a52"); }
+  if (T.taxi) { j.caja(0, alto + 0.11, -0.05, 0.6, 0.2, 0.26, "#fff8e0"); }
+  if (T.poli) { j.caja(0, alto + 0.05, -0.05, 1.2, 0.1, 0.32, "#14141c"); }
   const resto = j.geometria();
-  // los vidrios (laterales, parabrisas y medallón)
-  const v = new Juntador();
-  if (T.autobus) { for (const s of [-1, 1]) v.caja(s * (A / 2 + 0.005), 2.1, 0, 0.02, 0.9, L - 1.2); v.caja(0, 2, L / 2 + 0.005, A - 0.3, 1.3, 0.02); }
-  else if (T.redondo) { for (const s of [-1, 1]) v.caja(s * (A / 2 - 0.04), 1.2, 0, 0.02, 0.36, 1.4); v.caja(0, 1.2, 0.85, A - 0.4, 0.35, 0.02, "#fff", 0); v.caja(0, 1.2, -0.85, A - 0.4, 0.3, 0.02); }
-  else { const [c0, c1] = T.cab, ym = (h1 + T.techo) / 2, hh = (T.techo - h1) * 0.7; for (const s of [-1, 1]) v.caja(s * (A / 2 - 0.05), ym + 0.02, (c0 + c1) / 2, 0.02, hh, c1 - c0 + 0.1); v.caja(0, ym, c1 + 0.12, A - 0.3, hh, 0.02); v.caja(0, ym, c0 - 0.12, A - 0.3, hh * 0.9, 0.02); }
-  const vidrio = v.geometria();
-  // las luces: faros, calaveras y (si es patrulla) torreta
+  // ── las luces ──
   const l = new Juntador();
-  for (const s of [-1, 1]) { l.caja(s * (A / 2 - 0.3), 0.72, L / 2 + 0.05, 0.36, 0.14, 0.04, "#fff4d8"); l.caja(s * (A / 2 - 0.25), 0.72, -L / 2 - 0.05, 0.32, 0.12, 0.04, "#ff2a3a"); }
+  const yf = T.autobus ? 0.75 : cin - 0.2;
+  for (const s of [-1, 1]) {
+    l.caja(s * (A / 2 - 0.3), yf, L / 2 + 0.03, 0.36, 0.13, 0.05, "#fff4d8");
+    l.caja(s * (A / 2 - 0.2), yf + 0.02, -L / 2 - 0.03, 0.3, 0.14, 0.05, "#ff3048");
+    l.caja(s * (A / 2 - 0.06), yf - 0.04, L / 2 + 0.01, 0.1, 0.08, 0.05, "#ffb030");
+  }
+  if (T.taxi) l.caja(0, alto + 0.12, -0.05, 0.5, 0.12, 0.28, "#ffe8a0");
   const luces = l.geometria();
-  geoCache[tipo] = { pint, resto, vidrio, luces, ruedas, rueda, rin };
+  geoCache[tipo] = { pint, resto, vidrio, luces, ruedas, puerta, puertaV, zp1, R, asiento: [0.42, 0.27, -0.05 + (c0 + c1) * 0.18] };
   return geoCache[tipo];
 }
 function unir(geos) {
   const j = new Juntador(); for (const g of geos) j.meter(g.index ? g : g, new THREE.Matrix4(), "#ffffff");
   const r = j.geometria(); r.deleteAttribute("color"); return r;
 }
-const matRueda = new THREE.MeshStandardMaterial({ color: "#121216", roughness: 0.8 });
-const matRin = new THREE.MeshStandardMaterial({ color: "#8a8a98", roughness: 0.35, metalness: 0.8 });
-const ruedaGeo = new THREE.CylinderGeometry(0.36, 0.36, 0.26, 16).rotateZ(Math.PI / 2), rinGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.28, 10).rotateZ(Math.PI / 2);
+const matRueda = toon({ color: "#24242c" }), matRin = toon({ color: "#c8c8d4" });
+const ruedaGeo = {}, rinGeo = {};
+const geoRueda = (R) => ruedaGeo[R] || (ruedaGeo[R] = new THREE.CylinderGeometry(R, R, 0.26, 18).rotateZ(Math.PI / 2));
+const geoRin = (R) => rinGeo[R] || (rinGeo[R] = new THREE.CylinderGeometry(R * 0.55, R * 0.55, 0.28, 10).rotateZ(Math.PI / 2));
 const hazGeo = (() => { const g = new THREE.ConeGeometry(2.2, 9, 16, 1, true); g.rotateX(-Math.PI / 2); g.translate(0, 0, 4.5); return g; })();
 function construirCoche(tipo) {
   const G = geometrias(tipo), T = TIPOS[tipo];
   // el origen del coche es su centro (así gira bien al volar); el modelo cuelga medio alto abajo
   const raiz = new THREE.Group(), piv = new THREE.Group(), cuerpo = new THREE.Group(); raiz.add(piv); piv.position.y = -T.H / 2; piv.add(cuerpo);
-  const pintura = contorno(new THREE.MeshStandardMaterial({ color: elegir(T.pintura), roughness: 0.32, metalness: 0.45 }), "#c8b8ff", 0.35, 3);
+  const pintura = contorno(toon({ color: elegir(T.pintura) }), "#ffffff", 0.18, 3);
   const geoP = G.pint.clone();   // cada coche tiene su lámina (para abollarla)
   const mP = new THREE.Mesh(geoP, pintura), mR = new THREE.Mesh(G.resto, matResto), mV = new THREE.Mesh(G.vidrio, matVidrio), mL = new THREE.Mesh(G.luces, matLuces);
-  for (const m of [mP, mR]) { m.castShadow = J.calidad.sombras; m.receiveShadow = false; }
+  for (const m of [mP, mR]) { m.castShadow = J.calidad.sombras; m.receiveShadow = true; }
   cuerpo.add(mP, mR, mV, mL);
-  const ruedas = G.ruedas.map(([x, y, z]) => { const r = new THREE.Group(); r.position.set(x, y, z); const a = new THREE.Mesh(ruedaGeo, matRueda), b = new THREE.Mesh(rinGeo, matRin); r.add(a, b); piv.add(r); return r; });
-  const haces = [-1, 1].map((s) => { const h = new THREE.Mesh(hazGeo, matHaz); h.position.set(s * (T.A / 2 - 0.3), 0.72, T.L / 2); h.rotation.x = 0.06; cuerpo.add(h); return h; });
+  // las puertas (la izquierda es la del conductor: +x del coche)
+  const puertas = T.autobus ? [] : [1, -1].map((s) => {
+    const p = new THREE.Group(); p.position.set(s * (T.A / 2 - 0.02), 0, G.zp1); cuerpo.add(p);
+    const a = new THREE.Mesh(G.puerta, pintura), b = new THREE.Mesh(G.puertaV, matVidrio); a.castShadow = J.calidad.sombras; p.add(a, b);
+    return { p, s, ang: 0, obj: 0 };
+  });
+  const ruedas = G.ruedas.map(([x, y, z]) => { const r = new THREE.Group(); r.position.set(x, y, z); const a = new THREE.Mesh(geoRueda(G.R), matRueda), b = new THREE.Mesh(geoRin(G.R), matRin); a.castShadow = J.calidad.sombras; r.add(a, b); piv.add(r); return r; });
+  const haces = [-1, 1].map((s) => { const h = new THREE.Mesh(hazGeo, matHaz); h.position.set(s * (T.A / 2 - 0.3), T.autobus ? 0.75 : T.cintura - 0.2, T.L / 2); h.rotation.x = 0.08; cuerpo.add(capaEfectos(h)); return h; });
   let torreta = null;
   if (T.poli) {
-    torreta = [new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.1, 0.22), new THREE.MeshBasicMaterial({ color: "#ff2030" })), new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.1, 0.22), new THREE.MeshBasicMaterial({ color: "#2050ff" }))];
-    torreta[0].position.set(-0.27, T.techo + 0.18, 0.15); torreta[1].position.set(0.27, T.techo + 0.18, 0.15); cuerpo.add(...torreta);
-    const letrero = new THREE.Mesh(new THREE.BoxGeometry(T.A + 0.02, 0.32, 1.6), new THREE.MeshStandardMaterial({ color: "#f2f2f6", roughness: 0.4 })); letrero.position.set(0, 0.68, 0); cuerpo.add(letrero);
+    torreta = [new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.12, 0.24), new THREE.MeshBasicMaterial({ color: "#ff2030" })), new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.12, 0.24), new THREE.MeshBasicMaterial({ color: "#2050ff" }))];
+    torreta[0].position.set(-0.29, T.techo + 0.16, -0.05); torreta[1].position.set(0.29, T.techo + 0.16, -0.05); cuerpo.add(...torreta);
+    const letrero = new THREE.Mesh(new THREE.BoxGeometry(T.A - 0.08, 0.3, 1.5), toon({ color: "#f4f4f8" })); letrero.position.set(0, 0.68, -0.3); cuerpo.add(letrero);
   }
   J.escena.add(raiz);
-  return { raiz, cuerpo, mP, mV, mL, ruedas, haces, torreta, pintura, geoP, base: G.pint.attributes.position.array.slice() };
+  return { raiz, cuerpo, mP, mV, mL, ruedas, haces, torreta, pintura, geoP, puertas, asiento: G.asiento, base: G.pint.attributes.position.array.slice() };
+}
+/* Abrir / cerrar una puerta (s: 1 conductor, -1 pasajero). */
+export function puerta(c, s, abierta) { const p = c.m.puertas.find((q) => q.s === s); if (p) { if (abierta && p.obj === 0) son("puerta", c.x, c.z, 0.6); p.obj = abierta ? 1.05 : 0; } }
+/* Dónde queda un punto del coche en el mundo (x local: + izquierda; z local: + adelante). */
+export function puntoDelCoche(c, lx, ly, lz, fuera = {}) {
+  const s = Math.sin(c.ry), co = Math.cos(c.ry);
+  fuera.x = c.x + lx * co + lz * s; fuera.z = c.z - lx * s + lz * co; fuera.y = c.y - c.T.H / 2 + ly;
+  return fuera;
 }
 
 /* ══════════════════ EL ESTADO DE UN COCHE ══════════════════ */
@@ -134,7 +189,7 @@ function nuevoCoche(tipo, o = {}) {
     // daño
     dano: 0, fase: "NORMAL", arde: 0, restos: 0, vidrios: 0, humoT: 0, alfa: 1, alarma: 0,
     // conducción
-    desde: 0, hacia: 1, carril: 1, desvio: 0, desvioObj: 0, bloqueado: 0, claxon: 0, mani: null, cabeceo: 0, balanceo: 0, rgiro: 0, conductor: Math.random() < 0.9,
+    desde: 0, hacia: 1, carril: 1, desvio: 0, desvioObj: 0, bloqueado: 0, claxon: 0, panico: 0, mani: null, cabeceo: 0, balanceo: 0, rgiro: 0, conductor: Math.random() < 0.9,
     ...o,
   };
   J.coches.push(c);
@@ -172,6 +227,7 @@ export function cocheEn(x, z, r = 2.5) { let m = null, md = 1e9; for (const c of
 
 /* ══════════════════ MANEJAR (el tráfico) ══════════════════ */
 const _c = [];
+const _pt = { x: 0, z: 0 };
 function manejar(c, dt) {
   const A = nodosCalle[c.desde], B = nodosCalle[c.hacia];
   const dx = B.x - A.x, dz = B.z - A.z, L = Math.hypot(dx, dz), ux = dx / L, uz = dz / L;
@@ -190,7 +246,23 @@ function manejar(c, dt) {
   rejilla.cerca(c.x + fx * 6, c.z + fz * 6, 8, _c);
   for (const a of _c) if (a.estado !== "DENTRO" && a.y < 1) mirar(a, 0.7, "gente");
   for (const an of J.animales) if (Math.abs(an.x - c.x) < 12 && Math.abs(an.z - c.z) < 12) mirar(an, 0.6, "animal");
-  for (const o of J.coches) if (o !== c && o.estado !== "fuera" && Math.abs(o.x - c.x) < 16 && Math.abs(o.z - c.z) < 16) { const mismo = Math.cos(difAng(o.ry, c.ry)) > 0.3 || o.estado !== "maneja"; if (mismo) mirar(o, o.T.A / 2, "coche"); }
+  if (c.paso > 0) c.paso -= dt;   // destrabe: si dos que se cruzan se esperan uno al otro, éste pasa primero
+  for (const o of J.coches) if (o !== c && o.estado !== "fuera" && Math.abs(o.x - c.x) < 16 && Math.abs(o.z - c.z) < 16) {
+    const cruza = o.estado === "maneja" && Math.cos(difAng(o.ry, c.ry)) < 0.3, tipo = cruza ? "cruce" : "coche";
+    if (cruza && c.paso > 0) continue;
+    // el centro, la trompa y la cola del otro (así uno atravesado o que cruza también lo frena)
+    mirar(o, o.T.A / 2, tipo);
+    if (Math.cos(difAng(o.ry, c.ry)) < 0.9) {
+      const ox = Math.sin(o.ry) * o.T.L * 0.42, oz = Math.cos(o.ry) * o.T.L * 0.42;
+      _pt.x = o.x + ox; _pt.z = o.z + oz; mirar(_pt, o.T.A / 2, tipo);
+      _pt.x = o.x - ox; _pt.z = o.z - oz; mirar(_pt, o.T.A / 2, tipo);
+    }
+  }
+  // el semáforo del cruce al que llega: en rojo (o ámbar, si alcanza a frenar) se para antes de la esquina
+  if (!c.mani && c.panico <= 0) {
+    const luz = semaforo(c.hacia, Math.abs(uz) > Math.abs(ux) ? "NS" : "EO"), alto = L - 9.6 - s;
+    if (alto > -0.4 && alto < vision + 4 && (luz === "rojo" || (luz === "ambar" && alto > c.vel * 0.9))) { const d = alto + 1.5; if (d < freno) { freno = d; quien = "semaforo"; } }
+  }
   // velocidad: frenar con suavidad hasta detenerse a 1.5 m
   let vObj = c.velMax * (c.panico > 0 ? 1.5 : 1);
   if (c.mani) vObj = Math.min(vObj, 6.5);
@@ -200,7 +272,7 @@ function manejar(c, dt) {
   c.cabeceo = amort(c.cabeceo, frena ? 0.035 : c.vel < vObj - 1 ? -0.02 : 0, 6, dt);
   if (c.panico > 0) c.panico -= dt;
   // bloqueado: claxon y, si se puede, rodear por el otro carril
-  if (freno < 3 && c.vel < 0.6 && quien !== "coche") {
+  if (freno < 3 && c.vel < 0.6 && quien !== "coche" && quien !== "cruce" && quien !== "semaforo") {
     c.bloqueado += dt;
     if (c.bloqueado > 0.7 && c.claxon <= 0) { son("claxon", c.x, c.z); c.claxon = c.bloqueado > 4 ? 1.6 : 3; if (quien === "yo" && Math.random() < 0.5) globito(c, elegir(["¡Muévete, joven!", "¡Piii! ¡Quítate!", "¿Qué haces ahí parado?", "¡Oiga!"]), "gente", 2, 2.1); }
     if (c.bloqueado > 2.2 && !c.mani) {
@@ -209,6 +281,7 @@ function manejar(c, dt) {
     }
   } else c.bloqueado = 0;
   if (c.claxon > 0) c.claxon -= dt;
+  if (quien === "cruce" && c.vel < 0.3) { c.esperaCoche = (c.esperaCoche || 0) + dt; if (c.esperaCoche > 5 + (c.desde % 3)) { c.esperaCoche = 0; c.paso = 1.6; } } else c.esperaCoche = 0;
   if (c.rodeando > 0) { c.rodeando -= dt * (c.vel > 1 ? 1 : 0.3); if (c.rodeando <= 0) c.desvioObj = 0; }
   if (c.desvioObj < 0 && freno > 6 && c.bloqueado === 0) vObj = Math.min(vObj, 5);
   c.desvio = amort(c.desvio, c.desvioObj, 1.6, dt);
@@ -389,26 +462,32 @@ function sacarConductor(c) {
 }
 
 /* ══════════════════ SUBIRSE Y MANEJAR ══════════════════ */
+/* Que se detenga para subirme (y que el que manejaba se baje). */
+export function prepararParaSubir(c) {
+  if (c.conductor) sacarConductor(c);
+  if (c.estado === "maneja") { c.estado = "estacionado"; c.vel = 0; }
+  if (c.estado === "fisica") { c.q.setFromAxisAngle(arriba, c.ry); c.y = c.T.H / 2; c.estado = "estacionado"; c.vx = c.vz = c.vy = 0; c.w.set(0, 0, 0); }
+}
 export function subirAlCoche(c) {
   const yo = J.jugador;
-  if (c.conductor) sacarConductor(c);
-  if (c.estado === "fisica") { c.q.setFromAxisAngle(arriba, c.ry); c.y = c.T.H / 2; }
+  prepararParaSubir(c);
   c.estado = "conducido"; c.vel = 0; yo.coche = c; c.mani = null;
-  son("puerta", c.x, c.z); bucleEn("motor", 0.08, c.x, c.z);
-  decir(elegir(["¡Vámonos, amor! 🚗", "Súbete… ah, no, tú espérame aquí 😅"]), "yo");
+  bucleEn("motor", 0.08, c.x, c.z);
 }
 export function bajarDelCoche(rapido = false) {
   const yo = J.jugador, c = yo.coche; if (!c) return;
-  yo.coche = null; if (!rapido) son("puerta", c.x, c.z);
+  yo.coche = null;
   bucleEn("motor", 0);
-  yo.x = c.x - Math.cos(c.ry) * 1.7; yo.z = c.z + Math.sin(c.ry) * 1.7; yo.y = 0.2; yo.vx = yo.vz = 0;
+  if (rapido) { yo.x = c.x + Math.cos(c.ry) * 1.7; yo.z = c.z - Math.sin(c.ry) * 1.7; yo.y = 0.2; yo.vx = yo.vz = 0; yo.subir = yo.bajar = null; if (J.novia.coche === c) { J.novia.estado = "sigue"; J.novia.coche = null; J.novia.x = c.x - Math.cos(c.ry) * 1.7; J.novia.z = c.z + Math.sin(c.ry) * 1.7; J.novia.y = 0.2; } }
   if (c.estado === "conducido") { c.estado = "estacionado"; c.vel = 0; }
 }
 function conducir(c, dt) {
   const [fx, fz] = [-Math.sin(J.camYaw || 0), -Math.cos(J.camYaw || 0)], rx = -fz, rz = fx;
   const dx = rx * E.mx - fx * E.mz, dz = rz * E.mx - fz * E.mz, m = Math.min(1, Math.hypot(dx, dz));
   let gas = 0;
-  if (m > 0.15) {
+  const espera = J.esperandoElla && J.esperandoElla();
+  c.rgiro = m > 0.15 ? clamp(difAng(Math.atan2(dx, dz), c.ry), -1, 1) : 0;
+  if (m > 0.15 && !espera && !J.jugador.subir && !J.jugador.bajar) {
     const quiere = Math.atan2(dx, dz), dif = difAng(quiere, c.ry);
     if (Math.abs(dif) < 2.2) { gas = m; c.ry += clamp(dif, -1, 1) * dt * 2.2 * clamp(Math.abs(c.vel) / 4, 0.25, 1); }
     else { gas = -m * 0.6; c.ry -= clamp(dif, -1, 1) * dt * 1.5 * clamp(Math.abs(c.vel) / 4, 0.2, 1); }
@@ -430,6 +509,7 @@ function conducir(c, dt) {
 
 /* ══════════════════ CADA CUADRO ══════════════════ */
 export function actualizar(dt, dtReal) {
+  matHaz.uniforms.uA.value = 0.16 * J.ciclo.noche;
   const yo = J.jugador;
   for (let i = J.coches.length - 1; i >= 0; i--) {
     const c = J.coches[i];
@@ -478,7 +558,7 @@ function danoPorFase(c, dt) {
   } else if (c.fase === "RESTOS") {
     c.restos -= dt;
     if (Math.random() < dt * 3) humo(c.x, c.y + c.T.H, c.z, 1, 1, false);
-    if (c.restos < 0) { c.fase = "RECUPERANDO"; c.alfa = 1; for (const m of [c.m.mP.material, matResto]) m.transparent = true; }
+    if (c.restos < 0) { c.fase = "RECUPERANDO"; c.alfa = 1; }
   } else if (c.fase === "RECUPERANDO") {
     c.alfa -= dt / 2.5;
     c.m.raiz.traverse((o) => { if (o.material && o.material !== matHaz) { if (!o.userData.propio) { o.material = o.material.clone(); o.userData.propio = true; } o.material.transparent = true; o.material.opacity = Math.max(0, c.alfa); } });
@@ -500,13 +580,31 @@ function pintar(c, dt) {
   c.m.cuerpo.position.y = Math.sin(J.t * 9 + c.x) * 0.006 * clamp(c.vel / 8, 0, 1);
   const giro = (c.estado === "fisica" ? Math.hypot(c.vx, c.vz) : c.vel) * dt / 0.36;
   for (const w of c.m.ruedas) w.children[0].rotation.x += giro, w.children[1].rotation.x += giro;
+  for (const p of c.m.puertas) { p.ang = amort(p.ang, p.obj, 9, dt); p.p.rotation.y = -p.s * p.ang; }
+  // las ruedas de adelante giran con el volante
+  if (c.estado === "conducido" || c.estado === "maneja") { const v = clamp((c.rgiro || 0) * 2.2, -0.5, 0.5); c.m.ruedas[0].rotation.y = c.m.ruedas[1].rotation.y = amort(c.m.ruedas[0].rotation.y, v, 8, dt); }
   if (c.m.torreta) { const on = Math.sin(J.t * 14) > 0; c.m.torreta[0].material.color.set(on ? "#ff2030" : "#3a0810"); c.m.torreta[1].material.color.set(on ? "#0a1240" : "#2a60ff"); }
   const lejos = Math.hypot(c.x - J.jugador.x, c.z - J.jugador.z) > 60;
-  for (const h of c.m.haces) h.visible = !lejos && c.fase !== "ARDIENDO" && c.fase !== "RESTOS" && (c.estado === "maneja" || c.estado === "conducido" || c.poli);
+  // el haz de los faros es sólo un velo en el aire de noche (la luz que pinta la calle es un SpotLight de verdad)
+  for (const h of c.m.haces) h.visible = !lejos && J.ciclo.noche > 0.3 && c.fase !== "ARDIENDO" && c.fase !== "RESTOS" && (c.estado === "maneja" || c.estado === "conducido" || c.poli);
   c.m.raiz.visible = Math.hypot(c.x - J.camara.position.x, c.z - J.camara.position.z) < J.calidad.lejos * 0.6;
 }
 void lerp; void onda; void edificioEn; void CALLES; void ACERA_Y;
 
+/* Al apagar el Modo Dios: los coches volteados, abollados o quemados se
+   cambian por coches nuevos en la calle (durante el fundido: no se ve). */
+export function restaurarTodos() {
+  const yo = J.jugador;
+  for (const c of J.coches.slice()) {
+    if (c === yo.coche || c.poli || c.estado === "fuera" || c.estado === "controlado") continue;
+    const tocado = c.fase !== "NORMAL" || c.estado === "fisica" || c.estado === "agarrado" || c.dano > 0.05 || c.y > c.T.H / 2 + 0.2;
+    if (!tocado) continue;
+    const estaba = c.estado; c.estado = "fuera";
+    if (estaba === "estacionado") continue;
+    const n = nuevoCoche(c.tipo === "camion" ? "camion" : elegir(["sedan", "vocho", "taxi", "pickup"])); ponerEnCalle(n, { x: yo.x, z: yo.z, r: 25 });
+  }
+  if (!J.coches.some((c) => c.estado === "estacionado" && c.estado !== "fuera")) { const est = nuevoCoche("vocho"); est.estado = "estacionado"; est.x = 27.2; est.z = 13; est.ry = Math.PI; est.y = est.T.H / 2; est.conductor = false; est.vel = 0; }
+}
 /* Para los eventos: un coche nuevo (la patrulla) y devolver uno al tráfico. */
 export function crearCoche(tipo, o = {}) { const c = nuevoCoche(tipo, o); c.y = c.T.H / 2; return c; }
 export function aLaCalle(c) { c.estado = "maneja"; c.q.identity(); retomarCalle(c); }

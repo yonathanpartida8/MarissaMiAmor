@@ -155,6 +155,15 @@ export function derribar(a, dx, dz, k) {
   if (Math.random() < 0.6) son("gritito", a.x, a.z, 1, a.fem);
   if (Math.random() < 0.4) globito(a, elegir(FRASES.golpe), "gente", 1.6, 2.1 * a.escala);
 }
+/* Que todo el mundo vuelva a la calma (al apagar el Modo Dios). */
+export function calmarTodos() {
+  for (const a of J.gente) {
+    if (a.controlado || a.adentro) continue;
+    if (a.estado === "DENTRO" && !a.enBurger) a.te = Math.min(a.te, rnd(0.5, 3));
+    if (["MIEDO", "CORRE", "REFUGIO", "HERIDO", "ARRASTRADO", "MIRA", "GRABA", "CURIOSO"].includes(a.estado)) { a.estado = "VUELVE"; a.vx = a.vz = a.vy = 0; a.y = alturaSuelo(a.x, a.z, a.y + 0.3); a.anim.caido = 0; a.anim.miedo = 0; a.reaccion = null; }
+  }
+  for (const an of J.animales) an.escudo = 0;
+}
 export function golpearGente(h) {
   let pego = false;
   rejilla.cerca(h.x, h.z, h.r + 1, _cerca);
