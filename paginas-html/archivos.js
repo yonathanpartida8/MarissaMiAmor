@@ -22,5 +22,5 @@ window.LIBRO_ARCHIVOS = {
     "../la%20radio/music2.mp3",
     "../la%20radio/music3.mp3"
   ],
-  "arena": null
+  "arena": "../musica%20arena/musica1-lista.m4a"
 };
