@@ -86,6 +86,11 @@ export class Viewport extends Emitter {
       document.documentElement.clientHeight || 0,
     )) || 1;
 
+    // El alto que de verdad se ve (sin las barras de Chrome/Safari): lo usan
+    // las páginas a pantalla completa para que nada quede tapado.
+    const visible = Math.round(Math.min(vv?.height || Infinity, window.innerHeight || Infinity)) || height;
+    document.documentElement.style.setProperty("--vis-h", `${visible}px`);
+
     // Ignora los cambios de alto minúsculos de la barra de direcciones,
     // que si no provocan reflows constantes al hacer scroll en móvil.
     const dw = Math.abs(width - this.width);

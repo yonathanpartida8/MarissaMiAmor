@@ -1006,8 +1006,12 @@ html[data-orientation="landscape"][data-device="phone"] .edge {
    ============================================================ */
 /* Con `!important`: las medidas de apaisado y de tableta son más específicas. */
 html.pagina-completa #stage {
+  /* pegada arriba y del alto que de verdad se ve: las barras del navegador no tapan nada */
+  place-items: start center !important;
+  bottom: auto !important;
+  height: var(--vis-h, 100dvh) !important;
   --frame-w: 100vw !important;
-  --frame-h: var(--app-h) !important;
+  --frame-h: var(--vis-h, 100dvh) !important;
   --frame-radius: 0px !important;
 }
 html.pagina-completa .leaf { box-shadow: none; }
