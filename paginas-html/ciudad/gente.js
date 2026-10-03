@@ -31,7 +31,7 @@ export const FRASES = {
   miedo: ["¡AAAH!", "¡Corran!", "¡Mamáaa!", "¡¿Qué fue eso?!", "¡Auxilio!", "¡Ay no, ay no, ay no!", "¡Sálvese quien pueda!", "¡Mi cafecito!", "¡Nooo!"],
   mira: ["¿Es en serio?", "¿Vieron eso?", "No manches…", "¡Qué padre!", "Órale…", "¿Eso es real?", "¿Qué está pasando?"],
   arriba: ["¿Es un pájaro? ¿Es un avión?", "¡Está volando!", "¡Miren arriba!", "¡¿Qué es eso?!"],
-  graba: ["¡Lo estoy grabando!", "Esto va directo a TikTok 📱", "¡Nadie me va a creer!", "¡Denle like!"],
+  graba: ["¡Lo estoy grabando!", "Esto va directo a TikTok 📱", "¡Nadie me va a creer!", "¡Esto es histórico!"],
   refugio: ["¡Al edificio!", "¡Adentro, rápido!", "¡Me meto aquí!"],
   calma: ["Ya pasó… creo.", "¿Alguien más vio eso?", "Mejor me voy a mi casa.", "Qué noche tan rara…"],
   heroe: ["¡Es un superhéroe!", "¡Está brillando!", "¿Es un ángel?", "¡Qué genio!"],

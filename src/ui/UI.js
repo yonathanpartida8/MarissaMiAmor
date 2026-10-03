@@ -32,6 +32,7 @@ export class UI {
 
     this.root.append(
       this.#buildProgress(),
+      this.#buildNavFina(),
       this.#buildBar(),
       this.#buildHint(),
       this.#buildToast(),
@@ -64,6 +65,7 @@ export class UI {
   destroy() {
     window.removeEventListener("pointerdown", this.#wake);
     window.removeEventListener("keydown", this.#onKeyDown);
+    clearTimeout(this.navFinaTimer);
     clearTimeout(this.hintTimer);
     clearTimeout(this.barTimer);
     clearTimeout(this.toastTimer);
@@ -202,6 +204,58 @@ export class UI {
     this.temaBtn.classList.remove("is-girando");
     void this.temaBtn.offsetWidth;
     this.temaBtn.classList.add("is-girando");
+  }
+
+  /**
+   * La barrita de las páginas a pantalla completa.
+   *
+   * En la ciudad y en la noche estrellada el libro no enseña nada suyo: sólo
+   * esta línea delgada abajo, como la de un teléfono. Al tocarla se abre con
+   * «Página anterior» y «Página siguiente», y se vuelve a cerrar sola.
+   */
+  #buildNavFina() {
+    const boton = (clase, texto, etiqueta, fn) =>
+      el(`button.navfina__btn.${clase}`, { type: "button", "aria-label": etiqueta, html: texto, onClick: () => { this.cerrarNavFina(); fn(); } });
+    this.navFinaPanel = el("div.navfina__panel", { role: "group", "aria-label": "Pasar de página" }, [
+      boton("navfina__btn--prev", "<span aria-hidden=\"true\">‹</span> Página anterior", "Página anterior", () => this.ctx.router.prev()),
+      boton("navfina__btn--next", "Página siguiente <span aria-hidden=\"true\">›</span>", "Página siguiente", () => this.ctx.router.next()),
+    ]);
+    this.navFinaAsa = el("button.navfina__asa", {
+      type: "button",
+      "aria-label": "Mostrar la navegación del libro",
+      "aria-expanded": "false",
+      html: "<i></i>",
+      onClick: () => this.#alternarNavFina(),
+    });
+    this.navFina = el("div.navfina", {}, [this.navFinaPanel, this.navFinaAsa]);
+    return this.navFina;
+  }
+
+  #alternarNavFina() {
+    const abierta = !this.navFina.classList.contains("is-abierta");
+    this.navFina.classList.toggle("is-abierta", abierta);
+    this.navFinaAsa.setAttribute("aria-expanded", String(abierta));
+    clearTimeout(this.navFinaTimer);
+    if (abierta) {
+      qs(".navfina__btn--prev", this.navFina).disabled = this.ctx.router.atStart;
+      qs(".navfina__btn--next", this.navFina).disabled = this.ctx.router.atEnd;
+      this.navFinaTimer = setTimeout(() => this.cerrarNavFina(), 5200);
+    }
+    this.ctx.haptics?.play?.("tap");
+  }
+
+  cerrarNavFina() {
+    if (!this.navFina?.classList.contains("is-abierta")) return;
+    clearTimeout(this.navFinaTimer);
+    this.navFina.classList.remove("is-abierta");
+    this.navFinaAsa?.setAttribute("aria-expanded", "false");
+  }
+
+  /** Entrar o salir de una página a pantalla completa. */
+  setCompleta(si) {
+    this.root.classList.toggle("is-completa", si);
+    if (!si) this.cerrarNavFina();
+    if (si) this.index?.close?.();
   }
 
   #buildHint() {

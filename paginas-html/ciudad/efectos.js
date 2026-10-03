@@ -285,35 +285,36 @@ export function lluviaNivel(n) {
 let aura = null;
 function iniciarAura(escena) {
   const g = new THREE.Group();
-  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: brillo([[0, "rgba(255,240,190,.75)"], [0.3, "rgba(255,200,110,.3)"], [1, "rgba(255,170,90,0)"]], 128), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, color: new THREE.Color(1.6, 1.4, 1.1) }));
-  halo.scale.set(4.2, 4.2, 1); g.add(halo);
-  const anillo = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.025, 6, 64), new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 2.4, 1.2), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+  // todo discreto: un dios enamorado, no un foco (el brillo exagerado tapaba al personaje)
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: brillo([[0, "rgba(255,240,200,.45)"], [0.35, "rgba(255,210,140,.14)"], [1, "rgba(255,180,110,0)"]], 128), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, color: new THREE.Color(1.0, 0.92, 0.78) }));
+  halo.scale.set(2.6, 2.6, 1); g.add(halo);
+  const anillo = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.018, 6, 64), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.5, 1.2, 0.65), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
   anillo.rotation.x = Math.PI / 2; g.add(anillo);
-  const anillo2 = anillo.clone(); anillo2.material = anillo.material.clone(); anillo2.material.color.set(3, 1.2, 2); anillo2.scale.setScalar(0.8); g.add(anillo2);
+  const anillo2 = anillo.clone(); anillo2.material = anillo.material.clone(); anillo2.material.color.set(1.4, 0.7, 1.1); anillo2.scale.setScalar(0.8); g.add(anillo2);
   // un velo de luz que sube alrededor del cuerpo
   const velo = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.7, 2.6, 24, 1, true), new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
     uniforms: { uA: { value: 0 }, uT: { value: 0 } },
     vertexShader: "varying vec2 vU; void main(){ vU = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
-    fragmentShader: "uniform float uA, uT; varying vec2 vU; void main(){ float r = smoothstep(0.55, 1.0, sin(vU.x * 50.0 + vU.y * 6.0 - uT * 4.0) * 0.5 + 0.5); float a = uA * r * (1.0 - vU.y) * smoothstep(0.0, 0.15, vU.y + 0.05); gl_FragColor = vec4(vec3(2.6, 2.0, 1.1) * a, a); }",
+    fragmentShader: "uniform float uA, uT; varying vec2 vU; void main(){ float r = smoothstep(0.55, 1.0, sin(vU.x * 50.0 + vU.y * 6.0 - uT * 4.0) * 0.5 + 0.5); float a = uA * r * (1.0 - vU.y) * smoothstep(0.0, 0.15, vU.y + 0.05); gl_FragColor = vec4(vec3(1.3, 1.05, 0.65) * a, a); }",
   }));
   velo.position.y = 0.25; g.add(velo);
-  const pl = new THREE.PointLight("#ffd28a", 0, 10, 1.6); pl.position.y = 0.4; g.add(pl);
+  const pl = new THREE.PointLight("#ffd28a", 0, 7, 1.8); pl.position.y = 0.4; g.add(pl);
   g.visible = false; escena.add(capaEfectos(g));
   aura = { g, halo, anillo, anillo2, pl, velo };
 }
 export function actualizarAura(x, y, z, nivel, dt) {
   if (!aura) return;
   aura.g.visible = nivel > 0.01;
-  aura.pl.intensity = 18 * nivel;
+  aura.pl.intensity = 4 * nivel;
   if (!aura.g.visible) return;
   aura.g.position.set(x, y + 1.05, z);
   const p = 1 + Math.sin(J.t * 4) * 0.06;
-  aura.halo.material.opacity = nivel * 0.9; aura.halo.scale.set(4.2 * p * nivel, 4.6 * p * nivel, 1);
-  aura.anillo.rotation.z += dt * 2; aura.anillo.position.y = Math.sin(J.t * 2) * 0.6; aura.anillo.material.opacity = nivel * 0.8;
-  aura.anillo2.rotation.z -= dt * 3; aura.anillo2.position.y = -Math.sin(J.t * 2) * 0.6; aura.anillo2.material.opacity = nivel * 0.6;
-  aura.velo.material.uniforms.uA.value = nivel * 0.7; aura.velo.material.uniforms.uT.value = J.t;
-  if (Math.random() < dt * 26 * nivel) { const a = rnd(TAU), r = rnd(0.4, 0.8); luz.emitir(x + Math.cos(a) * r, y + rnd(0.1, 1.8), z + Math.sin(a) * r, { vx: 0, vy: rnd(0.8, 2), vz: 0, dur: rnd(0.6, 1.1), tam: rnd(0.08, 0.2), color: Math.random() < 0.7 ? COL.oro : COL.rosa, roce: 1 }); }
+  aura.halo.material.opacity = nivel * 0.5; aura.halo.scale.set(2.6 * p * nivel, 3 * p * nivel, 1);
+  aura.anillo.rotation.z += dt * 2; aura.anillo.position.y = Math.sin(J.t * 2) * 0.6; aura.anillo.material.opacity = nivel * 0.45;
+  aura.anillo2.rotation.z -= dt * 3; aura.anillo2.position.y = -Math.sin(J.t * 2) * 0.6; aura.anillo2.material.opacity = nivel * 0.35;
+  aura.velo.material.uniforms.uA.value = nivel * 0.22; aura.velo.material.uniforms.uT.value = J.t;
+  if (Math.random() < dt * 9 * nivel) { const a = rnd(TAU), r = rnd(0.4, 0.8); luz.emitir(x + Math.cos(a) * r, y + rnd(0.1, 1.8), z + Math.sin(a) * r, { vx: 0, vy: rnd(0.8, 2), vz: 0, dur: rnd(0.6, 1.1), tam: rnd(0.08, 0.2), color: Math.random() < 0.7 ? COL.oro : COL.rosa, roce: 1 }); }
 }
 
 /* ══════════════════ CADA CUADRO ══════════════════ */

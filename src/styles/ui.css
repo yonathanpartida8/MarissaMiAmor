@@ -998,3 +998,99 @@ html[data-orientation="landscape"][data-device="phone"] .edge {
 @media (prefers-reduced-motion: reduce) {
   .barra-toggle span { animation: none; }
 }
+
+/* ============================================================
+   PÁGINA A PANTALLA COMPLETA — la ciudad, la noche estrellada.
+   La hoja ocupa toda la pantalla (también en apaisado y en la
+   tableta), el libro guarda su cromo y sólo queda la barrita.
+   ============================================================ */
+/* Con `!important`: las medidas de apaisado y de tableta son más específicas. */
+html.pagina-completa #stage {
+  --frame-w: 100vw !important;
+  --frame-h: var(--app-h) !important;
+  --frame-radius: 0px !important;
+}
+html.pagina-completa .leaf { box-shadow: none; }
+html.pagina-completa #vignette,
+html.pagina-completa #grain { opacity: 0 !important; }
+#ui.is-completa > *:not(.navfina):not(.toast) {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden;
+}
+/* La página de dentro deja libre lo justo para la barrita (no más). */
+html.pagina-completa .page.pagweb.is-completa { --bar-space: 14px; }
+
+/* ---- La barrita delgada -------------------------------------- */
+.navfina {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-b) + 2px);
+  transform: translateX(-50%);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 3;
+}
+#ui.is-completa .navfina { display: flex; }
+
+.navfina__asa {
+  display: grid;
+  place-items: center;
+  width: 148px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.navfina__asa i {
+  display: block;
+  width: 54px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 246, 236, 0.5);
+  box-shadow: 0 0 0 1px rgba(20, 12, 30, 0.25), 0 1px 6px rgba(0, 0, 0, 0.35);
+  transition: width 260ms var(--e-out), background 260ms var(--e-out), transform 200ms var(--e-spring);
+}
+.navfina__asa:hover i,
+.navfina.is-abierta .navfina__asa i { width: 74px; background: rgba(255, 246, 236, 0.85); }
+.navfina__asa:active i { transform: scaleY(1.6); }
+
+.navfina__panel {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(var(--chrome-alto-rgb), 0.9), rgba(var(--chrome-rgb), 0.94));
+  border: 1px solid rgba(var(--cromo-luz-rgb), 0.12);
+  box-shadow: var(--sh-lift), inset 0 1px 0 rgba(var(--cromo-luz-rgb), 0.08);
+  opacity: 0;
+  transform: translateY(10px) scale(0.96);
+  pointer-events: none;
+  transition: opacity 240ms var(--e-out), transform 320ms var(--e-spring);
+}
+.navfina.is-abierta .navfina__panel {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.navfina__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font: 600 0.84rem var(--font-ui);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--text);
+  background: rgba(var(--cromo-luz-rgb), 0.06);
+  transition: background var(--t-fast), transform var(--t-fast) var(--e-spring), opacity var(--t-fast);
+}
+.navfina__btn span { font-family: var(--font-display); font-size: 1.25rem; line-height: 1; }
+.navfina__btn:active { transform: scale(0.94); background: rgba(var(--cromo-luz-rgb), 0.14); }
+.navfina__btn:disabled { opacity: 0.35; pointer-events: none; }

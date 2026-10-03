@@ -18,6 +18,14 @@
   vehículos, poderes, eventos, lugares, efectos, audio e interfaz. Si el
   teléfono no tiene WebGL2, se queda en la calle 2D.
 -->
+<script>
+/* Las medidas que el libro le presta a la calle 2D (márgenes seguros y el hueco
+   de su barrita) también valen aquí: este marco vive encima de ella. */
+try {
+  const de = parent !== window && parent.document.documentElement.style, aqui = document.documentElement.style;
+  if (de) for (const v of ["--seguro-arriba", "--seguro-abajo", "--seguro-lado", "--hueco-barra"]) { const x = de.getPropertyValue(v); if (x) aqui.setProperty(v, x); }
+} catch (e) { /* abierto suelto */ }
+</script>
 <script type="importmap">{ "imports": { "three": "../vendor/three/three.module.min.js" } }</script>
 <style>
 :root{

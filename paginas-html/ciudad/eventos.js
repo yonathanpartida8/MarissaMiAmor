@@ -36,6 +36,7 @@ export const MISTERIOS = {
   noticias: ["📡", "Saliste en las noticias", "Que te vean desde el cielo"],
   tormenta: ["⛈️", "Una tormenta de verdad", "A veces la noche cambia sola"],
   ventanas: ["🪟", "Las 83 ventanas encendidas", "Toca las ventanas que tienen escena"],
+  heli: ["🚁", "Tumbaste un helicóptero (nadie salió herido)", "Algo que vuela demasiado cerca…"],
   abrazo: ["🤍", "Un abrazo en medio de la ciudad", "Acércate a ella y abrázala"],
 };
 function misterio(id) {
@@ -320,7 +321,15 @@ function actualizarHelis(dt) {
       const r = h.tipo === "policia" ? 22 : 30; tx = yo.x + Math.cos(h.ang) * r; tz = yo.z + Math.sin(h.ang) * r; ty = Math.max(30, yo.y + 16);
       if (h.fase === "llega" && Math.hypot(tx - h.x, tz - h.z) < 10) h.fase = "orbita";
     } else if (h.fase === "se_va") { tx = h.x + Math.cos(h.ang) * 100; tz = h.z + Math.sin(h.ang) * 100; ty = 50; if (Math.hypot(h.x - yo.x, h.z - yo.z) > 170) { quitarHeli(h); helis.splice(i, 1); continue; } }
-    else if (h.fase === "cae") { h.y -= dt * 4; h.ry += dt * 5; if (Math.random() < dt * 30) fx.humo(h.x, h.y, h.z, 1, 1.4, true); if (h.y < 18) { h.fase = "se_va"; h.dano = 0.6; } }
+    else if (h.fase === "cae") {
+      // cae girando, echando humo y fuego… y se estrella (y explota)
+      h.vy = (h.vy || 0) - 7 * dt; h.y += h.vy * dt; h.ry += dt * (3 + h.t * 0.4);
+      h.x += h.vx * dt; h.z += h.vz * dt; h.vx *= 1 - dt * 0.3; h.vz *= 1 - dt * 0.3;
+      if (Math.random() < dt * 30) fx.humo(h.x, h.y, h.z, 1, 1.5, true);
+      if (Math.random() < dt * 20) fx.fuego(h.x, h.y - 0.3, h.z, 1, 1.1);
+      const e = edificioEn(h.x, h.z), piso = e ? e.h : alturaSuelo(h.x, h.z, h.y);
+      if (h.y - 1.3 <= piso) { estrellarHeli(h, piso); helis.splice(i, 1); continue; }
+    }
     if (h.fase !== "cae") {
       const dx = tx - h.x, dz = tz - h.z, d = Math.hypot(dx, dz), v = Math.min(18, d * 0.8);
       h.vx = amort(h.vx, d > 0.1 ? dx / d * v : 0, 1.2, dt); h.vz = amort(h.vz, d > 0.1 ? dz / d * v : 0, 1.2, dt);
@@ -330,7 +339,7 @@ function actualizarHelis(dt) {
     }
     if (h.dano > 0 && Math.random() < dt * 8) fx.humo(h.x, h.y, h.z, 1, 1.2, true);
     // ¿le pegó un coche volador?
-    for (const c of J.coches) if (c.estado === "fisica" && Math.hypot(c.x - h.x, c.y - h.y, c.z - h.z) < 4 && h.fase !== "cae") { h.fase = "cae"; h.dano = 1; son("chapa", h.x, h.z); fx.chispas(h.x, h.y, h.z, 20, 8); globito(h, "¡Mayday, mayday! 😱", "poli", 2.4, 2); c.vx *= -0.3; c.vz *= -0.3; }
+    for (const c of J.coches) if (c.estado === "fisica" && Math.hypot(c.x - h.x, c.y - h.y, c.z - h.z) < 4 && h.fase !== "cae") { derribarHeli(h); son("chapa", h.x, h.z); fx.chispas(h.x, h.y, h.z, 20, 8); c.vx *= -0.3; c.vz *= -0.3; }
     const m = h.m, sp = Math.hypot(h.vx, h.vz);
     m.g.position.set(h.x, h.y + Math.sin(h.t * 1.3) * 0.25, h.z);
     m.g.rotation.set(clamp(sp * 0.02, 0, 0.25), h.ry, Math.sin(h.t * 0.9) * 0.04);
@@ -350,6 +359,37 @@ function actualizarHelis(dt) {
     if (1 - d / 160 > volHeli) { volHeli = Math.max(0, 1 - d / 160); hx = h.x; hz = h.z; }
   }
   bucleEn("heli", volHeli * 0.12, hx, hz);
+}
+/* Un golpe a los helicópteros (rayos, explosiones, coches aventados, un puñetazo en el aire). */
+function golpearHelis(x, y, z, r, k = 1) {
+  let pego = false;
+  for (const h of helis) {
+    if (h.fase === "cae" || h.fase === "se_va") continue;
+    const d = Math.hypot(h.x - x, h.y - y, h.z - z);
+    if (d > r + 3) continue;
+    pego = true;
+    h.dano += 0.45 + k * 0.5 * (1 - d / (r + 3));
+    fx.chispas(h.x, h.y, h.z, 16, 8); fx.humo(h.x, h.y, h.z, 3, 1.3, true); son("chapa", h.x, h.z);
+    if (h.dano >= 1) derribarHeli(h);
+    else if (Math.random() < 0.6) globito(h, elegir(["¡Nos dieron!", "¡Estabilicen!", "¡Ay, mi helicóptero nuevo!"]), "poli", 1.8, 2);
+  }
+  return pego;
+}
+function derribarHeli(h) {
+  if (h.fase === "cae") return;
+  h.fase = "cae"; h.dano = 1; h.vy = 1.5; h.vx += rnd(-3, 3); h.vz += rnd(-3, 3);
+  globito(h, h.tipo === "noticias" ? "¡Se cae la transmisión! 😱" : "¡Mayday, mayday! 😱", "poli", 2.4, 2);
+  son("alarma", h.x, h.z); J.caos += 18;
+  if (h.tipo === "noticias") setTimeout(() => enVivo(false), 900);
+}
+function estrellarHeli(h, piso) {
+  J.explosion && J.explosion(h.x, piso + 0.8, h.z, 1.6);
+  fx.escombro(h.x, piso + 1.2, h.z, 18, h.tipo === "policia" ? "#1f3270" : "#c8304a", 10, 0.35);
+  fx.escombro(h.x, piso + 1.2, h.z, 8, "#22222c", 8, 0.5);
+  quitarHeli(h);
+  if (h.tipo === "noticias") enVivo(false);
+  if (!memo.misterios.heli) setTimeout(() => decirElla("¡¿Tumbaste un helicóptero?! 😳"), 900);
+  misterio("heli");
 }
 function quitarHeli(h) { for (const o of [h.m.g, h.m.cono]) J.escena.remove(o); soltarFoco(h); }
 /* ══════════════════ EL OVNI ══════════════════ */
@@ -792,7 +832,8 @@ export function iniciar() {
   J.misterio = misterio; J.abrirMisterios = abrirMisterios;
   J.grieta = grieta; J.lluviaRayos = lluviaRayos;
   J.llamarHeli = llamarHeli; J.llamarOvni = () => llamarOvni(true);
-  J.alRayo = (mano, p) => rayoAlOvni(p);
+  J.alRayo = (mano, p) => { rayoAlOvni(p); golpearHelis(p.x, p.y, p.z, 4, 1.4); };
+  J.golpearHelis = golpearHelis; J.helis = () => helis;
   J.alApagarDios = () => { retirarPolicia(true); for (const h of helis) h.calma = Math.max(h.calma, 7); };
   J.alPegarPoli = (a) => { if (Math.random() < 0.5) globito(a, elegir(["¡Oficial caído! 😵", "¡Agresión a la autoridad!", "¡Eso dolió! 😭"]), "poli", 1.8, 2.2); };
   J.ovni = () => ovni;

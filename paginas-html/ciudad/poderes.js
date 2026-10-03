@@ -47,7 +47,7 @@ export function iniciar() {
   J.nivelAgua = (x) => (J.ola ? nivelAgua(x) : -1);
   burbuja = new THREE.Mesh(new THREE.SphereGeometry(1.15, 24, 16), contorno(new THREE.MeshToonMaterial({ color: "#ff9ec8", transparent: true, opacity: 0.2, depthWrite: false }), "#ffc8e0", 1.2, 2));
   burbuja.visible = false; J.escena.add(burbuja);
-  J.golpear = (h) => { const a = golpearGente(h), b = golpearCoches(h), c = objetos.golpearObjetos(h); return a || b || c; };
+  J.golpear = (h) => { const a = golpearGente(h), b = golpearCoches(h), c = objetos.golpearObjetos(h), d = J.golpearHelis ? J.golpearHelis(h.x, h.y ?? J.jugador.y + 1, h.z, (h.r || 1) + 1, h.k || 1) : false; return a || b || c || d; };
   J.objetivoGolpe = (yo, r) => {
     let m = null, md = r;
     for (const a of J.gente) { if (a.estado === "DENTRO" || !a.ver) continue; const d = Math.hypot(a.x - yo.x, a.z - yo.z); if (d < md && Math.abs(difAng(Math.atan2(a.x - yo.x, a.z - yo.z), yo.ry)) < 1.3) { md = d; m = a; } }
@@ -159,6 +159,8 @@ function blanco(alcance = 35, soloLevantable = false) {
   for (const c of J.coches) if (c.estado !== "fuera" && c.fase !== "RECUPERANDO" && c.fase !== "RESTOS" && c.estado !== "conducido") evaluar(c, c.x, c.z, soloLevantable ? -3 : 0);
   for (const o of J.objetos) if (o.estado !== "DESTRUIDO" && o.estado !== "RECUPERANDO") evaluar(o, o.x, o.z, 2);
   if (!soloLevantable) for (const a of J.gente) if (a.ver && a.estado !== "DENTRO" && !a.audifonos) evaluar(a, a.x, a.z, 4);
+  // los helicópteros: si estoy mirando hacia arriba, son el blanco preferido
+  if (!soloLevantable && J.helis) for (const h of J.helis()) if (h.fase !== "cae" && h.fase !== "se_va") evaluar(h, h.x, h.z, (J.cam && J.cam.pitch < 0.05) ? -6 : 10);
   return mejor;
 }
 function puntoAdelante(d = 18) { const yo = J.jugador, ay = J.camYaw || 0; return { x: yo.x - Math.sin(ay) * d, y: 0.2, z: yo.z - Math.cos(ay) * d }; }
@@ -242,6 +244,7 @@ function moverAgarrado(dt) {
 }
 /* ── la explosión ── */
 export function explosion(x, y, z, k, menos = null) {
+  J.golpearHelis && J.golpearHelis(x, y, z, 4 + k * 5, k);
   fx.bolaFuego(x, y + 0.4, z, 1.5 + k * 2, 0.5 + k * 0.22);
   fx.fuego(x, y, z, Math.round(16 + k * 18), 1 + k * 0.6);
   fx.humo(x, y + 0.5, z, Math.round(6 + k * 8), 1.4 + k, true);

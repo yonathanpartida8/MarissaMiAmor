@@ -58,6 +58,8 @@ export const entradaNoche = {
   transition: "fade",
   act: "noche",
   custom: true,
+  /* Un mundo aparte: se abre a pantalla completa, sin el cromo del libro. */
+  completa: true,
   /* La marca que lo cambia todo: el manifiesto no deja que nada se
      coloque después de ésta. */
   ultima: true,

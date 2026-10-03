@@ -145,6 +145,18 @@ const BANDA_PROP = 0.07;
 /** Si el archivo no abre en este tiempo, se sigue adelante sin él. */
 const ESPERA_MAX = 3500;
 
+/**
+ * La marca con la que un archivo pide abrirse a pantalla completa:
+ *
+ *     <meta name="libro-pagina" content="completa">
+ *
+ * Es para las páginas que son un mundo aparte —un juego, una escena entera—:
+ * el libro guarda su cromo (barra, progreso, bordes, viñeta) y sólo deja una
+ * barrita delgada abajo para pasar de página. El barrido desde el borde
+ * tampoco pasa la hoja ahí: en un juego se hace sin querer.
+ */
+const META_COMPLETA = /<meta[^>]+name=["']libro-pagina["'][^>]*content=["'][^"']*completa/i;
+
 export default class HtmlPage extends BasePage {
   static type = "html";
 
@@ -194,10 +206,12 @@ export default class HtmlPage extends BasePage {
    * ejecuta ni un script, que es lo que importa aquí.
    */
   #nombrarDesdeElTexto(texto) {
-    if (!texto || !this.chapter) return;
+    if (!texto) return;
     // Sin los comentarios: un archivo que cite <title> dentro de uno haría
     // que la búsqueda empezara ahí y arrastrara el comentario entero.
     const cabeza = texto.slice(0, 8192).replace(/<!--[\s\S]*?-->/g, "");
+    if (META_COMPLETA.test(cabeza)) this.metaCompleta = true;
+    if (!this.chapter) return;
     const m = cabeza.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
     if (!m) return;
     let titulo = m[1];
@@ -208,6 +222,11 @@ export default class HtmlPage extends BasePage {
     }
     titulo = (titulo || "").trim();
     if (titulo) this.chapter.title = titulo;
+  }
+
+  /** ¿Se abre a pantalla completa? (ver `META_COMPLETA`) */
+  get completa() {
+    return !!(this.entry.completa || this.metaCompleta);
   }
 
   build() {
@@ -246,6 +265,7 @@ export default class HtmlPage extends BasePage {
     });
 
     this.root.append(this.fondo, this.marco);
+    this.root.classList.toggle("is-completa", this.completa);
     return this.root;
   }
 
@@ -407,6 +427,17 @@ export default class HtmlPage extends BasePage {
 
     // 4. ¿SU PÁGINA ES CLARA O ES OSCURA?
     this.#mirarLuz(doc);
+
+    // 5. ¿PIDE PANTALLA COMPLETA? Normalmente ya se supo al precargarla; esto
+    //    cubre el caso de llegar a ella sin precarga.
+    if (!this.completa && doc.querySelector('meta[name="libro-pagina"][content*="completa"]')) {
+      this.metaCompleta = true;
+      this.root?.classList.add("is-completa");
+      if (this.active) {
+        document.documentElement.classList.add("pagina-completa");
+        this.ctx.ui?.setCompleta?.(true);
+      }
+    }
   }
 
   /**
@@ -600,7 +631,12 @@ export default class HtmlPage extends BasePage {
       // Un toque dentro de la página también despierta la música del libro
       // si el teléfono la había dormido (el libro no lo ve desde fuera).
       this.ctx.audio?.revivir?.();
+      // Y si su barrita delgada está abierta, un toque en la página la cierra.
+      this.ctx.ui?.cerrarNavFina?.();
       if (e.pointerType === "mouse" && e.button !== 0) return;
+      // En pantalla completa la hoja no se pasa barriendo desde el borde: en
+      // un juego ese gesto se hace sin querer. Para eso está la barrita.
+      if (this.completa) return;
 
       // 1. ¿Empieza en el borde? Si no, no hay nada que hablar: el gesto es
       //    suyo y el libro ni se entera.

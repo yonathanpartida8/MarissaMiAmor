@@ -49,6 +49,7 @@ const matVidrio = toon({ color: "#4a5e82", emissive: "#141c2e" });
 const matVidrioRoto = toon({ color: "#6a7488" });
 const matResto = toon({ vertexColors: true });
 const matLuces = new THREE.MeshBasicMaterial({ vertexColors: true });
+J.matLucesCoche = matLuces;   // luces.js le sube el brillo de noche
 // el velo de los faros: se desvanece a lo largo y hacia los bordes (sin cortes duros en el piso)
 const matHaz = new THREE.ShaderMaterial({
   transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,

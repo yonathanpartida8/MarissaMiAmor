@@ -304,6 +304,13 @@ export class Router extends Emitter {
     const raiz = page.root;
     const claro = !!raiz && (raiz.classList.contains("paper") || raiz.dataset.claro === "true");
     document.documentElement.classList.toggle("hoja-clara", claro);
+
+    // Las páginas que son un mundo aparte (la ciudad, la noche estrellada) se
+    // abren a pantalla completa: el libro guarda su cromo y sólo deja la
+    // barrita delgada de abajo. Se decide aquí, al empezar la transición, para
+    // que la hoja llegue ya con su tamaño y no dé un salto al terminar.
+    document.documentElement.classList.toggle("pagina-completa", !!page.completa);
+    this.ctx.ui?.setCompleta?.(!!page.completa);
   }
 
   async #transition(name, outLeaf, inLeaf, direction) {

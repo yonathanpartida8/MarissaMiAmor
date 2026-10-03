@@ -33,7 +33,7 @@ export function iniciarLuces(esc) {
     esc.add(s, s.target); L.farolas.push({ s, f: null, obj: 0 });
   }
   const nC = q.nivel === "baja" ? 1 : 3;
-  for (let i = 0; i < nC; i++) { const s = new THREE.SpotLight("#fff2d8", 0, 30, 0.5, 0.45, 1.4); esc.add(s, s.target); L.faros.push({ s, c: null }); }
+  for (let i = 0; i < nC; i++) { const s = new THREE.SpotLight("#fff2d8", 0, 30, 0.55, 0.8, 1.4); esc.add(s, s.target); L.faros.push({ s, c: null }); }
   J.luces = L;
 }
 
@@ -68,15 +68,27 @@ export function actualizarLuces(dt, ciclo, foco) {
   }
   for (const l of L.farolas) l.s.intensity = amort(l.s.intensity, l.f && !l.f.apagado ? 26 * on : 0, 3, dt);
   // ── los faros de los coches (de tarde y de noche) ──
+  // Cada foco se queda con SU coche mientras siga cerca; si hay que pasarlo a
+  // otro, primero se apaga suave y luego cambia. Antes se repartían por
+  // distancia en cada cuadro y la luz brincaba de un coche a otro (el parpadeo).
   const faro = Math.max(0, ciclo.farolas * 1.2 - 0.1);
-  const coches = J.coches.filter((c) => (c.estado === "maneja" || c.estado === "conducido" || c.estado === "controlado") && c.fase !== "ARDIENDO" && c.fase !== "RESTOS")
-    .map((c) => ({ c, d: (c.x - foco.x) ** 2 + (c.z - foco.z) ** 2 + (c === (J.jugador && J.jugador.coche) ? -1e6 : 0) })).sort((p, q) => p.d - q.d);
-  L.faros.forEach((f, i) => {
-    const o = coches[i];
-    if (!o || o.d > 2500 || faro < 0.02) { f.s.intensity = amort(f.s.intensity, 0, 6, dt); return; }
-    const c = o.c, sx = Math.sin(c.ry), sz = Math.cos(c.ry);
-    f.s.position.set(c.x + sx * (c.T.L / 2 + 0.1), c.y + 0.15, c.z + sz * (c.T.L / 2 + 0.1));
-    f.s.target.position.set(c.x + sx * 14, 0, c.z + sz * 14); f.s.target.updateMatrixWorld();
-    f.s.intensity = amort(f.s.intensity, 60 * faro, 6, dt);
-  });
+  const vale = (c) => c && (c.estado === "maneja" || c.estado === "conducido" || c.estado === "controlado") && c.fase !== "ARDIENDO" && c.fase !== "RESTOS" && c.estado !== "fuera";
+  const dist2 = (c) => (c.x - foco.x) ** 2 + (c.z - foco.z) ** 2;
+  if ((L.cadaFaro = (L.cadaFaro || 0) - dt) <= 0) {
+    L.cadaFaro = 0.5;
+    const mio = J.jugador && J.jugador.coche;
+    const quiero = J.coches.filter((c) => vale(c) && dist2(c) < 2500).sort((p, q) => (q === mio) - (p === mio) || dist2(p) - dist2(q)).slice(0, L.faros.length);
+    for (const f of L.faros) if (f.c && !quiero.includes(f.c)) f.suelta = true;
+    for (const c of quiero) if (!L.faros.some((f) => f.c === c)) { const f = L.faros.find((q) => !q.c || (q.suelta && q.s.intensity < 0.5)); if (f) { f.c = c; f.suelta = false; f.s.intensity = 0; } }
+  }
+  for (const f of L.faros) {
+    const c = f.c;
+    if (!c || f.suelta || !vale(c) || faro < 0.02) { f.s.intensity = amort(f.s.intensity, 0, 7, dt); if (f.s.intensity < 0.05 && (f.suelta || !vale(c))) { f.c = null; f.suelta = false; } if (!c) continue; }
+    const sx = Math.sin(c.ry), sz = Math.cos(c.ry);
+    f.s.position.set(c.x + sx * (c.T.L / 2 + 0.1), c.y + 0.12, c.z + sz * (c.T.L / 2 + 0.1));
+    f.s.target.position.set(c.x + sx * 12, 0, c.z + sz * 12); f.s.target.updateMatrixWorld();
+    if (!f.suelta && vale(c) && faro >= 0.02) f.s.intensity = amort(f.s.intensity, 55 * faro * (1 - Math.min(1, Math.max(0, (Math.sqrt(dist2(c)) - 35) / 15))), 4, dt);
+  }
+  // las lucecitas de los coches: tenues de día, encendidas (y con resplandor) de noche
+  if (J.matLucesCoche) J.matLucesCoche.color.setScalar(0.85 + 1.5 * ciclo.farolas);
 }
