@@ -41,6 +41,10 @@ function nuevoCuerpo(quien, x, z) {
 }
 
 /* ══════════════════ YO ══════════════════ */
+/* Ir de la mano: la distancia entre los dos y lo que se abre cada brazo para que
+   las manos se encuentren justo en medio (hombro 0.19 + brazo 0.56·sen θ = mitad). */
+const MANO_SEP = 0.64, MANO_ANG = Math.asin((MANO_SEP / 2 - 0.19) / 0.56) + 0.02;
+
 export function crearJugador() {
   const p = lugares.inicio;
   const yo = nuevoCuerpo("yo", p.x, p.z - 0.6);
@@ -211,7 +215,7 @@ export function actualizarJugador(dt) {
     // ── CAMINAR / CORRER ──
     bucleEn("vuelo", 0);
     yo.anim.vuelo = amort(yo.anim.vuelo, 0, 6, dt);
-    const corre = E.correr || fuerza > 0.88;
+    const corre = E.correr;   // correr: joystick hasta el borde (o Shift); si no, caminamos (y así vamos de la mano)
     const vmax = (corre ? 6.4 : 2.7 * Math.max(0.55, fuerza / 0.85)) * (dios ? 1.25 : 1);
     const obj = fuerza > 0.08 ? vmax : 0;
     const k = yo.suelo ? (obj > yo.vel ? 9 : 12) : 2.2;
@@ -257,7 +261,7 @@ function terminar(yo, dt, coche) {
   const ella = J.novia;
   yo.anim.mirarY = amort(yo.anim.mirarY, yo.mirar != null ? clamp(difAng(yo.mirar, yo.ry), -1, 1) : 0, 4, dt);
   animar(yo, dt, yo.vuela ? 7 : 12);
-  if (ella.mano > 0.3 && yo.vel < 3.2 && !coche) { yo.ang.hLZ = lerp(yo.ang.hLZ, 0.42, ella.mano); yo.ang.hLX = lerp(yo.ang.hLX, 0.2, ella.mano); yo.ang.cLX = lerp(yo.ang.cLX, 0.25, ella.mano); }
+  if (ella.mano > 0.05 && yo.vel < 3.4 && !coche) { const sw = Math.sin(yo.anim.fase) * 0.12 * Math.min(1, yo.vel / 2); yo.ang.hLZ = lerp(yo.ang.hLZ, MANO_ANG, ella.mano); yo.ang.hLX = lerp(yo.ang.hLX, 0.08 + sw, ella.mano); yo.ang.cLX = lerp(yo.ang.cLX, 0.14, ella.mano); }
   yo.j.raiz.position.set(yo.x, yo.y, yo.z);
   if (coche) yo.j.raiz.quaternion.copy(coche.m.raiz.quaternion); else yo.j.raiz.rotation.set(0, yo.ry, 0);
   aplicar(yo.j, yo.ang, ALTURA_CADERA);
@@ -409,8 +413,11 @@ export function actualizarElla(dt) {
     case "sigue":
       if (yo.vuela && alto > 4) { ella.estado = "cielo"; ella.te = 6; if (J.t - (ella.dicho.vuela || -99) > 40) { ella.dicho.vuela = J.t; setTimeout(() => decirElla(lineaElla("vuela")), 400); } break; }
       if (d > 26 || yo.coche) { ella.estado = "espera"; ella.te = rnd(4, 7); if (J.t - (ella.dicho.espera || -99) > 50) { ella.dicho.espera = J.t; decirElla(lineaElla("espera")); } break; }
-      // camina a mi lado: un poquito atrás y a la izquierda
-      { const lado = Math.atan2(dx, dz); const ox = -Math.cos(lado) * 0.75 - Math.sin(lado) * (yo.vel > 0.5 ? 0.5 : 0.9), oz = Math.sin(lado) * 0.75 - Math.cos(lado) * (yo.vel > 0.5 ? 0.5 : 0.9); meta = { x: yo.x + ox, z: yo.z + oz }; rapido = yo.vel > 3.5 || d > 6; }
+      // cerquita y despacio: de la mano, exactamente a mi izquierda (MANO_SEP), mismo paso
+      ella.deMano = d < 2.6 && yo.vel < 3.4 && !yo.vuela && yo.suelo && !yo.coche;
+      if (ella.deMano) { meta = { x: yo.x + Math.cos(yo.ry) * MANO_SEP, z: yo.z - Math.sin(yo.ry) * MANO_SEP }; rapido = d > 1.4; }
+      // si no, camina a mi lado: un poquito atrás y a la izquierda
+      else { const lado = Math.atan2(dx, dz); const ox = -Math.cos(lado) * 0.75 - Math.sin(lado) * (yo.vel > 0.5 ? 0.5 : 0.9), oz = Math.sin(lado) * 0.75 - Math.cos(lado) * (yo.vel > 0.5 ? 0.5 : 0.9); meta = { x: yo.x + ox, z: yo.z + oz }; rapido = yo.vel > 3.5 || d > 6; }
       break;
     case "espera":
       if (d < 7 && !yo.vuela && !yo.coche) { ella.estado = "sigue"; if (J.t - (ella.dicho.vuelve || -99) > 40) { ella.dicho.vuelve = J.t; decirElla(lineaElla("vuelve")); } break; }
@@ -472,7 +479,7 @@ export function actualizarElla(dt) {
     let vObj = 0, dirX = 0, dirZ = 0;
     if (meta) {
       const mx = meta.x - ella.x, mz = meta.z - ella.z, md = Math.hypot(mx, mz);
-      if (md > 0.3) { dirX = mx / md; dirZ = mz / md; vObj = rapido ? Math.min(6, md * 1.6 + 2) : Math.min(2.6, md * 1.5 + 0.6); if (ella.estado === "sigue" && yo.vel > 0.5) vObj = Math.min(Math.max(vObj, yo.vel * (md > 1.2 ? 1.15 : 0.95)), 6.4); }
+      if (md > 0.3) { dirX = mx / md; dirZ = mz / md; vObj = rapido ? Math.min(6, md * 1.6 + 2) : Math.min(2.6, md * 1.5 + 0.6); if (ella.estado === "sigue" && yo.vel > 0.5) vObj = ella.deMano ? Math.min(6.4, yo.vel + md * 3) : Math.min(Math.max(vObj, yo.vel * (md > 1.2 ? 1.15 : 0.95)), 6.4); }
     }
     ella.vx = amort(ella.vx, dirX * vObj, 8, dt); ella.vz = amort(ella.vz, dirZ * vObj, 8, dt);
     ella.x += ella.vx * dt; ella.z += ella.vz * dt;
@@ -489,6 +496,14 @@ export function actualizarElla(dt) {
     else if (ella.estado === "kdrama") mira = Math.atan2(lugares.kdrama.x - ella.x, lugares.kdrama.z - ella.z);
     else if (d < 30) mira = Math.atan2(dx, dz);
     if (mira != null) ella.ry = amortAng(ella.ry, mira, 6, dt);
+    // de la mano: pegadita a mi izquierda, mirando hacia donde vamos (no hacia mí)
+    if (ella.mano > 0.45) {
+      const k = (ella.mano - 0.45) / 0.55, tx = yo.x + Math.cos(yo.ry) * MANO_SEP, tz = yo.z - Math.sin(yo.ry) * MANO_SEP;
+      ella.x = amort(ella.x, tx, 6 + 10 * k, dt); ella.z = amort(ella.z, tz, 6 + 10 * k, dt);
+      chocarEdificios(ella, 0.3, ella.y);
+      ella.ry = amortAng(ella.ry, yo.ry, 10, dt);
+      if (yo.vel > 0.3) { ella.vel = yo.vel; ella.vx = Math.sin(yo.ry) * yo.vel; ella.vz = Math.cos(yo.ry) * yo.vel; }
+    }
   }
   const haciaMi = Math.atan2(dx, dz);
   const sentadaConmigo = ella.estado === "sentada" && yo.banca && ella.banca && yo.banca === ella.banca.de;
@@ -505,9 +520,11 @@ export function actualizarElla(dt) {
   a.saluda = amort(a.saluda, ella.saludaT > 0 ? 1 : 0, 6, dt); if (ella.saludaT > 0) ella.saludaT -= dt;
   a.recarga = amort(a.recarga || 0, sentadaConmigo ? 1 : 0, 2, dt);
   // de la mano: si vamos los dos despacito y juntos
-  ella.mano = amort(ella.mano, ella.estado === "sigue" && d < 1.5 && yo.vel < 3.2 && !yo.vuela && yo.suelo && !yo.anim.golpe && !yo.coche ? 1 : 0, 4, dt);
+  ella.mano = amort(ella.mano, ella.estado === "sigue" && ella.deMano && d < 1.25 && yo.vel < 3.4 && !yo.vuela && yo.suelo && !yo.anim.golpe && !yo.coche && !J.actividad ? 1 : 0, 4, dt);
+  if (ella.mano > 0.5) { a.fase = yo.anim.fase; a.vel = yo.vel; }   // el mismo paso
   animar(ella, dt, 11);
-  if (ella.mano > 0.3) { ella.ang.hRZ = lerp(ella.ang.hRZ, 0.42, ella.mano); ella.ang.hRX = lerp(ella.ang.hRX, 0.2, ella.mano); ella.ang.cRX = lerp(ella.ang.cRX, 0.25, ella.mano); }
+  // su brazo derecho baja a buscar mi mano izquierda (y se balancea poquito con el paso)
+  if (ella.mano > 0.05) { const sw = Math.sin(a.fase) * 0.12 * Math.min(1, yo.vel / 2); ella.ang.hRZ = lerp(ella.ang.hRZ, MANO_ANG, ella.mano); ella.ang.hRX = lerp(ella.ang.hRX, 0.08 + sw, ella.mano); ella.ang.cRX = lerp(ella.ang.cRX, 0.14, ella.mano); }
   if (ella.j.melena) ella.j.melena.rotation.x = amort(ella.j.melena.rotation.x, clamp(ella.vel * 0.06, 0, 0.35) + Math.sin(J.t * 2) * 0.03, 6, dt);
   ella.j.raiz.position.set(ella.x, ella.y, ella.z);
   if (enAuto) ella.j.raiz.quaternion.copy(enAuto.m.raiz.quaternion); else ella.j.raiz.rotation.set(0, ella.ry, 0);

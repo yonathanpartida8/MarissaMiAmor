@@ -55,7 +55,7 @@ export function iniciar() {
     return m;
   };
   J.explosion = explosion;
-  J.elegirPoder = (id) => { poder = id; pintarBarra(); const p = PODERES.find((q) => q.id === id); aviso(p.ico + " " + p.nombre); };
+  J.elegirPoder = (id) => { poder = id; pintarBarra(); const p = PODERES.find((q) => q.id === id); aviso(p.nombre); };
   J.elegirPoderN = (n) => { if (PODERES[n] && J.dios.on) J.elegirPoder(PODERES[n].id); };
   J.desbloquear = () => {};   // ya están todos
   J.soltarAgarre = soltarAgarre;
@@ -66,7 +66,7 @@ export function iniciar() {
 function pintarBarra() {
   definirPoderes(PODERES, poder);
   const p = PODERES.find((q) => q.id === poder);
-  botonPoder(J.agarrado ? "🫳" : p.ico, J.dios.on);
+  botonPoder(J.agarrado ? "agarrar" : p.id, J.dios.on);
   botonDios(J.dios.on);
 }
 
@@ -454,7 +454,7 @@ export function actualizar(dt, dtM) {
   J.dios.nivel = clamp(J.dios.nivel + (J.dios.on && J.dios.brilla ? dt * 1.4 : -dt * 0.6), 0, 1);   // el brillo, sólo ya transformado
   // los botones según lo que pasa
   botonBajar(yo.vuela || cam.modo === "dron");
-  botonSaltar(yo.vuela ? "⤒" : J.dios.on && !yo.suelo ? "🕊️" : "⤒");
+  botonSaltar(!yo.vuela && J.dios.on && !yo.suelo ? "volar" : "saltar");
   if (yo.planea > 0) { yo.planea -= dt; if (!yo.suelo) yo.vy = Math.max(yo.vy, -3); }
   // el poder
   if (J.dios.on) {

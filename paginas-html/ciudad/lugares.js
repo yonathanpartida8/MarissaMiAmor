@@ -12,7 +12,7 @@
 import { J, THREE, rnd, elegir, clamp, amort, memo, contar, lienzo, textura, brillo, contorno, Juntador, aPantalla, TAU, toon } from "./base.js";
 import { son, bucleEn, piezasEscena } from "./audio.js";
 import * as fx from "./efectos.js";
-import { E, decir, decirYa, globito, aviso, contador, botonAccion, abrirTarjeta, tarjetaAbierta } from "./ui.js";
+import { E, decir, decirYa, globito, aviso, contador, botonAccion, abrirTarjeta, tarjetaAbierta, pista } from "./ui.js";
 import { lugares, ventanasEscena, bancas, ACERA_Y } from "./mundo.js";
 import { pintarEscena, sonarEscena, linea, FINAL } from "./escenas.js";
 import { ventanaEn, alternar, contarEscenas, marcarVista, animarVentana, ventanaKdrama } from "./ventanas.js";
@@ -243,7 +243,10 @@ function tocarVentana(v) {
     const on = alternar(v);
     son("ding", v.x, v.z, on ? 0.35 : 0.2);
     if (on) fx.brillos(v.x + v.nx * 0.3, v.y, v.z + v.nz * 0.3, 4, "oro", 0.5, 0.6);
-    if (contar("ventanasNormales") === 6 && J.novia.estado !== "fuera") decirElla("¿Les estás prendiendo la luz a todos? jajaja 🙈");
+    const n = contar("ventanasNormales");
+    if (n === 6 && J.novia.estado !== "fuera") decirElla("¿Les estás prendiendo la luz a todos? jajaja 🙈");
+    // de vez en cuando, una pista: la ventana con escena más cercana que falta, brilla
+    if (on && n % 4 === 0) pistaVentana(v);
     return;
   }
   const mirador = !!cam.mirador;
@@ -251,6 +254,8 @@ function tocarVentana(v) {
     alternar(v); marcarVista(v);
     try { sonarEscena(v.escena.id, piezasEscena()); } catch (e) { /* sin sonido */ }
     fx.brillos(v.x + v.nx * 0.3, v.y, v.z + v.nz * 0.3, 14, "oro", 0.8, 1); son("ding", v.x, v.z, 0.5);
+    // como en la calle 2D: al prenderla se asoma la ventanita con su escena
+    setTimeout(() => { if (!tarjetaAbierta()) abrirVentana(v); }, 520);
     const n = contarEscenas(); contador("#nVen", n);
     if (n === ventanasEscena.length) setTimeout(() => { decirYa(FINAL, "yo", 5000); J.misterio && J.misterio("ventanas"); for (let k = 0; k < 40; k++) setTimeout(() => fx.lluviaDeCorazones(yo.x, yo.z, 20), k * 80); son("corazon"); }, 1800);
   } else if (mirador) {
@@ -266,6 +271,15 @@ function tocarVentana(v) {
   decir(linea(v.escena.dice, v.vez), "yo", 3400);
   animarVentana(v);
   if (v.escena.id === "kdrama" && v.vez >= 2) { contar("kdramaCerca"); J.misterio && J.misterio("kdrama"); }
+}
+/* La ventana con escena más cercana que todavía no se ha visto se ilumina un instante. */
+function pistaVentana(desde) {
+  let m = null, md = 26;
+  for (const w of ventanasEscena) { if (w.vez > 0) continue; const d = Math.hypot(w.x - desde.x, w.y - desde.y, w.z - desde.z); if (d < md) { md = d; m = w; } }
+  if (!m) return;
+  for (let k = 0; k < 3; k++) setTimeout(() => fx.brillos(m.x + m.nx * 0.4, m.y, m.z + m.nz * 0.4, 8, "rosa", 0.7, 0.4), k * 380);
+  pista("Psst… esa ventana que brilla tiene algo");
+  setTimeout(() => { if (document.getElementById("pista").textContent.startsWith("Psst")) pista(cam.mirador ? "Toca las ventanas · desliza para recorrer" : ""); }, 3200);
 }
 function abrirVentana(v) {
   abrirTarjeta(`<canvas id="vent" width="360" height="300"></canvas><p class="mano">${linea(v.escena.dice, v.vez)}</p><button data-cerrar>Seguir paseando</button>`);
@@ -285,7 +299,9 @@ function alTocar(px, py) {
   if (o) { aPantalla(o.x, o.y, o.z, _p); const d = Math.hypot(o.x - cam3.x, o.y - cam3.y, o.z - cam3.z), r = 4.5 / d * f + 20; if (_p.visible && Math.hypot(px - _p.x, py - _p.y) < r) { if (J.dios.on) J.rayoA({ x: o.x, y: o.y, z: o.z }); else { globito(o, elegir(["👽👋", "👽💚", "👽❓"]), "gente", 1.6, -1); son("ovni", o.x, o.z, 0.6); } return; } }
   // 2) la luna
   if (J.sobreLuna && J.sobreLuna(px, py)) { J.tocarLuna(); return; }
-  // 3) una ventana
+  // 3) las cositas lindas (globos, el músico)
+  if (J.tocarCosita && J.tocarCosita(px, py)) return;
+  // 4) una ventana
   const v = ventanaEn(px, py);
   if (v) { tocarVentana(v); return; }
   // 4) un perrito o una persona
@@ -319,6 +335,8 @@ function elegirAccion() {
   if (c && c.estado !== "agarrado" && !c.poli && c.m.puertas.length && c.fase !== "ARDIENDO" && c.fase !== "RESTOS" && c.fase !== "RECUPERANDO" && (c.estado !== "maneja" || c.vel < 4) && c.y < 2) return { txt: J.novia && Math.hypot(J.novia.x - yo.x, J.novia.z - yo.z) < 9 && !J.dios.on ? "🚗 Subirnos" : "🚗 Subir", f: () => empezarSubir(c) };
   const an = J.animales.find((q) => cerca(q, 1.8));
   if (an) return { txt: an.tipo === "perro" ? "🐶 Acariciar" : "🐱 Acariciar", f: () => acariciar(an) };
+  const cos = J.accionCosita && J.accionCosita();
+  if (cos) return cos;
   const b = bancas.find((q) => !q.ocupada && cerca(q, 1.8));
   if (b) return { txt: "🪑 Sentarse", f: () => sentarseEn(b) };
   const vk = ventanaKdrama();

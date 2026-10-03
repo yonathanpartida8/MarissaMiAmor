@@ -37,6 +37,12 @@ export const MISTERIOS = {
   tormenta: ["⛈️", "Una tormenta de verdad", "A veces la noche cambia sola"],
   ventanas: ["🪟", "Las 83 ventanas encendidas", "Toca las ventanas que tienen escena"],
   heli: ["🚁", "Tumbaste un helicóptero (nadie salió herido)", "Algo que vuela demasiado cerca…"],
+  gis: ["🖍️", "Dibujos de gis en la banqueta", "Mira bien el piso mientras paseas"],
+  globo: ["🎈", "Un globo de corazón… ¡pop!", "Hay algo amarrado a algunas bancas"],
+  musico: ["🎸", "El músico de la plaza les dedicó una canción", "Escucha en la plaza"],
+  helado: ["🍦", "Dos helados de fresa", "Un carrito en la plaza"],
+  flores: ["🌷", "Le regalaste una flor", "Un puestito en la plaza"],
+  buzon: ["💌", "Las cartitas del buzón", "Un buzón rojo con un corazón"],
   abrazo: ["🤍", "Un abrazo en medio de la ciudad", "Acércate a ella y abrázala"],
 };
 function misterio(id) {

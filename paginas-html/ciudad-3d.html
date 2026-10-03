@@ -155,6 +155,32 @@ html, body{ margin: 0; padding: 0 !important; width: 100%; height: 100%; overflo
 .cd-tarjeta li small{ display: block; font-size: 13.5px; opacity: .7; }
 .cd-tarjeta h3{ margin: 12px 0 2px; font: 700 12px system-ui, sans-serif; letter-spacing: .2em; text-transform: uppercase; color: #bfb4ff; }
 .cd-tarjeta button{ margin-top: 10px; font: 600 17px "Cormorant Garamond", serif !important; border: 0; border-radius: 999px; padding: 8px 22px; background: #ffd9a8; color: #2a1428 !important; }
+/* ── los iconos dibujados (sin emojis) y los botones con relieve ── */
+.ico{ width: 1.1em; height: 1.1em; display: block; flex: none; }
+.cd-chip .ico{ width: 17px; height: 17px; color: #ffd9b0; }
+.cd-chip.boton{ display: inline-flex; align-items: center; gap: 5px; min-height: 34px; }
+.cd-chip.boton span{ font: 700 12px system-ui, sans-serif; letter-spacing: .08em; }
+.cd-b{ color: #ffe9d2; background: radial-gradient(circle at 50% 30%, rgba(70,52,110,.88), rgba(20,15,40,.86) 70%);
+  box-shadow: 0 8px 18px -8px #000, inset 0 1px 0 rgba(255,240,220,.18), inset 0 -2px 6px rgba(0,0,0,.35); }
+.cd-b .ico{ width: 46%; height: 46%; filter: drop-shadow(0 1px 1px rgba(0,0,0,.45)); }
+.cd-b:active{ transform: scale(.88); background: radial-gradient(circle at 50% 30%, rgba(110,82,160,.95), rgba(30,22,58,.92) 70%); }
+.cd-golpe .ico{ width: 50%; height: 50%; }
+.cd-carga{ position: absolute; inset: -4px; border-radius: 50%; pointer-events: none; --k: 0;
+  background: conic-gradient(#ffd36e calc(var(--k) * 360deg), transparent 0); -webkit-mask: radial-gradient(circle, transparent 62%, #000 64%); mask: radial-gradient(circle, transparent 62%, #000 64%); opacity: calc(var(--k) * 1.4); }
+.cd-dios .ico{ color: #ffe6a0; }
+.cd-dios.on{ color: #5a3008; }
+.cd-pareja .ico{ color: #ffb3d6; }
+.cd-poder .ico{ color: #ffd88a; width: 52%; height: 52%; }
+.cd-accion{ display: inline-flex; align-items: center; gap: 6px; }
+.cd-accion .ico{ width: 20px; height: 20px; color: #ffcf9a; }
+.cd-menu button{ display: inline-flex; align-items: center; gap: 5px; }
+.cd-menu .ico{ width: 18px; height: 18px; color: #ffb3d6; }
+.cd-rp{ width: 62px; height: 58px; display: grid; grid-template-rows: 1fr auto; place-items: center; padding: 6px 2px 4px; color: #ffe2b8; }
+.cd-rp .ico{ width: 24px; height: 24px; }
+.cd-rp small{ font: 600 9.5px/1.05 system-ui, sans-serif; letter-spacing: .02em; color: #e8d8ff; text-align: center; max-width: 58px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cd-rueda{ max-width: 340px; }
+.cd-joy.corre{ border-color: rgba(255,210,120,.7); box-shadow: 0 0 18px rgba(255,200,110,.35); }
+.cd-joy.corre i{ background: rgba(255,214,140,.55); }
 @media (orientation: landscape) and (max-height: 500px){
   .cd-dialogo{ bottom: calc(var(--barra) + var(--seg-b) + 16px); width: min(52vw, 430px); }
   .cd-botones{ transform: scale(.85); transform-origin: 100% 100%; }

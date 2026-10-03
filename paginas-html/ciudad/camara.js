@@ -132,7 +132,7 @@ export function actualizarCamara(dt, E) {
     fov = lerp(fov, J.ancho < J.alto ? 62 : 50, k);
   }
   // en la banca, los árboles pegados a la cámara se desvanecen (para ver la fachada completa)
-  if (J.cercaU) J.cercaU.value.set(px, py, pz, cam.mezcla > 0.01 ? 9 * cam.mezcla : 0);
+  if (J.cercaU) J.cercaU.value.set(px, py, pz, cam.mezcla > 0.01 ? Math.max(3.2, 9 * cam.mezcla) : 3.2);
   // temblor
   const s = J.temblor || 0;
   if (s > 0) { px += (Math.random() - 0.5) * s * 0.45; py += (Math.random() - 0.5) * s * 0.35; pz += (Math.random() - 0.5) * s * 0.45; J.temblor = Math.max(0, s - dt * 1.4); }

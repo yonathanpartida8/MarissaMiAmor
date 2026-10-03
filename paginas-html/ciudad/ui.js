@@ -23,6 +23,7 @@
  * los momentos importantes.
  */
 import { J, clamp, aPantalla } from "./base.js";
+import { icono, conIcono } from "./iconos.js";
 
 export const E = J.entrada = { mx: 0, mz: 0, mag: 0, correr: false, saltar: false, subir: false, bajar: false, golpe: false, golpeFuerte: false, accion: false, poder: false, poderSostenido: false, poderSuelto: false, dios: false, camDX: 0, camDY: 0, zoom: 0, hora: false, camara: false, pareja: false };
 
@@ -34,13 +35,13 @@ function el(tag, clase, padre = raiz, html = "") { const e = document.createElem
 export function armarUI() {
   raiz.innerHTML = `
   <div class="cd-arriba">
-    <button class="cd-chip" id="bMis" aria-label="Misterios">📜 <b id="nMis">0</b></button>
-    <span class="cd-chip" id="nVen" title="Ventanas con escena descubiertas">🪟 <b>0</b>/83</span>
+    <button class="cd-chip" id="bMis" aria-label="Misterios">${icono("misterios")} <b id="nMis">0</b></button>
+    <span class="cd-chip" id="nVen" title="Ventanas con escena descubiertas">${icono("ventana")} <b>0</b>/83</span>
     <span class="cd-caos" id="caos"></span>
     <span class="cd-der">
-      <button class="cd-chip boton" id="bHora" aria-label="Cambiar la hora del día">🌇</button>
-      <button class="cd-chip boton" id="bCam" aria-label="Cámara libre">🎥</button>
-      <button class="cd-chip boton" id="b2d" aria-label="Volver a la calle 2D">🖼️ 2D</button>
+      <button class="cd-chip boton" id="bHora" aria-label="Cambiar la hora del día">${icono("tarde")}</button>
+      <button class="cd-chip boton" id="bCam" aria-label="Cámara libre">${icono("dron")}</button>
+      <button class="cd-chip boton" id="b2d" aria-label="Volver a la calle 2D">${icono("libro")}<span>2D</span></button>
     </span>
   </div>
   <p class="cd-pista" id="pista"></p>
@@ -50,14 +51,14 @@ export function armarUI() {
   <p class="cd-dialogo is-fuera" id="dialogo" role="status" aria-live="polite"></p>
   <div class="cd-joy" id="joy"><i></i></div>
   <div class="cd-botones" id="botones">
-    <button class="cd-b cd-dios" id="bDios" aria-label="Modo Dios">✨</button>
-    <button class="cd-b cd-poder oculto" id="bPoder" aria-label="Usar poder">⚡</button>
-    <button class="cd-b cd-mini oculto" id="bPoderes" aria-label="Elegir poder">⋯</button>
+    <button class="cd-b cd-dios" id="bDios" aria-label="Modo Dios">${icono("dios")}</button>
+    <button class="cd-b cd-poder oculto" id="bPoder" aria-label="Usar poder">${icono("rayo")}</button>
+    <button class="cd-b cd-mini oculto" id="bPoderes" aria-label="Elegir poder">${icono("mas")}</button>
     <button class="cd-b cd-accion oculto" id="bAccion"><span></span></button>
-    <button class="cd-b cd-pareja oculto" id="bPareja" aria-label="Hacer algo con ella">💞</button>
-    <button class="cd-b cd-saltar" id="bSaltar" aria-label="Saltar">⤒</button>
-    <button class="cd-b cd-bajar oculto" id="bBajar" aria-label="Bajar">⤓</button>
-    <button class="cd-b cd-golpe" id="bGolpe" aria-label="Golpe">👊</button>
+    <button class="cd-b cd-pareja oculto" id="bPareja" aria-label="Hacer algo con ella">${icono("pareja")}</button>
+    <button class="cd-b cd-saltar" id="bSaltar" aria-label="Saltar">${icono("saltar")}</button>
+    <button class="cd-b cd-bajar oculto" id="bBajar" aria-label="Bajar">${icono("bajar")}</button>
+    <button class="cd-b cd-golpe" id="bGolpe" aria-label="Golpe (mantener: fuerte)">${icono("golpe")}<i class="cd-carga"></i></button>
   </div>
   <div class="cd-rueda oculto" id="rueda"></div>
   <div class="cd-menu oculto" id="menu"></div>
@@ -65,7 +66,11 @@ export function armarUI() {
   <div class="cd-fundido" id="fundido"></div>
   <div class="cd-capa oculto" id="capa"><div class="cd-tarjeta" id="tarjeta"></div></div>
   <div class="cd-titulo" id="titulo"><h1>La ciudad dormida</h1><p>una noche cualquiera… o eso parece</p></div>`;
-  for (const id of ["bDios", "bPoder", "bPoderes", "bAccion", "bPareja", "bSaltar", "bBajar", "bGolpe", "bMis", "bHora", "bCam", "b2d"]) for (const ev of ["pointerdown", "pointerup", "pointercancel", "pointermove"]) $("#" + id).addEventListener(ev, (e) => e.stopPropagation());
+  for (const id of ["bDios", "bPoder", "bPoderes", "bAccion", "bPareja", "bSaltar", "bBajar", "bGolpe", "bMis", "bHora", "bCam", "b2d"]) {
+    for (const ev of ["pointerdown", "pointerup", "pointercancel", "pointermove"]) $("#" + id).addEventListener(ev, (e) => e.stopPropagation());
+    // un toquecito en la mano al presionar (en los teléfonos que vibran)
+    $("#" + id).addEventListener("pointerdown", () => { try { navigator.vibrate && navigator.vibrate(7); } catch (er) { /* nada */ } });
+  }
   $("#bSaltar").addEventListener("pointerdown", () => { E.saltar = true; E.subir = true; });
   for (const ev of ["pointerup", "pointercancel", "pointerleave"]) $("#bSaltar").addEventListener(ev, () => { E.subir = false; });
   $("#bBajar").addEventListener("pointerdown", () => { E.bajar = true; });
@@ -95,12 +100,13 @@ export function irA2D() {
 }
 
 /* ── la rueda de poderes ── */
+const CORTO = { levantar: "Levantar", carga: "Explosión", lluvia: "Tormenta", meteoros: "Meteoritos", corazones: "Corazones", tiempo: "Tiempo", ovni: "Ovni" };
 let rueda = null;
 export function definirPoderes(lista, actual) {
   const r = $("#rueda"); r.innerHTML = "";
   for (const p of lista) {
-    const b = el("button", "cd-rp" + (p.id === actual ? " activo" : ""), r, p.ico);
-    b.title = p.nombre;
+    const b = el("button", "cd-rp" + (p.id === actual ? " activo" : ""), r, icono(p.id) + `<small>${CORTO[p.id] || p.nombre}</small>`);
+    b.title = p.nombre; b.setAttribute("aria-label", p.nombre);
     b.addEventListener("pointerdown", (e) => { e.stopPropagation(); J.elegirPoder(p.id); cerrarRueda(); });
   }
   rueda = r;
@@ -110,23 +116,26 @@ function cerrarRueda() { if (rueda) rueda.classList.add("oculto"); }
 /* ── el menú de cosas para hacer con ella ── */
 export function abrirMenu(opciones) {
   const m = $("#menu"); m.innerHTML = "";
-  for (const o of opciones) { const b = el("button", "", m, o.txt); b.addEventListener("pointerdown", (e) => { e.stopPropagation(); cerrarMenu(); o.f(); }); }
+  for (const o of opciones) { const b = el("button", "", m, conIcono(o.txt)); b.addEventListener("pointerdown", (e) => { e.stopPropagation(); cerrarMenu(); o.f(); }); }
   m.classList.remove("oculto"); cerrarRueda();
 }
 export function cerrarMenu() { $("#menu").classList.add("oculto"); }
 export const menuAbierto = () => !$("#menu").classList.contains("oculto");
 
-export function botonPoder(ico, visible) { const b = $("#bPoder"); b.textContent = ico; b.classList.toggle("oculto", !visible); $("#bPoderes").classList.toggle("oculto", !visible); if (!visible) cerrarRueda(); }
+let poderIco = "";
+export function botonPoder(id, visible) { const b = $("#bPoder"); if (id !== poderIco) { poderIco = id; b.innerHTML = icono(id) || icono("rayo"); } b.classList.toggle("oculto", !visible); $("#bPoderes").classList.toggle("oculto", !visible); if (!visible) cerrarRueda(); }
 export function botonDios(on) { $("#bDios").classList.toggle("on", on); $("#botones").classList.toggle("dios", on); }
 export function botonBajar(v) { $("#bBajar").classList.toggle("oculto", !v); }
-export function botonSaltar(ico) { const b = $("#bSaltar"); if (b.textContent !== ico) b.textContent = ico; }
+let saltarIco = "saltar";
+export function botonSaltar(id) { if (id === saltarIco) return; saltarIco = id; const b = $("#bSaltar"); b.innerHTML = icono(id); b.setAttribute("aria-label", id === "volar" ? "Volar" : "Saltar"); }
 export function botonPareja(v) { $("#bPareja").classList.toggle("oculto", !v); if (!v) cerrarMenu(); }
-export function botonHora(fase) { const b = $("#bHora"); const ico = fase === "dia" ? "☀️" : fase === "tarde" ? "🌇" : "🌙"; if (b.textContent !== ico) b.textContent = ico; }
+let horaIco = "";
+export function botonHora(fase) { const ico = fase === "dia" ? "sol" : fase === "tarde" ? "tarde" : "luna"; if (ico === horaIco) return; horaIco = ico; $("#bHora").innerHTML = icono(ico); }
 export function modoDron(v) { $("#bCam").classList.toggle("activo", v); $("#botones").classList.toggle("dron", v); }
 let accionTxt = "";
 export function botonAccion(txt) {
   if (txt === accionTxt) return; accionTxt = txt;
-  const b = $("#bAccion"); b.classList.toggle("oculto", !txt); if (txt) b.querySelector("span").textContent = txt;
+  const b = $("#bAccion"); b.classList.toggle("oculto", !txt); if (txt) b.innerHTML = conIcono(txt);
 }
 export function contador(id, n) { const e = $(id + " b"); if (e && e.textContent !== String(n)) e.textContent = n; }
 export function caos(txt) { const e = $("#caos"); if (e.textContent !== txt) e.textContent = txt; }
@@ -220,12 +229,16 @@ export function anilloLuna(x, y, k) { const a = $("#anilloLuna"); a.style.opacit
 
 /* ══════════════════ LOS DEDOS ══════════════════ */
 const lienzo = document.getElementById("lienzo");
+/* la cámara sigue girando un poquito al soltar (inercia) */
+const inercia = { x: 0, y: 0 };
+let ultimoToque = { t: 0, x: 0, y: 0 };
 const dedos = new Map();   // id → { x0, y0, x, y, t0, tipo }
 let joy = null, pinza = null;
 const joyEl = () => $("#joy");
 lienzo.addEventListener("pointerdown", (e) => {
   J.alTocarAlgo && J.alTocarAlgo();
   if (menuAbierto()) cerrarMenu();
+  inercia.x = inercia.y = 0;
   const d = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, t0: performance.now(), tipo: "?" };
   dedos.set(e.pointerId, d);
   try { lienzo.setPointerCapture(e.pointerId); } catch (er) { /* nada */ }
@@ -250,17 +263,34 @@ lienzo.addEventListener("pointermove", (e) => {
   if (d.tipo === "joy") {
     let jx = d.x - d.x0, jy = d.y - d.y0; const m = Math.hypot(jx, jy), R = 52;
     if (m > R) { d.x0 += (jx / m) * (m - R); d.y0 += (jy / m) * (m - R); jx = d.x - d.x0; jy = d.y - d.y0; joyEl().style.transform = `translate(${d.x0 - 60}px, ${d.y0 - 60}px)`; }
-    E.mx = jx / R; E.mz = jy / R; E.mag = Math.min(1, Math.hypot(jx, jy) / R);
+    // zona muerta chiquita y curva suave: caminar despacito es fácil; hasta el borde, corre
+    const m2 = Math.hypot(jx, jy) / R, k = m2 < 0.12 ? 0 : Math.pow((m2 - 0.12) / 0.88, 1.2) / (m2 || 1);
+    E.mx = jx / R * k; E.mz = jy / R * k; E.mag = Math.min(1, m2 < 0.12 ? 0 : (m2 - 0.12) / 0.88);
+    E.correr = m2 > 0.97; joyEl().classList.toggle("corre", E.correr);
     joyEl().querySelector("i").style.transform = `translate(${jx}px, ${jy}px)`;
     return;
   }
   if (d.tipo === "?" && Math.hypot(d.x - d.x0, d.y - d.y0) > 9) d.tipo = "cam";
-  if (d.tipo === "cam") { E.camDX += dx; E.camDY += dy; }
+  if (d.tipo === "cam") {
+    // la misma vuelta por la misma fracción de pantalla, sea chica o grande
+    const s = 390 / Math.max(320, Math.min(J.ancho, 900));
+    E.camDX += dx * s; E.camDY += dy * s;
+    const t = performance.now(), dtm = Math.max(8, t - (d.tm || t - 16)); d.tm = t;
+    d.vx = dx * s * 16 / dtm; d.vy = dy * s * 16 / dtm;
+  }
 });
+
 function soltar(e) {
   const d = dedos.get(e.pointerId); if (!d) return;
   dedos.delete(e.pointerId);
-  if (d.tipo === "joy") { joy = null; E.mx = E.mz = E.mag = 0; joyEl().classList.remove("ver"); joyEl().querySelector("i").style.transform = ""; }
+  if (d.tipo === "joy") { joy = null; E.mx = E.mz = E.mag = 0; E.correr = false; joyEl().classList.remove("ver", "corre"); joyEl().querySelector("i").style.transform = ""; }
+  if (d.tipo === "cam" && performance.now() - (d.tm || 0) < 60) { inercia.x = d.vx || 0; inercia.y = (d.vy || 0) * 0.6; }
+  // doble toque en un lugar vacío: la cámara se acomoda detrás de mí
+  if (d.tipo === "?") {
+    const t = performance.now();
+    if (t - ultimoToque.t < 320 && Math.hypot(d.x - ultimoToque.x, d.y - ultimoToque.y) < 40 && J.cam && J.jugador) { J.cam.yawObj = J.cam.yaw + ((J.jugador.coche || J.jugador).ry + Math.PI - J.cam.yaw + Math.PI * 3) % (Math.PI * 2) - Math.PI; J.cam.pitchObj = 0.28; inercia.x = inercia.y = 0; }
+    ultimoToque = { t, x: d.x, y: d.y };
+  }
   if (d.tipo === "luna") { J.lunaDedos = null; for (const o of dedos.values()) if (o.tipo === "luna") o.tipo = "x"; }
   if (d.tipo === "?" && performance.now() - d.t0 < 450 && J.alTocar) J.alTocar(d.x, d.y);
 }
@@ -307,5 +337,12 @@ function teclado() {
   E.bajar = teclas.has("c") || teclas.has("control");
 }
 /* Lo que se consume una vez por cuadro. */
-export function limpiarEntrada() { E.saltar = false; E.golpe = false; E.golpeFuerte = false; E.accion = false; E.poder = false; E.poderSuelto = false; E.dios = false; E.camDX = 0; E.camDY = 0; E.zoom = 0; E.hora = false; E.camara = false; E.pareja = false; }
+export function limpiarEntrada() {
+  E.saltar = false; E.golpe = false; E.golpeFuerte = false; E.accion = false; E.poder = false; E.poderSuelto = false; E.dios = false; E.zoom = 0; E.hora = false; E.camara = false; E.pareja = false;
+  // la inercia de la cámara entra como si el dedo siguiera, y se apaga sola
+  E.camDX = inercia.x; E.camDY = inercia.y; inercia.x *= 0.86; inercia.y *= 0.8;
+  if (Math.abs(inercia.x) < 0.05) inercia.x = 0; if (Math.abs(inercia.y) < 0.05) inercia.y = 0;
+  // el anillo del golpe cargándose
+  const c = cargaGolpe(), anillo = $("#bGolpe .cd-carga"); if (anillo) anillo.style.setProperty("--k", c.toFixed(2));
+}
 export const dedosEnLuna = () => [...dedos.values()].filter((d) => d.tipo === "luna");
