@@ -33,7 +33,8 @@ import { cam, mirarDesdeBanca } from "./camara.js";
 
 const V = new THREE.Vector3(), P = {};
 function nuevoCuerpo(quien, x, z) {
-  const j = crearProtagonista(quien);
+  // si soy Marissa, el cuerpo que manejo es el de ella (y el que me acompaña, el de él)
+  const j = crearProtagonista(J.soyM ? (quien === "yo" ? "ella" : "yo") : quien);
   J.escena.add(j.raiz);
   const c = { quien, j, x, y: 0.16, z, vx: 0, vy: 0, vz: 0, ry: 0, anim: nuevaAnim(), suelo: true, coyote: 0, vuela: false, vel: 0 };
   c.anim.semilla = rnd(10);
@@ -321,7 +322,12 @@ const LINEAS = {
   vuela: ["¡¿Amor?! ¡Bájate de ahí! 😳", "¿Desde cuándo vuelas? 😳", "¡Ten cuidado allá arriba! 🥺"],
   miedo: ["¡Ay! ¡¿Qué fue eso?! 😱", "¡Amor! ¡Ten cuidado! 😳", "¡Me asusté! 😭"],
   busca: ["¿Amor? ¿Dónde estás? 🥺", "¿Amorcito…? 🥺", "¿Hola? ¿Te perdiste? 😢"],
-  charla: ["Qué bonita está la noche, ¿verdad? 🌙", "¿Vamos a Angelos Burger? 🍔", "Me encanta caminar contigo 🤍", "Mira la luna, amor 🌙", "¿Ya viste a la parejita del K-drama? Como nosotros 🥹", "Te amo 🤍", "¿Te digo un secreto? …me encantas 🥰", "Así me imaginaba caminar contigo 🤍", "Falta poquito para vernos de verdad 🥹"],
+  charla: ["Qué bonita está la noche, ¿verdad? 🌙", "¿Vamos a Angelos Burger? 🍔", "Me encanta caminar contigo 🤍", "Mira la luna, amor 🌙", "¿Ya viste a la parejita del K-drama? Como nosotros 🥹", "Te amo 🤍", "¿Te digo un secreto? …me encantas 🥰", "Así me imaginaba caminar contigo 🤍", "Falta poquito para vernos de verdad 🥹",
+    "No te suelto la mano. Ni aunque me lo pidas.", "Ya te extrañé… y estás aquí a mi lado.", "Eres mío, ¿eh? Que se entere toda la ciudad.",
+    "Te amo tanto que hasta me da coraje.", "Si te pierdes, te busco en todas las calles. En todas.", "¿Ya te dije que te amo? Te lo digo otra vez: te amo.",
+    "Te veo y se me olvida hasta a dónde íbamos.", "Prométeme que mañana también me tomas de la mano.", "Contigo hasta perderse es bonito.",
+    "No mires a nadie más. Sólo a mí, ¿sí?", "Eres mi lugar favorito de toda la ciudad.", "Si pudiera, te guardaba en mi bolsillo para llevarte a todos lados.",
+    "Me encanta cómo me miras cuando crees que no me doy cuenta.", "Quiero que esta calle no se acabe nunca.", "¿Te puedo abrazar otra vez? Ya pasó un minuto."],
   dia: ["Qué bonito día para caminar contigo ☀️", "¿Vamos por un helado? 🍦", "Hasta los edificios se ven felices hoy ☀️"],
   tarde: ["Mira el cielo, amor… está rosita 🌇", "Me encantan los atardeceres contigo 🌇"],
   auto: ["¡Vámonos! 🚗", "Yo pongo la música 🎶", "Maneja con cuidadito, ¿eh? 🥺", "¿A dónde me llevas? 🥰"],
@@ -532,7 +538,7 @@ export function actualizarElla(dt) {
   // platica de vez en cuando (sólo si vamos juntos y cerquita)
   if (ella.estado === "sigue" && !J.dios.on && d < 3) {
     ella.charla -= dt;
-    if (ella.charla < 0) { ella.charla = rnd(70, 120); const f = J.ciclo && J.ciclo.fase; decirElla(lineaElla(f === "dia" && Math.random() < 0.5 ? "dia" : f === "tarde" && Math.random() < 0.5 ? "tarde" : "charla")); }
+    if (ella.charla < 0) { ella.charla = rnd(38, 70); const f = J.ciclo && J.ciclo.fase; decirElla(lineaElla(f === "dia" && Math.random() < 0.5 ? "dia" : f === "tarde" && Math.random() < 0.5 ? "tarde" : "charla")); }
   }
   if (ella.estado === "en_auto" && ella.coche && Math.abs(ella.coche.vel) > 6 && Math.random() < dt * 0.012) decirElla(elegir(["¡Más despacito! 😳", "Me encanta pasear contigo así 🥰", "Pon la ventana, ¿sí? 🌙"]));
 }

@@ -120,7 +120,8 @@ export class Post {
   }
   ponerNivel(nivel) {
     this.nivel = nivel;
-    this.muestras = nivel === "alta" ? 4 : nivel === "media" ? 2 : 0;
+    // en iPhone/iPad el MSAA junto con la textura de profundidad se resuelve mal (líneas raras): sin MSAA
+    this.muestras = J.ios ? 0 : nivel === "alta" ? 4 : nivel === "media" ? 2 : 0;
     this.bloom = nivel === "baja" ? 0 : nivel === "media" ? 3 : 4;
     if (this.ancho) this.medir(this.ancho, this.alto, this.dpr);
   }

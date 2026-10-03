@@ -690,29 +690,41 @@ function iniciarPortal() {
   return true;
 }
 const GUIONES = [[
-  [0.0, "rick", () => J.dios.on ? "*burp* Morty, esta no es la C-137… mira, hay un tipo brillando como foco." : "*burp* Morty, esta no es la C-137. Ni siquiera hay un Rick por aquí."],
-  [4.2, "morty", () => "R-Rick, ¿y si es una trampa de Rick Prime? Esa pareja se ve sospechosamente… feliz."],
-  [8.4, "rick", () => "Nah, Morty. Es una de esas dimensiones donde el amor *burp* sí funciona. Qué asco. Vámonos."],
-  [12.6, "morty", () => "¡Perdón por interrumpir! Se ven muy lindos juntos 🥹"],
-  [16.2, "rick", () => "Oye, tú. Cuídala. En casi todas las dimensiones la riegas."],
+  [0.0, "rick", () => J.dios.on ? "*eructo* Morty, mira, un tipo brillando como foco de Navidad. Esta dimensión se volvió estúpida." : "*eructo* Morty, esta no es la C-137. Ni siquiera hay un Rick por aquí. Qué alivio."],
+  [4.2, "morty", () => "A-aw, geez, Rick, ¿y si es una trampa de Rick Prime? Esa pareja se ve sospechosamente… feliz."],
+  [8.4, "rick", () => "Nah, Morty. Es de esas dimensiones donde el amor *eructo* sí funciona. Asqueroso. Estadísticamente asqueroso."],
+  [12.6, "morty", () => "¡Ay, perdón por interrumpir! Se ven bien bonitos juntos, ¿eh?"],
+  [16.2, "rick", () => (J.soyM ? "Oye, tú. Cuídalo." : "Oye, tú. Cuídala.") + " En casi todas las dimensiones la riegas, y luego me toca verlo. *eructo*"],
 ], [
-  [0.0, "rick", () => "*burp* Morty, esta dimensión huele a… cursilería. Agarramos la semilla y nos vamos."],
-  [4.2, "morty", () => "Rick, mira, esos dos se están viendo como en las películas."],
-  [8.4, "rick", () => "Es una ciudad dormida, Morty. Aquí todos andan de la mano. *burp* Me da urticaria."],
-  [12.6, "morty", () => "¡Perdón! Ya nos vamos, sigan con su cita 🥹"],
-  [16.2, "rick", () => "Y tú, galán: no la hagas esperar. La distancia es sólo un número… *burp* y yo tengo pistola de portales."],
+  [0.0, "rick", () => "*eructo* Morty, esta dimensión huele a… cursilería barata. Agarramos la semilla megasemilla y nos largamos."],
+  [4.2, "morty", () => "R-Rick, mira, esos dos se están viendo como en las películas. ¡Como en las películas, Rick!"],
+  [8.4, "rick", () => "El amor es una reacción química para que la gente se reproduzca, Morty. Pero ésta… *eructo* ésta es de las caras."],
+  [12.6, "morty", () => "¡Perdón, perdón! Ya nos vamos, sigan con su cita."],
+  [16.2, "rick", () => (J.soyM ? "Y tú, guapa: no lo hagas esperar." : "Y tú, galán: no la hagas esperar.") + " La distancia es sólo un número… *eructo* y yo tengo pistola de portales."],
 ], [
-  [0.0, "rick", () => "Morty, ¿por qué todos los portales nos traen a esta misma calle?"],
-  [4.2, "morty", () => "¿Será que el universo quiere que veamos algo bonito, Rick?"],
-  [8.4, "rick", () => "El universo no quiere nada, Morty. *burp* …Bueno, ok, se ven bien juntos. No se lo digas a nadie."],
-  [12.6, "morty", () => "¡Hola otra vez! ¡Saludos de la C-137! 👋"],
-  [16.2, "rick", () => "Oye, galán: en casi todas las dimensiones la riegas. En ésta no. No lo arruines."],
+  [0.0, "rick", () => "Morty, ¿por qué todos mis portales nos escupen en esta misma calle? ¿Quién la programó? ¿Yo?"],
+  [4.2, "morty", () => "¿Y si el universo quiere que veamos algo bonito, Rick?"],
+  [8.4, "rick", () => "El universo no quiere nada, Morty. Es un vacío frío y sin sentido. *eructo* …Bueno, ok, se ven bien juntos. No se lo digas a nadie."],
+  [12.6, "morty", () => "¡Hola otra vez! ¡Saludos desde la C-137!"],
+  [16.2, "rick", () => "Wubba lubba dub dub, tortolitos. Traducción: estoy sufriendo. Ustedes no. Qué envidia."],
 ], [
-  [0.0, "morty", () => "¡Rick! ¡Son ellos otra vez! Los de la ciudad bonita."],
-  [4.2, "rick", () => "Ya sé, Morty. *burp* Es la quinta vez. Creo que mi pistola de portales está enamorada."],
-  [8.4, "morty", () => "¿Las pistolas de portales se pueden enamorar?"],
-  [12.6, "rick", () => "En esta dimensión parece que todo se puede, Morty. Hasta amarse de lejos."],
-  [16.2, "morty", () => "¡Cuídense mucho! 💚"],
+  [0.0, "morty", () => "¡Rick! ¡Son ellos otra vez! ¡Los de la ciudad bonita!"],
+  [4.2, "rick", () => "Ya sé, Morty. *eructo* Es la quinta vez. Creo que mi pistola de portales está enamorada."],
+  [8.4, "morty", () => "¿L-las pistolas de portales se pueden enamorar, Rick?"],
+  [12.6, "rick", () => "En esta dimensión parece que todo se puede, Morty. Hasta amarse de lejos. Ridículo. Hermoso. Ridículo."],
+  [16.2, "morty", () => "¡Cuídense mucho, eh! ¡Y no se suelten!"],
+], [
+  [0.0, "rick", () => "Morty, escanéalos. ¿Ves? Los dos tienen el ritmo cardiaco sincronizado. *eructo*"],
+  [4.2, "morty", () => "¿Eso es… amor de verdad, Rick?"],
+  [8.4, "rick", () => "Es una anomalía, Morty. Una anomalía muy cursi. Anótala en la libreta de cosas que no voy a admitir."],
+  [12.6, "morty", () => "A-aw, Rick, sí te importa…"],
+  [16.2, "rick", () => "¡Me importa la ciencia, Morty! *eructo* …y que ese par no se separe. Por la ciencia."],
+], [
+  [0.0, "morty", () => "Rick, ¿crees que algún día alguien me quiera así?"],
+  [4.2, "rick", () => "En alguna dimensión sí, Morty. En ésta… sigue intentándolo."],
+  [8.4, "morty", () => "Aw, geez…"],
+  [12.6, "rick", () => "Oigan, ustedes dos, ¿no han visto un cristal de materia oscura del tamaño de un aguacate? …¿No? Pues sigan con su besuqueo."],
+  [16.2, "morty", () => "¡Rick! ¡No les digas así! Perdón, es que no sale mucho."],
 ]];
 function actualizarPortal(dt) {
   const P = portal; if (!P) return;

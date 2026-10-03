@@ -1019,18 +1019,19 @@ html.pagina-completa #grain { opacity: 0 !important; }
   visibility: hidden;
 }
 /* La página de dentro deja libre lo justo para la barrita (no más). */
-html.pagina-completa .page.pagweb.is-completa { --bar-space: 14px; }
+html.pagina-completa .page.pagweb.is-completa { --bar-space: 0px; }
 
 /* ---- La barrita delgada -------------------------------------- */
 .navfina {
+  /* a la derecha, a media altura: una asita que respira para que se note que se toca */
   position: absolute;
-  left: 50%;
-  bottom: calc(var(--safe-b) + 2px);
-  transform: translateX(-50%);
+  right: calc(env(safe-area-inset-right, 0px) + 0px);
+  top: 42%;
+  transform: translateY(-50%);
   display: none;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   z-index: 3;
 }
 #ui.is-completa .navfina { display: flex; }
@@ -1038,8 +1039,8 @@ html.pagina-completa .page.pagweb.is-completa { --bar-space: 14px; }
 .navfina__asa {
   display: grid;
   place-items: center;
-  width: 148px;
-  height: 22px;
+  width: 26px;
+  height: 92px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -1048,30 +1049,38 @@ html.pagina-completa .page.pagweb.is-completa { --bar-space: 14px; }
 }
 .navfina__asa i {
   display: block;
-  width: 54px;
-  height: 4px;
+  width: 5px;
+  height: 52px;
   border-radius: 999px;
-  background: rgba(255, 246, 236, 0.5);
-  box-shadow: 0 0 0 1px rgba(20, 12, 30, 0.25), 0 1px 6px rgba(0, 0, 0, 0.35);
-  transition: width 260ms var(--e-out), background 260ms var(--e-out), transform 200ms var(--e-spring);
+  background: rgba(255, 246, 236, 0.62);
+  box-shadow: 0 0 0 1px rgba(20, 12, 30, 0.25), 0 0 10px rgba(255, 190, 220, 0.55);
+  animation: asa-late 2.4s ease-in-out infinite;
+  transition: height 260ms var(--e-out), background 260ms var(--e-out);
 }
-.navfina__asa:hover i,
-.navfina.is-abierta .navfina__asa i { width: 74px; background: rgba(255, 246, 236, 0.85); }
-.navfina__asa:active i { transform: scaleY(1.6); }
+@keyframes asa-late {
+  0%, 100% { transform: translateX(0); box-shadow: 0 0 0 1px rgba(20,12,30,.25), 0 0 6px rgba(255,190,220,.35); }
+  45% { transform: translateX(-5px); box-shadow: 0 0 0 1px rgba(20,12,30,.25), 0 0 16px rgba(255,190,220,.95); }
+  60% { transform: translateX(-2px); }
+}
+.navfina.is-abierta .navfina__asa i { height: 70px; background: rgba(255, 246, 236, 0.9); animation: none; }
+.navfina__asa:active i { transform: scaleX(1.6); }
 
 .navfina__panel {
+  order: -1;
   display: flex;
+  flex-direction: column;
   gap: 8px;
   padding: 6px;
-  border-radius: 999px;
+  border-radius: 22px;
   background: linear-gradient(180deg, rgba(var(--chrome-alto-rgb), 0.9), rgba(var(--chrome-rgb), 0.94));
   border: 1px solid rgba(var(--cromo-luz-rgb), 0.12);
   box-shadow: var(--sh-lift), inset 0 1px 0 rgba(var(--cromo-luz-rgb), 0.08);
   opacity: 0;
-  transform: translateY(10px) scale(0.96);
+  transform: translateX(12px) scale(0.96);
   pointer-events: none;
   transition: opacity 240ms var(--e-out), transform 320ms var(--e-spring);
 }
+@media (prefers-reduced-motion: reduce) { .navfina__asa i { animation: none; } }
 .navfina.is-abierta .navfina__panel {
   opacity: 1;
   transform: none;

@@ -42,10 +42,11 @@ function elegirCalidad() {
   const nucleos = navigator.hardwareConcurrency || 4, mem = navigator.deviceMemory || 4;
   const movil = /iPhone|iPad|Android|Mobile/i.test(navigator.userAgent) || matchMedia("(pointer: coarse)").matches;
   if (nucleos <= 4 || mem <= 3) return "baja";
-  if (movil) return "media";
+  if (movil) return "media";   // (iPhone 12 y parecidos: media, sin MSAA; si no aguanta, baja sola)
   return "alta";
 }
 J.calidad = { ...NIVELES[elegirCalidad()] };
+if (J.ios) J.calidad.dpr = Math.min(J.calidad.dpr, 1.3);   // las pantallas de iPhone tienen 3× pixeles: 1.3 se ve nítido y vuela
 
 /* ══════════════════ LA ESCENA ══════════════════ */
 const lienzo = document.getElementById("lienzo");
@@ -86,7 +87,7 @@ function vigilarFps(dt) {
 }
 function cambiarA(n) {
   const nv = NIVELES[n];
-  Object.assign(J.calidad, { nivel: n, dpr: nv.dpr, particulas: nv.particulas, gente: nv.gente, distIA: nv.distIA, lejos: nv.lejos });
+  Object.assign(J.calidad, { nivel: n, dpr: J.ios ? Math.min(nv.dpr, 1.3) : nv.dpr, particulas: nv.particulas, gente: nv.gente, distIA: nv.distIA, lejos: nv.lejos });
   if (post) post.ponerNivel(n);
   medir();
 }

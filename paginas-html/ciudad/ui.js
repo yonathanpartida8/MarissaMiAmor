@@ -22,7 +22,7 @@
  * sobre su cabeza (y sólo si están cerca); la caja de abajo se queda para
  * los momentos importantes.
  */
-import { J, clamp, aPantalla } from "./base.js";
+import { J, clamp, aPantalla, adaptar } from "./base.js";
 import { icono, conIcono } from "./iconos.js";
 
 export const E = J.entrada = { mx: 0, mz: 0, mag: 0, correr: false, saltar: false, subir: false, bajar: false, golpe: false, golpeFuerte: false, accion: false, poder: false, poderSostenido: false, poderSuelto: false, dios: false, camDX: 0, camDY: 0, zoom: 0, hora: false, camara: false, pareja: false };
@@ -84,10 +84,16 @@ export function armarUI() {
   $("#bPoder").addEventListener("pointerdown", () => { E.poder = true; E.poderSostenido = true; });
   for (const ev of ["pointerup", "pointercancel"]) $("#bPoder").addEventListener(ev, () => { E.poderSostenido = false; E.poderSuelto = true; });
   $("#bPoderes").addEventListener("pointerdown", () => abrirRueda());
-  $("#bMis").addEventListener("click", () => J.abrirMisterios && J.abrirMisterios());
-  $("#bHora").addEventListener("click", () => { E.hora = true; });
-  $("#bCam").addEventListener("click", () => { E.camara = true; });
-  $("#b2d").addEventListener("click", () => irA2D());
+  // toque firme (pointerup sobre el mismo botón): en iPhone el «click» a veces no llega
+  const toque = (id, fn) => { const b = $("#" + id); let x0 = null, y0 = 0, ya = 0;
+    b.addEventListener("pointerdown", (e) => { e.stopPropagation(); x0 = e.clientX; y0 = e.clientY; });
+    b.addEventListener("pointerup", (e) => { e.stopPropagation(); if (x0 != null && Math.hypot(e.clientX - x0, e.clientY - y0) < 24) { ya = performance.now(); fn(); } x0 = null; });
+    b.addEventListener("pointercancel", () => { x0 = null; });
+    b.addEventListener("click", () => { if (performance.now() - ya > 600) fn(); }); };
+  toque("bMis", () => J.abrirMisterios && J.abrirMisterios());
+  toque("bHora", () => { E.hora = true; });
+  toque("bCam", () => { E.camara = true; });
+  toque("b2d", () => irA2D());
   const capa = $("#capa");
   for (const ev of ["pointerdown", "pointermove", "pointerup"]) capa.addEventListener(ev, (e) => e.stopPropagation());
   capa.addEventListener("click", (e) => { if (e.target === capa || e.target.closest("[data-cerrar]")) cerrarTarjeta(); });
@@ -151,6 +157,7 @@ export function fundido(v) { $("#fundido").classList.toggle("ver", v); }
    vista); la caja de abajo es para lo importante. */
 let relojD = null, colaD = [], hablandoHasta = 0;
 export function decir(txt, quien = "yo", dur, importante = false) {
+  if (quien === "yo" || quien === "ella" || quien === "dios") txt = adaptar(txt, quien);
   if ((quien === "yo" || quien === "ella") && J.jugador) {
     const p = quien === "ella" ? J.novia : J.jugador;
     if (p && cerca(p)) { globito(p, txt, quien, dur ? dur / 1000 : Math.max(2.6, txt.length * 0.055), 2.25); return; }
@@ -190,6 +197,7 @@ function mostrar(txt, quien, d) {
 const globos = [];   // { el, quien (objeto con x,y,z), alto, t, dur }
 export function globito(quien, txt, estilo = "gente", dur = 2.4, alto = 2.2) {
   if (!quien) return;
+  if (estilo === "yo" || estilo === "ella" || estilo === "dios") txt = adaptar(txt, estilo);
   if (estilo === "gente") {
     if (globos.filter((g) => g.estilo === "gente").length >= 3) return;
     const c = J.camara.position; if (Math.hypot(quien.x - c.x, quien.z - c.z) > 30) return;

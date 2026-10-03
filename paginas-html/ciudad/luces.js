@@ -24,15 +24,18 @@ export function iniciarLuces(esc) {
   sol.shadow.mapSize.set(q.sombraTam, q.sombraTam);
   const R = q.nivel === "alta" ? 38 : 32;
   Object.assign(sol.shadow.camera, { left: -R, right: R, top: R, bottom: -R, near: 1, far: 220 });
-  sol.shadow.bias = -0.0006; sol.shadow.normalBias = 0.045; sol.shadow.radius = 2;
+  sol.shadow.bias = -0.0012; sol.shadow.normalBias = 0.08;   // sin «acné»: con toon se ve como rayas de luz sol.shadow.radius = 2;
   esc.add(sol, sol.target); L.sol = sol; L.R = R;
-  const nF = q.nivel === "alta" ? 7 : q.nivel === "media" ? 5 : 3, nS = q.nivel === "alta" ? 2 : q.nivel === "media" ? 1 : 0;
+  // en iPhone (GPU de teléfono, pantalla con muchos pixeles): menos focos y sin sombras de farola
+  const nF = J.ios ? (q.nivel === "baja" ? 3 : 4) : q.nivel === "alta" ? 7 : q.nivel === "media" ? 5 : 3, nS = J.ios ? 0 : q.nivel === "alta" ? 2 : q.nivel === "media" ? 1 : 0;
   for (let i = 0; i < nF; i++) {
     const s = new THREE.SpotLight("#ffcf92", 0, 19, 1.08, 0.7, 1.25);
-    if (i < nS && q.sombras) { s.castShadow = true; s.shadow.mapSize.set(512, 512); s.shadow.camera.near = 0.6; s.shadow.camera.far = 12; s.shadow.bias = -0.0008; s.shadow.normalBias = 0.03; }
+    if (i < nS && q.sombras) { s.castShadow = true; s.shadow.mapSize.set(512, 512); s.shadow.camera.near = 0.6; s.shadow.camera.far = 12; s.shadow.bias = -0.002; s.shadow.normalBias = 0.07; }
     esc.add(s, s.target); L.farolas.push({ s, f: null, obj: 0 });
   }
-  const nC = q.nivel === "baja" ? 1 : 3;
+  // los coches ya no llevan foco de verdad: su charco de luz es un velo en el piso (vehiculos.js),
+  // que no parpadea ni deja rayas y le ahorra mucho al iPhone
+  const nC = 0;
   for (let i = 0; i < nC; i++) { const s = new THREE.SpotLight("#fff2d8", 0, 30, 0.55, 0.8, 1.4); esc.add(s, s.target); L.faros.push({ s, c: null }); }
   J.luces = L;
 }

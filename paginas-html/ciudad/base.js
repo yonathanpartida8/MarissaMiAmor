@@ -12,6 +12,9 @@ export const J = {
   t: 0,                 // segundos de juego
   dt: 0,
   calidad: null,        // ver main.js
+  // ¿quién soy? (lo elige la calle 2D): si soy Marissa, manejo a la chica y él va de mi mano
+  soyM: (() => { try { return localStorage.getItem("ciudad_soy") === "marissa"; } catch (e) { return false; } })(),
+  ios: /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
   escena: null, camara: null, render: null,
   jugador: null, novia: null,
   gente: [], animales: [], coches: [],
@@ -156,3 +159,22 @@ const CLAVE = "ciudad_dormida_3d_v1";
 export const memo = (() => { try { const m = JSON.parse(localStorage.getItem(CLAVE) || "null"); if (m && m.misterios) return m; } catch (e) { /* sin memoria */ } return { misterios: {}, poderes: {}, cuenta: {}, ventanas: {} }; })();
 export function guardar() { try { localStorage.setItem(CLAVE, JSON.stringify(memo)); } catch (e) { /* sin memoria */ } }
 export function contar(k, n = 1) { memo.cuenta[k] = (memo.cuenta[k] || 0) + n; guardar(); return memo.cuenta[k]; }
+
+/* Si juego como Marissa: lo que digo yo le habla a él, y lo que dice mi pareja me habla a mí. */
+const FEM_MASC = { niña: "niño", bonita: "bonito", hermosa: "hermoso", preciosa: "precioso", bella: "bello", guapa: "guapo", linda: "lindo", novia: "novio", princesa: "príncipe", mía: "mío", chiquita: "chiquito", reina: "rey" };
+const MASC_FEM = { tontito: "tontita", niño: "niña", bonito: "bonita", hermoso: "hermosa", precioso: "preciosa", guapo: "guapa", lindo: "linda", novio: "novia", mío: "mía", tonto: "tonta", chiquito: "chiquita", galán: "guapa" };
+export function adaptar(t, quien) {
+  if (!J.soyM || !t || typeof t !== "string") return t;
+  const mapa = quien === "ella" ? MASC_FEM : FEM_MASC;
+  return t.replace(/[A-Za-zÁÉÍÓÚáéíóúñÑ]+/g, (w) => { const m = mapa[w.toLowerCase()]; if (!m) return w; return w[0] === w[0].toUpperCase() ? m[0].toUpperCase() + m.slice(1) : m; });
+}
+
+/* Los puntitos de luz (halos de farola, foquitos, luciérnagas): pegados a la cámara se
+   volverían manchas enormes y borrosas. Se desvanecen de cerca y nunca pasan de un tamaño. */
+export function sinManchaCerca(mat, cerca = 3, lejos = 9, maxPx = 70) {
+  mat.onBeforeCompile = (sh) => {
+    sh.vertexShader = "varying float vFade;\n" + sh.vertexShader.replace("#include <fog_vertex>", `vFade = smoothstep(${cerca.toFixed(1)}, ${lejos.toFixed(1)}, -mvPosition.z); gl_PointSize = min(gl_PointSize, ${maxPx.toFixed(1)});\n#include <fog_vertex>`);
+    sh.fragmentShader = "varying float vFade;\n" + sh.fragmentShader.replace("#include <tonemapping_fragment>", "gl_FragColor *= vFade;\n#include <tonemapping_fragment>");
+  };
+  return mat;
+}

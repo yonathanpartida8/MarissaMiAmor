@@ -41,10 +41,39 @@ function opciones() {
     { txt: "📸 Selfie", f: () => empezar("selfie") },
     { txt: "💃 Bailar", f: () => empezar("baile") },
     { txt: "🌙 Ver el cielo", f: () => empezar("cielo") },
+    // la magia romántica (sin Modo Dios: sólo para perdernos por la ciudad)
+    { txt: "🌸 Pétalos", f: () => magia("petalos") },
+    { txt: "🏮 Farolitos", f: () => magia("farolitos") },
+    { txt: "🎆 Fuegos de corazón", f: () => magia("fuegos") },
+    { txt: "✨ Luciérnagas", f: () => magia("luciernagas") },
   ];
   const b = bancas.filter((q) => !q.ocupada && Math.hypot(q.x - yo.x, q.z - yo.z) < 9).sort((p, q) => Math.hypot(p.x - yo.x, p.z - yo.z) - Math.hypot(q.x - yo.x, q.z - yo.z))[0];
   if (b) l.push({ txt: "🪑 Sentarnos", f: () => sentarseEn(b) });
   return l;
+}
+
+/* ── la magia romántica: dura un ratito y se actualiza en `mover` ── */
+let magiaAct = null;
+function magia(tipo) {
+  const yo = J.jugador;
+  magiaAct = { tipo, t: 0, dur: tipo === "fuegos" ? 6 : tipo === "farolitos" ? 4 : 12, cada: 0 };
+  son("magia");
+  const L = { petalos: ["Llueven pétalos… como en las películas 🥹", "Todo esto para mí? Te amo 🌸"], farolitos: ["Pide un deseo conmigo… el mío ya lo sabes: tú 🏮"], fuegos: ["¡Fuegos de corazón! Eres un exagerado… y te amo 🎆"], luciernagas: ["Luciérnagas… parece que la ciudad se llenó de estrellitas ✨"] };
+  setTimeout(() => decirElla(elegir(L[tipo])), 700);
+  J.novia.abrazaT = 2; yo.abrazaT = 2; fx.corazones(J.novia.x, J.novia.y + 1.6, J.novia.z, 6, 1.4);
+}
+function moverMagia(dt) {
+  const m = magiaAct; if (!m) return;
+  const yo = J.jugador; m.t += dt; m.cada -= dt;
+  if (m.tipo === "petalos") for (let k = 0; k < 4; k++) { if (Math.random() < dt * 18) fx.petalos(yo.x, yo.z, 9); }
+  else if (m.tipo === "farolitos") { if (m.cada <= 0) { m.cada = 0.28; fx.farolito((yo.x + J.novia.x) / 2, yo.y + 1.2, (yo.z + J.novia.z) / 2); } }
+  else if (m.tipo === "luciernagas") { if (Math.random() < dt * 22) fx.luciernaga(yo.x, yo.y, yo.z); }
+  else if (m.tipo === "fuegos" && m.cada <= 0) {
+    m.cada = rnd(0.6, 1); const ry = (J.camara && J.camara.rotation) ? Math.atan2(J.camara.position.x - yo.x, J.camara.position.z - yo.z) : 0;
+    const d = rnd(14, 22), lado = rnd(-8, 8), fx0 = yo.x - Math.sin(ry) * d + Math.cos(ry) * lado, fz0 = yo.z - Math.cos(ry) * d - Math.sin(ry) * lado;
+    fx.fuegoCorazon(fx0, rnd(14, 20), fz0, ry, elegir(["#ff7ab0", "#ffc070", "#c79aff", "#ff8a8a"])); son("boom", fx0, fz0, 0.25);
+  }
+  if (m.t > m.dur) magiaAct = null;
 }
 
 /* ── empezar una actividad ── */
@@ -72,6 +101,7 @@ function terminar() {
 }
 /* Ella durante la actividad (o yendo al baño): a dónde va. */
 function mover(ella, dt) {
+  moverMagia(dt);
   if (ella.estado === "bano") return moverBano(ella, dt);
   if (!act) { ella.estado = "sigue"; return null; }
   const d = Math.hypot(act.px - ella.x, act.pz - ella.z);

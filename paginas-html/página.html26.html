@@ -134,6 +134,20 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #070a18; }
   color: #ffe3b0; font: 700 0.8rem system-ui, sans-serif; letter-spacing: 0.06em; cursor: pointer; box-shadow: 0 6px 18px -8px #000, 0 0 16px -6px rgba(255, 200, 120, 0.6);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); transition: transform 0.25s var(--suave), opacity 0.4s; }
 .cd-modo3d:active { transform: scale(0.94); }
+.cd-soyb { position: absolute; top: calc(var(--seg-t) + 12px); left: 10px; z-index: 6; padding: 4px 9px; border-radius: 999px; border: 1px solid rgba(255, 190, 220, 0.4);
+  background: rgba(24, 16, 48, 0.7); color: #ffd3ea; font: 600 0.66rem system-ui, sans-serif; letter-spacing: 0.04em; cursor: pointer; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.cd-soyb:active { transform: scale(0.94); }
+.cd-soy { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(10, 8, 26, 0.72); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); transition: opacity 0.4s; }
+.cd-soy[hidden] { display: none; }
+.cd-soy__caja { text-align: center; padding: 22px 20px 20px; border-radius: 22px; background: linear-gradient(180deg, #2a1d4e, #1a1236); border: 1px solid rgba(255, 210, 230, 0.25); box-shadow: 0 20px 50px -20px #000; width: min(86vw, 340px); }
+.cd-soy__caja h2 { margin: 0 0 4px; font: 400 1.7rem/1.1 "Caveat", "Segoe Script", cursive; color: #ffe3b0; }
+.cd-soy__caja p { margin: 0 0 16px; color: #d8c8f0; font: 0.86rem/1.4 system-ui, sans-serif; }
+.cd-soy__ops { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cd-soy__ops button { padding: 14px 8px 12px; border-radius: 16px; border: 1px solid rgba(255, 220, 240, 0.3); background: rgba(255, 255, 255, 0.06); color: #fff4fa; font: 600 1rem system-ui, sans-serif; cursor: pointer; }
+.cd-soy__ops button span { display: block; font-size: 0.72rem; font-weight: 400; opacity: 0.75; margin-top: 3px; }
+.cd-soy__ops button.m { background: linear-gradient(180deg, rgba(255, 122, 168, 0.35), rgba(255, 122, 168, 0.12)); }
+.cd-soy__ops button.y { background: linear-gradient(180deg, rgba(138, 122, 255, 0.35), rgba(138, 122, 255, 0.12)); }
+.cd-soy__ops button:active { transform: scale(0.96); }
 .cd-modo3d b { font-size: 0.95rem; }
 .cd-marco3d { position: fixed; inset: 0; z-index: 50; background: #0c0a1c; opacity: 0; transition: opacity 0.45s ease; }
 .cd-marco3d.ver { opacity: 1; }
@@ -155,7 +169,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #070a18; }
   <div class="cd-aviso" id="aviso"></div>
   <div class="cd-envivo" id="envivo">🔴 EN VIVO · ¡Un héroe misterioso ilumina la ciudad dormida!</div>
   <div class="cd-capa oculto" id="capa"><div class="cd-tarjeta" id="tarjeta"></div></div>
-  <button type="button" class="cd-modo3d" id="modo3d" aria-label="Cambiar a modo 3D"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20.5 7.5v9L12 21.2 3.5 16.5v-9z"/><path d="M3.5 7.5 12 12.2l8.5-4.7M12 12.2v9"/></svg> 3D</button>
+  <button type="button" class="cd-soyb" id="soyBtn" aria-label="Elegir quién soy">Soy Yonathan</button>
+<div class="cd-soy" id="soyElige" hidden><div class="cd-soy__caja"><h2>¿Quién eres?</h2><p>Elige con quién recorres la ciudad (el otro va de tu mano).</p>
+  <div class="cd-soy__ops"><button type="button" class="m" data-soy="marissa">Marissa<span>la chica</span></button><button type="button" class="y" data-soy="yonathan">Yonathan<span>el chico</span></button></div></div></div>
+<button type="button" class="cd-modo3d" id="modo3d" aria-label="Cambiar a modo 3D"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8 20.5 7.5v9L12 21.2 3.5 16.5v-9z"/><path d="M3.5 7.5 12 12.2l8.5-4.7M12 12.2v9"/></svg> 3D</button>
 </div>
 
 <script>
@@ -1524,7 +1541,16 @@ function pitido() { if (!ac) return; const t = ac.currentTime; nota(440, t, 0.25
    `dios` en dorado). `globito` es el que sale encima de alguien.
    ══════════════════════════════════════════════════════════════════════ */
 let relojDialogo = null;
+/* Si juego como Marissa, lo que digo yo le habla a él y lo que dice mi pareja me habla a mí. */
+const FEM_MASC = { niña: "niño", bonita: "bonito", hermosa: "hermoso", preciosa: "precioso", bella: "bello", guapa: "guapo", linda: "lindo", novia: "novio", princesa: "príncipe", mía: "mío", chiquita: "chiquito", reina: "rey" };
+const MASC_FEM = { tontito: "tontita", niño: "niña", bonito: "bonita", hermoso: "hermosa", precioso: "preciosa", guapo: "guapa", lindo: "linda", novio: "novia", mío: "mía", tonto: "tonta", chiquito: "chiquita" };
+function adaptar(t, quien) {
+  if (!soyM || !t || !quien) return t;
+  const mapa = quien === "pareja" ? MASC_FEM : FEM_MASC;
+  return t.replace(/[A-Za-zÁÉÍÓÚáéíóúñÑ]+/g, (w) => { const m = mapa[w.toLowerCase()]; if (!m) return w; return w[0] === w[0].toUpperCase() ? m[0].toUpperCase() + m.slice(1) : m; });
+}
 function decir(t, quien) {
+  t = adaptar(t, quien === "ella" ? "pareja" : "jugador");
   clearTimeout(relojDialogo);
   elDialogo.classList.add("is-fuera");
   relojDialogo = setTimeout(() => {
@@ -1537,6 +1563,7 @@ function decir(t, quien) {
 const globos = [];   // { x, y (mundo), texto, t, dur, estilo, sigue }
 function globito(x, y, texto, dur = 2.4, estilo = "", sigue = null) {
   if (estilo === "gente" && globos.filter((b) => b.estilo === "gente").length >= 3) return;
+  if (estilo === "ella" || estilo === "yo") texto = adaptar(texto, estilo === "ella" ? "pareja" : "jugador");
   globos.push({ x, y, texto, t: 0, dur, estilo, sigue });
 }
 const ESTILOS = { "": ["#fffaf2", "#2a1428"], gente: ["#fffaf2", "#2a1428"], ella: ["#ffd3ea", "#8a1452"], yo: ["#fff1c4", "#5a3a08"], poli: ["#d6e4ff", "#12306a"], perro: ["#e8fff0", "#1a5a34"] };
@@ -1564,6 +1591,11 @@ const PODERES = [
   { id: "corazones", ico: "💗", nombre: "Lluvia de corazones", oculto: true, como: "Mira de cerca a la pareja del K-drama 3 veces" },
   { id: "tiempo", ico: "⏳", nombre: "Detener el tiempo", oculto: true, como: "Toca la luna 5 veces siendo un dios" },
   { id: "ovni", ico: "🛸", nombre: "Llamar al ovni", oculto: true, como: "Atrapa al ovni cuando pase" },
+  // los románticos: no hace falta ser dios para usarlos
+  { id: "petalos", ico: "🌸", nombre: "Lluvia de pétalos", romantico: true },
+  { id: "linternas", ico: "🏮", nombre: "Farolitos al cielo", romantico: true },
+  { id: "constelacion", ico: "⭐", nombre: "Nuestra constelación", romantico: true },
+  { id: "fuegosA", ico: "🎆", nombre: "Fuegos de corazón", romantico: true },
 ];
 const MISTERIOS = [
   { id: "kdrama", nombre: "La pareja del K-drama", pista: "Una ventana muy acurrucadita… tócala" },
@@ -1583,10 +1615,14 @@ const MISTERIOS = [
   { id: "hidrante", nombre: "La fuente improvisada", pista: "Arranca un hidrante" },
   { id: "surf", nombre: "El surfista", pista: "Alguien sabe surfear tsunamis" },
   { id: "lunaFuego", nombre: "La luna en pedacitos", pista: "Una explosión cargada… apuntando muy alto" },
+  { id: "heliCae", nombre: "Mayday", pista: "Lo que vuela también puede caer" },
+  { id: "rickmorty", nombre: "Visitantes de otra dimensión", pista: "A veces se abre un portal verde en la calle" },
+  { id: "detalles", nombre: "Los detallitos de la calle", pista: "Toca las cositas lindas de la banqueta" },
 ];
 const CLAVE_MEMO = "ciudad_dormida_v2";
 const memo = (() => { try { const m = JSON.parse(localStorage.getItem(CLAVE_MEMO) || "null"); if (m && m.poderes) return m; } catch {} return { poderes: {}, misterios: {}, cuenta: {} }; })();
 function guardarMemo() { try { localStorage.setItem(CLAVE_MEMO, JSON.stringify(memo)); } catch {} }
+for (const p of PODERES) memo.poderes[p.id] = true;   // todo desbloqueado desde el principio
 function contar(clave, n = 1) { memo.cuenta[clave] = (memo.cuenta[clave] || 0) + n; guardarMemo(); return memo.cuenta[clave]; }
 function misterio(id) {
   if (memo.misterios[id]) return false;
@@ -1689,6 +1725,7 @@ function poblar() {
   }
   gente.push(nuevaPersona(camInicial + A * 0.78, { audifonos: true, caracter: "nada", vel: 22, dir: -1, look: { piel: "#c89a7a", pelo: "#1a1a1a", peinado: 0, torso: "#3a8a6a", piernas: "#26304a" } }));
   for (let i = 0; i < Math.max(2, Math.round(MW / 700)); i++) animales.push({ tipo: "gato", x: azar(40, MW - 40), y: azar(ACERA0, ACERA1), dir: 1, t: Math.random() * 9, escudo: 0, col: elegir(["#1a1a22", "#d8883a", "#e8e0d0", "#8a8a90"]), s: 1, estado: "camina" });
+  generarDetalles();
   for (let i = 0; i < Math.max(2, Math.round(MW / 600)); i++) {
     const x = azar(80, MW - 80), n = 5 + Math.floor(Math.random() * 3);
     parvadas.push({ x, t: 0, estado: "come", te: 0, aves: Array.from({ length: n }, (_, k) => ({ dx: azar(-24, 24), y: azar(ACERA0 + 2, ACERA1), f: Math.random() * 9, vx: 0, vy: 0, px: 0, py: 0 })) });
@@ -2018,7 +2055,7 @@ function dibujaYo() {
     g.restore();
   }
   const pose = yo.poseT > 0 ? yo.pose : f > 0.3 ? "flota" : yo.anda > 0.2 ? "camina" : "quieto";
-  figura(yo.x, y, 39, LOOK_YO, pose, yo.t * 7, yo.dir, { anime: true, capa: f > 0.3 ? "#ff5f9e" : null, ojos: f > 0.3 ? "#fff6c0" : null, ang: pose === "lanza" ? yo.brazo : undefined, mano: deMano() ? puntoMano() : null });
+  figura(yo.x, y, soyM ? 35 : 39, soyM ? LOOK_ELLA : LOOK_YO, pose, yo.t * 7, yo.dir, { anime: true, capa: f > 0.3 ? "#ff5f9e" : null, ojos: f > 0.3 ? "#fff6c0" : null, ang: pose === "lanza" ? yo.brazo : undefined, mano: deMano() ? puntoMano() : null });
   if (f > 0.3) { g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = f; const [mx, my] = manoYo(); estampa(SELLO.oro, mx, my, 7 + Math.sin(reloj * 9) * 2); g.restore(); }
   if (yo.escudoFlash > 0) burbujaEscudo(yo.x, y - 20, 28, yo.escudoFlash);
 }
@@ -2033,7 +2070,7 @@ function deMano() { return !ella.fuera && !ella.bano && yo.flota < 0.15 && !carg
 function puntoMano() { return [(yo.x + ella.x) / 2, Math.max(yo.y, ella.y) - 15 + Math.sin(yo.t * 7) * 0.6]; }
 function dibujaElla() {
   const pose = ella.abraza > 0 ? "abraza" : ella.anda > 0.2 ? "camina" : ella.mira > 0 ? "mira" : "quieto";
-  figura(ella.x, ella.y, 35, LOOK_ELLA, pose, ella.t * 7, ella.dir, { alto: 1, anime: true, mano: deMano() ? puntoMano() : null });
+  figura(ella.x, ella.y, soyM ? 39 : 35, soyM ? LOOK_YO : LOOK_ELLA, pose, ella.t * 7, ella.dir, { alto: 1, anime: true, mano: deMano() ? puntoMano() : null });
   if (ella.escudo > 0) burbujaEscudo(ella.x, ella.y - 17, 24, ella.escudo);
 }
 /* ══════════════════════════════════════════════════════════════════════
@@ -2045,6 +2082,11 @@ let velo = 0, veloObj = 0;                 // el fundido suave del Modo Dios
 let zoomCam = 1, camYoff = 0;              // la cámara respira: un poquito de zoom y de vaivén (profundidad)
 const SEP_MANO = 16;                       // la distancia entre los dos cuando van de la mano
 let relojCruce = 9;                        // de vez en cuando alguien cruza por la cebra
+let meta = null, libre = false;            // caminar libre: a dónde voy (tocar el piso o dejar el dedo) y si la cámara me sigue
+const teclas = {};
+let soyM = (() => { try { return localStorage.getItem("ciudad_soy") === "marissa"; } catch { return false; } })();
+const romance = { petalosT: 0, petalos: [], linternas: [], cielo: null, chispas: [], cohetes: [] };
+let rickMorty = null, relojMimo = 18, relojRM = 40;
 let poder = null, tokenDios = 0;
 let caos = 0, temblor = 0, flash = 0, congelado = 0, amorLluvia = 0, dichoAnimal = -99;
 const lluvia = { on: false, nivel: 0 }, gotas = [];
@@ -2067,7 +2109,7 @@ const barra = document.getElementById("poderes");
 /* Los iconos dibujados (los mismos del 3D); mientras llegan, el emoji de siempre. */
 let ICONO = null;
 import("./ciudad/iconos.js").then((m) => { ICONO = m.icono; pintarBarra(); }).catch(() => {});
-const ICO_DE = { vehiculos: "coche", misterios: "misterios" };
+const ICO_DE = { vehiculos: "coche", misterios: "misterios", petalos: "flor", linternas: "linterna", constelacion: "estrella", fuegosA: "fuegos" };
 const pintarIco = (b, id, emoji) => { const svg = ICONO && ICONO(ICO_DE[id] || id); if (svg) b.innerHTML = svg; else b.textContent = emoji; };
 let barraAbierta = memo.barra !== false;
 function pintarBarra(nuevo) {
@@ -2083,7 +2125,7 @@ function pintarBarra(nuevo) {
     if (p.oculto && !memo.poderes[p.id]) { b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9.2 9a2.9 2.9 0 1 1 4.1 2.6c-.8.4-1.3 1-1.3 1.9v.5"/><circle cx="12" cy="17.6" r=".6" fill="currentColor"/></svg>'; b.className = "oculto-p"; b.setAttribute("aria-label", "Poder secreto"); barra.appendChild(b); continue; }
     pintarIco(b, p.id, p.ico); b.title = p.nombre; b.setAttribute("aria-label", p.nombre);
     if (p.id === "dios") { b.classList.add("dios"); if (dios.on) b.classList.add("on"); }
-    else if (!dios.on) b.classList.add("bloq");
+    else if (!dios.on && !p.romantico) b.classList.add("bloq");
     if (poder === p.id) b.classList.add("activo");
     if (nuevo === p.id) b.classList.add("nuevo");
     barra.appendChild(b);
@@ -2094,6 +2136,21 @@ function pintarBarra(nuevo) {
 }
 for (const ev of ["pointerdown", "pointermove", "pointerup"]) barra.addEventListener(ev, (e) => e.stopPropagation());
 barra.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) tocarPoder(b.dataset.p, b); });
+/* ¿Quién soy? Marissa o Yonathan (se recuerda; el 3D también lo lee). */
+const soyBtn = document.getElementById("soyBtn"), soyElige = document.getElementById("soyElige");
+const pintarSoy = () => { soyBtn.textContent = soyM ? "♡ Marissa" : "♡ Yonathan"; };
+pintarSoy();
+for (const ev of ["pointerdown", "pointermove", "pointerup"]) { soyBtn.addEventListener(ev, (e) => e.stopPropagation()); soyElige.addEventListener(ev, (e) => e.stopPropagation()); }
+soyBtn.addEventListener("click", () => { soyElige.hidden = false; });
+soyElige.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-soy]"); if (!b) { if (e.target === soyElige) soyElige.hidden = true; return; }
+  soyM = b.dataset.soy === "marissa";
+  try { localStorage.setItem("ciudad_soy", b.dataset.soy); } catch {}
+  soyElige.hidden = true; pintarSoy(); despertar();
+  decir(soyM ? "Hola, mi amor. Agárrame de la mano y vamos a perdernos por la ciudad 🤍" : "Ven, mi niña bella. Hoy la ciudad es sólo para nosotros 🤍");
+  corazonesDe((yo.x + ella.x) / 2, yo.y - 40, 6); if (ac) SFX.corazon();
+});
+try { if (!localStorage.getItem("ciudad_soy")) soyElige.hidden = false; } catch {}
 function sacude(b) { b.classList.remove("no"); void b.offsetWidth; b.classList.add("no"); }
 function tocarPoder(id, b) {
   despertar();
@@ -2102,6 +2159,7 @@ function tocarPoder(id, b) {
   if (id === "misterios") return abrirMisterios();
   const p = PODERES.find((x) => x.id === id);
   if (p.oculto && !memo.poderes[id]) { aviso(`❓ Poder secreto · ${p.como}`); return sacude(b); }
+  if (p.romantico) return usarRomance(id);
   if (!dios.on) { decir("Primero prende el Modo Dios ✨ (el botón que brilla)"); return sacude(b); }
   if (id === "lluvia") { lluvia.on = !lluvia.on; decir(lluvia.on ? "Que llueva… 🌧️" : "Ya, que vuelva a salir la luna 🌙", "dios"); if (lluvia.on) alarma(camX + A / 2, calle, 0.3, "lluvia"); }
   else if (id === "terremoto") terremoto();
@@ -2328,10 +2386,14 @@ function manejar(c, dt) {
     const d = (p.x - c.x) * c.dir - c.w / 2 - 6;
     if (d > -c.w * 0.3 && d < dmin) { dmin = Math.max(0, d); peaton = p; }
   }
+  if (!dios.on && yo.y > c.suelo - 26 && yo.y < c.suelo + 10) { const d = (yo.x - c.x) * c.dir - c.w / 2 - 8; if (d > -c.w * 0.3 && d < dmin) { dmin = Math.max(0, d); peaton = yo; } }
   if (dmin < 10) meta = 0; else if (dmin < 60) meta = Math.min(meta, c.velBase * (dmin - 10) / 50);
-  if (peaton && c.vel < 6) {
+  if (peaton === yo && c.vel < 6) {
     c.espera = (c.espera || 0) + dt;
-    if (c.espera > 0.3 && !c.pito) { c.pito = true; if (enVista(c.x)) { SFX.claxon(); globito(0, 0, elegir(["¡Piii!", "¡Piii, piii!", "¡Con cuidado!"]), 1.6, "gente", () => [c.x, c.y - c.h - 10]); if (Math.random() < 0.6) setTimeout(() => { if (!peaton.fuera) globito(0, 0, elegir(["¡Ya voy, ya voy!", "¡Perdón! 🙏", "¡Paciencia, joven!"]), 1.8, "gente", () => [peaton.x, peaton.y - peaton.s - 8]); }, 500); } }
+    if (c.espera > 0.5 && !c.pito) { c.pito = true; SFX.claxon(); globito(0, 0, elegir(["¡Piii! ¡Quítense, tortolitos! 😂", "¡Piii! ¡Ay, el amor!", "¡Búsquense un cuarto! 🙄"]), 2, "gente", () => [c.x, c.y - c.h - 10]); setTimeout(() => { if (!ella.fuera) globito(0, 0, "¡Perdón! Es que no le suelto la mano 🙈", 2.4, "ella", () => [ella.x, ella.y - 46]); }, 900); }
+  } else if (peaton && c.vel < 6) {
+    c.espera = (c.espera || 0) + dt;
+    if (c.espera > 0.3 && !c.pito) { c.pito = true; if (enVista(c.x)) { SFX.claxon(); globito(0, 0, elegir(["¡Piii!", "¡Piii, piii!", "¡Con cuidado!"]), 1.6, "gente", () => [c.x, c.y - c.h - 10]); if (Math.random() < 0.6) setTimeout(() => { if (!peaton.fuera) globito(0, 0, elegir(["¡Ya voy, ya voy!", "¡Perdón! 🙏", "¡Paciencia, joven!"]), 1.8, "gente", () => [peaton.x, peaton.y - (peaton.s || 40) - 8]); }, 500); } }
   } else if (!peaton) { c.espera = 0; c.pito = false; }
   c.vel += (meta - c.vel) * Math.min(1, dt * (meta < c.vel ? 5 : 1.5));
   c.x += c.dir * c.vel * dt; c.y = c.suelo; c.ang = 0; c.vx = c.dir * c.vel; c.vy = 0;
@@ -2509,6 +2571,7 @@ function explotar(x, y, k, menos = null) {
   for (let i = 0; i < nE; i++) part({ k: "resto", x, y, vx: azar(-220, 220) * (0.5 + k), vy: -azar(150, 380) * (0.5 + k * 0.6), vida: 2.5, g: 900, tam: azar(2, 4.5), col: elegir(["#2a2226", "#3a3036", "#6a5a50"]), suelo: Math.max(y, ACERA0) + azar(0, 40) });
   marcas.push({ tipo: "quemado", x, y: clamp(y + 6, ACERA0 + 4, CARRIL[1] + 8), r: 12 + k * 20, a: 1 });
   const R = 60 + k * 120;
+  golpearHelis(x, y, R * 0.7);
   for (const c of cuerpos) {
     if (c === menos || ["fuera", "desaparece", "abducido", "agarrado", "tornado", "flota"].includes(c.estado)) continue;
     const dx = c.x - x, dy = (c.y - c.h / 2) - y, d = Math.hypot(dx, dy);
@@ -2548,6 +2611,7 @@ function lanzarRayo(tx, ty) {
   chispas(tx, ty, 22, 360, "#e6f0ff");
   for (let i = 0; i < 4; i++) part({ k: "fuego", x: tx, y: ty, vx: azar(-40, 40), vy: azar(-60, -10), vida: 0.4, tam: 8, crece: 1, g: 0 });
   explosiones.push({ x: tx, y: ty, k: 0.25, t: 0, rayo: true });
+  golpearHelis(tx, ty, 40);
   if (ty > calle - 10) marcas.push({ tipo: "quemado", x: tx, y: clamp(ty, ACERA0 + 4, CARRIL[1] + 8), r: 10, a: 1 });
   const c = cuerpoEn(tx, ty);
   if (c) {
@@ -2733,15 +2797,45 @@ const EVENTOS = {
     if (!cand.length) return;
     fantasma = { e: elegir(cand), t: 0, dur: 9 };
   },
+  rickmorty() { rickMorty = { x: camX + A * azar(0.62, 0.8), t: 0, fase: "abre", i: 0, prox: 1.4, guion: elegir(GUIONES_RM) }; if (ac) barrido("sine", 180, 900, 0.9, 0.05); },
   mariachis() { mariachis = { x: camX - 60, meta: camX + A * azar(0.5, 0.7), t: 0, fase: "llega", toca: 0 }; decir("¿Escuchas? Vienen unos mariachis por la calle 🎺"); },
 };
+/* Rick y Morty, como son ellos (r: Rick, m: Morty). */
+/* Cosas dulces (y un poquito obsesivas) que me dice mi pareja mientras caminamos. */
+const MIMOS = [
+  "No te suelto la mano. Ni aunque me lo pidas.", "Ya te extrañé… y estás aquí a mi lado.", "Eres mío, ¿eh? Que se entere toda la ciudad.",
+  "Te amo tanto que hasta me da coraje.", "Si te pierdes, te busco en todas las calles. En todas.", "¿Ya te dije que te amo? Bueno, te lo digo otra vez: te amo.",
+  "Te veo y se me olvida hasta a dónde íbamos.", "Prométeme que mañana también me tomas de la mano.", "Contigo hasta perderse es bonito.",
+  "Cuento los días para verte… y hoy por fin no hay nada que contar.", "No mires a nadie más. Sólo a mí, ¿sí?", "Eres mi lugar favorito de toda la ciudad.",
+  "Si pudiera, te guardaba en mi bolsillo para llevarte a todos lados.", "Me encanta cómo me miras cuando crees que no me doy cuenta.",
+  "Quiero que esta calle no se acabe nunca.", "Te amo de aquí a la luna… y de regreso, y otra vez de ida.", "Nadie me hace sentir como tú. Nadie.",
+  "Ya sé que estamos lejos casi siempre, pero hoy te tengo aquí y no te suelto.", "¿Te puedo abrazar otra vez? Ya pasó un minuto.",
+];
+const RESPUESTAS = ["Y yo a ti, mi niña bella.", "Eres lo más bonito que me ha pasado.", "Ni la luna brilla tanto como tú.", "Te amo más que ayer y menos que mañana.", "Me encantas, de verdad.", "Aquí estoy, y aquí me quedo.", "Contigo hasta el fin del mundo… o de la calle 😌"];
+const GUIONES_RM = [
+  [["r", "Morty, *eructo* esta dimensión es tan cursi que me están saliendo caries."], ["m", "¡Ay, Rick! Mira, van de la manita… qué bonitos."], ["r", "El amor es pura química, Morty. Química barata… que por desgracia funciona."], ["m", "¿Entonces sí funciona?"], ["r", "¡Vámonos antes de que se nos pegue!"]],
+  [["r", "En nueve mil dimensiones estos dos siguen juntos, Morty. Es estadísticamente asqueroso."], ["m", "Aw, Rick… eso es lo más romántico que has dicho en tu vida."], ["r", "No lo es. *eructo* Bueno… tantito."]],
+  [["m", "Rick, ¿por qué siempre volvemos a esta calle?"], ["r", "Porque aquí el wifi interdimensional jala bien, Morty. No es por la parejita."], ["m", "Rick… te vi sonreír."], ["r", "¡Fue un gas, Morty! ¡Un gas!"]],
+  [["r", "Oigan, tortolitos, ¿no han visto un cristal de materia oscura del tamaño de un aguacate?"], ["m", "Rick, déjalos, están en su cita."], ["r", "*eructo* En la dimensión C-137 ni se conocían. Aquí no se sueltan. Qué asco… qué bonito… qué asco."]],
+  [["m", "Rick, ¿crees que algún día alguien me quiera así?"], ["r", "En alguna dimensión sí, Morty. En esta… sigue intentándolo."], ["m", "Aw, geez…"]],
+  [["r", "Morty, escanéalos. ¿Ves eso? Los dos tienen el ritmo cardiaco sincronizado."], ["m", "¿Eso es… amor de verdad, Rick?"], ["r", "Es una anomalía, Morty. Una anomalía muy cursi. Anótala y vámonos."]],
+];
 function lanzarEvento() {
   const nombres = Object.keys(EVENTOS).filter((n) => n !== ultimoEvento &&
     !((n === "fierro" || n === "tamales") && vendedor) && !(n === "ovni" && ovni) &&
-    !(n === "gato" && gatoTecho) && !(n === "linterna" && linterna) && !(n === "fantasma" && fantasma) && !(n === "mariachis" && mariachis));
+    !(n === "gato" && gatoTecho) && !(n === "linterna" && linterna) && !(n === "fantasma" && fantasma) && !(n === "mariachis" && mariachis) && !(n === "rickmorty" && rickMorty));
   const n = elegir(nombres);
   ultimoEvento = n;
   EVENTOS[n]();
+}
+/* Derribar un helicóptero: con una explosión cerca o un rayo. */
+function golpearHelis(x, y, r) {
+  for (const h of helis) {
+    if (h.fase === "cae" || Math.hypot(h.x - x, h.y - y) > r + 22) continue;
+    h.fase = "cae"; h.vy = -40; h.rot = 0; h.va = azar(2.5, 4) * (Math.random() < 0.5 ? -1 : 1);
+    explosiones.push({ x: h.x, y: h.y, k: 0.4, t: 0 }); SFX.boom(0.6); temblor = Math.max(temblor, 0.4);
+    globito(0, 0, h.tipo === "noticias" ? "¡Mayday! ¡Perdimos la señal! 📺" : "¡Mayday, mayday! 🚨", 2.2, "poli", () => [h.x, h.y - 30]);
+  }
 }
 function techoEn(x) {
   for (const e of edificios) if (x >= e.x && x <= e.x + e.w) return e.y;
@@ -2798,7 +2892,7 @@ mundo.addEventListener("pointerdown", (e) => {
   despertar();
   if (dedo) return;
   const [sx, sy, wx, wy] = aMundo(e);
-  dedo = { id: e.pointerId, x0: e.clientX, cam0: camX, lx: e.clientX, lt: performance.now(), mueve: false, modo: "camara", sx, sy };
+  dedo = { id: e.pointerId, x0: e.clientX, cam0: camX, lx: e.clientX, lt: performance.now(), t0: performance.now(), mueve: false, modo: "camara", sx, sy };
   velCam = 0;
   if (dios.on && poder === "carga") { dedo.modo = "carga"; empezarCarga(wx, wy); }
   else if (dios.on && (poder === "levantar" || poder === "vehiculos")) {
@@ -2811,10 +2905,11 @@ mundo.addEventListener("pointermove", (e) => {
   if (!dedo || dedo.id !== e.pointerId) return;
   const [sx, sy, wx, wy] = aMundo(e);
   dedo.sx = sx; dedo.sy = sy;
+  if (dedo.modo === "anda") return;
   if (dedo.modo === "carga") { carga.x = wx; carga.y = wy; return; }
   if (dedo.modo === "agarre" && agarre) { agarre.tx = wx + agarre.dx; agarre.ty = wy + agarre.dy; agarre.hist.push([performance.now(), wx, wy]); if (agarre.hist.length > 12) agarre.hist.shift(); return; }
   const dx = e.clientX - dedo.x0;
-  if (!dedo.mueve && Math.abs(dx) > 9) { dedo.mueve = true; elPista.classList.add("is-fuera"); }
+  if (!dedo.mueve && Math.abs(dx) > 9) { dedo.mueve = true; libre = false; meta = null; elPista.classList.add("is-fuera"); }
   if (dedo.mueve) {
     camX = clamp(dedo.cam0 - dx, 0, Math.max(0, MW - A));
     const ahora = performance.now(), dt = Math.max(1, ahora - dedo.lt);
@@ -2827,11 +2922,14 @@ function soltarDedo(e) {
   const d = dedo; dedo = null;
   if (d.modo === "carga") return soltarCarga();
   if (d.modo === "agarre") return soltarAgarre();
+  if (d.modo === "anda") return;
   if (d.mueve) return;
   const [sx, sy] = aMundo(e);
   tocar(sx, sy);
 }
 mundo.addEventListener("pointerup", soltarDedo);
+addEventListener("keydown", (e) => { teclas[e.key.toLowerCase()] = true; });
+addEventListener("keyup", (e) => { teclas[e.key.toLowerCase()] = false; });
 mundo.addEventListener("pointercancel", (e) => { if (dedo && dedo.modo === "carga") soltarCarga(); if (dedo && dedo.modo === "agarre") soltarAgarre(); dedo = null; });
 
 function tocar(sx, sy) {
@@ -2879,7 +2977,12 @@ function tocar(sx, sy) {
       luna.guino = 1.2; misterio("luna");
       decir(elegir(["La luna te manda un beso 🌙", "Te guiñó el ojo. Ni a mí me hace eso 😤", "Hasta la luna sabe que eres bonita 🤍"])); if (ac) campanitas();
       if (dios.on && contar("lunaDios") >= 5) desbloquear("tiempo");
+      return;
     }
+    for (const d of detalles) if (Math.abs(wx - d.x) < 22 && wy > d.y - 46 && wy < d.y + 12) return tocarDetalle(d);
+    if (rickMorty && Math.abs(wx - rickMorty.x) < 40 && wy > calle - 70 && wy < calle + 30) { globito(0, 0, elegir(["¡No toques, Morty… digo, humano!", "*eructo* ¿Qué quieres?", "Estamos ocupados, tortolitos."]), 2.2, "gente", () => [rickMorty.x + 14, calle - 64]); return; }
+    // tocar el piso: caminamos hasta ahí (libres, por la banqueta o cruzando la calle)
+    if (wy > ACERA0 - 16 && wy < CARRIL[1] + 22) { meta = { x: wx, y: wy }; libre = true; part({ k: "brillo", x: wx, y: wy, vx: 0, vy: 0, vida: 0.4, tam: 6, g: 0 }); }
     return;
   }
   if (v.escena && v.escena.id === "kdrama" && v.encendida) { v.vez++; abrirKdrama(); return; }
@@ -2946,13 +3049,25 @@ function actualizar(dt, dtM) {
   yo.escudoFlash = Math.max(0, yo.escudoFlash - dt * 1.5);
   ella.escudo = Math.max(0, ella.escudo - dt); ella.abraza = Math.max(0, (ella.abraza || 0) - dt); ella.mira = Math.max(0, ella.mira - dt);
   yo.flota += ((dios.on && dios.listo ? 1 : 0) - yo.flota) * Math.min(1, dt * 2.2);
+  // caminar libre: con el dedo puesto en el piso (o el teclado) voy a donde quiero, en x y en profundidad
+  if (dedo && dedo.modo === "camara" && !dedo.mueve && performance.now() - dedo.t0 > 230 && dedo.sy > ACERA0 - 16 && dedo.sy < CARRIL[1] + 22 && !(dios.on && poder)) dedo.modo = "anda";
+  if (dedo && dedo.modo === "anda") { meta = { x: camX + dedo.sx, y: dedo.sy }; libre = true; }
+  const kx = (teclas.arrowright || teclas.d ? 1 : 0) - (teclas.arrowleft || teclas.a ? 1 : 0), ky = (teclas.arrowdown || teclas.s ? 1 : 0) - (teclas.arrowup || teclas.w ? 1 : 0);
+  if (kx || ky) { libre = true; meta = { x: yo.x + kx * 60, y: yo.y + ky * 40 }; }
+  const PISO0 = ACERA0 - 1, PISO1 = CARRIL[1] + 12;
   // ella va a mi izquierda, a la distancia justa para tomarnos de la mano (en cualquier pantalla)
-  const mYo = camX + A * 0.36;
-  let mElla = mYo - SEP_MANO;
+  const mYo = libre && meta ? clamp(meta.x, 20, MW - 20) : camX + A * 0.36;
+  let mElla = (libre ? yo.x : mYo) - SEP_MANO;
   if (ella.bano) { mElla = ella.x - 400; if (ella.x < camX - 50) ella.fuera = true; }
-  const pYo = clamp(mYo - yo.x, -180 * dt, 180 * dt), pElla = ella.fuera ? 0 : clamp(mElla - ella.x, -(ella.bano ? 75 : 190) * dt, 190 * dt);
+  const vMax = libre ? 92 : 180;
+  const pYo = clamp(mYo - yo.x, -vMax * dt, vMax * dt), pElla = ella.fuera ? 0 : clamp(mElla - ella.x, -(ella.bano ? 75 : 190) * dt, 190 * dt);
+  let pYy = 0;
+  if (libre && meta && yo.flota < 0.5) { pYy = clamp(clamp(meta.y, PISO0, PISO1) - yo.y, -50 * dt, 50 * dt); yo.y += pYy; }
+  if (!ella.bano && !ella.fuera) ella.y += clamp(yo.y - 0.5 - ella.y, -60 * dt, 60 * dt);
   yo.x += pYo; ella.x += pElla;
-  yo.anda = Math.abs(pYo) / Math.max(dt, 1e-3) / 60; ella.anda = Math.abs(pElla) / Math.max(dt, 1e-3) / 60;
+  if (libre && meta && !(dedo && dedo.modo === "anda") && !(kx || ky) && Math.abs(meta.x - yo.x) < 2 && Math.abs(clamp(meta.y, PISO0, PISO1) - yo.y) < 1.5) meta = null;
+  if (libre && (!dedo || dedo.modo === "anda")) camX += (clamp(yo.x - A * 0.42, 0, Math.max(0, MW - A)) - camX) * Math.min(1, dt * 2.6);
+  yo.anda = Math.hypot(pYo, pYy) / Math.max(dt, 1e-3) / 60; ella.anda = Math.abs(pElla) / Math.max(dt, 1e-3) / 60;
   if (yo.poseT <= 0) yo.dir = Math.abs(pYo) > 0.2 ? Math.sign(pYo) : (deMano() || ella.fuera ? yo.dir : ella.x < yo.x ? -1 : 1);
   ella.dir = Math.abs(pElla) > 0.2 ? Math.sign(pElla) : (deMano() ? yo.dir : yo.x > ella.x ? 1 : -1);
   if (agarre) { const [hx, hy] = manoYo(); yo.dir = agarre.c.x >= yo.x ? 1 : -1; yo.brazo = Math.atan2(agarre.c.y - agarre.c.h / 2 - hy, Math.abs(agarre.c.x - hx)); }
@@ -3155,6 +3270,20 @@ function actualizar(dt, dtM) {
   }
   for (let i = helis.length - 1; i >= 0; i--) {
     const h = helis[i]; h.t += dt;
+    if (h.fase === "cae") {
+      h.vy += 330 * dt; h.y += h.vy * dt; h.x += h.dir * 70 * dt; h.rot += h.va * dt; h.va *= 1 + dt * 0.6;
+      if (Math.random() < dt * 30) part({ k: "humo", x: h.x, y: h.y, vx: azar(-20, 20), vy: azar(-40, -10), vida: azar(1, 1.8), tam: 10, crece: 2.4, g: -10, a: 0.7 });
+      if (Math.random() < dt * 20) part({ k: "fuego", x: h.x + azar(-8, 8), y: h.y, vx: azar(-20, 20), vy: -20, vida: 0.4, tam: 9, crece: 1, g: 0 });
+      const piso = techoEn(h.x); const choca = h.y >= ACERA1 - 6 || (piso != null && h.y >= piso - 4 && h.y < piso + 30);
+      if (choca) {
+        helis.splice(i, 1); explotar(h.x, Math.min(h.y, ACERA1 - 6), 1.5); caos += 20;
+        for (let n = 0; n < 10; n++) part({ k: "resto", x: h.x, y: h.y, vx: azar(-260, 260), vy: -azar(120, 380), vida: 2.4, g: 900, tam: azar(2, 5), col: h.tipo === "noticias" ? "#e8e8f2" : "#1e2a4a", suelo: ACERA1 + azar(0, 30) });
+        if (h.tipo === "noticias") document.getElementById("envivo").classList.remove("ver");
+        decir(elegir(["¡Lo tumbé! …Espero que hayan saltado en paracaídas 😳", "Ese helicóptero no vuelve a grabarnos 😤", "Ups. Creo que me pasé tantito."]), "dios");
+        misterio("heliCae");
+      }
+      continue;
+    }
     const tx = h.fase === "sale" ? (h.dir > 0 ? camX + A + 400 : camX - 400) : yo.x + (h.tipo === "noticias" ? -A * 0.28 : A * 0.22);
     h.x += clamp(tx - h.x, -150 * dt, 150 * dt); if (Math.abs(tx - h.x) > 4) h.dir = Math.sign(tx - h.x);
     if (h.fase === "sale" && !enVista(h.x, 200)) { helis.splice(i, 1); if (h.tipo === "noticias") document.getElementById("envivo").classList.remove("ver"); }
@@ -3170,6 +3299,24 @@ function actualizar(dt, dtM) {
   // ── lo que se mueve solo ──
   for (const al of alcantarillas) { al.ojos = Math.max(0, al.ojos - dt); al.humo -= dt; if (al.humo <= 0) { al.humo = azar(1.5, 3.5); if (enVista(al.x)) part({ k: "humo", x: al.x, y: al.y, vx: azar(-6, 6), vy: -azar(15, 30), vida: 2.4, tam: 7, crece: 2.5, g: -4, a: 0.28 }); } }
   if (fantasma) { fantasma.t += dt; if (fantasma.t > fantasma.dur) fantasma = null; }
+  if (rickMorty) {
+    const r = rickMorty; r.t += dt;
+    if (r.fase === "abre" && r.t > 1) { r.fase = "habla"; r.t = 0; misterio("rickmorty"); }
+    else if (r.fase === "habla" && r.t > r.prox) {
+      const l = r.guion[r.i];
+      if (l) { const rk = l[0] === "r"; globito(0, 0, l[1], Math.max(2.4, l[1].length * 0.06), "gente", () => [r.x + (rk ? -10 : 18), calle - (rk ? 64 : 48)]); r.prox = Math.max(2.6, l[1].length * 0.065); r.t = 0; r.i++; if (rk && /eructo/.test(l[1]) && ac) barrido("sawtooth", 90, 60, 0.35, 0.05); }
+      else { r.fase = "cierra"; r.t = 0; globito(0, 0, "¡Wubba lubba dub dub!", 2, "gente", () => [r.x - 10, calle - 64]); setTimeout(() => { if (!ella.fuera) globito(0, 0, "¿Eran… Rick y Morty? 😳", 2.4, "ella", () => [ella.x, ella.y - 46]); }, 1800); }
+    } else if (r.fase === "cierra" && r.t > 1.6) rickMorty = null;
+  }
+  // los mimos: de vez en cuando mi pareja me dice algo dulce (y a veces le contesto)
+  if (!dios.on && !ella.fuera && (relojMimo -= dt) <= 0) {
+    relojMimo = azar(24, 42);
+    const l = elegir(MIMOS); globito(0, 0, l, Math.max(2.6, l.length * 0.06), "ella", () => [ella.x, ella.y - 46]);
+    if (Math.random() < 0.55) setTimeout(() => { if (!dios.on) { const r = elegir(RESPUESTAS); globito(0, 0, r, Math.max(2.4, r.length * 0.06), "yo", () => [yo.x, yo.y - 50]); corazonesDe((yo.x + ella.x) / 2, yo.y - 40, 3); } }, Math.max(2600, l.length * 62));
+  }
+  // Rick y Morty: el primero al ratito y luego cada dos a cuatro minutos
+  if ((relojRM -= dt) <= 0) { relojRM = azar(130, 240); if (!rickMorty && !dios.on) EVENTOS.rickmorty(); }
+  actualizarRomance(dt);
   if (mariachis) {
     const m = mariachis; m.t += dt;
     if (m.fase === "llega") { m.x += 40 * dt; if (m.x >= m.meta) { m.fase = "toca"; m.t = 0; } }
@@ -3368,14 +3515,14 @@ function dibujaBurger() {
 }
 function dibujaHeli(h) {
   const x = h.x, y = h.y + Math.sin(h.t * 1.8) * 3;
-  if (h.tipo === "policia" && h.fase !== "sale") {
+  if (h.tipo === "policia" && h.fase !== "sale" && h.fase !== "cae") {
     const fx = yo.x + Math.sin(h.t * 0.9) * 26, fy = pechoYo()[1] + 20;
     g.save(); g.globalCompositeOperation = "lighter";
     const gr = g.createLinearGradient(x, y, fx, fy); gr.addColorStop(0, "rgba(255,255,230,.28)"); gr.addColorStop(1, "rgba(255,255,230,.04)");
     g.fillStyle = gr; g.beginPath(); g.moveTo(x - 3, y + 6); g.lineTo(x + 3, y + 6); g.lineTo(fx + 26, fy); g.lineTo(fx - 26, fy); g.fill();
     g.globalAlpha = 0.3; estampa(SELLO.luz, fx, fy - 6, 34); g.restore();
   }
-  g.save(); g.translate(x, y); if (h.dir < 0) g.scale(-1, 1);
+  g.save(); g.translate(x, y); if (h.rot) g.rotate(h.rot); if (h.dir < 0) g.scale(-1, 1);
   g.fillStyle = h.tipo === "noticias" ? "#e8e8f2" : "#1e2a4a";
   g.beginPath(); g.ellipse(0, 0, 20, 9, 0, 0, TAU); g.fill();
   g.fillRect(-42, -3, 26, 4); g.beginPath(); g.moveTo(-44, -12); g.lineTo(-38, -3); g.lineTo(-44, -1); g.fill();
@@ -3531,6 +3678,7 @@ function dibujar(dt) {
   }
 
   dibujaNubes(dt);
+  dibujaCieloRomance();
   // ---- La ciudad de lejos y la de cerca (con la cámara respirando: profundidad) ----
   g.save(); g.translate(A / 2, calle + camYoff); g.scale(zoomCam, zoomCam); g.translate(-A / 2, -calle);
   g.drawImage(lejos, -camX * 0.5 + sx * 0.5, sy * 0.5, lejos.anchoCss, H);
@@ -3669,6 +3817,8 @@ function dibujar(dt) {
   if (yo.flota < 0.25) lista.push([yo.y + 0.2, 5, yo]);
   if (vendedor) lista.push([calle + 50, 6, vendedor]);
   if (mariachis) lista.push([ACERA0 + 5, 7, mariachis]);
+  dibujaDetalles(v0, v1);
+  if (rickMorty) dibujaRickMorty(rickMorty);
   lista.sort((a, b) => a[0] - b[0]);
   for (const [, tipo, o] of lista) {
     if (tipo === 0) { if (o.perroDe) {} dibujaPersona(o); }
@@ -3791,6 +3941,8 @@ function dibujar(dt) {
   g.restore();
   g.restore();   // (la cámara que respira)
   dibujaBokeh();
+  dibujaRomance();
+  dibujaConstelacion();
 
   // ---- Encima de todo: la lluvia, el tiempo detenido, el brillo del Modo Dios y los destellos ----
   if (gotas.length) {
@@ -3808,6 +3960,131 @@ function dibujar(dt) {
   if (velo > 0.01) { g.fillStyle = `rgba(10,8,24,${velo})`; g.fillRect(0, 0, A, H); }
   if (camX < MW - A - 4) { const gr = g.createLinearGradient(A - 26, 0, A, 0); gr.addColorStop(0, "rgba(5,6,16,0)"); gr.addColorStop(1, "rgba(5,6,16,.55)"); g.fillStyle = gr; g.fillRect(A - 26, techo - 40, 26, calle - techo + 40); }
   if (camX > 4) { const gr = g.createLinearGradient(0, 0, 26, 0); gr.addColorStop(0, "rgba(5,6,16,.55)"); gr.addColorStop(1, "rgba(5,6,16,0)"); g.fillStyle = gr; g.fillRect(0, techo - 40, 26, calle - techo + 40); }
+}
+/* ── LOS PODERES ROMÁNTICOS ── */
+function usarRomance(id) {
+  if (ac) SFX.magia();
+  if (id === "petalos") { romance.petalosT = 11; globito(0, 0, elegir(["Llueven pétalos… como en las películas 🥹", "Todo esto para mí? Te amo 🌸"]), 2.6, "ella", () => [ella.x, ella.y - 46]); }
+  else if (id === "linternas") {
+    for (let i = 0; i < 14; i++) romance.linternas.push({ x: (yo.x + ella.x) / 2 + azar(-70, 70), y: yo.y - 20 - azar(0, 30), vy: -azar(16, 30), f: Math.random() * 9, t: -i * 0.25, s: azar(0.8, 1.25) });
+    globito(0, 0, "Pide un deseo conmigo… el mío ya lo sabes: tú 🏮", 3, "ella", () => [ella.x, ella.y - 46]);
+  } else if (id === "constelacion") { romance.cielo = { t: 0, dur: 12 }; globito(0, 0, "Mira el cielo… ¡son nuestras iniciales! 🥹⭐", 3, "ella", () => [ella.x, ella.y - 46]); if (ac) campanitas(); }
+  else if (id === "fuegosA") { for (let i = 0; i < 7; i++) romance.cohetes.push({ t: -i * 0.55, x: azar(A * 0.15, A * 0.85), y0: calle, y1: azar(techo * 0.4, techo + (calle - techo) * 0.15), hue: elegir(["255,110,170", "255,200,120", "200,150,255", "255,140,140"]) }); globito(0, 0, "¡Fuegos artificiales de corazón! Eres un exagerado… y te amo 🎆", 3, "ella", () => [ella.x, ella.y - 46]); }
+  corazonesDe((yo.x + ella.x) / 2, yo.y - 40, 5); ella.abraza = 1.6;
+}
+function actualizarRomance(dt) {
+  const R = romance;
+  if (R.petalosT > 0) { R.petalosT -= dt; const n = dt * 26; for (let k = 0; k < n; k++) if (R.petalos.length < 140) R.petalos.push({ x: Math.random() * A, y: -10, vy: azar(28, 52), f: Math.random() * 9, r: azar(3, 5), rot: Math.random() * 6, c: elegir(["#ff9ec4", "#ffc2d8", "#ff7aa8", "#fff0f6"]) }); }
+  for (let i = R.petalos.length - 1; i >= 0; i--) { const q = R.petalos[i]; q.f += dt * 2; q.y += q.vy * dt; q.x += Math.sin(q.f) * 22 * dt; q.rot += dt * 2; if (q.y > H + 10) R.petalos.splice(i, 1); }
+  for (let i = R.linternas.length - 1; i >= 0; i--) { const q = R.linternas[i]; q.t += dt; if (q.t < 0) continue; q.f += dt; q.y += q.vy * dt; q.x += Math.sin(q.f * 0.8) * 6 * dt; if (q.y < -40) R.linternas.splice(i, 1); }
+  if (R.cielo) { R.cielo.t += dt; if (R.cielo.t > R.cielo.dur) R.cielo = null; }
+  for (let i = R.cohetes.length - 1; i >= 0; i--) {
+    const c = R.cohetes[i]; c.t += dt; if (c.t < 0) continue;
+    if (c.t > 0.9) {
+      R.cohetes.splice(i, 1);
+      // revienta en forma de corazón
+      for (let k = 0; k < 40; k++) { const a = k / 40 * TAU, hx = 16 * Math.sin(a) ** 3, hy = -(13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)); R.chispas.push({ x: c.x, y: c.y1, vx: hx * 5, vy: hy * 5, t: 0, c: c.hue }); }
+      if (ac) { barrido("sine", 110, 40, 0.5, 0.08); nota(elegir([1046, 1318, 1568]), ac.currentTime + 0.05, 0.8, 0.02); }
+    }
+  }
+  for (let i = R.chispas.length - 1; i >= 0; i--) { const q = R.chispas[i]; q.t += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 1 - dt * 1.4; q.vy = q.vy * (1 - dt * 1.4) + 30 * dt; if (q.t > 1.8) R.chispas.splice(i, 1); }
+}
+function dibujaCieloRomance() {
+  const R = romance;
+  // los cohetes subiendo y los corazones de chispas (en el cielo, detrás de los edificios)
+  g.save(); g.globalCompositeOperation = "lighter";
+  for (const c of R.cohetes) if (c.t >= 0) { const k = c.t / 0.9, y = c.y0 + (c.y1 - c.y0) * (1 - (1 - k) ** 2); g.fillStyle = `rgba(${c.hue},.9)`; g.beginPath(); g.arc(c.x, y, 2, 0, TAU); g.fill(); c.y = y; }
+  for (const q of R.chispas) { const a = Math.max(0, 1 - q.t / 1.8); g.fillStyle = `rgba(${q.c},${a})`; g.beginPath(); g.arc(q.x, q.y, 1.8, 0, TAU); g.fill(); }
+  g.restore();
+}
+function dibujaConstelacion() {
+  const R = romance;
+  if (R.cielo) {
+    g.save(); g.globalCompositeOperation = "lighter";
+    const t = R.cielo.t, a = Math.min(1, t / 1.5, (R.cielo.dur - t) / 1.5), S = Math.min(A, 520) / 120, cx = A * 0.5, cy = Math.max(86, techo * 0.6) + 14 * S;
+    const pts = []; for (let k = 0; k < 18; k++) { const q = k / 18 * TAU; pts.push([cx + 16 * Math.sin(q) ** 3 * S, cy - (13 * Math.cos(q) - 5 * Math.cos(2 * q) - 2 * Math.cos(3 * q) - Math.cos(4 * q)) * S]); }
+    const n = Math.min(pts.length, Math.floor(t * 8) + 1);
+    g.strokeStyle = `rgba(200,210,255,${0.35 * a})`; g.lineWidth = 1; g.beginPath(); for (let k = 0; k < n; k++) { const [x, y] = pts[k]; k ? g.lineTo(x, y) : g.moveTo(x, y); } if (n === pts.length) g.closePath(); g.stroke();
+    for (let k = 0; k < n; k++) { const [x, y] = pts[k], tw = 0.6 + 0.4 * Math.sin(reloj * 4 + k); g.fillStyle = `rgba(255,250,235,${a * tw})`; g.beginPath(); g.arc(x, y, 1.8, 0, TAU); g.fill(); estampa(SELLO.luz, x, y, 7 * a); }
+    if (t > 2.4) { g.globalAlpha = a * Math.min(1, (t - 2.4) / 1.2); g.fillStyle = "#fff6e8"; g.font = `${Math.round(6.5 * S + 6)}px "Caveat", "Segoe Script", cursive`; g.textAlign = "center"; g.fillText(soyM ? "M ♥ Y" : "Y ♥ M", cx, cy + 2 * S); g.textAlign = "left"; g.globalAlpha = 1; }
+    g.restore();
+  }
+}
+function dibujaRomance() {
+  const R = romance;
+  for (const q of R.petalos) { g.save(); g.translate(q.x, q.y); g.rotate(q.rot); g.fillStyle = q.c; g.beginPath(); g.ellipse(0, 0, q.r, q.r * 0.55, 0, 0, TAU); g.fill(); g.restore(); }
+  for (const q of R.linternas) {
+    if (q.t < 0) continue;
+    const x = q.x - camX, y = q.y, s = q.s, fl = 0.85 + 0.15 * Math.sin(reloj * 9 + q.f * 3);
+    g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = 0.5 * fl; estampa(SELLO.luz, x, y, 22 * s); g.restore();
+    g.fillStyle = `rgba(255,${150 + 40 * fl},90,.95)`; g.beginPath(); g.moveTo(x - 6 * s, y - 8 * s); g.lineTo(x + 6 * s, y - 8 * s); g.lineTo(x + 7.5 * s, y + 7 * s); g.lineTo(x - 7.5 * s, y + 7 * s); g.closePath(); g.fill();
+    g.fillStyle = "rgba(255,240,200,.9)"; g.beginPath(); g.ellipse(x, y + 5 * s, 3 * s, 1.6 * s, 0, 0, TAU); g.fill();
+  }
+}
+/* ── Los detallitos lindos de la banqueta (tocarlos: mi pareja los comenta) ── */
+const detalles = [];
+const DETALLES = {
+  macetas: ["Mira esas macetitas… cuando estemos juntos tenemos que tener muchas 🌷", "Huelen a primavera. Como tú."],
+  grafiti: ["¡Alguien pintó M + Y en la pared! …¿fuiste tú? 🥹", "Ese corazón en la pared somos nosotros, ¿verdad?"],
+  candados: ["Candados del amor… pon el nuestro y tira la llave lejos 🔒", "Ese puente de candados es como lo nuestro: no se abre."],
+  gatito: ["Un gatito dormido… shhh, no lo despiertes 🐱", "Míralo, todo enroscadito. Así me quiero dormir contigo."],
+  globos: ["Globos de corazón amarrados al poste… ¿y si nos llevamos uno? 🎈", "Ese rojo es mi favorito. Como tus besos."],
+  neon: ["Ese letrero dice «te amo»… la ciudad sabe lo que siento 💗", "Hasta los letreros de neón están de nuestro lado."],
+  flores: ["Flores en la banqueta… las voy a poner en tu pelo 🌼", "Alguien dejó flores aquí. Ojalá sean para alguien que ama tanto como yo."],
+  carta: ["Hay una cartita en la banca… «para la persona que camina de la mano» 💌", "Dice: «no la sueltes nunca». No pienso hacerlo."],
+  luces: ["Foquitos colgando… parece que la calle se arregló para nosotros ✨", "Todo brilla bonito cuando vienes conmigo."],
+};
+function generarDetalles() {
+  detalles.length = 0;
+  const tipos = Object.keys(DETALLES);
+  for (let x = 130, i = 0; x < MW - 60; x += azar(95, 150), i++) {
+    if (burger.e && x > burger.e.x - 20 && x < burger.e.x + burger.e.w + 20) continue;
+    detalles.push({ tipo: tipos[i % tipos.length], x, y: ACERA0 - 1, f: Math.random() * 9 });
+  }
+}
+function tocarDetalle(d) {
+  const l = linea(DETALLES[d.tipo], (d.vez = (d.vez || 0) + 1));
+  globito(0, 0, l, Math.max(2.6, l.length * 0.06), "ella", () => [ella.x, ella.y - 46]);
+  corazonesDe(d.x, d.y - 24, 4); if (ac) SFX.corazon();
+  memo.cuenta.detalles = memo.cuenta.detalles || {}; if (typeof memo.cuenta.detalles !== "object") memo.cuenta.detalles = {};
+  memo.cuenta.detalles[d.tipo] = 1; guardarMemo(); if (Object.keys(memo.cuenta.detalles).length >= 6) misterio("detalles");
+}
+function dibujaDetalles(v0, v1) {
+  for (const d of detalles) {
+    if (d.x < v0 - 40 || d.x > v1 + 40) continue;
+    const x = d.x, y = d.y, t = reloj + d.f;
+    if (d.tipo === "macetas") { for (let k = 0; k < 3; k++) { const px = x - 12 + k * 12; g.fillStyle = "#b0603a"; g.fillRect(px - 4, y - 8, 8, 8); g.fillStyle = "#3a8a4a"; g.beginPath(); g.arc(px, y - 10, 5, 0, TAU); g.fill(); g.fillStyle = elegirFijo(["#ff7aa8", "#ffd34a", "#ff9ec4"], k + d.f); g.beginPath(); g.arc(px + 1, y - 13 + Math.sin(t * 2 + k) * 0.6, 2.2, 0, TAU); g.fill(); } }
+    else if (d.tipo === "grafiti") { g.strokeStyle = "rgba(255,110,170,.75)"; g.lineWidth = 2; corazonCamino(x, y - 34, 11); g.stroke(); g.fillStyle = "rgba(255,230,240,.85)"; g.font = "bold 8px sans-serif"; g.textAlign = "center"; g.fillText("M + Y", x, y - 31); g.textAlign = "left"; }
+    else if (d.tipo === "candados") { g.strokeStyle = "#6a6a78"; g.lineWidth = 1.5; g.beginPath(); for (let k = 0; k < 4; k++) { g.moveTo(x - 18 + k * 12, y); g.lineTo(x - 18 + k * 12, y - 16); } g.moveTo(x - 20, y - 15); g.lineTo(x + 20, y - 15); g.moveTo(x - 20, y - 8); g.lineTo(x + 20, y - 8); g.stroke(); for (let k = 0; k < 6; k++) { g.fillStyle = elegirFijo(["#ff5a8a", "#ffd34a", "#7ab8ff", "#c78aff"], k + d.f); g.fillRect(x - 16 + k * 6, y - 13 + (k % 2) * 6, 4, 4); } }
+    else if (d.tipo === "gatito") { const b = Math.sin(t * 1.5) * 0.6; g.fillStyle = "#e8a060"; g.beginPath(); g.ellipse(x, y - 4, 9, 4.5 + b * 0.3, 0, 0, TAU); g.fill(); g.beginPath(); g.arc(x + 8, y - 5, 3.6, 0, TAU); g.fill(); g.beginPath(); g.moveTo(x + 6, y - 8); g.lineTo(x + 7, y - 11); g.lineTo(x + 9, y - 8.5); g.moveTo(x + 9, y - 8.5); g.lineTo(x + 11, y - 11); g.lineTo(x + 11.5, y - 7.5); g.fill(); if (Math.sin(t) > 0.3) { g.fillStyle = "rgba(255,255,255,.7)"; g.font = "8px sans-serif"; g.fillText("z", x + 12, y - 14 - (t % 2) * 3); } }
+    else if (d.tipo === "globos") { for (let k = 0; k < 3; k++) { const bx = x - 6 + k * 6 + Math.sin(t * 1.2 + k) * 2, by = y - 46 - k * 4; g.strokeStyle = "rgba(255,255,255,.4)"; g.lineWidth = 0.6; g.beginPath(); g.moveTo(x, y - 10); g.lineTo(bx, by + 6); g.stroke(); g.fillStyle = elegirFijo(["#ff3a6a", "#ff7aa8", "#ff5a5a"], k); corazonCamino(bx, by, 6); g.fill(); } g.fillStyle = "#4a4a58"; g.fillRect(x - 1, y - 12, 2, 12); }
+    else if (d.tipo === "neon") { const on = Math.sin(t * 7) > -0.92; g.save(); g.globalCompositeOperation = "lighter"; g.fillStyle = on ? "rgba(255,90,170,.95)" : "rgba(255,90,170,.25)"; g.font = "italic bold 11px 'Caveat', cursive"; g.textAlign = "center"; g.fillText("te amo", x, y - 52); if (on) { g.globalAlpha = 0.35; estampa(SELLO.rosa, x, y - 56, 30); } g.restore(); g.textAlign = "left"; }
+    else if (d.tipo === "flores") { for (let k = 0; k < 5; k++) { const fx = x - 10 + k * 5, fy = y - 2 - (k % 2) * 2; g.strokeStyle = "#3a8a4a"; g.lineWidth = 1; g.beginPath(); g.moveTo(fx, y); g.lineTo(fx, fy); g.stroke(); g.fillStyle = elegirFijo(["#fff2a8", "#ff9ec4", "#ffffff", "#c8a8ff"], k + d.f); g.beginPath(); g.arc(fx, fy, 2, 0, TAU); g.fill(); } }
+    else if (d.tipo === "carta") { g.fillStyle = "#fff4ea"; g.fillRect(x - 6, y - 6, 12, 8); g.strokeStyle = "#c89aa8"; g.lineWidth = 0.8; g.beginPath(); g.moveTo(x - 6, y - 6); g.lineTo(x, y - 2); g.lineTo(x + 6, y - 6); g.stroke(); g.fillStyle = "#e0335a"; corazonCamino(x, y - 3, 2.2); g.fill(); }
+    else if (d.tipo === "luces") { g.strokeStyle = "rgba(60,50,70,.8)"; g.lineWidth = 0.8; g.beginPath(); g.moveTo(x - 30, y - 60); g.quadraticCurveTo(x, y - 48, x + 30, y - 60); g.stroke(); g.save(); g.globalCompositeOperation = "lighter"; for (let k = 0; k <= 6; k++) { const u = k / 6, lx = x - 30 + 60 * u, ly = y - 60 + 12 * 4 * u * (1 - u) * 0.5; g.fillStyle = `rgba(255,${200 + 30 * Math.sin(t * 3 + k)},140,.9)`; g.beginPath(); g.arc(lx, ly + 2, 1.6, 0, TAU); g.fill(); g.globalAlpha = 0.3; estampa(SELLO.luz, lx, ly + 2, 8); g.globalAlpha = 1; } g.restore(); }
+  }
+}
+const elegirFijo = (arr, n) => arr[Math.abs(Math.floor(n * 7.3)) % arr.length];
+function corazonCamino(x, y, r) { g.beginPath(); g.moveTo(x, y + r * 0.9); g.bezierCurveTo(x - r * 1.4, y - r * 0.2, x - r * 0.7, y - r * 1.3, x, y - r * 0.45); g.bezierCurveTo(x + r * 0.7, y - r * 1.3, x + r * 1.4, y - r * 0.2, x, y + r * 0.9); }
+/* Rick y Morty saliendo de su portal. */
+const LOOK_RICK = { piel: "#e8d4c4", pelo: "#a8d8ec", peinado: 0, torso: "#eef2f4", piernas: "#7a5a3a" };
+const LOOK_MORTY = { piel: "#f2c8a4", pelo: "#6a3a1a", peinado: 0, torso: "#f2d43a", piernas: "#3a5ab8" };
+function dibujaRickMorty(r) {
+  const x = r.x, y = calle + 2, a = r.fase === "abre" ? Math.min(1, r.t) : r.fase === "cierra" ? Math.max(0, 1 - r.t / 1.4) : 1;
+  // el portal verde, girando
+  g.save(); g.translate(x - 38, y - 26); g.rotate(reloj * 2); g.globalAlpha = Math.min(1, a * 1.2);
+  const rg = g.createRadialGradient(0, 0, 2, 0, 0, 24); rg.addColorStop(0, "rgba(220,255,160,.95)"); rg.addColorStop(0.5, "rgba(110,230,60,.85)"); rg.addColorStop(1, "rgba(40,140,30,0)");
+  g.fillStyle = rg; g.beginPath(); g.ellipse(0, 0, 16 * a + 2, 26 * a + 2, 0, 0, TAU); g.fill();
+  g.strokeStyle = "rgba(200,255,140,.7)"; g.lineWidth = 1.4; g.beginPath(); for (let k = 0; k < 30; k++) { const q = k * 0.5, rr = k * 0.75 * a; g.lineTo(Math.cos(q) * rr * 0.6, Math.sin(q) * rr); } g.stroke(); g.restore();
+  if (r.fase === "abre" && r.t < 0.6) return;
+  const sale = r.fase === "abre" ? Math.min(1, (r.t - 0.6) / 0.4) : r.fase === "cierra" ? Math.max(0, 1 - r.t / 1) : 1;
+  g.save(); g.globalAlpha = sale;
+  figura(x - 30 + 20 * sale, y, 44, LOOK_RICK, "quieto", reloj * 3, 1, { anime: true });
+  // el pelo en picos de Rick y su bata
+  g.fillStyle = LOOK_RICK.pelo; const hx = x - 30 + 20 * sale, hy = y - 44 * 0.91; for (let k = -2; k <= 2; k++) { g.beginPath(); g.moveTo(hx + k * 4 - 3, hy - 4); g.lineTo(hx + k * 5 - 6, hy - 14 - Math.abs(k)); g.lineTo(hx + k * 4 + 3, hy - 5); g.fill(); }
+  g.fillStyle = "rgba(240,246,250,.9)"; g.fillRect(hx - 7, y - 36, 14, 22);
+  figura(x - 12 + 30 * sale, y, 30, LOOK_MORTY, "quieto", reloj * 3, -1, { anime: true });
+  g.restore();
 }
 /* Nubes de anime: esponjosas, con la luz de la luna arriba; se mueven despacito y con poco parallax. */
 const nubes = Array.from({ length: 6 }, (_, i) => ({ x: i * 170 + Math.random() * 90, y: 0.12 + Math.random() * 0.3, w: 70 + Math.random() * 80, v: 3 + Math.random() * 5 }));
@@ -3913,7 +4190,7 @@ burger.abierto = burgerAbierto();
 pintarBarra();
 setTimeout(() => { if (!dios.on) decir("El resto de la ciudad sigue dormida. Toca una ventana, amor :>"); }, 6500);
 setTimeout(() => { if (!dios.on) decir("Psst… ¿ves ese ✨ de abajo? No lo toques… o sí 👀"); }, 17000);
-if (/prueba/.test(location.search)) window.__ciudad = { dios, prenderDios, apagarDios, tocarPoder, cuerpos, gente, yo, ella, get caos() { return caos; }, set caos(v) { caos = v; }, get camX() { return camX; }, set camX(v) { camX = v; }, llamarPolicia, P, burger, abrirKdrama, deMano, cruzar, romperLuna, luna, get velo() { return velo; }, get A() { return A; } };
+if (/prueba/.test(location.search)) window.__ciudad = { dios, prenderDios, apagarDios, tocarPoder, cuerpos, gente, yo, ella, get caos() { return caos; }, set caos(v) { caos = v; }, get camX() { return camX; }, set camX(v) { camX = v; }, llamarPolicia, P, burger, abrirKdrama, deMano, cruzar, romperLuna, luna, usarRomance, golpearHelis, llamarHeli, helis, EVENTOS, get rickMorty() { return rickMorty; }, get yoV() { return yo; }, get ellaV() { return ella; }, get libre() { return libre; }, detalles, tocarDetalle, get velo() { return velo; }, get A() { return A; } };
 window.__ciudadPausa = (v) => { pausada3d = v; t0 = performance.now(); try { if (ac) { if (v) ac.suspend(); else ac.resume(); } } catch (e) { /* sin audio */ } };
 requestAnimationFrame(paso);
 })();

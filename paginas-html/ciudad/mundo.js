@@ -20,7 +20,7 @@
  *
  * Unidades: metros. El suelo es y = 0; x hacia el este, z hacia el sur.
  */
-import { J, THREE, rnd, elegir, clamp, lienzo, textura, brillo, Juntador, CAJA, TAU, toon, capaEfectos } from "./base.js";
+import { J, THREE, rnd, elegir, clamp, lienzo, textura, brillo, Juntador, CAJA, TAU, toon, capaEfectos, sinManchaCerca } from "./base.js";
 export { luna, colocarLuna } from "./cielo.js";
 import { construirCielo } from "./cielo.js";
 
@@ -440,7 +440,7 @@ export function construirMundo(esc, ESCENAS) {
   poste.castShadow = brazo.castShadow = tapa.castShadow = base.castShadow = sombras;
   esc.add(poste, base, brazo, tapa, bombillas);
   const hg = new THREE.BufferGeometry(); hg.setAttribute("position", new THREE.BufferAttribute(halos, 3));
-  halo = new THREE.Points(hg, new THREE.PointsMaterial({ size: 3.6, map: brillo([[0, "rgba(255,236,190,.95)"], [0.25, "rgba(255,210,150,.35)"], [1, "rgba(255,200,140,0)"]]), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true, color: new THREE.Color(1.6, 1.4, 1.1) }));
+  halo = new THREE.Points(hg, sinManchaCerca(new THREE.PointsMaterial({ size: 3.6, map: brillo([[0, "rgba(255,236,190,.95)"], [0.25, "rgba(255,210,150,.35)"], [1, "rgba(255,200,140,0)"]]), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true, color: new THREE.Color(1.6, 1.4, 1.1) })));
   halo.frustumCulled = false; esc.add(capaEfectos(halo));
   // ── los árboles: tronco, maceta y copa en tres tonos (instanciados) ──
   // (en la vista de la banca, los que quedan pegados a la cámara se desvanecen y dejan ver la fachada)
@@ -470,7 +470,7 @@ export function construirMundo(esc, ESCENAS) {
   const fqG = new THREE.BufferGeometry(); fqG.setAttribute("position", new THREE.Float32BufferAttribute(fq, 3));
   const cols = []; for (let i = 0; i < fq.length / 3; i++) { const c = new THREE.Color(elegir(["#ffd36a", "#ff8ac0", "#8ad8ff", "#b8ff9a"])).multiplyScalar(1.8); cols.push(c.r, c.g, c.b); }
   fqG.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
-  J.foquitos = new THREE.Points(fqG, new THREE.PointsMaterial({ size: 0.45, vertexColors: true, map: brillo([[0, "rgba(255,255,255,1)"], [0.3, "rgba(255,255,255,.5)"], [1, "rgba(255,255,255,0)"]], 32), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  J.foquitos = new THREE.Points(fqG, sinManchaCerca(new THREE.PointsMaterial({ size: 0.45, vertexColors: true, map: brillo([[0, "rgba(255,255,255,1)"], [0.3, "rgba(255,255,255,.5)"], [1, "rgba(255,255,255,0)"]], 32), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })));
   J.foquitos.frustumCulled = false; esc.add(capaEfectos(J.foquitos));
   // ── las bancas: asiento de tablas, respaldo y patas de hierro ──
   const banca = new Juntador();

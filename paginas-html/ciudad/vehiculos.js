@@ -51,11 +51,13 @@ const matResto = toon({ vertexColors: true });
 const matLuces = new THREE.MeshBasicMaterial({ vertexColors: true });
 J.matLucesCoche = matLuces;   // luces.js le sube el brillo de noche
 // el velo de los faros: se desvanece a lo largo y hacia los bordes (sin cortes duros en el piso)
+// el charco de luz de los faros, pintado en el piso: un abanico suave que se abre y se apaga a lo lejos
 const matHaz = new THREE.ShaderMaterial({
   transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+  polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4,
   uniforms: { uA: { value: 0 } },
-  vertexShader: "varying vec2 vU; varying vec3 vN; varying vec3 vV; void main(){ vU = uv; vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }",
-  fragmentShader: "uniform float uA; varying vec2 vU; varying vec3 vN; varying vec3 vV; void main(){ float f = abs(dot(normalize(vN), normalize(vV))); float a = uA * pow(vU.y, 1.8) * f * f; gl_FragColor = vec4(vec3(1.0, 0.94, 0.78) * a, a); }",
+  vertexShader: "varying vec2 vU; void main(){ vU = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+  fragmentShader: "uniform float uA; varying vec2 vU; void main(){ float y = vU.y; float w = 0.28 + 0.72 * y; float x = abs(vU.x - 0.5) * 2.0 / w; float lat = 1.0 - smoothstep(0.35, 1.0, x); float lon = smoothstep(0.0, 0.14, y) * (1.0 - smoothstep(0.3, 1.0, y)); float a = uA * lat * lon; gl_FragColor = vec4(vec3(1.0, 0.9, 0.72) * a, a); }",
 });
 const extruir = (forma, ancho, bisel = 0.07) => { const g = new THREE.ExtrudeGeometry(forma, { depth: ancho, bevelEnabled: true, bevelThickness: bisel, bevelSize: bisel, bevelSegments: 3, curveSegments: 10 }); g.translate(0, 0, -ancho / 2); g.rotateY(-Math.PI / 2); return g; };
 function geometrias(tipo) {
@@ -144,7 +146,11 @@ const matRueda = toon({ color: "#24242c" }), matRin = toon({ color: "#c8c8d4" })
 const ruedaGeo = {}, rinGeo = {};
 const geoRueda = (R) => ruedaGeo[R] || (ruedaGeo[R] = new THREE.CylinderGeometry(R, R, 0.26, 18).rotateZ(Math.PI / 2));
 const geoRin = (R) => rinGeo[R] || (rinGeo[R] = new THREE.CylinderGeometry(R * 0.55, R * 0.55, 0.28, 10).rotateZ(Math.PI / 2));
-const hazGeo = (() => { const g = new THREE.ConeGeometry(2.2, 9, 16, 1, true); g.rotateX(-Math.PI / 2); g.translate(0, 0, 4.5); return g; })();
+// los halitos de los faros y las calaveras (se prenden de tarde y de noche)
+const texHalo = (() => { const c = document.createElement("canvas"); c.width = c.height = 64; const x = c.getContext("2d"); const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.25, "rgba(255,255,255,.55)"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+const matHaloF = new THREE.SpriteMaterial({ map: texHalo, color: "#fff1d6", blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 });
+const matHaloR = new THREE.SpriteMaterial({ map: texHalo, color: "#ff3a3a", blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 });
+const hazGeo = (() => { const g = new THREE.PlaneGeometry(4.6, 10); g.rotateX(Math.PI / 2); g.translate(0, 0, 5); return g; })();
 function construirCoche(tipo) {
   const G = geometrias(tipo), T = TIPOS[tipo];
   // el origen del coche es su centro (así gira bien al volar); el modelo cuelga medio alto abajo
@@ -161,7 +167,12 @@ function construirCoche(tipo) {
     return { p, s, ang: 0, obj: 0 };
   });
   const ruedas = G.ruedas.map(([x, y, z]) => { const r = new THREE.Group(); r.position.set(x, y, z); const a = new THREE.Mesh(geoRueda(G.R), matRueda), b = new THREE.Mesh(geoRin(G.R), matRin); a.castShadow = J.calidad.sombras; r.add(a, b); piv.add(r); return r; });
-  const haces = [-1, 1].map((s) => { const h = new THREE.Mesh(hazGeo, matHaz); h.position.set(s * (T.A / 2 - 0.3), T.autobus ? 0.75 : T.cintura - 0.2, T.L / 2); h.rotation.x = 0.08; cuerpo.add(capaEfectos(h)); return h; });
+  const haces = [0].map(() => { const h = new THREE.Mesh(hazGeo, matHaz); h.position.set(0, 0.06, T.L / 2 - 0.2); h.renderOrder = 1; cuerpo.add(capaEfectos(h)); return h; });
+  // halitos: dos adelante (faros) y dos atrás (calaveras)
+  const halos = [];
+  for (const s of [-1, 1]) for (const [z, m, t] of [[T.L / 2 + 0.06, matHaloF, 0.7], [-T.L / 2 - 0.06, matHaloR, 0.45]]) {
+    const h = new THREE.Sprite(m); halos.push(h); h.scale.setScalar(t); h.position.set(s * (T.A / 2 - 0.32), T.autobus ? 0.8 : T.cintura - 0.18, z); cuerpo.add(capaEfectos(h));
+  }
   let torreta = null;
   if (T.poli) {
     torreta = [new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.12, 0.24), new THREE.MeshBasicMaterial({ color: "#ff2030" })), new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.12, 0.24), new THREE.MeshBasicMaterial({ color: "#2050ff" }))];
@@ -169,7 +180,7 @@ function construirCoche(tipo) {
     const letrero = new THREE.Mesh(new THREE.BoxGeometry(T.A - 0.08, 0.3, 1.5), toon({ color: "#f4f4f8" })); letrero.position.set(0, 0.68, -0.3); cuerpo.add(letrero);
   }
   J.escena.add(raiz);
-  return { raiz, cuerpo, mP, mV, mL, ruedas, haces, torreta, pintura, geoP, puertas, asiento: G.asiento, base: G.pint.attributes.position.array.slice() };
+  return { raiz, cuerpo, mP, mV, mL, ruedas, haces, halos, torreta, pintura, geoP, puertas, asiento: G.asiento, base: G.pint.attributes.position.array.slice() };
 }
 /* Abrir / cerrar una puerta (s: 1 conductor, -1 pasajero). */
 export function puerta(c, s, abierta) { const p = c.m.puertas.find((q) => q.s === s); if (p) { if (abierta && p.obj === 0) son("puerta", c.x, c.z, 0.6); p.obj = abierta ? 1.05 : 0; } }
@@ -510,7 +521,8 @@ function conducir(c, dt) {
 
 /* ══════════════════ CADA CUADRO ══════════════════ */
 export function actualizar(dt, dtReal) {
-  matHaz.uniforms.uA.value = 0.16 * J.ciclo.noche;
+  const prendidas = Math.max(0, J.ciclo.farolas * 1.1 - 0.1);
+  matHaz.uniforms.uA.value = 0.42 * prendidas; matHaloF.opacity = 0.75 * prendidas; matHaloR.opacity = 0.6 * prendidas + 0.08;
   const yo = J.jugador;
   for (let i = J.coches.length - 1; i >= 0; i--) {
     const c = J.coches[i];
@@ -587,8 +599,11 @@ function pintar(c, dt) {
   if (c.m.torreta) { const on = Math.sin(J.t * 14) > 0; c.m.torreta[0].material.color.set(on ? "#ff2030" : "#3a0810"); c.m.torreta[1].material.color.set(on ? "#0a1240" : "#2a60ff"); }
   const lejos = Math.hypot(c.x - J.jugador.x, c.z - J.jugador.z) > 60;
   // el haz de los faros es sólo un velo en el aire de noche (la luz que pinta la calle es un SpotLight de verdad)
-  for (const h of c.m.haces) h.visible = !lejos && J.ciclo.noche > 0.3 && c.fase !== "ARDIENDO" && c.fase !== "RESTOS" && (c.estado === "maneja" || c.estado === "conducido" || c.poli);
-  c.m.raiz.visible = Math.hypot(c.x - J.camara.position.x, c.z - J.camara.position.z) < J.calidad.lejos * 0.6;
+  for (const h of c.m.haces) h.visible = !lejos && J.ciclo.farolas > 0.12 && c.fase !== "ARDIENDO" && c.fase !== "RESTOS" && (c.estado === "maneja" || c.estado === "conducido" || (c.poli && c.estado !== "fisica"));
+  const dc = Math.hypot(c.x - J.camara.position.x, c.z - J.camara.position.z);
+  c.m.raiz.visible = dc < J.calidad.lejos * 0.6;
+  // pegado a la cámara, el halito se volvería una mancha enorme
+  for (const h of c.m.halos) h.visible = dc > 7 && J.ciclo.farolas > 0.05 && c.fase !== "RESTOS";
 }
 void lerp; void onda; void edificioEn; void CALLES; void ACERA_Y;
 

@@ -13,7 +13,7 @@
  * las interacciones se cuelgan de lo que ya existe (el botón de acción, el
  * toque en la pantalla, los misterios).
  */
-import { J, THREE, rnd, elegir, TAU, toon, contorno, lienzo, textura, brillo, capaEfectos, memo, contar, aPantalla } from "./base.js";
+import { J, THREE, rnd, elegir, TAU, toon, contorno, lienzo, textura, brillo, capaEfectos, memo, contar, aPantalla, sinManchaCerca } from "./base.js";
 import { CALLES, MANZANAS, MEDIA, ACERA_Y, bancas, edificios } from "./mundo.js";
 import { son, piezasEscena } from "./audio.js";
 import * as fx from "./efectos.js";
@@ -54,7 +54,7 @@ function armarGuirnaldas(esc) {
   const gc = new THREE.BufferGeometry(); gc.setAttribute("position", new THREE.Float32BufferAttribute(cable, 3));
   esc.add(new THREE.LineSegments(gc, new THREE.LineBasicMaterial({ color: "#2a2230" })));
   const gp = new THREE.BufferGeometry(); gp.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3)); gp.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
-  const mat = new THREE.PointsMaterial({ size: 0.55, vertexColors: true, map: brillo([[0, "rgba(255,255,255,1)"], [0.25, "rgba(255,255,255,.6)"], [1, "rgba(255,255,255,0)"]], 32), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+  const mat = sinManchaCerca(new THREE.PointsMaterial({ size: 0.55, vertexColors: true, map: brillo([[0, "rgba(255,255,255,1)"], [0.25, "rgba(255,255,255,.6)"], [1, "rgba(255,255,255,0)"]], 32), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   guirnaldas = new THREE.Points(gp, mat); guirnaldas.frustumCulled = false;
   esc.add(capaEfectos(guirnaldas));
 }
@@ -127,7 +127,7 @@ function armarLuciernagas(esc) {
   const N = 70, pos = new Float32Array(N * 3);
   for (let i = 0; i < N; i++) { const a = rnd(TAU), r = rnd(7, 16); lucData.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, y: rnd(0.4, 3), f: rnd(TAU), v: rnd(0.3, 0.8) }); }
   const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
-  luciernagas = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.28, map: brillo([[0, "rgba(240,255,160,1)"], [0.3, "rgba(200,255,120,.5)"], [1, "rgba(160,255,90,0)"]], 32), color: new THREE.Color(2, 2.4, 1.2), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  luciernagas = new THREE.Points(g, sinManchaCerca(new THREE.PointsMaterial({ size: 0.28, map: brillo([[0, "rgba(240,255,160,1)"], [0.3, "rgba(200,255,120,.5)"], [1, "rgba(160,255,90,0)"]], 32), color: new THREE.Color(2, 2.4, 1.2), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })));
   luciernagas.frustumCulled = false; esc.add(capaEfectos(luciernagas));
 }
 

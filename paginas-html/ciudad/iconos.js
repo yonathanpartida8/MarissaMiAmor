@@ -48,6 +48,9 @@ const T = {
   helado: '<path d="M8 10.5h8l-4 11z"/><path d="M8 10.5a4 4 0 1 1 8 0"/><path d="M10 7.2a2.2 2.2 0 0 1 4 0"/>',
   flor: '<circle cx="12" cy="8" r="2"/><path d="M12 5.2c0-2.4 3.2-2.4 3.2 0M14.8 8c2.4 0 2.4 3.2 0 3.2M12 10.8c0 2.4-3.2 2.4-3.2 0M9.2 8c-2.4 0-2.4-3.2 0-3.2"/><path d="M12 11v10M12 17c-2-2.5-4.5-2.5-5.5-1.5M12 15c2-2 4-2 5-1"/>',
   carta: '<rect x="3.5" y="6" width="17" height="12.5" rx="1.5"/><path d="m4 7 8 6 8-6"/><path d="M12 15.5s-1.6-1-1.6-2.1a.9.9 0 0 1 1.6-.5.9.9 0 0 1 1.6.5c0 1.1-1.6 2.1-1.6 2.1z" fill="currentColor"/>',
+  linterna: '<path d="M8 6.5h8l1.3 10H6.7z"/><path d="M9.5 4h5M12 4V2.5M9 19.5h6M10.5 16.5v3M13.5 16.5v3"/><path d="M12 9.5c1 1.2 1 2.6 0 3.6-1-1-1-2.4 0-3.6z" fill="currentColor"/>',
+  estrella: '<path d="M12 3.5l2.4 5 5.4.7-4 3.7 1 5.4L12 15.7l-4.8 2.6 1-5.4-4-3.7 5.4-.7z"/>',
+  fuegos: '<path d="M12 21v-7M12 11.5V9M12 6.5V3M7.8 7.8 6 6M16.2 7.8 18 6M8.5 12H6M18 12h-2.5M7.8 16.2 6 18M16.2 16.2 18 18"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>',
   cielo: '<path d="M14.5 13.5A6 6 0 0 1 8.5 5.5a6 6 0 1 0 6 8z"/><path d="M18 3.5l.7 1.8 1.8.7-1.8.7L18 8.5l-.7-1.8-1.8-.7 1.8-.7zM19 14l.5 1.2 1.2.5-1.2.5L19 17.4l-.5-1.2-1.2-.5 1.2-.5z"/>',
 };
 
@@ -59,7 +62,7 @@ export function icono(nombre, clase = "ico") {
 
 /* Para los textos que traen su emoji al principio («🪑 Sentarse»): se le
    quita y se pone el icono que toca según la palabra. */
-const POR_PALABRA = { helado: "helado", flores: "flor", cartita: "carta", "canción": "baile", bajar: "puerta", pararse: "persona", burger: "burger", sentarse: "banca", sentarnos: "banca", mirar: "ojo", subir: "coche", subirnos: "coche", acariciar: "patita", abrazo: "abrazo", selfie: "selfie", bailar: "baile", ver: "cielo" };
+const POR_PALABRA = { helado: "helado", flores: "flor", cartita: "carta", "canción": "baile", bajar: "puerta", pararse: "persona", burger: "burger", sentarse: "banca", sentarnos: "banca", mirar: "ojo", subir: "coche", subirnos: "coche", acariciar: "patita", abrazo: "abrazo", selfie: "selfie", bailar: "baile", ver: "cielo", "pétalos": "flor", farolitos: "linterna", fuegos: "fuegos", "luciérnagas": "estrella" };
 export function sinEmoji(txt) { return String(txt).replace(/^[^\p{L}\p{N}]+/u, "").trim(); }
 export function conIcono(txt) {
   const limpio = sinEmoji(txt), palabra = limpio.split(/\s+/)[0].toLowerCase();

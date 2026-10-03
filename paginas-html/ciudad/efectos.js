@@ -172,6 +172,17 @@ export function corazones(x, y, z, n = 6, fuerza = 2) {
   for (let i = 0; i < n; i++) amor.emitir(x + rnd(-0.3, 0.3), y, z + rnd(-0.3, 0.3), { vx: rnd(-fuerza, fuerza) * 0.5, vy: rnd(1, 2.4) * fuerza * 0.6, vz: rnd(-fuerza, fuerza) * 0.5, dur: rnd(1.4, 2.4), tam: rnd(0.35, 0.6), g: -0.3, color: Math.random() < 0.5 ? C("#ff7ab0", 1.6) : C("#ff4d7d", 1.6), roce: 1 });
 }
 export function lluviaDeCorazones(cx, cz, r) { amor.emitir(cx + rnd(-r, r), rnd(14, 20), cz + rnd(-r, r), { vx: rnd(-0.5, 0.5), vy: -rnd(1.5, 2.5), vz: rnd(-0.5, 0.5), dur: 7, tam: rnd(0.4, 0.7), color: Math.random() < 0.5 ? C("#ff7ab0", 1.5) : C("#ffb0d0", 1.5), piso: 0.2 }); }
+/* ── la magia romántica (menú de pareja) ── */
+export function petalos(cx, cz, r) { amor.emitir(cx + rnd(-r, r), rnd(7, 12), cz + rnd(-r, r), { vx: rnd(-0.8, 0.8), vy: -rnd(0.6, 1.1), vz: rnd(-0.8, 0.8), dur: 9, tam: rnd(0.16, 0.26), color: Math.random() < 0.5 ? C("#ff9ec4", 1.3) : C("#ffd0e0", 1.3), piso: 0.08 }); }
+export function farolito(x, y, z) { luz.emitir(x + rnd(-0.6, 0.6), y, z + rnd(-0.6, 0.6), { vx: rnd(-0.25, 0.25), vy: rnd(0.9, 1.5), vz: rnd(-0.25, 0.25), dur: rnd(9, 12), tam: rnd(0.55, 0.8), g: 0, color: C("#ffb060", 2.2), roce: 0.05 }); }
+export function luciernaga(x, y, z) { luz.emitir(x + rnd(-6, 6), y + rnd(0.3, 2.4), z + rnd(-6, 6), { vx: rnd(-0.4, 0.4), vy: rnd(-0.1, 0.25), vz: rnd(-0.4, 0.4), dur: rnd(3, 6), tam: rnd(0.12, 0.2), color: C("#d8ff7a", 2.4), roce: 0.3 }); }
+export function fuegoCorazon(x, y, z, ry, color = "#ff7ab0") {
+  // un corazón de chispas, de frente a la cámara (en el plano que mira hacia ry)
+  const cx = Math.cos(ry), cz = -Math.sin(ry);
+  for (let k = 0; k < 46; k++) { const a = k / 46 * TAU, hx = 16 * Math.sin(a) ** 3, hy = 13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a), v = 0.32;
+    luz.emitir(x, y, z, { vx: hx * v * cx, vy: hy * v, vz: hx * v * cz, dur: rnd(1.6, 2.2), tam: rnd(0.22, 0.32), g: 1.2, color: C(color, 2.6), roce: 1.1 }); }
+  luz.emitir(x, y, z, { vx: 0, vy: 0, vz: 0, dur: 0.5, tam: 4, color: C(color, 1.6), roce: 0 });
+}
 export function escombro(x, y, z, n, color, fuerza = 6, tam = 0.25) {
   const c = new THREE.Color(color);
   for (let i = 0; i < n; i++) {
