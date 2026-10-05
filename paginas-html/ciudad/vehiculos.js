@@ -498,24 +498,34 @@ export function bajarDelCoche(rapido = false) {
   if (c.estado === "conducido") { c.estado = "estacionado"; c.vel = 0; }
 }
 function conducir(c, dt) {
-  const [fx, fz] = [-Math.sin(J.camYaw || 0), -Math.cos(J.camYaw || 0)], rx = -fz, rz = fx;
-  const dx = rx * E.mx - fx * E.mz, dz = rz * E.mx - fz * E.mz, m = Math.min(1, Math.hypot(dx, dz));
-  let gas = 0;
-  const espera = J.esperandoElla && J.esperandoElla();
-  c.rgiro = m > 0.15 ? clamp(difAng(Math.atan2(dx, dz), c.ry), -1, 1) : 0;
-  if (m > 0.15 && !espera && !J.jugador.subir && !J.jugador.bajar) {
-    const quiere = Math.atan2(dx, dz), dif = difAng(quiere, c.ry);
-    if (Math.abs(dif) < 2.2) { gas = m; c.ry += clamp(dif, -1, 1) * dt * 2.2 * clamp(Math.abs(c.vel) / 4, 0.25, 1); }
-    else { gas = -m * 0.6; c.ry -= clamp(dif, -1, 1) * dt * 1.5 * clamp(Math.abs(c.vel) / 4, 0.2, 1); }
-  }
-  const vmax = E.correr ? 22 : 16;
-  c.vel = amort(c.vel, gas * vmax, gas ? 1.2 : 2.5, dt);
+  /* Manejar de verdad: el volante (flechas) gira las llantas poco a poco y el
+     coche da vuelta según su velocidad (modelo de bicicleta: parado no gira);
+     el pedal acelera, y si pides reversa yendo hacia adelante, primero frena.
+     Suelto, el coche rueda y se va frenando solo. */
+  const vmax = 19;
+  const libre = !(J.esperandoElla && J.esperandoElla()) && !J.jugador.subir && !J.jugador.bajar;
+  const giroObj = libre ? E.giro : 0;
+  c.volante = amort(c.volante || 0, giroObj, giroObj ? 4.5 : 6.5, dt);
+  const L = c.T.L * 0.62, ang = c.volante * 0.62 / (1 + Math.abs(c.vel) / 13);
+  const p = libre ? E.pedal : 0;
+  let a;
+  if (p > 0) a = c.vel < -0.3 ? 15 : 7.2 * (1 - clamp(c.vel / vmax, 0, 1));
+  else if (p < 0) a = c.vel > 0.3 ? -15 : -4.8 * (1 - clamp(-c.vel / 7, 0, 1));
+  else a = -Math.sign(c.vel) * Math.min(Math.abs(c.vel) / Math.max(dt, 1e-3), 1.4 + Math.abs(c.vel) * 0.16);
+  c.vel += a * dt;
+  if (!p && Math.abs(c.vel) < 0.06) c.vel = 0;
+  const w = c.vel * Math.tan(ang) / L;            // qué tan rápido gira (rad/s)
+  c.ry -= w * dt;
+  c.rgiro = -c.volante * 0.25;                     // las llantas de adelante (dibujo)
   c.x += Math.sin(c.ry) * c.vel * dt; c.z += Math.cos(c.ry) * c.vel * dt;
   const antes = { x: c.x, z: c.z };
   if (chocarEdificios(c, c.T.A * 0.55, 0)) { if (Math.abs(c.vel) > 5) impacto(c, Math.abs(c.vel) * 0.8, antes.x + Math.sin(c.ry) * 2, 0.5, antes.z + Math.cos(c.ry) * 2); c.vel *= -0.3; }
   c.x = clamp(c.x, -79, 79); c.z = clamp(c.z, -79, 79); c.y = c.T.H / 2;
-  c.cabeceo = amort(c.cabeceo, gas < 0 && c.vel > 0 ? 0.04 : -gas * 0.025, 6, dt);
-  c.balanceo = amort(c.balanceo, clamp(-difAng(Math.atan2(dx, dz), c.ry) * Math.abs(c.vel) * 0.012, -0.07, 0.07), 5, dt);
+  // la carrocería: se va de nariz al frenar, se sienta al acelerar y se recarga hacia afuera en las curvas
+  c.cabeceo = amort(c.cabeceo, clamp(-a * 0.0042, -0.035, 0.05), 6, dt);
+  c.balanceo = amort(c.balanceo, clamp(-c.vel * w * 0.011, -0.075, 0.075), 5, dt);
+  // derrapar: a mucha velocidad y con todo el volante, chillan las llantas
+  if (Math.abs(c.vel * w) > 9 && Math.abs(c.vel) > 8) { if (Math.random() < dt * 8) son("frenazo", c.x, c.z, 0.35); }
   motorRpm(clamp(Math.abs(c.vel) / vmax, 0, 1)); bucleEn("motor", 0.08 + Math.abs(c.vel) / vmax * 0.06, c.x, c.z);
   // atropellar NO: la gente se quita (y si no alcanza, sólo se cae)
   rejilla.cerca(c.x, c.z, 4, _c);

@@ -195,7 +195,7 @@ gente.iniciar(); coches.iniciar(); poderes.iniciar(); eventos.iniciar(); lugares
 let despierto = false;
 J.alTocarAlgo = () => { if (!despierto) { despierto = true; iniciarAudio(); bucleEn("ciudad", 0.05); } };
 setTimeout(() => decir("Mira… como nosotros próximamente 🤍", "yo", 4200), 1200);
-if (!memo.visto3d) setTimeout(() => { const txt = "Dedo izquierdo: caminar · derecho: girar la cámara (también al cielo)"; pista(txt); setTimeout(() => { if (document.getElementById("pista").textContent === txt) pista(""); }, 6000); }, 6200);
+if (!memo.visto3d) setTimeout(() => { const txt = "Joystick (abajo a la izquierda): caminar · el resto de la pantalla: mover la cámara"; pista(txt); setTimeout(() => { if (document.getElementById("pista").textContent === txt) pista(""); }, 6000); }, 6200);
 memo.visto3d = 1;
 if (/prueba/.test(location.search)) window.__J = J;
 requestAnimationFrame(cuadro);

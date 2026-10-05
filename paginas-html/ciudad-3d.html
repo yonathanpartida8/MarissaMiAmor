@@ -96,9 +96,25 @@ html, body{ margin: 0; padding: 0 !important; width: 100%; height: 100%; overflo
 .cd-globo.yo, .cd-globo.ella, .cd-globo.dios, .cd-globo.rick, .cd-globo.morty{ -webkit-line-clamp: 4; max-width: min(72vw, 330px); }
 
 /* el joystick */
-.cd-joy{ position: absolute; left: 0; top: 0; width: 120px; height: 120px; border-radius: 50%; border: 1.5px solid rgba(255,230,200,.3); background: radial-gradient(circle, rgba(255,240,220,.08), rgba(255,240,220,.02));
+.cd-joy{ position: absolute; left: calc(max(var(--seguro-lado, 0px), env(safe-area-inset-left, 0px)) + 18px); bottom: calc(var(--barra) + var(--seg-b) + 18px); top: auto; width: 128px; height: 128px; opacity: .55 !important; transition: opacity .2s; border-radius: 50%; border: 1.5px solid rgba(255,230,200,.3); background: radial-gradient(circle, rgba(255,240,220,.08), rgba(255,240,220,.02));
   opacity: 0; transition: opacity .2s; }
-.cd-joy.ver{ opacity: 1; }
+.cd-joy.ver{ opacity: 1 !important; }
+.cd-joy i{ transition: transform .06s linear; }
+/* ── en el coche: flechas a la izquierda, pedales a la derecha ── */
+.cd-volante, .cd-pedales{ position: absolute; display: none; gap: 12px; bottom: calc(var(--barra) + var(--seg-b) + 18px); }
+.cd-volante{ left: calc(max(var(--seguro-lado, 0px), env(safe-area-inset-left, 0px)) + 16px); }
+.cd-pedales{ right: 16px; flex-direction: column; align-items: flex-end; bottom: calc(var(--barra) + var(--seg-b) + 84px); }
+body.en-coche .cd-volante, body.en-coche .cd-pedales{ display: flex; }
+body.en-coche .cd-joy, body.en-coche .cd-golpe, body.en-coche .cd-saltar, body.en-coche .cd-pareja, body.en-coche .cd-poder, body.en-coche .cd-mini, body.en-coche .cd-dios{ display: none !important; }
+body.en-coche .cd-bajar{ right: 0; bottom: 0; }
+body.en-coche .cd-accion{ right: 104px; bottom: 0; }
+.cd-flecha{ width: 76px; height: 76px; border-radius: 22px; border: 1px solid var(--borde); background: radial-gradient(circle at 50% 30%, rgba(70,52,110,.9), rgba(20,15,40,.88) 70%); color: #ffe9d2; display: grid; place-items: center; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.cd-flecha svg, .cd-pedal svg{ width: 34px; height: 34px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.cd-pedal{ width: 86px; border-radius: 20px; border: 1px solid var(--borde); color: #ffe9d2; display: grid; place-items: center; gap: 2px; padding: 8px 0 6px; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.cd-pedal small{ font: 700 10px system-ui, sans-serif; letter-spacing: .04em; opacity: .85; }
+.cd-acel{ height: 96px; background: radial-gradient(circle at 50% 30%, rgba(40,110,70,.92), rgba(12,40,26,.9) 70%); }
+.cd-reversa{ height: 66px; background: radial-gradient(circle at 50% 30%, rgba(120,46,46,.92), rgba(44,14,14,.9) 70%); }
+.cd-flecha.on, .cd-pedal.on{ transform: scale(.92); filter: brightness(1.35); }
 .cd-joy i{ position: absolute; left: 36px; top: 36px; width: 48px; height: 48px; border-radius: 50%; background: rgba(255,236,214,.35); box-shadow: 0 0 18px rgba(255,180,220,.35); }
 
 /* los botones */

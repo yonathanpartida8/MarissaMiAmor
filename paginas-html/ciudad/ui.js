@@ -25,7 +25,9 @@
 import { J, clamp, aPantalla, adaptar } from "./base.js";
 import { icono, conIcono } from "./iconos.js";
 
-export const E = J.entrada = { mx: 0, mz: 0, mag: 0, correr: false, saltar: false, subir: false, bajar: false, golpe: false, golpeFuerte: false, accion: false, poder: false, poderSostenido: false, poderSuelto: false, dios: false, camDX: 0, camDY: 0, zoom: 0, hora: false, camara: false, pareja: false };
+export const E = J.entrada = { mx: 0, mz: 0, mag: 0, correr: false, saltar: false, subir: false, bajar: false, golpe: false, golpeFuerte: false, accion: false, poder: false, poderSostenido: false, poderSuelto: false, dios: false, camDX: 0, camDY: 0, zoom: 0, hora: false, camara: false, pareja: false,
+  // en el coche: volante (−1 izquierda … 1 derecha) y pedal (1 acelerar … −1 reversa/freno)
+  giro: 0, pedal: 0 };
 
 const raiz = document.getElementById("ui");
 const $ = (s) => raiz.querySelector(s);
@@ -50,6 +52,14 @@ export function armarUI() {
   <div class="cd-burbujas" id="burbujas"></div>
   <p class="cd-dialogo is-fuera" id="dialogo" role="status" aria-live="polite"></p>
   <div class="cd-joy" id="joy"><i></i></div>
+  <div class="cd-volante" id="volante">
+    <button class="cd-flecha" id="bIzq" aria-label="Girar a la izquierda"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg></button>
+    <button class="cd-flecha" id="bDer" aria-label="Girar a la derecha"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></button>
+  </div>
+  <div class="cd-pedales" id="pedales">
+    <button class="cd-pedal cd-acel" id="bAcel" aria-label="Acelerar"><svg viewBox="0 0 24 24"><path d="M12 4v16M6 10l6-6 6 6"/></svg><small>Acelerar</small></button>
+    <button class="cd-pedal cd-reversa" id="bRev" aria-label="Frenar y reversa"><svg viewBox="0 0 24 24"><path d="M12 20V4M6 14l6 6 6-6"/></svg><small>Reversa</small></button>
+  </div>
   <div class="cd-botones" id="botones">
     <button class="cd-b cd-dios" id="bDios" aria-label="Modo Dios">${icono("dios")}</button>
     <button class="cd-b cd-poder oculto" id="bPoder" aria-label="Usar poder">${icono("rayo")}</button>
@@ -74,6 +84,15 @@ export function armarUI() {
   $("#bSaltar").addEventListener("pointerdown", () => { E.saltar = true; E.subir = true; });
   for (const ev of ["pointerup", "pointercancel", "pointerleave"]) $("#bSaltar").addEventListener(ev, () => { E.subir = false; });
   $("#bBajar").addEventListener("pointerdown", () => { E.bajar = true; });
+  // el volante y los pedales: mientras el dedo esté encima
+  const sostener = (id, prender, apagar) => { const b = $("#" + id);
+    b.addEventListener("pointerdown", (e) => { e.stopPropagation(); try { b.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } b.classList.add("on"); prender(); try { navigator.vibrate && navigator.vibrate(6); } catch (er) { /* nada */ } });
+    for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, (e) => { e.stopPropagation(); b.classList.remove("on"); apagar(); });
+    b.addEventListener("pointermove", (e) => e.stopPropagation()); };
+  sostener("bIzq", () => { E.giroIzq = true; }, () => { E.giroIzq = false; });
+  sostener("bDer", () => { E.giroDer = true; }, () => { E.giroDer = false; });
+  sostener("bAcel", () => { E.pedalAcel = true; }, () => { E.pedalAcel = false; });
+  sostener("bRev", () => { E.pedalRev = true; }, () => { E.pedalRev = false; });
   for (const ev of ["pointerup", "pointercancel", "pointerleave"]) $("#bBajar").addEventListener(ev, () => { E.bajar = false; });
   $("#bGolpe").addEventListener("pointerdown", () => { E.golpeAbajo = performance.now(); E.cargandoGolpe = true; });
   $("#bGolpe").addEventListener("pointerup", () => { const d = performance.now() - (E.golpeAbajo || 0); E.cargandoGolpe = false; if (d > 380) E.golpeFuerte = true; else E.golpe = true; });
@@ -243,7 +262,8 @@ let ultimoToque = { t: 0, x: 0, y: 0 };
 const dedos = new Map();   // id → { x0, y0, x, y, t0, tipo }
 let joy = null, pinza = null;
 /* El joystick se adapta al teléfono: en pantallas grandes, más recorrido. */
-const joyR = () => clamp(Math.min(J.ancho, J.alto) * 0.16, 44, 76);
+const joyR = () => joyEl().getBoundingClientRect().width * 0.4;
+let enCoche = false;
 const joyEl = () => $("#joy");
 lienzo.addEventListener("pointerdown", (e) => {
   J.alTocarAlgo && J.alTocarAlgo();
@@ -260,10 +280,11 @@ lienzo.addEventListener("pointerdown", (e) => {
     return;
   }
   if (e.pointerType === "mouse" && e.button !== 0) { d.tipo = "cam"; return; }
-  // la zona del joystick: media pantalla de la izquierda, por debajo del primer cuarto
-  // (en apaisado la pantalla es bajita, así que se mide con el alto de verdad)
-  if (!joy && e.clientX < J.ancho * 0.5 && e.clientY > J.alto * 0.26 && e.clientX > 24) {
-    d.tipo = "joy"; joy = d; const j = joyEl(); j.classList.add("ver"); j.style.transform = `translate(${d.x0 - 60}px, ${d.y0 - 60}px)`;
+  // el joystick está FIJO abajo a la izquierda: sólo lo mueve el dedo que empieza encima de
+  // él; cualquier otro lugar de la pantalla mueve la cámara (o toca cosas)
+  const jr = joyEl().getBoundingClientRect(), jcx = jr.left + jr.width / 2, jcy = jr.top + jr.height / 2;
+  if (!joy && !enCoche && Math.hypot(e.clientX - jcx, e.clientY - jcy) < jr.width * 0.78) {
+    d.tipo = "joy"; d.x0 = jcx; d.y0 = jcy; joy = d; joyEl().classList.add("ver");
     try { navigator.vibrate && navigator.vibrate(5); } catch (er) { /* nada */ }
   }
 });
@@ -275,7 +296,7 @@ lienzo.addEventListener("pointermove", (e) => {
   if (d.tipo === "pinza" && dedos.size >= 2) { const [a, b] = [...dedos.values()]; const n = Math.hypot(a.x - b.x, a.y - b.y); E.zoom += (pinza - n) * 0.04; pinza = n; return; }
   if (d.tipo === "joy") {
     let jx = d.x - d.x0, jy = d.y - d.y0; const m = Math.hypot(jx, jy), R = joyR();
-    if (m > R) { d.x0 += (jx / m) * (m - R); d.y0 += (jy / m) * (m - R); jx = d.x - d.x0; jy = d.y - d.y0; joyEl().style.transform = `translate(${d.x0 - 60}px, ${d.y0 - 60}px)`; }
+    if (m > R) { jx *= R / m; jy *= R / m; }   // la base no se mueve: la perilla se queda en el borde
     // zona muerta chiquita y curva suave: caminar despacito es fácil; hasta el borde, corre
     const m2 = Math.hypot(jx, jy) / R, k = m2 < 0.12 ? 0 : Math.pow((m2 - 0.12) / 0.88, 1.2) / (m2 || 1);
     E.mx = jx / R * k; E.mz = jy / R * k; E.mag = Math.min(1, m2 < 0.12 ? 0 : (m2 - 0.12) / 0.88);
@@ -297,7 +318,7 @@ lienzo.addEventListener("pointermove", (e) => {
 function soltar(e) {
   const d = dedos.get(e.pointerId); if (!d) return;
   dedos.delete(e.pointerId);
-  if (d.tipo === "joy") { joy = null; E.mx = E.mz = E.mag = 0; E.correr = false; joyEl().classList.remove("ver", "corre"); joyEl().querySelector("i").style.transform = ""; }
+  if (d.tipo === "joy") { joy = null; E.mx = E.mz = E.mag = 0; E.correr = false; joyEl().classList.remove("ver", "corre"); joyEl().querySelector("i").style.transform = ""; teclado(); }
   if (d.tipo === "cam" && performance.now() - (d.tm || 0) < 60) { inercia.x = d.vx || 0; inercia.y = (d.vy || 0) * 0.6; }
   // doble toque en un lugar vacío: la cámara se acomoda detrás de mí
   if (d.tipo === "?") {
@@ -355,6 +376,10 @@ function teclado() {
 }
 /* Lo que se consume una vez por cuadro. */
 export function limpiarEntrada() {
+  const dentro = !!(J.jugador && J.jugador.coche);
+  if (dentro !== enCoche) { enCoche = dentro; document.body.classList.toggle("en-coche", dentro); if (dentro && joy) { joy = null; E.mx = E.mz = E.mag = 0; joyEl().classList.remove("ver", "corre"); } }
+  E.giro = (E.giroDer || teclas.has("d") || teclas.has("arrowright") ? 1 : 0) - (E.giroIzq || teclas.has("a") || teclas.has("arrowleft") ? 1 : 0);
+  E.pedal = (E.pedalAcel || teclas.has("w") || teclas.has("arrowup") ? 1 : 0) - (E.pedalRev || teclas.has("s") || teclas.has("arrowdown") ? 1 : 0);
   E.saltar = false; E.golpe = false; E.golpeFuerte = false; E.accion = false; E.poder = false; E.poderSuelto = false; E.dios = false; E.zoom = 0; E.hora = false; E.camara = false; E.pareja = false;
   // la inercia de la cámara entra como si el dedo siguiera, y se apaga sola
   E.camDX = inercia.x; E.camDY = inercia.y; inercia.x *= 0.86; inercia.y *= 0.8;
