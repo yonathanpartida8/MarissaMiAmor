@@ -17,12 +17,14 @@
  * Todo con material «de dibujo» (toon) y un borde de luz para que la ropa
  * negra se lea de noche.
  */
-import { J, THREE, clamp, lerp, amort, TAU, contorno, toon, lienzo, textura } from "./base.js";
+import { J, THREE, clamp, lerp, amort, difAng, TAU, contorno, toon, lienzo, textura } from "./base.js";
 
 /* ══════════════════ LA POSE ══════════════════ */
 export const ANG0 = { torsoX: 0, torsoY: 0, torsoZ: 0, cabezaX: 0, cabezaY: 0, cabezaZ: 0, hLX: 0, hLZ: 0.08, cLX: 0.15, hRX: 0, hRZ: 0.08, cRX: 0.15, pLX: 0, pLZ: 0, rLX: 0, pRX: 0, pRZ: 0, rRX: 0, pieL: 0, pieR: 0, cuerpoX: 0, cuerpoZ: 0, bajar: 0 };
 export function nuevaAnim() {
-  return { vel: 0, fase: 0, aire: 0, vuelo: 0, velVuelo: 0, sentado: 0, miedo: 0, arriba: 0, caido: 0, tel: 0, abraza: 0, saluda: 0, habla: 0, agacha: 0, grabar: 0, cargar: 0, apunta: 0, golpe: null, impacto: 0, mirarY: 0, temblor: 0, poder: 0, maneja: 0, volante: 0, baile: 0, selfie: 0, paz: 0, recarga: 0 };
+  return { vel: 0, fase: 0, aire: 0, vuelo: 0, velVuelo: 0, sentado: 0, miedo: 0, arriba: 0, caido: 0, tel: 0, abraza: 0, saluda: 0, habla: 0, agacha: 0, grabar: 0, cargar: 0, apunta: 0, golpe: null, impacto: 0, mirarY: 0, temblor: 0, poder: 0, maneja: 0, volante: 0, baile: 0, selfie: 0, paz: 0, recarga: 0,
+    // movimiento secundario: lo que el cuerpo arrastra con retardo (giro, arranque/frenada, aterrizaje)
+    giro: 0, ryAnt: null, empuje: 0, velAnt: 0, aterriza: 0, estirar: 1, parpadeo: 0, tic: 0 };
 }
 /* Lo que el cuerpo QUIERE hacer ahora, según lo que está pasando. */
 function objetivo(a, t, o) {
@@ -131,14 +133,69 @@ export function animar(act, dt, rapidez = 12) {
   const a = act.anim;
   if (!act.ang) act.ang = { ...ANG0 };
   objetivo(a, J.t, _o);
+  secundario(act, a, dt, _o);
   const k = 1 - Math.exp(-rapidez * dt);
   for (const n in _o) act.ang[n] += (_o[n] - act.ang[n]) * (n === "cuerpoX" || n === "bajar" ? k * 0.6 : k);
   if (a.golpe) { a.golpe.t += dt; if (a.golpe.t >= a.golpe.dur) a.golpe = null; }
   a.impacto = Math.max(0, a.impacto - dt * 3);
 }
+
+/* ══════════════════ MOVIMIENTO SECUNDARIO ══════════════════
+   Lo que hace que un muñeco deje de parecer un muñeco: el cuerpo no gira ni
+   arranca de golpe, sino que las partes de arriba se quedan atrás un
+   instante y luego alcanzan (follow-through); al correr y dar vuelta uno se
+   inclina hacia adentro, como en una moto; al frenar el torso se va para
+   atrás; al caer de alto el cuerpo se aplasta y rebota (squash & stretch);
+   y nadie está nunca perfectamente quieto. */
+function secundario(act, a, dt, o) {
+  const dts = Math.max(dt, 1e-3);
+  // ── cuánto está girando el cuerpo ahora (rad/s), suavizado ──
+  if (act.ry != null) {
+    if (a.ryAnt == null) a.ryAnt = act.ry;
+    const w = clamp(difAng(act.ry, a.ryAnt) / dts, -7, 7);
+    a.ryAnt = act.ry;
+    a.giro = lerp(a.giro, w, Math.min(1, dt * 6));
+  }
+  // ── cuánto está acelerando o frenando ──
+  const v = a.vel || 0;
+  a.empuje = lerp(a.empuje, clamp((v - a.velAnt) / dts, -9, 9), Math.min(1, dt * 7));
+  a.velAnt = v;
+  // de pie, sentado o manejando el cuerpo no arrastra nada de esto
+  const suelto = (1 - clamp(a.sentado, 0, 1)) * (1 - clamp(a.maneja, 0, 1)) * (1 - clamp(a.caido, 0, 1));
+  if (suelto > 0.01) {
+    const corre = clamp(v / 4, 0, 1);
+    // inclinarse hacia adentro de la vuelta (más cuanto más rápido)
+    const peralte = clamp(a.giro * (0.06 + corre * 0.1), -0.3, 0.3) * suelto;
+    o.cuerpoZ += peralte;
+    // la cabeza y el torso se quedan atrás y alcanzan después
+    o.torsoY -= a.giro * 0.07 * suelto;
+    o.cabezaY -= a.giro * 0.1 * suelto;
+    o.cabezaZ = (o.cabezaZ || 0) - peralte * 0.5;
+    // los brazos se abren un poquito hacia afuera en la curva
+    o.hLZ += Math.max(0, a.giro) * 0.07 * suelto; o.hRZ += Math.max(0, -a.giro) * 0.07 * suelto;
+    // arrancar echa el cuerpo adelante; frenar, atrás
+    o.torsoX += clamp(a.empuje * 0.035, -0.22, 0.22) * suelto;
+    o.cabezaX -= clamp(a.empuje * 0.02, -0.12, 0.12) * suelto;
+  }
+  // ── aterrizaje: aplastarse y rebotar ──
+  a.aterriza = Math.max(0, a.aterriza - dt * 2.6);
+  const ap = a.aterriza > 0 ? Math.sin(a.aterriza * Math.PI) * a.aterriza : 0;
+  a.estirar = 1 - ap * 0.16;
+  o.bajar -= ap * 0.1;
+  // ── un tic de vida: nadie está perfectamente quieto ──
+  a.tic += dt;
+  if (v < 0.2 && a.sentado < 0.5) {
+    const s = a.semilla || 0, n = Math.sin(a.tic * 0.9 + s) * Math.sin(a.tic * 0.37 + s * 2);
+    o.cabezaY += n * 0.05; o.cabezaZ = (o.cabezaZ || 0) + n * 0.02; o.hLZ += n * 0.012; o.hRZ -= n * 0.012;
+  }
+}
+/* Lo llama quien aterriza: `k` 0–1 según lo fuerte que haya caído. */
+export function golpeDeSuelo(act, k = 1) { if (act.anim) act.anim.aterriza = Math.max(act.anim.aterriza || 0, clamp(k, 0, 1)); }
 /* Pone los ángulos en las articulaciones. */
-export function aplicar(j, g, alturaCadera) {
+export function aplicar(j, g, alturaCadera, estirar = 1) {
   j.cuerpo.position.y = alturaCadera + g.bajar;
+  // squash & stretch: al caer se aplasta un poquito y se ensancha (y al revés)
+  if (estirar !== 1 || j.cuerpo.scale.y !== 1) { const e = clamp(estirar, 0.8, 1.15), w = 1 + (1 - e) * 0.7; j.cuerpo.scale.set(w, e, w); }
   j.cuerpo.rotation.set(g.cuerpoX, 0, g.cuerpoZ);
   j.torso.rotation.set(g.torsoX, g.torsoY, g.torsoZ);
   j.cabeza.rotation.set(g.cabezaX, g.cabezaY, g.cabezaZ || 0);
@@ -382,7 +439,7 @@ export class Gentio {
       j.raiz.position.set(a.x, a.y, a.z);
       j.raiz.rotation.set(0, a.ry, 0);
       j.raiz.scale.setScalar(a.escala || 1);
-      aplicar(j, a.ang || ANG0, ALTURA_CADERA);
+      aplicar(j, a.ang || ANG0, ALTURA_CADERA, a.anim ? a.anim.estirar : 1);
       j.raiz.updateMatrixWorld(true);
       for (const m of this.mallas) {
         const ver = !m.cuando || m.cuando(a);

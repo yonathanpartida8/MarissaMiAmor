@@ -242,6 +242,8 @@ const inercia = { x: 0, y: 0 };
 let ultimoToque = { t: 0, x: 0, y: 0 };
 const dedos = new Map();   // id → { x0, y0, x, y, t0, tipo }
 let joy = null, pinza = null;
+/* El joystick se adapta al teléfono: en pantallas grandes, más recorrido. */
+const joyR = () => clamp(Math.min(J.ancho, J.alto) * 0.16, 44, 76);
 const joyEl = () => $("#joy");
 lienzo.addEventListener("pointerdown", (e) => {
   J.alTocarAlgo && J.alTocarAlgo();
@@ -258,8 +260,11 @@ lienzo.addEventListener("pointerdown", (e) => {
     return;
   }
   if (e.pointerType === "mouse" && e.button !== 0) { d.tipo = "cam"; return; }
-  if (e.clientX < J.ancho * 0.45 && e.clientY > J.alto * 0.3 && !joy && e.clientX > 46) {
+  // la zona del joystick: media pantalla de la izquierda, por debajo del primer cuarto
+  // (en apaisado la pantalla es bajita, así que se mide con el alto de verdad)
+  if (!joy && e.clientX < J.ancho * 0.5 && e.clientY > J.alto * 0.26 && e.clientX > 24) {
     d.tipo = "joy"; joy = d; const j = joyEl(); j.classList.add("ver"); j.style.transform = `translate(${d.x0 - 60}px, ${d.y0 - 60}px)`;
+    try { navigator.vibrate && navigator.vibrate(5); } catch (er) { /* nada */ }
   }
 });
 lienzo.addEventListener("pointermove", (e) => {
@@ -269,16 +274,17 @@ lienzo.addEventListener("pointermove", (e) => {
   if (d.tipo === "luna") return;
   if (d.tipo === "pinza" && dedos.size >= 2) { const [a, b] = [...dedos.values()]; const n = Math.hypot(a.x - b.x, a.y - b.y); E.zoom += (pinza - n) * 0.04; pinza = n; return; }
   if (d.tipo === "joy") {
-    let jx = d.x - d.x0, jy = d.y - d.y0; const m = Math.hypot(jx, jy), R = 52;
+    let jx = d.x - d.x0, jy = d.y - d.y0; const m = Math.hypot(jx, jy), R = joyR();
     if (m > R) { d.x0 += (jx / m) * (m - R); d.y0 += (jy / m) * (m - R); jx = d.x - d.x0; jy = d.y - d.y0; joyEl().style.transform = `translate(${d.x0 - 60}px, ${d.y0 - 60}px)`; }
     // zona muerta chiquita y curva suave: caminar despacito es fácil; hasta el borde, corre
     const m2 = Math.hypot(jx, jy) / R, k = m2 < 0.12 ? 0 : Math.pow((m2 - 0.12) / 0.88, 1.2) / (m2 || 1);
     E.mx = jx / R * k; E.mz = jy / R * k; E.mag = Math.min(1, m2 < 0.12 ? 0 : (m2 - 0.12) / 0.88);
-    E.correr = m2 > 0.97; joyEl().classList.toggle("corre", E.correr);
+    const corria = E.correr; E.correr = m2 > 0.97; joyEl().classList.toggle("corre", E.correr);
+    if (E.correr && !corria) { try { navigator.vibrate && navigator.vibrate(9); } catch (er) { /* nada */ } }
     joyEl().querySelector("i").style.transform = `translate(${jx}px, ${jy}px)`;
     return;
   }
-  if (d.tipo === "?" && Math.hypot(d.x - d.x0, d.y - d.y0) > 9) d.tipo = "cam";
+  if (d.tipo === "?" && Math.hypot(d.x - d.x0, d.y - d.y0) > (e.pointerType === "touch" ? 14 : 9)) d.tipo = "cam";
   if (d.tipo === "cam") {
     // la misma vuelta por la misma fracción de pantalla, sea chica o grande
     const s = 390 / Math.max(320, Math.min(J.ancho, 900));
@@ -300,12 +306,15 @@ function soltar(e) {
     ultimoToque = { t, x: d.x, y: d.y };
   }
   if (d.tipo === "luna") { J.lunaDedos = null; for (const o of dedos.values()) if (o.tipo === "luna") o.tipo = "x"; }
-  if (d.tipo === "?" && performance.now() - d.t0 < 450 && J.alTocar) J.alTocar(d.x, d.y);
+  if (d.tipo === "?" && performance.now() - d.t0 < 600 && J.alTocar) J.alTocar(d.x, d.y);
 }
 lienzo.addEventListener("pointerup", soltar);
 lienzo.addEventListener("pointercancel", soltar);
 lienzo.addEventListener("wheel", (e) => { E.zoom += e.deltaY * 0.008; e.preventDefault(); }, { passive: false });
 lienzo.addEventListener("contextmenu", (e) => e.preventDefault());
+// iOS Safari: el pellizco de la página y el doble toque que hace zoom estorban al jugar
+for (const ev of ["gesturestart", "gesturechange", "gestureend"]) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
+document.addEventListener("dblclick", (e) => e.preventDefault(), { passive: false });
 
 const teclas = new Set();
 addEventListener("keydown", (e) => {

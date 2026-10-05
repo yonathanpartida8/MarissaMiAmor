@@ -23,7 +23,7 @@
  * nada de cajas de texto a cada rato.
  */
 import { J, THREE, clamp, lerp, amort, amortAng, difAng, rnd, elegir, anunciar, oir, TAU } from "./base.js";
-import { crearProtagonista, nuevaAnim, animar, aplicar, ALTURA_CADERA } from "./cuerpos.js";
+import { crearProtagonista, nuevaAnim, animar, aplicar, golpeDeSuelo, ALTURA_CADERA } from "./cuerpos.js";
 import { alturaSuelo, chocarEdificios, lugares, bancas, BORDE_MUNDO } from "./mundo.js";
 import { son, bucleEn } from "./audio.js";
 import { polvo, brillos, corazones, onda, chispas } from "./efectos.js";
@@ -265,10 +265,11 @@ function terminar(yo, dt, coche) {
   if (ella.mano > 0.05 && yo.vel < 3.4 && !coche) { const sw = Math.sin(yo.anim.fase) * 0.12 * Math.min(1, yo.vel / 2); yo.ang.hLZ = lerp(yo.ang.hLZ, MANO_ANG, ella.mano); yo.ang.hLX = lerp(yo.ang.hLX, 0.08 + sw, ella.mano); yo.ang.cLX = lerp(yo.ang.cLX, 0.14, ella.mano); }
   yo.j.raiz.position.set(yo.x, yo.y, yo.z);
   if (coche) yo.j.raiz.quaternion.copy(coche.m.raiz.quaternion); else yo.j.raiz.rotation.set(0, yo.ry, 0);
-  aplicar(yo.j, yo.ang, ALTURA_CADERA);
+  aplicar(yo.j, yo.ang, ALTURA_CADERA, yo.anim.estirar);
 }
 function aterrizar(yo, piso, vImp) {
   yo.y = piso; yo.vy = 0; yo.suelo = true; yo.vuela = false;
+  golpeDeSuelo(yo, clamp((vImp - 3) / 12, 0.18, 1));
   if (vImp > 7) { yo.aterriza = 0.35; son("aterriza", yo.x, yo.z, clamp(vImp / 14, 0.3, 1)); polvo(yo.x, piso, yo.z, Math.round(vImp), clamp(vImp / 12, 0.6, 1.6)); }
   if (vImp > 14) { J.temblor = Math.max(J.temblor || 0, 0.4); onda(yo.x, piso, yo.z, 6, 0.6, "#d8d0ff"); anunciar({ tipo: "aterriza", x: yo.x, z: yo.z, radio: 18, fuerza: 0.6 }); }
 }
@@ -534,7 +535,7 @@ export function actualizarElla(dt) {
   if (ella.j.melena) ella.j.melena.rotation.x = amort(ella.j.melena.rotation.x, clamp(ella.vel * 0.06, 0, 0.35) + Math.sin(J.t * 2) * 0.03, 6, dt);
   ella.j.raiz.position.set(ella.x, ella.y, ella.z);
   if (enAuto) ella.j.raiz.quaternion.copy(enAuto.m.raiz.quaternion); else ella.j.raiz.rotation.set(0, ella.ry, 0);
-  aplicar(ella.j, ella.ang, ALTURA_CADERA);
+  aplicar(ella.j, ella.ang, ALTURA_CADERA, ella.anim.estirar);
   // platica de vez en cuando (sólo si vamos juntos y cerquita)
   if (ella.estado === "sigue" && !J.dios.on && d < 3) {
     ella.charla -= dt;
