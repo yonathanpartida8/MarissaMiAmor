@@ -101,7 +101,7 @@ function objetivo(a, t, o) {
   // sentado
   if (a.sentado > 0) { const k = a.sentado; o.pLX = lerp(o.pLX, 1.5, k); o.pRX = lerp(o.pRX, 1.5, k); o.rLX = lerp(o.rLX, 1.5, k); o.rRX = lerp(o.rRX, 1.5, k); o.bajar = lerp(o.bajar, -0.47, k); o.hLX = lerp(o.hLX, 0.35, k); o.hRX = lerp(o.hRX, 0.35, k); o.cLX = lerp(o.cLX, 0.9, k); o.cRX = lerp(o.cRX, 0.9, k); o.torsoX = lerp(o.torsoX, -0.08, k); o.cuerpoZ = lerp(o.cuerpoZ, 0, k); o.pLZ = lerp(o.pLZ, 0.05, k); o.pRZ = lerp(o.pRZ, 0.05, k); }
   // manejando: las manos al volante, que gira con las vueltas
-  if (a.maneja > 0) { const k = a.maneja, v2 = a.volante || 0; o.hLX = lerp(o.hLX, 1.0 + v2 * 0.35, k); o.hRX = lerp(o.hRX, 1.0 - v2 * 0.35, k); o.cLX = lerp(o.cLX, 0.75, k); o.cRX = lerp(o.cRX, 0.75, k); o.hLZ = lerp(o.hLZ, -0.12, k); o.hRZ = lerp(o.hRZ, -0.12, k); o.torsoX = lerp(o.torsoX, 0.06, k); o.cabezaY = lerp(o.cabezaY, v2 * 0.4, k); }
+  if (a.maneja > 0) { const k = a.maneja, v2 = a.volante || 0; o.hLX = lerp(o.hLX, 1.05 + v2 * 0.35, k); o.hRX = lerp(o.hRX, 1.05 - v2 * 0.35, k); o.cLX = lerp(o.cLX, 0.8, k); o.cRX = lerp(o.cRX, 0.8, k); o.hLZ = lerp(o.hLZ, -0.12, k); o.hRZ = lerp(o.hRZ, -0.12, k); o.torsoX = lerp(o.torsoX, -0.12, k); o.cabezaX = lerp(o.cabezaX, 0.1, k); o.cabezaY = lerp(o.cabezaY, v2 * 0.4, k); }
   // recargada en el hombro del otro (sentados juntos)
   if (a.recarga > 0) { const k = a.recarga; o.cabezaZ = lerp(o.cabezaZ, -0.32, k); o.torsoZ = lerp(o.torsoZ, -0.07, k); o.cabezaX = lerp(o.cabezaX, 0.05, k); }
   // agachado
@@ -435,6 +435,8 @@ export function crearProtagonista(quien) {
     else { M(new THREE.CapsuleGeometry(0.05, 0.15, 4, 8).rotateX(Math.PI / 2).translate(0, -0.035, 0.05), blanco, f); M(new THREE.BoxGeometry(0.1, 0.025, 0.24).translate(0, -0.075, 0.05), negro3, f); }
   }
   j.mats = { piel, negro, pelo };
+  // estaturas de verdad (él ~1.75 m, ella ~1.67 m): así caben sentados en un coche normal
+  j.raiz.scale.setScalar(ella ? 0.88 : 0.92);
   return j;
 }
 

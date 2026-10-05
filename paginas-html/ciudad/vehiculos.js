@@ -138,7 +138,7 @@ function geometrias(tipo) {
   }
   if (T.taxi) l.caja(0, alto + 0.12, -0.05, 0.5, 0.12, 0.28, "#ffe8a0");
   const luces = l.geometria();
-  geoCache[tipo] = { pint, resto, vidrio, luces, ruedas, puerta, puertaV, zp1, R, asiento: [0.42, 0.27, -0.05 + (c0 + c1) * 0.18] };
+  geoCache[tipo] = { pint, resto, vidrio, luces, ruedas, puerta, puertaV, zp1, R, asiento: [0.42, 0.12, -0.05 + (c0 + c1) * 0.18] };
   return geoCache[tipo];
 }
 function unir(geos) {
@@ -237,7 +237,7 @@ export function iniciar() {
   for (let i = 0; i < n; i++) { const c = nuevoCoche(tipos[i % tipos.length]); ponerEnCalle(c); }
   // uno estacionado junto al inicio (para subirse)
   const est = nuevoCoche("vocho"); est.estado = "estacionado"; est.x = 27.2; est.z = 13; est.ry = Math.PI; est.y = est.T.H / 2; est.conductor = false; est.vel = 0;
-  J.golpearCoches = golpearCoches; J.explotarCoche = explotar; J.cocheEn = cocheEn;
+  J.golpearCoches = golpearCoches; J.explotarCoche = explotar; J.incendiarCoche = incendiar; J.cocheEn = cocheEn;
 }
 export function cocheEn(x, z, r = 2.5) { let m = null, md = 1e9; for (const c of J.coches) { if (c.estado === "fuera" || c.fase === "RESTOS") continue; const d = Math.hypot(c.x - x, c.z - z); if (d < r + c.T.L / 2 && d < md) { md = d; m = c; } } return m; }
 
@@ -408,8 +408,15 @@ function impacto(c, v, x, y, z) {
   son(k > 0.4 ? "chapa" : "golpe", x, z, clamp(k, 0.2, 1.2));
   chispas(x, y + 0.4, z, Math.round(4 + k * 14), 4 + k * 5);
   if (k > 0.25) polvo(x, Math.max(0.1, y), z, Math.round(3 + k * 5), 0.6 + k * 0.5);
-  abollar(c, x, y, z, clamp(0.08 + k * 0.22, 0, 0.42), 0.8 + k * 0.8);
-  c.dano = Math.min(1.2, c.dano + k * 0.32 / c.T.masa);
+  // la lámina se hunde de verdad (más hondo y más ancho cuanto más fuerte)
+  abollar(c, x, y, z, clamp(0.1 + k * 0.32, 0, 0.62), 0.9 + k * 1.1);
+  c.dano = Math.min(1.2, c.dano + k * 0.2 / c.T.masa);
+  // una puerta del lado del golpe se bota y se queda colgando
+  if (k > 0.5 && c.m.puertas.length && Math.random() < 0.45) {
+    _l.set(x, y, z); c.m.raiz.worldToLocal(_l);
+    const p = c.m.puertas.find((q) => Math.sign(q.s) === Math.sign(_l.x)) || c.m.puertas[0];
+    if (!p.rota) { p.rota = true; p.obj = rnd(0.35, 0.9); son("puerta", x, z, 0.8); }
+  }
   J.temblor = Math.max(J.temblor || 0, clamp(k * 0.35, 0, 0.6) * clamp(1 - Math.hypot(x - J.jugador.x, z - J.jugador.z) / 60, 0, 1));
   if (k > 0.45 && c.vidrios < 2) { c.vidrios++; c.m.mV.material = matVidrioRoto; son("vidrio", x, z); brillos(x, y + 1, z, 10, "azul", 0.6, 3); }
   if (k > 0.3 && c.conductor && c.estado !== "conducido" && Math.random() < 0.5) sacarConductor(c);
@@ -418,8 +425,15 @@ function impacto(c, v, x, y, z) {
   if (c.dano > 0.5 && c.fase !== "ARDIENDO") c.fase = "DAÑADO";
   J.caos += k * 4;
   if (k > 0.35) anunciar({ tipo: "choque", x, z, radio: 18 + k * 10, fuerza: k });
-  if (k > 1.25 || c.dano >= 1) setTimeout(() => explotar(c), 60);
-  else if (k > 0.9 && c.fase !== "ARDIENDO" && Math.random() < 0.5) { c.fase = "ARDIENDO"; c.arde = rnd(6, 9); }
+  // ya muy dañado, se prende el motor: humo negro, fuego en el cofre… y una mecha de
+  // varios segundos antes de explotar (da tiempo de bajarse y correr)
+  if (c.dano >= 0.85) incendiar(c, c.dano >= 1.1 ? rnd(3, 5) : rnd(7, 11));
+}
+/* El motor se prende: `t` segundos de fuego en el cofre y luego explota. */
+export function incendiar(c, t) {
+  if (c.fase === "ARDIENDO" || c.fase === "RESTOS" || c.fase === "RECUPERANDO" || c.estado === "fuera") return;
+  if (c.mecha == null || t < c.mecha) c.mecha = t;
+  if (!c.alarma) { c.alarma = 3; son("alarma", c.x, c.z); }
 }
 function abollar(c, x, y, z, hondo, radio) {
   // pasar el punto del golpe a coordenadas del coche y hundir la lámina cerca
@@ -576,6 +590,14 @@ export function actualizar(dt, dtReal) {
 function danoPorFase(c, dt) {
   if (c.alarma > 0) c.alarma -= dt;
   if (c.fase === "DAÑADO" || (c.fase === "GOLPEADO" && c.dano > 0.35)) { c.humoT -= dt; if (c.humoT < 0) { c.humoT = 0.35 - c.dano * 0.15; humo(c.x + Math.sin(c.ry) * c.T.L * 0.35, c.y + 1, c.z + Math.cos(c.ry) * c.T.L * 0.35, 1, 0.7 + c.dano * 0.5, c.dano > 0.6); } }
+  if (c.mecha != null && c.fase !== "ARDIENDO" && c.fase !== "RESTOS") {
+    c.mecha -= dt;
+    const fx0 = c.x + Math.sin(c.ry) * c.T.L * 0.36, fz0 = c.z + Math.cos(c.ry) * c.T.L * 0.36, crece = clamp(1 - c.mecha / 8, 0.25, 1);
+    if (Math.random() < dt * 16 * crece) fuego(fx0 + rnd(-0.3, 0.3), c.y + c.T.H * 0.45, fz0 + rnd(-0.3, 0.3), 1, 0.5 + crece * 0.8);
+    if (Math.random() < dt * 9) humo(fx0, c.y + c.T.H * 0.7, fz0, 1, 1 + crece, true);
+    if (c.mecha < 1.2 && Math.random() < dt * 10) chispas(fx0, c.y + 0.6, fz0, 3, 4, "fuego2");
+    if (c.mecha <= 0) { c.mecha = null; explotar(c); }
+  }
   if (c.fase === "ARDIENDO") {
     c.arde -= dt;
     if (Math.random() < dt * 22) fuego(c.x + rnd(-c.T.L / 3, c.T.L / 3), c.y + c.T.H * 0.6, c.z + rnd(-0.5, 0.5), 1, 1 + c.T.masa * 0.1);
@@ -617,7 +639,11 @@ function pintar(c, dt) {
   }
   const giro = (c.estado === "fisica" ? Math.hypot(c.vx, c.vz) : c.vel) * dt / 0.36;
   for (const w of c.m.ruedas) w.children[0].rotation.x += giro, w.children[1].rotation.x += giro;
-  for (const p of c.m.puertas) { p.ang = amort(p.ang, p.obj, 9, dt); p.p.rotation.y = -p.s * p.ang; }
+  for (const p of c.m.puertas) {
+    if (p.rota) { p.vang = (p.vang || 0) + ((p.obj - p.ang) * 30 - (p.vang || 0) * 2.2 + (c.vel || Math.hypot(c.vx || 0, c.vz || 0)) * rnd(-0.6, 0.6)) * dt; p.ang = clamp(p.ang + p.vang * dt, 0.05, 1.35); }
+    else p.ang = amort(p.ang, p.obj, 9, dt);
+    p.p.rotation.y = -p.s * p.ang;
+  }
   // las ruedas de adelante giran con el volante
   if (c.estado === "conducido" || c.estado === "maneja") { const v = clamp((c.rgiro || 0) * 2.2, -0.5, 0.5); c.m.ruedas[0].rotation.y = c.m.ruedas[1].rotation.y = amort(c.m.ruedas[0].rotation.y, v, 8, dt); }
   if (c.m.torreta) { const on = Math.sin(J.t * 14) > 0; c.m.torreta[0].material.color.set(on ? "#ff2030" : "#3a0810"); c.m.torreta[1].material.color.set(on ? "#0a1240" : "#2a60ff"); }

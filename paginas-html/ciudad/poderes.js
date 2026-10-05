@@ -297,7 +297,8 @@ export function explosion(x, y, z, k, menos = null) {
     const f = (1 - d / R) * (10 + k * 10) / c.T.masa;
     soltarFisica(c); c.vx += (dx / (d || 1)) * f; c.vz += (dz / (d || 1)) * f; c.vy += f * 0.8; c.w.add(new THREE.Vector3(rnd(-2, 2), rnd(-1, 1), rnd(-2, 2)).multiplyScalar(f * 0.15));
     c.dano += (1 - d / R) * k * 0.7 / c.T.masa;
-    if (c.dano >= 1) setTimeout(() => J.explotarCoche(c), rnd(300, 700));
+    // una explosión no revienta otro coche al instante: le prende el motor (y luego estalla)
+    if (c.dano >= 0.85) J.incendiarCoche && J.incendiarCoche(c, c.dano >= 1.15 ? rnd(1.5, 3) : rnd(5, 8));
   }
   for (const o of J.objetos) { const dx = o.x - x, dz = o.z - z, d = Math.hypot(dx, dz); if (d < R) { const f = (1 - d / R) * (8 + k * 8); objetos.empujar(o, (dx / (d || 1)) * f, f * 0.9, (dz / (d || 1)) * f, k); } }
   rejilla.cerca(x, z, R, _c);

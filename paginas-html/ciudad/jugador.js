@@ -44,7 +44,7 @@ function nuevoCuerpo(quien, x, z) {
 /* ══════════════════ YO ══════════════════ */
 /* Ir de la mano: la distancia entre los dos y lo que se abre cada brazo para que
    las manos se encuentren justo en medio (hombro 0.19 + brazo 0.56·sen θ = mitad). */
-const MANO_SEP = 0.64, MANO_ANG = Math.asin((MANO_SEP / 2 - 0.19) / 0.56) + 0.02;
+const MANO_SEP = 0.6, MANO_ANG = Math.asin((MANO_SEP / 2 - 0.19) / 0.56) + 0.02;
 
 export function crearJugador() {
   const p = lugares.inicio;
