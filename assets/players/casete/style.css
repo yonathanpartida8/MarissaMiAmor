@@ -1,0 +1,13 @@
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+body { display: grid; place-items: center; font-family: "Caveat", "Segoe Print", cursive; -webkit-tap-highlight-color: transparent; }
+.casete { position: relative; width: 280px; height: 172px; border: 3px solid #3b2a3f; border-radius: 16px; background: var(--color, #f7c6d9); box-shadow: 4px 4px 0 #3b2a3f; }
+.etiqueta { position: absolute; left: 16px; right: 16px; top: 12px; height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 6px; background: #fffaf0; border: 2px solid #3b2a3f; color: #3b2a3f; line-height: 1; }
+.titulo { font-size: 22px; }
+.sub { font-size: 14px; opacity: .7; }
+.ventana { position: absolute; left: 48px; right: 48px; top: 70px; height: 44px; border-radius: 22px; background: #3b2a3f; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; }
+.rueda { width: 30px; height: 30px; border-radius: 50%; background: repeating-conic-gradient(#fffaf0 0 20deg, #c7b6c0 20deg 60deg); border: 3px solid #fffaf0; }
+.cinta { position: absolute; left: 44px; right: 44px; top: 18px; height: 8px; background: #6b4a3a; border-radius: 4px; }
+.sonando .rueda { animation: gira 1.6s linear infinite; }
+@keyframes gira { to { transform: rotate(360deg); } }
+.play { position: absolute; left: 50%; bottom: -14px; width: 54px; height: 54px; margin-left: -27px; border: 3px solid #3b2a3f; border-radius: 50%; background: #fffaf0; color: #d8397a; font: 22px/1 system-ui; box-shadow: 2px 2px 0 #3b2a3f; cursor: pointer; }
+.play:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 #3b2a3f; }

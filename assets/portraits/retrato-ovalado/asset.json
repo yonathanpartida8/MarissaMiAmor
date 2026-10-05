@@ -1,0 +1,10 @@
+{
+  "nombre": "Retrato ovalado",
+  "descripcion": "Un marco dorado ovalado, como de fotografía antigua, con su cartelito.",
+  "ancho": 240,
+  "alto": 290,
+  "parametros": [
+    { "id": "foto", "tipo": "imagen", "etiqueta": "Foto" },
+    { "id": "texto", "tipo": "texto", "etiqueta": "Cartelito", "def": "mi amor" }
+  ]
+}

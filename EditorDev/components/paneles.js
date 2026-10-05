@@ -9,12 +9,13 @@
  *   </> HTML        bloques de HTML propio, aislados
  *   ⚙️ Ajustes      nombre, tamaño, portada, reproducción, exportar, borradores
  */
-import { el, seccion, fila, boton, control, Vinculos, aviso, confirmar, formatoBytes } from "./ui.js";
+import { el, seccion, fila, boton, control, Vinculos, aviso, confirmar, formatoBytes, debounce } from "./ui.js";
 import { leerRuta } from "../core/estado.js";
 import { FORMATOS, assetsUsados } from "../core/modelo.js";
 import { DIBUJOS, FORMAS } from "../assets/dibujos.js";
 import { elegir } from "../assets/selector.js";
 import { carpetasFotos } from "../assets/librito.js";
+import { catalogo } from "../componentes/catalogo.js";
 import { rutaAUrl } from "../assets/biblioteca.js";
 import { borrarArchivo, espacio } from "../storage/db.js";
 import { paletas } from "../../src/data/paletas.js";
@@ -29,11 +30,11 @@ export class Paneles {
     this.E = app.estado;
     this.v = new Vinculos();
     const pronto = () => { if (this._r) return; this._r = requestAnimationFrame(() => { this._r = null; this.v.refrescar(); }); };
-    this.E.on("proyecto", ({ ruta }) => { if (/musica\.asset|transicion\.tipo|formato/.test(ruta) && /musica|transiciones|ajustes/.test(this.actual)) this.rehacer(); else pronto(); });
-    this.E.on("pagina", ({ ruta }) => { if (/^musica|^transicion/.test(ruta) && /musica|transiciones/.test(this.actual)) this.rehacer(); else pronto(); });
-    this.E.on("actual", () => { if (/musica|transiciones|html/.test(this.actual)) this.rehacer(); });
+    this.E.on("proyecto", ({ ruta }) => { if (/musica\.asset|transicion\.(tipo|sonido)|formato/.test(ruta) && /audio|transiciones|ajustes/.test(this.actual)) this.rehacer(); else pronto(); });
+    this.E.on("pagina", ({ ruta }) => { if (/^musica|^transicion/.test(ruta) && /audio|transiciones/.test(this.actual)) this.rehacer(); else pronto(); });
+    this.E.on("actual", () => { if (/audio|transiciones|html/.test(this.actual)) this.rehacer(); });
     this.E.on("els", () => { if (this.actual === "html") this.rehacer(); });
-    this.E.on("assets", () => { if (/anadir|musica/.test(this.actual)) this.rehacer(); });
+    this.E.on("assets", () => { if (/fotos/.test(this.actual)) this.rehacer(); });
   }
 
   get P() { return this.E.proyecto; }
@@ -47,6 +48,8 @@ export class Paneles {
   rehacer() {
     const cont = this.cont;
     if (!cont || !this.P) return;
+    this._limpiar?.();
+    this._limpiar = null;
     const y = cont.scrollTop;
     this.v.vaciar();
     cont.textContent = "";
@@ -65,25 +68,23 @@ export class Paneles {
     return (ruta, op = {}) => control(this.v, { ...op, leer: () => leerRuta(E.pagina || {}, ruta) ?? op.def, escribir: (x) => E.setPag({ [ruta]: x }, op.nombre || "Página", ruta + E.paginaId) });
   }
 
-  /* ── 🧩 Añadir ──────────────────────────────────────────────────── */
-  _anadir(c) {
+  /* ── Piezas comunes de los paneles ──────────────────────────────── */
+  _pieza(icono, nombre, al, titulo) {
+    return el("button.ed-pieza", { type: "button", title: titulo || nombre, onClick: al }, [el("b", { html: icono }), el("span", { text: nombre })]);
+  }
+
+  _iconoForma(id) {
+    if (id === "rect") return '<i class="ed-ico-forma" style="border-radius:3px"></i>';
+    if (id === "circulo") return '<i class="ed-ico-forma" style="border-radius:50%"></i>';
+    if (id === "linea") return '<i class="ed-ico-forma" style="height:3px"></i>';
+    return `<svg viewBox="0 0 100 100" width="26" height="26"><path d="${RT.FIGURAS[id]}" fill="currentColor"/></svg>`;
+  }
+
+  /* ── ✿ Elementos ────────────────────────────────────────────────── */
+  _elementos(c) {
     const A = this.app.acciones;
-    const pieza = (icono, nombre, al, titulo) => el("button.ed-pieza", { type: "button", title: titulo || nombre, onClick: al }, [el("b", { html: icono }), el("span", { text: nombre })]);
-    c.append(seccion("Texto", [el("div.ed-piezas", {}, [
-      pieza('<i style="font:600 22px Georgia">Aa</i>', "Título", () => A.texto("titulo")),
-      pieza('<i style="font:italic 18px Georgia">Aa</i>', "Subtítulo", () => A.texto("subtitulo")),
-      pieza("¶", "Párrafo", () => A.texto("parrafo")),
-      pieza('<i style="font:22px Caveat,cursive">a</i>', "A mano", () => A.texto("mano")),
-      pieza("«»", "Frase", () => A.texto("cita")),
-      pieza('<i style="font:600 11px system-ui;letter-spacing:2px">ABC</i>', "Etiqueta", () => A.texto("etiqueta")),
-    ])]));
-    c.append(seccion("Fotos", [el("div.ed-piezas", {}, [
-      pieza("＋", "Añadir foto", () => A.foto(), "Sube tus fotos o elige una que ya subiste"),
-      pieza("▢", "Marco vacío", () => A.marcoFoto(), "Un hueco para poner la foto después"),
-      pieza("📸", "Álbum", () => A.album()),
-      pieza("🎞️", "Carrusel", () => A.carrusel()),
-    ])]));
-    c.append(seccion("Formas", [el("div.ed-piezas.chicas", {}, FORMAS.map((f) => pieza(this._iconoForma(f.id), f.n, () => A.forma(f.id))))]));
+    const pz = (...a) => this._pieza(...a);
+    c.append(seccion("Formas", [el("div.ed-piezas.chicas", {}, FORMAS.map((f) => pz(this._iconoForma(f.id), f.n, () => A.forma(f.id))))]));
     const lapiz = { color: this.P.ajustes.tema.acento, grosor: 5 };
     const btnLapiz = boton("✏️ Dibujar a mano", () => {
       const on = !this.app.lienzo.herramienta;
@@ -96,24 +97,61 @@ export class Paneles {
       fila("Color", control(this.v, { tipo: "color", leer: () => lapiz.color, escribir: (x) => { lapiz.color = x; } })),
       fila("Grosor", control(this.v, { tipo: "rango", min: 1, max: 30, leer: () => lapiz.grosor, escribir: (x) => { lapiz.grosor = x; } })),
     ]);
+    const adornos = el("div.ed-rejilla-assets.adornos");
     c.append(seccion("Dibujos y adornos", [
       el("div.ed-dibujos", {}, DIBUJOS.map((d) => el("button", { type: "button", title: d.n, html: d.svg, style: { color: this.P.ajustes.tema.acento }, onClick: () => A.dibujo(d.id) }))),
-      btnLapiz, opLapiz,
+      adornos, btnLapiz, opLapiz,
     ]));
-    c.append(seccion("Más", [el("div.ed-piezas", {}, [
-      pieza("⏺", "Botón", () => A.boton()),
-      pieza("▶", "Vídeo", () => A.video(), "Sube un vídeo tuyo"),
-      pieza("&lt;/&gt;", "HTML", () => A.html(), "Un bloque de HTML propio, aislado"),
-      pieza("📄", "Página original", () => this.app.importar.misPaginas(), "Una de tus páginas HTML del librito"),
+    catalogo().then((cat) => {
+      for (const g of cat.categorias) for (const it of g.items) if (it.tipo === "imagen") adornos.append(el("button.ed-asset", { type: "button", title: `${it.nombre} · ${g.nombre}`, onClick: () => A.imagenCatalogo(it) }, [el("img", { src: rutaAUrl(it.ruta), loading: "lazy", decoding: "async", alt: "" })]));
+    });
+    const marcos = [["polaroid", "Polaroid"], ["cinta", "Con cinta"], ["washi", "Washi"], ["vintage", "Vintage"], ["sello", "Sello"], ["doble", "Doble"]];
+    c.append(seccion("Marcos", [
+      el("div.ed-piezas", {}, [
+        pz("▢", "Marco vacío", () => A.marcoFoto()),
+        ...marcos.map(([m, n]) => pz(`<i class="ed-ico-marco m-${m}"></i>`, n, () => A.agregar("imagen", { nombre: "Marco " + n.toLowerCase(), imagen: { marco: m } }))),
+      ]),
+      el("small.ed-ayuda", { text: "Los marcos de assets/frames/ están en 🧩 Componentes." }),
+    ]));
+    c.append(seccion("Tarjetas", [el("div.ed-piezas", {}, [
+      pz("🗒", "Nota adhesiva", () => A.tarjeta("nota")), pz("💌", "Tarjeta", () => A.tarjeta("romantica")),
+      pz("🎟", "Boleto", () => A.tarjeta("boleto")), pz("📷", "Polaroid con frase", () => A.tarjeta("polaroid")),
+      pz("✉️", "Sobre", () => A.tarjeta("sobre")),
     ])]));
-    c.append(this._biblioteca());
+    c.append(seccion("Interactivos", [el("div.ed-piezas", {}, [
+      pz("⏺", "Botón", () => A.boton()), pz("📸", "Álbum", () => A.album()), pz("🎞️", "Carrusel", () => A.carrusel()),
+      pz("▶", "Vídeo", () => A.video(), "Sube un vídeo tuyo"), pz("&lt;/&gt;", "HTML", () => A.html(), "Un bloque de HTML propio, aislado"),
+      pz("📄", "Página original", () => this.app.importar.misPaginas(), "Una de tus páginas HTML del librito"),
+    ])]));
   }
 
-  _iconoForma(id) {
-    if (id === "rect") return '<i class="ed-ico-forma" style="border-radius:3px"></i>';
-    if (id === "circulo") return '<i class="ed-ico-forma" style="border-radius:50%"></i>';
-    if (id === "linea") return '<i class="ed-ico-forma" style="height:3px"></i>';
-    return `<svg viewBox="0 0 100 100" width="26" height="26"><path d="${RT.FIGURAS[id]}" fill="currentColor"/></svg>`;
+  /* ── T Texto ────────────────────────────────────────────────────── */
+  _texto(c) {
+    const A = this.app.acciones;
+    const t = this.P.ajustes.tema;
+    const muestra = (estilo, html, css) => el("button.ed-texto-muestra", { type: "button", onClick: () => A.texto(estilo), style: css }, [el("span", { html })]);
+    c.append(boton("＋ Añadir un cuadro de texto", () => A.texto("parrafo"), "primario ancho"));
+    c.append(seccion("Estilos", [
+      muestra("titulo", "Añade un título", { fontFamily: RT.pilaFuente(t.fuenteTitulos), fontSize: "28px", fontWeight: 600 }),
+      muestra("subtitulo", "Añade un subtítulo", { fontFamily: RT.pilaFuente(t.fuente), fontSize: "20px", fontStyle: "italic" }),
+      muestra("parrafo", "Un poquito de texto", { fontFamily: RT.pilaFuente("Jost"), fontSize: "15px" }),
+      muestra("mano", "escrito a mano", { fontFamily: RT.pilaFuente("Caveat"), fontSize: "28px", color: t.acento }),
+      muestra("cita", "«una frase bonita»", { fontFamily: RT.pilaFuente("Cormorant Garamond"), fontSize: "22px", fontStyle: "italic" }),
+      muestra("etiqueta", "ETIQUETA", { fontFamily: RT.pilaFuente("Jost"), fontSize: "12px", letterSpacing: "3px", fontWeight: 500, color: t.acento }),
+    ]));
+    c.append(seccion("Letras", [
+      el("div.ed-muestras", {}, Object.keys(RT.FUENTES).map((f) => el("span", { text: f, style: { fontFamily: RT.pilaFuente(f) } }))),
+      el("small.ed-ayuda", { text: "Elige un texto en la hoja y cambia su letra desde la barra de arriba (o abajo, en el teléfono)." }),
+    ], { abierta: false }));
+    RT.cargarFuentes(Object.keys(RT.FUENTES));
+  }
+
+  /* ── 🖼 Fotos ───────────────────────────────────────────────────── */
+  _fotos(c) {
+    const A = this.app.acciones;
+    c.append(el("button.ed-subir", { type: "button", onClick: () => A.foto() }, [el("b", { text: "＋" }), el("span", { text: "Subir fotos" }), el("small", { text: "se optimizan solas · el editor nunca pone fotos por su cuenta" })]));
+    c.append(el("div.ed-botonera", {}, [boton("▢ Marco vacío", () => A.marcoFoto(), "chico"), boton("📸 Álbum", () => A.album(), "chico"), boton("🎞️ Carrusel", () => A.carrusel(), "chico"), boton("▶ Vídeo", () => A.video(), "chico")]));
+    c.append(this._biblioteca());
   }
 
   /** Tus archivos: lo subido a este librito, con cuántas veces se usa. */
@@ -123,13 +161,13 @@ export class Paneles {
     const usados = assetsUsados(P);
     const todos = Object.values(P.assets).sort((a, b) => b.creado - a.creado);
     const fotos = todos.filter((a) => a.tipo === "imagen");
-    const otros = todos.filter((a) => a.tipo !== "imagen");
+    const otros = todos.filter((a) => a.tipo === "video");
     const rej = el("div.ed-rejilla-assets", {}, fotos.map((a) => el("button.ed-asset" + (usados.has(a.id) ? ".usado" : ""), { type: "button", title: `${a.nombre}${a.tam ? " · " + formatoBytes(a.tam) : ""}\nToca para ponerla en la página`, onClick: () => A._poner(A._elFoto(a.id)) }, [
       el("img", { src: this.app.bib.url(a.id) || "", loading: "lazy", decoding: "async", alt: "" }),
       usados.has(a.id) ? null : el("i.ed-borrar-asset", { html: "✕", title: "Quitar de la biblioteca", onClick: (e) => { e.stopPropagation(); this._quitarAsset(a); } }),
     ])));
     const lista = el("div.ed-rejilla-assets.lista", {}, otros.map((a) => el("div.ed-asset", {}, [
-      el("b", { text: a.tipo === "audio" ? "♪" : "▶" }), el("span", { text: a.nombre }), el("small", { text: usados.has(a.id) ? "en uso" : a.tam ? formatoBytes(a.tam) : "" }),
+      el("b", { text: "▶" }), el("span", { text: a.nombre }), el("small", { text: usados.has(a.id) ? "en uso" : a.tam ? formatoBytes(a.tam) : "" }),
       usados.has(a.id) ? null : el("button.ed-quitar", { type: "button", html: "✕", title: "Quitar", onClick: () => this._quitarAsset(a) }),
     ])));
     const libFotos = el("div");
@@ -150,8 +188,7 @@ export class Paneles {
       }
     });
     return seccion("Tu biblioteca", [
-      el("div.ed-botonera", {}, [boton("＋ Subir fotos", () => A.foto(), "chico primario"), boton("＋ Subir canción", async () => { await elegir(this.app, "audio"); }, "chico"), boton("＋ Subir vídeo", () => A.video(), "chico")]),
-      fotos.length ? rej : el("p.ed-vacio-txt", { text: "Aquí aparecerán las fotos que subas. El editor no añade nada por su cuenta." }),
+      fotos.length ? rej : el("p.ed-vacio-txt", { text: "Aquí aparecerán las fotos que subas." }),
       otros.length ? lista : null,
       d,
     ].filter(Boolean));
@@ -161,6 +198,130 @@ export class Paneles {
     if (!(await confirmar(`¿Quitar «${a.nombre}» de la biblioteca de este librito?`, "Quitar"))) return;
     if (a.fuente === "local") borrarArchivo(a.id).catch(() => {});
     this.E.quitarAsset(a.id);
+  }
+
+  /* ── 🧩 Componentes (assets/) ───────────────────────────────────── */
+  _componentes(c) {
+    const A = this.app.acciones;
+    const buscar = el("input.ed-txt.ed-buscar", { type: "search", placeholder: "Buscar componentes…" });
+    const lista = el("div");
+    c.append(buscar, lista);
+    const vivas = new IntersectionObserver((xs) => {
+      for (const x of xs) {
+        if (!x.isIntersecting) continue;
+        vivas.unobserve(x.target);
+        const it = x.target._it;
+        const W = it.ancho || 360, H = it.alto || 360;
+        const k = Math.min(132 / W, 96 / H);
+        const f = el("iframe.ed-comp-vivo", { src: rutaAUrl(it.ruta + (it.entrada || "index.html")), title: it.nombre, tabindex: "-1", loading: "lazy", style: { width: W + "px", height: H + "px", transform: `scale(${k})`, marginLeft: -(W * k) / 2 + "px", marginTop: -(H * k) / 2 + "px" } });
+        x.target.append(f);
+      }
+    }, { root: c, rootMargin: "80px" });
+    this._limpiar = () => vivas.disconnect();
+    catalogo().then((cat) => {
+      const pintar = () => {
+        const q = buscar.value.trim().toLowerCase();
+        lista.textContent = "";
+        let hay = 0;
+        for (const g of cat.categorias) {
+          const items = g.items.filter((it) => it.tipo === "componente" && (!q || (it.nombre + " " + it.descripcion + " " + g.nombre).toLowerCase().includes(q)));
+          if (!items.length) continue;
+          hay += items.length;
+          lista.append(seccion(g.nombre, [el("div.ed-comps", {}, items.map((it) => {
+            const prev = el("div.ed-comp-prev");
+            if (it.miniatura) prev.append(el("img", { src: rutaAUrl(it.miniatura), alt: "", loading: "lazy" }));
+            else { prev._it = it; vivas.observe(prev); }
+            return el("button.ed-comp", { type: "button", title: it.descripcion || it.nombre, onClick: () => A.componente(it) }, [prev, el("b", { text: it.nombre }), it.parametros?.length ? el("small", { text: "se puede personalizar" }) : null].filter(Boolean));
+          }))]));
+        }
+        if (!hay) lista.append(el("p.ed-vacio-txt", { text: q ? "Nada con ese nombre." : "Todavía no hay componentes en assets/." }));
+      };
+      buscar.addEventListener("input", debounce(pintar, 200));
+      pintar();
+    });
+    c.append(seccion("¿Cómo añado los míos?", [
+      el("p.ed-ayuda", { html: "Crea una carpeta en <b>assets/&lt;categoría&gt;/&lt;nombre&gt;/</b> con su <b>index.html</b> (y su css, js, imágenes, sonidos…). Aparece aquí sola en cuanto se sube a GitHub. Su HTML no se modifica nunca: el editor sólo lo coloca. Más detalles en <b>assets/LÉEME.md</b>." }),
+    ], { abierta: false }));
+  }
+
+  /* ── 🎵 Audio ───────────────────────────────────────────────────── */
+  _audio(c) {
+    const E = this.E;
+    const p = this._proy();
+    const g = this._pag();
+    const nombre = (id) => (id && this.P.assets[id]?.nombre) || null;
+    const escuchar = this._escuchar();
+    const gm = this.P.ajustes.musica;
+    c.append(seccion("Música de todo el librito", [
+      el("div.ed-cancion", {}, [el("b", { text: "♪" }), el("span", { text: nombre(gm.asset) || "Sin música" }), gm.asset ? escuchar(gm.asset) : null].filter(Boolean)),
+      el("div.ed-botonera", {}, [
+        boton(gm.asset ? "⟳ Cambiar canción" : "＋ Añadir canción", async () => { const [id] = await elegir(this.app, "audio", { titulo: "Música del librito" }); if (id) E.setProy({ "ajustes.musica.asset": id }, "Música del librito"); }, gm.asset ? "chico" : "chico primario"),
+        gm.asset ? boton("Quitar", () => E.setProy({ "ajustes.musica.asset": null }, "Quitar música"), "chico") : null,
+      ].filter(Boolean)),
+      fila("Volumen", p("ajustes.musica.volumen", { tipo: "rango", min: 0, max: 1, paso: 0.05 })),
+      fila("En bucle", p("ajustes.musica.bucle", { tipo: "toggle" })),
+    ]));
+    const pm = E.pagina?.musica || { modo: "global" };
+    const pag = [fila("Aquí suena", g("musica.modo", { tipo: "segmento", opciones: [["global", "La del librito"], ["propia", "Su canción"], ["silencio", "Silencio"]], def: "global" }))];
+    if (pm.modo === "propia") pag.push(
+      el("div.ed-cancion", {}, [el("b", { text: "♪" }), el("span", { text: nombre(pm.asset) || "Elige una canción" }), pm.asset ? escuchar(pm.asset) : null].filter(Boolean)),
+      boton(pm.asset ? "⟳ Cambiar canción" : "＋ Añadir canción", async () => { const [id] = await elegir(this.app, "audio", { titulo: "Canción de esta página" }); if (id) E.setPag({ "musica.asset": id }, "Canción de la página"); }, pm.asset ? "chico" : "chico primario"),
+      fila("Volumen", g("musica.volumen", { tipo: "rango", min: 0, max: 1, paso: 0.05, def: 0.85 })),
+      fila("En bucle", g("musica.bucle", { tipo: "toggle", def: true })),
+    );
+    pag.push(el("small.ed-ayuda", { text: "Al cambiar de canción se funden: una baja mientras la otra sube." }));
+    c.append(seccion("Esta página", pag));
+    // La biblioteca: «musica assets/», los sonidos de assets/ y lo subido.
+    const lib = el("div");
+    c.append(seccion("Biblioteca de audio", [lib, boton("＋ Subir canción o sonido", async () => { await elegir(this.app, "audio"); this.rehacer(); }, "chico")]));
+    const fila_ = (nom, ruta, peso) => {
+      const a = () => this.app.bib.delLibrito(ruta, "audio", nom, { tam: peso });
+      const b = el("button.ed-play", { type: "button", html: "▶", title: "Escuchar" });
+      b.addEventListener("click", () => this._sonar(rutaAUrl(ruta), b));
+      return el("div.ed-asset", {}, [b, el("span", { text: nom }), peso ? el("small", { text: formatoBytes(peso) }) : null,
+        el("button.ed-btn.chico", { type: "button", text: "De fondo", title: "Música de todo el librito", onClick: () => E.setProy({ "ajustes.musica.asset": a().id }, "Música del librito") }),
+        el("button.ed-btn.chico", { type: "button", text: "Aquí", title: "Sólo en esta página", onClick: () => E.setPag({ musica: { modo: "propia", asset: a().id, volumen: 0.85, bucle: true } }, "Canción de la página") }),
+      ].filter(Boolean));
+    };
+    catalogo().then((cat) => {
+      const musica = cat.musica.map((m) => fila_(m.nombre, m.ruta, m.peso));
+      const sonidos = [];
+      for (const gr of cat.categorias) for (const it of gr.items) if (it.tipo === "audio") sonidos.push(fila_(`${it.nombre} · ${gr.nombre.toLowerCase()}`, it.ruta, it.peso));
+      const mios = Object.values(this.P.assets).filter((a) => a.tipo === "audio" && a.fuente === "local").map((a) => el("div.ed-asset", {}, [escuchar(a.id), el("span", { text: a.nombre }), el("small", { text: formatoBytes(a.tam) })]));
+      lib.append(
+        el("b.ed-sub", { text: "🎵 Música (musica assets/)" }),
+        musica.length ? el("div.ed-rejilla-assets.lista", {}, musica) : el("p.ed-vacio-txt", { text: "Deja tus canciones en la carpeta «musica assets/» y aparecen aquí solas." }),
+        el("b.ed-sub", { text: "🔔 Sonidos (assets/)" }),
+        sonidos.length ? el("div.ed-rejilla-assets.lista", {}, sonidos) : el("p.ed-vacio-txt", { text: "Pon .mp3 cortos en cualquier carpeta de assets/." }),
+        mios.length ? el("b.ed-sub", { text: "⬆ Subidas a este librito" }) : null,
+        mios.length ? el("div.ed-rejilla-assets.lista", {}, mios) : null,
+      );
+    });
+    c.append(seccion("Reproducción", [
+      fila("Tocar para empezar", p("ajustes.reproduccion.tocarParaEmpezar", { tipo: "toggle" }), "los teléfonos no dejan sonar música hasta el primer toque"),
+      el("small.ed-ayuda", { text: "Los sonidos de cada botón o elemento se eligen en su sección «Sonidos» (inspector); el de pasar página, en 🎞️ Transiciones." }),
+    ], { abierta: false }));
+  }
+
+  _sonar(url, b) {
+    const a = Paneles._audio || (Paneles._audio = new Audio());
+    if (Paneles._sonando === url && !a.paused) { a.pause(); b.innerHTML = "▶"; return; }
+    document.querySelectorAll(".ed-play").forEach((x) => { x.innerHTML = "▶"; });
+    a.preload = "none";
+    a.src = url;
+    a.play().catch(() => aviso("No se pudo reproducir"));
+    Paneles._sonando = url;
+    b.innerHTML = "❚❚";
+    a.onended = () => { b.innerHTML = "▶"; };
+  }
+
+  /** Un botoncito ▶ que suena sólo cuando se pide (y para a los demás). */
+  _escuchar() {
+    return (id) => {
+      const b = el("button.ed-play", { type: "button", html: "▶", title: "Escuchar" });
+      b.addEventListener("click", () => this._sonar(this.app.bib.url(id), b));
+      return b;
+    };
   }
 
   /* ── 🎨 Diseño (tema) ───────────────────────────────────────────── */
@@ -215,6 +376,7 @@ export class Paneles {
       fila("Ritmo", p("ajustes.transicion.facil", { tipo: "select", opciones: facil })),
     ];
     if (gT.tipo === "personalizada") global.push(...this._transPropia(p, "ajustes.transicion.propia"));
+    global.push(this._sonidoFila(() => this.P.ajustes.transicion.sonido, (id) => E.setProy({ "ajustes.transicion.sonido": id }, "Sonido al pasar"), "Sonido al pasar"));
     c.append(seccion("Entre todas las páginas", global.filter(Boolean)));
     const pt = E.pagina?.transicion;
     const propia = [
@@ -228,6 +390,7 @@ export class Paneles {
         fila("Ritmo", g("transicion.facil", { tipo: "select", opciones: facil })),
       );
       if (pt.tipo === "personalizada") propia.push(...this._transPropia(g, "transicion.propia"));
+      propia.push(this._sonidoFila(() => E.pagina?.transicion?.sonido, (id) => E.setPag({ "transicion.sonido": id }, "Sonido al llegar"), "Sonido al llegar"));
     }
     propia.push(el("small.ed-ayuda", { text: "Es la transición con la que se LLEGA a esta página." }));
     c.append(seccion("Al llegar a esta página", propia.filter(Boolean)));
@@ -235,6 +398,13 @@ export class Paneles {
       const i = this.P.orden.indexOf(E.paginaId);
       this.app.vista.abrir(Math.max(0, i - 1), { avanzar: i > 0 });
     }, "primario"));
+  }
+
+  _sonidoFila(leer, escribir, etiqueta) {
+    const nombre = () => { const id = leer(); return id ? this.P.assets[id]?.nombre || "sonido" : "ninguno"; };
+    const b = boton("♪ " + nombre(), async () => { const [id] = await elegir(this.app, "audio", { titulo: etiqueta }); if (id) escribir(id); }, "chico");
+    this.v.add(() => { b.innerHTML = "♪ " + nombre(); });
+    return fila(etiqueta, el("div.ed-botonera", {}, [b, boton("▶", () => { const id = leer(); if (id) RT.sonar(this.app.bib.url(id)); }, "chico ico", "Escuchar"), boton("✕", () => escribir(null), "chico ico", "Quitar")]));
   }
 
   _transPropia(ctl, base) {
@@ -249,64 +419,6 @@ export class Paneles {
         fila("Desenfoque", ctl(base + ".desenfoque", { min: 0, max: 40, unidad: "px", def: 0 })),
       ]),
     ];
-  }
-
-  /* ── 🎵 Música ──────────────────────────────────────────────────── */
-  _musica(c) {
-    const E = this.E;
-    const p = this._proy();
-    const g = this._pag();
-    const bib = this.app.bib;
-    const nombre = (id) => (id && this.P.assets[id]?.nombre) || null;
-    const escuchar = this._escuchar();
-    const gm = this.P.ajustes.musica;
-    c.append(seccion("Música de todo el librito", [
-      el("div.ed-cancion", {}, [el("b", { text: "♪" }), el("span", { text: nombre(gm.asset) || "Sin música" }), gm.asset ? escuchar(gm.asset) : null].filter(Boolean)),
-      el("div.ed-botonera", {}, [
-        boton(gm.asset ? "⟳ Cambiar canción" : "＋ Añadir canción", async () => { const [id] = await elegir(this.app, "audio", { titulo: "Música del librito" }); if (id) E.setProy({ "ajustes.musica.asset": id }, "Música del librito"); }, gm.asset ? "chico" : "chico primario"),
-        gm.asset ? boton("Quitar", () => E.setProy({ "ajustes.musica.asset": null }, "Quitar música"), "chico") : null,
-      ].filter(Boolean)),
-      fila("Volumen", p("ajustes.musica.volumen", { tipo: "rango", min: 0, max: 1, paso: 0.05 })),
-      fila("En bucle", p("ajustes.musica.bucle", { tipo: "toggle" })),
-    ]));
-    const pm = E.pagina?.musica || { modo: "global" };
-    const pag = [fila("Aquí suena", g("musica.modo", { tipo: "segmento", opciones: [["global", "La del librito"], ["propia", "Su canción"], ["silencio", "Silencio"]], def: "global" }))];
-    if (pm.modo === "propia") pag.push(
-      el("div.ed-cancion", {}, [el("b", { text: "♪" }), el("span", { text: nombre(pm.asset) || "Elige una canción" }), pm.asset ? escuchar(pm.asset) : null].filter(Boolean)),
-      boton(pm.asset ? "⟳ Cambiar canción" : "＋ Añadir canción", async () => { const [id] = await elegir(this.app, "audio", { titulo: "Canción de esta página" }); if (id) E.setPag({ "musica.asset": id }, "Canción de la página"); }, pm.asset ? "chico" : "chico primario"),
-      fila("Volumen", g("musica.volumen", { tipo: "rango", min: 0, max: 1, paso: 0.05, def: 0.85 })),
-      fila("En bucle", g("musica.bucle", { tipo: "toggle", def: true })),
-    );
-    pag.push(el("small.ed-ayuda", { text: "Al cambiar de canción se funden: una baja mientras la otra sube." }));
-    c.append(seccion("Esta página", pag));
-    const canciones = Object.values(this.P.assets).filter((a) => a.tipo === "audio");
-    c.append(seccion("Tus canciones", [
-      canciones.length ? el("div.ed-rejilla-assets.lista", {}, canciones.map((a) => el("div.ed-asset", {}, [el("b", { text: "♪" }), el("span", { text: a.nombre }), escuchar(a.id)]))) : el("p.ed-vacio-txt", { text: "Todavía ninguna. Súbelas o elige del librito con «＋ Añadir canción»." }),
-      el("small.ed-ayuda", { text: "El editor no descarga canciones por su cuenta: sólo suenan cuando le das ▶." }),
-    ]));
-    c.append(seccion("Reproducción", [
-      fila("Tocar para empezar", p("ajustes.reproduccion.tocarParaEmpezar", { tipo: "toggle" }), "los teléfonos no dejan sonar música hasta el primer toque"),
-    ], { abierta: false }));
-    void bib;
-  }
-
-  /** Un botoncito ▶ que suena sólo cuando se pide (y para a los demás). */
-  _escuchar() {
-    return (id) => {
-      const b = el("button.ed-play", { type: "button", html: "▶", title: "Escuchar" });
-      b.addEventListener("click", () => {
-        const a = Paneles._audio || (Paneles._audio = new Audio());
-        if (Paneles._sonando === id && !a.paused) { a.pause(); b.innerHTML = "▶"; return; }
-        document.querySelectorAll(".ed-play").forEach((x) => { x.innerHTML = "▶"; });
-        a.preload = "none";
-        a.src = this.app.bib.url(id);
-        a.play().catch(() => aviso("No se pudo reproducir"));
-        Paneles._sonando = id;
-        b.innerHTML = "❚❚";
-        a.onended = () => { b.innerHTML = "▶"; };
-      });
-      return b;
-    };
   }
 
   /* ── </> HTML ───────────────────────────────────────────────────── */

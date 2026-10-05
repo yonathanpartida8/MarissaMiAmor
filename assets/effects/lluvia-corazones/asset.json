@@ -1,0 +1,11 @@
+{
+  "nombre": "Lluvia de corazones",
+  "descripcion": "Corazoncitos que caen meciéndose. Es decorativo: los toques pasan a lo de abajo.",
+  "ancho": 390,
+  "alto": 844,
+  "decorativo": true,
+  "parametros": [
+    { "id": "cantidad", "tipo": "numero", "etiqueta": "Cuántos", "def": 22, "min": 4, "max": 60 },
+    { "id": "colores", "tipo": "texto", "etiqueta": "Colores (separados por coma)", "def": "#ff8fb8,#ffc4d9,#f2c27d,#d8397a" }
+  ]
+}

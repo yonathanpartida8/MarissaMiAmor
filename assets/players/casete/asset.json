@@ -1,0 +1,12 @@
+{
+  "nombre": "Casete",
+  "descripcion": "Un reproductor de casete: toca ▶ y suena tu canción (las ruedas giran).",
+  "ancho": 310,
+  "alto": 210,
+  "parametros": [
+    { "id": "cancion", "tipo": "audio", "etiqueta": "Canción" },
+    { "id": "titulo", "tipo": "texto", "etiqueta": "Título", "def": "Nuestra canción" },
+    { "id": "subtitulo", "tipo": "texto", "etiqueta": "Abajo", "def": "lado A · para ti" },
+    { "id": "color", "tipo": "color", "etiqueta": "Color", "def": "#f7c6d9" }
+  ]
+}

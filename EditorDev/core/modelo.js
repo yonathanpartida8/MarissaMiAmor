@@ -42,6 +42,7 @@ export const TIPOS = {
   video: { n: "Vídeo", icono: "▶" },
   html: { n: "HTML", icono: "</>" },
   pagina: { n: "Página original", icono: "📄" },
+  componente: { n: "Componente", icono: "🧩" },
 };
 
 export function uid(prefijo = "e") {
@@ -96,7 +97,7 @@ const ANIM_VACIA = () => ({ entrada: { tipo: "ninguna" }, salida: { tipo: "ningu
 /** Medidas por defecto de cada tipo (antes de centrarlo en la hoja). */
 const TAM = {
   texto: [300, 60], imagen: [240, 300], forma: [160, 160], dibujo: [120, 120], trazo: [200, 120],
-  boton: [200, 56], album: [330, 330], carrusel: [330, 420], video: [330, 220], html: [330, 260], pagina: [390, 844],
+  boton: [200, 56], album: [330, 330], carrusel: [330, 420], video: [330, 220], html: [330, 260], pagina: [390, 844], componente: [280, 200],
 };
 
 export function nuevoEl(tipo, proyecto, datos = {}) {
@@ -121,6 +122,10 @@ export function nuevoEl(tipo, proyecto, datos = {}) {
     anim: ANIM_VACIA(),
     accion: null,
     origen: null,
+    efectos: null,      // sombra, resplandor, filtros (sobre todo el elemento)
+    sonidos: null,      // { tocar, aparecer, volumen } → ids de assets de audio
+    inicioOculto: false, // en el librito empieza escondido (lo muestra una acción)
+    grupo: null,        // los del mismo grupo se eligen y se mueven juntos
   };
   if (tipo === "pagina") { base.x = 0; base.y = 0; base.w = a.ancho; }
   const propio = {
@@ -135,6 +140,9 @@ export function nuevoEl(tipo, proyecto, datos = {}) {
     video: { asset: null, auto: false, bucle: false, silencio: false, controles: true, ajuste: "cover" },
     html: { codigo: '<div style="display:grid;place-items:center;height:100%;font:600 22px system-ui;color:#d8397a">Hola 🤍</div>', interactivo: true },
     pagina: { ruta: "", titulo: "" },
+    // Un componente de assets/: aquí sólo se guarda CÓMO se usa esta copia;
+    // el componente original no se toca nunca.
+    componente: { id: "", ruta: "", entrada: "index.html", ancho: null, alto: null, parametros: [], params: {}, decorativo: false, aislado: false, miniatura: null, ajuste: "escalar", sinFondo: false, recorte: false, seleccion: "zona", analisis: null },
   }[tipo];
   if (tipo === "boton") base.accion = { tipo: "siguiente" };
   if (tipo === "boton") base.caja = {};
@@ -158,8 +166,14 @@ export function assetsUsados(proyecto) {
       poner(e.video?.asset);
       for (const id of e.album?.fotos || []) poner(id);
       for (const id of e.carrusel?.fotos || []) poner(id);
+      poner(e.sonidos?.tocar);
+      poner(e.sonidos?.aparecer);
+      if (e.accion?.tipo === "sonido") poner(e.accion.destino);
+      for (const d of e.componente?.parametros || []) if (d.tipo === "imagen" || d.tipo === "audio") poner(e.componente.params?.[d.id]);
     }
+    poner(p.transicion?.sonido);
   }
+  poner(proyecto.ajustes?.transicion?.sonido);
   return usados;
 }
 

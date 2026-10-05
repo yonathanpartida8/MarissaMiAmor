@@ -8,6 +8,7 @@
 import { el, modal, aviso, formatoBytes } from "../components/ui.js";
 import { elegirArchivos, rutaAUrl } from "./biblioteca.js";
 import { carpetasFotos, cancionesDelLibrito, videos } from "./librito.js";
+import { catalogo } from "../componentes/catalogo.js";
 
 const ACEPTA = { imagen: "image/*", audio: "audio/*,.mp3,.m4a,.ogg,.wav", video: "video/*" };
 const NOMBRE = { imagen: "fotos", audio: "canciones", video: "vídeos" };
@@ -62,6 +63,11 @@ export async function elegir(app, tipo = "imagen", { multiple = false, titulo } 
     delLibrito.textContent = "Buscando…";
     if (tipo === "imagen") {
       const cs = await carpetasFotos();
+      const cat = await catalogo();
+      for (const g of cat.categorias) {
+        const imgs = g.items.filter((it) => it.tipo === "imagen");
+        if (imgs.length) cs.unshift({ carpeta: "assets/" + g.id, nombre: "✿ " + g.nombre + " (assets)", fotos: imgs.map((it) => it.ruta) });
+      }
       delLibrito.textContent = "";
       for (const c of cs) {
         const r = el("div.ed-rejilla-assets");
@@ -84,7 +90,14 @@ export async function elegir(app, tipo = "imagen", { multiple = false, titulo } 
         delLibrito.append(d);
       }
     } else {
-      const lista = tipo === "audio" ? await cancionesDelLibrito() : await videos();
+      let lista;
+      if (tipo === "audio") {
+        // Primero lo de «musica assets/» y los sonidos de assets/, luego lo del librito de siempre.
+        const cat = await catalogo();
+        const sueltos = [];
+        for (const g of cat.categorias) for (const it of g.items) if (it.tipo === "audio") sueltos.push({ ruta: it.ruta, nombre: `${it.nombre} · ${g.nombre.toLowerCase()}`, tam: it.peso });
+        lista = [...cat.musica.map((m) => ({ ruta: m.ruta, nombre: "🎵 " + m.nombre, tam: m.peso })), ...sueltos, ...(await cancionesDelLibrito())];
+      } else lista = await videos();
       delLibrito.textContent = "";
       const r = el("div.ed-rejilla-assets.lista");
       for (const c of lista) {

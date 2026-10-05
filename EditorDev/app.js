@@ -34,20 +34,25 @@ import { Vista } from "./components/vista.js";
 import { pantallaInicio } from "./components/inicio.js";
 import { atajos } from "./components/teclado.js";
 import { PLANTILLAS } from "./templates/plantillas.js";
+import { BarraContextual } from "./components/barra.js";
+import { ico } from "./components/iconos.js";
 
 const RT = window.LibritoRT;
 const ULTIMO = "editordev:ultimo";
 const $ = (s) => document.querySelector(s);
 
 const SECCIONES = [
-  ["paginas", "📄", "Páginas"],
-  ["anadir", "🧩", "Añadir"],
-  ["diseno", "🎨", "Diseño"],
-  ["animar", "✨", "Animar"],
-  ["transiciones", "🎞️", "Transiciones"],
-  ["musica", "🎵", "Música"],
-  ["html", "&lt;/&gt;", "HTML"],
-  ["ajustes", "⚙️", "Ajustes"],
+  ["paginas", "paginas", "Páginas"],
+  ["elementos", "elementos", "Elementos"],
+  ["texto", "texto", "Texto"],
+  ["fotos", "fotos", "Fotos"],
+  ["componentes", "componentes", "Componentes"],
+  ["audio", "audio", "Audio"],
+  ["animar", "animar", "Animar"],
+  ["diseno", "diseno", "Tema"],
+  ["transiciones", "transiciones", "Transiciones"],
+  ["html", "html", "HTML"],
+  ["ajustes", "ajustes", "Ajustes"],
 ];
 
 const app = {};
@@ -71,6 +76,8 @@ async function arrancar() {
   app.paneles = new Paneles(app);
   app.paginas = new PanelPaginas(app);
   app.tiempo = new Linea(app, $(".ed-linea"));
+  app.barra = new BarraContextual(app, $(".ed-contexto"));
+  app.abrirSeccion = (id) => abrirSeccion(id, true);
 
   const estadoGuardado = $(".ed-guardado");
   app.auto = new Autoguardado(E, (st) => {
@@ -97,6 +104,12 @@ async function arrancar() {
 /* ── Barra de arriba ─────────────────────────────────────────────────── */
 function construirBarra() {
   const E = app.estado;
+  // Los iconos a crayón de la barra de arriba.
+  $(".ed-deshacer").innerHTML = ico("deshacer");
+  $(".ed-rehacer").innerHTML = ico("rehacer");
+  $(".ed-guardar").innerHTML = ico("guardar");
+  $(".ed-previa").insertAdjacentHTML("afterbegin", ico("play"));
+  $(".ed-exportar").insertAdjacentHTML("afterbegin", ico("exportar"));
   const nombre = $(".ed-nombre input");
   nombre.addEventListener("change", () => { const n = nombre.value.trim(); if (n) E.setProy({ nombre: n }, "Nombre"); });
   nombre.addEventListener("keydown", (e) => { if (e.key === "Enter") nombre.blur(); e.stopPropagation(); });
@@ -137,17 +150,20 @@ function pintarHistorial() {
 function construirRiel() {
   const riel = $(".ed-riel");
   const tabs = $(".ed-tabs");
-  for (const [id, ico, n] of SECCIONES) {
-    riel.append(el("button", { type: "button", dataset: { s: id }, title: n, onClick: () => abrirSeccion(app.seccion === id && !esMovil() ? null : id, true) }, [el("b", { html: ico }), el("span", { text: n })]));
+  for (const [id, icono, n] of SECCIONES) {
+    riel.append(el("button", { type: "button", dataset: { s: id }, title: n, onClick: () => abrirSeccion(app.seccion === id && !esMovil() ? null : id, true) }, [el("b", { html: ico(icono) }), el("span", { text: n })]));
   }
-  const movil = [["paginas", "📄", "Páginas"], ["anadir", "🧩", "Añadir"], ["insp:diseno", "🎨", "Diseño"], ["insp:animar", "✨", "Animar"], ["insp:capas", "☰", "Capas"], ["mas", "⋯", "Más"]];
-  for (const [id, ico, n] of movil) {
+  const movil = [["paginas", "paginas", "Páginas"], ["elementos", "elementos", "Elementos"], ["texto", "texto", "Texto"], ["fotos", "fotos", "Fotos"], ["componentes", "componentes", "Piezas"], ["mas", "mas", "Más"]];
+  for (const [id, icono, n] of movil) {
     tabs.append(el("button", { type: "button", dataset: { s: id }, onClick: (e) => {
       if (id === "mas") {
         menu(e.currentTarget, [
-          { t: "🎨 Tema y letras", al: () => abrirSeccion("diseno", true) },
+          { t: "🎵 Audio y música", al: () => abrirSeccion("audio", true) },
+          { t: "✨ Animar", al: () => abrirSeccion("animar", true) },
+          { t: "🎨 Diseño del elemento", al: () => { app.insp.abrir("diseno"); abrirHoja("insp:diseno"); } },
+          { t: "☰ Capas", al: () => { app.insp.abrir("capas"); abrirHoja("insp:capas"); } },
+          { t: "🌸 Tema y letras", al: () => abrirSeccion("diseno", true) },
           { t: "🎞️ Transiciones", al: () => abrirSeccion("transiciones", true) },
-          { t: "🎵 Música", al: () => abrirSeccion("musica", true) },
           { t: "</> HTML", al: () => abrirSeccion("html", true) },
           { t: "⏱ Línea de tiempo", al: () => app.tiempo.alternar() },
           { t: "⚙️ Ajustes y exportar", al: () => abrirSeccion("ajustes", true) },
@@ -158,7 +174,7 @@ function construirRiel() {
       if (activo) { cerrarHoja(); return; }
       if (id.startsWith("insp:")) { app.insp.abrir(id.slice(5)); abrirHoja(id); }
       else abrirSeccion(id, true);
-    } }, [el("b", { html: ico }), el("span", { text: n })]));
+    } }, [el("b", { html: ico(icono) }), el("span", { text: n })]));
   }
   // El asa: tocarla o arrastrarla hacia abajo cierra la hoja.
   let y0 = null;
@@ -181,7 +197,7 @@ function abrirSeccion(id, desdeUsuario) {
   document.body.classList.toggle("sin-panel", !id);
   if (!id) { if (esMovil()) cerrarHoja(); return; }
   const titulo = SECCIONES.find((s) => s[0] === id);
-  $(".ed-panel-titulo").innerHTML = `${titulo[1]} ${titulo[2]}`;
+  $(".ed-panel-titulo").innerHTML = `${ico(titulo[1])}<span>${titulo[2]}</span>`;
   cont.textContent = "";
   cont.scrollTop = 0;
   if (id === "animar") {

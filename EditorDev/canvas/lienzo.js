@@ -18,9 +18,10 @@
 import { el } from "../components/ui.js";
 import { rutaAUrl } from "../assets/biblioteca.js";
 import { cajaDe, union, candidatos, imanMover, imanBorde, pintarRegla } from "./guias.js";
+import { tocaZona } from "../componentes/analizar.js";
 
 const RT = window.LibritoRT;
-const PROPORCION = new Set(["imagen", "dibujo", "trazo", "video"]);
+const PROPORCION = new Set(["imagen", "dibujo", "trazo", "video", "componente"]);
 const MANIJAS = { nw: [-1, -1], n: [0, -1], ne: [1, -1], e: [1, 0], se: [1, 1], s: [0, 1], sw: [-1, 1], w: [-1, 0] };
 const REGLA = 20;
 
@@ -86,7 +87,7 @@ export class Lienzo {
       else if (/^editor/.test(ruta)) this.pintarVista();
     });
     E.on("assets", () => { if (this.pag) { for (const n of this.pag.nodos.values()) n._rt.firma = null; this.pag.sincronizar(E.pagina); } });
-    E.on("sel", () => { this.salirRecorte(); this.pintarSobre(); });
+    E.on("sel", () => { this.salirRecorte(); if (this.probando && !E.sel.includes(this.probando)) this.salirProbar(); this.pintarSobre(); });
   }
 
   /** Pinta la página actual (y suelta la anterior entera). */
@@ -203,7 +204,19 @@ export class Lienzo {
     }
     if (sel.length > 1) {
       const u = union(sel.map(cajaDe));
-      caja({ ...u, rot: 0 }, "ed-caja-grupo");
+      const g = caja({ ...u, rot: 0 }, "ed-caja-grupo");
+      if (!sel.some((e) => e.bloqueado) && !this.editando) for (const m of ["nw", "ne", "se", "sw"]) g.append(el("i.ed-manija.m-" + m, { dataset: { m, grupo: "1" } }));
+    }
+    // Las zonas que detectó el editor en un componente (sólo para el editor).
+    if (unico && unico.tipo === "componente" && unico.componente?.analisis) {
+      const k = unico.componente, an = k.analisis;
+      const W = k.ajuste === "adaptar" ? unico.w : k.ancho || unico.w, H = k.ajuste === "adaptar" ? unico.h : k.alto || unico.h;
+      const sx = unico.w / W, sy = unico.h / H;
+      const marco = caja(unico, "ed-zonas");
+      const poner = (z, clase, txt) => marco.append(el("i." + clase, { title: txt || "", style: { left: z.x * sx * this.v.z + "px", top: z.y * sy * this.v.z + "px", width: z.w * sx * this.v.z + "px", height: z.h * sy * this.v.z + "px" } }));
+      for (const z of an.interactivos || []) poner(z, "ed-zona-toca", "zona táctil: " + (z.que || ""));
+      if (!(an.interactivos || []).length) for (const z of an.visual || []) poner(z, "ed-zona-ve");
+      if (k.sinFondo) marco.classList.add("sin-fondo");
     }
     const tl = this.aPantalla(0, 0);
     for (const x of this.lineas.x) { const p = this.aPantalla(x, 0); s.append(el("i.ed-iman.v", { style: { left: p.x + "px", top: tl.y + "px", height: this.H * z + "px" } })); }
@@ -222,22 +235,81 @@ export class Lienzo {
     this.app.acciones.barraFlotante(f, sel);
     f.hidden = false;
     const vw = this.vistaEl.clientWidth, fw = f.offsetWidth || 260, fh = f.offsetHeight || 44;
-    const reglas = this.raiz.classList.contains("con-reglas") ? REGLA : 0;
-    let top = a.y - fh - 34 + reglas;
-    if (top < 6 + reglas) top = Math.min(b.y + 34 + reglas, this.vistaEl.clientHeight - fh - 6 + reglas);
-    f.style.left = Math.max(6, Math.min(vw - fw - 6, a.x - fw / 2)) + reglas + "px";
-    f.style.top = top + "px";
+    const ox = this.vistaEl.offsetLeft, oy = this.vistaEl.offsetTop;
+    let top = a.y - fh - 34;
+    if (top < 6) top = Math.min(b.y + 34, this.vistaEl.clientHeight - fh - 6);
+    f.style.left = Math.max(6, Math.min(vw - fw - 6, a.x - fw / 2)) + ox + "px";
+    f.style.top = top + oy + "px";
   }
 
   /* ── Qué hay bajo el dedo ───────────────────────────────────────── */
   tocar(cx, cy, conBloqueados = false) {
+    const w = this.aMundo(cx, cy);
+    const els = this.estado.pagina?.els || [];
+    let arriba = null;
     for (const n of document.elementsFromPoint(cx, cy)) {
       const r = n.closest?.(".rt-el");
       if (!r || !this.hoja.contains(r)) continue;
       const e = this.estado.el(r.dataset.id);
-      if (e && !e.oculto && (conBloqueados || !e.bloqueado)) return e;
+      if (!e || e.oculto || (!conBloqueados && e.bloqueado)) continue;
+      // Un componente sólo se agarra por su zona real (su botón, lo que se ve),
+      // no por todo su rectángulo: así no tapa lo que hay debajo.
+      if (e.tipo === "componente" && e.componente?.seleccion !== "todo" && !this._enZona(e, w.x, w.y)) continue;
+      arriba = e;
+      break;
     }
-    return null;
+    // Lo ya elegido se agarra por toda su caja (para arrastrarlo), salvo que
+    // encima haya otra cosa: entonces gana la de encima.
+    for (const e of this.estado.seleccionados) {
+      if (e.bloqueado && !conBloqueados) continue;
+      if (this._dentro(e, w.x, w.y) && (!arriba || els.indexOf(e) >= els.indexOf(arriba))) return e;
+    }
+    return arriba;
+  }
+
+  /** Punto de la hoja → coordenadas propias del elemento (sin giro). */
+  _local(e, x, y) {
+    const cx = e.x + e.w / 2, cy = e.y + e.h / 2;
+    const r = (-(e.rot || 0) * Math.PI) / 180;
+    const dx = x - cx, dy = y - cy;
+    return { x: dx * Math.cos(r) - dy * Math.sin(r) + e.w / 2, y: dx * Math.sin(r) + dy * Math.cos(r) + e.h / 2 };
+  }
+
+  _dentro(e, x, y) { const l = this._local(e, x, y); return l.x >= 0 && l.y >= 0 && l.x <= e.w && l.y <= e.h; }
+
+  _enZona(e, x, y) {
+    const k = e.componente || {};
+    const l = this._local(e, x, y);
+    if (l.x < 0 || l.y < 0 || l.x > e.w || l.y > e.h) return false;
+    if (k.ajuste === "adaptar") return tocaZona(k.analisis, l.x, l.y);
+    return tocaZona(k.analisis, (l.x * (k.ancho || e.w)) / e.w, (l.y * (k.alto || e.h)) / e.h, 6 * ((k.ancho || e.w) / e.w));
+  }
+
+  /** Los del mismo grupo que `e` (o sólo él). */
+  _grupo(e) {
+    if (!e.grupo || this.dentroGrupo === e.grupo) return [e.id];
+    return this.estado.pagina.els.filter((x) => x.grupo === e.grupo && !x.oculto).map((x) => x.id);
+  }
+
+  /** Tocar un componente de verdad, aquí mismo, sin salir del editor. */
+  probarAqui(e) {
+    this.salirProbar();
+    const n = this.pag?.nodos.get(e.id);
+    if (!n) return;
+    n.classList.add("ed-probando");
+    this.probando = e.id;
+    this.aviso.hidden = false;
+    this.aviso.innerHTML = "";
+    this.aviso.append(el("span", { text: "Probando: tócalo como en el librito" }), el("button.ed-btn.primario", { type: "button", text: "Listo", onClick: () => this.salirProbar() }));
+    this.pintarSobre();
+  }
+
+  salirProbar() {
+    if (!this.probando) return;
+    this.pag?.nodos.get(this.probando)?.classList.remove("ed-probando");
+    this.probando = null;
+    this.aviso.hidden = true;
+    this.pintarSobre();
   }
 
   /* ── Gestos ─────────────────────────────────────────────────────── */
@@ -302,7 +374,7 @@ export class Lienzo {
     if (ev.pointerType === "mouse") ev.preventDefault();
     this.vistaEl.focus({ preventScroll: true });
     const man = ev.target.closest(".ed-manija");
-    if (man) { ev.preventDefault(); return this._manija(ev, man.dataset.m); }
+    if (man) { ev.preventDefault(); return man.dataset.grupo ? this._escalarGrupo(ev, man.dataset.m) : this._manija(ev, man.dataset.m); }
     if (this.herramienta === "lapiz") return this._lapiz(ev);
     if (ev.button === 1 || this.espacio) return this._pan(ev);
     const e = this.tocar(ev.clientX, ev.clientY);
@@ -310,11 +382,13 @@ export class Lienzo {
       if (e && e.id === this.recortando) return this._recorte(ev, e);
       this.salirRecorte();
     }
+    if (this.probando) this.salirProbar();
     if (e) {
       const sel = this.estado.sel;
       if (ev.target.closest("[data-pedir]") && sel.length === 1 && sel[0] === e.id) { this.app.acciones.pedirArchivoPara(e); return; }
-      if (ev.shiftKey || ev.metaKey || ev.ctrlKey) { this.estado.seleccionar([e.id], true); return; }
-      if (!sel.includes(e.id)) this.estado.seleccionar([e.id]);
+      if (e.grupo !== this.dentroGrupo) this.dentroGrupo = null;
+      if (ev.shiftKey || ev.metaKey || ev.ctrlKey) { this.estado.seleccionar(this._grupo(e), true); return; }
+      if (!sel.includes(e.id)) this.estado.seleccionar(this._grupo(e));
       this._mover(ev, e);
     } else if (ev.pointerType === "mouse") this._marco(ev);
     else this._pan(ev, true);
@@ -322,7 +396,13 @@ export class Lienzo {
 
   _toque(e) {
     const t = performance.now();
-    if (this._ult && this._ult.id === e.id && t - this._ult.t < 380) { this._ult = null; this.editar(e); return; }
+    if (this._ult && this._ult.id === e.id && t - this._ult.t < 380) {
+      this._ult = null;
+      // En un grupo, el doble toque entra a editar uno solo.
+      if (e.grupo && this.dentroGrupo !== e.grupo) { this.dentroGrupo = e.grupo; this.estado.seleccionar([e.id]); return; }
+      this.editar(e);
+      return;
+    }
     this._ult = { id: e.id, t };
   }
 
@@ -421,6 +501,29 @@ export class Lienzo {
       }
       E.setEl(e.id, { x: Math.round(cx - nw / 2), y: Math.round(cy - nh / 2), w: Math.round(nw), h: Math.round(nh) }, "Cambiar tamaño");
     }, () => { this.lineas = { x: [], y: [] }; this.gestoTam = false; fin(); });
+  }
+
+  /** Escalar varios a la vez (un grupo) desde una esquina. */
+  _escalarGrupo(ev, m) {
+    const E = this.estado;
+    const sel = E.seleccionados;
+    const u = union(sel.map(cajaDe));
+    const orig = sel.map((e) => ({ id: e.id, x: e.x, y: e.y, w: e.w, h: e.h, tam: e.texto?.tam, tamB: e.boton?.tam }));
+    const [sx, sy] = MANIJAS[m];
+    const ax = sx > 0 ? u.x : u.x + u.w, ay = sy > 0 ? u.y : u.y + u.h;
+    const x0 = ev.clientX, y0 = ev.clientY, z = this.v.z;
+    const fin = E.gesto("Escalar grupo");
+    this.gestoActivo = true;
+    this._seguir(ev, (mv) => {
+      const dx = ((mv.clientX - x0) / z) * sx, dy = ((mv.clientY - y0) / z) * sy;
+      const k = Math.max(0.1, Math.max((u.w + dx) / u.w, (u.h + dy) / u.h));
+      for (const o of orig) {
+        const c = { x: Math.round(ax + (o.x - ax) * k), y: Math.round(ay + (o.y - ay) * k), w: Math.round(o.w * k), h: Math.round(o.h * k) };
+        if (o.tam) c["texto.tam"] = Math.round(o.tam * k * 10) / 10;
+        if (o.tamB) c["boton.tam"] = Math.round(o.tamB * k * 10) / 10;
+        E.setEl(o.id, c, "Escalar grupo");
+      }
+    }, () => fin());
   }
 
   _pan(ev, tocarDeselecciona = false) {
@@ -542,7 +645,7 @@ export class Lienzo {
     else if (e.tipo === "imagen" && e.imagen?.asset) this.recortar(e);
     else if (e.tipo === "imagen" || e.tipo === "video" || e.tipo === "album" || e.tipo === "carrusel") this.app.acciones.pedirArchivoPara(e);
     else if (e.tipo === "html") this.app.acciones.editarHtml(e);
-    else if (e.tipo === "boton") this.app.insp?.abrir("diseno");
+    else if (e.tipo === "boton" || e.tipo === "componente") this.app.insp?.abrir("diseno");
   }
 
   editarTexto(e) {

@@ -21,6 +21,16 @@
 .rt-e-imagen .rt-c.rt-cinta { overflow: visible; }
 .rt-e-imagen .rt-c.rt-cinta::before { content: ""; position: absolute; z-index: 2; top: -12px; left: 50%; width: 38%; height: 26px; transform: translateX(-50%) rotate(-3deg); background: rgba(255, 236, 210, .78); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
 
+.rt-e-imagen .rt-c.rt-mf-vintage { overflow: visible; padding: 7%; background: #f4ead8; border-radius: 4px; box-shadow: inset 0 0 0 3px #fff8ea, inset 0 0 0 5px #cdb48c, 0 8px 20px rgba(70, 40, 20, .25); }
+.rt-e-imagen .rt-c.rt-mf-sello { overflow: visible; padding: 12px; background: radial-gradient(circle at 6px 6px, transparent 4px, #fffdf8 4.6px) -6px -6px / 12px 12px; filter: drop-shadow(0 6px 10px rgba(60, 20, 40, .22)); }
+.rt-e-imagen .rt-c.rt-mf-doble { overflow: visible; box-shadow: 0 0 0 5px #fffdf8, 0 0 0 8px #3b2a3f, 0 10px 22px rgba(60, 20, 40, .25); }
+.rt-e-imagen .rt-c.rt-mf-washi { overflow: visible; box-shadow: 0 8px 18px rgba(60, 20, 40, .2); }
+.rt-e-imagen .rt-c.rt-mf-washi::before, .rt-e-imagen .rt-c.rt-mf-washi::after { content: ""; position: absolute; z-index: 2; top: -10px; width: 34%; height: 22px; background: repeating-linear-gradient(45deg, rgba(255, 182, 210, .82) 0 7px, rgba(255, 222, 234, .82) 7px 14px); }
+.rt-e-imagen .rt-c.rt-mf-washi::before { left: -8%; transform: rotate(-28deg); }
+.rt-e-imagen .rt-c.rt-mf-washi::after { right: -8%; transform: rotate(26deg); background: repeating-linear-gradient(45deg, rgba(178, 214, 236, .85) 0 7px, rgba(214, 234, 246, .85) 7px 14px); }
+.rt-comp { overflow: hidden; }
+.rt-comp-mini { display: block; width: 100%; height: 100%; object-fit: contain; }
+.rt-modo-editor .rt-el.rt-escondido { opacity: .45; outline: 2px dashed rgba(216, 57, 122, .7); outline-offset: 2px; }
 .rt-figura { width: 100%; height: 100%; box-sizing: border-box; }
 .rt-linea { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); }
 

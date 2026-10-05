@@ -70,7 +70,9 @@ armar libritos nuevos o editar éste sin tocar código. Páginas, textos, fotos,
 capas, guías, deshacer, autoguardado y exportar a **.zip** con sólo lo que
 se usa. Tus páginas de `paginas-html/` se pueden usar tal cual o volverse
 plantillas editables. Vive entero en **`EditorDev/`** y el libro no carga
-nada de él hasta que se entra. Todo explicado en
+nada de él hasta que se entra. Su biblioteca se llena sola: componentes
+HTML en **`assets/<categoría>/<nombre>/`** (ver `assets/LÉEME.md`) y canciones
+en **`musica assets/`**. Todo explicado en
 [`EditorDev/LÉEME.md`](EditorDev/LÉEME.md).
 
 ---
@@ -140,6 +142,8 @@ musica barco/           barco.mp3: la música de 10 s del barquito («Aunque est
 mis-sonidos/            sonidos propios: corazón.mp3 (el latido de «Mi pulso»)
 noche-estrellada/       la escena final (bosque, cabaña, cacería)
 EditorDev/              «📖 Crear librito»: el editor visual (ver su LÉEME)
+assets/<categoría>/     componentes HTML, adornos y sonidos para el editor
+musica assets/          canciones para el editor
 herramientas/
   contenido.mjs         rehace la lista de lo que hay en las carpetas
   verificar.mjs         revisa el libro entero antes de publicar

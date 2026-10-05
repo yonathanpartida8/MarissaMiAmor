@@ -1,0 +1,11 @@
+{
+  "nombre": "Botón corazón",
+  "descripcion": "Una tarjetita de papel con un botón que late y suelta corazones.",
+  "ancho": 280,
+  "alto": 150,
+  "parametros": [
+    { "id": "texto", "tipo": "texto", "etiqueta": "Texto del botón", "def": "Ábreme" },
+    { "id": "color", "tipo": "color", "etiqueta": "Color del botón", "def": "#ff8fb8" },
+    { "id": "accion", "tipo": "opciones", "etiqueta": "Al tocarlo, además", "def": "", "opciones": [["", "Nada"], ["siguiente", "Pasar a la siguiente página"], ["anterior", "Volver a la anterior"], ["musica", "Pausar / poner la música"]] }
+  ]
+}

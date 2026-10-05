@@ -1,0 +1,10 @@
+{
+  "nombre": "Marco scrapbook",
+  "descripcion": "Foto pegada con cinta washi, su notita y un garabato.",
+  "ancho": 270,
+  "alto": 320,
+  "parametros": [
+    { "id": "foto", "tipo": "imagen", "etiqueta": "Foto" },
+    { "id": "texto", "tipo": "texto", "etiqueta": "Notita", "def": "nosotros ♡" }
+  ]
+}

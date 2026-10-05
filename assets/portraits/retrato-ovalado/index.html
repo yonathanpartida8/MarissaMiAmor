@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Retrato ovalado</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  body { display: grid; place-items: center; font-family: "Caveat", "Segoe Print", cursive; }
+  .marco { position: relative; width: 200px; height: 250px; padding: 14px; border-radius: 50%; background: radial-gradient(circle at 30% 25%, #f9e3b4, #d9a85b 60%, #a8742d); box-shadow: 0 10px 24px rgba(80, 40, 20, .3), inset 0 0 0 3px rgba(255, 240, 200, .6); box-sizing: border-box; }
+  .foto { width: 100%; height: 100%; border-radius: 50%; background: #f3e6ea center / cover no-repeat; box-shadow: inset 0 0 0 4px rgba(0, 0, 0, .15); display: grid; place-items: center; color: #b68aa0; font-size: 22px; }
+  .lazo { position: absolute; left: 50%; bottom: -16px; transform: translateX(-50%); padding: 4px 18px; border-radius: 8px; background: #fff7ee; border: 2px solid #3b2a3f; color: #3b2a3f; font-size: 22px; white-space: nowrap; box-shadow: 2px 2px 0 #3b2a3f; }
+</style>
+</head>
+<body>
+  <div class="marco"><div class="foto">tu foto</div><span class="lazo">mi amor</span></div>
+  <script src="../../_librito/componente.js"></script>
+  <script>
+    (function () {
+      var p = LibritoComponente.params();
+      var f = document.querySelector(".foto");
+      if (p.foto) { f.style.backgroundImage = 'url("' + p.foto + '")'; f.textContent = ""; }
+      if (p.texto != null) document.querySelector(".lazo").textContent = p.texto;
+      if (p.texto === "") document.querySelector(".lazo").remove();
+    })();
+  </script>
+</body>
+</html>

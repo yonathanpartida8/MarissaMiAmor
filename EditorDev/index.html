@@ -9,7 +9,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📖%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Caveat:wght@400;600&family=Jost:wght@300;400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Caveat:wght@400;600;700&family=Jost:wght@300;400;500;600&family=Patrick+Hand&display=swap">
 <link rel="stylesheet" href="runtime/librito.css">
 <link rel="stylesheet" href="styles/editor.css">
 </head>
@@ -21,8 +21,8 @@
       <span class="ed-guardado" data-st="guardado">✓ Guardado</span>
     </div>
     <div class="ed-acciones">
-      <button type="button" class="ed-btn ico ed-deshacer" aria-label="Deshacer" disabled>↶</button>
-      <button type="button" class="ed-btn ico ed-rehacer" aria-label="Rehacer" disabled>↷</button>
+      <button type="button" class="ed-btn ico ed-deshacer" aria-label="Deshacer" disabled></button>
+      <button type="button" class="ed-btn ico ed-rehacer" aria-label="Rehacer" disabled></button>
       <select class="ed-zoom ed-sel" aria-label="Zoom">
         <option value="">Ajustar</option>
         <option value="ajustar">Ajustar a la pantalla</option>
@@ -32,9 +32,9 @@
         <option value="1.5">150 %</option>
         <option value="2">200 %</option>
       </select>
-      <button type="button" class="ed-btn ed-previa" title="Ver el librito como lo verá ella">▶ <span>Vista previa</span></button>
-      <button type="button" class="ed-btn ico ed-guardar" aria-label="Guardar y borradores" title="Guardar y borradores">💾</button>
-      <button type="button" class="ed-btn primario ed-exportar" title="Descargar el librito completo en .zip">📦 <span>Exportar ZIP</span></button>
+      <button type="button" class="ed-btn ed-previa" title="Ver el librito como lo verá ella"><span>Reproducir</span></button>
+      <button type="button" class="ed-btn ico ed-guardar" aria-label="Guardar y borradores" title="Guardar y borradores"></button>
+      <button type="button" class="ed-btn primario ed-exportar" title="Descargar el librito completo en .zip"><span>Exportar</span></button>
     </div>
   </header>
 
@@ -47,6 +47,7 @@
   </aside>
 
   <main class="ed-centro">
+    <div class="ed-contexto" role="toolbar" aria-label="Herramientas de lo elegido" hidden></div>
     <section class="ed-linea" hidden aria-label="Línea de tiempo"></section>
   </main>
 

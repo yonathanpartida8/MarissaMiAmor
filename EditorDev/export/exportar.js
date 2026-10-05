@@ -18,6 +18,7 @@
 import { Zip } from "./zip.js";
 import { assetsUsados, fuentesUsadas, clonar, VERSION } from "../core/modelo.js";
 import { RAIZ, rutaAUrl } from "../assets/biblioteca.js";
+import { catalogo } from "../componentes/catalogo.js";
 
 const RT = window.LibritoRT;
 const RUNTIME = ["rt-base.js", "rt-render.js", "rt-anim.js", "rt-comps.js", "rt-trans.js", "rt-musica.js", "rt-player.js"];
@@ -74,6 +75,21 @@ export async function exportar(app, { alProgreso } = {}) {
   /* 2 · Tus páginas HTML usadas tal cual (y lo que piden) */
   const variantes = {};
   const originales = new Map();
+  // Los componentes de assets/: su carpeta ENTERA, tal cual (más lo que pidan de fuera).
+  const cat = await catalogo();
+  const porId = {};
+  for (const g of cat.categorias) for (const it of g.items) porId[it.id] = it;
+  const sinFondo = {};
+  for (const pid of P.orden) {
+    for (const e of P.paginas[pid].els) {
+      if (e.tipo !== "componente" || !e.componente?.ruta) continue;
+      const k = e.componente;
+      const it = porId[k.id];
+      const lista = it?.archivos?.length ? it.archivos : [k.entrada || "index.html"];
+      for (const f of lista) if (!originales.has(k.ruta + f)) originales.set(k.ruta + f, null);
+      if (k.sinFondo) sinFondo[e.id] = { base: k.ruta + (k.entrada || "index.html"), entrada: (k.entrada || "index.html").replace(/(\.html?)$/i, `.${e.id}$1`), css: RT.cssSinFondo(k.analisis) };
+    }
+  }
   for (const pid of P.orden) {
     const pg = P.paginas[pid];
     const ocultos = RT.ocultosDe(pg);
@@ -119,6 +135,13 @@ export async function exportar(app, { alProgreso } = {}) {
         bytes += b.size;
       }
     }
+    // Las copias sin fondo (sólo de las que lo pediste; el original queda igual).
+    for (const [, v] of Object.entries(sinFondo)) {
+      const txt = originales.get(v.base);
+      if (txt == null) continue;
+      const estilo = `<style id="rt-sin-fondo">${v.css}</style>`;
+      zip.agregar("pages/originales/" + v.base.replace(/[^/]+$/, v.entrada), /<\/head>/i.test(txt) ? txt.replace(/<\/head>/i, estilo + "</head>") : estilo + txt);
+    }
     // Las copias con lo sacado a capas ya escondido (así funciona también como archivo).
     for (const v of Object.values(variantes)) {
       const txt = originales.get(v.base);
@@ -136,6 +159,7 @@ export async function exportar(app, { alProgreso } = {}) {
     const pg = clonar(P.paginas[pid]);
     for (const e of pg.els) {
       if (variantes[e.id]) e.pagina.ruta = variantes[e.id].ruta;
+      if (sinFondo[e.id]) e.componente.entrada = sinFondo[e.id].entrada;
       delete e.bloqueado;
     }
     const nombre = `pages/pagina-${String(i + 1).padStart(2, "0")}.js`;

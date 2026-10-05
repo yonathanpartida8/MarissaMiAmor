@@ -31,6 +31,64 @@ pero lo que hagas se guarda aparte.
 | **Guardar** | **autoguardado** (espera 0,8 s sin tocar, como mucho 5 s; sólo lo que cambió), deshacer/rehacer (150 pasos, sólo lo que cambió), borradores: abrir, nuevo, duplicar, borrar |
 | **Exportar** | **.zip** con todo lo necesario y SÓLO lo usado; se vuelve a abrir en el editor |
 
+## 🧩 Componentes de `assets/` (HTML de verdad)
+
+Todo lo que dejes en **`assets/<categoría>/<componente>/index.html`** (con su
+CSS, JS, imágenes, sonidos y fuentes al lado) aparece solo en
+**🧩 Componentes**, agrupado por categoría y con su miniatura en vivo. Las
+imágenes sueltas de `assets/` salen en **Elementos → Dibujos y adornos** y los
+sonidos en **🎵 Audio**. La guía para crearlos está en `assets/LÉEME.md`.
+
+- **El componente no se toca nunca.** Se muestra en su propio marco con sus
+  rutas, estilos, scripts, eventos y zona táctil tal cual. Cada copia en una
+  página guarda sólo dónde va, su tamaño, giro, capa, animación, sonidos,
+  efectos y sus **parámetros** (los que declare su `asset.json`: texto,
+  color, foto, canción…).
+- **Zona táctil detectada.** Al ponerlo, el editor lo mira por dentro (sin
+  cambiar nada) y separa lo que se toca (botones, enlaces, `cursor: pointer`…),
+  lo que se ve y el **fondo decorativo**. En la hoja, el componente se elige
+  por su zona real: si su botón es pequeño y su fondo grande, tocar fuera del
+  botón elige lo de abajo. Las zonas se dibujan al elegirlo («toca»). Se
+  puede cambiar a «por todo el cuadro» o volver a detectar.
+- **Eliminar fondo** es una acción tuya y sólo tuya (barra contextual o
+  inspector): afecta sólo a esa copia y se deshace. Detectar no quita nada.
+- **Dejar pasar los toques** (opcional): en el librito, lo transparente
+  alrededor del componente deja tocar lo de abajo.
+- **▶ Probar aquí**: lo tocas de verdad sin salir del editor.
+- Los componentes pueden pedirle cosas al librito (pasar de página, pausar
+  la música, sonar algo) con `LibritoComponente.enviar(…)`.
+- Al exportar va su carpeta entera (y lo que pida de fuera); si le quitaste
+  el fondo, una copia aparte con eso, sin tocar la original.
+
+## 🎵 Música y sonidos
+
+- **`musica assets/`**: deja ahí tus canciones y salen en **🎵 Audio**, con
+  «De fondo» (todo el librito) o «Aquí» (sólo esta página).
+- **Sonidos** para cualquier elemento: al tocarlo y al aparecer (inspector →
+  Sonidos), y al pasar de página (🎞️ Transiciones → «Sonido al pasar», o el
+  de llegar a una página concreta).
+- **Acciones al tocar** (cualquier elemento): pasar/ir a página, **mostrar,
+  esconder o animar otro elemento** (con «Empieza escondido» se hacen
+  sorpresas que aparecen al tocar algo), hacer sonar algo, abrir un enlace o
+  pausar la música.
+
+## La barra contextual (como en Canva)
+
+Arriba del lienzo (abajo en el teléfono) cambia según lo elegido: letra,
+tamaño (−/+), color, negrita, cursiva, subrayado, alineación y espaciado
+para textos; cambiar, recortar, marco y forma para fotos; color y borde
+para formas; personalizar, probar y eliminar fondo para componentes;
+agrupar y alinear para varios. Y para todo: animar, transparencia,
+posición (capas y alinear) y «⋯» (duplicar, copiar, pegar, efectos,
+sonidos, al tocarlo, empieza escondido, bloquear, borrar).
+
+También: **efectos** para cualquier elemento (sombra, resplandor,
+desenfoque, brillo, contraste, color, b/n, sepia, tono), **grupos** (se
+eligen y escalan juntos; doble toque para editar uno), **tarjetas** hechas
+(nota adhesiva, tarjeta, boleto, polaroid con frase, sobre), **marcos**
+(polaroid, cinta, washi, vintage, sello, doble) y animaciones nuevas
+(sello, pegarse, elástico, círculo, rebotar, aletear, arcoíris, resplandor).
+
 ## Tus páginas HTML como plantilla
 
 En **📄 Páginas → 📚 Mis páginas** (o 🧩 → «Página original»):
@@ -124,7 +182,9 @@ EditorDev/
 ├── animations/  linea.js (línea de tiempo)
 ├── html/        editorHtml.js · importar.js (hacer editable, importar el librito)
 ├── export/      zip.js (escribir y leer .zip) · exportar.js · abrir.js
-├── components/  ui.js · inspector.js · paneles.js · acciones.js · vista.js · inicio.js · teclado.js
+├── componentes/ catalogo.js (lo que hay en assets/) · analizar.js (zona táctil y fondo, sin tocar nada)
+├── components/  ui.js · inspector.js · paneles.js · barra.js (contextual) · iconos.js (a crayón) ·
+│                acciones.js · vista.js · inicio.js · teclado.js
 ├── runtime/     EL REPRODUCTOR: rt-base · rt-render · rt-anim · rt-comps · rt-trans ·
 │                rt-musica · rt-player · librito.css · reproductor.html
 └── styles/      editor.css
@@ -136,5 +196,13 @@ EditorDev/
 - El reproductor (`runtime/`) son guiones clásicos (no módulos) para que el
   .zip abra también como archivo suelto en el teléfono.
 - `herramientas/verificar.mjs` revisa también la sintaxis de todo `EditorDev/`.
+- `herramientas/catalogo.mjs` (lo llama `contenido.mjs`, también en GitHub a
+  cada subida) escribe `assets/catalogo.js` con lo que hay en `assets/` y en
+  `musica assets/`.
+- Separación: **interfaz** (components/, canvas/), **motor del libro**
+  (runtime/: el mismo para el lienzo, la vista previa y el .zip), **assets**
+  (componentes/, assets/), **datos** (core/, storage/, history/), **exportar**
+  (export/). Los componentes viven en su propio documento (su CSS y su JS no
+  tocan ni el editor ni los demás).
 - Los borradores viven en el navegador (IndexedDB). Si borras los datos del
   sitio, se borran: exporta el .zip para guardarlos de verdad.

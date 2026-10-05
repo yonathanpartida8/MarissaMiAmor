@@ -50,8 +50,23 @@
         modo: "vista", activo: true,
         url: (id) => this.op.url(id),
         ruta: (r) => (this.op.ruta ? this.op.ruta(r) : r),
-        accion: (ac) => this.accion(ac),
+        accion: (ac, e) => this.accion(ac, e),
+        sonido: (id, vol) => RT.sonar(this.op.url(id), vol),
       };
+      // Los componentes de assets/ pueden pedir cosas («siguiente», «musica»…).
+      this._mensaje = (ev) => {
+        const d = ev.data && ev.data.librito;
+        if (!d || !this.actual) return;
+        const ok = Array.prototype.some.call(this.marco.querySelectorAll("iframe"), (f) => f.contentWindow === ev.source);
+        if (!ok) return;
+        if (typeof d === "string") {
+          if (d === "bajarMusica") this.musica.agachar(true);
+          else if (d === "subirMusica") this.musica.agachar(false);
+          else this.accion({ tipo: d });
+        } else if (d.ir) this.accion({ tipo: "ir", destino: d.ir });
+        else if (d.sonido) RT.sonar(d.sonido, d.volumen);
+      };
+      addEventListener("message", this._mensaje);
       this._montar();
       const ini = typeof op.inicio === "string" ? Math.max(0, this.orden.indexOf(op.inicio)) : op.inicio || 0;
       const empezar = () => this.ir(ini, false, true);
@@ -165,7 +180,20 @@
       this._pintarUI(pag);
       const cfg = pag.transicion && pag.transicion.tipo ? pag.transicion : (this.datos.ajustes || {}).transicion || { tipo: "fundido" };
       const dur = primera || !viejo ? 0 : RT.num(cfg.dur, 700);
-      setTimeout(() => { if (this.actual === nueva) anim.entrar({ vista: true }); }, primera || !viejo ? 60 : dur * 0.45);
+      this._quitarRelojes();
+      if (viejo && cfg.sonido) RT.sonar(this.op.url(cfg.sonido), cfg.volumen);
+      for (const e of pag.els || []) { const so = e.sonidos; if (so && so.tocar) RT.precargarSonido(this.op.url(so.tocar)); }
+      setTimeout(() => {
+        if (this.actual !== nueva) return;
+        anim.entrar({ vista: true });
+        // Los sonidos «al aparecer», cuando empieza su entrada.
+        for (const e of pag.els || []) {
+          const so = e.sonidos;
+          if (!so || !so.aparecer || e.oculto || e.inicioOculto) continue;
+          const ret = e.anim && e.anim.entrada && e.anim.entrada.tipo !== "ninguna" ? RT.num(e.anim.entrada.retraso, 0) : 0;
+          this._relojes.push(setTimeout(() => RT.sonar(this.op.url(so.aparecer), so.volumen), ret));
+        }
+      }, primera || !viejo ? 60 : dur * 0.45);
       if (viejo) {
         await RT.transicion(viejo.nodo, nueva.nodo, cfg, atras);
         if (viejo.anim) viejo.anim.cancelar();
@@ -212,9 +240,39 @@
       if (window.requestIdleCallback) requestIdleCallback(hacer, { timeout: 2000 }); else setTimeout(hacer, 400);
     }
 
-    accion(ac) {
+    _quitarRelojes() { for (const t of this._relojes || []) clearTimeout(t); this._relojes = []; }
+
+    /** Un elemento de la página que se está viendo. */
+    _nodo(id) { return this.actual && id ? this.actual.nodos.get(id) : null; }
+
+    _mostrar(id, ver) {
+      const n = this._nodo(id);
+      if (!n) return;
+      const e = n._rt.e;
+      const visible = n.style.display !== "none";
+      const quiere = ver == null ? !visible : ver;
+      if (quiere === visible) return;
+      n._rt.revelado = quiere;
+      n.style.display = quiere ? "" : "none";
+      if (quiere) {
+        const en = e.anim && e.anim.entrada;
+        RT.animarUno(n._rt.ae, en && en.tipo !== "ninguna" ? en.tipo : "zoom", Object.assign({}, en || {}, { retraso: 0 }));
+        if (e.sonidos && e.sonidos.aparecer) RT.sonar(this.op.url(e.sonidos.aparecer), e.sonidos.volumen);
+      }
+    }
+
+    accion(ac, desde) {
       if (!ac || !ac.tipo) return;
       switch (ac.tipo) {
+        case "mostrar": this._mostrar(ac.destino, true); break;
+        case "ocultar": this._mostrar(ac.destino, false); break;
+        case "alternar": this._mostrar(ac.destino, null); break;
+        case "animar": {
+          const n = this._nodo(ac.destino) || (desde && this._nodo(desde.id));
+          if (n) { const en = n._rt.e.anim && n._rt.e.anim.entrada; RT.animarUno(n._rt.ae, en && en.tipo !== "ninguna" ? en.tipo : "rebote", Object.assign({}, en || {}, { retraso: 0 })); }
+          break;
+        }
+        case "sonido": if (ac.destino) RT.sonar(this.op.url(ac.destino), ac.volumen); break;
         case "siguiente": this.siguiente(); break;
         case "anterior": this.anterior(); break;
         case "inicio": this.ir(0, true); break;
@@ -242,6 +300,8 @@
 
     destruir() {
       clearTimeout(this._auto);
+      this._quitarRelojes();
+      removeEventListener("message", this._mensaje);
       removeEventListener("resize", this._rs);
       removeEventListener("keydown", this._tecla);
       if (window.visualViewport) visualViewport.removeEventListener("resize", this._rs);

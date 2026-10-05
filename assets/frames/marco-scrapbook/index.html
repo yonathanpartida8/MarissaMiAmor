@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marco scrapbook</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  body { display: grid; place-items: center; font-family: "Caveat", "Segoe Print", cursive; }
+  .hoja { position: relative; width: 220px; height: 270px; padding: 14px 14px 46px; background: #fffaf2; transform: rotate(-2deg); box-shadow: 0 8px 20px rgba(70, 30, 50, .22); box-sizing: border-box; }
+  .foto { width: 100%; height: 100%; background: #f1e4e9 center / cover no-repeat; display: grid; place-items: center; color: #b68aa0; font-size: 20px; }
+  .washi { position: absolute; width: 86px; height: 24px; background: repeating-linear-gradient(45deg, rgba(255, 182, 210, .85) 0 8px, rgba(255, 220, 232, .85) 8px 16px); }
+  .w1 { top: -10px; left: -18px; transform: rotate(-32deg); }
+  .w2 { top: -10px; right: -18px; transform: rotate(30deg); background: repeating-linear-gradient(45deg, rgba(178, 214, 236, .85) 0 8px, rgba(214, 234, 246, .85) 8px 16px); }
+  .nota { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; color: #3b2a3f; font-size: 24px; }
+  .doodle { position: absolute; right: -14px; bottom: 26px; color: #d8397a; font-size: 26px; transform: rotate(12deg); }
+</style>
+</head>
+<body>
+  <div class="hoja"><i class="washi w1"></i><i class="washi w2"></i><div class="foto">tu foto</div><span class="nota">nosotros ♡</span><span class="doodle">✿</span></div>
+  <script src="../../_librito/componente.js"></script>
+  <script>
+    (function () {
+      var p = LibritoComponente.params();
+      var f = document.querySelector(".foto");
+      if (p.foto) { f.style.backgroundImage = 'url("' + p.foto + '")'; f.textContent = ""; }
+      if (p.texto != null) document.querySelector(".nota").textContent = p.texto;
+    })();
+  </script>
+</body>
+</html>

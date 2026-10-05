@@ -22,8 +22,10 @@
   /** ¿Recibe toques en el librito? Lo decorativo deja pasar el dedo. */
   RT.esInteractivo = function (e) {
     if (e.accion && e.accion.tipo) return true;
+    if (e.sonidos && e.sonidos.tocar) return true;
     switch (e.tipo) {
       case "boton": case "carrusel": case "pagina": return true;
+      case "componente": return !(e.componente && e.componente.decorativo);
       case "album": return !e.album || e.album.ampliar !== false || e.album.disposicion === "pila";
       case "video": return !!(e.video && e.video.controles);
       case "html": return !e.html || e.html.interactivo !== false;
@@ -75,8 +77,8 @@
   PINTAR.imagen = function (c, e, ctx) {
     const im = e.imagen || {};
     const url = im.asset ? ctx.url(im.asset) : null;
-    c.classList.toggle("rt-polaroid", im.marco === "polaroid");
-    c.classList.toggle("rt-cinta", im.marco === "cinta");
+    c.classList.remove("rt-polaroid", "rt-cinta", "rt-mf-vintage", "rt-mf-sello", "rt-mf-washi", "rt-mf-doble");
+    if (im.marco) c.classList.add(im.marco === "polaroid" ? "rt-polaroid" : im.marco === "cinta" ? "rt-cinta" : "rt-mf-" + im.marco);
     if (!url) { vacio(c, "Añadir foto", ctx, e); return; }
     const m = marcoFoto(c, "rt-foto");
     let img = m.firstChild;
@@ -228,6 +230,107 @@
     ocultarEn(f);
   };
 
+  /* ── Componentes de assets/ ─────────────────────────────────────
+     Su HTML no se toca NUNCA: se abre tal cual en su marco, con sus rutas,
+     estilos, scripts y sonidos. Lo único que pone el librito es dónde va,
+     de qué tamaño (se escala entero, como una foto) y sus parámetros, que
+     viajan en la dirección (?p=…). «Eliminar fondo» sólo existe si se pide,
+     y sólo afecta a esta copia en la página. */
+  RT.urlComponente = function (e, ctx) {
+    const k = e.componente || {};
+    let url = ctx.ruta ? ctx.ruta(k.ruta + (k.entrada || "index.html")) : k.ruta + (k.entrada || "index.html");
+    const p = {};
+    for (const def of k.parametros || []) {
+      let v = k.params && k.params[def.id] != null ? k.params[def.id] : def.def;
+      if (v == null || v === "") continue;
+      if ((def.tipo === "imagen" || def.tipo === "audio") && ctx.url) {
+        const u = ctx.url(v);
+        if (!u) continue;
+        try { v = new URL(u, location.href).href; } catch (err) { v = u; }
+      }
+      p[def.id] = v;
+    }
+    if (Object.keys(p).length) url += (url.indexOf("?") < 0 ? "?" : "&") + "p=" + encodeURIComponent(JSON.stringify(p));
+    return url;
+  };
+
+  /** Las zonas → `path()` de CSS (para dejar pasar los toques fuera del contenido). */
+  RT.rutaZonas = function (zonas) {
+    return zonas.map((z) => `M${z.x} ${z.y}h${z.w}v${z.h}h${-z.w}Z`).join("");
+  };
+
+  RT.tamComponente = function (n, e) {
+    const k = e.componente || {};
+    const caja = n._rt.c.firstChild;
+    if (!caja || caja.className !== "rt-comp") return;
+    const f = caja.firstChild;
+    if (k.ajuste === "adaptar") {
+      caja.style.cssText = "position:absolute;inset:0";
+      f.style.width = f.style.height = "100%";
+    } else {
+      const W = k.ancho || e.w, H = k.alto || e.h;
+      caja.style.cssText = `position:absolute;left:0;top:0;width:${W}px;height:${H}px;transform-origin:0 0;transform:scale(${e.w / W},${e.h / H})`;
+      f.style.width = W + "px"; f.style.height = H + "px";
+    }
+    // «Dejar pasar los toques fuera de lo que se ve»: sólo recorta lo transparente
+    // (el fondo, si lo tiene y no se quitó, cuenta como parte de lo que se ve).
+    const an = k.analisis;
+    const zonas = k.recorte && an && (an.interactivos || []).concat(an.visual || [], k.sinFondo ? [] : (an.fondo || []).filter((z) => z.w));
+    caja.style.clipPath = zonas && zonas.length ? `path("${RT.rutaZonas(zonas)}")` : "";
+  };
+
+  PINTAR.componente = function (c, e, ctx, n) {
+    const k = e.componente || {};
+    if (!k.ruta) { c.textContent = ""; return; }
+    if (ctx.modo === "mini") {
+      c.innerHTML = k.miniatura && ctx.ruta ? `<img class="rt-comp-mini" alt="" loading="lazy" src="${ctx.ruta(k.miniatura)}">` : `<div class="rt-marcador">✿</div>`;
+      return;
+    }
+    let caja = c.firstChild;
+    if (!caja || caja.className !== "rt-comp") {
+      c.textContent = "";
+      caja = h("div", "rt-comp", c);
+      const f = h("iframe", "rt-marco", caja);
+      f.setAttribute("allow", "autoplay *; fullscreen *");
+      f.setAttribute("title", e.nombre || "Componente");
+      if (k.aislado) f.setAttribute("sandbox", "allow-scripts allow-forms allow-popups allow-modals");
+      f.addEventListener("load", function () { RT.prepararComponente(f, n._rt.e || e, ctx); });
+    }
+    const f = caja.firstChild;
+    f._e = e;
+    const url = RT.urlComponente(e, ctx);
+    if (f._url !== url) { f._url = url; f.src = url; }
+    RT.prepararComponente(f, e, ctx);
+  };
+
+  /** Lo que el librito añade a la copia: sólo si se pidió (fondo) o para escuchar (sonido). */
+  RT.prepararComponente = function (f, e, ctx) {
+    let doc = null;
+    try { doc = f.contentDocument; } catch (err) { doc = null; }
+    if (!doc || !doc.documentElement) return;
+    f._e = e;
+    const k = e.componente || {};
+    let st = doc.getElementById("rt-sin-fondo");
+    const css = k.sinFondo ? RT.cssSinFondo(k.analisis) : "";
+    if (css) {
+      if (!st) { st = doc.createElement("style"); st.id = "rt-sin-fondo"; (doc.head || doc.documentElement).appendChild(st); }
+      if (st.textContent !== css) st.textContent = css;
+    } else if (st) st.remove();
+    if (ctx.modo === "vista" && ctx.sonido && !f._escucha) {
+      f._escucha = true;
+      doc.addEventListener("pointerdown", function () {
+        const s = f._e && f._e.sonidos;
+        if (s && s.tocar) ctx.sonido(s.tocar, s.volumen);
+      }, true);
+    }
+  };
+
+  RT.cssSinFondo = function (an) {
+    let css = "html,body{background:transparent!important;background-image:none!important}";
+    for (const z of (an && an.fondo) || []) css += (OCULTAR[z.modo] || OCULTAR.caja)(z.sel);
+    return css;
+  };
+
   function ocultarEn(f) {
     let doc = null;
     try { doc = f.contentDocument; } catch (err) { doc = null; }
@@ -246,13 +349,25 @@
     const ae = h("div", "rt-ae", n);
     const ab = h("div", "rt-ab", ae);
     const c = h("div", "rt-c", ab);
-    n._rt = { ae: ae, ab: ab, c: c, firma: null, tipo: e.tipo };
+    n._rt = { ae: ae, ab: ab, c: c, firma: null, tipo: e.tipo, e: e };
+    if (ctx.modo === "vista") {
+      // Tocar: su sonido y su acción (la del botón o la de cualquier elemento).
+      n.addEventListener("pointerdown", function () {
+        const x = n._rt.e, s = x.sonidos;
+        if (s && s.tocar && ctx.sonido && x.tipo !== "componente") ctx.sonido(s.tocar, s.volumen);
+      });
+      n.addEventListener("click", function (ev) {
+        const x = n._rt.e;
+        if (x.accion && x.accion.tipo && ctx.accion) { ev.stopPropagation(); ctx.accion(x.accion, x); }
+      });
+    }
     RT.actualizarEl(n, e, ctx);
     return n;
   };
 
   RT.actualizarEl = function (n, e, ctx, z) {
     const r = n._rt;
+    r.e = e;
     if (r.tipo !== e.tipo) { r.c.textContent = ""; r.c.className = "rt-c"; r.firma = null; r.tipo = e.tipo; }
     n.className = "rt-el rt-e-" + e.tipo + (RT.esInteractivo(e) ? " rt-toca" : "");
     const s = n.style;
@@ -260,10 +375,13 @@
     s.width = Math.max(1, e.w) + "px"; s.height = Math.max(1, e.h) + "px";
     s.transform = e.rot ? `rotate(${e.rot}deg)` : "";
     s.opacity = e.opacidad == null || e.opacidad === 1 ? "" : e.opacidad;
-    s.display = e.oculto ? "none" : "";
+    // «Empieza escondido»: en el librito no se ve hasta que una acción lo muestra.
+    s.display = e.oculto || (ctx.modo === "vista" && e.inicioOculto && !r.revelado) ? "none" : "";
+    n.classList.toggle("rt-escondido", ctx.modo === "editor" && !!e.inicioOculto);
     if (z != null) s.zIndex = z;
     s.mixBlendMode = e.mezcla || "";
     RT.aplicarCaja(r.c, e.caja);
+    r.c.style.filter = RT.efectos(e.efectos);
     if (e.tipo === "texto") r.c.classList.add("rt-flex");
     const datos = e[e.tipo];
     const firma = JSON.stringify(datos || null) + (e.tipo === "forma" ? JSON.stringify(e.caja && e.caja.radio) : "");
@@ -274,6 +392,7 @@
       if (pintor) r.vida = pintor(r.c, e, ctx, n) || null;
       if (r.vida && typeof r.vida.destruir !== "function") r.vida = null;
     }
+    if (e.tipo === "componente") RT.tamComponente(n, e);
     if (e.tipo === "pagina") { const f = r.c.firstChild; if (f && f.tagName === "IFRAME") { f._ocultos = ctx.ocultos ? ctx.ocultos(e) : ""; ocultarEn(f); } }
   };
 

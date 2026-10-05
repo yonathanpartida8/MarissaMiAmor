@@ -93,6 +93,14 @@
       this._fundir(p, vol, 900);
     }
 
+    /** Bajar la música mientras suena otra cosa (un reproductor de un componente). */
+    agachar(on) {
+      if (!this.actual) return;
+      const p = this.actual;
+      if (on) { if (p._vol == null) p._vol = p.vol; this._fundir(p, p._vol * 0.15, 400); p.vol = p._vol; }
+      else if (p._vol != null) { this._fundir(p, p._vol, 600); p._vol = null; }
+    }
+
     alternar() {
       this.silencio = !this.silencio;
       if (this.actual) {

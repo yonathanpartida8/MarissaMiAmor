@@ -1,0 +1,9 @@
+{
+  "nombre": "Flecha a crayón",
+  "descripcion": "Una flecha dibujada a mano que pasa de página al tocarla.",
+  "ancho": 90,
+  "alto": 90,
+  "parametros": [
+    { "id": "accion", "tipo": "opciones", "etiqueta": "Al tocarla", "def": "siguiente", "opciones": [["siguiente", "Página siguiente"], ["anterior", "Página anterior"], ["inicio", "Volver a la portada"]] }
+  ]
+}

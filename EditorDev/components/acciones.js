@@ -10,6 +10,8 @@ import { nuevoEl, nuevaPagina, clonar, uid, TIPOS } from "../core/modelo.js";
 import { elegir } from "../assets/selector.js";
 import { DIBUJOS } from "../assets/dibujos.js";
 import { cajaDe, union } from "../canvas/guias.js";
+import { analizar } from "../componentes/analizar.js";
+import { rutaAUrl } from "../assets/biblioteca.js";
 
 const RT = window.LibritoRT;
 
@@ -88,6 +90,101 @@ export class Acciones {
     const d = DIBUJOS.find((x) => x.id === id);
     if (!d) return null;
     return this.agregar("dibujo", { nombre: d.n, dibujo: { svg: d.svg, color: this.tema.acento } });
+  }
+
+  /** Un componente de assets/: se analiza (sin tocarlo) y se pone en la hoja. */
+  async componente(it) {
+    const espera = el("div.ed-ocupado", {}, [el("div", {}, [el("i.ed-girando"), el("p", { text: `Preparando «${it.nombre}»…` })])]);
+    document.body.append(espera);
+    try {
+      const an = await analizar(rutaAUrl(it.ruta + (it.entrada || "index.html")), { ancho: it.ancho, alto: it.alto, aislado: it.aislado });
+      const W = this.P.ajustes.ancho, H = this.P.ajustes.alto;
+      let w = an.natural.w, h = an.natural.h;
+      const k = Math.min(1, (W - 20) / w, (H - 20) / h);
+      w = Math.round(w * k); h = Math.round(h * k);
+      const params = {};
+      for (const d of it.parametros || []) if (d.def != null && d.tipo !== "imagen" && d.tipo !== "audio") params[d.id] = d.def;
+      const e = nuevoEl("componente", this.P, {
+        nombre: it.nombre, w, h,
+        componente: { id: it.id, ruta: it.ruta, entrada: it.entrada || "index.html", ancho: an.natural.w, alto: an.natural.h, parametros: it.parametros || [], params, decorativo: !!it.decorativo, aislado: !!it.aislado, miniatura: it.miniatura || null, analisis: an },
+      });
+      if (w >= W - 20 && h >= H - 20) { e.x = Math.round((W - w) / 2); e.y = Math.round((H - h) / 2); }
+      this._poner(e);
+      if (e.w >= W - 20 && e.h >= H - 20) this.E.setEl(e.id, { x: Math.round((W - w) / 2), y: Math.round((H - h) / 2) }, "Centrar");
+      if (an.resumen) aviso(`${it.nombre}: ${an.resumen}`);
+      return e;
+    } finally { espera.remove(); }
+  }
+
+  /** Volver a mirar un componente (si cambió su archivo). */
+  async reanalizar(e) {
+    const k = e.componente;
+    const an = await analizar(rutaAUrl(k.ruta + (k.entrada || "index.html")), { ancho: k.ancho, alto: k.alto, aislado: k.aislado });
+    this.E.setEl(e.id, { "componente.analisis": an }, "Detectar zona táctil");
+    aviso(an.resumen || "Listo");
+  }
+
+  /** Una imagen o adorno de assets/ (no se copia: se apunta a ella). */
+  imagenCatalogo(it) {
+    const a = this.app.bib.delLibrito(it.ruta, "imagen", it.nombre, { w: it.ancho || 0, h: it.alto || 0 });
+    const max = 160;
+    const k = it.ancho && it.alto ? Math.min(max / it.ancho, max / it.alto) : 1;
+    const w = it.ancho ? Math.round(it.ancho * k) : max, h = it.alto ? Math.round(it.alto * k) : max;
+    return this._poner(nuevoEl("imagen", this.P, { nombre: it.nombre, w, h, imagen: { asset: a.id, ajuste: "contain" } }));
+  }
+
+  /* ── Tarjetas (varios elementos ya agrupados) ───────────────────── */
+  tarjeta(tipo) {
+    const t = this.tema;
+    const g = uid("g");
+    const W = this.P.ajustes.ancho;
+    const T = (html, x, y, w, h, op) => nuevoEl("texto", this.P, { grupo: g, x, y, w, h, nombre: op.nombre || "Texto", texto: { html, fuente: op.fuente || t.fuente, tam: op.tam || 22, peso: op.peso || 500, cursiva: !!op.cursiva, alin: op.alin || "center", color: op.color || t.texto, interlinea: op.interlinea || 1.3 } });
+    const F = (x, y, w, h, op) => nuevoEl("forma", this.P, { grupo: g, x, y, w, h, rot: op.rot || 0, nombre: op.nombre || "Fondo", caja: op.caja || {}, forma: { figura: "rect", relleno: op.relleno, grosor: op.grosor || 0, trazo: op.trazo || t.texto } });
+    const cx = (W - 280) / 2;
+    const y0 = 220;
+    const recetas = {
+      nota: () => [
+        F(cx + 30, y0, 220, 200, { nombre: "Nota adhesiva", relleno: "#fff2a8", rot: -3, caja: { sombra: { x: 4, y: 8, blur: 14, color: "rgba(80,60,0,.22)" } } }),
+        T("no olvides que te amo ♡", cx + 50, y0 + 60, 180, 90, { nombre: "Nota", fuente: "Caveat", tam: 30, color: "#5b4224" }),
+      ],
+      romantica: () => [
+        F(cx, y0, 280, 230, { nombre: "Tarjeta", relleno: "#fffaf6", caja: { radio: 22, borde: { ancho: 2, color: "#f2b6cc", estilo: "dashed" }, sombra: { x: 0, y: 10, blur: 26, color: "rgba(120,40,80,.18)" } } }),
+        T("Para ti", cx + 20, y0 + 30, 240, 50, { nombre: "Título", fuente: t.fuenteTitulos, tam: 38, peso: 600, color: t.acento }),
+        T("Escribe aquí algo bonito, corto y verdadero.", cx + 30, y0 + 96, 220, 90, { nombre: "Texto", tam: 20, cursiva: true }),
+      ],
+      boleto: () => [
+        F(cx, y0, 280, 130, { nombre: "Boleto", relleno: "#ffe3ec", caja: { radio: 10, borde: { ancho: 3, color: t.texto, estilo: "dashed" } } }),
+        T("ADMITE: 2", cx + 20, y0 + 18, 240, 30, { nombre: "Arriba", fuente: "Jost", tam: 15, peso: 600, color: t.texto }),
+        T("Cita contigo", cx + 20, y0 + 50, 240, 50, { nombre: "Boleto", fuente: "Caveat", tam: 40, peso: 600, color: t.acento }),
+      ],
+      polaroid: () => [
+        nuevoEl("imagen", this.P, { grupo: g, nombre: "Foto", x: cx + 40, y: y0, w: 200, h: 220, rot: -2, imagen: { marco: "polaroid" } }),
+        T("nosotros ♡", cx + 40, y0 + 186, 200, 40, { nombre: "Pie de foto", fuente: "Caveat", tam: 28, color: t.texto }),
+      ],
+      sobre: () => [
+        F(cx + 10, y0, 260, 170, { nombre: "Sobre", relleno: "#fbe7d3", caja: { radio: 8, sombra: { x: 0, y: 8, blur: 18, color: "rgba(90,50,30,.2)" } } }),
+        nuevoEl("dibujo", this.P, { grupo: g, nombre: "Solapa", x: cx + 10, y: y0, w: 260, h: 100, dibujo: { svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40" preserveAspectRatio="none"><path d="M0 0L50 36L100 0Z" fill="currentColor"/></svg>', color: "#f3cfae", estirar: true } }),
+        nuevoEl("dibujo", this.P, { grupo: g, nombre: "Sello", x: cx + 118, y: y0 + 64, w: 44, h: 44, dibujo: { svg: DIBUJOS.find((d) => d.id === "corazon").svg, color: "#d8397a" } }),
+      ],
+    };
+    const els = (recetas[tipo] || recetas.romantica)();
+    this.E.transaccion("Añadir tarjeta", () => { for (const x of els) this.E.agregarEl(x, null, this.E.paginaId, false); });
+    this.E.seleccionar(els.map((x) => x.id));
+    this.app.alAnadir?.();
+  }
+
+  agrupar() {
+    const sel = this.E.seleccionados;
+    if (sel.length < 2) return;
+    const g = uid("g");
+    this.E.transaccion("Agrupar", () => { for (const e of sel) this.E.setEl(e.id, { grupo: g }); });
+    aviso("Agrupados: se mueven juntos (doble toque para editar uno)");
+  }
+
+  desagrupar() {
+    const sel = this.E.seleccionados.filter((e) => e.grupo);
+    if (!sel.length) return;
+    this.E.transaccion("Desagrupar", () => { for (const e of sel) this.E.setEl(e.id, { grupo: null }); });
   }
 
   async video() {
@@ -259,6 +356,9 @@ export class Acciones {
       if (uno.tipo === "album" || uno.tipo === "carrusel") f.append(b("＋", "Añadir fotos", () => this.pedirArchivoPara(uno)));
       if (uno.tipo === "html") f.append(b("&lt;/&gt;", "Editar HTML", () => this.editarHtml(uno)));
     }
+    if (sel.length > 1 && !sel.every((e) => e.grupo && e.grupo === sel[0].grupo)) f.append(b("⛓", "Agrupar", () => this.agrupar()));
+    if (sel.some((e) => e.grupo)) f.append(b("✂", "Desagrupar", () => this.desagrupar()));
+    if (uno && uno.tipo === "componente") f.append(b("▶", "Probar aquí (tocarlo de verdad)", () => this.app.lienzo.probarAqui(uno)));
     if (!bloq) {
       f.append(b("⧉", "Duplicar (Ctrl+D)", () => this.duplicar()));
       f.append(b("⇡", "Traer adelante", () => this.capa("subir")));

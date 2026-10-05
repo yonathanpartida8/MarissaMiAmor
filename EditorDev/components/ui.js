@@ -229,3 +229,24 @@ export function debounce(fn, ms) {
 }
 
 export const esMovil = () => matchMedia("(max-width: 820px)").matches;
+
+/* ── Globito de opciones (la barra contextual lo usa) ─────────────── */
+export function popover(ancla, contenido, { clase = "" } = {}) {
+  document.querySelector(".ed-pop")?._cerrar?.();
+  const p = el("div.ed-pop" + (clase ? "." + clase : ""), { role: "dialog" }, [].concat(contenido));
+  document.body.append(p);
+  const r = ancla.getBoundingClientRect();
+  if (!esMovil()) {
+    const W = innerWidth, H = innerHeight;
+    const pw = p.offsetWidth, ph = p.offsetHeight;
+    p.style.left = Math.max(8, Math.min(W - pw - 8, r.left + r.width / 2 - pw / 2)) + "px";
+    p.style.top = (r.bottom + ph + 10 > H ? Math.max(8, r.top - ph - 8) : r.bottom + 8) + "px";
+  }
+  const fuera = (e) => { if (!p.contains(e.target) && !ancla.contains(e.target)) cerrar(); };
+  const tecla = (e) => { if (e.key === "Escape") cerrar(); };
+  const cerrar = () => { p.remove(); document.removeEventListener("pointerdown", fuera, true); removeEventListener("keydown", tecla); };
+  p._cerrar = cerrar;
+  setTimeout(() => { document.addEventListener("pointerdown", fuera, true); addEventListener("keydown", tecla); }, 0);
+  requestAnimationFrame(() => p.classList.add("ver"));
+  return { nodo: p, cerrar };
+}

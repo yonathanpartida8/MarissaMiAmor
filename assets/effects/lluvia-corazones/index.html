@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lluvia de corazones</title>
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}canvas{display:block;width:100%;height:100%}</style>
+</head>
+<body>
+  <canvas></canvas>
+  <script src="../../_librito/componente.js"></script>
+  <script>
+    (function () {
+      var p = LibritoComponente.params();
+      var cv = document.querySelector("canvas"), g = cv.getContext("2d");
+      var colores = (p.colores || "#ff8fb8,#ffc4d9,#f2c27d,#d8397a").split(",");
+      var n = Math.max(4, Math.min(60, +p.cantidad || 22));
+      var W = 0, H = 0, dpr = Math.min(2, devicePixelRatio || 1), cs = [];
+      function medir() { W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); }
+      function nuevo(arriba) { return { x: Math.random() * W, y: arriba ? -20 : Math.random() * H, s: 8 + Math.random() * 14, v: 18 + Math.random() * 30, f: Math.random() * 6, c: colores[(Math.random() * colores.length) | 0], a: 0.5 + Math.random() * 0.5 }; }
+      function corazon(x, y, s) { g.beginPath(); g.moveTo(x, y + s * 0.3); g.bezierCurveTo(x, y, x - s * 0.5, y, x - s * 0.5, y + s * 0.3); g.bezierCurveTo(x - s * 0.5, y + s * 0.6, x, y + s * 0.8, x, y + s); g.bezierCurveTo(x, y + s * 0.8, x + s * 0.5, y + s * 0.6, x + s * 0.5, y + s * 0.3); g.bezierCurveTo(x + s * 0.5, y, x, y, x, y + s * 0.3); g.fill(); }
+      medir(); addEventListener("resize", medir);
+      for (var i = 0; i < n; i++) cs.push(nuevo(false));
+      var t0 = performance.now();
+      function paso(t) {
+        var dt = Math.min(0.05, (t - t0) / 1000); t0 = t;
+        g.clearRect(0, 0, W, H);
+        for (var i = 0; i < cs.length; i++) {
+          var c = cs[i];
+          c.y += c.v * dt; c.f += dt * 1.5;
+          if (c.y > H + 20) cs[i] = nuevo(true);
+          g.globalAlpha = c.a; g.fillStyle = c.c;
+          corazon(c.x + Math.sin(c.f) * 12, c.y, c.s);
+        }
+        if (!document.hidden) requestAnimationFrame(paso); else setTimeout(function () { requestAnimationFrame(paso); }, 500);
+      }
+      requestAnimationFrame(paso);
+    })();
+  </script>
+</body>
+</html>

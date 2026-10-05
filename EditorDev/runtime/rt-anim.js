@@ -56,6 +56,10 @@
       revelar: { n: "Revelar (como si se escribiera)", usa: ["dir"], f: (p) => [{ clipPath: RECORTE[p.dir] || RECORTE.derecha }, { clipPath: "inset(0 0 0 0)" }] },
       voltear: { n: "Voltear", f: () => [{ opacity: 0, transform: "perspective(800px) rotateY(85deg)" }, { opacity: 1, transform: "perspective(800px) rotateY(0deg)" }] },
       destello: { n: "Destello", f: () => [{ opacity: 0, filter: "brightness(2.4) blur(6px)" }, { opacity: 1, filter: "brightness(1) blur(0px)" }] },
+      sello: { n: "Sello (como estampado)", f: () => [{ opacity: 0, transform: "scale(1.8) rotate(-12deg)" }, { opacity: 1, transform: "scale(.94) rotate(2deg)", offset: 0.6 }, { opacity: 1, transform: "scale(1) rotate(0deg)" }] },
+      circulo: { n: "Aparecer en círculo", f: () => [{ clipPath: "circle(0% at 50% 50%)" }, { clipPath: "circle(75% at 50% 50%)" }] },
+      elastico: { n: "Elástico", f: () => [{ opacity: 0, transform: "scale(.2, 1.4)" }, { opacity: 1, transform: "scale(1.2, .85)", offset: 0.45 }, { transform: "scale(.92, 1.08)", offset: 0.7 }, { opacity: 1, transform: "scale(1, 1)" }] },
+      pegar: { n: "Pegarse (como sticker)", f: () => [{ opacity: 0, transform: "translateY(-30px) rotate(-8deg) scale(1.15)" }, { opacity: 1, transform: "translateY(2px) rotate(1deg) scale(.98)", offset: 0.7 }, { opacity: 1, transform: "translateY(0) rotate(0deg) scale(1)" }] },
     },
     salida: {
       ninguna: { n: "Ninguna" },
@@ -77,6 +81,10 @@
       brillar: { n: "Brillar", f: () => [{ opacity: 1 }, { opacity: 0.55 }, { opacity: 1 }] },
       respirar: { n: "Respirar", f: () => [{ transform: "scale(1)", opacity: 1 }, { transform: "scale(1.03)", opacity: 0.9 }, { transform: "scale(1)", opacity: 1 }] },
       temblar: { n: "Temblar", f: () => [{ transform: "translateX(0)" }, { transform: "translateX(-3px)", offset: 0.2 }, { transform: "translateX(3px)", offset: 0.4 }, { transform: "translateX(-2px)", offset: 0.6 }, { transform: "translateX(2px)", offset: 0.8 }, { transform: "translateX(0)" }] },
+      rebotar: { n: "Rebotar", usa: ["dist"], f: (p) => [{ transform: "translateY(0)", offset: 0 }, { transform: `translateY(${-p.dist}px)`, offset: 0.3 }, { transform: "translateY(0)", offset: 0.55 }, { transform: `translateY(${-p.dist * 0.3}px)`, offset: 0.72 }, { transform: "translateY(0)", offset: 0.88 }, { transform: "translateY(0)", offset: 1 }] },
+      aletear: { n: "Aletear", f: () => [{ transform: "scaleX(1)" }, { transform: "scaleX(.55)" }, { transform: "scaleX(1)" }] },
+      arcoiris: { n: "Arcoíris", lineal: true, f: () => [{ filter: "hue-rotate(0deg)" }, { filter: "hue-rotate(360deg)" }] },
+      resplandor: { n: "Resplandor", f: () => [{ filter: "drop-shadow(0 0 0px rgba(255,190,220,0))" }, { filter: "drop-shadow(0 0 14px rgba(255,170,210,.95))" }, { filter: "drop-shadow(0 0 0px rgba(255,190,220,0))" }] },
       parpadear: { n: "Parpadear", f: () => [{ opacity: 1 }, { opacity: 1, offset: 0.45 }, { opacity: 0.15, offset: 0.5 }, { opacity: 1, offset: 0.55 }, { opacity: 1 }] },
     },
   };

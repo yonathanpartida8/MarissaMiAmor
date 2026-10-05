@@ -15,6 +15,7 @@ import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { extraerAudio, esMp4 } from "./voz.mjs";
 import { etiquetas } from "./etiquetas.mjs";
+import { textoCatalogo } from "./catalogo.mjs";
 
 const RAIZ = new URL("..", import.meta.url).pathname;
 const leer = (dir) => (existsSync(join(RAIZ, dir)) ? readdirSync(join(RAIZ, dir)) : []);
@@ -393,6 +394,8 @@ const SALIDAS = {
     "// GENERADO: no se edita a mano. Lo rehace `node herramientas/contenido.mjs`\n" +
     "// y, en GitHub, la acción `.github/workflows/contenido.yml` a cada subida.\n" +
     `export default ${JSON.stringify(contenido, null, 2)};\n`,
+  // El catálogo del editor (📖 Crear librito): componentes, adornos y música.
+  "assets/catalogo.js": textoCatalogo(RAIZ),
 };
 
 // La reserva de la portada en `index.html`: tiene que pedir EXACTAMENTE la

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flecha siguiente</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  body { display: grid; place-items: center; -webkit-tap-highlight-color: transparent; }
+  button { display: grid; place-items: center; width: 64px; height: 64px; border: 3px solid #3b2a3f; border-radius: 46% 54% 50% 50% / 52% 46% 54% 48%; background: #fff3d6; box-shadow: 3px 3px 0 #3b2a3f; cursor: pointer; animation: empuja 1.8s ease-in-out infinite; }
+  button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #3b2a3f; animation: none; }
+  svg { width: 34px; height: 34px; }
+  @keyframes empuja { 50% { transform: translateX(5px); } }
+</style>
+</head>
+<body>
+  <button type="button" aria-label="Siguiente página"><svg viewBox="0 0 40 40" fill="none" stroke="#3b2a3f" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21c8-.6 16-.2 25-.4"/><path d="M23 11c3.6 3.4 6.4 6.2 9.6 9.4-3.2 3-6.2 6-9.2 9.4"/></svg></button>
+  <script src="../../_librito/componente.js"></script>
+  <script>document.querySelector("button").addEventListener("click", function () { LibritoComponente.enviar(LibritoComponente.params().accion || "siguiente"); });</script>
+</body>
+</html>

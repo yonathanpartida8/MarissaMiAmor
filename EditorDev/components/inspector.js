@@ -16,7 +16,7 @@ import { elegir } from "../assets/selector.js";
 
 const RT = window.LibritoRT;
 const FUENTES = Object.keys(RT.FUENTES).map((f) => [f, f]);
-const RECONSTRUIR = /fotos|\.tipo$|^fondo\.tipo|^accion|figura|disposicion|^carrusel\.modo|propia|^tipo$|^imagen\.asset|^video\.asset|^musica\.modo|fondo\.imagen|gradiente$|sombra$|^transicion$/;
+const RECONSTRUIR = /^efectos\.(sombra|resplandor)$|^efectos$|sonidos|^componente\.(params|analisis|sinFondo)|^accion\.destino|fotos|\.tipo$|^fondo\.tipo|^accion|figura|disposicion|^carrusel\.modo|propia|^tipo$|^imagen\.asset|^video\.asset|^musica\.modo|fondo\.imagen|gradiente$|sombra$|^transicion$/;
 const OPC_DIR = Object.entries(RT.DIRS);
 const FACILES = Object.entries(RT.FACIL).map(([k, v]) => [k, v.n]);
 
@@ -50,10 +50,15 @@ export class Inspector {
     E.on("assets", () => { if (!E.sel.length || E.unico?.tipo === "album" || E.unico?.tipo === "carrusel") rehacer(); });
   }
 
-  abrir(tab) {
+  /** Abre una pestaña y, si se pide, va directo a una sección («Efectos», «Sonidos»…). */
+  abrir(tab, seccion) {
     this.tab = tab;
     this.app.mostrarInspector?.();
     this.construir();
+    if (!seccion) return;
+    for (const d of this.cuerpo.querySelectorAll("details.ed-sec")) {
+      if (d.firstChild.textContent.trim().startsWith(seccion)) { d.open = true; requestAnimationFrame(() => d.scrollIntoView({ block: "start", behavior: "smooth" })); break; }
+    }
   }
 
   construir() {
@@ -136,8 +141,13 @@ export class Inspector {
       ]),
     ]));
 
-    if (e.tipo !== "pagina" && e.tipo !== "html") this.cuerpo.append(this._caja(e, c));
+    if (e.tipo !== "pagina" && e.tipo !== "html" && e.tipo !== "componente") this.cuerpo.append(this._caja(e, c));
+    this.cuerpo.append(this._efectos(e, c));
     if (e.tipo !== "boton") this.cuerpo.append(seccion("Al tocarlo", [this._accion(e, c)], { abierta: !!e.accion }));
+    this.cuerpo.append(this._sonidos(e));
+    this.cuerpo.append(seccion("Visibilidad", [
+      fila("Empieza escondido", c("inicioOculto", { tipo: "toggle", nombre: "Empieza escondido" }), "en el librito no se ve hasta que otro elemento lo muestre («Al tocarlo → Mostrar…»)"),
+    ], { abierta: !!e.inicioOculto }));
     this.cuerpo.append(el("div.ed-botonera.ed-pie-insp", {}, [
       boton("⧉ Duplicar", () => A.duplicar(), "chico"),
       boton(e.oculto ? "👁 Mostrar" : "🙈 Ocultar", () => A.alternar("oculto"), "chico"),
@@ -173,11 +183,19 @@ export class Inspector {
     const ac = e.accion || {};
     const hijos = [fila("Acción", control(this.v, {
       tipo: "select",
-      opciones: [["", "Nada"], ["siguiente", "Pasar a la siguiente página"], ["anterior", "Volver a la anterior"], ["inicio", "Ir a la portada"], ["ir", "Ir a una página…"], ["enlace", "Abrir un enlace…"], ["musica", "Pausar / poner la música"]],
+      opciones: [["", "Nada"], ["siguiente", "Pasar a la siguiente página"], ["anterior", "Volver a la anterior"], ["inicio", "Ir a la portada"], ["ir", "Ir a una página…"],
+        ["mostrar", "Mostrar un elemento…"], ["ocultar", "Esconder un elemento…"], ["alternar", "Mostrar / esconder un elemento…"], ["animar", "Animar un elemento…"],
+        ["sonido", "Hacer sonar algo…"], ["enlace", "Abrir un enlace…"], ["musica", "Pausar / poner la música"]],
       leer: () => this.E.el(e.id)?.accion?.tipo || "",
       escribir: (t) => this.E.setEl(e.id, { accion: t ? { tipo: t, destino: t === "ir" ? paginas[0]?.[0] : "" } : null }, "Acción"),
     }))];
+    const otros = this.E.pagina.els.filter((x) => x.id !== e.id).map((x) => [x.id, (x.inicioOculto ? "🙈 " : "") + x.nombre]);
     if (ac.tipo === "ir") hijos.push(fila("Página", c("accion.destino", { tipo: "select", opciones: paginas })));
+    if (/^(mostrar|ocultar|alternar|animar)$/.test(ac.tipo)) {
+      hijos.push(fila("Cuál", c("accion.destino", { tipo: "select", opciones: [["", "— elige —"], ...otros] })));
+      if (ac.tipo === "mostrar") hijos.push(el("small.ed-ayuda", { text: "Al otro ponle «Empieza escondido» (en Visibilidad) y aparecerá con su animación de entrada." }));
+    }
+    if (ac.tipo === "sonido") hijos.push(this._elegirAudio(() => this.E.el(e.id)?.accion?.destino, (id) => this.E.setEl(e.id, { "accion.destino": id }, "Sonido")));
     if (ac.tipo === "enlace") hijos.push(fila("Enlace", c("accion.destino", { tipo: "texto", placeholder: "https://…", alcambiar: true })));
     return el("div", {}, hijos);
   }
@@ -333,6 +351,96 @@ export class Inspector {
       fila("Se puede tocar", c("html.interactivo", { tipo: "toggle", def: true })),
       el("small.ed-ayuda", { text: "Va dentro de su propio marco aislado: no puede romper el librito ni el editor." }),
     ]);
+  }
+
+  /** Un botoncito para elegir un sonido (de assets/, de la música o subido). */
+  _elegirAudio(leer, escribir, etiqueta = "Sonido") {
+    const nombre = () => { const id = leer(); return id ? this.E.proyecto.assets[id]?.nombre || "sonido" : "ninguno"; };
+    const b = boton("♪ " + nombre(), async () => { const [id] = await elegir(this.app, "audio", { titulo: etiqueta }); if (id) escribir(id); }, "chico");
+    const quitar = boton("✕", () => escribir(null), "chico ico", "Quitar");
+    const probar = boton("▶", () => { const id = leer(); if (id) RT.sonar(this.app.bib.url(id), 0.9); }, "chico ico", "Escuchar");
+    this.v.add(() => { b.innerHTML = "♪ " + nombre(); });
+    return fila(etiqueta, el("div.ed-botonera", {}, [b, probar, quitar]));
+  }
+
+  _sonidos(e) {
+    const E = this.E;
+    const set = (k) => (id) => E.setEl(e.id, { ["sonidos." + k]: id }, "Sonido");
+    const leer = (k) => () => E.el(e.id)?.sonidos?.[k] || null;
+    return seccion("Sonidos", [
+      this._elegirAudio(leer("tocar"), set("tocar"), "Al tocarlo"),
+      this._elegirAudio(leer("aparecer"), set("aparecer"), "Al aparecer"),
+      fila("Volumen", this._ctl(e)("sonidos.volumen", { tipo: "rango", min: 0, max: 1, paso: 0.05, def: 0.9 })),
+      el("small.ed-ayuda", { text: "Pon tus sonidos en assets/ (cualquier carpeta) o súbelos aquí." }),
+    ], { abierta: !!(e.sonidos?.tocar || e.sonidos?.aparecer) });
+  }
+
+  _efectos(e, c) {
+    const f = e.efectos || {};
+    const conmuta = (k, def) => control(this.v, { tipo: "toggle", leer: () => !!this.E.el(e.id)?.efectos?.[k], escribir: (on) => this.E.setEl(e.id, { ["efectos." + k]: on ? def : null }, "Efecto") });
+    const hijos = [
+      fila("Sombra", conmuta("sombra", { x: 0, y: 8, blur: 14, color: "rgba(60,20,45,.35)" })),
+      f.sombra ? el("div.ed-rejilla2", {}, [fila("X", c("efectos.sombra.x")), fila("Y", c("efectos.sombra.y")), fila("Difuso", c("efectos.sombra.blur", { min: 0 })), fila("Color", c("efectos.sombra.color", { tipo: "color" }))]) : null,
+      fila("Resplandor", conmuta("resplandor", { color: "#ffc4dc", tam: 12 })),
+      f.resplandor ? el("div.ed-rejilla2", {}, [fila("Color", c("efectos.resplandor.color", { tipo: "color" })), fila("Tamaño", c("efectos.resplandor.tam", { min: 1, max: 60 }))]) : null,
+      fila("Desenfoque", c("efectos.desenfoque", { tipo: "rango", min: 0, max: 20, paso: 0.5, def: 0, unidad: "px" })),
+      fila("Brillo", c("efectos.brillo", { tipo: "rango", min: 30, max: 180, def: 100, unidad: "%" })),
+      fila("Contraste", c("efectos.contraste", { tipo: "rango", min: 30, max: 180, def: 100, unidad: "%" })),
+      fila("Color", c("efectos.saturacion", { tipo: "rango", min: 0, max: 220, def: 100, unidad: "%" })),
+      fila("Blanco y negro", c("efectos.byn", { tipo: "rango", min: 0, max: 100, def: 0, unidad: "%" })),
+      fila("Sepia", c("efectos.sepia", { tipo: "rango", min: 0, max: 100, def: 0, unidad: "%" })),
+      fila("Tono", c("efectos.tono", { tipo: "rango", min: 0, max: 360, def: 0, unidad: "°" })),
+      boton("Quitar efectos", () => this.E.setEl(e.id, { efectos: null }, "Quitar efectos"), "chico"),
+    ];
+    return seccion("Efectos", hijos.filter(Boolean), { abierta: !!e.efectos });
+  }
+
+  _componente(e, c) {
+    const k = e.componente || {};
+    const an = k.analisis;
+    const A = this.app.acciones;
+    const params = (k.parametros || []).map((d) => {
+      const ruta = "componente.params." + d.id;
+      const et = d.etiqueta || d.id;
+      if (d.tipo === "color") return fila(et, c(ruta, { tipo: "color", def: d.def }));
+      if (d.tipo === "numero") return fila(et, c(ruta, { tipo: "numero", min: d.min, max: d.max, def: d.def }));
+      if (d.tipo === "opciones") return fila(et, c(ruta, { tipo: "select", opciones: d.opciones || [], def: d.def }));
+      if (d.tipo === "si-no") return fila(et, c(ruta, { tipo: "toggle", def: d.def }));
+      if (d.tipo === "audio") return this._elegirAudio(() => this.E.el(e.id)?.componente?.params?.[d.id], (id) => this.E.setEl(e.id, { [ruta]: id }, et), et);
+      if (d.tipo === "imagen") {
+        const id = k.params?.[d.id];
+        const url = id && this.app.bib.url(id);
+        return fila(et, el("div.ed-botonera", {}, [
+          url ? el("img.ed-param-foto", { src: url, alt: "" }) : null,
+          boton(url ? "⟳ Cambiar" : "＋ Elegir foto", async () => { const [x] = await elegir(this.app, "imagen", { titulo: et }); if (x) this.E.setEl(e.id, { [ruta]: x }, et); }, url ? "chico" : "chico primario"),
+          url ? boton("✕", () => this.E.setEl(e.id, { [ruta]: null }, et), "chico ico", "Quitar") : null,
+        ].filter(Boolean)));
+      }
+      return fila(et, c(ruta, { tipo: "texto", def: d.def, alcambiar: true }));
+    });
+    const hayFondo = an && (an.fondo || []).length;
+    return [
+      seccion("Componente", [
+        el("p.ed-nota.suave", { text: `${k.id || k.ruta} — su HTML, sus estilos, sus scripts y su zona táctil se usan tal cual: aquí sólo decides dónde va y cómo se ve en esta página.` }),
+        ...(params.length ? params : [el("small.ed-ayuda", { text: "Este componente no tiene parámetros (se pueden declarar en su asset.json)." })]),
+        el("div.ed-botonera", {}, [
+          boton("▶ Probar aquí", () => this.app.lienzo.probarAqui(e), "chico primario"),
+          boton("Ver el original", () => open("../" + k.ruta + (k.entrada || "index.html"), "_blank"), "chico"),
+          boton("Tamaño natural", () => { const W = k.ancho || e.w, H = k.alto || e.h; this.E.setEl(e.id, { w: W, h: H }, "Tamaño natural"); }, "chico"),
+        ]),
+      ]),
+      seccion("Tamaño y zona táctil", [
+        fila("Al cambiar el tamaño", c("componente.ajuste", { tipo: "segmento", opciones: [["escalar", "Escalar entero"], ["adaptar", "Que se acomode"]], def: "escalar" }), "escalar = se ve igual pero más grande o chico"),
+        el("p.ed-nota", { text: "Detectado: " + (an ? an.resumen || "—" : "sin analizar") }),
+        fila("Elegirlo en la hoja", c("componente.seleccion", { tipo: "segmento", opciones: [["zona", "Por su zona real"], ["todo", "Por todo el cuadro"]], def: "zona" }), "«zona real»: sólo su botón o lo que se ve; lo demás deja tocar lo de abajo"),
+        boton("🔍 Volver a detectar", () => A.reanalizar(e), "chico"),
+      ], { abierta: false }),
+      seccion("Fondo", [
+        el("p.ed-ayuda", { text: hayFondo ? "Este componente tiene fondo. No se quita solo: sólo si tú lo pides, y sólo en esta copia (el archivo original no cambia)." : "No se detectó un fondo propio (es transparente)." }),
+        fila("Eliminar fondo", c("componente.sinFondo", { tipo: "toggle", nombre: "Eliminar fondo" })),
+        fila("Dejar pasar los toques", c("componente.recorte", { tipo: "toggle", nombre: "Dejar pasar los toques" }), "en el librito, los toques fuera de lo que se ve llegan a lo de abajo"),
+      ], { abierta: !!(k.sinFondo || k.recorte) }),
+    ];
   }
 
   _pagina(e) {
@@ -527,7 +635,7 @@ export class Inspector {
     const lista = el("ol.ed-capas", {}, els.map((e) => el("li" + (E.sel.includes(e.id) ? ".on" : "") + (e.oculto ? ".oculto" : ""), { dataset: { id: e.id } }, [
       el("button.ed-asa", { type: "button", html: "☰", title: "Arrastra para cambiar el orden", "aria-label": "Ordenar" }),
       el("b", { text: TIPOS[e.tipo]?.icono || "•" }),
-      el("span.ed-capa-nombre", { text: e.nombre }),
+      el("span.ed-capa-nombre", { text: (e.grupo ? "⛓ " : "") + (e.inicioOculto ? "🙈 " : "") + e.nombre }),
       el("button.ed-capa-btn", { type: "button", html: e.oculto ? "🙈" : "👁", title: e.oculto ? "Mostrar" : "Ocultar", onClick: (ev) => { ev.stopPropagation(); E.setEl(e.id, { oculto: !e.oculto }, e.oculto ? "Mostrar" : "Ocultar"); } }),
       el("button.ed-capa-btn", { type: "button", html: e.bloqueado ? "🔒" : "🔓", title: e.bloqueado ? "Desbloquear" : "Bloquear", onClick: (ev) => { ev.stopPropagation(); E.setEl(e.id, { bloqueado: !e.bloqueado }, e.bloqueado ? "Desbloquear" : "Bloquear"); } }),
     ])));
@@ -541,7 +649,7 @@ export class Inspector {
       if (!li || !s) return;
       s.contentEditable = "true"; s.focus();
       getSelection().selectAllChildren(s);
-      const fin = () => { s.contentEditable = "false"; const t = s.textContent.trim(); if (t) E.setEl(li.dataset.id, { nombre: t }, "Renombrar"); };
+      const fin = () => { s.contentEditable = "false"; const t = s.textContent.replace(/^(⛓ |🙈 )+/, "").trim(); if (t) E.setEl(li.dataset.id, { nombre: t }, "Renombrar"); };
       s.addEventListener("blur", fin, { once: true });
       s.addEventListener("keydown", (k) => { if (k.key === "Enter") { k.preventDefault(); s.blur(); } k.stopPropagation(); });
     });

@@ -212,6 +212,39 @@
     return p.join(" ");
   };
 
+  /** Efectos de cualquier elemento (también de los componentes, sin tocarlos por dentro). */
+  RT.efectos = function (f) {
+    if (!f) return "";
+    const p = [];
+    if (f.sombra) p.push(`drop-shadow(${RT.num(f.sombra.x, 0)}px ${RT.num(f.sombra.y, 6)}px ${RT.num(f.sombra.blur, 10)}px ${f.sombra.color || "rgba(60,20,45,.35)"})`);
+    if (f.resplandor) p.push(`drop-shadow(0 0 ${RT.num(f.resplandor.tam, 10)}px ${f.resplandor.color || "#ffd6e8"})`);
+    if (f.desenfoque) p.push(`blur(${f.desenfoque}px)`);
+    if (f.brillo != null && f.brillo !== 100) p.push(`brightness(${f.brillo}%)`);
+    if (f.contraste != null && f.contraste !== 100) p.push(`contrast(${f.contraste}%)`);
+    if (f.saturacion != null && f.saturacion !== 100) p.push(`saturate(${f.saturacion}%)`);
+    if (f.byn) p.push(`grayscale(${f.byn}%)`);
+    if (f.sepia) p.push(`sepia(${f.sepia}%)`);
+    if (f.tono) p.push(`hue-rotate(${f.tono}deg)`);
+    if (f.invertir) p.push(`invert(${f.invertir}%)`);
+    return p.join(" ");
+  };
+
+  /* ── Sonidos cortos (botones, apariciones, transiciones) ─────────── */
+  const cacheSon = new Map();
+  RT.sonar = function (url, vol) {
+    if (!url) return;
+    try {
+      let base = cacheSon.get(url);
+      if (!base) { base = new Audio(url); base.preload = "auto"; cacheSon.set(url, base); if (cacheSon.size > 40) cacheSon.delete(cacheSon.keys().next().value); }
+      const a = base.paused || base.ended || base.currentTime === 0 ? base : base.cloneNode();
+      a.currentTime = 0;
+      a.volume = RT.clamp(RT.num(vol, 0.9), 0, 1);
+      const r = a.play();
+      if (r && r.catch) r.catch(function () {});
+    } catch (err) { /* sin audio */ }
+  };
+  RT.precargarSonido = function (url) { if (url && !cacheSon.has(url)) { const a = new Audio(); a.preload = "auto"; a.src = url; cacheSon.set(url, a); } };
+
   /** ¿Pide el teléfono menos movimiento? Entonces las animaciones se acortan. */
   RT.menosMovimiento = function () {
     try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; }
