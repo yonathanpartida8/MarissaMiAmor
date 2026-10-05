@@ -31,6 +31,7 @@ import * as eventos from "./eventos.js";
 import * as lugaresMod from "./lugares.js";
 import * as objetos from "./objetos.js";
 import * as cositas from "./cositas.js";
+import * as callejonesMod from "./callejones.js";
 
 /* ══════════════════ LA CALIDAD ══════════════════ */
 const NIVELES = {
@@ -157,7 +158,7 @@ function cuadro(ahora) {
   objetos.actualizar(dtM);
   eventos.actualizar(dt, dtM);
   lugaresMod.actualizar(dt);
-  cositas.actualizar(dt);
+  cositas.actualizar(dt); callejonesMod.actualizar(dt);
   actualizarCamara(dt, E);
   colocarLuna(camara);
   actualizarCielo(camara, ciclo, dt);
@@ -192,7 +193,7 @@ iniciarEfectos(escena);
 iniciarLuces(escena);
 crearJugador();
 iniciarVida();
-gente.iniciar(); coches.iniciar(); poderes.iniciar(); eventos.iniciar(); lugaresMod.iniciar(); cositas.iniciar(escena);
+gente.iniciar(); coches.iniciar(); poderes.iniciar(); eventos.iniciar(); lugaresMod.iniciar(); cositas.iniciar(escena); callejonesMod.iniciar(escena);
 { const yo = J.jugador; cam.x = yo.x; cam.y = 1.5; cam.z = yo.z; }
 // la primera toma: los dos mirando la ventana del K-drama
 { const k = lugares.kdrama; cinematica({ dur: 7.5, dist: 8.5, pitch: 0.1, mezcla: 0.5, mirar: { x: k.x, y: k.y - 1.2, z: k.z } }); cam.cine.t = 1.2; }

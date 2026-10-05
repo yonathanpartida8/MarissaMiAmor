@@ -242,7 +242,7 @@ export function actualizarJugador(dt) {
     }
     yo.anim.aire = amort(yo.anim.aire, yo.suelo ? 0 : 1, 10, dt);
     yo.anim.vel = yo.suelo ? yo.vel : yo.anim.vel;
-    if (yo.suelo && yo.vel > 0.12) { const antes = yo.anim.fase; avanzarFase(yo.anim, yo.vel, dt); if (Math.floor(antes / Math.PI) !== Math.floor(yo.anim.fase / Math.PI)) son("paso", yo.x, yo.z, yo.vel > 3 ? 1 : 0.6); }
+    if (yo.suelo && yo.vel > 0.12) { const antes = yo.anim.fase; avanzarFase(yo.anim, yo.vel, dt); if (Math.floor(antes / Math.PI) !== Math.floor(yo.anim.fase / Math.PI)) { son("paso", yo.x, yo.z, yo.vel > 3 ? 1 : 0.6); if (yo.vel > 3.2) polvo(yo.x - Math.sin(yo.ry) * 0.2, yo.y + 0.05, yo.z - Math.cos(yo.ry) * 0.2, 2, 0.32); } }
   }
   // no atravesar paredes ni salirse del mundo
   chocarEdificios(yo, 0.35, yo.y);

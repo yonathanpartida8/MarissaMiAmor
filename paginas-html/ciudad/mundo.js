@@ -37,7 +37,8 @@ export const edificios = [];   // { x0, x1, z0, z1, h, estilo, puerta, frente, e
 export const fachadas = [];    // caras que dan a la calle: { ax, az, bx, bz, nx, nz, L, h, ed }
 export const bancas = [];      // { x, z, ry, ocupada }
 export const faroles = [];     // { x, z, ry, lx, lz }
-export const semaforos = [];   // { x, z, ry, eje, nodo }
+export const semaforos = [];
+export const callejones = [];  // { bx, bz, x0, x1, z0, z1 }: el pasillo que cruza la manzana (ver callejones.js)   // { x, z, ry, eje, nodo }
 export const nodosAcera = [];  // { x, z, vecinos: [] }
 export const nodosCalle = [];  // { x, z, vecinos: [] }
 export const ventanasEscena = []; // (las llena ventanas.js)
@@ -253,8 +254,11 @@ function construirCuadricula() {
       filaDeEdificios(bx, bz, 0, -1, -3, 15); filaDeEdificios(bx, bz, 0, 1, -3, 15);
     } else {
       filaDeEdificios(bx, bz, 0, -1, -15, 15); filaDeEdificios(bx, bz, 0, 1, -15, 15);
-      filaDeEdificios(bx, bz, -1, 0, -3, 3);
     }
+    // algunas manzanas tienen un callejón que las cruza de lado a lado (de calle a calle)
+    const callejon = !especial && ((bx === -48 && bz === -48) || (bx === 0 && bz === 48) || (bx === -48 && bz === 48) || (bx === 48 && bz === -48));
+    if (callejon) { callejones.push({ bx, bz, x0: bx - 15, x1: bx + 15, z0: bz - 3, z1: bz + 3 }); continue; }
+    if (!especial) filaDeEdificios(bx, bz, -1, 0, -3, 3);
     filaDeEdificios(bx, bz, 1, 0, -3, 3);
     // el patio de adentro (no se ve, pero que no quede un hueco)
     juntaResto.caja(bx + (especial ? 0 : 0), 4, bz, 6, 8, 6, "#3a3440");
