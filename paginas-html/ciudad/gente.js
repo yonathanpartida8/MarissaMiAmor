@@ -14,7 +14,7 @@
  * por el bus (con su radio) y los coches se buscan en la rejilla.
  */
 import { J, THREE, rnd, elegir, clamp, amort, amortAng, difAng, oir, anunciar, Rejilla, memo, guardar } from "./base.js";
-import { Gentio, Animalitos, nuevaAnim, animar, ALTURA_CADERA } from "./cuerpos.js";
+import { Gentio, Animalitos, nuevaAnim, animar, ALTURA_CADERA, avanzarFase } from "./cuerpos.js";
 import { nodosAcera, chocarEdificios, alturaSuelo, bancas, puertaCercana, lugares, ACERA_Y } from "./mundo.js";
 import { son } from "./audio.js";
 import { globito, decir } from "./ui.js";
@@ -351,7 +351,7 @@ function pensar(a, dt) {
 function posePorEstado(a, dt) {
   const an = a.anim, e = a.estado;
   an.vel = a.vel / (a.escala || 1);
-  if (a.vel > 0.2) an.fase += dt * a.vel * (a.vel > 3 ? 2.2 : 3.1) / (a.escala || 1);
+  if (a.vel > 0.12) avanzarFase(an, a.vel, dt, a.escala || 1);
   an.sentado = amort(an.sentado, e === "SENTADO" ? 1 : 0, 5, dt);
   an.miedo = amort(an.miedo, e === "MIEDO" || (e === "CORRE" && a.caracter === "miedoso") ? 1 : 0, 8, dt);
   an.agacha = amort(an.agacha, e === "MIEDO" ? 0.6 : 0, 6, dt);

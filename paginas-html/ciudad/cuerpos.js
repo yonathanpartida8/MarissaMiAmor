@@ -20,33 +20,70 @@
 import { J, THREE, clamp, lerp, amort, difAng, TAU, contorno, toon, pbr, lienzo, textura } from "./base.js";
 
 /* ══════════════════ LA POSE ══════════════════ */
-export const ANG0 = { torsoX: 0, torsoY: 0, torsoZ: 0, cabezaX: 0, cabezaY: 0, cabezaZ: 0, hLX: 0, hLZ: 0.08, cLX: 0.15, hRX: 0, hRZ: 0.08, cRX: 0.15, pLX: 0, pLZ: 0, rLX: 0, pRX: 0, pRZ: 0, rRX: 0, pieL: 0, pieR: 0, cuerpoX: 0, cuerpoZ: 0, bajar: 0 };
+export const ANG0 = { cuerpoY: 0, torsoX: 0, torsoY: 0, torsoZ: 0, cabezaX: 0, cabezaY: 0, cabezaZ: 0, hLX: 0, hLZ: 0.08, cLX: 0.15, hRX: 0, hRZ: 0.08, cRX: 0.15, pLX: 0, pLZ: 0, rLX: 0, pRX: 0, pRZ: 0, rRX: 0, pieL: 0, pieR: 0, cuerpoX: 0, cuerpoZ: 0, bajar: 0 };
 export function nuevaAnim() {
   return { vel: 0, fase: 0, aire: 0, vuelo: 0, velVuelo: 0, sentado: 0, miedo: 0, arriba: 0, caido: 0, tel: 0, abraza: 0, saluda: 0, habla: 0, agacha: 0, grabar: 0, cargar: 0, apunta: 0, golpe: null, impacto: 0, mirarY: 0, temblor: 0, poder: 0, maneja: 0, volante: 0, baile: 0, selfie: 0, paz: 0, recarga: 0,
     // movimiento secundario: lo que el cuerpo arrastra con retardo (giro, arranque/frenada, aterrizaje)
     giro: 0, ryAnt: null, empuje: 0, velAnt: 0, aterriza: 0, estirar: 1, parpadeo: 0, tic: 0 };
 }
+/* ══════════════════ LA ZANCADA ══════════════════
+   Cuánto abre la cadera y cuánto avanza cada paso a cierta velocidad. Con
+   esto la fase del ciclo avanza exactamente lo que el pie recorre en el
+   piso: el pie de apoyo se queda plantado (no patina, no «nada»). */
+const PIERNA_L1 = 0.46, PIERNA_L2 = 0.44, PIERNA = PIERNA_L1 + PIERNA_L2;
+export function zancada(v) {
+  const run = clamp((v - 2.8) / 2.6, 0, 1);
+  const paso = clamp(0.3 + v * 0.26, 0.36, 1.5);
+  const A = Math.min(Math.asin(clamp(paso / (2 * PIERNA), 0, 0.95)), 0.5 + run * 0.25);
+  return { A, run, paso: 2 * PIERNA * Math.sin(A) * (1 + run * 0.6) };
+}
+/* Avanza el ciclo según la distancia recorrida (`escala` para los niños, que tienen la pierna corta). */
+export function avanzarFase(a, v, dt, escala = 1) { const ve = v / escala; a.fase += dt * ve * Math.PI / zancada(ve).paso; }
+const planta = { L: 0, R: 0 };
 /* Lo que el cuerpo QUIERE hacer ahora, según lo que está pasando. */
 function objetivo(a, t, o) {
+  planta.L = planta.R = 0;
   for (const k in ANG0) o[k] = ANG0[k];
-  const v = a.vel, A = clamp(v / 1.6, 0, 1) * 0.55, run = clamp((v - 2.6) / 2.4, 0, 1), f = a.fase;
-  // caminar / correr
-  if (A > 0.01) {
-    const amp = A * (1 + run * 0.55);
-    o.pLX = Math.sin(f) * amp; o.pRX = -Math.sin(f) * amp;
-    o.rLX = 0.1 + Math.max(0, -Math.cos(f)) * amp * (1.3 + run); o.rRX = 0.1 + Math.max(0, Math.cos(f)) * amp * (1.3 + run);
-    o.hLX = -Math.sin(f) * amp * (0.75 + run * 0.3); o.hRX = Math.sin(f) * amp * (0.75 + run * 0.3);
-    o.cLX = 0.25 + run * 1.15; o.cRX = 0.25 + run * 1.15;
-    o.torsoX = 0.04 + run * 0.22; o.torsoY = Math.sin(f) * 0.08 * A; o.cuerpoZ = Math.sin(f) * 0.025 * A;
-    o.bajar = -Math.abs(Math.cos(f)) * 0.035 * (A + run) + run * 0.04;
-    o.pieL = Math.max(0, Math.sin(f)) * 0.3 * A; o.pieR = Math.max(0, -Math.sin(f)) * 0.3 * A;
-    o.cabezaX = -o.torsoX * 0.5;
-  } else {
-    // respirar de pie (y cambiar el peso de pierna de vez en cuando)
-    const s = a.semilla || 0, r = Math.sin(t * 1.7 + s) * 0.02, peso = Math.sin(t * 0.21 + s * 3) * 0.5 + 0.5;
-    o.torsoX = r; o.hLZ = 0.1 + r; o.hRZ = 0.1 + r; o.cabezaX = -r * 0.5;
-    o.cuerpoZ = (peso - 0.5) * 0.04; o.pLZ = peso * 0.04; o.pRZ = (1 - peso) * 0.04; o.rLX = peso * 0.08; o.rRX = (1 - peso) * 0.08;
-    o.cabezaY = Math.sin(t * 0.37 + s * 2) * 0.12;
+  const v = a.vel, s0 = a.semilla || 0;
+  // ── de pie: respirar y cambiar el peso de pierna (la cadera se ladea, pero
+  //    el torso la compensa y la cabeza se queda derecha: nada de mecerse) ──
+  const resp = Math.sin(t * 1.6 + s0), peso = Math.sin(t * 0.19 + s0 * 3);
+  o.torsoX = 0.02 + resp * 0.012; o.hLZ = 0.1 + resp * 0.008; o.hRZ = 0.1 + resp * 0.008; o.cLX = 0.18; o.cRX = 0.18;
+  o.cuerpoZ = peso * 0.025; o.torsoZ = -peso * 0.022; o.cabezaZ = -peso * 0.004;
+  o.rLX = Math.max(0, peso) * 0.12; o.rRX = Math.max(0, -peso) * 0.12; o.pLX = Math.max(0, peso) * 0.05; o.pRX = Math.max(0, -peso) * 0.05;
+  o.cabezaY = Math.sin(t * 0.33 + s0 * 2) * 0.14 * Math.max(0, Math.sin(t * 0.11 + s0)); o.cabezaX = -0.01 - resp * 0.006;
+  // ── caminando / corriendo ──
+  const w = clamp((v - 0.12) / 0.55, 0, 1);
+  if (w > 0.001) {
+    const z = zancada(v), run = z.run, f = a.fase, A = z.A;
+    const W = (k, val) => { o[k] = lerp(o[k], val, w); };
+    const pierna = (ff) => {
+      const u = Math.atan2(Math.sin(ff), Math.cos(ff));            // fase de esa pierna, de −π a π
+      const hip = 0.03 + run * 0.08 + A * Math.sin(ff);
+      // la rodilla: se dobla mucho al pasar la pierna (balanceo) y poquito al recibir el peso
+      const bal = Math.max(0, Math.cos(u + 0.42)), carga = Math.abs(u - 2.2) < 0.785 ? Math.cos((u - 2.2) * 2) : 0;
+      const knee = 0.04 + (0.95 + run * 0.85) * Math.pow(bal, 1.25) * (0.55 + 0.45 * Math.min(1, A / 0.4)) + (0.17 + run * 0.3) * carga;
+      // el pie en el mundo: punta arriba al pisar con el talón, punta abajo al despegar
+      const pie = -0.26 * Math.pow(Math.max(0, Math.cos(u - 1.45)), 4) + (0.55 + run * 0.3) * Math.pow(Math.max(0, Math.cos(u + 1.85)), 3) - 0.08 * Math.pow(Math.max(0, Math.cos(u + 0.1)), 2);
+      return [hip, knee, pie];
+    };
+    const [hL, kL, fpL] = pierna(f), [hR, kR, fpR] = pierna(f + Math.PI);
+    W("pLX", hL); W("rLX", kL); W("pRX", hR); W("rRX", kR); planta.L = fpL * w; planta.R = fpR * w;
+    W("pLZ", 0.015); W("pRZ", 0.015);
+    // la cadera gira con la pierna que avanza y los hombros al revés (el «contrabalanceo»)
+    const sf = Math.sin(f), cf = Math.cos(f);
+    W("cuerpoY", -sf * (0.09 + run * 0.06)); W("torsoY", sf * (0.13 + run * 0.08));
+    // la cadera baja del lado que no apoya, pero el torso lo compensa: el cuerpo no se mece
+    W("cuerpoZ", cf * 0.035 * (1 - run * 0.5)); W("torsoZ", -cf * 0.032 * (1 - run * 0.5));
+    W("torsoX", 0.035 + run * 0.24 + Math.cos(2 * f) * 0.012);
+    // los brazos: al revés de las piernas, con un poquito de retraso (se dejan llevar), y el codo
+    // se dobla más cuando el brazo va adelante; al correr, a 90°
+    const aA = A * (0.8 + run * 0.55);
+    const bL = -aA * Math.sin(f - 0.22), bR = aA * Math.sin(f - 0.22);
+    W("hLX", bL); W("hRX", bR); W("hLZ", 0.1 + run * 0.06); W("hRZ", 0.1 + run * 0.06);
+    W("cLX", 0.16 + Math.max(0, bL) * 0.55 + run * 1.2); W("cRX", 0.16 + Math.max(0, bR) * 0.55 + run * 1.2);
+    // la cabeza se queda mirando adelante y nivelada aunque el cuerpo gire
+    W("cabezaY", -(o.cuerpoY + o.torsoY) * 0.85); W("cabezaZ", -(o.cuerpoZ + o.torsoZ) * 0.9); W("cabezaX", -o.torsoX * 0.55);
   }
   // en el aire
   if (a.aire > 0) { const k = a.aire; o.pLX = lerp(o.pLX, 0.5, k); o.pRX = lerp(o.pRX, 0.1, k); o.rLX = lerp(o.rLX, 0.9, k); o.rRX = lerp(o.rRX, 0.5, k); o.hLZ = lerp(o.hLZ, 0.7, k); o.hRZ = lerp(o.hRZ, 0.7, k); o.hLX = lerp(o.hLX, -0.4, k); o.hRX = lerp(o.hRX, -0.4, k); }
@@ -126,6 +163,20 @@ function objetivo(a, t, o) {
   if (a.caido > 0) { const k = a.caido; o.cuerpoX = lerp(o.cuerpoX, -1.5, k); o.bajar = lerp(o.bajar, -0.72, k); o.hLZ = lerp(o.hLZ, 1.2, k); o.hRZ = lerp(o.hRZ, 0.5, k); o.pLX = lerp(o.pLX, 0.2, k); o.rLX = lerp(o.rLX, 0.6, k); o.pRX = lerp(o.pRX, 0, k); }
   if (a.temblor > 0) o.cuerpoZ += Math.sin(t * 50) * 0.04 * a.temblor;
   o.cabezaY = clamp(o.cabezaY + a.mirarY, -1.1, 1.1);
+  // ── los pies en el piso ──
+  // El pie se acomoda para quedar plano en el mundo (más su punta/talón del paso),
+  // y la cadera baja justo lo que haga falta para que el pie de apoyo toque el piso:
+  // así el cuerpo sube y baja de verdad con cada paso, sin hundirse ni flotar.
+  const pisa = (1 - clamp(a.aire, 0, 1)) * (1 - clamp(a.vuelo, 0, 1)) * (1 - clamp(a.caido, 0, 1));
+  if (pisa > 0.001) {
+    o.pieL = lerp(o.pieL, o.pLX - o.rLX + planta.L, pisa); o.pieR = lerp(o.pieR, o.pRX - o.rRX + planta.R, pisa);
+    const apoyo = pisa * (1 - clamp(a.sentado, 0, 1)) * (1 - clamp(a.maneja, 0, 1));
+    if (apoyo > 0.001) {
+      const alcance = (h, k) => PIERNA_L1 * Math.cos(h) + PIERNA_L2 * Math.cos(h - k);
+      const b = Math.max(alcance(o.pLX, o.rLX), alcance(o.pRX, o.rRX)) - PIERNA;
+      o.bajar = lerp(o.bajar, b, apoyo);
+    }
+  }
 }
 const _o = {};
 /* Acerca los ángulos de verdad a los que tocan. `rapidez` más alta = más ágil. */
@@ -134,8 +185,10 @@ export function animar(act, dt, rapidez = 12) {
   if (!act.ang) act.ang = { ...ANG0 };
   objetivo(a, J.t, _o);
   secundario(act, a, dt, _o);
-  const k = 1 - Math.exp(-rapidez * dt);
-  for (const n in _o) act.ang[n] += (_o[n] - act.ang[n]) * (n === "cuerpoX" || n === "bajar" ? k * 0.6 : k);
+  // al caminar el ciclo casi no se suaviza (si no, pierde fuerza y se atrasa: el cuerpo «flota»)
+  const anda = clamp(((a.vel || 0) - 0.12) / 0.55, 0, 1) * (1 - clamp(a.aire + a.vuelo, 0, 1));
+  const k = 1 - Math.exp(-lerp(rapidez, 42, anda) * dt);
+  for (const n in _o) act.ang[n] += (_o[n] - act.ang[n]) * (n === "cuerpoX" ? k * 0.6 : k);
   if (a.golpe) { a.golpe.t += dt; if (a.golpe.t >= a.golpe.dur) a.golpe = null; }
   a.impacto = Math.max(0, a.impacto - dt * 3);
 }
@@ -163,19 +216,16 @@ function secundario(act, a, dt, o) {
   // de pie, sentado o manejando el cuerpo no arrastra nada de esto
   const suelto = (1 - clamp(a.sentado, 0, 1)) * (1 - clamp(a.maneja, 0, 1)) * (1 - clamp(a.caido, 0, 1));
   if (suelto > 0.01) {
-    const corre = clamp(v / 4, 0, 1);
-    // inclinarse hacia adentro de la vuelta (más cuanto más rápido)
-    const peralte = clamp(a.giro * (0.06 + corre * 0.1), -0.3, 0.3) * suelto;
-    o.cuerpoZ += peralte;
-    // la cabeza y el torso se quedan atrás y alcanzan después
-    o.torsoY -= a.giro * 0.07 * suelto;
-    o.cabezaY -= a.giro * 0.1 * suelto;
-    o.cabezaZ = (o.cabezaZ || 0) - peralte * 0.5;
-    // los brazos se abren un poquito hacia afuera en la curva
-    o.hLZ += Math.max(0, a.giro) * 0.07 * suelto; o.hRZ += Math.max(0, -a.giro) * 0.07 * suelto;
-    // arrancar echa el cuerpo adelante; frenar, atrás
-    o.torsoX += clamp(a.empuje * 0.035, -0.22, 0.22) * suelto;
-    o.cabezaX -= clamp(a.empuje * 0.02, -0.12, 0.12) * suelto;
+    const corre = clamp((v - 2.8) / 2.6, 0, 1);
+    // sólo corriendo uno se inclina hacia adentro de la curva (caminando, nada: eso era el «barco»)
+    const peralte = clamp(a.giro * 0.07 * corre, -0.16, 0.16) * suelto;
+    o.cuerpoZ += peralte; o.torsoZ -= peralte * 0.4;
+    // la cabeza se ADELANTA a la vuelta (uno mira a dónde va) y el torso la sigue
+    o.cabezaY += clamp(a.giro * 0.11, -0.4, 0.4) * suelto;
+    o.torsoY += clamp(a.giro * 0.035, -0.12, 0.12) * suelto;
+    o.cabezaZ = (o.cabezaZ || 0) - peralte * 0.6;
+    // arrancar echa el cuerpo un poquito adelante; frenar, atrás
+    o.torsoX += clamp(a.empuje * 0.022, -0.1, 0.12) * suelto;
   }
   // ── aterrizaje: aplastarse y rebotar ──
   a.aterriza = Math.max(0, a.aterriza - dt * 2.6);
@@ -186,7 +236,7 @@ function secundario(act, a, dt, o) {
   a.tic += dt;
   if (v < 0.2 && a.sentado < 0.5) {
     const s = a.semilla || 0, n = Math.sin(a.tic * 0.9 + s) * Math.sin(a.tic * 0.37 + s * 2);
-    o.cabezaY += n * 0.05; o.cabezaZ = (o.cabezaZ || 0) + n * 0.02; o.hLZ += n * 0.012; o.hRZ -= n * 0.012;
+    o.cabezaY += n * 0.04; o.hLZ += n * 0.01; o.hRZ -= n * 0.01;
   }
 }
 /* Lo llama quien aterriza: `k` 0–1 según lo fuerte que haya caído. */
@@ -196,7 +246,7 @@ export function aplicar(j, g, alturaCadera, estirar = 1) {
   j.cuerpo.position.y = alturaCadera + g.bajar;
   // squash & stretch: al caer se aplasta un poquito y se ensancha (y al revés)
   if (estirar !== 1 || j.cuerpo.scale.y !== 1) { const e = clamp(estirar, 0.8, 1.15), w = 1 + (1 - e) * 0.7; j.cuerpo.scale.set(w, e, w); }
-  j.cuerpo.rotation.set(g.cuerpoX, 0, g.cuerpoZ);
+  j.cuerpo.rotation.set(g.cuerpoX, g.cuerpoY || 0, g.cuerpoZ);
   j.torso.rotation.set(g.torsoX, g.torsoY, g.torsoZ);
   j.cabeza.rotation.set(g.cabezaX, g.cabezaY, g.cabezaZ || 0);
   // (el izquierdo está en +x: girar en +z lo abre hacia afuera; el derecho, al revés)
@@ -251,7 +301,7 @@ function cara(tipo) {
   const [c, x] = lienzo(256, 256);
   x.clearRect(0, 0, 256, 256);
   const ella = tipo === "ella", gente = tipo === "gente";
-  const rx = gente ? 15 : ella ? 21 : 19, ry = gente ? 19 : ella ? 28 : 25, oy = 122;
+  const rx = gente ? 15 : ella ? 25 : 22, ry = gente ? 19 : ella ? 31 : 27, oy = 120;
   const ojo = (cx, s) => {
     x.fillStyle = "#1a1220"; x.beginPath(); x.ellipse(cx, oy, rx, ry, 0, 0, TAU); x.fill();
     if (!gente) { x.fillStyle = ella ? "#5a3426" : "#3e2a22"; x.beginPath(); x.ellipse(cx, oy + 5, rx * 0.66, ry * 0.66, 0, 0, TAU); x.fill(); }
@@ -278,6 +328,24 @@ function cara(tipo) {
 /* La cara se dibuja sobre un casquete un poquito más grande que la cabeza (sólo el frente). */
 const caraGeo = (r) => new THREE.SphereGeometry(r * 1.015, 24, 16, Math.PI * 0.5 - 0.61, 1.22, Math.PI * 0.5 - 0.53, 1.06);
 
+/* El casco de pelo: una esfera un poquito más grande que la cabeza; lo que
+   queda debajo de la línea del nacimiento del pelo (`linea`, en radios de
+   la cabeza, según hacia dónde mire ese punto) se mete dentro de la cabeza.
+   Así la frente tiene una línea curva y natural, no un corte recto de casco. */
+function cascoPelo(R, linea, grosor = 1.075, bulto = null) {
+  const g = new THREE.SphereGeometry(R * grosor, 96, 64), p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i) / R, y = p.getY(i) / R, z = p.getZ(i) / R, lim = linea(Math.atan2(x, z), x);
+    // se mete poco a poco (el pelo se adelgaza hacia el borde, como de verdad) y, si hay, el volumen del peinado
+    const k = lerp(0.88, 1, suaveEntre(lim - 0.22, lim + 0.05, y)) + (bulto ? bulto(x, y, z) : 0);
+    p.setXYZ(i, p.getX(i) * k, p.getY(i) * k, p.getZ(i) * k);
+  }
+  g.computeVertexNormals(); return g;
+}
+const suaveEntre = (a, b, v) => { const k = clamp((v - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+/* Un mechón: un óvalo aplastado que se acuesta sobre el casco, peinado hacia atrás y arriba. */
+const mechonGeo = new THREE.SphereGeometry(1, 14, 10);
+
 /* ══════════════════ YO Y ELLA (con detalle) ══════════════════ */
 export function crearProtagonista(quien) {
   const j = esqueleto();
@@ -286,7 +354,7 @@ export function crearProtagonista(quien) {
   /* Yo y ella llevamos materiales con luz de verdad (no el «toon» plano del
      resto de la ciudad): la piel tiene su brillo suave, el pelo refleja la
      luz en una franja, la ropa es mate y todo recoge el color del cielo. */
-  const T = (o) => contorno(pbr(o), rim, 0.5);
+  const T = (o) => contorno(pbr(o), rim, 0.2);
   const piel = T({ color: ella ? "#d8a682" : "#c89670", roughness: 0.56, metalness: 0, envMapIntensity: 0.55 });
   const negro = T({ color: "#232030", roughness: 0.88, envMapIntensity: 0.3 });
   const negro2 = T({ color: "#2e2a3c", roughness: 0.82, envMapIntensity: 0.35 });
@@ -297,14 +365,14 @@ export function crearProtagonista(quien) {
   const M = (geo, mat, padre, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; padre.add(m); return m; };
   const R = 0.13;   // radio de la cabeza
   // ── el torso con su ropa ──
-  M(torsoGeo(ella ? 0.86 : 1.06, ella ? 0.8 : 1, ella ? 1 : 0), negro, j.torso);
+  M(torsoGeo(ella ? 0.88 : 1.16, ella ? 0.8 : 1.02, ella ? 1 : 0), negro, j.torso);
   if (!ella) {
     // chamarra: cuello alzado, cierre, bolsillos y la playera blanca asomándose
     M(new THREE.TorusGeometry(0.088, 0.03, 8, 18).rotateX(Math.PI / 2), negro2, j.torso, 0, H.torso - 0.02, 0);
     M(new THREE.CylinderGeometry(0.075, 0.08, 0.05, 12), blanco, j.torso, 0, H.torso - 0.035, 0.012);
-    M(new THREE.BoxGeometry(0.012, 0.36, 0.01), T({ color: "#8a8898" }), j.torso, 0, 0.3, 0.128);
-    for (const s of [-1, 1]) M(new THREE.BoxGeometry(0.09, 0.012, 0.01), negro3, j.torso, s * 0.085, 0.16, 0.12);
-    M(new THREE.CapsuleGeometry(0.11, 0.06, 4, 10).scale(1.2, 0.7, 0.5), negro2, j.torso, 0, 0.47, -0.12);   // la capucha
+    M(new THREE.BoxGeometry(0.01, 0.34, 0.006), T({ color: "#9a98a8", roughness: 0.3, metalness: 0.8 }), j.torso, 0, 0.3, 0.114);
+    for (const s of [-1, 1]) M(new THREE.BoxGeometry(0.08, 0.01, 0.006), negro3, j.torso, s * 0.075, 0.16, 0.108);
+    M(new THREE.CapsuleGeometry(0.1, 0.04, 4, 10).scale(1.15, 0.6, 0.42), negro2, j.torso, 0, 0.47, -0.105);   // la capucha
   } else {
     // blusa con un listón rosita y su collar
     M(new THREE.TorusGeometry(0.075, 0.012, 6, 18).rotateX(Math.PI / 2 - 0.25), T({ color: "#e8d0b8" }), j.torso, 0, H.torso - 0.06, 0.018);
@@ -312,7 +380,7 @@ export function crearProtagonista(quien) {
     M(new THREE.SphereGeometry(0.018, 8, 6), acento, j.torso, 0, 0.42, 0.125);
   }
   M(new THREE.SphereGeometry(0.15, 14, 10).scale(1.1, 0.75, 0.85), negro2, j.cadera, 0, 0, 0);
-  if (!ella) M(new THREE.TorusGeometry(0.15, 0.014, 6, 24).rotateX(Math.PI / 2).scale(1.08, 1, 0.82), T({ color: "#4a4050" }), j.cadera, 0, 0.06, 0);   // el cinturón
+  if (!ella) { M(new THREE.TorusGeometry(0.15, 0.01, 6, 28).rotateX(Math.PI / 2).scale(1.06, 1, 0.8), T({ color: "#3a3440", roughness: 0.6 }), j.cadera, 0, 0.06, 0); M(new THREE.BoxGeometry(0.035, 0.026, 0.01), T({ color: "#c8c4d0", roughness: 0.25, metalness: 0.9 }), j.cadera, 0, 0.06, 0.122); }   // el cinturón y su hebilla
   if (ella) {
     // la falda, con vuelo
     const falda = new THREE.CylinderGeometry(0.15, 0.3, 0.4, 24, 3, true).translate(0, -0.15, 0);
@@ -328,21 +396,22 @@ export function crearProtagonista(quien) {
   M(new THREE.SphereGeometry(0.018, 8, 6).scale(0.9, 1, 1.1), piel, j.cabeza, 0, 0.125, 0.128);   // la nariz
   for (const s of [-1, 1]) M(new THREE.SphereGeometry(0.03, 8, 6).scale(0.5, 1, 0.8), piel, j.cabeza, s * 0.12, 0.14, 0);   // orejas
   // ── el pelo ──
+  const HC = (g) => g.scale(0.94, 1.06, 1).translate(0, 0.14, 0.005);   // mismo huevo que la cabeza
   if (!ella) {
-    M(new THREE.SphereGeometry(R + 0.012, 20, 12, 0, TAU, 0, Math.PI * 0.6).rotateX(-0.42).scale(0.98, 1.06, 1.06).translate(0, 0.15, -0.012), pelo, j.cabeza);
-    // mechones con volumen y el copete
-    for (const [x, y, z, s, rz] of [[0.0, 0.29, 0.06, 1.2, 0.1], [0.06, 0.28, 0.02, 0.9, -0.4], [-0.06, 0.28, 0.03, 0.95, 0.5], [0.09, 0.24, 0.07, 0.7, -0.8], [-0.09, 0.24, 0.07, 0.7, 0.8], [0.0, 0.26, -0.07, 1, 0]])
-      M(new THREE.SphereGeometry(0.06, 10, 8).scale(1.3 * s, 0.6 * s, 1 * s), pelo, j.cabeza, x, y, z).rotation.z = rz;
-    for (const s of [-1, 1]) M(new THREE.BoxGeometry(0.03, 0.07, 0.04), pelo, j.cabeza, s * 0.118, 0.17, 0.035);   // patillas
+    // corte corto: arriba con volumen, la frente con su línea curva, los lados cortos sobre la oreja
+    M(HC(cascoPelo(R, (th, x) => { const a = Math.abs(th); return lerp(0.44 - 0.32 * x * x, lerp(-0.08, -0.5, suaveEntre(1.9, 2.6, a)), suaveEntre(0.7, 1.35, a)); }, 1.075,
+      // el copete: volumen arriba y adelante, peinado hacia atrás
+      (x, y, z) => 0.065 * Math.exp(-((x / 0.85) ** 2)) * suaveEntre(0.3, 0.8, y) * suaveEntre(-0.4, 0.6, z))), pelo, j.cabeza);
   } else {
-    M(new THREE.SphereGeometry(R + 0.015, 20, 12, 0, TAU, 0, Math.PI * 0.62).rotateX(-0.4).scale(1, 1.07, 1.08).translate(0, 0.148, -0.014), pelo, j.cabeza);
+    // pelo largo: la frente con fleco de lado, y por los lados y atrás baja hasta los hombros
+    M(HC(cascoPelo(R, (th, x) => { const a = Math.abs(th); return lerp(0.12 + 0.2 * x - 0.1 * x * x, -1.3, suaveEntre(0.8, 1.3, a)); }, 1.085)), pelo, j.cabeza);
     const largo = new THREE.Group(); largo.position.set(0, 0.2, -0.06); j.cabeza.add(largo); j.melena = largo;
-    M(new THREE.CapsuleGeometry(0.125, 0.36, 6, 14).scale(1.1, 1, 0.5).translate(0, -0.22, -0.03), pelo, largo);
-    for (const s of [-1, 1]) {
-      const m = M(new THREE.CapsuleGeometry(0.04, 0.3, 4, 8).translate(0, -0.15, 0), pelo, j.cabeza, s * 0.12, 0.2, 0.035); m.rotation.z = s * 0.06;
-      M(new THREE.SphereGeometry(0.05, 10, 8).scale(1.4, 0.8, 0.7), pelo, j.cabeza, s * 0.05, 0.255, 0.1).rotation.z = s * 0.35;   // el fleco
+    M(new THREE.CapsuleGeometry(0.12, 0.36, 6, 16).scale(1.12, 1, 0.46).translate(0, -0.3, -0.02), pelo, largo);
+    // los mechones de los lados: listones planos que caen por delante de los hombros
+    for (const sx of [-1, 1]) {
+      const m = M(new THREE.CapsuleGeometry(0.034, 0.3, 4, 10).scale(1.9, 1, 0.5).translate(0, -0.15, 0), pelo, j.cabeza, sx * 0.108, 0.18, -0.005); m.rotation.z = sx * 0.09; m.rotation.x = 0.06;
     }
-    M(new THREE.SphereGeometry(0.035, 8, 6).scale(1.5, 0.7, 0.7), acento, j.cabeza, 0.1, 0.26, 0.0);   // pasador
+    M(new THREE.SphereGeometry(0.018, 8, 6).scale(1.6, 0.6, 0.6), acento, j.cabeza, 0.105, 0.245, 0.04).rotation.z = -0.5;   // pasador
     for (const s of [-1, 1]) M(new THREE.SphereGeometry(0.012, 6, 4), T({ color: "#ffe0a0", emissive: "#3a2a00" }), j.cabeza, s * 0.123, 0.1, 0.0);   // aretes
   }
   // ── brazos: mangas, puños y manos con pulgar ──
@@ -350,7 +419,7 @@ export function crearProtagonista(quien) {
     M(miembro(ella ? 0.052 : 0.06, ella ? 0.044 : 0.05, H.brazo - 0.04), negro, h);
     M(miembro(ella ? 0.042 : 0.05, ella ? 0.034 : 0.042, H.ante - 0.06), ella ? piel : negro, c);
     if (!ella) M(new THREE.CylinderGeometry(0.046, 0.046, 0.05, 10), negro3, c, 0, -H.ante + 0.06, 0);
-    M(new THREE.SphereGeometry(ella ? 0.038 : 0.044, 10, 8).scale(0.85, 1.2, 0.55), piel, m, 0, -0.035, 0);
+    M(new THREE.SphereGeometry(ella ? 0.044 : 0.052, 12, 10).scale(0.85, 1.25, 0.55), piel, m, 0, -0.04, 0);
     M(new THREE.CapsuleGeometry(0.014, 0.035, 3, 6), piel, m, s * 0.03, -0.03, 0.02).rotation.z = s * 0.6;
     if (ella && s > 0) M(new THREE.TorusGeometry(0.038, 0.008, 6, 14).rotateX(Math.PI / 2), acento, c, 0, -H.ante + 0.07, 0);   // pulsera
   }

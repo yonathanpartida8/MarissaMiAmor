@@ -23,7 +23,7 @@
  * nada de cajas de texto a cada rato.
  */
 import { J, THREE, clamp, lerp, amort, amortAng, difAng, rnd, elegir, anunciar, oir, TAU } from "./base.js";
-import { crearProtagonista, nuevaAnim, animar, aplicar, golpeDeSuelo, ALTURA_CADERA } from "./cuerpos.js";
+import { crearProtagonista, nuevaAnim, animar, aplicar, golpeDeSuelo, avanzarFase, ALTURA_CADERA } from "./cuerpos.js";
 import { alturaSuelo, chocarEdificios, lugares, bancas, BORDE_MUNDO } from "./mundo.js";
 import { son, bucleEn } from "./audio.js";
 import { polvo, brillos, corazones, onda, chispas } from "./efectos.js";
@@ -91,7 +91,7 @@ function secuenciaCoche(yo, dt) {
     if (q.fase === "ir") {
       const dx = pp.x - yo.x, dz = pp.z - yo.z, d = Math.hypot(dx, dz);
       if (d < 0.22 || q.t > 2.6) { q.fase = "abrir"; q.t = 0; q.x0 = yo.x; q.z0 = yo.z; puerta(c, 1, true); }
-      else { const v = Math.min(2.6, d * 3 + 0.6); yo.vx = dx / d * v; yo.vz = dz / d * v; yo.x += yo.vx * dt; yo.z += yo.vz * dt; yo.ry = amortAng(yo.ry, Math.atan2(dx, dz), 10, dt); yo.vel = v; yo.anim.vel = v; yo.anim.fase += dt * v * 2.9; }
+      else { const v = Math.min(2.6, d * 3 + 0.6); yo.vx = dx / d * v; yo.vz = dz / d * v; yo.x += yo.vx * dt; yo.z += yo.vz * dt; yo.ry = amortAng(yo.ry, Math.atan2(dx, dz), 10, dt); yo.vel = v; yo.anim.vel = v; avanzarFase(yo.anim, v, dt); }
     } else if (q.fase === "abrir") {
       yo.x = lerp(q.x0, pp.x, Math.min(1, q.t / 0.3)); yo.z = lerp(q.z0, pp.z, Math.min(1, q.t / 0.3)); yo.vel = 0; yo.anim.vel = 0;
       yo.ry = amortAng(yo.ry, c.ry + Math.PI, 8, dt);   // de espaldas al asiento
@@ -137,7 +137,7 @@ function secuenciaBanca(yo, dt) {
     if (q.fase === "ir") {
       const dx = q.ax - yo.x, dz = q.az - yo.z, d = Math.hypot(dx, dz);
       if (d < 0.15 || q.t > 3) { q.fase = "girar"; q.t = 0; }
-      else { const v = Math.min(2.4, d * 3 + 0.5); yo.vx = dx / d * v; yo.vz = dz / d * v; yo.x += yo.vx * dt; yo.z += yo.vz * dt; yo.ry = amortAng(yo.ry, Math.atan2(dx, dz), 10, dt); yo.vel = v; yo.anim.vel = v; yo.anim.fase += dt * v * 2.9; }
+      else { const v = Math.min(2.4, d * 3 + 0.5); yo.vx = dx / d * v; yo.vz = dz / d * v; yo.x += yo.vx * dt; yo.z += yo.vz * dt; yo.ry = amortAng(yo.ry, Math.atan2(dx, dz), 10, dt); yo.vel = v; yo.anim.vel = v; avanzarFase(yo.anim, v, dt); }
     } else if (q.fase === "girar") {
       yo.vel = yo.anim.vel = 0; yo.ry = amortAng(yo.ry, q.b.ry, 9, dt);
       if (Math.abs(difAng(yo.ry, q.b.ry)) < 0.12 || q.t > 0.6) { q.fase = "sentar"; q.t = 0; q.x0 = yo.x; q.z0 = yo.z; }
@@ -217,7 +217,7 @@ export function actualizarJugador(dt) {
     bucleEn("vuelo", 0);
     yo.anim.vuelo = amort(yo.anim.vuelo, 0, 6, dt);
     const corre = E.correr;   // correr: joystick hasta el borde (o Shift); si no, caminamos (y así vamos de la mano)
-    const vmax = (corre ? 6.4 : 2.7 * Math.max(0.55, fuerza / 0.85)) * (dios ? 1.25 : 1);
+    const vmax = (corre ? 6.2 : 2.3 * Math.max(0.5, fuerza / 0.85)) * (dios ? 1.25 : 1);
     const obj = fuerza > 0.08 ? vmax : 0;
     const k = yo.suelo ? (obj > yo.vel ? 9 : 12) : 2.2;
     yo.vx = amort(yo.vx, dx * obj, k, dt); yo.vz = amort(yo.vz, dz * obj, k, dt);
@@ -241,7 +241,7 @@ export function actualizarJugador(dt) {
     }
     yo.anim.aire = amort(yo.anim.aire, yo.suelo ? 0 : 1, 10, dt);
     yo.anim.vel = yo.suelo ? yo.vel : yo.anim.vel;
-    if (yo.suelo && yo.vel > 0.6) { const antes = yo.anim.fase; yo.anim.fase += dt * yo.vel * (yo.vel > 3 ? 2.1 : 2.9); if (Math.floor(antes / Math.PI) !== Math.floor(yo.anim.fase / Math.PI)) son("paso", yo.x, yo.z, yo.vel > 3 ? 1 : 0.6); }
+    if (yo.suelo && yo.vel > 0.12) { const antes = yo.anim.fase; avanzarFase(yo.anim, yo.vel, dt); if (Math.floor(antes / Math.PI) !== Math.floor(yo.anim.fase / Math.PI)) son("paso", yo.x, yo.z, yo.vel > 3 ? 1 : 0.6); }
   }
   // no atravesar paredes ni salirse del mundo
   chocarEdificios(yo, 0.35, yo.y);
@@ -516,7 +516,7 @@ export function actualizarElla(dt) {
   const sentadaConmigo = ella.estado === "sentada" && yo.banca && ella.banca && yo.banca === ella.banca.de;
   a.mirarY = amort(a.mirarY, ella.estado === "telefono" || (ella.estado === "sentada" && ella.sola) ? 0 : clamp(difAng(haciaMi, ella.ry), -1.1, 1.1) * (sentadaConmigo ? 0.6 : 1), 4, dt);
   // las poses
-  if (ella.vel > 0.3) a.fase += dt * ella.vel * (ella.vel > 3 ? 2.2 : 3.1);
+  if (ella.vel > 0.12) avanzarFase(a, ella.vel, dt);
   a.vel = ella.vel;
   if (ella.estado === "sentada" || enAuto) a.sentado = amort(a.sentado, 1, 5, dt);
   a.tel = amort(a.tel, ((ella.estado === "sentada" && ella.sola) || ella.estado === "telefono") ? 1 : 0, 3, dt);
