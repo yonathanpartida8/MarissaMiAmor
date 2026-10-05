@@ -99,6 +99,10 @@ html, body{ margin: 0; padding: 0 !important; width: 100%; height: 100%; overflo
 .cd-joy{ position: absolute; left: calc(max(var(--seguro-lado, 0px), env(safe-area-inset-left, 0px)) + 18px); bottom: calc(var(--barra) + var(--seg-b) + 18px); top: auto; width: 128px; height: 128px; opacity: .55 !important; transition: opacity .2s; border-radius: 50%; border: 1.5px solid rgba(255,230,200,.3); background: radial-gradient(circle, rgba(255,240,220,.08), rgba(255,240,220,.02));
   opacity: 0; transition: opacity .2s; }
 .cd-joy.ver{ opacity: 1 !important; }
+/* la mira: un poco arriba del centro (ahí apuntan los poderes) */
+.cd-mira{ position: absolute; left: 50%; top: 38%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; border: 2px solid rgba(255,240,220,.75); box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 0 10px rgba(255,210,150,.4); pointer-events: none; opacity: 0; transition: opacity .2s, transform .2s; transform: scale(.7); }
+.cd-mira i{ position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px; border-radius: 50%; background: #fff4e4; }
+body.apunta .cd-mira{ opacity: 1; transform: none; }
 .cd-joy i{ transition: transform .06s linear; }
 /* ── en el coche: flechas a la izquierda, pedales a la derecha ── */
 .cd-volante, .cd-pedales{ position: absolute; display: none; gap: 12px; bottom: calc(var(--barra) + var(--seg-b) + 18px); }

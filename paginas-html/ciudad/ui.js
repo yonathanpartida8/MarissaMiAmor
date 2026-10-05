@@ -51,6 +51,7 @@ export function armarUI() {
   <div class="cd-envivo" id="envivo">🔴 EN VIVO · Un héroe misterioso ilumina la ciudad dormida</div>
   <div class="cd-burbujas" id="burbujas"></div>
   <p class="cd-dialogo is-fuera" id="dialogo" role="status" aria-live="polite"></p>
+  <div class="cd-mira" id="mira"><i></i></div>
   <div class="cd-joy" id="joy"><i></i></div>
   <div class="cd-volante" id="volante">
     <button class="cd-flecha" id="bIzq" aria-label="Girar a la izquierda"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg></button>
@@ -125,7 +126,7 @@ export function irA2D() {
 }
 
 /* ── la rueda de poderes ── */
-const CORTO = { levantar: "Levantar", carga: "Explosión", lluvia: "Tormenta", meteoros: "Meteoritos", corazones: "Corazones", tiempo: "Tiempo", ovni: "Ovni" };
+const CORTO = { empuje: "Empuje", escudo: "Escudo", levantar: "Levantar", carga: "Explosión", lluvia: "Tormenta", meteoros: "Meteoritos", corazones: "Corazones", tiempo: "Tiempo", ovni: "Ovni" };
 let rueda = null;
 export function definirPoderes(lista, actual) {
   const r = $("#rueda"); r.innerHTML = "";

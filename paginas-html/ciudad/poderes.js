@@ -21,7 +21,7 @@ import { golpearGente, derribar, rejilla, calmarTodos } from "./gente.js";
 import { soltarFisica, golpearCoches, restaurarTodos } from "./vehiculos.js";
 import * as objetos from "./objetos.js";
 import { decirElla, lineaElla } from "./jugador.js";
-import { CALLES, alturaSuelo, chocarEdificios } from "./mundo.js";
+import { CALLES, alturaSuelo, chocarEdificios, edificios } from "./mundo.js";
 import { irAlBano, regresar } from "./pareja.js";
 import { cam } from "./camara.js";
 
@@ -37,6 +37,8 @@ export const PODERES = [
   { id: "corazones", ico: "💗", nombre: "Lluvia de corazones" },
   { id: "tiempo", ico: "⏳", nombre: "Detener el tiempo" },
   { id: "ovni", ico: "🛸", nombre: "Llamar al ovni" },
+  { id: "empuje", ico: "💨", nombre: "Onda de empuje" },
+  { id: "escudo", ico: "🛡️", nombre: "Escudo para los dos" },
 ];
 let poder = "rayo", burbuja = null;
 J.dios = { on: false, nivel: 0, brilla: false };
@@ -145,6 +147,38 @@ function limpiarCaos() {
 }
 /* ══════════════════ ELEGIR A QUIÉN ══════════════════ */
 /* Lo que el poder apunta: lo que se tocó, o lo más cercano enfrente. */
+/* ══════════════════ LA MIRA (sin autoapuntado) ══════════════════
+   Los poderes salen hacia donde apunta la cámara: una línea desde la cámara
+   por la mira (un poco arriba del centro, para no tapar al personaje) que
+   avanza hasta chocar con lo primero que haya: una persona, un coche, un
+   objeto, un helicóptero, un edificio o el piso. Nada se elige solo: si
+   fallas, fallas. */
+const _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2(0, 0.24);
+export function mira(alcance = 90) {
+  _ray.setFromCamera(_ndc, J.camara);
+  const o = _ray.ray.origin, d = _ray.ray.direction, yo = J.jugador;
+  // empezar ya pasando al personaje (lo que esté entre la cámara y yo no cuenta)
+  const t0 = Math.max(0, (yo.x - o.x) * d.x + (yo.y + 1 - o.y) * d.y + (yo.z - o.z) * d.z) + 0.6;
+  let mejor = null, tMejor = alcance;
+  const probar = (obj, x, y, z, r) => {
+    const t = (x - o.x) * d.x + (y - o.y) * d.y + (z - o.z) * d.z;
+    if (t < t0 || t > tMejor) return;
+    const px = o.x + d.x * t - x, py = o.y + d.y * t - y, pz = o.z + d.z * t - z;
+    if (px * px + py * py + pz * pz < r * r) { tMejor = t; mejor = obj; }
+  };
+  for (const c of J.coches) if (c.estado !== "fuera" && c.estado !== "conducido" && c.fase !== "RESTOS") probar(c, c.x, c.y, c.z, c.T.L * 0.45);
+  for (const ob of J.objetos) if (ob.estado !== "DESTRUIDO") probar(ob, ob.x, (ob.y || 0) + 0.4, ob.z, 0.75);
+  for (const a of J.gente) if (a.ver && a.estado !== "DENTRO") probar(a, a.x, (a.y || 0) + 0.9, a.z, 0.55);
+  if (J.helis) for (const h of J.helis()) if (h.fase !== "cae") probar(h, h.x, h.y, h.z, 2.6);
+  // el piso y los edificios: avanzar por la línea hasta chocar
+  for (let t = t0; t < tMejor; t += 0.35) {
+    const x = o.x + d.x * t, y = o.y + d.y * t, z = o.z + d.z * t;
+    if (y <= 0.02) { tMejor = t; mejor = null; break; }
+    let dentro = false; for (const e of edificios) if (x > e.x0 && x < e.x1 && z > e.z0 && z < e.z1 && y < e.h) { dentro = true; break; }
+    if (dentro) { tMejor = t; mejor = null; break; }
+  }
+  return { x: o.x + d.x * tMejor, y: Math.max(0.05, o.y + d.y * tMejor), z: o.z + d.z * tMejor, obj: mejor, dir: d };
+}
 function blanco(alcance = 35, soloLevantable = false) {
   const yo = J.jugador, ay = J.camYaw || 0, fwx = -Math.sin(ay), fwz = -Math.cos(ay);
   let mejor = null, punt = 1e9;
@@ -177,12 +211,14 @@ const tornados = [];
 function usarPoder() {
   const yo = J.jugador;
   switch (poder) {
-    case "rayo": { const b = blanco(); lanzarRayo(b ? { x: b.x, y: (b.y || 0) + (b.T ? 0.3 : 1), z: b.z } : puntoAdelante(16), b); break; }
-    case "levantar": if (J.agarrado) aventar(); else { const b = blanco(30, true); if (b) agarrar(b); else decir("No hay nada que levantar por aquí 🤔", "dios", 1800); } break;
+    case "rayo": { const m = mira(); lanzarRayo({ x: m.x, y: m.y, z: m.z }, m.obj); break; }
+    case "levantar": if (J.agarrado) aventar(); else { const m = mira(35); const b = m.obj && (m.obj.T || J.objetos.includes(m.obj)) ? m.obj : null; if (b) agarrar(b); else decir("Apunta la mira a un coche o a algo para levantarlo", "dios", 1800); } break;
+    case "empuje": ondaEmpuje(); break;
+    case "escudo": J.escudoT = 9; son("magia"); fx.onda(yo.x, yo.y + 0.1, yo.z, 3, 0.6, "#a8d8ff"); decir("Nada nos va a pasar 🛡️", "dios", 1800); break;
     case "terremoto": terremoto(); break;
     case "tsunami": tsunami(); break;
     case "lluvia": lluviaObj = lluviaObj ? 0 : 1; decir(lluviaObj ? "Que llueva… 🌧️" : "Ya, que vuelva a salir la luna 🌙", "dios", 2200); if (lluviaObj) anunciar({ tipo: "lluvia", x: yo.x, z: yo.z, radio: 90, fuerza: 0.3 }); break;
-    case "tornado": { const p = puntoAdelante(14); crearTornado(p.x, p.z); break; }
+    case "tornado": { const m = mira(60); crearTornado(m.x, m.z); break; }
     case "meteoros": meteoros(); break;
     case "corazones": amorT = 12; decir("Para ti, mi niña bonita 💗", "dios"); son("corazon"); anunciar({ tipo: "amor", x: yo.x, z: yo.z, radio: 60, fuerza: 0.2 }); setTimeout(() => { if (J.dios.on) { decirElla("Amor… ¿eso lo hiciste tú? 🥹💗"); J.novia.abrazaT = 3; } }, 2600); break;
     case "tiempo": J.congelado = 7; son("magia"); decir("El tiempo se detuvo… sólo para mirarte un ratito más 🤍", "dios", 3400); J.misterio && J.misterio("tiempo"); break;
@@ -275,12 +311,24 @@ const proyectiles = [];
 function soltarCarga() {
   const yo = J.jugador, k = cargaPoder; cargaPoder = 0; J.cargandoPoder = false;
   if (k < 0.08) { if (orbeCarga) orbeCarga.soltar(); orbeCarga = null; return; }
-  const b = blanco(40);
-  const p = b ? { x: b.x, y: (b.y || 0) + 0.5, z: b.z } : puntoAdelante(18);
+  const p = mira();
   const mano = { x: yo.x + Math.sin(yo.ry) * 0.6, y: yo.y + 1.45, z: yo.z + Math.cos(yo.ry) * 0.6 };
   proyectiles.push({ ...mano, tx: p.x, ty: p.y, tz: p.z, k, orbe: orbeCarga }); orbeCarga = null;
   yo.anim.golpe = { tipo: "lanzar", t: 0, dur: 0.45 };
   son("whoosh", yo.x, yo.z, 1);
+}
+/* ── la onda de empuje: un cono de fuerza hacia donde apunta la mira ── */
+function ondaEmpuje() {
+  const yo = J.jugador, m = mira(30), dx0 = m.x - yo.x, dz0 = m.z - yo.z, dl = Math.hypot(dx0, dz0) || 1, ux = dx0 / dl, uz = dz0 / dl;
+  yo.anim.golpe = { tipo: "rayo", t: 0, dur: 0.4 }; yo.ry = Math.atan2(ux, uz);
+  son("whoosh", yo.x, yo.z, 1.2); J.temblor = Math.max(J.temblor || 0, 0.3);
+  for (let k = 0; k < 5; k++) fx.onda(yo.x + ux * (2 + k * 2.4), yo.y + 0.6, yo.z + uz * (2 + k * 2.4), 1.5 + k * 0.9, 0.35 + k * 0.08, "#c8e4ff");
+  const enCono = (x, z) => { const ax = x - yo.x, az = z - yo.z, d = Math.hypot(ax, az); return d > 0.5 && d < 18 && (ax * ux + az * uz) / d > 0.75 ? 1 - d / 18 : 0; };
+  for (const c of J.coches) { if (c.estado === "fuera" || c.estado === "conducido") continue; const f = enCono(c.x, c.z); if (!f) continue;
+    soltarFisica(c); const F = (8 + f * 16) / c.T.masa; c.vx += ux * F; c.vz += uz * F; c.vy += F * 0.45; c.w.add(new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).multiplyScalar(F * 0.12)); c.dano += f * 0.15 / c.T.masa; }
+  for (const o of J.objetos) { const f = enCono(o.x, o.z); if (f) objetos.empujar(o, ux * (6 + f * 12), 3 + f * 4, uz * (6 + f * 12), 0.6); }
+  for (const a of J.gente) { if (a.estado === "DENTRO") continue; const f = enCono(a.x, a.z); if (f) derribar(a, ux, uz, 0.6 + f); }
+  J.caos += 8;
 }
 /* ── el terremoto ── */
 function terremoto() {
@@ -447,8 +495,26 @@ function meteoros() {
 }
 
 /* ══════════════════ CADA CUADRO ══════════════════ */
+/* La burbuja del escudo (una para mí y otra para ella). */
+let burbujas = null;
+function actualizarEscudo(dt) {
+  if (!burbujas) {
+    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.55, 0.85, 1.4), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    burbujas = [0, 1].map(() => { const m = new THREE.Mesh(new THREE.SphereGeometry(1.15, 28, 18), mat); m.layers.set(1); m.visible = false; J.escena.add(m); return m; });
+  }
+  J.escudoT = Math.max(0, (J.escudoT || 0) - dt);
+  const k = Math.min(1, J.escudoT * 2), on = J.escudoT > 0;
+  burbujas[0].material.opacity = 0.16 * k + Math.sin(J.t * 9) * 0.03 * k;
+  [J.jugador, J.novia].forEach((p, i) => { const b = burbujas[i]; b.visible = on && !p.coche; if (on) { b.position.set(p.x, p.y + 0.95, p.z); b.scale.setScalar(1 + Math.sin(J.t * 3 + i) * 0.03); } });
+}
+/* ¿La mira se ve? (con un poder que apunta, o cargando la explosión) */
+const APUNTAN = new Set(["rayo", "levantar", "carga", "tornado", "empuje"]);
+let miraVisible = false;
 export function actualizar(dt, dtM) {
   const yo = J.jugador, ella = J.novia;
+  actualizarEscudo(dt);
+  const ver = J.dios.on && APUNTAN.has(poder) && !yo.coche;
+  if (ver !== miraVisible) { miraVisible = ver; document.body.classList.toggle("apunta", ver); }
   // el botón ✨
   if (E.dios) { if (J.dios.on) apagarDios(); else prenderDios(); }
   J.dios.nivel = clamp(J.dios.nivel + (J.dios.on && J.dios.brilla ? dt * 1.4 : -dt * 0.6), 0, 1);   // el brillo, sólo ya transformado
