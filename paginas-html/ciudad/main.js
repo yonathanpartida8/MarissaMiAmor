@@ -9,7 +9,7 @@
  *   eventos) → la cámara → el cielo, las luces y las ventanas → y la
  *   imagen pasa por el postproceso (contornos de dibujo, resplandor, color).
  */
-import { J, THREE, memo } from "./base.js";
+import { J, THREE, memo, lienzo as lienzo2D, TAU } from "./base.js";
 import { construirMundo, colocarLuna, lugares, actualizarMundo } from "./mundo.js";
 import { actualizarCielo } from "./cielo.js";
 import { construirVentanas, actualizarVentanas } from "./ventanas.js";
@@ -73,6 +73,36 @@ function medir() {
 }
 addEventListener("resize", medir);
 
+/* ══════════════════ LOS REFLEJOS ══════════════════
+   Un cielito chiquito (64×32) pintado con los colores de la hora, más el sol
+   o la luna. Se convierte en mapa de entorno y la escena entera lo usa: la
+   pintura de los coches, los vidrios y la piel reflejan el cielo que de
+   verdad hay en ese momento. Se vuelve a pintar cada pocos segundos, así que
+   no cuesta casi nada. */
+const pmrem = new THREE.PMREMGenerator(render);
+const [cEnv, xEnv] = lienzo2D(64, 32);
+let envTex = null, envRT = null, envCada = 0;
+function refrescarEntorno() {
+  const g = xEnv.createLinearGradient(0, 0, 0, 32);
+  g.addColorStop(0, "#" + ciclo.arriba.getHexString());
+  g.addColorStop(0.4, "#" + ciclo.medio.getHexString());
+  g.addColorStop(0.52, "#" + ciclo.horizonte.getHexString());
+  g.addColorStop(1, "#" + ciclo.hemiSuelo.getHexString());
+  xEnv.fillStyle = g; xEnv.fillRect(0, 0, 64, 32);
+  // el sol o la luna: el brillito que se pasea por la pintura al girar
+  const sx = ((Math.atan2(ciclo.luz.x, ciclo.luz.z) / TAU + 0.5) % 1) * 64;
+  const sy = (1 - (ciclo.luz.y * 0.5 + 0.5)) * 32, c = ciclo.luzColor, br = 0.45 + ciclo.luzFuerza * 0.5;
+  const r = xEnv.createRadialGradient(sx, sy, 0, sx, sy, 10);
+  r.addColorStop(0, `rgba(${Math.min(255, c.r * 255 * br) | 0},${Math.min(255, c.g * 255 * br) | 0},${Math.min(255, c.b * 255 * br) | 0},1)`);
+  r.addColorStop(1, "rgba(0,0,0,0)");
+  xEnv.fillStyle = r; xEnv.fillRect(0, 0, 64, 32);
+  if (!envTex) { envTex = new THREE.CanvasTexture(cEnv); envTex.mapping = THREE.EquirectangularReflectionMapping; envTex.colorSpace = THREE.SRGBColorSpace; }
+  envTex.needsUpdate = true;
+  const rt = pmrem.fromEquirectangular(envTex);
+  if (envRT) envRT.dispose();
+  envRT = rt; escena.environment = rt.texture; J.entorno = rt.texture;
+}
+
 /* ══════════════════ LA CALIDAD QUE SE AJUSTA SOLA ══════════════════ */
 let ventanaFps = 0, cuadros = 0, bueno = 0;
 function vigilarFps(dt) {
@@ -107,6 +137,7 @@ function cuadro(ahora) {
   // 🕒 la hora: día → tarde → noche (con su transición suave)
   if (E.hora) siguienteParte();
   actualizarCiclo(dt);
+  if ((envCada -= dt) <= 0) { envCada = 2.5; refrescarEntorno(); }
   botonHora(ciclo.fase);
   // 🎥 la cámara libre (dron) y de regreso
   if (E.camara) {

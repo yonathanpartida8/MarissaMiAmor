@@ -17,7 +17,7 @@
  * medianos rompen vidrios y sacan humo, los fuertes prenden fuego y los
  * extremos lo hacen explotar. Nada desaparece de golpe.
  */
-import { J, THREE, rnd, elegir, clamp, lerp, amort, amortAng, difAng, anunciar, Juntador, contorno, toon, capaEfectos } from "./base.js";
+import { J, THREE, rnd, elegir, clamp, lerp, amort, amortAng, difAng, anunciar, Juntador, contorno, toon, pbr, fisico, capaEfectos } from "./base.js";
 import { nodosCalle, CALLES, chocarEdificios, edificioEn, ACERA_Y, semaforo } from "./mundo.js";
 import { son, bucleEn, motorRpm } from "./audio.js";
 import { chispas, humo, fuego, polvo, escombro, onda, destello, brillos } from "./efectos.js";
@@ -45,9 +45,12 @@ const TIPOS = {
      espejos, placas y manijas;
    · las luces (faros, calaveras y cuartos). */
 const geoCache = {};
-const matVidrio = toon({ color: "#4a5e82", emissive: "#141c2e" });
-const matVidrioRoto = toon({ color: "#6a7488" });
-const matResto = toon({ vertexColors: true });
+/* La carrocería y los vidrios llevan materiales de verdad: la pintura tiene
+   barniz encima (clearcoat) y el vidrio refleja como espejo, los dos usando
+   el cielo de la hora (J.entorno). Por eso ya no parecen bloques de color. */
+const matVidrio = fisico({ color: "#101828", roughness: 0.06, metalness: 0.55, envMapIntensity: 1.5, emissive: "#0a1020" });
+const matVidrioRoto = pbr({ color: "#6a7488", roughness: 0.75 });
+const matResto = pbr({ vertexColors: true, roughness: 0.42, metalness: 0.45, envMapIntensity: 1.1 });
 const matLuces = new THREE.MeshBasicMaterial({ vertexColors: true });
 J.matLucesCoche = matLuces;   // luces.js le sube el brillo de noche
 // el velo de los faros: se desvanece a lo largo y hacia los bordes (sin cortes duros en el piso)
@@ -142,7 +145,8 @@ function unir(geos) {
   const j = new Juntador(); for (const g of geos) j.meter(g.index ? g : g, new THREE.Matrix4(), "#ffffff");
   const r = j.geometria(); r.deleteAttribute("color"); return r;
 }
-const matRueda = toon({ color: "#24242c" }), matRin = toon({ color: "#c8c8d4" });
+const matRueda = pbr({ color: "#1c1c22", roughness: 0.92, metalness: 0 });
+const matRin = pbr({ color: "#d2d4de", roughness: 0.22, metalness: 0.95, envMapIntensity: 1.4 });
 const ruedaGeo = {}, rinGeo = {};
 const geoRueda = (R) => ruedaGeo[R] || (ruedaGeo[R] = new THREE.CylinderGeometry(R, R, 0.26, 18).rotateZ(Math.PI / 2));
 const geoRin = (R) => rinGeo[R] || (rinGeo[R] = new THREE.CylinderGeometry(R * 0.55, R * 0.55, 0.28, 10).rotateZ(Math.PI / 2));
@@ -155,7 +159,7 @@ function construirCoche(tipo) {
   const G = geometrias(tipo), T = TIPOS[tipo];
   // el origen del coche es su centro (así gira bien al volar); el modelo cuelga medio alto abajo
   const raiz = new THREE.Group(), piv = new THREE.Group(), cuerpo = new THREE.Group(); raiz.add(piv); piv.position.y = -T.H / 2; piv.add(cuerpo);
-  const pintura = contorno(toon({ color: elegir(T.pintura) }), "#ffffff", 0.18, 3);
+  const pintura = contorno(fisico({ color: elegir(T.pintura), roughness: 0.3, metalness: 0.42, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 1.25 }), "#ffffff", 0.14, 3);
   const geoP = G.pint.clone();   // cada coche tiene su lámina (para abollarla)
   const mP = new THREE.Mesh(geoP, pintura), mR = new THREE.Mesh(G.resto, matResto), mV = new THREE.Mesh(G.vidrio, matVidrio), mL = new THREE.Mesh(G.luces, matLuces);
   for (const m of [mP, mR]) { m.castShadow = J.calidad.sombras; m.receiveShadow = true; }
@@ -588,9 +592,19 @@ function pintar(c, dt) {
   r.position.set(c.x, c.y, c.z);
   if (c.estado === "fisica" || c.estado === "agarrado") r.quaternion.copy(c.q);
   else { _pe.set(0, c.ry, 0); r.quaternion.setFromEuler(_pe); }
-  // suspensión: cabeceo al frenar, balanceo al girar
+  // ── la suspensión ──
+  // El cuerpo cabecea al frenar y se balancea al girar; y cada rueda se
+  // comprime o se estira lo que le toca según hacia dónde se recarga el
+  // coche, así que las cuatro siguen tocando el piso aunque el coche se
+  // incline. Más el temblorcito del motor al ralentí.
   c.m.cuerpo.rotation.set(c.cabeceo, 0, c.balanceo);
-  c.m.cuerpo.position.y = Math.sin(J.t * 9 + c.x) * 0.006 * clamp(c.vel / 8, 0, 1);
+  const motor = Math.sin(J.t * 26 + c.x) * 0.0022 * (c.estado === "maneja" || c.estado === "conducido" ? 1 : 0);
+  c.m.cuerpo.position.y = Math.sin(J.t * 9 + c.x) * 0.006 * clamp(c.vel / 8, 0, 1) + motor;
+  for (let i = 0; i < c.m.ruedas.length; i++) {
+    const w = c.m.ruedas[i], lado = Math.sign(w.position.x) || 1, frente = i < 2 ? 1 : -1;
+    const comp = clamp(c.cabeceo * frente * 1.6 - c.balanceo * lado * 1.6, -0.045, 0.045);
+    w.position.y = amort(w.position.y, (w.userData.y0 ?? (w.userData.y0 = w.position.y)) + comp, 14, dt);
+  }
   const giro = (c.estado === "fisica" ? Math.hypot(c.vx, c.vz) : c.vel) * dt / 0.36;
   for (const w of c.m.ruedas) w.children[0].rotation.x += giro, w.children[1].rotation.x += giro;
   for (const p of c.m.puertas) { p.ang = amort(p.ang, p.obj, 9, dt); p.p.rotation.y = -p.s * p.ang; }

@@ -17,7 +17,7 @@
  * Todo con material «de dibujo» (toon) y un borde de luz para que la ropa
  * negra se lea de noche.
  */
-import { J, THREE, clamp, lerp, amort, difAng, TAU, contorno, toon, lienzo, textura } from "./base.js";
+import { J, THREE, clamp, lerp, amort, difAng, TAU, contorno, toon, pbr, lienzo, textura } from "./base.js";
 
 /* ══════════════════ LA POSE ══════════════════ */
 export const ANG0 = { torsoX: 0, torsoY: 0, torsoZ: 0, cabezaX: 0, cabezaY: 0, cabezaZ: 0, hLX: 0, hLZ: 0.08, cLX: 0.15, hRX: 0, hRZ: 0.08, cRX: 0.15, pLX: 0, pLZ: 0, rLX: 0, pRX: 0, pRZ: 0, rRX: 0, pieL: 0, pieR: 0, cuerpoX: 0, cuerpoZ: 0, bajar: 0 };
@@ -283,12 +283,17 @@ export function crearProtagonista(quien) {
   const j = esqueleto();
   const ella = quien === "ella";
   const rim = ella ? "#ffa8d8" : "#b8a8ff";
-  const T = (o) => contorno(toon(o), rim, 0.55);
-  const piel = T({ color: ella ? "#d8a682" : "#c89670" });
-  const negro = T({ color: "#232030" }), negro2 = T({ color: "#2e2a3c" }), negro3 = T({ color: "#1a1824" });
-  const pelo = T({ color: "#16121c" });
-  const blanco = T({ color: "#f4f0f6" });
-  const acento = T({ color: ella ? "#ff7aa8" : "#8a7aff", emissive: ella ? "#4a1028" : "#14104a" });
+  /* Yo y ella llevamos materiales con luz de verdad (no el «toon» plano del
+     resto de la ciudad): la piel tiene su brillo suave, el pelo refleja la
+     luz en una franja, la ropa es mate y todo recoge el color del cielo. */
+  const T = (o) => contorno(pbr(o), rim, 0.5);
+  const piel = T({ color: ella ? "#d8a682" : "#c89670", roughness: 0.56, metalness: 0, envMapIntensity: 0.55 });
+  const negro = T({ color: "#232030", roughness: 0.88, envMapIntensity: 0.3 });
+  const negro2 = T({ color: "#2e2a3c", roughness: 0.82, envMapIntensity: 0.35 });
+  const negro3 = T({ color: "#1a1824", roughness: 0.9, envMapIntensity: 0.25 });
+  const pelo = T({ color: "#16121c", roughness: 0.34, metalness: 0.12, envMapIntensity: 0.9 });
+  const blanco = T({ color: "#f4f0f6", roughness: 0.74, envMapIntensity: 0.4 });
+  const acento = T({ color: ella ? "#ff7aa8" : "#8a7aff", emissive: ella ? "#4a1028" : "#14104a", roughness: 0.45, envMapIntensity: 0.7 });
   const M = (geo, mat, padre, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; padre.add(m); return m; };
   const R = 0.13;   // radio de la cabeza
   // ── el torso con su ropa ──
@@ -318,7 +323,7 @@ export function crearProtagonista(quien) {
   M(new THREE.CylinderGeometry(0.048, 0.056, 0.12, 10).translate(0, 0.02, 0), piel, j.cuello);
   M(new THREE.SphereGeometry(R, 24, 18).scale(0.94, 1.06, 1).translate(0, 0.14, 0.005), piel, j.cabeza);
   M(new THREE.SphereGeometry(0.07, 12, 8).scale(1, 0.6, 0.9), piel, j.cabeza, 0, 0.05, 0.02);   // la quijada
-  const cr = new THREE.Mesh(caraGeo(R).scale(0.94, 1.06, 1).translate(0, 0.14, 0.005), new THREE.MeshToonMaterial({ map: cara(quien), transparent: true, alphaTest: 0.3, depthWrite: false, gradientMap: piel.gradientMap }));
+  const cr = new THREE.Mesh(caraGeo(R).scale(0.94, 1.06, 1).translate(0, 0.14, 0.005), new THREE.MeshStandardMaterial({ map: cara(quien), transparent: true, alphaTest: 0.3, depthWrite: false, roughness: 0.6, metalness: 0, envMapIntensity: 0.4 }));
   cr.renderOrder = 2; j.cabeza.add(cr);
   M(new THREE.SphereGeometry(0.018, 8, 6).scale(0.9, 1, 1.1), piel, j.cabeza, 0, 0.125, 0.128);   // la nariz
   for (const s of [-1, 1]) M(new THREE.SphereGeometry(0.03, 8, 6).scale(0.5, 1, 0.8), piel, j.cabeza, s * 0.12, 0.14, 0);   // orejas

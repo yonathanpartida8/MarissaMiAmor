@@ -140,6 +140,12 @@ export function rampaToon() {
   return rampa;
 }
 export function toon(o = {}) { return new THREE.MeshToonMaterial({ gradientMap: rampaToon(), ...o }); }
+/* ── Materiales con luz de verdad ──
+   Para yo, ella y los coches: responden al sol, a la luna y a las farolas con
+   brillo especular, y reflejan el cielo (J.entorno, que cambia con la hora).
+   El resto de la ciudad sigue en «toon» (plano y barato). */
+export function pbr(o = {}) { return new THREE.MeshStandardMaterial({ roughness: 0.78, metalness: 0.03, ...o }); }
+export function fisico(o = {}) { return new THREE.MeshPhysicalMaterial({ roughness: 0.4, metalness: 0.2, ...o }); }
 /* Los efectos transparentes (fuego, humo, haces, portal…) viven en la capa 1: se pintan
    después de la tinta de los contornos (ver post.js). Las luces van en las dos capas. */
 export function capaEfectos(o) { o.traverse((c) => { if (c.isLight) c.layers.enable(1); else c.layers.set(1); }); return o; }
