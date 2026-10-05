@@ -103,6 +103,20 @@ html, body{ margin: 0; padding: 0 !important; width: 100%; height: 100%; overflo
 .cd-mira{ position: absolute; left: 50%; top: 38%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; border: 2px solid rgba(255,240,220,.75); box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 0 10px rgba(255,210,150,.4); pointer-events: none; opacity: 0; transition: opacity .2s, transform .2s; transform: scale(.7); }
 .cd-mira i{ position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px; border-radius: 50%; background: #fff4e4; }
 body.apunta .cd-mira{ opacity: 1; transform: none; }
+/* la vida: un corazón con su barrita (sólo si me lastimaron) */
+.cd-vida{ position: absolute; left: calc(max(var(--seguro-lado, 0px), env(safe-area-inset-left, 0px)) + 14px); top: calc(var(--seg-t) + 58px); display: flex; align-items: center; gap: 6px; opacity: 0; transition: opacity .35s; pointer-events: none; z-index: 5; }
+.cd-vida.ver{ opacity: 1; }
+.cd-vida svg{ width: 20px; height: 20px; fill: #ff5a7a; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+.cd-vida b{ display: block; width: 92px; height: 8px; border-radius: 6px; background: rgba(20,10,30,.6); box-shadow: inset 0 0 0 1px rgba(255,220,230,.25); overflow: hidden; }
+.cd-vida i{ display: block; height: 100%; background: linear-gradient(90deg, #ff4d6d, #ff9ab0); transform-origin: left; transition: transform .25s; }
+.cd-vida.poca svg{ animation: latido .7s ease-in-out infinite; }
+.cd-vida.dolor{ transform: translateX(3px); }
+@keyframes latido{ 50%{ transform: scale(1.25); } }
+/* morir: la pantalla se va a gris y a oscuro, con su letrero */
+.cd-muerte{ position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 1.2s; z-index: 8; background: radial-gradient(ellipse at center, rgba(40,10,20,.25), rgba(10,4,10,.85)); -webkit-backdrop-filter: grayscale(1); backdrop-filter: grayscale(1); }
+.cd-muerte.ver{ opacity: 1; }
+.cd-muerte-txt{ position: absolute; left: 0; right: 0; top: 40%; margin: 0; text-align: center; font: 600 2.2rem/1.2 "Caveat", "Segoe Script", cursive; color: #ffd6e0; text-shadow: 0 2px 12px #000; opacity: 0; transition: opacity 1s; z-index: 9; pointer-events: none; }
+.cd-muerte-txt.ver{ opacity: 1; }
 .cd-joy i{ transition: transform .06s linear; }
 /* ── en el coche: flechas a la izquierda, pedales a la derecha ── */
 .cd-volante, .cd-pedales{ position: absolute; display: none; gap: 12px; bottom: calc(var(--barra) + var(--seg-b) + 18px); }

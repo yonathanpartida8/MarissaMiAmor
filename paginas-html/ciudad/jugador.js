@@ -30,6 +30,7 @@ import { polvo, brillos, corazones, onda, chispas } from "./efectos.js";
 import { E, decir, globito, pista } from "./ui.js";
 import { puerta, puntoDelCoche, subirAlCoche, bajarDelCoche, prepararParaSubir } from "./vehiculos.js";
 import { cam, mirarDesdeBanca } from "./camara.js";
+import { tiradaElla, herir } from "./vida.js";
 
 const V = new THREE.Vector3(), P = {};
 function nuevoCuerpo(quien, x, z) {
@@ -270,6 +271,8 @@ function terminar(yo, dt, coche) {
 function aterrizar(yo, piso, vImp) {
   yo.y = piso; yo.vy = 0; yo.suelo = true; yo.vuela = false;
   golpeDeSuelo(yo, clamp((vImp - 3) / 12, 0.18, 1));
+  // caer de muy alto duele (sin Modo Dios)
+  if (vImp > 12 && !J.dios.on) herir(yo, (vImp - 12) * 9);
   if (vImp > 7) { yo.aterriza = 0.35; son("aterriza", yo.x, yo.z, clamp(vImp / 14, 0.3, 1)); polvo(yo.x, piso, yo.z, Math.round(vImp), clamp(vImp / 12, 0.6, 1.6)); }
   if (vImp > 14) { J.temblor = Math.max(J.temblor || 0, 0.4); onda(yo.x, piso, yo.z, 6, 0.6, "#d8d0ff"); anunciar({ tipo: "aterriza", x: yo.x, z: yo.z, radio: 18, fuerza: 0.6 }); }
 }
@@ -307,6 +310,7 @@ export function recibirGolpe(dx, dz, k) {
   yo.vx += dx * 6 * k; yo.vz += dz * 6 * k; yo.vy = Math.max(yo.vy, 2.5 * k); yo.suelo = false;
   yo.anim.impacto = 1; yo.stun = 0.4 * k;
   son("golpe", yo.x, yo.z, 0.6);
+  herir(yo, 30 * k, dx, dz);
 }
 
 /* ══════════════════ ELLA ══════════════════ */
@@ -405,7 +409,9 @@ export function actualizarElla(dt) {
   // ── las cosas que no son caminar ──
   if (ella.estado === "fuera") { ella.j.raiz.visible = false; ella.oculta = true; return; }
   ella.oculta = false; ella.j.raiz.visible = true;
-  if (["al_auto", "en_auto", "bajar_auto"].includes(ella.estado)) {
+  // tirada en el piso (la golpearon): no se mueve hasta pararse (o hasta que llego yo)
+  if (tiradaElla(ella, dt, d)) { fijo = true; ella.vx = ella.vz = 0; }
+  else if (["al_auto", "en_auto", "bajar_auto"].includes(ella.estado)) {
     const r = autoElla(ella, dt);
     if (r === "auto") { enAuto = ella.coche; const pa = puntoAsiento(enAuto, -1, P); ella.x = pa.x; ella.z = pa.z; ella.y = pa.y; ella.ry = enAuto.ry; a.sentado = 1; fijo = true; }
     else if (r === "fijo") fijo = true;

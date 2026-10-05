@@ -18,6 +18,8 @@ import { decirElla, lineaElla, recibirGolpe } from "./jugador.js";
 
 /* ══════════════════ LOS MISTERIOS ══════════════════ */
 export const MISTERIOS = {
+  ladron: ["🦹", "Atrapaste a un ladrón y le devolviste su bolsa a la señora", "Si alguien grita «¡ladrón!», corre tras él"],
+  callejon: ["🐈‍⬛", "El callejón del gato negro tiene un secreto", "Los callejones guardan cosas"],
   luna: ["🌙", "La luna se rompió… y se volvió a armar sola", "Dos dedos sobre la luna, quietitos…"],
   ovni: ["🛸", "Hay un ovni paseando sobre la ciudad", "Mira al cielo de vez en cuando"],
   abduccion: ["👽", "Se llevaron a alguien… y lo devolvieron", "Sigue al ovni cuando aparezca"],

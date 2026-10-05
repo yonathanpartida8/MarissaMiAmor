@@ -10,6 +10,8 @@
  *   imagen pasa por el postproceso (contornos de dibujo, resplandor, color).
  */
 import { J, THREE, memo, lienzo as lienzo2D, TAU } from "./base.js";
+import { iniciarVida, actualizarVida } from "./vida.js";
+import { actualizarLadrones } from "./ladrones.js";
 import { construirMundo, colocarLuna, lugares, actualizarMundo } from "./mundo.js";
 import { actualizarCielo } from "./cielo.js";
 import { construirVentanas, actualizarVentanas } from "./ventanas.js";
@@ -147,6 +149,8 @@ function cuadro(ahora) {
   }
   actualizarJugador(dt);
   actualizarElla(dtM || dt * 0.0001);
+  actualizarVida(dt);
+  if (dtM > 0) actualizarLadrones(dtM);
   poderes.actualizar(dt, dtM);
   gente.actualizar(dtM, dt);
   coches.actualizar(dtM, dt);
@@ -187,6 +191,7 @@ construirVentanas(escena, ESCENAS);
 iniciarEfectos(escena);
 iniciarLuces(escena);
 crearJugador();
+iniciarVida();
 gente.iniciar(); coches.iniciar(); poderes.iniciar(); eventos.iniciar(); lugaresMod.iniciar(); cositas.iniciar(escena);
 { const yo = J.jugador; cam.x = yo.x; cam.y = 1.5; cam.z = yo.z; }
 // la primera toma: los dos mirando la ventana del K-drama
