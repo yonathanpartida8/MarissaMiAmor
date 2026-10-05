@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Vista previa</title>
+<link rel="stylesheet" href="librito.css">
+<style>html,body{margin:0;height:100%;background:#111;overflow:hidden}</style>
+</head>
+<body>
+<div id="librito"></div>
+<script src="rt-base.js"></script>
+<script src="rt-render.js"></script>
+<script src="rt-anim.js"></script>
+<script src="rt-comps.js"></script>
+<script src="rt-trans.js"></script>
+<script src="rt-musica.js"></script>
+<script src="rt-player.js"></script>
+<script>
+  /* La vista previa del editor: el editor le manda el proyecto entero y las
+     direcciones de cada archivo (las fotos subidas viven en el navegador). */
+  addEventListener("message", function (ev) {
+    if (ev.origin !== location.origin || !ev.data || ev.data.tipo !== "librito") return;
+    var d = ev.data;
+    if (LibritoRT.libro) LibritoRT.libro.destruir();
+    LibritoRT.cargarFuentes(d.fuentes || []);
+    LibritoRT.libro = new LibritoRT.Libro(document.getElementById("librito"), d.datos, {
+      url: function (id) { return d.urls[id] || null; },
+      ruta: function (r) { return d.base + r.split("/").map(encodeURIComponent).join("/"); },
+      inicio: d.inicio,
+      sinPortadilla: !d.portadilla,
+      cerrar: function () { parent.postMessage({ tipo: "cerrar-vista" }, location.origin); },
+    });
+  });
+  parent.postMessage({ tipo: "vista-lista" }, location.origin);
+</script>
+</body>
+</html>

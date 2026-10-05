@@ -80,7 +80,14 @@ export class BookIndex {
         setTimeout(() => this.ctx.ui?.album?.abrir(), 260);
       },
     });
-    this.pie = el("footer.toc__pie", {}, [this.albumBtn, this.instalarBtn, this.borrarBtn]);
+    // El taller para armar libritos nuevos (o editar éste). Vive aparte, en
+    // EditorDev/, y no carga nada del editor hasta que se entra.
+    this.crearBtn = el("button.toc__accion.toc__accion--crear", {
+      type: "button",
+      html: "<span>📖</span><b>Crear librito</b><i>edita tus páginas o arma uno nuevo</i>",
+      onClick: () => { location.href = "EditorDev/index.html"; },
+    });
+    this.pie = el("footer.toc__pie", {}, [this.albumBtn, this.crearBtn, this.instalarBtn, this.borrarBtn]);
     return this.pie;
   }
 

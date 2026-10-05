@@ -61,6 +61,20 @@ la de la noche estrellada y la copia guardada para abrirlo sin internet.
 
 ---
 
+## 📖 Crear librito (el editor)
+
+En el índice (☰), al final, está **«📖 Crear librito»**: un editor visual para
+armar libritos nuevos o editar éste sin tocar código. Páginas, textos, fotos,
+álbumes, carruseles, formas, dibujos, botones, vídeo, música, HTML propio
+(aislado), animaciones por elemento con línea de tiempo, transiciones,
+capas, guías, deshacer, autoguardado y exportar a **.zip** con sólo lo que
+se usa. Tus páginas de `paginas-html/` se pueden usar tal cual o volverse
+plantillas editables. Vive entero en **`EditorDev/`** y el libro no carga
+nada de él hasta que se entra. Todo explicado en
+[`EditorDev/LÉEME.md`](EditorDev/LÉEME.md).
+
+---
+
 ## Cómo empieza: dos páginas y un candado
 
 El libro se abre con **`paginas-html/inicio.html1.html`** e
@@ -125,6 +139,7 @@ musica final/           musicafinal.mp3: suena en bucle desde la última página
 musica barco/           barco.mp3: la música de 10 s del barquito («Aunque esté oscuro»)
 mis-sonidos/            sonidos propios: corazón.mp3 (el latido de «Mi pulso»)
 noche-estrellada/       la escena final (bosque, cabaña, cacería)
+EditorDev/              «📖 Crear librito»: el editor visual (ver su LÉEME)
 herramientas/
   contenido.mjs         rehace la lista de lo que hay en las carpetas
   verificar.mjs         revisa el libro entero antes de publicar

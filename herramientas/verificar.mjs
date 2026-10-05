@@ -29,7 +29,7 @@ function recorrer(dir, fuera = []) {
   }
   return fuera;
 }
-const codigo = [...recorrer("src"), ...recorrer("herramientas"), "sw.js", "mis-paginas/paginas.js"];
+const codigo = [...recorrer("src"), ...recorrer("herramientas"), ...recorrer("EditorDev"), "sw.js", "mis-paginas/paginas.js"];
 for (const archivo of codigo) {
   try {
     execFileSync(process.execPath, ["--experimental-default-type=module", "--check", join(RAIZ, archivo)], { stdio: "pipe" });

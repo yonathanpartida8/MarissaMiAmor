@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="theme-color" content="#fff6f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#171019" media="(prefers-color-scheme: dark)">
+<title>Crear librito</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📖%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Caveat:wght@400;600&family=Jost:wght@300;400;500;600&display=swap">
+<link rel="stylesheet" href="runtime/librito.css">
+<link rel="stylesheet" href="styles/editor.css">
+</head>
+<body class="ed">
+  <header class="ed-barra">
+    <a class="ed-volver" href="../index.html" title="Volver al librito" aria-label="Volver al librito">←</a>
+    <div class="ed-nombre">
+      <input type="text" aria-label="Nombre del librito" spellcheck="false">
+      <span class="ed-guardado" data-st="guardado">✓ Guardado</span>
+    </div>
+    <div class="ed-acciones">
+      <button type="button" class="ed-btn ico ed-deshacer" aria-label="Deshacer" disabled>↶</button>
+      <button type="button" class="ed-btn ico ed-rehacer" aria-label="Rehacer" disabled>↷</button>
+      <select class="ed-zoom ed-sel" aria-label="Zoom">
+        <option value="">Ajustar</option>
+        <option value="ajustar">Ajustar a la pantalla</option>
+        <option value="0.5">50 %</option>
+        <option value="0.75">75 %</option>
+        <option value="1">100 %</option>
+        <option value="1.5">150 %</option>
+        <option value="2">200 %</option>
+      </select>
+      <button type="button" class="ed-btn ed-previa" title="Ver el librito como lo verá ella">▶ <span>Vista previa</span></button>
+      <button type="button" class="ed-btn ico ed-guardar" aria-label="Guardar y borradores" title="Guardar y borradores">💾</button>
+      <button type="button" class="ed-btn primario ed-exportar" title="Descargar el librito completo en .zip">📦 <span>Exportar ZIP</span></button>
+    </div>
+  </header>
+
+  <nav class="ed-riel" aria-label="Secciones"></nav>
+
+  <aside class="ed-panel" aria-label="Panel">
+    <button type="button" class="ed-hoja-asa" aria-label="Cerrar"><i></i></button>
+    <h2 class="ed-panel-titulo"></h2>
+    <div class="ed-panel-cuerpo"></div>
+  </aside>
+
+  <main class="ed-centro">
+    <section class="ed-linea" hidden aria-label="Línea de tiempo"></section>
+  </main>
+
+  <aside class="ed-insp" aria-label="Inspector">
+    <button type="button" class="ed-hoja-asa" aria-label="Cerrar"><i></i></button>
+  </aside>
+
+  <nav class="ed-tabs" aria-label="Secciones"></nav>
+
+  <!-- El reproductor: el lienzo pinta con él (lo mismo que sale en el .zip). -->
+  <script src="runtime/rt-base.js"></script>
+  <script src="runtime/rt-render.js"></script>
+  <script src="runtime/rt-anim.js"></script>
+  <script src="runtime/rt-comps.js"></script>
+  <script src="runtime/rt-trans.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
