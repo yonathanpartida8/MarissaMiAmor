@@ -219,14 +219,48 @@
     if (f.sombra) p.push(`drop-shadow(${RT.num(f.sombra.x, 0)}px ${RT.num(f.sombra.y, 6)}px ${RT.num(f.sombra.blur, 10)}px ${f.sombra.color || "rgba(60,20,45,.35)"})`);
     if (f.resplandor) p.push(`drop-shadow(0 0 ${RT.num(f.resplandor.tam, 10)}px ${f.resplandor.color || "#ffd6e8"})`);
     if (f.desenfoque) p.push(`blur(${f.desenfoque}px)`);
-    if (f.brillo != null && f.brillo !== 100) p.push(`brightness(${f.brillo}%)`);
-    if (f.contraste != null && f.contraste !== 100) p.push(`contrast(${f.contraste}%)`);
+    // Brillo, exposición (pasos de cámara: −2…2) y luz (levanta o baja las sombras: −100…100).
+    let br = RT.num(f.brillo, 100) / 100, co = RT.num(f.contraste, 100) / 100;
+    if (f.exposicion) br *= Math.pow(2, RT.num(f.exposicion, 0));
+    if (f.luz) { const l = RT.clamp(RT.num(f.luz, 0) / 100, -1, 1); br *= 1 + l * 0.2; co *= 1 - l * 0.24; }
+    if (Math.abs(br - 1) > 0.004) p.push(`brightness(${Math.round(br * 1000) / 10}%)`);
+    if (Math.abs(co - 1) > 0.004) p.push(`contrast(${Math.round(co * 1000) / 10}%)`);
     if (f.saturacion != null && f.saturacion !== 100) p.push(`saturate(${f.saturacion}%)`);
     if (f.byn) p.push(`grayscale(${f.byn}%)`);
     if (f.sepia) p.push(`sepia(${f.sepia}%)`);
     if (f.tono) p.push(`hue-rotate(${f.tono}deg)`);
     if (f.invertir) p.push(`invert(${f.invertir}%)`);
+    // Temperatura (−100 frío … 100 cálido): un filtro SVG que sube el rojo y baja el azul (o al revés).
+    if (f.temperatura) p.push(`url(#${RT.filtroTemperatura(f.temperatura)})`);
     return p.join(" ");
+  };
+
+  /** Los filtros de temperatura viven una sola vez en la página (de 10 en 10). */
+  RT.filtroTemperatura = function (t) {
+    const paso = Math.round(RT.clamp(RT.num(t, 0), -100, 100) / 10) * 10;
+    const id = "rt-temp" + (paso < 0 ? "m" + -paso : paso);
+    if (!document.getElementById(id)) {
+      let defs = document.getElementById("rt-filtros");
+      if (!defs) {
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("aria-hidden", "true");
+        svg.style.cssText = "position:absolute;width:0;height:0;overflow:hidden";
+        defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+        defs.id = "rt-filtros";
+        svg.appendChild(defs);
+        (document.body || document.documentElement).appendChild(svg);
+      }
+      const k = paso / 100;
+      const fl = document.createElementNS("http://www.w3.org/2000/svg", "filter");
+      fl.id = id;
+      fl.setAttribute("color-interpolation-filters", "sRGB");
+      const m = document.createElementNS("http://www.w3.org/2000/svg", "feColorMatrix");
+      m.setAttribute("type", "matrix");
+      m.setAttribute("values", `${1 + 0.16 * k} 0 0 0 ${0.02 * k}  0 ${1 + 0.03 * k} 0 0 0  0 0 ${1 - 0.18 * k} 0 ${-0.02 * k}  0 0 0 1 0`);
+      fl.appendChild(m);
+      defs.appendChild(fl);
+    }
+    return id;
   };
 
   /* ── Sonidos cortos (botones, apariciones, transiciones) ─────────── */

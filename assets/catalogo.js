@@ -374,5 +374,190 @@ export default {
    ]
   }
  ],
- "musica": []
+ "musica": [],
+ "extras": {
+  "animaciones": [
+   {
+    "id": "animaciones/aparecer-suave",
+    "nombre": "Aparecer suave",
+    "ruta": "assets/animaciones/aparecer-suave/",
+    "definicion": [
+     "animacion.json"
+    ],
+    "miniatura": null
+   },
+   {
+    "id": "animaciones/flotando",
+    "nombre": "Flotando",
+    "ruta": "assets/animaciones/flotando/",
+    "definicion": [
+     "animacion.json"
+    ],
+    "miniatura": null
+   },
+   {
+    "id": "animaciones/latido-con-codigo",
+    "nombre": "Latido con codigo",
+    "ruta": "assets/animaciones/latido-con-codigo/",
+    "definicion": [
+     "animacion.js"
+    ],
+    "miniatura": null
+   },
+   {
+    "id": "animaciones/rebote",
+    "nombre": "Rebote",
+    "ruta": "assets/animaciones/rebote/",
+    "definicion": [
+     "animacion.css"
+    ],
+    "miniatura": null
+   }
+  ],
+  "transiciones": [
+   {
+    "id": "transiciones/deslizar",
+    "nombre": "Deslizar",
+    "ruta": "assets/transiciones/deslizar/",
+    "definicion": [
+     "transicion.json"
+    ],
+    "miniatura": null
+   },
+   {
+    "id": "transiciones/fundido-suave",
+    "nombre": "Fundido suave",
+    "ruta": "assets/transiciones/fundido-suave/",
+    "definicion": [
+     "transicion.json"
+    ],
+    "miniatura": null
+   },
+   {
+    "id": "transiciones/glitch",
+    "nombre": "Glitch",
+    "ruta": "assets/transiciones/glitch/",
+    "definicion": [
+     "transicion.json"
+    ],
+    "miniatura": null
+   },
+   {
+    "id": "transiciones/zoom",
+    "nombre": "Zoom",
+    "ruta": "assets/transiciones/zoom/",
+    "definicion": [
+     "transicion.css"
+    ],
+    "miniatura": null
+   }
+  ],
+  "efectos": [
+   {
+    "id": "efectos/calido.json",
+    "nombre": "Calido",
+    "ruta": "assets/efectos/calido.json",
+    "miniatura": null
+   },
+   {
+    "id": "efectos/frio.json",
+    "nombre": "Frio",
+    "ruta": "assets/efectos/frio.json",
+    "miniatura": null
+   },
+   {
+    "id": "efectos/noche.json",
+    "nombre": "Noche",
+    "ruta": "assets/efectos/noche.json",
+    "miniatura": null
+   },
+   {
+    "id": "efectos/sonador.json",
+    "nombre": "Sonador",
+    "ruta": "assets/efectos/sonador.json",
+    "miniatura": null
+   }
+  ],
+  "fondos": [
+   {
+    "tipo": "html",
+    "id": "fondos/aurora",
+    "nombre": "Aurora",
+    "ruta": "assets/fondos/aurora/index.html",
+    "base": "assets/fondos/aurora/",
+    "archivos": [
+     "index.html"
+    ],
+    "miniatura": null
+   },
+   {
+    "tipo": "html",
+    "id": "fondos/corazones-flotando",
+    "nombre": "Corazones flotando",
+    "ruta": "assets/fondos/corazones-flotando/index.html",
+    "base": "assets/fondos/corazones-flotando/",
+    "archivos": [
+     "index.html"
+    ],
+    "miniatura": null
+   },
+   {
+    "tipo": "html",
+    "id": "fondos/estrellas",
+    "nombre": "Estrellas",
+    "ruta": "assets/fondos/estrellas/index.html",
+    "base": "assets/fondos/estrellas/",
+    "archivos": [
+     "index.html"
+    ],
+    "miniatura": null
+   }
+  ],
+  "sonidos": {
+   "abrir": [
+    "assets/sonidos-editor/abrir/abrir-1.wav",
+    "assets/sonidos-editor/abrir/abrir-2.wav"
+   ],
+   "arrastrar": [
+    "assets/sonidos-editor/arrastrar/arrastrar-1.wav",
+    "assets/sonidos-editor/arrastrar/arrastrar-2.wav"
+   ],
+   "borrar": [
+    "assets/sonidos-editor/borrar/borrar-1.wav",
+    "assets/sonidos-editor/borrar/borrar-2.wav"
+   ],
+   "botones": [
+    "assets/sonidos-editor/botones/botones-1.wav",
+    "assets/sonidos-editor/botones/botones-2.wav",
+    "assets/sonidos-editor/botones/botones-3.wav"
+   ],
+   "cerrar": [
+    "assets/sonidos-editor/cerrar/cerrar-1.wav",
+    "assets/sonidos-editor/cerrar/cerrar-2.wav"
+   ],
+   "deshacer": [
+    "assets/sonidos-editor/deshacer/deshacer-1.wav",
+    "assets/sonidos-editor/deshacer/deshacer-2.wav"
+   ],
+   "error": [
+    "assets/sonidos-editor/error/error-1.wav"
+   ],
+   "exito": [
+    "assets/sonidos-editor/exito/exito-1.wav"
+   ],
+   "guardar": [
+    "assets/sonidos-editor/guardar/guardar-1.wav",
+    "assets/sonidos-editor/guardar/guardar-2.wav"
+   ],
+   "seleccionar": [
+    "assets/sonidos-editor/seleccionar/seleccionar-1.wav",
+    "assets/sonidos-editor/seleccionar/seleccionar-2.wav"
+   ],
+   "soltar": [
+    "assets/sonidos-editor/soltar/soltar-1.wav",
+    "assets/sonidos-editor/soltar/soltar-2.wav"
+   ]
+  },
+  "iconos": {}
+ }
 };

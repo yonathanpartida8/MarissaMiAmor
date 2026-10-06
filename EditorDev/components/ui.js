@@ -7,6 +7,7 @@
  */
 import { el } from "../../src/utils/dom.js";
 import { ico } from "./iconos.js";
+import { Hoja, asa } from "./hoja.js";
 
 export { el };
 
@@ -56,6 +57,12 @@ export function control(v, { tipo = "numero", leer, escribir, min, max, paso = 1
       const [i, o] = n.children;
       const pintar = (x) => { o.textContent = (Math.round(x * 100) / 100) + unidad; i.style.setProperty("--p", ((x - min) / (max - min)) * 100 + "%"); };
       i.addEventListener("input", () => { pintar(+i.value); poner(+i.value); });
+      // Si el dedo sólo pasaba por encima para desplazar el panel, el navegador
+      // cancela el gesto: el valor vuelve a como estaba (nada cambia sin querer).
+      let v0 = null;
+      i.addEventListener("pointerdown", () => { v0 = i.value; });
+      i.addEventListener("pointerup", () => { v0 = null; });
+      i.addEventListener("pointercancel", () => { if (v0 != null && i.value !== v0) { i.value = v0; pintar(+v0); poner(+v0); } v0 = null; });
       v.add(() => { if (!enfocado(i)) { const x = leer() ?? min; i.value = x; pintar(+x); } });
       break;
     }
@@ -96,37 +103,83 @@ export function control(v, { tipo = "numero", leer, escribir, min, max, paso = 1
 
 /* ── Avisos ───────────────────────────────────────────────────────── */
 let pila = null;
-export function aviso(texto, ms = 2600, tipo = "") {
+export function aviso(texto, ms = 2600, tipo = "", accion = null) {
   if (!pila) { pila = el("div.ed-avisos", { role: "status", "aria-live": "polite" }); document.body.append(pila); }
   const t = el("div.ed-aviso" + (tipo ? "." + tipo : ""), { text: texto });
+  // Un botón dentro del aviso («Probar», «Deshacer»…).
+  if (accion) t.append(el("button.ed-aviso-b", { type: "button", html: accion.t, onClick: () => { t.classList.remove("ver"); setTimeout(() => t.remove(), 300); accion.al(); } }));
   pila.append(t);
+  if (tipo) dispatchEvent(new CustomEvent("ed-aviso", { detail: tipo }));
   requestAnimationFrame(() => t.classList.add("ver"));
   setTimeout(() => { t.classList.remove("ver"); setTimeout(() => t.remove(), 300); }, ms);
 }
 
 /* ── Ventanas ─────────────────────────────────────────────────────── */
-export function modal({ titulo, contenido, acciones = [], ancho = 520, clase = "" }) {
+export const MODALES = [];
+
+export function modal({ titulo, contenido, acciones = [], ancho = 520, clase = "", antesDeCerrar = null, cabecera = null }) {
   return new Promise((resolver) => {
-    const cerrar = (v) => {
-      fondo.classList.remove("ver");
+    let hecho = false, preguntando = false;
+    const hoja = esMovil();
+    /** Cierra con un valor. `antesDeCerrar(v)` puede negarse (false) o cambiar el valor ({ valor }). */
+    const cerrar = async (v, forzar) => {
+      if (hecho || preguntando) return;
+      if (!forzar && antesDeCerrar) {
+        preguntando = true;
+        let r;
+        try { r = await antesDeCerrar(v); } finally { preguntando = false; }
+        if (r === false) { if (h && !h.abierta) h.abrir(0); return; }
+        if (r && typeof r === "object" && "valor" in r) v = r.valor;
+      }
+      hecho = true;
+      const i = MODALES.indexOf(caja);
+      if (i >= 0) MODALES.splice(i, 1);
       document.removeEventListener("keydown", tecla, true);
-      setTimeout(() => fondo.remove(), 220);
+      if (h && h.abierta) { valor = v; h.cerrar("codigo"); return; }
+      fondo.classList.remove("ver");
+      setTimeout(() => fondo.remove(), 240);
+      dispatchEvent(new CustomEvent("ed-hoja", { detail: "cerrar" }));
       resolver(v);
     };
-    const tecla = (e) => { if (e.key === "Escape") { e.stopPropagation(); cerrar(null); } };
+    let valor = null;
+    const tecla = (e) => { if (e.key === "Escape" && MODALES[MODALES.length - 1] === caja) { e.stopPropagation(); cerrar(null); } };
+    const a = hoja ? asa() : null;
+    const cab = el("header", {}, [el("h2", { text: titulo }), cabecera, el("button.ed-x", { type: "button", "aria-label": "Cerrar", html: ico("cerrar"), onClick: () => cerrar(null) })].filter(Boolean));
     const caja = el("div.ed-modal" + (clase ? "." + clase : ""), { role: "dialog", "aria-modal": "true", style: { maxWidth: ancho + "px" } }, [
-      el("header", {}, [el("h2", { text: titulo }), el("button.ed-x", { type: "button", "aria-label": "Cerrar", html: ico("cerrar"), onClick: () => cerrar(null) })]),
+      a,
+      cab,
       el("div.ed-modal-cuerpo", {}, [].concat(contenido)),
-      acciones.length ? el("footer", {}, acciones.map(([txt, val, cl]) => el("button.ed-btn" + (cl ? "." + cl : ""), { type: "button", html: txt, onClick: () => cerrar(typeof val === "function" ? val() : val) }))) : null,
-    ]);
-    const fondo = el("div.ed-modal-fondo", {}, [caja]);
+      acciones.length ? el("footer", {}, acciones.map(([txt, val, cl]) => el("button.ed-btn" + (cl ? "." + cl.split(" ").join(".") : ""), { type: "button", html: txt, onClick: () => cerrar(typeof val === "function" ? val() : val) }))) : null,
+    ].filter(Boolean));
+    const fondo = el("div.ed-modal-fondo" + (hoja ? ".hoja" : ""), {}, [caja]);
     fondo.addEventListener("pointerdown", (e) => { if (e.target === fondo) cerrar(null); });
     document.addEventListener("keydown", tecla, true);
     document.body.append(fondo);
+    // En el teléfono es una hoja que sube y se baja con el dedo desde su asa.
+    const h = hoja ? new Hoja(caja, {
+      asa: a, agarres: [cab.firstChild], cerrable: true,
+      alMover: (y, alto) => { fondo.style.setProperty("--velo", String(Math.max(0, Math.min(1, 1 - y / alto)))); },
+      alCerrar: (motivo) => {
+        if (!hecho) { cerrar(null); if (!hecho) return; }
+        fondo.classList.remove("ver");
+        setTimeout(() => fondo.remove(), 200);
+        resolver(motivo === "codigo" ? valor : null);
+      },
+    }) : null;
     requestAnimationFrame(() => fondo.classList.add("ver"));
+    if (h) h.abrir(0); else dispatchEvent(new CustomEvent("ed-hoja", { detail: "abrir" }));
     caja.cerrar = cerrar;
+    MODALES.push(caja);
     modal.ultima = caja;
   });
+}
+
+/** Cierra la ventana de más arriba (botón «atrás» del teléfono). ¿Había alguna? */
+export function cerrarUltimoModal() {
+  const c = MODALES[MODALES.length - 1];
+  if (!c) return false;
+  c.cerrar(null);
+  return true;
 }
 
 export const confirmar = (texto, si = "Sí", clase = "peligro") =>
@@ -230,8 +283,9 @@ export function debounce(fn, ms) {
   return d;
 }
 
-/** Teléfono, tableta vertical o teléfono acostado: cajón lateral y hojas de abajo. */
-export const COMPACTO = "(max-width: 1023px), (max-height: 560px)";
+/** Teléfono (vertical o acostado) y tableta vertical: cajón lateral y hojas de abajo.
+    Sólo por el ancho: el teclado achica el alto y no debe cambiar la forma del editor. */
+export const COMPACTO = "(max-width: 1023px)";
 export const esMovil = () => matchMedia(COMPACTO).matches;
 
 /* ── Globito de opciones (la barra contextual lo usa) ─────────────── */
@@ -248,9 +302,17 @@ export function popover(ancla, contenido, { clase = "" } = {}) {
   }
   const fuera = (e) => { if (!p.contains(e.target) && !ancla.contains(e.target)) cerrar(); };
   const tecla = (e) => { if (e.key === "Escape") cerrar(); };
-  const cerrar = () => { p.remove(); document.removeEventListener("pointerdown", fuera, true); removeEventListener("keydown", tecla); };
+  let h = null;
+  const quitar = () => { p.remove(); document.removeEventListener("pointerdown", fuera, true); removeEventListener("keydown", tecla); };
+  const cerrar = () => { if (h && h.abierta) { h.cerrar("codigo"); document.removeEventListener("pointerdown", fuera, true); removeEventListener("keydown", tecla); } else quitar(); };
   p._cerrar = cerrar;
   setTimeout(() => { document.addEventListener("pointerdown", fuera, true); addEventListener("keydown", tecla); }, 0);
-  requestAnimationFrame(() => p.classList.add("ver"));
+  if (esMovil()) {
+    // En el teléfono: una hojita con su asa, que se baja con el dedo.
+    const a = asa();
+    p.prepend(a);
+    h = new Hoja(p, { asa: a, cerrable: true, alCerrar: quitar });
+    h.abrir(0);
+  } else requestAnimationFrame(() => p.classList.add("ver"));
   return { nodo: p, cerrar };
 }

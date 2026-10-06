@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Estrellas</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: radial-gradient(120% 90% at 50% 10%, #2b1d4a 0%, #140d24 60%, #0b0716 100%); }
+  canvas { display: block; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+  // Un cielo tranquilo: estrellas que titilan y, de vez en cuando, una fugaz.
+  const c = document.getElementById("c"), g = c.getContext("2d");
+  let W = 0, H = 0, estrellas = [], fugaz = null, t0 = performance.now();
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  function medir() {
+    W = c.width = innerWidth * dpr; H = c.height = innerHeight * dpr;
+    estrellas = Array.from({ length: Math.round((innerWidth * innerHeight) / 2600) }, () => ({ x: Math.random() * W, y: Math.random() * H, r: (Math.random() * 1.3 + 0.3) * dpr, f: Math.random() * 6.28, v: 0.6 + Math.random() * 1.6 }));
+  }
+  addEventListener("resize", medir); medir();
+  function cuadro(t) {
+    const s = (t - t0) / 1000;
+    g.clearRect(0, 0, W, H);
+    for (const e of estrellas) {
+      g.globalAlpha = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(e.f + s * e.v));
+      g.fillStyle = "#fff4fb";
+      g.beginPath(); g.arc(e.x, e.y, e.r, 0, 6.283); g.fill();
+    }
+    if (!fugaz && Math.random() < 0.004) fugaz = { x: Math.random() * W * 0.7, y: Math.random() * H * 0.4, k: 0 };
+    if (fugaz) {
+      fugaz.k += 0.02;
+      const x = fugaz.x + fugaz.k * W * 0.35, y = fugaz.y + fugaz.k * H * 0.18;
+      const gr = g.createLinearGradient(x - 90 * dpr, y - 45 * dpr, x, y);
+      gr.addColorStop(0, "rgba(255,220,240,0)"); gr.addColorStop(1, "rgba(255,240,250,.9)");
+      g.globalAlpha = 1 - fugaz.k; g.strokeStyle = gr; g.lineWidth = 2 * dpr;
+      g.beginPath(); g.moveTo(x - 90 * dpr, y - 45 * dpr); g.lineTo(x, y); g.stroke();
+      if (fugaz.k >= 1) fugaz = null;
+    }
+    g.globalAlpha = 1;
+    requestAnimationFrame(cuadro);
+  }
+  requestAnimationFrame(cuadro);
+</script>
+</body>
+</html>

@@ -130,6 +130,8 @@ export class BarraContextual {
           this._b(I("marco", "Marco"), "Marco", (a) => popover(a, [el("b.ed-pop-t", { text: "Marco" }), this._ctl("imagen.marco", { tipo: "select", def: "", opciones: [["", "Ninguno"], ["polaroid", "Polaroid"], ["cinta", "Con cinta"], ["washi", "Washi"], ["vintage", "Vintage"], ["sello", "Sello"], ["doble", "Doble"]] })])),
           this._b(I("forma", "Forma"), "Forma", (a) => popover(a, [el("b.ed-pop-t", { text: "Forma" }), this._ctl("imagen.forma", { tipo: "select", def: "", opciones: [["", "Normal"], ["circulo", "Círculo"], ["corazon", "Corazón"], ["estrella", "Estrella"], ["arco", "Arco"], ["gota", "Gota"], ["hexagono", "Hexágono"], ["nube", "Nube"]] })])),
           this._b(I("filtros", "Filtros"), "Filtros", () => ins.abrir("diseno", "Foto")),
+          // Un GIF o sticker animado: quitarle el fondo sin perder la animación.
+          uno.imagen?.gif || /gif|webp/.test(E.proyecto.assets[uno.imagen?.asset]?.mime || "") ? this._b(I("tijeras", "Quitar fondo"), "Quitar el fondo (la animación se conserva)", () => this.app.gifs.quitarFondoGif(uno)) : null,
         ));
       } else if (t === "forma") {
         partes.push(grupo(this._color("forma.relleno", "Relleno"), this._b(I("borde", "Borde"), "Borde", (a) => popover(a, [el("b.ed-pop-t", { text: "Borde" }), el("label.ed-fila", {}, [el("span.ed-et", { text: "Grosor" }), this._ctl("forma.grosor", { tipo: "rango", min: 0, max: 30, def: 0, unidad: "px" })]), el("label.ed-fila", {}, [el("span.ed-et", { text: "Color" }), this._ctl("forma.trazo", { tipo: "color" })])]))));
@@ -144,7 +146,7 @@ export class BarraContextual {
           this._b(k.sinFondo ? I("deshacer", "Poner fondo") : I("tijeras", "Eliminar fondo"), k.sinFondo ? "Volver a poner su fondo" : "Quitar su fondo (sólo en esta copia)", () => E.setEl(uno.id, { "componente.sinFondo": !k.sinFondo }, k.sinFondo ? "Poner fondo" : "Eliminar fondo")),
         ));
       } else if (t === "album" || t === "carrusel") partes.push(grupo(this._b(I("mas", "Fotos"), "Añadir fotos", () => A.pedirArchivoPara(uno)), this._b(I("herramientas", "Opciones"), "Opciones", () => ins.abrir("diseno"))));
-      else if (t === "html") partes.push(grupo(this._b(I("html", "Editar HTML"), "Editar HTML", () => A.editarHtml(uno)), this._b(I("play", "Probar"), "Probar aquí", () => L.probarAqui(uno))));
+      else if (t === "html") partes.push(grupo(this._b(I("html", "Editar HTML"), "Editar HTML", () => A.editarHtml(uno)), this._b(I("play", "Probar"), "Probar la página a pantalla completa", () => this.app.prueba.abrir()), this._b(I("toque", "Aquí"), "Tocarlo aquí mismo, en la hoja", () => L.probarAqui(uno), "chico")));
       else if (t === "pagina") partes.push(grupo(this._b(I("editar", "Hacer editable"), "Sacar textos y fotos a capas", () => this.app.importar.hacerEditable(uno)), this._b(I("play", "Probar"), "Probar aquí", () => L.probarAqui(uno))));
       else if (t === "video") partes.push(grupo(this._b(I("cambiar", "Cambiar"), "Cambiar el vídeo", () => A.pedirArchivoPara(uno)), this._b(I("herramientas", "Opciones"), "Cómo se reproduce", () => ins.abrir("diseno", "Vídeo"))));
       else if (t === "escena3d") partes.push(grupo(this._color("escena3d.color", "Color"), this._b(I("cubo", "3D"), "Figura, luz y cámara", () => ins.abrir("diseno", "Escena 3D")), this._b(I("orbita", "Probar"), "Girarla con el dedo aquí", () => L.probarAqui(uno))));
@@ -157,7 +159,9 @@ export class BarraContextual {
       }
       // Lo de todos.
       partes.push(grupo(
-        this._b(ico("animar") + "<span>Animar</span>", "Animar", () => ins.abrir("animar")),
+        this._b(ico("animar") + "<span>Animar</span>", "Animar", () => (esMovil() ? this.app.abrirSeccion("animar") : ins.abrir("animar"))),
+        this._b(ico("luz") + "<span>Ajustes</span>", "Luz, brillo, contraste, color (o mantén presionado)", () => this.app.ajustes.abrir(sel[0].id)),
+        this._b(ico("efectos") + "<span>Efectos</span>", "Efectos con previsualización", () => this.app.abrirSeccion("efectos")),
         this._b(ico("opacidad"), "Transparencia", (a) => popover(a, [el("b.ed-pop-t", { text: "Transparencia" }), this._ctl("opacidad", { tipo: "rango", min: 0, max: 1, paso: 0.01, def: 1, nombre: "Opacidad" })]), "chico"),
         this._b(ico("capas"), "Posición", (a) => popover(a, [
           el("b.ed-pop-t", { text: "Posición" }),

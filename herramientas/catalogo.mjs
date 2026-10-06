@@ -16,6 +16,15 @@
  *   assets/<categoría>/algo.glb|gltf|obj         → un modelo 3D (elemento «Escena 3D»)
  *   musica assets/*.mp3|m4a|ogg|wav              → la biblioteca de música
  *
+ * Carpetas especiales (lo que el editor ofrece en sus paneles, no como piezas):
+ *   assets/animaciones/<nombre>/animacion.json|css|js   → Animar (+ miniatura.*)
+ *   assets/transiciones/<nombre>/transicion.json|css|js → Transiciones
+ *   assets/efectos/<nombre>.json  (o <nombre>/efecto.json) → Efectos (filtros listos)
+ *   assets/fondos/<nombre>/index.html  (o <nombre>.html)   → Fondos con HTML
+ *   assets/sonidos-editor/<categoría>/*.mp3|wav|ogg        → sonidos del propio editor
+ *   assets/iconos/<nombre>.svg                              → cambia un icono del editor
+ *   (una carpeta con index.html dentro de animaciones/ o efectos/ sigue siendo una pieza)
+ *
  * Nada de esto toca los archivos: sólo los lista.
  */
 import { readdirSync, existsSync, statSync, readFileSync } from "node:fs";
@@ -34,6 +43,8 @@ const NOMBRES = {
   "3d": "3D", modelos: "3D", models: "3D",
 };
 const ORDEN = ["buttons", "players", "portraits", "frames", "cards", "effects", "animations", "decorations", "stickers", "ui"];
+const SOLO_EXTRAS = new Set(["sonidos-editor", "iconos", "fondos", "transiciones"]);
+const DEF = { animaciones: /^animacion\.(json|css|js)$/i, transiciones: /^transicion\.(json|css|js)$/i };
 
 const bonito = (s) => s.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 const orden = (a, b) => a.localeCompare(b, "es", { numeric: true });
@@ -73,11 +84,56 @@ function medida(p) {
   return {};
 }
 
+/** Lo de las carpetas especiales (animaciones, transiciones, efectos, fondos, sonidos, iconos). */
+function extrasDe(raiz) {
+  const ex = { animaciones: [], transiciones: [], efectos: [], fondos: [], sonidos: {}, iconos: {} };
+  const lista = (d) => (existsSync(d) ? readdirSync(d).filter((f) => !f.startsWith(".") && !/^(léeme|leeme|readme)\.(md|txt)$/i.test(f)).sort(orden) : []);
+  for (const tipo of ["animaciones", "transiciones"]) {
+    const d = join(raiz, tipo);
+    for (const f of lista(d)) {
+      const p = join(d, f);
+      if (!esDir(p)) continue;
+      const archivos = todos(p);
+      const def = archivos.filter((a) => DEF[tipo].test(a));
+      if (!def.length) continue;
+      const prev = archivos.find((a) => PREVIEW.test(a));
+      ex[tipo].push({ id: `${tipo}/${f}`, nombre: bonito(f), ruta: `assets/${tipo}/${f}/`, definicion: def, miniatura: prev ? `assets/${tipo}/${f}/${prev}` : null });
+    }
+  }
+  const de = join(raiz, "efectos");
+  for (const f of lista(de)) {
+    const p = join(de, f);
+    if (esDir(p)) { if (existsSync(join(p, "efecto.json"))) { const prev = todos(p).find((a) => PREVIEW.test(a)); ex.efectos.push({ id: `efectos/${f}`, nombre: bonito(f), ruta: `assets/efectos/${f}/efecto.json`, miniatura: prev ? `assets/efectos/${f}/${prev}` : null }); } }
+    else if (/\.json$/i.test(f)) ex.efectos.push({ id: `efectos/${f}`, nombre: bonito(f), ruta: `assets/efectos/${f}`, miniatura: null });
+  }
+  const df = join(raiz, "fondos");
+  for (const f of lista(df)) {
+    const p = join(df, f);
+    if (esDir(p)) {
+      if (!existsSync(join(p, "index.html"))) continue;
+      const archivos = todos(p);
+      const prev = archivos.find((a) => PREVIEW.test(a));
+      ex.fondos.push({ tipo: "html", id: `fondos/${f}`, nombre: bonito(f), ruta: `assets/fondos/${f}/index.html`, base: `assets/fondos/${f}/`, archivos, miniatura: prev ? `assets/fondos/${f}/${prev}` : null });
+    } else if (/\.html?$/i.test(f)) ex.fondos.push({ tipo: "html", id: `fondos/${f}`, nombre: bonito(f), ruta: `assets/fondos/${f}`, base: "assets/fondos/", archivos: [f], miniatura: null });
+    else if (IMG.test(f)) ex.fondos.push({ tipo: "imagen", id: `fondos/${f}`, nombre: bonito(f), ruta: `assets/fondos/${f}`, miniatura: `assets/fondos/${f}` });
+  }
+  const ds = join(raiz, "sonidos-editor");
+  for (const c of lista(ds)) {
+    const p = join(ds, c);
+    if (!esDir(p)) continue;
+    const sons = todos(p).filter((a) => AUD.test(a)).map((a) => `assets/sonidos-editor/${c}/${a}`);
+    if (sons.length) ex.sonidos[c.toLowerCase()] = sons;
+  }
+  const di = join(raiz, "iconos");
+  for (const f of lista(di)) if (/\.svg$/i.test(f)) ex.iconos[f.replace(/\.svg$/i, "")] = `assets/iconos/${f}`;
+  return ex;
+}
+
 export function catalogo(RAIZ) {
   const raiz = join(RAIZ, "assets");
   const categorias = [];
   if (existsSync(raiz)) {
-    const cats = readdirSync(raiz).filter((c) => !c.startsWith(".") && !c.startsWith("_") && esDir(join(raiz, c)));
+    const cats = readdirSync(raiz).filter((c) => !c.startsWith(".") && !c.startsWith("_") && !SOLO_EXTRAS.has(c) && esDir(join(raiz, c)));
     cats.sort((a, b) => ((ORDEN.indexOf(a) + 1 || 99) - (ORDEN.indexOf(b) + 1 || 99)) || orden(a, b));
     for (const cat of cats) {
       const items = [];
@@ -87,6 +143,8 @@ export function catalogo(RAIZ) {
         const ruta = `assets/${cat}/${f}`;
         if (esDir(p)) {
           if (!existsSync(join(p, "index.html"))) continue;
+          // Una animación de assets/animaciones/ no es una pieza (sí lo es si sólo trae index.html).
+          if (cat === "animaciones" && readdirSync(p).some((a) => DEF.animaciones.test(a))) continue;
           let meta = {};
           if (existsSync(join(p, "asset.json"))) { try { meta = JSON.parse(readFileSync(join(p, "asset.json"), "utf8")); } catch (e) { meta = { error: "asset.json no se pudo leer" }; } }
           const archivos = todos(p);
@@ -98,6 +156,8 @@ export function catalogo(RAIZ) {
             parametros: meta.parametros || [], decorativo: !!meta.decorativo, aislado: !!meta.aislado,
             miniatura: prev ? `${ruta}/${prev}` : null, archivos, peso,
           });
+        } else if (cat === "efectos" && /\.json$/i.test(f)) {
+          continue; // un filtro listo (va en extras.efectos)
         } else if (/\.html?$/i.test(f)) {
           items.push({ tipo: "componente", id: `${cat}/${f}`, nombre: bonito(f), descripcion: "", ruta: `assets/${cat}/`, entrada: f, ancho: null, alto: null, parametros: [], miniatura: null, archivos: [f], peso: statSync(p).size });
         } else if (IMG.test(f)) {
@@ -115,7 +175,7 @@ export function catalogo(RAIZ) {
   const musica = existsSync(dirMusica)
     ? todos(dirMusica).filter((f) => AUD.test(f)).map((f) => ({ nombre: bonito(f.split("/").pop()), ruta: `musica assets/${f}`, peso: statSync(join(dirMusica, f)).size }))
     : [];
-  return { categorias, musica };
+  return { categorias, musica, extras: extrasDe(raiz) };
 }
 
 export function textoCatalogo(RAIZ) {

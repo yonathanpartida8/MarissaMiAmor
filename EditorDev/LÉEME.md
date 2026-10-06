@@ -251,6 +251,38 @@ En la computadora, además, atajos:
 | Espacio + arrastrar | mover la vista |
 | RePág / AvPág | página anterior / siguiente |
 
+## HTML libre, Probar y lo nuevo
+
+| | |
+| --- | --- |
+| **Página HTML libre** | HTML → «Nueva página HTML»: página en blanco con un bloque a hoja completa. Pegas tu `index.html` entero (sin separar HTML, CSS ni JS) → **Guardar** → **Probar**. Guardar guarda exactamente lo escrito; se vuelve a editar con dos toques. Fotos o audios que use: «Archivos» y se enlazan solos por su nombre |
+| **Probar página** | botón «Probar» (arriba) o el aviso tras guardar: los menús se van suaves hacia su borde y la página llena la pantalla, sola. Al salir vuelven poco a poco (aparecen, se acomodan, quedan firmes), más lento cuanto más duró la prueba |
+| **Salir** | la flecha pregunta sólo si hay cambios sin guardar: «Seguir editando · Salir sin guardar · Guardar y salir». Con autoguardado, guarda y sale sin preguntar (se apaga en Herramientas → «Guardar solo») |
+| **Hojas con asa** | todos los paneles que suben (secciones, inspector, menús, línea de tiempo) tienen un asa de color: siguen al dedo, rebotan con física, se quedan en sus paradas y se cierran al bajarlas |
+| **Nada se mueve solo** | con el dedo, deslizar sobre algo NO elegido sólo desplaza la vista; tocar = elegir; ya elegido, arrastrar = mover. En la línea de tiempo igual, o mantener presionado un clip para agarrarlo |
+| **Mantener presionado** | abre sus ajustes de luz: luz, exposición, brillo, contraste, saturación, temperatura, desenfoque, opacidad (dos toques en una etiqueta la regresa a cero) |
+| **Animar** | compacto: entrada / bucle / salida; integradas, **Mías** (CSS `@keyframes`, JSON o JS) y **de la carpeta** `assets/animaciones/`. Tocar = verla, «Usar» / «Atrás» |
+| **Efectos y transiciones** | cada uno con miniatura → «Previsualización» con intensidad, «Atrás · Usar». Propios en `assets/efectos/` y `assets/transiciones/` |
+| **Fondo con HTML** | Diseño → «Fondo animado»: partículas, degradados, canvas… detrás de todo, sin estorbar al editar. Propios en `assets/fondos/<nombre>/index.html` |
+| **Pistas de audio** | Audio → «Añadir audio a esta página»: con su onda, escuchar, volumen, bucle; en la línea de tiempo se arrastra y se recorta |
+| **GIFs y Stickers** | GIPHY (Powered by GIPHY): buscar, cargar más, previsualizar, Usar. A un GIF se le puede **quitar el fondo sin perder la animación** (método local cambiable por un servicio externo: `editordev:quitar-fondo-url`) |
+| **Sonidos del editor** | `assets/sonidos-editor/<momento>/*.wav`: al azar sin repetir, con fundidos; encender, volumen y cuántos a la vez en Herramientas |
+| **Foquito de ayuda** | esquina de abajo: brilla cuando hay un consejo nuevo para lo que haces; nunca se abre solo |
+
+### La clave de GIPHY (que no quede en el código)
+
+La clave **no** está en ningún archivo del repositorio. Tres formas, de la más
+segura a la más simple:
+
+1. **Proxy propio** (Cloudflare Worker): `herramientas/giphy-proxy/worker.js`;
+   la clave va como secreto `GIPHY_KEY`. En el editor: GIFs → Conectar → «Uso
+   un proxy» y pega su dirección.
+2. **Servidor local**: `GIPHY_KEY=… node herramientas/servir.mjs` (o la clave
+   en `.giphy-clave`, ignorado por git) y abre `http://localhost:8080/EditorDev/`.
+   El editor lo detecta solo.
+3. **Sólo en este aparato**: GIFs → Conectar → pega la clave. Se guarda en el
+   navegador, nunca en el librito ni en el .zip.
+
 ## Cómo está hecho
 
 ```
@@ -265,13 +297,18 @@ EditorDev/
 ├── pages/       panel.js (lista con miniaturas)
 ├── templates/   plantillas.js
 ├── timeline/    linea.js (línea de tiempo tipo editor de vídeo)
-├── audio/       mezclador.js (MusicaDev, efectos, escuchar y «ducking» por Web Audio)
+├── audio/       mezclador.js (MusicaDev, pistas con onda, «ducking») · sonidos-editor.js
 ├── html/        editorHtml.js (HTML completo en un bloque) · importar.js (hacer editable, importar el librito)
 ├── export/      zip.js (escribir y leer .zip) · exportar.js · abrir.js
 ├── componentes/ catalogo.js (lo que hay en assets/) · analizar.js (zona táctil y fondo, sin tocar nada)
 ├── components/  lateral.js (cajón que sigue al dedo) · guardas.js (comportarse como app) ·
 │                ui.js · inspector.js · paneles.js · barra.js (contextual) · iconos.js (SVG) ·
-│                acciones.js · vista.js · inicio.js · teclado.js
+│                acciones.js · vista.js · inicio.js · teclado.js ·
+│                hoja.js (hojas con asa y resorte) · pantalla.js (teclado virtual, orientación) ·
+│                morfo.js (repintar sin parpadeo) · prueba.js · salir.js · ajustes.js · ayuda.js
+│   └── secciones/  animar · efectos · transiciones · giphy · audio · html · fondo
+├── recursos/    extras.js (animaciones, transiciones, efectos y fondos propios o de assets/)
+├── integraciones/ giphy.js (clave protegida) · gif.js (leer GIF, quitar fondo → APNG)
 ├── runtime/     EL REPRODUCTOR: rt-base · rt-render (y la hoja automática) · rt-anim (y el tiempo) ·
 │                rt-comps · rt-3d (WebGL2) · rt-trans · rt-musica · rt-player · librito.css · reproductor.html
 └── styles/      editor.css

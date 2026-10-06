@@ -37,7 +37,8 @@
         <option value="1.5">150 %</option>
         <option value="2">200 %</option>
       </select>
-      <button type="button" class="ed-btn ed-previa" title="Ver el librito como lo verá ella"><span>Reproducir</span></button>
+      <button type="button" class="ed-btn primario-suave ed-probar" title="Probar esta página a pantalla completa"><span>Probar</span></button>
+      <button type="button" class="ed-btn ed-previa" title="Ver el librito entero como lo verá ella"><span>Librito</span></button>
       <button type="button" class="ed-btn ico ed-guardar" aria-label="Guardar y borradores" title="Guardar y borradores"></button>
       <button type="button" class="ed-btn primario ed-exportar" title="Descargar el librito completo en .zip"><span>Exportar</span></button>
     </div>
@@ -63,6 +64,13 @@
     <div class="ed-contexto" role="toolbar" aria-label="Herramientas de lo elegido" hidden></div>
     <section class="ed-linea" hidden aria-label="Línea de tiempo"></section>
   </main>
+
+  <!-- En el teléfono: Animar, Efectos, Transiciones, GIFs y Stickers en una hojita (la página se sigue viendo). -->
+  <section class="ed-hoja-sec" aria-label="Panel">
+    <button type="button" class="ed-asa-hoja" aria-label="Arrastra para subir o bajar · toca para cambiar"><i></i></button>
+    <header class="ed-hoja-sec-cab"><h2></h2><button type="button" class="ed-hoja-sec-x" aria-label="Cerrar"></button></header>
+    <div class="ed-hoja-sec-cuerpo"></div>
+  </section>
 
   <aside class="ed-insp" aria-label="Inspector">
     <button type="button" class="ed-hoja-asa" aria-label="Cerrar"><i></i></button>

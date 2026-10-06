@@ -269,9 +269,29 @@
       + "</head><body>" + codigo + "</body></html>";
   };
 
+  /* Los archivos que pide un HTML pegado («foto.jpg», «musica.mp3»…) y que se
+     subieron al editor: se cambian por su dirección de verdad. En el editor
+     son `data:` (un marco aislado no puede abrir las `blob:` del editor). */
+  const escaparRe = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  RT.conArchivos = function (codigo, archivos, ctx) {
+    codigo = String(codigo || "");
+    if (!archivos || !ctx) return codigo;
+    for (const nombre in archivos) {
+      const id = archivos[nombre];
+      let u = (ctx.urlDatos && ctx.urlDatos(id)) || (ctx.url && ctx.url(id));
+      if (!u) continue;
+      if (!/^(data:|https?:|blob:)/i.test(u)) { try { u = new URL(u, location.href).href; } catch (err) { /* se deja */ } }
+      const re = new RegExp(`(["'(=\\s])(?:\\./)?${escaparRe(nombre)}(?=["')\\s?#>])`, "g");
+      codigo = codigo.replace(re, (m, a) => a + u);
+    }
+    return codigo;
+  };
+
   PINTAR.html = function (c, e, ctx) {
     const x = e.html || {};
     if (ctx.modo === "mini") { c.innerHTML = '<div class="rt-marcador">&lt;/&gt;</div>'; return; }
+    // Una página HTML recién creada (todavía sin código): en el editor, «pega aquí».
+    if (!String(x.codigo || "").trim()) { vacio(c, "Toca dos veces y pega tu HTML", ctx, e); return; }
     let f = c.firstChild;
     if (!f || f.tagName !== "IFRAME") {
       c.textContent = ""; f = h("iframe", "rt-marco", c);
@@ -280,7 +300,7 @@
       f.setAttribute("loading", ctx.modo === "vista" ? "eager" : "lazy");
       f.setAttribute("title", e.nombre || "HTML");
     }
-    const doc = RT.envolverHtml(x.codigo);
+    const doc = RT.envolverHtml(RT.conArchivos(x.codigo, x.archivos, ctx));
     if (f._doc !== doc) { f._doc = doc; f.srcdoc = doc; }
   };
 
@@ -487,7 +507,8 @@
     const s = n.style;
     s.background = f.css ? f.css : f.tipo === "gradiente" ? RT.gradiente(f.gradiente) : f.color || "#fff";
     if (f.tipo === "gradiente" || f.css) s.backgroundColor = f.color || "";
-    let im = n.firstChild;
+    pintarFondoHtml(n, f.html, ctx);
+    let im = n.querySelector(":scope > .rt-fondo-img");
     const url = f.imagen && f.imagen.asset ? ctx.url(f.imagen.asset) : null;
     if (!url) { if (im) im.remove(); return; }
     if (!im) im = h("div", "rt-fondo-img", n);
@@ -500,6 +521,40 @@
     im.style.filter = i.desenfoque ? `blur(${i.desenfoque}px)` : "";
     im.style.transform = i.desenfoque ? "scale(1.06)" : "";
   };
+
+  /* Fondo con HTML (partículas, degradados vivos, canvas…): va en su marco,
+     DETRÁS de todo lo de la página y sin recibir toques en el editor (nunca
+     estorba al elegir o mover). En el librito puede ser tocable si se pide.
+       { codigo }  lo pegado: aislado, como cualquier HTML
+       { ruta }    una carpeta de assets/fondos/ (con sus css, js, imágenes) */
+  function pintarFondoHtml(n, fh, ctx) {
+    let f = n.querySelector(":scope > .rt-fondo-html");
+    const hay = fh && (String(fh.codigo || "").trim() || fh.ruta) && ctx.modo !== "mini";
+    const pag = n.parentNode;
+    if (pag && pag.classList) pag.classList.toggle("rt-fondo-vivo", !!(hay && ctx.modo === "vista" && fh.interactivo));
+    if (!hay) { if (f) f.remove(); return; }
+    const modo = fh.ruta ? "ruta" : "codigo";
+    if (f && f._modo !== modo) { f.remove(); f = null; }
+    if (!f) {
+      f = document.createElement("iframe");
+      f.className = "rt-fondo-html";
+      f._modo = modo;
+      f.setAttribute("title", "Fondo");
+      f.setAttribute("tabindex", "-1");
+      f.setAttribute("allow", "autoplay; accelerometer; gyroscope");
+      if (modo === "codigo") f.setAttribute("sandbox", "allow-scripts");
+      if (ctx.modo !== "vista") f.setAttribute("loading", "lazy");
+      n.insertBefore(f, n.firstChild);
+    }
+    if (modo === "ruta") {
+      const url = ctx.ruta ? ctx.ruta(fh.ruta) : fh.ruta;
+      if (f._url !== url) { f._url = url; f.src = url; }
+    } else {
+      const doc = RT.envolverHtml(RT.conArchivos(fh.codigo, fh.archivos, ctx));
+      if (f._doc !== doc) { f._doc = doc; f.srcdoc = doc; }
+    }
+    f.classList.toggle("rt-toca-fondo", ctx.modo === "vista" && !!fh.interactivo);
+  }
 
   /* Lo que se sacó a capas se esconde en el original, y SÓLO esa parte:
        todo   la foto, el dibujo (visibility: hidden, sin mover nada)

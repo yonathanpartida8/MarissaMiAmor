@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1a1030; }
+  .capa { position: absolute; inset: -40%; filter: blur(40px); opacity: .75; mix-blend-mode: screen; animation: girar 26s linear infinite; }
+  .a { background: radial-gradient(closest-side, #ff8fb8, transparent 70%) 20% 30% / 60% 60% no-repeat; }
+  .b { background: radial-gradient(closest-side, #8fb8ff, transparent 70%) 70% 60% / 65% 65% no-repeat; animation-duration: 34s; animation-direction: reverse; }
+  .c { background: radial-gradient(closest-side, #b98fff, transparent 70%) 40% 80% / 55% 55% no-repeat; animation-duration: 41s; }
+  @keyframes girar { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .capa { animation: none; } }
+</style>
+</head>
+<body>
+<div class="capa a"></div><div class="capa b"></div><div class="capa c"></div>
+</body>
+</html>

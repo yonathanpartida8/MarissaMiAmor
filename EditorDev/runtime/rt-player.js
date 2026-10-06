@@ -38,9 +38,13 @@
       this.datos = datos;
       this.op = op || {};
       const a = datos.ajustes || {};
+      RT.registrarExtras && RT.registrarExtras(a);
       this.W = a.ancho || 390;
       this.H = a.alto || 844;
       this.rep = Object.assign({ flechas: true, progreso: true, deslizar: true, indice: true, tocarParaEmpezar: true, alFinal: "quedarse", autoAvance: 0 }, a.reproduccion || {});
+      // «Probar página» (editor): sólo esa página, sin flechas, barrita ni índice.
+      if (this.op.soloPagina) Object.assign(this.rep, { flechas: false, progreso: false, indice: false, deslizar: false, autoAvance: 0, tocarParaEmpezar: false });
+      this._sonandoPistas = [];
       this.orden = datos.orden.slice();
       this.i = -1;
       this.actual = null;
@@ -49,6 +53,7 @@
       this.ctx = {
         modo: "vista", activo: true,
         url: (id) => this.op.url(id),
+        urlDatos: (id) => (this.op.urlDatos ? this.op.urlDatos(id) : null),
         ruta: (r) => (this.op.ruta ? this.op.ruta(r) : r),
         accion: (ac, e) => this.accion(ac, e),
         sonido: (id, vol) => RT.sonar(this.op.url(id), vol),
@@ -99,13 +104,19 @@
         const b = h("button", "rt-chip", arriba); b.type = "button"; b.textContent = "☰"; b.setAttribute("aria-label", "Índice");
         b.addEventListener("click", () => this._indice());
       }
-      if (this.op.cerrar) {
+      if (this.op.cerrar && !this.op.soloPagina) {
         const x = h("button", "rt-chip", arriba); x.type = "button"; x.textContent = "✕"; x.setAttribute("aria-label", "Cerrar");
         x.addEventListener("click", () => this.op.cerrar());
       }
       this._escalar = () => {
         const vv = window.visualViewport;
         const w = vv ? vv.width : innerWidth, hh = vv ? vv.height : innerHeight;
+        // Salió el teclado (mismo ancho, mucho menos alto, escribiendo): la hoja no se
+        // reacomoda «como si se hubiera girado»; el teclado sólo tapa un poco.
+        const ae = document.activeElement;
+        const escribe = ae && (ae.tagName === "IFRAME" || /INPUT|TEXTAREA|SELECT/.test(ae.tagName) || ae.isContentEditable);
+        if (this.medidas && escribe && Math.abs(w - this._ultW) < 2 && hh < this._ultH * 0.86) return;
+        this._ultW = w; this._ultH = hh;
         // Hoja automática: la hoja toma la forma de la pantalla (vertical u
         // horizontal) y lo de dentro se recoloca; con tamaño fijo, se escala.
         const m = RT.medidas(this.datos.ajustes, w, hh);
@@ -183,6 +194,7 @@
       let pag;
       try { pag = await this._pagina(i); } catch (err) { console.warn(err); this.ocupado = false; return; }
       const viejo = this.actual;
+      this._pararPistas();
       if (viejo && viejo.anim) await viejo.anim.salir();
       const nueva = new RT.Pagina(pag, this.ctx, this.W, this.H);
       this.marco.appendChild(nueva.nodo);
@@ -213,6 +225,7 @@
           const ret = RT.inicioDe(e) + (e.anim && e.anim.entrada && e.anim.entrada.tipo !== "ninguna" ? RT.num(e.anim.entrada.retraso, 0) : 0);
           this._relojes.push(setTimeout(() => RT.sonar(this.op.url(so.aparecer), so.volumen), ret));
         }
+        this._pistas(pag);
       }, primera || !viejo ? 60 : dur * 0.45);
       if (viejo) {
         await RT.transicion(viejo.nodo, nueva.nodo, cfg, atras);
@@ -222,7 +235,7 @@
       this._sonar(pag);
       this.ocupado = false;
       this._adelantar(i + 1);
-      const auto = RT.num(pag.duracion, 0) || RT.num(this.rep.autoAvance, 0);
+      const auto = this.op.soloPagina ? 0 : RT.num(pag.duracion, 0) || RT.num(this.rep.autoAvance, 0);
       if (auto > 0) this._auto = setTimeout(() => this.siguiente(), auto * 1000);
       if (this._pendiente) { const p = this._pendiente; this._pendiente = null; this.ir(p[0], p[1]); }
     }
@@ -261,6 +274,46 @@
     }
 
     _quitarRelojes() { for (const t of this._relojes || []) clearTimeout(t); this._relojes = []; }
+
+    /* Las pistas de audio de la página (línea de tiempo del editor): cada una
+       a su hora, desde su recorte, con su volumen; la música baja mientras suenan. */
+    _pistas(pag) {
+      this._pararPistas();
+      for (const t of pag.audios || []) {
+        const url = this.op.url(t.asset);
+        if (!url) continue;
+        const s = { relojes: [], a: null };
+        s.relojes.push(setTimeout(() => {
+          const a = new Audio();
+          a.preload = "auto";
+          a.loop = !!t.bucle;
+          a.src = url;
+          a.volume = RT.clamp(RT.num(t.vol, 0.9), 0, 1);
+          const ir = () => { try { a.currentTime = RT.num(t.desde, 0) / 1000; } catch (err) { /* nada */ } };
+          ir();
+          a.addEventListener("loadedmetadata", ir, { once: true });
+          a.play().catch(() => {});
+          if (RT.alSonar) RT.alSonar(a);
+          s.a = a;
+          if (t.dur) s.relojes.push(setTimeout(() => this._apagarPista(s), RT.num(t.dur, 0)));
+        }, Math.max(0, RT.num(t.inicio, 0))));
+        this._sonandoPistas.push(s);
+      }
+    }
+
+    _apagarPista(s) {
+      for (const r of s.relojes) clearTimeout(r);
+      s.relojes = [];
+      const a = s.a;
+      if (!a) return;
+      s.a = null;
+      // Un fundido cortito (en iPhone el volumen no cambia: se corta al final).
+      const v0 = a.volume, t0 = performance.now();
+      const paso = () => { const k = Math.min(1, (performance.now() - t0) / 220); try { a.volume = v0 * (1 - k); } catch (err) { /* nada */ } if (k < 1) requestAnimationFrame(paso); else { a.pause(); a.removeAttribute("src"); } };
+      requestAnimationFrame(paso);
+    }
+
+    _pararPistas() { for (const s of this._sonandoPistas || []) this._apagarPista(s); this._sonandoPistas = []; }
 
     /** Un elemento de la página que se está viendo. */
     _nodo(id) { return this.actual && id ? this.actual.nodos.get(id) : null; }
@@ -321,6 +374,7 @@
     destruir() {
       clearTimeout(this._auto);
       this._quitarRelojes();
+      this._pararPistas();
       removeEventListener("message", this._mensaje);
       if (RT.alSonar) RT.alSonar = null;
       removeEventListener("resize", this._rs);

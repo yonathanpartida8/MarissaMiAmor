@@ -10,8 +10,15 @@
  *                 (el archivo de las fotos subidas vive aparte, en IndexedDB)
  *     editor      cuadrícula, guías, imán… lo que sólo le importa al editor
  *
- *   página = { id, nombre, fondo, transicion, musica, duracion, els: [ … ] }
+ *   página = { id, nombre, fondo, transicion, musica, duracion, audios, els: [ … ] }
  *            `els` va de atrás hacia delante: el último es el que se ve encima.
+ *            fondo.html  { codigo | ruta, archivos, interactivo } un fondo hecho con HTML
+ *            audios      [{ id, asset, inicio, desde, dur, vol, bucle }] pistas de audio
+ *                        en la línea de tiempo (ms; dur null = hasta el final)
+ *
+ *   ajustes.extras = { animaciones: { id: { n, fase, fotogramas, dur, facil } },
+ *                      transiciones: { id: { n, entra, sale, encima, dur } } }
+ *            las animaciones y transiciones propias (de assets/ o escritas a mano)
  *
  *   elemento = { id, tipo, nombre, x, y, w, h, rot, opacidad, bloqueado, oculto,
  *                caja, anim, accion, origen, [tipo]: { lo propio de su tipo },
@@ -160,7 +167,8 @@ export function nuevoEl(tipo, proyecto, datos = {}) {
     album: { fotos: [], disposicion: "cuadricula", columnas: 2, espacio: 8, radio: 10, marco: "ninguno", proporcion: "1", ampliar: true, cascada: { tipo: "aparecer", paso: 110, dur: 650, dir: "arriba" } },
     carrusel: { fotos: [], modo: "deslizar", direccion: "horizontal", auto: true, intervalo: 3200, velocidad: 600, bucle: true, puntos: true, flechas: false, espacio: 0, radio: 16, ajuste: "cover" },
     video: { asset: null, auto: false, bucle: false, silencio: false, controles: true, ajuste: "cover" },
-    html: { codigo: '<div style="display:grid;place-items:center;height:100%;font:600 22px system-ui;color:#d8397a">Hola, mi amor</div>', interactivo: true },
+    // Empieza en blanco: se pega el HTML (un trozo o el index.html entero).
+    html: { codigo: "", interactivo: true, archivos: null },
     pagina: { ruta: "", titulo: "" },
     // Un componente de assets/: aquí sólo se guarda CÓMO se usa esta copia;
     // el componente original no se toca nunca.
@@ -185,6 +193,8 @@ export function assetsUsados(proyecto) {
     if (!p) continue;
     poner(p.fondo?.imagen?.asset);
     poner(p.musica?.asset);
+    for (const id of Object.values(p.fondo?.html?.archivos || {})) poner(id);
+    for (const a of p.audios || []) poner(a.asset);
     for (const e of p.els) {
       poner(e.imagen?.asset);
       poner(e.video?.asset);
@@ -192,6 +202,7 @@ export function assetsUsados(proyecto) {
       for (const id of e.album?.fotos || []) poner(id);
       for (const id of e.carrusel?.fotos || []) poner(id);
       poner(e.sonidos?.tocar);
+      for (const id of Object.values(e.html?.archivos || {})) poner(id);
       poner(e.sonidos?.aparecer);
       if (e.accion?.tipo === "sonido") poner(e.accion.destino);
       for (const d of e.componente?.parametros || []) if (d.tipo === "imagen" || d.tipo === "audio") poner(e.componente.params?.[d.id]);

@@ -41,6 +41,8 @@ export class Biblioteca {
   liberar() {
     for (const u of this.urls.values()) URL.revokeObjectURL(u);
     this.urls.clear();
+    this._datos?.clear();
+    this._listos?.clear();
   }
 
   url(id) {
@@ -59,6 +61,31 @@ export class Biblioteca {
   }
 
   blob(id) { return leerArchivo(id); }
+
+  /**
+   * El archivo como dirección `data:` (la necesitan los HTML aislados: un marco
+   * sin permisos no puede abrir las `blob:` del editor). Se calcula una vez.
+   */
+  datos(id) {
+    this._datos = this._datos || new Map();
+    if (this._datos.has(id)) return this._datos.get(id);
+    const a = this.assets[id];
+    if (!a) return Promise.resolve(null);
+    const p = (a.fuente === "local" ? leerArchivo(id) : fetch(this.url(id)).then((r) => (r.ok ? r.blob() : null)))
+      .then((b) => (b ? new Promise((ok) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => ok(null); r.readAsDataURL(b); }) : null))
+      .then((u) => { if (u) { this._listos = this._listos || new Map(); this._listos.set(id, u); this.alDatos?.(id); } return u; })
+      .catch(() => null);
+    this._datos.set(id, p);
+    return p;
+  }
+
+  /** La `data:` si ya está (si no, la pide y avisa con `alDatos` cuando esté). */
+  urlDatos(id) {
+    const u = this._listos?.get(id);
+    if (u) return u;
+    this.datos(id);
+    return null;
+  }
 
   /** Sube archivos elegidos por quien edita. Devuelve los assets nuevos. */
   async subir(files, alProgreso) {

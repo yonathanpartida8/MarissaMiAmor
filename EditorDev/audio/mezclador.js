@@ -44,6 +44,8 @@ export class AudioEditor {
     this.escucha = null;      // la canción que se está escuchando (sólo una)
     this.url = null;          // dónde está MusicaDev.mp3 (null = no está)
     this.oyentes = new Set();
+    this.ondas = new Map();    // url → { picos, dur, svg } (la onda de cada pista)
+    this._sonando = [];        // las pistas de la línea de tiempo que suenan ahora
     this.listo = this._buscar();
     // El primer toque desbloquea el sonido (y arranca MusicaDev).
     this._toque = () => this._desbloquear();
@@ -291,5 +293,120 @@ export class AudioEditor {
       p.gain.gain.linearRampToValueAtTime(0, t + 0.3);
     }
     setTimeout(() => { p.audio.pause(); p.audio.removeAttribute("src"); }, 340);
+  }
+  /* ── Pistas de audio de la página (línea de tiempo) ──────────────── */
+  /** Cuánto dura un archivo (ms), si ya se sabe. */
+  duracionDe(url) { return url ? this.ondas.get(url)?.dur || null : null; }
+
+  /** La onda como imagen (dirección blob: de un SVG), si ya está. */
+  ondaUrl(url) { return url ? this.ondas.get(url)?.svg || null : null; }
+
+  /**
+   * Calcula la onda de un archivo (una vez): decodifica, saca 40 picos por
+   * segundo y suelta el audio decodificado (no se guarda en memoria).
+   */
+  onda(url) {
+    if (!url) return Promise.reject(new Error("sin archivo"));
+    const ya = this.ondas.get(url);
+    if (ya) return ya.promesa || Promise.resolve(ya);
+    const o = { picos: null, dur: null, svg: null };
+    o.promesa = (async () => {
+      const AC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const r = await fetch(url);
+      const datos = await r.arrayBuffer();
+      if (datos.byteLength > 40 * 1024 * 1024 || !AC) throw new Error("muy grande");
+      const ctx = this.ac || new AC(1, 2, 44100);
+      const b = await new Promise((ok, mal) => { const p = ctx.decodeAudioData(datos, ok, mal); if (p?.then) p.then(ok, mal); });
+      o.dur = Math.round(b.duration * 1000);
+      const n = Math.max(8, Math.min(12000, Math.round(b.duration * 40)));
+      const picos = new Float32Array(n);
+      const canales = [];
+      for (let c = 0; c < Math.min(2, b.numberOfChannels); c++) canales.push(b.getChannelData(c));
+      const paso = Math.max(1, Math.floor(b.length / n));
+      let max = 0.0001;
+      for (let i = 0; i < n; i++) {
+        let m = 0;
+        const ini = i * paso, fin = Math.min(b.length, ini + paso);
+        for (const d of canales) for (let j = ini; j < fin; j += 16) { const v = Math.abs(d[j]); if (v > m) m = v; }
+        picos[i] = m;
+        if (m > max) max = m;
+      }
+      for (let i = 0; i < n; i++) picos[i] = Math.sqrt(picos[i] / max);
+      o.picos = picos;
+      let d = "M0 50";
+      for (let i = 0; i < n; i++) d += `L${i} ${(50 - picos[i] * 46).toFixed(1)}`;
+      for (let i = n - 1; i >= 0; i--) d += `L${i} ${(50 + picos[i] * 46).toFixed(1)}`;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} 100" preserveAspectRatio="none"><path d="${d}Z" fill="#e0558e" fill-opacity=".5"/></svg>`;
+      o.svg = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+      delete o.promesa;
+      return o;
+    })().catch((e) => { delete o.promesa; o.dur = o.dur || null; throw e; });
+    this.ondas.set(url, o);
+    return o.promesa;
+  }
+
+  /**
+   * Hace sonar varias pistas desde el instante `desde` (ms de la página):
+   * cada una empieza a su hora, desde su recorte, con su volumen y un
+   * fundido corto al entrar y al salir. `solo` = sólo ésas (para escuchar una).
+   */
+  pistas(lista, desde = 0, solo = false) {
+    this.pararPistas();
+    if (!this.ac) this._desbloquear();
+    const t0 = performance.now() - desde;
+    for (const p of lista) {
+      if (!p.url) continue;
+      const dur = p.dur || (this.duracionDe(p.url) ? this.duracionDe(p.url) - (p.desde || 0) : null);
+      const fin = dur != null ? p.inicio + dur : Infinity;
+      if (fin <= desde) continue;
+      const s = { relojes: [], audio: null, gain: null };
+      const arrancar = () => {
+        const ahora = performance.now() - t0;
+        const audio = new Audio();
+        audio.crossOrigin = "anonymous";
+        audio.preload = "auto";
+        audio.loop = !!p.bucle;
+        audio.src = p.url;
+        const dentro = Math.max(0, ahora - p.inicio);
+        try { audio.currentTime = ((p.desde || 0) + (p.bucle && this.duracionDe(p.url) ? dentro % Math.max(1, this.duracionDe(p.url) - (p.desde || 0)) : dentro)) / 1000; } catch (e) { /* nada */ }
+        let gain = null;
+        if (this.ac) {
+          gain = this.ac.createGain();
+          gain.gain.value = 0;
+          try { this.ac.createMediaElementSource(audio).connect(gain); } catch (e) { /* nada */ }
+          gain.connect(this.general);
+          gain.gain.setTargetAtTime(Math.max(0, Math.min(1, p.vol ?? 0.9)), this.ac.currentTime, 0.06);
+        } else audio.volume = Math.max(0, Math.min(1, p.vol ?? 0.9));
+        s.audio = audio; s.gain = gain;
+        audio.play().catch(() => {});
+        if (fin !== Infinity) s.relojes.push(setTimeout(() => this._apagar(s), Math.max(0, fin - (performance.now() - t0))));
+      };
+      s.relojes.push(setTimeout(arrancar, Math.max(0, p.inicio - desde)));
+      this._sonando.push(s);
+    }
+    if (this._sonando.length) this.agachar("pista#varias", true);
+    void solo;
+  }
+
+  _apagar(s) {
+    for (const r of s.relojes) clearTimeout(r);
+    s.relojes = [];
+    const a = s.audio;
+    if (!a) return;
+    if (s.gain && this.ac) {
+      const t = this.ac.currentTime;
+      s.gain.gain.cancelScheduledValues(t);
+      s.gain.gain.setValueAtTime(s.gain.gain.value, t);
+      s.gain.gain.linearRampToValueAtTime(0, t + 0.18);
+      setTimeout(() => { a.pause(); a.removeAttribute("src"); }, 220);
+    } else a.pause();
+    s.audio = null;
+  }
+
+  pararPistas() {
+    const hay = this._sonando.length;
+    for (const s of this._sonando) this._apagar(s);
+    this._sonando = [];
+    if (hay) this.agachar("pista#varias", false);
   }
 }

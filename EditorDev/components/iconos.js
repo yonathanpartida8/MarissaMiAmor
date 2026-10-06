@@ -150,13 +150,28 @@ const P = {
   luz: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   orbita: '<ellipse cx="12" cy="12" rx="9.5" ry="4"/><circle cx="12" cy="12" r="2.5"/><path d="M19 8.5l2 .5-.6 2"/>',
   esfera: '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="3.5"/><path d="M12 3a12 12 0 0 1 0 18"/>',
-};
-// Nombres que se usan igual (para leer más fácil en cada sitio).
+  // Fase 2
+  gif: '<rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M10 9.5H8a1.5 1.5 0 0 0-1.5 1.5v2A1.5 1.5 0 0 0 8 14.5h2V12H9M12.8 9.5v5M15.6 14.5v-5h2.9M15.6 12h2.1"/>',
+  foco: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.8.6 1.1 1.4 1.1 2.2h5c0-.8.3-1.6 1.1-2.2A6 6 0 0 0 12 3z"/>',
+  onda: '<path d="M3 12h1M6 9v6M9 6v12M12 9v6M15 4v16M18 8v8M21 11v2"/>',
+  volumen: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
+  exposicion: '<circle cx="12" cy="12" r="9"/><path d="M5.6 18.4L18.4 5.6"/><path d="M7 9.5h4M9 7.5v4M13.5 15h4"/>',
+  contraste: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/>',
+  temperatura: '<path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v7"/>',
+  salir: '<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 16l-4-4 4-4M6 12h10"/>',
+  fondo: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 15l5-5 4 4 3-3 6 6"/><path d="M15.5 6.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/>',
+  varita: '<path d="M4 20L15 9l-1.5-1.5L2.5 18.5z"/><path d="M17 3v3M20 6h-3M19.6 3.4l-1.4 1.4M17 10v2M12 4h2"/>',
+  refrescar: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>',
+  ver: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+};// Nombres que se usan igual (para leer más fácil en cada sitio).
 P.fotos = P.imagen;
 P.ajustes = P.herramientas;
 P.mas3 = P.puntos;
 P.letra = P.fuente;
 P.musica = P.audio;
+P.codigo = P.html;
+P.saturacion = P.gota;
+P.brillo = P.luz;
 
 export const ICONOS = Object.fromEntries(Object.entries(P).map(([k, d]) => [k, T(d)]));
 

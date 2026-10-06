@@ -79,6 +79,20 @@ assets/buttons/mi-boton/
 `.png .jpg .webp .gif .svg` → adornos en la biblioteca.
 `.mp3 .m4a .ogg .wav` → sonidos (para botones, animaciones, transiciones).
 
+## Carpetas especiales
+
+Cada una tiene su `LÉEME.md` con ejemplos. Lo que dejes aparece solo.
+
+| Carpeta | Qué va | Dónde sale en el editor |
+| --- | --- | --- |
+| `animaciones/<nombre>/` | `animacion.css` (`@keyframes`), `.json` o `.js` | Animar → «De la carpeta» |
+| `transiciones/` | `.json` o `.css` (`@keyframes` entra/sale) | Transiciones → «De la carpeta» |
+| `efectos/` | `.json` con filtros (brillo, contraste…) | Efectos, al final |
+| `fondos/<nombre>/index.html` | un fondo animado (y `miniatura.png` opcional) | Diseño → «Fondo animado» |
+| `sonidos-editor/<momento>/` | `.wav/.mp3` cortitos (`botones`, `seleccionar`, `abrir`, `guardar`…) | sonidos al editar |
+| `stickers/` | `.png/.webp/.gif` sin fondo | Stickers → «Tus stickers» |
+| `iconos/` | `<nombre>.svg` que reemplaza un icono del editor | toda la interfaz |
+
 ## Que aparezca
 
 En GitHub se rehace solo a cada subida (`assets/catalogo.js`). En la

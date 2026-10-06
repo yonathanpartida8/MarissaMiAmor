@@ -1,0 +1,14 @@
+{
+  "nombre": "Glitch",
+  "duracion": 650,
+  "ritmo": "linear",
+  "encima": "entra",
+  "entra": [
+    { "opacity": 0, "transform": "translateX(-6%)", "filter": "hue-rotate(90deg) contrast(2)", "offset": 0 },
+    { "opacity": 1, "transform": "translateX(4%)", "filter": "hue-rotate(-60deg) contrast(1.6)", "offset": 0.2 },
+    { "opacity": 0.4, "transform": "translateX(-2%) skewX(8deg)", "filter": "hue-rotate(40deg)", "offset": 0.4 },
+    { "opacity": 1, "transform": "translateX(1%) skewX(-4deg)", "filter": "none", "offset": 0.65 },
+    { "opacity": 1, "transform": "translateX(0)", "filter": "none", "offset": 1 }
+  ],
+  "sale": [ { "opacity": 1, "filter": "none" }, { "opacity": 0, "filter": "contrast(2) hue-rotate(120deg)" } ]
+}

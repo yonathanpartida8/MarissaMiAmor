@@ -91,6 +91,13 @@ export async function exportar(app, { alProgreso } = {}) {
       if (k.sinFondo) sinFondo[e.id] = { base: k.ruta + (k.entrada || "index.html"), entrada: (k.entrada || "index.html").replace(/(\.html?)$/i, `.${e.id}$1`), css: RT.cssSinFondo(k.analisis) };
     }
   }
+  // Los fondos con HTML de assets/fondos/: su carpeta entera, tal cual.
+  for (const pid of P.orden) {
+    const fh = P.paginas[pid].fondo?.html;
+    if (!fh?.ruta) continue;
+    const base = fh.base || fh.ruta.replace(/[^/]*$/, "");
+    for (const f of fh.lista?.length ? fh.lista : [fh.ruta.slice(base.length)]) if (!originales.has(base + f)) originales.set(base + f, null);
+  }
   for (const pid of P.orden) {
     const pg = P.paginas[pid];
     const ocultos = RT.ocultosDe(pg);

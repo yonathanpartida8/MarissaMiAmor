@@ -53,6 +53,26 @@
     } },
   };
 
+  /* Animaciones y transiciones propias (de assets/animaciones, assets/transiciones
+     o escritas en el editor): viajan DENTRO del proyecto (ajustes.extras) como
+     fotogramas, así el librito exportado no necesita las carpetas. */
+  RT.registrarExtras = function (aj) {
+    const x = aj && aj.extras;
+    if (!x) return;
+    for (const id in x.animaciones || {}) {
+      const a = x.animaciones[id];
+      const fase = RT.ANIM[a.fase] ? a.fase : "entrada";
+      const k = a.fotogramas;
+      if (!Array.isArray(k) || !k.length) continue;
+      RT.ANIM[fase][id] = { n: a.n || id, propia: true, lineal: !!a.lineal, f: () => k };
+    }
+    for (const id in x.transiciones || {}) {
+      const t = x.transiciones[id];
+      if (!t || (!t.entra && !t.sale)) continue;
+      RT.TRANS[id] = { n: t.n || id, propia: true, f: () => ({ entra: t.entra || null, sale: t.sale || null, encima: t.encima || "entra" }) };
+    }
+  };
+
   const DIR_INV = { izquierda: "derecha", derecha: "izquierda", arriba: "abajo", abajo: "arriba" };
 
   /** Pasa de `viejo` a `nuevo`. Se cumple cuando acaba (o enseguida si no hay). */

@@ -1,0 +1,11 @@
+{
+  "nombre": "Flotando",
+  "fase": "bucle",
+  "duracion": 2600,
+  "ritmo": "ease-in-out",
+  "fotogramas": [
+    { "transform": "translateY(0px) rotate(0deg)" },
+    { "transform": "translateY(-12px) rotate(-2deg)", "offset": 0.5 },
+    { "transform": "translateY(0px) rotate(0deg)" }
+  ]
+}

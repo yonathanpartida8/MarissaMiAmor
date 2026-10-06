@@ -12,7 +12,7 @@ export function atajos(app) {
   const E = app.estado;
   const A = app.acciones;
   addEventListener("keydown", (e) => {
-    if (!E.proyecto || document.querySelector(".ed-modal-fondo, .ed-inicio, .ed-previsual")) return;
+    if (!E.proyecto || document.querySelector(".ed-modal-fondo, .ed-inicio, .ed-previsual, .ed-codigo-pantalla, .ed-prueba, .ed-salir-fondo, .ed-hojita.abierta")) return;
     const t = e.target;
     const escribiendo = /INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable;
     const mod = e.ctrlKey || e.metaKey;

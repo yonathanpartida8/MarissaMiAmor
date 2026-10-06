@@ -18,6 +18,10 @@
  *   components/  barra lateral, paneles, inspector, barra contextual, vista previa…
  *   runtime/     el reproductor: lo usan el lienzo, la vista previa y el .zip
  *                (rt-3d.js: escenas WebGL2, se carga sólo si hay una)
+ *   recursos/    lo que se amplía solo desde assets/ (animaciones, transiciones,
+ *                efectos, fondos, sonidos del editor, iconos)
+ *   integraciones/  GIPHY (GIFs y stickers) y quitar el fondo de un GIF animado
+ *   components/secciones/  cada sección grande del panel en su archivo
  */
 import { el, aviso, modal, esMovil, menu } from "./components/ui.js";
 import { Estado } from "./core/estado.js";
@@ -42,6 +46,14 @@ import { Lateral } from "./components/lateral.js";
 import { guardasDeApp } from "./components/guardas.js";
 import { AudioEditor } from "./audio/mezclador.js";
 import { ico } from "./components/iconos.js";
+import { Hoja } from "./components/hoja.js";
+import { vigilarPantalla } from "./components/pantalla.js";
+import { Prueba } from "./components/prueba.js";
+import { Salida } from "./components/salir.js";
+import { Ajustes } from "./components/ajustes.js";
+import { Ayuda } from "./components/ayuda.js";
+import { SonidosEditor } from "./audio/sonidos-editor.js";
+import { aplicarIconos } from "./recursos/extras.js";
 
 const RT = window.LibritoRT;
 const ULTIMO = "editordev:ultimo";
@@ -53,6 +65,8 @@ const SECCIONES = [
   ["elementos", "elementos", "Elementos"],
   ["texto", "texto", "Texto"],
   ["imagenes", "imagen", "Imágenes"],
+  ["gifs", "gif", "GIFs"],
+  ["stickers", "sticker", "Stickers"],
   ["video", "video", "Vídeo"],
   ["audio", "audio", "Audio"],
   ["efectos", "efectos", "Efectos"],
@@ -67,6 +81,9 @@ const SECCIONES = [
 ];
 // Nombres viejos que otros sitios todavía piden.
 const ALIAS = { fotos: "imagenes", ajustes: "herramientas" };
+// En el teléfono, estas secciones se abren en una hojita de abajo (compacta)
+// para que la página se siga viendo: lo elegido, su efecto, su animación…
+const HOJAS = new Set(["animar", "efectos", "transiciones", "gifs", "stickers"]);
 
 const app = {};
 window.EditorDev = app;
@@ -76,6 +93,9 @@ function leerUltimo() { try { return localStorage.getItem(ULTIMO); } catch (e) {
 
 async function arrancar() {
   guardasDeApp();
+  vigilarPantalla();
+  // Iconos propios de assets/iconos/ (si hay), antes de pintar nada.
+  await Promise.race([aplicarIconos().catch(() => 0), new Promise((r) => setTimeout(r, 700))]);
   const E = new Estado();
   Object.assign(app, { estado: E });
   app.bib = new Biblioteca(E);
@@ -84,6 +104,10 @@ async function arrancar() {
   app.html = new EditorHtml(app);
   app.importar = new Importador(app);
   app.vista = new Vista(app);
+  app.prueba = new Prueba(app);
+  app.ajustes = new Ajustes(app);
+  app.sonidos = new SonidosEditor(app.audio);
+  app.sonidos.conectar(app);
   app.plantilla = (id) => PLANTILLAS.find((t) => t.id === id).crear(E.proyecto);
 
   app.lienzo = new Lienzo(app, $(".ed-centro"));
@@ -92,19 +116,22 @@ async function arrancar() {
   app.paginas = new PanelPaginas(app);
   app.tiempo = new Linea(app, $(".ed-linea"));
   app.barra = new BarraContextual(app, $(".ed-contexto"));
-  app.lateral = new Lateral({ raiz: $(".ed-lateral"), velo: $(".ed-velo"), borde: $(".ed-borde-izq"), asa: $(".ed-asa-lateral"), alCambiar: (on) => { if (on) cerrarHoja(); } });
+  app.lateral = new Lateral({ raiz: $(".ed-lateral"), velo: $(".ed-velo"), borde: $(".ed-borde-izq"), asa: $(".ed-asa-lateral"), alCambiar: (on) => { if (on) { cerrarHoja(); cerrarHojaSec(); } } });
+  app.gifs = app.paneles;
   app.abrirSeccion = (id) => abrirSeccion(id, true);
 
   const estadoGuardado = $(".ed-guardado");
   app.auto = new Autoguardado(E, (st) => {
     estadoGuardado.dataset.st = st;
-    estadoGuardado.textContent = st === "guardando" ? "Guardando…" : st === "error" ? "No se pudo guardar" : "Guardado";
+    estadoGuardado.textContent = st === "guardando" ? "Guardando…" : st === "error" ? "No se pudo guardar" : st === "sin-guardar" ? "Sin guardar" : "Guardado";
     if (st === "error") aviso("No se pudo guardar en este navegador (¿sin espacio?). Exporta el .zip para no perder nada.", 5000, "error");
   });
 
   construirBarra();
   construirRiel();
   atajos(app);
+  app.salida = new Salida(app);
+  app.ayuda = new Ayuda(app);
   E.on("historial", pintarHistorial);
   E.on("proyecto", ({ ruta }) => { if (ruta === "nombre") pintarNombre(); });
   E.on("cargado", () => { pintarNombre(); pintarHistorial(); abrirSeccion(app.seccion || (esMovil() ? "elementos" : "paginas")); });
@@ -126,7 +153,9 @@ function construirBarra() {
   $(".ed-rehacer").innerHTML = ico("rehacer");
   $(".ed-guardar").innerHTML = ico("guardar");
   $(".ed-ver").innerHTML = ico("telefono");
-  $(".ed-previa").insertAdjacentHTML("afterbegin", ico("play"));
+  $(".ed-previa").insertAdjacentHTML("afterbegin", ico("biblioteca"));
+  $(".ed-probar").insertAdjacentHTML("afterbegin", ico("play"));
+  $(".ed-probar").addEventListener("click", () => app.prueba.abrir());
   $(".ed-exportar").insertAdjacentHTML("afterbegin", ico("exportar"));
   const nombre = $(".ed-nombre input");
   nombre.addEventListener("change", () => { const n = nombre.value.trim(); if (n) E.setProy({ nombre: n }, "Nombre"); });
@@ -194,15 +223,34 @@ function construirRiel() {
   $(".ed-panel-x").innerHTML = ico("cerrar");
   $(".ed-panel-x").addEventListener("click", () => { if (esMovil()) app.lateral.cerrar(); else abrirSeccion(null); });
   $(".ed-asa-lateral").innerHTML = ico("derecha");
-  // El asa de la hoja del inspector: tocarla o arrastrarla hacia abajo la cierra.
-  let y0 = null;
-  for (const asa of document.querySelectorAll(".ed-hoja-asa")) {
-    asa.addEventListener("click", cerrarHoja);
-    asa.addEventListener("pointerdown", (e) => { y0 = e.clientY; });
-  }
-  addEventListener("pointerup", (e) => { if (y0 != null && e.clientY - y0 > 60) cerrarHoja(); y0 = null; });
-  app.mostrarInspector = () => { if (esMovil()) { app.lateral.cerrar(); abrirHoja("insp:" + app.insp.tab); } };
+  // El inspector en el teléfono: una hoja que sigue al dedo desde su asa de color.
+  const insp = $(".ed-insp");
+  const asaInsp = insp.querySelector(".ed-hoja-asa");
+  asaInsp.className = "ed-asa-hoja";
+  asaInsp.innerHTML = "<i></i>";
+  hojaInsp = new Hoja(insp, { asa: asaInsp, puntos: [1, 0.55], cerrable: true, alCerrar: () => { if (document.body.dataset.hoja?.startsWith("insp:")) delete document.body.dataset.hoja; } });
+  // Las secciones compactas del teléfono (Animar, Efectos, GIFs…): otra hoja, a media altura.
+  const hs = $(".ed-hoja-sec");
+  hs.querySelector(".ed-hoja-sec-x").innerHTML = ico("cerrar");
+  hs.querySelector(".ed-hoja-sec-x").addEventListener("click", () => cerrarHojaSec());
+  hojaSec = new Hoja(hs, {
+    asa: hs.querySelector(".ed-asa-hoja"), agarres: [hs.querySelector(".ed-hoja-sec-cab h2")], puntos: [1, 0.62], cerrable: true,
+    alCerrar: () => {
+      document.body.classList.remove("con-hoja-sec");
+      if (app.paneles.cont === hs.querySelector(".ed-hoja-sec-cuerpo")) { app.paneles._limpiar?.(); app.paneles._limpiar = null; app.paneles.cont = null; }
+      if (esMovil()) for (const b of document.querySelectorAll(".ed-riel button")) b.classList.remove("on");
+    },
+  });
+  // Al pasar a la computadora, las hojas vuelven a ser paneles fijos.
+  matchMedia("(max-width: 1023px)").addEventListener("change", (m) => {
+    if (m.matches) return;
+    for (const [h, n] of [[hojaInsp, insp], [hojaSec, hs]]) { h.parar?.(); h.abierta = false; n.classList.remove("abierta"); n.style.transform = ""; n.style.visibility = ""; }
+    delete document.body.dataset.hoja;
+    document.body.classList.remove("con-hoja-sec");
+  });
+  app.mostrarInspector = () => { if (esMovil()) { app.lateral.cerrar(); cerrarHojaSec(); abrirHoja("insp:" + app.insp.tab); } };
   app.cerrarHoja = cerrarHoja;
+  app.cerrarHojaSec = cerrarHojaSec;
   app.alElegirPagina = () => { if (esMovil()) app.lateral.cerrar(); };
   app.alDibujar = () => { if (esMovil()) app.lateral.cerrar(); };
   // En el teléfono, lo recién añadido se ve en la hoja (no debajo del cajón).
@@ -214,9 +262,26 @@ function abrirSeccion(id, desdeUsuario) {
   const cont = $(".ed-panel-cuerpo");
   for (const b of document.querySelectorAll(".ed-riel button")) b.classList.toggle("on", b.dataset.s === id);
   document.body.classList.toggle("sin-panel", !id);
-  if (!id) { if (esMovil()) app.lateral.cerrar(); return; }
+  if (!id) { if (esMovil()) app.lateral.cerrar(); cerrarHojaSec(); return; }
   app.seccion = id;
   const titulo = SECCIONES.find((s) => s[0] === id) || SECCIONES[1];
+  // Teléfono + sección compacta: en una hojita abajo, con la página a la vista.
+  if (esMovil() && HOJAS.has(id) && desdeUsuario) {
+    const hs = $(".ed-hoja-sec");
+    const cuerpo = hs.querySelector(".ed-hoja-sec-cuerpo");
+    hs.querySelector(".ed-hoja-sec-cab h2").innerHTML = `${ico(titulo[1])}<span>${titulo[2]}</span>`;
+    app.lateral.cerrar();
+    cerrarHoja();
+    app.paneles._limpiar?.();
+    cuerpo.textContent = "";
+    cuerpo.scrollTop = 0;
+    app.paneles.abrir(id, cuerpo);
+    document.body.classList.add("con-hoja-sec");
+    hojaSec.abrir(hojaSec.abierta ? 0 : 1);
+    requestAnimationFrame(() => setTimeout(() => app.lienzo.mostrarSeleccion?.(hs.offsetHeight * 0.62 + 12), 320));
+    return;
+  }
+  cerrarHojaSec();
   $(".ed-panel-titulo").innerHTML = `${ico(titulo[1])}<span>${titulo[2]}</span>`;
   app.paneles._limpiar?.();
   cont.textContent = "";
@@ -227,12 +292,15 @@ function abrirSeccion(id, desdeUsuario) {
   if (esMovil() && desdeUsuario) app.lateral.abrir();
 }
 
-function abrirHoja(id) { document.body.dataset.hoja = id; }
-function cerrarHoja() { delete document.body.dataset.hoja; }
+let hojaInsp = null, hojaSec = null;
+function abrirHoja(id) { document.body.dataset.hoja = id; hojaInsp?.abrir(0); }
+function cerrarHoja() { if (hojaInsp?.abierta) hojaInsp.cerrar(); delete document.body.dataset.hoja; }
+function cerrarHojaSec() { if (hojaSec?.abierta) hojaSec.cerrar(); }
 
 /* ── Proyectos ──────────────────────────────────────────────────────── */
 app.abrirProyecto = async (P, guardar = false) => {
   P = normalizar(P);
+  RT.registrarExtras?.(P.ajustes); // sus animaciones y transiciones propias
   registrarFuentes(P.ajustes.fuentesExtra);
   if (!P.orden.length) { const pg = nuevaPagina(P, { nombre: "Portada" }); P.paginas[pg.id] = pg; P.orden.push(pg.id); }
   await app.bib.preparar(P);
@@ -273,7 +341,8 @@ app.inicio = async () => {
 
 app.guardarYa = async () => {
   await app.auto.ahora();
-  aviso(app.auto.error ? "No se pudo guardar" : "Borrador guardado");
+  if (!app.auto.error) app.sonidos?.sonar("guardar");
+  aviso(app.auto.error ? "No se pudo guardar" : "Borrador guardado", 2600, app.auto.error ? "error" : "");
 };
 
 app.duplicarProyecto = async (id) => {
@@ -340,6 +409,7 @@ app.exportar = async () => {
     const { exportar, descargar } = await import("./export/exportar.js");
     const r = await exportar(app, { alProgreso: (x) => { t.textContent = x; } });
     descargar(r.blob, r.nombre);
+    app.sonidos?.sonar("exito");
     const mb = (r.blob.size / 1024 / 1024).toFixed(1);
     aviso(`Listo: ${r.nombre} · ${mb} MB · ${r.archivos} archivos`, 4500);
     if (r.faltan.length) aviso("No se encontraron: " + r.faltan.join(", "), 6000, "error");

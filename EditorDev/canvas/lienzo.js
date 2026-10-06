@@ -8,8 +8,11 @@
  *
  * Gestos (Pointer Events: ratón, dedo y lápiz igual):
  *   tocar                       elegir (Mayús/Ctrl: añadir o quitar)
- *   arrastrar                   mover (con imán y sin perderse fuera de la hoja)
- *   mantener presionado         menú del elemento (o de la hoja); botón derecho igual
+ *   arrastrar                   mover LO ELEGIDO (con imán y sin perderse fuera de la hoja).
+ *                               Con el dedo, algo que no está elegido NO se mueve:
+ *                               deslizar encima desplaza la hoja; primero se toca.
+ *   mantener presionado         sus ajustes (luz, brillo, contraste…); en vacío, el
+ *                               menú de la hoja. Botón derecho: el menú del elemento
  *   doble toque                 editar el texto / encuadrar la foto / abrir el HTML;
  *                               en un grupo, entrar a editar uno; en vacío, acercar
  *   manijas                     tamaño (las de las esquinas guardan la proporción
@@ -31,6 +34,7 @@ import { tocaZona } from "../componentes/analizar.js";
 import { permite } from "../core/modelo.js";
 import { enCuadro, holgura, TOQUE_LARGO, vibrar, Reserva, estilo, clase } from "./gestos.js";
 import { ico } from "../components/iconos.js";
+import { orientacion, PANTALLA } from "../components/pantalla.js";
 
 const RT = window.LibritoRT;
 const PROPORCION = new Set(["imagen", "dibujo", "trazo", "video", "componente", "escena3d"]);
@@ -70,6 +74,7 @@ export class Lienzo {
     this.ctx = {
       modo: "editor",
       url: (id) => app.bib.url(id),
+      urlDatos: (id) => app.bib.urlDatos(id),
       ruta: (r) => rutaAUrl(r),
       pedir: true,
       medidas: this.m,
@@ -78,6 +83,15 @@ export class Lienzo {
     this._construir();
     this._escuchar();
     this._gestos();
+    // Llegó la `data:` de un archivo que pide un HTML (fondo o bloque): se repinta sólo eso.
+    app.bib.alDatos = () => {
+      cancelAnimationFrame(this._rd);
+      this._rd = requestAnimationFrame(() => {
+        if (!this.pag) return;
+        for (const n of this.pag.nodos.values()) if (n._rt.e?.html?.archivos) n._rt.firma = null;
+        this.pag.sincronizar(this.estado.pagina);
+      });
+    };
   }
 
   get P() { return this.estado.proyecto; }
@@ -103,8 +117,15 @@ export class Lienzo {
     r.append(this.reglaX, this.reglaY, this.esquina, this.vistaEl, this.flotante, this.aviso, this.fuera);
     new ResizeObserver(() => {
       if (this.editando) return this._mostrarEditando();
+      // Mientras se arrastra el alto de un panel o está el teclado abierto, la
+      // hoja se queda como está (nada de brincos de zoom); al terminar se acomoda.
+      if (this.congelado || PANTALLA.teclado) return;
       if (this.v.ajustar) this.ajustar(); else this.pintarVista();
     }).observe(this.vistaEl);
+    addEventListener("ed-teclado", (ev) => {
+      if (this.editando) { this._mostrarEditando(); return; }
+      if (!ev.detail.teclado) { if (this.v.ajustar) this.ajustar(); else this.pintarVista(); }
+    });
     // La pantalla cambió (girar el teléfono): la hoja automática se rehace.
     const re = () => { cancelAnimationFrame(this._rre); this._rre = requestAnimationFrame(() => this._rehoja()); };
     addEventListener("resize", re);
@@ -116,7 +137,10 @@ export class Lienzo {
     E.on("cargado", () => { this.montar(); this.ajustar(); });
     E.on("actual", () => { this.terminarTexto(); this.salirRecorte(); this.salirProbar(); this.montar(); });
     E.on("els", ({ p }) => { if (p === E.paginaId && this.pag) { this.pag.sincronizar(E.pagina); this.pintarSobre(); } });
-    E.on("pagina", ({ p }) => { if (p === E.paginaId && this.pag) { this.pag.sincronizar(E.pagina); this.pintarSobre(); } });
+    E.on("pagina", ({ p, ruta }) => {
+      if (/^audios/.test(ruta || "")) return; // las pistas de audio no cambian nada de la hoja
+      if (p === E.paginaId && this.pag) { this.pag.sincronizar(E.pagina); this.pintarSobre(); }
+    });
     E.on("el", ({ p, e, rutas }) => {
       if (p !== E.paginaId || !this.pag) return;
       const x = E.el(e);
@@ -141,7 +165,8 @@ export class Lienzo {
     // en la computadora, la ventana.
     if (matchMedia("(pointer: coarse)").matches && screen.width) {
       const a = Math.min(screen.width, screen.height), b = Math.max(screen.width, screen.height);
-      return innerWidth > innerHeight ? { w: b, h: a } : { w: a, h: b };
+      // La orientación de la PANTALLA (con el teclado abierto la ventana parece acostada).
+      return orientacion() === "h" ? { w: b, h: a } : { w: a, h: b };
     }
     return { w: innerWidth, h: innerHeight };
   }
@@ -244,6 +269,32 @@ export class Lienzo {
     this.hoja.append(this.pag.nodo);
     RT.cargarFuentes(p.els.map((e) => e.texto?.fuente || e.boton?.fuente));
     this.pintarVista();
+  }
+
+  /** Que lo elegido se vea por encima de una hoja que ocupa `abajo` px de la pantalla. */
+  mostrarSeleccion(abajo = 0) {
+    const sel = this.estado.seleccionados;
+    if (!sel.length) return;
+    const r = this.vistaEl.getBoundingClientRect();
+    const tope = Math.min(r.bottom, innerHeight - abajo) - r.top - 16;
+    if (tope < 80) return;
+    const b = union(sel.map((e) => cajaDe(this.vis(e))));
+    const y0 = this.v.py + b.y * this.v.z, y1 = y0 + b.h * this.v.z;
+    let dy = 0;
+    if (y1 > tope) dy = tope - y1;
+    if (y0 + dy < 12) dy = 12 - y0;
+    if (Math.abs(dy) < 2) return;
+    const desde = this.v.py, hasta = this.v.py + dy, t0 = performance.now();
+    this.v.ajustar = false;
+    const paso = (t) => { const k = Math.min(1, (t - t0) / 260); const e = 1 - Math.pow(1 - k, 3); this.v.py = desde + (hasta - desde) * e; this.pintarVista(); if (k < 1) requestAnimationFrame(paso); };
+    requestAnimationFrame(paso);
+  }
+
+  /** Mientras otro panel cambia de alto (siguiendo al dedo), la hoja no se reacomoda. */
+  congelar(on) {
+    if (this.congelado === on) return;
+    this.congelado = on;
+    if (!on) { if (this.v.ajustar) this.ajustar(); else { this._acotarVista(); this.pintarVista(); } }
   }
 
   /* ── Zoom y desplazamiento ──────────────────────────────────────── */
@@ -685,8 +736,39 @@ export class Lienzo {
     if (ev.target.closest("[data-pedir]") && sel.length === 1 && sel[0] === e.id) { this.app.acciones.pedirArchivoPara(e); return; }
     if (e.grupo !== this.dentroGrupo) this.dentroGrupo = null;
     if (ev.shiftKey || ev.metaKey || ev.ctrlKey) { this.estado.seleccionar(this._grupo(e), true); return; }
+    // Con el dedo (o el lápiz) sólo se mueve lo que YA estaba elegido.
+    if (ev.pointerType !== "mouse" && !sel.includes(e.id)) return this._tocarSinElegir(ev, e);
     if (!sel.includes(e.id)) this.estado.seleccionar(this._grupo(e));
     this._arrastrar(ev, e);
+  }
+
+  /**
+   * El dedo sobre algo que NO está elegido: nada se mueve.
+   *   tocar = elegirlo · deslizar = desplazar la hoja · mantener = elegirlo y abrir sus ajustes
+   */
+  _tocarSinElegir(ev, e) {
+    const x0 = ev.clientX, y0 = ev.clientY;
+    let pan = null;
+    this._gesto(ev, {
+      mover: (m) => {
+        if (!this.g?.movio) return;
+        if (!pan) { pan = this._panDesde(x0, y0); this.vistaEl.classList.add("panea"); }
+        pan(m);
+      },
+      soltar: (u, cancelado) => {
+        this.vistaEl.classList.remove("panea");
+        if (pan || cancelado) return;
+        this.estado.seleccionar(this._grupo(e));
+        this._toque(e);
+      },
+    }, () => this._largoSobre(e, x0, y0));
+  }
+
+  /** Mantener presionado un elemento: elegirlo y abrir sus ajustes (o su menú si no hay). */
+  _largoSobre(e, x, y) {
+    if (!this.estado.sel.includes(e.id)) this.estado.seleccionar(this._grupo(e));
+    if (this.app.ajustes) this.app.ajustes.abrir(e.id, { x, y });
+    else this.menuEn(x, y);
   }
 
   /** Tocar fuera de todo: con el dedo desplaza, con el ratón elige varios. */
@@ -792,7 +874,7 @@ export class Lienzo {
         else if (!pan && !g.movio) this._toque(tocado);
       },
       cancelar: () => { this.lineas = { x: [], y: [] }; if (fin) { fin(false); fin = null; } },
-    }, () => this.menuEn(x0, y0));
+    }, () => this._largoSobre(tocado, x0, y0));
   }
 
   _panDesde(x0, y0) {
@@ -1201,7 +1283,11 @@ export class Lienzo {
     const e = this.estado.el(this.editando);
     if (!e) return;
     const b = this.vis(e);
-    const vh = this.vistaEl.clientHeight;
+    // Lo que de verdad se ve: la vista menos lo que tapa el teclado (y la barra de abajo).
+    const r = this.vistaEl.getBoundingClientRect();
+    const vv = window.visualViewport;
+    const abajo = vv ? Math.min(r.bottom, vv.offsetTop + vv.height - (PANTALLA.teclado ? (document.querySelector(".ed-contexto:not([hidden])")?.offsetHeight || 0) : 0)) : r.bottom;
+    const vh = Math.max(80, abajo - r.top);
     const top = this.v.py + b.y * this.v.z, bot = top + Math.min(b.h * this.v.z, vh * 0.6);
     if (bot > vh - 12) this.v.py -= bot - (vh - 12);
     else if (top < 12) this.v.py += 12 - top;

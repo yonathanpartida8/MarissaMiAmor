@@ -12,7 +12,7 @@
  *     claramente horizontal mueve el cajón (los deslizadores y campos de
  *     texto no lo mueven nunca).
  */
-import { esMovil } from "./ui.js";
+import { esMovil, COMPACTO } from "./ui.js";
 import { vibrar } from "../canvas/gestos.js";
 
 const NO_ARRASTRA = "input, textarea, select, [contenteditable='true'], .ed-rango, .ed-seg, .ed-tl, iframe, .ed-asa, .ed-capas li, .ed-paginas li";
@@ -129,7 +129,7 @@ export class Lateral {
     this.asa.addEventListener("click", (ev) => { if (ev.detail === 0) this.abrir(); });
     addEventListener("keydown", (ev) => { if (ev.key === "Escape" && this.abierto && !document.querySelector(".ed-modal-fondo, .ed-pop, .ed-menu")) this.cerrar(); });
     let antes = this.compacto;
-    matchMedia("(max-width: 1023px), (max-height: 560px)").addEventListener("change", () => {
+    matchMedia(COMPACTO).addEventListener("change", () => {
       const ahora = this.compacto;
       if (ahora !== antes) { antes = ahora; this.abierto = false; }
       this.reacomodar();

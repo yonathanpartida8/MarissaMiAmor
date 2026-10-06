@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Corazones flotando</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: linear-gradient(170deg, #fff1f5, #ffe1ec 55%, #fbd3e3); }
+  i { position: absolute; bottom: -40px; width: var(--t); height: var(--t); opacity: 0; animation: subir var(--d) linear var(--r) infinite; will-change: transform, opacity; }
+  i::before { content: ""; position: absolute; inset: 0; background: var(--c); clip-path: path("M12 21s-7.5-4.6-9.6-9.2C.9 8.6 2.9 4.5 6.7 4.5c2.2 0 3.6 1.2 4.3 2.5.7-1.3 2.1-2.5 4.3-2.5 3.8 0 5.8 4.1 4.3 7.3C19.5 16.4 12 21 12 21z"); transform: scale(calc(var(--t) / 24px)); transform-origin: 0 0; }
+  @keyframes subir {
+    0%   { transform: translate(0, 0) rotate(-8deg); opacity: 0; }
+    12%  { opacity: .85; }
+    50%  { transform: translate(var(--x), -55vh) rotate(8deg); }
+    100% { transform: translate(0, -115vh) rotate(-6deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<script>
+  // Corazoncitos que suben despacio (sólo CSS: no gasta casi nada).
+  const tonos = ["#ff8fb8", "#ffb3cc", "#f7a8c4", "#ffc9da", "#e85d92"];
+  for (let i = 0; i < 18; i++) {
+    const n = document.createElement("i");
+    const t = 10 + Math.random() * 22;
+    n.style.cssText = `left:${Math.random() * 100}%;--t:${t}px;--d:${9 + Math.random() * 9}s;--r:${-Math.random() * 18}s;--x:${(Math.random() * 60 - 30).toFixed(0)}px;--c:${tonos[i % tonos.length]}`;
+    document.body.append(n);
+  }
+</script>
+</body>
+</html>

@@ -72,7 +72,10 @@ capas, guías, hoja **Automática** (se adapta a cada pantalla), deshacer,
 autoguardado y exportar a **.zip** con sólo lo que se usa. Funciona como app
 en el teléfono (cajón lateral que sigue al dedo, gestos de dos dedos,
 mantener presionado). Mientras se edita suena **`EditorDev/MusicaDev.mp3`**
-(si está), no la música del librito. Tus páginas de `paginas-html/` se pueden usar tal cual o volverse
+(si está), no la música del librito. Pegas un `index.html` entero en una
+página en blanco → Guardar → **Probar** (pantalla completa); GIFs y stickers de
+GIPHY (con quitar fondo), pistas de audio, fondos animados, efectos y
+transiciones con vista previa, hojas con asa y un foquito de ayuda. Tus páginas de `paginas-html/` se pueden usar tal cual o volverse
 plantillas editables. Vive entero en **`EditorDev/`** y el libro no carga
 nada de él hasta que se entra. Su biblioteca se llena sola: componentes
 HTML en **`assets/<categoría>/<nombre>/`** (ver `assets/LÉEME.md`) y canciones

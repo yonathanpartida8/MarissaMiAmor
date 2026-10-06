@@ -1,0 +1,10 @@
+{
+  "nombre": "Aparecer suave",
+  "fase": "entrada",
+  "duracion": 1100,
+  "ritmo": "cubic-bezier(.22,.8,.26,1)",
+  "fotogramas": [
+    { "opacity": 0, "transform": "translateY(18px) scale(.97)", "filter": "blur(6px)" },
+    { "opacity": 1, "transform": "translateY(0) scale(1)", "filter": "blur(0px)" }
+  ]
+}

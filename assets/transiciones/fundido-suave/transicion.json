@@ -1,0 +1,8 @@
+{
+  "nombre": "Fundido suave",
+  "duracion": 900,
+  "ritmo": "ease-in-out",
+  "encima": "entra",
+  "entra": [ { "opacity": 0, "filter": "brightness(1.15)" }, { "opacity": 1, "filter": "brightness(1)" } ],
+  "sale":  [ { "opacity": 1 }, { "opacity": 0 } ]
+}

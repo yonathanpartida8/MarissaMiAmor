@@ -27,6 +27,8 @@
     LibritoRT.cargarFuentes(d.fuentes || []);
     LibritoRT.libro = new LibritoRT.Libro(document.getElementById("librito"), d.datos, {
       url: function (id) { return d.urls[id] || null; },
+      urlDatos: function (id) { return (d.datosUrls || {})[id] || null; },
+      soloPagina: !!d.soloPagina,
       ruta: function (r) { return d.base + r.split("/").map(encodeURIComponent).join("/"); },
       inicio: d.inicio,
       sinPortadilla: !d.portadilla,

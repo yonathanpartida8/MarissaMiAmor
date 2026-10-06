@@ -4,11 +4,14 @@
  *   Elementos     formas, dibujos y adornos, dibujar a mano, marcos, tarjetas
  *   Texto         estilos de texto y letras
  *   Imágenes      subir fotos, tu biblioteca y las fotos del librito
+ *   GIFs          GIPHY (empieza con «Dragon Ball»), con quitar fondo
+ *   Stickers      GIPHY (empieza con «love») y los tuyos de assets/stickers/
  *   Vídeo         subir vídeos y los del librito
- *   Audio         MusicaDev (la del editor), la música del librito y de la página
- *   Efectos       sombra, brillo, filtros… y efectos animados de assets/
- *   Animar        probar, línea de tiempo y las animaciones de lo elegido
- *   Transiciones  entre páginas: la de todo el librito y la de ésta
+ *   Audio         pistas de la página (con su onda), MusicaDev y la música del librito
+ *   Efectos       filtros con miniatura y previsualización, y efectos animados
+ *   Animar        integradas, mías (CSS/JSON/JS) y de assets/animaciones, con prueba
+ *   Transiciones  con miniatura y previsualización; propias y de assets/transiciones
+ * (cada sección grande vive en components/secciones/)
  *   Interactivo   botones, álbumes, carruseles y qué pasa al tocar
  *   Piezas        los componentes HTML de assets/
  *   HTML          páginas HTML completas (en un solo bloque) y bloques
@@ -29,23 +32,18 @@ import { paletas } from "../../src/data/paletas.js";
 import { mezclar } from "../../src/utils/color.js";
 import { ico } from "./iconos.js";
 import { DISPOSITIVOS } from "../canvas/lienzo.js";
+import { ANIMAR } from "./secciones/animar.js";
+import { EFECTOS_SEC } from "./secciones/efectos.js";
+import { TRANSICIONES } from "./secciones/transiciones.js";
+import { GIPHY } from "./secciones/giphy.js";
+import { AUDIO } from "./secciones/audio.js";
+import { HTML } from "./secciones/html.js";
+import { FONDO_HTML } from "./secciones/fondo.js";
+import * as GIF from "../integraciones/giphy.js";
 
 const RT = window.LibritoRT;
 const FUENTES = Object.keys(RT.FUENTES).map((f) => [f, f]);
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
-
-/** Efectos listos para un toque (se pueden afinar luego en el inspector). */
-const EFECTOS = [
-  ["sombra", "Sombra suave", { sombra: { x: 0, y: 8, blur: 16, color: "rgba(60,20,45,.32)" } }],
-  ["luz", "Resplandor", { resplandor: { color: "#ffc4dc", tam: 14 } }],
-  ["gota", "Desenfoque", { desenfoque: 3 }],
-  ["opacidad", "Blanco y negro", { byn: 100 }],
-  ["estrella", "Sepia", { sepia: 80 }],
-  ["filtros", "Vintage", { sepia: 45, contraste: 110, saturacion: 80, brillo: 105 }],
-  ["luz", "Más brillo", { brillo: 125, saturacion: 115 }],
-  ["diseno", "Colores vivos", { saturacion: 160, contraste: 108 }],
-  ["cambiar", "Arcoíris", { tono: 180 }],
-];
 
 export class Paneles {
   constructor(app) {
@@ -55,9 +53,10 @@ export class Paneles {
     const pronto = () => { if (this._r) return; this._r = requestAnimationFrame(() => { this._r = null; this.v.refrescar(); }); };
     this.E.on("proyecto", ({ ruta }) => { if (/musica\.asset|transicion\.(tipo|sonido)|formato/.test(ruta) && /audio|transiciones|herramientas/.test(this.actual)) this.rehacer(); else pronto(); });
     this.E.on("pagina", ({ ruta }) => { if (/^musica|^transicion/.test(ruta) && /audio|transiciones/.test(this.actual)) this.rehacer(); else pronto(); });
-    this.E.on("actual", () => { if (/audio|transiciones|html/.test(this.actual)) this.rehacer(); });
+    this.E.on("actual", () => { if (/audio|transiciones|html|diseno/.test(this.actual)) this.rehacer(); });
     this.E.on("els", () => { if (/html|3d|video/.test(this.actual)) this.rehacer(); });
     this.E.on("sel", () => { if (/efectos|interactivo|animar/.test(this.actual)) this.rehacer(); });
+    this.E.on("pagina", ({ ruta }) => { if (/^audios/.test(ruta || "") && this.actual === "audio") this.rehacer(); if (/^fondo/.test(ruta || "") && this.actual === "diseno") this.rehacer(); });
     this.E.on("assets", () => { if (/imagenes|video|3d/.test(this.actual)) this.rehacer(); });
   }
 
@@ -280,83 +279,6 @@ export class Paneles {
     ], { abierta: false }));
   }
 
-  /* ── Audio ──────────────────────────────────────────────────────── */
-  _audio(c) {
-    const E = this.E;
-    const p = this._proy();
-    const g = this._pag();
-    const AU = this.app.audio;
-    const nombre = (id) => (id && this.P.assets[id]?.nombre) || null;
-    const escuchar = (id) => this._botonEscuchar(() => this.app.bib.url(id));
-    // La música del editor (no es la del librito).
-    const estado = el("small.ed-ayuda");
-    const pintarEstado = () => {
-      estado.textContent = !AU ? "" : AU.disponible
-        ? AU.pref.on ? (AU.sonando ? "Sonando mientras editas. Baja sola cuando suena otra cosa." : "Empieza al primer toque.") : "Apagada."
-        : "No encontré MusicaDev.mp3: déjala en EditorDev/ (o en «musica assets/») y vuelve a abrir el editor.";
-    };
-    pintarEstado();
-    if (AU) { const quitar = AU.alCambiar(pintarEstado); const antes = this._limpiar; this._limpiar = () => { quitar(); antes?.(); }; }
-    c.append(seccion("Música del editor", [
-      el("p.ed-ayuda", { text: "Mientras editas suena MusicaDev.mp3, no la música de tu librito: la que le pongas al proyecto se guarda en él y sólo suena cuando la pides (▶, la vista previa o la línea de tiempo)." }),
-      fila("Encendida", control(this.v, { tipo: "toggle", leer: () => AU?.pref.on, escribir: (on) => AU?.ponerPref({ on }) })),
-      fila("Volumen", control(this.v, { tipo: "rango", min: 0, max: 1, paso: 0.05, leer: () => AU?.pref.vol ?? 0.45, escribir: (vol) => AU?.ponerPref({ vol }) })),
-      estado,
-    ]));
-    const gm = this.P.ajustes.musica;
-    c.append(seccion("Música de todo el librito", [
-      el("div.ed-cancion", {}, [el("b", { html: ico("audio") }), el("span", { text: nombre(gm.asset) || "Sin música" }), gm.asset ? escuchar(gm.asset) : null].filter(Boolean)),
-      el("div.ed-botonera", {}, [
-        boton(gm.asset ? I("cambiar", "Cambiar canción") : I("mas", "Añadir canción"), async () => { const [id] = await elegir(this.app, "audio", { titulo: "Música del librito" }); if (id) E.setProy({ "ajustes.musica.asset": id }, "Música del librito"); }, gm.asset ? "chico" : "chico primario"),
-        gm.asset ? boton("Quitar", () => E.setProy({ "ajustes.musica.asset": null }, "Quitar música"), "chico") : null,
-      ].filter(Boolean)),
-      fila("Volumen", p("ajustes.musica.volumen", { tipo: "rango", min: 0, max: 1, paso: 0.05 })),
-      fila("En bucle", p("ajustes.musica.bucle", { tipo: "toggle" })),
-    ]));
-    const pm = E.pagina?.musica || { modo: "global" };
-    const pag = [fila("Aquí suena", g("musica.modo", { tipo: "segmento", opciones: [["global", "La del librito"], ["propia", "Su canción"], ["silencio", "Silencio"]], def: "global" }))];
-    if (pm.modo === "propia") pag.push(
-      el("div.ed-cancion", {}, [el("b", { html: ico("audio") }), el("span", { text: nombre(pm.asset) || "Elige una canción" }), pm.asset ? escuchar(pm.asset) : null].filter(Boolean)),
-      boton(pm.asset ? I("cambiar", "Cambiar canción") : I("mas", "Añadir canción"), async () => { const [id] = await elegir(this.app, "audio", { titulo: "Canción de esta página" }); if (id) E.setPag({ "musica.asset": id }, "Canción de la página"); }, pm.asset ? "chico" : "chico primario"),
-      fila("Volumen", g("musica.volumen", { tipo: "rango", min: 0, max: 1, paso: 0.05, def: 0.85 })),
-      fila("En bucle", g("musica.bucle", { tipo: "toggle", def: true })),
-    );
-    pag.push(el("small.ed-ayuda", { text: "En el librito, al cambiar de canción se funden: una baja mientras la otra sube. Los sonidos de los elementos bajan la música un momento." }));
-    c.append(seccion("Esta página", pag));
-    // La biblioteca: «musica assets/», los sonidos de assets/ y lo subido.
-    const lib = el("div");
-    c.append(seccion("Biblioteca de audio", [lib, boton(I("subir", "Subir canción o sonido"), async () => { await elegir(this.app, "audio"); this.rehacer(); }, "chico")]));
-    const fila_ = (nom, ruta, peso) => {
-      const a = () => this.app.bib.delLibrito(ruta, "audio", nom, { tam: peso });
-      const parar = () => this.app.audio?.detenerEscucha();
-      return el("div.ed-asset", {}, [this._botonEscuchar(() => rutaAUrl(ruta)), el("span", { text: nom }), peso ? el("small", { text: formatoBytes(peso) }) : null,
-        el("button.ed-btn.chico", { type: "button", text: "De fondo", title: "Música de todo el librito (no suena mientras editas)", onClick: () => { parar(); E.setProy({ "ajustes.musica.asset": a().id }, "Música del librito"); aviso("Guardada como música del librito. Suena en la vista previa y en el librito."); } }),
-        el("button.ed-btn.chico", { type: "button", text: "Aquí", title: "Sólo en esta página", onClick: () => { parar(); E.setPag({ musica: { modo: "propia", asset: a().id, volumen: 0.85, bucle: true } }, "Canción de la página"); } }),
-      ].filter(Boolean));
-    };
-    catalogo().then((cat) => {
-      const musica = cat.musica.filter((m) => !/^musicadev\./i.test(m.ruta.split("/").pop())).map((m) => fila_(m.nombre, m.ruta, m.peso));
-      const sonidos = [];
-      for (const gr of cat.categorias) for (const it of gr.items) if (it.tipo === "audio") sonidos.push(fila_(`${it.nombre} · ${gr.nombre.toLowerCase()}`, it.ruta, it.peso));
-      const mios = Object.values(this.P.assets).filter((a) => a.tipo === "audio" && a.fuente === "local").map((a) => el("div.ed-asset", {}, [escuchar(a.id), el("span", { text: a.nombre }), el("small", { text: formatoBytes(a.tam) })]));
-      lib.append(
-        el("b.ed-sub", { text: "Música (musica assets/)" }),
-        musica.length ? el("div.ed-rejilla-assets.lista", {}, musica) : el("p.ed-vacio-txt", { text: "Deja tus canciones en la carpeta «musica assets/» y aparecen aquí solas." }),
-        el("b.ed-sub", { text: "Sonidos (assets/)" }),
-        sonidos.length ? el("div.ed-rejilla-assets.lista", {}, sonidos) : el("p.ed-vacio-txt", { text: "Pon .mp3 cortos en cualquier carpeta de assets/." }),
-        mios.length ? el("b.ed-sub", { text: "Subidas a este librito" }) : null,
-        mios.length ? el("div.ed-rejilla-assets.lista", {}, mios) : null,
-      );
-    });
-    c.append(seccion("Reproducción", [
-      fila("Tocar para empezar", p("ajustes.reproduccion.tocarParaEmpezar", { tipo: "toggle" }), "los teléfonos no dejan sonar música hasta el primer toque"),
-      el("small.ed-ayuda", { text: "Los sonidos de cada elemento se eligen en su sección «Sonidos» (inspector); el de pasar página, en Transiciones." }),
-    ], { abierta: false }));
-    // Cambiar de panel corta lo que se esté escuchando.
-    const antes = this._limpiar;
-    this._limpiar = () => { this.app.audio?.detenerEscucha(); antes?.(); };
-  }
-
   /** Un botoncito para escuchar (sólo suena cuando se pide y para a los demás). */
   _botonEscuchar(url) {
     const b = el("button.ed-play", { type: "button", html: ico("play"), title: "Escuchar", "aria-label": "Escuchar" });
@@ -370,47 +292,6 @@ export class Paneles {
       b.innerHTML = ico(suena ? "parar" : "play");
     });
     return b;
-  }
-
-  /* ── Efectos ────────────────────────────────────────────────────── */
-  _efectos(c) {
-    const E = this.E;
-    const A = this.app.acciones;
-    this._paraLoElegido(c, "Efectos para lo elegido", (sel) => {
-      const aplicar = (f) => E.transaccion("Efecto", () => { for (const x of sel) E.setEl(x.id, { efectos: { ...(x.efectos || {}), ...f } }, "Efecto"); });
-      c.append(seccion(sel.length > 1 ? `Efectos para ${sel.length} elementos` : "Efectos para lo elegido", [
-        el("div.ed-piezas", {}, EFECTOS.map(([i, n, f]) => this._pieza(ico(i), n, () => aplicar(f)))),
-        el("div.ed-botonera", {}, [
-          boton(I("filtros", "Afinar"), () => this.app.insp.abrir("diseno", "Efectos"), "chico"),
-          boton(I("borrar", "Quitar efectos"), () => E.transaccion("Quitar efectos", () => { for (const x of sel) E.setEl(x.id, { efectos: null }, "Quitar efectos"); }), "chico"),
-        ]),
-      ]));
-    });
-    const vivos = el("div.ed-comps");
-    c.append(seccion("Efectos animados (assets/)", [vivos, el("small.ed-ayuda", { text: "Lluvias, brillos y partículas de assets/effects/: se ponen como piezas encima de la página." })]));
-    catalogo().then((cat) => {
-      for (const g of cat.categorias) {
-        if (!/effects|efectos|animations|animaciones/i.test(g.id)) continue;
-        for (const it of g.items) if (it.tipo === "componente") vivos.append(el("button.ed-comp", { type: "button", title: it.descripcion || it.nombre, onClick: () => A.componente(it) }, [el("div.ed-comp-prev", { html: ico("efectos") }), el("b", { text: it.nombre })]));
-      }
-      if (!vivos.childElementCount) vivos.append(el("p.ed-vacio-txt", { text: "Todavía no hay efectos en assets/effects/." }));
-    });
-  }
-
-  /* ── Animar ─────────────────────────────────────────────────────── */
-  _animar(c) {
-    const T = this.app.tiempo;
-    const sel = this.E.seleccionados;
-    c.append(el("p.ed-ayuda", { text: "Cada elemento puede tener su entrada, su bucle, su salida o una animación propia; en la línea de tiempo decides cuándo aparece y cuándo se va." }));
-    c.append(el("div.ed-botonera", {}, [
-      boton(I("play", "Probar la página"), () => T.probar(), "primario"),
-      boton(I("tiempo", "Línea de tiempo"), () => T.alternar(true), "chico"),
-    ]));
-    c.append(seccion(sel.length === 1 ? "Animar «" + sel[0].nombre + "»" : "Animar", [
-      sel.length ? boton(I("animar", "Sus animaciones"), () => this.app.insp.abrir("animar"), "chico") : el("p.ed-nota.suave", { text: "Toca algo de la hoja para animarlo, o anima toda la página en cascada desde «Sus animaciones»." }),
-      !sel.length ? boton(I("animar", "Animar toda la página"), () => this.app.insp.abrir("animar"), "chico") : null,
-    ].filter(Boolean)));
-    c.append(seccion("Entre páginas", [boton(I("transiciones", "Transiciones"), () => this.app.abrirSeccion("transiciones"), "chico")], { abierta: false }));
   }
 
   /* ── Tema ───────────────────────────────────────────────────────── */
@@ -446,47 +327,8 @@ export class Paneles {
       el("p.ed-ayuda", { text: "El fondo de la página (color, degradado o foto) se cambia en el inspector, sin nada elegido." }),
       boton(I("diseno", "Fondo de esta página"), () => { E.seleccionar([]); this.app.insp.abrir("diseno"); }, "chico"),
     ]));
+    this._fondoHtml(c);
     RT.cargarFuentes(["Playfair Display", "Dancing Script", "Great Vibes", "Quicksand"]);
-  }
-
-  /* ── Transiciones ───────────────────────────────────────────────── */
-  _transiciones(c) {
-    const p = this._proy();
-    const g = this._pag();
-    const E = this.E;
-    const tipos = Object.entries(RT.TRANS).map(([k, v]) => [k, v.n]);
-    const dirs = [["auto", "Según hacia dónde pases"], ["izquierda", "Hacia la izquierda"], ["derecha", "Hacia la derecha"], ["arriba", "Hacia arriba"], ["abajo", "Hacia abajo"]];
-    const facil = Object.entries(RT.FACIL).map(([k, v]) => [k, v.n]);
-    const gT = this.P.ajustes.transicion;
-    const global = [
-      el("div.ed-trans", {}, tipos.map(([k, n]) => el("button" + (gT.tipo === k ? ".on" : ""), { type: "button", onClick: () => E.setProy({ "ajustes.transicion.tipo": k }, "Transición") }, [el("i.ed-trans-ico.t-" + k), el("span", { text: n })]))),
-      fila("Duración", p("ajustes.transicion.dur", { tipo: "rango", min: 150, max: 2500, paso: 50, unidad: "ms" })),
-      RT.TRANS[gT.tipo]?.dir ? fila("Dirección", p("ajustes.transicion.dir", { tipo: "select", opciones: dirs })) : null,
-      fila("Ritmo", p("ajustes.transicion.facil", { tipo: "select", opciones: facil })),
-    ];
-    if (gT.tipo === "personalizada") global.push(...this._transPropia(p, "ajustes.transicion.propia"));
-    global.push(this._sonidoFila(() => this.P.ajustes.transicion.sonido, (id) => E.setProy({ "ajustes.transicion.sonido": id }, "Sonido al pasar"), "Sonido al pasar"));
-    c.append(seccion("Entre todas las páginas", global.filter(Boolean)));
-    const pt = E.pagina?.transicion;
-    const propia = [
-      fila("Usar", control(this.v, { tipo: "segmento", opciones: [["global", "La del librito"], ["propia", "Una propia"]], leer: () => (E.pagina?.transicion ? "propia" : "global"), escribir: (x) => E.setPag({ transicion: x === "propia" ? { ...this.P.ajustes.transicion } : null }, "Transición de la página") })),
-    ];
-    if (pt) {
-      propia.push(
-        fila("Tipo", g("transicion.tipo", { tipo: "select", opciones: tipos })),
-        fila("Duración", g("transicion.dur", { tipo: "rango", min: 150, max: 2500, paso: 50, unidad: "ms" })),
-        RT.TRANS[pt.tipo]?.dir ? fila("Dirección", g("transicion.dir", { tipo: "select", opciones: dirs })) : null,
-        fila("Ritmo", g("transicion.facil", { tipo: "select", opciones: facil })),
-      );
-      if (pt.tipo === "personalizada") propia.push(...this._transPropia(g, "transicion.propia"));
-      propia.push(this._sonidoFila(() => E.pagina?.transicion?.sonido, (id) => E.setPag({ "transicion.sonido": id }, "Sonido al llegar"), "Sonido al llegar"));
-    }
-    propia.push(el("small.ed-ayuda", { text: "Es la transición con la que se LLEGA a esta página." }));
-    c.append(seccion("Al llegar a esta página", propia.filter(Boolean)));
-    c.append(boton(I("play", "Ver cómo se ve"), () => {
-      const i = this.P.orden.indexOf(E.paginaId);
-      this.app.vista.abrir(Math.max(0, i - 1), { avanzar: i > 0 });
-    }, "primario"));
   }
 
   _sonidoFila(leer, escribir, etiqueta) {
@@ -532,31 +374,6 @@ export class Paneles {
       ])]));
     });
     c.append(seccion("Sorpresas", [el("p.ed-ayuda", { text: "Pon un elemento con «Empieza escondido» y a otro (un botón, una foto…) dale «Al tocarlo → Mostrar…»: en el librito aparece con su animación de entrada cuando ella lo toque." })], { abierta: false }));
-  }
-
-  /* ── HTML ───────────────────────────────────────────────────────── */
-  _html(c) {
-    const A = this.app.acciones;
-    const E = this.E;
-    const bloques = E.pagina?.els.filter((e) => e.tipo === "html" || e.tipo === "pagina") || [];
-    c.append(seccion("Tu propio HTML", [
-      el("p.ed-ayuda", { text: "Pega una página ENTERA en un solo bloque (<!DOCTYPE html>, <head>, <style>, <script>, <body>…): se reconoce sola y funciona tal cual, con sus botones, animaciones, canvas o WebGL. Va aislada: no puede romper el editor ni el librito." }),
-      boton(I("pagina", "Pegar una página HTML completa"), () => A.htmlCompleto(), "primario ancho"),
-      el("div.ed-botonera", {}, [
-        boton(I("html", "Bloque HTML"), () => A.html(), "chico"),
-        boton(I("carpeta", "Abrir un .html"), () => A.htmlCompleto(true), "chico"),
-      ]),
-    ]));
-    c.append(seccion("En esta página", bloques.length ? bloques.map((e) => el("div.ed-bloque", {}, [
-      el("b", { html: ico(e.tipo === "html" ? "html" : "pagina") }),
-      el("span", { text: e.nombre }),
-      e.tipo === "html" ? boton("Editar", () => { E.seleccionar([e.id]); A.editarHtml(e); }, "chico") : boton("Hacer editable", () => { E.seleccionar([e.id]); this.app.importar.hacerEditable(e); }, "chico"),
-      boton(ico("play"), () => { E.seleccionar([e.id]); this.app.lienzo.probarAqui(e); }, "chico ico", "Probar aquí"),
-    ])) : [el("p.ed-vacio-txt", { text: "Esta página no tiene bloques HTML." })]));
-    c.append(seccion("Tus páginas HTML del librito", [
-      el("p.ed-ayuda", { text: "Úsalas tal cual (funcionan con todo su JavaScript) o conviértelas en plantilla editable." }),
-      boton(I("biblioteca", "Elegir una de mis páginas"), () => this.app.importar.misPaginas(), "chico"),
-    ]));
   }
 
   /* ── 3D (WebGL2) ────────────────────────────────────────────────── */
@@ -634,8 +451,26 @@ export class Paneles {
       fila("Al terminar", p("ajustes.reproduccion.alFinal", { tipo: "segmento", opciones: [["quedarse", "Quedarse"], ["portada", "Volver a empezar"]] })),
       fila("Pasar solas", p("ajustes.reproduccion.autoAvance", { tipo: "rango", min: 0, max: 30, unidad: " s" }), "0 = sólo cuando ella pase la hoja"),
     ], { abierta: false }));
+    const SE = app.sonidos;
+    if (SE) c.append(seccion("Sonidos del editor", [
+      fila("Encendidos", control(this.v, { tipo: "toggle", leer: () => SE.pref.on, escribir: (on) => SE.ponerPref({ on }) })),
+      fila("Volumen", control(this.v, { tipo: "rango", min: 0, max: 1, paso: 0.05, leer: () => SE.pref.vol, escribir: (vol) => SE.ponerPref({ vol }) })),
+      fila("A la vez, como mucho", control(this.v, { tipo: "segmento", opciones: [[1, "1"], [2, "2"], [3, "3"], [5, "5"]], leer: () => SE.pref.max, escribir: (max) => SE.ponerPref({ max }) })),
+      el("div.ed-botonera", {}, ["botones", "seleccionar", "abrir", "guardar", "exito"].map((m) => boton(m, () => SE.sonar(m), "chico"))),
+      el("small.ed-ayuda", { text: SE.hay ? `Suenan al azar los de assets/sonidos-editor/ (${SE.momentos.length} momentos). Pon los tuyos en esas carpetas.` : "Deja sonidos en assets/sonidos-editor/<momento>/ (botones, seleccionar, abrir, cerrar, guardar…)." }),
+    ], { abierta: false }));
+    const giphy = el("div.ed-botonera");
+    const pintarGiphy = async () => {
+      const k = await GIF.como();
+      giphy.textContent = "";
+      giphy.append(el("small.ed-ayuda", { text: k === "proxy" ? "Conectado por tu proxy (la clave no está en el navegador)." : k === "local" ? "Conectado por el servidor local (la clave no sale de tu computadora)." : k === "clave" ? `Conectado con tu clave (guardada sólo en este aparato) · ${GIF.USUARIO}` : "Sin conectar: ábrelo en GIFs o Stickers." }));
+      if (k === "clave" || k === "proxy") giphy.append(boton(I("borrar", "Olvidar la clave"), () => { GIF.olvidar(); pintarGiphy(); aviso("GIPHY desconectado en este aparato"); }, "chico"));
+    };
+    pintarGiphy();
+    c.append(seccion("GIPHY", [giphy], { abierta: false }));
     const usados = assetsUsados(this.P);
     c.append(seccion("Guardar y exportar", [
+      fila("Guardar solo", control(this.v, { tipo: "toggle", leer: () => app.auto.activo, escribir: (on) => app.auto.ponerActivo(on) }), "apagado: sólo se guarda al pedirlo y al salir pregunta"),
       el("p.ed-ayuda", { text: "Se guarda solo mientras editas (en este navegador). Para llevártelo, exporta el .zip: trae sólo lo que de verdad se usa." }),
       el("div.ed-botonera", {}, [
         boton(I("exportar", "Exportar ZIP"), () => app.exportar(), "primario"),
@@ -658,3 +493,6 @@ export class Paneles {
   }
   _ajustes(c) { this._herramientas(c); }
 }
+
+// Las secciones grandes viven cada una en su archivo (components/secciones/).
+Object.assign(Paneles.prototype, ANIMAR, EFECTOS_SEC, TRANSICIONES, GIPHY, AUDIO, HTML, FONDO_HTML);
