@@ -23,6 +23,7 @@ import { el, modal, aviso, boton } from "../components/ui.js";
 import { nuevoEl, nuevaPagina, nuevoProyecto, uid } from "../core/modelo.js";
 import { paginasHtml, titulo as leerTitulo, recorrido, PESADAS } from "../assets/librito.js";
 import { RAIZ, rutaAUrl } from "../assets/biblioteca.js";
+import { ico } from "../components/iconos.js";
 
 const RT = window.LibritoRT;
 const SALTAR = new Set(["SCRIPT", "STYLE", "LINK", "META", "NOSCRIPT", "TEMPLATE", "HEAD", "TITLE", "SOURCE", "TRACK", "BASE"]);
@@ -59,7 +60,7 @@ export class Importador {
         el("div.ed-botonera", {}, [
           boton("Editar como plantilla", () => { caja.cerrar(); this.comoPlantilla(p.ruta, nombre.textContent, p.pesada); }, "chico primario"),
           boton("Usar tal cual", () => { caja.cerrar(); this.usarTalCual(p.ruta, nombre.textContent); }, "chico"),
-          boton("👁", () => open(rutaAUrl(p.ruta), "_blank"), "chico ico", "Verla en otra pestaña"),
+          boton(ico("ojo"), () => open(rutaAUrl(p.ruta), "_blank"), "chico ico", "Verla en otra pestaña"),
         ]),
       ]);
       if (p.pesada) li.classList.add("pesada");
@@ -68,12 +69,12 @@ export class Importador {
       leerTitulo(p.ruta).then((t) => { if (t) { nombre.textContent = t; p.titulo = t; } });
     }
     const p = modal({
-      titulo: "📚 Mis páginas",
+      titulo: "Mis páginas",
       ancho: 640,
       contenido: [
         el("p.ed-ayuda", { text: "«Editar como plantilla» saca a capas editables sus textos, fotos, adornos y animaciones, y deja debajo lo que se mueve con JavaScript. «Usar tal cual» la pone entera, funcionando igual que en el librito." }),
         ul,
-        el("div.ed-botonera", {}, [boton("📚 Importar mi librito entero como proyecto nuevo", () => { caja.cerrar(); this.importarLibrito(); }, "chico")]),
+        el("div.ed-botonera", {}, [boton(`${ico("biblioteca")}<span>Importar mi librito entero como proyecto nuevo</span>`, () => { caja.cerrar(); this.importarLibrito(); }, "chico")]),
       ],
     });
     caja = modal.ultima;
@@ -84,7 +85,7 @@ export class Importador {
     const pg = nuevaPagina(this.P, { nombre: titulo || ruta.split("/").pop() });
     pg.els.push(nuevoEl("pagina", this.P, { nombre: "Página original · " + (titulo || ""), pagina: { ruta, titulo }, bloqueado: true }));
     this.app.acciones.nuevaPagina(pg);
-    aviso("Lista: funciona igual que en el librito. Puedes poner cosas encima 🤍");
+    aviso("Lista: funciona igual que en el librito. Puedes poner cosas encima");
   }
 
   async comoPlantilla(ruta, titulo, pesada) {
@@ -101,7 +102,7 @@ export class Importador {
     if (!e || e.tipo !== "pagina") return;
     if (!modo) {
       modo = await modal({
-        titulo: "✨ Hacer editable",
+        titulo: "Hacer editable",
         ancho: 520,
         contenido: [el("p", { text: `Se van a sacar a capas los textos, fotos, adornos y animaciones de «${e.pagina.titulo || e.pagina.ruta}».` })],
         acciones: [["Cancelar", null], ["Sólo lo que se ve", "plano"], ["Conservar lo interactivo", "hibrido", "primario"]],
@@ -128,7 +129,7 @@ export class Importador {
       }
       for (const ruta of r.audios) this.app.bib.delLibrito(ruta, "audio", ruta.split("/").pop().replace(/\.[^.]+$/, ""));
       this.E.seleccionar([]);
-      aviso(`Listo: ${r.els.length} capas editables${r.audios.length ? ` · ${r.audios.length} canciones en 🎵` : ""}${r.animadas ? ` · ${r.animadas} con su animación` : ""}`, 4200);
+      aviso(`Listo: ${r.els.length} capas editables${r.audios.length ? ` · ${r.audios.length} canciones en Audio` : ""}${r.animadas ? ` · ${r.animadas} con su animación` : ""}`, 4200);
       if (!r.els.length) aviso("Esta página se dibuja casi toda con JavaScript: no había textos ni fotos que sacar. Sigue funcionando tal cual.", 5200);
     } catch (err) {
       console.error(err);
@@ -412,12 +413,12 @@ export class Importador {
   async importarLibrito() {
     const incluirPesadas = el("input", { type: "checkbox" });
     const ok = await modal({
-      titulo: "📚 Importar mi librito",
+      titulo: "Importar mi librito",
       ancho: 520,
       contenido: [
         el("p", { text: "Se crea un proyecto NUEVO con todo el librito de siempre (el tuyo no se toca):" }),
         el("ul.ed-lista", {}, [
-          el("li", { text: "Las páginas HTML entran tal cual, funcionando. Cada una tiene «✨ Hacer editable» para sacar sus textos y fotos." }),
+          el("li", { text: "Las páginas HTML entran tal cual, funcionando. Cada una tiene «Hacer editable» para sacar sus textos y fotos." }),
           el("li", { text: "Las páginas con mecánica propia del libro (sobre, rascar, candado…) entran como cartas editables con su texto y sus fotos." }),
           el("li", { text: "No se descarga nada ahora: las fotos y canciones se piden cuando las ves." }),
         ]),
@@ -492,7 +493,7 @@ export class Importador {
       P.ajustes.musica.asset = musica ? musica.id : ref("assets/audio/musica.mp3", "audio", "Música del librito");
       prog.poner("Guardando…");
       await this.app.abrirProyecto(P, true);
-      aviso(`Tu librito: ${P.orden.length} páginas listas para editar 🤍`, 4000);
+      aviso(`Tu librito: ${P.orden.length} páginas listas para editar`, 4000);
     } catch (err) {
       console.error(err);
       aviso("No se pudo importar: " + err.message, 4000, "error");

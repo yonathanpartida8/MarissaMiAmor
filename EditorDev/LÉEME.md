@@ -1,8 +1,9 @@
-# 📖 Crear librito — el editor
+# Crear librito — el editor
 
 Un taller visual para armar libritos interactivos (o editar el de siempre)
-sin tocar código. Se abre desde el librito: **☰ índice → «📖 Crear librito»**,
-o directo en `EditorDev/index.html`.
+sin tocar código. Se abre desde el librito: **índice → «Crear librito»**,
+o directo en `EditorDev/index.html`. Funciona como una app en Android, iPhone,
+tableta (vertical u horizontal) y computadora.
 
 Todo vive aquí dentro. El libro no carga nada del editor hasta que se entra,
 y el editor no toca ni un archivo del libro: lee sus listas y sus páginas,
@@ -14,30 +15,104 @@ pero lo que hagas se guarda aparte.
 
 | | |
 | --- | --- |
-| **Páginas** | nuevas en blanco, desde plantilla o desde tus páginas HTML; duplicar, borrar, reordenar arrastrando ⠿, renombrar, dejar en blanco (una o todas), **dejar sólo una en blanco**, poner de portada |
-| **Añadir** | textos (título, subtítulo, párrafo, a mano, frase, etiqueta), fotos, marco vacío, **álbum**, **carrusel**, 12 formas, 27 dibujos y adornos, **dibujo a mano** ✏️, botón, vídeo, HTML propio, página original |
-| **Editar en la hoja** | arrastrar, cambiar tamaño, girar (se pega a 0/45/90°), duplicar, borrar, bloquear, ocultar, alinear, repartir, traer adelante/atrás, varios a la vez (Mayús o marco), doble toque: escribir el texto directo / recortar la foto / abrir el HTML |
+| **Páginas** | nuevas en blanco, desde plantilla o desde tus páginas HTML; duplicar, borrar, reordenar arrastrando su asa, renombrar, dejar en blanco (una o todas), **dejar sólo una en blanco**, poner de portada |
+| **Añadir** | textos (título, subtítulo, párrafo, a mano, frase, etiqueta), fotos, marco vacío, **álbum**, **carrusel**, 12 formas, 27 dibujos y adornos, **dibujo a mano**, botón, vídeo, HTML propio, página original |
+| **Editar en la hoja** | arrastrar, cambiar tamaño (esquinas y lados, manijas grandes), girar (se pega a 0/45/90°), **dos dedos sobre lo elegido = tamaño y giro**, duplicar, borrar, bloquear, ocultar, alinear, repartir, traer adelante/atrás, varios a la vez (Mayús o marco), doble toque: escribir el texto directo / recortar la foto / abrir el HTML; **mantener presionado = su menú** |
+| **Permisos** | por elemento: permitir mover, cambiar el tamaño, girar, elegirlo tocándolo, salir un poco de la hoja, tocarlo en el librito; proporción según el tipo / mantener / libre |
+| **Límites** | nada se pierde fuera de la hoja: al arrastrar siempre queda un pedazo dentro (o nada fuera, si así lo pides); el borde se ilumina al tocarlo; «Traer dentro de la hoja» y un aviso si algo quedó fuera |
 | **Texto** | contenido, letra (16, se piden sólo las usadas), tamaño, color, grosor, cursiva, subrayado, mayúsculas, alineación, vertical, interletra, interlínea, sombra, opacidad, giro, posición, animación |
 | **Fotos** | subir (se optimizan solas: 2048 px y WebP), cambiar, **recortar/encuadrar**, acercar, forma (círculo, corazón, estrella, arco…), marco polaroid o cinta, bordes, esquinas, sombra, filtros (brillo, contraste, color, b/n, sepia, desenfoque), opacidad |
 | **Álbum** | cuadrícula, mosaico, tira que se desliza, polaroids sueltas o pila; columnas, espacio, esquinas, marco, proporción, ampliar al tocar, **cómo aparecen** las fotos (en cascada) |
 | **Carrusel** | deslizar, fundido o cartas 3D; horizontal o vertical; solo, cada cuánto, velocidad, bucle, puntitos, flechas, espacio, esquinas |
-| **Animaciones** | por elemento: **entrada** (11), **bucle** (9), **salida** (8) y **animación propia** con fotogramas (x, y, escala, giro, opacidad, desenfoque); duración, retraso, ritmo, dirección, distancia, repeticiones, ida y vuelta; **línea de tiempo** ⏱ (arrastrar = retraso, estirar = duración, tocar la regla = ver ese instante) |
+| **Animaciones** | por elemento: **entrada** (13), **bucle** (13), **salida** (7) y **animación propia** con fotogramas (x, y, escala, giro, opacidad, desenfoque); duración, retraso, ritmo, dirección, distancia, repeticiones, ida y vuelta |
+| **Línea de tiempo** | como un editor de vídeo (ver abajo): cuándo aparece y cuándo se va cada cosa, sus animaciones, sonidos, música y duración de la página; reproducir, pausar, avanzar, retroceder |
 | **Transiciones** | 11: fundido, disolver, deslizar, desplazamiento, zoom, voltear, pasar la hoja, desenfoque, círculo, cortina y **personalizada**; la del librito y la de cada página; duración, dirección, ritmo |
 | **Música** | la del librito y la de cada página (o silencio), volumen, bucle; tus canciones o las que ya están en el librito; se funden al cambiar |
-| **HTML** | bloques `</>` con su editor y vista previa al lado, **aislados** en su propio marco (no pueden tocar el editor, la navegación, las otras páginas ni los estilos) |
+| **HTML** | **una página HTML completa en un solo bloque** (`<!DOCTYPE html>`, `<head>`, `<style>`, `<script>`, `<body>`…) o un trozo; pegar, abrir un .html o escribir, con vista previa que funciona; **aislada** en su propio marco (no puede tocar el editor, la navegación, las otras páginas ni los estilos) |
+| **3D (WebGL2)** | figuras (corazón, esfera, dona, nudo, estrella…) o tus modelos **.glb / .gltf / .obj** con sus colores, texturas y animaciones; material, luz, fondo, giro solo y cámara que se gira con el dedo |
 | **Mis páginas** | tus `paginas-html/` como **plantilla editable** o **tal cual** (ver abajo) |
-| **Ajustes** | nombre, tamaño de hoja (5 + a medida, con «acomodar lo que hay»), portada, flechas, deslizar, progreso, índice, «toca para abrir», al terminar, pasar solas |
+| **Herramientas** | nombre, tamaño de hoja (**Automática**, 5 fijos o a medida, con «acomodar lo que hay»), «Ver como», portada, flechas, deslizar, progreso, índice, «toca para abrir», al terminar, pasar solas |
 | **Editor** | cuadrícula, imán, reglas, **guías** (se arrastran desde las reglas), márgenes seguros, zoom (ajustar, 50–200 %, rueda, pellizco) |
 | **Guardar** | **autoguardado** (espera 0,8 s sin tocar, como mucho 5 s; sólo lo que cambió), deshacer/rehacer (150 pasos, sólo lo que cambió), borradores: abrir, nuevo, duplicar, borrar |
 | **Exportar** | **.zip** con todo lo necesario y SÓLO lo usado; se vuelve a abrir en el editor |
 
-## 🧩 Componentes de `assets/` (HTML de verdad)
+## La barra lateral
+
+A la izquierda, las categorías con su icono y su nombre: Páginas, Elementos,
+Texto, Imágenes, Vídeo, Audio, Efectos, Animar, Transiciones, Interactivo,
+Piezas, HTML, 3D, Tema y Herramientas. En la computadora van fijas (el panel
+se pliega con el botón de arriba o tocando la categoría abierta). En el
+teléfono y la tableta es un **cajón**: se abre deslizando el dedo desde el
+borde izquierdo, con la pestañita o con el botón de arriba, y se cierra
+deslizándolo hacia la izquierda o tocando fuera. Mientras se arrastra, **sigue
+al dedo**. Los iconos son del editor (SVG), no emojis: se ven igual en
+Android y en iPhone.
+
+## Hoja automática
+
+En Herramientas → Tamaño → **Automática**, la hoja se adapta a cada pantalla
+(teléfonos chicos y grandes, tabletas, vertical u horizontal) sin escalar todo
+a lo bruto ni cortar nada: su tamaño guardado es la **zona segura** (en el
+teléfono sale de su pantalla; en la computadora se queda la forma que ya
+tenía) y en cada pantalla la hoja crece por un lado. Cada elemento tiene un
+**ancla** (izquierda/centro/derecha/estirar y arriba/en medio/abajo/estirar;
+«Sola» la deduce por dónde está): lo de arriba se queda arriba, lo de abajo
+abajo, lo centrado centrado y los fondos se estiran. Con **Ver como**
+(arriba) se prueba en otras pantallas sin salir del editor. El librito
+exportado hace lo mismo y se recoloca al girar el teléfono.
+
+## Línea de tiempo
+
+Abajo del lienzo (Animar → Línea de tiempo, o «Tiempo» en la barra). Como en
+un editor de vídeo:
+
+- **Regla y cabezal**: tocar o arrastrar = ir a ese instante; la hoja se queda
+  mostrando ese momento de verdad (las mismas animaciones que el librito).
+- **Reproducir / pausar / atrás y adelante medio segundo / al principio y al
+  final**; con ♪ también suena la música de la página.
+- **Página**: su transición al llegar y cuándo pasa sola (arrastra su marca).
+- **Música**: la canción de esa página (o la del librito).
+- **Una pista por elemento** (la de arriba es la que se ve delante; su asa
+  cambia la capa): el **clip** dice cuándo está en la página — arrastrarlo
+  lo mueve en el tiempo, sus bordes cambian **cuándo aparece** y **cuándo se
+  va** —; dentro, la entrada (arrastrar = retraso, borde = duración), la
+  animación propia, el bucle y la salida (que termina justo al irse); marcas
+  de sonido, de «al tocarlo» y de «empieza escondido».
+- Mantener presionado un clip: «que aparezca/se vaya aquí», «que se quede
+  hasta el final», sus animaciones, probar sólo ése. Dos dedos o Ctrl+rueda
+  acercan; el borde de arriba cambia el alto.
+
+## Sonido mientras editas: MusicaDev.mp3
+
+Mientras editas suena **MusicaDev.mp3** (la música de trabajo del editor), no
+la del librito: las canciones que le pongas al proyecto se guardan y sólo
+suenan cuando las pides (▶ en la biblioteca, la vista previa o la línea de
+tiempo). Déjala en **`EditorDev/MusicaDev.mp3`** (o en `musica assets/` o en
+la raíz). Cuando suena otra cosa (un efecto, una canción que escuchas, un
+componente), baja sola con un fundido corto y vuelve poco a poco al
+terminar. Se enciende, se apaga y se ajusta en **Audio → Música del
+editor**. En la vista previa se calla (ahí suena la del librito, que también
+baja un momento con los sonidos de los elementos). Todo el volumen va por Web
+Audio porque en iPhone es la única forma de controlarlo.
+
+## Como una app
+
+Mantener presionado no selecciona texto ni abre «copiar/pegar» (salvo en los
+campos de texto, donde todo funciona normal); no se arrastran imágenes de la
+página; el pellizco no agranda la interfaz entera ni la página rebota o se
+recarga al tirar hacia abajo. El lienzo usa Pointer Events (ratón, dedo y
+lápiz igual): un dedo mueve, dos dedos acercan (o cambian el tamaño y el
+giro de lo elegido); si el segundo dedo llega mientras el primero movía
+algo, ese movimiento se deshace. Los movimientos se pintan una vez por
+cuadro y un arrastre entero es un solo paso de deshacer.
+
+## Componentes de `assets/` (HTML de verdad)
 
 Todo lo que dejes en **`assets/<categoría>/<componente>/index.html`** (con su
 CSS, JS, imágenes, sonidos y fuentes al lado) aparece solo en
-**🧩 Componentes**, agrupado por categoría y con su miniatura en vivo. Las
+**Piezas**, agrupado por categoría y con su miniatura en vivo. Las
 imágenes sueltas de `assets/` salen en **Elementos → Dibujos y adornos** y los
-sonidos en **🎵 Audio**. La guía para crearlos está en `assets/LÉEME.md`.
+sonidos en **Audio**. La guía para crearlos está en `assets/LÉEME.md`.
 
 - **El componente no se toca nunca.** Se muestra en su propio marco con sus
   rutas, estilos, scripts, eventos y zona táctil tal cual. Cada copia en una
@@ -60,12 +135,12 @@ sonidos en **🎵 Audio**. La guía para crearlos está en `assets/LÉEME.md`.
 - Al exportar va su carpeta entera (y lo que pida de fuera); si le quitaste
   el fondo, una copia aparte con eso, sin tocar la original.
 
-## 🎵 Música y sonidos
+## Música y sonidos
 
-- **`musica assets/`**: deja ahí tus canciones y salen en **🎵 Audio**, con
+- **`musica assets/`**: deja ahí tus canciones y salen en **Audio**, con
   «De fondo» (todo el librito) o «Aquí» (sólo esta página).
 - **Sonidos** para cualquier elemento: al tocarlo y al aparecer (inspector →
-  Sonidos), y al pasar de página (🎞️ Transiciones → «Sonido al pasar», o el
+  Sonidos), y al pasar de página (Transiciones → «Sonido al pasar», o el
   de llegar a una página concreta).
 - **Acciones al tocar** (cualquier elemento): pasar/ir a página, **mostrar,
   esconder o animar otro elemento** (con «Empieza escondido» se hacen
@@ -91,7 +166,7 @@ eligen y escalan juntos; doble toque para editar uno), **tarjetas** hechas
 
 ## Tus páginas HTML como plantilla
 
-En **📄 Páginas → 📚 Mis páginas** (o 🧩 → «Página original»):
+En **Páginas → Mis páginas** (o Interactivo → «Página original»):
 
 - **Usar tal cual** — la página entra como capa «Página original»: se ve y
   funciona igual que en el librito, con todo su JavaScript. Puedes poner
@@ -107,7 +182,7 @@ En **📄 Páginas → 📚 Mis páginas** (o 🧩 → «Página original»):
   - **Sólo lo que se ve**: todo pasa a capas (los dibujos de `<canvas>` se
     vuelven fotos) y se quita la original.
 - **Importar mi librito** — un proyecto nuevo con todo el librito de
-  siempre: las páginas HTML tal cual (con «✨ Hacer editable») y las de
+  siempre: las páginas HTML tal cual (con «Hacer editable») y las de
   mecánica propia del libro (sobre, rascar, candado…) como cartas editables
   con su texto y sus fotos. No descarga nada al importar. Las escenas
   pesadas (la ciudad 3D…) sólo entran si lo pides.
@@ -137,7 +212,7 @@ sitio de archivos). Para seguir editándolo: **Ajustes → Abrir archivo**.
 
 - Sólo existe en el DOM la página que se ve; las demás no gastan nada.
 - El editor carga el exportador, el lector de .zip y las listas del libro
-  sólo cuando se usan. Sin librerías: ni three.js, ni zip, ni nada.
+  sólo cuando se usan. Sin librerías (salvo three.js para el 3D, a pedido).
 - Animaciones con la API del navegador (`transform` y `opacity`); la línea de
   tiempo las pausa y las lleva a cualquier instante.
 - Las miniaturas se pintan cuando aparecen y se repintan un rato después de
@@ -145,13 +220,22 @@ sitio de archivos). Para seguir editándolo: **Ajustes → Abrir archivo**.
   sólo cambian los números.
 - Las fotos se reducen al subirlas. En el librito exportado se adelanta la
   siguiente página (datos y fotos) mientras ella lee.
+- La capa del editor (cajas, manijas, líneas del imán) recicla sus nodos: a
+  cada cuadro sólo se mueven. Varios cambios a un elemento avisan una sola
+  vez; un arrastre se guarda como un solo paso.
+- El motor 3D (three.js, ya en `vendor/three`) se carga sólo si una página
+  tiene una escena 3D; cada escena dibuja sólo cuando se ve y suelta la
+  memoria de la tarjeta gráfica al quitarla. El .zip lo incluye sólo si hace
+  falta.
 
 ## Teléfono, tableta y computadora
 
-En el teléfono: el lienzo ocupa la pantalla, abajo van las pestañas
-(Páginas, Añadir, Diseño, Animar, Capas, Más) y los paneles suben como
-hojas. Manijas grandes para el dedo, dos dedos para acercar, toque largo
-para nada (no estorba al desplazarse).
+En el teléfono (y la tableta en vertical, y el teléfono acostado): el lienzo
+ocupa la pantalla, la barra de herramientas de lo elegido va abajo, las
+categorías en el cajón de la izquierda y el inspector sube como hoja.
+Manijas grandes (con zona de toque de 44 px o más, que no se salen de la
+pantalla), dos dedos para acercar o para cambiar tamaño y giro, mantener
+presionado para el menú, doble toque en vacío para acercar.
 
 En la computadora, además, atajos:
 
@@ -176,17 +260,20 @@ EditorDev/
 ├── history/     historial.js (deshacer/rehacer por parches)
 ├── storage/     db.js (IndexedDB: proyectos, páginas y archivos por separado) · autoguardado.js
 ├── assets/      biblioteca.js · optimizar.js · dibujos.js · selector.js · librito.js (el librito de siempre)
-├── canvas/      lienzo.js (zoom, selección, manijas, gestos) · guias.js (imán, reglas, guías)
+├── canvas/      lienzo.js (selección, transformaciones, límites, hoja automática) ·
+│                gestos.js (un cuadro por movimiento, nodos reciclables) · guias.js (imán, reglas)
 ├── pages/       panel.js (lista con miniaturas)
 ├── templates/   plantillas.js
-├── animations/  linea.js (línea de tiempo)
-├── html/        editorHtml.js · importar.js (hacer editable, importar el librito)
+├── timeline/    linea.js (línea de tiempo tipo editor de vídeo)
+├── audio/       mezclador.js (MusicaDev, efectos, escuchar y «ducking» por Web Audio)
+├── html/        editorHtml.js (HTML completo en un bloque) · importar.js (hacer editable, importar el librito)
 ├── export/      zip.js (escribir y leer .zip) · exportar.js · abrir.js
 ├── componentes/ catalogo.js (lo que hay en assets/) · analizar.js (zona táctil y fondo, sin tocar nada)
-├── components/  ui.js · inspector.js · paneles.js · barra.js (contextual) · iconos.js (a crayón) ·
+├── components/  lateral.js (cajón que sigue al dedo) · guardas.js (comportarse como app) ·
+│                ui.js · inspector.js · paneles.js · barra.js (contextual) · iconos.js (SVG) ·
 │                acciones.js · vista.js · inicio.js · teclado.js
-├── runtime/     EL REPRODUCTOR: rt-base · rt-render · rt-anim · rt-comps · rt-trans ·
-│                rt-musica · rt-player · librito.css · reproductor.html
+├── runtime/     EL REPRODUCTOR: rt-base · rt-render (y la hoja automática) · rt-anim (y el tiempo) ·
+│                rt-comps · rt-3d (WebGL2) · rt-trans · rt-musica · rt-player · librito.css · reproductor.html
 └── styles/      editor.css
 ```
 

@@ -93,7 +93,7 @@ export const PLANTILLAS = [
         nuevoEl("forma", P, { nombre: "Disco", x: W / 2 - 110, y: H * 0.2, w: 220, h: 220, forma: { figura: "circulo", relleno: "#0d060f", grosor: 10, trazo: "#2b1830" }, anim: { ...entra("zoom", 200), bucle: { tipo: "girar", dur: 6000, repetir: "inf" } } }),
         nuevoEl("forma", P, { nombre: "Centro del disco", x: W / 2 - 34, y: H * 0.2 + 76, w: 68, h: 68, forma: { figura: "circulo", relleno: t.acento }, anim: entra("zoom", 400) }),
         T(P, "Nuestra canción", 24, H * 0.2 + 260, W - 48, { tam: 34, peso: 600, color: "#fff", nombre: "Título", anim: entra("deslizar", 600) }),
-        T(P, "elige la canción en 🎵 Música → «Esta página»", 30, H * 0.2 + 316, W - 60, { tam: 16, fuente: "Jost", peso: 400, color: "#e8cde0", nombre: "Nota", anim: entra("aparecer", 900) }),
+        T(P, "elige la canción en Audio → «Esta página»", 30, H * 0.2 + 316, W - 60, { tam: 16, fuente: "Jost", peso: 400, color: "#e8cde0", nombre: "Nota", anim: entra("aparecer", 900) }),
         nuevoEl("boton", P, { nombre: "Pausar música", x: W / 2 - 100, y: H - 150, w: 200, h: 52, boton: { texto: "♪ pausar / poner", estilo: "vidrio" }, accion: { tipo: "musica" }, anim: entra("aparecer", 1200) }),
       );
       return p;
@@ -133,7 +133,7 @@ export const PLANTILLAS = [
     crear: (P) => {
       const { ancho: W, alto: H } = P.ajustes;
       const p = nuevaPagina(P, { nombre: "Página HTML" });
-      p.els.push(nuevoEl("html", P, { nombre: "HTML", x: 0, y: 0, w: W, h: H, html: { codigo: '<div style="height:100%;display:grid;place-items:center;background:linear-gradient(160deg,#ffe9f1,#ffc4d9);font:600 28px Georgia,serif;color:#8e2f86">Tu HTML aquí 🤍</div>', interactivo: true } }));
+      p.els.push(nuevoEl("html", P, { nombre: "HTML", x: 0, y: 0, w: W, h: H, ancla: { h: "estirar", v: "estirar" }, html: { codigo: '<div style="height:100%;display:grid;place-items:center;background:linear-gradient(160deg,#ffe9f1,#ffc4d9);font:600 28px Georgia,serif;color:#8e2f86">Tu HTML aquí 🤍</div>', interactivo: true } }));
       return p;
     },
   },

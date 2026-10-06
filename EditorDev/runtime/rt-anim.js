@@ -121,17 +121,26 @@
 
   function repetir(r) { return r === "inf" || r === Infinity || r == null ? Infinity : Math.max(1, +r || 1); }
 
-  /** Cuánto dura la entrada de un elemento (con su retraso). */
+  /* Cuándo está un elemento en la página (línea de tiempo):
+       tiempo.inicio  ms en que aparece (antes no se ve)        · 0 = desde el principio
+       tiempo.fin     ms en que se va (su salida termina ahí)   · null = se queda
+     Las animaciones de entrada y la propia cuentan desde su inicio. */
+  RT.inicioDe = function (e) { return Math.max(0, RT.num(e.tiempo && e.tiempo.inicio, 0)); };
+  RT.finDe = function (e) { const f = e.tiempo && e.tiempo.fin; return f == null || f === "" ? null : Math.max(RT.inicioDe(e) + 50, RT.num(f, 0)); };
+
+  /** Cuánto dura la entrada de un elemento (con su retraso y su inicio). */
   RT.finEntrada = function (e) {
     const a = e.anim || {};
-    let fin = 0;
-    if (a.entrada && a.entrada.tipo && a.entrada.tipo !== "ninguna") fin = RT.num(a.entrada.retraso, 0) + RT.num(a.entrada.dur, 800);
+    const ini = RT.inicioDe(e);
+    let fin = ini;
+    if (a.entrada && a.entrada.tipo && a.entrada.tipo !== "ninguna") fin = ini + RT.num(a.entrada.retraso, 0) + RT.num(a.entrada.dur, 800);
     const pr = a.propia;
     if (pr && (pr.raw || pr.fotogramas)) {
       const n = repetir(pr.repetir);
-      if (n !== Infinity) fin = Math.max(fin, RT.num(pr.retraso, 0) + RT.num(pr.dur, 1000) * n);
+      if (n !== Infinity) fin = Math.max(fin, ini + RT.num(pr.retraso, 0) + RT.num(pr.dur, 1000) * n);
     }
-    return fin;
+    const f = RT.finDe(e);
+    return f != null ? Math.max(fin, f) : fin;
   };
 
   /* ── El animador de una página ─────────────────────────────────── */
@@ -161,22 +170,39 @@
         const n = this.nodos.get(e.id);
         if (!n || e.oculto || !e.anim) continue;
         const a = e.anim;
-        let fin = 0;
+        const ini = RT.inicioDe(e), hasta = RT.finDe(e);
+        let fin = ini;
+        // Cuándo está: antes de su inicio y después de su fin no se ve.
+        if (ini > 0 || hasta != null) {
+          const D = (hasta != null ? hasta : ini) + 1;
+          const k = [];
+          if (ini > 0) k.push({ visibility: "hidden", offset: 0 }, { visibility: "hidden", offset: ini / D });
+          k.push({ visibility: "visible", offset: ini / D });
+          if (hasta != null) k.push({ visibility: "visible", offset: hasta / D }, { visibility: "hidden", offset: hasta / D }, { visibility: "hidden", offset: 1 });
+          else k.push({ visibility: "visible", offset: 1 });
+          this._anim(n, k, { duration: D, easing: "linear", fill: "both" });
+        }
         const en = a.entrada && RT.ANIM.entrada[a.entrada.tipo];
         if (en && en.f) {
           const p = param("entrada", a.entrada);
           const dur = poco ? Math.min(p.dur, 200) : p.dur;
-          this._anim(n._rt.ae, en.f(p), { duration: dur, delay: p.retraso, easing: facil(p.facil), fill: "both" });
-          fin = p.retraso + dur;
+          this._anim(n._rt.ae, en.f(p), { duration: dur, delay: ini + p.retraso, easing: facil(p.facil), fill: "both" });
+          fin = ini + p.retraso + dur;
         }
         const pr = a.propia;
         const fr = pr && RT.fotogramasPropios(pr);
         if (fr && !poco) {
           this._anim(n._rt.c, fr, {
-            duration: RT.num(pr.dur, 1000), delay: RT.num(pr.retraso, 0), easing: facil(pr.facil),
+            duration: RT.num(pr.dur, 1000), delay: ini + RT.num(pr.retraso, 0), easing: facil(pr.facil),
             iterations: repetir(pr.repetir), direction: pr.direccion || "normal", fill: pr.relleno || "both",
           });
-          if (repetir(pr.repetir) !== Infinity) fin = Math.max(fin, RT.num(pr.retraso, 0) + RT.num(pr.dur, 1000) * repetir(pr.repetir));
+          if (repetir(pr.repetir) !== Infinity) fin = Math.max(fin, ini + RT.num(pr.retraso, 0) + RT.num(pr.dur, 1000) * repetir(pr.repetir));
+        }
+        // Se va a su hora: la salida termina justo en su fin.
+        const sa = hasta != null && a.salida && RT.ANIM.salida[a.salida.tipo];
+        if (sa && sa.f) {
+          const p = param("salida", a.salida);
+          this._anim(n._rt.ae, sa.f(p), { duration: p.dur, delay: Math.max(ini, hasta - p.dur), easing: facil(p.facil), fill: "forwards" });
         }
         const bu = a.bucle && RT.ANIM.bucle[a.bucle.tipo];
         if (bu && bu.f && !poco) {
@@ -186,7 +212,7 @@
             direction: p.alterna ? "alternate" : "normal", easing: bu.lineal ? "linear" : facil(p.facil), fill: "none",
           });
         }
-        total = Math.max(total, fin);
+        total = Math.max(total, hasta != null ? Math.max(fin, hasta) : fin);
       }
       if (this.componentes) for (const c of this.componentes) total = Math.max(total, c.entrar ? c.entrar(this) || 0 : 0);
       this.total = total;
@@ -200,7 +226,7 @@
         const n = this.nodos.get(e.id);
         const s = e.anim && e.anim.salida;
         const def = s && RT.ANIM.salida[s.tipo];
-        if (!n || e.oculto || !def || !def.f) continue;
+        if (!n || e.oculto || !def || !def.f || RT.finDe(e) != null) continue;
         const p = param("salida", s);
         this._anim(n._rt.ae, def.f(p), { duration: p.dur, delay: p.retraso, easing: facil(p.facil), fill: "forwards" });
         max = Math.max(max, p.retraso + p.dur);

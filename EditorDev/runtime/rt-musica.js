@@ -101,6 +101,32 @@
       else if (p._vol != null) { this._fundir(p, p._vol, 600); p._vol = null; }
     }
 
+    /** Baja un poco mientras suena un efecto y vuelve sola, suave, al terminar. */
+    agacharPor(audio) {
+      if (!audio || !this.actual) return;
+      this._efectos = (this._efectos || 0) + 1;
+      if (this._efectos === 1) {
+        const p = this.actual;
+        if (p._volE == null) p._volE = p.vol;
+        this._fundir(p, p._volE * 0.35, 250);
+        p.vol = p._volE;
+      }
+      let listo = false;
+      const soltar = () => {
+        if (listo) return;
+        listo = true;
+        audio.removeEventListener("ended", soltar);
+        audio.removeEventListener("pause", soltar);
+        clearTimeout(t);
+        this._efectos = Math.max(0, (this._efectos || 1) - 1);
+        if (!this._efectos && this.actual && this.actual._volE != null) { const p = this.actual; this._fundir(p, p._volE, 900); p._volE = null; }
+      };
+      audio.addEventListener("ended", soltar);
+      audio.addEventListener("pause", soltar);
+      const d = isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 6;
+      const t = setTimeout(soltar, Math.min(30, d) * 1000 + 300);
+    }
+
     alternar() {
       this.silencio = !this.silencio;
       if (this.actual) {

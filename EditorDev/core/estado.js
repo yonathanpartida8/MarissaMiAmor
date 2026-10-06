@@ -104,20 +104,43 @@ export class Estado extends Emitter {
     }
   }
 
-  /** Para arrastres: se abre al poner el dedo y se cierra al soltarlo. */
+  /**
+   * Para arrastres: se abre al poner el dedo y se cierra al soltarlo.
+   * Durante el gesto, los cambios a la misma ruta se funden en uno solo
+   * (un arrastre de 300 movimientos = un paso de deshacer, no 600). Si se
+   * cancela (`fin(false)`), todo vuelve a como estaba antes del gesto.
+   */
   gesto(nombre) {
     if (this._tx) return () => {};
-    this._tx = { nombre, ops: [], t: performance.now() };
-    return () => {
-      const tx = this._tx;
+    const tx = { nombre, ops: [], t: performance.now(), gesto: new Map() };
+    this._tx = tx;
+    return (guardar = true) => {
+      if (this._tx !== tx) return;
       this._tx = null;
-      if (tx) { this.historial.registrar(tx); this.emit("historial"); }
+      if (!guardar) {
+        this._deshaciendo = true;
+        try { for (const op of [...tx.ops].reverse()) this._aplicar(op, true); } finally { this._deshaciendo = false; }
+        return;
+      }
+      tx.ops = tx.ops.filter((o) => o.t !== "set" || !igual(o.antes, o.despues));
+      delete tx.gesto;
+      if (tx.ops.length) { this.historial.registrar(tx); this.emit("historial"); }
     };
   }
 
   _registrar(op, nombre, clave) {
     if (this._deshaciendo) return;
-    if (this._tx) { this._tx.ops.push(op); return; }
+    if (this._tx) {
+      const g = this._tx.gesto;
+      if (g && op.t === "set") {
+        const k = (op.ref.p || "") + "|" + (op.ref.e || "") + "|" + op.ruta;
+        const ya = g.get(k);
+        if (ya) { ya.despues = op.despues; return; }
+        g.set(k, op);
+      }
+      this._tx.ops.push(op);
+      return;
+    }
     this.historial.registrar({ nombre, clave, ops: [op], t: performance.now() });
     this.emit("historial");
   }
@@ -148,10 +171,21 @@ export class Estado extends Emitter {
     this._registrar(op, nombre, clave);
   }
 
+  /** Varios cambios a un elemento = UN solo aviso «el» (el lienzo lo repinta una vez). */
   setEl(eid, cambios, nombre = "Editar", clave, pid = this.paginaId) {
-    this.transaccion(nombre, () => {
-      for (const [ruta, v] of Object.entries(cambios)) this.set({ p: pid, e: eid }, ruta, v, nombre, clave);
-    }, clave);
+    const fuera = !this._lote;
+    if (fuera) this._lote = new Map();
+    try {
+      this.transaccion(nombre, () => {
+        for (const [ruta, v] of Object.entries(cambios)) this.set({ p: pid, e: eid }, ruta, v, nombre, clave);
+      }, clave);
+    } finally {
+      if (fuera) {
+        const lote = this._lote;
+        this._lote = null;
+        for (const [k, rutas] of lote) { const [p, e] = k.split("|"); this.emit("el", { p, e, ruta: rutas[0], rutas }); }
+      }
+    }
   }
 
   setPag(cambios, nombre = "Página", clave, pid = this.paginaId) {
@@ -267,7 +301,10 @@ export class Estado extends Emitter {
         if (!obj) return;
         escribirRuta(obj, op.ruta, clonar(inverso ? op.antes : op.despues));
         this._marcar(op.ref);
-        if (op.ref.e) this.emit("el", { p: op.ref.p, e: op.ref.e, ruta: op.ruta });
+        if (op.ref.e) {
+          if (this._lote) { const k = op.ref.p + "|" + op.ref.e; const r = this._lote.get(k); if (r) r.push(op.ruta); else this._lote.set(k, [op.ruta]); }
+          else this.emit("el", { p: op.ref.p, e: op.ref.e, ruta: op.ruta, rutas: [op.ruta] });
+        }
         else if (op.ref.p) this.emit("pagina", { p: op.ref.p, ruta: op.ruta });
         else this.emit("proyecto", { ruta: op.ruta });
         break;

@@ -21,7 +21,7 @@ import { RAIZ, rutaAUrl } from "../assets/biblioteca.js";
 import { catalogo } from "../componentes/catalogo.js";
 
 const RT = window.LibritoRT;
-const RUNTIME = ["rt-base.js", "rt-render.js", "rt-anim.js", "rt-comps.js", "rt-trans.js", "rt-musica.js", "rt-player.js"];
+const RUNTIME = ["rt-base.js", "rt-render.js", "rt-anim.js", "rt-comps.js", "rt-3d.js", "rt-trans.js", "rt-musica.js", "rt-player.js"];
 const DEPENDENCIA = /["'`(]((?:\.{0,2}\/)?[^"'`()\s<>:]+?\.(?:png|jpe?g|gif|webp|avif|svg|mp3|m4a|ogg|wav|aac|mp4|webm|mov|js|mjs|css|json|glb|gltf|bin|woff2?|ttf|otf))(?:\?[^"'`)\s]*)?["'`)]/gi;
 const MAX_ARCHIVOS = 600;
 const MAX_BYTES = 400 * 1024 * 1024;
@@ -33,6 +33,7 @@ const EXT = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "im
 function carpeta(a, ext) {
   if (a.tipo === "audio") return "assets/audio/";
   if (a.tipo === "video") return "assets/video/";
+  if (a.tipo === "modelo") return "assets/models/";
   if (ext === "svg") return "assets/drawings/";
   if (a.tipo === "imagen") return "assets/images/";
   return "assets/other/";
@@ -168,8 +169,14 @@ export async function exportar(app, { alProgreso } = {}) {
     titulos[pid] = pg.nombre;
   });
 
-  /* 4 · El reproductor y el arranque */
+  /* 4 · El reproductor y el arranque (y el motor 3D, sólo si alguna página lo usa) */
   avisar("Preparando el reproductor…");
+  if (P.orden.some((pid) => P.paginas[pid].els.some((e) => e.tipo === "escena3d"))) {
+    for (const f of ["three.module.min.js", "three.core.min.js", "LICENSE"]) {
+      const r = await fetch(new URL("../../vendor/three/" + f, import.meta.url)).catch(() => null);
+      if (r?.ok) zip.agregar("vendor/three/" + f, await r.blob());
+    }
+  }
   const codigo = await Promise.all(RUNTIME.map((f) => fetch(new URL("../runtime/" + f, import.meta.url)).then((r) => r.text())));
   zip.agregar("scripts/librito.js", `/* Librito · reproductor (hecho con EditorDev) */\n${codigo.join("\n")}`);
   zip.agregar("styles/librito.css", await fetch(new URL("../runtime/librito.css", import.meta.url)).then((r) => r.text()));
@@ -189,7 +196,7 @@ export async function exportar(app, { alProgreso } = {}) {
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="${fondo}">
 <title>${escapar(P.nombre)}</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E💗%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.5 4.3 4.3 0 0 1 19.5 10c0 5.6-7.5 10-7.5 10z' fill='%23e0457f'/%3E%3C/svg%3E">
 ${urlF ? `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link rel="stylesheet" href="${urlF}">` : ""}
 <link rel="stylesheet" href="styles/librito.css">
 <style>html,body{margin:0;height:100%;background:${fondo};overflow:hidden}</style>
@@ -219,7 +226,7 @@ Para verlo: abre index.html (en el teléfono o en la computadora).
 Para publicarlo: sube TODO el contenido de esta carpeta a GitHub Pages
 (o a cualquier sitio de archivos) y comparte el enlace de index.html.
 
-Para seguir editándolo: en el librito, ☰ → «📖 Crear librito» →
+Para seguir editándolo: en el librito, el índice → «Crear librito» →
 «Abrir archivo» y elige este .zip (o project.json).
 
 Páginas: ${P.orden.length}

@@ -68,7 +68,7 @@ export class Biblioteca {
     let n = 0;
     for (const f of files) {
       alProgreso?.(n++, files.length, f.name);
-      const tipo = /^image\//.test(f.type) ? "imagen" : /^audio\//.test(f.type) ? "audio" : /^video\//.test(f.type) ? "video" : /\.(mp3|m4a|ogg|wav|aac)$/i.test(f.name) ? "audio" : /\.(mp4|webm|mov|m4v)$/i.test(f.name) ? "video" : /\.(png|jpe?g|webp|gif|avif|svg)$/i.test(f.name) ? "imagen" : null;
+      const tipo = /^image\//.test(f.type) ? "imagen" : /^audio\//.test(f.type) ? "audio" : /^video\//.test(f.type) ? "video" : /\.(mp3|m4a|ogg|wav|aac)$/i.test(f.name) ? "audio" : /\.(mp4|webm|mov|m4v)$/i.test(f.name) ? "video" : /\.(png|jpe?g|webp|gif|avif|svg)$/i.test(f.name) ? "imagen" : /\.(glb|gltf|obj)$/i.test(f.name) ? "modelo" : null;
       if (!tipo) continue;
       let blob = f, w = 0, h = 0, dur = 0;
       if (tipo === "imagen") ({ blob, w, h } = await optimizarImagen(f));

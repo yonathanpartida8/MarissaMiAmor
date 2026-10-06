@@ -8,6 +8,7 @@
 import { el } from "./ui.js";
 import { fuentesUsadas } from "../core/modelo.js";
 import { RAIZ } from "../assets/biblioteca.js";
+import { ico } from "./iconos.js";
 
 export class Vista {
   constructor(app) { this.app = app; }
@@ -17,10 +18,15 @@ export class Vista {
     const P = this.app.estado.proyecto;
     if (!P.orden.length) return;
     this.app.lienzo.terminarTexto();
+    // La vista previa trae la música del librito: la del editor se calla mientras tanto.
+    this.app.audio?.pausarParaVista(true);
     const marco = el("iframe.ed-vista-marco", { src: "runtime/reproductor.html", title: "Vista previa", allow: "autoplay; fullscreen" });
+    // Con la hoja automática, el «teléfono» toma la forma de la pantalla elegida en «Ver como».
+    const m = this.app.lienzo.m;
+    const prop = m.auto ? `${m.W} / ${m.H}` : `${P.ajustes.ancho} / ${P.ajustes.alto}`;
     const capa = el("div.ed-previsual", {}, [
-      el("div.ed-vista-tel", { style: { aspectRatio: `${P.ajustes.ancho} / ${P.ajustes.alto}` } }, [marco]),
-      el("button.ed-vista-x", { type: "button", html: "✕ Volver a editar", onClick: () => this.cerrar() }),
+      el("div.ed-vista-tel", { style: { aspectRatio: prop } }, [marco]),
+      el("button.ed-vista-x", { type: "button", html: ico("cerrar") + "<span>Volver a editar</span>", onClick: () => this.cerrar() }),
     ]);
     document.body.append(capa);
     requestAnimationFrame(() => capa.classList.add("ver"));
@@ -53,5 +59,6 @@ export class Vista {
     c.classList.remove("ver");
     // Quitar el marco corta la música y todo lo que estuviera corriendo.
     setTimeout(() => c.remove(), 220);
+    this.app.audio?.pausarParaVista(false);
   }
 }

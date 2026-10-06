@@ -23,8 +23,13 @@ export function union(cajas) {
   return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
 }
 
-export function candidatos(proyecto, pagina, excluir) {
-  const { ancho: W, alto: H } = proyecto.ajustes;
+/**
+ * A qué se puede pegar algo. `op.W`, `op.H` y `op.vis` dicen cómo se ve la
+ * hoja en esta pantalla (con la hoja automática no es su tamaño guardado).
+ */
+export function candidatos(proyecto, pagina, excluir, op = {}) {
+  const W = op.W || proyecto.ajustes.ancho, H = op.H || proyecto.ajustes.alto;
+  const vis = op.vis || ((e) => e);
   const ed = proyecto.editor || {};
   const m = ed.margenes ? ed.margen || 0 : 0;
   const x = [0, W / 2, W], y = [0, H / 2, H];
@@ -32,7 +37,7 @@ export function candidatos(proyecto, pagina, excluir) {
   for (const g of ed.guias || []) (g.eje === "x" ? x : y).push(g.pos);
   for (const e of pagina.els) {
     if (excluir.has(e.id) || e.oculto) continue;
-    const b = cajaDe(e);
+    const b = cajaDe(vis(e));
     x.push(b.x, b.x + b.w / 2, b.x + b.w);
     y.push(b.y, b.y + b.h / 2, b.y + b.h);
   }

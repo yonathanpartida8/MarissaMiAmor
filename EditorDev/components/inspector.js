@@ -10,13 +10,15 @@
  */
 import { el, seccion, fila, boton, control, Vinculos, aviso, ordenable } from "./ui.js";
 import { leerRuta } from "../core/estado.js";
-import { TIPOS } from "../core/modelo.js";
+import { TIPOS, permite } from "../core/modelo.js";
+import { ico } from "./iconos.js";
 import { DIBUJOS, FORMAS } from "../assets/dibujos.js";
 import { elegir } from "../assets/selector.js";
 
 const RT = window.LibritoRT;
 const FUENTES = Object.keys(RT.FUENTES).map((f) => [f, f]);
-const RECONSTRUIR = /^efectos\.(sombra|resplandor)$|^efectos$|sonidos|^componente\.(params|analisis|sinFondo)|^accion\.destino|fotos|\.tipo$|^fondo\.tipo|^accion|figura|disposicion|^carrusel\.modo|propia|^tipo$|^imagen\.asset|^video\.asset|^musica\.modo|fondo\.imagen|gradiente$|sombra$|^transicion$/;
+const I = (n, t) => `${ico(n)}<span>${t}</span>`;
+const RECONSTRUIR = /^escena3d\.(fuente|asset)$|^ancla|^tiempo$|^efectos\.(sombra|resplandor)$|^efectos$|sonidos|^componente\.(params|analisis|sinFondo)|^accion\.destino|fotos|\.tipo$|^fondo\.tipo|^accion|figura|disposicion|^carrusel\.modo|propia|^tipo$|^imagen\.asset|^video\.asset|^musica\.modo|fondo\.imagen|gradiente$|sombra$|^transicion$/;
 const OPC_DIR = Object.entries(RT.DIRS);
 const FACILES = Object.entries(RT.FACIL).map(([k, v]) => [k, v.n]);
 
@@ -28,7 +30,7 @@ export class Inspector {
     this.v = new Vinculos();
     this.tab = "diseno";
     this.pestanas = el("div.ed-insp-tabs", { role: "tablist" }, [
-      ["diseno", "🎨 Diseño"], ["animar", "✨ Animar"], ["capas", "☰ Capas"],
+      ["diseno", I("diseno", "Diseño")], ["animar", I("animar", "Animar")], ["capas", I("capas", "Capas")],
     ].map(([k, t]) => el("button", { type: "button", role: "tab", dataset: { t: k }, html: t, onClick: () => this.abrir(k) })));
     this.cuerpo = el("div.ed-insp-cuerpo");
     raiz.append(this.pestanas, this.cuerpo);
@@ -38,10 +40,10 @@ export class Inspector {
     E.on("sel", rehacer);
     E.on("actual", rehacer);
     E.on("cargado", rehacer);
-    E.on("el", ({ e, ruta }) => {
+    E.on("el", ({ e, rutas }) => {
       if (this.tab === "capas") return rehacer();
       if (!E.sel.includes(e)) return;
-      if (RECONSTRUIR.test(ruta || "")) rehacer(); else pronto();
+      if ((rutas || []).some((r) => RECONSTRUIR.test(r || ""))) rehacer(); else pronto();
     });
     E.on("els", () => { if (this.tab === "capas") rehacer(); else pronto(); });
     E.on("pagina", ({ ruta }) => { if (!E.sel.length) { if (RECONSTRUIR.test(ruta || "")) rehacer(); else pronto(); } });
@@ -113,14 +115,14 @@ export class Inspector {
     const c = this._ctl(e);
     const A = this.app.acciones;
     const cab = el("div.ed-insp-cab", {}, [
-      el("b.ed-tipo", { text: TIPOS[e.tipo]?.icono || "•" }),
+      el("b.ed-tipo", { html: ico(TIPOS[e.tipo]?.ico || "elementos") }),
       c("nombre", { tipo: "texto", nombre: "Renombrar", alcambiar: true }),
     ]);
     this.cuerpo.append(cab);
-    if (e.bloqueado) this.cuerpo.append(el("p.ed-nota", {}, ["🔒 Está bloqueado: no se mueve en la hoja. ", boton("Desbloquear", () => A.alternar("bloqueado"), "chico")]));
+    if (e.bloqueado) this.cuerpo.append(el("p.ed-nota", {}, [el("span", { html: ico("candado") }), " Está bloqueado: no se mueve en la hoja. ", boton("Desbloquear", () => A.alternar("bloqueado"), "chico")]));
     if (e.origen) this.cuerpo.append(el("p.ed-nota", { text: "Sacado de la página original: el de debajo está escondido. Si lo borras, vuelve a verse el original." }));
 
-    const propio = this["_" + e.tipo]?.(e, c);
+    const propio = e.tipo === "pagina" ? this._paginaOriginal(e) : this["_" + e.tipo]?.(e, c);
     if (propio) this.cuerpo.append(...[].concat(propio));
 
     this.cuerpo.append(seccion("Posición y tamaño", [
@@ -131,29 +133,83 @@ export class Inspector {
       fila("Giro", c("rot", { tipo: "rango", min: -180, max: 180, paso: 1, unidad: "°", nombre: "Girar" })),
       fila("Opacidad", c("opacidad", { tipo: "rango", min: 0, max: 1, paso: 0.01, nombre: "Opacidad", def: 1 })),
       el("div.ed-botonera", {}, [
-        boton("⇤", () => A.alinear("izq"), "ico", "Alinear a la izquierda"), boton("↔", () => A.alinear("centroH"), "ico", "Centrar a lo ancho"),
-        boton("⇥", () => A.alinear("der"), "ico", "Alinear a la derecha"), boton("⤒", () => A.alinear("arriba"), "ico", "Alinear arriba"),
-        boton("↕", () => A.alinear("centroV"), "ico", "Centrar a lo alto"), boton("⤓", () => A.alinear("abajo"), "ico", "Alinear abajo"),
+        boton(ico("izqA"), () => A.alinear("izq"), "ico", "Alinear a la izquierda"), boton(ico("alinearH"), () => A.alinear("centroH"), "ico", "Centrar a lo ancho"),
+        boton(ico("derA"), () => A.alinear("der"), "ico", "Alinear a la derecha"), boton(ico("arribaA"), () => A.alinear("arriba"), "ico", "Alinear arriba"),
+        boton(ico("centroV"), () => A.alinear("centroV"), "ico", "Centrar a lo alto"), boton(ico("abajoA"), () => A.alinear("abajo"), "ico", "Alinear abajo"),
       ]),
       el("div.ed-botonera", {}, [
-        boton("⇈ Al frente", () => A.capa("frente"), "chico"), boton("⇡", () => A.capa("subir"), "ico", "Adelante"),
-        boton("⇣", () => A.capa("bajar"), "ico", "Atrás"), boton("⇊ Al fondo", () => A.capa("fondo"), "chico"),
+        boton(I("alFrente", "Al frente"), () => A.capa("frente"), "chico"), boton(ico("subirCapa"), () => A.capa("subir"), "ico", "Adelante"),
+        boton(ico("bajarCapa"), () => A.capa("bajar"), "ico", "Atrás"), boton(I("alFondo", "Al fondo"), () => A.capa("fondo"), "chico"),
       ]),
+      ...this._ancla(e),
     ]));
 
     if (e.tipo !== "pagina" && e.tipo !== "html" && e.tipo !== "componente") this.cuerpo.append(this._caja(e, c));
     this.cuerpo.append(this._efectos(e, c));
     if (e.tipo !== "boton") this.cuerpo.append(seccion("Al tocarlo", [this._accion(e, c)], { abierta: !!e.accion }));
     this.cuerpo.append(this._sonidos(e));
-    this.cuerpo.append(seccion("Visibilidad", [
+    this.cuerpo.append(seccion("Visibilidad y tiempo", [
       fila("Empieza escondido", c("inicioOculto", { tipo: "toggle", nombre: "Empieza escondido" }), "en el librito no se ve hasta que otro elemento lo muestre («Al tocarlo → Mostrar…»)"),
-    ], { abierta: !!e.inicioOculto }));
+      el("div.ed-rejilla2", {}, [
+        fila("Aparece a los", c("tiempo.inicio", { min: 0, max: 600000, paso: 50, unidad: "ms", def: 0, nombre: "Aparece" })),
+        fila("Se va a los", control(this.v, { tipo: "numero", min: 0, max: 600000, paso: 50, unidad: "ms", leer: () => this.E.el(e.id)?.tiempo?.fin ?? null, escribir: (x) => this.E.setEl(e.id, { "tiempo.fin": x > 0 ? x : null }, "Se va", "tfin" + e.id) })),
+      ]),
+      el("small.ed-ayuda", { text: "Vacío = se queda hasta el final. Más fácil desde la línea de tiempo." }),
+      boton(I("tiempo", "Línea de tiempo"), () => this.app.tiempo.alternar(true), "chico"),
+    ], { abierta: !!(e.inicioOculto || e.tiempo?.inicio || e.tiempo?.fin != null) }));
+    this.cuerpo.append(this._permisos(e));
     this.cuerpo.append(el("div.ed-botonera.ed-pie-insp", {}, [
-      boton("⧉ Duplicar", () => A.duplicar(), "chico"),
-      boton(e.oculto ? "👁 Mostrar" : "🙈 Ocultar", () => A.alternar("oculto"), "chico"),
-      boton(e.bloqueado ? "🔓 Desbloquear" : "🔒 Bloquear", () => A.alternar("bloqueado"), "chico"),
-      boton("🗑 Borrar", () => A.borrar(), "chico peligro"),
+      boton(I("duplicar", "Duplicar"), () => A.duplicar(), "chico"),
+      boton(e.oculto ? I("ojo", "Mostrar") : I("ojoNo", "Ocultar"), () => A.alternar("oculto"), "chico"),
+      boton(e.bloqueado ? I("abierto", "Desbloquear") : I("candado", "Bloquear"), () => A.alternar("bloqueado"), "chico"),
+      boton(I("borrar", "Borrar"), () => A.borrar(), "chico peligro"),
     ]));
+  }
+
+  /** Qué se puede hacer con él (en la hoja y en el librito). */
+  _permisos(e) {
+    const E = this.E;
+    const t = (k, etq, ayuda) => fila(etq, control(this.v, { tipo: "toggle", leer: () => permite(E.el(e.id), k), escribir: (on) => E.setEl(e.id, { ["permisos." + k]: on ? undefined : false }, etq) }), ayuda);
+    const hay = e.permisos && Object.values(e.permisos).some((v) => v === false || v === true);
+    return seccion("Permisos", [
+      t("mover", "Permitir mover", "apagado = su posición queda fija (no se arrastra sin querer)"),
+      t("tamano", "Permitir cambiar el tamaño"),
+      t("rotar", "Permitir girar"),
+      t("seleccionar", "Se elige tocándolo", "apagado = el toque pasa a lo de abajo (se elige desde Capas)"),
+      t("fuera", "Puede salir un poco de la hoja", "apagado = nunca pasa del borde"),
+      t("interactuar", "Se puede tocar en el librito", "apagado = es decoración: los dedos pasan de largo"),
+      fila("Proporción", control(this.v, { tipo: "segmento", opciones: [["auto", "Según el tipo"], ["si", "Mantener"], ["no", "Libre"]], leer: () => { const v = E.el(e.id)?.permisos?.proporcion; return v === true ? "si" : v === false ? "no" : "auto"; }, escribir: (x) => E.setEl(e.id, { "permisos.proporcion": x === "si" ? true : x === "no" ? false : undefined }, "Proporción") }), "al estirar desde una esquina"),
+      el("small.ed-ayuda", { text: "«Bloquear» lo congela todo de una vez (sigue viéndose y funcionando en el librito)." }),
+    ], { abierta: !!hay });
+  }
+
+  /** Hoja automática: a qué borde se queda pegado en otras pantallas. */
+  _ancla(e) {
+    if (this.E.proyecto.ajustes.formato !== "auto") return [];
+    const E = this.E;
+    const L = this.app.lienzo;
+    const eje = (k, ops) => control(this.v, {
+      tipo: "segmento", opciones: ops,
+      leer: () => { const a = E.el(e.id)?.ancla; return !a || a.auto ? "auto" : a[k]; },
+      escribir: (x) => {
+        const y = E.el(e.id);
+        if (!y) return;
+        const actual = RT.anclaDe(y, L.m);
+        const nueva = x === "auto" ? L._anclaPara(L.vis(y)) : { ...actual, [k]: x };
+        const otra = k === "h" ? "v" : "h";
+        if (x !== "auto" && y.ancla?.auto) nueva[otra] = actual[otra];
+        // Que no salte: se guarda para que se vea donde está ahora.
+        const b = L.vis(y);
+        const st = RT.descolocar(y, b, L.m, nueva);
+        E.setEl(e.id, { ancla: x === "auto" ? { ...nueva, auto: true } : { h: nueva.h, v: nueva.v }, x: Math.round(st.x), y: Math.round(st.y), w: Math.round(st.w), h: Math.round(st.h) }, "Ancla");
+      },
+    });
+    return [
+      el("b.ed-sub", { text: "Ancla (hoja automática)" }),
+      fila("A lo ancho", eje("h", [["auto", "Sola"], ["izq", ico("izqA"), "Izquierda"], ["centro", ico("alinearH"), "Centro"], ["der", ico("derA"), "Derecha"], ["estirar", ico("ajustar"), "Estirar"]])),
+      fila("A lo alto", eje("v", [["auto", "Sola"], ["arriba", ico("arribaA"), "Arriba"], ["centro", ico("centroV"), "En medio"], ["abajo", ico("abajoA"), "Abajo"], ["estirar", ico("ajustar"), "Estirar"]])),
+      el("small.ed-ayuda", { text: "En pantallas más largas o más anchas, se queda pegado a ese borde (o se estira). «Sola» lo decide por dónde está." }),
+    ];
   }
 
   _caja(e, c) {
@@ -189,7 +245,7 @@ export class Inspector {
       leer: () => this.E.el(e.id)?.accion?.tipo || "",
       escribir: (t) => this.E.setEl(e.id, { accion: t ? { tipo: t, destino: t === "ir" ? paginas[0]?.[0] : "" } : null }, "Acción"),
     }))];
-    const otros = this.E.pagina.els.filter((x) => x.id !== e.id).map((x) => [x.id, (x.inicioOculto ? "🙈 " : "") + x.nombre]);
+    const otros = this.E.pagina.els.filter((x) => x.id !== e.id).map((x) => [x.id, x.nombre + (x.inicioOculto ? " (escondido)" : "")]);
     if (ac.tipo === "ir") hijos.push(fila("Página", c("accion.destino", { tipo: "select", opciones: paginas })));
     if (/^(mostrar|ocultar|alternar|animar)$/.test(ac.tipo)) {
       hijos.push(fila("Cuál", c("accion.destino", { tipo: "select", opciones: [["", "— elige —"], ...otros] })));
@@ -214,7 +270,7 @@ export class Inspector {
         c("texto.subrayado", { tipo: "toggle", nombre: "Subrayado" }), el("small", { text: "subrayado" }),
         c("texto.mayus", { tipo: "toggle", nombre: "Mayúsculas" }), el("small", { text: "MAYÚS" }),
       ]),
-      fila("Alinear", c("texto.alin", { tipo: "segmento", opciones: [["left", "⇤", "Izquierda"], ["center", "↔", "Centro"], ["right", "⇥", "Derecha"], ["justify", "☰", "Justificado"]] })),
+      fila("Alinear", c("texto.alin", { tipo: "segmento", opciones: [["left", ico("alinIzq"), "Izquierda"], ["center", ico("alinCentro"), "Centro"], ["right", ico("alinDer"), "Derecha"], ["justify", ico("alinJust"), "Justificado"]] })),
       fila("Vertical", c("texto.valin", { tipo: "segmento", opciones: [["arriba", "Arriba"], ["centro", "Centro"], ["abajo", "Abajo"]], def: "arriba" })),
       fila("Interletra", c("texto.interletra", { tipo: "rango", min: -4, max: 20, paso: 0.5, unidad: "px", def: 0, alto: true })),
       fila("Interlínea", c("texto.interlinea", { tipo: "rango", min: 0.8, max: 2.6, paso: 0.05, def: 1.3, alto: true })),
@@ -230,12 +286,12 @@ export class Inspector {
     return seccion("Foto", [
       url ? el("div.ed-previa", {}, [el("img", { src: url, alt: "" })]) : null,
       el("div.ed-botonera", {}, [
-        boton(url ? "⟳ Cambiar foto" : "＋ Añadir foto", () => A.pedirArchivoPara(e), url ? "" : "primario"),
-        url ? boton("⌗ Recortar", () => this.app.lienzo.recortar(e)) : null,
+        boton(url ? I("cambiar", "Cambiar foto") : I("mas", "Añadir foto"), () => A.pedirArchivoPara(e), url ? "" : "primario"),
+        url ? boton(I("recortar", "Recortar"), () => this.app.lienzo.recortar(e)) : null,
       ].filter(Boolean)),
       fila("Encaje", c("imagen.ajuste", { tipo: "segmento", opciones: [["cover", "Llenar"], ["contain", "Entera"]] })),
       fila("Acercar", c("imagen.recorte.zoom", { tipo: "rango", min: 1, max: 5, paso: 0.01, def: 1, nombre: "Acercar" })),
-      el("div.ed-rejilla2", {}, [fila("Encuadre ↔", c("imagen.recorte.x", { tipo: "rango", min: 0, max: 100, def: 50, unidad: "%" })), fila("Encuadre ↕", c("imagen.recorte.y", { tipo: "rango", min: 0, max: 100, def: 50, unidad: "%" }))]),
+      el("div.ed-rejilla2", {}, [fila("Encuadre horizontal", c("imagen.recorte.x", { tipo: "rango", min: 0, max: 100, def: 50, unidad: "%" })), fila("Encuadre vertical", c("imagen.recorte.y", { tipo: "rango", min: 0, max: 100, def: 50, unidad: "%" }))]),
       fila("Forma", c("imagen.forma", { tipo: "select", opciones: [["", "Normal"], ["circulo", "Círculo"], ["corazon", "Corazón"], ["estrella", "Estrella"], ["arco", "Arco"], ["gota", "Gota"], ["hexagono", "Hexágono"], ["nube", "Nube"], ["rombo", "Rombo"]], def: "" })),
       fila("Marco", c("imagen.marco", { tipo: "segmento", opciones: [["", "Ninguno"], ["polaroid", "Polaroid"], ["cinta", "Cinta"]], def: "" })),
       seccion("Filtros", [
@@ -290,12 +346,12 @@ export class Inspector {
     const fotos = e[clave].fotos || [];
     const lista = el("div.ed-fotos", {}, fotos.map((id, i) => el("div.ed-foto-mini", { dataset: { id: String(i) } }, [
       el("img", { src: this.app.bib.url(id) || "", alt: "", loading: "lazy" }),
-      el("button.ed-asa", { type: "button", html: "⠿", title: "Arrastra para ordenar", "aria-label": "Ordenar" }),
-      el("button.ed-quitar", { type: "button", html: "✕", title: "Quitar del " + (clave === "album" ? "álbum" : "carrusel"), onClick: () => this.E.setEl(e.id, { [clave + ".fotos"]: fotos.filter((_, j) => j !== i) }, "Quitar foto") }),
+      el("button.ed-asa", { type: "button", html: ico("agarre"), title: "Arrastra para ordenar", "aria-label": "Ordenar" }),
+      el("button.ed-quitar", { type: "button", html: ico("cerrar"), title: "Quitar del " + (clave === "album" ? "álbum" : "carrusel"), onClick: () => this.E.setEl(e.id, { [clave + ".fotos"]: fotos.filter((_, j) => j !== i) }, "Quitar foto") }),
     ])));
     ordenable(lista, { item: ".ed-foto-mini", asa: ".ed-asa", alSoltar: (de, a) => { const f = [...fotos]; const [x] = f.splice(de, 1); f.splice(a, 0, x); this.E.setEl(e.id, { [clave + ".fotos"]: f }, "Ordenar fotos"); } });
     return [
-      el("div.ed-botonera", {}, [boton("＋ Añadir fotos", () => this.app.acciones.pedirArchivoPara(e), "primario"), el("small", { text: fotos.length ? `${fotos.length} foto${fotos.length > 1 ? "s" : ""}` : "todavía ninguna" })]),
+      el("div.ed-botonera", {}, [boton(I("mas", "Añadir fotos"), () => this.app.acciones.pedirArchivoPara(e), "primario"), el("small", { text: fotos.length ? `${fotos.length} foto${fotos.length > 1 ? "s" : ""}` : "todavía ninguna" })]),
       fotos.length ? lista : null,
     ].filter(Boolean);
   }
@@ -307,7 +363,7 @@ export class Inspector {
       ...this._listaFotos(e, c, "album"),
       fila("Disposición", c("album.disposicion", { tipo: "select", opciones: [["cuadricula", "Cuadrícula"], ["mosaico", "Mosaico"], ["fila", "Tira que se desliza"], ["polaroids", "Polaroids sueltas"], ["pila", "Pila (se pasan tocando)"]] })),
       a.disposicion === "cuadricula" || a.disposicion === "mosaico" || !a.disposicion ? fila("Columnas", c("album.columnas", { tipo: "rango", min: 1, max: 5 })) : null,
-      a.disposicion === "fila" ? fila("Dirección", c("album.direccion", { tipo: "segmento", opciones: [["horizontal", "↔"], ["vertical", "↕"]], def: "horizontal" })) : null,
+      a.disposicion === "fila" ? fila("Dirección", c("album.direccion", { tipo: "segmento", opciones: [["horizontal", "Horizontal"], ["vertical", "Vertical"]], def: "horizontal" })) : null,
       a.disposicion === "cuadricula" || !a.disposicion ? fila("Proporción", c("album.proporcion", { tipo: "select", opciones: [["1", "Cuadrada"], ["4/5", "Retrato 4:5"], ["3/4", "Retrato 3:4"], ["4/3", "Apaisada 4:3"], ["16/9", "Panorámica"]] })) : null,
       el("div.ed-rejilla2", {}, [fila("Espacio", c("album.espacio", { min: 0, max: 40, unidad: "px" })), fila("Esquinas", c("album.radio", { min: 0, max: 60, unidad: "px" }))]),
       fila("Marco", c("album.marco", { tipo: "segmento", opciones: [["ninguno", "Ninguno"], ["blanco", "Blanco"], ["polaroid", "Polaroid"]] })),
@@ -325,7 +381,7 @@ export class Inspector {
     return seccion("Carrusel de fotos", [
       ...this._listaFotos(e, c, "carrusel"),
       fila("Estilo", c("carrusel.modo", { tipo: "segmento", opciones: [["deslizar", "Deslizar"], ["fundido", "Fundido"], ["cartas", "Cartas 3D"]] })),
-      fila("Dirección", c("carrusel.direccion", { tipo: "segmento", opciones: [["horizontal", "↔"], ["vertical", "↕"]] })),
+      fila("Dirección", c("carrusel.direccion", { tipo: "segmento", opciones: [["horizontal", "Horizontal"], ["vertical", "Vertical"]] })),
       fila("Solo", c("carrusel.auto", { tipo: "toggle" }), "pasa las fotos sin tocar"),
       k.auto !== false ? fila("Cada", c("carrusel.intervalo", { tipo: "rango", min: 1200, max: 10000, paso: 100, unidad: "ms" })) : null,
       fila("Velocidad", c("carrusel.velocidad", { tipo: "rango", min: 150, max: 2000, paso: 50, unidad: "ms" })),
@@ -337,29 +393,76 @@ export class Inspector {
 
   _video(e, c) {
     return seccion("Vídeo", [
-      boton(e.video?.asset ? "⟳ Cambiar vídeo" : "＋ Añadir vídeo", () => this.app.acciones.pedirArchivoPara(e), e.video?.asset ? "" : "primario"),
+      boton(e.video?.asset ? I("cambiar", "Cambiar vídeo") : I("mas", "Añadir vídeo"), () => this.app.acciones.pedirArchivoPara(e), e.video?.asset ? "" : "primario"),
       el("div.ed-botonera", {}, [c("video.auto", { tipo: "toggle" }), el("small", { text: "solo al llegar" }), c("video.bucle", { tipo: "toggle" }), el("small", { text: "en bucle" })]),
       el("div.ed-botonera", {}, [c("video.silencio", { tipo: "toggle" }), el("small", { text: "sin sonido" }), c("video.controles", { tipo: "toggle" }), el("small", { text: "controles" })]),
       fila("Encaje", c("video.ajuste", { tipo: "segmento", opciones: [["cover", "Llenar"], ["contain", "Entero"]] })),
-      el("small.ed-ayuda", { text: "Para que empiece solo, el teléfono pide que esté sin sonido." }),
+      el("small.ed-ayuda", { text: "Para que empiece solo, el teléfono pide que esté sin sonido. En la línea de tiempo decides cuándo aparece (y empieza)." }),
     ]);
   }
 
   _html(e, c) {
+    const L = this.app.lienzo;
     return seccion("HTML", [
-      boton("&lt;/&gt; Editar el HTML", () => this.app.acciones.editarHtml(e), "primario"),
+      el("p.ed-nota.suave", { text: e.html?.completo ? "Página HTML completa: se usa tal cual, con su CSS y su JavaScript." : "Trozo de HTML (se envuelve en una página)." }),
+      el("div.ed-botonera", {}, [
+        boton(I("html", "Editar el HTML"), () => this.app.acciones.editarHtml(e), "primario"),
+        boton(I("play", "Probar aquí"), () => L.probarAqui(e), "chico"),
+        boton(I("ajustar", "Que ocupe toda la hoja"), () => this.E.setEl(e.id, { ...L.guardarCaja(e, { x: 0, y: 0, w: L.W, h: L.H }, false), rot: 0, ancla: { h: "estirar", v: "estirar" } }, "Página entera"), "chico"),
+      ]),
       fila("Se puede tocar", c("html.interactivo", { tipo: "toggle", def: true })),
       el("small.ed-ayuda", { text: "Va dentro de su propio marco aislado: no puede romper el librito ni el editor." }),
     ]);
   }
 
+  /** Escena 3D (WebGL2): figura o modelo, material, luz y cámara. */
+  _escena3d(e, c) {
+    const d = e.escena3d || {};
+    const A = this.app.acciones;
+    const archivo = d.fuente === "archivo";
+    const hijos = [
+      fila("Qué se ve", c("escena3d.fuente", { tipo: "segmento", opciones: [["figura", "Una figura"], ["archivo", "Un modelo"]], def: "figura" })),
+      archivo
+        ? el("div.ed-botonera", {}, [el("span", { text: this.E.proyecto.assets[d.asset]?.nombre || "Sin modelo" }), boton(I("cambiar", d.asset ? "Cambiar modelo" : "Elegir modelo"), async () => { const [id] = await elegir(this.app, "modelo", { titulo: "Modelo 3D" }); if (id) { const a = this.E.proyecto.assets[id] || {}; this.E.setEl(e.id, { "escena3d.asset": id, "escena3d.formato": (a.archivo || a.ruta || "").split(".").pop().toLowerCase() }, "Modelo 3D"); } }, "chico")])
+        : fila("Figura", c("escena3d.figura", { tipo: "select", opciones: Object.entries(RT.FIGURAS3D || {}) })),
+      archivo && d.formato !== "obj" ? fila("Colores", c("escena3d.colores", { tipo: "segmento", opciones: [["propios", "Los suyos"], ["uno", "Uno solo"]], def: "propios" })) : null,
+      !archivo || d.colores === "uno" || d.formato === "obj" ? fila("Color", c("escena3d.color", { tipo: "color" })) : null,
+      el("div.ed-rejilla2", {}, [
+        fila("Metal", c("escena3d.metal", { tipo: "rango", min: 0, max: 1, paso: 0.05, def: 0.15 })),
+        fila("Rugosidad", c("escena3d.rugosidad", { tipo: "rango", min: 0, max: 1, paso: 0.05, def: 0.4 })),
+      ]),
+      el("div.ed-botonera", {}, [c("escena3d.alambre", { tipo: "toggle" }), el("small", { text: "de alambre" }), c("escena3d.plano", { tipo: "toggle" }), el("small", { text: "caras planas" })]),
+      el("b.ed-sub", { text: "Luz" }),
+      el("div.ed-rejilla2", {}, [
+        fila("Intensidad", c("escena3d.luz", { tipo: "rango", min: 0, max: 4, paso: 0.05, def: 1.4 })),
+        fila("Ambiente", c("escena3d.ambiente", { tipo: "rango", min: 0, max: 3, paso: 0.05, def: 0.7 })),
+      ]),
+      fila("Color de la luz", c("escena3d.luzColor", { tipo: "color", def: "#ffffff" })),
+      fila("Fondo", control(this.v, { tipo: "segmento", opciones: [["no", "Transparente"], ["si", "De color"]], leer: () => (this.E.el(e.id)?.escena3d?.fondo ? "si" : "no"), escribir: (x) => this.E.setEl(e.id, { "escena3d.fondo": x === "si" ? "#1b1030" : null }, "Fondo 3D") })),
+      d.fondo ? fila("Color de fondo", c("escena3d.fondo", { tipo: "color" })) : null,
+      el("b.ed-sub", { text: "Cámara y movimiento" }),
+      fila("Girar solo", c("escena3d.girar", { tipo: "rango", min: -3, max: 3, paso: 0.1, def: 0.6 }), "0 = quieto"),
+      el("div.ed-rejilla2", {}, [
+        fila("Acercar", c("escena3d.zoom", { tipo: "rango", min: 0.4, max: 3, paso: 0.05, def: 1 })),
+        fila("Inclinar", c("escena3d.rotX", { tipo: "rango", min: -1.5, max: 1.5, paso: 0.05, def: -0.25 })),
+      ]),
+      fila("Ángulo", c("escena3d.rotY", { tipo: "rango", min: -3.14, max: 3.14, paso: 0.05, def: 0.5 })),
+      fila("Girarlo con el dedo", c("escena3d.orbitar", { tipo: "toggle", def: true }), "en el librito: arrastrar gira, dos dedos acercan"),
+      archivo ? fila("Sus animaciones", c("escena3d.animar", { tipo: "toggle", def: true })) : null,
+      boton(I("play", "Probar aquí"), () => this.app.lienzo.probarAqui(e), "chico"),
+      !RT.hayWebGL2?.() ? el("p.ed-nota", { text: "Este navegador no tiene WebGL2: aquí no se ve, pero en otros aparatos sí." }) : null,
+    ];
+    void A;
+    return seccion("Escena 3D", hijos.filter(Boolean));
+  }
+
   /** Un botoncito para elegir un sonido (de assets/, de la música o subido). */
   _elegirAudio(leer, escribir, etiqueta = "Sonido") {
     const nombre = () => { const id = leer(); return id ? this.E.proyecto.assets[id]?.nombre || "sonido" : "ninguno"; };
-    const b = boton("♪ " + nombre(), async () => { const [id] = await elegir(this.app, "audio", { titulo: etiqueta }); if (id) escribir(id); }, "chico");
-    const quitar = boton("✕", () => escribir(null), "chico ico", "Quitar");
-    const probar = boton("▶", () => { const id = leer(); if (id) RT.sonar(this.app.bib.url(id), 0.9); }, "chico ico", "Escuchar");
-    this.v.add(() => { b.innerHTML = "♪ " + nombre(); });
+    const b = boton(I("sonido", nombre()), async () => { const [id] = await elegir(this.app, "audio", { titulo: etiqueta }); if (id) escribir(id); }, "chico");
+    const quitar = boton(ico("cerrar"), () => escribir(null), "chico ico", "Quitar");
+    const probar = boton(ico("play"), () => { const id = leer(); if (id) RT.sonar(this.app.bib.url(id), 0.9); }, "chico ico", "Escuchar");
+    this.v.add(() => { b.innerHTML = I("sonido", nombre()); });
     return fila(etiqueta, el("div.ed-botonera", {}, [b, probar, quitar]));
   }
 
@@ -412,8 +515,8 @@ export class Inspector {
         const url = id && this.app.bib.url(id);
         return fila(et, el("div.ed-botonera", {}, [
           url ? el("img.ed-param-foto", { src: url, alt: "" }) : null,
-          boton(url ? "⟳ Cambiar" : "＋ Elegir foto", async () => { const [x] = await elegir(this.app, "imagen", { titulo: et }); if (x) this.E.setEl(e.id, { [ruta]: x }, et); }, url ? "chico" : "chico primario"),
-          url ? boton("✕", () => this.E.setEl(e.id, { [ruta]: null }, et), "chico ico", "Quitar") : null,
+          boton(url ? I("cambiar", "Cambiar") : I("mas", "Elegir foto"), async () => { const [x] = await elegir(this.app, "imagen", { titulo: et }); if (x) this.E.setEl(e.id, { [ruta]: x }, et); }, url ? "chico" : "chico primario"),
+          url ? boton(ico("cerrar"), () => this.E.setEl(e.id, { [ruta]: null }, et), "chico ico", "Quitar") : null,
         ].filter(Boolean)));
       }
       return fila(et, c(ruta, { tipo: "texto", def: d.def, alcambiar: true }));
@@ -424,7 +527,7 @@ export class Inspector {
         el("p.ed-nota.suave", { text: `${k.id || k.ruta} — su HTML, sus estilos, sus scripts y su zona táctil se usan tal cual: aquí sólo decides dónde va y cómo se ve en esta página.` }),
         ...(params.length ? params : [el("small.ed-ayuda", { text: "Este componente no tiene parámetros (se pueden declarar en su asset.json)." })]),
         el("div.ed-botonera", {}, [
-          boton("▶ Probar aquí", () => this.app.lienzo.probarAqui(e), "chico primario"),
+          boton(I("play", "Probar aquí"), () => this.app.lienzo.probarAqui(e), "chico primario"),
           boton("Ver el original", () => open("../" + k.ruta + (k.entrada || "index.html"), "_blank"), "chico"),
           boton("Tamaño natural", () => { const W = k.ancho || e.w, H = k.alto || e.h; this.E.setEl(e.id, { w: W, h: H }, "Tamaño natural"); }, "chico"),
         ]),
@@ -433,7 +536,7 @@ export class Inspector {
         fila("Al cambiar el tamaño", c("componente.ajuste", { tipo: "segmento", opciones: [["escalar", "Escalar entero"], ["adaptar", "Que se acomode"]], def: "escalar" }), "escalar = se ve igual pero más grande o chico"),
         el("p.ed-nota", { text: "Detectado: " + (an ? an.resumen || "—" : "sin analizar") }),
         fila("Elegirlo en la hoja", c("componente.seleccion", { tipo: "segmento", opciones: [["zona", "Por su zona real"], ["todo", "Por todo el cuadro"]], def: "zona" }), "«zona real»: sólo su botón o lo que se ve; lo demás deja tocar lo de abajo"),
-        boton("🔍 Volver a detectar", () => A.reanalizar(e), "chico"),
+        boton(I("buscar", "Volver a detectar"), () => A.reanalizar(e), "chico"),
       ], { abierta: false }),
       seccion("Fondo", [
         el("p.ed-ayuda", { text: hayFondo ? "Este componente tiene fondo. No se quita solo: sólo si tú lo pides, y sólo en esta copia (el archivo original no cambia)." : "No se detectó un fondo propio (es transparente)." }),
@@ -443,11 +546,12 @@ export class Inspector {
     ];
   }
 
-  _pagina(e) {
+  _paginaOriginal(e) {
     const p = e.pagina || {};
     return seccion("Página original", [
       el("p.ed-nota", { text: `${p.titulo || p.ruta}: se ve y funciona tal cual (con su JavaScript). Puedes poner cosas encima.` }),
-      boton("✨ Hacer editable (sacar textos y fotos)", () => this.app.importar.hacerEditable(e), "primario"),
+      boton(I("editar", "Hacer editable (sacar textos y fotos)"), () => this.app.importar.hacerEditable(e), "primario"),
+      boton(I("play", "Probar aquí"), () => this.app.lienzo.probarAqui(e), "chico"),
       boton("Abrir el original en otra pestaña", () => open("../" + p.ruta, "_blank"), "chico"),
     ]);
   }
@@ -455,17 +559,17 @@ export class Inspector {
   /* ── Varios a la vez ────────────────────────────────────────────── */
   _varios(sel) {
     const A = this.app.acciones;
-    this.cuerpo.append(el("div.ed-insp-cab", {}, [el("b.ed-tipo", { text: sel.length }), el("span", { text: "elementos elegidos" })]));
+    this.cuerpo.append(el("div.ed-insp-cab", {}, [el("b.ed-tipo", { text: String(sel.length) }), el("span", { text: "elementos elegidos" })]));
     this.cuerpo.append(seccion("Alinear entre ellos", [
       el("div.ed-botonera", {}, [
-        boton("⇤", () => A.alinear("izq"), "ico", "Izquierda"), boton("↔", () => A.alinear("centroH"), "ico", "Centro"), boton("⇥", () => A.alinear("der"), "ico", "Derecha"),
-        boton("⤒", () => A.alinear("arriba"), "ico", "Arriba"), boton("↕", () => A.alinear("centroV"), "ico", "En medio"), boton("⤓", () => A.alinear("abajo"), "ico", "Abajo"),
+        boton(ico("izqA"), () => A.alinear("izq"), "ico", "Izquierda"), boton(ico("alinearH"), () => A.alinear("centroH"), "ico", "Centro"), boton(ico("derA"), () => A.alinear("der"), "ico", "Derecha"),
+        boton(ico("arribaA"), () => A.alinear("arriba"), "ico", "Arriba"), boton(ico("centroV"), () => A.alinear("centroV"), "ico", "En medio"), boton(ico("abajoA"), () => A.alinear("abajo"), "ico", "Abajo"),
       ]),
-      el("div.ed-botonera", {}, [boton("Repartir ↔", () => A.distribuir("h"), "chico"), boton("Repartir ↕", () => A.distribuir("v"), "chico")]),
+      el("div.ed-botonera", {}, [boton(I("repartir", "Repartir a lo ancho"), () => A.distribuir("h"), "chico"), boton(I("repartir", "Repartir a lo alto"), () => A.distribuir("v"), "chico")]),
     ]));
     this.cuerpo.append(seccion("Todos juntos", [
       fila("Opacidad", control(this.v, { tipo: "rango", min: 0, max: 1, paso: 0.01, leer: () => this.E.el(sel[0].id)?.opacidad ?? 1, escribir: (x) => this.E.transaccion("Opacidad", () => { for (const e of sel) this.E.setEl(e.id, { opacidad: x }); }, "opvarios") })),
-      el("div.ed-botonera", {}, [boton("⧉ Duplicar", () => A.duplicar(), "chico"), boton("🔒 Bloquear", () => A.alternar("bloqueado"), "chico"), boton("🗑 Borrar", () => A.borrar(), "chico peligro")]),
+      el("div.ed-botonera", {}, [boton(I("duplicar", "Duplicar"), () => A.duplicar(), "chico"), boton(I("enlazar", "Agrupar"), () => A.agrupar(), "chico"), boton(I("candado", "Bloquear"), () => A.alternar("bloqueado"), "chico"), boton(I("borrar", "Borrar"), () => A.borrar(), "chico peligro")]),
     ]));
   }
 
@@ -475,7 +579,7 @@ export class Inspector {
     const c = this._ctlPag();
     const A = this.app.acciones;
     const f = p.fondo || {};
-    this.cuerpo.append(el("div.ed-insp-cab", {}, [el("b.ed-tipo", { text: "📄" }), c("nombre", { tipo: "texto", nombre: "Renombrar página", alcambiar: true })]));
+    this.cuerpo.append(el("div.ed-insp-cab", {}, [el("b.ed-tipo", { html: ico("paginas") }), c("nombre", { tipo: "texto", nombre: "Renombrar página", alcambiar: true })]));
     const fondo = [fila("Tipo", c("fondo.tipo", { tipo: "segmento", opciones: [["color", "Color"], ["gradiente", "Degradado"]], def: "color" })), fila("Color", c("fondo.color", { tipo: "color", nombre: "Fondo" }))];
     if (f.tipo === "gradiente") fondo.push(
       el("div.ed-rejilla2", {}, [fila("Color 1", c("fondo.gradiente.a", { tipo: "color", def: "#ffd9ea" })), fila("Color 2", c("fondo.gradiente.b", { tipo: "color", def: "#ff9fc3" }))]),
@@ -485,7 +589,7 @@ export class Inspector {
     if (f.css) fondo.push(el("p.ed-nota", {}, ["Fondo traído de la página original. ", boton("Quitarlo", () => this.E.setPag({ "fondo.css": undefined }, "Fondo"), "chico")]));
     const img = f.imagen?.asset;
     fondo.push(el("div.ed-botonera", {}, [
-      boton(img ? "⟳ Cambiar foto de fondo" : "＋ Foto de fondo", async () => { const [id] = await elegir(this.app, "imagen", { titulo: "Foto de fondo" }); if (id) this.E.setPag({ "fondo.imagen": { asset: id, ajuste: "cover", opacidad: 1, desenfoque: 0, pos: "center" } }, "Foto de fondo"); }, img ? "chico" : "chico primario"),
+      boton(img ? I("cambiar", "Cambiar foto de fondo") : I("mas", "Foto de fondo"), async () => { const [id] = await elegir(this.app, "imagen", { titulo: "Foto de fondo" }); if (id) this.E.setPag({ "fondo.imagen": { asset: id, ajuste: "cover", opacidad: 1, desenfoque: 0, pos: "center" } }, "Foto de fondo"); }, img ? "chico" : "chico primario"),
       img ? boton("Quitar", () => this.E.setPag({ "fondo.imagen": null }, "Quitar foto de fondo"), "chico") : null,
     ].filter(Boolean)));
     if (img) fondo.push(
@@ -497,14 +601,14 @@ export class Inspector {
     this.cuerpo.append(seccion("Esta página", [
       fila("Pasar sola", c("duracion", { tipo: "rango", min: 0, max: 60, def: 0, unidad: " s" }), "0 = espera a que pases la hoja"),
       el("div.ed-botonera", {}, [
-        boton("🖼️ Poner de portada", () => A.ponerPortada(), "chico"),
-        boton("⧉ Duplicar", () => this.E.duplicarPagina(this.E.paginaId), "chico"),
-        boton("🧹 Dejar en blanco", () => A.limpiarPagina(), "chico"),
-        boton("🗑 Borrar", () => A.borrarPagina(), "chico peligro"),
+        boton(I("estrella", "Poner de portada"), () => A.ponerPortada(), "chico"),
+        boton(I("duplicar", "Duplicar"), () => this.E.duplicarPagina(this.E.paginaId), "chico"),
+        boton(I("limpiar", "Dejar en blanco"), () => A.limpiarPagina(), "chico"),
+        boton(I("borrar", "Borrar"), () => A.borrarPagina(), "chico peligro"),
       ]),
-      el("small.ed-ayuda", { text: "La transición y la música de esta página están en sus paneles (🎞️ y 🎵)." }),
+      el("small.ed-ayuda", { text: "La transición y la música de esta página están en sus paneles (Transiciones y Audio). Cuándo aparece cada cosa, en la línea de tiempo." }),
     ]));
-    this.cuerpo.append(el("p.ed-nota.suave", { text: "Toca algo de la hoja para editarlo, o añade cosas desde 🧩." }));
+    this.cuerpo.append(el("p.ed-nota.suave", { text: "Toca algo de la hoja para editarlo, o añade cosas desde la barra de la izquierda." }));
   }
 
   /* ── Animar un elemento ─────────────────────────────────────────── */
@@ -541,10 +645,10 @@ export class Inspector {
   }
 
   _animar(e) {
-    this.cuerpo.append(el("div.ed-insp-cab", {}, [el("b.ed-tipo", { text: "✨" }), el("span", { text: e.nombre })]));
+    this.cuerpo.append(el("div.ed-insp-cab", {}, [el("b.ed-tipo", { html: ico("animar") }), el("span", { text: e.nombre })]));
     this.cuerpo.append(el("div.ed-botonera", {}, [
-      boton("▶ Probar", () => this.app.tiempo.probar([e.id]), "primario"),
-      boton("⏱ Línea de tiempo", () => this.app.tiempo.alternar(true), "chico"),
+      boton(I("play", "Probar"), () => this.app.tiempo.probar([e.id]), "primario"),
+      boton(I("tiempo", "Línea de tiempo"), () => this.app.tiempo.alternar(true), "chico"),
     ]));
     this.cuerpo.append(this._faseAnim(e, "entrada", "Entrada · al llegar a la página"));
     this.cuerpo.append(this._faseAnim(e, "bucle", "Mientras está · se repite"));
@@ -554,7 +658,7 @@ export class Inspector {
       boton("Copiar a toda la página", () => {
         const anim = JSON.parse(JSON.stringify(this.E.el(e.id).anim));
         this.E.transaccion("Copiar animación", () => { for (const x of this.E.pagina.els) if (x.id !== e.id) this.E.setEl(x.id, { anim: { ...anim, propia: x.anim?.propia || null } }); });
-        aviso("Animación copiada a todos 🤍");
+        aviso("Animación copiada a todos");
       }, "chico"),
       boton("Quitar animaciones", () => this.E.setEl(e.id, { anim: { entrada: { tipo: "ninguna" }, salida: { tipo: "ninguna" }, bucle: { tipo: "ninguno" }, propia: null } }, "Quitar animaciones"), "chico peligro"),
     ]));
@@ -567,7 +671,7 @@ export class Inspector {
     if (!pr) {
       return seccion("Animación propia", [
         el("p.ed-ayuda", { text: "Inventa tu animación con fotogramas: dónde está, qué tan grande, girada y transparente en cada momento." }),
-        boton("＋ Crear animación propia", () => this.E.setEl(e.id, { "anim.propia": { dur: 1600, retraso: 0, repetir: "inf", direccion: "alternate", facil: "entraSale", fotogramas: [{ t: 0, x: 0, y: 0, escala: 1, rot: 0, opacidad: 1 }, { t: 1, x: 0, y: -16, escala: 1.05, rot: 4, opacidad: 1 }] } }, "Animación propia"), "chico"),
+        boton(I("mas", "Crear animación propia"), () => this.E.setEl(e.id, { "anim.propia": { dur: 1600, retraso: 0, repetir: "inf", direccion: "alternate", facil: "entraSale", fotogramas: [{ t: 0, x: 0, y: 0, escala: 1, rot: 0, opacidad: 1 }, { t: 1, x: 0, y: -16, escala: 1.05, rot: 4, opacidad: 1 }] } }, "Animación propia"), "chico"),
       ], { abierta: false });
     }
     const hijos = [
@@ -589,10 +693,10 @@ export class Inspector {
             escribir: (v) => this.E.setEl(e.id, { [`anim.propia.fotogramas.${i}.${k}`]: k === "t" ? Math.max(0, Math.min(1, v / 100)) : v }, "Fotograma", "fg" + i + k + e.id),
           });
           return el("div.ed-fg", {}, [campo("t", 1, 0, 100), campo("x", 1), campo("y", 1), campo("escala", 0.05, 0), campo("rot", 1), campo("opacidad", 0.05, 0, 1), campo("desenfoque", 0.5, 0),
-            el("button.ed-quitar", { type: "button", html: "✕", title: "Quitar fotograma", disabled: fs.length <= 2 || null, onClick: () => this.E.setEl(e.id, { "anim.propia.fotogramas": fs.filter((_, j) => j !== i) }, "Quitar fotograma") })]);
+            el("button.ed-quitar", { type: "button", html: ico("cerrar"), title: "Quitar fotograma", disabled: fs.length <= 2 || null, onClick: () => this.E.setEl(e.id, { "anim.propia.fotogramas": fs.filter((_, j) => j !== i) }, "Quitar fotograma") })]);
         }),
       ]);
-      hijos.unshift(tabla, boton("＋ Fotograma", () => {
+      hijos.unshift(tabla, boton(I("mas", "Fotograma"), () => {
         const lista = fs.map((f) => ({ ...f }));
         const u = lista[lista.length - 1] || { t: 0 };
         if (u.t >= 1) { lista.push({ ...u }); lista.forEach((f, j) => { f.t = Math.round((j / (lista.length - 1)) * 100) / 100; }); }
@@ -607,10 +711,10 @@ export class Inspector {
   _animarPagina(sel) {
     const E = this.E;
     const els = sel.length ? sel : E.pagina.els;
-    this.cuerpo.append(el("div.ed-insp-cab", {}, [el("b.ed-tipo", { text: "✨" }), el("span", { text: sel.length ? `${sel.length} elementos` : "Toda la página" })]));
+    this.cuerpo.append(el("div.ed-insp-cab", {}, [el("b.ed-tipo", { html: ico("animar") }), el("span", { text: sel.length ? `${sel.length} elementos` : "Toda la página" })]));
     this.cuerpo.append(el("div.ed-botonera", {}, [
-      boton("▶ Probar la página", () => this.app.tiempo.probar(), "primario"),
-      boton("⏱ Línea de tiempo", () => this.app.tiempo.alternar(true), "chico"),
+      boton(I("play", "Probar la página"), () => this.app.tiempo.probar(), "primario"),
+      boton(I("tiempo", "Línea de tiempo"), () => this.app.tiempo.alternar(true), "chico"),
     ]));
     const cascada = (tipo, dir) => E.transaccion("Entrada en cascada", () => {
       [...els].sort((a, b) => a.y - b.y || a.x - b.x).forEach((e, i) => E.setEl(e.id, { "anim.entrada": { tipo, dur: 800, retraso: i * 160, facil: "suave", dir: dir || "arriba", dist: 30 } }));
@@ -618,7 +722,7 @@ export class Inspector {
     this.cuerpo.append(seccion("Aplicar a " + (sel.length ? "los elegidos" : "todo"), [
       el("p.ed-ayuda", { text: "Aparecen uno tras otro, de arriba hacia abajo." }),
       el("div.ed-botonera", {}, [
-        boton("Aparecer", () => cascada("aparecer"), "chico"), boton("Deslizar ↑", () => cascada("deslizar", "arriba"), "chico"),
+        boton("Aparecer", () => cascada("aparecer"), "chico"), boton("Deslizar", () => cascada("deslizar", "arriba"), "chico"),
         boton("Crecer", () => cascada("zoom"), "chico"), boton("Desde borroso", () => cascada("desenfoque"), "chico"),
         boton("Rebote", () => cascada("rebote"), "chico"), boton("Latido", () => cascada("latido"), "chico"),
       ]),
@@ -632,13 +736,18 @@ export class Inspector {
     const E = this.E;
     const els = [...E.pagina.els].reverse();
     if (!els.length) { this.cuerpo.append(el("p.ed-nota.suave", { text: "Esta página está vacía. Lo que añadas aparecerá aquí: lo de arriba de la lista se ve encima." })); return; }
+    const L = this.app.lienzo;
+    const fuera = (e) => { const b = L.vis(e); return b.x + b.w < 0 || b.y + b.h < 0 || b.x > L.W || b.y > L.H; };
     const lista = el("ol.ed-capas", {}, els.map((e) => el("li" + (E.sel.includes(e.id) ? ".on" : "") + (e.oculto ? ".oculto" : ""), { dataset: { id: e.id } }, [
-      el("button.ed-asa", { type: "button", html: "☰", title: "Arrastra para cambiar el orden", "aria-label": "Ordenar" }),
-      el("b", { text: TIPOS[e.tipo]?.icono || "•" }),
-      el("span.ed-capa-nombre", { text: (e.grupo ? "⛓ " : "") + (e.inicioOculto ? "🙈 " : "") + e.nombre }),
-      el("button.ed-capa-btn", { type: "button", html: e.oculto ? "🙈" : "👁", title: e.oculto ? "Mostrar" : "Ocultar", onClick: (ev) => { ev.stopPropagation(); E.setEl(e.id, { oculto: !e.oculto }, e.oculto ? "Mostrar" : "Ocultar"); } }),
-      el("button.ed-capa-btn", { type: "button", html: e.bloqueado ? "🔒" : "🔓", title: e.bloqueado ? "Desbloquear" : "Bloquear", onClick: (ev) => { ev.stopPropagation(); E.setEl(e.id, { bloqueado: !e.bloqueado }, e.bloqueado ? "Desbloquear" : "Bloquear"); } }),
-    ])));
+      el("button.ed-asa", { type: "button", html: ico("agarre"), title: "Arrastra para cambiar el orden", "aria-label": "Ordenar" }),
+      el("b", { html: ico(TIPOS[e.tipo]?.ico || "elementos") }),
+      el("span.ed-capa-nombre", { text: e.nombre }),
+      e.grupo ? el("i.ed-capa-marca", { html: ico("enlazar"), title: "En un grupo" }) : null,
+      e.inicioOculto ? el("i.ed-capa-marca", { html: ico("ojoNo"), title: "Empieza escondido" }) : null,
+      fuera(e) ? el("button.ed-capa-btn.aviso", { type: "button", html: ico("recuperar"), title: "Está fuera de la hoja: traerlo", onClick: (ev) => { ev.stopPropagation(); L.traerALaHoja([e.id]); } }) : null,
+      el("button.ed-capa-btn", { type: "button", html: ico(e.oculto ? "ojoNo" : "ojo"), title: e.oculto ? "Mostrar" : "Ocultar", onClick: (ev) => { ev.stopPropagation(); E.setEl(e.id, { oculto: !e.oculto }, e.oculto ? "Mostrar" : "Ocultar"); } }),
+      el("button.ed-capa-btn", { type: "button", html: ico(e.bloqueado ? "candado" : "abierto"), title: e.bloqueado ? "Desbloquear" : "Bloquear", onClick: (ev) => { ev.stopPropagation(); E.setEl(e.id, { bloqueado: !e.bloqueado }, e.bloqueado ? "Desbloquear" : "Bloquear"); } }),
+    ].filter(Boolean))));
     lista.addEventListener("click", (ev) => {
       const li = ev.target.closest("li");
       if (li && !ev.target.closest(".ed-asa")) E.seleccionar([li.dataset.id], ev.shiftKey || ev.metaKey || ev.ctrlKey);
@@ -649,12 +758,12 @@ export class Inspector {
       if (!li || !s) return;
       s.contentEditable = "true"; s.focus();
       getSelection().selectAllChildren(s);
-      const fin = () => { s.contentEditable = "false"; const t = s.textContent.replace(/^(⛓ |🙈 )+/, "").trim(); if (t) E.setEl(li.dataset.id, { nombre: t }, "Renombrar"); };
+      const fin = () => { s.contentEditable = "false"; const t = s.textContent.trim(); if (t) E.setEl(li.dataset.id, { nombre: t }, "Renombrar"); };
       s.addEventListener("blur", fin, { once: true });
       s.addEventListener("keydown", (k) => { if (k.key === "Enter") { k.preventDefault(); s.blur(); } k.stopPropagation(); });
     });
     // La lista está al revés (arriba = delante).
     ordenable(lista, { item: "li", asa: ".ed-asa", alSoltar: (de, a) => { const n = els.length; E.moverCapa(els[de].id, n - 1 - a); } });
-    this.cuerpo.append(el("p.ed-ayuda", { text: "Lo de arriba se ve delante. Arrastra ☰ para cambiar el orden; doble toque en el nombre para renombrar." }), lista);
+    this.cuerpo.append(el("p.ed-ayuda", { text: "Lo de arriba se ve delante. Arrastra el asa para cambiar el orden; doble toque en el nombre para renombrar." }), lista);
   }
 }

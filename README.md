@@ -65,10 +65,14 @@ la de la noche estrellada y la copia guardada para abrirlo sin internet.
 
 En el índice (☰), al final, está **«📖 Crear librito»**: un editor visual para
 armar libritos nuevos o editar éste sin tocar código. Páginas, textos, fotos,
-álbumes, carruseles, formas, dibujos, botones, vídeo, música, HTML propio
-(aislado), animaciones por elemento con línea de tiempo, transiciones,
-capas, guías, deshacer, autoguardado y exportar a **.zip** con sólo lo que
-se usa. Tus páginas de `paginas-html/` se pueden usar tal cual o volverse
+álbumes, carruseles, formas, dibujos, botones, vídeo, música, páginas HTML
+completas (aisladas), escenas 3D (WebGL2: figuras y modelos .glb/.gltf/.obj),
+animaciones con una línea de tiempo tipo editor de vídeo, transiciones,
+capas, guías, hoja **Automática** (se adapta a cada pantalla), deshacer,
+autoguardado y exportar a **.zip** con sólo lo que se usa. Funciona como app
+en el teléfono (cajón lateral que sigue al dedo, gestos de dos dedos,
+mantener presionado). Mientras se edita suena **`EditorDev/MusicaDev.mp3`**
+(si está), no la música del librito. Tus páginas de `paginas-html/` se pueden usar tal cual o volverse
 plantillas editables. Vive entero en **`EditorDev/`** y el libro no carga
 nada de él hasta que se entra. Su biblioteca se llena sola: componentes
 HTML en **`assets/<categoría>/<nombre>/`** (ver `assets/LÉEME.md`) y canciones

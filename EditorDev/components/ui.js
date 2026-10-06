@@ -6,6 +6,7 @@
  * «refresca» solo (y no si lo estás tocando, para no quitarte el foco).
  */
 import { el } from "../../src/utils/dom.js";
+import { ico } from "./iconos.js";
 
 export { el };
 
@@ -114,7 +115,7 @@ export function modal({ titulo, contenido, acciones = [], ancho = 520, clase = "
     };
     const tecla = (e) => { if (e.key === "Escape") { e.stopPropagation(); cerrar(null); } };
     const caja = el("div.ed-modal" + (clase ? "." + clase : ""), { role: "dialog", "aria-modal": "true", style: { maxWidth: ancho + "px" } }, [
-      el("header", {}, [el("h2", { text: titulo }), el("button.ed-x", { type: "button", "aria-label": "Cerrar", html: "✕", onClick: () => cerrar(null) })]),
+      el("header", {}, [el("h2", { text: titulo }), el("button.ed-x", { type: "button", "aria-label": "Cerrar", html: ico("cerrar"), onClick: () => cerrar(null) })]),
       el("div.ed-modal-cuerpo", {}, [].concat(contenido)),
       acciones.length ? el("footer", {}, acciones.map(([txt, val, cl]) => el("button.ed-btn" + (cl ? "." + cl : ""), { type: "button", html: txt, onClick: () => cerrar(typeof val === "function" ? val() : val) }))) : null,
     ]);
@@ -144,7 +145,8 @@ export function menu(ancla, items) {
   document.querySelector(".ed-menu")?.remove();
   const m = el("div.ed-menu", { role: "menu" }, items.filter(Boolean).map((it) => it === "-" ? el("hr") : el("button" + (it.peligro ? ".peligro" : ""), { type: "button", role: "menuitem", html: it.t, disabled: it.off || null, onClick: () => { cerrar(); it.al(); } })));
   document.body.append(m);
-  const r = ancla.getBoundingClientRect();
+  // Se ancla a un botón… o a un punto de la pantalla (el del dedo).
+  const r = ancla.getBoundingClientRect ? ancla.getBoundingClientRect() : { left: ancla.x, right: ancla.x, top: ancla.y, bottom: ancla.y };
   const W = innerWidth, H = innerHeight;
   const mw = m.offsetWidth, mh = m.offsetHeight;
   m.style.left = Math.max(8, Math.min(W - mw - 8, r.left)) + "px";
@@ -228,7 +230,9 @@ export function debounce(fn, ms) {
   return d;
 }
 
-export const esMovil = () => matchMedia("(max-width: 820px)").matches;
+/** Teléfono, tableta vertical o teléfono acostado: cajón lateral y hojas de abajo. */
+export const COMPACTO = "(max-width: 1023px), (max-height: 560px)";
+export const esMovil = () => matchMedia(COMPACTO).matches;
 
 /* ── Globito de opciones (la barra contextual lo usa) ─────────────── */
 export function popover(ancla, contenido, { clase = "" } = {}) {

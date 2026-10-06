@@ -241,7 +241,10 @@
       a.volume = RT.clamp(RT.num(vol, 0.9), 0, 1);
       const r = a.play();
       if (r && r.catch) r.catch(function () {});
-    } catch (err) { /* sin audio */ }
+      // Quien quiera enterarse (la música baja mientras suena: «ducking»).
+      if (RT.alSonar) RT.alSonar(a);
+      return a;
+    } catch (err) { return null; }
   };
   RT.precargarSonido = function (url) { if (url && !cacheSon.has(url)) { const a = new Audio(); a.preload = "auto"; a.src = url; cacheSon.set(url, a); } };
 

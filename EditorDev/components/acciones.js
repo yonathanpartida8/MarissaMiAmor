@@ -11,7 +11,8 @@ import { elegir } from "../assets/selector.js";
 import { DIBUJOS } from "../assets/dibujos.js";
 import { cajaDe, union } from "../canvas/guias.js";
 import { analizar } from "../componentes/analizar.js";
-import { rutaAUrl } from "../assets/biblioteca.js";
+import { rutaAUrl, elegirArchivos } from "../assets/biblioteca.js";
+import { ico } from "./iconos.js";
 
 const RT = window.LibritoRT;
 
@@ -28,19 +29,11 @@ export class Acciones {
 
   /* ── Añadir ─────────────────────────────────────────────────────── */
   _poner(el_) {
-    // Lo nuevo aparece en el centro de lo que se ve, un poquito corrido si ya hay algo ahí.
+    // Lo nuevo aparece en el centro de lo que se ve (con la hoja automática,
+    // donde se ve en esta pantalla), un poquito corrido si ya hay algo ahí.
     const L = this.app.lienzo;
-    if (L && el_.tipo !== "pagina") {
-      const r = L.vistaEl.getBoundingClientRect();
-      const c = L.aMundo(r.left + r.width / 2, r.top + r.height / 2);
-      const W = this.P.ajustes.ancho, H = this.P.ajustes.alto;
-      el_.x = Math.round(Math.max(0, Math.min(W - el_.w, c.x - el_.w / 2)));
-      el_.y = Math.round(Math.max(0, Math.min(H - el_.h, c.y - el_.h / 2)));
-      const ocupado = (x, y) => this.E.pagina.els.some((o) => Math.abs(o.x - x) < 4 && Math.abs(o.y - y) < 4);
-      let k = 0;
-      while (ocupado(el_.x, el_.y) && k++ < 12) { el_.x += 14; el_.y += 14; }
-    }
     if (!this.E.pagina) this.nuevaPagina();
+    if (L && el_.tipo !== "pagina") L.colocarNuevo(el_);
     this.E.agregarEl(el_);
     this.app.alAnadir?.();
     if (el_.tipo === "texto") requestAnimationFrame(() => L?.ajustarAlto(el_.id));
@@ -84,7 +77,40 @@ export class Acciones {
   carrusel() { return this.agregar("carrusel", { nombre: "Carrusel" }); }
   forma(figura) { return this.agregar("forma", { nombre: "Forma", forma: { figura }, ...(figura === "linea" ? { h: 20, w: 220 } : {}) }); }
   boton() { return this.agregar("boton", { nombre: "Botón" }); }
-  html() { const e = this.agregar("html", { nombre: "Bloque HTML" }); this.editarHtml(e); return e; }
+  html() { const e = this.agregar("html", { nombre: "Bloque HTML" }); this.app.html.abrir(e, { nuevo: true }); return e; }
+
+  /** Una página HTML entera, pegada en un solo bloque (ocupa toda la hoja). */
+  async htmlCompleto(desdeArchivo) {
+    let codigo = "";
+    if (desdeArchivo) {
+      const [f] = await elegirArchivos({ accept: ".html,.htm,text/html", multiple: false });
+      if (!f) return null;
+      codigo = await f.text();
+    }
+    const L = this.app.lienzo;
+    const e = nuevoEl("html", this.P, { nombre: "Página HTML", html: { codigo, interactivo: true, completo: true } });
+    Object.assign(e, L.guardarCaja(e, { x: 0, y: 0, w: L.W, h: L.H }, false), { ancla: { h: "estirar", v: "estirar" } });
+    if (!this.E.pagina) this.nuevaPagina();
+    this.E.agregarEl(e);
+    this.app.alAnadir?.();
+    this.app.html.abrir(this.E.el(e.id), { nuevo: !codigo });
+    return e;
+  }
+
+  /** Una escena 3D (WebGL2): una figura o un modelo. */
+  escena3d(op = {}) {
+    const d = { ...op };
+    const nombre = op.fuente === "archivo" ? this.P.assets[op.asset]?.nombre || "Modelo 3D" : RT.FIGURAS3D?.[op.figura] ? "3D · " + RT.FIGURAS3D[op.figura] : "Escena 3D";
+    if (op.fuente === "archivo" && op.formato !== "obj") d.colores = "propios";
+    return this.agregar("escena3d", { nombre, escena3d: d });
+  }
+
+  async modelo3d() {
+    const [id] = await elegir(this.app, "modelo", { titulo: "Modelo 3D" });
+    if (!id) return null;
+    const a = this.P.assets[id] || {};
+    return this.escena3d({ fuente: "archivo", asset: id, formato: (a.archivo || a.ruta || "").split(".").pop().toLowerCase() });
+  }
 
   dibujo(id) {
     const d = DIBUJOS.find((x) => x.id === id);
@@ -145,7 +171,7 @@ export class Acciones {
     const recetas = {
       nota: () => [
         F(cx + 30, y0, 220, 200, { nombre: "Nota adhesiva", relleno: "#fff2a8", rot: -3, caja: { sombra: { x: 4, y: 8, blur: 14, color: "rgba(80,60,0,.22)" } } }),
-        T("no olvides que te amo ♡", cx + 50, y0 + 60, 180, 90, { nombre: "Nota", fuente: "Caveat", tam: 30, color: "#5b4224" }),
+        T("no olvides que te amo", cx + 50, y0 + 60, 180, 90, { nombre: "Nota", fuente: "Caveat", tam: 30, color: "#5b4224" }),
       ],
       romantica: () => [
         F(cx, y0, 280, 230, { nombre: "Tarjeta", relleno: "#fffaf6", caja: { radio: 22, borde: { ancho: 2, color: "#f2b6cc", estilo: "dashed" }, sombra: { x: 0, y: 10, blur: 26, color: "rgba(120,40,80,.18)" } } }),
@@ -159,7 +185,7 @@ export class Acciones {
       ],
       polaroid: () => [
         nuevoEl("imagen", this.P, { grupo: g, nombre: "Foto", x: cx + 40, y: y0, w: 200, h: 220, rot: -2, imagen: { marco: "polaroid" } }),
-        T("nosotros ♡", cx + 40, y0 + 186, 200, 40, { nombre: "Pie de foto", fuente: "Caveat", tam: 28, color: t.texto }),
+        T("nosotros", cx + 40, y0 + 186, 200, 40, { nombre: "Pie de foto", fuente: "Caveat", tam: 28, color: t.texto }),
       ],
       sobre: () => [
         F(cx + 10, y0, 260, 170, { nombre: "Sobre", relleno: "#fbe7d3", caja: { radio: 8, sombra: { x: 0, y: 8, blur: 18, color: "rgba(90,50,30,.2)" } } }),
@@ -190,6 +216,10 @@ export class Acciones {
   async video() {
     const [id] = await elegir(this.app, "video");
     if (!id) return null;
+    return this.videoDe(id);
+  }
+
+  videoDe(id) {
     const a = this.P.assets[id] || {};
     const w = Math.min(330, this.P.ajustes.ancho - 40);
     const h = a.w && a.h ? Math.round((w * a.h) / a.w) : Math.round(w * 0.6);
@@ -288,11 +318,13 @@ export class Acciones {
   alinear(modo) {
     const sel = this.E.seleccionados.filter((e) => !e.bloqueado);
     if (!sel.length) return;
-    const W = this.P.ajustes.ancho, H = this.P.ajustes.alto;
-    const ref = sel.length > 1 ? union(sel.map(cajaDe)) : { x: 0, y: 0, w: W, h: H };
+    // Con lo que se ve en esta pantalla (la hoja automática puede ser más grande que su zona segura).
+    const L = this.app.lienzo;
+    const vis = (e) => cajaDe(L.vis(e));
+    const ref = sel.length > 1 ? union(sel.map(vis)) : { x: 0, y: 0, w: L.W, h: L.H };
     this.E.transaccion("Alinear", () => {
       for (const e of sel) {
-        const b = cajaDe(e);
+        const b = vis(e);
         let dx = 0, dy = 0;
         if (modo === "izq") dx = ref.x - b.x;
         if (modo === "centroH") dx = ref.x + ref.w / 2 - (b.x + b.w / 2);
@@ -309,8 +341,9 @@ export class Acciones {
     const sel = this.E.seleccionados.filter((e) => !e.bloqueado);
     if (sel.length < 3) { aviso("Elige 3 o más para repartirlos"); return; }
     const k = eje === "h" ? ["x", "w"] : ["y", "h"];
-    const orden = [...sel].sort((a, b) => cajaDe(a)[k[0]] - cajaDe(b)[k[0]]);
-    const cs = orden.map(cajaDe);
+    const vis = (e) => cajaDe(this.app.lienzo.vis(e));
+    const orden = [...sel].sort((a, b) => vis(a)[k[0]] - vis(b)[k[0]]);
+    const cs = orden.map(vis);
     const total = cs.reduce((s, c) => s + c[k[1]], 0);
     const ini = cs[0][k[0]], fin = cs[cs.length - 1][k[0]] + cs[cs.length - 1][k[1]];
     const hueco = (fin - ini - total) / (cs.length - 1);
@@ -326,17 +359,18 @@ export class Acciones {
 
   menuAlinear(ancla) {
     const muchos = this.E.sel.length > 1;
+    const t = (i, x) => `${ico(i)}<span>${x}</span>`;
     menu(ancla, [
-      { t: "⇤ Izquierda", al: () => this.alinear("izq") },
-      { t: "↔ Centro", al: () => this.alinear("centroH") },
-      { t: "⇥ Derecha", al: () => this.alinear("der") },
+      { t: t("izqA", "Izquierda"), al: () => this.alinear("izq") },
+      { t: t("alinearH", "Centro"), al: () => this.alinear("centroH") },
+      { t: t("derA", "Derecha"), al: () => this.alinear("der") },
       "-",
-      { t: "⤒ Arriba", al: () => this.alinear("arriba") },
-      { t: "↕ En medio", al: () => this.alinear("centroV") },
-      { t: "⤓ Abajo", al: () => this.alinear("abajo") },
+      { t: t("arribaA", "Arriba"), al: () => this.alinear("arriba") },
+      { t: t("centroV", "En medio"), al: () => this.alinear("centroV") },
+      { t: t("abajoA", "Abajo"), al: () => this.alinear("abajo") },
       muchos ? "-" : null,
-      muchos ? { t: "Repartir a lo ancho", al: () => this.distribuir("h") } : null,
-      muchos ? { t: "Repartir a lo alto", al: () => this.distribuir("v") } : null,
+      muchos ? { t: t("repartir", "Repartir a lo ancho"), al: () => this.distribuir("h") } : null,
+      muchos ? { t: t("repartir", "Repartir a lo alto"), al: () => this.distribuir("v") } : null,
     ]);
   }
 
@@ -350,24 +384,24 @@ export class Acciones {
     const uno = sel.length === 1 ? sel[0] : null;
     const bloq = sel.every((e) => e.bloqueado);
     if (uno && !bloq) {
-      if (uno.tipo === "texto") f.append(b("✎", "Editar texto", () => this.app.lienzo.editarTexto(uno)));
-      if (uno.tipo === "imagen") f.append(b(uno.imagen?.asset ? "⟳" : "＋", uno.imagen?.asset ? "Cambiar foto" : "Añadir foto", () => this.pedirArchivoPara(uno)));
-      if (uno.tipo === "imagen" && uno.imagen?.asset) f.append(b("⌗", "Recortar / encuadrar", () => this.app.lienzo.recortar(uno)));
-      if (uno.tipo === "album" || uno.tipo === "carrusel") f.append(b("＋", "Añadir fotos", () => this.pedirArchivoPara(uno)));
-      if (uno.tipo === "html") f.append(b("&lt;/&gt;", "Editar HTML", () => this.editarHtml(uno)));
+      if (uno.tipo === "texto") f.append(b(ico("editar"), "Escribir", () => this.app.lienzo.editarTexto(uno)));
+      if (uno.tipo === "imagen") f.append(b(ico(uno.imagen?.asset ? "cambiar" : "mas"), uno.imagen?.asset ? "Cambiar foto" : "Añadir foto", () => this.pedirArchivoPara(uno)));
+      if (uno.tipo === "imagen" && uno.imagen?.asset) f.append(b(ico("recortar"), "Recortar / encuadrar", () => this.app.lienzo.recortar(uno)));
+      if (uno.tipo === "album" || uno.tipo === "carrusel") f.append(b(ico("mas"), "Añadir fotos", () => this.pedirArchivoPara(uno)));
+      if (uno.tipo === "html") f.append(b(ico("html"), "Editar HTML", () => this.editarHtml(uno)));
     }
-    if (sel.length > 1 && !sel.every((e) => e.grupo && e.grupo === sel[0].grupo)) f.append(b("⛓", "Agrupar", () => this.agrupar()));
-    if (sel.some((e) => e.grupo)) f.append(b("✂", "Desagrupar", () => this.desagrupar()));
-    if (uno && uno.tipo === "componente") f.append(b("▶", "Probar aquí (tocarlo de verdad)", () => this.app.lienzo.probarAqui(uno)));
+    if (sel.length > 1 && !sel.every((e) => e.grupo && e.grupo === sel[0].grupo)) f.append(b(ico("enlazar"), "Agrupar", () => this.agrupar()));
+    if (sel.some((e) => e.grupo)) f.append(b(ico("desenlazar"), "Desagrupar", () => this.desagrupar()));
+    if (uno && /componente|html|pagina|escena3d/.test(uno.tipo)) f.append(b(ico("play"), "Probar aquí (tocarlo de verdad)", () => this.app.lienzo.probarAqui(uno)));
     if (!bloq) {
-      f.append(b("⧉", "Duplicar (Ctrl+D)", () => this.duplicar()));
-      f.append(b("⇡", "Traer adelante", () => this.capa("subir")));
-      f.append(b("⇣", "Llevar atrás", () => this.capa("bajar")));
-      f.append(b("⊞", "Alinear", (ev) => this.menuAlinear(ev.currentTarget)));
-      f.append(b("✨", "Animar", () => this.app.insp.abrir("animar")));
+      f.append(b(ico("duplicar"), "Duplicar (Ctrl+D)", () => this.duplicar()));
+      f.append(b(ico("subirCapa"), "Traer adelante", () => this.capa("subir")));
+      f.append(b(ico("bajarCapa"), "Llevar atrás", () => this.capa("bajar")));
+      f.append(b(ico("alinearH"), "Alinear", (ev) => this.menuAlinear(ev.currentTarget)));
+      f.append(b(ico("animar"), "Animar", () => this.app.insp.abrir("animar")));
     }
-    f.append(b(bloq ? "🔓" : "🔒", bloq ? "Desbloquear" : "Bloquear", () => this.alternar("bloqueado")));
-    if (!bloq) f.append(b("🗑", "Borrar (Supr)", () => this.borrar(), "peligro"));
+    f.append(b(ico(bloq ? "abierto" : "candado"), bloq ? "Desbloquear" : "Bloquear", () => this.alternar("bloqueado")));
+    if (!bloq) f.append(b(ico("borrar"), "Borrar (Supr)", () => this.borrar(), "peligro"));
   }
 
   /* ── Páginas ────────────────────────────────────────────────────── */
@@ -381,7 +415,7 @@ export class Acciones {
   async borrarPagina(pid = this.E.paginaId) {
     const p = this.P.paginas[pid];
     if (!p) return;
-    if (p.els.length && !(await confirmar(`Se borrará «${p.nombre}» con todo lo que tiene. Puedes deshacerlo con ↶.`, "Borrar página"))) return;
+    if (p.els.length && !(await confirmar(`Se borrará «${p.nombre}» con todo lo que tiene. Puedes deshacerlo con «Deshacer».`, "Borrar página"))) return;
     this.E.quitarPagina(pid);
     if (!this.P.orden.length) this.nuevaPagina();
   }
@@ -394,12 +428,12 @@ export class Acciones {
       this.E.quitarEls(p.els.map((e) => e.id), pid);
       this.E.setPag({ fondo: { tipo: "color", color: this.tema.fondo || "#ffffff" }, musica: { modo: "global" }, transicion: null }, "Dejar en blanco", null, pid);
     });
-    aviso("Página en blanco · ↶ para deshacer");
+    aviso("Página en blanco · puedes deshacerlo");
   }
 
   async limpiarTodo(soloUna) {
     const txt = soloUna ? "Se borrarán todas las páginas y quedará una sola en blanco." : "Se vaciarán todas las páginas (quedan en blanco, con su nombre y en su orden).";
-    if (!(await confirmar(txt + " Tus fotos y canciones subidas se quedan en la biblioteca. Puedes deshacerlo con ↶.", soloUna ? "Dejar una en blanco" : "Vaciar todas"))) return;
+    if (!(await confirmar(txt + " Tus fotos y canciones subidas se quedan en la biblioteca. Puedes deshacerlo con «Deshacer».", soloUna ? "Dejar una en blanco" : "Vaciar todas"))) return;
     this.E.transaccion(soloUna ? "Dejar una página" : "Vaciar páginas", () => {
       if (soloUna) {
         const nueva = nuevaPagina(this.P, { nombre: "Página 1" });
@@ -416,7 +450,7 @@ export class Acciones {
       this.E.setProy({ "ajustes.portada": pid });
       if (i > 0) this.E.moverPagina(i, 0);
     });
-    aviso("Ésta es ahora la portada 🖼️");
+    aviso("Ésta es ahora la portada");
   }
 
   nombreTipo(e) { return TIPOS[e.tipo]?.n || e.tipo; }

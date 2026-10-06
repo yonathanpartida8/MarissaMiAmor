@@ -7,27 +7,30 @@
  *   history/     deshacer y rehacer
  *   storage/     borradores en IndexedDB y autoguardado
  *   assets/      biblioteca de archivos, fotos optimizadas, dibujos, el librito de siempre
- *   canvas/      el lienzo: zoom, selección, manijas, imán, guías, reglas
+ *   componentes/ los componentes HTML de assets/ (catálogo y zona táctil)
+ *   canvas/      el lienzo: gestos, selección, transformaciones, imán, guías, reglas
  *   pages/       la lista de páginas
  *   templates/   plantillas ligeras
- *   animations/  la línea de tiempo
- *   html/        el editor de HTML aislado y el importador de páginas
+ *   timeline/    la línea de tiempo (como un editor de vídeo)
+ *   audio/       el sonido del editor: MusicaDev, efectos y «ducking»
+ *   html/        el editor de HTML aislado (documentos completos) y el importador
  *   export/      el .zip (escribir y leer)
- *   components/  inspector, paneles, vista previa, inicio, atajos, piezas de interfaz
+ *   components/  barra lateral, paneles, inspector, barra contextual, vista previa…
  *   runtime/     el reproductor: lo usan el lienzo, la vista previa y el .zip
+ *                (rt-3d.js: escenas WebGL2, se carga sólo si hay una)
  */
-import { el, aviso, modal, boton, esMovil, menu } from "./components/ui.js";
+import { el, aviso, modal, esMovil, menu } from "./components/ui.js";
 import { Estado } from "./core/estado.js";
-import { nuevoProyecto, nuevaPagina, nuevoEl, normalizar, clonar, uid } from "./core/modelo.js";
+import { nuevoProyecto, nuevaPagina, nuevoEl, normalizar, clonar, uid, tamAuto } from "./core/modelo.js";
 import { Biblioteca, elegirArchivos } from "./assets/biblioteca.js";
 import { Autoguardado } from "./storage/autoguardado.js";
 import { cargar, guardarTodo, borrar, leerArchivo, guardarArchivo } from "./storage/db.js";
-import { Lienzo } from "./canvas/lienzo.js";
+import { Lienzo, DISPOSITIVOS } from "./canvas/lienzo.js";
 import { Acciones } from "./components/acciones.js";
 import { Inspector } from "./components/inspector.js";
 import { Paneles } from "./components/paneles.js";
 import { PanelPaginas } from "./pages/panel.js";
-import { Linea } from "./animations/linea.js";
+import { Linea } from "./timeline/linea.js";
 import { EditorHtml } from "./html/editorHtml.js";
 import { Importador, registrarFuentes } from "./html/importar.js";
 import { Vista } from "./components/vista.js";
@@ -35,25 +38,35 @@ import { pantallaInicio } from "./components/inicio.js";
 import { atajos } from "./components/teclado.js";
 import { PLANTILLAS } from "./templates/plantillas.js";
 import { BarraContextual } from "./components/barra.js";
+import { Lateral } from "./components/lateral.js";
+import { guardasDeApp } from "./components/guardas.js";
+import { AudioEditor } from "./audio/mezclador.js";
 import { ico } from "./components/iconos.js";
 
 const RT = window.LibritoRT;
 const ULTIMO = "editordev:ultimo";
 const $ = (s) => document.querySelector(s);
 
+/** Las categorías del riel: [id, icono, nombre]. */
 const SECCIONES = [
   ["paginas", "paginas", "Páginas"],
   ["elementos", "elementos", "Elementos"],
   ["texto", "texto", "Texto"],
-  ["fotos", "fotos", "Fotos"],
-  ["componentes", "componentes", "Componentes"],
+  ["imagenes", "imagen", "Imágenes"],
+  ["video", "video", "Vídeo"],
   ["audio", "audio", "Audio"],
+  ["efectos", "efectos", "Efectos"],
   ["animar", "animar", "Animar"],
-  ["diseno", "diseno", "Tema"],
   ["transiciones", "transiciones", "Transiciones"],
+  ["interactivo", "interactivo", "Interactivo"],
+  ["componentes", "componentes", "Piezas"],
   ["html", "html", "HTML"],
-  ["ajustes", "ajustes", "Ajustes"],
+  ["3d", "cubo", "3D"],
+  ["diseno", "diseno", "Tema"],
+  ["herramientas", "herramientas", "Herramientas"],
 ];
+// Nombres viejos que otros sitios todavía piden.
+const ALIAS = { fotos: "imagenes", ajustes: "herramientas" };
 
 const app = {};
 window.EditorDev = app;
@@ -62,9 +75,11 @@ function guardarUltimo(id) { try { if (id) localStorage.setItem(ULTIMO, id); els
 function leerUltimo() { try { return localStorage.getItem(ULTIMO); } catch (e) { return null; } }
 
 async function arrancar() {
+  guardasDeApp();
   const E = new Estado();
   Object.assign(app, { estado: E });
   app.bib = new Biblioteca(E);
+  app.audio = new AudioEditor(app);
   app.acciones = new Acciones(app);
   app.html = new EditorHtml(app);
   app.importar = new Importador(app);
@@ -77,12 +92,13 @@ async function arrancar() {
   app.paginas = new PanelPaginas(app);
   app.tiempo = new Linea(app, $(".ed-linea"));
   app.barra = new BarraContextual(app, $(".ed-contexto"));
+  app.lateral = new Lateral({ raiz: $(".ed-lateral"), velo: $(".ed-velo"), borde: $(".ed-borde-izq"), asa: $(".ed-asa-lateral"), alCambiar: (on) => { if (on) cerrarHoja(); } });
   app.abrirSeccion = (id) => abrirSeccion(id, true);
 
   const estadoGuardado = $(".ed-guardado");
   app.auto = new Autoguardado(E, (st) => {
     estadoGuardado.dataset.st = st;
-    estadoGuardado.textContent = st === "guardando" ? "● Guardando…" : st === "error" ? "⚠ No se pudo guardar" : "✓ Guardado";
+    estadoGuardado.textContent = st === "guardando" ? "Guardando…" : st === "error" ? "No se pudo guardar" : "Guardado";
     if (st === "error") aviso("No se pudo guardar en este navegador (¿sin espacio?). Exporta el .zip para no perder nada.", 5000, "error");
   });
 
@@ -91,7 +107,7 @@ async function arrancar() {
   atajos(app);
   E.on("historial", pintarHistorial);
   E.on("proyecto", ({ ruta }) => { if (ruta === "nombre") pintarNombre(); });
-  E.on("cargado", () => { pintarNombre(); pintarHistorial(); abrirSeccion(app.seccion || (esMovil() ? null : "paginas")); });
+  E.on("cargado", () => { pintarNombre(); pintarHistorial(); abrirSeccion(app.seccion || (esMovil() ? "elementos" : "paginas")); });
   E.on("actual", () => { if (esMovil()) cerrarHoja(); });
 
   const ultimo = leerUltimo();
@@ -104,31 +120,50 @@ async function arrancar() {
 /* ── Barra de arriba ─────────────────────────────────────────────────── */
 function construirBarra() {
   const E = app.estado;
-  // Los iconos a crayón de la barra de arriba.
+  $(".ed-volver").innerHTML = ico("volver");
+  $(".ed-abrir-lateral").innerHTML = ico("menu");
   $(".ed-deshacer").innerHTML = ico("deshacer");
   $(".ed-rehacer").innerHTML = ico("rehacer");
   $(".ed-guardar").innerHTML = ico("guardar");
+  $(".ed-ver").innerHTML = ico("telefono");
   $(".ed-previa").insertAdjacentHTML("afterbegin", ico("play"));
   $(".ed-exportar").insertAdjacentHTML("afterbegin", ico("exportar"));
   const nombre = $(".ed-nombre input");
   nombre.addEventListener("change", () => { const n = nombre.value.trim(); if (n) E.setProy({ nombre: n }, "Nombre"); });
   nombre.addEventListener("keydown", (e) => { if (e.key === "Enter") nombre.blur(); e.stopPropagation(); });
+  $(".ed-abrir-lateral").addEventListener("click", () => {
+    if (esMovil()) app.lateral.alternar();
+    else abrirSeccion(app.seccion && !document.body.classList.contains("sin-panel") ? null : app.seccion || "elementos", true);
+  });
   $(".ed-deshacer").addEventListener("click", () => E.deshacer());
   $(".ed-rehacer").addEventListener("click", () => E.rehacer());
   $(".ed-previa").addEventListener("click", () => app.vista.abrir(Math.max(0, E.proyecto.orden.indexOf(E.paginaId)), { portadilla: false }));
   $(".ed-exportar").addEventListener("click", () => app.exportar());
+  const t = (i, x) => `${ico(i)}<span>${x}</span>`;
   $(".ed-guardar").addEventListener("click", (e) => menu(e.currentTarget, [
-    { t: "💾 Guardar borrador ahora", al: () => app.guardarYa() },
-    { t: "📂 Abrir borrador…", al: () => app.inicio() },
-    { t: "🆕 Empezar uno nuevo", al: () => app.nuevo() },
-    { t: "📥 Abrir archivo (.zip / .json)…", al: () => app.abrirArchivo() },
+    { t: t("guardar", "Guardar borrador ahora"), al: () => app.guardarYa() },
+    { t: t("carpeta", "Abrir borrador…"), al: () => app.inicio() },
+    { t: t("nuevo", "Empezar uno nuevo"), al: () => app.nuevo() },
+    { t: t("subir", "Abrir archivo (.zip / .json)…"), al: () => app.abrirArchivo() },
     "-",
-    { t: "📦 Exportar ZIP", al: () => app.exportar() },
+    { t: t("exportar", "Exportar ZIP"), al: () => app.exportar() },
   ]));
+  $(".ed-ver").addEventListener("click", (e) => app.menuVerComo(e.currentTarget));
   const zoom = $(".ed-zoom");
   zoom.addEventListener("change", () => { const v = zoom.value; app.lienzo.zoom(v === "ajustar" ? "ajustar" : +v); zoom.value = ""; });
   app.alZoom = (v) => { $(".ed-zoom option[value='']").textContent = v.ajustar ? "Ajustar" : Math.round(v.z * 100) + "%"; };
+  app.alVerComo = (id) => { $(".ed-ver").innerHTML = ico(DISPOSITIVOS[id]?.ico || "telefono"); };
+  app.alVerComo(app.lienzo.ver);
 }
+
+/** Con la hoja automática: en qué pantalla probarla. */
+app.menuVerComo = (ancla) => {
+  const L = app.lienzo;
+  menu(ancla, Object.entries(DISPOSITIVOS).map(([k, d]) => ({
+    t: `${ico(d.ico)}<span>${d.n}${d.w ? ` · ${d.w}×${d.h}` : ""}</span>${L.ver === k ? ico("ok") : ""}`,
+    al: () => L.verComo(k),
+  })));
+};
 
 function pintarNombre() {
   const P = app.estado.proyecto;
@@ -146,82 +181,54 @@ function pintarHistorial() {
   r.title = h.puedeRehacer ? `Rehacer: ${h.siguienteNombre} (Ctrl+Mayús+Z)` : "Nada que rehacer";
 }
 
-/* ── Riel, paneles y hojas (en el teléfono) ──────────────────────────── */
+/* ── Riel, panel y hojas (en el teléfono) ────────────────────────────── */
 function construirRiel() {
   const riel = $(".ed-riel");
-  const tabs = $(".ed-tabs");
   for (const [id, icono, n] of SECCIONES) {
-    riel.append(el("button", { type: "button", dataset: { s: id }, title: n, onClick: () => abrirSeccion(app.seccion === id && !esMovil() ? null : id, true) }, [el("b", { html: ico(icono) }), el("span", { text: n })]));
-  }
-  const movil = [["paginas", "paginas", "Páginas"], ["elementos", "elementos", "Elementos"], ["texto", "texto", "Texto"], ["fotos", "fotos", "Fotos"], ["componentes", "componentes", "Piezas"], ["mas", "mas", "Más"]];
-  for (const [id, icono, n] of movil) {
-    tabs.append(el("button", { type: "button", dataset: { s: id }, onClick: (e) => {
-      if (id === "mas") {
-        menu(e.currentTarget, [
-          { t: "🎵 Audio y música", al: () => abrirSeccion("audio", true) },
-          { t: "✨ Animar", al: () => abrirSeccion("animar", true) },
-          { t: "🎨 Diseño del elemento", al: () => { app.insp.abrir("diseno"); abrirHoja("insp:diseno"); } },
-          { t: "☰ Capas", al: () => { app.insp.abrir("capas"); abrirHoja("insp:capas"); } },
-          { t: "🌸 Tema y letras", al: () => abrirSeccion("diseno", true) },
-          { t: "🎞️ Transiciones", al: () => abrirSeccion("transiciones", true) },
-          { t: "</> HTML", al: () => abrirSeccion("html", true) },
-          { t: "⏱ Línea de tiempo", al: () => app.tiempo.alternar() },
-          { t: "⚙️ Ajustes y exportar", al: () => abrirSeccion("ajustes", true) },
-        ]);
-        return;
-      }
-      const activo = document.body.dataset.hoja === id;
-      if (activo) { cerrarHoja(); return; }
-      if (id.startsWith("insp:")) { app.insp.abrir(id.slice(5)); abrirHoja(id); }
-      else abrirSeccion(id, true);
+    riel.append(el("button", { type: "button", dataset: { s: id }, title: n, "aria-label": n, onClick: () => {
+      const activo = app.seccion === id;
+      if (esMovil()) { if (activo && app.lateral.abierto) app.lateral.cerrar(); else abrirSeccion(id, true); }
+      else abrirSeccion(activo && !document.body.classList.contains("sin-panel") ? null : id, true);
     } }, [el("b", { html: ico(icono) }), el("span", { text: n })]));
   }
-  // El asa: tocarla o arrastrarla hacia abajo cierra la hoja.
+  $(".ed-panel-x").innerHTML = ico("cerrar");
+  $(".ed-panel-x").addEventListener("click", () => { if (esMovil()) app.lateral.cerrar(); else abrirSeccion(null); });
+  $(".ed-asa-lateral").innerHTML = ico("derecha");
+  // El asa de la hoja del inspector: tocarla o arrastrarla hacia abajo la cierra.
   let y0 = null;
   for (const asa of document.querySelectorAll(".ed-hoja-asa")) {
     asa.addEventListener("click", cerrarHoja);
     asa.addEventListener("pointerdown", (e) => { y0 = e.clientY; });
   }
   addEventListener("pointerup", (e) => { if (y0 != null && e.clientY - y0 > 60) cerrarHoja(); y0 = null; });
-  app.mostrarInspector = () => { if (esMovil()) abrirHoja("insp:" + app.insp.tab); };
-  app.alElegirPagina = () => { if (esMovil()) cerrarHoja(); };
-  app.alDibujar = () => { if (esMovil()) cerrarHoja(); };
-  // En el teléfono, lo recién añadido se ve en la hoja (no debajo del panel).
-  app.alAnadir = () => { if (esMovil() && !document.querySelector(".ed-modal-fondo")) cerrarHoja(); };
+  app.mostrarInspector = () => { if (esMovil()) { app.lateral.cerrar(); abrirHoja("insp:" + app.insp.tab); } };
+  app.cerrarHoja = cerrarHoja;
+  app.alElegirPagina = () => { if (esMovil()) app.lateral.cerrar(); };
+  app.alDibujar = () => { if (esMovil()) app.lateral.cerrar(); };
+  // En el teléfono, lo recién añadido se ve en la hoja (no debajo del cajón).
+  app.alAnadir = () => { if (esMovil() && !document.querySelector(".ed-modal-fondo")) app.lateral.cerrar(); };
 }
 
 function abrirSeccion(id, desdeUsuario) {
-  app.seccion = id;
+  id = ALIAS[id] || id;
   const cont = $(".ed-panel-cuerpo");
   for (const b of document.querySelectorAll(".ed-riel button")) b.classList.toggle("on", b.dataset.s === id);
   document.body.classList.toggle("sin-panel", !id);
-  if (!id) { if (esMovil()) cerrarHoja(); return; }
-  const titulo = SECCIONES.find((s) => s[0] === id);
+  if (!id) { if (esMovil()) app.lateral.cerrar(); return; }
+  app.seccion = id;
+  const titulo = SECCIONES.find((s) => s[0] === id) || SECCIONES[1];
   $(".ed-panel-titulo").innerHTML = `${ico(titulo[1])}<span>${titulo[2]}</span>`;
+  app.paneles._limpiar?.();
   cont.textContent = "";
   cont.scrollTop = 0;
-  if (id === "animar") {
-    app.insp.abrir("animar");
-    if (!esMovil()) app.tiempo.alternar(true);
-    cont.append(el("p.ed-ayuda", { text: "Elige un elemento en la hoja y dale su entrada, su bucle, su salida o una animación propia (a la derecha). Abajo está la línea de tiempo." }));
-    cont.append(boton("▶ Probar la página", () => app.tiempo.probar(), "primario"), boton("⏱ Línea de tiempo", () => app.tiempo.alternar(), "chico"));
-    if (esMovil() && desdeUsuario) abrirHoja("insp:animar");
-    return;
-  }
   if (id === "paginas") { app.paneles.actual = null; app.paginas.construir(cont); }
   else app.paneles.abrir(id, cont);
-  if (esMovil() && desdeUsuario) abrirHoja(id);
+  if (id === "animar" && !esMovil()) { app.insp.abrir("animar"); app.tiempo.alternar(true); }
+  if (esMovil() && desdeUsuario) app.lateral.abrir();
 }
 
-function abrirHoja(id) {
-  document.body.dataset.hoja = id;
-  for (const b of document.querySelectorAll(".ed-tabs button")) b.classList.toggle("on", b.dataset.s === id);
-}
-
-function cerrarHoja() {
-  delete document.body.dataset.hoja;
-  for (const b of document.querySelectorAll(".ed-tabs button")) b.classList.remove("on");
-}
+function abrirHoja(id) { document.body.dataset.hoja = id; }
+function cerrarHoja() { delete document.body.dataset.hoja; }
 
 /* ── Proyectos ──────────────────────────────────────────────────────── */
 app.abrirProyecto = async (P, guardar = false) => {
@@ -248,6 +255,7 @@ app.nuevo = async (nombre, formato = "movil") => {
   if (app.auto.pendiente) await app.auto.ahora();
   if (!nombre) { pantallaInicio(app, { cerrable: !!app.estado.proyecto }); return; }
   const P = nuevoProyecto(nombre, formato);
+  if (formato === "auto" && matchMedia("(pointer: coarse)").matches) { const t = tamAuto(); P.ajustes.ancho = t.w; P.ajustes.alto = t.h; }
   const pg = PLANTILLAS.find((t) => t.id === "portada").crear(P);
   pg.nombre = "Portada";
   P.paginas[pg.id] = pg;
@@ -255,7 +263,7 @@ app.nuevo = async (nombre, formato = "movil") => {
   P.ajustes.portada = pg.id;
   await app.abrirProyecto(P, true);
   RT.cargarFuentes(pg.els.map((e) => e.texto?.fuente));
-  aviso("Tu librito nuevo 🤍 Empieza tocando cualquier cosa de la portada");
+  aviso("Tu librito nuevo. Empieza tocando cualquier cosa de la portada");
 };
 
 app.inicio = async () => {
@@ -265,7 +273,7 @@ app.inicio = async () => {
 
 app.guardarYa = async () => {
   await app.auto.ahora();
-  aviso(app.auto.error ? "No se pudo guardar 😟" : "Borrador guardado ✓");
+  aviso(app.auto.error ? "No se pudo guardar" : "Borrador guardado");
 };
 
 app.duplicarProyecto = async (id) => {
@@ -326,7 +334,7 @@ app.abrirArchivo = async () => {
 app.exportar = async () => {
   if (app.auto.pendiente) await app.auto.ahora();
   const t = el("p", { text: "Juntando todo…" });
-  const capa = el("div.ed-ocupado", {}, [el("div", {}, [el("i.ed-girando"), el("b", { text: "📦 Exportando tu librito" }), t])]);
+  const capa = el("div.ed-ocupado", {}, [el("div", {}, [el("i.ed-girando"), el("b", { text: "Exportando tu librito" }), t])]);
   document.body.append(capa);
   try {
     const { exportar, descargar } = await import("./export/exportar.js");
@@ -341,16 +349,27 @@ app.exportar = async () => {
   } finally { capa.remove(); }
 };
 
-/** Cambiar el tamaño de la hoja (y, si se quiere, acomodar lo que ya hay). */
+/**
+ * Cambiar el tamaño de la hoja (y, si se quiere, acomodar lo que ya hay).
+ * «auto» = Automática: la zona segura sale de esta pantalla y en cada
+ * teléfono, tableta u orientación la hoja se adapta sola.
+ */
 app.cambiarTamano = async (w, h, formato) => {
   const E = app.estado;
   const P = E.proyecto;
   const { ancho: W, alto: H } = P.ajustes;
-  if (w === W && h === H) { E.setProy({ "ajustes.formato": formato }, "Tamaño"); return; }
+  // En el teléfono, la zona segura sale de su pantalla; en la computadora se
+  // queda la forma que ya tiene la hoja (y se prueba en otras con «Ver como»).
+  if (formato === "auto") { if (matchMedia("(pointer: coarse)").matches) { const t = tamAuto(); w = t.w; h = t.h; } else { w = W; h = H; } }
+  if (w === W && h === H) {
+    E.setProy({ "ajustes.formato": formato }, "Tamaño");
+    if (formato === "auto") aviso("Hoja automática: se adapta a cada pantalla. Pruébala con «Ver como».", 4200);
+    return;
+  }
   const hay = P.orden.some((pid) => P.paginas[pid].els.length);
   let escalar = false;
   if (hay) {
-    const r = await modal({ titulo: "Nuevo tamaño de hoja", ancho: 440, contenido: el("p", { text: `De ${W}×${H} a ${w}×${h}. ¿Acomodo lo que ya hay al nuevo tamaño?` }), acciones: [["Cancelar", null], ["Dejarlo igual", "no"], ["Acomodar", "si", "primario"]] });
+    const r = await modal({ titulo: "Nuevo tamaño de hoja", ancho: 440, contenido: el("p", { text: `De ${W}×${H} a ${w}×${h}${formato === "auto" ? " (automática)" : ""}. ¿Acomodo lo que ya hay al nuevo tamaño?` }), acciones: [["Cancelar", null], ["Dejarlo igual", "no"], ["Acomodar", "si", "primario"]] });
     if (!r) { app.paneles.rehacer(); return; }
     escalar = r === "si";
   }
@@ -365,6 +384,7 @@ app.cambiarTamano = async (w, h, formato) => {
       E.setEl(e.id, c, "Tamaño de hoja", null, pid);
     }
   });
+  if (formato === "auto") aviso("Hoja automática: se adapta a cada pantalla. Pruébala con «Ver como».", 4200);
 };
 
 app.dejarDeDibujar = () => {

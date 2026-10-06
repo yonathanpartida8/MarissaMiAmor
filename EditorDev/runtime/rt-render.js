@@ -26,11 +26,66 @@
     switch (e.tipo) {
       case "boton": case "carrusel": case "pagina": return true;
       case "componente": return !(e.componente && e.componente.decorativo);
+      case "escena3d": return !e.escena3d || e.escena3d.orbitar !== false;
       case "album": return !e.album || e.album.ampliar !== false || e.album.disposicion === "pila";
       case "video": return !!(e.video && e.video.controles);
       case "html": return !e.html || e.html.interactivo !== false;
       default: return false;
     }
+  };
+
+  /* ── Hoja automática (se adapta a cada pantalla) ─────────────────
+     Con «Automática», ancho×alto es la ZONA SEGURA del diseño. En cada
+     pantalla la hoja crece por un lado (nunca se corta nada: la zona
+     segura cabe entera) y cada elemento se queda pegado a su borde: lo de
+     arriba arriba, lo de abajo abajo, lo centrado centrado y lo que ocupa
+     todo (fondos) se estira. Sin anclas puestas, se deducen solas por
+     dónde está. Con un tamaño fijo, nada de esto cambia nada. */
+  RT.esAuto = function (aj) { return !!aj && aj.formato === "auto"; };
+
+  RT.medidas = function (aj, vw, vh) {
+    aj = aj || {};
+    const W0 = aj.ancho || 390, H0 = aj.alto || 844;
+    const s = vw > 0 && vh > 0 ? Math.min(vw / W0, vh / H0) : 1;
+    if (!RT.esAuto(aj) || !(vw > 0 && vh > 0)) return { W: W0, H: H0, W0: W0, H0: H0, s: s, auto: false };
+    return { W: Math.max(W0, Math.round(vw / s)), H: Math.max(H0, Math.round(vh / s)), W0: W0, H0: H0, s: s, auto: true };
+  };
+
+  RT.anclaDe = function (e, m) {
+    const a = e.ancla || {};
+    const W0 = (m && m.W0) || 390, H0 = (m && m.H0) || 844;
+    let ah = a.h, av = a.v;
+    if (!ah || ah === "auto") {
+      const cx = e.x + e.w / 2;
+      ah = e.tipo === "pagina" || e.w >= W0 * 0.9 ? "estirar" : cx < W0 / 3 ? "izq" : cx > (W0 * 2) / 3 ? "der" : "centro";
+    }
+    if (!av || av === "auto") {
+      const cy = e.y + e.h / 2;
+      av = e.tipo === "pagina" || e.h >= H0 * 0.9 ? "estirar" : cy < H0 / 3 ? "arriba" : cy > (H0 * 2) / 3 ? "abajo" : "centro";
+    }
+    return { h: ah, v: av };
+  };
+
+  /** Dónde se ve un elemento en esta pantalla (en la hoja fija, donde está). */
+  RT.colocar = function (e, m) {
+    if (!m || !m.auto || (m.W === m.W0 && m.H === m.H0)) return e;
+    const dx = m.W - m.W0, dy = m.H - m.H0;
+    const a = RT.anclaDe(e, m);
+    let x = e.x, y = e.y, w = e.w, h = e.h;
+    if (a.h === "der") x += dx; else if (a.h === "centro") x += dx / 2; else if (a.h === "estirar") w += dx;
+    if (a.v === "abajo") y += dy; else if (a.v === "centro") y += dy / 2; else if (a.v === "estirar") h += dy;
+    return { x: x, y: y, w: w, h: h, rot: e.rot };
+  };
+
+  /** Lo contrario: una caja vista en esta pantalla → lo que se guarda. */
+  RT.descolocar = function (e, caja, m, ancla) {
+    if (!m || !m.auto || (m.W === m.W0 && m.H === m.H0)) return caja;
+    const dx = m.W - m.W0, dy = m.H - m.H0;
+    const a = ancla || RT.anclaDe(e, m);
+    const r = { x: caja.x, y: caja.y, w: caja.w, h: caja.h };
+    if (a.h === "der") r.x -= dx; else if (a.h === "centro") r.x -= dx / 2; else if (a.h === "estirar") r.w -= dx;
+    if (a.v === "abajo") r.y -= dy; else if (a.v === "centro") r.y -= dy / 2; else if (a.v === "estirar") r.h -= dy;
+    return r;
   };
 
   /* ── Cada tipo ─────────────────────────────────────────────────── */
@@ -67,10 +122,14 @@
   }
 
   function vacio(c, texto, ctx, e) {
+    // Ya está (se repinta mucho al arrastrar): no rehacerlo, que parpadea.
+    const ya = c.firstChild;
+    if (ya && ya.className === "rt-vacio" && c.childNodes.length === 1 && ya.dataset.t === texto) return;
     c.textContent = "";
     if (ctx.modo !== "editor") return;
     const v = h("div", "rt-vacio", c);
-    v.innerHTML = `<span>＋</span><b>${texto}</b>`;
+    v.dataset.t = texto;
+    v.innerHTML = `<span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><b>${texto}</b>`;
     if (ctx.pedir) v.dataset.pedir = e.id;
   }
 
@@ -186,14 +245,26 @@
     n.controls = ctx.modo === "vista" && !!v.controles;
     n.style.objectFit = v.ajuste || "cover";
     if (n.getAttribute("src") !== url) n.src = url;
-    if (ctx.modo === "vista" && v.auto && ctx.activo) n.play().catch(function () {});
+    if (ctx.modo === "vista" && v.auto && ctx.activo && !RT.inicioDe(e)) n.play().catch(function () {});
   };
 
-  /** El HTML libre va SIEMPRE en su marco aislado: sin acceso al librito. */
+  /* El HTML libre va SIEMPRE en su marco aislado: sin acceso al librito.
+     Se acepta un trozo (se envuelve) o un documento entero tal cual
+     (<!DOCTYPE>, <html>, <head>, <style>, <script>, <body>…). Al principio
+     se le pone un «puente» chiquito para que lo que el aislamiento no deja
+     (localStorage, cookies) no rompa sus scripts: guardan en memoria. */
+  const PUENTE = "<script>(function(){function M(){var d={};return{getItem:function(k){return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null},setItem:function(k,v){d[k]=String(v)},removeItem:function(k){delete d[k]},clear:function(){d={}},key:function(i){return Object.keys(d)[i]||null},get length(){return Object.keys(d).length}}}"
+    + "['localStorage','sessionStorage'].forEach(function(n){try{window[n].getItem('x')}catch(e){try{Object.defineProperty(window,n,{value:M(),configurable:true})}catch(x){}}});"
+    + "try{document.cookie}catch(e){try{var c='';Object.defineProperty(document,'cookie',{get:function(){return c},set:function(v){c=String(v).split(';')[0]},configurable:true})}catch(x){}}})();<\/script>";
+  RT.esDocumento = function (codigo) { return /^\s*(<!--[\s\S]*?-->\s*)*<!doctype\s+html|<html[\s>]|<head[\s>]|<body[\s>]/i.test(String(codigo || "")); };
   RT.envolverHtml = function (codigo) {
     codigo = String(codigo || "");
-    if (/<html[\s>]|<body[\s>]/i.test(codigo)) return codigo;
-    return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    if (RT.esDocumento(codigo)) {
+      if (/<head[^>]*>/i.test(codigo)) return codigo.replace(/<head[^>]*>/i, (m) => m + PUENTE);
+      if (/<html[^>]*>/i.test(codigo)) return codigo.replace(/<html[^>]*>/i, (m) => m + "<head>" + PUENTE + "</head>");
+      return PUENTE + codigo;
+    }
+    return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' + PUENTE
       + "<style>html,body{margin:0;height:100%;background:transparent;font-family:system-ui,sans-serif;overflow:hidden;-webkit-text-size-adjust:100%}</style>"
       + "</head><body>" + codigo + "</body></html>";
   };
@@ -205,7 +276,8 @@
     if (!f || f.tagName !== "IFRAME") {
       c.textContent = ""; f = h("iframe", "rt-marco", c);
       f.setAttribute("sandbox", "allow-scripts allow-forms allow-popups allow-modals allow-pointer-lock");
-      f.setAttribute("allow", "autoplay; fullscreen");
+      f.setAttribute("allow", "autoplay; fullscreen; accelerometer; gyroscope");
+      f.setAttribute("loading", ctx.modo === "vista" ? "eager" : "lazy");
       f.setAttribute("title", e.nombre || "HTML");
     }
     const doc = RT.envolverHtml(x.codigo);
@@ -261,6 +333,7 @@
 
   RT.tamComponente = function (n, e) {
     const k = e.componente || {};
+    const b = n._rt.caja || e;
     const caja = n._rt.c.firstChild;
     if (!caja || caja.className !== "rt-comp") return;
     const f = caja.firstChild;
@@ -268,8 +341,8 @@
       caja.style.cssText = "position:absolute;inset:0";
       f.style.width = f.style.height = "100%";
     } else {
-      const W = k.ancho || e.w, H = k.alto || e.h;
-      caja.style.cssText = `position:absolute;left:0;top:0;width:${W}px;height:${H}px;transform-origin:0 0;transform:scale(${e.w / W},${e.h / H})`;
+      const W = k.ancho || b.w, H = k.alto || b.h;
+      caja.style.cssText = `position:absolute;left:0;top:0;width:${W}px;height:${H}px;transform-origin:0 0;transform:scale(${b.w / W},${b.h / H})`;
       f.style.width = W + "px"; f.style.height = H + "px";
     }
     // «Dejar pasar los toques fuera de lo que se ve»: sólo recorta lo transparente
@@ -369,15 +442,19 @@
     const r = n._rt;
     r.e = e;
     if (r.tipo !== e.tipo) { r.c.textContent = ""; r.c.className = "rt-c"; r.firma = null; r.tipo = e.tipo; }
-    n.className = "rt-el rt-e-" + e.tipo + (RT.esInteractivo(e) ? " rt-toca" : "");
+    // «Permitir interacción» apagado: en el librito no recibe toques.
+    const toca = RT.esInteractivo(e) && !(e.permisos && e.permisos.interactuar === false);
+    const cls = "rt-el rt-e-" + e.tipo + (toca ? " rt-toca" : "") + (e.permisos && e.permisos.interactuar === false ? " rt-sin-toque" : "") + (ctx.modo === "editor" && e.inicioOculto ? " rt-escondido" : "") + (n._rt.extra || "");
+    if (n.className !== cls) n.className = cls;
+    const b = RT.colocar(e, ctx.medidas);
+    r.caja = b;
     const s = n.style;
-    s.left = e.x + "px"; s.top = e.y + "px";
-    s.width = Math.max(1, e.w) + "px"; s.height = Math.max(1, e.h) + "px";
+    s.left = b.x + "px"; s.top = b.y + "px";
+    s.width = Math.max(1, b.w) + "px"; s.height = Math.max(1, b.h) + "px";
     s.transform = e.rot ? `rotate(${e.rot}deg)` : "";
     s.opacity = e.opacidad == null || e.opacidad === 1 ? "" : e.opacidad;
     // «Empieza escondido»: en el librito no se ve hasta que una acción lo muestra.
     s.display = e.oculto || (ctx.modo === "vista" && e.inicioOculto && !r.revelado) ? "none" : "";
-    n.classList.toggle("rt-escondido", ctx.modo === "editor" && !!e.inicioOculto);
     if (z != null) s.zIndex = z;
     s.mixBlendMode = e.mezcla || "";
     RT.aplicarCaja(r.c, e.caja);
@@ -450,6 +527,7 @@
       this.nodo = h("div", "rt-pagina rt-modo-" + ctx.modo);
       this.nodo.style.width = ancho + "px";
       this.nodo.style.height = alto + "px";
+      this.ancho = ancho; this.alto = alto;
       this.fondo = h("div", "rt-fondo", this.nodo);
       this.capa = h("div", "rt-capa", this.nodo);
       this.nodos = new Map();
@@ -472,6 +550,15 @@
         else RT.actualizarEl(n, e, ctx, i + 1);
       }
       for (const [id, n] of this.nodos) if (!vivos.has(id)) { RT.destruirEl(n); this.nodos.delete(id); }
+    }
+
+    /** Otra pantalla (hoja automática): mismo contenido, recolocado. */
+    redimensionar(ancho, alto) {
+      if (ancho === this.ancho && alto === this.alto) return;
+      this.ancho = ancho; this.alto = alto;
+      this.nodo.style.width = ancho + "px";
+      this.nodo.style.height = alto + "px";
+      for (const e of this.pagina.els || []) { const n = this.nodos.get(e.id); if (n) RT.actualizarEl(n, e, this.ctx); }
     }
 
     /** Sólo un elemento (lo que se usa mientras se arrastra). */

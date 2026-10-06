@@ -52,6 +52,7 @@
         ruta: (r) => (this.op.ruta ? this.op.ruta(r) : r),
         accion: (ac, e) => this.accion(ac, e),
         sonido: (id, vol) => RT.sonar(this.op.url(id), vol),
+        escala: () => this.escala || 1,
       };
       // Los componentes de assets/ pueden pedir cosas («siguiente», «musica»…).
       this._mensaje = (ev) => {
@@ -67,6 +68,7 @@
         else if (d.sonido) RT.sonar(d.sonido, d.volumen);
       };
       addEventListener("message", this._mensaje);
+      RT.alSonar = (a) => this.musica.agacharPor(a);
       this._montar();
       const ini = typeof op.inicio === "string" ? Math.max(0, this.orden.indexOf(op.inicio)) : op.inicio || 0;
       const empezar = () => this.ir(ini, false, true);
@@ -104,6 +106,17 @@
       this._escalar = () => {
         const vv = window.visualViewport;
         const w = vv ? vv.width : innerWidth, hh = vv ? vv.height : innerHeight;
+        // Hoja automática: la hoja toma la forma de la pantalla (vertical u
+        // horizontal) y lo de dentro se recoloca; con tamaño fijo, se escala.
+        const m = RT.medidas(this.datos.ajustes, w, hh);
+        this.medidas = m;
+        this.ctx.medidas = m;
+        if (m.W !== this.W || m.H !== this.H) {
+          this.W = m.W; this.H = m.H;
+          this.marco.style.width = this.W + "px";
+          this.marco.style.height = this.H + "px";
+          if (this.actual) this.actual.redimensionar(this.W, this.H);
+        }
         const s = Math.min(w / this.W, hh / this.H);
         this.escala = s;
         this.marco.style.transform = `translate(-50%, -50%) scale(${s})`;
@@ -111,6 +124,7 @@
       this._escalar();
       this._rs = () => { cancelAnimationFrame(this._rf); this._rf = requestAnimationFrame(this._escalar); };
       addEventListener("resize", this._rs);
+      addEventListener("orientationchange", this._rs);
       if (window.visualViewport) visualViewport.addEventListener("resize", this._rs);
       this._tecla = (ev) => {
         if (ev.target && /INPUT|TEXTAREA/.test(ev.target.tagName)) return;
@@ -186,11 +200,17 @@
       setTimeout(() => {
         if (this.actual !== nueva) return;
         anim.entrar({ vista: true });
+        // Los vídeos que empiezan más tarde (línea de tiempo).
+        for (const e of pag.els || []) {
+          if (e.tipo !== "video" || !e.video || !e.video.auto || !RT.inicioDe(e)) continue;
+          const v = nueva.nodos.get(e.id) && nueva.nodos.get(e.id).querySelector("video");
+          if (v) this._relojes.push(setTimeout(() => v.play().catch(() => {}), RT.inicioDe(e)));
+        }
         // Los sonidos «al aparecer», cuando empieza su entrada.
         for (const e of pag.els || []) {
           const so = e.sonidos;
           if (!so || !so.aparecer || e.oculto || e.inicioOculto) continue;
-          const ret = e.anim && e.anim.entrada && e.anim.entrada.tipo !== "ninguna" ? RT.num(e.anim.entrada.retraso, 0) : 0;
+          const ret = RT.inicioDe(e) + (e.anim && e.anim.entrada && e.anim.entrada.tipo !== "ninguna" ? RT.num(e.anim.entrada.retraso, 0) : 0);
           this._relojes.push(setTimeout(() => RT.sonar(this.op.url(so.aparecer), so.volumen), ret));
         }
       }, primera || !viejo ? 60 : dur * 0.45);
@@ -302,7 +322,9 @@
       clearTimeout(this._auto);
       this._quitarRelojes();
       removeEventListener("message", this._mensaje);
+      if (RT.alSonar) RT.alSonar = null;
       removeEventListener("resize", this._rs);
+      removeEventListener("orientationchange", this._rs);
       removeEventListener("keydown", this._tecla);
       if (window.visualViewport) visualViewport.removeEventListener("resize", this._rs);
       if (this.actual) { if (this.actual.anim) this.actual.anim.cancelar(); this.actual.destruir(); }

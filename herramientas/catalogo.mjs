@@ -13,6 +13,7 @@
  *   assets/<categoría>/algo.html                 → componente de un solo archivo
  *   assets/<categoría>/algo.png|jpg|webp|gif|svg → una imagen o adorno
  *   assets/<categoría>/algo.mp3|m4a|ogg|wav      → un sonido
+ *   assets/<categoría>/algo.glb|gltf|obj         → un modelo 3D (elemento «Escena 3D»)
  *   musica assets/*.mp3|m4a|ogg|wav              → la biblioteca de música
  *
  * Nada de esto toca los archivos: sólo los lista.
@@ -22,6 +23,7 @@ import { join } from "node:path";
 
 const IMG = /\.(png|jpe?g|webp|gif|svg|avif)$/i;
 const AUD = /\.(mp3|m4a|ogg|wav|aac)$/i;
+const MOD = /\.(glb|gltf|obj)$/i;
 const PREVIEW = /^(preview|miniatura|thumb)\.(png|jpe?g|webp|svg|gif)$/i;
 const NOMBRES = {
   buttons: "Botones", botones: "Botones", players: "Reproductores", reproductores: "Reproductores",
@@ -29,6 +31,7 @@ const NOMBRES = {
   animations: "Animaciones", animaciones: "Animaciones", decorations: "Decoraciones", decoraciones: "Decoraciones",
   frames: "Marcos", marcos: "Marcos", ui: "Interfaz", cards: "Tarjetas", tarjetas: "Tarjetas",
   audio: "Sonidos", sonidos: "Sonidos", img: "Imágenes", imagenes: "Imágenes", stickers: "Stickers",
+  "3d": "3D", modelos: "3D", models: "3D",
 };
 const ORDEN = ["buttons", "players", "portraits", "frames", "cards", "effects", "animations", "decorations", "stickers", "ui"];
 
@@ -101,6 +104,8 @@ export function catalogo(RAIZ) {
           items.push({ tipo: "imagen", id: `${cat}/${f}`, nombre: bonito(f), ruta, ...medida(p), peso: statSync(p).size });
         } else if (AUD.test(f)) {
           items.push({ tipo: "audio", id: `${cat}/${f}`, nombre: bonito(f), ruta, peso: statSync(p).size });
+        } else if (MOD.test(f)) {
+          items.push({ tipo: "modelo", id: `${cat}/${f}`, nombre: bonito(f), ruta, peso: statSync(p).size });
         }
       }
       if (items.length) categorias.push({ id: cat, nombre: NOMBRES[cat.toLowerCase()] || bonito(cat), items });

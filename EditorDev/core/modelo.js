@@ -14,7 +14,12 @@
  *            `els` va de atrás hacia delante: el último es el que se ve encima.
  *
  *   elemento = { id, tipo, nombre, x, y, w, h, rot, opacidad, bloqueado, oculto,
- *                caja, anim, accion, origen, [tipo]: { lo propio de su tipo } }
+ *                caja, anim, accion, origen, [tipo]: { lo propio de su tipo },
+ *                permisos  { mover, tamano, rotar, seleccionar, interactuar, fuera, proporcion }
+ *                          (lo que falte = permitido; proporcion: null = según el tipo)
+ *                ancla     { h: auto|izq|centro|der|estirar, v: auto|arriba|centro|abajo|estirar }
+ *                          (sólo cuenta con la hoja «Automática»)
+ *                tiempo    { inicio, fin } ms en la línea de tiempo (fin null = se queda) }
  *
  * Todo es JSON plano: se guarda tal cual, se exporta tal cual y el
  * reproductor lo pinta tal cual.
@@ -23,6 +28,9 @@
 export const VERSION = 1;
 
 export const FORMATOS = {
+  // «Automática»: el tamaño sale de la pantalla en la que se elige (es la
+  // zona segura) y en cada teléfono, tableta u orientación la hoja se adapta.
+  auto: { n: "Automática (se adapta a cada pantalla)", w: 0, h: 0, auto: true },
   movil: { n: "Teléfono", w: 390, h: 844 },
   movilAlto: { n: "Teléfono grande", w: 430, h: 932 },
   tableta: { n: "Tableta", w: 768, h: 1024 },
@@ -30,20 +38,31 @@ export const FORMATOS = {
   horizontal: { n: "Horizontal", w: 960, h: 540 },
 };
 
+/** `ico` = nombre del icono (components/iconos.js). */
 export const TIPOS = {
-  texto: { n: "Texto", icono: "T" },
-  imagen: { n: "Foto", icono: "🖼" },
-  forma: { n: "Forma", icono: "◆" },
-  dibujo: { n: "Dibujo", icono: "✿" },
-  trazo: { n: "Trazo a mano", icono: "✎" },
-  boton: { n: "Botón", icono: "⏺" },
-  album: { n: "Álbum", icono: "📸" },
-  carrusel: { n: "Carrusel", icono: "🎞" },
-  video: { n: "Vídeo", icono: "▶" },
-  html: { n: "HTML", icono: "</>" },
-  pagina: { n: "Página original", icono: "📄" },
-  componente: { n: "Componente", icono: "🧩" },
+  texto: { n: "Texto", ico: "texto" },
+  imagen: { n: "Foto", ico: "imagen" },
+  forma: { n: "Forma", ico: "forma" },
+  dibujo: { n: "Dibujo", ico: "dibujo" },
+  trazo: { n: "Trazo a mano", ico: "lapiz" },
+  boton: { n: "Botón", ico: "boton" },
+  album: { n: "Álbum", ico: "album" },
+  carrusel: { n: "Carrusel", ico: "carrusel" },
+  video: { n: "Vídeo", ico: "video" },
+  html: { n: "HTML", ico: "html" },
+  pagina: { n: "Página original", ico: "pagina" },
+  componente: { n: "Componente", ico: "componentes" },
+  escena3d: { n: "Escena 3D", ico: "cubo" },
 };
+
+/** Tamaño de la zona segura para «Automática», según la pantalla. */
+export function tamAuto(vw = innerWidth, vh = innerHeight) {
+  const k = 390 / Math.max(1, Math.min(vw, vh));
+  return { w: Math.round(vw * k), h: Math.round(vh * k) };
+}
+
+/** ¿Se permite? (lo que no está puesto, sí). */
+export const permite = (e, k) => !(e && e.permisos && e.permisos[k] === false);
 
 export function uid(prefijo = "e") {
   const r = crypto.getRandomValues(new Uint32Array(2));
@@ -97,7 +116,7 @@ const ANIM_VACIA = () => ({ entrada: { tipo: "ninguna" }, salida: { tipo: "ningu
 /** Medidas por defecto de cada tipo (antes de centrarlo en la hoja). */
 const TAM = {
   texto: [300, 60], imagen: [240, 300], forma: [160, 160], dibujo: [120, 120], trazo: [200, 120],
-  boton: [200, 56], album: [330, 330], carrusel: [330, 420], video: [330, 220], html: [330, 260], pagina: [390, 844], componente: [280, 200],
+  boton: [200, 56], album: [330, 330], carrusel: [330, 420], video: [330, 220], html: [330, 260], pagina: [390, 844], componente: [280, 200], escena3d: [300, 300],
 };
 
 export function nuevoEl(tipo, proyecto, datos = {}) {
@@ -126,6 +145,9 @@ export function nuevoEl(tipo, proyecto, datos = {}) {
     sonidos: null,      // { tocar, aparecer, volumen } → ids de assets de audio
     inicioOculto: false, // en el librito empieza escondido (lo muestra una acción)
     grupo: null,        // los del mismo grupo se eligen y se mueven juntos
+    permisos: null,     // { mover, tamano, rotar, seleccionar, interactuar, fuera, proporcion }
+    ancla: null,        // hoja automática: a qué borde se pega
+    tiempo: null,       // { inicio, fin } en la línea de tiempo
   };
   if (tipo === "pagina") { base.x = 0; base.y = 0; base.w = a.ancho; }
   const propio = {
@@ -138,11 +160,13 @@ export function nuevoEl(tipo, proyecto, datos = {}) {
     album: { fotos: [], disposicion: "cuadricula", columnas: 2, espacio: 8, radio: 10, marco: "ninguno", proporcion: "1", ampliar: true, cascada: { tipo: "aparecer", paso: 110, dur: 650, dir: "arriba" } },
     carrusel: { fotos: [], modo: "deslizar", direccion: "horizontal", auto: true, intervalo: 3200, velocidad: 600, bucle: true, puntos: true, flechas: false, espacio: 0, radio: 16, ajuste: "cover" },
     video: { asset: null, auto: false, bucle: false, silencio: false, controles: true, ajuste: "cover" },
-    html: { codigo: '<div style="display:grid;place-items:center;height:100%;font:600 22px system-ui;color:#d8397a">Hola 🤍</div>', interactivo: true },
+    html: { codigo: '<div style="display:grid;place-items:center;height:100%;font:600 22px system-ui;color:#d8397a">Hola, mi amor</div>', interactivo: true },
     pagina: { ruta: "", titulo: "" },
     // Un componente de assets/: aquí sólo se guarda CÓMO se usa esta copia;
     // el componente original no se toca nunca.
     componente: { id: "", ruta: "", entrada: "index.html", ancho: null, alto: null, parametros: [], params: {}, decorativo: false, aislado: false, miniatura: null, ajuste: "escalar", sinFondo: false, recorte: false, seleccion: "zona", analisis: null },
+    // WebGL2: una figura o un modelo (.glb/.gltf/.obj) con su luz y su cámara.
+    escena3d: { fuente: "figura", figura: "corazon", asset: null, color: t.acento || "#d8397a", metal: 0.15, rugosidad: 0.4, alambre: false, plano: false, luz: 1.4, luzColor: "#ffffff", ambiente: 0.7, fondo: null, girar: 0.6, orbitar: true, zoom: 1, rotX: -0.25, rotY: 0.5, animar: true },
   }[tipo];
   if (tipo === "boton") base.accion = { tipo: "siguiente" };
   if (tipo === "boton") base.caja = {};
@@ -164,6 +188,7 @@ export function assetsUsados(proyecto) {
     for (const e of p.els) {
       poner(e.imagen?.asset);
       poner(e.video?.asset);
+      if (e.escena3d?.fuente === "archivo") poner(e.escena3d.asset);
       for (const id of e.album?.fotos || []) poner(id);
       for (const id of e.carrusel?.fotos || []) poner(id);
       poner(e.sonidos?.tocar);

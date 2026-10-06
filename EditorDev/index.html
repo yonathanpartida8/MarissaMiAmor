@@ -2,11 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="theme-color" content="#fff6f1" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#171019" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
 <title>Crear librito</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📖%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d8397a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2z'/%3E%3Cpath d='M8 3v18'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Caveat:wght@400;600;700&family=Jost:wght@300;400;500;600&family=Patrick+Hand&display=swap">
@@ -15,14 +18,16 @@
 </head>
 <body class="ed">
   <header class="ed-barra">
-    <a class="ed-volver" href="../index.html" title="Volver al librito" aria-label="Volver al librito">←</a>
+    <a class="ed-volver" href="../index.html" title="Volver al librito" aria-label="Volver al librito"></a>
+    <button type="button" class="ed-btn ico ed-abrir-lateral" aria-label="Herramientas" title="Herramientas"></button>
     <div class="ed-nombre">
       <input type="text" aria-label="Nombre del librito" spellcheck="false">
-      <span class="ed-guardado" data-st="guardado">✓ Guardado</span>
+      <span class="ed-guardado" data-st="guardado">Guardado</span>
     </div>
     <div class="ed-acciones">
       <button type="button" class="ed-btn ico ed-deshacer" aria-label="Deshacer" disabled></button>
       <button type="button" class="ed-btn ico ed-rehacer" aria-label="Rehacer" disabled></button>
+      <button type="button" class="ed-btn ico ed-ver" aria-label="Ver como" title="Ver como (hoja automática)"></button>
       <select class="ed-zoom ed-sel" aria-label="Zoom">
         <option value="">Ajustar</option>
         <option value="ajustar">Ajustar a la pantalla</option>
@@ -38,13 +43,21 @@
     </div>
   </header>
 
-  <nav class="ed-riel" aria-label="Secciones"></nav>
-
-  <aside class="ed-panel" aria-label="Panel">
-    <button type="button" class="ed-hoja-asa" aria-label="Cerrar"><i></i></button>
-    <h2 class="ed-panel-titulo"></h2>
-    <div class="ed-panel-cuerpo"></div>
-  </aside>
+  <!-- La barra lateral: el riel de categorías y su panel. En la computadora
+       van fijos; en el teléfono y la tableta es un cajón que sigue al dedo. -->
+  <div class="ed-lateral" aria-label="Herramientas">
+    <nav class="ed-riel" aria-label="Secciones"></nav>
+    <aside class="ed-panel" aria-label="Panel">
+      <div class="ed-panel-cab">
+        <h2 class="ed-panel-titulo"></h2>
+        <button type="button" class="ed-panel-x" aria-label="Cerrar el panel" title="Cerrar"></button>
+      </div>
+      <div class="ed-panel-cuerpo"></div>
+    </aside>
+  </div>
+  <div class="ed-velo" aria-hidden="true"></div>
+  <div class="ed-borde-izq" aria-hidden="true"></div>
+  <button type="button" class="ed-asa-lateral" aria-label="Abrir herramientas"></button>
 
   <main class="ed-centro">
     <div class="ed-contexto" role="toolbar" aria-label="Herramientas de lo elegido" hidden></div>
@@ -55,13 +68,12 @@
     <button type="button" class="ed-hoja-asa" aria-label="Cerrar"><i></i></button>
   </aside>
 
-  <nav class="ed-tabs" aria-label="Secciones"></nav>
-
   <!-- El reproductor: el lienzo pinta con él (lo mismo que sale en el .zip). -->
   <script src="runtime/rt-base.js"></script>
   <script src="runtime/rt-render.js"></script>
   <script src="runtime/rt-anim.js"></script>
   <script src="runtime/rt-comps.js"></script>
+  <script src="runtime/rt-3d.js"></script>
   <script src="runtime/rt-trans.js"></script>
   <script type="module" src="app.js"></script>
 </body>
