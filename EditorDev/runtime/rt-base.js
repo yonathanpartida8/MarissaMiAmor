@@ -42,6 +42,30 @@
     "Quicksand": { g: "Quicksand:wght@400;600", pila: SANS, tipo: "sans" },
     "Poppins": { g: "Poppins:wght@300;400;600", pila: SANS, tipo: "sans" },
     "Nunito": { g: "Nunito:wght@400;700", pila: SANS, tipo: "sans" },
+    "Satisfy": { g: "Satisfy", pila: MANO, tipo: "mano" },
+    "Parisienne": { g: "Parisienne", pila: MANO, tipo: "mano" },
+    "Allura": { g: "Allura", pila: MANO, tipo: "mano" },
+    "Homemade Apple": { g: "Homemade+Apple", pila: MANO, tipo: "mano" },
+    "Shadows Into Light": { g: "Shadows+Into+Light", pila: MANO, tipo: "mano" },
+    "Indie Flower": { g: "Indie+Flower", pila: MANO, tipo: "mano" },
+    "Kalam": { g: "Kalam:wght@400;700", pila: MANO, tipo: "mano" },
+    "Patrick Hand": { g: "Patrick+Hand", pila: MANO, tipo: "mano" },
+    "Gloria Hallelujah": { g: "Gloria+Hallelujah", pila: MANO, tipo: "mano" },
+    "Cinzel": { g: "Cinzel:wght@400;600", pila: SERIF, tipo: "serif" },
+    "DM Serif Display": { g: "DM+Serif+Display:ital@0;1", pila: SERIF, tipo: "serif" },
+    "Libre Baskerville": { g: "Libre+Baskerville:ital,wght@0,400;0,700;1,400", pila: SERIF, tipo: "serif" },
+    "Merriweather": { g: "Merriweather:ital,wght@0,400;0,700;1,400", pila: SERIF, tipo: "serif" },
+    "EB Garamond": { g: "EB+Garamond:ital,wght@0,400;0,600;1,400", pila: SERIF, tipo: "serif" },
+    "Montserrat": { g: "Montserrat:wght@300;400;600;700", pila: SANS, tipo: "sans" },
+    "Raleway": { g: "Raleway:wght@300;400;600", pila: SANS, tipo: "sans" },
+    "Josefin Sans": { g: "Josefin+Sans:wght@300;400;600", pila: SANS, tipo: "sans" },
+    "Comfortaa": { g: "Comfortaa:wght@400;700", pila: SANS, tipo: "sans" },
+    "Fredoka": { g: "Fredoka:wght@400;600", pila: SANS, tipo: "divertida" },
+    "Baloo 2": { g: "Baloo+2:wght@400;600", pila: SANS, tipo: "divertida" },
+    "Lobster": { g: "Lobster", pila: MANO, tipo: "divertida" },
+    "Cookie": { g: "Cookie", pila: MANO, tipo: "divertida" },
+    "Chewy": { g: "Chewy", pila: SANS, tipo: "divertida" },
+    "Space Mono": { g: "Space+Mono:wght@400;700", pila: "'Courier New', monospace", tipo: "mono" },
     "Georgia": { pila: SERIF, tipo: "serif" },
     "Sistema": { pila: SANS, tipo: "sans" },
     "Courier": { pila: "'Courier New', Courier, monospace", tipo: "mono" },
@@ -61,15 +85,30 @@
     return fam.length ? "https://fonts.googleapis.com/css2?" + fam.map((f) => "family=" + f).join("&") + "&display=swap" : "";
   };
 
-  const pedidas = new Set();
-  /** Pide (una sola vez cada una) las tipografías que se van usando. */
-  RT.cargarFuentes = function (nombres) {
-    const nuevas = [];
-    for (const n of nombres) if (n && RT.FUENTES[n] && RT.FUENTES[n].g && !pedidas.has(n)) { pedidas.add(n); nuevas.push(n); }
-    if (!nuevas.length) return;
-    const l = document.createElement("link");
-    l.rel = "stylesheet"; l.href = RT.urlFuentes(nuevas);
-    document.head.appendChild(l);
+  const pedidas = new Map();
+  /**
+   * Pide (una sola vez cada una) las tipografías que se van usando. Con
+   * `esperar`, la promesa se cumple cuando ya están listas para medir el texto.
+   */
+  RT.cargarFuentes = function (nombres, esperar) {
+    const nuevas = [], esperas = [], g = [];
+    for (const n of nombres || []) {
+      if (!n || !RT.FUENTES[n] || !RT.FUENTES[n].g) continue;
+      g.push(n);
+      if (pedidas.has(n)) esperas.push(pedidas.get(n)); else nuevas.push(n);
+    }
+    if (nuevas.length) {
+      const l = document.createElement("link");
+      l.rel = "stylesheet"; l.href = RT.urlFuentes(nuevas);
+      const p = new Promise((ok) => { l.onload = l.onerror = () => ok(); setTimeout(ok, 5000); });
+      for (const n of nuevas) pedidas.set(n, p);
+      esperas.push(p);
+      document.head.appendChild(l);
+    }
+    if (!esperar) return Promise.resolve();
+    return Promise.all(esperas).then(() => (document.fonts && document.fonts.load
+      ? Promise.all(g.map((n) => document.fonts.load('400 24px "' + n + '"').catch(() => null)))
+      : null));
   };
 
   /* ── Saneado ──────────────────────────────────────────────────────

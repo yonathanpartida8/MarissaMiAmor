@@ -1,10 +1,10 @@
 /**
  * SALIR DEL EDITOR — sin perder nada sin querer.
  *
- * La flecha de volver (y el botón «atrás» del teléfono) ya no salen de golpe:
- *   · si TODO está guardado, sale directo;
- *   · si hay cambios sin guardar, pregunta con una tarjeta animada:
- *       Seguir editando · Salir sin guardar · Guardar y salir
+ * La flecha de volver (y el botón «atrás» del teléfono) nunca salen de golpe:
+ * siempre avisa, con una tarjeta animada, que podría perderse el progreso
+ * (y dice si ahora mismo hay algo sin guardar):
+ *       Guardar y salir · Salir · Quedarme un rato más
  * El botón «atrás» del teléfono primero cierra lo que esté abierto (una hoja,
  * una ventana, la prueba, el editor de HTML) y sólo después pregunta.
  *
@@ -17,7 +17,7 @@ import { cerrarUltima, PILA } from "./hoja.js";
 import { cerrarUltimoModal, MODALES } from "./ui.js";
 
 /** La tarjeta: se cumple con "seguir" | "salir" | "guardar". */
-export function preguntarCambios({ titulo = "¿Seguro que quieres salir?", texto = "Perderás todos los cambios que no hayas guardado.", salir = "Salir sin guardar", guardar = "Guardar y salir", seguir = "Seguir editando" } = {}) {
+export function preguntarCambios({ titulo = "¿Seguro que quieres salir?", texto = "Perderás todos los cambios que no hayas guardado.", estado = "", bien = false, salir = "Salir sin guardar", guardar = "Guardar y salir", seguir = "Seguir editando" } = {}) {
   return new Promise((resolver) => {
     const fin = (v) => {
       if (hecho) return;
@@ -34,12 +34,13 @@ export function preguntarCambios({ titulo = "¿Seguro que quieres salir?", texto
       el("div.ed-salir-ico", { html: ico("salir") }),
       el("h2", { id: "ed-salir-t", text: titulo }),
       el("p", { text: texto }),
+      estado ? el("small.ed-salir-estado" + (bien ? ".bien" : ""), { html: `${ico(bien ? "ok" : "guardar")}<span>${estado}</span>` }) : null,
       el("div.ed-salir-botones", {}, [
         el("button.ed-btn.primario", { type: "button", html: `${ico("guardar")}<span>${guardar}</span>`, onClick: () => fin("guardar") }),
         el("button.ed-btn.peligro-suave", { type: "button", html: `<span>${salir}</span>`, onClick: () => fin("salir") }),
         el("button.ed-btn", { type: "button", html: `<span>${seguir}</span>`, onClick: () => fin("seguir") }),
       ]),
-    ]);
+    ].filter(Boolean));
     const fondo = el("div.ed-salir-fondo", {}, [tarjeta]);
     fondo.addEventListener("pointerdown", (e) => { if (e.target === fondo) fin("seguir"); });
     addEventListener("keydown", tecla, true);
@@ -99,21 +100,27 @@ export class Salida {
 
   async salir() {
     const app = this.app;
-    if (this.hayCambios()) {
-      // Con el guardado automático encendido, lo pendiente se guarda solo en un instante.
-      if (app.auto?.activo && !app.auto.error && !app.html?.sucio) await app.auto.ahora();
-      if (this.hayCambios()) {
-        const r = await preguntarCambios();
-        if (r === "seguir") return;
-        if (r === "guardar") {
-          if (app.html?.sucio) await app.html.guardar(false);
-          await app.auto?.ahora();
-          if (app.auto?.error) return;
-        } else {
-          app.html?.descartar?.();
-          app.auto?.descartar();
-        }
-      }
+    if (this._preguntando) return;
+    this._preguntando = true;
+    // Lo que el guardado automático tenga pendiente se intenta guardar mientras se pregunta.
+    if (this.hayCambios() && app.auto?.activo && !app.auto.error && !app.html?.sucio) app.auto.ahora().catch(() => {});
+    const hay = () => this.hayCambios();
+    const r = await preguntarCambios({
+      titulo: "¿Ya te vas?",
+      texto: "Si sales ahora, podrías perder el progreso que no se haya guardado.",
+      estado: hay() ? "Ahora mismo hay cambios sin guardar." : "Ahora mismo todo está guardado.",
+      bien: !hay(),
+      salir: "Salir", guardar: "Guardar y salir", seguir: "Quedarme un rato más",
+    });
+    this._preguntando = false;
+    if (r === "seguir") return;
+    if (r === "guardar") {
+      if (app.html?.sucio) await app.html.guardar(false);
+      await app.auto?.ahora();
+      if (app.auto?.error) return;
+    } else if (hay()) {
+      app.html?.descartar?.();
+      app.auto?.descartar();
     }
     this.saliendo = true;
     document.body.classList.add("ed-saliendo");

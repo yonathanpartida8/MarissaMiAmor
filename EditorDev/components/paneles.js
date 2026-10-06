@@ -39,6 +39,7 @@ import { GIPHY } from "./secciones/giphy.js";
 import { AUDIO } from "./secciones/audio.js";
 import { HTML } from "./secciones/html.js";
 import { FONDO_HTML } from "./secciones/fondo.js";
+import { NAVEGACION } from "./secciones/navegacion.js";
 import * as GIF from "../integraciones/giphy.js";
 
 const RT = window.LibritoRT;
@@ -442,6 +443,7 @@ export class Paneles {
       fila("Margen", p("editor.margen", { tipo: "rango", min: 0, max: 80, unidad: "px", nombre: "Margen" })),
       (this.P.editor.guias || []).length ? boton("Quitar todas las guías", () => E.setProy({ "editor.guias": [] }, "Quitar guías"), "chico") : null,
     ].filter(Boolean), { abierta: false }));
+    this._navegacion(c);
     c.append(seccion("Cómo se lee", [
       fila("Flechas", p("ajustes.reproduccion.flechas", { tipo: "toggle" })),
       fila("Pasar deslizando", p("ajustes.reproduccion.deslizar", { tipo: "toggle" })),
@@ -495,4 +497,4 @@ export class Paneles {
 }
 
 // Las secciones grandes viven cada una en su archivo (components/secciones/).
-Object.assign(Paneles.prototype, ANIMAR, EFECTOS_SEC, TRANSICIONES, GIPHY, AUDIO, HTML, FONDO_HTML);
+Object.assign(Paneles.prototype, ANIMAR, EFECTOS_SEC, TRANSICIONES, GIPHY, AUDIO, HTML, FONDO_HTML, NAVEGACION);

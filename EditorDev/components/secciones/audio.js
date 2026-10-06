@@ -5,7 +5,7 @@
  *                           cuándo empieza y cuánto suena, verlo en la línea de
  *                           tiempo (ahí se arrastra y se recorta) y quitarlo
  *   Añadir audio            de tu biblioteca, de «musica assets/», de assets/ o subido
- *   Música del editor       MusicaDev.mp3 (sólo mientras editas)
+ *   Música del editor       lo de la carpeta DevMusic/ (sólo mientras editas)
  *   Música del librito y de la página   la de fondo, con sus fundidos
  */
 import { el, seccion, fila, boton, control, aviso, formatoBytes } from "../ui.js";
@@ -74,7 +74,7 @@ export const AUDIO = {
     const pintarEstado = () => {
       estado.textContent = !AU ? "" : AU.disponible
         ? AU.pref.on ? (AU.sonando ? "Sonando mientras editas. Baja sola cuando suena otra cosa." : "Empieza al primer toque.") : "Apagada."
-        : "No encontré MusicaDev.mp3: déjala en EditorDev/ (o en «musica assets/») y vuelve a abrir el editor.";
+        : "Todavía no hay música: deja tus canciones en la carpeta DevMusic/ y vuelve a abrir el editor.";
     };
     pintarEstado();
     if (AU) { const quitar = AU.alCambiar(pintarEstado); const antes = this._limpiar; this._limpiar = () => { quitar(); antes?.(); }; }

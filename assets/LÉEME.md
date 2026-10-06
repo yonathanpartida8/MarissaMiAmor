@@ -79,6 +79,23 @@ assets/buttons/mi-boton/
 `.png .jpg .webp .gif .svg` → adornos en la biblioteca.
 `.mp3 .m4a .ogg .wav` → sonidos (para botones, animaciones, transiciones).
 
+## Piezas de un solo archivo
+
+Un `.html` suelto en cualquier carpeta (`efectos-animados/soleado.html`,
+`botones/`, `marcos/`, `tarjetas/`, `dibujos/`…) es una pieza: su HTML, su CSS
+y su JS van juntos en el mismo archivo. Sale en el editor (Piezas) con el
+nombre de su `<title>`. Opcional, dentro de `<head>`:
+
+```html
+<title>Soleado</title>
+<meta name="tamaño" content="320x320">        <!-- su tamaño al ponerlo -->
+<meta name="descripcion" content="Un solecito que brilla">
+<meta name="decorativo" content="si">          <!-- deja pasar los toques -->
+```
+
+Fondo transparente (`html,body{background:transparent}`) para que se vea lo
+de detrás. Para ampliar, sólo hay que añadir archivos: nada más que tocar.
+
 ## Carpetas especiales
 
 Cada una tiene su `LÉEME.md` con ejemplos. Lo que dejes aparece solo.
@@ -92,6 +109,8 @@ Cada una tiene su `LÉEME.md` con ejemplos. Lo que dejes aparece solo.
 | `sonidos-editor/<momento>/` | `.wav/.mp3` cortitos (`botones`, `seleccionar`, `abrir`, `guardar`…) | sonidos al editar |
 | `stickers/` | `.png/.webp/.gif` sin fondo | Stickers → «Tus stickers» |
 | `iconos/` | `<nombre>.svg` que reemplaza un icono del editor | toda la interfaz |
+| `deslizar/<estilo>/` | `izquierda.svg` y `derecha.svg` (o .png/.webp/.gif) | las flechas para pasar página |
+| `sonidos-editor/abeja/` | la voz de la abejita (si no hay, hace un «bzz-pip» sola) | el foquito de ayuda |
 
 ## Que aparezca
 

@@ -21,7 +21,7 @@
  * librito exportado no necesita la carpeta. «Mías» se guardan en este
  * aparato para usarlas en cualquier librito.
  */
-import { catalogo } from "../componentes/catalogo.js";
+import { catalogo, listar } from "../componentes/catalogo.js";
 import { rutaAUrl } from "../assets/biblioteca.js";
 import { ICONOS } from "../components/iconos.js";
 
@@ -141,17 +141,6 @@ export async function interpretar(texto, formato, tipo, nombre = "") {
 
 /* ── Lo que hay en las carpetas ──────────────────────────────────── */
 
-/** Si el servidor deja listar una carpeta (servidor local), sus nombres. */
-async function listar(rel) {
-  try {
-    const r = await fetch(rutaAUrl(rel), { cache: "no-store" });
-    if (!r.ok || !/text\/html/.test(r.headers.get("content-type") || "")) return null;
-    const t = await r.text();
-    if (!/<a\s/i.test(t) || /<title>[^<]*(librito|Crear)/i.test(t)) return null;
-    return [...t.matchAll(/href="([^"?#]+)"/gi)].map((m) => decodeURIComponent(m[1])).filter((h) => !/^(\.\.?\/|\/|https?:)/.test(h) && !h.startsWith("?"));
-  } catch (e) { return null; }
-}
-
 let cache = null;
 /** Todo lo de las carpetas especiales (catálogo + lo que se pueda listar ahora). */
 export async function extras() {
@@ -160,6 +149,15 @@ export async function extras() {
   const ex = JSON.parse(JSON.stringify(c.extras || {}));
   for (const k of ["animaciones", "transiciones", "efectos", "fondos"]) ex[k] = ex[k] || [];
   ex.sonidos = ex.sonidos || {};
+  ex.deslizar = ex.deslizar || [];
+  const desl = await listar("assets/deslizar/");
+  if (desl) for (const d of desl.filter((h) => h.endsWith("/"))) {
+    const id = `deslizar/${d.slice(0, -1)}`;
+    if (ex.deslizar.some((x) => x.id === id)) continue;
+    const fs = (await listar(`assets/deslizar/${d}`)) || [];
+    const izq = fs.find((f) => /^(izquierda|left)\.(svg|png|webp|gif|avif)$/i.test(f)), der = fs.find((f) => /^(derecha|right)\.(svg|png|webp|gif|avif)$/i.test(f));
+    if (izq && der) ex.deslizar.push({ id, nombre: d.slice(0, -1).replace(/[-_]+/g, " "), izquierda: `assets/deslizar/${d}${izq}`, derecha: `assets/deslizar/${d}${der}` });
+  }
   ex.iconos = ex.iconos || {};
   // Lo recién dejado (sin catálogo nuevo): sólo si el servidor lista carpetas.
   const tipos = [["animaciones", /^animacion\.(json|css|js)$/i], ["transiciones", /^transicion\.(json|css|js)$/i]];

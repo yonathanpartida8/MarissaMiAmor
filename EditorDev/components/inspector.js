@@ -16,7 +16,6 @@ import { DIBUJOS, FORMAS } from "../assets/dibujos.js";
 import { elegir } from "../assets/selector.js";
 
 const RT = window.LibritoRT;
-const FUENTES = Object.keys(RT.FUENTES).map((f) => [f, f]);
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 const RECONSTRUIR = /^escena3d\.(fuente|asset)$|^ancla|^tiempo$|^efectos\.(sombra|resplandor)$|^efectos$|sonidos|^componente\.(params|analisis|sinFondo)|^accion\.destino|fotos|\.tipo$|^fondo\.tipo|^accion|figura|disposicion|^carrusel\.modo|propia|^tipo$|^imagen\.asset|^video\.asset|^musica\.modo|fondo\.imagen|gradiente$|sombra$|^transicion$/;
 const OPC_DIR = Object.entries(RT.DIRS);
@@ -261,7 +260,7 @@ export class Inspector {
     return seccion("Texto", [
       c("texto.html", { tipo: "area", filas: 4, nombre: "Escribir", leerComo: "texto" }),
       el("small.ed-ayuda", { text: "Toca dos veces el texto en la hoja para escribir directo (ahí puedes poner negritas con Ctrl+B)." }),
-      fila("Letra", c("texto.fuente", { tipo: "select", opciones: FUENTES, nombre: "Letra", alto: true })),
+      fila("Letra", c("texto.fuente", { tipo: "fuente", nombre: "Letra", alto: true })),
       el("div.ed-rejilla2", {}, [fila("Tamaño", c("texto.tam", { min: 6, max: 300, unidad: "px", nombre: "Tamaño", alto: true })), fila("Color", c("texto.color", { tipo: "color", nombre: "Color" }))]),
       fila("Grosor", c("texto.peso", { tipo: "segmento", opciones: [[300, "300"], [400, "400"], [500, "500"], [600, "600"], [700, "700"]], nombre: "Grosor" })),
       el("div.ed-botonera", {}, [
@@ -337,7 +336,7 @@ export class Inspector {
       fila("Texto", c("boton.texto", { tipo: "texto" })),
       fila("Estilo", c("boton.estilo", { tipo: "select", opciones: [["relleno", "Relleno"], ["borde", "Con borde"], ["suave", "Suave"], ["vidrio", "Vidrio"], ["texto", "Sólo texto"]] })),
       el("div.ed-rejilla2", {}, [fila("Color", c("boton.fondo", { tipo: "color" })), fila("Letra", c("boton.color", { tipo: "color" }))]),
-      fila("Tipografía", c("boton.fuente", { tipo: "select", opciones: FUENTES })),
+      fila("Tipografía", c("boton.fuente", { tipo: "fuente" })),
       el("div.ed-rejilla2", {}, [fila("Tamaño", c("boton.tam", { min: 8, max: 80, unidad: "px" })), fila("Esquinas", c("boton.radio", { min: 0, max: 999, unidad: "px" }))]),
     ]), seccion("Al tocarlo", [this._accion(e, c)])];
   }
@@ -394,9 +393,17 @@ export class Inspector {
   _video(e, c) {
     return seccion("Vídeo", [
       boton(e.video?.asset ? I("cambiar", "Cambiar vídeo") : I("mas", "Añadir vídeo"), () => this.app.acciones.pedirArchivoPara(e), e.video?.asset ? "" : "primario"),
-      el("div.ed-botonera", {}, [c("video.auto", { tipo: "toggle" }), el("small", { text: "solo al llegar" }), c("video.bucle", { tipo: "toggle" }), el("small", { text: "en bucle" })]),
+      fila("Reproducción", control(this.v, {
+        tipo: "segmento", opciones: [["auto", "Automática"], ["manual", "Manual (al tocarlo)"]],
+        leer: () => RT.modoVideo(this.E.el(e.id)?.video),
+        escribir: (m) => this.E.setEl(e.id, { "video.modo": m, "video.auto": m === "auto" }, "Reproducción del vídeo"),
+      }), "automática: empieza sola al llegar (sin sonido en el teléfono) · manual: se toca para verlo"),
+      el("div.ed-botonera", {}, [c("video.bucle", { tipo: "toggle" }), el("small", { text: "en bucle" })]),
       el("div.ed-botonera", {}, [c("video.silencio", { tipo: "toggle" }), el("small", { text: "sin sonido" }), c("video.controles", { tipo: "toggle" }), el("small", { text: "controles" })]),
       fila("Encaje", c("video.ajuste", { tipo: "segmento", opciones: [["cover", "Llenar"], ["contain", "Entero"]] })),
+      fila("Marco", c("video.marco", { tipo: "select", opciones: Object.entries(RT.MARCOS_VIDEO), def: "ninguno", nombre: "Marco del vídeo" })),
+      fila("Resplandor", c("video.ambiente", { tipo: "rango", min: 0, max: 1, paso: 0.05, def: 0, nombre: "Resplandor" }), "un fondo suave hecho con los colores del vídeo"),
+      boton(I("efectos", "Efectos y filtros"), () => this.app.abrirSeccion("efectos", true), "chico"),
       el("small.ed-ayuda", { text: "Para que empiece solo, el teléfono pide que esté sin sonido. En la línea de tiempo decides cuándo aparece (y empieza)." }),
     ]);
   }

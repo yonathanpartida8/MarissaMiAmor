@@ -66,6 +66,30 @@ export class SonidosEditor {
     this._sonar(momento);
   }
 
+  /** La voz de la abejita: un sonido de assets/sonidos-editor/abeja/ o un «bzz-pip» hecho aquí mismo. */
+  voz() {
+    if (!this.pref.on) return;
+    if (this.lista.abeja?.length) { this._sonar("abeja"); return; }
+    const ac = this.audio.ac;
+    if (!ac || ac.state !== "running") return;
+    const t = ac.currentTime, vol = Math.max(0, Math.min(1, this.pref.vol)) * 0.45;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    const o = ac.createOscillator(), lfo = ac.createOscillator(), lg = ac.createGain();
+    const f0 = 600 + Math.random() * 180;
+    o.type = "triangle";
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f0 * 1.6, t + 0.07);
+    o.frequency.exponentialRampToValueAtTime(f0 * 1.25, t + 0.2);
+    lfo.frequency.value = 36; lg.gain.value = f0 * 0.05; // el zumbido
+    lfo.connect(lg).connect(o.frequency);
+    o.connect(g).connect(this.audio.general);
+    o.start(t); lfo.start(t); o.stop(t + 0.24); lfo.stop(t + 0.24);
+    o.onended = () => { try { g.disconnect(); lg.disconnect(); } catch (e) { /* nada */ } };
+  }
+
   async _sonar(momento) {
     const l = this.lista[momento];
     const ahora = performance.now();

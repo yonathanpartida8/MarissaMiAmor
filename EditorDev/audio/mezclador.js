@@ -18,12 +18,14 @@
  * El volumen va por Web Audio (GainNode) porque en iPhone `audio.volume`
  * no hace nada. Nada suena hasta el primer toque (los navegadores no dejan).
  *
- * Dónde se busca MusicaDev.mp3: EditorDev/MusicaDev.mp3, «musica assets/»
- * o la raíz del proyecto (la primera que exista).
+ * Dónde se busca la música del editor: primero la carpeta **DevMusic/** (en
+ * la raíz; cualquier canción que dejes ahí, y si hay varias suenan una tras
+ * otra), y si no, MusicaDev.mp3 en EditorDev/, «musica assets/» o la raíz.
  */
 const RT = window.LibritoRT;
 const PREF = "editordev:musicadev";
 const CANDIDATAS = ["MusicaDev.mp3", "../musica assets/MusicaDev.mp3", "../MusicaDev.mp3"];
+const AUD = /\.(mp3|m4a|ogg|wav|aac)$/i;
 const BAJAR = 0.09;   // constante de tiempo al bajar (s): ~0.3 s
 const SUBIR = 0.45;   // al volver: ~1.5 s, gradual
 const NIVEL = { efecto: 0.3, escuchar: 0.06, componente: 0.15, vista: 0, pista: 0.12 };
@@ -65,7 +67,17 @@ export class AudioEditor {
 
   /* ── Encontrar MusicaDev.mp3 ─────────────────────────────────────── */
   async _buscar() {
-    for (const c of CANDIDATAS) {
+    // 1) DevMusic/ (del catálogo, o listándola si el servidor deja).
+    try {
+      const { catalogo, listar } = await import("../componentes/catalogo.js");
+      let lista = ((await catalogo()).devMusic || []).map((m) => m.ruta);
+      if (!lista.length) lista = ((await listar("DevMusic/")) || []).filter((f) => AUD.test(f)).map((f) => "DevMusic/" + f);
+      if (lista.length) {
+        this.lista = lista.map((r) => new URL("../" + r.split("/").map(encodeURIComponent).join("/"), location.href).href);
+        this.url = this.lista[0];
+      }
+    } catch (e) { /* sigue con las de siempre */ }
+    if (!this.url) for (const c of CANDIDATAS) {
       const u = new URL(c, location.href).href;
       try {
         const r = await fetch(u, { method: "HEAD", cache: "no-store" });
@@ -109,10 +121,19 @@ export class AudioEditor {
     if (!this.ac || !this.url || !this.pref.on || this._pausaVista) return;
     if (!this.dev) {
       const audio = new Audio();
-      audio.loop = true;
+      const varias = (this.lista?.length || 0) > 1;
+      audio.loop = !varias;
       audio.preload = "auto";
       audio.crossOrigin = "anonymous";
       audio.src = this.url;
+      // Varias canciones en DevMusic/: una tras otra, sin repetir la misma seguida.
+      if (varias) audio.addEventListener("ended", () => {
+        const l = this.lista, i = l.indexOf(audio.src);
+        let j = Math.floor(Math.random() * l.length);
+        if (j === i) j = (j + 1) % l.length;
+        audio.src = this.url = l[j];
+        if (this.pref.on && !this._pausaVista && !document.hidden) audio.play().catch(() => {});
+      });
       const gain = this.ac.createGain();
       gain.gain.value = 0;
       try { this.ac.createMediaElementSource(audio).connect(gain); } catch (e) { /* sin mezcla: suena directo */ }

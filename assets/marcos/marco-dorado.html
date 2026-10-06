@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Marco dorado</title>
+<meta name="tamaño" content="360x460">
+<meta name="descripcion" content="Un marco con brillo que pasa; el centro es transparente">
+<meta name="decorativo" content="si">
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+.m{position:absolute;inset:4%;border-radius:14px;padding:5%;background:linear-gradient(135deg,#f7e2a6,#c9a04c 30%,#fff3c4 50%,#b8862f 70%,#f2d48a);-webkit-mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);box-shadow:0 8px 24px rgba(120,80,20,.25)}
+.m::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.8) 50%,transparent 60%);background-size:250% 100%;animation:brillo 4.5s ease-in-out infinite}
+@keyframes brillo{from{background-position:130% 0}to{background-position:-130% 0}}
+@media (prefers-reduced-motion:reduce){.m::after{animation:none}}
+</style></head>
+<body><div class="m"></div></body></html>

@@ -119,6 +119,11 @@
 .rt-nav-ant { left: max(4px, env(safe-area-inset-left)); }
 .rt-nav-sig { right: max(4px, env(safe-area-inset-right)); }
 @media (hover: hover) { .rt-nav:hover { opacity: 1; } }
+/* Flechas de assets/deslizar/ (izquierda y derecha) */
+.rt-nav.rt-nav-img { width: calc(var(--rt-nav, 52px) + 8px); height: calc(var(--rt-nav, 52px) + 16px); margin-top: calc(var(--rt-nav, 52px) / -2 - 8px); opacity: .92; }
+.rt-nav-img img { width: var(--rt-nav, 52px); height: var(--rt-nav, 52px); object-fit: contain; filter: drop-shadow(0 3px 6px rgba(40, 10, 30, .25)); transition: transform .25s cubic-bezier(.3, 1.4, .5, 1); -webkit-user-drag: none; user-select: none; pointer-events: none; }
+.rt-nav-img:active img { transform: scale(.86); }
+@media (hover: hover) { .rt-nav-img:hover img { transform: scale(1.08); } }
 .rt-prog { position: absolute; left: 50%; bottom: max(10px, env(safe-area-inset-bottom)); width: min(40vw, 180px); height: 3px; margin-left: min(-20vw, -90px); border-radius: 3px; background: rgba(255, 255, 255, .25); overflow: hidden; }
 .rt-prog i { display: block; height: 100%; background: #fff; transform-origin: left; transition: transform .5s cubic-bezier(.22, .8, .26, 1); }
 .rt-arriba { position: absolute; top: max(10px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right)); display: flex; gap: 8px; }
@@ -140,3 +145,32 @@
 /* Escenas 3D (WebGL2). */
 .rt-3d { display: block; width: 100%; height: 100%; touch-action: none; }
 .rt-3d-aviso { position: absolute; inset: 0; display: grid; place-items: center; padding: 12px; text-align: center; font: 500 13px/1.3 system-ui, sans-serif; color: #8e2f86; background: rgba(255, 228, 238, .6); border-radius: 12px; }
+
+/* ── Vídeo: marcos, resplandor con sus colores y botón de reproducir ── */
+.rt-vwrap { position: relative; width: 100%; height: 100%; box-sizing: border-box; border-radius: inherit; --rt-vcolor: #e88aa8; }
+.rt-vwrap > .rt-vid { position: relative; z-index: 1; }
+.rt-vamb { position: absolute; z-index: 0; left: -12%; top: -12%; width: 124%; height: 124%; filter: blur(26px) saturate(1.7); opacity: var(--rt-amb, .8); pointer-events: none; border-radius: 30%; }
+.rt-vid-play { all: unset; position: absolute; z-index: 3; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; background: rgba(255, 255, 255, .86); box-shadow: 0 8px 24px rgba(0, 0, 0, .25), 0 0 0 6px rgba(255, 255, 255, .25); transition: opacity .3s, transform .3s cubic-bezier(.3, 1.4, .5, 1); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.rt-vid-play::before { content: ""; margin-left: 6px; border-left: 20px solid var(--rt-vcolor); border-top: 12px solid transparent; border-bottom: 12px solid transparent; filter: brightness(.8) saturate(1.4); }
+.rt-vwrap.sonando .rt-vid-play { opacity: 0; transform: scale(.7); pointer-events: none; }
+.rt-vwrap:active .rt-vid-play { transform: scale(.92); }
+.rt-vm-polaroid { padding: 5% 5% 16%; background: #fffdf7; box-shadow: 0 10px 26px rgba(40, 20, 30, .22); border-radius: 3px; }
+.rt-vm-polaroid > .rt-vid { border-radius: 2px; }
+.rt-vm-redondo { padding: 3%; background: #fff; border-radius: 24px; box-shadow: 0 10px 26px rgba(40, 20, 30, .2); }
+.rt-vm-redondo > .rt-vid { border-radius: 17px; }
+.rt-vm-cine { padding: 9% 0; background: #141014 repeating-linear-gradient(90deg, transparent 0 6%, rgba(255, 255, 255, .85) 6% 9%, transparent 9% 12%) 0 2.4% / 100% 3.2% no-repeat; box-shadow: 0 10px 26px rgba(0, 0, 0, .3); }
+.rt-vm-cine::after { content: ""; position: absolute; left: 0; right: 0; bottom: 2.4%; height: 3.2%; background: repeating-linear-gradient(90deg, transparent 0 6%, rgba(255, 255, 255, .85) 6% 9%, transparent 9% 12%); z-index: 2; }
+.rt-vm-neon > .rt-vid { border-radius: 16px; box-shadow: 0 0 0 3px var(--rt-vcolor), 0 0 22px 5px var(--rt-vcolor); transition: box-shadow 1s; }
+.rt-vm-cinta > .rt-vid { border-radius: 4px; box-shadow: 0 8px 20px rgba(40, 20, 30, .2); }
+.rt-vm-cinta::before, .rt-vm-cinta::after { content: ""; position: absolute; z-index: 2; top: -5%; width: 30%; height: 11%; background: rgba(255, 196, 214, .78); box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
+.rt-vm-cinta::before { left: -7%; transform: rotate(-14deg); }
+.rt-vm-cinta::after { right: -7%; transform: rotate(14deg); background: rgba(196, 226, 255, .78); }
+.rt-vm-tele { padding: 7% 7% 12%; background: linear-gradient(160deg, #8a5d48, #5a3a2c); border-radius: 20px; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .2), 0 10px 26px rgba(0, 0, 0, .3); }
+.rt-vm-tele > .rt-vid { border-radius: 14% / 18%; box-shadow: inset 0 0 0 4px #2a1a14; }
+@media (prefers-reduced-motion: reduce) { .rt-vm-neon > .rt-vid { transition: none; } }
+
+/* Lo que hace algo al tocarlo se hunde un poquito (sin tocar sus animaciones) */
+.rt-el.rt-accion { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.rt-el.rt-accion > .rt-ae { transition: scale .28s cubic-bezier(.34, 1.56, .64, 1); }
+.rt-el.rt-accion:active > .rt-ae { scale: .95; transition-duration: .08s; }
+.rt-el.rt-accion:focus-visible { outline: 3px solid rgba(224, 85, 142, .55); outline-offset: 3px; border-radius: 8px; }

@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><g transform="translate(64 0) scale(-1 1)"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff9fba"/><stop offset="1" stop-color="#ff5d8f"/></linearGradient></defs>
+<style>.m{animation:n 2.6s ease-in-out infinite;transform-origin:32px 32px}@keyframes n{0%,70%,100%{transform:translateX(0)}80%{transform:translateX(3px)}90%{transform:translateX(-1px)}}@media (prefers-reduced-motion:reduce){.m{animation:none}}</style>
+<g class="m"><path d="M32 56C14 44 5 34 6 22 7 12 20 8 32 19 44 8 57 12 58 22 59 34 50 44 32 56Z" fill="url(#g)" stroke="#fff" stroke-width="2.5"/>
+<path d="M27 21l11 10-11 10" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></g></g></svg>

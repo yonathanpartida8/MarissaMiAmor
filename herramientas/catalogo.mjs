@@ -10,11 +10,15 @@
  *       (con todo lo que tenga al lado: css, js, imágenes, audio, fuentes…;
  *        opcional `asset.json` con nombre, tamaño y parámetros, y
  *        `preview.png|jpg|webp|svg` como miniatura)
- *   assets/<categoría>/algo.html                 → componente de un solo archivo
+ *   assets/<categoría>/algo.html                 → componente de UN SOLO ARCHIVO (HTML,
+ *       CSS y JS juntos). Su nombre sale de <title> (o del archivo); opcional:
+ *       <meta name="tamaño" content="320x200">, <meta name="descripcion" …>,
+ *       <meta name="decorativo" content="si"> (no recibe toques)
  *   assets/<categoría>/algo.png|jpg|webp|gif|svg → una imagen o adorno
  *   assets/<categoría>/algo.mp3|m4a|ogg|wav      → un sonido
  *   assets/<categoría>/algo.glb|gltf|obj         → un modelo 3D (elemento «Escena 3D»)
  *   musica assets/*.mp3|m4a|ogg|wav              → la biblioteca de música
+ *   DevMusic/*.mp3|m4a|ogg|wav                   → la música que suena MIENTRAS editas
  *
  * Carpetas especiales (lo que el editor ofrece en sus paneles, no como piezas):
  *   assets/animaciones/<nombre>/animacion.json|css|js   → Animar (+ miniatura.*)
@@ -23,6 +27,7 @@
  *   assets/fondos/<nombre>/index.html  (o <nombre>.html)   → Fondos con HTML
  *   assets/sonidos-editor/<categoría>/*.mp3|wav|ogg        → sonidos del propio editor
  *   assets/iconos/<nombre>.svg                              → cambia un icono del editor
+ *   assets/deslizar/<estilo>/izquierda.*|derecha.*          → botones para pasar página
  *   (una carpeta con index.html dentro de animaciones/ o efectos/ sigue siendo una pieza)
  *
  * Nada de esto toca los archivos: sólo los lista.
@@ -40,10 +45,11 @@ const NOMBRES = {
   animations: "Animaciones", animaciones: "Animaciones", decorations: "Decoraciones", decoraciones: "Decoraciones",
   frames: "Marcos", marcos: "Marcos", ui: "Interfaz", cards: "Tarjetas", tarjetas: "Tarjetas",
   audio: "Sonidos", sonidos: "Sonidos", img: "Imágenes", imagenes: "Imágenes", stickers: "Stickers",
+  "efectos-animados": "Efectos animados", dibujos: "Dibujos", textos: "Textos", fondos: "Fondos",
   "3d": "3D", modelos: "3D", models: "3D",
 };
-const ORDEN = ["buttons", "players", "portraits", "frames", "cards", "effects", "animations", "decorations", "stickers", "ui"];
-const SOLO_EXTRAS = new Set(["sonidos-editor", "iconos", "fondos", "transiciones"]);
+const ORDEN = ["efectos-animados", "botones", "buttons", "marcos", "frames", "tarjetas", "cards", "dibujos", "players", "portraits", "effects", "animations", "decorations", "stickers", "ui"];
+const SOLO_EXTRAS = new Set(["sonidos-editor", "iconos", "fondos", "transiciones", "deslizar"]);
 const DEF = { animaciones: /^animacion\.(json|css|js)$/i, transiciones: /^transicion\.(json|css|js)$/i };
 
 const bonito = (s) => s.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/^\w/, (c) => c.toUpperCase());
@@ -78,6 +84,23 @@ function medidaPng(p) {
   return {};
 }
 
+/** Lo que un .html de un solo archivo dice de sí mismo (<title> y <meta>). */
+function metaHtml(p) {
+  try {
+    const t = readFileSync(p, "utf8").slice(0, 6000);
+    const meta = (n) => (new RegExp(`<meta[^>]+name=["']${n}["'][^>]*content=["']([^"']*)["']`, "i").exec(t) || new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]*name=["']${n}["']`, "i").exec(t) || [])[1];
+    const r = {};
+    const ti = /<title>([^<]{1,80})<\/title>/i.exec(t);
+    if (ti && ti[1].trim()) r.nombre = ti[1].trim();
+    const tam = /(\d{2,4})\s*[x×]\s*(\d{2,4})/.exec(meta("tama(?:ñ|n)o") || meta("size") || "");
+    if (tam) { r.ancho = +tam[1]; r.alto = +tam[2]; }
+    const d = meta("descripci(?:ó|o)n") || meta("description");
+    if (d) r.descripcion = d.slice(0, 140);
+    if (/^(si|sí|true|1)$/i.test(meta("decorativo") || "")) r.decorativo = true;
+    return r;
+  } catch (e) { return {}; }
+}
+
 function medida(p) {
   if (/\.svg$/i.test(p)) return medidaSvg(p);
   if (/\.png$/i.test(p)) return medidaPng(p);
@@ -86,7 +109,7 @@ function medida(p) {
 
 /** Lo de las carpetas especiales (animaciones, transiciones, efectos, fondos, sonidos, iconos). */
 function extrasDe(raiz) {
-  const ex = { animaciones: [], transiciones: [], efectos: [], fondos: [], sonidos: {}, iconos: {} };
+  const ex = { animaciones: [], transiciones: [], efectos: [], fondos: [], sonidos: {}, iconos: {}, deslizar: [] };
   const lista = (d) => (existsSync(d) ? readdirSync(d).filter((f) => !f.startsWith(".") && !/^(léeme|leeme|readme)\.(md|txt)$/i.test(f)).sort(orden) : []);
   for (const tipo of ["animaciones", "transiciones"]) {
     const d = join(raiz, tipo);
@@ -126,6 +149,15 @@ function extrasDe(raiz) {
   }
   const di = join(raiz, "iconos");
   for (const f of lista(di)) if (/\.svg$/i.test(f)) ex.iconos[f.replace(/\.svg$/i, "")] = `assets/iconos/${f}`;
+  const dd = join(raiz, "deslizar");
+  for (const f of lista(dd)) {
+    const p = join(dd, f);
+    if (!esDir(p)) continue;
+    const fs = readdirSync(p);
+    const izq = fs.find((a) => /^(izquierda|left)\.(svg|png|webp|gif|avif)$/i.test(a));
+    const der = fs.find((a) => /^(derecha|right)\.(svg|png|webp|gif|avif)$/i.test(a));
+    if (izq && der) ex.deslizar.push({ id: `deslizar/${f}`, nombre: bonito(f), izquierda: `assets/deslizar/${f}/${izq}`, derecha: `assets/deslizar/${f}/${der}` });
+  }
   return ex;
 }
 
@@ -159,7 +191,8 @@ export function catalogo(RAIZ) {
         } else if (cat === "efectos" && /\.json$/i.test(f)) {
           continue; // un filtro listo (va en extras.efectos)
         } else if (/\.html?$/i.test(f)) {
-          items.push({ tipo: "componente", id: `${cat}/${f}`, nombre: bonito(f), descripcion: "", ruta: `assets/${cat}/`, entrada: f, ancho: null, alto: null, parametros: [], miniatura: null, archivos: [f], peso: statSync(p).size });
+          const m = metaHtml(p);
+          items.push({ tipo: "componente", id: `${cat}/${f}`, nombre: m.nombre || bonito(f), descripcion: m.descripcion || "", ruta: `assets/${cat}/`, entrada: f, ancho: m.ancho || null, alto: m.alto || null, parametros: [], decorativo: !!m.decorativo, miniatura: null, archivos: [f], peso: statSync(p).size, suelto: true });
         } else if (IMG.test(f)) {
           items.push({ tipo: "imagen", id: `${cat}/${f}`, nombre: bonito(f), ruta, ...medida(p), peso: statSync(p).size });
         } else if (AUD.test(f)) {
@@ -168,14 +201,21 @@ export function catalogo(RAIZ) {
           items.push({ tipo: "modelo", id: `${cat}/${f}`, nombre: bonito(f), ruta, peso: statSync(p).size });
         }
       }
-      if (items.length) categorias.push({ id: cat, nombre: NOMBRES[cat.toLowerCase()] || bonito(cat), items });
+      const nombre = NOMBRES[cat.toLowerCase()] || bonito(cat);
+      const ya = categorias.find((g) => g.nombre === nombre); // «botones» y «buttons» van juntas
+      if (ya) ya.items.push(...items);
+      else if (items.length) categorias.push({ id: cat, nombre, items });
     }
   }
   const dirMusica = join(RAIZ, "musica assets");
   const musica = existsSync(dirMusica)
     ? todos(dirMusica).filter((f) => AUD.test(f)).map((f) => ({ nombre: bonito(f.split("/").pop()), ruta: `musica assets/${f}`, peso: statSync(join(dirMusica, f)).size }))
     : [];
-  return { categorias, musica, extras: extrasDe(raiz) };
+  const dirDev = join(RAIZ, "DevMusic");
+  const devMusic = existsSync(dirDev)
+    ? todos(dirDev).filter((f) => AUD.test(f)).map((f) => ({ nombre: bonito(f.split("/").pop()), ruta: `DevMusic/${f}`, peso: statSync(join(dirDev, f)).size }))
+    : [];
+  return { categorias, musica, devMusic, extras: extrasDe(raiz) };
 }
 
 export function textoCatalogo(RAIZ) {

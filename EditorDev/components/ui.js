@@ -83,7 +83,19 @@ export function control(v, { tipo = "numero", leer, escribir, min, max, paso = 1
     case "select": {
       n = el("select.ed-sel", {}, opciones.map(([val, txt]) => el("option", { value: val, text: txt })));
       n.addEventListener("change", () => { const o = opciones.find(([val]) => String(val) === n.value); poner(o ? o[0] : n.value); });
-      v.add(() => { const x = leer(); n.value = x == null ? "" : String(x); });
+      v.add(() => {
+        const x = leer(), s = x == null ? "" : String(x);
+        // Un valor que no está en la lista (una letra importada…) se añade, en vez de mostrar otro.
+        if (s && ![...n.options].some((o) => o.value === s)) n.append(el("option", { value: s, text: nombreFuente(s) }));
+        n.value = s;
+      });
+      break;
+    }
+    case "fuente": {
+      const RT = window.LibritoRT;
+      n = el("button.ed-sel.ed-sel-fuente", { type: "button", title: "Elegir la letra" });
+      n.addEventListener("click", () => elegirFuente(n, leer, poner));
+      v.add(() => { const f = leer() || "Sistema"; n.textContent = nombreFuente(f); n.style.fontFamily = RT.pilaFuente(f); RT.cargarFuentes([f]); });
       break;
     }
     case "toggle": {
@@ -142,7 +154,15 @@ export function modal({ titulo, contenido, acciones = [], ancho = 520, clase = "
       resolver(v);
     };
     let valor = null;
-    const tecla = (e) => { if (e.key === "Escape" && MODALES[MODALES.length - 1] === caja) { e.stopPropagation(); cerrar(null); } };
+    const tecla = (e) => {
+      if (MODALES[MODALES.length - 1] !== caja) return;
+      if (e.key === "Escape") { e.stopPropagation(); cerrar(null); return; }
+      // Enter = el botón principal (salvo escribiendo varias líneas o sobre otro botón).
+      if (e.key === "Enter" && !e.shiftKey && !e.isComposing && !e.target.closest?.("textarea, [contenteditable], .ed-codigo-pantalla, button, select")) {
+        const b = caja.querySelector(":scope > footer .primario, :scope > footer .peligro");
+        if (b) { e.preventDefault(); b.click(); }
+      }
+    };
     const a = hoja ? asa() : null;
     const cab = el("header", {}, [el("h2", { text: titulo }), cabecera, el("button.ed-x", { type: "button", "aria-label": "Cerrar", html: ico("cerrar"), onClick: () => cerrar(null) })].filter(Boolean));
     const caja = el("div.ed-modal" + (clase ? "." + clase : ""), { role: "dialog", "aria-modal": "true", style: { maxWidth: ancho + "px" } }, [
@@ -183,13 +203,19 @@ export function cerrarUltimoModal() {
 }
 
 export const confirmar = (texto, si = "Sí", clase = "peligro") =>
-  modal({ titulo: "¿Seguro?", contenido: el("p", { text: texto }), acciones: [["Cancelar", false], [si, true, clase]], ancho: 420 });
+  modal({
+    titulo: "¿Seguro?", ancho: 420, clase: "ed-modal-chico",
+    contenido: el("div.ed-confirmar", {}, [el("i.ed-confirmar-ico" + (clase === "peligro" ? ".peligro" : ""), { html: ico(clase === "peligro" ? "borrar" : "ok") }), el("p", { text: texto })]),
+    acciones: [["Cancelar", false], [si, true, clase]],
+  });
 
+/** Pedir un texto: ya viene elegido para reescribirlo, con un botón para vaciarlo y Enter para aceptar. */
 export function pedirTexto(titulo, valor = "", placeholder = "") {
-  const i = el("input.ed-txt", { type: "text", value: valor, placeholder });
-  setTimeout(() => { i.focus(); i.select(); }, 60);
-  const p = modal({ titulo, contenido: i, acciones: [["Cancelar", null], ["Aceptar", () => i.value, "primario"]], ancho: 420 });
-  i.addEventListener("keydown", (e) => { if (e.key === "Enter") i.closest(".ed-modal").cerrar(i.value); });
+  const i = el("input.ed-txt", { type: "text", value: valor, placeholder, enterkeyhint: "done", autocomplete: "off" });
+  const x = el("button.ed-txt-x", { type: "button", "aria-label": "Borrar", html: ico("cerrar"), hidden: !valor || null, onClick: () => { i.value = ""; x.hidden = true; i.focus(); } });
+  i.addEventListener("input", () => { x.hidden = !i.value; });
+  setTimeout(() => { i.focus(); i.select(); }, 80);
+  const p = modal({ titulo, contenido: el("div.ed-txt-caja", {}, [i, x]), acciones: [["Cancelar", null], ["Aceptar", () => i.value, "primario"]], ancho: 420, clase: "ed-modal-chico" });
   return p;
 }
 
@@ -289,6 +315,42 @@ export const COMPACTO = "(max-width: 1023px)";
 export const esMovil = () => matchMedia(COMPACTO).matches;
 
 /* ── Globito de opciones (la barra contextual lo usa) ─────────────── */
+/** El nombre limpio de una letra («"Caveat", cursive» → «Caveat»). */
+export const nombreFuente = (f) => String(f || "").split(",")[0].replace(/["']/g, "").trim() || "—";
+
+const GRUPOS_LETRA = [["mano", "A mano"], ["serif", "Elegantes"], ["sans", "Modernas"], ["divertida", "Divertidas"], ["mono", "De máquina"]];
+
+/**
+ * Elegir letra: cada una escrita con su propia letra, por grupos y con
+ * buscador. Tocar una la aplica al momento (se puede ir probando) y la deja
+ * marcada; se cierra tocando fuera o bajando la hojita.
+ */
+export function elegirFuente(ancla, leer, poner) {
+  const RT = window.LibritoRT;
+  const todas = Object.keys(RT.FUENTES);
+  RT.cargarFuentes(todas);
+  const buscar = el("input.ed-txt.ed-buscar", { type: "search", placeholder: "Buscar letra…", enterkeyhint: "search" });
+  const lista = el("div.ed-fuentes");
+  const marcar = (f) => { for (const x of lista.querySelectorAll(".ed-fuente")) x.classList.toggle("on", x.dataset.f === f); };
+  const pintar = () => {
+    const q = buscar.value.trim().toLowerCase();
+    const actual = nombreFuente(leer());
+    lista.textContent = "";
+    for (const [t, titulo] of [...GRUPOS_LETRA, ["", "Otras"]]) {
+      const fs = todas.filter((f) => (t ? RT.FUENTES[f].tipo === t : !GRUPOS_LETRA.some(([g]) => g === RT.FUENTES[f].tipo)) && (!q || f.toLowerCase().includes(q)));
+      if (!fs.length) continue;
+      lista.append(el("b.ed-fuentes-t", { text: titulo }));
+      for (const f of fs) lista.append(el("button.ed-fuente" + (f === actual ? ".on" : ""), { type: "button", dataset: { f }, style: { fontFamily: RT.pilaFuente(f) }, onClick: () => { poner(f); marcar(f); } }, [el("span", { text: f }), el("small", { text: "Te amo" })]));
+    }
+    if (!lista.childElementCount) lista.append(el("p.ed-vacio-txt", { text: "Ninguna letra con ese nombre." }));
+  };
+  buscar.addEventListener("input", pintar);
+  pintar();
+  const p = popover(ancla, [el("b.ed-pop-t", { text: "Letra" }), buscar, lista], { clase: "ed-pop-letras" });
+  requestAnimationFrame(() => { const on = lista.querySelector(".on"); if (on) lista.scrollTop = on.offsetTop - lista.clientHeight / 2; });
+  return p;
+}
+
 export function popover(ancla, contenido, { clase = "" } = {}) {
   document.querySelector(".ed-pop")?._cerrar?.();
   const p = el("div.ed-pop" + (clase ? "." + clase : ""), { role: "dialog" }, [].concat(contenido));

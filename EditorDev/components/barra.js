@@ -9,7 +9,7 @@
  * En la computadora va sobre el lienzo; en el teléfono, abajo, encima de
  * las pestañas, con botones grandes y desplazable de lado.
  */
-import { el, control, Vinculos, popover, menu, esMovil } from "./ui.js";
+import { el, control, Vinculos, popover, menu, esMovil, elegirFuente } from "./ui.js";
 import { leerRuta } from "../core/estado.js";
 import { ico } from "./iconos.js";
 
@@ -97,11 +97,9 @@ export class BarraContextual {
       const uno = sel.length === 1 ? sel[0] : null;
       const t = uno?.tipo;
       if (sel.every((x) => x.tipo === "texto")) {
-        const fuente = this._b("", "Letra", (a) => {
-          const lista = el("div.ed-pop-fuentes", {}, Object.keys(RT.FUENTES).map((f) => el("button", { type: "button", text: f, style: { fontFamily: RT.pilaFuente(f) }, onClick: () => { E.transaccion("Letra", () => { for (const x of E.seleccionados) E.setEl(x.id, { "texto.fuente": f }, "Letra"); }); for (const x of E.seleccionados) L.ajustarAlto(x.id); } })));
-          RT.cargarFuentes(Object.keys(RT.FUENTES));
-          popover(a, [el("b.ed-pop-t", { text: "Letra" }), lista]);
-        }, "fuente");
+        const fuente = this._b("", "Letra", (a) => elegirFuente(a, () => E.seleccionados[0]?.texto?.fuente, (f) => {
+          E.transaccion("Letra", () => { for (const x of E.seleccionados) E.setEl(x.id, { "texto.fuente": f }, "Letra"); });
+        }), "fuente");
         this.v.add(() => { const f = E.seleccionados[0]?.texto?.fuente || "—"; fuente.textContent = f.split(",")[0].replace(/["']/g, ""); fuente.style.fontFamily = RT.pilaFuente(f); });
         const tam = this._ctl("texto.tam", { tipo: "numero", min: 6, max: 300, nombre: "Tamaño", alto: true });
         const paso = (d) => this._b(ico(d > 0 ? "mas" : "menos"), d > 0 ? "Más grande" : "Más chico", () => { E.transaccion("Tamaño", () => { for (const x of E.seleccionados) E.setEl(x.id, { "texto.tam": Math.max(6, Math.round((x.texto.tam || 24) + d)) }, "Tamaño", "tam"); }, "tam"); for (const x of E.seleccionados) L.ajustarAlto(x.id); }, "chico");

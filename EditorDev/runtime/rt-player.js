@@ -92,6 +92,16 @@
       this.sig = h("button", "rt-nav rt-nav-sig", ui); this.sig.type = "button"; this.sig.setAttribute("aria-label", "Página siguiente"); this.sig.innerHTML = "<span>›</span>";
       this.ant.addEventListener("click", () => this.anterior());
       this.sig.addEventListener("click", () => this.siguiente());
+      // Las flechas son las de assets/deslizar/ (izquierda y derecha) que eligió el editor.
+      const bt = this.rep.botones, uIzq = bt && bt.izq && this.op.url(bt.izq), uDer = bt && bt.der && this.op.url(bt.der);
+      if (uIzq && uDer) {
+        for (const [b, u] of [[this.ant, uIzq], [this.sig, uDer]]) {
+          b.classList.add("rt-nav-img");
+          b.innerHTML = "";
+          const im = h("img", "", b); im.alt = ""; im.draggable = false; im.decoding = "async"; im.src = u;
+          if (bt.tam) b.style.setProperty("--rt-nav", bt.tam + "px");
+        }
+      }
       if (!this.rep.flechas) { this.ant.hidden = true; this.sig.hidden = true; }
       this.prog = h("div", "rt-prog", ui);
       this.progBarra = h("i", "", this.prog);
@@ -214,7 +224,7 @@
         anim.entrar({ vista: true });
         // Los vídeos que empiezan más tarde (línea de tiempo).
         for (const e of pag.els || []) {
-          if (e.tipo !== "video" || !e.video || !e.video.auto || !RT.inicioDe(e)) continue;
+          if (e.tipo !== "video" || !e.video || RT.modoVideo(e.video) !== "auto" || !RT.inicioDe(e)) continue;
           const v = nueva.nodos.get(e.id) && nueva.nodos.get(e.id).querySelector("video");
           if (v) this._relojes.push(setTimeout(() => v.play().catch(() => {}), RT.inicioDe(e)));
         }

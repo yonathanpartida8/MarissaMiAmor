@@ -1170,3 +1170,155 @@ body.con-teclado .ed-foco, body.con-teclado .ed-asa-lateral { opacity: 0; pointe
 .ed-tl-clip:not(.on) .ed-tl-asa, .ed-tl-clip:not(.on) .ed-tl-borde, .ed-tl-clip:not(.on) .ed-tl-seg { touch-action: pan-x pan-y; }
 @media (min-width: 1024px) { .ed-insp > .ed-asa-hoja { display: none; } }
 .ed-cp-herr .ed-sel { width: auto; flex: 0 0 auto; min-width: 128px; min-height: 30px; padding-top: 0; padding-bottom: 0; font-size: 13px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   FASE 3 · más vivo y más cuidado
+   Microinteracciones con transform/opacity (GPU), resortes cortos y nada
+   que se anime en bucle salvo lo que se está mirando. Con «menos
+   movimiento» del sistema, todo queda quieto.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --resorte: cubic-bezier(.34, 1.56, .64, 1);
+  --suave: cubic-bezier(.2, .8, .2, 1);
+  --foco-anillo: 0 0 0 3px color-mix(in srgb, var(--acento) 35%, transparent);
+}
+::selection { background: color-mix(in srgb, var(--acento) 30%, transparent); }
+
+/* Barras de desplazamiento finitas y del color del cuaderno */
+.ed-panel-cuerpo, .ed-insp-cuerpo, .ed-modal-cuerpo, .ed-pop, .ed-fuentes { scrollbar-width: thin; scrollbar-color: var(--linea-fuerte) transparent; }
+.ed-panel-cuerpo::-webkit-scrollbar, .ed-insp-cuerpo::-webkit-scrollbar, .ed-modal-cuerpo::-webkit-scrollbar, .ed-fuentes::-webkit-scrollbar { width: 8px; }
+.ed-panel-cuerpo::-webkit-scrollbar-thumb, .ed-insp-cuerpo::-webkit-scrollbar-thumb, .ed-modal-cuerpo::-webkit-scrollbar-thumb, .ed-fuentes::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 8px; background: var(--linea-fuerte) padding-box; }
+
+/* Botones: se hunden al tocarlos y rebotan al soltar */
+.ed-btn, .ed-cb, .ed-riel button, .ed-seg button, .ed-x, .ed-play, .ed-comp, .ed-asset, .ed-pieza, .ed-fuente, .ed-deslizar-par { -webkit-tap-highlight-color: transparent; }
+.ed-btn { transition: background .15s, border-color .15s, box-shadow .15s, transform .32s var(--resorte); }
+.ed-btn:active:not(:disabled) { transform: scale(.95); transition-duration: .08s; }
+.ed-btn.primario:active:not(:disabled) { transform: translate(2px, 2px) scale(.98); }
+.ed-btn:focus-visible, .ed-cb:focus-visible, .ed-riel button:focus-visible, .ed-seg button:focus-visible, .ed-sel:focus-visible, .ed-txt:focus { outline: none; box-shadow: var(--foco-anillo); }
+.ed-cb { transition: background .15s, color .15s, transform .3s var(--resorte); }
+.ed-cb:active { transform: scale(.92); transition-duration: .08s; }
+.ed-cb.on { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--acento) 45%, transparent); }
+.ed-riel button { transition: background .2s, color .2s, transform .3s var(--resorte); }
+.ed-riel button:active { transform: scale(.92); transition-duration: .08s; }
+.ed-riel button b::before { transition: opacity .25s, transform .4s var(--resorte); }
+.ed-riel button:hover b::before { opacity: .7; transform: rotate(-2deg) scale(1.06); }
+.ed-riel button.on b::before { opacity: .95; transform: rotate(4deg) scale(1.14); }
+.ed-riel button.on b .ed-ico { animation: ed-salta .45s var(--resorte); }
+.ed-seg button { transition: background .2s, color .2s, box-shadow .2s, transform .25s var(--resorte); }
+.ed-seg button:active { transform: scale(.94); }
+.ed-x { transition: background .15s, transform .3s var(--resorte); }
+.ed-x:hover { transform: rotate(90deg); }
+
+/* Interruptores con resorte */
+.ed-toggle { transition: background .25s var(--suave); }
+.ed-toggle i { transition: transform .38s var(--resorte), width .2s; }
+.ed-toggle:active i { width: 20px; }
+.ed-toggle.on:active i { transform: translateX(12px); }
+
+/* Secciones que se abren con suavidad */
+.ed-sec > summary { border-radius: 8px; transition: color .15s, background .15s; }
+.ed-sec > summary:hover { color: var(--acento); }
+.ed-sec > summary::after { transition: transform .35s var(--resorte); }
+.ed-sec[open] > .ed-sec-cuerpo { animation: ed-abre .3s var(--suave); }
+
+/* Al cambiar de sección, lo de dentro entra escalonado (sólo esa vez) */
+.ed-panel-cuerpo.entra > * { animation: ed-entra .34s var(--suave) both; }
+.ed-panel-cuerpo.entra > :nth-child(2) { animation-delay: .03s; }
+.ed-panel-cuerpo.entra > :nth-child(3) { animation-delay: .06s; }
+.ed-panel-cuerpo.entra > :nth-child(4) { animation-delay: .09s; }
+.ed-panel-cuerpo.entra > :nth-child(5) { animation-delay: .12s; }
+.ed-panel-cuerpo.entra > :nth-child(n + 6) { animation-delay: .15s; }
+
+/* Tarjetas de piezas, assets y fuentes: se levantan un poquito */
+.ed-comp, .ed-asset, .ed-pieza { transition: transform .3s var(--resorte), box-shadow .2s, border-color .2s; }
+.ed-comp:active, .ed-asset:active, .ed-pieza:active { transform: scale(.96); transition-duration: .08s; }
+
+/* Diálogos: entran con un resorte, el velo apenas difumina (sólo en compu) */
+.ed-modal { transition: transform .38s var(--resorte), opacity .2s; }
+.ed-modal-fondo:not(.hoja) .ed-modal { transform: translateY(16px) scale(.94); opacity: 0; }
+.ed-modal-fondo.ver:not(.hoja) .ed-modal { transform: none; opacity: 1; }
+@media (hover: hover) and (pointer: fine) { .ed-modal-fondo { -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); } }
+.ed-modal-fondo.ver .ed-modal-cuerpo > * { animation: ed-entra .32s var(--suave) both .06s; }
+.ed-modal-fondo.ver .ed-modal > footer .ed-btn { animation: ed-entra .3s var(--suave) both .1s; }
+.ed-modal-fondo.ver .ed-modal > footer .ed-btn:last-child { animation-delay: .14s; }
+.ed-modal.ed-modal-chico .ed-modal-cuerpo { padding-top: 18px; }
+.ed-confirmar { display: flex; align-items: flex-start; gap: 14px; }
+.ed-confirmar p { margin: 4px 0 0; line-height: 1.45; }
+.ed-confirmar-ico { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--acento-suave); color: var(--acento); animation: ed-salta .5s var(--resorte) .08s both; }
+.ed-confirmar-ico.peligro { background: color-mix(in srgb, var(--peligro) 14%, transparent); color: var(--peligro); }
+.ed-confirmar-ico .ed-ico { width: 22px; height: 22px; }
+.ed-txt-caja { position: relative; }
+.ed-txt-caja .ed-txt { min-height: 44px; padding-right: 42px; font-size: 16px; border-radius: 12px; }
+.ed-txt-x { position: absolute; right: 6px; top: 50%; width: 32px; height: 32px; margin-top: -16px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--superficie-2); color: var(--texto-suave); }
+.ed-txt-x .ed-ico { width: 14px; height: 14px; }
+
+/* Avisos: una pastilla que sube con resorte */
+.ed-aviso { border-radius: 999px; padding: 10px 18px; transition: opacity .25s, transform .4s var(--resorte); transform: translateY(14px) scale(.96); }
+.ed-aviso.ver { transform: none; }
+
+/* Elegir letra */
+.ed-sel-fuente { display: block; text-align: left; font-size: 18px; line-height: 1.2; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background-image: linear-gradient(45deg, transparent 50%, var(--texto-suave) 50%), linear-gradient(135deg, var(--texto-suave) 50%, transparent 50%); background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 28px; }
+.ed-pop.ed-pop-letras { width: min(340px, 92vw); }
+.ed-pop-letras .ed-buscar { margin-bottom: 6px; }
+.ed-fuentes { display: flex; flex-direction: column; max-height: min(52vh, 460px); overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; margin: 0 -4px; padding: 0 4px; }
+.ed-fuentes-t { position: sticky; top: 0; z-index: 1; padding: 8px 6px 4px; font: 400 13px/1 "Patrick Hand", Jost, sans-serif; letter-spacing: .04em; text-transform: uppercase; color: var(--texto-suave); background: var(--superficie); }
+.ed-fuente { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-height: 44px; padding: 6px 10px; border: 0; border-radius: 10px; background: none; color: var(--texto); text-align: left; transition: background .15s, transform .25s var(--resorte); }
+.ed-fuente span { font-size: 21px; line-height: 1.1; }
+.ed-fuente small { font-size: 15px; color: var(--texto-suave); white-space: nowrap; }
+.ed-fuente:hover { background: var(--superficie-2); }
+.ed-fuente:active { transform: scale(.97); }
+.ed-fuente.on { background: var(--acento-suave); box-shadow: inset 3px 0 0 var(--acento); }
+.ed-fuente.on small { color: var(--acento); }
+
+/* Botones para pasar página (Herramientas) */
+.ed-deslizar { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 10px; margin: 4px 0 10px; }
+.ed-deslizar-t { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 8px; border: 1.5px solid var(--linea); border-radius: var(--mano-chica); background: var(--superficie); transition: border-color .2s, box-shadow .2s; }
+.ed-deslizar-t.on { border-color: var(--acento); box-shadow: 0 0 0 3px var(--acento-suave); }
+.ed-deslizar-t > b { font: 400 15px/1.1 "Patrick Hand", Jost, sans-serif; text-align: center; }
+.ed-deslizar-par { display: flex; justify-content: center; gap: 10px; padding: 10px 6px; border: 0; border-radius: 10px; background: var(--superficie-2); transition: transform .3s var(--resorte); }
+.ed-deslizar-par img { width: 40px; height: 40px; object-fit: contain; pointer-events: none; }
+.ed-deslizar-par:active { transform: scale(.94); }
+
+/* La abejita */
+.ed-abeja { position: fixed; left: 0; top: 0; z-index: 70; width: 72px; height: 60px; padding: 0; border: 0; background: none; cursor: pointer; will-change: transform; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.ed-abeja-in { display: block; width: 100%; height: 100%; animation: ed-abeja-flota 2.4s ease-in-out infinite; filter: drop-shadow(0 6px 8px rgba(60, 40, 10, .22)); transition: transform .25s; }
+.ed-abeja.izq .ed-abeja-in { transform: scaleX(-1); }
+.ed-abeja svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ed-abeja .ala ellipse { fill: rgba(225, 242, 255, .78); stroke: #8fb5d8; stroke-width: 1.4; }
+.ed-abeja .ala { transform-origin: 32px 26px; animation: ed-aleteo .08s ease-in-out infinite alternate; }
+.ed-abeja .ala-b { animation-delay: .04s; }
+.ed-abeja .ojo { transform-origin: 56.5px 29.5px; animation: ed-parpadeo 4.2s infinite; }
+.ed-abeja.habla .ed-abeja-in { animation: ed-abeja-habla .5s var(--resorte), ed-abeja-flota 2.4s ease-in-out .5s infinite; }
+.ed-abeja-globo { position: fixed; left: 0; top: 0; z-index: 71; padding: 12px 14px 10px; border: 2px solid var(--tinta); border-radius: 18px; background: var(--superficie); color: var(--texto); box-shadow: var(--sticker), var(--sombra); opacity: 0; pointer-events: none; transition: opacity .2s, scale .35s var(--resorte); scale: .9; transform-origin: var(--cola, 50%) 100%; }
+.ed-abeja-globo.abajo { transform-origin: var(--cola, 50%) 0; }
+.ed-abeja-globo.ver { opacity: 1; scale: 1; pointer-events: auto; }
+.ed-abeja-globo::after { content: ""; position: absolute; left: var(--cola, 50%); bottom: -9px; width: 14px; height: 14px; margin-left: -7px; background: var(--superficie); border: 2px solid var(--tinta); border-top: 0; border-left: 0; transform: rotate(45deg); }
+.ed-abeja-globo.abajo::after { bottom: auto; top: -9px; transform: rotate(225deg); }
+.ed-abeja-globo p { margin: 0 0 10px; min-height: 2.6em; font: 400 17px/1.35 "Patrick Hand", Jost, sans-serif; }
+.ed-abeja-pie { display: flex; align-items: center; gap: 6px; }
+.ed-abeja-pie small { margin-right: auto; color: var(--texto-suave); font-size: 12px; white-space: nowrap; }
+.ed-abeja-globo p .falta { opacity: 0; }
+.ed-foco.con-abeja { color: #b07a00; border-color: #e7b23c; background: #fff6d6; }
+.ed-senalado { animation: ed-senal 1.2s ease-out 2; border-radius: 10px; }
+body.ed-probando .ed-abeja, body.ed-probando .ed-abeja-globo { opacity: 0 !important; pointer-events: none !important; }
+@media (prefers-color-scheme: dark) { .ed-foco.con-abeja { background: #3b3018; } }
+
+/* Salir: el estado (guardado o no) */
+.ed-salir-estado { display: inline-flex; align-items: center; gap: 6px; margin: -2px 0 14px; padding: 5px 10px; border-radius: 999px; background: color-mix(in srgb, var(--peligro) 12%, transparent); color: var(--peligro); font-size: 12.5px; }
+.ed-salir-estado.bien { background: color-mix(in srgb, #3aa877 14%, transparent); color: #2c8a60; }
+.ed-salir-estado .ed-ico { width: 14px; height: 14px; }
+
+@keyframes ed-entra { from { opacity: 0; transform: translateY(8px); } }
+@keyframes ed-abre { from { opacity: 0; transform: translateY(-4px); } }
+@keyframes ed-salta { 0% { transform: scale(.6); } 60% { transform: scale(1.12); } 100% { transform: none; } }
+@keyframes ed-aleteo { to { transform: scaleY(.45) rotate(-6deg); } }
+@keyframes ed-abeja-flota { 0%, 100% { translate: 0 0; rotate: -2deg; } 50% { translate: 0 -6px; rotate: 3deg; } }
+@keyframes ed-abeja-habla { 0% { scale: 1; } 40% { scale: 1.15 .9; } 70% { scale: .95 1.08; } 100% { scale: 1; } }
+@keyframes ed-parpadeo { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+@keyframes ed-senal { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--acento) 60%, transparent); } 100% { box-shadow: 0 0 0 14px transparent; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ed-panel-cuerpo.entra > *, .ed-modal-fondo.ver .ed-modal-cuerpo > *, .ed-modal-fondo.ver .ed-modal > footer .ed-btn, .ed-sec[open] > .ed-sec-cuerpo,
+  .ed-abeja-in, .ed-abeja .ala, .ed-abeja .ojo, .ed-senalado, .ed-confirmar-ico, .ed-riel button.on b .ed-ico { animation: none !important; }
+  .ed-btn, .ed-cb, .ed-riel button, .ed-toggle i, .ed-modal, .ed-aviso, .ed-abeja-globo { transition-duration: .01s !important; }
+}

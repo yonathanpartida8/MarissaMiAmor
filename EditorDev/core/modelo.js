@@ -188,6 +188,8 @@ export function assetsUsados(proyecto) {
   const usados = new Set();
   const poner = (id) => { if (id) usados.add(id); };
   poner(proyecto.ajustes?.musica?.asset);
+  poner(proyecto.ajustes?.reproduccion?.botones?.izq);
+  poner(proyecto.ajustes?.reproduccion?.botones?.der);
   for (const pid of proyecto.orden) {
     const p = proyecto.paginas[pid];
     if (!p) continue;

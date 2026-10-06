@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Soleado</title>
+<meta name="tamaño" content="320x320">
+<meta name="descripcion" content="Un solecito que brilla y gira despacito">
+<meta name="decorativo" content="si">
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+body{display:grid;place-items:center}
+.sol{position:relative;width:62%;aspect-ratio:1}
+.rayos{position:absolute;inset:0;animation:gira 24s linear infinite}
+.rayos i{position:absolute;left:50%;top:50%;width:9%;height:50%;margin-left:-4.5%;transform-origin:50% 0;border-radius:99px;background:linear-gradient(#ffd56b,#ffb347 70%,transparent)}
+.disco{position:absolute;inset:22%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6c9,#ffd36b 45%,#ffa53d);box-shadow:0 0 30px 10px rgba(255,200,90,.55),0 0 80px 30px rgba(255,170,60,.25);animation:late 3.2s ease-in-out infinite}
+.disco::before,.disco::after{content:"";position:absolute;top:44%;width:9%;height:9%;border-radius:50%;background:#7a4a1c}
+.disco::before{left:32%}.disco::after{right:32%}
+.boca{position:absolute;left:38%;right:38%;top:58%;height:12%;border-bottom:3px solid #7a4a1c;border-radius:0 0 50% 50%}
+.cachete{position:absolute;top:56%;width:12%;height:7%;border-radius:50%;background:#ff8a7a;opacity:.55}
+@keyframes gira{to{transform:rotate(360deg)}}
+@keyframes late{50%{transform:scale(1.05);box-shadow:0 0 40px 14px rgba(255,200,90,.65),0 0 100px 40px rgba(255,170,60,.3)}}
+@media (prefers-reduced-motion:reduce){.rayos,.disco{animation:none}}
+</style></head>
+<body><div class="sol"><div class="rayos"></div><div class="disco"><span class="boca"></span><span class="cachete" style="left:20%"></span><span class="cachete" style="right:20%"></span></div></div>
+<script>
+const r=document.querySelector(".rayos");
+for(let i=0;i<12;i++){const x=document.createElement("i");x.style.transform=`rotate(${i*30}deg)`;x.style.height=(i%2?42:50)+"%";r.append(x)}
+</script></body></html>

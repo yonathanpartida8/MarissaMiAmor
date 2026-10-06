@@ -54,6 +54,7 @@ import { Ajustes } from "./components/ajustes.js";
 import { Ayuda } from "./components/ayuda.js";
 import { SonidosEditor } from "./audio/sonidos-editor.js";
 import { aplicarIconos } from "./recursos/extras.js";
+import { asegurarBotones } from "./components/secciones/navegacion.js";
 
 const RT = window.LibritoRT;
 const ULTIMO = "editordev:ultimo";
@@ -288,6 +289,12 @@ function abrirSeccion(id, desdeUsuario) {
   cont.scrollTop = 0;
   if (id === "paginas") { app.paneles.actual = null; app.paginas.construir(cont); }
   else app.paneles.abrir(id, cont);
+  // Lo de dentro entra escalonado sólo al cambiar de sección (no al repintar).
+  if (cont._sec !== id) {
+    cont._sec = id;
+    cont.classList.remove("entra"); void cont.offsetWidth; cont.classList.add("entra");
+    clearTimeout(cont._entra); cont._entra = setTimeout(() => cont.classList.remove("entra"), 700);
+  }
   if (id === "animar" && !esMovil()) { app.insp.abrir("animar"); app.tiempo.alternar(true); }
   if (esMovil() && desdeUsuario) app.lateral.abrir();
 }
@@ -302,6 +309,7 @@ app.abrirProyecto = async (P, guardar = false) => {
   P = normalizar(P);
   RT.registrarExtras?.(P.ajustes); // sus animaciones y transiciones propias
   registrarFuentes(P.ajustes.fuentesExtra);
+  await asegurarBotones(P); // las flechas siempre salen de assets/deslizar/
   if (!P.orden.length) { const pg = nuevaPagina(P, { nombre: "Portada" }); P.paginas[pg.id] = pg; P.orden.push(pg.id); }
   await app.bib.preparar(P);
   if (guardar) await guardarTodo(P);

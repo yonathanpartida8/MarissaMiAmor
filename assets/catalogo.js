@@ -3,9 +3,69 @@
 export default {
  "categorias": [
   {
-   "id": "buttons",
+   "id": "efectos-animados",
+   "nombre": "Efectos animados",
+   "items": [
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/corazones-que-suben.html",
+     "nombre": "Corazones que suben",
+     "descripcion": "",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "corazones-que-suben.html",
+     "ancho": 360,
+     "alto": 480,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "corazones-que-suben.html"
+     ],
+     "peso": 1354,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/soleado.html",
+     "nombre": "Soleado",
+     "descripcion": "Un solecito que brilla y gira despacito",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "soleado.html",
+     "ancho": 320,
+     "alto": 320,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "soleado.html"
+     ],
+     "peso": 1978,
+     "suelto": true
+    }
+   ]
+  },
+  {
+   "id": "botones",
    "nombre": "Botones",
    "items": [
+    {
+     "tipo": "componente",
+     "id": "botones/boton-te-amo.html",
+     "nombre": "Botón «Te amo»",
+     "descripcion": "Late suave y suelta corazoncitos al tocarlo",
+     "ruta": "assets/botones/",
+     "entrada": "boton-te-amo.html",
+     "ancho": 240,
+     "alto": 96,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "boton-te-amo.html"
+     ],
+     "peso": 1603,
+     "suelto": true
+    },
     {
      "tipo": "componente",
      "id": "buttons/boton-corazon",
@@ -63,6 +123,109 @@ export default {
       "style.css"
      ],
      "peso": 4586
+    }
+   ]
+  },
+  {
+   "id": "marcos",
+   "nombre": "Marcos",
+   "items": [
+    {
+     "tipo": "componente",
+     "id": "marcos/marco-dorado.html",
+     "nombre": "Marco dorado",
+     "descripcion": "Un marco con brillo que pasa; el centro es transparente",
+     "ruta": "assets/marcos/",
+     "entrada": "marco-dorado.html",
+     "ancho": 360,
+     "alto": 460,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "marco-dorado.html"
+     ],
+     "peso": 1106,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "frames/marco-scrapbook",
+     "nombre": "Marco scrapbook",
+     "descripcion": "Foto pegada con cinta washi, su notita y un garabato.",
+     "ruta": "assets/frames/marco-scrapbook/",
+     "entrada": "index.html",
+     "ancho": 270,
+     "alto": 320,
+     "parametros": [
+      {
+       "id": "foto",
+       "tipo": "imagen",
+       "etiqueta": "Foto"
+      },
+      {
+       "id": "texto",
+       "tipo": "texto",
+       "etiqueta": "Notita",
+       "def": "nosotros ♡"
+      }
+     ],
+     "decorativo": false,
+     "aislado": false,
+     "miniatura": null,
+     "archivos": [
+      "asset.json",
+      "index.html"
+     ],
+     "peso": 2246
+    }
+   ]
+  },
+  {
+   "id": "tarjetas",
+   "nombre": "Tarjetas",
+   "items": [
+    {
+     "tipo": "componente",
+     "id": "tarjetas/tarjeta-que-se-voltea.html",
+     "nombre": "Tarjeta que se voltea",
+     "descripcion": "Tócala y se voltea para mostrar un mensaje",
+     "ruta": "assets/tarjetas/",
+     "entrada": "tarjeta-que-se-voltea.html",
+     "ancho": 300,
+     "alto": 400,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "tarjeta-que-se-voltea.html"
+     ],
+     "peso": 1413,
+     "suelto": true
+    }
+   ]
+  },
+  {
+   "id": "dibujos",
+   "nombre": "Dibujos",
+   "items": [
+    {
+     "tipo": "componente",
+     "id": "dibujos/corazon-que-se-dibuja.html",
+     "nombre": "Corazón que se dibuja",
+     "descripcion": "",
+     "ruta": "assets/dibujos/",
+     "entrada": "corazon-que-se-dibuja.html",
+     "ancho": 300,
+     "alto": 280,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "corazon-que-se-dibuja.html"
+     ],
+     "peso": 1046,
+     "suelto": true
     }
    ]
   },
@@ -151,43 +314,6 @@ export default {
       "index.html"
      ],
      "peso": 2010
-    }
-   ]
-  },
-  {
-   "id": "frames",
-   "nombre": "Marcos",
-   "items": [
-    {
-     "tipo": "componente",
-     "id": "frames/marco-scrapbook",
-     "nombre": "Marco scrapbook",
-     "descripcion": "Foto pegada con cinta washi, su notita y un garabato.",
-     "ruta": "assets/frames/marco-scrapbook/",
-     "entrada": "index.html",
-     "ancho": 270,
-     "alto": 320,
-     "parametros": [
-      {
-       "id": "foto",
-       "tipo": "imagen",
-       "etiqueta": "Foto"
-      },
-      {
-       "id": "texto",
-       "tipo": "texto",
-       "etiqueta": "Notita",
-       "def": "nosotros ♡"
-      }
-     ],
-     "decorativo": false,
-     "aislado": false,
-     "miniatura": null,
-     "archivos": [
-      "asset.json",
-      "index.html"
-     ],
-     "peso": 2246
     }
    ]
   },
@@ -375,6 +501,7 @@ export default {
   }
  ],
  "musica": [],
+ "devMusic": [],
  "extras": {
   "animaciones": [
    {
@@ -558,6 +685,26 @@ export default {
     "assets/sonidos-editor/soltar/soltar-2.wav"
    ]
   },
-  "iconos": {}
+  "iconos": {},
+  "deslizar": [
+   {
+    "id": "deslizar/corazon",
+    "nombre": "Corazon",
+    "izquierda": "assets/deslizar/corazon/izquierda.svg",
+    "derecha": "assets/deslizar/corazon/derecha.svg"
+   },
+   {
+    "id": "deslizar/cristal",
+    "nombre": "Cristal",
+    "izquierda": "assets/deslizar/cristal/izquierda.svg",
+    "derecha": "assets/deslizar/cristal/derecha.svg"
+   },
+   {
+    "id": "deslizar/cuaderno",
+    "nombre": "Cuaderno",
+    "izquierda": "assets/deslizar/cuaderno/izquierda.svg",
+    "derecha": "assets/deslizar/cuaderno/derecha.svg"
+   }
+  ]
  }
 };

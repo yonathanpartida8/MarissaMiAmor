@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Tarjeta que se voltea</title>
+<meta name="tamaño" content="300x400">
+<meta name="descripcion" content="Tócala y se voltea para mostrar un mensaje">
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+body{display:grid;place-items:center;font-family:Georgia,serif;perspective:900px}
+.t{position:relative;width:86%;height:86%;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.2,.8,.2,1);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.t.vuelta{transform:rotateY(180deg)}
+.c{position:absolute;inset:0;display:grid;place-items:center;padding:12%;box-sizing:border-box;border-radius:18px;backface-visibility:hidden;-webkit-backface-visibility:hidden;text-align:center;box-shadow:0 10px 30px rgba(90,40,60,.18)}
+.f{background:linear-gradient(160deg,#ffe3ec,#ffc6d6);color:#b23a5e;font-size:22px}
+.f b{display:block;font-size:56px;line-height:1}
+.a{background:#fffaf3;color:#5a3a46;font-size:20px;line-height:1.4;transform:rotateY(180deg);border:2px dashed #f2b6c6}
+</style></head>
+<body><div class="t" role="button" tabindex="0">
+<div class="c f"><div><b>♥</b>Tócame</div></div>
+<div class="c a">Eres mi persona favorita en todo el mundo. Te amo.</div>
+</div>
+<script>
+const t=document.querySelector(".t");
+t.addEventListener("click",()=>t.classList.toggle("vuelta"));
+</script></body></html>

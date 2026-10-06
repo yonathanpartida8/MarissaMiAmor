@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Corazón que se dibuja</title>
+<meta name="tamaño" content="300x280">
+<meta name="decorativo" content="si">
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+svg{width:100%;height:100%}
+path{fill:none;stroke:#e8507a;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:620;stroke-dashoffset:620;animation:traza 2.6s ease-in-out forwards,late 1.6s ease-in-out 2.8s infinite;transform-origin:50% 55%}
+.relleno{fill:#ffb7c9;stroke:none;opacity:0;animation:aparece 1s ease 2.2s forwards}
+@keyframes traza{to{stroke-dashoffset:0}}
+@keyframes aparece{to{opacity:.55}}
+@keyframes late{50%{transform:scale(1.05)}}
+</style></head>
+<body><svg viewBox="0 0 300 280" aria-hidden="true">
+<path class="relleno" d="M150 250C60 190 20 140 30 90 40 40 110 30 150 85 190 30 260 40 270 90 280 140 240 190 150 250Z"/>
+<path d="M150 250C60 190 20 140 30 90 40 40 110 30 150 85 190 30 260 40 270 90 280 140 240 190 150 250Z"/>
+</svg></body></html>

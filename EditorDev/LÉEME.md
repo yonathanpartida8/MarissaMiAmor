@@ -257,7 +257,7 @@ En la computadora, además, atajos:
 | --- | --- |
 | **Página HTML libre** | HTML → «Nueva página HTML»: página en blanco con un bloque a hoja completa. Pegas tu `index.html` entero (sin separar HTML, CSS ni JS) → **Guardar** → **Probar**. Guardar guarda exactamente lo escrito; se vuelve a editar con dos toques. Fotos o audios que use: «Archivos» y se enlazan solos por su nombre |
 | **Probar página** | botón «Probar» (arriba) o el aviso tras guardar: los menús se van suaves hacia su borde y la página llena la pantalla, sola. Al salir vuelven poco a poco (aparecen, se acomodan, quedan firmes), más lento cuanto más duró la prueba |
-| **Salir** | la flecha pregunta sólo si hay cambios sin guardar: «Seguir editando · Salir sin guardar · Guardar y salir». Con autoguardado, guarda y sale sin preguntar (se apaga en Herramientas → «Guardar solo») |
+| **Salir** | la flecha siempre avisa que podría perderse el progreso (y dice si ahora mismo hay algo sin guardar): «Guardar y salir · Salir · Quedarme un rato más» |
 | **Hojas con asa** | todos los paneles que suben (secciones, inspector, menús, línea de tiempo) tienen un asa de color: siguen al dedo, rebotan con física, se quedan en sus paradas y se cierran al bajarlas |
 | **Nada se mueve solo** | con el dedo, deslizar sobre algo NO elegido sólo desplaza la vista; tocar = elegir; ya elegido, arrastrar = mover. En la línea de tiempo igual, o mantener presionado un clip para agarrarlo |
 | **Mantener presionado** | abre sus ajustes de luz: luz, exposición, brillo, contraste, saturación, temperatura, desenfoque, opacidad (dos toques en una etiqueta la regresa a cero) |
@@ -267,7 +267,12 @@ En la computadora, además, atajos:
 | **Pistas de audio** | Audio → «Añadir audio a esta página»: con su onda, escuchar, volumen, bucle; en la línea de tiempo se arrastra y se recorta |
 | **GIFs y Stickers** | GIPHY (Powered by GIPHY): buscar, cargar más, previsualizar, Usar. A un GIF se le puede **quitar el fondo sin perder la animación** (método local cambiable por un servicio externo: `editordev:quitar-fondo-url`) |
 | **Sonidos del editor** | `assets/sonidos-editor/<momento>/*.wav`: al azar sin repetir, con fundidos; encender, volumen y cuántos a la vez en Herramientas |
-| **Foquito de ayuda** | esquina de abajo: brilla cuando hay un consejo nuevo para lo que haces; nunca se abre solo |
+| **La abejita** | toca el foquito (esquina de abajo; brilla cuando hay un consejo nuevo): llega volando una abejita que te cuenta el consejo de ese momento con un «bzz-pip» y, si habla de un botón, vuela hasta él. Flota sin tapar la hoja; vuelve a tocar el foquito y se va volando |
+| **Piezas de un solo .html** | deja `algo.html` (HTML, CSS y JS juntos) en cualquier carpeta de `assets/` (`efectos-animados/`, `botones/`, `marcos/`, `tarjetas/`, `dibujos/`…) y sale en **Piezas** con su nombre (el de su `<title>`) |
+| **Letras** | 40 letras por grupos (a mano, elegantes, modernas, divertidas, de máquina), cada una escrita con su letra y con buscador; se cargan al elegirlas y el texto se mide cuando ya llegaron |
+| **Vídeo** | reproducción automática o manual (se toca para verlo), marcos (polaroid, redondeado, cine, neón, con cinta, tele antigua), resplandor con sus propios colores, efectos y ajustes de luz |
+| **Pasar página** | flechas de `assets/deslizar/<estilo>/izquierda|derecha` (Herramientas → «Botones para pasar página»), deslizar con el dedo en el librito y, en el editor, deslizar rápido de lado sobre la hoja entera |
+| **Música del editor** | todo lo que haya en la carpeta `DevMusic/` (varias = una tras otra) |
 
 ### La clave de GIPHY (que no quede en el código)
 
@@ -306,7 +311,7 @@ EditorDev/
 │                acciones.js · vista.js · inicio.js · teclado.js ·
 │                hoja.js (hojas con asa y resorte) · pantalla.js (teclado virtual, orientación) ·
 │                morfo.js (repintar sin parpadeo) · prueba.js · salir.js · ajustes.js · ayuda.js
-│   └── secciones/  animar · efectos · transiciones · giphy · audio · html · fondo
+│   └── secciones/  animar · efectos · transiciones · giphy · audio · html · fondo · navegacion
 ├── recursos/    extras.js (animaciones, transiciones, efectos y fondos propios o de assets/)
 ├── integraciones/ giphy.js (clave protegida) · gif.js (leer GIF, quitar fondo → APNG)
 ├── runtime/     EL REPRODUCTOR: rt-base · rt-render (y la hoja automática) · rt-anim (y el tiempo) ·

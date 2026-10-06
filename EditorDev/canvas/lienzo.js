@@ -136,7 +136,11 @@ export class Lienzo {
     const E = this.estado;
     E.on("cargado", () => { this.montar(); this.ajustar(); });
     E.on("actual", () => { this.terminarTexto(); this.salirRecorte(); this.salirProbar(); this.montar(); });
-    E.on("els", ({ p }) => { if (p === E.paginaId && this.pag) { this.pag.sincronizar(E.pagina); this.pintarSobre(); } });
+    E.on("els", ({ p }) => {
+      if (p !== E.paginaId || !this.pag) return;
+      RT.cargarFuentes(E.pagina.els.map((x) => x.texto?.fuente || x.boton?.fuente));
+      this.pag.sincronizar(E.pagina); this.pintarSobre();
+    });
     E.on("pagina", ({ p, ruta }) => {
       if (/^audios/.test(ruta || "")) return; // las pistas de audio no cambian nada de la hoja
       if (p === E.paginaId && this.pag) { this.pag.sincronizar(E.pagina); this.pintarSobre(); }
@@ -148,6 +152,10 @@ export class Lienzo {
       // Cambiar un elemento puede cambiar qué se esconde en la página original de debajo.
       if ((rutas || []).includes("origen") || x.origen) this.pag.sincronizar(E.pagina); else this.pag.actualizar(x);
       this.pintarSobre();
+      if ((rutas || []).some((r) => /^(texto|boton)\.fuente$/.test(r || ""))) {
+        // La letra nueva llega un momento después: se mide cuando ya está.
+        RT.cargarFuentes([x.texto?.fuente || x.boton?.fuente], true).then(() => { if (x.tipo === "texto") this.ajustarAlto(x.id); this.pintarSobre(); });
+      }
     });
     E.on("proyecto", ({ ruta }) => {
       if (/^ajustes\.(ancho|alto|formato)/.test(ruta)) { this.montar(); this.ajustar(); }
@@ -748,6 +756,7 @@ export class Lienzo {
    */
   _tocarSinElegir(ev, e) {
     const x0 = ev.clientX, y0 = ev.clientY;
+    const flick = this._flick(x0, y0);
     let pan = null;
     this._gesto(ev, {
       mover: (m) => {
@@ -757,11 +766,47 @@ export class Lienzo {
       },
       soltar: (u, cancelado) => {
         this.vistaEl.classList.remove("panea");
+        if (pan && !cancelado && flick(u)) return;
         if (pan || cancelado) return;
         this.estado.seleccionar(this._grupo(e));
         this._toque(e);
       },
     }, () => this._largoSobre(e, x0, y0));
+  }
+
+  /**
+   * Deslizar rápido de lado con la hoja entera a la vista = pasar de página
+   * (como en el librito). Con zoom, deslizar sigue moviendo la vista.
+   */
+  _flick(x0, y0) {
+    const t0 = performance.now(), entera = !!this.v.ajustar;
+    return (u) => {
+      if (!entera || !u) return false;
+      const dx = u.clientX - x0, dy = u.clientY - y0;
+      if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8 || performance.now() - t0 > 450) return false;
+      this.pasarPagina(dx < 0 ? 1 : -1);
+      return true;
+    };
+  }
+
+  /** Ir a la página de al lado con un deslizamiento suave (o un rebotito si no hay más). */
+  pasarPagina(dir) {
+    const E = this.estado, o = this.P.orden, i = o.indexOf(E.paginaId) + dir;
+    const h = this.hoja;
+    if (i < 0 || i >= o.length) {
+      this.ajustar();
+      h.animate([{ translate: "0 0" }, { translate: `${-dir * 16}px 0` }, { translate: "0 0" }], { duration: 300, easing: "ease-out" });
+      return false;
+    }
+    const fuera = h.animate([{ translate: "0 0", opacity: 1 }, { translate: `${-dir * 56}px 0`, opacity: 0 }], { duration: 140, easing: "ease-in", fill: "forwards" });
+    fuera.onfinish = () => {
+      E.irPagina(o[i]);
+      this.ajustar();
+      fuera.cancel();
+      h.animate([{ translate: `${dir * 56}px 0`, opacity: 0 }, { translate: "0 0", opacity: 1 }], { duration: 240, easing: "cubic-bezier(.2,.8,.2,1)" });
+    };
+    this.app.sonidos?.sonar("botones");
+    return true;
   }
 
   /** Mantener presionado un elemento: elegirlo y abrir sus ajustes (o su menú si no hay). */
@@ -775,6 +820,7 @@ export class Lienzo {
   _vacio(ev) {
     if (ev.pointerType === "mouse") return this._marco(ev);
     const x0 = ev.clientX, y0 = ev.clientY;
+    const flick = this._flick(x0, y0);
     let pan = null;
     this._gesto(ev, {
       mover: (m) => {
@@ -784,6 +830,7 @@ export class Lienzo {
       },
       soltar: (u, cancelado) => {
         this.vistaEl.classList.remove("panea");
+        if (pan && !cancelado && flick(u)) return;
         if (!pan && !cancelado) this._toqueVacio(u);
       },
     }, () => this.menuEn(x0, y0));

@@ -28,7 +28,7 @@
       case "componente": return !(e.componente && e.componente.decorativo);
       case "escena3d": return !e.escena3d || e.escena3d.orbitar !== false;
       case "album": return !e.album || e.album.ampliar !== false || e.album.disposicion === "pila";
-      case "video": return !!(e.video && e.video.controles);
+      case "video": return !!(e.video && (e.video.controles || RT.modoVideo(e.video) === "manual"));
       case "html": return !e.html || e.html.interactivo !== false;
       default: return false;
     }
@@ -230,22 +230,75 @@
     n.tabIndex = ctx.modo === "vista" ? 0 : -1;
   };
 
+  /** «auto» (empieza solo al llegar) o «manual» (se toca para verlo). */
+  RT.modoVideo = function (v) { return v && (v.modo || (v.auto ? "auto" : "manual")); };
+  RT.MARCOS_VIDEO = { ninguno: "Sin marco", polaroid: "Polaroid", redondo: "Redondeado", cine: "Cine", neon: "Neón", cinta: "Con cinta", tele: "Tele antigua" };
+
+  /**
+   * Un vídeo con su marco y, si se pide, un resplandor detrás hecho con sus
+   * propios colores (un lienzo chiquito de 24×14 que se agranda borroso:
+   * casi no cuesta). En modo manual se toca para reproducir o pausar.
+   */
   PINTAR.video = function (c, e, ctx) {
     const v = e.video || {};
     const url = v.asset ? ctx.url(v.asset) : null;
     if (!url) { vacio(c, "Añadir vídeo", ctx, e); return; }
     if (ctx.modo === "mini") { c.innerHTML = '<div class="rt-marcador">▶</div>'; return; }
-    let n = c.firstChild;
-    if (!n || n.tagName !== "VIDEO") {
-      c.textContent = ""; n = h("video", "rt-vid", c);
+    let w = c.firstChild;
+    if (!w || !w.classList || !w.classList.contains("rt-vwrap")) {
+      c.textContent = ""; w = h("div", "rt-vwrap", c);
+      const n = h("video", "rt-vid", w);
       n.setAttribute("playsinline", ""); n.playsInline = true; n.preload = "metadata";
     }
+    const n = w.querySelector("video");
+    const marco = RT.MARCOS_VIDEO[v.marco] ? v.marco : "ninguno";
+    w.className = "rt-vwrap rt-vm-" + marco;
     n.muted = ctx.modo !== "vista" || !!v.silencio;
     n.loop = !!v.bucle;
     n.controls = ctx.modo === "vista" && !!v.controles;
     n.style.objectFit = v.ajuste || "cover";
     if (n.getAttribute("src") !== url) n.src = url;
-    if (ctx.modo === "vista" && v.auto && ctx.activo && !RT.inicioDe(e)) n.play().catch(function () {});
+    const modo = RT.modoVideo(v);
+    // Botón grande de reproducir (modo manual, sin controles del sistema).
+    let b = w.querySelector(".rt-vid-play");
+    if (ctx.modo === "vista" && modo === "manual" && !v.controles) {
+      if (!b) {
+        b = h("button", "rt-vid-play", w); b.type = "button"; b.setAttribute("aria-label", "Reproducir");
+        w.addEventListener("click", function (ev) { ev.stopPropagation(); if (n.paused) n.play().catch(function () {}); else n.pause(); });
+        n.addEventListener("play", function () { w.classList.add("sonando"); });
+        n.addEventListener("pause", function () { w.classList.remove("sonando"); });
+      }
+    } else if (b) b.remove();
+    if (ctx.modo !== "vista" && !n.paused) n.pause();
+    // Resplandor con los colores del vídeo.
+    const amb = Math.max(0, Math.min(1, +v.ambiente || 0));
+    let cv = w.querySelector(".rt-vamb");
+    let parar = null;
+    if (amb > 0) {
+      if (!cv) { cv = document.createElement("canvas"); cv.className = "rt-vamb"; cv.width = 24; cv.height = 14; w.insertBefore(cv, w.firstChild); }
+      w.style.setProperty("--rt-amb", String(amb));
+      const g = cv.getContext("2d");
+      let t = 0, vivo = true, leer = true;
+      const pintar = function () {
+        if (!vivo || n.readyState < 2) return;
+        try { g.drawImage(n, 0, 0, 24, 14); } catch (err) { return; }
+        if (leer) {
+          try {
+            const d = g.getImageData(0, 0, 24, 14).data;
+            let r = 0, gg = 0, bb = 0;
+            for (let i = 0; i < d.length; i += 4) { r += d[i]; gg += d[i + 1]; bb += d[i + 2]; }
+            const k = d.length / 4;
+            w.style.setProperty("--rt-vcolor", "rgb(" + Math.round(r / k) + "," + Math.round(gg / k) + "," + Math.round(bb / k) + ")");
+          } catch (err) { leer = false; } // un vídeo de otro sitio no deja leer sus colores (pero sí verse)
+        }
+      };
+      const bucle = function () { if (!vivo) return; pintar(); t = setTimeout(bucle, n.paused ? 900 : 220); };
+      if (n.readyState >= 2) bucle(); else n.addEventListener("loadeddata", function () { if (ctx.modo !== "vista" && n.currentTime < 0.05) { try { n.currentTime = 0.1; } catch (err) { /* nada */ } } bucle(); }, { once: true });
+      n.addEventListener("seeked", pintar);
+      parar = function () { vivo = false; clearTimeout(t); n.removeEventListener("seeked", pintar); };
+    } else if (cv) { cv.remove(); w.style.removeProperty("--rt-vcolor"); }
+    if (ctx.modo === "vista" && modo === "auto" && ctx.activo && !RT.inicioDe(e)) n.play().catch(function () {});
+    return parar ? { destruir: parar } : null;
   };
 
   /* El HTML libre va SIEMPRE en su marco aislado: sin acceso al librito.
@@ -449,9 +502,20 @@
         const x = n._rt.e, s = x.sonidos;
         if (s && s.tocar && ctx.sonido && x.tipo !== "componente") ctx.sonido(s.tocar, s.volumen);
       });
+      // Un toque = una acción: un doble toque rápido no pasa dos páginas.
+      let ultimo = 0;
       n.addEventListener("click", function (ev) {
         const x = n._rt.e;
-        if (x.accion && x.accion.tipo && ctx.accion) { ev.stopPropagation(); ctx.accion(x.accion, x); }
+        if (!(x.accion && x.accion.tipo && ctx.accion)) return;
+        ev.stopPropagation();
+        const ahora = performance.now();
+        if (ahora - ultimo < 380) return;
+        ultimo = ahora;
+        ctx.accion(x.accion, x);
+      });
+      n.addEventListener("keydown", function (ev) {
+        const x = n._rt.e;
+        if ((ev.key === "Enter" || ev.key === " ") && x.accion && x.accion.tipo && ev.target === n) { ev.preventDefault(); n.click(); }
       });
     }
     RT.actualizarEl(n, e, ctx);
@@ -464,7 +528,9 @@
     if (r.tipo !== e.tipo) { r.c.textContent = ""; r.c.className = "rt-c"; r.firma = null; r.tipo = e.tipo; }
     // «Permitir interacción» apagado: en el librito no recibe toques.
     const toca = RT.esInteractivo(e) && !(e.permisos && e.permisos.interactuar === false);
-    const cls = "rt-el rt-e-" + e.tipo + (toca ? " rt-toca" : "") + (e.permisos && e.permisos.interactuar === false ? " rt-sin-toque" : "") + (ctx.modo === "editor" && e.inicioOculto ? " rt-escondido" : "") + (n._rt.extra || "");
+    const accion = ctx.modo === "vista" && !!(e.accion && e.accion.tipo);
+    if (accion && e.tipo !== "boton") { n.tabIndex = 0; n.setAttribute("role", "button"); if (e.nombre) n.setAttribute("aria-label", e.nombre); }
+    const cls = "rt-el rt-e-" + e.tipo + (toca ? " rt-toca" : "") + (accion ? " rt-accion" : "") + (e.permisos && e.permisos.interactuar === false ? " rt-sin-toque" : "") + (ctx.modo === "editor" && e.inicioOculto ? " rt-escondido" : "") + (n._rt.extra || "");
     if (n.className !== cls) n.className = cls;
     const b = RT.colocar(e, ctx.medidas);
     r.caja = b;

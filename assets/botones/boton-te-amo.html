@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Botón «Te amo»</title>
+<meta name="tamaño" content="240x96">
+<meta name="descripcion" content="Late suave y suelta corazoncitos al tocarlo">
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+body{display:grid;place-items:center;font-family:system-ui,-apple-system,sans-serif}
+button{position:relative;border:0;padding:14px 30px;border-radius:999px;font:600 20px/1 inherit;color:#fff;background:linear-gradient(135deg,#ff7aa2,#ff4f7f);box-shadow:0 6px 18px rgba(255,79,127,.35),inset 0 -3px 0 rgba(0,0,0,.08);cursor:pointer;animation:late 2.4s ease-in-out infinite;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button:active{transform:scale(.94)}
+@keyframes late{0%,100%{transform:scale(1)}12%{transform:scale(1.06)}24%{transform:scale(1)}36%{transform:scale(1.04)}}
+.c{position:fixed;pointer-events:none;font-size:18px;color:#ff5c8a;animation:sube 1s ease-out forwards}
+@keyframes sube{to{transform:translate(var(--x),-70px) scale(.6);opacity:0}}
+</style></head>
+<body><button type="button">Te amo</button>
+<script>
+const b=document.querySelector("button");
+b.addEventListener("click",(e)=>{const r=b.getBoundingClientRect();for(let i=0;i<7;i++){const s=document.createElement("span");s.className="c";s.textContent="♥";s.style.left=(r.left+r.width/2-8)+"px";s.style.top=(r.top+6)+"px";s.style.setProperty("--x",(Math.random()*90-45)+"px");s.style.animationDelay=i*40+"ms";document.body.append(s);setTimeout(()=>s.remove(),1300)}navigator.vibrate?.(12)});
+</script></body></html>
