@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Tarjeta de otoño</title>
+<meta name="tamaño" content="300x380">
+<meta name="descripcion" content="Tarjeta con borde de hojas; al tocarla caen hojitas">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}body{display:grid;place-items:center;font-family:Georgia,serif}.t{position:relative;width:86%;height:86%;border-radius:18px;background:linear-gradient(160deg,#fff8ec,#fde8d4);box-shadow:0 10px 26px rgba(120,60,20,.18);display:grid;place-items:center;text-align:center;padding:16%;box-sizing:border-box;color:#8a4a24;font-size:20px;line-height:1.4;cursor:pointer;-webkit-tap-highlight-color:transparent}.t::before{content:"🍂";position:absolute;top:8px;left:12px;font-size:28px}.t::after{content:"🍁";position:absolute;bottom:8px;right:12px;font-size:28px}i{position:fixed;top:-20px;font-style:normal;pointer-events:none;animation:c linear forwards}@keyframes c{to{transform:translate(var(--x),110vh) rotate(540deg)}}</style></head>
+<body><div class="t" role="button" tabindex="0">Contigo todas las estaciones son bonitas 🧡</div>
+<script>document.querySelector(".t").addEventListener("click",()=>{for(let k=0;k<12;k++){const i=document.createElement("i");i.textContent=["🍂","🍁","🍃"][k%3];i.style.left=Math.random()*100+"%";i.style.setProperty("--x",(Math.random()*80-40)+"px");i.style.animationDuration=(1.6+Math.random()*1.4)+"s";i.style.fontSize=(16+Math.random()*14)+"px";document.body.append(i);setTimeout(()=>i.remove(),3200)}})</script></body></html>

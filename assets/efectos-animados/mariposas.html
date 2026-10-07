@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Mariposas</title>
+<meta name="tamaño" content="360x420">
+<meta name="descripcion" content="Mariposas que revolotean">
+<meta name="decorativo" content="si">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}.m{position:absolute;width:34px;height:28px;animation:v var(--d) ease-in-out infinite alternate}.m b{position:absolute;top:2px;width:16px;height:22px;border-radius:60% 40% 50% 50%;background:var(--c);animation:a .22s ease-in-out infinite alternate}.m b:first-child{left:0;transform-origin:100% 50%}.m b:last-child{right:0;transform-origin:0 50%;border-radius:40% 60% 50% 50%}.m::after{content:"";position:absolute;left:15px;top:4px;width:4px;height:20px;border-radius:2px;background:#4a3320}@keyframes a{to{transform:scaleX(.25)}}@keyframes v{0%{transform:translate(0,0) rotate(-8deg)}50%{transform:translate(calc(var(--x)*.5),calc(var(--y)*-1)) rotate(10deg)}100%{transform:translate(var(--x),var(--y)) rotate(-4deg)}}@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body>
+<script>const c=["#ff9fbf","#b58cff","#7fd1ff","#ffd56b"];for(let i=0;i<5;i++){const m=document.createElement("div");m.className="m";m.innerHTML="<b></b><b></b>";m.style.cssText=`left:${10+Math.random()*70}%;top:${10+Math.random()*70}%;--c:${c[i%4]};--x:${Math.random()*120-60}px;--y:${Math.random()*90-45}px;--d:${3+Math.random()*3}s`;document.body.append(m)}</script></body></html>

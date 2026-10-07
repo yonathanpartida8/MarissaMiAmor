@@ -288,6 +288,20 @@ segura a la más simple:
 3. **Sólo en este aparato**: GIFs → Conectar → pega la clave. Se guarda en el
    navegador, nunca en el librito ni en el .zip.
 
+## Fase 4: configuración, música, abejita y biblioteca
+
+| | |
+| --- | --- |
+| **Música** | `EditorDev/MusicaDev.mp3` (una cajita musical suave en bucle; cámbiala por la tuya con el mismo nombre). Intenta sonar al entrar y, si el navegador no deja, empieza con el primer toque. Un solo reproductor para todo el editor: no se reinicia al cambiar de sección. La notita de arriba la enciende/apaga con fundido; mantenerla presionada abre el volumen. Lo de `DevMusic/` suena después |
+| **Barra de arriba** | ⚙ Configuración · nombre · deshacer/rehacer · **1/3 (Páginas)** · música · Probar · y «⋯ Más» en el teléfono (librito, ver como, guardar, exportar, herramientas). Páginas ya no está en la barra lateral |
+| **⚙ Configuración** | modos Rendimiento / Equilibrado / Calidad; refresco 30–144 Hz **sólo hasta lo que da tu pantalla** (se mide con requestAnimationFrame); calidad; partículas; efectos en la hoja; FPS; diagnóstico; movimiento e intensidad; música, efectos y voz de la abejita; vibración; ayudas, etiquetas y consejos; tema, tamaño y transparencias; restaurar y limpiar datos temporales. Se guarda en el aparato |
+| **Abejita** | mascota con caras (feliz, guiño, enamorada, sorpresa…), alas, rebotes, vueltas y brillitos; se mueve sola mientras está y nunca bloquea botones. Reacciona al insertar, guardar, borrar y exportar. Su voz son blips hechos con Web Audio (sin archivos) |
+| **dialogos.txt** | en la carpeta principal. Una frase por línea, `#` = comentario, una línea con `-` = evento especial: «hackeo» con glitch, terminal, «OH... ESTOY SIENDO HACKEADO...» y luego el mensaje. Todo es sólo texto: nunca se ejecuta nada |
+| **Recursos** | biblioteca por categorías (botones, marcos, tarjetas, hojas, dibujos, efectos, reproductores, retratos, GIFs, stickers, decoraciones, otros) con vista previa real aislada (sandbox), descripción e «Insertar». Sólo se animan las que se ven |
+| **GIPHY** | ya viene conectado (`integraciones/giphy-config.js`); un proxy o el servidor local siguen teniendo prioridad si los configuras |
+
+Código: `config/` (preferencias, cuadros/Hz), `mascota/` (abeja, dialogos, glitch), `components/configuracion.js`, `components/secciones/biblioteca.js`.
+
 ## Cómo está hecho
 
 ```

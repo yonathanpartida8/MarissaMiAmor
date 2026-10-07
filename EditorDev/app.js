@@ -23,7 +23,7 @@
  *   integraciones/  GIPHY (GIFs y stickers) y quitar el fondo de un GIF animado
  *   components/secciones/  cada sección grande del panel en su archivo
  */
-import { el, aviso, modal, esMovil, menu } from "./components/ui.js";
+import { el, aviso, modal, esMovil, menu, popover } from "./components/ui.js";
 import { Estado } from "./core/estado.js";
 import { nuevoProyecto, nuevaPagina, nuevoEl, normalizar, clonar, uid, tamAuto } from "./core/modelo.js";
 import { Biblioteca, elegirArchivos } from "./assets/biblioteca.js";
@@ -55,6 +55,9 @@ import { Ayuda } from "./components/ayuda.js";
 import { SonidosEditor } from "./audio/sonidos-editor.js";
 import { aplicarIconos } from "./recursos/extras.js";
 import { asegurarBotones } from "./components/secciones/navegacion.js";
+import { PREF, aplicar as aplicarPref, vibrar } from "./config/preferencias.js";
+import { medirHz } from "./config/cuadros.js";
+import { Configuracion } from "./components/configuracion.js";
 
 const RT = window.LibritoRT;
 const ULTIMO = "editordev:ultimo";
@@ -74,7 +77,7 @@ const SECCIONES = [
   ["animar", "animar", "Animar"],
   ["transiciones", "transiciones", "Transiciones"],
   ["interactivo", "interactivo", "Interactivo"],
-  ["componentes", "componentes", "Piezas"],
+  ["componentes", "biblioteca", "Recursos"],
   ["html", "html", "HTML"],
   ["3d", "cubo", "3D"],
   ["diseno", "diseno", "Tema"],
@@ -94,7 +97,9 @@ function leerUltimo() { try { return localStorage.getItem(ULTIMO); } catch (e) {
 
 async function arrancar() {
   guardasDeApp();
+  aplicarPref();
   vigilarPantalla();
+  setTimeout(() => medirHz(), 1200); // con la página ya quieta, para medir bien
   // Iconos propios de assets/iconos/ (si hay), antes de pintar nada.
   await Promise.race([aplicarIconos().catch(() => 0), new Promise((r) => setTimeout(r, 700))]);
   const E = new Estado();
@@ -133,10 +138,13 @@ async function arrancar() {
   atajos(app);
   app.salida = new Salida(app);
   app.ayuda = new Ayuda(app);
+  app.config = new Configuracion(app);
+  tactil();
   E.on("historial", pintarHistorial);
   E.on("proyecto", ({ ruta }) => { if (ruta === "nombre") pintarNombre(); });
-  E.on("cargado", () => { pintarNombre(); pintarHistorial(); abrirSeccion(app.seccion || (esMovil() ? "elementos" : "paginas")); });
-  E.on("actual", () => { if (esMovil()) cerrarHoja(); });
+  E.on("cargado", () => { pintarNombre(); pintarHistorial(); abrirSeccion(app.seccion || "elementos"); pintarPaginas(); });
+  E.on("actual", () => { if (esMovil()) cerrarHoja(); pintarPaginas(); });
+  E.on("paginas", pintarPaginas);
 
   const ultimo = leerUltimo();
   const P = ultimo ? await cargar(ultimo).catch(() => null) : null;
@@ -146,10 +154,74 @@ async function arrancar() {
 }
 
 /* ── Barra de arriba ─────────────────────────────────────────────────── */
+/** «2/5»: la página en la que estás; abre Páginas. */
+function pintarPaginas() {
+  const E = app.estado, b = $(".ed-paginas-b span");
+  if (!b || !E.proyecto) return;
+  b.textContent = `${Math.max(1, E.proyecto.orden.indexOf(E.paginaId) + 1)}/${E.proyecto.orden.length}`;
+}
+
+/** La notita: tocar = encender/apagar (con fundido); mantener = volumen. */
+function botonMusica() {
+  const b = $(".ed-musica-b"), AU = app.audio;
+  const pintar = () => {
+    const on = !!AU?.pref.on;
+    b.innerHTML = ico(on ? "musica" : "musicaNo");
+    b.classList.toggle("on", on && !!AU?.sonando);
+    b.classList.toggle("apagada", !on);
+    b.setAttribute("aria-pressed", String(on));
+  };
+  pintar();
+  AU?.alCambiar(pintar);
+  let largo = 0, abrio = false;
+  const volumen = () => {
+    abrio = true;
+    const r = el("input", { type: "range", min: 0, max: 1, step: 0.05, value: AU.pref.vol, "aria-label": "Volumen de la música" });
+    r.addEventListener("input", () => AU.ponerPref({ vol: +r.value, on: true }));
+    popover(b, [el("b.ed-pop-t", { text: "Música" }), el("div.ed-musica-vol", {}, [el("span", { html: ico("volumen") }), r])]);
+  };
+  b.addEventListener("pointerdown", () => { abrio = false; clearTimeout(largo); largo = setTimeout(volumen, 480); });
+  for (const t of ["pointerup", "pointercancel", "pointerleave"]) b.addEventListener(t, () => clearTimeout(largo));
+  b.addEventListener("contextmenu", (e) => { e.preventDefault(); if (!abrio) volumen(); });
+  b.addEventListener("click", () => {
+    if (abrio || !AU) return;
+    AU.ponerPref({ on: !AU.pref.on });
+    aviso(AU.pref.on ? (AU.disponible ? "Música encendida 🎶" : "No encontré MusicaDev.mp3") : "Música apagada", 1600);
+  });
+}
+
+/** Detalles táctiles: vibración suave al tocar botones y etiquetas al pasar el ratón. */
+function tactil() {
+  document.addEventListener("pointerdown", (e) => {
+    if (e.pointerType !== "mouse" && e.target.closest("button, .ed-cb, [role=button]")) vibrar(6);
+  }, { capture: true, passive: true });
+  let tip = null, t = 0;
+  const quitar = () => { clearTimeout(t); tip?.remove(); tip = null; };
+  document.addEventListener("pointerover", (e) => {
+    if (e.pointerType !== "mouse") return;
+    const b = e.target.closest?.("[title], [data-tip]");
+    if (!b) return quitar();
+    if (b.hasAttribute("title")) { b.dataset.tip = b.getAttribute("title"); b.removeAttribute("title"); }
+    if (!PREF.tooltips || !b.dataset.tip || tip?._de === b) return;
+    quitar();
+    t = setTimeout(() => {
+      const r = b.getBoundingClientRect();
+      tip = el("div.ed-tip", { text: b.dataset.tip });
+      tip._de = b;
+      document.body.append(tip);
+      const w = tip.offsetWidth;
+      tip.style.left = Math.max(6, Math.min(innerWidth - w - 6, r.left + r.width / 2 - w / 2)) + "px";
+      tip.style.top = (r.bottom + 8 + 30 > innerHeight ? r.top - 34 : r.bottom + 8) + "px";
+    }, 450);
+  }, { passive: true });
+  document.addEventListener("pointerdown", quitar, true);
+  addEventListener("scroll", quitar, true);
+}
 function construirBarra() {
   const E = app.estado;
   $(".ed-volver").innerHTML = ico("volver");
-  $(".ed-abrir-lateral").innerHTML = ico("menu");
+  $(".ed-ajustes-b").innerHTML = ico("tuerca");
+  $(".ed-mas").innerHTML = ico("puntos");
   $(".ed-deshacer").innerHTML = ico("deshacer");
   $(".ed-rehacer").innerHTML = ico("rehacer");
   $(".ed-guardar").innerHTML = ico("guardar");
@@ -161,10 +233,17 @@ function construirBarra() {
   const nombre = $(".ed-nombre input");
   nombre.addEventListener("change", () => { const n = nombre.value.trim(); if (n) E.setProy({ nombre: n }, "Nombre"); });
   nombre.addEventListener("keydown", (e) => { if (e.key === "Enter") nombre.blur(); e.stopPropagation(); });
-  $(".ed-abrir-lateral").addEventListener("click", () => {
-    if (esMovil()) app.lateral.alternar();
-    else abrirSeccion(app.seccion && !document.body.classList.contains("sin-panel") ? null : app.seccion || "elementos", true);
-  });
+  $(".ed-ajustes-b").addEventListener("click", () => app.config.abrir());
+  $(".ed-paginas-b").addEventListener("click", () => abrirSeccion(app.seccion === "paginas" && !document.body.classList.contains("sin-panel") && !esMovil() ? null : "paginas", true));
+  botonMusica();
+  // «Más»: lo que no cabe en el teléfono (los mismos botones de siempre).
+  $(".ed-mas").addEventListener("click", (e) => menu(e.currentTarget, [
+    { t: `${ico("biblioteca")}<span>Ver el librito entero</span>`, al: () => $(".ed-previa").click() },
+    { t: `${ico("telefono")}<span>Ver como…</span>`, al: () => $(".ed-ver").click() },
+    { t: `${ico("guardar")}<span>Guardar y borradores…</span>`, al: () => $(".ed-guardar").click() },
+    { t: `${ico("exportar")}<span>Exportar (.zip)</span>`, al: () => app.exportar() },
+    { t: `${ico("herramientas")}<span>Herramientas</span>`, al: () => abrirSeccion("herramientas", true) },
+  ]));
   $(".ed-deshacer").addEventListener("click", () => E.deshacer());
   $(".ed-rehacer").addEventListener("click", () => E.rehacer());
   $(".ed-previa").addEventListener("click", () => app.vista.abrir(Math.max(0, E.proyecto.orden.indexOf(E.paginaId)), { portadilla: false }));
@@ -215,6 +294,7 @@ function pintarHistorial() {
 function construirRiel() {
   const riel = $(".ed-riel");
   for (const [id, icono, n] of SECCIONES) {
+    if (id === "paginas") continue; // Páginas va arriba (botón «1/3»), no compite con las herramientas
     riel.append(el("button", { type: "button", dataset: { s: id }, title: n, "aria-label": n, onClick: () => {
       const activo = app.seccion === id;
       if (esMovil()) { if (activo && app.lateral.abierto) app.lateral.cerrar(); else abrirSeccion(id, true); }
@@ -349,7 +429,7 @@ app.inicio = async () => {
 
 app.guardarYa = async () => {
   await app.auto.ahora();
-  if (!app.auto.error) app.sonidos?.sonar("guardar");
+  if (!app.auto.error) { app.sonidos?.sonar("guardar"); dispatchEvent(new CustomEvent("ed-evento", { detail: "guardado" })); }
   aviso(app.auto.error ? "No se pudo guardar" : "Borrador guardado", 2600, app.auto.error ? "error" : "");
 };
 
@@ -418,6 +498,7 @@ app.exportar = async () => {
     const r = await exportar(app, { alProgreso: (x) => { t.textContent = x; } });
     descargar(r.blob, r.nombre);
     app.sonidos?.sonar("exito");
+    dispatchEvent(new CustomEvent("ed-evento", { detail: "exportado" }));
     const mb = (r.blob.size / 1024 / 1024).toFixed(1);
     aviso(`Listo: ${r.nombre} · ${mb} MB · ${r.archivos} archivos`, 4500);
     if (r.faltan.length) aviso("No se encontraron: " + r.faltan.join(", "), 6000, "error");

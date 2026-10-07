@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Guirnalda de hojas</title>
+<meta name="tamaño" content="360x460">
+<meta name="descripcion" content="Un marco de hojitas para tarjetas; el centro es transparente">
+<meta name="decorativo" content="si">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}svg{width:100%;height:100%}use{transform-box:fill-box;transform-origin:center;animation:b 4s ease-in-out infinite}use:nth-of-type(odd){animation-delay:-2s}@keyframes b{50%{transform:rotate(7deg) scale(1.04)}}@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head>
+<body><svg viewBox="0 0 360 460"><defs><path id="h" d="M0 0q12-16 28-8q-12 16-28 8z"/></defs><rect x="22" y="22" width="316" height="416" rx="22" fill="none" stroke="#9ccf7f" stroke-width="3" stroke-dasharray="2 9" stroke-linecap="round"/>
+<g fill="#7cc47a" id="g"></g></svg>
+<script>const g=document.getElementById("g"),ns="http://www.w3.org/2000/svg",cols=["#7cc47a","#a6d98a","#f2a03d","#ff9fbf"];
+const pon=(x,y,a,i)=>{const u=document.createElementNS(ns,"use");u.setAttribute("href","#h");u.setAttribute("transform",`translate(${x} ${y}) rotate(${a})`);u.setAttribute("fill",cols[i%4]);u.style.animationDelay=(-i*.37)+"s";g.append(u)};
+let i=0;for(let x=30;x<=330;x+=26){pon(x,22,i%2?-30:20,i++);pon(x,438,i%2?160:200,i++)}for(let y=48;y<=412;y+=26){pon(22,y,i%2?70:110,i++);pon(338,y,i%2?-70:-110,i++)}</script></body></html>

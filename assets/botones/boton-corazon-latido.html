@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Botón corazón</title>
+<meta name="tamaño" content="120x120">
+<meta name="descripcion" content="Un corazón que late; al tocarlo da un salto">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}body{display:grid;place-items:center}button{border:0;background:none;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;animation:l 1.4s ease-in-out infinite}button:active svg{transform:scale(.85)}svg{width:84px;height:84px;transition:transform .15s;filter:drop-shadow(0 6px 10px rgba(232,80,122,.4))}.s{animation:s .5s cubic-bezier(.3,1.6,.5,1)}@keyframes l{12%{transform:scale(1.08)}24%{transform:scale(1)}36%{transform:scale(1.05)}}@keyframes s{50%{transform:translateY(-14px) scale(1.15)}}@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head>
+<body><button type="button" aria-label="Corazón"><svg viewBox="0 0 32 30"><path d="M16 28C5 20 1 14 2 8.5 3 3 10 1 16 7c6-6 13-4 14 1.5C31 14 27 20 16 28Z" fill="#ff5c8a" stroke="#fff" stroke-width="2"/><ellipse cx="9" cy="9" rx="2.6" ry="1.6" fill="#fff" opacity=".7" transform="rotate(-30 9 9)"/></svg></button>
+<script>const b=document.querySelector("button");b.addEventListener("click",()=>{const s=b.querySelector("svg");s.classList.remove("s");void s.offsetWidth;s.classList.add("s")})</script></body></html>

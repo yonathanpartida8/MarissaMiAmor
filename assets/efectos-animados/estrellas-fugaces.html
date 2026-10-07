@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Estrellas fugaces</title>
+<meta name="tamaño" content="360x300">
+<meta name="descripcion" content="Estrellitas que cruzan el cielo de vez en cuando">
+<meta name="decorativo" content="si">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}i{position:absolute;width:90px;height:2px;background:linear-gradient(90deg,#fff,transparent);border-radius:2px;filter:drop-shadow(0 0 4px #fff6c0);transform:rotate(-25deg);opacity:0;animation:f var(--d) ease-in infinite}@keyframes f{0%,70%{opacity:0;translate:0 0}75%{opacity:1}100%{opacity:0;translate:-240px 110px}}@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body>
+<script>for(let i=0;i<5;i++){const s=document.createElement("i");s.style.cssText=`left:${40+Math.random()*60}%;top:${Math.random()*50}%;--d:${4+Math.random()*5}s;animation-delay:${-Math.random()*8}s`;document.body.append(s)}</script></body></html>

@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Burbujas</title>
+<meta name="tamaño" content="360x480">
+<meta name="descripcion" content="Burbujas de jabón que suben y brillan">
+<meta name="decorativo" content="si">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}i{position:absolute;bottom:-70px;border-radius:50%;background:radial-gradient(circle at 30% 28%,#fff 0 12%,rgba(255,255,255,.2) 30%,rgba(190,170,255,.25) 62%,rgba(255,170,210,.45));box-shadow:inset 0 0 8px rgba(255,255,255,.7);animation:s linear infinite}@keyframes s{to{transform:translate(var(--x),-130vh)}}@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body>
+<script>for(let i=0;i<14;i++){const b=document.createElement("i"),t=16+Math.random()*46;b.style.cssText=`left:${Math.random()*100}%;width:${t}px;height:${t}px;--x:${Math.random()*80-40}px;animation-duration:${7+Math.random()*9}s;animation-delay:${-Math.random()*16}s`;document.body.append(b)}</script></body></html>

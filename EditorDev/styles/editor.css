@@ -41,7 +41,7 @@
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-tema="claro"]) {
     /* Pizarrón de ciruela y gises pastel. */
     --fondo: #1d1720;
     --superficie: #272029;
@@ -65,6 +65,30 @@
     --regla-texto: #a796a8;
     color-scheme: dark;
   }
+}
+:root[data-tema="oscuro"] {
+    /* Pizarrón de ciruela y gises pastel. */
+    --fondo: #1d1720;
+    --superficie: #272029;
+    --superficie-2: #2f2632;
+    --linea: #3c3141;
+    --linea-fuerte: #574a5c;
+    --texto: #f4e8ef;
+    --texto-suave: #b8a7b6;
+    --tinta: #f4e8ef;
+    --acento: #ff8fb8;
+    --acento-suave: #45233a;
+    --acento-texto: #2a0f1d;
+    --peligro: #ff6b81;
+    --lienzo: #161117;
+    --sombra: 0 12px 34px rgba(0, 0, 0, .45);
+    --sombra-chica: 0 2px 8px rgba(0, 0, 0, .35);
+    --sticker: 3px 3px 0 rgba(0, 0, 0, .55);
+    --regla-fondo: #1f1922;
+    --regla-hoja: #2a222d;
+    --regla-linea: #4d4052;
+    --regla-texto: #a796a8;
+    color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -1322,3 +1346,156 @@ body.ed-probando .ed-abeja, body.ed-probando .ed-abeja-globo { opacity: 0 !impor
   .ed-abeja-in, .ed-abeja .ala, .ed-abeja .ojo, .ed-senalado, .ed-confirmar-ico, .ed-riel button.on b .ed-ico { animation: none !important; }
   .ed-btn, .ed-cb, .ed-riel button, .ed-toggle i, .ed-modal, .ed-aviso, .ed-abeja-globo { transition-duration: .01s !important; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   FASE 4 · configuración, barra nueva, mascota, biblioteca
+   ═══════════════════════════════════════════════════════════════════ */
+/* Tamaño de la interfaz (sólo los marcos del editor, nunca la hoja) */
+.ed-barra, .ed-riel, .ed-panel, .ed-insp, .ed-contexto { zoom: var(--ui-escala, 1); }
+
+/* Movimiento, calidad, partículas, efectos, transparencias */
+body.ed-mov-nada *:not(.ed-hoja, .ed-hoja *), body.ed-mov-nada *:not(.ed-hoja *)::before, body.ed-mov-nada *:not(.ed-hoja *)::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
+body.ed-mov-reducido .ed-panel-cuerpo.entra > *, body.ed-mov-reducido .ed-modal-fondo.ver .ed-modal-cuerpo > * { animation: none !important; }
+body.ed-calidad-baja .ed-barra, body.ed-calidad-baja .ed-riel, body.ed-calidad-baja .ed-btn, body.ed-calidad-baja .ed-modal, body.ed-calidad-baja .ed-pop, body.ed-calidad-baja .ed-hojita { box-shadow: none !important; }
+body.ed-calidad-baja *, body.ed-sin-transparencias * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+body.ed-calidad-baja .ed-barra, body.ed-calidad-baja .ed-riel, body.ed-calidad-baja .ed-contexto { background-image: none !important; }
+body.ed-sin-particulas .ed-hoja .rt-fondo-html, body.ed-sin-particulas .ed-chispa, body.ed-sin-particulas .ed-hack-flota { display: none !important; }
+body.ed-sin-efectos .ed-hoja .rt-c { filter: none !important; }
+
+/* ── Barra de arriba: lo principal primero, lo demás agrupado ── */
+.ed-barra .ed-btn.ico { min-width: 40px; min-height: 40px; }
+@media (pointer: coarse) { .ed-barra .ed-btn.ico { min-width: 44px; min-height: 44px; } .ed-barra .ed-btn { min-height: 44px; } }
+.ed-grupo-b { display: flex; gap: 2px; padding: 2px; border-radius: var(--mano-chica); background: var(--superficie-2); }
+.ed-grupo-b .ed-btn { border-color: transparent; background: transparent; }
+.ed-ajustes-b .ed-ico { transition: transform .6s var(--resorte); }
+.ed-ajustes-b:hover .ed-ico, .ed-ajustes-b:active .ed-ico { transform: rotate(90deg); }
+.ed-paginas-b { gap: 0; min-width: 52px; padding: 0 10px; font: 400 16px/1 "Patrick Hand", Jost, sans-serif; border-style: dashed; }
+.ed-musica-b { position: relative; }
+.ed-musica-b.on .ed-ico { animation: ed-nota 1.8s ease-in-out infinite; color: var(--acento); }
+.ed-musica-b.apagada { color: var(--texto-suave); }
+.ed-musica-vol { display: flex; align-items: center; gap: 10px; min-width: 220px; }
+.ed-musica-vol input { flex: 1; accent-color: var(--acento); }
+.ed-mas { display: none; }
+@media (max-width: 760px) {
+  .ed-previa, .ed-guardar, .ed-ver, .ed-zoom, .ed-exportar { display: none !important; }
+  .ed-mas { display: inline-flex; }
+  .ed-nombre { min-width: 0; flex: 1 1 40px; }
+  .ed-probar span { display: none; }
+  .ed-probar { min-width: 44px; padding: 0 10px; }
+}
+@media (max-width: 400px) { .ed-nombre { display: none; } .ed-acciones { margin-left: auto; } }
+@keyframes ed-nota { 0%, 100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-2px) rotate(-8deg); } 60% { transform: translateY(1px) rotate(6deg); } }
+
+/* Etiquetas al pasar el ratón */
+.ed-tip { position: fixed; z-index: 500; max-width: 240px; padding: 6px 10px; border-radius: 8px; background: #2a1830; color: #fff; font-size: 12.5px; line-height: 1.3; pointer-events: none; animation: ed-entra .18s var(--suave); box-shadow: var(--sombra-chica); }
+
+/* Contador de FPS */
+.ed-fps { position: fixed; z-index: 600; left: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); padding: 4px 8px; border-radius: 8px; background: rgba(20, 8, 24, .72); color: #9effc4; font: 600 11px/1 ui-monospace, monospace; pointer-events: none; }
+
+/* ── Configuración ── */
+.ed-modal-config .ed-modal-cuerpo { padding-top: 10px; }
+.ed-config-modos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.ed-config-modo { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border: 1.5px solid var(--linea); border-radius: var(--mano-chica); background: var(--superficie); color: var(--texto); transition: border-color .2s, transform .3s var(--resorte), box-shadow .2s; }
+.ed-config-modo b { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--superficie-2); }
+.ed-config-modo span { font: 400 17px/1.1 "Patrick Hand", Jost, sans-serif; }
+.ed-config-modo small { font-size: 11px; color: var(--texto-suave); text-align: center; }
+.ed-config-modo.on { border-color: var(--acento); box-shadow: 0 0 0 3px var(--acento-suave); }
+.ed-config-modo.on b { background: var(--acento-suave); color: var(--acento); animation: ed-salta .45s var(--resorte); }
+.ed-config-modo:active { transform: scale(.95); }
+.ed-config-info { display: grid; gap: 4px; margin-top: 10px; padding: 12px; border-radius: 12px; background: var(--superficie-2); }
+.ed-config-info small { color: var(--texto-suave); }
+.ed-diag dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0 0 12px; }
+.ed-diag dt { color: var(--texto-suave); font-size: 13px; }
+.ed-diag dd { margin: 0; font-weight: 600; font-size: 13px; }
+
+/* Consejito automático (sin abejita) */
+.ed-consejito { position: fixed; z-index: 65; right: calc(var(--insp, 0px) + 64px); bottom: 18px; max-width: min(320px, calc(100vw - 90px)); display: flex; align-items: center; gap: 8px; padding: 9px 14px; border: 2px solid var(--tinta); border-radius: 16px; background: var(--superficie); color: var(--texto); font: 400 15px/1.3 "Patrick Hand", Jost, sans-serif; text-align: left; box-shadow: var(--sticker); opacity: 0; transform: translateX(10px) scale(.95); transition: opacity .25s, transform .4s var(--resorte); }
+.ed-consejito.ver { opacity: 1; transform: none; }
+.ed-consejito .ed-ico { flex: none; width: 18px; height: 18px; color: #d9a21c; }
+@media (max-width: 1023px) { .ed-consejito { right: 62px; bottom: calc(var(--cb, 56px) + 16px); } }
+
+/* ── La abejita nueva ── */
+.ed-abeja { width: 80px; height: 74px; pointer-events: none !important; cursor: default; }
+.ed-abeja-in { animation: ed-ab-flota calc(2.2s / max(var(--anim-k, 1), .3)) ease-in-out infinite; filter: drop-shadow(0 7px 8px rgba(70, 45, 10, .22)); }
+.ed-abeja-cuerpo { width: 100%; height: 100%; }
+.ed-abeja .ab-ala { fill: rgba(228, 244, 255, .8); stroke: #8fb5d8; stroke-width: 1.4; transform-box: fill-box; animation: ed-ab-ala .075s ease-in-out infinite alternate; }
+.ed-abeja .ab-ala-i { transform-origin: 100% 100%; }
+.ed-abeja .ab-ala-d { transform-origin: 0% 100%; animation-delay: .035s; }
+.ed-abeja .ab-antena { transform-box: fill-box; transform-origin: 50% 100%; animation: ed-ab-antena 1.6s ease-in-out infinite; }
+.ed-abeja [data-o], .ed-abeja [data-b] { display: none; }
+.ed-abeja[data-ojos="normal"] [data-o="normal"], .ed-abeja[data-ojos="feliz"] [data-o="feliz"], .ed-abeja[data-ojos="guino"] [data-o="guino"], .ed-abeja[data-ojos="corazon"] [data-o="corazon"], .ed-abeja[data-ojos="susto"] [data-o="susto"], .ed-abeja[data-ojos="dormida"] [data-o="dormida"],
+.ed-abeja[data-boca="sonrisa"] [data-b="sonrisa"], .ed-abeja[data-boca="grande"] [data-b="grande"], .ed-abeja[data-boca="gato"] [data-b="gato"], .ed-abeja[data-boca="o"] [data-b="o"] { display: inline; }
+.ed-abeja .ab-ojos-n { transform-box: fill-box; transform-origin: center; animation: ed-ab-parpadeo 4.6s infinite; }
+.ed-abeja[data-ojos="corazon"] [data-o="corazon"] { transform-box: fill-box; transform-origin: center; animation: ed-ab-late .8s ease-in-out infinite; }
+.ed-abeja.hablando .ab-cara { transform-box: fill-box; transform-origin: 50% 70%; animation: ed-ab-habla .18s ease-in-out infinite alternate; }
+.ed-abeja-in.salta { animation: ed-ab-salta .6s var(--resorte); }
+.ed-abeja-in.vuelta { animation: ed-ab-vuelta .9s cubic-bezier(.5, 0, .3, 1); }
+.ed-abeja-in.tiembla { animation: ed-ab-tiembla .09s linear infinite; }
+.ed-chispa { position: fixed; z-index: 69; font-style: normal; font-size: 14px; pointer-events: none; animation: ed-chispa .9s ease-out forwards; text-shadow: 0 0 6px rgba(255, 255, 255, .8); }
+body.ed-mov-nada .ed-abeja-in, body.ed-mov-nada .ed-abeja .ab-ala { animation: none !important; }
+@keyframes ed-ab-flota { 0%, 100% { translate: 0 0; rotate: -3deg; } 50% { translate: 0 calc(-7px * var(--anim-k, 1)); rotate: 3deg; } }
+@keyframes ed-ab-ala { to { transform: scaleY(.4) rotate(-4deg); } }
+@keyframes ed-ab-antena { 50% { transform: rotate(-10deg); } }
+@keyframes ed-ab-parpadeo { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+@keyframes ed-ab-late { 50% { transform: scale(1.18); } }
+@keyframes ed-ab-habla { to { transform: scaleY(.92) translateY(1px); } }
+@keyframes ed-ab-salta { 40% { transform: translateY(-14px) scale(1.06, .94); } 70% { transform: translateY(2px) scale(.96, 1.05); } }
+@keyframes ed-ab-vuelta { to { transform: rotate(360deg); } }
+@keyframes ed-ab-tiembla { 0% { transform: translate(-2px, 1px) rotate(-3deg); } 50% { transform: translate(2px, -1px) rotate(3deg); } 100% { transform: translate(-1px, 0); } }
+@keyframes ed-chispa { from { transform: translate(-50%, -50%) scale(.4); opacity: 1; } to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.1); opacity: 0; } }
+.ed-foco { width: 46px; height: 46px; }
+.ed-foco.con-abeja .ed-ico { animation: ed-ab-late 1.4s ease-in-out infinite; }
+
+/* ── El «hackeo» ── */
+.ed-hack { position: fixed; inset: 0; z-index: 900; overflow: hidden; pointer-events: auto; color: #9effc4; font: 600 14px/1.4 ui-monospace, "Courier New", monospace; }
+.ed-hack-ruido, .ed-hack-lineas { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s; }
+.ed-hack.fase1 .ed-hack-ruido { opacity: .5; background: repeating-radial-gradient(circle at 17% 32%, rgba(255,255,255,.18) 0 1px, transparent 1px 3px), repeating-radial-gradient(circle at 73% 61%, rgba(0,0,0,.25) 0 1px, transparent 1px 4px); animation: ed-hack-ruido .12s steps(3) infinite; }
+.ed-hack.fase1 .ed-hack-lineas { opacity: 1; background: repeating-linear-gradient(transparent 0 3px, rgba(0, 0, 0, .18) 3px 4px); }
+.ed-hack.fase1 { background: rgba(10, 4, 16, .35); animation: ed-hack-parpadeo 1.2s steps(6) infinite; }
+.ed-hack-letra { position: absolute; color: #ff5c8a; text-shadow: 2px 0 #00e5ff; font-size: 16px; opacity: .8; }
+.ed-hack-term { position: absolute; left: 50%; top: 22%; width: min(460px, 90vw); margin: 0 0 0 calc(min(460px, 90vw) / -2); padding: 16px 18px; border: 1px solid #39ff9a; border-radius: 10px; background: rgba(6, 14, 10, .92); box-shadow: 0 0 30px rgba(57, 255, 154, .25); white-space: pre-wrap; animation: ed-entra .2s; }
+.ed-hack-grito { position: absolute; left: 0; right: 0; top: 52%; text-align: center; font: 900 clamp(26px, 7vw, 52px)/1.1 ui-monospace, monospace; color: #fff; text-shadow: 3px 0 #ff2d6f, -3px 0 #00e5ff; letter-spacing: .04em; }
+.ed-hack-grito.rojo { color: #ff4d6d; animation: ed-hack-tiembla .08s linear infinite; }
+.ed-hack.fase3 { background: radial-gradient(circle at 50% 45%, rgba(255, 214, 230, .92), rgba(60, 20, 50, .85)); transition: background .6s; }
+.ed-hack-carta { position: absolute; left: 50%; top: 50%; width: min(420px, 88vw); transform: translate(-50%, -50%); padding: 26px 22px 20px; border: 2px solid var(--tinta); border-radius: 20px; background: var(--papel), #fffaf3; color: #3b2a3f; text-align: center; box-shadow: var(--sticker), 0 20px 60px rgba(80, 20, 50, .4); animation: ed-hack-carta .7s var(--resorte); font: 400 19px/1.45 "Patrick Hand", Jost, sans-serif; }
+.ed-hack-carta p { margin: 8px 0 16px; min-height: 3em; }
+.ed-hack-cor { display: block; font-style: normal; font-size: 40px; color: #ff5c8a; animation: ed-ab-late 1s ease-in-out infinite; }
+.ed-hack-flota { position: absolute; bottom: -40px; font-style: normal; color: #ff7aa2; animation: ed-hack-sube 4s ease-in infinite; pointer-events: none; }
+.ed-hack.fin { animation: ed-hack-fin .42s steps(4) forwards; }
+body.ed-glitcheando .ed-barra, body.ed-glitcheando .ed-riel, body.ed-glitcheando .ed-panel, body.ed-glitcheando .ed-insp, body.ed-glitcheando .ed-centro { animation: ed-glitch .32s steps(2) infinite; }
+@keyframes ed-glitch { 0% { transform: translate(0); filter: none; } 25% { transform: translate(-3px, 1px) skewX(-2deg); filter: hue-rotate(40deg) saturate(1.6); } 50% { transform: translate(3px, -1px); clip-path: inset(10% 0 30% 0); } 75% { transform: translate(-1px, 2px) skewX(3deg); filter: invert(.08); } 100% { transform: none; clip-path: none; } }
+@keyframes ed-hack-ruido { to { background-position: 7px -5px, -9px 4px; } }
+@keyframes ed-hack-parpadeo { 50% { background: rgba(10, 4, 16, .55); } }
+@keyframes ed-hack-tiembla { 0% { transform: translate(-3px, 1px); } 50% { transform: translate(3px, -2px); } 100% { transform: translate(-1px, 2px); } }
+@keyframes ed-hack-carta { from { opacity: 0; transform: translate(-50%, -40%) scale(.85) rotate(-3deg); } }
+@keyframes ed-hack-sube { to { transform: translateY(-115vh) rotate(30deg); opacity: 0; } }
+@keyframes ed-hack-fin { 0% { opacity: 1; filter: none; } 50% { opacity: .6; filter: hue-rotate(90deg) contrast(2); } 100% { opacity: 0; } }
+
+/* ── Biblioteca de recursos ── */
+.ed-bib-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 10px; margin: 0 -2px; touch-action: pan-x; }
+.ed-bib-chips::-webkit-scrollbar { display: none; }
+.ed-bib-chip { flex: none; display: inline-flex; align-items: center; gap: 5px; min-height: 38px; padding: 0 12px; border: 1.5px solid var(--linea-fuerte); border-radius: 999px; background: var(--superficie); color: var(--texto); font: 400 15px/1 "Patrick Hand", Jost, sans-serif; transition: background .2s, border-color .2s, transform .3s var(--resorte); }
+.ed-bib-chip .ed-ico { width: 16px; height: 16px; }
+.ed-bib-chip small { min-width: 18px; padding: 2px 5px; border-radius: 999px; background: var(--superficie-2); font: 600 10px/1 Jost, sans-serif; color: var(--texto-suave); }
+.ed-bib-chip.on { background: var(--acento-suave); border-color: var(--acento); color: var(--acento); }
+.ed-bib-chip:active { transform: scale(.94); }
+.ed-bib { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; margin-top: 8px; }
+.ed-bib-t { display: flex; flex-direction: column; gap: 3px; padding: 6px 6px 8px; border: 1.5px solid var(--linea); border-radius: var(--mano-chica); background: var(--superficie); animation: ed-entra .3s var(--suave) both; transition: border-color .2s, box-shadow .2s; }
+.ed-bib-t:hover { border-color: var(--linea-fuerte); box-shadow: var(--sombra-chica); }
+.ed-bib-t.puesto { animation: ed-bib-puesto .6s var(--resorte); border-color: var(--acento); }
+.ed-bib-t b { font: 400 15px/1.15 "Patrick Hand", Jost, sans-serif; }
+.ed-bib-t small { color: var(--texto-suave); font-size: 11px; }
+.ed-bib-t p { margin: 0; color: var(--texto-suave); font-size: 11.5px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ed-bib-ver { padding: 0; border: 0; background: none; border-radius: 10px; overflow: hidden; }
+.ed-bib-prev { position: relative; height: 96px; border-radius: 10px; overflow: hidden; background: repeating-conic-gradient(var(--superficie-2) 0 25%, var(--superficie) 0 50%) 0 0 / 16px 16px; display: grid; place-items: center; }
+.ed-bib-prev img { max-width: 88%; max-height: 88%; object-fit: contain; pointer-events: none; }
+.ed-bib-vivo { position: absolute; left: 50%; top: 50%; border: 0; transform-origin: center; pointer-events: none; background: transparent; }
+.ed-bib-poner { margin-top: 4px; width: 100%; }
+.ed-bib-giphy { grid-column: 1 / -1; display: grid; gap: 6px; justify-items: start; padding: 14px; border: 2px dashed var(--linea-fuerte); border-radius: var(--mano); background: var(--superficie-2); }
+.ed-bib-grande { position: relative; width: 100%; height: min(52vh, 380px); border-radius: 14px; overflow: hidden; background: repeating-conic-gradient(var(--superficie-2) 0 25%, var(--superficie) 0 50%) 0 0 / 20px 20px; display: grid; place-items: center; }
+.ed-bib-grande .ed-bib-vivo { pointer-events: auto; }
+.ed-bib-grande img { max-width: 90%; max-height: 90%; object-fit: contain; }
+.ed-bib-cat { color: var(--texto-suave); }
+@keyframes ed-bib-puesto { 0% { transform: scale(1); } 40% { transform: scale(.92); } 100% { transform: none; } }
+.ed-barra .ed-paginas-b span { display: inline !important; }

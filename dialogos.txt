@@ -1,0 +1,37 @@
+# ─────────────────────────────────────────────────────────────────────
+#  DIÁLOGOS DE LA ABEJITA DEL EDITOR
+#
+#  · Cada línea es una frase que la abejita puede decir de sorpresa.
+#  · Las líneas que empiezan con # son comentarios (no se dicen).
+#  · Las líneas vacías no cuentan.
+#  · Una línea que empieza con «-» es un EVENTO ESPECIAL: primero la
+#    pantalla «se hackea» (glitch, terminal, «ESTOY SIENDO HACKEADO…») y
+#    después aparece ese mensaje. Sale de vez en cuando, no muy seguido.
+#  · Todo se trata sólo como texto: aquí no se puede poner código.
+#  · Se puede cambiar cada cuánto habla en el editor: ⚙ → Abejita.
+# ─────────────────────────────────────────────────────────────────────
+
+Hola amorcito 🥹💖
+¿Ya guardaste tu creación?
+Jeje, esto está quedando bonito.
+¿Necesitas una ayudita? 🐝
+¡Ánimo, bbsita! 💖
+Creo que esta parte necesita un poquito más de brillo ✨
+No olvides guardar tu trabajo.
+Esto está quedando precioso ✨
+No olvides descansar un ratito.
+Jeje, estoy vigilando que todo funcione 🐝
+Qué bonito está quedando esto.
+No olvides hacer una copia de seguridad (Exportar → .zip).
+Consejito: prueba un efecto aquí 🐝
+¿Sabías que puedes previsualizar los recursos antes de insertarlos?
+Tu creación está quedando linda 🥹💖
+Quizás un poquito de brillo quedaría bonito ✨
+Bzz bzz… perdón, estaba pensando en flores 🌼
+Si te cansas, la música te acompaña 🎶
+Toca «Probar» para verla como la verá él 💌
+Eres la persona más bonita que he visto (y he visto muchas flores) 🌸
+Un poquito de animación y queda perfecto ✨
+Me encanta verte crear cositas 🥰
+
+- Hola amorcito, soy yop :> solo quería decirte que te amo mucho, y no te preocupes, no estoy viendo tu creación, pero seguramente te está quedando bien linda, ¡ánimos mi bbsita! 🥹💖✨️

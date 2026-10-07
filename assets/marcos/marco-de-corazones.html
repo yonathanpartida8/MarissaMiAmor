@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Marco de corazones</title>
+<meta name="tamaño" content="360x460">
+<meta name="descripcion" content="Corazoncitos alrededor que laten; centro transparente">
+<meta name="decorativo" content="si">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}i{position:absolute;font-style:normal;color:var(--c);font-size:var(--t);animation:l 1.8s ease-in-out infinite;animation-delay:var(--r)}@keyframes l{50%{transform:scale(1.25)}}@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body>
+<script>const c=["#ff7aa2","#ffb3c7","#e8507a","#ffd1dc"];let k=0;const pon=(x,y)=>{const i=document.createElement("i");i.textContent="♥";i.style.cssText=`left:${x}%;top:${y}%;--c:${c[k%4]};--t:${14+(k%3)*6}px;--r:${-k*.2}s`;k++;document.body.append(i)};for(let x=2;x<=92;x+=9){pon(x,1);pon(x,93)}for(let y=9;y<=85;y+=8){pon(1,y);pon(93,y)}</script></body></html>

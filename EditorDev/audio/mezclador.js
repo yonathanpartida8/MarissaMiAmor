@@ -53,6 +53,7 @@ export class AudioEditor {
     this._toque = () => this._desbloquear();
     addEventListener("pointerdown", this._toque, true);
     addEventListener("keydown", this._toque, true);
+    addEventListener("touchend", this._toque, true); // iPhone: el gesto que de verdad desbloquea
     document.addEventListener("visibilitychange", () => this._visibilidad());
     // Todo lo que suena con RT.sonar (inspector, línea de tiempo, componentes) pasa por la mezcla.
     RT.sonar = (url, vol) => this.efecto(url, vol);
@@ -67,25 +68,24 @@ export class AudioEditor {
 
   /* ── Encontrar MusicaDev.mp3 ─────────────────────────────────────── */
   async _buscar() {
-    // 1) DevMusic/ (del catálogo, o listándola si el servidor deja).
-    try {
-      const { catalogo, listar } = await import("../componentes/catalogo.js");
-      let lista = ((await catalogo()).devMusic || []).map((m) => m.ruta);
-      if (!lista.length) lista = ((await listar("DevMusic/")) || []).filter((f) => AUD.test(f)).map((f) => "DevMusic/" + f);
-      if (lista.length) {
-        this.lista = lista.map((r) => new URL("../" + r.split("/").map(encodeURIComponent).join("/"), location.href).href);
-        this.url = this.lista[0];
-      }
-    } catch (e) { /* sigue con las de siempre */ }
-    if (!this.url) for (const c of CANDIDATAS) {
+    // 1) MusicaDev.mp3 (la de siempre). 2) Lo que haya en DevMusic/ suena después, en orden al azar.
+    for (const c of CANDIDATAS) {
       const u = new URL(c, location.href).href;
       try {
         const r = await fetch(u, { method: "HEAD", cache: "no-store" });
         if (r.ok && !/text\/html/.test(r.headers.get("content-type") || "")) { this.url = u; break; }
       } catch (e) { /* sigue buscando */ }
     }
+    try {
+      const { catalogo, listar } = await import("../componentes/catalogo.js");
+      let lista = ((await catalogo()).devMusic || []).map((m) => m.ruta);
+      if (!lista.length) lista = ((await listar("DevMusic/")) || []).filter((f) => AUD.test(f)).map((f) => "DevMusic/" + f);
+      const extra = lista.map((r) => new URL("../" + r.split("/").map(encodeURIComponent).join("/"), location.href).href);
+      if (extra.length) { this.lista = [...new Set([this.url, ...extra].filter(Boolean))]; this.url = this.url || this.lista[0]; }
+    } catch (e) { /* sólo MusicaDev */ }
     this._avisar();
-    if (this.ac) this._arrancarDev();
+    // Intenta empezar ya (si el navegador lo permite); si no, empieza con el primer toque.
+    this._desbloquear();
     return this.url;
   }
 
@@ -114,6 +114,7 @@ export class AudioEditor {
     if (this.ac && this.ac.state === "running" && (!this.url || !this.pref.on || this.sonando)) {
       removeEventListener("pointerdown", this._toque, true);
       removeEventListener("keydown", this._toque, true);
+      removeEventListener("touchend", this._toque, true);
     }
   }
 

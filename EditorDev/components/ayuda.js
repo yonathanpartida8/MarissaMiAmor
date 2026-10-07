@@ -1,23 +1,35 @@
 /**
- * EL FOQUITO Y LA ABEJITA — consejos que no estorban.
+ * EL FOQUITO Y LA ABEJITA — consejos y compañía que no estorban.
  *
- * Un foquito chiquito en una esquina. Nunca abre nada solo: cuando hay un
- * consejo que todavía no viste para lo que estás haciendo (una foto elegida,
- * la línea de tiempo, el editor de HTML, Animar, GIFs…), brilla suave.
- * Al tocarlo llega volando una ABEJITA que te cuenta el consejo de ese
- * momento en un globito (con un «bzz-pip» cada vez que habla). Si el consejo
- * habla de un botón, vuela hasta él para enseñártelo. Mientras está, flota
- * despacito cerca de la esquina sin tapar la hoja. Tocar fuera sólo esconde el
- * globito; tocar la abejita la hace hablar otra vez. Al volver a tocar el
- * foquito (o «Entendido») se va volando y desaparece.
- * Los consejos son texto o { t, a } (a = el botón al que vuela).
+ * El foquito (esquina de abajo) brilla cuando hay un consejo nuevo para lo
+ * que haces. Al tocarlo llega la abejita (mascota/abeja.js): da el consejo
+ * del momento, se queda revoloteando, reacciona a lo que haces (insertar,
+ * guardar, borrar…) y de vez en cuando dice algo de dialogos.txt
+ * (mascota/dialogos.js). Las líneas con «-» lanzan el «hackeo» romántico
+ * (mascota/glitch.js). Al volver a tocar el foquito se va volando.
+ * Sin abejita, de vez en cuando aparece un consejito discreto (si se pide).
+ * Todo se ajusta en ⚙ Configuración.
  */
 import { el } from "../../src/utils/dom.js";
 import { ico } from "./iconos.js";
+import { Abeja } from "../mascota/abeja.js";
+import { siguiente as dialogo, evento } from "../mascota/dialogos.js";
+import { hackeo } from "../mascota/glitch.js";
+import { PREF, alCambiar } from "../config/preferencias.js";
 
 const VISTOS = "editordev:ayuda-vista";
 const OCULTO = "editordev:ayuda-oculta";
-const QUIETO = matchMedia("(prefers-reduced-motion: reduce)");
+const azar = (a, b) => a + Math.random() * (b - a);
+
+/** Consejos generales (los automáticos y los de la abejita cuando no hay nada concreto). */
+const GENERALES = [
+  "Consejo: usa el modo rendimiento (⚙) si tienes muchos efectos.",
+  "Puedes añadir nuevos recursos dejándolos en la carpeta assets/.",
+  "Los diálogos de la abejita están en dialogos.txt: cámbialos cuando quieras.",
+  "Puedes previsualizar un recurso antes de insertarlo (Recursos).",
+  "Guarda seguido tu creación (o deja el guardado automático encendido).",
+  "Toca la notita musical de arriba para apagar o encender la música.",
+];
 
 const TIPS = {
   hoja: [
@@ -60,22 +72,6 @@ const TIPS = {
   "el:componente": ["Las piezas salen de assets/<carpeta>/: deja ahí un .html (con su CSS y JS dentro) y aparece solo en «Piezas»."],
 };
 
-const ABEJA = `<svg viewBox="0 0 72 60" aria-hidden="true">
-<defs><clipPath id="ed-abeja-c"><ellipse cx="30" cy="36" rx="19" ry="15"/></clipPath></defs>
-<g class="ala ala-a"><ellipse cx="27" cy="17" rx="10" ry="14" transform="rotate(-18 27 17)"/></g>
-<g class="ala ala-b"><ellipse cx="37" cy="16" rx="9" ry="13" transform="rotate(14 37 16)"/></g>
-<path d="M12 37l-7 2 7 3z" fill="#3b2a1a"/>
-<ellipse cx="30" cy="36" rx="19" ry="15" fill="#ffd23f"/>
-<g clip-path="url(#ed-abeja-c)" fill="#3b2a1a"><rect x="19" y="18" width="6" height="36" rx="3"/><rect x="31" y="18" width="6" height="36" rx="3"/></g>
-<ellipse cx="30" cy="36" rx="19" ry="15" fill="none" stroke="#3b2a1a" stroke-width="2.4"/>
-<path d="M52 21c1-5 3-8 6-9M57 23c3-4 6-5 9-5" fill="none" stroke="#3b2a1a" stroke-width="2" stroke-linecap="round"/>
-<circle cx="58.5" cy="12" r="2.4" fill="#3b2a1a"/><circle cx="66" cy="18" r="2.4" fill="#3b2a1a"/>
-<circle cx="53" cy="32" r="11.5" fill="#ffd23f" stroke="#3b2a1a" stroke-width="2.4"/>
-<circle class="ojo" cx="56.5" cy="29.5" r="2.3" fill="#3b2a1a"/><circle cx="57.3" cy="28.7" r=".8" fill="#fff"/>
-<circle cx="58.5" cy="35.5" r="2.6" fill="#ff8fa3" opacity=".7"/>
-<path d="M52.5 36.5q2.8 2.6 5.6.2" fill="none" stroke="#3b2a1a" stroke-width="1.8" stroke-linecap="round"/>
-</svg>`;
-
 const textoDe = (tip) => (typeof tip === "string" ? tip : tip.t);
 const metaDe = (tip) => (typeof tip === "string" ? null : tip.a);
 
@@ -83,10 +79,10 @@ export class Ayuda {
   constructor(app) {
     this.app = app;
     try { this.vistos = new Set(JSON.parse(localStorage.getItem(VISTOS) || "[]")); } catch (e) { this.vistos = new Set(); }
-    try { this.oculto = localStorage.getItem(OCULTO) === "1"; } catch (e) { this.oculto = false; }
+    try { if (localStorage.getItem(OCULTO) === "1") PREF.ayudas = false; } catch (e) { /* nada */ }
     this.i = 0;
-    this.boton = el("button.ed-foco", { type: "button", title: "Consejos", "aria-label": "Consejos para este momento", html: ico("foco") });
-    this.boton.hidden = this.oculto;
+    this.abeja = new Abeja(app);
+    this.boton = el("button.ed-foco", { type: "button", title: "Consejos y la abejita", "aria-label": "Llamar a la abejita (consejos)", html: ico("foco") });
     this.boton.addEventListener("click", () => this.alternar());
     document.body.append(this.boton);
     const pronto = () => { if (this._r) return; this._r = requestAnimationFrame(() => { this._r = 0; this.revisar(); }); };
@@ -95,9 +91,33 @@ export class Ayuda {
     E.on("actual", pronto);
     addEventListener("ed-hoja", pronto);
     document.addEventListener("click", pronto, true);
-    addEventListener("resize", () => { if (this.abeja && !this._volando) this._volar(this._casa(), 420); });
+    addEventListener("resize", () => { if (this.abeja.viva && !this.abeja.hablando) this.abeja.volarA(this.abeja.casa(), 400); else if (this.abeja.globoVisible) this.abeja._colocar(); });
+    // Reacciones a lo que pasa en el editor.
+    this._cuantos = this._contar();
+    E.on("els", () => {
+      const n = this._contar(), antes = this._cuantos;
+      this._cuantos = n;
+      if (!this.abeja.viva || this.abeja.hablando) return;
+      if (n > antes) { this.abeja.reaccionar("insertar"); if (Math.random() < 0.35) this.abeja.decir(["¡Qué lindo quedó eso! ✨", "Ooh, me gusta 🥹", "¡Eso! Así se hace 🐝"][Math.random() * 3 | 0], { cara: "feliz", dura: 3200 }); }
+      else if (n < antes && Math.random() < 0.3) this.abeja.reaccionar("borrar");
+    });
+    E.on("sel", () => { if (this.abeja.viva && !this.abeja.hablando && Math.random() < 0.15) { const id = E.sel[0]; const n = id && document.querySelector(`.ed-hoja [data-id="${id}"]`); if (n) this.abeja.visitar(n.getBoundingClientRect()); } });
+    addEventListener("ed-evento", (ev) => {
+      if (!this.abeja.viva) return;
+      if (ev.detail === "guardado") { this.abeja.reaccionar("guardar"); this.abeja.decir("¡Guardadito! 💾💖", { cara: "enamorada", dura: 2600 }); }
+      if (ev.detail === "exportado") { this.abeja.reaccionar("carino"); this.abeja.decir("¡Tu librito está listo! Qué orgullo 🥹", { cara: "enamorada", dura: 3600 }); }
+    });
+    alCambiar((p, c) => {
+      if ("ayudas" in c) this.revisar();
+      if (("abeja" in c && !p.abeja) || ("ayudas" in c && !p.ayudas)) this.irse();
+      if ("dialogos" in c || "frecuencia" in c) this._programarCharla();
+      if ("consejos" in c) this._programarConsejo();
+    });
     this.revisar();
+    this._programarConsejo();
   }
+
+  _contar() { return this.app.estado.pagina?.els.length || 0; }
 
   /** Dónde está quien edita ahora mismo. */
   contexto() {
@@ -117,198 +137,121 @@ export class Ayuda {
   revisar() {
     const k = this.contexto();
     this.k = k;
-    this.boton.classList.toggle("nuevo", !!k && !this.vistos.has(k));
+    this.boton.hidden = !PREF.ayudas;
+    this.boton.classList.toggle("nuevo", !!k && !this.vistos.has(k) && !this.abeja.viva);
     this.boton.classList.toggle("fuera", !k);
-    this.boton.classList.toggle("con-abeja", !!this.abeja);
-    if (!k && this.abeja) this.irse();
+    this.boton.classList.toggle("con-abeja", this.abeja.viva);
+    document.body.classList.toggle("ed-con-abeja", this.abeja.viva);
+    if (!k && this.abeja.viva) this.irse();
   }
 
-  alternar() { if (this.abeja) this.irse(); else this.venir(); }
-
-  /* ── La abejita ─────────────────────────────────────────────────── */
-
-  /** Su sitio de descanso: cerca del foquito, sin tapar la hoja. */
-  _casa() {
-    const r = this.boton.getBoundingClientRect();
-    return { x: Math.max(8, Math.min(innerWidth - 80, r.left - 62)), y: Math.max(60, r.top - 74) };
-  }
-
-  /** Junto a un botón de la interfaz (para enseñarlo). */
-  _junto(sel) {
-    const n = sel && document.querySelector(sel);
-    if (!n || !n.offsetParent) return null;
-    const r = n.getBoundingClientRect();
-    const x = r.right + 76 < innerWidth ? r.right + 4 : r.left - 76;
-    const y = r.bottom + 70 < innerHeight ? r.bottom + 2 : r.top - 62;
-    return { x: Math.max(4, Math.min(innerWidth - 76, x)), y: Math.max(4, Math.min(innerHeight - 64, y)), n };
-  }
-
-  _poner(p) { this.pos = p; this.abeja.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`; }
-
-  /** Vuela en curva de donde está a `p`; mira hacia donde va. */
-  _volar(p, ms = 900) {
-    const a = this.abeja;
-    if (!a) return Promise.resolve();
-    const o = this.pos || p;
-    const dx = p.x - o.x, dy = p.y - o.y;
-    if (Math.abs(dx) > 2) a.classList.toggle("izq", dx < 0);
-    if (QUIETO.matches) ms = Math.min(ms, 260);
-    const lado = Math.min(90, Math.hypot(dx, dy) * 0.3);
-    const mx = (o.x + p.x) / 2 - (dy / (Math.hypot(dx, dy) || 1)) * lado, my = (o.y + p.y) / 2 + (dx / (Math.hypot(dx, dy) || 1)) * lado * 0.6 - 20;
-    this._volando = true;
-    this._quieto?.();
-    const anim = a.animate([
-      { transform: `translate3d(${o.x}px, ${o.y}px, 0)` },
-      { transform: `translate3d(${mx}px, ${my}px, 0) rotate(${dx < 0 ? -8 : 8}deg)`, offset: 0.5 },
-      { transform: `translate3d(${p.x}px, ${p.y}px, 0)` },
-    ], { duration: ms, easing: "cubic-bezier(.45,.05,.35,1)" });
-    this._poner(p);
-    return anim.finished.catch(() => {}).then(() => { this._volando = false; if (this.abeja === a) this._pasear(p); });
-  }
-
-  /** Flota despacito alrededor de su sitio (sin moverse si se pidió menos movimiento). */
-  _pasear(base) {
-    this._quieto?.();
-    if (QUIETO.matches) return;
-    let t = 0, vivo = true;
-    const paso = () => {
-      if (!vivo || !this.abeja || document.hidden) { if (vivo) t = setTimeout(paso, 2000); return; }
-      const p = { x: base.x + (Math.random() * 2 - 1) * 16, y: base.y + (Math.random() * 2 - 1) * 10 };
-      const a = this.abeja, o = this.pos;
-      a.animate([{ transform: `translate3d(${o.x}px, ${o.y}px, 0)` }, { transform: `translate3d(${p.x}px, ${p.y}px, 0)` }], { duration: 2400, easing: "ease-in-out" });
-      this._poner(p);
-      this._globoSigue();
-      t = setTimeout(paso, 2600 + Math.random() * 1600);
-    };
-    t = setTimeout(paso, 1800);
-    this._quieto = () => { vivo = false; clearTimeout(t); this._quieto = null; };
-  }
+  alternar() { if (this.abeja.viva) this.irse(); else this.venir(); }
 
   venir() {
-    if (this.abeja) return;
+    if (this.abeja.viva || !PREF.abeja) { if (!PREF.abeja) this._consejito("La abejita está apagada en ⚙ Configuración → Abejita."); return; }
+    this._consejitoFuera();
     const r = this.boton.getBoundingClientRect();
-    const a = el("button.ed-abeja", { type: "button", "aria-label": "La abejita: toca para otro consejo", html: `<span class="ed-abeja-in">${ABEJA}</span>` });
-    a.addEventListener("click", () => { if (this.globo?.classList.contains("ver")) this.otro(); else this.hablar(this.i); });
-    document.body.append(a);
-    this.abeja = a;
-    this.pos = { x: r.left + r.width / 2 - 36, y: r.top + r.height / 2 - 30 };
-    this._poner(this.pos);
-    a.animate([{ opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1 }], { duration: 260, easing: "ease-out" });
-    this.boton.classList.add("con-abeja");
-    const tips = this._tips();
-    this.i = 0;
-    this._volar(this._casa(), 820).then(() => this.hablar(0));
+    this.abeja.venir({ x: r.left + r.width / 2, y: r.top + r.height / 2 }).then(() => this.hablar(0));
     this.vistos.add(this.k || "hoja");
     try { localStorage.setItem(VISTOS, JSON.stringify([...this.vistos])); } catch (e) { /* nada */ }
+    this._programarCharla();
     this.revisar();
-    this._fuera = (ev) => { if (this.globo && !this.globo.contains(ev.target) && !a.contains(ev.target) && !this.boton.contains(ev.target)) this._callar(); };
-    document.addEventListener("pointerdown", this._fuera, true);
-    return tips;
+  }
+
+  irse() {
+    if (!this.abeja.viva) return;
+    clearTimeout(this._charla);
+    this.abeja.irse();
+    this.revisar();
   }
 
   _tips() { return TIPS[this.k] || TIPS.hoja; }
 
-  /** Dice un consejo: vuela hasta su botón (si tiene) y lo cuenta en el globito. */
+  /** Un consejo del momento (si habla de un botón, vuela a enseñárselo). */
   async hablar(i) {
     const tips = this._tips();
     this.i = ((i % tips.length) + tips.length) % tips.length;
     const tip = tips[this.i];
-    const junto = this._junto(metaDe(tip));
-    const destino = junto || this._casa();
-    this._callar(true);
-    if (Math.hypot(destino.x - this.pos.x, destino.y - this.pos.y) > 24) await this._volar(destino, 700);
-    if (!this.abeja) return;
-    if (junto) { junto.n.classList.add("ed-senalado"); clearTimeout(this._sen); this._sen = setTimeout(() => junto.n.classList.remove("ed-senalado"), 2400); }
-    this._globo(textoDe(tip), tips.length);
-    this.app.sonidos?.voz?.();
-    this.abeja.classList.remove("habla"); void this.abeja.offsetWidth; this.abeja.classList.add("habla");
-  }
-
-  otro() { this.hablar(this.i + 1); }
-
-  _globo(texto, total) {
-    let g = this.globo;
-    if (!g) {
-      g = el("div.ed-abeja-globo", { role: "status", "aria-live": "polite" }, [
-        el("p"),
-        el("div.ed-abeja-pie", {}, [
-          el("small"),
-          el("button.ed-btn.chico", { type: "button", html: `${ico("refrescar")}<span>Otro consejo</span>`, onClick: () => this.otro() }),
-          el("button.ed-btn.chico.primario", { type: "button", text: "Entendido", onClick: () => this.irse() }),
-        ]),
-      ]);
-      document.body.append(g);
-      this.globo = g;
+    const sel = metaDe(tip);
+    const n = sel && document.querySelector(sel);
+    if (n && n.offsetParent) {
+      n.classList.add("ed-senalado"); clearTimeout(this._sen); this._sen = setTimeout(() => n.classList.remove("ed-senalado"), 2400);
     }
-    const p = g.firstChild;
-    const [cuenta, otro] = g.lastChild.children;
-    cuenta.textContent = total > 1 ? `${this.i + 1} de ${total}` : "";
-    otro.hidden = total < 2;
-    // Escribe rapidito, como si hablara. El resto del texto ya ocupa su sitio
-    // (invisible), así el globito no cambia de tamaño ni salta mientras escribe.
-    clearInterval(this._tecla);
-    p.setAttribute("aria-label", texto);
-    const ya = el("span"), falta = el("span.falta", { text: texto });
-    p.replaceChildren(ya, falta);
-    let n = 0;
-    const cada = QUIETO.matches ? texto.length : 3;
-    this._tecla = setInterval(() => { n += cada; ya.textContent = texto.slice(0, n); falta.textContent = texto.slice(n); if (n >= texto.length) clearInterval(this._tecla); }, 16);
-    this._globoSigue();
-    g.classList.add("ver");
+    this.abeja.decir(textoDe(tip), {
+      cara: this.i === 0 ? "feliz" : "normal",
+      cuenta: tips.length > 1 ? `${this.i + 1} de ${tips.length}` : "",
+      botones: [
+        ...(tips.length > 1 ? [[`${ico("refrescar")}<span>Otro</span>`, () => this.hablar(this.i + 1)]] : []),
+        [`<span>Gracias</span>`, () => this.abeja.callar(), "primario"],
+      ],
+    });
   }
 
-  /** El globito se acomoda junto a la abejita, dentro de la pantalla. */
-  _globoSigue() {
-    const g = this.globo;
-    if (!g || !this.pos) return;
-    const w = Math.min(280, innerWidth - 24);
-    g.style.width = w + "px";
-    const izq = this.pos.x + 36 > innerWidth / 2;
-    const x = Math.max(12, Math.min(innerWidth - w - 12, izq ? this.pos.x - w + 30 : this.pos.x + 40));
-    const h = g.offsetHeight || 120;
-    const arriba = this.pos.y - h - 8 > 8;
-    const y = arriba ? this.pos.y - h - 6 : Math.min(innerHeight - h - 12, this.pos.y + 62);
-    g.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-    g.classList.toggle("abajo", !arriba);
-    g.style.setProperty("--cola", `${Math.max(16, Math.min(w - 24, this.pos.x + 36 - x))}px`);
+  /* ── Charlitas de dialogos.txt ─────────────────────────────────── */
+  _programarCharla() {
+    clearTimeout(this._charla);
+    if (!this.abeja.viva || !PREF.dialogos) return;
+    const s = Math.max(15, +PREF.frecuencia || 75);
+    this._charla = setTimeout(() => this._charlar(), azar(0.7, 1.3) * s * 1000);
   }
 
-  _callar(rapido) {
-    clearInterval(this._tecla);
-    this.globo?.classList.remove("ver");
-    if (!rapido) this._volar(this._casa(), 600);
+  async _charlar() {
+    if (!this.abeja.viva) return;
+    if (document.hidden || this.abeja.hablando || document.body.classList.contains("ed-probando") || document.querySelector(".ed-modal-fondo, .ed-hojita.abierta, .ed-codigo-pantalla")) return this._programarCharla();
+    const d = await dialogo();
+    if (d.tipo === "hackeo") await this.hackeo(d.texto);
+    else this.abeja.decir(d.texto, { cara: /💖|🥹|amor|bbsita|lind|bonit/i.test(d.texto) ? "enamorada" : "feliz", dura: Math.min(9000, 2600 + d.texto.length * 55) });
+    this._programarCharla();
   }
 
-  irse() {
-    const a = this.abeja;
-    if (!a) return;
-    this.abeja = null;
-    this._quieto?.();
-    clearInterval(this._tecla);
-    document.removeEventListener("pointerdown", this._fuera, true);
-    const g = this.globo;
-    this.globo = null;
-    if (g) { g.classList.remove("ver"); setTimeout(() => g.remove(), 260); }
-    const o = this.pos;
-    const p = { x: innerWidth + 40, y: Math.max(-80, o.y - 160) };
-    a.classList.remove("izq");
-    const vuelo = a.animate([
-      { transform: `translate3d(${o.x}px, ${o.y}px, 0)`, opacity: 1 },
-      { transform: `translate3d(${o.x - 30}px, ${o.y - 20}px, 0) rotate(-6deg)`, opacity: 1, offset: 0.25 },
-      { transform: `translate3d(${p.x}px, ${p.y}px, 0) rotate(10deg)`, opacity: 0 },
-    ], { duration: QUIETO.matches ? 200 : 900, easing: "cubic-bezier(.5,0,.6,1)", fill: "forwards" });
-    vuelo.finished.catch(() => {}).then(() => a.remove());
-    this.boton.classList.remove("con-abeja");
+  /** El evento especial (también lo prueba Configuración). */
+  async hackeo(texto) {
+    if (!texto) texto = (await evento()).texto;
+    if (!this.abeja.viva && PREF.abeja) { this.venir(); await new Promise((ok) => setTimeout(ok, 1500)); }
+    this.abeja.callar();
+    await hackeo(this.app, texto, this.abeja.viva ? this.abeja : null);
   }
 
-  /** Esconder o mostrar el foquito (Herramientas). */
+  /** Una frase de dialogos.txt ya (Configuración → «Que diga algo»). */
+  async decirAlgo() {
+    if (!this.abeja.viva) { this.venir(); await new Promise((ok) => setTimeout(ok, 1400)); }
+    clearTimeout(this._charla);
+    this.abeja.callar();
+    this._charlar();
+  }
+
+  /* ── Consejos automáticos (sin abejita): discretos y pocos ─────── */
+  _programarConsejo() {
+    clearTimeout(this._cons);
+    if (!PREF.consejos || !PREF.ayudas) return;
+    this._dados = this._dados || 0;
+    if (this._dados >= 3) return;
+    this._cons = setTimeout(() => {
+      if (document.hidden || this.abeja.viva || document.querySelector(".ed-modal-fondo, .ed-hojita.abierta, .ed-codigo-pantalla") || document.body.classList.contains("ed-probando")) return this._programarConsejo();
+      this._dados++;
+      this._consejito(GENERALES[Math.random() * GENERALES.length | 0]);
+      this._programarConsejo();
+    }, azar(180, 300) * 1000);
+  }
+
+  _consejito(texto) {
+    this._consejitoFuera();
+    const c = el("button.ed-consejito", { type: "button", "aria-live": "polite", html: `${ico("foco")}<span></span>`, onClick: () => this._consejitoFuera() });
+    c.lastChild.textContent = texto;
+    document.body.append(c);
+    this._cn = c;
+    requestAnimationFrame(() => c.classList.add("ver"));
+    clearTimeout(this._tcn);
+    this._tcn = setTimeout(() => this._consejitoFuera(), 6500);
+  }
+
+  _consejitoFuera() { const c = this._cn; this._cn = null; if (c) { c.classList.remove("ver"); setTimeout(() => c.remove(), 300); } }
+
+  /** Esconder o mostrar el foquito (compatibilidad con Herramientas). */
   ponerOculto(on) {
-    this.oculto = !!on;
     try { localStorage.setItem(OCULTO, on ? "1" : "0"); } catch (e) { /* nada */ }
-    this.boton.hidden = this.oculto;
-    if (on) this.irse();
+    import("../config/preferencias.js").then((m) => m.poner({ ayudas: !on }));
   }
 
-  /** (compatibilidad) cerrar = que se vaya. */
   cerrar() { this.irse(); }
 }

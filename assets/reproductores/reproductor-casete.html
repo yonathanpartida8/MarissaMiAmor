@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Reproductor de casete</title>
+<meta name="tamaño" content="300x200">
+<meta name="descripcion" content="Un casete retro: al tocar ▶ giran las ruedas">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}body{display:grid;place-items:center;font-family:"Courier New",monospace}.k{position:relative;width:260px;height:164px;border-radius:12px;background:linear-gradient(#ffb3c7,#f78fb3);box-shadow:0 10px 24px rgba(120,40,70,.25);border:3px solid #3b2a3f}.e{position:absolute;left:18px;right:18px;top:14px;height:30px;background:#fffdf6;border-radius:4px;font-size:13px;display:grid;place-items:center;color:#3b2a3f}.v{position:absolute;left:40px;right:40px;top:56px;height:52px;border-radius:26px;background:#3b2a3f;display:flex;justify-content:space-between;align-items:center;padding:0 10px}.r{width:36px;height:36px;border-radius:50%;background:repeating-conic-gradient(#fff 0 20deg,#ddd 20deg 60deg);border:3px solid #fff}.on .r{animation:g 1.2s linear infinite}@keyframes g{to{transform:rotate(360deg)}}button{position:absolute;left:50%;bottom:12px;margin-left:-24px;width:48px;height:30px;border:2px solid #3b2a3f;border-radius:8px;background:#fff6a8;font-size:15px;cursor:pointer;-webkit-tap-highlight-color:transparent}button:active{transform:translateY(2px)}</style></head>
+<body><div class="k"><div class="e">♥ nuestra canción ♥</div><div class="v"><i class="r"></i><i class="r"></i></div><button type="button" aria-label="Reproducir">▶</button></div>
+<script>const k=document.querySelector(".k"),b=k.querySelector("button");b.addEventListener("click",()=>{b.textContent=k.classList.toggle("on")?"❚❚":"▶"})</script></body></html>

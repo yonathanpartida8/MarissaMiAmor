@@ -19,14 +19,18 @@
 <body class="ed">
   <header class="ed-barra">
     <a class="ed-volver" href="../index.html" title="Volver al librito" aria-label="Volver al librito"></a>
-    <button type="button" class="ed-btn ico ed-abrir-lateral" aria-label="Herramientas" title="Herramientas"></button>
+    <button type="button" class="ed-btn ico ed-ajustes-b" aria-label="Configuración del editor" title="Configuración del editor"></button>
     <div class="ed-nombre">
       <input type="text" aria-label="Nombre del librito" spellcheck="false">
       <span class="ed-guardado" data-st="guardado">Guardado</span>
     </div>
     <div class="ed-acciones">
-      <button type="button" class="ed-btn ico ed-deshacer" aria-label="Deshacer" disabled></button>
-      <button type="button" class="ed-btn ico ed-rehacer" aria-label="Rehacer" disabled></button>
+      <div class="ed-grupo-b">
+        <button type="button" class="ed-btn ico ed-deshacer" aria-label="Deshacer" title="Deshacer" disabled></button>
+        <button type="button" class="ed-btn ico ed-rehacer" aria-label="Rehacer" title="Rehacer" disabled></button>
+      </div>
+      <button type="button" class="ed-btn ed-paginas-b" aria-label="Páginas" title="Páginas del librito"><span>1/1</span></button>
+      <button type="button" class="ed-btn ico ed-musica-b" aria-label="Música" title="Música: tocar para encender o apagar · mantener para el volumen"></button>
       <button type="button" class="ed-btn ico ed-ver" aria-label="Ver como" title="Ver como (hoja automática)"></button>
       <select class="ed-zoom ed-sel" aria-label="Zoom">
         <option value="">Ajustar</option>
@@ -41,6 +45,7 @@
       <button type="button" class="ed-btn ed-previa" title="Ver el librito entero como lo verá ella"><span>Librito</span></button>
       <button type="button" class="ed-btn ico ed-guardar" aria-label="Guardar y borradores" title="Guardar y borradores"></button>
       <button type="button" class="ed-btn primario ed-exportar" title="Descargar el librito completo en .zip"><span>Exportar</span></button>
+      <button type="button" class="ed-btn ico ed-mas" aria-label="Más" title="Más"></button>
     </div>
   </header>
 

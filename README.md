@@ -76,7 +76,7 @@ mantener presionado). Mientras se edita suena **`EditorDev/MusicaDev.mp3`**
 página en blanco → Guardar → **Probar** (pantalla completa); GIFs y stickers de
 GIPHY (con quitar fondo), pistas de audio, fondos animados, efectos y
 transiciones con vista previa, hojas con asa y una abejita que te ayuda. Piezas
-de un solo `.html` en `assets/<carpeta>/`, flechas para pasar página en
+de un solo `.html` en `assets/<carpeta>/` (con su biblioteca de Recursos), ⚙ configuración (hasta 144 Hz si la pantalla da), la abejita con sus frases de `dialogos.txt`, flechas para pasar página en
 `assets/deslizar/` y la música del editor en `DevMusic/`. Tus páginas de `paginas-html/` se pueden usar tal cual o volverse
 plantillas editables. Vive entero en **`EditorDev/`** y el libro no carga
 nada de él hasta que se entra. Su biblioteca se llena sola: componentes

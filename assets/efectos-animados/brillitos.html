@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Brillitos</title>
+<meta name="tamaño" content="360x360">
+<meta name="descripcion" content="Destellos que aparecen y desaparecen">
+<meta name="decorativo" content="si">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}i{position:absolute;width:var(--t);height:var(--t);background:#ffe27a;clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);filter:drop-shadow(0 0 6px #fff3b0);animation:b 2.4s ease-in-out infinite;opacity:0}@keyframes b{50%{opacity:1;transform:scale(1) rotate(45deg)}0%,100%{transform:scale(.2)}}@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body>
+<script>const c=["#ffe27a","#ffc1d6","#c9b8ff","#fff"];for(let i=0;i<18;i++){const s=document.createElement("i");s.style.cssText=`left:${Math.random()*94}%;top:${Math.random()*94}%;--t:${8+Math.random()*18}px;background:${c[i%4]};animation-delay:${-Math.random()*2.4}s;animation-duration:${1.8+Math.random()*1.6}s`;document.body.append(s)}</script></body></html>

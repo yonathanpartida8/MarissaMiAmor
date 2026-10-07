@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Nubes pasando</title>
+<meta name="tamaño" content="360x220">
+<meta name="descripcion" content="Nubecitas que cruzan despacio">
+<meta name="decorativo" content="si">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}.n{position:absolute;left:-40%;width:var(--w);height:calc(var(--w)*.42);background:#fff;border-radius:999px;box-shadow:0 6px 14px rgba(120,150,190,.18);opacity:.95;animation:p var(--d) linear infinite}.n::before,.n::after{content:"";position:absolute;background:#fff;border-radius:50%}.n::before{width:50%;height:110%;left:14%;top:-50%}.n::after{width:38%;height:90%;left:50%;top:-35%}@keyframes p{to{transform:translateX(160vw)}}@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style></head><body>
+<script>for(let i=0;i<4;i++){const n=document.createElement("div");n.className="n";const w=70+Math.random()*80;n.style.cssText=`top:${8+i*22}%;--w:${w}px;--d:${18+Math.random()*16}s;animation-delay:${-Math.random()*30}s`;document.body.append(n)}</script></body></html>

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Confeti</title>
+<meta name="tamaño" content="360x480">
+<meta name="descripcion" content="Lluvia de confeti de colores (tócalo para otra ráfaga)">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}canvas{display:block;width:100%;height:100%}</style></head>
+<body><canvas></canvas><script>
+const c=document.querySelector("canvas"),g=c.getContext("2d"),d=Math.min(2,devicePixelRatio||1),col=["#ff7aa2","#ffd56b","#7fd1ff","#b58cff","#7ee0b5","#ffb38a"];
+let W,H,p=[],quieto=matchMedia("(prefers-reduced-motion:reduce)").matches;
+function medir(){W=c.width=innerWidth*d;H=c.height=innerHeight*d}
+function nueva(y){return{x:Math.random()*W,y:y??(-30*d),t:(6+Math.random()*5)*d,v:(1.2+Math.random()*1.4000000000000001)*d,r:Math.random()*6.3,vr:(Math.random()-.5)*.04,f:Math.random()*6.3,c:col[Math.random()*col.length|0]}}
+function forma(t){g.fillRect(-t*.5,-t*.25,t,t*.5)}
+addEventListener("resize",medir);medir();
+for(let i=0;i<40;i++)p.push(nueva(Math.random()*H));
+(function cuadro(ms){g.clearRect(0,0,W,H);for(const h of p){if(!quieto){h.y+=h.v;h.x+=Math.sin(h.f+ms/1100)*.6*d;h.r+=h.vr}if(h.y>H+h.t*2)Object.assign(h,nueva());g.save();g.translate(h.x,h.y);g.rotate(h.r+Math.sin(ms/700+h.f)*.3);g.fillStyle=h.c;g.globalAlpha=.9;forma(h.t);g.restore()}if(!quieto)requestAnimationFrame(cuadro)})(0);
+addEventListener("click",()=>{for(let i=0;i<30;i++)p.push(nueva(-Math.random()*H*.3));if(p.length>140)p.splice(0,p.length-140)});</script></body></html>

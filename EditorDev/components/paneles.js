@@ -40,6 +40,7 @@ import { AUDIO } from "./secciones/audio.js";
 import { HTML } from "./secciones/html.js";
 import { FONDO_HTML } from "./secciones/fondo.js";
 import { NAVEGACION } from "./secciones/navegacion.js";
+import { BIBLIOTECA } from "./secciones/biblioteca.js";
 import * as GIF from "../integraciones/giphy.js";
 
 const RT = window.LibritoRT;
@@ -233,50 +234,6 @@ export class Paneles {
     c.append(seccion("Tus vídeos", [vids.length ? lista : el("p.ed-vacio-txt", { text: "Todavía no hay vídeos en este librito." })]));
     c.append(seccion("Cómo se reproducen", [
       el("p.ed-ayuda", { text: "Elige el vídeo en la hoja para decidir si empieza solo, si se repite, si va sin sonido y si se ven sus controles. En la línea de tiempo puedes decidir en qué momento aparece (y empieza)." }),
-    ], { abierta: false }));
-  }
-
-  /* ── Piezas (componentes de assets/) ───────────────────────────── */
-  _componentes(c) {
-    const A = this.app.acciones;
-    const buscar = el("input.ed-txt.ed-buscar", { type: "search", placeholder: "Buscar piezas…" });
-    const lista = el("div");
-    c.append(buscar, lista);
-    const vivas = new IntersectionObserver((xs) => {
-      for (const x of xs) {
-        if (!x.isIntersecting) continue;
-        vivas.unobserve(x.target);
-        const it = x.target._it;
-        const W = it.ancho || 360, H = it.alto || 360;
-        const k = Math.min(132 / W, 96 / H);
-        const f = el("iframe.ed-comp-vivo", { src: rutaAUrl(it.ruta + (it.entrada || "index.html")), title: it.nombre, tabindex: "-1", loading: "lazy", style: { width: W + "px", height: H + "px", transform: `scale(${k})`, marginLeft: -(W * k) / 2 + "px", marginTop: -(H * k) / 2 + "px" } });
-        x.target.append(f);
-      }
-    }, { root: c, rootMargin: "80px" });
-    this._limpiar = () => vivas.disconnect();
-    catalogo().then((cat) => {
-      const pintar = () => {
-        const q = buscar.value.trim().toLowerCase();
-        lista.textContent = "";
-        let hay = 0;
-        for (const g of cat.categorias) {
-          const items = g.items.filter((it) => it.tipo === "componente" && (!q || (it.nombre + " " + it.descripcion + " " + g.nombre).toLowerCase().includes(q)));
-          if (!items.length) continue;
-          hay += items.length;
-          lista.append(seccion(g.nombre, [el("div.ed-comps", {}, items.map((it) => {
-            const prev = el("div.ed-comp-prev");
-            if (it.miniatura) prev.append(el("img", { src: rutaAUrl(it.miniatura), alt: "", loading: "lazy", draggable: "false" }));
-            else { prev._it = it; vivas.observe(prev); }
-            return el("button.ed-comp", { type: "button", title: it.descripcion || it.nombre, onClick: () => A.componente(it) }, [prev, el("b", { text: it.nombre }), it.parametros?.length ? el("small", { text: "se puede personalizar" }) : null].filter(Boolean));
-          }))]));
-        }
-        if (!hay) lista.append(el("p.ed-vacio-txt", { text: q ? "Nada con ese nombre." : "Todavía no hay componentes en assets/." }));
-      };
-      buscar.addEventListener("input", debounce(pintar, 200));
-      pintar();
-    });
-    c.append(seccion("¿Cómo añado los míos?", [
-      el("p.ed-ayuda", { html: "Crea una carpeta en <b>assets/&lt;categoría&gt;/&lt;nombre&gt;/</b> con su <b>index.html</b> (y su css, js, imágenes, sonidos…). Aparece aquí sola en cuanto se sube a GitHub. Su HTML no se modifica nunca: el editor sólo lo coloca. Más detalles en <b>assets/LÉEME.md</b>." }),
     ], { abierta: false }));
   }
 
@@ -497,4 +454,4 @@ export class Paneles {
 }
 
 // Las secciones grandes viven cada una en su archivo (components/secciones/).
-Object.assign(Paneles.prototype, ANIMAR, EFECTOS_SEC, TRANSICIONES, GIPHY, AUDIO, HTML, FONDO_HTML, NAVEGACION);
+Object.assign(Paneles.prototype, ANIMAR, EFECTOS_SEC, TRANSICIONES, GIPHY, AUDIO, HTML, FONDO_HTML, NAVEGACION, BIBLIOTECA);

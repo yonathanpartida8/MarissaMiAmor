@@ -13,6 +13,10 @@ const T = (d) => `<svg class="ed-ico" viewBox="0 0 24 24" fill="none" stroke="cu
 
 const P = {
   // Secciones
+  tuerca: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.8l1.6 2.3 2.7-.8.5 2.8 2.7.9-.9 2.7 2.2 1.7-2.2 1.7.9 2.7-2.7.9-.5 2.8-2.7-.8L12 21.2l-1.6-2.3-2.7.8-.5-2.8-2.7-.9.9-2.7L3.2 12l2.2-1.7-.9-2.7 2.7-.9.5-2.8 2.7.8z"/>',
+  musica: '<path d="M9 18V5.5l11-2.2v12.4"/><circle cx="6.5" cy="18" r="2.6"/><circle cx="17.5" cy="15.7" r="2.6"/>',
+  musicaNo: '<path d="M9 18V5.5l11-2.2v12.4"/><circle cx="6.5" cy="18" r="2.6"/><circle cx="17.5" cy="15.7" r="2.6"/><path d="M3 3l18 18"/>',
+  rapido: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
   paginas: '<rect x="5" y="3" width="12" height="16" rx="2"/><path d="M8 7h6M8 11h6M8 15h3"/><path d="M19 7v12a2 2 0 0 1-2 2H8"/>',
   elementos: '<circle cx="8" cy="8" r="4"/><rect x="13" y="13" width="7" height="7" rx="1.5"/><path d="M16.5 3l3.5 6h-7z"/><path d="M4 20l4-6 4 6z"/>',
   texto: '<path d="M5 6V4.5h14V6M12 4.5v15M9 19.5h6"/>',

@@ -15,6 +15,7 @@
  */
 const CLAVE = "editordev:giphy-clave";
 const PROXY = "editordev:giphy-proxy";
+import { CLAVE_PROYECTO, PROXY_PROYECTO } from "./giphy-config.js";
 export const USUARIO = "YonathanPG";
 
 const leer = (k) => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } };
@@ -34,7 +35,7 @@ export async function proxyLocal() {
   return local;
 }
 
-export const config = () => ({ clave: leer(CLAVE), proxy: leer(PROXY) });
+export const config = () => ({ clave: leer(CLAVE) || CLAVE_PROYECTO, proxy: leer(PROXY) || PROXY_PROYECTO });
 export async function listo() { const c = config(); return !!(c.proxy || c.clave || (await proxyLocal())); }
 export async function como() { const c = config(); if (c.proxy) return "proxy"; if (await proxyLocal()) return "local"; return c.clave ? "clave" : ""; }
 export function ponerClave(k) { escribir(CLAVE, String(k || "").trim()); }

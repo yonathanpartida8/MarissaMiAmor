@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Hojas otoñales cayendo</title>
+<meta name="tamaño" content="360x480">
+<meta name="descripcion" content="Hojas de arce que caen meciéndose">
+<meta name="decorativo" content="si">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}canvas{display:block;width:100%;height:100%}</style></head>
+<body><canvas></canvas><script>
+const c=document.querySelector("canvas"),g=c.getContext("2d"),d=Math.min(2,devicePixelRatio||1),col=["#e8742a","#d9531e","#f2a03d","#b8461b","#f5c04a"];
+let W,H,p=[],quieto=matchMedia("(prefers-reduced-motion:reduce)").matches;
+function medir(){W=c.width=innerWidth*d;H=c.height=innerHeight*d}
+function nueva(y){return{x:Math.random()*W,y:y??(-30*d),t:(10+Math.random()*12)*d,v:(0.4+Math.random()*0.7000000000000001)*d,r:Math.random()*6.3,vr:(Math.random()-.5)*.04,f:Math.random()*6.3,c:col[Math.random()*col.length|0]}}
+function forma(t){g.beginPath();for(let i=0;i<10;i++){const a=i/10*6.283-1.57,r=i%2?t*.28:t*.6;g.lineTo(Math.cos(a)*r,Math.sin(a)*r)}g.closePath();g.fill();g.strokeStyle="rgba(80,30,0,.35)";g.lineWidth=t*.05;g.beginPath();g.moveTo(0,0);g.lineTo(0,t*.75);g.stroke()}
+addEventListener("resize",medir);medir();
+for(let i=0;i<18;i++)p.push(nueva(Math.random()*H));
+(function cuadro(ms){g.clearRect(0,0,W,H);for(const h of p){if(!quieto){h.y+=h.v;h.x+=Math.sin(h.f+ms/1100)*.6*d;h.r+=h.vr}if(h.y>H+h.t*2)Object.assign(h,nueva());g.save();g.translate(h.x,h.y);g.rotate(h.r+Math.sin(ms/700+h.f)*.3);g.fillStyle=h.c;g.globalAlpha=.9;forma(h.t);g.restore()}if(!quieto)requestAnimationFrame(cuadro)})(0);
+</script></body></html>

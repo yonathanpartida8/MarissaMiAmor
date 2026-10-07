@@ -33,6 +33,7 @@
  * (las mismas animaciones que el librito) y hacen sonar sus sonidos y pistas.
  * Dos dedos o Ctrl+rueda acercan.
  */
+import { alCuadro } from "../config/cuadros.js";
 import { el, menu, ordenable, COMPACTO, popover, control, Vinculos, fila } from "../components/ui.js";
 import { ico } from "../components/iconos.js";
 import { TIPOS, uid } from "../core/modelo.js";
@@ -767,20 +768,19 @@ export class Linea {
     }
     const t0 = performance.now() - desde;
     const total = this._total() + 400;
-    cancelAnimationFrame(this._raf);
-    const paso = () => {
-      if (this.anim !== a || a.quieto) return;
+    this._raf?.();
+    // Un solo bucle, al ritmo de la pantalla (o al tope de Configuración).
+    this._raf = alCuadro(() => {
+      if (this.anim !== a || a.quieto) return false;
       this.t = performance.now() - t0;
-      if (this.t >= total) { this.t = total; this.pausar(); return; }
+      if (this.t >= total) { this.t = total; this.pausar(); return false; }
       this._pintarCabezal(false, true);
-      this._raf = requestAnimationFrame(paso);
-    };
-    this._raf = requestAnimationFrame(paso);
+    });
     this._icono();
   }
 
   pausar() {
-    cancelAnimationFrame(this._raf);
+    this._raf?.();
     this._quitarRelojes();
     this.app.audio?.pararPista();
     this.app.audio?.pararPistas();
@@ -807,7 +807,7 @@ export class Linea {
   _quitarRelojes() { for (const r of this._relojes) clearTimeout(r); this._relojes = []; }
 
   _quitarAnim() {
-    cancelAnimationFrame(this._raf);
+    this._raf?.();
     clearTimeout(this._fin);
     this._quitarRelojes();
     if (this.anim) { this.anim.cancelar(); this.anim = null; }

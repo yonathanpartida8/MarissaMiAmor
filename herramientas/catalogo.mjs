@@ -45,10 +45,10 @@ const NOMBRES = {
   animations: "Animaciones", animaciones: "Animaciones", decorations: "Decoraciones", decoraciones: "Decoraciones",
   frames: "Marcos", marcos: "Marcos", ui: "Interfaz", cards: "Tarjetas", tarjetas: "Tarjetas",
   audio: "Sonidos", sonidos: "Sonidos", img: "Imágenes", imagenes: "Imágenes", stickers: "Stickers",
-  "efectos-animados": "Efectos animados", dibujos: "Dibujos", textos: "Textos", fondos: "Fondos",
+  "efectos-animados": "Efectos animados", dibujos: "Dibujos", textos: "Textos", fondos: "Fondos", hojas: "Hojas", otros: "Otros", gifs: "GIFs",
   "3d": "3D", modelos: "3D", models: "3D",
 };
-const ORDEN = ["efectos-animados", "botones", "buttons", "marcos", "frames", "tarjetas", "cards", "dibujos", "players", "portraits", "effects", "animations", "decorations", "stickers", "ui"];
+const ORDEN = ["botones", "buttons", "marcos", "frames", "tarjetas", "cards", "hojas", "dibujos", "efectos-animados", "decoraciones", "players", "portraits", "effects", "animations", "decorations", "stickers", "ui"];
 const SOLO_EXTRAS = new Set(["sonidos-editor", "iconos", "fondos", "transiciones", "deslizar"]);
 const DEF = { animaciones: /^animacion\.(json|css|js)$/i, transiciones: /^transicion\.(json|css|js)$/i };
 

@@ -3,51 +3,81 @@
 export default {
  "categorias": [
   {
-   "id": "efectos-animados",
-   "nombre": "Efectos animados",
+   "id": "botones",
+   "nombre": "Botones",
    "items": [
     {
      "tipo": "componente",
-     "id": "efectos-animados/corazones-que-suben.html",
-     "nombre": "Corazones que suben",
-     "descripcion": "",
-     "ruta": "assets/efectos-animados/",
-     "entrada": "corazones-que-suben.html",
-     "ancho": 360,
-     "alto": 480,
+     "id": "botones/boton-brillo.html",
+     "nombre": "Botón con brillo",
+     "descripcion": "Un botón en forma de pastilla con un brillo que pasa",
+     "ruta": "assets/botones/",
+     "entrada": "boton-brillo.html",
+     "ancho": 240,
+     "alto": 90,
      "parametros": [],
-     "decorativo": true,
+     "decorativo": false,
      "miniatura": null,
      "archivos": [
-      "corazones-que-suben.html"
+      "boton-brillo.html"
      ],
-     "peso": 1354,
+     "peso": 1182,
      "suelto": true
     },
     {
      "tipo": "componente",
-     "id": "efectos-animados/soleado.html",
-     "nombre": "Soleado",
-     "descripcion": "Un solecito que brilla y gira despacito",
-     "ruta": "assets/efectos-animados/",
-     "entrada": "soleado.html",
-     "ancho": 320,
-     "alto": 320,
+     "id": "botones/boton-corazon-latido.html",
+     "nombre": "Botón corazón",
+     "descripcion": "Un corazón que late; al tocarlo da un salto",
+     "ruta": "assets/botones/",
+     "entrada": "boton-corazon-latido.html",
+     "ancho": 120,
+     "alto": 120,
      "parametros": [],
-     "decorativo": true,
+     "decorativo": false,
      "miniatura": null,
      "archivos": [
-      "soleado.html"
+      "boton-corazon-latido.html"
      ],
-     "peso": 1978,
+     "peso": 1396,
      "suelto": true
-    }
-   ]
-  },
-  {
-   "id": "botones",
-   "nombre": "Botones",
-   "items": [
+    },
+    {
+     "tipo": "componente",
+     "id": "botones/boton-crayon.html",
+     "nombre": "Botón de crayón",
+     "descripcion": "Hecho a mano, con borde de crayón y garabatito",
+     "ruta": "assets/botones/",
+     "entrada": "boton-crayon.html",
+     "ancho": 230,
+     "alto": 100,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "boton-crayon.html"
+     ],
+     "peso": 1008,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "botones/boton-retro.html",
+     "nombre": "Botón retro",
+     "descripcion": "Estilo videojuego de los 90, se hunde al tocarlo",
+     "ruta": "assets/botones/",
+     "entrada": "boton-retro.html",
+     "ancho": 240,
+     "alto": 100,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "boton-retro.html"
+     ],
+     "peso": 903,
+     "suelto": true
+    },
     {
      "tipo": "componente",
      "id": "botones/boton-te-amo.html",
@@ -132,6 +162,24 @@ export default {
    "items": [
     {
      "tipo": "componente",
+     "id": "marcos/marco-de-corazones.html",
+     "nombre": "Marco de corazones",
+     "descripcion": "Corazoncitos alrededor que laten; centro transparente",
+     "ruta": "assets/marcos/",
+     "entrada": "marco-de-corazones.html",
+     "ancho": 360,
+     "alto": 460,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "marco-de-corazones.html"
+     ],
+     "peso": 970,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
      "id": "marcos/marco-dorado.html",
      "nombre": "Marco dorado",
      "descripcion": "Un marco con brillo que pasa; el centro es transparente",
@@ -187,6 +235,24 @@ export default {
    "items": [
     {
      "tipo": "componente",
+     "id": "tarjetas/cartita-que-se-abre.html",
+     "nombre": "Cartita que se abre",
+     "descripcion": "Un sobre que se abre al tocarlo y saca una cartita",
+     "ruta": "assets/tarjetas/",
+     "entrada": "cartita-que-se-abre.html",
+     "ancho": 300,
+     "alto": 300,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "cartita-que-se-abre.html"
+     ],
+     "peso": 1839,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
      "id": "tarjetas/tarjeta-que-se-voltea.html",
      "nombre": "Tarjeta que se voltea",
      "descripcion": "Tócala y se voltea para mostrar un mensaje",
@@ -201,6 +267,210 @@ export default {
       "tarjeta-que-se-voltea.html"
      ],
      "peso": 1413,
+     "suelto": true
+    }
+   ]
+  },
+  {
+   "id": "hojas",
+   "nombre": "Hojas",
+   "items": [
+    {
+     "tipo": "componente",
+     "id": "hojas/fondo-de-hojas.html",
+     "nombre": "Fondo de hojas",
+     "descripcion": "Un fondo suave de hojitas que se mueven despacio (para páginas o tarjetas)",
+     "ruta": "assets/hojas/",
+     "entrada": "fondo-de-hojas.html",
+     "ancho": 360,
+     "alto": 640,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "fondo-de-hojas.html"
+     ],
+     "peso": 1027,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "hojas/guirnalda-de-hojas.html",
+     "nombre": "Guirnalda de hojas",
+     "descripcion": "Un marco de hojitas para tarjetas; el centro es transparente",
+     "ruta": "assets/hojas/",
+     "entrada": "guirnalda-de-hojas.html",
+     "ancho": 360,
+     "alto": 460,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "guirnalda-de-hojas.html"
+     ],
+     "peso": 1470,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "hojas/hoja-con-corazon.html",
+     "nombre": "Hoja con corazón",
+     "descripcion": "Una hoja cuyas nervaduras forman un corazón que late",
+     "ruta": "assets/hojas/",
+     "entrada": "hoja-con-corazon.html",
+     "ancho": 220,
+     "alto": 220,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "hoja-con-corazon.html"
+     ],
+     "peso": 960,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "hojas/hoja-de-cuaderno.html",
+     "nombre": "Hoja de cuaderno",
+     "descripcion": "Una hoja de cuaderno con renglones, margen y cinta (para escribir encima)",
+     "ruta": "assets/hojas/",
+     "entrada": "hoja-de-cuaderno.html",
+     "ancho": 300,
+     "alto": 380,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "hoja-de-cuaderno.html"
+     ],
+     "peso": 1173,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "hojas/hoja-grande.html",
+     "nombre": "Hoja grande",
+     "descripcion": "Una hoja grande con nervaduras y un brillo que pasa",
+     "ruta": "assets/hojas/",
+     "entrada": "hoja-grande.html",
+     "ancho": 260,
+     "alto": 320,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "hoja-grande.html"
+     ],
+     "peso": 1567,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "hojas/hojas-otonales-cayendo.html",
+     "nombre": "Hojas otoñales cayendo",
+     "descripcion": "Hojas de arce que caen meciéndose",
+     "ruta": "assets/hojas/",
+     "entrada": "hojas-otonales-cayendo.html",
+     "ancho": 360,
+     "alto": 480,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "hojas-otonales-cayendo.html"
+     ],
+     "peso": 1658,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "hojas/hojas-rosas-flotando.html",
+     "nombre": "Hojitas rosas flotando",
+     "descripcion": "Hojitas en forma de corazón que suben despacito",
+     "ruta": "assets/hojas/",
+     "entrada": "hojas-rosas-flotando.html",
+     "ancho": 360,
+     "alto": 480,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "hojas-rosas-flotando.html"
+     ],
+     "peso": 1557,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "hojas/hojitas-pequenas.html",
+     "nombre": "Hojitas pequeñas",
+     "descripcion": "Un ramito de hojitas para adornar esquinas",
+     "ruta": "assets/hojas/",
+     "entrada": "hojitas-pequenas.html",
+     "ancho": 220,
+     "alto": 120,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "hojitas-pequenas.html"
+     ],
+     "peso": 1320,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "hojas/lluvia-de-hojas-verdes.html",
+     "nombre": "Lluvia de hojas verdes",
+     "descripcion": "Hojas frescas de primavera cayendo",
+     "ruta": "assets/hojas/",
+     "entrada": "lluvia-de-hojas-verdes.html",
+     "ancho": 360,
+     "alto": 480,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "lluvia-de-hojas-verdes.html"
+     ],
+     "peso": 1648,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "hojas/rama-con-hojas.html",
+     "nombre": "Rama con hojas",
+     "descripcion": "Una rama que se mece con el viento",
+     "ruta": "assets/hojas/",
+     "entrada": "rama-con-hojas.html",
+     "ancho": 340,
+     "alto": 170,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "rama-con-hojas.html"
+     ],
+     "peso": 1441,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "hojas/tarjeta-de-otono.html",
+     "nombre": "Tarjeta de otoño",
+     "descripcion": "Tarjeta con borde de hojas; al tocarla caen hojitas",
+     "ruta": "assets/hojas/",
+     "entrada": "tarjeta-de-otono.html",
+     "ancho": 300,
+     "alto": 380,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "tarjeta-de-otono.html"
+     ],
+     "peso": 1571,
      "suelto": true
     }
    ]
@@ -226,6 +496,324 @@ export default {
      ],
      "peso": 1046,
      "suelto": true
+    }
+   ]
+  },
+  {
+   "id": "efectos-animados",
+   "nombre": "Efectos animados",
+   "items": [
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/brillitos.html",
+     "nombre": "Brillitos",
+     "descripcion": "Destellos que aparecen y desaparecen",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "brillitos.html",
+     "ancho": 360,
+     "alto": 360,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "brillitos.html"
+     ],
+     "peso": 1090,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/burbujas.html",
+     "nombre": "Burbujas",
+     "descripcion": "Burbujas de jabón que suben y brillan",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "burbujas.html",
+     "ancho": 360,
+     "alto": 480,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "burbujas.html"
+     ],
+     "peso": 1029,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/confeti.html",
+     "nombre": "Confeti",
+     "descripcion": "Lluvia de confeti de colores (tócalo para otra ráfaga)",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "confeti.html",
+     "ancho": 360,
+     "alto": 480,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "confeti.html"
+     ],
+     "peso": 1548,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/corazones-que-suben.html",
+     "nombre": "Corazones que suben",
+     "descripcion": "",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "corazones-que-suben.html",
+     "ancho": 360,
+     "alto": 480,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "corazones-que-suben.html"
+     ],
+     "peso": 1354,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/estrellas-fugaces.html",
+     "nombre": "Estrellas fugaces",
+     "descripcion": "Estrellitas que cruzan el cielo de vez en cuando",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "estrellas-fugaces.html",
+     "ancho": 360,
+     "alto": 300,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "estrellas-fugaces.html"
+     ],
+     "peso": 988,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/mariposas.html",
+     "nombre": "Mariposas",
+     "descripcion": "Mariposas que revolotean",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "mariposas.html",
+     "ancho": 360,
+     "alto": 420,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "mariposas.html"
+     ],
+     "peso": 1494,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/nubes.html",
+     "nombre": "Nubes pasando",
+     "descripcion": "Nubecitas que cruzan despacio",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "nubes.html",
+     "ancho": 360,
+     "alto": 220,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "nubes.html"
+     ],
+     "peso": 1099,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/soleado.html",
+     "nombre": "Soleado",
+     "descripcion": "Un solecito que brilla y gira despacito",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "soleado.html",
+     "ancho": 320,
+     "alto": 320,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "soleado.html"
+     ],
+     "peso": 1978,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/texto-te-amo.html",
+     "nombre": "Texto «Te amo» escribiéndose",
+     "descripcion": "Las letras se escriben solas, como a mano",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "texto-te-amo.html",
+     "ancho": 320,
+     "alto": 140,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "texto-te-amo.html"
+     ],
+     "peso": 780,
+     "suelto": true
+    }
+   ]
+  },
+  {
+   "id": "decoraciones",
+   "nombre": "Decoraciones",
+   "items": [
+    {
+     "tipo": "imagen",
+     "id": "decoraciones/brillo.svg",
+     "nombre": "Brillo",
+     "ruta": "assets/decoraciones/brillo.svg",
+     "ancho": 100,
+     "alto": 100,
+     "peso": 324
+    },
+    {
+     "tipo": "imagen",
+     "id": "decoraciones/burbuja-dialogo.svg",
+     "nombre": "Burbuja dialogo",
+     "ruta": "assets/decoraciones/burbuja-dialogo.svg",
+     "ancho": 160,
+     "alto": 110,
+     "peso": 262
+    },
+    {
+     "tipo": "imagen",
+     "id": "decoraciones/cartita.svg",
+     "nombre": "Cartita",
+     "ruta": "assets/decoraciones/cartita.svg",
+     "ancho": 120,
+     "alto": 84,
+     "peso": 339
+    },
+    {
+     "tipo": "imagen",
+     "id": "decoraciones/cinta-washi.svg",
+     "nombre": "Cinta washi",
+     "ruta": "assets/decoraciones/cinta-washi.svg",
+     "ancho": 160,
+     "alto": 40,
+     "peso": 395
+    },
+    {
+     "tipo": "imagen",
+     "id": "decoraciones/confeti-estatico.svg",
+     "nombre": "Confeti estatico",
+     "ruta": "assets/decoraciones/confeti-estatico.svg",
+     "ancho": 120,
+     "alto": 120,
+     "peso": 1003
+    },
+    {
+     "tipo": "imagen",
+     "id": "decoraciones/corazones-dobles.svg",
+     "nombre": "Corazones dobles",
+     "ruta": "assets/decoraciones/corazones-dobles.svg",
+     "ancho": 120,
+     "alto": 90,
+     "peso": 301
+    },
+    {
+     "tipo": "imagen",
+     "id": "decoraciones/estrella-brillante.svg",
+     "nombre": "Estrella brillante",
+     "ruta": "assets/decoraciones/estrella-brillante.svg",
+     "ancho": 100,
+     "alto": 100,
+     "peso": 364
+    },
+    {
+     "tipo": "imagen",
+     "id": "decoraciones/flor-margarita.svg",
+     "nombre": "Flor margarita",
+     "ruta": "assets/decoraciones/flor-margarita.svg",
+     "ancho": 100,
+     "alto": 100,
+     "peso": 847
+    },
+    {
+     "tipo": "imagen",
+     "id": "decoraciones/mariposa.svg",
+     "nombre": "Mariposa",
+     "ruta": "assets/decoraciones/mariposa.svg",
+     "ancho": 100,
+     "alto": 80,
+     "peso": 497
+    },
+    {
+     "tipo": "imagen",
+     "id": "decoraciones/nube.svg",
+     "nombre": "Nube",
+     "ruta": "assets/decoraciones/nube.svg",
+     "ancho": 120,
+     "alto": 70,
+     "peso": 378
+    },
+    {
+     "tipo": "imagen",
+     "id": "decoraciones/papel-rasgado.svg",
+     "nombre": "Papel rasgado",
+     "ruta": "assets/decoraciones/papel-rasgado.svg",
+     "ancho": 200,
+     "alto": 120,
+     "peso": 305
+    },
+    {
+     "tipo": "imagen",
+     "id": "decoraciones/sello-postal.svg",
+     "nombre": "Sello postal",
+     "ruta": "assets/decoraciones/sello-postal.svg",
+     "ancho": 100,
+     "alto": 120,
+     "peso": 410
+    },
+    {
+     "tipo": "imagen",
+     "id": "decorations/corazon-garabato.svg",
+     "nombre": "Corazon garabato",
+     "ruta": "assets/decorations/corazon-garabato.svg",
+     "ancho": 120,
+     "alto": 110,
+     "peso": 487
+    },
+    {
+     "tipo": "imagen",
+     "id": "decorations/estrella-crayon.svg",
+     "nombre": "Estrella crayon",
+     "ruta": "assets/decorations/estrella-crayon.svg",
+     "ancho": 120,
+     "alto": 116,
+     "peso": 422
+    },
+    {
+     "tipo": "imagen",
+     "id": "decorations/flor-crayon.svg",
+     "nombre": "Flor crayon",
+     "ruta": "assets/decorations/flor-crayon.svg",
+     "ancho": 120,
+     "alto": 140,
+     "peso": 669
+    },
+    {
+     "tipo": "imagen",
+     "id": "decorations/sello-te-amo.svg",
+     "nombre": "Sello te amo",
+     "ruta": "assets/decorations/sello-te-amo.svg",
+     "ancho": 140,
+     "alto": 140,
+     "peso": 561
     }
    ]
   },
@@ -277,6 +865,24 @@ export default {
       "style.css"
      ],
      "peso": 3943
+    },
+    {
+     "tipo": "componente",
+     "id": "reproductores/reproductor-casete.html",
+     "nombre": "Reproductor de casete",
+     "descripcion": "Un casete retro: al tocar ▶ giran las ruedas",
+     "ruta": "assets/reproductores/",
+     "entrada": "reproductor-casete.html",
+     "ancho": 300,
+     "alto": 200,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "reproductor-casete.html"
+     ],
+     "peso": 1747,
+     "suelto": true
     }
    ]
   },
@@ -354,48 +960,6 @@ export default {
       "index.html"
      ],
      "peso": 2703
-    }
-   ]
-  },
-  {
-   "id": "decorations",
-   "nombre": "Decoraciones",
-   "items": [
-    {
-     "tipo": "imagen",
-     "id": "decorations/corazon-garabato.svg",
-     "nombre": "Corazon garabato",
-     "ruta": "assets/decorations/corazon-garabato.svg",
-     "ancho": 120,
-     "alto": 110,
-     "peso": 487
-    },
-    {
-     "tipo": "imagen",
-     "id": "decorations/estrella-crayon.svg",
-     "nombre": "Estrella crayon",
-     "ruta": "assets/decorations/estrella-crayon.svg",
-     "ancho": 120,
-     "alto": 116,
-     "peso": 422
-    },
-    {
-     "tipo": "imagen",
-     "id": "decorations/flor-crayon.svg",
-     "nombre": "Flor crayon",
-     "ruta": "assets/decorations/flor-crayon.svg",
-     "ancho": 120,
-     "alto": 140,
-     "peso": 669
-    },
-    {
-     "tipo": "imagen",
-     "id": "decorations/sello-te-amo.svg",
-     "nombre": "Sello te amo",
-     "ruta": "assets/decorations/sello-te-amo.svg",
-     "ancho": 140,
-     "alto": 140,
-     "peso": 561
     }
    ]
   },
