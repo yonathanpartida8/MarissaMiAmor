@@ -24,7 +24,7 @@
  */
 const RT = window.LibritoRT;
 const PREF = "editordev:musicadev";
-const CANDIDATAS = ["MusicaDev.mp3", "../musica assets/MusicaDev.mp3", "../MusicaDev.mp3"];
+const CANDIDATAS = ["../DevMusic/MusicaDev.mp3", "MusicaDev.mp3", "../musica assets/MusicaDev.mp3", "../MusicaDev.mp3"];
 const AUD = /\.(mp3|m4a|ogg|wav|aac)$/i;
 const BAJAR = 0.09;   // constante de tiempo al bajar (s): ~0.3 s
 const SUBIR = 0.45;   // al volver: ~1.5 s, gradual

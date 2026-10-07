@@ -1065,7 +1065,13 @@ export default {
   }
  ],
  "musica": [],
- "devMusic": [],
+ "devMusic": [
+  {
+   "nombre": "MusicaDev",
+   "ruta": "DevMusic/MusicaDev.mp3",
+   "peso": 2659650
+  }
+ ],
  "extras": {
   "animaciones": [
    {
