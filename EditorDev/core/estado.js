@@ -375,7 +375,10 @@ export class Estado extends Emitter {
     const pid = conPag ? conPag.p || conPag.ref.p : null;
     if (pid && pid !== this.paginaId && this.proyecto.paginas[pid]) this.irPagina(pid);
     const ids = paso.ops.map((o) => o.ref?.e || o.el?.id).filter((id) => id && this.el(id));
-    this.seleccionar([...new Set(ids)]);
+    // Un cambio de toda la página (tema, fondo…) no deja todo elegido: el
+    // siguiente deslizar movería todo en vez de desplazar la hoja.
+    const dePagina = paso.ops.some((o) => o.t === "set" && o.ref?.p && !o.ref.e);
+    this.seleccionar(dePagina ? [] : [...new Set(ids)]);
     this.emit("historial");
   }
 

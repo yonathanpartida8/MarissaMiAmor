@@ -289,6 +289,7 @@ export class Paneles {
     ]));
     c.append(seccion("Esta página", [
       el("p.ed-ayuda", { text: "El fondo de la página (color, degradado o foto) se cambia en el inspector, sin nada elegido." }),
+      boton(I("diseno", "Tema sólo para esta hoja…"), () => this.app.temaDeHoja?.(), "chico"),
       boton(I("diseno", "Fondo de esta página"), () => { E.seleccionar([]); this.app.insp.abrir("diseno"); }, "chico"),
     ]));
     this._fondoHtml(c);

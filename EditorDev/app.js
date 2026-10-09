@@ -383,6 +383,7 @@ function construirRiel() {
   app.cerrarHoja = cerrarHoja;
   app.cerrarHojaSec = cerrarHojaSec;
   app.cerrarHojaInsp = cerrarHoja;
+  app.temaDeHoja = (pid) => import("./components/temas-hoja.js").then((m) => m.temaDeHoja(app, pid));
   // Un menú que se abre encima de lo elegido (teléfono): la hoja se corre para que se vea.
   addEventListener("ed-menu-abierto", (ev) => { const r = ev.detail; if (!r || !app.estado.sel.length) return; if (esMovil()) app.lienzo.mostrarSeleccion?.(innerHeight - r.top + 10); else app.lienzo.apartarDe?.(r); });
   app.alElegirPagina = () => { if (esMovil()) app.lateral.cerrar(); };

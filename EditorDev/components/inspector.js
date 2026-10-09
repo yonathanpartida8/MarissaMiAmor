@@ -15,10 +15,11 @@ import { ico } from "./iconos.js";
 import { DIBUJOS, FORMAS } from "../assets/dibujos.js";
 import { elegir } from "../assets/selector.js";
 import { seccionToque, seccionToquePagina } from "./toques.js";
+import { PAPELES, fondoDePapel, muestraPapel, nombrePapel } from "./temas-hoja.js";
 
 const RT = window.LibritoRT;
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
-const RECONSTRUIR = /^zonas$|^toque$|^escena3d\.(fuente|asset)$|^ancla|^tiempo$|^efectos\.(sombra|resplandor)$|^efectos$|sonidos|^componente\.(params|analisis|sinFondo)|^accion\.destino|fotos|\.tipo$|^fondo\.tipo|^accion|figura|disposicion|^carrusel\.modo|propia|^tipo$|^imagen\.asset|^video\.asset|^musica\.modo|fondo\.imagen|gradiente$|sombra$|^transicion$/;
+const RECONSTRUIR = /^zonas$|^toque$|^escena3d\.(fuente|asset)$|^ancla|^tiempo$|^efectos\.(sombra|resplandor)$|^efectos$|sonidos|^componente\.(params|analisis|sinFondo)|^accion\.destino|fotos|\.tipo$|^fondo\.tipo|^fondo$|^fondo\.(css|papel)$|^accion|figura|disposicion|^carrusel\.modo|propia|^tipo$|^imagen\.asset|^video\.asset|^musica\.modo|fondo\.imagen|gradiente$|sombra$|^transicion$/;
 const OPC_DIR = Object.entries(RT.DIRS);
 const FACILES = Object.entries(RT.FACIL).map(([k, v]) => [k, v.n]);
 
@@ -597,7 +598,12 @@ export class Inspector {
       fila("Forma", c("fondo.gradiente.tipo", { tipo: "segmento", opciones: [["lineal", "Lineal"], ["radial", "Radial"]], def: "lineal" })),
       fila("Ángulo", c("fondo.gradiente.angulo", { tipo: "rango", min: 0, max: 360, def: 160, unidad: "°" })),
     );
-    if (f.css) fondo.push(el("p.ed-nota", {}, ["Fondo traído de la página original. ", boton("Quitarlo", () => this.E.setPag({ "fondo.css": undefined }, "Fondo"), "chico")]));
+    // Estilos de hoja: la ficha ya es la muestra; tocar la pone (y se deshace como todo).
+    const papeles = el("div.ed-papeles", {}, PAPELES.map(([id, n]) => el("button", { type: "button", title: n, "aria-label": n, class: (f.papel || (f.css ? "" : "liso")) === id ? "on" : "", style: { background: muestraPapel(id) }, onClick: () => this.E.setPag({ fondo: { ...fondoDePapel(id, f), ...(id === "liso" && f.color ? { color: f.color } : {}) } }, "Estilo de hoja: " + n) }, [el("small", { text: n })])));
+    fondo.unshift(el("div.ed-sub-t", { text: "Estilo de hoja" }), papeles);
+    fondo.push(boton(I("diseno", "Tema completo para esta hoja…"), () => this.app.temaDeHoja?.(), "chico"));
+    if (f.css && f.papel) fondo.push(el("p.ed-nota.suave", {}, [`Estilo de hoja: ${nombrePapel(f.papel)}. El color de arriba es el del papel. `, boton("Quitar estilo", () => this.E.setPag({ "fondo.css": undefined, "fondo.papel": undefined }, "Quitar estilo de hoja"), "chico")]));
+    else if (f.css) fondo.push(el("p.ed-nota", {}, ["Fondo traído de la página original. ", boton("Quitarlo", () => this.E.setPag({ "fondo.css": undefined }, "Fondo"), "chico")]));
     const img = f.imagen?.asset;
     fondo.push(el("div.ed-botonera", {}, [
       boton(img ? I("cambiar", "Cambiar foto de fondo") : I("mas", "Foto de fondo"), async () => { const [id] = await elegir(this.app, "imagen", { titulo: "Foto de fondo" }); if (id) this.E.setPag({ "fondo.imagen": { asset: id, ajuste: "cover", opacidad: 1, desenfoque: 0, pos: "center" } }, "Foto de fondo"); }, img ? "chico" : "chico primario"),

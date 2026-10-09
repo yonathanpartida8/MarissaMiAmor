@@ -1598,6 +1598,24 @@ body.ed-ajustando .ed-modal-fondo, body.ed-ajustando .ed-hojita-velo { backgroun
 @keyframes tqBrillo { 0%, 100% { box-shadow: 0 0 0 #ff5c93; filter: brightness(1); } 50% { box-shadow: 0 0 12px #ff5c93; filter: brightness(1.5); } }
 @keyframes tqColor { to { filter: hue-rotate(360deg); } }
 @keyframes tqOpac { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
+/* Estilos de hoja (inspector de la página) y temas por hoja. */
+.ed-sub-t { margin: 2px 0 6px; font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--texto-suave); text-transform: uppercase; }
+.ed-papeles { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; margin-bottom: 8px; }
+.ed-papeles button { position: relative; aspect-ratio: 3 / 4; padding: 0; border: 1.5px solid var(--linea-fuerte); border-radius: 10px; overflow: hidden; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255,255,255,.4); -webkit-tap-highlight-color: transparent; }
+.ed-papeles button small { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 2px; font-size: 10px; line-height: 1.1; color: #2a1b22; background: rgba(255,255,255,.82); text-align: center; }
+.ed-papeles button.on { border-color: var(--acento); box-shadow: 0 0 0 2px var(--acento); }
+.ed-temas { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.ed-tema-ficha { display: flex; flex-direction: column; gap: 4px; padding: 0 0 6px; border: 1.5px solid var(--linea); border-radius: 14px; background: var(--superficie); color: var(--texto); font: inherit; cursor: pointer; overflow: hidden; transition: transform .2s var(--resorte, ease), border-color .15s; -webkit-tap-highlight-color: transparent; }
+.ed-tema-ficha:active { transform: scale(.95); }
+.ed-tema-ficha.on { border-color: var(--acento); box-shadow: 0 0 0 2px var(--acento); }
+.ed-tema-ficha small { font-size: 11.5px; line-height: 1.15; padding: 0 4px; text-align: center; }
+.ed-tema-muestra { position: relative; display: grid; place-items: center; height: 62px; }
+.ed-tema-muestra b { font-size: 21px; font-weight: 400; line-height: 1; }
+.ed-tema-muestra i { position: absolute; right: 8px; bottom: 7px; width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255,255,255,.7); }
+.ed-temas-nombre { text-align: center; }
+.ed-hojita.ed-previa-tema { max-height: min(46dvh, 400px); }
+.ed-hojita.ed-previa-tema.acoplada { max-height: min(80dvh, 640px); }
+@media (max-width: 1023px) { .ed-hojita.ed-previa-tema .ed-temas { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 96px; grid-template-rows: auto auto; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x proximity; } .ed-hojita.ed-previa-tema .ed-tema-ficha { scroll-snap-align: start; } }
 /* «Al tocar»: categorías en pestañitas, lo que hace ahora y la vista previa. */
 .ed-tq-cats { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 4px; margin: 2px 0; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
 .ed-tq-cats::-webkit-scrollbar { display: none; }

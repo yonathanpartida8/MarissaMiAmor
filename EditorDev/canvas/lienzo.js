@@ -344,6 +344,25 @@ export class Lienzo {
   }
 
   /** Vuelve a una vista guardada (la de antes de `enfocar`). */
+  /** La hoja entera, a la vista, encima de los `abajo` px de abajo. Devuelve cómo estaba. */
+  verHojaArriba(abajo = 0) {
+    const r = this.vistaEl.getBoundingClientRect();
+    const alto = Math.min(r.bottom, innerHeight - abajo) - r.top - 24;
+    if (alto < 100 || !this.W) return null;
+    const antes = { ...this.v };
+    const z = Math.max(0.05, Math.min((r.width - 24) / this.W, alto / this.H));
+    const hasta = { z, px: (r.width - this.W * z) / 2, py: 12 + (alto - this.H * z) / 2 };
+    const desde = { ...this.v }, t0 = performance.now();
+    const paso = (t) => {
+      const k = Math.min(1, (t - t0) / 300), q = 1 - Math.pow(1 - k, 3);
+      this.v = { z: desde.z + (hasta.z - desde.z) * q, px: desde.px + (hasta.px - desde.px) * q, py: desde.py + (hasta.py - desde.py) * q, ajustar: false };
+      this.pintarVista();
+      if (k < 1) requestAnimationFrame(paso);
+    };
+    requestAnimationFrame(paso);
+    return antes;
+  }
+
   volverVista(v) {
     if (!v) return;
     if (v.ajustar) return this.ajustar();
@@ -1303,7 +1322,8 @@ export class Lienzo {
         { t: t("texto", "Añadir texto"), al: () => A.texto("parrafo") },
         { t: t("ok", "Elegir todo"), al: () => E.seleccionar(E.pagina.els.filter((x) => !x.bloqueado && !x.oculto && permite(x, "seleccionar")).map((x) => x.id)) },
         "-",
-        { t: t("diseno", "Fondo de la página"), al: () => this.app.insp.abrir("diseno", "Fondo") },
+        { t: t("diseno", "Tema de esta hoja…"), al: () => this.app.temaDeHoja?.() },
+        { t: t("fondo", "Fondo de la página"), al: () => this.app.insp.abrir("diseno", "Fondo") },
         { t: t("ajustar", "Ver la hoja entera"), al: () => this.ajustar() },
       ];
     }
