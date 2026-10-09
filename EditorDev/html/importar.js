@@ -104,7 +104,10 @@ export class Importador {
       modo = await modal({
         titulo: "Hacer editable",
         ancho: 520,
-        contenido: [el("p", { text: `Se van a sacar a capas los textos, fotos, adornos y animaciones de «${e.pagina.titulo || e.pagina.ruta}».` })],
+        contenido: [
+          el("p", { text: `Se van a sacar a capas los textos, fotos, adornos y animaciones de «${e.pagina.titulo || e.pagina.ruta}».` }),
+          el("p.ed-ayuda", { text: "Su HTML completo se conserva siempre: con «Conservar lo interactivo» sigue funcionando debajo; con «Sólo lo que se ve» queda guardado y escondido en Capas, por si lo vuelves a necesitar." }),
+        ],
         acciones: [["Cancelar", null], ["Sólo lo que se ve", "plano"], ["Conservar lo interactivo", "hibrido", "primario"]],
       });
       if (!modo) return;
@@ -119,7 +122,8 @@ export class Importador {
         let i = this.E.pagina.els.findIndex((x) => x.id === e.id) + 1;
         for (const x of r.els) { this.E.agregarEl(x, i++, pid, false); ids.push(x.id); }
         if (r.fondo) this.E.setPag({ "fondo.css": r.fondo, "fondo.tipo": "color", "fondo.color": r.fondoColor || "#ffffff" }, "Fondo", null, pid);
-        if (!hibrido) this.E.quitarEls([e.id], pid);
+        // Nunca se pierde: el original (con todo su HTML) queda escondido en Capas.
+        if (!hibrido) this.E.setEl(e.id, { oculto: true, nombre: (e.nombre || "Página") + " · original" }, "Esconder el original");
       });
       if (Object.keys(r.fuentes).length) {
         const extra = { ...(this.P.ajustes.fuentesExtra || {}), ...r.fuentes };

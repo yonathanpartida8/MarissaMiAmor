@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Aurora</title>
+<meta name="tamaño" content="420x300">
+<meta name="descripcion" content="Una aurora boreal que ondula despacito, con estrellitas">
+<meta name="decorativo" content="si">
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+canvas{position:fixed;inset:-10%;width:120%;height:120%;filter:blur(14px) saturate(1.3);mix-blend-mode:screen}
+.e{position:fixed;width:2px;height:2px;border-radius:50%;background:#fff;box-shadow:0 0 6px #fff;animation:tw 3s ease-in-out infinite}
+@keyframes tw{50%{opacity:.15;transform:scale(.6)}}
+@media (prefers-reduced-motion:reduce){.e{animation:none}}
+</style></head><body>
+<canvas></canvas>
+<script>
+(function () {
+  const c = document.querySelector("canvas"), x = c.getContext("2d");
+  const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W = 0, H = 0;
+  function tam() { W = Math.round(innerWidth * 0.6); H = Math.round(innerHeight * 0.6); c.width = W; c.height = H; }
+  addEventListener("resize", tam); tam();
+  for (let i = 0; i < 26; i++) { const e = document.createElement("i"); e.className = "e"; e.style.left = Math.random() * 100 + "%"; e.style.top = Math.random() * 60 + "%"; e.style.animationDelay = -Math.random() * 3 + "s"; document.body.appendChild(e); }
+  const cintas = [
+    { c: ["rgba(80,255,170,0)", "rgba(80,255,170,.85)", "rgba(60,200,255,0)"], y: 0.36, v: 0.00035, f: 0.011 },
+    { c: ["rgba(120,160,255,0)", "rgba(140,120,255,.7)", "rgba(255,120,220,0)"], y: 0.48, v: -0.00028, f: 0.009 },
+    { c: ["rgba(255,140,210,0)", "rgba(255,120,200,.55)", "rgba(120,255,200,0)"], y: 0.6, v: 0.00022, f: 0.013 },
+  ];
+  function pintar(t) {
+    if (quieto) t = 4000;
+    x.clearRect(0, 0, W, H);
+    x.globalCompositeOperation = "lighter";
+    cintas.forEach((k, i) => {
+      const g = x.createLinearGradient(0, H * (k.y - 0.25), 0, H * (k.y + 0.25));
+      g.addColorStop(0, k.c[0]); g.addColorStop(0.45, k.c[1]); g.addColorStop(1, k.c[2]);
+      x.fillStyle = g;
+      x.beginPath();
+      const arriba = (px) => H * k.y + Math.sin(px * k.f + t * k.v * 6 + i) * H * 0.08 + Math.sin(px * k.f * 2.7 - t * k.v * 9) * H * 0.03;
+      x.moveTo(0, arriba(0));
+      for (let px = 0; px <= W; px += 6) x.lineTo(px, arriba(px));
+      for (let px = W; px >= 0; px -= 6) x.lineTo(px, arriba(px) + H * (0.22 + 0.06 * Math.sin(px * 0.02 + t * 0.001 + i)));
+      x.closePath(); x.fill();
+    });
+    if (!quieto) requestAnimationFrame(pintar);
+  }
+  requestAnimationFrame(pintar);
+})();
+</script>
+</body></html>

@@ -262,7 +262,8 @@ export class Acciones {
     const a = this.P.assets[id] || {};
     const w = Math.min(330, this.P.ajustes.ancho - 40);
     const h = a.w && a.h ? Math.round((w * a.h) / a.w) : Math.round(w * 0.6);
-    return this._poner(nuevoEl("video", this.P, { nombre: a.nombre || "Vídeo", w, h, video: { asset: id } }));
+    // Lo nuevo empieza solo, en bucle, con resplandor épico y la barra de controles moderna.
+    return this._poner(nuevoEl("video", this.P, { nombre: a.nombre || "Vídeo", w, h, video: { asset: id, modo: "auto", auto: true, bucle: true, controles: true, ambiente: 0.75, epico: true } }));
   }
 
   paginaOriginal(ruta, titulo) {

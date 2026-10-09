@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Luciérnagas</title>
+<meta name="tamaño" content="360x360">
+<meta name="descripcion" content="Luciérnagas que flotan; deja el dedo y se juntan alrededor">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;-webkit-tap-highlight-color:transparent;user-select:none}canvas{position:fixed;inset:0;width:100%;height:100%}</style>
+</head><body><canvas></canvas>
+<script>
+(function () {
+  const c = document.querySelector("canvas"), x = c.getContext("2d");
+  const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W = 0, H = 0, D = 1, dedo = null;
+  function tam() { D = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; c.width = W * D; c.height = H * D; x.setTransform(D, 0, 0, D, 0, 0); }
+  addEventListener("resize", tam); tam();
+  const L = Array.from({ length: quieto ? 14 : 34 }, () => ({ x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, f: Math.random() * 6.3, r: 1.6 + Math.random() * 1.8 }));
+  // Un brillito pre-pintado (rápido de copiar en cada cuadro).
+  const halo = document.createElement("canvas"); halo.width = halo.height = 64;
+  const hx = halo.getContext("2d"), g = hx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, "rgba(255,250,190,1)"); g.addColorStop(0.18, "rgba(230,255,120,.75)"); g.addColorStop(0.5, "rgba(170,255,90,.18)"); g.addColorStop(1, "rgba(170,255,90,0)");
+  hx.fillStyle = g; hx.fillRect(0, 0, 64, 64);
+  function pintar(t) {
+    x.clearRect(0, 0, W, H);
+    x.globalCompositeOperation = "lighter";
+    for (const l of L) {
+      l.f += 0.03;
+      if (dedo) { const dx = dedo.x - l.x, dy = dedo.y - l.y, d = Math.hypot(dx, dy) || 1, orbita = 26 + l.r * 8; l.vx += (dx / d) * (d > orbita ? 0.12 : -0.08) + (-dy / d) * 0.06; l.vy += (dy / d) * (d > orbita ? 0.12 : -0.08) + (dx / d) * 0.06; }
+      else { l.vx += Math.cos(l.f * 0.7) * 0.03; l.vy += Math.sin(l.f * 0.9) * 0.03 - 0.004; }
+      l.vx *= 0.95; l.vy *= 0.95; l.x += l.vx; l.y += l.vy;
+      if (l.x < -10) l.x = W + 10; if (l.x > W + 10) l.x = -10; if (l.y < -10) l.y = H + 10; if (l.y > H + 10) l.y = -10;
+      const brillo = 0.45 + 0.55 * Math.pow(Math.max(0, Math.sin(l.f)), 2), s = l.r * 9 * (0.7 + brillo * 0.5);
+      x.globalAlpha = brillo;
+      x.drawImage(halo, l.x - s / 2, l.y - s / 2, s, s);
+    }
+    x.globalAlpha = 1;
+    requestAnimationFrame(pintar);
+  }
+  requestAnimationFrame(pintar);
+  addEventListener("pointerdown", (ev) => { dedo = { x: ev.clientX, y: ev.clientY }; });
+  addEventListener("pointermove", (ev) => { if (dedo) dedo = { x: ev.clientX, y: ev.clientY }; });
+  for (const n of ["pointerup", "pointercancel", "pointerleave"]) addEventListener(n, () => { dedo = null; });
+})();
+</script>
+</body></html>

@@ -401,10 +401,12 @@ export class Inspector {
         escribir: (m) => this.E.setEl(e.id, { "video.modo": m, "video.auto": m === "auto" }, "Reproducción del vídeo"),
       }), "automática: empieza sola al llegar (sin sonido en el teléfono) · manual: se toca para verlo"),
       el("div.ed-botonera", {}, [c("video.bucle", { tipo: "toggle" }), el("small", { text: "en bucle" })]),
-      el("div.ed-botonera", {}, [c("video.silencio", { tipo: "toggle" }), el("small", { text: "sin sonido" }), c("video.controles", { tipo: "toggle" }), el("small", { text: "controles" })]),
+      el("div.ed-botonera", {}, [c("video.silencio", { tipo: "toggle" }), el("small", { text: "sin sonido" }), c("video.controles", { tipo: "toggle" }), el("small", { text: "barra de controles" })]),
       fila("Encaje", c("video.ajuste", { tipo: "segmento", opciones: [["cover", "Llenar"], ["contain", "Entero"]] })),
       fila("Marco", c("video.marco", { tipo: "select", opciones: Object.entries(RT.MARCOS_VIDEO), def: "ninguno", nombre: "Marco del vídeo" })),
       fila("Resplandor", c("video.ambiente", { tipo: "rango", min: 0, max: 1, paso: 0.05, def: 0, nombre: "Resplandor" }), "un fondo suave hecho con los colores del vídeo"),
+      el("div.ed-botonera", {}, [c("video.epico", { tipo: "toggle", nombre: "Resplandor épico" }), el("small", { text: "resplandor épico (más grande, vivo y que respira)" })]),
+      fila("Estilo", c("video.estilo", { tipo: "select", opciones: Object.entries(RT.ESTILOS_VIDEO), def: "normal", nombre: "Estilo del vídeo" })),
       boton(I("efectos", "Efectos y filtros"), () => this.app.abrirSeccion("efectos", true), "chico"),
       el("small.ed-ayuda", { text: "Para que empiece solo, el teléfono pide que esté sin sonido. En la línea de tiempo decides cuándo aparece (y empieza)." }),
     ]);

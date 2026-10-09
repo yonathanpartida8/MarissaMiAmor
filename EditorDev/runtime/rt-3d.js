@@ -485,7 +485,7 @@
 
   RT.componentes = RT.componentes || {};
   RT.componentes.escena3d = function (c, e, ctx, n) {
-    if (ctx.modo === "mini") { c.innerHTML = '<div class="rt-marcador">3D</div>'; return null; }
+    if (ctx.modo === "mini") { c.innerHTML = RT.marcador ? RT.marcador("d3", e.nombre || "3D") : '<div class="rt-marcador">3D</div>'; return null; }
     const ya = n && n._rt && n._rt.escena3d;
     if (ya && ya.vivo && ya.lienzo.parentNode === c) { ya._muere = false; ya.actualizar(e); return ya; }
     c.textContent = "";

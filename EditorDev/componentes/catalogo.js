@@ -12,6 +12,7 @@ import { rutaAUrl } from "../assets/biblioteca.js";
 let cat = null;
 const SOLO_EXTRAS = /^(sonidos-editor|iconos|fondos|transiciones|animaciones|efectos|deslizar|_.*)$/i;
 const bonito = (s) => s.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+const sinTilde = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
 /** Si el servidor deja listar una carpeta (servidor local), sus nombres. */
 export async function listar(rel) {
@@ -48,7 +49,7 @@ async function recienDejados(c) {
       let m = {};
       try { m = metaHtml((await (await fetch(rutaAUrl(`assets/${d}${f}`), { cache: "no-store" })).text()).slice(0, 6000)); } catch (e) { /* nada */ }
       if (!g) { g = { id, nombre: bonito(id), items: [] }; c.categorias.push(g); }
-      g.items.push({ tipo: "componente", id: `${id}/${f}`, nombre: m.nombre || bonito(f), descripcion: "", ruta: `assets/${d}`, entrada: f, ancho: m.ancho || null, alto: m.alto || null, parametros: [], miniatura: null, archivos: [f], peso: 0, suelto: true });
+      g.items.push({ tipo: "componente", id: `${id}/${f}`, nombre: id === "elementos" && sinTilde(m.nombre) !== sinTilde(bonito(f)) ? bonito(f) : m.nombre || bonito(f), descripcion: "", ruta: `assets/${d}`, entrada: f, ancho: m.ancho || null, alto: m.alto || null, parametros: [], miniatura: null, archivos: [f], peso: 0, suelto: true });
     }
   }
 }

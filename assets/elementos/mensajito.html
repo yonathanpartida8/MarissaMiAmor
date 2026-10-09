@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Mensajito</title>
+<meta name="tamaño" content="320x180">
+<meta name="descripcion" content="Un globito de chat que escribe frases bonitas; tócalo para la siguiente">
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none}
+body{display:grid;place-items:center;cursor:pointer;font-family:"Jost","Quicksand",system-ui,sans-serif}
+.g{position:relative;max-width:84%;padding:14px 18px 22px;border-radius:22px 22px 22px 6px;background:linear-gradient(160deg,#ff7aa8,#e0457f);color:#fff;box-shadow:0 10px 24px rgba(200,40,100,.3);font-size:clamp(15px,6.4vw,24px);line-height:1.3;transform-origin:0 100%;animation:sale .45s cubic-bezier(.3,1.5,.5,1) both}
+.g::after{content:"";position:absolute;left:-7px;bottom:0;width:16px;height:16px;background:#e0457f;clip-path:polygon(100% 0,100% 100%,0 100%)}
+.h{position:absolute;right:12px;bottom:6px;font-size:11px;opacity:.8;letter-spacing:.02em}
+.cur{display:inline-block;width:2px;height:1em;margin-left:2px;background:#fff;vertical-align:-.12em;animation:par 1s steps(1) infinite}
+.puntos{display:inline-flex;gap:4px}.puntos i{width:7px;height:7px;border-radius:50%;background:#fff;opacity:.6;animation:pt 1s infinite}.puntos i:nth-child(2){animation-delay:.15s}.puntos i:nth-child(3){animation-delay:.3s}
+@keyframes sale{from{transform:scale(.6);opacity:0}}
+@keyframes par{50%{opacity:0}}
+@keyframes pt{30%{transform:translateY(-4px);opacity:1}}
+</style></head><body>
+<div class="g" role="button" aria-label="Mensajito: tocar para el siguiente"><span class="txt"></span><span class="h"></span></div>
+<script>
+(function () {
+  // Cambia o agrega frases aquí:
+  const FRASES = ["te amo", "¿ya comiste, mi amor?", "te extraño un montón", "eres mi persona favorita", "falta menos para vernos", "buenas noches, te amo"];
+  const g = document.querySelector(".g"), txt = document.querySelector(".txt"), hora = document.querySelector(".h");
+  const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let i = -1, reloj = 0;
+  function siguiente() {
+    clearTimeout(reloj);
+    i = (i + 1) % FRASES.length;
+    const f = FRASES[i];
+    const d = new Date(); hora.textContent = d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0") + " ✓✓";
+    g.style.animation = "none"; void g.offsetWidth; g.style.animation = "";
+    if (quieto) { txt.textContent = f; return; }
+    txt.innerHTML = '<span class="puntos"><i></i><i></i><i></i></span>';
+    let k = 0;
+    reloj = setTimeout(function letra() {
+      txt.textContent = f.slice(0, ++k);
+      const cur = document.createElement("span"); cur.className = "cur"; txt.appendChild(cur);
+      if (k < f.length) reloj = setTimeout(letra, 45 + Math.random() * 60);
+      else reloj = setTimeout(() => cur.remove(), 1400);
+    }, 700);
+  }
+  addEventListener("pointerdown", siguiente);
+  siguiente();
+})();
+</script>
+</body></html>

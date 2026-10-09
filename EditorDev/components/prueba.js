@@ -64,7 +64,12 @@ export class Prueba {
     // 1 · Los menús se van, cada uno hacia su orilla.
     this._salen = [...document.querySelectorAll(CROMO)].filter((n) => n.offsetParent !== null || getComputedStyle(n).position === "fixed").map((n, i) => {
       const d = rumbo(n);
-      const a = n.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: tr(d, 1) }], { duration: 300, delay: Math.min(i, 6) * 22, easing: "cubic-bezier(.55,0,.75,.4)", fill: "forwards" });
+      // Primero se vuelven translúcidos (se ve la página detrás) y luego se van.
+      const a = n.animate([
+        { opacity: 1, transform: "none", filter: "none" },
+        { opacity: 0.32, transform: tr(d, 0.12), filter: "blur(1.5px) saturate(.7)", offset: 0.45 },
+        { opacity: 0, transform: tr(d, 1), filter: "blur(3px) saturate(.6)" },
+      ], { duration: 460, delay: Math.min(i, 6) * 22, easing: "cubic-bezier(.45,0,.6,.5)", fill: "forwards" });
       return { n, d, a };
     });
     document.body.classList.add("ed-probando");

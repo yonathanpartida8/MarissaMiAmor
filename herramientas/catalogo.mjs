@@ -45,14 +45,18 @@ const NOMBRES = {
   animations: "Animaciones", animaciones: "Animaciones", decorations: "Decoraciones", decoraciones: "Decoraciones",
   frames: "Marcos", marcos: "Marcos", ui: "Interfaz", cards: "Tarjetas", tarjetas: "Tarjetas",
   audio: "Sonidos", sonidos: "Sonidos", img: "Imágenes", imagenes: "Imágenes", stickers: "Stickers",
-  "efectos-animados": "Efectos animados", dibujos: "Dibujos", textos: "Textos", fondos: "Fondos", hojas: "Hojas", otros: "Otros", gifs: "GIFs",
+  elementos: "Elementos", "efectos-animados": "Efectos animados", dibujos: "Dibujos", textos: "Textos", fondos: "Fondos", hojas: "Hojas", otros: "Otros", gifs: "GIFs",
   "3d": "3D", modelos: "3D", models: "3D",
 };
-const ORDEN = ["botones", "buttons", "marcos", "frames", "tarjetas", "cards", "hojas", "dibujos", "efectos-animados", "decoraciones", "players", "portraits", "effects", "animations", "decorations", "stickers", "ui"];
+const ORDEN = ["elementos", "botones", "buttons", "marcos", "frames", "tarjetas", "cards", "hojas", "dibujos", "efectos-animados", "decoraciones", "players", "portraits", "effects", "animations", "decorations", "stickers", "ui"];
 const SOLO_EXTRAS = new Set(["sonidos-editor", "iconos", "fondos", "transiciones", "deslizar"]);
 const DEF = { animaciones: /^animacion\.(json|css|js)$/i, transiciones: /^transicion\.(json|css|js)$/i };
 
 const bonito = (s) => s.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+// En assets/elementos/ el nombre sale del archivo (rayos.html → «Rayos»); el
+// <title> sólo se usa si dice lo mismo con tildes («Corazón neón»).
+const sinTilde = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+const nombreDe = (cat, f, titulo) => (cat === "elementos" && sinTilde(titulo) !== sinTilde(bonito(f)) ? bonito(f) : titulo || bonito(f));
 const orden = (a, b) => a.localeCompare(b, "es", { numeric: true });
 const esDir = (p) => { try { return statSync(p).isDirectory(); } catch (e) { return false; } };
 
@@ -192,7 +196,7 @@ export function catalogo(RAIZ) {
           continue; // un filtro listo (va en extras.efectos)
         } else if (/\.html?$/i.test(f)) {
           const m = metaHtml(p);
-          items.push({ tipo: "componente", id: `${cat}/${f}`, nombre: m.nombre || bonito(f), descripcion: m.descripcion || "", ruta: `assets/${cat}/`, entrada: f, ancho: m.ancho || null, alto: m.alto || null, parametros: [], decorativo: !!m.decorativo, miniatura: null, archivos: [f], peso: statSync(p).size, suelto: true });
+          items.push({ tipo: "componente", id: `${cat}/${f}`, nombre: nombreDe(cat, f, m.nombre), descripcion: m.descripcion || "", ruta: `assets/${cat}/`, entrada: f, ancho: m.ancho || null, alto: m.alto || null, parametros: [], decorativo: !!m.decorativo, miniatura: null, archivos: [f], peso: statSync(p).size, suelto: true });
         } else if (IMG.test(f)) {
           items.push({ tipo: "imagen", id: `${cat}/${f}`, nombre: bonito(f), ruta, ...medida(p), peso: statSync(p).size });
         } else if (AUD.test(f)) {

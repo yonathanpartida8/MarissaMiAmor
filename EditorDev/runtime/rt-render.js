@@ -35,6 +35,20 @@
     }
   };
 
+  /* Miniaturas (páginas, transiciones): lo que no se puede pintar en chiquito
+     se ve como una tarjetita oscura con su icono y su nombre (no un bloque rosa). */
+  const ICO_MINI = {
+    video: '<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/>',
+    html: '<path d="M8.5 7 3.5 12l5 5M15.5 7l5 5-5 5M13.4 5.5l-2.8 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+    componente: '<path d="M12 3l2.2 5.3L20 9l-4.4 3.8L17 18.5 12 15.6 7 18.5l1.4-5.7L4 9l5.8-.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
+    d3: '<path d="M12 3 20 7.5v9L12 21l-8-4.5v-9zM4 7.5l8 4.5 8-4.5M12 12v9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
+    pagina: '<path d="M6 3.5h8.5L19 8v12.5H6z M14.5 3.5V8H19M9 12h7M9 15.5h7M9 9h3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>',
+  };
+  RT.marcador = function (tipo, nombre, clase) {
+    const t = String(nombre || "").replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+    return '<div class="rt-marcador rt-mk-' + tipo + (clase ? " " + clase : "") + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + (ICO_MINI[tipo] || ICO_MINI.componente) + "</svg>" + (t ? "<span>" + t + "</span>" : "") + "</div>";
+  };
+
   /* ── Hoja automática (se adapta a cada pantalla) ─────────────────
      Con «Automática», ancho×alto es la ZONA SEGURA del diseño. En cada
      pantalla la hoja crece por un lado (nunca se corta nada: la zona
@@ -234,17 +248,76 @@
   /** «auto» (empieza solo al llegar) o «manual» (se toca para verlo). */
   RT.modoVideo = function (v) { return v && (v.modo || (v.auto ? "auto" : "manual")); };
   RT.MARCOS_VIDEO = { ninguno: "Sin marco", polaroid: "Polaroid", redondo: "Redondeado", cine: "Cine", neon: "Neón", cinta: "Con cinta", tele: "Tele antigua" };
+  RT.ESTILOS_VIDEO = { normal: "Normal", sueno: "Sueño (brillo suave)", cine: "Cine (franjas y grano)", vhs: "VHS retro", recuerdo: "Recuerdo (sepia)", noche: "Noche azul", vivo: "Colores vivos" };
+
+  /* Controles propios (los del sistema se ven viejos y cambian en cada
+     teléfono): reproducir, barra para adelantar, tiempo, sonido y pantalla
+     completa. Se esconden solos mientras se ve y vuelven al tocar. */
+  const SVG = (d) => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + d + '" fill="currentColor"/></svg>';
+  const ICO_V = {
+    play: SVG("M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"),
+    pausa: SVG("M7 5h3.2v14H7zM13.8 5H17v14h-3.2z"),
+    son: SVG("M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 8.5a5 5 0 0 1 0 7l-1.2-1.2a3.3 3.3 0 0 0 0-4.6zM17.9 6.1a8.4 8.4 0 0 1 0 11.8l-1.2-1.2a6.7 6.7 0 0 0 0-9.4z"),
+    mudo: SVG("M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.2 9.4l1.2-1.2 2.1 2.1 2.1-2.1 1.2 1.2-2.1 2.1 2.1 2.1-1.2 1.2-2.1-2.1-2.1 2.1-1.2-1.2 2.1-2.1z"),
+    grande: SVG("M4 4h6v2H6v4H4zM14 4h6v6h-2V6h-4zM4 14h2v4h4v2H4zM18 14h2v6h-6v-2h4z"),
+  };
+  const tiempo = (s) => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  function controlesVideo(w, n) {
+    const b = h("div", "rt-vctl", w);
+    b.innerHTML = '<button type="button" class="rt-vb rt-vb-play" aria-label="Reproducir"></button><div class="rt-vbar" role="slider" aria-label="Avance" tabindex="0"><i class="rt-vbuf"></i><i class="rt-vprog"></i><b class="rt-vpunto"></b></div><span class="rt-vt">0:00</span><button type="button" class="rt-vb rt-vb-son" aria-label="Sonido"></button><button type="button" class="rt-vb rt-vb-full" aria-label="Pantalla completa">' + ICO_V.grande + "</button>";
+    const bp = b.querySelector(".rt-vb-play"), bs = b.querySelector(".rt-vb-son"), barra = b.querySelector(".rt-vbar"), prog = b.querySelector(".rt-vprog"), buf = b.querySelector(".rt-vbuf"), punto = b.querySelector(".rt-vpunto"), t = b.querySelector(".rt-vt");
+    let ocultar = 0;
+    const mostrar = () => { w.classList.remove("rt-vctl-fuera"); clearTimeout(ocultar); if (!n.paused) ocultar = setTimeout(() => w.classList.add("rt-vctl-fuera"), 2600); };
+    const pintar = () => {
+      const k = n.duration ? n.currentTime / n.duration : 0;
+      prog.style.transform = "scaleX(" + k + ")"; punto.style.left = k * 100 + "%";
+      t.textContent = tiempo(n.currentTime) + (n.duration && isFinite(n.duration) ? " / " + tiempo(n.duration) : "");
+      barra.setAttribute("aria-valuenow", String(Math.round(k * 100)));
+    };
+    const estado = () => { bp.innerHTML = n.paused ? ICO_V.play : ICO_V.pausa; bp.setAttribute("aria-label", n.paused ? "Reproducir" : "Pausar"); bs.innerHTML = n.muted ? ICO_V.mudo : ICO_V.son; mostrar(); };
+    n.addEventListener("timeupdate", pintar);
+    n.addEventListener("loadedmetadata", pintar);
+    n.addEventListener("progress", () => { try { const r = n.buffered; if (r.length && n.duration) buf.style.transform = "scaleX(" + r.end(r.length - 1) / n.duration + ")"; } catch (err) { /* nada */ } });
+    for (const ev of ["play", "pause", "volumechange"]) n.addEventListener(ev, estado);
+    bp.addEventListener("click", (ev) => { ev.stopPropagation(); if (n.paused) n.play().catch(() => {}); else n.pause(); });
+    bs.addEventListener("click", (ev) => { ev.stopPropagation(); n.muted = !n.muted; w.classList.remove("rt-vmudo"); if (!n.muted && n.volume < 0.05) n.volume = 1; });
+    b.querySelector(".rt-vb-full").addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      else if (w.requestFullscreen) w.requestFullscreen().catch(() => { if (n.webkitEnterFullscreen) n.webkitEnterFullscreen(); });
+      else if (n.webkitEnterFullscreen) n.webkitEnterFullscreen();
+    });
+    const ir = (ev) => { const r = barra.getBoundingClientRect(); const k = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)); if (n.duration) { n.currentTime = k * n.duration; pintar(); } };
+    barra.addEventListener("pointerdown", (ev) => { ev.stopPropagation(); ev.preventDefault(); try { barra.setPointerCapture(ev.pointerId); } catch (err) { /* nada */ } w.classList.add("rt-varrastra"); ir(ev); const mv = (e2) => ir(e2); const fin = () => { w.classList.remove("rt-varrastra"); barra.removeEventListener("pointermove", mv); barra.removeEventListener("pointerup", fin); barra.removeEventListener("pointercancel", fin); mostrar(); }; barra.addEventListener("pointermove", mv); barra.addEventListener("pointerup", fin); barra.addEventListener("pointercancel", fin); });
+    barra.addEventListener("keydown", (ev) => { if (ev.key === "ArrowRight") n.currentTime = Math.min(n.duration || 0, n.currentTime + 5); else if (ev.key === "ArrowLeft") n.currentTime = Math.max(0, n.currentTime - 5); });
+    b.addEventListener("click", (ev) => ev.stopPropagation());
+    w.addEventListener("pointerdown", mostrar);
+    estado(); pintar();
+    return b;
+  }
 
   /**
    * Un vídeo con su marco y, si se pide, un resplandor detrás hecho con sus
    * propios colores (un lienzo chiquito de 24×14 que se agranda borroso:
    * casi no cuesta). En modo manual se toca para reproducir o pausar.
    */
+  /** Empieza un vídeo: con sonido si el teléfono deja; si no, en silencio
+   *  (con el aviso «Toca para el sonido»). Nunca se queda negro sin avisar. */
+  RT.reproducirVideo = function (n) {
+    const w = n.closest(".rt-vwrap");
+    return n.play().catch(function () {
+      if (n.muted) return;
+      n.muted = true;
+      if (w) w.classList.add("rt-vmudo");
+      return n.play().catch(function () { if (w) w.classList.remove("rt-vmudo"); });
+    });
+  };
+
   PINTAR.video = function (c, e, ctx) {
     const v = e.video || {};
     const url = v.asset ? ctx.url(v.asset) : null;
     if (!url) { vacio(c, "Añadir vídeo", ctx, e); return; }
-    if (ctx.modo === "mini") { c.innerHTML = '<div class="rt-marcador">▶</div>'; return; }
+    if (ctx.modo === "mini") { c.innerHTML = RT.marcador("video", e.nombre); return; }
     let w = c.firstChild;
     if (!w || !w.classList || !w.classList.contains("rt-vwrap")) {
       c.textContent = ""; w = h("div", "rt-vwrap", c);
@@ -253,14 +326,30 @@
     }
     const n = w.querySelector("video");
     const marco = RT.MARCOS_VIDEO[v.marco] ? v.marco : "ninguno";
-    w.className = "rt-vwrap rt-vm-" + marco;
-    n.muted = ctx.modo !== "vista" || !!v.silencio;
+    // Lo que es estado (sonando, sin sonido…) sobrevive a repintar.
+    const queda = ["sonando", "rt-vmudo", "rt-vctl-fuera", "rt-varrastra"].filter(function (k) { return w.classList.contains(k); });
+    w.className = "rt-vwrap rt-vm-" + marco + (queda.length ? " " + queda.join(" ") : "");
+    // Si el teléfono no dejó empezar con sonido, sigue sin sonido hasta que lo toquen.
+    n.muted = ctx.modo !== "vista" || !!v.silencio || w.classList.contains("rt-vmudo");
     n.loop = !!v.bucle;
-    n.controls = ctx.modo === "vista" && !!v.controles;
+    n.controls = false;
+    const estilo = RT.ESTILOS_VIDEO[v.estilo] ? v.estilo : "normal";
+    w.classList.toggle("rt-vepico", !!v.epico);
+    if (estilo !== "normal") w.classList.add("rt-vfx-" + estilo);
     n.style.objectFit = v.ajuste || "cover";
     if (n.getAttribute("src") !== url) n.src = url;
     const modo = RT.modoVideo(v);
-    // Botón grande de reproducir (modo manual, sin controles del sistema).
+    let barra = w.querySelector(".rt-vctl");
+    if (ctx.modo === "vista" && v.controles) { if (!barra) controlesVideo(w, n); }
+    else if (barra) barra.remove();
+    // «Tocar para el sonido»: cuando empezó solo y en silencio.
+    let chip = w.querySelector(".rt-vsonido");
+    if (ctx.modo === "vista" && !v.silencio && !chip) {
+      chip = h("button", "rt-vsonido", w); chip.type = "button";
+      chip.innerHTML = ICO_V.mudo + "<span>Toca para el sonido</span>";
+      chip.addEventListener("click", function (ev) { ev.stopPropagation(); n.muted = false; if (n.volume < 0.05) n.volume = 1; w.classList.remove("rt-vmudo"); if (n.paused) n.play().catch(function () {}); });
+    }
+    // Botón grande de reproducir (modo manual, sin barra de controles).
     let b = w.querySelector(".rt-vid-play");
     if (ctx.modo === "vista" && modo === "manual" && !v.controles) {
       if (!b) {
@@ -272,7 +361,7 @@
     } else if (b) b.remove();
     if (ctx.modo !== "vista" && !n.paused) n.pause();
     // Resplandor con los colores del vídeo.
-    const amb = Math.max(0, Math.min(1, +v.ambiente || 0));
+    const amb = Math.max(0, Math.min(1, +v.ambiente || (v.epico ? 0.75 : 0)));
     let cv = w.querySelector(".rt-vamb");
     let parar = null;
     if (amb > 0) {
@@ -293,12 +382,13 @@
           } catch (err) { leer = false; } // un vídeo de otro sitio no deja leer sus colores (pero sí verse)
         }
       };
-      const bucle = function () { if (!vivo) return; pintar(); t = setTimeout(bucle, n.paused ? 900 : 220); };
+      const bucle = function () { if (!vivo) return; pintar(); t = setTimeout(bucle, n.paused ? 900 : v.epico ? 120 : 220); };
       if (n.readyState >= 2) bucle(); else n.addEventListener("loadeddata", function () { if (ctx.modo !== "vista" && n.currentTime < 0.05) { try { n.currentTime = 0.1; } catch (err) { /* nada */ } } bucle(); }, { once: true });
       n.addEventListener("seeked", pintar);
       parar = function () { vivo = false; clearTimeout(t); n.removeEventListener("seeked", pintar); };
     } else if (cv) { cv.remove(); w.style.removeProperty("--rt-vcolor"); }
-    if (ctx.modo === "vista" && modo === "auto" && ctx.activo && !RT.inicioDe(e)) n.play().catch(function () {});
+    // Arranca una sola vez (si ella lo pausó, repintar no lo vuelve a poner).
+    if (ctx.modo === "vista" && modo === "auto" && ctx.activo && !RT.inicioDe(e) && !w._arrancado) { w._arrancado = true; RT.reproducirVideo(n); }
     return parar ? { destruir: parar } : null;
   };
 
@@ -343,7 +433,7 @@
 
   PINTAR.html = function (c, e, ctx) {
     const x = e.html || {};
-    if (ctx.modo === "mini") { c.innerHTML = '<div class="rt-marcador">&lt;/&gt;</div>'; return; }
+    if (ctx.modo === "mini") { c.innerHTML = RT.marcador("html", e.nombre); return; }
     // Una página HTML recién creada (todavía sin código): en el editor, «pega aquí».
     if (!String(x.codigo || "").trim()) { vacio(c, "Toca dos veces y pega tu HTML", ctx, e); return; }
     let f = c.firstChild;
@@ -363,7 +453,9 @@
      se esconde aquí dentro (sin moverlo, para que nada salte de sitio). */
   PINTAR.pagina = function (c, e, ctx) {
     const p = e.pagina || {};
-    if (ctx.modo === "mini" || !p.ruta) { c.innerHTML = `<div class="rt-marcador rt-marcador-pag">${p.titulo || "Página original"}</div>`; return; }
+    if (ctx.modo === "mini" || !p.ruta) { c.innerHTML = RT.marcador("pagina", p.titulo || "Página original", "rt-marcador-pag"); return; }
+    // Un original escondido (se sacó todo a capas) no se carga en el librito: ni suena ni gasta.
+    if (ctx.modo === "vista" && e.oculto) { c.textContent = ""; return; }
     let f = c.firstChild;
     const url = ctx.ruta ? ctx.ruta(p.ruta) : p.ruta;
     if (!f || f.tagName !== "IFRAME") {
@@ -430,7 +522,7 @@
     const k = e.componente || {};
     if (!k.ruta) { c.textContent = ""; return; }
     if (ctx.modo === "mini") {
-      c.innerHTML = k.miniatura && ctx.ruta ? `<img class="rt-comp-mini" alt="" loading="lazy" src="${ctx.ruta(k.miniatura)}">` : `<div class="rt-marcador">✿</div>`;
+      c.innerHTML = k.miniatura && ctx.ruta ? `<img class="rt-comp-mini" alt="" loading="lazy" src="${ctx.ruta(k.miniatura)}">` : RT.marcador("componente", e.nombre);
       return;
     }
     let caja = c.firstChild;

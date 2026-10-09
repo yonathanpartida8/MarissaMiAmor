@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Hilo rojo</title>
+<meta name="tamaño" content="400x220">
+<meta name="descripcion" content="Tú y yo unidos por un hilo rojo; tócalo y viaja un corazón">
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;cursor:pointer}
+canvas{position:fixed;inset:0;width:100%;height:100%}
+.et{position:fixed;bottom:7%;font:600 clamp(14px,5vw,22px) "Caveat","Dancing Script",cursive;color:#7a2440;transform:translateX(-50%)}
+.pie{position:fixed;left:0;right:0;top:6%;text-align:center;font:500 clamp(11px,3.6vw,15px) "Jost",system-ui,sans-serif;letter-spacing:.08em;color:#9a4a66;opacity:.85}
+</style></head><body>
+<canvas></canvas><div class="pie">lejos, pero atados con el mismo hilo</div><div class="et" style="left:16%">tú</div><div class="et" style="left:84%">yo</div>
+<script>
+(function () {
+  const c = document.querySelector("canvas"), x = c.getContext("2d");
+  const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W = 0, H = 0, D = 1;
+  function tam() { D = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; c.width = W * D; c.height = H * D; x.setTransform(D, 0, 0, D, 0, 0); }
+  addEventListener("resize", tam); tam();
+  const viajes = [], chispas = [];
+  const A = () => ({ x: W * 0.16, y: H * 0.55 }), B = () => ({ x: W * 0.84, y: H * 0.55 });
+  function punto(k, t) {
+    const a = A(), b = B(), cx = W / 2, cy = H * 0.55 + H * 0.16 + Math.sin(t * 0.0012) * H * 0.06;
+    const u = 1 - k;
+    return { x: u * u * a.x + 2 * u * k * cx + k * k * b.x, y: u * u * a.y + 2 * u * k * cy + k * k * b.y + Math.sin(k * 9 + t * 0.003) * 2 };
+  }
+  function corazon(px, py, s, col) {
+    x.save(); x.translate(px, py); x.scale(s / 24, s / 24); x.fillStyle = col;
+    x.beginPath(); x.moveTo(12, 21); x.bezierCurveTo(4, 15, 0, 11, 2.5, 6.5); x.bezierCurveTo(5, 2.5, 10, 3.5, 12, 7); x.bezierCurveTo(14, 3.5, 19, 2.5, 21.5, 6.5); x.bezierCurveTo(24, 11, 20, 15, 12, 21); x.fill(); x.restore();
+  }
+  function enviar(desdeYo) { viajes.push({ t0: performance.now(), atras: desdeYo }); }
+  function pintar(t) {
+    x.clearRect(0, 0, W, H);
+    x.lineWidth = 2.4; x.strokeStyle = "#d8274f"; x.shadowColor = "rgba(216,39,79,.5)"; x.shadowBlur = 8;
+    x.beginPath();
+    for (let i = 0; i <= 60; i++) { const p = punto(i / 60, t); i ? x.lineTo(p.x, p.y) : x.moveTo(p.x, p.y); }
+    x.stroke(); x.shadowBlur = 0;
+    for (const p of [A(), B()]) {
+      const g = x.createRadialGradient(p.x, p.y, 0, p.x, p.y, 26);
+      g.addColorStop(0, "rgba(255,120,160,.55)"); g.addColorStop(1, "rgba(255,120,160,0)");
+      x.fillStyle = g; x.beginPath(); x.arc(p.x, p.y, 26, 0, 7); x.fill();
+      x.fillStyle = "#e0457f"; x.beginPath(); x.arc(p.x, p.y, 9 + Math.sin(t * 0.004) * 1.2, 0, 7); x.fill();
+      x.fillStyle = "#fff"; x.beginPath(); x.arc(p.x - 3, p.y - 3, 2.6, 0, 7); x.fill();
+    }
+    for (let i = viajes.length - 1; i >= 0; i--) {
+      const v = viajes[i], k = Math.min(1, (t - v.t0) / 1700), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      const p = punto(v.atras ? 1 - e : e, t);
+      corazon(p.x - 9, p.y - 16, 18, "#ff3d6e");
+      if (k >= 1) { viajes.splice(i, 1); const d = v.atras ? A() : B(); for (let j = 0; j < 10; j++) chispas.push({ x: d.x, y: d.y, vx: Math.cos(j * 0.63) * 2.4, vy: Math.sin(j * 0.63) * 2.4 - 1, v: 1 }); }
+    }
+    for (let i = chispas.length - 1; i >= 0; i--) { const s = chispas[i]; s.x += s.vx; s.y += s.vy; s.vy += 0.06; s.v -= 0.025; if (s.v <= 0) { chispas.splice(i, 1); continue; } corazon(s.x - 4, s.y - 4, 8, "rgba(255,90,140," + s.v + ")"); }
+    requestAnimationFrame(pintar);
+  }
+  requestAnimationFrame(pintar);
+  addEventListener("pointerdown", (ev) => enviar(ev.clientX > W / 2));
+  if (!quieto) (function solo() { if (!document.hidden && !viajes.length) enviar(Math.random() < 0.5); setTimeout(solo, 3200 + Math.random() * 2000); })();
+})();
+</script>
+</body></html>

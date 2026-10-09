@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Corazón neón</title>
+<meta name="tamaño" content="320x320">
+<meta name="descripcion" content="Un letrero de neón «te amo»; tócalo para apagarlo y prenderlo">
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none}
+body{display:grid;place-items:center;cursor:pointer}
+.n{position:relative;width:86%;aspect-ratio:1;display:grid;place-items:center;--c:#ff3d8b;--g:#ff8fc0}
+svg{width:78%;overflow:visible}
+.tubo{fill:none;stroke:var(--c);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 3px var(--g)) drop-shadow(0 0 10px var(--c)) drop-shadow(0 0 26px var(--c));transition:stroke .15s,filter .15s}
+.alma{fill:none;stroke:#fff3f8;stroke-width:1.6;stroke-linecap:round;opacity:.9}
+.t{position:absolute;bottom:6%;left:0;right:0;text-align:center;font:600 clamp(20px,13vw,58px)/1 "Dancing Script","Pacifico",cursive;color:#fff0f6;text-shadow:0 0 4px #fff,0 0 10px var(--g),0 0 22px var(--c),0 0 44px var(--c);letter-spacing:.02em}
+.vive{animation:zumba 7s infinite}
+@keyframes zumba{0%,91%,100%{opacity:1}92%{opacity:.35}93%{opacity:1}95%{opacity:.6}96%{opacity:1}}
+.apagado .tubo{stroke:#5a2a3c;filter:none}.apagado .alma{opacity:.15}
+.apagado .t{color:#6b3a4c;text-shadow:none}
+.prende{animation:prende .7s steps(1) both}
+@keyframes prende{0%{opacity:.2}12%{opacity:1}22%{opacity:.3}34%{opacity:1}46%{opacity:.5}60%,100%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.vive,.prende{animation:none}}
+</style></head><body>
+<div class="n vive" role="button" aria-label="Letrero de neón te amo">
+  <svg viewBox="0 0 100 92"><path class="tubo" d="M50 84C30 70 8 55 8 32 8 17 19 8 31 8c9 0 15 5 19 12 4-7 10-12 19-12 12 0 23 9 23 24 0 23-22 38-42 52z"/><path class="alma" d="M50 84C30 70 8 55 8 32 8 17 19 8 31 8c9 0 15 5 19 12 4-7 10-12 19-12 12 0 23 9 23 24 0 23-22 38-42 52z"/></svg>
+  <div class="t">te amo</div>
+</div>
+<script>
+(function () {
+  const n = document.querySelector(".n");
+  let on = true;
+  addEventListener("pointerdown", () => {
+    on = !on;
+    n.classList.toggle("apagado", !on);
+    n.classList.remove("prende");
+    if (on) { void n.offsetWidth; n.classList.add("prende"); }
+    try { navigator.vibrate && navigator.vibrate(on ? [8, 40, 8] : 12); } catch (e) {}
+  });
+})();
+</script>
+</body></html>

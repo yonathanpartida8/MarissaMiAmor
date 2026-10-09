@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Rayos</title>
+<meta name="tamaño" content="360x420">
+<meta name="descripcion" content="Rayos eléctricos que caen solos; tócalo y el rayo cae donde tocas">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:pointer}
+.flash{position:fixed;inset:0;background:radial-gradient(circle at var(--x,50%) var(--y,0%),rgba(210,230,255,.55),rgba(160,190,255,.12) 45%,transparent 70%);opacity:0;pointer-events:none}
+</style></head><body>
+<canvas></canvas><div class="flash"></div>
+<script>
+(function () {
+  const c = document.querySelector("canvas"), x = c.getContext("2d"), flash = document.querySelector(".flash");
+  const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W = 0, H = 0, D = 1;
+  function tam() { D = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; c.width = W * D; c.height = H * D; x.setTransform(D, 0, 0, D, 0, 0); }
+  addEventListener("resize", tam); tam();
+  const rayos = [];
+  // Un rayo: el camino se parte en dos una y otra vez y se tuerce un poco (con ramitas).
+  function camino(x1, y1, x2, y2, des, ancho, segs, nivel) {
+    if (des < 4) { segs.push([x1, y1, x2, y2, ancho]); return; }
+    const mx = (x1 + x2) / 2 + (Math.random() - 0.5) * des, my = (y1 + y2) / 2 + (Math.random() - 0.5) * des * 0.4;
+    camino(x1, y1, mx, my, des / 2, ancho, segs, nivel);
+    camino(mx, my, x2, y2, des / 2, ancho, segs, nivel);
+    if (nivel < 2 && Math.random() < 0.22 && des > 20) {
+      const a = Math.atan2(y2 - y1, x2 - x1) + (Math.random() - 0.5) * 1.6, l = des * 1.4;
+      camino(mx, my, mx + Math.cos(a) * l, my + Math.sin(a) * l, des / 2, ancho * 0.55, segs, nivel + 1);
+    }
+  }
+  function rayo(tx, ty) {
+    const sx = tx + (Math.random() - 0.5) * W * 0.4, segs = [];
+    camino(sx, -10, tx, ty, Math.max(60, H * 0.35), 2.4, segs, 0);
+    rayos.push({ segs, t0: performance.now(), dur: 520 });
+    flash.style.setProperty("--x", (tx / W) * 100 + "%"); flash.style.setProperty("--y", (ty / H) * 100 + "%");
+    flash.animate([{ opacity: 0.9 }, { opacity: 0.15, offset: 0.25 }, { opacity: 0.6, offset: 0.4 }, { opacity: 0 }], { duration: 480 });
+  }
+  function pintar(t) {
+    x.clearRect(0, 0, W, H);
+    for (let i = rayos.length - 1; i >= 0; i--) {
+      const r = rayos[i], k = (t - r.t0) / r.dur;
+      if (k >= 1) { rayos.splice(i, 1); continue; }
+      const a = (1 - k) * (k < 0.3 && Math.random() < 0.35 ? 0.45 : 1);
+      x.lineCap = "round";
+      for (const pasada of [[10, "rgba(120,170,255," + 0.35 * a + ")", 26], [1, "rgba(235,245,255," + a + ")", 10]]) {
+        x.shadowBlur = pasada[2]; x.shadowColor = "#8fc2ff"; x.strokeStyle = pasada[1];
+        x.beginPath();
+        for (const s of r.segs) { x.lineWidth = s[4] * pasada[0] * 0.5 + 0.6; x.moveTo(s[0], s[1]); x.lineTo(s[2], s[3]); }
+        x.stroke();
+      }
+    }
+    x.shadowBlur = 0;
+    requestAnimationFrame(pintar);
+  }
+  requestAnimationFrame(pintar);
+  addEventListener("pointerdown", (ev) => rayo(ev.clientX, ev.clientY));
+  // Solitos, de vez en cuando (más tranquilo si se pidió menos movimiento).
+  (function solo() { if (!document.hidden) rayo(W * (0.2 + Math.random() * 0.6), H * (0.55 + Math.random() * 0.4)); setTimeout(solo, (quieto ? 6000 : 1800) + Math.random() * 2600); })();
+})();
+</script>
+</body></html>

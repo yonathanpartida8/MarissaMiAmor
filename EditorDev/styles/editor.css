@@ -1650,3 +1650,12 @@ body.ed-con-zonas .ed-flotante, body.ed-con-zonas .ed-dock-op { display: none !i
 .ed-zp-chip:hover { border-color: var(--acento); }
 body.ed-con-zonas .ed-dock { display: none; }
 @media (max-width: 1023px) { body.ed-con-zonas .ed-avisos { top: calc(var(--barra, 56px) + 8px); bottom: auto; } }
+
+/* ── Fase 6: vistas previas con fondo oscuro (o cuadritos / claro) ── */
+.ed-bib-barra { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ed-bib-barra .ed-buscar { flex: 1 1 160px; min-width: 0; }
+.ed-bib-fondo { flex: 0 0 auto; }
+.ed-bib-fondo button { font-size: 12px; padding-inline: 9px; }
+body[data-bib-fondo="oscuro"] .ed-bib-prev, body[data-bib-fondo="oscuro"] .ed-bib-grande { background: radial-gradient(120% 90% at 50% 30%, #3b2e42 0%, #221a27 55%, #15101a 100%); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); }
+body[data-bib-fondo="claro"] .ed-bib-prev, body[data-bib-fondo="claro"] .ed-bib-grande { background: #fff; box-shadow: inset 0 0 0 1px var(--linea); }
+body[data-bib-fondo="oscuro"] .ed-bib-prev img, body[data-bib-fondo="oscuro"] .ed-bib-grande img { filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .45)); }

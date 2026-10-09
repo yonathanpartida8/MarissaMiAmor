@@ -3,6 +3,174 @@
 export default {
  "categorias": [
   {
+   "id": "elementos",
+   "nombre": "Elementos",
+   "items": [
+    {
+     "tipo": "componente",
+     "id": "elementos/aurora.html",
+     "nombre": "Aurora",
+     "descripcion": "Una aurora boreal que ondula despacito, con estrellitas",
+     "ruta": "assets/elementos/",
+     "entrada": "aurora.html",
+     "ancho": 420,
+     "alto": 300,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "aurora.html"
+     ],
+     "peso": 2582,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/contador-de-dias.html",
+     "nombre": "Contador de días",
+     "descripcion": "Los días (y las horas) desde nuestra fecha, contando en vivo",
+     "ruta": "assets/elementos/",
+     "entrada": "contador-de-dias.html",
+     "ancho": 320,
+     "alto": 240,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "contador-de-dias.html"
+     ],
+     "peso": 2485,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/corazon-neon.html",
+     "nombre": "Corazón neón",
+     "descripcion": "Un letrero de neón «te amo»; tócalo para apagarlo y prenderlo",
+     "ruta": "assets/elementos/",
+     "entrada": "corazon-neon.html",
+     "ancho": 320,
+     "alto": 320,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "corazon-neon.html"
+     ],
+     "peso": 2405,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/hilo-rojo.html",
+     "nombre": "Hilo rojo",
+     "descripcion": "Tú y yo unidos por un hilo rojo; tócalo y viaja un corazón",
+     "ruta": "assets/elementos/",
+     "entrada": "hilo-rojo.html",
+     "ancho": 400,
+     "alto": 220,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "hilo-rojo.html"
+     ],
+     "peso": 4018,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/lluvia-de-petalos.html",
+     "nombre": "Lluvia de pétalos",
+     "descripcion": "Pétalos de rosa que caen girando y meciéndose",
+     "ruta": "assets/elementos/",
+     "entrada": "lluvia-de-petalos.html",
+     "ancho": 360,
+     "alto": 480,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "lluvia-de-petalos.html"
+     ],
+     "peso": 2203,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/luciernagas.html",
+     "nombre": "Luciérnagas",
+     "descripcion": "Luciérnagas que flotan; deja el dedo y se juntan alrededor",
+     "ruta": "assets/elementos/",
+     "entrada": "luciernagas.html",
+     "ancho": 360,
+     "alto": 360,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "luciernagas.html"
+     ],
+     "peso": 2813,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/mensajito.html",
+     "nombre": "Mensajito",
+     "descripcion": "Un globito de chat que escribe frases bonitas; tócalo para la siguiente",
+     "ruta": "assets/elementos/",
+     "entrada": "mensajito.html",
+     "ancho": 320,
+     "alto": 180,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "mensajito.html"
+     ],
+     "peso": 2984,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/rayos.html",
+     "nombre": "Rayos",
+     "descripcion": "Rayos eléctricos que caen solos; tócalo y el rayo cae donde tocas",
+     "ruta": "assets/elementos/",
+     "entrada": "rayos.html",
+     "ancho": 360,
+     "alto": 420,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "rayos.html"
+     ],
+     "peso": 3588,
+     "suelto": true
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/vinilo.html",
+     "nombre": "Vinilo",
+     "descripcion": "Un disco de vinilo que gira; tócalo para parar o seguir (el brazo se mueve)",
+     "ruta": "assets/elementos/",
+     "entrada": "vinilo.html",
+     "ancho": 320,
+     "alto": 320,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "vinilo.html"
+     ],
+     "peso": 3034,
+     "suelto": true
+    }
+   ]
+  },
+  {
    "id": "botones",
    "nombre": "Botones",
    "items": [

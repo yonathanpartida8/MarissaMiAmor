@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Contador de días</title>
+<meta name="tamaño" content="320x240">
+<meta name="descripcion" content="Los días (y las horas) desde nuestra fecha, contando en vivo">
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;user-select:none}
+body{display:grid;place-items:center;font-family:"Jost","Quicksand",system-ui,sans-serif;color:#4a2a3e}
+.c{text-align:center;padding:6% 8%;border-radius:22px;background:rgba(255,248,251,.82);box-shadow:0 10px 30px rgba(120,40,80,.18),inset 0 0 0 2px rgba(255,150,190,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.arriba{font-size:clamp(11px,4.2vw,16px);letter-spacing:.12em;text-transform:uppercase;opacity:.7}
+.num{font:700 clamp(40px,24vw,96px)/1 "Fraunces","Playfair Display",Georgia,serif;color:#e0457f;font-variant-numeric:tabular-nums;margin:.08em 0}
+.abajo{font-size:clamp(12px,4.6vw,18px)}
+.reloj{margin-top:.5em;font-size:clamp(11px,4vw,15px);opacity:.75;font-variant-numeric:tabular-nums}
+.amo{margin-top:.35em;font:600 clamp(16px,6.5vw,26px) "Caveat","Dancing Script",cursive;color:#c2366d}
+</style></head><body>
+<div class="c">
+  <div class="arriba">desde el 23 · 08 · 2025</div>
+  <div class="num" aria-live="polite">0</div>
+  <div class="abajo">días contigo</div>
+  <div class="reloj"></div>
+  <div class="amo">y cada uno te amo más</div>
+</div>
+<script>
+(function () {
+  // Cambia la fecha aquí (año, mes, día):
+  const DESDE = new Date(2025, 7, 23, 0, 0, 0);
+  const num = document.querySelector(".num"), reloj = document.querySelector(".reloj");
+  const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const dias = () => Math.max(0, Math.floor((Date.now() - DESDE) / 864e5));
+  let mostrado = quieto ? dias() : 0;
+  function contar() {
+    const meta = dias();
+    if (mostrado < meta) { mostrado += Math.max(1, Math.round((meta - mostrado) / 8)); if (mostrado > meta) mostrado = meta; requestAnimationFrame(contar); }
+    num.textContent = mostrado.toLocaleString("es");
+  }
+  function tic() {
+    const ms = Math.max(0, Date.now() - DESDE), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60, s = Math.floor(ms / 1e3) % 60;
+    reloj.textContent = `y ${h} h ${String(m).padStart(2, "0")} min ${String(s).padStart(2, "0")} s`;
+    if (mostrado === dias()) num.textContent = dias().toLocaleString("es");
+  }
+  contar(); tic(); setInterval(tic, 1000);
+})();
+</script>
+</body></html>

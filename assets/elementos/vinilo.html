@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Vinilo</title>
+<meta name="tamaño" content="320x320">
+<meta name="descripcion" content="Un disco de vinilo que gira; tócalo para parar o seguir (el brazo se mueve)">
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none}
+body{display:grid;place-items:center;cursor:pointer}
+.base{position:relative;width:88%;aspect-ratio:1}
+.disco{position:absolute;inset:4%;border-radius:50%;background:radial-gradient(circle,#e8457f 0 16%,#c2366d 16.5% 17.5%,#111 18%),repeating-radial-gradient(circle,#161616 0 1.2px,#222 1.6px 2.6px);box-shadow:0 12px 28px rgba(0,0,0,.35),inset 0 0 0 3px #0b0b0b}
+.disco::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 20deg,transparent 0 12%,rgba(255,255,255,.14) 16%,transparent 22% 58%,rgba(255,255,255,.1) 62%,transparent 68%)}
+.etiqueta{position:absolute;inset:34%;border-radius:50%;display:grid;place-items:center;text-align:center;color:#fff3f8;font:600 clamp(8px,3.4vw,14px)/1.15 "Jost",system-ui,sans-serif;letter-spacing:.04em}
+.etiqueta::after{content:"";position:absolute;width:9%;height:9%;border-radius:50%;background:#1a1a1a}
+.brazo{position:absolute;right:2%;top:2%;width:44%;height:60%;transform-origin:82% 12%;transition:transform .9s cubic-bezier(.3,1.3,.5,1);transform:rotate(26deg)}
+.brazo svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 4px 4px rgba(0,0,0,.3))}
+.parado .brazo{transform:rotate(0deg)}
+@media (prefers-reduced-motion:reduce){.brazo{transition:none}}
+</style></head><body>
+<div class="base" role="button" aria-label="Vinilo: tocar para parar o seguir">
+  <div class="disco"><div class="etiqueta">nuestra<br>canción</div></div>
+  <div class="brazo"><svg viewBox="0 0 100 130"><circle cx="82" cy="16" r="12" fill="#d9d4cf" stroke="#9a948e" stroke-width="2"/><path d="M82 16 L70 90 L52 112" fill="none" stroke="#cfc9c3" stroke-width="5" stroke-linecap="round"/><rect x="40" y="106" width="20" height="12" rx="3" transform="rotate(35 50 112)" fill="#3b3b3b"/></svg></div>
+</div>
+<script>
+(function () {
+  const base = document.querySelector(".base"), disco = document.querySelector(".disco");
+  const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const giro = disco.animate([{ transform: "rotate(0)" }, { transform: "rotate(360deg)" }], { duration: 1800, iterations: Infinity });
+  let on = !quieto, vel = on ? 1 : 0, raf = 0;
+  if (!on) { giro.playbackRate = 0; base.classList.add("parado"); }
+  // Frena y arranca de a poco, como un tocadiscos de verdad.
+  function rampa() { const meta = on ? 1 : 0; vel += (meta - vel) * 0.06; if (Math.abs(meta - vel) < 0.01) vel = meta; giro.playbackRate = vel; if (vel !== meta) raf = requestAnimationFrame(rampa); }
+  addEventListener("pointerdown", () => { on = !on; base.classList.toggle("parado", !on); cancelAnimationFrame(raf); raf = requestAnimationFrame(rampa); });
+})();
+</script>
+</body></html>

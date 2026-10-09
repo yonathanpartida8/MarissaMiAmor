@@ -17,13 +17,13 @@ import { rutaAUrl } from "../../assets/biblioteca.js";
 
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 export const CATEGORIAS = [
-  ["todo", "Todo", "biblioteca"], ["botones", "Botones", "boton"], ["marcos", "Marcos", "marco"], ["tarjetas", "Tarjetas", "tarjeta"],
+  ["todo", "Todo", "biblioteca"], ["elementos", "Elementos", "estrella"], ["botones", "Botones", "boton"], ["marcos", "Marcos", "marco"], ["tarjetas", "Tarjetas", "tarjeta"],
   ["hojas", "Hojas", "dibujo"], ["dibujos", "Dibujos", "lapiz"], ["efectos", "Efectos", "efectos"], ["animaciones", "Animaciones", "animar"],
   ["reproductores", "Reproductores", "play"], ["retratos", "Retratos", "polaroid"], ["gifs", "GIFs", "gif"], ["stickers", "Stickers", "sticker"],
   ["decoraciones", "Decoraciones", "estrella"], ["otros", "Otros", "puntos"],
 ];
 const CARPETAS = {
-  botones: "botones", buttons: "botones", marcos: "marcos", frames: "marcos", tarjetas: "tarjetas", cards: "tarjetas", hojas: "hojas",
+  elementos: "elementos", botones: "botones", buttons: "botones", marcos: "marcos", frames: "marcos", tarjetas: "tarjetas", cards: "tarjetas", hojas: "hojas",
   dibujos: "dibujos", "efectos-animados": "efectos", effects: "efectos", efectos: "efectos", animaciones: "animaciones", animations: "animaciones",
   reproductores: "reproductores", players: "reproductores", retratos: "retratos", portraits: "retratos", gifs: "gifs", stickers: "stickers",
   decoraciones: "decoraciones", decorations: "decoraciones", img: "decoraciones", imagenes: "decoraciones",
@@ -53,7 +53,14 @@ export const BIBLIOTECA = {
     const chips = el("div.ed-bib-chips", { role: "tablist" });
     const buscar = el("input.ed-txt.ed-buscar", { type: "search", placeholder: "Buscar recursos…", enterkeyhint: "search" });
     const rej = el("div.ed-bib");
-    c.append(chips, buscar, rej);
+    // Fondo de las vistas previas: oscuro (se notan brillos y detalles), cuadritos o claro.
+    const FONDOS = [["oscuro", "Oscuro"], ["cuadros", "Cuadritos"], ["claro", "Claro"]];
+    let fondo = "oscuro";
+    try { fondo = localStorage.getItem("editordev:bibFondo") || "oscuro"; } catch (e) { /* nada */ }
+    const ponerFondo = (k) => { fondo = k; document.body.dataset.bibFondo = k; try { localStorage.setItem("editordev:bibFondo", k); } catch (e) { /* nada */ } for (const b of selFondo.children) b.classList.toggle("on", b.dataset.k === k); };
+    const selFondo = el("div.ed-seg.ed-bib-fondo", { role: "radiogroup", "aria-label": "Fondo de las vistas previas" }, FONDOS.map(([k, t]) => el("button", { type: "button", text: t, dataset: { k }, onClick: () => ponerFondo(k) })));
+    ponerFondo(fondo);
+    c.append(chips, el("div.ed-bib-barra", {}, [buscar, selFondo]), rej);
     // Las vistas previas vivas: sólo mientras se ven.
     const io = new IntersectionObserver((xs) => {
       for (const x of xs) {

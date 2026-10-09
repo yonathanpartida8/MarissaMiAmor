@@ -226,7 +226,7 @@
         for (const e of pag.els || []) {
           if (e.tipo !== "video" || !e.video || RT.modoVideo(e.video) !== "auto" || !RT.inicioDe(e)) continue;
           const v = nueva.nodos.get(e.id) && nueva.nodos.get(e.id).querySelector("video");
-          if (v) this._relojes.push(setTimeout(() => v.play().catch(() => {}), RT.inicioDe(e)));
+          if (v) this._relojes.push(setTimeout(() => RT.reproducirVideo(v), RT.inicioDe(e)));
         }
         // Los sonidos «al aparecer», cuando empieza su entrada.
         for (const e of pag.els || []) {
