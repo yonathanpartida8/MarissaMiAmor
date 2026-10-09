@@ -123,8 +123,11 @@ function categorias(app, ids, leer, v) {
  * solito) y no se guarda hasta «Usar»; «Atrás» lo deja como estaba. La hojita
  * es baja y la hoja se corre para que el elemento quede a la vista.
  */
+let previaAbierta = null;
 export function previaToque(app, ids, cambio, nombre, sobre) {
   const E = app.estado;
+  // Tocar otra ficha con la vista previa abierta: la anterior se va sin guardar.
+  previaAbierta?.cerrar?.(null);
   ids = ids.filter((id) => E.el(id));
   if (!ids.length) return;
   const t = { color: "#ff5c93", cantidad: 1, ...(E.el(ids[0]).toque || {}), ...cambio };
@@ -139,7 +142,7 @@ export function previaToque(app, ids, cambio, nombre, sobre) {
     return s;
   };
   const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let reloj = 0;
+  let reloj = 0, mio = null;
   pintarTxt();
   hojita({
     titulo: nombre ? "Vista previa · " + nombre : "Vista previa",
@@ -157,6 +160,7 @@ export function previaToque(app, ids, cambio, nombre, sobre) {
     ],
     acciones: [[I("volver", "Atrás"), null], [I("ok", "Usar"), "usar", "primario"]],
     alAbrir: (panel) => {
+      previaAbierta = mio = panel;
       v.refrescar();
       requestAnimationFrame(() => {
         if (matchMedia("(max-width: 1023px)").matches) app.lienzo.mostrarSeleccion?.(panel.offsetHeight + 12);
@@ -167,6 +171,7 @@ export function previaToque(app, ids, cambio, nombre, sobre) {
     },
   }).then((r) => {
     clearInterval(reloj);
+    if (previaAbierta === mio) previaAbierta = null;
     if (r !== "usar") return;
     const fin = { ...t };
     for (const k of Object.keys(fin)) if (fin[k] === undefined || fin[k] === "") delete fin[k];
