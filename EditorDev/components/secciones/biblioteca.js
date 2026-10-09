@@ -28,7 +28,12 @@ const CARPETAS = {
   reproductores: "reproductores", players: "reproductores", retratos: "retratos", portraits: "retratos", gifs: "gifs", stickers: "stickers",
   decoraciones: "decoraciones", decorations: "decoraciones", img: "decoraciones", imagenes: "decoraciones",
 };
-const categoriaDe = (it) => CARPETAS[String(it.id).split("/")[0].toLowerCase()] || "otros";
+// La carpeta se reconoce aunque tenga mayúsculas, espacios o tildes («Efectos Animados»).
+const normCarpeta = (c) => String(c).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/[\s_]+/g, "-");
+Object.assign(CARPETAS, { "efectos-animado": "efectos", "animated-effects": "efectos", musica: "otros", reproductor: "reproductores", retrato: "retratos", marco: "marcos", tarjeta: "tarjetas", boton: "botones", dibujo: "dibujos", hoja: "hojas", elemento: "elementos" });
+const categoriaDe = (it) => CARPETAS[normCarpeta(String(it.id).split("/")[0])] || "otros";
+// «Nuevo»: lo que llegó en los últimos 10 días (o se acaba de dejar en la carpeta).
+const esNuevo = (it) => it.nuevo || (it.fecha && Date.now() - it.fecha < 10 * 864e5);
 const nombreCat = (k) => CATEGORIAS.find((c) => c[0] === k)?.[1] || "Otros";
 let elegida = "todo";
 
@@ -100,7 +105,7 @@ export const BIBLIOTECA = {
       else { caja._it = it; io.observe(caja); }
       const t = el("div.ed-bib-t", {}, [
         el("button.ed-bib-ver", { type: "button", title: "Ver en grande y probar", "aria-label": `Ver ${it.nombre}`, onClick: () => previa(it) }, [caja]),
-        el("b", { text: it.nombre }),
+        el("b", {}, [it.nombre, esNuevo(it) ? el("i.ed-bib-nuevo", { text: "Nuevo" }) : null].filter(Boolean)),
         el("small", { text: nombreCat(categoriaDe(it)) }),
         it.descripcion ? el("p", { text: it.descripcion }) : null,
         el("button.ed-btn.chico.primario.ed-bib-poner", { type: "button", html: I("mas", "Insertar"), onClick: (e) => insertar(it, e.currentTarget.closest(".ed-bib-t")) }),
@@ -110,6 +115,8 @@ export const BIBLIOTECA = {
     catalogo().then((cat) => {
       const todos = [];
       for (const g of cat.categorias) for (const it of g.items) if (it.tipo === "componente" || it.tipo === "imagen") todos.push(it);
+      // Lo más reciente arriba (lo recién dejado primero); a igual fecha, el orden de siempre.
+      todos.sort((a, b) => (b.nuevo ? 1 : 0) - (a.nuevo ? 1 : 0) || (b.fecha || 0) - (a.fecha || 0));
       const cuenta = {};
       for (const it of todos) cuenta[categoriaDe(it)] = (cuenta[categoriaDe(it)] || 0) + 1;
       const pintarChips = () => {

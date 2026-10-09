@@ -34,6 +34,7 @@
  */
 import { readdirSync, existsSync, statSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { execSync } from "node:child_process";
 
 const IMG = /\.(png|jpe?g|webp|gif|svg|avif)$/i;
 const AUD = /\.(mp3|m4a|ogg|wav|aac)$/i;
@@ -56,7 +57,15 @@ const bonito = (s) => s.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/
 // En assets/elementos/ el nombre sale del archivo (rayos.html → «Rayos»); el
 // <title> sólo se usa si dice lo mismo con tildes («Corazón neón»).
 const sinTilde = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-const nombreDe = (cat, f, titulo) => (cat === "elementos" && sinTilde(titulo) !== sinTilde(bonito(f)) ? bonito(f) : titulo || bonito(f));
+// Un <title> genérico («Document», «Untitled», «index»…) no es un nombre: se usa el del archivo.
+const GENERICO = /^(document|documento|untitled|sin t[ií]tulo|new page|nueva p[aá]gina|p[aá]gina|page|index|home|inicio|test|prueba|html|html5|my page|mi p[aá]gina|title|t[ií]tulo|web|website)\s*\d*$/i;
+const nombreDe = (cat, f, titulo) => {
+  const archivo = bonito(f.split("/").pop());
+  if (!titulo || titulo.length < 2 || GENERICO.test(titulo.trim())) return archivo;
+  return cat === "elementos" && sinTilde(titulo) !== sinTilde(archivo) ? archivo : titulo;
+};
+// «Efectos Animados», «efectos_animados», «Botónes» → la misma carpeta de siempre.
+const normCat = (c) => sinTilde(c).replace(/[\s_]+/g, "-");
 const orden = (a, b) => a.localeCompare(b, "es", { numeric: true });
 const esDir = (p) => { try { return statSync(p).isDirectory(); } catch (e) { return false; } };
 
@@ -165,49 +174,90 @@ function extrasDe(raiz) {
   return ex;
 }
 
+/** Fecha en que llegó cada archivo: la del catálogo anterior (estable), la de git
+ *  (cuándo se añadió) o, si es nuevo de verdad, ahora. Así lo nuevo sale primero. */
+function fechas(RAIZ) {
+  const previas = new Map();
+  try {
+    const t = readFileSync(join(RAIZ, "assets", "catalogo.js"), "utf8");
+    const json = JSON.parse(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1));
+    for (const g of json.categorias || []) for (const it of g.items || []) if (it.fecha) previas.set(it.id, it.fecha);
+  } catch (e) { /* primera vez */ }
+  const git = new Map();
+  try {
+    const log = execSync("git log --diff-filter=A --format=@%ct --name-only -- assets", { cwd: RAIZ, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 32 << 20 });
+    let ts = 0;
+    for (const l of log.split("\n")) {
+      if (l.startsWith("@")) ts = +l.slice(1) * 1000;
+      else if (l && !git.has(l)) git.set(l, ts);
+    }
+  } catch (e) { /* sin git */ }
+  return { previas, git, habia: previas.size > 0 };
+}
+
 export function catalogo(RAIZ) {
   const raiz = join(RAIZ, "assets");
   const categorias = [];
+  const F = fechas(RAIZ);
+  const fechaDe = (id, ruta, abs) => F.previas.get(id) || F.git.get(ruta) || (F.habia ? Date.now() : Math.round(statSync(abs).mtimeMs));
+  const SALTAR = (f) => f.startsWith(".") || f.startsWith("_") || /^(l[ée]eme|readme)\.(md|txt)$/i.test(f) || PREVIEW.test(f) || /^asset\.json$/i.test(f);
   if (existsSync(raiz)) {
-    const cats = readdirSync(raiz).filter((c) => !c.startsWith(".") && !c.startsWith("_") && !SOLO_EXTRAS.has(c) && esDir(join(raiz, c)));
-    cats.sort((a, b) => ((ORDEN.indexOf(a) + 1 || 99) - (ORDEN.indexOf(b) + 1 || 99)) || orden(a, b));
+    const cats = readdirSync(raiz).filter((c) => !c.startsWith(".") && !c.startsWith("_") && !SOLO_EXTRAS.has(normCat(c)) && esDir(join(raiz, c)));
+    cats.sort((a, b) => ((ORDEN.indexOf(normCat(a)) + 1 || 99) - (ORDEN.indexOf(normCat(b)) + 1 || 99)) || orden(a, b));
     for (const cat of cats) {
       const items = [];
-      for (const f of readdirSync(join(raiz, cat)).sort(orden)) {
-        if (f.startsWith(".") || /^(léeme|leeme|readme)\.md$/i.test(f)) continue;
-        const p = join(raiz, cat, f);
-        const ruta = `assets/${cat}/${f}`;
-        if (esDir(p)) {
-          if (!existsSync(join(p, "index.html"))) continue;
-          // Una animación de assets/animaciones/ no es una pieza (sí lo es si sólo trae index.html).
-          if (cat === "animaciones" && readdirSync(p).some((a) => DEF.animaciones.test(a))) continue;
-          let meta = {};
-          if (existsSync(join(p, "asset.json"))) { try { meta = JSON.parse(readFileSync(join(p, "asset.json"), "utf8")); } catch (e) { meta = { error: "asset.json no se pudo leer" }; } }
-          const archivos = todos(p);
-          const peso = archivos.reduce((s, a) => s + statSync(join(p, a)).size, 0);
-          const prev = archivos.find((a) => PREVIEW.test(a));
-          items.push({
-            tipo: "componente", id: `${cat}/${f}`, nombre: meta.nombre || bonito(f), descripcion: meta.descripcion || "",
-            ruta: ruta + "/", entrada: "index.html", ancho: meta.ancho || null, alto: meta.alto || null,
-            parametros: meta.parametros || [], decorativo: !!meta.decorativo, aislado: !!meta.aislado,
-            miniatura: prev ? `${ruta}/${prev}` : null, archivos, peso,
-          });
-        } else if (cat === "efectos" && /\.json$/i.test(f)) {
-          continue; // un filtro listo (va en extras.efectos)
-        } else if (/\.html?$/i.test(f)) {
-          const m = metaHtml(p);
-          items.push({ tipo: "componente", id: `${cat}/${f}`, nombre: nombreDe(cat, f, m.nombre), descripcion: m.descripcion || "", ruta: `assets/${cat}/`, entrada: f, ancho: m.ancho || null, alto: m.alto || null, parametros: [], decorativo: !!m.decorativo, miniatura: null, archivos: [f], peso: statSync(p).size, suelto: true });
-        } else if (IMG.test(f)) {
-          items.push({ tipo: "imagen", id: `${cat}/${f}`, nombre: bonito(f), ruta, ...medida(p), peso: statSync(p).size });
-        } else if (AUD.test(f)) {
-          items.push({ tipo: "audio", id: `${cat}/${f}`, nombre: bonito(f), ruta, peso: statSync(p).size });
-        } else if (MOD.test(f)) {
-          items.push({ tipo: "modelo", id: `${cat}/${f}`, nombre: bonito(f), ruta, peso: statSync(p).size });
+      const nc = normCat(cat);
+      // Un componente con carpeta: index.html, o el ÚNICO .html de la carpeta (con su css/js/imágenes al lado).
+      const componente = (p, rel, entrada) => {
+        let meta = {};
+        if (existsSync(join(p, "asset.json"))) { try { meta = JSON.parse(readFileSync(join(p, "asset.json"), "utf8")); } catch (e) { meta = { error: "asset.json no se pudo leer" }; } }
+        const m = entrada === "index.html" ? {} : metaHtml(join(p, entrada));
+        const archivos = todos(p);
+        const peso = archivos.reduce((s, a) => s + statSync(join(p, a)).size, 0);
+        const prev = archivos.find((a) => PREVIEW.test(a));
+        const id = `${cat}/${rel}`, ruta = `assets/${cat}/${rel}`;
+        items.push({
+          tipo: "componente", id, nombre: meta.nombre || (entrada === "index.html" ? bonito(rel.split("/").pop()) : nombreDe(nc, entrada, m.nombre)), descripcion: meta.descripcion || m.descripcion || "",
+          ruta: ruta + "/", entrada, ancho: meta.ancho || m.ancho || null, alto: meta.alto || m.alto || null,
+          parametros: meta.parametros || [], decorativo: !!(meta.decorativo || m.decorativo), aislado: !!meta.aislado,
+          miniatura: prev ? `${ruta}/${prev}` : null, archivos, peso, fecha: fechaDe(id, `${ruta}/${entrada}`, join(p, entrada)),
+        });
+      };
+      // Recorre la carpeta de la categoría y sus subcarpetas (para ordenar en grupos).
+      const recorrer = (dir, rel) => {
+        for (const f of readdirSync(dir).sort(orden)) {
+          if (SALTAR(f)) continue;
+          const p = join(dir, f), r = rel + f;
+          const ruta = `assets/${cat}/${r}`;
+          if (esDir(p)) {
+            const dentro = readdirSync(p).filter((x) => !SALTAR(x));
+            const htmls = dentro.filter((x) => /\.html?$/i.test(x) && !esDir(join(p, x)));
+            // Una animación de assets/animaciones/ no es una pieza (sí lo es si sólo trae index.html).
+            if (nc === "animaciones" && dentro.some((a) => DEF.animaciones.test(a))) continue;
+            if (nc === "efectos" && existsSync(join(p, "efecto.json")) && !htmls.length) continue;
+            if (htmls.some((x) => x.toLowerCase() === "index.html")) componente(p, r, htmls.find((x) => x.toLowerCase() === "index.html"));
+            else if (htmls.length === 1) componente(p, r, htmls[0]);
+            else recorrer(p, r + "/"); // varios .html sueltos (o subcarpetas): cada uno es una pieza
+          } else if (nc === "efectos" && /\.json$/i.test(f)) {
+            continue; // un filtro listo (va en extras.efectos)
+          } else if (/\.html?$/i.test(f)) {
+            const m = metaHtml(p), id = `${cat}/${r}`;
+            items.push({ tipo: "componente", id, nombre: nombreDe(nc, f, m.nombre), descripcion: m.descripcion || "", ruta: `assets/${cat}/${rel}`, entrada: f, ancho: m.ancho || null, alto: m.alto || null, parametros: [], decorativo: !!m.decorativo, miniatura: null, archivos: [f], peso: statSync(p).size, suelto: true, fecha: fechaDe(id, ruta, p) });
+          } else if (IMG.test(f)) {
+            items.push({ tipo: "imagen", id: `${cat}/${r}`, nombre: bonito(f), ruta, ...medida(p), peso: statSync(p).size, fecha: fechaDe(`${cat}/${r}`, ruta, p) });
+          } else if (AUD.test(f)) {
+            items.push({ tipo: "audio", id: `${cat}/${r}`, nombre: bonito(f), ruta, peso: statSync(p).size, fecha: fechaDe(`${cat}/${r}`, ruta, p) });
+          } else if (MOD.test(f)) {
+            items.push({ tipo: "modelo", id: `${cat}/${r}`, nombre: bonito(f), ruta, peso: statSync(p).size, fecha: fechaDe(`${cat}/${r}`, ruta, p) });
+          }
         }
-      }
-      const nombre = NOMBRES[cat.toLowerCase()] || bonito(cat);
+      };
+      recorrer(join(raiz, cat), "");
+      // Lo más nuevo primero (y a igual fecha, por nombre).
+      items.sort((a, b) => (b.fecha || 0) - (a.fecha || 0) || orden(a.nombre, b.nombre));
+      const nombre = NOMBRES[nc] || bonito(cat);
       const ya = categorias.find((g) => g.nombre === nombre); // «botones» y «buttons» van juntas
-      if (ya) ya.items.push(...items);
+      if (ya) { ya.items.push(...items); ya.items.sort((a, b) => (b.fecha || 0) - (a.fecha || 0) || orden(a.nombre, b.nombre)); }
       else if (items.length) categorias.push({ id: cat, nombre, items });
     }
   }

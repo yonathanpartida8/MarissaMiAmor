@@ -35,22 +35,46 @@ export function metaHtml(t) {
   return r;
 }
 
-/** Los .html sueltos que todavía no están en el catálogo (sólo con servidor local). */
+const GENERICO = /^(document|documento|untitled|sin t[ií]tulo|new page|nueva p[aá]gina|p[aá]gina|page|index|home|inicio|test|prueba|html|html5|my page|mi p[aá]gina|title|t[ií]tulo|web|website)\s*\d*$/i;
+/** El nombre de una pieza: su <title> si dice algo, si no el del archivo (igual que el catálogo). */
+export function nombrePieza(cat, archivo, titulo) {
+  const deArchivo = bonito(archivo.split("/").pop());
+  if (!titulo || titulo.length < 2 || GENERICO.test(titulo.trim())) return deArchivo;
+  return normCat(cat) === "elementos" && sinTilde(titulo) !== sinTilde(deArchivo) ? deArchivo : titulo;
+}
+export const normCat = (c) => sinTilde(c).replace(/[\s_]+/g, "-");
+
+/** Lo que se acaba de dejar en assets/ y todavía no está en el catálogo (sólo con
+ *  servidor local, que sabe listar carpetas): también dentro de subcarpetas.
+ *  Sale PRIMERO en su categoría, marcado como nuevo. */
 async function recienDejados(c) {
   const dirs = await listar("assets/");
   if (!dirs) return;
-  for (const d of dirs.filter((h) => h.endsWith("/") && !SOLO_EXTRAS.test(h.slice(0, -1)))) {
+  const ya = new Set();
+  for (const g of c.categorias) for (const it of g.items) ya.add((it.ruta || "") + (it.entrada || ""));
+  const leerMeta = async (ruta) => { try { return metaHtml((await (await fetch(rutaAUrl(ruta), { cache: "no-store" })).text()).slice(0, 6000)); } catch (e) { return {}; } };
+  for (const d of dirs.filter((h) => h.endsWith("/") && !h.startsWith("_") && !SOLO_EXTRAS.test(normCat(h.slice(0, -1))))) {
     const id = d.slice(0, -1);
-    const fs = ((await listar(`assets/${d}`)) || []).filter((f) => /\.html?$/i.test(f));
-    if (!fs.length) continue;
-    let g = c.categorias.find((x) => x.id === id);
-    for (const f of fs) {
-      if (g?.items.some((it) => it.id === `${id}/${f}`)) continue;
-      let m = {};
-      try { m = metaHtml((await (await fetch(rutaAUrl(`assets/${d}${f}`), { cache: "no-store" })).text()).slice(0, 6000)); } catch (e) { /* nada */ }
-      if (!g) { g = { id, nombre: bonito(id), items: [] }; c.categorias.push(g); }
-      g.items.push({ tipo: "componente", id: `${id}/${f}`, nombre: id === "elementos" && sinTilde(m.nombre) !== sinTilde(bonito(f)) ? bonito(f) : m.nombre || bonito(f), descripcion: "", ruta: `assets/${d}`, entrada: f, ancho: m.ancho || null, alto: m.alto || null, parametros: [], miniatura: null, archivos: [f], peso: 0, suelto: true });
+    const nuevos = [];
+    const pieza = async (dir, entrada, carpeta) => {
+      const ruta = `assets/${d}${dir}`;
+      if (ya.has(ruta + entrada)) return;
+      const m = await leerMeta(ruta + entrada);
+      const rel = carpeta ? dir.replace(/\/$/, "") : dir + entrada;
+      nuevos.push({ tipo: "componente", id: `${id}/${rel}`, nombre: m.nombre && !GENERICO.test(m.nombre) ? m.nombre : nombrePieza(id, carpeta ? rel : entrada, m.nombre), descripcion: "", ruta, entrada, ancho: m.ancho || null, alto: m.alto || null, parametros: [], miniatura: null, archivos: [entrada], peso: 0, suelto: !carpeta, fecha: Date.now(), nuevo: true });
+    };
+    const lista = (await listar(`assets/${d}`)) || [];
+    for (const f of lista.filter((x) => /\.html?$/i.test(x))) await pieza("", f, false);
+    for (const sub of lista.filter((x) => x.endsWith("/") && !x.startsWith("_") && !x.startsWith("."))) {
+      const dentro = ((await listar(`assets/${d}${sub}`)) || []).filter((x) => /\.html?$/i.test(x));
+      const idx = dentro.find((x) => x.toLowerCase() === "index.html");
+      if (idx || dentro.length === 1) await pieza(sub, idx || dentro[0], true);
+      else for (const f of dentro) await pieza(sub, f, false);
     }
+    if (!nuevos.length) continue;
+    let g = c.categorias.find((x) => normCat(x.id) === normCat(id));
+    if (!g) { g = { id, nombre: bonito(id), items: [] }; c.categorias.push(g); }
+    g.items.unshift(...nuevos);
   }
 }
 

@@ -22,7 +22,8 @@ export default {
       "aurora.html"
      ],
      "peso": 2582,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791530703000
     },
     {
      "tipo": "componente",
@@ -40,7 +41,8 @@ export default {
       "contador-de-dias.html"
      ],
      "peso": 2485,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791530703000
     },
     {
      "tipo": "componente",
@@ -58,7 +60,8 @@ export default {
       "corazon-neon.html"
      ],
      "peso": 2405,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791530703000
     },
     {
      "tipo": "componente",
@@ -76,7 +79,8 @@ export default {
       "hilo-rojo.html"
      ],
      "peso": 4018,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791530703000
     },
     {
      "tipo": "componente",
@@ -94,7 +98,8 @@ export default {
       "lluvia-de-petalos.html"
      ],
      "peso": 2203,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791530703000
     },
     {
      "tipo": "componente",
@@ -112,7 +117,8 @@ export default {
       "luciernagas.html"
      ],
      "peso": 2813,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791530703000
     },
     {
      "tipo": "componente",
@@ -130,7 +136,8 @@ export default {
       "mensajito.html"
      ],
      "peso": 2984,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791530703000
     },
     {
      "tipo": "componente",
@@ -148,7 +155,8 @@ export default {
       "rayos.html"
      ],
      "peso": 3588,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791530703000
     },
     {
      "tipo": "componente",
@@ -166,7 +174,8 @@ export default {
       "vinilo.html"
      ],
      "peso": 3034,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791530703000
     }
    ]
   },
@@ -190,7 +199,8 @@ export default {
       "boton-brillo.html"
      ],
      "peso": 1182,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -208,7 +218,8 @@ export default {
       "boton-corazon-latido.html"
      ],
      "peso": 1396,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -226,7 +237,8 @@ export default {
       "boton-crayon.html"
      ],
      "peso": 1008,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -244,7 +256,8 @@ export default {
       "boton-retro.html"
      ],
      "peso": 903,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -262,7 +275,8 @@ export default {
       "boton-te-amo.html"
      ],
      "peso": 1603,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791305608000
     },
     {
      "tipo": "componente",
@@ -320,7 +334,8 @@ export default {
       "script.js",
       "style.css"
      ],
-     "peso": 4586
+     "peso": 4586,
+     "fecha": 1791236534000
     }
    ]
   },
@@ -344,7 +359,8 @@ export default {
       "marco-de-corazones.html"
      ],
      "peso": 970,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -362,7 +378,8 @@ export default {
       "marco-dorado.html"
      ],
      "peso": 1106,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791305608000
     },
     {
      "tipo": "componente",
@@ -393,7 +410,8 @@ export default {
       "asset.json",
       "index.html"
      ],
-     "peso": 2246
+     "peso": 2246,
+     "fecha": 1791236534000
     }
    ]
   },
@@ -417,7 +435,8 @@ export default {
       "cartita-que-se-abre.html"
      ],
      "peso": 1839,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -435,7 +454,8 @@ export default {
       "tarjeta-que-se-voltea.html"
      ],
      "peso": 1413,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791305608000
     }
    ]
   },
@@ -459,7 +479,8 @@ export default {
       "fondo-de-hojas.html"
      ],
      "peso": 1027,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -477,7 +498,8 @@ export default {
       "guirnalda-de-hojas.html"
      ],
      "peso": 1470,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -495,7 +517,8 @@ export default {
       "hoja-con-corazon.html"
      ],
      "peso": 960,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -513,7 +536,8 @@ export default {
       "hoja-de-cuaderno.html"
      ],
      "peso": 1173,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -531,7 +555,8 @@ export default {
       "hoja-grande.html"
      ],
      "peso": 1567,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -549,25 +574,8 @@ export default {
       "hojas-otonales-cayendo.html"
      ],
      "peso": 1658,
-     "suelto": true
-    },
-    {
-     "tipo": "componente",
-     "id": "hojas/hojas-rosas-flotando.html",
-     "nombre": "Hojitas rosas flotando",
-     "descripcion": "Hojitas en forma de corazón que suben despacito",
-     "ruta": "assets/hojas/",
-     "entrada": "hojas-rosas-flotando.html",
-     "ancho": 360,
-     "alto": 480,
-     "parametros": [],
-     "decorativo": true,
-     "miniatura": null,
-     "archivos": [
-      "hojas-rosas-flotando.html"
-     ],
-     "peso": 1557,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -585,7 +593,27 @@ export default {
       "hojitas-pequenas.html"
      ],
      "peso": 1320,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
+    },
+    {
+     "tipo": "componente",
+     "id": "hojas/hojas-rosas-flotando.html",
+     "nombre": "Hojitas rosas flotando",
+     "descripcion": "Hojitas en forma de corazón que suben despacito",
+     "ruta": "assets/hojas/",
+     "entrada": "hojas-rosas-flotando.html",
+     "ancho": 360,
+     "alto": 480,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "hojas-rosas-flotando.html"
+     ],
+     "peso": 1557,
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -603,7 +631,8 @@ export default {
       "lluvia-de-hojas-verdes.html"
      ],
      "peso": 1648,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -621,7 +650,8 @@ export default {
       "rama-con-hojas.html"
      ],
      "peso": 1441,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -639,7 +669,8 @@ export default {
       "tarjeta-de-otono.html"
      ],
      "peso": 1571,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     }
    ]
   },
@@ -663,7 +694,8 @@ export default {
       "corazon-que-se-dibuja.html"
      ],
      "peso": 1046,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791305608000
     }
    ]
   },
@@ -687,7 +719,8 @@ export default {
       "brillitos.html"
      ],
      "peso": 1090,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -705,7 +738,8 @@ export default {
       "burbujas.html"
      ],
      "peso": 1029,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -723,25 +757,8 @@ export default {
       "confeti.html"
      ],
      "peso": 1548,
-     "suelto": true
-    },
-    {
-     "tipo": "componente",
-     "id": "efectos-animados/corazones-que-suben.html",
-     "nombre": "Corazones que suben",
-     "descripcion": "",
-     "ruta": "assets/efectos-animados/",
-     "entrada": "corazones-que-suben.html",
-     "ancho": 360,
-     "alto": 480,
-     "parametros": [],
-     "decorativo": true,
-     "miniatura": null,
-     "archivos": [
-      "corazones-que-suben.html"
-     ],
-     "peso": 1354,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -759,7 +776,8 @@ export default {
       "estrellas-fugaces.html"
      ],
      "peso": 988,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -777,7 +795,8 @@ export default {
       "mariposas.html"
      ],
      "peso": 1494,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -795,25 +814,8 @@ export default {
       "nubes.html"
      ],
      "peso": 1099,
-     "suelto": true
-    },
-    {
-     "tipo": "componente",
-     "id": "efectos-animados/soleado.html",
-     "nombre": "Soleado",
-     "descripcion": "Un solecito que brilla y gira despacito",
-     "ruta": "assets/efectos-animados/",
-     "entrada": "soleado.html",
-     "ancho": 320,
-     "alto": 320,
-     "parametros": [],
-     "decorativo": true,
-     "miniatura": null,
-     "archivos": [
-      "soleado.html"
-     ],
-     "peso": 1978,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
     },
     {
      "tipo": "componente",
@@ -831,7 +833,46 @@ export default {
       "texto-te-amo.html"
      ],
      "peso": 780,
-     "suelto": true
+     "suelto": true,
+     "fecha": 1791358477000
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/corazones-que-suben.html",
+     "nombre": "Corazones que suben",
+     "descripcion": "",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "corazones-que-suben.html",
+     "ancho": 360,
+     "alto": 480,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "corazones-que-suben.html"
+     ],
+     "peso": 1354,
+     "suelto": true,
+     "fecha": 1791305608000
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/soleado.html",
+     "nombre": "Soleado",
+     "descripcion": "Un solecito que brilla y gira despacito",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "soleado.html",
+     "ancho": 320,
+     "alto": 320,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "soleado.html"
+     ],
+     "peso": 1978,
+     "suelto": true,
+     "fecha": 1791305608000
     }
    ]
   },
@@ -846,7 +887,8 @@ export default {
      "ruta": "assets/decoraciones/brillo.svg",
      "ancho": 100,
      "alto": 100,
-     "peso": 324
+     "peso": 324,
+     "fecha": 1791358477000
     },
     {
      "tipo": "imagen",
@@ -855,7 +897,8 @@ export default {
      "ruta": "assets/decoraciones/burbuja-dialogo.svg",
      "ancho": 160,
      "alto": 110,
-     "peso": 262
+     "peso": 262,
+     "fecha": 1791358477000
     },
     {
      "tipo": "imagen",
@@ -864,7 +907,8 @@ export default {
      "ruta": "assets/decoraciones/cartita.svg",
      "ancho": 120,
      "alto": 84,
-     "peso": 339
+     "peso": 339,
+     "fecha": 1791358477000
     },
     {
      "tipo": "imagen",
@@ -873,7 +917,8 @@ export default {
      "ruta": "assets/decoraciones/cinta-washi.svg",
      "ancho": 160,
      "alto": 40,
-     "peso": 395
+     "peso": 395,
+     "fecha": 1791358477000
     },
     {
      "tipo": "imagen",
@@ -882,7 +927,8 @@ export default {
      "ruta": "assets/decoraciones/confeti-estatico.svg",
      "ancho": 120,
      "alto": 120,
-     "peso": 1003
+     "peso": 1003,
+     "fecha": 1791358477000
     },
     {
      "tipo": "imagen",
@@ -891,7 +937,8 @@ export default {
      "ruta": "assets/decoraciones/corazones-dobles.svg",
      "ancho": 120,
      "alto": 90,
-     "peso": 301
+     "peso": 301,
+     "fecha": 1791358477000
     },
     {
      "tipo": "imagen",
@@ -900,7 +947,8 @@ export default {
      "ruta": "assets/decoraciones/estrella-brillante.svg",
      "ancho": 100,
      "alto": 100,
-     "peso": 364
+     "peso": 364,
+     "fecha": 1791358477000
     },
     {
      "tipo": "imagen",
@@ -909,7 +957,8 @@ export default {
      "ruta": "assets/decoraciones/flor-margarita.svg",
      "ancho": 100,
      "alto": 100,
-     "peso": 847
+     "peso": 847,
+     "fecha": 1791358477000
     },
     {
      "tipo": "imagen",
@@ -918,7 +967,8 @@ export default {
      "ruta": "assets/decoraciones/mariposa.svg",
      "ancho": 100,
      "alto": 80,
-     "peso": 497
+     "peso": 497,
+     "fecha": 1791358477000
     },
     {
      "tipo": "imagen",
@@ -927,7 +977,8 @@ export default {
      "ruta": "assets/decoraciones/nube.svg",
      "ancho": 120,
      "alto": 70,
-     "peso": 378
+     "peso": 378,
+     "fecha": 1791358477000
     },
     {
      "tipo": "imagen",
@@ -936,7 +987,8 @@ export default {
      "ruta": "assets/decoraciones/papel-rasgado.svg",
      "ancho": 200,
      "alto": 120,
-     "peso": 305
+     "peso": 305,
+     "fecha": 1791358477000
     },
     {
      "tipo": "imagen",
@@ -945,7 +997,8 @@ export default {
      "ruta": "assets/decoraciones/sello-postal.svg",
      "ancho": 100,
      "alto": 120,
-     "peso": 410
+     "peso": 410,
+     "fecha": 1791358477000
     },
     {
      "tipo": "imagen",
@@ -954,7 +1007,8 @@ export default {
      "ruta": "assets/decorations/corazon-garabato.svg",
      "ancho": 120,
      "alto": 110,
-     "peso": 487
+     "peso": 487,
+     "fecha": 1791236534000
     },
     {
      "tipo": "imagen",
@@ -963,7 +1017,8 @@ export default {
      "ruta": "assets/decorations/estrella-crayon.svg",
      "ancho": 120,
      "alto": 116,
-     "peso": 422
+     "peso": 422,
+     "fecha": 1791236534000
     },
     {
      "tipo": "imagen",
@@ -972,7 +1027,8 @@ export default {
      "ruta": "assets/decorations/flor-crayon.svg",
      "ancho": 120,
      "alto": 140,
-     "peso": 669
+     "peso": 669,
+     "fecha": 1791236534000
     },
     {
      "tipo": "imagen",
@@ -981,7 +1037,8 @@ export default {
      "ruta": "assets/decorations/sello-te-amo.svg",
      "ancho": 140,
      "alto": 140,
-     "peso": 561
+     "peso": 561,
+     "fecha": 1791236534000
     }
    ]
   },
@@ -989,6 +1046,25 @@ export default {
    "id": "players",
    "nombre": "Reproductores",
    "items": [
+    {
+     "tipo": "componente",
+     "id": "reproductores/reproductor-casete.html",
+     "nombre": "Reproductor de casete",
+     "descripcion": "Un casete retro: al tocar ▶ giran las ruedas",
+     "ruta": "assets/reproductores/",
+     "entrada": "reproductor-casete.html",
+     "ancho": 300,
+     "alto": 200,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "reproductor-casete.html"
+     ],
+     "peso": 1747,
+     "suelto": true,
+     "fecha": 1791358477000
+    },
     {
      "tipo": "componente",
      "id": "players/casete",
@@ -1032,25 +1108,8 @@ export default {
       "script.js",
       "style.css"
      ],
-     "peso": 3943
-    },
-    {
-     "tipo": "componente",
-     "id": "reproductores/reproductor-casete.html",
-     "nombre": "Reproductor de casete",
-     "descripcion": "Un casete retro: al tocar ▶ giran las ruedas",
-     "ruta": "assets/reproductores/",
-     "entrada": "reproductor-casete.html",
-     "ancho": 300,
-     "alto": 200,
-     "parametros": [],
-     "decorativo": false,
-     "miniatura": null,
-     "archivos": [
-      "reproductor-casete.html"
-     ],
-     "peso": 1747,
-     "suelto": true
+     "peso": 3943,
+     "fecha": 1791236534000
     }
    ]
   },
@@ -1087,7 +1146,8 @@ export default {
       "asset.json",
       "index.html"
      ],
-     "peso": 2010
+     "peso": 2010,
+     "fecha": 1791236534000
     }
    ]
   },
@@ -1127,7 +1187,8 @@ export default {
       "asset.json",
       "index.html"
      ],
-     "peso": 2703
+     "peso": 2703,
+     "fecha": 1791236534000
     }
    ]
   },
@@ -1173,7 +1234,8 @@ export default {
       "asset.json",
       "index.html"
      ],
-     "peso": 1737
+     "peso": 1737,
+     "fecha": 1791236534000
     }
    ]
   },
@@ -1183,38 +1245,43 @@ export default {
    "items": [
     {
      "tipo": "audio",
-     "id": "audio/abrir.mp3",
-     "nombre": "Abrir",
-     "ruta": "assets/audio/abrir.mp3",
-     "peso": 2120686
-    },
-    {
-     "tipo": "audio",
      "id": "audio/musica.mp3",
      "nombre": "Musica",
      "ruta": "assets/audio/musica.mp3",
-     "peso": 5165704
-    },
-    {
-     "tipo": "audio",
-     "id": "audio/musicaa.mp3",
-     "nombre": "Musicaa",
-     "ruta": "assets/audio/musicaa.mp3",
-     "peso": 2
+     "peso": 5165704,
+     "fecha": 1789801371000
     },
     {
      "tipo": "audio",
      "id": "audio/musiyyca.mp3",
      "nombre": "Musiyyca",
      "ruta": "assets/audio/musiyyca.mp3",
-     "peso": 2
+     "peso": 2,
+     "fecha": 1789801153000
+    },
+    {
+     "tipo": "audio",
+     "id": "audio/musicaa.mp3",
+     "nombre": "Musicaa",
+     "ruta": "assets/audio/musicaa.mp3",
+     "peso": 2,
+     "fecha": 1789800903000
+    },
+    {
+     "tipo": "audio",
+     "id": "audio/abrir.mp3",
+     "nombre": "Abrir",
+     "ruta": "assets/audio/abrir.mp3",
+     "peso": 2120686,
+     "fecha": 1786675024000
     },
     {
      "tipo": "audio",
      "id": "audio/sonido.mp3",
      "nombre": "Sonido",
      "ruta": "assets/audio/sonido.mp3",
-     "peso": 417243
+     "peso": 417243,
+     "fecha": 1786675024000
     }
    ]
   },
@@ -1227,7 +1294,8 @@ export default {
      "id": "img/imagen83.png",
      "nombre": "Imagen83",
      "ruta": "assets/img/imagen83.png",
-     "peso": 75219
+     "peso": 75219,
+     "fecha": 1786675024000
     }
    ]
   }

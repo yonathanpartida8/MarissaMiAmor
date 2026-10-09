@@ -4,18 +4,43 @@ Todo lo que dejes aquí aparece solo en el editor, en **🧩 Componentes**
 (o en **Elementos** si es una imagen, y en **🎵 Audio** si es un sonido).
 No hay que tocar el código del editor.
 
-```
-assets/
-├── buttons/       botones
-├── players/       reproductores
-├── portraits/     retratos
-├── frames/        marcos
-├── effects/       efectos
-├── animations/    animaciones
-├── decorations/   adornos (svg/png)
-├── ui/            flechas, menús…
-└── la-que-quieras/   (cualquier carpeta nueva es una categoría nueva)
-```
+## ¿Dónde pongo cada HTML?
+
+Deja el archivo en la carpeta de su tipo y aparece solo en **Recursos**,
+**primero** en su lista y con la etiqueta **Nuevo** durante unos días.
+
+| Carpeta | Para qué | Sale en Recursos como |
+| --- | --- | --- |
+| `elementos/` | cosas animadas o tocables (contadores, letreros, vinilos…) | Elementos |
+| `botones/` (o `buttons/`) | botones bonitos | Botones |
+| `reproductores/` (o `players/`) | reproductores de música | Reproductores |
+| `retratos/` (o `portraits/`) | marcos de foto con estilo | Retratos |
+| `marcos/` (o `frames/`) | marcos y bordes | Marcos |
+| `tarjetas/` | tarjetas, cartas, notas | Tarjetas |
+| `dibujos/` | dibujos que se animan | Dibujos |
+| `efectos-animados/` | lluvias, brillitos, confeti (decorativos) | Efectos |
+| `efectos/` (o `effects/`) | efectos con HTML (los `.json` de aquí son filtros) | Efectos |
+| `hojas/` | hojas y fondos de página | Hojas |
+| `decoraciones/` | adornos en imagen (svg/png/webp) | Decoraciones |
+| `audio/` · `«musica assets»/` | sonidos y música | Audio |
+| `otros/` o cualquier carpeta nueva | lo demás | Otros (o su propia categoría) |
+
+Da igual si la carpeta tiene mayúsculas, espacios o tildes: «Efectos Animados»
+y «efectos-animados» son la misma.
+
+**Tres formas de dejar un HTML** (todas funcionan, sin separar CSS ni JS):
+
+1. **Un solo archivo**: `assets/botones/boton-rosa.html` (con su `<style>` y `<script>` dentro).
+2. **Una carpeta con su HTML y sus cosas**: `assets/marcos/mi-marco/` con `mi-marco.html`
+   (o `index.html`) y al lado sus imágenes, css o js.
+3. **Una subcarpeta para ordenar varios**: `assets/tarjetas/amor/carta-1.html`,
+   `assets/tarjetas/amor/carta-2.html`… cada uno es una pieza.
+
+**El nombre** sale del `<title>` del HTML; si no tiene, o dice algo genérico
+(«Document», «Untitled», «index»…), sale del archivo: `boton-rosa.html` → «Boton rosa».
+
+Al subirlos a GitHub, la acción «Lista de contenido» rehace `assets/catalogo.js`
+sola en un minuto. Con el servidor local, aparecen al recargar el editor.
 
 ## Un componente HTML
 
