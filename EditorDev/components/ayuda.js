@@ -29,6 +29,10 @@ const GENERALES = [
   "Puedes previsualizar un recurso antes de insertarlo (Recursos).",
   "Guarda seguido tu creación (o deja el guardado automático encendido).",
   "Toca la notita musical de arriba para apagar o encender la música.",
+  "En «Bloques» hay secciones ya armadas: portada, carta, galería, frase… con tus colores.",
+  "Cualquier cosa puede reaccionar al tocarla: corazones, destellos, un latido… (Efectos al tocar).",
+  "Deja un .html en assets/elementos/ y aparece en Recursos con el nombre del archivo.",
+  "En ⚙ → Estilo puedes probar «Baddie»: negro, rosa fuerte y brillo (yo también me arreglo).",
 ];
 
 const TIPS = {
@@ -68,8 +72,12 @@ const TIPS = {
   "sec:html": ["«Nueva página HTML» crea una página en blanco con tu HTML a pantalla completa."],
   "sec:diseno": ["Un fondo con HTML (partículas, degradados…) va detrás de todo y nunca estorba al editar."],
   "sec:herramientas": ["Aquí apagas o subes los sonidos del editor y decides si se guarda solo.", "En «Botones para pasar página» eliges las flechas del librito (salen de assets/deslizar/)."],
-  "el:video": ["En el inspector eliges si el vídeo empieza solo o al tocarlo, su marco y un resplandor con sus propios colores.", "Mantén presionado el vídeo para ajustar su luz y su color."],
-  "el:componente": ["Las piezas salen de assets/<carpeta>/: deja ahí un .html (con su CSS y JS dentro) y aparece solo en «Piezas»."],
+  "el:video": ["En el inspector eliges si el vídeo empieza solo o al tocarlo, su marco y un resplandor con sus propios colores.", "Mantén presionado el vídeo para ajustar su luz y su color.", "Prende «Resplandor épico» y elige un estilo (Sueño, Cine, VHS…): el brillo sale de los colores del vídeo.", "Si el teléfono no deja que suene solo, empieza en silencio y aparece «Toca para el sonido»."],
+  "el:forma": ["En «Efectos al tocar» puedes hacer que suelte corazones o que lata cuando ella lo toque."],
+  "sec:bloques": ["Toca un bloque y aparece en un hueco libre de la página, ya agrupado.", "Doble toque en una parte del bloque para editarla sola; «Desagrupar» los suelta del todo."],
+  "sec:componentes": ["Arriba eliges el fondo de las vistas previas: oscuro para ver brillos y detalles.", "Tus elementos de assets/elementos/ salen primero, con el nombre de su archivo."],
+  zonas: ["Arrastra sobre el elemento para dibujar una zona; toca una para decirle qué hace.", "«Probar» esconde las marcas: toca como lo haría ella. Al volver a editar, reaparecen.", "Las zonas se mueven y giran con el elemento: no hay que reacomodarlas."],
+  "el:componente": ["Las piezas salen de assets/<carpeta>/: deja ahí un .html (con su CSS y JS dentro) y aparece solo en «Piezas».", "Con «Zonas táctiles» (en Efectos al tocar) haces que cada parte del HTML haga algo distinto: un sonido, corazones, pasar de página…"],
 };
 
 const textoDe = (tip) => (typeof tip === "string" ? tip : tip.t);
@@ -125,6 +133,7 @@ export class Ayuda {
     if (document.body.classList.contains("ed-probando")) return null;
     if (document.querySelector(".ed-codigo-pantalla")) return "html";
     if (app.tiempo?.abierta) return "linea";
+    if (app.zonas?.id) return "zonas";
     const abierto = app.lateral?.abierto || document.querySelector(".ed-hoja-sec.abierta") || (!document.body.classList.contains("sin-panel") && !matchMedia("(max-width: 1023px)").matches);
     const sel = app.estado.sel;
     if (sel.length > 1) return "varios";

@@ -68,23 +68,30 @@ const $ = (s) => document.querySelector(s);
 /** Las categorías del riel: [id, icono, nombre]. */
 const SECCIONES = [
   ["paginas", "paginas", "Páginas"],
+  // Crear: lo que arma la página
+  ["bloques", "bloques", "Bloques"],
   ["elementos", "elementos", "Elementos"],
   ["texto", "texto", "Texto"],
   ["imagenes", "imagen", "Imágenes"],
+  ["video", "video", "Vídeo"],
+  ["componentes", "biblioteca", "Recursos"],
+  // Adornar y dar vida
   ["gifs", "gif", "GIFs"],
   ["stickers", "sticker", "Stickers"],
-  ["video", "video", "Vídeo"],
-  ["audio", "audio", "Audio"],
   ["efectos", "efectos", "Efectos"],
   ["animar", "animar", "Animar"],
   ["transiciones", "transiciones", "Transiciones"],
+  // Interacción y sonido
   ["interactivo", "interactivo", "Interactivo"],
-  ["componentes", "biblioteca", "Recursos"],
+  ["audio", "audio", "Audio"],
+  // Avanzado
   ["html", "html", "HTML"],
   ["3d", "cubo", "3D"],
   ["diseno", "diseno", "Tema"],
   ["herramientas", "herramientas", "Herramientas"],
 ];
+// Separadores del riel: antes de cada una, un título chiquito.
+const GRUPOS_RIEL = { gifs: "Adornar", interactivo: "Tocar y oír", html: "Avanzado" };
 // Nombres viejos que otros sitios todavía piden.
 const ALIAS = { fotos: "imagenes", ajustes: "herramientas" };
 // En el teléfono, estas secciones se abren en una hojita de abajo (compacta)
@@ -316,6 +323,7 @@ function construirRiel() {
   const riel = $(".ed-riel");
   for (const [id, icono, n] of SECCIONES) {
     if (id === "paginas") continue; // Páginas va arriba (botón «1/3»), no compite con las herramientas
+    if (GRUPOS_RIEL[id]) riel.append(el("i.ed-riel-sep", { "aria-hidden": "true" }, [el("small", { text: GRUPOS_RIEL[id] })]));
     riel.append(el("button", { type: "button", dataset: { s: id }, title: n, "aria-label": n, onClick: () => {
       const activo = app.seccion === id;
       if (esMovil()) { if (activo && app.lateral.abierto) app.lateral.cerrar(); else abrirSeccion(id, true); }

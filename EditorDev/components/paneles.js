@@ -41,6 +41,7 @@ import { HTML } from "./secciones/html.js";
 import { FONDO_HTML } from "./secciones/fondo.js";
 import { NAVEGACION } from "./secciones/navegacion.js";
 import { BIBLIOTECA } from "./secciones/biblioteca.js";
+import { BLOQUES } from "./secciones/bloques.js";
 import * as GIF from "../integraciones/giphy.js";
 
 const RT = window.LibritoRT;
@@ -457,4 +458,4 @@ export class Paneles {
 }
 
 // Las secciones grandes viven cada una en su archivo (components/secciones/).
-Object.assign(Paneles.prototype, ANIMAR, EFECTOS_SEC, TRANSICIONES, GIPHY, AUDIO, HTML, FONDO_HTML, NAVEGACION, BIBLIOTECA);
+Object.assign(Paneles.prototype, ANIMAR, EFECTOS_SEC, TRANSICIONES, GIPHY, AUDIO, HTML, FONDO_HTML, NAVEGACION, BIBLIOTECA, BLOQUES);

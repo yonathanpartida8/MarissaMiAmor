@@ -179,6 +179,7 @@ P.codigo = P.html;
 P.saturacion = P.gota;
 P.brillo = P.luz;
 
+P.bloques = '<rect x="3.5" y="3.5" width="17" height="6" rx="1.5"/><rect x="3.5" y="12" width="7.5" height="8.5" rx="1.5"/><rect x="13" y="12" width="7.5" height="3.6" rx="1.2"/><rect x="13" y="17" width="7.5" height="3.5" rx="1.2"/>';
 P.zonas = '<rect x="3" y="3.5" width="11" height="8.5" rx="1.5" stroke-dasharray="2.6 2"/><rect x="10" y="12" width="11" height="8.5" rx="1.5" stroke-dasharray="2.6 2"/><circle cx="15.5" cy="16.3" r="1.7"/>';
 P.rotar = P.girar; P.seleccionar = P.cursor; P.interactuar = P.toque;
 P.fuera = '<rect x="7" y="7" width="10" height="10" rx="1.5" stroke-dasharray="2 2"/><path d="M3 3l4 4M21 3l-4 4M3 21l4-4M21 21l-4-4"/>';
