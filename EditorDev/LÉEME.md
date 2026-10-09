@@ -358,6 +358,22 @@ Código nuevo: `runtime/rt-toques.js` (efectos y zonas en el librito), `componen
 | **Recorrido con la abejita** | la primera vez lo ofrece; después, en su globito («Enséñame todo») o en ⋯. Vuela a cada parte, la ilumina y la explica, con Atrás / Siguiente / Salir; el globito nunca tapa lo que explica |
 | **Estabilidad** | si algo falla, el editor suelta los toques trabados, quita velos, guarda y avisa en vez de congelarse |
 
+## Fase 8: menús que no tapan, efectos al tocar, HTML que aparecen solos y temas por hoja
+
+| | |
+| --- | --- |
+| **Menús y hojas** | nada queda fuera de la pantalla: las hojas a media altura dejan desplazar hasta lo último. En el teléfono, los menús salen en dos columnas (la mitad de alto). Si un menú, una ventanita o una vista previa tapa lo elegido, la hoja se corre sola para dejarlo a la vista |
+| **Efectos al tocar** | sección nueva **«Al tocar»** (en la barra de abajo, en el riel y en el inspector) con categorías: Combinados, Partículas, Ondas y texto, Movimiento, Luz y color. Al tocar una ficha, el efecto **se ve en el propio elemento** y se repite solo; ahí mismo se cambia lo que sale del dedo, lo que hace el elemento, el color y la cantidad. Nada se guarda hasta **«Usar»**; «Atrás» lo deja como estaba. Nuevos: Besitos, Pétalos y Flotar, y combinados listos (Amor, Te amo, Magia, Fiesta, Romántico…) |
+| **Vista previa sin tapar** | en el teléfono se apartan los paneles de atrás y la hoja se corre; en la computadora la vista previa se acomoda sobre el panel de donde salió (también la de Efectos) |
+| **HTML que aparecen solos** | ver `assets/LÉEME.md`: cada carpeta es una categoría; un `.html` todo-en-uno, una carpeta con su `index.html` o varias páginas sueltas en una subcarpeta aparecen solos, con buen nombre (si el título dice «Document», se usa el nombre del archivo), su vista previa y **los más nuevos primero** (con la marquita «Nuevo»). Los que no dicen su tamaño se miden solos al insertarlos (ya no salen cortados). Las vistas previas vivas se cargan de una en una y sólo mientras se ven |
+| **Temas por hoja** | **mantén presionada la hoja** (o botón derecho) → «Tema de esta hoja…»: 12 temas (Cuaderno, Carta antigua, Rosa acuarela, Noche de estrellas, Baddie leopardo, Picnic, Corazoncitos, Kraft, Pizarrón, Tablero de corcho, Apuntes, Minimal) que cambian el papel, los colores y las letras **sólo de esa página**. Tocar uno lo muestra en la hoja; «Usar» lo guarda con un solo deshacer. Las fotos de fondo y lo bloqueado no se tocan |
+| **Estilos de hoja** | en el inspector de la página: Liso, Rayada, Cuadriculada, Puntitos, Acuarela, Pergamino, Kraft, Picnic, Corazoncitos, Noche estrellada, Pizarrón, Corcho y Leopardo. CSS puro (`templates/papeles.js`): se adaptan a cualquier tamaño de hoja y se ven igual en el librito |
+| **Transiciones** | ordenadas en Suaves, Deslizar, Como un libro, Con forma y A tu medida; cada miniatura **se mueve sola** y muestra de qué hoja (la de rayitas) a cuál (la del corazón) pasa |
+| **Portadas nuevas** | con foto, de noche, baddie, sobre y minimal. La galería de plantillas está por grupos (Para empezar, Portadas, Fotos, Cartas y frases, Música y más). Todas las plantillas se revisaron en teléfono, tableta, cuadrado y horizontal: ya no se enciman |
+| **Arreglos** | al deshacer un cambio de toda la página ya no queda todo elegido (el siguiente deslizamiento arrastraba todo); el inspector de la página se actualiza cuando cambia el fondo entero |
+
+Código nuevo: `components/temas-hoja.js`, `templates/papeles.js`; la sección «Al tocar» vive en `components/toques.js`.
+
 ## Cómo está hecho
 
 ```

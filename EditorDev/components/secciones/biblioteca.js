@@ -66,16 +66,30 @@ export const BIBLIOTECA = {
     const selFondo = el("div.ed-seg.ed-bib-fondo", { role: "radiogroup", "aria-label": "Fondo de las vistas previas" }, FONDOS.map(([k, t]) => el("button", { type: "button", text: t, dataset: { k }, onClick: () => ponerFondo(k) })));
     ponerFondo(fondo);
     c.append(chips, el("div.ed-bib-barra", {}, [buscar, selFondo]), rej);
-    // Las vistas previas vivas: sólo mientras se ven.
+    // Las vistas previas vivas: sólo mientras se ven, y de una en una (abrir
+    // la sección con diez HTML a la vez trababa el teléfono un momento).
+    const cola = [];
+    let reloj = 0;
+    const bombear = () => {
+      if (reloj) return;
+      const paso = () => {
+        const caja = cola.shift();
+        if (!caja) { reloj = 0; return; }
+        if (caja._ve && !caja.firstChild && caja.isConnected) { const f = marco(caja._it); caja.append(f); requestAnimationFrame(() => encajar(f, caja)); }
+        reloj = setTimeout(paso, 110);
+      };
+      reloj = setTimeout(paso, 0);
+    };
     const io = new IntersectionObserver((xs) => {
       for (const x of xs) {
-        const caja = x.target, it = caja._it;
-        if (x.isIntersecting && !caja.firstChild) { const f = marco(it); caja.append(f); requestAnimationFrame(() => encajar(f, caja)); }
+        const caja = x.target;
+        caja._ve = x.isIntersecting;
+        if (x.isIntersecting && !caja.firstChild) { if (!cola.includes(caja)) cola.push(caja); bombear(); }
         else if (!x.isIntersecting && caja.firstChild?.tagName === "IFRAME") caja.firstChild.remove();
       }
     }, { root: c.closest(".ed-panel-cuerpo, .ed-hoja-sec-cuerpo") || null, rootMargin: "120px" });
     const antes = this._limpiar;
-    this._limpiar = () => { io.disconnect(); antes?.(); };
+    this._limpiar = () => { io.disconnect(); clearTimeout(reloj); reloj = 0; cola.length = 0; antes?.(); };
 
     const insertar = async (it, tile) => {
       try {
