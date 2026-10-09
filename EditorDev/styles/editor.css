@@ -1706,3 +1706,14 @@ body.ed-mov-nada .ed-abeja .ab-patas, body.ed-mov-nada .ed-abeja .ab-ojos-n { an
 :root[data-estilo="retromylove"] .ed-bq-t, :root[data-estilo="retromylove"] .ed-bq-maq { border-radius: 0; }
 :root[data-estilo="retromylove"] .ed-bq-t { border: 2px solid var(--rml-tinta); box-shadow: 2px 2px 0 var(--rml-tinta); }
 :root[data-estilo="retromylove"] .ed-bq-t b { font: 400 18px/1.05 var(--rml-pixel); }
+/* Filas de la lista de sonidos: el nombre se acorta (…) y los botones nunca se cortan */
+.ed-rejilla-assets.lista .ed-asset { flex-wrap: wrap; row-gap: 6px; }
+.ed-rejilla-assets.lista .ed-asset > span { flex: 1 1 110px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ed-rejilla-assets.lista .ed-asset > :is(button, small, .ed-play) { flex: 0 0 auto; }
+.ed-rejilla-assets.lista .ed-asset > small { max-width: 30%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Nada se sale del panel: los botones largos parten la línea y las fichas se encogen */
+:is(.ed-panel-cuerpo, .ed-hoja-sec-cuerpo, .ed-insp) .ed-btn { max-width: 100%; white-space: normal; text-align: center; line-height: 1.15; padding-block: 4px; }
+:is(.ed-panel-cuerpo, .ed-hoja-sec-cuerpo, .ed-insp) .ed-btn > span { min-width: 0; overflow-wrap: anywhere; }
+.ed-piezas { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ed-piezas.chicas { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ed-pieza span { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }

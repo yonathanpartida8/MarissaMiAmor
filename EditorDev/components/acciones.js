@@ -354,7 +354,18 @@ export class Acciones {
 
   /* ── Editar lo seleccionado ─────────────────────────────────────── */
   duplicar() { if (this.E.sel.length) this.E.duplicarEls(this.E.sel); }
-  borrar() { if (this.E.sel.length) this.E.quitarEls(this.E.sel); }
+  /** Borra lo elegido (lo bloqueado se respeta) y ofrece deshacerlo al momento. */
+  borrar(callado) {
+    const sel = this.E.seleccionados;
+    if (!sel.length) return;
+    const ids = sel.filter((e) => !e.bloqueado).map((e) => e.id);
+    if (!ids.length) { aviso("Está bloqueado: desbloquéalo para borrarlo"); return; }
+    this.E.quitarEls(ids);
+    if (!callado) {
+      const n = ids.length, quedan = sel.length - n;
+      aviso((n > 1 ? `Borraste ${n} elementos` : "Borrado") + (quedan ? ` (${quedan} bloqueado${quedan > 1 ? "s" : ""} se quedó)` : ""), 3600, "", { t: `${ico("deshacer")}<span>Deshacer</span>`, al: () => this.E.deshacer() });
+    }
+  }
 
   copiar() {
     const s = this.E.seleccionados;
@@ -365,7 +376,7 @@ export class Acciones {
     aviso(s.length > 1 ? `Copiaste ${s.length} elementos` : "Copiado");
   }
 
-  cortar() { this.copiar(); this.borrar(); }
+  cortar() { this.copiar(); this.borrar(true); }
 
   pegar() {
     if (!this.portapapeles) return;

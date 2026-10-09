@@ -38,9 +38,11 @@ pero lo que hagas se guarda aparte.
 
 ## La barra lateral
 
-A la izquierda, las categorías con su icono y su nombre: Páginas, Elementos,
-Texto, Imágenes, Vídeo, Audio, Efectos, Animar, Transiciones, Interactivo,
-Piezas, HTML, 3D, Tema y Herramientas. En la computadora van fijas (el panel
+A la izquierda, las categorías con su icono y su nombre, ordenadas para
+construir en cuatro grupos: **Crear** (Bloques, Elementos, Texto, Imágenes,
+Vídeo, Recursos) · **Adornar** (GIFs, Stickers, Efectos, Animar, Transiciones)
+· **Tocar y oír** (Interactivo, Audio) · **Avanzado** (HTML, 3D, Tema,
+Herramientas). Páginas está arriba (el botón «1/3»). En la computadora van fijas (el panel
 se pliega con el botón de arriba o tocando la categoría abierta). En el
 teléfono y la tableta es un **cajón**: se abre deslizando el dedo desde el
 borde izquierdo, con la pestañita o con el botón de arriba, y se cierra
@@ -315,6 +317,34 @@ Código: `config/` (preferencias, cuadros/Hz), `mascota/` (abeja, dialogos, glit
 
 Código nuevo: `canvas/herramientas.js` (dock y opciones), `config/estilo.js` (estilos y textura del grano), `styles/retromylove.css` (todo el estilo, por tokens).
 
+## Fase 6: tocar, zonas, bloques, vídeo y Baddie
+
+Tres niveles: **acciones rápidas** (herramientas junto a la hoja y la barrita
+del objeto: copiar, pegar, duplicar, capas, bloquear, eliminar con
+«Deshacer»), **herramientas de edición** (el riel en grupos) y **opciones
+avanzadas** (grupo «Avanzado» y secciones cerradas del inspector).
+
+| | |
+| --- | --- |
+| **Dibujo y toques** | el lápiz y la goma se quedan puestos hasta cambiar de herramienta; un toque dibuja un punto; «Detrás de todo» dibuja debajo. Los toques que se quedaban «trabados» (dedo que se levanta sobre un marco HTML, app en segundo plano) se limpian solos |
+| **Capas** | orden correcto con varios elegidos; en Capas, barra Al frente · Adelante · Atrás · Al fondo y flechitas ▲▼ en cada fila; todo se ve al instante en la hoja |
+| **Paneles translúcidos** | mientras arrastras un deslizador, el panel se vuelve casi transparente (sólo queda esa fila) para ver el cambio en la hoja |
+| **Recursos** | el cajón ya no se cierra al deslizar las categorías ni al insertar; arriba eliges el **fondo de las vistas previas** (oscuro, cuadritos o claro) |
+| **Elementos propios** | `assets/elementos/`: un `.html` todo-en-uno (sin CSS aparte) aparece solo, con el **nombre del archivo** (`rayos.html` → «Rayos»). Vienen nueve: rayos, aurora, lluvia de pétalos, corazón neón, contador de días, hilo rojo, vinilo, luciérnagas y mensajito |
+| **Efectos al tocar** | en el inspector: lo que sale del dedo (ondas, corazones, destellos, estrellitas, confeti, burbujas, «te amo») y lo que hace el elemento (latido, rebote, saltito, sacudida, giro, crecer, brillo, color, opacidad), con color y cantidad. Cada ficha se prueba al instante. También «Al tocar la página» |
+| **Zonas táctiles** | «Efectos al tocar → Crear zonas»: 1 dibuja rectángulos sobre el elemento (ideal para HTML), 2 toca uno y elige su efecto, sonido y acción (mostrar, esconder, animar, ir a una página, enlace, música, vibrar), 3 «Probar» esconde las marcas para tocar como ella. Se mueven, se agrandan, se duplican y se borran; viven dentro del elemento, así que siguen alineadas aunque lo muevas, lo gires o le cambies el tamaño. En el librito son invisibles |
+| **Bloques** | secciones listas: portada, carta, galería, recuerdo, frase, razones, vídeo con título, contador de días, anterior/siguiente y pie. Se ponen agrupadas, con tus letras y colores, en el hueco libre más cercano |
+| **Vídeo** | barra de controles propia (reproducir, adelantar, tiempo, sonido, pantalla completa) que se esconde sola; **resplandor épico** con los colores del vídeo; estilos (sueño, cine, VHS, recuerdo, noche, vivo). Si el teléfono no deja sonido, empieza en silencio con «Toca para el sonido». Los vídeos nuevos empiezan solos y en bucle |
+| **Música al previsualizar** | la canción que escuchas en Audio da vueltas sola y se pausa al cambiar de pestaña, cerrar el panel o salir de la app |
+| **Probar** | los menús se vuelven translúcidos antes de irse y la página crece desde la hoja |
+| **Miniaturas** | en Páginas, lo que no se puede pintar chiquito (vídeo, HTML, 3D, piezas) es una tarjetita oscura con icono y nombre |
+| **Hacer editable** | el HTML original nunca se borra: con «Sólo lo que se ve» queda escondido en Capas |
+| **Estilo Baddie** | ⚙ → Estilo: negro brillante, rosa fuerte, cromo y brillitos; vidrio oscuro, botones de gloss, títulos en cursiva. La abejita se pone **pestañas, labial rojo y chapitas** |
+| **Abejita** | más detallada (alas tornasol, brillo, patitas, ojitos que miran) y con consejos para todo lo nuevo |
+| **Formas** | pasaron al final de Elementos, en «Formas básicas» (cerrada) |
+
+Código nuevo: `runtime/rt-toques.js` (efectos y zonas en el librito), `components/toques.js` (inspector y editor de zonas), `components/secciones/bloques.js`, `styles/baddie.css`, `assets/elementos/`.
+
 ## Cómo está hecho
 
 ```
@@ -342,7 +372,8 @@ EditorDev/
 ├── recursos/    extras.js (animaciones, transiciones, efectos y fondos propios o de assets/)
 ├── integraciones/ giphy.js (clave protegida) · gif.js (leer GIF, quitar fondo → APNG)
 ├── runtime/     EL REPRODUCTOR: rt-base · rt-render (y la hoja automática) · rt-anim (y el tiempo) ·
-│                rt-comps · rt-3d (WebGL2) · rt-trans · rt-musica · rt-player · librito.css · reproductor.html
+│                rt-comps · rt-3d (WebGL2) · rt-trans · rt-toques (efectos al tocar y zonas) · rt-musica ·
+│                rt-player · librito.css · reproductor.html
 └── styles/      editor.css
 ```
 
