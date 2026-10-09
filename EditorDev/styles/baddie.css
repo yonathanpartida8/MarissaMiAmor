@@ -1,0 +1,165 @@
+/* ═══════════════════════════════════════════════════════════════════
+   BADDIE · estilo seleccionable del editor (⚙ → Interfaz → Estilo)
+   Negro brillante, rosa fuerte, cromo y destellos: vidrio oscuro, botones
+   como gloss, títulos en cursiva elegante y una abejita con pestañas,
+   labial rojo y chapitas.
+
+   Igual que RetroMyLove, va en tres capas reutilizables:
+     1. TOKENS   (todo el editor ya los usa: cambia de golpe)
+     2. TEXTURAS brillitos, cromo y gloss (variables --bd-*)
+     3. PIEZAS   botones, ventanas, campos, fichas… sobre las clases que ya
+                 existen (nada duplicado)
+   Nada de esto toca el librito: la hoja y la vista previa son tu página.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── 1 · Tokens ── */
+:root[data-estilo="baddie"] {
+  --bd-negro: #0c080e;
+  --bd-noche: #150f18;
+  --bd-vidrio: rgba(24, 16, 27, .82);
+  --bd-rosa: #ff2e8a;
+  --bd-rosa-2: #ff6fb5;
+  --bd-fucsia: #d1007a;
+  --bd-lila: #b77bff;
+  --bd-cromo: linear-gradient(135deg, #ffffff 0%, #f6d4e6 22%, #c9b3c8 45%, #ffffff 58%, #e7bfd6 78%, #fff 100%);
+  --bd-gloss: linear-gradient(180deg, rgba(255, 255, 255, .42) 0%, rgba(255, 255, 255, .08) 48%, transparent 52%);
+  --bd-brillos: radial-gradient(circle at 18% 24%, rgba(255, 255, 255, .55) 0 1px, transparent 1.6px) 0 0 / 46px 46px, radial-gradient(circle at 70% 64%, rgba(255, 140, 200, .45) 0 1px, transparent 1.6px) 0 0 / 38px 38px, radial-gradient(circle at 40% 80%, rgba(255, 255, 255, .3) 0 .8px, transparent 1.3px) 0 0 / 29px 29px;
+  --bd-titulo: "Playfair Display", "Bodoni Moda", Georgia, serif;
+  --bd-lectura: "Poppins", "Jost", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fondo: var(--bd-negro);
+  --superficie: #19111c;
+  --superficie-2: #231828;
+  --linea: #3a2740;
+  --linea-fuerte: #ff2e8a;
+  --texto: #fdeef6;
+  --texto-suave: #cfa9c1;
+  --tinta: #fdeef6;
+  --acento: var(--bd-rosa);
+  --acento-suave: rgba(255, 46, 138, .18);
+  --acento-texto: #fff;
+  --peligro: #ff5a7a;
+  --lienzo: #110b13;
+  --mano: 18px;
+  --mano-chica: 12px;
+  --radio: 16px;
+  --sombra: 0 14px 40px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 46, 138, .1);
+  --sombra-chica: 0 3px 10px rgba(0, 0, 0, .45);
+  --sticker: 0 0 0 1px rgba(255, 255, 255, .07), 0 8px 24px rgba(255, 46, 138, .22);
+  --regla-fondo: #140d17;
+  --regla-hoja: #21162a;
+  --regla-linea: #5a3a60;
+  --regla-texto: #b98aa9;
+  --papel: none;
+  --washi: linear-gradient(90deg, var(--bd-rosa), var(--bd-lila));
+  --washi-2: linear-gradient(90deg, var(--bd-lila), var(--bd-rosa));
+  color-scheme: dark;
+}
+
+/* ── 2 · Fondo: negro con resplandores rosas y brillitos quietos ── */
+:root[data-estilo="baddie"] body.ed {
+  font-family: var(--bd-lectura);
+  background: var(--bd-brillos), radial-gradient(60% 50% at 0% 0%, rgba(255, 46, 138, .22), transparent 70%), radial-gradient(50% 45% at 100% 100%, rgba(183, 123, 255, .18), transparent 70%), var(--bd-negro);
+}
+
+/* ── 3 · Piezas ── */
+/* Ventanas de vidrio oscuro con filo rosa */
+:root[data-estilo="baddie"] :is(.ed-barra, .ed-riel, .ed-panel, .ed-insp, .ed-contexto, .ed-linea) { background: var(--bd-vidrio); -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3); }
+:root[data-estilo="baddie"] .ed-barra { border-bottom: 1px solid rgba(255, 46, 138, .35); box-shadow: 0 1px 0 rgba(255, 255, 255, .04), 0 10px 30px rgba(0, 0, 0, .4); }
+:root[data-estilo="baddie"] .ed-riel { border-right: 1px solid rgba(255, 46, 138, .25); }
+:root[data-estilo="baddie"] :is(.ed-panel, .ed-insp) { border-color: rgba(255, 46, 138, .25); }
+:root[data-estilo="baddie"] :is(.ed-modal, .ed-pop, .ed-menu, .ed-hojita, .ed-salir, .ed-abeja-globo, .ed-foco-tarjeta, .ed-consejito, .ed-dock-grupo, .ed-dock-op, .ed-flotante, .ed-hack-carta, .ed-tarjeta, .ed-zonas-panel) {
+  border: 1px solid rgba(255, 46, 138, .45) !important; background: var(--bd-brillos), linear-gradient(160deg, #22162a, #140d17) !important; color: var(--texto);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .05) inset, 0 18px 50px rgba(0, 0, 0, .6), 0 0 34px rgba(255, 46, 138, .2) !important;
+}
+:root[data-estilo="baddie"] .ed-pop::before { display: none; }
+:root[data-estilo="baddie"] :is(.ed-modal > header, .ed-panel-titulo, .ed-tarjeta)::before { display: none !important; }
+/* Títulos: cursiva elegante con brillo de cromo rosa */
+:root[data-estilo="baddie"] :is(.ed-modal h2, .ed-hojita-cab h3, .ed-panel-titulo, .ed-pop-t, .ed-salir h2, .ed-nombre input, .ed-hoja-sec-cab h2) {
+  font-family: var(--bd-titulo) !important; font-style: italic; font-weight: 700; letter-spacing: .01em;
+}
+:root[data-estilo="baddie"] :is(.ed-modal h2, .ed-panel-titulo span, .ed-salir h2, .ed-hoja-sec-cab h2 span) { background: linear-gradient(90deg, #fff 0%, #ffc2df 40%, var(--bd-rosa) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+:root[data-estilo="baddie"] :is(.ed-panel-titulo, .ed-modal h2)::after { content: ""; display: inline-block; width: 14px; height: 14px; margin-left: 8px; vertical-align: 2px; background: var(--bd-rosa); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 0l2.4 9.6L24 12l-9.6 2.4L12 24l-2.4-9.6L0 12l9.6-2.4z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 0l2.4 9.6L24 12l-9.6 2.4L12 24l-2.4-9.6L0 12l9.6-2.4z'/%3E%3C/svg%3E") center / contain no-repeat; filter: drop-shadow(0 0 6px var(--bd-rosa)); animation: bd-titila 2.8s ease-in-out infinite; }
+:root[data-estilo="baddie"] .ed-x { border-radius: 50%; border: 1px solid rgba(255, 255, 255, .15); background: rgba(255, 255, 255, .06); color: var(--texto); }
+:root[data-estilo="baddie"] .ed-x:hover { background: rgba(255, 46, 138, .25); }
+
+/* Botones: píldoras de gloss; el principal, rosa fuerte que brilla */
+:root[data-estilo="baddie"] .ed-btn { border-radius: 999px; border: 1px solid rgba(255, 255, 255, .12); background: linear-gradient(180deg, #2a1d30, #1b1220); color: var(--texto); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 4px 12px rgba(0, 0, 0, .35); font-family: var(--bd-lectura); font-weight: 500; }
+:root[data-estilo="baddie"] .ed-btn:hover:not(:disabled) { border-color: rgba(255, 46, 138, .6); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 0 18px rgba(255, 46, 138, .3); }
+:root[data-estilo="baddie"] .ed-btn.primario { border: 0; color: #fff; background: var(--bd-gloss), linear-gradient(135deg, var(--bd-rosa-2), var(--bd-rosa) 45%, var(--bd-fucsia)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 6px 22px rgba(255, 46, 138, .5); text-shadow: 0 1px 2px rgba(120, 0, 60, .4); }
+:root[data-estilo="baddie"] .ed-btn.primario:hover:not(:disabled) { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 8px 30px rgba(255, 46, 138, .7); }
+:root[data-estilo="baddie"] .ed-btn.peligro { color: #ff8aa2; }
+:root[data-estilo="baddie"] :is(.ed-btn, .ed-dock-b, .ed-cb, .ed-bib-chip).on { background: var(--bd-gloss), linear-gradient(135deg, var(--bd-rosa), var(--bd-fucsia)) !important; color: #fff !important; border-color: transparent !important; box-shadow: 0 0 16px rgba(255, 46, 138, .45) !important; }
+:root[data-estilo="baddie"] .ed-dock-b { color: var(--texto); }
+:root[data-estilo="baddie"] .ed-dock-b:hover { background: rgba(255, 46, 138, .14); }
+:root[data-estilo="baddie"] .ed-dock-grupo { border-radius: 22px !important; }
+
+/* Riel: iconos que se encienden en rosa neón */
+:root[data-estilo="baddie"] .ed-riel button { color: var(--texto-suave); }
+:root[data-estilo="baddie"] .ed-riel button b::before { background: rgba(255, 46, 138, .14); }
+:root[data-estilo="baddie"] .ed-riel button.on { color: #fff; }
+:root[data-estilo="baddie"] .ed-riel button.on b::before { background: var(--bd-gloss), linear-gradient(135deg, var(--bd-rosa), var(--bd-fucsia)); box-shadow: 0 0 18px rgba(255, 46, 138, .55); opacity: 1; }
+:root[data-estilo="baddie"] .ed-riel button.on .ed-ico { filter: drop-shadow(0 0 4px rgba(255, 255, 255, .6)); }
+
+/* Campos, selects, interruptores, segmentos y rangos */
+:root[data-estilo="baddie"] :is(.ed-sel, .ed-txt, .ed-num input, .ed-color input[type="text"], .ed-buscar) { border: 1px solid rgba(255, 255, 255, .12); border-radius: 12px; background-color: #120c15; color: var(--texto); box-shadow: inset 0 2px 6px rgba(0, 0, 0, .4); }
+:root[data-estilo="baddie"] :is(.ed-sel, .ed-txt, .ed-buscar):focus { border-color: var(--bd-rosa); box-shadow: 0 0 0 3px rgba(255, 46, 138, .25); outline: none; }
+:root[data-estilo="baddie"] .ed-sel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23ff6fb5'/%3E%3C/svg%3E"); }
+:root[data-estilo="baddie"] .ed-toggle { background: #2c1f31; border-color: rgba(255, 255, 255, .1); }
+:root[data-estilo="baddie"] .ed-toggle.on { background: linear-gradient(135deg, var(--bd-rosa), var(--bd-fucsia)); box-shadow: 0 0 12px rgba(255, 46, 138, .5); }
+:root[data-estilo="baddie"] .ed-toggle i { background: var(--bd-cromo); }
+:root[data-estilo="baddie"] .ed-seg { background: #120c15; border-color: rgba(255, 255, 255, .1); border-radius: 999px; }
+:root[data-estilo="baddie"] .ed-seg button { border-radius: 999px; color: var(--texto-suave); }
+:root[data-estilo="baddie"] .ed-seg button.on { background: linear-gradient(135deg, var(--bd-rosa), var(--bd-fucsia)); color: #fff; box-shadow: 0 0 12px rgba(255, 46, 138, .45); }
+:root[data-estilo="baddie"] input[type="range"] { accent-color: var(--bd-rosa); }
+:root[data-estilo="baddie"] .ed-sec > summary { font-family: var(--bd-titulo); font-style: italic; font-weight: 700; letter-spacing: .01em; }
+:root[data-estilo="baddie"] .ed-sec { border-bottom-color: rgba(255, 46, 138, .14); }
+
+/* Fichas y tarjetas: vidrio con filo de cromo al pasar */
+:root[data-estilo="baddie"] :is(.ed-bib-t, .ed-pieza, .ed-comp, .ed-asset, .ed-deslizar-t, .ed-config-modo, .ed-tq-ficha) { background: linear-gradient(160deg, #21162a, #160f1a); border: 1px solid rgba(255, 255, 255, .08) !important; color: var(--texto); }
+:root[data-estilo="baddie"] :is(.ed-bib-t, .ed-pieza, .ed-comp, .ed-tq-ficha):hover { border-color: rgba(255, 46, 138, .55) !important; box-shadow: 0 0 20px rgba(255, 46, 138, .25); }
+:root[data-estilo="baddie"] .ed-tq-ficha.on { border-color: var(--bd-rosa) !important; box-shadow: 0 0 0 2px var(--bd-rosa) inset, 0 0 18px rgba(255, 46, 138, .4); background: linear-gradient(160deg, #3a1530, #1d1020); }
+:root[data-estilo="baddie"] .ed-bib-chip { background: #1d1421; border: 1px solid rgba(255, 255, 255, .1); color: var(--texto-suave); border-radius: 999px; }
+:root[data-estilo="baddie"] :is(.ed-config-modo.on, .ed-config-estilo.on) { border-color: var(--bd-rosa) !important; box-shadow: 0 0 0 3px rgba(255, 46, 138, .25), 0 0 20px rgba(255, 46, 138, .3); }
+
+/* Barrita del objeto, menús, avisos, ayuda */
+:root[data-estilo="baddie"] .ed-flotante button { color: var(--texto); }
+:root[data-estilo="baddie"] .ed-flotante .ed-flot-borrar { color: #ff8aa2; }
+:root[data-estilo="baddie"] .ed-menu button:hover { background: rgba(255, 46, 138, .2); }
+:root[data-estilo="baddie"] .ed-aviso { background: linear-gradient(135deg, #2a1730, #170e1b); color: #fff; border: 1px solid rgba(255, 46, 138, .5); box-shadow: 0 10px 30px rgba(0, 0, 0, .5), 0 0 24px rgba(255, 46, 138, .3); }
+:root[data-estilo="baddie"] .ed-tip { background: #241628; color: #fff; border: 1px solid rgba(255, 46, 138, .4); }
+:root[data-estilo="baddie"] .ed-abeja-globo p { font-family: var(--bd-lectura); font-size: 15px; line-height: 1.45; }
+:root[data-estilo="baddie"] .ed-abeja-globo::after { background: #1d1222; border-color: rgba(255, 46, 138, .45); }
+:root[data-estilo="baddie"] .ed-foco { background: var(--bd-gloss), linear-gradient(135deg, var(--bd-rosa), var(--bd-fucsia)); border-color: transparent; box-shadow: 0 0 22px rgba(255, 46, 138, .55); color: #fff; }
+:root[data-estilo="baddie"] .ed-insp-tabs button.on { box-shadow: inset 0 -2px 0 var(--bd-rosa); color: #fff; }
+:root[data-estilo="baddie"] :is(.ed-asa-hoja i, .ed-hoja-asa i) { background: linear-gradient(90deg, var(--bd-rosa), var(--bd-lila)); }
+:root[data-estilo="baddie"] .ed-fps { background: #1d1421; color: var(--bd-rosa-2); }
+
+/* La hoja: una sombra rosa que la hace flotar sobre el negro */
+:root[data-estilo="baddie"] .ed-hoja { box-shadow: 0 30px 80px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 255, 255, .06), 0 0 60px rgba(255, 46, 138, .18); }
+
+/* Aparecer: un destello rosa cortito */
+:root[data-estilo="baddie"] :is(.ed-modal-fondo.ver .ed-modal, .ed-pop.ver, .ed-menu, .ed-salir-fondo.ver .ed-salir) { animation: bd-entra .38s cubic-bezier(.2, 1.2, .4, 1) both; }
+@keyframes bd-entra { from { opacity: 0; transform: translateY(10px) scale(.97); filter: brightness(1.6) saturate(1.4); } }
+@keyframes bd-titila { 0%, 100% { opacity: 1; transform: scale(1) rotate(0); } 50% { opacity: .55; transform: scale(.75) rotate(45deg); } }
+@media (prefers-reduced-motion: reduce) { :root[data-estilo="baddie"] :is(.ed-panel-titulo, .ed-modal h2)::after { animation: none; } }
+body.ed-mov-nada :is(.ed-panel-titulo, .ed-modal h2)::after { animation: none !important; }
+
+/* ── La abejita baddie: pestañas, labial rojo, chapitas y brillitos ── */
+.ed-abeja .ab-baddie, .ed-abeja .ab-labios { display: none; }
+:root[data-estilo="baddie"] .ed-abeja .ab-baddie { display: inline; }
+:root[data-estilo="baddie"] .ed-abeja[data-boca="sonrisa"] .ab-labios { display: inline; }
+:root[data-estilo="baddie"] .ed-abeja[data-boca="sonrisa"] [data-b="sonrisa"] { display: none !important; }
+:root[data-estilo="baddie"] .ed-abeja [data-b="grande"], :root[data-estilo="baddie"] .ed-abeja [data-b="o"] { fill: #d4002a; stroke: #7a0018; }
+:root[data-estilo="baddie"] .ed-abeja [data-b="gato"] { stroke: #d4002a; stroke-width: 2.4; }
+:root[data-estilo="baddie"] .ed-abeja .ab-chapa { fill: #ff3f7a; opacity: .85; }
+:root[data-estilo="baddie"] .ed-abeja .ab-ala { fill: rgba(255, 190, 225, .55); stroke: #ff6fb5; }
+:root[data-estilo="baddie"] .ed-abeja .ab-antena { fill: var(--bd-rosa); }
+:root[data-estilo="baddie"] .ed-abeja .ab-rayas { fill: #120a10; }
+:root[data-estilo="baddie"] .ed-abeja-in { filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .5)) drop-shadow(0 0 10px rgba(255, 46, 138, .45)); }
+:root[data-estilo="baddie"] .ed-abeja .ab-brillito { animation: bd-titila 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+
+/* Tarjetita de muestra en Configuración */
+.ed-config-estilo.baddie i { background: radial-gradient(circle at 20% 30%, #fff 0 1px, transparent 1.6px) 0 0 / 14px 14px, linear-gradient(135deg, #ff2e8a 0 30%, #0c080e 30% 70%, #b77bff 70%); border: 1px solid #ff2e8a; box-shadow: 0 0 14px rgba(255, 46, 138, .55); }
+.ed-config-estilo.baddie b { font: italic 700 16px/1 "Playfair Display", Georgia, serif; }
+/* La notita de la música: blanca sobre el rosa (no rosa sobre rosa) */
+:root[data-estilo="baddie"] .ed-musica-b.on .ed-ico { color: #fff; filter: drop-shadow(0 0 4px rgba(255, 255, 255, .7)); }

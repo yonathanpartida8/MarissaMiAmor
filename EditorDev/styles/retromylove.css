@@ -189,7 +189,7 @@ body.ed-mov-nada :is(.rml-grano, .rml-parpadeo), body.ed-calidad-baja .rml-parpa
 body.ed-calidad-baja .rml-grano { opacity: .035; }
 
 /* Elegir estilo en Configuración: dos tarjetitas de muestra */
-.ed-config-estilos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.ed-config-estilos { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-bottom: 10px; }
 .ed-config-estilo { display: grid; gap: 6px; padding: 8px; border: 1.5px solid var(--linea); border-radius: var(--mano-chica); background: var(--superficie); color: var(--texto); text-align: left; transition: border-color .2s, transform .25s var(--resorte); }
 .ed-config-estilo.on { border-color: var(--acento); box-shadow: 0 0 0 3px var(--acento-suave); }
 .ed-config-estilo i { display: block; height: 46px; border-radius: 8px; }

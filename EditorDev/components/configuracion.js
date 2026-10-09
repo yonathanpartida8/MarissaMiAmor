@@ -31,7 +31,7 @@ export class Configuracion {
     });
     const notaHz = el("small.ed-ayuda");
     v.add(() => { notaHz.textContent = `Tu pantalla da ${HZ.real} Hz${HZS.some((h) => +h > HZ.real + 2) ? ` (por eso no aparecen ${HZS.filter((h) => +h > HZ.real + 2).join(", ")})` : ""}. Ahora el editor va a ${objetivo()} Hz. Bajar ahorra batería y calor.`; });
-    const estilos = el("div.ed-config-estilos", {}, [["cuaderno", "Cuaderno", "crayón, papel y stickers"], ["retromylove", "RetroMyLove", "píxeles, papel viejo y grano vivo"]].map(([k, t, d]) => {
+    const estilos = el("div.ed-config-estilos", {}, [["cuaderno", "Cuaderno", "crayón, papel y stickers"], ["retromylove", "RetroMyLove", "píxeles, papel viejo y grano vivo"], ["baddie", "Baddie", "negro, rosa fuerte, cromo y brillo"]].map(([k, t, d]) => {
       const b = el("button.ed-config-estilo." + k, { type: "button", onClick: () => { poner({ estilo: k }); app.sonidos?.sonar("seleccionar"); } }, [el("i"), el("b", { text: t }), el("small", { text: d })]);
       v.add(() => b.classList.toggle("on", PREF.estilo === k));
       return b;
@@ -80,7 +80,7 @@ export class Configuracion {
         fila("Consejos automáticos", p("consejos", { tipo: "toggle" }), "muy de vez en cuando, discretos"),
       ], { abierta: false }),
       seccion("Interfaz", [
-        fila("Estilo", p("estilo", { tipo: "segmento", opciones: [["cuaderno", "Cuaderno"], ["retromylove", "RetroMyLove"]] }), "RetroMyLove: retro de los 90, píxeles, papel y grano vivo"),
+        fila("Estilo", p("estilo", { tipo: "segmento", opciones: [["cuaderno", "Cuaderno"], ["retromylove", "RetroMyLove"], ["baddie", "Baddie"]] }), "RetroMyLove: retro de los 90 · Baddie: negro, rosa fuerte y brillo (la abejita también se arregla)"),
         fila("Grano animado", p("grano", { tipo: "toggle" }), "sólo en RetroMyLove"),
         fila("Parpadeo analógico", p("parpadeo", { tipo: "toggle" }), "sutil, como un monitor viejo (sólo RetroMyLove)"),
         fila("Tema", p("tema", { tipo: "segmento", opciones: [["auto", "Como el teléfono"], ["claro", "Claro"], ["oscuro", "Oscuro"]] })),

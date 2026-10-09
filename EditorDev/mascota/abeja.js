@@ -20,19 +20,23 @@ import { PREF, movimiento } from "../config/preferencias.js";
 const DIBUJO = `<svg viewBox="0 0 80 74" aria-hidden="true">
 <defs>
   <radialGradient id="ab-cuerpo" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="#fff3a6"/><stop offset=".55" stop-color="#ffd23f"/><stop offset="1" stop-color="#f4a71d"/></radialGradient>
+  <linearGradient id="ab-ala-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".95"/><stop offset=".55" stop-color="#dcefff" stop-opacity=".72"/><stop offset="1" stop-color="#ffd3ea" stop-opacity=".62"/></linearGradient>
   <clipPath id="ab-recorte"><circle cx="40" cy="44" r="22"/></clipPath>
 </defs>
 <g class="ab-alas">
   <ellipse class="ab-ala ab-ala-i" cx="26" cy="25" rx="11" ry="15" transform="rotate(-24 26 25)"/>
   <ellipse class="ab-ala ab-ala-d" cx="54" cy="25" rx="11" ry="15" transform="rotate(24 54 25)"/>
 </g>
-<path d="M33 25q-5-9-8-15M47 25q5-9 8-15" fill="none" stroke="#4a3320" stroke-width="2" stroke-linecap="round"/>
+<path class="ab-tallos" d="M33 25q-5-9-8-15M47 25q5-9 8-15" fill="none" stroke="#4a3320" stroke-width="2" stroke-linecap="round"/>
 <path class="ab-antena" d="M25 10c-3-3-7 1-3 4l3 3 3-3c4-3 0-7-3-4z" fill="#ff7aa2"/>
 <path class="ab-antena" d="M55 10c-3-3-7 1-3 4l3 3 3-3c4-3 0-7-3-4z" fill="#ff7aa2"/>
+<path class="ab-patas" d="M33.5 63.5q-1.2 3.6-3.6 5M46.5 63.5q1.2 3.6 3.6 5" fill="none" stroke="#4a3320" stroke-width="2" stroke-linecap="round"/>
 <path d="M40 70l-3.5-5h7z" fill="#4a3320"/>
 <circle cx="40" cy="44" r="22" fill="url(#ab-cuerpo)"/>
-<g clip-path="url(#ab-recorte)" fill="#4a3320" opacity=".9"><rect x="14" y="54" width="52" height="5" rx="2.5"/><rect x="14" y="61.5" width="52" height="4" rx="2"/></g>
-<circle cx="40" cy="44" r="22" fill="none" stroke="#4a3320" stroke-width="2.2"/>
+<g class="ab-rayas" clip-path="url(#ab-recorte)" fill="#4a3320" opacity=".9"><rect x="14" y="54" width="52" height="5" rx="2.5"/><rect x="14" y="61.5" width="52" height="4" rx="2"/></g>
+<circle class="ab-borde" cx="40" cy="44" r="22" fill="none" stroke="#4a3320" stroke-width="2.2"/>
+<ellipse class="ab-luz" cx="31" cy="31.5" rx="7.5" ry="3.6" transform="rotate(-28 31 31.5)" fill="#fff" opacity=".5"/>
+<circle cx="49" cy="29.5" r="1.4" fill="#fff" opacity=".7"/>
 <g class="ab-cara">
   <g data-o="normal" class="ab-ojos-n"><ellipse cx="32" cy="41" rx="3.4" ry="4.2" fill="#2b1d12"/><ellipse cx="48" cy="41" rx="3.4" ry="4.2" fill="#2b1d12"/><circle cx="33.3" cy="39.3" r="1.4" fill="#fff"/><circle cx="49.3" cy="39.3" r="1.4" fill="#fff"/><circle cx="31.2" cy="43" r=".6" fill="#fff"/><circle cx="47.2" cy="43" r=".6" fill="#fff"/></g>
   <g data-o="feliz" fill="none" stroke="#2b1d12" stroke-width="2.2" stroke-linecap="round"><path d="M28.5 42q3.5-5 7 0M44.5 42q3.5-5 7 0"/></g>
@@ -40,11 +44,18 @@ const DIBUJO = `<svg viewBox="0 0 80 74" aria-hidden="true">
   <g data-o="corazon" fill="#ff4f7f"><path d="M32 45l-4-4c-2-2 0-5 2.2-4l1.8 1.3 1.8-1.3c2.2-1 4.2 2 2.2 4z"/><path d="M48 45l-4-4c-2-2 0-5 2.2-4l1.8 1.3 1.8-1.3c2.2-1 4.2 2 2.2 4z"/></g>
   <g data-o="susto"><circle cx="32" cy="41" r="4.6" fill="#fff" stroke="#2b1d12" stroke-width="1.6"/><circle cx="48" cy="41" r="4.6" fill="#fff" stroke="#2b1d12" stroke-width="1.6"/><circle cx="32" cy="41.5" r="1.6" fill="#2b1d12"/><circle cx="48" cy="41.5" r="1.6" fill="#2b1d12"/><path d="M58 33q2 4 0 6q-2-2 0-6z" fill="#8fd3ff"/></g>
   <g data-o="dormida" fill="none" stroke="#2b1d12" stroke-width="2" stroke-linecap="round"><path d="M28.5 41.5h7M44.5 41.5h7"/></g>
-  <ellipse cx="26.5" cy="48" rx="3.6" ry="2.2" fill="#ff8fa3" opacity=".75"/><ellipse cx="53.5" cy="48" rx="3.6" ry="2.2" fill="#ff8fa3" opacity=".75"/>
+  <ellipse class="ab-chapa" cx="26.5" cy="48" rx="3.6" ry="2.2" fill="#ff8fa3" opacity=".75"/><ellipse class="ab-chapa" cx="53.5" cy="48" rx="3.6" ry="2.2" fill="#ff8fa3" opacity=".75"/>
   <path data-b="sonrisa" d="M36.5 48.5q3.5 3.4 7 0" fill="none" stroke="#2b1d12" stroke-width="1.9" stroke-linecap="round"/>
   <path data-b="grande" d="M35.5 47.5q4.5 6.5 9 0z" fill="#c2324f" stroke="#2b1d12" stroke-width="1.6" stroke-linejoin="round"/>
   <path data-b="gato" d="M35.5 48q2.2 2.4 4.5 0q2.3 2.4 4.5 0" fill="none" stroke="#2b1d12" stroke-width="1.8" stroke-linecap="round"/>
   <ellipse data-b="o" cx="40" cy="49.5" rx="2.4" ry="3" fill="#c2324f" stroke="#2b1d12" stroke-width="1.5"/>
+  <g class="ab-baddie">
+    <path d="M28.8 38.3l-2.9-1.6M29.6 37.2l-1.9-2.6M31 36.6l-.8-3M51.2 38.3l2.9-1.6M50.4 37.2l1.9-2.6M49 36.6l.8-3" fill="none" stroke="#120a0e" stroke-width="1.35" stroke-linecap="round"/>
+    <circle cx="25.2" cy="47.2" r=".75" fill="#fff"/><circle cx="52.2" cy="47.2" r=".75" fill="#fff"/>
+    <g class="ab-labios"><path d="M35.4 48.4q2.3-1.9 4.6-.5q2.3-1.4 4.6.5q-1.7 3.8-4.6 3.8q-2.9 0-4.6-3.8z" fill="#d4002a" stroke="#7a0018" stroke-width=".8" stroke-linejoin="round"/><path d="M37.6 50.3q2.4.9 4.8 0" fill="none" stroke="#ff9db2" stroke-width=".7" stroke-linecap="round"/></g>
+    <path class="ab-brillito" d="M63 19l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" fill="#fff"/>
+    <path class="ab-brillito" d="M15 33l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" fill="#ffd1ea" style="animation-delay:.9s"/>
+  </g>
 </g>
 </svg>`;
 

@@ -1659,3 +1659,11 @@ body.ed-con-zonas .ed-dock { display: none; }
 body[data-bib-fondo="oscuro"] .ed-bib-prev, body[data-bib-fondo="oscuro"] .ed-bib-grande { background: radial-gradient(120% 90% at 50% 30%, #3b2e42 0%, #221a27 55%, #15101a 100%); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); }
 body[data-bib-fondo="claro"] .ed-bib-prev, body[data-bib-fondo="claro"] .ed-bib-grande { background: #fff; box-shadow: inset 0 0 0 1px var(--linea); }
 body[data-bib-fondo="oscuro"] .ed-bib-prev img, body[data-bib-fondo="oscuro"] .ed-bib-grande img { filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .45)); }
+
+/* ── Fase 6: abejita más detallada (alas tornasol, brillo, patitas, mirada) ── */
+.ed-abeja .ab-ala { fill: url(#ab-ala-g); }
+.ed-abeja .ab-patas { transform-box: fill-box; transform-origin: 50% 0; animation: ed-ab-patas 1.2s ease-in-out infinite; }
+.ed-abeja .ab-ojos-n { animation: ed-ab-parpadeo 4.6s infinite, ed-ab-mira 9s ease-in-out infinite; }
+@keyframes ed-ab-patas { 50% { transform: rotate(6deg); } }
+@keyframes ed-ab-mira { 0%, 38%, 100% { translate: 0 0; } 42%, 56% { translate: 1.1px -.2px; } 60%, 74% { translate: -1.1px .2px; } 78% { translate: 0 0; } }
+body.ed-mov-nada .ed-abeja .ab-patas, body.ed-mov-nada .ed-abeja .ab-ojos-n { animation: none !important; }

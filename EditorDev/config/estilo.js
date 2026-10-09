@@ -1,5 +1,8 @@
 /**
- * ESTILOS DE LA INTERFAZ — «Cuaderno» (el de siempre) o «RetroMyLove».
+ * ESTILOS DE LA INTERFAZ — «Cuaderno» (el de siempre), «RetroMyLove» o «Baddie».
+ *
+ * Baddie vive entero en styles/baddie.css (negro, rosa fuerte, cromo y
+ * brillitos; la abejita se pone pestañas, labial rojo y chapitas).
  *
  * RetroMyLove vive entero en styles/retromylove.css, bajo
  * :root[data-estilo="retromylove"]: cambia los tokens (colores, bordes,
@@ -11,14 +14,19 @@
  *     desplazándose a saltitos con transform (sin repintar nada),
  *   · se pone o se quita el velo de grano y el parpadeo analógico.
  */
-let fuentes = false, textura = null;
+let textura = null;
+const FUENTES = {
+  retromylove: "https://fonts.googleapis.com/css2?family=Silkscreen&family=VT323&family=Nunito:wght@400;600;700&display=swap",
+  baddie: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&family=Poppins:wght@400;500;600&display=swap",
+};
+const pedidas = new Set();
 
-function pedirFuentes() {
-  if (fuentes) return;
-  fuentes = true;
+function pedirFuentes(estilo) {
+  if (!FUENTES[estilo] || pedidas.has(estilo)) return;
+  pedidas.add(estilo);
   const l = document.createElement("link");
   l.rel = "stylesheet";
-  l.href = "https://fonts.googleapis.com/css2?family=Silkscreen&family=VT323&family=Nunito:wght@400;600;700&display=swap";
+  l.href = FUENTES[estilo];
   document.head.append(l);
 }
 
@@ -41,7 +49,7 @@ function grano() {
 export function aplicarEstilo(p) {
   const r = document.documentElement, b = document.body;
   const retro = p.estilo === "retromylove";
-  if (retro) { r.dataset.estilo = "retromylove"; pedirFuentes(); } else delete r.dataset.estilo;
+  if (p.estilo === "retromylove" || p.estilo === "baddie") { r.dataset.estilo = p.estilo; pedirFuentes(p.estilo); } else delete r.dataset.estilo;
   // El grano sólo existe con RetroMyLove y si se quiere; quieto con «sin movimiento».
   let v = document.querySelector(".rml-grano");
   if (retro && p.grano) {
