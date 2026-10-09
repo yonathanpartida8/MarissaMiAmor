@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuerdita Mágica Pro</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .lamp-container {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            height: 650px;
+            pointer-events: none; /* Permite clics a través del contenedor vacío */
+        }
+
+        canvas {
+            display: block;
+            pointer-events: auto; /* Solo interactivo en la zona de la lámpara */
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="lamp-container">
+        <canvas id="lampCanvas" width="400" height="650"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('lampCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- 1. CONFIGURACIÓN DE AUDIO WEB API ---
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSwitchSound() {
+            initAudio();
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(580, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.07);
+
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(1800, audioCtx.currentTime);
+
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.07);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.07);
+        }
+
+        function playTensionSound(intensity) {
+            initAudio();
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(100 + intensity * 60, audioCtx.currentTime);
+
+            gain.gain.setValueAtTime(0.015 * Math.min(intensity, 1), audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.04);
+        }
+
+        // --- 2. FÍSICAS VERLET Y PARTÍCULAS ---
+        const originX = 200;
+        const originY = 35;
+
+        class VerletNode {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.oldX = x;
+                this.oldY = y;
+                this.pinned = false;
+            }
+        }
+
+        const numSegments = 14;
+        const segmentLength = 15;
+        const nodes = [];
+
+        for (let i = 0; i <= numSegments; i++) {
+            nodes.push(new VerletNode(originX, originY + 50 + i * segmentLength));
+        }
+
+        const handleRadius = 24;
+        let isDragging = false;
+        let dragX = originX;
+        let dragY = originY + 50 + numSegments * segmentLength;
+
+        let isLightOn = false;
+        let lightIntensity = 0;
+        let toggleTriggered = false;
+
+        // Partículas de polvo mágico flotantes
+        const particles = [];
+        for (let i = 0; i < 30; i++) {
+            particles.push({
+                x: originX + (Math.random() - 0.5) * 200,
+                y: originY + 80 + Math.random() * 300,
+                vx: (Math.random() - 0.5) * 0.6,
+                vy: -0.2 - Math.random() * 0.8,
+                radius: Math.random() * 2 + 1,
+                alpha: Math.random()
+            });
+        }
+
+        // Utilidades de puntero (Ratón y Táctil)
+        function getPointerPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            initAudio();
+            const pos = getPointerPos(e);
+            const lastNode = nodes[nodes.length - 1];
+            const dist = Math.hypot(pos.x - lastNode.x, pos.y - lastNode.y);
+            if (dist <= handleRadius + 22) {
+                isDragging = true;
+                toggleTriggered = false;
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const pos = getPointerPos(e);
+            dragX = pos.x;
+            dragY = pos.y;
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            initAudio();
+            const pos = getPointerPos(e);
+            const lastNode = nodes[nodes.length - 1];
+            const dist = Math.hypot(pos.x - lastNode.x, pos.y - lastNode.y);
+            if (dist <= handleRadius + 25) {
+                isDragging = true;
+                toggleTriggered = false;
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const pos = getPointerPos(e);
+            dragX = pos.x;
+            dragY = pos.y;
+            e.preventDefault();
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        // --- 3. BUCLE DE ANIMACIÓN PRINCIPAL ---
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Actualizar físicas Verlet de la cuerda
+            const gravity = 0.55;
+            const friction = 0.985;
+
+            for (let i = 0; i < nodes.length; i++) {
+                let node = nodes[i];
+                if (node.pinned) continue;
+
+                let vx = (node.x - node.oldX) * friction;
+                let vy = (node.y - node.oldY) * friction;
+
+                node.oldX = node.x;
+                node.oldY = node.y;
+
+                node.x += vx;
+                node.y += vy + gravity;
+            }
+
+            if (isDragging) {
+                const lastNode = nodes[nodes.length - 1];
+                lastNode.x = dragX;
+                lastNode.y = dragY;
+
+                const pullLen = Math.hypot(lastNode.x - originX, lastNode.y - (originY + 50));
+                if (Math.random() < 0.25) {
+                    playTensionSound(pullLen / 100);
+                }
+            }
+
+            // Resolver restricciones de distancia
+            for (let iter = 0; iter < 10; iter++) {
+                nodes[0].x = originX;
+                nodes[0].y = originY + 50;
+                nodes[0].pinned = true;
+
+                if (isDragging) {
+                    nodes[nodes.length - 1].x = dragX;
+                    nodes[nodes.length - 1].y = dragY;
+                }
+
+                for (let i = 0; i < nodes.length - 1; i++) {
+                    let p1 = nodes[i];
+                    let p2 = nodes[i+1];
+                    let dx = p2.x - p1.x;
+                    let dy = p2.y - p1.y;
+                    let dist = Math.hypot(dx, dy);
+                    let diff = (segmentLength - dist) / dist;
+
+                    let offsetX = dx * diff * 0.5;
+                    let offsetY = dy * diff * 0.5;
+
+                    if (!p1.pinned) {
+                        p1.x -= offsetX;
+                        p1.y -= offsetY;
+                    }
+                    if (!p2.pinned && !(isDragging && i + 1 === nodes.length - 1)) {
+                        p2.x += offsetX;
+                        p2.y += offsetY;
+                    }
+                }
+            }
+
+            // Interruptor por jalón
+            const lastNode = nodes[nodes.length - 1];
+            const restY = originY + 50 + (numSegments * segmentLength);
+            const pullDistance = lastNode.y - restY;
+            const threshold = 60;
+
+            if (pullDistance > threshold && !toggleTriggered) {
+                isLightOn = !isLightOn;
+                toggleTriggered = true;
+                playSwitchSound();
+            }
+
+            if (pullDistance < 15) {
+                toggleTriggered = false;
+            }
+
+            const targetIntensity = isLightOn ? 1 : 0;
+            lightIntensity += (targetIntensity - lightIntensity) * 0.12;
+
+            // --- RENDERIZADO VISUAL ---
+
+            // A. Luz ambiental cálida volumétrica
+            if (lightIntensity > 0.01) {
+                const glow = ctx.createRadialGradient(originX, originY + 30, 15, originX, originY + 30, 340);
+                glow.addColorStop(0, `rgba(255, 238, 150, ${0.85 * lightIntensity})`);
+                glow.addColorStop(0.4, `rgba(255, 185, 60, ${0.35 * lightIntensity})`);
+                glow.addColorStop(1, 'rgba(255, 120, 20, 0)');
+
+                ctx.fillStyle = glow;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Partículas de polvo mágico
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.y < originY) p.y = originY + 350;
+                    if (p.x < originX - 150 || p.x > originX + 150) p.vx *= -1;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 250, 200, ${0.7 * lightIntensity * Math.abs(Math.sin(p.y * 0.05))})`;
+                    ctx.fill();
+                });
+            }
+
+            // B. Casquillo y cable superior
+            ctx.fillStyle = '#2b2d35';
+            ctx.beginPath();
+            ctx.roundRect(originX - 16, originY - 20, 32, 24, 6);
+            ctx.fill();
+
+            ctx.strokeStyle = '#15171c';
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.moveTo(originX, 0);
+            ctx.lineTo(originX, originY - 20);
+            ctx.stroke();
+
+            // C. Bombilla de cristal estético
+            ctx.beginPath();
+            ctx.arc(originX, originY + 30, 24, 0, Math.PI * 2);
+            if (lightIntensity > 0.05) {
+                ctx.fillStyle = `rgba(255, 248, 180, ${0.55 + 0.45 * lightIntensity})`;
+                ctx.shadowColor = '#FFD700';
+                ctx.shadowBlur = 35 * lightIntensity;
+            } else {
+                ctx.fillStyle = 'rgba(215, 225, 235, 0.5)';
+                ctx.shadowBlur = 0;
+            }
+            ctx.fill();
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Reflejo de cristal
+            ctx.beginPath();
+            ctx.arc(originX - 8, originY + 22, 5, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+            ctx.fill();
+
+            // D. Cuerda flexible Verlet
+            ctx.strokeStyle = '#d6b896';
+            ctx.lineWidth = 3.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(nodes[0].x, nodes[0].y);
+            for (let i = 1; i < nodes.length; i++) {
+                ctx.lineTo(nodes[i].x, nodes[i].y);
+            }
+            ctx.stroke();
+
+            // E. Colgante / Tirador esférico aesthetic
+            const hx = lastNode.x;
+            const hy = lastNode.y;
+
+            ctx.beginPath();
+            ctx.arc(hx, hy, handleRadius, 0, Math.PI * 2);
+
+            const beadGrad = ctx.createRadialGradient(hx - 7, hy - 7, 3, hx, hy, handleRadius);
+            beadGrad.addColorStop(0, '#ff9a9e');
+            beadGrad.addColorStop(0.5, '#fecfef');
+            beadGrad.addColorStop(1, '#e0c3fc');
+            ctx.fillStyle = beadGrad;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            ctx.shadowBlur = 12;
+            ctx.shadowOffsetY = 5;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Anillo metálico superior del tirador
+            ctx.beginPath();
+            ctx.arc(hx, hy - handleRadius + 3, 5.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fill();
+
+            requestAnimationFrame(animate);
+        }
+
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
