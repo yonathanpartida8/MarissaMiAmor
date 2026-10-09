@@ -46,7 +46,7 @@ function unir(zonas, max) {
 
 /** Abre el componente escondido y lo analiza. */
 export async function analizar(url, { ancho, alto, aislado } = {}) {
-  const W = ancho || 360, H = alto || 360;
+  let W = ancho || 360, H = alto || 360;
   const natural = { w: W, h: H };
   if (aislado) return { natural, interactivos: [], visual: [], fondo: [], resumen: "aislado: no se puede mirar por dentro" };
   const f = document.createElement("iframe");
@@ -60,6 +60,27 @@ export async function analizar(url, { ancho, alto, aislado } = {}) {
     await new Promise((r) => setTimeout(r, 700));
     const doc = f.contentDocument, win = f.contentWindow;
     if (!doc || !doc.body) return { natural, interactivos: [], visual: [], fondo: [], resumen: "" };
+    // Sin tamaño declarado: si lo que dibuja es más grande que la prueba (un lienzo
+    // de 400×650, algo centrado que se sale…), el marco crece hasta abarcarlo.
+    // Nunca se achica: lo que llena la pantalla o se anima hacia afuera no se corta.
+    if (!ancho || !alto) {
+      let x0 = 0, y0 = 0, x1 = W, y1 = H;
+      for (const n of doc.body.querySelectorAll("*")) {
+        const r = n.getBoundingClientRect();
+        if (r.width < 2 || r.height < 2 || r.width > 4000 || r.height > 4000) continue;
+        const cs = win.getComputedStyle(n);
+        if (cs.display === "none" || cs.visibility === "hidden") continue;
+        x0 = Math.min(x0, r.left); y0 = Math.min(y0, r.top); x1 = Math.max(x1, r.right); y1 = Math.max(y1, r.bottom);
+      }
+      const nw = Math.min(1600, Math.ceil(x1 - x0)), nh = Math.min(2000, Math.ceil(y1 - y0));
+      if ((!ancho && nw > W + 8) || (!alto && nh > H + 8)) {
+        if (!ancho) W = Math.max(W, nw);
+        if (!alto) H = Math.max(H, nh);
+        natural.w = W; natural.h = H;
+        f.style.width = W + "px"; f.style.height = H + "px";
+        await new Promise((r) => setTimeout(r, 450));
+      }
+    }
     const area = W * H;
     const interactivos = [], vivos = [], fondo = [], visual = [];
     const dentroDe = (lista, n) => lista.some((x) => x !== n && x.contains(n));

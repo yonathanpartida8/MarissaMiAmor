@@ -705,6 +705,25 @@ export default {
    "items": [
     {
      "tipo": "componente",
+     "id": "efectos-animados/VerletLamp.html",
+     "nombre": "Cuerdita Mágica Pro",
+     "descripcion": "",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "VerletLamp.html",
+     "ancho": null,
+     "alto": null,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "VerletLamp.html"
+     ],
+     "peso": 13159,
+     "suelto": true,
+     "fecha": 1791585271000
+    },
+    {
+     "tipo": "componente",
      "id": "efectos-animados/brillitos.html",
      "nombre": "Brillitos",
      "descripcion": "Destellos que aparecen y desaparecen",
