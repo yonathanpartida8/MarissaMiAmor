@@ -7,7 +7,7 @@
  * nunca a cada tecla.
  */
 import { el, boton, menu, pedirTexto, modal, ordenable } from "../components/ui.js";
-import { PLANTILLAS } from "../templates/plantillas.js";
+import { PLANTILLAS, GRUPOS_PLANTILLAS } from "../templates/plantillas.js";
 import { rutaAUrl } from "../assets/biblioteca.js";
 import { ico } from "../components/iconos.js";
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
@@ -136,8 +136,10 @@ export class PanelPaginas {
     const { ancho: W, alto: H } = P.ajustes;
     const ctx = { modo: "mini", url: () => null };
     const vivas = [];
-    const rej = el("div.ed-plantillas", {}, PLANTILLAS.map((t) => {
+    const fuentes = new Set();
+    const ficha = (t) => {
       const pg = t.crear(P);
+      for (const x of pg.els) if (x.texto?.fuente) fuentes.add(x.texto.fuente);
       const pag = new RT.Pagina(pg, { ...ctx, modo: "editor" }, W, H);
       vivas.push(pag);
       pag.nodo.style.transform = `scale(${120 / W})`;
@@ -146,7 +148,13 @@ export class PanelPaginas {
         el("div.ed-mini", { style: { aspectRatio: `${W} / ${H}`, width: "120px" } }, [el("div.ed-mini-escala", {}, [pag.nodo])]),
         el("b", { text: t.n }), el("small", { text: t.d }),
       ]);
-    }));
+    };
+    // Por grupos (Portadas, Fotos…); las que no digan grupo van en «Música y más».
+    const rej = el("div.ed-plantillas-grupos", {}, GRUPOS_PLANTILLAS.map(([id, n]) => {
+      const ts = PLANTILLAS.filter((t) => (t.cat || "mas") === id);
+      return ts.length ? el("section.ed-plantillas-grupo", {}, [el("div.ed-sub-t", { text: n }), el("div.ed-plantillas", {}, ts.map(ficha))]) : null;
+    }).filter(Boolean));
+    RT.cargarFuentes([...fuentes]);
     let elegida = null;
     rej.addEventListener("click", (e) => {
       const b = e.target.closest(".ed-plantilla");

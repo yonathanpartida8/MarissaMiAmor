@@ -19,6 +19,14 @@ import { crearPorCodigo } from "./animar.js";
 const RT = window.LibritoRT;
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 
+/** Las integradas, ordenadas por cómo se sienten (las que no estén aquí van en «Otras»). */
+const GRUPOS = [
+  ["Suaves", ["ninguna", "fundido", "disolver", "desenfoque", "zoom"]],
+  ["Deslizar", ["deslizar", "empujar", "cortina"]],
+  ["Como un libro", ["hoja", "voltear"]],
+  ["Con forma", ["circulo"]],
+];
+
 /** Una página en chiquito (sin marcos ni vídeos: sólo cómo se ve). */
 function mini(app, pagina, ancho) {
   const L = app.lienzo;
@@ -44,18 +52,21 @@ export const TRANSICIONES = {
     const pt = E.pagina?.transicion;
     const actual = (pt?.tipo ? pt : gT).tipo;
     const tile = (k, n, def, borrar) => {
-      const b = el("button.ed-trans-t" + (actual === k || actual === def?.id ? ".on" : ""), { type: "button", title: n }, [
-        el("span.ed-trans-escena", {}, [el("i.a"), el("i.b")]),
+      const b = el("button.ed-trans-t" + (actual === k || actual === def?.id ? ".on" : ""), { type: "button", title: n, dataset: { k } }, [
+        el("span.ed-trans-escena", {}, [el("i.a", { style: { zIndex: 2 } }), el("i.b", { style: { zIndex: 1 } })]),
         el("span", { text: n }),
         borrar ? el("u.ed-anim-x", { html: ico("cerrar"), title: "Borrar", onClick: (ev) => { ev.stopPropagation(); borrar(); } }) : null,
       ].filter(Boolean));
+      b._def = def;
       b.addEventListener("pointerenter", (ev) => { if (ev.pointerType === "mouse") this._miniTrans(b, k, def); });
       b.addEventListener("click", () => { this._miniTrans(b, k, def); this._previaTrans(k, n, def); });
       return b;
     };
-    const integradas = Object.entries(RT.TRANS).filter(([k, v]) => !v.propia && k !== "personalizada").map(([k, v]) => tile(k, v.n));
-    integradas.push(tile("personalizada", "A mi medida"));
-    c.append(seccion("Transiciones", [el("div.ed-trans-rejilla", {}, integradas), el("small.ed-ayuda", { text: "Toca una para verla antes de usarla. Es la transición con la que se LLEGA a la página." })]));
+    const todas = Object.entries(RT.TRANS).filter(([k, v]) => !v.propia && k !== "personalizada");
+    const puestas = new Set(GRUPOS.flatMap((g) => g[1]));
+    const grupos = [...GRUPOS.map(([n, ks]) => [n, ks.filter((k) => RT.TRANS[k])]), ["Otras", todas.map(([k]) => k).filter((k) => !puestas.has(k))], ["A tu medida", ["personalizada"]]].filter((g) => g[1].length);
+    const filas = grupos.flatMap(([n, ks]) => [el("div.ed-sub-t", { text: n }), el("div.ed-trans-rejilla", {}, ks.map((k) => tile(k, k === "personalizada" ? "A mi medida" : RT.TRANS[k].n)))]);
+    c.append(seccion("Transiciones", [...filas, el("small.ed-ayuda", { text: "Cada miniatura muestra cómo pasa de una hoja (la de rayitas) a la otra (la del corazón). Toca una para verla con tus páginas antes de usarla. Es la transición con la que se LLEGA a la página." })]));
     const m = Object.values(mias().transiciones);
     const nueva = el("button.ed-trans-t.nueva", { type: "button", onClick: () => crearPorCodigo(app, "transicion").then((d) => { if (d) this.rehacer(); }) }, [el("span.ed-trans-escena", { html: ico("varita") }), el("span", { text: "Crear" })]);
     c.append(seccion("Mías", [el("div.ed-trans-rejilla", {}, [nueva, ...m.map((d) => tile(d.id, d.n, d, async () => { if (await confirmar(`¿Borrar «${d.n}» de tus transiciones?`, "Borrar")) { borrarMia("transiciones", d.id); this.rehacer(); } }))])], { clase: "compacta" }));
@@ -67,6 +78,7 @@ export const TRANSICIONES = {
       carpeta.textContent = "";
       if (lista.length) carpeta.append(...lista); else carpeta.append(el("small.ed-ayuda", { text: "Deja carpetas en assets/transiciones/ (con transicion.json, .css o .js) y aparecen aquí." }));
     });
+    this._vivasTrans(c);
     // Los ajustes finos (lo de siempre).
     const dirs = [["auto", "Según hacia dónde pases"], ["izquierda", "Hacia la izquierda"], ["derecha", "Hacia la derecha"], ["arriba", "Hacia arriba"], ["abajo", "Hacia abajo"]];
     const facil = Object.entries(RT.FACIL).map(([k, v]) => [k, v.n]);
@@ -96,15 +108,44 @@ export const TRANSICIONES = {
   },
 
   /** La miniatura de un botón: dos rectangulitos haciendo la transición. */
+  /** Una pasada de la miniatura: la hoja de arriba se va y queda la otra (sin saltos). */
   _miniTrans(b, k, def) {
-    const [a, bb] = b.querySelectorAll(".ed-trans-escena i");
-    if (!a) return;
+    const [x, y] = b.querySelectorAll(".ed-trans-escena i");
+    if (!x || b._anda) return;
     const d = def ? { entra: def.entra, sale: def.sale, encima: def.encima } : RT.TRANS[k]?.f?.("izquierda", false, this.P.ajustes.transicion.propia);
-    if (!d) return;
-    bb.style.zIndex = d.encima === "sale" ? 1 : 2;
-    a.style.zIndex = d.encima === "sale" ? 2 : 1;
-    const op = { duration: def?.dur || 700, easing: "ease-in-out" };
-    try { if (d.sale) a.animate(d.sale, op); if (d.entra) bb.animate(d.entra, op); } catch (x) { /* nada */ }
+    if (!d || (!d.sale && !d.entra)) return;
+    const de = b._arriba || x, a = de === x ? y : x;
+    de.style.zIndex = d.encima === "sale" ? 3 : 1;
+    a.style.zIndex = d.encima === "sale" ? 1 : 3;
+    const op = { duration: def?.dur || 700, easing: "ease-in-out", fill: "both" };
+    try {
+      const anims = [d.sale && de.animate(d.sale, op), d.entra && a.animate(d.entra, op)].filter(Boolean);
+      b._anda = true;
+      Promise.all(anims.map((q) => q.finished)).catch(() => {}).then(() => {
+        a.style.zIndex = 2; de.style.zIndex = 1;
+        for (const q of anims) q.cancel();
+        b._arriba = a;
+        b._anda = false;
+      });
+    } catch (er) { b._anda = false; }
+  },
+
+  /** Las miniaturas se mueven solas: sólo las que se ven y todas al mismo ritmo. */
+  _vivasTrans(c) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const vistas = new Set();
+    const io = "IntersectionObserver" in window ? new IntersectionObserver((es) => { for (const e of es) { if (e.isIntersecting) vistas.add(e.target); else vistas.delete(e.target); } }) : null;
+    const mirar = () => { for (const b of c.querySelectorAll(".ed-trans-t[data-k]")) if (!b._mira) { b._mira = true; if (io) io.observe(b); else vistas.add(b); } };
+    mirar();
+    const reloj = setInterval(() => {
+      if (!c.isConnected || document.hidden) { if (!c.isConnected) parar(); return; }
+      mirar();
+      let n = 0;
+      for (const b of vistas) { const t = (n++ % 8) * 60; setTimeout(() => this._miniTrans(b, b.dataset.k, b._def), t); }
+    }, 2200);
+    const parar = () => { clearInterval(reloj); io?.disconnect(); };
+    const antes = this._limpiar;
+    this._limpiar = () => { parar(); antes?.(); };
   },
 
   /** Previsualización con las páginas de verdad (en chiquito). */
