@@ -883,7 +883,8 @@ body.animando .ed-sobre { opacity: .2; }
   body.con-linea .ed-vista { bottom: calc(var(--cb) + var(--tl)); }
   .ed-linea { bottom: var(--cb); }
   .ed-centro .ed-regla, .ed-centro .ed-regla-esq { display: none !important; }
-  .ed-flotante { display: none !important; }
+  .ed-flotante button { width: 40px; height: 40px; }
+  .ed-flotante { max-width: calc(100vw - 16px); overflow-x: auto; scrollbar-width: none; }
   .ed-fuera { top: 10px; }
   .ed-lienzo-aviso { bottom: 12px; max-width: calc(100vw - 24px); }
   .ed-pop { left: 8px !important; right: 8px; bottom: calc(var(--cb) + 8px); top: auto !important; max-width: none; max-height: 52dvh; }
@@ -1499,3 +1500,42 @@ body.ed-glitcheando .ed-barra, body.ed-glitcheando .ed-riel, body.ed-glitcheando
 .ed-bib-cat { color: var(--texto-suave); }
 @keyframes ed-bib-puesto { 0% { transform: scale(1); } 40% { transform: scale(.92); } 100% { transform: none; } }
 .ed-barra .ed-paginas-b span { display: inline !important; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   FASE 5 · herramientas del lienzo y barrita del objeto
+   ═══════════════════════════════════════════════════════════════════ */
+.ed-dock { position: absolute; z-index: 18; right: 12px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; }
+.ed-dock-grupo { display: flex; flex-direction: column; gap: 2px; padding: 4px; border: 2px solid var(--tinta); border-radius: 14px; background: var(--superficie); box-shadow: var(--sticker); }
+.ed-dock-b { display: grid; place-items: center; width: 42px; height: 42px; padding: 0; border: 0; border-radius: 10px; background: none; color: var(--texto); transition: background .15s, color .15s, transform .3s var(--resorte); -webkit-tap-highlight-color: transparent; }
+.ed-dock-b .ed-ico { width: 21px; height: 21px; }
+.ed-dock-b:hover { background: var(--superficie-2); }
+.ed-dock-b:active:not(:disabled) { transform: scale(.88); transition-duration: .08s; }
+.ed-dock-b:disabled { opacity: .35; }
+.ed-dock-b.on { background: var(--acento); color: var(--acento-texto); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .15); }
+.ed-dock-b.on .ed-ico { animation: ed-salta .4s var(--resorte); }
+.ed-dock-op { position: absolute; z-index: 19; right: 70px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: 220px; padding: 12px; border: 2px solid var(--tinta); border-radius: 16px; background: var(--superficie); box-shadow: var(--sticker), var(--sombra); animation: ed-entra .25s var(--suave); }
+.ed-dock-colores { display: flex; flex-wrap: wrap; gap: 6px; }
+.ed-dock-colores button { width: 26px; height: 26px; padding: 0; border: 2px solid var(--linea-fuerte); border-radius: 50%; transition: transform .25s var(--resorte); }
+.ed-dock-colores button.on { border-color: var(--tinta); transform: scale(1.18); box-shadow: 0 0 0 2px var(--superficie), 0 0 0 4px var(--acento); }
+.ed-dock-colores input[type="color"] { width: 26px; height: 26px; padding: 0; border: 2px dashed var(--linea-fuerte); border-radius: 50%; background: none; }
+.ed-dock-rango { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 8px; font-size: 12px; color: var(--texto-suave); }
+.ed-dock-rango span { grid-column: 1 / -1; }
+.ed-dock-rango input { width: 100%; accent-color: var(--acento); }
+.ed-dock-punto { display: block; min-width: 4px; min-height: 4px; border-radius: 50%; border: 1.5px solid var(--tinta); }
+.ed-vista.borrador { cursor: cell; }
+.ed-goma circle { fill: rgba(255, 255, 255, .35); stroke: var(--tinta); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.ed-chip-efectos { position: absolute; z-index: 17; left: 50%; bottom: 12px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1.5px dashed var(--acento); border-radius: 999px; background: var(--acento-suave); color: var(--acento); font-size: 12.5px; }
+.ed-chip-efectos[hidden] { display: none; }
+.ed-flot-sep { width: 1px; align-self: stretch; margin: 6px 2px; background: var(--linea-fuerte); }
+.ed-flotante .ed-flot-borrar { display: inline-flex; align-items: center; gap: 2px; color: #fff !important; background: var(--peligro) !important; border-radius: 10px; }
+.ed-flot-borrar small { font: 700 11px/1 Jost, sans-serif; }
+@media (max-width: 1023px) {
+  .ed-dock { right: 8px; top: calc(var(--barra, 56px) + 12px); transform: none; flex-direction: column; }
+  .ed-dock-b { width: 44px; height: 44px; }
+  .ed-dock-op { right: 64px; top: calc(var(--barra, 56px) + 12px); transform: none; width: min(230px, calc(100vw - 90px)); }
+  body.lateral-abierto .ed-dock, body.con-hoja-sec .ed-dock, body.ed[data-hoja] .ed-dock { opacity: 0; pointer-events: none; }
+}
+@media (max-width: 1023px) and (max-height: 640px) { .ed-dock-grupo + .ed-dock-grupo { display: none; } }
+.ed-dock-op[hidden] { display: none; }
+@media (min-width: 1024px) { .ed-dock { top: calc(var(--ctx, 52px) + 44px); transform: none; } .ed-dock-op { top: calc(var(--ctx, 52px) + 44px); transform: none; } }
+@media (max-width: 1023px) { .ed-dock-b[data-h="des"], .ed-dock-b[data-h="re"] { display: none; } } /* ya están arriba */

@@ -31,7 +31,13 @@ export class Configuracion {
     });
     const notaHz = el("small.ed-ayuda");
     v.add(() => { notaHz.textContent = `Tu pantalla da ${HZ.real} Hz${HZS.some((h) => +h > HZ.real + 2) ? ` (por eso no aparecen ${HZS.filter((h) => +h > HZ.real + 2).join(", ")})` : ""}. Ahora el editor va a ${objetivo()} Hz. Bajar ahorra batería y calor.`; });
+    const estilos = el("div.ed-config-estilos", {}, [["cuaderno", "Cuaderno", "crayón, papel y stickers"], ["retromylove", "RetroMyLove", "píxeles, papel viejo y grano vivo"]].map(([k, t, d]) => {
+      const b = el("button.ed-config-estilo." + k, { type: "button", onClick: () => { poner({ estilo: k }); app.sonidos?.sonar("seleccionar"); } }, [el("i"), el("b", { text: t }), el("small", { text: d })]);
+      v.add(() => b.classList.toggle("on", PREF.estilo === k));
+      return b;
+    }));
     const cuerpo = el("div.ed-config", {}, [
+      el("b.ed-sub", { text: "Estilo del editor" }), estilos,
       el("div.ed-config-modos", {}, [["rendimiento", "rapido", "Rendimiento", "fluido y fresquito"], ["equilibrado", "ajustar", "Equilibrado", "lo mejor de los dos"], ["calidad", "estrella", "Calidad", "todo bonito"]].map(([m, i, t, d]) => {
         const b = el("button.ed-config-modo", { type: "button", onClick: () => { poner({ modo: m }); app.sonidos?.sonar("seleccionar"); } }, [el("b", { html: ico(i) }), el("span", { text: t }), el("small", { text: d })]);
         v.add(() => b.classList.toggle("on", PREF.modo === m));
@@ -74,6 +80,9 @@ export class Configuracion {
         fila("Consejos automáticos", p("consejos", { tipo: "toggle" }), "muy de vez en cuando, discretos"),
       ], { abierta: false }),
       seccion("Interfaz", [
+        fila("Estilo", p("estilo", { tipo: "segmento", opciones: [["cuaderno", "Cuaderno"], ["retromylove", "RetroMyLove"]] }), "RetroMyLove: retro de los 90, píxeles, papel y grano vivo"),
+        fila("Grano animado", p("grano", { tipo: "toggle" }), "sólo en RetroMyLove"),
+        fila("Parpadeo analógico", p("parpadeo", { tipo: "toggle" }), "sutil, como un monitor viejo (sólo RetroMyLove)"),
         fila("Tema", p("tema", { tipo: "segmento", opciones: [["auto", "Como el teléfono"], ["claro", "Claro"], ["oscuro", "Oscuro"]] })),
         fila("Tamaño de la interfaz", p("escala", { tipo: "segmento", opciones: [[0.9, "Chica"], [1, "Normal"], [1.12, "Grande"]] })),
         fila("Transparencias", p("transparencias", { tipo: "toggle" })),

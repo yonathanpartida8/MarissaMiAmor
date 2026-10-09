@@ -25,9 +25,23 @@ function tieneTransparencia(bmp) {
   return false;
 }
 
+/**
+ * ¿Es una imagen animada? (WebP con «ANIM» o PNG con «acTL»). Esas no se
+ * recomprimen: pasarlas por un canvas las dejaría quietas (sólo el 1.er cuadro).
+ */
+export async function esAnimada(file) {
+  if (/gif/i.test(file.type)) return true;
+  if (!/webp|png|apng/i.test(file.type)) return false;
+  try {
+    const b = new Uint8Array(await file.slice(0, 4096).arrayBuffer());
+    const t = String.fromCharCode(...b);
+    return /webp/i.test(file.type) ? t.includes("ANIM") : t.includes("acTL");
+  } catch (e) { return false; }
+}
+
 /** Devuelve { blob, w, h } listo para guardar. */
 export async function optimizarImagen(file) {
-  if (/gif|svg/i.test(file.type)) {
+  if (/gif|svg/i.test(file.type) || (await esAnimada(file))) {
     const dim = await medir(file).catch(() => ({ w: 0, h: 0 }));
     return { blob: file, ...dim };
   }

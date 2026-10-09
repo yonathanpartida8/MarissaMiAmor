@@ -5,6 +5,8 @@
  * (clases en <body>, variables CSS) y avisa a quien escuche. Lo de la música
  * y los sonidos vive en sus propios módulos (audio/), aquí sólo se enlaza.
  */
+import { aplicarEstilo } from "./estilo.js";
+
 const CLAVE = "editordev:config";
 export const VERSION = "3.1";
 
@@ -20,11 +22,12 @@ export const DEF = {
   haptic: true, hapticFuerza: 1,
   ayudas: true, tooltips: true, consejos: true,
   escala: 1, tema: "auto", transparencias: true,
+  estilo: "cuaderno", grano: true, parpadeo: false, // RetroMyLove: grano animado y parpadeo analógico (opcional)
   abeja: true, abejaSonido: true, dialogos: true, frecuencia: 75, // segundos entre charlitas
 };
 
 export const MODOS = {
-  rendimiento: { calidad: "baja", hz: "60", particulas: false, efectos: false, movimiento: "reducido" },
+  rendimiento: { calidad: "baja", hz: "60", particulas: false, efectos: true, movimiento: "reducido" },
   equilibrado: { calidad: "media", hz: "auto", particulas: true, efectos: true, movimiento: "completo" },
   calidad: { calidad: "alta", hz: "auto", particulas: true, efectos: true, movimiento: "completo" },
 };
@@ -62,6 +65,7 @@ export function aplicar() {
   r.style.setProperty("--anim-k", String(mov === "nada" ? 0 : (mov === "reducido" ? 0.5 : 1) * PREF.intensidad));
   r.style.setProperty("--ui-escala", String(PREF.escala));
   if (PREF.tema === "auto") delete r.dataset.tema; else r.dataset.tema = PREF.tema;
+  aplicarEstilo(PREF);
 }
 
 /** Vibración suavecita (Android; iPhone no la permite en la web). */

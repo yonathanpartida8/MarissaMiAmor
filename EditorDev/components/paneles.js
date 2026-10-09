@@ -119,8 +119,9 @@ export class Paneles {
     c.append(seccion("Formas", [el("div.ed-piezas.chicas", {}, FORMAS.map((f) => pz(this._iconoForma(f.id), f.n, () => A.forma(f.id))))]));
     const lapiz = { color: this.P.ajustes.tema.acento, grosor: 5 };
     const btnLapiz = boton(I("lapiz", "Dibujar a mano"), () => {
-      const on = !this.app.lienzo.herramienta;
-      this.app.lienzo.lapiz(on ? lapiz : null);
+      const on = this.app.lienzo.herramienta !== "lapiz";
+      if (this.app.herramientas) { Object.assign(this.app.herramientas.lapiz, lapiz); this.app.herramientas.usar(on ? "lapiz" : null); }
+      else this.app.lienzo.lapiz(on ? lapiz : null);
       btnLapiz.classList.toggle("on", on);
       opLapiz.hidden = !on;
       if (on) { aviso("Dibuja con el dedo o el ratón sobre la hoja"); this.app.alDibujar?.(); }

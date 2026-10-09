@@ -58,6 +58,7 @@ import { asegurarBotones } from "./components/secciones/navegacion.js";
 import { PREF, aplicar as aplicarPref, vibrar } from "./config/preferencias.js";
 import { medirHz } from "./config/cuadros.js";
 import { Configuracion } from "./components/configuracion.js";
+import { Herramientas } from "./canvas/herramientas.js";
 
 const RT = window.LibritoRT;
 const ULTIMO = "editordev:ultimo";
@@ -139,6 +140,7 @@ async function arrancar() {
   app.salida = new Salida(app);
   app.ayuda = new Ayuda(app);
   app.config = new Configuracion(app);
+  app.herramientas = new Herramientas(app);
   tactil();
   E.on("historial", pintarHistorial);
   E.on("proyecto", ({ ruta }) => { if (ruta === "nombre") pintarNombre(); });
@@ -547,7 +549,7 @@ app.cambiarTamano = async (w, h, formato) => {
 };
 
 app.dejarDeDibujar = () => {
-  app.lienzo.lapiz(null);
+  if (app.herramientas) app.herramientas.usar(null); else app.lienzo.lapiz(null);
   document.querySelectorAll(".ed-btn.on").forEach((b) => { if (/Dibujar/.test(b.textContent)) b.classList.remove("on"); });
 };
 

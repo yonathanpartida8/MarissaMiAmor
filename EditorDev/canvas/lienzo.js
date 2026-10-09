@@ -577,7 +577,17 @@ export class Lienzo {
       if ((e.bloqueado && !conBloqueados) || e.oculto) continue;
       if (this._dentro(e, w.x, w.y) && (!arriba || els.indexOf(e) >= els.indexOf(arriba))) return e;
     }
-    return arriba;
+    if (arriba) return arriba;
+    // Cosas chiquitas: se pueden elegir aunque el dedo caiga un poquito al lado.
+    const tol = 16 / this.v.z;
+    for (let i = els.length - 1; i >= 0; i--) {
+      const e = els[i];
+      if (e.oculto || (!conBloqueados && (e.bloqueado || !permite(e, "seleccionar")))) continue;
+      const b = cajaDe(this.vis(e));
+      if (Math.min(b.w, b.h) * this.v.z > 40) continue;
+      if (w.x >= b.x - tol && w.x <= b.x + b.w + tol && w.y >= b.y - tol && w.y <= b.y + b.h + tol) return e;
+    }
+    return null;
   }
 
   /** Punto de la hoja → coordenadas propias del elemento (sin giro). */
@@ -732,6 +742,7 @@ export class Lienzo {
     const man = ev.target.closest(".ed-manija, .ed-giro");
     if (man) { ev.preventDefault(); return man.dataset.grupo ? this._escalarGrupo(ev, man.dataset.m) : this._manija(ev, man.dataset.m); }
     if (this.herramienta === "lapiz") return this._lapiz(ev);
+    if (this.herramienta === "borrador") return this._borrar(ev);
     if (ev.button === 1 || this.espacio) return this._pan(ev);
     const e = this.tocar(ev.clientX, ev.clientY);
     if (this.recortando) {
@@ -1412,12 +1423,45 @@ export class Lienzo {
   }
 
   /* ── Dibujar a mano ─────────────────────────────────────────────── */
-  lapiz(opciones) {
-    this.herramienta = opciones ? "lapiz" : null;
-    this.lapizOp = opciones;
-    this.vistaEl.classList.toggle("lapiz", !!opciones);
-    if (opciones) this.estado.seleccionar([]);
+  lapiz(opciones) { this.usarHerramienta(opciones ? "lapiz" : null, opciones); }
+
+  /**
+   * La herramienta de la hoja: null (elegir/mover), "lapiz" o "borrador".
+   * Con lápiz o borrador el dedo sólo dibuja o borra: nada se elige, se
+   * arrastra ni abre menús. Dos dedos siguen acercando y moviendo la vista.
+   */
+  usarHerramienta(h, op) {
+    this.herramienta = h || null;
+    if (h === "lapiz" && op) this.lapizOp = op;
+    if (h === "borrador") this.borradorOp = op || this.borradorOp || { tam: 24 };
+    this.vistaEl.classList.toggle("lapiz", h === "lapiz");
+    this.vistaEl.classList.toggle("borrador", h === "borrador");
+    if (h) this.estado.seleccionar([]);
     this.pintarSobre();
+    dispatchEvent(new CustomEvent("ed-herramienta", { detail: this.herramienta }));
+  }
+
+  _borrar(ev) {
+    const A = this.app.acciones;
+    const r = (this.borradorOp?.tam || 24) / 2;
+    const fin = this.estado.gesto("Borrador");
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("class", "ed-trazo-vivo ed-goma");
+    const c = document.createElementNS(ns, "circle");
+    svg.append(c);
+    this.sobre.append(svg);
+    this.trazoVivo = svg;
+    let hubo = false;
+    const ver = (x, y) => { const p = this.aPantalla(x, y); c.setAttribute("cx", p.x.toFixed(1)); c.setAttribute("cy", p.y.toFixed(1)); c.setAttribute("r", (r * this.v.z).toFixed(1)); };
+    const pasar = (m) => { const p = this.aMundo(m.clientX, m.clientY); ver(p.x, p.y); if (A.borrarTrazos(p, r)) hubo = true; };
+    pasar(ev);
+    const quitar = () => { svg.remove(); this.trazoVivo = null; };
+    this._gesto(ev, {
+      cada: (m) => { const l = m.getCoalescedEvents ? m.getCoalescedEvents() : []; for (const x of l.length ? l : [m]) pasar(x); },
+      soltar: () => { quitar(); fin(true); if (hubo) this.app.sonidos?.sonar("borrar"); },
+      cancelar: () => { quitar(); fin(true); },
+    });
   }
 
   _lapiz(ev) {

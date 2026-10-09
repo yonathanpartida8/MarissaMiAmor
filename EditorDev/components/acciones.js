@@ -16,6 +16,45 @@ import { ico } from "./iconos.js";
 
 const RT = window.LibritoRT;
 
+/* ── Trazos a mano: puntos ↔ curva suave ─────────────────────────── */
+const r1 = (v) => (Math.round(v * 10) / 10).toString();
+/** Curva suave por los puntos (cuadráticas por los puntos medios). `p` = [x, y, x, y…]. */
+export function dDeTrazo(p) {
+  const n = p.length / 2;
+  if (n < 2) return "";
+  let d = `M${r1(p[0])} ${r1(p[1])}`;
+  for (let i = 1; i < n - 1; i++) d += `Q${r1(p[i * 2])} ${r1(p[i * 2 + 1])} ${r1((p[i * 2] + p[i * 2 + 2]) / 2)} ${r1((p[i * 2 + 1] + p[i * 2 + 3]) / 2)}`;
+  return d + `L${r1(p[(n - 1) * 2])} ${r1(p[(n - 1) * 2 + 1])}`;
+}
+const muestras = new Map();
+/** Los puntos de un trazo (los guardados o, para trazos viejos, sacados de su curva). */
+export function puntosDeTrazo(t) {
+  if (Array.isArray(t.pts) && t.pts.length >= 4) return t.pts;
+  if (muestras.has(t.d)) return muestras.get(t.d);
+  let svg = document.getElementById("ed-muestreo");
+  if (!svg) { svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.id = "ed-muestreo"; svg.setAttribute("aria-hidden", "true"); svg.style.cssText = "position:absolute;width:0;height:0;overflow:hidden"; document.body.append(svg); }
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", String(t.d || "M0 0"));
+  svg.append(path);
+  const L = path.getTotalLength(), r = [];
+  for (let s = 0; s <= L; s += 2) { const q = path.getPointAtLength(s); r.push(q.x, q.y); }
+  path.remove();
+  if (muestras.size > 200) muestras.clear();
+  muestras.set(t.d, r);
+  return r;
+}
+/** Mete puntos intermedios para que ningún tramo sea más largo que `paso`. */
+function densificar(p, paso) {
+  const r = [p[0], p[1]];
+  for (let i = 2; i < p.length; i += 2) {
+    const x0 = r[r.length - 2], y0 = r[r.length - 1], x = p[i], y = p[i + 1], d = Math.hypot(x - x0, y - y0);
+    const n = Math.min(64, Math.floor(d / Math.max(0.5, paso)));
+    for (let k = 1; k <= n; k++) r.push(x0 + ((x - x0) * k) / (n + 1), y0 + ((y - y0) * k) / (n + 1));
+    r.push(x, y);
+  }
+  return r;
+}
+
 export class Acciones {
   constructor(app) {
     this.app = app;
@@ -230,19 +269,69 @@ export class Acciones {
     return this._poner(nuevoEl("pagina", this.P, { nombre: titulo || "Página original", pagina: { ruta, titulo }, bloqueado: false }));
   }
 
+  /**
+   * Un trazo del lápiz. Es DIBUJO, no un objeto: no se elige tocándolo (así
+   * nunca tapa ni se lleva por delante lo de debajo). Se borra con el
+   * borrador; si quieres moverlo, «Elegir el dibujo» en las opciones del lápiz
+   * o desde Capas. Guarda sus puntos para que el borrador pueda cortarlo.
+   */
   crearTrazo(pts, op) {
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const p of pts) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
     const pad = op.grosor;
     x0 -= pad; y0 -= pad; x1 += pad; y1 += pad;
     const w = Math.max(4, x1 - x0), h = Math.max(4, y1 - y0);
-    // Curva suave: puntos medios con cuadráticas.
-    const q = pts.map((p) => [Math.round((p.x - x0) * 10) / 10, Math.round((p.y - y0) * 10) / 10]);
-    let d = `M${q[0][0]} ${q[0][1]}`;
-    for (let i = 1; i < q.length - 1; i++) d += `Q${q[i][0]} ${q[i][1]} ${((q[i][0] + q[i + 1][0]) / 2).toFixed(1)} ${((q[i][1] + q[i + 1][1]) / 2).toFixed(1)}`;
-    d += `L${q[q.length - 1][0]} ${q[q.length - 1][1]}`;
-    const e = nuevoEl("trazo", this.P, { nombre: "Trazo a mano", x: Math.round(x0), y: Math.round(y0), w: Math.round(w), h: Math.round(h), trazo: { d, vw: Math.round(w), vh: Math.round(h), color: op.color, grosor: op.grosor } });
+    const plano = [];
+    for (const p of pts) plano.push(Math.round((p.x - x0) * 10) / 10, Math.round((p.y - y0) * 10) / 10);
+    const e = nuevoEl("trazo", this.P, {
+      nombre: "Dibujo", x: Math.round(x0), y: Math.round(y0), w: Math.round(w), h: Math.round(h),
+      permisos: { seleccionar: false },
+      trazo: { d: dDeTrazo(plano), pts: plano, vw: Math.round(w), vh: Math.round(h), color: op.color, grosor: op.grosor, libre: true },
+    });
     this.E.agregarEl(e, null, this.E.paginaId, false);
+  }
+
+  /**
+   * El borrador en el punto `p` (mundo) con radio `r`: corta los trazos que
+   * toca (sólo trazos; las fotos, textos y demás no se tocan). Devuelve si
+   * cambió algo. Va dentro del gesto del borrador (un solo paso de deshacer).
+   */
+  borrarTrazos(p, r) {
+    const E = this.E, els = E.pagina?.els || [];
+    let cambio = false;
+    for (let i = els.length - 1; i >= 0; i--) {
+      const e = els[i];
+      if (e.tipo !== "trazo" || e.oculto || e.bloqueado || !e.trazo) continue;
+      // Al sistema del trazo (deshaciendo su giro alrededor del centro).
+      const a = (-(e.rot || 0) * Math.PI) / 180, dx = p.x - (e.x + e.w / 2), dy = p.y - (e.y + e.h / 2);
+      const lx = dx * Math.cos(a) - dy * Math.sin(a) + e.w / 2, ly = dx * Math.sin(a) + dy * Math.cos(a) + e.h / 2;
+      const g = (e.trazo.grosor || 4) / 2;
+      if (lx < -r - g || ly < -r - g || lx > e.w + r + g || ly > e.h + r + g) continue;
+      const kx = (e.trazo.vw || e.w) / e.w, ky = (e.trazo.vh || e.h) / e.h;
+      const qx = lx * kx, qy = ly * ky, rr = (r + g) * (kx + ky) / 2;
+      const pts = densificar(puntosDeTrazo(e.trazo), rr / 2);
+      const tramos = [];
+      let t = [];
+      for (let j = 0; j < pts.length; j += 2) {
+        if (Math.hypot(pts[j] - qx, pts[j + 1] - qy) > rr) t.push(pts[j], pts[j + 1]);
+        else if (t.length) { tramos.push(t); t = []; }
+      }
+      if (t.length) tramos.push(t);
+      const total = tramos.reduce((n, x) => n + x.length, 0);
+      if (total === pts.length) continue; // no lo tocó
+      cambio = true;
+      const vivos = tramos.filter((x) => x.length >= 4);
+      if (!vivos.length) { E.quitarEls([e.id]); continue; }
+      const poner = (x) => ({ "trazo.pts": x.map((v) => Math.round(v * 10) / 10), "trazo.d": dDeTrazo(x) });
+      E.setEl(e.id, poner(vivos[0]), "Borrador", "borrador" + e.id);
+      for (let k = 1; k < vivos.length; k++) {
+        const c = clonar(e);
+        c.id = uid("e");
+        Object.assign(c.trazo, { pts: poner(vivos[k])["trazo.pts"], d: dDeTrazo(vivos[k]) });
+        E.agregarEl(c, i + k, E.paginaId, false);
+      }
+    }
+    return cambio;
   }
 
   /** «+ Añadir foto» dentro de un elemento (o reemplazarla). */
@@ -270,6 +359,7 @@ export class Acciones {
     if (!s.length) return;
     this.portapapeles = clonar(s);
     this.escalon = 0;
+    this.app.herramientas?.pintar();
     aviso(s.length > 1 ? `Copiaste ${s.length} elementos` : "Copiado");
   }
 
@@ -393,15 +483,29 @@ export class Acciones {
     if (sel.length > 1 && !sel.every((e) => e.grupo && e.grupo === sel[0].grupo)) f.append(b(ico("enlazar"), "Agrupar", () => this.agrupar()));
     if (sel.some((e) => e.grupo)) f.append(b(ico("desenlazar"), "Desagrupar", () => this.desagrupar()));
     if (uno && /componente|html|pagina|escena3d/.test(uno.tipo)) f.append(b(ico("play"), "Probar aquí (tocarlo de verdad)", () => this.app.lienzo.probarAqui(uno)));
+    // Lo de todos los días, a la vista: copiar, cortar, duplicar y eliminar.
     if (!bloq) {
+      f.append(el("i.ed-flot-sep"));
+      f.append(b(ico("copiar"), "Copiar (Ctrl+C)", () => this.copiar()));
+      f.append(b(ico("tijeras"), "Cortar (Ctrl+X)", () => this.cortar()));
       f.append(b(ico("duplicar"), "Duplicar (Ctrl+D)", () => this.duplicar()));
-      f.append(b(ico("subirCapa"), "Traer adelante", () => this.capa("subir")));
-      f.append(b(ico("bajarCapa"), "Llevar atrás", () => this.capa("bajar")));
-      f.append(b(ico("alinearH"), "Alinear", (ev) => this.menuAlinear(ev.currentTarget)));
-      f.append(b(ico("animar"), "Animar", () => this.app.insp.abrir("animar")));
     }
-    f.append(b(ico(bloq ? "abierto" : "candado"), bloq ? "Desbloquear" : "Bloquear", () => this.alternar("bloqueado")));
-    if (!bloq) f.append(b(ico("borrar"), "Borrar (Supr)", () => this.borrar(), "peligro"));
+    // Lo demás, agrupado en «Más» (capas, alinear, animar, bloquear).
+    const mas = b(ico("puntos"), "Más opciones", (ev) => menu(ev.currentTarget, [
+      ...(bloq ? [] : [
+        { t: `${ico("subirCapa")}<span>Traer adelante</span>`, al: () => this.capa("subir") },
+        { t: `${ico("bajarCapa")}<span>Llevar atrás</span>`, al: () => this.capa("bajar") },
+        { t: `${ico("alinearH")}<span>Alinear…</span>`, al: () => this.menuAlinear(mas) },
+        { t: `${ico("animar")}<span>Animar</span>`, al: () => this.app.insp.abrir("animar") },
+        { t: `${ico("luz")}<span>Luz y color</span>`, al: () => this.app.ajustes?.abrir(sel[0].id) },
+      ]),
+      { t: `${ico(bloq ? "abierto" : "candado")}<span>${bloq ? "Desbloquear" : "Bloquear"}</span>`, al: () => this.alternar("bloqueado") },
+    ]));
+    f.append(mas);
+    if (!bloq) {
+      const n = sel.length;
+      f.append(el("button.peligro.ed-flot-borrar", { type: "button", title: n > 1 ? `Eliminar los ${n} (Supr)` : "Eliminar (Supr)", "aria-label": "Eliminar", html: `${ico("borrar")}${n > 1 ? `<small>${n}</small>` : ""}`, onClick: (ev) => { ev.stopPropagation(); this.borrar(); } }));
+    }
   }
 
   /* ── Páginas ────────────────────────────────────────────────────── */

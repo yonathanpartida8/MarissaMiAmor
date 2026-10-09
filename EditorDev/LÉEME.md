@@ -302,6 +302,19 @@ segura a la más simple:
 
 Código: `config/` (preferencias, cuadros/Hz), `mascota/` (abeja, dialogos, glitch), `components/configuracion.js`, `components/secciones/biblioteca.js`.
 
+## Fase 5: herramientas, dibujo y RetroMyLove
+
+| | |
+| --- | --- |
+| **Herramientas del lienzo** | a la derecha de la hoja, siempre visibles: **Seleccionar · Dibujar · Borrador** (la activa se marca y cambia el cursor) y **Pegar · Deshacer · Rehacer**. Esc vuelve a Seleccionar |
+| **Dibujo** | los trazos del lápiz son dibujo, no objetos: no se eligen al tocarlos ni tapan lo de debajo. Colores, grosor (se recuerdan), «Elegir el dibujo» para moverlo o recolorearlo, y todo con deshacer |
+| **Borrador** | borra partes de los trazos de verdad (los corta en pedazos), sólo trazos (nunca fotos ni textos), con tamaño de goma y «Borrar todo el dibujo»; cada pasada es un paso de deshacer |
+| **Barrita del objeto** | (también en el teléfono) Copiar · Cortar · Duplicar · Más (capas, alinear, animar, luz, bloquear) · **Eliminar** en rojo (con el número si hay varios). Las cosas chiquitas se eligen aunque el dedo caiga un poquito al lado |
+| **GIF e imágenes animadas** | los efectos se aplican al GIF sin reiniciarlo, en la hoja, al probar y en el librito. Los WebP/PNG animados que subes ya no se vuelven fotos quietas. Si los efectos están ocultos en la hoja (⚙ Rendimiento), un aviso lo dice con «mostrar» |
+| **RetroMyLove** | ⚙ → Estilo del editor. Computadora retro de los 90 + papel viejo + rosa pastel: ventanas con rayitas y corazón de píxeles, botones biselados que se hunden, letras de píxel (VT323/Silkscreen) para menús y legible (Nunito) para textos, trama (dither), semitono (halftone), selección con «hormigas», apariciones a píxeles y **grano vivo** (una sola textura que se desplaza con transform; se apaga en ⚙). Parpadeo analógico opcional. El librito y la prueba nunca llevan grano |
+
+Código nuevo: `canvas/herramientas.js` (dock y opciones), `config/estilo.js` (estilos y textura del grano), `styles/retromylove.css` (todo el estilo, por tokens).
+
 ## Cómo está hecho
 
 ```

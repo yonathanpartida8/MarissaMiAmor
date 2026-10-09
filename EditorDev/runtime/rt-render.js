@@ -544,7 +544,9 @@
     if (z != null) s.zIndex = z;
     s.mixBlendMode = e.mezcla || "";
     RT.aplicarCaja(r.c, e.caja);
-    r.c.style.filter = RT.efectos(e.efectos);
+    // El marco «sello» trae su propia sombra: se suma a los efectos (no se pisa).
+    const base = e.tipo === "imagen" && e.imagen && e.imagen.marco === "sello" ? "drop-shadow(0 6px 10px rgba(60,20,40,.22)) " : "";
+    r.c.style.filter = (base + RT.efectos(e.efectos)).trim();
     if (e.tipo === "texto") r.c.classList.add("rt-flex");
     const datos = e[e.tipo];
     const firma = JSON.stringify(datos || null) + (e.tipo === "forma" ? JSON.stringify(e.caja && e.caja.radio) : "");

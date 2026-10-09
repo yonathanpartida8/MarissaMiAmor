@@ -1,0 +1,204 @@
+/* ═══════════════════════════════════════════════════════════════════
+   RETROMYLOVE · estilo seleccionable del editor (⚙ → Interfaz → Estilo)
+   Retro Computing de los 80/90 (ventanas con rayitas, botones biselados,
+   píxeles) + papel envejecido, tinta y rosa pastel, con grano vivo.
+
+   Sistema de diseño en tres capas, todas reutilizables:
+     1. TOKENS   colores, bordes, sombras y letras (todo el editor ya los usa)
+     2. TEXTURAS dither, halftone, papel y grano (variables --rml-*)
+     3. PIEZAS   botón, ventana, campo, interruptor, ficha… aplicadas a las
+                 clases que ya existen (sin duplicar componentes)
+   Nada de esto toca el librito: la hoja y la vista previa son tu página.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── 1 · Tokens ── */
+:root[data-estilo="retromylove"] {
+  --rml-tinta: #231c1f;
+  --rml-crema: #f3ead6;
+  --rml-marfil: #fffaf0;
+  --rml-gris: #8a7f77;
+  --rml-gris-claro: #d9cfbf;
+  --rml-rosa: #f2a5bd;
+  --rml-rosa-fuerte: #d9668c;
+  --rml-rosa-suave: #fbe1e9;
+  --rml-menta: #b9e3cf;
+  --fondo: var(--rml-crema);
+  --superficie: var(--rml-marfil);
+  --superficie-2: #f6eedd;
+  --linea: var(--rml-gris-claro);
+  --linea-fuerte: var(--rml-tinta);
+  --texto: var(--rml-tinta);
+  --texto-suave: #6f645d;
+  --tinta: var(--rml-tinta);
+  --acento: var(--rml-rosa-fuerte);
+  --acento-suave: var(--rml-rosa-suave);
+  --acento-texto: #fff;
+  --peligro: #c23b55;
+  --lienzo: #e9dfca;
+  --mano: 0;
+  --mano-chica: 0;
+  --radio: 0;
+  --sombra: 4px 4px 0 rgba(35, 28, 31, .22);
+  --sombra-chica: 2px 2px 0 rgba(35, 28, 31, .25);
+  --sticker: 3px 3px 0 var(--rml-tinta);
+  --regla-fondo: #efe5cf;
+  --regla-hoja: var(--rml-marfil);
+  --regla-linea: var(--rml-tinta);
+  --regla-texto: #6f645d;
+  --rml-pixel: "VT323", "Courier New", ui-monospace, monospace;
+  --rml-titulo: "Silkscreen", "VT323", ui-monospace, monospace;
+  --rml-lectura: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* ── 2 · Texturas reutilizables ── */
+  --rml-dither: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='1' height='1' fill='%23231c1f'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23231c1f'/%3E%3C/svg%3E");
+  --rml-dither-claro: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='1' height='1' fill='%23231c1f' fill-opacity='.18'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23231c1f' fill-opacity='.18'/%3E%3C/svg%3E");
+  --rml-halftone: radial-gradient(circle, rgba(217, 102, 140, .28) 1.1px, transparent 1.4px) 0 0 / 7px 7px, radial-gradient(circle, rgba(217, 102, 140, .18) 1.1px, transparent 1.4px) 3.5px 3.5px / 7px 7px;
+  --rml-rayas: repeating-linear-gradient(0deg, var(--rml-tinta) 0 1px, transparent 1px 3px);
+  --papel: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='r'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .32 0 0 0 0 .22 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23r)'/%3E%3C/svg%3E"), radial-gradient(ellipse at 12% 8%, rgba(190, 150, 90, .08), transparent 40%), radial-gradient(ellipse at 88% 92%, rgba(190, 150, 90, .07), transparent 45%);
+  --rml-corazon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='12' shape-rendering='crispEdges'%3E%3Cpath d='M2 0h3v1h1v1h2V1h1V0h3v1h1v1h1v4h-1v1h-1v1h-1v1H9v1H8v1H6v-1H5V9H4V8H3V7H2V6H1V2h1z' fill='%23231c1f'/%3E%3Cpath d='M2 1h3v1h1v1h2V2h1V1h3v1h1v4h-1v1h-1v1H9v1H8v1H6V9H5V8H4V7H3V6H2z' fill='%23f2a5bd'/%3E%3Crect x='3' y='2' width='1' height='1' fill='%23fff'/%3E%3C/svg%3E");
+  color-scheme: light;
+}
+
+/* Lectura cómoda para todo lo largo; píxeles para títulos, menús y botones. */
+:root[data-estilo="retromylove"] body.ed { font-family: var(--rml-lectura); background: var(--papel), var(--rml-dither-claro), var(--fondo); }
+
+/* ── 3 · Piezas ── */
+/* Ventanas: barra superior, riel, paneles, inspector, menús, hojitas, diálogos */
+:root[data-estilo="retromylove"] :is(.ed-barra, .ed-riel, .ed-panel, .ed-insp, .ed-contexto, .ed-linea) { background: var(--papel), var(--rml-marfil); }
+:root[data-estilo="retromylove"] .ed-barra { border-bottom: 2px solid var(--rml-tinta); box-shadow: 0 2px 0 var(--rml-rosa); }
+:root[data-estilo="retromylove"] .ed-riel { border-right: 2px solid var(--rml-tinta); }
+:root[data-estilo="retromylove"] :is(.ed-panel, .ed-insp) { border-color: var(--rml-tinta); border-width: 2px; }
+:root[data-estilo="retromylove"] .ed-contexto { border-bottom: 2px solid var(--rml-tinta); }
+:root[data-estilo="retromylove"] :is(.ed-modal, .ed-pop, .ed-menu, .ed-hojita, .ed-salir, .ed-abeja-globo, .ed-foco-tarjeta, .ed-consejito, .ed-dock-grupo, .ed-dock-op, .ed-flotante, .ed-hack-carta, .ed-tarjeta) {
+  border: 2px solid var(--rml-tinta) !important; border-radius: 0 !important; background: var(--papel), var(--rml-marfil) !important; box-shadow: 4px 4px 0 var(--rml-tinta) !important;
+}
+:root[data-estilo="retromylove"] .ed-pop::before { display: none; }
+/* Barra de título de ventana: rayitas a los lados y un corazón de píxeles */
+:root[data-estilo="retromylove"] :is(.ed-modal > header, .ed-hojita-cab, .ed-panel-cab) { position: relative; background: linear-gradient(var(--rml-marfil), var(--rml-marfil)) center / calc(100% - 64px) 100% no-repeat, var(--rml-rayas); border-bottom: 2px solid var(--rml-tinta); }
+:root[data-estilo="retromylove"] :is(.ed-modal h2, .ed-hojita-cab h3, .ed-panel-titulo, .ed-pop-t, .ed-salir h2) { font: 400 15px/1.3 var(--rml-titulo) !important; letter-spacing: .02em; text-transform: none; color: var(--rml-tinta); }
+:root[data-estilo="retromylove"] :is(.ed-modal h2, .ed-hojita-cab h3)::before { content: ""; display: inline-block; width: 14px; height: 12px; margin-right: 8px; vertical-align: -1px; background: var(--rml-corazon); image-rendering: pixelated; }
+:root[data-estilo="retromylove"] .ed-x { border-radius: 0; border: 2px solid var(--rml-tinta); width: 30px; height: 30px; background: var(--rml-marfil); }
+:root[data-estilo="retromylove"] .ed-x:hover { transform: none; background: var(--rml-rosa-suave); }
+
+/* Botón retro: biselado, se hunde al pulsarlo, «elegido» rosa con trama */
+:root[data-estilo="retromylove"] :is(.ed-btn, .ed-dock-b, .ed-cb, .ed-bib-chip, .ed-config-modo, .ed-fuente, .ed-seg button, .ed-pieza, .ed-comp, .ed-asset, .ed-bib-t, .ed-deslizar-t) { border-radius: 0 !important; }
+:root[data-estilo="retromylove"] .ed-btn {
+  font: 400 19px/1 var(--rml-pixel); letter-spacing: .02em; border: 2px solid var(--rml-tinta); background: var(--rml-marfil); color: var(--rml-tinta);
+  box-shadow: inset -2px -2px 0 rgba(35, 28, 31, .18), inset 2px 2px 0 #fff, 2px 2px 0 var(--rml-tinta); transition: transform .06s steps(1), box-shadow .06s steps(1);
+}
+:root[data-estilo="retromylove"] .ed-btn:hover:not(:disabled) { transform: none; background: var(--rml-rosa-suave); }
+:root[data-estilo="retromylove"] .ed-btn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: inset 2px 2px 0 rgba(35, 28, 31, .25), inset -2px -2px 0 #fff; }
+:root[data-estilo="retromylove"] .ed-btn.primario { background: var(--rml-rosa); color: var(--rml-tinta); border-color: var(--rml-tinta); box-shadow: inset -2px -2px 0 rgba(120, 30, 60, .3), inset 2px 2px 0 rgba(255, 255, 255, .6), 3px 3px 0 var(--rml-tinta); }
+:root[data-estilo="retromylove"] .ed-btn.primario:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: inset 2px 2px 0 rgba(120, 30, 60, .35); }
+:root[data-estilo="retromylove"] :is(.ed-btn, .ed-dock-b, .ed-cb).on { background: var(--rml-dither-claro), var(--rml-rosa) !important; color: var(--rml-tinta) !important; }
+:root[data-estilo="retromylove"] :is(.ed-btn, .ed-dock-b):disabled { background: var(--rml-dither-claro), var(--rml-gris-claro); color: var(--rml-gris); opacity: 1; box-shadow: none; }
+:root[data-estilo="retromylove"] .ed-btn.peligro { color: var(--peligro); }
+:root[data-estilo="retromylove"] .ed-btn.chico { font-size: 17px; }
+:root[data-estilo="retromylove"] .ed-dock-b { border: 2px solid transparent; }
+:root[data-estilo="retromylove"] .ed-dock-b.on { border-color: var(--rml-tinta); box-shadow: inset 2px 2px 0 rgba(35, 28, 31, .25); }
+:root[data-estilo="retromylove"] .ed-dock-b:active:not(:disabled) { transform: translate(1px, 1px); }
+
+/* Riel: fichas cuadradas con trama al elegirlas */
+:root[data-estilo="retromylove"] .ed-riel button { font: 400 16px/1 var(--rml-pixel); border-radius: 0; }
+:root[data-estilo="retromylove"] .ed-riel button b::before { border-radius: 0; transform: none; opacity: .55; background: var(--rml-rosa-suave); border: 2px solid var(--rml-tinta); inset: 0 4px; }
+:root[data-estilo="retromylove"] .ed-riel button.on b::before { background: var(--rml-dither-claro), var(--rml-rosa); opacity: 1; transform: translate(-1px, -1px); box-shadow: 2px 2px 0 var(--rml-tinta); }
+:root[data-estilo="retromylove"] .ed-riel button:hover b::before { transform: translate(-1px, -1px); }
+
+/* Iconos con aire de pixel art (puntas y uniones rectas) */
+:root[data-estilo="retromylove"] .ed-ico { shape-rendering: crispEdges; stroke-linecap: square; stroke-linejoin: miter; stroke-width: 2; }
+
+/* Campos, selects, rangos, interruptores, segmentos */
+:root[data-estilo="retromylove"] :is(.ed-sel, .ed-txt, .ed-num input, .ed-color input[type="text"], .ed-buscar) { border: 2px solid var(--rml-tinta); border-radius: 0; background-color: #fff; box-shadow: inset 2px 2px 0 rgba(35, 28, 31, .14); font-family: var(--rml-lectura); }
+:root[data-estilo="retromylove"] .ed-sel { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h10v2H8v2H6v2H4V4H2V2H0z' fill='%23231c1f'/%3E%3C/svg%3E"); }
+:root[data-estilo="retromylove"] .ed-toggle { border-radius: 0; border: 2px solid var(--rml-tinta); background: var(--rml-dither-claro), var(--rml-gris-claro); width: 40px; height: 22px; }
+:root[data-estilo="retromylove"] .ed-toggle i { border-radius: 0; top: 1px; left: 1px; width: 16px; height: 16px; background: var(--rml-marfil); border: 2px solid var(--rml-tinta); box-shadow: none; transition: transform .12s steps(3); }
+:root[data-estilo="retromylove"] .ed-toggle.on { background: var(--rml-rosa); }
+:root[data-estilo="retromylove"] .ed-seg { border-radius: 0; border: 2px solid var(--rml-tinta); background: var(--rml-dither-claro), var(--rml-marfil); }
+:root[data-estilo="retromylove"] .ed-seg button { font: 400 17px/1 var(--rml-pixel); }
+:root[data-estilo="retromylove"] .ed-seg button.on { background: var(--rml-rosa); color: var(--rml-tinta); box-shadow: inset 2px 2px 0 rgba(35, 28, 31, .2); }
+:root[data-estilo="retromylove"] input[type="range"] { accent-color: var(--rml-rosa-fuerte); }
+:root[data-estilo="retromylove"] .ed-rango input { --pista: var(--rml-tinta); }
+:root[data-estilo="retromylove"] .ed-sec > summary { font: 400 19px/1 var(--rml-pixel); letter-spacing: .02em; }
+:root[data-estilo="retromylove"] .ed-sec > summary::after { content: "▸"; font: 400 18px/1 var(--rml-pixel); }
+:root[data-estilo="retromylove"] .ed-sec { border-bottom: 2px dotted var(--rml-gris-claro); }
+:root[data-estilo="retromylove"] :is(.ed-et, .ed-fila > span, label) { font-family: var(--rml-lectura); }
+
+/* Tarjetas de biblioteca, piezas y efectos: marco de tinta y fondo de trama */
+:root[data-estilo="retromylove"] :is(.ed-bib-t, .ed-pieza, .ed-comp, .ed-asset, .ed-deslizar-t, .ed-config-modo) { border: 2px solid var(--rml-tinta) !important; box-shadow: 2px 2px 0 var(--rml-tinta); }
+:root[data-estilo="retromylove"] :is(.ed-bib-t, .ed-pieza, .ed-comp):hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--rml-tinta); }
+:root[data-estilo="retromylove"] :is(.ed-bib-prev, .ed-bib-grande, .ed-comp-prev) { border-radius: 0; background: var(--rml-halftone), #fff; border: 1px solid var(--rml-gris-claro); }
+:root[data-estilo="retromylove"] :is(.ed-bib-t b, .ed-pieza span, .ed-comp b, .ed-config-modo span, .ed-deslizar-t > b) { font: 400 18px/1.05 var(--rml-pixel); }
+:root[data-estilo="retromylove"] .ed-bib-chip { font: 400 17px/1 var(--rml-pixel); border: 2px solid var(--rml-tinta); }
+:root[data-estilo="retromylove"] .ed-bib-chip.on { background: var(--rml-dither-claro), var(--rml-rosa); color: var(--rml-tinta); }
+:root[data-estilo="retromylove"] .ed-config-modo.on { background: var(--rml-dither-claro), var(--rml-rosa-suave); }
+:root[data-estilo="retromylove"] .ed-config-modo b { border-radius: 0; border: 2px solid var(--rml-tinta); }
+
+/* Barrita del objeto y menús */
+:root[data-estilo="retromylove"] .ed-flotante button { border-radius: 0 !important; }
+:root[data-estilo="retromylove"] .ed-flotante .ed-flot-borrar { border: 2px solid var(--rml-tinta); }
+:root[data-estilo="retromylove"] .ed-menu button { border-radius: 0; font: 400 19px/1 var(--rml-pixel); }
+:root[data-estilo="retromylove"] .ed-menu button:hover { background: var(--rml-tinta); color: var(--rml-marfil); }
+
+/* Lienzo: mesa con trama, hoja con sombra dura, manijas de píxel y «hormigas» */
+:root[data-estilo="retromylove"] .ed-vista { background: var(--rml-dither-claro), #e6dbc4; }
+:root[data-estilo="retromylove"] .ed-hoja { box-shadow: 6px 6px 0 var(--rml-tinta), 0 0 0 2px var(--rml-tinta) !important; }
+:root[data-estilo="retromylove"] .ed-manija { border-radius: 0 !important; width: 12px; height: 12px; border: 2px solid var(--rml-tinta) !important; background: var(--rml-rosa) !important; box-shadow: none !important; }
+:root[data-estilo="retromylove"] .ed-manija.lado { width: 18px; height: 8px; }
+:root[data-estilo="retromylove"] .ed-giro { border-radius: 0 !important; }
+:root[data-estilo="retromylove"] .ed-caja { outline: 1.5px dashed var(--rml-tinta); outline-offset: 0; animation: rml-hormigas .5s steps(2) infinite; }
+
+/* Avisos, cargando, etiquetas, contador y la abejita */
+:root[data-estilo="retromylove"] .ed-aviso { border-radius: 0; background: var(--rml-tinta); color: var(--rml-marfil); font: 400 19px/1.1 var(--rml-pixel); border: 2px solid var(--rml-rosa); box-shadow: 3px 3px 0 var(--rml-rosa); }
+:root[data-estilo="retromylove"] .ed-girando { border-radius: 0; border: 3px solid var(--rml-tinta); border-top-color: var(--rml-rosa); animation: ed-gira .8s steps(8) infinite; }
+:root[data-estilo="retromylove"] .ed-ocupado > div { border-radius: 0; border: 2px solid var(--rml-tinta); box-shadow: 4px 4px 0 var(--rml-tinta); }
+:root[data-estilo="retromylove"] .ed-tip { border-radius: 0; background: var(--rml-tinta); font: 400 17px/1.1 var(--rml-pixel); }
+:root[data-estilo="retromylove"] .ed-abeja-globo p { font: 400 21px/1.15 var(--rml-pixel); }
+:root[data-estilo="retromylove"] .ed-abeja-globo::after { border-radius: 0; }
+:root[data-estilo="retromylove"] .ed-foco { border-radius: 0; box-shadow: 2px 2px 0 var(--rml-tinta); }
+:root[data-estilo="retromylove"] .ed-paginas-b { border-style: solid; font: 400 20px/1 var(--rml-pixel); }
+:root[data-estilo="retromylove"] .ed-nombre input { font: 400 26px/1 var(--rml-pixel); letter-spacing: .02em; }
+:root[data-estilo="retromylove"] .ed-guardado { font: 400 17px/1 var(--rml-pixel); }
+:root[data-estilo="retromylove"] .ed-salir-estado, :root[data-estilo="retromylove"] .ed-chip-efectos { border-radius: 0; }
+:root[data-estilo="retromylove"] .ed-linea :is(.ed-tl-clip, .ed-tl-b) { border-radius: 0 !important; }
+:root[data-estilo="retromylove"] .ed-fps { border-radius: 0; font-family: var(--rml-pixel); font-size: 15px; }
+
+/* Aparecer y desaparecer: disolución «a píxeles» (pasos, sin desenfoques caros) */
+:root[data-estilo="retromylove"] :is(.ed-modal-fondo.ver .ed-modal, .ed-pop.ver, .ed-menu, .ed-dock-op, .ed-salir-fondo.ver .ed-salir, .ed-aviso.ver, .ed-abeja-globo.ver) { animation: rml-disuelve .32s steps(6) both; }
+:root[data-estilo="retromylove"] .ed-panel-cuerpo.entra > * { animation: rml-disuelve .3s steps(5) both; }
+@keyframes rml-disuelve {
+  0% { opacity: 0; clip-path: inset(0 0 100% 0); filter: contrast(1.6); }
+  40% { opacity: .55; clip-path: inset(0 0 45% 0); }
+  100% { opacity: 1; clip-path: inset(0); filter: none; }
+}
+@keyframes rml-hormigas { to { outline-offset: 1px; } }
+
+/* ── Grano vivo: UNA textura que se desplaza a saltitos (sólo transform) ── */
+.rml-grano { position: fixed; z-index: 2147483000; left: -50%; top: -50%; width: 200%; height: 200%; pointer-events: none; background: var(--rml-ruido) 0 0 / 160px 160px; opacity: .06; mix-blend-mode: multiply; animation: rml-grano .9s steps(1) infinite; will-change: transform; }
+@keyframes rml-grano {
+  0% { transform: translate(0, 0); } 12% { transform: translate(-37px, 21px); } 25% { transform: translate(19px, -45px); }
+  37% { transform: translate(-58px, -12px); } 50% { transform: translate(44px, 33px); } 62% { transform: translate(-21px, 57px); }
+  75% { transform: translate(63px, -29px); } 87% { transform: translate(-9px, -61px); }
+}
+/* Parpadeo analógico (opcional): un velo con viñeta que respira, muy leve */
+.rml-parpadeo { position: fixed; inset: 0; z-index: 2147482999; pointer-events: none; background: radial-gradient(ellipse at center, transparent 55%, rgba(35, 28, 31, .14)), repeating-linear-gradient(0deg, rgba(35, 28, 31, .025) 0 1px, transparent 1px 3px); animation: rml-parpadeo 7s steps(1) infinite; }
+@keyframes rml-parpadeo { 0%, 100% { opacity: .9; } 41% { opacity: .75; } 42% { opacity: .95; } 43% { opacity: .8; } 77% { opacity: 1; } 78% { opacity: .82; } }
+/* Nunca encima de la prueba ni de la vista del librito; y quieto si se pide */
+body.ed-probando :is(.rml-grano, .rml-parpadeo) { display: none; }
+body:has(.ed-previsual) :is(.rml-grano, .rml-parpadeo) { display: none; }
+body.ed-mov-nada :is(.rml-grano, .rml-parpadeo), body.ed-calidad-baja .rml-parpadeo { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .rml-grano, .rml-parpadeo { animation: none !important; } }
+body.ed-calidad-baja .rml-grano { opacity: .035; }
+
+/* Elegir estilo en Configuración: dos tarjetitas de muestra */
+.ed-config-estilos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.ed-config-estilo { display: grid; gap: 6px; padding: 8px; border: 1.5px solid var(--linea); border-radius: var(--mano-chica); background: var(--superficie); color: var(--texto); text-align: left; transition: border-color .2s, transform .25s var(--resorte); }
+.ed-config-estilo.on { border-color: var(--acento); box-shadow: 0 0 0 3px var(--acento-suave); }
+.ed-config-estilo i { display: block; height: 46px; border-radius: 8px; }
+.ed-config-estilo.cuaderno i { background: radial-gradient(circle at 25% 40%, #f7a8c4 0 9px, transparent 10px), radial-gradient(circle at 60% 55%, #a9dcc7 0 8px, transparent 9px), #fffaf3; border: 2px solid #3b2a3f; box-shadow: 3px 3px 0 #3b2a3f; }
+.ed-config-estilo.retromylove i { border-radius: 0; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='1' height='1' fill='%23231c1f' fill-opacity='.25'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23231c1f' fill-opacity='.25'/%3E%3C/svg%3E"), linear-gradient(#f3ead6 0 14px, #f2a5bd 14px 16px, #fffaf0 16px); border: 2px solid #231c1f; box-shadow: 3px 3px 0 #231c1f; }
+.ed-config-estilo b { font: 400 16px/1 "Patrick Hand", Jost, sans-serif; }
+.ed-config-estilo.retromylove b { font: 400 13px/1 "Silkscreen", "VT323", monospace; }
+.ed-config-estilo small { color: var(--texto-suave); font-size: 11px; }
+:root[data-estilo="retromylove"] :is(.ed-modal > header, .ed-panel-titulo, .ed-tarjeta)::before { display: none !important; }
+:root[data-estilo="retromylove"] .ed-insp-tabs button { font: 400 19px/1 var(--rml-pixel); border-radius: 0; }
+:root[data-estilo="retromylove"] .ed-insp-tabs button.on { box-shadow: inset 0 -3px 0 var(--rml-rosa-fuerte); }
+:root[data-estilo="retromylove"] .ed-asa-hoja i, :root[data-estilo="retromylove"] .ed-hoja-asa i { border-radius: 0; background: var(--rml-dither), var(--rml-rosa); height: 6px; }
