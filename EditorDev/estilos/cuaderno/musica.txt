@@ -1,0 +1,4 @@
+# Canciones del repositorio que suenan con el estilo Cuaderno (una ruta por línea,
+# desde la raíz del repositorio). Las de la carpeta musica/ de aquí al lado
+# también suenan, y van primero.
+DevMusic/MusicaDev.mp3

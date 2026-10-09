@@ -1240,6 +1240,29 @@ export default {
    "peso": 2659650
   }
  ],
+ "estilos": {
+  "baddie": {
+   "musica": [
+    "la radio/music1.mp3",
+    "la radio/music2.mp3",
+    "la radio/music3.mp3"
+   ],
+   "fuentes": []
+  },
+  "cuaderno": {
+   "musica": [
+    "DevMusic/MusicaDev.mp3"
+   ],
+   "fuentes": []
+  },
+  "retromylove": {
+   "musica": [
+    "musica arena/musica1.mp3",
+    "DevMusic/MusicaDev.mp3"
+   ],
+   "fuentes": []
+  }
+ },
  "extras": {
   "animaciones": [
    {

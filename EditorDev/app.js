@@ -101,6 +101,24 @@ const HOJAS = new Set(["animar", "efectos", "transiciones", "gifs", "stickers"])
 const app = {};
 window.EditorDev = app;
 
+// Red de seguridad: un error suelto nunca deja el editor trabado. Suelta los
+// toques que hubieran quedado «puestos», quita velos de ajuste, guarda y avisa
+// (como mucho un aviso cada 10 s). Los errores de dentro de los HTML aislados
+// no llegan aquí: no pueden romper el editor.
+let ultimoError = 0;
+function rescatar(motivo, avisar) {
+  console.error("[editor]", motivo);
+  try { app.lienzo?._limpiarToques?.(); } catch (e) { /* nada */ }
+  document.body.classList.remove("ed-ajustando");
+  for (const n of document.querySelectorAll(".ed-viendo")) n.classList.remove("ed-viendo");
+  if (!avisar || Date.now() - ultimoError < 10000) return;
+  ultimoError = Date.now();
+  try { app.guardarYa?.(); } catch (e) { /* nada */ }
+  aviso("Algo se trabó, pero ya lo solté. Tu trabajo está guardado.", 3200);
+}
+addEventListener("error", (ev) => { if (ev.error || ev.message) rescatar(ev.error || ev.message, true); });
+addEventListener("unhandledrejection", (ev) => rescatar(ev.reason, false));
+
 function guardarUltimo(id) { try { if (id) localStorage.setItem(ULTIMO, id); else localStorage.removeItem(ULTIMO); } catch (e) { /* nada */ } }
 function leerUltimo() { try { return localStorage.getItem(ULTIMO); } catch (e) { return null; } }
 
@@ -271,6 +289,7 @@ function construirBarra() {
     { t: `${ico("guardar")}<span>Guardar y borradores…</span>`, al: () => $(".ed-guardar").click() },
     { t: `${ico("exportar")}<span>Exportar (.zip)</span>`, al: () => app.exportar() },
     { t: `${ico("herramientas")}<span>Herramientas</span>`, al: () => abrirSeccion("herramientas", true) },
+    { t: `${ico("foco")}<span>Recorrido con la abejita</span>`, al: () => app.ayuda?.recorrido() },
   ]));
   $(".ed-deshacer").addEventListener("click", () => E.deshacer());
   $(".ed-rehacer").addEventListener("click", () => E.rehacer());

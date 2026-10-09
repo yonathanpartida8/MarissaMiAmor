@@ -1,0 +1,5 @@
+# Canciones del repositorio para Baddie (una ruta por línea, desde la raíz).
+# Las de la carpeta musica/ de aquí al lado van primero.
+la radio/music1.mp3
+la radio/music2.mp3
+la radio/music3.mp3

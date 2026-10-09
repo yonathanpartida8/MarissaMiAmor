@@ -1,0 +1,159 @@
+/* ═══════════════════════════════════════════════════════════════════
+   BADDIE GIRL LEOPARD · estilo seleccionable del editor (⚙ → Estilo)
+   Estampado de leopardo (beige, negro y café), besos de labial rojo,
+   negro brillante y letra estilo Barbie para los títulos.
+
+   Todo vive en esta carpeta (estilos/baddie/):
+     estilo.css         este archivo
+     leopardo.svg       el estampado (se repite sin costuras)
+     leopardo-suave.svg el mismo, en tonos suaves, detrás de la hoja
+     labios.svg         la marca de beso
+     fuentes/           pon aquí la fuente de Barbie si la tienes (se usa sola)
+     musica/ · musica.txt  la música que suena con este estilo
+
+   Estable a propósito: nada de animaciones infinitas, desenfoques ni
+   brillos que se repintan (eso era lo que parpadeaba). Fondos claros y
+   color-scheme claro: los recursos HTML transparentes no muestran fondo.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── 1 · Tokens ── */
+:root[data-estilo="baddie"] {
+  --bd-tan: #d6b48c;
+  --bd-tan-2: #c79f73;
+  --bd-crema: #fbf4ea;
+  --bd-crema-2: #f3e4d0;
+  --bd-negro: #17100b;
+  --bd-negro-2: #2a1d15;
+  --bd-cafe: #8f5733;
+  --bd-rojo: #a3101c;
+  --bd-rojo-2: #c4182a;
+  --bd-rojo-suave: #f6dcd8;
+  --bd-titulo: "BarbieEstilo", "Pacifico", "Dancing Script", cursive;
+  --bd-lectura: "Poppins", "Jost", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bd-leopardo: url("leopardo.svg") 0 0 / 300px 300px;
+  --bd-gloss: linear-gradient(180deg, rgba(255, 255, 255, .38) 0%, rgba(255, 255, 255, .06) 50%, transparent 52%);
+  --fondo: var(--bd-tan);
+  --superficie: var(--bd-crema);
+  --superficie-2: var(--bd-crema-2);
+  --linea: #dcc5a8;
+  --linea-fuerte: var(--bd-negro);
+  --texto: var(--bd-negro);
+  --texto-suave: #6b4f3b;
+  --tinta: var(--bd-negro);
+  --acento: var(--bd-rojo);
+  --acento-suave: var(--bd-rojo-suave);
+  --acento-texto: #fff;
+  --peligro: #b3121f;
+  --lienzo: #c9a57c;
+  --mano: 16px;
+  --mano-chica: 11px;
+  --radio: 14px;
+  --sombra: 0 12px 30px rgba(40, 20, 10, .28);
+  --sombra-chica: 0 2px 8px rgba(40, 20, 10, .22);
+  --sticker: 3px 3px 0 var(--bd-negro);
+  --regla-fondo: #ead7bd;
+  --regla-hoja: var(--bd-crema);
+  --regla-linea: var(--bd-cafe);
+  --regla-texto: #6b4f3b;
+  --papel: none;
+  --washi: var(--bd-leopardo), var(--bd-tan);
+  --washi-2: var(--bd-leopardo), var(--bd-tan);
+  color-scheme: light;
+}
+/* Zonas negras (barra de arriba, riel, avisos): sus tokens se invierten. */
+:root[data-estilo="baddie"] :is(.ed-barra, .ed-riel, .ed-aviso, .ed-tip) {
+  --texto: #fbf4ea; --texto-suave: #d9bd9b; --tinta: #fbf4ea; --superficie: #241912; --superficie-2: #33241a;
+  --linea: #4a3426; --linea-fuerte: #d6b48c; --acento-suave: rgba(196, 24, 42, .28);
+}
+
+/* ── 2 · Fondo leopardo (quieto) ── */
+:root[data-estilo="baddie"] body.ed { font-family: var(--bd-lectura); background: var(--bd-leopardo), var(--bd-tan); }
+:root[data-estilo="baddie"] .ed-centro { background: url("leopardo-suave.svg") 0 0 / 300px 300px, var(--lienzo); }
+
+/* ── 3 · Piezas ── */
+:root[data-estilo="baddie"] :is(.ed-barra, .ed-riel) { background: var(--bd-negro); color: var(--texto); }
+:root[data-estilo="baddie"] .ed-barra { border-bottom: 3px solid var(--bd-rojo); box-shadow: 0 2px 0 var(--bd-negro); }
+:root[data-estilo="baddie"] .ed-riel { border-right: 3px solid var(--bd-rojo); }
+:root[data-estilo="baddie"] :is(.ed-panel, .ed-insp, .ed-contexto, .ed-linea) { background: var(--bd-crema); border-color: var(--bd-negro); }
+:root[data-estilo="baddie"] :is(.ed-panel, .ed-insp) { border-width: 2px; }
+/* Cabeceras con una franja de leopardo */
+:root[data-estilo="baddie"] :is(.ed-panel-cab, .ed-modal > header, .ed-hojita-cab) { background: linear-gradient(var(--bd-crema), var(--bd-crema)) 0 0 / 100% calc(100% - 7px) no-repeat, var(--bd-leopardo), var(--bd-tan); }
+:root[data-estilo="baddie"] :is(.ed-modal > header, .ed-panel-titulo, .ed-tarjeta)::before { display: none !important; }
+/* Títulos: letra estilo Barbie, rojo labial */
+:root[data-estilo="baddie"] :is(.ed-modal h2, .ed-hojita-cab h3, .ed-panel-titulo, .ed-pop-t, .ed-salir h2, .ed-hoja-sec-cab h2) { font-family: var(--bd-titulo) !important; font-weight: 400; font-style: normal; color: var(--bd-rojo); letter-spacing: .01em; }
+:root[data-estilo="baddie"] .ed-panel-titulo { font-size: 26px; }
+:root[data-estilo="baddie"] :is(.ed-panel-titulo, .ed-modal h2)::after { content: ""; display: inline-block; width: 30px; height: 18px; margin-left: 8px; vertical-align: -2px; background: url("labios.svg") center / contain no-repeat; transform: rotate(-10deg); }
+:root[data-estilo="baddie"] .ed-nombre input { font-family: var(--bd-titulo); font-weight: 400; color: #fbf4ea; }
+:root[data-estilo="baddie"] .ed-sec > summary { font-family: var(--bd-titulo); font-weight: 400; font-size: 20px; color: var(--bd-rojo); }
+:root[data-estilo="baddie"] .ed-sec { border-bottom-color: #e3cdb0; }
+
+/* Botones: crema con filo negro; el principal, rojo labial con brillo */
+:root[data-estilo="baddie"] .ed-btn { border: 1.5px solid var(--bd-negro); border-radius: 999px; background: var(--bd-crema); color: var(--bd-negro); font-family: var(--bd-lectura); font-weight: 500; box-shadow: 2px 2px 0 var(--bd-negro); }
+:root[data-estilo="baddie"] .ed-btn:hover:not(:disabled) { background: var(--bd-crema-2); }
+:root[data-estilo="baddie"] .ed-btn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: none; }
+:root[data-estilo="baddie"] .ed-btn.primario { background: var(--bd-gloss), linear-gradient(135deg, var(--bd-rojo-2), var(--bd-rojo)); color: #fff; border-color: var(--bd-negro); }
+:root[data-estilo="baddie"] .ed-barra .ed-btn { background: #241912; color: #fbf4ea; border-color: #d6b48c; box-shadow: none; }
+:root[data-estilo="baddie"] .ed-barra .ed-btn.primario { background: var(--bd-gloss), linear-gradient(135deg, var(--bd-rojo-2), var(--bd-rojo)); border-color: transparent; }
+:root[data-estilo="baddie"] .ed-btn.peligro { color: var(--bd-rojo); }
+:root[data-estilo="baddie"] :is(.ed-btn, .ed-dock-b, .ed-cb, .ed-bib-chip, .ed-seg button).on { background: var(--bd-rojo) !important; color: #fff !important; border-color: var(--bd-negro) !important; }
+:root[data-estilo="baddie"] .ed-dock-grupo { background: var(--bd-crema); border: 2px solid var(--bd-negro); box-shadow: 3px 3px 0 var(--bd-negro); }
+:root[data-estilo="baddie"] .ed-dock-b { color: var(--bd-negro); }
+:root[data-estilo="baddie"] .ed-dock-b:hover { background: var(--bd-crema-2); }
+
+/* Riel: iconos crema; el elegido, un besito rojo */
+:root[data-estilo="baddie"] .ed-riel button { color: #e9d3b6; font-family: var(--bd-lectura); }
+:root[data-estilo="baddie"] .ed-riel button b::before { background: #33241a; opacity: 1; }
+:root[data-estilo="baddie"] .ed-riel button b .ed-ico { color: #fbf4ea; }
+:root[data-estilo="baddie"] .ed-riel button.on { color: #fff; }
+:root[data-estilo="baddie"] .ed-riel button.on b::before { background: var(--bd-rojo); }
+:root[data-estilo="baddie"] .ed-riel-sep { border-top-color: #4a3426; }
+:root[data-estilo="baddie"] .ed-riel-sep small { color: #d6b48c; }
+
+/* Campos e interruptores */
+:root[data-estilo="baddie"] :is(.ed-sel, .ed-txt, .ed-num input, .ed-color input[type="text"], .ed-buscar) { border: 1.5px solid var(--bd-negro); border-radius: 10px; background-color: #fff; color: var(--bd-negro); }
+:root[data-estilo="baddie"] :is(.ed-sel, .ed-txt, .ed-buscar):focus { outline: 2px solid var(--bd-rojo); outline-offset: 1px; }
+:root[data-estilo="baddie"] .ed-toggle { background: #e2cdb2; border-color: var(--bd-negro); }
+:root[data-estilo="baddie"] .ed-toggle.on { background: var(--bd-rojo); }
+:root[data-estilo="baddie"] .ed-seg { background: var(--bd-crema-2); border: 1.5px solid var(--bd-negro); border-radius: 999px; }
+:root[data-estilo="baddie"] .ed-seg button { border-radius: 999px; color: var(--bd-negro); }
+:root[data-estilo="baddie"] input[type="range"] { accent-color: var(--bd-rojo); }
+
+/* Fichas, tarjetas y biblioteca: crema, filo negro (las imágenes se ven sin fondo de color) */
+:root[data-estilo="baddie"] :is(.ed-bib-t, .ed-pieza, .ed-comp, .ed-deslizar-t, .ed-config-modo, .ed-tq-ficha, .ed-bq-t) { background: #fff; border: 1.5px solid var(--bd-negro) !important; color: var(--bd-negro); box-shadow: 2px 2px 0 var(--bd-negro); }
+:root[data-estilo="baddie"] :is(.ed-bib-t, .ed-pieza, .ed-comp, .ed-tq-ficha, .ed-bq-t):hover { box-shadow: 3px 3px 0 var(--bd-rojo); }
+:root[data-estilo="baddie"] .ed-tq-ficha.on { background: var(--bd-rojo-suave); box-shadow: 0 0 0 2px var(--bd-rojo) inset; }
+:root[data-estilo="baddie"] .ed-bq-maq { background: #fff7ee; }
+:root[data-estilo="baddie"] .ed-bib-chip { background: #fff; border: 1.5px solid var(--bd-negro); color: var(--bd-negro); border-radius: 999px; }
+
+/* Ventanas, menús, avisos y la abejita */
+:root[data-estilo="baddie"] :is(.ed-modal, .ed-pop, .ed-menu, .ed-hojita, .ed-salir, .ed-abeja-globo, .ed-foco-tarjeta, .ed-consejito, .ed-dock-op, .ed-flotante, .ed-hack-carta, .ed-tarjeta, .ed-zonas-panel) { background: var(--bd-crema) !important; border: 2px solid var(--bd-negro) !important; box-shadow: 4px 4px 0 var(--bd-negro) !important; color: var(--bd-negro); }
+:root[data-estilo="baddie"] .ed-pop::before { display: none; }
+:root[data-estilo="baddie"] .ed-menu button:hover { background: var(--bd-rojo-suave); }
+:root[data-estilo="baddie"] .ed-flotante .ed-flot-borrar { background: var(--bd-rojo); color: #fff; }
+:root[data-estilo="baddie"] .ed-aviso { background: var(--bd-negro); color: #fbf4ea; border: 2px solid var(--bd-rojo); box-shadow: 3px 3px 0 var(--bd-rojo); }
+:root[data-estilo="baddie"] .ed-tip { background: var(--bd-negro); color: #fbf4ea; }
+:root[data-estilo="baddie"] .ed-abeja-globo p { font-family: var(--bd-lectura); font-size: 15px; line-height: 1.45; }
+:root[data-estilo="baddie"] .ed-abeja-globo::after { background: var(--bd-crema); border-color: var(--bd-negro); }
+:root[data-estilo="baddie"] .ed-foco { background: var(--bd-rojo); border: 2px solid var(--bd-negro); color: #fff; box-shadow: 2px 2px 0 var(--bd-negro); }
+:root[data-estilo="baddie"] .ed-insp-tabs button.on { box-shadow: inset 0 -3px 0 var(--bd-rojo); color: var(--bd-rojo); }
+:root[data-estilo="baddie"] :is(.ed-asa-hoja i, .ed-hoja-asa i) { background: var(--bd-leopardo), var(--bd-tan); height: 6px; }
+:root[data-estilo="baddie"] .ed-hoja { box-shadow: 0 26px 70px rgba(40, 20, 10, .45), 0 0 0 2px var(--bd-negro); }
+:root[data-estilo="baddie"] .ed-musica-b.on { background: var(--bd-rojo); border-color: #d6b48c; }
+:root[data-estilo="baddie"] .ed-musica-b.on .ed-ico { color: #fff; }
+:root[data-estilo="baddie"] .ed-fps { background: var(--bd-negro); color: #d6b48c; }
+
+/* ── La abejita baddie: pestañas, labial rojo, chapitas y moño de leopardo ── */
+.ed-abeja .ab-baddie, .ed-abeja .ab-labios { display: none; }
+:root[data-estilo="baddie"] .ed-abeja .ab-baddie { display: inline; }
+:root[data-estilo="baddie"] .ed-abeja[data-boca="sonrisa"] .ab-labios { display: inline; }
+:root[data-estilo="baddie"] .ed-abeja[data-boca="sonrisa"] [data-b="sonrisa"] { display: none !important; }
+:root[data-estilo="baddie"] .ed-abeja [data-b="grande"], :root[data-estilo="baddie"] .ed-abeja [data-b="o"] { fill: #a3101c; stroke: #5c0710; }
+:root[data-estilo="baddie"] .ed-abeja [data-b="gato"] { stroke: #a3101c; stroke-width: 2.4; }
+:root[data-estilo="baddie"] .ed-abeja .ab-chapa { fill: #e2475a; opacity: .8; }
+:root[data-estilo="baddie"] .ed-abeja .ab-antena { fill: #a3101c; }
+:root[data-estilo="baddie"] .ed-abeja .ab-rayas { fill: #17100b; }
+:root[data-estilo="baddie"] .ed-abeja-in { filter: drop-shadow(0 6px 8px rgba(40, 20, 10, .35)); }
+
+/* Tarjetita de muestra en Configuración */
+.ed-config-estilo.baddie i { background: url("labios.svg") 70% 50% / 34px auto no-repeat, url("leopardo.svg") 0 0 / 120px 120px, #d6b48c; border: 2px solid #17100b; box-shadow: 3px 3px 0 #17100b; }
+.ed-config-estilo.baddie b { font: 400 18px/1 "BarbieEstilo", "Pacifico", cursive; color: #a3101c; }

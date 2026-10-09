@@ -1,0 +1,8 @@
+/* ═══════════════════════════════════════════════════════════════════
+   CUADERNO · el estilo de siempre (crayón, papel y stickers).
+   Su base está en styles/editor.css (es el estilo por defecto); aquí van
+   sólo los retoques propios de este estilo, bajo
+   :root:not([data-estilo]) para no tocar a los demás.
+   Su música: estilos/cuaderno/musica/ y musica.txt.
+   ═══════════════════════════════════════════════════════════════════ */
+:root:not([data-estilo]) .ed-config-estilo.cuaderno b { color: #d8397a; }

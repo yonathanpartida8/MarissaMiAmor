@@ -18,10 +18,14 @@
  * El volumen va por Web Audio (GainNode) porque en iPhone `audio.volume`
  * no hace nada. Nada suena hasta el primer toque (los navegadores no dejan).
  *
- * Dónde se busca la música del editor: primero la carpeta **DevMusic/** (en
- * la raíz; cualquier canción que dejes ahí, y si hay varias suenan una tras
- * otra), y si no, MusicaDev.mp3 en EditorDev/, «musica assets/» o la raíz.
+ * Dónde se busca la música del editor: primero la del ESTILO elegido
+ * (EditorDev/estilos/<estilo>/musica/ y su musica.txt, que apunta a canciones
+ * del repositorio); si no hay, la carpeta **DevMusic/** (en la raíz; si hay
+ * varias suenan una tras otra), y si no, MusicaDev.mp3 en EditorDev/,
+ * «musica assets/» o la raíz. Al cambiar de estilo, cambia con un fundido.
  */
+import { PREF as CONFIG, alCambiar as alCambiarConfig } from "../config/preferencias.js";
+
 const RT = window.LibritoRT;
 const PREF = "editordev:musicadev";
 const CANDIDATAS = ["../DevMusic/MusicaDev.mp3", "MusicaDev.mp3", "../musica assets/MusicaDev.mp3", "../MusicaDev.mp3"];
@@ -67,7 +71,35 @@ export class AudioEditor {
   }
 
   /* ── Encontrar MusicaDev.mp3 ─────────────────────────────────────── */
+  /** Las canciones del estilo (carpeta musica/ + musica.txt), como direcciones. */
+  async _listaDeEstilo(estilo) {
+    try {
+      const { catalogo, listar } = await import("../componentes/catalogo.js");
+      const { rutaAUrl } = await import("../assets/biblioteca.js");
+      let rutas = (((await catalogo()).estilos || {})[estilo] || {}).musica || [];
+      if (!rutas.length) {
+        // Sin catálogo (recién dejadas): lo que se vea en la carpeta y en musica.txt.
+        const enCarpeta = ((await listar(`EditorDev/estilos/${estilo}/musica/`)) || []).filter((f) => AUD.test(f)).map((f) => `EditorDev/estilos/${estilo}/musica/${f}`);
+        let txt = [];
+        try { const r = await fetch(`estilos/${estilo}/musica.txt`, { cache: "no-store" }); if (r.ok) txt = (await r.text()).split(/\r?\n/).map((l) => l.replace(/#.*/, "").trim()).filter((l) => l && AUD.test(l)); } catch (e) { /* nada */ }
+        rutas = [...enCarpeta, ...txt];
+      }
+      return [...new Set(rutas)].map(rutaAUrl);
+    } catch (e) { return []; }
+  }
+
   async _buscar() {
+    // 0) La música del estilo elegido (si tiene).
+    this._estilo = CONFIG.estilo || "cuaderno";
+    alCambiarConfig(() => { if ((CONFIG.estilo || "cuaderno") !== this._estilo) this.cambiarEstilo(CONFIG.estilo || "cuaderno"); });
+    const delEstilo = await this._listaDeEstilo(this._estilo);
+    if (delEstilo.length) {
+      this.lista = delEstilo;
+      this.url = delEstilo[0];
+      this._avisar();
+      this._desbloquear();
+      return this.url;
+    }
     // 1) MusicaDev.mp3 (la de siempre). 2) Lo que haya en DevMusic/ suena después, en orden al azar.
     for (const c of CANDIDATAS) {
       const u = new URL(c, location.href).href;
@@ -83,10 +115,33 @@ export class AudioEditor {
       const extra = lista.map((r) => new URL("../" + r.split("/").map(encodeURIComponent).join("/"), location.href).href);
       if (extra.length) { this.lista = [...new Set([this.url, ...extra].filter(Boolean))]; this.url = this.url || this.lista[0]; }
     } catch (e) { /* sólo MusicaDev */ }
+    this._listaBase = this.lista ? [...this.lista] : this.url ? [this.url] : [];
     this._avisar();
     // Intenta empezar ya (si el navegador lo permite); si no, empieza con el primer toque.
     this._desbloquear();
     return this.url;
+  }
+
+  /** Otro estilo, otra música: baja suave, cambia de canción y vuelve a subir. */
+  async cambiarEstilo(estilo) {
+    this._estilo = estilo;
+    let lista = await this._listaDeEstilo(estilo);
+    if (estilo !== this._estilo) return; // ya se cambió otra vez
+    if (!lista.length) lista = this._listaBase || [];
+    if (!lista.length || (this.lista && lista.join() === this.lista.join())) return;
+    this.lista = lista;
+    this.url = lista[0];
+    this._avisar();
+    const d = this.dev;
+    if (!d || !this.ac) { this._arrancarDev(); return; }
+    const g = d.gain.gain, t = this.ac.currentTime;
+    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + 0.6);
+    setTimeout(() => {
+      if (this.dev !== d) return;
+      d.audio.loop = lista.length <= 1;
+      d.audio.src = this.url;
+      if (this.pref.on && !this._pausaVista && !document.hidden) d.audio.play().then(() => this._nivel(true)).catch(() => {});
+    }, 650);
   }
 
   get disponible() { return !!this.url; }
@@ -122,14 +177,15 @@ export class AudioEditor {
     if (!this.ac || !this.url || !this.pref.on || this._pausaVista) return;
     if (!this.dev) {
       const audio = new Audio();
-      const varias = (this.lista?.length || 0) > 1;
-      audio.loop = !varias;
+      audio.loop = (this.lista?.length || 0) <= 1;
       audio.preload = "auto";
       audio.crossOrigin = "anonymous";
       audio.src = this.url;
-      // Varias canciones en DevMusic/: una tras otra, sin repetir la misma seguida.
-      if (varias) audio.addEventListener("ended", () => {
-        const l = this.lista, i = l.indexOf(audio.src);
+      // Varias canciones: una tras otra, sin repetir la misma seguida.
+      audio.addEventListener("ended", () => {
+        const l = this.lista || [];
+        if (l.length < 2) return;
+        const i = l.indexOf(audio.src);
         let j = Math.floor(Math.random() * l.length);
         if (j === i) j = (j + 1) % l.length;
         audio.src = this.url = l[j];

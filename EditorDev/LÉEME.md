@@ -345,6 +345,19 @@ avanzadas** (grupo «Avanzado» y secciones cerradas del inspector).
 
 Código nuevo: `runtime/rt-toques.js` (efectos y zonas en el librito), `components/toques.js` (inspector y editor de zonas), `components/secciones/bloques.js`, `styles/baddie.css`, `assets/elementos/`.
 
+## Fase 7: barra útil, estilos con carpeta y música, Baddie leopardo y recorrido
+
+| | |
+| --- | --- |
+| **Barra derecha** | ahora con lo que más se usa al armar: **Deshacer · Rehacer │ Pegar · Duplicar · Capas │ Imán · Ver toda la hoja**. El dibujo a mano sigue en Elementos → «Dibujar a mano»; mientras dibujas sale la tirita con **Lápiz / Goma**, colores, grosor y «Listo» |
+| **Barra de abajo** | se probó tocando cada botón de cada tipo (página, texto, forma, foto, botón, vídeo, HTML): todos responden |
+| **Cada estilo en su carpeta** | `estilos/<estilo>/` con su `estilo.css`, sus imágenes, `fuentes/`, `musica/` y `musica.txt`. Cuaderno, RetroMyLove y Baddie |
+| **Música por estilo** | suena lo de `estilos/<estilo>/musica/` y lo que diga su `musica.txt` (canciones que ya están en el repositorio: Cuaderno → DevMusic, RetroMyLove → musica arena, Baddie → la radio). Al cambiar de estilo, la música cambia con un fundido |
+| **Baddie girl leopard** | rehecho a partir de la foto: estampado de leopardo (beige, negro y café), besos de labial rojo, barra y riel negros, botones crema con filo negro y principal rojo labial, títulos con letra estilo Barbie (**Pacifico**; si dejas la fuente de Barbie en `estilos/baddie/fuentes/`, se usa ésa). Sin animaciones infinitas ni desenfoques: ya no parpadea. La abejita: pestañas, labial rojo, chapitas y moñito de leopardo |
+| **Recursos sin fondo** | los marcos HTML siempre se pintan transparentes, también con estilos oscuros |
+| **Recorrido con la abejita** | la primera vez lo ofrece; después, en su globito («Enséñame todo») o en ⋯. Vuela a cada parte, la ilumina y la explica, con Atrás / Siguiente / Salir; el globito nunca tapa lo que explica |
+| **Estabilidad** | si algo falla, el editor suelta los toques trabados, quita velos, guarda y avisa en vez de congelarse |
+
 ## Cómo está hecho
 
 ```
@@ -374,7 +387,8 @@ EditorDev/
 ├── runtime/     EL REPRODUCTOR: rt-base · rt-render (y la hoja automática) · rt-anim (y el tiempo) ·
 │                rt-comps · rt-3d (WebGL2) · rt-trans · rt-toques (efectos al tocar y zonas) · rt-musica ·
 │                rt-player · librito.css · reproductor.html
-└── styles/      editor.css
+├── estilos/     cuaderno · retromylove · baddie (cada uno: estilo.css, imágenes, fuentes/, musica/, musica.txt)
+└── styles/      editor.css (la base de todo)
 ```
 
 - Reusa del libro `src/utils/dom.js` (`el`), `src/core/Emitter.js`,

@@ -11,6 +11,7 @@
  * Todo se ajusta en ⚙ Configuración.
  */
 import { el } from "../../src/utils/dom.js";
+import { aviso } from "./ui.js";
 import { ico } from "./iconos.js";
 import { Abeja } from "../mascota/abeja.js";
 import { siguiente as dialogo, evento } from "../mascota/dialogos.js";
@@ -80,6 +81,24 @@ const TIPS = {
   "el:componente": ["Las piezas salen de assets/<carpeta>/: deja ahí un .html (con su CSS y JS dentro) y aparece solo en «Piezas».", "Con «Zonas táctiles» (en Efectos al tocar) haces que cada parte del HTML haga algo distinto: un sonido, corazones, pasar de página…"],
 };
 
+/* El recorrido guiado: la abejita va a cada parte, la ilumina y la explica.
+   Cada paso usa el primer selector que se vea (computadora o teléfono). */
+const RECORRIDO = [
+  { sel: null, cara: "feliz", t: "¡Hola! Te enseño cómo funciona todo en un ratito. Puedes salir cuando quieras y volver a verlo desde mi foquito o desde ⋯." },
+  { sel: [".ed-riel", ".ed-asa-lateral"], t: "A la izquierda están las herramientas por grupos: CREAR (Bloques, Elementos, Texto, Imágenes, Vídeo, Recursos), ADORNAR, TOCAR Y OÍR y AVANZADO. En el teléfono se abren deslizando desde el borde o con esta pestañita." },
+  { sel: [".ed-hoja"], t: "Ésta es tu página. Toca algo para elegirlo y arrástralo para moverlo; con dos dedos acercas o alejas. Doble toque en un texto para escribir." },
+  { sel: [".ed-dock"], t: "Lo de todo el rato, a un toque: deshacer, rehacer, pegar, duplicar, capas, el imán (para alinear solito) y «ver toda la hoja»." },
+  { sel: [".ed-contexto"], t: "Esta barra cambia según lo que elijas: letra y color para un texto, marco para una foto, probar para un HTML… Sin nada elegido, es la de la página: fondo, transición y música." },
+  { sel: [".ed-insp"], t: "Aquí están todos los detalles de lo elegido: posición, efectos al tocar, zonas táctiles, sonidos, animación y capas." },
+  { sel: [".ed-paginas-b"], t: "Tus páginas: tócalo para verlas, cambiar de una a otra, ordenarlas o agregar más." },
+  { sel: [".ed-probar"], t: "«Probar» abre la página como la verá ella, con sus animaciones, toques y música." },
+  { sel: [".ed-musica-b"], t: "La notita prende o apaga la música mientras editas (mantén presionado para el volumen). Cada estilo trae su propia música." },
+  { sel: [".ed-ajustes-b"], t: "En ⚙ eliges el estilo del editor (Cuaderno, RetroMyLove o Baddie), el rendimiento, las animaciones y cómo me porto yo." },
+  { sel: [".ed-exportar", ".ed-mas"], t: "Cuando esté lista, Exportar arma tu librito para compartirlo. Lo de guardar también está aquí arriba." },
+  { sel: [".ed-foco"], cara: "enamorada", t: "Y si te pierdes, toca mi foquito: te explico justo lo que estás haciendo. ¡A crear algo bonito!" },
+];
+const visible = (n) => { if (!n) return false; const r = n.getBoundingClientRect(); return r.width > 4 && r.height > 4 && r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth && getComputedStyle(n).visibility !== "hidden"; };
+
 const textoDe = (tip) => (typeof tip === "string" ? tip : tip.t);
 const metaDe = (tip) => (typeof tip === "string" ? null : tip.a);
 
@@ -90,6 +109,12 @@ export class Ayuda {
     try { if (localStorage.getItem(OCULTO) === "1") PREF.ayudas = false; } catch (e) { /* nada */ }
     this.i = 0;
     this.abeja = new Abeja(app);
+    // La primera vez: ofrece el recorrido guiado (una sola vez; luego está en el foquito y en ⋯).
+    app.estado.on("cargado", () => setTimeout(() => {
+      let visto = false;
+      try { visto = localStorage.getItem("editordev:recorrido") === "1"; localStorage.setItem("editordev:recorrido", "1"); } catch (e) { visto = true; }
+      if (!visto && PREF.ayudas && PREF.abeja && !document.querySelector(".ed-modal-fondo")) aviso("¿Primera vez aquí? La abejita te enseña todo en un minuto", 9000, "", { t: `${ico("foco")}<span>Enséñame</span>`, al: () => this.recorrido() });
+    }, 2500));
     this.boton = el("button.ed-foco", { type: "button", title: "Consejos y la abejita", "aria-label": "Llamar a la abejita (consejos)", html: ico("foco") });
     this.boton.addEventListener("click", () => this.alternar());
     document.body.append(this.boton);
@@ -176,6 +201,67 @@ export class Ayuda {
 
   _tips() { return TIPS[this.k] || TIPS.hoja; }
 
+  /* ── Recorrido guiado ──────────────────────────────────────────── */
+  async recorrido() {
+    if (!PREF.abeja) { this._consejito("La abejita está apagada en ⚙ Configuración → Abejita."); return; }
+    this.app.lateral?.cerrar?.();
+    this.app.cerrarHojaSec?.();
+    if (!this.abeja.viva) {
+      this._consejitoFuera?.();
+      const r = this.boton.getBoundingClientRect();
+      await this.abeja.venir({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+      this.revisar();
+    }
+    clearTimeout(this._charla);
+    this.enTour = true;
+    this._pasos = RECORRIDO.map((p) => ({ ...p, n: p.sel ? p.sel.map((s) => document.querySelector(s)).find(visible) || null : null })).filter((p) => !p.sel || p.n);
+    try { localStorage.setItem("editordev:recorrido", "1"); } catch (e) { /* nada */ }
+    this._paso(0);
+  }
+
+  async _paso(i) {
+    const pasos = this._pasos || [];
+    if (!this.enTour || !this.abeja.viva) return this.salirTour();
+    if (i < 0) i = 0;
+    if (i >= pasos.length) return this.salirTour(true);
+    this.iTour = i;
+    const p = pasos[i];
+    let foco = this._focoTour;
+    if (!foco) { foco = el("div.ed-tour-foco", { "aria-hidden": "true" }); document.body.append(foco); this._focoTour = foco; }
+    this.abeja.callar();
+    if (p.n) {
+      const r = p.n.getBoundingClientRect(), m = 6;
+      Object.assign(foco.style, { left: r.left - m + "px", top: r.top - m + "px", width: r.width + m * 2 + "px", height: r.height + m * 2 + "px" });
+      foco.classList.add("ver");
+      // Si es muy grande (la hoja, el riel), la abejita va a su orilla.
+      await this.abeja.visitar(r.width > innerWidth * 0.5 || r.height > innerHeight * 0.6 ? { left: r.left, right: Math.min(r.right, r.left + 140), top: Math.max(r.top + 40, 60), bottom: r.bottom } : r);
+    } else {
+      foco.classList.remove("ver");
+      await this.abeja.volarA({ x: innerWidth / 2 - 40, y: Math.max(70, innerHeight * 0.32) }, 700);
+    }
+    if (!this.enTour || this.iTour !== i) return;
+    const ultimo = i === pasos.length - 1;
+    this.abeja.decir(p.t, {
+      aqui: true, cara: p.cara || "feliz", cuenta: `${i + 1} de ${pasos.length}`, evitar: p.n && p.n.getBoundingClientRect().width < innerWidth * 0.7 ? p.n.getBoundingClientRect() : null,
+      botones: [
+        ...(i > 0 ? [[`${ico("izquierda")}<span>Atrás</span>`, () => this._paso(i - 1)]] : []),
+        [ultimo ? "<span>¡Listo!</span>" : `<span>Siguiente</span>${ico("derecha")}`, () => this._paso(i + 1), "primario"],
+        ...(!ultimo ? [["<span>Salir</span>", () => this.salirTour()]] : []),
+      ],
+    });
+  }
+
+  salirTour(completo) {
+    this.enTour = false;
+    this.abeja._evitar = null;
+    this._focoTour?.classList.remove("ver");
+    if (!this.abeja.viva) return;
+    this.abeja.callar();
+    this.abeja.volarA(this.abeja.casa(), 700);
+    if (completo) { this.abeja.reaccionar?.("carino"); }
+    this._programarCharla();
+  }
+
   /** Un consejo del momento (si habla de un botón, vuela a enseñárselo). */
   async hablar(i) {
     const tips = this._tips();
@@ -191,6 +277,7 @@ export class Ayuda {
       cuenta: tips.length > 1 ? `${this.i + 1} de ${tips.length}` : "",
       botones: [
         ...(tips.length > 1 ? [[`${ico("refrescar")}<span>Otro</span>`, () => this.hablar(this.i + 1)]] : []),
+        [`${ico("play")}<span>Enséñame todo</span>`, () => this.recorrido()],
         [`<span>Gracias</span>`, () => this.abeja.callar(), "primario"],
       ],
     });
@@ -206,6 +293,7 @@ export class Ayuda {
 
   async _charlar() {
     if (!this.abeja.viva) return;
+    if (this.enTour) return this._programarCharla();
     if (document.hidden || this.abeja.hablando || document.body.classList.contains("ed-probando") || document.querySelector(".ed-modal-fondo, .ed-hojita.abierta, .ed-codigo-pantalla")) return this._programarCharla();
     const d = await dialogo();
     if (d.tipo === "hackeo") await this.hackeo(d.texto);

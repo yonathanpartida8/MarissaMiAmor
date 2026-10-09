@@ -219,7 +219,30 @@ export function catalogo(RAIZ) {
   const devMusic = existsSync(dirDev)
     ? todos(dirDev).filter((f) => AUD.test(f)).map((f) => ({ nombre: bonito(f.split("/").pop()), ruta: `DevMusic/${f}`, peso: statSync(join(dirDev, f)).size }))
     : [];
-  return { categorias, musica, devMusic, extras: extrasDe(raiz) };
+  return { categorias, musica, devMusic, estilos: estilosDe(RAIZ), extras: extrasDe(raiz) };
+}
+
+/* Cada estilo del editor en su carpeta: EditorDev/estilos/<estilo>/
+     musica/*.mp3…   canciones que suenan con ese estilo
+     musica.txt      (opcional) canciones del repositorio, una ruta por línea
+     fuentes/*.woff2|ttf|otf  su letra propia (opcional) */
+function estilosDe(RAIZ) {
+  const base = join(RAIZ, "EditorDev", "estilos");
+  const r = {};
+  if (!existsSync(base)) return r;
+  for (const e of readdirSync(base).filter((x) => !x.startsWith(".") && esDir(join(base, x))).sort(orden)) {
+    const dir = join(base, e), rel = `EditorDev/estilos/${e}`;
+    const musica = existsSync(join(dir, "musica")) ? todos(join(dir, "musica")).filter((f) => AUD.test(f)).map((f) => `${rel}/musica/${f}`) : [];
+    if (existsSync(join(dir, "musica.txt"))) {
+      for (const l of readFileSync(join(dir, "musica.txt"), "utf8").split(/\r?\n/)) {
+        const ruta = l.replace(/#.*/, "").trim().replace(/^\/+/, "");
+        if (ruta && AUD.test(ruta) && existsSync(join(RAIZ, ruta)) && statSync(join(RAIZ, ruta)).size > 1024 && !musica.includes(ruta)) musica.push(ruta);
+      }
+    }
+    const fuentes = existsSync(join(dir, "fuentes")) ? todos(join(dir, "fuentes")).filter((f) => /\.(woff2?|ttf|otf)$/i.test(f)).map((f) => `${rel}/fuentes/${f}`) : [];
+    r[e] = { musica, fuentes };
+  }
+  return r;
 }
 
 export function textoCatalogo(RAIZ) {

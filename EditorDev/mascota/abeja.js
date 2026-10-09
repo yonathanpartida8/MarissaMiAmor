@@ -52,9 +52,8 @@ const DIBUJO = `<svg viewBox="0 0 80 74" aria-hidden="true">
   <g class="ab-baddie">
     <path d="M28.8 38.3l-2.9-1.6M29.6 37.2l-1.9-2.6M31 36.6l-.8-3M51.2 38.3l2.9-1.6M50.4 37.2l1.9-2.6M49 36.6l.8-3" fill="none" stroke="#120a0e" stroke-width="1.35" stroke-linecap="round"/>
     <circle cx="25.2" cy="47.2" r=".75" fill="#fff"/><circle cx="52.2" cy="47.2" r=".75" fill="#fff"/>
-    <g class="ab-labios"><path d="M35.4 48.4q2.3-1.9 4.6-.5q2.3-1.4 4.6.5q-1.7 3.8-4.6 3.8q-2.9 0-4.6-3.8z" fill="#d4002a" stroke="#7a0018" stroke-width=".8" stroke-linejoin="round"/><path d="M37.6 50.3q2.4.9 4.8 0" fill="none" stroke="#ff9db2" stroke-width=".7" stroke-linecap="round"/></g>
-    <path class="ab-brillito" d="M63 19l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" fill="#fff"/>
-    <path class="ab-brillito" d="M15 33l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" fill="#ffd1ea" style="animation-delay:.9s"/>
+    <g class="ab-labios"><path d="M35.4 48.4q2.3-1.9 4.6-.5q2.3-1.4 4.6.5q-1.7 3.8-4.6 3.8q-2.9 0-4.6-3.8z" fill="#a3101c" stroke="#5c0710" stroke-width=".8" stroke-linejoin="round"/><path d="M37.6 50.3q2.4.9 4.8 0" fill="none" stroke="#f08a96" stroke-width=".7" stroke-linecap="round"/></g>
+    <g class="ab-mono" stroke="#17100b" stroke-width="1" stroke-linejoin="round"><path d="M40 24.5l-8.5-5.2q-2 4.6 0 9.6z" fill="#d6b48c"/><path d="M40 24.5l8.5-5.2q2 4.6 0 9.6z" fill="#d6b48c"/><circle cx="40" cy="24.5" r="2.3" fill="#a3101c"/><g fill="#17100b" stroke="none"><circle cx="34" cy="22.6" r=".9"/><circle cx="35.6" cy="26.4" r=".8"/><circle cx="46" cy="22.6" r=".9"/><circle cx="44.4" cy="26.4" r=".8"/></g></g>
   </g>
 </g>
 </svg>`;
@@ -179,9 +178,9 @@ export class Abeja {
 
   /** Va a mirar algo (una zona de la pantalla) y vuelve después. */
   visitar(r) {
-    if (!this.n || !r) return;
+    if (!this.n || !r) return Promise.resolve();
     const x = r.right + 80 < innerWidth ? r.right - 10 : r.left - 70, y = Math.max(56, r.top - 60);
-    this.volarA({ x: Math.max(6, Math.min(innerWidth - 86, x)), y: Math.min(innerHeight - 90, y) }, 800);
+    return this.volarA({ x: Math.max(6, Math.min(innerWidth - 86, x)), y: Math.min(innerHeight - 90, y) }, 800);
   }
 
   /** Vida: cada ratito cambia de sitio, da un saltito, una vuelta o zumba. */
@@ -251,7 +250,7 @@ export class Abeja {
     clearTimeout(this._t);
     clearTimeout(this._tg);
     const c = this.casa();
-    if (Math.hypot(c.x - this.pos.x, c.y - this.pos.y) > 120) await this.volarA(c, 650);
+    if (!op.aqui && Math.hypot(c.x - this.pos.x, c.y - this.pos.y) > 120) await this.volarA(c, 650);
     if (!this.n) return;
     let g = this.g;
     if (!g) {
@@ -280,6 +279,7 @@ export class Abeja {
     }, 22);
     this.cara(op.cara || "normal", op.cara ? 2600 : 0);
     this.sonar(op.voz || "habla", Math.ceil(texto.length / 18));
+    this._evitar = op.evitar || null;
     this._colocar();
     g.classList.add("ver");
     if (op.dura) this._tg = setTimeout(() => this.callar(), op.dura);
@@ -295,9 +295,23 @@ export class Abeja {
     const x = Math.max(12, Math.min(innerWidth - w - 12, cx > innerWidth / 2 ? cx - w + 28 : cx - 28));
     const arriba = this.pos.y - h - 4 > 8;
     const y = arriba ? this.pos.y - h - 2 : Math.min(innerHeight - h - 12, this.pos.y + 74);
-    g.style.transform = `translate3d(${x}px,${y}px,0)`;
+    let fx = x, fy = y;
+    // En el recorrido, el globito no tapa lo que se está explicando.
+    const r = this._evitar;
+    const tapa = (gx, gy) => r && gx < r.right + 6 && gx + w > r.left - 6 && gy < r.bottom + 6 && gy + h > r.top - 6;
+    if (tapa(fx, fy)) {
+      const cand = [
+        [Math.max(12, Math.min(innerWidth - w - 12, r.left)), r.bottom + 14],
+        [Math.max(12, Math.min(innerWidth - w - 12, r.left)), r.top - h - 14],
+        [r.left - w - 14, Math.max(12, Math.min(innerHeight - h - 12, r.top))],
+        [r.right + 14, Math.max(12, Math.min(innerHeight - h - 12, r.top))],
+      ].filter(([a, b]) => a >= 8 && b >= 8 && a + w <= innerWidth - 8 && b + h <= innerHeight - 8 && !tapa(a, b));
+      if (cand.length) [fx, fy] = cand[0];
+    }
+    g.style.transform = `translate3d(${fx}px,${fy}px,0)`;
     g.classList.toggle("abajo", !arriba);
-    g.style.setProperty("--cola", `${Math.max(18, Math.min(w - 22, cx - x))}px`);
+    g.classList.toggle("suelto", fx !== x || fy !== y);
+    g.style.setProperty("--cola", `${Math.max(18, Math.min(w - 22, cx - fx))}px`);
   }
 
   get globoVisible() { return !!this.g?.classList.contains("ver"); }
