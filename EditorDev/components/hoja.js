@@ -81,7 +81,15 @@ export class Hoja {
 
   _ir(destino, v0, alFin) {
     this.parar?.();
-    this.parar = resorte(this.y ?? this._cerrada(), destino, { v0, cuadro: (x) => this._poner(x), fin: () => { this.parar = null; alFin?.(); } });
+    this.parar = resorte(this.y ?? this._cerrada(), destino, { v0, cuadro: (x) => this._poner(x), fin: () => { this.parar = null; this._marcarOculto(); alFin?.(); } });
+  }
+
+  /** Lo que queda fuera de la pantalla en esta parada: el cuerpo se alarga
+   *  por dentro esa misma medida, así se puede desplazar hasta lo último aunque
+   *  la hoja esté a media altura (antes, lo de abajo quedaba inalcanzable). */
+  _marcarOculto() {
+    const y = Math.max(0, Math.min(this.alto, this.y || 0));
+    this.panel.style.setProperty("--oculto", Math.round(y) + "px");
   }
 
   /** Abre en la parada `i` (0 = la más abierta). */

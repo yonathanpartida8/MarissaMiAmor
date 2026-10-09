@@ -230,6 +230,8 @@ export function menu(ancla, items) {
   const mw = m.offsetWidth, mh = m.offsetHeight;
   m.style.left = Math.max(8, Math.min(W - mw - 8, r.left)) + "px";
   m.style.top = (r.bottom + mh + 8 > H ? Math.max(8, r.top - mh - 4) : r.bottom + 4) + "px";
+  // Quien edita se entera (el lienzo corre la hoja para que lo elegido no quede tapado).
+  dispatchEvent(new CustomEvent("ed-menu-abierto", { detail: m.getBoundingClientRect() }));
   const fuera = (e) => { if (!m.contains(e.target)) cerrar(); };
   const cerrar = () => { m.remove(); document.removeEventListener("pointerdown", fuera, true); };
   setTimeout(() => document.addEventListener("pointerdown", fuera, true), 0);
@@ -361,6 +363,7 @@ export function popover(ancla, contenido, { clase = "" } = {}) {
     const pw = p.offsetWidth, ph = p.offsetHeight;
     p.style.left = Math.max(8, Math.min(W - pw - 8, r.left + r.width / 2 - pw / 2)) + "px";
     p.style.top = (r.bottom + ph + 10 > H ? Math.max(8, r.top - ph - 8) : r.bottom + 8) + "px";
+    dispatchEvent(new CustomEvent("ed-menu-abierto", { detail: p.getBoundingClientRect() }));
   }
   const fuera = (e) => { if (!p.contains(e.target) && !ancla.contains(e.target)) cerrar(); };
   const tecla = (e) => { if (e.key === "Escape") cerrar(); };

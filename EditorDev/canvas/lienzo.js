@@ -298,6 +298,29 @@ export class Lienzo {
     requestAnimationFrame(paso);
   }
 
+  /** Si un menú (rect de pantalla) tapa lo elegido, la hoja se corre lo justo
+   *  para dejarlo a la vista (abajo, arriba o al lado, donde quepa). */
+  apartarDe(r) {
+    const sel = this.estado.seleccionados;
+    if (!sel.length || !r || this.congelado) return;
+    const rs = sel.map((e) => this.pag?.nodos.get(e.id)?.getBoundingClientRect()).filter((x) => x && x.width);
+    if (!rs.length) return;
+    const s = { left: Math.min(...rs.map((x) => x.left)), top: Math.min(...rs.map((x) => x.top)), right: Math.max(...rs.map((x) => x.right)), bottom: Math.max(...rs.map((x) => x.bottom)) };
+    const tapa = Math.max(0, Math.min(r.right, s.right) - Math.max(r.left, s.left)) * Math.max(0, Math.min(r.bottom, s.bottom) - Math.max(r.top, s.top));
+    if (tapa < (s.right - s.left) * (s.bottom - s.top) * 0.25) return;
+    const vr = this.vistaEl.getBoundingClientRect();
+    let dx = 0, dy = 0;
+    const bajar = r.bottom + 12 - s.top, subir = s.bottom - (r.top - 12);
+    if (s.bottom + bajar <= vr.bottom - 8) dy = bajar;
+    else if (s.top - subir >= vr.top + 8) dy = -subir;
+    else { const der = r.right + 12 - s.left, izq = s.right - (r.left - 12); if (s.right + der <= vr.right - 8) dx = der; else if (s.left - izq >= vr.left + 8) dx = -izq; }
+    if (!dx && !dy) return;
+    const d = { ...this.v }, t0 = performance.now();
+    this.v.ajustar = false;
+    const paso = (t) => { const k = Math.min(1, (t - t0) / 260), q = 1 - Math.pow(1 - k, 3); this.v.px = d.px + dx * q; this.v.py = d.py + dy * q; this.pintarVista(); if (k < 1) requestAnimationFrame(paso); };
+    requestAnimationFrame(paso);
+  }
+
   /** Acerca la vista hasta que el elemento llene lo visible (encima de `abajo` px).
    *  Devuelve cómo estaba la vista para poder volver. */
   enfocar(e, abajo = 0) {

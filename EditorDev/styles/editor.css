@@ -1733,3 +1733,13 @@ body.ed-mov-nada .ed-tour-foco { transition: none; }
 .ed-abeja-globo.suelto::after { display: none; } /* separado de la abejita: sin colita */
 .ed-abeja-pie { flex-wrap: wrap; row-gap: 6px; }
 .ed-bib-nuevo { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 99px; background: var(--acento); color: var(--acento-texto); font: 600 9.5px/1.5 system-ui, sans-serif; font-style: normal; letter-spacing: .04em; text-transform: uppercase; vertical-align: 2px; }
+
+/* ── Fase 8: hojas a media altura sin contenido inalcanzable ──────── */
+:is(.ed-hoja-sec-cuerpo, .ed-insp-cuerpo, .ed-hojita-cuerpo) { scroll-padding-bottom: var(--oculto, 0px); }
+:is(.ed-hoja-sec-cuerpo, .ed-insp-cuerpo, .ed-hojita-cuerpo)::after { content: ""; display: block; flex: 0 0 auto; height: var(--oculto, 0px); pointer-events: none; }
+/* Menús en el teléfono: dos columnas (la mitad de alto, tapan menos) */
+@media (max-width: 1023px) {
+  .ed-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; width: min(360px, calc(100vw - 16px)); max-height: 60vh; overflow-y: auto; }
+  .ed-menu hr { grid-column: 1 / -1; }
+  .ed-menu button { min-height: 42px; white-space: normal; text-align: left; line-height: 1.15; }
+}
