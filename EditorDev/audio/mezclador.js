@@ -54,7 +54,7 @@ export class AudioEditor {
     addEventListener("pointerdown", this._toque, true);
     addEventListener("keydown", this._toque, true);
     addEventListener("touchend", this._toque, true); // iPhone: el gesto que de verdad desbloquea
-    document.addEventListener("visibilitychange", () => this._visibilidad());
+    document.addEventListener("visibilitychange", () => { if (document.hidden) this.detenerEscucha(); this._visibilidad(); });
     // Todo lo que suena con RT.sonar (inspector, línea de tiempo, componentes) pasa por la mezcla.
     RT.sonar = (url, vol) => this.efecto(url, vol);
     // Los componentes que se prueban en la hoja pueden pedir silencio.
@@ -246,6 +246,9 @@ export class AudioEditor {
     const audio = new Audio();
     audio.preload = "auto";
     audio.crossOrigin = "anonymous";
+    // Al previsualizar, la canción da vueltas sola hasta que se pare (o se
+    // cierre la pestaña de sonidos, o la app quede en segundo plano).
+    audio.loop = true;
     audio.src = url;
     let gain = null;
     if (this.ac) {

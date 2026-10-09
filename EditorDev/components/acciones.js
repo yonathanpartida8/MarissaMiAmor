@@ -288,7 +288,8 @@ export class Acciones {
       permisos: { seleccionar: false },
       trazo: { d: dDeTrazo(plano), pts: plano, vw: Math.round(w), vh: Math.round(h), color: op.color, grosor: op.grosor, libre: true },
     });
-    this.E.agregarEl(e, null, this.E.paginaId, false);
+    // «Detrás»: el dibujo queda debajo de todo (no tapa fotos ni textos).
+    this.E.agregarEl(e, op.detras ? 0 : null, this.E.paginaId, false);
   }
 
   /**
@@ -385,7 +386,9 @@ export class Acciones {
     const sel = this.E.seleccionados;
     if (!sel.length) return;
     this.E.transaccion("Cambiar capa", () => {
-      const lista = modo === "subir" || modo === "frente" ? [...sel].reverse() : sel;
+      // Para que varios elegidos conserven su orden entre sí: al frente y
+      // bajar van de abajo arriba; al fondo y subir, de arriba abajo.
+      const lista = modo === "subir" || modo === "fondo" ? [...sel].reverse() : [...sel];
       for (const e of lista) {
         const i = els.indexOf(e);
         const a = modo === "frente" ? els.length - 1 : modo === "fondo" ? 0 : modo === "subir" ? i + 1 : i - 1;
@@ -493,8 +496,12 @@ export class Acciones {
     // Lo demás, agrupado en «Más» (capas, alinear, animar, bloquear).
     const mas = b(ico("puntos"), "Más opciones", (ev) => menu(ev.currentTarget, [
       ...(bloq ? [] : [
-        { t: `${ico("subirCapa")}<span>Traer adelante</span>`, al: () => this.capa("subir") },
-        { t: `${ico("bajarCapa")}<span>Llevar atrás</span>`, al: () => this.capa("bajar") },
+        { t: `${ico("alFrente")}<span>Al frente</span>`, al: () => this.capa("frente") },
+        { t: `${ico("subirCapa")}<span>Una capa adelante</span>`, al: () => this.capa("subir") },
+        { t: `${ico("bajarCapa")}<span>Una capa atrás</span>`, al: () => this.capa("bajar") },
+        { t: `${ico("alFondo")}<span>Al fondo</span>`, al: () => this.capa("fondo") },
+        { t: `${ico("capas")}<span>Ver todas las capas</span>`, al: () => this.app.insp.abrir("capas") },
+        { t: `${ico("ojo")}<span>Ocultar</span>`, al: () => this.alternar("oculto") },
         { t: `${ico("alinearH")}<span>Alinear…</span>`, al: () => this.menuAlinear(mas) },
         { t: `${ico("animar")}<span>Animar</span>`, al: () => this.app.insp.abrir("animar") },
         { t: `${ico("luz")}<span>Luz y color</span>`, al: () => this.app.ajustes?.abrir(sel[0].id) },

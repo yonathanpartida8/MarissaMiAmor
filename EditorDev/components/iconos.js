@@ -179,6 +179,8 @@ P.codigo = P.html;
 P.saturacion = P.gota;
 P.brillo = P.luz;
 
+P.rotar = P.girar; P.seleccionar = P.cursor; P.interactuar = P.toque;
+P.fuera = '<rect x="7" y="7" width="10" height="10" rx="1.5" stroke-dasharray="2 2"/><path d="M3 3l4 4M21 3l-4 4M3 21l4-4M21 21l-4-4"/>';
 export const ICONOS = Object.fromEntries(Object.entries(P).map(([k, d]) => [k, T(d)]));
 
 export const ico = (n) => ICONOS[n] || "";

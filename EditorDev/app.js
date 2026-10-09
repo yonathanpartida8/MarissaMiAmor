@@ -123,7 +123,7 @@ async function arrancar() {
   app.paginas = new PanelPaginas(app);
   app.tiempo = new Linea(app, $(".ed-linea"));
   app.barra = new BarraContextual(app, $(".ed-contexto"));
-  app.lateral = new Lateral({ raiz: $(".ed-lateral"), velo: $(".ed-velo"), borde: $(".ed-borde-izq"), asa: $(".ed-asa-lateral"), alCambiar: (on) => { if (on) { cerrarHoja(); cerrarHojaSec(); } } });
+  app.lateral = new Lateral({ raiz: $(".ed-lateral"), velo: $(".ed-velo"), borde: $(".ed-borde-izq"), asa: $(".ed-asa-lateral"), alCambiar: (on) => { if (on) { cerrarHoja(); cerrarHojaSec(); } else app.audio?.detenerEscucha?.(); } });
   app.gifs = app.paneles;
   app.abrirSeccion = (id) => abrirSeccion(id, true);
 
@@ -218,6 +218,23 @@ function tactil() {
   }, { passive: true });
   document.addEventListener("pointerdown", quitar, true);
   addEventListener("scroll", quitar, true);
+  // Mientras deslizas un control, su panel se vuelve translúcido (sólo queda
+  // firme la fila que mueves): ves el objeto cambiar en la hoja, sin adivinar.
+  const PANELES = ".ed-insp, .ed-panel, .ed-hojita, .ed-pop, .ed-hoja-sec, .ed-modal, .ed-dock-op, .ed-lateral";
+  document.addEventListener("pointerdown", (e) => {
+    const c = e.target.closest?.('input[type="range"], .ed-rango, .ed-num');
+    const panel = c?.closest(PANELES);
+    if (!panel) return;
+    const fila = c.closest(".ed-fila, .ed-dock-rango, label") || c;
+    const t = setTimeout(() => { panel.classList.add("ed-viendo"); fila.classList.add("ed-viendo-fila"); document.body.classList.add("ed-ajustando"); }, 120);
+    const fin = () => {
+      clearTimeout(t);
+      panel.classList.remove("ed-viendo"); fila.classList.remove("ed-viendo-fila"); document.body.classList.remove("ed-ajustando");
+      removeEventListener("pointerup", fin, true); removeEventListener("pointercancel", fin, true);
+    };
+    addEventListener("pointerup", fin, true);
+    addEventListener("pointercancel", fin, true);
+  }, true);
 }
 function construirBarra() {
   const E = app.estado;
@@ -320,6 +337,7 @@ function construirRiel() {
     asa: hs.querySelector(".ed-asa-hoja"), agarres: [hs.querySelector(".ed-hoja-sec-cab h2")], puntos: [1, 0.62], cerrable: true,
     alCerrar: () => {
       document.body.classList.remove("con-hoja-sec");
+      app.audio?.detenerEscucha?.();
       if (app.paneles.cont === hs.querySelector(".ed-hoja-sec-cuerpo")) { app.paneles._limpiar?.(); app.paneles._limpiar = null; app.paneles.cont = null; }
       if (esMovil()) for (const b of document.querySelectorAll(".ed-riel button")) b.classList.remove("on");
     },
@@ -342,6 +360,8 @@ function construirRiel() {
 
 function abrirSeccion(id, desdeUsuario) {
   id = ALIAS[id] || id;
+  // Lo que se estaba escuchando para al cambiar de pestaña (o al cerrarla).
+  if (id !== app.seccion || !id) app.audio?.detenerEscucha?.();
   const cont = $(".ed-panel-cuerpo");
   for (const b of document.querySelectorAll(".ed-riel button")) b.classList.toggle("on", b.dataset.s === id);
   document.body.classList.toggle("sin-panel", !id);

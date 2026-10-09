@@ -76,10 +76,19 @@ export class Lateral {
     }
   }
 
+  /** ¿El dedo está sobre algo que se desplaza de lado (fichas, ideas, galerías)? Entonces no cierra el cajón. */
+  _desplazaDeLado(n) {
+    for (let x = n; x && x !== document.body; x = x.parentElement) {
+      if (x.scrollWidth > x.clientWidth + 2) { const o = getComputedStyle(x).overflowX; if (o === "auto" || o === "scroll") return true; }
+      if (x.classList?.contains("ed-lateral") || x.classList?.contains("ed-panel")) break;
+    }
+    return false;
+  }
+
   _enlazar() {
     const empezar = (ev, desde) => {
       if (!this.compacto || ev.button > 0) return;
-      if (desde === "dentro" && ev.target.closest(NO_ARRASTRA)) return;
+      if (desde === "dentro" && (ev.target.closest(NO_ARRASTRA) || this._desplazaDeLado(ev.target))) return;
       this._g = { id: ev.pointerId, x0: ev.clientX, y0: ev.clientY, t0: performance.now(), base: this.abierto ? this.ancho : 0, desde, decidido: desde !== "dentro", vx: 0, ux: ev.clientX, ut: performance.now() };
       if (this._g.decidido) { try { ev.currentTarget.setPointerCapture(ev.pointerId); } catch (e) { /* nada */ } }
     };

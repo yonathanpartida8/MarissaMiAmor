@@ -745,8 +745,23 @@ export class Inspector {
     if (!els.length) { this.cuerpo.append(el("p.ed-nota.suave", { text: "Esta página está vacía. Lo que añadas aparecerá aquí: lo de arriba de la lista se ve encima." })); return; }
     const L = this.app.lienzo;
     const fuera = (e) => { const b = L.vis(e); return b.x + b.w < 0 || b.y + b.h < 0 || b.x > L.W || b.y > L.H; };
+    const A = this.app.acciones;
+    const paso = (e, d) => { const i = E.pagina.els.indexOf(e); E.moverCapa(e.id, i + d); };
+    // Orden de lo elegido, a un toque (con varios elegidos conservan su orden entre sí).
+    const hay = E.sel.length > 0;
+    const orden = el("div.ed-capas-orden", {}, [
+      boton(I("alFrente", "Al frente"), () => A.capa("frente"), "chico"),
+      boton(I("subirCapa", "Adelante"), () => A.capa("subir"), "chico"),
+      boton(I("bajarCapa", "Atrás"), () => A.capa("bajar"), "chico"),
+      boton(I("alFondo", "Al fondo"), () => A.capa("fondo"), "chico"),
+    ]);
+    for (const b of orden.children) b.disabled = !hay;
     const lista = el("ol.ed-capas", {}, els.map((e) => el("li" + (E.sel.includes(e.id) ? ".on" : "") + (e.oculto ? ".oculto" : ""), { dataset: { id: e.id } }, [
       el("button.ed-asa", { type: "button", html: ico("agarre"), title: "Arrastra para cambiar el orden", "aria-label": "Ordenar" }),
+      el("span.ed-capa-pasos", {}, [
+        el("button.ed-capa-btn", { type: "button", html: ico("arriba"), title: "Una capa adelante", "aria-label": "Adelante", onClick: (ev) => { ev.stopPropagation(); paso(e, 1); } }),
+        el("button.ed-capa-btn", { type: "button", html: ico("abajo"), title: "Una capa atrás", "aria-label": "Atrás", onClick: (ev) => { ev.stopPropagation(); paso(e, -1); } }),
+      ]),
       el("b", { html: ico(TIPOS[e.tipo]?.ico || "elementos") }),
       el("span.ed-capa-nombre", { text: e.nombre }),
       e.grupo ? el("i.ed-capa-marca", { html: ico("enlazar"), title: "En un grupo" }) : null,
@@ -771,6 +786,6 @@ export class Inspector {
     });
     // La lista está al revés (arriba = delante).
     ordenable(lista, { item: "li", asa: ".ed-asa", alSoltar: (de, a) => { const n = els.length; E.moverCapa(els[de].id, n - 1 - a); } });
-    this.cuerpo.append(el("p.ed-ayuda", { text: "Lo de arriba se ve delante. Arrastra el asa para cambiar el orden; doble toque en el nombre para renombrar." }), lista);
+    this.cuerpo.append(orden, el("p.ed-ayuda", { text: hay ? "Lo de arriba se ve delante. Toca una capa para elegirla; ▲▼ la mueven un paso; arrastra el asa para llevarla a otro sitio; doble toque en el nombre para renombrar." : "Toca una capa para elegirla y ordenarla. Lo de arriba de la lista se ve delante." }), lista);
   }
 }

@@ -93,7 +93,8 @@ export class Herramientas {
       const otro = el("input", { type: "color", value: this.lapiz.color, title: "Otro color", "aria-label": "Otro color" });
       otro.addEventListener("input", () => { this.lapiz.color = otro.value; guardar(); for (const x of colores.children) x.classList.remove("on"); });
       colores.append(otro);
-      o.append(colores, this._rango("Grosor", 1, 40, this.lapiz.grosor, (v) => { this.lapiz.grosor = v; guardar(); }, this.lapiz.color), elegirDibujo);
+      const donde = el("div.ed-seg", {}, [["encima", "Encima de todo"], ["detras", "Detrás de todo"]].map(([k, t]) => el("button" + ((k === "detras") === !!this.lapiz.detras ? ".on" : ""), { type: "button", text: t, onClick: (ev) => { this.lapiz.detras = k === "detras"; guardar(); for (const x of donde.children) x.classList.toggle("on", x === ev.currentTarget); } })));
+      o.append(colores, this._rango("Grosor", 1, 40, this.lapiz.grosor, (v) => { this.lapiz.grosor = v; guardar(); }, this.lapiz.color), donde, elegirDibujo);
     } else {
       o.append(
         this._rango("Tamaño de la goma", 8, 90, this.goma.tam, (v) => { this.goma.tam = v; L.borradorOp = this.goma; }),

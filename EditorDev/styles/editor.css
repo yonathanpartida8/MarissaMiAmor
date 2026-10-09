@@ -1539,3 +1539,17 @@ body.ed-glitcheando .ed-barra, body.ed-glitcheando .ed-riel, body.ed-glitcheando
 .ed-dock-op[hidden] { display: none; }
 @media (min-width: 1024px) { .ed-dock { top: calc(var(--ctx, 52px) + 44px); transform: none; } .ed-dock-op { top: calc(var(--ctx, 52px) + 44px); transform: none; } }
 @media (max-width: 1023px) { .ed-dock-b[data-h="des"], .ed-dock-b[data-h="re"] { display: none; } } /* ya están arriba */
+.ed-capas-orden { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+.ed-capas-orden .ed-btn { flex-direction: column; gap: 2px; min-height: 52px; padding: 4px; font-size: 11.5px; white-space: normal; }
+.ed-capa-pasos { display: inline-flex; flex-direction: column; }
+.ed-capa-pasos .ed-capa-btn { width: 26px; height: 18px; }
+.ed-capa-pasos .ed-ico { width: 14px; height: 14px; }
+@media (pointer: coarse) { .ed-capa-pasos .ed-capa-btn { width: 32px; height: 22px; } }
+
+/* ═══ FASE 6 ═══ */
+/* Paneles translúcidos mientras deslizas: sólo la fila que mueves queda firme */
+:is(.ed-insp, .ed-panel, .ed-hojita, .ed-pop, .ed-hoja-sec, .ed-modal, .ed-dock-op, .ed-lateral) { transition: background-color .3s, box-shadow .3s, border-color .3s; }
+.ed-viendo { background: transparent !important; box-shadow: none !important; border-color: transparent !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.ed-viendo :is(.ed-fila, .ed-botonera, .ed-ayuda, .ed-nota, p, header, h2, h3, .ed-sec > summary, .ed-seg, .ed-capas, .ed-bloque, .ed-rejilla2, .ed-insp-tabs, .ed-panel-cab, footer, .ed-asa-hoja, .ed-dock-colores, .ed-dock-op > button, .ed-hojita-pie, .ed-piezas, img, .ed-pista):not(:has(.ed-viendo-fila)):not(.ed-viendo-fila) { opacity: .1; transition: opacity .25s; }
+.ed-viendo .ed-viendo-fila { position: relative; z-index: 2; padding: 6px 8px; border-radius: 12px; background: color-mix(in srgb, var(--superficie) 92%, transparent); box-shadow: var(--sombra); }
+body.ed-ajustando .ed-modal-fondo, body.ed-ajustando .ed-hojita-velo { background: transparent !important; transition: background .25s; }

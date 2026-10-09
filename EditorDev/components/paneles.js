@@ -116,7 +116,6 @@ export class Paneles {
   _elementos(c) {
     const A = this.app.acciones;
     const pz = (...a) => this._pieza(...a);
-    c.append(seccion("Formas", [el("div.ed-piezas.chicas", {}, FORMAS.map((f) => pz(this._iconoForma(f.id), f.n, () => A.forma(f.id))))]));
     const lapiz = { color: this.P.ajustes.tema.acento, grosor: 5 };
     const btnLapiz = boton(I("lapiz", "Dibujar a mano"), () => {
       const on = this.app.lienzo.herramienta !== "lapiz";
@@ -151,6 +150,9 @@ export class Paneles {
       pz(ico("boleto"), "Boleto", () => A.tarjeta("boleto")), pz(ico("polaroid"), "Polaroid con frase", () => A.tarjeta("polaroid")),
       pz(ico("sobre"), "Sobre", () => A.tarjeta("sobre")),
     ])]));
+    // Las formas básicas quedan al final y cerradas: siempre a mano, sin robar
+    // el primer lugar (un toque en el título las abre).
+    c.append(seccion("Formas básicas", [el("div.ed-piezas.chicas", {}, FORMAS.map((f) => pz(this._iconoForma(f.id), f.n, () => A.forma(f.id))))], { abierta: false, clase: "secundaria" }));
   }
 
   /* ── Texto ──────────────────────────────────────────────────────── */

@@ -70,9 +70,7 @@ export const BIBLIOTECA = {
         if (it.tipo === "componente") await A.componente(it); else A.imagenCatalogo(it);
         tile?.classList.remove("puesto"); void tile?.offsetWidth; tile?.classList.add("puesto");
         app.sonidos?.sonar("soltar");
-        aviso(`«${it.nombre}» en la hoja ✨`, 1600);
-        if (app.lateral?.abierto && matchMedia("(max-width: 1023px)").matches) app.lateral.cerrar();
-        app.cerrarHojaSec?.();
+        aviso(`«${it.nombre}» en la hoja ✨ (sigue eligiendo o cierra el panel)`, 1800);
       } catch (e) { aviso("No se pudo insertar: " + (e.message || e), 3500, "error"); }
     };
     const previa = (it) => {

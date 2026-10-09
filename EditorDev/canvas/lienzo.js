@@ -678,6 +678,14 @@ export class Lienzo {
     };
     addEventListener("pointerup", arriba);
     addEventListener("pointercancel", arriba);
+    // Si el «soltar» se pierde (dedo que se levanta sobre un marco HTML, la app
+    // que pasa a segundo plano…), el lienzo creería que sigue habiendo un dedo
+    // puesto y cada toque nuevo sería un pellizco: el editor «no respondería».
+    v.addEventListener("lostpointercapture", arriba);
+    const limpiar = () => { for (const id of [...this.punteros.keys()]) arriba({ pointerId: id, type: "pointercancel", clientX: 0, clientY: 0 }); this.punteros.clear(); if (this.pellizco) this._finPellizco(); this.gestoActivo = false; };
+    addEventListener("blur", limpiar);
+    document.addEventListener("visibilitychange", () => { if (document.hidden) limpiar(); });
+    this._limpiarToques = limpiar;
     // Botón derecho (o el «mantener» del navegador): nuestro menú, nunca el del navegador.
     v.addEventListener("contextmenu", (ev) => {
       ev.preventDefault();
@@ -734,6 +742,8 @@ export class Lienzo {
     if (this.probando && ev.target.closest(".ed-probando")) return;
     if (this.editando) this.terminarTexto();
     if (ev.pointerType === "mouse" && ev.button === 2) return;
+    // El primer dedo de un toque nuevo: nada de antes puede seguir «puesto».
+    if (ev.isPrimary && (this.punteros.size || this.g || this.pellizco)) this._limpiarToques?.();
     this.punteros.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
     if (this.punteros.size === 2) return this._dosDedos();
     if (this.punteros.size > 2 || this.pellizco) return;
@@ -1494,7 +1504,7 @@ export class Lienzo {
       soltar: () => {
         svg.remove();
         this.trazoVivo = null;
-        if (pts.length < 2) return;
+        if (pts.length < 2) pts.push({ x: pts[0].x + 0.4, y: pts[0].y + 0.4 }); // un toque = un puntito
         this.app.acciones.crearTrazo(pts, op);
       },
       cancelar: () => { svg.remove(); this.trazoVivo = null; },
