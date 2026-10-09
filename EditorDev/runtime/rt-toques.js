@@ -21,15 +21,19 @@
   RT.TOQUES = [
     ["", "Nada"], ["ondas", "Ondas"], ["corazones", "Corazones"], ["chispas", "Destellos"],
     ["estrellas", "Estrellitas"], ["confeti", "Confeti"], ["burbujas", "Burbujas"], ["teamo", "«Te amo»"],
+    ["besos", "Besitos"], ["petalos", "Pétalos"],
   ];
   RT.MOVS = [
     ["", "Nada"], ["pulso", "Latido"], ["rebote", "Rebote"], ["saltito", "Saltito"], ["sacudir", "Sacudida"],
     ["girar", "Giro"], ["crecer", "Crecer"], ["brillo", "Brillo"], ["color", "Color"], ["desvanecer", "Opacidad"],
+    ["flotar", "Flotar"],
   ];
 
   const CORAZON = '<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.5 1.2 4.3 2.4.8-1.2 2.2-2.4 4.3-2.4 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z" fill="currentColor"/></svg>';
   const DESTELLO = '<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M12 0l2.4 9.6L24 12l-9.6 2.4L12 24l-2.4-9.6L0 12l9.6-2.4z" fill="currentColor"/></svg>';
   const ESTRELLA = '<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.6l-6.4 3.5L7 14l-5.3-5 7.2-.9z" fill="currentColor"/></svg>';
+  const BESO = '<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M1.5 11.5C4 8 6.6 6.4 8.8 6.4c1.3 0 2.4.7 3.2 1.6.8-.9 1.9-1.6 3.2-1.6 2.2 0 4.8 1.6 7.3 5.1-2.7 4-6.3 6.6-10.5 6.6S4.2 15.5 1.5 11.5z" fill="currentColor"/><path d="M3.6 11.6c3 .8 5.7 1.1 8.4 1.1s5.4-.3 8.4-1.1" stroke="rgba(0,0,0,.32)" stroke-width="1.1" fill="none" stroke-linecap="round"/></svg>';
+  const PETALO = '<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M12 1.5c4.6 3.4 6.8 7.6 6.8 11.6a6.8 6.8 0 0 1-13.6 0c0-4 2.2-8.2 6.8-11.6z" fill="currentColor"/><path d="M12 5v13" stroke="rgba(255,255,255,.45)" stroke-width="1" stroke-linecap="round"/></svg>';
   const MAX_PIEZAS = 90;
   let capa = null, vivas = 0;
 
@@ -129,6 +133,28 @@
           ], azar(1100, 1700), `border-radius:50%;border:1.5px solid ${color};background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.95) 0 12%,rgba(255,255,255,.18) 30%,transparent 70%)`);
         }
         break;
+      case "besos":
+        for (let i = 0; i < n(6); i++) {
+          const a = azar(-Math.PI * 0.85, -Math.PI * 0.15), d = azar(45, 120) * k, t = azar(16, 26);
+          pieza(x, y, t, BESO, i % 2 ? color : "#c8102e", [
+            { transform: `translate(0,0) scale(.2) rotate(${azar(-25, 25)}deg)`, opacity: 1 },
+            { transform: `translate(${Math.cos(a) * d * 0.7}px,${Math.sin(a) * d * 0.7}px) scale(1.15) rotate(${azar(-15, 15)}deg)`, opacity: 1, offset: 0.4 },
+            { transform: `translate(${Math.cos(a) * d}px,${Math.sin(a) * d - 30}px) scale(.85) rotate(${azar(-25, 25)}deg)`, opacity: 0 },
+          ], azar(900, 1300), "filter:drop-shadow(0 2px 3px rgba(90,0,20,.3))");
+        }
+        break;
+      case "petalos": {
+        const cols = [color, "#ffb3c9", "#ff8fb1"];
+        for (let i = 0; i < n(9); i++) {
+          const vx = azar(-90, 90) * k, t = azar(10, 18), g = azar(-260, 260);
+          pieza(x, y, t, PETALO, cols[i % 3], [
+            { transform: "translate(0,0) scale(.3) rotate(0deg)", opacity: 1 },
+            { transform: `translate(${vx * 0.5}px,${-azar(30, 70) * k}px) scale(1) rotate(${g * 0.4}deg)`, opacity: 1, offset: 0.3 },
+            { transform: `translate(${vx + azar(-20, 20)}px,${azar(60, 140) * k}px) scale(.9) rotate(${g}deg)`, opacity: 0 },
+          ], azar(1400, 2000), "filter:drop-shadow(0 1px 2px rgba(120,20,60,.2))");
+        }
+        break;
+      }
       case "teamo": {
         const p = pieza(x, y, 10, "", color, [
           { transform: "translate(-50%,0) scale(.6)", opacity: 0 },
@@ -158,6 +184,7 @@
       brillo: [[{ filter: base || "none" }, { filter: `${base} brightness(1.35) drop-shadow(0 0 14px ${color}) drop-shadow(0 0 4px ${color})`.trim(), offset: 0.3 }, { filter: base || "none" }], 900],
       color: [[{ filter: `${base} hue-rotate(0deg)`.trim() }, { filter: `${base} hue-rotate(180deg) saturate(1.5)`.trim(), offset: 0.5 }, { filter: `${base} hue-rotate(360deg)`.trim() }], 900],
       desvanecer: [[{ opacity: 1 }, { opacity: 0.25, offset: 0.4 }, { opacity: 1 }], 800],
+      flotar: [[{ transform: "translateY(0)" }, { transform: "translateY(-9%) rotate(-2deg)", offset: 0.45 }, { transform: "translateY(-6%) rotate(1.5deg)", offset: 0.7 }, { transform: "translateY(0)" }], 1300],
     }[mov];
     if (!F) return;
     try {

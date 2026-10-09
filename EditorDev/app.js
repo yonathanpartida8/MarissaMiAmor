@@ -82,6 +82,7 @@ const SECCIONES = [
   ["animar", "animar", "Animar"],
   ["transiciones", "transiciones", "Transiciones"],
   // Interacción y sonido
+  ["toques", "toque", "Al tocar"],
   ["interactivo", "interactivo", "Interactivo"],
   ["audio", "audio", "Audio"],
   // Avanzado
@@ -96,7 +97,7 @@ const GRUPOS_RIEL = { gifs: "Adornar", interactivo: "Tocar y oír", html: "Avanz
 const ALIAS = { fotos: "imagenes", ajustes: "herramientas" };
 // En el teléfono, estas secciones se abren en una hojita de abajo (compacta)
 // para que la página se siga viendo: lo elegido, su efecto, su animación…
-const HOJAS = new Set(["animar", "efectos", "transiciones", "gifs", "stickers"]);
+const HOJAS = new Set(["animar", "efectos", "transiciones", "gifs", "stickers", "toques"]);
 
 const app = {};
 window.EditorDev = app;

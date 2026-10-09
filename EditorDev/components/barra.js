@@ -160,6 +160,7 @@ export class BarraContextual {
         this._b(ico("animar") + "<span>Animar</span>", "Animar", () => (esMovil() ? this.app.abrirSeccion("animar") : ins.abrir("animar"))),
         this._b(ico("luz") + "<span>Ajustes</span>", "Luz, brillo, contraste, color (o mantén presionado)", () => this.app.ajustes.abrir(sel[0].id)),
         this._b(ico("efectos") + "<span>Efectos</span>", "Efectos con previsualización", () => this.app.abrirSeccion("efectos")),
+        this._b(ico("toque") + "<span>Al tocar</span>", "Efectos al tocar, con vista previa", () => this.app.abrirSeccion("toques")),
         this._b(ico("opacidad"), "Transparencia", (a) => popover(a, [el("b.ed-pop-t", { text: "Transparencia" }), this._ctl("opacidad", { tipo: "rango", min: 0, max: 1, paso: 0.01, def: 1, nombre: "Opacidad" })]), "chico"),
         this._b(ico("capas"), "Posición", (a) => popover(a, [
           el("b.ed-pop-t", { text: "Posición" }),

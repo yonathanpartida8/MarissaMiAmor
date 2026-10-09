@@ -42,6 +42,7 @@ import { FONDO_HTML } from "./secciones/fondo.js";
 import { NAVEGACION } from "./secciones/navegacion.js";
 import { BIBLIOTECA } from "./secciones/biblioteca.js";
 import { BLOQUES } from "./secciones/bloques.js";
+import { TOQUES_SEC } from "./toques.js";
 import * as GIF from "../integraciones/giphy.js";
 
 const RT = window.LibritoRT;
@@ -58,7 +59,8 @@ export class Paneles {
     this.E.on("pagina", ({ ruta }) => { if (/^musica|^transicion/.test(ruta) && /audio|transiciones/.test(this.actual)) this.rehacer(); else pronto(); });
     this.E.on("actual", () => { if (/audio|transiciones|html|diseno/.test(this.actual)) this.rehacer(); });
     this.E.on("els", () => { if (/html|3d|video/.test(this.actual)) this.rehacer(); });
-    this.E.on("sel", () => { if (/efectos|interactivo|animar/.test(this.actual)) this.rehacer(); });
+    this.E.on("sel", () => { if (/efectos|interactivo|animar|toques/.test(this.actual)) this.rehacer(); });
+    this.E.on("el", () => { if (this.actual === "toques") pronto(); });
     this.E.on("pagina", ({ ruta }) => { if (/^audios/.test(ruta || "") && this.actual === "audio") this.rehacer(); if (/^fondo/.test(ruta || "") && this.actual === "diseno") this.rehacer(); });
     this.E.on("assets", () => { if (/imagenes|video|3d/.test(this.actual)) this.rehacer(); });
   }
@@ -458,4 +460,4 @@ export class Paneles {
 }
 
 // Las secciones grandes viven cada una en su archivo (components/secciones/).
-Object.assign(Paneles.prototype, ANIMAR, EFECTOS_SEC, TRANSICIONES, GIPHY, AUDIO, HTML, FONDO_HTML, NAVEGACION, BIBLIOTECA, BLOQUES);
+Object.assign(Paneles.prototype, ANIMAR, EFECTOS_SEC, TRANSICIONES, GIPHY, AUDIO, HTML, FONDO_HTML, NAVEGACION, BIBLIOTECA, BLOQUES, TOQUES_SEC);

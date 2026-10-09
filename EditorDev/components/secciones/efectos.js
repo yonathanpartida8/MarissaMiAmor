@@ -115,6 +115,7 @@ export const EFECTOS_SEC = {
       titulo: "Previsualización del efecto",
       clase: "ed-previa-efecto",
       velo: false,
+      sobre: this.cont?.closest?.(".ed-panel"),
       contenido: [
         el("div.ed-antes-despues", {}, [el("figure", {}, [antes, el("figcaption", { text: "Antes" })]), el("figure", {}, [despues, el("figcaption", { text: nombre })])]),
         intensidad,

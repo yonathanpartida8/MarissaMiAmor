@@ -196,24 +196,33 @@ export class Hoja {
  *   acciones: [[texto, valor, clase]]   el valor puede ser una función
  *   Se cumple con el valor elegido, o null si se baja, se toca fuera o «atrás».
  */
-export function hojita({ titulo, contenido, acciones = [], clase = "", puntos = [1], velo = true, alAbrir } = {}) {
+export function hojita({ titulo, contenido, acciones = [], clase = "", puntos = [1], velo = true, alAbrir, sobre = null } = {}) {
   return new Promise((resolver) => {
     const a = asa();
     const cab = el("header.ed-hojita-cab", {}, [el("h3", { text: titulo || "" })]);
     const pie = acciones.length ? el("footer.ed-hojita-pie", {}, acciones.map(([t, v, cl]) => el("button.ed-btn" + (cl ? "." + cl.split(" ").join(".") : ""), { type: "button", html: t, onClick: () => cerrar(typeof v === "function" ? v() : v) }))) : null;
     const panel = el("section.ed-hojita" + (clase ? "." + clase : ""), { role: "dialog", "aria-label": titulo || "Opciones" }, [a, cab, el("div.ed-hojita-cuerpo", {}, [].concat(contenido)), pie]);
     const fondo = velo ? el("div.ed-hojita-velo") : null;
+    // Vista previa en la hoja: en el teléfono se apartan las hojas de atrás para ver lo elegido.
+    const previa = /ed-previa/.test(clase);
+    if (previa) document.body.classList.add("con-previa");
     let valor = null, hecho = false;
     const cerrar = (v) => { if (hecho) return; hecho = true; valor = v; h.cerrar(v == null ? "atras" : "elegido"); };
     const h = new Hoja(panel, {
       asa: a, agarres: [cab], puntos, cerrable: true,
       alMover: (y, alto) => { if (fondo) fondo.style.opacity = String(clamp(1 - y / alto, 0, 1)); },
-      alCerrar: () => { panel.remove(); fondo?.remove(); document.removeEventListener("keydown", tecla, true); resolver(valor); },
+      alCerrar: () => { panel.remove(); fondo?.remove(); if (previa && !document.querySelector(".ed-hojita[class*='ed-previa']")) document.body.classList.remove("con-previa"); document.removeEventListener("keydown", tecla, true); resolver(valor); },
     });
     const tecla = (e) => { if (e.key === "Escape") { e.stopPropagation(); cerrar(null); } };
     if (fondo) fondo.addEventListener("pointerdown", (e) => { e.preventDefault(); cerrar(null); });
     document.addEventListener("keydown", tecla, true);
     document.body.append(...[fondo, panel].filter(Boolean));
+    // Computadora: la hojita se acomoda encima del panel de donde salió (la hoja queda libre).
+    const rs = sobre && !matchMedia("(max-width: 1023px)").matches ? sobre.getBoundingClientRect() : null;
+    if (rs && rs.width > 260 && rs.height > 300) {
+      panel.classList.add("acoplada");
+      Object.assign(panel.style, { left: rs.left + 8 + "px", width: rs.width - 16 + "px", marginLeft: "0", bottom: Math.max(8, innerHeight - rs.bottom + 8) + "px" });
+    }
     panel.cerrar = cerrar;
     h.cerrarDesde = cerrar;
     h.abrir(0);

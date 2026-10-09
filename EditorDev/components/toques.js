@@ -5,6 +5,9 @@
  *                           lo que hace el elemento, color, cantidad, probar y
  *                           el acceso al editor de zonas.
  *   seccionToquePagina(insp) lo mismo para cualquier toque en la página.
+ *   TOQUES_SEC              la sección «Al tocar» (riel y barra de abajo):
+ *                           categorías con fichas animadas y vista previa en el
+ *                           propio elemento antes de guardar («Atrás» / «Usar»).
  *   EditorZonas             el editor visual: 1 dibuja zonas sobre el elemento,
  *                           2 toca una y dile qué hace, 3 pruébala.
  *
@@ -12,7 +15,8 @@
  * escalan y giran con él sin recalcular nada. Mientras se arrastran sólo se
  * toca el DOM; al soltar se guarda una sola vez (un solo «deshacer»).
  */
-import { el, seccion, fila, boton, control, aviso } from "./ui.js";
+import { el, seccion, fila, boton, control, aviso, Vinculos } from "./ui.js";
+import { hojita } from "./hoja.js";
 import { ico } from "./iconos.js";
 import { elegir } from "../assets/selector.js";
 
@@ -30,6 +34,8 @@ const MINI = {
   confeti: '<i class="tq-cf a"></i><i class="tq-cf b"></i><i class="tq-cf c"></i>',
   burbujas: '<i class="tq-bu a"></i><i class="tq-bu b"></i>',
   teamo: '<b class="tq-txt">te amo</b>',
+  besos: '<svg viewBox="0 0 24 24"><path d="M1.5 11.5C4 8 6.6 6.4 8.8 6.4c1.3 0 2.4.7 3.2 1.6.8-.9 1.9-1.6 3.2-1.6 2.2 0 4.8 1.6 7.3 5.1-2.7 4-6.3 6.6-10.5 6.6S4.2 15.5 1.5 11.5z" fill="currentColor"/></svg>',
+  petalos: '<i class="tq-pe a"></i><i class="tq-pe b"></i>',
 };
 const MINI_MOV = (k) => `<i class="tq-caja tq-m-${k || "nada"}"></i>`;
 
@@ -60,22 +66,164 @@ export function probarToque(app, e, t) {
   RT.efectoToque(c.n, t, c.x, c.y);
 }
 
+/* ── Categorías: todo ordenado para encontrarlo rápido ─────────────── */
+const N_EF = Object.fromEntries(RT.TOQUES), N_MOV = Object.fromEntries(RT.MOVS);
+const ef = (k) => [N_EF[k] || k, { efecto: k }];
+const mv = (k) => [N_MOV[k] || k, { mov: k }];
+export const CATEGORIAS = [
+  { id: "combos", n: "Combinados", ayuda: "Partículas y movimiento juntos, listos para usar.", items: [
+    ["Amor", { efecto: "corazones", mov: "pulso" }], ["Te amo", { efecto: "teamo", mov: "crecer" }],
+    ["Besitos", { efecto: "besos", mov: "rebote", color: "#c8102e" }], ["Magia", { efecto: "chispas", mov: "brillo", color: "#ffc93c" }],
+    ["Fiesta", { efecto: "confeti", mov: "saltito" }], ["Romántico", { efecto: "petalos", mov: "flotar" }],
+    ["Estelar", { efecto: "estrellas", mov: "girar", color: "#ffc93c" }], ["Burbujitas", { efecto: "burbujas", mov: "rebote", color: "#7cc6ff" }],
+  ] },
+  { id: "particulas", n: "Partículas", ayuda: "Salen del dedo, justo donde toca.", items: ["corazones", "besos", "chispas", "estrellas", "confeti", "burbujas", "petalos"].map(ef) },
+  { id: "ondas", n: "Ondas y texto", ayuda: "Un círculo de luz o unas palabritas que suben.", items: ["ondas", "teamo"].map(ef) },
+  { id: "mov", n: "Movimiento", ayuda: "Lo que hace el propio elemento al tocarlo.", items: ["pulso", "rebote", "saltito", "sacudir", "girar", "crecer", "flotar"].map(mv) },
+  { id: "luz", n: "Luz y color", ayuda: "El elemento brilla, cambia de color o se transparenta un momento.", items: ["brillo", "color", "desvanecer"].map(mv) },
+];
+let catActiva = "combos";
+
+function miniDe(c) {
+  if (c.efecto && c.mov) return `<i class="tq-caja chica tq-m-${c.mov}"></i>${MINI[c.efecto] || ""}`;
+  return c.efecto ? MINI[c.efecto] || "" : MINI_MOV(c.mov);
+}
+const coincide = (t, c) => Object.keys(c).filter((k) => k !== "color").every((k) => (t[k] || "") === c[k]);
+const resumen = (t) => [t.efecto && N_EF[t.efecto], t.mov && N_MOV[t.mov]].filter(Boolean).join(" + ");
+
+/** Las pestañitas de categoría y sus fichas. Tocar una ficha abre la vista previa. */
+function categorias(app, ids, leer, v) {
+  const caja = el("div.ed-tq-cats-caja");
+  const tabs = el("div.ed-tq-cats", { role: "tablist" });
+  const ayuda = el("small.ed-ayuda.ed-tq-cat-ayuda");
+  const rej = el("div.ed-tq-fichas");
+  const pintar = () => {
+    const cat = CATEGORIAS.find((x) => x.id === catActiva) || CATEGORIAS[0];
+    for (const b of tabs.children) { const on = b.dataset.k === cat.id; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); }
+    ayuda.textContent = cat.ayuda;
+    rej.textContent = "";
+    for (const [n, c] of cat.items) {
+      const b = el("button.ed-tq-ficha", { type: "button", title: n, "aria-label": n }, [el("span.ed-tq-mini" + (c.efecto && c.mov ? ".combo" : ""), { html: miniDe(c), style: c.color ? { color: c.color } : {} }), el("small", { text: n })]);
+      b._c = c;
+      b.addEventListener("click", () => { const l = ids(); if (!l.length) return aviso("Primero toca algo de la hoja"); previaToque(app, l, c, n, b.closest(".ed-panel, .ed-insp")); });
+      rej.append(b);
+    }
+    marcar();
+  };
+  const marcar = () => { const t = leer() || {}; for (const b of rej.children) b.classList.toggle("on", RT.tieneToque(t) && coincide(t, b._c)); };
+  for (const cat of CATEGORIAS) tabs.append(el("button.ed-tq-cat", { type: "button", role: "tab", text: cat.n, dataset: { k: cat.id }, onClick: () => { catActiva = cat.id; pintar(); } }));
+  pintar();
+  v.add(marcar);
+  caja.append(tabs, ayuda, rej);
+  return caja;
+}
+
+/**
+ * Vista previa de un efecto al tocar en lo elegido: se ve en la hoja (se repite
+ * solito) y no se guarda hasta «Usar»; «Atrás» lo deja como estaba. La hojita
+ * es baja y la hoja se corre para que el elemento quede a la vista.
+ */
+export function previaToque(app, ids, cambio, nombre, sobre) {
+  const E = app.estado;
+  ids = ids.filter((id) => E.el(id));
+  if (!ids.length) return;
+  const t = { color: "#ff5c93", cantidad: 1, ...(E.el(ids[0]).toque || {}), ...cambio };
+  const v = new Vinculos();
+  const demo = () => { for (const id of ids.slice(0, 4)) { const c = centroDe(app, id); if (c) RT.efectoToque(c.n, t, c.x, c.y); } };
+  const txt = el("p.ed-tq-resumen");
+  const pintarTxt = () => { txt.textContent = RT.tieneToque(t) ? "Al tocarlo: " + resumen(t) : "Sin efecto"; };
+  const sel = (lista, k) => {
+    const s = el("select.ed-sel", { "aria-label": k === "efecto" ? "Sale del dedo" : "El elemento hace" }, lista.map(([a, b]) => el("option", { value: a, text: b })));
+    s.value = t[k] || "";
+    s.addEventListener("change", () => { t[k] = s.value || undefined; pintarTxt(); demo(); });
+    return s;
+  };
+  const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let reloj = 0;
+  pintarTxt();
+  hojita({
+    titulo: nombre ? "Vista previa · " + nombre : "Vista previa",
+    clase: "ed-previa-efecto.ed-previa-toque",
+    velo: false,
+    sobre,
+    contenido: [
+      el("div.ed-tq-resumen-fila", {}, [txt, boton(I("toque", "Otra vez"), demo, "chico")]),
+      el("div.ed-rejilla2", {}, [fila("Del dedo", sel(RT.TOQUES, "efecto")), fila("El elemento", sel(RT.MOVS, "mov"))]),
+      el("div.ed-rejilla2", {}, [
+        fila("Color", control(v, { tipo: "color", leer: () => t.color, escribir: (x) => { t.color = x; } })),
+        fila("Cantidad", control(v, { tipo: "rango", min: 0.4, max: 2.2, paso: 0.1, leer: () => t.cantidad, escribir: (x) => { t.cantidad = x; } })),
+      ]),
+      el("small.ed-ayuda", { text: ids.length > 1 ? `Se verá en los ${ids.length} elementos elegidos. No se guarda hasta «Usar».` : "Así lo verá ella al tocarlo. No se guarda hasta «Usar»." }),
+    ],
+    acciones: [[I("volver", "Atrás"), null], [I("ok", "Usar"), "usar", "primario"]],
+    alAbrir: (panel) => {
+      v.refrescar();
+      requestAnimationFrame(() => {
+        if (matchMedia("(max-width: 1023px)").matches) app.lienzo.mostrarSeleccion?.(panel.offsetHeight + 12);
+        else app.lienzo.apartarDe?.(panel.getBoundingClientRect());
+        setTimeout(demo, 300);
+        if (!quieto) reloj = setInterval(demo, 2200);
+      });
+    },
+  }).then((r) => {
+    clearInterval(reloj);
+    if (r !== "usar") return;
+    const fin = { ...t };
+    for (const k of Object.keys(fin)) if (fin[k] === undefined || fin[k] === "") delete fin[k];
+    E.transaccion("Al tocar: " + (nombre || resumen(fin) || "efecto"), () => { for (const id of ids) if (E.el(id)) E.setEl(id, { toque: RT.tieneToque(fin) ? fin : null }, "Efecto al tocar"); });
+  });
+}
+
+/* ── La sección «Al tocar» (riel de la izquierda y barra de abajo) ── */
+export const TOQUES_SEC = {
+  _toques(c) {
+    const E = this.E, app = this.app, v = this.v;
+    const sel = E.seleccionados;
+    if (!sel.length) {
+      c.append(el("p.ed-nota.suave", { text: "Toca algo de la hoja para elegirlo: luego toca un efecto y lo verás en él antes de usarlo." }));
+      c.append(seccionToquePagina(this));
+      return;
+    }
+    const ids = sel.map((x) => x.id);
+    const t = () => E.el(ids[0])?.toque || {};
+    const ahoraTxt = el("span");
+    const ahoraMini = el("span.ed-tq-mini");
+    const ahora = el("div.ed-tq-ahora", {}, [ahoraMini, el("div", {}, [el("b", { text: sel.length > 1 ? `${sel.length} elementos` : "«" + sel[0].nombre + "»" }), ahoraTxt]),
+      boton(ico("toque"), () => { if (RT.tieneToque(t())) for (const id of ids) probarToque(app, E.el(id), E.el(id).toque); else aviso("Elige un efecto de abajo"); }, "chico ico", "Probar"),
+      boton(ico("cerrar"), () => E.transaccion("Quitar efecto al tocar", () => { for (const id of ids) E.setEl(id, { toque: null }, "Quitar efecto al tocar"); }), "chico ico", "Quitar efecto"),
+    ]);
+    v.add(() => {
+      const x = t();
+      ahoraTxt.textContent = RT.tieneToque(x) ? "Al tocarlo: " + resumen(x) : "Todavía no hace nada al tocarlo";
+      ahoraMini.innerHTML = RT.tieneToque(x) ? miniDe(x) : MINI[""];
+      ahoraMini.classList.toggle("combo", !!(x.efecto && x.mov));
+    });
+    c.append(ahora, categorias(app, () => ids, t, v));
+    if (sel.length === 1) {
+      const zonas = (sel[0].zonas || []).length;
+      c.append(el("div.ed-tq-zonas", {}, [
+        el("div", {}, [el("b", { text: "Zonas táctiles" }), el("small", { text: zonas ? `${zonas} zona${zonas > 1 ? "s" : ""}: cada una hace lo suyo` : "Partes del elemento que responden distinto (ideal para HTML)" })]),
+        boton(I("zonas", zonas ? "Editar zonas" : "Crear zonas"), () => app.zonas?.abrir(ids[0]), "primario chico"),
+      ]));
+    }
+    c.append(el("div.ed-botonera", {}, [
+      boton(I("sonido", "Sonido al tocar"), () => app.insp.abrir("diseno", "Sonidos"), "chico"),
+      boton(I("ojo", "Mostrar o esconder otra cosa"), () => app.insp.abrir("diseno", "Al tocarlo"), "chico"),
+    ]));
+    const pag = seccionToquePagina(this);
+    pag.open = false;
+    c.append(pag);
+  },
+};
+
 /* ── «Efectos al tocar» de un elemento ─────────────────────────────── */
 export function seccionToque(insp, e) {
   const E = insp.E, app = insp.app, v = insp.v;
   const t = () => E.el(e.id)?.toque || {};
-  const poner = (k, x, nombre) => {
-    const nuevo = { color: "#ff5c93", cantidad: 1, ...t(), [k]: x };
-    E.setEl(e.id, { toque: RT.tieneToque(nuevo) ? nuevo : null }, nombre || "Efecto al tocar");
-    requestAnimationFrame(() => probarToque(app, E.el(e.id) || e, nuevo));
-  };
   const zonas = (E.el(e.id)?.zonas || []).length;
   const hijos = [
-    el("p.ed-ayuda.ed-tq-intro", { text: "Lo que pasa cuando ella lo toque en el librito. Toca una ficha y lo verás aquí mismo." }),
-    el("div.ed-tq-sub", { text: "Sale del dedo" }),
-    fichas(RT.TOQUES, (k) => MINI[k] || "", () => t().efecto, (k) => poner("efecto", k, "Partículas al tocar"), v),
-    el("div.ed-tq-sub", { text: "El elemento hace" }),
-    fichas(RT.MOVS, MINI_MOV, () => t().mov, (k) => poner("mov", k, "Movimiento al tocar"), v),
+    el("p.ed-ayuda.ed-tq-intro", { text: "Lo que pasa cuando ella lo toque en el librito. Toca una ficha: lo verás en el elemento antes de usarlo." }),
+    categorias(app, () => [e.id], t, v),
     el("div.ed-rejilla2", {}, [
       fila("Color", control(v, { tipo: "color", leer: () => t().color || "#ff5c93", escribir: (x) => { if (RT.tieneToque(t())) E.setEl(e.id, { "toque.color": x }, "Color del efecto", "tqc" + e.id); } })),
       fila("Cantidad", control(v, { tipo: "rango", min: 0.4, max: 2.2, paso: 0.1, leer: () => t().cantidad ?? 1, escribir: (x) => { if (RT.tieneToque(t())) E.setEl(e.id, { "toque.cantidad": x }, "Cantidad del efecto", "tqn" + e.id); } })),
