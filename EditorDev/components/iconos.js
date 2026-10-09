@@ -179,6 +179,7 @@ P.codigo = P.html;
 P.saturacion = P.gota;
 P.brillo = P.luz;
 
+P.zonas = '<rect x="3" y="3.5" width="11" height="8.5" rx="1.5" stroke-dasharray="2.6 2"/><rect x="10" y="12" width="11" height="8.5" rx="1.5" stroke-dasharray="2.6 2"/><circle cx="15.5" cy="16.3" r="1.7"/>';
 P.rotar = P.girar; P.seleccionar = P.cursor; P.interactuar = P.toque;
 P.fuera = '<rect x="7" y="7" width="10" height="10" rx="1.5" stroke-dasharray="2 2"/><path d="M3 3l4 4M21 3l-4 4M3 21l4-4M21 21l-4-4"/>';
 export const ICONOS = Object.fromEntries(Object.entries(P).map(([k, d]) => [k, T(d)]));

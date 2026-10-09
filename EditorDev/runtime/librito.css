@@ -174,3 +174,7 @@
 .rt-el.rt-accion > .rt-ae { transition: scale .28s cubic-bezier(.34, 1.56, .64, 1); }
 .rt-el.rt-accion:active > .rt-ae { scale: .95; transition-duration: .08s; }
 .rt-el.rt-accion:focus-visible { outline: 3px solid rgba(224, 85, 142, .55); outline-offset: 3px; border-radius: 8px; }
+/* Zonas táctiles: invisibles en el librito, siempre encima de su elemento. */
+.rt-zonas { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
+.rt-modo-vista .rt-zona { position: absolute; pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; border-radius: 6px; }
+.rt-modo-vista .rt-zona:focus-visible { outline: 2px dashed rgba(255, 255, 255, .85); outline-offset: 2px; }

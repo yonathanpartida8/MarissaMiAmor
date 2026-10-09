@@ -298,6 +298,37 @@ export class Lienzo {
     requestAnimationFrame(paso);
   }
 
+  /** Acerca la vista hasta que el elemento llene lo visible (encima de `abajo` px).
+   *  Devuelve cómo estaba la vista para poder volver. */
+  enfocar(e, abajo = 0) {
+    const r = this.vistaEl.getBoundingClientRect();
+    const alto = Math.min(r.bottom, innerHeight - abajo) - r.top - 32;
+    if (!e || alto < 80) return null;
+    const antes = { ...this.v };
+    const b = cajaDe(this.vis(e));
+    const z = clamp(Math.min((r.width - 40) / Math.max(1, b.w), alto / Math.max(1, b.h)), this.v.z, 4);
+    const hasta = { z, px: r.width / 2 - (b.x + b.w / 2) * z, py: 16 + alto / 2 - (b.y + b.h / 2) * z };
+    const desde = { ...this.v }, t0 = performance.now();
+    this.v.ajustar = false;
+    const paso = (t) => {
+      const k = Math.min(1, (t - t0) / 320), q = 1 - Math.pow(1 - k, 3);
+      this.v = { z: desde.z + (hasta.z - desde.z) * q, px: desde.px + (hasta.px - desde.px) * q, py: desde.py + (hasta.py - desde.py) * q, ajustar: false };
+      this.pintarVista();
+      if (k < 1) requestAnimationFrame(paso);
+    };
+    requestAnimationFrame(paso);
+    return antes;
+  }
+
+  /** Vuelve a una vista guardada (la de antes de `enfocar`). */
+  volverVista(v) {
+    if (!v) return;
+    if (v.ajustar) return this.ajustar();
+    this.v = { ...v };
+    this._acotarVista();
+    this.pintarVista();
+  }
+
   /** Mientras otro panel cambia de alto (siguiendo al dedo), la hoja no se reacomoda. */
   congelar(on) {
     if (this.congelado === on) return;
@@ -414,7 +445,7 @@ export class Lienzo {
       const fijo = e.bloqueado || !permite(e, "mover");
       this._caja(this.vis(e), "ed-caja" + (e.bloqueado ? " bloq" : fijo ? " fijo" : "") + (this.editando === e.id ? " editando" : "") + (this.recortando === e.id ? " recortando" : ""));
     }
-    if (unico && !unico.bloqueado && !this.editando && !this.recortando && !this.probando) this._manijas(unico);
+    if (unico && !unico.bloqueado && !this.editando && !this.recortando && !this.probando && !this.zonasDe) this._manijas(unico);
     if (sel.length > 1) {
       const u = union(sel.map((e) => cajaDe(this.vis(e))));
       this._caja({ ...u, rot: 0 }, "ed-caja-grupo");

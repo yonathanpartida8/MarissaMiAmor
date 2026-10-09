@@ -23,6 +23,7 @@
   RT.esInteractivo = function (e) {
     if (e.accion && e.accion.tipo) return true;
     if (e.sonidos && e.sonidos.tocar) return true;
+    if (RT.tieneToque && RT.tieneToque(e.toque)) return true;
     switch (e.tipo) {
       case "boton": case "carrusel": case "pagina": return true;
       case "componente": return !(e.componente && e.componente.decorativo);
@@ -498,9 +499,11 @@
     n._rt = { ae: ae, ab: ab, c: c, firma: null, tipo: e.tipo, e: e };
     if (ctx.modo === "vista") {
       // Tocar: su sonido y su acción (la del botón o la de cualquier elemento).
-      n.addEventListener("pointerdown", function () {
+      n.addEventListener("pointerdown", function (ev) {
         const x = n._rt.e, s = x.sonidos;
+        if (ev._rtToque) return; // ya lo atendió una zona táctil
         if (s && s.tocar && ctx.sonido && x.tipo !== "componente") ctx.sonido(s.tocar, s.volumen);
+        if (RT.tieneToque && RT.tieneToque(x.toque)) { ev._rtToque = true; RT.efectoToque(n, x.toque, ev.clientX, ev.clientY); }
       });
       // Un toque = una acción: un doble toque rápido no pasa dos páginas.
       let ultimo = 0;
@@ -558,6 +561,7 @@
       if (r.vida && typeof r.vida.destruir !== "function") r.vida = null;
     }
     if (e.tipo === "componente") RT.tamComponente(n, e);
+    if (RT.pintarZonas && (e.zonas || r.zonas)) RT.pintarZonas(n, e, ctx);
     if (e.tipo === "pagina") { const f = r.c.firstChild; if (f && f.tagName === "IFRAME") { f._ocultos = ctx.ocultos ? ctx.ocultos(e) : ""; ocultarEn(f); } }
   };
 
@@ -654,6 +658,11 @@
       this.fondo = h("div", "rt-fondo", this.nodo);
       this.capa = h("div", "rt-capa", this.nodo);
       this.nodos = new Map();
+      // «Al tocar la página»: un efectito en cualquier toque (si no lo atendió ya un elemento).
+      if (ctx.modo === "vista") this.nodo.addEventListener("pointerdown", (ev) => {
+        const t = this.pagina && this.pagina.toque;
+        if (!ev._rtToque && t && t.efecto && RT.particulas) RT.particulas(t.efecto, ev.clientX, ev.clientY, t);
+      });
       this.sincronizar(pagina);
     }
 

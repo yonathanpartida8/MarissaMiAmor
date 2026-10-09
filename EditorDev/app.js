@@ -53,6 +53,7 @@ import { Salida } from "./components/salir.js";
 import { Ajustes } from "./components/ajustes.js";
 import { Ayuda } from "./components/ayuda.js";
 import { SonidosEditor } from "./audio/sonidos-editor.js";
+import { EditorZonas } from "./components/toques.js";
 import { aplicarIconos } from "./recursos/extras.js";
 import { asegurarBotones } from "./components/secciones/navegacion.js";
 import { PREF, aplicar as aplicarPref, vibrar } from "./config/preferencias.js";
@@ -141,6 +142,7 @@ async function arrancar() {
   app.ayuda = new Ayuda(app);
   app.config = new Configuracion(app);
   app.herramientas = new Herramientas(app);
+  app.zonas = new EditorZonas(app);
   tactil();
   E.on("historial", pintarHistorial);
   E.on("proyecto", ({ ruta }) => { if (ruta === "nombre") pintarNombre(); });
@@ -352,6 +354,7 @@ function construirRiel() {
   app.mostrarInspector = () => { if (esMovil()) { app.lateral.cerrar(); cerrarHojaSec(); abrirHoja("insp:" + app.insp.tab); } };
   app.cerrarHoja = cerrarHoja;
   app.cerrarHojaSec = cerrarHojaSec;
+  app.cerrarHojaInsp = cerrarHoja;
   app.alElegirPagina = () => { if (esMovil()) app.lateral.cerrar(); };
   app.alDibujar = () => { if (esMovil()) app.lateral.cerrar(); };
   // En el teléfono, lo recién añadido se ve en la hoja (no debajo del cajón).

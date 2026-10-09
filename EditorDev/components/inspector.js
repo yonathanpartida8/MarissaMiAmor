@@ -14,10 +14,11 @@ import { TIPOS, permite } from "../core/modelo.js";
 import { ico } from "./iconos.js";
 import { DIBUJOS, FORMAS } from "../assets/dibujos.js";
 import { elegir } from "../assets/selector.js";
+import { seccionToque, seccionToquePagina } from "./toques.js";
 
 const RT = window.LibritoRT;
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
-const RECONSTRUIR = /^escena3d\.(fuente|asset)$|^ancla|^tiempo$|^efectos\.(sombra|resplandor)$|^efectos$|sonidos|^componente\.(params|analisis|sinFondo)|^accion\.destino|fotos|\.tipo$|^fondo\.tipo|^accion|figura|disposicion|^carrusel\.modo|propia|^tipo$|^imagen\.asset|^video\.asset|^musica\.modo|fondo\.imagen|gradiente$|sombra$|^transicion$/;
+const RECONSTRUIR = /^zonas$|^toque$|^escena3d\.(fuente|asset)$|^ancla|^tiempo$|^efectos\.(sombra|resplandor)$|^efectos$|sonidos|^componente\.(params|analisis|sinFondo)|^accion\.destino|fotos|\.tipo$|^fondo\.tipo|^accion|figura|disposicion|^carrusel\.modo|propia|^tipo$|^imagen\.asset|^video\.asset|^musica\.modo|fondo\.imagen|gradiente$|sombra$|^transicion$/;
 const OPC_DIR = Object.entries(RT.DIRS);
 const FACILES = Object.entries(RT.FACIL).map(([k, v]) => [k, v.n]);
 
@@ -145,6 +146,7 @@ export class Inspector {
 
     if (e.tipo !== "pagina" && e.tipo !== "html" && e.tipo !== "componente") this.cuerpo.append(this._caja(e, c));
     this.cuerpo.append(this._efectos(e, c));
+    if (e.tipo !== "pagina") this.cuerpo.append(seccionToque(this, e));
     if (e.tipo !== "boton") this.cuerpo.append(seccion("Al tocarlo", [this._accion(e, c)], { abierta: !!e.accion }));
     this.cuerpo.append(this._sonidos(e));
     this.cuerpo.append(seccion("Visibilidad y tiempo", [
@@ -605,6 +607,7 @@ export class Inspector {
       fila("Desenfoque", c("fondo.imagen.desenfoque", { tipo: "rango", min: 0, max: 30, def: 0, unidad: "px" })),
     );
     this.cuerpo.append(seccion("Fondo de la página", fondo));
+    this.cuerpo.append(seccionToquePagina(this));
     this.cuerpo.append(seccion("Esta página", [
       fila("Pasar sola", c("duracion", { tipo: "rango", min: 0, max: 60, def: 0, unidad: " s" }), "0 = espera a que pases la hoja"),
       el("div.ed-botonera", {}, [

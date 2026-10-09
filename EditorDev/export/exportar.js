@@ -21,7 +21,7 @@ import { RAIZ, rutaAUrl } from "../assets/biblioteca.js";
 import { catalogo } from "../componentes/catalogo.js";
 
 const RT = window.LibritoRT;
-const RUNTIME = ["rt-base.js", "rt-render.js", "rt-anim.js", "rt-comps.js", "rt-3d.js", "rt-trans.js", "rt-musica.js", "rt-player.js"];
+const RUNTIME = ["rt-base.js", "rt-render.js", "rt-anim.js", "rt-comps.js", "rt-3d.js", "rt-trans.js", "rt-toques.js", "rt-musica.js", "rt-player.js"];
 const DEPENDENCIA = /["'`(]((?:\.{0,2}\/)?[^"'`()\s<>:]+?\.(?:png|jpe?g|gif|webp|avif|svg|mp3|m4a|ogg|wav|aac|mp4|webm|mov|js|mjs|css|json|glb|gltf|bin|woff2?|ttf|otf))(?:\?[^"'`)\s]*)?["'`)]/gi;
 const MAX_ARCHIVOS = 600;
 const MAX_BYTES = 400 * 1024 * 1024;
