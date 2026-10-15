@@ -38,7 +38,7 @@ import { Linea } from "./timeline/linea.js";
 import { EditorHtml } from "./html/editorHtml.js";
 import { Importador, registrarFuentes } from "./html/importar.js";
 import { Vista } from "./components/vista.js";
-import { pantallaInicio } from "./components/inicio.js";
+import { pantallaInicio, quitarInicio } from "./components/inicio.js";
 import { atajos } from "./components/teclado.js";
 import { PLANTILLAS } from "./templates/plantillas.js";
 import { BarraContextual } from "./components/barra.js";
@@ -460,7 +460,7 @@ app.abrirProyecto = async (P, guardar = false) => {
   app.tiempo.parar(false);
   app.estado.cargar(P);
   guardarUltimo(P.id);
-  document.querySelector(".ed-inicio")?.remove();
+  quitarInicio();
 };
 
 app.abrir = async (id) => {
@@ -470,18 +470,28 @@ app.abrir = async (id) => {
   await app.abrirProyecto(P);
 };
 
-app.nuevo = async (nombre, formato = "movil") => {
+app.nuevo = async (nombre, formato = "movil", { portada = "portada", imagen = null } = {}) => {
   if (app.auto.pendiente) await app.auto.ahora();
   if (!nombre) { pantallaInicio(app, { cerrable: !!app.estado.proyecto }); return; }
   const P = nuevoProyecto(nombre, formato);
   if (formato === "auto" && matchMedia("(pointer: coarse)").matches) { const t = tamAuto(); P.ajustes.ancho = t.w; P.ajustes.alto = t.h; }
-  const pg = PLANTILLAS.find((t) => t.id === "portada").crear(P);
+  const pg = (PLANTILLAS.find((t) => t.id === portada && t.cat === "portadas") || PLANTILLAS.find((t) => t.id === "portada")).crear(P);
   pg.nombre = "Portada";
   P.paginas[pg.id] = pg;
   P.orden.push(pg.id);
   P.ajustes.portada = pg.id;
   await app.abrirProyecto(P, true);
   RT.cargarFuentes(pg.els.map((e) => e.texto?.fuente));
+  // Tu propia imagen: va al hueco de foto de la portada (o de fondo si no tiene).
+  if (imagen) {
+    try {
+      const [a] = await app.bib.subir([imagen]);
+      const pag = app.estado.proyecto.paginas[pg.id];
+      const hueco = a && pag.els.find((e) => e.tipo === "imagen" && !e.imagen?.asset);
+      if (hueco) app.estado.setEl(hueco.id, { "imagen.asset": a.id }, "Foto de portada", null, pg.id);
+      else if (a) app.estado.setPag({ fondo: { ...(pag.fondo || {}), imagen: { asset: a.id, ajuste: "cover", pos: "center", opacidad: 1 } } }, "Foto de portada", null, pg.id);
+    } catch (e) { aviso("No se pudo poner tu imagen: tócala en la portada para elegirla otra vez", 4000, "error"); }
+  }
   aviso("Tu librito nuevo. Empieza tocando cualquier cosa de la portada");
 };
 
