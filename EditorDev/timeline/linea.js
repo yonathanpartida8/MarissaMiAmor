@@ -48,6 +48,13 @@
  *   Efectos      la campanita: efectos de sonido listos (pop, latido, ¡tadá!…)
  *                que se ponen en el cabezal como una pista más
  *   Audio        cada pista se puede silenciar (sin quitarla)
+ *   Fotogramas   (Fase 11) la flechita de una pista abre sus propiedades
+ *                (posición, escala, giro, opacidad, desenfoque, color,
+ *                brillo), cada una con sus rombos ◆: arrastrarlos los mueve
+ *                en el tiempo; tocarlos abre sus valores, su ritmo (también
+ *                una curva a mano), duplicar, copiar y quitar. El botón ◆+
+ *                pone un fotograma en el cabezal (K). ↑/↓ saltan también
+ *                entre fotogramas.
  */
 import { alCuadro } from "../config/cuadros.js";
 import { el, menu, ordenable, COMPACTO, popover, control, Vinculos, fila, aviso } from "../components/ui.js";
@@ -57,6 +64,8 @@ import { TIPOS, uid } from "../core/modelo.js";
 import { holgura, TOQUE_LARGO, vibrar, enCuadro } from "../canvas/gestos.js";
 import { hijos, parchear } from "../components/morfo.js";
 import { resorte } from "../components/hoja.js";
+import { abrirCurva } from "../components/curva.js";
+import { PROPS, CAMPOS, editable, aV2, claves, ventana, ponerClave, cambiarClave, moverClave, quitarClave, duplicarClave, valoresEn, claveEn } from "./fotogramas.js";
 
 const RT = window.LibritoRT;
 const ET = 132;           // ancho de la columna de nombres (px)
@@ -80,6 +89,9 @@ export class Linea {
     this.bucle = false;
     this.audioSel = null;
     this._relojes = [];
+    this.abiertos = new Set(); // pistas con sus propiedades a la vista
+    this.kf = null;            // el fotograma elegido { id, i, k }
+    this._kfCopia = null;
     this._montar();
     const re = () => { if (this.abierta && !this._arrastrando) { cancelAnimationFrame(this._r); this._r = requestAnimationFrame(() => this.pintar()); } };
     this.E.on("el", ({ rutas }) => {
@@ -192,6 +204,18 @@ export class Linea {
     const els = [...p.els].reverse();
     hijos(this.filas, el("div", {}, els.length ? els.map((e) => this._fila(e, T)) : [el("p.ed-vacio-txt", { dataset: { k: "vacio" }, text: "Nada en esta página todavía: lo que añadas aparece aquí con su pista." })]));
     this._pintarCabezal();
+    // Lo elegido (o la pista que se acaba de abrir) se trae a la vista, sin saltos.
+    const u = this.E.unico?.id || null, clave = u + (u && this.abiertos.has(u) ? ":a" : "");
+    if (u && clave !== this._visto) {
+      this._visto = clave;
+      requestAnimationFrame(() => {
+        const f = this.filas.querySelector(`.ed-tl-fila[data-k="${CSS.escape(u)}"]`);
+        if (!f) return;
+        const c = this.cuerpo, cr = c.getBoundingClientRect(), fr = f.getBoundingClientRect();
+        const arriba = cr.top + (this.cRegla.offsetHeight || 0);
+        if (fr.top < arriba || fr.bottom > cr.bottom) c.scrollBy({ top: fr.top - arriba - 4, behavior: "smooth" });
+      });
+    } else if (!u) this._visto = null;
   }
 
   _herramientas() {
@@ -206,6 +230,8 @@ export class Linea {
         sel ? b("dividir", "tijeras", "Dividir lo elegido en el cabezal (S)", dividible ? "" : "apagado") : null,
         sel ? b("aparece", "izqA", "Que aparezca aquí (en el cabezal)") : null,
         sel ? b("sevay", "derA", "Que se vaya aquí (en el cabezal)") : null,
+        sel ? b("fotograma", "fotogramaMas", "Fotograma en el cabezal: posición, escala, giro, opacidad, color… (K)") : null,
+        sel && this._kfCopia ? b("pegarKf", "pegar", "Pegar el fotograma copiado en el cabezal") : null,
         b("marca", "estrella", "Poner un marcador en el cabezal (M)"),
       ].filter(Boolean)),
       el("div.ed-tl-g", {}, [
@@ -276,6 +302,8 @@ export class Linea {
     const puntos = new Set([0, this._total(), ...this._marcas()]);
     for (const e of p.els) { puntos.add(RT.inicioDe(e)); const f = RT.finDe(e); if (f != null) puntos.add(f); }
     for (const a of p.audios || []) { puntos.add(a.inicio || 0); puntos.add((a.inicio || 0) + this._durPista(a)); }
+    // Y los fotogramas de lo elegido.
+    for (const e of this.E.seleccionados) { if (!editable(e.anim?.propia)) continue; const { base, dur } = ventana(e); for (const f of e.anim.propia.fotogramas) puntos.add(Math.round(base + (+f.t || 0) * dur)); }
     const lista = [...puntos].filter(Number.isFinite).sort((x, y) => x - y);
     const dest = dir < 0 ? [...lista].reverse().find((x) => x < this.t - 20) : lista.find((x) => x > this.t + 20);
     if (dest != null) this.ir(dest);
@@ -400,16 +428,209 @@ export class Linea {
     const so = e.sonidos;
     if (so?.aparecer) clip.append(el("i.ed-tl-marca", { style: { left: this.x((en && en.tipo !== "ninguna" ? en.retraso || 0 : 0)) + "px" }, title: "Suena al aparecer", html: ico("campana") }));
     const pista = el("div.ed-tl-pista", {}, [clip]);
+    const conKf = editable(pr);
+    const abierta = conKf && this.abiertos.has(e.id);
     const marcas = [e.accion?.tipo ? el("i", { title: "Hace algo al tocarlo", html: ico("toque") }) : null, so?.tocar ? el("i", { title: "Suena al tocarlo", html: ico("sonido") }) : null, e.inicioOculto ? el("i", { title: "Empieza escondido", html: ico("ojoNo") }) : null].filter(Boolean);
     const et = el("div.ed-tl-et" + (sel ? ".on" : ""), { dataset: { id: e.id } }, [
       el("button.ed-asa", { type: "button", html: ico("agarre"), title: "Arrastra para cambiar la capa", "aria-label": "Cambiar la capa" }),
+      conKf ? el("button.ed-tl-abrir" + (abierta ? ".on" : ""), { type: "button", dataset: { abrir: e.id }, html: ico("derecha"), title: abierta ? "Ocultar sus fotogramas" : "Ver sus fotogramas por propiedad", "aria-label": abierta ? "Ocultar sus fotogramas" : "Ver sus fotogramas", "aria-expanded": String(abierta) }) : null,
       el("b", { html: ico(TIPOS[e.tipo]?.ico || "elementos") }),
       el("span", { text: e.nombre }),
       marcas.length ? el("em", {}, marcas) : null,
       el("button.ed-tl-pp" + (e.oculto ? ".on" : ""), { type: "button", dataset: { pp: "oculto", id: e.id }, html: ico(e.oculto ? "ojoNo" : "ojo"), title: e.oculto ? "Mostrar en el editor" : "Esconder en el editor", "aria-label": "Esconder o mostrar" }),
       el("button.ed-tl-pp" + (e.bloqueado ? ".on" : ""), { type: "button", dataset: { pp: "bloqueado", id: e.id }, html: ico(e.bloqueado ? "candado" : "abierto"), title: e.bloqueado ? "Desbloquear" : "Bloquear (que no se mueva)", "aria-label": "Bloquear o desbloquear" }),
     ].filter(Boolean));
-    return el("div.ed-tl-fila" + (sel ? ".on" : "") + (e.oculto ? ".oculto" : ""), { dataset: { id: e.id, k: e.id } }, [et, pista]);
+    return el("div.ed-tl-fila" + (sel ? ".on" : "") + (e.oculto ? ".oculto" : "") + (abierta ? ".abierta" : ""), { dataset: { id: e.id, k: e.id } }, [et, pista, abierta ? this._propiedades(e) : null].filter(Boolean));
+  }
+
+  /** Las pistas de cada propiedad de su animación propia, con sus fotogramas ◆. */
+  _propiedades(e) {
+    const pr = e.anim.propia, ks = claves(pr), { base, dur } = ventana(e);
+    const def = pr.facil || "suave";
+    const lanes = Object.keys(PROPS).filter((k) => ks[k]).map((k) => {
+      const l = ks[k];
+      const hijosL = [el("i.ed-tl-kfv", { style: { left: this.x(base) + "px", width: Math.max(2, this.x(dur)) + "px" } })];
+      for (let j = 0; j < l.length - 1; j++) {
+        const a = l[j], b = l[j + 1], propio = a.facil && a.facil !== def;
+        hijosL.push(el("i.ed-tl-kfl" + (propio ? ".ritmo" : ""), { style: { left: this.x(base + a.t * dur) + "px", width: Math.max(0, this.x((b.t - a.t) * dur)) + "px" }, title: propio ? "Con su propio ritmo" : "" }));
+      }
+      for (const c of l) {
+        const on = this.kf && this.kf.id === e.id && this.kf.i === c.i && this.kf.k === k;
+        const ms = base + c.t * dur;
+        hijosL.push(el("button.ed-tl-kf" + (on ? ".on" : ""), { type: "button", dataset: { kf: k, i: c.i, id: e.id, k: "kf" + k + c.i }, style: { left: this.x(ms) + "px" }, title: `${PROPS[k].n} en ${fmt(ms)} · arrastra para moverlo, toca para cambiarlo`, "aria-label": `Fotograma de ${PROPS[k].n} en ${fmt(ms)}` }));
+      }
+      return el("div.ed-tl-prop", { dataset: { k: "p:" + k } }, [el("div.ed-tl-et.chica", { dataset: { kfet: e.id } }, [el("i", { html: ico("fotograma") }), el("span", { text: PROPS[k].n })]), el("div.ed-tl-pista", {}, hijosL)]);
+    });
+    return el("div.ed-tl-props", { dataset: { k: "props" } }, lanes);
+  }
+
+  /* ── Fotogramas ─────────────────────────────────────────────────── */
+  /** Un fotograma: con el dedo/ratón se arrastra en el tiempo; un toque abre sus valores. */
+  _tocarKf(ev, n) {
+    const E = this.E, id = n.dataset.id, k = n.dataset.kf, i = +n.dataset.i;
+    const e = E.el(id);
+    if (!e || !editable(e.anim?.propia)) return;
+    if (ev.cancelable) ev.preventDefault();
+    ev.stopPropagation();
+    const pid = ev.pointerId, x0 = ev.clientX, y0 = ev.clientY;
+    const blanco = this.cuerpo;
+    try { blanco.setPointerCapture(pid); } catch (x) { /* nada */ }
+    const elegido = E.sel.includes(id);
+    const { base, dur } = ventana(e);
+    const pr0 = aV2(e.anim.propia);
+    const t0 = pr0.fotogramas[i]?.t ?? 0;
+    // Se pega al cabezal, a los marcadores y a los demás fotogramas.
+    const imanes = [this.t, ...this._marcas(), ...pr0.fotogramas.filter((_, j) => j !== i).map((f) => base + f.t * dur)];
+    const umbral = this.iman ? this.ms(9) : -1;
+    let fin = null, idx = i;
+    const mover = enCuadro((m) => {
+      if (m.pointerId !== pid) return;
+      if (!fin) {
+        if (Math.hypot(m.clientX - x0, m.clientY - y0) < holgura(m)) return;
+        if (!elegido && m.pointerType !== "mouse") return; // con el dedo, primero se elige
+        fin = E.gesto("Mover fotograma");
+        this._arrastrando = true;
+      }
+      let ms = base + t0 * dur + this.ms(m.clientX - x0);
+      let mejor = null;
+      for (const t of imanes) if (Math.abs(t - ms) <= umbral && (mejor == null || Math.abs(t - ms) < Math.abs(mejor - ms))) mejor = t;
+      ms = mejor != null ? mejor : Math.round(ms / 10) * 10;
+      const r = moverClave(pr0, i, k, (ms - base) / dur);
+      idx = r.i;
+      E.setEl(id, { "anim.propia": r.pr }, "Mover fotograma");
+      this.kf = { id, i: idx, k };
+      this._repintarFila(e);
+    });
+    const soltar = (u) => {
+      if (u.pointerId !== pid) return;
+      blanco.removeEventListener("pointermove", mover);
+      blanco.removeEventListener("pointerup", soltar);
+      blanco.removeEventListener("pointercancel", soltar);
+      mover.ya();
+      this._arrastrando = false;
+      if (fin) { fin(); this.kf = { id, i: idx, k }; this.pintar(); this._refrescarAnim(); return; }
+      if (u.type === "pointercancel") return;
+      if (!elegido) E.seleccionar([id]);
+      this.kf = { id, i, k };
+      this.pintar();
+      const nodo = this.filas.querySelector(`.ed-tl-kf[data-k="kf${k}${i}"]`) || n;
+      this._popKf(id, i, k, nodo);
+    };
+    blanco.addEventListener("pointermove", mover);
+    blanco.addEventListener("pointerup", soltar);
+    blanco.addEventListener("pointercancel", soltar);
+  }
+
+  /** Los valores de un fotograma, su ritmo hasta el siguiente y sus acciones. */
+  _popKf(id, i0, k, ancla) {
+    const E = this.E;
+    let i = i0;
+    const v = new Vinculos();
+    const e0 = E.el(id);
+    if (!e0) return;
+    const { base, dur } = ventana(e0);
+    const fila_ = () => E.el(id)?.anim?.propia?.fotogramas?.[i];
+    const escribir = (cambios, nombre = "Fotograma") => {
+      const e = E.el(id);
+      if (!e) return;
+      const r = cambiarClave(e.anim.propia, i, k, cambios);
+      i = r.i;
+      this.kf = { id, i, k };
+      E.setEl(id, { "anim.propia": r.pr }, nombre, "kf" + id + i + k);
+    };
+    const PASOS = { x: 1, y: 1, curva: 2, escala: 0.05, rot: 1, opacidad: 0.05, desenfoque: 0.5, tono: 5, brillo: 0.05 };
+    const NOMBRES = { x: "X", y: "Y", curva: "Curva del camino", escala: "Escala", rot: "Giro", opacidad: "Opacidad", desenfoque: "Desenfoque", tono: "Tono", brillo: "Brillo" };
+    const campos = CAMPOS[k].map((c) => fila(NOMBRES[c], control(v, {
+      tipo: "numero", paso: PASOS[c], min: c === "opacidad" ? 0 : undefined, max: c === "opacidad" ? 1 : undefined,
+      unidad: c === "rot" || c === "tono" ? "°" : c === "x" || c === "y" || c === "curva" || c === "desenfoque" ? "px" : "",
+      leer: () => fila_()?.[c] ?? (c === "escala" || c === "brillo" || c === "opacidad" ? 1 : 0),
+      escribir: (x) => escribir({ [c]: x }),
+    })));
+    const FACILES = Object.entries(RT.FACIL).map(([kk, x]) => [kk, x.n]);
+    const ritmo = control(v, { tipo: "select", opciones: [["", "Como toda la animación"], ...FACILES], leer: () => fila_()?.facil || "", escribir: (x) => escribir({ facil: x || null }, "Ritmo del fotograma") });
+    const bc = el("button.ed-btn.chico.ico", { type: "button", html: ico("curva"), title: "Dibujar la curva a mano", "aria-label": "Dibujar la curva a mano" });
+    bc.addEventListener("click", () => abrirCurva(bc, fila_()?.facil || E.el(id)?.anim?.propia?.facil || "suave", (x) => { escribir({ facil: x }, "Curva del fotograma"); this.pintar(); }, `Ritmo de ${PROPS[k].n.toLowerCase()} hasta el siguiente`));
+    const t = () => base + (fila_()?.t ?? 0) * dur;
+    const acc = (txt, icono, fn, cls = "") => el("button.ed-btn.chico" + (cls ? "." + cls : ""), { type: "button", html: `${ico(icono)}<span>${txt}</span>`, onClick: fn });
+    let pop = null;
+    const cerrar = () => pop?.cerrar?.();
+    pop = popover(ancla, [
+      el("div.ed-kf-cab", {}, [el("b", { html: `${ico("fotograma")}<span>${PROPS[k].n}</span>` }), el("small", { text: "en " + fmt(t()) })]),
+      ...campos,
+      fila("Ritmo hasta el siguiente", el("div.ed-ritmo", {}, [ritmo, bc])),
+      el("div.ed-botonera", {}, [
+        acc("Ir aquí", "play", () => this.ir(t())),
+        acc("Duplicar", "duplicar", () => { const e = E.el(id); if (!e) return; const du = Math.max(100, dur * 0.12) / dur; const r = duplicarClave(e.anim.propia, i, k, (fila_()?.t ?? 0) + du); E.setEl(id, { "anim.propia": r.pr }, "Duplicar fotograma"); this.kf = { id, i: r.i, k }; cerrar(); }),
+        acc("Copiar", "copiar", () => { const f = fila_(); if (!f) return; const vals = {}; for (const c of CAMPOS[k]) if (f[c] != null) vals[c] = f[c]; this._kfCopia = { k, vals, facil: f.facil || null }; aviso("Fotograma copiado: ponlo con «Pegar» en el cabezal", 2200); this.pintar(); cerrar(); }),
+        acc("Quitar", "borrar", () => { this.kf = { id, i, k }; this.quitarFotograma(); cerrar(); }, "peligro"),
+      ]),
+    ], { clase: "ed-pop-kf" });
+    v.refrescar();
+    const al = () => v.refrescar();
+    E.on("el", al);
+    const obs = new MutationObserver(() => { if (!pop.nodo.isConnected) { E.off?.("el", al); obs.disconnect(); } });
+    obs.observe(document.body, { childList: true });
+  }
+
+  /** ◆+ : un fotograma en el cabezal para lo elegido (crea la animación propia si no tiene). */
+  fotogramaAqui(ancla) {
+    const E = this.E, e0 = E.unico;
+    if (!e0) { aviso("Elige primero algo de la hoja"); return; }
+    ancla = ancla || this.herr.querySelector('[data-ac="fotograma"]') || this.cab;
+    const id = e0.id, v = new Vinculos();
+    const ms = () => Math.round(this.t / 10) * 10;
+    const val = (c) => valoresEn(E.el(id), ms())[c];
+    const poner = (k, cambios) => {
+      const e = E.el(id);
+      if (!e) return;
+      const actual = valoresEn(e, ms());
+      const vals = {};
+      for (const c of CAMPOS[k]) vals[c] = cambios[c] ?? (c === "curva" ? undefined : actual[c]);
+      const nueva = ponerClave(e, k, ms(), vals);
+      this.abiertos.add(id);
+      E.setEl(id, { "anim.propia": nueva }, "Fotograma", "kfa" + id + k + ms());
+    };
+    const NOMBRES = { x: "X", y: "Y", escala: "Escala", rot: "Giro", opacidad: "Opacidad", desenfoque: "Desenfoque", tono: "Tono", brillo: "Brillo" };
+    const PASOS = { x: 1, y: 1, escala: 0.05, rot: 1, opacidad: 0.05, desenfoque: 0.5, tono: 5, brillo: 0.05 };
+    const filas = Object.keys(PROPS).map((k) => {
+      const hay = () => claveEn(E.el(id), k, ms()) >= 0;
+      const rombo = el("button.ed-kf-rombo", { type: "button", html: ico("fotograma"), title: "Poner o quitar el fotograma de " + PROPS[k].n.toLowerCase() + " aquí" });
+      rombo.addEventListener("click", () => {
+        const e = E.el(id), j = claveEn(e, k, ms());
+        if (j >= 0) E.setEl(id, { "anim.propia": quitarClave(e.anim.propia, j, k) }, "Quitar fotograma");
+        else poner(k, {});
+      });
+      v.add(() => rombo.classList.toggle("on", hay()));
+      const ins = CAMPOS[k].filter((c) => c !== "curva").map((c) => el("label.ed-kf-campo", {}, [el("small", { text: NOMBRES[c] }), control(v, { tipo: "numero", paso: PASOS[c], leer: () => +(+val(c)).toFixed(3), escribir: (x) => poner(k, { [c]: x }) })]));
+      return el("div.ed-kf-fila", {}, [rombo, el("b", { text: PROPS[k].n }), el("div.ed-kf-ins", {}, ins)]);
+    });
+    popover(ancla, [
+      el("div.ed-kf-cab", {}, [el("b", { html: `${ico("fotogramaMas")}<span>Fotograma en ${fmt(ms())}</span>` }), el("small", { text: "«" + e0.nombre + "»" })]),
+      el("p.ed-ayuda", { text: "Cambia un valor y queda un ◆ en el cabezal para esa propiedad. Mueve el cabezal y cambia otro: la animación va de uno a otro con su ritmo." }),
+      ...filas,
+      el("div.ed-botonera", {}, [el("button.ed-btn.chico", { type: "button", html: `${ico("fotograma")}<span>Fijar todo aquí</span>`, onClick: () => E.transaccion("Fotograma de todo", () => { for (const k of Object.keys(PROPS)) poner(k, {}); }) })]),
+    ], { clase: "ed-pop-kf" });
+    v.refrescar();
+    const al = () => v.refrescar();
+    E.on("el", al);
+    setTimeout(() => { const obs = new MutationObserver(() => { if (!document.querySelector(".ed-pop-kf")) { E.off?.("el", al); obs.disconnect(); } }); obs.observe(document.body, { childList: true }); }, 0);
+  }
+
+  pegarFotograma() {
+    const E = this.E, e = E.unico, c = this._kfCopia;
+    if (!e || !c) return;
+    const nueva = ponerClave(e, c.k, Math.round(this.t / 10) * 10, c.vals);
+    if (c.facil) { const j = nueva.fotogramas.findIndex((f) => RT.tieneProp(f, c.k) && Math.abs(ventana({ ...e, anim: { ...e.anim, propia: nueva } }).base + f.t * nueva.dur - this.t) < 15); if (j >= 0) nueva.fotogramas[j].facil = c.facil; }
+    this.abiertos.add(e.id);
+    E.setEl(e.id, { "anim.propia": nueva }, "Pegar fotograma");
+  }
+
+  quitarFotograma() {
+    const E = this.E, kf = this.kf;
+    const e = kf && E.el(kf.id);
+    if (!e || !editable(e.anim?.propia)) { this.kf = null; return; }
+    E.setEl(e.id, { "anim.propia": quitarClave(e.anim.propia, kf.i, kf.k) }, "Quitar fotograma");
+    this.kf = null;
   }
 
   /* ── Gestos (todos delegados: los nodos se reutilizan) ──────────── */
@@ -434,6 +655,8 @@ export class Linea {
         case "aparece": if (sel) this._ponerTiempo(sel, "inicio"); break;
         case "sevay": if (sel) this._ponerTiempo(sel, "fin"); break;
         case "pista": this.app.paneles?.agregarPista?.(Math.round(this.t / PASO) * PASO); break;
+        case "fotograma": this.fotogramaAqui(b); break;
+        case "pegarKf": this.pegarFotograma(); break;
         case "musica": this.conMusica = !this.conMusica; this.pintar(); break;
         case "menos": this._zoom(this.pps / 1.4); break;
         case "mas": this._zoom(this.pps * 1.4); break;
@@ -451,7 +674,7 @@ export class Linea {
       let hacer = null;
       if (mod && !ev.altKey) hacer = /^d$/i.test(k) ? () => this.duplicarClip() : null;
       else if (ev.altKey && !mod) hacer = k === "ArrowLeft" ? () => this.empujar(-paso) : k === "ArrowRight" ? () => this.empujar(paso) : null;
-      else if (!mod && !ev.altKey) hacer = { " ": () => this.alternarPlay(), ArrowLeft: () => this.ir(this.t - paso), ArrowRight: () => this.ir(this.t + paso), ArrowUp: () => this.saltar(-1), ArrowDown: () => this.saltar(1), Home: () => this.ir(0), End: () => this.ir(this._total()), Delete: () => this.borrarClip(), Backspace: () => this.borrarClip(), s: () => this.dividir(), S: () => this.dividir(), m: () => this.marcar(), M: () => this.marcar(), "+": () => this._zoom(this.pps * 1.4), "=": () => this._zoom(this.pps * 1.4), "-": () => this._zoom(this.pps / 1.4), 0: () => this.verTodo() }[k];
+      else if (!mod && !ev.altKey) hacer = { " ": () => this.alternarPlay(), ArrowLeft: () => this.ir(this.t - paso), ArrowRight: () => this.ir(this.t + paso), ArrowUp: () => this.saltar(-1), ArrowDown: () => this.saltar(1), Home: () => this.ir(0), End: () => this.ir(this._total()), Delete: () => (this.kf ? this.quitarFotograma() : this.borrarClip()), Backspace: () => (this.kf ? this.quitarFotograma() : this.borrarClip()), k: () => this.fotogramaAqui(), K: () => this.fotogramaAqui(), s: () => this.dividir(), S: () => this.dividir(), m: () => this.marcar(), M: () => this.marcar(), "+": () => this._zoom(this.pps * 1.4), "=": () => this._zoom(this.pps * 1.4), "-": () => this._zoom(this.pps / 1.4), 0: () => this.verTodo() }[k];
       if (!hacer) return;
       ev.preventDefault();
       ev.stopImmediatePropagation();
@@ -473,7 +696,9 @@ export class Linea {
         addEventListener("pointerup", fuera);
         return;
       }
-      if (ev.target.closest(".ed-tl-pp")) return;
+      if (ev.target.closest(".ed-tl-pp, [data-abrir]")) return;
+      const kf = ev.target.closest(".ed-tl-kf");
+      if (kf) { this._tocarKf(ev, kf); return; }
       if (ev.target.closest(".ed-tl-cabezal, .ed-tl-regla, .ed-tl-fregla")) { this._buscar(ev); return; }
       const n = ev.target.closest("[data-arr]");
       if (n) this._tocarArr(ev, n);
@@ -486,6 +711,10 @@ export class Linea {
       // Ojo y candado de cada pista.
       const mu = ev.target.closest("[data-mudo]");
       if (mu) { const a = this._pista(mu.dataset.mudo); if (a) this._ponerPista(a.id, { silencio: !a.silencio }, a.silencio ? "Pista con sonido" : "Silenciar pista"); return; }
+      const ab = ev.target.closest("[data-abrir]");
+      if (ab) { const id = ab.dataset.abrir; if (this.abiertos.has(id)) this.abiertos.delete(id); else this.abiertos.add(id); this.pintar(); return; }
+      const ke = ev.target.closest("[data-kfet]");
+      if (ke) { if (!this.E.sel.includes(ke.dataset.kfet)) this.E.seleccionar([ke.dataset.kfet]); return; }
       const pp = ev.target.closest("[data-pp]");
       if (pp) { const x = this.E.el(pp.dataset.id); if (x) this.E.setEl(x.id, { [pp.dataset.pp]: !x[pp.dataset.pp] }, pp.dataset.pp === "oculto" ? (x.oculto ? "Mostrar" : "Esconder") : (x.bloqueado ? "Desbloquear" : "Bloquear")); return; }
       // Marcadores: tocar = ir.

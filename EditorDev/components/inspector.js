@@ -17,10 +17,12 @@ import { elegir } from "../assets/selector.js";
 import { seccionToque, seccionToquePagina } from "./toques.js";
 import { PAPELES, fondoDePapel, muestraPapel, nombrePapel } from "./temas-hoja.js";
 import { abrirEfectos } from "./efectos-sonido.js";
+import { abrirCurva } from "./curva.js";
+import { copiarAnim, pegarAnim, hayAnimCopiada, secuencia } from "./animacion.js";
 
 const RT = window.LibritoRT;
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
-const RECONSTRUIR = /^zonas$|^toque$|^escena3d\.(fuente|asset)$|^ancla|^tiempo$|^efectos\.(sombra|resplandor)$|^efectos$|sonidos|^componente\.(params|analisis|sinFondo)|^accion\.destino|fotos|\.tipo$|^fondo\.tipo|^fondo$|^fondo\.(css|papel)$|^accion|figura|disposicion|^carrusel\.modo|propia|^tipo$|^imagen\.asset|^video\.asset|^musica\.modo|fondo\.imagen|gradiente$|sombra$|^transicion$/;
+const RECONSTRUIR = /^anim$|^anim\.magia$|^anim\.propia(\.fotogramas)?$|^zonas$|^toque$|^escena3d\.(fuente|asset)$|^ancla|^tiempo$|^efectos\.(sombra|resplandor)$|^efectos$|sonidos|^componente\.(params|analisis|sinFondo)|^accion\.destino|fotos|\.tipo$|^fondo\.tipo|^fondo$|^fondo\.(css|papel)$|^accion|figura|disposicion|^carrusel\.modo|propia|^tipo$|^imagen\.asset|^video\.asset|^musica\.modo|fondo\.imagen|gradiente$|sombra$|^transicion$/;
 const OPC_DIR = Object.entries(RT.DIRS);
 const FACILES = Object.entries(RT.FACIL).map(([k, v]) => [k, v.n]);
 
@@ -695,8 +697,11 @@ export class Inspector {
         fila("Duración", c(base + "dur", { min: 50, max: 20000, paso: 50, unidad: "ms", def: def.dur })),
         fila("Retraso", c(base + "retraso", { min: 0, max: 20000, paso: 50, unidad: "ms", def: def.retraso })),
       ]));
-      if (fase !== "bucle" || !info.lineal) hijos.push(fila("Ritmo", c(base + "facil", { tipo: "select", opciones: FACILES, def: def.facil })));
+      if (fase !== "bucle" || !info.lineal) hijos.push(this._ritmo(e, base + "facil", def.facil));
       const usa = info.usa || [];
+      hijos.push(fila("Intensidad", c(base + "intensidad", { tipo: "rango", min: 0, max: 3, paso: 0.05, def: 1, nombre: "Intensidad" })));
+      if (usa.includes("rebotes")) hijos.push(fila("Rebotes", c(base + "rebotes", { tipo: "rango", min: 1, max: 6, paso: 1, def: 3 })));
+      if (fase === "bucle") hijos.push(fila("Velocidad", c(base + "velocidad", { tipo: "rango", min: 0.25, max: 3, paso: 0.05, def: 1, unidad: "×" })));
       if (usa.includes("dir")) hijos.push(fila("Dirección", c(base + "dir", { tipo: "select", opciones: OPC_DIR, def: def.dir })));
       if (usa.includes("dist")) hijos.push(fila("Distancia", c(base + "dist", { tipo: "rango", min: 0, max: 400, unidad: "px", def: def.dist })));
       if (usa.includes("escala")) hijos.push(fila("Escala", c(base + "escala", { tipo: "rango", min: fase === "bucle" ? 1 : 0, max: fase === "bucle" ? 1.6 : 1.5, paso: 0.01, def: def.escala })));
@@ -713,6 +718,60 @@ export class Inspector {
     return seccion(titulo, hijos, { abierta: !nada || fase === "entrada" });
   }
 
+  /** «Ritmo»: los de siempre o una curva a mano (se dibuja arrastrando dos asas). */
+  _ritmo(e, ruta, def) {
+    const actual = leerRuta(this.E.el(e.id) || {}, ruta) ?? def;
+    const opciones = RT.FACIL[actual] || !actual ? FACILES : [...FACILES, [actual, "Curva a mano"]];
+    const sel = this._ctl(e)(ruta, { tipo: "select", opciones, def, nombre: "Ritmo" });
+    const b = el("button.ed-btn.chico.ico", { type: "button", html: ico("curva"), title: "Dibujar la curva a mano", "aria-label": "Dibujar la curva a mano" });
+    b.addEventListener("click", () => abrirCurva(b, leerRuta(this.E.el(e.id) || {}, ruta) ?? def, (v) => this.E.setEl(e.id, { [ruta]: v }, "Curva de ritmo")));
+    return fila("Ritmo", el("div.ed-ritmo", {}, [sel, b]));
+  }
+
+  /** Magia: efectos que se combinan (chispas, estela, resplandor…), cada uno con su momento. */
+  _magia(e) {
+    const E = this.E;
+    const lista = e.anim?.magia || [];
+    const poner = (l, nombre) => E.setEl(e.id, { "anim.magia": l }, nombre || "Magia");
+    const filas = lista.map((m, i) => {
+      const cambiar = (k, v) => poner(lista.map((x, j) => (j === i ? { ...x, [k]: v } : x)), "Magia", "mg" + i + k + e.id);
+      const leer = (k, d) => E.el(e.id)?.anim?.magia?.[i]?.[k] ?? d;
+      const ctl = (k, op) => control(this.v, { ...op, leer: () => leer(k, op.def), escribir: (v) => cambiar(k, v) });
+      return el("div.ed-mg-fila", {}, [
+        el("div.ed-mg-cab", {}, [
+          ctl("tipo", { tipo: "select", opciones: Object.entries(RT.MAGIA).map(([k, v]) => [k, v.n]), def: "chispas" }),
+          ctl("momento", { tipo: "select", opciones: RT.MAGIA_MOMENTOS, def: "entrada" }),
+          el("button.ed-quitar", { type: "button", html: ico("cerrar"), title: "Quitar este efecto", "aria-label": "Quitar este efecto", onClick: () => poner(lista.filter((_, j) => j !== i), "Quitar magia") }),
+        ]),
+        el("div.ed-rejilla2", {}, [
+          fila("Color", ctl("color", { tipo: "color", def: "#ff7fae" })),
+          fila("Cantidad", ctl("cantidad", { tipo: "rango", min: 0.3, max: 2.5, paso: 0.1, def: 1 })),
+        ]),
+        fila("Retraso", ctl("retraso", { min: -2000, max: 20000, paso: 50, unidad: "ms", def: 0 })),
+      ]);
+    });
+    const nuevo = (tipo, momento) => poner([...lista, { tipo, momento, color: "#ff7fae", cantidad: 1, retraso: 0 }], "Añadir magia");
+    return seccion("Magia · chispas, estelas, brillos", [
+      el("p.ed-ayuda", { text: "Se suman a sus animaciones y entre sí: ponle varias. Se ven al probar la página y en la línea de tiempo." }),
+      ...filas,
+      el("div.ed-botonera.ed-mg-rapidos", {}, [
+        boton(I("varita", "Chispas al llegar"), () => nuevo("chispas", "entrada"), "chico"),
+        boton(I("estrella", "Brillitos siempre"), () => nuevo("brillitos", "siempre"), "chico"),
+        boton(I("animar", "Estela"), () => nuevo("estela", "entrada"), "chico"),
+        boton(I("mas", "Otro efecto"), () => nuevo("resplandor", "siempre"), "chico"),
+      ]),
+    ], { abierta: lista.length > 0 });
+  }
+
+  /** Reacciones: qué hace mientras lo presionan en el librito. */
+  _reaccion(e) {
+    const c = this._ctl(e);
+    return seccion("Al presionarlo", [
+      fila("Reacción", c("anim.reaccion.presionar", { tipo: "select", opciones: RT.REACCIONES, def: "", nombre: "Reacción" })),
+      el("p.ed-ayuda", { text: "Mientras el dedo está encima se hunde, crece o brilla, y al soltar vuelve con un rebotito. Para efectos al tocar, usa la magia «Al tocarlo» o la pestaña Diseño → Al tocar." }),
+    ], { abierta: !!e.anim?.reaccion?.presionar });
+  }
+
   _animar(e) {
     this.cuerpo.append(el("div.ed-insp-cab", {}, [el("b.ed-tipo", { html: ico("animar") }), el("span", { text: e.nombre })]));
     this.cuerpo.append(el("div.ed-botonera", {}, [
@@ -723,14 +782,18 @@ export class Inspector {
     this.cuerpo.append(this._faseAnim(e, "bucle", "Mientras está · se repite"));
     this.cuerpo.append(this._faseAnim(e, "salida", "Salida · al irse de la página"));
     this.cuerpo.append(this._propia(e));
+    this.cuerpo.append(this._magia(e));
+    this.cuerpo.append(this._reaccion(e));
     this.cuerpo.append(el("div.ed-botonera.ed-pie-insp", {}, [
+      boton(I("copiar", "Copiar animación"), () => copiarAnim(this.E.el(e.id)), "chico"),
+      hayAnimCopiada() ? boton(I("pegar", "Pegar animación"), () => pegarAnim(this.E, [e.id]), "chico") : null,
       boton("Copiar a toda la página", () => {
         const anim = JSON.parse(JSON.stringify(this.E.el(e.id).anim));
         this.E.transaccion("Copiar animación", () => { for (const x of this.E.pagina.els) if (x.id !== e.id) this.E.setEl(x.id, { anim: { ...anim, propia: x.anim?.propia || null } }); });
         aviso("Animación copiada a todos");
       }, "chico"),
       boton("Quitar animaciones", () => this.E.setEl(e.id, { anim: { entrada: { tipo: "ninguna" }, salida: { tipo: "ninguna" }, bucle: { tipo: "ninguno" }, propia: null } }, "Quitar animaciones"), "chico peligro"),
-    ]));
+    ].filter(Boolean)));
   }
 
   /** Animación propia: fotogramas a mano (x, y, escala, giro, opacidad, desenfoque). */
@@ -747,7 +810,8 @@ export class Inspector {
       el("div.ed-rejilla2", {}, [fila("Duración", c("anim.propia.dur", { min: 50, max: 30000, paso: 50, unidad: "ms" })), fila("Retraso", c("anim.propia.retraso", { min: 0, max: 30000, paso: 50, unidad: "ms" }))]),
       fila("Repetir", control(this.v, { tipo: "select", opciones: [["inf", "Para siempre"], [1, "1 vez"], [2, "2 veces"], [3, "3 veces"], [5, "5 veces"]], leer: () => this.E.el(e.id)?.anim?.propia?.repetir ?? 1, escribir: (x) => this.E.setEl(e.id, { "anim.propia.repetir": x }, "Repetir") })),
       fila("Sentido", c("anim.propia.direccion", { tipo: "select", opciones: [["normal", "Normal"], ["reverse", "Al revés"], ["alternate", "Ida y vuelta"], ["alternate-reverse", "Vuelta e ida"]], def: "normal" })),
-      fila("Ritmo", c("anim.propia.facil", { tipo: "select", opciones: FACILES, def: "suave" })),
+      this._ritmo(e, "anim.propia.facil", "suave"),
+      el("p.ed-ayuda", { text: "En la línea de tiempo, la flechita de su pista muestra cada propiedad con sus fotogramas (◆): ahí se mueven, se copian y cada uno lleva su propio ritmo." }),
     ];
     if (pr.raw) {
       hijos.unshift(el("p.ed-nota", { text: `Animación original de la página${pr.nombre ? " («" + pr.nombre + "»)" : ""}: ${pr.raw.length} fotogramas. Puedes cambiar su duración, retraso, repeticiones y sentido.` }));
@@ -797,6 +861,20 @@ export class Inspector {
       ]),
       boton("Quitar todas las animaciones", () => E.transaccion("Quitar animaciones", () => { for (const e of els) E.setEl(e.id, { anim: { entrada: { tipo: "ninguna" }, salida: { tipo: "ninguna" }, bucle: { tipo: "ninguno" }, propia: null } }); }), "chico peligro"),
     ]));
+    // Secuencia: el orden, el paso entre uno y otro y si se encadenan (con solape).
+    const sq = this._sq || (this._sq = { orden: "arriba", modo: "paso", paso: 160, solape: 200 });
+    const ctlSq = (k, op) => control(this.v, { ...op, leer: () => sq[k], escribir: (v) => { sq[k] = v; } });
+    this.cuerpo.append(seccion("Secuencia (uno tras otro)", [
+      fila("Orden", ctlSq("orden", { tipo: "select", opciones: [["arriba", "De arriba abajo"], ["izquierda", "De izquierda a derecha"], ["centro", "Del centro hacia afuera"], ["capas", "Por capas (de atrás al frente)"], ["azar", "Al azar"]] })),
+      fila("Cómo", ctlSq("modo", { tipo: "segmento", opciones: [["paso", "Cada tanto"], ["cadena", "Encadenados"]] })),
+      el("div.ed-rejilla2", {}, [
+        fila("Paso", ctlSq("paso", { tipo: "rango", min: 0, max: 1500, paso: 10, unidad: "ms" })),
+        fila("Solape", ctlSq("solape", { tipo: "rango", min: -1000, max: 1500, paso: 10, unidad: "ms" })),
+      ]),
+      el("p.ed-ayuda", { text: "«Cada tanto»: empiezan separados por el paso. «Encadenados»: cada uno empieza cuando el anterior termina de llegar, menos el solape (negativo = una pausa entre ellos). Conserva la entrada que ya tiene cada uno (o pone «Aparecer»)." }),
+      boton(I("animar", "Aplicar la secuencia"), () => { secuencia(E, els, sq); aviso("Secuencia lista: pruébala con ▶"); }, "chico primario"),
+    ], { abierta: true }));
+    if (sel.length && hayAnimCopiada()) this.cuerpo.append(el("div.ed-botonera", {}, [boton(I("pegar", "Pegar la animación copiada en los elegidos"), () => pegarAnim(E, sel.map((x) => x.id)), "chico")]));
     this.cuerpo.append(el("p.ed-nota.suave", { text: "Elige un elemento para darle su propia entrada, su bucle y su salida." }));
   }
 

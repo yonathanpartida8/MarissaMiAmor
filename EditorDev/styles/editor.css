@@ -2042,3 +2042,68 @@ body.ed ::-webkit-scrollbar-track { background: transparent; }
    o mientras la hoja se acomoda) no obligan a repintar toda la pantalla. */
 .ed-sobre { will-change: transform; }
 .ed-flotante { will-change: transform; }
+
+/* ── Fase 11: animación avanzada ───────────────────────────────────── */
+/* Ritmo: el selector y el botón de la curva a mano, juntos. */
+.ed-ritmo { display: flex; gap: 6px; align-items: center; min-width: 0; }
+.ed-ritmo > select { flex: 1; min-width: 0; }
+.ed-ritmo > .ed-btn.ico { flex: none; width: 34px; height: 34px; padding: 0; display: grid; place-items: center; }
+/* Editor de curvas. */
+.ed-pop-curva { width: min(320px, calc(100vw - 24px)); }
+.ed-curva-svg { display: block; width: 100%; max-width: 250px; margin: 4px auto 2px; touch-action: none; overflow: visible; }
+.ed-curva-caja { fill: color-mix(in srgb, var(--acento) 5%, transparent); stroke: var(--linea-fuerte); stroke-width: 1.5; }
+.ed-curva-rej { stroke: var(--linea); stroke-width: 1; }
+.ed-curva-diag { stroke: var(--linea-fuerte); stroke-width: 1; stroke-dasharray: 4 4; }
+.ed-curva-brazo { stroke: var(--texto-suave); stroke-width: 1.5; }
+.ed-curva-linea { fill: none; stroke: var(--acento); stroke-width: 4; stroke-linecap: round; }
+.ed-curva-asa { fill: var(--superficie); stroke: var(--acento); stroke-width: 3; cursor: grab; }
+.ed-curva-asa.b { stroke: #8b5cf0; }
+.ed-curva-asa:active { cursor: grabbing; }
+.ed-curva-pista { position: relative; height: 18px; margin: 6px 34px 8px; border-radius: 9px; background: var(--superficie-2); }
+.ed-curva-bola { position: absolute; top: 3px; left: 0; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--acento); box-shadow: 0 0 10px var(--acento); }
+.ed-curva-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+.ed-curva-chips button { padding: 5px 10px; border: 1.5px solid var(--linea); border-radius: 99px; background: var(--superficie); color: var(--texto); font: inherit; font-size: 12px; cursor: pointer; }
+.ed-curva-chips button.on { border-color: var(--acento); background: var(--acento-suave); color: var(--acento); }
+.ed-curva-pie { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ed-curva-val { display: block; font-size: 10.5px; color: var(--texto-suave); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ed-curva-pie .ed-sub-t { margin: 0; }
+/* Magia en el inspector. */
+.ed-mg-fila { margin: 6px 0 10px; padding: 8px; border: 1.5px dashed color-mix(in srgb, var(--acento) 45%, var(--linea)); border-radius: 12px; background: color-mix(in srgb, var(--acento) 4%, transparent); }
+.ed-mg-cab { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
+.ed-mg-cab > select { flex: 1; min-width: 0; }
+.ed-mg-rapidos { flex-wrap: wrap; }
+/* La línea de tiempo: propiedades con sus fotogramas. */
+.ed-tl-abrir { flex: 0 0 22px; width: 22px; height: 26px; padding: 0; border: 0; border-radius: 6px; background: none; color: #8b5cf0; display: grid; place-items: center; cursor: pointer; }
+.ed-tl-abrir .ed-ico { width: 14px; height: 14px; transition: transform .2s; }
+.ed-tl-abrir.on .ed-ico { transform: rotate(90deg); }
+.ed-tl-fila.abierta { flex-wrap: wrap; }
+.ed-tl-props { flex: 0 0 100%; display: flex; flex-direction: column; background: color-mix(in srgb, #8b5cf0 5%, var(--superficie)); }
+.ed-tl-prop { display: flex; height: 28px; border-top: 1px dashed color-mix(in srgb, #8b5cf0 25%, var(--linea)); }
+.ed-tl-et.chica { font-size: 11px; color: var(--texto-suave); padding-left: 26px; gap: 4px; background: color-mix(in srgb, #8b5cf0 7%, var(--superficie)); }
+.ed-tl-et.chica > i { color: #8b5cf0; display: grid; }
+.ed-tl-et.chica > i .ed-ico { width: 10px; height: 10px; }
+.ed-tl-kfv { position: absolute; top: 12px; height: 4px; border-radius: 2px; background: color-mix(in srgb, #8b5cf0 16%, transparent); pointer-events: none; }
+.ed-tl-kfl { position: absolute; top: 13px; height: 2px; background: #8b5cf0; opacity: .55; pointer-events: none; }
+.ed-tl-kfl.ritmo { height: 3px; top: 12.5px; opacity: .9; background: repeating-linear-gradient(90deg, #8b5cf0 0 6px, var(--acento) 6px 9px); }
+.ed-tl-kf { position: absolute; top: 5px; width: 18px; height: 18px; margin-left: -9px; padding: 0; border: 0; background: none; cursor: grab; touch-action: pan-x pan-y; }
+.ed-tl-kf::before { content: ""; position: absolute; inset: 3px; transform: rotate(45deg); border-radius: 2px; background: var(--superficie); border: 2px solid #8b5cf0; transition: transform .15s, background .15s; }
+.ed-tl-fila.on .ed-tl-kf { touch-action: none; }
+.ed-tl-kf:hover::before { transform: rotate(45deg) scale(1.15); }
+.ed-tl-kf.on::before { background: #8b5cf0; box-shadow: 0 0 0 3px color-mix(in srgb, #8b5cf0 30%, transparent), 0 0 10px #8b5cf0; }
+@media (pointer: coarse) { .ed-tl-kf { width: 26px; height: 26px; margin-left: -13px; top: 1px; } .ed-tl-kf::before { inset: 7px; } }
+/* Popovers de fotogramas. */
+.ed-pop-kf { width: min(340px, calc(100vw - 24px)); }
+.ed-kf-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.ed-kf-cab b { display: inline-flex; align-items: center; gap: 6px; color: #8b5cf0; }
+.ed-kf-cab b .ed-ico { width: 16px; height: 16px; }
+.ed-kf-cab small { color: var(--texto-suave); }
+.ed-kf-fila { display: grid; grid-template-columns: 30px 82px 1fr; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px solid var(--linea); }
+.ed-kf-fila > b { font-size: 12.5px; font-weight: 500; }
+.ed-kf-ins { display: flex; gap: 6px; min-width: 0; }
+.ed-kf-campo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ed-kf-campo small { font-size: 10px; color: var(--texto-suave); }
+.ed-kf-campo .ed-num input { width: 100%; }
+.ed-kf-rombo { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: none; color: color-mix(in srgb, #8b5cf0 45%, var(--linea-fuerte)); display: grid; place-items: center; cursor: pointer; }
+.ed-kf-rombo .ed-ico { width: 15px; height: 15px; }
+.ed-kf-rombo.on { color: #8b5cf0; background: color-mix(in srgb, #8b5cf0 14%, transparent); }
+.ed-kf-rombo.on .ed-ico { fill: currentColor; }

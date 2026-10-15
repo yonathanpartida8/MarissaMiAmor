@@ -24,6 +24,8 @@
     if (e.accion && e.accion.tipo) return true;
     if (e.sonidos && e.sonidos.tocar) return true;
     if (RT.tieneToque && RT.tieneToque(e.toque)) return true;
+    const an = e.anim;
+    if (an && ((an.reaccion && an.reaccion.presionar) || (an.magia || []).some((m) => m.momento === "tocar"))) return true;
     switch (e.tipo) {
       case "boton": case "carrusel": case "pagina": return true;
       case "componente": return !(e.componente && e.componente.decorativo);
@@ -634,6 +636,10 @@
         if (ev._rtToque) return; // ya lo atendió una zona táctil
         if (s && s.tocar && ctx.sonido && x.tipo !== "componente") ctx.sonido(s.tocar, s.volumen);
         if (RT.tieneToque && RT.tieneToque(x.toque)) { ev._rtToque = true; RT.efectoToque(n, x.toque, ev.clientX, ev.clientY); }
+        // Reacciones: mientras se presiona (se hunde, crece, brilla…) y su magia «al tocarlo».
+        const an = x.anim;
+        if (an && an.reaccion && an.reaccion.presionar && RT.presionar) RT.presionar(n, an.reaccion.presionar, ev);
+        if (an && an.magia && RT.magiaAlTocar) RT.magiaAlTocar(n, x);
       });
       // Un toque = una acción: un doble toque rápido no pasa dos páginas.
       let ultimo = 0;
