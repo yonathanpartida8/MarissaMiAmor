@@ -723,6 +723,7 @@ export class Lienzo {
     if (!this.pag?.nodos.get(e.id)) return;
     this._marcarNodo(e.id, "ed-probando", true);
     this.probando = e.id;
+    this.app.audio?.pausarParaVista(true, "aqui");
     this.aviso.hidden = false;
     this.aviso.innerHTML = "";
     this.aviso.append(el("span", { text: "Probando: tócalo como en el librito" }), el("button.ed-btn.primario", { type: "button", text: "Listo", onClick: () => this.salirProbar() }));
@@ -733,6 +734,7 @@ export class Lienzo {
     if (!this.probando) return;
     this._marcarNodo(this.probando, "ed-probando", false);
     this.probando = null;
+    this.app.audio?.pausarParaVista(false, "aqui");
     this.aviso.hidden = true;
     this.pintarSobre();
   }

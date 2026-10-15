@@ -743,6 +743,7 @@ export class Linea {
       const a = this._preparar(ids || null);
       if (!a) return;
       const fin = Math.max(a.total + 1200, 1800);
+      this.app.audio?.pausarParaVista(true, "linea");
       this._sonidos(0, ids);
       clearTimeout(this._fin);
       this._fin = setTimeout(() => this.parar(false), fin);
@@ -754,6 +755,8 @@ export class Linea {
   _play(desde = 0, ids) {
     const a = this.anim && !this.anim.ids && !ids ? this.anim : this._preparar(ids || null);
     if (!a) return;
+    // Reproducir la página es probarla: la música de trabajo del editor se calla.
+    this.app.audio?.pausarParaVista(true, "linea");
     a.quieto = false;
     a.ir(desde);
     a.seguir();
@@ -784,6 +787,7 @@ export class Linea {
     this._quitarRelojes();
     this.app.audio?.pararPista();
     this.app.audio?.pararPistas();
+    this.app.audio?.pausarParaVista(false, "linea");
     if (this.anim) { this.anim.pausar(); this.anim.quieto = true; this.anim.ir(this.t); }
     this._pintarCabezal();
     this._icono();
@@ -825,6 +829,7 @@ export class Linea {
     this._quitarAnim();
     this.app.audio?.pararPista();
     this.app.audio?.pararPistas();
+    this.app.audio?.pausarParaVista(false, "linea");
     if (repintar && this.abierta) this.pintar();
   }
 

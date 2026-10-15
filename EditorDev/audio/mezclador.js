@@ -238,8 +238,14 @@ export class AudioEditor {
     this._avisar();
   }
 
-  /** La vista previa del librito tiene su propia música: MusicaDev se calla mientras tanto. */
-  pausarParaVista(on) {
+  /** Al probar (Probar, Librito, reproducir la línea de tiempo, tocar algo
+   *  aquí) suena sólo la música del librito, o nada: la de trabajo se calla.
+   *  `quien` lleva la cuenta de quién la pidió, para no despertarla antes de tiempo. */
+  pausarParaVista(on, quien = "vista") {
+    this._pruebas = this._pruebas || new Set();
+    if (on) this._pruebas.add(quien); else this._pruebas.delete(quien);
+    on = this._pruebas.size > 0;
+    if (on === !!this._pausaVista && quien !== "vista") return;
     this._pausaVista = on;
     this.agachar("vista", on, 0);
     this.detenerEscucha();
