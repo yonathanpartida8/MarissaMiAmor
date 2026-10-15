@@ -28,6 +28,9 @@ import { Estado } from "./core/estado.js";
 import { nuevoProyecto, nuevaPagina, nuevoEl, normalizar, clonar, uid, tamAuto } from "./core/modelo.js";
 import { Biblioteca, elegirArchivos } from "./assets/biblioteca.js";
 import { Autoguardado } from "./storage/autoguardado.js";
+import { IndicadorGuardado } from "./components/guardado.js";
+import { cargarSeguro, quitarRescate } from "./storage/seguro.js";
+import { borrarCopias, listarCopias, leerCopia } from "./storage/respaldos.js";
 import { cargar, guardarTodo, borrar, leerArchivo, guardarArchivo } from "./storage/db.js";
 import { Lienzo, DISPOSITIVOS } from "./canvas/lienzo.js";
 import { Acciones } from "./components/acciones.js";
@@ -155,11 +158,12 @@ async function arrancar() {
   app.gifs = app.paneles;
   app.abrirSeccion = (id) => abrirSeccion(id, true);
 
-  const estadoGuardado = $(".ed-guardado");
-  app.auto = new Autoguardado(E, (st) => {
-    estadoGuardado.dataset.st = st;
-    estadoGuardado.textContent = st === "guardando" ? "Guardando…" : st === "error" ? "No se pudo guardar" : st === "sin-guardar" ? "Sin guardar" : "Guardado";
-    if (st === "error") aviso("No se pudo guardar en este navegador (¿sin espacio?). Exporta el .zip para no perder nada.", 5000, "error");
+  app.guardado = new IndicadorGuardado(app, $(".ed-guardado"));
+  app.auto = new Autoguardado(E, (st, err) => {
+    app.guardado.poner(st, err);
+    // Un solo aviso por tanda de errores (los reintentos no repiten el aviso).
+    if (st === "error" && !app._avisoError) { app._avisoError = true; aviso("No se pudo guardar. Tu última versión buena sigue intacta y lo nuevo se reintenta solo. Toca el indicador de guardado para más opciones.", 6000, "error"); }
+    if (st === "guardado") app._avisoError = false;
   });
 
   construirBarra();
@@ -177,9 +181,10 @@ async function arrancar() {
   E.on("actual", () => { if (esMovil()) cerrarHoja(); pintarPaginas(); });
   E.on("paginas", pintarPaginas);
 
+  // Al volver a abrir el editor: el último librito, tal como quedó (con sus redes de seguridad).
   const ultimo = leerUltimo();
-  const P = ultimo ? await cargar(ultimo).catch(() => null) : null;
-  if (P) await app.abrirProyecto(P);
+  const r = ultimo ? await cargarSeguro(ultimo).catch(() => ({ P: null, notas: [] })) : { P: null, notas: [] };
+  if (r.P) await app.abrirProyecto(r.P, r.notas.length > 0, r.notas);
   else await pantallaInicio(app);
   document.body.classList.add("listo");
 }
@@ -295,6 +300,7 @@ function construirBarra() {
     { t: `${ico("biblioteca")}<span>Ver el librito entero</span>`, al: () => $(".ed-previa").click() },
     { t: `${ico("telefono")}<span>Ver como…</span>`, al: () => $(".ed-ver").click() },
     { t: `${ico("guardar")}<span>Guardar y borradores…</span>`, al: () => $(".ed-guardar").click() },
+    { t: `${ico("escudo")}<span>Copias de seguridad…</span>`, al: () => app.guardado.abrir() },
     { t: `${ico("exportar")}<span>Exportar (.zip)</span>`, al: () => app.exportar() },
     { t: `${ico("herramientas")}<span>Herramientas</span>`, al: () => abrirSeccion("herramientas", true) },
     { t: `${ico("foco")}<span>Recorrido con la abejita</span>`, al: () => app.ayuda?.recorrido() },
@@ -311,6 +317,7 @@ function construirBarra() {
     { t: t("subir", "Abrir archivo (.zip / .json)…"), al: () => app.abrirArchivo() },
     "-",
     { t: t("exportar", "Exportar ZIP"), al: () => app.exportar() },
+    { t: t("escudo", "Copias de seguridad…"), al: () => app.guardado.abrir() },
   ]));
   $(".ed-ver").addEventListener("click", (e) => app.menuVerComo(e.currentTarget));
   const zoom = $(".ed-zoom");
@@ -448,26 +455,30 @@ function cerrarHoja() { if (hojaInsp?.abierta) hojaInsp.cerrar(); delete documen
 function cerrarHojaSec() { if (hojaSec?.abierta) hojaSec.cerrar(); }
 
 /* ── Proyectos ──────────────────────────────────────────────────────── */
-app.abrirProyecto = async (P, guardar = false) => {
+app.abrirProyecto = async (P, guardar = false, notas = []) => {
   P = normalizar(P);
   RT.registrarExtras?.(P.ajustes); // sus animaciones y transiciones propias
   registrarFuentes(P.ajustes.fuentesExtra);
   await asegurarBotones(P); // las flechas siempre salen de assets/deslizar/
   if (!P.orden.length) { const pg = nuevaPagina(P, { nombre: "Portada" }); P.paginas[pg.id] = pg; P.orden.push(pg.id); }
   await app.bib.preparar(P);
-  if (guardar) await guardarTodo(P);
+  // Si no se pudo guardar ahora, nada se pierde: queda marcado y el autoguardado reintenta.
+  let porGuardar = false;
+  if (guardar) await guardarTodo(P).then(() => quitarRescate(P.id), () => { porGuardar = true; });
   app.vista.cerrar();
   app.tiempo.parar(false);
   app.estado.cargar(P);
   guardarUltimo(P.id);
   quitarInicio();
+  if (porGuardar) { app.estado.sucio = { meta: true, paginas: new Set(P.orden), borradas: new Set() }; app.auto.programar(); }
+  if (notas.length) { const t = notas.join("; "); aviso("Tu librito está a salvo: " + t + (/[.!]$/.test(t) ? "" : "."), 6000); }
 };
 
 app.abrir = async (id) => {
   if (app.auto.pendiente) await app.auto.ahora();
-  const P = await cargar(id);
+  const { P, notas } = await cargarSeguro(id);
   if (!P) { aviso("No se encontró ese borrador"); return app.inicio(); }
-  await app.abrirProyecto(P);
+  await app.abrirProyecto(P, notas.length > 0, notas);
 };
 
 app.nuevo = async (nombre, formato = "movil", { portada = "portada", imagen = null } = {}) => {
@@ -503,16 +514,18 @@ app.inicio = async () => {
 app.guardarYa = async () => {
   await app.auto.ahora();
   if (!app.auto.error) { app.sonidos?.sonar("guardar"); dispatchEvent(new CustomEvent("ed-evento", { detail: "guardado" })); }
-  aviso(app.auto.error ? "No se pudo guardar" : "Borrador guardado", 2600, app.auto.error ? "error" : "");
+  aviso(app.auto.error ? "Error al guardar: tu última versión buena sigue intacta" : "Guardado correctamente", 2600, app.auto.error ? "error" : "");
 };
 
-app.duplicarProyecto = async (id) => {
+/** Duplica un librito (o, con `desde`, una copia completa guardada) como uno nuevo, aparte. */
+app.duplicarProyecto = async (id, op = {}) => {
   if (app.auto.pendiente) await app.auto.ahora();
-  const P = clonar(id ? await cargar(id) : app.estado.proyecto);
+  const P = clonar(op.desde || (id ? await cargar(id) : app.estado.proyecto));
   if (!P) return;
   P.id = uid("lib");
-  P.nombre = P.nombre + " (copia)";
+  P.nombre = op.nombre || P.nombre + " (copia)";
   P.creado = P.editado = Date.now();
+  delete P.rev; delete P.guardado;
   // Las fotos subidas se copian con otro id (cada borrador borra las suyas).
   const mapa = {};
   const assets = {};
@@ -533,12 +546,23 @@ app.duplicarProyecto = async (id) => {
   P.paginas = cambiar(P.paginas);
   P.ajustes = cambiar(P.ajustes);
   await guardarTodo(P);
-  if (!id) { await app.abrirProyecto(P); aviso("Ahora estás en la copia"); }
+  if (!id || op.abrir) { await app.abrirProyecto(P); aviso(op.aviso || "Ahora estás en la copia", 4000); }
+};
+
+/** Abre una copia completa automática como un librito aparte (el original no se toca). */
+app.abrirCopia = async (lib, hueco, t) => {
+  const p = await leerCopia(lib, hueco).catch(() => null);
+  if (!p) { aviso("Esa copia no está entera; prueba con otra", 3500, "error"); return; }
+  const hora = new Date(t || p.guardado || Date.now()).toLocaleString("es-MX", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" });
+  await app.duplicarProyecto(lib, { desde: p, abrir: true, nombre: `${p.nombre} (copia ${hora})`, aviso: "Abrí la copia como un librito aparte: el original sigue igual" });
 };
 
 app.borrarProyecto = async () => {
   const id = app.estado.proyecto.id;
+  app.auto.descartar();
   await borrar(id);
+  borrarCopias(id).catch(() => {});
+  quitarRescate(id);
   guardarUltimo(null);
   app.estado.proyecto = null;
   pantallaInicio(app);
@@ -561,14 +585,15 @@ app.abrirArchivo = async () => {
   } finally { capa.remove(); }
 };
 
-app.exportar = async () => {
+app.exportar = async ({ completo = false } = {}) => {
   if (app.auto.pendiente) await app.auto.ahora();
   const t = el("p", { text: "Juntando todo…" });
   const capa = el("div.ed-ocupado", {}, [el("div", {}, [el("i.ed-girando"), el("b", { text: "Exportando tu librito" }), t])]);
   document.body.append(capa);
   try {
     const { exportar, descargar } = await import("./export/exportar.js");
-    const r = await exportar(app, { alProgreso: (x) => { t.textContent = x; } });
+    const r = await exportar(app, { completo, alProgreso: (x) => { t.textContent = x; } });
+    if (completo) try { localStorage.setItem("editordev:copia-descargada:" + app.estado.proyecto.id, String(Date.now())); } catch (e) { /* nada */ }
     descargar(r.blob, r.nombre);
     app.sonidos?.sonar("exito");
     dispatchEvent(new CustomEvent("ed-evento", { detail: "exportado" }));

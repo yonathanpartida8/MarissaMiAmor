@@ -8,43 +8,77 @@
  *               y sólo una vez: al subirlos
  *
  * Nada de esto sale del teléfono: no hay servidor.
+ *
+ * Seguridad de los datos:
+ *   - cada guardado es UNA transacción: se escribe todo o nada, así que uno
+ *     fallido o cortado nunca pisa la última versión buena;
+ *   - se escribe con durabilidad «estricta» (el navegador confirma cuando ya
+ *     está en el disco) y después se vuelve a leer para comprobarlo;
+ *   - si Safari pierde la conexión (pasa con la pestaña en segundo plano) se
+ *     vuelve a abrir y se reintenta una vez;
+ *   - aparte, en otra base (EditorDev-respaldos), las 3 últimas copias
+ *     COMPLETAS de cada librito, con su suma de control (ver respaldos.js).
  */
 
 const NOMBRE = "EditorDev-libritos";
-let abierta = null;
+const cache = new Map(); // nombre de la base → promesa de la conexión
 
-export function abrir() {
-  if (abierta) return abierta;
-  abierta = new Promise((ok, mal) => {
-    const r = indexedDB.open(NOMBRE, 1);
-    r.onupgradeneeded = () => {
+/** Abre (una sola vez) una base; si se cierra o la pide otra pestaña, se vuelve a abrir en el próximo uso. */
+export function abrirBase(nombre, version, crear) {
+  if (cache.has(nombre)) return cache.get(nombre);
+  const p = new Promise((ok, mal) => {
+    let r;
+    try { r = indexedDB.open(nombre, version); } catch (e) { mal(e); return; }
+    r.onupgradeneeded = () => crear(r.result);
+    r.onsuccess = () => {
       const db = r.result;
-      db.createObjectStore("proyectos", { keyPath: "id" });
-      db.createObjectStore("paginas", { keyPath: "clave" }).createIndex("lib", "lib");
-      db.createObjectStore("archivos", { keyPath: "id" }).createIndex("lib", "lib");
+      db.onversionchange = () => { db.close(); cache.delete(nombre); };
+      db.onclose = () => cache.delete(nombre);
+      ok(db);
     };
-    r.onsuccess = () => ok(r.result);
-    r.onerror = () => mal(r.error);
-    r.onblocked = () => mal(new Error("La base de datos está ocupada en otra pestaña."));
+    r.onerror = () => mal(r.error || new Error("No se pudo abrir el almacén del navegador"));
+    r.onblocked = () => mal(new Error("Cierra las otras pestañas del editor y vuelve a intentarlo."));
   });
-  return abierta;
+  p.catch(() => cache.delete(nombre));
+  cache.set(nombre, p);
+  return p;
 }
 
-function req(r) {
+export function abrir() {
+  return abrirBase(NOMBRE, 1, (db) => {
+    db.createObjectStore("proyectos", { keyPath: "id" });
+    db.createObjectStore("paginas", { keyPath: "clave" }).createIndex("lib", "lib");
+    db.createObjectStore("archivos", { keyPath: "id" }).createIndex("lib", "lib");
+  });
+}
+
+export function req(r) {
   return new Promise((ok, mal) => { r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error); });
 }
 
-async function tx(cajones, modo, fn) {
-  const db = await abrir();
-  return new Promise((ok, mal) => {
-    const t = db.transaction(cajones, modo);
-    let res;
-    Promise.resolve(fn(t)).then((v) => { res = v; }, mal);
-    t.oncomplete = () => ok(res);
-    t.onerror = () => mal(t.error);
-    t.onabort = () => mal(t.error || new Error("Se canceló la escritura (¿espacio lleno?)"));
-  });
+// Errores de «la conexión se perdió» (Safari en segundo plano, base cerrada por otra pestaña…).
+const perdida = (e) => !!e && (e.name === "InvalidStateError" || e.name === "UnknownError" || /connection|closing|closed|lost|database/i.test(e.message || ""));
+
+/** Una transacción: se resuelve sólo cuando el navegador confirma que terminó (todo o nada). */
+export async function txEn(abrirFn, cajones, modo, fn, intento = 0) {
+  const db = await abrirFn();
+  try {
+    return await new Promise((ok, mal) => {
+      let t;
+      try { t = modo === "readwrite" ? db.transaction(cajones, modo, { durability: "strict" }) : db.transaction(cajones, modo); } catch (e) { mal(e); return; }
+      let res;
+      Promise.resolve(fn(t)).then((v) => { res = v; }, (e) => { try { t.abort(); } catch (x) { /* ya terminó */ } mal(e); });
+      t.oncomplete = () => ok(res);
+      t.onerror = () => mal(t.error);
+      t.onabort = () => mal(t.error || new Error("Se canceló la escritura (¿espacio lleno?)"));
+    });
+  } catch (e) {
+    if (intento === 0 && perdida(e)) { cache.delete(db.name); try { db.close(); } catch (x) { /* ya cerrada */ } return txEn(abrirFn, cajones, modo, fn, 1); }
+    throw e;
+  }
 }
+
+const tx = (cajones, modo, fn) => txEn(abrir, cajones, modo, fn);
 
 /** Lo general del proyecto, sin las páginas. */
 export function metaDe(p) {
@@ -52,6 +86,10 @@ export function metaDe(p) {
   return { ...meta, nPaginas: p.orden.length };
 }
 
+/**
+ * Escribe lo que cambió (en una sola transacción: todo o nada). `rev` sube en
+ * cada guardado y sirve para comprobar después que lo escrito es lo de ahora.
+ */
 export function guardarCambios(p, paginasSucias, borradas) {
   return tx(["proyectos", "paginas"], "readwrite", (t) => {
     t.objectStore("proyectos").put(metaDe(p));
@@ -63,6 +101,12 @@ export function guardarCambios(p, paginasSucias, borradas) {
 
 export function guardarTodo(p) {
   return guardarCambios(p, p.orden, []);
+}
+
+/** Lee sólo la revisión guardada de un librito (para confirmar un guardado). */
+export async function revGuardada(id) {
+  const m = await tx(["proyectos"], "readonly", (t) => req(t.objectStore("proyectos").get(id)));
+  return m ? { rev: m.rev || 0, guardado: m.guardado || 0 } : null;
 }
 
 export async function listar() {

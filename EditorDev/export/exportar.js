@@ -39,7 +39,12 @@ function carpeta(a, ext) {
   return "assets/other/";
 }
 
-export async function exportar(app, { alProgreso } = {}) {
+/**
+ * `completo`: copia de seguridad — además de lo que se usa, van TODAS las
+ * fotos, canciones y vídeos subidos a la biblioteca del librito (aunque
+ * todavía no estén en ninguna página), para no perder nada al restaurarla.
+ */
+export async function exportar(app, { alProgreso, completo = false } = {}) {
   const P = app.estado.proyecto;
   const bib = app.bib;
   const zip = new Zip();
@@ -47,7 +52,7 @@ export async function exportar(app, { alProgreso } = {}) {
   const avisar = (t) => alProgreso?.(t);
 
   /* 1 · Los archivos que se usan */
-  const usados = [...assetsUsados(P)];
+  const usados = [...new Set([...assetsUsados(P), ...(completo ? Object.keys(P.assets || {}) : [])])];
   const archivos = {};
   const faltan = [];
   let n = 0;
@@ -242,7 +247,8 @@ Archivos incluidos: ${Object.keys(archivos).length}${faltan.length ? `\nNo se en
 
   avisar("Comprimiendo…");
   const blob = await zip.generar((i, total) => { if (i % 10 === 0) avisar(`Comprimiendo ${i} de ${total}…`); });
-  return { blob, nombre: limpio(P.nombre) + ".zip", faltan, archivos: zip.tamano };
+  const dia = new Date().toISOString().slice(0, 10);
+  return { blob, nombre: limpio(P.nombre) + (completo ? ` (copia de seguridad ${dia})` : "") + ".zip", faltan, archivos: zip.tamano };
 }
 
 function escapar(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }

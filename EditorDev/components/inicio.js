@@ -3,6 +3,7 @@
  */
 import { el, boton, menu, confirmar, aviso } from "./ui.js";
 import { listar, borrar } from "../storage/db.js";
+import { borrarCopias } from "../storage/respaldos.js";
 import { FORMATOS, nuevoProyecto } from "../core/modelo.js";
 import { PLANTILLAS, ponerFotoDePortada, tieneHuecoDeFoto } from "../templates/plantillas.js";
 import { elegirArchivos } from "../assets/biblioteca.js";
@@ -135,7 +136,7 @@ export async function pantallaInicio(app, { cerrable = false } = {}) {
             { t: "Abrir", al: () => { cerrar(); app.abrir(p.id); } },
             { t: I("duplicar", "Duplicar"), al: async () => { await app.duplicarProyecto(p.id); pantallaInicio(app, { cerrable }); } },
             "-",
-            { t: I("borrar", "Borrar"), peligro: true, al: async () => { if (await confirmar(`Se borrará «${p.nombre}» de este navegador, con sus fotos subidas.`, "Borrar")) { await borrar(p.id); if (app.estado.proyecto?.id === p.id) app.estado.proyecto = null; pantallaInicio(app, { cerrable: cerrable && !!app.estado.proyecto }); } } },
+            { t: I("borrar", "Borrar"), peligro: true, al: async () => { if (await confirmar(`Se borrará «${p.nombre}» de este navegador, con sus fotos subidas.`, "Borrar")) { await borrar(p.id); borrarCopias(p.id).catch(() => {}); if (app.estado.proyecto?.id === p.id) app.estado.proyecto = null; pantallaInicio(app, { cerrable: cerrable && !!app.estado.proyecto }); } } },
           ]) }),
         ]))) : el("p.ed-vacio-txt", { text: "Lo que hagas se guarda solo en este navegador mientras editas. Para llevártelo a otro lado, exporta el .zip." }),
       ]),
