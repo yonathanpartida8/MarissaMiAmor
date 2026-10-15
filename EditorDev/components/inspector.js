@@ -60,8 +60,27 @@ export class Inspector {
     this.construir();
     if (!seccion) return;
     for (const d of this.cuerpo.querySelectorAll("details.ed-sec")) {
-      if (d.firstChild.textContent.trim().startsWith(seccion)) { d.open = true; requestAnimationFrame(() => d.scrollIntoView({ block: "start", behavior: "smooth" })); break; }
+      if (d.firstChild.textContent.trim().startsWith(seccion)) { this._irA(d); break; }
     }
+  }
+
+  /** Lleva a una sección (abierta) y la ilumina un momento. */
+  _irA(d) {
+    d.open = true;
+    requestAnimationFrame(() => {
+      const ind = this.cuerpo.querySelector(".ed-indice");
+      const top = this.cuerpo.scrollTop + d.getBoundingClientRect().top - this.cuerpo.getBoundingClientRect().top - (ind ? ind.offsetHeight + 8 : 0);
+      this.cuerpo.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      d.classList.remove("ilumina"); void d.offsetWidth; d.classList.add("ilumina");
+    });
+  }
+
+  /** Accesos a todas las secciones, arriba y siempre a mano (nada escondido). */
+  _indice() {
+    const secs = [...this.cuerpo.querySelectorAll(":scope > details.ed-sec")];
+    if (secs.length < 4) return;
+    const ind = el("nav.ed-indice", { "aria-label": "Secciones" }, secs.map((d) => el("button", { type: "button", text: d.firstChild.textContent.trim().replace(/^«.*»$/, "Este"), onClick: () => this._irA(d) })));
+    this.cuerpo.prepend(ind);
   }
 
   construir() {
@@ -73,7 +92,7 @@ export class Inspector {
     const sel = this.E.seleccionados;
     if (this.tab === "capas") this._capas();
     else if (this.tab === "animar") sel.length === 1 ? this._animar(sel[0]) : this._animarPagina(sel);
-    else if (sel.length === 1) this._diseno(sel[0]);
+    else if (sel.length === 1) { this._diseno(sel[0]); this._indice(); }
     else if (sel.length > 1) this._varios(sel);
     else this._pagina();
     this.v.refrescar();
@@ -148,10 +167,10 @@ export class Inspector {
     if (e.tipo !== "pagina" && e.tipo !== "html" && e.tipo !== "componente") this.cuerpo.append(this._caja(e, c));
     this.cuerpo.append(this._efectos(e, c));
     if (e.tipo !== "pagina") this.cuerpo.append(seccionToque(this, e));
-    if (e.tipo !== "boton") this.cuerpo.append(seccion("Al tocarlo", [this._accion(e, c)], { abierta: !!e.accion }));
+    if (e.tipo !== "boton") this.cuerpo.append(seccion("Qué hace al tocarlo", [this._accion(e, c)]));
     this.cuerpo.append(this._sonidos(e));
     this.cuerpo.append(seccion("Visibilidad y tiempo", [
-      fila("Empieza escondido", c("inicioOculto", { tipo: "toggle", nombre: "Empieza escondido" }), "en el librito no se ve hasta que otro elemento lo muestre («Al tocarlo → Mostrar…»)"),
+      fila("Empieza escondido", c("inicioOculto", { tipo: "toggle", nombre: "Empieza escondido" }), "en el librito no se ve hasta que otro elemento lo muestre («Qué hace al tocarlo → Mostrar…»)"),
       el("div.ed-rejilla2", {}, [
         fila("Aparece a los", c("tiempo.inicio", { min: 0, max: 600000, paso: 50, unidad: "ms", def: 0, nombre: "Aparece" })),
         fila("Se va a los", control(this.v, { tipo: "numero", min: 0, max: 600000, paso: 50, unidad: "ms", leer: () => this.E.el(e.id)?.tiempo?.fin ?? null, escribir: (x) => this.E.setEl(e.id, { "tiempo.fin": x > 0 ? x : null }, "Se va", "tfin" + e.id) })),
@@ -341,7 +360,7 @@ export class Inspector {
       el("div.ed-rejilla2", {}, [fila("Color", c("boton.fondo", { tipo: "color" })), fila("Letra", c("boton.color", { tipo: "color" }))]),
       fila("Tipografía", c("boton.fuente", { tipo: "fuente" })),
       el("div.ed-rejilla2", {}, [fila("Tamaño", c("boton.tam", { min: 8, max: 80, unidad: "px" })), fila("Esquinas", c("boton.radio", { min: 0, max: 999, unidad: "px" }))]),
-    ]), seccion("Al tocarlo", [this._accion(e, c)])];
+    ]), seccion("Qué hace al tocarlo", [this._accion(e, c)])];
   }
 
   _musica(e, c) {

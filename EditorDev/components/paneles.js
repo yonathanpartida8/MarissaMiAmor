@@ -332,14 +332,12 @@ export class Paneles {
     this._paraLoElegido(c, "Lo elegido", (sel) => {
       const ins = this.app.insp;
       c.append(seccion(sel.length === 1 ? "«" + sel[0].nombre + "»" : `${sel.length} elementos`, [el("div.ed-piezas", {}, [
-        pz(ico("toque"), "Al tocarlo…", () => ins.abrir("diseno", "Al tocarlo")),
-        pz(ico("sonido"), "Sonidos", () => ins.abrir("diseno", "Sonidos")),
-        pz(ico("ojoNo"), "Empieza escondido", () => ins.abrir("diseno", "Visibilidad")),
-        pz(ico("mano"), "Permisos", () => ins.abrir("diseno", "Permisos")),
+        pz(ico("toque"), "Qué hace al tocarlo", () => ins.abrir("diseno", "Qué hace al tocarlo")),
+        pz(ico("efectos"), "Efectos al tocar", () => this.app.abrirSeccion("toques")),
         pz(ico("tiempo"), "Cuándo aparece", () => this.app.tiempo.alternar(true)),
       ])]));
     });
-    c.append(seccion("Sorpresas", [el("p.ed-ayuda", { text: "Pon un elemento con «Empieza escondido» y a otro (un botón, una foto…) dale «Al tocarlo → Mostrar…»: en el librito aparece con su animación de entrada cuando ella lo toque." })], { abierta: false }));
+    c.append(seccion("Sorpresas", [el("p.ed-ayuda", { text: "Pon un elemento con «Empieza escondido» y a otro (un botón, una foto…) dale «Qué hace al tocarlo → Mostrar…»: en el librito aparece con su animación de entrada cuando ella lo toque." })], { abierta: false }));
   }
 
   /* ── 3D (WebGL2) ────────────────────────────────────────────────── */

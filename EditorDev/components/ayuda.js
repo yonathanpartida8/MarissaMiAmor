@@ -50,7 +50,7 @@ const TIPS = {
   "el:imagen": ["Toca dos veces la foto para encuadrarla.", "Mantén presionado para ajustar luz, exposición y temperatura.", "En Efectos, cada filtro se ve antes de usarlo («Atrás» lo deja como estaba)."],
   "el:texto": ["Toca dos veces el texto para escribir. Con el teclado abierto, la hoja se queda quieta y el texto se ve encima del teclado.", "Cambia la letra, el tamaño y el color desde la barra de abajo."],
   "el:html": ["Toca dos veces para abrir su código: pega tu index.html entero, Guardar y luego Probar.", "Si tu HTML usa fotos o música, súbelas en «Archivos» dentro del editor de HTML y se enlazan solas."],
-  "el:boton": ["Elige qué hace al tocarlo (pasar de página, mostrar algo, sonar…) en el inspector, sección «Al tocarlo»."],
+  "el:boton": ["Elige qué hace al tocarlo (pasar de página, mostrar algo, sonar…) en el inspector, sección «Qué hace al tocarlo»."],
   "el:escena3d": ["En el librito, la escena se gira con el dedo y se acerca con dos.", "Cambia la figura, el color y la luz desde la barra de abajo."],
   linea: [
     "Toca un clip para elegirlo y luego arrástralo; si no está elegido, deslizar sólo mueve la línea.",

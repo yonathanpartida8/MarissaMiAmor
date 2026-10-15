@@ -213,7 +213,7 @@ export const TOQUES_SEC = {
     }
     c.append(el("div.ed-botonera", {}, [
       boton(I("sonido", "Sonido al tocar"), () => app.insp.abrir("diseno", "Sonidos"), "chico"),
-      boton(I("ojo", "Mostrar o esconder otra cosa"), () => app.insp.abrir("diseno", "Al tocarlo"), "chico"),
+      boton(I("ojo", "Mostrar o esconder otra cosa"), () => app.insp.abrir("diseno", "Qué hace al tocarlo"), "chico"),
     ]));
     const pag = seccionToquePagina(this);
     pag.open = false;
@@ -241,7 +241,7 @@ export function seccionToque(insp, e) {
       el("div", {}, [el("b", { text: "Zonas táctiles" }), el("small", { text: zonas ? `${zonas} zona${zonas > 1 ? "s" : ""}: cada una hace lo suyo` : "Partes del elemento que responden distinto (ideal para HTML)" })]),
       boton(I("zonas", zonas ? "Editar zonas" : "Crear zonas"), () => app.zonas?.abrir(e.id), "primario chico"),
     ]),
-    el("small.ed-ayuda", { text: "Sonido al tocar: en «Sonidos». Mostrar, esconder o animar otra cosa: en «Al tocarlo»." }),
+    el("small.ed-ayuda", { text: "Sonido al tocar: en «Sonidos». Mostrar, esconder o animar otra cosa: en «Qué hace al tocarlo»." }),
   ];
   return seccion("Efectos al tocar", hijos, { abierta: !!(e.toque || zonas), clase: "ed-tq" });
 }

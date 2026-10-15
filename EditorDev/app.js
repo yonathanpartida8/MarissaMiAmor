@@ -187,9 +187,15 @@ async function arrancar() {
 /* ── Barra de arriba ─────────────────────────────────────────────────── */
 /** «2/5»: la página en la que estás; abre Páginas. */
 function pintarPaginas() {
-  const E = app.estado, b = $(".ed-paginas-b span");
+  const E = app.estado, btn = $(".ed-paginas-b"), b = btn?.querySelector("span");
   if (!b || !E.proyecto) return;
-  b.textContent = `${Math.max(1, E.proyecto.orden.indexOf(E.paginaId) + 1)}/${E.proyecto.orden.length}`;
+  // Un montoncito de hojas (son páginas) con la que estás y cuántas hay.
+  const i = Math.max(1, E.proyecto.orden.indexOf(E.paginaId) + 1), n = E.proyecto.orden.length;
+  const ic = btn.querySelector(".ed-pg-ico");
+  if (ic && !ic.firstChild) ic.innerHTML = ico("hojas");
+  b.textContent = `${i}/${n}`;
+  btn.setAttribute("aria-label", `Páginas: estás en la ${i} de ${n}`);
+  btn.title = `Páginas del librito (${i} de ${n})`;
 }
 
 /** La notita: tocar = encender/apagar (con fundido); mantener = volumen. */

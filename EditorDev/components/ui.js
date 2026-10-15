@@ -22,11 +22,21 @@ export class Vinculos {
 
 const enfocado = (n) => n && (n === document.activeElement || n.contains(document.activeElement));
 
+/** Secciones que tú cerraste (se quedan cerradas mientras editas). */
+const PLEGADAS = new Set();
+/**
+ * Una sección con título. Nada se esconde como carpeta: todas empiezan
+ * abiertas (`abierta: "plegada"` sólo para textos de ayuda largos). Si tú la
+ * cierras, se recuerda mientras dure la sesión.
+ */
 export function seccion(titulo, hijos, { abierta = true, clase = "", extra = null } = {}) {
-  const d = el("details.ed-sec" + (clase ? "." + clase : ""), { open: abierta || null }, [
+  const k = String(titulo).replace(/«[^»]*»|\d+/g, "").trim();
+  const abrir = abierta !== "plegada" && !PLEGADAS.has(k);
+  const d = el("details.ed-sec" + (clase ? "." + clase : ""), { open: abrir || null, dataset: { sec: k } }, [
     el("summary", {}, [el("span", { text: titulo }), extra].filter(Boolean)),
     el("div.ed-sec-cuerpo", {}, hijos),
   ]);
+  d.addEventListener("toggle", () => { if (d.open) PLEGADAS.delete(k); else PLEGADAS.add(k); });
   return d;
 }
 

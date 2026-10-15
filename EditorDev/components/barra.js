@@ -140,7 +140,7 @@ export class BarraContextual {
         this._b(I("musica", "Estilo"), "Delgadito, redondo o sólo el icono", (a) => menu(a, [["slim", "Delgadito"], ["redondo", "Redondo"], ["icono", "Sólo icono"]].map(([k, n]) => ({ t: n, al: () => E.setEl(uno.id, { "musica.estilo": k }, "Estilo del botón de música") })))),
         this._b(I("audio", "Canción"), "Elegir la canción", () => this.app.abrirSeccion("audio")),
       ));
-      else if (t === "boton") partes.push(grupo(this._color("boton.fondo", "Color del botón"), this._color("boton.color", "Color de la letra"), this._b(I("editar", "Texto"), "Texto y acción", () => ins.abrir("diseno", "Botón")), this._b(I("toque", "Al tocarlo"), "Qué hace al tocarlo", () => ins.abrir("diseno", "Al tocarlo"))));
+      else if (t === "boton") partes.push(grupo(this._color("boton.fondo", "Color del botón"), this._color("boton.color", "Color de la letra"), this._b(I("editar", "Texto"), "Texto y acción", () => ins.abrir("diseno", "Botón")), this._b(I("toque", "Al tocarlo"), "Qué hace al tocarlo", () => ins.abrir("diseno", "Qué hace al tocarlo"))));
       else if (t === "componente") {
         const k = uno.componente || {};
         partes.push(grupo(
@@ -176,20 +176,16 @@ export class BarraContextual {
           el("div.ed-botonera", {}, ["izq", "centroH", "der", "arriba", "centroV", "abajo"].map((m, i) => this._b(ico(["izqA", "alinearH", "derA", "arribaA", "centroV", "abajoA"][i]), "Alinear", () => A.alinear(m), "chico"))),
           el("div.ed-botonera", {}, [this._b(I("capas", "Ver capas"), "Capas", () => ins.abrir("capas"), "chico"), this._b(I("recuperar", "Traer a la hoja"), "Meterlo dentro de la hoja", () => L.traerALaHoja(E.sel), "chico")]),
         ]), "chico"),
+        // «Más»: sólo lo que no está ya en otra barra (copiar, duplicar y borrar
+        // están en la barrita de arriba de lo elegido; efectos, aquí mismo).
         this._b(ico("mas"), "Más", (a) => menu(a, [
-          { t: I("duplicar", "Duplicar"), al: () => A.duplicar() },
-          { t: I("copiar", "Copiar"), al: () => A.copiar() },
-          { t: I("pegar", "Pegar"), al: () => A.pegar(), off: !A.portapapeles },
-          "-",
-          { t: I("efectos", "Efectos"), al: () => ins.abrir("diseno", "Efectos") },
           { t: I("sonido", "Sonidos"), al: () => ins.abrir("diseno", "Sonidos") },
-          { t: I("toque", "Al tocarlo…"), al: () => ins.abrir("diseno", "Al tocarlo") },
+          { t: I("toque", "Qué hace al tocarlo…"), al: () => ins.abrir("diseno", "Qué hace al tocarlo") },
           { t: I("ojoNo", "Empieza escondido / tiempo…"), al: () => ins.abrir("diseno", "Visibilidad") },
           { t: I("mano", "Permisos…"), al: () => ins.abrir("diseno", "Permisos") },
           { t: sel.every((x) => x.bloqueado) ? I("abierto", "Desbloquear") : I("candado", "Bloquear"), al: () => A.alternar("bloqueado") },
           { t: I("ojo", "Ocultar en el editor"), al: () => A.alternar("oculto") },
-          "-",
-          { t: I("borrar", "Borrar"), al: () => A.borrar(), peligro: true },
+          { t: I("diseno", "Todas sus opciones"), al: () => ins.abrir("diseno") },
         ]), "chico"),
       ));
     }
