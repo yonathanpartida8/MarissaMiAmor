@@ -110,7 +110,7 @@ function colores(canvas) {
 export function pintarRegla(canvas, eje, z, desplaz, largoMundo, dpr) {
   const g = canvas.getContext("2d");
   const { W, H } = medidas(canvas);
-  if (!W || !H) { MEDIDAS.delete(canvas); return; }
+  if (!W || !H) return; // escondida: el ResizeObserver avisa cuando tenga tamaño
   const col = colores(canvas);
   if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);

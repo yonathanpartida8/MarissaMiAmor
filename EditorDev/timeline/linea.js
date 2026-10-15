@@ -589,6 +589,7 @@ export class Linea {
       const nueva = ponerClave(e, k, ms(), vals);
       this.abiertos.add(id);
       E.setEl(id, { "anim.propia": nueva }, "Fotograma", "kfa" + id + k + ms());
+      this.app.sonidos?.sonar("fotograma");
     };
     const NOMBRES = { x: "X", y: "Y", escala: "Escala", rot: "Giro", opacidad: "Opacidad", desenfoque: "Desenfoque", tono: "Tono", brillo: "Brillo" };
     const PASOS = { x: 1, y: 1, escala: 0.05, rot: 1, opacidad: 0.05, desenfoque: 0.5, tono: 5, brillo: 0.05 };
@@ -623,6 +624,7 @@ export class Linea {
     if (c.facil) { const j = nueva.fotogramas.findIndex((f) => RT.tieneProp(f, c.k) && Math.abs(ventana({ ...e, anim: { ...e.anim, propia: nueva } }).base + f.t * nueva.dur - this.t) < 15); if (j >= 0) nueva.fotogramas[j].facil = c.facil; }
     this.abiertos.add(e.id);
     E.setEl(e.id, { "anim.propia": nueva }, "Pegar fotograma");
+    this.app.sonidos?.sonar("fotograma");
   }
 
   quitarFotograma() {

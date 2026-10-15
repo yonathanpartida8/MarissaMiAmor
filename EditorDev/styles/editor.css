@@ -2107,3 +2107,7 @@ body.ed ::-webkit-scrollbar-track { background: transparent; }
 .ed-kf-rombo .ed-ico { width: 15px; height: 15px; }
 .ed-kf-rombo.on { color: #8b5cf0; background: color-mix(in srgb, #8b5cf0 14%, transparent); }
 .ed-kf-rombo.on .ed-ico { fill: currentColor; }
+
+/* Efectitos del editor (canvas/fx.js): encima de la hoja, nunca reciben toques. */
+.ed-fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 6; contain: strict; }
+.ed-fx > i { position: absolute; display: block; pointer-events: none; will-change: transform, opacity; }

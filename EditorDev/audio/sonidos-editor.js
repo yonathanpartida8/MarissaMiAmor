@@ -12,13 +12,30 @@
  *     pocos a la vez (se puede elegir cuántos).
  * Van por la misma mezcla que MusicaDev (Web Audio), sin bajarla.
  * Se apagan, se suben o se bajan en Herramientas → Sonidos del editor.
+ *
+ * Fase 11: los momentos sin carpeta (duplicar, colocar, ajustar,
+ * herramienta, fotograma… o cualquiera que falte) suenan con un sonidito
+ * digital hecho aquí mismo: suaves, cortitos, nunca iguales dos veces
+ * seguidas y sin cargar archivos.
  */
 import { extras } from "../recursos/extras.js";
 import { rutaAUrl } from "../assets/biblioteca.js";
 
 const PREF = "editordev:sonidos";
 // Lo mínimo entre dos sonidos del mismo momento (ms): sin metralletas.
-const MIN = { botones: 70, seleccionar: 90, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140 };
+const MIN = { botones: 70, seleccionar: 90, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120 };
+/* Sonidos hechos a mano: [forma, frec. inicial, frec. final, duración s, volumen, retraso s]. */
+const SINTE = {
+  colocar: [["sine", 520, 250, 0.11, 0.5], ["triangle", 1040, 900, 0.03, 0.12]],
+  duplicar: [["sine", 880, 900, 0.05, 0.32], ["sine", 1320, 1360, 0.07, 0.3, 0.055]],
+  ajustar: [["sine", 1750, 1650, 0.016, 0.16]],
+  herramienta: [["triangle", 420, 780, 0.11, 0.26]],
+  fotograma: [["sine", 1568, 1568, 0.28, 0.24], ["sine", 2349, 2349, 0.2, 0.09]],
+  seleccionar: [["sine", 990, 1180, 0.06, 0.22]],
+  soltar: [["sine", 360, 240, 0.08, 0.32]],
+  arrastrar: [["triangle", 260, 330, 0.06, 0.16]],
+  exito: [["sine", 784, 784, 0.12, 0.26], ["sine", 1046, 1046, 0.14, 0.24, 0.09], ["sine", 1568, 1568, 0.22, 0.2, 0.18]],
+};
 
 function leerPref() {
   try { return { on: true, vol: 0.35, max: 3, ...JSON.parse(localStorage.getItem(PREF) || "{}") }; } catch (e) { return { on: true, vol: 0.35, max: 3 }; }
@@ -56,7 +73,8 @@ export class SonidosEditor {
 
   /** Suena un momento («botones», «guardar»…). Si es «botones», espera un pelito por si llega uno más importante. */
   sonar(momento) {
-    if (!this.pref.on || !this.lista[momento]?.length) return;
+    if (!this.pref.on) return;
+    if (!this.lista[momento]?.length) { if (SINTE[momento]) this._sintetizar(momento); return; }
     if (momento === "botones") {
       clearTimeout(this._boton);
       this._boton = setTimeout(() => this._sonar("botones"), 28);
@@ -88,6 +106,35 @@ export class SonidosEditor {
     o.connect(g).connect(this.audio.general);
     o.start(t); lfo.start(t); o.stop(t + 0.24); lfo.stop(t + 0.24);
     o.onended = () => { try { g.disconnect(); lg.disconnect(); } catch (e) { /* nada */ } };
+  }
+
+  /** Un sonidito digital hecho con osciladores (sin archivos). */
+  _sintetizar(momento) {
+    const ahora = performance.now();
+    if (ahora - (this.cuando[momento] || 0) < (MIN[momento] ?? 80)) return;
+    if (this.voces >= Math.max(1, this.pref.max | 0)) return;
+    const ac = this.audio.ac;
+    if (!ac || ac.state !== "running") return;
+    this.cuando[momento] = ahora;
+    const t0 = ac.currentTime, vol = Math.max(0, Math.min(1, this.pref.vol));
+    // Nunca dos iguales seguidos: un pelín de tono distinto cada vez.
+    const k = 0.96 + Math.random() * 0.08;
+    let fin = 0;
+    this.voces++;
+    for (const [forma, f0, f1, dur, v, ret = 0] of SINTE[momento]) {
+      const t = t0 + ret, o = ac.createOscillator(), g = ac.createGain();
+      o.type = forma;
+      o.frequency.setValueAtTime(f0 * k, t);
+      o.frequency.exponentialRampToValueAtTime(Math.max(20, f1 * k), t + dur);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(v * vol, t + Math.min(0.006, dur / 4));
+      g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+      o.connect(g).connect(this.audio.general);
+      o.start(t); o.stop(t + dur + 0.02);
+      o.onended = () => { try { g.disconnect(); } catch (e) { /* nada */ } };
+      fin = Math.max(fin, ret + dur);
+    }
+    setTimeout(() => { this.voces = Math.max(0, this.voces - 1); }, fin * 1000 + 30);
   }
 
   async _sonar(momento) {
@@ -128,8 +175,11 @@ export class SonidosEditor {
     document.addEventListener("click", (ev) => {
       const b = ev.target.closest?.("button, .ed-pieza, [role=menuitem], summary, .ed-asset, .ed-comp, label.ed-fila");
       if (!b || b.disabled || ev.target.closest(".ed-vista, input, textarea, select, .ed-tl-cuerpo")) return;
-      this.sonar("botones");
+      // Las herramientas (el riel, la barrita de la línea de tiempo) suenan distinto.
+      this.sonar(b.closest(".ed-riel, .ed-tl-herr") ? "herramienta" : "botones");
     }, true);
+    // Ajustar un deslizador: un «tic» muy suave (con tope: no ametralla).
+    document.addEventListener("input", (ev) => { if (ev.target.matches?.("input[type=range]") && !ev.target.closest(".ed-tl")) this.sonar("ajustar"); }, true);
     let antes = "";
     E.on("sel", () => { const k = E.sel.join(","); if (k && k !== antes) this.sonar("seleccionar"); antes = k; });
     addEventListener("ed-hoja", (ev) => this.sonar(ev.detail === "abrir" ? "abrir" : "cerrar"));

@@ -23,6 +23,7 @@
  *   integraciones/  GIPHY (GIFs y stickers) y quitar el fondo de un GIF animado
  *   components/secciones/  cada sección grande del panel en su archivo
  */
+import { FxEditor } from "./canvas/fx.js";
 import { el, aviso, modal, esMovil, menu, popover } from "./components/ui.js";
 import { Estado } from "./core/estado.js";
 import { nuevoProyecto, nuevaPagina, nuevoEl, normalizar, clonar, uid, tamAuto } from "./core/modelo.js";
@@ -149,6 +150,7 @@ async function arrancar() {
   app.plantilla = (id) => PLANTILLAS.find((t) => t.id === id).crear(E.proyecto);
 
   app.lienzo = new Lienzo(app, $(".ed-centro"));
+  app.fx = new FxEditor(app);
   app.insp = new Inspector(app, $(".ed-insp"));
   app.paneles = new Paneles(app);
   app.paginas = new PanelPaginas(app);

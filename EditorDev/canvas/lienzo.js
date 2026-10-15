@@ -116,6 +116,10 @@ export class Lienzo {
     this.flotante = el("div.ed-flotante", { hidden: "" });
     this.aviso = el("div.ed-lienzo-aviso", { hidden: "" });
     this.fuera = el("button.ed-fuera", { type: "button", hidden: "", onClick: () => this.traerALaHoja(this._fueraIds || []) });
+    new ResizeObserver(() => {
+      const f = this.flotante, w = f.offsetWidth, h = f.offsetHeight;
+      if (w && (w !== f._fw || h !== f._fh)) { f._fw = w; f._fh = h; this.pintarSobre(); }
+    }).observe(this.flotante);
     r.append(this.reglaX, this.reglaY, this.esquina, this.vistaEl, this.flotante, this.aviso, this.fuera);
     new ResizeObserver(() => {
       this._medirVista();
@@ -745,9 +749,8 @@ export class Lienzo {
     const b = this.aPantalla(u.x + u.w / 2, u.y + u.h);
     this.app.acciones.barraFlotante(f, sel);
     if (f.hidden) f.hidden = false;
-    // Su tamaño sólo cambia cuando cambian sus botones: se mide una vez por selección.
-    if (f._medida !== f._firma || !f._fw) { const w = f.offsetWidth; f._medida = w ? f._firma : null; f._fw = w || 260; f._fh = f.offsetHeight || 44; }
-    const t = this.tv, vw = t.w, fw = f._fw, fh = f._fh;
+    // Su tamaño lo avisa un ResizeObserver (sin medir aquí: medir forzaba a recalcular todo).
+    const t = this.tv, vw = t.w, fw = f._fw || 260, fh = f._fh || 44;
     const ox = t.x, oy = t.y;
     let top = a.y - fh - 16;
     if (top < 6) top = Math.min(b.y + 52, t.h - fh - 6);
@@ -905,9 +908,12 @@ export class Lienzo {
       this.g = null;
       this._cancelarLargo();
       g.mover.ya();
+      const movio = this.gestoActivo && ev.type !== "pointercancel", pego = this.lineas.x.length + this.lineas.y.length > 0;
       this.gestoActivo = false;
       if (!g.consumido) g.soltar(ev, ev.type === "pointercancel");
       this.pintarSobre();
+      // Una ondita donde quedó (y un brillo azul si el imán lo pegó).
+      if (movio && this.estado.sel.length) requestAnimationFrame(() => { const b = this.app.fx?._union(this.estado.sel); if (b) this.app.fx.soltar(b, pego); });
     };
     addEventListener("pointerup", arriba);
     addEventListener("pointercancel", arriba);
