@@ -253,13 +253,30 @@ export class Lienzo {
 
   /** Lo nuevo aparece en el centro de lo que se ve (un poquito corrido si ya hay algo ahí). */
   colocarNuevo(e) {
+    // Lo nuevo se acomoda en el hueco libre más cercano al centro de lo que se ve
+    // (sin contar lo que tapan las hojas de abajo): no se encima a lo que ya hay.
     const r = this.vistaEl.getBoundingClientRect();
-    const c = this.aMundo(r.left + r.width / 2, r.top + r.height / 2);
-    const b = { x: clamp(c.x - e.w / 2, 0, Math.max(0, this.W - e.w)), y: clamp(c.y - e.h / 2, 0, Math.max(0, this.H - e.h)), w: e.w, h: e.h };
-    const ocupado = (x, y) => (this.estado.pagina?.els || []).some((o) => { const v = this.vis(o); return Math.abs(v.x - x) < 4 && Math.abs(v.y - y) < 4; });
-    let k = 0;
-    while (ocupado(b.x, b.y) && k++ < 12) { b.x += 14; b.y += 14; }
-    Object.assign(e, this.guardarCaja(e, b));
+    const abajo = Math.min(r.bottom, innerHeight - (this._tapadoAbajo || 0));
+    const c = this.aMundo(r.left + r.width / 2, r.top + Math.max(40, abajo - r.top) / 2);
+    const W = this.W, H = this.H, w = e.w, h = e.h;
+    const ix = clamp(c.x - w / 2, 0, Math.max(0, W - w)), iy = clamp(c.y - h / 2, 0, Math.max(0, H - h));
+    const otros = (this.estado.pagina?.els || [])
+      .filter((o) => !o.oculto && o.tipo !== "pagina" && o.tipo !== "trazo" && !(o.ancla?.h === "estirar" && o.ancla?.v === "estirar"))
+      .map((o) => cajaDe(this.vis(o)))
+      .filter((o) => !(o.w >= W * 0.92 && o.h >= H * 0.92));
+    const tapa = (x, y) => otros.reduce((s, o) => s + Math.max(0, Math.min(x + w, o.x + o.w) - Math.max(x, o.x)) * Math.max(0, Math.min(y + h, o.y + o.h) - Math.max(y, o.y)), 0);
+    let b = { x: ix, y: iy };
+    if (otros.length && tapa(ix, iy) > 0) {
+      let mejor = Infinity;
+      const paso = Math.max(8, Math.round(Math.min(W, H) / 40));
+      for (let y = 0; y <= Math.max(0, H - h); y += paso) {
+        for (let x = 0; x <= Math.max(0, W - w); x += paso) {
+          const costo = tapa(x, y) + Math.hypot(x - ix, y - iy) * 20;
+          if (costo < mejor) { mejor = costo; b = { x, y }; }
+        }
+      }
+    }
+    Object.assign(e, this.guardarCaja(e, { x: Math.round(b.x), y: Math.round(b.y), w, h }));
     return e;
   }
 
@@ -572,14 +589,15 @@ export class Lienzo {
     const b = this.vis(e);
     const marco = this._caja(b, "ed-zonas" + (k.sinFondo ? " sin-fondo" : ""));
     const W = k.ajuste === "adaptar" ? b.w : k.ancho || b.w, H = k.ajuste === "adaptar" ? b.h : k.alto || b.h;
-    const sx = (b.w / W) * this.v.z, sy = (b.h / H) * this.v.z;
-    const firma = JSON.stringify([an.interactivos, an.visual]) + sx + "," + sy;
+    const q = RT.encuadreDe(k) || { x: 0, y: 0, w: W, h: H };
+    const sx = (b.w / q.w) * this.v.z, sy = (b.h / q.h) * this.v.z;
+    const firma = JSON.stringify([an.interactivos, an.visual, q]) + sx + "," + sy;
     if (marco._firma === firma) return;
     marco._firma = firma;
     marco.textContent = "";
-    const poner = (q, cls, txt) => marco.append(el("i." + cls, { title: txt || "", style: { left: q.x * sx + "px", top: q.y * sy + "px", width: q.w * sx + "px", height: q.h * sy + "px" } }));
-    for (const q of an.interactivos || []) poner(q, "ed-zona-toca", "zona táctil: " + (q.que || ""));
-    if (!(an.interactivos || []).length) for (const q of an.visual || []) poner(q, "ed-zona-ve");
+    const poner = (z, cls, txt) => marco.append(el("i." + cls, { title: txt || "", style: { left: (z.x - q.x) * sx + "px", top: (z.y - q.y) * sy + "px", width: z.w * sx + "px", height: z.h * sy + "px" } }));
+    for (const z of an.interactivos || []) poner(z, "ed-zona-toca", "zona táctil: " + (z.que || ""));
+    if (!(an.interactivos || []).length) for (const z of an.visual || []) poner(z, "ed-zona-ve");
   }
 
   _pintarFlotante(sel) {
@@ -679,7 +697,8 @@ export class Lienzo {
     const l = this._local(e, x, y);
     if (l.x < 0 || l.y < 0 || l.x > l.w || l.y > l.h) return false;
     if (k.ajuste === "adaptar") return tocaZona(k.analisis, l.x, l.y);
-    return tocaZona(k.analisis, (l.x * (k.ancho || l.w)) / l.w, (l.y * (k.alto || l.h)) / l.h, 6 * ((k.ancho || l.w) / l.w));
+    const q = RT.encuadreDe(k) || { x: 0, y: 0, w: k.ancho || l.w, h: k.alto || l.h };
+    return tocaZona(k.analisis, q.x + (l.x * q.w) / l.w, q.y + (l.y * q.h) / l.h, 6 * (q.w / l.w));
   }
 
   /** Los del mismo grupo que `e` (o sólo él). */

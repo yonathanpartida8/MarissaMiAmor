@@ -55,6 +55,14 @@ function densificar(p, paso) {
   return r;
 }
 
+/** Lo que se ve de un componente, si es bastante menos que su marco (si no, null). */
+function encuadreSugerido(an, max = 0.72) {
+  const c = an?.contenido, n = an?.natural;
+  // Lo que se mueve por todo el marco (estrellas fugaces, mariposas) conserva el marco entero.
+  if (!c || !n || !n.w || !n.h || an.mueve) return null;
+  return c.w * c.h < n.w * n.h * max ? { x: c.x, y: c.y, w: c.w, h: c.h } : null;
+}
+
 export class Acciones {
   constructor(app) {
     this.app = app;
@@ -104,10 +112,13 @@ export class Acciones {
 
   _elFoto(id) {
     const a = this.P.assets[id] || {};
-    const max = Math.min(300, this.P.ajustes.ancho - 60);
+    const max = Math.min(300, Math.round(this.P.ajustes.ancho * 0.68));
     const k = a.w && a.h ? a.w / a.h : 0.8;
-    const w = k >= 1 ? max : Math.round(max * Math.max(0.55, k));
-    const h = Math.round(w / k);
+    let w = k >= 1 ? max : Math.round(max * Math.max(0.55, k));
+    let h = Math.round(w / k);
+    // Las fotos muy altas tampoco ocupan toda la hoja.
+    const hm = Math.round(this.P.ajustes.alto * 0.45);
+    if (h > hm) { w = Math.round((w * hm) / h); h = hm; }
     return nuevoEl("imagen", this.P, { nombre: a.nombre || "Foto", w, h, imagen: { asset: id } });
   }
 
@@ -164,14 +175,18 @@ export class Acciones {
     try {
       const an = await analizar(rutaAUrl(it.ruta + (it.entrada || "index.html")), { ancho: it.ancho, alto: it.alto, aislado: it.aislado });
       const W = this.P.ajustes.ancho, H = this.P.ajustes.alto;
-      let w = an.natural.w, h = an.natural.h;
-      const k = Math.min(1, (W - 20) / w, (H - 20) / h);
-      w = Math.round(w * k); h = Math.round(h * k);
+      // Si lo que se ve es bastante menos que el marco, el elemento se encuadra a
+      // eso (hitbox justo). Lo que llena todo (lluvias, brillos) cubre la hoja;
+      // lo demás entra a lo sumo en ~60 % del ancho y la mitad del alto.
+      const q = encuadreSugerido(an);
+      let w = q ? q.w : an.natural.w, h = q ? q.h : an.natural.h;
+      const k = q ? Math.min(1, (W * 0.62) / w, (H * 0.5) / h) : Math.min(1, (W - 20) / w, (H - 20) / h);
+      w = Math.max(24, Math.round(w * k)); h = Math.max(24, Math.round(h * k));
       const params = {};
       for (const d of it.parametros || []) if (d.def != null && d.tipo !== "imagen" && d.tipo !== "audio") params[d.id] = d.def;
       const e = nuevoEl("componente", this.P, {
         nombre: it.nombre, w, h,
-        componente: { id: it.id, ruta: it.ruta, entrada: it.entrada || "index.html", ancho: an.natural.w, alto: an.natural.h, parametros: it.parametros || [], params, decorativo: !!it.decorativo, aislado: !!it.aislado, miniatura: it.miniatura || null, analisis: an },
+        componente: { id: it.id, ruta: it.ruta, entrada: it.entrada || "index.html", ancho: an.natural.w, alto: an.natural.h, encuadre: q, parametros: it.parametros || [], params, decorativo: !!it.decorativo, aislado: !!it.aislado, miniatura: it.miniatura || null, analisis: an },
       });
       if (w >= W - 20 && h >= H - 20) { e.x = Math.round((W - w) / 2); e.y = Math.round((H - h) / 2); }
       this._poner(e);
@@ -187,6 +202,22 @@ export class Acciones {
     const an = await analizar(rutaAUrl(k.ruta + (k.entrada || "index.html")), { ancho: k.ancho, alto: k.alto, aislado: k.aislado });
     this.E.setEl(e.id, { "componente.analisis": an }, "Detectar zona táctil");
     aviso(an.resumen || "Listo");
+    return an;
+  }
+
+  /** Marco «sólo lo que se ve» (ajustado) o «todo el HTML»: misma escala y mismo centro. */
+  async encuadrar(e, ajustado) {
+    let k = e.componente;
+    if (ajustado && !k.analisis?.contenido) { await this.reanalizar(e); e = this.E.el(e.id); k = e.componente; }
+    const nat = { x: 0, y: 0, w: k.ancho || e.w, h: k.alto || e.h };
+    const antes = RT.encuadreDe(k) || nat;
+    const q = ajustado ? encuadreSugerido(k.analisis, 0.98) : null;
+    if (ajustado && !q) { aviso("Lo que se ve ya ocupa todo el marco"); return; }
+    const s = e.w / antes.w, despues = q || nat;
+    const w = Math.max(24, Math.round(despues.w * s)), h = Math.max(24, Math.round(despues.h * s));
+    // Que lo que se ve no se mueva de lugar en la hoja.
+    const x = Math.round(e.x + (despues.x - antes.x) * s), y = Math.round(e.y + (despues.y - antes.y) * s);
+    this.E.setEl(e.id, { "componente.encuadre": q, w, h, x, y }, ajustado ? "Marco: sólo lo que se ve" : "Marco: todo el HTML");
   }
 
   /** Una imagen o adorno de assets/ (no se copia: se apunta a ella). */

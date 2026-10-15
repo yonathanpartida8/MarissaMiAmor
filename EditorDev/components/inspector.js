@@ -541,10 +541,11 @@ export class Inspector {
         el("div.ed-botonera", {}, [
           boton(I("play", "Probar aquí"), () => this.app.lienzo.probarAqui(e), "chico primario"),
           boton("Ver el original", () => open("../" + k.ruta + (k.entrada || "index.html"), "_blank"), "chico"),
-          boton("Tamaño natural", () => { const W = k.ancho || e.w, H = k.alto || e.h; this.E.setEl(e.id, { w: W, h: H }, "Tamaño natural"); }, "chico"),
+          boton("Tamaño natural", () => { const q = RT.encuadreDe(k); const W = q ? q.w : k.ancho || e.w, H = q ? q.h : k.alto || e.h; this.E.setEl(e.id, { w: Math.round(W), h: Math.round(H) }, "Tamaño natural"); }, "chico"),
         ]),
       ]),
       seccion("Tamaño y zona táctil", [
+        k.ajuste !== "adaptar" ? fila("Su recuadro", control(this.v, { tipo: "segmento", opciones: [["ajustado", "Sólo lo que se ve"], ["completo", "Todo el HTML"]], leer: () => (RT.encuadreDe(this.E.el(e.id)?.componente) ? "ajustado" : "completo"), escribir: (x) => A.encuadrar(this.E.el(e.id), x === "ajustado") }), "«sólo lo que se ve»: el recuadro para elegirlo y moverlo abraza el contenido; si algo se mueve hacia afuera se sigue viendo") : null,
         fila("Al cambiar el tamaño", c("componente.ajuste", { tipo: "segmento", opciones: [["escalar", "Escalar entero"], ["adaptar", "Que se acomode"]], def: "escalar" }), "escalar = se ve igual pero más grande o chico"),
         el("p.ed-nota", { text: "Detectado: " + (an ? an.resumen || "—" : "sin analizar") }),
         fila("Elegirlo en la hoja", c("componente.seleccion", { tipo: "segmento", opciones: [["zona", "Por su zona real"], ["todo", "Por todo el cuadro"]], def: "zona" }), "«zona real»: sólo su botón o lo que se ve; lo demás deja tocar lo de abajo"),

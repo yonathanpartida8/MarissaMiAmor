@@ -497,6 +497,12 @@
     return zonas.map((z) => `M${z.x} ${z.y}h${z.w}v${z.h}h${-z.w}Z`).join("");
   };
 
+  /** El recuadro de lo que se ve de un componente (o null: el marco entero). */
+  RT.encuadreDe = function (k) {
+    const q = k && k.ajuste !== "adaptar" && k.encuadre;
+    return q && q.w > 4 && q.h > 4 ? q : null;
+  };
+
   RT.tamComponente = function (n, e) {
     const k = e.componente || {};
     const b = n._rt.caja || e;
@@ -507,8 +513,12 @@
       caja.style.cssText = "position:absolute;inset:0";
       f.style.width = f.style.height = "100%";
     } else {
+      // Con `encuadre`, el elemento mide sólo lo que se ve del marco: el marco se
+      // corre para que eso quede dentro (lo que se anima hacia afuera se sigue viendo).
       const W = k.ancho || b.w, H = k.alto || b.h;
-      caja.style.cssText = `position:absolute;left:0;top:0;width:${W}px;height:${H}px;transform-origin:0 0;transform:scale(${b.w / W},${b.h / H})`;
+      const q = RT.encuadreDe(k);
+      const sx = b.w / (q ? q.w : W), sy = b.h / (q ? q.h : H);
+      caja.style.cssText = `position:absolute;left:0;top:0;width:${W}px;height:${H}px;transform-origin:0 0;transform:${q ? `translate(${-q.x * sx}px,${-q.y * sy}px) ` : ""}scale(${sx},${sy})`;
       f.style.width = W + "px"; f.style.height = H + "px";
     }
     // «Dejar pasar los toques fuera de lo que se ve»: sólo recorta lo transparente

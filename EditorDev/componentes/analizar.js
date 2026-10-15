@@ -14,6 +14,12 @@
  * Con eso el editor ajusta SU propia zona para seleccionarlo (no la del
  * componente) y sabe qué quitar si TÚ pides «Eliminar fondo». Son dos cosas
  * independientes: detectar no quita nada.
+ *
+ *   contenido     el recuadro de lo que DE VERDAD se ve: el texto (no la caja
+ *                 entera del párrafo), lo pintado en los lienzos (mirando sus
+ *                 píxeles unas cuantas veces, por si se mueve) y lo demás. Con
+ *                 él, el elemento se encuadra a su contenido en vez de ocupar
+ *                 todo el marco (el hitbox deja de ser gigante).
  */
 const VIVO = "button, a[href], input, select, textarea, summary, label[for], [onclick], [role=button], [role=link], [role=slider], [tabindex]:not([tabindex='-1']), [data-claim-drag], [contenteditable=''], [contenteditable=true], video[controls], audio[controls]";
 const MEDIA = new Set(["IMG", "SVG", "CANVAS", "VIDEO", "PICTURE"]);
@@ -31,7 +37,34 @@ function selector(doc, n) {
   return "body > " + partes.join(" > ");
 }
 
-const caja = (r) => ({ x: Math.max(0, Math.floor(r.left)), y: Math.max(0, Math.floor(r.top)), w: Math.ceil(r.width), h: Math.ceil(r.height) });
+const caja = (r) => ({ x: Math.max(0, Math.floor(r.left ?? r.x)), y: Math.max(0, Math.floor(r.top ?? r.y)), w: Math.ceil(r.width ?? r.w), h: Math.ceil(r.height ?? r.h) });
+const juntar = (a, b) => { const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y); return { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y }; };
+const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** Lo pintado en un lienzo 2D (coordenadas del marco). `null` = nada pintado;
+ *  `undefined` = no se puede saber (WebGL o protegido): cuenta entero. */
+function pintadoDe(cv, doc) {
+  const r = cv.getBoundingClientRect();
+  if (r.width < 2 || r.height < 2) return null;
+  try {
+    // En el marco de análisis (se tira después) pedir el contexto 2D no estorba;
+    // si el lienzo es WebGL devuelve null y no se toca.
+    if (!cv.getContext("2d")) return undefined;
+    const k = Math.min(1, 180 / Math.max(r.width, r.height));
+    const w = Math.max(1, Math.round(r.width * k)), h = Math.max(1, Math.round(r.height * k));
+    const t = doc.createElement("canvas");
+    t.width = w; t.height = h;
+    const g = t.getContext("2d", { willReadFrequently: true });
+    g.drawImage(cv, 0, 0, w, h);
+    const d = g.getImageData(0, 0, w, h).data;
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (d[(y * w + x) * 4 + 3] > 40) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    }
+    if (x1 < 0) return null;
+    return { x: r.left + x0 / k, y: r.top + y0 / k, w: (x1 - x0 + 1) / k, h: (y1 - y0 + 1) / k };
+  } catch (e) { return undefined; }
+}
 
 function pinta(cs) {
   return !transparente(cs.backgroundColor) || (cs.backgroundImage && cs.backgroundImage !== "none") || (cs.boxShadow && cs.boxShadow !== "none") || (parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== "none" && !transparente(cs.borderTopColor));
@@ -95,16 +128,59 @@ export async function analizar(url, { ancho, alto, aislado } = {}) {
       if (!cs) { cs = win.getComputedStyle(n); estilos.set(n, cs); }
       return cs.display !== "none" && cs.visibility !== "hidden" && parseFloat(cs.opacity) > 0.02 ? cs : null;
     };
+    const texto = (n) => {
+      if (!/\S/.test(n.textContent || "")) return null;
+      const rg = doc.createRange();
+      rg.selectNodeContents(n);
+      const r = rg.getBoundingClientRect();
+      return r.width > 1 && r.height > 1 ? r : null;
+    };
+    // Lo que se ve de verdad, mirado varias veces (por si se mueve): los lienzos
+    // por sus píxeles, el texto por sus letras y lo demás por su caja.
+    const lienzos = new Map();
+    const cvs = todos.filter((n) => n.tagName === "CANVAS" && visible(n));
+    const queSeVe = (n) => {
+      const cs = visible(n);
+      if (!cs || /^(SCRIPT|STYLE|LINK|META|TEMPLATE|HTML|BODY)$/i.test(n.tagName)) return null;
+      const tag = n.tagName.toUpperCase();
+      if (tag !== "SVG" && n.closest("svg")) return null;
+      if (tag === "CANVAS") { const p = lienzos.get(n); return p === "?" ? n.getBoundingClientRect() : p || null; }
+      if (MEDIA.has(tag) || pinta(cs)) return n.getBoundingClientRect();
+      return n.children.length ? null : texto(n);
+    };
+    const miradas = [];
+    for (let i = 0; i < 4; i++) {
+      if (i) await espera(350);
+      for (const cv of cvs) {
+        if (lienzos.get(cv) === "?") continue;
+        const p = pintadoDe(cv, doc);
+        if (p === undefined) { lienzos.set(cv, "?"); continue; }
+        const a = lienzos.get(cv);
+        lienzos.set(cv, a && p ? juntar(a, p) : a || p);
+      }
+      let u = null;
+      for (const n of todos) {
+        const r = queSeVe(n);
+        if (!r) continue;
+        const q = caja(r);
+        if (q.w < 2 || q.h < 2 || q.x > W || q.y > H) continue;
+        u = u ? juntar(u, q) : q;
+      }
+      miradas.push(u);
+    }
     // 1 · Lo que se toca (el de más afuera, sin repetir lo de dentro).
     for (const n of todos) {
       const cs = visible(n);
       if (!cs || /^(SCRIPT|STYLE|LINK|META|TEMPLATE)$/.test(n.tagName)) continue;
       const esVivo = n.matches(VIVO) || (cs.cursor === "pointer" && (!n.parentElement || win.getComputedStyle(n.parentElement).cursor !== "pointer"));
       if (!esVivo || dentroDe(vivos, n)) continue;
-      const r = n.getBoundingClientRect();
-      if (r.width < 4 || r.height < 4 || r.right < 0 || r.bottom < 0 || r.left > W || r.top > H) continue;
+      let r = n.getBoundingClientRect();
+      // Un lienzo tocable: su zona es lo que tiene pintado (no el lienzo entero).
+      if (n.tagName === "CANVAS") { const p = lienzos.get(n); if (p === null) continue; if (p && p !== "?") r = p; }
+      const q = caja(r);
+      if (q.w < 4 || q.h < 4 || q.x + q.w < 0 || q.y + q.h < 0 || q.x > W || q.y > H) continue;
       vivos.push(n);
-      interactivos.push({ ...caja(r), que: (n.getAttribute("aria-label") || n.textContent || n.tagName).trim().slice(0, 24) });
+      interactivos.push({ ...q, que: (n.getAttribute("aria-label") || n.textContent || n.tagName).trim().slice(0, 24) });
     }
     // 2 · El fondo: lo que ocupa casi todo y no es tocable.
     const fondos = [];
@@ -128,15 +204,30 @@ export async function analizar(url, { ancho, alto, aislado } = {}) {
       const tag = n.tagName.toUpperCase();
       const hoja = MEDIA.has(tag) || !n.children.length;
       if (!hoja && !pinta(cs)) continue;
-      if (tag === "SVG" ? false : n.closest("svg")) continue;
-      const r = n.getBoundingClientRect();
-      if (r.width < 2 || r.height < 2) continue;
-      visual.push(caja(r));
+      const r = queSeVe(n);
+      if (!r) continue;
+      const q = caja(r);
+      if (q.w < 2 || q.h < 2) continue;
+      visual.push(q);
+    }
+    // El recuadro de lo que se ve (con un margen, sin salirse del marco). Si
+    // creció mucho entre una mirada y otra, lo de adentro se mueve por todo el
+    // marco: entonces el elemento conserva el marco entero.
+    let contenido = null;
+    for (const u of miradas) if (u) contenido = contenido ? juntar(contenido, u) : u;
+    const primera = miradas.find(Boolean);
+    const mueve = !!(contenido && primera && contenido.w * contenido.h > primera.w * primera.h * 1.35);
+    for (const q of [...interactivos, ...fondo.filter((z) => z.w)]) contenido = contenido ? juntar(contenido, q) : { x: q.x, y: q.y, w: q.w, h: q.h };
+    if (contenido) {
+      const m = Math.max(10, Math.round(Math.max(contenido.w, contenido.h) * 0.06));
+      const x = Math.max(0, contenido.x - m), y = Math.max(0, contenido.y - m);
+      contenido = { x, y, w: Math.min(W, contenido.x + contenido.w + m) - x, h: Math.min(H, contenido.y + contenido.h + m) - y };
+      if (contenido.w < 8 || contenido.h < 8) contenido = null;
     }
     const res = [];
     if (interactivos.length) res.push(interactivos.length === 1 ? "1 zona táctil" : `${interactivos.length} zonas táctiles`);
     if (fondo.some((z) => z.sel !== "html" && z.sel !== "body") || fondo.length) res.push("fondo decorativo");
-    return { natural, interactivos: unir(interactivos, 16), visual: unir(visual, 24), fondo, resumen: res.join(" · ") || "sin zonas detectadas" };
+    return { natural, contenido, mueve, interactivos: unir(interactivos, 16), visual: unir(visual, 24), fondo, resumen: res.join(" · ") || "sin zonas detectadas" };
   } catch (e) {
     return { natural, interactivos: [], visual: [], fondo: [], resumen: "no se pudo mirar por dentro" };
   } finally { f.remove(); }

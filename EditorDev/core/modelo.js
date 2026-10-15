@@ -130,8 +130,12 @@ export function nuevoEl(tipo, proyecto, datos = {}) {
   const a = proyecto?.ajustes || { ancho: 390, alto: 844, tema: {} };
   const t = a.tema || {};
   const [w, h] = TAM[tipo] || [160, 160];
-  const W = Math.min(w, a.ancho - 40);
-  const H = tipo === "pagina" ? a.alto : Math.round(h * (W / w));
+  // Los grandes (fotos, álbum, carrusel, vídeo, HTML, 3D) nacen medianos: a lo
+  // sumo ~70 % del ancho y 45 % del alto de la hoja, para no taparlo todo.
+  const grande = /^(imagen|album|carrusel|video|html|componente|escena3d)$/.test(tipo);
+  const k = Math.min(1, (a.ancho - 40) / w, grande ? (a.ancho * 0.7) / w : 1, grande ? (a.alto * 0.45) / h : 1);
+  const W = Math.round(w * k);
+  const H = tipo === "pagina" ? a.alto : Math.round(h * k);
   const base = {
     id: uid("e"),
     tipo,
