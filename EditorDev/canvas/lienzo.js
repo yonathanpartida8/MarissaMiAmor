@@ -323,10 +323,27 @@ export class Lienzo {
   get acomodoActivo() { return matchMedia("(max-width: 1023px)").matches; }
 
   acomodar() {
-    if (!this.P || !this.acomodoActivo) return;
+    if (!this.P) return;
     clearTimeout(this._acT);
     cancelAnimationFrame(this._acRaf);
-    this._acT = setTimeout(() => { this._acRaf = requestAnimationFrame(() => this._acomodarYa()); }, 40);
+    this._acT = setTimeout(() => { this._acRaf = requestAnimationFrame(() => (this.acomodoActivo ? this._acomodarYa() : this._apartarEscritorio())); }, 40);
+  }
+
+  /** En escritorio: si un menú o un diálogo abierto tapa lo elegido, la hoja se
+   *  corre a un lado; al cerrarlo vuelve a donde estaba (si no se movió a mano). */
+  _apartarEscritorio() {
+    if (this.congelado || this.editando || this.g) return;
+    const capas = [...document.querySelectorAll(".ed-modal-fondo.ver .ed-modal:not(.cerrando), .ed-pop.ver:not(.cerrando), .ed-menu")].filter((n) => n.offsetWidth);
+    const igual = (a, b) => a && b && Math.abs(a.px - b.px) < 1 && Math.abs(a.py - b.py) < 1 && Math.abs(a.z - b.z) < 1e-4;
+    if (!capas.length) {
+      const a = this._apAntes, d = this._apDespues;
+      this._apAntes = this._apDespues = null;
+      if (a && igual(this.v, d)) this._animarVista(a, 260);
+      return;
+    }
+    const antes = { ...this.v };
+    const hasta = this.apartarDe(capas[capas.length - 1].getBoundingClientRect());
+    if (hasta) { if (!this._apAntes) this._apAntes = antes; this._apDespues = hasta; }
   }
 
   _vistaAjustada() {
@@ -424,11 +441,12 @@ export class Lienzo {
     if (s.bottom + bajar <= vr.bottom - 8) dy = bajar;
     else if (s.top - subir >= vr.top + 8) dy = -subir;
     else { const der = r.right + 12 - s.left, izq = s.right - (r.left - 12); if (s.right + der <= vr.right - 8) dx = der; else if (s.left - izq >= vr.left + 8) dx = -izq; }
-    if (!dx && !dy) return;
+    if (!dx && !dy) return null;
     const d = { ...this.v }, t0 = performance.now();
     this.v.ajustar = false;
     const paso = (t) => { const k = Math.min(1, (t - t0) / 260), q = 1 - Math.pow(1 - k, 3); this.v.px = d.px + dx * q; this.v.py = d.py + dy * q; this.pintarVista(); if (k < 1) requestAnimationFrame(paso); };
     requestAnimationFrame(paso);
+    return { ...d, px: d.px + dx, py: d.py + dy, ajustar: false };
   }
 
   /** Acerca la vista hasta que el elemento llene lo visible (encima de `abajo` px).

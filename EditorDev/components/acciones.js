@@ -224,7 +224,7 @@ export class Acciones {
   /** Volver a mirar un componente (si cambió su archivo). */
   async reanalizar(e) {
     const k = e.componente;
-    const an = await analizar(rutaAUrl(k.ruta + (k.entrada || "index.html")), { ancho: k.ancho, alto: k.alto, aislado: k.aislado });
+    const an = await analizar(rutaAUrl(k.ruta + (k.entrada || "index.html")), { ancho: k.ancho, alto: k.alto, aislado: k.aislado, fresco: true });
     this.E.setEl(e.id, { "componente.analisis": an }, "Detectar zona táctil");
     aviso(an.resumen || "Listo");
     return an;

@@ -374,6 +374,24 @@ Código nuevo: `runtime/rt-toques.js` (efectos y zonas en el librito), `componen
 
 Código nuevo: `components/temas-hoja.js`, `templates/papeles.js`; la sección «Al tocar» vive en `components/toques.js`.
 
+## Fase 9: recuadro justo, música, selectores, hoja que se acomoda, línea de tiempo y portadas
+
+| | |
+| --- | --- |
+| **Recuadro justo** | al poner un componente HTML se mira qué se ve de verdad (cuatro miradas seguidas, píxeles pintados de los lienzos incluidos) y el recuadro se ajusta a eso en vez de a todo su marco (la lámpara pasó de 370×601 a 95×349). Lo que se mueve por toda la hoja (lluvias, estrellas fugaces) conserva su marco entero. En el inspector: «Su recuadro: Sólo lo que se ve / Todo el HTML». Al insertar, nada sale gigante: lo grande entra a lo sumo en ~60–70 % del ancho y la mitad del alto, en un hueco libre. Lo ya mirado se recuerda: poner el mismo componente otra vez es al instante |
+| **Música** | la música de trabajo del editor sólo suena mientras editas: al reproducir la línea de tiempo, al «Probar aquí» o al probar la página se calla, y suena **tu** canción (o nada si no pusiste ninguna) |
+| **Botón de música en la hoja** | cada página nueva trae un botón delgado de reproducir/pausar arriba (o en el rincón que esté libre). Se puede mover, cambiar de estilo, de texto y de colores, y ponerlo en todas las páginas. En el librito sólo se ve si hay canción. Se quita en Audio → «Botón de música en la hoja» |
+| **Letras y colores** | selector de letras nuevo: tu propio texto escrito con cada letra, grupos (Recientes, A mano, Elegantes, Modernas, Divertidas…), buscador y una animación al elegir. Selector de color nuevo: cuadro de tono y brillo que se arrastra (un solo deshacer por arrastre), código, cuentagotas, y filas de «En esta página», «Del tema», «Recientes» y paleta |
+| **La hoja se acomoda** | en el teléfono y la tableta, al abrir un menú, una hojita o el inspector, la página se encoge y se corre animada (como el vídeo de Instagram al abrir los comentarios) para que lo elegido nunca quede tapado; al cerrar vuelve como estaba. En la computadora, si un menú o una ventanita tapa lo elegido, la hoja se corre a un lado y regresa al cerrarla |
+| **Todo a la vista** | las secciones del inspector y de los paneles ya no vienen plegadas como carpetas; arriba hay un índice de chips para saltar a cada una. El menú «Más» de la barra quedó sin repetidos. «Pasar página» tiene su propio sitio en el riel, con el estado de esta página y «Ponerlos aquí» |
+| **Pasar página con prioridad** | los botones de pasar y volver (y el de música) van siempre por encima de lo demás y anclados a su borde: no se salen de la pantalla. Al **Probar**, si la página no tiene botones para pasar, la abejita lo avisa y dice dónde se ponen («Ponerlos ahora», «Llévame ahí» o «Ahora no»); si uno se sale de la hoja, ofrece meterlo |
+| **Icono de páginas** | el botón de arriba muestra unas hojitas apiladas con «1/3», no sólo el número |
+| **Línea de tiempo profesional** | dividir en el cabezal (tijeras o S), marcadores en la regla (M; tocarlo lleva ahí, mantenerlo lo quita) que también sirven de imán, imán apagable, repetir en bucle, zoom con deslizador y «Ver todo» (0), pasos finos de 0,1 s (Mayús: 1 s), marcas finas en la regla al acercar, ojo y candado en cada pista. Atajos (con la línea tocada): Espacio, ←/→, Inicio/Fin, S, M, +/−, 0. En la computadora, si las herramientas no caben bajan a una segunda fila |
+| **Portada al empezar** | la tarjeta «Librito nuevo» muestra cada estilo de portada en chiquito y deja **usar tu propia imagen**: se ve puesta en cada estilo antes de crear y va al hueco de foto (o de fondo). Portadas nuevas: **Revista (como la de Marissa)** —cabecera «Nº 01 · edición de amor», su nombre en dorado, foto con cinta, hojas debajo, sticker «edición única» y el sello con su inicial que abre el librito—, **Con tu foto de fondo**, **Lluvia de corazones**, **Tres polaroids** y **Estreno**. Todas animadas, sin tapar el botón de música y revisadas en cinco tamaños de hoja |
+| **Arreglos** | los menús del teléfono a veces no se veían (quedaban transparentes); las letras a veces no se podían elegir (los títulos de grupo tapaban los toques); el índice del inspector tapaba el título de la sección al saltar; las páginas importadas del librito ponen su botón de música en un rincón libre |
+
+Código nuevo: `components/selectores.js` (letras y colores), `componentes/analizar.js` (lo que se ve de cada HTML); el acomodo de la hoja vive en `canvas/lienzo.js` y la línea de tiempo en `timeline/linea.js`.
+
 ## Cómo está hecho
 
 ```

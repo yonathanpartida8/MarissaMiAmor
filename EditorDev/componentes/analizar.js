@@ -77,8 +77,19 @@ function unir(zonas, max) {
   return [{ x: x0, y: y0, w: x1 - x0, h: y1 - y0 }];
 }
 
-/** Abre el componente escondido y lo analiza. */
-export async function analizar(url, { ancho, alto, aislado } = {}) {
+// Lo ya mirado en esta sesión: poner el mismo componente otra vez es al instante.
+const MEMO = new Map();
+
+/** Abre el componente escondido y lo analiza (`fresco` vuelve a mirarlo aunque ya se haya visto). */
+export async function analizar(url, op = {}) {
+  const clave = [url, op.ancho, op.alto, !!op.aislado].join("|");
+  if (!op.fresco && MEMO.has(clave)) return structuredClone(MEMO.get(clave));
+  const an = await mirar(url, op);
+  if (an && an.contenido !== undefined) MEMO.set(clave, structuredClone(an));
+  return an;
+}
+
+async function mirar(url, { ancho, alto, aislado } = {}) {
   let W = ancho || 360, H = alto || 360;
   const natural = { w: W, h: H };
   if (aislado) return { natural, interactivos: [], visual: [], fondo: [], resumen: "aislado: no se puede mirar por dentro" };
@@ -90,7 +101,7 @@ export async function analizar(url, { ancho, alto, aislado } = {}) {
   document.body.append(f);
   try {
     await new Promise((ok) => { f.onload = ok; setTimeout(ok, 6000); });
-    await new Promise((r) => setTimeout(r, 700));
+    await new Promise((r) => setTimeout(r, 450));
     const doc = f.contentDocument, win = f.contentWindow;
     if (!doc || !doc.body) return { natural, interactivos: [], visual: [], fondo: [], resumen: "" };
     // Sin tamaño declarado: si lo que dibuja es más grande que la prueba (un lienzo
@@ -150,7 +161,7 @@ export async function analizar(url, { ancho, alto, aislado } = {}) {
     };
     const miradas = [];
     for (let i = 0; i < 4; i++) {
-      if (i) await espera(350);
+      if (i) await espera(260);
       for (const cv of cvs) {
         if (lienzos.get(cv) === "?") continue;
         const p = pintadoDe(cv, doc);

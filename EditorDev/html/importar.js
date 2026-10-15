@@ -20,7 +20,7 @@
  *   cartas editables con su texto y sus fotos.
  */
 import { el, modal, aviso, boton } from "../components/ui.js";
-import { nuevoEl, nuevaPagina, nuevoProyecto, uid } from "../core/modelo.js";
+import { nuevoEl, nuevaPagina, nuevoProyecto, uid, rinconParaMusica } from "../core/modelo.js";
 import { paginasHtml, titulo as leerTitulo, recorrido, PESADAS } from "../assets/librito.js";
 import { RAIZ, rutaAUrl } from "../assets/biblioteca.js";
 import { ico } from "../components/iconos.js";
@@ -445,7 +445,8 @@ export class Importador {
         return id;
       };
       const TRANS = { none: "ninguna", dissolve: "disolver", flip: "voltear", zoom: "zoom", fade: "fundido", slide: "deslizar", push: "empujar", ink: "circulo", iris: "circulo", heart: "circulo", tide: "cortina", bloom: "desenfoque", fold: "hoja", pageflip: "hoja" };
-      const poner = (pg, t) => { pg.transicion = t && TRANS[t] ? { tipo: TRANS[t], dur: 800, dir: "auto", facil: "entraSale" } : null; P.paginas[pg.id] = pg; P.orden.push(pg.id); };
+      // El botón de música de cada página se va al rincón que tenga libre.
+      const poner = (pg, t) => { pg.transicion = t && TRANS[t] ? { tipo: TRANS[t], dur: 800, dir: "auto", facil: "entraSale" } : null; rinconParaMusica(pg, W, H); P.paginas[pg.id] = pg; P.orden.push(pg.id); };
       const titulos = await paginasHtml();
       for (const e of rec) {
         if (e.ruta && /\.html$/i.test(e.ruta)) {
