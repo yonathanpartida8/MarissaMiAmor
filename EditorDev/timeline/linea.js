@@ -32,9 +32,20 @@
  * Reproducir, pausar, avanzar y retroceder pintan la página de verdad
  * (las mismas animaciones que el librito) y hacen sonar sus sonidos y pistas.
  * Dos dedos o Ctrl+rueda acercan.
+ *
+ * Como un editor de vídeo de verdad:
+ *   Dividir      parte lo elegido en el cabezal (dos clips seguidos, sin salto)
+ *   Marcadores   banderitas en la regla: se tocan para ir, y los clips se pegan
+ *   Imán         los clips se pegan al cabezal, a los bordes de los demás y a
+ *                los marcadores (apagado: sólo a pasos de 50 ms)
+ *   Bucle        al llegar al final vuelve a empezar
+ *   Zoom         −/+ , deslizador y «Ver todo»
+ *   Cada pista   ojo (esconder en el editor) y candado (bloquear)
+ *   Teclado      (con la línea tocada) Espacio reproduce · ←/→ 0,1 s (Mayús 1 s)
+ *                · Inicio/Fin · S divide · M marcador · +/− zoom · 0 ver todo
  */
 import { alCuadro } from "../config/cuadros.js";
-import { el, menu, ordenable, COMPACTO, popover, control, Vinculos, fila } from "../components/ui.js";
+import { el, menu, ordenable, COMPACTO, popover, control, Vinculos, fila, aviso } from "../components/ui.js";
 import { ico } from "../components/iconos.js";
 import { TIPOS, uid } from "../core/modelo.js";
 import { holgura, TOQUE_LARGO, vibrar, enCuadro } from "../canvas/gestos.js";
@@ -59,6 +70,8 @@ export class Linea {
     this.t = 0;
     this.pps = matchMedia("(pointer: coarse)").matches ? 90 : 120; // píxeles por segundo
     this.conMusica = false;
+    this.iman = true;
+    this.bucle = false;
     this.audioSel = null;
     this._relojes = [];
     this._montar();
@@ -70,7 +83,7 @@ export class Linea {
     this.E.on("els", () => { re(); this._refrescarAnim(); });
     this.E.on("actual", () => { this.parar(false); this.t = 0; this.audioSel = null; re(); });
     this.E.on("sel", () => { if (this.E.sel.length) this.audioSel = null; re(); });
-    this.E.on("pagina", ({ ruta }) => { if (/^duracion|^musica|^transicion|^audios/.test(ruta || "")) re(); });
+    this.E.on("pagina", ({ ruta }) => { if (/^duracion|^musica|^transicion|^audios|^marcas/.test(ruta || "")) re(); });
     this.E.on("assets", re);
     this._re = re;
   }
@@ -83,7 +96,7 @@ export class Linea {
     this.reloj = el("span.ed-tl-reloj");
     this.herr = el("div.ed-tl-herr");
     this.cab = el("div.ed-tl-cab", {}, [
-      el("div.ed-tl-transporte", {}, [b("inicio", "inicio", "Al principio"), b("atras", "retroceder", "Atrás medio segundo"), this.btnPlay, b("adelante", "avanzar", "Adelante medio segundo"), b("final", "final", "Al final")]),
+      el("div.ed-tl-transporte", {}, [b("inicio", "inicio", "Al principio (Inicio)"), b("atras", "retroceder", "Atrás 0,1 s (←)"), this.btnPlay, b("adelante", "avanzar", "Adelante 0,1 s (→)"), b("final", "final", "Al final (Fin)")]),
       this.reloj, this.herr,
     ]);
     this.cRegla = el("div.ed-tl-fila.ed-tl-fregla");
@@ -156,6 +169,9 @@ export class Linea {
     this._icono();
     this.reloj.textContent = `${fmt(this.t)} / ${fmt(this._total())}`;
     hijos(this.herr, this._herramientas());
+    // El nodo del deslizador se reutiliza: su valor se pone a mano (si no se está arrastrando).
+    const zm = this.herr.querySelector(".ed-tl-zoom");
+    if (zm && !zm.matches(":active")) zm.value = String(this._zoomPct());
     hijos(this.cRegla, this._regla(T));
     this._etw = this.cRegla.firstChild?.offsetWidth || ET;
     this.lienzo.style.width = this.et + W + 40 + "px";
@@ -169,21 +185,71 @@ export class Linea {
   _herramientas() {
     const b = (ac, i, t, cls = "") => el("button.ed-tl-b" + (cls ? "." + cls : ""), { type: "button", title: t, "aria-label": t, dataset: { ac, k: ac }, html: ico(i) });
     const sel = this.E.unico;
+    const dividible = sel && this.t > RT.inicioDe(sel) + 50 && (RT.finDe(sel) == null || this.t < RT.finDe(sel) - 50);
+    // El zoom también con un deslizador (escala logarítmica, como en los editores).
+    const zoom = el("input.ed-tl-zoom", { type: "range", min: "0", max: "100", step: "1", "aria-label": "Zoom de la línea", title: "Zoom" });
+    zoom.value = String(this._zoomPct());
     return el("div", {}, [
-      sel ? b("aparece", "izqA", "Que aparezca aquí (en el cabezal)") : null,
-      sel ? b("sevay", "derA", "Que se vaya aquí (en el cabezal)") : null,
-      b("pista", "onda", "Añadir una pista de audio aquí"),
-      b("musica", "audio", "Escuchar la música de la página al reproducir", this.conMusica ? "on" : ""),
-      b("menos", "zoomMenos", "Alejar"),
-      b("mas", "zoomMas", "Acercar"),
+      el("div.ed-tl-g", {}, [
+        sel ? b("dividir", "tijeras", "Dividir lo elegido en el cabezal (S)", dividible ? "" : "apagado") : null,
+        sel ? b("aparece", "izqA", "Que aparezca aquí (en el cabezal)") : null,
+        sel ? b("sevay", "derA", "Que se vaya aquí (en el cabezal)") : null,
+        b("marca", "estrella", "Poner un marcador en el cabezal (M)"),
+      ].filter(Boolean)),
+      el("div.ed-tl-g", {}, [
+        b("iman", "iman", "Imán: pegar al cabezal, a otros clips y a los marcadores", this.iman ? "on" : ""),
+        b("bucle", "bucle", "Repetir en bucle al reproducir", this.bucle ? "on" : ""),
+        b("musica", "audio", "Escuchar la música de la página al reproducir", this.conMusica ? "on" : ""),
+        b("pista", "onda", "Añadir una pista de audio aquí"),
+      ]),
+      el("div.ed-tl-g.zoom", {}, [b("menos", "zoomMenos", "Alejar (−)"), zoom, b("mas", "zoomMas", "Acercar (+)"), b("todo", "ajustar", "Ver todo (0)")]),
       b("cerrar", "cerrar", "Cerrar la línea de tiempo"),
-    ].filter(Boolean));
+    ]);
+  }
+
+  _zoomPct() { return Math.round((Math.log(this.pps / 20) / Math.log(600 / 20)) * 100); }
+
+  /** Dividir en el cabezal: el clip sigue igual hasta ahí y una copia sigue desde ahí. */
+  dividir(e = this.E.unico) {
+    const E = this.E, t = Math.round(this.t / PASO) * PASO;
+    if (!e) return;
+    const ini = RT.inicioDe(e), fin = RT.finDe(e);
+    if (t <= ini + 50 || (fin != null && t >= fin - 50)) { aviso("Pon el cabezal dentro del clip para dividirlo"); return; }
+    const c = JSON.parse(JSON.stringify(e));
+    c.id = uid("e");
+    c.nombre = e.nombre + " (2)";
+    c.tiempo = { ...(e.tiempo || {}), inicio: t, fin: fin ?? null };
+    c.anim = { ...(c.anim || {}), entrada: { tipo: "ninguna" } };
+    const i = E.pagina.els.findIndex((x) => x.id === e.id);
+    E.transaccion("Dividir en el cabezal", () => {
+      E.setEl(e.id, { "tiempo.fin": t, "anim.salida": { tipo: "ninguna" } }, "Dividir");
+      E.agregarEl(c, i + 1, E.paginaId, false);
+    });
+    E.seleccionar([c.id]);
+  }
+
+  /** Marcadores de la página (banderitas en la regla). */
+  _marcas() { return (this.E.pagina?.marcas || []).slice().sort((a, b) => a - b); }
+  marcar(t = this.t) {
+    const ms = Math.round(t / PASO) * PASO;
+    const m = this._marcas();
+    if (m.some((x) => Math.abs(x - ms) < 60)) { this.E.setPag({ marcas: m.filter((x) => Math.abs(x - ms) >= 60) }, "Quitar marcador"); return; }
+    this.E.setPag({ marcas: [...m, ms] }, "Marcador");
+  }
+
+  /** Que se vea toda la página (de 0 al final) en el ancho de la línea. */
+  verTodo() {
+    const ancho = Math.max(120, this.cuerpo.clientWidth - this.et - 40);
+    this._zoom((ancho / Math.max(1500, this._total() + 600)) * 1000);
+    this.cuerpo.scrollLeft = 0;
   }
 
   _regla(T) {
     const regla = el("div.ed-tl-regla", { dataset: { k: "regla" } });
-    const paso = this.pps >= 160 ? 250 : this.pps >= 80 ? 500 : 1000;
-    for (let s = 0; s <= T; s += paso) regla.append(el("i" + (s % 1000 ? ".m" : ""), { style: { left: this.x(s) + "px" }, text: s % 1000 ? "" : fmt(s).replace(/\.0$/, "") }));
+    const paso = this.pps >= 320 ? 100 : this.pps >= 160 ? 250 : this.pps >= 80 ? 500 : 1000;
+    const cada = this.pps < 45 ? 2000 : 1000; // con la línea muy lejos, un número cada 2 s
+    for (let s = 0; s <= T; s += paso) regla.append(el("i" + (s % cada ? ".m" : ""), { style: { left: this.x(s) + "px" }, text: s % cada ? "" : fmt(s).replace(/\.0$/, "") }));
+    for (const m of this._marcas()) regla.append(el("b.ed-tl-marcador", { dataset: { marca: String(m) }, style: { left: this.x(m) + "px" }, title: `Marcador en ${fmt(m)} · tócalo para ir · mantén para quitarlo` }));
     return el("div", {}, [el("div.ed-tl-et", { dataset: { k: "et" } }, [el("small", { text: "tiempo" })]), regla]);
   }
 
@@ -286,6 +352,8 @@ export class Linea {
       el("b", { html: ico(TIPOS[e.tipo]?.ico || "elementos") }),
       el("span", { text: e.nombre }),
       marcas.length ? el("em", {}, marcas) : null,
+      el("button.ed-tl-pp" + (e.oculto ? ".on" : ""), { type: "button", dataset: { pp: "oculto", id: e.id }, html: ico(e.oculto ? "ojoNo" : "ojo"), title: e.oculto ? "Mostrar en el editor" : "Esconder en el editor", "aria-label": "Esconder o mostrar" }),
+      el("button.ed-tl-pp" + (e.bloqueado ? ".on" : ""), { type: "button", dataset: { pp: "bloqueado", id: e.id }, html: ico(e.bloqueado ? "candado" : "abierto"), title: e.bloqueado ? "Desbloquear" : "Bloquear (que no se mueva)", "aria-label": "Bloquear o desbloquear" }),
     ].filter(Boolean));
     return el("div.ed-tl-fila" + (sel ? ".on" : "") + (e.oculto ? ".oculto" : ""), { dataset: { id: e.id, k: e.id } }, [et, pista]);
   }
@@ -299,9 +367,14 @@ export class Linea {
       const sel = this.E.unico;
       switch (b.dataset.ac) {
         case "inicio": this.ir(0); break;
-        case "atras": this.ir(this.t - 500); break;
+        case "atras": this.ir(this.t - 100); break;
         case "play": this.alternarPlay(); break;
-        case "adelante": this.ir(this.t + 500); break;
+        case "adelante": this.ir(this.t + 100); break;
+        case "dividir": this.dividir(sel); break;
+        case "marca": this.marcar(); break;
+        case "iman": this.iman = !this.iman; this.pintar(); break;
+        case "bucle": this.bucle = !this.bucle; this.pintar(); break;
+        case "todo": this.verTodo(); break;
         case "final": this.ir(this._total()); break;
         case "aparece": if (sel) this._ponerTiempo(sel, "inicio"); break;
         case "sevay": if (sel) this._ponerTiempo(sel, "fin"); break;
@@ -312,6 +385,20 @@ export class Linea {
         case "cerrar": this.alternar(false); break;
       }
     });
+    this.cab.addEventListener("input", (ev) => { if (ev.target.matches(".ed-tl-zoom")) this._zoom(20 * Math.pow(600 / 20, +ev.target.value / 100), null, true); });
+    // Atajos de teclado, sólo mientras la línea tiene el foco (se tocó).
+    addEventListener("pointerdown", (ev) => { this._foco = this.abierta && this.raiz.contains(ev.target); }, true);
+    addEventListener("keydown", (ev) => {
+      if (!this.abierta || !this._foco || ev.altKey || ev.ctrlKey || ev.metaKey) return;
+      const af = document.activeElement;
+      if (af?.isContentEditable || (/INPUT|TEXTAREA|SELECT/.test(af?.tagName || "") && af.type !== "range")) return;
+      const k = ev.key, paso = ev.shiftKey ? 1000 : 100;
+      const hacer = { " ": () => this.alternarPlay(), ArrowLeft: () => this.ir(this.t - paso), ArrowRight: () => this.ir(this.t + paso), Home: () => this.ir(0), End: () => this.ir(this._total()), s: () => this.dividir(), S: () => this.dividir(), m: () => this.marcar(), M: () => this.marcar(), "+": () => this._zoom(this.pps * 1.4), "=": () => this._zoom(this.pps * 1.4), "-": () => this._zoom(this.pps / 1.4), 0: () => this.verTodo() }[k];
+      if (!hacer) return;
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      hacer();
+    }, true);
     // El asa de arriba: el alto sigue al dedo.
     this.asaEl.addEventListener("pointerdown", (ev) => this._arrastrarAlto(ev));
     // Tocar, arrastrar, agarrar.
@@ -319,6 +406,16 @@ export class Linea {
       if (ev.button > 0) return;
       if (this._dedo(ev)) return;
       if (ev.target.closest(".ed-asa")) return; // cambiar la capa (ordenable)
+      if (ev.target.closest("[data-marca]")) {
+        // Mantener un marcador lo quita.
+        const m = +ev.target.closest("[data-marca]").dataset.marca;
+        clearTimeout(this._tMarca);
+        this._tMarca = setTimeout(() => { vibrar(8); this.marcar(m); }, TOQUE_LARGO);
+        const fuera = () => { clearTimeout(this._tMarca); removeEventListener("pointerup", fuera); };
+        addEventListener("pointerup", fuera);
+        return;
+      }
+      if (ev.target.closest(".ed-tl-pp")) return;
       if (ev.target.closest(".ed-tl-cabezal, .ed-tl-regla, .ed-tl-fregla")) { this._buscar(ev); return; }
       const n = ev.target.closest("[data-arr]");
       if (n) this._tocarArr(ev, n);
@@ -328,6 +425,12 @@ export class Linea {
     // Elegir tocando el nombre.
     this.cuerpo.addEventListener("click", (ev) => {
       if (ev.target.closest(".ed-asa")) return;
+      // Ojo y candado de cada pista.
+      const pp = ev.target.closest("[data-pp]");
+      if (pp) { const x = this.E.el(pp.dataset.id); if (x) this.E.setEl(x.id, { [pp.dataset.pp]: !x[pp.dataset.pp] }, pp.dataset.pp === "oculto" ? (x.oculto ? "Mostrar" : "Esconder") : (x.bloqueado ? "Desbloquear" : "Bloquear")); return; }
+      // Marcadores: tocar = ir.
+      const mk = ev.target.closest("[data-marca]");
+      if (mk) { this.ir(+mk.dataset.marca); return; }
       const et = ev.target.closest(".ed-tl-et");
       if (!et) return;
       if (et.dataset.id) { this.audioSel = null; this.E.seleccionar([et.dataset.id], ev.shiftKey || ev.metaKey || ev.ctrlKey); }
@@ -538,7 +641,8 @@ export class Linea {
     const imanes = [0, this.t];
     for (const o of p.els) if (o.id !== id) { imanes.push(RT.inicioDe(o)); const f = RT.finDe(o); if (f != null) imanes.push(f); }
     for (const o of p.audios || []) if (o.id !== id) { imanes.push(o.inicio || 0); imanes.push((o.inicio || 0) + this._durPista(o)); }
-    const umbral = this.ms(9);
+    imanes.push(...this._marcas());
+    const umbral = this.iman ? this.ms(9) : -1;
     const pegar = (v) => { let m = null; for (const t of imanes) if (Math.abs(t - v) <= umbral && (m == null || Math.abs(t - v) < Math.abs(m - v))) m = t; return m != null ? m : Math.round(v / PASO) * PASO; };
     let fin = null, movio = !!op.agarrado, largo = null;
     // Ratón o clip ya elegido: mantener sin mover = su menú.
@@ -650,6 +754,7 @@ export class Linea {
       { t: t("derA", `Que se vaya en ${fmt(this.t)}`), al: () => this._ponerTiempo(e, "fin") },
       { t: t("bucle", "Que se quede hasta el final"), al: () => E.setEl(e.id, { "tiempo.fin": null }, "Se queda"), off: RT.finDe(e) == null },
       { t: t("inicio", "Que esté desde el principio"), al: () => E.setEl(e.id, { "tiempo.inicio": 0 }, "Desde el principio"), off: !RT.inicioDe(e) },
+      { t: t("tijeras", `Dividir en ${fmt(this.t)}`), al: () => this.dividir(e) },
       "-",
       { t: t("animar", "Sus animaciones…"), al: () => { E.seleccionar([e.id]); this.app.insp.abrir("animar"); } },
       { t: t("play", "Probar sólo éste"), al: () => this.probar([e.id]) },
@@ -776,7 +881,10 @@ export class Linea {
     this._raf = alCuadro(() => {
       if (this.anim !== a || a.quieto) return false;
       this.t = performance.now() - t0;
-      if (this.t >= total) { this.t = total; this.pausar(); return false; }
+      if (this.t >= total) {
+        if (this.bucle && !this.anim?.ids) { this.t = 0; requestAnimationFrame(() => this._play(0)); return false; }
+        this.t = total; this.pausar(); return false;
+      }
       this._pintarCabezal(false, true);
     });
     this._icono();
@@ -843,6 +951,9 @@ export class Linea {
     this.cabezal.style.transform = `translateX(${this.et + x}px)`;
     const txt = `${fmt(this.t)} / ${fmt(this._total())}`;
     if (this.reloj.textContent !== txt) this.reloj.textContent = txt;
+    // «Dividir» sólo se ve activo con el cabezal dentro del clip elegido.
+    const dv = this.herr.querySelector('[data-ac="dividir"]'), s = this.E.unico;
+    if (dv && s) dv.classList.toggle("apagado", !(this.t > RT.inicioDe(s) + 50 && (RT.finDe(s) == null || this.t < RT.finDe(s) - 50)));
     // Que el cabezal no se salga de lo que se ve al reproducir.
     const c = this.cuerpo;
     if (siguiendo && !desdeRegla) {
