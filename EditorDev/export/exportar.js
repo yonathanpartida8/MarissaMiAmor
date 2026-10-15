@@ -205,6 +205,7 @@ export async function exportar(app, { alProgreso, completo = false } = {}) {
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}input,textarea,select,[contenteditable]:not([contenteditable="false"]),[contenteditable]:not([contenteditable="false"]) *{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}</style>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="${fondo}">
 <title>${escapar(P.nombre)}</title>

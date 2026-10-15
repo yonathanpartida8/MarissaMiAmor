@@ -1,6 +1,8 @@
 /**
  * AUDIO — sencillo y visual.
  *
+ *   Efectos de sonido       listos para usar (pop, latido, ¡tadá!…): tocar para
+ *                           oír, «+» para ponerlo en el cabezal de la línea
  *   Pistas de esta página   cada audio con su onda: escuchar/pausar, volumen,
  *                           cuándo empieza y cuánto suena, verlo en la línea de
  *                           tiempo (ahí se arrastra y se recorta) y quitarlo
@@ -13,6 +15,8 @@ import { ico } from "../iconos.js";
 import { elegir } from "../../assets/selector.js";
 import { catalogo } from "../../componentes/catalogo.js";
 import { rutaAUrl } from "../../assets/biblioteca.js";
+import { rejillaEfectos, abrirEfectos } from "../efectos-sonido.js";
+import { assetEfecto } from "../../audio/efectos.js";
 
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 const fmt = (ms) => { const s = Math.max(0, ms || 0) / 1000; return `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, "0")}`; };
@@ -35,6 +39,23 @@ export const AUDIO = {
     const g = this._pag();
     const nombre = (id) => (id && this.P.assets[id]?.nombre) || null;
     const escuchar = (id) => this._botonEscuchar(() => app.bib.url(id));
+    // ── Efectos de sonido (primero: es lo que más se usa) ──
+    const ponerEfecto = async (s, caja) => {
+      caja.classList.add("cargando");
+      try {
+        const id = await assetEfecto(app, s.id);
+        const t = Math.round((T.t || 0) / 50) * 50;
+        T.agregarPista(id, t, { nombre: s.n });
+        aviso(`«${s.n}» en ${fmt(t)} de la línea de tiempo`, 2400);
+        this.rehacer();
+      } catch (e) { aviso("No se pudo preparar ese efecto en este navegador", 3000, "error"); } finally { caja.classList.remove("cargando"); }
+    };
+    const btnElegido = E.unico ? boton(I("toque", `Que suene al tocar «${E.unico.nombre}»…`), (ev) => abrirEfectos(app, ev.currentTarget, { donde: "tocar" }), "chico") : null;
+    c.append(seccion("Efectos de sonido", [
+      el("small.ed-ayuda", { text: "Toca uno para oírlo; con «+» se pone en la línea de tiempo, donde está el cabezal. Suenan igual en el librito." }),
+      rejillaEfectos(ponerEfecto, "Poner en la línea"),
+      btnElegido,
+    ].filter(Boolean)));
     // ── Pistas de esta página ──
     const pistas = E.pagina?.audios || [];
     const lista = el("div.ed-pistas", {}, pistas.map((a) => {

@@ -43,9 +43,15 @@
  *   Cada pista   ojo (esconder en el editor) y candado (bloquear)
  *   Teclado      (con la línea tocada) Espacio reproduce · ←/→ 0,1 s (Mayús 1 s)
  *                · Inicio/Fin · S divide · M marcador · +/− zoom · 0 ver todo
+ *                · ↑/↓ salta al corte anterior/siguiente · Supr quita lo elegido
+ *                · Ctrl/Cmd+D lo duplica · Alt+←/→ lo corre 0,1 s (Mayús 1 s)
+ *   Efectos      la campanita: efectos de sonido listos (pop, latido, ¡tadá!…)
+ *                que se ponen en el cabezal como una pista más
+ *   Audio        cada pista se puede silenciar (sin quitarla)
  */
 import { alCuadro } from "../config/cuadros.js";
 import { el, menu, ordenable, COMPACTO, popover, control, Vinculos, fila, aviso } from "../components/ui.js";
+import { abrirEfectos } from "../components/efectos-sonido.js";
 import { ico } from "../components/iconos.js";
 import { TIPOS, uid } from "../core/modelo.js";
 import { holgura, TOQUE_LARGO, vibrar, enCuadro } from "../canvas/gestos.js";
@@ -202,6 +208,7 @@ export class Linea {
         b("iman", "iman", "Imán: pegar al cabezal, a otros clips y a los marcadores", this.iman ? "on" : ""),
         b("bucle", "bucle", "Repetir en bucle al reproducir", this.bucle ? "on" : ""),
         b("musica", "audio", "Escuchar la música de la página al reproducir", this.conMusica ? "on" : ""),
+        b("sfx", "campana", "Efectos de sonido en el cabezal"),
         b("pista", "onda", "Añadir una pista de audio aquí"),
       ]),
       el("div.ed-tl-g.zoom", {}, [b("menos", "zoomMenos", "Alejar (−)"), zoom, b("mas", "zoomMas", "Acercar (+)"), b("todo", "ajustar", "Ver todo (0)")]),
@@ -228,6 +235,46 @@ export class Linea {
       E.agregarEl(c, i + 1, E.paginaId, false);
     });
     E.seleccionar([c.id]);
+  }
+
+  /** Supr: quita la pista de audio elegida, o lo elegido de la hoja. */
+  borrarClip() {
+    const a = this.audioSel && this._pista(this.audioSel);
+    if (a) { this.quitarPista(a.id); this.audioSel = null; return; }
+    if (this.E.sel.length) this.app.acciones?.borrar?.();
+  }
+
+  /** Ctrl/Cmd+D: duplica la pista elegida (justo después de ella) o lo elegido de la hoja. */
+  duplicarClip() {
+    const a = this.audioSel && this._pista(this.audioSel);
+    if (a) { const { id, inicio, ...resto } = a; this.agregarPista(a.asset, (inicio || 0) + this._durPista(a), resto); return; }
+    if (this.E.sel.length) this.app.acciones?.duplicar?.();
+  }
+
+  /** Alt+←/→: corre en el tiempo lo elegido (la pista o los elementos), sin moverlo de la hoja. */
+  empujar(dt) {
+    const a = this.audioSel && this._pista(this.audioSel);
+    if (a) { this._ponerPista(a.id, { inicio: Math.max(0, (a.inicio || 0) + dt) }, "Mover pista", "mover" + a.id); return; }
+    const E = this.E, sel = E.seleccionados;
+    if (!sel.length) return;
+    E.transaccion("Correr en el tiempo", () => {
+      for (const e of sel) {
+        const ini = RT.inicioDe(e), fin = RT.finDe(e), d = Math.max(-ini, dt);
+        E.setEl(e.id, { "tiempo.inicio": ini + d, ...(fin != null ? { "tiempo.fin": fin + d } : {}) }, "Correr en el tiempo");
+      }
+    });
+  }
+
+  /** ↑/↓: el cabezal salta al corte anterior o siguiente (inicios y finales de clips y pistas, marcadores). */
+  saltar(dir) {
+    const p = this.E.pagina;
+    if (!p) return;
+    const puntos = new Set([0, this._total(), ...this._marcas()]);
+    for (const e of p.els) { puntos.add(RT.inicioDe(e)); const f = RT.finDe(e); if (f != null) puntos.add(f); }
+    for (const a of p.audios || []) { puntos.add(a.inicio || 0); puntos.add((a.inicio || 0) + this._durPista(a)); }
+    const lista = [...puntos].filter(Number.isFinite).sort((x, y) => x - y);
+    const dest = dir < 0 ? [...lista].reverse().find((x) => x < this.t - 20) : lista.find((x) => x > this.t + 20);
+    if (dest != null) this.ir(dest);
   }
 
   /** Marcadores de la página (banderitas en la regla). */
@@ -288,7 +335,7 @@ export class Linea {
     if (url && AU && (!onda || !largo)) AU.onda(url).then(() => this._re()).catch(() => {});
     const est = { left: 0, right: 0 };
     if (onda && largo) Object.assign(est, { backgroundImage: `url("${onda}")`, backgroundSize: `${this.x(largo)}px 100%`, backgroundPositionX: `${-this.x(a.desde || 0)}px`, backgroundRepeat: a.bucle ? "repeat-x" : "no-repeat" });
-    const clip = el("div.ed-tl-clip.ed-tl-aclip" + (sel ? ".on" : ""), {
+    const clip = el("div.ed-tl-clip.ed-tl-aclip" + (sel ? ".on" : "") + (a.silencio ? ".mudo" : ""), {
       dataset: { arr: "audio", id: a.id },
       style: { transform: `translateX(${this.x(a.inicio || 0)}px)`, width: Math.max(16, this.x(dur)) + "px" },
       title: `${nombre}: empieza en ${fmt(a.inicio || 0)} y suena ${fmt(dur)}${a.bucle ? " (en bucle)" : ""} · volumen ${Math.round((a.vol ?? 0.9) * 100)} %`,
@@ -300,6 +347,7 @@ export class Linea {
     ]);
     const et = el("div.ed-tl-et" + (sel ? ".on" : ""), { dataset: { audio: a.id } }, [
       el("b", { html: ico("onda") }), el("span", { text: nombre }), el("em", { text: Math.round((a.vol ?? 0.9) * 100) + "%" }),
+      el("button.ed-tl-pp" + (a.silencio ? ".on" : ""), { type: "button", dataset: { mudo: a.id }, html: ico(a.silencio ? "silencio" : "volumen"), title: a.silencio ? "Que vuelva a sonar" : "Silenciar esta pista (sin quitarla)", "aria-label": "Silenciar o no" }),
     ]);
     return el("div.ed-tl-fila.ed-tl-faudio" + (sel ? ".on" : ""), { dataset: { k: "a:" + a.id } }, [et, el("div.ed-tl-pista", {}, [clip])]);
   }
@@ -377,6 +425,7 @@ export class Linea {
         case "iman": this.iman = !this.iman; this.pintar(); break;
         case "bucle": this.bucle = !this.bucle; this.pintar(); break;
         case "todo": this.verTodo(); break;
+        case "sfx": abrirEfectos(this.app, b); break;
         case "final": this.ir(this._total()); break;
         case "aparece": if (sel) this._ponerTiempo(sel, "inicio"); break;
         case "sevay": if (sel) this._ponerTiempo(sel, "fin"); break;
@@ -391,11 +440,14 @@ export class Linea {
     // Atajos de teclado, sólo mientras la línea tiene el foco (se tocó).
     addEventListener("pointerdown", (ev) => { this._foco = this.abierta && this.raiz.contains(ev.target); }, true);
     addEventListener("keydown", (ev) => {
-      if (!this.abierta || !this._foco || ev.altKey || ev.ctrlKey || ev.metaKey) return;
+      if (!this.abierta || !this._foco) return;
       const af = document.activeElement;
       if (af?.isContentEditable || (/INPUT|TEXTAREA|SELECT/.test(af?.tagName || "") && af.type !== "range")) return;
-      const k = ev.key, paso = ev.shiftKey ? 1000 : 100;
-      const hacer = { " ": () => this.alternarPlay(), ArrowLeft: () => this.ir(this.t - paso), ArrowRight: () => this.ir(this.t + paso), Home: () => this.ir(0), End: () => this.ir(this._total()), s: () => this.dividir(), S: () => this.dividir(), m: () => this.marcar(), M: () => this.marcar(), "+": () => this._zoom(this.pps * 1.4), "=": () => this._zoom(this.pps * 1.4), "-": () => this._zoom(this.pps / 1.4), 0: () => this.verTodo() }[k];
+      const k = ev.key, paso = ev.shiftKey ? 1000 : 100, mod = ev.ctrlKey || ev.metaKey;
+      let hacer = null;
+      if (mod && !ev.altKey) hacer = /^d$/i.test(k) ? () => this.duplicarClip() : null;
+      else if (ev.altKey && !mod) hacer = k === "ArrowLeft" ? () => this.empujar(-paso) : k === "ArrowRight" ? () => this.empujar(paso) : null;
+      else if (!mod && !ev.altKey) hacer = { " ": () => this.alternarPlay(), ArrowLeft: () => this.ir(this.t - paso), ArrowRight: () => this.ir(this.t + paso), ArrowUp: () => this.saltar(-1), ArrowDown: () => this.saltar(1), Home: () => this.ir(0), End: () => this.ir(this._total()), Delete: () => this.borrarClip(), Backspace: () => this.borrarClip(), s: () => this.dividir(), S: () => this.dividir(), m: () => this.marcar(), M: () => this.marcar(), "+": () => this._zoom(this.pps * 1.4), "=": () => this._zoom(this.pps * 1.4), "-": () => this._zoom(this.pps / 1.4), 0: () => this.verTodo() }[k];
       if (!hacer) return;
       ev.preventDefault();
       ev.stopImmediatePropagation();
@@ -428,6 +480,8 @@ export class Linea {
     this.cuerpo.addEventListener("click", (ev) => {
       if (ev.target.closest(".ed-asa")) return;
       // Ojo y candado de cada pista.
+      const mu = ev.target.closest("[data-mudo]");
+      if (mu) { const a = this._pista(mu.dataset.mudo); if (a) this._ponerPista(a.id, { silencio: !a.silencio }, a.silencio ? "Pista con sonido" : "Silenciar pista"); return; }
       const pp = ev.target.closest("[data-pp]");
       if (pp) { const x = this.E.el(pp.dataset.id); if (x) this.E.setEl(x.id, { [pp.dataset.pp]: !x[pp.dataset.pp] }, pp.dataset.pp === "oculto" ? (x.oculto ? "Mostrar" : "Esconder") : (x.bloqueado ? "Desbloquear" : "Bloquear")); return; }
       // Marcadores: tocar = ir.
@@ -771,6 +825,8 @@ export class Linea {
       { t: t("play", "Escuchar desde su principio"), al: () => this.app.audio?.pistas([this._datosPista(a)], a.inicio || 0, true) },
       { t: t("volumen", `Volumen · ${Math.round((a.vol ?? 0.9) * 100)} %`), al: () => this._volumenPista(a, x, y) },
       { t: t("bucle", a.bucle ? "Que no se repita" : "Que se repita (en bucle)"), al: () => this._ponerPista(a.id, { bucle: !a.bucle }, "Bucle") },
+      { t: t(a.silencio ? "volumen" : "silencio", a.silencio ? "Que vuelva a sonar" : "Silenciar (sin quitarla)"), al: () => this._ponerPista(a.id, { silencio: !a.silencio }, "Silenciar pista") },
+      { t: t("duplicar", "Duplicar (justo después)"), al: () => { this.audioSel = a.id; this.duplicarClip(); } },
       "-",
       { t: t("izqA", `Que empiece en ${fmt(this.t)}`), al: () => this._ponerPista(a.id, { inicio: Math.round(this.t / PASO) * PASO }, "Mover pista") },
       { t: t("derA", `Que termine en ${fmt(this.t)}`), al: () => this._ponerPista(a.id, { dur: Math.max(200, Math.round(this.t / PASO) * PASO - (a.inicio || 0)) }, "Recortar pista"), off: this.t <= (a.inicio || 0) + 200 },
@@ -871,7 +927,7 @@ export class Linea {
     this.t = desde;
     this._sonidos(desde, ids);
     const p = this.E.pagina;
-    if (!ids && p.audios?.length) this.app.audio?.pistas(p.audios.map((x) => this._datosPista(x)), desde);
+    if (!ids && p.audios?.length) this.app.audio?.pistas(p.audios.filter((x) => !x.silencio).map((x) => this._datosPista(x)), desde);
     if (this.conMusica) {
       const g = this.E.proyecto.ajustes.musica || {}, m = p.musica || {};
       const id = m.modo === "silencio" ? null : m.modo === "propia" ? m.asset : g.asset;

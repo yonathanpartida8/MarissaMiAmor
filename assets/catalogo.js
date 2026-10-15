@@ -21,7 +21,7 @@ export default {
      "archivos": [
       "aurora.html"
      ],
-     "peso": 2582,
+     "peso": 2990,
      "suelto": true,
      "fecha": 1791530703000
     },
@@ -40,7 +40,7 @@ export default {
      "archivos": [
       "contador-de-dias.html"
      ],
-     "peso": 2485,
+     "peso": 2893,
      "suelto": true,
      "fecha": 1791530703000
     },
@@ -59,7 +59,7 @@ export default {
      "archivos": [
       "corazon-neon.html"
      ],
-     "peso": 2405,
+     "peso": 2813,
      "suelto": true,
      "fecha": 1791530703000
     },
@@ -78,7 +78,7 @@ export default {
      "archivos": [
       "hilo-rojo.html"
      ],
-     "peso": 4018,
+     "peso": 4426,
      "suelto": true,
      "fecha": 1791530703000
     },
@@ -97,7 +97,7 @@ export default {
      "archivos": [
       "lluvia-de-petalos.html"
      ],
-     "peso": 2203,
+     "peso": 2611,
      "suelto": true,
      "fecha": 1791530703000
     },
@@ -116,7 +116,7 @@ export default {
      "archivos": [
       "luciernagas.html"
      ],
-     "peso": 2813,
+     "peso": 3221,
      "suelto": true,
      "fecha": 1791530703000
     },
@@ -135,7 +135,7 @@ export default {
      "archivos": [
       "mensajito.html"
      ],
-     "peso": 2984,
+     "peso": 3392,
      "suelto": true,
      "fecha": 1791530703000
     },
@@ -154,7 +154,7 @@ export default {
      "archivos": [
       "rayos.html"
      ],
-     "peso": 3588,
+     "peso": 3996,
      "suelto": true,
      "fecha": 1791530703000
     },
@@ -173,7 +173,7 @@ export default {
      "archivos": [
       "vinilo.html"
      ],
-     "peso": 3034,
+     "peso": 3442,
      "suelto": true,
      "fecha": 1791530703000
     }
@@ -198,7 +198,7 @@ export default {
      "archivos": [
       "boton-brillo.html"
      ],
-     "peso": 1182,
+     "peso": 1590,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -217,7 +217,7 @@ export default {
      "archivos": [
       "boton-corazon-latido.html"
      ],
-     "peso": 1396,
+     "peso": 1804,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -236,7 +236,7 @@ export default {
      "archivos": [
       "boton-crayon.html"
      ],
-     "peso": 1008,
+     "peso": 1416,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -255,7 +255,7 @@ export default {
      "archivos": [
       "boton-retro.html"
      ],
-     "peso": 903,
+     "peso": 1311,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -274,7 +274,7 @@ export default {
      "archivos": [
       "boton-te-amo.html"
      ],
-     "peso": 1603,
+     "peso": 2011,
      "suelto": true,
      "fecha": 1791305608000
     },
@@ -334,7 +334,7 @@ export default {
       "script.js",
       "style.css"
      ],
-     "peso": 4586,
+     "peso": 4994,
      "fecha": 1791236534000
     }
    ]
@@ -358,7 +358,7 @@ export default {
      "archivos": [
       "marco-de-corazones.html"
      ],
-     "peso": 970,
+     "peso": 1378,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -377,7 +377,7 @@ export default {
      "archivos": [
       "marco-dorado.html"
      ],
-     "peso": 1106,
+     "peso": 1514,
      "suelto": true,
      "fecha": 1791305608000
     },
@@ -410,7 +410,7 @@ export default {
       "asset.json",
       "index.html"
      ],
-     "peso": 2246,
+     "peso": 2654,
      "fecha": 1791236534000
     }
    ]
@@ -434,7 +434,7 @@ export default {
      "archivos": [
       "cartita-que-se-abre.html"
      ],
-     "peso": 1839,
+     "peso": 2247,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -453,7 +453,7 @@ export default {
      "archivos": [
       "tarjeta-que-se-voltea.html"
      ],
-     "peso": 1413,
+     "peso": 1821,
      "suelto": true,
      "fecha": 1791305608000
     }
@@ -478,7 +478,7 @@ export default {
      "archivos": [
       "fondo-de-hojas.html"
      ],
-     "peso": 1027,
+     "peso": 1435,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -497,7 +497,7 @@ export default {
      "archivos": [
       "guirnalda-de-hojas.html"
      ],
-     "peso": 1470,
+     "peso": 1878,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -516,7 +516,7 @@ export default {
      "archivos": [
       "hoja-con-corazon.html"
      ],
-     "peso": 960,
+     "peso": 1368,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -535,7 +535,7 @@ export default {
      "archivos": [
       "hoja-de-cuaderno.html"
      ],
-     "peso": 1173,
+     "peso": 1581,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -554,7 +554,7 @@ export default {
      "archivos": [
       "hoja-grande.html"
      ],
-     "peso": 1567,
+     "peso": 1975,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -573,7 +573,7 @@ export default {
      "archivos": [
       "hojas-otonales-cayendo.html"
      ],
-     "peso": 1658,
+     "peso": 2066,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -592,7 +592,7 @@ export default {
      "archivos": [
       "hojitas-pequenas.html"
      ],
-     "peso": 1320,
+     "peso": 1728,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -611,7 +611,7 @@ export default {
      "archivos": [
       "hojas-rosas-flotando.html"
      ],
-     "peso": 1557,
+     "peso": 1965,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -630,7 +630,7 @@ export default {
      "archivos": [
       "lluvia-de-hojas-verdes.html"
      ],
-     "peso": 1648,
+     "peso": 2056,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -649,7 +649,7 @@ export default {
      "archivos": [
       "rama-con-hojas.html"
      ],
-     "peso": 1441,
+     "peso": 1849,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -668,7 +668,7 @@ export default {
      "archivos": [
       "tarjeta-de-otono.html"
      ],
-     "peso": 1571,
+     "peso": 1979,
      "suelto": true,
      "fecha": 1791358477000
     }
@@ -693,7 +693,7 @@ export default {
      "archivos": [
       "corazon-que-se-dibuja.html"
      ],
-     "peso": 1046,
+     "peso": 1454,
      "suelto": true,
      "fecha": 1791305608000
     }
@@ -718,7 +718,7 @@ export default {
      "archivos": [
       "VerletLamp.html"
      ],
-     "peso": 13159,
+     "peso": 13567,
      "suelto": true,
      "fecha": 1791585271000
     },
@@ -737,7 +737,7 @@ export default {
      "archivos": [
       "brillitos.html"
      ],
-     "peso": 1090,
+     "peso": 1498,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -756,7 +756,7 @@ export default {
      "archivos": [
       "burbujas.html"
      ],
-     "peso": 1029,
+     "peso": 1437,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -775,7 +775,7 @@ export default {
      "archivos": [
       "confeti.html"
      ],
-     "peso": 1548,
+     "peso": 1956,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -794,7 +794,7 @@ export default {
      "archivos": [
       "estrellas-fugaces.html"
      ],
-     "peso": 988,
+     "peso": 1396,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -813,7 +813,7 @@ export default {
      "archivos": [
       "mariposas.html"
      ],
-     "peso": 1494,
+     "peso": 1902,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -832,7 +832,7 @@ export default {
      "archivos": [
       "nubes.html"
      ],
-     "peso": 1099,
+     "peso": 1507,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -851,7 +851,7 @@ export default {
      "archivos": [
       "texto-te-amo.html"
      ],
-     "peso": 780,
+     "peso": 1188,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -870,7 +870,7 @@ export default {
      "archivos": [
       "corazones-que-suben.html"
      ],
-     "peso": 1354,
+     "peso": 1762,
      "suelto": true,
      "fecha": 1791305608000
     },
@@ -889,7 +889,7 @@ export default {
      "archivos": [
       "soleado.html"
      ],
-     "peso": 1978,
+     "peso": 2386,
      "suelto": true,
      "fecha": 1791305608000
     }
@@ -1080,7 +1080,7 @@ export default {
      "archivos": [
       "reproductor-casete.html"
      ],
-     "peso": 1747,
+     "peso": 2155,
      "suelto": true,
      "fecha": 1791358477000
     },
@@ -1127,7 +1127,7 @@ export default {
       "script.js",
       "style.css"
      ],
-     "peso": 3943,
+     "peso": 4351,
      "fecha": 1791236534000
     }
    ]
@@ -1165,7 +1165,7 @@ export default {
       "asset.json",
       "index.html"
      ],
-     "peso": 2010,
+     "peso": 2418,
      "fecha": 1791236534000
     }
    ]
@@ -1206,7 +1206,7 @@ export default {
       "asset.json",
       "index.html"
      ],
-     "peso": 2703,
+     "peso": 3111,
      "fecha": 1791236534000
     }
    ]
@@ -1253,7 +1253,7 @@ export default {
       "asset.json",
       "index.html"
      ],
-     "peso": 1737,
+     "peso": 2145,
      "fecha": 1791236534000
     }
    ]

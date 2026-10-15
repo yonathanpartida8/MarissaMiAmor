@@ -422,7 +422,8 @@
      (<!DOCTYPE>, <html>, <head>, <style>, <script>, <body>…). Al principio
      se le pone un «puente» chiquito para que lo que el aislamiento no deja
      (localStorage, cookies) no rompa sus scripts: guardan en memoria. */
-  const PUENTE = "<script>(function(){function M(){var d={};return{getItem:function(k){return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null},setItem:function(k,v){d[k]=String(v)},removeItem:function(k){delete d[k]},clear:function(){d={}},key:function(i){return Object.keys(d)[i]||null},get length(){return Object.keys(d).length}}}"
+  const PUENTE = '<style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}input,textarea,select,[contenteditable]:not([contenteditable="false"]),[contenteditable]:not([contenteditable="false"]) *{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}</style>'
+    + "<script>(function(){function M(){var d={};return{getItem:function(k){return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null},setItem:function(k,v){d[k]=String(v)},removeItem:function(k){delete d[k]},clear:function(){d={}},key:function(i){return Object.keys(d)[i]||null},get length(){return Object.keys(d).length}}}"
     + "['localStorage','sessionStorage'].forEach(function(n){try{window[n].getItem('x')}catch(e){try{Object.defineProperty(window,n,{value:M(),configurable:true})}catch(x){}}});"
     + "try{document.cookie}catch(e){try{var c='';Object.defineProperty(document,'cookie',{get:function(){return c},set:function(v){c=String(v).split(';')[0]},configurable:true})}catch(x){}}})();<\/script>";
   RT.esDocumento = function (codigo) { return /^\s*(<!--[\s\S]*?-->\s*)*<!doctype\s+html|<html[\s>]|<head[\s>]|<body[\s>]/i.test(String(codigo || "")); };

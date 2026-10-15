@@ -16,6 +16,7 @@ import { DIBUJOS, FORMAS } from "../assets/dibujos.js";
 import { elegir } from "../assets/selector.js";
 import { seccionToque, seccionToquePagina } from "./toques.js";
 import { PAPELES, fondoDePapel, muestraPapel, nombrePapel } from "./temas-hoja.js";
+import { abrirEfectos } from "./efectos-sonido.js";
 
 const RT = window.LibritoRT;
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
@@ -520,7 +521,8 @@ export class Inspector {
       this._elegirAudio(leer("tocar"), set("tocar"), "Al tocarlo"),
       this._elegirAudio(leer("aparecer"), set("aparecer"), "Al aparecer"),
       fila("Volumen", this._ctl(e)("sonidos.volumen", { tipo: "rango", min: 0, max: 1, paso: 0.05, def: 0.9 })),
-      el("small.ed-ayuda", { text: "Pon tus sonidos en assets/ (cualquier carpeta) o súbelos aquí." }),
+      boton(I("campana", "Efectos de sonido listos…"), (ev) => abrirEfectos(this.app, ev.currentTarget, { donde: "tocar" }), "chico"),
+      el("small.ed-ayuda", { text: "Elige un efecto listo (pop, latido, ¡tadá!…), pon tus sonidos en assets/ o súbelos aquí." }),
     ], { abierta: !!(e.sonidos?.tocar || e.sonidos?.aparecer) });
   }
 

@@ -46,6 +46,8 @@
       if (this.op.soloPagina) Object.assign(this.rep, { flechas: false, progreso: false, indice: false, deslizar: false, autoAvance: 0, tocarParaEmpezar: false });
       this._sonandoPistas = [];
       this.orden = datos.orden.slice();
+      // Si el librito usa el botón de música de la hoja, el chip viejo «♪» ya no sale (sólo el nuevo).
+      this.botonNuevo = Object.values(datos.paginas || {}).some((p) => (p.els || []).some((e) => e.tipo === "musica"));
       this.i = -1;
       this.actual = null;
       this.ocupado = false;
@@ -266,7 +268,7 @@
       if (m.modo === "silencio") src = null;
       else if (m.modo === "propia" && m.asset) { src = this.op.url(m.asset); vol = RT.num(m.volumen, 0.8); bucle = m.bucle !== false; }
       else if (g.asset) { src = this.op.url(g.asset); vol = RT.num(g.volumen, 0.8); bucle = g.bucle !== false; }
-      this.btnMusica.hidden = !src && !this.musica.actual;
+      this.btnMusica.hidden = this.botonNuevo || (!src && !this.musica.actual);
       this.raiz.classList.toggle("rt-con-musica", !!src);
       this.musica.poner(src, vol, bucle);
     }
@@ -291,6 +293,7 @@
     _pistas(pag) {
       this._pararPistas();
       for (const t of pag.audios || []) {
+        if (t.silencio) continue; // silenciada en la línea de tiempo
         const url = this.op.url(t.asset);
         if (!url) continue;
         const s = { relojes: [], a: null };
