@@ -8,6 +8,7 @@
 import { el } from "../../src/utils/dom.js";
 import { ico } from "./iconos.js";
 import { Hoja, asa } from "./hoja.js";
+import { elegirLetra, elegirColor, normalHex } from "./selectores.js";
 
 export { el };
 
@@ -67,11 +68,22 @@ export function control(v, { tipo = "numero", leer, escribir, min, max, paso = 1
       break;
     }
     case "color": {
-      n = el("div.ed-color", {}, [el("input", { type: "color" }), el("input", { type: "text", spellcheck: "false", placeholder: "#rrggbb" })]);
-      const [c, t] = n.children;
-      c.addEventListener("input", () => { t.value = c.value; poner(c.value); });
-      t.addEventListener("change", () => { const x = t.value.trim(); if (x) { poner(x); if (/^#[0-9a-f]{6}$/i.test(x)) c.value = x; } });
-      v.add(() => { const x = leer() || ""; if (!enfocado(t)) t.value = x; if (/^#[0-9a-f]{6}$/i.test(x)) c.value = x; });
+      // Una muestra con su código: al tocarla se abre el selector de color
+      // (el mismo en todo el editor). Arrastrar en él es un solo «deshacer».
+      n = el("button.ed-color", { type: "button", title: "Elegir color" }, [el("i.ed-color-m"), el("span.ed-color-t")]);
+      const [m, t] = n.children;
+      let fin = null;
+      const ponerColor = (c, enVivo) => {
+        const E = window.EditorDev?.estado;
+        if (enVivo && !fin && E?.gesto) fin = E.gesto("Color");
+        poner(c);
+        if (!enVivo && fin) { fin(); fin = null; }
+      };
+      n.addEventListener("click", () => {
+        const E = window.EditorDev?.estado;
+        elegirColor(n, { titulo: n.closest(".ed-fila")?.querySelector(".ed-et")?.textContent || "Color", leer, poner: ponerColor, pagina: E?.pagina, tema: E?.proyecto?.ajustes?.tema });
+      });
+      v.add(() => { const x = leer() || ""; m.style.background = x || "transparent"; t.textContent = normalHex(x) || x || "—"; });
       break;
     }
     case "texto": case "area": {
@@ -94,7 +106,7 @@ export function control(v, { tipo = "numero", leer, escribir, min, max, paso = 1
     case "fuente": {
       const RT = window.LibritoRT;
       n = el("button.ed-sel.ed-sel-fuente", { type: "button", title: "Elegir la letra" });
-      n.addEventListener("click", () => elegirFuente(n, leer, poner));
+      n.addEventListener("click", () => elegirFuente(n, leer, poner, { muestra: window.EditorDev?.estado?.unico?.texto?.html }));
       v.add(() => { const f = leer() || "Sistema"; n.textContent = nombreFuente(f); n.style.fontFamily = RT.pilaFuente(f); RT.cargarFuentes([f]); });
       break;
     }
@@ -327,30 +339,8 @@ const GRUPOS_LETRA = [["mano", "A mano"], ["serif", "Elegantes"], ["sans", "Mode
  * buscador. Tocar una la aplica al momento (se puede ir probando) y la deja
  * marcada; se cierra tocando fuera o bajando la hojita.
  */
-export function elegirFuente(ancla, leer, poner) {
-  const RT = window.LibritoRT;
-  const todas = Object.keys(RT.FUENTES);
-  RT.cargarFuentes(todas);
-  const buscar = el("input.ed-txt.ed-buscar", { type: "search", placeholder: "Buscar letra…", enterkeyhint: "search" });
-  const lista = el("div.ed-fuentes");
-  const marcar = (f) => { for (const x of lista.querySelectorAll(".ed-fuente")) x.classList.toggle("on", x.dataset.f === f); };
-  const pintar = () => {
-    const q = buscar.value.trim().toLowerCase();
-    const actual = nombreFuente(leer());
-    lista.textContent = "";
-    for (const [t, titulo] of [...GRUPOS_LETRA, ["", "Otras"]]) {
-      const fs = todas.filter((f) => (t ? RT.FUENTES[f].tipo === t : !GRUPOS_LETRA.some(([g]) => g === RT.FUENTES[f].tipo)) && (!q || f.toLowerCase().includes(q)));
-      if (!fs.length) continue;
-      lista.append(el("b.ed-fuentes-t", { text: titulo }));
-      for (const f of fs) lista.append(el("button.ed-fuente" + (f === actual ? ".on" : ""), { type: "button", dataset: { f }, style: { fontFamily: RT.pilaFuente(f) }, onClick: () => { poner(f); marcar(f); } }, [el("span", { text: f }), el("small", { text: "Te amo" })]));
-    }
-    if (!lista.childElementCount) lista.append(el("p.ed-vacio-txt", { text: "Ninguna letra con ese nombre." }));
-  };
-  buscar.addEventListener("input", pintar);
-  pintar();
-  const p = popover(ancla, [el("b.ed-pop-t", { text: "Letra" }), buscar, lista], { clase: "ed-pop-letras" });
-  requestAnimationFrame(() => { const on = lista.querySelector(".on"); if (on) lista.scrollTop = on.offsetTop - lista.clientHeight / 2; });
-  return p;
+export function elegirFuente(ancla, leer, poner, op) {
+  return elegirLetra(ancla, leer, poner, op);
 }
 
 export function popover(ancla, contenido, { clase = "" } = {}) {
@@ -377,6 +367,8 @@ export function popover(ancla, contenido, { clase = "" } = {}) {
     const a = asa();
     p.prepend(a);
     h = new Hoja(p, { asa: a, cerrable: true, alCerrar: quitar });
+    // (Antes faltaba «ver» aquí: en el teléfono la hojita subía invisible.)
+    p.classList.add("ver");
     h.abrir(0);
   } else requestAnimationFrame(() => p.classList.add("ver"));
   return { nodo: p, cerrar };

@@ -10,12 +10,12 @@
  * las pestañas, con botones grandes y desplazable de lado.
  */
 import { el, control, Vinculos, popover, menu, esMovil, elegirFuente } from "./ui.js";
+import { elegirColor } from "./selectores.js";
 import { leerRuta } from "../core/estado.js";
 import { ico } from "./iconos.js";
 
 const RT = window.LibritoRT;
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
-const PASTEL = ["#3b2a3f", "#ffffff", "#d8397a", "#ff8fb8", "#ffc4d9", "#f7b787", "#ffe08a", "#9fd8c2", "#a7c7e7", "#c3b1e1", "#8e2f86", "#f6efe6"];
 
 export class BarraContextual {
   constructor(app, raiz) {
@@ -56,15 +56,14 @@ export class BarraContextual {
     const E = this.E;
     const muestra = el("i.ed-cb-muestra");
     const b = this._b("", titulo, (a) => {
-      const pon = (c) => { E.transaccion(titulo, () => { for (const x of E.seleccionados) E.setEl(x.id, { [ruta]: c }, titulo); }); };
-      const tema = this.E.proyecto.ajustes.tema;
-      const colores = [...new Set([tema.texto, tema.acento, tema.fondo, ...PASTEL])];
-      popover(a, [
-        el("b.ed-pop-t", { text: titulo }),
-        el("div.ed-pop-colores", {}, colores.map((c) => el("button", { type: "button", style: { background: c }, title: c, onClick: () => pon(c) }))),
-        this._ctl(ruta, { tipo: "color", nombre: titulo }),
-      ]);
-      this.v.refrescar();
+      // Arrastrar en el selector es un solo «deshacer» para todo lo elegido.
+      let fin = null;
+      const pon = (c, enVivo) => {
+        if (!fin) fin = E.gesto(titulo);
+        for (const x of E.seleccionados) E.setEl(x.id, { [ruta]: c }, titulo);
+        if (!enVivo) { fin(); fin = null; }
+      };
+      elegirColor(a, { titulo, leer: () => leerRuta(E.seleccionados[0] || {}, ruta), poner: pon, pagina: E.pagina, tema: E.proyecto.ajustes.tema });
     }, "color");
     b.append(muestra);
     this.v.add(() => { const x = this.E.seleccionados[0]; muestra.style.background = (x && leerRuta(x, ruta)) || def || "#fff"; });
@@ -99,7 +98,7 @@ export class BarraContextual {
       if (sel.every((x) => x.tipo === "texto")) {
         const fuente = this._b("", "Letra", (a) => elegirFuente(a, () => E.seleccionados[0]?.texto?.fuente, (f) => {
           E.transaccion("Letra", () => { for (const x of E.seleccionados) E.setEl(x.id, { "texto.fuente": f }, "Letra"); });
-        }), "fuente");
+        }, { muestra: E.seleccionados[0]?.texto?.html }), "fuente");
         this.v.add(() => { const f = E.seleccionados[0]?.texto?.fuente || "—"; fuente.textContent = f.split(",")[0].replace(/["']/g, ""); fuente.style.fontFamily = RT.pilaFuente(f); });
         const tam = this._ctl("texto.tam", { tipo: "numero", min: 6, max: 300, nombre: "Tamaño", alto: true });
         const paso = (d) => this._b(ico(d > 0 ? "mas" : "menos"), d > 0 ? "Más grande" : "Más chico", () => { E.transaccion("Tamaño", () => { for (const x of E.seleccionados) E.setEl(x.id, { "texto.tam": Math.max(6, Math.round((x.texto.tam || 24) + d)) }, "Tamaño", "tam"); }, "tam"); for (const x of E.seleccionados) L.ajustarAlto(x.id); }, "chico");
