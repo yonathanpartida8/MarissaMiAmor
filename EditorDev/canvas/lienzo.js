@@ -38,7 +38,7 @@ import { orientacion, PANTALLA } from "../components/pantalla.js";
 
 const RT = window.LibritoRT;
 /** Lo que sube desde abajo y puede tapar la hoja (en el teléfono). */
-const ACOMODO = ".ed-hoja-sec.abierta:not(.cerrando), .ed-insp.ed-desliza.abierta:not(.cerrando), .ed-hojita.abierta:not(.cerrando), .ed-pop.ver:not(.cerrando), .ed-menu, .ed-modal-fondo.ver .ed-modal:not(.cerrando)";
+const ACOMODO = ".ed-hoja-sec.abierta:not(.cerrando), .ed-insp.ed-desliza.abierta:not(.cerrando), .ed-hojita.abierta:not(.cerrando), .ed-pop.ver:not(.cerrando), .ed-menu, .ed-modal-fondo.ver .ed-modal:not(.cerrando), .ed-linea:not([hidden])";
 const PROPORCION = new Set(["imagen", "dibujo", "trazo", "video", "componente", "escena3d"]);
 const MANIJAS = { nw: [-1, -1], n: [0, -1], ne: [1, -1], e: [1, 0], se: [1, 1], s: [0, 1], sw: [-1, 1], w: [-1, 0] };
 const CURSORES = ["ns-resize", "nesw-resize", "ew-resize", "nwse-resize"];
@@ -368,22 +368,17 @@ export class Lienzo {
       else if (igual) this._animarVista(antes);
       return;
     }
+    // Lo que queda libre encima del panel. Si el panel ocupa casi toda la
+    // pantalla, encoger la hoja hasta un sello no sirve: se deja como está.
+    const m = 14, lw = r.width, lh = r.height - tapado;
+    if (lh < Math.max(150, r.height * 0.2)) return;
     if (!this._acAntes) this._acAntes = { ...this.v };
-    const m = 14, lw = r.width, lh = Math.max(90, r.height - tapado);
+    // La hoja ENTERA sube y se escala (proporcional, sin deformarse ni cambiar
+    // su tamaño real) para caber en lo libre; si ya cabía, sólo sube.
+    const antes = this._acAntes;
     const zPag = Math.max(0.05, Math.min((lw - 2 * m) / this.W, (lh - 2 * m) / this.H));
-    const sel = this.estado.seleccionados.filter((e) => this.pag?.nodos.get(e.id));
-    let z = zPag, cx = this.W / 2, cy = this.H / 2;
-    if (sel.length) {
-      const b = union(sel.map((e) => cajaDe(this.vis(e))));
-      const zSel = Math.min((lw - 2 * m - 24) / Math.max(1, b.w), (lh - 2 * m - 24) / Math.max(1, b.h));
-      // Nunca acerca más de lo que estaba; aleja lo necesario para que quepa entero.
-      z = clamp(Math.min(this.v.z, zSel), zPag, Math.max(zPag, this.v.z));
-      cx = b.x + b.w / 2; cy = b.y + b.h / 2;
-    }
-    const hasta = { z, px: lw / 2 - cx * z, py: lh / 2 - cy * z, ajustar: false };
-    // Sin huecos de más: si la página entra entera, centrada; si no, sin dejar bordes vacíos.
-    hasta.px = this.W * z <= lw - 2 * m ? (lw - this.W * z) / 2 : clamp(hasta.px, lw - m - this.W * z, m);
-    hasta.py = this.H * z <= lh - 2 * m ? (lh - this.H * z) / 2 : clamp(hasta.py, lh - m - this.H * z, m);
+    const z = Math.min(antes.ajustar ? Infinity : antes.z, zPag);
+    const hasta = { z, px: (lw - this.W * z) / 2, py: (lh - this.H * z) / 2, ajustar: false };
     this._acPuesta = hasta;
     this._animarVista(hasta);
   }

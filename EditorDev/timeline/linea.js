@@ -123,6 +123,8 @@ export class Linea {
       this.app.lateral?.cerrar();
       this.pintar();
     } else this.parar();
+    // Que la hoja se acomode encima (o vuelva a como estaba al cerrar).
+    dispatchEvent(new CustomEvent("ed-hoja", { detail: this.abierta ? "abrir" : "cerrar" }));
   }
 
   _max() { return Math.max(MIN + 10, Math.round(innerHeight * 0.74)); }
@@ -615,6 +617,7 @@ export class Linea {
       this._pararAlto = null;
       if (h > 0) { this._alto(h); try { localStorage.setItem(ALTO, this.altoPx); } catch (e) { /* nada */ } }
       if (alFin) alFin(); else L?.congelar?.(false);
+      dispatchEvent(new CustomEvent("ed-hoja-quieta"));
     } });
   }
 

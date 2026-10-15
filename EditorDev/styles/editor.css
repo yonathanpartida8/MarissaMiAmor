@@ -1953,3 +1953,35 @@ details.ed-sec.ilumina > summary { animation: edSecIlumina 1.1s ease-out; }
 .ed-gd-prot .ed-ico { width: 16px; height: 16px; flex: none; }
 .ed-gd-prot.si { color: #2c9a68 !important; }
 .ed-gd-nota { margin: 2px 0 0; padding: 9px 11px; border-radius: 12px; background: var(--acento-suave); font-size: 12.5px; line-height: 1.4; }
+
+/* ── Fase 10: cualquier pantalla, muescas y barras del sistema ──────
+   La página nunca se agranda ni se desliza entera (si algo no cabía,
+   el navegador del teléfono la hacía más ancha que la pantalla y la barra
+   de abajo quedaba fuera, detrás de los botones de Android). Arriba, a los
+   lados y abajo se respetan la muesca, la barra de gestos y los botones
+   de navegación (env(safe-area-inset-*), con viewport-fit=cover). */
+:root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px); }
+html:has(body.ed) { overflow: hidden; overscroll-behavior: none; }
+@supports not (height: 100dvh) { body.ed { height: 100vh; height: -webkit-fill-available; } }
+body.ed, body.ed.sin-panel { grid-template-rows: calc(var(--barra) + var(--sat)) minmax(0, 1fr); }
+.ed-barra { padding-top: var(--sat); padding-right: max(8px, var(--sar)); min-width: 0; }
+@media (max-width: 1023px) {
+  .ed-lateral, .ed-velo { top: calc(var(--barra) + var(--sat)); }
+  .ed-borde-izq { top: calc(var(--barra) + var(--sat) + 6px); }
+}
+.ed-inicio-caja { padding-left: max(20px, var(--sal)); padding-right: max(20px, var(--sar)); padding-bottom: calc(40px + var(--sab)); }
+/* Teléfonos angostos (320–430 px): todo lo de arriba cabe sin cortarse. */
+@media (max-width: 430px) {
+  .ed-barra { gap: 0; padding-right: max(4px, var(--sar)); }
+  .ed-barra .ed-acciones { gap: 0; }
+  .ed-barra .ed-grupo-b { gap: 0; }
+  .ed-barra .ed-acciones .ed-btn.ico, .ed-barra .ed-ajustes-b, .ed-barra .ed-probar { width: 40px !important; min-width: 40px !important; padding: 0 !important; justify-content: center; }
+  /* Páginas: el icono de hojitas con el «2/5» de insignia, como una notificación. */
+  .ed-barra .ed-paginas-b { position: relative; width: 42px !important; min-width: 42px !important; padding: 0 !important; justify-content: center; }
+  .ed-barra .ed-paginas-b span { position: absolute; right: -3px; bottom: 1px; min-width: 0; padding: 2px 4px; font-size: 10px; line-height: 1; box-shadow: 0 0 0 2px var(--superficie); }
+  .ed-barra .ed-grupo-b { gap: 0 !important; }
+  .ed-barra .ed-volver { width: 28px !important; }
+}
+@media (max-width: 340px) { .ed-barra .ed-ajustes-b { display: none !important; } }
+/* Con la línea de tiempo abierta en el teléfono, el foquito de la abejita no se encima en la barra flotante. */
+@media (max-width: 1023px) { body.con-linea .ed-foco { opacity: 0; pointer-events: none; transform: scale(.6); } }

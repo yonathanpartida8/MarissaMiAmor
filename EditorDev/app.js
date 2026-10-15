@@ -297,6 +297,8 @@ function construirBarra() {
   botonMusica();
   // «Más»: lo que no cabe en el teléfono (los mismos botones de siempre).
   $(".ed-mas").addEventListener("click", (e) => menu(e.currentTarget, [
+    // En teléfonos muy angostos el engrane no cabe arriba: vive aquí.
+    getComputedStyle($(".ed-ajustes-b")).display === "none" ? { t: `${ico("tuerca")}<span>Configuración del editor</span>`, al: () => app.config.abrir() } : null,
     { t: `${ico("biblioteca")}<span>Ver el librito entero</span>`, al: () => $(".ed-previa").click() },
     { t: `${ico("telefono")}<span>Ver como…</span>`, al: () => $(".ed-ver").click() },
     { t: `${ico("guardar")}<span>Guardar y borradores…</span>`, al: () => $(".ed-guardar").click() },
