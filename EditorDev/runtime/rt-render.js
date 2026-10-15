@@ -248,7 +248,9 @@
   /* El botón de música (delgadito, redondo o sólo el icono). En el librito
      cambia solo entre «suena» (barritas) y «en pausa» (triángulo), y no se ve
      si la página no tiene canción. */
-  const ICONO_MUSICA = '<svg class="rt-mb-i" viewBox="0 0 24 24" aria-hidden="true"><g class="rt-mb-son"><rect x="4" y="9" width="3" height="10" rx="1.5"/><rect x="10.5" y="5" width="3" height="14" rx="1.5"/><rect x="17" y="11" width="3" height="8" rx="1.5"/></g><path class="rt-mb-pausa" d="M8 5.5v13l10.5-6.5z"/></svg>';
+  // Las barritas que bailan son <i> (no rectángulos SVG): así su animación la
+  // mueve la tarjeta gráfica y no obliga a repintar la página en cada cuadro.
+  const ICONO_MUSICA = '<span class="rt-mb-i" aria-hidden="true"><span class="rt-mb-son"><i></i><i></i><i></i></span><svg class="rt-mb-pausa" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg></span>';
   PINTAR.musica = function (c, e, ctx) {
     const m = e.musica || {};
     let b = c.firstChild;

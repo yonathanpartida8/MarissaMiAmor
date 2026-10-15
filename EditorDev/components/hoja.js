@@ -66,10 +66,14 @@ export class Hoja {
     this.parar = null;
     this.abierta = false;
     panel.classList.add("ed-desliza");
+    // Su alto, guardado (se renueva solo al cambiar): leerlo en cada cuadro del
+    // deslizamiento obligaba a recalcular la página entera.
+    this._h = 0;
+    new ResizeObserver(() => { this._h = panel.offsetHeight; }).observe(panel);
     for (const n of [a, ...agarres].filter(Boolean)) this._agarre(n);
   }
 
-  get alto() { return this.panel.offsetHeight || 1; }
+  get alto() { return this._h || this.panel.offsetHeight || 1; }
   _paradas() { const h = this.alto; return this.puntos.map((f) => Math.round(h * (1 - f))); }
   _cerrada() { return this.alto + 28; }
 

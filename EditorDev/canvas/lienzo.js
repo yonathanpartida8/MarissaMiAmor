@@ -118,6 +118,7 @@ export class Lienzo {
     this.fuera = el("button.ed-fuera", { type: "button", hidden: "", onClick: () => this.traerALaHoja(this._fueraIds || []) });
     r.append(this.reglaX, this.reglaY, this.esquina, this.vistaEl, this.flotante, this.aviso, this.fuera);
     new ResizeObserver(() => {
+      this._medirVista();
       if (this.editando) return this._mostrarEditando();
       // Mientras se arrastra el alto de un panel o está el teclado abierto, la
       // hoja se queda como está (nada de brincos de zoom); al terminar se acomoda.
@@ -593,7 +594,26 @@ export class Lienzo {
   aPantalla(x, y) { return { x: this.v.px + x * this.v.z, y: this.v.py + y * this.v.z }; }
 
   /* ── La capa del editor ─────────────────────────────────────────── */
+  /** Medidas de la vista, guardadas: leerlas en medio de un pintado obligaba
+   *  al navegador a recalcular la página entera varias veces por cuadro
+   *  (una por manija). Se ponen al día solas cuando la vista cambia de tamaño. */
+  _medirVista() {
+    const v = this.vistaEl;
+    this._tv = { w: v.clientWidth, h: v.clientHeight, x: v.offsetLeft, y: v.offsetTop };
+    return this._tv;
+  }
+  get tv() { return this._tv && this._tv.w ? this._tv : this._medirVista(); }
+
   pintarSobre() {
+    if (this._ps === -1) return;
+    // Durante un gesto, el marco y las manijas se pintan en el MISMO cuadro que
+    // el elemento (antes iban un cuadro detrás y parecían temblar o despegarse).
+    if (this.g || this.pellizco) {
+      if (this._ps) cancelAnimationFrame(this._ps);
+      this._ps = -1;
+      queueMicrotask(() => { this._ps = null; this._pintarSobre(); });
+      return;
+    }
     if (this._ps) return;
     this._ps = requestAnimationFrame(() => { this._ps = null; this._pintarSobre(); });
   }
@@ -642,7 +662,7 @@ export class Lienzo {
       clase(n, "ed-medida");
       const t = `${Math.round(b.w)} × ${Math.round(b.h)}` + (unico.rot ? ` · ${Math.round(unico.rot)}°` : "");
       if (n.textContent !== t) n.textContent = t;
-      estilo(n, { left: p.x + "px", top: Math.min(p.y + 26, this.vistaEl.clientHeight - 30) + "px" });
+      estilo(n, { left: p.x + "px", top: Math.min(p.y + 26, this.tv.h - 30) + "px" });
     }
     // Las zonas que detectó el editor en un componente (sólo para el editor).
     if (unico && unico.tipo === "componente" && unico.componente?.analisis && !this.g) this._zonas(unico);
@@ -657,7 +677,8 @@ export class Lienzo {
 
   /** Un punto de la pantalla, sin salirse de la vista (las manijas siempre se alcanzan). */
   _enVista(p, pad = 14) {
-    return { x: clamp(p.x, pad, this.vistaEl.clientWidth - pad), y: clamp(p.y, pad, this.vistaEl.clientHeight - pad) };
+    const t = this.tv;
+    return { x: clamp(p.x, pad, t.w - pad), y: clamp(p.y, pad, t.h - pad) };
   }
 
   _manijas(e) {
@@ -690,7 +711,7 @@ export class Lienzo {
     if (permite(e, "rotar")) {
       const d = hh + 34 + extra;
       let p = pt(0, d);
-      if (p.y > this.vistaEl.clientHeight - 20) p = pt(0, -d);
+      if (p.y > this.tv.h - 20) p = pt(0, -d);
       p = this._enVista(p, 20);
       const n = R.nodo("ed-giro");
       clase(n, "ed-giro");
@@ -723,11 +744,13 @@ export class Lienzo {
     const a = this.aPantalla(u.x + u.w / 2, u.y);
     const b = this.aPantalla(u.x + u.w / 2, u.y + u.h);
     this.app.acciones.barraFlotante(f, sel);
-    f.hidden = false;
-    const vw = this.vistaEl.clientWidth, fw = f.offsetWidth || 260, fh = f.offsetHeight || 44;
-    const ox = this.vistaEl.offsetLeft, oy = this.vistaEl.offsetTop;
+    if (f.hidden) f.hidden = false;
+    // Su tamaño sólo cambia cuando cambian sus botones: se mide una vez por selección.
+    if (f._medida !== f._firma || !f._fw) { const w = f.offsetWidth; f._medida = w ? f._firma : null; f._fw = w || 260; f._fh = f.offsetHeight || 44; }
+    const t = this.tv, vw = t.w, fw = f._fw, fh = f._fh;
+    const ox = t.x, oy = t.y;
     let top = a.y - fh - 16;
-    if (top < 6) top = Math.min(b.y + 52, this.vistaEl.clientHeight - fh - 6);
+    if (top < 6) top = Math.min(b.y + 52, t.h - fh - 6);
     estilo(f, { left: clamp(a.x - fw / 2, 6, vw - fw - 6) + ox + "px", top: top + oy + "px" });
   }
 

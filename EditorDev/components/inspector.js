@@ -8,7 +8,7 @@
  * Se construye una vez por selección y luego sólo se refresca: mover una
  * foto no rehace el panel, sólo cambia los números de X e Y.
  */
-import { el, seccion, fila, boton, control, Vinculos, aviso, ordenable } from "./ui.js";
+import { el, seccion, fila, boton, control, Vinculos, aviso, ordenable, esMovil } from "./ui.js";
 import { leerRuta } from "../core/estado.js";
 import { TIPOS, permite } from "../core/modelo.js";
 import { ico } from "./iconos.js";
@@ -37,8 +37,14 @@ export class Inspector {
     this.cuerpo = el("div.ed-insp-cuerpo");
     raiz.append(this.pestanas, this.cuerpo);
     const E = this.E;
-    const pronto = () => { if (this._r) return; this._r = requestAnimationFrame(() => { this._r = null; this.v.refrescar(); }); };
-    const rehacer = () => { cancelAnimationFrame(this._rb); this._rb = requestAnimationFrame(() => this.construir()); };
+    // Cerrado (la hoja del teléfono abajo), no se construye ni se refresca nada:
+    // queda marcado y se pone al día al abrirse. Antes cada toque reconstruía
+    // el inspector entero aunque no se viera (el tirón al elegir y al arrastrar).
+    const pronto = () => { if (!this.visible) { this._sucio = true; return; } if (this._r) return; this._r = requestAnimationFrame(() => { this._r = null; if (this.visible) this.v.refrescar(); else this._sucio = true; }); };
+    const rehacer = () => { cancelAnimationFrame(this._rb); if (!this.visible) { this._sucio = true; return; } this._rb = requestAnimationFrame(() => (this.visible ? this.construir() : (this._sucio = true))); };
+    this._rehacer = rehacer;
+    this._y = 0;
+    this.cuerpo.addEventListener("scroll", () => { this._y = this.cuerpo.scrollTop; }, { passive: true });
     E.on("sel", rehacer);
     E.on("actual", rehacer);
     E.on("cargado", rehacer);
@@ -53,6 +59,12 @@ export class Inspector {
     E.on("paginas", pronto);
     E.on("assets", () => { if (!E.sel.length || E.unico?.tipo === "album" || E.unico?.tipo === "carrusel") rehacer(); });
   }
+
+  /** ¿Se ve? (en el teléfono es una hoja que puede estar abajo, cerrada). */
+  get visible() { return !esMovil() || this.raiz.classList.contains("abierta"); }
+
+  /** Al mostrarse: si algo cambió mientras estaba cerrado, se pone al día. */
+  alMostrar() { if (this._sucio) this._rehacer(); }
 
   /** Abre una pestaña y, si se pide, va directo a una sección («Efectos», «Sonidos»…). */
   abrir(tab, seccion) {
@@ -85,7 +97,9 @@ export class Inspector {
   }
 
   construir() {
-    const y = this.cuerpo.scrollTop;
+    cancelAnimationFrame(this._rb);
+    this._sucio = false;
+    const y = this._y; // sin leer scrollTop: forzaría otro cálculo de la página entera
     for (const b of this.pestanas.children) b.classList.toggle("on", b.dataset.t === this.tab);
     this.v.vaciar();
     this.cuerpo.textContent = "";
@@ -97,7 +111,7 @@ export class Inspector {
     else if (sel.length > 1) this._varios(sel);
     else this._pagina();
     this.v.refrescar();
-    this.cuerpo.scrollTop = y;
+    if (y > 0) this.cuerpo.scrollTop = y;
   }
 
   /* ── Atajos para ligar controles ────────────────────────────────── */

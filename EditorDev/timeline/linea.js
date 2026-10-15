@@ -112,6 +112,10 @@ export class Linea {
     this.cabezal = el("div.ed-tl-cabezal", {}, [el("i")]);
     this.lienzo = el("div.ed-tl-lienzo", {}, [this.cRegla, this.cFijas, this.cAudios, this.filas, this.cabezal]);
     this.cuerpo = el("div.ed-tl-cuerpo", {}, [this.lienzo]);
+    // Ancho y desplazamiento guardados (los lee el cabezal en cada cuadro sin forzar cálculos).
+    this._cw = 0; this._sl = 0;
+    new ResizeObserver(() => { this._cw = this.cuerpo.clientWidth; }).observe(this.cuerpo);
+    this.cuerpo.addEventListener("scroll", () => { this._sl = this.cuerpo.scrollLeft; }, { passive: true });
     this.raiz.append(this.asaEl, this.cab, this.cuerpo);
     this._enlazar();
   }
@@ -1007,17 +1011,26 @@ export class Linea {
 
   _pintarCabezal(desdeRegla, siguiendo) {
     const x = this.x(this.t);
-    this.cabezal.style.transform = `translateX(${this.et + x}px)`;
+    // Primero se lee y después se escribe: leer el ancho DESPUÉS de mover el
+    // cabezal obligaba a recalcular toda la página en cada cuadro (el tirón al reproducir).
+    const c = this.cuerpo;
+    let ir = null;
+    if (siguiendo && !desdeRegla) {
+      const vis = (this._cw || c.clientWidth) - this.et, sl = this._sl;
+      if (x > sl + vis - 40 || x < sl) ir = Math.max(0, x - vis * 0.2);
+    }
+    const tr = `translateX(${this.et + x}px)`;
+    if (this._tr !== tr) { this._tr = tr; this.cabezal.style.transform = tr; }
     const txt = `${fmt(this.t)} / ${fmt(this._total())}`;
     if (this.reloj.textContent !== txt) this.reloj.textContent = txt;
     // «Dividir» sólo se ve activo con el cabezal dentro del clip elegido.
-    const dv = this.herr.querySelector('[data-ac="dividir"]'), s = this.E.unico;
-    if (dv && s) dv.classList.toggle("apagado", !(this.t > RT.inicioDe(s) + 50 && (RT.finDe(s) == null || this.t < RT.finDe(s) - 50)));
-    // Que el cabezal no se salga de lo que se ve al reproducir.
-    const c = this.cuerpo;
-    if (siguiendo && !desdeRegla) {
-      const vis = c.clientWidth - this.et;
-      if (x > c.scrollLeft + vis - 40 || x < c.scrollLeft) c.scrollLeft = Math.max(0, x - vis * 0.2);
+    if (!this._dv?.isConnected) this._dv = this.herr.querySelector('[data-ac="dividir"]');
+    const dv = this._dv, s = this.E.unico;
+    if (dv && s) {
+      const off = !(this.t > RT.inicioDe(s) + 50 && (RT.finDe(s) == null || this.t < RT.finDe(s) - 50));
+      if (dv._off !== off) { dv._off = off; dv.classList.toggle("apagado", off); }
     }
+    // Que el cabezal no se salga de lo que se ve al reproducir.
+    if (ir != null) { c.scrollLeft = ir; this._sl = ir; }
   }
 }

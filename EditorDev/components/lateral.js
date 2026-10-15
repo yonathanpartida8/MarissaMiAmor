@@ -26,11 +26,15 @@ export class Lateral {
     this.alCambiar = alCambiar;
     this.abierto = false;
     this._g = null;
+    // Su ancho, guardado: medirlo al abrir (con el panel recién llenado) forzaba
+    // a calcular todo de golpe y el deslizamiento arrancaba con un tirón.
+    this._w = 0;
+    new ResizeObserver(() => { this._w = this.raiz.offsetWidth; }).observe(this.raiz);
     this._enlazar();
   }
 
   get compacto() { return esMovil(); }
-  get ancho() { return this.raiz.offsetWidth || 320; }
+  get ancho() { return this._w || this.raiz.offsetWidth || 320; }
 
   /** `t` = cuánto se ve (0 cerrado … ancho abierto). */
   _poner(t, anim) {

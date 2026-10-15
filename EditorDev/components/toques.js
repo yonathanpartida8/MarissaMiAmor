@@ -19,6 +19,7 @@ import { el, seccion, fila, boton, control, aviso, Vinculos } from "./ui.js";
 import { hojita } from "./hoja.js";
 import { ico } from "./iconos.js";
 import { elegir } from "../assets/selector.js";
+import { vivo } from "./vivo.js";
 
 const RT = window.LibritoRT;
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
@@ -42,7 +43,7 @@ const MINI_MOV = (k) => `<i class="tq-caja tq-m-${k || "nada"}"></i>`;
 function fichas(lista, mini, leer, poner, v) {
   const caja = el("div.ed-tq-fichas");
   for (const [k, n] of lista) {
-    const b = el("button.ed-tq-ficha", { type: "button", "aria-label": n, title: n, dataset: { k } }, [el("span.ed-tq-mini", { html: mini(k) }), el("small", { text: n })]);
+    const b = el("button.ed-tq-ficha", { type: "button", "aria-label": n, title: n, dataset: { k } }, [vivo(el("span.ed-tq-mini", { html: mini(k) })), el("small", { text: n })]);
     b.addEventListener("click", () => poner(k));
     caja.append(b);
   }
@@ -103,7 +104,7 @@ function categorias(app, ids, leer, v) {
     ayuda.textContent = cat.ayuda;
     rej.textContent = "";
     for (const [n, c] of cat.items) {
-      const b = el("button.ed-tq-ficha", { type: "button", title: n, "aria-label": n }, [el("span.ed-tq-mini" + (c.efecto && c.mov ? ".combo" : ""), { html: miniDe(c), style: c.color ? { color: c.color } : {} }), el("small", { text: n })]);
+      const b = el("button.ed-tq-ficha", { type: "button", title: n, "aria-label": n }, [vivo(el("span.ed-tq-mini" + (c.efecto && c.mov ? ".combo" : ""), { html: miniDe(c), style: c.color ? { color: c.color } : {} })), el("small", { text: n })]);
       b._c = c;
       b.addEventListener("click", () => { const l = ids(); if (!l.length) return aviso("Primero toca algo de la hoja"); previaToque(app, l, c, n, b.closest(".ed-panel, .ed-insp")); });
       rej.append(b);
@@ -192,7 +193,7 @@ export const TOQUES_SEC = {
     const ids = sel.map((x) => x.id);
     const t = () => E.el(ids[0])?.toque || {};
     const ahoraTxt = el("span");
-    const ahoraMini = el("span.ed-tq-mini");
+    const ahoraMini = vivo(el("span.ed-tq-mini"));
     const ahora = el("div.ed-tq-ahora", {}, [ahoraMini, el("div", {}, [el("b", { text: sel.length > 1 ? `${sel.length} elementos` : "«" + sel[0].nombre + "»" }), ahoraTxt]),
       boton(ico("toque"), () => { if (RT.tieneToque(t())) for (const id of ids) probarToque(app, E.el(id), E.el(id).toque); else aviso("Elige un efecto de abajo"); }, "chico ico", "Probar"),
       boton(ico("cerrar"), () => E.transaccion("Quitar efecto al tocar", () => { for (const id of ids) E.setEl(id, { toque: null }, "Quitar efecto al tocar"); }), "chico ico", "Quitar efecto"),

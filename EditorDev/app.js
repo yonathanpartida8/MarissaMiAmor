@@ -374,7 +374,7 @@ function construirRiel() {
   const asaInsp = insp.querySelector(".ed-hoja-asa");
   asaInsp.className = "ed-asa-hoja";
   asaInsp.innerHTML = "<i></i>";
-  hojaInsp = new Hoja(insp, { asa: asaInsp, puntos: [1, 0.55], cerrable: true, alCerrar: () => { if (document.body.dataset.hoja?.startsWith("insp:")) delete document.body.dataset.hoja; } });
+  hojaInsp = new Hoja(insp, { asa: asaInsp, puntos: [1, 0.55], cerrable: true, alAbrir: () => app.insp.alMostrar(), alCerrar: () => { if (document.body.dataset.hoja?.startsWith("insp:")) delete document.body.dataset.hoja; } });
   // Las secciones compactas del teléfono (Animar, Efectos, GIFs…): otra hoja, a media altura.
   const hs = $(".ed-hoja-sec");
   hs.querySelector(".ed-hoja-sec-x").innerHTML = ico("cerrar");
@@ -394,6 +394,7 @@ function construirRiel() {
     for (const [h, n] of [[hojaInsp, insp], [hojaSec, hs]]) { h.parar?.(); h.abierta = false; n.classList.remove("abierta"); n.style.transform = ""; n.style.visibility = ""; }
     delete document.body.dataset.hoja;
     document.body.classList.remove("con-hoja-sec");
+    app.insp.alMostrar();
   });
   app.mostrarInspector = () => { if (esMovil()) { app.lateral.cerrar(); cerrarHojaSec(); abrirHoja("insp:" + app.insp.tab); } };
   app.cerrarHoja = cerrarHoja;

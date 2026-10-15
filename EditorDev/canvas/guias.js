@@ -77,25 +77,56 @@ export function imanBorde(v, objetivos, umbral, rejilla) {
 }
 
 /* ── Reglas ────────────────────────────────────────────────────────── */
+// Medidas y colores de cada regla, guardados: antes se leían (y se forzaba a
+// recalcular la página) en cada movimiento de la vista. Se renuevan solos al
+// cambiar de tamaño o de tema.
+const MEDIDAS = new WeakMap();
+const COLORES = new WeakMap();
+let temaVer = 0;
+if (typeof MutationObserver !== "undefined") {
+  const mo = new MutationObserver(() => { temaVer++; });
+  mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style", "data-tema", "data-estilo"] });
+  if (document.body) mo.observe(document.body, { attributes: true, attributeFilter: ["class", "style", "data-tema", "data-estilo"] });
+  else addEventListener("DOMContentLoaded", () => mo.observe(document.body, { attributes: true, attributeFilter: ["class", "style", "data-tema", "data-estilo"] }), { once: true });
+}
+try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { temaVer++; }); } catch (e) { /* nada */ }
+const RO = typeof ResizeObserver !== "undefined" ? new ResizeObserver((es) => { for (const e of es) MEDIDAS.set(e.target, { W: e.target.clientWidth, H: e.target.clientHeight }); }) : null;
+function medidas(canvas) {
+  let m = MEDIDAS.get(canvas);
+  if (!m) { m = { W: canvas.clientWidth, H: canvas.clientHeight }; MEDIDAS.set(canvas, m); RO?.observe(canvas); }
+  return m;
+}
+function colores(canvas) {
+  let c = COLORES.get(canvas);
+  if (!c || c.v !== temaVer) {
+    const css = getComputedStyle(canvas);
+    const v = (n, d) => css.getPropertyValue(n) || d;
+    c = { v: temaVer, fondo: v("--regla-fondo", "#f6eef2"), hoja: v("--regla-hoja", "#fff"), linea: v("--regla-linea", "#c9b3c0"), texto: v("--regla-texto", "#8c6f85") };
+    COLORES.set(canvas, c);
+  }
+  return c;
+}
+
 export function pintarRegla(canvas, eje, z, desplaz, largoMundo, dpr) {
   const g = canvas.getContext("2d");
-  const W = canvas.clientWidth, H = canvas.clientHeight;
+  const { W, H } = medidas(canvas);
+  if (!W || !H) { MEDIDAS.delete(canvas); return; }
+  const col = colores(canvas);
   if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
   }
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, W, H);
-  const css = getComputedStyle(canvas);
-  g.fillStyle = css.getPropertyValue("--regla-fondo") || "#f6eef2";
+  g.fillStyle = col.fondo;
   g.fillRect(0, 0, W, H);
   // la hoja
-  g.fillStyle = css.getPropertyValue("--regla-hoja") || "#fff";
+  g.fillStyle = col.hoja;
   if (eje === "x") g.fillRect(desplaz, 0, largoMundo * z, H); else g.fillRect(0, desplaz, W, largoMundo * z);
   const pasos = [1, 2, 5, 10, 20, 50, 100, 200, 500];
   const paso = pasos.find((p) => p * z >= 46) || 500;
   const menor = paso / (paso >= 10 && paso % 5 === 0 ? 5 : 2);
-  g.strokeStyle = css.getPropertyValue("--regla-linea") || "#c9b3c0";
-  g.fillStyle = css.getPropertyValue("--regla-texto") || "#8c6f85";
+  g.strokeStyle = col.linea;
+  g.fillStyle = col.texto;
   g.font = "9px system-ui, sans-serif";
   g.lineWidth = 1;
   g.beginPath();
