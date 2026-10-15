@@ -132,6 +132,7 @@ export class IndicadorGuardado {
       el("small.ed-ayuda", { text: `Un .zip con TODO el librito (páginas, textos, fotos, dibujos, sonidos, animaciones y ajustes) para guardarlo donde quieras o pasarlo a otro dispositivo.${ult ? ` Última descargada: ${new Date(ult).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}.` : ""}` }),
       el("div.ed-botonera", {}, [
         b("Descargar copia (.zip)", "exportar", () => { this.cerrar(); app.exportar({ completo: true }); }, "primario"),
+        b("Mandarla por WhatsApp…", "compartir", () => { this.cerrar(); app.compartir(); }),
         b("Restaurar desde archivo…", "subir", () => { this.cerrar(); app.abrirArchivo(); }),
       ]),
     ]));

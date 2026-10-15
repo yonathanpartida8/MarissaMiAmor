@@ -196,7 +196,7 @@ export class Paneles {
     const usados = assetsUsados(P);
     const fotos = Object.values(P.assets).filter((a) => a.tipo === "imagen").sort((a, b) => b.creado - a.creado);
     const rej = el("div.ed-rejilla-assets", {}, fotos.map((a) => el("button.ed-asset" + (usados.has(a.id) ? ".usado" : ""), { type: "button", title: `${a.nombre}${a.tam ? " · " + formatoBytes(a.tam) : ""}\nToca para ponerla en la página`, onClick: () => A._poner(A._elFoto(a.id)) }, [
-      el("img", { src: this.app.bib.url(a.id) || "", loading: "lazy", decoding: "async", alt: "", draggable: "false" }),
+      el("img", { src: this.app.bib.miniUrl(a.id) || "", loading: "lazy", decoding: "async", alt: "", draggable: "false" }),
       usados.has(a.id) ? null : el("i.ed-borrar-asset", { html: ico("cerrar"), title: "Quitar de la biblioteca", onClick: (e) => { e.stopPropagation(); this._quitarAsset(a); } }),
     ])));
     const libFotos = el("div");
@@ -221,7 +221,8 @@ export class Paneles {
 
   async _quitarAsset(a) {
     if (!(await confirmar(`¿Quitar «${a.nombre}» de la biblioteca de este librito?`, "Quitar"))) return;
-    if (a.fuente === "local") borrarArchivo(a.id).catch(() => {});
+    if (a.fuente === "local") for (const k of [a.id, "orig:" + a.id, "mini:" + a.id]) borrarArchivo(k).catch(() => {});
+    this.app.bib.olvidar?.(a.id);
     this.E.quitarAsset(a.id);
   }
 
@@ -430,6 +431,8 @@ export class Paneles {
       el("p.ed-ayuda", { text: "Se guarda solo mientras editas (en este navegador). Para llevártelo, exporta el .zip: trae sólo lo que de verdad se usa." }),
       el("div.ed-botonera", {}, [
         boton(I("exportar", "Exportar ZIP"), () => app.exportar(), "primario"),
+        boton(I("compartir", "Compartir por WhatsApp…"), () => app.compartir(), "chico"),
+        boton(I("rayo", "Revisar recursos…"), () => app.revisarRecursos(), "chico"),
         boton(I("guardar", "Guardar ya"), () => app.guardarYa(), "chico"),
       ]),
       el("small.ed-ayuda", { text: `${this.P.orden.length} páginas · ${usados.size} archivos en uso de ${Object.keys(this.P.assets).length} en la biblioteca` }),

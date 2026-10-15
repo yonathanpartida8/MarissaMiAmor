@@ -230,6 +230,21 @@ ${urlF ? `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="
     if (archivos[id] && a.fuente !== "url") { a.fuente = "zip"; a.archivoZip = archivos[id]; }
     if (!usados.includes(id)) delete proyecto.assets[id];
   }
+  // En la copia de seguridad van también los ORIGINALES de las fotos achicadas.
+  if (completo) {
+    const { leerArchivo } = await import("../storage/db.js");
+    let k = 0;
+    for (const [id, a] of Object.entries(proyecto.assets)) {
+      if (!a.original || P.assets[id]?.fuente !== "local") continue;
+      const b = await leerArchivo("orig:" + id).catch(() => null);
+      if (!b) { delete a.original; continue; }
+      avisar(`Originales ${++k}…`);
+      const ext = EXT[b.type] || (a.original.archivo || "").split(".").pop().toLowerCase().slice(0, 5) || "bin";
+      const ruta = `EditorData/originales/${String(k).padStart(3, "0")}-${limpio(a.nombre)}.${ext}`;
+      zip.agregar(ruta, b);
+      a.original.archivoZip = ruta;
+    }
+  }
   zip.agregar("project.json", JSON.stringify(proyecto, null, 1));
   zip.agregar("EditorData/editor.json", JSON.stringify({ version: VERSION, exportado: new Date().toISOString(), editor: P.editor, origen: "EditorDev" }, null, 1));
   zip.agregar("EditorData/LÉEME.txt", `${P.nombre}

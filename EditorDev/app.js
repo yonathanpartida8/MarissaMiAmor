@@ -138,6 +138,7 @@ async function arrancar() {
   const E = new Estado();
   Object.assign(app, { estado: E });
   app.bib = new Biblioteca(E);
+  app.bib.alAviso = (t) => aviso(t, 3400);
   app.audio = new AudioEditor(app);
   app.acciones = new Acciones(app);
   app.html = new EditorHtml(app);
@@ -306,6 +307,8 @@ function construirBarra() {
     { t: `${ico("guardar")}<span>Guardar y borradores…</span>`, al: () => $(".ed-guardar").click() },
     { t: `${ico("escudo")}<span>Copias de seguridad…</span>`, al: () => app.guardado.abrir() },
     { t: `${ico("exportar")}<span>Exportar (.zip)</span>`, al: () => app.exportar() },
+    { t: `${ico("compartir")}<span>Compartir por WhatsApp…</span>`, al: () => app.compartir() },
+    { t: `${ico("rayo")}<span>Revisar recursos…</span>`, al: () => app.revisarRecursos() },
     { t: `${ico("herramientas")}<span>Herramientas</span>`, al: () => abrirSeccion("herramientas", true) },
     { t: `${ico("foco")}<span>Recorrido con la abejita</span>`, al: () => app.ayuda?.recorrido() },
   ]));
@@ -321,7 +324,9 @@ function construirBarra() {
     { t: t("subir", "Abrir archivo (.zip / .json)…"), al: () => app.abrirArchivo() },
     "-",
     { t: t("exportar", "Exportar ZIP"), al: () => app.exportar() },
+    { t: t("compartir", "Compartir por WhatsApp…"), al: () => app.compartir() },
     { t: t("escudo", "Copias de seguridad…"), al: () => app.guardado.abrir() },
+    { t: t("rayo", "Revisar recursos…"), al: () => app.revisarRecursos() },
   ]));
   $(".ed-ver").addEventListener("click", (e) => app.menuVerComo(e.currentTarget));
   const zoom = $(".ed-zoom");
@@ -589,6 +594,10 @@ app.abrirArchivo = async () => {
     aviso("No se pudo abrir: " + e.message, 4500, "error");
   } finally { capa.remove(); }
 };
+
+/** Compartir (WhatsApp y otras apps, con el menú del teléfono) y revisar recursos. */
+app.compartir = () => import("./components/compartir.js").then((m) => m.abrirCompartir(app));
+app.revisarRecursos = () => import("./components/recursos.js").then((m) => m.abrirRecursos(app));
 
 app.exportar = async ({ completo = false } = {}) => {
   if (app.auto.pendiente) await app.auto.ahora();

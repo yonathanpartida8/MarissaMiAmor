@@ -391,6 +391,15 @@ export class Estado extends Emitter {
     return a;
   }
 
+  /** Notas de un archivo que no cambian cómo se ve (su huella…): sin repintar nada. */
+  anotarAsset(id, cambios) {
+    const a = this.proyecto?.assets[id];
+    if (!a) return;
+    Object.assign(a, cambios);
+    this.sucio.meta = true;
+    this.emit("sucio");
+  }
+
   quitarAsset(id) {
     delete this.proyecto.assets[id];
     this.sucio.meta = true;

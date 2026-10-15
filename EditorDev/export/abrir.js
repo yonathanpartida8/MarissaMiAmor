@@ -36,6 +36,13 @@ export async function abrirArchivo(file) {
     a.fuente = "local";
     a.tam = blob.size;
     delete a.archivoZip;
+    // Su original (si la copia de seguridad lo traía).
+    if (a.original?.archivoZip) {
+      const lo = zip?.[a.original.archivoZip];
+      if (lo) await guardarArchivo(proyecto.id, "orig:" + a.id, new Blob([await lo()], { type: a.original.mime || "application/octet-stream" }));
+      else delete a.original;
+      if (a.original) delete a.original.archivoZip;
+    }
   }
   return proyecto;
 }

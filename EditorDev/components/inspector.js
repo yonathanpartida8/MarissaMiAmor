@@ -398,7 +398,7 @@ export class Inspector {
   _listaFotos(e, c, clave) {
     const fotos = e[clave].fotos || [];
     const lista = el("div.ed-fotos", {}, fotos.map((id, i) => el("div.ed-foto-mini", { dataset: { id: String(i) } }, [
-      el("img", { src: this.app.bib.url(id) || "", alt: "", loading: "lazy" }),
+      el("img", { src: this.app.bib.miniUrl(id) || "", alt: "", loading: "lazy", decoding: "async" }),
       el("button.ed-asa", { type: "button", html: ico("agarre"), title: "Arrastra para ordenar", "aria-label": "Ordenar" }),
       el("button.ed-quitar", { type: "button", html: ico("cerrar"), title: "Quitar del " + (clave === "album" ? "álbum" : "carrusel"), onClick: () => this.E.setEl(e.id, { [clave + ".fotos"]: fotos.filter((_, j) => j !== i) }, "Quitar foto") }),
     ])));

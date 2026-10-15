@@ -24,6 +24,7 @@ export class Biblioteca {
   constructor(estado) {
     this.estado = estado;
     this.urls = new Map();
+    this.minis = new Map(); // miniaturas (compilador.js)
   }
 
   get assets() { return this.estado.proyecto?.assets || {}; }
@@ -41,6 +42,8 @@ export class Biblioteca {
   liberar() {
     for (const u of this.urls.values()) URL.revokeObjectURL(u);
     this.urls.clear();
+    for (const u of this.minis.values()) URL.revokeObjectURL(u);
+    this.minis.clear();
     this._datos?.clear();
     this._listos?.clear();
   }
@@ -51,6 +54,26 @@ export class Biblioteca {
     if (a.fuente === "local") return this.urls.get(id) || null;
     if (a.fuente === "librito") return rutaAUrl(a.ruta);
     return a.ruta || null;
+  }
+
+  /** Para rejillas y listas: la miniatura si ya está (si no, la de siempre y la miniatura se prepara en calma). */
+  miniUrl(id, alListo) {
+    const m = this.minis.get(id);
+    if (m) return m;
+    const a = this.assets[id];
+    if (a?.fuente === "local" && a.tipo === "imagen") import("./compilador.js").then((c) => c.prepararMiniaturas(this, [id], alListo)).catch(() => {});
+    return this.url(id);
+  }
+
+  /** Se olvida de un archivo quitado (libera su memoria). */
+  olvidar(id) {
+    for (const m of [this.urls, this.minis]) { const u = m.get(id); if (u) { URL.revokeObjectURL(u); m.delete(id); } }
+  }
+
+  /** Un archivo que cambió (versión ligera): nueva dirección. */
+  renovar(id, blob) {
+    this.olvidar(id);
+    this.urls.set(id, URL.createObjectURL(blob));
   }
 
   /** Todas las direcciones usadas (para la vista previa). */
@@ -97,13 +120,26 @@ export class Biblioteca {
       alProgreso?.(n++, files.length, f.name);
       const tipo = /^image\//.test(f.type) ? "imagen" : /^audio\//.test(f.type) ? "audio" : /^video\//.test(f.type) ? "video" : /\.(mp3|m4a|ogg|wav|aac)$/i.test(f.name) ? "audio" : /\.(mp4|webm|mov|m4v)$/i.test(f.name) ? "video" : /\.(png|jpe?g|webp|gif|avif|svg)$/i.test(f.name) ? "imagen" : /\.(glb|gltf|obj)$/i.test(f.name) ? "modelo" : null;
       if (!tipo) continue;
+      // Validar: vacío o una foto que no se puede leer no entra (se avisa).
+      if (!f.size) { this.alAviso?.(`«${f.name}» está vacío: no se subió`); continue; }
+      // Duplicados: la misma foto (o canción) que ya estaba se reutiliza.
+      const C = await import("./compilador.js");
+      const hu = await C.huella(f).catch(() => null);
+      const ya = hu && C.porHuella(this.estado.proyecto, hu);
+      if (ya) { nuevos.push(ya); this.alAviso?.(`«${f.name}» ya estaba en tu biblioteca: se usa la misma (sin duplicarla)`); continue; }
       let blob = f, w = 0, h = 0, dur = 0;
-      if (tipo === "imagen") ({ blob, w, h } = await optimizarImagen(f));
-      else if (tipo === "video") ({ w, h, dur } = await medirVideo(f));
+      if (tipo === "imagen") {
+        ({ blob, w, h } = await optimizarImagen(f));
+        if (!w && !h && !/svg/i.test(f.type)) { this.alAviso?.(`«${f.name}» no se pudo leer como foto (¿está dañada?): no se subió`); continue; }
+      } else if (tipo === "video") ({ w, h, dur } = await medirVideo(f));
       const id = uid("a");
       await guardarArchivo(lib, id, blob);
+      // Si se achicó para trabajar ligero, el ORIGINAL se guarda aparte (y va en la copia de seguridad).
+      let original = null;
+      if (blob !== f) { await guardarArchivo(lib, "orig:" + id, f); original = { tam: f.size, mime: f.type, archivo: f.name }; }
       this.urls.set(id, URL.createObjectURL(blob));
-      const a = { id, tipo, nombre: f.name.replace(/\.[^.]+$/, ""), archivo: f.name, mime: blob.type || f.type, tam: blob.size, w, h, dur, fuente: "local", creado: Date.now() };
+      const ha = blob === f ? hu : await C.huella(blob).catch(() => null);
+      const a = { id, tipo, nombre: f.name.replace(/\.[^.]+$/, ""), archivo: f.name, mime: blob.type || f.type, tam: blob.size, w, h, dur, fuente: "local", creado: Date.now(), ...(hu ? { huella: hu } : {}), ...(ha ? { huellaArchivo: ha } : {}), ...(original ? { original } : {}) };
       this.estado.agregarAsset(a);
       nuevos.push(a);
     }
