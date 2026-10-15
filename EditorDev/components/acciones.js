@@ -6,7 +6,7 @@
  * pida desde donde se pida.
  */
 import { el, aviso, confirmar, menu } from "./ui.js";
-import { nuevoEl, nuevaPagina, clonar, uid, TIPOS } from "../core/modelo.js";
+import { nuevoEl, nuevaPagina, clonar, uid, TIPOS, botonMusica } from "../core/modelo.js";
 import { elegir } from "../assets/selector.js";
 import { DIBUJOS } from "../assets/dibujos.js";
 import { cajaDe, union } from "../canvas/guias.js";
@@ -123,6 +123,31 @@ export class Acciones {
   }
 
   marcoFoto() { return this.agregar("imagen", { nombre: "Marco para foto" }); }
+
+  /** El botón de música de la página (si ya hay uno, lo elige). */
+  botonMusica() {
+    const ya = this.E.pagina?.els.find((x) => x.tipo === "musica");
+    if (ya) { this.E.seleccionar([ya.id]); aviso("Esta página ya tiene su botón de música"); return ya; }
+    const e = botonMusica(this.P);
+    this.E.agregarEl(e);
+    return e;
+  }
+
+  /** Copia este botón de música (igual, en el mismo lugar) a las páginas que no tienen. */
+  botonMusicaEnTodas(e) {
+    let n = 0;
+    this.E.transaccion("Botón de música en todas", () => {
+      for (const pid of this.P.orden) {
+        const pg = this.P.paginas[pid];
+        if (pid === this.E.paginaId || pg.els.some((x) => x.tipo === "musica")) continue;
+        const c = clonar(e);
+        c.id = uid("e"); c.grupo = null;
+        this.E.agregarEl(c, null, pid, false);
+        n++;
+      }
+    });
+    aviso(n ? `Listo: en ${n} página${n > 1 ? "s" : ""} más` : "Todas las páginas ya tienen su botón de música");
+  }
   album() { return this.agregar("album", { nombre: "Álbum" }); }
   carrusel() { return this.agregar("carrusel", { nombre: "Carrusel" }); }
   forma(figura) { return this.agregar("forma", { nombre: "Forma", forma: { figura }, ...(figura === "linea" ? { h: 20, w: 220 } : {}) }); }

@@ -13,6 +13,8 @@ const T = (d) => `<svg class="ed-ico" viewBox="0 0 24 24" fill="none" stroke="cu
 
 const P = {
   // Secciones
+  pasar: '<rect x="4.5" y="3" width="15" height="18" rx="2.5"/><path d="M10 9.5l-2.5 2.5 2.5 2.5M14 9.5l2.5 2.5-2.5 2.5"/>',
+  hojas: '<path d="M8.5 3.5h8a2.5 2.5 0 0 1 2.5 2.5v11"/><rect x="5" y="6.5" width="11" height="14" rx="2"/><path d="M8 11h5M8 14.5h3.5"/>',
   cursor: '<path d="M5 3l13 7.2-5.6 1.6L10 18z"/><path d="M12.4 11.8l4.6 6.2"/>',
   borrador: '<path d="M15.5 3.5l5 5L10 19H5.5L2.5 16z"/><path d="M8.5 10.5l5 5M13 21h8"/>',
   tuerca: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.8l1.6 2.3 2.7-.8.5 2.8 2.7.9-.9 2.7 2.2 1.7-2.2 1.7.9 2.7-2.7.9-.5 2.8-2.7-.8L12 21.2l-1.6-2.3-2.7.8-.5-2.8-2.7-.9.9-2.7L3.2 12l2.2-1.7-.9-2.7 2.7-.9.5-2.8 2.7.8z"/>',

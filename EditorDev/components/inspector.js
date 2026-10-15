@@ -344,6 +344,21 @@ export class Inspector {
     ]), seccion("Al tocarlo", [this._accion(e, c)])];
   }
 
+  _musica(e, c) {
+    const A = this.app.acciones;
+    const hay = !!(this.E.proyecto.ajustes.musica?.asset || this.E.pagina?.musica?.asset);
+    return [seccion("Botón de música", [
+      fila("Estilo", c("musica.estilo", { tipo: "segmento", opciones: [["slim", "Delgadito"], ["redondo", "Redondo"], ["icono", "Sólo icono"]], def: "slim" })),
+      (e.musica?.estilo || "slim") === "slim" ? fila("Texto", c("musica.texto", { tipo: "texto", alcambiar: true })) : null,
+      el("div.ed-rejilla2", {}, [fila("Icono y letra", c("musica.color", { tipo: "color" })), fila("Fondo", c("musica.fondo", { tipo: "color" }))]),
+      el("div.ed-botonera", {}, [
+        boton(I("duplicar", "Ponerlo en todas las páginas"), () => A.botonMusicaEnTodas(e), "chico"),
+        boton(I("audio", "Elegir la canción"), () => this.app.abrirSeccion("audio"), "chico"),
+      ]),
+      el("small.ed-ayuda", { text: hay ? "En el librito pausa y vuelve a poner la canción; mientras suena, sus barritas bailan." : "Todavía no hay canción: en el librito no se ve hasta que pongas una en Audio." }),
+    ].filter(Boolean))];
+  }
+
   _listaFotos(e, c, clave) {
     const fotos = e[clave].fotos || [];
     const lista = el("div.ed-fotos", {}, fotos.map((id, i) => el("div.ed-foto-mini", { dataset: { id: String(i) } }, [

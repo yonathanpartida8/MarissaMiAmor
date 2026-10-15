@@ -108,7 +108,7 @@
       if (!this.rep.progreso) this.prog.hidden = true;
       const arriba = h("div", "rt-arriba", ui);
       this.btnMusica = h("button", "rt-chip", arriba); this.btnMusica.type = "button"; this.btnMusica.textContent = "♪"; this.btnMusica.setAttribute("aria-label", "Música");
-      this.btnMusica.addEventListener("click", () => { const on = this.musica.alternar(); this.btnMusica.classList.toggle("rt-off", !on); });
+      this.btnMusica.addEventListener("click", () => { const on = this.musica.alternar(); this.btnMusica.classList.toggle("rt-off", !on); this.raiz.classList.toggle("rt-musica-off", !on); });
       this.btnMusica.hidden = true;
       if (this.rep.indice && this.orden.length > 2) {
         const b = h("button", "rt-chip", arriba); b.type = "button"; b.textContent = "☰"; b.setAttribute("aria-label", "Índice");
@@ -267,6 +267,7 @@
       else if (m.modo === "propia" && m.asset) { src = this.op.url(m.asset); vol = RT.num(m.volumen, 0.8); bucle = m.bucle !== false; }
       else if (g.asset) { src = this.op.url(g.asset); vol = RT.num(g.volumen, 0.8); bucle = g.bucle !== false; }
       this.btnMusica.hidden = !src && !this.musica.actual;
+      this.raiz.classList.toggle("rt-con-musica", !!src);
       this.musica.poner(src, vol, bucle);
     }
 
@@ -361,7 +362,7 @@
         case "inicio": this.ir(0, true); break;
         case "ir": { const j = this.orden.indexOf(ac.destino); if (j >= 0) this.ir(j, j < this.i); break; }
         case "enlace": if (/^(https?:|mailto:|tel:)/i.test(ac.destino || "")) window.open(ac.destino, "_blank", "noopener"); break;
-        case "musica": { const on = this.musica.alternar(); this.btnMusica.classList.toggle("rt-off", !on); break; }
+        case "musica": { const on = this.musica.alternar(); this.btnMusica.classList.toggle("rt-off", !on); this.raiz.classList.toggle("rt-musica-off", !on); break; }
       }
     }
 

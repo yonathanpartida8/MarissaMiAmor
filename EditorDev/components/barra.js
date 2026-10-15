@@ -134,6 +134,12 @@ export class BarraContextual {
         partes.push(grupo(this._color("forma.relleno", "Relleno"), this._b(I("borde", "Borde"), "Borde", (a) => popover(a, [el("b.ed-pop-t", { text: "Borde" }), el("label.ed-fila", {}, [el("span.ed-et", { text: "Grosor" }), this._ctl("forma.grosor", { tipo: "rango", min: 0, max: 30, def: 0, unidad: "px" })]), el("label.ed-fila", {}, [el("span.ed-et", { text: "Color" }), this._ctl("forma.trazo", { tipo: "color" })])]))));
       } else if (t === "dibujo") partes.push(grupo(this._color("dibujo.color", "Color")));
       else if (t === "trazo") partes.push(grupo(this._color("trazo.color", "Color"), this._b(I("borde", "Grosor"), "Grosor", (a) => popover(a, [el("b.ed-pop-t", { text: "Grosor" }), this._ctl("trazo.grosor", { tipo: "rango", min: 1, max: 40, unidad: "px" })]))));
+      else if (t === "musica") partes.push(grupo(
+        this._color("musica.fondo", "Fondo"),
+        this._color("musica.color", "Icono y letra"),
+        this._b(I("musica", "Estilo"), "Delgadito, redondo o sólo el icono", (a) => menu(a, [["slim", "Delgadito"], ["redondo", "Redondo"], ["icono", "Sólo icono"]].map(([k, n]) => ({ t: n, al: () => E.setEl(uno.id, { "musica.estilo": k }, "Estilo del botón de música") })))),
+        this._b(I("audio", "Canción"), "Elegir la canción", () => this.app.abrirSeccion("audio")),
+      ));
       else if (t === "boton") partes.push(grupo(this._color("boton.fondo", "Color del botón"), this._color("boton.color", "Color de la letra"), this._b(I("editar", "Texto"), "Texto y acción", () => ins.abrir("diseno", "Botón")), this._b(I("toque", "Al tocarlo"), "Qué hace al tocarlo", () => ins.abrir("diseno", "Al tocarlo"))));
       else if (t === "componente") {
         const k = uno.componente || {};

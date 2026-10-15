@@ -1332,7 +1332,7 @@ body.con-teclado .ed-foco, body.con-teclado .ed-asa-lateral { opacity: 0; pointe
 .ed-abeja-globo p .falta { opacity: 0; }
 .ed-foco.con-abeja { color: #b07a00; border-color: #e7b23c; background: #fff6d6; }
 .ed-senalado { animation: ed-senal 1.2s ease-out 2; border-radius: 10px; }
-body.ed-probando .ed-abeja, body.ed-probando .ed-abeja-globo { opacity: 0 !important; pointer-events: none !important; }
+body.ed-probando .ed-abeja:not(.ed-abeja-mini), body.ed-probando .ed-abeja-globo { opacity: 0 !important; pointer-events: none !important; }
 @media (prefers-color-scheme: dark) { .ed-foco.con-abeja { background: #3b3018; } }
 
 /* Salir: el estado (guardado o no) */
@@ -1832,3 +1832,17 @@ body.ed-mov-nada .ed-tour-foco { transition: none; }
 .ed-col-m.on { box-shadow: 0 0 0 2px var(--superficie), 0 0 0 4px var(--acento); }
 @media (max-width: 1023px) { .ed-hsv { height: 132px; } .ed-letras { max-height: min(40vh, 360px); } }
 @media (max-width: 1023px) { .ed-pop.ed-pop-letras, .ed-pop.ed-pop-color { width: auto; } }
+
+/* ── Pasar página: estado de la hoja y aviso de la abejita al probar ── */
+.ed-nav-estado { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 10px; padding: 10px 12px; border: 1.5px dashed var(--acento); border-radius: 14px; background: var(--acento-suave); }
+.ed-nav-estado > span { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--acento); color: #fff; }
+.ed-nav-estado > span svg { width: 17px; height: 17px; }
+.ed-nav-estado p { flex: 1; min-width: 160px; margin: 0; font-size: 13px; line-height: 1.3; }
+.ed-nav-estado.bien { border-style: solid; border-color: var(--linea); background: var(--superficie-2); }
+.ed-nav-estado.bien > span { background: #4fb39a; }
+.ed-prueba-abeja { position: absolute; z-index: 5; left: 50%; top: max(14px, env(safe-area-inset-top)); width: min(420px, calc(100vw - 24px)); display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 2px solid var(--tinta); border-radius: 18px; background: var(--superficie); color: var(--texto); box-shadow: var(--sticker, 0 6px 0 rgba(0,0,0,.15)), 0 12px 30px rgba(0,0,0,.25); transform: translate(-50%, -16px) scale(.96); opacity: 0; transition: opacity .3s, transform .45s var(--resorte, ease); }
+.ed-prueba-abeja.ver { opacity: 1; transform: translate(-50%, 0) scale(1); }
+.ed-prueba-abeja p { margin: 2px 0 8px; font-size: 14px; line-height: 1.35; }
+.ed-prueba-abeja-b { display: flex; flex-wrap: wrap; gap: 6px; }
+.ed-abeja.ed-abeja-mini { display: block; position: static; flex: 0 0 auto; width: 52px; height: 46px; transform: none; cursor: default; will-change: auto; animation: ed-ab-mini 2.4s ease-in-out infinite; }
+@keyframes ed-ab-mini { 0%, 100% { translate: 0 0; } 50% { translate: 0 -4px; } }

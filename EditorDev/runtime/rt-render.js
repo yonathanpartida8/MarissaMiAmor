@@ -245,6 +245,31 @@
     n.tabIndex = ctx.modo === "vista" ? 0 : -1;
   };
 
+  /* El botón de música (delgadito, redondo o sólo el icono). En el librito
+     cambia solo entre «suena» (barritas) y «en pausa» (triángulo), y no se ve
+     si la página no tiene canción. */
+  const ICONO_MUSICA = '<svg class="rt-mb-i" viewBox="0 0 24 24" aria-hidden="true"><g class="rt-mb-son"><rect x="4" y="9" width="3" height="10" rx="1.5"/><rect x="10.5" y="5" width="3" height="14" rx="1.5"/><rect x="17" y="11" width="3" height="8" rx="1.5"/></g><path class="rt-mb-pausa" d="M8 5.5v13l10.5-6.5z"/></svg>';
+  PINTAR.musica = function (c, e, ctx) {
+    const m = e.musica || {};
+    let b = c.firstChild;
+    if (!b || !b.classList || !b.classList.contains("rt-musica-b")) {
+      c.textContent = "";
+      b = h("button", "rt-musica-b", c); b.type = "button";
+      b.innerHTML = ICONO_MUSICA + '<span class="rt-mb-t"></span>';
+    }
+    b.className = "rt-musica-b rt-mb-" + (m.estilo || "slim");
+    b.style.setProperty("--mb-c", m.color || "#ffffff");
+    b.style.setProperty("--mb-f", m.fondo || "rgba(30,14,34,.55)");
+    b.lastChild.textContent = m.estilo === "icono" || m.estilo === "redondo" ? "" : m.texto || "Música";
+    b.setAttribute("aria-label", "Música: pausar o poner");
+    b.tabIndex = ctx.modo === "vista" ? 0 : -1;
+  };
+
+  /** Lo que va siempre encima: los botones para pasar página y el de música. */
+  RT.prioritario = function (e) {
+    return !!e && (e.tipo === "musica" || (e.accion && /^(anterior|siguiente|inicio)$/.test(e.accion.tipo || "")));
+  };
+
   /** «auto» (empieza solo al llegar) o «manual» (se toca para verlo). */
   RT.modoVideo = function (v) { return v && (v.modo || (v.auto ? "auto" : "manual")); };
   RT.MARCOS_VIDEO = { ninguno: "Sin marco", polaroid: "Polaroid", redondo: "Redondeado", cine: "Cine", neon: "Neón", cinta: "Con cinta", tele: "Tele antigua" };
@@ -780,8 +805,10 @@
         const e = els[i];
         vivos.add(e.id);
         let n = this.nodos.get(e.id);
-        if (!n) { n = RT.crearEl(e, ctx); n.style.zIndex = i + 1; this.capa.appendChild(n); this.nodos.set(e.id, n); }
-        else RT.actualizarEl(n, e, ctx, i + 1);
+        // Pasar página y música, siempre por encima de todo (nunca quedan tapados).
+        const z = (RT.prioritario(e) ? 5000 : 0) + i + 1;
+        if (!n) { n = RT.crearEl(e, ctx); n.style.zIndex = z; this.capa.appendChild(n); this.nodos.set(e.id, n); }
+        else RT.actualizarEl(n, e, ctx, z);
       }
       for (const [id, n] of this.nodos) if (!vivos.has(id)) { RT.destruirEl(n); this.nodos.delete(id); }
     }

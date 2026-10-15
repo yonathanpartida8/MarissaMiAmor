@@ -58,6 +58,9 @@ const DIBUJO = `<svg viewBox="0 0 80 74" aria-hidden="true">
 </g>
 </svg>`;
 
+/** El dibujo de la abejita (para avisos fuera de su globito, como en «Probar»). */
+export const DIBUJO_ABEJA = DIBUJO;
+
 const CARAS = {
   normal: ["normal", "sonrisa"], feliz: ["feliz", "grande"], guino: ["guino", "gato"], enamorada: ["corazon", "sonrisa"],
   sorpresa: ["susto", "o"], asustada: ["susto", "o"], dormida: ["dormida", "gato"],

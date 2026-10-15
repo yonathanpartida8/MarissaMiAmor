@@ -222,3 +222,22 @@
 @keyframes rtVLlama { 50% { box-shadow: 0 0 0 6px rgba(255, 255, 255, .12); } }
 @media (max-width: 300px) { .rt-vt { display: none; } }
 @media (prefers-reduced-motion: reduce) { .rt-vepico .rt-vamb, .rt-vfx-cine::after, .rt-vfx-vhs::after, .rt-vsonido { animation: none; } }
+
+/* ── Botón de música (elemento «musica») ─────────────────────────── */
+.rt-musica-b { all: unset; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 100%; padding: 0 12px 0 10px; border-radius: 999px; background: var(--mb-f, rgba(30, 14, 34, .55)); color: var(--mb-c, #fff); font: 600 13px/1 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: .02em; white-space: nowrap; cursor: pointer; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 2px 10px rgba(0, 0, 0, .18), inset 0 0 0 1px rgba(255, 255, 255, .18); -webkit-tap-highlight-color: transparent; transition: transform .18s; }
+.rt-musica-b:active { transform: scale(.94); }
+.rt-mb-i { flex: 0 0 auto; width: 18px; height: 18px; fill: currentColor; }
+.rt-mb-redondo, .rt-mb-icono { padding: 0; }
+.rt-mb-redondo .rt-mb-i, .rt-mb-icono .rt-mb-i { width: 56%; height: 56%; }
+.rt-mb-icono { background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .4)); }
+.rt-mb-t:empty { display: none; }
+.rt-mb-son rect { transform-box: fill-box; transform-origin: 50% 100%; animation: rt-mb-baila 1s ease-in-out infinite; }
+.rt-mb-son rect:nth-child(2) { animation-delay: -.35s; }
+.rt-mb-son rect:nth-child(3) { animation-delay: -.7s; }
+.rt-mb-pausa { display: none; }
+.rt-musica-off .rt-mb-son { display: none; }
+.rt-musica-off .rt-mb-pausa { display: inline; }
+/* En el librito, sin canción en esta página no hay botón de música. */
+.rt-libro:not(.rt-con-musica) .rt-e-musica { display: none !important; }
+@keyframes rt-mb-baila { 0%, 100% { transform: scaleY(.45); } 50% { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .rt-mb-son rect { animation: none; } }

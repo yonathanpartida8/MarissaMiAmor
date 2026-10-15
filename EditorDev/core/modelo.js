@@ -53,6 +53,7 @@ export const TIPOS = {
   dibujo: { n: "Dibujo", ico: "dibujo" },
   trazo: { n: "Trazo a mano", ico: "lapiz" },
   boton: { n: "Botón", ico: "boton" },
+  musica: { n: "Botón de música", ico: "musica" },
   album: { n: "Álbum", ico: "album" },
   carrusel: { n: "Carrusel", ico: "carrusel" },
   video: { n: "Vídeo", ico: "video" },
@@ -106,7 +107,7 @@ export function nuevoProyecto(nombre = "Mi librito", formato = "movil") {
 
 export function nuevaPagina(proyecto, datos = {}) {
   const t = proyecto?.ajustes?.tema || {};
-  return {
+  const p = {
     id: uid("p"),
     nombre: "Página nueva",
     fondo: { tipo: "color", color: t.fondo || "#ffffff" },
@@ -116,6 +117,36 @@ export function nuevaPagina(proyecto, datos = {}) {
     els: [],
     ...datos,
   };
+  // Cada página nueva trae su botón de música (delgadito, arriba a la derecha):
+  // se mueve, se edita o se borra como cualquier cosa. En el librito sólo se
+  // ve si suena una canción. Se apaga en Audio → «Botón de música».
+  if (proyecto?.ajustes && proyecto.ajustes.botonMusica !== false && !datos.els) p.els.push(botonMusica(proyecto));
+  return p;
+}
+
+/**
+ * Lleva el botón de música de la página al rincón más despejado (arriba a la
+ * derecha si está libre; si no, el que menos tape), pegado a ese rincón.
+ */
+export function rinconParaMusica(pagina, W, H) {
+  const m = pagina?.els.find((x) => x.tipo === "musica");
+  if (!m) return;
+  const otros = pagina.els.filter((x) => x !== m && !x.oculto && !(x.w >= W * 0.92 && x.h >= H * 0.92));
+  const tapa = (x, y) => otros.reduce((s, o) => s + Math.max(0, Math.min(x + m.w, o.x + o.w) - Math.max(x, o.x)) * Math.max(0, Math.min(y + m.h, o.y + o.h) - Math.max(y, o.y)), 0);
+  const r = 14;
+  const rincones = [[W - m.w - r, r, "der", "arriba"], [r, r, "izq", "arriba"], [W - m.w - r, H - m.h - r, "der", "abajo"], [r, H - m.h - r, "izq", "abajo"]];
+  let mejor = rincones[0], min = Infinity;
+  for (const c of rincones) { const t = tapa(c[0], c[1]); if (t < min - 0.5) { min = t; mejor = c; } }
+  m.x = Math.round(mejor[0]); m.y = Math.round(mejor[1]);
+  m.ancla = { h: mejor[2], v: mejor[3] };
+}
+
+/** El botón de música de una página (arriba a la derecha, pegado a ese rincón). */
+export function botonMusica(proyecto, datos = {}) {
+  const a = proyecto.ajustes;
+  const e = nuevoEl("musica", proyecto, { nombre: "Botón de música", accion: { tipo: "musica" }, ancla: { h: "der", v: "arriba" }, ...datos });
+  e.x = a.ancho - e.w - 14; e.y = 14;
+  return e;
 }
 
 const ANIM_VACIA = () => ({ entrada: { tipo: "ninguna" }, salida: { tipo: "ninguna" }, bucle: { tipo: "ninguno" }, propia: null });
@@ -123,7 +154,7 @@ const ANIM_VACIA = () => ({ entrada: { tipo: "ninguna" }, salida: { tipo: "ningu
 /** Medidas por defecto de cada tipo (antes de centrarlo en la hoja). */
 const TAM = {
   texto: [300, 60], imagen: [240, 300], forma: [160, 160], dibujo: [120, 120], trazo: [200, 120],
-  boton: [200, 56], album: [330, 330], carrusel: [330, 420], video: [330, 220], html: [330, 260], pagina: [390, 844], componente: [280, 200], escena3d: [300, 300],
+  boton: [200, 56], musica: [112, 36], album: [330, 330], carrusel: [330, 420], video: [330, 220], html: [330, 260], pagina: [390, 844], componente: [280, 200], escena3d: [300, 300],
 };
 
 export function nuevoEl(tipo, proyecto, datos = {}) {
@@ -168,6 +199,7 @@ export function nuevoEl(tipo, proyecto, datos = {}) {
     dibujo: { svg: "", color: t.acento || "#d8397a", estirar: false },
     trazo: { d: "", vw: 100, vh: 100, color: t.acento || "#d8397a", grosor: 4 },
     boton: { texto: "Siguiente", estilo: "relleno", fuente: "Jost", tam: 18, peso: 500, color: "#ffffff", fondo: t.acento || "#d8397a", radio: 999 },
+    musica: { estilo: "slim", texto: "Música", color: "#ffffff", fondo: "rgba(30,14,34,.55)" },
     album: { fotos: [], disposicion: "cuadricula", columnas: 2, espacio: 8, radio: 10, marco: "ninguno", proporcion: "1", ampliar: true, cascada: { tipo: "aparecer", paso: 110, dur: 650, dir: "arriba" } },
     carrusel: { fotos: [], modo: "deslizar", direccion: "horizontal", auto: true, intervalo: 3200, velocidad: 600, bucle: true, puntos: true, flechas: false, espacio: 0, radio: 16, ajuste: "cover" },
     video: { asset: null, auto: false, bucle: false, silencio: false, controles: true, ajuste: "cover" },

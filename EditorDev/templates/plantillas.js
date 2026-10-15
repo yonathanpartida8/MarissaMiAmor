@@ -4,7 +4,7 @@
  * Ninguna trae fotos ni canciones: traen el hueco («+ Añadir foto») y tú
  * pones lo tuyo. Son JSON de unos pocos cientos de bytes.
  */
-import { nuevaPagina, nuevoEl } from "../core/modelo.js";
+import { nuevaPagina, nuevoEl, rinconParaMusica } from "../core/modelo.js";
 import { DIBUJOS } from "../assets/dibujos.js";
 import { fondoDePapel } from "./papeles.js";
 
@@ -161,7 +161,7 @@ export const PLANTILLAS = [
       const p = nuevaPagina(P, { nombre: "Galería", fondo: { tipo: "gradiente", color: "#f6ebe3", gradiente: { a: "#fbf1ea", b: "#efd9cc", angulo: 180 } } });
       p.els.push(
         T(P, "Cositas nuestras", 24, 40, W - 48, { tam: 34, fuente: "Caveat", nombre: "Título" }),
-        nuevoEl("album", P, { nombre: "Polaroids", x: 10, y: 100, w: W - 20, h: H - 140, album: { disposicion: "polaroids", cascada: { tipo: "latido", paso: 160, dur: 700 } } }),
+        nuevoEl("album", P, { nombre: "Polaroids", x: 10, y: 100, w: W - 20, h: H - 170, album: { disposicion: "polaroids", cascada: { tipo: "latido", paso: 160, dur: 700 } } }),
       );
       return p;
     },
@@ -234,3 +234,9 @@ export const PLANTILLAS = [
     },
   },
 ];
+
+// El botón de música de cada plantilla se va al rincón que tenga libre.
+for (const t of PLANTILLAS) {
+  const crear = t.crear;
+  t.crear = (P) => { const p = crear(P); rinconParaMusica(p, P.ajustes.ancho, P.ajustes.alto); return p; };
+}

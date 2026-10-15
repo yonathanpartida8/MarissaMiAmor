@@ -17,6 +17,8 @@ import { el } from "../../src/utils/dom.js";
 import { ico } from "./iconos.js";
 import { fuentesUsadas } from "../core/modelo.js";
 import { RAIZ } from "../assets/biblioteca.js";
+import { DIBUJO_ABEJA } from "../mascota/abeja.js";
+import { ponerBotonesPagina } from "./secciones/navegacion.js";
 
 const RT = window.LibritoRT;
 const CROMO = ".ed-barra, .ed-lateral, .ed-insp, .ed-contexto, .ed-linea:not([hidden]), .ed-asa-lateral, .ed-foco, .ed-hoja-sec.abierta, .ed-fuera:not([hidden]), .ed-hojita, .ed-codigo-pantalla, .ed-avisos";
@@ -109,11 +111,49 @@ export class Prueba {
       };
       addEventListener("message", this._msg);
     }
+    if (html == null) this._revisarNavegacion(capa);
     this._tecla = (e) => { if (e.key === "Escape") { e.preventDefault(); this.cerrar(); } };
     addEventListener("keydown", this._tecla);
     // El botón se hace discreto para no tapar la página (vuelve al pasar cerca).
     this._dim = setTimeout(() => x.classList.add("discreto"), 2600);
     dispatchEvent(new CustomEvent("ed-hoja", { detail: "abrir" }));
+  }
+
+  /**
+   * La abejita avisa (una vez por página) si no hay botones para pasar y
+   * volver de página, o si alguno se sale de la hoja, y dice dónde se ponen.
+   */
+  _revisarNavegacion(capa) {
+    const app = this.app, E = app.estado, pg = E.pagina;
+    if (!pg) return;
+    this._avisadas = this._avisadas || new Set();
+    const navs = pg.els.filter((e) => !e.oculto && e.accion && /^(anterior|siguiente|inicio|ir)$/.test(e.accion.tipo));
+    const W = app.lienzo.W, H = app.lienzo.H;
+    const fuera = navs.filter((e) => { const b = app.lienzo.vis(e); return b.x < -2 || b.y < -2 || b.x + b.w > W + 2 || b.y + b.h > H + 2; });
+    const clave = pg.id + (navs.length ? ":fuera" : ":faltan");
+    if ((navs.length && !fuera.length) || this._avisadas.has(clave)) return;
+    this._avisadas.add(clave);
+    const texto = navs.length
+      ? "Un botón para pasar página se sale de la hoja: en el librito no se vería entero."
+      : "No has añadido botones para pasar y volver de página. Se ponen en «Pasar página» (en el riel de la izquierda) → «En esta página».";
+    const quitar = () => { clearTimeout(t); tarjeta.classList.remove("ver"); setTimeout(() => tarjeta.remove(), 300); };
+    const acciones = navs.length
+      ? [["Meterlo en la hoja", () => { this.cerrar(); app.lienzo.traerALaHoja(fuera.map((e) => e.id)); }, "primario"]]
+      : [["Ponerlos ahora", async () => { this.cerrar(); await ponerBotonesPagina(app); app.ayuda?.abeja?.decir?.("¡Listo! Ya tiene sus botones para pasar y volver 💛", { cara: "feliz", dura: 3200 }); }, "primario"],
+        ["Llévame ahí", () => { this.cerrar(); app.abrirSeccion("navegacion"); }, ""]];
+    const tarjeta = el("div.ed-prueba-abeja", { role: "status" }, [
+      el("span.ed-abeja.ed-abeja-mini", { html: DIBUJO_ABEJA, dataset: { ojos: navs.length ? "susto" : "normal", boca: navs.length ? "o" : "sonrisa" } }),
+      el("div", {}, [
+        el("p", { text: texto }),
+        el("div.ed-prueba-abeja-b", {}, [
+          ...acciones.map(([t, fn, cl]) => el("button.ed-btn.chico" + (cl ? "." + cl : ""), { type: "button", text: t, onClick: fn })),
+          el("button.ed-btn.chico", { type: "button", text: "Ahora no", onClick: quitar }),
+        ]),
+      ]),
+    ]);
+    capa.append(tarjeta);
+    setTimeout(() => tarjeta.classList.add("ver"), 650);
+    const t = setTimeout(quitar, 14000);
   }
 
   _rectHoja() {

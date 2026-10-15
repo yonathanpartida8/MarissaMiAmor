@@ -1,10 +1,11 @@
 /**
- * BOTONES PARA PASAR PÁGINA — siempre los de assets/deslizar/.
+ * PASAR PÁGINA — su propia sección en el riel (antes estaba escondida en
+ * Herramientas), con todo lo de leer el librito en un solo lugar.
  *
- * Cada estilo es una carpeta con `izquierda.*` y `derecha.*`. El librito los
- * usa como flechas (y además se pasa deslizando con el dedo). Aquí se elige
- * el estilo, su tamaño, y se pueden poner sobre una página como dos botones
- * que se mueven como cualquier elemento (al tocarlos pasan la página).
+ * Cada estilo es una carpeta de assets/deslizar/ con `izquierda.*` y
+ * `derecha.*`. El librito los usa como flechas (y además se pasa deslizando).
+ * «En esta página» los pone como dos botones abajo, pegados a los rincones
+ * (nunca se salen de la pantalla) y siempre por encima de todo.
  */
 import { el, seccion, fila, boton, aviso } from "../ui.js";
 import { ico } from "../iconos.js";
@@ -37,6 +38,32 @@ export async function asegurarBotones(P) {
   r.botones = { estilo: s.id, tam: b?.tam || 52, izq: assetDe(P, s.izquierda, `${s.nombre} · izquierda`), der: assetDe(P, s.derecha, `${s.nombre} · derecha`) };
 }
 
+/** Los dos botones (anterior y siguiente) sobre la página actual, abajo en los rincones. */
+export async function ponerBotonesPagina(app, s = null) {
+  const E = app.estado, P = E.proyecto, L = app.lienzo;
+  if (!s) {
+    const lista = (await extras()).deslizar || [];
+    const est = P.ajustes.reproduccion?.botones?.estilo;
+    s = lista.find((x) => x.id === est) || lista.find((x) => /corazon/i.test(x.id)) || lista[0];
+  }
+  if (!s) { aviso("No hay estilos en assets/deslizar/"); return []; }
+  const t = Math.round(Math.max(40, Math.min(64, Math.min(L.W, L.H) * 0.13)));
+  const y = L.H - t - 26, ids = [];
+  // Si ya había botones de pasar página en esta hoja, se cambian por los nuevos.
+  const viejos = (E.pagina?.els || []).filter((x) => x.accion && /^(anterior|siguiente)$/.test(x.accion.tipo)).map((x) => x.id);
+  E.transaccion("Botones para pasar página", () => {
+    if (viejos.length) E.quitarEls(viejos);
+    for (const [lado, ruta, x, tipo, h] of [["izquierda", s.izquierda, 14, "anterior", "izq"], ["derecha", s.derecha, L.W - t - 14, "siguiente", "der"]]) {
+      const a = app.bib.delLibrito(ruta, "imagen", `${s.nombre} · ${lado}`, { w: 64, h: 64 });
+      const e = nuevoEl("imagen", P, { nombre: lado === "izquierda" ? "Página anterior" : "Página siguiente", x, y, w: t, h: t, imagen: { asset: a.id, ajuste: "contain" }, accion: { tipo }, ancla: { h, v: "abajo" } });
+      E.agregarEl(e, null, E.paginaId, false);
+      ids.push(e.id);
+    }
+  });
+  E.seleccionar(ids);
+  return ids;
+}
+
 export const NAVEGACION = {
   _navegacion(c) {
     const E = this.E;
@@ -52,17 +79,9 @@ export const NAVEGACION = {
       for (const x of rej.children) x.classList.toggle("on", x.dataset.id === s.id);
       app.sonidos?.sonar("seleccionar");
     };
-    const ponerAqui = (s) => {
-      const L = app.lienzo;
-      const t = Math.round(Math.min(L.W, L.H) * 0.13);
-      const y = Math.round((L.H - t) / 2);
-      E.transaccion("Botones en la página", () => {
-        for (const [lado, ruta, x, tipo] of [["izquierda", s.izquierda, 10, "anterior"], ["derecha", s.derecha, L.W - t - 10, "siguiente"]]) {
-          const a = app.bib.delLibrito(ruta, "imagen", `${s.nombre} · ${lado}`, { w: 64, h: 64 });
-          E.agregarEl(nuevoEl("imagen", this.P, { nombre: lado === "izquierda" ? "Página anterior" : "Página siguiente", x, y, w: t, h: t, imagen: { asset: a.id, ajuste: "contain" }, accion: { tipo } }));
-        }
-      });
-      aviso("Listo: al tocarlos en el librito pasan la página. Muévelos como quieras.");
+    const ponerAqui = async (s) => {
+      await ponerBotonesPagina(app, s);
+      aviso("Listo: al tocarlos en el librito pasan la página. Siempre quedan encima de todo.");
     };
     extras().then((ex) => {
       const lista = ex.deslizar || [];
@@ -74,14 +93,30 @@ export const NAVEGACION = {
             el("img", { src: rutaAUrl(s.derecha), alt: "", draggable: "false" }),
           ]),
           el("b", { text: s.nombre }),
-          el("button.ed-btn.chico", { type: "button", html: I("mas", "En esta página"), title: "Ponerlos sobre la página como botones", onClick: () => ponerAqui(s) }),
+          el("button.ed-btn.chico", { type: "button", html: I("mas", "En esta página"), title: "Ponerlos sobre la página como botones", onClick: () => ponerAqui(s).then(() => this.rehacer()) }),
         ]));
       }
     });
+    const p = this._proy();
+    const navs = (E.pagina?.els || []).filter((x) => x.accion && /^(anterior|siguiente)$/.test(x.accion.tipo));
+    c.append(el("div.ed-nav-estado" + (navs.length ? ".bien" : ""), {}, [
+      el("span", { html: ico(navs.length ? "ok" : "aviso") }),
+      el("p", { text: navs.length ? `Esta página tiene ${navs.length === 1 ? "1 botón" : navs.length + " botones"} para pasar o volver.` : "Esta página todavía no tiene botones propios para pasar y volver." }),
+      navs.length ? null : el("button.ed-btn.chico.primario", { type: "button", html: I("mas", "Ponerlos aquí"), onClick: () => ponerAqui(null).then(() => this.rehacer()) }),
+    ].filter(Boolean)));
     c.append(seccion("Botones para pasar página", [
       rej,
-      fila("Tamaño", this._proy()("ajustes.reproduccion.botones.tam", { tipo: "rango", min: 36, max: 88, unidad: " px", def: 52 })),
-      el("small.ed-ayuda", { text: "Salen de assets/deslizar/ (izquierda y derecha). En el librito también se pasa deslizando con el dedo; en el editor, desliza rápido de lado sobre la hoja entera." }),
+      fila("Tamaño", p("ajustes.reproduccion.botones.tam", { tipo: "rango", min: 36, max: 88, unidad: " px", def: 52 })),
+      el("small.ed-ayuda", { text: "Elige un estilo para las flechas de todo el librito, o toca «En esta página» para poner los dos botones abajo, en los rincones (siempre quedan encima de todo y nunca se salen de la pantalla). También se pasa deslizando con el dedo." }),
+    ]));
+    c.append(seccion("Cómo se lee", [
+      fila("Flechas", p("ajustes.reproduccion.flechas", { tipo: "toggle" })),
+      fila("Pasar deslizando", p("ajustes.reproduccion.deslizar", { tipo: "toggle" })),
+      fila("Barrita de progreso", p("ajustes.reproduccion.progreso", { tipo: "toggle" })),
+      fila("Índice", p("ajustes.reproduccion.indice", { tipo: "toggle" })),
+      fila("«Toca para abrir»", p("ajustes.reproduccion.tocarParaEmpezar", { tipo: "toggle" })),
+      fila("Al terminar", p("ajustes.reproduccion.alFinal", { tipo: "segmento", opciones: [["quedarse", "Quedarse"], ["portada", "Volver a empezar"]] })),
+      fila("Pasar solas", p("ajustes.reproduccion.autoAvance", { tipo: "rango", min: 0, max: 30, unidad: " s" }), "0 = sólo cuando ella pase la hoja"),
     ]));
   },
 };

@@ -61,6 +61,7 @@ export class Paneles {
     this.E.on("els", () => { if (/html|3d|video/.test(this.actual)) this.rehacer(); });
     this.E.on("sel", () => { if (/efectos|interactivo|animar|toques/.test(this.actual)) this.rehacer(); });
     this.E.on("el", () => { if (this.actual === "toques") pronto(); });
+    this.E.on("els", () => { if (this.actual === "navegacion") this.rehacer(); });
     this.E.on("pagina", ({ ruta }) => { if (/^audios/.test(ruta || "") && this.actual === "audio") this.rehacer(); if (/^fondo/.test(ruta || "") && this.actual === "diseno") this.rehacer(); });
     this.E.on("assets", () => { if (/imagenes|video|3d/.test(this.actual)) this.rehacer(); });
   }
@@ -407,16 +408,7 @@ export class Paneles {
       fila("Margen", p("editor.margen", { tipo: "rango", min: 0, max: 80, unidad: "px", nombre: "Margen" })),
       (this.P.editor.guias || []).length ? boton("Quitar todas las guías", () => E.setProy({ "editor.guias": [] }, "Quitar guías"), "chico") : null,
     ].filter(Boolean), { abierta: false }));
-    this._navegacion(c);
-    c.append(seccion("Cómo se lee", [
-      fila("Flechas", p("ajustes.reproduccion.flechas", { tipo: "toggle" })),
-      fila("Pasar deslizando", p("ajustes.reproduccion.deslizar", { tipo: "toggle" })),
-      fila("Barrita de progreso", p("ajustes.reproduccion.progreso", { tipo: "toggle" })),
-      fila("Índice", p("ajustes.reproduccion.indice", { tipo: "toggle" })),
-      fila("«Toca para abrir»", p("ajustes.reproduccion.tocarParaEmpezar", { tipo: "toggle" })),
-      fila("Al terminar", p("ajustes.reproduccion.alFinal", { tipo: "segmento", opciones: [["quedarse", "Quedarse"], ["portada", "Volver a empezar"]] })),
-      fila("Pasar solas", p("ajustes.reproduccion.autoAvance", { tipo: "rango", min: 0, max: 30, unidad: " s" }), "0 = sólo cuando ella pase la hoja"),
-    ], { abierta: false }));
+    c.append(el("div.ed-botonera", {}, [boton(I("pasar", "Pasar página y cómo se lee →"), () => app.abrirSeccion("navegacion"), "chico")]));
     const SE = app.sonidos;
     if (SE) c.append(seccion("Sonidos del editor", [
       fila("Encendidos", control(this.v, { tipo: "toggle", leer: () => SE.pref.on, escribir: (on) => SE.ponerPref({ on }) })),

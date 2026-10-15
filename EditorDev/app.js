@@ -68,6 +68,7 @@ const $ = (s) => document.querySelector(s);
 /** Las categorías del riel: [id, icono, nombre]. */
 const SECCIONES = [
   ["paginas", "paginas", "Páginas"],
+  ["navegacion", "pasar", "Pasar página"],
   // Crear: lo que arma la página
   ["bloques", "bloques", "Bloques"],
   ["elementos", "elementos", "Elementos"],

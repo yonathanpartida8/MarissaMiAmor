@@ -94,6 +94,13 @@ export const AUDIO = {
       fila("Volumen", p("ajustes.musica.volumen", { tipo: "rango", min: 0, max: 1, paso: 0.05 })),
       fila("En bucle", p("ajustes.musica.bucle", { tipo: "toggle" })),
     ], { abierta: false }));
+    // ── El botón de música que va en la hoja ──
+    const tiene = (E.pagina?.els || []).some((x) => x.tipo === "musica");
+    c.append(seccion("Botón de música en la hoja", [
+      el("p.ed-ayuda", { text: "Un botoncito para pausar o volver a poner la canción. Se mueve y se edita como cualquier cosa; en el librito sólo se ve si hay canción." }),
+      fila("En las páginas nuevas", control(this.v, { tipo: "toggle", leer: () => this.P.ajustes.botonMusica !== false, escribir: (on) => E.setProy({ "ajustes.botonMusica": on }, "Botón de música en páginas nuevas") })),
+      el("div.ed-botonera", {}, [boton(tiene ? I("ok", "Elegir el de esta página") : I("mas", "Ponerlo en esta página"), () => { app.acciones.botonMusica(); this.rehacer(); }, tiene ? "chico" : "chico primario")]),
+    ]));
     const pm = E.pagina?.musica || { modo: "global" };
     const pag = [fila("Aquí suena", g("musica.modo", { tipo: "segmento", opciones: [["global", "La del librito"], ["propia", "Su canción"], ["silencio", "Silencio"]], def: "global" }))];
     if (pm.modo === "propia") pag.push(
