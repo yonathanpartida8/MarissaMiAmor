@@ -2010,3 +2010,26 @@ body.ed, body.ed.sin-panel { grid-template-rows: calc(var(--barra) + var(--sat))
 /* Pistas silenciadas en la línea de tiempo: se ven apagadas pero siguen ahí. */
 .ed-tl-aclip.mudo { opacity: .45; filter: grayscale(.7); }
 .ed-tl-aclip.mudo::after { content: ""; position: absolute; left: 6px; right: 6px; top: 50%; border-top: 2px dashed currentColor; opacity: .5; pointer-events: none; }
+
+/* ── Fase 10: pulido general (coherente con los tres estilos) ────── */
+body.ed { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+/* El foco del teclado siempre se ve (y sólo con teclado). */
+body.ed :is(button, a, input, select, textarea, [tabindex]):focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+body.ed :is(button, a):focus:not(:focus-visible) { outline: none; }
+/* Lo desactivado se ve desactivado, sin reaccionar al pasar. */
+body.ed .ed-btn:disabled, body.ed button[disabled] { opacity: .4; cursor: default; filter: saturate(.6); }
+/* Respuesta suave al tocar en todo lo que es botón. */
+body.ed :is(.ed-btn, .ed-cb, .ed-dock-b, .ed-tl-b, .ed-riel button, .ed-portada-op, .ed-sfx-oir) { transition: transform .12s ease, background-color .2s, color .2s, box-shadow .2s, opacity .2s; }
+body.ed :is(.ed-cb, .ed-dock-b, .ed-tl-b, .ed-riel button):active:not(:disabled) { transform: scale(.94); }
+/* Barras de desplazamiento finas y del color del tema en todo el editor. */
+body.ed * { scrollbar-width: thin; scrollbar-color: var(--linea-fuerte) transparent; }
+body.ed ::-webkit-scrollbar { width: 8px; height: 8px; }
+body.ed ::-webkit-scrollbar-thumb { background: var(--linea-fuerte); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+body.ed ::-webkit-scrollbar-track { background: transparent; }
+/* La barra de arriba flota un poquito sobre el lienzo. */
+.ed-barra { box-shadow: 0 6px 18px -14px rgba(40, 10, 30, .35); }
+/* Menos movimiento para quien lo pide. */
+@media (prefers-reduced-motion: reduce) {
+  /* Sólo la interfaz: las animaciones de las páginas son contenido y se siguen viendo. */
+  body.ed :is(.ed-barra, .ed-lateral, .ed-insp, .ed-panel, .ed-pop, .ed-menu, .ed-hojita, .ed-hoja-sec, .ed-modal, .ed-contexto, .ed-dock, .ed-linea, .ed-guardado, .ed-avisos) :is(*, *::before, *::after) { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

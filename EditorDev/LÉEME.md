@@ -392,6 +392,25 @@ Código nuevo: `components/temas-hoja.js`, `templates/papeles.js`; la sección �
 
 Código nuevo: `components/selectores.js` (letras y colores), `componentes/analizar.js` (lo que se ve de cada HTML); el acomodo de la hoja vive en `canvas/lienzo.js` y la línea de tiempo en `timeline/linea.js`.
 
+## Fase 10: guardado a prueba de fallos, pantallas de cualquier tamaño y efectos de sonido
+
+| | |
+| --- | --- |
+| **Se guarda solo** | a los pocos segundos de cada cambio (sólo lo que cambió) y, además, **cada 5 minutos una copia COMPLETA** del librito (páginas, textos, fotos, dibujos, elementos, posiciones, tamaños, colores, efectos, animaciones y ajustes). También se hace una copia al abrir y al salir. Se guardan las 3 últimas, aparte, con su suma de control |
+| **Nunca se pisa lo bueno** | cada guardado es una sola transacción (todo o nada) con escritura «estricta» y se comprueba volviéndolo a leer. «Guardado correctamente» sólo aparece después de esa comprobación. Si algo falla, la versión buena anterior se queda, lo nuevo queda pendiente y se reintenta solo (5 s, 10 s, 20 s… hasta cada minuto). Si el librito estuviera dañado, no se escribe |
+| **Al salir** | al cerrar, cambiar de app o de pestaña, se intenta guardar normal y, por si el navegador corta antes, se deja al instante un rescate de lo pendiente. Al volver a abrir el editor se abre el último librito tal como quedó: si el rescate es más nuevo se aplica, y si faltara una página se completa con la última copia buena (avisa qué recuperó) |
+| **Indicador** | junto al nombre (en el teléfono, sólo el icono; el texto se asoma un momento): «Guardando…», «Guardado correctamente» o «Error al guardar». Tocarlo abre **«Tu trabajo está a salvo»**: último guardado, las copias automáticas (abrir una crea un librito aparte, el original no se toca), espacio usado, si el navegador lo protege, «Hacer una copia ahora» y la **copia de seguridad en archivo**: un .zip con TODO (también lo subido que aún no se usa) que se restaura con «Restaurar desde archivo…» |
+| **Compatibilidad** | IndexedDB en Safari (iPhone/iPad), Chrome/Android y escritorio; si Safari pierde la conexión con la pestaña en segundo plano, se reconecta sola. En Safari sin instalar, el navegador puede borrar lo guardado tras 7 días sin abrir el sitio: la ventanita lo explica y recomienda instalarlo o bajar una copia |
+| **La hoja se acomoda** | al abrir cualquier panel de abajo (inspector, hojas, ventanitas, diálogos y ahora también la línea de tiempo) la hoja entera sube y se escala en proporción para verse completa; al cerrarlo vuelve suave a como estaba. Si el panel ocupa casi toda la pantalla, la hoja no se encoge hasta volverse un sello |
+| **Cualquier pantalla** | el teléfono ya no agranda la página (antes, en 360–390 px la barra de arriba no cabía y la de abajo quedaba detrás de los botones de Android). Arriba, a los lados y abajo se respetan la muesca, la barra de gestos y los botones de navegación. En teléfonos angostos la barra de arriba se compacta (páginas como icono con insignia; el engrane pasa a «Más» sólo si no cabe) y la hoja ajustada no queda debajo de la barra flotante |
+| **Sin resaltado azul** | en los 88 HTML del repositorio, en el HTML que se pega y en el librito exportado ya no aparece el resaltado azul al tocar ni al mantener presionado; en los campos de escritura se sigue pudiendo seleccionar |
+| **Un solo botón de música** | al probar (y en el librito), si se usa el botón de música de la hoja, el chip viejo «♪» ya no sale |
+| **Efectos de sonido** | 18 efectos listos, hechos en el navegador (Toques, Magia y brillo, Amor, Movimiento y Celebración): tocar para oír; «+» para ponerlo en el cabezal de la línea de tiempo o para que suene al tocar o al aparecer lo elegido. Se guardan como audio del librito (10–56 KB) y suenan igual en el librito exportado. Están en la campanita de la línea de tiempo, arriba de todo en Audio y en Sonidos del inspector |
+| **Línea de tiempo** | cada pista de audio se puede silenciar sin quitarla; nuevos atajos: ↑/↓ saltar entre cortes, Supr quitar, Ctrl/Cmd+D duplicar y Alt+←/→ correr lo elegido 0,1 s (Mayús: 1 s); duplicar y silenciar también en el menú de la pista |
+| **Pulido** | foco visible con teclado, respuesta suave al tocar, desactivados más claros, barras de desplazamiento finas del color del tema y menos movimiento para quien lo pide en su sistema |
+
+Código nuevo: `storage/respaldos.js` (copias completas), `storage/seguro.js` (revisar, rescatar y recuperar), `components/guardado.js` (indicador y ventanita), `audio/efectos.js` (sintetizador de efectos) y `components/efectos-sonido.js` (elegirlos y ponerlos).
+
 ## Cómo está hecho
 
 ```

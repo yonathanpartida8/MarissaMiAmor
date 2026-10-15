@@ -348,9 +348,20 @@ export class Lienzo {
 
   _vistaAjustada() {
     const r = this.vistaEl.getBoundingClientRect();
-    const mx = r.width < 600 ? 20 : 56, my = r.width < 600 ? 20 : 48;
-    const z = Math.max(0.05, Math.min((r.width - mx) / this.W, (r.height - my) / this.H));
-    return { z, px: (r.width - this.W * z) / 2, py: (r.height - this.H * z) / 2, ajustar: true };
+    const mx = r.width < 600 ? 20 : 56, my = r.width < 600 ? 20 : 48, dw = this._reservaDerecha(r);
+    const z = Math.max(0.05, Math.min((r.width - mx - dw) / this.W, (r.height - my) / this.H));
+    return { z, px: (r.width - dw - this.W * z) / 2, py: (r.height - this.H * z) / 2, ajustar: true };
+  }
+
+  /** En pantallas angostas, el ancho de la barra flotante de la derecha: la hoja ajustada no queda debajo de ella. */
+  _reservaDerecha(r) {
+    if (r.width >= 760) return 0;
+    const d = document.querySelector(".ed-dock");
+    if (!d || !d.offsetWidth) return 0;
+    const cs = getComputedStyle(d);
+    if (cs.display === "none" || cs.visibility === "hidden" || +cs.opacity < 0.1) return 0;
+    const dr = d.getBoundingClientRect();
+    return Math.max(0, Math.round(r.right - dr.left + 6));
   }
 
   _acomodarYa() {
@@ -370,7 +381,7 @@ export class Lienzo {
     }
     // Lo que queda libre encima del panel. Si el panel ocupa casi toda la
     // pantalla, encoger la hoja hasta un sello no sirve: se deja como está.
-    const m = 14, lw = r.width, lh = r.height - tapado;
+    const m = 14, dw = this._reservaDerecha(r), lw = r.width - dw, lh = r.height - tapado;
     if (lh < Math.max(150, r.height * 0.2)) return;
     if (!this._acAntes) this._acAntes = { ...this.v };
     // La hoja ENTERA sube y se escala (proporcional, sin deformarse ni cambiar
@@ -506,9 +517,7 @@ export class Lienzo {
   ajustar() {
     const r = this.vistaEl.getBoundingClientRect();
     if (!r.width || !r.height || !this.P) return;
-    const mx = r.width < 600 ? 20 : 56, my = r.width < 600 ? 20 : 48;
-    const z = Math.max(0.05, Math.min((r.width - mx) / this.W, (r.height - my) / this.H));
-    this.v = { z, px: (r.width - this.W * z) / 2, py: (r.height - this.H * z) / 2, ajustar: true };
+    this.v = this._vistaAjustada();
     this.pintarVista();
   }
 
