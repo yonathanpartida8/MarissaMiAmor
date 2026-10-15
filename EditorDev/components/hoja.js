@@ -81,7 +81,7 @@ export class Hoja {
 
   _ir(destino, v0, alFin) {
     this.parar?.();
-    this.parar = resorte(this.y ?? this._cerrada(), destino, { v0, cuadro: (x) => this._poner(x), fin: () => { this.parar = null; this._marcarOculto(); alFin?.(); } });
+    this.parar = resorte(this.y ?? this._cerrada(), destino, { v0, cuadro: (x) => this._poner(x), fin: () => { this.parar = null; this._marcarOculto(); alFin?.(); dispatchEvent(new CustomEvent("ed-hoja-quieta")); } });
   }
 
   /** Lo que queda fuera de la pantalla en esta parada: el cuerpo se alarga
@@ -96,6 +96,7 @@ export class Hoja {
   abrir(i = 0) {
     const nueva = !this.abierta;
     this.abierta = true;
+    this.panel.classList.remove("cerrando");
     this.panel.classList.add("abierta");
     this.panel.style.visibility = "visible";
     if (nueva) { this._poner(this._cerrada()); if (!PILA.includes(this)) PILA.push(this); this.alAbrir?.(); dispatchEvent(new CustomEvent("ed-hoja", { detail: "abrir" })); }
@@ -107,12 +108,13 @@ export class Hoja {
   cerrar(motivo = "codigo", v0 = 0) {
     if (!this.abierta) return;
     this.abierta = false;
+    this.panel.classList.add("cerrando");
     const i = PILA.indexOf(this);
     if (i >= 0) PILA.splice(i, 1);
     dispatchEvent(new CustomEvent("ed-hoja", { detail: "cerrar" }));
     this._ir(this._cerrada(), v0, () => {
       if (this.abierta) return;
-      this.panel.classList.remove("abierta");
+      this.panel.classList.remove("abierta", "cerrando");
       this.panel.style.visibility = "hidden";
       this.alCerrar?.(motivo);
     });

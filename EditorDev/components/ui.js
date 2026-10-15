@@ -245,7 +245,7 @@ export function menu(ancla, items) {
   // Quien edita se entera (el lienzo corre la hoja para que lo elegido no quede tapado).
   dispatchEvent(new CustomEvent("ed-menu-abierto", { detail: m.getBoundingClientRect() }));
   const fuera = (e) => { if (!m.contains(e.target)) cerrar(); };
-  const cerrar = () => { m.remove(); document.removeEventListener("pointerdown", fuera, true); };
+  const cerrar = () => { m.remove(); document.removeEventListener("pointerdown", fuera, true); dispatchEvent(new CustomEvent("ed-hoja", { detail: "cerrar" })); };
   setTimeout(() => document.addEventListener("pointerdown", fuera, true), 0);
   return m;
 }

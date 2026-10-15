@@ -37,6 +37,8 @@ import { ico } from "../components/iconos.js";
 import { orientacion, PANTALLA } from "../components/pantalla.js";
 
 const RT = window.LibritoRT;
+/** Lo que sube desde abajo y puede tapar la hoja (en el teléfono). */
+const ACOMODO = ".ed-hoja-sec.abierta:not(.cerrando), .ed-insp.ed-desliza.abierta:not(.cerrando), .ed-hojita.abierta:not(.cerrando), .ed-pop.ver:not(.cerrando), .ed-menu, .ed-modal-fondo.ver .ed-modal:not(.cerrando)";
 const PROPORCION = new Set(["imagen", "dibujo", "trazo", "video", "componente", "escena3d"]);
 const MANIJAS = { nw: [-1, -1], n: [0, -1], ne: [1, -1], e: [1, 0], se: [1, 1], s: [0, 1], sw: [-1, 1], w: [-1, 0] };
 const CURSORES = ["ns-resize", "nesw-resize", "ew-resize", "nwse-resize"];
@@ -126,6 +128,9 @@ export class Lienzo {
       if (this.editando) { this._mostrarEditando(); return; }
       if (!ev.detail.teclado) { if (this.v.ajustar) this.ajustar(); else this.pintarVista(); }
     });
+    // Lo que sube desde abajo: la hoja se acomoda (ver «Acomodo»).
+    for (const t of ["ed-hoja", "ed-hoja-quieta", "ed-menu-abierto"]) addEventListener(t, () => this.acomodar());
+    this.estado.on("sel", () => { if (this._tapadoAbajo) this.acomodar(); });
     // La pantalla cambió (girar el teléfono): la hoja automática se rehace.
     const re = () => { cancelAnimationFrame(this._rre); this._rre = requestAnimationFrame(() => this._rehoja()); };
     addEventListener("resize", re);
@@ -296,8 +301,96 @@ export class Lienzo {
     this.pintarVista();
   }
 
+  /* ── Acomodo (como Instagram al abrir los comentarios) ─────────────
+     En el teléfono, cuando sube algo desde abajo (una hoja, el inspector, una
+     ventanita, un menú), la hoja de trabajo se hace a un lado con una
+     animación: se encoge lo justo para que lo elegido quede entero y centrado
+     encima (o, sin nada elegido, la página entera). Al cerrarse todo vuelve a
+     como estaba. Mientras arrastras una hoja no se mueve; al soltarla, sí. */
+  _tapadoDeAbajo() {
+    const vr = this.vistaEl.getBoundingClientRect();
+    let tope = Infinity;
+    for (const n of document.querySelectorAll(ACOMODO)) {
+      const r = n.getBoundingClientRect();
+      if (r.width < innerWidth * 0.55 || r.height < 24 || r.bottom < vr.bottom - 14 || r.top >= vr.bottom - 4) continue;
+      const cs = getComputedStyle(n);
+      if (cs.visibility === "hidden" || cs.display === "none" || +cs.opacity < 0.05) continue;
+      tope = Math.min(tope, r.top);
+    }
+    return tope === Infinity ? 0 : Math.max(0, Math.round(vr.bottom - tope));
+  }
+
+  get acomodoActivo() { return matchMedia("(max-width: 1023px)").matches; }
+
+  acomodar() {
+    if (!this.P || !this.acomodoActivo) return;
+    clearTimeout(this._acT);
+    cancelAnimationFrame(this._acRaf);
+    this._acT = setTimeout(() => { this._acRaf = requestAnimationFrame(() => this._acomodarYa()); }, 40);
+  }
+
+  _vistaAjustada() {
+    const r = this.vistaEl.getBoundingClientRect();
+    const mx = r.width < 600 ? 20 : 56, my = r.width < 600 ? 20 : 48;
+    const z = Math.max(0.05, Math.min((r.width - mx) / this.W, (r.height - my) / this.H));
+    return { z, px: (r.width - this.W * z) / 2, py: (r.height - this.H * z) / 2, ajustar: true };
+  }
+
+  _acomodarYa() {
+    if (!this.P || this.congelado || this.editando || this.g || this.pellizco) return;
+    const tapado = this._tapadoDeAbajo();
+    this._tapadoAbajo = tapado;
+    const r = this.vistaEl.getBoundingClientRect();
+    if (!tapado) {
+      // Todo cerrado: vuelve a como estaba (si la vista estaba «entera», a la vista entera).
+      const antes = this._acAntes, puesta = this._acPuesta;
+      this._acAntes = this._acPuesta = null;
+      if (!antes) return;
+      const igual = puesta && Math.abs(this.v.z - puesta.z) < 0.002 && Math.abs(this.v.px - puesta.px) < 1.5 && Math.abs(this.v.py - puesta.py) < 1.5;
+      if (antes.ajustar) this._animarVista(this._vistaAjustada());
+      else if (igual) this._animarVista(antes);
+      return;
+    }
+    if (!this._acAntes) this._acAntes = { ...this.v };
+    const m = 14, lw = r.width, lh = Math.max(90, r.height - tapado);
+    const zPag = Math.max(0.05, Math.min((lw - 2 * m) / this.W, (lh - 2 * m) / this.H));
+    const sel = this.estado.seleccionados.filter((e) => this.pag?.nodos.get(e.id));
+    let z = zPag, cx = this.W / 2, cy = this.H / 2;
+    if (sel.length) {
+      const b = union(sel.map((e) => cajaDe(this.vis(e))));
+      const zSel = Math.min((lw - 2 * m - 24) / Math.max(1, b.w), (lh - 2 * m - 24) / Math.max(1, b.h));
+      // Nunca acerca más de lo que estaba; aleja lo necesario para que quepa entero.
+      z = clamp(Math.min(this.v.z, zSel), zPag, Math.max(zPag, this.v.z));
+      cx = b.x + b.w / 2; cy = b.y + b.h / 2;
+    }
+    const hasta = { z, px: lw / 2 - cx * z, py: lh / 2 - cy * z, ajustar: false };
+    // Sin huecos de más: si la página entra entera, centrada; si no, sin dejar bordes vacíos.
+    hasta.px = this.W * z <= lw - 2 * m ? (lw - this.W * z) / 2 : clamp(hasta.px, lw - m - this.W * z, m);
+    hasta.py = this.H * z <= lh - 2 * m ? (lh - this.H * z) / 2 : clamp(hasta.py, lh - m - this.H * z, m);
+    this._acPuesta = hasta;
+    this._animarVista(hasta);
+  }
+
+  /** Lleva la vista a `hasta` con una animación suave (cancela la anterior). */
+  _animarVista(hasta, ms = 340) {
+    cancelAnimationFrame(this._animV);
+    const desde = { ...this.v }, t0 = performance.now();
+    if (Math.abs(desde.z - hasta.z) < 0.001 && Math.abs(desde.px - hasta.px) < 0.5 && Math.abs(desde.py - hasta.py) < 0.5) { this.v = { ...hasta }; return; }
+    this.v.ajustar = false;
+    const paso = (t) => {
+      const k = Math.min(1, (t - t0) / ms), q = 1 - Math.pow(1 - k, 3);
+      this.v = { z: desde.z + (hasta.z - desde.z) * q, px: desde.px + (hasta.px - desde.px) * q, py: desde.py + (hasta.py - desde.py) * q, ajustar: false };
+      this.pintarVista();
+      if (k < 1) this._animV = requestAnimationFrame(paso);
+      else { this.v = { ...hasta }; this.pintarVista(); }
+    };
+    this._animV = requestAnimationFrame(paso);
+  }
+
   /** Que lo elegido se vea por encima de una hoja que ocupa `abajo` px de la pantalla. */
   mostrarSeleccion(abajo = 0) {
+    // En el teléfono lo hace el acomodo (mide de verdad lo que tapa).
+    if (this.acomodoActivo) return this.acomodar();
     const sel = this.estado.seleccionados;
     if (!sel.length) return;
     const r = this.vistaEl.getBoundingClientRect();
@@ -363,6 +456,7 @@ export class Lienzo {
   /** Vuelve a una vista guardada (la de antes de `enfocar`). */
   /** La hoja entera, a la vista, encima de los `abajo` px de abajo. Devuelve cómo estaba. */
   verHojaArriba(abajo = 0) {
+    if (this.acomodoActivo) { this.acomodar(); return null; }
     const r = this.vistaEl.getBoundingClientRect();
     const alto = Math.min(r.bottom, innerHeight - abajo) - r.top - 24;
     if (alto < 100 || !this.W) return null;

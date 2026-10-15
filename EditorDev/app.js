@@ -223,7 +223,7 @@ function botonMusica() {
 /** Detalles táctiles: vibración suave al tocar botones y etiquetas al pasar el ratón. */
 function tactil() {
   document.addEventListener("pointerdown", (e) => {
-    if (e.pointerType !== "mouse" && e.target.closest("button, .ed-cb, [role=button]")) vibrar(6);
+    if (e.pointerType !== "mouse" && e.target.closest?.("button, .ed-cb, [role=button]")) vibrar(6);
   }, { capture: true, passive: true });
   let tip = null, t = 0;
   const quitar = () => { clearTimeout(t); tip?.remove(); tip = null; };
