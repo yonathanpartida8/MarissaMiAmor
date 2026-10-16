@@ -431,6 +431,25 @@ Código nuevo: `storage/respaldos.js` (copias completas), `storage/seguro.js` (r
 
 Código nuevo: `runtime/rt-magia.js` (magia y reacciones), `components/curva.js` (curvas a mano), `components/animacion.js` (copiar, pegar y secuencias), `timeline/fotogramas.js` (fotogramas por propiedad), `canvas/fx.js` (efectitos del editor), `components/vivo.js` (animar sólo lo que se ve), `assets/compilador.js` + `components/recursos.js` (revisar recursos) y `components/compartir.js`.
 
+## Fase 12: correcciones — posición fiel, vídeos, pantalla completa, abejita y sonidos
+
+Sólo arreglos y mejoras de lo que ya había (nada se quitó ni se rediseñó).
+
+| | |
+| --- | --- |
+| **«Probar página» idéntica a la hoja** | la causa: el editor y la prueba medían la pantalla distinto (barras del navegador, teclado, zona segura) y en formato «Automático» cada pieza de un bloque se acomodaba por su cuenta. Ahora la prueba usa exactamente la medida de la hoja (`pantallaDeHoja`) y las piezas de un bloque se anclan juntas (`RT.cajasGrupo`): mismas coordenadas, tamaño, giro, capas y separación. Medido en teléfono vertical, apaisado y computadora: diferencia máxima 1 px; entrar y salir no cambia el diseño |
+| **Vídeos** | «Automático» (si el navegador deja; si no, en silencio) o «Al tocar». **Controles**: sólo se ven si están activados; sin controles no hay botón de reproducir, barra ni chip de sonido, pero se sigue pudiendo tocar (pausa o da sonido). Un solo manejador por vídeo (sin dobles), en el editor un toque elige y no reproduce, y al volver a la app siguen los que sonaban |
+| **Pantalla completa** | «Probar página» pide la pantalla completa real del sistema (Android y computadora) y la suelta al salir; respeta la zona segura. En iPhone Safari no existe para páginas: usa toda el área visible. El vídeo en pantalla completa ocupa todo sin deformarse |
+| **Sin saltos** | la barra de abajo conserva su desplazamiento al repintarse y aparece suave sólo cuando cambia lo elegido |
+| **Bloques** | un toque elige el bloque, dos toques una pieza (como antes); ahora una pista breve lo explica la primera vez |
+| **Abejita al momento** | consejos cortos la primera vez que mueves (con o sin imán), giras, cambias tamaño, ordenas capas, abres efectos o un vídeo. Cada uno sale una vez (el del bloque, hasta tres), nunca durante un gesto ni con una ventana abierta, y como mucho uno cada 15 s |
+| **Sonidos en carpetas** | `assets/sonidos-editor/<categoría>/<acción>/` (ver su LÉEME): interaccion, movimiento, transformacion, organizacion, interfaz, edicion, paginas, multimedia y animaciones. Cambiar un sonido es cambiar archivos; qué carpeta usa cada acción está en una sola tabla (`CARPETA`, `audio/sonidos-editor.js`) |
+| **Sonidos en cada acción** | pulsar, elegir/soltar la selección, arrastrar y soltar, desplazar la vista, girar, zoom (una vez por tanda), cambiar tamaño, agrupar/desagrupar, duplicar, eliminar, capas, abrir/cerrar/minimizar/restaurar paneles, lápiz, goma, color, efectos, animaciones, páginas y escuchar canciones. Una vez por acción, nunca por cuadro; los de poca importancia ceden ante uno más importante |
+| **Mezcla** | los efectos pasan por un limitador suave (no saturan aunque coincidan) y la música del editor baja un poco mientras suenan y vuelve sola (medido: de 0,45 a ~0,27 y de vuelta a 0,45). Los volúmenes elegidos no cambian |
+| **Controles de música** | el botón de música de cada hoja es su control: si se oculta no aparece ningún otro (tampoco el ♪ viejo) y la música sigue sonando |
+
+No probado en aparatos reales: Android, iPhone/iPad Safari y Safari de Mac se comprobaron con Chromium emulando esas pantallas, no en los equipos.
+
 ## Cómo está hecho
 
 ```
