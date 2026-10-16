@@ -142,7 +142,7 @@ export function elegirColor(ancla, { titulo = "Color", leer, poner, pagina = nul
     if (!h) return;
     actual = h;
     poner(h, !!enVivo);
-    if (!enVivo) recordar("editordev:colores", h, 12);
+    if (!enVivo) { recordar("editordev:colores", h, 12); dispatchEvent(new CustomEvent("ed-color")); }
   };
   const deUnColor = (c) => { const h = normalHex(c); if (!h) return; hsv = aHsv(h); usar(h, false); pintar(); };
   // Arrastrar (con un solo «deshacer» al soltar).

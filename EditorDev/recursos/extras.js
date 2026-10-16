@@ -5,7 +5,7 @@
  *   assets/transiciones/<nombre>/transicion.json|css|js → Transiciones
  *   assets/efectos/<nombre>.json                         → Efectos (filtros listos)
  *   assets/fondos/<nombre>/index.html                    → fondos con HTML
- *   assets/sonidos-editor/<momento>/*.wav|mp3            → sonidos del editor
+ *   assets/sonidos-editor/<categoría>/<acción>/*.wav|mp3 → sonidos del editor
  *   assets/iconos/<icono>.svg                            → cambia un icono
  *
  * Lo encuentra `herramientas/catalogo.mjs` (en cada subida) y, si el servidor
@@ -176,8 +176,16 @@ export async function extras() {
   if (sons) for (const d of sons.filter((h) => h.endsWith("/"))) {
     const cat = d.slice(0, -1).toLowerCase();
     if (ex.sonidos[cat]?.length) continue;
-    const fs = ((await listar(`assets/sonidos-editor/${d}`)) || []).filter((f) => /\.(mp3|m4a|ogg|wav|aac)$/i.test(f));
+    const dentro = (await listar(`assets/sonidos-editor/${d}`)) || [];
+    const fs = dentro.filter((f) => /\.(mp3|m4a|ogg|wav|aac)$/i.test(f));
     if (fs.length) ex.sonidos[cat] = fs.map((f) => `assets/sonidos-editor/${d}${f}`);
+    // <categoría>/<acción>/
+    for (const a of dentro.filter((h) => h.endsWith("/"))) {
+      const k = cat + "/" + a.slice(0, -1).toLowerCase();
+      if (ex.sonidos[k]?.length) continue;
+      const f2 = ((await listar(`assets/sonidos-editor/${d}${a}`)) || []).filter((f) => /\.(mp3|m4a|ogg|wav|aac)$/i.test(f));
+      if (f2.length) ex.sonidos[k] = f2.map((f) => `assets/sonidos-editor/${d}${a}${f}`);
+    }
   }
   cache = ex;
   return ex;

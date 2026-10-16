@@ -151,6 +151,7 @@ async function arrancar() {
   app.plantilla = (id) => PLANTILLAS.find((t) => t.id === id).crear(E.proyecto);
 
   app.lienzo = new Lienzo(app, $(".ed-centro"));
+  app.sonidos.conectarLienzo(app.lienzo);
   app.fx = new FxEditor(app);
   app.insp = new Inspector(app, $(".ed-insp"));
   app.paneles = new Paneles(app);

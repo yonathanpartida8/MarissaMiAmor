@@ -34,7 +34,7 @@ export class FxEditor {
       if ((pid == null || pid === E.paginaId) && !this._sinFx) {
         const dup = this._duplicando;
         requestAnimationFrame(() => this._enEl(el.id, dup ? "duplicar" : "colocar"));
-        if (!dup) app.sonidos?.sonar("colocar");
+        if (!dup) app.sonidos?.sonar(el.tipo === "trazo" ? "dibujar" : "colocar");
       }
       return r;
     };

@@ -25,7 +25,7 @@
  *   assets/transiciones/<nombre>/transicion.json|css|js → Transiciones
  *   assets/efectos/<nombre>.json  (o <nombre>/efecto.json) → Efectos (filtros listos)
  *   assets/fondos/<nombre>/index.html  (o <nombre>.html)   → Fondos con HTML
- *   assets/sonidos-editor/<categoría>/*.mp3|wav|ogg        → sonidos del propio editor
+ *   assets/sonidos-editor/<categoría>/<acción>/*.mp3|wav|ogg → sonidos del propio editor
  *   assets/iconos/<nombre>.svg                              → cambia un icono del editor
  *   assets/deslizar/<estilo>/izquierda.*|derecha.*          → botones para pasar página
  *   (una carpeta con index.html dentro de animaciones/ o efectos/ sigue siendo una pieza)
@@ -157,8 +157,14 @@ function extrasDe(raiz) {
   for (const c of lista(ds)) {
     const p = join(ds, c);
     if (!esDir(p)) continue;
-    const sons = todos(p).filter((a) => AUD.test(a)).map((a) => `assets/sonidos-editor/${c}/${a}`);
+    // <categoría>/<acción>/ (y, como antes, una carpeta suelta por momento).
+    const sons = lista(p).filter((a) => AUD.test(a) && !esDir(join(p, a))).map((a) => `assets/sonidos-editor/${c}/${a}`);
     if (sons.length) ex.sonidos[c.toLowerCase()] = sons;
+    for (const a of lista(p)) {
+      if (!esDir(join(p, a))) continue;
+      const dentro = todos(join(p, a)).filter((f) => AUD.test(f)).map((f) => `assets/sonidos-editor/${c}/${a}/${f}`);
+      if (dentro.length) ex.sonidos[`${c}/${a}`.toLowerCase()] = dentro;
+    }
   }
   const di = join(raiz, "iconos");
   for (const f of lista(di)) if (/\.svg$/i.test(f)) ex.iconos[f.replace(/\.svg$/i, "")] = `assets/iconos/${f}`;

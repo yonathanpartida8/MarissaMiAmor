@@ -84,6 +84,10 @@ export class Hoja {
   }
 
   _ir(destino, v0, alFin) {
+    // Bajar a una parada más chica = minimizar; volver a una más grande = restaurar.
+    const ps = this.abierta && destino !== this._cerrada() ? this._paradas() : null, pi = ps ? ps.findIndex((p) => Math.abs(p - destino) < 2) : -1;
+    if (pi >= 0 && this._pi != null && pi !== this._pi && ps[this._pi] != null) dispatchEvent(new CustomEvent("ed-hoja", { detail: destino > ps[this._pi] ? "minimizar" : "restaurar" }));
+    this._pi = this.abierta ? (pi >= 0 ? pi : this._pi) : null;
     this.parar?.();
     this.parar = resorte(this.y ?? this._cerrada(), destino, { v0, cuadro: (x) => this._poner(x), fin: () => { this.parar = null; this._marcarOculto(); alFin?.(); dispatchEvent(new CustomEvent("ed-hoja-quieta")); } });
   }

@@ -414,7 +414,7 @@ export class Paneles {
       fila("Volumen", control(this.v, { tipo: "rango", min: 0, max: 1, paso: 0.05, leer: () => SE.pref.vol, escribir: (vol) => SE.ponerPref({ vol }) })),
       fila("A la vez, como mucho", control(this.v, { tipo: "segmento", opciones: [[1, "1"], [2, "2"], [3, "3"], [5, "5"]], leer: () => SE.pref.max, escribir: (max) => SE.ponerPref({ max }) })),
       el("div.ed-botonera", {}, ["botones", "seleccionar", "colocar", "duplicar", "herramienta", "fotograma", "guardar", "exito"].map((m) => boton(m, () => SE.sonar(m), "chico"))),
-      el("small.ed-ayuda", { text: SE.hay ? `Suenan al azar los de assets/sonidos-editor/ (${SE.momentos.length} momentos). Pon los tuyos en esas carpetas.` : "Deja sonidos en assets/sonidos-editor/<momento>/ (botones, seleccionar, abrir, cerrar, guardar…)." }),
+      el("small.ed-ayuda", { text: SE.hay ? `Suenan al azar los de assets/sonidos-editor/ (${SE.momentos.length} carpetas, por categoría y acción). Cambia o añade archivos en esas carpetas.` : "Deja sonidos en assets/sonidos-editor/<categoría>/<acción>/ (interaccion/pulsar, movimiento/arrastrar, interfaz/abrir…)." }),
     ], { abierta: false }));
     const giphy = el("div.ed-botonera");
     const pintarGiphy = async () => {

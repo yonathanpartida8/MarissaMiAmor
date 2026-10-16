@@ -1714,7 +1714,7 @@ export class Lienzo {
     const quitar = () => { svg.remove(); this.trazoVivo = null; };
     this._gesto(ev, {
       cada: (m) => { const l = m.getCoalescedEvents ? m.getCoalescedEvents() : []; for (const x of l.length ? l : [m]) pasar(x); },
-      soltar: () => { quitar(); fin(true); if (hubo) this.app.sonidos?.sonar("borrar"); },
+      soltar: () => { quitar(); fin(true); if (hubo) this.app.sonidos?.sonar("borrador"); },
       cancelar: () => { quitar(); fin(true); },
     });
   }

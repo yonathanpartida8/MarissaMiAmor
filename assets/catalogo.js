@@ -1489,48 +1489,148 @@ export default {
    }
   ],
   "sonidos": {
-   "abrir": [
-    "assets/sonidos-editor/abrir/abrir-1.wav",
-    "assets/sonidos-editor/abrir/abrir-2.wav"
+   "animaciones/aplicar": [
+    "assets/sonidos-editor/animaciones/aplicar/aplicar-1.wav",
+    "assets/sonidos-editor/animaciones/aplicar/aplicar-2.wav"
    ],
-   "arrastrar": [
-    "assets/sonidos-editor/arrastrar/arrastrar-1.wav",
-    "assets/sonidos-editor/arrastrar/arrastrar-2.wav"
+   "animaciones/fotograma": [
+    "assets/sonidos-editor/animaciones/fotograma/fotograma-1.wav",
+    "assets/sonidos-editor/animaciones/fotograma/fotograma-2.wav"
    ],
-   "borrar": [
-    "assets/sonidos-editor/borrar/borrar-1.wav",
-    "assets/sonidos-editor/borrar/borrar-2.wav"
+   "edicion/ajustar": [
+    "assets/sonidos-editor/edicion/ajustar/ajustar-1.wav",
+    "assets/sonidos-editor/edicion/ajustar/ajustar-2.wav"
    ],
-   "botones": [
-    "assets/sonidos-editor/botones/botones-1.wav",
-    "assets/sonidos-editor/botones/botones-2.wav",
-    "assets/sonidos-editor/botones/botones-3.wav"
+   "edicion/aplicar-efectos": [
+    "assets/sonidos-editor/edicion/aplicar-efectos/aplicar-efectos-1.wav",
+    "assets/sonidos-editor/edicion/aplicar-efectos/aplicar-efectos-2.wav"
    ],
-   "cerrar": [
-    "assets/sonidos-editor/cerrar/cerrar-1.wav",
-    "assets/sonidos-editor/cerrar/cerrar-2.wav"
+   "edicion/borrar": [
+    "assets/sonidos-editor/edicion/borrar/borrar-1.wav",
+    "assets/sonidos-editor/edicion/borrar/borrar-2.wav"
    ],
-   "deshacer": [
-    "assets/sonidos-editor/deshacer/deshacer-1.wav",
-    "assets/sonidos-editor/deshacer/deshacer-2.wav"
+   "edicion/colocar": [
+    "assets/sonidos-editor/edicion/colocar/colocar-1.wav",
+    "assets/sonidos-editor/edicion/colocar/colocar-2.wav"
    ],
-   "error": [
-    "assets/sonidos-editor/error/error-1.wav"
+   "edicion/colorear": [
+    "assets/sonidos-editor/edicion/colorear/colorear-1.wav",
+    "assets/sonidos-editor/edicion/colorear/colorear-2.wav"
    ],
-   "exito": [
-    "assets/sonidos-editor/exito/exito-1.wav"
+   "edicion/deshacer": [
+    "assets/sonidos-editor/edicion/deshacer/deshacer-1.wav",
+    "assets/sonidos-editor/edicion/deshacer/deshacer-2.wav"
    ],
-   "guardar": [
-    "assets/sonidos-editor/guardar/guardar-1.wav",
-    "assets/sonidos-editor/guardar/guardar-2.wav"
+   "edicion/dibujar": [
+    "assets/sonidos-editor/edicion/dibujar/dibujar-1.wav",
+    "assets/sonidos-editor/edicion/dibujar/dibujar-2.wav"
    ],
-   "seleccionar": [
-    "assets/sonidos-editor/seleccionar/seleccionar-1.wav",
-    "assets/sonidos-editor/seleccionar/seleccionar-2.wav"
+   "interaccion/confirmar": [
+    "assets/sonidos-editor/interaccion/confirmar/confirmar-1.wav"
    ],
-   "soltar": [
-    "assets/sonidos-editor/soltar/soltar-1.wav",
-    "assets/sonidos-editor/soltar/soltar-2.wav"
+   "interaccion/deseleccionar": [
+    "assets/sonidos-editor/interaccion/deseleccionar/deseleccionar-1.wav",
+    "assets/sonidos-editor/interaccion/deseleccionar/deseleccionar-2.wav"
+   ],
+   "interaccion/herramienta": [
+    "assets/sonidos-editor/interaccion/herramienta/herramienta-1.wav",
+    "assets/sonidos-editor/interaccion/herramienta/herramienta-2.wav"
+   ],
+   "interaccion/pulsar": [
+    "assets/sonidos-editor/interaccion/pulsar/pulsar-1.wav",
+    "assets/sonidos-editor/interaccion/pulsar/pulsar-2.wav",
+    "assets/sonidos-editor/interaccion/pulsar/pulsar-3.wav"
+   ],
+   "interaccion/seleccionar": [
+    "assets/sonidos-editor/interaccion/seleccionar/seleccionar-1.wav",
+    "assets/sonidos-editor/interaccion/seleccionar/seleccionar-2.wav"
+   ],
+   "interfaz/abrir": [
+    "assets/sonidos-editor/interfaz/abrir/abrir-1.wav",
+    "assets/sonidos-editor/interfaz/abrir/abrir-2.wav"
+   ],
+   "interfaz/cerrar": [
+    "assets/sonidos-editor/interfaz/cerrar/cerrar-1.wav",
+    "assets/sonidos-editor/interfaz/cerrar/cerrar-2.wav"
+   ],
+   "interfaz/error": [
+    "assets/sonidos-editor/interfaz/error/error-1.wav"
+   ],
+   "interfaz/guardar": [
+    "assets/sonidos-editor/interfaz/guardar/guardar-1.wav",
+    "assets/sonidos-editor/interfaz/guardar/guardar-2.wav"
+   ],
+   "interfaz/minimizar": [
+    "assets/sonidos-editor/interfaz/minimizar/minimizar-1.wav",
+    "assets/sonidos-editor/interfaz/minimizar/minimizar-2.wav"
+   ],
+   "interfaz/restaurar": [
+    "assets/sonidos-editor/interfaz/restaurar/restaurar-1.wav",
+    "assets/sonidos-editor/interfaz/restaurar/restaurar-2.wav"
+   ],
+   "movimiento/arrastrar": [
+    "assets/sonidos-editor/movimiento/arrastrar/arrastrar-1.wav",
+    "assets/sonidos-editor/movimiento/arrastrar/arrastrar-2.wav"
+   ],
+   "movimiento/desplazar": [
+    "assets/sonidos-editor/movimiento/desplazar/desplazar-1.wav",
+    "assets/sonidos-editor/movimiento/desplazar/desplazar-2.wav"
+   ],
+   "movimiento/soltar": [
+    "assets/sonidos-editor/movimiento/soltar/soltar-1.wav",
+    "assets/sonidos-editor/movimiento/soltar/soltar-2.wav"
+   ],
+   "multimedia/pausar": [
+    "assets/sonidos-editor/multimedia/pausar/pausar-1.wav",
+    "assets/sonidos-editor/multimedia/pausar/pausar-2.wav"
+   ],
+   "multimedia/reproducir": [
+    "assets/sonidos-editor/multimedia/reproducir/reproducir-1.wav",
+    "assets/sonidos-editor/multimedia/reproducir/reproducir-2.wav"
+   ],
+   "organizacion/agrupar": [
+    "assets/sonidos-editor/organizacion/agrupar/agrupar-1.wav",
+    "assets/sonidos-editor/organizacion/agrupar/agrupar-2.wav"
+   ],
+   "organizacion/desagrupar": [
+    "assets/sonidos-editor/organizacion/desagrupar/desagrupar-1.wav",
+    "assets/sonidos-editor/organizacion/desagrupar/desagrupar-2.wav"
+   ],
+   "organizacion/duplicar": [
+    "assets/sonidos-editor/organizacion/duplicar/duplicar-1.wav",
+    "assets/sonidos-editor/organizacion/duplicar/duplicar-2.wav"
+   ],
+   "organizacion/eliminar": [
+    "assets/sonidos-editor/organizacion/eliminar/eliminar-1.wav",
+    "assets/sonidos-editor/organizacion/eliminar/eliminar-2.wav"
+   ],
+   "organizacion/ordenar-capas": [
+    "assets/sonidos-editor/organizacion/ordenar-capas/ordenar-capas-1.wav",
+    "assets/sonidos-editor/organizacion/ordenar-capas/ordenar-capas-2.wav"
+   ],
+   "paginas/cambiar": [
+    "assets/sonidos-editor/paginas/cambiar/cambiar-1.wav",
+    "assets/sonidos-editor/paginas/cambiar/cambiar-2.wav"
+   ],
+   "paginas/crear": [
+    "assets/sonidos-editor/paginas/crear/crear-1.wav",
+    "assets/sonidos-editor/paginas/crear/crear-2.wav"
+   ],
+   "paginas/duplicar": [
+    "assets/sonidos-editor/paginas/duplicar/duplicar-1.wav",
+    "assets/sonidos-editor/paginas/duplicar/duplicar-2.wav"
+   ],
+   "transformacion/redimensionar": [
+    "assets/sonidos-editor/transformacion/redimensionar/redimensionar-1.wav",
+    "assets/sonidos-editor/transformacion/redimensionar/redimensionar-2.wav"
+   ],
+   "transformacion/rotar": [
+    "assets/sonidos-editor/transformacion/rotar/rotar-1.wav",
+    "assets/sonidos-editor/transformacion/rotar/rotar-2.wav"
+   ],
+   "transformacion/zoom": [
+    "assets/sonidos-editor/transformacion/zoom/zoom-1.wav",
+    "assets/sonidos-editor/transformacion/zoom/zoom-2.wav"
    ]
   },
   "iconos": {},
