@@ -64,27 +64,23 @@ volverlo público **no** se vuelve a encender solo: todo da 404. Se enciende as�
 
 1. GitHub → el repositorio → **Settings → Pages**.
 2. «Build and deployment» → **Source: Deploy from a branch**.
-3. **Branch:** la rama con el librito (hoy `claude/interactive-love-book-redesign-5p93fv`;
-   `main` va atrasada) y la carpeta **`/ (root)`** → **Save**.
+3. **Branch:** la rama con el librito más nuevo (`main` puede ir atrasada) y
+   la carpeta **`/ (root)`** → **Save**.
 4. En uno o dos minutos el enlace vuelve a abrir.
 
-También desde el editor: **Páginas publicadas → GitHub Pages** (con un token que
-tenga «Pages» y «Administration» en *Read and write* lo enciende de un toque).
+(Si M.YNTHN tiene el token con «Administration», también se enciende desde su
+panel: GitHub → GitHub Pages.)
 
-### Tu propio servidor (Termux)
+### M.YNTHN, el servidor del librito (Termux)
 
-Un teléfono viejo con Termux puede ser tu servidor de publicación y
-almacenamiento: guarda el token de GitHub cifrado (nunca en el editor), tiene
-cuentas con usuario y contraseña y un panel web. Desde el editor: **Páginas
-publicadas → Tu servidor** → entrar → «Publicar en mi GitHub». Todo queda en
-`publicaciones/<nombre>/`, a pantalla completa y sólo para ver. Instalación
-paso a paso en **`servidor/LÉEME.md`** (una línea en Termux).
-
-### Publicar páginas sin token
-
-Editor → **Páginas publicadas → Publicar sin token**: se descarga un `.zip`, se
-sube a la carpeta `publicar/` del repositorio desde la web de GitHub y la acción
-«Publicar páginas subidas» lo deja en `publicaciones/<nombre>/` (ver `publicar/LÉEME.md`).
+Un teléfono viejo con Termux es **M.YNTHN**, el servidor público del editor:
+cualquiera crea su usuario y contraseña y ya puede **publicar** (Exportar →
+«Publicar en servidor M.YNTHN», queda en `publicaciones/<nombre>/`, a pantalla
+completa y sólo para ver), guardar **copias de sus proyectos** en su carpeta
+cada vez que guarda a mano, y mandarle **Detallitos** a su amorcito
+(«Vincular a tu Amorcito» con un código único). El token de GitHub es uno
+solo, cifrado en el teléfono: nunca está en el editor. Instalación paso a paso
+en **`servidor/LÉEME.md`** (una línea en Termux).
 
 ### Privado: sólo con el enlace
 
@@ -145,6 +141,11 @@ nada de él hasta que se entra. Su biblioteca se llena sola: componentes
 HTML en **`assets/<categoría>/<nombre>/`** (ver `assets/LÉEME.md`) y canciones
 en **`musica assets/`**. Todo explicado en
 [`EditorDev/LÉEME.md`](EditorDev/LÉEME.md).
+
+Al abrirlo sale primero un **menú principal** (entrar al editor, tu cuenta de
+M.YNTHN, Detallitos, volver al librito). **Exportar** da tres opciones:
+descargar la página completa (.zip), publicar en M.YNTHN o **Enviar
+Detallito** a tu amorcito.
 
 ---
 

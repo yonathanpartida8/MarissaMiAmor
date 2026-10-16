@@ -11,7 +11,7 @@ on:
         description: "Dirección que abre la app"
         default: "https://yonathanpartida8.github.io/MarissaMiAmor/"
   push:
-    branches: [main, claude/interactive-love-book-redesign-5p93fv]
+    branches: ["**"]
     paths:
       - "android/**"
       - "icono/**"

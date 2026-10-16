@@ -19,7 +19,10 @@ export function el(tag, props = {}, children = []) {
     if (key === "class") node.classList.add(...String(value).split(/\s+/).filter(Boolean));
     else if (key === "text") node.textContent = value;
     else if (key === "html") node.innerHTML = value;
-    else if (key === "style" && typeof value === "object") Object.assign(node.style, value);
+    else if (key === "style" && typeof value === "object") {
+      // Las variables de CSS (--algo) sólo entran con setProperty.
+      for (const [k, v] of Object.entries(value)) { if (k.startsWith("--")) node.style.setProperty(k, v); else node.style[k] = v; }
+    }
     else if (key === "dataset") Object.assign(node.dataset, value);
     else if (key.startsWith("on") && typeof value === "function") {
       node.addEventListener(key.slice(2).toLowerCase(), value);

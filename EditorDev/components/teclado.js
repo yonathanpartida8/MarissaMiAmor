@@ -17,7 +17,7 @@ export function atajos(app) {
     const escribiendo = /INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable;
     const mod = e.ctrlKey || e.metaKey;
     const k = e.key.toLowerCase();
-    if (mod && k === "s") { e.preventDefault(); app.guardarYa(); return; }
+    if (mod && k === "s") { e.preventDefault(); (app.guardarAMano || app.guardarYa)(); return; }
     if (mod && (k === "+" || k === "=")) { e.preventDefault(); app.lienzo.zoom(app.lienzo.v.z * 1.25); return; }
     if (mod && k === "-") { e.preventDefault(); app.lienzo.zoom(app.lienzo.v.z / 1.25); return; }
     if (mod && k === "0") { e.preventDefault(); app.lienzo.ajustar(); return; }

@@ -1,15 +1,16 @@
-# Servidor del librito (Termux)
+# M.YNTHN — el servidor del librito (Termux)
 
-Tu propio servidor de **publicación y almacenamiento** en un teléfono viejo.
-El editor le manda el librito, y el servidor lo publica en tu GitHub Pages
-con **tu** token de GitHub, que vive cifrado en el teléfono. En el editor no
-hay ninguna llave: ahí cada quien entra con **su usuario y contraseña del
-servidor**.
+**M.YNTHN** es el servidor **público** del editor de libritos: vive en tu
+teléfono viejo con Termux y atiende a **todas** las personas que usan el
+editor. Cada quien sólo crea su **usuario y contraseña** (al momento, sin
+esperar aprobación) y ya puede publicar, guardar sus proyectos y mandarle
+**Detallitos** a su amorcito. El token de GitHub es **uno solo, el tuyo**, y
+vive cifrado en el teléfono: nadie lo ve, nadie lo escribe en el editor.
 
 ```
-  Editor (en tu GitHub Pages, o donde lo abras)
-     │  usuario + contraseña  →  sesión (Bearer)
-     │  el librito en .zip (sólo para ver)
+  Editor (en tu GitHub Pages) — cualquiera, con su usuario y contraseña
+     │  sesión (Bearer)
+     │  páginas en .zip · copias de proyectos · detallitos
      ▼
   https://xxxx.trycloudflare.com  (túnel de Cloudflare, https gratis)
      ▼
@@ -19,10 +20,20 @@ servidor**.
   GitHub → tu repositorio → publicaciones/<nombre>/ → GitHub Pages
 ```
 
-Lo publicado queda en `https://<usuario>.github.io/<repositorio>/publicaciones/<nombre>/`,
-se ve **a pantalla completa** como una app y **no se puede editar** (no lleva
-el proyecto). Si el nombre ya existe, se usa `<nombre>-2`, `-3`… Actualizar una
-que ya estaba es aparte: botón «Actualizar con este librito».
+Lo que hace por cada usuario:
+
+- **Publicar en servidor M.YNTHN** (Editor → Exportar): la página queda en
+  `https://<usuario>.github.io/<repositorio>/publicaciones/<nombre>/`, a
+  **pantalla completa** como una app y **sin poder editarse**. Si el nombre ya
+  existe, se usa `<nombre>-2`, `-3`… Actualizar una que ya estaba es aparte.
+- **Copias de sus proyectos**: cada vez que guarda **a mano** (Guardar o
+  Ctrl+S) se guarda una copia completa en **su** carpeta
+  (`proyectos/<usuario>/<proyecto>/`), con sus fotos, música y todo. Se
+  quedan las más nuevas de cada proyecto (15, se cambia en el panel).
+- **Detallitos**: cada cuenta tiene un **código único** (`AMOR-XXXX-XXXX`).
+  Con «Vincular a tu Amorcito» uno pega el código del otro y quedan
+  conectados: se mandan páginas que se van coleccionando, ven si el otro está
+  en línea y les llega un aviso cuando hay uno nuevo.
 
 ---
 
@@ -43,12 +54,12 @@ que ya estaba es aparte: botón «Actualizar con este librito».
 Pega esto en Termux y Enter:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/yonathanpartida8/MarissaMiAmor/refs/heads/claude/interactive-love-book-redesign-5p93fv/servidor/instalar.sh | bash
+curl -fsSL https://yonathanpartida8.github.io/MarissaMiAmor/servidor/instalar.sh | bash
 ```
 
 Hace esto, solo:
 - instala `python` y `cloudflared` (con `pkg`);
-- baja **sólo** la carpeta `servidor/` a `~/librito-servidor` (no el repositorio entero);
+- baja **sólo** la carpeta `servidor/` de tu GitHub Pages a `~/librito-servidor` (no el repositorio entero);
 - crea la carpeta de datos `~/librito-datos` (sólo tu usuario puede entrar);
 - genera la **llave maestra** (`llave.bin`, 32 bytes al azar) que cifra los secretos;
 - deja listo el comando **`librito`**;
@@ -106,8 +117,7 @@ Dos maneras (la segunda es la más segura: el token ni pasa por el navegador):
   escribirlo— y rama).
 
 Luego, en **Panel → GitHub → GitHub Pages**: si dice «Apagado», elige la rama
-(`claude/interactive-love-book-redesign-5p93fv` mientras no la juntes con
-`main`) → **Encender GitHub Pages**. Si tu token no tiene «Administration»,
+donde está el librito más nuevo → **Encender GitHub Pages**. Si tu token no tiene «Administration»,
 el panel te lleva a los ajustes de GitHub para hacerlo a mano
 (Settings → Pages → Deploy from a branch → la rama → `/ (root)` → Save).
 
@@ -132,36 +142,47 @@ librito direccion        # → https://palabras-al-azar.trycloudflare.com
   desde GitHub Pages **no** puede hablar con `http://192.168…` (el navegador
   bloquea http desde una página https). Para eso es el túnel.
 
-### 7 · Emparejar el editor
+### 7 · Cómo lo usa la gente (nada que configurar)
 
-Cualquiera de estas tres:
+Con «Anunciar la dirección» encendido (viene así), el editor **encuentra solo**
+a M.YNTHN. Quien lo abre ve primero el **menú principal**:
 
-1. **Panel → Inicio → «Abrir el editor emparejado»**: abre el editor con la
-   dirección ya puesta (`…/EditorDev/#servidor=https://…`).
-2. **Solo**: abre el editor → **Páginas publicadas → Tu servidor**. Si el
-   servidor la anunció, dice «Encontré tu servidor» → «Conectar».
-3. **A mano**: copia la dirección (`librito direccion` o el panel) y pégala en
-   Páginas publicadas → Tu servidor → «Conectar».
+1. **Iniciar sesión o crear cuenta** → usuario y contraseña (mínimo 8) →
+   listo, ya tiene acceso. «Recordarme» en sus aparatos; en uno prestado, no.
+2. **Entrar al editor** y hacer su librito.
 
-Luego **Entrar** con tu usuario y contraseña del servidor (o «Crear cuenta»
-para alguien más: queda esperando tu aprobación). Marca «Recordarme» en tus
-aparatos; en uno prestado, no.
+Para probar con un servidor que no está anunciado:
+`…/EditorDev/#servidor=https://tu-túnel` (o Panel → Inicio → «Abrir el editor
+emparejado»).
 
-### 8 · Publicar
+### 8 · Publicar, copias y Detallitos
 
-Editor → **Páginas publicadas → Tu servidor**:
+Editor → **Exportar** abre tres opciones:
 
-- **Publicar en mi GitHub**: arma el librito (sólo para ver, con el visor a
-  pantalla completa), lo sube al servidor con su barrita de avance y el
-  servidor lo deja en `publicaciones/<nombre>/`. Te da el enlace, «Ver a
-  pantalla completa», copiar y compartir.
-- **Mis publicaciones**: ver, copiar, compartir, **Actualizar con este
-  librito** (mismo enlace), **Subir a GitHub** (si se publicó antes de
-  conectar GitHub) y **Quitar** (deja de verse en internet).
-- **Copias de mis proyectos**: «Guardar este proyecto en el servidor» guarda
-  el .zip **completo** (con todo para volver a editarlo; se quedan las 8 más
-  nuevas de cada nombre). «Abrir como borrador nuevo» lo trae de vuelta al
-  editor, en cualquier aparato.
+- **Descargar página completa**: el .zip de siempre, en el aparato.
+- **Publicar en servidor M.YNTHN**: arma la página (sólo para ver, con el visor
+  a pantalla completa), la sube con su barrita de avance y M.YNTHN la deja en
+  `publicaciones/<nombre>/` de tu GitHub. Da el enlace, «Ver a pantalla
+  completa», copiar y compartir.
+- **Enviar Detallito**: abre el menú de Detallitos (ver abajo).
+
+La pestaña **Páginas publicadas** del editor es sólo de M.YNTHN: publicar,
+**Mis páginas publicadas** (ver, copiar, compartir, actualizar con el librito
+abierto, subir a GitHub, quitar) y **Copias de mis proyectos** (abrir
+cualquiera como borrador nuevo, en cualquier aparato, o borrarla).
+
+**Detallitos** (Exportar → Enviar Detallito, o desde el menú principal):
+
+- **Vincular a tu Amorcito**: muestra tu código (copiar / compartir / otro
+  código) y un lugar para **pegar el de tu amorcito**. Con que uno de los dos
+  lo pegue basta. Cada cuenta se vincula con una sola; «Desvincular» lo deshace.
+- **Mandar esta página**: título y un mensajito; la página abierta se envuelve
+  (con su proyecto) y le llega a tu amorcito.
+- **De mi amorcito / Mis enviados**: la colección, como notitas. Al abrir uno
+  se ve en una ventanita (o a pantalla completa), se puede **guardar en tus
+  borradores** para editarlo, o quitarlo de tu colección (al otro no se le borra).
+- El editor pregunta cada 45 s si llegó algo: globito en Exportar / Más y un
+  aviso «Verlo». La pastilla de arriba dice si tu amorcito está **en línea**.
 
 Mientras el servidor no tenga GitHub conectado, lo publicado se guarda en el
 servidor y se ve en `https://<tu-túnel>/p/<nombre>/`.
@@ -170,9 +191,13 @@ servidor y se ve en `https://<tu-túnel>/p/<nombre>/`.
 
 ## Cuentas y autenticación
 
-- **Registro** (Panel → Usuarios): «Cualquiera se registra y tú lo apruebas»
-  (de fábrica), «Sólo con código de invitación» (cada código sirve una vez y
-  vence) o «Cerrado».
+- **Registro** (Panel → Ajustes): «Abierto: cualquiera crea su cuenta y entra
+  al momento» (de fábrica), «Cualquiera se registra y tú lo apruebas», «Sólo
+  con código de invitación» (cada código sirve una vez y vence) o «Cerrado».
+  Tope de cuentas: 1000 (se cambia).
+- **Cuotas por usuario** (Panel → Ajustes, «Para todos los usuarios»): espacio
+  (300 MB), publicaciones (30) y copias por proyecto (15). Lo que pase el
+  espacio se rechaza con un aviso claro; al administrador no se le aplica.
 - **Roles**: *administrador* (todo el panel) y *editor* (publica, ve y quita
   lo suyo, guarda sus proyectos). Nadie más que el servidor toca GitHub.
 - **Contraseñas**: se guardan como huella **scrypt** con sal (nunca en
@@ -194,8 +219,7 @@ servidor y se ve en `https://<tu-túnel>/p/<nombre>/`.
 | `publicaciones/<nombre>/` | cada librito publicado (index.html, scripts/, pages/, assets/, visor) |
 | `publicaciones/lista.json` | la lista de lo publicado (título, páginas, fecha, enlace) |
 | `servidor.json` | la dirección actual del servidor (sólo si «Anunciar» está encendido) |
-| `servidor/` | este código (sin ningún secreto) |
-| `publicar/` | para publicar sin token (subiendo un .zip desde la web de GitHub) |
+| `servidor/` | este código (sin ningún secreto); el instalador lo baja de aquí |
 
 **En el teléfono:**
 
@@ -205,14 +229,16 @@ servidor y se ve en `https://<tu-túnel>/p/<nombre>/`.
   config.json            ajustes (sin secretos)
   llave.bin              llave maestra (0600)
   secretos.bin           token de GitHub, cifrado (0600)
-  librito.db             cuentas, sesiones, publicaciones, proyectos, actividad
+  librito.db             cuentas, parejas, sesiones, publicaciones, proyectos, detallitos, actividad
   publicaciones/<n>/     copia de cada publicación (se ve en /p/<n>/)
-  proyectos/<id>/        copias completas de proyectos
+  proyectos/<usuario>/<proyecto>/   las copias de cada proyecto de cada usuario
+  detallitos/<id>/       cada detallito (ver/ y paquete.zip)
   servidor.log           lo que va pasando (sin secretos)
 ```
 
 **En el servidor (HTTP):** `/` panel · `/p/<nombre>/` copia local de una
-publicación (aislada) · `/api/…`:
+publicación (aislada) · `/d/<id>/` un detallito (aislado, dirección larga al
+azar) · `/api/…`:
 
 | Método y ruta | Quién | Para qué |
 | --- | --- | --- |
@@ -222,7 +248,10 @@ publicación (aislada) · `/api/…`:
 | `GET /api/yo` · `POST /api/yo/contrasena` · `GET/DELETE /api/yo/sesiones` | sesión | tu cuenta |
 | `GET/POST /api/publicaciones` · `DELETE /api/publicaciones/<n>` · `POST /api/publicaciones/<n>/subir` | sesión | publicar (el .zip va en el cuerpo, `?titulo=&nombre=&reemplazar=`) |
 | `GET /api/trabajos/<id>` | sesión | cómo va una publicación |
-| `GET/POST /api/proyectos` · `GET/DELETE /api/proyectos/<id>` | sesión | copias de proyectos |
+| `GET/POST /api/proyectos` · `GET/DELETE /api/proyectos/<id>` | sesión | copias de proyectos (`?nombre=&proyecto=`) |
+| `GET/DELETE /api/amor` · `POST /api/amor/vincular` · `POST /api/amor/codigo` | sesión | tu código y el vínculo con tu amorcito |
+| `GET /api/latido` | sesión | «sigo aquí» + cuántos detallitos nuevos |
+| `GET/POST /api/detallitos` · `POST …/<id>/visto` · `GET …/<id>/paquete` · `DELETE …/<id>` | sesión | mandar, ver, guardar y quitar detallitos |
 | `/api/admin/…` (resumen, ajustes, github, usuarios, invitaciones, actividad, túnel) | admin | el panel |
 
 ## Seguridad: qué protege y qué no
@@ -238,9 +267,13 @@ publicación (aislada) · `/api/…`:
 - Los .zip se revisan antes de abrirse: nada de rutas con `..`, absolutas o
   enlaces simbólicos; tope de tamaño y de archivos; nunca se publica
   `project.json` ni `EditorData/`.
-- Lo publicado que se ve **en el servidor** (`/p/…`) corre aislado (CSP
-  `sandbox`, origen opaco): aunque traiga JavaScript, no puede usar tu sesión
-  del panel.
+- Lo publicado que se ve **en el servidor** (`/p/…` y los detallitos `/d/…`)
+  corre aislado (CSP `sandbox`, origen opaco): aunque traiga JavaScript, no
+  puede usar la sesión de nadie. Los detallitos sólo se dejan mostrar dentro
+  del editor (tu GitHub Pages) y su dirección es larga y al azar.
+- Cada quien ve y borra **sólo lo suyo** (publicaciones, copias, detallitos);
+  un detallito lo pueden ver sólo los dos. Probar códigos de pareja al azar
+  se frena tras unos intentos.
 - El panel tiene CSP estricta (sin scripts de fuera), no se deja enmarcar y
   pide la cabecera `X-Librito` en cada cambio (además de `SameSite=Strict`).
 
@@ -280,7 +313,7 @@ librito primer-plano     correrlo aquí mismo para ver errores
 
 | Pasa esto | Haz esto |
 | --- | --- |
-| El editor dice «No hay conexión con tu servidor» | `librito estado`: ¿prendido? ¿hay dirección? Si cambió, el editor la encuentra solo (o pégala). |
+| El editor dice «No hay conexión con M.YNTHN» | `librito estado`: ¿prendido? ¿hay dirección? ¿«Anunciar» encendido? Si cambió, el editor la encuentra solo en un minuto. |
 | «Desde internet el navegador no deja usar http://…» | Usa la dirección **https** del túnel, no la de la wifi. |
 | «Falta cloudflared» | `pkg install cloudflared` y `librito reiniciar`. |
 | «Este origen no puede usar el servidor» | Abriste el editor desde otra dirección: agrégala en Panel → Ajustes → Orígenes. |
@@ -291,7 +324,9 @@ librito primer-plano     correrlo aquí mismo para ver errores
 | Perdí `llave.bin` | Los secretos ya no se pueden leer: `librito github` para poner el token otra vez. |
 
 Probado en este repositorio con Python 3.11 y un GitHub simulado (cuentas,
-publicar, nombres repetidos, actualizar, quitar, proyectos, CORS, .zip con
-`../`, freno a la fuerza bruta y que el token no salga en ninguna respuesta).
+registro abierto, cuotas, publicar, nombres repetidos, actualizar, quitar,
+copias por carpeta, vincular parejas, mandar/recibir/guardar/quitar
+detallitos, CORS, .zip con `../`, freno a la fuerza bruta y que el token no
+salga en ninguna respuesta), y el editor en Chromium (teléfono y compu).
 **No** se probó todavía en un teléfono real con Termux ni con el túnel de
 Cloudflare de verdad.

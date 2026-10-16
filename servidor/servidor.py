@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-SERVIDOR DEL LIBRITO — publicación y almacenamiento en tu propio teléfono.
+M.YNTHN — el servidor del librito: publicación, almacenamiento y Detallitos,
+corriendo en tu propio teléfono.
 
 Pensado para Termux en un teléfono viejo (también corre en cualquier Linux,
 macOS o Windows con Python 3.9+). Sólo usa la biblioteca estándar de Python:
@@ -8,15 +9,19 @@ no hay que instalar nada más que `python` (y `cloudflared` si quieres que se
 vea desde internet).
 
 Qué hace:
-  · Cuentas propias (usuario y contraseña, con registro que tú apruebas o con
-    código de invitación). Nada de GitHub para los que publican.
+  · Cuentas propias: cualquiera que abra el editor crea su usuario y su
+    contraseña y ya puede publicar (o, si prefieres, registro con aprobación,
+    con invitación o cerrado). Nadie más necesita GitHub ni tokens.
   · Guarda TU token de GitHub cifrado aquí, en el teléfono. Nunca viaja al
     editor ni a ningún navegador: el editor le manda el librito al servidor y
     es el servidor quien lo sube a tu repositorio.
   · Publica cada librito en publicaciones/<nombre>/ de tu GitHub Pages (si el
     nombre ya existe, usa <nombre>-2, -3…) y guarda una copia aquí mismo, que
     también se ve en /p/<nombre>/.
-  · Guarda copias de tus proyectos (el .zip completo del editor) por usuario.
+  · Guarda las copias de los proyectos de cada usuario, cada uno en su carpeta
+    (proyectos/<usuario>/<proyecto>/), una copia nueva cada vez que guarda a mano.
+  · Detallitos: cada cuenta tiene un código único; con el código de tu amorcito
+    quedan vinculados y se mandan páginas que se van coleccionando.
   · Un panel web bonito para administrarlo todo: espacio, publicaciones,
     proyectos, usuarios, GitHub, túnel y actividad.
 
@@ -58,7 +63,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -67,16 +72,20 @@ CARPETA_PUB = "publicaciones"
 ARCHIVO_ANUNCIO = "servidor.json"
 
 AJUSTES_BASE = {
-    "nombre": "Servidor del librito",
+    "nombre": "M.YNTHN",
     "puerto": 8787,
     "escuchar": "0.0.0.0",
-    "registro": "aprobacion",          # aprobacion · codigo · cerrado
+    "registro": "abierto",             # abierto · aprobacion · codigo · cerrado
     "origenes": [],                    # orígenes extra que pueden usar la API (además de tu GitHub Pages)
     "permitir_local": True,            # http://localhost y 127.0.0.1 (para probar)
     "tunel": "cloudflare",             # cloudflare · ninguno
     "url_publica": "",                 # si tienes un dominio o túnel fijo, ponlo aquí
     "anunciar": True,                  # escribir la dirección del túnel en servidor.json de tu sitio
     "max_subida_mb": 300,
+    "max_usuarios": 1000,              # cuentas como máximo (para que el teléfono no se llene)
+    "cuota_mb": 300,                   # espacio por usuario (proyectos + detallitos enviados)
+    "max_publicaciones": 30,           # publicaciones por usuario (el administrador no tiene tope)
+    "copias_por_proyecto": 15,         # copias que se guardan de cada proyecto (las más nuevas)
     "github": {"repo": "", "rama": ""},
 }
 RESERVADOS = {"lista", "index", "servidor", "assets", "scripts", "pages", "styles"}
@@ -306,7 +315,15 @@ CREATE TABLE IF NOT EXISTS publicaciones(slug TEXT PRIMARY KEY, titulo TEXT, usu
 CREATE TABLE IF NOT EXISTS proyectos(id TEXT PRIMARY KEY, usuario_id INTEGER, nombre TEXT, bytes INTEGER, creado REAL, paginas INTEGER);
 CREATE TABLE IF NOT EXISTS invitaciones(id TEXT PRIMARY KEY, hash TEXT UNIQUE, creado REAL, expira REAL, usado_por INTEGER, nota TEXT);
 CREATE TABLE IF NOT EXISTS actividad(id INTEGER PRIMARY KEY, t REAL, usuario TEXT, accion TEXT, detalle TEXT, ip TEXT);
+CREATE TABLE IF NOT EXISTS detallitos(id TEXT PRIMARY KEY, de INTEGER, para INTEGER, titulo TEXT, mensaje TEXT, color TEXT,
+  creado REAL, visto REAL, bytes INTEGER, borrado_de INTEGER DEFAULT 0, borrado_para INTEGER DEFAULT 0);
 """
+# Columnas que llegaron después (se agregan solas a una base vieja).
+COLUMNAS_NUEVAS = {
+    "usuarios": [("codigo_amor", "TEXT"), ("pareja_id", "INTEGER"), ("pareja_desde", "REAL"), ("visto", "REAL")],
+    "proyectos": [("clave", "TEXT"), ("ruta", "TEXT")],
+}
+LETRAS_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 
 class Base:
@@ -318,7 +335,15 @@ class Base:
         self.c.execute("PRAGMA journal_mode=WAL")
         self.c.execute("PRAGMA foreign_keys=ON")
         self.c.executescript(ESQUEMA)
+        for tabla, cols in COLUMNAS_NUEVAS.items():
+            tiene = {r[1] for r in self.c.execute(f"PRAGMA table_info({tabla})").fetchall()}
+            for nombre, tipo in cols:
+                if nombre not in tiene:
+                    self.c.execute(f"ALTER TABLE {tabla} ADD COLUMN {nombre} {tipo}")
+        self.c.execute("CREATE UNIQUE INDEX IF NOT EXISTS usuarios_codigo_amor ON usuarios(codigo_amor)")
         self.c.commit()
+        for u in self.q("SELECT id FROM usuarios WHERE codigo_amor IS NULL"):
+            self.x("UPDATE usuarios SET codigo_amor=? WHERE id=?", self.codigo_libre(), u["id"])
         if nueva:
             os.chmod(ruta, 0o600)
 
@@ -335,6 +360,17 @@ class Base:
             cur = self.c.execute(sql, a)
             self.c.commit()
             return cur.lastrowid if sql.lstrip().upper().startswith("INSERT") else cur.rowcount
+
+    def codigo_libre(self):
+        """El código único de cada cuenta para vincularse con su amorcito: AMOR-XXXX-XXXX."""
+        while True:
+            c = "AMOR-" + "-".join("".join(secrets.choice(LETRAS_CODIGO) for _ in range(4)) for _ in range(2))
+            if not self.uno("SELECT id FROM usuarios WHERE codigo_amor=?", c):
+                return c
+
+    def crear_usuario(self, usuario, contrasena, rol, estado):
+        return self.x("INSERT INTO usuarios(usuario,hash,rol,estado,creado,codigo_amor) VALUES(?,?,?,?,?,?)",
+                      usuario, hashear(contrasena), rol, estado, ahora(), self.codigo_libre())
 
 
 # ════════════════════════════════════════════════════════════════════════
@@ -503,7 +539,7 @@ def sitio_de(repo):
 # ════════════════════════════════════════════════════════════════════════
 class Estado:
     def __init__(self):
-        for d in ("publicaciones", "proyectos", "tmp"):
+        for d in ("publicaciones", "proyectos", "detallitos", "tmp"):
             os.makedirs(os.path.join(DATOS, d), exist_ok=True)
         os.chmod(DATOS, 0o700)
         self.aj = Ajustes()
@@ -1149,12 +1185,20 @@ class Manejador(BaseHTTPRequestHandler):
             return self.panel(camino[7:])
         if camino == "/favicon.ico":
             return self.panel("icono.svg")
-        m = re.match(r"^/p/([a-z0-9-]{1,40})(/.*)?$", camino)
+        m = re.match(r"^/(p|d)/([A-Za-z0-9_-]{1,40})(/.*)?$", camino)
         if m:
-            slug, resto = m.group(1), m.group(2)
+            tipo, slug, resto = m.group(1), m.group(2), m.group(3)
             if resto is None:
-                return self.responder(301, b"", "text/plain", {"Location": f"/p/{slug}/"})
-            base = os.path.realpath(os.path.join(DATOS, "publicaciones", slug))
+                return self.responder(301, b"", "text/plain", {"Location": f"/{tipo}/{slug}/"})
+            if tipo == "p":
+                if not re.match(r"^[a-z0-9-]{1,40}$", slug):
+                    return self.error(404, "No existe.")
+                base = os.path.realpath(os.path.join(DATOS, "publicaciones", slug))
+            else:
+                # Un detallito: su dirección es larga y al azar (sólo la conocen los dos).
+                if len(slug) < 20 or not E.db.uno("SELECT id FROM detallitos WHERE id=?", slug):
+                    return self.error(404, "No existe.")
+                base = os.path.realpath(os.path.join(DATOS, "detallitos", slug, "ver"))
             rel = resto.lstrip("/") or "index.html"
             if rel.endswith("/"):
                 rel += "index.html"
@@ -1163,9 +1207,18 @@ class Manejador(BaseHTTPRequestHandler):
                 return self.error(404, "No existe.")
             # Lo publicado corre AISLADO (origen opaco): aunque traiga JavaScript,
             # no puede tocar el panel ni la API del servidor con tu sesión.
-            return self.archivo(final, {
-                "Content-Security-Policy": "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms allow-modals allow-downloads allow-pointer-lock allow-presentation allow-orientation-lock",
-                "X-Robots-Tag": "noindex, nofollow", "X-Frame-Options": "SAMEORIGIN"}, cache="public, max-age=300")
+            csp = "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms allow-modals allow-downloads allow-pointer-lock allow-presentation allow-orientation-lock"
+            extra = {"X-Robots-Tag": "noindex, nofollow"}
+            if tipo == "d":
+                # El editor (tu GitHub Pages) muestra el detallito dentro de su ventanita.
+                marcos = ["'self'"] + sorted(E.origenes()) + ([u for u in [E.url_publica()] if u])
+                if E.aj["permitir_local"]:
+                    marcos += ["http://localhost:*", "http://127.0.0.1:*"]
+                csp += "; frame-ancestors " + " ".join(marcos)
+            else:
+                extra["X-Frame-Options"] = "SAMEORIGIN"
+            extra["Content-Security-Policy"] = csp
+            return self.archivo(final, extra, cache="public, max-age=300")
         return self.error(404, "No existe.")
 
     def panel(self, nombre):
@@ -1224,7 +1277,7 @@ def api_instalar(h, s):
     if E.db.uno("SELECT id FROM usuarios WHERE usuario=?", usuario):
         E.db.x("UPDATE usuarios SET hash=?, rol='admin', estado='activo' WHERE usuario=?", hashear(d["contrasena"]), usuario)
     else:
-        E.db.x("INSERT INTO usuarios(usuario,hash,rol,estado,creado) VALUES(?,?,?,?,?)", usuario, hashear(d["contrasena"]), "admin", "activo", ahora())
+        E.db.crear_usuario(usuario, d["contrasena"], "admin", "activo")
     E.codigo_instalacion = None
     try:
         os.unlink(os.path.join(DATOS, "codigo-instalacion.txt"))
@@ -1268,16 +1321,18 @@ def api_registro(h, s):
         if not inv:
             E.fallo("registro:" + ip, limite=8)
             raise Falla("Ese código de invitación no sirve (o ya se usó).", 403)
-    elif (E.db.uno("SELECT COUNT(*) n FROM usuarios WHERE estado='pendiente'") or {}).get("n", 0) >= 30:
+    elif modo == "aprobacion" and (E.db.uno("SELECT COUNT(*) n FROM usuarios WHERE estado='pendiente'") or {}).get("n", 0) >= 30:
         raise Falla("Hay demasiadas cuentas esperando aprobación. Inténtalo más tarde.", 429)
+    if E.db.uno("SELECT COUNT(*) n FROM usuarios")["n"] >= E.aj["max_usuarios"]:
+        raise Falla("M.YNTHN ya está lleno por ahora. Inténtalo más tarde.", 503)
     if E.db.uno("SELECT id FROM usuarios WHERE usuario=?", usuario):
-        raise Falla("Ese usuario ya existe.", 409)
-    estado = "activo" if inv else "pendiente"
-    uid = E.db.x("INSERT INTO usuarios(usuario,hash,rol,estado,creado) VALUES(?,?,?,?,?)", usuario, hashear(d["contrasena"]), "editor", estado, ahora())
+        raise Falla("Ese usuario ya existe: elige otro.", 409)
+    estado = "activo" if inv or modo == "abierto" else "pendiente"
+    uid = E.db.crear_usuario(usuario, d["contrasena"], "editor", estado)
     if inv:
         E.db.x("UPDATE invitaciones SET usado_por=? WHERE id=?", uid, inv["id"])
     E.fallo("registro:" + ip, limite=6, base=600)   # cuenta los registros: muchos seguidos frenan
-    E.actividad(usuario, "registro", "con invitación" if inv else "espera aprobación", ip)
+    E.actividad(usuario, "registro", "con invitación" if inv else "abierto" if estado == "activo" else "espera aprobación", ip)
     if estado == "activo":
         return entrar_y_responder(h, E.db.uno("SELECT * FROM usuarios WHERE id=?", uid), d)
     h.responder(202, {"pendiente": True, "mensaje": "Listo. Tu cuenta espera que el administrador la apruebe."})
@@ -1349,6 +1404,21 @@ def api_cerrar_sesion(h, s, corto):
     h.responder(200, {"ok": True})
 
 
+# — Cuotas: que nadie llene el teléfono —
+def uso_de(uid):
+    p = E.db.uno("SELECT COALESCE(SUM(bytes),0) n FROM proyectos WHERE usuario_id=?", uid)["n"]
+    d = E.db.uno("SELECT COALESCE(SUM(bytes),0) n FROM detallitos WHERE de=? AND NOT (borrado_de=1 AND borrado_para=1)", uid)["n"]
+    return p + d
+
+
+def revisar_cuota(s, extra):
+    if s["rol"] == "admin":
+        return
+    tope = E.aj["cuota_mb"] * 1024 * 1024
+    if uso_de(s["usuario_id"]) + extra > tope:
+        raise Falla(f"Llegaste a tu espacio en M.YNTHN ({E.aj['cuota_mb']} MB). Borra copias viejas de tus proyectos o detallitos enviados.", 413)
+
+
 # — Publicaciones —
 def fila_pub(p, usuarios=None):
     return {"slug": p["slug"], "titulo": p["titulo"], "paginas": p["paginas"], "archivos": p["archivos"], "bytes": p["bytes"],
@@ -1368,6 +1438,8 @@ def api_publicaciones(h, s):
 @ruta("POST", "/api/publicaciones", "sesion")
 def api_publicar(h, s):
     q = h.parametros()
+    if s["rol"] != "admin" and not q.get("reemplazar") and E.db.uno("SELECT COUNT(*) n FROM publicaciones WHERE usuario_id=?", s["usuario_id"])["n"] >= E.aj["max_publicaciones"]:
+        raise Falla(f"Ya tienes {E.aj['max_publicaciones']} páginas publicadas: quita alguna o actualiza una que ya esté.", 413)
     tmp = h.cuerpo_a_archivo()
     carpeta_nueva = None
     try:
@@ -1468,43 +1540,57 @@ def api_proyectos(h, s):
     todas = s["rol"] == "admin" and h.parametros().get("todas") == "1"
     l = E.db.q("SELECT * FROM proyectos ORDER BY creado DESC") if todas else E.db.q("SELECT * FROM proyectos WHERE usuario_id=? ORDER BY creado DESC", s["usuario_id"])
     nombres = {u["id"]: u["usuario"] for u in E.db.q("SELECT id, usuario FROM usuarios")}
-    h.responder(200, {"proyectos": [{"id": p["id"], "nombre": p["nombre"], "bytes": p["bytes"], "paginas": p["paginas"], "creado": iso(p["creado"]), "autor": nombres.get(p["usuario_id"], "")} for p in l]})
+    h.responder(200, {"proyectos": [{"id": p["id"], "nombre": p["nombre"], "clave": p["clave"] or nombre_limpio(p["nombre"]), "bytes": p["bytes"], "paginas": p["paginas"], "creado": iso(p["creado"]), "autor": nombres.get(p["usuario_id"], "")} for p in l],
+                      "uso": uso_de(s["usuario_id"]), "cuota": E.aj["cuota_mb"] * 1024 * 1024})
 
 
 @ruta("POST", "/api/proyectos", "sesion")
 def api_guardar_proyecto(h, s):
+    """Una copia nueva del proyecto, en proyectos/<usuario>/<proyecto>/<fecha>.zip (se quedan las más nuevas)."""
     q = h.parametros()
     tmp = h.cuerpo_a_archivo()
     try:
+        revisar_cuota(s, os.path.getsize(tmp))
         try:
             with zipfile.ZipFile(tmp) as z:
                 pj = json.loads(z.read("project.json").decode("utf-8"))
         except (zipfile.BadZipFile, KeyError, ValueError):
             raise Falla("Eso no es un proyecto del editor (falta project.json).")
         nombre = (q.get("nombre") or pj.get("nombre") or "Mi librito").strip()[:80]
+        clave = nombre_limpio(q.get("proyecto") or pj.get("id") or nombre, "proyecto")
         pid = time.strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(3)
-        carpeta = os.path.join(DATOS, "proyectos", str(s["usuario_id"]))
-        os.makedirs(carpeta, exist_ok=True)
-        destino = os.path.join(carpeta, pid + ".zip")
+        rel = os.path.join(nombre_limpio(s["usuario"], "usuario"), clave, pid + ".zip")
+        destino = os.path.join(DATOS, "proyectos", rel)
+        os.makedirs(os.path.dirname(destino), exist_ok=True)
         shutil.move(tmp, destino)
         os.chmod(destino, 0o600)
         tam = os.path.getsize(destino)
     finally:
         if os.path.exists(tmp):
             os.unlink(tmp)
-    E.db.x("INSERT INTO proyectos(id,usuario_id,nombre,bytes,creado,paginas) VALUES(?,?,?,?,?,?)", pid, s["usuario_id"], nombre, tam, ahora(), len(pj.get("orden") or []))
-    # Se quedan las 8 copias más nuevas de cada nombre.
-    for viejo in E.db.q("SELECT id FROM proyectos WHERE usuario_id=? AND nombre=? ORDER BY creado DESC LIMIT -1 OFFSET 8", s["usuario_id"], nombre):
+    E.db.x("INSERT INTO proyectos(id,usuario_id,nombre,bytes,creado,paginas,clave,ruta) VALUES(?,?,?,?,?,?,?,?)", pid, s["usuario_id"], nombre, tam, ahora(), len(pj.get("orden") or []), clave, rel)
+    viejas = E.db.q("SELECT id FROM proyectos WHERE usuario_id=? AND clave=? ORDER BY creado DESC LIMIT -1 OFFSET ?", s["usuario_id"], clave, max(1, E.aj["copias_por_proyecto"]))
+    for viejo in viejas:
         borrar_proyecto(viejo["id"])
     E.actividad(s["usuario"], "proyecto", nombre, h.ip())
-    h.responder(201, {"id": pid, "nombre": nombre, "bytes": tam})
+    h.responder(201, {"id": pid, "nombre": nombre, "clave": clave, "bytes": tam, "copias": E.db.uno("SELECT COUNT(*) n FROM proyectos WHERE usuario_id=? AND clave=?", s["usuario_id"], clave)["n"]})
+
+
+def ruta_proyecto(p):
+    if p.get("ruta"):
+        return os.path.join(DATOS, "proyectos", p["ruta"])
+    return os.path.join(DATOS, "proyectos", str(p["usuario_id"]), p["id"] + ".zip")   # copias de antes de las carpetas
 
 
 def borrar_proyecto(pid):
     p = E.db.uno("SELECT * FROM proyectos WHERE id=?", pid)
     if p:
+        f = ruta_proyecto(p)
         try:
-            os.unlink(os.path.join(DATOS, "proyectos", str(p["usuario_id"]), pid + ".zip"))
+            os.unlink(f)
+            d = os.path.dirname(f)
+            if not os.listdir(d):
+                os.rmdir(d)
         except OSError:
             pass
         E.db.x("DELETE FROM proyectos WHERE id=?", pid)
@@ -1521,8 +1607,7 @@ def proyecto_de(s, pid):
 def api_bajar_proyecto(h, s, pid):
     p = proyecto_de(s, pid)
     nombre = nombre_limpio(p["nombre"]) + ".zip"
-    h.archivo(os.path.join(DATOS, "proyectos", str(p["usuario_id"]), pid + ".zip"),
-              {"Content-Disposition": f'attachment; filename="{nombre}"'}, cache="no-store")
+    h.archivo(ruta_proyecto(p), {"Content-Disposition": f'attachment; filename="{nombre}"'}, cache="no-store")
 
 
 @ruta("DELETE", "/api/proyectos/([0-9a-f-]{10,40})", "sesion")
@@ -1533,12 +1618,170 @@ def api_borrar_proyecto(h, s, pid):
     h.responder(200, {"ok": True})
 
 
+# — Vincular a tu Amorcito —
+def pareja_de(uid):
+    u = E.db.uno("SELECT pareja_id, pareja_desde FROM usuarios WHERE id=?", uid)
+    if not u or not u["pareja_id"]:
+        return None
+    p = E.db.uno("SELECT id, usuario, visto FROM usuarios WHERE id=? AND estado='activo'", u["pareja_id"])
+    if not p:
+        return None
+    return {"usuario": p["usuario"], "desde": iso(u["pareja_desde"]) if u["pareja_desde"] else "", "en_linea": bool(p["visto"] and ahora() - p["visto"] < 120),
+            "visto": iso(p["visto"]) if p["visto"] else ""}
+
+
+@ruta("GET", "/api/amor", "sesion")
+def api_amor(h, s):
+    u = E.db.uno("SELECT codigo_amor FROM usuarios WHERE id=?", s["usuario_id"])
+    h.responder(200, {"codigo": u["codigo_amor"], "pareja": pareja_de(s["usuario_id"])})
+
+
+@ruta("POST", "/api/amor/vincular", "sesion")
+def api_vincular(h, s):
+    ip = h.ip()
+    if E.frenado("amor:" + str(s["usuario_id"])):
+        raise Falla("Demasiados intentos. Espera unos minutos.", 429)
+    codigo = re.sub(r"[^A-Z0-9]", "", str(h.cuerpo_json().get("codigo", "")).upper())
+    if codigo.startswith("AMOR"):
+        codigo = codigo[4:]
+    codigo = "AMOR-" + codigo[:4] + "-" + codigo[4:8]
+    yo = E.db.uno("SELECT * FROM usuarios WHERE id=?", s["usuario_id"])
+    if yo["pareja_id"] and pareja_de(yo["id"]):
+        raise Falla("Ya estás vinculado con tu amorcito. Para cambiar, primero desvincúlate.", 409)
+    otro = E.db.uno("SELECT * FROM usuarios WHERE codigo_amor=? AND estado='activo'", codigo)
+    if not otro:
+        E.fallo("amor:" + str(s["usuario_id"]), limite=8)
+        raise Falla("Ese código no es de nadie. Revísalo con tu amorcito (se ve como AMOR-XXXX-XXXX).", 404)
+    if otro["id"] == yo["id"]:
+        raise Falla("Ese es tu propio código: pega el de tu amorcito.")
+    if otro["pareja_id"] and otro["pareja_id"] != yo["id"] and pareja_de(otro["id"]):
+        raise Falla("Esa cuenta ya está vinculada con alguien más.", 409)
+    t = ahora()
+    E.db.x("UPDATE usuarios SET pareja_id=?, pareja_desde=? WHERE id=?", otro["id"], t, yo["id"])
+    E.db.x("UPDATE usuarios SET pareja_id=?, pareja_desde=? WHERE id=?", yo["id"], t, otro["id"])
+    E.acierto("amor:" + str(s["usuario_id"]))
+    E.actividad(s["usuario"], "vincular", f"con {otro['usuario']}", ip)
+    h.responder(200, {"pareja": pareja_de(yo["id"])})
+
+
+@ruta("DELETE", "/api/amor", "sesion")
+def api_desvincular(h, s):
+    yo = E.db.uno("SELECT * FROM usuarios WHERE id=?", s["usuario_id"])
+    if yo["pareja_id"]:
+        E.db.x("UPDATE usuarios SET pareja_id=NULL, pareja_desde=NULL WHERE id=? AND pareja_id=?", yo["pareja_id"], yo["id"])
+    E.db.x("UPDATE usuarios SET pareja_id=NULL, pareja_desde=NULL WHERE id=?", yo["id"])
+    E.actividad(s["usuario"], "desvincular", "", h.ip())
+    h.responder(200, {"ok": True})
+
+
+@ruta("POST", "/api/amor/codigo", "sesion")
+def api_codigo_nuevo(h, s):
+    if pareja_de(s["usuario_id"]):
+        raise Falla("Mientras estés vinculado tu código no cambia.", 409)
+    c = E.db.codigo_libre()
+    E.db.x("UPDATE usuarios SET codigo_amor=? WHERE id=?", c, s["usuario_id"])
+    h.responder(200, {"codigo": c})
+
+
+@ruta("GET", "/api/latido", "sesion")
+def api_latido(h, s):
+    """El editor pregunta cada tanto: así se sabe quién está en línea y si llegó un detallito."""
+    E.db.x("UPDATE usuarios SET visto=? WHERE id=?", ahora(), s["usuario_id"])
+    n = E.db.uno("SELECT COUNT(*) n FROM detallitos WHERE para=? AND visto IS NULL AND borrado_para=0", s["usuario_id"])["n"]
+    h.responder(200, {"nuevos": n, "pareja": pareja_de(s["usuario_id"])})
+
+
+# — Detallitos: páginas que se mandan entre los dos y se van coleccionando —
+DETALLITO_RE = r"([A-Za-z0-9_-]{20,40})"
+
+
+def fila_detallito(d, nombres):
+    return {"id": d["id"], "titulo": d["titulo"], "mensaje": d["mensaje"], "color": d["color"], "creado": iso(d["creado"]),
+            "visto": iso(d["visto"]) if d["visto"] else "", "ver": f"/d/{d['id']}/", "de": nombres.get(d["de"], ""), "para": nombres.get(d["para"], ""), "bytes": d["bytes"]}
+
+
+@ruta("GET", "/api/detallitos", "sesion")
+def api_detallitos(h, s):
+    uid = s["usuario_id"]
+    nombres = {u["id"]: u["usuario"] for u in E.db.q("SELECT id, usuario FROM usuarios")}
+    h.responder(200, {
+        "recibidos": [fila_detallito(d, nombres) for d in E.db.q("SELECT * FROM detallitos WHERE para=? AND borrado_para=0 ORDER BY creado DESC LIMIT 300", uid)],
+        "enviados": [fila_detallito(d, nombres) for d in E.db.q("SELECT * FROM detallitos WHERE de=? AND borrado_de=0 ORDER BY creado DESC LIMIT 300", uid)],
+        "pareja": pareja_de(uid)})
+
+
+@ruta("POST", "/api/detallitos", "sesion")
+def api_mandar_detallito(h, s):
+    q = h.parametros()
+    yo = E.db.uno("SELECT * FROM usuarios WHERE id=?", s["usuario_id"])
+    if not (yo["pareja_id"] and pareja_de(yo["id"])):
+        raise Falla("Primero vincúlate con tu amorcito (Vincular a tu Amorcito).", 409)
+    tmp = h.cuerpo_a_archivo()
+    did = secrets.token_urlsafe(18)
+    carpeta = os.path.join(DATOS, "detallitos", did)
+    try:
+        revisar_cuota(s, os.path.getsize(tmp))
+        entradas, _ = revisar_zip(tmp, E.aj["max_subida_mb"] * 1024 * 1024 * 4)
+        abrir_zip(tmp, entradas, os.path.join(carpeta, "ver"))
+        shutil.move(tmp, os.path.join(carpeta, "paquete.zip"))
+    except BaseException:
+        shutil.rmtree(carpeta, ignore_errors=True)
+        raise
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+    titulo = (q.get("titulo") or "Un detallito").strip()[:80]
+    mensaje = (q.get("mensaje") or "").strip()[:280]
+    color = q.get("color") if re.match(r"^#[0-9a-fA-F]{3,8}$", q.get("color") or "") else "#ffd1e6"
+    tam = tamano_carpeta(carpeta)
+    E.db.x("INSERT INTO detallitos(id,de,para,titulo,mensaje,color,creado,bytes) VALUES(?,?,?,?,?,?,?,?)", did, yo["id"], yo["pareja_id"], titulo, mensaje, color, ahora(), tam)
+    E.actividad(s["usuario"], "detallito", titulo, h.ip())
+    nombres = {u["id"]: u["usuario"] for u in E.db.q("SELECT id, usuario FROM usuarios WHERE id IN (?,?)", yo["id"], yo["pareja_id"])}
+    h.responder(201, {"detallito": fila_detallito(E.db.uno("SELECT * FROM detallitos WHERE id=?", did), nombres)})
+
+
+def detallito_de(s, did):
+    d = E.db.uno("SELECT * FROM detallitos WHERE id=?", did)
+    if not d or s["usuario_id"] not in (d["de"], d["para"]):
+        raise Falla("Ese detallito no existe.", 404)
+    return d
+
+
+@ruta("POST", f"/api/detallitos/{DETALLITO_RE}/visto", "sesion")
+def api_detallito_visto(h, s, did):
+    d = detallito_de(s, did)
+    if d["para"] == s["usuario_id"] and not d["visto"]:
+        E.db.x("UPDATE detallitos SET visto=? WHERE id=?", ahora(), did)
+    h.responder(200, {"ok": True})
+
+
+@ruta("GET", f"/api/detallitos/{DETALLITO_RE}/paquete", "sesion")
+def api_detallito_paquete(h, s, did):
+    d = detallito_de(s, did)
+    h.archivo(os.path.join(DATOS, "detallitos", did, "paquete.zip"), {"Content-Disposition": f'attachment; filename="{nombre_limpio(d["titulo"], "detallito")}.zip"'}, cache="no-store")
+
+
+@ruta("DELETE", f"/api/detallitos/{DETALLITO_RE}", "sesion")
+def api_borrar_detallito(h, s, did):
+    d = detallito_de(s, did)
+    if d["de"] == s["usuario_id"]:
+        E.db.x("UPDATE detallitos SET borrado_de=1 WHERE id=?", did)
+    if d["para"] == s["usuario_id"]:
+        E.db.x("UPDATE detallitos SET borrado_para=1 WHERE id=?", did)
+    d = E.db.uno("SELECT * FROM detallitos WHERE id=?", did)
+    if d["borrado_de"] and d["borrado_para"]:
+        shutil.rmtree(os.path.join(DATOS, "detallitos", did), ignore_errors=True)
+        E.db.x("DELETE FROM detallitos WHERE id=?", did)
+    h.responder(200, {"ok": True})
+
+
 # — Administración —
 def uso_disco():
     total, usado, libre = shutil.disk_usage(DATOS)
     return {"total": total, "libre": libre, "telefono_usado": usado,
             "publicaciones": tamano_carpeta(os.path.join(DATOS, "publicaciones")),
             "proyectos": tamano_carpeta(os.path.join(DATOS, "proyectos")),
+            "detallitos": tamano_carpeta(os.path.join(DATOS, "detallitos")),
             "base": sum(os.path.getsize(os.path.join(DATOS, f)) for f in os.listdir(DATOS) if f.startswith("librito.db"))}
 
 
@@ -1550,13 +1793,16 @@ def api_resumen(h, s):
         "disco": uso_disco(),
         "cuentas": {"usuarios": E.db.uno("SELECT COUNT(*) n FROM usuarios")["n"], "pendientes": E.db.uno("SELECT COUNT(*) n FROM usuarios WHERE estado='pendiente'")["n"]},
         "publicaciones": E.db.uno("SELECT COUNT(*) n FROM publicaciones")["n"], "proyectos": E.db.uno("SELECT COUNT(*) n FROM proyectos")["n"],
+        "detallitos": E.db.uno("SELECT COUNT(*) n FROM detallitos")["n"], "parejas": E.db.uno("SELECT COUNT(*) n FROM usuarios WHERE pareja_id IS NOT NULL")["n"] // 2,
         "github": {"repo": g.get("repo", ""), "rama": g.get("rama", ""), "token": bool(caja.get("github_token")), "listo": bool(E.github())},
         "url_publica": E.url_publica(), "tunel": E.aj["tunel"], "cloudflared": bool(shutil.which("cloudflared")),
         "red_local": ip_local(), "puerto": E.aj["puerto"], "version": VERSION, "datos": DATOS,
         "trabajando": [{"tipo": t["tipo"], "paso": t["paso"]} for t in E.trabajos.values() if t["estado"] in ("esperando", "trabajando")]})
 
 
-CAMPOS_AJUSTES = {"nombre": str, "registro": str, "origenes": list, "permitir_local": bool, "tunel": str, "url_publica": str, "anunciar": bool, "max_subida_mb": int}
+CAMPOS_AJUSTES = {"nombre": str, "registro": str, "origenes": list, "permitir_local": bool, "tunel": str, "url_publica": str, "anunciar": bool, "max_subida_mb": int,
+                  "max_usuarios": int, "cuota_mb": int, "max_publicaciones": int, "copias_por_proyecto": int}
+TOPES = {"max_subida_mb": (10, 2000), "max_usuarios": (1, 100000), "cuota_mb": (10, 100000), "max_publicaciones": (1, 1000), "copias_por_proyecto": (1, 100)}
 
 
 @ruta("GET", "/api/admin/ajustes", "admin")
@@ -1572,7 +1818,8 @@ def api_poner_ajustes(h, s):
         if k in d:
             v = d[k]
             if tipo is int:
-                v = max(10, min(2000, int(v)))
+                lo, hi = TOPES[k]
+                v = max(lo, min(hi, int(v)))
             elif tipo is list:
                 v = [str(x).strip().rstrip("/") for x in v if re.match(r"^https?://[A-Za-z0-9.-]+(:\d+)?/?$", str(x).strip())][:20]
             elif tipo is bool:
@@ -1580,8 +1827,8 @@ def api_poner_ajustes(h, s):
             else:
                 v = str(v).strip()[:120]
             cambios[k] = v
-    if cambios.get("registro", "aprobacion") not in ("aprobacion", "codigo", "cerrado"):
-        raise Falla("Registro: aprobacion, codigo o cerrado.")
+    if cambios.get("registro", "abierto") not in ("abierto", "aprobacion", "codigo", "cerrado"):
+        raise Falla("Registro: abierto, aprobacion, codigo o cerrado.")
     if cambios.get("tunel", "cloudflare") not in ("cloudflare", "ninguno"):
         raise Falla("Túnel: cloudflare o ninguno.")
     if cambios.get("url_publica") and not re.match(r"^https://[A-Za-z0-9.-]+(:\d+)?$", cambios["url_publica"].rstrip("/")):
@@ -1676,7 +1923,9 @@ def api_reconstruir(h, s):
 
 @ruta("GET", "/api/admin/usuarios", "admin")
 def api_usuarios(h, s):
-    h.responder(200, {"usuarios": [publico_usuario(u) | {"publicaciones": E.db.uno("SELECT COUNT(*) n FROM publicaciones WHERE usuario_id=?", u["id"])["n"]}
+    nombres = {u["id"]: u["usuario"] for u in E.db.q("SELECT id, usuario FROM usuarios")}
+    h.responder(200, {"usuarios": [publico_usuario(u) | {"publicaciones": E.db.uno("SELECT COUNT(*) n FROM publicaciones WHERE usuario_id=?", u["id"])["n"],
+                                                         "pareja": nombres.get(u["pareja_id"], ""), "uso": uso_de(u["id"])}
                                    for u in E.db.q("SELECT * FROM usuarios ORDER BY estado='pendiente' DESC, creado DESC")]})
 
 
@@ -1721,6 +1970,10 @@ def api_borrar_usuario(h, s, uid):
     for p in E.db.q("SELECT id FROM proyectos WHERE usuario_id=?", u["id"]):
         borrar_proyecto(p["id"])
     E.db.x("UPDATE publicaciones SET usuario_id=? WHERE usuario_id=?", s["usuario_id"], u["id"])   # sus publicaciones pasan a ti
+    E.db.x("UPDATE usuarios SET pareja_id=NULL, pareja_desde=NULL WHERE pareja_id=?", u["id"])
+    for d in E.db.q("SELECT id FROM detallitos WHERE de=? OR para=?", u["id"], u["id"]):
+        shutil.rmtree(os.path.join(DATOS, "detallitos", d["id"]), ignore_errors=True)
+    E.db.x("DELETE FROM detallitos WHERE de=? OR para=?", u["id"], u["id"])
     E.db.x("DELETE FROM usuarios WHERE id=?", u["id"])
     E.actividad(s["usuario"], "usuario", f"{u['usuario']}: borrado", h.ip())
     h.responder(200, {"ok": True})
@@ -1837,7 +2090,7 @@ def orden_admin(args):
         E.db.x("UPDATE usuarios SET hash=?, rol='admin', estado='activo' WHERE usuario=?", hashear(c1), usuario)
         print(f"Listo: «{usuario}» ahora es administrador con contraseña nueva.")
     else:
-        E.db.x("INSERT INTO usuarios(usuario,hash,rol,estado,creado) VALUES(?,?,?,?,?)", usuario, hashear(c1), "admin", "activo", ahora())
+        E.db.crear_usuario(usuario, c1, "admin", "activo")
         print(f"Listo: administrador «{usuario}» creado.")
     try:
         os.unlink(os.path.join(DATOS, "codigo-instalacion.txt"))

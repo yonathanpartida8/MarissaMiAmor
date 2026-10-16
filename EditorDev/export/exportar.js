@@ -70,9 +70,19 @@ function icono(tam, fondo) {
  * `publicar`: lo que se sube a internet — SÓLO para ver: sin project.json ni
  * EditorData/ (no se puede abrir en el editor), con el visor a pantalla
  * completa (runtime/visor.js), su manifiesto e iconos para «Agregar a inicio».
+ * Con `conProyecto`, además lleva project.json (un Detallito: se ve y se
+ * puede abrir como borrador). `soloPaginas`: sólo esas páginas (un Detallito
+ * es una sola página).
  */
-export async function exportar(app, { alProgreso, completo = false, publicar = false } = {}) {
-  const P = app.estado.proyecto;
+export async function exportar(app, { alProgreso, completo = false, publicar = false, soloPaginas = null, conProyecto = false } = {}) {
+  const P0 = app.estado.proyecto;
+  const P = soloPaginas ? {
+    ...P0,
+    nombre: P0.paginas[soloPaginas[0]]?.nombre || P0.nombre,
+    orden: P0.orden.filter((id) => soloPaginas.includes(id)),
+    paginas: Object.fromEntries(soloPaginas.filter((id) => P0.paginas[id]).map((id) => [id, P0.paginas[id]])),
+    ajustes: { ...P0.ajustes, portada: soloPaginas[0] },
+  } : P0;
   const bib = app.bib;
   const zip = new Zip();
   let bytes = 0;
@@ -284,6 +294,8 @@ html,body{overscroll-behavior:none;touch-action:manipulation}
       icons: [{ src: "icono-192.png", sizes: "192x192", type: "image/png" }, { src: "icono-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }],
     }, null, 1));
     for (const t of [180, 192, 512]) { const b = await icono(t, fondo); if (b) zip.agregar(`icono-${t}.png`, b); }
+  }
+  if (publicar && !conProyecto) {
     avisar("Comprimiendo…");
     const blob = await zip.generar((i, total) => { if (i % 10 === 0) avisar(`Comprimiendo ${i} de ${total}…`); });
     return { blob, nombre: limpio(P.nombre) + ".zip", faltan, archivos: zip.tamano };

@@ -78,6 +78,8 @@ export class Salida {
   cerrarLoAbierto() {
     const app = this.app;
     if (document.querySelector(".ed-salir-fondo")) return true;
+    if (app.detallitos?.abierto) return app.detallitos.atras();
+    if (app.exportarMenu?.abierto) return app.exportarMenu.atras();
     if (app.prueba?.abierta) { app.prueba.cerrar(); return true; }
     if (app.html?.abierto) { app.html.cerrar(); return true; }
     if (MODALES.length) return cerrarUltimoModal();

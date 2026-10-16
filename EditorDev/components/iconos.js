@@ -195,6 +195,12 @@ P.bloques = '<rect x="3.5" y="3.5" width="17" height="6" rx="1.5"/><rect x="3.5"
 P.zonas = '<rect x="3" y="3.5" width="11" height="8.5" rx="1.5" stroke-dasharray="2.6 2"/><rect x="10" y="12" width="11" height="8.5" rx="1.5" stroke-dasharray="2.6 2"/><circle cx="15.5" cy="16.3" r="1.7"/>';
 P.rotar = P.girar; P.seleccionar = P.cursor; P.interactuar = P.toque;
 P.fuera = '<rect x="7" y="7" width="10" height="10" rx="1.5" stroke-dasharray="2 2"/><path d="M3 3l4 4M21 3l-4 4M3 21l4-4M21 21l-4-4"/>';
+// Fase 17 · M.YNTHN y Detallitos
+P.cuenta = '<circle cx="12" cy="8.2" r="3.7"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>';
+P.detallito = '<rect x="3" y="6" width="18" height="13" rx="2.2"/><path d="M3.4 7.6 12 13.4l8.6-5.8"/><path d="M12 4.6c-.9-1.4-3.2-1.2-3.2.6 0 1.5 1.8 2.5 3.2 3.4 1.4-.9 3.2-1.9 3.2-3.4 0-1.8-2.3-2-3.2-.6z"/>';
+P.vincular = '<path d="M8.6 18.4s-5.1-3-5.1-6.8a2.9 2.9 0 0 1 5.1-1.9 2.9 2.9 0 0 1 5.1 1.9c0 3.8-5.1 6.8-5.1 6.8z"/><path d="M15.4 14.8c2.6-1.8 5.1-4 5.1-6.6a2.9 2.9 0 0 0-5.1-1.9 2.9 2.9 0 0 0-3.6-.6"/>';
+P.regalo = '<rect x="3.5" y="9" width="17" height="4" rx="1"/><path d="M5 13v7h14v-7M12 9v11"/><path d="M12 9c-2.5 0-4.5-1-4.5-2.6S9.7 4 12 9zM12 9c2.5 0 4.5-1 4.5-2.6S14.3 4 12 9z"/>';
+P.coleccion = '<rect x="3.5" y="6.5" width="12" height="14" rx="1.8"/><path d="M7 4h11.5a2 2 0 0 1 2 2v12"/><path d="M9.5 15.6s-2.8-1.6-2.8-3.6a1.6 1.6 0 0 1 2.8-1 1.6 1.6 0 0 1 2.8 1c0 2-2.8 3.6-2.8 3.6z"/>';
 export const ICONOS = Object.fromEntries(Object.entries(P).map(([k, d]) => [k, T(d)]));
 
 export const ico = (n) => ICONOS[n] || "";

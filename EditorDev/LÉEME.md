@@ -486,6 +486,9 @@ Código nuevo: `canvas/fx.js` (rehecho), `herramientas/sonidos-editor.mjs` (rehe
 
 ### Fase 15: GitHub Pages que no falle, publicar sin token, sonido del menú y 20 recursos nuevos
 
+> Desde la Fase 17 lo de publicar con token o sin token ya no está en el editor:
+> todo se publica por M.YNTHN (ver más abajo). Lo demás de esta fase sigue igual.
+
 | | |
 | --- | --- |
 | **GitHub Pages** | en «Páginas publicadas» hay una sección que dice si GitHub Pages está **encendido** (si está apagado, todo da 404: es lo que pasa cuando un repositorio pasa a privado y vuelve a público). Con token: lo enciende con la rama elegida (la más nueva va primero, no a ciegas la principal), cambia de rama, «Volver a publicar el sitio» y avisa si la última publicación falló. Sin token: revisa si el sitio contesta y explica los 4 pasos a mano con un botón directo a Settings → Pages. Al conectar, si Pages está apagado ya no se elige `main` por descarte |
@@ -503,6 +506,20 @@ Código nuevo: `herramientas/publicar-subidas.mjs`, `.github/workflows/publicar-
 | **Editor ↔ servidor** | Páginas publicadas → **Tu servidor**: se empareja con el enlace del panel (`#servidor=…`), solo (servidor.json en tu sitio) o pegando la dirección; se entra con usuario y contraseña del servidor (sesión Bearer, nada de GitHub) y se publica con barrita de avance. Mis publicaciones (ver, copiar, compartir, actualizar con el mismo enlace, subir a GitHub, quitar) y copias de proyectos en el servidor (guardar y abrir como borrador nuevo). Código: `integraciones/servidor.js` |
 | **publicaciones/** | todo lo publicado (servidor, token o sin token) va a `publicaciones/<nombre>/` con `publicaciones/lista.json`; si el nombre ya existe, `<nombre>-2`, `-3`… (actualizar es aparte) |
 | **Visor a pantalla completa** | lo publicado lleva `runtime/visor.js`: carga con un corazón que late, botón de pantalla completa que aparece al tocar (y tecla F), pantalla que no se apaga, manifiesto e iconos para «Agregar a inicio» (se abre a pantalla completa). Es sólo para ver: sin `project.json`, con `soloVer`, y el editor se niega a abrirlo |
+
+### Fase 17: M.YNTHN para todos, Exportar con tres opciones, Detallitos y menú principal
+
+| | |
+| --- | --- |
+| **Menú principal** | lo primero al abrir el editor (el editor se carga por detrás): **Entrar al editor**, **Detallitos** (con globito si hay nuevos), **Iniciar sesión o crear cuenta** (ahí mismo) o Salir de mi cuenta, y Volver al librito. Básico y lindo, con corazoncitos que flotan |
+| **M.YNTHN** | el servidor de `servidor/` ahora es **público**: cualquiera crea su usuario y contraseña y entra al momento (nada de tokens, direcciones ni GitHub en el editor; sólo iniciar sesión). El editor lo encuentra solo (`servidor.json` de tu sitio) |
+| **Exportar** | el botón Exportar (en el teléfono: Más → Exportar…) abre una hoja con tres opciones: **Descargar página completa** (el .zip de siempre), **Publicar en servidor M.YNTHN** (entrar si hace falta → publicar con barrita → enlace, ver, copiar, compartir) y **Enviar Detallito** |
+| **Páginas publicadas** | rehecha: sólo M.YNTHN. Tu cuenta, Publicar, **Mis páginas publicadas** (ver, copiar, compartir, actualizar, subir, quitar) y **Copias de mis proyectos** agrupadas por proyecto, con lo que ocupas de tu espacio |
+| **Copias al guardar** | cada vez que guardas **a mano** (Guardar borrador ahora o Ctrl+S) se sube una copia completa del proyecto a tu carpeta de M.YNTHN (una por minuto como mucho; el autoguardado no sube nada). Se abre en cualquier aparato como borrador nuevo |
+| **Detallitos** | menú completo a pantalla entera que se abre con una transición en círculo desde el botón, burbujitas y chispitas, y se cierra con atrás (botón, Esc o el atrás del teléfono, paso por paso). **Vincular a tu Amorcito**: tu código único `AMOR-XXXX-XXXX` (copiar, compartir, otro código) y un lugar para pegar el de tu amorcito (con «Pegar»); al vincular, los dos corazones se juntan. Luego: **Mandar esta página** (título, mensajito, un sobre que sale volando) y la colección en notitas: **De mi amorcito** (con «Nuevo») y **Mis enviados**. Abrir uno lo muestra en una ventanita aislada, a pantalla completa, «Guardar en mis borradores» o quitarlo de tu colección. La pastilla de arriba dice si tu amorcito está **en línea** |
+| **Avisos** | cada 45 s (y al volver a la app) se pregunta si llegó algo: globito en Exportar y en Más, sonidito y un aviso «Verlo» |
+
+Código nuevo: `components/menu-principal.js`, `components/exportar-menu.js`, `components/detallitos.js`, `components/cuenta.js`, `components/myn.js`, `styles/myn.css`; `integraciones/servidor.js` rehecho; `components/secciones/publicadas.js` rehecho; `export/exportar.js` puede armar una sola página (`soloPaginas`) con su proyecto. Se quitaron `integraciones/github.js`, `herramientas/publicar-subidas.mjs`, su acción y `publicar/`.
 
 ## Cómo está hecho
 
@@ -526,15 +543,16 @@ EditorDev/
 │                ui.js · inspector.js · paneles.js · barra.js (contextual) · iconos.js (SVG) ·
 │                acciones.js · vista.js · inicio.js · teclado.js ·
 │                hoja.js (hojas con asa y resorte) · pantalla.js (teclado virtual, orientación) ·
-│                morfo.js (repintar sin parpadeo) · prueba.js · salir.js · ajustes.js · ayuda.js
+│                morfo.js (repintar sin parpadeo) · prueba.js · salir.js · ajustes.js · ayuda.js ·
+│                menu-principal.js · exportar-menu.js · detallitos.js · cuenta.js · myn.js (M.YNTHN)
 │   └── secciones/  animar · efectos · transiciones · giphy · audio · html · fondo · navegacion
 ├── recursos/    extras.js (animaciones, transiciones, efectos y fondos propios o de assets/)
-├── integraciones/ giphy.js (clave protegida) · gif.js (leer GIF, quitar fondo → APNG)
+├── integraciones/ giphy.js (clave protegida) · gif.js (leer GIF, quitar fondo → APNG) · servidor.js (M.YNTHN)
 ├── runtime/     EL REPRODUCTOR: rt-base · rt-render (y la hoja automática) · rt-anim (y el tiempo) ·
 │                rt-comps · rt-3d (WebGL2) · rt-trans · rt-toques (efectos al tocar y zonas) · rt-musica ·
 │                rt-player · librito.css · reproductor.html
 ├── estilos/     cuaderno · retromylove · baddie (cada uno: estilo.css, imágenes, fuentes/, musica/, musica.txt)
-└── styles/      editor.css (la base de todo)
+└── styles/      editor.css (la base de todo) · myn.css (menú principal, Exportar, Detallitos)
 ```
 
 - Reusa del libro `src/utils/dom.js` (`el`), `src/core/Emitter.js`,
@@ -552,4 +570,5 @@ EditorDev/
   (export/). Los componentes viven en su propio documento (su CSS y su JS no
   tocan ni el editor ni los demás).
 - Los borradores viven en el navegador (IndexedDB). Si borras los datos del
-  sitio, se borran: exporta el .zip para guardarlos de verdad.
+  sitio, se borran: con tu cuenta de M.YNTHN cada guardado a mano deja una
+  copia en tu carpeta del servidor, y el .zip sigue sirviendo para guardarlos.

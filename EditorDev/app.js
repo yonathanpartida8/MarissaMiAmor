@@ -43,6 +43,11 @@ import { EditorHtml } from "./html/editorHtml.js";
 import { Importador, registrarFuentes } from "./html/importar.js";
 import { Vista } from "./components/vista.js";
 import { pantallaInicio, quitarInicio } from "./components/inicio.js";
+import { MenuPrincipal } from "./components/menu-principal.js";
+import { MenuExportar } from "./components/exportar-menu.js";
+import { Detallitos } from "./components/detallitos.js";
+import { copiaEnNube } from "./components/myn.js";
+import * as SRV from "./integraciones/servidor.js";
 import { atajos } from "./components/teclado.js";
 import { PLANTILLAS } from "./templates/plantillas.js";
 import { BarraContextual } from "./components/barra.js";
@@ -132,6 +137,11 @@ function leerUltimo() { try { return localStorage.getItem(ULTIMO); } catch (e) {
 async function arrancar() {
   guardasDeApp();
   aplicarPref();
+  // Lo primero que se ve: el menú principal (el editor se carga por detrás).
+  app.detallitos = new Detallitos(app);
+  app.exportarMenu = new MenuExportar(app);
+  app.menuPrincipal = new MenuPrincipal(app);
+  app.menuPrincipal.abrir();
   vigilarPantalla();
   setTimeout(() => medirHz(), 1200); // con la página ya quieta, para medir bien
   // Iconos propios de assets/iconos/ (si hay), antes de pintar nada.
@@ -193,11 +203,7 @@ async function arrancar() {
   else await pantallaInicio(app);
   document.body.classList.add("listo");
   // Un enlace de emparejamiento (…/EditorDev/#servidor=https://…): se guarda la dirección de tu servidor.
-  import("./integraciones/servidor.js").then((S) => {
-    if (!S.revisarEnlace()) return;
-    aviso("Tu servidor quedó emparejado. Entra con tu cuenta en «Páginas publicadas» para publicar.", 5000);
-    if (E.proyecto) abrirSeccion("publicadas", true);
-  }).catch(() => {});
+  if (SRV.revisarEnlace()) aviso(`Conectado a ${SRV.NOMBRE}`, 3000);
 }
 
 /* ── Barra de arriba ─────────────────────────────────────────────────── */
@@ -314,7 +320,8 @@ function construirBarra() {
     { t: `${ico("telefono")}<span>Ver como…</span>`, al: () => $(".ed-ver").click() },
     { t: `${ico("guardar")}<span>Guardar y borradores…</span>`, al: () => $(".ed-guardar").click() },
     { t: `${ico("escudo")}<span>Copias de seguridad…</span>`, al: () => app.guardado.abrir() },
-    { t: `${ico("exportar")}<span>Exportar (.zip)</span>`, al: () => app.exportar() },
+    { t: `${ico("exportar")}<span>Exportar…</span>`, al: () => app.exportarMenu.abrir() },
+    { t: `${ico("detallito")}<span>Detallitos</span>`, al: () => app.detallitos.abrir($(".ed-mas")) },
     { t: `${ico("compartir")}<span>Compartir por WhatsApp…</span>`, al: () => app.compartir() },
     { t: `${ico("rayo")}<span>Revisar recursos…</span>`, al: () => app.revisarRecursos() },
     { t: `${ico("herramientas")}<span>Herramientas</span>`, al: () => abrirSeccion("herramientas", true) },
@@ -323,15 +330,15 @@ function construirBarra() {
   $(".ed-deshacer").addEventListener("click", () => E.deshacer());
   $(".ed-rehacer").addEventListener("click", () => E.rehacer());
   $(".ed-previa").addEventListener("click", () => app.vista.abrir(Math.max(0, E.proyecto.orden.indexOf(E.paginaId)), { portadilla: false }));
-  $(".ed-exportar").addEventListener("click", () => app.exportar());
+  $(".ed-exportar").addEventListener("click", () => app.exportarMenu.abrir());
   const t = (i, x) => `${ico(i)}<span>${x}</span>`;
   $(".ed-guardar").addEventListener("click", (e) => menu(e.currentTarget, [
-    { t: t("guardar", "Guardar borrador ahora"), al: () => app.guardarYa() },
+    { t: t("guardar", "Guardar borrador ahora"), al: () => app.guardarAMano() },
     { t: t("carpeta", "Abrir borrador…"), al: () => app.inicio() },
     { t: t("nuevo", "Empezar uno nuevo"), al: () => app.nuevo() },
     { t: t("subir", "Abrir archivo (.zip / .json)…"), al: () => app.abrirArchivo() },
     "-",
-    { t: t("exportar", "Exportar ZIP"), al: () => app.exportar() },
+    { t: t("exportar", "Descargar página completa (.zip)"), al: () => app.exportar() },
     { t: t("compartir", "Compartir por WhatsApp…"), al: () => app.compartir() },
     { t: t("escudo", "Copias de seguridad…"), al: () => app.guardado.abrir() },
     { t: t("rayo", "Revisar recursos…"), al: () => app.revisarRecursos() },
@@ -554,6 +561,47 @@ app.guardarYa = async () => {
   if (!app.auto.error) { app.sonidos?.sonar("guardar"); dispatchEvent(new CustomEvent("ed-evento", { detail: "guardado" })); }
   aviso(app.auto.error ? "Error al guardar: tu última versión buena sigue intacta" : "Guardado correctamente", 2600, app.auto.error ? "error" : "");
 };
+
+/* Guardar A MANO (Guardar, Ctrl+S): además del borrador, una copia completa en
+   tu carpeta de M.YNTHN si tienes la sesión abierta (no más de una por minuto). */
+let subiendoCopia = false, ultimaCopia = 0;
+app.guardarAMano = async () => {
+  await app.guardarYa();
+  if (!SRV.conectado() || app.auto.error || subiendoCopia || !app.estado.proyecto) return;
+  if (Date.now() - ultimaCopia < 60000) return;
+  subiendoCopia = true;
+  try { await copiaEnNube(app); ultimaCopia = Date.now(); }
+  catch (e) { aviso(`No se pudo guardar la copia en ${SRV.NOMBRE}: ${e.message}`, 4500, "error"); }
+  finally { subiendoCopia = false; }
+};
+
+/* El latido: cada tanto se le pregunta a M.YNTHN si tu amorcito te mandó un detallito. */
+app.amorNuevos = 0;
+async function latir() {
+  if (!SRV.conectado() || document.hidden) return;
+  try {
+    const r = await SRV.latido();
+    const antes = app.amorNuevos;
+    app.amorNuevos = r.nuevos || 0;
+    app.pareja = r.pareja;
+    // El globito va en Exportar y en «Más» (en el teléfono, Exportar vive dentro de «Más»).
+    for (const b of [$(".ed-exportar"), $(".ed-mas")]) {
+      b?.querySelector(".dt-globo")?.remove();
+      if (app.amorNuevos && b) b.append(el("i.dt-globo", { text: String(app.amorNuevos) }));
+    }
+    if (app.amorNuevos > antes) {
+      app.sonidos?.sonar("exito");
+      const desde = () => [$(".ed-exportar"), $(".ed-mas")].find((b) => b?.offsetParent);
+      aviso(`${r.pareja?.usuario || "Tu amorcito"} te mandó un detallito`, 7000, "", { t: "Verlo", al: () => app.detallitos.abrir(desde()) });
+    }
+    if (app.amorNuevos !== antes) dispatchEvent(new CustomEvent("ed-amor"));
+  } catch (e) { /* sin conexión: la próxima */ }
+}
+setTimeout(latir, 4000);
+setInterval(latir, 45000);
+addEventListener("ed-cuenta", () => setTimeout(latir, 300));
+addEventListener("ed-detallito-visto", () => setTimeout(latir, 300));
+document.addEventListener("visibilitychange", () => { if (!document.hidden) latir(); });
 
 /** Duplica un librito (o, con `desde`, una copia completa guardada) como uno nuevo, aparte. */
 app.duplicarProyecto = async (id, op = {}) => {

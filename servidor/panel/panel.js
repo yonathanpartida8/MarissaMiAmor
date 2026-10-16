@@ -96,7 +96,7 @@
   /* ── Arranque ───────────────────────────────────────────────────── */
   async function arrancar() {
     try { INFO = await api("info"); } catch (e) { RAIZ.replaceChildren(h("div.entrada", {}, h("div.tarjeta-entrada", {}, h("h1", { text: "No hay servidor" }), h("p", { text: e.message })))); return; }
-    document.title = INFO.nombre || "Servidor del librito";
+    document.title = INFO.nombre || "M.YNTHN";
     if (!INFO.instalado) return pantallaInstalar();
     try { YO = (await api("yo")).usuario; } catch (e) { YO = null; }
     if (!YO) return pantallaEntrar();
@@ -152,7 +152,7 @@
       } catch (e) { msg.textContent = e.message; ir.disabled = false; }
     }, "primario ancho");
     RAIZ.replaceChildren(h("div.entrada", {}, h("form.tarjeta-entrada", { onSubmit: (e) => { e.preventDefault(); ir.click(); } },
-      marcaEntrada(INFO.nombre || "Servidor del librito", modo === "entrar" ? "Entra para administrar tus publicaciones y proyectos." : INFO.registro === "codigo" ? "Necesitas un código de invitación." : "Tu cuenta quedará esperando la aprobación del administrador."),
+      marcaEntrada(INFO.nombre || "M.YNTHN", modo === "entrar" ? "Entra para administrar tus publicaciones y proyectos." : INFO.registro === "codigo" ? "Necesitas un código de invitación." : "Tu cuenta quedará esperando la aprobación del administrador."),
       puedeRegistro ? h("div.pestanas", {}, h("button", { type: "button", class: modo === "entrar" ? "on" : "", text: "Entrar", onClick: () => pantallaEntrar("entrar") }), h("button", { type: "button", class: modo === "registro" ? "on" : "", text: "Crear cuenta", onClick: () => pantallaEntrar("registro") })) : null,
       campo("Usuario", usuario), campo("Contraseña", c1),
       modo === "registro" ? campo("Repítela", c2) : null,
@@ -172,7 +172,7 @@
   function pintarApp() {
     const esAdmin = YO.rol === "admin";
     const lado = h("nav.lado", { "aria-label": "Secciones" },
-      h("div.marca", {}, h("i"), h("div", {}, h("b", { text: INFO.nombre || "Servidor del librito" }), h("small", { text: `${YO.usuario} · ${esAdmin ? "administrador" : "editor"}` }))),
+      h("div.marca", {}, h("i"), h("div", {}, h("b", { text: INFO.nombre || "M.YNTHN" }), h("small", { text: `${YO.usuario} · ${esAdmin ? "administrador" : "editor"}` }))),
       VISTAS.filter((v) => !v[3] || esAdmin).map(([id, t, icono]) => {
         const b = h("button.nav" + (VISTA === id ? ".on" : ""), { type: "button", html: ico(icono), onClick: () => ir(id), "data-v": id });
         b.append(h("span", { text: t }));
@@ -228,7 +228,7 @@
     const url = r.url_publica;
     const d = r.disco, total = d.total || 1;
     const seg = (cls, v) => { const i = h("i." + cls); i.style.width = Math.max(v > 0 ? 0.6 : 0, (v / total) * 100) + "%"; return i; };
-    const otros = Math.max(0, d.telefono_usado - d.publicaciones - d.proyectos - d.base);
+    const otros = Math.max(0, d.telefono_usado - d.publicaciones - d.proyectos - (d.detallitos || 0) - d.base);
     zona.replaceChildren(
       h("div.caja.destacada.ancha", {}, h("h2", { html: ico("enlace") + "<span>Conectar el editor</span>" }),
         url ? h("p", { text: "Esta es la dirección de tu servidor en internet. El editor la encuentra solo (si «anunciar» está encendido), o pégala en Páginas publicadas → Tu servidor." })
@@ -246,6 +246,7 @@
         h("small", { text: `Datos en ${r.datos}` })),
       caja("Publicaciones", "pub", h("div.cifra", { text: r.publicaciones }), btn("Verlas", () => ir("publicaciones"), "chico")),
       caja("Proyectos guardados", "proy", h("div.cifra", { text: r.proyectos }), btn("Verlos", () => ir("proyectos"), "chico")),
+      caja("Detallitos", "pub", h("div.cifra", {}, String(r.detallitos), h("small", { text: `· ${r.parejas} ${r.parejas === 1 ? "pareja vinculada" : "parejas vinculadas"}` })), h("small", { text: `Ocupan ${peso(r.disco.detallitos)} · son privados entre cada pareja.` })),
       caja("Cuentas", "usuarios", h("div.cifra", {}, String(r.cuentas.usuarios), r.cuentas.pendientes ? h("small", { text: `· ${r.cuentas.pendientes} esperando` }) : null), btn(r.cuentas.pendientes ? "Aprobar" : "Ver cuentas", () => ir("usuarios"), r.cuentas.pendientes ? "chico primario" : "chico")),
       caja("GitHub", "github",
         r.github.listo ? h("div", {}, pildora("Conectado", "ok"), h("p", { text: `${r.github.repo} · rama ${r.github.rama}` })) : h("div", {}, pildora("Sin conectar", "aviso"), h("p", { text: "Conéctalo para que lo publicado salga en tu GitHub Pages." })),
@@ -306,7 +307,7 @@
     c.append(cabeza("Usuarios", "Quién puede entrar al editor y publicar. Nadie necesita GitHub: el servidor publica por ellos."));
     const [aj, us, inv] = await Promise.all([api("admin/ajustes"), api("admin/usuarios"), api("admin/invitaciones")]).catch((e) => { c.append(vacio(e.message)); return []; });
     if (!aj) return;
-    const modo = h("select", {}, ...[["aprobacion", "Cualquiera se registra y tú lo apruebas"], ["codigo", "Sólo con código de invitación"], ["cerrado", "Cerrado (sólo tú creas cuentas)"]].map(([v, t]) => h("option", { value: v, text: t, selected: aj.registro === v })));
+    const modo = h("select", {}, ...[["abierto", "Abierto: cualquiera crea su cuenta y ya puede publicar"], ["aprobacion", "Cualquiera se registra y tú lo apruebas"], ["codigo", "Sólo con código de invitación"], ["cerrado", "Cerrado (sólo tú creas cuentas)"]].map(([v, t]) => h("option", { value: v, text: t, selected: aj.registro === v })));
     modo.addEventListener("change", async () => { try { await api("admin/ajustes", { method: "PUT", body: { registro: modo.value } }); INFO.registro = modo.value; aviso("Guardado", "ok"); } catch (e) { aviso(e.message, "mal"); } });
     pendientes = us.usuarios.filter((u) => u.estado === "pendiente").length;
     const lista = h("div.lista", {}, ...us.usuarios.map((u) => {
@@ -316,7 +317,7 @@
       rol.addEventListener("change", () => cambiar({ rol: rol.value }));
       const est = { activo: ["Activo", "ok"], pendiente: ["Espera aprobación", "aviso vivo"], desactivado: ["Desactivado", "mal"] }[u.estado];
       return h("div.item", {}, h("div.icono", { html: ico("cuenta") }),
-        h("div.datos", {}, h("b", { text: u.usuario + (yo ? " (tú)" : "") }), h("small", { text: `${u.publicaciones} publicaciones · desde ${fecha(u.creado ? new Date(u.creado * 1000).toISOString() : "")}${u.ultimo ? " · visto " + fecha(new Date(u.ultimo * 1000).toISOString()) : ""}` })),
+        h("div.datos", {}, h("b", { text: u.usuario + (yo ? " (tú)" : "") }), h("small", { text: `${u.publicaciones} publicaciones · ${peso(u.uso)}${u.pareja ? " · vinculada con " + u.pareja : ""} · desde ${fecha(u.creado ? new Date(u.creado * 1000).toISOString() : "")}${u.ultimo ? " · visto " + fecha(new Date(u.ultimo * 1000).toISOString()) : ""}` })),
         pildora(est[0], est[1]),
         h("div.acciones", {},
           u.estado === "pendiente" ? btn("Aprobar", () => cambiar({ estado: "activo" }), "chico primario", "ok") : null,
@@ -406,16 +407,23 @@
     const origenes = h("textarea", { placeholder: "https://otro-sitio.com\n(uno por línea)" });
     origenes.value = (a.origenes || []).join("\n");
     const maxMb = h("input", { type: "number", min: 10, max: 2000, value: a.max_subida_mb });
+    const num = (v, min, max) => h("input", { type: "number", min, max, value: v });
+    const cuota = num(a.cuota_mb, 10, 100000), maxUs = num(a.max_usuarios, 1, 100000), maxPub = num(a.max_publicaciones, 1, 1000), copias = num(a.copias_por_proyecto, 1, 100);
     const interruptor = (input, titulo, texto) => h("label.interruptor", {}, h("div", {}, h("b", { text: titulo }), h("small", { text: texto })), input);
     const guardar = btn("Guardar ajustes", async () => {
       try {
-        await api("admin/ajustes", { method: "PUT", body: { nombre: nombre.value, tunel: tunel.value, url_publica: urlFija.value.trim(), anunciar: anunciar.checked, permitir_local: local.checked, origenes: origenes.value.split(/\s+/).filter(Boolean), max_subida_mb: +maxMb.value } });
+        await api("admin/ajustes", { method: "PUT", body: { nombre: nombre.value, tunel: tunel.value, url_publica: urlFija.value.trim(), anunciar: anunciar.checked, permitir_local: local.checked, origenes: origenes.value.split(/\s+/).filter(Boolean), max_subida_mb: +maxMb.value, cuota_mb: +cuota.value, max_usuarios: +maxUs.value, max_publicaciones: +maxPub.value, copias_por_proyecto: +copias.value } });
         INFO = await api("info"); aviso("Guardado", "ok");
         if (tunel.value !== a.tunel) { await api("admin/tunel/reiniciar", { method: "POST", body: {} }); aviso(tunel.value === "cloudflare" ? "Abriendo el túnel…" : "Túnel cerrado"); }
       } catch (e) { aviso(e.message, "mal"); }
     }, "primario", "ok");
     c.append(h("div.rejilla", {},
       caja("General", "ajustes", campo("Nombre del servidor", nombre), campo("Tamaño máximo de una subida (MB)", maxMb, "Un librito con vídeos pesa más. El teléfono tiene que tener ese espacio libre.")),
+      caja("Para todos los usuarios", "usuarios",
+        campo("Espacio por usuario (MB)", cuota, "Proyectos guardados + detallitos enviados. Tú (administrador) no tienes tope."),
+        campo("Copias que se guardan de cada proyecto", copias, "Cada vez que alguien guarda a mano se hace una copia; se quedan las más nuevas."),
+        campo("Páginas publicadas por usuario", maxPub),
+        campo("Cuentas como máximo", maxUs)),
       caja("Dirección en internet", "enlace", campo("Túnel", tunel, "Instala cloudflared en Termux: pkg install cloudflared"), campo("Dirección fija (si tienes una)", urlFija, "Si usas un túnel con nombre o tu dominio. Gana sobre la del túnel rápido."),
         interruptor(anunciar, "Anunciar la dirección", "Escribe servidor.json en tu GitHub Pages para que el editor encuentre el servidor solo, aunque la dirección del túnel cambie.")),
       caja("Quién puede hablarle a la API", "llave",

@@ -121,7 +121,7 @@ respaldar() {
 
 actualizar() {
   dice "Bajando la versión nueva…"
-  RAMA="${RAMA:-claude/interactive-love-book-redesign-5p93fv}" LIBRITO_APP="$APP" bash -c "$(curl -fsSL "https://raw.githubusercontent.com/${REPO:-yonathanpartida8/MarissaMiAmor}/refs/heads/${RAMA:-claude/interactive-love-book-redesign-5p93fv}/servidor/instalar.sh")" -- --solo-archivos
+  LIBRITO_APP="$APP" bash -c "$(curl -fsSL "${LIBRITO_BASE:-https://yonathanpartida8.github.io/MarissaMiAmor/servidor}/instalar.sh?v=$(date +%s)")" -- --solo-archivos
   if prendido; then detener; iniciar; fi
 }
 

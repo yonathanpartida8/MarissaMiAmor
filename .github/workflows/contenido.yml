@@ -5,7 +5,7 @@ name: Lista de contenido
 
 on:
   push:
-    branches: [main, claude/interactive-love-book-redesign-5p93fv]
+    branches: ["**"]
     paths:
       - "paginas-html/**"
       - "images/amores/**"
