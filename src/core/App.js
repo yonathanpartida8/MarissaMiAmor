@@ -165,6 +165,7 @@ export class App {
 
     setProgress(1);
     setStatus("listo");
+    this.ctx.audio?.prepararPasar?.();
     await wait(280);
 
     // 5. La puerta: un toque real que desbloquea audio y sensores.

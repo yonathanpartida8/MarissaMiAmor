@@ -84,9 +84,21 @@ function ponerEnlace(rel, href, extra = {}) {
   return el;
 }
 
-/** Busca el icono, rehace el manifiesto y registra el ayudante. */
-export async function prepararInstalacion(ctx) {
-  /* ---- 1. EL ICONO ---- */
+const esIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent)
+  || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const instalado = () => window.matchMedia("(display-mode: standalone)").matches
+  || window.matchMedia("(display-mode: fullscreen)").matches
+  || window.navigator.standalone === true;
+
+/** Cuando el teléfono ya terminó de abrir el libro y no tiene nada mejor que hacer. */
+function sinPrisa(fn) {
+  const ya = () => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 6000 }) : setTimeout(fn, 2500));
+  if (document.readyState === "complete") ya();
+  else window.addEventListener("load", ya, { once: true });
+}
+
+/** Busca el icono y rehace el manifiesto. */
+async function ponerIconos() {
   let im = null;
   let ruta = "";
   for (const c of CANDIDATOS) {
@@ -94,7 +106,7 @@ export async function prepararInstalacion(ctx) {
     if (im) { ruta = c; break; }
   }
 
-  if (im) {
+  if (im && !esIOS()) {
     try {
       const manifiesto = {
         name: "Marissa×Ynthn-Love.Forever",
@@ -125,11 +137,31 @@ export async function prepararInstalacion(ctx) {
       /* Si el lienzo no deja exportar, se queda el manifiesto de
          siempre. Peor icono, pero instalable igual. */
     }
-
+  }
+  if (im) {
     /* iOS quiere una dirección de verdad, no una imagen metida dentro. */
     ponerEnlace("apple-touch-icon", ruta);
     ponerEnlace("icon", ruta);
   }
+}
+
+/** Registra el ayudante, prepara el botón de instalar y, sin prisa, el icono. */
+export async function prepararInstalacion(ctx) {
+  /* ---- 1. EL ICONO ----
+     Recortarlo a tres tamaños son tres lienzos y tres PNG codificados en
+     el hilo principal: en un teléfono, un tirón justo mientras se anima
+     la pantalla de apertura. Ahora espera a que el libro esté abierto y
+     el teléfono quieto. En iPhone ni se hace: iOS usa el
+     `apple-touch-icon`, no los iconos del manifiesto. */
+  sinPrisa(() => {
+    ponerIconos().catch(() => {});
+    /* Que el sistema no borre la caché del libro cuando le falte sitio
+       (iOS limpia los datos de las webs que no se abren en una semana,
+       salvo que estén instaladas o tengan este permiso). */
+    if ((instalado() || esIOS() || /android/i.test(navigator.userAgent)) && navigator.storage?.persist) {
+      navigator.storage.persisted?.().then((ya) => ya || navigator.storage.persist()).catch(() => {});
+    }
+  });
 
   /* ---- 2. EL AYUDANTE DE SEGUNDO PLANO ----
      Sin él Android no ofrece instalar nada. Va después de `load` para
@@ -158,17 +190,10 @@ export async function prepararInstalacion(ctx) {
 
   return {
     /** ¿Ya está abierto como aplicación? */
-    get instalado() {
-      return window.matchMedia("(display-mode: standalone)").matches
-        || window.matchMedia("(display-mode: fullscreen)").matches
-        || window.navigator.standalone === true;
-    },
+    get instalado() { return instalado(); },
     get puedeInstalar() { return !!aviso; },
     /** iPhone no tiene diálogo: hay que contárselo a mano. */
-    get esIOS() {
-      return /iphone|ipad|ipod/i.test(navigator.userAgent)
-        || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    },
+    get esIOS() { return esIOS(); },
     async instalar() {
       if (!aviso) return false;
       aviso.prompt();

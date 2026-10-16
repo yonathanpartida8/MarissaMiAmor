@@ -174,6 +174,8 @@ export default class FinalePage extends BasePage {
     const photo = this.photos[0];
     if (photo) {
       await this.ctx.assets.load(photo.src).catch(() => {});
+      // Si ya se pasó de página mientras llegaba la foto, no queda nada que pintar.
+      if (!this.root) return;
       this.root.querySelector(".finale__backdrop").style.backgroundImage = `url("${photo.src}")`;
     }
 

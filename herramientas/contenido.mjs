@@ -415,8 +415,10 @@ const SALIDAS = {
 // Los módulos que el libro necesita para arrancar (todo lo que `src/main.js`
 // importa, directa o indirectamente, sin contar las páginas, que se piden
 // al llegar a ellas): van como `modulepreload` en `index.html` para que el
-// teléfono los pida todos juntos y no en seis tandas seguidas.
-{
+// teléfono los pida todos juntos y no en seis tandas seguidas. Lo mismo con
+// el editor (`EditorDev/app.js` en `EditorDev/index.html`), que son casi
+// noventa módulos y antes llegaban en cascada.
+for (const [entrada, pagina] of [["src/main.js", "index.html"], ["EditorDev/app.js", "EditorDev/index.html"]]) {
   const MAPA = { three: "vendor/three/three.module.min.js" };
   const vistos = new Set();
   const visitar = (rel) => {
@@ -432,13 +434,15 @@ const SALIDAS = {
       visitar(d);
     }
   };
-  visitar("src/main.js");
-  vistos.delete("src/main.js");
-  const html = SALIDAS["index.html"] ?? readFileSync(join(RAIZ, "index.html"), "utf8");
+  visitar(entrada);
+  vistos.delete(entrada);
+  if (!existsSync(join(RAIZ, pagina))) continue;
+  const html = SALIDAS[pagina] ?? readFileSync(join(RAIZ, pagina), "utf8");
   const re = /<!-- modulos:inicio -->[\s\S]*?<!-- modulos:fin -->/;
   if (re.test(html)) {
-    const lista = [...vistos].sort().map((m) => `<link rel="modulepreload" href="${m}">`).join("\n");
-    SALIDAS["index.html"] = html.replace(re, `<!-- modulos:inicio -->\n${lista}\n<!-- modulos:fin -->`);
+    const dir = pagina.includes("/") ? pagina.slice(0, pagina.lastIndexOf("/") + 1) : "";
+    const lista = [...vistos].sort().map((m) => `<link rel="modulepreload" href="${m.startsWith(dir) ? m.slice(dir.length) : "../".repeat(dir.split("/").length - 1) + m}">`).join("\n");
+    SALIDAS[pagina] = html.replace(re, `<!-- modulos:inicio -->\n${lista}\n<!-- modulos:fin -->`);
   }
 }
 

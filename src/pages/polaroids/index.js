@@ -102,6 +102,7 @@ export default class PolaroidsPage extends BasePage {
     // decodificación bloquea el hilo mientras la página está animándose.
     this.photos.forEach(async (photo, i) => {
       await this.ctx.assets.load(photo.src).catch(() => null);
+      if (!this.root) return;
       const holder = qs(`.pola__img[data-src="${photo.src}"]`, this.root);
       if (!holder) return;
       holder.style.backgroundImage = `url("${photo.src}")`;

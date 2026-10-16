@@ -850,6 +850,36 @@ El libro mide el aparato en el que se está abriendo y se adapta:
   fotograma —cada uno monta una matriz y la descompone en cuaternión— eran lo
   más caro de todo el proyecto. Como lo que se quiere es que las cartas queden
   planas hacia quien mira, basta deshacer el giro del grupo una vez y copiarlo.
+- **El código sale del teléfono mientras no se publique nada nuevo.** GitHub
+  Pages pone a todos los archivos de una publicación la misma fecha. El
+  ayudante de segundo plano (`sw.js`) sólo pregunta a la red por la página: si
+  la fecha es la de lo guardado, los ~110 archivos de código (del libro y del
+  editor) salen de la caché sin tocar la red; si cambió, estrena una caché nueva
+  y lo pide todo. Abrir el libro pasó de 113 peticiones a 1, y nunca se mezcla
+  código de dos publicaciones: una corrección se ve en la primera apertura.
+  Fuera de GitHub Pages (el servidor local) todo sigue yendo a la red.
+- **Con una sola raya de cobertura, abre igual.** Si la página no contesta en
+  cuatro segundos, se abre lo guardado. Sin red, abre del todo.
+- **La música se guarda entera.** Safari no guarda en su caché los pedazos de
+  audio, así que la canción del libro (5 MB) se volvía a bajar en cada apertura.
+  Ahora, la primera vez que suena, se guarda entera de fondo; después cada
+  pedazo sale del teléfono: empieza al instante, suena sin red y no gasta datos.
+  Todos los pedazos de una misma canción se contestan del mismo modo: el
+  reproductor se corta si mezcla pedazos de la red con pedazos guardados.
+- **La caché no crece sin fin.** Lo guardado no pasa del 60 % de lo que deja el
+  teléfono (ni de 600 MB): se va lo más antiguo. Las fotos con huella vieja se
+  borran todas juntas, no recorriendo la caché entera por cada foto nueva. Y en
+  iPhone y Android se pide almacenamiento persistente, para que el sistema no
+  borre la caché del libro cuando le falte sitio.
+- **Nada pesado mientras se abre.** El icono para instalar (tres lienzos y tres
+  PNG en el hilo principal) se hace cuando el libro ya está abierto y quieto, y
+  en iPhone ni se hace (usa el `apple-touch-icon`). El sonido de pasar página
+  empieza a bajar cuando la portada ya está lista y el libro espera el primer
+  toque.
+- **Sin fugas.** Medido recorriendo las 89 páginas tres veces y el editor
+  cuatro ciclos enteros (todas las secciones, vistas previas, inspector y
+  «Probar página»): la memoria, los nodos y los oyentes se quedan quietos. Y una
+  página que ya se dejó atrás no intenta pintar la foto que le llega tarde.
 
 Y si no hay WebGL, el libro sigue siendo un libro: todas las páginas tienen su
 versión en DOM, sin una sola pantalla vacía.

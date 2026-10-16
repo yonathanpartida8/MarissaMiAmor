@@ -461,6 +461,14 @@ No probado en aparatos reales: Android, iPhone/iPad Safari y Safari de Mac se co
 | **Probado a lo bruto** | atrás doble y rápido, atrás del teléfono dos veces seguidas, cambiar de sección 20 veces seguidas, inspector abierto y cerrado al instante: no queda nada trabado (ni velos, ni hojas a medias, ni la vista previa pegada) y la hoja vuelve exacta |
 | **Más sonidos** | atrás en menús, activar y desactivar interruptores, el imán al pegarse a una guía, el menú al mantener presionado, «Probar página», bloquear/desbloquear, ocultar/mostrar (también el ojito y el candado de «Capas»), borrar y reordenar páginas y empezar a escribir un texto. Cada carpeta trae ahora al menos 3 variantes. Sin dobles: «Atrás» no suena además a «cerrar», ni «Probar» además a «abrir» |
 
+### Fase 13: rendimiento (iPhone, Android y computadora)
+
+| | |
+| --- | --- |
+| **Código desde el teléfono** | el editor comparte el ayudante de segundo plano del libro: mientras no se publique nada nuevo, sus casi noventa módulos salen de la caché sin tocar la red (una sola petición por apertura); al publicar, la primera apertura ya trae lo nuevo, sin mezclar versiones. Detalle en «Rendimiento» del README principal |
+| **Módulos de una vez** | `index.html` del editor lleva su lista de `modulepreload` (la rehace `node herramientas/contenido.mjs`, igual que la del libro): el teléfono pide los módulos todos juntos y no en cascada. La primera apertura, ≈11 % antes en el servidor de pruebas, y más en GitHub Pages, que los sirve en paralelo |
+| **Sin fugas** | cuatro ciclos enteros (todas las secciones, vistas previas de efectos, inspector y «Probar página»): nodos, oyentes y documentos quietos; la memoria crece ≈0,1 MB por ciclo |
+
 ## Cómo está hecho
 
 ```

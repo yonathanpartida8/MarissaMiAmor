@@ -237,15 +237,25 @@ export class AudioBus extends Emitter {
     // mientras la reserva la pedía sin él. Entre las dos cosas, el mismo
     // archivo de cuatrocientos kilos se descargaba cuatro veces.
     //
-    // Sólo la primera copia se trae el sonido; las otras dos lo encuentran
-    // en la caché del navegador porque piden exactamente lo mismo.
-    this.turnPool = Array.from({ length: TURN.copias }, (_, i) => {
+    // Ninguna se trae nada mientras se abre el libro: la primera empieza a
+    // bajar el sonido cuando la portada ya está lista y el libro espera el
+    // primer toque (`prepararPasar`), que es red que sobra; las otras dos
+    // lo encuentran en la caché porque piden exactamente lo mismo.
+    this.turnPool = Array.from({ length: TURN.copias }, () => {
       const a = new Audio(TURN.src);
       a.volume = 0;
-      a.preload = i === 0 ? "auto" : "metadata";
+      a.preload = "none";
       return a;
     });
     this.turnIndex = 0;
+  }
+
+  /** Trae el sonido de pasar página sin sonarlo. */
+  prepararPasar() {
+    const a = this.turnPool[0];
+    if (!a || a.preload === "auto") return;
+    a.preload = "auto";
+    a.load();
   }
 
   /**

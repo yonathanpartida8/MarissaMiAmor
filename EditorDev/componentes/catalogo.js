@@ -15,7 +15,14 @@ const bonito = (s) => s.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/
 const sinTilde = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
 /** Si el servidor deja listar una carpeta (servidor local), sus nombres. */
+/* Sólo un servidor de casa (el de `herramientas/servir.mjs`, o el de la
+   computadora visto desde el teléfono por wifi) sabe listar carpetas.
+   GitHub Pages contesta 404 a cada una: eran cinco peticiones en balde en
+   cada apertura del editor, con datos. */
+const DE_CASA = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[::1\]$)/.test(location.hostname) || location.hostname.endsWith(".local");
+
 export async function listar(rel) {
+  if (!DE_CASA) return null;
   try {
     const r = await fetch(rutaAUrl(rel), { cache: "no-store" });
     if (!r.ok || !/text\/html/.test(r.headers.get("content-type") || "")) return null;
