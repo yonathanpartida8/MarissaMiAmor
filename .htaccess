@@ -1,0 +1,16 @@
+# Protección si algún día se sirve con Apache (GitHub Pages ignora este archivo).
+Options -Indexes -MultiViews
+ServerSignature Off
+<IfModule mod_headers.c>
+  Header always set X-Robots-Tag "noindex, nofollow, noarchive, noimageindex"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "no-referrer"
+  Header always set Permissions-Policy "geolocation=(), payment=(), usb=()"
+</IfModule>
+<FilesMatch "(^\.|\.(md|mjs|log|jks|bak|sh|gradle)$|^LICENSE$)">
+  Require all denied
+</FilesMatch>
+<FilesMatch "^(LÉEME|README)\.md$">
+  Require all denied
+</FilesMatch>

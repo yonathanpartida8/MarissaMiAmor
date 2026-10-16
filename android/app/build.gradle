@@ -4,7 +4,7 @@ plugins {
 
 // La dirección que abre la app (la de tu GitHub Pages). Se cambia al construir:
 // LIBRITO_URL=https://…/ gradle assembleRelease
-def URL_LIBRITO = System.getenv("LIBRITO_URL") ?: "https://yonathanpartida8.github.io/MarissaMiAmor/"
+def URL_LIBRITO = System.getenv("LIBRITO_URL") ?: "https://yonathanpartida8.github.io/MarissaMiAmor/#k=9fa156feb82b3cc45aa1c1e5"
 def NUMERO = (System.getenv("GITHUB_RUN_NUMBER") ?: "1") as Integer
 
 android {
