@@ -8,7 +8,11 @@ import { minify } from "terser";
 const SALIDA = "dist";
 const FUERA = new Set([".git", ".github", "node_modules", "dist", "android", "herramientas", "vendor-src"]);
 rmSync(SALIDA, { recursive: true, force: true });
-cpSync(".", SALIDA, { recursive: true, filter: (o) => !FUERA.has(o.split("/")[0]) && !/\.(md|mjs|jks|log)$/i.test(o) && !/^(LICENSE|package(-lock)?\.json)$/.test(o) });
+mkdirSync(SALIDA);
+for (const f of readdirSync(".")) {
+  if (FUERA.has(f) || /\.(md|mjs|jks|log)$/i.test(f) || /^(LICENSE|package(-lock)?\.json)$/.test(f)) continue;
+  cpSync(f, join(SALIDA, f), { recursive: true, filter: (o) => !/\.(md|mjs|jks|log)$/i.test(o) });
+}
 
 let n = 0, antes = 0, despues = 0;
 async function recorrer(d) {
