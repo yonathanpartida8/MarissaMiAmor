@@ -63,7 +63,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -178,6 +178,8 @@ class Ajustes:
                     d["github"].update(v)
                 elif k in d:
                     d[k] = v
+            if d.get("nombre") in ("Servidor del librito", "", None):
+                d["nombre"] = "M.YNTHN"
             if d.get("registro") not in ("abierto", "codigo", "cerrado"):
                 d["registro"] = "abierto"   # el antiguo «aprobacion» ya no existe: se entra sin aprobación
             self.d = d
@@ -1578,8 +1580,9 @@ def api_entrar(h, s):
         E.fallo("u:" + usuario, limite=5)
         E.actividad(usuario, "entrar-fallo", "", ip)
         raise Falla("Usuario o contraseña incorrectos.", 401)
-    if u["estado"] == "pendiente":
-        raise Falla("Tu cuenta todavía espera la aprobación del administrador.", 403)
+    if u["estado"] == "pendiente":   # ya no hay aprobación: una cuenta que quedó esperando entra directo
+        E.db.x("UPDATE usuarios SET estado='activo' WHERE id=?", u["id"])
+        u["estado"] = "activo"
     if u["estado"] != "activo":
         raise Falla("Esta cuenta está desactivada.", 403)
     E.acierto("u:" + usuario)
