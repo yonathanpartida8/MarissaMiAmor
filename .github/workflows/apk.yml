@@ -9,7 +9,7 @@ on:
     inputs:
       url:
         description: "Dirección que abre la app"
-        default: "https://yonathanpartida8.github.io/MarissaMiAmor/#k=9fa156feb82b3cc45aa1c1e5"
+        default: "https://yonathanpartida8.github.io/MarissaMiAmor/"
   push:
     branches: [main, claude/interactive-love-book-redesign-5p93fv]
     paths:
@@ -64,7 +64,7 @@ jobs:
       - name: Construir
         working-directory: android
         env:
-          LIBRITO_URL: ${{ inputs.url || 'https://yonathanpartida8.github.io/MarissaMiAmor/#k=9fa156feb82b3cc45aa1c1e5' }}
+          LIBRITO_URL: ${{ inputs.url || 'https://yonathanpartida8.github.io/MarissaMiAmor/' }}
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS || 'librito-firma' }}
           KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'librito' }}
         run: gradle assembleRelease --no-daemon
