@@ -57,6 +57,7 @@ export function formularioCuenta(app, { alEntrar, modo = "entrar", compacto = fa
       ...(modo === "registro" ? [el("label.cu-campo", {}, [el("span", { text: "Repítela" }), c2]), filaCodigo] : []),
       el("label.cu-recordar", {}, [recordar, el("span", { text: "Recordarme en este aparato" })]),
       ir, estado,
+      el("small.cu-nota", { text: "Con tu cuenta, tus libritos (con sus fotos, música y videos) y tus ajustes se guardan en tu nube: entra desde cualquier aparato y ahí están. No hay que instalar nada." }),
     );
     SRV.info().then((inf) => {
       if (modo === "registro") {

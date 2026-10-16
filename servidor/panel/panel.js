@@ -426,7 +426,7 @@
     c.append(h("div.rejilla", {},
       caja("General", "ajustes", campo("Nombre del servidor", nombre), campo("Tamaño máximo de una subida (MB)", maxMb, "Un librito con vídeos pesa más. El teléfono tiene que tener ese espacio libre.")),
       caja("Para todos los usuarios", "usuarios",
-        campo("Espacio por usuario (MB)", cuota, "Proyectos guardados + detallitos enviados. Tú (administrador) no tienes tope."),
+        campo("Espacio por usuario (MB)", cuota, "Su nube (libritos con sus fotos, música y videos, y sus copias) + detallitos enviados. Tú (administrador) no tienes tope."),
         campo("Copias que se guardan de cada proyecto", copias, "Cada vez que alguien guarda a mano se hace una copia; se quedan las más nuevas."),
         campo("Páginas publicadas por usuario", maxPub),
         campo("Cuentas como máximo", maxUs)),

@@ -4,8 +4,8 @@
  * Quien usa el editor sólo entra con su usuario y su contraseña: no hay
  * tokens, ni direcciones, ni nada de GitHub aquí. M.YNTHN publica cada
  * página en publicaciones/<nombre>/ (si el nombre ya existe, <nombre>-2…),
- * a pantalla completa y sólo para ver, y guarda las copias de tus proyectos
- * en tu carpeta (una copia nueva cada vez que guardas a mano).
+ * a pantalla completa y sólo para ver. Tus libritos viven en tu nube (se
+ * suben solos mientras editas) y cada vez que guardas a mano queda una copia.
  */
 import { el, seccion, aviso } from "../ui.js";
 import { ico } from "../iconos.js";
@@ -22,7 +22,7 @@ export const PUBLICADAS = {
       el("i", { html: ico("publicar") }),
       el("div", {}, [
         el("b", { text: SRV.NOMBRE }),
-        el("small", { text: "Publica tus páginas con su propio enlace, a pantalla completa y sólo para ver. Tus proyectos se guardan con copias en tu carpeta." }),
+        el("small", { text: "Publica tus páginas con su propio enlace, a pantalla completa y sólo para ver. Tus libritos se guardan en tu nube y los abres desde cualquier aparato." }),
       ]),
     ]));
     const cuerpo = el("div.ed-myn");
@@ -51,7 +51,7 @@ export const PUBLICADAS = {
         seccion("Publicar", [pub]),
         seccion("Mis páginas publicadas", [lista]),
         seccion("Copias de mis proyectos", [
-          el("small.ed-nota.suave", { text: "Cada vez que guardas a mano (Guardar o Ctrl+S) se guarda una copia completa en tu carpeta de M.YNTHN. Desde aquí la abres en cualquier aparato." }),
+          el("small.ed-nota.suave", { text: "Mientras editas, tu librito se sube solo a tu nube de M.YNTHN. Además, cada vez que guardas a mano (Guardar o Ctrl+S) queda una copia aquí; ábrela desde cualquier aparato." }),
           guardar, copias,
         ]),
       );

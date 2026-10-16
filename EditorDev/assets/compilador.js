@@ -169,6 +169,6 @@ export async function aligerar(app, id) {
   await guardarArchivo(lib, id, r.blob);
   await borrarArchivo("mini:" + id).catch(() => {});
   app.bib.renovar?.(id, r.blob);
-  E.agregarAsset({ ...a, tam: r.blob.size, mime: r.blob.type, w: r.w, h: r.h, huellaArchivo: await huella(r.blob), huella: a.huella || a.huellaArchivo, original: a.original || { tam: blob.size, mime: blob.type, w: a.w, h: a.h } });
+  E.agregarAsset({ ...a, sha: undefined, shaTam: undefined, tam: r.blob.size, mime: r.blob.type, w: r.w, h: r.h, huellaArchivo: await huella(r.blob), huella: a.huella || a.huellaArchivo, original: a.original || { tam: blob.size, mime: blob.type, w: a.w, h: a.h } });
   return true;
 }

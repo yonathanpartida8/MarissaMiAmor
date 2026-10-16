@@ -46,8 +46,8 @@ import { pantallaInicio, quitarInicio } from "./components/inicio.js";
 import { MenuPrincipal } from "./components/menu-principal.js";
 import { MenuExportar } from "./components/exportar-menu.js";
 import { Detallitos } from "./components/detallitos.js";
-import { copiaEnNube } from "./components/myn.js";
 import * as SRV from "./integraciones/servidor.js";
+import * as NUBE from "./integraciones/nube.js";
 import { atajos } from "./components/teclado.js";
 import { PLANTILLAS } from "./templates/plantillas.js";
 import { BarraContextual } from "./components/barra.js";
@@ -178,8 +178,11 @@ async function arrancar() {
     app.guardado.poner(st, err);
     // Un solo aviso por tanda de errores (los reintentos no repiten el aviso).
     if (st === "error" && !app._avisoError) { app._avisoError = true; aviso("No se pudo guardar. Tu última versión buena sigue intacta y lo nuevo se reintenta solo. Toca el indicador de guardado para más opciones.", 6000, "error"); }
-    if (st === "guardado") app._avisoError = false;
+    if (st === "guardado") { app._avisoError = false; NUBE.programar(); }
   });
+  // Tu nube (M.YNTHN): lo guardado aquí sube solo unos segundos después, y se abre desde cualquier aparato.
+  app.nube = NUBE;
+  NUBE.conectar(app);
 
   construirBarra();
   construirRiel();
@@ -562,16 +565,20 @@ app.guardarYa = async () => {
   aviso(app.auto.error ? "Error al guardar: tu última versión buena sigue intacta" : "Guardado correctamente", 2600, app.auto.error ? "error" : "");
 };
 
-/* Guardar A MANO (Guardar, Ctrl+S): además del borrador, una copia completa en
-   tu carpeta de M.YNTHN si tienes la sesión abierta (no más de una por minuto). */
+/* Guardar A MANO (Guardar, Ctrl+S): además del borrador, lo sube ya a tu nube de
+   M.YNTHN y deja ahí una copia (no más de una por minuto) si tienes la sesión abierta. */
 let subiendoCopia = false, ultimaCopia = 0;
 app.guardarAMano = async () => {
   await app.guardarYa();
-  if (!SRV.conectado() || app.auto.error || subiendoCopia || !app.estado.proyecto) return;
-  if (Date.now() - ultimaCopia < 60000) return;
+  const P = app.estado.proyecto;
+  if (!SRV.conectado() || app.auto.error || subiendoCopia || !P) return;
+  if (NUBE.quitado(P.id) || !NUBE.esMio(P.id) || Date.now() - ultimaCopia < 60000) { NUBE.programar(800); return; }
   subiendoCopia = true;
-  try { await copiaEnNube(app); ultimaCopia = Date.now(); }
-  catch (e) { aviso(`No se pudo guardar la copia en ${SRV.NOMBRE}: ${e.message}`, 4500, "error"); }
+  try {
+    const r = await NUBE.guardarCopia();
+    ultimaCopia = Date.now();
+    if (r) aviso(`También quedó en tu nube de ${SRV.NOMBRE} (${r.copias} ${r.copias === 1 ? "copia" : "copias"} de este librito)`, 3600);
+  } catch (e) { aviso(`Quedó guardado en este aparato, pero no se pudo subir a ${SRV.NOMBRE}: ${e.message}`, 5000, "error"); }
   finally { subiendoCopia = false; }
 };
 
@@ -682,7 +689,7 @@ app.exportar = async ({ completo = false } = {}) => {
   document.body.append(capa);
   try {
     const { exportar, descargar } = await import("./export/exportar.js");
-    const r = await exportar(app, { completo, alProgreso: (x) => { t.textContent = x; } });
+    const r = await exportar(app, { completo, alProgreso: (x) => { t.textContent = x; }, deLaNube: NUBE.originalDeLaNube });
     if (completo) try { localStorage.setItem("editordev:copia-descargada:" + app.estado.proyecto.id, String(Date.now())); } catch (e) { /* nada */ }
     descargar(r.blob, r.nombre);
     app.sonidos?.sonar("exito");

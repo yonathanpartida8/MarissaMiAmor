@@ -530,6 +530,21 @@ Código nuevo: `components/menu-principal.js`, `components/exportar-menu.js`, `c
 | **Vista previa al mandar** | en Detallitos, la página se ve **terminada** (el mismo reproductor del librito, sin sonido) en un teléfono chiquito junto al sobre, con una notita que repite tu mensajito mientras escribes. Al tocarla se ve en grande y se puede tocar como la verá. Al enviar: la página entra al sobre, se cierra con su sello, late mientras sube y sale volando con chispitas; si falla, el sobre se abre y la página vuelve a salir |
 | **Conexión** | si el teléfono del servidor se reinició y cambió de dirección, el editor busca la nueva (sin esperar la caché de GitHub Pages) y reintenta solo; si no contesta, lo dice claro («puede estar apagado o sin internet; tus cosas siguen en este aparato») |
 
+### Fase 19: tu nube en M.YNTHN — tus libritos en cualquier aparato
+
+| | |
+| --- | --- |
+| **Para quién** | para todos los que usan el editor: nadie instala nada. Abren el enlace, crean su cuenta (al momento) y entran; sólo el dueño del servidor tiene Termux |
+| **Se guarda solo en tu nube** | todo se guarda primero en el aparato (al instante, sin internet) y ~10 s después se sube a tu nube **sólo lo que cambió**: el `project.json` del librito y cada foto, canción o video que falte, reconocido por su huella SHA-256 (lo que ya está no se vuelve a subir). Los archivos suben en partes de 8 MB y, si se corta, siguen donde quedaron. Al entrar a tu cuenta se suben también los demás libritos de ese aparato (`integraciones/nube.js`) |
+| **Desde otro aparato** | en «Tus borradores» salen los de aquí y los de tu nube, cada uno con su etiqueta: *En tu nube*, *Sólo en este aparato*, *Hay uno más nuevo en tu nube*, *Cambió en dos aparatos*. Tocar uno que sólo está en la nube lo baja entero (con barrita) y lo abre con el **mismo** id |
+| **Dos aparatos a la vez** | al abrir un librito, o al volver a la pestaña, si en la nube hay uno más nuevo y aquí no lo tocaste, se trae solo («Traje la versión más nueva…»). Si cambió en los dos, pregunta: **La de aquí**, **La de mi nube** o **Las dos** (la de aquí queda como librito aparte y también sube). Nunca se pisa sin preguntar |
+| **Borrar** | «Borrar de este aparato» (en tu nube sigue) o «Borrar de todos lados». Si se borró de la nube desde otro aparato, aquí no se revive: queda sólo aquí, con «Subirlo otra vez» |
+| **Guardar a mano** | además de subirlo ya, deja una **copia** en tu nube (no duplica fotos ni videos). «Copias de mis proyectos» las muestra por librito y abre cualquiera como borrador nuevo (con sus fotos con otro nombre, para no chocar). Las copias .zip de antes siguen ahí |
+| **Ajustes** | la configuración del editor, sonidos, letras, colores y extras también viajan (gana el último que cambió) |
+| **Publicar y Detallitos** | las fotos y videos ya están en la nube, así que el .zip lleva sólo su huella (`publicar.json` → `nube`) y el servidor los pone: lo que cruza el túnel es chiquito aunque el librito pese cientos de MB. En el servidor, los archivos de más de 20 MB van a GitHub con `git push` (adiós «Sorry, your input was too large to process») |
+| **Se ve** | el indicador de guardado lleva un puntito: verde al día, latiendo subiendo, hueco sin conexión, naranja si hay que elegir o la nube está llena. Su panel tiene «Tu nube · M.YNTHN» con lo que pasa y «Subir ahora» |
+| **Arreglos** | en la computadora, el «⋯» de cada borrador del inicio estaba escondido (lo tapaba la regla del «Más» de la barra): ya se ve; «1 página» en singular |
+
 ## Cómo está hecho
 
 ```

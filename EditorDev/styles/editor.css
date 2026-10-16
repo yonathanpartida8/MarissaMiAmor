@@ -1386,10 +1386,11 @@ body.ed-sin-efectos .ed-hoja .rt-c { filter: none !important; }
 .ed-musica-b.apagada { color: var(--texto-suave); }
 .ed-musica-vol { display: flex; align-items: center; gap: 10px; min-width: 220px; }
 .ed-musica-vol input { flex: 1; accent-color: var(--acento); }
-.ed-mas { display: none; }
+/* «Más» de la barra de arriba: sólo en pantallas angostas (los «⋯» de cada borrador del inicio, siempre). */
+.ed-barra .ed-mas { display: none; }
 @media (max-width: 760px) {
   .ed-previa, .ed-guardar, .ed-ver, .ed-zoom, .ed-exportar { display: none !important; }
-  .ed-mas { display: inline-flex; }
+  .ed-barra .ed-mas { display: inline-flex; }
   .ed-nombre { min-width: 0; flex: 1 1 40px; }
   .ed-probar span { display: none; }
   .ed-probar { min-width: 44px; padding: 0 10px; }
@@ -1919,6 +1920,26 @@ details.ed-sec.ilumina > summary { animation: edSecIlumina 1.1s ease-out; }
 .ed-guardado[data-st="error"] { --gd: var(--peligro); background: color-mix(in srgb, var(--peligro) 12%, transparent); animation: ed-gd-sacude .45s ease-in-out; }
 .ed-guardado[data-st="error"] .ed-gd-alerta { opacity: 1; transform: none; }
 .ed-guardado[data-st="sin-guardar"] .ed-gd-nube { opacity: .55; }
+/* El puntito de tu nube (M.YNTHN) en el icono de guardado. */
+.ed-gd-nb { position: absolute; right: -3px; bottom: -2px; width: 8px; height: 8px; border-radius: 50%; background: var(--texto-suave); box-shadow: 0 0 0 2px var(--superficie, #fff); opacity: 0; transform: scale(.4); transition: opacity .3s, transform .35s cubic-bezier(.2, .9, .3, 1.4), background .3s; }
+.ed-guardado:not([data-nube="fuera"]):not([data-nube=""])[data-nube] .ed-gd-nb { opacity: 1; transform: none; }
+.ed-guardado[data-nube="al-dia"] .ed-gd-nb { background: #2c9a68; }
+.ed-guardado[data-nube="subiendo"] .ed-gd-nb, .ed-guardado[data-nube="bajando"] .ed-gd-nb { background: var(--acento); animation: ed-gd-late 1.1s ease-in-out infinite; }
+.ed-guardado[data-nube="sin-conexion"] .ed-gd-nb { background: transparent; box-shadow: inset 0 0 0 2px var(--texto-suave), 0 0 0 2px var(--superficie, #fff); }
+.ed-guardado[data-nube="conflicto"] .ed-gd-nb, .ed-guardado[data-nube="llena"] .ed-gd-nb, .ed-guardado[data-nube="error"] .ed-gd-nb { background: #e08a1e; }
+@keyframes ed-gd-late { 50% { transform: scale(1.35); } }
+.ed-gd-nubesec[data-st="conflicto"] > small, .ed-gd-nubesec[data-st="llena"] > small { color: #b8670f; }
+/* Inicio: cómo está cada borrador frente a tu nube. */
+.ed-bd-nube { display: inline-flex; align-items: center; gap: 5px; margin-top: 2px; padding: 2px 8px 2px 6px; border-radius: 999px; font: 600 11.5px/1.3 Jost, system-ui, sans-serif; font-style: normal; color: var(--texto-suave); background: var(--superficie-2); }
+.ed-bd-nube .ed-ico { width: 14px; height: 14px; }
+.ed-bd-nube[data-st="igual"] { color: #23805a; background: rgba(44, 154, 104, .12); }
+.ed-bd-nube[data-st="nube"], .ed-bd-nube[data-st="solo-nube"] { color: var(--acento); background: var(--acento-suave); }
+.ed-bd-nube[data-st="los-dos"] { color: #b8670f; background: rgba(224, 138, 30, .13); }
+.ed-borrador.en-nube b { opacity: .9; }
+.ed-borradores li:has(.en-nube) { border-style: dashed; }
+.ed-inicio-nube { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: var(--acento-suave); }
+.ed-inicio-nube p { flex: 1 1 260px; margin: 0; font-size: 13.5px; }
+@media (prefers-reduced-motion: reduce) { .ed-gd-nb { animation: none !important; } }
 @keyframes ed-gd-giro { to { transform: rotate(360deg); } }
 @keyframes ed-gd-palomita { to { stroke-dashoffset: 0; } }
 @keyframes ed-gd-sacude { 20%, 60% { transform: translateX(-2px); } 40%, 80% { transform: translateX(2px); } }

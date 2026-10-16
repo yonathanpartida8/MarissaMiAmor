@@ -73,12 +73,18 @@ panel: GitHub → GitHub Pages.)
 
 ### M.YNTHN, el servidor del librito (Termux)
 
-Un teléfono viejo con Termux es **M.YNTHN**, el servidor público del editor:
-cualquiera crea su usuario y contraseña y ya puede **publicar** (Exportar →
-«Publicar en servidor M.YNTHN», queda en `publicaciones/<nombre>/`, a pantalla
-completa y sólo para ver), guardar **copias de sus proyectos** en su carpeta
-cada vez que guarda a mano, y mandarle **Detallitos** a su amorcito
-(«Vincular a tu Amorcito» con un código único). El token de GitHub es uno
+Un teléfono viejo con Termux es **M.YNTHN**, el servidor público del editor.
+**Sólo tú lo instalas**; los demás (tu amorcito incluida, esté donde esté)
+**no instalan nada**: abren el editor, crean su usuario y contraseña (al
+momento, sin aprobación) y ya tienen **su nube**: sus libritos con sus fotos,
+música y videos, sus copias y sus ajustes quedan en tu servidor y se abren
+desde cualquier teléfono o computadora (se suben solos mientras editan; si
+cambió en dos aparatos, pregunta con cuál quedarse). Desde ahí también
+**publican** (Exportar → «Publicar en servidor M.YNTHN», queda en
+`publicaciones/<nombre>/`, a pantalla completa y sólo para ver; los videos
+grandes llegan a GitHub con `git push`, sin el error «input too large») y le
+mandan **Detallitos** a su amorcito («Vincular a tu Amorcito» con un código
+único). El token de GitHub es uno
 solo, cifrado en el teléfono: nunca está en el editor. Se instala con una línea
 en Termux y un asistente que te pregunta tu usuario, tu contraseña y el token, y
 lo deja prendido (sin códigos). Paso a paso en **`servidor/LÉEME.md`**.

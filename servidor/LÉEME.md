@@ -2,15 +2,26 @@
 
 **M.YNTHN** es el servidor **público** del editor de libritos: vive en tu
 teléfono viejo con Termux y atiende a **todas** las personas que usan el
-editor. Cada quien sólo crea su **usuario y contraseña** (al momento, sin
-esperar aprobación) y ya puede publicar, guardar sus proyectos y mandarle
-**Detallitos** a su amorcito. El token de GitHub es **uno solo, el tuyo**, y
-vive cifrado en el teléfono: nadie lo ve, nadie lo escribe en el editor.
+editor, estén donde estén. Cada quien sólo crea su **usuario y contraseña**
+(al momento, sin esperar aprobación de nadie) y ya tiene **su nube**: sus
+libritos con sus fotos, música y videos, sus copias y sus ajustes del editor
+quedan guardados **en tu servidor**, y los abre desde cualquier teléfono o
+computadora. También publica y le manda **Detallitos** a su amorcito. El token
+de GitHub es **uno solo, el tuyo**, y vive cifrado en el teléfono: nadie lo ve,
+nadie lo escribe en el editor.
+
+> **Sólo tú instalas Termux, una vez, en tu teléfono.** Las demás personas
+> —tu amorcito incluida— **no instalan nada**: abren el enlace del editor
+> (`https://<usuario>.github.io/<repositorio>/EditorDev/`), tocan «Mi cuenta»,
+> crean su usuario y contraseña, y listo. Da igual si están en otra ciudad o en
+> otro país: el túnel de Cloudflare hace que tu servidor se vea desde todo
+> internet.
 
 ```
-  Editor (en tu GitHub Pages) — cualquiera, con su usuario y contraseña
+  Editor (en tu GitHub Pages) — cualquiera, con su usuario y contraseña, desde donde sea
      │  sesión (Bearer)
-     │  páginas en .zip · copias de proyectos · detallitos
+     │  su nube: libritos (project.json) · fotos, música y videos (por huella) · ajustes
+     │  páginas para publicar · detallitos
      ▼
   https://xxxx.trycloudflare.com  (túnel de Cloudflare, https gratis)
      ▼
@@ -26,10 +37,12 @@ Lo que hace por cada usuario:
   `https://<usuario>.github.io/<repositorio>/publicaciones/<nombre>/`, a
   **pantalla completa** como una app y **sin poder editarse**. Si el nombre ya
   existe, se usa `<nombre>-2`, `-3`… Actualizar una que ya estaba es aparte.
-- **Copias de sus proyectos**: cada vez que guarda **a mano** (Guardar o
-  Ctrl+S) se guarda una copia completa en **su** carpeta
-  (`proyectos/<usuario>/<proyecto>/`), con sus fotos, música y todo. Se
-  quedan las más nuevas de cada proyecto (15, se cambia en el panel).
+- **Su nube**: mientras edita, cada librito se guarda en su aparato y, unos
+  segundos después, **se sube solo** a M.YNTHN (sólo lo que cambió). En otro
+  aparato, con la misma cuenta, sus libritos aparecen en «Tus borradores» y se
+  abren con todo. Cada vez que guarda **a mano** (Guardar o Ctrl+S) queda
+  además una **copia** (se quedan las 15 más nuevas de cada librito; se cambia
+  en el panel). Ver **9 · La nube**.
 - **Detallitos**: cada cuenta tiene un **código único** (`AMOR-XXXX-XXXX`).
   Con «Vincular a tu Amorcito» uno pega el código del otro y quedan
   conectados: se mandan páginas que se van coleccionando, ven si el otro está
@@ -177,6 +190,14 @@ La pestaña **Páginas publicadas** del editor es sólo de M.YNTHN: publicar,
 abierto, subir a GitHub, quitar) y **Copias de mis proyectos** (abrir
 cualquiera como borrador nuevo, en cualquier aparato, o borrarla).
 
+Al publicar (o mandar un detallito), las fotos, la música y los videos **no
+viajan otra vez** dentro del .zip: ya están en tu nube (o suben antes, por
+partes) y el .zip lleva sólo su huella; M.YNTHN los pone él mismo. Así una
+página con un video de 200 MB sube en segundos y no choca con el tope de
+100 MB del túnel. Los archivos grandes (más de 20 MB) llegan a GitHub con
+`git push` (no por su API), así que ya no sale «Sorry, your input was too large
+to process»: por eso `librito actualizar` instala `git` en Termux.
+
 **Detallitos** (Exportar → Enviar Detallito, o desde el menú principal):
 
 - **Vincular a tu Amorcito**: muestra tu código (copiar / compartir / otro
@@ -194,6 +215,39 @@ Mientras el servidor no tenga GitHub conectado, lo publicado se guarda en el
 servidor y se ve en `https://<tu-túnel>/p/<nombre>/`.
 
 ---
+
+### 9 · La nube (tus libritos en cualquier aparato)
+
+Todo lo de cada cuenta vive en **tu teléfono servidor**, en
+`~/librito-datos/nube/`:
+
+- **Cada foto, canción o video se guarda una sola vez**, por su huella
+  (SHA-256): si está en diez libritos, o dos personas suben la misma, ocupa un
+  solo lugar. Sube **por partes** (8 MB) y, si se corta el internet, sigue
+  donde quedó; al terminar, el servidor comprueba la huella (si llegó dañado,
+  se vuelve a subir solo).
+- **Cada librito es su `project.json`** (páginas, textos, ajustes y la huella
+  de cada archivo). Guardar = mandar sólo lo nuevo.
+- **Dos aparatos a la vez**: si cambiaste el librito en la compu y el teléfono
+  no lo había tocado, al abrirlo (o al volver a esa pestaña) el teléfono **se
+  trae solo** la versión nueva. Si cambió en los dos, el editor **pregunta**:
+  «La de aquí», «La de mi nube» o «Las dos» (la de aquí queda como un librito
+  aparte). Nunca se pisa nada sin preguntar.
+- **Borrar**: en «Tus borradores», «Borrar de este aparato» (en tu nube sigue)
+  o «Borrar de todos lados». Si lo borras de la nube desde otro aparato, en
+  éste no se revive solo: se queda sólo aquí (el indicador de guardado deja
+  «Subirlo otra vez»).
+- **Ajustes del editor** (tema, estilo, sonidos, letras…): también viajan; gana
+  el último que cambió.
+- **Espacio**: cada cuenta tiene su cuota (1 GB al instalar; Panel → Ajustes,
+  «Espacio por usuario»); los administradores no tienen tope. Lo que ya ningún librito ni
+  copia usa se borra solo.
+- **El indicador de guardado** (arriba en el editor) lleva un puntito: verde =
+  al día en tu nube, latiendo = subiendo, hueco = tu nube no contesta (se sube
+  sola cuando vuelva), naranja = cambió en dos aparatos o la nube está llena.
+  Tocarlo explica qué pasa y deja «Subir ahora».
+- **Sin internet o con el servidor apagado** se sigue editando igual: todo se
+  guarda en el aparato y sube después.
 
 ## Cuentas y autenticación
 
@@ -237,7 +291,10 @@ servidor y se ve en `https://<tu-túnel>/p/<nombre>/`.
   secretos.bin           token de GitHub, cifrado (0600)
   librito.db             cuentas, parejas, sesiones, publicaciones, proyectos, detallitos, actividad
   publicaciones/<n>/     copia de cada publicación (se ve en /p/<n>/)
-  proyectos/<usuario>/<proyecto>/   las copias de cada proyecto de cada usuario
+  nube/archivos/ab/<huella>         cada foto, canción o video (una sola vez, por su huella)
+  nube/libritos/<cuenta>/<clave>.json   cada librito de cada cuenta
+  nube/copias/<cuenta>/<clave>/<id>.json  sus copias (al guardar a mano)
+  proyectos/<usuario>/<proyecto>/   las copias de antes (.zip), si había
   detallitos/<id>/       cada detallito (ver/ y paquete.zip)
   servidor.log           lo que va pasando (sin secretos)
   estado.json            pid, puerto y dirección del servidor PRENDIDO (lo lee «librito»; se borra al apagarlo)
@@ -256,7 +313,13 @@ azar) · `/api/…`:
 | `GET /api/yo` · `POST /api/yo/contrasena` · `GET/DELETE /api/yo/sesiones` | sesión | tu cuenta |
 | `GET/POST /api/publicaciones` · `DELETE /api/publicaciones/<n>` · `POST /api/publicaciones/<n>/subir` | sesión | publicar (el .zip va en el cuerpo, `?titulo=&nombre=&reemplazar=`) |
 | `GET /api/trabajos/<id>` | sesión | cómo va una publicación |
-| `GET/POST /api/proyectos` · `GET/DELETE /api/proyectos/<id>` | sesión | copias de proyectos (`?nombre=&proyecto=`) |
+| `GET /api/nube` | sesión | tus libritos en la nube, tu espacio y tu cuota |
+| `POST /api/nube/faltan` | sesión | de estas huellas, cuáles faltan (lo que ya está no se vuelve a subir) |
+| `PUT /api/nube/archivos/<huella>?desde=&tam=&tipo=` · `GET …/<huella>` | sesión | subir un archivo por partes (se sigue donde quedó) y bajarlo |
+| `PUT/GET/DELETE /api/nube/libritos/<clave>` (`?base=&forzar=1&aparato=`) | sesión | guardar, abrir y borrar un librito (avisa si cambió en otro aparato) |
+| `POST /api/nube/libritos/<clave>/copia` · `GET /api/nube/copias` · `GET/DELETE /api/nube/copias/<id>` | sesión | copias al guardar a mano |
+| `GET/PUT /api/yo/ajustes` | sesión | tus ajustes del editor |
+| `GET/POST /api/proyectos` · `GET/DELETE /api/proyectos/<id>` | sesión | copias de antes (.zip) |
 | `GET/DELETE /api/amor` · `POST /api/amor/vincular` · `POST /api/amor/codigo` | sesión | tu código y el vínculo con tu amorcito |
 | `GET /api/latido` | sesión | «sigo aquí» + cuántos detallitos nuevos |
 | `GET/POST /api/detallitos` · `POST …/<id>/visto` · `GET …/<id>/paquete` · `DELETE …/<id>` | sesión | mandar, ver, guardar y quitar detallitos |
@@ -316,7 +379,7 @@ librito github           guardar el token (cifrado) desde la terminal
 librito llave-nueva      cambiar la llave maestra (vuelve a cifrar)
 librito respaldar        copia de ~/librito-datos (SIN llave ni token)
 librito arranque         prenderse solo (Termux:Boot)
-librito actualizar       bajar la versión nueva (tus datos no se tocan)
+librito actualizar       bajar la versión nueva (tus datos no se tocan; instala lo que falte, como git)
 librito primer-plano     correrlo aquí mismo para ver errores
 ```
 
@@ -327,6 +390,9 @@ librito primer-plano     correrlo aquí mismo para ver errores
 | El editor dice «No hay conexión con M.YNTHN» | `librito estado`: ¿prendido? ¿hay dirección? ¿«Anunciar» encendido? Si cambió, el editor la encuentra solo en un minuto. |
 | «Desde internet el navegador no deja usar http://…» | Usa la dirección **https** del túnel, no la de la wifi. |
 | «Falta cloudflared» | `pkg install cloudflared` y `librito reiniciar`. |
+| «Sorry, your input was too large to process» al publicar | Ya lo resuelve el servidor: los archivos grandes van con `git push`. Corre `librito actualizar` (instala `git`) y vuelve a publicar. |
+| Mi librito no aparece en el otro aparato | ¿Entraste con la **misma cuenta**? Espera unos segundos (sube solo) o toca el indicador de guardado → «Subir ahora». El puntito dice cómo va. |
+| «Tu nube está llena» | Borra libritos o copias viejas que ya no uses, o sube el espacio por cuenta en Panel → Ajustes. |
 | «El código de instalación no es ese» | Ya no debería pasar (el código no cambia). Más fácil: abre el panel en el mismo teléfono (no pide código) o `librito admin`. |
 | «El puerto 8787 ya está ocupado» | Ya estaba prendido: `librito estado`. Si dice apagado, `librito detener` y `librito iniciar`. |
 | «Túnel: no logró conectar» en `librito registro` | Reintenta solo (y cambia a http2). Revisa que el teléfono tenga internet; dice lo que respondió cloudflared. |
@@ -345,6 +411,12 @@ aparato», `librito github` con el servidor prendido (sin reiniciar), el túnel
 con un cloudflared de mentira (conecta, anuncia, el vigía lo reabre, cambia a
 http2), cuentas, registro abierto, cuotas, publicar, copias, parejas,
 detallitos, CORS, .zip con `../`, conexiones que quedan limpias tras un error y
-que el token no salga en ninguna respuesta; y el editor en Chromium (teléfono
-y compu). **No** se probó todavía en un teléfono real con Termux ni con el
-túnel de Cloudflare de verdad.
+que el token no salga en ninguna respuesta; la nube (subidas por partes que
+siguen donde quedaron, huella dañada, dedupe entre cuentas, conflicto, forzar,
+copias, ajustes, cuota, limpieza) y un video de 2.5 MB publicado por `git push`
+con una API que rechaza más de 1 MB; y el editor en Chromium con **dos
+aparatos y la misma cuenta** (uno crea con foto y un video de 20 MB, el otro
+lo abre entero, lo cambia, el primero se pone al día solo, conflicto con «Las
+dos», ajustes que viajan, publicar con la foto puesta por el servidor, borrar
+de todos lados). **No** se probó todavía en un teléfono real con Termux, ni
+con el túnel de Cloudflare ni con GitHub de verdad.

@@ -12,13 +12,20 @@
  * al fallar. Tocarlo abre «Tu trabajo está a salvo»: el último guardado, las
  * copias completas automáticas (abrir una como librito aparte), el espacio
  * usado, si el navegador lo protege y la copia de seguridad en archivo.
+ *
+ * Con tu cuenta de M.YNTHN, un puntito en el icono dice cómo va tu nube (al
+ * día, subiendo, sin conexión, cambió en dos aparatos…) y el panel deja
+ * subirlo ya o elegir versión.
  */
 import { el, popover, aviso } from "./ui.js";
 import { ico } from "./iconos.js";
 import { listarCopias } from "../storage/respaldos.js";
 import { espacio, pedirPersistencia } from "../storage/db.js";
+import * as SRV from "../integraciones/servidor.js";
+import * as NUBE from "../integraciones/nube.js";
 
 const TXT = { guardando: "Guardando…", ok: "Guardado correctamente", guardado: "Guardado", error: "Error al guardar", "sin-guardar": "Sin guardar" };
+const NUBE_TXT = { revisando: "revisando tu nube", pendiente: "por subir a tu nube", subiendo: "subiendo a tu nube", bajando: "bajando de tu nube", "al-dia": "en tu nube", "sin-conexion": "tu nube no contesta", conflicto: "cambió en dos aparatos", llena: "tu nube está llena", error: "no se pudo subir a tu nube" };
 const hora = (t) => new Date(t).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
 const hace = (t) => { const s = Math.round((Date.now() - t) / 1000); return s < 10 ? "ahora mismo" : s < 60 ? `hace ${s} s` : s < 3600 ? `hace ${Math.round(s / 60)} min` : `a las ${hora(t)}`; };
 const mb = (b) => (b / 1048576).toLocaleString("es-MX", { maximumFractionDigits: b < 10485760 ? 1 : 0 }) + " MB";
@@ -31,9 +38,32 @@ export class IndicadorGuardado {
     this.n = nodo;
     nodo.innerHTML = `<i class="ed-gd-ico" aria-hidden="true"><span class="ed-gd-giro"></span><span class="ed-gd-nube">${ico("nubeOk")}</span><span class="ed-gd-alerta">${ico("aviso")}</span></i><span class="ed-gd-t">Guardado</span>`;
     this.t = nodo.querySelector(".ed-gd-t");
+    nodo.querySelector(".ed-gd-ico").append(el("b.ed-gd-nb", { "aria-hidden": "true" }));
     this.st = null;
     this._pintar("guardado");
     nodo.addEventListener("click", () => this.abrir());
+    let antes = "";
+    NUBE.alCambiar((N) => {
+      const st = SRV.conectado() ? N.st : "fuera";
+      nodo.dataset.nube = st;
+      this._titulo();
+      if (this._nubeLinea?.isConnected) this._nubeLinea.textContent = this._textoNube();
+      if (st !== antes && this.panel) this._rellenar();
+      antes = st;
+    });
+  }
+
+  _titulo() {
+    const n = NUBE_TXT[this.n.dataset.nube];
+    this.n.setAttribute("aria-label", `${TXT[this.st] || "Guardado"}${n ? " · " + n : ""} · tus copias`);
+    this.n.title = this.st === "error" ? "No se pudo guardar: toca para ver qué hacer" : `Guardado${n ? " · " + n : ""} · copias de seguridad`;
+  }
+
+  _textoNube() {
+    const N = NUBE.estadoNube(), P = this.app.estado.proyecto;
+    if (N.st === "al-dia" && P && NUBE.quitado(P.id)) return "Este librito sólo está en este aparato: se borró de tu nube desde otro. Si quieres, súbelo otra vez.";
+    if (N.st === "al-dia") return `Al día${N.cuando ? ` (${hace(N.cuando)})` : ""}: también está en tu nube. Ábrelo desde cualquier aparato entrando con tu cuenta.`;
+    return (N.texto || "Revisando tu nube…") + (N.p != null && N.p < 1 ? ` · ${Math.round(N.p * 100)} %` : "");
   }
 
   /** Estados del autoguardado: pendiente · escribiendo · guardado · error · sin-guardar. */
@@ -57,8 +87,7 @@ export class IndicadorGuardado {
     this.st = v;
     this.n.dataset.st = v;
     this.t.textContent = TXT[v] || "Guardado";
-    this.n.setAttribute("aria-label", `${TXT[v]} · tus copias`);
-    this.n.title = v === "error" ? "No se pudo guardar: toca para ver qué hacer" : "Guardado y copias de seguridad";
+    this._titulo();
     clearTimeout(this._as);
     this.n.classList.toggle("asoma", v === "ok" || v === "error");
     if (v === "error") this._as = setTimeout(() => this.n.classList.remove("asoma"), 5000);
@@ -90,6 +119,22 @@ export class IndicadorGuardado {
     if (st === "error") partes.push(el("p.ed-gd-error", { text: `${A.error?.message || "El navegador no dejó escribir"}. La última versión buena sigue intacta; lo nuevo queda pendiente y se reintenta solo.` }), el("div.ed-botonera", {}, [b("Reintentar ahora", "refrescar", () => app.guardarYa(), "primario"), b("Descargar copia (.zip)", "exportar", () => { this.cerrar(); app.exportar({ completo: true }); })]));
     else if (st === "sin-guardar") partes.push(el("p.ed-ayuda", { text: "El guardado automático está apagado (Herramientas → Guardar)." }), el("div.ed-botonera", {}, [b("Guardar ahora", "guardar", () => app.guardarYa(), "primario")]));
     else partes.push(el("div.ed-botonera", {}, [b("Guardar ahora", "guardar", () => app.guardarYa())]));
+
+    // Tu nube: el mismo librito en cualquier aparato.
+    const N = NUBE.estadoNube(), con = SRV.conectado();
+    this._nubeLinea = el("small", { text: con ? this._textoNube() : `Entra a tu cuenta de ${SRV.NOMBRE} y este librito se guarda también en tu nube: lo abres desde cualquier teléfono o computadora.` });
+    const subir = async (btn) => {
+      btn.disabled = true;
+      try { await NUBE.subirAhora(); aviso("Listo: está en tu nube", 2600); } catch (e) { aviso(e.message, 5000, "error"); }
+      finally { btn.disabled = false; }
+    };
+    partes.push(el("section.ed-gd-sec.ed-gd-nubesec", { dataset: { st: con ? N.st : "fuera" } }, [
+      el("div.ed-sub-t", { text: `Tu nube · ${SRV.NOMBRE}` }),
+      this._nubeLinea,
+      el("div.ed-botonera", {}, con
+        ? [N.st === "conflicto" ? b("Elegir con cuál quedarme", "aviso", () => { this.cerrar(); NUBE.preguntar(); }, "primario") : b(NUBE.quitado(P.id) ? "Subirlo otra vez" : "Subir ahora", "nube", (e) => subir(e.currentTarget), N.st === "error" || N.st === "sin-conexion" ? "primario" : "")]
+        : [b("Entrar o crear mi cuenta", "cuenta", () => { this.cerrar(); const M = app.menuPrincipal; if (!M.abierto) M.abrir(); M.pintar("cuenta"); }, "primario")]),
+    ]));
 
     // Copias completas automáticas.
     const copias = await listarCopias(P.id).catch(() => []);

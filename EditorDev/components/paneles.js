@@ -449,7 +449,10 @@ export class Paneles {
         boton(I("duplicar", "Duplicar este"), () => app.duplicarProyecto(), "chico"),
         boton(I("subir", "Abrir archivo (.zip / .json)"), () => app.abrirArchivo(), "chico"),
       ]),
-      boton(I("borrar", "Borrar este borrador"), async () => { if (await confirmar(`Se borrará «${this.P.nombre}» de este navegador, con sus fotos subidas. Si no lo exportaste, se pierde.`, "Borrar borrador")) app.borrarProyecto(); }, "chico peligro"),
+      boton(I("borrar", "Borrar este borrador"), async () => {
+        const enNube = !!app.nube?.base(this.P.id);
+        if (await confirmar(enNube ? `Se borrará «${this.P.nombre}» de este aparato. En tu nube sigue guardado: lo vuelves a abrir desde «Tus borradores» (o lo borras de ahí también).` : `Se borrará «${this.P.nombre}» de este navegador, con sus fotos subidas. Si no lo exportaste, se pierde.`, "Borrar borrador")) app.borrarProyecto();
+      }, "chico peligro"),
       esp,
     ], { abierta: false }));
   }

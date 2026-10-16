@@ -6,6 +6,7 @@
 import { el, aviso, confirmar } from "./ui.js";
 import { ico } from "./iconos.js";
 import * as SRV from "../integraciones/servidor.js";
+import * as NUBE from "../integraciones/nube.js";
 
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 export const fecha = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" }); } catch (e) { return ""; } };
@@ -14,22 +15,20 @@ export async function copiar(t) { try { await navigator.clipboard.writeText(t); 
 export function compartir(t, titulo) { if (navigator.share) navigator.share({ title: titulo, url: t }).catch(() => {}); else copiar(t); }
 export const abrir = (u) => open(u, "_blank", "noopener");
 
-/** El librito (o sólo algunas páginas) en un .zip para VER, con su ficha. */
+/**
+ * El librito (o sólo algunas páginas) en un .zip para VER, con su ficha.
+ * Las fotos, la música y los videos suben antes a tu nube (sólo los que
+ * falten) y el .zip lleva nada más su huella: M.YNTHN los pone él mismo. Así
+ * lo que cruza el túnel es chiquito, aunque el librito pese cientos de MB.
+ */
 export async function zipParaVer(app, { titulo, slug, alProgreso, actualizar = false, soloPaginas = null, conProyecto = false }) {
   if (app.auto?.pendiente) await app.auto.ahora();
   const { exportar } = await import("../export/exportar.js");
-  const { leerZip, Zip } = await import("../export/zip.js");
-  const { blob } = await exportar(app, { alProgreso, publicar: true, soloPaginas, conProyecto });
-  if (conProyecto) return { blob, paginas: soloPaginas?.length || app.estado.proyecto.orden.length };
-  const zip = await leerZip(blob);
-  const z = new Zip();
-  for (const [r, leerA] of Object.entries(zip)) {
-    if (r.endsWith("/") || r === "project.json" || r.startsWith("EditorData/")) continue;
-    z.agregar(r, await leerA());
-  }
-  const paginas = app.estado.proyecto.orden.length;
-  z.agregar("publicar.json", JSON.stringify({ titulo, slug, paginas, fecha: new Date().toISOString(), ...(actualizar ? { actualizar: true } : {}) }, null, 1));
-  return { blob: await z.generar(), paginas };
+  const P = app.estado.proyecto;
+  const paginas = conProyecto ? soloPaginas?.length || P.orden.length : P.orden.length;
+  const ficha = { titulo, slug, paginas, fecha: new Date().toISOString(), ...(actualizar ? { actualizar: true } : {}) };
+  const { blob } = await exportar(app, { alProgreso, publicar: true, soloPaginas, conProyecto, ficha, nube: (ids) => NUBE.asegurarArchivos(P, ids, alProgreso) });
+  return { blob, paginas };
 }
 
 /** Un circulito de estado: ok · mal · espera · nada. */
@@ -59,7 +58,7 @@ export function bloquePublicar(app, { alPublicar } = {}) {
     btn.disabled = true; prog.hidden = false; resultado.hidden = true;
     try {
       poner("Preparando tu página…");
-      const v = await zipParaVer(app, { titulo: nombre, slug, alProgreso: (t) => poner(t), actualizar: !!reemplazar });
+      const v = await zipParaVer(app, { titulo: nombre, slug, alProgreso: (t, p) => poner(t, p), actualizar: !!reemplazar });
       const r = await SRV.publicar(v.blob, { titulo: nombre, nombre: slug, paginas: v.paginas, reemplazar }, poner);
       app.sonidos?.sonar("publicar");
       const L = app.lienzo;
@@ -89,18 +88,11 @@ export function bloquePublicar(app, { alPublicar } = {}) {
   return caja;
 }
 
-/** Guarda una copia COMPLETA del proyecto en M.YNTHN (en su carpeta, con las copias de antes). */
+/** Sube el librito a tu nube y deja ahí una copia (una instantánea: no duplica fotos ni videos). */
 export async function copiaEnNube(app, { alAvance, silencioso = false } = {}) {
-  if (!SRV.conectado()) return null;
-  const P = app.estado.proyecto;
-  if (!P) return null;
-  if (app.auto?.pendiente) await app.auto.ahora();
-  const { exportar } = await import("../export/exportar.js");
-  const { blob } = await exportar(app, { completo: true, alProgreso: (t) => alAvance?.(t) });
-  const r = await SRV.guardarProyecto(blob, { nombre: P.nombre || "Mi librito", proyecto: P.id }, (p) => alAvance?.(`Subiendo la copia… ${Math.round(p * 100)} %`, p));
-  try { localStorage.setItem("editordev:nube:" + P.id, String(Date.now())); } catch (e) { /* nada */ }
-  if (!silencioso) aviso(`Copia guardada en ${SRV.NOMBRE} (${r.copias} ${r.copias === 1 ? "copia" : "copias"} de este proyecto)`, 3600);
-  dispatchEvent(new CustomEvent("ed-nube", { detail: r }));
+  if (!SRV.conectado() || !app.estado.proyecto) return null;
+  const r = await NUBE.guardarCopia({ alAvance: (t, p) => alAvance?.(p != null && p < 1 ? `${t} · ${Math.round(p * 100)} %` : t, p) });
+  if (r && !silencioso) aviso(`Copia guardada en tu nube (${r.copias} ${r.copias === 1 ? "copia" : "copias"} de este librito)`, 3600);
   return r;
 }
 
@@ -153,30 +145,43 @@ export function listaPublicaciones(app, { alActualizar } = {}) {
   return lista;
 }
 
-/** «Copias de mis proyectos»: una carpeta por proyecto con sus copias (la más nueva arriba). */
+/**
+ * «Copias de mis proyectos»: una carpeta por librito con sus copias de tu nube
+ * (la más nueva arriba) y, si hay, las copias de antes (.zip).
+ */
 export function listaCopias(app) {
   const lista = el("div.ed-pub-lista", {}, [el("small.ed-nota.suave", { text: "Buscando tus copias…" })]);
   const uso = el("small.ed-pub-estado");
-  const cargar = () => SRV.proyectos().then((d) => {
+  const hora = (t) => new Date(t).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const cargar = () => Promise.all([SRV.nubeCopias(), SRV.proyectos().catch(() => ({ proyectos: [] }))]).then(([nueva, vieja]) => {
     lista.textContent = "";
-    uso.textContent = d.cuota ? `Usas ${peso(d.uso)} de ${peso(d.cuota)} en ${SRV.NOMBRE}.` : "";
+    uso.textContent = nueva.cuota ? `Usas ${peso(nueva.uso)} de ${peso(nueva.cuota)} en ${SRV.NOMBRE}.` : "";
     const grupos = new Map();
-    for (const p of d.proyectos || []) { if (!grupos.has(p.clave)) grupos.set(p.clave, []); grupos.get(p.clave).push(p); }
-    if (!grupos.size) { lista.append(el("small.ed-nota.suave", { text: "Todavía no hay copias. Cada vez que guardes a mano se hace una aquí." })); return; }
+    const grupo = (k) => { if (!grupos.has(k)) grupos.set(k, []); return grupos.get(k); };
+    for (const c of nueva.copias || []) grupo(c.clave).push({ ...c, bytes: c.tam, nube: true });
+    for (const p of vieja.proyectos || []) grupo("zip:" + p.clave).push({ ...p, nube: false });
+    if (!grupos.size) { lista.append(el("small.ed-nota.suave", { text: "Todavía no hay copias. Cada vez que guardas a mano (Guardar o Ctrl+S) se hace una aquí." })); return; }
     for (const copias of grupos.values()) {
       const p = copias[0];
       const ver = el("details.ed-myn-copias", {}, [
-        el("summary", {}, [el("i", { html: ico("carpeta") }), el("span", {}, [el("b", { text: p.nombre }), el("small", { text: `${copias.length} ${copias.length === 1 ? "copia" : "copias"} · la última ${fecha(p.creado)} · ${p.paginas || "?"} pág.` })])]),
+        el("summary", {}, [el("i", { html: ico("carpeta") }), el("span", {}, [el("b", { text: p.nombre + (p.nube ? "" : " · copias de antes") }), el("small", { text: `${copias.length} ${copias.length === 1 ? "copia" : "copias"} · la última ${fecha(p.creado)} · ${p.paginas || "?"} pág.` })])]),
         el("div.ed-pub-lista", {}, copias.map((cp, i) => el("div.ed-pub-item", {}, [
           el("i", { html: ico(i === 0 ? "estrella" : "guardar") }),
-          el("div", {}, [el("b", { text: i === 0 ? "La más nueva" : `Copia ${copias.length - i}` }), el("small", { text: `${new Date(cp.creado).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · ${peso(cp.bytes)}` })]),
+          el("div", {}, [el("b", { text: i === 0 ? "La más nueva" : `Copia ${copias.length - i}` }), el("small", { text: `${hora(cp.creado)} · ${peso(cp.bytes)}${cp.nube ? "" : " · .zip"}` })]),
           el("div.ed-pub-mini", {}, [
-            el("button.ed-btn", { type: "button", html: ico("subir"), title: "Abrir como borrador nuevo", "aria-label": "Abrir como borrador nuevo", onClick: async () => {
-              try { aviso("Bajando la copia…"); await abrirComoBorrador(app, await SRV.bajarProyecto(cp.id), cp.nombre); } catch (e) { aviso("No se pudo abrir: " + e.message, 4500, "error"); }
+            el("button.ed-btn", { type: "button", html: ico("subir"), title: "Abrir como borrador nuevo", "aria-label": "Abrir como borrador nuevo", onClick: async (e) => {
+              const b = e.currentTarget;
+              b.disabled = true;
+              try {
+                aviso("Bajando la copia…");
+                if (cp.nube) await NUBE.abrirCopia(cp.id, cp.nombre);
+                else await abrirComoBorrador(app, await SRV.bajarProyecto(cp.id), cp.nombre);
+              } catch (er) { aviso("No se pudo abrir: " + er.message, 4500, "error"); }
+              finally { b.disabled = false; }
             } }),
             el("button.ed-btn", { type: "button", html: ico("borrar"), title: "Borrar esta copia", "aria-label": "Borrar esta copia", onClick: async () => {
               if (!(await confirmar(`¿Borrar esta copia de «${cp.nombre}»?`, "Borrar"))) return;
-              try { await SRV.borrarProyecto(cp.id); cargar(); } catch (e) { aviso(e.message, 4200, "error"); }
+              try { await (cp.nube ? SRV.nubeBorrarCopia(cp.id) : SRV.borrarProyecto(cp.id)); cargar(); } catch (er) { aviso(er.message, 4200, "error"); }
             } }),
           ]),
         ]))),

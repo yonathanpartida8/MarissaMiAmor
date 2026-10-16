@@ -63,7 +63,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.2.1"
+VERSION = "1.3.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -73,6 +73,10 @@ ARCHIVO_ANUNCIO = "servidor.json"
 RUTA_CODIGO = os.path.join(DATOS, "codigo-instalacion.txt")   # el código para crear el primer administrador
 RUTA_ESTADO = os.path.join(DATOS, "estado.json")              # pid, puerto y dirección del servidor PRENDIDO (para «librito»)
 VIGIA_S = max(5, int(os.environ.get("LIBRITO_VIGIA_S", "150")))  # cada cuánto se prueba el túnel desde internet
+# La API de GitHub no acepta archivos grandes («Sorry, your input was too large to process»):
+# lo que pase de esto se sube con git (como desde una copia del repositorio).
+LIMITE_API = int(float(os.environ.get("LIBRITO_LIMITE_API_MB", "20")) * 1024 * 1024)
+GIT_URL = os.environ.get("LIBRITO_GIT_URL", "")   # para pruebas (si no, https://github.com/<repo>.git)
 
 AJUSTES_BASE = {
     "nombre": "M.YNTHN",
@@ -86,7 +90,7 @@ AJUSTES_BASE = {
     "anunciar": True,                  # escribir la dirección del túnel en servidor.json de tu sitio
     "max_subida_mb": 300,
     "max_usuarios": 1000,              # cuentas como máximo (para que el teléfono no se llene)
-    "cuota_mb": 300,                   # espacio por usuario (proyectos + detallitos enviados)
+    "cuota_mb": 1024,                  # espacio por usuario (su nube: libritos, fotos, videos y copias + detallitos enviados)
     "max_publicaciones": 30,           # publicaciones por usuario (el administrador no tiene tope)
     "copias_por_proyecto": 15,         # copias que se guardan de cada proyecto (las más nuevas)
     "github": {"repo": "", "rama": ""},
@@ -351,6 +355,12 @@ CREATE TABLE IF NOT EXISTS invitaciones(id TEXT PRIMARY KEY, hash TEXT UNIQUE, c
 CREATE TABLE IF NOT EXISTS actividad(id INTEGER PRIMARY KEY, t REAL, usuario TEXT, accion TEXT, detalle TEXT, ip TEXT);
 CREATE TABLE IF NOT EXISTS detallitos(id TEXT PRIMARY KEY, de INTEGER, para INTEGER, titulo TEXT, mensaje TEXT, color TEXT,
   creado REAL, visto REAL, bytes INTEGER, borrado_de INTEGER DEFAULT 0, borrado_para INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS archivos(sha TEXT PRIMARY KEY, tam INTEGER, mime TEXT, creado REAL);
+CREATE TABLE IF NOT EXISTS archivos_de(usuario_id INTEGER, sha TEXT, creado REAL, PRIMARY KEY(usuario_id, sha));
+CREATE TABLE IF NOT EXISTS libritos(usuario_id INTEGER, clave TEXT, nombre TEXT, editado REAL, subido REAL, paginas INTEGER,
+  tam INTEGER, aparato TEXT, PRIMARY KEY(usuario_id, clave));
+CREATE TABLE IF NOT EXISTS copias(id TEXT PRIMARY KEY, usuario_id INTEGER, clave TEXT, nombre TEXT, creado REAL, paginas INTEGER, tam INTEGER);
+CREATE TABLE IF NOT EXISTS ajustes_de(usuario_id INTEGER PRIMARY KEY, datos TEXT, editado REAL);
 """
 # Columnas que llegaron después (se agregan solas a una base vieja).
 COLUMNAS_NUEVAS = {
@@ -445,6 +455,11 @@ class GitHub:
                 if e.code in (502, 503, 504) and i < intentos - 1:
                     time.sleep(2 * (i + 1))
                     continue
+                if e.code in (413, 422) and re.search(r"too large|too big|demasiado", m, re.I):
+                    f = Falla("GitHub no acepta un archivo tan grande por su API. Instala git en Termux («pkg install git») y vuelve a publicar: los archivos grandes se suben con git.", 413)
+                    f.estado_github = e.code
+                    f.mensaje_github = m
+                    raise f
                 f = Falla({401: "El token de GitHub no es válido o ya caducó (cámbialo en el panel → GitHub).",
                            403: f"Al token de GitHub le falta permiso ({permiso}).",
                            404: "GitHub no encontró eso (repositorio, rama o carpeta), o el token no tiene acceso."}.get(e.code, m or f"GitHub contestó {e.code}"), 502)
@@ -545,6 +560,54 @@ class GitHub:
             raise Falla("Un archivo pesa más de 95 MB: GitHub no lo acepta. Achícalo en el editor (Recursos → Optimizar).")
         return self.pedir("POST", f"/repos/{self.repo}/git/blobs", {"content": base64.b64encode(datos).decode(), "encoding": "base64"})["sha"]
 
+    def shas_del_repo(self, arbol):
+        """Todas las huellas de archivos que YA están en la rama: esos no se vuelven a subir (los videos del librito, por ejemplo)."""
+        try:
+            t = self.pedir("GET", f"/repos/{self.repo}/git/trees/{arbol}?recursive=1", intentos=2)
+            return {n["sha"] for n in (t or {}).get("tree", []) if n.get("type") == "blob"}
+        except Falla:
+            return set()
+
+    def subir_con_git(self, archivos):
+        """Los archivos grandes: con git, a una rama temporal (sin bajar el repositorio). Sus huellas
+        quedan en GitHub y el commit de la publicación las usa. Devuelve el nombre de la rama temporal."""
+        git = shutil.which("git")
+        if not git:
+            raise Falla("Hay archivos de más de %d MB y para subirlos a GitHub hace falta git: en Termux escribe «pkg install git» y vuelve a publicar." % (LIMITE_API // 1048576), 409)
+        for _, p in archivos:
+            if os.path.getsize(p) > 95 * 1024 * 1024:
+                raise Falla("Un archivo pesa más de 95 MB: GitHub no lo acepta. Achícalo en el editor (Recursos → Optimizar).")
+        tmp = tempfile.mkdtemp(dir=os.path.join(DATOS, "tmp"), prefix="git-")
+        llave = base64.b64encode(f"x-access-token:{self.token}".encode()).decode()
+        # El token va por variables del proceso (no en la línea de órdenes ni en la dirección).
+        env = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "GIT_CONFIG_NOSYSTEM": "1", "HOME": tmp,
+               "GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "http.extraHeader", "GIT_CONFIG_VALUE_0": f"Authorization: Basic {llave}"}
+
+        def g(*args, entrada=None):
+            r = subprocess.run([git, "-C", tmp, *args], input=entrada, capture_output=True, env=env, timeout=3600)
+            if r.returncode:
+                error = r.stderr.decode("utf-8", "replace").replace(self.token, "…").strip().splitlines()[-1:] or ["?"]
+                raise Falla(f"git no pudo subir los archivos grandes: {error[0][:200]}", 502)
+            return r.stdout.decode().strip()
+        try:
+            g("init", "-q")
+            lineas = []
+            for i, (_, p) in enumerate(archivos):
+                lineas.append(f"100644 blob {g('hash-object', '-w', p)}\tarchivo-{i}")
+            arbol = g("mktree", entrada=("\n".join(lineas) + "\n").encode())
+            commit = g("-c", "user.name=M.YNTHN", "-c", "user.email=servidor@librito.invalid", "commit-tree", arbol, "-m", "Archivos grandes de una publicación (rama temporal)")
+            nombre = "librito-subida-" + secrets.token_hex(4)
+            g("push", "-q", GIT_URL or f"https://github.com/{self.repo}.git", f"{commit}:refs/heads/{nombre}")
+            return nombre
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def borrar_rama(self, nombre):
+        try:
+            self.pedir("DELETE", f"/repos/{self.repo}/git/refs/heads/{urllib.parse.quote(nombre)}", intentos=1)
+        except Falla:
+            pass
+
     def confirmar(self, armar, mensaje):
         """Un commit con lo que devuelva armar(arbol_base) (que se vuelve a armar si la rama se movió mientras tanto)."""
         for intento in range(4):
@@ -581,7 +644,7 @@ def normal_codigo(c):
 
 class Estado:
     def __init__(self, arranque=False):
-        for d in ("publicaciones", "proyectos", "detallitos", "tmp"):
+        for d in ("publicaciones", "proyectos", "detallitos", "tmp", "nube", os.path.join("nube", "archivos"), os.path.join("tmp", "subidas")):
             os.makedirs(os.path.join(DATOS, d), exist_ok=True)
         os.chmod(DATOS, 0o700)
         self.aj = Ajustes()
@@ -604,6 +667,8 @@ class Estado:
             # Sólo al prender: lo que quedó a medias de la vez anterior. (Las otras
             # órdenes —estado, admin, github— corren MIENTRAS el servidor trabaja.)
             for f in os.listdir(os.path.join(DATOS, "tmp")):
+                if f == "subidas":
+                    continue   # las subidas a medias se pueden seguir (se limpian a los 2 días)
                 try:
                     p = os.path.join(DATOS, "tmp", f)
                     shutil.rmtree(p) if os.path.isdir(p) else os.unlink(p)
@@ -876,14 +941,26 @@ def trabajo_publicar(t, slug, carpeta, ficha, usuario):
     enlace = f"{sitio}{base}/"
     estado_final = {}
 
+    temporales = []
+
     def armar(commit, arbol):
         viejos = gh.bajo(arbol, base)
         cambian = [(rel, p) for rel, p in archivos if viejos.get(f"{rel}") != huellas[rel]]
-        faltan = [(rel, p) for rel, p in cambian if rel not in subidos]
+        # Lo que ya está en algún lado del repositorio (mismo contenido) no se sube: se reutiliza.
+        en_repo = gh.shas_del_repo(arbol) if cambian else set()
+        faltan = [(rel, p) for rel, p in cambian if rel not in subidos and huellas[rel] not in en_repo]
         t["hechos"] = len(archivos) - len(faltan)
-        if faltan:
+        grandes = [(rel, p) for rel, p in faltan if os.path.getsize(p) > LIMITE_API]
+        chicos = [x for x in faltan if x not in grandes]
+        if grandes:
+            t["paso"] = f"Subiendo {len(grandes)} archivo{'s' if len(grandes) > 1 else ''} grande{'s' if len(grandes) > 1 else ''} con git…"
+            temporales.append(gh.subir_con_git(grandes))
+            with lock:
+                subidos.update(rel for rel, _ in grandes)
+                t["hechos"] += len(grandes)
+        if chicos:
             with concurrent.futures.ThreadPoolExecutor(2) as ex:   # 2 a la vez: el teléfono viejo no se ahoga
-                list(ex.map(subir, faltan))
+                list(ex.map(subir, chicos))
         t["paso"] = "Guardando en GitHub…"
         entradas = [{"path": f"{base}/{rel}", "mode": "100644", "type": "blob", "sha": huellas[rel]} for rel, _ in cambian]
         nuevos = {rel for rel, _ in archivos}
@@ -894,7 +971,11 @@ def trabajo_publicar(t, slug, carpeta, ficha, usuario):
         estado_final.update(subidos=len(cambian), borrados=len(borrar))
         return entradas
 
-    sha = gh.confirmar(armar, f"Publicar «{titulo}» desde el servidor ({usuario})")
+    try:
+        sha = gh.confirmar(armar, f"Publicar «{titulo}» desde el servidor ({usuario})")
+    finally:
+        for r in temporales:   # la rama temporal ya no hace falta (sus archivos quedan en el commit)
+            gh.borrar_rama(r)
     gh.reconstruir()
     E.db.x("UPDATE publicaciones SET estado='publicada', actualizado=?, enlace=?, commit_sha=?, error='' WHERE slug=?", ahora(), enlace, sha, slug)
     E._carpetas[1].add(slug)
@@ -1637,7 +1718,7 @@ def api_cerrar_sesion(h, s, corto):
 def uso_de(uid):
     p = E.db.uno("SELECT COALESCE(SUM(bytes),0) n FROM proyectos WHERE usuario_id=?", uid)["n"]
     d = E.db.uno("SELECT COALESCE(SUM(bytes),0) n FROM detallitos WHERE de=? AND NOT (borrado_de=1 AND borrado_para=1)", uid)["n"]
-    return p + d
+    return p + d + uso_nube(uid)
 
 
 def revisar_cuota(s, extra):
@@ -1645,7 +1726,7 @@ def revisar_cuota(s, extra):
         return
     tope = E.aj["cuota_mb"] * 1024 * 1024
     if uso_de(s["usuario_id"]) + extra > tope:
-        raise Falla(f"Llegaste a tu espacio en M.YNTHN ({E.aj['cuota_mb']} MB). Borra copias viejas de tus proyectos o detallitos enviados.", 413)
+        raise Falla(f"Llegaste a tu espacio en M.YNTHN ({E.aj['cuota_mb']} MB). Borra libritos o copias que ya no uses (o detallitos enviados).", 413)
 
 
 # — Publicaciones —
@@ -1692,6 +1773,8 @@ def api_publicar(h, s):
         carpeta_nueva = carpeta + ".nueva"
         shutil.rmtree(carpeta_nueva, ignore_errors=True)
         total = abrir_zip(tmp, entradas, carpeta_nueva)
+        extra, n_nube = llenar_desde_nube(s, ficha, carpeta_nueva)
+        total += extra
         shutil.rmtree(carpeta, ignore_errors=True)
         os.replace(carpeta_nueva, carpeta)
         carpeta_nueva = None
@@ -1703,7 +1786,7 @@ def api_publicar(h, s):
         raise
     finally:
         os.unlink(tmp)
-    E.db.x("UPDATE publicaciones SET paginas=?, archivos=?, bytes=?, estado='subiendo' WHERE slug=?", paginas, len(entradas), total, slug)
+    E.db.x("UPDATE publicaciones SET paginas=?, archivos=?, bytes=?, estado='subiendo' WHERE slug=?", paginas, len(entradas) + n_nube, total, slug)
     E.actividad(s["usuario"], "publicar", f"{titulo} → {slug}", h.ip())
 
     def correr(t, slug):
@@ -1847,6 +1930,355 @@ def api_borrar_proyecto(h, s, pid):
     h.responder(200, {"ok": True})
 
 
+# ════════════════════════════════════════════════════════════════════════
+#  LA NUBE — cada cuenta guarda AQUÍ sus libritos, fotos, música y videos,
+#  para abrirlos desde cualquier aparato.
+#
+#  · Los archivos se guardan por su huella SHA-256 (nube/archivos/ab/abcd…):
+#    la misma foto se guarda una sola vez aunque esté en mil libritos. Cada
+#    cuenta «tiene» las huellas que subió (eso cuenta para su espacio).
+#  · Cada librito es su project.json (nube/libritos/<cuenta>/<clave>.json),
+#    con la huella de cada archivo. Guardar = mandar sólo lo que cambió.
+#  · Las copias (guardar a mano) son instantáneas del project.json: no
+#    duplican fotos ni videos.
+#  · Las subidas son por partes y se pueden seguir donde se cortaron.
+#  · Lo que ya ningún librito ni copia usa se borra solo.
+# ════════════════════════════════════════════════════════════════════════
+SHA_RE = r"([0-9a-f]{64})"
+CLAVE_RE = r"([A-Za-z0-9_-]{3,64})"
+SHA_OK = re.compile(r"^[0-9a-f]{64}$")
+
+
+def nube(*p):
+    return os.path.join(DATOS, "nube", *p)
+
+
+def ruta_archivo(sha):
+    return nube("archivos", sha[:2], sha)
+
+
+def uso_nube(uid):
+    a = E.db.uno("SELECT COALESCE(SUM(a.tam),0) n FROM archivos_de d JOIN archivos a ON a.sha=d.sha WHERE d.usuario_id=?", uid)["n"]
+    l = E.db.uno("SELECT COALESCE(SUM(tam),0) n FROM libritos WHERE usuario_id=?", uid)["n"]
+    c = E.db.uno("SELECT COALESCE(SUM(tam),0) n FROM copias WHERE usuario_id=?", uid)["n"]
+    return a + l + c
+
+
+def tiene_archivo(uid, sha):
+    return bool(E.db.uno("SELECT 1 FROM archivos_de WHERE usuario_id=? AND sha=?", uid, sha))
+
+
+def shas_de(d):
+    """Las huellas de los archivos que usa un librito (y sus originales)."""
+    out = set()
+    for a in ((d or {}).get("assets") or {}).values():
+        if not isinstance(a, dict):
+            continue
+        org = a.get("original") if isinstance(a.get("original"), dict) else {}
+        for x in (a.get("sha"), org.get("sha")):
+            if isinstance(x, str) and SHA_OK.match(x):
+                out.add(x)
+    return out
+
+
+def leer_json(ruta):
+    try:
+        with open(ruta, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def huella_sha256(ruta):
+    h = hashlib.sha256()
+    with open(ruta, "rb") as f:
+        for trozo in iter(lambda: f.read(1 << 20), b""):
+            h.update(trozo)
+    return h.hexdigest()
+
+
+def limpiar_nube(uid=None):
+    """Quita lo que ya ningún librito ni copia usa (de una cuenta, o de todas)."""
+    cuentas = [uid] if uid else [r["usuario_id"] for r in E.db.q("SELECT DISTINCT usuario_id FROM archivos_de")]
+    viejo = ahora() - 3600   # lo recién subido se respeta: su librito puede estar por llegar
+    for u in cuentas:
+        usados = set()
+        for r in E.db.q("SELECT clave FROM libritos WHERE usuario_id=?", u):
+            usados |= shas_de(leer_json(nube("libritos", str(u), r["clave"] + ".json")))
+        for r in E.db.q("SELECT id, clave FROM copias WHERE usuario_id=?", u):
+            usados |= shas_de(leer_json(nube("copias", str(u), r["clave"], r["id"] + ".json")))
+        for r in E.db.q("SELECT sha FROM archivos_de WHERE usuario_id=? AND creado < ?", u, viejo):
+            if r["sha"] not in usados:
+                E.db.x("DELETE FROM archivos_de WHERE usuario_id=? AND sha=?", u, r["sha"])
+    for r in E.db.q("SELECT sha FROM archivos WHERE sha NOT IN (SELECT sha FROM archivos_de)"):
+        try:
+            os.unlink(ruta_archivo(r["sha"]))
+        except OSError:
+            pass
+        E.db.x("DELETE FROM archivos WHERE sha=?", r["sha"])
+
+
+@ruta("GET", "/api/nube", "sesion")
+def api_nube(h, s):
+    uid = s["usuario_id"]
+    h.responder(200, {
+        "libritos": [{"clave": r["clave"], "nombre": r["nombre"], "editado": r["editado"], "subido": iso(r["subido"]) if r["subido"] else "",
+                      "paginas": r["paginas"], "tam": r["tam"], "aparato": r["aparato"] or ""}
+                     for r in E.db.q("SELECT * FROM libritos WHERE usuario_id=? ORDER BY editado DESC", uid)],
+        "uso": uso_de(uid), "cuota": E.aj["cuota_mb"] * 1024 * 1024, "sin_tope": s["rol"] == "admin"})
+
+
+@ruta("POST", "/api/nube/faltan", "sesion")
+def api_nube_faltan(h, s):
+    """¿Cuáles de estos archivos te faltan en la nube? (lo que ya está, aunque lo haya subido otra cuenta, no se vuelve a subir)."""
+    uid = s["usuario_id"]
+    shas = [x for x in (h.cuerpo_json().get("shas") or [])[:5000] if isinstance(x, str) and SHA_OK.match(x)]
+    faltan = []
+    for sha in dict.fromkeys(shas):
+        if tiene_archivo(uid, sha):
+            continue
+        if E.db.uno("SELECT 1 FROM archivos WHERE sha=?", sha) and os.path.isfile(ruta_archivo(sha)):
+            E.db.x("INSERT OR IGNORE INTO archivos_de(usuario_id,sha,creado) VALUES(?,?,?)", uid, sha, ahora())
+            continue
+        faltan.append(sha)
+    h.responder(200, {"faltan": faltan})
+
+
+@ruta("PUT", f"/api/nube/archivos/{SHA_RE}", "sesion")
+def api_nube_subir_archivo(h, s, sha):
+    """Una parte de un archivo (?desde=<byte>&tam=<total>). Si se cortó, se sigue desde donde quedó."""
+    uid = s["usuario_id"]
+    q = h.parametros()
+    try:
+        desde, total = int(q.get("desde") or 0), int(q.get("tam") or 0)
+    except ValueError:
+        raise Falla("desde/tam no son números.")
+    if total <= 0:
+        raise Falla("Falta el tamaño del archivo (tam).")
+    if total > E.aj["max_subida_mb"] * 1024 * 1024:
+        raise Falla(f"Ese archivo pesa más de {E.aj['max_subida_mb']} MB.", 413)
+    if tiene_archivo(uid, sha) or (E.db.uno("SELECT 1 FROM archivos WHERE sha=?", sha) and os.path.isfile(ruta_archivo(sha))):
+        h._leido = False   # ya estaba: lo que mandaron se tira
+        E.db.x("INSERT OR IGNORE INTO archivos_de(usuario_id,sha,creado) VALUES(?,?,?)", uid, sha, ahora())
+        return h.responder(200, {"sha": sha, "listo": True, "tam": total})
+    parte = os.path.join(DATOS, "tmp", "subidas", f"{uid}-{sha}")
+    tengo = os.path.getsize(parte) if os.path.exists(parte) else 0
+    if desde != tengo:
+        h._leido = False
+        return h.responder(409, {"error": "Esa parte no sigue a la anterior.", "tengo": tengo})
+    if desde == 0:
+        revisar_cuota(s, total)
+    tmp = h.cuerpo_a_archivo()
+    try:
+        if tengo + os.path.getsize(tmp) > total:
+            os.unlink(parte) if os.path.exists(parte) else None
+            raise Falla("Llegó más de lo que dijiste que pesaba.")
+        with open(parte, "ab") as dst, open(tmp, "rb") as src:
+            shutil.copyfileobj(src, dst, 1 << 20)
+    finally:
+        os.unlink(tmp)
+    tengo = os.path.getsize(parte)
+    if tengo < total:
+        return h.responder(202, {"sha": sha, "listo": False, "tengo": tengo})
+    if huella_sha256(parte) != sha:
+        os.unlink(parte)
+        raise Falla("El archivo llegó dañado (su huella no coincide). Se vuelve a subir solo.", 422)
+    final = ruta_archivo(sha)
+    os.makedirs(os.path.dirname(final), exist_ok=True)
+    os.replace(parte, final)
+    os.chmod(final, 0o600)
+    mime = q.get("tipo") if re.match(r"^[a-z]+/[A-Za-z0-9.+-]{1,60}$", q.get("tipo") or "") else ""
+    E.db.x("INSERT OR IGNORE INTO archivos(sha,tam,mime,creado) VALUES(?,?,?,?)", sha, total, mime, ahora())
+    E.db.x("INSERT OR IGNORE INTO archivos_de(usuario_id,sha,creado) VALUES(?,?,?)", uid, sha, ahora())
+    h.responder(201, {"sha": sha, "listo": True, "tam": total})
+
+
+@ruta("GET", f"/api/nube/archivos/{SHA_RE}", "sesion")
+def api_nube_bajar_archivo(h, s, sha):
+    if not (tiene_archivo(s["usuario_id"], sha) or s["rol"] == "admin") or not os.path.isfile(ruta_archivo(sha)):
+        raise Falla("Ese archivo no está en tu nube.", 404)
+    h.archivo(ruta_archivo(sha), cache="private, max-age=31536000, immutable")
+
+
+def json_de_subida(h):
+    tmp = h.cuerpo_a_archivo()
+    try:
+        d = leer_json(tmp)
+        if not isinstance(d, dict) or not isinstance(d.get("orden"), list) or not isinstance(d.get("paginas"), dict):
+            raise Falla("Eso no es un librito del editor.")
+        return d, tmp
+    except BaseException:
+        os.unlink(tmp)
+        raise
+
+
+@ruta("PUT", f"/api/nube/libritos/{CLAVE_RE}", "sesion")
+def api_nube_guardar(h, s, clave):
+    """El librito como está ahora (?base=<editado que conocías>; ?forzar=1 para pisar otro aparato)."""
+    uid, q = s["usuario_id"], h.parametros()
+    d, tmp = json_de_subida(h)
+    try:
+        faltan = [x for x in shas_de(d) if not tiene_archivo(uid, x)]
+        if faltan:
+            return h.responder(409, {"error": "Faltan archivos en la nube; súbelos primero.", "faltan": faltan[:500]})
+        ex = E.db.uno("SELECT * FROM libritos WHERE usuario_id=? AND clave=?", uid, clave)
+        try:
+            editado, base = float(d.get("editado") or 0), float(q.get("base") or 0)
+        except (TypeError, ValueError):
+            editado, base = 0.0, 0.0
+        if not ex and base > 0 and q.get("forzar") != "1":
+            # Ya estuvo en la nube y alguien lo borró desde otro aparato: no se revive solo.
+            return h.responder(410, {"quitado": True, "error": "Este librito se borró de tu nube desde otro aparato."})
+        if ex and q.get("forzar") != "1" and ex["editado"] and ex["editado"] > base + 1 and abs(ex["editado"] - editado) > 1:
+            return h.responder(409, {"conflicto": True, "editado": ex["editado"], "aparato": ex["aparato"] or "",
+                                     "error": "Este librito cambió en otro aparato después de la última vez que lo abriste aquí."})
+        tam = os.path.getsize(tmp)
+        revisar_cuota(s, tam - (ex["tam"] if ex else 0))
+        destino = nube("libritos", str(uid), clave + ".json")
+        os.makedirs(os.path.dirname(destino), exist_ok=True)
+        os.replace(tmp, destino)
+        os.chmod(destino, 0o600)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+    nombre = str(d.get("nombre") or "Mi librito")[:80]
+    aparato = (q.get("aparato") or "")[:60]
+    E.db.x("INSERT INTO libritos(usuario_id,clave,nombre,editado,subido,paginas,tam,aparato) VALUES(?,?,?,?,?,?,?,?) "
+           "ON CONFLICT(usuario_id,clave) DO UPDATE SET nombre=excluded.nombre, editado=excluded.editado, subido=excluded.subido, "
+           "paginas=excluded.paginas, tam=excluded.tam, aparato=excluded.aparato",
+           uid, clave, nombre, editado or ahora() * 1000, ahora(), len(d["orden"]), tam, aparato)
+    h.responder(200, {"clave": clave, "editado": editado, "subido": iso()})
+
+
+@ruta("GET", f"/api/nube/libritos/{CLAVE_RE}", "sesion")
+def api_nube_abrir(h, s, clave):
+    ruta_j = nube("libritos", str(s["usuario_id"]), clave + ".json")
+    if not os.path.isfile(ruta_j):
+        raise Falla("Ese librito no está en tu nube.", 404)
+    h.archivo(ruta_j, cache="no-store")
+
+
+def borrar_copia(uid, cid):
+    c = E.db.uno("SELECT * FROM copias WHERE id=? AND usuario_id=?", cid, uid)
+    if c:
+        try:
+            os.unlink(nube("copias", str(uid), c["clave"], cid + ".json"))
+        except OSError:
+            pass
+        E.db.x("DELETE FROM copias WHERE id=?", cid)
+
+
+@ruta("DELETE", f"/api/nube/libritos/{CLAVE_RE}", "sesion")
+def api_nube_borrar(h, s, clave):
+    uid = s["usuario_id"]
+    try:
+        os.unlink(nube("libritos", str(uid), clave + ".json"))
+    except OSError:
+        pass
+    E.db.x("DELETE FROM libritos WHERE usuario_id=? AND clave=?", uid, clave)
+    for c in E.db.q("SELECT id FROM copias WHERE usuario_id=? AND clave=?", uid, clave):
+        borrar_copia(uid, c["id"])
+    E.actividad(s["usuario"], "nube-borrar", clave, h.ip())
+    E.db.x("UPDATE archivos_de SET creado=0 WHERE usuario_id=?", uid)   # se puede limpiar ya
+    limpiar_nube(uid)
+    h.responder(200, {"ok": True})
+
+
+@ruta("POST", f"/api/nube/libritos/{CLAVE_RE}/copia", "sesion")
+def api_nube_copia(h, s, clave):
+    """Guardar a mano: una instantánea del librito (no duplica fotos ni videos)."""
+    uid = s["usuario_id"]
+    l = E.db.uno("SELECT * FROM libritos WHERE usuario_id=? AND clave=?", uid, clave)
+    origen = nube("libritos", str(uid), clave + ".json")
+    if not l or not os.path.isfile(origen):
+        raise Falla("Primero tiene que estar en tu nube.", 404)
+    revisar_cuota(s, l["tam"] or 0)
+    cid = time.strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(3)
+    destino = nube("copias", str(uid), clave, cid + ".json")
+    os.makedirs(os.path.dirname(destino), exist_ok=True)
+    shutil.copyfile(origen, destino)
+    os.chmod(destino, 0o600)
+    E.db.x("INSERT INTO copias(id,usuario_id,clave,nombre,creado,paginas,tam) VALUES(?,?,?,?,?,?,?)", cid, uid, clave, l["nombre"], ahora(), l["paginas"], l["tam"])
+    for viejo in E.db.q("SELECT id FROM copias WHERE usuario_id=? AND clave=? ORDER BY creado DESC LIMIT -1 OFFSET ?", uid, clave, max(1, E.aj["copias_por_proyecto"])):
+        borrar_copia(uid, viejo["id"])
+    E.actividad(s["usuario"], "copia", l["nombre"], h.ip())
+    h.responder(201, {"id": cid, "copias": E.db.uno("SELECT COUNT(*) n FROM copias WHERE usuario_id=? AND clave=?", uid, clave)["n"]})
+
+
+@ruta("GET", "/api/nube/copias", "sesion")
+def api_nube_copias(h, s):
+    h.responder(200, {"copias": [{"id": c["id"], "clave": c["clave"], "nombre": c["nombre"], "creado": iso(c["creado"]), "paginas": c["paginas"], "tam": c["tam"]}
+                                 for c in E.db.q("SELECT * FROM copias WHERE usuario_id=? ORDER BY creado DESC", s["usuario_id"])],
+                      "uso": uso_de(s["usuario_id"]), "cuota": E.aj["cuota_mb"] * 1024 * 1024})
+
+
+@ruta("GET", r"/api/nube/copias/([0-9a-f-]{10,40})", "sesion")
+def api_nube_abrir_copia(h, s, cid):
+    c = E.db.uno("SELECT * FROM copias WHERE id=? AND usuario_id=?", cid, s["usuario_id"])
+    ruta_j = c and nube("copias", str(s["usuario_id"]), c["clave"], cid + ".json")
+    if not c or not os.path.isfile(ruta_j):
+        raise Falla("Esa copia no existe.", 404)
+    h.archivo(ruta_j, cache="no-store")
+
+
+@ruta("DELETE", r"/api/nube/copias/([0-9a-f-]{10,40})", "sesion")
+def api_nube_borrar_copia(h, s, cid):
+    borrar_copia(s["usuario_id"], cid)
+    E.db.x("UPDATE archivos_de SET creado=0 WHERE usuario_id=?", s["usuario_id"])
+    limpiar_nube(s["usuario_id"])
+    h.responder(200, {"ok": True})
+
+
+@ruta("GET", "/api/yo/ajustes", "sesion")
+def api_mis_ajustes(h, s):
+    r = E.db.uno("SELECT * FROM ajustes_de WHERE usuario_id=?", s["usuario_id"])
+    h.responder(200, {"ajustes": json.loads(r["datos"]) if r and r["datos"] else None, "editado": r["editado"] if r else 0})
+
+
+@ruta("PUT", "/api/yo/ajustes", "sesion")
+def api_poner_mis_ajustes(h, s):
+    d = h.cuerpo_json()
+    if not isinstance(d.get("ajustes"), dict):
+        raise Falla("Faltan los ajustes.")
+    try:
+        editado = float(d.get("editado") or ahora() * 1000)
+    except (TypeError, ValueError):
+        editado = ahora() * 1000
+    E.db.x("INSERT INTO ajustes_de(usuario_id,datos,editado) VALUES(?,?,?) ON CONFLICT(usuario_id) DO UPDATE SET datos=excluded.datos, editado=excluded.editado",
+           s["usuario_id"], json.dumps(d["ajustes"], ensure_ascii=False)[:60000], editado)
+    h.responder(200, {"ok": True, "editado": editado})
+
+
+def llenar_desde_nube(s, ficha, destino, paquete=None):
+    """Lo que el editor no mandó en el .zip porque ya estaba en tu nube («nube» en publicar.json): se copia aquí."""
+    refs = (ficha or {}).get("nube") or {}
+    if not isinstance(refs, dict) or not refs:
+        return 0, 0
+    base = os.path.realpath(destino)
+    total = n = 0
+    z = zipfile.ZipFile(paquete, "a") if paquete else None
+    try:
+        nombres = set(z.namelist()) if z else set()
+        for rel, sha in list(refs.items())[:5000]:
+            if not (isinstance(rel, str) and ruta_segura(rel) and rel.startswith("assets/") and isinstance(sha, str) and SHA_OK.match(sha)):
+                raise Falla("Una referencia a la nube no es válida.")
+            if not (tiene_archivo(s["usuario_id"], sha) or s["rol"] == "admin") or not os.path.isfile(ruta_archivo(sha)):
+                raise Falla("Falta un archivo en tu nube (¿se cortó la subida?). Vuelve a intentarlo.", 409)
+            final = os.path.realpath(os.path.join(base, rel))
+            if not final.startswith(base + os.sep):
+                raise Falla("Ruta no permitida.")
+            os.makedirs(os.path.dirname(final), exist_ok=True)
+            shutil.copyfile(ruta_archivo(sha), final)
+            total += os.path.getsize(final)
+            n += 1
+            if z and rel not in nombres:
+                z.write(ruta_archivo(sha), rel, compress_type=zipfile.ZIP_STORED)
+    finally:
+        if z:
+            z.close()
+    return total, n
+
+
 # — Vincular a tu Amorcito —
 def pareja_de(uid):
     u = E.db.uno("SELECT pareja_id, pareja_desde FROM usuarios WHERE id=?", uid)
@@ -1950,9 +2382,11 @@ def api_mandar_detallito(h, s):
     carpeta = os.path.join(DATOS, "detallitos", did)
     try:
         revisar_cuota(s, os.path.getsize(tmp))
-        entradas, _ = revisar_zip(tmp, E.aj["max_subida_mb"] * 1024 * 1024 * 4)
+        entradas, ficha = revisar_zip(tmp, E.aj["max_subida_mb"] * 1024 * 1024 * 4)
         abrir_zip(tmp, entradas, os.path.join(carpeta, "ver"))
         shutil.move(tmp, os.path.join(carpeta, "paquete.zip"))
+        # Lo que venía de tu nube va al detallito y a su paquete (para que tu amorcito pueda guardarlo entero).
+        llenar_desde_nube(s, ficha, os.path.join(carpeta, "ver"), os.path.join(carpeta, "paquete.zip"))
     except BaseException:
         shutil.rmtree(carpeta, ignore_errors=True)
         raise
@@ -2011,6 +2445,7 @@ def uso_disco():
             "publicaciones": tamano_carpeta(os.path.join(DATOS, "publicaciones")),
             "proyectos": tamano_carpeta(os.path.join(DATOS, "proyectos")),
             "detallitos": tamano_carpeta(os.path.join(DATOS, "detallitos")),
+            "nube": tamano_carpeta(os.path.join(DATOS, "nube")),
             "base": sum(os.path.getsize(os.path.join(DATOS, f)) for f in os.listdir(DATOS) if f.startswith("librito.db"))}
 
 
@@ -2022,6 +2457,7 @@ def api_resumen(h, s):
         "disco": uso_disco(),
         "cuentas": {"usuarios": E.db.uno("SELECT COUNT(*) n FROM usuarios")["n"], "pendientes": E.db.uno("SELECT COUNT(*) n FROM usuarios WHERE estado='pendiente'")["n"]},
         "publicaciones": E.db.uno("SELECT COUNT(*) n FROM publicaciones")["n"], "proyectos": E.db.uno("SELECT COUNT(*) n FROM proyectos")["n"],
+        "nube": {"libritos": E.db.uno("SELECT COUNT(*) n FROM libritos")["n"], "archivos": E.db.uno("SELECT COUNT(*) n FROM archivos")["n"], "copias": E.db.uno("SELECT COUNT(*) n FROM copias")["n"]},
         "detallitos": E.db.uno("SELECT COUNT(*) n FROM detallitos")["n"], "parejas": E.db.uno("SELECT COUNT(*) n FROM usuarios WHERE pareja_id IS NOT NULL")["n"] // 2,
         "github": {"repo": g.get("repo", ""), "rama": g.get("rama", ""), "token": bool(caja.get("github_token")), "listo": bool(E.github())},
         "url_publica": E.url_publica(), "tunel": E.aj["tunel"], "cloudflared": bool(shutil.which("cloudflared")),
@@ -2207,6 +2643,11 @@ def api_borrar_usuario(h, s, uid):
     for d in E.db.q("SELECT id FROM detallitos WHERE de=? OR para=?", u["id"], u["id"]):
         shutil.rmtree(os.path.join(DATOS, "detallitos", d["id"]), ignore_errors=True)
     E.db.x("DELETE FROM detallitos WHERE de=? OR para=?", u["id"], u["id"])
+    for t in ("libritos", "copias", "archivos_de", "ajustes_de"):
+        E.db.x(f"DELETE FROM {t} WHERE usuario_id=?", u["id"])
+    for carpeta in (nube("libritos", str(u["id"])), nube("copias", str(u["id"]))):
+        shutil.rmtree(carpeta, ignore_errors=True)
+    limpiar_nube()
     E.db.x("DELETE FROM usuarios WHERE id=?", u["id"])
     E.actividad(s["usuario"], "usuario", f"{u['usuario']}: borrado", h.ip())
     h.responder(200, {"ok": True})
@@ -2276,10 +2717,18 @@ def mantenimiento():
         try:
             if vuelta % 5 == 0:
                 anunciar_direccion()        # si falló antes (sin internet), aquí se reintenta
+            if vuelta % 360 == 0:
+                limpiar_nube()
+                sub = os.path.join(DATOS, "tmp", "subidas")
+                for f in os.listdir(sub):
+                    if ahora() - os.path.getmtime(os.path.join(sub, f)) > 2 * 86400:
+                        os.unlink(os.path.join(sub, f))
             if vuelta % 60 == 0:
                 E.db.x("DELETE FROM sesiones WHERE expira < ?", ahora())
                 tmp = os.path.join(DATOS, "tmp")
                 for f in os.listdir(tmp):
+                    if f == "subidas":
+                        continue
                     p = os.path.join(tmp, f)
                     if ahora() - os.path.getmtime(p) > 86400:
                         shutil.rmtree(p, ignore_errors=True) if os.path.isdir(p) else os.unlink(p)

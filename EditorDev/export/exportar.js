@@ -73,8 +73,14 @@ function icono(tam, fondo) {
  * Con `conProyecto`, además lleva project.json (un Detallito: se ve y se
  * puede abrir como borrador). `soloPaginas`: sólo esas páginas (un Detallito
  * es una sola página).
+ *
+ * `nube(ids)`: (al publicar o mandar un detallito) sube a tu nube lo que falte
+ * y devuelve id → huella; esos archivos NO van dentro del .zip, sólo su huella
+ * en publicar.json («nube») y M.YNTHN los pone él mismo. `ficha`: lo que va en
+ * publicar.json. `deLaNube(asset)`: el original de una foto achicada que este
+ * aparato no tiene (copia de seguridad completa).
  */
-export async function exportar(app, { alProgreso, completo = false, publicar = false, soloPaginas = null, conProyecto = false } = {}) {
+export async function exportar(app, { alProgreso, completo = false, publicar = false, soloPaginas = null, conProyecto = false, nube = null, ficha = null, deLaNube = null } = {}) {
   const P0 = app.estado.proyecto;
   const P = soloPaginas ? {
     ...P0,
@@ -92,11 +98,21 @@ export async function exportar(app, { alProgreso, completo = false, publicar = f
   const usados = [...new Set([...assetsUsados(P), ...(completo ? Object.keys(P.assets || {}) : [])])];
   const archivos = {};
   const faltan = [];
+  const refs = {};
+  // Lo que ya está (o se sube ahora) en tu nube no viaja dentro del .zip.
+  const enNube = nube ? await nube(usados.filter((id) => P.assets[id]?.fuente === "local")).catch((e) => { console.warn("[nube]", e); return null; }) : null;
   let n = 0;
   for (const id of usados) {
     const a = P.assets[id];
     if (!a) continue;
     avisar(`Archivos ${++n} de ${usados.length}: ${a.nombre}`);
+    if (enNube?.has(id)) {
+      const ext = EXT[a.mime] || (a.archivo || "").split(".").pop().toLowerCase().slice(0, 5) || "bin";
+      const ruta = carpeta(a, ext) + `${String(n).padStart(3, "0")}-${limpio(a.nombre)}.${ext}`;
+      refs[ruta] = enNube.get(id);
+      archivos[id] = ruta;
+      continue;
+    }
     let blob = null;
     try {
       if (a.fuente === "local") blob = await bib.blob(id);
@@ -295,10 +311,11 @@ html,body{overscroll-behavior:none;touch-action:manipulation}
     }, null, 1));
     for (const t of [180, 192, 512]) { const b = await icono(t, fondo); if (b) zip.agregar(`icono-${t}.png`, b); }
   }
+  if (ficha) zip.agregar("publicar.json", JSON.stringify({ ...ficha, ...(Object.keys(refs).length ? { nube: refs } : {}) }, null, 1));
   if (publicar && !conProyecto) {
     avisar("Comprimiendo…");
     const blob = await zip.generar((i, total) => { if (i % 10 === 0) avisar(`Comprimiendo ${i} de ${total}…`); });
-    return { blob, nombre: limpio(P.nombre) + ".zip", faltan, archivos: zip.tamano };
+    return { blob, nombre: limpio(P.nombre) + ".zip", faltan, archivos: zip.tamano, nube: refs };
   }
 
   /* 5 · Para volver a abrirlo en el editor */
@@ -313,7 +330,8 @@ html,body{overscroll-behavior:none;touch-action:manipulation}
     let k = 0;
     for (const [id, a] of Object.entries(proyecto.assets)) {
       if (!a.original || P.assets[id]?.fuente !== "local") continue;
-      const b = await leerArchivo("orig:" + id).catch(() => null);
+      let b = await leerArchivo("orig:" + id).catch(() => null);
+      if (!b && deLaNube) b = await deLaNube(P.assets[id]);
       if (!b) { delete a.original; continue; }
       avisar(`Originales ${++k}…`);
       const ext = EXT[b.type] || (a.original.archivo || "").split(".").pop().toLowerCase().slice(0, 5) || "bin";
@@ -341,7 +359,7 @@ Archivos incluidos: ${Object.keys(archivos).length}${faltan.length ? `\nNo se en
   avisar("Comprimiendo…");
   const blob = await zip.generar((i, total) => { if (i % 10 === 0) avisar(`Comprimiendo ${i} de ${total}…`); });
   const dia = new Date().toISOString().slice(0, 10);
-  return { blob, nombre: limpio(P.nombre) + (completo ? ` (copia de seguridad ${dia})` : "") + ".zip", faltan, archivos: zip.tamano };
+  return { blob, nombre: limpio(P.nombre) + (completo ? ` (copia de seguridad ${dia})` : "") + ".zip", faltan, archivos: zip.tamano, nube: refs };
 }
 
 function escapar(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }

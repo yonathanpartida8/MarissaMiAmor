@@ -31,6 +31,7 @@
 .cu-recordar { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--texto-suave, #8a6a7c); }
 .cu-ir { width: 100%; min-height: 46px; justify-content: center; font-size: 15px; margin-top: 2px; }
 .cu-estado { min-height: 1.2em; font-size: 12.5px; color: var(--texto-suave, #8a6a7c); }
+.cu-nota { display: block; font-size: 12px; line-height: 1.4; color: var(--texto-suave, #8a6a7c); opacity: .9; }
 .cu-estado.bien { color: #2c9a68; }
 .cu-saludo { display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin: 0 0 8px; border-radius: 16px; background: linear-gradient(135deg, #fff0f6, #f3ecff); border: 1.5px solid rgba(216, 57, 122, .16); }
 .cu-saludo > i { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; background: #fff; color: var(--amor-2); box-shadow: 0 2px 8px rgba(216, 57, 122, .18); }

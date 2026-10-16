@@ -89,7 +89,8 @@ async function pedir(ruta, { method = "GET", body } = {}, otraVez = true) {
     r = await fetch(base + "/api/" + ruta, {
       method, cache: "no-store", referrerPolicy: "no-referrer", credentials: "omit",
       headers: { ...(body !== undefined ? { "Content-Type": "application/json" } : {}), ...(c.token ? { Authorization: "Bearer " + c.token } : {}) },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      // Un texto ya armado (un librito entero) va tal cual; lo demás, como JSON.
+      body: body === undefined ? undefined : typeof body === "string" ? body : JSON.stringify(body),
     });
   } catch (e) {
     if (!navigator.onLine) throw new Error("Este aparato está sin internet.");
@@ -101,7 +102,7 @@ async function pedir(ruta, { method = "GET", body } = {}, otraVez = true) {
   let d = {};
   try { d = await r.json(); } catch (e) { /* nada */ }
   if (r.status === 401 && ruta !== "entrar") olvidarSesion();
-  if (!r.ok) { const err = new Error(d.error || `${NOMBRE} contestó ${r.status}`); err.status = r.status; throw err; }
+  if (!r.ok) { const err = new Error(d.error || `${NOMBRE} contestó ${r.status}`); err.status = r.status; err.datos = d; throw err; }
   return d;
 }
 
@@ -127,6 +128,30 @@ async function subir(ruta, blob, alAvance) {
     x.onerror = () => { asegurarUrl(true); mal(new Error(navigator.onLine ? `Se cortó la conexión con ${NOMBRE} mientras subía. Inténtalo otra vez.` : "Este aparato se quedó sin internet mientras subía.")); };
     x.ontimeout = () => mal(new Error("Tardó demasiado en subir."));
     x.send(blob);
+  });
+}
+
+/** Manda algo con XHR (para ver el avance) y devuelve { status, datos } sin lanzar por 4xx/5xx. */
+async function enviar(metodo, ruta, cuerpo, tipo, alAvance) {
+  const base = await asegurarUrl();
+  if (!base) throw new Error(DORMIDO);
+  if (bloqueada(base)) throw new Error(`${NOMBRE} no tiene una dirección segura (https) ahora mismo.`);
+  return new Promise((ok, mal) => {
+    const x = new XMLHttpRequest();
+    x.open(metodo, base + "/api/" + ruta);
+    x.setRequestHeader("Authorization", "Bearer " + leer().token);
+    x.setRequestHeader("Content-Type", tipo || "application/octet-stream");
+    x.timeout = 10 * 60 * 1000;
+    x.upload.onprogress = (e) => { if (e.lengthComputable) alAvance?.(e.loaded, e.total); };
+    x.onload = () => {
+      let d = {};
+      try { d = JSON.parse(x.responseText || "{}"); } catch (e) { /* nada */ }
+      if (x.status === 401) olvidarSesion();
+      ok({ status: x.status, datos: d });
+    };
+    x.onerror = () => { asegurarUrl(true); mal(new Error(navigator.onLine ? DORMIDO : "Este aparato está sin internet.")); };
+    x.ontimeout = () => mal(new Error(`${NOMBRE} tardó demasiado en contestar.`));
+    x.send(cuerpo);
   });
 }
 
@@ -183,11 +208,27 @@ export const publicaciones = () => pedir("publicaciones").then((d) => d.publicac
 export const quitar = (slug) => pedir("publicaciones/" + encodeURIComponent(slug), { method: "DELETE" });
 export const subirOtraVez = (slug) => pedir(`publicaciones/${encodeURIComponent(slug)}/subir`, { method: "POST", body: {} });
 
-/* ── Copias de los proyectos (una carpeta por proyecto, una copia por cada vez que guardas a mano) ── */
+/* ── Copias de antes (un .zip por copia; las nuevas viven en la nube) ── */
 export const proyectos = () => pedir("proyectos");
 export const guardarProyecto = (blob, { nombre, proyecto }, alAvance) => subir("proyectos?" + new URLSearchParams({ nombre, proyecto: proyecto || "" }), blob, alAvance);
 export const bajarProyecto = (id) => bajar("proyectos/" + encodeURIComponent(id));
 export const borrarProyecto = (id) => pedir("proyectos/" + encodeURIComponent(id), { method: "DELETE" });
+
+/* ── La nube: tus libritos, fotos, música, videos y ajustes (ver nube.js) ── */
+const C = (clave) => "nube/libritos/" + encodeURIComponent(clave);
+export const nube = () => pedir("nube");
+export const nubeFaltan = (shas) => pedir("nube/faltan", { method: "POST", body: { shas } }).then((d) => d.faltan || []);
+export const nubeParte = (sha, trozo, { desde, tam, tipo }, alAvance) => enviar("PUT", `nube/archivos/${sha}?` + new URLSearchParams({ desde: String(desde), tam: String(tam), tipo: tipo || "" }), trozo, "application/octet-stream", alAvance);
+export const nubeArchivo = (sha) => bajar("nube/archivos/" + sha);
+export const nubeLibrito = (clave) => pedir(C(clave));
+export const nubeGuardar = (clave, texto, { base = 0, forzar = false, aparato = "" } = {}) => pedir(C(clave) + "?" + new URLSearchParams({ base: String(base || 0), aparato, ...(forzar ? { forzar: "1" } : {}) }), { method: "PUT", body: texto });
+export const nubeBorrar = (clave) => pedir(C(clave), { method: "DELETE" });
+export const nubeCopia = (clave) => pedir(C(clave) + "/copia", { method: "POST", body: {} });
+export const nubeCopias = () => pedir("nube/copias");
+export const nubeAbrirCopia = (id) => pedir("nube/copias/" + encodeURIComponent(id));
+export const nubeBorrarCopia = (id) => pedir("nube/copias/" + encodeURIComponent(id), { method: "DELETE" });
+export const misAjustes = () => pedir("yo/ajustes");
+export const guardarMisAjustes = (ajustes, editado) => pedir("yo/ajustes", { method: "PUT", body: { ajustes, editado } });
 
 /* ── Vincular a tu Amorcito y Detallitos ── */
 export const amor = () => pedir("amor");

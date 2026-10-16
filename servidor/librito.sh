@@ -55,6 +55,8 @@ paquetes() {
     local falta=""
     command -v python3 >/dev/null 2>&1 || falta="$falta python"
     command -v cloudflared >/dev/null 2>&1 || falta="$falta cloudflared"
+    command -v git >/dev/null 2>&1 || falta="$falta git"   # para subir videos grandes a GitHub
+    [ -f "$PREFIX/etc/resolv.conf" ] || falta="$falta resolv-conf"   # cloudflared necesita saber qué DNS usar
     if [ -n "$falta" ]; then
       dice "Instalando:$falta (la primera vez tarda unos minutos; no cierres Termux)…"
       pkg update -y >/dev/null 2>&1 || true
@@ -62,9 +64,11 @@ paquetes() {
       yes | pkg install -y $falta >/dev/null 2>&1 || true
       command -v python3 >/dev/null 2>&1 || yes | pkg install -y python || true
       command -v cloudflared >/dev/null 2>&1 || yes | pkg install -y cloudflared || true
+      command -v git >/dev/null 2>&1 || yes | pkg install -y git || true
     fi
     PY="$(command -v python3 || command -v python || true)"
     command -v cloudflared >/dev/null 2>&1 && bien "python y cloudflared listos." || ojo "No se pudo instalar cloudflared: sin él el servidor sólo se ve en tu wifi (pkg install cloudflared)."
+    command -v git >/dev/null 2>&1 || ojo "No se pudo instalar git: los videos grandes no podrán subirse a GitHub (pkg install git)."
   fi
   necesita_python
   mkdir -p "$DATOS"; chmod 700 "$DATOS"
@@ -206,6 +210,7 @@ respaldar() {
 actualizar() {
   dice "Bajando la versión nueva…"
   LIBRITO_APP="$APP" bash -c "$(curl -fsSL "${LIBRITO_BASE:-https://yonathanpartida8.github.io/MarissaMiAmor/servidor}/instalar.sh?v=$(date +%s)")" -- --solo-archivos
+  paquetes   # lo que la versión nueva necesite (git, por ejemplo) y aún no esté
   if prendido; then reiniciar; fi
 }
 
