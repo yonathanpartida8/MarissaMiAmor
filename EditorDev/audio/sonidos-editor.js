@@ -1,5 +1,13 @@
 /**
- * LOS SONIDOS DEL EDITOR — los de assets/sonidos-editor/<categoría>/<acción>/.
+ * LOS SONIDOS DEL EDITOR — un archivo por interacción en assets/sonidos-editor/,
+ * con el nombre de lo que hace: seleccionar-elemento.wav, soltar-objeto.wav,
+ * zoom-acercar.wav… (la lista entera, en ARCHIVO, abajo, y en el LÉEME de la
+ * carpeta). Cambiar un sonido = poner otro archivo con el MISMO nombre (wav,
+ * mp3, ogg o m4a). Con «-2», «-3»… al final del nombre, varias versiones que se
+ * turnan. Sin archivo, ese momento suena con un sonidito hecho aquí mismo.
+ *
+ * Antes (Fase 12) eran carpetas <categoría>/<acción>/: si alguien las pone,
+ * siguen valiendo (CARPETA), pero el archivo con nombre manda.
  *
  *   interaccion · movimiento · transformacion · organizacion · interfaz ·
  *   edicion · paginas · multimedia · animaciones   (ver CARPETA, abajo)
@@ -45,12 +53,32 @@ export const CARPETA = {
   iman: "movimiento/iman", bloquear: "organizacion/bloquear", desbloquear: "organizacion/desbloquear", ocultar: "organizacion/ocultar", mostrar: "organizacion/mostrar",
   "pagina-eliminar": "paginas/eliminar", "pagina-reordenar": "paginas/reordenar", escribir: "edicion/escribir",
 };
+/** Cada momento del editor → el archivo que suena (assets/sonidos-editor/<nombre>.wav). */
+export const ARCHIVO = {
+  botones: "tocar-boton", seleccionar: "seleccionar-elemento", "seleccionar-varios": "seleccionar-varios", deseleccionar: "deseleccionar",
+  exito: "listo-exito", herramienta: "elegir-herramienta", menu: "menu-mantener", ajustar: "deslizador",
+  arrastrar: "arrastrar-pintura", pincel: "pincel-roce", soltar: "soltar-objeto", iman: "iman-pegar", desplazar: "mover-hoja",
+  rotar: "girar-objeto", redimensionar: "cambiar-tamano", zoom: "zoom-acercar", "zoom-acercar": "zoom-acercar", "zoom-alejar": "zoom-alejar", "zoom-paso": "zoom-paso",
+  colocar: "colocar-objeto", duplicar: "duplicar", borrar: "borrar-objeto", agrupar: "agrupar", desagrupar: "desagrupar", capas: "ordenar-capas",
+  bloquear: "bloquear", desbloquear: "desbloquear", ocultar: "ocultar", mostrar: "mostrar",
+  dibujar: "dibujar-trazo", borrador: "borrador", colorear: "elegir-color", efecto: "aplicar-efecto", animar: "aplicar-animacion", fotograma: "fotograma",
+  escribir: "escribir-texto", deshacer: "deshacer", rehacer: "rehacer", guardar: "guardar", error: "aviso-error",
+  abrir: "abrir-menu", cerrar: "cerrar-menu", minimizar: "bajar-hoja", restaurar: "subir-hoja", atras: "atras",
+  activar: "interruptor-encender", desactivar: "interruptor-apagar", probar: "probar-pagina",
+  pagina: "pagina-nueva", "pagina-duplicar": "pagina-duplicar", "pagina-cambiar": "pagina-cambiar", "pagina-eliminar": "pagina-borrar", "pagina-reordenar": "pagina-reordenar",
+  reproducir: "reproducir", pausar: "pausar", publicar: "publicar",
+};
+/* Lo que se repite seguido sube por la escala (do, re, mi, sol, la, do…) en vez
+   de sonar igual: elegir cinco cosas seguidas es una escalerita, no un martillo.
+   Tras una pausa vuelve a empezar desde abajo. */
+const ESCALA = [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3, 2];
+const COMBO = new Set(["seleccionar", "seleccionar-varios", "colocar", "iman", "duplicar", "capas", "fotograma"]);
 // Los de poca importancia: ceden ante cualquier otro.
 const SUAVES = new Set(["botones", "seleccionar", "deseleccionar"]);
 // Cuánto se hace a un lado MusicaDev mientras suena un efecto del editor (1 = nada).
 const AGACHAR = 0.6;
 // Lo mínimo entre dos sonidos del mismo momento (ms): sin metralletas.
-const MIN = { botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250, atras: 150, activar: 100, desactivar: 100, menu: 150, iman: 260, escribir: 200, probar: 400 };
+const MIN = { "zoom-paso": 55, "zoom-acercar": 380, "zoom-alejar": 380, pincel: 240, "seleccionar-varios": 90, rehacer: 120, publicar: 800, botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250, atras: 150, activar: 100, desactivar: 100, menu: 150, iman: 260, escribir: 200, probar: 400 };
 /* Sonidos hechos a mano: [forma, frec. inicial, frec. final, duración s, volumen, retraso s]. */
 const SINTE = {
   colocar: [["sine", 520, 250, 0.11, 0.5], ["triangle", 1040, 900, 0.03, 0.12]],
@@ -63,6 +91,8 @@ const SINTE = {
   arrastrar: [["triangle", 260, 330, 0.06, 0.16]],
   exito: [["sine", 784, 784, 0.12, 0.26], ["sine", 1046, 1046, 0.14, 0.24, 0.09], ["sine", 1568, 1568, 0.22, 0.2, 0.18]],
 };
+
+const ALIAS = { "seleccionar-varios": "seleccionar", rehacer: "deshacer", pincel: "arrastrar", publicar: "exito", "zoom-paso": "ajustar" };
 
 function leerPref() {
   try { return { on: true, vol: 0.35, max: 3, ...JSON.parse(localStorage.getItem(PREF) || "{}") }; } catch (e) { return { on: true, vol: 0.35, max: 3 }; }
@@ -82,7 +112,7 @@ export class SonidosEditor {
 
   get hay() { return Object.keys(this.lista).length > 0; }
   /** Los archivos de un momento: su carpeta de CARPETA o, como antes, la carpeta con su nombre. */
-  _de(momento) { return this.lista[CARPETA[momento]] || this.lista[momento]; }
+  _de(momento) { return this.lista[ARCHIVO[momento]] || this.lista[CARPETA[momento]] || this.lista[momento]; }
   get momentos() { return Object.keys(this.lista); }
 
   ponerPref(c) {
@@ -101,21 +131,41 @@ export class SonidosEditor {
   }
 
   /** Suena un momento («botones», «guardar»…). Si es «botones», espera un pelito por si llega uno más importante. */
-  sonar(momento) {
+  sonar(momento, op = {}) {
     if (!this.pref.on) return;
     if (SUAVES.has(momento)) {
       clearTimeout(this._boton);
-      this._boton = setTimeout(() => { if (performance.now() - (this._fuerte || 0) > 160) this._tocar(momento); }, 28);
+      this._boton = setTimeout(() => { if (performance.now() - (this._fuerte || 0) > 160) this._tocar(momento, op); }, 28);
       return;
     }
     clearTimeout(this._boton);
     this._fuerte = performance.now();
-    this._tocar(momento);
+    this._tocar(momento, op);
   }
 
-  _tocar(momento) {
-    if (this._de(momento)?.length) this._sonar(momento);
-    else if (SINTE[momento]) this._sintetizar(momento);
+  _tocar(momento, op) {
+    if (COMBO.has(momento) && op.tono == null) {
+      const c = this._combo ||= {}, ahora = performance.now(), k = c[momento];
+      const paso = k && ahora - k.t < 1400 ? Math.min(ESCALA.length - 1, k.i + 1) : 0;
+      c[momento] = { i: paso, t: ahora };
+      op = { ...op, tono: ESCALA[paso] };
+    }
+    if (this._de(momento)?.length) this._sonar(momento, op);
+    else if (SINTE[momento] || SINTE[ALIAS[momento]]) this._sintetizar(SINTE[momento] ? momento : ALIAS[momento], op);
+  }
+
+  /** Acercar o alejar la hoja (botones, rueda o dos dedos): un barrido al empezar y un «tin» por cada escalón, más agudo cuanto más cerca. */
+  zoomCambio(z0, z1) {
+    if (!this.pref.on || !(z0 > 0) || !(z1 > 0) || Math.abs(z1 - z0) < 1e-4) return;
+    const ahora = performance.now(), nivel = Math.round(Math.log(z1) / Math.log(1.18));
+    if (ahora - (this._zt || 0) > 420) { this._zDir = 0; this._zNivel = Math.round(Math.log(z0) / Math.log(1.18)); }
+    this._zt = ahora;
+    const dir = Math.sign(z1 - z0);
+    if (dir && dir !== this._zDir) { this._zDir = dir; this.sonar(dir > 0 ? "zoom-acercar" : "zoom-alejar"); }
+    if (nivel !== this._zNivel) {
+      this._zNivel = nivel;
+      this.sonar("zoom-paso", { tono: Math.max(0.6, Math.min(1.9, Math.pow(1.06, nivel))), vol: 0.8 });
+    }
   }
 
   /** Por donde pasan todos: un limitador suave hacia la mezcla general. */
@@ -165,7 +215,7 @@ export class SonidosEditor {
   }
 
   /** Un sonidito digital hecho con osciladores (sin archivos). */
-  _sintetizar(momento) {
+  _sintetizar(momento, op = {}) {
     const ahora = performance.now();
     if (ahora - (this.cuando[momento] || 0) < (MIN[momento] ?? 80)) return;
     if (this.voces >= Math.max(1, this.pref.max | 0)) return;
@@ -174,7 +224,7 @@ export class SonidosEditor {
     this.cuando[momento] = ahora;
     const t0 = ac.currentTime, vol = Math.max(0, Math.min(1, this.pref.vol));
     // Nunca dos iguales seguidos: un pelín de tono distinto cada vez.
-    const k = 0.96 + Math.random() * 0.08;
+    const k = (op.tono || 1) * (0.985 + Math.random() * 0.03);
     let fin = 0;
     this.voces++;
     for (const [forma, f0, f1, dur, v, ret = 0] of SINTE[momento]) {
@@ -194,7 +244,7 @@ export class SonidosEditor {
     setTimeout(() => { this.voces = Math.max(0, this.voces - 1); }, fin * 1000 + 30);
   }
 
-  async _sonar(momento) {
+  async _sonar(momento, op = {}) {
     const l = this._de(momento);
     const ahora = performance.now();
     if (ahora - (this.cuando[momento] || 0) < (MIN[momento] ?? 80)) return;
@@ -209,11 +259,11 @@ export class SonidosEditor {
     if (!b || this.voces >= Math.max(1, this.pref.max | 0)) return;
     const src = ac.createBufferSource();
     src.buffer = b;
-    const rate = 0.965 + Math.random() * 0.07;
+    const rate = (op.tono || 1) * (0.985 + Math.random() * 0.03);
     src.playbackRate.value = rate;
     const g = ac.createGain();
     const t = ac.currentTime;
-    const vol = Math.max(0, Math.min(1, this.pref.vol)) * (0.86 + Math.random() * 0.2);
+    const vol = Math.max(0, Math.min(1, this.pref.vol)) * (op.vol ?? 1) * (0.9 + Math.random() * 0.14);
     const dur = b.duration / rate;
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(vol, t + 0.008);
@@ -251,7 +301,7 @@ export class SonidosEditor {
     // Ajustar un deslizador: un «tic» muy suave (con tope: no ametralla).
     document.addEventListener("input", (ev) => { if (ev.target.matches?.("input[type=range]") && !ev.target.closest(".ed-tl")) this.sonar("ajustar"); }, true);
     let antes = "";
-    E.on("sel", () => { const k = E.sel.join(","); if (k && k !== antes) this.sonar("seleccionar"); else if (!k && antes) this.sonar("deseleccionar"); antes = k; });
+    E.on("sel", () => { const k = E.sel.join(","); if (k && k !== antes) this.sonar(E.sel.length > 1 ? "seleccionar-varios" : "seleccionar"); else if (!k && antes) this.sonar("deseleccionar"); antes = k; });
     // Paneles y hojas: abrir, cerrar, bajar a una parada más chica (minimizar) o volver a subir (restaurar).
     addEventListener("ed-hoja", (ev) => {
       if (ev.detail === "cerrar" && performance.now() - (this._tAtras || 0) < 300) return; // ya sonó «atrás»
@@ -292,16 +342,14 @@ export class SonidosEditor {
     if (esc) app.audio.escuchar = (...a) => { const r = esc(...a); this.sonar(r === false ? "pausar" : "reproducir"); return r; };
     for (const k of ["deshacer", "rehacer"]) {
       const f = E[k].bind(E);
-      E[k] = (...a) => { if (k === "deshacer" ? E.historial.puedeDeshacer : E.historial.puedeRehacer) this.sonar("deshacer"); return f(...a); };
+      E[k] = (...a) => { if (k === "deshacer" ? E.historial.puedeDeshacer : E.historial.puedeRehacer) this.sonar(k); return f(...a); };
     }
     const quitar = E.quitarEls.bind(E);
     E.quitarEls = (...a) => { this.sonar("borrar"); return quitar(...a); };
   }
 
-  /** La vista de la hoja: acercar/alejar (una vez por tanda) y desplazarla. */
+  /** La vista de la hoja: desplazarla y escribir (acercar/alejar lo avisa el lienzo: zoomCambio). */
   conectarLienzo(L) {
-    const zoom = L.zoom.bind(L);
-    L.zoom = (...a) => { const t = performance.now(); if (t - (this._tz || 0) > 350) this.sonar("zoom"); this._tz = t; return zoom(...a); };
     const pan = L._panDesde.bind(L);
     L._panDesde = (...a) => { this.sonar("desplazar"); return pan(...a); };
     const txt = L.editarTexto?.bind(L);

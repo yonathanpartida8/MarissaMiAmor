@@ -1,0 +1,47 @@
+plugins {
+    id "com.android.application"
+}
+
+// La dirección que abre la app (la de tu GitHub Pages). Se cambia al construir:
+// LIBRITO_URL=https://…/ gradle assembleRelease
+def URL_LIBRITO = System.getenv("LIBRITO_URL") ?: "https://yonathanpartida8.github.io/MarissaMiAmor/"
+def NUMERO = (System.getenv("GITHUB_RUN_NUMBER") ?: "1") as Integer
+
+android {
+    namespace "io.github.yonathanpartida8.librito"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "io.github.yonathanpartida8.librito"
+        minSdk 24
+        targetSdk 34
+        versionCode NUMERO
+        versionName "1.0.${NUMERO}"
+        buildConfigField "String", "URL_LIBRITO", "\"${URL_LIBRITO}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("../firma.jks")
+            storePassword System.getenv("KS_PASS") ?: "librito-firma"
+            keyAlias System.getenv("KS_ALIAS") ?: "librito"
+            keyPassword System.getenv("KS_KEY_PASS") ?: (System.getenv("KS_PASS") ?: "librito-firma")
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

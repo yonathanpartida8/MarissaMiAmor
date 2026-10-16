@@ -40,6 +40,39 @@ internet**, porque guarda su propia copia.
 También hay un botón que lo explica dentro del libro: se abre el índice (☰) y
 está en el pie, junto al de empezar de cero.
 
+### Como app de Android (APK)
+
+En `android/` está la app: abre tu GitHub Pages a pantalla completa, sin barra
+de direcciones, con el botón «atrás» del teléfono, elegir fotos, vídeo a
+pantalla completa y descargas que se guardan en Descargas/Librito. La construye
+GitHub sola (Actions → «APK de Android») cada vez que cambia `android/` o el
+icono, y la deja en **Releases → «apk» → Librito.apk**: se abre desde el
+teléfono, se permite «instalar apps de este origen» y listo.
+
+- Para abrir otra dirección: Actions → «APK de Android» → *Run workflow* y
+  escríbela.
+- La app se firma siempre con la misma llave (guardada en la caché de
+  Actions), así que cada versión nueva se instala encima sin perder nada. Para
+  que esa llave no caduque nunca, guárdala como secreto del repositorio
+  (`ANDROID_KEYSTORE_B64` y `ANDROID_KEYSTORE_PASS`).
+- iPhone no instala APK: ahí se usa «Añadir a pantalla de inicio» (arriba).
+
+### Privado: sólo con el enlace
+
+El libro, el editor y cada página publicada llevan `noindex` (no salen en
+Google ni en otros buscadores) y `robots.txt` lo pide también; sólo entra quien
+tenga el enlace. Lo publicado desde el editor va **sin** el archivo editable
+(`project.json`), y el proyecto lleva licencia de todos los derechos
+reservados (`LICENSE`).
+
+Lo que no se puede hacer desde aquí: mientras el **repositorio** sea público,
+cualquiera que lo encuentre en github.com puede ver sus archivos. Para cerrarlo
+hay que hacerlo privado (Settings → General → Danger Zone → Change visibility);
+GitHub Pages desde un repositorio privado necesita GitHub Pro, y la página
+seguiría abriéndose para quien tenga el enlace (pedir usuario y contraseña
+sólo existe en GitHub Enterprise). Ninguna página web puede impedir del todo
+que alguien que la está viendo guarde lo que ve.
+
 ### El icono
 
 Se deja caer cualquier imagen en la carpeta **`icono/`** con el nombre

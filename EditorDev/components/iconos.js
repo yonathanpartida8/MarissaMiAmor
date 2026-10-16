@@ -180,6 +180,7 @@ const P = {
   varita: '<path d="M4 20L15 9l-1.5-1.5L2.5 18.5z"/><path d="M17 3v3M20 6h-3M19.6 3.4l-1.4 1.4M17 10v2M12 4h2"/>',
   refrescar: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>',
   ver: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+  publicar: '<path d="M3.5 11.2 20.5 4l-6.6 16.2-2.9-6.4z"/><path d="M11 13.8 20.5 4"/><path d="M6.3 17.6c-.9-.9-.9-2.2 0-3 .8-.8 2-.7 2.6.1.6-.8 1.8-.9 2.6-.1.9.8.9 2.1 0 3L8.9 20z"/>',
 };// Nombres que se usan igual (para leer más fácil en cada sitio).
 P.fotos = P.imagen;
 P.ajustes = P.herramientas;

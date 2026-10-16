@@ -173,6 +173,12 @@ export async function extras() {
     }
   }
   const sons = await listar("assets/sonidos-editor/");
+  // Con servidor de casa, lo recién dejado suena al momento (aunque el catálogo aún no lo sepa).
+  if (sons) {
+    const sueltos = {};
+    for (const f of sons.filter((h) => /\.(mp3|m4a|ogg|wav|aac)$/i.test(h))) (sueltos[f.replace(/\.[^.]+$/, "").replace(/-\d+$/, "").toLowerCase()] ||= []).push(`assets/sonidos-editor/${f}`);
+    Object.assign(ex.sonidos, sueltos);
+  }
   if (sons) for (const d of sons.filter((h) => h.endsWith("/"))) {
     const cat = d.slice(0, -1).toLowerCase();
     if (ex.sonidos[cat]?.length) continue;

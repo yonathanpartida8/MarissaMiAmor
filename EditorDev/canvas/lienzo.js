@@ -542,10 +542,19 @@ export class Lienzo {
     const r = this.vistaEl.getBoundingClientRect();
     if (cx == null) { cx = r.width / 2; cy = r.height / 2; }
     z = clamp(z, 0.1, 8);
+    const z0 = this.v.z;
     const wx = (cx - this.v.px) / this.v.z, wy = (cy - this.v.py) / this.v.z;
     this.v = { z, px: cx - wx * z, py: cy - wy * z, ajustar: false };
     this._acotarVista();
     this.pintarVista();
+    this._avisarZoom(z0, z, cx, cy);
+  }
+
+  /** Acercar o alejar (con botones, rueda o dos dedos): su sonido y su globito, en el mismo cuadro. */
+  _avisarZoom(z0, z1, cx, cy) {
+    if (Math.abs(z1 - z0) < 1e-4) return;
+    this.app.sonidos?.zoomCambio?.(z0, z1);
+    this.app.fx?.zoom?.(z1, cx, cy, z1 > z0);
   }
 
   /** Que la hoja nunca se pierda de vista al desplazar o acercar. */
@@ -1191,6 +1200,9 @@ export class Lienzo {
         }
         ({ dx, dy } = this._limitar(caja0, dx, dy, estricto));
         for (const o of orig) E.setEl(o.id, { x: Math.round(o.x + dx), y: Math.round(o.y + dy) }, "Mover");
+        // La estela de pintura sigue a lo que se arrastra (en pantalla, ya movido).
+        const pe = this.aPantalla(caja0.x + dx, caja0.y + dy);
+        this.app.fx?.estela?.({ x: pe.x, y: pe.y, w: caja0.w * z, h: caja0.h * z });
       },
       soltar: (u) => {
         this.lineas = { x: [], y: [] };
@@ -1387,11 +1399,12 @@ export class Lienzo {
     const k = d / P.d0;
     const E = this.estado;
     if (P.modo === "vista") {
-      const z = clamp(P.z0 * k, 0.1, 8);
+      const z = clamp(P.z0 * k, 0.1, 8), zAntes = this.v.z;
       const wx = (P.mx - P.px) / P.z0, wy = (P.my - P.py) / P.z0;
       this.v = { z, px: mx - wx * z, py: my - wy * z, ajustar: false };
       this._acotarVista();
       this.pintarVista();
+      this._avisarZoom(zAntes, z, mx, my);
     } else if (P.modo === "recorte") {
       const zoom = clamp(Math.round(P.rc.zoom * k * 100) / 100, 1, 5);
       E.setEl(this.recortando, { "imagen.recorte": { ...P.rc, zoom } }, "Acercar foto");

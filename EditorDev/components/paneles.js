@@ -43,6 +43,7 @@ import { NAVEGACION } from "./secciones/navegacion.js";
 import { BIBLIOTECA } from "./secciones/biblioteca.js";
 import { BLOQUES } from "./secciones/bloques.js";
 import { TOQUES_SEC } from "./toques.js";
+import { PUBLICADAS } from "./secciones/publicadas.js";
 import * as GIF from "../integraciones/giphy.js";
 
 const RT = window.LibritoRT;
@@ -416,7 +417,7 @@ export class Paneles {
       fila("Volumen", control(this.v, { tipo: "rango", min: 0, max: 1, paso: 0.05, leer: () => SE.pref.vol, escribir: (vol) => SE.ponerPref({ vol }) })),
       fila("A la vez, como mucho", control(this.v, { tipo: "segmento", opciones: [[1, "1"], [2, "2"], [3, "3"], [5, "5"]], leer: () => SE.pref.max, escribir: (max) => SE.ponerPref({ max }) })),
       el("div.ed-botonera", {}, ["botones", "seleccionar", "colocar", "duplicar", "herramienta", "fotograma", "guardar", "exito"].map((m) => boton(m, () => SE.sonar(m), "chico"))),
-      el("small.ed-ayuda", { text: SE.hay ? `Suenan al azar los de assets/sonidos-editor/ (${SE.momentos.length} carpetas, por categoría y acción). Cambia o añade archivos en esas carpetas.` : "Deja sonidos en assets/sonidos-editor/<categoría>/<acción>/ (interaccion/pulsar, movimiento/arrastrar, interfaz/abrir…)." }),
+      el("small.ed-ayuda", { text: SE.hay ? `Cada interacción tiene su archivo en assets/sonidos-editor/ (${SE.momentos.length}), con el nombre de lo que hace: seleccionar-elemento, soltar-objeto, zoom-acercar… Para cambiar uno, pon otro con el mismo nombre.` : "Deja sonidos en assets/sonidos-editor/ con el nombre de su interacción (seleccionar-elemento.wav, soltar-objeto.wav, zoom-acercar.wav…)." }),
     ], { abierta: false }));
     const giphy = el("div.ed-botonera");
     const pintarGiphy = async () => {
@@ -456,4 +457,4 @@ export class Paneles {
 }
 
 // Las secciones grandes viven cada una en su archivo (components/secciones/).
-Object.assign(Paneles.prototype, ANIMAR, EFECTOS_SEC, TRANSICIONES, GIPHY, AUDIO, HTML, FONDO_HTML, NAVEGACION, BIBLIOTECA, BLOQUES, TOQUES_SEC);
+Object.assign(Paneles.prototype, ANIMAR, EFECTOS_SEC, TRANSICIONES, GIPHY, AUDIO, HTML, FONDO_HTML, NAVEGACION, BIBLIOTECA, BLOQUES, TOQUES_SEC, PUBLICADAS);

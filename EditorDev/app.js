@@ -73,6 +73,7 @@ const $ = (s) => document.querySelector(s);
 const SECCIONES = [
   ["paginas", "paginas", "Páginas"],
   ["navegacion", "pasar", "Pasar página"],
+  ["publicadas", "publicar", "Páginas publicadas"],
   // Crear: lo que arma la página
   ["bloques", "bloques", "Bloques"],
   ["elementos", "elementos", "Elementos"],

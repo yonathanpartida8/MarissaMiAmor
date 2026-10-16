@@ -1,0 +1,3 @@
+# Este sitio es privado: sólo para quien tenga el enlace.
+User-agent: *
+Disallow: /

@@ -25,7 +25,7 @@
  *   assets/transiciones/<nombre>/transicion.json|css|js → Transiciones
  *   assets/efectos/<nombre>.json  (o <nombre>/efecto.json) → Efectos (filtros listos)
  *   assets/fondos/<nombre>/index.html  (o <nombre>.html)   → Fondos con HTML
- *   assets/sonidos-editor/<categoría>/<acción>/*.mp3|wav|ogg → sonidos del propio editor
+ *   assets/sonidos-editor/<interacción>.wav|mp3|ogg   → sonidos del propio editor (uno por interacción)
  *   assets/iconos/<nombre>.svg                              → cambia un icono del editor
  *   assets/deslizar/<estilo>/izquierda.*|derecha.*          → botones para pasar página
  *   (una carpeta con index.html dentro de animaciones/ o efectos/ sigue siendo una pieza)
@@ -154,6 +154,13 @@ function extrasDe(raiz) {
     else if (IMG.test(f)) ex.fondos.push({ tipo: "imagen", id: `fondos/${f}`, nombre: bonito(f), ruta: `assets/fondos/${f}`, miniatura: `assets/fondos/${f}` });
   }
   const ds = join(raiz, "sonidos-editor");
+  // Un archivo por interacción, con su nombre (seleccionar-elemento.wav). Con «-2», «-3»… al final
+  // del nombre, varias versiones del mismo sonido (se turnan).
+  for (const a of lista(ds)) {
+    if (!AUD.test(a) || esDir(join(ds, a))) continue;
+    const k = a.replace(/\.[^.]+$/, "").replace(/-\d+$/, "").toLowerCase();
+    (ex.sonidos[k] ||= []).push(`assets/sonidos-editor/${a}`);
+  }
   for (const c of lista(ds)) {
     const p = join(ds, c);
     if (!esDir(p)) continue;

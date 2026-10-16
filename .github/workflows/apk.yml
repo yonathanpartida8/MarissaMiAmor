@@ -1,0 +1,82 @@
+# Construye la app de Android (un APK) que abre el librito a pantalla completa.
+# Se hace sola cuando cambia android/ o el icono; también a mano: Actions →
+# «APK de Android» → Run workflow (ahí se puede cambiar la dirección que abre).
+# El APK queda en Releases → «apk» (Librito.apk), listo para instalar.
+name: APK de Android
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Dirección que abre la app"
+        default: "https://yonathanpartida8.github.io/MarissaMiAmor/"
+  push:
+    branches: [main, claude/interactive-love-book-redesign-5p93fv]
+    paths:
+      - "android/**"
+      - "icono/**"
+      - ".github/workflows/apk.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+      - name: El icono (el de icono/, cuadrado)
+        run: |
+          command -v convert >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick)
+          f=$(ls icono | grep -iE '\.(png|jpe?g|webp)$' | head -1)
+          if [ -n "$f" ]; then
+            rm -f android/app/src/main/res/drawable/icono.*
+            convert "icono/$f" -auto-orient -resize 512x512^ -gravity center -extent 512x512 PNG32:android/app/src/main/res/drawable/icono.png
+          fi
+      # La misma llave siempre: así cada APK nuevo se instala ENCIMA del anterior
+      # (sin perder lo guardado). Si pones el secreto ANDROID_KEYSTORE_B64 se usa
+      # ése; si no, se crea una y se guarda en la caché de Actions.
+      - uses: actions/cache@v4
+        with:
+          path: android/firma.jks
+          key: firma-apk-v1
+      - name: La firma
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS || 'librito-firma' }}
+        run: |
+          if [ -n "$KS_B64" ]; then echo "$KS_B64" | base64 -d > android/firma.jks
+          elif [ ! -f android/firma.jks ]; then
+            keytool -genkeypair -keystore android/firma.jks -alias librito -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$KS_PASS" -keypass "$KS_PASS" -dname "CN=Librito"
+          fi
+      - name: Construir
+        working-directory: android
+        env:
+          LIBRITO_URL: ${{ inputs.url || 'https://yonathanpartida8.github.io/MarissaMiAmor/' }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS || 'librito-firma' }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'librito' }}
+        run: gradle assembleRelease --no-daemon
+      - name: Guardar el APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Librito-APK
+          path: android/app/build/outputs/apk/release/app-release.apk
+      - name: Publicarlo en Releases («apk»)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk Librito.apk
+          gh release view apk >/dev/null 2>&1 || gh release create apk --title "Librito para Android" --notes "La app del librito: ábrelo en el teléfono e instálalo. Se rehace sola cuando cambia android/ o el icono." --latest=false --target "$GITHUB_SHA"
+          gh release upload apk Librito.apk --clobber

@@ -469,6 +469,21 @@ No probado en aparatos reales: Android, iPhone/iPad Safari y Safari de Mac se co
 | **Módulos de una vez** | `index.html` del editor lleva su lista de `modulepreload` (la rehace `node herramientas/contenido.mjs`, igual que la del libro): el teléfono pide los módulos todos juntos y no en cascada. La primera apertura, ≈11 % antes en el servidor de pruebas, y más en GitHub Pages, que los sirve en paralelo |
 | **Sin fugas** | cuatro ciclos enteros (todas las secciones, vistas previas de efectos, inspector y «Probar página»): nodos, oyentes y documentos quietos; la memoria crece ≈0,1 MB por ciclo |
 
+### Fase 14: efectos lindos, un sonido por interacción y Páginas publicadas
+
+| | |
+| --- | --- |
+| **Estela de acuarela** | al arrastrar sale por DETRÁS del objeto un trazo de acuarela pastel (lila → rosa → durazno), con granito de papel y gotitas si vas rápido; se seca y desaparece solo en ≈1 s y nunca pinta encima del objeto. Un único lienzo con gotas ya dibujadas (cuesta muy poco) y se apaga solo cuando no queda pintura |
+| **Elegir** | una cinta de colores que se DIBUJA alrededor y florcitas y estrellitas que se abren con resorte en las esquinas (lila si eliges varios) |
+| **Soltar** | una mancha de acuarela que florece debajo y pétalos que se posan; si el imán pegó, brillitos sobre la guía |
+| **Colocar, duplicar, borrar** | colocar: halo tibio y confeti de corazones, flores y estrellas que suben y caen con su peso. Duplicar: un fantasma punteado que se asienta. Borrar: nubecitas que se deshacen y pétalos que caen |
+| **Zoom** | con dos dedos, rueda, botones o doble toque: un globito con el porcentaje junto a los dedos (lupa con «+» o «−») |
+| **Un sonido por interacción** | 55 archivos en `assets/sonidos-editor/`, uno por cosa, con su nombre (`seleccionar-elemento`, `arrastrar-pintura`, `soltar-objeto`, `zoom-acercar`, `zoom-alejar`, `zoom-paso`…). La tabla de qué suena cuándo está en el LÉEME de esa carpeta; para cambiar uno basta poner otro archivo con el mismo nombre. Todos en la misma escala (kalimba, campanitas, marimba, gotitas, pincel, papel, aire), con un poquito de sala para que suenen suaves |
+| **Sincronizados** | cada sonido sale en el mismo cuadro que su efecto. Al pellizcar con dos dedos suena un barrido al empezar (sube al acercar, baja al alejar) y un «tin» por escalón, más agudo cuanto más cerca. Arrastrar: pincel al empezar y un roce suave de vez en cuando (más fuerte cuanto más rápido). Lo que se repite seguido (elegir, imán, colocar, duplicar, capas, fotogramas) sube por la escala como una escalerita en vez de sonar igual. Deshacer y rehacer suenan distinto |
+| **Páginas publicadas** | nueva opción en la barra de la izquierda. Se conecta tu GitHub una vez (un token sólo para tu repositorio, guardado sólo en ese aparato) y publica el librito en `publicadas/<nombre>/` de tu GitHub Pages, en un solo commit; al actualizar sube sólo lo que cambió y borra lo que ya no se usa. Lista lo publicado con Abrir, Copiar enlace, Compartir y Quitar. Lo publicado va sin `project.json` (no se puede abrir en el editor), con `noindex` y sin decir de dónde viene el clic (`no-referrer`) |
+
+Código nuevo: `canvas/fx.js` (rehecho), `herramientas/sonidos-editor.mjs` (rehecho: un archivo por interacción), `components/secciones/publicadas.js` y `integraciones/github.js`.
+
 ## Cómo está hecho
 
 ```
