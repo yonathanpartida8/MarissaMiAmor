@@ -15,6 +15,9 @@ import { ico } from "./iconos.js";
 import * as SRV from "../integraciones/servidor.js";
 import { formularioCuenta } from "./cuenta.js";
 import { zipParaVer, abrirComoBorrador, copiar, abrir } from "./myn.js";
+import { datosDe } from "./prueba.js";
+import { fuentesUsadas } from "../core/modelo.js";
+import { RAIZ } from "../assets/biblioteca.js";
 
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 const cuando = (iso) => {
@@ -36,6 +39,41 @@ export class Detallitos {
     this.datos = null;
     this.amor = null;
     this.pestana = "recibidos";
+    this.borrador = null;   // título y mensajito que se van escribiendo (sobreviven al ir y volver)
+    this._limpiezas = [];
+  }
+
+  _limpiar() { for (const f of this._limpiezas.splice(0)) { try { f(); } catch (e) { /* nada */ } } }
+
+  /**
+   * La página tal cual le va a llegar: el MISMO reproductor del librito, en un
+   * marco chiquito, sin sonido. Devuelve el marco (se muestra al estar listo).
+   */
+  _marcoPrevia(interactiva = false) {
+    const app = this.app, P = app.estado.proyecto, pg = app.estado.pagina;
+    const marco = el("iframe.dt-previa-marco", { src: "runtime/reproductor.html", title: "Así le va a llegar", allow: "autoplay; fullscreen", tabindex: interactiva ? "0" : "-1" });
+    if (!interactiva) marco.setAttribute("aria-hidden", "true");
+    const al = async (ev) => {
+      if (ev.source !== marco.contentWindow || ev.data?.tipo !== "vista-lista") return;
+      const datosUrls = await datosDe(app, pg).catch(() => ({}));
+      marco.contentWindow?.postMessage({
+        tipo: "librito", datos: { nombre: P.nombre, ajustes: P.ajustes, orden: P.orden, paginas: P.paginas, titulos: {} },
+        urls: app.bib.mapa(), datosUrls, base: RAIZ, inicio: app.estado.paginaId, portadilla: false, soloPagina: true, silencio: true,
+        fuentes: [...fuentesUsadas(P)], fijar: app.lienzo?.pantallaDeHoja?.() || null,
+      }, location.origin);
+      setTimeout(() => marco.classList.add("listo"), 160);
+    };
+    addEventListener("message", al);
+    this._limpiezas.push(() => removeEventListener("message", al));
+    return marco;
+  }
+
+  /** El tamaño de la vista previa dentro de una caja, con la forma de la hoja (la de «Ver como» si es automática). */
+  _tam(maxW, maxH) {
+    const m = this.app.lienzo?.m, a = this.app.estado.proyecto?.ajustes || {};
+    const W = m?.auto ? m.W : a.ancho || 390, H = m?.auto ? m.H : a.alto || 844;
+    const k = Math.min(maxW / W, maxH / H);
+    return { width: Math.round(W * k) + "px", height: Math.round(H * k) + "px" };
   }
 
   /** Abre el menú. `desde`: el elemento (o rectángulo) de donde crece la transición. */
@@ -79,6 +117,7 @@ export class Detallitos {
   cerrar() {
     if (!this.abierto) return;
     this.abierto = false;
+    this._limpiar();
     removeEventListener("keydown", this._tecla, true);
     removeEventListener("ed-cuenta", this._cuenta);
     this.app.sonidos?.sonar("cerrar-recursos");
@@ -102,6 +141,7 @@ export class Detallitos {
   }
 
   async _pintar({ vista, datos }, dir) {
+    this._limpiar();
     const v = el("section.dt-pantalla" + (dir < 0 ? ".vuelve" : ""));
     this.vista.replaceChildren(v);
     this.atrasB.setAttribute("aria-label", this.pila.length > 1 ? "Atrás" : "Cerrar Detallitos");
@@ -110,6 +150,7 @@ export class Detallitos {
     if (!this.abierto) return;
     if (vista === "vincular" || !this.amor?.pareja) return this._vVincular(v);
     if (vista === "ver") return this._vVer(v, datos);
+    if (vista === "previa") return this._vPrevia(v);
     return this._vInicio(v);
   }
 
@@ -193,36 +234,62 @@ export class Detallitos {
     this.titulo.lastChild.textContent = `con ${pareja.usuario}`;
     const pg = P?.paginas?.[app.estado.paginaId];
     const color = pg?.fondo?.color || P?.ajustes?.tema?.fondo || "#ffd1e6";
-    const titulo = el("input.dt-input", { type: "text", value: pg?.nombre || "Un detallito", maxlength: 60, "aria-label": "Título del detallito" });
-    const mensaje = el("textarea.dt-input.dt-mensaje", { maxlength: 280, rows: 2, placeholder: "Escríbele algo bonito… (opcional)", "aria-label": "Mensajito" });
+    if (!this.borrador || this.borrador.pagina !== app.estado.paginaId) this.borrador = { pagina: app.estado.paginaId, titulo: pg?.nombre || "Un detallito", mensaje: "" };
+    const B = this.borrador;
+    const titulo = el("input.dt-input", { type: "text", value: B.titulo, maxlength: 60, "aria-label": "Título del detallito", onInput: () => { B.titulo = titulo.value; } });
+    const mensaje = el("textarea.dt-input.dt-mensaje", { maxlength: 280, rows: 2, placeholder: "Escríbele algo bonito… (opcional)", "aria-label": "Mensajito", onInput: () => { B.mensaje = mensaje.value; nota.textContent = mensaje.value.trim() || "…"; } });
+    mensaje.value = B.mensaje;
     const avance = el("div.dt-avance", { hidden: "" }, [el("i")]);
     const estado = el("small.dt-estado");
-    const sobre = el("div.dt-sobre-envio", { "aria-hidden": "true" }, [el("i.dt-carta"), el("i.dt-solapa"), el("i.dt-sello", { html: ico("corazon") })]);
+    const sobre = el("div.dt-sobre-envio.abierto", { "aria-hidden": "true" }, [el("i.dt-carta"), el("i.dt-solapa"), el("i.dt-sello", { html: ico("corazon") })]);
     sobre.style.setProperty("--c", color);
+    // La vista previa: un teléfono chiquito con la página de verdad (se toca para verla en grande).
+    const nota = el("span.dt-previa-nota", { text: B.mensaje.trim() || "…" });
+    const previa = pg ? el("button.dt-previa", { type: "button", title: "Verla en grande", "aria-label": "Ver en grande cómo le va a llegar", onClick: () => this.ir("previa"), style: { ...this._tam(118, 178), "--c": color } }, [
+      el("span.dt-previa-pantalla", {}, [this._marcoPrevia(), el("i.dt-previa-brillo")]),
+      el("span.dt-previa-lupa", { html: I("ver", "Verla") }),
+    ]) : null;
     const enviar = el("button.ed-btn.primario.dt-btn.dt-enviar", { type: "button", html: I("detallito", "Enviar Detallito"), onClick: async () => {
       enviar.disabled = true; avance.hidden = false; estado.textContent = "Envolviendo tu página…";
       const poner = (p) => { avance.firstChild.style.width = Math.round(p * 100) + "%"; };
+      // 1 · La página se mete al sobre y el sobre se cierra (mientras sube, late).
+      previa?.classList.add("adentro");
+      setTimeout(() => sobre.classList.replace("abierto", "cerrado"), reducido() ? 0 : 560);
+      setTimeout(() => sobre.classList.add("esperando"), reducido() ? 0 : 1000);
       try {
         const z = await zipParaVer(app, { titulo: titulo.value, slug: "detallito", soloPaginas: [app.estado.paginaId], conProyecto: true, alProgreso: (t) => { estado.textContent = t; } });
         estado.textContent = "Mandándolo…";
         await SRV.mandarDetallito(z.blob, { titulo: titulo.value.trim() || "Un detallito", mensaje: mensaje.value.trim(), color }, poner);
+        // 2 · Llegó: el sobre sale volando con chispitas.
+        sobre.classList.remove("esperando");
         sobre.classList.add("vuela");
-        this._chispas(sobre.getBoundingClientRect().left + 60, sobre.getBoundingClientRect().top + 40);
+        const r = sobre.getBoundingClientRect();
+        this._chispas(r.left + r.width / 2, r.top + r.height / 2);
         app.sonidos?.sonar("publicar");
         estado.textContent = `¡Le llegó a ${pareja.usuario}!`;
-        mensaje.value = "";
+        mensaje.value = ""; B.mensaje = ""; nota.textContent = "…";
         this.pestana = "enviados";
-        setTimeout(() => { sobre.classList.remove("vuela"); this._coleccion(col); }, reducido() ? 0 : 1300);
-      } catch (e) { estado.textContent = e.message; app.sonidos?.sonar("error"); }
-      finally { enviar.disabled = false; avance.hidden = true; poner(0); }
+        setTimeout(() => {
+          sobre.classList.remove("vuela", "cerrado"); sobre.classList.add("abierto", "regresa");
+          previa?.classList.remove("adentro"); previa?.classList.add("regresa");
+          setTimeout(() => { sobre.classList.remove("regresa"); previa?.classList.remove("regresa"); }, 700);
+          this._coleccion(col);
+        }, reducido() ? 0 : 1300);
+      } catch (e) {
+        // No se pudo: el sobre se abre y la página vuelve a salir, para intentarlo otra vez.
+        sobre.classList.remove("esperando", "cerrado"); sobre.classList.add("abierto");
+        previa?.classList.remove("adentro");
+        estado.textContent = e.message; app.sonidos?.sonar("error");
+      } finally { enviar.disabled = false; avance.hidden = true; poner(0); }
     } });
     const col = el("div.dt-coleccion");
     v.append(
       el("div.dt-tarjeta-grande.dt-mandar", { style: { "--i": 0 } }, [
-        sobre,
-        el("div", {}, [
+        pg ? el("div.dt-mesa", {}, [previa, sobre, el("i.dt-mesa-nota", {}, [nota])]) : sobre,
+        el("div.dt-mandar-texto", {}, [
           el("h2", { text: "Mandar esta página" }),
-          el("p", { text: pg ? `«${pg.nombre || "Página"}» le llega a ${pareja.usuario} y se guarda en su colección.` : "Abre la página que quieras mandarle." }),
+          el("p", { text: pg ? `«${pg.nombre || "Página"}» le llega a ${pareja.usuario} igualita, con sus animaciones, y se guarda en su colección.` : "Abre la página que quieras mandarle." }),
+          pg ? el("small.dt-mandar-tip", { text: "Toca la vista previa para verla en grande." }) : null,
         ]),
       ]),
       pg
@@ -239,6 +306,25 @@ export class Detallitos {
       el("button.dt-enlace", { type: "button", html: I("vincular", "Vincular a tu Amorcito"), onClick: () => this.ir("vincular") }),
     );
     this._coleccion(col);
+  }
+
+  /* — La vista previa en grande (y se puede tocar, como la verá) — */
+  _vPrevia(v) {
+    const app = this.app, P = app.estado.proyecto, pg = app.estado.pagina;
+    if (!pg) return this.atras();
+    this.titulo.lastChild.textContent = "Así le va a llegar";
+    const color = pg.fondo?.color || P?.ajustes?.tema?.fondo || "#ffd1e6";
+    v.append(
+      el("div.dt-ver", { style: { "--c": color } }, [
+        el("div.dt-ver-hoja.dt-previa-grande", { style: this._tam(Math.min(innerWidth - 40, 440), innerHeight * 0.6) }, [this._marcoPrevia(true)]),
+        this.borrador?.mensaje?.trim() ? el("p.dt-ver-msg", { text: `«${this.borrador.mensaje.trim()}»` }) : null,
+        el("small.dt-ver-de", { text: "Se puede tocar: así la va a ver (sin sonido aquí)." }),
+        el("div.dt-fila.dt-ver-acc", {}, [
+          el("button.ed-btn.primario", { type: "button", html: I("detallito", "Listo, quiero mandarla"), onClick: () => this.atras() }),
+          el("button.ed-btn", { type: "button", html: I("editar", "Seguir editándola"), onClick: () => { this.cerrar(); app.menuPrincipal?.cerrar(); } }),
+        ]),
+      ].filter(Boolean)),
+    );
   }
 
   async _coleccion(col) {

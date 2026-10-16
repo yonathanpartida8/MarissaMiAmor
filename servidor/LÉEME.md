@@ -49,39 +49,14 @@ Lo que hace por cada usuario:
 4. (Opcional) Para guardar respaldos en la memoria del teléfono:
    `termux-setup-storage` y acepta el permiso.
 
-### 2 · Instalar el servidor (una línea)
+### 2 · Saca tu token de GitHub (2 minutos, antes de instalar)
 
-Pega esto en Termux y Enter:
-
-```sh
-curl -fsSL https://yonathanpartida8.github.io/MarissaMiAmor/servidor/instalar.sh | bash
-```
-
-Hace esto, solo:
-- instala `python` y `cloudflared` (con `pkg`);
-- baja **sólo** la carpeta `servidor/` de tu GitHub Pages a `~/librito-servidor` (no el repositorio entero);
-- crea la carpeta de datos `~/librito-datos` (sólo tu usuario puede entrar);
-- genera la **llave maestra** (`llave.bin`, 32 bytes al azar) que cifra los secretos;
-- deja listo el comando **`librito`**;
-- te muestra el **código de instalación** (8 letras, como `K7P2-9QX4`).
-
-> Si ya clonaste el repositorio, también vale: `bash servidor/librito.sh instalar`.
-
-### 3 · Las claves que hacen falta
-
-| Clave | Quién la genera | Dónde vive |
-| --- | --- | --- |
-| Llave maestra (cifra el token) | el servidor, solo, al instalar | `~/librito-datos/llave.bin` (0600) |
-| Código de instalación | el servidor, la primera vez | en la terminal y en `codigo-instalacion.txt` (se borra al usarlo) |
-| Token de GitHub | tú, en GitHub (abajo) | cifrado en `~/librito-datos/secretos.bin` |
-| Tu contraseña de administrador | tú, en el panel | sólo su huella (scrypt) en `librito.db` |
-
-**Sacar el token de GitHub (2 minutos):**
+Así el asistente te lo pide de una vez y no hay que volver.
 
 1. GitHub → foto de perfil → **Settings → Developer settings → Personal access
    tokens → Fine-grained tokens → Generate new token**.
 2. Nombre: `servidor del librito`. Expiración: la que quieras (al caducar,
-   pones otro en el panel).
+   pones otro con `librito github`).
 3. **Repository access → Only select repositories →** `MarissaMiAmor`.
 4. **Permissions → Repository permissions:**
    - **Contents: Read and write** (para publicar);
@@ -90,35 +65,60 @@ Hace esto, solo:
      encienda GitHub Pages por ti; si no, déjalo).
    - Metadata queda en *Read-only* solo.
 5. **Generate token** y cópialo (empieza con `github_pat_`). No lo pegues en
-   ningún otro lado: sólo en el servidor (paso 5).
+   ningún otro lado: sólo en Termux, cuando el asistente te lo pida.
 
-### 4 · Prenderlo y crear tu administrador
+### 3 · Instalar y prender (una línea; te va guiando)
+
+Pega esto en Termux y Enter:
 
 ```sh
-librito iniciar
+curl -fsSL https://yonathanpartida8.github.io/MarissaMiAmor/servidor/instalar.sh | bash
 ```
 
-Abre en el navegador **del mismo teléfono**: `http://127.0.0.1:8787`
-(o desde tu compu en la misma wifi: `http://IP-del-teléfono:8787`, la muestra `librito estado`).
+Es un asistente de **3 pasitos** y no pide ningún código:
 
-En el panel: escribe el **código de instalación**, tu **usuario** y una
-**contraseña** (mínimo 8; mejor una frase larga) → «Crear administrador».
-Desde ahí ya entras con tu usuario y contraseña. (También se puede desde la
-terminal: `librito admin tu-usuario`.)
+1. **Lo necesario:** instala `python` y `cloudflared` si faltan y baja **sólo**
+   la carpeta `servidor/` de tu GitHub Pages a `~/librito-servidor`.
+2. **Tu administrador:** te pregunta **usuario** y **contraseña** (mínimo 8;
+   no se ve al escribirla). Si no coinciden o es corta, te la vuelve a pedir.
+3. **GitHub:** «¿Lo conectas ahora? [S/n]» → repositorio
+   (`yonathanpartida8/MarissaMiAmor`), el token (no se ve al pegarlo) y la
+   rama (Enter = la que sugiere).
 
-### 5 · Conectar GitHub
+Al final **lo prende**, te muestra la dirección y **abre el panel** en el
+navegador del teléfono. Desde ese momento ya se escribe sólo **`librito`**:
 
-Dos maneras (la segunda es la más segura: el token ni pasa por el navegador):
+- `librito` → si está apagado lo prende; si está prendido te dice cómo va.
+- `librito panel` → abre el panel.
 
-- **Panel → GitHub:** repositorio `yonathanpartida8/MarissaMiAmor`, pega el
-  token, la rama se elige sola (la de GitHub Pages o la más nueva) →
-  «Guardar y probar».
-- **Terminal:** `librito github` (pregunta repositorio, token —no se ve al
-  escribirlo— y rama).
+> Si ya clonaste el repositorio, también vale: `bash servidor/librito.sh`.
 
-Luego, en **Panel → GitHub → GitHub Pages**: si dice «Apagado», elige la rama
-donde está el librito más nuevo → **Encender GitHub Pages**. Si tu token no tiene «Administration»,
-el panel te lleva a los ajustes de GitHub para hacerlo a mano
+### 4 · Si te saltaste algo
+
+- **El administrador:** `librito admin` (te pregunta usuario y contraseña), o
+  abre `http://127.0.0.1:8787` **en el mismo teléfono**: ahí el panel te deja
+  crearlo **sin código**.
+- **Desde otro aparato** (tu compu en la misma wifi, `http://IP-del-teléfono:8787`)
+  el panel sí pide el **código de instalación**: lo ves con `librito estado`.
+  Ese código **no cambia** hasta que lo usas (antes cambiaba con cada
+  `librito estado`: por eso decía «no es ese»), y da igual escribirlo con
+  minúsculas o sin el guion.
+- **GitHub:** `librito github` (lo más seguro: el token ni pasa por el
+  navegador) o Panel → GitHub. **No hace falta reiniciar**: el servidor lo nota
+  solo y en unos minutos anuncia su dirección.
+
+| Clave | Quién la genera | Dónde vive |
+| --- | --- | --- |
+| Llave maestra (cifra el token) | el servidor, solo, al instalar | `~/librito-datos/llave.bin` (0600) |
+| Código de instalación | el servidor, mientras no haya administrador | `codigo-instalacion.txt` (se borra al usarlo) |
+| Token de GitHub | tú, en GitHub (paso 2) | cifrado en `~/librito-datos/secretos.bin` |
+| Tu contraseña de administrador | tú | sólo su huella (scrypt) en `librito.db` |
+
+### 5 · GitHub Pages encendido
+
+En **Panel → GitHub → GitHub Pages**: si dice «Apagado», elige la rama donde
+está el librito más nuevo → **Encender GitHub Pages**. Si tu token no tiene
+«Administration», el panel te lleva a los ajustes de GitHub para hacerlo a mano
 (Settings → Pages → Deploy from a branch → la rama → `/ (root)` → Save).
 
 ### 6 · Que se vea desde internet (el túnel)
@@ -138,6 +138,12 @@ librito direccion        # → https://palabras-al-azar.trycloudflare.com
 - ¿Quieres una dirección fija? Usa un túnel con nombre de Cloudflare (con tu
   dominio) o cualquier otro proxy https, y escríbela en Panel → Ajustes →
   «Dirección fija». Entonces pon el túnel en «Sin túnel».
+- **Se cuida solo:** la dirección se da por buena sólo cuando cloudflared de
+  verdad conectó; cada ~3 minutos el servidor se prueba **desde internet**
+  (por su propia dirección) y, si no contesta 3 veces seguidas, reabre el
+  túnel y anuncia la dirección nueva. Si la red de datos bloquea el protocolo
+  de fábrica (QUIC), el siguiente intento usa `http2`. En el panel → Inicio se
+  ve «Probado desde internet hace X min» y si el editor ya la conoce.
 - Sin internet / sólo en casa: el panel se abre por la wifi, pero el editor
   desde GitHub Pages **no** puede hablar con `http://192.168…` (el navegador
   bloquea http desde una página https). Para eso es el túnel.
@@ -234,6 +240,7 @@ servidor y se ve en `https://<tu-túnel>/p/<nombre>/`.
   proyectos/<usuario>/<proyecto>/   las copias de cada proyecto de cada usuario
   detallitos/<id>/       cada detallito (ver/ y paquete.zip)
   servidor.log           lo que va pasando (sin secretos)
+  estado.json            pid, puerto y dirección del servidor PRENDIDO (lo lee «librito»; se borra al apagarlo)
 ```
 
 **En el servidor (HTTP):** `/` panel · `/p/<nombre>/` copia local de una
@@ -242,7 +249,8 @@ azar) · `/api/…`:
 
 | Método y ruta | Quién | Para qué |
 | --- | --- | --- |
-| `GET /api/info` | todos | nombre, si hay GitHub, modo de registro |
+| `GET /api/info` | todos | nombre, si hay GitHub, modo de registro, si falta el administrador |
+| `GET /api/salud` | todos | «aquí estoy» (lo usa el vigía del túnel) |
 | `POST /api/instalar` | con el código | primer administrador |
 | `POST /api/registro` · `POST /api/entrar` · `POST /api/salir` | todos | cuentas |
 | `GET /api/yo` · `POST /api/yo/contrasena` · `GET/DELETE /api/yo/sesiones` | sesión | tu cuenta |
@@ -297,7 +305,10 @@ azar) · `/api/…`:
 ## Comandos
 
 ```
+librito                  lo deja listo y prendido (la primera vez, te guía)
+librito instalar         el asistente otra vez (paquetes, administrador, GitHub)
 librito iniciar | detener | reiniciar | estado
+librito panel            abre el panel en el navegador del teléfono
 librito direccion        la dirección https para el editor
 librito registro         ver lo que pasa (Ctrl+C sale)
 librito admin [usuario]  crear o reiniciar un administrador
@@ -316,17 +327,24 @@ librito primer-plano     correrlo aquí mismo para ver errores
 | El editor dice «No hay conexión con M.YNTHN» | `librito estado`: ¿prendido? ¿hay dirección? ¿«Anunciar» encendido? Si cambió, el editor la encuentra solo en un minuto. |
 | «Desde internet el navegador no deja usar http://…» | Usa la dirección **https** del túnel, no la de la wifi. |
 | «Falta cloudflared» | `pkg install cloudflared` y `librito reiniciar`. |
+| «El código de instalación no es ese» | Ya no debería pasar (el código no cambia). Más fácil: abre el panel en el mismo teléfono (no pide código) o `librito admin`. |
+| «El puerto 8787 ya está ocupado» | Ya estaba prendido: `librito estado`. Si dice apagado, `librito detener` y `librito iniciar`. |
+| «Túnel: no logró conectar» en `librito registro` | Reintenta solo (y cambia a http2). Revisa que el teléfono tenga internet; dice lo que respondió cloudflared. |
 | «Este origen no puede usar el servidor» | Abriste el editor desde otra dirección: agrégala en Panel → Ajustes → Orígenes. |
-| «Al token de GitHub le falta permiso» | Revisa los permisos del paso 3 (Contents y Pages en *Read and write*). |
+| «Al token de GitHub le falta permiso» | Revisa los permisos del paso 2 (Contents y Pages en *Read and write*). |
 | Lo publicado da 404 | Panel → GitHub → GitHub Pages: ¿encendido y en la misma rama donde publica el servidor? |
 | Se apaga solo | Batería de Termux en «Sin restricciones» y `librito iniciar` (toma el wake lock). |
 | Olvidé la contraseña del administrador | En Termux: `librito admin tu-usuario` (pide una nueva). |
 | Perdí `llave.bin` | Los secretos ya no se pueden leer: `librito github` para poner el token otra vez. |
 
-Probado en este repositorio con Python 3.11 y un GitHub simulado (cuentas,
-registro abierto, cuotas, publicar, nombres repetidos, actualizar, quitar,
-copias por carpeta, vincular parejas, mandar/recibir/guardar/quitar
-detallitos, CORS, .zip con `../`, freno a la fuerza bruta y que el token no
-salga en ninguna respuesta), y el editor en Chromium (teléfono y compu).
-**No** se probó todavía en un teléfono real con Termux ni con el túnel de
-Cloudflare de verdad.
+Probado en este repositorio con Python 3.11 y un GitHub simulado: el asistente
+de instalación de punta a punta en una terminal de verdad (también con
+`curl … | bash`), el código de instalación que no cambia, crear el
+administrador sin código en el mismo teléfono y con código desde «otro
+aparato», `librito github` con el servidor prendido (sin reiniciar), el túnel
+con un cloudflared de mentira (conecta, anuncia, el vigía lo reabre, cambia a
+http2), cuentas, registro abierto, cuotas, publicar, copias, parejas,
+detallitos, CORS, .zip con `../`, conexiones que quedan limpias tras un error y
+que el token no salga en ninguna respuesta; y el editor en Chromium (teléfono
+y compu). **No** se probó todavía en un teléfono real con Termux ni con el
+túnel de Cloudflare de verdad.

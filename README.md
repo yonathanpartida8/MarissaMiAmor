@@ -79,8 +79,9 @@ cualquiera crea su usuario y contraseña y ya puede **publicar** (Exportar →
 completa y sólo para ver), guardar **copias de sus proyectos** en su carpeta
 cada vez que guarda a mano, y mandarle **Detallitos** a su amorcito
 («Vincular a tu Amorcito» con un código único). El token de GitHub es uno
-solo, cifrado en el teléfono: nunca está en el editor. Instalación paso a paso
-en **`servidor/LÉEME.md`** (una línea en Termux).
+solo, cifrado en el teléfono: nunca está en el editor. Se instala con una línea
+en Termux y un asistente que te pregunta tu usuario, tu contraseña y el token, y
+lo deja prendido (sin códigos). Paso a paso en **`servidor/LÉEME.md`**.
 
 ### Privado: sólo con el enlace
 

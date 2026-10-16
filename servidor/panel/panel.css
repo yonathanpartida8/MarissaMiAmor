@@ -80,6 +80,9 @@ small { color: var(--suave); }
 .enlace { background: none; border: 0; color: var(--acento); cursor: pointer; padding: 0; font-weight: 600; }
 .mensaje { min-height: 1.3em; margin: 8px 2px 0; font-size: 13px; color: var(--mal); }
 .mensaje.bien { color: var(--ok); }
+.nota-ok { margin: 4px 0 14px; padding: 10px 12px; border-radius: 12px; background: var(--ok-suave); color: var(--ok); font-size: 13.5px; font-weight: 600; }
+.fila.estados { flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+.fila.estados .pildora { white-space: normal; }
 
 /* — La app — */
 .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100%; }
@@ -170,7 +173,7 @@ code.k { padding: 1px 6px; border-radius: 6px; background: var(--fondo-2); font-
   .lado { position: fixed; top: auto; bottom: 0; left: 0; right: 0; height: auto; flex-direction: row; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); border-right: 0; border-top: 1px solid var(--linea); z-index: 30; overflow-x: auto; gap: 2px; background: color-mix(in srgb, var(--sup) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); scrollbar-width: none; }
   .lado::-webkit-scrollbar { display: none; }
   .lado .marca, .lado .pie { display: none; }
-  .nav { flex-direction: column; gap: 3px; padding: 7px 10px; font-size: 11px; min-width: 64px; align-items: center; }
+  .nav { flex: 0 0 auto; width: auto; flex-direction: column; gap: 3px; padding: 7px 10px; font-size: 11px; min-width: 64px; align-items: center; white-space: nowrap; }
   .nav .globo { position: absolute; top: 2px; right: 8px; margin: 0; min-width: 17px; height: 17px; font-size: 10px; }
   .principal { padding-top: 18px; padding-bottom: 110px; }
   .cabeza h1 { font-size: 22px; }

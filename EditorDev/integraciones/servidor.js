@@ -65,7 +65,8 @@ export async function asegurarUrl(forzar = false) {
   buscadoEn = Date.now();
   buscando = (async () => {
     try {
-      const r = await fetch(new URL("../servidor.json", location.href), { cache: "no-store" });
+      // «?t=» salta la caché de GitHub Pages (guarda hasta 10 min): si el túnel cambió, se sabe ya.
+      const r = await fetch(new URL("../servidor.json?t=" + Math.floor(Date.now() / 15000), location.href), { cache: "no-store" });
       if (r.ok) {
         const url = limpiarUrl((await r.json()).url);
         if (url && url !== leer().url) guardar({ ...leer(), url });   // el túnel cambió: la sesión sigue valiendo
@@ -76,7 +77,9 @@ export async function asegurarUrl(forzar = false) {
   return buscando;
 }
 
-async function pedir(ruta, { method = "GET", body } = {}) {
+const DORMIDO = `${NOMBRE} no contesta ahora mismo (el teléfono del servidor puede estar apagado o sin internet). Tus cosas siguen guardadas en este aparato; inténtalo en un ratito.`;
+
+async function pedir(ruta, { method = "GET", body } = {}, otraVez = true) {
   const base = await asegurarUrl();
   if (!base) throw new Error(`${NOMBRE} no está disponible ahora mismo. Inténtalo en un ratito.`);
   if (bloqueada(base)) throw new Error(`${NOMBRE} no tiene una dirección segura (https) ahora mismo.`);
@@ -89,8 +92,11 @@ async function pedir(ruta, { method = "GET", body } = {}) {
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch (e) {
-    asegurarUrl(true);   // quizá el túnel cambió de dirección
-    throw new Error(`No hay conexión con ${NOMBRE}. Revisa tu internet e inténtalo otra vez.`);
+    if (!navigator.onLine) throw new Error("Este aparato está sin internet.");
+    // Quizá el túnel cambió de dirección (el teléfono se reinició): se busca la nueva y se vuelve a intentar UNA vez.
+    const nueva = await asegurarUrl(true);
+    if (otraVez && nueva && nueva !== base) return pedir(ruta, { method, body }, false);
+    throw new Error(DORMIDO);
   }
   let d = {};
   try { d = await r.json(); } catch (e) { /* nada */ }
@@ -118,7 +124,7 @@ async function subir(ruta, blob, alAvance) {
       if (x.status >= 200 && x.status < 300) ok(d);
       else mal(Object.assign(new Error(d.error || `${NOMBRE} contestó ${x.status}`), { status: x.status }));
     };
-    x.onerror = () => mal(new Error(`Se cortó la conexión con ${NOMBRE} mientras subía.`));
+    x.onerror = () => { asegurarUrl(true); mal(new Error(navigator.onLine ? `Se cortó la conexión con ${NOMBRE} mientras subía. Inténtalo otra vez.` : "Este aparato se quedó sin internet mientras subía.")); };
     x.ontimeout = () => mal(new Error("Tardó demasiado en subir."));
     x.send(blob);
   });
@@ -126,7 +132,10 @@ async function subir(ruta, blob, alAvance) {
 
 async function bajar(ruta) {
   const base = await asegurarUrl();
-  const r = await fetch(base + "/api/" + ruta, { headers: { Authorization: "Bearer " + leer().token }, cache: "no-store", credentials: "omit" });
+  if (!base) throw new Error(DORMIDO);
+  let r;
+  try { r = await fetch(base + "/api/" + ruta, { headers: { Authorization: "Bearer " + leer().token }, cache: "no-store", credentials: "omit" }); }
+  catch (e) { asegurarUrl(true); throw new Error(DORMIDO); }
   if (r.status === 401) olvidarSesion();
   if (!r.ok) throw new Error(`${NOMBRE} contestó ${r.status}`);
   return r.blob();

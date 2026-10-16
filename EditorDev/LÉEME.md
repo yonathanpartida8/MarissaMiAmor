@@ -521,6 +521,15 @@ Código nuevo: `herramientas/publicar-subidas.mjs`, `.github/workflows/publicar-
 
 Código nuevo: `components/menu-principal.js`, `components/exportar-menu.js`, `components/detallitos.js`, `components/cuenta.js`, `components/myn.js`, `styles/myn.css`; `integraciones/servidor.js` rehecho; `components/secciones/publicadas.js` rehecho; `export/exportar.js` puede armar una sola página (`soloPaginas`) con su proyecto. Se quitaron `integraciones/github.js`, `herramientas/publicar-subidas.mjs`, su acción y `publicar/`.
 
+### Fase 18: M.YNTHN que prende fácil, menú principal nuevo y vista previa del detallito
+
+| | |
+| --- | --- |
+| **Servidor** | instalar = un asistente de 3 pasitos en Termux (lo necesario, tu administrador, GitHub) que lo deja prendido y abre el panel; el código de instalación ya no cambia solo (era el «no es ese») y en el mismo teléfono ni se pide; `librito` solito lo prende o dice cómo va; el túnel se prueba desde internet y se reabre si no contesta; la dirección se reanuncia hasta que entra. Detalles en `servidor/LÉEME.md` |
+| **Menú principal** | rediseñado: un librito que pasa sus hojas, saludo según la hora, tu cuenta arriba (con puntito verde), botón grande «Entrar al editor» con destello, dos tarjetas (Detallitos —con el estado de tu amorcito y los nuevos— y tu cuenta), auroras de fondo y corazones que suben. Con mouse, la tarjeta se inclina apenas |
+| **Vista previa al mandar** | en Detallitos, la página se ve **terminada** (el mismo reproductor del librito, sin sonido) en un teléfono chiquito junto al sobre, con una notita que repite tu mensajito mientras escribes. Al tocarla se ve en grande y se puede tocar como la verá. Al enviar: la página entra al sobre, se cierra con su sello, late mientras sube y sale volando con chispitas; si falla, el sobre se abre y la página vuelve a salir |
+| **Conexión** | si el teléfono del servidor se reinició y cambió de dirección, el editor busca la nueva (sin esperar la caché de GitHub Pages) y reintenta solo; si no contesta, lo dice claro («puede estar apagado o sin internet; tus cosas siguen en este aparato») |
+
 ## Cómo está hecho
 
 ```

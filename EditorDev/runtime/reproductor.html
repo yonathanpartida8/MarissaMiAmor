@@ -32,6 +32,7 @@
       urlDatos: function (id) { return (d.datosUrls || {})[id] || null; },
       soloPagina: !!d.soloPagina,
       fijar: d.fijar || null,
+      silencio: !!d.silencio,
       ruta: function (r) { return d.base + r.split("/").map(encodeURIComponent).join("/"); },
       inicio: d.inicio,
       sinPortadilla: !d.portadilla,

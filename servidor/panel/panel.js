@@ -59,6 +59,7 @@
     return b;
   }
   const peso = (b) => { b = +b || 0; const u = ["B", "KB", "MB", "GB", "TB"]; let i = 0; while (b >= 1024 && i < u.length - 1) { b /= 1024; i++; } return (i ? b.toFixed(b < 10 ? 1 : 0) : b) + " " + u[i]; };
+  const haceRato = (s) => { const m = Math.max(0, Math.round((Date.now() - new Date(s)) / 60000)); return m < 1 ? "hace un momento" : m < 60 ? `hace ${m} min` : `hace ${Math.round(m / 60)} h`; };
   const fecha = (s) => { if (!s) return ""; try { return new Date(s).toLocaleString("es-MX", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch (e) { return s; } };
   const avisos = document.querySelector(".avisos");
   function aviso(t, tipo = "") { const a = h("div.aviso" + (tipo ? "." + tipo : ""), { text: t }); avisos.append(a); setTimeout(() => { a.style.opacity = "0"; a.style.transition = "opacity .3s"; setTimeout(() => a.remove(), 320); }, 3200); }
@@ -114,6 +115,7 @@
     const c1 = h("input", { type: "password", autocomplete: "new-password" });
     const c2 = h("input", { type: "password", autocomplete: "new-password" });
     const msg = h("p.mensaje");
+    const local = !!INFO.en_el_telefono;
     const ir = btn("Crear administrador", async () => {
       if (c1.value !== c2.value) { msg.textContent = "Las contraseñas no coinciden."; return; }
       ir.disabled = true; msg.textContent = "";
@@ -121,12 +123,13 @@
       catch (e) { msg.textContent = e.message; ir.disabled = false; }
     }, "primario ancho");
     RAIZ.replaceChildren(h("div.entrada", {}, h("form.tarjeta-entrada", { onSubmit: (e) => { e.preventDefault(); ir.click(); } },
-      marcaEntrada("Bienvenido a tu servidor", "Primero, crea la cuenta de administrador."),
-      campo("Código de instalación", codigo, "Sale en la terminal de Termux al arrancar (y en ~/librito-datos/codigo-instalacion.txt)."),
+      marcaEntrada("Bienvenido a M.YNTHN", "Primero, crea tu cuenta de administrador."),
+      local ? h("p.nota-ok", { text: "Estás en el mismo teléfono del servidor: no hace falta ningún código." })
+        : campo("Código de instalación", codigo, "En Termux escribe «librito estado» y cópialo (con o sin guion, da igual). Más fácil: abre este panel en el mismo teléfono, o escribe «librito admin»."),
       campo("Usuario", usuario, "3 a 32: letras minúsculas, números, punto, guion."),
       campo("Contraseña", c1, "Mínimo 8 caracteres. Mejor una frase larga."),
       campo("Repítela", c2), ir, msg)));
-    codigo.focus();
+    (local ? usuario : codigo).focus();
   }
 
   function pantallaEntrar(modo = "entrar") {
@@ -152,7 +155,7 @@
       } catch (e) { msg.textContent = e.message; ir.disabled = false; }
     }, "primario ancho");
     RAIZ.replaceChildren(h("div.entrada", {}, h("form.tarjeta-entrada", { onSubmit: (e) => { e.preventDefault(); ir.click(); } },
-      marcaEntrada(INFO.nombre || "M.YNTHN", modo === "entrar" ? "Entra para administrar tus publicaciones y proyectos." : INFO.registro === "codigo" ? "Necesitas un código de invitación." : "Tu cuenta quedará esperando la aprobación del administrador."),
+      marcaEntrada(INFO.nombre || "M.YNTHN", modo === "entrar" ? "Entra para administrar tus publicaciones y proyectos." : INFO.registro === "codigo" ? "Necesitas un código de invitación." : INFO.registro === "abierto" ? "Crea tu cuenta y entras al momento." : "Tu cuenta quedará esperando la aprobación del administrador."),
       puedeRegistro ? h("div.pestanas", {}, h("button", { type: "button", class: modo === "entrar" ? "on" : "", text: "Entrar", onClick: () => pantallaEntrar("entrar") }), h("button", { type: "button", class: modo === "registro" ? "on" : "", text: "Crear cuenta", onClick: () => pantallaEntrar("registro") })) : null,
       campo("Usuario", usuario), campo("Contraseña", c1),
       modo === "registro" ? campo("Repítela", c2) : null,
@@ -231,9 +234,12 @@
     const otros = Math.max(0, d.telefono_usado - d.publicaciones - d.proyectos - (d.detallitos || 0) - d.base);
     zona.replaceChildren(
       h("div.caja.destacada.ancha", {}, h("h2", { html: ico("enlace") + "<span>Conectar el editor</span>" }),
-        url ? h("p", { text: "Esta es la dirección de tu servidor en internet. El editor la encuentra solo (si «anunciar» está encendido), o pégala en Páginas publicadas → Tu servidor." })
+        url ? h("p", { text: "Esta es la dirección de tu servidor en internet. El editor la encuentra solo: no hay que copiarla en ningún lado." })
           : h("p", { text: r.tunel === "cloudflare" ? (r.cloudflared ? "Abriendo el túnel… (tarda unos segundos)" : "Falta cloudflared: en Termux escribe «pkg install cloudflared» y reinicia el servidor.") : "El túnel está apagado: el servidor sólo se ve en tu wifi." }),
         url ? h("div.url", {}, h("span", { text: url })) : null,
+        url ? h("div.fila.estados", {},
+          r.tunel_probado ? pildora("Probado desde internet " + haceRato(r.tunel_probado), "ok") : pildora("Conectado; la primera prueba desde internet tarda ~3 min", "lila"),
+          r.github.listo ? (r.anunciada ? pildora("El editor ya la conoce", "ok") : pildora("Avisándole al editor…", "aviso vivo")) : pildora("Conecta GitHub para que el editor la encuentre", "aviso")) : null,
         h("div.fila", {},
           url ? btn("Copiar", () => copiar(url), "chico", "copiar") : null,
           enlaceEditor(url) ? h("a.btn.chico.primario", { href: enlaceEditor(url), target: "_blank", rel: "noopener", text: "Abrir el editor emparejado" }) : null,
@@ -263,7 +269,7 @@
     c.append(lista);
     let d;
     try { d = await api("publicaciones" + (todas ? "?todas=1" : "")); } catch (e) { lista.replaceChildren(vacio(e.message)); return; }
-    if (!d.publicaciones.length) { lista.replaceChildren(vacio("Todavía no hay publicaciones. Publica desde el editor: Páginas publicadas → Tu servidor.")); return; }
+    if (!d.publicaciones.length) { lista.replaceChildren(vacio("Todavía no hay publicaciones. En el editor: Exportar → Publicar en servidor M.YNTHN.")); return; }
     lista.replaceChildren(...d.publicaciones.map((p) => {
       const estado = { publicada: ["Publicada", "ok"], local: ["Sólo aquí", "lila"], subiendo: ["Subiendo…", "aviso vivo"], preparando: ["Preparando…", "aviso vivo"], quitando: ["Quitando…", "aviso vivo"], error: ["Error", "mal"] }[p.estado] || [p.estado, ""];
       return h("div.item", {}, h("div.icono", { html: ico("pub") }),
@@ -286,7 +292,7 @@
   /* — Proyectos — */
   async function proyectos(c) {
     const todas = YO.rol === "admin";
-    c.append(cabeza("Proyectos guardados", "Copias completas de tus libritos (con todo para volver a editarlos). Se guardan desde el editor: Páginas publicadas → Tu servidor → Guardar este proyecto."));
+    c.append(cabeza("Proyectos guardados", "Copias completas de los libritos (con todo para volver a editarlos), en una carpeta por usuario y por proyecto. Se guardan solas cada vez que alguien guarda a mano en el editor."));
     const lista = h("div.lista", {}, cargando());
     c.append(lista);
     let d;
@@ -439,7 +445,7 @@
     let d;
     try { d = await api("admin/actividad"); } catch (e) { c.append(vacio(e.message)); return; }
     if (!d.actividad.length) { c.append(vacio("Nada todavía.")); return; }
-    const NOM = { entrar: "Entró", "entrar-fallo": "Contraseña mal", registro: "Se registró", publicar: "Publicó", quitar: "Quitó", proyecto: "Guardó proyecto", "proyecto-borrar": "Borró proyecto", ajustes: "Ajustes", github: "GitHub", pages: "GitHub Pages", usuario: "Cuenta", invitacion: "Invitación", instalar: "Instalación", contrasena: "Contraseña" };
+    const NOM = { entrar: "Entró", "entrar-fallo": "Contraseña mal", registro: "Se registró", publicar: "Publicó", quitar: "Quitó", proyecto: "Guardó proyecto", "proyecto-borrar": "Borró proyecto", ajustes: "Ajustes", github: "GitHub", pages: "GitHub Pages", usuario: "Cuenta", invitacion: "Invitación", instalar: "Instalación", contrasena: "Contraseña", vincular: "Se vinculó", desvincular: "Se desvinculó", detallito: "Mandó un detallito" };
     c.append(h("div.caja", {}, h("div.desplazable", {}, h("table.tabla", {}, h("thead", {}, h("tr", {}, ...["Cuándo", "Quién", "Qué", "Detalle", "IP"].map((t) => h("th", { text: t })))),
       h("tbody", {}, ...d.actividad.map((a) => h("tr", {}, h("td", { text: fecha(a.t) }), h("td", { text: a.usuario }), h("td", {}, pildora(NOM[a.accion] || a.accion, a.accion === "entrar-fallo" ? "mal" : "")), h("td", { text: a.detalle }), h("td", {}, h("code", { text: a.ip })))))))));
   }

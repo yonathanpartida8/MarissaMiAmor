@@ -212,7 +212,9 @@ async function navegar(e, req) {
 /* ═══ El código ════════════════════════════════════════════════════ */
 async function codigo(req, esPagina) {
   const id = await huella();
-  if (!id || req.cache === "no-store" || req.cache === "reload") return redPrimero(req, esPagina);
+  // «no-store» quiere decir eso: ni se guarda (p. ej. servidor.json?t=…, que cambia cada vez).
+  if (req.cache === "no-store") return fetch(req).catch(() => caches.match(req, { ignoreSearch: true }).then((r) => r || Response.error()));
+  if (!id || req.cache === "reload") return redPrimero(req, esPagina);
   const c = await caches.open(CODIGO + id);
   const hit = await c.match(req.url, { ignoreVary: true });
   if (hit) return hit;

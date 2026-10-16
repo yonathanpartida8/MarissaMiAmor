@@ -52,6 +52,8 @@
       this.actual = null;
       this.ocupado = false;
       this.musica = new RT.Musica();
+      // Vistas previas chiquitas (Detallitos): la página se ve, pero no suena.
+      if (this.op.silencio) this.musica.silencio = true;
       this.ctx = {
         modo: "vista", activo: true,
         url: (id) => this.op.url(id),
@@ -294,6 +296,7 @@
        a su hora, desde su recorte, con su volumen; la música baja mientras suenan. */
     _pistas(pag) {
       this._pararPistas();
+      if (this.op.silencio) return;
       for (const t of pag.audios || []) {
         if (t.silencio) continue; // silenciada en la línea de tiempo
         const url = this.op.url(t.asset);

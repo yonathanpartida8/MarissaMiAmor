@@ -63,13 +63,16 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
 GITHUB_API = os.environ.get("LIBRITO_GITHUB_API", "https://api.github.com").rstrip("/")
 CARPETA_PUB = "publicaciones"
 ARCHIVO_ANUNCIO = "servidor.json"
+RUTA_CODIGO = os.path.join(DATOS, "codigo-instalacion.txt")   # el código para crear el primer administrador
+RUTA_ESTADO = os.path.join(DATOS, "estado.json")              # pid, puerto y dirección del servidor PRENDIDO (para «librito»)
+VIGIA_S = max(5, int(os.environ.get("LIBRITO_VIGIA_S", "150")))  # cada cuánto se prueba el túnel desde internet
 
 AJUSTES_BASE = {
     "nombre": "M.YNTHN",
@@ -153,39 +156,66 @@ def log(*partes):
 #  Ajustes (config.json, sin secretos)
 # ════════════════════════════════════════════════════════════════════════
 class Ajustes:
+    """config.json. Si otra orden lo cambia (p. ej. «librito github» con el servidor
+    prendido), el servidor lo relee solo: no hace falta reiniciarlo."""
     def __init__(self):
         self.ruta = os.path.join(DATOS, "config.json")
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
+        self._mtime, self._revisado = 0, 0
         self.d = json.loads(json.dumps(AJUSTES_BASE))
         if os.path.exists(self.ruta):
-            try:
-                with open(self.ruta, encoding="utf-8") as f:
-                    guardado = json.load(f)
-                for k, v in guardado.items():
-                    if k == "github" and isinstance(v, dict):
-                        self.d["github"].update(v)
-                    elif k in self.d:
-                        self.d[k] = v
-            except (OSError, ValueError) as e:
-                log("config.json no se pudo leer, se usan los valores de fábrica:", e)
+            self._leer()
         else:
             self.guardar()
 
+    def _leer(self):
+        d = json.loads(json.dumps(AJUSTES_BASE))
+        try:
+            with open(self.ruta, encoding="utf-8") as f:
+                guardado = json.load(f)
+            for k, v in guardado.items():
+                if k == "github" and isinstance(v, dict):
+                    d["github"].update(v)
+                elif k in d:
+                    d[k] = v
+            self.d = d
+            self._mtime = os.path.getmtime(self.ruta)
+        except (OSError, ValueError) as e:
+            log("config.json no se pudo leer, se usan los valores que había:", e)
+
+    def _al_dia(self):
+        if ahora() - self._revisado < 1:
+            return
+        self._revisado = ahora()
+        try:
+            m = os.path.getmtime(self.ruta)
+        except OSError:
+            return
+        if m != self._mtime:
+            with self.lock:
+                self._leer()
+
     def __getitem__(self, k):
+        self._al_dia()
         return self.d[k]
 
     def guardar(self):
         with self.lock:
             escribir_seguro(self.ruta, json.dumps(self.d, ensure_ascii=False, indent=1))
+            try:
+                self._mtime = os.path.getmtime(self.ruta)
+            except OSError:
+                pass
 
     def poner(self, **cambios):
         with self.lock:
+            self._al_dia()
             for k, v in cambios.items():
                 if k == "github":
                     self.d["github"].update(v)
                 else:
                     self.d[k] = v
-        self.guardar()
+            self.guardar()
 
 
 # ════════════════════════════════════════════════════════════════════════
@@ -537,8 +567,14 @@ def sitio_de(repo):
 # ════════════════════════════════════════════════════════════════════════
 #  El servidor: estado compartido
 # ════════════════════════════════════════════════════════════════════════
+def normal_codigo(c):
+    """«k7p2 9qx4», «K7P29QX4» o «K7P2-9QX4» → «K7P2-9QX4»."""
+    c = re.sub(r"[^A-Z0-9]", "", str(c or "").upper())
+    return c[:4] + "-" + c[4:8] if len(c) == 8 else c
+
+
 class Estado:
-    def __init__(self):
+    def __init__(self, arranque=False):
         for d in ("publicaciones", "proyectos", "detallitos", "tmp"):
             os.makedirs(os.path.join(DATOS, d), exist_ok=True)
         os.chmod(DATOS, 0o700)
@@ -555,16 +591,50 @@ class Estado:
         self._carpetas = (0, set())
         self.intentos = {}                       # ip/usuario → [fallos, bloqueado_hasta]
         self.lock_intentos = threading.Lock()
-        self.codigo_instalacion = None
-        if not self.db.uno("SELECT id FROM usuarios WHERE rol='admin' AND estado='activo'"):
-            self.codigo_instalacion = "-".join("".join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(4)) for _ in range(2))
-            escribir_seguro(os.path.join(DATOS, "codigo-instalacion.txt"), self.codigo_instalacion + "\n")
-        for f in os.listdir(os.path.join(DATOS, "tmp")):
+        self.anunciando = ""
+        self.arranque_id = secrets.token_hex(8)  # para que el vigía del túnel sepa que contesta ESTE servidor
+        self.tunel_ok = 0                        # la última vez que el túnel se probó desde internet y contestó
+        if arranque:
+            # Sólo al prender: lo que quedó a medias de la vez anterior. (Las otras
+            # órdenes —estado, admin, github— corren MIENTRAS el servidor trabaja.)
+            for f in os.listdir(os.path.join(DATOS, "tmp")):
+                try:
+                    p = os.path.join(DATOS, "tmp", f)
+                    shutil.rmtree(p) if os.path.isdir(p) else os.unlink(p)
+                except OSError:
+                    pass
+
+    # — El primer administrador —
+    def instalado(self):
+        return bool(self.db.uno("SELECT id FROM usuarios WHERE rol='admin' AND estado='activo'"))
+
+    def codigo_instalacion(self):
+        """El código para crear el primer administrador desde otro aparato.
+        Es SIEMPRE el mismo hasta que se usa: vive en codigo-instalacion.txt y
+        todas las órdenes (iniciar, estado…) leen ese mismo archivo."""
+        if self.instalado():
             try:
-                p = os.path.join(DATOS, "tmp", f)
-                shutil.rmtree(p) if os.path.isdir(p) else os.unlink(p)
+                os.unlink(RUTA_CODIGO)
             except OSError:
                 pass
+            return None
+        try:
+            with open(RUTA_CODIGO, encoding="utf-8") as f:
+                c = normal_codigo(f.read())
+            if re.match(r"^[A-Z0-9]{4}-[A-Z0-9]{4}$", c):
+                return c
+        except OSError:
+            pass
+        c = "-".join("".join(secrets.choice(LETRAS_CODIGO) for _ in range(4)) for _ in range(2))
+        try:
+            # O_EXCL: si dos órdenes llegan a la vez, gana una y la otra lee ese mismo.
+            fd = os.open(RUTA_CODIGO, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(c + "\n")
+            return c
+        except FileExistsError:
+            with open(RUTA_CODIGO, encoding="utf-8") as f:
+                return normal_codigo(f.read())
 
     # — GitHub —
     def github(self):
@@ -845,80 +915,187 @@ def trabajo_quitar(t, slug, usuario):
 
 
 def anunciar_direccion():
-    """Escribe servidor.json en tu sitio para que el editor encuentre el servidor solo."""
+    """Escribe servidor.json en tu sitio para que el editor encuentre el servidor solo.
+    Si falla (sin internet, GitHub caído), el mantenimiento lo vuelve a intentar cada
+    pocos minutos: la dirección sólo se da por anunciada cuando el commit entró."""
     url = E.url_publica()
     gh = E.github()
-    if not (url and gh and E.aj["anunciar"]) or url == E.anunciada:
+    if not (url and gh and E.aj["anunciar"]) or url in (E.anunciada, E.anunciando):
         return
     cuerpo = json.dumps({"url": url, "nombre": E.aj["nombre"], "actualizado": iso()}, ensure_ascii=False, indent=1).encode() + b"\n"
 
     def hacer(t):
-        def armar(commit, arbol):
-            actual = gh.leer(ARCHIVO_ANUNCIO, commit)
-            if actual:
-                try:
-                    if json.loads(actual).get("url") == url:
-                        return []
-                except ValueError:
-                    pass
-            return [{"path": ARCHIVO_ANUNCIO, "mode": "100644", "type": "blob", "sha": gh.blob(cuerpo)}]
-        commit, arbol = gh.cabeza()
-        if not armar(commit, arbol):
+        try:
+            def armar(commit, arbol):
+                actual = gh.leer(ARCHIVO_ANUNCIO, commit)
+                if actual:
+                    try:
+                        if json.loads(actual).get("url") == url:
+                            return []
+                    except ValueError:
+                        pass
+                return [{"path": ARCHIVO_ANUNCIO, "mode": "100644", "type": "blob", "sha": gh.blob(cuerpo)}]
+            commit, arbol = gh.cabeza()
+            if armar(commit, arbol):
+                gh.confirmar(armar, "Dirección del servidor del librito")
+                gh.reconstruir()
+            if E.url_publica() == url:
+                E.anunciada = url
+                log("Dirección anunciada en", ARCHIVO_ANUNCIO, "→", url, "(el editor la ve en uno o dos minutos)")
             return {}
-        gh.confirmar(armar, "Dirección del servidor del librito")
-        gh.reconstruir()
-        return {}
-    E.anunciada = url
+        except Falla as e:
+            log("No se pudo anunciar la dirección (lo vuelvo a intentar en unos minutos):", e)
+            raise
+        finally:
+            E.anunciando = ""
+    E.anunciando = url
     E.trabajo("anunciar", None, hacer)
-    log("La dirección del servidor se anuncia en", ARCHIVO_ANUNCIO, "→", url)
+
+
+def escribir_estado(borrar=False):
+    """estado.json: lo que «librito» necesita saber del servidor PRENDIDO (nunca secretos)."""
+    if borrar:
+        try:
+            os.unlink(RUTA_ESTADO)
+        except OSError:
+            pass
+        return
+    try:
+        escribir_seguro(RUTA_ESTADO, json.dumps({
+            "pid": os.getpid(), "version": VERSION, "puerto": E.aj["puerto"], "red_local": ip_local(),
+            "url": E.url_publica(), "tunel": E.aj["tunel"], "tunel_listo": bool(E.url_tunel), "tunel_probado": iso(E.tunel_ok) if E.tunel_ok else "",
+            "instalado": E.instalado(), "github": bool(E.github()), "desde": iso()}, ensure_ascii=False, indent=1))
+    except OSError:
+        pass
 
 
 # ════════════════════════════════════════════════════════════════════════
 #  El túnel (cloudflared): para que el editor en internet llegue al teléfono
+#
+#  · La dirección se da por buena sólo cuando cloudflared dice que conectó
+#    («Registered tunnel connection»), no apenas la inventa.
+#  · Un vigía la prueba DESDE INTERNET cada pocos minutos (pide /api/salud por
+#    la dirección pública). Si deja de contestar 3 veces seguidas, se reabre.
+#  · Si no logra conectar, la siguiente vez prueba con http2 (algunas redes de
+#    datos bloquean QUIC, que es lo que usa de fábrica).
 # ════════════════════════════════════════════════════════════════════════
 class Tunel(threading.Thread):
     URL = re.compile(r"https://[-a-z0-9]+\.trycloudflare\.com")
+    CONECTADO = re.compile(r"Registered tunnel connection|Connection [0-9a-f-]+ registered", re.I)
 
     def __init__(self, puerto):
         super().__init__(daemon=True)
         self.puerto, self.proc, self.parar = puerto, None, False
+        self.url = ""            # la dirección de ESTE túnel (la global la puede tener ya otro)
+        self.protocolo = "auto"
+        self.fallos_vigia = 0
+
+    def poner(self, url):
+        if self.parar or not url or E.url_tunel == url:
+            return
+        E.url_tunel = url
+        log("Túnel listo:", url)
+        escribir_estado()
+        try:
+            anunciar_direccion()
+        except Exception as e:   # noqa: BLE001
+            log("No se pudo anunciar la dirección:", e)
 
     def run(self):
-        espera = 5
+        espera, sin_conectar = 5, 0
+        threading.Thread(target=self.vigia, daemon=True).start()
         while not self.parar:
             exe = shutil.which("cloudflared")
             if not exe:
-                log("Túnel: no está cloudflared (instálalo con «pkg install cloudflared»). El servidor sólo se ve en tu red.")
+                log("Túnel: no está cloudflared (instálalo con «pkg install cloudflared» y «librito reiniciar»). El servidor sólo se ve en tu wifi.")
                 return
-            log("Túnel: abriendo con cloudflared…")
+            orden = [exe, "tunnel", "--no-autoupdate"] + (["--protocol", self.protocolo] if self.protocolo != "auto" else []) + ["--url", f"http://127.0.0.1:{self.puerto}"]
+            log("Túnel: abriendo con cloudflared" + (f" ({self.protocolo})" if self.protocolo != "auto" else "") + "…")
             try:
-                self.proc = subprocess.Popen([exe, "tunnel", "--no-autoupdate", "--url", f"http://127.0.0.1:{self.puerto}"],
-                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+                self.proc = subprocess.Popen(orden, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, errors="replace")
             except OSError as e:
                 log("Túnel: no se pudo abrir:", e)
                 return
-            inicio = ahora()
+            inicio, self.url, conectado, ultimas = ahora(), "", False, []
+            respaldo = None
             for linea in self.proc.stdout:
+                ultimas = (ultimas + [linea.strip()])[-6:]
                 m = self.URL.search(linea)
-                if m and m.group(0) != E.url_tunel:
-                    E.url_tunel = m.group(0)
-                    log("Túnel listo:", E.url_tunel)
-                    try:
-                        anunciar_direccion()
-                    except Exception as e:   # noqa: BLE001
-                        log("No se pudo anunciar la dirección:", e)
+                if m and not self.url:
+                    self.url = m.group(0)
+                    # Por si esta versión de cloudflared no avisa al conectar: a los 25 s se da por buena igual.
+                    respaldo = threading.Timer(25, lambda u=self.url: self.poner(u) if self.url == u else None)
+                    respaldo.daemon = True
+                    respaldo.start()
+                if self.url and not conectado and self.CONECTADO.search(linea):
+                    conectado = True
+                    self.fallos_vigia = 0
+                    self.poner(self.url)
             self.proc.wait()
-            E.url_tunel = ""
+            if respaldo:
+                respaldo.cancel()
+            if E.url_tunel == self.url:
+                E.url_tunel = ""
+                escribir_estado()
             if self.parar:
                 return
+            if not conectado:
+                sin_conectar += 1
+                errores = [l for l in ultimas if re.search(r"\b(ERR|error|failed)\b", l, re.I)] or ultimas[-1:]
+                dijo = re.sub(r"^\S+Z\s+", "", errores[-1] if errores else "").strip()
+                log("Túnel: no logró conectar." + (f" cloudflared dijo: {dijo[:200]}" if dijo else ""))
+                if sin_conectar % 2 == 0:
+                    self.protocolo = "http2" if self.protocolo == "auto" else "auto"
+            else:
+                sin_conectar = 0
             espera = 5 if ahora() - inicio > 120 else min(300, espera * 2)
             log(f"Túnel: se cerró; lo vuelvo a abrir en {espera} s.")
-            time.sleep(espera)
+            for _ in range(espera):
+                if self.parar:
+                    return
+                time.sleep(1)
+
+    def vigia(self):
+        """Prueba el túnel desde internet; si no contesta 3 veces seguidas, lo reabre."""
+        while not self.parar:
+            for _ in range(VIGIA_S):
+                if self.parar:
+                    return
+                time.sleep(1)
+            url = E.url_tunel
+            if not url or url != self.url or not self.proc or self.proc.poll() is not None:
+                continue
+            try:
+                req = urllib.request.Request(url + "/api/salud", headers={"User-Agent": "librito-vigia/" + VERSION})
+                with urllib.request.urlopen(req, timeout=20) as r:
+                    ok = json.loads(r.read() or b"{}").get("id") == E.arranque_id
+            except Exception:   # noqa: BLE001 — cualquier cosa cuenta como «no contestó»
+                ok = False
+            if ok:
+                self.fallos_vigia = 0
+                E.tunel_ok = ahora()
+                escribir_estado()
+                continue
+            self.fallos_vigia += 1
+            log(f"Túnel: no contestó desde internet ({self.fallos_vigia} de 3).")
+            if self.fallos_vigia >= 3:
+                self.fallos_vigia = 0
+                log("Túnel: lo reabro para que tenga una conexión nueva.")
+                try:
+                    self.proc.terminate()
+                except OSError:
+                    pass
 
     def cerrar(self):
         self.parar = True
         if self.proc and self.proc.poll() is None:
             self.proc.terminate()
+            try:
+                self.proc.wait(5)
+            except subprocess.TimeoutExpired:
+                self.proc.kill()
+        if E.url_tunel == self.url:
+            E.url_tunel = ""
 
 
 TUNEL = None
@@ -957,6 +1134,17 @@ class Manejador(BaseHTTPRequestHandler):
     def de_aqui(self):
         """¿Llega por este mismo teléfono (el túnel)? Sólo entonces se creen las cabeceras X-Forwarded-*."""
         return self.client_address[0] in ("127.0.0.1", "::1")
+
+    def en_el_telefono(self):
+        """¿Lo abriste en el navegador del MISMO teléfono (http://127.0.0.1:8787), sin pasar por el túnel?
+        Ahí no hace falta el código de instalación: quien tiene el teléfono en la mano ya es el dueño."""
+        ip = self.client_address[0]
+        if ip not in ("127.0.0.1", "::1") and ip != ip_local():
+            return False
+        if any(self.headers.get(k) for k in ("CF-Connecting-IP", "CF-Ray", "Cf-Visitor", "X-Forwarded-For", "X-Forwarded-Host", "X-Forwarded-Proto")):
+            return False   # llegó por el túnel (o por otro proxy)
+        host = (self.headers.get("Host") or "").rsplit(":", 1)[0].strip("[]").lower()
+        return host in ("127.0.0.1", "localhost", "::1", ip_local())
 
     def es_https(self):
         return self.de_aqui() and (self.headers.get("X-Forwarded-Proto") == "https" or "https" in (self.headers.get("Cf-Visitor") or ""))
@@ -1053,7 +1241,11 @@ class Manejador(BaseHTTPRequestHandler):
 
     # — Lo que llega —
     def cuerpo_json(self):
-        n = int(self.headers.get("Content-Length") or 0)
+        self._leido = True
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            raise Falla("Content-Length inválido.")
         if n > 64 * 1024:
             raise Falla("Demasiado grande.", 413)
         if n and "json" not in (self.headers.get("Content-Type") or ""):
@@ -1064,6 +1256,7 @@ class Manejador(BaseHTTPRequestHandler):
             raise Falla("JSON inválido.")
 
     def cuerpo_a_archivo(self):
+        self._leido = True
         try:
             n = int(self.headers.get("Content-Length") or -1)
         except ValueError:
@@ -1071,7 +1264,7 @@ class Manejador(BaseHTTPRequestHandler):
         if n < 0:
             raise Falla("Falta el tamaño de lo que se sube (Content-Length).", 411)
         if n > E.aj["max_subida_mb"] * 1024 * 1024:
-            self.close_connection = True
+            self._leido = False
             raise Falla(f"Pesa más de {E.aj['max_subida_mb']} MB (se puede cambiar en el panel → Ajustes).", 413)
         fd, tmp = tempfile.mkstemp(dir=os.path.join(DATOS, "tmp"), suffix=".zip")
         try:
@@ -1162,18 +1355,44 @@ class Manejador(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _seguro(self):
+        self._leido = False
         try:
             self.atender()
         except Falla as e:
             self.error(e.codigo, str(e))
         except (BrokenPipeError, ConnectionResetError):
-            pass
+            self.close_connection = True
+            return
         except Exception as e:   # noqa: BLE001
             log("Error atendiendo", self.command, self.path.split("?")[0], repr(e))
             try:
                 self.error(500, "Algo salió mal en el servidor.")
             except OSError:
                 pass
+        self._vaciar()
+
+    def _vaciar(self):
+        """Si se contestó (un error, casi siempre) sin leer lo que mandaron, se lee y se tira:
+        así la conexión queda limpia para el pedido siguiente y el navegador no ve un «corte»."""
+        if self._leido:
+            return
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            n = -1
+        if n == 0:
+            return
+        if n < 0 or n > 64 * 1024 * 1024:
+            self.close_connection = True
+            return
+        try:
+            while n > 0:
+                trozo = self.rfile.read(min(1 << 20, n))
+                if not trozo:
+                    break
+                n -= len(trozo)
+        except OSError:
+            self.close_connection = True
 
     do_GET = do_HEAD = do_POST = do_PUT = do_PATCH = do_DELETE = _seguro
 
@@ -1252,24 +1471,34 @@ def nueva_sesion(h, u, cliente, recordar):
 @ruta("GET", "/api/info")
 def api_info(h, s):
     sitio = E.sitio() if E.github() else ""
+    instalado = E.instalado()
     h.responder(200, {
         "nombre": E.aj["nombre"], "version": VERSION, "registro": E.aj["registro"],
-        "instalado": E.codigo_instalacion is None, "github": bool(E.github()), "sitio": sitio,
+        "instalado": instalado, "en_el_telefono": (not instalado) and h.en_el_telefono(),
+        "github": bool(E.github()), "sitio": sitio,
         "url_publica": E.url_publica(), "editor": (sitio + "EditorDev/") if sitio else "",
         "max_subida_mb": E.aj["max_subida_mb"]})
 
 
+@ruta("GET", "/api/salud")
+def api_salud(h, s):
+    """Para el vigía del túnel (y para ti): ¿contesta este servidor?"""
+    h.responder(200, {"ok": True, "id": E.arranque_id, "version": VERSION})
+
+
 @ruta("POST", "/api/instalar")
 def api_instalar(h, s):
-    if E.codigo_instalacion is None:
-        raise Falla("El servidor ya tiene administrador.", 409)
+    if E.instalado():
+        raise Falla("El servidor ya tiene administrador: entra con su usuario y contraseña.", 409)
     ip = h.ip()
     if E.frenado("instalar:" + ip):
         raise Falla("Demasiados intentos. Espera un poco.", 429)
     d = h.cuerpo_json()
-    if not hmac.compare_digest(str(d.get("codigo", "")).strip().upper().encode(), E.codigo_instalacion.encode()):
-        E.fallo("instalar:" + ip, limite=5)
-        raise Falla("El código de instalación no es ese (míralo en la terminal de Termux).", 403)
+    if not h.en_el_telefono():
+        esperado = E.codigo_instalacion() or ""
+        if not hmac.compare_digest(normal_codigo(d.get("codigo")).encode(), esperado.encode()):
+            E.fallo("instalar:" + ip, limite=8)
+            raise Falla("Ese no es el código. En Termux escribe «librito estado» y cópialo tal cual (o abre el panel en el mismo teléfono: ahí no hace falta).", 403)
     usuario = str(d.get("usuario", "")).strip().lower()
     if not USUARIO_RE.match(usuario):
         raise Falla("El usuario: de 3 a 32 letras minúsculas, números, punto, guion o guion bajo.")
@@ -1278,11 +1507,8 @@ def api_instalar(h, s):
         E.db.x("UPDATE usuarios SET hash=?, rol='admin', estado='activo' WHERE usuario=?", hashear(d["contrasena"]), usuario)
     else:
         E.db.crear_usuario(usuario, d["contrasena"], "admin", "activo")
-    E.codigo_instalacion = None
-    try:
-        os.unlink(os.path.join(DATOS, "codigo-instalacion.txt"))
-    except OSError:
-        pass
+    E.codigo_instalacion()   # ya hay administrador: el código se borra
+    escribir_estado()
     E.actividad(usuario, "instalar", "Primer administrador", ip)
     log("Administrador creado:", usuario)
     u = E.db.uno("SELECT * FROM usuarios WHERE usuario=?", usuario)
@@ -1796,6 +2022,7 @@ def api_resumen(h, s):
         "detallitos": E.db.uno("SELECT COUNT(*) n FROM detallitos")["n"], "parejas": E.db.uno("SELECT COUNT(*) n FROM usuarios WHERE pareja_id IS NOT NULL")["n"] // 2,
         "github": {"repo": g.get("repo", ""), "rama": g.get("rama", ""), "token": bool(caja.get("github_token")), "listo": bool(E.github())},
         "url_publica": E.url_publica(), "tunel": E.aj["tunel"], "cloudflared": bool(shutil.which("cloudflared")),
+        "tunel_probado": iso(E.tunel_ok) if E.tunel_ok else "", "anunciada": E.anunciada == E.url_publica() and bool(E.anunciada),
         "red_local": ip_local(), "puerto": E.aj["puerto"], "version": VERSION, "datos": DATOS,
         "trabajando": [{"tipo": t["tipo"], "paso": t["paso"]} for t in E.trabajos.values() if t["estado"] in ("esperando", "trabajando")]})
 
@@ -1819,7 +2046,10 @@ def api_poner_ajustes(h, s):
             v = d[k]
             if tipo is int:
                 lo, hi = TOPES[k]
-                v = max(lo, min(hi, int(v)))
+                try:
+                    v = max(lo, min(hi, int(v)))
+                except (TypeError, ValueError):
+                    raise Falla(f"«{k}» tiene que ser un número.")
             elif tipo is list:
                 v = [str(x).strip().rstrip("/") for x in v if re.match(r"^https?://[A-Za-z0-9.-]+(:\d+)?/?$", str(x).strip())][:20]
             elif tipo is bool:
@@ -2012,12 +2242,14 @@ def api_actividad(h, s):
 def api_reiniciar_tunel(h, s):
     global TUNEL
     if TUNEL:
-        TUNEL.cerrar()
+        threading.Thread(target=TUNEL.cerrar, daemon=True).start()
     TUNEL = None
+    E.url_tunel = ""
     if E.aj["tunel"] == "cloudflare":
         TUNEL = Tunel(E.aj["puerto"])
         TUNEL.start()
-    h.responder(200, {"ok": True})
+    escribir_estado()
+    h.responder(200, {"ok": True, "cloudflared": bool(shutil.which("cloudflared"))})
 
 
 # ════════════════════════════════════════════════════════════════════════
@@ -2032,38 +2264,60 @@ def ip_local():
         return "127.0.0.1"
 
 
+def mantenimiento():
+    """Cada minuto: anunciar la dirección si quedó pendiente; cada hora: sesiones vencidas y restos."""
+    vuelta = 0
+    while True:
+        time.sleep(60)
+        vuelta += 1
+        try:
+            if vuelta % 5 == 0:
+                anunciar_direccion()        # si falló antes (sin internet), aquí se reintenta
+            if vuelta % 60 == 0:
+                E.db.x("DELETE FROM sesiones WHERE expira < ?", ahora())
+                tmp = os.path.join(DATOS, "tmp")
+                for f in os.listdir(tmp):
+                    p = os.path.join(tmp, f)
+                    if ahora() - os.path.getmtime(p) > 86400:
+                        shutil.rmtree(p, ignore_errors=True) if os.path.isdir(p) else os.unlink(p)
+        except Exception as e:   # noqa: BLE001 — el mantenimiento nunca tumba el servidor
+            log("Mantenimiento:", repr(e))
+
+
 def iniciar(args):
     global E, TUNEL
-    E = Estado()
+    E = Estado(arranque=True)
     puerto = args.puerto or E.aj["puerto"]
     if args.puerto:
         E.aj.poner(puerto=puerto)
-    srv = ThreadingHTTPServer((E.aj["escuchar"], puerto), Manejador)
+    try:
+        srv = ThreadingHTTPServer((E.aj["escuchar"], puerto), Manejador)
+    except OSError as e:
+        if e.errno in (48, 98, 10048):
+            raise SystemExit(f"El puerto {puerto} ya está ocupado: el servidor ya está prendido (mira «librito estado») u otra app lo usa.")
+        raise
     srv.daemon_threads = True
-    log(f"Servidor del librito {VERSION} escuchando en el puerto {puerto}")
+    log(f"{E.aj['nombre']} {VERSION} escuchando en el puerto {puerto}")
     log(f"  En este teléfono:  http://127.0.0.1:{puerto}/")
     log(f"  En tu wifi:        http://{ip_local()}:{puerto}/")
     log(f"  Datos en:          {DATOS}")
-    if E.codigo_instalacion:
+    codigo = E.codigo_instalacion()
+    if codigo:
         log("")
-        log("  ★ Código de instalación (para crear el administrador en el panel):", E.codigo_instalacion)
+        log("  ★ Todavía no hay administrador. Créalo así (lo más fácil):")
+        log("      · en Termux: librito admin")
+        log(f"      · o en el navegador de ESTE teléfono: http://127.0.0.1:{puerto}/ (no pide código)")
+        log(f"      · o desde otro aparato, con el código de instalación: {codigo}")
         log("")
     if not E.github():
-        log("  GitHub todavía no está conectado: hazlo en el panel → GitHub (o con «python servidor.py github»).")
+        log("  GitHub todavía no está conectado: «librito github» (o en el panel → GitHub).")
+    escribir_estado()
     if E.aj["tunel"] == "cloudflare" and not args.sin_tunel:
         TUNEL = Tunel(puerto)
         TUNEL.start()
     elif E.url_publica():
         threading.Timer(3, anunciar_direccion).start()
-
-    def limpiar():
-        while True:
-            time.sleep(3600)
-            try:
-                E.db.x("DELETE FROM sesiones WHERE expira < ?", ahora())
-            except Exception:   # noqa: BLE001
-                pass
-    threading.Thread(target=limpiar, daemon=True).start()
+    threading.Thread(target=mantenimiento, daemon=True).start()
     # «librito detener» manda SIGTERM: se cierra igual que con Ctrl+C (y se lleva el túnel).
     signal.signal(signal.SIGTERM, lambda *_: (_ for _ in ()).throw(KeyboardInterrupt()))
     try:
@@ -2073,29 +2327,35 @@ def iniciar(args):
     finally:
         if TUNEL:
             TUNEL.cerrar()
+        escribir_estado(borrar=True)
 
 
 def orden_admin(args):
     global E
     E = Estado()
-    usuario = (args.usuario or input("Usuario del administrador: ")).strip().lower()
+    usuario = (args.usuario or input("Usuario del administrador (ej. yonathan): ")).strip().lower()
     if not USUARIO_RE.match(usuario):
-        raise SystemExit("Usuario no válido (3 a 32: letras minúsculas, números, . _ -).")
-    c1 = getpass.getpass("Contraseña (mínimo 8): ")
-    c2 = getpass.getpass("Repítela: ")
-    if c1 != c2:
-        raise SystemExit("No coinciden.")
-    validar_contrasena(c1)
+        raise SystemExit("Usuario no válido: de 3 a 32 letras minúsculas, números, punto, guion o guion bajo (sin espacios).")
+    for _ in range(3):
+        c1 = getpass.getpass("Contraseña (mínimo 8; no se ve al escribir): ")
+        c2 = getpass.getpass("Repítela: ")
+        try:
+            if c1 != c2:
+                raise Falla("No coinciden.")
+            validar_contrasena(c1)
+            break
+        except Falla as e:
+            print(f"  {e} Otra vez.")
+    else:
+        raise SystemExit("No se creó el administrador. Vuelve a intentarlo con «librito admin».")
     if E.db.uno("SELECT id FROM usuarios WHERE usuario=?", usuario):
         E.db.x("UPDATE usuarios SET hash=?, rol='admin', estado='activo' WHERE usuario=?", hashear(c1), usuario)
-        print(f"Listo: «{usuario}» ahora es administrador con contraseña nueva.")
+        print(f"✓ Listo: «{usuario}» ahora es administrador con contraseña nueva.")
     else:
         E.db.crear_usuario(usuario, c1, "admin", "activo")
-        print(f"Listo: administrador «{usuario}» creado.")
-    try:
-        os.unlink(os.path.join(DATOS, "codigo-instalacion.txt"))
-    except OSError:
-        pass
+        print(f"✓ Listo: administrador «{usuario}» creado. Con él entras al panel.")
+    E.codigo_instalacion()   # ya hay administrador: el código de instalación se borra
+    E.actividad(usuario, "instalar", "administrador desde la terminal")
 
 
 def orden_github(args):
@@ -2129,18 +2389,39 @@ def orden_github(args):
     print("El token quedó cifrado en", E.caja.ruta, "(sólo tu usuario puede leerlo).")
 
 
+def leer_estado():
+    """Lo que dejó escrito el servidor prendido (si de verdad sigue vivo)."""
+    try:
+        with open(RUTA_ESTADO, encoding="utf-8") as f:
+            d = json.load(f)
+        os.kill(int(d.get("pid") or 0), 0)
+        return d
+    except (OSError, ValueError, TypeError):
+        return None
+
+
 def orden_estado(args):
     global E
     E = Estado()
     gh = E.github()
-    print(f"Servidor del librito {VERSION}")
+    vivo = leer_estado()
+    admins = [u["usuario"] for u in E.db.q("SELECT usuario FROM usuarios WHERE rol='admin' AND estado='activo'")]
+    if getattr(args, "json", False):
+        print(json.dumps({"prendido": bool(vivo), "url": (vivo or {}).get("url", ""), "admins": admins, "github": bool(gh),
+                          "codigo": E.codigo_instalacion() or "", "puerto": E.aj["puerto"]}, ensure_ascii=False))
+        return
+    print(f"{E.aj['nombre']} {VERSION}")
     print("  Datos:", DATOS)
     print("  Puerto:", E.aj["puerto"], "· Red local:", ip_local())
-    print("  Registro:", E.aj["registro"], "· Túnel:", E.aj["tunel"], "· cloudflared:", "sí" if shutil.which("cloudflared") else "no")
-    print("  GitHub:", f"{gh.repo} · rama {gh.rama}" if gh else "sin conectar")
-    print("  Usuarios:", E.db.uno("SELECT COUNT(*) n FROM usuarios")["n"], "· Publicaciones:", E.db.uno("SELECT COUNT(*) n FROM publicaciones")["n"], "· Proyectos:", E.db.uno("SELECT COUNT(*) n FROM proyectos")["n"])
-    if E.codigo_instalacion:
-        print("  Código de instalación:", E.codigo_instalacion)
+    print("  Registro:", E.aj["registro"], "· Túnel:", E.aj["tunel"], "· cloudflared:", "sí" if shutil.which("cloudflared") else "no (pkg install cloudflared)")
+    print("  GitHub:", f"{gh.repo} · rama {gh.rama}" if gh else "sin conectar (librito github)")
+    print("  Administrador:", ", ".join(admins) if admins else "todavía ninguno (librito admin)")
+    print("  Usuarios:", E.db.uno("SELECT COUNT(*) n FROM usuarios")["n"], "· Publicaciones:", E.db.uno("SELECT COUNT(*) n FROM publicaciones")["n"], "· Proyectos:", E.db.uno("SELECT COUNT(*) n FROM proyectos")["n"], "· Detallitos:", E.db.uno("SELECT COUNT(*) n FROM detallitos")["n"])
+    if vivo and vivo.get("tunel_probado"):
+        print("  Túnel probado desde internet:", vivo["tunel_probado"].replace("T", " ").replace("Z", " UTC"))
+    codigo = E.codigo_instalacion()
+    if codigo:
+        print("  Código de instalación:", codigo, "(sólo para crear el administrador desde otro aparato)")
 
 
 def orden_llave(args):
@@ -2159,7 +2440,8 @@ def principal():
     a = sub.add_parser("admin", help="crea o reinicia un administrador")
     a.add_argument("usuario", nargs="?")
     sub.add_parser("github", help="guarda el token de GitHub (cifrado)")
-    sub.add_parser("estado", help="cómo está todo")
+    e = sub.add_parser("estado", help="cómo está todo")
+    e.add_argument("--json", action="store_true")
     sub.add_parser("llave-nueva", help="cambia la llave que cifra los secretos")
     args = p.parse_args()
     os.umask(0o077)   # todo lo que se cree aquí, sólo para tu usuario

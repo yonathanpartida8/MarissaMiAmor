@@ -47,7 +47,7 @@ function rumbo(n) {
 const tr = (d, k) => `translate3d(${(d.dx * k).toFixed(1)}px, ${(d.dy * k).toFixed(1)}px, 0)`;
 
 /** Data URLs de lo que piden los HTML de la página (un marco aislado no abre las `blob:`). */
-async function datosDe(app, pagina) {
+export async function datosDe(app, pagina) {
   const ids = new Set();
   for (const e of pagina?.els || []) for (const id of Object.values(e.html?.archivos || {})) ids.add(id);
   for (const id of Object.values(pagina?.fondo?.html?.archivos || {})) ids.add(id);

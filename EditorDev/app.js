@@ -581,7 +581,7 @@ async function latir() {
   if (!SRV.conectado() || document.hidden) return;
   try {
     const r = await SRV.latido();
-    const antes = app.amorNuevos;
+    const antes = app.amorNuevos, parejaAntes = JSON.stringify(app.pareja || null);
     app.amorNuevos = r.nuevos || 0;
     app.pareja = r.pareja;
     // El globito va en Exportar y en «Más» (en el teléfono, Exportar vive dentro de «Más»).
@@ -594,7 +594,7 @@ async function latir() {
       const desde = () => [$(".ed-exportar"), $(".ed-mas")].find((b) => b?.offsetParent);
       aviso(`${r.pareja?.usuario || "Tu amorcito"} te mandó un detallito`, 7000, "", { t: "Verlo", al: () => app.detallitos.abrir(desde()) });
     }
-    if (app.amorNuevos !== antes) dispatchEvent(new CustomEvent("ed-amor"));
+    if (app.amorNuevos !== antes || JSON.stringify(app.pareja || null) !== parejaAntes) dispatchEvent(new CustomEvent("ed-amor"));
   } catch (e) { /* sin conexión: la próxima */ }
 }
 setTimeout(latir, 4000);
