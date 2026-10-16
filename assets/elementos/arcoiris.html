@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Arcoíris</title>
+<meta name="tamaño" content="360x260">
+<meta name="descripcion" content="Un arcoíris pastel que se dibuja solo entre dos nubecitas; tócalo y se vuelve a pintar">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}svg{width:100%;height:100%;overflow:visible}.arco{fill:none;stroke-linecap:round;stroke-width:15}.nube{animation:flota 4s ease-in-out infinite}.nube.d{animation-delay:-2s}@keyframes flota{50%{transform:translateY(-6px)}}</style>
+</head><body><svg viewBox="0 0 360 260"><g class="arcos"></g><g class="nube"><g fill="#fff"><circle cx="60" cy="210" r="26"/><circle cx="88" cy="196" r="30"/><circle cx="116" cy="212" r="22"/><rect x="40" y="208" width="90" height="26" rx="13"/></g><circle cx="78" cy="214" r="2.6" fill="#7a6a7a"/><circle cx="98" cy="214" r="2.6" fill="#7a6a7a"/><path d="M84 221q4 4 8 0" stroke="#7a6a7a" stroke-width="2" fill="none" stroke-linecap="round"/></g><g class="nube d"><g fill="#fff"><circle cx="300" cy="210" r="26"/><circle cx="272" cy="196" r="30"/><circle cx="244" cy="212" r="22"/><rect x="230" y="208" width="90" height="26" rx="13"/></g><circle cx="262" cy="214" r="2.6" fill="#7a6a7a"/><circle cx="282" cy="214" r="2.6" fill="#7a6a7a"/><path d="M268 221q4 4 8 0" stroke="#7a6a7a" stroke-width="2" fill="none" stroke-linecap="round"/></g></svg>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var NS = "http://www.w3.org/2000/svg", A = document.querySelector(".arcos"), cols = ["#ffadc6", "#ffcba4", "#fff0a6", "#bff0c8", "#b6dcff", "#d4c2ff"], arcos = [];
+  cols.forEach(function (co, i) { var r = 128 - i * 15, p = document.createElementNS(NS, "path"); p.setAttribute("d", "M" + (180 - r) + " 214A" + r + " " + r + " 0 0 1 " + (180 + r) + " 214"); p.setAttribute("class", "arco"); p.setAttribute("stroke", co); A.appendChild(p); arcos.push(p); });
+  function pintar() { arcos.forEach(function (p, i) { var L = p.getTotalLength(); p.style.strokeDasharray = L; p.animate([{ strokeDashoffset: L }, { strokeDashoffset: 0 }], { duration: quieto ? 1 : 1400, delay: i * 120, easing: "cubic-bezier(.3,.7,.3,1)", fill: "both" }); }); }
+  pintar();
+  addEventListener("pointerdown", pintar);
+})();
+</script>
+</body></html>

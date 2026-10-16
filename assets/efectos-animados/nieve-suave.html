@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Nieve suave</title>
+<meta name="tamaño" content="360x480">
+<meta name="descripcion" content="Copitos de nieve en tres capas, lentos y con un poquito de viento">
+<meta name="decorativo" content="si">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}canvas{position:fixed;inset:0;width:100%;height:100%}</style>
+</head><body><canvas></canvas>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var c = document.querySelector("canvas"), g = c.getContext("2d"), W = 0, H = 0, D = 1;
+  function tam() { D = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; c.width = W * D; c.height = H * D; g.setTransform(D, 0, 0, D, 0, 0); }
+  addEventListener("resize", tam); tam();
+  function bucle(f) { var t0 = performance.now(); function paso(t) { var dt = Math.min(50, t - t0); t0 = t; if (!document.hidden) f(dt / 16.7, t); requestAnimationFrame(paso); } requestAnimationFrame(paso); }
+  var P = Array.from({ length: quieto ? 40 : 110 }, function () { var z = Math.random(); return { x: Math.random() * W, y: Math.random() * H, z: z, r: 0.8 + z * 2.6, v: 0.3 + z * 0.9, f: Math.random() * 6.3 }; });
+  bucle(function (k, t) {
+    g.clearRect(0, 0, W, H); var vi = Math.sin(t / 4000) * 0.5;
+    for (var i = 0; i < P.length; i++) { var p = P[i]; p.f += 0.02 * k; p.y += p.v * k; p.x += (vi + Math.sin(p.f) * 0.3) * p.z * k;
+      if (p.y > H + 4) { p.y = -4; p.x = Math.random() * W; } if (p.x > W + 4) p.x = -4; if (p.x < -4) p.x = W + 4;
+      g.globalAlpha = 0.45 + p.z * 0.5; g.fillStyle = "#fff"; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.3); g.fill(); }
+    g.globalAlpha = 1;
+  });
+})();
+</script>
+</body></html>

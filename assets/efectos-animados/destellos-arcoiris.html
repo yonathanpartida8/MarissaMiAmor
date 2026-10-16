@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Destellos arcoíris</title>
+<meta name="tamaño" content="360x360">
+<meta name="descripcion" content="Destellos de cuatro puntas en tonos arcoíris pastel que aparecen y se apagan">
+<meta name="decorativo" content="si">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}canvas{position:fixed;inset:0;width:100%;height:100%}</style>
+</head><body><canvas></canvas>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var c = document.querySelector("canvas"), g = c.getContext("2d"), W = 0, H = 0, D = 1;
+  function tam() { D = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; c.width = W * D; c.height = H * D; g.setTransform(D, 0, 0, D, 0, 0); }
+  addEventListener("resize", tam); tam();
+  function bucle(f) { var t0 = performance.now(); function paso(t) { var dt = Math.min(50, t - t0); t0 = t; if (!document.hidden) f(dt / 16.7, t); requestAnimationFrame(paso); } requestAnimationFrame(paso); }
+  var P = Array.from({ length: quieto ? 12 : 30 }, function () { return n(); });
+  function n() { return { x: Math.random() * W, y: Math.random() * H, r: 3 + Math.random() * 7, h: Math.floor(Math.random() * 360), t: Math.random() * 6.3, v: 0.02 + Math.random() * 0.03 }; }
+  bucle(function (k) {
+    g.clearRect(0, 0, W, H);
+    for (var i = 0; i < P.length; i++) { var p = P[i]; p.t += p.v * k; var a = Math.sin(p.t); if (a <= 0) { if (p.t > Math.PI * 2) P[i] = n(); continue; }
+      var r = p.r * a; g.save(); g.translate(p.x, p.y); g.rotate(p.t * 0.3); g.fillStyle = "hsla(" + p.h + ",90%,82%," + a + ")"; g.shadowColor = "hsla(" + p.h + ",90%,75%,1)"; g.shadowBlur = 8 * a;
+      g.beginPath(); g.moveTo(0, -r * 2); g.quadraticCurveTo(0, 0, r * 2, 0); g.quadraticCurveTo(0, 0, 0, r * 2); g.quadraticCurveTo(0, 0, -r * 2, 0); g.quadraticCurveTo(0, 0, 0, -r * 2); g.fill(); g.restore(); }
+  });
+})();
+</script>
+</body></html>

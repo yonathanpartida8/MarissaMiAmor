@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Hojas de otoño</title>
+<meta name="tamaño" content="360x480">
+<meta name="descripcion" content="Hojitas de colores cálidos que caen meciéndose">
+<meta name="decorativo" content="si">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}canvas{position:fixed;inset:0;width:100%;height:100%}</style>
+</head><body><canvas></canvas>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var c = document.querySelector("canvas"), g = c.getContext("2d"), W = 0, H = 0, D = 1;
+  function tam() { D = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; c.width = W * D; c.height = H * D; g.setTransform(D, 0, 0, D, 0, 0); }
+  addEventListener("resize", tam); tam();
+  function bucle(f) { var t0 = performance.now(); function paso(t) { var dt = Math.min(50, t - t0); t0 = t; if (!document.hidden) f(dt / 16.7, t); requestAnimationFrame(paso); } requestAnimationFrame(paso); }
+  var cols = ["#f4a259", "#e76f51", "#f6bd60", "#d4a373", "#e5989b"];
+  var P = Array.from({ length: quieto ? 10 : 22 }, function (_, i) { return n(true); });
+  function n(alAzar) { return { x: Math.random() * W, y: alAzar ? Math.random() * H : -30, s: 9 + Math.random() * 8, v: 0.6 + Math.random() * 0.6, f: Math.random() * 6.3, a: Math.random() * 6.3, c: cols[Math.floor(Math.random() * cols.length)] }; }
+  function hoja(s) { g.beginPath(); g.moveTo(0, -s); g.quadraticCurveTo(s * 0.9, -s * 0.2, 0, s); g.quadraticCurveTo(-s * 0.9, -s * 0.2, 0, -s); g.fill(); g.strokeStyle = "rgba(120,60,30,.35)"; g.lineWidth = 1; g.beginPath(); g.moveTo(0, -s * 0.8); g.lineTo(0, s * 1.15); g.stroke(); }
+  bucle(function (k) {
+    g.clearRect(0, 0, W, H);
+    for (var i = 0; i < P.length; i++) { var p = P[i]; p.f += 0.025 * k; p.y += p.v * k; p.x += Math.sin(p.f) * 1.2 * k; p.a = Math.sin(p.f) * 0.9;
+      if (p.y > H + 30) { P[i] = n(); continue; }
+      g.save(); g.translate(p.x, p.y); g.rotate(p.a); g.scale(Math.cos(p.f * 0.7) * 0.4 + 0.6, 1); g.fillStyle = p.c; hoja(p.s); g.restore(); }
+  });
+})();
+</script>
+</body></html>

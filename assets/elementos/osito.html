@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Osito</title>
+<meta name="tamaño" content="300x320">
+<meta name="descripcion" content="Un osito que saluda y parpadea; tócalo y te manda un abrazo">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}svg{width:100%;height:100%;overflow:visible}.brazo{transform-origin:214px 214px;animation:saluda 1.6s ease-in-out infinite}@keyframes saluda{50%{transform:rotate(-28deg)}}.ojo{transform-box:fill-box;transform-origin:center;animation:parp 4s infinite}@keyframes parp{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}.oso{transform-origin:150px 300px;animation:resp 3s ease-in-out infinite}@keyframes resp{50%{transform:scale(1.015,.99)}}</style>
+</head><body><svg viewBox="0 0 300 320"><g class="oso"><ellipse cx="150" cy="248" rx="70" ry="62" fill="#c99a72"/><ellipse cx="150" cy="258" rx="40" ry="36" fill="#f0d5b5"/><circle cx="92" cy="74" r="26" fill="#c99a72"/><circle cx="92" cy="74" r="13" fill="#ffc2c8"/><circle cx="208" cy="74" r="26" fill="#c99a72"/><circle cx="208" cy="74" r="13" fill="#ffc2c8"/><circle cx="150" cy="126" r="72" fill="#d4a67c"/><ellipse cx="150" cy="150" rx="32" ry="24" fill="#f0d5b5"/><ellipse cx="150" cy="138" rx="10" ry="7" fill="#5a3a2a"/><path d="M150 145v8M150 153q-8 7-14 2M150 153q8 7 14 2" stroke="#5a3a2a" stroke-width="2.6" fill="none" stroke-linecap="round"/><ellipse class="ojo" cx="122" cy="112" rx="7" ry="9" fill="#3a2a22"/><ellipse class="ojo" cx="178" cy="112" rx="7" ry="9" fill="#3a2a22"/><circle cx="124" cy="108" r="2.5" fill="#fff"/><circle cx="180" cy="108" r="2.5" fill="#fff"/><ellipse cx="104" cy="140" rx="11" ry="7" fill="#ff9cb0" opacity=".55"/><ellipse cx="196" cy="140" rx="11" ry="7" fill="#ff9cb0" opacity=".55"/><ellipse cx="96" cy="240" rx="18" ry="34" fill="#c99a72" transform="rotate(20 96 240)"/><g class="brazo"><ellipse cx="226" cy="196" rx="18" ry="34" fill="#c99a72" transform="rotate(-40 226 196)"/></g><path d="M134 202c-8-6-12-10-12-15 0-4 3-6 6-6 3 0 5 2 6 4 1-2 3-4 6-4 3 0 6 2 6 6 0 5-4 9-12 15z" fill="#ff7aa8"/></g></svg>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function estallido(x, y, n, colores, simbolo) {
+    for (var i = 0; i < n; i++) {
+      var s = document.createElement("i"), a = Math.random() * 6.28, d = 40 + Math.random() * 70, t = 10 + Math.random() * 12;
+      s.textContent = simbolo || "\u2665";
+      s.style.cssText = "position:fixed;left:" + x + "px;top:" + y + "px;font:normal " + t + "px/1 system-ui;color:" + colores[i % colores.length] + ";pointer-events:none;text-shadow:0 1px 3px rgba(150,40,90,.25);z-index:9";
+      document.body.appendChild(s);
+      var an = s.animate([{ transform: "translate(-50%,-50%) scale(.2)", opacity: 1 }, { transform: "translate(calc(-50% + " + Math.cos(a) * d + "px),calc(-50% + " + (Math.sin(a) * d - 30) + "px)) scale(1) rotate(" + (Math.random() * 60 - 30) + "deg)", opacity: 0 }], { duration: 900 + Math.random() * 500, easing: "cubic-bezier(.2,.7,.3,1)" });
+      an.onfinish = (function (el) { return function () { el.remove(); }; })(s);
+    }
+  }
+  var o = document.querySelector(".oso");
+  addEventListener("pointerdown", function (e) { o.animate([{ transform: "scale(1)" }, { transform: "scale(1.08,.92)" }, { transform: "scale(.96,1.05)" }, { transform: "scale(1)" }], { duration: 650, easing: "ease-out" }); estallido(e.clientX, e.clientY, quieto ? 5 : 11, ["#ff7aa8", "#ffb3cf", "#ffd1e6", "#f7a1c4"]); });
+})();
+</script>
+</body></html>

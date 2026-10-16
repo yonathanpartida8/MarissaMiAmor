@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Plantita</title>
+<meta name="tamaño" content="260x340">
+<meta name="descripcion" content="Una macetita sonriente; riégala con un toque y le crecen hojitas y una flor">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}svg{width:100%;height:100%;overflow:visible}.planta{transform-origin:130px 230px;animation:mece 3.6s ease-in-out infinite}@keyframes mece{50%{transform:rotate(3deg)}}.nueva{transform-box:fill-box;animation:crece .9s cubic-bezier(.3,1.5,.5,1) both}@keyframes crece{from{transform:scale(0)}}.gota{fill:#9fd4ff;animation:cae .8s ease-in forwards}@keyframes cae{from{transform:translateY(-60px);opacity:0}30%{opacity:1}to{transform:translateY(40px);opacity:0}}</style>
+</head><body><svg viewBox="0 0 260 340"><g class="planta"><path d="M130 232V150" stroke="#6fbf73" stroke-width="7" stroke-linecap="round"/><path d="M130 196c-26-6-40-26-36-42 20 4 34 20 36 42z" fill="#8bd48f"/><path d="M130 176c24-6 38-26 34-42-20 4-32 20-34 42z" fill="#7cc77f"/><g class="extra"></g></g><path d="M66 230h128l-14 86c-2 10-10 16-20 16h-60c-10 0-18-6-20-16z" fill="#f2a27a"/><rect x="58" y="222" width="144" height="22" rx="9" fill="#ffb48c"/><path d="M104 270q6 6 12 0M144 270q6 6 12 0" stroke="#7a3f2a" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M122 286q8 7 16 0" stroke="#7a3f2a" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="96" cy="284" rx="8" ry="5" fill="#ff8fae" opacity=".55"/><ellipse cx="164" cy="284" rx="8" ry="5" fill="#ff8fae" opacity=".55"/><g class="lluvia"></g></svg>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var NS = "http://www.w3.org/2000/svg", extra = document.querySelector(".extra"), ll = document.querySelector(".lluvia"), n = 0;
+  var PIEZAS = ['<path d="M130 160c-20-4-30-18-28-30 14 2 26 14 28 30z" fill="#9ade9d"/>', '<path d="M130 150c18-4 28-18 26-30-14 2-24 14-26 30z" fill="#8bd48f"/>', '<g><circle cx="130" cy="136" r="9" fill="#ffd23f"/><g fill="#ff9cc6"><circle cx="130" cy="122" r="8"/><circle cx="143" cy="132" r="8"/><circle cx="138" cy="147" r="8"/><circle cx="122" cy="147" r="8"/><circle cx="117" cy="132" r="8"/></g><circle cx="130" cy="136" r="6" fill="#ffd23f"/></g>'];
+  addEventListener("pointerdown", function () {
+    for (var i = 0; i < 6; i++) { var d = document.createElementNS(NS, "path"); d.setAttribute("d", "M" + (100 + i * 12) + " 120q4 8 0 12q-4-4 0-12z"); d.setAttribute("class", "gota"); d.style.animationDelay = i * 60 + "ms"; ll.appendChild(d); setTimeout(function (x) { return function () { x.remove(); }; }(d), 1200); }
+    setTimeout(function () {
+      if (n >= PIEZAS.length) { extra.textContent = ""; n = 0; return; }
+      var g = document.createElementNS(NS, "g"); g.setAttribute("class", "nueva"); g.style.transformOrigin = "130px 160px"; g.innerHTML = PIEZAS[n++]; extra.appendChild(g);
+    }, 600);
+  });
+})();
+</script>
+</body></html>

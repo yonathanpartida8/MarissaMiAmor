@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Frasco de estrellas</title>
+<meta name="tamaño" content="280x340">
+<meta name="descripcion" content="Un frasquito con estrellitas que brillan; tócalo, se sacude y saltan">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}body{display:grid;place-items:center}.frasco{position:relative;width:72%;aspect-ratio:.78;cursor:pointer}svg,canvas{position:absolute;inset:0;width:100%;height:100%}</style>
+</head><body><div class="frasco"><canvas></canvas><svg viewBox="0 0 200 256"><rect x="62" y="10" width="76" height="26" rx="8" fill="#d9a77a"/><path d="M62 24h76" stroke="#b9875a" stroke-width="3"/><path d="M46 52h108v6c18 10 26 26 26 52v100c0 22-14 36-36 36H56c-22 0-36-14-36-36V110c0-26 8-42 26-52z" fill="rgba(220,240,255,.18)" stroke="rgba(160,190,230,.85)" stroke-width="4"/><path d="M40 120v80" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".55"/><path d="M60 46h80" stroke="#ff8fbf" stroke-width="7" stroke-linecap="round"/><path d="M100 46c-14-14-30-6-20 4 6 6 20-4 20-4zM100 46c14-14 30-6 20 4-6 6-20-4-20-4z" fill="#ff8fbf"/></svg></div>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var c = document.querySelector("canvas"), g = c.getContext("2d"), fr = document.querySelector(".frasco"), W, H, D;
+  function tam() { D = Math.min(2, devicePixelRatio || 1); W = c.clientWidth; H = c.clientHeight; c.width = W * D; c.height = H * D; g.setTransform(D, 0, 0, D, 0, 0); }
+  addEventListener("resize", tam); tam();
+  var col = ["#fff3a8", "#ffd1e6", "#c9b6ff", "#b6e3ff", "#ffe0a8"];
+  // Flotan como luciérnagas, cada una alrededor de su sitio; al sacudir el frasco saltan y vuelven.
+  var E = Array.from({ length: quieto ? 10 : 16 }, function (_, i) { var y = 0.42 + Math.random() * 0.44; return { x: 0.26 + Math.random() * 0.48, y: y, cy: y, vy: 0, f: Math.random() * 6, r: 6 + Math.random() * 5, c: col[i % col.length], a: Math.random() * 6 }; });
+  function estrella(x, y, r, a) { g.beginPath(); for (var i = 0; i < 10; i++) { var rr = i % 2 ? r * 0.45 : r, an = a + i * Math.PI / 5; g.lineTo(x + Math.cos(an) * rr, y + Math.sin(an) * rr); } g.closePath(); }
+  function pintar(t) {
+    if (!document.hidden) {
+      g.clearRect(0, 0, W, H);
+      for (var i = 0; i < E.length; i++) { var s = E[i]; s.f += quieto ? 0.01 : 0.03; s.vy += (s.cy - s.y) * 0.004; s.vy *= 0.94; s.y += s.vy; if (s.y > 0.88) { s.y = 0.88; s.vy *= -0.5; } if (s.y < 0.34) { s.y = 0.34; s.vy *= -0.5; } s.a += 0.01;
+        var x = s.x * W + Math.sin(s.f) * 6, y = s.y * H + Math.cos(s.f * 0.8) * 5, b = 0.55 + 0.45 * Math.sin(s.f * 1.7);
+        g.save(); g.shadowColor = s.c; g.shadowBlur = 10 * b; g.fillStyle = s.c; g.globalAlpha = 0.65 + b * 0.35; estrella(x, y, s.r, s.a); g.fill(); g.restore(); }
+    }
+    requestAnimationFrame(pintar);
+  }
+  requestAnimationFrame(pintar);
+  addEventListener("pointerdown", function () { fr.animate([{ transform: "rotate(0)" }, { transform: "rotate(-9deg)" }, { transform: "rotate(8deg)" }, { transform: "rotate(-5deg)" }, { transform: "rotate(0)" }], { duration: 600, easing: "ease-in-out" }); E.forEach(function (s) { s.vy = -0.02 - Math.random() * 0.02; }); if (navigator.vibrate) navigator.vibrate(18); });
+})();
+</script>
+</body></html>

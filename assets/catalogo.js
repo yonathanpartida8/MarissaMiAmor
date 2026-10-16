@@ -8,6 +8,272 @@ export default {
    "items": [
     {
      "tipo": "componente",
+     "id": "elementos/globos-de-corazon.html",
+     "nombre": "Globos de corazón",
+     "descripcion": "Tres globos de corazón que flotan; tócalos y explotan en confeti y vuelven",
+     "ruta": "assets/elementos/",
+     "entrada": "globos-de-corazon.html",
+     "ancho": 320,
+     "alto": 420,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "globos-de-corazon.html"
+     ],
+     "peso": 4201,
+     "suelto": true,
+     "fecha": 1792133754349
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/nubecita-de-amor.html",
+     "nombre": "Nubecita de amor",
+     "descripcion": "Una nubecita que flota y llueve corazones; tócala y sonríe más",
+     "ruta": "assets/elementos/",
+     "entrada": "nubecita-de-amor.html",
+     "ancho": 320,
+     "alto": 320,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "nubecita-de-amor.html"
+     ],
+     "peso": 3086,
+     "suelto": true,
+     "fecha": 1792133470483
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/osito.html",
+     "nombre": "Osito",
+     "descripcion": "Un osito que saluda y parpadea; tócalo y te manda un abrazo",
+     "ruta": "assets/elementos/",
+     "entrada": "osito.html",
+     "ancho": 300,
+     "alto": 320,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "osito.html"
+     ],
+     "peso": 3895,
+     "suelto": true,
+     "fecha": 1792133470483
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/plantita.html",
+     "nombre": "Plantita",
+     "descripcion": "Una macetita sonriente; riégala con un toque y le crecen hojitas y una flor",
+     "ruta": "assets/elementos/",
+     "entrada": "plantita.html",
+     "ancho": 260,
+     "alto": 340,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "plantita.html"
+     ],
+     "peso": 3345,
+     "suelto": true,
+     "fecha": 1792133470483
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/reloj-de-arena.html",
+     "nombre": "Reloj de arena",
+     "descripcion": "Un reloj de arena rosita que cae granito a granito; tócalo y se da la vuelta",
+     "ruta": "assets/elementos/",
+     "entrada": "reloj-de-arena.html",
+     "ancho": 240,
+     "alto": 340,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "reloj-de-arena.html"
+     ],
+     "peso": 4136,
+     "suelto": true,
+     "fecha": 1792133470483
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/sobre-con-carta.html",
+     "nombre": "Sobre con carta",
+     "descripcion": "Un sobre con sello de corazón; tócalo y se abre y sale una cartita",
+     "ruta": "assets/elementos/",
+     "entrada": "sobre-con-carta.html",
+     "ancho": 320,
+     "alto": 300,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "sobre-con-carta.html"
+     ],
+     "peso": 3868,
+     "suelto": true,
+     "fecha": 1792133470483
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/taza-de-cafe.html",
+     "nombre": "Taza de café",
+     "descripcion": "Una tacita feliz con vapor que dibuja un corazón; tócala y se alegra",
+     "ruta": "assets/elementos/",
+     "entrada": "taza-de-cafe.html",
+     "ancho": 300,
+     "alto": 320,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "taza-de-cafe.html"
+     ],
+     "peso": 3836,
+     "suelto": true,
+     "fecha": 1792133470483
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/luna-dormilona.html",
+     "nombre": "Luna dormilona",
+     "descripcion": "Una luna con gorrito que duerme y se mece entre estrellitas; tócala y suspira",
+     "ruta": "assets/elementos/",
+     "entrada": "luna-dormilona.html",
+     "ancho": 320,
+     "alto": 320,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "luna-dormilona.html"
+     ],
+     "peso": 3632,
+     "suelto": true,
+     "fecha": 1792133470482
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/gatito.html",
+     "nombre": "Gatito",
+     "descripcion": "Un gatito que parpadea y mueve la cola; tócalo y ronronea corazones",
+     "ruta": "assets/elementos/",
+     "entrada": "gatito.html",
+     "ancho": 300,
+     "alto": 300,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "gatito.html"
+     ],
+     "peso": 4319,
+     "suelto": true,
+     "fecha": 1792133470481
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/girasol.html",
+     "nombre": "Girasol",
+     "descripcion": "Un girasol que se mece con el viento; tócalo y da una vuelta",
+     "ruta": "assets/elementos/",
+     "entrada": "girasol.html",
+     "ancho": 300,
+     "alto": 380,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "girasol.html"
+     ],
+     "peso": 3111,
+     "suelto": true,
+     "fecha": 1792133470481
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/corazon-latiendo.html",
+     "nombre": "Corazón latiendo",
+     "descripcion": "Un corazón que late suave con brillito; tócalo y suelta corazoncitos",
+     "ruta": "assets/elementos/",
+     "entrada": "corazon-latiendo.html",
+     "ancho": 300,
+     "alto": 300,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "corazon-latiendo.html"
+     ],
+     "peso": 4083,
+     "suelto": true,
+     "fecha": 1792133470480
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/frasco-de-estrellas.html",
+     "nombre": "Frasco de estrellas",
+     "descripcion": "Un frasquito con estrellitas que brillan; tócalo, se sacude y saltan",
+     "ruta": "assets/elementos/",
+     "entrada": "frasco-de-estrellas.html",
+     "ancho": 280,
+     "alto": 340,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "frasco-de-estrellas.html"
+     ],
+     "peso": 3672,
+     "suelto": true,
+     "fecha": 1792133470480
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/fresita.html",
+     "nombre": "Fresita",
+     "descripcion": "Una fresita que rebota feliz; tócala y salta más alto con brillitos",
+     "ruta": "assets/elementos/",
+     "entrada": "fresita.html",
+     "ancho": 240,
+     "alto": 260,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "fresita.html"
+     ],
+     "peso": 3863,
+     "suelto": true,
+     "fecha": 1792133470480
+    },
+    {
+     "tipo": "componente",
+     "id": "elementos/arcoiris.html",
+     "nombre": "Arcoíris",
+     "descripcion": "Un arcoíris pastel que se dibuja solo entre dos nubecitas; tócalo y se vuelve a pintar",
+     "ruta": "assets/elementos/",
+     "entrada": "arcoiris.html",
+     "ancho": 360,
+     "alto": 260,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "arcoiris.html"
+     ],
+     "peso": 2667,
+     "suelto": true,
+     "fecha": 1792133470479
+    },
+    {
+     "tipo": "componente",
      "id": "elementos/aurora.html",
      "nombre": "Aurora",
      "descripcion": "Una aurora boreal que ondula despacito, con estrellitas",
@@ -703,6 +969,120 @@ export default {
    "id": "efectos-animados",
    "nombre": "Efectos animados",
    "items": [
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/destellos-arcoiris.html",
+     "nombre": "Destellos arcoíris",
+     "descripcion": "Destellos de cuatro puntas en tonos arcoíris pastel que aparecen y se apagan",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "destellos-arcoiris.html",
+     "ancho": 360,
+     "alto": 360,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "destellos-arcoiris.html"
+     ],
+     "peso": 2328,
+     "suelto": true,
+     "fecha": 1792133470491
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/hojas-de-otono.html",
+     "nombre": "Hojas de otoño",
+     "descripcion": "Hojitas de colores cálidos que caen meciéndose",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "hojas-de-otono.html",
+     "ancho": 360,
+     "alto": 480,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "hojas-de-otono.html"
+     ],
+     "peso": 2491,
+     "suelto": true,
+     "fecha": 1792133470491
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/nieve-suave.html",
+     "nombre": "Nieve suave",
+     "descripcion": "Copitos de nieve en tres capas, lentos y con un poquito de viento",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "nieve-suave.html",
+     "ancho": 360,
+     "alto": 480,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "nieve-suave.html"
+     ],
+     "peso": 2111,
+     "suelto": true,
+     "fecha": 1792133470491
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/notas-musicales.html",
+     "nombre": "Notas musicales",
+     "descripcion": "Notitas musicales de colores que suben bailando",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "notas-musicales.html",
+     "ancho": 360,
+     "alto": 480,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "notas-musicales.html"
+     ],
+     "peso": 2418,
+     "suelto": true,
+     "fecha": 1792133470491
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/petalos-de-sakura.html",
+     "nombre": "Pétalos de sakura",
+     "descripcion": "Pétalos de cerezo que caen girando con ráfagas de viento suave",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "petalos-de-sakura.html",
+     "ancho": 360,
+     "alto": 480,
+     "parametros": [],
+     "decorativo": true,
+     "miniatura": null,
+     "archivos": [
+      "petalos-de-sakura.html"
+     ],
+     "peso": 2668,
+     "suelto": true,
+     "fecha": 1792133470491
+    },
+    {
+     "tipo": "componente",
+     "id": "efectos-animados/polvo-de-hadas.html",
+     "nombre": "Polvo de hadas",
+     "descripcion": "Destellos dorados que siguen el dedo y titilan solos cuando está quieto",
+     "ruta": "assets/efectos-animados/",
+     "entrada": "polvo-de-hadas.html",
+     "ancho": 360,
+     "alto": 420,
+     "parametros": [],
+     "decorativo": false,
+     "miniatura": null,
+     "archivos": [
+      "polvo-de-hadas.html"
+     ],
+     "peso": 2952,
+     "suelto": true,
+     "fecha": 1792133470491
+    },
     {
      "tipo": "componente",
      "id": "efectos-animados/VerletLamp.html",
@@ -1492,6 +1872,9 @@ export default {
    "abrir-menu": [
     "assets/sonidos-editor/abrir-menu.wav"
    ],
+   "abrir-recursos": [
+    "assets/sonidos-editor/abrir-recursos.wav"
+   ],
    "agrupar": [
     "assets/sonidos-editor/agrupar.wav"
    ],
@@ -1527,6 +1910,9 @@ export default {
    ],
    "cerrar-menu": [
     "assets/sonidos-editor/cerrar-menu.wav"
+   ],
+   "cerrar-recursos": [
+    "assets/sonidos-editor/cerrar-recursos.wav"
    ],
    "colocar-objeto": [
     "assets/sonidos-editor/colocar-objeto.wav"

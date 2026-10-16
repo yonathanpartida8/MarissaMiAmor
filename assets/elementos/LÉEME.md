@@ -17,3 +17,10 @@ Opcional, en el `<head>`:
 
 Fondo transparente (`html,body{background:transparent}`) para que se vea lo de debajo.
 Para que una parte concreta haga algo al tocarla, usa **Efectos al tocar → Zonas táctiles** en el editor.
+
+## Los que hay
+
+aurora · contador de días · corazón neón · hilo rojo · lluvia de pétalos · luciérnagas · mensajito · rayos · vinilo ·
+corazón latiendo · sobre con carta · girasol · globos de corazón · gatito · luna dormilona · reloj de arena ·
+frasco de estrellas · arcoíris · taza de café · plantita · osito · fresita · nubecita de amor.
+Todos se tocan (corazoncitos, se abre la carta, gira el girasol, revientan los globos, ronronea el gatito…).

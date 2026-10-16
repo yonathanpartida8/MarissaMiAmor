@@ -62,6 +62,7 @@ Después de añadir o cambiar archivos, el catálogo se rehace solo al subir
 | `listo-exito` | algo terminó bien (exportar, compartir…) |
 | `aviso-error` | algo salió mal |
 | `abrir-menu` / `cerrar-menu` | abrir y cerrar paneles y hojas |
+| `abrir-recursos` / `cerrar-recursos` | sacar y guardar el menú de recursos (Elementos, Stickers, Efectos, GIFs…), en el riel, el cajón del teléfono o su hojita |
 | `bajar-hoja` / `subir-hoja` | bajar una hoja deslizable a una parada más chica o volver a subirla |
 | `atras` | «Atrás» en un menú o el atrás del teléfono |
 | `interruptor-encender` / `interruptor-apagar` | los interruptores |

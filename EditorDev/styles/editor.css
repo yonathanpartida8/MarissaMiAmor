@@ -2190,3 +2190,23 @@ body.ed ::-webkit-scrollbar-track { background: transparent; }
 .ed-pub-item small { color: var(--texto-suave); font-size: 11.5px; }
 .ed-pub-mini { display: flex; gap: 2px; margin-left: auto; }
 .ed-pub-mini .ed-btn { min-width: 32px; min-height: 32px; padding: 0; justify-content: center; }
+/* Fase 15 · GitHub Pages: el estado en una pastillita */
+.ed-pub-pill { display: flex; align-items: flex-start; gap: 8px; margin: 2px 0 6px; padding: 9px 11px; border-radius: 12px; font-size: 13px; line-height: 1.35; background: var(--superficie-2); color: var(--texto); border: 1.5px solid var(--linea); animation: edPubEntra .45s cubic-bezier(.3, 1.4, .5, 1) both; }
+.ed-pub-pill > i { flex: none; width: 10px; height: 10px; margin-top: 4px; border-radius: 50%; background: #b9a7c2; }
+.ed-pub-pill.ok { background: linear-gradient(135deg, #effaf3, #f3fbff); border-color: rgba(44, 154, 104, .28); }
+.ed-pub-pill.ok > i { background: #2fbf7a; box-shadow: 0 0 0 4px rgba(47, 191, 122, .18); }
+.ed-pub-pill.mal { background: linear-gradient(135deg, #fff0f3, #fff6ec); border-color: rgba(216, 57, 92, .28); }
+.ed-pub-pill.mal > i { background: #e5486e; box-shadow: 0 0 0 4px rgba(229, 72, 110, .18); animation: edPubLate 1.4s ease-in-out infinite; }
+.ed-pub-pill.espera > i { border: 2px solid color-mix(in srgb, var(--acento) 25%, transparent); border-top-color: var(--acento); background: none; width: 12px; height: 12px; margin-top: 2px; animation: edPubGira .8s linear infinite; }
+.ed-pub-pill span { overflow-wrap: anywhere; }
+@keyframes edPubLate { 50% { transform: scale(1.35); } }
+.ed-pub-pages .ed-sel { width: 100%; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) .ed-pub-pill.ok { background: rgba(47, 191, 122, .12); }
+  :root:not([data-tema="claro"]) .ed-pub-pill.mal { background: rgba(229, 72, 110, .12); }
+}
+:root[data-tema="oscuro"] .ed-pub-pill.ok { background: rgba(47, 191, 122, .12); }
+:root[data-tema="oscuro"] .ed-pub-pill.mal { background: rgba(229, 72, 110, .12); }
+@media (prefers-reduced-motion: reduce) { .ed-pub-pill, .ed-pub-pill > i { animation: none !important; } }
+/* Lo escondido de «Páginas publicadas» se esconde de verdad (los .ed-btn y las tarjetas llevan su propio display). */
+.ed-pub-listo[hidden], .ed-pub-prog[hidden], .ed-pub-btn[hidden], .ed-pub-pages [hidden] { display: none !important; }

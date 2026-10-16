@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Taza de café</title>
+<meta name="tamaño" content="300x320">
+<meta name="descripcion" content="Una tacita feliz con vapor que dibuja un corazón; tócala y se alegra">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}svg{width:100%;height:100%;overflow:visible}.vapor{fill:none;stroke:#fff;stroke-width:6;stroke-linecap:round;opacity:.8;animation:vapor 3.2s ease-in-out infinite}.v2{animation-delay:-1.1s}.v3{animation-delay:-2.2s}@keyframes vapor{0%{transform:translateY(14px);opacity:0}30%{opacity:.85}100%{transform:translateY(-26px);opacity:0}}.taza{transform-origin:150px 300px}.cor{transform-box:fill-box;transform-origin:center;animation:cor 3.2s ease-in-out infinite}@keyframes cor{0%,100%{transform:scale(.8) translateY(6px);opacity:.3}50%{transform:scale(1) translateY(-6px);opacity:1}}</style>
+</head><body><svg viewBox="0 0 300 320"><path class="vapor" d="M118 120c-12-16 12-24 0-42"/><path class="vapor v2" d="M182 120c12-16-12-24 0-42"/><path class="cor" d="M150 92c-14-10-22-16-22-26 0-6 5-11 11-11 5 0 9 3 11 7 2-4 6-7 11-7 6 0 11 5 11 11 0 10-8 16-22 26z" fill="#ffd1e6"/><g class="taza"><ellipse cx="150" cy="292" rx="96" ry="14" fill="#f0d7c4"/><path d="M200 168c40-4 48 52 6 58" stroke="#ffb3cf" stroke-width="15" fill="none" stroke-linecap="round"/><path d="M70 140h160l-10 120c-2 18-14 28-32 28h-76c-18 0-30-10-32-28z" fill="#ffc2d6"/><ellipse cx="150" cy="140" rx="80" ry="15" fill="#ffd9e6"/><ellipse cx="150" cy="142" rx="68" ry="10" fill="#9a6a4a"/><path d="M118 200q8 8 16 0M166 200q8 8 16 0" stroke="#5a3a3a" stroke-width="4" fill="none" stroke-linecap="round" class="ojos"/><path d="M140 222q10 10 20 0" stroke="#5a3a3a" stroke-width="3.5" fill="none" stroke-linecap="round"/><ellipse cx="108" cy="218" rx="10" ry="6" fill="#ff8fae" opacity=".6"/><ellipse cx="192" cy="218" rx="10" ry="6" fill="#ff8fae" opacity=".6"/><path d="M92 160v60" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".5"/></g></svg>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function estallido(x, y, n, colores, simbolo) {
+    for (var i = 0; i < n; i++) {
+      var s = document.createElement("i"), a = Math.random() * 6.28, d = 40 + Math.random() * 70, t = 10 + Math.random() * 12;
+      s.textContent = simbolo || "\u2665";
+      s.style.cssText = "position:fixed;left:" + x + "px;top:" + y + "px;font:normal " + t + "px/1 system-ui;color:" + colores[i % colores.length] + ";pointer-events:none;text-shadow:0 1px 3px rgba(150,40,90,.25);z-index:9";
+      document.body.appendChild(s);
+      var an = s.animate([{ transform: "translate(-50%,-50%) scale(.2)", opacity: 1 }, { transform: "translate(calc(-50% + " + Math.cos(a) * d + "px),calc(-50% + " + (Math.sin(a) * d - 30) + "px)) scale(1) rotate(" + (Math.random() * 60 - 30) + "deg)", opacity: 0 }], { duration: 900 + Math.random() * 500, easing: "cubic-bezier(.2,.7,.3,1)" });
+      an.onfinish = (function (el) { return function () { el.remove(); }; })(s);
+    }
+  }
+  var t = document.querySelector(".taza");
+  addEventListener("pointerdown", function (e) { t.animate([{ transform: "rotate(0)" }, { transform: "rotate(-6deg) scale(1.03)" }, { transform: "rotate(5deg)" }, { transform: "rotate(0)" }], { duration: 700, easing: "ease-in-out" }); estallido(e.clientX, e.clientY - 30, quieto ? 4 : 8, ["#ffb3cf", "#ffd1e6", "#c9967a"]); });
+})();
+</script>
+</body></html>

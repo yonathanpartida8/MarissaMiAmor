@@ -57,6 +57,26 @@ teléfono, se permite «instalar apps de este origen» y listo.
   (`ANDROID_KEYSTORE_B64` y `ANDROID_KEYSTORE_PASS`).
 - iPhone no instala APK: ahí se usa «Añadir a pantalla de inicio» (arriba).
 
+### Si el enlace da 404 (GitHub Pages apagado)
+
+Cuando el repositorio pasa a privado, GitHub **apaga** GitHub Pages, y al
+volverlo público **no** se vuelve a encender solo: todo da 404. Se enciende así:
+
+1. GitHub → el repositorio → **Settings → Pages**.
+2. «Build and deployment» → **Source: Deploy from a branch**.
+3. **Branch:** la rama con el librito (hoy `claude/interactive-love-book-redesign-5p93fv`;
+   `main` va atrasada) y la carpeta **`/ (root)`** → **Save**.
+4. En uno o dos minutos el enlace vuelve a abrir.
+
+También desde el editor: **Páginas publicadas → GitHub Pages** (con un token que
+tenga «Pages» y «Administration» en *Read and write* lo enciende de un toque).
+
+### Publicar páginas sin token
+
+Editor → **Páginas publicadas → Publicar sin token**: se descarga un `.zip`, se
+sube a la carpeta `publicar/` del repositorio desde la web de GitHub y la acción
+«Publicar páginas subidas» lo deja en `publicadas/<nombre>/` (ver `publicar/LÉEME.md`).
+
 ### Privado: sólo con el enlace
 
 El libro, el editor y cada página publicada llevan `noindex` (no salen en

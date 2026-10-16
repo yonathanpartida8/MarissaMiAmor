@@ -67,6 +67,7 @@ export const ARCHIVO = {
   activar: "interruptor-encender", desactivar: "interruptor-apagar", probar: "probar-pagina",
   pagina: "pagina-nueva", "pagina-duplicar": "pagina-duplicar", "pagina-cambiar": "pagina-cambiar", "pagina-eliminar": "pagina-borrar", "pagina-reordenar": "pagina-reordenar",
   reproducir: "reproducir", pausar: "pausar", publicar: "publicar",
+  "abrir-recursos": "abrir-recursos", "cerrar-recursos": "cerrar-recursos",
 };
 /* Lo que se repite seguido sube por la escala (do, re, mi, sol, la, do…) en vez
    de sonar igual: elegir cinco cosas seguidas es una escalerita, no un martillo.
@@ -78,7 +79,7 @@ const SUAVES = new Set(["botones", "seleccionar", "deseleccionar"]);
 // Cuánto se hace a un lado MusicaDev mientras suena un efecto del editor (1 = nada).
 const AGACHAR = 0.6;
 // Lo mínimo entre dos sonidos del mismo momento (ms): sin metralletas.
-const MIN = { "zoom-paso": 55, "zoom-acercar": 380, "zoom-alejar": 380, pincel: 240, "seleccionar-varios": 90, rehacer: 120, publicar: 800, botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250, atras: 150, activar: 100, desactivar: 100, menu: 150, iman: 260, escribir: 200, probar: 400 };
+const MIN = { "zoom-paso": 55, "zoom-acercar": 380, "zoom-alejar": 380, pincel: 240, "seleccionar-varios": 90, rehacer: 120, publicar: 800, botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250, atras: 150, activar: 100, desactivar: 100, menu: 150, iman: 260, escribir: 200, probar: 400, "abrir-recursos": 200, "cerrar-recursos": 200 };
 /* Sonidos hechos a mano: [forma, frec. inicial, frec. final, duración s, volumen, retraso s]. */
 const SINTE = {
   colocar: [["sine", 520, 250, 0.11, 0.5], ["triangle", 1040, 900, 0.03, 0.12]],
@@ -92,7 +93,7 @@ const SINTE = {
   exito: [["sine", 784, 784, 0.12, 0.26], ["sine", 1046, 1046, 0.14, 0.24, 0.09], ["sine", 1568, 1568, 0.22, 0.2, 0.18]],
 };
 
-const ALIAS = { "seleccionar-varios": "seleccionar", rehacer: "deshacer", pincel: "arrastrar", publicar: "exito", "zoom-paso": "ajustar" };
+const ALIAS = { "abrir-recursos": "exito", "cerrar-recursos": "soltar", "seleccionar-varios": "seleccionar", rehacer: "deshacer", pincel: "arrastrar", publicar: "exito", "zoom-paso": "ajustar" };
 
 function leerPref() {
   try { return { on: true, vol: 0.35, max: 3, ...JSON.parse(localStorage.getItem(PREF) || "{}") }; } catch (e) { return { on: true, vol: 0.35, max: 3 }; }
@@ -288,7 +289,8 @@ export class SonidosEditor {
       // «Atrás» / «Cancelar» de las ventanas y vistas previas: suena a volver (y no además a cerrar).
       if (b.matches(".ed-hojita-pie .ed-btn:not(.primario), .ed-modal footer .ed-btn:not(.primario):not(.peligro)")) { this._tAtras = performance.now(); this.sonar("atras"); return; }
       // Las herramientas (el riel, la barrita de la línea de tiempo) suenan distinto.
-      this.sonar(b.closest(".ed-riel, .ed-tl-herr") ? "herramienta" : "botones");
+      if (b.closest(".ed-riel")) { setTimeout(() => { if (performance.now() - (this._tRec || 0) > 250) this.sonar("herramienta"); }, 0); return; }
+      this.sonar(b.closest(".ed-tl-herr") ? "herramienta" : "botones");
     }, true);
     // El botón «atrás» del teléfono (o del navegador).
     addEventListener("popstate", () => { this._tAtras = performance.now(); this.sonar("atras"); });
@@ -306,8 +308,30 @@ export class SonidosEditor {
     addEventListener("ed-hoja", (ev) => {
       if (ev.detail === "cerrar" && performance.now() - (this._tAtras || 0) < 300) return; // ya sonó «atrás»
       if (ev.detail === "abrir" && performance.now() - (this._tProbar || 0) < 300) return; // ya sonó «probar»
-      if (["abrir", "cerrar", "minimizar", "restaurar"].includes(ev.detail)) this.sonar(ev.detail);
+      if (!["abrir", "cerrar", "minimizar", "restaurar"].includes(ev.detail)) return;
+      // Un instante después: si la que se movió fue la hojita de recursos, ya sonó la suya.
+      setTimeout(() => { if (performance.now() - (this._tRec || 0) > 250) this.sonar(ev.detail); }, 0);
     });
+    // El menú de recursos (Elementos, Stickers, Efectos, GIFs…): al sacarlo y al guardarlo, su propio sonido,
+    // venga de donde venga (el riel, el cajón del teléfono que sigue al dedo, su hojita, la X o «atrás»).
+    const B = document.body.classList, hs = document.querySelector(".ed-hoja-sec");
+    // La hojita cuenta como guardada desde que empieza a bajar (no cuando termina).
+    const fuera = () => (B.contains("con-hoja-sec") && !hs?.classList.contains("cerrando")) || (app.lateral?.compacto ? !!app.lateral.abierto : !B.contains("sin-panel"));
+    // Lo que cambie al arrancar (antes de tocar nada) no suena: sólo lo que hace ella.
+    let estaba = false, toco = false;
+    const marcar = () => { if (!toco) { toco = true; estaba = fuera(); } };
+    addEventListener("pointerdown", marcar, true);
+    addEventListener("keydown", marcar, true);
+    const obs = new MutationObserver(() => {
+      const ahora = fuera();
+      if (ahora === estaba) return;
+      estaba = ahora;
+      if (!toco) return;
+      if (document.querySelector(".ed-prueba, .ed-modal-fondo")) return;
+      this._tRec = performance.now();
+      this.sonar(ahora ? "abrir-recursos" : "cerrar-recursos");
+    });
+    for (const n of [document.body, hs]) if (n) obs.observe(n, { attributes: true, attributeFilter: ["class"] });
     addEventListener("ed-color", () => this.sonar("colorear"));
     addEventListener("ed-aviso", (ev) => { if (ev.detail === "error") this.sonar("error"); });
     // Mover, girar, cambiar tamaño, la línea de tiempo…: uno al empezar (según el gesto) y otro al soltar.

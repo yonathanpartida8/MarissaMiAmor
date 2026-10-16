@@ -9,6 +9,11 @@
  *     frase nueva sube una frase.
  *   · Al actualizar, lo que ya no está en el librito se borra.
  *
+ * GitHub Pages (Fase 15): ver si está encendido, encenderlo con la rama
+ * correcta, pedirle que se vuelva a publicar y ver si la última vez falló.
+ * Y sin token: el editor arma un .zip que se sube a publicar/ desde la web de
+ * GitHub y la acción «publicar-subidas» lo abre en publicadas/<nombre>/.
+ *
  * El token (un «fine-grained token» con permiso de Contenido sólo para ese
  * repositorio) se guarda SÓLO en este aparato: en localStorage si eliges
  * «recordarlo», si no en sessionStorage (se olvida al cerrar). Nunca viaja a
@@ -39,20 +44,26 @@ export function repoDeAqui() {
   return primero && primero !== "EditorDev" ? `${dueno}/${primero}` : `${dueno}/${dueno}.github.io`;
 }
 
+/** La dirección de GitHub Pages que le toca a un repositorio (usuario/repo). */
+export function sitioDe(repo) {
+  const [dueno = "", nombre = ""] = String(repo || "").split("/");
+  return nombre.toLowerCase() === `${dueno.toLowerCase()}.github.io` ? `https://${dueno.toLowerCase()}.github.io/` : `https://${dueno.toLowerCase()}.github.io/${nombre}/`;
+}
+
 export const nombreLimpio = (s) => String(s || "librito").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "librito";
 
 async function api(c, ruta, op = {}) {
   let r;
   try {
     r = await fetch(API + ruta, {
-      ...op, cache: "no-store", referrerPolicy: "no-referrer",
+      method: op.method, body: op.body, cache: "no-store", referrerPolicy: "no-referrer",
       headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${c.token}`, "X-GitHub-Api-Version": "2022-11-28", ...(op.body ? { "Content-Type": "application/json" } : {}) },
     });
   } catch (e) { throw new Error("Sin conexión con GitHub. Revisa el internet e inténtalo otra vez."); }
   if (!r.ok) {
     let m = "";
     try { m = (await r.json()).message || ""; } catch (e) { /* nada */ }
-    const err = new Error(r.status === 401 ? "El token no es válido o ya caducó." : r.status === 403 ? "El token no tiene permiso para esto (necesita «Contents: Read and write»)." : r.status === 404 ? "No encontré el repositorio o la rama (o el token no tiene acceso)." : m || `GitHub contestó ${r.status}`);
+    const err = new Error(r.status === 401 ? "El token no es válido o ya caducó." : r.status === 403 ? `El token no tiene permiso para esto (necesita ${op.permiso || "«Contents: Read and write»"}).` : r.status === 404 ? "No encontré el repositorio o la rama (o el token no tiene acceso)." : m || `GitHub contestó ${r.status}`);
     err.status = r.status;
     throw err;
   }
@@ -63,14 +74,102 @@ async function api(c, ruta, op = {}) {
 export async function conectar(c) {
   const repo = await api(c, `/repos/${c.repo}`);
   if (repo.permissions && !repo.permissions.push) throw new Error("Ese token puede ver el repositorio pero no escribir en él.");
-  const [dueno, nombre] = c.repo.split("/");
-  let rama = repo.default_branch, sitio = nombre.toLowerCase() === `${dueno.toLowerCase()}.github.io` ? `https://${dueno}.github.io/` : `https://${dueno}.github.io/${nombre}/`;
+  let rama = "", sitio = sitioDe(c.repo);
+  const pg = await estadoPages(c);
+  if (pg.activo) { rama = pg.rama || ""; sitio = pg.sitio || sitio; }
+  // Sin Pages (o sin permiso para verlo): la rama con lo más nuevo, no a ciegas la principal
+  // (la principal puede ir muy atrás y publicar ahí no se vería).
+  if (!rama) { try { rama = (await ramas(c))[0]?.nombre || ""; } catch (e) { /* nada */ } }
+  return { rama: c.rama || rama || repo.default_branch, sitio, privado: !!repo.private, pages: pg };
+}
+
+/**
+ * Cómo está GitHub Pages: { activo: true, rama, carpeta, sitio, estado } · { activo: false }
+ * (apagado: por eso sale 404) · { activo: null } (el token no tiene permiso de verlo).
+ */
+export async function estadoPages(c) {
   try {
-    const pg = await api(c, `/repos/${c.repo}/pages`);
-    rama = pg?.source?.branch || rama;
-    if (pg?.html_url) sitio = pg.html_url.endsWith("/") ? pg.html_url : pg.html_url + "/";
-  } catch (e) { /* el token puede no tener permiso de Pages: se usa la rama principal */ }
-  return { rama: c.rama || rama, sitio, privado: !!repo.private };
+    const pg = await api(c, `/repos/${c.repo}/pages`, { permiso: "«Pages: Read»" });
+    const sitio = pg?.html_url ? (pg.html_url.endsWith("/") ? pg.html_url : pg.html_url + "/") : sitioDe(c.repo);
+    return { activo: true, rama: pg?.source?.branch || "", carpeta: pg?.source?.path || "/", sitio, estado: pg?.status || "", tipo: pg?.build_type || "legacy" };
+  } catch (e) {
+    if (e.status === 404) return { activo: false, sitio: sitioDe(c.repo) };
+    if (e.status === 401) throw e;
+    return { activo: null, sitio: sitioDe(c.repo), error: e.message };
+  }
+}
+
+/** Las ramas del repositorio, la más reciente primero: [{ nombre, fecha }]. */
+export async function ramas(c) {
+  const l = (await api(c, `/repos/${c.repo}/branches?per_page=100`)) || [];
+  const con = await Promise.all(l.slice(0, 12).map(async (b) => {
+    try { const k = await api(c, `/repos/${c.repo}/git/commits/${b.commit.sha}`); return { nombre: b.name, fecha: k.committer?.date || k.author?.date || "" }; }
+    catch (e) { return { nombre: b.name, fecha: "" }; }
+  }));
+  return [...con.sort((a, b) => (b.fecha > a.fecha ? 1 : b.fecha < a.fecha ? -1 : 0)), ...l.slice(12).map((b) => ({ nombre: b.name, fecha: "" }))];
+}
+
+const PERMISO_PAGES = "«Pages: Read and write» y «Administration: Read and write»";
+
+/** Enciende GitHub Pages desde una rama (o cambia de rama si ya estaba encendido). */
+export async function encenderPages(c, rama) {
+  const cuerpo = JSON.stringify({ build_type: "legacy", source: { branch: rama, path: "/" } });
+  try { await api(c, `/repos/${c.repo}/pages`, { method: "POST", body: cuerpo, permiso: PERMISO_PAGES }); }
+  catch (e) {
+    // 409: ya existía. 422: ya existía con otra configuración. → se cambia en vez de crear.
+    if (e.status !== 409 && e.status !== 422) throw e;
+    await api(c, `/repos/${c.repo}/pages`, { method: "PUT", body: cuerpo, permiso: PERMISO_PAGES });
+  }
+  return estadoPages(c);
+}
+
+/** Le pide a GitHub Pages que vuelva a publicar el sitio ya. */
+export async function reconstruirPages(c) {
+  await api(c, `/repos/${c.repo}/pages/builds`, { method: "POST", permiso: "«Pages: Read and write»" });
+}
+
+/** Cómo salió la última publicación de GitHub Pages: { estado, error, fecha } o null. */
+export async function ultimaPublicacion(c) {
+  try {
+    const b = await api(c, `/repos/${c.repo}/pages/builds/latest`, { permiso: "«Pages: Read»" });
+    return { estado: b?.status || "", error: b?.error?.message || "", fecha: b?.updated_at || b?.created_at || "" };
+  } catch (e) { return null; }
+}
+
+/** Sin token: ¿el sitio público contesta? true (en línea) · false (404: Pages apagado) · null (no se sabe). */
+export async function sitioEnLinea(sitio) {
+  try {
+    const r = await fetch(sitio, { method: "GET", cache: "no-store", mode: "cors", referrerPolicy: "no-referrer" });
+    return r.ok ? true : r.status === 404 ? false : null;
+  } catch (e) { return null; }
+}
+
+/**
+ * Sin token (repositorio público): la rama de GitHub Pages si se deja ver; si
+ * no, la última a la que se subió algo; si no, la principal. "" si no se sabe.
+ */
+export async function ramaPublica(repo) {
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo || "")) return "";
+  const pedir = async (ruta) => {
+    const r = await fetch(API + ruta, { cache: "no-store", referrerPolicy: "no-referrer", headers: { Accept: "application/vnd.github+json" } });
+    if (!r.ok) throw new Error(String(r.status));
+    return r.json();
+  };
+  try { const pg = await pedir(`/repos/${repo}/pages`); if (pg?.source?.branch) return pg.source.branch; } catch (e) { /* sin permiso o apagado */ }
+  try {
+    const ev = await pedir(`/repos/${repo}/events?per_page=30`);
+    const push = (ev || []).find((e) => e.type === "PushEvent" && /^refs\/heads\//.test(e.payload?.ref || ""));
+    if (push) return push.payload.ref.slice(11);
+  } catch (e) { /* nada */ }
+  try { return (await pedir(`/repos/${repo}`)).default_branch || ""; } catch (e) { return ""; }
+}
+
+/** Sin token: lo publicado, leído del sitio público (publicadas/lista.json). */
+export async function listarPublico(sitio) {
+  try {
+    const r = await fetch(`${sitio}publicadas/lista.json`, { cache: "no-store", mode: "cors", referrerPolicy: "no-referrer" });
+    return r.ok ? ((await r.json()).paginas || []) : [];
+  } catch (e) { return []; }
 }
 
 function base64(u8) {
@@ -149,6 +248,8 @@ export async function publicar(c, { slug, titulo, paginas, archivos, alProgreso 
   entradas.push({ path: "publicadas/lista.json", mode: "100644", type: "blob", sha: await blobTexto(c, JSON.stringify({ paginas: lista }, null, 1)) });
   alProgreso?.("Guardando en GitHub…");
   await confirmarCambios(c, { commit, entradas, mensaje: `Publicar «${titulo}»` });
+  // Por si acaso: que GitHub Pages lo publique ya (si el token no tiene permiso de Pages, se publica solo igual).
+  reconstruirPages(c).catch(() => {});
   return { enlace, subidos, borrados };
 }
 

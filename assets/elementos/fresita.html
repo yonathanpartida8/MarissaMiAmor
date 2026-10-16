@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Fresita</title>
+<meta name="tamaño" content="240x260">
+<meta name="descripcion" content="Una fresita que rebota feliz; tócala y salta más alto con brillitos">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}svg{width:100%;height:100%;overflow:visible}.fresa{transform-origin:120px 230px;animation:bota 1.1s cubic-bezier(.3,0,.5,1) infinite}@keyframes bota{0%,100%{transform:translateY(0) scale(1.06,.94)}12%{transform:translateY(0) scale(1)}50%{transform:translateY(-22px) scale(.97,1.03)}88%{transform:translateY(0) scale(1)}}.sombra{transform-origin:120px 238px;animation:sombra 1.1s cubic-bezier(.3,0,.5,1) infinite}@keyframes sombra{50%{transform:scale(.7);opacity:.35}}</style>
+</head><body><svg viewBox="0 0 240 260"><ellipse class="sombra" cx="120" cy="238" rx="50" ry="8" fill="#e8b8c8" opacity=".6"/><g class="fresa"><path d="M120 228C66 200 54 150 62 118c8-30 40-38 58-30 18-8 50 0 58 30 8 32-4 82-58 110z" fill="#ff5c7a"/><path d="M120 228C66 200 54 150 62 118c8-30 40-38 58-30" fill="#ff7a92" opacity=".5"/><g fill="#ffe6a3"><ellipse cx="88" cy="130" rx="2.5" ry="4"/><ellipse cx="152" cy="130" rx="2.5" ry="4"/><ellipse cx="80" cy="162" rx="2.5" ry="4"/><ellipse cx="160" cy="162" rx="2.5" ry="4"/><ellipse cx="96" cy="190" rx="2.5" ry="4"/><ellipse cx="144" cy="190" rx="2.5" ry="4"/><ellipse cx="120" cy="206" rx="2.5" ry="4"/></g><path d="M120 92c-16-20-40-18-46-8 18 2 30 6 46 8zM120 92c16-20 40-18 46-8-18 2-30 6-46 8zM120 92c-6-18 0-30 6-34 2 14 0 24-6 34z" fill="#6fcf7a"/><circle cx="104" cy="148" r="5" fill="#3a1a22"/><circle cx="136" cy="148" r="5" fill="#3a1a22"/><circle cx="106" cy="146" r="1.8" fill="#fff"/><circle cx="138" cy="146" r="1.8" fill="#fff"/><path d="M112 160q8 8 16 0" stroke="#3a1a22" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="92" cy="160" rx="8" ry="5" fill="#ffb3c6" opacity=".7"/><ellipse cx="148" cy="160" rx="8" ry="5" fill="#ffb3c6" opacity=".7"/></g></svg>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function estallido(x, y, n, colores, simbolo) {
+    for (var i = 0; i < n; i++) {
+      var s = document.createElement("i"), a = Math.random() * 6.28, d = 40 + Math.random() * 70, t = 10 + Math.random() * 12;
+      s.textContent = simbolo || "\u2665";
+      s.style.cssText = "position:fixed;left:" + x + "px;top:" + y + "px;font:normal " + t + "px/1 system-ui;color:" + colores[i % colores.length] + ";pointer-events:none;text-shadow:0 1px 3px rgba(150,40,90,.25);z-index:9";
+      document.body.appendChild(s);
+      var an = s.animate([{ transform: "translate(-50%,-50%) scale(.2)", opacity: 1 }, { transform: "translate(calc(-50% + " + Math.cos(a) * d + "px),calc(-50% + " + (Math.sin(a) * d - 30) + "px)) scale(1) rotate(" + (Math.random() * 60 - 30) + "deg)", opacity: 0 }], { duration: 900 + Math.random() * 500, easing: "cubic-bezier(.2,.7,.3,1)" });
+      an.onfinish = (function (el) { return function () { el.remove(); }; })(s);
+    }
+  }
+  var f = document.querySelector(".fresa");
+  addEventListener("pointerdown", function (e) { f.animate([{ transform: "translateY(0)" }, { transform: "translateY(-70px) rotate(360deg)" }, { transform: "translateY(0) rotate(360deg)" }], { duration: 800, easing: "cubic-bezier(.3,0,.4,1)", composite: "add" }); estallido(e.clientX, e.clientY - 20, quieto ? 4 : 9, ["#ffe6a3", "#ff9cb4", "#fff3c4"], "\u2726"); });
+})();
+</script>
+</body></html>

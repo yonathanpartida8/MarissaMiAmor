@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Pétalos de sakura</title>
+<meta name="tamaño" content="360x480">
+<meta name="descripcion" content="Pétalos de cerezo que caen girando con ráfagas de viento suave">
+<meta name="decorativo" content="si">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}canvas{position:fixed;inset:0;width:100%;height:100%}</style>
+</head><body><canvas></canvas>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var c = document.querySelector("canvas"), g = c.getContext("2d"), W = 0, H = 0, D = 1;
+  function tam() { D = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; c.width = W * D; c.height = H * D; g.setTransform(D, 0, 0, D, 0, 0); }
+  addEventListener("resize", tam); tam();
+  function bucle(f) { var t0 = performance.now(); function paso(t) { var dt = Math.min(50, t - t0); t0 = t; if (!document.hidden) f(dt / 16.7, t); requestAnimationFrame(paso); } requestAnimationFrame(paso); }
+  var P = Array.from({ length: quieto ? 14 : 34 }, nuevo);
+  function nuevo(_, i) { return { x: Math.random() * W, y: i === undefined ? -20 : Math.random() * H, s: 6 + Math.random() * 7, v: 0.5 + Math.random() * 0.7, a: Math.random() * 6.3, va: (Math.random() - .5) * 0.04, f: Math.random() * 6.3, c: Math.random() < .5 ? "#ffc4d8" : "#ffd9e6" }; }
+  var viento = 0;
+  bucle(function (k, t) {
+    g.clearRect(0, 0, W, H); viento = Math.sin(t / 3000) * 0.8 + Math.sin(t / 1100) * 0.3;
+    for (var i = 0; i < P.length; i++) { var p = P[i]; p.f += 0.03 * k; p.y += p.v * k; p.x += (viento + Math.sin(p.f) * 0.6) * k; p.a += p.va * k;
+      if (p.y > H + 20 || p.x > W + 30 || p.x < -30) { P[i] = nuevo(); P[i].x = Math.random() * W; continue; }
+      g.save(); g.translate(p.x, p.y); g.rotate(p.a); g.scale(1, Math.abs(Math.sin(p.f)) * 0.7 + 0.3);
+      g.fillStyle = p.c; g.beginPath(); g.moveTo(0, -p.s); g.bezierCurveTo(p.s, -p.s * 0.6, p.s * 0.9, p.s * 0.6, 0, p.s); g.bezierCurveTo(-p.s * 0.9, p.s * 0.6, -p.s, -p.s * 0.6, -p.s * 0.15, -p.s * 0.75); g.lineTo(0, -p.s * 0.5); g.closePath(); g.fill();
+      g.fillStyle = "rgba(255,140,180,.35)"; g.beginPath(); g.ellipse(0, p.s * 0.2, p.s * 0.2, p.s * 0.5, 0, 0, 6.3); g.fill(); g.restore(); }
+  });
+})();
+</script>
+</body></html>

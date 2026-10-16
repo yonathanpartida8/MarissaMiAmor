@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Gatito</title>
+<meta name="tamaño" content="300x300">
+<meta name="descripcion" content="Un gatito que parpadea y mueve la cola; tócalo y ronronea corazones">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}svg{width:100%;height:100%;overflow:visible}.cola{transform-origin:212px 236px;animation:cola 2.2s ease-in-out infinite}@keyframes cola{50%{transform:rotate(-22deg)}}.ojo{transform-box:fill-box;transform-origin:center;animation:parpadeo 4.2s infinite}@keyframes parpadeo{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}.oreja{transform-box:fill-box;transform-origin:bottom center}.oreja.d{animation:oreja 5s infinite}@keyframes oreja{0%,88%,100%{transform:rotate(0)}91%{transform:rotate(12deg)}94%{transform:rotate(0)}}.feliz .ojo{display:none}.feliz .contento{display:block}.contento{display:none}.cuerpo{transform-origin:150px 270px;animation:resp 3s ease-in-out infinite}@keyframes resp{50%{transform:scale(1.02,.985)}}</style>
+</head><body><svg viewBox="0 0 300 300"><path class="cola" d="M212 236c40-6 52-40 40-62" stroke="#f3b38a" stroke-width="16" fill="none" stroke-linecap="round"/><g class="cuerpo"><ellipse cx="150" cy="232" rx="72" ry="52" fill="#ffd2b0"/><ellipse cx="150" cy="245" rx="40" ry="30" fill="#fff1e4"/><path class="oreja i" d="M86 112l10-58 44 34z" fill="#ffd2b0"/><path d="M96 98l5-28 22 17z" fill="#ffadc6"/><path class="oreja d" d="M214 112l-10-58-44 34z" fill="#ffd2b0"/><path d="M204 98l-5-28-22 17z" fill="#ffadc6"/><ellipse cx="150" cy="140" rx="74" ry="62" fill="#ffd2b0"/><path d="M150 90c-8 10-8 22 0 30 8-8 8-20 0-30z" fill="#f3b38a" opacity=".55"/><ellipse class="ojo" cx="122" cy="138" rx="9" ry="12" fill="#3a2a2a"/><ellipse class="ojo" cx="178" cy="138" rx="9" ry="12" fill="#3a2a2a"/><circle cx="125" cy="133" r="3" fill="#fff"/><circle cx="181" cy="133" r="3" fill="#fff"/><g class="contento" stroke="#3a2a2a" stroke-width="4" fill="none" stroke-linecap="round"><path d="M112 140q10-12 20 0"/><path d="M168 140q10-12 20 0"/></g><path d="M144 156l6 6 6-6z" fill="#ff8fae"/><path d="M150 162q-6 9-14 6M150 162q6 9 14 6" stroke="#3a2a2a" stroke-width="2.4" fill="none" stroke-linecap="round"/><ellipse cx="104" cy="160" rx="11" ry="7" fill="#ff9cbc" opacity=".6"/><ellipse cx="196" cy="160" rx="11" ry="7" fill="#ff9cbc" opacity=".6"/><g stroke="#c9967a" stroke-width="1.8" stroke-linecap="round"><path d="M92 152l-26-4M92 160l-26 4M208 152l26-4M208 160l26 4"/></g></g></svg>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function estallido(x, y, n, colores, simbolo) {
+    for (var i = 0; i < n; i++) {
+      var s = document.createElement("i"), a = Math.random() * 6.28, d = 40 + Math.random() * 70, t = 10 + Math.random() * 12;
+      s.textContent = simbolo || "\u2665";
+      s.style.cssText = "position:fixed;left:" + x + "px;top:" + y + "px;font:normal " + t + "px/1 system-ui;color:" + colores[i % colores.length] + ";pointer-events:none;text-shadow:0 1px 3px rgba(150,40,90,.25);z-index:9";
+      document.body.appendChild(s);
+      var an = s.animate([{ transform: "translate(-50%,-50%) scale(.2)", opacity: 1 }, { transform: "translate(calc(-50% + " + Math.cos(a) * d + "px),calc(-50% + " + (Math.sin(a) * d - 30) + "px)) scale(1) rotate(" + (Math.random() * 60 - 30) + "deg)", opacity: 0 }], { duration: 900 + Math.random() * 500, easing: "cubic-bezier(.2,.7,.3,1)" });
+      an.onfinish = (function (el) { return function () { el.remove(); }; })(s);
+    }
+  }
+  var t0 = 0;
+  addEventListener("pointerdown", function (e) {
+    document.body.classList.add("feliz"); clearTimeout(t0); t0 = setTimeout(function () { document.body.classList.remove("feliz"); }, 1600);
+    estallido(e.clientX, e.clientY - 20, quieto ? 4 : 8, ["#ff8fae", "#ffb3cf", "#ffd1e6"]);
+    if (navigator.vibrate) navigator.vibrate([8, 40, 8, 40, 8]);
+  });
+})();
+</script>
+</body></html>

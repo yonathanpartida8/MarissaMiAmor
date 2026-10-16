@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Nubecita de amor</title>
+<meta name="tamaño" content="320x320">
+<meta name="descripcion" content="Una nubecita que flota y llueve corazones; tócala y sonríe más">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}svg{width:100%;height:100%;overflow:visible}.nube{animation:flota 3.8s ease-in-out infinite}@keyframes flota{50%{transform:translateY(-8px)}}.boca2{display:none}.feliz .boca1{display:none}.feliz .boca2{display:block}</style>
+</head><body><svg viewBox="0 0 320 320"><g class="lluvia"></g><g class="nube"><g fill="#fff" stroke="#f3dcea" stroke-width="2"><circle cx="110" cy="120" r="44"/><circle cx="168" cy="92" r="56"/><circle cx="222" cy="124" r="40"/><rect x="78" y="118" width="176" height="52" rx="26"/></g><g fill="#fff"><circle cx="110" cy="120" r="42"/><circle cx="168" cy="92" r="54"/><circle cx="222" cy="124" r="38"/><rect x="80" y="120" width="172" height="48" rx="24"/></g><circle cx="146" cy="126" r="5" fill="#6a5a6a"/><circle cx="192" cy="126" r="5" fill="#6a5a6a"/><path class="boca1" d="M162 140q7 6 14 0" stroke="#6a5a6a" stroke-width="3" fill="none" stroke-linecap="round"/><path class="boca2" d="M158 138q11 14 22 0z" fill="#ff8fae"/><ellipse cx="130" cy="140" rx="9" ry="5" fill="#ffb3cf" opacity=".7"/><ellipse cx="208" cy="140" rx="9" ry="5" fill="#ffb3cf" opacity=".7"/></g></svg>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var NS = "http://www.w3.org/2000/svg", ll = document.querySelector(".lluvia"), cols = ["#ff8fbf", "#ffb3cf", "#c9a6ff", "#9fd4ff"];
+  function gota() { if (document.hidden) return; var h = document.createElementNS(NS, "path"), x = 100 + Math.random() * 130, s = 0.5 + Math.random() * 0.5; h.setAttribute("d", "M0 8c-6-4-9-7-9-11 0-2.5 2-4.5 4.5-4.5 2 0 3.5 1.2 4.5 2.7 1-1.5 2.5-2.7 4.5-2.7 2.5 0 4.5 2 4.5 4.5 0 4-3 7-9 11z"); h.setAttribute("fill", cols[Math.floor(Math.random() * cols.length)]); ll.appendChild(h);
+    var a = h.animate([{ transform: "translate(" + x + "px,170px) scale(" + s + ")", opacity: 0 }, { opacity: 1, offset: 0.15 }, { transform: "translate(" + (x + Math.random() * 16 - 8) + "px,310px) scale(" + s + ") rotate(" + (Math.random() * 40 - 20) + "deg)", opacity: 0 }], { duration: 1600 + Math.random() * 800, easing: "ease-in" }); a.onfinish = function () { h.remove(); }; }
+  setInterval(gota, quieto ? 700 : 260);
+  var t0 = 0; addEventListener("pointerdown", function () { document.body.classList.add("feliz"); clearTimeout(t0); t0 = setTimeout(function () { document.body.classList.remove("feliz"); }, 1500); for (var i = 0; i < 6; i++) setTimeout(gota, i * 50); });
+})();
+</script>
+</body></html>

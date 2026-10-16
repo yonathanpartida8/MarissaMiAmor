@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Globos de corazón</title>
+<meta name="tamaño" content="320x420">
+<meta name="descripcion" content="Tres globos de corazón que flotan; tócalos y explotan en confeti y vuelven">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}svg{width:100%;height:100%;overflow:visible}.globo{cursor:pointer;transform-box:fill-box;transform-origin:center}</style>
+</head><body><svg viewBox="0 0 320 420"></svg>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function estallido(x, y, n, colores, simbolo) {
+    for (var i = 0; i < n; i++) {
+      var s = document.createElement("i"), a = Math.random() * 6.28, d = 40 + Math.random() * 70, t = 10 + Math.random() * 12;
+      s.textContent = simbolo || "\u2665";
+      s.style.cssText = "position:fixed;left:" + x + "px;top:" + y + "px;font:normal " + t + "px/1 system-ui;color:" + colores[i % colores.length] + ";pointer-events:none;text-shadow:0 1px 3px rgba(150,40,90,.25);z-index:9";
+      document.body.appendChild(s);
+      var an = s.animate([{ transform: "translate(-50%,-50%) scale(.2)", opacity: 1 }, { transform: "translate(calc(-50% + " + Math.cos(a) * d + "px),calc(-50% + " + (Math.sin(a) * d - 30) + "px)) scale(1) rotate(" + (Math.random() * 60 - 30) + "deg)", opacity: 0 }], { duration: 900 + Math.random() * 500, easing: "cubic-bezier(.2,.7,.3,1)" });
+      an.onfinish = (function (el) { return function () { el.remove(); }; })(s);
+    }
+  }
+  var NS = "http://www.w3.org/2000/svg", svg = document.querySelector("svg");
+  var G = [{ x: 95, y: 150, c: "#ff8fb8", c2: "#ff5f9e", f: 0 }, { x: 165, y: 105, c: "#c9a6ff", c2: "#9b6ff0", f: 2 }, { x: 235, y: 160, c: "#ffc39e", c2: "#ff9a6b", f: 4 }];
+  G.forEach(function (b, i) {
+    var cuerda = document.createElementNS(NS, "path"); cuerda.setAttribute("stroke", "#c9a3b5"); cuerda.setAttribute("stroke-width", "1.6"); cuerda.setAttribute("fill", "none"); svg.appendChild(cuerda);
+    var g = document.createElementNS(NS, "g"); g.setAttribute("class", "globo");
+    g.innerHTML = '<defs><radialGradient id="r' + i + '" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".25" stop-color="' + b.c + '"/><stop offset="1" stop-color="' + b.c2 + '"/></radialGradient></defs><path d="M0 34C-26 16-34 4-34-9c0-11 9-19 19-19 7 0 12 4 15 9 3-5 8-9 15-9 10 0 19 8 19 19 0 13-8 25-34 43z" fill="url(#r' + i + ')"/><path d="M-3 34l3 6 3-6z" fill="' + b.c2 + '"/><ellipse cx="-14" cy="-12" rx="6" ry="9" fill="#fff" opacity=".5" transform="rotate(-25 -14 -12)"/>';
+    svg.appendChild(g); b.g = g; b.cuerda = cuerda; b.vivo = 1;
+    g.addEventListener("pointerdown", function (ev) {
+      if (b.vivo < 1) return; b.vivo = 0;
+      var r = g.getBoundingClientRect(); estallido(r.left + r.width / 2, r.top + r.height / 2, quieto ? 6 : 14, [b.c, b.c2, "#fff3c4", "#ffd1e6"], "\u2726");
+      if (navigator.vibrate) navigator.vibrate(15);
+      setTimeout(function () { b.vivo = 0.01; }, 1800);
+    });
+  });
+  function paso(t) {
+    if (!document.hidden) G.forEach(function (b) {
+      if (b.vivo > 0 && b.vivo < 1) b.vivo = Math.min(1, b.vivo + 0.03);
+      var s = b.vivo <= 0 ? 0 : 1 - Math.pow(1 - b.vivo, 3), y = b.y + Math.sin(t / 900 + b.f) * 8, x = b.x + Math.sin(t / 1300 + b.f) * 5, rot = Math.sin(t / 1100 + b.f) * 6;
+      b.g.setAttribute("transform", "translate(" + x + " " + y + ") rotate(" + rot + ") scale(" + s + ")");
+      var bx = x + Math.sin(rot * Math.PI / 180) * 40, by = y + 40, cx = 160 + Math.sin(t / 700 + b.f) * 18;
+      b.cuerda.setAttribute("d", "M" + bx + " " + by + " Q" + cx + " " + (by + 120) + " 160 410");
+      b.cuerda.style.opacity = s;
+    });
+    requestAnimationFrame(paso);
+  }
+  requestAnimationFrame(paso);
+})();
+</script>
+</body></html>

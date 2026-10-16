@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Reloj de arena</title>
+<meta name="tamaño" content="240x340">
+<meta name="descripcion" content="Un reloj de arena rosita que cae granito a granito; tócalo y se da la vuelta">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}body{display:grid;place-items:center}.reloj{position:relative;width:70%;aspect-ratio:.62;transition:transform .9s cubic-bezier(.4,1.4,.5,1);cursor:pointer}canvas{position:absolute;inset:0;width:100%;height:100%}</style>
+</head><body><div class="reloj"><canvas></canvas></div>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var c = document.querySelector("canvas"), g = c.getContext("2d"), reloj = document.querySelector(".reloj"), W, H, D;
+  function tam() { D = Math.min(2, devicePixelRatio || 1); W = c.clientWidth; H = c.clientHeight; c.width = W * D; c.height = H * D; g.setTransform(D, 0, 0, D, 0, 0); }
+  addEventListener("resize", tam); tam();
+  var arriba = 1, granos = [], vueltas = 0, girando = 0;
+  function vidrio(cx, top, bot, w) { g.beginPath(); g.moveTo(cx - w, top); g.bezierCurveTo(cx - w, (top + bot) / 2 - 20, cx - 5, (top + bot) / 2 - 10, cx - 4, (top + bot) / 2); g.bezierCurveTo(cx - 5, (top + bot) / 2 + 10, cx - w, (top + bot) / 2 + 20, cx - w, bot); g.lineTo(cx + w, bot); g.bezierCurveTo(cx + w, (top + bot) / 2 + 20, cx + 5, (top + bot) / 2 + 10, cx + 4, (top + bot) / 2); g.bezierCurveTo(cx + 5, (top + bot) / 2 - 10, cx + w, (top + bot) / 2 - 20, cx + w, top); g.closePath(); }
+  function pintar() {
+    if (document.hidden) return requestAnimationFrame(pintar);
+    var cx = W / 2, top = H * 0.1, bot = H * 0.9, mid = (top + bot) / 2, w = W * 0.36;
+    g.clearRect(0, 0, W, H);
+    g.save(); vidrio(cx, top, bot, w); g.fillStyle = "rgba(255,240,248,.55)"; g.fill(); g.clip();
+    if (!girando) arriba = Math.max(0, arriba - 0.0009);
+    var hA = (mid - top - 8) * arriba, hB = (bot - mid - 8) * (1 - arriba);
+    g.fillStyle = "#ffb3cf";
+    g.beginPath(); g.moveTo(cx - w, mid - 4 - hA * 0.15); g.quadraticCurveTo(cx, mid - 4 - hA * 1.2, cx + w, mid - 4 - hA * 0.15); g.lineTo(cx + w, mid); g.lineTo(cx - w, mid); g.fill();
+    g.beginPath(); g.moveTo(cx - w, bot); g.lineTo(cx - w, bot - hB * 0.5); g.quadraticCurveTo(cx, bot - hB * 1.5, cx + w, bot - hB * 0.5); g.lineTo(cx + w, bot); g.fill();
+    if (arriba > 0 && !girando) { for (var i = 0; i < 2; i++) granos.push({ x: cx + (Math.random() - .5) * 2, y: mid, v: 1 + Math.random() }); g.fillRect(cx - 1, mid, 2, bot - hB - mid); }
+    for (var k = granos.length - 1; k >= 0; k--) { var p = granos[k]; p.y += p.v; p.v += 0.2; if (p.y > bot - hB * 1.1) granos.splice(k, 1); else { g.beginPath(); g.arc(p.x, p.y, 1.2, 0, 6.3); g.fill(); } }
+    g.restore();
+    vidrio(cx, top, bot, w); g.strokeStyle = "rgba(216,57,122,.55)"; g.lineWidth = 2.5; g.stroke();
+    g.fillStyle = "#c98aa8"; g.beginPath(); g.roundRect ? g.roundRect(cx - w - 10, top - 12, 2 * w + 20, 12, 6) : g.rect(cx - w - 10, top - 12, 2 * w + 20, 12); g.fill(); g.beginPath(); g.roundRect ? g.roundRect(cx - w - 10, bot, 2 * w + 20, 12, 6) : g.rect(cx - w - 10, bot, 2 * w + 20, 12); g.fill();
+    g.fillStyle = "rgba(255,255,255,.6)"; g.fillRect(cx - w + 6, top + 8, 4, (mid - top) * 0.5);
+    requestAnimationFrame(pintar);
+  }
+  requestAnimationFrame(pintar);
+  addEventListener("pointerdown", function () { if (girando) return; girando = 1; vueltas++; reloj.style.transform = "rotate(" + vueltas * 180 + "deg)"; setTimeout(function () { reloj.style.transition = "none"; reloj.style.transform = "rotate(0deg)"; vueltas = 0; arriba = 1 - arriba; granos = []; void reloj.offsetWidth; reloj.style.transition = ""; girando = 0; }, 950); });
+})();
+</script>
+</body></html>

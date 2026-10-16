@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Girasol</title>
+<meta name="tamaño" content="300x380">
+<meta name="descripcion" content="Un girasol que se mece con el viento; tócalo y da una vuelta">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}svg{width:100%;height:100%;overflow:visible}.planta{transform-origin:150px 375px;animation:mece 4s ease-in-out infinite}@keyframes mece{50%{transform:rotate(3.5deg)}}.cabeza{transform-origin:150px 120px;transition:transform 1.4s cubic-bezier(.3,1.4,.5,1)}.petalos{transform-origin:150px 120px;animation:respira 3s ease-in-out infinite}@keyframes respira{50%{transform:scale(1.04)}}.hoja{transform-box:fill-box;animation:hoja 3s ease-in-out infinite}@keyframes hoja{50%{transform:rotate(-6deg)}}</style>
+</head><body><svg viewBox="0 0 300 380"><g class="planta"><path d="M150 375C148 300 152 240 150 170" stroke="#6fbf73" stroke-width="9" fill="none" stroke-linecap="round"/><path class="hoja" style="transform-origin:left center" d="M150 290c25-28 60-30 78-18-22 20-52 26-78 18z" fill="#86d08a"/><path class="hoja" style="transform-origin:right center;animation-delay:-1.4s" d="M150 250c-25-25-58-26-76-14 21 18 50 23 76 14z" fill="#7cc77f"/><g class="cabeza"><g class="petalos"></g><circle cx="150" cy="120" r="34" fill="#7a4a2a"/><g class="semillas"></g><circle cx="140" cy="116" r="3.2" fill="#3b2316"/><circle cx="160" cy="116" r="3.2" fill="#3b2316"/><path d="M142 128q8 7 16 0" stroke="#3b2316" stroke-width="2.5" fill="none" stroke-linecap="round"/><ellipse cx="132" cy="127" rx="5" ry="3" fill="#ff8fb3" opacity=".7"/><ellipse cx="168" cy="127" rx="5" ry="3" fill="#ff8fb3" opacity=".7"/></g></g></svg>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var NS = "http://www.w3.org/2000/svg", pet = document.querySelector(".petalos"), sem = document.querySelector(".semillas");
+  for (var i = 0; i < 22; i++) { var e = document.createElementNS(NS, "ellipse"), a = i * 360 / 22; e.setAttribute("cx", 150); e.setAttribute("cy", 72); e.setAttribute("rx", 11); e.setAttribute("ry", 28); e.setAttribute("fill", i % 2 ? "#ffd23f" : "#ffc21a"); e.setAttribute("transform", "rotate(" + a + " 150 120)"); pet.appendChild(e); }
+  for (var k = 1; k < 40; k++) { var r = 4.2 * Math.sqrt(k), t = k * 2.4; var d = document.createElementNS(NS, "circle"); d.setAttribute("cx", 150 + r * Math.cos(t)); d.setAttribute("cy", 120 + r * Math.sin(t)); d.setAttribute("r", 1.3); d.setAttribute("fill", "#a8703f"); sem.appendChild(d); }
+  var cab = document.querySelector(".cabeza"), giro = 0;
+  addEventListener("pointerdown", function () { giro += 360; cab.style.transform = "rotate(" + giro + "deg)"; });
+})();
+</script>
+</body></html>

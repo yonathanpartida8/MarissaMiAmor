@@ -150,6 +150,9 @@ const SON = {
   // — Menús y hojas —
   "abrir-menu": [0.38, (m) => { aire(m, 0, 0.2, 0.45, { f0: 600, f1: 2300, q: 1.2, forma: sube }); nota(m, N.C6, 0.15, { vol: 0.3, caida: 10 }); }, 0.36],
   "cerrar-menu": [0.36, (m) => { aire(m, 0, 0.19, 0.45, { f0: 2300, f1: 600, q: 1.2, forma: sube }); nota(m, N.G5, 0.12, { vol: 0.26, caida: 12 }); }, 0.34],
+  // El menú de recursos (Elementos, Stickers, Efectos…): una cajita mágica que se abre o se guarda.
+  "abrir-recursos": [0.62, (m) => { aire(m, 0, 0.24, 0.4, { f0: 520, f1: 2600, q: 1.1, forma: sube }); [N.C6, N.E6, N.G6, N.C7].forEach((f, i) => nota(m, f, 0.08 + i * 0.05, { timbre: "celesta", vol: 0.2, caida: 7 })); nota(m, N.E7, 0.3, { timbre: "campana", vol: 0.08, caida: 9 }); }, 0.4],
+  "cerrar-recursos": [0.5, (m) => { aire(m, 0, 0.22, 0.4, { f0: 2400, f1: 520, q: 1.1, forma: sube }); [N.G6, N.E6, N.C6].forEach((f, i) => nota(m, f, 0.06 + i * 0.05, { timbre: "celesta", vol: 0.18, caida: 9 })); }, 0.36],
   "bajar-hoja": [0.24, (m) => aire(m, 0, 0.2, 0.6, { f0: 1500, f1: 480, q: 1.1, forma: sube }), 0.24],
   "subir-hoja": [0.24, (m) => aire(m, 0, 0.2, 0.6, { f0: 480, f1: 1500, q: 1.1, forma: sube }), 0.24],
   atras: [0.36, (m) => { aire(m, 0, 0.18, 0.4, { f0: 1800, f1: 520, q: 1.2, forma: sube }); nota(m, N.E5, 0.09, { vol: 0.32, caida: 11 }); }, 0.36],

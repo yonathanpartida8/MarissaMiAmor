@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es"><head><style id="sin-resaltado">html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}*,*::before,*::after{-webkit-tap-highlight-color:transparent}body{-webkit-user-select:none;user-select:none}</style><meta charset="utf-8">
+<title>Polvo de hadas</title>
+<meta name="tamaño" content="360x420">
+<meta name="descripcion" content="Destellos dorados que siguen el dedo y titilan solos cuando está quieto">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}canvas{position:fixed;inset:0;width:100%;height:100%}</style>
+</head><body><canvas></canvas>
+<script>
+(function () {
+  var quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var c = document.querySelector("canvas"), g = c.getContext("2d"), W = 0, H = 0, D = 1;
+  function tam() { D = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; c.width = W * D; c.height = H * D; g.setTransform(D, 0, 0, D, 0, 0); }
+  addEventListener("resize", tam); tam();
+  function bucle(f) { var t0 = performance.now(); function paso(t) { var dt = Math.min(50, t - t0); t0 = t; if (!document.hidden) f(dt / 16.7, t); requestAnimationFrame(paso); } requestAnimationFrame(paso); }
+  var P = [], dedo = null;
+  function chispa(x, y, mucho) { P.push({ x: x, y: y, vx: (Math.random() - .5) * (mucho ? 2.4 : 0.6), vy: (Math.random() - .5) * (mucho ? 2.4 : 0.6) - 0.3, r: 1 + Math.random() * 2.6, vida: 1, c: Math.random() < .6 ? "255,226,140" : Math.random() < .5 ? "255,190,220" : "200,190,255" }); }
+  function brillo(x, y, r, a, c) { g.fillStyle = "rgba(" + c + "," + a + ")"; g.beginPath(); g.moveTo(x, y - r * 3); g.quadraticCurveTo(x, y, x + r * 3, y); g.quadraticCurveTo(x, y, x, y + r * 3); g.quadraticCurveTo(x, y, x - r * 3, y); g.quadraticCurveTo(x, y, x, y - r * 3); g.fill(); }
+  bucle(function (k) {
+    g.clearRect(0, 0, W, H);
+    if (dedo) for (var i = 0; i < 3; i++) chispa(dedo.x + (Math.random() - .5) * 10, dedo.y + (Math.random() - .5) * 10, true);
+    else if (Math.random() < 0.25 * k) chispa(Math.random() * W, Math.random() * H, false);
+    for (var j = P.length - 1; j >= 0; j--) { var p = P[j]; p.x += p.vx * k; p.y += p.vy * k; p.vy += 0.02 * k; p.vida -= 0.018 * k;
+      if (p.vida <= 0) { P.splice(j, 1); continue; }
+      brillo(p.x, p.y, p.r * (0.5 + p.vida * 0.5), p.vida, p.c); }
+    if (P.length > 400) P.splice(0, P.length - 400);
+  });
+  addEventListener("pointerdown", function (e) { dedo = { x: e.clientX, y: e.clientY }; for (var i = 0; i < 20; i++) chispa(dedo.x, dedo.y, true); });
+  addEventListener("pointermove", function (e) { if (dedo) dedo = { x: e.clientX, y: e.clientY }; });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(function (n) { addEventListener(n, function () { dedo = null; }); });
+})();
+</script>
+</body></html>

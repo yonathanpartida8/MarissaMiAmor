@@ -484,6 +484,17 @@ No probado en aparatos reales: Android, iPhone/iPad Safari y Safari de Mac se co
 
 Código nuevo: `canvas/fx.js` (rehecho), `herramientas/sonidos-editor.mjs` (rehecho: un archivo por interacción), `components/secciones/publicadas.js` y `integraciones/github.js`.
 
+### Fase 15: GitHub Pages que no falle, publicar sin token, sonido del menú y 20 recursos nuevos
+
+| | |
+| --- | --- |
+| **GitHub Pages** | en «Páginas publicadas» hay una sección que dice si GitHub Pages está **encendido** (si está apagado, todo da 404: es lo que pasa cuando un repositorio pasa a privado y vuelve a público). Con token: lo enciende con la rama elegida (la más nueva va primero, no a ciegas la principal), cambia de rama, «Volver a publicar el sitio» y avisa si la última publicación falló. Sin token: revisa si el sitio contesta y explica los 4 pasos a mano con un botón directo a Settings → Pages. Al conectar, si Pages está apagado ya no se elige `main` por descarte |
+| **Publicar sin token** | «1 · Descargar el .zip para subir» (sólo para ver: sin `project.json` ni `EditorData/`) → «2 · Subirlo en GitHub» abre `publicar/` de tu repositorio (Add file → Upload files) → la acción **Publicar páginas subidas** lo abre en `publicadas/<nombre>/`, lo apunta en `publicadas/lista.json`, borra el .zip y le pide a GitHub Pages que publique. La lista se lee del sitio público. Rutas raras dentro del .zip (`..`, absolutas) se rechazan |
+| **Sonido del menú de recursos** | sacar y guardar el menú (riel, cajón del teléfono que sigue al dedo, su hojita, la X, el velo o «atrás») suena con su propio sonido: `abrir-recursos` (una cajita mágica que se abre) y `cerrar-recursos`. Cambiar de sección con el menú abierto sigue sonando a herramienta; nunca suenan dos a la vez |
+| **20 recursos nuevos** | Elementos (se tocan): corazón latiendo, sobre con carta, girasol, globos de corazón, gatito, luna dormilona, reloj de arena, frasco de estrellas, arcoíris, taza de café, plantita, osito, fresita, nubecita de amor. Efectos animados: pétalos de sakura, hojas de otoño, nieve suave, notas musicales, polvo de hadas (sigue el dedo), destellos arcoíris. Todos transparentes, ligeros (DPR ≤ 2, pausan en segundo plano) y con `prefers-reduced-motion` |
+
+Código nuevo: `herramientas/publicar-subidas.mjs`, `.github/workflows/publicar-subidas.yml`, `publicar/LÉEME.md`; cambios en `integraciones/github.js`, `components/secciones/publicadas.js` y `audio/sonidos-editor.js`.
+
 ## Cómo está hecho
 
 ```
