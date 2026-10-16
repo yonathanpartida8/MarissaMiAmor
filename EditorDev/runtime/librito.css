@@ -243,3 +243,7 @@
 .rt-libro:not(.rt-con-musica) .rt-e-musica { display: none !important; }
 @keyframes rt-mb-baila { 0%, 100% { transform: scaleY(.45); } 50% { transform: scaleY(1); } }
 @media (prefers-reduced-motion: reduce) { .rt-mb-son i { animation: none; } }
+/* Vídeo a pantalla completa: entero (sin recortar ni deformar), sin marco y sobre negro. */
+.rt-vwrap:fullscreen, .rt-vwrap:-webkit-full-screen { padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: #000 !important; filter: none !important; }
+.rt-vwrap:fullscreen .rt-vid, .rt-vwrap:-webkit-full-screen .rt-vid { width: 100% !important; height: 100% !important; object-fit: contain !important; border-radius: 0 !important; }
+.rt-vwrap:fullscreen .rt-vamb, .rt-vwrap:-webkit-full-screen .rt-vamb { display: none; }

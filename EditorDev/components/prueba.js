@@ -12,6 +12,14 @@
  * primero se asoman un poquito, luego vuelven a su lugar y al final quedan
  * del todo visibles. Cuanto más larga fue la prueba, más pausado el regreso.
  * Se termina con «Terminar prueba», Esc o el botón «atrás» del teléfono.
+ *
+ * Pantalla completa DE VERDAD donde el sistema la da (Android, computadora,
+ * iPad): se ocultan las barras del navegador y del sistema. En el iPhone
+ * Safari no deja a una página ponerse a pantalla completa: se usa todo lo
+ * visible (o, instalado en la pantalla de inicio, la pantalla entera).
+ * La página se arma con la MISMA pantalla que en el editor y sólo se escala
+ * (igual a lo ancho y a lo alto: nada se deforma ni se corta), dentro de la
+ * zona segura (muesca, barra de gestos); lo que sobra lleva el color del fondo.
  */
 import { el } from "../../src/utils/dom.js";
 import { ico } from "./iconos.js";
@@ -83,11 +91,14 @@ export class Prueba {
     const capa = el("div.ed-prueba", { role: "dialog", "aria-label": "Probando la página", style: { background: html != null ? "#fff" : fondo } }, [marco, x]);
     this.capa = capa;
     document.body.append(capa);
-    const desde = this._rectHoja();
-    this._entrada = capa.animate([
-      { transform: `translate(${desde.left}px, ${desde.top}px) scale(${desde.width / innerWidth}, ${desde.height / innerHeight})`, borderRadius: "18px", opacity: 0.6 },
-      { transform: "none", borderRadius: "0px", opacity: 1 },
-    ], { duration: 480, easing: SUAVE });
+    // Pantalla completa real (dentro del toque que abrió la prueba; si el sistema no la da, no pasa nada).
+    this._fs = false;
+    const doc = document.documentElement;
+    const pedir = doc.requestFullscreen || doc.webkitRequestFullscreen;
+    if (pedir && !(document.fullscreenElement || document.webkitFullscreenElement) && (document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
+      try { const r = pedir.call(doc, { navigationUI: "hide" }); this._fs = true; r?.catch?.(() => { this._fs = false; }); } catch (e) { this._fs = false; }
+    }
+    this._entrada = capa.animate([{ transform: this._desdeHoja(), borderRadius: "18px", opacity: 0.6 }, { transform: "none", borderRadius: "0px", opacity: 1 }], { duration: 480, easing: SUAVE });
     const mostrar = () => marco.classList.add("listo");
     if (html != null) {
       marco.setAttribute("sandbox", "allow-scripts allow-forms allow-modals allow-pointer-lock allow-popups");
@@ -158,6 +169,13 @@ export class Prueba {
     const t = setTimeout(quitar, 14000);
   }
 
+  /** De la hoja a la pantalla con la MISMA escala a lo ancho y a lo alto (antes se estiraba al entrar y salir). */
+  _desdeHoja() {
+    const r = this._rectHoja(), k = Math.min(r.width / innerWidth, r.height / innerHeight) || 1;
+    const x = r.left + (r.width - innerWidth * k) / 2, y = r.top + (r.height - innerHeight * k) / 2;
+    return `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${k.toFixed(4)})`;
+  }
+
   _rectHoja() {
     const h = document.querySelector(".ed-centro .ed-hoja");
     const r = h?.getBoundingClientRect();
@@ -176,12 +194,10 @@ export class Prueba {
     if (this._msg) { removeEventListener("message", this._msg); this._msg = null; }
     this._entrada?.cancel();
     dispatchEvent(new CustomEvent("ed-hoja", { detail: "cerrar" }));
-    // La página vuelve a su sitio en la hoja.
-    const hasta = this._rectHoja();
-    const salida = capa.animate([
-      { transform: "none", borderRadius: "0px", opacity: 1 },
-      { transform: `translate(${hasta.left}px, ${hasta.top}px) scale(${hasta.width / innerWidth}, ${hasta.height / innerHeight})`, borderRadius: "18px", opacity: 0 },
-    ], { duration: 380, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" });
+    // Se sale de la pantalla completa (si la pidió la prueba) y la página vuelve a su sitio en la hoja.
+    if (this._fs && (document.fullscreenElement || document.webkitFullscreenElement)) (document.exitFullscreen || document.webkitExitFullscreen)?.call(document)?.catch?.(() => {});
+    this._fs = false;
+    const salida = capa.animate([{ transform: "none", borderRadius: "0px", opacity: 1 }, { transform: this._desdeHoja(), borderRadius: "18px", opacity: 0 }], { duration: 380, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" });
     salida.finished.catch(() => {}).then(() => capa.remove());
     document.body.classList.remove("ed-probando");
     // Los menús regresan por etapas; más pausado cuanto más duró la prueba.

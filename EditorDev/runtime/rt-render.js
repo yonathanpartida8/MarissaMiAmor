@@ -31,7 +31,8 @@
       case "componente": return !(e.componente && e.componente.decorativo);
       case "escena3d": return !e.escena3d || e.escena3d.orbitar !== false;
       case "album": return !e.album || e.album.ampliar !== false || e.album.disposicion === "pila";
-      case "video": return !!(e.video && (e.video.controles || RT.modoVideo(e.video) === "manual"));
+      // Un vídeo con sonido se toca (para darle sonido si el navegador lo empezó en silencio, o pausarlo).
+      case "video": return !!(e.video && (e.video.controles || RT.modoVideo(e.video) === "manual" || !e.video.silencio));
       case "html": return !e.html || e.html.interactivo !== false;
       default: return false;
     }
@@ -350,6 +351,17 @@
    * propios colores (un lienzo chiquito de 24×14 que se agranda borroso:
    * casi no cuesta). En modo manual se toca para reproducir o pausar.
    */
+  /* Al salir de la app o cambiar de pestaña el navegador pausa los vídeos; al
+     volver, siguen los que estaban sonando (antes se quedaban parados). */
+  if (typeof document !== "undefined" && !RT._vidVisible) {
+    RT._vidVisible = true;
+    document.addEventListener("visibilitychange", function () {
+      const vs = document.querySelectorAll(".rt-modo-vista video.rt-vid");
+      if (document.hidden) { for (let i = 0; i < vs.length; i++) vs[i]._seguir = !vs[i].paused; return; }
+      for (let i = 0; i < vs.length; i++) if (vs[i]._seguir && vs[i].isConnected) { vs[i]._seguir = false; RT.reproducirVideo(vs[i]); }
+    });
+  }
+
   /** Empieza un vídeo: con sonido si el teléfono deja; si no, en silencio
    *  (con el aviso «Toca para el sonido»). Nunca se queda negro sin avisar. */
   RT.reproducirVideo = function (n) {
@@ -391,23 +403,40 @@
     let barra = w.querySelector(".rt-vctl");
     if (ctx.modo === "vista" && v.controles) { if (!barra) controlesVideo(w, n); }
     else if (barra) barra.remove();
-    // «Tocar para el sonido»: cuando empezó solo y en silencio.
+    // Lo que el vídeo tiene configurado AHORA (el toque lo lee al momento: no se duplican oyentes).
+    w._v = v; w._modo = modo;
+    // «Toca para el sonido» (cuando empezó solo y en silencio) y el botón grande de
+    // reproducir son CONTROLES: sólo con «barra de controles» encendida.
     let chip = w.querySelector(".rt-vsonido");
-    if (ctx.modo === "vista" && !v.silencio && !chip) {
-      chip = h("button", "rt-vsonido", w); chip.type = "button";
-      chip.innerHTML = ICO_V.mudo + "<span>Toca para el sonido</span>";
-      chip.addEventListener("click", function (ev) { ev.stopPropagation(); n.muted = false; if (n.volume < 0.05) n.volume = 1; w.classList.remove("rt-vmudo"); if (n.paused) n.play().catch(function () {}); });
-    }
-    // Botón grande de reproducir (modo manual, sin barra de controles).
-    let b = w.querySelector(".rt-vid-play");
-    if (ctx.modo === "vista" && modo === "manual" && !v.controles) {
-      if (!b) {
-        b = h("button", "rt-vid-play", w); b.type = "button"; b.setAttribute("aria-label", "Reproducir");
-        w.addEventListener("click", function (ev) { ev.stopPropagation(); if (n.paused) n.play().catch(function () {}); else n.pause(); });
-        n.addEventListener("play", function () { w.classList.add("sonando"); });
-        n.addEventListener("pause", function () { w.classList.remove("sonando"); });
+    if (ctx.modo === "vista" && v.controles && !v.silencio) {
+      if (!chip) {
+        chip = h("button", "rt-vsonido", w); chip.type = "button";
+        chip.innerHTML = ICO_V.mudo + "<span>Toca para el sonido</span>";
+        chip.addEventListener("click", function (ev) { ev.stopPropagation(); n.muted = false; if (n.volume < 0.05) n.volume = 1; w.classList.remove("rt-vmudo"); if (n.paused) n.play().catch(function () {}); });
       }
+    } else if (chip) chip.remove();
+    let b = w.querySelector(".rt-vid-play");
+    if (ctx.modo === "vista" && modo === "manual" && v.controles) {
+      if (!b) { b = h("button", "rt-vid-play", w); b.type = "button"; b.setAttribute("aria-label", "Reproducir"); }
     } else if (b) b.remove();
+    // Un solo manejador de toques por vídeo (antes podían sumarse y pausar de más):
+    //   en pausa → reproduce (con sonido: el toque lo permite) · sonando en
+    //   silencio por el navegador → le pone sonido · sonando → pausa.
+    // Funciona igual con o sin controles visibles.
+    if (ctx.modo === "vista" && !w._toque) {
+      w._toque = true;
+      n.addEventListener("play", function () { w.classList.add("sonando"); });
+      n.addEventListener("pause", function () { w.classList.remove("sonando"); });
+      w.addEventListener("click", function (ev) {
+        if (ev.target.closest(".rt-vctl, .rt-vsonido")) return;
+        const vv = w._v || {};
+        if (!w.closest(".rt-accion")) ev.stopPropagation();
+        const conSonido = !vv.silencio;
+        if (n.paused) { if (conSonido) { n.muted = false; w.classList.remove("rt-vmudo"); } RT.reproducirVideo(n); return; }
+        if (conSonido && n.muted) { n.muted = false; if (n.volume < 0.05) n.volume = 1; w.classList.remove("rt-vmudo"); return; }
+        n.pause();
+      });
+    }
     if (ctx.modo !== "vista" && !n.paused) n.pause();
     // Resplandor con los colores del vídeo.
     const amb = Math.max(0, Math.min(1, +v.ambiente || (v.epico ? 0.75 : 0)));

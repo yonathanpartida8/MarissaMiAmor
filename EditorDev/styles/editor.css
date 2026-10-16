@@ -984,6 +984,8 @@ body.con-linea .ed-avisos { bottom: calc(var(--tl) + 18px); }
 /* ── Probar página (inmersivo) ── */
 .ed-prueba { position: fixed; inset: 0; z-index: 300; transform-origin: 0 0; overflow: hidden; contain: strict; }
 .ed-prueba-marco { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; opacity: 0; transition: opacity .35s ease .05s; background: transparent; }
+/* La página, dentro de la zona segura (muesca, barra de gestos, esquinas): nada queda tapado. */
+.ed-prueba-marco { top: env(safe-area-inset-top, 0px); left: env(safe-area-inset-left, 0px); width: calc(100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)); height: calc(100% - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
 .ed-prueba-marco.listo { opacity: 1; }
 .ed-prueba-x { position: absolute; z-index: 2; top: calc(10px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px 0 10px; border: 1px solid rgba(255, 255, 255, .35); border-radius: 99px; background: rgba(20, 10, 18, .55); color: #fff; font: 500 13px Jost, system-ui, sans-serif; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: opacity .5s, transform .3s; }
 .ed-prueba-x .ed-ico { width: 16px; height: 16px; }
