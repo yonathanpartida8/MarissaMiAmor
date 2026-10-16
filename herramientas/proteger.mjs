@@ -33,4 +33,14 @@ await recorrer(SALIDA);
 // Los .htaccess y robots se quedan; el sw.js sólo pierde comentarios.
 const sw = join(SALIDA, "sw.js");
 writeFileSync(sw, (await minify(readFileSync(sw, "utf8"), { format: { comments: false } })).code);
+// El sitio vive en una carpeta con nombre aleatorio; la raíz queda vacía (404) y sin pistas.
+const SECRETO = "r395271632d8a144908";
+mkdirSync("dist-tmp");
+for (const f of readdirSync(SALIDA)) cpSync(join(SALIDA, f), join("dist-tmp", SECRETO, f), { recursive: true });
+rmSync(SALIDA, { recursive: true });
+cpSync("dist-tmp", SALIDA, { recursive: true });
+rmSync("dist-tmp", { recursive: true });
+writeFileSync(join(SALIDA, "robots.txt"), "User-agent: *\nDisallow: /\n");
+writeFileSync(join(SALIDA, "index.html"), "<!doctype html><meta charset=utf-8><meta name=robots content=noindex><title></title>");
+writeFileSync(join(SALIDA, "404.html"), "<!doctype html><meta charset=utf-8><meta name=robots content=noindex><title>404</title>404");
 console.log(`dist/: ${n} archivos JS · ${(antes / 1024).toFixed(0)} KB → ${(despues / 1024).toFixed(0)} KB`);
