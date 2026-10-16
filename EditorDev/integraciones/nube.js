@@ -286,10 +286,13 @@ export async function abrirDeLaNube(clave, { alAvance, avisoTxt = "" } = {}) {
 }
 
 /* ── La lista de tu nube ── */
+/** Un M.YNTHN de antes (sin la nube) contesta «No existe esa ruta»: se dice claro qué hacer. */
+const sinNube = (e) => e?.status === 404 && /ruta de la API/.test(e.message || "");
+const VIEJO = `${SRV.NOMBRE} todavía no tiene la nube: quien cuida el servidor tiene que correr «librito actualizar» en Termux. Mientras, todo sigue guardado en este aparato.`;
 let cacheLista = null, cacheT = 0;
 export async function listaNube(fresca = false) {
   if (!fresca && cacheLista && Date.now() - cacheT < 15000) return cacheLista;
-  const d = await SRV.nube();
+  const d = await SRV.nube().catch((e) => { throw sinNube(e) ? Object.assign(new Error(VIEJO), { status: 501 }) : e; });
   cacheLista = { ...d, libritos: d.libritos || [] };
   cacheT = Date.now();
   return cacheLista;
@@ -355,9 +358,10 @@ function manejar(e, P) {
   if (e.status === 413) { poner("llena", e.message); avisoUnaVez("llena", `Tu nube de ${SRV.NOMBRE} está llena: ${e.message} Lo de este aparato sigue a salvo.`); return true; }
   if (e.status === 401) { poner("fuera"); return true; }
   error(e);
-  return false;
+  return sinNube(e) || e.status === 501;
 }
 function error(e) {
+  if (sinNube(e) || e.status === 501) { poner("error", VIEJO); return; }
   const sinRed = !navigator.onLine || /no contesta|sin internet|no está disponible|se cortó/i.test(e.message || "");
   poner(sinRed ? "sin-conexion" : "error", sinRed ? `${SRV.NOMBRE} no contesta: se sube solo cuando vuelva` : e.message || "No se pudo subir");
 }
