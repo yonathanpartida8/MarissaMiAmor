@@ -105,6 +105,8 @@ export class Prueba {
             tipo: "librito",
             datos: { nombre: P.nombre, ajustes: P.ajustes, orden: P.orden, paginas: P.paginas, titulos: {} },
             urls: app.bib.mapa(), datosUrls, base: RAIZ, inicio: app.estado.paginaId, portadilla: false, soloPagina: true, fuentes: [...fuentesUsadas(P)],
+            // La MISMA pantalla con la que se arma la hoja en el editor: nada se corre al probar.
+            fijar: app.lienzo?.pantallaDeHoja?.() || null,
           }, location.origin);
           setTimeout(mostrar, 90);
         } else if (ev.data?.tipo === "cerrar-vista") this.cerrar();

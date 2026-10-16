@@ -131,7 +131,9 @@
         this._ultW = w; this._ultH = hh;
         // Hoja automática: la hoja toma la forma de la pantalla (vertical u
         // horizontal) y lo de dentro se recoloca; con tamaño fijo, se escala.
-        const m = RT.medidas(this.datos.ajustes, w, hh);
+        // En «Probar página» la hoja se arma con la pantalla del editor (fijar) y sólo se escala.
+        const f = this.op.fijar;
+        const m = RT.medidas(this.datos.ajustes, f && f.w > 0 ? f.w : w, f && f.h > 0 ? f.h : hh);
         this.medidas = m;
         this.ctx.medidas = m;
         if (m.W !== this.W || m.H !== this.H) {

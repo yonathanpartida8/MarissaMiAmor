@@ -68,17 +68,37 @@
     return { W: Math.max(W0, Math.round(vw / s)), H: Math.max(H0, Math.round(vh / s)), W0: W0, H0: H0, s: s, auto: true };
   };
 
+  /* Los de un mismo grupo deducen su ancla con la caja del GRUPO entero: así
+     se mueven juntos en cualquier pantalla y nunca se separan. Cada página
+     anota sus grupos al pintarse (RT.Pagina). */
+  RT.cajasGrupo = new Map();
+  RT.anotarGrupos = function (els) {
+    const g = {};
+    for (const e of els || []) {
+      if (!e.grupo) continue;
+      const b = g[e.grupo];
+      if (!b) g[e.grupo] = { x: e.x, y: e.y, r: e.x + e.w, b: e.y + e.h };
+      else { b.x = Math.min(b.x, e.x); b.y = Math.min(b.y, e.y); b.r = Math.max(b.r, e.x + e.w); b.b = Math.max(b.b, e.y + e.h); }
+    }
+    for (const k in g) { const b = g[k]; RT.cajasGrupo.set(k, { x: b.x, y: b.y, w: b.r - b.x, h: b.b - b.y }); }
+  };
+
   RT.anclaDe = function (e, m) {
     const a = e.ancla || {};
     const W0 = (m && m.W0) || 390, H0 = (m && m.H0) || 844;
+    const g = e.grupo && RT.cajasGrupo.get(e.grupo);
+    const c = g || e;
     let ah = a.h, av = a.v;
     if (!ah || ah === "auto") {
-      const cx = e.x + e.w / 2;
-      ah = e.tipo === "pagina" || e.w >= W0 * 0.9 ? "estirar" : cx < W0 / 3 ? "izq" : cx > (W0 * 2) / 3 ? "der" : "centro";
+      const cx = c.x + c.w / 2;
+      ah = e.tipo === "pagina" || c.w >= W0 * 0.9 ? "estirar" : cx < W0 / 3 ? "izq" : cx > (W0 * 2) / 3 ? "der" : "centro";
+      // En un grupo, sólo se estira lo que de verdad ocupa todo: lo demás se corre con él.
+      if (g && ah === "estirar" && e.w < W0 * 0.9) ah = "centro";
     }
     if (!av || av === "auto") {
-      const cy = e.y + e.h / 2;
-      av = e.tipo === "pagina" || e.h >= H0 * 0.9 ? "estirar" : cy < H0 / 3 ? "arriba" : cy > (H0 * 2) / 3 ? "abajo" : "centro";
+      const cy = c.y + c.h / 2;
+      av = e.tipo === "pagina" || c.h >= H0 * 0.9 ? "estirar" : cy < H0 / 3 ? "arriba" : cy > (H0 * 2) / 3 ? "abajo" : "centro";
+      if (g && av === "estirar" && e.h < H0 * 0.9) av = "centro";
     }
     return { h: ah, v: av };
   };
@@ -804,6 +824,7 @@
 
     sincronizar(pagina) {
       this.pagina = pagina;
+      RT.anotarGrupos(pagina.els);
       const ctx = this.ctx;
       const ocultos = RT.ocultosDe(pagina);
       ctx.ocultos = (e) => ocultos[e.id] || "";
@@ -834,6 +855,15 @@
     /** Sólo un elemento (lo que se usa mientras se arrastra). */
     actualizar(e) {
       const n = this.nodos.get(e.id);
+      // Si se movió un miembro de un grupo, la caja del grupo (y el ancla de todos) se pone al día.
+      if (e.grupo && this.pagina) {
+        const els = (this.pagina.els || []).map((x) => (x.id === e.id ? e : x)).filter((x) => x.grupo === e.grupo);
+        const antes = JSON.stringify(RT.cajasGrupo.get(e.grupo) || null);
+        RT.anotarGrupos(els);
+        if (this.ctx.medidas && this.ctx.medidas.auto && JSON.stringify(RT.cajasGrupo.get(e.grupo)) !== antes) {
+          for (const x of els) if (x.id !== e.id) { const m = this.nodos.get(x.id); if (m) RT.actualizarEl(m, x, this.ctx); }
+        }
+      }
       if (n) RT.actualizarEl(n, e, this.ctx);
     }
 

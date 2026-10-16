@@ -34,7 +34,7 @@ import { tocaZona } from "../componentes/analizar.js";
 import { permite } from "../core/modelo.js";
 import { enCuadro, holgura, TOQUE_LARGO, vibrar, Reserva, estilo, clase } from "./gestos.js";
 import { ico } from "../components/iconos.js";
-import { orientacion, PANTALLA } from "../components/pantalla.js";
+import { orientacion, PANTALLA, escribiendo } from "../components/pantalla.js";
 
 const RT = window.LibritoRT;
 /** Lo que sube desde abajo y puede tapar la hoja (en el teléfono). */
@@ -179,15 +179,19 @@ export class Lienzo {
   _pantalla() {
     const d = DISPOSITIVOS[this.ver];
     if (d && d.w) return { w: d.w, h: d.h };
-    // En un teléfono, la pantalla entera (no cambia al salir el teclado);
-    // en la computadora, la ventana.
-    if (matchMedia("(pointer: coarse)").matches && screen.width) {
-      const a = Math.min(screen.width, screen.height), b = Math.max(screen.width, screen.height);
-      // La orientación de la PANTALLA (con el teclado abierto la ventana parece acostada).
-      return orientacion() === "h" ? { w: b, h: a } : { w: a, h: b };
-    }
-    return { w: innerWidth, h: innerHeight };
+    // «Esta pantalla»: lo que de verdad verá el librito en este navegador = la
+    // ventana (sin las barras del navegador ni del sistema), igual que en
+    // «Probar página» y en el librito exportado. Antes, en el teléfono se usaba
+    // la pantalla física entera y todo se corría al probar. El teclado no
+    // cuenta: con él abierto se usa el alto de antes de que saliera.
+    const o = orientacion();
+    if (this._ori !== o) { this._ori = o; this._altoLibre = 0; }
+    if (!escribiendo() || !this._altoLibre) this._altoLibre = Math.max(this._altoLibre && escribiendo() ? this._altoLibre : 0, innerHeight);
+    return { w: innerWidth, h: this._altoLibre };
   }
+
+  /** La pantalla con la que se arma la hoja ahora (para que «Probar página» use la MISMA). */
+  pantallaDeHoja() { return this._pantalla(); }
 
   _medir() {
     const a = this.P?.ajustes;
