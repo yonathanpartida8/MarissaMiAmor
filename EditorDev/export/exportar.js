@@ -39,12 +39,39 @@ function carpeta(a, ext) {
   return "assets/other/";
 }
 
+/** Un icono cuadrado (corazón sobre el color del librito) para la pantalla de inicio. */
+function icono(tam, fondo) {
+  const c = document.createElement("canvas");
+  c.width = c.height = tam;
+  const g = c.getContext("2d"), k = tam / 64;
+  g.fillStyle = fondo || "#fff4f8";
+  g.fillRect(0, 0, tam, tam);
+  const gr = g.createLinearGradient(10 * k, 11 * k, 54 * k, 51 * k);
+  gr.addColorStop(0, "#ff9cc6");
+  gr.addColorStop(1, "#d8397a");
+  g.fillStyle = gr;
+  g.beginPath();
+  g.moveTo(32 * k, 50 * k);
+  g.bezierCurveTo(18 * k, 41 * k, 11 * k, 33 * k, 11 * k, 24.5 * k);
+  g.bezierCurveTo(11 * k, 17.6 * k, 16.4 * k, 12 * k, 23 * k, 12 * k);
+  g.bezierCurveTo(27 * k, 12 * k, 30 * k, 14 * k, 32 * k, 17.4 * k);
+  g.bezierCurveTo(34 * k, 14 * k, 37 * k, 12 * k, 41 * k, 12 * k);
+  g.bezierCurveTo(47.6 * k, 12 * k, 53 * k, 17.6 * k, 53 * k, 24.5 * k);
+  g.bezierCurveTo(53 * k, 33 * k, 46 * k, 41 * k, 32 * k, 50 * k);
+  g.fill();
+  return new Promise((ok) => c.toBlob((b) => ok(b), "image/png"));
+}
+
 /**
  * `completo`: copia de seguridad — además de lo que se usa, van TODAS las
  * fotos, canciones y vídeos subidos a la biblioteca del librito (aunque
  * todavía no estén en ninguna página), para no perder nada al restaurarla.
+ *
+ * `publicar`: lo que se sube a internet — SÓLO para ver: sin project.json ni
+ * EditorData/ (no se puede abrir en el editor), con el visor a pantalla
+ * completa (runtime/visor.js), su manifiesto e iconos para «Agregar a inicio».
  */
-export async function exportar(app, { alProgreso, completo = false } = {}) {
+export async function exportar(app, { alProgreso, completo = false, publicar = false } = {}) {
   const P = app.estado.proyecto;
   const bib = app.bib;
   const zip = new Zip();
@@ -194,7 +221,7 @@ export async function exportar(app, { alProgreso, completo = false } = {}) {
   zip.agregar("styles/librito.css", await fetch(new URL("../runtime/librito.css", import.meta.url)).then((r) => r.text()));
   const { editor, paginas, assets, ...resto } = P;
   void paginas; void editor; void assets;
-  const datos = { nombre: P.nombre, ajustes: { ...resto.ajustes }, orden: P.orden, titulos, paginasArchivos, archivos };
+  const datos = { nombre: P.nombre, ajustes: { ...resto.ajustes }, orden: P.orden, titulos, paginasArchivos, archivos, ...(publicar ? { soloVer: true } : {}) };
   zip.agregar("scripts/datos.js", `window.LIBRITO_DATOS = ${JSON.stringify(datos)};\n`);
   const fuentes = [...fuentesUsadas(P)];
   for (const [nom, g] of Object.entries(P.ajustes.fuentesExtra || {})) if (fuentes.includes(nom) && !RT.FUENTES[nom]) RT.FUENTES[nom] = { g, pila: "Georgia, serif" };
@@ -215,17 +242,52 @@ export async function exportar(app, { alProgreso, completo = false } = {}) {
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.5 4.3 4.3 0 0 1 19.5 10c0 5.6-7.5 10-7.5 10z' fill='%23e0457f'/%3E%3C/svg%3E">
 ${urlF ? `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link rel="stylesheet" href="${urlF}">` : ""}
 <link rel="stylesheet" href="styles/librito.css">
-<style>html,body{margin:0;height:100%;background:${fondo};overflow:hidden}</style>
+<style>html,body{margin:0;height:100%;background:${fondo};overflow:hidden}</style>${publicar ? `
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="${escapar(P.nombre.slice(0, 30))}">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icono-180.png">
+<style>
+html,body{overscroll-behavior:none;touch-action:manipulation}
+#visor-carga{position:fixed;inset:0;z-index:2147483600;display:grid;place-items:center;background:${fondo};transition:opacity .6s ease,visibility .6s}
+#visor-carga.fuera{opacity:0;visibility:hidden}
+#visor-carga i{width:58px;height:58px;background:url("icono-180.png") center/contain no-repeat;border-radius:18px;animation:visorLate 1.2s ease-in-out infinite;box-shadow:0 10px 30px rgba(216,57,122,.25)}
+@keyframes visorLate{0%,100%{transform:scale(1)}15%{transform:scale(1.12)}30%{transform:scale(1)}45%{transform:scale(1.16)}}
+.visor-pc{position:fixed;z-index:2147483500;top:calc(env(safe-area-inset-top) + 12px);right:calc(env(safe-area-inset-right) + 12px);width:44px;height:44px;border:0;border-radius:14px;display:grid;place-items:center;background:rgba(20,10,20,.42);color:#fff;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 4px 16px rgba(0,0,0,.25);opacity:0;transform:translateY(-6px) scale(.92);pointer-events:none;transition:opacity .3s,transform .3s cubic-bezier(.3,1.4,.5,1);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.visor-pc.ver{opacity:1;transform:none;pointer-events:auto}
+.visor-pc svg{width:22px;height:22px}
+.visor-nota{position:fixed;z-index:2147483500;left:50%;bottom:calc(env(safe-area-inset-bottom) + 18px);transform:translate(-50%,20px);max-width:calc(100% - 32px);padding:11px 16px;border-radius:14px;background:rgba(20,10,20,.78);color:#fff;font:600 14px/1.35 system-ui,-apple-system,sans-serif;text-align:center;opacity:0;transition:opacity .4s,transform .4s;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.visor-nota.ver{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){#visor-carga i{animation:none}}
+</style>` : ""}
 </head>
-<body>
+<body>${publicar ? `
+<div id="visor-carga" aria-hidden="true"><i></i></div>` : ""}
 <div id="librito"></div>
 <noscript>Este librito necesita JavaScript.</noscript>
 <script src="scripts/librito.js"></script>
 <script src="scripts/datos.js"></script>
-<script>LibritoRT.arrancar();</script>
+<script>LibritoRT.arrancar();</script>${publicar ? `
+<script src="scripts/visor.js"></script>` : ""}
 </body>
 </html>
 `);
+
+  if (publicar) {
+    // Sólo para ver: el visor, el manifiesto y los iconos; nada del proyecto editable.
+    zip.agregar("scripts/visor.js", await fetch(new URL("../runtime/visor.js", import.meta.url)).then((r) => r.text()));
+    zip.agregar("manifest.webmanifest", JSON.stringify({
+      name: P.nombre, short_name: P.nombre.slice(0, 14), start_url: "./", scope: "./", display: "fullscreen", orientation: "any",
+      background_color: fondo, theme_color: fondo,
+      icons: [{ src: "icono-192.png", sizes: "192x192", type: "image/png" }, { src: "icono-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }],
+    }, null, 1));
+    for (const t of [180, 192, 512]) { const b = await icono(t, fondo); if (b) zip.agregar(`icono-${t}.png`, b); }
+    avisar("Comprimiendo…");
+    const blob = await zip.generar((i, total) => { if (i % 10 === 0) avisar(`Comprimiendo ${i} de ${total}…`); });
+    return { blob, nombre: limpio(P.nombre) + ".zip", faltan, archivos: zip.tamano };
+  }
 
   /* 5 · Para volver a abrirlo en el editor */
   const proyecto = clonar(P);

@@ -7,22 +7,28 @@
  * salga en buscadores, y en una dirección que sólo conoce quien tenga el enlace.
  * La conexión con GitHub está en integraciones/github.js.
  *
- * Dos caminos (Fase 15):
+ * Todo va a publicaciones/<nombre>/ (si el nombre ya existe: <nombre>-2…).
+ * Tres caminos:
+ *   · Tu servidor (Fase 16, el recomendado): entras con TU usuario y
+ *     contraseña del servidor (servidor/ en Termux) y él publica en GitHub con
+ *     el token que guarda cifrado. En el editor no hay ninguna llave.
  *   · Con token: un toque y se sube solo (y se puede quitar, y encender Pages).
  *   · Sin token: se descarga un .zip, se sube a la carpeta publicar/ desde la
- *     web de GitHub y la acción «Publicar páginas subidas» lo deja en
- *     publicadas/<nombre>/ (ver .github/workflows/publicar-subidas.yml).
+ *     web de GitHub y la acción «Publicar páginas subidas» lo publica.
  * Y una sección «GitHub Pages» que dice si está encendido (si no, todo da 404)
  * y, con token, lo enciende con la rama correcta.
  */
 import { el, seccion, boton, aviso, confirmar } from "../ui.js";
 import { ico } from "../iconos.js";
 import * as GH from "../../integraciones/github.js";
+import * as SRV from "../../integraciones/servidor.js";
 
 const fecha = (iso) => { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" }); } catch (e) { return ""; } };
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 const REPO_BASE = "yonathanpartida8/MarissaMiAmor";
 const CLAVE_SIN = "editordev:publicar-sin-token";
+const RAMA_LIBRITO = "claude/interactive-love-book-redesign-5p93fv";
+const pesoTxt = (b) => { b = +b || 0; const u = ["B", "KB", "MB", "GB"]; let i = 0; while (b >= 1024 && i < 3) { b /= 1024; i++; } return (i ? b.toFixed(b < 10 ? 1 : 0) : b) + " " + u[i]; };
 
 async function copiar(t) {
   try { await navigator.clipboard.writeText(t); aviso("Enlace copiado"); }
@@ -40,12 +46,12 @@ const rutaRama = (r) => String(r).split("/").map(encodeURIComponent).join("/");
 function leerSin() { try { return JSON.parse(localStorage.getItem(CLAVE_SIN) || "{}"); } catch (e) { return {}; } }
 function guardarSin(c) { try { localStorage.setItem(CLAVE_SIN, JSON.stringify({ ...leerSin(), ...c })); } catch (e) { /* nada */ } }
 
-/** El librito en un .zip sólo para VER (sin project.json ni EditorData/), con su ficha. */
-async function zipParaVer(app, { titulo, slug, alProgreso }) {
+/** El librito en un .zip sólo para VER (sin project.json ni EditorData/, con el visor a pantalla completa) y su ficha. */
+async function zipParaVer(app, { titulo, slug, alProgreso, actualizar = false }) {
   await app.guardarYa?.();
   const { exportar } = await import("../../export/exportar.js");
   const { leerZip, Zip } = await import("../../export/zip.js");
-  const { blob } = await exportar(app, { alProgreso });
+  const { blob } = await exportar(app, { alProgreso, publicar: true });
   const zip = await leerZip(blob);
   const archivos = [];
   for (const [r, leer] of Object.entries(zip)) {
@@ -56,7 +62,7 @@ async function zipParaVer(app, { titulo, slug, alProgreso }) {
   return { archivos, paginas, async comoZip() {
     const z = new Zip();
     for (const a of archivos) z.agregar(a.ruta, a.datos);
-    z.agregar("publicar.json", JSON.stringify({ titulo, slug, paginas, fecha: new Date().toISOString() }, null, 1));
+    z.agregar("publicar.json", JSON.stringify({ titulo, slug, paginas, fecha: new Date().toISOString(), ...(actualizar ? { actualizar: true } : {}) }, null, 1));
     return z.generar();
   } };
 }
@@ -73,15 +79,258 @@ export const PUBLICADAS = {
         el("small", { text: "Se publican en tu GitHub Pages. Sólo las ve quien tenga el enlace: no salen en buscadores y van sin el archivo para editarlas." }),
       ]),
     ]));
+    this._pubServidor(c);
+    const conServidor = !!SRV.leer().token;
     const cfg = GH.leerConfig();
     if (!cfg?.token) {
       const repo = GH.repoDeAqui() || leerSin().repo || REPO_BASE;
-      this._pubPagesSinToken(c, repo);
-      this._pubSinToken(c, { abierta: true });
+      this._pubPagesSinToken(c, repo, conServidor);
+      this._pubSinToken(c, { abierta: conServidor ? "plegada" : true });
       this._pubConectar(c);
     } else {
       this._pubPanel(c, cfg);
     }
+  },
+
+  /* ── Tu servidor: publicar sin tokens (el servidor tiene la llave de GitHub) ── */
+  _pubServidor(c) {
+    const cuerpo = el("div.ed-srv");
+    c.append(seccion("Tu servidor", [cuerpo], { clase: "ed-srv-sec" }));
+    const pintar = () => {
+      const cfg = SRV.leer();
+      cuerpo.textContent = "";
+      if (!cfg.url) return this._srvConectar(cuerpo, pintar);
+      if (!cfg.token) return this._srvEntrar(cuerpo, cfg, pintar);
+      return this._srvPanel(cuerpo, cfg, pintar);
+    };
+    pintar();
+  },
+
+  _srvConectar(cuerpo, pintar) {
+    const url = el("input", { type: "url", placeholder: "https://algo.trycloudflare.com", autocomplete: "off", spellcheck: "false", inputmode: "url" });
+    const estado = el("small.ed-pub-estado");
+    const hallado = el("div");
+    const ir = boton(I("enlace", "Conectar"), async () => {
+      const u = SRV.limpiarUrl(url.value);
+      if (!u) { estado.textContent = "Pega la dirección que muestra el panel de tu servidor."; return; }
+      ir.disabled = true; estado.textContent = "Buscando tu servidor…";
+      try {
+        const inf = await SRV.info(u);
+        SRV.guardar({ url: u, nombre: inf.nombre });
+        this.app.sonidos?.sonar("exito");
+        aviso(`Conectado a «${inf.nombre}». Ahora entra con tu cuenta.`);
+        pintar();
+      } catch (e) { estado.textContent = e.message; this.app.sonidos?.sonar("error"); ir.disabled = false; }
+    }, "primario ed-pub-btn");
+    cuerpo.append(
+      el("small.ed-nota.suave", { text: "Publica directo en tu GitHub sin tokens ni claves: tu servidor (un teléfono con Termux) guarda la llave de GitHub y sube por ti. Aquí sólo entras con tu usuario y contraseña del servidor." }),
+      hallado,
+      el("label.ed-fila", {}, [el("span.ed-et", { text: "Dirección" }), url]),
+      ir, estado,
+      el("details.ed-pub-ayuda", {}, [
+        el("summary", { text: "¿Todavía no tienes servidor? (5 minutos)" }),
+        el("ol", {}, [
+          el("li", { text: "En el teléfono viejo instala Termux desde F-Droid (no el de Play Store)." }),
+          el("li", { text: "En Termux pega la línea de instalación de servidor/LÉEME.md y luego escribe: librito iniciar." }),
+          el("li", { text: "Abre http://127.0.0.1:8787 en ese teléfono, crea tu administrador y conecta GitHub." }),
+          el("li", { text: "Toca «Abrir el editor emparejado» en el panel (o copia su dirección aquí)." }),
+        ]),
+        boton(I("enlace", "Ver la guía completa"), () => abrir(`https://github.com/${GH.repoDeAqui() || REPO_BASE}/tree/${RAMA_LIBRITO}/servidor`)),
+      ]),
+    );
+    // ¿El servidor ya anunció su dirección en tu GitHub Pages?
+    SRV.descubrir().then((d) => {
+      if (!d || !cuerpo.isConnected) return;
+      url.value = d.url;
+      hallado.append(pastilla("ok", `Encontré tu servidor${d.nombre ? `: ${d.nombre}` : ""}`));
+    });
+  },
+
+  _srvEntrar(cuerpo, cfg, pintar, modo = "entrar") {
+    const app = this.app;
+    const cab = el("div.ed-srv-cab", {}, [pastilla("espera", `Conectando con ${cfg.nombre || cfg.url}…`),
+      boton(I("cambiar", "Cambiar"), () => { SRV.olvidarTodo(); pintar(); }, "chico")]);
+    const usuario = el("input", { type: "text", autocomplete: "username", autocapitalize: "none", spellcheck: "false", placeholder: "tu usuario" });
+    const c1 = el("input", { type: "password", autocomplete: modo === "entrar" ? "current-password" : "new-password" });
+    const c2 = el("input", { type: "password", autocomplete: "new-password" });
+    const codigo = el("input", { type: "text", autocapitalize: "characters", placeholder: "XXXX-XXXX-XXXX" });
+    const recordar = el("input", { type: "checkbox", checked: true });
+    const estado = el("small.ed-pub-estado");
+    const filaCodigo = el("label.ed-fila", { hidden: "" }, [el("span.ed-et", { text: "Invitación" }), codigo]);
+    const tabs = el("div.ed-srv-tabs", { hidden: "" }, [
+      el("button", { type: "button", class: modo === "entrar" ? "on" : "", text: "Entrar", onClick: () => { cuerpo.textContent = ""; this._srvEntrar(cuerpo, cfg, pintar, "entrar"); } }),
+      el("button", { type: "button", class: modo === "registro" ? "on" : "", text: "Crear cuenta", onClick: () => { cuerpo.textContent = ""; this._srvEntrar(cuerpo, cfg, pintar, "registro"); } }),
+    ]);
+    const ir = boton(I(modo === "entrar" ? "ok" : "mas", modo === "entrar" ? "Entrar" : "Crear mi cuenta"), async () => {
+      if (!usuario.value.trim() || !c1.value) { estado.textContent = "Escribe tu usuario y tu contraseña."; return; }
+      if (modo === "registro" && c1.value !== c2.value) { estado.textContent = "Las contraseñas no coinciden."; return; }
+      ir.disabled = true; estado.textContent = modo === "entrar" ? "Entrando…" : "Creando tu cuenta…";
+      try {
+        if (modo === "entrar") {
+          const u = await SRV.entrar(cfg.url, usuario.value.trim(), c1.value, recordar.checked);
+          app.sonidos?.sonar("exito");
+          aviso(`¡Hola, ${u.usuario}!`);
+          pintar();
+        } else {
+          const r = await SRV.registrar(cfg.url, usuario.value.trim(), c1.value, codigo.value.trim(), recordar.checked);
+          if (r.token) { app.sonidos?.sonar("exito"); pintar(); return; }
+          estado.textContent = r.mensaje || "Cuenta creada: espera a que el administrador la apruebe y luego entra.";
+          ir.disabled = false;
+        }
+      } catch (e) { estado.textContent = e.message; app.sonidos?.sonar("error"); ir.disabled = false; }
+    }, "primario ed-pub-btn");
+    for (const i of [usuario, c1, c2, codigo]) i.addEventListener("keydown", (e) => { if (e.key === "Enter") ir.click(); });
+    cuerpo.append(...[cab, tabs,
+      el("label.ed-fila", {}, [el("span.ed-et", { text: "Usuario" }), usuario]),
+      el("label.ed-fila", {}, [el("span.ed-et", { text: "Contraseña" }), c1]),
+      modo === "registro" ? el("label.ed-fila", {}, [el("span.ed-et", { text: "Repítela" }), c2]) : null,
+      filaCodigo,
+      el("label.ed-pub-check", {}, [recordar, el("span", { text: "Recordarme en este aparato" })]),
+      ir, estado].filter(Boolean));
+    SRV.info(cfg.url).then((inf) => {
+      if (inf.nombre !== cfg.nombre) SRV.guardar({ ...SRV.leer(), nombre: inf.nombre });
+      cab.firstChild.replaceWith(pastilla(inf.github ? "ok" : "nada", `${inf.nombre}${inf.github ? "" : " · sin GitHub todavía"}`));
+      tabs.hidden = inf.registro === "cerrado";
+      filaCodigo.hidden = !(modo === "registro" && inf.registro === "codigo");
+      if (modo === "registro" && inf.registro === "aprobacion") estado.textContent = "Tu cuenta quedará esperando que el administrador la apruebe.";
+    }).catch((e) => { cab.firstChild.replaceWith(pastilla("mal", e.message)); });
+    setTimeout(() => usuario.focus({ preventScroll: true }), 50);
+  },
+
+  _srvPanel(cuerpo, cfg, pintar) {
+    const app = this.app, P = this.P;
+    let inf = { github: true, sitio: "" };
+    const cab = el("div.ed-srv-cab", {}, [pastilla("ok", `${cfg.usuario?.usuario || "Tú"} · ${cfg.nombre || "tu servidor"}`),
+      boton(I("salir", "Salir"), async () => { await SRV.salir(); aviso("Saliste de tu servidor"); pintar(); }, "chico")]);
+    const aviso_gh = el("small.ed-nota", { hidden: "", text: "Tu servidor todavía no tiene GitHub conectado: lo publicado se guarda en el servidor (con su enlace) y se sube a GitHub cuando el administrador lo conecte." });
+    const titulo = el("input", { type: "text", value: P.nombre || "Mi librito", maxlength: 60 });
+    const ruta = el("small.ed-pub-ruta");
+    const ponerRuta = () => { const sl = GH.nombreLimpio(titulo.value); ruta.textContent = inf.sitio ? `${inf.sitio}${GH.CARPETA}/${sl}/  (si ya existe, ${sl}-2…)` : `Carpeta: ${GH.CARPETA}/${sl}/`; };
+    titulo.addEventListener("input", ponerRuta);
+    const prog = el("div.ed-pub-prog", { hidden: "" }, [el("i"), el("span"), el("b.ed-srv-barra", {}, [el("i")])]);
+    const resultado = el("div.ed-pub-listo", { hidden: "" });
+    const lista = el("div.ed-pub-lista", {}, [el("small.ed-nota.suave", { text: "Buscando tus publicaciones…" })]);
+    const proyectos = el("div.ed-pub-lista", {}, [el("small.ed-nota.suave", { text: "Buscando tus copias…" })]);
+    const poner = (t, p) => { prog.children[1].textContent = t; const b = prog.children[2]; b.hidden = p == null; if (p != null) b.firstChild.style.width = Math.round(Math.max(0, Math.min(1, p)) * 100) + "%"; };
+
+    const mostrarListo = (r, nombre) => {
+      const enlace = r.enlace || r.local;
+      resultado.textContent = "";
+      resultado.append(
+        el("b", { html: `${ico("ok")} ¡Publicado!` }),
+        el("a", { href: enlace, target: "_blank", rel: "noopener", text: enlace }),
+        el("small", { text: r.github === false ? "Quedó guardado en tu servidor (GitHub todavía no está conectado)." : `En un minutito ya se puede abrir (GitHub Pages lo prepara).${r.slug && r.slug !== GH.nombreLimpio(titulo.value) ? ` Ese nombre ya existía: quedó como «${r.slug}».` : ""}` }),
+        el("div.ed-pub-acciones", {}, [
+          boton(I("pantalla", "Ver a pantalla completa"), () => abrir(enlace), "primario"),
+          boton(I("copiar", "Copiar enlace"), () => copiar(enlace)),
+          boton(I("compartir", "Compartir"), () => compartir(enlace, nombre)),
+        ]),
+      );
+      resultado.hidden = false;
+    };
+
+    const publicar = async (reemplazar = "") => {
+      const nombre = titulo.value.trim() || P.nombre;
+      const slug = GH.nombreLimpio(titulo.value);
+      btn.disabled = true; prog.hidden = false; resultado.hidden = true;
+      try {
+        poner("Preparando tu librito…");
+        const v = await zipParaVer(app, { titulo: nombre, slug, alProgreso: (t) => poner(t), actualizar: !!reemplazar });
+        poner("Armando el paquete…");
+        const blob = await v.comoZip();
+        const r = await SRV.publicar(blob, { titulo: nombre, nombre: slug, paginas: v.paginas, reemplazar }, poner);
+        app.sonidos?.sonar("publicar");
+        const L = app.lienzo;
+        app.fx?.colocar?.({ x: L.v.px, y: L.v.py, w: L.W * L.v.z, h: L.H * L.v.z });
+        mostrarListo(r, nombre);
+        cargar();
+      } catch (e) {
+        app.sonidos?.sonar("error");
+        aviso(e.message || "No se pudo publicar", 5000, "error");
+        if (e.status === 401) pintar();
+      } finally { btn.disabled = false; prog.hidden = true; }
+    };
+    const btn = boton(I("publicar", "Publicar en mi GitHub"), () => publicar(), "primario ed-pub-btn");
+
+    const fila = (p) => el("div.ed-pub-item", {}, [
+      el("i", { html: ico("libro") }),
+      el("div", {}, [el("b", { text: p.titulo || p.slug }), el("small", { text: `${fecha(p.actualizado)} · ${p.paginas || "?"} ${p.paginas === 1 ? "página" : "páginas"} · ${{ publicada: "en GitHub", local: "sólo en el servidor", subiendo: "subiendo…", preparando: "preparando…", quitando: "quitando…", error: "error: " + (p.error || "") }[p.estado] || p.estado}` })]),
+      el("div.ed-pub-mini", {}, [
+        boton(ico("pantalla"), () => abrir(p.enlace || cfg.url + p.local), "", "Ver a pantalla completa"),
+        boton(ico("copiar"), () => copiar(p.enlace || cfg.url + p.local), "", "Copiar enlace"),
+        boton(ico("compartir"), () => compartir(p.enlace || cfg.url + p.local, p.titulo), "", "Compartir"),
+        boton(ico("refrescar"), async () => {
+          if (!(await confirmar(`¿Reemplazar «${p.titulo}» con el librito que tienes abierto? El enlace sigue siendo el mismo.`, "Actualizar"))) return;
+          titulo.value = p.titulo || titulo.value; ponerRuta();
+          publicar(p.slug);
+        }, "", "Actualizar con este librito"),
+        (p.estado === "local" || p.estado === "error") && inf.github ? boton(ico("subir"), async () => {
+          try { const r = await SRV.subirOtraVez(p.slug); aviso("Subiéndola a GitHub…"); await SRV.esperar(r.trabajo); aviso("¡Ya está en GitHub!"); cargar(); } catch (e) { aviso(e.message, 4200, "error"); }
+        }, "", "Subir a GitHub") : null,
+        boton(ico("borrar"), async () => {
+          if (!(await confirmar(`¿Quitar «${p.titulo}» de internet? El enlace dejará de funcionar (tu librito en el editor no se toca).`, "Quitar"))) return;
+          try { const r = await SRV.quitar(p.slug); aviso("Quitándola…"); await SRV.esperar(r.trabajo); app.sonidos?.sonar("borrar"); aviso("Quitada de internet"); cargar(); }
+          catch (e) { aviso(e.message, 4200, "error"); }
+        }, "", "Quitar de internet"),
+      ]),
+    ]);
+    const cargar = () => SRV.publicaciones().then((l) => {
+      lista.textContent = "";
+      if (!l.length) lista.append(el("small.ed-nota.suave", { text: "Todavía no publicaste ninguna desde tu servidor." }));
+      else lista.append(...l.map(fila));
+    }).catch((e) => { lista.textContent = ""; lista.append(el("small.ed-nota.suave", { text: e.message })); if (e.status === 401) pintar(); });
+
+    const cargarProyectos = () => SRV.proyectos().then((l) => {
+      proyectos.textContent = "";
+      if (!l.length) { proyectos.append(el("small.ed-nota.suave", { text: "Todavía no guardaste copias aquí." })); return; }
+      proyectos.append(...l.slice(0, 20).map((p) => el("div.ed-pub-item", {}, [
+        el("i", { html: ico("guardar") }),
+        el("div", {}, [el("b", { text: p.nombre }), el("small", { text: `${fecha(p.creado)} · ${p.paginas || "?"} pág. · ${pesoTxt(p.bytes)}` })]),
+        el("div.ed-pub-mini", {}, [
+          boton(ico("subir"), async () => {
+            try {
+              aviso("Bajando la copia…");
+              const blob = await SRV.bajarProyecto(p.id);
+              const { abrirArchivo } = await import("../../export/abrir.js");
+              if (app.auto?.pendiente) await app.auto.ahora();
+              const Pn = await abrirArchivo(new File([blob], GH.nombreLimpio(p.nombre) + ".zip", { type: "application/zip" }));
+              await app.abrirProyecto(Pn, true);
+              aviso(`«${Pn.nombre}» abierto como borrador nuevo`);
+            } catch (e) { aviso("No se pudo abrir: " + e.message, 4500, "error"); }
+          }, "", "Abrir como borrador nuevo"),
+          boton(ico("borrar"), async () => {
+            if (!(await confirmar(`¿Borrar la copia de «${p.nombre}» del ${fecha(p.creado)} en el servidor?`, "Borrar"))) return;
+            try { await SRV.borrarProyecto(p.id); cargarProyectos(); } catch (e) { aviso(e.message, 4200, "error"); }
+          }, "", "Borrar del servidor"),
+        ]),
+      ])));
+    }).catch((e) => { proyectos.textContent = ""; proyectos.append(el("small.ed-nota.suave", { text: e.message })); });
+
+    const guardarBtn = boton(I("guardar", "Guardar este proyecto en el servidor"), async () => {
+      guardarBtn.disabled = true;
+      try {
+        await app.guardarYa?.();
+        const { exportar } = await import("../../export/exportar.js");
+        const { blob } = await exportar(app, { completo: true, alProgreso: (t) => { guardarBtn.querySelector("span").textContent = t; } });
+        await SRV.guardarProyecto(blob, P.nombre || "Mi librito", (p) => { guardarBtn.querySelector("span").textContent = `Subiendo… ${Math.round(p * 100)} %`; });
+        app.sonidos?.sonar("guardar");
+        aviso("Copia guardada en tu servidor");
+        cargarProyectos();
+      } catch (e) { aviso(e.message, 4500, "error"); }
+      finally { guardarBtn.disabled = false; guardarBtn.querySelector("span").textContent = "Guardar este proyecto en el servidor"; }
+    }, "ed-pub-btn");
+
+    cuerpo.append(cab, aviso_gh,
+      el("label.ed-fila", {}, [el("span.ed-et", { text: "Nombre" }), titulo]),
+      ruta, btn, prog, resultado,
+      el("h4.ed-srv-sub", { text: "Mis publicaciones" }), lista,
+      el("h4.ed-srv-sub", { text: "Copias de mis proyectos" }), guardarBtn, proyectos);
+    ponerRuta();
+    SRV.info(cfg.url).then((i) => {
+      inf = i; aviso_gh.hidden = !!i.github; ponerRuta(); cargar();
+      cab.firstChild.replaceWith(pastilla(i.github ? "ok" : "nada", `${cfg.usuario?.usuario || "Tú"} · ${i.nombre}`));
+    }).catch((e) => { cab.firstChild.replaceWith(pastilla("mal", e.message)); cargar(); });
+    cargarProyectos();
   },
 
   _pubConectar(c) {
@@ -124,19 +373,20 @@ export const PUBLICADAS = {
   },
 
   /* ── GitHub Pages: ¿está encendido? (sin token sólo se puede mirar y explicar) ── */
-  _pubPagesSinToken(c, repo) {
+  _pubPagesSinToken(c, repo, plegada = false) {
     const sitio = GH.sitioDe(repo);
     const estado = el("div.ed-pub-pages-est", {}, [pastilla("espera", "Revisando tu sitio…")]);
     const pasos = this._pubPasosPages(repo, leerSin().rama || "");
-    c.append(seccion("GitHub Pages", [
+    const sec = seccion("GitHub Pages", [
       estado,
       boton(I("tuerca", "Abrir los ajustes de Pages en GitHub"), () => abrir(`https://github.com/${repo}/settings/pages`), "ed-pub-btn"),
       pasos,
-    ]));
+    ], { abierta: plegada ? "plegada" : true });
+    c.append(sec);
     (location.href.startsWith(sitio) ? Promise.resolve(true) : GH.sitioEnLinea(sitio)).then((ok) => {
       estado.textContent = "";
       if (ok === true) estado.append(pastilla("ok", `Encendido: ${sitio}`));
-      else if (ok === false) { estado.append(pastilla("mal", "Apagado: por eso tu enlace da 404. Enciéndelo con los pasos de abajo (o conecta un token y lo enciendo yo).")); pasos.open = true; }
+      else if (ok === false) { estado.append(pastilla("mal", "Apagado: por eso tu enlace da 404. Enciéndelo con los pasos de abajo (o desde el panel de tu servidor → GitHub).")); pasos.open = true; sec.open = true; }
       else estado.append(pastilla("nada", "No pude revisarlo desde aquí. Si tu enlace da 404, sigue los pasos de abajo."));
     });
   },
@@ -224,8 +474,9 @@ export const PUBLICADAS = {
     const prog = el("div.ed-pub-prog", { hidden: "" }, [el("i"), el("span")]);
     const listo = el("div.ed-pub-listo", { hidden: "" });
     const lista = el("div.ed-pub-lista");
-    const slug = () => GH.nombreLimpio(titulo.value);
-    const enlace = () => `${GH.sitioDe(limpiarRepo(repo.value))}publicadas/${slug()}/`;
+    let usadosPublicos = new Set(["lista"]);
+    const slug = () => GH.nombreLibre(GH.nombreLimpio(titulo.value), usadosPublicos);
+    const enlace = () => `${GH.sitioDe(limpiarRepo(repo.value))}${GH.CARPETA}/${slug()}/`;
     const ponerRuta = () => { ruta.textContent = enlace(); };
     for (const i of [titulo, repo]) i.addEventListener("input", ponerRuta);
     ponerRuta();
@@ -272,6 +523,8 @@ export const PUBLICADAS = {
     const pintarLista = async () => {
       const sitio = GH.sitioDe(limpiarRepo(repo.value));
       const publicas = await GH.listarPublico(sitio);
+      usadosPublicos = new Set(["lista", ...publicas.map((p) => p.slug)]);
+      ponerRuta();
       const mias = (leerSin().subidas || []).filter((m) => m.enlace?.startsWith(sitio));
       const todas = [...publicas, ...mias.filter((m) => !publicas.some((p) => p.slug === m.slug)).map((m) => ({ ...m, subiendo: true }))];
       lista.textContent = "";
@@ -297,7 +550,7 @@ export const PUBLICADAS = {
         el("label.ed-fila", {}, [el("span.ed-et", { text: "Rama" }), rama]),
       ]),
       paso1, paso2, prog, listo,
-      el("small.ed-pub-estado", { text: "3 · Listo: en 1 a 3 minutos el enlace funciona. Para quitar una, borra su carpeta publicadas/<nombre>/ en GitHub (o usa el token)." }),
+      el("small.ed-pub-estado", { text: "3 · Listo: en 1 a 3 minutos el enlace funciona. Para quitar una, borra su carpeta publicaciones/<nombre>/ en GitHub (o usa tu servidor o el token)." }),
       lista,
     ], { abierta }));
     pintarLista();
@@ -307,7 +560,7 @@ export const PUBLICADAS = {
     const app = this.app, P = this.P;
     const titulo = el("input", { type: "text", value: P.nombre || "Mi librito", maxlength: 60 });
     const ruta = el("small.ed-pub-ruta");
-    const ponerRuta = () => { ruta.textContent = `${cfg.sitio}publicadas/${GH.nombreLimpio(titulo.value)}/`; };
+    const ponerRuta = () => { const sl = GH.nombreLimpio(titulo.value); ruta.textContent = `${cfg.sitio}${GH.CARPETA}/${sl}/  (si ya existe, ${sl}-2…)`; };
     titulo.addEventListener("input", ponerRuta);
     ponerRuta();
     const prog = el("div.ed-pub-prog", { hidden: "" }, [el("i"), el("span")]);
@@ -315,14 +568,14 @@ export const PUBLICADAS = {
     const lista = el("div.ed-pub-lista", {}, [el("small.ed-nota.suave", { text: "Buscando lo que ya publicaste…" })]);
     let publicadas = [];
 
-    const btn = boton(I("publicar", "Publicar este librito"), async () => {
+    const publicarCon = async (reemplazar = "") => {
       const slug = GH.nombreLimpio(titulo.value), nombre = titulo.value.trim() || P.nombre;
       btn.disabled = true; prog.hidden = false; resultado.hidden = true;
       const poner = (t) => { prog.lastChild.textContent = t; };
       try {
         poner("Preparando tu librito…");
         const { archivos } = await zipParaVer(app, { titulo: nombre, slug, alProgreso: poner });
-        const r = await GH.publicar(cfg, { slug, titulo: nombre, paginas: P.orden.length, archivos, alProgreso: poner });
+        const r = await GH.publicar(cfg, { slug, titulo: nombre, paginas: P.orden.length, archivos, alProgreso: poner, reemplazar });
         app.sonidos?.sonar("publicar");
         const L = app.lienzo;
         app.fx?.colocar?.({ x: L.v.px, y: L.v.py, w: L.W * L.v.z, h: L.H * L.v.z });
@@ -330,8 +583,8 @@ export const PUBLICADAS = {
         resultado.append(
           el("b", { html: `${ico("ok")} ¡Publicado!` }),
           el("a", { href: r.enlace, target: "_blank", rel: "noopener", text: r.enlace }),
-          el("small", { text: `En un minutito ya se puede abrir (GitHub Pages lo prepara). ${r.subidos ? `Se subieron ${r.subidos} archivos` : "No había nada nuevo que subir"}${r.borrados ? ` y se quitaron ${r.borrados} que ya no se usan` : ""}.` }),
-          el("div.ed-pub-acciones", {}, [boton(I("copiar", "Copiar enlace"), () => copiar(r.enlace)), boton(I("compartir", "Compartir"), () => compartir(r.enlace, nombre))]),
+          el("small", { text: `En un minutito ya se puede abrir (GitHub Pages lo prepara). ${r.slug !== slug && !reemplazar ? `Ese nombre ya existía: quedó como «${r.slug}». ` : ""}${r.subidos ? `Se subieron ${r.subidos} archivos` : "No había nada nuevo que subir"}${r.borrados ? ` y se quitaron ${r.borrados} que ya no se usan` : ""}.` }),
+          el("div.ed-pub-acciones", {}, [boton(I("pantalla", "Ver a pantalla completa"), () => abrir(r.enlace), "primario"), boton(I("copiar", "Copiar enlace"), () => copiar(r.enlace)), boton(I("compartir", "Compartir"), () => compartir(r.enlace, nombre))]),
         );
         resultado.hidden = false;
         cargar();
@@ -339,7 +592,8 @@ export const PUBLICADAS = {
         app.sonidos?.sonar("error");
         aviso(e.message || "No se pudo publicar", 4200, "error");
       } finally { btn.disabled = false; prog.hidden = true; }
-    }, "primario ed-pub-btn");
+    };
+    const btn = boton(I("publicar", "Publicar este librito"), () => publicarCon(), "primario ed-pub-btn");
 
     const pintarLista = () => {
       lista.textContent = "";
@@ -352,6 +606,11 @@ export const PUBLICADAS = {
             boton(ico("ver"), () => abrir(p.enlace), "", "Abrir"),
             boton(ico("copiar"), () => copiar(p.enlace), "", "Copiar enlace"),
             boton(ico("compartir"), () => compartir(p.enlace, p.titulo), "", "Compartir"),
+            boton(ico("refrescar"), async () => {
+              if (!(await confirmar(`¿Reemplazar «${p.titulo}» con el librito que tienes abierto? El enlace sigue siendo el mismo.`, "Actualizar"))) return;
+              titulo.value = p.titulo || titulo.value; ponerRuta();
+              publicarCon(p.slug);
+            }, "", "Actualizar con este librito"),
             boton(ico("borrar"), async () => {
               if (!(await confirmar(`¿Quitar «${p.titulo}» de internet? El enlace dejará de funcionar (tu librito en el editor no se toca).`, "Quitar"))) return;
               try { await GH.despublicar(cfg, p.slug); app.sonidos?.sonar("borrar"); aviso("Quitada de internet"); publicadas = publicadas.filter((x) => x.slug !== p.slug); pintarLista(); }
@@ -360,13 +619,10 @@ export const PUBLICADAS = {
           ]),
         ]));
       }
-      const ya = publicadas.some((p) => p.slug === GH.nombreLimpio(titulo.value));
-      btn.querySelector("span").textContent = ya ? "Actualizar la publicada" : "Publicar este librito";
     };
     const cargar = () => GH.listar(cfg).then((l) => { publicadas = l; pintarLista(); }).catch((e) => { lista.textContent = ""; lista.append(el("small.ed-nota.suave", { text: e.message })); });
-    titulo.addEventListener("input", () => pintarLista());
 
-    c.append(seccion("Publicar", [
+    c.append(seccion("Publicar con token", [
       el("label.ed-fila", {}, [el("span.ed-et", { text: "Nombre" }), titulo]),
       ruta, btn, prog, resultado,
     ]));

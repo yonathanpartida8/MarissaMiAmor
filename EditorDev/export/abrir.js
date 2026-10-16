@@ -15,11 +15,13 @@ export async function abrirArchivo(file) {
   if (/\.zip$/i.test(file.name) || file.type === "application/zip") {
     zip = await leerZip(file);
     const pj = zip["project.json"];
+    if (!pj && (zip["scripts/visor.js"] || zip["publicar.json"])) throw new Error("es un librito PUBLICADO: es sólo para ver y no se puede abrir ni editar en el editor (abre la copia del proyecto)");
     if (!pj) throw new Error("ese .zip no trae project.json (¿lo hizo el editor?)");
     proyecto = JSON.parse(new TextDecoder().decode(await pj()));
   } else {
     proyecto = JSON.parse(await file.text());
   }
+  if (proyecto?.soloVer) throw new Error("es un librito publicado (sólo para ver)");
   if (!proyecto || !proyecto.orden || !proyecto.paginas) throw new Error("no parece un librito del editor");
   proyecto = normalizar(proyecto);
   proyecto.id = uid("lib");

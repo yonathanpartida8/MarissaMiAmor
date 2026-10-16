@@ -71,11 +71,20 @@ volverlo público **no** se vuelve a encender solo: todo da 404. Se enciende as�
 También desde el editor: **Páginas publicadas → GitHub Pages** (con un token que
 tenga «Pages» y «Administration» en *Read and write* lo enciende de un toque).
 
+### Tu propio servidor (Termux)
+
+Un teléfono viejo con Termux puede ser tu servidor de publicación y
+almacenamiento: guarda el token de GitHub cifrado (nunca en el editor), tiene
+cuentas con usuario y contraseña y un panel web. Desde el editor: **Páginas
+publicadas → Tu servidor** → entrar → «Publicar en mi GitHub». Todo queda en
+`publicaciones/<nombre>/`, a pantalla completa y sólo para ver. Instalación
+paso a paso en **`servidor/LÉEME.md`** (una línea en Termux).
+
 ### Publicar páginas sin token
 
 Editor → **Páginas publicadas → Publicar sin token**: se descarga un `.zip`, se
 sube a la carpeta `publicar/` del repositorio desde la web de GitHub y la acción
-«Publicar páginas subidas» lo deja en `publicadas/<nombre>/` (ver `publicar/LÉEME.md`).
+«Publicar páginas subidas» lo deja en `publicaciones/<nombre>/` (ver `publicar/LÉEME.md`).
 
 ### Privado: sólo con el enlace
 

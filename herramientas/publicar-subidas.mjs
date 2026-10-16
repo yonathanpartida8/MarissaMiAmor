@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /**
  * PUBLICAR SIN TOKEN — abre los .zip que se subieron a publicar/ (desde la web
- * de GitHub) y los deja en publicadas/<nombre>/, con su línea en
- * publicadas/lista.json. Lo corre .github/workflows/publicar-subidas.yml.
+ * de GitHub) y los deja en publicaciones/<nombre>/, con su línea en
+ * publicaciones/lista.json. Lo corre .github/workflows/publicar-subidas.yml.
  *
- *   · El nombre sale del archivo: «mi-librito.zip» → publicadas/mi-librito/.
+ *   · El nombre sale del archivo: «mi-librito.zip» → publicaciones/mi-librito/.
+ *     Si esa carpeta ya existe, va a mi-librito-2, -3… salvo que su
+ *     publicar.json diga "actualizar": true (entonces la reemplaza).
  *   · Si el .zip trae todo dentro de una carpeta, se usa lo de dentro.
  *   · Nunca se escribe fuera de su carpeta (rutas con «..», absolutas o raras
  *     se rechazan) y no se publica lo editable (project.json, EditorData/).
@@ -22,7 +24,7 @@ import { tmpdir } from "node:os";
 
 const RAIZ = process.cwd();
 const ENTRADA = join(RAIZ, "publicar");
-const SALIDA = join(RAIZ, "publicadas");
+const SALIDA = join(RAIZ, "publicaciones");
 const LISTA = join(SALIDA, "lista.json");
 const MAX = 400 * 1024 * 1024;
 
@@ -56,13 +58,20 @@ function archivosDe(dir, base = dir) {
   return out;
 }
 
+function nombreLibre(base, usados) {
+  let slug = base, n = 2;
+  while (usados.has(slug)) { const suf = `-${n++}`; slug = base.slice(0, 40 - suf.length) + suf; }
+  return slug;
+}
+
 const zips = existsSync(ENTRADA) ? readdirSync(ENTRADA).filter((n) => /\.zip$/i.test(n)) : [];
 if (!zips.length) { console.log("No hay .zip en publicar/: nada que hacer."); process.exit(0); }
 
 const errores = [];
 let lista = leerLista();
 for (const nombre of zips) {
-  const zip = join(ENTRADA, nombre), slug = nombreLimpio(nombre.replace(/\s*\(\d+\)(?=\.zip$)/i, "").replace(/\.zip$/i, ""));
+  const zip = join(ENTRADA, nombre);
+  let slug = nombreLimpio(nombre.replace(/\s*\(\d+\)(?=\.zip$)/i, "").replace(/\.zip$/i, ""));
   try {
     if (statSync(zip).size > MAX) throw new Error("pesa más de 400 MB");
     const entradas = execFileSync("unzip", ["-Z1", zip], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }).split("\n").filter(Boolean);
@@ -78,6 +87,7 @@ for (const nombre of zips) {
     let ficha = {};
     try { ficha = JSON.parse(readFileSync(join(base, "publicar.json"), "utf8")); } catch (e) { /* opcional */ }
     rmSync(join(base, "publicar.json"), { force: true });
+    if (ficha.actualizar !== true) slug = nombreLibre(slug, new Set(["lista", ...(existsSync(SALIDA) ? readdirSync(SALIDA) : [])]));
     const titulo = String(ficha.titulo || (readFileSync(join(base, "index.html"), "utf8").match(/<title>([^<]{1,80})<\/title>/i)?.[1] || slug)).trim().slice(0, 80);
     const paginas = Number(ficha.paginas) || (existsSync(join(base, "pages")) ? readdirSync(join(base, "pages")).filter((n) => /^pagina-\d+\.js$/.test(n)).length : 0);
     const destino = join(SALIDA, slug);
@@ -85,7 +95,7 @@ for (const nombre of zips) {
     mkdirSync(dirname(destino), { recursive: true });
     renameSync(base, destino);
     rmSync(tmp, { recursive: true, force: true });
-    const enlace = `${sitio()}publicadas/${slug}/`;
+    const enlace = `${sitio()}publicaciones/${slug}/`;
     lista = [{ slug, titulo, paginas, fecha: new Date().toISOString(), enlace }, ...lista.filter((p) => p.slug !== slug)];
     console.log(`Publicada «${titulo}» → ${enlace} (${archivosDe(destino).length} archivos)`);
   } catch (e) {

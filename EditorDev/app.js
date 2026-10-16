@@ -192,6 +192,12 @@ async function arrancar() {
   if (r.P) await app.abrirProyecto(r.P, r.notas.length > 0, r.notas);
   else await pantallaInicio(app);
   document.body.classList.add("listo");
+  // Un enlace de emparejamiento (…/EditorDev/#servidor=https://…): se guarda la dirección de tu servidor.
+  import("./integraciones/servidor.js").then((S) => {
+    if (!S.revisarEnlace()) return;
+    aviso("Tu servidor quedó emparejado. Entra con tu cuenta en «Páginas publicadas» para publicar.", 5000);
+    if (E.proyecto) abrirSeccion("publicadas", true);
+  }).catch(() => {});
 }
 
 /* ── Barra de arriba ─────────────────────────────────────────────────── */

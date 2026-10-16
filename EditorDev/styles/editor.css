@@ -2210,3 +2210,18 @@ body.ed ::-webkit-scrollbar-track { background: transparent; }
 @media (prefers-reduced-motion: reduce) { .ed-pub-pill, .ed-pub-pill > i { animation: none !important; } }
 /* Lo escondido de «Páginas publicadas» se esconde de verdad (los .ed-btn y las tarjetas llevan su propio display). */
 .ed-pub-listo[hidden], .ed-pub-prog[hidden], .ed-pub-btn[hidden], .ed-pub-pages [hidden] { display: none !important; }
+/* Fase 16 · Tu servidor: cabecera, pestañas y barra de avance */
+.ed-srv { display: flex; flex-direction: column; gap: 6px; }
+.ed-srv-cab { display: flex; align-items: center; gap: 8px; }
+.ed-srv-cab > .ed-pub-pill { flex: 1; margin: 0; min-width: 0; }
+.ed-srv-tabs { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--superficie-2); margin: 4px 0 2px; }
+.ed-srv-tabs[hidden] { display: none; }
+.ed-srv-tabs button { flex: 1; min-height: 34px; border: 0; border-radius: 9px; background: none; color: var(--texto-suave); font: 600 13px/1 inherit; cursor: pointer; transition: background .15s, color .15s; }
+.ed-srv-tabs button.on { background: var(--superficie); color: var(--acento); box-shadow: 0 1px 4px rgba(120, 40, 80, .12); }
+.ed-srv-sub { margin: 12px 0 2px; font-size: 13px; color: var(--texto-suave); font-weight: 600; letter-spacing: .02em; }
+.ed-srv-barra { flex: 1 1 90px; height: 6px; border-radius: 99px; background: color-mix(in srgb, var(--acento) 15%, transparent); overflow: hidden; }
+.ed-srv-barra[hidden] { display: none; }
+.ed-srv-barra > i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #ff9cc6, var(--acento)); transition: width .3s ease; }
+.ed-pub-prog { flex-wrap: wrap; }
+.ed-srv .ed-pub-mini { flex-wrap: wrap; }
+.ed-srv-sec .ed-fila[hidden] { display: none; }

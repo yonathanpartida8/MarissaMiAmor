@@ -3,7 +3,8 @@
  * servidor de por medio: el teléfono habla directo con la API de GitHub.
  *
  *   · Todo en UN commit (Git Data API): los archivos del librito en
- *     publicadas/<nombre>/ y la lista publicadas/lista.json.
+ *     publicaciones/<nombre>/ y la lista publicaciones/lista.json. Si el
+ *     nombre ya existe, se usa <nombre>-2, -3… (actualizar es aparte).
  *   · Sólo se suben los archivos que cambiaron (se compara la huella SHA-1
  *     de git, calculada aquí): actualizar un librito con 40 fotos y una
  *     frase nueva sube una frase.
@@ -12,7 +13,8 @@
  * GitHub Pages (Fase 15): ver si está encendido, encenderlo con la rama
  * correcta, pedirle que se vuelva a publicar y ver si la última vez falló.
  * Y sin token: el editor arma un .zip que se sube a publicar/ desde la web de
- * GitHub y la acción «publicar-subidas» lo abre en publicadas/<nombre>/.
+ * GitHub y la acción «publicar-subidas» lo abre en publicaciones/<nombre>/.
+ * Y con tu servidor (servidor/): el token vive allá, no aquí (servidor.js).
  *
  * El token (un «fine-grained token» con permiso de Contenido sólo para ese
  * repositorio) se guarda SÓLO en este aparato: en localStorage si eliges
@@ -20,6 +22,15 @@
  * ningún otro sitio que api.github.com.
  */
 const CLAVE = "editordev:github";
+/** La carpeta de todas las páginas publicadas (una subcarpeta por librito). */
+export const CARPETA = "publicaciones";
+
+/** Un nombre que no choque: «nombre», y si ya está, «nombre-2», «nombre-3»… */
+export function nombreLibre(base, usados) {
+  let slug = base, n = 2;
+  while (usados.has(slug)) { const suf = `-${n++}`; slug = base.slice(0, 40 - suf.length) + suf; }
+  return slug;
+}
 const API = "https://api.github.com";
 
 export function leerConfig() {
@@ -164,10 +175,10 @@ export async function ramaPublica(repo) {
   try { return (await pedir(`/repos/${repo}`)).default_branch || ""; } catch (e) { return ""; }
 }
 
-/** Sin token: lo publicado, leído del sitio público (publicadas/lista.json). */
+/** Sin token: lo publicado, leído del sitio público (publicaciones/lista.json). */
 export async function listarPublico(sitio) {
   try {
-    const r = await fetch(`${sitio}publicadas/lista.json`, { cache: "no-store", mode: "cors", referrerPolicy: "no-referrer" });
+    const r = await fetch(`${sitio}${CARPETA}/lista.json`, { cache: "no-store", mode: "cors", referrerPolicy: "no-referrer" });
     return r.ok ? ((await r.json()).paginas || []) : [];
   } catch (e) { return []; }
 }
@@ -192,10 +203,10 @@ async function estado(c) {
   return { commit, arbol: arbol.tree || [], incompleto: !!arbol.truncated };
 }
 
-/** La lista de lo publicado (publicadas/lista.json). */
+/** La lista de lo publicado (publicaciones/lista.json). */
 export async function listar(c) {
   try {
-    const r = await api(c, `/repos/${c.repo}/contents/publicadas/lista.json?ref=${encodeURIComponent(c.rama)}`);
+    const r = await api(c, `/repos/${c.repo}/contents/${CARPETA}/lista.json?ref=${encodeURIComponent(c.rama)}`);
     return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(r.content.replace(/\s/g, "")), (x) => x.charCodeAt(0)))).paginas || [];
   } catch (e) {
     if (e.status === 404) return [];
@@ -215,13 +226,20 @@ async function blobTexto(c, s) {
 }
 
 /**
- * Publica (o actualiza) un librito. `archivos`: [{ ruta, datos: Uint8Array }].
- * Devuelve { enlace, subidos, borrados }.
+ * Publica un librito nuevo en publicaciones/<nombre>/ (con otro nombre si ese ya
+ * existe) o, con `reemplazar`, actualiza uno que ya estaba.
+ * `archivos`: [{ ruta, datos: Uint8Array }]. Devuelve { slug, enlace, subidos, borrados }.
  */
-export async function publicar(c, { slug, titulo, paginas, archivos, alProgreso }) {
-  const carpeta = `publicadas/${slug}`;
+export async function publicar(c, { slug, titulo, paginas, archivos, alProgreso, reemplazar = "" }) {
   alProgreso?.("Preparando…");
   const { commit, arbol } = await estado(c);
+  if (reemplazar) slug = reemplazar;
+  else {
+    const usados = new Set(["lista"]);
+    for (const n of arbol) if (n.path.startsWith(CARPETA + "/")) usados.add(n.path.split("/")[1]);
+    slug = nombreLibre(slug, usados);
+  }
+  const carpeta = `${CARPETA}/${slug}`;
   const viejos = arbol.filter((n) => n.type === "blob" && n.path.startsWith(carpeta + "/"));
   const shaViejo = new Map(viejos.map((n) => [n.path, n.sha]));
   const entradas = [];
@@ -245,20 +263,20 @@ export async function publicar(c, { slug, titulo, paginas, archivos, alProgreso 
   const enlace = `${c.sitio}${carpeta}/`;
   const lista = (await listar(c)).filter((p) => p.slug !== slug);
   lista.unshift({ slug, titulo, paginas, fecha: new Date().toISOString(), enlace });
-  entradas.push({ path: "publicadas/lista.json", mode: "100644", type: "blob", sha: await blobTexto(c, JSON.stringify({ paginas: lista }, null, 1)) });
+  entradas.push({ path: `${CARPETA}/lista.json`, mode: "100644", type: "blob", sha: await blobTexto(c, JSON.stringify({ paginas: lista }, null, 1)) });
   alProgreso?.("Guardando en GitHub…");
   await confirmarCambios(c, { commit, entradas, mensaje: `Publicar «${titulo}»` });
   // Por si acaso: que GitHub Pages lo publique ya (si el token no tiene permiso de Pages, se publica solo igual).
   reconstruirPages(c).catch(() => {});
-  return { enlace, subidos, borrados };
+  return { slug, enlace, subidos, borrados };
 }
 
 /** Quita un librito publicado (sus archivos y su línea en la lista). */
 export async function despublicar(c, slug) {
-  const carpeta = `publicadas/${slug}`;
+  const carpeta = `${CARPETA}/${slug}`;
   const { commit, arbol } = await estado(c);
   const entradas = arbol.filter((n) => n.type === "blob" && n.path.startsWith(carpeta + "/")).map((n) => ({ path: n.path, mode: "100644", type: "blob", sha: null }));
   const lista = (await listar(c)).filter((p) => p.slug !== slug);
-  entradas.push({ path: "publicadas/lista.json", mode: "100644", type: "blob", sha: await blobTexto(c, JSON.stringify({ paginas: lista }, null, 1)) });
+  entradas.push({ path: `${CARPETA}/lista.json`, mode: "100644", type: "blob", sha: await blobTexto(c, JSON.stringify({ paginas: lista }, null, 1)) });
   await confirmarCambios(c, { commit, entradas, mensaje: `Despublicar «${slug}»` });
 }

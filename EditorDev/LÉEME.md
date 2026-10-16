@@ -495,6 +495,15 @@ Código nuevo: `canvas/fx.js` (rehecho), `herramientas/sonidos-editor.mjs` (rehe
 
 Código nuevo: `herramientas/publicar-subidas.mjs`, `.github/workflows/publicar-subidas.yml`, `publicar/LÉEME.md`; cambios en `integraciones/github.js`, `components/secciones/publicadas.js` y `audio/sonidos-editor.js`.
 
+### Fase 16: tu propio servidor (Termux), cuentas y publicaciones/ a pantalla completa
+
+| | |
+| --- | --- |
+| **Tu servidor** | `servidor/` (Python, sólo biblioteca estándar) corre en un teléfono viejo con Termux: cuentas propias (registro con aprobación o invitación, administrador/editor), el **token de GitHub cifrado allá** (nunca en el editor ni en el repositorio), un panel web para almacenamiento, publicaciones, proyectos, usuarios, GitHub, túnel y actividad, y un túnel https de Cloudflare. Guía completa: `servidor/LÉEME.md` |
+| **Editor ↔ servidor** | Páginas publicadas → **Tu servidor**: se empareja con el enlace del panel (`#servidor=…`), solo (servidor.json en tu sitio) o pegando la dirección; se entra con usuario y contraseña del servidor (sesión Bearer, nada de GitHub) y se publica con barrita de avance. Mis publicaciones (ver, copiar, compartir, actualizar con el mismo enlace, subir a GitHub, quitar) y copias de proyectos en el servidor (guardar y abrir como borrador nuevo). Código: `integraciones/servidor.js` |
+| **publicaciones/** | todo lo publicado (servidor, token o sin token) va a `publicaciones/<nombre>/` con `publicaciones/lista.json`; si el nombre ya existe, `<nombre>-2`, `-3`… (actualizar es aparte) |
+| **Visor a pantalla completa** | lo publicado lleva `runtime/visor.js`: carga con un corazón que late, botón de pantalla completa que aparece al tocar (y tecla F), pantalla que no se apaga, manifiesto e iconos para «Agregar a inicio» (se abre a pantalla completa). Es sólo para ver: sin `project.json`, con `soloVer`, y el editor se niega a abrirlo |
+
 ## Cómo está hecho
 
 ```
