@@ -313,7 +313,7 @@
     c.append(cabeza("Usuarios", "Quién puede entrar al editor y publicar. Nadie necesita GitHub: el servidor publica por ellos."));
     const [aj, us, inv] = await Promise.all([api("admin/ajustes"), api("admin/usuarios"), api("admin/invitaciones")]).catch((e) => { c.append(vacio(e.message)); return []; });
     if (!aj) return;
-    const modo = h("select", {}, ...[["abierto", "Abierto: cualquiera crea su cuenta y ya puede publicar"], ["aprobacion", "Cualquiera se registra y tú lo apruebas"], ["codigo", "Sólo con código de invitación"], ["cerrado", "Cerrado (sólo tú creas cuentas)"]].map(([v, t]) => h("option", { value: v, text: t, selected: aj.registro === v })));
+    const modo = h("select", {}, ...[["abierto", "Abierto: cualquiera crea su cuenta y entra al momento"], ["codigo", "Sólo con código de invitación"], ["cerrado", "Cerrado (sólo tú creas cuentas)"]].map(([v, t]) => h("option", { value: v, text: t, selected: aj.registro === v })));
     modo.addEventListener("change", async () => { try { await api("admin/ajustes", { method: "PUT", body: { registro: modo.value } }); INFO.registro = modo.value; aviso("Guardado", "ok"); } catch (e) { aviso(e.message, "mal"); } });
     pendientes = us.usuarios.filter((u) => u.estado === "pendiente").length;
     const lista = h("div.lista", {}, ...us.usuarios.map((u) => {

@@ -78,7 +78,7 @@ AJUSTES_BASE = {
     "nombre": "M.YNTHN",
     "puerto": 8787,
     "escuchar": "0.0.0.0",
-    "registro": "abierto",             # abierto · aprobacion · codigo · cerrado
+    "registro": "abierto",             # abierto (entra al momento) · codigo (con invitación) · cerrado
     "origenes": [],                    # orígenes extra que pueden usar la API (además de tu GitHub Pages)
     "permitir_local": True,            # http://localhost y 127.0.0.1 (para probar)
     "tunel": "cloudflare",             # cloudflare · ninguno
@@ -178,6 +178,8 @@ class Ajustes:
                     d["github"].update(v)
                 elif k in d:
                     d[k] = v
+            if d.get("registro") not in ("abierto", "codigo", "cerrado"):
+                d["registro"] = "abierto"   # el antiguo «aprobacion» ya no existe: se entra sin aprobación
             self.d = d
             self._mtime = os.path.getmtime(self.ruta)
         except (OSError, ValueError) as e:
@@ -371,6 +373,8 @@ class Base:
                 if nombre not in tiene:
                     self.c.execute(f"ALTER TABLE {tabla} ADD COLUMN {nombre} {tipo}")
         self.c.execute("CREATE UNIQUE INDEX IF NOT EXISTS usuarios_codigo_amor ON usuarios(codigo_amor)")
+        # Ya no hay aprobación: las cuentas que quedaron esperando de antes entran directo.
+        self.c.execute("UPDATE usuarios SET estado='activo' WHERE estado='pendiente'")
         self.c.commit()
         for u in self.q("SELECT id FROM usuarios WHERE codigo_amor IS NULL"):
             self.x("UPDATE usuarios SET codigo_amor=? WHERE id=?", self.codigo_libre(), u["id"])
@@ -1547,21 +1551,17 @@ def api_registro(h, s):
         if not inv:
             E.fallo("registro:" + ip, limite=8)
             raise Falla("Ese código de invitación no sirve (o ya se usó).", 403)
-    elif modo == "aprobacion" and (E.db.uno("SELECT COUNT(*) n FROM usuarios WHERE estado='pendiente'") or {}).get("n", 0) >= 30:
-        raise Falla("Hay demasiadas cuentas esperando aprobación. Inténtalo más tarde.", 429)
     if E.db.uno("SELECT COUNT(*) n FROM usuarios")["n"] >= E.aj["max_usuarios"]:
         raise Falla("M.YNTHN ya está lleno por ahora. Inténtalo más tarde.", 503)
     if E.db.uno("SELECT id FROM usuarios WHERE usuario=?", usuario):
         raise Falla("Ese usuario ya existe: elige otro.", 409)
-    estado = "activo" if inv or modo == "abierto" else "pendiente"
-    uid = E.db.crear_usuario(usuario, d["contrasena"], "editor", estado)
+    # Sin aprobación: la cuenta queda lista y entra al momento (con código, sólo con invitación).
+    uid = E.db.crear_usuario(usuario, d["contrasena"], "editor", "activo")
     if inv:
         E.db.x("UPDATE invitaciones SET usado_por=? WHERE id=?", uid, inv["id"])
     E.fallo("registro:" + ip, limite=6, base=600)   # cuenta los registros: muchos seguidos frenan
-    E.actividad(usuario, "registro", "con invitación" if inv else "abierto" if estado == "activo" else "espera aprobación", ip)
-    if estado == "activo":
-        return entrar_y_responder(h, E.db.uno("SELECT * FROM usuarios WHERE id=?", uid), d)
-    h.responder(202, {"pendiente": True, "mensaje": "Listo. Tu cuenta espera que el administrador la apruebe."})
+    E.actividad(usuario, "registro", "con invitación" if inv else "abierto", ip)
+    return entrar_y_responder(h, E.db.uno("SELECT * FROM usuarios WHERE id=?", uid), d)
 
 
 @ruta("POST", "/api/entrar")
@@ -2057,8 +2057,8 @@ def api_poner_ajustes(h, s):
             else:
                 v = str(v).strip()[:120]
             cambios[k] = v
-    if cambios.get("registro", "abierto") not in ("abierto", "aprobacion", "codigo", "cerrado"):
-        raise Falla("Registro: abierto, aprobacion, codigo o cerrado.")
+    if cambios.get("registro", "abierto") not in ("abierto", "codigo", "cerrado"):
+        raise Falla("Registro: abierto, codigo o cerrado.")
     if cambios.get("tunel", "cloudflare") not in ("cloudflare", "ninguno"):
         raise Falla("Túnel: cloudflare o ninguno.")
     if cambios.get("url_publica") and not re.match(r"^https://[A-Za-z0-9.-]+(:\d+)?$", cambios["url_publica"].rstrip("/")):

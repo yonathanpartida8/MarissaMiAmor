@@ -38,7 +38,7 @@ export function formularioCuenta(app, { alEntrar, modo = "entrar", compacto = fa
           const r = await SRV.registrar(u, c1.value, codigo.value.trim(), recordar.checked);
           if (r.token) { app.sonidos?.sonar("exito"); aviso(`¡Bienvenido a ${SRV.NOMBRE}, ${r.usuario.usuario}!`); alEntrar?.(r.usuario); return; }
           estado.className = "cu-estado bien";
-          estado.textContent = r.mensaje || "Listo. Tu cuenta espera que la aprueben; luego entra.";
+          estado.textContent = r.mensaje || "Listo, tu cuenta ya está lista.";
           ir.disabled = false;
         }
       } catch (er) {
@@ -62,7 +62,6 @@ export function formularioCuenta(app, { alEntrar, modo = "entrar", compacto = fa
       if (modo === "registro") {
         filaCodigo.hidden = inf.registro !== "codigo";
         if (inf.registro === "cerrado") estado.textContent = "Por ahora no se pueden crear cuentas nuevas.";
-        else if (inf.registro === "aprobacion") estado.textContent = "Tu cuenta quedará esperando que la aprueben.";
       }
     }).catch((er) => { estado.textContent = er.message; });
     setTimeout(() => usuario.focus({ preventScroll: true }), 60);
