@@ -117,3 +117,27 @@ export function aparecer(nodo, tipo = "sobre") {
 }
 
 export const sinMovimiento = quieto;
+
+/**
+ * Cambia algo DENTRO de `caja` (`fn`) y la caja crece o se encoge suave en vez
+ * de saltar; lo que llega (`nuevos`) aparece con un fundido cortito.
+ */
+export function ajustar(caja, fn, nuevos = []) {
+  if (!caja?.isConnected || quieto()) { fn(); return; }
+  const h0 = caja.getBoundingClientRect().height;
+  fn();
+  const h1 = caja.getBoundingClientRect().height;
+  for (const n of nuevos) if (n?.isConnected && n.animate) n.animate([{ opacity: 0, transform: "translateY(6px) scale(.98)" }, { opacity: 1, transform: "none" }], { duration: 380, easing: LLEGA, fill: "backwards" });
+  if (Math.abs(h1 - h0) > 1) caja.animate([{ height: h0 + "px" }, { height: h1 + "px" }], { duration: 420, easing: SUAVE });
+}
+
+/**
+ * Espera a que estén las letras de la interfaz (Caveat, Jost) para que nada se
+ * vea primero con otra letra y luego «salte». Si tardan, se sigue igual.
+ */
+let LETRAS = null;
+export function letrasListas(ms = 900) {
+  if (!document.fonts?.load) return Promise.resolve();
+  LETRAS ||= Promise.all(["700 20px Caveat", "400 17px Caveat", "600 15px Jost", "400 14px Jost"].map((f) => document.fonts.load(f).catch(() => {})));
+  return Promise.race([LETRAS, new Promise((r) => setTimeout(r, ms))]);
+}

@@ -89,7 +89,10 @@ export class IndicadorGuardado {
     this.t.textContent = TXT[v] || "Guardado";
     this._titulo();
     clearTimeout(this._as);
-    this.n.classList.toggle("asoma", v === "ok" || v === "error");
+    // En el teléfono el texto se asoma al fallar o, al guardar, como mucho cada 30 s (no a cada cambio: la barra no baila).
+    const asoma = v === "error" || (v === "ok" && performance.now() - (this._asomo || -1e9) > 30000);
+    if (asoma && v === "ok") this._asomo = performance.now();
+    this.n.classList.toggle("asoma", asoma);
     if (v === "error") this._as = setTimeout(() => this.n.classList.remove("asoma"), 5000);
   }
 

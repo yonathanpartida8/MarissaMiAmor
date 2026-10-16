@@ -23,7 +23,7 @@ import { el, aviso } from "./ui.js";
 import { ico } from "./iconos.js";
 import * as SRV from "../integraciones/servidor.js";
 import { formularioCuenta } from "./cuenta.js";
-import { cambiar, sinMovimiento } from "./transiciones.js";
+import { cambiar, ajustar, letrasListas, sinMovimiento } from "./transiciones.js";
 import * as PF from "./perfil.js";
 
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
@@ -92,15 +92,22 @@ export class MenuPrincipal {
     // La tarjeta se inclina apenas siguiendo el mouse (con el dedo se queda quieta).
     this._mover = (e) => {
       if (sinMovimiento() || e.pointerType !== "mouse") return;
+      this.tarjeta.classList.add("inclina");
       const x = (e.clientX / innerWidth - 0.5) * 2, y = (e.clientY / innerHeight - 0.5) * 2;
       this.tarjeta.style.setProperty("--rx", (-y * 2).toFixed(2) + "deg");
       this.tarjeta.style.setProperty("--ry", (x * 2.5).toFixed(2) + "deg");
     };
     this.capa.addEventListener("pointermove", this._mover);
     this._pintarChip();
+    let seVio;
+    this._alVer = new Promise((r) => { seVio = r; });
     this.ir(vista, { sinSonido: true });
-    if (SRV.conectado()) PF.refrescar();
-    requestAnimationFrame(() => requestAnimationFrame(() => this.capa.classList.add("ver")));
+    // Se muestra cuando ya están las letras (sin el salto de una letra a otra) y, la primera vez
+    // en este aparato, tu perfil (así no cambia de golpe al llegar); si tardan, al rato igual.
+    const capa = this.capa, antes = [letrasListas(1200)];
+    if (SRV.conectado()) { const p = PF.refrescar(); if (!PF.tieneCopia()) antes.push(p); }
+    Promise.race([Promise.all(antes), new Promise((r) => setTimeout(r, 1200))])
+      .then(() => requestAnimationFrame(() => requestAnimationFrame(() => { if (this.capa === capa && this.abierto) capa.classList.add("ver"); seVio(); })));
   }
 
   cerrar() {
@@ -143,7 +150,13 @@ export class MenuPrincipal {
     this._pintarChip();
     if (this.vista !== "inicio" || !this.r) return;
     const d = PF.datos(), clave = this._clave();
-    if (clave !== this.r.clave) { this.ir("inicio", { tipo: "zoom", forzar: true }); return; }
+    const seVe = this.capa.classList.contains("ver");
+    if (clave !== this.r.clave) {
+      // Todavía no se ve (esperando letras y tu perfil): se rehace en silencio, sin transición.
+      if (!seVe) { this.escena._terminar?.(); this.escena.replaceChildren(); this.escena._actual = null; this.vista = null; this.ir("inicio", { sinSonido: true }); }
+      else this.ir("inicio", { tipo: "zoom", forzar: true });
+      return;
+    }
     const r = this.r, pa = d.pareja, nuevos = this.app.amorNuevos || 0;
     if (r.nombreYo) r.nombreYo.textContent = PF.miNombre();
     if (r.nombrePa && pa) r.nombrePa.textContent = PF.nombreDe(pa);
@@ -156,7 +169,12 @@ export class MenuPrincipal {
     else if (g && g.textContent !== String(nuevos)) g.textContent = String(nuevos);
     // Si cambió la fecha de novios, se rehace sólo el contador.
     const ahora = JSON.stringify([pa?.novios || d.yo?.novios, PF.proximo(d)?.texto]);
-    if (ahora !== r.fechas) { r.fechas = ahora; r.contador?.replaceWith(r.contador = this._contador(false)); r.proximo?.replaceWith(r.proximo = this._proximo()); }
+    if (ahora !== r.fechas) {
+      r.fechas = ahora;
+      const c = this._contador(false), p = this._proximo();
+      const poner = () => { r.contador?.replaceWith(c); r.proximo?.replaceWith(p); r.contador = c; r.proximo = p; };
+      if (seVe) ajustar(r.hero, poner, [c, p]); else poner();
+    }
   }
 
   _clave() { const d = PF.datos(); return SRV.conectado() ? (d.pareja ? "pareja" : "sola") : "fuera"; }
@@ -203,9 +221,11 @@ export class MenuPrincipal {
     const num = el("b.mp-dias-num", { text: String(animar && !this.contado && !sinMovimiento() ? 0 : j.dias) });
     if (animar && !this.contado && !sinMovimiento() && j.dias > 0) {
       this.contado = true;
-      const t0 = performance.now(), dur = Math.min(1800, 500 + j.dias * 2);
-      const paso = (t) => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); num.textContent = String(Math.round(j.dias * e)); if (k < 1 && num.isConnected !== false) requestAnimationFrame(paso); };
-      setTimeout(() => requestAnimationFrame(paso), 380);
+      // Empieza a contar cuando el menú ya se ve (no a escondidas mientras llegan las letras).
+      let t0 = 0;
+      const dur = Math.min(1800, 500 + j.dias * 2);
+      const paso = (t) => { t0 ||= t; const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); num.textContent = String(Math.round(j.dias * e)); if (k < 1 && num.isConnected) requestAnimationFrame(paso); };
+      (this._alVer || Promise.resolve()).then(() => setTimeout(() => requestAnimationFrame(paso), 380));
     }
     return el("div.mp-dias", {}, [el("small", { text: "Juntos desde hace" }), el("div", {}, [num, el("span", { text: j.dias === 1 ? "día" : "días" })]), el("em", { text: PF.textoJuntos(j) })]);
   }
@@ -238,7 +258,7 @@ export class MenuPrincipal {
     r.proximo = this._proximo();
     const entrar = el("button.mp-btn.primario", { type: "button", style: { "--i": 3 }, html: I("editar", "Entrar al editor"), onClick: () => this.cerrar() });
     return el("div.mp-vista.mp-inicio", {}, [
-      el("div.mp-hero", { style: { "--i": 0 } }, [this._pareja(), r.contador, r.proximo]),
+      r.hero = el("div.mp-hero", { style: { "--i": 0 } }, [this._pareja(), r.contador, r.proximo]),
       el("div.mp-titulo", { style: { "--i": 1 } }, [
         el("h1", {}, ["Crear librito", el("span.mp-subrayado", { "aria-hidden": "true", html: '<svg viewBox="0 0 220 18" preserveAspectRatio="none"><path d="M4 12 C 50 2, 90 18, 130 8 S 200 4, 216 10"/></svg>' })]),
         r.saludo,

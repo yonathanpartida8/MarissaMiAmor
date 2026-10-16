@@ -14,6 +14,7 @@ import { FORMATOS, nuevoProyecto } from "../core/modelo.js";
 import { PLANTILLAS, ponerFotoDePortada, tieneHuecoDeFoto } from "../templates/plantillas.js";
 import { elegirArchivos } from "../assets/biblioteca.js";
 import { ico } from "./iconos.js";
+import { ajustar } from "./transiciones.js";
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 const RT = window.LibritoRT;
 
@@ -169,10 +170,11 @@ export async function pantallaInicio(app, { cerrable = false } = {}) {
       const fila = enNube.get(p.id);
       const c = conectado && nubeL && NUBE.esMio(p.id) ? NUBE.comparar(p, fila) : null;
       const abrirlo = () => { if (c === "nube") abrirNube(fila); else { cerrar(); app.abrir(p.id); } };
-      return el("li", {}, [
+      const txt = `${paginas(p.nPaginas ?? p.orden?.length ?? 0)} · ${hace(p.editado)}`;
+      return el("li", { dataset: { id: p.id, k: [p.id, p.nombre, txt, c, !!fila].join("|") } }, [
         el("button.ed-borrador", { type: "button", onClick: abrirlo }, [
           el("b", { text: p.nombre }),
-          el("small", { text: `${paginas(p.nPaginas ?? p.orden?.length ?? 0)} · ${hace(p.editado)}` }),
+          el("small", { text: txt }),
           c ? etiqueta(c, ...ETQ[c]) : null,
         ]),
         el("button.ed-mas", { type: "button", html: ico("puntos"), "aria-label": "Más", onClick: (e) => menu(e.currentTarget, [
@@ -191,7 +193,7 @@ export async function pantallaInicio(app, { cerrable = false } = {}) {
         ].filter(Boolean)) }),
       ]);
     });
-    for (const l of soloNube) items.push(el("li", {}, [
+    for (const l of soloNube) items.push(el("li", { dataset: { id: "n:" + l.clave, k: ["n", l.clave, l.nombre, l.paginas, l.editado, l.aparato].join("|") } }, [
       el("button.ed-borrador.en-nube", { type: "button", onClick: () => abrirNube(l) }, [
         el("b", { text: l.nombre }),
         el("small", { text: `${paginas(l.paginas || 0)} · ${hace(l.editado)}${l.aparato ? ` · desde ${l.aparato}` : ""}` }),
@@ -213,11 +215,32 @@ export async function pantallaInicio(app, { cerrable = false } = {}) {
       ])
       : errNube ? el("small.ed-nota.suave", { text: `No pude ver tu nube ahora (${errNube}). Lo de este aparato está aquí.` })
         : !nubeL ? el("small.ed-nota.suave", { text: "Buscando tus libritos en tu nube…" }) : null;
-    borradores.replaceChildren(...[
-      el("h2", { text: items.length ? "Tus borradores" : "Todavía no hay borradores" }),
-      items.length ? el("ul.ed-borradores", {}, items) : el("p.ed-vacio-txt", { text: conectado ? "Empieza uno nuevo: se guarda aquí y en tu nube mientras editas." : "Lo que hagas se guarda solo mientras editas." }),
-      nota,
-    ].filter(Boolean));
+    // Se cambia sólo lo que cambió: las filas iguales se quedan (nada parpadea al llegar tu nube)
+    // y la caja crece suave; las que llegan nuevas aparecen con un fundido.
+    const antes = new Map([...borradores.querySelectorAll("li[data-k]")].map((li) => [li.dataset.k, li]));
+    const idsAntes = new Set([...antes.values()].map((li) => li.dataset.id));
+    const filas = items.map((li) => antes.get(li.dataset.k) || li);
+    const llegan = borradores._pintado ? filas.filter((li) => !idsAntes.has(li.dataset.id)) : [];
+    const h2t = items.length ? "Tus borradores" : "Todavía no hay borradores";
+    ajustar(borradores, () => {
+      let h2 = borradores.querySelector(":scope > h2");
+      if (!h2) h2 = el("h2");
+      if (h2.textContent !== h2t) h2.textContent = h2t;
+      let cuerpo = borradores.querySelector(":scope > ul.ed-borradores");
+      if (items.length) {
+        cuerpo ||= el("ul.ed-borradores");
+        const ya = [...cuerpo.children];
+        if (ya.length !== filas.length || ya.some((n, i) => n !== filas[i])) cuerpo.replaceChildren(...filas);
+      } else cuerpo = el("p.ed-vacio-txt", { text: conectado ? "Empieza uno nuevo: se guarda aquí y en tu nube mientras editas." : "Lo que hagas se guarda solo mientras editas." });
+      const notaVieja = borradores._nota;
+      const mismaNota = notaVieja && nota && notaVieja.textContent === nota.textContent && notaVieja.className === nota.className;
+      const n = mismaNota ? notaVieja : nota;
+      borradores._nota = n;
+      const quiero = [h2, cuerpo, n].filter(Boolean);
+      const hay = [...borradores.children];
+      if (hay.length !== quiero.length || hay.some((x, i) => x !== quiero[i])) borradores.replaceChildren(...quiero);
+    }, llegan);
+    borradores._pintado = true;
   };
   const cargarNube = () => {
     pintar(null);

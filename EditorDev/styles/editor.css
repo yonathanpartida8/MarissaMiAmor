@@ -1592,7 +1592,7 @@ body.ed-ajustando .ed-modal-fondo, body.ed-ajustando .ed-hojita-velo { backgroun
 .ed-tq-mini .tq-m-sacudir { animation: tqSacudir .9s ease-in-out infinite; }
 .ed-tq-mini .tq-m-girar { animation: tqGirar 1.4s linear infinite; }
 .ed-tq-mini .tq-m-crecer { animation: tqCrecer 1.6s ease-in-out infinite; }
-.ed-tq-mini .tq-m-brillo { animation: tqBrillo 1.4s ease-in-out infinite; }
+.ed-tq-mini .tq-m-brillo { box-shadow: 0 0 10px #ff5c93; animation: tqBrillo 1.4s ease-in-out infinite; }
 .ed-tq-mini .tq-m-color { animation: tqColor 2s linear infinite; }
 .ed-tq-mini .tq-m-desvanecer { animation: tqOpac 1.4s ease-in-out infinite; }
 @keyframes tqSube { 0%, 100% { transform: translateY(3px); } 50% { transform: translateY(-3px); } }
@@ -1605,7 +1605,7 @@ body.ed-ajustando .ed-modal-fondo, body.ed-ajustando .ed-hojita-velo { backgroun
 @keyframes tqSacudir { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px) rotate(-8deg); } 75% { transform: translateX(4px) rotate(8deg); } }
 @keyframes tqGirar { to { transform: rotate(360deg); } }
 @keyframes tqCrecer { 0%, 100% { transform: scale(.8); } 50% { transform: scale(1.4); } }
-@keyframes tqBrillo { 0%, 100% { box-shadow: 0 0 0 #ff5c93; filter: brightness(1); } 50% { box-shadow: 0 0 12px #ff5c93; filter: brightness(1.5); } }
+@keyframes tqBrillo { 0%, 100% { transform: scale(1); opacity: .75; } 50% { transform: scale(1.14); opacity: 1; } }
 @keyframes tqColor { to { filter: hue-rotate(360deg); } }
 @keyframes tqOpac { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
 /* Estilos de hoja (inspector de la página) y temas por hoja. */
@@ -2246,3 +2246,30 @@ body.ed ::-webkit-scrollbar-track { background: transparent; }
 .ed-pub-prog { flex-wrap: wrap; }
 .ed-srv .ed-pub-mini { flex-wrap: wrap; }
 .ed-srv-sec .ed-fila[hidden] { display: none; }
+
+/* ── Tacto (Fase 21): la onda al tocar, corazoncitos y lo que pasa al desplazar ──
+   La onda vive en una capita fija encima del botón (components/tacto.js): sólo se
+   anima transform y opacity, y el botón no se toca. */
+.ed-onda-capa { position: fixed; z-index: 2147483600; overflow: hidden; pointer-events: none; contain: strict; }
+.ed-onda { position: absolute; border-radius: 50%; pointer-events: none; background: radial-gradient(closest-side, rgba(216, 57, 122, .26), rgba(216, 57, 122, .16) 75%, rgba(216, 57, 122, 0)); }
+.ed-onda.clara { background: radial-gradient(closest-side, rgba(255, 255, 255, .55), rgba(255, 255, 255, .32) 75%, rgba(255, 255, 255, 0)); }
+.ed-corazoncito { position: fixed; z-index: 2147483601; width: 15px; height: 15px; color: #ff5c93; pointer-events: none; filter: drop-shadow(0 1px 1px rgba(160, 30, 80, .25)); }
+.ed-corazoncito:nth-of-type(3n) { color: #ff9cc6; }
+.ed-corazoncito:nth-of-type(3n+1) { color: #e0325f; }
+.ed-corazoncito svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+/* Al bajar en un panel, su cabecera se separa con una sombrita (sólo cambia al cruzar los primeros píxeles). */
+:is(.ed-panel-cab, .ed-insp-tabs, .ed-hojita-cab, .ed-hoja-sec-cab, .ed-modal > header, .dt-cab) { position: relative; z-index: 1; transition: box-shadow .25s ease; }
+:is(.ed-panel-cab, .ed-insp-tabs, .ed-hojita-cab, .ed-hoja-sec-cab, .ed-modal > header, .dt-cab):has(+ [data-desplazado]) { box-shadow: 0 12px 14px -14px rgba(120, 40, 80, .55); }
+/* Al desplazar, las fichas y las listas van apareciendo (lo hace el navegador, en el compositor;
+   donde no se puede, simplemente están). Especificidad cero: si algo ya tiene su animación, gana la suya. */
+@supports (animation-timeline: view()) {
+  :where(.ed-rejilla-assets, .ed-plantillas, .ed-borradores, .ed-anim-rejilla, .ed-efectos, .ed-trans-rejilla, .ed-fondos, .ed-deslizar, .ed-bib, .ed-bq, .ed-sfx-fila, .ed-comp-sueltos, .ed-tq-fichas) > * {
+    animation: ed-asoma linear both; animation-timeline: view(); animation-range: entry 0% entry 85%;
+  }
+  @keyframes ed-asoma { from { opacity: 0; scale: .9; translate: 0 18px; } to { opacity: 1; scale: 1; translate: 0 0; } }
+  :where(body.ed-mov-nada, body.ed-calidad-baja) :where(.ed-rejilla-assets, .ed-plantillas, .ed-borradores, .ed-anim-rejilla, .ed-efectos, .ed-trans-rejilla, .ed-fondos, .ed-deslizar, .ed-bib, .ed-bq, .ed-sfx-fila, .ed-comp-sueltos, .ed-tq-fichas) > * { animation: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(.ed-rejilla-assets, .ed-plantillas, .ed-borradores, .ed-anim-rejilla, .ed-efectos, .ed-trans-rejilla, .ed-fondos, .ed-deslizar, .ed-bib, .ed-bq, .ed-sfx-fila, .ed-comp-sueltos, .ed-tq-fichas) > * { animation: none; }
+  :is(.ed-panel-cab, .ed-insp-tabs, .ed-hojita-cab, .ed-hoja-sec-cab, .ed-modal > header, .dt-cab) { transition: none; }
+}

@@ -31,6 +31,8 @@ export function datos() {
   if (!D || D._de !== yoU()) { D = leer(); D._de = yoU(); if (!D.yo) D.yo = { usuario: yoU(), nombre: SRV.usuario()?.nombre || "" }; }
   return D;
 }
+/** ¿Ya hay una copia de tu perfil en este aparato? (la primera vez, no) */
+export function tieneCopia() { try { return !!localStorage.getItem(CLAVE()); } catch (e) { return false; } }
 export const nombreDe = (p) => (p?.nombre || "").trim() || p?.usuario || "";
 export const miNombre = () => nombreDe(datos().yo) || yoU();
 
@@ -79,13 +81,16 @@ function pintarAvatar(n) {
   const k = (p ? "1" : "0") + foto.length + foto.slice(-24) + letra;
   if (n._k === k) return;   // ya está igual: no se toca (nada parpadea)
   n._k = k;
-  n.classList.toggle("con-foto", !!foto);
-  n.classList.toggle("vacio", !p);
+  const marcar = () => { n.classList.toggle("con-foto", !!foto); n.classList.toggle("vacio", !p); };
   if (foto) {
-    let img = n.querySelector("img");
-    if (!img) { img = el("img", { alt: "", draggable: "false" }); n.replaceChildren(img); }
-    if (img.src !== foto) img.src = foto;
-  } else n.replaceChildren(el("b", { text: p ? letra : "?" }));
+    // La foto nueva se decodifica ANTES de ponerse: nunca se ve el circulito vacío un instante.
+    if (n.querySelector("img")?.src === foto) return marcar();
+    const img = el("img", { alt: "", draggable: "false" });
+    img.decoding = "sync";
+    img.src = foto;
+    const poner = () => { if (n._k === k) { marcar(); n.replaceChildren(img); } };
+    if (img.complete || !img.decode) poner(); else img.decode().then(poner, poner);
+  } else { marcar(); n.replaceChildren(el("b", { text: p ? letra : "?" })); }
 }
 export function avatar(quien, clase = "") {
   const n = el("span.av" + (clase ? "." + clase.split(" ").join(".") : ""), { dataset: { quien }, "aria-hidden": "true" });

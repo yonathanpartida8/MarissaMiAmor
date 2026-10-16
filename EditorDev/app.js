@@ -58,6 +58,7 @@ import { AudioEditor } from "./audio/mezclador.js";
 import { ico } from "./components/iconos.js";
 import { Hoja } from "./components/hoja.js";
 import { vigilarPantalla } from "./components/pantalla.js";
+import { iniciarTacto } from "./components/tacto.js";
 import { Prueba } from "./components/prueba.js";
 import { Salida } from "./components/salir.js";
 import { Ajustes } from "./components/ajustes.js";
@@ -144,6 +145,7 @@ async function arrancar() {
   app.menuPrincipal = new MenuPrincipal(app);
   app.menuPrincipal.abrir();
   vigilarPantalla();
+  iniciarTacto();
   setTimeout(() => medirHz(), 1200); // con la página ya quieta, para medir bien
   // Iconos propios de assets/iconos/ (si hay), antes de pintar nada.
   await Promise.race([aplicarIconos().catch(() => 0), new Promise((r) => setTimeout(r, 700))]);

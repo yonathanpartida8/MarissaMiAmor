@@ -556,6 +556,20 @@ Código nuevo: `components/menu-principal.js`, `components/exportar-menu.js`, `c
 | **Transiciones** | cada camino la suya, con su sonido (`components/transiciones.js`): el perfil se abre como una **hoja que se da vuelta** y regresa igual; tu cuenta **gira como una tarjeta**; al entrar, todo **crece en un círculo** desde el botón; vincular gira; un detallito **sale de su sobre**; la vista previa **se acerca**; atrás **se desliza**. Sonidos nuevos hechos aquí mismo (brillo, giro, sobre, latido, campanas, separar y el «tic» del código), cambiables poniendo un archivo con su nombre en `assets/sonidos-editor/` |
 | **Parpadeos** | la causa: el menú y Detallitos se volvían a armar enteros (con sus animaciones de entrada) cada vez que llegaba un latido, y el «visto hace…» de tu amorcito cambia en **cada** latido (cada 45 s); además, el globito de Exportar se quitaba y se volvía a poner. Ahora sólo se cambia el pedacito que cambió (un nombre, una foto, el puntito en línea, el número del globito). Fuera también el vidrio esmerilado y los desenfoques grandes animados del fondo (lo más pesado y lo que parpadeaba en Android): ahora todo se mueve con transform y opacity |
 
+### Fase 21: menos parpadeos, más fluido y toques que se sienten
+
+Medido con un detector propio que graba la pantalla cuadro por cuadro con el procesador 4 veces más lento (como un teléfono): destellos, animaciones que se reinician solas, saltos de diseño, tareas largas y cuadros por segundo, antes y después.
+
+| | |
+| --- | --- |
+| **Animaciones que repintaban** | el destello del botón grande se movía con `left`; los puntitos «en línea», el brillo de las notitas nuevas y el botón «Vincularnos» latían con `box-shadow`; el brillito de la vista previa movía un fondo. Todo eso se repintaba en **cada cuadro**. Ahora son capitas aparte que sólo cambian transform y opacity (las mueve la tarjeta de video, no el procesador) |
+| **La tarjeta del menú** | ya no lleva una perspectiva 3D fija (dejaba el texto borroso y una capa enorme siempre encendida): sólo se inclina cuando mueves el mouse |
+| **Letras que saltaban** | el menú espera a que estén sus letras (Caveat y Jost) antes de aparecer —como mucho un segundo— y, la primera vez en un aparato, también a tu perfil: así no se ve primero con otra letra ni «sola» y luego cambia de golpe. El contador de días empieza cuando ya se ve |
+| **Cambios suaves** | si cambia la fecha o lo que viene, esa parte crece o se encoge suave en vez de empujar todo; las fotos nuevas se preparan antes de ponerse (nunca un circulito vacío un instante); la lista de borradores sólo cambia las filas que cambiaron cuando llega tu nube; el «Guardado» del teléfono se asoma como mucho cada 30 s (la barra ya no baila a cada cambio); el velo de los menús sólo se desenfoca con mouse |
+| **Al tocar** (`components/tacto.js`) | cada botón suelta una **onda** suave desde tu dedo (rosita; blanca en los de color) y los botones principales, unos **corazoncitos** y una vibración chiquita en Android. Nunca en la hoja que editas ni en «Probar página». Con «sin movimiento» o calidad baja, no hay |
+| **Al desplazar** | la cabecera de cada panel se separa con una sombrita en cuanto bajas; las fichas y los borradores **van apareciendo** al llegar a la vista (lo hace el navegador en la tarjeta de video; donde no se puede, simplemente están) |
+| **Resultado** (teléfono simulado) | menú de **41 a 51–54** cuadros por segundo; 0 destellos; el salto al arrancar desapareció; tareas largas del arranque de 1,8 s a 1,1 s en total. En computadora, el menú de **~38 a ~48**; editor y Detallitos igual que antes |
+
 ## Cómo está hecho
 
 ```
