@@ -417,6 +417,24 @@ function construirRiel() {
   app.alAnadir = () => { if (esMovil() && !document.querySelector(".ed-modal-fondo")) app.lateral.cerrar(); };
 }
 
+/* Cada sección recuerda dónde ibas: al volver a ella (o al repintarse) sigue ahí, sin
+   saltar arriba ni repetir la entrada escalonada (ésa, sólo la primera vez que se abre). */
+const DESPLAZADO = new Map(), VISTAS = new Set();
+function devolverDesplazado(cont, id) {
+  // Se anota al desplazarse (pasivo: nunca obliga a recalcular el diseño al cambiar de sección).
+  if (!cont._oyeDespl) { cont._oyeDespl = true; cont.addEventListener("scroll", () => { if (cont._sec) DESPLAZADO.set(cont._sec, cont.scrollTop); }, { passive: true }); }
+  const y = DESPLAZADO.get(id) || 0;
+  if (!y) return;
+  cont.scrollTop = y;
+  // Lo que carga después (miniaturas, listas de assets/) puede alargarla: se reintenta un ratito.
+  let n = 0, tocado = false;
+  const toca = () => { tocado = true; };
+  cont.addEventListener("pointerdown", toca, { once: true, passive: true });
+  cont.addEventListener("wheel", toca, { once: true, passive: true });
+  const otra = () => { if (tocado || cont._sec !== id || cont.scrollTop >= y - 1 || ++n > 10) return; cont.scrollTop = y; setTimeout(otra, 120); };
+  setTimeout(otra, 60);
+}
+
 function abrirSeccion(id, desdeUsuario) {
   id = ALIAS[id] || id;
   // Lo que se estaba escuchando para al cambiar de pestaña (o al cerrarla).
@@ -436,8 +454,9 @@ function abrirSeccion(id, desdeUsuario) {
     cerrarHoja();
     app.paneles._limpiar?.();
     cuerpo.textContent = "";
-    cuerpo.scrollTop = 0;
     app.paneles.abrir(id, cuerpo);
+    cuerpo._sec = id;
+    devolverDesplazado(cuerpo, id);
     document.body.classList.add("con-hoja-sec");
     hojaSec.abrir(hojaSec.abierta ? 0 : 1);
     requestAnimationFrame(() => setTimeout(() => app.lienzo.mostrarSeleccion?.(hs.offsetHeight * 0.62 + 12), 320));
@@ -447,15 +466,16 @@ function abrirSeccion(id, desdeUsuario) {
   $(".ed-panel-titulo").innerHTML = `${ico(titulo[1])}<span>${titulo[2]}</span>`;
   app.paneles._limpiar?.();
   cont.textContent = "";
-  cont.scrollTop = 0;
   if (id === "paginas") { app.paneles.actual = null; app.paginas.construir(cont); }
   else app.paneles.abrir(id, cont);
-  // Lo de dentro entra escalonado sólo al cambiar de sección (no al repintar).
-  if (cont._sec !== id) {
-    cont._sec = id;
+  // Lo de dentro entra escalonado sólo la primera vez que se abre la sección (no al volver ni al repintar).
+  if (cont._sec !== id && !VISTAS.has(id)) {
     cont.classList.remove("entra"); void cont.offsetWidth; cont.classList.add("entra");
     clearTimeout(cont._entra); cont._entra = setTimeout(() => cont.classList.remove("entra"), 700);
-  }
+  } else if (cont.classList.contains("entra") && cont._sec !== id) { clearTimeout(cont._entra); cont.classList.remove("entra"); }
+  VISTAS.add(id);
+  cont._sec = id;
+  devolverDesplazado(cont, id);
   if (id === "animar" && !esMovil()) { app.insp.abrir("animar"); app.tiempo.alternar(true); }
   if (esMovil() && desdeUsuario) app.lateral.abrir();
 }

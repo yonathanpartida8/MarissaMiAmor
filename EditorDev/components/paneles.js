@@ -79,12 +79,14 @@ export class Paneles {
     if (!cont || !this.P) return;
     this._limpiar?.();
     this._limpiar = null;
-    const y = cont.scrollTop;
+    // Al repintar la misma sección se queda donde ibas; recién vaciada no hay nada que leer
+    // (leer el desplazamiento ahí obligaría a recalcular el diseño en balde).
+    const y = cont.firstChild ? cont.scrollTop : 0;
     this.v.vaciar();
     cont.textContent = "";
     this["_" + this.actual]?.(cont);
     this.v.refrescar();
-    cont.scrollTop = y;
+    if (y) cont.scrollTop = y;
   }
 
   _proy() {

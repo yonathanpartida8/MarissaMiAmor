@@ -322,8 +322,11 @@ export class Lienzo {
     for (const n of document.querySelectorAll(ACOMODO)) {
       const r = n.getBoundingClientRect();
       if (r.width < innerWidth * 0.55 || r.height < 24 || r.bottom < vr.bottom - 14 || r.top >= vr.bottom - 4) continue;
+      // Se mide cómo QUEDARÁ, no el cuadro de en medio: lo que está abriéndose (aún transparente)
+      // cuenta; lo que se aparta para una vista previa no; lo que se cierra ya está fuera (ACOMODO).
+      if (document.body.classList.contains("con-previa") && n.matches(".ed-hoja-sec, .ed-insp")) continue;
       const cs = getComputedStyle(n);
-      if (cs.visibility === "hidden" || cs.display === "none" || +cs.opacity < 0.05) continue;
+      if (cs.visibility === "hidden" || cs.display === "none" || (+cs.opacity < 0.05 && !n.matches(".abierta, .ver, .ed-modal"))) continue;
       tope = Math.min(tope, r.top);
     }
     return tope === Infinity ? 0 : Math.max(0, Math.round(vr.bottom - tope));
@@ -342,17 +345,20 @@ export class Lienzo {
    *  corre a un lado; al cerrarlo vuelve a donde estaba (si no se movió a mano). */
   _apartarEscritorio() {
     if (this.congelado || this.editando || this.g) return;
-    const capas = [...document.querySelectorAll(".ed-modal-fondo.ver .ed-modal:not(.cerrando), .ed-pop.ver:not(.cerrando), .ed-menu")].filter((n) => n.offsetWidth);
+    const capas = [...document.querySelectorAll(".ed-modal-fondo.ver .ed-modal:not(.cerrando), .ed-pop.ver:not(.cerrando), .ed-menu, .ed-hojita.abierta:not(.cerrando)")].filter((n) => n.offsetWidth);
     const igual = (a, b) => a && b && Math.abs(a.px - b.px) < 1 && Math.abs(a.py - b.py) < 1 && Math.abs(a.z - b.z) < 1e-4;
     if (!capas.length) {
       const a = this._apAntes, d = this._apDespues;
       this._apAntes = this._apDespues = null;
-      if (a && igual(this.v, d)) this._animarVista(a, 260);
+      // Si aún iba de camino a donde se apartó, tampoco se movió a mano: vuelve igual.
+      if (a && (igual(this.v, d) || (d && this._animHasta === d))) { this._volverA = { antes: a, hasta: a }; this._animarVista(a, 260); }
       return;
     }
-    const antes = { ...this.v };
+    // Si estaba volviendo y algo la tapa otra vez, lo de antes sigue siendo a donde volver.
+    const vv = this._volverA;
+    const antes = vv && this._animHasta === vv.hasta ? { ...vv.antes } : { ...this.v };
     const hasta = this.apartarDe(capas[capas.length - 1].getBoundingClientRect());
-    if (hasta) { if (!this._apAntes) this._apAntes = antes; this._apDespues = hasta; }
+    if (hasta) { if (!this._apAntes) this._apAntes = antes; this._apDespues = this._animHasta || hasta; }
   }
 
   _vistaAjustada() {
@@ -368,7 +374,11 @@ export class Lienzo {
     const d = document.querySelector(".ed-dock");
     if (!d || !d.offsetWidth) return 0;
     const cs = getComputedStyle(d);
-    if (cs.display === "none" || cs.visibility === "hidden" || +cs.opacity < 0.1) return 0;
+    if (cs.display === "none" || cs.visibility === "hidden") return 0;
+    // Cómo QUEDARÁ, no la opacidad de en medio de su fundido: la esconden el panel lateral
+    // y las hojas que siguen abiertas (las que se están cerrando ya no cuentan).
+    const B = document.body.classList, abierta = (q) => !!document.querySelector(q + ".abierta:not(.cerrando)");
+    if (B.contains("lateral-abierto") || (B.contains("con-hoja-sec") && abierta(".ed-hoja-sec")) || (document.body.dataset.hoja && abierta(".ed-insp"))) return 0;
     const dr = d.getBoundingClientRect();
     return Math.max(0, Math.round(r.right - dr.left + 6));
   }
@@ -382,22 +392,31 @@ export class Lienzo {
       // Todo cerrado: vuelve a como estaba (si la vista estaba «entera», a la vista entera).
       const antes = this._acAntes, puesta = this._acPuesta;
       this._acAntes = this._acPuesta = null;
-      if (!antes) return;
-      const igual = puesta && Math.abs(this.v.z - puesta.z) < 0.002 && Math.abs(this.v.px - puesta.px) < 1.5 && Math.abs(this.v.py - puesta.py) < 1.5;
-      if (antes.ajustar) this._animarVista(this._vistaAjustada());
-      else if (igual) this._animarVista(antes);
+      if (!antes) {
+        // Ya en su sitio «entera»: si el espacio cambió mientras tanto (la barrita de la derecha volvió), se reajusta suave.
+        // Sólo con todo cerrado de verdad (a medio abrir una hoja la foto sería inconsistente).
+        const aj = (this._animHasta ? this._animHasta.ajustar : this.v.ajustar) && !document.body.matches(".lateral-abierto, .con-hoja-sec, [data-hoja]");
+        if (aj) { const h = this._vistaAjustada(), y = this._animHasta || this.v; if (Math.abs(h.z - y.z) > 0.002 || Math.abs(h.px - y.px) > 1.5 || Math.abs(h.py - y.py) > 1.5) this._animarVista(h); }
+        return;
+      }
+      // Todavía yendo hacia lo puesto (se cerró a mitad de la animación) = no se movió a mano.
+      const igual = puesta && (this._animHasta === puesta || (Math.abs(this.v.z - puesta.z) < 0.002 && Math.abs(this.v.px - puesta.px) < 1.5 && Math.abs(this.v.py - puesta.py) < 1.5));
+      if (antes.ajustar) { const h = this._vistaAjustada(); this._volverA = { antes, hasta: h }; this._animarVista(h); }
+      else if (igual) { this._volverA = { antes, hasta: antes }; this._animarVista(antes); }
       return;
     }
     // Lo que queda libre encima del panel. Si el panel ocupa casi toda la
     // pantalla, encoger la hoja hasta un sello no sirve: se deja como está.
     const m = 14, dw = this._reservaDerecha(r), lw = r.width - dw, lh = r.height - tapado;
     if (lh < Math.max(150, r.height * 0.2)) return;
-    if (!this._acAntes) this._acAntes = { ...this.v };
+    // Si estaba volviendo a su sitio y algo la tapa otra vez, «antes» sigue siendo ese sitio.
+    if (!this._acAntes) { const vv = this._volverA; this._acAntes = vv && this._animHasta === vv.hasta ? { ...vv.antes } : { ...this.v }; }
     // La hoja ENTERA sube y se escala (proporcional, sin deformarse ni cambiar
     // su tamaño real) para caber en lo libre; si ya cabía, sólo sube.
     const antes = this._acAntes;
     const zPag = Math.max(0.05, Math.min((lw - 2 * m) / this.W, (lh - 2 * m) / this.H));
-    const z = Math.min(antes.ajustar ? Infinity : antes.z, zPag);
+    // Nunca más grande que antes (si ya cabía, sólo sube): agrandarla sería un brinco y se tomaría por «su sitio».
+    const z = Math.min(antes.z, zPag);
     const hasta = { z, px: (lw - this.W * z) / 2, py: (lh - this.H * z) / 2, ajustar: false };
     this._acPuesta = hasta;
     this._animarVista(hasta);
@@ -406,38 +425,26 @@ export class Lienzo {
   /** Lleva la vista a `hasta` con una animación suave (cancela la anterior). */
   _animarVista(hasta, ms = 340) {
     cancelAnimationFrame(this._animV);
+    this._animHasta = null;
     const desde = { ...this.v }, t0 = performance.now();
     if (Math.abs(desde.z - hasta.z) < 0.001 && Math.abs(desde.px - hasta.px) < 0.5 && Math.abs(desde.py - hasta.py) < 0.5) { this.v = { ...hasta }; return; }
+    this._animHasta = hasta;
     this.v.ajustar = false;
     const paso = (t) => {
       const k = Math.min(1, (t - t0) / ms), q = 1 - Math.pow(1 - k, 3);
       this.v = { z: desde.z + (hasta.z - desde.z) * q, px: desde.px + (hasta.px - desde.px) * q, py: desde.py + (hasta.py - desde.py) * q, ajustar: false };
       this.pintarVista();
       if (k < 1) this._animV = requestAnimationFrame(paso);
-      else { this.v = { ...hasta }; this.pintarVista(); }
+      else { this.v = { ...hasta }; this._animHasta = null; this.pintarVista(); }
     };
     this._animV = requestAnimationFrame(paso);
   }
 
   /** Que lo elegido se vea por encima de una hoja que ocupa `abajo` px de la pantalla. */
-  mostrarSeleccion(abajo = 0) {
-    // En el teléfono lo hace el acomodo (mide de verdad lo que tapa).
-    if (this.acomodoActivo) return this.acomodar();
-    const sel = this.estado.seleccionados;
-    if (!sel.length) return;
-    const r = this.vistaEl.getBoundingClientRect();
-    const tope = Math.min(r.bottom, innerHeight - abajo) - r.top - 16;
-    if (tope < 80) return;
-    const b = union(sel.map((e) => cajaDe(this.vis(e))));
-    const y0 = this.v.py + b.y * this.v.z, y1 = y0 + b.h * this.v.z;
-    let dy = 0;
-    if (y1 > tope) dy = tope - y1;
-    if (y0 + dy < 12) dy = 12 - y0;
-    if (Math.abs(dy) < 2) return;
-    const desde = this.v.py, hasta = this.v.py + dy, t0 = performance.now();
-    this.v.ajustar = false;
-    const paso = (t) => { const k = Math.min(1, (t - t0) / 260); const e = 1 - Math.pow(1 - k, 3); this.v.py = desde + (hasta - desde) * e; this.pintarVista(); if (k < 1) requestAnimationFrame(paso); };
-    requestAnimationFrame(paso);
+  mostrarSeleccion() {
+    // En el teléfono lo hace el acomodo (mide de verdad lo que tapa); en la computadora,
+    // el apartado: sólo se corre si de verdad la tapa y vuelve a su sitio al cerrar.
+    return this.acomodar();
   }
 
   /** Si un menú (rect de pantalla) tapa lo elegido, la hoja se corre lo justo
@@ -1164,6 +1171,7 @@ export class Lienzo {
           else {
             fin = E.gesto("Mover");
             this.gestoActivo = true;
+            this._pegaba = false;
             cand = candidatos(this.P, E.pagina, new Set(movibles.map((e) => e.id)), { W: this.W, H: this.H, vis: (e) => this.vis(e) });
           }
         }
@@ -1176,6 +1184,10 @@ export class Lienzo {
           if (!m.shiftKey || dx) dx += r.dx;
           if (!m.shiftKey || dy) dy += r.dy;
           this.lineas = { x: r.lx, y: r.ly };
+          // Un «clic» de imán cuando se pega a una guía (sólo al pegarse, no mientras sigue pegado).
+          const pega = !!(r.dx || r.dy);
+          if (pega && !this._pegaba) this.app.sonidos?.sonar("iman");
+          this._pegaba = pega;
         }
         ({ dx, dy } = this._limitar(caja0, dx, dy, estricto));
         for (const o of orig) E.setEl(o.id, { x: Math.round(o.x + dx), y: Math.round(o.y + dy) }, "Mover");

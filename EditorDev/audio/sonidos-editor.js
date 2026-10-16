@@ -40,13 +40,17 @@ export const CARPETA = {
   pagina: "paginas/crear", "pagina-duplicar": "paginas/duplicar", "pagina-cambiar": "paginas/cambiar",
   reproducir: "multimedia/reproducir", pausar: "multimedia/pausar",
   animar: "animaciones/aplicar", fotograma: "animaciones/fotograma",
+  // Más momentos: atrás en los menús, interruptores, imán, menú, probar, bloquear/ocultar, páginas y escribir.
+  atras: "interfaz/atras", probar: "interfaz/probar", activar: "interaccion/activar", desactivar: "interaccion/desactivar", menu: "interaccion/menu",
+  iman: "movimiento/iman", bloquear: "organizacion/bloquear", desbloquear: "organizacion/desbloquear", ocultar: "organizacion/ocultar", mostrar: "organizacion/mostrar",
+  "pagina-eliminar": "paginas/eliminar", "pagina-reordenar": "paginas/reordenar", escribir: "edicion/escribir",
 };
 // Los de poca importancia: ceden ante cualquier otro.
 const SUAVES = new Set(["botones", "seleccionar", "deseleccionar"]);
 // Cuánto se hace a un lado MusicaDev mientras suena un efecto del editor (1 = nada).
 const AGACHAR = 0.6;
 // Lo mínimo entre dos sonidos del mismo momento (ms): sin metralletas.
-const MIN = { botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250 };
+const MIN = { botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250, atras: 150, activar: 100, desactivar: 100, menu: 150, iman: 260, escribir: 200, probar: 400 };
 /* Sonidos hechos a mano: [forma, frec. inicial, frec. final, duración s, volumen, retraso s]. */
 const SINTE = {
   colocar: [["sine", 520, 250, 0.11, 0.5], ["triangle", 1040, 900, 0.03, 0.12]],
@@ -229,9 +233,16 @@ export class SonidosEditor {
     document.addEventListener("click", (ev) => {
       const b = ev.target.closest?.("button, .ed-pieza, [role=menuitem], summary, .ed-asset, .ed-comp, label.ed-fila");
       if (!b || b.disabled || ev.target.closest(".ed-vista, input, textarea, select, .ed-tl-cuerpo")) return;
+      // Interruptores: suena cómo QUEDAN (encendido o apagado), ya cambiados.
+      if (b.matches(".ed-toggle")) { setTimeout(() => this.sonar(b.classList.contains("on") ? "activar" : "desactivar"), 0); return; }
+      // «Atrás» / «Cancelar» de las ventanas y vistas previas: suena a volver (y no además a cerrar).
+      if (b.matches(".ed-hojita-pie .ed-btn:not(.primario), .ed-modal footer .ed-btn:not(.primario):not(.peligro)")) { this._tAtras = performance.now(); this.sonar("atras"); return; }
       // Las herramientas (el riel, la barrita de la línea de tiempo) suenan distinto.
       this.sonar(b.closest(".ed-riel, .ed-tl-herr") ? "herramienta" : "botones");
     }, true);
+    // El botón «atrás» del teléfono (o del navegador).
+    addEventListener("popstate", () => { this._tAtras = performance.now(); this.sonar("atras"); });
+    addEventListener("ed-menu-abierto", () => this.sonar("menu"));
     const S = this, envolver = (obj, k, momento, cuando) => {
       const f = obj?.[k];
       if (typeof f !== "function") return;
@@ -242,7 +253,11 @@ export class SonidosEditor {
     let antes = "";
     E.on("sel", () => { const k = E.sel.join(","); if (k && k !== antes) this.sonar("seleccionar"); else if (!k && antes) this.sonar("deseleccionar"); antes = k; });
     // Paneles y hojas: abrir, cerrar, bajar a una parada más chica (minimizar) o volver a subir (restaurar).
-    addEventListener("ed-hoja", (ev) => { if (["abrir", "cerrar", "minimizar", "restaurar"].includes(ev.detail)) this.sonar(ev.detail); });
+    addEventListener("ed-hoja", (ev) => {
+      if (ev.detail === "cerrar" && performance.now() - (this._tAtras || 0) < 300) return; // ya sonó «atrás»
+      if (ev.detail === "abrir" && performance.now() - (this._tProbar || 0) < 300) return; // ya sonó «probar»
+      if (["abrir", "cerrar", "minimizar", "restaurar"].includes(ev.detail)) this.sonar(ev.detail);
+    });
     addEventListener("ed-color", () => this.sonar("colorear"));
     addEventListener("ed-aviso", (ev) => { if (ev.detail === "error") this.sonar("error"); });
     // Mover, girar, cambiar tamaño, la línea de tiempo…: uno al empezar (según el gesto) y otro al soltar.
@@ -262,9 +277,13 @@ export class SonidosEditor {
     envolver(app.acciones, "nuevaPagina", "pagina", pag);
     envolver(E, "duplicarPagina", "pagina-duplicar", pag);
     envolver(E, "irPagina", "pagina-cambiar", (pid) => pid !== E.paginaId && performance.now() - (this._pag || 0) > 300);
+    envolver(E, "moverPagina", "pagina-reordenar", pag);
+    envolver(app.prueba, "abrir", "probar", () => { this._tProbar = performance.now(); return true; });
     const tx = E.transaccion.bind(E);
     E.transaccion = (nombre, ...a) => {
-      const m = /^(Animación|Entrada en cascada|Secuencia|Pegar animación)/.test(nombre) ? "animar" : /^Efecto/.test(nombre) ? "efecto" : null;
+      const m = /^(Animación|Entrada en cascada|Secuencia|Pegar animación)/.test(nombre) ? "animar" : /^Efecto/.test(nombre) ? "efecto"
+        : { Bloquear: "bloquear", Desbloquear: "desbloquear", Ocultar: "ocultar", Mostrar: "mostrar", "Borrar página": "pagina-eliminar" }[nombre] || null;
+      if (m === "pagina-eliminar") this._pag = performance.now();
       if (m) this.sonar(m);
       return tx(nombre, ...a);
     };
@@ -285,5 +304,7 @@ export class SonidosEditor {
     L.zoom = (...a) => { const t = performance.now(); if (t - (this._tz || 0) > 350) this.sonar("zoom"); this._tz = t; return zoom(...a); };
     const pan = L._panDesde.bind(L);
     L._panDesde = (...a) => { this.sonar("desplazar"); return pan(...a); };
+    const txt = L.editarTexto?.bind(L);
+    if (txt) L.editarTexto = (...a) => { this.sonar("escribir"); return txt(...a); };
   }
 }

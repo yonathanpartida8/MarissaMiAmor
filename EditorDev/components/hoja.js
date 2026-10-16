@@ -218,6 +218,9 @@ export function hojita({ titulo, contenido, acciones = [], clase = "", puntos = 
     if (previa) document.body.classList.add("con-previa");
     let valor = null, hecho = false;
     const cerrar = (v) => { if (hecho) return; hecho = true; valor = v; h.cerrar(v == null ? "atras" : "elegido"); };
+    // Al EMPEZAR a cerrarse (botón, atrás, velo o dedo) vuelve ya la hoja de atrás: así la hoja
+    // de la página se acomoda una sola vez y no se agranda para encogerse enseguida.
+    const sinPrevia = () => { if (previa && ![...document.querySelectorAll(".ed-hojita[class*='ed-previa']")].some((n) => n !== panel && !n.classList.contains("cerrando"))) document.body.classList.remove("con-previa"); };
     const h = new Hoja(panel, {
       asa: a, agarres: [cab], puntos, cerrable: true,
       alMover: (y, alto) => { if (fondo) fondo.style.opacity = String(clamp(1 - y / alto, 0, 1)); },
@@ -233,6 +236,8 @@ export function hojita({ titulo, contenido, acciones = [], clase = "", puntos = 
       panel.classList.add("acoplada");
       Object.assign(panel.style, { left: rs.left + 8 + "px", width: rs.width - 16 + "px", marginLeft: "0", bottom: Math.max(8, innerHeight - rs.bottom + 8) + "px" });
     }
+    const cerrarHoja = h.cerrar.bind(h);
+    h.cerrar = (...x) => { sinPrevia(); return cerrarHoja(...x); };
     panel.cerrar = cerrar;
     h.cerrarDesde = cerrar;
     h.abrir(0);

@@ -6,16 +6,19 @@ sonidos que quieras (`.wav`, `.mp3`, `.ogg`): el editor elige uno al azar cada v
 
 ```
 interaccion/     pulsar (botones) · seleccionar · deseleccionar · confirmar (al exportar) · herramienta (el riel)
-movimiento/      arrastrar (al empezar a mover) · desplazar (mover la vista) · soltar
+                 activar · desactivar (interruptores) · menu (menú al mantener presionado)
+movimiento/      arrastrar (al empezar a mover) · desplazar (mover la vista) · soltar · iman (al pegarse a una guía)
 transformacion/  rotar · zoom (acercar/alejar la vista o la foto) · redimensionar
-organizacion/    agrupar · desagrupar · duplicar · eliminar · ordenar-capas
+organizacion/    agrupar · desagrupar · duplicar · eliminar · ordenar-capas · bloquear · desbloquear · ocultar · mostrar
 interfaz/        abrir · cerrar · minimizar (bajar un panel a su parada chica) · restaurar · guardar · error
-edicion/         dibujar (lápiz) · borrar (goma) · colorear · aplicar-efectos · deshacer · colocar · ajustar (deslizadores)
-paginas/         crear · duplicar · cambiar
+                 atras («Atrás»/«Cancelar» y el botón atrás del teléfono) · probar («Probar página»)
+edicion/         dibujar (lápiz) · borrar (goma) · colorear · aplicar-efectos · deshacer · colocar · ajustar (deslizadores) · escribir (al editar un texto)
+paginas/         crear · duplicar · cambiar · eliminar · reordenar
 multimedia/      reproducir · pausar (escuchar una canción de la biblioteca)
 animaciones/     aplicar · fotograma (línea de tiempo)
 ```
 
+- Cada carpeta trae al menos 3 variantes (suena una distinta cada vez).
 - **Cambiar un sonido:** reemplaza los archivos de su carpeta. **Añadir variedad:** pon más
   archivos en la misma carpeta. No hay que tocar código: aparecen solos (el catálogo se
   regenera con `node herramientas/contenido.mjs`).

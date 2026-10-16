@@ -450,6 +450,17 @@ Sólo arreglos y mejoras de lo que ya había (nada se quitó ni se rediseñó).
 
 No probado en aparatos reales: Android, iPhone/iPad Safari y Safari de Mac se comprobaron con Chromium emulando esas pantallas, no en los equipos.
 
+### Fase 12b: ir atrás sin parpadeos, más estabilidad y más sonidos
+
+| | |
+| --- | --- |
+| **Atrás en las vistas previas** | al pulsar «Atrás» (o el atrás del teléfono) en la vista previa de efectos, transiciones, fondos o «Al tocar», la hoja de la página se agrandaba y volvía a encogerse: la hoja de atrás reaparecía recién al terminar la animación y el lienzo medía a mitad de camino. Ahora vuelve al EMPEZAR a cerrarse y el lienzo mide cómo quedará: un solo movimiento |
+| **La hoja vuelve a su sitio** | al abrir y cerrar menús muy rápido la hoja de la página quedaba más chica (teléfono) o corrida (computadora): si un menú se cerraba a mitad de la animación se creía que la habías movido a mano y se olvidaba dónde estaba; en la computadora cada vista previa la subía aunque no la tapara y nunca la bajaba. Ahora recuerda su sitio aunque se cierre a mitad, sólo se aparta si de verdad algo la tapa, vuelve al cerrar y se reajusta si la barrita de la derecha reaparece |
+| **Volver a una sección** | sigue donde ibas (antes saltaba arriba) y sin repetir la entrada escalonada (ésa, sólo la primera vez) |
+| **Más fluido** | abrir una sección ya no obliga a recalcular el diseño de la pantalla en balde (≈12 % menos al abrir, con la CPU 4× más lenta) |
+| **Probado a lo bruto** | atrás doble y rápido, atrás del teléfono dos veces seguidas, cambiar de sección 20 veces seguidas, inspector abierto y cerrado al instante: no queda nada trabado (ni velos, ni hojas a medias, ni la vista previa pegada) y la hoja vuelve exacta |
+| **Más sonidos** | atrás en menús, activar y desactivar interruptores, el imán al pegarse a una guía, el menú al mantener presionado, «Probar página», bloquear/desbloquear, ocultar/mostrar (también el ojito y el candado de «Capas»), borrar y reordenar páginas y empezar a escribir un texto. Cada carpeta trae ahora al menos 3 variantes. Sin dobles: «Atrás» no suena además a «cerrar», ni «Probar» además a «abrir» |
+
 ## Cómo está hecho
 
 ```
