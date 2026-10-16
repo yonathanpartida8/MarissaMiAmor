@@ -201,6 +201,11 @@ P.detallito = '<rect x="3" y="6" width="18" height="13" rx="2.2"/><path d="M3.4 
 P.vincular = '<path d="M8.6 18.4s-5.1-3-5.1-6.8a2.9 2.9 0 0 1 5.1-1.9 2.9 2.9 0 0 1 5.1 1.9c0 3.8-5.1 6.8-5.1 6.8z"/><path d="M15.4 14.8c2.6-1.8 5.1-4 5.1-6.6a2.9 2.9 0 0 0-5.1-1.9 2.9 2.9 0 0 0-3.6-.6"/>';
 P.regalo = '<rect x="3.5" y="9" width="17" height="4" rx="1"/><path d="M5 13v7h14v-7M12 9v11"/><path d="M12 9c-2.5 0-4.5-1-4.5-2.6S9.7 4 12 9zM12 9c2.5 0 4.5-1 4.5-2.6S14.3 4 12 9z"/>';
 P.coleccion = '<rect x="3.5" y="6.5" width="12" height="14" rx="1.8"/><path d="M7 4h11.5a2 2 0 0 1 2 2v12"/><path d="M9.5 15.6s-2.8-1.6-2.8-3.6a1.6 1.6 0 0 1 2.8-1 1.6 1.6 0 0 1 2.8 1c0 2-2.8 3.6-2.8 3.6z"/>';
+// Fase 20 · perfil
+P.camara = '<path d="M4 8.2h3.1l1.7-2.4h6.4l1.7 2.4H20a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.2a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.4" r="3.3"/>';
+P.calendario = '<rect x="3.5" y="5" width="17" height="15.5" rx="2.2"/><path d="M3.5 9.6h17M8 3v4M16 3v4"/><path d="M12 17.6s-2.4-1.4-2.4-3a1.3 1.3 0 0 1 2.4-.8 1.3 1.3 0 0 1 2.4.8c0 1.6-2.4 3-2.4 3z"/>';
+P.pastel = '<path d="M4.5 20.5h15V13a1 1 0 0 0-1-1h-13a1 1 0 0 0-1 1z"/><path d="M4.5 16.2c2.5 1.3 5 1.3 7.5 0s5-1.3 7.5 0"/><path d="M12 12V9"/><path d="M12 6.6c-.9-.9-.9-1.9 0-3.1.9 1.2.9 2.2 0 3.1z"/>';
+P.anillos = '<circle cx="9" cy="14" r="5"/><circle cx="15" cy="14" r="5"/><path d="M10.5 4.5 12 3l1.5 1.5L12 7z"/>';
 export const ICONOS = Object.fromEntries(Object.entries(P).map(([k, d]) => [k, T(d)]));
 
 export const ico = (n) => ICONOS[n] || "";

@@ -1,14 +1,23 @@
 /**
  * DETALLITOS — páginas que se mandan entre los dos, como notitas, y se van
- * coleccionando. Se abre desde Exportar → «Enviar Detallito» (o desde el menú
- * principal) con una transición que crece desde el botón, y es un menú
- * completo con «atrás» (la flecha, Escape o el «atrás» del teléfono).
+ * coleccionando. Se abre desde Exportar → «Enviar Detallito» o desde el menú
+ * principal, creciendo en un círculo desde el botón; es un menú completo con
+ * «atrás» (la flecha, Escape o el «atrás» del teléfono).
  *
- *   · Cada cuenta de M.YNTHN tiene un código único (AMOR-XXXX-XXXX).
- *   · «Vincular a tu Amorcito»: pegas su código y quedan vinculados los dos.
- *   · «Enviar Detallito»: la página que tienes abierta le llega a tu amorcito
- *     (con un mensajito); a ti te llega lo que te manda. Se ven a pantalla
- *     completa y se pueden abrir como borrador para guardarlas en tu librito.
+ *   · Arriba, tu foto y la de tu amorcito (con un puntito si está en línea).
+ *   · «Vincular a tu Amorcito»: una escenita con sus dos fotos y un hilo rojo.
+ *     Tu código sale en fichitas; el suyo se escribe solito con su formato
+ *     (AMOR-XXXX-XXXX) y se va llenando de corazones. Al vincularse, las fotos
+ *     se acercan, el hilo se hace corazón y suenan campanitas.
+ *   · «Mandar esta página»: la página tal cual le llega, junto al sobre.
+ *   · La colección: lo de tu amorcito y lo tuyo, como notitas pegadas.
+ *
+ * Cada pantalla llega con su transición (y su sonido): vincular gira como una
+ * tarjeta, un detallito sale de su sobre, la vista previa se acerca…
+ *
+ * Sin parpadeos: las pantallas se arman al instante con lo que ya se sabe y lo
+ * que llega del servidor sólo cambia su pedacito (o, si cambió lo grande, pasa
+ * a la pantalla que toca con su transición). Nunca una pantalla en blanco.
  */
 import { el, aviso, confirmar } from "./ui.js";
 import { ico } from "./iconos.js";
@@ -18,6 +27,8 @@ import { zipParaVer, abrirComoBorrador, copiar, abrir } from "./myn.js";
 import { datosDe } from "./prueba.js";
 import { fuentesUsadas } from "../core/modelo.js";
 import { RAIZ } from "../assets/biblioteca.js";
+import { cambiar, sinMovimiento as reducido } from "./transiciones.js";
+import * as PF from "./perfil.js";
 
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 const cuando = (iso) => {
@@ -29,7 +40,9 @@ const cuando = (iso) => {
   return t.toLocaleDateString("es-MX", { day: "numeric", month: "short" });
 };
 const ROTAR = [-2.2, 1.6, -1, 2.4, -1.8, 1.1, -2.6, 0.8];
-const reducido = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const HILO = '<svg viewBox="0 0 200 60" preserveAspectRatio="none"><path class="vn-cuerda" d="M2 14 C 60 62, 140 62, 198 14"/><path class="vn-luz" d="M2 14 C 60 62, 140 62, 198 14"/></svg>';
+/* Cómo se llega a cada pantalla. */
+const LLEGA = { vincular: "carta", ver: "sobre", previa: "zoom", inicio: "deslizar", cuenta: "carta", cargando: "zoom" };
 
 export class Detallitos {
   constructor(app) {
@@ -78,26 +91,30 @@ export class Detallitos {
 
   /** Abre el menú. `desde`: el elemento (o rectángulo) de donde crece la transición. */
   abrir(desde, vista = "inicio") {
-    if (this.abierto) { this.ir(vista); return; }
+    if (this.abierto) { this.ir(vista, null, { desde }); return; }
     this.abierto = true;
     const r = desde?.getBoundingClientRect ? desde.getBoundingClientRect() : desde || { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
     this.cx = r.left + r.width / 2; this.cy = r.top + r.height / 2;
     this.atrasB = el("button.dt-atras", { type: "button", html: ico("izquierda"), "aria-label": "Atrás", onClick: () => this.atras() });
-    this.titulo = el("div.dt-titulo", {}, [el("b", { text: "Detallitos" }), el("small", { text: "con tu amorcito" })]);
-    this.pill = el("div.dt-pill");
-    this.vista = el("main.dt-vista");
+    this.tituloB = el("b", { text: "Detallitos" });
+    this.tituloS = el("small", { text: "con tu amorcito" });
+    this.titulo = el("div.dt-titulo", {}, [this.tituloB, this.tituloS]);
+    this.cab = el("div.dt-cab-pareja");
+    this.escena = el("div.dt-escena");
+    this.vista = el("main.dt-vista", {}, [this.escena]);
     const burbujas = el("div.dt-burbujas", { "aria-hidden": "true" });
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 14; i++) {
       const b = el("i");
       b.style.left = (Math.random() * 100).toFixed(1) + "%";
-      b.style.setProperty("--t", (9 + Math.random() * 9).toFixed(1) + "s");
+      b.style.setProperty("--t", (10 + Math.random() * 9).toFixed(1) + "s");
       b.style.setProperty("--d", (-Math.random() * 18).toFixed(1) + "s");
       b.style.setProperty("--s", (0.5 + Math.random() * 0.9).toFixed(2));
       burbujas.append(b);
     }
     this.capa = el("div.dt-capa", { role: "dialog", "aria-modal": "true", "aria-label": "Detallitos" }, [
+      el("div.dt-cielo", { "aria-hidden": "true" }, [el("i"), el("i")]),
       burbujas,
-      el("div.dt-marco", {}, [el("header.dt-cab", {}, [this.atrasB, this.titulo, this.pill]), this.vista]),
+      el("div.dt-marco", {}, [el("header.dt-cab", {}, [this.atrasB, this.titulo, this.cab]), this.vista]),
     ]);
     this.capa.style.setProperty("--x", this.cx + "px");
     this.capa.style.setProperty("--y", this.cy + "px");
@@ -108,10 +125,16 @@ export class Detallitos {
     this._chispas(this.cx, this.cy);
     requestAnimationFrame(() => requestAnimationFrame(() => this.capa.classList.add("ver")));
     this.app.sonidos?.sonar("abrir-recursos");
-    this._cuenta = () => { if (this.abierto) { this.pila = []; this.ir("inicio"); } };
+    this._cuenta = () => { if (!this.abierto) return; this.amor = null; this.datos = null; this.pila = [{ vista: "inicio" }]; this._mostrar(this.pila[0], "zoom"); this._refrescar(); };
+    this._cambio = () => { if (this.abierto) this._alCambiar(); };
     addEventListener("ed-cuenta", this._cuenta);
-    this.pila = [];
-    this.ir(vista);
+    addEventListener("ed-amor", this._cambio);
+    addEventListener("ed-perfil", this._cambio);
+    // Lo que ya se sabe (de tu perfil guardado) para que nada salga en blanco.
+    if (!this.amor && SRV.conectado() && PF.datos().pareja) this.amor = { pareja: PF.datos().pareja, codigo: "" };
+    this.pila = [{ vista }];
+    this._mostrar(this.pila[0], null, { sinSonido: true });
+    this._refrescar();
   }
 
   cerrar() {
@@ -119,125 +142,234 @@ export class Detallitos {
     this.abierto = false;
     this._limpiar();
     removeEventListener("keydown", this._tecla, true);
-    removeEventListener("ed-cuenta", this._cuenta);
+    for (const [t, f] of [["ed-cuenta", this._cuenta], ["ed-amor", this._cambio], ["ed-perfil", this._cambio]]) removeEventListener(t, f);
     this.app.sonidos?.sonar("cerrar-recursos");
     const c = this.capa;
     c.classList.remove("ver");
     c.classList.add("fuera");
-    setTimeout(() => { c.remove(); if (!this.abierto) document.body.classList.remove("con-detallitos"); }, reducido() ? 10 : 520);
+    setTimeout(() => { c.remove(); if (!this.abierto) document.body.classList.remove("con-detallitos"); }, reducido() ? 10 : 560);
     dispatchEvent(new CustomEvent("ed-detallitos", { detail: "cerrado" }));
   }
 
-  /** Atrás: la vista anterior, o cerrar. */
+  /** Atrás: la pantalla anterior, o cerrar. */
   atras() {
-    if (this.pila.length > 1) { this.pila.pop(); this._pintar(this.pila[this.pila.length - 1], -1); return true; }
+    if (this.pila.length > 1) { this.pila.pop(); this._mostrar(this.pila[this.pila.length - 1], "atras"); return true; }
     this.cerrar();
     return true;
   }
 
-  ir(vista, datos) {
+  ir(vista, datos, op = {}) {
     this.pila.push({ vista, datos });
-    this._pintar({ vista, datos }, 1);
+    this._mostrar({ vista, datos }, op.tipo, op);
   }
 
-  async _pintar({ vista, datos }, dir) {
+  /** La pantalla que de verdad toca (sin cuenta: entrar; sin vínculo: vincular; sin saber: buscando). */
+  _real(vista) {
+    if (!SRV.conectado()) return "cuenta";
+    if (!this.amor) return "cargando";
+    if (vista === "vincular" || !this.amor.pareja) return "vincular";
+    return vista;
+  }
+  _forma() { return SRV.conectado() ? (this.amor ? (this.amor.pareja ? "pareja" : "sola") : "?") : "fuera"; }
+
+  _mostrar({ vista, datos }, tipo, { desde = null, sinSonido = false } = {}) {
     this._limpiar();
-    const v = el("section.dt-pantalla" + (dir < 0 ? ".vuelve" : ""));
-    this.vista.replaceChildren(v);
+    this._col = null;
+    const real = this._real(vista);
+    this.actual = real;
+    const v = { cuenta: () => this._vCuenta(), cargando: () => this._vCargando(), vincular: () => this._vVincular(), ver: () => this._vVer(datos), previa: () => this._vPrevia() }[real]?.() || this._vInicio();
+    if (!v) return;
     this.atrasB.setAttribute("aria-label", this.pila.length > 1 ? "Atrás" : "Cerrar Detallitos");
-    if (!SRV.conectado()) return this._vCuenta(v);
-    await this._refrescarAmor();
-    if (!this.abierto) return;
-    if (vista === "vincular" || !this.amor?.pareja) return this._vVincular(v);
-    if (vista === "ver") return this._vVer(v, datos);
-    if (vista === "previa") return this._vPrevia(v);
-    return this._vInicio(v);
+    this._cabeza();
+    this.vista.scrollTop = 0;
+    cambiar(this.escena, v, { tipo: tipo || LLEGA[real] || "deslizar", desde, sonidos: this.app.sonidos, sinSonido });
   }
 
-  async _refrescarAmor() {
-    try { this.amor = await SRV.amor(); } catch (e) { this.amor = this.amor || null; }
-    const p = this.amor?.pareja;
-    this.pill.replaceChildren(p
-      ? el("span.dt-pareja" + (p.en_linea ? ".en-linea" : ""), {}, [el("i"), el("span", { text: `${p.usuario}${p.en_linea ? " · en línea" : ""}` })])
-      : el("span.dt-pareja.sola", { html: `${ico("vincular")}<span>Sin vincular</span>` }));
+  /** Lo de arriba: tus fotos (con su puntito en línea) y el título. */
+  _cabeza() {
+    const pa = this.amor?.pareja, con = SRV.conectado();
+    const sub = { cuenta: SRV.NOMBRE, cargando: "un momentito…", vincular: pa ? "su vínculo" : "vincular a tu amorcito", previa: "así le va a llegar" }[this.actual] || (pa ? `con ${PF.nombreDe(pa)}${pa.en_linea ? " · en línea" : ""}` : "con tu amorcito");
+    if (this.actual === "ver") this.tituloS.textContent = this.tituloS.textContent || "";
+    else this.tituloS.textContent = sub;
+    const k = con ? (pa ? "p" + !!pa.en_linea + PF.nombreDe(pa) : this.amor ? "s" : "?") : "f";
+    if (this.cab._k === k) return;
+    this.cab._k = k;
+    this.cab.title = pa ? `${PF.miNombre()} y ${PF.nombreDe(pa)}${pa.en_linea ? " · en línea" : ""}` : "";
+    this.cab.replaceChildren(...(!con || !this.amor ? [] : [
+      PF.avatar("yo", "dt-mini"),
+      el("i.dt-mini-corazon" + (pa ? ".late" : ""), { html: ico("corazon") }),
+      pa ? PF.avatar("pareja", "dt-mini") : el("span.av.vacio.dt-mini", {}, [el("b", { text: "?" })]),
+      pa ? el("span.dt-mini-punto" + (pa.en_linea ? ".on" : "")) : null,
+    ].filter(Boolean)));
+  }
+
+  /** Lo que se sabe del vínculo, del servidor. Si cambió lo grande, se pasa a la pantalla que toca. */
+  async _refrescar() {
+    if (!SRV.conectado()) return;
+    try {
+      const a = await SRV.amor();
+      if (!this.abierto) return;
+      const antes = this._forma(), codigoAntes = this.amor?.codigo;
+      this.amor = a;
+      PF.poner({ pareja: a.pareja });
+      if (this._forma() !== antes || this._real(this.pila[this.pila.length - 1].vista) !== this.actual) {
+        if (antes === "pareja" && !a.pareja) this.pila = [{ vista: "vincular" }];
+        this._mostrar(this.pila[this.pila.length - 1], "zoom");
+        return;
+      }
+      if (this.actual === "vincular" && a.codigo && a.codigo !== codigoAntes && this._fichas) this._fichas.replaceWith(this._fichas = this._hacerFichas(a.codigo));
+      this._cabeza();
+    } catch (e) {
+      if (this.actual === "cargando" && this._esperaTxt) this._esperaTxt.textContent = e.message;
+    }
+  }
+
+  /** Un latido, una foto o un nombre nuevo: se cambia sólo lo que cambió. */
+  _alCambiar() {
+    const pa = PF.datos().pareja;
+    if (this.amor?.pareja && pa && pa.usuario === this.amor.pareja.usuario) this.amor.pareja = { ...this.amor.pareja, ...pa };
+    if (!!pa !== !!this.amor?.pareja) { this._refrescar(); return; }
+    this._cabeza();
+    if (this.actual === "inicio") this._recargarCol?.();
   }
 
   /* — Sin cuenta: entrar — */
-  _vCuenta(v) {
-    this.titulo.lastChild.textContent = SRV.NOMBRE;
-    v.append(
-      el("div.dt-tarjeta-grande.dt-entra", {}, [
+  _vCuenta() {
+    return el("section.dt-pantalla", {}, [
+      el("div.dt-tarjeta-grande", { style: { "--i": 0 } }, [
         el("div.dt-sobre", { html: ico("detallito") }),
         el("h2", { text: "Entra para mandarle detallitos" }),
-        el("p", { text: "Con tu cuenta de M.YNTHN te vinculas con tu amorcito y se mandan páginas que se van coleccionando." }),
+        el("p", { text: `Con tu cuenta de ${SRV.NOMBRE} te vinculas con tu amorcito y se mandan páginas que se van coleccionando.` }),
       ]),
-      el("div.dt-tarjeta.dt-entra", { style: { "--i": 1 } }, [formularioCuenta(this.app, { compacto: true })]),
-    );
+      el("div.dt-tarjeta", { style: { "--i": 1 } }, [formularioCuenta(this.app, { compacto: true })]),
+    ]);
+  }
+
+  /* — Mientras se sabe si ya tienes amorcito (sólo la primera vez) — */
+  _vCargando() {
+    this._esperaTxt = el("p", { text: "Buscando a tu amorcito…" });
+    return el("section.dt-pantalla.dt-espera", {}, [el("i.dt-espera-corazon", { style: { "--i": 0 }, html: ico("corazon") }), this._esperaTxt]);
+  }
+
+  /* — Tu código, en fichitas que se voltean — */
+  _hacerFichas(codigo) {
+    return el("div.vn-fichas", { role: "text", "aria-label": codigo }, [...codigo].map((ch, i) => el("span" + (ch === "-" ? ".guion" : ""), { text: ch, style: { "--i": i } })));
+  }
+
+  /** La escenita: tú, el hilo rojo con su corazón y tu amorcito (o un «?»). */
+  _escena(pa) {
+    const lado = (quien, nombre) => el("div.vn-lado." + quien, {}, [quien === "yo" ? PF.avatar("yo", "vn-av") : pa ? PF.avatar("pareja", "vn-av") : el("span.av.vacio.vn-av", {}, [el("b", { text: "?" })]), el("small", { text: nombre })]);
+    const ella = lado("ella", pa ? PF.nombreDe(pa) : "Tu amorcito");
+    const corazon = el("i.vn-corazon", { html: ico("corazon") });
+    const e = el("div.vn-escena" + (pa ? ".unidos" : ""), { "aria-hidden": "true" }, [lado("yo", "Tú"), el("div.vn-hilo", { html: HILO }), corazon, ella]);
+    e.corazon = corazon; e.ella = ella;
+    return e;
   }
 
   /* — Vincular a tu Amorcito — */
-  _vVincular(v) {
-    const a = this.amor || {};
-    this.titulo.lastChild.textContent = "Vincular a tu Amorcito";
-    const codigoEl = el("div.dt-codigo", { text: a.codigo || "…" });
-    const pegar = el("input.dt-input", { type: "text", placeholder: "AMOR-XXXX-XXXX", autocapitalize: "characters", spellcheck: "false", autocomplete: "off", "aria-label": "Código de tu amorcito" });
-    const estado = el("small.dt-estado");
-    const vincular = el("button.ed-btn.primario.dt-btn", { type: "button", html: I("vincular", "Vincular"), onClick: async () => {
-      if (pegar.value.trim().length < 8) { estado.textContent = "Pega el código completo de tu amorcito."; return; }
-      vincular.disabled = true; estado.textContent = "Vinculando…";
-      try {
-        const r = await SRV.vincular(pegar.value.trim());
-        this.app.sonidos?.sonar("publicar");
-        this._corazones();
-        aviso(`¡Ya están vinculados, ${r.pareja.usuario} y tú!`, 4000);
-        this.pila = [];
-        setTimeout(() => this.ir("inicio"), reducido() ? 0 : 900);
-      } catch (e) { estado.textContent = e.message; this.app.sonidos?.sonar("error"); vincular.disabled = false; }
-    } });
-    pegar.addEventListener("keydown", (e) => { if (e.key === "Enter") vincular.click(); });
-    const pareja = a.pareja;
-    v.append(el("div.dt-tarjeta-grande", { style: { "--i": 0 } }, [
-      el("div.dt-dos", { "aria-hidden": "true" }, [el("i"), el("i")]),
-      el("h2", { text: pareja ? `Vinculados: ${pareja.usuario} y tú` : "Vincúlate con tu amorcito" }),
-      el("p", { text: pareja ? `Desde ${new Date(pareja.desde).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}. Todo lo que se manden aparece en su colección.` : "Pásale tu código, o pega aquí el suyo. Con uno de los dos basta: quedan conectados." }),
-    ]));
-    v.append(el("div.dt-tarjeta", { style: { "--i": 1 } }, [
-      el("small.dt-etq", { text: "Tu código" }),
-      codigoEl,
-      el("div.dt-fila", {}, [
-        el("button.ed-btn.chico", { type: "button", html: I("copiar", "Copiar"), onClick: () => copiar(a.codigo) }),
-        navigator.share ? el("button.ed-btn.chico", { type: "button", html: I("compartir", "Mandárselo"), onClick: () => navigator.share({ title: "Mi código de amor", text: `Vincúlate conmigo en M.YNTHN: ${a.codigo}` }).catch(() => {}) }) : null,
-        !pareja ? el("button.ed-btn.chico", { type: "button", html: I("refrescar", "Otro código"), onClick: async () => { try { const r = await SRV.codigoNuevo(); this.amor.codigo = r.codigo; codigoEl.textContent = r.codigo; } catch (e) { aviso(e.message, 3500, "error"); } } }) : null,
-      ].filter(Boolean)),
-    ]));
-    if (!pareja) {
-      v.append(el("div.dt-tarjeta", { style: { "--i": 2 } }, [
-        el("small.dt-etq", { text: "El código de tu amorcito" }),
-        el("div.dt-fila", {}, [pegar, navigator.clipboard?.readText ? el("button.ed-btn.chico", { type: "button", html: I("pegar", "Pegar"), onClick: async () => { try { pegar.value = (await navigator.clipboard.readText()).trim(); } catch (e) { /* sin permiso */ } } }) : null].filter(Boolean)),
-        vincular, estado,
-      ]));
-    } else {
-      v.append(el("div.dt-tarjeta", { style: { "--i": 2 } }, [
-        el("button.ed-btn.dt-btn", { type: "button", html: I("detallito", "Ir a nuestros detallitos"), onClick: () => { this.pila = []; this.ir("inicio"); } }),
-        el("button.ed-btn.peligro-suave.dt-btn", { type: "button", html: I("cerrar", "Desvincular"), onClick: async () => {
-          if (!(await confirmar(`¿Desvincularte de ${pareja.usuario}? Sus detallitos se quedan en sus colecciones, pero ya no podrán mandarse nuevos.`, "Desvincular"))) return;
-          try { await SRV.desvincular(); aviso("Se desvincularon"); this.pila = []; this.ir("vincular"); } catch (e) { aviso(e.message, 3500, "error"); }
-        } }),
-      ]));
+  _vVincular() {
+    const a = this.amor || {}, pa = a.pareja, son = this.app.sonidos;
+    const escena = this._escena(pa);
+    if (pa) {
+      const j = PF.juntos(pa.novios || PF.datos().yo?.novios);
+      const desde = pa.desde ? new Date(pa.desde).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }) : "";
+      return el("section.dt-pantalla", {}, [
+        el("div.dt-tarjeta-grande.vn", { style: { "--i": 0 } }, [
+          escena,
+          el("h2", { text: `${PF.miNombre()} y ${PF.nombreDe(pa)}` }),
+          el("p", { text: (desde ? `Unidos en ${SRV.NOMBRE} desde el ${desde}.` : "Unidos.") + (j ? ` Novios desde hace ${PF.textoJuntos(j)}.` : " Pon desde cuándo son novios en tu perfil.") }),
+        ]),
+        el("div.dt-tarjeta.vn-acciones", { style: { "--i": 1 } }, [
+          el("button.ed-btn.primario.dt-btn", { type: "button", html: I("detallito", "Ir a nuestros detallitos"), onClick: () => { this.pila = [{ vista: "inicio" }]; this._mostrar(this.pila[0], "deslizar"); } }),
+          el("button.ed-btn.peligro-suave.dt-btn", { type: "button", html: I("cerrar", "Desvincular"), onClick: async () => {
+            if (!(await confirmar(`¿Desvincularte de ${PF.nombreDe(pa)}? Sus detallitos se quedan en sus colecciones, pero ya no podrán mandarse nuevos.`, "Desvincular"))) return;
+            try {
+              await SRV.desvincular();
+              son?.sonar("separar");
+              escena.classList.add("separando");
+              this.amor = { ...this.amor, pareja: null };
+              await PF.poner({ pareja: null });
+              setTimeout(() => { this.pila = [{ vista: "vincular" }]; this._mostrar(this.pila[0], "zoom"); this._refrescar(); }, reducido() ? 100 : 950);
+            } catch (e) { aviso(e.message, 3500, "error"); }
+          } }),
+        ]),
+      ]);
     }
-    if (!pareja) setTimeout(() => pegar.focus({ preventScroll: true }), 400);
+    // Sin vincular: tu código y el suyo.
+    this._fichas = this._hacerFichas(a.codigo || "AMOR-····-····");
+    const pegar = el("input.dt-input.vn-input", { type: "text", placeholder: "AMOR-XXXX-XXXX", autocapitalize: "characters", spellcheck: "false", autocomplete: "off", maxlength: 16, enterkeyhint: "done", "aria-label": "Código de tu amorcito" });
+    const puntos = el("div.vn-puntos", { "aria-hidden": "true" }, Array.from({ length: 8 }, () => el("i", { html: ico("corazon") })));
+    const estado = el("small.dt-estado", { role: "status" });
+    const vincular = el("button.ed-btn.primario.dt-btn.vn-ir", { type: "button", html: I("vincular", "Vincularnos") });
+    let n = 0;
+    const formatear = () => {
+      let c = pegar.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (c.startsWith("AMOR")) c = c.slice(4);
+      c = c.slice(0, 8);
+      const v = c ? "AMOR-" + c.slice(0, 4) + (c.length > 4 ? "-" + c.slice(4) : "") : "";
+      if (pegar.value !== v) pegar.value = v;
+      [...puntos.children].forEach((p, i) => p.classList.toggle("on", i < c.length));
+      if (c.length > n) son?.sonar("tecla", { tono: 1 + c.length * 0.07 });
+      n = c.length;
+      vincular.classList.toggle("listo", c.length === 8);
+      return c;
+    };
+    pegar.addEventListener("input", formatear);
+    pegar.addEventListener("keydown", (e) => { if (e.key === "Enter") vincular.click(); });
+    vincular.addEventListener("click", async () => {
+      const c = formatear();
+      if (c.length < 8) { estado.textContent = "Escribe (o pega) el código completo de tu amorcito."; pegar.classList.remove("sacude"); void pegar.offsetWidth; pegar.classList.add("sacude"); son?.sonar("error"); return; }
+      vincular.disabled = true; vincular.classList.add("latiendo"); estado.textContent = "Atando el hilo…";
+      try {
+        const r = await SRV.vincular(c);
+        await PF.poner({ pareja: r.pareja });
+        this.amor = { ...this.amor, pareja: r.pareja };
+        son?.sonar("campanas");
+        // El «?» se vuelve su foto, se acercan los dos y el hilo se hace corazón.
+        escena.ella.replaceChildren(PF.avatar("pareja", "vn-av vn-llega"), el("small", { text: PF.nombreDe(r.pareja) }));
+        escena.classList.add("uniendo");
+        setTimeout(() => { const q = escena.corazon.getBoundingClientRect(); this._chispas(q.left + q.width / 2, q.top + q.height / 2, 22); son?.sonar("latido"); }, reducido() ? 0 : 620);
+        estado.textContent = `¡Ya están unidos, ${PF.nombreDe(r.pareja)} y tú!`;
+        this._cabeza();
+        setTimeout(() => { this.pila = [{ vista: "inicio" }]; this._mostrar(this.pila[0], "circulo", { desde: escena.corazon }); }, reducido() ? 300 : 1900);
+      } catch (e) { estado.textContent = e.message; son?.sonar("error"); vincular.disabled = false; vincular.classList.remove("latiendo"); }
+    });
+    if (!sinTeclado()) setTimeout(() => { if (pegar.isConnected) pegar.focus({ preventScroll: true }); }, 800);
+    return el("section.dt-pantalla", {}, [
+      el("div.dt-tarjeta-grande.vn", { style: { "--i": 0 } }, [
+        escena,
+        el("h2", { text: "Vincúlate con tu amorcito" }),
+        el("p", { text: "Pásale tu código, o escribe aquí el suyo. Con que uno de los dos lo ponga basta: el hilo rojo los une a los dos." }),
+      ]),
+      el("div.dt-tarjeta", { style: { "--i": 1 } }, [
+        el("small.dt-etq", { text: "Tu código" }),
+        this._fichas,
+        el("div.dt-fila.vn-fila", {}, [
+          el("button.ed-btn.chico", { type: "button", html: I("copiar", "Copiar"), onClick: () => { copiar(this.amor?.codigo || ""); son?.sonar("brillo"); } }),
+          navigator.share ? el("button.ed-btn.chico", { type: "button", html: I("compartir", "Mandárselo"), onClick: () => navigator.share({ title: "Mi código de amor", text: `Vincúlate conmigo en ${SRV.NOMBRE}: ${this.amor?.codigo || ""}` }).catch(() => {}) }) : null,
+          el("button.ed-btn.chico", { type: "button", html: I("refrescar", "Otro código"), onClick: async () => {
+            try { const r = await SRV.codigoNuevo(); this.amor.codigo = r.codigo; this._fichas.replaceWith(this._fichas = this._hacerFichas(r.codigo)); son?.sonar("giro"); } catch (e) { aviso(e.message, 3500, "error"); }
+          } }),
+        ]),
+      ]),
+      el("div.dt-tarjeta", { style: { "--i": 2 } }, [
+        el("small.dt-etq", { text: "El código de tu amorcito" }),
+        el("div.dt-fila", {}, [pegar, navigator.clipboard?.readText ? el("button.ed-btn.chico", { type: "button", html: I("pegar", "Pegar"), onClick: async () => { try { pegar.value = (await navigator.clipboard.readText()).trim(); formatear(); } catch (e) { /* sin permiso */ } } }) : null]),
+        puntos, vincular, estado,
+      ]),
+    ]);
   }
 
   /* — Inicio: mandar esta página y la colección — */
-  async _vInicio(v) {
-    const app = this.app, P = app.estado.proyecto, pareja = this.amor.pareja;
-    this.titulo.lastChild.textContent = `con ${pareja.usuario}`;
-    const pg = P?.paginas?.[app.estado.paginaId];
+  _vInicio() {
+    // (El editor puede seguir cargándose detrás del menú: sin librito abierto, se dice cómo.)
+    const app = this.app, P = app.estado?.proyecto, pareja = this.amor.pareja, nombre = PF.nombreDe(pareja);
+    const pg = P?.paginas?.[app.estado?.paginaId];
     const color = pg?.fondo?.color || P?.ajustes?.tema?.fondo || "#ffd1e6";
-    if (!this.borrador || this.borrador.pagina !== app.estado.paginaId) this.borrador = { pagina: app.estado.paginaId, titulo: pg?.nombre || "Un detallito", mensaje: "" };
+    if (!this.borrador || this.borrador.pagina !== app.estado?.paginaId) this.borrador = { pagina: app.estado?.paginaId, titulo: pg?.nombre || "Un detallito", mensaje: "" };
     const B = this.borrador;
     const titulo = el("input.dt-input", { type: "text", value: B.titulo, maxlength: 60, "aria-label": "Título del detallito", onInput: () => { B.titulo = titulo.value; } });
-    const mensaje = el("textarea.dt-input.dt-mensaje", { maxlength: 280, rows: 2, placeholder: "Escríbele algo bonito… (opcional)", "aria-label": "Mensajito", onInput: () => { B.mensaje = mensaje.value; nota.textContent = mensaje.value.trim() || "…"; } });
+    const mensaje = el("textarea.dt-input.dt-mensaje", { maxlength: 280, rows: 2, placeholder: `Escríbele algo bonito a ${nombre}… (opcional)`, "aria-label": "Mensajito", onInput: () => { B.mensaje = mensaje.value; nota.textContent = mensaje.value.trim() || "…"; } });
     mensaje.value = B.mensaje;
     const avance = el("div.dt-avance", { hidden: "" }, [el("i")]);
     const estado = el("small.dt-estado");
@@ -245,15 +377,16 @@ export class Detallitos {
     sobre.style.setProperty("--c", color);
     // La vista previa: un teléfono chiquito con la página de verdad (se toca para verla en grande).
     const nota = el("span.dt-previa-nota", { text: B.mensaje.trim() || "…" });
-    const previa = pg ? el("button.dt-previa", { type: "button", title: "Verla en grande", "aria-label": "Ver en grande cómo le va a llegar", onClick: () => this.ir("previa"), style: { ...this._tam(118, 178), "--c": color } }, [
+    const previa = pg ? el("button.dt-previa", { type: "button", title: "Verla en grande", "aria-label": "Ver en grande cómo le va a llegar", onClick: (e) => this.ir("previa", null, { desde: e.currentTarget }), style: { ...this._tam(118, 178), "--c": color } }, [
       el("span.dt-previa-pantalla", {}, [this._marcoPrevia(), el("i.dt-previa-brillo")]),
       el("span.dt-previa-lupa", { html: I("ver", "Verla") }),
     ]) : null;
-    const enviar = el("button.ed-btn.primario.dt-btn.dt-enviar", { type: "button", html: I("detallito", "Enviar Detallito"), onClick: async () => {
+    const enviar = el("button.ed-btn.primario.dt-btn.dt-enviar", { type: "button", html: I("detallito", `Mandárselo a ${nombre}`), onClick: async () => {
       enviar.disabled = true; avance.hidden = false; estado.textContent = "Envolviendo tu página…";
       const poner = (p) => { avance.firstChild.style.width = Math.round(p * 100) + "%"; };
       // 1 · La página se mete al sobre y el sobre se cierra (mientras sube, late).
       previa?.classList.add("adentro");
+      app.sonidos?.sonar("sobre");
       setTimeout(() => sobre.classList.replace("abierto", "cerrado"), reducido() ? 0 : 560);
       setTimeout(() => sobre.classList.add("esperando"), reducido() ? 0 : 1000);
       try {
@@ -266,14 +399,14 @@ export class Detallitos {
         const r = sobre.getBoundingClientRect();
         this._chispas(r.left + r.width / 2, r.top + r.height / 2);
         app.sonidos?.sonar("publicar");
-        estado.textContent = `¡Le llegó a ${pareja.usuario}!`;
+        estado.textContent = `¡Le llegó a ${nombre}!`;
         mensaje.value = ""; B.mensaje = ""; nota.textContent = "…";
         this.pestana = "enviados";
         setTimeout(() => {
           sobre.classList.remove("vuela", "cerrado"); sobre.classList.add("abierto", "regresa");
           previa?.classList.remove("adentro"); previa?.classList.add("regresa");
           setTimeout(() => { sobre.classList.remove("regresa"); previa?.classList.remove("regresa"); }, 700);
-          this._coleccion(col);
+          this._recargarCol?.(true);
         }, reducido() ? 0 : 1300);
       } catch (e) {
         // No se pudo: el sobre se abre y la página vuelve a salir, para intentarlo otra vez.
@@ -282,18 +415,19 @@ export class Detallitos {
         estado.textContent = e.message; app.sonidos?.sonar("error");
       } finally { enviar.disabled = false; avance.hidden = true; poner(0); }
     } });
-    const col = el("div.dt-coleccion");
-    v.append(
+    const col = el("div.dt-coleccion", { style: { "--i": 2 } });
+    const v = el("section.dt-pantalla", {}, [
       el("div.dt-tarjeta-grande.dt-mandar", { style: { "--i": 0 } }, [
+        el("i.dt-washi", { "aria-hidden": "true" }),
         pg ? el("div.dt-mesa", {}, [previa, sobre, el("i.dt-mesa-nota", {}, [nota])]) : sobre,
         el("div.dt-mandar-texto", {}, [
           el("h2", { text: "Mandar esta página" }),
-          el("p", { text: pg ? `«${pg.nombre || "Página"}» le llega a ${pareja.usuario} igualita, con sus animaciones, y se guarda en su colección.` : "Abre la página que quieras mandarle." }),
+          el("p", { text: pg ? `«${pg.nombre || "Página"}» le llega a ${nombre} igualita, con sus animaciones, y se guarda en su colección.` : "Abre la página que quieras mandarle." }),
           pg ? el("small.dt-mandar-tip", { text: "Toca la vista previa para verla en grande." }) : null,
         ]),
       ]),
       pg
-        ? el("div.dt-tarjeta", { style: { "--i": 1 } }, [
+        ? el("div.dt-tarjeta.dt-carta-papel", { style: { "--i": 1 } }, [
           el("label.dt-campo", {}, [el("span", { text: "Título" }), titulo]),
           el("label.dt-campo", {}, [el("span", { text: "Mensajito" }), mensaje]),
           enviar, avance, estado,
@@ -303,18 +437,76 @@ export class Detallitos {
           el("button.ed-btn.primario.dt-btn", { type: "button", html: I("editar", "Ir al editor"), onClick: () => { this.cerrar(); app.menuPrincipal?.cerrar(); } }),
         ]),
       col,
-      el("button.dt-enlace", { type: "button", html: I("vincular", "Vincular a tu Amorcito"), onClick: () => this.ir("vincular") }),
-    );
+      el("button.dt-enlace", { type: "button", style: { "--i": 3 }, html: I("vincular", "Nuestro vínculo"), onClick: (e) => this.ir("vincular", null, { desde: e.currentTarget }) }),
+    ]);
     this._coleccion(col);
+    return v;
+  }
+
+  /* — La colección: pestañas con su lucecita que se desliza y las notitas — */
+  _coleccion(col) {
+    const nombre = PF.nombreDe(this.amor?.pareja) || "mi amorcito";
+    const luz = el("i.dt-tab-luz");
+    const bR = el("button", { type: "button", role: "tab" }), bE = el("button", { type: "button", role: "tab" });
+    const tabs = el("div.dt-tabs", { role: "tablist" }, [luz, bR, bE]);
+    const caja = el("div.dt-rejilla-caja");
+    col.replaceChildren(tabs, caja);
+    const pintar = (tipo = null) => {
+      const d = this.datos, nuevos = d ? d.recibidos.filter((x) => !x.visto).length : 0;
+      tabs.dataset.on = this.pestana;
+      bR.classList.toggle("on", this.pestana === "recibidos"); bE.classList.toggle("on", this.pestana === "enviados");
+      bR.setAttribute("aria-selected", String(this.pestana === "recibidos")); bE.setAttribute("aria-selected", String(this.pestana === "enviados"));
+      bR.replaceChildren(el("span", { text: `De ${nombre}` }), ...(nuevos ? [el("i.dt-globo", { text: String(nuevos) })] : []));
+      bE.replaceChildren(el("span", { text: "Mis enviados" }));
+      const rej = d ? this._rejilla(d) : el("div.dt-cargando", {}, [el("i"), el("span", { text: "Buscando sus detallitos…" })]);
+      if (tipo && caja._actual) cambiar(caja, rej, { tipo, sonidos: this.app.sonidos, sinSonido: tipo === "zoom" });
+      else { caja.replaceChildren(rej); caja._actual = rej; }
+    };
+    bR.addEventListener("click", () => { if (this.pestana === "recibidos") return; this.pestana = "recibidos"; pintar("atras"); });
+    bE.addEventListener("click", () => { if (this.pestana === "enviados") return; this.pestana = "enviados"; pintar("deslizar"); });
+    pintar();
+    const firma = (d) => JSON.stringify([d.recibidos.map((x) => x.id + x.visto), d.enviados.map((x) => x.id + x.visto)]);
+    this._recargarCol = async (cambioPestana = false) => {
+      try {
+        const d = await SRV.detallitos();
+        if (!col.isConnected) return;
+        if (this.datos && firma(d) === firma(this.datos) && !cambioPestana) return;
+        const habia = !!this.datos;
+        this.datos = d;
+        pintar(habia ? "zoom" : null);
+      } catch (e) { if (!this.datos && col.isConnected) { caja.replaceChildren(el("p.dt-vacio", { text: e.message })); caja._actual = caja.firstChild; } }
+    };
+    this._recargarCol();
+  }
+
+  _rejilla(d) {
+    const recibidos = this.pestana === "recibidos", lista = recibidos ? d.recibidos : d.enviados;
+    const rejilla = el("div.dt-rejilla");
+    if (!lista.length) rejilla.append(el("p.dt-vacio", { text: recibidos ? `Todavía no te llega ninguno. Cuando ${PF.nombreDe(this.amor?.pareja) || "tu amorcito"} te mande uno, aparece aquí.` : "Todavía no mandas ninguno. ¡Manda el primero!" }));
+    lista.forEach((x, i) => {
+      const nuevo = !x.visto && recibidos;
+      const t = el("button.dt-nota" + (nuevo ? ".nueva" : ""), { type: "button", onClick: (e) => this.ir("ver", x, { desde: e.currentTarget }) }, [
+        el("i.dt-cinta"),
+        el("b", { text: x.titulo }),
+        x.mensaje ? el("p", { text: x.mensaje }) : null,
+        el("small", { text: `${recibidos ? "de " + (x.de_nombre || x.de) : "para " + (x.para_nombre || x.para)} · ${cuando(x.creado)}${!recibidos && x.visto ? " · ya lo vio" : ""}` }),
+        PF.avatar(recibidos ? "pareja" : "yo", "dt-nota-av"),
+        nuevo ? el("em", { text: "Nuevo" }) : null,
+      ]);
+      t.style.setProperty("--c", x.color || "#ffd1e6");
+      t.style.setProperty("--r", ROTAR[i % ROTAR.length] + "deg");
+      t.style.setProperty("--i", Math.min(i, 12));
+      rejilla.append(t);
+    });
+    return rejilla;
   }
 
   /* — La vista previa en grande (y se puede tocar, como la verá) — */
-  _vPrevia(v) {
-    const app = this.app, P = app.estado.proyecto, pg = app.estado.pagina;
-    if (!pg) return this.atras();
-    this.titulo.lastChild.textContent = "Así le va a llegar";
+  _vPrevia() {
+    const app = this.app, P = app.estado?.proyecto, pg = app.estado?.pagina;
+    if (!pg) { setTimeout(() => this.atras(), 0); return null; }
     const color = pg.fondo?.color || P?.ajustes?.tema?.fondo || "#ffd1e6";
-    v.append(
+    return el("section.dt-pantalla", {}, [
       el("div.dt-ver", { style: { "--c": color } }, [
         el("div.dt-ver-hoja.dt-previa-grande", { style: this._tam(Math.min(innerWidth - 40, 440), innerHeight * 0.6) }, [this._marcoPrevia(true)]),
         this.borrador?.mensaje?.trim() ? el("p.dt-ver-msg", { text: `«${this.borrador.mensaje.trim()}»` }) : null,
@@ -323,46 +515,23 @@ export class Detallitos {
           el("button.ed-btn.primario", { type: "button", html: I("detallito", "Listo, quiero mandarla"), onClick: () => this.atras() }),
           el("button.ed-btn", { type: "button", html: I("editar", "Seguir editándola"), onClick: () => { this.cerrar(); app.menuPrincipal?.cerrar(); } }),
         ]),
-      ].filter(Boolean)),
-    );
+      ]),
+    ]);
   }
 
-  async _coleccion(col) {
-    col.replaceChildren(el("div.dt-cargando", {}, [el("i"), el("span", { text: "Buscando sus detallitos…" })]));
-    try { this.datos = await SRV.detallitos(); } catch (e) { col.replaceChildren(el("p.dt-vacio", { text: e.message })); return; }
-    const d = this.datos, nuevos = d.recibidos.filter((x) => !x.visto).length;
-    const tab = (k, t, n) => el("button" + (this.pestana === k ? ".on" : ""), { type: "button", role: "tab", onClick: () => { this.pestana = k; this._coleccion(col); } }, [el("span", { text: t }), n ? el("i.dt-globo", { text: String(n) }) : null].filter(Boolean));
-    const lista = this.pestana === "recibidos" ? d.recibidos : d.enviados;
-    const rejilla = el("div.dt-rejilla");
-    if (!lista.length) rejilla.append(el("p.dt-vacio", { text: this.pestana === "recibidos" ? "Todavía no te llega ninguno. Cuando tu amorcito te mande uno, aparece aquí." : "Todavía no mandas ninguno. ¡Manda el primero!" }));
-    lista.forEach((x, i) => {
-      const t = el("button.dt-nota" + (!x.visto && this.pestana === "recibidos" ? ".nueva" : ""), { type: "button", onClick: () => this.ir("ver", x) }, [
-        el("i.dt-cinta"),
-        el("b", { text: x.titulo }),
-        x.mensaje ? el("p", { text: x.mensaje }) : null,
-        el("small", { text: `${this.pestana === "recibidos" ? "de " + x.de : "para " + x.para} · ${cuando(x.creado)}${this.pestana === "enviados" && x.visto ? " · ya lo vio" : ""}` }),
-        !x.visto && this.pestana === "recibidos" ? el("em", { text: "Nuevo" }) : null,
-      ].filter(Boolean));
-      t.style.setProperty("--c", x.color || "#ffd1e6");
-      t.style.setProperty("--r", ROTAR[i % ROTAR.length] + "deg");
-      t.style.setProperty("--i", Math.min(i, 12));
-      rejilla.append(t);
-    });
-    col.replaceChildren(el("div.dt-tabs", { role: "tablist" }, [tab("recibidos", "De mi amorcito", nuevos), tab("enviados", "Mis enviados", 0)]), rejilla);
-  }
-
-  /* — Ver un detallito — */
-  _vVer(v, x) {
-    this.titulo.lastChild.textContent = x.titulo;
+  /* — Ver un detallito: sale de su sobre — */
+  _vVer(x) {
+    if (!x) { setTimeout(() => this.atras(), 0); return null; }
+    this.tituloS.textContent = x.titulo;
     const recibido = x.de && x.de !== SRV.usuario()?.usuario;
     const url = SRV.enlace(x.ver);
     const marco = el("iframe.dt-marco-ver", { src: url, title: x.titulo, sandbox: "allow-scripts allow-popups allow-forms allow-modals allow-pointer-lock", allow: "autoplay; fullscreen" });
     if (recibido && !x.visto) SRV.visto(x.id).then(() => { x.visto = new Date().toISOString(); dispatchEvent(new CustomEvent("ed-detallito-visto")); }).catch(() => {});
-    v.append(
+    return el("section.dt-pantalla", {}, [
       el("div.dt-ver", { style: { "--c": x.color || "#ffd1e6" } }, [
         el("div.dt-ver-hoja", {}, [marco]),
         x.mensaje ? el("p.dt-ver-msg", { text: `«${x.mensaje}»` }) : null,
-        el("small.dt-ver-de", { text: `${recibido ? "De " + x.de : "Para " + x.para} · ${cuando(x.creado)}` }),
+        el("small.dt-ver-de", {}, [PF.avatar(recibido ? "pareja" : "yo", "dt-ver-av"), el("span", { text: `${recibido ? "De " + (x.de_nombre || x.de) : "Para " + (x.para_nombre || x.para)} · ${cuando(x.creado)}` })]),
         el("div.dt-fila.dt-ver-acc", {}, [
           el("button.ed-btn.primario", { type: "button", html: I("pantalla", "Pantalla completa"), onClick: () => abrir(url) }),
           el("button.ed-btn", { type: "button", html: I("guardar", "Guardar en mis borradores"), onClick: async (ev) => {
@@ -372,19 +541,19 @@ export class Detallitos {
           } }),
           el("button.ed-btn.peligro-suave", { type: "button", html: I("borrar", recibido ? "Quitar de mi colección" : "Quitar de mis enviados"), onClick: async () => {
             if (!(await confirmar(recibido ? "¿Quitarlo de tu colección?" : "¿Quitarlo de tus enviados? (A tu amorcito se le queda)", "Quitar"))) return;
-            try { await SRV.borrarDetallito(x.id); aviso("Quitado"); this.atras(); } catch (e) { aviso(e.message, 3500, "error"); }
+            try { await SRV.borrarDetallito(x.id); this.datos = null; aviso("Quitado"); this.app.sonidos?.sonar("borrar"); this.atras(); } catch (e) { aviso(e.message, 3500, "error"); }
           } }),
         ]),
-      ].filter(Boolean)),
-    );
+      ]),
+    ]);
   }
 
   /* — Adornos — */
-  _chispas(x, y) {
+  _chispas(x, y, n = 14) {
     if (reducido()) return;
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < n; i++) {
       const s = el("i.dt-chispa", { html: i % 3 ? ico("corazon") : ico("estrella") });
-      const a = (i / 14) * Math.PI * 2 + Math.random() * 0.4, d = 60 + Math.random() * 90;
+      const a = (i / n) * Math.PI * 2 + Math.random() * 0.4, d = 60 + Math.random() * 90;
       s.style.left = x + "px"; s.style.top = y + "px";
       s.style.setProperty("--dx", Math.cos(a) * d + "px");
       s.style.setProperty("--dy", Math.sin(a) * d - 30 + "px");
@@ -393,11 +562,7 @@ export class Detallitos {
       setTimeout(() => s.remove(), 1200);
     }
   }
-
-  _corazones() {
-    if (reducido() || !this.capa) return;
-    const c = el("div.dt-union", { "aria-hidden": "true" }, [el("i"), el("i")]);
-    this.capa.append(c);
-    setTimeout(() => c.remove(), 1600);
-  }
 }
+
+/** En el teléfono no se abre el teclado solo (taparía la escenita). */
+const sinTeclado = () => matchMedia("(pointer: coarse)").matches;

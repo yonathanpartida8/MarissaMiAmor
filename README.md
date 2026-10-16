@@ -84,7 +84,10 @@ cambió en dos aparatos, pregunta con cuál quedarse). Desde ahí también
 `publicaciones/<nombre>/`, a pantalla completa y sólo para ver; los videos
 grandes llegan a GitHub con `git push`, sin el error «input too large») y le
 mandan **Detallitos** a su amorcito («Vincular a tu Amorcito» con un código
-único). El token de GitHub es uno
+único, con una escenita animada del hilo rojo). Cada quien tiene su **perfil**
+(foto, nombre, cumpleaños y «novios desde», que es de los dos), y el menú
+principal muestra sus dos fotos y cuántos días llevan juntos. Para empezar de
+cero con las cuentas de prueba: `librito borrar-cuentas`. El token de GitHub es uno
 solo, cifrado en el teléfono: nunca está en el editor. Se instala con una línea
 en Termux y un asistente que te pregunta tu usuario, tu contraseña y el token, y
 lo deja prendido (sin códigos). Paso a paso en **`servidor/LÉEME.md`**.

@@ -63,7 +63,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.3.0"
+VERSION = "1.4.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -364,7 +364,8 @@ CREATE TABLE IF NOT EXISTS ajustes_de(usuario_id INTEGER PRIMARY KEY, datos TEXT
 """
 # Columnas que llegaron después (se agregan solas a una base vieja).
 COLUMNAS_NUEVAS = {
-    "usuarios": [("codigo_amor", "TEXT"), ("pareja_id", "INTEGER"), ("pareja_desde", "REAL"), ("visto", "REAL")],
+    "usuarios": [("codigo_amor", "TEXT"), ("pareja_id", "INTEGER"), ("pareja_desde", "REAL"), ("visto", "REAL"),
+                 ("nombre", "TEXT"), ("cumple", "TEXT"), ("novios", "TEXT"), ("foto_v", "REAL")],
     "proyectos": [("clave", "TEXT"), ("ruta", "TEXT")],
 }
 LETRAS_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -644,7 +645,7 @@ def normal_codigo(c):
 
 class Estado:
     def __init__(self, arranque=False):
-        for d in ("publicaciones", "proyectos", "detallitos", "tmp", "nube", os.path.join("nube", "archivos"), os.path.join("tmp", "subidas")):
+        for d in ("publicaciones", "proyectos", "detallitos", "tmp", "nube", "fotos", os.path.join("nube", "archivos"), os.path.join("tmp", "subidas")):
             os.makedirs(os.path.join(DATOS, d), exist_ok=True)
         os.chmod(DATOS, 0o700)
         self.aj = Ajustes()
@@ -1542,7 +1543,8 @@ class Manejador(BaseHTTPRequestHandler):
 #  La API
 # ════════════════════════════════════════════════════════════════════════
 def publico_usuario(u):
-    return {"id": u["id"], "usuario": u["usuario"], "rol": u["rol"], "estado": u["estado"], "creado": u.get("creado"), "ultimo": u.get("ultimo")}
+    return {"id": u["id"], "usuario": u["usuario"], "rol": u["rol"], "estado": u["estado"], "creado": u.get("creado"), "ultimo": u.get("ultimo"),
+            "nombre": u.get("nombre") or "", "foto_v": int(u.get("foto_v") or 0)}
 
 
 def nueva_sesion(h, u, cliente, recordar):
@@ -2284,11 +2286,136 @@ def pareja_de(uid):
     u = E.db.uno("SELECT pareja_id, pareja_desde FROM usuarios WHERE id=?", uid)
     if not u or not u["pareja_id"]:
         return None
-    p = E.db.uno("SELECT id, usuario, visto FROM usuarios WHERE id=? AND estado='activo'", u["pareja_id"])
+    p = E.db.uno("SELECT id, usuario, visto, nombre, cumple, novios, foto_v FROM usuarios WHERE id=? AND estado='activo'", u["pareja_id"])
     if not p:
         return None
     return {"usuario": p["usuario"], "desde": iso(u["pareja_desde"]) if u["pareja_desde"] else "", "en_linea": bool(p["visto"] and ahora() - p["visto"] < 120),
-            "visto": iso(p["visto"]) if p["visto"] else ""}
+            "visto": iso(p["visto"]) if p["visto"] else "", "nombre": p["nombre"] or "", "cumple": p["cumple"] or "", "novios": p["novios"] or "",
+            "foto_v": int(p["foto_v"] or 0)}
+
+
+# — Tu perfil: foto, nombre, cumpleaños y desde cuándo son novios —
+FECHA_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+FOTO_MAX = 2 * 1024 * 1024
+FOTO_TIPOS = ((b"\xff\xd8\xff", ".jpg"), (b"\x89PNG\r\n\x1a\n", ".png"), (b"RIFF", ".webp"))
+
+
+def fecha_valida(v):
+    """AAAA-MM-DD de verdad (o vacío para quitarla)."""
+    v = str(v or "").strip()[:10]
+    if not v:
+        return ""
+    if not FECHA_RE.match(v):
+        raise Falla("La fecha va como AAAA-MM-DD.")
+    a, m, d = (int(x) for x in v.split("-"))
+    try:
+        t = time.mktime((a, m, d, 12, 0, 0, 0, 0, -1))
+    except (OverflowError, ValueError):
+        raise Falla("Esa fecha no existe.")
+    if time.localtime(t)[:3] != (a, m, d) or a < 1900 or t > ahora() + 86400:
+        raise Falla("Esa fecha no puede ser.")
+    return v
+
+
+def perfil_de(u):
+    return {"usuario": u["usuario"], "nombre": u["nombre"] or "", "cumple": u["cumple"] or "", "novios": u["novios"] or "", "foto_v": int(u["foto_v"] or 0)}
+
+
+def ruta_foto(uid):
+    """La foto de perfil de una cuenta (la que haya: .jpg, .png o .webp), o None."""
+    for _, ext in FOTO_TIPOS:
+        r = os.path.join(DATOS, "fotos", f"{uid}{ext}")
+        if os.path.isfile(r):
+            return r
+    return None
+
+
+def borrar_foto(uid):
+    for _, ext in FOTO_TIPOS:
+        try:
+            os.unlink(os.path.join(DATOS, "fotos", f"{uid}{ext}"))
+        except OSError:
+            pass
+
+
+@ruta("GET", "/api/yo/perfil", "sesion")
+def api_mi_perfil(h, s):
+    u = E.db.uno("SELECT * FROM usuarios WHERE id=?", s["usuario_id"])
+    h.responder(200, {"perfil": perfil_de(u), "pareja": pareja_de(u["id"])})
+
+
+@ruta("PUT", "/api/yo/perfil", "sesion")
+def api_poner_perfil(h, s):
+    d = h.cuerpo_json()
+    u = E.db.uno("SELECT * FROM usuarios WHERE id=?", s["usuario_id"])
+    cambios = {}
+    if "nombre" in d:
+        nombre = re.sub(r"\s+", " ", re.sub(r"[\x00-\x1f\x7f<>]", "", str(d.get("nombre") or ""))).strip()
+        if len(nombre) > 40:
+            raise Falla("Tu nombre: hasta 40 letras.")
+        cambios["nombre"] = nombre
+    for k in ("cumple", "novios"):
+        if k in d:
+            cambios[k] = fecha_valida(d.get(k))
+    for k, v in cambios.items():
+        E.db.x(f"UPDATE usuarios SET {k}=? WHERE id=?", v, u["id"])
+    # Desde cuándo son novios es de los dos: se le pone igual a tu amorcito.
+    if "novios" in cambios and u["pareja_id"]:
+        E.db.x("UPDATE usuarios SET novios=? WHERE id=? AND pareja_id=?", cambios["novios"], u["pareja_id"], u["id"])
+    u = E.db.uno("SELECT * FROM usuarios WHERE id=?", u["id"])
+    h.responder(200, {"perfil": perfil_de(u), "pareja": pareja_de(u["id"])})
+
+
+@ruta("PUT", "/api/yo/foto", "sesion")
+def api_poner_foto(h, s):
+    """Tu foto de perfil (jpg, png o webp, hasta 2 MB; el editor ya la manda recortada y chiquita)."""
+    try:
+        n = int(h.headers.get("Content-Length") or -1)
+    except ValueError:
+        n = -1
+    if n <= 0 or n > FOTO_MAX:
+        h._leido = False
+        raise Falla("La foto tiene que pesar menos de 2 MB.", 413)
+    datos = h.rfile.read(n)
+    h._leido = True
+    ext = next((e for m, e in FOTO_TIPOS if datos.startswith(m) and (e != ".webp" or datos[8:12] == b"WEBP")), None)
+    if not ext:
+        raise Falla("Eso no es una foto (jpg, png o webp).", 415)
+    uid = s["usuario_id"]
+    os.makedirs(os.path.join(DATOS, "fotos"), exist_ok=True)
+    borrar_foto(uid)
+    final = os.path.join(DATOS, "fotos", f"{uid}{ext}")
+    with open(final + ".tmp", "wb") as f:
+        f.write(datos)
+    os.replace(final + ".tmp", final)
+    os.chmod(final, 0o600)
+    v = int(ahora() * 1000)
+    E.db.x("UPDATE usuarios SET foto_v=? WHERE id=?", v, uid)
+    h.responder(200, {"foto_v": v})
+
+
+@ruta("DELETE", "/api/yo/foto", "sesion")
+def api_quitar_foto(h, s):
+    borrar_foto(s["usuario_id"])
+    E.db.x("UPDATE usuarios SET foto_v=0 WHERE id=?", s["usuario_id"])
+    h.responder(200, {"foto_v": 0})
+
+
+@ruta("GET", "/api/yo/foto", "sesion")
+def api_mi_foto(h, s):
+    r = ruta_foto(s["usuario_id"])
+    if not r:
+        raise Falla("Todavía no tienes foto.", 404)
+    h.archivo(r, cache="private, max-age=31536000, immutable")
+
+
+@ruta("GET", "/api/amor/foto", "sesion")
+def api_foto_pareja(h, s):
+    u = E.db.uno("SELECT pareja_id FROM usuarios WHERE id=?", s["usuario_id"])
+    r = u and u["pareja_id"] and pareja_de(s["usuario_id"]) and ruta_foto(u["pareja_id"])
+    if not r:
+        raise Falla("Tu amorcito todavía no tiene foto.", 404)
+    h.archivo(r, cache="private, max-age=31536000, immutable")
 
 
 @ruta("GET", "/api/amor", "sesion")
@@ -2320,6 +2447,10 @@ def api_vincular(h, s):
     t = ahora()
     E.db.x("UPDATE usuarios SET pareja_id=?, pareja_desde=? WHERE id=?", otro["id"], t, yo["id"])
     E.db.x("UPDATE usuarios SET pareja_id=?, pareja_desde=? WHERE id=?", yo["id"], t, otro["id"])
+    # «Novios desde»: si uno de los dos ya lo había puesto, queda para los dos.
+    novios = yo["novios"] or otro["novios"]
+    if novios:
+        E.db.x("UPDATE usuarios SET novios=? WHERE id IN (?,?)", novios, yo["id"], otro["id"])
     E.acierto("amor:" + str(s["usuario_id"]))
     E.actividad(s["usuario"], "vincular", f"con {otro['usuario']}", ip)
     h.responder(200, {"pareja": pareja_de(yo["id"])})
@@ -2356,18 +2487,22 @@ def api_latido(h, s):
 DETALLITO_RE = r"([A-Za-z0-9_-]{20,40})"
 
 
-def fila_detallito(d, nombres):
+def fila_detallito(d, nombres, apodos=None):
+    apodos = apodos or {}
     return {"id": d["id"], "titulo": d["titulo"], "mensaje": d["mensaje"], "color": d["color"], "creado": iso(d["creado"]),
-            "visto": iso(d["visto"]) if d["visto"] else "", "ver": f"/d/{d['id']}/", "de": nombres.get(d["de"], ""), "para": nombres.get(d["para"], ""), "bytes": d["bytes"]}
+            "visto": iso(d["visto"]) if d["visto"] else "", "ver": f"/d/{d['id']}/", "de": nombres.get(d["de"], ""), "para": nombres.get(d["para"], ""),
+            "de_nombre": apodos.get(d["de"], ""), "para_nombre": apodos.get(d["para"], ""), "bytes": d["bytes"]}
 
 
 @ruta("GET", "/api/detallitos", "sesion")
 def api_detallitos(h, s):
     uid = s["usuario_id"]
-    nombres = {u["id"]: u["usuario"] for u in E.db.q("SELECT id, usuario FROM usuarios")}
+    filas = E.db.q("SELECT id, usuario, nombre FROM usuarios")
+    nombres = {u["id"]: u["usuario"] for u in filas}
+    apodos = {u["id"]: u["nombre"] or u["usuario"] for u in filas}
     h.responder(200, {
-        "recibidos": [fila_detallito(d, nombres) for d in E.db.q("SELECT * FROM detallitos WHERE para=? AND borrado_para=0 ORDER BY creado DESC LIMIT 300", uid)],
-        "enviados": [fila_detallito(d, nombres) for d in E.db.q("SELECT * FROM detallitos WHERE de=? AND borrado_de=0 ORDER BY creado DESC LIMIT 300", uid)],
+        "recibidos": [fila_detallito(d, nombres, apodos) for d in E.db.q("SELECT * FROM detallitos WHERE para=? AND borrado_para=0 ORDER BY creado DESC LIMIT 300", uid)],
+        "enviados": [fila_detallito(d, nombres, apodos) for d in E.db.q("SELECT * FROM detallitos WHERE de=? AND borrado_de=0 ORDER BY creado DESC LIMIT 300", uid)],
         "pareja": pareja_de(uid)})
 
 
@@ -2629,16 +2764,11 @@ def api_reiniciar_contrasena(h, s, uid):
     h.responder(200, {"temporal": temporal})
 
 
-@ruta("DELETE", "/api/admin/usuarios/(\\d+)", "admin")
-def api_borrar_usuario(h, s, uid):
-    u = E.db.uno("SELECT * FROM usuarios WHERE id=?", int(uid))
-    if not u:
-        raise Falla("No existe.", 404)
-    if u["id"] == s["usuario_id"]:
-        raise Falla("No puedes borrar tu propia cuenta desde aquí.")
+def borrar_cuenta(u, heredero):
+    """Borra una cuenta con todo lo suyo (nube, copias, detallitos, foto). Sus publicaciones pasan a `heredero`."""
     for p in E.db.q("SELECT id FROM proyectos WHERE usuario_id=?", u["id"]):
         borrar_proyecto(p["id"])
-    E.db.x("UPDATE publicaciones SET usuario_id=? WHERE usuario_id=?", s["usuario_id"], u["id"])   # sus publicaciones pasan a ti
+    E.db.x("UPDATE publicaciones SET usuario_id=? WHERE usuario_id=?", heredero, u["id"])
     E.db.x("UPDATE usuarios SET pareja_id=NULL, pareja_desde=NULL WHERE pareja_id=?", u["id"])
     for d in E.db.q("SELECT id FROM detallitos WHERE de=? OR para=?", u["id"], u["id"]):
         shutil.rmtree(os.path.join(DATOS, "detallitos", d["id"]), ignore_errors=True)
@@ -2647,10 +2777,35 @@ def api_borrar_usuario(h, s, uid):
         E.db.x(f"DELETE FROM {t} WHERE usuario_id=?", u["id"])
     for carpeta in (nube("libritos", str(u["id"])), nube("copias", str(u["id"]))):
         shutil.rmtree(carpeta, ignore_errors=True)
-    limpiar_nube()
+    borrar_foto(u["id"])
     E.db.x("DELETE FROM usuarios WHERE id=?", u["id"])
+
+
+@ruta("DELETE", "/api/admin/usuarios/(\\d+)", "admin")
+def api_borrar_usuario(h, s, uid):
+    u = E.db.uno("SELECT * FROM usuarios WHERE id=?", int(uid))
+    if not u:
+        raise Falla("No existe.", 404)
+    if u["id"] == s["usuario_id"]:
+        raise Falla("No puedes borrar tu propia cuenta desde aquí.")
+    borrar_cuenta(u, s["usuario_id"])   # sus publicaciones pasan a ti
+    limpiar_nube()
     E.actividad(s["usuario"], "usuario", f"{u['usuario']}: borrado", h.ip())
     h.responder(200, {"ok": True})
+
+
+@ruta("POST", "/api/admin/usuarios/borrar-todas", "admin")
+def api_borrar_todas(h, s):
+    """Las cuentas de prueba: todas menos las de administrador (con «BORRAR» escrito, para no hacerlo por error)."""
+    if str(h.cuerpo_json().get("confirmar", "")).strip().upper() != "BORRAR":
+        raise Falla("Escribe BORRAR para confirmarlo.")
+    n = 0
+    for u in E.db.q("SELECT * FROM usuarios WHERE rol<>'admin'"):
+        borrar_cuenta(u, s["usuario_id"])
+        n += 1
+    limpiar_nube()
+    E.actividad(s["usuario"], "usuario", f"{n} cuentas borradas (todas menos administradores)", h.ip())
+    h.responder(200, {"borradas": n})
 
 
 @ruta("GET", "/api/admin/invitaciones", "admin")
@@ -2810,6 +2965,30 @@ def orden_admin(args):
     E.actividad(usuario, "instalar", "administrador desde la terminal")
 
 
+def orden_borrar_cuentas(args):
+    """librito borrar-cuentas: borra TODAS las cuentas que no son de administrador (las de prueba)."""
+    global E
+    E = Estado()
+    cuentas = E.db.q("SELECT * FROM usuarios WHERE rol<>'admin' ORDER BY creado")
+    admins = [u["usuario"] for u in E.db.q("SELECT usuario FROM usuarios WHERE rol='admin'")]
+    if not cuentas:
+        print("No hay cuentas que borrar (sólo administradores: " + ", ".join(admins) + ").")
+        return
+    print(f"Se van a borrar {len(cuentas)} cuentas, con su nube, sus copias, sus detallitos y su foto:")
+    for u in cuentas:
+        print("  ·", u["usuario"])
+    print("Se quedan los administradores:", ", ".join(admins) or "(ninguno)")
+    if not args.si:
+        if input("Para confirmar escribe BORRAR: ").strip().upper() != "BORRAR":
+            raise SystemExit("No se borró nada.")
+    heredero = E.db.uno("SELECT id FROM usuarios WHERE rol='admin' ORDER BY creado")
+    for u in cuentas:
+        borrar_cuenta(u, heredero["id"] if heredero else None)
+    limpiar_nube()
+    E.actividad("terminal", "usuario", f"{len(cuentas)} cuentas borradas (todas menos administradores)")
+    print(f"✓ Listo: {len(cuentas)} cuentas borradas. Si el servidor está prendido, no hace falta reiniciarlo.")
+
+
 def orden_github(args):
     global E
     E = Estado()
@@ -2895,10 +3074,13 @@ def principal():
     e = sub.add_parser("estado", help="cómo está todo")
     e.add_argument("--json", action="store_true")
     sub.add_parser("llave-nueva", help="cambia la llave que cifra los secretos")
+    b = sub.add_parser("borrar-cuentas", help="borra todas las cuentas que no son de administrador (las de prueba)")
+    b.add_argument("--si", action="store_true", help="sin preguntar")
     args = p.parse_args()
     os.umask(0o077)   # todo lo que se cree aquí, sólo para tu usuario
     os.makedirs(DATOS, exist_ok=True)
-    {"iniciar": iniciar, "admin": orden_admin, "github": orden_github, "estado": orden_estado, "llave-nueva": orden_llave}.get(args.orden or "iniciar", iniciar)(args if args.orden else p.parse_args(["iniciar"]))
+    {"iniciar": iniciar, "admin": orden_admin, "github": orden_github, "estado": orden_estado, "llave-nueva": orden_llave,
+     "borrar-cuentas": orden_borrar_cuentas}.get(args.orden or "iniciar", iniciar)(args if args.orden else p.parse_args(["iniciar"]))
 
 
 if __name__ == "__main__":

@@ -545,6 +545,17 @@ Código nuevo: `components/menu-principal.js`, `components/exportar-menu.js`, `c
 | **Se ve** | el indicador de guardado lleva un puntito: verde al día, latiendo subiendo, hueco sin conexión, naranja si hay que elegir o la nube está llena. Su panel tiene «Tu nube · M.YNTHN» con lo que pasa y «Subir ahora» |
 | **Arreglos** | en la computadora, el «⋯» de cada borrador del inicio estaba escondido (lo tapaba la regla del «Más» de la barra): ya se ve; «1 página» en singular |
 
+### Fase 20: menú principal y Detallitos nuevos, tu perfil, emparejamiento animado y sin parpadeos
+
+| | |
+| --- | --- |
+| **Menú principal** | un álbum de los dos: tu foto y la de tu amorcito en polaroids con cinta washi, unidas por un hilo rojo con un corazón que late (y su puntito verde si está en línea). Debajo, **cuántos días llevan juntos** (el número sube al abrir) y **lo que viene**: aniversario, mesiversario o un cumpleaños (el día mero, la etiqueta festeja). Sin vincular: tu polaroid y una vacía que invita a vincularse. Luego «Crear librito», el botón grande y tres tarjetas: Detallitos, Mis libritos y Mi perfil. Fondo de luces suaves, corazones y destellos |
+| **Tu perfil** | toca tu foto arriba (o «Mi perfil»): foto (la eliges, la mueves con el dedo y la acercas en un círculo; sube recortada y chiquita), tu nombre, tu cumpleaños y «somos novios desde» (es de los dos). Ahí mismo, tu amorcito y «Salir de mi cuenta». Se guarda en M.YNTHN y una copia chiquita en el aparato, para que todo se vea al instante (`components/perfil.js`) |
+| **Detallitos** | arriba, sus dos fotos con su corazón y el puntito en línea; las pestañas «De ‹su nombre›» / «Mis enviados» con una lucecita que se desliza; cada notita lleva la foto de quien la mandó; la hoja para escribir tiene renglones y cinta. Las pantallas salen al instante con lo que ya se sabe y se ponen al día por detrás (nunca en blanco) |
+| **Vincular** | una escenita: tu foto, el hilo rojo con su lucecita y un «?» que se mece. Tu código sale en fichitas que se voltean una por una; el de tu amorcito se escribe solito con su formato (AMOR-XXXX-XXXX) y llena 8 corazones con un «tic» por letra. Al vincularse: su foto aparece de un brinco, se acercan, el hilo se recoge en un corazón grande con chispitas y campanitas, y todo crece en un círculo hacia sus detallitos. Al desvincularse, se separan y el hilo se suelta |
+| **Transiciones** | cada camino la suya, con su sonido (`components/transiciones.js`): el perfil se abre como una **hoja que se da vuelta** y regresa igual; tu cuenta **gira como una tarjeta**; al entrar, todo **crece en un círculo** desde el botón; vincular gira; un detallito **sale de su sobre**; la vista previa **se acerca**; atrás **se desliza**. Sonidos nuevos hechos aquí mismo (brillo, giro, sobre, latido, campanas, separar y el «tic» del código), cambiables poniendo un archivo con su nombre en `assets/sonidos-editor/` |
+| **Parpadeos** | la causa: el menú y Detallitos se volvían a armar enteros (con sus animaciones de entrada) cada vez que llegaba un latido, y el «visto hace…» de tu amorcito cambia en **cada** latido (cada 45 s); además, el globito de Exportar se quitaba y se volvía a poner. Ahora sólo se cambia el pedacito que cambió (un nombre, una foto, el puntito en línea, el número del globito). Fuera también el vidrio esmerilado y los desenfoques grandes animados del fondo (lo más pesado y lo que parpadeaba en Android): ahora todo se mueve con transform y opacity |
+
 ## Cómo está hecho
 
 ```

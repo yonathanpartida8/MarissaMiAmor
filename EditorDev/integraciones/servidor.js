@@ -230,6 +230,18 @@ export const nubeBorrarCopia = (id) => pedir("nube/copias/" + encodeURIComponent
 export const misAjustes = () => pedir("yo/ajustes");
 export const guardarMisAjustes = (ajustes, editado) => pedir("yo/ajustes", { method: "PUT", body: { ajustes, editado } });
 
+/* ── Tu perfil: foto, nombre, cumpleaños y desde cuándo son novios ── */
+export const perfil = () => pedir("yo/perfil");
+export const guardarPerfil = (d) => pedir("yo/perfil", { method: "PUT", body: d });
+export async function subirFoto(blob) {
+  const r = await enviar("PUT", "yo/foto", blob, blob.type || "image/jpeg");
+  if (r.status < 200 || r.status >= 300) throw Object.assign(new Error(r.datos?.error || `${NOMBRE} contestó ${r.status}`), { status: r.status });
+  return r.datos;
+}
+export const quitarFoto = () => pedir("yo/foto", { method: "DELETE" });
+export const miFoto = () => bajar("yo/foto");
+export const fotoPareja = () => bajar("amor/foto");
+
 /* ── Vincular a tu Amorcito y Detallitos ── */
 export const amor = () => pedir("amor");
 export const vincular = (codigo) => pedir("amor/vincular", { method: "POST", body: { codigo } });

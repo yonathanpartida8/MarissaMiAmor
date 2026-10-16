@@ -12,6 +12,7 @@
 #    librito panel          abre el panel en el navegador de este teléfono
 #    librito registro       lo que va pasando (Ctrl+C para salir)
 #    librito admin [usuario]  crea o reinicia un administrador
+#    librito borrar-cuentas   borra todas las cuentas de prueba (menos administradores)
 #    librito github         guarda el token de GitHub (cifrado) desde aquí
 #    librito primer-plano   lo corre aquí mismo (para ver errores)
 #    librito arranque       que se prenda solo al encender el teléfono (Termux:Boot)
@@ -238,9 +239,10 @@ case "$orden" in
   admin) necesita_python; "$PY" "$APP/servidor.py" admin "$@" ;;
   github) necesita_python; "$PY" "$APP/servidor.py" github ;;
   llave-nueva) necesita_python; "$PY" "$APP/servidor.py" llave-nueva ;;
+  borrar-cuentas) necesita_python; "$PY" "$APP/servidor.py" borrar-cuentas "$@" ;;
   primer-plano) necesita_python; exec "$PY" "$APP/servidor.py" iniciar "$@" ;;
   arranque) arranque ;;
   respaldar) respaldar ;;
   actualizar) actualizar ;;
-  *) sed -n '3,20p' "$0" | sed 's/^# \{0,1\}//' ;;
+  *) sed -n '3,21p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac

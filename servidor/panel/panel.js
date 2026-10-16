@@ -344,9 +344,17 @@
     const invs = h("div.lista", {}, ...(inv.invitaciones.length ? inv.invitaciones.map((i) => h("div.item", {}, h("div.icono", { html: ico("invitar") }),
       h("div.datos", {}, h("b", { text: i.nota || "Invitación" }), h("small", { text: i.usada ? `Usada por ${i.usada}` : `Vence ${fecha(i.expira)}` })),
       h("div.acciones", {}, btn("Borrar", async () => { await api("admin/invitaciones/" + i.id, { method: "DELETE" }); ir("usuarios"); }, "chico peligro", "borrar")))) : [h("small", { text: "Sin invitaciones." })]));
+    const deprueba = us.usuarios.filter((u) => u.rol !== "admin");
+    const limpiar = deprueba.length ? caja("Cuentas de prueba", "borrar",
+      h("small", { text: `Borra de un jalón las ${deprueba.length} cuentas que no son de administrador (${deprueba.map((u) => u.usuario).join(", ")}), con su nube, sus copias, sus detallitos y su foto. Tú y los demás administradores se quedan.` }),
+      h("div.acciones", {}, btn(`Borrar las ${deprueba.length} cuentas`, async () => {
+        if (!(await confirmar("¿Borrar todas las cuentas de prueba?", `Se borran ${deprueba.length} cuentas para siempre. Sus publicaciones pasan a ti.`, "Borrar todas"))) return;
+        try { const r = await api("admin/usuarios/borrar-todas", { method: "POST", body: { confirmar: "BORRAR" } }); aviso(`${r.borradas} cuentas borradas`, "ok"); ir("usuarios"); } catch (e) { aviso(e.message, "mal"); }
+      }, "chico peligro", "borrar"))) : null;
     c.append(
       caja("Registro", "invitar", campo("¿Quién puede crear cuenta?", modo)),
       caja("Cuentas", "usuarios", lista),
+      ...(limpiar ? [limpiar] : []),
       caja("Códigos de invitación", "invitar",
         h("p", { text: "Con el registro «sólo con código», cada código sirve una vez y entra sin esperar aprobación." }),
         h("div.fila", {}, campo("Nota", nota), campo("Días", dias), btn("Crear código", async () => {

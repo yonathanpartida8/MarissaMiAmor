@@ -68,6 +68,8 @@ export const ARCHIVO = {
   pagina: "pagina-nueva", "pagina-duplicar": "pagina-duplicar", "pagina-cambiar": "pagina-cambiar", "pagina-eliminar": "pagina-borrar", "pagina-reordenar": "pagina-reordenar",
   reproducir: "reproducir", pausar: "pausar", publicar: "publicar",
   "abrir-recursos": "abrir-recursos", "cerrar-recursos": "cerrar-recursos",
+  // Fase 20: si pones un archivo con estos nombres, suena ése; si no, uno hecho aquí.
+  brillo: "brillo", giro: "girar-tarjeta", sobre: "abrir-sobre", latido: "latido", campanas: "vincular-pareja", separar: "desvincular", tecla: "tecla-codigo",
 };
 /* Lo que se repite seguido sube por la escala (do, re, mi, sol, la, do…) en vez
    de sonar igual: elegir cinco cosas seguidas es una escalerita, no un martillo.
@@ -91,6 +93,14 @@ const SINTE = {
   soltar: [["sine", 360, 240, 0.08, 0.32]],
   arrastrar: [["triangle", 260, 330, 0.06, 0.16]],
   exito: [["sine", 784, 784, 0.12, 0.26], ["sine", 1046, 1046, 0.14, 0.24, 0.09], ["sine", 1568, 1568, 0.22, 0.2, 0.18]],
+  // Fase 20 · menús con transiciones y la pareja
+  brillo: [["sine", 1318, 1318, 0.09, 0.16], ["sine", 1760, 1760, 0.09, 0.14, 0.06], ["sine", 2637, 2637, 0.18, 0.11, 0.12]],
+  giro: [["triangle", 320, 760, 0.16, 0.2], ["sine", 980, 1260, 0.09, 0.1, 0.12]],
+  sobre: [["triangle", 520, 280, 0.12, 0.22], ["sine", 1180, 940, 0.07, 0.1, 0.11], ["sine", 1568, 1568, 0.12, 0.08, 0.2]],
+  latido: [["sine", 96, 58, 0.13, 0.7], ["sine", 88, 52, 0.15, 0.55, 0.19]],
+  campanas: [["sine", 523, 523, 0.55, 0.2], ["sine", 659, 659, 0.55, 0.18, 0.09], ["sine", 784, 784, 0.6, 0.18, 0.18], ["sine", 1046, 1046, 0.8, 0.18, 0.27], ["sine", 2093, 2093, 0.5, 0.05, 0.27]],
+  separar: [["triangle", 700, 220, 0.24, 0.22], ["sine", 300, 180, 0.2, 0.18, 0.08]],
+  tecla: [["sine", 1400, 1300, 0.03, 0.12]],
 };
 
 const ALIAS = { "abrir-recursos": "exito", "cerrar-recursos": "soltar", "seleccionar-varios": "seleccionar", rehacer: "deshacer", pincel: "arrastrar", publicar: "exito", "zoom-paso": "ajustar" };

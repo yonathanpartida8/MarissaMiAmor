@@ -43,6 +43,10 @@ Lo que hace por cada usuario:
   abren con todo. Cada vez que guarda **a mano** (Guardar o Ctrl+S) queda
   además una **copia** (se quedan las 15 más nuevas de cada librito; se cambia
   en el panel). Ver **9 · La nube**.
+- **Su perfil**: foto, nombre, cumpleaños y «somos novios desde» (esa fecha
+  es de los dos: si uno la pone, al otro le aparece igual). El menú principal
+  muestra sus dos fotos como polaroids, cuántos días llevan juntos y lo que
+  viene (aniversario, mesiversario o un cumpleaños).
 - **Detallitos**: cada cuenta tiene un **código único** (`AMOR-XXXX-XXXX`).
   Con «Vincular a tu Amorcito» uno pega el código del otro y quedan
   conectados: se mandan páginas que se van coleccionando, ven si el otro está
@@ -249,6 +253,18 @@ Todo lo de cada cuenta vive en **tu teléfono servidor**, en
 - **Sin internet o con el servidor apagado** se sigue editando igual: todo se
   guarda en el aparato y sube después.
 
+### 10 · Borrar las cuentas de prueba (empezar de cero)
+
+Para quitar de un jalón todas las cuentas que creaste para probar (todas las
+que **no** son de administrador, con su nube, sus copias, sus detallitos y su
+foto; tú te quedas):
+
+- En Termux: `librito borrar-cuentas`. Te enseña la lista y pide que escribas
+  **BORRAR** para confirmar. No hace falta apagar el servidor.
+- O en el panel: **Usuarios → Cuentas de prueba → Borrar las N cuentas**.
+
+No se puede deshacer. Sus publicaciones (si había) pasan a ti.
+
 ## Cuentas y autenticación
 
 - **Registro** (Panel → Ajustes): «Abierto: cualquiera crea su cuenta y entra
@@ -296,6 +312,7 @@ Todo lo de cada cuenta vive en **tu teléfono servidor**, en
   nube/copias/<cuenta>/<clave>/<id>.json  sus copias (al guardar a mano)
   proyectos/<usuario>/<proyecto>/   las copias de antes (.zip), si había
   detallitos/<id>/       cada detallito (ver/ y paquete.zip)
+  fotos/<cuenta>.jpg     la foto de perfil de cada cuenta (o .png / .webp)
   servidor.log           lo que va pasando (sin secretos)
   estado.json            pid, puerto y dirección del servidor PRENDIDO (lo lee «librito»; se borra al apagarlo)
 ```
@@ -319,10 +336,13 @@ azar) · `/api/…`:
 | `PUT/GET/DELETE /api/nube/libritos/<clave>` (`?base=&forzar=1&aparato=`) | sesión | guardar, abrir y borrar un librito (avisa si cambió en otro aparato) |
 | `POST /api/nube/libritos/<clave>/copia` · `GET /api/nube/copias` · `GET/DELETE /api/nube/copias/<id>` | sesión | copias al guardar a mano |
 | `GET/PUT /api/yo/ajustes` | sesión | tus ajustes del editor |
+| `GET/PUT /api/yo/perfil` | sesión | tu nombre, cumpleaños y «novios desde» (se le pone igual a tu amorcito) |
+| `PUT/GET/DELETE /api/yo/foto` · `GET /api/amor/foto` | sesión | tu foto de perfil (jpg, png o webp, hasta 2 MB) y la de tu amorcito |
 | `GET/POST /api/proyectos` · `GET/DELETE /api/proyectos/<id>` | sesión | copias de antes (.zip) |
 | `GET/DELETE /api/amor` · `POST /api/amor/vincular` · `POST /api/amor/codigo` | sesión | tu código y el vínculo con tu amorcito |
 | `GET /api/latido` | sesión | «sigo aquí» + cuántos detallitos nuevos |
 | `GET/POST /api/detallitos` · `POST …/<id>/visto` · `GET …/<id>/paquete` · `DELETE …/<id>` | sesión | mandar, ver, guardar y quitar detallitos |
+| `POST /api/admin/usuarios/borrar-todas` (`{"confirmar":"BORRAR"}`) | admin | borra todas las cuentas que no son de administrador |
 | `/api/admin/…` (resumen, ajustes, github, usuarios, invitaciones, actividad, túnel) | admin | el panel |
 
 ## Seguridad: qué protege y qué no
@@ -375,6 +395,7 @@ librito panel            abre el panel en el navegador del teléfono
 librito direccion        la dirección https para el editor
 librito registro         ver lo que pasa (Ctrl+C sale)
 librito admin [usuario]  crear o reiniciar un administrador
+librito borrar-cuentas   borra todas las cuentas de prueba (menos administradores; pide BORRAR)
 librito github           guardar el token (cifrado) desde la terminal
 librito llave-nueva      cambiar la llave maestra (vuelve a cifrar)
 librito respaldar        copia de ~/librito-datos (SIN llave ni token)
@@ -418,5 +439,8 @@ con una API que rechaza más de 1 MB; y el editor en Chromium con **dos
 aparatos y la misma cuenta** (uno crea con foto y un video de 20 MB, el otro
 lo abre entero, lo cambia, el primero se pone al día solo, conflicto con «Las
 dos», ajustes que viajan, publicar con la foto puesta por el servidor, borrar
-de todos lados). **No** se probó todavía en un teléfono real con Termux, ni
-con el túnel de Cloudflare ni con GitHub de verdad.
+de todos lados); el perfil (fotos que no son fotos o muy grandes, fechas que
+no existen, «novios desde» que queda para los dos, la foto de tu amorcito sólo
+si están vinculados) y borrar las cuentas de prueba desde el panel y desde
+`librito borrar-cuentas`. **No** se probó todavía en un teléfono real con
+Termux, ni con el túnel de Cloudflare ni con GitHub de verdad.

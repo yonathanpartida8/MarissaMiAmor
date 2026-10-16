@@ -97,13 +97,18 @@
 .dt-capa { position: fixed; inset: 0; z-index: 2147483200; background: var(--amor-cielo); color: var(--amor-tinta); clip-path: circle(0 at var(--x, 50%) var(--y, 50%)); transition: clip-path .78s cubic-bezier(.7, 0, .2, 1); overflow: hidden; font-family: Jost, system-ui, sans-serif; }
 .dt-capa.ver { clip-path: circle(150vmax at var(--x, 50%) var(--y, 50%)); }
 .dt-capa.fuera { clip-path: circle(0 at var(--x, 50%) var(--y, 50%)); transition-duration: .5s; transition-timing-function: cubic-bezier(.6, 0, .4, 1); }
+.dt-cielo { position: absolute; inset: 0; pointer-events: none; overflow: hidden; contain: strict; }
+.dt-cielo i { position: absolute; width: 90vmax; height: 90vmax; border-radius: 50%; will-change: transform; animation: mpOrbe 28s ease-in-out infinite alternate; }
+.dt-cielo i:first-child { left: -45vmax; top: -50vmax; background: radial-gradient(closest-side, rgba(255, 150, 196, .4), rgba(255, 150, 196, 0)); }
+.dt-cielo i:last-child { right: -45vmax; bottom: -55vmax; background: radial-gradient(closest-side, rgba(176, 150, 255, .36), rgba(176, 150, 255, 0)); animation-duration: 34s; animation-delay: -12s; }
 .dt-burbujas { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-.dt-burbujas i { position: absolute; bottom: -40px; width: calc(22px * var(--s)); height: calc(22px * var(--s)); border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .95), rgba(255, 170, 205, .35) 60%, transparent 72%); animation: dtSube var(--t) linear infinite; animation-delay: var(--d); opacity: .8; }
+.dt-burbujas i { position: absolute; bottom: -40px; width: calc(22px * var(--s)); height: calc(22px * var(--s)); border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .95), rgba(255, 170, 205, .35) 60%, transparent 72%); will-change: transform; animation: dtSube var(--t) linear infinite; animation-delay: var(--d); opacity: .8; }
 .dt-burbujas i:nth-child(3n) { background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .9), rgba(190, 165, 255, .35) 60%, transparent 72%); }
 @keyframes dtSube { from { transform: translate(0, 0); } 50% { transform: translate(18px, -55vh); } to { transform: translate(-10px, -115vh); } }
 .dt-marco { position: relative; display: flex; flex-direction: column; height: 100%; max-width: 760px; margin: 0 auto; padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
 .dt-cab { display: flex; align-items: center; gap: 12px; padding: 14px 16px 10px; }
-.dt-atras { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 15px; background: rgba(255, 255, 255, .7); color: var(--amor-2); box-shadow: 0 4px 14px rgba(216, 57, 122, .16); cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: transform .15s; }
+.dt-atras { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 15px; background: rgba(255, 255, 255, .92); color: var(--amor-2); box-shadow: 0 4px 14px rgba(216, 57, 122, .16); cursor: pointer; transition: transform .2s cubic-bezier(.3, 1.6, .5, 1); }
+.dt-atras:hover { transform: translateX(-2px); }
 .dt-atras:active { transform: scale(.92); }
 .dt-atras svg { width: 22px; height: 22px; }
 .dt-titulo { flex: 1; min-width: 0; }
@@ -118,13 +123,12 @@
 .dt-vista { flex: 1; overflow: auto; padding: 4px 16px calc(28px + env(safe-area-inset-bottom)); overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .dt-pantalla { display: flex; flex-direction: column; gap: 14px; }
 .dt-pantalla > * { animation: dtEntra .6s cubic-bezier(.2, .9, .3, 1.2) both; animation-delay: calc(.18s + var(--i, 0) * .08s); }
-.dt-pantalla.vuelve > * { animation-name: dtVuelve; animation-delay: calc(var(--i, 0) * .05s); }
 @keyframes dtEntra { from { opacity: 0; transform: translateY(26px) scale(.96); } }
 @keyframes dtVuelve { from { opacity: 0; transform: translateX(-30px); } }
-.dt-tarjeta, .dt-tarjeta-grande { position: relative; padding: 16px; border-radius: 24px; background: rgba(255, 255, 255, .78); box-shadow: 0 10px 30px rgba(160, 60, 110, .12); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .dt-tarjeta, :root:not([data-tema="claro"]) .dt-tarjeta-grande, :root:not([data-tema="claro"]) .dt-atras, :root:not([data-tema="claro"]) .dt-pareja { background: rgba(48, 28, 44, .78); } }
-:root[data-tema="oscuro"] .dt-tarjeta, :root[data-tema="oscuro"] .dt-tarjeta-grande, :root[data-tema="oscuro"] .dt-atras, :root[data-tema="oscuro"] .dt-pareja { background: rgba(48, 28, 44, .78); }
-.dt-tarjeta-grande { text-align: center; padding: 22px 18px; background: linear-gradient(160deg, rgba(255, 255, 255, .9), rgba(255, 236, 246, .82)); }
+.dt-tarjeta, .dt-tarjeta-grande { position: relative; padding: 16px; border-radius: 24px; background: rgba(255, 255, 255, .93); box-shadow: 0 10px 30px rgba(160, 60, 110, .12); }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .dt-tarjeta, :root:not([data-tema="claro"]) .dt-tarjeta-grande, :root:not([data-tema="claro"]) .dt-atras, :root:not([data-tema="claro"]) .dt-cab-pareja { background: rgba(48, 28, 44, .95); } }
+:root[data-tema="oscuro"] .dt-tarjeta, :root[data-tema="oscuro"] .dt-tarjeta-grande, :root[data-tema="oscuro"] .dt-atras, :root[data-tema="oscuro"] .dt-cab-pareja { background: rgba(48, 28, 44, .95); }
+.dt-tarjeta-grande { text-align: center; padding: 22px 18px; background: linear-gradient(160deg, rgba(255, 255, 255, .97), rgba(255, 238, 247, .94)); }
 .dt-tarjeta-grande h2 { margin: 10px 0 4px; font: 700 28px/1.05 Caveat, "Segoe Script", cursive; color: var(--amor-2); }
 .dt-tarjeta-grande p { margin: 0 auto; max-width: 440px; font-size: 14px; line-height: 1.45; color: var(--amor-suave); }
 .dt-sobre { width: 74px; height: 74px; margin: 0 auto; display: grid; place-items: center; border-radius: 24px; background: linear-gradient(135deg, var(--amor-1), var(--amor-2)); color: #fff; box-shadow: 0 12px 28px rgba(216, 57, 122, .34); animation: dtFlota 3.4s ease-in-out infinite; }
@@ -222,13 +226,17 @@
 .dt-previa-grande .dt-previa-marco { pointer-events: auto; }
 
 /* La colección: notitas pegadas */
-.dt-tabs { display: flex; gap: 6px; padding: 5px; border-radius: 16px; background: rgba(255, 255, 255, .6); }
+.dt-tabs { position: relative; display: grid; grid-template-columns: 1fr 1fr; padding: 5px; border-radius: 16px; background: rgba(255, 255, 255, .7); }
+.dt-tab-luz { position: absolute; top: 5px; bottom: 5px; left: 5px; width: calc(50% - 5px); border-radius: 12px; background: #fff; box-shadow: 0 3px 10px rgba(216, 57, 122, .16); transition: transform .45s cubic-bezier(.3, 1.3, .5, 1); }
+.dt-tabs[data-on="enviados"] .dt-tab-luz { transform: translateX(100%); }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .dt-tab-luz { background: #3a2335; } }
+:root[data-tema="oscuro"] .dt-tab-luz { background: #3a2335; }
 @media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .dt-tabs { background: rgba(48, 28, 44, .6); } }
 :root[data-tema="oscuro"] .dt-tabs { background: rgba(48, 28, 44, .6); }
-.dt-tabs button { flex: 1; display: inline-flex; align-items: center; justify-content: center; min-height: 40px; border: 0; border-radius: 12px; background: none; color: var(--amor-suave); font: 600 14px/1 inherit; cursor: pointer; transition: background .2s, color .2s; }
-.dt-tabs button.on { background: #fff; color: var(--amor-2); box-shadow: 0 3px 10px rgba(216, 57, 122, .16); }
-@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .dt-tabs button.on { background: #3a2335; } }
-:root[data-tema="oscuro"] .dt-tabs button.on { background: #3a2335; }
+.dt-tabs button { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; min-width: 0; min-height: 40px; border: 0; border-radius: 12px; background: none; color: var(--amor-suave); font: 600 14px/1 inherit; cursor: pointer; transition: color .25s; }
+.dt-tabs button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dt-tabs button.on { color: var(--amor-2); }
+.dt-rejilla-caja { position: relative; }
 .dt-coleccion { display: flex; flex-direction: column; gap: 12px; }
 .dt-rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px 14px; padding: 10px 2px 4px; }
 .dt-nota { position: relative; display: flex; flex-direction: column; gap: 6px; min-height: 150px; padding: 22px 14px 14px; border: 0; border-radius: 6px 6px 18px 6px; background: linear-gradient(165deg, color-mix(in srgb, var(--c) 72%, #fff), var(--c)); color: #4a2338; text-align: left; cursor: pointer; transform: rotate(var(--r, 0deg)); box-shadow: 0 10px 20px rgba(120, 40, 80, .16), inset 0 -18px 30px rgba(255, 255, 255, .25); animation: dtPega .55s cubic-bezier(.2, .9, .3, 1.35) both; animation-delay: calc(var(--i, 0) * .06s); transition: transform .25s cubic-bezier(.3, 1.4, .5, 1), box-shadow .25s; font: inherit; }
@@ -238,7 +246,8 @@
 .dt-nota .dt-cinta { position: absolute; top: -9px; left: 50%; width: 58px; height: 20px; margin-left: -29px; background: rgba(255, 255, 255, .62); box-shadow: 0 1px 3px rgba(0, 0, 0, .08); transform: rotate(-3deg); }
 .dt-nota b { font: 700 21px/1.05 Caveat, "Segoe Script", cursive; color: #5a1f3e; overflow-wrap: anywhere; }
 .dt-nota p { margin: 0; font: 17px/1.15 Caveat, "Segoe Script", cursive; color: #7a3a5a; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-.dt-nota small { margin-top: auto; font-size: 11px; color: #8a5a72; }
+.dt-nota small { margin-top: auto; padding-right: 26px; font-size: 11px; color: #8a5a72; }
+.dt-nota-av { --tam: 24px; position: absolute; right: 9px; bottom: 9px; box-shadow: 0 0 0 2px rgba(255, 255, 255, .9); }
 .dt-nota em { position: absolute; top: 8px; right: -6px; padding: 3px 9px; border-radius: 6px 0 0 6px; background: linear-gradient(135deg, var(--amor-1), var(--amor-2)); color: #fff; font: 700 10.5px/1.2 system-ui, sans-serif; font-style: normal; letter-spacing: .04em; box-shadow: 0 3px 8px rgba(216, 57, 122, .35); }
 .dt-nota.nueva { animation: dtPega .55s cubic-bezier(.2, .9, .3, 1.35) both, dtBrillo 2.2s ease-in-out 1s infinite; }
 @keyframes dtBrillo { 50% { box-shadow: 0 10px 20px rgba(120, 40, 80, .16), 0 0 0 6px rgba(255, 140, 190, .28); } }
@@ -253,7 +262,8 @@
 @keyframes dtAbreHoja { from { transform: rotateX(25deg) translateY(30px) scale(.9); opacity: 0; } }
 .dt-marco-ver { width: 100%; height: 100%; border: 0; display: block; background: transparent; }
 .dt-ver-msg { margin: 6px 0 0; max-width: 460px; text-align: center; font: 24px/1.15 Caveat, "Segoe Script", cursive; color: var(--amor-2); }
-.dt-ver-de { color: var(--amor-suave); font-size: 12.5px; }
+.dt-ver-de { display: inline-flex; align-items: center; gap: 8px; color: var(--amor-suave); font-size: 12.5px; }
+.dt-ver-av { --tam: 26px; }
 .dt-ver-acc { justify-content: center; }
 
 /* Adornos: chispitas que saltan y dos corazones que se juntan */
@@ -267,39 +277,108 @@
 @keyframes dtJunta { 0% { transform: translateX(-120px) scale(.4); opacity: 0; } 50% { transform: translateX(-14px) scale(1.2); opacity: 1; } 75% { transform: translateX(0) scale(1.4); } 100% { transform: translateX(0) scale(2.6); opacity: 0; } }
 @keyframes dtJunta2 { 0% { transform: translateX(120px) scale(.4); opacity: 0; } 50% { transform: translateX(14px) scale(1.2); opacity: 1; } 75% { transform: translateX(0) scale(1.4); } 100% { transform: translateX(0) scale(2.6); opacity: 0; } }
 
-/* ── Menú principal ───────────────────────────────────────────────── */
-.mp-capa { position: fixed; inset: 0; z-index: 2147483100; display: grid; place-items: center; padding: max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom)); background: var(--amor-cielo); overflow: auto; opacity: 0; transition: opacity .5s ease; font-family: inherit; perspective: 1200px; }
+/* ── Avatares: tu foto (o tu inicial) en un circulito ───────────────── */
+.av { --tam: 40px; position: relative; flex: none; display: inline-grid; place-items: center; width: var(--tam); height: var(--tam); border-radius: 50%; overflow: hidden; background: linear-gradient(135deg, var(--amor-1), var(--amor-lila)); color: #fff; box-shadow: 0 0 0 2px #fff, 0 4px 12px rgba(160, 60, 110, .2); }
+.av img { display: block; width: 100%; height: 100%; object-fit: cover; -webkit-user-drag: none; user-select: none; }
+.av b { font: 700 calc(var(--tam) * .42)/1 Jost, system-ui, sans-serif; letter-spacing: 0; }
+.av.vacio { background: repeating-linear-gradient(45deg, rgba(216, 57, 122, .09) 0 6px, rgba(216, 57, 122, .03) 6px 12px), #fff; color: var(--amor-2); box-shadow: 0 0 0 2px rgba(216, 57, 122, .4); }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .av { box-shadow: 0 0 0 2px #3a2335, 0 4px 12px rgba(0, 0, 0, .3); } :root:not([data-tema="claro"]) .av.vacio { background: #3a2335; } }
+:root[data-tema="oscuro"] .av { box-shadow: 0 0 0 2px #3a2335, 0 4px 12px rgba(0, 0, 0, .3); }
+:root[data-tema="oscuro"] .av.vacio { background: #3a2335; }
+
+/* ── Menú principal (Fase 20): un álbum de los dos ────────────────── */
+.mp-capa { position: fixed; inset: 0; z-index: 2147483100; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top)) 14px max(16px, env(safe-area-inset-bottom)); background: var(--amor-cielo); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; opacity: 0; transition: opacity .5s ease; font-family: Jost, system-ui, sans-serif; }
 .mp-capa.ver { opacity: 1; }
-.mp-capa.fuera { opacity: 0; pointer-events: none; transition-duration: .6s; }
-.mp-capa.fuera .mp-tarjeta { transform: scale(1.08) translateY(-14px); opacity: 0; filter: blur(6px); transition: transform .6s cubic-bezier(.5, 0, .2, 1), opacity .5s, filter .5s; }
-/* Auroras: tres manchas de luz que se mueven despacito */
-.mp-auroras { position: fixed; inset: -20%; pointer-events: none; filter: blur(50px); opacity: .75; }
-.mp-auroras i { position: absolute; width: 55vmax; height: 55vmax; border-radius: 50%; mix-blend-mode: multiply; animation: mpAurora 22s ease-in-out infinite alternate; }
-.mp-auroras i:nth-child(1) { left: -5%; top: -10%; background: radial-gradient(circle, rgba(255, 156, 198, .7), transparent 65%); }
-.mp-auroras i:nth-child(2) { right: -10%; top: 10%; background: radial-gradient(circle, rgba(180, 156, 255, .6), transparent 65%); animation-duration: 27s; animation-delay: -8s; }
-.mp-auroras i:nth-child(3) { left: 20%; bottom: -15%; background: radial-gradient(circle, rgba(255, 200, 168, .65), transparent 65%); animation-duration: 31s; animation-delay: -14s; }
-@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .mp-auroras i { mix-blend-mode: screen; opacity: .55; } }
-:root[data-tema="oscuro"] .mp-auroras i { mix-blend-mode: screen; opacity: .55; }
-@keyframes mpAurora { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(6vw, 4vh) scale(1.15); } 100% { transform: translate(-4vw, 7vh) scale(.92); } }
-.mp-flores { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
-.mp-flores i { position: absolute; bottom: -50px; width: calc(26px * var(--s)); height: calc(26px * var(--s)); color: rgba(255, 120, 175, .38); animation: dtSube var(--t) linear infinite; animation-delay: var(--d); }
-.mp-flores i:nth-child(3n) { color: rgba(170, 140, 255, .35); }
-.mp-flores i svg { width: 100%; height: 100%; fill: currentColor; stroke: none; }
-/* La tarjeta: vidrio esmerilado que se inclina un poquito con el dedo */
-.mp-tarjeta { position: relative; width: min(410px, 100%); padding: 18px 20px 16px; border-radius: 32px; background: linear-gradient(160deg, rgba(255, 255, 255, .82), rgba(255, 244, 250, .7)); border: 1px solid rgba(255, 255, 255, .7); box-shadow: 0 30px 80px rgba(160, 60, 110, .22), 0 2px 0 rgba(255, 255, 255, .8) inset; backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2); text-align: center; transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .5s cubic-bezier(.2, .8, .2, 1); animation: mpEntra .9s cubic-bezier(.2, .9, .3, 1.15) both; }
-@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .mp-tarjeta { background: linear-gradient(160deg, rgba(52, 30, 46, .86), rgba(36, 26, 52, .78)); border-color: rgba(255, 255, 255, .08); box-shadow: 0 30px 80px rgba(0, 0, 0, .45); } }
-:root[data-tema="oscuro"] .mp-tarjeta { background: linear-gradient(160deg, rgba(52, 30, 46, .86), rgba(36, 26, 52, .78)); border-color: rgba(255, 255, 255, .08); box-shadow: 0 30px 80px rgba(0, 0, 0, .45); }
-@keyframes mpEntra { from { opacity: 0; transform: translateY(40px) scale(.92) rotateX(12deg); } }
-.mp-arriba { display: flex; justify-content: flex-end; min-height: 34px; }
-.mp-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: 99px; background: rgba(255, 255, 255, .75); box-shadow: 0 2px 10px rgba(160, 60, 110, .12); font-size: 13px; font-weight: 600; color: var(--amor-tinta); animation: mpBoton .6s .2s both; }
-.mp-chip > i { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, var(--amor-1), var(--amor-lila)); color: #fff; font: 700 13px/1 system-ui, sans-serif; font-style: normal; }
-.mp-chip > i svg { width: 15px; height: 15px; }
-.mp-chip.sin > i { background: rgba(216, 57, 122, .12); color: var(--amor-2); }
-.mp-chip em { width: 8px; height: 8px; border-radius: 50%; background: #3ccf8e; box-shadow: 0 0 0 3px rgba(60, 207, 142, .2); }
-@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .mp-chip { background: rgba(70, 42, 62, .8); } }
-:root[data-tema="oscuro"] .mp-chip { background: rgba(70, 42, 62, .8); }
-/* El librito que pasa sus hojas */
-.mp-libro { position: relative; width: 112px; height: 86px; margin: 4px auto 6px; perspective: 500px; }
+.mp-capa.fuera { opacity: 0; pointer-events: none; transition-duration: .65s; }
+.mp-capa.fuera .mp-tarjeta { transform: perspective(1200px) translateY(-14px) scale(1.06); opacity: 0; transition: transform .65s cubic-bezier(.5, 0, .2, 1), opacity .5s; animation: none; }
+/* El fondo: luces que se mueven despacio, corazones que suben y destellos (sólo transform y opacity, sin desenfoques) */
+.mp-fondo { position: fixed; inset: 0; pointer-events: none; overflow: hidden; contain: strict; }
+.mp-orbe { position: absolute; width: 80vmax; height: 80vmax; border-radius: 50%; will-change: transform; animation: mpOrbe 26s ease-in-out infinite alternate; }
+.mp-orbe:nth-child(1) { left: -30vmax; top: -38vmax; background: radial-gradient(closest-side, rgba(255, 156, 198, .5), rgba(255, 156, 198, 0)); }
+.mp-orbe:nth-child(2) { right: -38vmax; top: -6vmax; background: radial-gradient(closest-side, rgba(180, 156, 255, .42), rgba(180, 156, 255, 0)); animation-duration: 31s; animation-delay: -9s; }
+.mp-orbe:nth-child(3) { left: -10vmax; bottom: -50vmax; background: radial-gradient(closest-side, rgba(255, 200, 168, .48), rgba(255, 200, 168, 0)); animation-duration: 36s; animation-delay: -16s; }
+@keyframes mpOrbe { to { transform: translate3d(9vw, 7vh, 0) scale(1.12); } }
+.mp-sube { position: absolute; bottom: -44px; width: calc(22px * var(--s)); height: calc(22px * var(--s)); color: rgba(255, 110, 170, .32); will-change: transform; animation: mpSube var(--t) linear infinite; animation-delay: var(--d); }
+.mp-sube:nth-of-type(3n) { color: rgba(160, 130, 255, .3); }
+.mp-sube svg { width: 100%; height: 100%; fill: currentColor; stroke: none; }
+@keyframes mpSube { from { transform: translate3d(0, 0, 0) rotate(0); } 50% { transform: translate3d(var(--x), -56vh, 0) rotate(14deg); } to { transform: translate3d(0, -118vh, 0) rotate(-10deg); } }
+.mp-destello { position: absolute; width: 8px; height: 8px; background: #fff; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); opacity: 0; animation: mpTitila 4.2s ease-in-out infinite; animation-delay: var(--d); }
+@keyframes mpTitila { 0%, 100% { opacity: 0; transform: scale(.3) rotate(0); } 50% { opacity: .95; transform: scale(1) rotate(45deg); } }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .mp-orbe { opacity: .55; } :root:not([data-tema="claro"]) .mp-destello { background: #ffd6e8; } }
+:root[data-tema="oscuro"] .mp-orbe { opacity: .55; }
+/* La tarjeta: papel con puntitos (sin vidrio esmerilado: era lo más pesado y lo que parpadeaba en Android) */
+.mp-tarjeta { position: relative; width: min(430px, 100%); padding: 12px 18px 12px; border-radius: 34px; background: linear-gradient(165deg, rgba(255, 255, 255, .96), rgba(255, 246, 251, .93)); border: 1px solid rgba(255, 255, 255, .95); box-shadow: 0 30px 80px rgba(160, 60, 110, .2), 0 2px 0 #fff inset; text-align: center; transform: perspective(1200px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .5s cubic-bezier(.2, .8, .2, 1); animation: mpEntra .9s cubic-bezier(.2, .9, .3, 1.15) both; }
+.mp-tarjeta::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background-image: radial-gradient(rgba(216, 57, 122, .07) 1px, transparent 1.3px); background-size: 18px 18px; pointer-events: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .mp-tarjeta { background: linear-gradient(165deg, rgba(50, 30, 46, .97), rgba(34, 25, 50, .95)); border-color: rgba(255, 255, 255, .06); box-shadow: 0 30px 80px rgba(0, 0, 0, .45); } }
+:root[data-tema="oscuro"] .mp-tarjeta { background: linear-gradient(165deg, rgba(50, 30, 46, .97), rgba(34, 25, 50, .95)); border-color: rgba(255, 255, 255, .06); box-shadow: 0 30px 80px rgba(0, 0, 0, .45); }
+@keyframes mpEntra { from { opacity: 0; transform: perspective(1200px) translateY(40px) scale(.92) rotateX(12deg); } }
+.mp-arriba { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; }
+.mp-marca { display: inline-flex; align-items: center; gap: 7px; font: 700 12px/1 Jost, system-ui, sans-serif; letter-spacing: .24em; color: var(--amor-2); }
+.mp-marca svg { width: 15px; height: 15px; fill: currentColor; stroke: none; animation: dtLate 1.8s ease-in-out infinite; }
+.mp-chip { display: inline-flex; align-items: center; gap: 8px; max-width: 60%; padding: 4px 13px 4px 4px; border: 0; border-radius: 99px; background: #fff; box-shadow: 0 3px 12px rgba(160, 60, 110, .14); font: 600 13px/1 inherit; color: var(--amor-tinta); cursor: pointer; transition: transform .2s cubic-bezier(.3, 1.6, .5, 1), box-shadow .2s; -webkit-tap-highlight-color: transparent; }
+.mp-chip:hover { box-shadow: 0 6px 18px rgba(216, 57, 122, .2); transform: translateY(-1px); }
+.mp-chip:active { transform: scale(.94); }
+.mp-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-chip > i { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: rgba(216, 57, 122, .1); color: var(--amor-2); }
+.mp-chip > i svg { width: 16px; height: 16px; }
+.mp-chip-av { --tam: 30px; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .mp-chip { background: #3a2335; } }
+:root[data-tema="oscuro"] .mp-chip { background: #3a2335; }
+/* Las pantallas: cada cosa entra escalonada (sólo al llegar, nunca al ponerse al día) */
+.mp-escena { position: relative; z-index: 1; }
+.mp-vista { display: flex; flex-direction: column; gap: 12px; padding: 4px 0 2px; }
+.mp-vista > *, .mp-cartas > * { animation: mpAparece .6s cubic-bezier(.2, .9, .3, 1.2) both; animation-delay: calc(.06s + var(--i, 0) * .055s); }
+@keyframes mpAparece { from { opacity: 0; transform: translateY(14px) scale(.98); } }
+/* La pareja: dos polaroids con su cinta y el hilo rojo */
+.mp-hero { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.mp-pareja { position: relative; display: flex; align-items: flex-start; justify-content: center; width: 100%; padding: 12px 0 0; }
+.mp-pola { position: relative; flex: none; display: block; margin: 0; padding: 8px 8px 0; width: 112px; border: 0; border-radius: 5px; background: #fff; box-shadow: 0 12px 26px rgba(120, 40, 80, .18), 0 1px 2px rgba(120, 40, 80, .1); color: var(--amor-tinta); font: inherit; transform: rotate(-6deg); transition: transform .4s cubic-bezier(.3, 1.4, .5, 1); z-index: 1; -webkit-tap-highlight-color: transparent; }
+.mp-pola.ella { transform: rotate(6deg); cursor: pointer; }
+.mp-pola:hover { transform: rotate(0) translateY(-4px) scale(1.04); }
+.mp-pola:active { transform: scale(.96); }
+.mp-pola-foto { --tam: 96px; width: 96px; height: 96px; border-radius: 3px; box-shadow: none; }
+.mp-pola figcaption { padding: 5px 2px 7px; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 20px/1.1 Caveat, "Segoe Script", cursive; color: #4a2338; }
+.mp-cinta { position: absolute; top: -10px; left: 50%; width: 52px; height: 19px; margin-left: -26px; background: rgba(255, 186, 214, .78); transform: rotate(-5deg); box-shadow: 0 1px 2px rgba(0, 0, 0, .06); z-index: 2; }
+.mp-pola.ella .mp-cinta { background: rgba(200, 186, 255, .8); transform: rotate(6deg); }
+.mp-pola.vacia { background: rgba(255, 255, 255, .7); outline: 2px dashed rgba(216, 57, 122, .35); outline-offset: -5px; animation: mpEspera 3s ease-in-out infinite; }
+.mp-pola.vacia figcaption { color: #9b6b85; }
+@keyframes mpEspera { 0%, 100% { transform: rotate(6deg); } 50% { transform: rotate(3deg) translateY(-4px); } }
+.mp-en-linea { position: absolute; right: 2px; top: 2px; width: 13px; height: 13px; border-radius: 50%; background: #3ccf8e; box-shadow: 0 0 0 2.5px #fff; opacity: 0; transform: scale(0); transition: opacity .3s, transform .4s cubic-bezier(.3, 1.8, .5, 1); z-index: 3; }
+.mp-pola.en-linea .mp-en-linea { opacity: 1; transform: none; animation: mpPunto 2s ease-out infinite; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .mp-pola { background: #fdf6f9; } }
+.mp-hilo { position: relative; flex: 0 0 70px; height: 46px; margin: 46px -12px 0; z-index: 2; }
+.mp-hilo svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.mp-hilo-cuerda { fill: none; stroke: #e0325f; stroke-width: 2.4; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.mp-hilo-luz { fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-dasharray: 10 150; vector-effect: non-scaling-stroke; opacity: .85; animation: mpHiloLuz 2.6s linear infinite; }
+@keyframes mpHiloLuz { from { stroke-dashoffset: 160; } to { stroke-dashoffset: 0; } }
+.mp-hilo-corazon { position: absolute; left: 50%; top: 14px; width: 28px; height: 28px; margin-left: -14px; color: #e0325f; animation: dtLate 1.6s ease-in-out infinite; }
+.mp-hilo-corazon svg { width: 100%; height: 100%; fill: currentColor; stroke: none; }
+.mp-pareja.sola .mp-hilo-cuerda { stroke-dasharray: 4 6; opacity: .5; }
+.mp-pareja.sola .mp-hilo-luz { display: none; }
+.mp-pareja.sola .mp-hilo-corazon { color: #ebb6c9; animation-duration: 3s; }
+/* Cuántos días llevan juntos y lo que viene */
+.mp-dias { display: flex; flex-direction: column; align-items: center; }
+.mp-dias small { font-size: 11px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--amor-suave); }
+.mp-dias > div { display: flex; align-items: baseline; gap: 6px; margin-top: -2px; }
+.mp-dias-num { font: italic 700 54px/1.02 "Cormorant Garamond", Georgia, serif; font-variant-numeric: tabular-nums; background: linear-gradient(135deg, #ff7aa8, #d8397a 55%, #8f6fe8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.mp-dias > div span { font: 700 26px/1 Caveat, "Segoe Script", cursive; color: var(--amor-2); }
+.mp-dias em { font-style: normal; font-size: 13px; color: var(--amor-suave); }
+.mp-proximo { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; padding: 7px 14px 7px 10px; border-radius: 99px; background: #fff; box-shadow: 0 4px 14px rgba(160, 60, 110, .12); font-size: 12.5px; font-weight: 600; line-height: 1.25; color: var(--amor-tinta); text-align: left; }
+.mp-proximo > i { flex: none; width: 18px; height: 18px; color: var(--amor-2); }
+.mp-proximo > i svg { width: 100%; height: 100%; }
+.mp-proximo.hoy { background: linear-gradient(135deg, var(--amor-1), var(--amor-2)); color: #fff; box-shadow: 0 8px 20px rgba(216, 57, 122, .35); animation: mpFiesta 2.4s ease-in-out infinite; }
+.mp-proximo.hoy > i { color: #fff; }
+@keyframes mpFiesta { 0%, 100% { transform: none; } 10% { transform: rotate(-3deg) scale(1.04); } 20% { transform: rotate(3deg) scale(1.04); } 30% { transform: none; } }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .mp-proximo:not(.hoy) { background: #3a2335; } }
+:root[data-tema="oscuro"] .mp-proximo:not(.hoy) { background: #3a2335; }
+.mp-invita { margin: 0; max-width: 300px; font-size: 13px; line-height: 1.4; color: var(--amor-suave); }
+.mp-poner-fecha { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border: 1.5px dashed rgba(216, 57, 122, .4); border-radius: 99px; background: none; color: var(--amor-2); font: 600 13px/1.2 inherit; cursor: pointer; transition: background .2s, transform .2s; }
+.mp-poner-fecha:hover { background: rgba(216, 57, 122, .06); }
+.mp-poner-fecha:active { transform: scale(.96); }
+.mp-poner-fecha svg { width: 17px; height: 17px; }
+.mp-nada { display: none; }
+/* El librito que pasa sus hojas (sin cuenta) */
+.mp-libro { position: relative; width: 112px; height: 86px; margin: 8px auto 4px; perspective: 500px; }
 .mp-libro .mp-tapa { position: absolute; left: 6px; right: 6px; bottom: 0; height: 74px; border-radius: 10px 10px 14px 14px; background: linear-gradient(135deg, var(--amor-1), var(--amor-2)); box-shadow: 0 14px 30px rgba(216, 57, 122, .35); }
 .mp-libro .mp-tapa::after { content: ""; position: absolute; left: 50%; top: 6px; bottom: 6px; width: 3px; margin-left: -1.5px; border-radius: 3px; background: rgba(255, 255, 255, .45); }
 .mp-libro .mp-hoja { position: absolute; left: 50%; bottom: 6px; width: 46px; height: 64px; border-radius: 3px 10px 10px 3px; background: linear-gradient(90deg, #fff4f8, #fff); box-shadow: 0 1px 3px rgba(120, 40, 80, .18); transform-origin: left center; animation: mpPasa 4.8s cubic-bezier(.45, .05, .3, 1) infinite; }
@@ -307,7 +386,7 @@
 .mp-libro .mp-hoja:nth-of-type(3) { animation-delay: 1.6s; }
 .mp-libro .mp-hoja:nth-of-type(4) { animation-delay: 3.2s; }
 .mp-libro::before { content: ""; position: absolute; right: 50%; bottom: 6px; width: 46px; height: 64px; border-radius: 10px 3px 3px 10px; background: linear-gradient(270deg, #fff4f8, #fff); box-shadow: 0 1px 3px rgba(120, 40, 80, .18); }
-@keyframes mpPasa { 0% { transform: rotateY(0); opacity: 0; } 6%, 12% { transform: rotateY(0); opacity: 1; } 42% { transform: rotateY(-180deg); filter: brightness(.95); } 88% { transform: rotateY(-180deg); opacity: 1; } 100% { transform: rotateY(-180deg); opacity: 0; } }
+@keyframes mpPasa { 0% { transform: rotateY(0); opacity: 0; } 6%, 12% { transform: rotateY(0); opacity: 1; } 42% { transform: rotateY(-180deg); } 88% { transform: rotateY(-180deg); opacity: 1; } 100% { transform: rotateY(-180deg); opacity: 0; } }
 .mp-latido { position: absolute; right: -2px; top: -4px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #fff; color: var(--amor-2); box-shadow: 0 6px 16px rgba(216, 57, 122, .35); animation: dtLate 1.6s ease-in-out infinite; z-index: 2; }
 .mp-latido svg { width: 18px; height: 18px; fill: currentColor; stroke: none; }
 .mp-brillo { position: absolute; width: 8px; height: 8px; background: #fff; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); filter: drop-shadow(0 0 4px rgba(255, 140, 190, .9)); animation: mpBrilla 2.6s ease-in-out infinite; }
@@ -315,50 +394,189 @@
 .mp-brillo:nth-of-type(2) { right: 18px; top: -10px; animation-delay: .9s; width: 6px; height: 6px; }
 .mp-brillo:nth-of-type(3) { left: 14px; top: -6px; animation-delay: 1.7s; width: 10px; height: 10px; }
 @keyframes mpBrilla { 0%, 100% { transform: scale(0) rotate(0); opacity: 0; } 50% { transform: scale(1) rotate(90deg); opacity: 1; } }
-.mp-tarjeta h1 { position: relative; display: inline-block; margin: 2px 0 0; font: 700 46px/1 Caveat, "Segoe Script", cursive; color: var(--amor-2); }
+/* «Crear librito» */
+.mp-titulo h1 { position: relative; display: inline-block; margin: 2px 0 0; font: 700 44px/1 Caveat, "Segoe Script", cursive; color: var(--amor-2); }
 .mp-subrayado { position: absolute; display: block; left: -2px; right: -2px; bottom: -3px; height: 10px; line-height: 0; }
 .mp-subrayado svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.mp-subrayado path { fill: none; stroke: var(--amor-1); stroke-width: 4; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-dasharray: 260; stroke-dashoffset: 260; animation: mpTraza 1.1s .5s cubic-bezier(.6, 0, .3, 1) forwards; }
+.mp-subrayado path { fill: none; stroke: var(--amor-1); stroke-width: 4; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-dasharray: 260; stroke-dashoffset: 260; animation: mpTraza 1.1s .45s cubic-bezier(.6, 0, .3, 1) forwards; }
 @keyframes mpTraza { to { stroke-dashoffset: 0; } }
-.mp-sub { margin: 16px 0 16px; font-size: 14.5px; color: var(--amor-suave); }
-.mp-botones { display: flex; flex-direction: column; gap: 10px; }
-.mp-botones > * { animation: mpBoton .6s cubic-bezier(.2, .9, .3, 1.2) both; }
-.mp-botones > *:nth-child(1) { animation-delay: .35s; } .mp-botones > *:nth-child(2) { animation-delay: .45s; } .mp-botones > *:nth-child(3) { animation-delay: .55s; }
-@keyframes mpBoton { from { opacity: 0; transform: translateY(16px) scale(.97); } }
-.mp-btn { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 52px; padding: 12px 16px; border: 1.5px solid rgba(216, 57, 122, .2); border-radius: 18px; background: rgba(255, 255, 255, .85); color: var(--amor-tinta); font: 600 15px/1.2 inherit; text-decoration: none; cursor: pointer; overflow: hidden; transition: transform .15s, box-shadow .2s, background .2s; -webkit-tap-highlight-color: transparent; }
-@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .mp-btn:not(.primario):not(.suave) { background: rgba(60, 36, 54, .85); } }
-:root[data-tema="oscuro"] .mp-btn:not(.primario):not(.suave) { background: rgba(60, 36, 54, .85); }
+.mp-sub { margin: 10px 0 0; font-size: 14px; color: var(--amor-suave); }
+/* Botones */
+.mp-btn { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 52px; padding: 12px 16px; border: 1.5px solid rgba(216, 57, 122, .2); border-radius: 18px; background: #fff; color: var(--amor-tinta); font: 600 15px/1.2 inherit; text-decoration: none; cursor: pointer; overflow: hidden; transition: transform .18s cubic-bezier(.3, 1.6, .5, 1), box-shadow .2s, background .2s; -webkit-tap-highlight-color: transparent; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .mp-btn:not(.primario):not(.suave) { background: #3a2335; } }
+:root[data-tema="oscuro"] .mp-btn:not(.primario):not(.suave) { background: #3a2335; }
 .mp-btn:hover { box-shadow: 0 8px 22px rgba(216, 57, 122, .16); }
-.mp-btn:active { transform: scale(.97); }
+.mp-btn:active { transform: scale(.96); }
+.mp-btn:disabled { opacity: .6; cursor: default; }
 .mp-btn svg { width: 21px; height: 21px; flex: none; }
-.mp-btn.primario { min-height: 60px; border-color: transparent; background: linear-gradient(135deg, var(--amor-1), var(--amor-2)); color: #fff; font-size: 17px; box-shadow: 0 14px 30px rgba(216, 57, 122, .36); }
-/* Un destello que cruza el botón principal de vez en cuando */
+.mp-btn.primario { min-height: 58px; border-color: transparent; background: linear-gradient(135deg, var(--amor-1), var(--amor-2)); color: #fff; font-size: 17px; box-shadow: 0 14px 30px rgba(216, 57, 122, .36); }
 .mp-btn.primario::after { content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .55), transparent); transform: skewX(-18deg); animation: mpDestello 4.5s 1.4s ease-in-out infinite; }
 @keyframes mpDestello { 0%, 70% { left: -40%; } 100% { left: 130%; } }
 .mp-btn.suave { background: transparent; border-color: transparent; color: var(--amor-suave); min-height: 42px; font-size: 14px; }
 .mp-btn.suave:hover { box-shadow: none; color: var(--amor-2); }
-/* Dos tarjetas: Detallitos y tu cuenta */
-.mp-cartas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.mp-carta { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-height: 104px; padding: 14px 14px 12px; border: 1.5px solid rgba(216, 57, 122, .16); border-radius: 22px; background: rgba(255, 255, 255, .86); color: var(--amor-tinta); text-align: left; cursor: pointer; transition: transform .2s cubic-bezier(.2, .8, .2, 1.3), box-shadow .2s; -webkit-tap-highlight-color: transparent; font: inherit; }
-.mp-carta:hover { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(216, 57, 122, .18); }
-.mp-carta:active { transform: scale(.96); }
-.mp-carta > i { width: 38px; height: 38px; display: grid; place-items: center; margin-bottom: 6px; border-radius: 13px; background: rgba(216, 57, 122, .1); color: var(--amor-2); }
-.mp-carta > i svg { width: 21px; height: 21px; }
-.mp-carta b { font-size: 15px; }
-.mp-carta small { font-size: 12px; line-height: 1.3; color: var(--amor-suave); }
+.mp-btn.chico { width: auto; min-height: 36px; padding: 7px 12px; font-size: 13px; border-radius: 13px; }
+.mp-btn.chico svg { width: 17px; height: 17px; }
+/* Tres tarjetas: Detallitos, Mis libritos y tu perfil */
+.mp-cartas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+.mp-carta { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 112px; padding: 14px 6px 11px; border: 1.5px solid rgba(216, 57, 122, .14); border-radius: 22px; background: #fff; color: var(--amor-tinta); text-align: center; cursor: pointer; transition: transform .22s cubic-bezier(.3, 1.6, .5, 1), box-shadow .2s; -webkit-tap-highlight-color: transparent; font: inherit; }
+.mp-carta:hover { transform: translateY(-3px) rotate(-1deg); box-shadow: 0 12px 26px rgba(216, 57, 122, .18); }
+.mp-carta:active { transform: scale(.94); }
+.mp-carta > i { width: 42px; height: 42px; display: grid; place-items: center; margin-bottom: 5px; border-radius: 14px; background: rgba(216, 57, 122, .1); color: var(--amor-2); transition: transform .3s cubic-bezier(.3, 1.6, .5, 1); }
+.mp-carta:hover > i { transform: rotate(-8deg) scale(1.08); }
+.mp-carta > i svg { width: 22px; height: 22px; }
+.mp-carta-av { --tam: 42px; margin-bottom: 5px; }
+.mp-carta b { font-size: 14px; }
+.mp-carta small { font-size: 11px; line-height: 1.25; color: var(--amor-suave); }
 .mp-carta.amor { background: linear-gradient(150deg, #fff0f6, #efe9ff); }
 .mp-carta.amor > i { background: linear-gradient(135deg, var(--amor-1), var(--amor-2)); color: #fff; box-shadow: 0 6px 16px rgba(216, 57, 122, .3); animation: dtLate 1.8s ease-in-out infinite; }
-.mp-carta > .dt-globo { position: absolute; top: 10px; right: 10px; margin: 0; }
-.mp-punto { position: absolute; top: 14px; right: 14px; width: 9px; height: 9px; border-radius: 50%; background: #3ccf8e; box-shadow: 0 0 0 0 rgba(60, 207, 142, .5); animation: mpPunto 2s ease-out infinite; }
-.mp-carta > .dt-globo ~ .mp-punto { right: 40px; }
-@keyframes mpPunto { 70% { box-shadow: 0 0 0 9px rgba(60, 207, 142, 0); } 100% { box-shadow: 0 0 0 0 rgba(60, 207, 142, 0); } }
-@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .mp-carta { background: rgba(60, 36, 54, .85); border-color: rgba(255, 255, 255, .06); } :root:not([data-tema="claro"]) .mp-carta.amor { background: linear-gradient(150deg, #4a2338, #32285a); } }
-:root[data-tema="oscuro"] .mp-carta { background: rgba(60, 36, 54, .85); border-color: rgba(255, 255, 255, .06); }
+.mp-carta > .dt-globo { position: absolute; top: 8px; right: 8px; margin: 0; }
+@keyframes mpPunto { 0% { box-shadow: 0 0 0 2.5px #fff, 0 0 0 2.5px rgba(60, 207, 142, .5); } 70% { box-shadow: 0 0 0 2.5px #fff, 0 0 0 10px rgba(60, 207, 142, 0); } 100% { box-shadow: 0 0 0 2.5px #fff, 0 0 0 2.5px rgba(60, 207, 142, 0); } }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .mp-carta { background: #3a2335; border-color: rgba(255, 255, 255, .06); } :root:not([data-tema="claro"]) .mp-carta.amor { background: linear-gradient(150deg, #4a2338, #32285a); } }
+:root[data-tema="oscuro"] .mp-carta { background: #3a2335; border-color: rgba(255, 255, 255, .06); }
 :root[data-tema="oscuro"] .mp-carta.amor { background: linear-gradient(150deg, #4a2338, #32285a); }
-.mp-cuenta { text-align: left; margin-bottom: 8px; animation: mpBoton .5s ease both; }
-.mp-pie { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--amor-suave); opacity: .8; }
+@media (max-width: 340px) { .mp-cartas { grid-template-columns: 1fr 1fr; } }
+/* Tu cuenta y tu perfil, dentro del menú */
+.mp-volver { align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; padding: 8px 13px 8px 8px; border: 0; border-radius: 14px; background: rgba(216, 57, 122, .08); color: var(--amor-2); font: 600 13.5px/1 inherit; cursor: pointer; transition: transform .2s cubic-bezier(.3, 1.6, .5, 1), background .2s; }
+.mp-volver:hover { background: rgba(216, 57, 122, .14); }
+.mp-volver:active { transform: scale(.94); }
+.mp-volver svg { width: 18px; height: 18px; }
+.mp-cuenta-cab i { width: 56px; height: 56px; display: grid; place-items: center; margin: 0 auto 4px; border-radius: 19px; background: linear-gradient(135deg, var(--amor-1), var(--amor-2)); color: #fff; box-shadow: 0 10px 24px rgba(216, 57, 122, .3); animation: dtFlota 3.4s ease-in-out infinite; }
+.mp-cuenta-cab i svg { width: 28px; height: 28px; }
+.mp-cuenta-cab h2, .mp-perfil-cab h2 { margin: 0; font: 700 32px/1.05 Caveat, "Segoe Script", cursive; color: var(--amor-2); }
+.mp-cuenta-cab p { margin: 4px auto 0; max-width: 330px; font-size: 13px; line-height: 1.4; color: var(--amor-suave); }
+.mp-cuenta-form { text-align: left; }
+.mp-perfil-cab { display: flex; align-items: center; gap: 10px; }
+.mp-perfil-cab h2 { flex: 1; text-align: right; padding-right: 4px; }
+.mp-pie { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--amor-suave); opacity: .8; }
 .mp-pie svg { width: 11px; height: 11px; fill: var(--amor-2); stroke: none; }
-@media (max-height: 640px) { .mp-libro { transform: scale(.8); margin: -6px auto -4px; } .mp-tarjeta h1 { font-size: 40px; } .mp-carta { min-height: 92px; } }
+@media (max-height: 700px) { .mp-pola { width: 98px; } .mp-pola-foto { --tam: 82px; width: 82px; height: 82px; } .mp-hilo { margin-top: 40px; } .mp-dias-num { font-size: 44px; } .mp-titulo h1 { font-size: 38px; } .mp-carta { min-height: 100px; } }
+
+/* ── Tu perfil ───────────────────────────────────────────────────── */
+.pf { display: flex; flex-direction: column; gap: 12px; text-align: left; }
+.pf-cabeza { display: flex; align-items: center; gap: 18px; padding: 6px 2px 2px; }
+.pf-foto { position: relative; flex: none; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; isolation: isolate; -webkit-tap-highlight-color: transparent; transition: transform .25s cubic-bezier(.3, 1.6, .5, 1); }
+.pf-foto:active { transform: scale(.95); }
+.pf-foto::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; background: conic-gradient(var(--amor-1), var(--amor-lila), var(--amor-durazno), var(--amor-1)); z-index: -1; animation: pfGira 7s linear infinite; }
+@keyframes pfGira { to { transform: rotate(360deg); } }
+.pf-av { --tam: 96px; box-shadow: 0 0 0 4px #fff, 0 10px 26px rgba(160, 60, 110, .25); }
+.pf-camara { position: absolute; right: -4px; bottom: -4px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, var(--amor-1), var(--amor-2)); color: #fff; box-shadow: 0 0 0 3px #fff, 0 4px 10px rgba(216, 57, 122, .35); transition: transform .3s cubic-bezier(.3, 1.6, .5, 1); }
+.pf-foto:hover .pf-camara { transform: rotate(-12deg) scale(1.1); }
+.pf-camara svg { width: 18px; height: 18px; }
+.pf-girando { position: absolute; inset: 0; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .35); border-top-color: #fff; background: rgba(40, 10, 30, .3); opacity: 0; pointer-events: none; transition: opacity .2s; animation: dtGira .8s linear infinite; }
+.pf-foto.cargando .pf-girando { opacity: 1; }
+.pf-foto.brilla .pf-av { animation: pfBrilla .9s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes pfBrilla { 30% { transform: scale(1.12) rotate(-6deg); } 60% { transform: scale(.97) rotate(3deg); } }
+.pf-quien { flex: 1; min-width: 0; }
+.pf-quien b { display: block; font: 700 30px/1.02 Caveat, "Segoe Script", cursive; color: var(--amor-2); overflow-wrap: anywhere; }
+.pf-quien small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--amor-suave); }
+.pf-quitar { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; padding: 4px 8px 4px 4px; border: 0; border-radius: 9px; background: none; color: var(--amor-suave); font: 600 12px/1 inherit; cursor: pointer; }
+.pf-quitar[hidden] { display: none; }
+.pf-quitar:hover { color: #c0466f; background: rgba(216, 57, 122, .06); }
+.pf-quitar svg { width: 14px; height: 14px; }
+.pf-campo { display: flex; flex-direction: column; gap: 5px; }
+.pf-et { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--amor-suave); }
+.pf-et svg { width: 16px; height: 16px; color: var(--amor-2); }
+.pf-input { box-sizing: border-box; width: 100%; min-height: 46px; padding: 10px 14px; border: 1.5px solid rgba(216, 57, 122, .2); border-radius: 15px; background: #fff; color: var(--amor-tinta); font: 15px/1.2 inherit; outline: none; transition: border-color .15s, box-shadow .15s; }
+.pf-input:focus { border-color: var(--amor-2); box-shadow: 0 0 0 4px rgba(216, 57, 122, .14); }
+.pf-input[type="date"] { -webkit-appearance: none; appearance: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .pf-input { background: #2a1a27; color-scheme: dark; } }
+:root[data-tema="oscuro"] .pf-input { background: #2a1a27; color-scheme: dark; }
+.pf-campo small { font-size: 11.5px; line-height: 1.3; color: var(--amor-suave); }
+.pf-estado { min-height: 1.1em; margin-top: -4px; font-size: 12.5px; color: var(--amor-suave); text-align: center; }
+.pf-estado.bien { color: #2c9a68; }
+.pf-estado.mal { color: #c0466f; }
+.pf-pareja { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 18px; background: linear-gradient(135deg, #fff0f6, #f1ebff); }
+.pf-pareja > div { flex: 1; min-width: 0; }
+.pf-pareja b { display: block; font-size: 14px; color: var(--amor-tinta); }
+.pf-pareja small { display: block; font-size: 12px; color: var(--amor-suave); }
+.pf-av-mini { --tam: 46px; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .pf-pareja { background: linear-gradient(135deg, #3a1f30, #2a2240); } }
+:root[data-tema="oscuro"] .pf-pareja { background: linear-gradient(135deg, #3a1f30, #2a2240); }
+.pf-salir { color: #c0466f; }
+/* Elegir el pedacito de la foto */
+.pf-recorte { position: relative; margin: 6px auto 4px; border-radius: 50%; overflow: hidden; background: #241520; touch-action: none; cursor: grab; box-shadow: 0 12px 30px rgba(0, 0, 0, .25); }
+.pf-recorte:active { cursor: grabbing; }
+.pf-recorte img { position: absolute; left: 50%; top: 50%; max-width: none; transform-origin: center; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+.pf-recorte-aro { position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .9); pointer-events: none; }
+.pf-recorte-ayuda { margin: 0 0 4px; text-align: center; font-size: 13px; color: var(--texto-suave, #8a6a7c); }
+.pf-zoom { display: flex; align-items: center; gap: 10px; margin: 10px 4px 0; color: var(--texto-suave, #8a6a7c); }
+.pf-zoom input { flex: 1; accent-color: var(--amor-2); }
+.pf-zoom svg { width: 18px; height: 18px; }
+
+/* ── Detallitos (Fase 20): arriba, tus fotos; la espera; vincular ─── */
+.dt-escena { position: relative; }
+.dt-cab-pareja { position: relative; flex: none; display: flex; align-items: center; padding: 4px 8px 4px 4px; border-radius: 99px; background: rgba(255, 255, 255, .92); box-shadow: 0 3px 12px rgba(160, 60, 110, .14); }
+.dt-cab-pareja:empty { display: none; }
+.dt-mini { --tam: 32px; }
+.dt-mini-corazon { position: relative; z-index: 1; width: 16px; height: 16px; margin: 0 -4px; color: #d7bfcb; }
+.dt-mini-corazon svg { width: 100%; height: 100%; fill: currentColor; stroke: none; }
+.dt-mini-corazon.late { color: #e0325f; animation: dtLate 1.6s ease-in-out infinite; }
+.dt-mini-punto { position: absolute; right: 6px; bottom: 3px; width: 11px; height: 11px; border-radius: 50%; background: #c7b0bd; box-shadow: 0 0 0 2px #fff; transition: background .3s; }
+.dt-mini-punto.on { background: #3ccf8e; animation: mpPunto 2s ease-out infinite; }
+.dt-espera { align-items: center; justify-content: center; min-height: 52vh; text-align: center; color: var(--amor-suave); }
+.dt-espera-corazon { display: block; width: 66px; height: 66px; color: var(--amor-2); animation: dtLate 1.2s ease-in-out infinite !important; }
+.dt-espera-corazon svg { width: 100%; height: 100%; fill: currentColor; stroke: none; filter: drop-shadow(0 8px 16px rgba(216, 57, 122, .35)); }
+.dt-washi { position: absolute; top: -11px; left: 26px; width: 86px; height: 22px; background: rgba(255, 186, 214, .8); transform: rotate(-5deg); box-shadow: 0 1px 2px rgba(0, 0, 0, .06); z-index: 3; }
+.dt-carta-papel .dt-mensaje { background: repeating-linear-gradient(transparent 0 27px, rgba(216, 57, 122, .12) 27px 28px), rgba(255, 255, 255, .95); line-height: 28px; padding-top: 6px; }
+.dt-enlace:hover { background: rgba(216, 57, 122, .07); }
+/* Vincular: la escenita con el hilo rojo */
+.vn { overflow: hidden; }
+.vn-escena { position: relative; display: flex; align-items: center; justify-content: center; max-width: 340px; height: 124px; margin: 2px auto 4px; }
+.vn-lado { position: relative; z-index: 2; flex: none; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 104px; transition: transform .95s cubic-bezier(.5, -.3, .3, 1.3), opacity .5s; }
+.vn-lado small { max-width: 104px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 18px/1 Caveat, "Segoe Script", cursive; color: var(--amor-tinta); }
+.vn-av { --tam: 74px; box-shadow: 0 0 0 3px #fff, 0 8px 22px rgba(160, 60, 110, .25); }
+.vn-lado.yo .vn-av { animation: vnFlota 3.4s ease-in-out infinite; }
+.vn-lado.ella .vn-av { animation: vnFlota 3.4s ease-in-out -1.7s infinite; }
+.vn-lado.ella .av.vacio { animation: vnEspera 2.6s ease-in-out infinite; }
+@keyframes vnFlota { 50% { transform: translateY(-5px) rotate(-2deg); } }
+@keyframes vnEspera { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+.vn-llega { animation: vnLlega .75s cubic-bezier(.3, 1.6, .5, 1) both !important; }
+@keyframes vnLlega { from { transform: scale(0) rotate(-40deg); } }
+.vn-hilo { position: relative; z-index: 1; flex: 1; min-width: 50px; height: 60px; margin: -22px -16px 0; transform-origin: 50% 20%; animation: vnMece 3.2s ease-in-out infinite; transition: transform .9s cubic-bezier(.5, -.3, .3, 1.3), opacity .5s; }
+.vn-hilo svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.vn-cuerda { fill: none; stroke: #e0325f; stroke-width: 2.6; stroke-linecap: round; vector-effect: non-scaling-stroke; transition: stroke-dasharray .5s, opacity .5s; }
+.vn-luz { fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 12 170; vector-effect: non-scaling-stroke; opacity: .85; animation: mpHiloLuz 2.4s linear infinite; }
+@keyframes vnMece { 50% { transform: scaleY(.72); } }
+.vn-corazon { position: absolute; left: 50%; top: 50%; z-index: 3; width: 32px; height: 32px; margin: -10px 0 0 -16px; color: #e0325f; transition: transform .95s cubic-bezier(.3, 1.5, .5, 1), color .4s; }
+.vn-corazon svg { width: 100%; height: 100%; fill: currentColor; stroke: none; filter: drop-shadow(0 4px 8px rgba(224, 50, 95, .35)); animation: dtLate 1.6s ease-in-out infinite; }
+.vn-escena:not(.unidos):not(.uniendo) .vn-cuerda { stroke-dasharray: 5 7; opacity: .55; }
+.vn-escena:not(.unidos):not(.uniendo) .vn-luz { opacity: 0; }
+.vn-escena:not(.unidos):not(.uniendo) .vn-corazon { color: #ebb6c9; }
+.vn-escena:not(.unidos):not(.uniendo) .vn-corazon svg { animation-duration: 3s; }
+/* Unidos: juntitos, con el corazón arriba */
+.vn-escena.unidos .vn-lado.yo { transform: translateX(16px); }
+.vn-escena.unidos .vn-lado.ella { transform: translateX(-16px); }
+.vn-escena.unidos .vn-hilo { transform: scaleX(.55); }
+.vn-escena.unidos .vn-corazon { transform: translateY(-36px) scale(1.2); }
+/* Al vincularse: se acercan, el hilo se recoge y el corazón crece */
+.vn-escena.uniendo .vn-lado.yo { transform: translateX(40px) rotate(4deg); }
+.vn-escena.uniendo .vn-lado.ella { transform: translateX(-40px) rotate(-4deg); }
+.vn-escena.uniendo .vn-hilo { transform: scaleX(0); opacity: 0; }
+.vn-escena.uniendo .vn-corazon { transform: translateY(-40px) scale(2); }
+/* Al desvincularse: se separan y el hilo se suelta */
+.vn-escena.separando .vn-lado.yo { transform: translateX(-24px) rotate(-8deg); }
+.vn-escena.separando .vn-lado.ella { transform: translateX(24px) rotate(8deg); opacity: .35; }
+.vn-escena.separando .vn-hilo { transform: scaleX(1.25) scaleY(.2); opacity: 0; }
+.vn-escena.separando .vn-corazon { transform: translateY(40px) scale(0) rotate(90deg); }
+/* Tu código en fichitas */
+.vn-fichas { display: flex; justify-content: center; gap: 3px; perspective: 600px; }
+.vn-fichas span { display: grid; place-items: center; width: clamp(16px, 5.4vw, 26px); height: clamp(30px, 9vw, 40px); border-radius: 8px; background: linear-gradient(165deg, #fff, #ffe6f0); box-shadow: 0 3px 8px rgba(160, 60, 110, .16), inset 0 -2px 0 rgba(216, 57, 122, .14); font: 700 clamp(14px, 4.4vw, 21px)/1 ui-monospace, Menlo, Consolas, monospace; color: var(--amor-2); transform-origin: 50% 100%; animation: vnFicha .55s cubic-bezier(.3, 1.5, .5, 1) both; animation-delay: calc(.25s + var(--i) * .045s); user-select: all; -webkit-user-select: all; }
+.vn-fichas span.guion { width: 7px; background: none; box-shadow: none; color: var(--amor-suave); }
+@keyframes vnFicha { from { transform: rotateX(-95deg); opacity: 0; } }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .vn-fichas span:not(.guion) { background: linear-gradient(165deg, #4a2338, #3a2335); } }
+:root[data-tema="oscuro"] .vn-fichas span:not(.guion) { background: linear-gradient(165deg, #4a2338, #3a2335); }
+.vn-fila { justify-content: center; }
+.vn-input { font: 700 19px/1.2 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
+.vn-input.sacude { animation: vnSacude .42s ease; }
+@keyframes vnSacude { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+.vn-puntos { display: flex; justify-content: center; gap: 7px; margin: 12px 0 2px; }
+.vn-puntos i { width: 17px; height: 17px; color: rgba(216, 57, 122, .18); transition: color .25s, transform .35s cubic-bezier(.3, 1.8, .5, 1); }
+.vn-puntos i svg { width: 100%; height: 100%; fill: currentColor; stroke: none; }
+.vn-puntos i.on { color: #e0325f; transform: scale(1.22); }
+.vn-ir.listo { animation: vnListo 1.5s ease-in-out infinite; }
+.vn-ir.latiendo { animation: dtLate 1s ease-in-out infinite; }
+@keyframes vnListo { 50% { box-shadow: 0 10px 24px rgba(216, 57, 122, .32), 0 0 0 8px rgba(255, 140, 190, .22); } }
+.vn-acciones { display: flex; flex-direction: column; gap: 2px; }
 
 /* Encima del menú principal y de Detallitos: los avisos y las preguntas («¿Quitar…?»). */
 body.con-menu-principal .ed-avisos, body.con-detallitos .ed-avisos { z-index: 2147483400; }
@@ -366,8 +584,8 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 
 @media (prefers-reduced-motion: reduce) {
   .dt-capa, .dt-capa.fuera { transition-duration: .01s; }
-  .dt-burbujas, .mp-flores, .mp-auroras, .mp-brillo { display: none; }
-  .dt-pantalla > *, .dt-nota, .mp-tarjeta, .mp-botones > *, .ex-pantalla > *, .dt-sobre, .mp-logo, .dt-ver-hoja, .mp-hoja, .mp-btn.primario::after, .mp-carta > i, .mp-chip, .dt-previa, .dt-previa-brillo { animation: none !important; }
+  .dt-burbujas, .mp-sube, .mp-destello, .mp-orbe, .dt-cielo, .mp-brillo { display: none; }
+  .dt-pantalla > *, .dt-nota, .mp-tarjeta, .mp-vista > *, .mp-cartas > *, .ex-pantalla > *, .dt-sobre, .dt-ver-hoja, .mp-hoja, .mp-btn.primario::after, .mp-carta > i, .mp-chip, .dt-previa, .dt-previa-brillo, .mp-hilo-luz, .vn-luz, .vn-hilo, .vn-av, .vn-fichas span, .pf-foto::before, .mp-pola.vacia, .mp-proximo.hoy { animation: none !important; }
   .mp-subrayado path { animation: none; stroke-dashoffset: 0; }
   .mp-tarjeta { transform: none !important; }
 }

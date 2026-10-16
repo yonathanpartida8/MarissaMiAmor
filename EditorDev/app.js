@@ -48,6 +48,7 @@ import { MenuExportar } from "./components/exportar-menu.js";
 import { Detallitos } from "./components/detallitos.js";
 import * as SRV from "./integraciones/servidor.js";
 import * as NUBE from "./integraciones/nube.js";
+import * as PF from "./components/perfil.js";
 import { atajos } from "./components/teclado.js";
 import { PLANTILLAS } from "./templates/plantillas.js";
 import { BarraContextual } from "./components/barra.js";
@@ -588,20 +589,27 @@ async function latir() {
   if (!SRV.conectado() || document.hidden) return;
   try {
     const r = await SRV.latido();
-    const antes = app.amorNuevos, parejaAntes = JSON.stringify(app.pareja || null);
+    // Sólo lo que se ve (el «visto hace…» cambia en cada latido y no debe repintar nada).
+    const firma = (p) => (p ? [p.usuario, !!p.en_linea, p.nombre, p.foto_v, p.novios, p.cumple].join("|") : "");
+    const antes = app.amorNuevos, parejaAntes = firma(app.pareja);
     app.amorNuevos = r.nuevos || 0;
     app.pareja = r.pareja;
+    PF.poner({ pareja: r.pareja || null });
     // El globito va en Exportar y en «Más» (en el teléfono, Exportar vive dentro de «Más»).
+    // El globito se cambia en su lugar (quitarlo y ponerlo cada latido lo hacía parpadear).
     for (const b of [$(".ed-exportar"), $(".ed-mas")]) {
-      b?.querySelector(".dt-globo")?.remove();
-      if (app.amorNuevos && b) b.append(el("i.dt-globo", { text: String(app.amorNuevos) }));
+      if (!b) continue;
+      const g = b.querySelector(".dt-globo"), n = String(app.amorNuevos);
+      if (!app.amorNuevos) g?.remove();
+      else if (!g) b.append(el("i.dt-globo", { text: n }));
+      else if (g.textContent !== n) g.textContent = n;
     }
     if (app.amorNuevos > antes) {
       app.sonidos?.sonar("exito");
       const desde = () => [$(".ed-exportar"), $(".ed-mas")].find((b) => b?.offsetParent);
       aviso(`${r.pareja?.usuario || "Tu amorcito"} te mandó un detallito`, 7000, "", { t: "Verlo", al: () => app.detallitos.abrir(desde()) });
     }
-    if (app.amorNuevos !== antes || JSON.stringify(app.pareja || null) !== parejaAntes) dispatchEvent(new CustomEvent("ed-amor"));
+    if (app.amorNuevos !== antes || firma(app.pareja) !== parejaAntes) dispatchEvent(new CustomEvent("ed-amor"));
   } catch (e) { /* sin conexión: la próxima */ }
 }
 setTimeout(latir, 4000);
