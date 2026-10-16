@@ -81,6 +81,22 @@ const TIPS = {
   "el:componente": ["Las piezas salen de assets/<carpeta>/: deja ahí un .html (con su CSS y JS dentro) y aparece solo en «Piezas».", "Con «Zonas táctiles» (en Efectos al tocar) haces que cada parte del HTML haga algo distinto: un sonido, corazones, pasar de página…"],
 };
 
+/* Consejos AL MOMENTO: la primera vez que se hace algo, una frase cortita
+   sobre eso mismo (cada una sale una vez; el bloque, hasta tres). Nunca
+   durante un gesto, ni con una ventana abierta, ni más de uno cada tanto. */
+const AL_MOMENTO = {
+  bloque: ["Es un bloque: un toque lo elige entero. Toca dos veces una pieza para elegirla sola.", "Un toque, el bloque; dos toques, una sola pieza.", "Doble toque sobre una pieza para editarla sin soltar el bloque."],
+  pieza: ["Editas sólo esta pieza del bloque. Toca fuera de la hoja para volver a elegirlo entero."],
+  mover: ["Arrastra para mover; las guías rosas te dicen cuándo queda centrado o alineado.", "Con dos dedos sobre lo elegido lo giras y le cambias el tamaño a la vez."],
+  iman: ["El imán la pegó a la guía. Para moverla libre, apaga «Imán» en Lienzo (o mantén Alt en la computadora).", "Se pegó al borde o al centro: así todo queda alineado sin esfuerzo."],
+  girar: ["El botón redondo de girar la gira; en la computadora, con Mayús va de 15 en 15 grados.", "Cerca de 0°, 45° o 90° se acomoda sola para quedar derechita."],
+  tamano: ["Las esquinas cambian el tamaño; los lados lo estiran sólo hacia ese lado.", "Si algo quedó chiquito, sus esquinas se apartan para que el dedo alcance el centro."],
+  capas: ["Lo de arriba en «Capas» se ve delante; «Al frente» y «Al fondo» lo mandan de un toque.", "Arrastra el asa en «Capas» para ponerlo exactamente entre otros dos."],
+  efectos: ["Cada efecto se ve en la hoja antes de usarlo; «Atrás» lo deja como estaba.", "En la previsualización ajustas la intensidad antes de tocar «Usar»."],
+  video: ["En «Opciones» del vídeo eliges si empieza solo o al tocarlo, y si muestra controles.", "Sin controles el vídeo se sigue tocando: un toque lo pausa o le da sonido."],
+};
+const MOMENTOS = "editordev:consejos-al-momento";
+
 /* El recorrido guiado: la abejita va a cada parte, la ilumina y la explica.
    Cada paso usa el primer selector que se vea (computadora o teléfono). */
 const RECORRIDO = [
@@ -146,8 +162,43 @@ export class Ayuda {
       if ("dialogos" in c || "frecuencia" in c) this._programarCharla();
       if ("consejos" in c) this._programarConsejo();
     });
+    // Consejos al momento: bloques, mover/imán, girar, tamaño, capas (y efectos y vídeo por contexto).
+    try { this._momentos = JSON.parse(localStorage.getItem(MOMENTOS) || "{}"); } catch (e) { this._momentos = {}; }
+    E.on("sel", () => {
+      const sel = E.seleccionados, L = app.lienzo;
+      if (sel.length > 1 && sel[0].grupo && sel.every((x) => x.grupo === sel[0].grupo) && sel.length === E.pagina.els.filter((x) => x.grupo === sel[0].grupo && !x.oculto).length) this.alMomento("bloque", 4000);
+      else if (sel.length === 1 && sel[0].grupo && L?.dentroGrupo === sel[0].grupo) this.alMomento("pieza", 4000);
+    });
+    const gesto = E.gesto.bind(E);
+    E.gesto = (nombre) => {
+      const fin = gesto(nombre);
+      return (guardar = true) => {
+        const r = fin(guardar);
+        if (guardar) setTimeout(() => { const k = { Mover: this._pego ? "iman" : "mover", Girar: "girar", "Cambiar tamaño": "tamano", "Escalar grupo": "tamano" }[nombre]; this._pego = false; if (k) this.alMomento(k); }, 0);
+        return r;
+      };
+    };
+    addEventListener("ed-soltar", (ev) => { this._pego = !!ev.detail?.pego; });
+    const A = app.acciones;
+    if (A?.capa) { const capa = A.capa.bind(A); A.capa = (...a) => { const r = capa(...a); this.alMomento("capas"); return r; }; }
     this.revisar();
     this._programarConsejo();
+  }
+
+  /** Un consejo de AL_MOMENTO (si toca y si no estorba). `pausa`: lo mínimo desde el último. */
+  alMomento(clave, pausa = 15000) {
+    const lista = AL_MOMENTO[clave];
+    if (!lista || !PREF.ayudas) return;
+    const n = this._momentos[clave] || 0;
+    if (n >= lista.length) return;
+    const ahora = Date.now();
+    if (ahora - (this._ultMomento || 0) < pausa) return;
+    if (this.abeja.hablando || this.app.lienzo?.g || document.querySelector(".ed-modal-fondo, .ed-hojita.abierta, .ed-codigo-pantalla") || document.body.classList.contains("ed-probando")) return;
+    this._momentos[clave] = n + 1;
+    try { localStorage.setItem(MOMENTOS, JSON.stringify(this._momentos)); } catch (e) { /* nada */ }
+    this._ultMomento = ahora;
+    if (this.abeja.viva) this.abeja.decir(lista[n], { dura: 4200 });
+    else this._consejito(lista[n], 4800);
   }
 
   _contar() { return this.app.estado.pagina?.els.length || 0; }
@@ -170,6 +221,7 @@ export class Ayuda {
 
   revisar() {
     const k = this.contexto();
+    if (k !== this.k) { const m = { "sec:efectos": "efectos", "el:video": "video" }[k]; if (m) setTimeout(() => this.alMomento(m), 600); }
     this.k = k;
     this.boton.hidden = !PREF.ayudas;
     this.boton.classList.toggle("nuevo", !!k && !this.vistos.has(k) && !this.abeja.viva);
@@ -331,7 +383,7 @@ export class Ayuda {
     }, azar(180, 300) * 1000);
   }
 
-  _consejito(texto) {
+  _consejito(texto, dura = 6500) {
     this._consejitoFuera();
     const c = el("button.ed-consejito", { type: "button", "aria-live": "polite", html: `${ico("foco")}<span></span>`, onClick: () => this._consejitoFuera() });
     c.lastChild.textContent = texto;
@@ -339,7 +391,7 @@ export class Ayuda {
     this._cn = c;
     requestAnimationFrame(() => c.classList.add("ver"));
     clearTimeout(this._tcn);
-    this._tcn = setTimeout(() => this._consejitoFuera(), 6500);
+    this._tcn = setTimeout(() => this._consejitoFuera(), dura);
   }
 
   _consejitoFuera() { const c = this._cn; this._cn = null; if (c) { c.classList.remove("ver"); setTimeout(() => c.remove(), 300); } }

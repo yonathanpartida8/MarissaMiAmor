@@ -73,6 +73,11 @@ export class BarraContextual {
   pintar() {
     const r = this.raiz;
     const E = this.E;
+    // Elegir otro del mismo tipo deja la barra donde estaba (antes volvía al
+    // principio de golpe); si cambian sus botones, aparecen con un fundido suave.
+    const firma = E.seleccionados.map((x) => x.tipo + (x.bloqueado ? "b" : "") + (x.grupo ? "g" : "")).join() || "-";
+    const sx = r.scrollLeft, igual = firma === this._firma;
+    this._firma = firma;
     this.v.vaciar();
     r.textContent = "";
     if (!E.proyecto || !E.pagina) { r.hidden = true; return; }
@@ -191,6 +196,8 @@ export class BarraContextual {
     }
     r.append(...partes);
     this.v.refrescar();
+    if (igual) { if (sx) r.scrollLeft = sx; }
+    else if (!r.hidden && !matchMedia("(prefers-reduced-motion: reduce)").matches) { try { r.animate([{ opacity: 0.35, transform: "translateY(3px)" }, { opacity: 1, transform: "none" }], { duration: 170, easing: "cubic-bezier(.2,.8,.3,1)" }); } catch (e) { /* nada */ } }
     r.classList.toggle("movil", esMovil());
   }
 }

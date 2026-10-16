@@ -2140,3 +2140,6 @@ body.ed ::-webkit-scrollbar-track { background: transparent; }
 .ed-comp-item img, .ed-comp-item > i { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 7px; display: grid; place-items: center; }
 .ed-comp-item small { font-size: 10.5px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ed-comp-ayuda ol { margin: 6px 0 8px; padding-left: 20px; }
+
+/* El consejito, en el teléfono, por encima de la barra de abajo (nunca la tapa). */
+@media (max-width: 1023px) { .ed-consejito { right: 12px; left: auto; bottom: calc(var(--cb, 58px) + env(safe-area-inset-bottom, 0px) + 12px); } }

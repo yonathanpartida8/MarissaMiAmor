@@ -918,6 +918,7 @@ export class Lienzo {
       this.pintarSobre();
       // Una ondita donde quedó (y un brillo azul si el imán lo pegó).
       if (movio && this.estado.sel.length) requestAnimationFrame(() => { const b = this.app.fx?._union(this.estado.sel); if (b) this.app.fx.soltar(b, pego); });
+      if (movio) dispatchEvent(new CustomEvent("ed-soltar", { detail: { pego } }));
     };
     addEventListener("pointerup", arriba);
     addEventListener("pointercancel", arriba);
