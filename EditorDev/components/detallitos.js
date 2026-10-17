@@ -9,8 +9,12 @@
  *     Tu código sale en fichitas; el suyo se escribe solito con su formato
  *     (AMOR-XXXX-XXXX) y se va llenando de corazones. Al vincularse, las fotos
  *     se acercan, el hilo se hace corazón y suenan campanitas.
- *   · «Mandar esta página»: la página tal cual le llega, junto al sobre.
- *   · La colección: lo de tu amorcito y lo tuyo, como notitas pegadas.
+ *   · «Mandar esta página» (sólo desde el editor): la página tal cual le llega.
+ *   · La colección (lo único, si se abre desde el menú principal): las páginas
+ *     de los dos juntas, por mes, cada una con su portadita, de quién es («Yo»
+ *     o su nombre) y su reacción. En las que te mandó, reaccionas con un toque:
+ *     te amo, me encantó, lloré, abrazo, beso o me reí, cada una con su sonido
+ *     de cristal (tres versiones que se turnan) y su lluvia (reacciones.js).
  *
  * Cada pantalla llega con su transición (y su sonido): vincular gira como una
  * tarjeta, un detallito sale de su sobre, la vista previa se acerca…
@@ -29,6 +33,8 @@ import { fuentesUsadas } from "../core/modelo.js";
 import { RAIZ } from "../assets/biblioteca.js";
 import { cambiar, sinMovimiento as reducido } from "./transiciones.js";
 import * as PF from "./perfil.js";
+import { REACCIONES, reaccion, svgReaccion, estallido } from "./reacciones.js";
+import { dibujarPortadita } from "./portadita.js";
 
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 const cuando = (iso) => {
@@ -42,7 +48,7 @@ const cuando = (iso) => {
 const ROTAR = [-2.2, 1.6, -1, 2.4, -1.8, 1.1, -2.6, 0.8];
 const HILO = '<svg viewBox="0 0 200 60" preserveAspectRatio="none"><path class="vn-cuerda" d="M2 14 C 60 62, 140 62, 198 14"/><path class="vn-luz" d="M2 14 C 60 62, 140 62, 198 14"/></svg>';
 /* Cómo se llega a cada pantalla. */
-const LLEGA = { vincular: "carta", ver: "sobre", previa: "zoom", inicio: "deslizar", cuenta: "carta", cargando: "zoom" };
+const LLEGA = { vincular: "carta", ver: "sobre", previa: "zoom", inicio: "deslizar", coleccion: "deslizar", cuenta: "carta", cargando: "zoom" };
 
 export class Detallitos {
   constructor(app) {
@@ -51,7 +57,6 @@ export class Detallitos {
     this.pila = [];
     this.datos = null;
     this.amor = null;
-    this.pestana = "recibidos";
     this.borrador = null;   // título y mensajito que se van escribiendo (sobreviven al ir y volver)
     this._limpiezas = [];
   }
@@ -93,6 +98,8 @@ export class Detallitos {
   abrir(desde, vista = "inicio") {
     if (this.abierto) { this.ir(vista, null, { desde }); return; }
     this.abierto = true;
+    // Desde el menú principal (la colección o el vínculo) todo lleva a la colección; desde el editor, a mandar la página.
+    this.casa = vista === "inicio" ? "inicio" : "coleccion";
     const r = desde?.getBoundingClientRect ? desde.getBoundingClientRect() : desde || { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
     this.cx = r.left + r.width / 2; this.cy = r.top + r.height / 2;
     this.atrasB = el("button.dt-atras", { type: "button", html: ico("izquierda"), "aria-label": "Atrás", onClick: () => this.atras() });
@@ -124,8 +131,9 @@ export class Detallitos {
     document.body.classList.add("con-detallitos");
     this._chispas(this.cx, this.cy);
     requestAnimationFrame(() => requestAnimationFrame(() => this.capa.classList.add("ver")));
-    this.app.sonidos?.sonar("abrir-recursos");
-    this._cuenta = () => { if (!this.abierto) return; this.amor = null; this.datos = null; this.pila = [{ vista: "inicio" }]; this._mostrar(this.pila[0], "zoom"); this._refrescar(); };
+    // Desde el menú principal es la colección de los dos (un álbum que se abre); desde el editor, mandar.
+    this.app.sonidos?.sonar(vista === "coleccion" ? "coleccion" : "abrir-recursos");
+    this._cuenta = () => { if (!this.abierto) return; this.amor = null; this.datos = null; this.pila = [{ vista: this.casa }]; this._mostrar(this.pila[0], "zoom"); this._refrescar(); };
     this._cambio = () => { if (this.abierto) this._alCambiar(); };
     addEventListener("ed-cuenta", this._cuenta);
     addEventListener("ed-amor", this._cambio);
@@ -177,7 +185,7 @@ export class Detallitos {
     this._col = null;
     const real = this._real(vista);
     this.actual = real;
-    const v = { cuenta: () => this._vCuenta(), cargando: () => this._vCargando(), vincular: () => this._vVincular(), ver: () => this._vVer(datos), previa: () => this._vPrevia() }[real]?.() || this._vInicio();
+    const v = { cuenta: () => this._vCuenta(), cargando: () => this._vCargando(), vincular: () => this._vVincular(), ver: () => this._vVer(datos), previa: () => this._vPrevia(), coleccion: () => this._vColeccion() }[real]?.() || this._vInicio();
     if (!v) return;
     this.atrasB.setAttribute("aria-label", this.pila.length > 1 ? "Atrás" : "Cerrar Detallitos");
     this._cabeza();
@@ -230,7 +238,7 @@ export class Detallitos {
     if (this.amor?.pareja && pa && pa.usuario === this.amor.pareja.usuario) this.amor.pareja = { ...this.amor.pareja, ...pa };
     if (!!pa !== !!this.amor?.pareja) { this._refrescar(); return; }
     this._cabeza();
-    if (this.actual === "inicio") this._recargarCol?.();
+    if (this.actual === "inicio" || this.actual === "coleccion") this._recargarCol?.();
   }
 
   /* — Sin cuenta: entrar — */
@@ -280,7 +288,7 @@ export class Detallitos {
           el("p", { text: (desde ? `Unidos en ${SRV.NOMBRE} desde el ${desde}.` : "Unidos.") + (j ? ` Novios desde hace ${PF.textoJuntos(j)}.` : " Pon desde cuándo son novios en tu perfil.") }),
         ]),
         el("div.dt-tarjeta.vn-acciones", { style: { "--i": 1 } }, [
-          el("button.ed-btn.primario.dt-btn", { type: "button", html: I("detallito", "Ir a nuestros detallitos"), onClick: () => { this.pila = [{ vista: "inicio" }]; this._mostrar(this.pila[0], "deslizar"); } }),
+          el("button.ed-btn.primario.dt-btn", { type: "button", html: I("detallito", "Ir a nuestros detallitos"), onClick: () => { this.pila = [{ vista: this.casa }]; this._mostrar(this.pila[0], "deslizar"); } }),
           el("button.ed-btn.peligro-suave.dt-btn", { type: "button", html: I("cerrar", "Desvincular"), onClick: async () => {
             if (!(await confirmar(`¿Desvincularte de ${PF.nombreDe(pa)}? Sus detallitos se quedan en sus colecciones, pero ya no podrán mandarse nuevos.`, "Desvincular"))) return;
             try {
@@ -331,7 +339,7 @@ export class Detallitos {
         setTimeout(() => { const q = escena.corazon.getBoundingClientRect(); this._chispas(q.left + q.width / 2, q.top + q.height / 2, 22); son?.sonar("latido"); }, reducido() ? 0 : 620);
         estado.textContent = `¡Ya están unidos, ${PF.nombreDe(r.pareja)} y tú!`;
         this._cabeza();
-        setTimeout(() => { this.pila = [{ vista: "inicio" }]; this._mostrar(this.pila[0], "circulo", { desde: escena.corazon }); }, reducido() ? 300 : 1900);
+        setTimeout(() => { this.pila = [{ vista: this.casa }]; this._mostrar(this.pila[0], "circulo", { desde: escena.corazon }); }, reducido() ? 300 : 1900);
       } catch (e) { estado.textContent = e.message; son?.sonar("error"); vincular.disabled = false; vincular.classList.remove("latiendo"); }
     });
     if (!sinTeclado()) setTimeout(() => { if (pegar.isConnected) pegar.focus({ preventScroll: true }); }, 800);
@@ -383,6 +391,8 @@ export class Detallitos {
     ]) : null;
     const enviar = el("button.ed-btn.primario.dt-btn.dt-enviar", { type: "button", html: I("detallito", `Mandárselo a ${nombre}`), onClick: async () => {
       enviar.disabled = true; avance.hidden = false; estado.textContent = "Envolviendo tu página…";
+      // Su portadita (para la colección) se dibuja mientras se envuelve.
+      const mini = dibujarPortadita(app).catch(() => null);
       const poner = (p) => { avance.firstChild.style.width = Math.round(p * 100) + "%"; };
       // 1 · La página se mete al sobre y el sobre se cierra (mientras sube, late).
       previa?.classList.add("adentro");
@@ -392,7 +402,8 @@ export class Detallitos {
       try {
         const z = await zipParaVer(app, { titulo: titulo.value, slug: "detallito", soloPaginas: [app.estado.paginaId], conProyecto: true, alProgreso: (t) => { estado.textContent = t; } });
         estado.textContent = "Mandándolo…";
-        await SRV.mandarDetallito(z.blob, { titulo: titulo.value.trim() || "Un detallito", mensaje: mensaje.value.trim(), color }, poner);
+        const det = await SRV.mandarDetallito(z.blob, { titulo: titulo.value.trim() || "Un detallito", mensaje: mensaje.value.trim(), color }, poner);
+        mini.then((b) => b && det?.id && SRV.subirPortadita(det.id, b)).catch(() => {}).finally(() => this._recargarCol?.());
         // 2 · Llegó: el sobre sale volando con chispitas.
         sobre.classList.remove("esperando");
         sobre.classList.add("vuela");
@@ -401,12 +412,10 @@ export class Detallitos {
         app.sonidos?.sonar("publicar");
         estado.textContent = `¡Le llegó a ${nombre}!`;
         mensaje.value = ""; B.mensaje = ""; nota.textContent = "…";
-        this.pestana = "enviados";
         setTimeout(() => {
           sobre.classList.remove("vuela", "cerrado"); sobre.classList.add("abierto", "regresa");
           previa?.classList.remove("adentro"); previa?.classList.add("regresa");
           setTimeout(() => { sobre.classList.remove("regresa"); previa?.classList.remove("regresa"); }, 700);
-          this._recargarCol?.(true);
         }, reducido() ? 0 : 1300);
       } catch (e) {
         // No se pudo: el sobre se abre y la página vuelve a salir, para intentarlo otra vez.
@@ -415,7 +424,11 @@ export class Detallitos {
         estado.textContent = e.message; app.sonidos?.sonar("error");
       } finally { enviar.disabled = false; avance.hidden = true; poner(0); }
     } });
-    const col = el("div.dt-coleccion", { style: { "--i": 2 } });
+    // La colección vive en su propia pantalla: aquí, una tarjetita con las últimas portaditas.
+    const minis = el("span.dt-ir-col-minis", { "aria-hidden": "true" });
+    const col = el("button.dt-tarjeta.dt-ir-col", { type: "button", style: { "--i": 2 }, onClick: (e) => this.ir("coleccion", null, { desde: e.currentTarget }) }, [
+      minis, el("span.dt-ir-col-t", {}, [el("b", { text: "Nuestra colección" }), el("small", { text: "Las páginas de los dos" })]), el("i.dt-ir-col-f", { html: ico("derecha") }),
+    ]);
     const v = el("section.dt-pantalla", {}, [
       el("div.dt-tarjeta-grande.dt-mandar", { style: { "--i": 0 } }, [
         el("i.dt-washi", { "aria-hidden": "true" }),
@@ -439,66 +452,164 @@ export class Detallitos {
       col,
       el("button.dt-enlace", { type: "button", style: { "--i": 3 }, html: I("vincular", "Nuestro vínculo"), onClick: (e) => this.ir("vincular", null, { desde: e.currentTarget }) }),
     ]);
-    this._coleccion(col);
+    const ponerMinis = () => {
+      const d = this.datos;
+      if (!d || !minis.isConnected) return;
+      const ult = [...d.recibidos, ...d.enviados].sort((a, b) => (b.creado > a.creado ? 1 : -1)).slice(0, 3);
+      minis.replaceChildren(...ult.map((x) => { const m = el("i.dt-ir-col-mini", { style: { "--c": x.color || "#ffd1e6" } }); if (x.portadita) m.style.backgroundImage = `url("${SRV.enlace(x.portadita)}")`; return m; }));
+    };
+    this._recargarCol = () => this._cargarDatos().then(ponerMinis).catch(() => {});
+    ponerMinis();
+    this._recargarCol();
     return v;
   }
 
-  /* — La colección: pestañas con su lucecita que se desliza y las notitas — */
-  _coleccion(col) {
-    const nombre = PF.nombreDe(this.amor?.pareja) || "mi amorcito";
-    const luz = el("i.dt-tab-luz");
-    const bR = el("button", { type: "button", role: "tab" }), bE = el("button", { type: "button", role: "tab" });
-    const tabs = el("div.dt-tabs", { role: "tablist" }, [luz, bR, bE]);
+  /** Trae la colección (y dice si cambió algo de lo que se ve). Las de cada uno quedan marcadas. */
+  async _cargarDatos() {
+    const d = await SRV.detallitos();
+    for (const x of d.recibidos) x._mio = false;
+    for (const x of d.enviados) x._mio = true;
+    const firma = (d) => JSON.stringify([...d.recibidos, ...d.enviados].map((x) => [x.id, x.visto, x.reaccion, x.portadita, x.titulo]));
+    const cambio = !this.datos || firma(d) !== firma(this.datos);
+    if (cambio || !this.datos) this.datos = d;
+    return cambio;
+  }
+
+  /* — La colección de los dos: por mes, con su portadita, de quién es y su reacción — */
+  _vColeccion() {
+    const nombre = PF.nombreDe(this.amor?.pareja) || "tu amorcito";
+    this.filtro ||= "todas";
+    const FIL = [["todas", "Todas"], ["suyas", `De ${nombre}`], ["mias", "Mías"]];
+    const bs = FIL.map(([k, t]) => el("button", { type: "button", role: "tab", dataset: { k } }, [el("span", { text: t })]));
+    const tabs = el("div.dt-tabs.tres", { role: "tablist", "aria-label": "Qué páginas ver" }, [el("i.dt-tab-luz"), ...bs]);
+    const resumen = el("p.dt-col-resumen", { text: this.datos ? "" : "Buscando sus páginas…" });
     const caja = el("div.dt-rejilla-caja");
-    col.replaceChildren(tabs, caja);
     const pintar = (tipo = null) => {
-      const d = this.datos, nuevos = d ? d.recibidos.filter((x) => !x.visto).length : 0;
-      tabs.dataset.on = this.pestana;
-      bR.classList.toggle("on", this.pestana === "recibidos"); bE.classList.toggle("on", this.pestana === "enviados");
-      bR.setAttribute("aria-selected", String(this.pestana === "recibidos")); bE.setAttribute("aria-selected", String(this.pestana === "enviados"));
-      bR.replaceChildren(el("span", { text: `De ${nombre}` }), ...(nuevos ? [el("i.dt-globo", { text: String(nuevos) })] : []));
-      bE.replaceChildren(el("span", { text: "Mis enviados" }));
-      const rej = d ? this._rejilla(d) : el("div.dt-cargando", {}, [el("i"), el("span", { text: "Buscando sus detallitos…" })]);
+      const d = this.datos;
+      tabs.dataset.on = this.filtro;
+      bs.forEach((b) => { const on = b.dataset.k === this.filtro; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); });
+      if (d) {
+        const s = d.recibidos.length, m = d.enviados.length, t = s + m;
+        resumen.textContent = t ? `${t} ${t === 1 ? "página" : "páginas"} · ${s} de ${nombre} · ${m} ${m === 1 ? "tuya" : "tuyas"}` : "Aquí se guarda todo lo que se manden";
+      }
+      const rej = d ? this._rejillaCol(d, nombre) : el("div.dt-cargando", {}, [el("i"), el("span", { text: "Buscando sus páginas…" })]);
       if (tipo && caja._actual) cambiar(caja, rej, { tipo, sonidos: this.app.sonidos, sinSonido: tipo === "zoom" });
       else { caja.replaceChildren(rej); caja._actual = rej; }
     };
-    bR.addEventListener("click", () => { if (this.pestana === "recibidos") return; this.pestana = "recibidos"; pintar("atras"); });
-    bE.addEventListener("click", () => { if (this.pestana === "enviados") return; this.pestana = "enviados"; pintar("deslizar"); });
+    bs.forEach((b, i) => b.addEventListener("click", () => {
+      if (b.dataset.k === this.filtro) return;
+      const antes = FIL.findIndex((f) => f[0] === this.filtro);
+      this.filtro = b.dataset.k;
+      pintar(i > antes ? "deslizar" : "atras");
+    }));
     pintar();
-    const firma = (d) => JSON.stringify([d.recibidos.map((x) => x.id + x.visto), d.enviados.map((x) => x.id + x.visto)]);
-    this._recargarCol = async (cambioPestana = false) => {
+    this._recargarCol = async () => {
       try {
-        const d = await SRV.detallitos();
-        if (!col.isConnected) return;
-        if (this.datos && firma(d) === firma(this.datos) && !cambioPestana) return;
-        const habia = !!this.datos;
-        this.datos = d;
-        pintar(habia ? "zoom" : null);
-      } catch (e) { if (!this.datos && col.isConnected) { caja.replaceChildren(el("p.dt-vacio", { text: e.message })); caja._actual = caja.firstChild; } }
+        const cambio = await this._cargarDatos();
+        if (!caja.isConnected) return;
+        if (cambio || caja._actual?.classList.contains("dt-cargando")) pintar(caja._actual?.classList.contains("dt-cargando") ? null : "zoom");
+        this._avisarReacciones(nombre);
+      } catch (e) { if (!this.datos && caja.isConnected) { caja.replaceChildren(el("p.dt-vacio", { text: e.message })); caja._actual = caja.firstChild; } }
     };
     this._recargarCol();
+    return el("section.dt-pantalla.dt-col", {}, [
+      el("div.dt-col-cab", { style: { "--i": 0 } }, [el("h2", {}, [el("span", { text: "Nuestra colección" }), el("i.dt-col-corazon", { html: ico("corazon") })]), resumen]),
+      el("div.dt-col-filtros", { style: { "--i": 1 } }, [tabs]),
+      el("div.dt-col-cuerpo", { style: { "--i": 2 } }, [caja]),
+      el("button.dt-enlace", { type: "button", style: { "--i": 3 }, html: I("vincular", "Nuestro vínculo"), onClick: (e) => this.ir("vincular", null, { desde: e.currentTarget }) }),
+    ]);
   }
 
-  _rejilla(d) {
-    const recibidos = this.pestana === "recibidos", lista = recibidos ? d.recibidos : d.enviados;
-    const rejilla = el("div.dt-rejilla");
-    if (!lista.length) rejilla.append(el("p.dt-vacio", { text: recibidos ? `Todavía no te llega ninguno. Cuando ${PF.nombreDe(this.amor?.pareja) || "tu amorcito"} te mande uno, aparece aquí.` : "Todavía no mandas ninguno. ¡Manda el primero!" }));
+  _rejillaCol(d, nombre) {
+    const todas = [...d.recibidos, ...d.enviados].sort((a, b) => (b.creado > a.creado ? 1 : -1));
+    const lista = todas.filter((x) => this.filtro === "todas" || (this.filtro === "mias" ? x._mio : !x._mio));
+    const rej = el("div.dt-col-rejilla");
+    if (!lista.length) {
+      const [t, p] = { todas: ["Su colección empieza aquí", "Cada página que uno le mande al otro se guarda aquí, con su portadita."], suyas: [`Todavía no te llega ninguna de ${nombre}`, "En cuanto te mande una, aparece aquí."], mias: ["Todavía no le mandas ninguna", `Abre un librito y mándasela a ${nombre} desde Exportar.`] }[this.filtro];
+      rej.append(el("div.dt-col-vacio", {}, [el("i.dt-col-vacio-sobre", { html: ico("detallito") }), el("b", { text: t }), el("p", { text: p })]));
+      return rej;
+    }
+    let mes = "";
     lista.forEach((x, i) => {
-      const nuevo = !x.visto && recibidos;
-      const t = el("button.dt-nota" + (nuevo ? ".nueva" : ""), { type: "button", onClick: (e) => this.ir("ver", x, { desde: e.currentTarget }) }, [
-        el("i.dt-cinta"),
-        el("b", { text: x.titulo }),
-        x.mensaje ? el("p", { text: x.mensaje }) : null,
-        el("small", { text: `${recibidos ? "de " + (x.de_nombre || x.de) : "para " + (x.para_nombre || x.para)} · ${cuando(x.creado)}${!recibidos && x.visto ? " · ya lo vio" : ""}` }),
-        PF.avatar(recibidos ? "pareja" : "yo", "dt-nota-av"),
-        nuevo ? el("em", { text: "Nuevo" }) : null,
-      ]);
-      t.style.setProperty("--c", x.color || "#ffd1e6");
-      t.style.setProperty("--r", ROTAR[i % ROTAR.length] + "deg");
-      t.style.setProperty("--i", Math.min(i, 12));
-      rejilla.append(t);
+      const m0 = new Date(x.creado).toLocaleDateString("es-MX", { month: "long", year: "numeric" }), m = m0.charAt(0).toUpperCase() + m0.slice(1);
+      if (m !== mes) { mes = m; rej.append(el("h3.dt-col-mes", {}, [el("span", { text: m })])); }
+      rej.append(this._tarjeta(x, i, nombre));
     });
-    return rejilla;
+    return rej;
+  }
+
+  /** Una página de la colección: su portadita (o una hecha con su color y su título), de quién es y su reacción. */
+  _tarjeta(x, i, nombre) {
+    const nuevo = !x._mio && !x.visto, rx = reaccion(x.reaccion);
+    const tapa = el("span.dt-cv-tapa", { style: { "--c": x.color || "#ffd1e6" } }, [
+      el("span.dt-cv-gen", { "aria-hidden": "true" }, [el("i.dt-cv-cinta"), el("b", { text: x.titulo }), el("i.dt-cv-cor", { html: ico("corazon") })]),
+    ]);
+    if (x.portadita) {
+      const im = el("img.dt-cv-img", { alt: "", loading: "lazy", decoding: "async", draggable: "false" });
+      im.onload = () => im.classList.add("lista");
+      im.onerror = () => im.remove();
+      im.src = SRV.enlace(x.portadita);
+      tapa.append(im);
+    }
+    if (rx) tapa.append(el("span.dt-cv-rx", { title: x._mio ? `${nombre} ${rx.largo}` : rx.tuyo, html: svgReaccion(rx.id) }));
+    const t = el("button.dt-cv" + (nuevo ? ".nueva" : "") + (x._mio && x.reaccion_nueva ? ".rx-nueva" : ""), {
+      type: "button", "aria-label": `${x.titulo}, ${x._mio ? "tuya" : "de " + nombre}${rx ? ", " + rx.corto : ""}`,
+      onClick: (e) => { this.app.sonidos?.sonar("detallito-abrir"); this.ir("ver", x, { desde: e.currentTarget, sinSonido: true }); },
+    }, [
+      tapa,
+      el("span.dt-cv-quien" + (x._mio ? ".mia" : ""), {}, [PF.avatar(x._mio ? "yo" : "pareja", "dt-cv-av"), el("span", { text: x._mio ? "Yo" : nombre })]),
+      nuevo ? el("em.dt-cv-nuevo", { text: "Nueva" }) : null,
+      el("span.dt-cv-pie", {}, [el("b", { text: x.titulo }), el("small", { text: cuando(x.creado) + (x._mio && x.visto && !rx ? " · ya la vio" : "") })]),
+    ]);
+    t.style.setProperty("--i", Math.min(i, 10));
+    t.style.setProperty("--r", (ROTAR[i % ROTAR.length] * 0.5).toFixed(2) + "deg");
+    return t;
+  }
+
+  /** Tu amorcito reaccionó a tus páginas: se avisa una vez (y el servidor lo da por visto). */
+  _avisarReacciones(nombre) {
+    const nuevas = (this.datos?.enviados || []).filter((x) => x.reaccion_nueva);
+    if (!nuevas.length || this._avisadas === nuevas.map((x) => x.id + x.reaccion).join()) return;
+    this._avisadas = nuevas.map((x) => x.id + x.reaccion).join();
+    const r = reaccion(nuevas[0].reaccion);
+    aviso(nuevas.length === 1 && r ? `${nombre} ${r.largo} en «${nuevas[0].titulo}»` : `${nombre} reaccionó a ${nuevas.length} de tus páginas`, 5000);
+    this.app.sonidos?.sonar("brillo");
+    SRV.reaccionesVistas().then(() => { for (const x of nuevas) x.reaccion_nueva = false; dispatchEvent(new CustomEvent("ed-detallito-visto")); }).catch(() => {});
+  }
+
+  /** Reaccionar a una página que te mandó (un toque; otro toque en la misma, la quita). */
+  _reaccionar(x) {
+    const titulo = el("small.dt-rx-t");
+    const bots = REACCIONES.map((r) => el("button.dt-rx-b", { type: "button", "aria-label": r.corto, html: svgReaccion(r.id) + `<span>${r.corto}</span>` }));
+    const pintar = (id) => {
+      x.reaccion = id;
+      bots.forEach((b, i) => { const on = REACCIONES[i].id === id; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
+      titulo.textContent = id ? reaccion(id).tuyo : "¿Qué sentiste?";
+    };
+    bots.forEach((b, i) => b.addEventListener("click", async () => {
+      const r = REACCIONES[i], antes = x.reaccion || "", nueva = antes === r.id ? "" : r.id;
+      pintar(nueva);
+      if (nueva) {
+        const rc = b.getBoundingClientRect();
+        this.app.sonidos?.sonar("reaccion-" + nueva);
+        estallido(rc.left + rc.width / 2, rc.top + rc.height / 3, nueva);
+        if (!reducido()) b.querySelector("svg")?.animate([{ transform: "scale(1)" }, { transform: "scale(1.5) rotate(-10deg)", offset: 0.4 }, { transform: "scale(.92) rotate(4deg)", offset: 0.7 }, { transform: "scale(1)" }], { duration: 520, easing: "ease-out" });
+      } else this.app.sonidos?.sonar("reaccion-quitar");
+      try { await SRV.reaccionar(x.id, nueva); }
+      catch (e) { pintar(antes); aviso(e.status === 404 ? `Tu ${SRV.NOMBRE} todavía no sabe de reacciones: actualízalo («librito actualizar»).` : e.message, 5000, "error"); }
+    }));
+    pintar(x.reaccion || "");
+    return el("div.dt-rx", { role: "group", "aria-label": "Reaccionar a esta página" }, [titulo, el("div.dt-rx-fila", {}, bots)]);
+  }
+
+  /** En las tuyas: cómo reaccionó tu amorcito. */
+  _suReaccion(x) {
+    const nombre = PF.nombreDe(this.amor?.pareja) || x.para_nombre || x.para, r = reaccion(x.reaccion);
+    if (!r) return el("div.dt-rx.dt-rx-suya", {}, [el("small.dt-rx-t", { text: x.visto ? `${nombre} ya la vio · todavía no reacciona` : `${nombre} todavía no la abre` })]);
+    return el("div.dt-rx.dt-rx-suya.con", {}, [
+      el("span.dt-rx-grande", { html: svgReaccion(r.id) }),
+      el("span.dt-rx-txt", {}, [el("b", { text: `${nombre} ${r.largo}` }), el("small", { text: cuando(x.reaccion_t) })]),
+    ]);
   }
 
   /* — La vista previa en grande (y se puede tocar, como la verá) — */
@@ -523,7 +634,7 @@ export class Detallitos {
   _vVer(x) {
     if (!x) { setTimeout(() => this.atras(), 0); return null; }
     this.tituloS.textContent = x.titulo;
-    const recibido = x.de && x.de !== SRV.usuario()?.usuario;
+    const recibido = x._mio != null ? !x._mio : x.de && x.de !== SRV.usuario()?.usuario;
     const url = SRV.enlace(x.ver);
     const marco = el("iframe.dt-marco-ver", { src: url, title: x.titulo, sandbox: "allow-scripts allow-popups allow-forms allow-modals allow-pointer-lock", allow: "autoplay; fullscreen" });
     if (recibido && !x.visto) SRV.visto(x.id).then(() => { x.visto = new Date().toISOString(); dispatchEvent(new CustomEvent("ed-detallito-visto")); }).catch(() => {});
@@ -531,7 +642,8 @@ export class Detallitos {
       el("div.dt-ver", { style: { "--c": x.color || "#ffd1e6" } }, [
         el("div.dt-ver-hoja", {}, [marco]),
         x.mensaje ? el("p.dt-ver-msg", { text: `«${x.mensaje}»` }) : null,
-        el("small.dt-ver-de", {}, [PF.avatar(recibido ? "pareja" : "yo", "dt-ver-av"), el("span", { text: `${recibido ? "De " + (x.de_nombre || x.de) : "Para " + (x.para_nombre || x.para)} · ${cuando(x.creado)}` })]),
+        el("small.dt-ver-de", {}, [PF.avatar(recibido ? "pareja" : "yo", "dt-ver-av"), el("span", { text: `${recibido ? "De " + (x.de_nombre || x.de) : "Tuya, para " + (x.para_nombre || x.para)} · ${cuando(x.creado)}` })]),
+        recibido ? this._reaccionar(x) : this._suReaccion(x),
         el("div.dt-fila.dt-ver-acc", {}, [
           el("button.ed-btn.primario", { type: "button", html: I("pantalla", "Pantalla completa"), onClick: () => abrir(url) }),
           el("button.ed-btn", { type: "button", html: I("guardar", "Guardar en mis borradores"), onClick: async (ev) => {

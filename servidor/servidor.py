@@ -63,7 +63,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.4.0"
+VERSION = "1.5.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -367,6 +367,8 @@ COLUMNAS_NUEVAS = {
     "usuarios": [("codigo_amor", "TEXT"), ("pareja_id", "INTEGER"), ("pareja_desde", "REAL"), ("visto", "REAL"),
                  ("nombre", "TEXT"), ("cumple", "TEXT"), ("novios", "TEXT"), ("foto_v", "REAL")],
     "proyectos": [("clave", "TEXT"), ("ruta", "TEXT")],
+    # Fase 22: la reacción de quien lo recibió (y si quien lo mandó ya la vio) y su portadita.
+    "detallitos": [("reaccion", "TEXT"), ("reaccion_t", "REAL"), ("reaccion_vista", "INTEGER DEFAULT 1"), ("portadita", "TEXT")],
 }
 LETRAS_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
@@ -2480,18 +2482,27 @@ def api_latido(h, s):
     """El editor pregunta cada tanto: así se sabe quién está en línea y si llegó un detallito."""
     E.db.x("UPDATE usuarios SET visto=? WHERE id=?", ahora(), s["usuario_id"])
     n = E.db.uno("SELECT COUNT(*) n FROM detallitos WHERE para=? AND visto IS NULL AND borrado_para=0", s["usuario_id"])["n"]
-    h.responder(200, {"nuevos": n, "pareja": pareja_de(s["usuario_id"])})
+    r = E.db.uno("SELECT COUNT(*) n FROM detallitos WHERE de=? AND reaccion IS NOT NULL AND reaccion_vista=0 AND borrado_de=0", s["usuario_id"])["n"]
+    h.responder(200, {"nuevos": n, "reacciones": r, "pareja": pareja_de(s["usuario_id"])})
 
 
 # — Detallitos: páginas que se mandan entre los dos y se van coleccionando —
 DETALLITO_RE = r"([A-Za-z0-9_-]{20,40})"
 
 
+# Las reacciones que se pueden dejar en una página de tu amorcito (el editor pone su dibujo y su sonido).
+REACCIONES = ("te-amo", "me-encanto", "llore", "abrazo", "beso", "risa")
+PORTADITA_MAX = 600 * 1024
+
+
 def fila_detallito(d, nombres, apodos=None):
     apodos = apodos or {}
     return {"id": d["id"], "titulo": d["titulo"], "mensaje": d["mensaje"], "color": d["color"], "creado": iso(d["creado"]),
             "visto": iso(d["visto"]) if d["visto"] else "", "ver": f"/d/{d['id']}/", "de": nombres.get(d["de"], ""), "para": nombres.get(d["para"], ""),
-            "de_nombre": apodos.get(d["de"], ""), "para_nombre": apodos.get(d["para"], ""), "bytes": d["bytes"]}
+            "de_nombre": apodos.get(d["de"], ""), "para_nombre": apodos.get(d["para"], ""), "bytes": d["bytes"],
+            "reaccion": d["reaccion"] or "", "reaccion_t": iso(d["reaccion_t"]) if d["reaccion_t"] else "",
+            "reaccion_nueva": bool(d["reaccion"] and not d["reaccion_vista"]),
+            "portadita": f"/d/{d['id']}/portadita.{d['portadita']}" if d["portadita"] else ""}
 
 
 @ruta("GET", "/api/detallitos", "sesion")
@@ -2551,6 +2562,62 @@ def api_detallito_visto(h, s, did):
     if d["para"] == s["usuario_id"] and not d["visto"]:
         E.db.x("UPDATE detallitos SET visto=? WHERE id=?", ahora(), did)
     h.responder(200, {"ok": True})
+
+
+@ruta("PUT", f"/api/detallitos/{DETALLITO_RE}/reaccion", "sesion")
+def api_reaccionar(h, s, did):
+    """Reaccionar a una página que te mandó tu amorcito (sólo quien la recibió). Vacío = quitarla."""
+    d = detallito_de(s, did)
+    if d["para"] != s["usuario_id"]:
+        raise Falla("Sólo puedes reaccionar a las páginas que te mandaron.", 403)
+    r = str(h.cuerpo_json().get("reaccion") or "").strip()
+    if r and r not in REACCIONES:
+        raise Falla("Esa reacción no existe.", 400)
+    if r:
+        E.db.x("UPDATE detallitos SET reaccion=?, reaccion_t=?, reaccion_vista=0 WHERE id=?", r, ahora(), did)
+    else:
+        E.db.x("UPDATE detallitos SET reaccion=NULL, reaccion_t=NULL, reaccion_vista=1 WHERE id=?", did)
+    h.responder(200, {"reaccion": r})
+
+
+@ruta("POST", "/api/detallitos/reacciones/vistas", "sesion")
+def api_reacciones_vistas(h, s):
+    """Quien mandó las páginas ya vio cómo reaccionó su amorcito."""
+    E.db.x("UPDATE detallitos SET reaccion_vista=1 WHERE de=? AND reaccion IS NOT NULL AND reaccion_vista=0", s["usuario_id"])
+    h.responder(200, {"ok": True})
+
+
+@ruta("PUT", f"/api/detallitos/{DETALLITO_RE}/portadita", "sesion")
+def api_portadita(h, s, did):
+    """La miniatura de la portada (la dibuja el editor al mandarla): jpg, png o webp, chiquita."""
+    d = detallito_de(s, did)
+    if d["de"] != s["usuario_id"]:
+        raise Falla("Sólo quien mandó la página le pone su portadita.", 403)
+    try:
+        n = int(h.headers.get("Content-Length") or -1)
+    except ValueError:
+        n = -1
+    if n <= 0 or n > PORTADITA_MAX:
+        h._leido = False
+        raise Falla("La portadita tiene que pesar menos de 600 KB.", 413)
+    datos = h.rfile.read(n)
+    h._leido = True
+    ext = next((e for m, e in FOTO_TIPOS if datos.startswith(m) and (e != ".webp" or datos[8:12] == b"WEBP")), None)
+    if not ext:
+        raise Falla("Eso no es una imagen (jpg, png o webp).", 415)
+    ver = os.path.join(DATOS, "detallitos", did, "ver")
+    os.makedirs(ver, exist_ok=True)
+    for _, e in FOTO_TIPOS:
+        try:
+            os.unlink(os.path.join(ver, "portadita" + e))
+        except FileNotFoundError:
+            pass
+    final = os.path.join(ver, "portadita" + ext)
+    with open(final + ".tmp", "wb") as f:
+        f.write(datos)
+    os.replace(final + ".tmp", final)
+    E.db.x("UPDATE detallitos SET portadita=?, bytes=? WHERE id=?", ext[1:], tamano_carpeta(os.path.join(DATOS, "detallitos", did)), did)
+    h.responder(200, {"portadita": f"/d/{did}/portadita{ext}"})
 
 
 @ruta("GET", f"/api/detallitos/{DETALLITO_RE}/paquete", "sesion")

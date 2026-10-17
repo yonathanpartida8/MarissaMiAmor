@@ -138,6 +138,6 @@ export function ajustar(caja, fn, nuevos = []) {
 let LETRAS = null;
 export function letrasListas(ms = 900) {
   if (!document.fonts?.load) return Promise.resolve();
-  LETRAS ||= Promise.all(["700 20px Caveat", "400 17px Caveat", "600 15px Jost", "400 14px Jost"].map((f) => document.fonts.load(f).catch(() => {})));
+  LETRAS ||= Promise.all(["700 20px Caveat", "400 17px Caveat", "600 15px Jost", "400 14px Jost", "400 16px 'Patrick Hand'"].map((f) => document.fonts.load(f).catch(() => {})));
   return Promise.race([LETRAS, new Promise((r) => setTimeout(r, ms))]);
 }

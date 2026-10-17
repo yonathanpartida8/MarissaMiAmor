@@ -1,26 +1,35 @@
 # Sonidos del editor
 
-Cada interacción del editor tiene **su propio archivo**, con el nombre de lo
-que hace. Para cambiar un sonido, pon otro archivo con **el mismo nombre**
-(`.wav`, `.mp3`, `.ogg` o `.m4a`) y listo: no hay que tocar nada del editor.
+**Todo lo que suena en el editor** (botones, menús, Detallitos, las reacciones, el
+gatito del menú, la abejita…) tiene **su nombre** aquí. Para cambiar un sonido,
+pon tu archivo con ese nombre y listo: no hay que tocar nada del editor.
 
-- **Varias versiones del mismo sonido:** añade `-2`, `-3`… al final del nombre
-  (`seleccionar-elemento-2.wav`). Se turnan solas, sin repetir la última.
-- **Quitar un sonido:** borra su archivo; ese momento suena con un sonidito
+- **Con tu archivo:** `reaccion-te-amo.mp3` (también `.m4a`, `.ogg` o `.aac`).
+  **Tu archivo manda:** en cuanto hay uno tuyo con ese nombre, los `.wav` de
+  fábrica de ese nombre dejan de sonar (no hace falta borrarlos). También puedes
+  reemplazar el `.wav` directamente.
+- **El nombre se lee fácil:** sin importar mayúsculas, acentos ni espacios
+  (`Reacción Te Amo.mp3` = `reaccion-te-amo`).
+- **Varias versiones, para que nada se repita:** añade `-2`, `-3`… al final
+  (`reaccion-te-amo-2.mp3`). Se turnan solas y nunca suena la misma dos veces
+  seguidas. Los de fábrica ya vienen en **tres versiones** cada uno (otra
+  figura u otro tono), salvo los que suben por la escala al repetirse.
+- **Quitar un sonido:** borra sus archivos; ese momento suena con un sonidito
   suave hecho por el editor (o con nada, si no tiene).
 - **Volumen o silencio:** Herramientas → Sonidos del editor.
-- **Que no se repitan iguales:** cada vez suenan con un tono apenas distinto, y
+- **Que no suenen robóticos:** cada vez suenan con un tono apenas distinto, y
   lo que se repite seguido (elegir, pegar con el imán, colocar, duplicar,
-  ordenar capas, fotogramas) **sube por la escala** como una escalerita; tras
-  una pausa vuelve a empezar.
+  ordenar capas, fotogramas) **sube por la escala** como una escalerita.
 
 Los de aquí los genera `node herramientas/sonidos-editor.mjs` (todos en la
-misma escala, para que combinen). Si cambias uno a mano, no vuelvas a correr
-esa herramienta o lo sobrescribe (puedes pasarle sólo los nombres que quieras
-rehacer: `node herramientas/sonidos-editor.mjs tocar-boton`).
+misma escala, para que combinen; las reacciones, de cristal, con su eco de
+sala grande). Si cambias uno a mano, no vuelvas a correr esa herramienta o lo
+sobrescribe (puedes pasarle sólo los nombres que quieras rehacer:
+`node herramientas/sonidos-editor.mjs tocar-boton`).
 
 Después de añadir o cambiar archivos, el catálogo se rehace solo al subir
-(o con `node herramientas/contenido.mjs`).
+(o con `node herramientas/contenido.mjs`). Con el servidor de casa suenan al
+momento.
 
 ## Qué suena cuándo
 
@@ -71,6 +80,38 @@ Después de añadir o cambiar archivos, el catálogo se rehace solo al subir
 | `pagina-borrar` / `pagina-reordenar` | borrar o mover una página |
 | `reproducir` / `pausar` | escuchar una canción de la biblioteca |
 | `publicar` | publicar una página en «Páginas publicadas» |
+
+### El menú principal, la pareja y Detallitos
+
+| Archivo | Cuándo suena |
+| --- | --- |
+| `brillo` | entrar a tu cuenta, guardar tu perfil |
+| `girar-tarjeta` | la tarjeta que gira (tu cuenta, vincular) |
+| `abrir-sobre` | un detallito que sale de su sobre |
+| `latido` | el corazón del hilo rojo al vincularse |
+| `vincular-pareja` | se vincularon (campanitas) |
+| `desvincular` | se desvincularon |
+| `tecla-codigo` | cada letra del código de tu amorcito |
+| `coleccion-abrir` | abrir Detallitos: la colección de los dos |
+| `detallito-abrir` | abrir una página de la colección |
+| `reaccion-te-amo` | reaccionar «Te amo» a una página de tu amorcito |
+| `reaccion-me-encanto` | reaccionar «Me encantó» |
+| `reaccion-llore` | reaccionar «Me hiciste llorar» |
+| `reaccion-abrazo` | reaccionar «Un abrazo» |
+| `reaccion-beso` | reaccionar «Un beso» |
+| `reaccion-risa` | reaccionar «Me hiciste reír» |
+| `reaccion-quitar` | quitar tu reacción |
+| `gatito-ronroneo` | tocar al gatito dormido del menú |
+
+### Sólo si pones tu archivo (si no, los hace el editor al momento)
+
+| Archivo | Cuándo suena |
+| --- | --- |
+| `abejita-habla` | la abejita habla |
+| `abejita-hola` / `abejita-adios` | la abejita llega o se va |
+| `abejita-feliz` / `abejita-susto` | la abejita se alegra o se asusta |
+| `abejita-zumbido` | la abejita revolotea |
+| `secreto-interferencia` / `secreto-campanita` | el huevito de pascua escondido |
 
 Si quieres que un momento use otro archivo, la lista está en
 `EditorDev/audio/sonidos-editor.js` (`ARCHIVO`).

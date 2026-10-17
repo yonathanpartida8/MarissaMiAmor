@@ -86,7 +86,11 @@ grandes llegan a GitHub con `git push`, sin el error «input too large») y le
 mandan **Detallitos** a su amorcito («Vincular a tu Amorcito» con un código
 único, con una escenita animada del hilo rojo). Cada quien tiene su **perfil**
 (foto, nombre, cumpleaños y «novios desde», que es de los dos), y el menú
-principal muestra sus dos fotos y cuántos días llevan juntos. Para empezar de
+principal —un álbum de recortes con su gatito dormido— muestra sus dos fotos y
+cuántos días llevan juntos. Sus detallitos se ven en una colección con la
+portadita de cada página, de quién es, y se les puede reaccionar con sonidos
+de cristal. Todos los sonidos del editor se cambian poniendo tu `nombre.mp3`
+en `assets/sonidos-editor/` (ver su `LÉEME.md`). Para empezar de
 cero con las cuentas de prueba: `librito borrar-cuentas`. El token de GitHub es uno
 solo, cifrado en el teléfono: nunca está en el editor. Se instala con una línea
 en Termux y un asistente que te pregunta tu usuario, tu contraseña y el token, y
@@ -152,8 +156,8 @@ HTML en **`assets/<categoría>/<nombre>/`** (ver `assets/LÉEME.md`) y canciones
 en **`musica assets/`**. Todo explicado en
 [`EditorDev/LÉEME.md`](EditorDev/LÉEME.md).
 
-Al abrirlo sale primero un **menú principal** (entrar al editor, tu cuenta de
-M.YNTHN, Detallitos, volver al librito). **Exportar** da tres opciones:
+Al abrirlo sale primero un **menú principal** (crear librito, Detallitos, mis
+libritos, tu perfil, volver al librito). **Exportar** da tres opciones:
 descargar la página completa (.zip), publicar en M.YNTHN o **Enviar
 Detallito** a tu amorcito.
 

@@ -18,6 +18,7 @@ let corriendo = false;
 
 /** Ruido de interferencia (Web Audio; sin archivos). */
 function ruido(app, seg = 1.6, vol = 0.18) {
+  if (app.sonidos?.tiene?.("glitch-ruido")) { app.sonidos.sonar("glitch-ruido"); return; }
   const AU = app.audio, ac = AU?.ac;
   if (!ac || ac.state !== "running" || !PREF.abejaSonido) return;
   const n = Math.floor(ac.sampleRate * seg), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
@@ -32,6 +33,7 @@ function ruido(app, seg = 1.6, vol = 0.18) {
 }
 
 function campanita(app) {
+  if (app.sonidos?.tiene?.("glitch-campanita")) { app.sonidos.sonar("glitch-campanita"); return; }
   const AU = app.audio, ac = AU?.ac;
   if (!ac || ac.state !== "running" || !PREF.abejaSonido) return;
   const t = ac.currentTime;

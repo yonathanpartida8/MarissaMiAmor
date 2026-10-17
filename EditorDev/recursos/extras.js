@@ -176,7 +176,7 @@ export async function extras() {
   // Con servidor de casa, lo recién dejado suena al momento (aunque el catálogo aún no lo sepa).
   if (sons) {
     const sueltos = {};
-    for (const f of sons.filter((h) => /\.(mp3|m4a|ogg|wav|aac)$/i.test(h))) (sueltos[f.replace(/\.[^.]+$/, "").replace(/-\d+$/, "").toLowerCase()] ||= []).push(`assets/sonidos-editor/${f}`);
+    for (const f of sons.filter((h) => /\.(mp3|m4a|ogg|wav|aac)$/i.test(h))) (sueltos[nombreSonido(f)] ||= []).push(`assets/sonidos-editor/${f}`);
     Object.assign(ex.sonidos, sueltos);
   }
   if (sons) for (const d of sons.filter((h) => h.endsWith("/"))) {
@@ -193,9 +193,13 @@ export async function extras() {
       if (f2.length) ex.sonidos[k] = f2.map((f) => `assets/sonidos-editor/${d}${a}${f}`);
     }
   }
+  // Tu archivo manda: con un .mp3/.m4a/.ogg/.aac de ese nombre, los .wav de fábrica ya no suenan.
+  for (const [k, l] of Object.entries(ex.sonidos)) if (Array.isArray(l) && l.some((f) => !/\.wav$/i.test(f))) ex.sonidos[k] = l.filter((f) => !/\.wav$/i.test(f));
   cache = ex;
   return ex;
 }
+/** «Tocar Botón-2.mp3» → «tocar-boton» (sin versión, mayúsculas, acentos ni espacios). */
+const nombreSonido = (f) => f.replace(/\.[^.]+$/, "").replace(/-\d+$/, "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/[\s_]+/g, "-");
 
 const leidos = new Map();
 /** La definición de una animación o transición de assets/ (leída una vez). */

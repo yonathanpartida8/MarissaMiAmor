@@ -209,11 +209,23 @@ to process»: por eso `librito actualizar` instala `git` en Termux.
   lo pegue basta. Cada cuenta se vincula con una sola; «Desvincular» lo deshace.
 - **Mandar esta página**: título y un mensajito; la página abierta se envuelve
   (con su proyecto) y le llega a tu amorcito.
-- **De mi amorcito / Mis enviados**: la colección, como notitas. Al abrir uno
-  se ve en una ventanita (o a pantalla completa), se puede **guardar en tus
-  borradores** para editarlo, o quitarlo de tu colección (al otro no se le borra).
+- **La colección de los dos** (desde el menú principal sólo sale esto, nada
+  de mandar): cada página con su **portadita** (una miniatura que el editor
+  dibuja al mandarla y sube aparte), «Yo» o el nombre de quien la mandó, y
+  filtros Todas / De ‹su nombre› / Mías. Al abrir una se ve en una ventanita
+  (o a pantalla completa), se puede **guardar en tus borradores** para
+  editarla, o quitarla de tu colección (al otro no se le borra).
+- **Reacciones**: a lo que te mandó tu amorcito le puedes poner una (te amo,
+  me encantó, lloré, abrazo, beso, me reí; tocar la misma la quita). Sólo
+  quien la recibió puede reaccionar; quien la mandó lo ve en su colección y
+  le llega un aviso con el latido.
 - El editor pregunta cada 45 s si llegó algo: globito en Exportar / Más y un
   aviso «Verlo». La pastilla de arriba dice si tu amorcito está **en línea**.
+
+Las reacciones y las portaditas necesitan M.YNTHN **1.5.0** o más nuevo: en
+el teléfono servidor corre `librito actualizar` (tus datos no se tocan; las
+columnas nuevas se agregan solas al prender). Con uno más viejo todo lo demás
+sigue igual y las páginas sin portadita llevan una tapita de colores.
 
 Mientras el servidor no tenga GitHub conectado, lo publicado se guarda en el
 servidor y se ve en `https://<tu-túnel>/p/<nombre>/`.
@@ -311,7 +323,7 @@ No se puede deshacer. Sus publicaciones (si había) pasan a ti.
   nube/libritos/<cuenta>/<clave>.json   cada librito de cada cuenta
   nube/copias/<cuenta>/<clave>/<id>.json  sus copias (al guardar a mano)
   proyectos/<usuario>/<proyecto>/   las copias de antes (.zip), si había
-  detallitos/<id>/       cada detallito (ver/ y paquete.zip)
+  detallitos/<id>/       cada detallito (ver/ con su portadita y paquete.zip)
   fotos/<cuenta>.jpg     la foto de perfil de cada cuenta (o .png / .webp)
   servidor.log           lo que va pasando (sin secretos)
   estado.json            pid, puerto y dirección del servidor PRENDIDO (lo lee «librito»; se borra al apagarlo)
@@ -340,8 +352,11 @@ azar) · `/api/…`:
 | `PUT/GET/DELETE /api/yo/foto` · `GET /api/amor/foto` | sesión | tu foto de perfil (jpg, png o webp, hasta 2 MB) y la de tu amorcito |
 | `GET/POST /api/proyectos` · `GET/DELETE /api/proyectos/<id>` | sesión | copias de antes (.zip) |
 | `GET/DELETE /api/amor` · `POST /api/amor/vincular` · `POST /api/amor/codigo` | sesión | tu código y el vínculo con tu amorcito |
-| `GET /api/latido` | sesión | «sigo aquí» + cuántos detallitos nuevos |
+| `GET /api/latido` | sesión | «sigo aquí» + cuántos detallitos nuevos y cuántas reacciones nuevas a los tuyos |
 | `GET/POST /api/detallitos` · `POST …/<id>/visto` · `GET …/<id>/paquete` · `DELETE …/<id>` | sesión | mandar, ver, guardar y quitar detallitos |
+| `PUT /api/detallitos/<id>/reaccion` (`{"reaccion":"te-amo"}`; vacío la quita) | quien lo recibió | reaccionar: te-amo, me-encanto, llore, abrazo, beso o risa |
+| `POST /api/detallitos/reacciones/vistas` | sesión | ya viste las reacciones a lo que mandaste |
+| `PUT /api/detallitos/<id>/portadita` (jpg, png o webp, hasta 600 KB) | quien lo mandó | su miniatura; se ve en `/d/<id>/portadita.<ext>` |
 | `POST /api/admin/usuarios/borrar-todas` (`{"confirmar":"BORRAR"}`) | admin | borra todas las cuentas que no son de administrador |
 | `/api/admin/…` (resumen, ajustes, github, usuarios, invitaciones, actividad, túnel) | admin | el panel |
 

@@ -253,3 +253,11 @@ export const mandarDetallito = (blob, { titulo, mensaje, color }, alAvance) => s
 export const visto = (id) => pedir(`detallitos/${encodeURIComponent(id)}/visto`, { method: "POST", body: {} });
 export const paqueteDetallito = (id) => bajar(`detallitos/${encodeURIComponent(id)}/paquete`);
 export const borrarDetallito = (id) => pedir("detallitos/" + encodeURIComponent(id), { method: "DELETE" });
+/* Fase 22: reaccionar a una página de tu amorcito («» = quitarla), ver las suyas y la portadita al mandar. */
+export const reaccionar = (id, reaccion) => pedir(`detallitos/${encodeURIComponent(id)}/reaccion`, { method: "PUT", body: { reaccion: reaccion || "" } });
+export const reaccionesVistas = () => pedir("detallitos/reacciones/vistas", { method: "POST", body: {} });
+export async function subirPortadita(id, blob) {
+  const r = await enviar("PUT", `detallitos/${encodeURIComponent(id)}/portadita`, blob, blob.type || "image/jpeg");
+  if (r.status < 200 || r.status >= 300) throw Object.assign(new Error(r.datos?.error || `${NOMBRE} contestó ${r.status}`), { status: r.status });
+  return r.datos;
+}

@@ -1,10 +1,13 @@
 // Genera los sonidos del editor: UN archivo por interacción, con su nombre, en assets/sonidos-editor/.
 //   node herramientas/sonidos-editor.mjs            (sobrescribe los <nombre>.wav de la lista)
 //   node herramientas/sonidos-editor.mjs tocar-boton zoom-acercar   (sólo esos)
-// WAV mono 16 bits a 32 000 Hz. Todo está en la misma escala (do mayor pentatónica) para que, sonando
+// Cada uno sale en TRES versiones (nombre.wav, nombre-2.wav, nombre-3.wav) que el editor turna sin
+// repetir la última: las de fábrica, a otro tono; las reacciones, con su propia figura.
+// (Los que suben por la escala al repetirse —elegir, imán, colocar…— van en una sola versión.)
+// WAV mono 16 bits a 24 000 Hz (lo agudo de más se omite: nada chilla ni se dobla). Todo está en la misma escala (do mayor pentatónica) para que, sonando
 // juntos o seguidos, siempre combinen: kalimba, campanitas, marimba, gotitas, pincel, papel y aire.
 import { writeFileSync, mkdirSync } from "node:fs";
-const SR = 32000, DIR = new URL("../assets/sonidos-editor/", import.meta.url).pathname;
+const SR = 24000, DIR = new URL("../assets/sonidos-editor/", import.meta.url).pathname;
 let semilla = 11;
 const azar = () => ((semilla = (semilla * 16807) % 2147483647) / 2147483647);
 
@@ -17,7 +20,14 @@ const TIMBRE = {
   campana: [[1, 1, 1], [2.76, 0.42, 1.6], [5.4, 0.22, 2.4], [8.93, 0.1, 3.4]],
   celesta: [[1, 1, 1], [2, 0.32, 1.4], [3, 0.12, 2.2], [4.17, 0.06, 3]],
   suave: [[1, 1, 1], [2, 0.18, 1.6], [3, 0.05, 2.4]],
+  // Fase 22: cristal (copa golpeada: parciales inarmónicos que se apagan antes que la base),
+  // vidrio (borde de copa: casi puro, larguísimo) y arpa (cuerda pulsada).
+  cristal: [[1, 1, 1], [2.32, 0.34, 1.7], [4.25, 0.17, 2.6], [6.63, 0.08, 3.6], [9.38, 0.035, 5]],
+  vidrio: [[1, 1, 1], [2.005, 0.1, 1.5], [3.01, 0.035, 2.2]],
+  arpa: [[1, 1, 1], [2, 0.42, 1.6], [3, 0.18, 2.4], [4, 0.08, 3.2], [5, 0.04, 4]],
 };
+// El tono de la versión que se está haciendo (1 = la original).
+let T = 1;
 
 const lienzo = (dur) => new Float32Array(Math.round(SR * dur));
 /** Una nota afinada con su timbre: ataque de pluma y caída natural. */
@@ -25,9 +35,10 @@ function nota(m, f, ini, { timbre = "kalimba", vol = 0.3, caida = 7, dur = 0.6, 
   const i0 = Math.round(ini * SR), n = Math.min(m.length - i0, Math.round(dur * SR));
   for (const [p, a, k] of TIMBRE[timbre]) {
     let fase = azar() * 6.28;
+    if (f * T * p > SR * 0.45) continue;
     for (let i = 0; i < n; i++) {
       const t = i / SR, x = i / n;
-      const ff = f * p * Math.pow(glide, x) * (1 + vib * Math.sin(2 * Math.PI * 6 * t));
+      const ff = f * T * p * Math.pow(glide, x) * (1 + vib * Math.sin(2 * Math.PI * 6 * t));
       fase += (2 * Math.PI * ff) / SR;
       const env = Math.min(1, t / ataque) * Math.exp(-t * caida * k) * (x > 0.92 ? (1 - x) / 0.08 : 1);
       m[i0 + i] += Math.sin(fase) * a * env * vol;
@@ -39,7 +50,7 @@ function barrido(m, f0, f1, ini, dur, vol, { curva = 1, caida = 0, ataque = 0.00
   const i0 = Math.round(ini * SR), n = Math.min(m.length - i0, Math.round(dur * SR));
   let fase = 0;
   for (let i = 0; i < n; i++) {
-    const x = i / n, f = f0 * Math.pow(f1 / f0, Math.pow(x, curva));
+    const x = i / n, f = f0 * T * Math.pow(f1 / f0, Math.pow(x, curva));
     fase += (2 * Math.PI * f) / SR;
     const env = Math.min(1, i / (SR * ataque)) * Math.sin(Math.PI * Math.min(1, x * 1.15 + 0.0001)) ** 0.6 * Math.exp(-x * caida);
     m[i0 + i] += Math.sin(fase) * env * vol;
@@ -50,7 +61,7 @@ function aire(m, ini, dur, vol, { f0 = 1200, f1 = 2400, q = 1.1, forma = (x) => 
   const i0 = Math.round(ini * SR), n = Math.min(m.length - i0, Math.round(dur * SR));
   let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
   for (let i = 0; i < n; i++) {
-    const x = i / n, f = f0 * Math.pow(f1 / f0, x);
+    const x = i / n, f = f0 * Math.sqrt(T) * Math.pow(f1 / f0, x);
     const w = (2 * Math.PI * f) / SR, al = Math.sin(w) / (2 * q), c = Math.cos(w);
     const b0 = al, b2 = -al, a0 = 1 + al, a1 = -2 * c, a2 = 1 - al;
     const ent = azar() * 2 - 1;
@@ -176,15 +187,95 @@ const SON = {
   }, 0.5],
 };
 
+/* ── Fase 20 y 22: menús, la pareja, Detallitos y el gatito ──────────────────────────────
+   Cristalinos y calmados: copas, arpa y campanas con su aire de sala grande (nada de juguete). */
+const SALA_GRANDE = { reverb: 0.3, tam: 1.7 };
+const rueda = (m, notas, ini, paso, op) => notas.forEach((f, i) => nota(m, f, ini + i * paso + azar() * 0.006, op));
+Object.assign(SON, {
+  brillo: [0.6, (m) => { rueda(m, [N.E7, N.A6, N.E7, N.A7], 0, 0.045, { timbre: "cristal", vol: 0.16, caida: 9 }); nota(m, N.E6, 0.02, { timbre: "vidrio", vol: 0.12, caida: 5 }); }, 0.36, SALA_GRANDE],
+  "girar-tarjeta": [0.6, (m) => { aire(m, 0, 0.3, 0.5, { f0: 700, f1: 2600, q: 1.2, forma: sube }); nota(m, N.G6, 0.24, { timbre: "cristal", vol: 0.2, caida: 7 }); }, 0.38, SALA_GRANDE],
+  "abrir-sobre": [0.8, (m) => { aire(m, 0, 0.34, 0.7, { f0: 900, f1: 3600, q: 0.9, am: 30, forma: sube }); rueda(m, [N.C6, N.G6, N.E7], 0.26, 0.06, { timbre: "cristal", vol: 0.18, caida: 6 }); }, 0.4, SALA_GRANDE],
+  latido: [0.5, (m) => { barrido(m, 92, 56, 0, 0.13, 0.9, { curva: 0.6, caida: 3 }); barrido(m, 84, 52, 0.19, 0.15, 0.7, { curva: 0.6, caida: 3 }); }, 0.5, { reverb: 0.08 }],
+  "vincular-pareja": [1.8, (m) => { rueda(m, [N.C6, N.E6, N.G6, N.C7, N.E7], 0, 0.09, { timbre: "campana", vol: 0.22, caida: 2.6, dur: 1.5 }); rueda(m, [N.G7, N.E7, N.C7], 0.55, 0.07, { timbre: "cristal", vol: 0.07, caida: 5 }); nota(m, N.C5, 0.1, { timbre: "vidrio", vol: 0.12, caida: 1.6, dur: 1.5, ataque: 0.08 }); }, 0.48, SALA_GRANDE],
+  desvincular: [1, (m) => { rueda(m, [N.G6, N.E6, N.C6, N.A5], 0, 0.11, { timbre: "vidrio", vol: 0.2, caida: 3.5 }); aire(m, 0.1, 0.5, 0.2, { f0: 1800, f1: 500, q: 1, forma: sube }); }, 0.4, SALA_GRANDE],
+  "tecla-codigo": [0.12, (m) => { clic(m, 0, 0.45, { brillo: 0.6, dur: 0.005 }); nota(m, N.E7, 0.002, { timbre: "cristal", vol: 0.1, caida: 40, dur: 0.08 }); }, 0.24],
+  // Detallitos: abrir la colección (un álbum que se abre) y abrir una página de ella.
+  "coleccion-abrir": [1.2, (m) => { aire(m, 0, 0.36, 0.55, { f0: 600, f1: 2400, q: 1, am: 26, forma: sube }); rueda(m, [N.C6, N.E6, N.G6, N.C7], 0.22, 0.07, { timbre: "arpa", vol: 0.2, caida: 4 }); nota(m, N.E7, 0.5, { timbre: "cristal", vol: 0.08, caida: 6 }); }, 0.42, SALA_GRANDE],
+  "detallito-abrir": [1, (m) => { aire(m, 0, 0.28, 0.7, { f0: 1600, f1: 4600, q: 0.9, am: 36, forma: sube }); nota(m, N.G6, 0.2, { timbre: "cristal", vol: 0.2, caida: 5 }); nota(m, N.D7, 0.27, { timbre: "cristal", vol: 0.09, caida: 7 }); }, 0.4, SALA_GRANDE],
+  // El gatito del menú, si lo tocas: ronronea (y se acomoda).
+  "gatito-ronroneo": [1.7, (m) => {
+    const am = 22 + azar() * 6;
+    aire(m, 0, 0.72, 1, { f0: 150, f1: 210, q: 1.6, am, forma: (x) => Math.sin(Math.PI * x) ** 1.4 });
+    aire(m, 0.82, 0.78, 0.9, { f0: 170, f1: 140, q: 1.6, am: am * 1.05, forma: (x) => Math.sin(Math.PI * x) ** 1.4 });
+  }, 0.5, { reverb: 0.05 }],
+});
+// Reacciones a una página de tu amorcito: cada una con TRES figuras distintas (v = 0, 1, 2).
+const SON_REACCION = {
+  "reaccion-te-amo": [1.9, (m, v) => {
+    const acordes = [[N.C6, N.E6, N.G6, N.C7], [N.G5, N.C6, N.E6, N.A6], [N.E6, N.G6, N.C7, N.E7]];
+    nota(m, [N.C5, N.A5 / 2, N.E5][v], 0, { timbre: "vidrio", vol: 0.16, caida: 1.4, dur: 1.7, ataque: 0.1 });
+    rueda(m, acordes[v], 0.02, 0.07, { timbre: "cristal", vol: 0.2, caida: 2.6, dur: 1.5 });
+    rueda(m, [N.E7, N.G7, N.C7].slice(0, 2 + v % 2), 0.42, 0.08, { timbre: "cristal", vol: 0.06, caida: 4 });
+  }, 0.5, SALA_GRANDE],
+  "reaccion-me-encanto": [1.5, (m, v) => {
+    const arriba = [N.C7, N.D7, N.E7, N.G7, N.A7], abajo = [N.A7, N.G7, N.E7, N.D7, N.C7];
+    if (v === 0) rueda(m, arriba, 0, 0.038, { timbre: "cristal", vol: 0.14, caida: 6 });
+    else if (v === 1) rueda(m, abajo, 0, 0.042, { timbre: "cristal", vol: 0.14, caida: 6 });
+    else for (let i = 0; i < 7; i++) nota(m, arriba[Math.floor(azar() * arriba.length)], azar() * 0.34, { timbre: "cristal", vol: 0.11, caida: 7 });
+    nota(m, [N.E6, N.G6, N.C6][v], 0.22, { timbre: "vidrio", vol: 0.16, caida: 2.4, dur: 1.1 });
+    aire(m, 0, 0.5, 0.12, { f0: 4000, f1: 7000, q: 1.4, forma: sube });
+  }, 0.44, SALA_GRANDE],
+  "reaccion-llore": [1.9, (m, v) => {
+    const gota = [[1900, 950, N.A6], [2100, 1100, N.E6], [1700, 880, N.G6]][v];
+    barrido(m, gota[0], gota[1], 0, 0.07, 0.35, { curva: 0.4, caida: 2 });
+    nota(m, gota[2], 0.05, { timbre: "cristal", vol: 0.22, caida: 2.8, glide: 0.985, dur: 1.3 });
+    if (v === 2) { barrido(m, 1500, 760, 0.32, 0.06, 0.25, { curva: 0.4, caida: 2 }); nota(m, N.D6, 0.36, { timbre: "cristal", vol: 0.16, caida: 3 }); }
+    rueda(m, [[N.A5, N.E6], [N.C6, N.E6], [N.A5, N.C6]][v], 0.3, 0.12, { timbre: "vidrio", vol: 0.12, caida: 1.5, dur: 1.4, ataque: 0.15 });
+  }, 0.44, { reverb: 0.36, tam: 1.9 }],
+  "reaccion-abrazo": [1.9, (m, v) => {
+    const base = [[N.C5, N.G5, N.E6], [N.A5 / 2, N.E5, N.C6], [N.G5 / 2, N.D5, N.G5]][v];
+    for (const f of base) nota(m, f, 0, { timbre: "vidrio", vol: 0.2, caida: 1.3, dur: 1.7, ataque: 0.16 });
+    nota(m, [N.C7, N.E7, N.D7][v], 0.36, { timbre: "cristal", vol: 0.12, caida: 4 });
+    nota(m, [N.G6, N.A6, N.G6][v], 0.5, { timbre: "cristal", vol: 0.07, caida: 5 });
+  }, 0.46, SALA_GRANDE],
+  "reaccion-beso": [1.1, (m, v) => {
+    const par = [[N.E7, N.A7], [N.D7, N.G7], [N.C7, N.E7, N.G7]][v];
+    aire(m, 0, 0.06, 0.25, { f0: 2400, f1: 3400, q: 2, forma: golpe });
+    rueda(m, par, 0.02, 0.07, { timbre: "cristal", vol: 0.2, caida: 5 });
+    nota(m, par[0] / 2, 0.06, { timbre: "vidrio", vol: 0.1, caida: 3, dur: 0.8 });
+  }, 0.42, SALA_GRANDE],
+  "reaccion-risa": [1.1, (m, v) => {
+    const notas = [[N.C7, N.E7, N.D7, N.G7], [N.G6, N.A6, N.C7, N.E7], [N.E7, N.D7, N.E7, N.G7]][v];
+    notas.forEach((f, i) => { barrido(m, f * 0.8, f, i * 0.07, 0.05, 0.1, { curva: 0.3 }); nota(m, f, i * 0.07 + 0.01, { timbre: "cristal", vol: 0.15, caida: 9 }); });
+    nota(m, notas[3] / 2, 0.3, { timbre: "vidrio", vol: 0.1, caida: 3, dur: 0.7 });
+  }, 0.42, SALA_GRANDE],
+  "reaccion-quitar": [0.7, (m, v) => {
+    nota(m, [N.G6, N.E6, N.A6][v], 0, { timbre: "cristal", vol: 0.18, caida: 6, glide: 0.75 });
+    aire(m, 0, 0.3, 0.2, { f0: 3000, f1: 900, q: 1.2, forma: sube });
+  }, 0.32, SALA_GRANDE],
+};
+const PROPIAS = new Set(Object.keys(SON_REACCION));
+Object.assign(SON, SON_REACCION);
+// Los que suben por la escala al repetirse (o marcan escalones): con una versión basta.
+const UNA_SOLA = new Set(["seleccionar-elemento", "seleccionar-varios", "colocar-objeto", "iman-pegar", "duplicar", "ordenar-capas", "fotograma", "zoom-paso", "deslizador"]);
+// Las tres versiones de las de fábrica: el original, un tono arriba y un tono abajo.
+const TONOS = [1, 1.1225, 0.8909];
+
 mkdirSync(DIR, { recursive: true });
 const solo = process.argv.slice(2);
-let total = 0;
-for (const [nombre, [dur, hacer, pico]] of Object.entries(SON)) {
-  const m = lienzo(dur + 0.12);
-  hacer(m);
-  const b = wav(terminar(m, pico));
-  if (solo.length && !solo.includes(nombre)) continue;
-  writeFileSync(DIR + nombre + ".wav", b);
-  total += b.length;
+let total = 0, n = 0;
+for (const [nombre, [dur, hacer, pico, fin]] of Object.entries(SON)) {
+  const versiones = UNA_SOLA.has(nombre) ? 1 : 3;
+  for (let v = 0; v < versiones; v++) {
+    semilla = 11 + v * 7919 + nombre.length * 31;
+    T = PROPIAS.has(nombre) ? 1 : TONOS[v];
+    const m = lienzo(dur + 0.12 + (fin?.reverb > 0.2 ? 0.3 : 0));
+    hacer(m, v);
+    const b = wav(terminar(m, pico, fin));
+    if (solo.length && !solo.includes(nombre)) continue;
+    writeFileSync(DIR + nombre + (v ? "-" + (v + 1) : "") + ".wav", b);
+    total += b.length; n++;
+  }
 }
-console.log(`${solo.length || Object.keys(SON).length} sonidos · ${(total / 1024).toFixed(0)} KB en assets/sonidos-editor/`);
+T = 1;
+console.log(`${n} archivos · ${(total / 1024).toFixed(0)} KB en assets/sonidos-editor/`);

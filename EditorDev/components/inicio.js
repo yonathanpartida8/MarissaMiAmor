@@ -106,7 +106,7 @@ const ETQ = {
   subir: ["nube", "Subiendo a tu nube pronto"], nube: ["nube", "Hay uno más nuevo en tu nube"], "los-dos": ["aviso", "Cambió en dos aparatos"],
 };
 
-export async function pantallaInicio(app, { cerrable = false } = {}) {
+export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
   quitarInicio();
   const lista = await listar().catch(() => []);
   const borradores = el("section.ed-inicio-borradores");
@@ -248,6 +248,8 @@ export async function pantallaInicio(app, { cerrable = false } = {}) {
     NUBE.listaNube(true).then((d) => { if (capa.isConnected) pintar(d); }).catch((e) => { if (capa.isConnected) pintar(null, e.message); });
   };
   cargarNube();
+  // «Mis libritos» (del menú principal): directo a tus borradores.
+  if (a === "borradores") requestAnimationFrame(() => borradores.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }));
   // Entraste o saliste de tu cuenta con esto abierto: la lista se pone al día.
   const alCuenta = () => { if (capa.isConnected) cargarNube(); else removeEventListener("ed-cuenta", alCuenta); };
   addEventListener("ed-cuenta", alCuenta);

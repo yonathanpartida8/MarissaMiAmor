@@ -557,9 +557,9 @@ app.nuevo = async (nombre, formato = "movil", { portada = "portada", imagen = nu
   aviso("Tu librito nuevo. Empieza tocando cualquier cosa de la portada");
 };
 
-app.inicio = async () => {
+app.inicio = async (op = {}) => {
   if (app.auto.pendiente) await app.auto.ahora();
-  pantallaInicio(app, { cerrable: !!app.estado.proyecto });
+  pantallaInicio(app, { cerrable: !!app.estado.proyecto, a: op.a });
 };
 
 app.guardarYa = async () => {
@@ -593,8 +593,9 @@ async function latir() {
     const r = await SRV.latido();
     // Sólo lo que se ve (el «visto hace…» cambia en cada latido y no debe repintar nada).
     const firma = (p) => (p ? [p.usuario, !!p.en_linea, p.nombre, p.foto_v, p.novios, p.cumple].join("|") : "");
-    const antes = app.amorNuevos, parejaAntes = firma(app.pareja);
+    const antes = app.amorNuevos, parejaAntes = firma(app.pareja), rxAntes = app.amorReacciones || 0;
     app.amorNuevos = r.nuevos || 0;
+    app.amorReacciones = r.reacciones || 0;
     app.pareja = r.pareja;
     PF.poner({ pareja: r.pareja || null });
     // El globito va en Exportar y en «Más» (en el teléfono, Exportar vive dentro de «Más»).
@@ -609,9 +610,14 @@ async function latir() {
     if (app.amorNuevos > antes) {
       app.sonidos?.sonar("exito");
       const desde = () => [$(".ed-exportar"), $(".ed-mas")].find((b) => b?.offsetParent);
-      aviso(`${r.pareja?.usuario || "Tu amorcito"} te mandó un detallito`, 7000, "", { t: "Verlo", al: () => app.detallitos.abrir(desde()) });
+      aviso(`${PF.nombreDe(r.pareja) || "Tu amorcito"} te mandó una página`, 7000, "", { t: "Verla", al: () => app.detallitos.abrir(desde(), "coleccion") });
     }
-    if (app.amorNuevos !== antes || firma(app.pareja) !== parejaAntes) dispatchEvent(new CustomEvent("ed-amor"));
+    // Reaccionó a una de tus páginas (sólo se avisa si la colección no está abierta: ahí ya se ve).
+    if (app.amorReacciones > rxAntes && !(app.detallitos.abierto && app.detallitos.actual === "coleccion")) {
+      app.sonidos?.sonar("brillo");
+      aviso(`${PF.nombreDe(r.pareja) || "Tu amorcito"} reaccionó a tu página`, 7000, "", { t: "Verla", al: () => app.detallitos.abrir(null, "coleccion") });
+    }
+    if (app.amorNuevos !== antes || app.amorReacciones !== rxAntes || firma(app.pareja) !== parejaAntes) dispatchEvent(new CustomEvent("ed-amor"));
   } catch (e) { /* sin conexión: la próxima */ }
 }
 setTimeout(latir, 4000);

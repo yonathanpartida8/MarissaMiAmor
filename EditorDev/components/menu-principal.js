@@ -1,30 +1,37 @@
 /**
- * MENÚ PRINCIPAL — lo primero que se ve al abrir el editor. Mientras está a
- * la vista, el editor se va cargando por detrás.
+ * MENÚ PRINCIPAL — lo primero que se ve al abrir el editor: un álbum de
+ * recortes de los dos (Fase 22). Mientras está a la vista, el editor se va
+ * cargando por detrás.
  *
- *   Arriba     M.YNTHN y tu cuenta (tu foto y tu nombre → tu perfil).
- *   La pareja  tu polaroid y la de tu amorcito, unidas por un hilo rojo con
- *              un corazón que late; cuántos días llevan juntos (cuenta hacia
- *              arriba al abrir) y lo que viene: aniversario, mesiversario o
- *              un cumpleaños. Sin vincular: tu polaroid y una vacía que invita.
- *   Después    «Crear librito», entrar al editor y tres tarjetas: Detallitos,
- *              Mis libritos y tu perfil (o tu cuenta).
+ *   Arriba      el corazón de píxeles, M.YNTHN y su lema; tu cuenta en una
+ *               etiqueta de papel con su coronita (tu foto y tu nombre → perfil).
+ *   La pareja   dos polaroids con cinta washi (tu foto y la de tu amorcito o,
+ *               sin foto, un atardecer y una ciudad de noche), unidas por un
+ *               hilo rojo que se hace corazón y late; la notita «Juntos
+ *               siempre es mejor».
+ *   Los días    una tarjetita de papel rasgado con su clip: cuántos días
+ *               llevan juntos (sube al abrir), lo que viene (mesiversario,
+ *               aniversario o un cumpleaños) y su barrita que se llena.
+ *   Crear       el botón grande «Crear librito» y, a su lado, un gatito
+ *               dormido que respira, mueve la cola y suelta sus «z» (si lo
+ *               tocas, ronronea y se acomoda).
+ *   Tarjetas    Detallitos (la colección de los dos), Mis libritos y tu perfil.
+ *   Abajo       la tira de papel oscuro «Volver al librito», una foto y la
+ *               notita «Cada página también es un beso».
  *
- * Cada pantalla llega con su propia transición y su sonidito (transiciones.js):
- * el perfil se abre como una hoja que se da vuelta, la cuenta gira como una
- * tarjeta y, al entrar, todo crece en un círculo desde el botón.
- *
- * Sin parpadeos: la pantalla no se rehace cuando llega un latido o cambia
- * algo chiquito (en línea, un detallito nuevo, una foto): sólo se cambia ese
- * pedacito. Se vuelve a armar (con transición) únicamente si cambia lo grande:
- * entrar, salir, vincularse o desvincularse.
+ * Todo se anima con transform y opacity (nada se repinta: el gatito va en
+ * piezas, cada una en su capa) y espera quieto hasta que llegan las letras.
+ * Sin parpadeos: un latido o un cambio chiquito sólo cambia su pedacito; la
+ * pantalla se rehace (con transición) sólo si cambia lo grande.
  */
 import { el, aviso } from "./ui.js";
 import { ico } from "./iconos.js";
 import * as SRV from "../integraciones/servidor.js";
 import { formularioCuenta } from "./cuenta.js";
 import { cambiar, ajustar, letrasListas, sinMovimiento } from "./transiciones.js";
+import { estallido } from "./reacciones.js";
 import * as PF from "./perfil.js";
+import * as A from "./album-arte.js";
 
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 
@@ -35,6 +42,11 @@ function saludoDeLaHora() {
 
 /* Cómo se va de una pantalla a otra (las que no están: «zoom»). */
 const CAMINO = { "inicio>cuenta": "carta", "cuenta>inicio": "atras", "inicio>perfil": "pagina", "perfil>inicio": "regresa", "cuenta>perfil": "pagina" };
+/* El hilo rojo: dos tramos fijos y, en medio, el corazón que late (en su propia capa). */
+const HILO = '<svg viewBox="0 0 160 70" preserveAspectRatio="none" aria-hidden="true"><path class="mp-hilo-cuerda" d="M2 26C30 34 60 48 80 58M80 58C100 48 130 34 158 26"/><path class="mp-hilo-luz" d="M2 26C30 34 60 48 80 58C100 48 130 34 158 26"/></svg>';
+const HILO_CORAZON = '<svg viewBox="0 0 48 44" aria-hidden="true"><path d="M24 40C15 32 6 25 6.5 16 7 9 13 6 18 8c3 1 5 3.5 6 6 1-2.5 3-5 6-6 5-2 11 1 11.5 8 .5 9-8.5 16-17.5 24z" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const FLECHA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const corto = (s, n = 11) => { s = String(s || "").trim(); return s.length > n ? s.slice(0, 1).toUpperCase() : s; };
 
 export class MenuPrincipal {
   constructor(app) {
@@ -48,19 +60,19 @@ export class MenuPrincipal {
     this.abierto = true;
     this.vista = null;
     this.contado = false;
-    // El fondo: luces suaves, corazones que suben y destellos (sólo transform y opacity).
-    const fondo = el("div.mp-fondo", { "aria-hidden": "true" }, [el("i.mp-orbe"), el("i.mp-orbe"), el("i.mp-orbe")]);
-    for (let i = 0; i < 12; i++) {
-      const f = el("i.mp-sube", { html: ico(i % 4 ? "corazon" : "estrella") });
+    // El fondo: garabatitos que suben y destellos (sólo transform y opacity).
+    const fondo = el("div.mp-fondo", { "aria-hidden": "true" });
+    for (let i = 0; i < 7; i++) {
+      const f = el("i.mp-sube", { html: i % 3 ? A.GARABATO_CORAZON : A.DESTELLO });
       f.style.left = (4 + Math.random() * 92).toFixed(1) + "%";
-      f.style.setProperty("--t", (13 + Math.random() * 11).toFixed(1) + "s");
+      f.style.setProperty("--t", (15 + Math.random() * 10).toFixed(1) + "s");
       f.style.setProperty("--d", (-Math.random() * 24).toFixed(1) + "s");
-      f.style.setProperty("--s", (0.5 + Math.random() * 0.8).toFixed(2));
-      f.style.setProperty("--x", (Math.random() * 60 - 30).toFixed(0) + "px");
+      f.style.setProperty("--s", (0.45 + Math.random() * 0.5).toFixed(2));
+      f.style.setProperty("--x", (Math.random() * 50 - 25).toFixed(0) + "px");
       fondo.append(f);
     }
-    for (let i = 0; i < 9; i++) {
-      const b = el("i.mp-destello");
+    for (let i = 0; i < 7; i++) {
+      const b = el("i.mp-destello", { html: A.DESTELLO_LLENO });
       b.style.left = (Math.random() * 100).toFixed(1) + "%";
       b.style.top = (Math.random() * 100).toFixed(1) + "%";
       b.style.setProperty("--d", (-Math.random() * 4).toFixed(2) + "s");
@@ -69,12 +81,35 @@ export class MenuPrincipal {
     this.chip = el("button.mp-chip", { type: "button" });
     this.chip.addEventListener("click", () => this.ir(SRV.conectado() ? "perfil" : "cuenta", { desde: this.chip }));
     this.escena = el("div.mp-escena");
-    this.tarjeta = el("div.mp-tarjeta", {}, [
-      el("header.mp-arriba", {}, [el("span.mp-marca", { html: `${ico("corazon")}<b>${SRV.NOMBRE}</b>` }), this.chip]),
-      this.escena,
-      el("small.mp-pie", { html: `${ico("corazon")}<span>${SRV.NOMBRE} · hecho con amor</span>` }),
+    const marca = el("div.mp-marca", {}, [
+      el("i.mp-pixel", { html: A.CORAZON_PIXEL }),
+      el("div.mp-marca-t", {}, [el("b", { text: SRV.NOMBRE }), el("small", {}, [el("span", { text: "Pequeños mundos, grandes historias…" }), el("i", { html: A.GARABATO_CORAZON })])]),
     ]);
-    this.capa = el("div.mp-capa", { role: "dialog", "aria-label": "Menú principal" }, [fondo, this.tarjeta]);
+    // Los papeles rasgados llevan su «sombra» como otro papelito debajo (un filtro repintaría a cada cuadro).
+    const rasgoEtq = A.rasgado(["arriba", "abajo", "izq", "der"], 3.2, 10, 5);
+    const etiqueta = el("div.mp-etiqueta", {}, [el("i.mp-sombra", { style: { clipPath: rasgoEtq } }), el("i.mp-etiqueta-papel", { style: { clipPath: rasgoEtq } }), el("i.mp-corona", { html: A.CORONITA }), this.chip]);
+    this.tarjeta = el("div.mp-tarjeta", {}, [el("header.mp-arriba", {}, [marca, etiqueta]), this.escena]);
+    const volver = document.querySelector(".ed-volver")?.getAttribute("href") || "../index.html";
+    this.pie = el("footer.mp-pie", {}, [
+      el("i.mp-pie-papel", { style: { clipPath: A.rasgado(["arriba"], 10, 36, 8) } }),
+      el("a.mp-volver-libro", { href: volver, html: `<span class="mp-raya"></span>${ico("libro")}<span>Volver al librito</span><span class="mp-raya"></span>` }),
+    ]);
+    const decor = el("div.mp-decor", { "aria-hidden": "true" }, [
+      el("i.mp-cuadricula", { style: { clipPath: A.rasgado(["der", "arriba", "abajo"], 6, 12, 2) } }),
+      el("i.mp-rama", { html: A.RAMA_SECA }),
+      el("i.mp-rama-rosa", { html: A.RAMA_ROSA }),
+      el("i.mp-garabato.g1", { html: A.GARABATO_CORAZON }),
+      el("i.mp-garabato.g2", { html: A.GARABATO_CORAZONES }),
+      el("i.mp-garabato.g3", { html: A.DESTELLO }),
+      el("i.mp-garabato.g4", { html: A.DESTELLO }),
+      el("i.mp-garabato.g5", { html: A.FLECHITA }),
+      el("figure.mp-foto-esquina", {}, [el("span", { html: A.FOTO_ESQUINA })]),
+      el("p.mp-nota-beso", {}, [el("span", { text: "Cada página también es un beso" }), el("i", { html: ico("corazon") })]),
+    ]);
+    const tex = A.texturaPapel();
+    this.capa = el("div.mp-capa.mp-album", { role: "dialog", "aria-label": "Menú principal", style: { "--papel-tex": tex ? `url("${tex}")` : "none" } }, [
+      fondo, el("div.mp-columna", {}, [decor, this.tarjeta, this.pie]),
+    ]);
     document.body.append(this.capa);
     document.body.classList.add("con-menu-principal");
     // Lo chiquito se cambia en su lugar; lo grande, con transición.
@@ -89,15 +124,6 @@ export class MenuPrincipal {
     addEventListener("ed-cuenta", this._cuenta);
     addEventListener("ed-amor", this._amor);
     addEventListener("ed-perfil", this._amor);
-    // La tarjeta se inclina apenas siguiendo el mouse (con el dedo se queda quieta).
-    this._mover = (e) => {
-      if (sinMovimiento() || e.pointerType !== "mouse") return;
-      this.tarjeta.classList.add("inclina");
-      const x = (e.clientX / innerWidth - 0.5) * 2, y = (e.clientY / innerHeight - 0.5) * 2;
-      this.tarjeta.style.setProperty("--rx", (-y * 2).toFixed(2) + "deg");
-      this.tarjeta.style.setProperty("--ry", (x * 2.5).toFixed(2) + "deg");
-    };
-    this.capa.addEventListener("pointermove", this._mover);
     this._pintarChip();
     let seVio;
     this._alVer = new Promise((r) => { seVio = r; });
@@ -134,7 +160,7 @@ export class MenuPrincipal {
     cambiar(this.escena, nodo, { tipo: tipo || CAMINO[antes + ">" + vista] || "zoom", desde, sonidos: this.app.sonidos, sinSonido: sinSonido || !antes });
   }
 
-  /* — Arriba a la derecha: tu cuenta — */
+  /* — Arriba a la derecha: tu cuenta, en su etiqueta de papel — */
   _pintarChip() {
     const c = this.chip, con = SRV.conectado();
     const k = con ? "1" + PF.miNombre() : "0";
@@ -142,7 +168,7 @@ export class MenuPrincipal {
     c._k = k;
     c.classList.toggle("sin", !con);
     c.setAttribute("aria-label", con ? "Mi perfil" : "Entrar o crear mi cuenta");
-    c.replaceChildren(...(con ? [PF.avatar("yo", "mp-chip-av"), el("span", { text: PF.miNombre() })] : [el("i", { html: ico("cuenta") }), el("span", { text: "Entrar" })]));
+    c.replaceChildren(...(con ? [PF.avatar("yo", "mp-chip-av"), el("span", { text: PF.miNombre() })] : [el("i.mp-chip-ico", { html: ico("cuenta") }), el("span", { text: "Entrar" })]), el("i.mp-chip-v", { html: A.CHEVRON }));
   }
 
   /** Llegó un latido, una foto o un nombre: se cambia sólo lo que cambió. */
@@ -157,23 +183,29 @@ export class MenuPrincipal {
       else this.ir("inicio", { tipo: "zoom", forzar: true });
       return;
     }
-    const r = this.r, pa = d.pareja, nuevos = this.app.amorNuevos || 0;
-    if (r.nombreYo) r.nombreYo.textContent = PF.miNombre();
-    if (r.nombrePa && pa) r.nombrePa.textContent = PF.nombreDe(pa);
+    const r = this.r, pa = d.pareja;
+    if (r.nombreYo) r.nombreYo.textContent = corto(PF.miNombre());
+    if (r.nombrePa && pa) r.nombrePa.textContent = corto(PF.nombreDe(pa));
     r.polaPa?.classList.toggle("en-linea", !!pa?.en_linea);
     r.saludo.textContent = this._saludo();
     if (r.subDet) r.subDet.textContent = this._subDetallitos();
-    const g = r.tarjetaDet.querySelector(".dt-globo");
+    const nuevos = (this.app.amorNuevos || 0) + (this.app.amorReacciones || 0), g = r.tarjetaDet.querySelector(".dt-globo");
     if (nuevos && !g) r.tarjetaDet.append(el("em.dt-globo", { text: String(nuevos) }));
     else if (!nuevos && g) g.remove();
     else if (g && g.textContent !== String(nuevos)) g.textContent = String(nuevos);
-    // Si cambió la fecha de novios, se rehace sólo el contador.
-    const ahora = JSON.stringify([pa?.novios || d.yo?.novios, PF.proximo(d)?.texto]);
+    // Llegó (o se quitó) una foto: sólo cambia la de su polaroid.
+    for (const [quien, nodo] of [["yo", r.fotoYo], ["pareja", r.fotoPa]]) {
+      if (!nodo) continue;
+      const tiene = !!(quien === "yo" ? d.yo : pa)?.foto;
+      if (tiene !== nodo._conFoto) { const n = this._fotoPola(quien); nodo.replaceWith(n); if (quien === "yo") r.fotoYo = n; else r.fotoPa = n; }
+    }
+    // Si cambió la fecha de novios o lo que viene, se rehace sólo la tarjetita de los días.
+    const ahora = this._firmaDias();
     if (ahora !== r.fechas) {
       r.fechas = ahora;
-      const c = this._contador(false), p = this._proximo();
-      const poner = () => { r.contador?.replaceWith(c); r.proximo?.replaceWith(p); r.contador = c; r.proximo = p; };
-      if (seVe) ajustar(r.hero, poner, [c, p]); else poner();
+      const s = this._dias(false);
+      const poner = () => { r.stats.replaceWith(s); r.stats = s; };
+      if (seVe) ajustar(r.vistaInicio, poner, [s]); else poner();
     }
   }
 
@@ -181,43 +213,55 @@ export class MenuPrincipal {
   _saludo() { return SRV.conectado() ? `${saludoDeLaHora()}, ${PF.miNombre()}` : `${saludoDeLaHora()} · con ${SRV.NOMBRE}`; }
   _subDetallitos() {
     const pa = SRV.conectado() ? PF.datos().pareja : null;
-    return pa ? `con ${PF.nombreDe(pa)}${pa.en_linea ? " · en línea" : ""}` : SRV.conectado() ? "Vincula a tu amorcito" : "Páginas para tu amorcito";
+    return pa ? `con ${PF.nombreDe(pa)}` : SRV.conectado() ? "Vincula a tu amorcito" : "Páginas para tu amorcito";
+  }
+  _firmaDias() { const d = PF.datos(), p = PF.proximo(d); return JSON.stringify([SRV.conectado(), !!d.pareja, d.pareja?.novios || d.yo?.novios, p?.linea1, p?.linea2]); }
+
+  /* — Las dos polaroids y el hilo rojo — */
+  _fotoPola(quien) {
+    const d = PF.datos(), p = quien === "yo" ? d.yo : d.pareja;
+    const n = p?.foto ? PF.avatar(quien, "mp-pola-foto") : el("span.mp-pola-foto.arte", { html: quien === "yo" ? A.FOTO_ATARDECER : A.FOTO_CIUDAD });
+    n._conFoto = !!p?.foto;
+    return n;
   }
 
-  /* — La pareja (o el librito, sin cuenta) — */
   _pareja() {
-    const r = this.r, d = PF.datos(), con = SRV.conectado();
-    if (!con) {
-      return el("div.mp-libro", { "aria-hidden": "true" }, [
-        el("i.mp-tapa"), el("i.mp-hoja"), el("i.mp-hoja"), el("i.mp-hoja"),
-        el("b.mp-latido", { html: ico("corazon") }),
-        el("span.mp-brillo"), el("span.mp-brillo"), el("span.mp-brillo"),
+    const r = this.r, con = SRV.conectado(), pa = con ? PF.datos().pareja : null;
+    r.nombreYo = el("b", { text: con ? corto(PF.miNombre()) : "Tú" });
+    r.fotoYo = this._fotoPola("yo");
+    const polaYo = el("figure.mp-pola.yo", {}, [el("i.mp-cinta"), el("span.mp-pola-marco", {}, [r.fotoYo]), el("figcaption.mp-pola-etq", {}, [r.nombreYo, el("i", { html: ico("corazon") })])]);
+    const hilo = el("div.mp-hilo", { "aria-hidden": "true", html: HILO }, []);
+    hilo.append(el("i.mp-hilo-corazon", { html: HILO_CORAZON }));
+    if (pa) {
+      r.nombrePa = el("b", { text: corto(PF.nombreDe(pa)) });
+      r.fotoPa = this._fotoPola("pareja");
+      r.polaPa = el("button.mp-pola.ella" + (pa.en_linea ? ".en-linea" : ""), { type: "button", "aria-label": `Nuestro vínculo con ${PF.nombreDe(pa)}`, onClick: (e) => this.app.detallitos.abrir(e.currentTarget, "vincular") }, [
+        el("i.mp-cinta"), el("span.mp-pola-marco", {}, [r.fotoPa]),
+        el("figcaption.mp-pola-etq", {}, [r.nombrePa, el("i", { html: ico("corazon") })]),
+        el("i.mp-en-linea", { title: "En línea" }),
+      ]);
+    } else {
+      r.nombrePa = null; r.fotoPa = null;
+      r.polaPa = el("button.mp-pola.ella.vacia", { type: "button", "aria-label": con ? "Vincular a mi amorcito" : "Entrar a mi cuenta", onClick: (e) => (con ? this.app.detallitos.abrir(e.currentTarget, "vincular") : this.ir("cuenta", { desde: e.currentTarget })) }, [
+        el("i.mp-cinta"), el("span.mp-pola-marco", {}, [el("span.mp-pola-foto.arte", { html: A.FOTO_VACIA })]),
+        el("figcaption.mp-pola-etq", {}, [el("b", { text: con ? "¿tu amor?" : "¿y tu amor?" })]),
       ]);
     }
-    const pa = d.pareja;
-    r.nombreYo = el("figcaption", { text: PF.miNombre() });
-    const polaYo = el("figure.mp-pola.yo", {}, [el("i.mp-cinta"), PF.avatar("yo", "mp-pola-foto"), r.nombreYo]);
-    const hilo = el("div.mp-hilo", { "aria-hidden": "true", html: '<svg viewBox="0 0 120 40" preserveAspectRatio="none"><path class="mp-hilo-cuerda" d="M2 8 C 34 40, 86 40, 118 8"/><path class="mp-hilo-luz" d="M2 8 C 34 40, 86 40, 118 8"/></svg>' }, []);
-    hilo.append(el("i.mp-hilo-corazon", { html: ico("corazon") }));
-    if (pa) {
-      r.nombrePa = el("figcaption", { text: PF.nombreDe(pa) });
-      r.polaPa = el("figure.mp-pola.ella" + (pa.en_linea ? ".en-linea" : ""), {}, [el("i.mp-cinta"), PF.avatar("pareja", "mp-pola-foto"), r.nombrePa, el("i.mp-en-linea", { title: "En línea" })]);
-      const ir = (e) => this.app.detallitos.abrir(e.currentTarget, "vincular");
-      r.polaPa.addEventListener("click", ir);
-      return el("div.mp-pareja", {}, [polaYo, hilo, r.polaPa]);
-    }
-    r.polaPa = null; r.nombrePa = null;
-    const vacia = el("button.mp-pola.ella.vacia", { type: "button", "aria-label": "Vincular a mi amorcito", onClick: (e) => this.app.detallitos.abrir(e.currentTarget, "vincular") }, [el("i.mp-cinta"), el("span.av.vacio.mp-pola-foto", {}, [el("b", { text: "?" })]), el("figcaption", { text: "¿tu amorcito?" })]);
-    return el("div.mp-pareja.sola", {}, [polaYo, hilo, vacia]);
+    const nota = el("p.mp-nota-pegada", { "aria-hidden": "true" }, [el("span", { text: "Juntos siempre es mejor" }), el("i", { html: ico("corazon") })]);
+    return el("div.mp-pareja" + (pa ? "" : ".sola"), {}, [nota, polaYo, hilo, r.polaPa]);
   }
 
-  /** «Juntos desde hace 423 días» (el número sube al abrir; después ya no). */
-  _contador(animar = true) {
-    const d = PF.datos(), pa = d.pareja;
-    if (!SRV.conectado()) return el("span.mp-nada");
-    if (!pa) return el("p.mp-invita", { text: "Vincúlate con tu amorcito para mandarse detallitos y ver cuántos días llevan juntos." });
+  /** La tarjetita de los días: «3 días juntos» y lo que viene, con su barrita. */
+  _dias(animar = true) {
+    const d = PF.datos(), pa = d.pareja, con = SRV.conectado();
+    const rasgo = A.rasgado(["arriba", "abajo", "izq", "der"], 2.2, 14, 4);
+    const papel = () => [el("i.mp-sombra", { style: { clipPath: rasgo } }), el("i.mp-dias-papel", { style: { clipPath: rasgo } })];
+    const adornos = () => [el("i.mp-dias-clip", { html: A.CLIP }), el("i.mp-dias-cinta")];
+    const invita = (texto, boton, al) => el("div.mp-dias.invita", {}, [...papel(), ...adornos(), el("i.mp-dias-cal", { html: A.ICONO_CALENDARIO }), el("p", { text: texto }), el("button.mp-dias-btn", { type: "button", onClick: al }, [el("span", { text: boton }), el("i", { html: FLECHA })])]);
+    if (!con) return invita("Entra a tu cuenta y tus libritos van contigo a cualquier aparato.", "Entrar o crear mi cuenta", (e) => this.ir("cuenta", { desde: e.currentTarget }));
+    if (!pa) return invita("Vincúlate con tu amorcito: se mandan páginas y aquí cuentan sus días juntos.", "Vincularnos", (e) => this.app.detallitos.abrir(e.currentTarget, "vincular"));
     const j = PF.juntos(pa.novios || d.yo?.novios);
-    if (!j) return el("button.mp-poner-fecha", { type: "button", html: I("calendario", "¿Desde cuándo son novios? Ponlo aquí"), onClick: (e) => this.ir("perfil", { desde: e.currentTarget }) });
+    if (!j) return invita("¿Desde cuándo son novios? Ponlo y aquí van sus días juntos.", "Poner la fecha", (e) => this.ir("perfil", { desde: e.currentTarget }));
     const num = el("b.mp-dias-num", { text: String(animar && !this.contado && !sinMovimiento() ? 0 : j.dias) });
     if (animar && !this.contado && !sinMovimiento() && j.dias > 0) {
       this.contado = true;
@@ -225,14 +269,50 @@ export class MenuPrincipal {
       let t0 = 0;
       const dur = Math.min(1800, 500 + j.dias * 2);
       const paso = (t) => { t0 ||= t; const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); num.textContent = String(Math.round(j.dias * e)); if (k < 1 && num.isConnected) requestAnimationFrame(paso); };
-      (this._alVer || Promise.resolve()).then(() => setTimeout(() => requestAnimationFrame(paso), 380));
+      (this._alVer || Promise.resolve()).then(() => setTimeout(() => requestAnimationFrame(paso), 420));
     }
-    return el("div.mp-dias", {}, [el("small", { text: "Juntos desde hace" }), el("div", {}, [num, el("span", { text: j.dias === 1 ? "día" : "días" })]), el("em", { text: PF.textoJuntos(j) })]);
+    const p = PF.proximo(d);
+    const barra = el("span.mp-barra", { "aria-hidden": "true" }, [el("i.mp-barra-relleno", { style: { "--p": (p?.progreso ?? 0.5).toFixed(3) } })]);
+    // Con tres o más cifras, el número se achica y el calendario se hace a un lado (lo que viene no se aprieta).
+    return el("div.mp-dias" + (p?.hoy ? ".hoy" : "") + (j.dias >= 100 ? ".largo" : ""), { title: PF.textoJuntos(j) }, [
+      ...papel(), ...adornos(),
+      el("div.mp-dias-fila", {}, [
+        el("i.mp-dias-cal", { html: A.ICONO_CALENDARIO }),
+        el("div.mp-dias-cuenta", {}, [el("div", {}, [num, el("span", { text: j.dias === 1 ? "día" : "días" })]), el("small", { text: "juntos" })]),
+        p ? el("i.mp-dias-sep") : null,
+        p ? el("div.mp-dias-viene", {}, [el("i.mp-dias-cor" + (p.icono === "pastel" || p.icono === "anillos" ? "" : ".lleno"), { html: ico(p.icono === "pastel" || p.icono === "anillos" ? p.icono : "corazon") }), el("div", {}, [el("b", { text: p.linea1 }), el("small", { text: p.linea2 })])]) : null,
+      ]),
+      p ? barra : el("small.mp-dias-texto", { text: PF.textoJuntos(j) }),
+    ]);
   }
 
-  _proximo() {
-    const p = SRV.conectado() ? PF.proximo() : null;
-    return p ? el("div.mp-proximo" + (p.hoy ? ".hoy" : ""), {}, [el("i", { html: ico(p.icono) }), el("span", { text: p.texto })]) : el("span.mp-nada");
+  /** Una tarjeta de abajo: su cinta, su dibujito, título, subtítulo y su flechita. */
+  _carta(color, dibujo, titulo, sub, al, i) {
+    return el("button.mp-carta." + color, { type: "button", style: { "--i": i }, onClick: al }, [
+      el("i.mp-carta-cinta"),
+      typeof dibujo === "string" ? el("span.mp-carta-ico", { html: dibujo }) : el("span.mp-carta-ico", {}, [dibujo]),
+      el("b", { text: titulo }), sub,
+      el("span.mp-carta-ir", { html: FLECHA }),
+    ]);
+  }
+
+  /** El gatito dormido (si lo tocas, ronronea y se acomoda). */
+  _gatito() {
+    const g = el("button.mp-gato", { type: "button", "aria-label": "El gatito está dormido. Hazle cariño" }, [
+      el("i.mp-gato-cola", { html: A.GATO_COLA }),
+      el("i.mp-gato-cuerpo", { html: A.GATO_CUERPO }),
+      el("i.mp-gato-cabeza", { html: A.GATO_CABEZA }),
+      el("span.mp-gato-z", { "aria-hidden": "true" }, [el("b", { text: "z" }), el("b", { text: "z" }), el("b", { text: "z" })]),
+    ]);
+    g.addEventListener("click", () => {
+      if (g.classList.contains("mimos")) return;
+      g.classList.add("mimos");
+      this.app.sonidos?.sonar("gatito");
+      const r = g.getBoundingClientRect();
+      estallido(r.left + r.width * 0.3, r.top + r.height * 0.3, "abrazo");
+      setTimeout(() => g.classList.remove("mimos"), 2000);
+    });
+    return g;
   }
 
   /* — Las pantallas — */
@@ -240,33 +320,30 @@ export class MenuPrincipal {
     const app = this.app, con = SRV.conectado();
     this.r = { clave: this._clave() };
     const r = this.r;
-    r.saludo = el("p.mp-sub", { text: this._saludo() });
+    r.saludo = el("span", { text: this._saludo() });
     r.subDet = el("small", { text: this._subDetallitos() });
-    const nuevos = app.amorNuevos || 0;
-    r.tarjetaDet = el("button.mp-carta.amor", { type: "button", style: { "--i": 4 }, onClick: (e) => app.detallitos.abrir(e.currentTarget) }, [
-      el("i", { html: ico("detallito") }), el("b", { text: "Detallitos" }), r.subDet,
-      nuevos ? el("em.dt-globo", { text: String(nuevos) }) : null,
+    const nuevos = (app.amorNuevos || 0) + (app.amorReacciones || 0);
+    r.tarjetaDet = this._carta("rosa", A.ICONO_CARPETA, "Detallitos", r.subDet, (e) => app.detallitos.abrir(e.currentTarget, "coleccion"), 5);
+    if (nuevos) r.tarjetaDet.append(el("em.dt-globo", { text: String(nuevos) }));
+    const libritos = this._carta("lila", A.ICONO_LIBRO, "Mis libritos", el("small", { text: con ? "Aquí y en tu nube" : "Tus borradores" }), () => { this.cerrar(); app.inicio?.({ a: "borradores" }); }, 6);
+    const yo = con ? PF.datos().yo : null;
+    const perfil = con
+      ? this._carta("menta", yo?.foto ? PF.avatar("yo", "mp-carta-av") : A.ICONO_PERSONA, "Mi perfil", el("small", { text: "Foto, nombre y fechas" }), (e) => this.ir("perfil", { desde: e.currentTarget }), 7)
+      : this._carta("menta", A.ICONO_PERSONA, "Mi cuenta", el("small", { text: "Entrar o crear una" }), (e) => this.ir("cuenta", { desde: e.currentTarget }), 7);
+    r.fechas = this._firmaDias();
+    r.stats = this._dias(true);
+    const crear = el("button.mp-btn.primario.mp-crear", { type: "button", onClick: () => { this.cerrar(); app.inicio?.(); } }, [
+      el("i.mp-crear-libro", { html: A.LIBRO_BRILLOS }), el("span.mp-crear-t", { text: "Crear librito" }), el("i.mp-crear-flecha", { html: FLECHA }),
     ]);
-    const libritos = el("button.mp-carta", { type: "button", style: { "--i": 5 }, onClick: () => { this.cerrar(); app.inicio?.(); } }, [
-      el("i", { html: ico("biblioteca") }), el("b", { text: "Mis libritos" }), el("small", { text: con ? "Aquí y en tu nube" : "Tus borradores" }),
+    const seguir = el("button.mp-seguir", { type: "button", onClick: () => this.cerrar() }, [el("span", { text: "Ir al editor" }), el("i", { html: FLECHA })]);
+    r.vistaInicio = el("div.mp-vista.mp-inicio", {}, [
+      el("div.mp-hero", { style: { "--i": 0 } }, [this._pareja()]),
+      el("div.mp-dias-caja", { style: { "--i": 1 } }, [r.stats]),
+      el("div.mp-crear-fila", { style: { "--i": 2 } }, [crear, el("i.mp-crear-chispa.c1", { html: A.DESTELLO_LLENO }), el("i.mp-crear-chispa.c2", { html: A.DESTELLO_LLENO }), el("i.mp-crear-chispa.c3", { html: A.DESTELLO }), this._gatito()]),
+      el("p.mp-saludo", { style: { "--i": 3 } }, [r.saludo, el("i", { html: ico("corazon") }), seguir]),
+      el("div.mp-cartas", {}, [r.tarjetaDet, libritos, perfil]),
     ]);
-    const cuenta = con
-      ? el("button.mp-carta", { type: "button", style: { "--i": 6 }, onClick: (e) => this.ir("perfil", { desde: e.currentTarget }) }, [PF.avatar("yo", "mp-carta-av"), el("b", { text: "Mi perfil" }), el("small", { text: "Foto, nombre y fechas" })])
-      : el("button.mp-carta", { type: "button", style: { "--i": 6 }, onClick: (e) => this.ir("cuenta", { desde: e.currentTarget }) }, [el("i", { html: ico("cuenta") }), el("b", { text: "Mi cuenta" }), el("small", { text: "Entrar o crear una" })]);
-    r.fechas = JSON.stringify([PF.datos().pareja?.novios || PF.datos().yo?.novios, PF.proximo()?.texto]);
-    r.contador = this._contador(true);
-    r.proximo = this._proximo();
-    const entrar = el("button.mp-btn.primario", { type: "button", style: { "--i": 3 }, html: I("editar", "Entrar al editor"), onClick: () => this.cerrar() });
-    return el("div.mp-vista.mp-inicio", {}, [
-      r.hero = el("div.mp-hero", { style: { "--i": 0 } }, [this._pareja(), r.contador, r.proximo]),
-      el("div.mp-titulo", { style: { "--i": 1 } }, [
-        el("h1", {}, ["Crear librito", el("span.mp-subrayado", { "aria-hidden": "true", html: '<svg viewBox="0 0 220 18" preserveAspectRatio="none"><path d="M4 12 C 50 2, 90 18, 130 8 S 200 4, 216 10"/></svg>' })]),
-        r.saludo,
-      ]),
-      entrar,
-      el("div.mp-cartas", {}, [r.tarjetaDet, libritos, cuenta]),
-      el("a.mp-btn.suave", { style: { "--i": 7 }, href: document.querySelector(".ed-volver")?.getAttribute("href") || "../index.html", html: I("libro", "Volver al librito") }),
-    ]);
+    return r.vistaInicio;
   }
 
   _vCuenta() {

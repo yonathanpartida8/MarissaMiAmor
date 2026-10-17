@@ -79,6 +79,8 @@ export class Abeja {
   /* ── Voz: blips cortitos hechos con Web Audio (nada que descargar) ── */
   sonar(tipo = "habla", silabas = 3) {
     if (!PREF.abejaSonido) return;
+    // Con tu archivo (assets/sonidos-editor/abejita-<tipo>.mp3), suena ése.
+    if (this.app.sonidos?.tiene?.("abeja-" + tipo)) { this.app.sonidos.sonar("abeja-" + tipo); return; }
     const AU = this.app.audio, ac = AU?.ac;
     if (!ac || ac.state !== "running") return;
     const vol = 0.32 * Math.max(0.05, this.app.sonidos?.pref?.vol ?? 0.35);

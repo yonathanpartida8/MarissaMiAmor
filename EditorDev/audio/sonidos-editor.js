@@ -70,6 +70,13 @@ export const ARCHIVO = {
   "abrir-recursos": "abrir-recursos", "cerrar-recursos": "cerrar-recursos",
   // Fase 20: si pones un archivo con estos nombres, suena ése; si no, uno hecho aquí.
   brillo: "brillo", giro: "girar-tarjeta", sobre: "abrir-sobre", latido: "latido", campanas: "vincular-pareja", separar: "desvincular", tecla: "tecla-codigo",
+  // Fase 22: Detallitos (la colección, abrir una página y las reacciones), el gatito del menú,
+  // la voz de la abejita y el huevito de pascua. Todo lo que suena en el editor tiene su nombre.
+  coleccion: "coleccion-abrir", "detallito-abrir": "detallito-abrir", gatito: "gatito-ronroneo",
+  "reaccion-te-amo": "reaccion-te-amo", "reaccion-me-encanto": "reaccion-me-encanto", "reaccion-llore": "reaccion-llore",
+  "reaccion-abrazo": "reaccion-abrazo", "reaccion-beso": "reaccion-beso", "reaccion-risa": "reaccion-risa", "reaccion-quitar": "reaccion-quitar",
+  "abeja-habla": "abejita-habla", "abeja-hola": "abejita-hola", "abeja-feliz": "abejita-feliz", "abeja-susto": "abejita-susto", "abeja-adios": "abejita-adios", "abeja-zumbido": "abejita-zumbido",
+  "glitch-ruido": "secreto-interferencia", "glitch-campanita": "secreto-campanita",
 };
 /* Lo que se repite seguido sube por la escala (do, re, mi, sol, la, do…) en vez
    de sonar igual: elegir cinco cosas seguidas es una escalerita, no un martillo.
@@ -81,7 +88,7 @@ const SUAVES = new Set(["botones", "seleccionar", "deseleccionar"]);
 // Cuánto se hace a un lado MusicaDev mientras suena un efecto del editor (1 = nada).
 const AGACHAR = 0.6;
 // Lo mínimo entre dos sonidos del mismo momento (ms): sin metralletas.
-const MIN = { "zoom-paso": 55, "zoom-acercar": 380, "zoom-alejar": 380, pincel: 240, "seleccionar-varios": 90, rehacer: 120, publicar: 800, botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250, atras: 150, activar: 100, desactivar: 100, menu: 150, iman: 260, escribir: 200, probar: 400, "abrir-recursos": 200, "cerrar-recursos": 200 };
+const MIN = { coleccion: 600, "detallito-abrir": 400, gatito: 1600, "reaccion-quitar": 300, "zoom-paso": 55, "zoom-acercar": 380, "zoom-alejar": 380, pincel: 240, "seleccionar-varios": 90, rehacer: 120, publicar: 800, botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250, atras: 150, activar: 100, desactivar: 100, menu: 150, iman: 260, escribir: 200, probar: 400, "abrir-recursos": 200, "cerrar-recursos": 200 };
 /* Sonidos hechos a mano: [forma, frec. inicial, frec. final, duración s, volumen, retraso s]. */
 const SINTE = {
   colocar: [["sine", 520, 250, 0.11, 0.5], ["triangle", 1040, 900, 0.03, 0.12]],
@@ -101,6 +108,17 @@ const SINTE = {
   campanas: [["sine", 523, 523, 0.55, 0.2], ["sine", 659, 659, 0.55, 0.18, 0.09], ["sine", 784, 784, 0.6, 0.18, 0.18], ["sine", 1046, 1046, 0.8, 0.18, 0.27], ["sine", 2093, 2093, 0.5, 0.05, 0.27]],
   separar: [["triangle", 700, 220, 0.24, 0.22], ["sine", 300, 180, 0.2, 0.18, 0.08]],
   tecla: [["sine", 1400, 1300, 0.03, 0.12]],
+  // Fase 22 (por si falta su archivo): copitas de cristal.
+  "reaccion-te-amo": [["sine", 1046, 1046, 0.9, 0.16], ["sine", 1318, 1318, 0.9, 0.14, 0.07], ["sine", 1568, 1568, 1, 0.13, 0.14], ["sine", 2093, 2093, 1.1, 0.1, 0.21]],
+  "reaccion-me-encanto": [["sine", 2093, 2093, 0.3, 0.1], ["sine", 2349, 2349, 0.3, 0.1, 0.04], ["sine", 2637, 2637, 0.3, 0.1, 0.08], ["sine", 3136, 3136, 0.4, 0.09, 0.12], ["sine", 1318, 1318, 0.8, 0.1, 0.2]],
+  "reaccion-llore": [["sine", 1900, 950, 0.08, 0.14], ["sine", 1760, 1730, 1.1, 0.16, 0.05], ["sine", 880, 880, 1.2, 0.08, 0.3]],
+  "reaccion-abrazo": [["sine", 523, 523, 1.2, 0.14], ["sine", 784, 784, 1.2, 0.12], ["sine", 2093, 2093, 0.6, 0.08, 0.36]],
+  "reaccion-beso": [["sine", 2637, 2637, 0.4, 0.12, 0.02], ["sine", 3520, 3520, 0.45, 0.1, 0.09]],
+  "reaccion-risa": [["sine", 2093, 2093, 0.2, 0.1], ["sine", 2637, 2637, 0.2, 0.1, 0.07], ["sine", 2349, 2349, 0.2, 0.1, 0.14], ["sine", 3136, 3136, 0.3, 0.1, 0.21]],
+  "reaccion-quitar": [["sine", 1568, 1170, 0.4, 0.12]],
+  coleccion: [["triangle", 520, 1046, 0.2, 0.12], ["sine", 1318, 1318, 0.5, 0.1, 0.16], ["sine", 1568, 1568, 0.5, 0.09, 0.23]],
+  "detallito-abrir": [["triangle", 700, 1400, 0.14, 0.1], ["sine", 1568, 1568, 0.6, 0.12, 0.12]],
+  gatito: [["sawtooth", 62, 58, 0.7, 0.05], ["sawtooth", 60, 64, 0.7, 0.045, 0.8]],
 };
 
 const ALIAS = { "abrir-recursos": "exito", "cerrar-recursos": "soltar", "seleccionar-varios": "seleccionar", rehacer: "deshacer", pincel: "arrastrar", publicar: "exito", "zoom-paso": "ajustar" };
@@ -122,6 +140,8 @@ export class SonidosEditor {
   }
 
   get hay() { return Object.keys(this.lista).length > 0; }
+  /** ¿Ese momento tiene archivo (tuyo o de fábrica) en assets/sonidos-editor/? */
+  tiene(momento) { return !!this._de(momento)?.length; }
   /** Los archivos de un momento: su carpeta de CARPETA o, como antes, la carpeta con su nombre. */
   _de(momento) { return this.lista[ARCHIVO[momento]] || this.lista[CARPETA[momento]] || this.lista[momento]; }
   get momentos() { return Object.keys(this.lista); }
@@ -204,6 +224,7 @@ export class SonidosEditor {
   voz() {
     if (!this.pref.on) return;
     if (this.lista.abeja?.length) { this._sonar("abeja"); return; }
+    if (this.tiene("abeja-habla")) { this._sonar("abeja-habla"); return; }
     const ac = this.audio.ac;
     if (!ac || ac.state !== "running") return;
     const t = ac.currentTime, vol = Math.max(0, Math.min(1, this.pref.vol)) * 0.45;

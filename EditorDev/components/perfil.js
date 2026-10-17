@@ -143,14 +143,15 @@ export function proximo(d = datos()) {
   const j = juntos(novios);
   if (j) {
     const an = siguienteAnual(novios), n = enDias(an), anios = an.getFullYear() - aFecha(novios).getFullYear();
-    if (anios > 0) ev.push({ icono: "anillos", dias: n, texto: n === 0 ? `¡Hoy cumplen ${plural(anios, "año", "años")} de novios!` : `Faltan ${plural(n, "día", "días")} para su aniversario (${plural(anios, "año", "años")})` });
+    if (anios > 0) ev.push({ icono: "anillos", dias: n, periodo: 365, texto: n === 0 ? `¡Hoy cumplen ${plural(anios, "año", "años")} de novios!` : `Faltan ${plural(n, "día", "días")} para su aniversario (${plural(anios, "año", "años")})`, para: `para su aniversario (${plural(anios, "año", "años")})`, hoyTxt: `cumplen ${plural(anios, "año", "años")} de novios` });
     const me = siguienteMensual(novios);
-    if (me && j.dias > 0) { const k = enDias(me), meses = (me.getFullYear() - aFecha(novios).getFullYear()) * 12 + me.getMonth() - aFecha(novios).getMonth(); if (meses % 12) ev.push({ icono: "corazon", dias: k, texto: k === 0 ? `¡Hoy cumplen ${plural(meses, "mes", "meses")} juntos!` : `Faltan ${plural(k, "día", "días")} para sus ${plural(meses, "mes", "meses")}` }); }
+    if (me && j.dias > 0) { const k = enDias(me), meses = (me.getFullYear() - aFecha(novios).getFullYear()) * 12 + me.getMonth() - aFecha(novios).getMonth(); if (meses % 12) ev.push({ icono: "corazon", dias: k, periodo: 30, texto: k === 0 ? `¡Hoy cumplen ${plural(meses, "mes", "meses")} juntos!` : `Faltan ${plural(k, "día", "días")} para sus ${plural(meses, "mes", "meses")}`, para: meses === 1 ? "para su 1 mes" : `para sus ${meses} meses`, hoyTxt: `cumplen ${plural(meses, "mes", "meses")} juntos` }); }
   }
-  if (pa?.cumple) { const n = enDias(siguienteAnual(pa.cumple)); ev.push({ icono: "pastel", dias: n, texto: n === 0 ? `¡Hoy es el cumpleaños de ${nombreDe(pa)}!` : `Faltan ${plural(n, "día", "días")} para el cumpleaños de ${nombreDe(pa)}` }); }
-  if (yo?.cumple) { const n = enDias(siguienteAnual(yo.cumple)); ev.push({ icono: "pastel", dias: n, texto: n === 0 ? "¡Hoy es tu cumpleaños! Feliz cumpleaños" : `Faltan ${plural(n, "día", "días")} para tu cumpleaños` }); }
+  if (pa?.cumple) { const n = enDias(siguienteAnual(pa.cumple)); ev.push({ icono: "pastel", dias: n, periodo: 365, texto: n === 0 ? `¡Hoy es el cumpleaños de ${nombreDe(pa)}!` : `Faltan ${plural(n, "día", "días")} para el cumpleaños de ${nombreDe(pa)}`, para: `para el cumple de ${nombreDe(pa)}`, hoyTxt: `es el cumple de ${nombreDe(pa)}` }); }
+  if (yo?.cumple) { const n = enDias(siguienteAnual(yo.cumple)); ev.push({ icono: "pastel", dias: n, periodo: 365, texto: n === 0 ? "¡Hoy es tu cumpleaños! Feliz cumpleaños" : `Faltan ${plural(n, "día", "días")} para tu cumpleaños`, para: "para tu cumpleaños", hoyTxt: "es tu cumpleaños" }); }
   const e = ev.sort((a, b) => a.dias - b.dias)[0];
-  return e ? { ...e, hoy: e.dias === 0 } : null;
+  // En dos renglones (como en la tarjeta del menú) y cuánto falta, de 0 a 1, para la barrita.
+  return e ? { ...e, hoy: e.dias === 0, linea1: e.dias === 0 ? "¡Hoy!" : `Faltan ${plural(e.dias, "día", "días")}`, linea2: e.dias === 0 ? e.hoyTxt : e.para, progreso: e.dias === 0 ? 1 : Math.max(0.04, Math.min(1, 1 - e.dias / e.periodo)) } : null;
 }
 
 /* ── Elegir el pedacito de la foto ── */

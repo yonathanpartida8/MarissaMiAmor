@@ -156,11 +156,14 @@ function extrasDe(raiz) {
   const ds = join(raiz, "sonidos-editor");
   // Un archivo por interacción, con su nombre (seleccionar-elemento.wav). Con «-2», «-3»… al final
   // del nombre, varias versiones del mismo sonido (se turnan).
+  // El nombre se lee sin mayúsculas, acentos ni espacios («Tocar Botón.mp3» = tocar-boton).
+  // Tu archivo manda: si hay un .mp3/.m4a/.ogg/.aac con ese nombre, los .wav de fábrica ya no suenan.
   for (const a of lista(ds)) {
     if (!AUD.test(a) || esDir(join(ds, a))) continue;
-    const k = a.replace(/\.[^.]+$/, "").replace(/-\d+$/, "").toLowerCase();
+    const k = a.replace(/\.[^.]+$/, "").replace(/-\d+$/, "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/[\s_]+/g, "-");
     (ex.sonidos[k] ||= []).push(`assets/sonidos-editor/${a}`);
   }
+  for (const [k, l] of Object.entries(ex.sonidos)) if (l.some((f) => !/\.wav$/i.test(f))) ex.sonidos[k] = l.filter((f) => !/\.wav$/i.test(f));
   for (const c of lista(ds)) {
     const p = join(ds, c);
     if (!esDir(p)) continue;
