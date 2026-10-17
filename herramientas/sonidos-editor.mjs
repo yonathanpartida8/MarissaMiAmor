@@ -12,7 +12,7 @@ let semilla = 11;
 const azar = () => ((semilla = (semilla * 16807) % 2147483647) / 2147483647);
 
 // Notas (Hz) de do mayor pentatónica.
-const N = { C5: 523.25, D5: 587.33, E5: 659.26, G5: 783.99, A5: 880, C6: 1046.5, D6: 1174.66, E6: 1318.51, G6: 1567.98, A6: 1760, C7: 2093, D7: 2349.32, E7: 2637.02, G7: 3135.96, A7: 3520 };
+const N = { C4: 261.63, D4: 293.66, E4: 329.63, G4: 392, A4: 440, C5: 523.25, D5: 587.33, E5: 659.26, G5: 783.99, A5: 880, C6: 1046.5, D6: 1174.66, E6: 1318.51, G6: 1567.98, A6: 1760, C7: 2093, D7: 2349.32, E7: 2637.02, G7: 3135.96, A7: 3520 };
 // Timbres: [proporción, volumen, cuánto más rápido se apaga].
 const TIMBRE = {
   kalimba: [[1, 1, 1], [2.01, 0.1, 1.8], [5.43, 0.22, 3.8], [9.1, 0.06, 6]],
@@ -25,6 +25,9 @@ const TIMBRE = {
   cristal: [[1, 1, 1], [2.32, 0.34, 1.7], [4.25, 0.17, 2.6], [6.63, 0.08, 3.6], [9.38, 0.035, 5]],
   vidrio: [[1, 1, 1], [2.005, 0.1, 1.5], [3.01, 0.035, 2.2]],
   arpa: [[1, 1, 1], [2, 0.42, 1.6], [3, 0.18, 2.4], [4, 0.08, 3.2], [5, 0.04, 4]],
+  // Fase 23: piano de fieltro (redondo, sin filo) y lengüeta de piano eléctrico (tibia).
+  fieltro: [[1, 1, 1], [2, 0.45, 1.5], [3, 0.16, 2.2], [4, 0.06, 3], [5.02, 0.03, 3.6]],
+  lengueta: [[1, 1, 1], [2, 0.14, 1.3], [3, 0.03, 2], [7.1, 0.035, 9]],
 };
 // El tono de la versión que se está haciendo (1 = la original).
 let T = 1;
@@ -111,6 +114,11 @@ function wav(m) {
 }
 const sube = (x) => Math.sin(Math.PI * x) * (1 - x * 0.3);
 const golpe = (x) => Math.min(1, x * 12) * Math.exp(-x * 4);
+// Fase 23: en vez de brillitos, cosas que dan gusto: una burbujita que hace «plop» (sube o baja),
+// un golpecito de madera grave y acordes de piano de fieltro.
+const plop = (m, ini, f, vol, baja = false) => barrido(m, baja ? f : f * 0.55, baja ? f * 0.6 : f, ini, 0.065, vol, { curva: 0.35, caida: 1.5 });
+const tum = (m, ini, vol, f = 150) => barrido(m, f, f * 0.6, ini, 0.07, vol, { curva: 0.5, caida: 3 });
+const FIELTRO = { timbre: "fieltro", ataque: 0.006 };
 
 // nombre → [duración, (m) => …, pico]. El pico es el volumen relativo: lo frecuente, más bajito.
 const SON = {
@@ -135,8 +143,8 @@ const SON = {
   "zoom-alejar": [0.42, (m) => { barrido(m, 1280, 640, 0, 0.22, 0.3, { curva: 0.8 }); aire(m, 0, 0.22, 0.3, { f0: 3200, f1: 900, q: 1.4, forma: sube }); nota(m, N.C6, 0.18, { timbre: "campana", vol: 0.25, caida: 9 }); }, 0.42],
   "zoom-paso": [0.12, (m) => nota(m, N.A6, 0, { timbre: "campana", vol: 0.5, caida: 32, dur: 0.1 }), 0.2],
   // — Crear, copiar, borrar —
-  "colocar-objeto": [0.5, (m) => { barrido(m, 360, 1150, 0, 0.09, 0.6, { curva: 0.4 }); nota(m, N.C7, 0.07, { timbre: "campana", vol: 0.18, caida: 8 }); nota(m, N.G7, 0.11, { timbre: "campana", vol: 0.08, caida: 10 }); }, 0.5],
-  duplicar: [0.5, (m) => { nota(m, N.A5, 0, { vol: 0.5, caida: 11 }); nota(m, N.A6, 0.075, { vol: 0.42, caida: 9 }); nota(m, N.E7, 0.09, { timbre: "campana", vol: 0.06, caida: 12 }); }, 0.48],
+  "colocar-objeto": [0.5, (m) => { barrido(m, 360, 1150, 0, 0.09, 0.6, { curva: 0.4 }); plop(m, 0.07, 700, 0.3); nota(m, N.C6, 0.08, { timbre: "marimba", vol: 0.2, caida: 12 }); }, 0.5],
+  duplicar: [0.5, (m) => { nota(m, N.A5, 0, { vol: 0.5, caida: 11 }); nota(m, N.A6, 0.075, { vol: 0.42, caida: 9 }); }, 0.48],
   "borrar-objeto": [0.5, (m) => { aire(m, 0, 0.3, 0.9, { f0: 2600, f1: 380, q: 0.7, forma: golpe }); nota(m, N.E6, 0.06, { timbre: "campana", vol: 0.12, caida: 10, glide: 0.8 }); }, 0.42],
   agrupar: [0.45, (m) => { nota(m, N.G5, 0, { timbre: "campana", vol: 0.3, caida: 6, glide: N.E6 / N.G5 }); nota(m, N.C6 * 1.5, 0, { timbre: "campana", vol: 0.25, caida: 6, glide: N.E6 / (N.C6 * 1.5) }); }, 0.42],
   desagrupar: [0.45, (m) => { nota(m, N.E6, 0, { timbre: "campana", vol: 0.3, caida: 6, glide: N.C6 / N.E6 }); nota(m, N.E6, 0, { timbre: "campana", vol: 0.25, caida: 6, glide: N.G6 / N.E6 }); }, 0.42],
@@ -149,27 +157,28 @@ const SON = {
   "dibujar-trazo": [0.18, (m) => aire(m, 0, 0.15, 0.9, { f0: 3200, f1: 3800, q: 2.2, forma: sube, granos: 0.02 }), 0.3],
   borrador: [0.2, (m) => aire(m, 0, 0.17, 0.9, { f0: 1700, f1: 2400, q: 3, am: 28, forma: sube }), 0.28],
   "elegir-color": [0.3, (m) => { barrido(m, 450, 1450, 0, 0.1, 0.7, { curva: 0.35 }); barrido(m, 600, 1700, 0.11, 0.07, 0.16, { curva: 0.35 }); }, 0.42],
-  "aplicar-efecto": [0.62, (m) => { const ns = [N.C7, N.E7, N.G7, N.A7, N.D7, N.G7]; ns.forEach((f, i) => nota(m, f, i * 0.045 + azar() * 0.01, { timbre: "campana", vol: 0.16, caida: 9 })); }, 0.4],
-  "aplicar-animacion": [0.7, (m) => { [N.C6, N.D6, N.E6, N.G6, N.A6, N.C7, N.E7].forEach((f, i) => nota(m, f, i * 0.04, { timbre: "celesta", vol: 0.2, caida: 7 })); }, 0.42],
+  "aplicar-efecto": [0.62, (m) => { aire(m, 0, 0.16, 0.3, { f0: 300, f1: 1100, q: 0.9, forma: sube }); plop(m, 0.08, 720, 0.45); [N.C5, N.E5, N.G5].forEach((f, i) => nota(m, f, 0.1 + i * 0.03, { ...FIELTRO, vol: 0.2, caida: 5 })); }, 0.42],
+  "aplicar-animacion": [0.6, (m) => { [N.C5, N.E5, N.G5].forEach((f, i) => { plop(m, i * 0.08, f * 1.2, 0.28); nota(m, f, i * 0.08 + 0.01, { timbre: "lengueta", vol: 0.22, caida: 7 }); }); }, 0.42],
   fotograma: [0.3, (m) => { nota(m, N.A6, 0, { timbre: "campana", vol: 0.4, caida: 11 }); nota(m, N.E7, 0.005, { timbre: "suave", vol: 0.08, caida: 18 }); }, 0.36],
   "escribir-texto": [0.12, (m) => { clic(m, 0, 0.6, { brillo: 0.55, dur: 0.006 }); nota(m, N.D7, 0.002, { timbre: "suave", vol: 0.06, caida: 50, dur: 0.05 }); }, 0.3],
   deshacer: [0.3, (m) => { barrido(m, 980, 620, 0, 0.12, 0.35, { curva: 0.6 }); nota(m, N.G5, 0.08, { vol: 0.3, caida: 12 }); }, 0.38],
   rehacer: [0.3, (m) => { barrido(m, 620, 980, 0, 0.12, 0.35, { curva: 0.6 }); nota(m, N.D6, 0.08, { vol: 0.3, caida: 12 }); }, 0.38],
   guardar: [0.6, (m) => { nota(m, N.C6, 0, { timbre: "campana", vol: 0.3, caida: 5 }); nota(m, N.E6, 0.1, { timbre: "campana", vol: 0.28, caida: 5 }); }, 0.42],
-  "listo-exito": [0.8, (m) => { [N.C6, N.E6, N.G6, N.C7].forEach((f, i) => nota(m, f, i * 0.075, { timbre: "campana", vol: 0.24, caida: 4.5 })); }, 0.44],
+  "listo-exito": [0.8, (m) => { [N.C5, N.E5, N.G5, N.C6].forEach((f, i) => nota(m, f, i * 0.07, { ...FIELTRO, vol: 0.22, caida: 4 })); plop(m, 0.21, 820, 0.22); }, 0.44],
   "aviso-error": [0.42, (m) => { nota(m, N.E5, 0, { timbre: "marimba", vol: 0.45, caida: 9 }); nota(m, N.C5, 0.13, { timbre: "marimba", vol: 0.45, caida: 9 }); }, 0.44],
   // — Menús y hojas —
   "abrir-menu": [0.38, (m) => { aire(m, 0, 0.2, 0.45, { f0: 600, f1: 2300, q: 1.2, forma: sube }); nota(m, N.C6, 0.15, { vol: 0.3, caida: 10 }); }, 0.36],
   "cerrar-menu": [0.36, (m) => { aire(m, 0, 0.19, 0.45, { f0: 2300, f1: 600, q: 1.2, forma: sube }); nota(m, N.G5, 0.12, { vol: 0.26, caida: 12 }); }, 0.34],
   // El menú de recursos (Elementos, Stickers, Efectos…): una cajita mágica que se abre o se guarda.
-  "abrir-recursos": [0.62, (m) => { aire(m, 0, 0.24, 0.4, { f0: 520, f1: 2600, q: 1.1, forma: sube }); [N.C6, N.E6, N.G6, N.C7].forEach((f, i) => nota(m, f, 0.08 + i * 0.05, { timbre: "celesta", vol: 0.2, caida: 7 })); nota(m, N.E7, 0.3, { timbre: "campana", vol: 0.08, caida: 9 }); }, 0.4],
-  "cerrar-recursos": [0.5, (m) => { aire(m, 0, 0.22, 0.4, { f0: 2400, f1: 520, q: 1.1, forma: sube }); [N.G6, N.E6, N.C6].forEach((f, i) => nota(m, f, 0.06 + i * 0.05, { timbre: "celesta", vol: 0.18, caida: 9 })); }, 0.36],
+  // El cajón de recursos: se desliza como papel, hace «plop» y suena un acorde tibio (nada de brillitos).
+  "abrir-recursos": [0.7, (m) => { aire(m, 0, 0.2, 0.3, { f0: 240, f1: 760, q: 0.8, forma: sube }); tum(m, 0.1, 0.35); plop(m, 0.1, 640, 0.5); [N.C5, N.G5].forEach((f, i) => nota(m, f, 0.13 + i * 0.035, { ...FIELTRO, vol: 0.24, caida: 5.5 })); nota(m, N.E5, 0.2, { ...FIELTRO, vol: 0.12, caida: 6 }); }, 0.44, { reverb: 0.18, tam: 1.2 }],
+  "cerrar-recursos": [0.5, (m) => { aire(m, 0, 0.18, 0.28, { f0: 760, f1: 240, q: 0.8, forma: sube }); plop(m, 0.08, 560, 0.4, true); nota(m, N.G4, 0.1, { ...FIELTRO, vol: 0.24, caida: 7 }); nota(m, N.C5, 0.13, { ...FIELTRO, vol: 0.12, caida: 8 }); }, 0.4],
   "bajar-hoja": [0.24, (m) => aire(m, 0, 0.2, 0.6, { f0: 1500, f1: 480, q: 1.1, forma: sube }), 0.24],
   "subir-hoja": [0.24, (m) => aire(m, 0, 0.2, 0.6, { f0: 480, f1: 1500, q: 1.1, forma: sube }), 0.24],
   atras: [0.36, (m) => { aire(m, 0, 0.18, 0.4, { f0: 1800, f1: 520, q: 1.2, forma: sube }); nota(m, N.E5, 0.09, { vol: 0.32, caida: 11 }); }, 0.36],
   "interruptor-encender": [0.26, (m) => { barrido(m, 500, 900, 0, 0.06, 0.55, { curva: 0.4 }); barrido(m, 720, 1320, 0.065, 0.07, 0.5, { curva: 0.4 }); }, 0.38],
   "interruptor-apagar": [0.26, (m) => { barrido(m, 900, 520, 0, 0.06, 0.5, { curva: 0.6 }); barrido(m, 640, 360, 0.065, 0.07, 0.45, { curva: 0.6 }); }, 0.36],
-  "probar-pagina": [0.9, (m) => { aire(m, 0, 0.5, 0.35, { f0: 500, f1: 3000, q: 1, forma: sube }); [N.C6, N.G6, N.C7, N.E7, N.G7].forEach((f, i) => nota(m, f, 0.18 + i * 0.06, { timbre: "campana", vol: 0.16, caida: 5 })); }, 0.42],
+  "probar-pagina": [0.9, (m) => { aire(m, 0, 0.42, 0.3, { f0: 260, f1: 1400, q: 0.9, forma: sube }); tum(m, 0.34, 0.4); [N.G4, N.C5, N.E5, N.G5].forEach((f, i) => nota(m, f, 0.34 + i * 0.03, { ...FIELTRO, vol: 0.2, caida: 3.5, dur: 0.9 })); }, 0.42],
   // — Páginas —
   "pagina-nueva": [0.6, (m) => { aire(m, 0, 0.26, 0.7, { f0: 1800, f1: 5200, q: 0.9, am: 38, forma: sube }); nota(m, N.G6, 0.2, { timbre: "campana", vol: 0.22, caida: 6 }); }, 0.42],
   "pagina-duplicar": [0.5, (m) => { aire(m, 0, 0.16, 0.6, { f0: 2000, f1: 4800, q: 0.9, am: 40, forma: sube }); aire(m, 0.16, 0.16, 0.6, { f0: 2200, f1: 5000, q: 0.9, am: 40, forma: sube }); nota(m, N.A6, 0.3, { timbre: "campana", vol: 0.14, caida: 8 }); }, 0.4],
@@ -181,9 +190,9 @@ const SON = {
   pausar: [0.35, (m) => { nota(m, N.G6, 0, { vol: 0.3, caida: 10 }); nota(m, N.E6, 0.065, { vol: 0.3, caida: 10 }); }, 0.36],
   // — Publicar —
   publicar: [1.4, (m) => {
-    [N.C6, N.E6, N.G6, N.C7, N.E7].forEach((f, i) => nota(m, f, i * 0.07, { timbre: "campana", vol: 0.22, caida: 3.2, dur: 1.1 }));
-    [N.G7, N.A7, N.E7, N.G7, N.C7].forEach((f, i) => nota(m, f * 1.0, 0.42 + i * 0.05 + azar() * 0.02, { timbre: "celesta", vol: 0.08, caida: 8 }));
-    nota(m, N.C5, 0.35, { timbre: "suave", vol: 0.16, caida: 2.2, dur: 1 });
+    [N.C4, N.G4, N.C5, N.E5, N.G5, N.C6].forEach((f, i) => nota(m, f, i * 0.06, { ...FIELTRO, vol: 0.2, caida: 2.6, dur: 1.2 }));
+    plop(m, 0.36, 760, 0.3);
+    nota(m, N.C4 / 2, 0, { timbre: "suave", vol: 0.16, caida: 2, dur: 1.1 });
   }, 0.5],
 };
 
@@ -192,16 +201,16 @@ const SON = {
 const SALA_GRANDE = { reverb: 0.3, tam: 1.7 };
 const rueda = (m, notas, ini, paso, op) => notas.forEach((f, i) => nota(m, f, ini + i * paso + azar() * 0.006, op));
 Object.assign(SON, {
-  brillo: [0.6, (m) => { rueda(m, [N.E7, N.A6, N.E7, N.A7], 0, 0.045, { timbre: "cristal", vol: 0.16, caida: 9 }); nota(m, N.E6, 0.02, { timbre: "vidrio", vol: 0.12, caida: 5 }); }, 0.36, SALA_GRANDE],
+  brillo: [0.6, (m) => { plop(m, 0, 700, 0.4); rueda(m, [N.E5, N.A5], 0.02, 0.06, { timbre: "lengueta", vol: 0.22, caida: 5 }); nota(m, N.A4, 0.02, { ...FIELTRO, vol: 0.12, caida: 4 }); }, 0.38, SALA_GRANDE],
   "girar-tarjeta": [0.6, (m) => { aire(m, 0, 0.3, 0.5, { f0: 700, f1: 2600, q: 1.2, forma: sube }); nota(m, N.G6, 0.24, { timbre: "cristal", vol: 0.2, caida: 7 }); }, 0.38, SALA_GRANDE],
-  "abrir-sobre": [0.8, (m) => { aire(m, 0, 0.34, 0.7, { f0: 900, f1: 3600, q: 0.9, am: 30, forma: sube }); rueda(m, [N.C6, N.G6, N.E7], 0.26, 0.06, { timbre: "cristal", vol: 0.18, caida: 6 }); }, 0.4, SALA_GRANDE],
+  "abrir-sobre": [0.8, (m) => { aire(m, 0, 0.34, 0.6, { f0: 500, f1: 1800, q: 0.9, am: 30, forma: sube }); rueda(m, [N.C5, N.G5, N.E6], 0.26, 0.06, { timbre: "lengueta", vol: 0.2, caida: 5 }); }, 0.4, SALA_GRANDE],
   latido: [0.5, (m) => { barrido(m, 92, 56, 0, 0.13, 0.9, { curva: 0.6, caida: 3 }); barrido(m, 84, 52, 0.19, 0.15, 0.7, { curva: 0.6, caida: 3 }); }, 0.5, { reverb: 0.08 }],
-  "vincular-pareja": [1.8, (m) => { rueda(m, [N.C6, N.E6, N.G6, N.C7, N.E7], 0, 0.09, { timbre: "campana", vol: 0.22, caida: 2.6, dur: 1.5 }); rueda(m, [N.G7, N.E7, N.C7], 0.55, 0.07, { timbre: "cristal", vol: 0.07, caida: 5 }); nota(m, N.C5, 0.1, { timbre: "vidrio", vol: 0.12, caida: 1.6, dur: 1.5, ataque: 0.08 }); }, 0.48, SALA_GRANDE],
+  "vincular-pareja": [1.8, (m) => { rueda(m, [N.C5, N.E5, N.G5, N.C6, N.E6], 0, 0.09, { timbre: "campana", vol: 0.22, caida: 2.6, dur: 1.5 }); rueda(m, [N.C4, N.G4], 0.02, 0.05, { ...FIELTRO, vol: 0.14, caida: 2, dur: 1.5 }); nota(m, N.C5, 0.1, { timbre: "vidrio", vol: 0.12, caida: 1.6, dur: 1.5, ataque: 0.08 }); }, 0.48, SALA_GRANDE],
   desvincular: [1, (m) => { rueda(m, [N.G6, N.E6, N.C6, N.A5], 0, 0.11, { timbre: "vidrio", vol: 0.2, caida: 3.5 }); aire(m, 0.1, 0.5, 0.2, { f0: 1800, f1: 500, q: 1, forma: sube }); }, 0.4, SALA_GRANDE],
-  "tecla-codigo": [0.12, (m) => { clic(m, 0, 0.45, { brillo: 0.6, dur: 0.005 }); nota(m, N.E7, 0.002, { timbre: "cristal", vol: 0.1, caida: 40, dur: 0.08 }); }, 0.24],
+  "tecla-codigo": [0.12, (m) => { clic(m, 0, 0.45, { brillo: 0.6, dur: 0.005 }); nota(m, N.E5, 0.002, { timbre: "lengueta", vol: 0.12, caida: 40, dur: 0.08 }); }, 0.24],
   // Detallitos: abrir la colección (un álbum que se abre) y abrir una página de ella.
-  "coleccion-abrir": [1.2, (m) => { aire(m, 0, 0.36, 0.55, { f0: 600, f1: 2400, q: 1, am: 26, forma: sube }); rueda(m, [N.C6, N.E6, N.G6, N.C7], 0.22, 0.07, { timbre: "arpa", vol: 0.2, caida: 4 }); nota(m, N.E7, 0.5, { timbre: "cristal", vol: 0.08, caida: 6 }); }, 0.42, SALA_GRANDE],
-  "detallito-abrir": [1, (m) => { aire(m, 0, 0.28, 0.7, { f0: 1600, f1: 4600, q: 0.9, am: 36, forma: sube }); nota(m, N.G6, 0.2, { timbre: "cristal", vol: 0.2, caida: 5 }); nota(m, N.D7, 0.27, { timbre: "cristal", vol: 0.09, caida: 7 }); }, 0.4, SALA_GRANDE],
+  "coleccion-abrir": [1.2, (m) => { aire(m, 0, 0.36, 0.5, { f0: 400, f1: 1600, q: 1, am: 26, forma: sube }); rueda(m, [N.C5, N.E5, N.G5, N.C6], 0.22, 0.07, { timbre: "arpa", vol: 0.2, caida: 4 }); tum(m, 0.22, 0.25); }, 0.42, SALA_GRANDE],
+  "detallito-abrir": [1, (m) => { aire(m, 0, 0.26, 0.5, { f0: 500, f1: 1600, q: 0.9, am: 30, forma: sube }); plop(m, 0.18, 660, 0.35); nota(m, N.G5, 0.2, { ...FIELTRO, vol: 0.22, caida: 4 }); nota(m, N.D5, 0.24, { ...FIELTRO, vol: 0.12, caida: 5 }); }, 0.4, SALA_GRANDE],
   // El gatito del menú, si lo tocas: ronronea (y se acomoda).
   "gatito-ronroneo": [1.7, (m) => {
     const am = 22 + azar() * 6;
@@ -215,15 +224,14 @@ const SON_REACCION = {
     const acordes = [[N.C6, N.E6, N.G6, N.C7], [N.G5, N.C6, N.E6, N.A6], [N.E6, N.G6, N.C7, N.E7]];
     nota(m, [N.C5, N.A5 / 2, N.E5][v], 0, { timbre: "vidrio", vol: 0.16, caida: 1.4, dur: 1.7, ataque: 0.1 });
     rueda(m, acordes[v], 0.02, 0.07, { timbre: "cristal", vol: 0.2, caida: 2.6, dur: 1.5 });
-    rueda(m, [N.E7, N.G7, N.C7].slice(0, 2 + v % 2), 0.42, 0.08, { timbre: "cristal", vol: 0.06, caida: 4 });
+    rueda(m, [N.E6, N.G6, N.C6].slice(0, 2 + v % 2), 0.42, 0.08, { timbre: "cristal", vol: 0.06, caida: 4 });
   }, 0.5, SALA_GRANDE],
   "reaccion-me-encanto": [1.5, (m, v) => {
-    const arriba = [N.C7, N.D7, N.E7, N.G7, N.A7], abajo = [N.A7, N.G7, N.E7, N.D7, N.C7];
+    const arriba = [N.C6, N.D6, N.E6, N.G6, N.A6], abajo = [N.A6, N.G6, N.E6, N.D6, N.C6];
     if (v === 0) rueda(m, arriba, 0, 0.038, { timbre: "cristal", vol: 0.14, caida: 6 });
     else if (v === 1) rueda(m, abajo, 0, 0.042, { timbre: "cristal", vol: 0.14, caida: 6 });
     else for (let i = 0; i < 7; i++) nota(m, arriba[Math.floor(azar() * arriba.length)], azar() * 0.34, { timbre: "cristal", vol: 0.11, caida: 7 });
     nota(m, [N.E6, N.G6, N.C6][v], 0.22, { timbre: "vidrio", vol: 0.16, caida: 2.4, dur: 1.1 });
-    aire(m, 0, 0.5, 0.12, { f0: 4000, f1: 7000, q: 1.4, forma: sube });
   }, 0.44, SALA_GRANDE],
   "reaccion-llore": [1.9, (m, v) => {
     const gota = [[1900, 950, N.A6], [2100, 1100, N.E6], [1700, 880, N.G6]][v];
@@ -235,17 +243,17 @@ const SON_REACCION = {
   "reaccion-abrazo": [1.9, (m, v) => {
     const base = [[N.C5, N.G5, N.E6], [N.A5 / 2, N.E5, N.C6], [N.G5 / 2, N.D5, N.G5]][v];
     for (const f of base) nota(m, f, 0, { timbre: "vidrio", vol: 0.2, caida: 1.3, dur: 1.7, ataque: 0.16 });
-    nota(m, [N.C7, N.E7, N.D7][v], 0.36, { timbre: "cristal", vol: 0.12, caida: 4 });
+    nota(m, [N.C6, N.E6, N.D6][v], 0.36, { timbre: "cristal", vol: 0.12, caida: 4 });
     nota(m, [N.G6, N.A6, N.G6][v], 0.5, { timbre: "cristal", vol: 0.07, caida: 5 });
   }, 0.46, SALA_GRANDE],
   "reaccion-beso": [1.1, (m, v) => {
-    const par = [[N.E7, N.A7], [N.D7, N.G7], [N.C7, N.E7, N.G7]][v];
+    const par = [[N.E6, N.A6], [N.D6, N.G6], [N.C6, N.E6, N.G6]][v];
     aire(m, 0, 0.06, 0.25, { f0: 2400, f1: 3400, q: 2, forma: golpe });
     rueda(m, par, 0.02, 0.07, { timbre: "cristal", vol: 0.2, caida: 5 });
     nota(m, par[0] / 2, 0.06, { timbre: "vidrio", vol: 0.1, caida: 3, dur: 0.8 });
   }, 0.42, SALA_GRANDE],
   "reaccion-risa": [1.1, (m, v) => {
-    const notas = [[N.C7, N.E7, N.D7, N.G7], [N.G6, N.A6, N.C7, N.E7], [N.E7, N.D7, N.E7, N.G7]][v];
+    const notas = [[N.C6, N.E6, N.D6, N.G6], [N.G5, N.A5, N.C6, N.E6], [N.E6, N.D6, N.E6, N.G6]][v];
     notas.forEach((f, i) => { barrido(m, f * 0.8, f, i * 0.07, 0.05, 0.1, { curva: 0.3 }); nota(m, f, i * 0.07 + 0.01, { timbre: "cristal", vol: 0.15, caida: 9 }); });
     nota(m, notas[3] / 2, 0.3, { timbre: "vidrio", vol: 0.1, caida: 3, dur: 0.7 });
   }, 0.42, SALA_GRANDE],

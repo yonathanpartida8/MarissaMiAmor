@@ -29,7 +29,6 @@ import { ico } from "./iconos.js";
 import * as SRV from "../integraciones/servidor.js";
 import { formularioCuenta } from "./cuenta.js";
 import { cambiar, ajustar, letrasListas, sinMovimiento } from "./transiciones.js";
-import { estallido } from "./reacciones.js";
 import * as PF from "./perfil.js";
 import * as A from "./album-arte.js";
 
@@ -298,7 +297,8 @@ export class MenuPrincipal {
 
   /** El gatito dormido (si lo tocas, ronronea y se acomoda). */
   _gatito() {
-    const g = el("button.mp-gato", { type: "button", "aria-label": "El gatito está dormido. Hazle cariño" }, [
+    // Sin onda ni recuadro al tocarlo (data-sin-onda): sólo suelta sus «Zzz».
+    const g = el("button.mp-gato", { type: "button", "data-sin-onda": "", "aria-label": "El gatito está dormido. Hazle cariño" }, [
       el("i.mp-gato-cola", { html: A.GATO_COLA }),
       el("i.mp-gato-cuerpo", { html: A.GATO_CUERPO }),
       el("i.mp-gato-cabeza", { html: A.GATO_CABEZA }),
@@ -308,8 +308,17 @@ export class MenuPrincipal {
       if (g.classList.contains("mimos")) return;
       g.classList.add("mimos");
       this.app.sonidos?.sonar("gatito");
-      const r = g.getBoundingClientRect();
-      estallido(r.left + r.width * 0.3, r.top + r.height * 0.3, "abrazo");
+      if (!sinMovimiento()) [["Z", 21, 0], ["z", 16, 170], ["z", 12, 340]].forEach(([t, tam, d], i) => {
+        const z = el("b.mp-gato-zz", { text: t, "aria-hidden": "true", style: { fontSize: tam + "px" } });
+        g.append(z);
+        const dx = 14 + i * 9, dy = 34 + i * 12;
+        z.animate([
+          { transform: "translate(0, 0) scale(.4) rotate(-8deg)", opacity: 0 },
+          { transform: `translate(${dx * 0.4}px, ${-dy * 0.35}px) scale(1.05) rotate(4deg)`, opacity: 1, offset: 0.3 },
+          { transform: `translate(${dx * 0.75}px, ${-dy * 0.7}px) scale(1) rotate(-3deg)`, opacity: 0.9, offset: 0.65 },
+          { transform: `translate(${dx}px, ${-dy}px) scale(1.15) rotate(10deg)`, opacity: 0 },
+        ], { duration: 1500, delay: d, easing: "cubic-bezier(.3, .6, .4, 1)", fill: "backwards" }).onfinish = () => z.remove();
+      });
       setTimeout(() => g.classList.remove("mimos"), 2000);
     });
     return g;
@@ -335,7 +344,8 @@ export class MenuPrincipal {
     const crear = el("button.mp-btn.primario.mp-crear", { type: "button", onClick: () => { this.cerrar(); app.inicio?.(); } }, [
       el("i.mp-crear-libro", { html: A.LIBRO_BRILLOS }), el("span.mp-crear-t", { text: "Crear librito" }), el("i.mp-crear-flecha", { html: FLECHA }),
     ]);
-    const seguir = el("button.mp-seguir", { type: "button", onClick: () => this.cerrar() }, [el("span", { text: "Ir al editor" }), el("i", { html: FLECHA })]);
+    // Sin librito abierto (volviste desde «Crear librito»), el editor vuelve a ofrecer crear uno.
+    const seguir = el("button.mp-seguir", { type: "button", onClick: () => { this.cerrar(); if (!app.estado?.proyecto && !document.querySelector(".ed-inicio")) app.inicio?.(); } }, [el("span", { text: "Ir al editor" }), el("i", { html: FLECHA })]);
     r.vistaInicio = el("div.mp-vista.mp-inicio", {}, [
       el("div.mp-hero", { style: { "--i": 0 } }, [this._pareja()]),
       el("div.mp-dias-caja", { style: { "--i": 1 } }, [r.stats]),

@@ -1,12 +1,13 @@
 /**
  * SALIR DEL EDITOR — sin perder nada sin querer.
  *
- * La flecha de volver (y el botón «atrás» del teléfono) nunca salen de golpe:
- * siempre avisa, con una tarjeta animada, que podría perderse el progreso
+ * Atrás (la flecha «Menú» de arriba o el botón «atrás» del teléfono) primero
+ * cierra lo que esté abierto (una hoja, una ventana, la prueba, el editor de
+ * HTML, la pantalla de crear librito) y después te lleva de vuelta al MENÚ
+ * PRINCIPAL, guardando por detrás: ahí no se pierde nada. Sólo desde el menú
+ * principal, atrás pregunta antes de irse del todo, con una tarjeta animada
  * (y dice si ahora mismo hay algo sin guardar):
  *       Guardar y salir · Salir · Quedarme un rato más
- * El botón «atrás» del teléfono primero cierra lo que esté abierto (una hoja,
- * una ventana, la prueba, el editor de HTML) y sólo después pregunta.
  *
  * `preguntarCambios()` es la misma tarjeta para cualquier cosa con cambios
  * (el editor de HTML la usa al cerrarse).
@@ -15,6 +16,7 @@ import { el } from "../../src/utils/dom.js";
 import { ico } from "./iconos.js";
 import { cerrarUltima, PILA } from "./hoja.js";
 import { cerrarUltimoModal, MODALES } from "./ui.js";
+import { quitarInicio } from "./inicio.js";
 
 /** La tarjeta: se cumple con "seguir" | "salir" | "guardar". */
 export function preguntarCambios({ titulo = "¿Seguro que quieres salir?", texto = "Perderás todos los cambios que no hayas guardado.", estado = "", bien = false, salir = "Salir sin guardar", guardar = "Guardar y salir", seguir = "Seguir editando" } = {}) {
@@ -57,13 +59,16 @@ export class Salida {
     this.saliendo = false;
     const volver = document.querySelector(".ed-volver");
     this.destino = volver?.getAttribute("href") || "../index.html";
-    volver?.addEventListener("click", (ev) => { ev.preventDefault(); this.salir(); });
+    volver?.setAttribute("title", "Volver al menú principal");
+    volver?.setAttribute("aria-label", "Volver al menú principal");
+    volver?.addEventListener("click", (ev) => { ev.preventDefault(); if (!this.cerrarLoAbierto()) this.alMenu(); });
     // El botón «atrás» del teléfono (o del navegador): primero cierra lo abierto.
     try { history.pushState({ editor: true }, ""); } catch (e) { /* nada */ }
     addEventListener("popstate", () => {
       if (this.saliendo) return;
       try { history.pushState({ editor: true }, ""); } catch (e) { /* nada */ }
       if (this.cerrarLoAbierto()) return;
+      if (!this.app.menuPrincipal?.abierto) { this.alMenu(); return; }
       this.salir();
     });
     // Cerrar la pestaña con cambios sin guardar (sólo si el guardado automático está apagado).
@@ -80,15 +85,28 @@ export class Salida {
     if (document.querySelector(".ed-salir-fondo")) return true;
     if (app.detallitos?.abierto) return app.detallitos.atras();
     if (app.exportarMenu?.abierto) return app.exportarMenu.atras();
+    if (MODALES.length) return cerrarUltimoModal();
+    // Con el menú principal abierto: de «Tu cuenta» o «Mi perfil» vuelve a su inicio; en su inicio, nada (pregunta si te vas).
+    const mp = app.menuPrincipal;
+    if (mp?.abierto) { if (mp.vista && mp.vista !== "inicio") { mp.ir("inicio"); return true; } return false; }
+    // La pantalla de crear librito (se abre desde el menú): atrás regresa al menú.
+    if (document.querySelector(".ed-inicio")) { quitarInicio(); this.alMenu(); return true; }
     if (app.prueba?.abierta) { app.prueba.cerrar(); return true; }
     if (app.html?.abierto) { app.html.cerrar(); return true; }
-    if (MODALES.length) return cerrarUltimoModal();
     if (PILA.length) return cerrarUltima();
     if (document.querySelector(".ed-menu")) { document.querySelector(".ed-menu").remove(); return true; }
     if (document.querySelector(".ed-pop")) { document.querySelector(".ed-pop")._cerrar?.(); return true; }
     if (app.lateral?.abierto) { app.lateral.cerrar(); return true; }
     if (app.vista?.capa) { app.vista.cerrar(); return true; }
     return false;
+  }
+
+  /** Atrás desde el editor: guarda por detrás (sin preguntar) y abre el menú principal. */
+  alMenu() {
+    const app = this.app;
+    if (!app.menuPrincipal || app.menuPrincipal.abierto) return;
+    if (this.hayCambios() && app.auto?.activo && !app.auto.error && !app.html?.sucio) app.auto.ahora().catch(() => {});
+    app.menuPrincipal.abrir();
   }
 
   /** ¿Hay algo sin guardar? (`alCerrar` = sólo lo que el guardado automático no salvaría). */

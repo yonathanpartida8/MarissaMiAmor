@@ -933,7 +933,7 @@ export class Lienzo {
       if (!g.consumido) g.soltar(ev, ev.type === "pointercancel");
       this.pintarSobre();
       // Una ondita donde quedó (y un brillo azul si el imán lo pegó).
-      if (movio && this.estado.sel.length) requestAnimationFrame(() => { const b = this.app.fx?._union(this.estado.sel); if (b) this.app.fx.soltar(b, pego); });
+      if (movio && this.estado.sel.length) requestAnimationFrame(() => { const b = this.app.fx?._union(this.estado.sel); if (b) this.app.fx.siguiendo(this.estado.sel.slice(), b, () => this.app.fx.soltar(b, pego)); });
       if (movio) dispatchEvent(new CustomEvent("ed-soltar", { detail: { pego } }));
     };
     addEventListener("pointerup", arriba);

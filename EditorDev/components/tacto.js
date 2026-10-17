@@ -10,8 +10,10 @@
  *                 (`data-desplazado` en el que se desplaza; lo pinta el CSS)
  *
  * Un solo oyente para cada cosa (delegado en el documento) y nada se mide más
- * que al tocar. La onda vive en una capita FIJA encima del botón, recortada
- * con su misma forma: el botón no se toca, así nada cambia de lugar ni parpadea.
+ * que al tocar. Todo SIGUE a lo que tocaste (Fase 23): la onda vive dentro del
+ * botón cuando él ya es su propio marco (así se desliza, gira y se encoge con
+ * él); si no, en una capita fija con su forma que lo acompaña cuadro a cuadro
+ * mientras dura, igual que los corazoncitos. El botón no cambia de lugar.
  * Sólo se anima transform y opacity. Con «sin movimiento», calidad baja o
  * «menos movimiento» del sistema, no hay ondas ni corazones; la sombrita sí.
  */
@@ -29,22 +31,42 @@ const quieto = () => {
   return b.contains("ed-mov-nada") || b.contains("ed-calidad-baja") || b.contains("ed-probando") || matchMedia("(prefers-reduced-motion: reduce)").matches;
 };
 
-/** La onda: una capita fija con la forma del botón y un círculo que crece desde el dedo. */
+/** Mueve `capa` (fija) lo mismo que se mueva `nodo` desde `r0`, mientras la capa exista. */
+function seguir(nodo, capa, r0) {
+  let ult = "";
+  const paso = () => {
+    if (!capa.isConnected || !nodo.isConnected) return;
+    const r = nodo.getBoundingClientRect();
+    if (r.width || r.height) {
+      const t = `translate(${(r.left - r0.left).toFixed(1)}px, ${(r.top - r0.top).toFixed(1)}px)`;
+      if (t !== ult) capa.style.transform = ult = t;
+    }
+    requestAnimationFrame(paso);
+  };
+  requestAnimationFrame(paso);
+}
+
+/** La onda: un círculo que crece desde el dedo, recortado con la forma del botón. */
 function onda(nodo, x, y) {
   if (vivas >= 4) return;
   const r = nodo.getBoundingClientRect();
   if (r.width < 8 || r.height < 8 || r.width > innerWidth * 1.2 || r.height > 420) return;
   const cs = getComputedStyle(nodo);
-  const capa = document.createElement("span");
+  // Dentro del botón si ya es su propio marco: va con él aunque se deslice, gire o se encoja.
+  const dentro = cs.position !== "static" && cs.display !== "inline" && nodo.offsetWidth > 0;
+  const capa = document.createElement(dentro ? "ed-onda" : "span");
   capa.className = "ed-onda-capa";
-  capa.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border-radius:${cs.borderRadius}`;
-  const lx = x - r.left, ly = y - r.top;
-  const d = 2 * Math.hypot(Math.max(lx, r.width - lx), Math.max(ly, r.height - ly));
+  if (!dentro) capa.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border-radius:${cs.borderRadius}`;
+  // El punto del dedo en las medidas propias del botón (por si está encogido o agrandado).
+  const ew = dentro ? nodo.offsetWidth : r.width, eh = dentro ? nodo.offsetHeight : r.height;
+  const lx = (x - r.left) * (ew / r.width), ly = (y - r.top) * (eh / r.height);
+  const d = 2 * Math.hypot(Math.max(lx, ew - lx), Math.max(ly, eh - ly));
   const o = document.createElement("i");
   o.className = "ed-onda" + (nodo.matches(CLARA) ? " clara" : "");
   o.style.cssText = `width:${d}px;height:${d}px;left:${lx - d / 2}px;top:${ly - d / 2}px`;
   capa.append(o);
-  document.body.append(capa);
+  (dentro ? nodo : document.body).append(capa);
+  if (!dentro) seguir(nodo, capa, r);
   vivas++;
   // Cada tramo con su ritmo (un solo «easing» para todo la apagaba antes de crecer).
   const a = o.animate([
@@ -57,16 +79,21 @@ function onda(nodo, x, y) {
   a.oncancel = fin;
 }
 
-/** Corazoncitos que suben y se apagan desde donde tocaste. */
-function corazones(x, y) {
+/** Corazoncitos que suben y se apagan desde donde tocaste (y van con el botón si se mueve). */
+function corazones(nodo, x, y) {
   if (!PREF.particulas) return;
+  const grupo = document.createElement("span");
+  grupo.className = "ed-corazones";
+  document.body.append(grupo);
+  if (nodo.isConnected) seguir(nodo, grupo, nodo.getBoundingClientRect());
+  setTimeout(() => grupo.remove(), 1300);
   for (let i = 0; i < 5; i++) {
     const c = document.createElement("i");
     c.className = "ed-corazoncito";
     c.innerHTML = CORAZON;
     c.style.left = x + "px";
     c.style.top = y + "px";
-    document.body.append(c);
+    grupo.append(c);
     const ang = -Math.PI / 2 + (i - 2) * 0.42 + (Math.random() - 0.5) * 0.3;
     const dist = 34 + Math.random() * 26, s = 0.6 + Math.random() * 0.5, giro = (Math.random() - 0.5) * 50;
     const dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
@@ -109,7 +136,7 @@ export function iniciarTacto() {
     const u = ultimo;
     ultimo = null;
     if (!u || quieto() || !u.nodo.matches(CLARA) || !u.nodo.contains(e.target)) return;
-    corazones(u.x, u.y);
+    corazones(u.nodo, u.x, u.y);
     vibrar(6);
   }, { capture: true, passive: true });
   document.addEventListener("scroll", (e) => {

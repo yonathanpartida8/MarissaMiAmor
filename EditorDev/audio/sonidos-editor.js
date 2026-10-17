@@ -101,7 +101,9 @@ const SINTE = {
   arrastrar: [["triangle", 260, 330, 0.06, 0.16]],
   exito: [["sine", 784, 784, 0.12, 0.26], ["sine", 1046, 1046, 0.14, 0.24, 0.09], ["sine", 1568, 1568, 0.22, 0.2, 0.18]],
   // Fase 20 · menús con transiciones y la pareja
-  brillo: [["sine", 1318, 1318, 0.09, 0.16], ["sine", 1760, 1760, 0.09, 0.14, 0.06], ["sine", 2637, 2637, 0.18, 0.11, 0.12]],
+  brillo: [["sine", 385, 700, 0.06, 0.2], ["triangle", 659, 659, 0.3, 0.14, 0.02], ["triangle", 880, 880, 0.3, 0.12, 0.08]],
+  // Fase 23: el cajón de recursos hace «plop» con un acorde tibio (ya no brillitos).
+  "abrir-recursos": [["sine", 150, 90, 0.07, 0.3, 0.1], ["sine", 350, 640, 0.065, 0.28, 0.1], ["triangle", 523, 523, 0.4, 0.16, 0.13], ["triangle", 784, 784, 0.4, 0.1, 0.165]],
   giro: [["triangle", 320, 760, 0.16, 0.2], ["sine", 980, 1260, 0.09, 0.1, 0.12]],
   sobre: [["triangle", 520, 280, 0.12, 0.22], ["sine", 1180, 940, 0.07, 0.1, 0.11], ["sine", 1568, 1568, 0.12, 0.08, 0.2]],
   latido: [["sine", 96, 58, 0.13, 0.7], ["sine", 88, 52, 0.15, 0.55, 0.19]],
@@ -121,7 +123,7 @@ const SINTE = {
   gatito: [["sawtooth", 62, 58, 0.7, 0.05], ["sawtooth", 60, 64, 0.7, 0.045, 0.8]],
 };
 
-const ALIAS = { "abrir-recursos": "exito", "cerrar-recursos": "soltar", "seleccionar-varios": "seleccionar", rehacer: "deshacer", pincel: "arrastrar", publicar: "exito", "zoom-paso": "ajustar" };
+const ALIAS = { "cerrar-recursos": "soltar", "seleccionar-varios": "seleccionar", rehacer: "deshacer", pincel: "arrastrar", publicar: "exito", "zoom-paso": "ajustar" };
 
 function leerPref() {
   try { return { on: true, vol: 0.35, max: 3, ...JSON.parse(localStorage.getItem(PREF) || "{}") }; } catch (e) { return { on: true, vol: 0.35, max: 3 }; }

@@ -744,6 +744,10 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 .mp-gato.mimos .mp-gato-cabeza { animation: mpGatoMimos 1.9s ease-in-out; }
 .mp-gato.mimos .mp-gato-cola { animation: mpGatoColaFeliz .42s ease-in-out 4; }
 .mp-gato.mimos .mp-gato-z { opacity: 0; }
+/* Fase 23: al tocarlo sólo suelta «Zzz» (sin onda, sin recuadro). */
+.mp-gato:focus { outline: none; }
+.mp-gato:focus-visible .mp-gato-cuerpo { filter: drop-shadow(0 0 3px var(--pp-rosa, #e8457a)); }
+.mp-gato-zz { position: absolute; left: 24%; top: 4%; z-index: 2; font: 700 16px/1 var(--pp-letra); color: var(--pp-suave); pointer-events: none; will-change: transform, opacity; }
 @keyframes mpGatoMimos { 0%, 100% { transform: none; } 25% { transform: translateY(-5px) rotate(9deg); } 55% { transform: translateY(-3px) rotate(-7deg); } 80% { transform: translateY(-1px) rotate(3deg); } }
 @keyframes mpGatoColaFeliz { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-16deg); } }
 /* El saludo */

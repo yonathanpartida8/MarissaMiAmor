@@ -301,7 +301,7 @@ function tactil() {
 }
 function construirBarra() {
   const E = app.estado;
-  $(".ed-volver").innerHTML = ico("volver");
+  $(".ed-volver").innerHTML = ico("volver") + '<span class="ed-volver-t">Menú</span>';
   $(".ed-ajustes-b").innerHTML = ico("tuerca");
   $(".ed-mas").innerHTML = ico("puntos");
   $(".ed-deshacer").innerHTML = ico("deshacer");

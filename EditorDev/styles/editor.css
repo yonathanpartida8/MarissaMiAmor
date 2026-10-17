@@ -124,6 +124,9 @@ button { cursor: pointer; }
 }
 .ed-volver { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; color: var(--texto); text-decoration: none; font-size: 20px; }
 .ed-volver:hover { background: var(--superficie-2); }
+/* Fase 23: la flecha lleva al menú principal; con espacio, dice «Menú». */
+.ed-volver-t { display: none; }
+@media (min-width: 720px) { .ed-barra .ed-volver { display: inline-flex; align-items: center; gap: 5px; width: auto; padding: 0 11px 0 7px; font-size: 13.5px; font-weight: 600; } .ed-volver-t { display: inline; } }
 .ed-nombre { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex: 1; }
 .ed-nombre input { min-width: 60px; max-width: 320px; flex: 0 1 auto; border: 1px solid transparent; background: transparent; border-radius: 8px; padding: 6px 8px; font: italic 600 20px/1 "Cormorant Garamond", Georgia, serif; text-overflow: ellipsis; }
 .ed-nombre input:hover, .ed-nombre input:focus { border-color: var(--linea); background: var(--superficie-2); outline: none; }
@@ -2133,7 +2136,10 @@ body.ed ::-webkit-scrollbar-track { background: transparent; }
 
 /* Efectitos del editor (canvas/fx.js): encima de la hoja, nunca reciben toques. */
 .ed-fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 6; contain: strict; }
-.ed-fx > i { position: absolute; display: block; pointer-events: none; will-change: transform, opacity; }
+.ed-fx > i, .ed-fx-grupo > i { position: absolute; display: block; pointer-events: none; will-change: transform, opacity; }
+/* Fase 23: el grupito que sigue al objeto (no ocupa lugar; sólo se mueve con transform). */
+.ed-fx > i.ed-fx-grupo { left: 0; top: 0; width: 0; height: 0; overflow: visible; }
+.ed-fx-grupo > i svg { display: block; overflow: visible; }
 
 /* Revisar recursos y Compartir (Fase 11). */
 .ed-rec-resumen { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
@@ -2251,6 +2257,9 @@ body.ed ::-webkit-scrollbar-track { background: transparent; }
    La onda vive en una capita fija encima del botón (components/tacto.js): sólo se
    anima transform y opacity, y el botón no se toca. */
 .ed-onda-capa { position: fixed; z-index: 2147483600; overflow: hidden; pointer-events: none; contain: strict; }
+/* Fase 23: la onda va DENTRO de lo que tocaste (si ya es su propio marco): se mueve, gira y se encoge con él. */
+ed-onda.ed-onda-capa { position: absolute; inset: 0; z-index: auto; display: block; border-radius: inherit; contain: layout paint; }
+.ed-corazones { position: fixed; left: 0; top: 0; width: 0; height: 0; z-index: 2147483601; pointer-events: none; transform: translate(0, 0); }
 .ed-onda { position: absolute; border-radius: 50%; pointer-events: none; background: radial-gradient(closest-side, rgba(216, 57, 122, .26), rgba(216, 57, 122, .16) 75%, rgba(216, 57, 122, 0)); }
 .ed-onda.clara { background: radial-gradient(closest-side, rgba(255, 255, 255, .55), rgba(255, 255, 255, .32) 75%, rgba(255, 255, 255, 0)); }
 .ed-corazoncito { position: fixed; z-index: 2147483601; width: 15px; height: 15px; color: #ff5c93; pointer-events: none; filter: drop-shadow(0 1px 1px rgba(160, 30, 80, .25)); }

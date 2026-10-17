@@ -71,7 +71,7 @@ export class FxEditor {
     let antes = "";
     E.on("sel", () => {
       const k = E.sel.join(",");
-      if (k && k !== antes && !L.g && !L.gestoActivo) requestAnimationFrame(() => { const b = this._union(E.sel); if (b) this.elegir(b, E.sel.length > 1); });
+      if (k && k !== antes && !L.g && !L.gestoActivo) requestAnimationFrame(() => { const ids = E.sel.slice(), b = this._union(ids); if (b) this.siguiendo(ids, b, () => this.elegir(b, ids.length > 1)); });
       antes = k;
     });
     E.on("actual", () => { this.capa.textContent = ""; this.vivas = 0; this.st.length = 0; });
@@ -95,14 +95,44 @@ export class FxEditor {
     const x = Math.min(...cs.map((c) => c.x)), y = Math.min(...cs.map((c) => c.y));
     return { x, y, w: Math.max(...cs.map((c) => c.x + c.w)) - x, h: Math.max(...cs.map((c) => c.y + c.h)) - y };
   }
-  _enEl(id, que) { const b = this._caja(id); if (b) (que === "duplicar" ? this.duplicar(b) : this.colocar(b)); }
+  _enEl(id, que) { const b = this._caja(id); if (b) this.siguiendo([id], b, () => (que === "duplicar" ? this.duplicar(b) : this.colocar(b))); }
+
+  /**
+   * Lo que se crea dentro de `hacer` va en un grupito que SIGUE al objeto: si lo
+   * arrastras justo después de tocarlo, si mueves la hoja o haces zoom, la cinta,
+   * las florcitas y el confeti van con él (antes se quedaban fijos donde estaba).
+   * Sólo se mueve el grupo con transform; se va solo cuando se apagan sus piezas.
+   */
+  siguiendo(ids, b0, hacer) {
+    const g = document.createElement("i");
+    g.className = "ed-fx-grupo";
+    g.style.transformOrigin = `${b0.x}px ${b0.y}px`;
+    this.capa.append(g);
+    const antes = this._dest;
+    this._dest = g;
+    try { hacer(); } finally { this._dest = antes; }
+    if (!g.childElementCount) { g.remove(); return; }
+    const L = this.app.lienzo, z0 = L.v.z, t0 = performance.now();
+    let ult = "";
+    const paso = () => {
+      if (!g.isConnected) return;
+      if (!g.childElementCount || performance.now() - t0 > 4000) { g.remove(); return; }
+      const b = this._union(ids);
+      if (b) {
+        const t = `translate(${(b.x - b0.x).toFixed(1)}px, ${(b.y - b0.y).toFixed(1)}px) scale(${(L.v.z / z0).toFixed(4)})`;
+        if (t !== ult) g.style.transform = ult = t;
+      }
+      requestAnimationFrame(paso);
+    };
+    requestAnimationFrame(paso);
+  }
 
   _pieza(x, y, tam, css, html, k, op) {
     if (this.vivas >= MAX) return null;
     const p = document.createElement("i");
     p.style.cssText = `left:${x - tam / 2}px;top:${y - tam / 2}px;width:${tam}px;height:${tam}px;${css || ""}`;
     if (html) p.innerHTML = html;
-    this.capa.append(p);
+    (this._dest || this.capa).append(p);
     this.vivas++;
     let fuera = false;
     const quitar = () => { if (fuera) return; fuera = true; this.vivas--; p.remove(); };
