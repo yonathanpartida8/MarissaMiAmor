@@ -1,109 +1,115 @@
 // Genera los sonidos del editor: UN archivo por interacción, con su nombre, en assets/sonidos-editor/.
 //   node herramientas/sonidos-editor.mjs            (sobrescribe los <nombre>.wav de la lista)
 //   node herramientas/sonidos-editor.mjs tocar-boton zoom-acercar   (sólo esos)
-// Fase 25: una mezcla de «Cute UI / Pop» y «Glass UI / Glassmorphism»: burbujitas redondas que hacen
-// «plop», pulsaditos de madera suave y gotitas, con el tink limpio de una copa, copas que se quedan
-// sonando y el aire de un vidrio esmerilado al abrir o deslizar algo. Suaves, sin cascadas de notas ni
-// fanfarrias, y cada uno con su propia figura (no hay dos iguales).
+// Fase 26: sonidos de interfaz PROFESIONALES, como los de un sistema operativo o una app de trabajo:
+//   · las interacciones son toques táctiles: un contacto cortito y la resonancia de un material
+//     suave (polímero, madera mate o metal suave) que se apaga enseguida; casi sin nota;
+//   · lo que se abre o se desliza es aire limpio y filtrado (sin temblores);
+//   · sólo los avisos (guardar, listo, error, publicar, Detallitos) llevan tono: un piano eléctrico
+//     suave (FM), todos en re mayor para que combinen; nunca más de dos o tres notas;
+//   · cortos, bajitos y con una sala muy discreta. Cada uno con su propia figura (no hay dos iguales).
 // Cada uno sale en TRES versiones (nombre.wav, nombre-2.wav, nombre-3.wav) que el editor turna sin
 // repetir la última: las de fábrica, a otro tono; las reacciones, con su propia figura.
 // (Los que suben por la escala al repetirse —elegir, imán, colocar…— van en una sola versión.)
-// WAV mono 16 bits a 24 000 Hz (lo agudo de más se omite: nada chilla ni se dobla).
+// WAV mono 16 bits a 24 000 Hz.
 import { writeFileSync, mkdirSync } from "node:fs";
 const SR = 24000, DIR = new URL("../assets/sonidos-editor/", import.meta.url).pathname;
 let semilla = 11;
 const azar = () => ((semilla = (semilla * 16807) % 2147483647) / 2147483647);
 
-// Notas (Hz) de do mayor pentatónica.
-const N = { C4: 261.63, D4: 293.66, E4: 329.63, G4: 392, A4: 440, C5: 523.25, D5: 587.33, E5: 659.26, G5: 783.99, A5: 880, C6: 1046.5, D6: 1174.66, E6: 1318.51, G6: 1567.98, A6: 1760, C7: 2093, D7: 2349.32, E7: 2637.02, G7: 3135.96, A7: 3520 };
-// Timbres: [proporción, volumen, cuánto más rápido se apaga].
-const TIMBRE = {
-  kalimba: [[1, 1, 1], [2.01, 0.1, 1.8], [5.43, 0.22, 3.8], [9.1, 0.06, 6]],
-  marimba: [[1, 1, 1], [3.93, 0.3, 3], [9.2, 0.1, 6]],
-  campana: [[1, 1, 1], [2.76, 0.42, 1.6], [5.4, 0.22, 2.4], [8.93, 0.1, 3.4]],
-  celesta: [[1, 1, 1], [2, 0.32, 1.4], [3, 0.12, 2.2], [4.17, 0.06, 3]],
-  suave: [[1, 1, 1], [2, 0.18, 1.6], [3, 0.05, 2.4]],
-  // Fase 22: cristal (copa golpeada: parciales inarmónicos que se apagan antes que la base),
-  // vidrio (borde de copa: casi puro, larguísimo) y arpa (cuerda pulsada).
-  cristal: [[1, 1, 1], [2.32, 0.34, 1.7], [4.25, 0.17, 2.6], [6.63, 0.08, 3.6], [9.38, 0.035, 5]],
-  vidrio: [[1, 1, 1], [2.005, 0.1, 1.5], [3.01, 0.035, 2.2]],
-  arpa: [[1, 1, 1], [2, 0.42, 1.6], [3, 0.18, 2.4], [4, 0.08, 3.2], [5, 0.04, 4]],
-  // Fase 23: piano de fieltro (redondo, sin filo) y lengüeta de piano eléctrico (tibia).
-  fieltro: [[1, 1, 1], [2, 0.45, 1.5], [3, 0.16, 2.2], [4, 0.06, 3], [5.02, 0.03, 3.6]],
-  lengueta: [[1, 1, 1], [2, 0.14, 1.3], [3, 0.03, 2], [7.1, 0.035, 9]],
-};
+// Re mayor (pentatónica): todo combina con todo.
+const N = { D3: 146.83, A3: 220, D4: 293.66, E4: 329.63, Fs4: 369.99, A4: 440, B4: 493.88, D5: 587.33, E5: 659.26, Fs5: 739.99, A5: 880, B5: 987.77, D6: 1174.66 };
 // El tono de la versión que se está haciendo (1 = la original).
 let T = 1;
-
 const lienzo = (dur) => new Float32Array(Math.round(SR * dur));
-/** Una nota afinada con su timbre: ataque de pluma y caída natural. */
-function nota(m, f, ini, { timbre = "kalimba", vol = 0.3, caida = 7, dur = 0.6, ataque = 0.003, glide = 1, vib = 0 } = {}) {
-  const i0 = Math.round(ini * SR), n = Math.min(m.length - i0, Math.round(dur * SR));
-  for (const [p, a, k] of TIMBRE[timbre]) {
-    let fase = azar() * 6.28;
-    if (f * T * p > SR * 0.45) continue;
-    for (let i = 0; i < n; i++) {
-      const t = i / SR, x = i / n;
-      const ff = f * T * p * Math.pow(glide, x) * (1 + vib * Math.sin(2 * Math.PI * 6 * t));
-      fase += (2 * Math.PI * ff) / SR;
-      const env = Math.min(1, t / ataque) * Math.exp(-t * caida * k) * (x > 0.92 ? (1 - x) / 0.08 : 1);
-      m[i0 + i] += Math.sin(fase) * a * env * vol;
-    }
-  }
-}
-/** Un barrido de tono puro (gotitas, burbujas, resortes). */
-function barrido(m, f0, f1, ini, dur, vol, { curva = 1, caida = 0, ataque = 0.004 } = {}) {
-  const i0 = Math.round(ini * SR), n = Math.min(m.length - i0, Math.round(dur * SR));
-  let fase = 0;
-  for (let i = 0; i < n; i++) {
-    const x = i / n, f = f0 * T * Math.pow(f1 / f0, Math.pow(x, curva));
-    fase += (2 * Math.PI * f) / SR;
-    const env = Math.min(1, i / (SR * ataque)) * Math.sin(Math.PI * Math.min(1, x * 1.15 + 0.0001)) ** 0.6 * Math.exp(-x * caida);
-    m[i0 + i] += Math.sin(fase) * env * vol;
-  }
-}
-/** Ruido filtrado con un pasa-banda que se mueve (pincel, papel, aire). */
-function aire(m, ini, dur, vol, { f0 = 1200, f1 = 2400, q = 1.1, forma = (x) => Math.sin(Math.PI * x), am = 0, granos = 0 } = {}) {
+const cola = (i, n) => (i > n - 48 ? (n - i) / 48 : 1);
+
+// Materiales para los toques: [proporción, volumen, cuánto más rápido se apaga].
+const MATERIAL = {
+  polimero: [[1, 1, 1], [1.73, 0.32, 1.5], [2.91, 0.12, 2.2], [4.6, 0.05, 3]],
+  madera: [[1, 1, 1], [2.11, 0.38, 1.7], [3.7, 0.14, 2.6], [5.3, 0.05, 3.4]],
+  metal: [[1, 1, 1], [2.76, 0.22, 0.8], [5.4, 0.08, 1.2]],
+};
+
+/** Ruido filtrado con un pasa-banda que se mueve (contactos, aire, papel). */
+function aire(m, ini, dur, vol, { f0 = 1200, f1 = 2400, q = 1.1, forma = (x) => 0.5 - 0.5 * Math.cos(2 * Math.PI * x), am = 0 } = {}) {
   const i0 = Math.round(ini * SR), n = Math.min(m.length - i0, Math.round(dur * SR));
   let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
   for (let i = 0; i < n; i++) {
-    const x = i / n, f = f0 * Math.sqrt(T) * Math.pow(f1 / f0, x);
+    const x = i / n, f = Math.min(SR * 0.45, f0 * Math.sqrt(T) * Math.pow(f1 / f0, x));
     const w = (2 * Math.PI * f) / SR, al = Math.sin(w) / (2 * q), c = Math.cos(w);
-    const b0 = al, b2 = -al, a0 = 1 + al, a1 = -2 * c, a2 = 1 - al;
     const ent = azar() * 2 - 1;
-    const y = (b0 * ent + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+    const y = (al * ent - al * x2 + 2 * c * y1 - (1 - al) * y2) / (1 + al);
     x2 = x1; x1 = ent; y2 = y1; y1 = y;
     let env = forma(x);
     if (am) env *= 0.6 + 0.4 * Math.sin(2 * Math.PI * am * (i / SR));
-    if (granos && azar() < granos) env *= 2.2;
     m[i0 + i] += y * env * vol;
   }
 }
-/** Un golpecito sin tono (clic de tecla, llave, madera). */
-function clic(m, ini, vol, { brillo = 0.35, dur = 0.008 } = {}) {
-  const i0 = Math.round(ini * SR), n = Math.min(m.length - i0, Math.round(dur * SR));
-  let y = 0;
-  for (let i = 0; i < n; i++) { y += (azar() * 2 - 1 - y) * brillo; m[i0 + i] += y * Math.exp(-i / (n / 4)) * vol; }
+/**
+ * Un toque táctil: un contacto de ruido cortísimo y la resonancia del material (modos que se
+ * apagan solos). `f` es su tono base; `caida`, qué tan seco; `contacto`, cuánto se oye el roce.
+ */
+function toque(m, ini, f, vol, { material = "polimero", caida = 45, contacto = 0.3 } = {}) {
+  const i0 = Math.round(ini * SR), n = Math.min(m.length - i0, Math.round(0.5 * SR));
+  for (const [p, a, k] of MATERIAL[material]) {
+    const ff = f * T * p;
+    if (ff > SR * 0.42) continue;
+    let fase = azar() * 6.28;
+    for (let i = 0; i < n; i++) {
+      const t = i / SR;
+      fase += (2 * Math.PI * ff) / SR;
+      m[i0 + i] += Math.sin(fase) * a * Math.min(1, t / 0.0006) * Math.exp(-t * caida * k) * cola(i, n) * vol;
+    }
+  }
+  if (contacto) aire(m, ini, 0.006, vol * contacto * 3, { f0: f * 2.2, f1: f * 1.6, q: 0.8, forma: (x) => (1 - x) ** 2 });
 }
-/** Un aire de habitación chiquita: lo que hace que suene suave y no «de computadora». */
-function sala(m, mezcla = 0.14, tam = 1) {
-  const d = [0.0297, 0.0371, 0.0411, 0.0437].map((s) => Math.round(s * tam * SR)), g = 0.72;
+/**
+ * Un tono de piano eléctrico suave (FM): brilla un instante al empezar y queda redondo.
+ * `ataque` largo = entra despacito; `glide` = se desliza a esa proporción.
+ */
+function fm(m, ini, f, vol, { ratio = 1, indice = 1.3, caida = 6, caidaIndice = 16, dur = 0.7, ataque = 0.004, glide = 1, vib = 0 } = {}) {
+  const i0 = Math.round(ini * SR), n = Math.min(m.length - i0, Math.round(dur * SR));
+  let fc = azar() * 6.28, fmod = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SR, x = i / n, ff = f * T * Math.pow(glide, x) * (1 + vib * Math.sin(2 * Math.PI * 5 * t));
+    fc += (2 * Math.PI * ff) / SR;
+    fmod += (2 * Math.PI * ff * ratio) / SR;
+    const I = indice * Math.exp(-t * caidaIndice);
+    m[i0 + i] += Math.sin(fc + I * Math.sin(fmod)) * Math.min(1, t / ataque) * Math.exp(-t * caida) * cola(i, n) * vol;
+  }
+}
+/** Un golpecito grave (algo que se asienta). */
+function asiento(m, ini, vol, f0 = 170, f1 = 90, dur = 0.06) {
+  const i0 = Math.round(ini * SR), n = Math.min(m.length - i0, Math.round(dur * SR));
+  let fase = 0;
+  for (let i = 0; i < n; i++) {
+    const x = i / n;
+    fase += (2 * Math.PI * f0 * T * Math.pow(f1 / f0, Math.sqrt(x))) / SR;
+    m[i0 + i] += Math.sin(fase) * Math.min(1, i / 24) * Math.exp(-x * 5) * cola(i, n) * vol;
+  }
+}
+// Aire limpio que sube o baja (paneles que se abren, hojas, deslizar).
+const soplo = (m, ini, dur, vol, f0, f1, q = 1) => aire(m, ini, dur, vol, { f0, f1, q });
+// Un clic de contacto, solo (interruptores, teclas, seguros).
+const clic = (m, ini, vol, f = 3200) => aire(m, ini, 0.008, vol, { f0: f, f1: f * 0.8, q: 1.2, forma: (x) => (1 - x) ** 3 });
+
+/** Una sala muy discreta (sólo para que no suene «de computadora»). */
+function sala(m, mezcla, tam = 1) {
+  const d = [0.0297, 0.0371, 0.0411, 0.0437].map((s) => Math.round(s * tam * SR)), g = 0.7;
   const sal = new Float32Array(m.length);
   for (const L of d) { const b = new Float32Array(L); let k = 0; for (let i = 0; i < m.length; i++) { const v = b[k]; b[k] = m[i] + v * g; sal[i] += v; k = (k + 1) % L; } }
-  for (const L of [Math.round(0.005 * SR), Math.round(0.0017 * SR)]) {
-    const b = new Float32Array(L); let k = 0;
-    for (let i = 0; i < m.length; i++) { const v = b[k]; const e = sal[i] + v * 0.5; b[k] = e; sal[i] = v - e * 0.5; k = (k + 1) % L; }
-  }
-  for (let i = 0; i < m.length; i++) m[i] = m[i] * (1 - mezcla * 0.5) + sal[i] * mezcla * 0.25;
+  for (let i = 0; i < m.length; i++) m[i] = m[i] * (1 - mezcla * 0.4) + sal[i] * mezcla * 0.22;
 }
-function terminar(m, pico, { reverb = 0.14, tam = 1 } = {}) {
+function terminar(m, pico, { reverb = 0.06, tam = 1 } = {}) {
   if (reverb) sala(m, reverb, tam);
-  let y = 0; // un pasa-bajos muy suave: nada chilla
-  for (let i = 0; i < m.length; i++) { y += (m[i] - y) * 0.72; m[i] = y; }
+  let y = 0;
+  for (let i = 0; i < m.length; i++) { y += (m[i] - y) * 0.8; m[i] = y; }
+  let x1 = 0, y1 = 0;
+  for (let i = 0; i < m.length; i++) { const v = m[i] - x1 + 0.995 * y1; x1 = m[i]; y1 = v; m[i] = v; }
   let max = 0;
   for (const v of m) max = Math.max(max, Math.abs(v));
-  const k = max ? pico / max : 1;
-  const f = Math.round(SR * 0.006);
+  const k = max ? pico / max : 1, f = Math.round(SR * 0.006);
   for (let i = 0; i < m.length; i++) m[i] *= k * (i > m.length - f ? (m.length - i) / f : 1);
   return m;
 }
@@ -115,164 +121,135 @@ function wav(m) {
   for (let i = 0; i < n; i++) b.writeInt16LE(Math.round(Math.max(-1, Math.min(1, m[i])) * 32767), 44 + i * 2);
   return b;
 }
-const sube = (x) => Math.sin(Math.PI * x) * (1 - x * 0.3);
-const golpe = (x) => Math.min(1, x * 12) * Math.exp(-x * 4);
-// Fase 23: en vez de brillitos, cosas que dan gusto: una burbujita que hace «plop» (sube o baja),
-// un golpecito de madera grave y acordes de piano de fieltro.
-const plop = (m, ini, f, vol, baja = false) => barrido(m, baja ? f : f * 0.55, baja ? f * 0.6 : f, ini, 0.065, vol, { curva: 0.35, caida: 1.5 });
-const tum = (m, ini, vol, f = 150) => barrido(m, f, f * 0.6, ini, 0.07, vol, { curva: 0.5, caida: 3 });
-const FIELTRO = { timbre: "fieltro", ataque: 0.006 };
-
-/* ── Fase 25: mezcla de «Cute UI / Pop» (burbujitas, pulsaditos de madera suave, gotitas) y
-   «Glass UI» (el tink de una copa, una copa que se queda sonando y el aire de vidrio esmerilado).
-   Sin cascadas ni fanfarrias: como mucho dos o tres notas; cada sonido con su propia figura. ── */
-Object.assign(N, { B4: 493.88, F5: 698.46, B5: 987.77, F6: 1396.91, B6: 1975.53 });
-const SALA = { reverb: 0.2, tam: 1.25 };          // vidrio: un aire de sala chiquita
-const SALA_GRANDE = { reverb: 0.3, tam: 1.7 };
-const rueda = (m, notas, ini, paso, op) => notas.forEach((f, i) => nota(m, f, ini + i * paso + azar() * 0.006, op));
-// Cute: una burbujita que hace «plop» (sube; con `baja`, al revés), una gotita y un pulsadito de madera.
-function pop(m, ini, f, vol, { dur = 0.07, baja = false } = {}) {
-  const a = baja ? f : f * 0.55, b = baja ? f * 0.62 : f;
-  barrido(m, a, b, ini, dur, vol, { curva: baja ? 0.4 : 0.35, caida: 1.5 });
-  barrido(m, a * 2, b * 2, ini, dur * 0.6, vol * 0.12, { curva: 0.35, caida: 2 });
-}
-const gota = (m, ini, f, vol) => barrido(m, f * 1.9, f, ini, 0.06, vol, { curva: 0.3, caida: 2.2 });
-const madera = (m, ini, f, vol, caida = 16) => nota(m, f, ini, { timbre: "kalimba", vol, caida, dur: 0.35 });
-// Glass: el «tink» de una copa, una copa que se queda sonando y el aire de vidrio esmerilado.
-const tink = (m, ini, f, vol, caida = 10) => nota(m, f, ini, { timbre: "cristal", vol, caida, ataque: 0.0015, dur: 0.7 });
-const copa = (m, ini, f, vol, caida = 3, dur = 1.2) => nota(m, f, ini, { timbre: "vidrio", vol, caida, dur, ataque: 0.006 });
-const escarcha = (m, ini, dur, vol, f0, f1, op = {}) => aire(m, ini, dur, vol, { f0, f1, q: 1.5, forma: sube, ...op });
+const SALA = { reverb: 0.14, tam: 1.2 };
+const SALA_GRANDE = { reverb: 0.22, tam: 1.6 };
+const P = "polimero", W = "madera", MET = "metal";
 
 // nombre → [duración, (m, v) => …, pico, final]. El pico es el volumen relativo: lo frecuente, más bajito.
 const SON = {
   // — Tocar y elegir (lo que más suena: cortito y bajito) —
-  "tocar-boton": [0.16, (m) => { pop(m, 0, 620, 0.55); tink(m, 0.012, N.G6, 0.06, 22); }, 0.36],
-  "seleccionar-elemento": [0.2, (m) => { pop(m, 0, 700, 0.5); tink(m, 0.01, N.E6, 0.1, 14); }, 0.38],
-  "seleccionar-varios": [0.24, (m) => { pop(m, 0, 650, 0.45); pop(m, 0.045, 820, 0.4); tink(m, 0.05, N.A6, 0.07, 14); }, 0.36],
-  deseleccionar: [0.16, (m) => pop(m, 0, 760, 0.45, { baja: true }), 0.3],
-  "elegir-herramienta": [0.24, (m) => { madera(m, 0, N.A5, 0.45, 18); pop(m, 0, 520, 0.25, { dur: 0.05 }); }, 0.36],
-  "menu-mantener": [0.4, (m) => { escarcha(m, 0, 0.26, 0.35, 1200, 2600); copa(m, 0.06, N.G5, 0.2, 5, 0.34); }, 0.34],
-  deslizador: [0.08, (m) => tink(m, 0, N.D6, 0.3, 32), 0.2],
-  "arrastrar-pintura": [0.34, (m) => { escarcha(m, 0, 0.28, 0.6, 900, 2200, { q: 1.1 }); pop(m, 0.02, 420, 0.12, { dur: 0.06 }); }, 0.36],
-  "pincel-roce": [0.22, (m) => aire(m, 0, 0.18, 0.9, { f0: 1500, f1: 2300, q: 1.6, forma: sube }), 0.22],
-  "soltar-objeto": [0.24, (m) => { pop(m, 0, 430, 0.6, { baja: true, dur: 0.09 }); tink(m, 0.03, N.C6, 0.08, 14); }, 0.42],
-  "iman-pegar": [0.16, (m) => { clic(m, 0, 0.12, { brillo: 0.6 }); tink(m, 0.004, N.A6, 0.22, 26); pop(m, 0, 900, 0.15, { dur: 0.04 }); }, 0.34],
-  "mover-hoja": [0.3, (m) => escarcha(m, 0, 0.26, 0.8, 380, 900, { q: 0.9 }), 0.22],
-  "girar-objeto": [0.36, (m) => { escarcha(m, 0, 0.26, 0.4, 1100, 1700, { am: 20 }); tink(m, 0.2, N.E6, 0.1, 12); }, 0.36],
-  "cambiar-tamano": [0.3, (m) => { barrido(m, 300, 700, 0, 0.12, 0.5, { curva: 0.5 }); pop(m, 0.11, 640, 0.3, { dur: 0.05 }); }, 0.38],
-  "zoom-acercar": [0.44, (m) => { escarcha(m, 0, 0.22, 0.35, 900, 2800); copa(m, 0.17, N.G6, 0.12, 8, 0.3); }, 0.38],
-  "zoom-alejar": [0.44, (m) => { escarcha(m, 0, 0.22, 0.35, 2800, 900); copa(m, 0.17, N.C6, 0.12, 8, 0.3); }, 0.38],
-  "zoom-paso": [0.1, (m) => tink(m, 0, N.A6, 0.3, 32), 0.2],
-  "colocar-objeto": [0.32, (m) => { pop(m, 0, 560, 0.5); pop(m, 0.05, 840, 0.35); tink(m, 0.06, N.E6, 0.1, 12); }, 0.42],
-  duplicar: [0.3, (m) => { pop(m, 0, 700, 0.45); pop(m, 0.075, 700, 0.22); tink(m, 0.08, N.A6, 0.06, 14); }, 0.38],
-  "borrar-objeto": [0.4, (m) => { escarcha(m, 0, 0.3, 0.6, 2600, 500, { forma: golpe }); pop(m, 0.08, 500, 0.3, { baja: true }); }, 0.4],
-  agrupar: [0.4, (m) => { nota(m, N.G5, 0, { timbre: "cristal", vol: 0.22, caida: 6, glide: N.E6 / N.G5, dur: 0.4 }); nota(m, N.C6, 0, { timbre: "cristal", vol: 0.18, caida: 6, glide: N.E6 / N.C6, dur: 0.4 }); pop(m, 0.3, 600, 0.2, { dur: 0.05 }); }, 0.38],
-  desagrupar: [0.4, (m) => { pop(m, 0, 600, 0.2, { dur: 0.05 }); nota(m, N.E6, 0.04, { timbre: "cristal", vol: 0.22, caida: 6, glide: N.C6 / N.E6, dur: 0.4 }); nota(m, N.E6, 0.04, { timbre: "cristal", vol: 0.18, caida: 6, glide: N.G6 / N.E6, dur: 0.4 }); }, 0.38],
-  "ordenar-capas": [0.22, (m) => { madera(m, 0, N.E6, 0.4, 22); madera(m, 0.055, N.A6, 0.35, 22); }, 0.36],
-  bloquear: [0.3, (m) => { clic(m, 0, 0.5, { brillo: 0.7 }); clic(m, 0.05, 0.4, { brillo: 0.5 }); pop(m, 0.05, 320, 0.4, { baja: true }); tink(m, 0.06, N.G6, 0.05, 18); }, 0.38],
-  desbloquear: [0.3, (m) => { clic(m, 0, 0.4, { brillo: 0.5 }); clic(m, 0.05, 0.5, { brillo: 0.7 }); pop(m, 0.05, 520, 0.35); tink(m, 0.07, N.C7, 0.08, 14); }, 0.38],
-  ocultar: [0.3, (m) => { escarcha(m, 0, 0.2, 0.4, 2000, 600); pop(m, 0.1, 600, 0.2, { baja: true }); }, 0.3],
-  mostrar: [0.3, (m) => { escarcha(m, 0, 0.2, 0.4, 600, 2000); pop(m, 0.1, 600, 0.22); }, 0.3],
-  "dibujar-trazo": [0.18, (m) => aire(m, 0, 0.15, 0.9, { f0: 3200, f1: 3800, q: 2.2, forma: sube, granos: 0.02 }), 0.26],
-  borrador: [0.24, (m) => { aire(m, 0, 0.1, 0.7, { f0: 2400, f1: 2000, q: 1.2, forma: golpe }); aire(m, 0.1, 0.1, 0.6, { f0: 2200, f1: 1800, q: 1.2, forma: golpe }); }, 0.26],
-  "elegir-color": [0.3, (m) => { gota(m, 0, 1100, 0.4); pop(m, 0.06, 520, 0.3); tink(m, 0.07, N.D6, 0.07, 14); }, 0.38],
-  "aplicar-efecto": [0.62, (m) => { escarcha(m, 0, 0.3, 0.35, 700, 2400); copa(m, 0.14, N.C6, 0.16, 4, 0.45); tink(m, 0.22, N.G6, 0.08, 9); }, 0.4, SALA],
-  "aplicar-animacion": [0.4, (m) => { pop(m, 0, 600, 0.35, { dur: 0.06 }); pop(m, 0.07, 760, 0.32, { dur: 0.06 }); pop(m, 0.14, 900, 0.3, { dur: 0.06 }); }, 0.38],
-  fotograma: [0.24, (m) => { tink(m, 0, N.A6, 0.2, 12); madera(m, 0.004, N.A5, 0.25, 20); }, 0.34],
-  "escribir-texto": [0.08, (m) => { clic(m, 0, 0.6, { brillo: 0.55, dur: 0.006 }); pop(m, 0.002, 1100, 0.08, { dur: 0.03 }); }, 0.24],
-  deshacer: [0.2, (m) => { pop(m, 0, 820, 0.4, { baja: true }); escarcha(m, 0, 0.12, 0.2, 1800, 900); }, 0.34],
-  rehacer: [0.2, (m) => { pop(m, 0, 820, 0.4); escarcha(m, 0, 0.12, 0.2, 900, 1800); }, 0.34],
-  // — Guardar y avisos —
-  guardar: [0.7, (m) => { pop(m, 0, 500, 0.3); copa(m, 0.03, N.C6, 0.2, 4, 0.6); tink(m, 0.11, N.G6, 0.1, 8); }, 0.42, SALA],
-  "listo-exito": [0.9, (m) => { pop(m, 0, 600, 0.3); copa(m, 0.04, N.E6, 0.22, 3, 0.8); copa(m, 0.04, N.E5, 0.1, 3, 0.8); tink(m, 0.12, N.B6, 0.06, 7); }, 0.44, SALA],
-  "aviso-error": [0.4, (m) => { madera(m, 0, N.E5, 0.4, 10); madera(m, 0.13, N.C5, 0.4, 10); pop(m, 0.13, 300, 0.25, { baja: true }); }, 0.42],
+  "tocar-boton": [0.1, (m) => toque(m, 0, 1150, 0.6, { caida: 60 }), 0.26],
+  "seleccionar-elemento": [0.12, (m) => toque(m, 0, 980, 0.6, { material: W, caida: 50 }), 0.28],
+  "seleccionar-varios": [0.14, (m) => { toque(m, 0, 980, 0.55, { material: W, caida: 55 }); toque(m, 0.035, 1240, 0.45, { material: W, caida: 60 }); }, 0.28],
+  deseleccionar: [0.1, (m) => toque(m, 0, 820, 0.5, { caida: 65, contacto: 0.15 }), 0.22],
+  "elegir-herramienta": [0.12, (m) => { toque(m, 0, 1320, 0.5, { material: W, caida: 55 }); asiento(m, 0, 0.2, 200, 120, 0.04); }, 0.28],
+  "menu-mantener": [0.32, (m) => { soplo(m, 0, 0.26, 0.25, 400, 1200, 0.8); fm(m, 0.04, N.A4, 0.25, { dur: 0.26, ataque: 0.06, caida: 7, indice: 0.6 }); }, 0.26],
+  deslizador: [0.05, (m) => toque(m, 0, 2100, 0.5, { caida: 110, contacto: 0.2 }), 0.14],
+  "arrastrar-pintura": [0.3, (m) => soplo(m, 0, 0.28, 0.6, 600, 1500, 0.9), 0.16],
+  "pincel-roce": [0.18, (m) => soplo(m, 0, 0.16, 0.6, 1800, 2400, 2), 0.13],
+  "soltar-objeto": [0.14, (m) => { asiento(m, 0, 0.6, 160, 90, 0.07); toque(m, 0.004, 700, 0.35, { material: W, caida: 55, contacto: 0.15 }); }, 0.32],
+  "iman-pegar": [0.1, (m) => { clic(m, 0, 0.5); toque(m, 0.002, 1700, 0.45, { material: MET, caida: 70, contacto: 0 }); }, 0.24],
+  "mover-hoja": [0.28, (m) => soplo(m, 0, 0.26, 0.6, 300, 700, 0.8), 0.15],
+  "girar-objeto": [0.22, (m) => { for (let i = 0; i < 4; i++) toque(m, i * 0.045, 1500 + i * 40, 0.35 - i * 0.05, { material: P, caida: 120, contacto: 0.35 }); }, 0.2],
+  "cambiar-tamano": [0.2, (m) => { soplo(m, 0, 0.12, 0.35, 500, 900, 1.2); toque(m, 0.1, 900, 0.4, { caida: 60 }); }, 0.24],
+  "zoom-acercar": [0.3, (m) => { soplo(m, 0, 0.2, 0.4, 700, 1800, 1); fm(m, 0.14, N.A5, 0.14, { dur: 0.16, caida: 18, indice: 0.5 }); }, 0.24],
+  "zoom-alejar": [0.3, (m) => { soplo(m, 0, 0.2, 0.4, 1800, 700, 1); fm(m, 0.14, N.D5, 0.14, { dur: 0.16, caida: 18, indice: 0.5 }); }, 0.24],
+  "zoom-paso": [0.06, (m) => toque(m, 0, 1600, 0.5, { material: MET, caida: 100, contacto: 0.1 }), 0.14],
+  "colocar-objeto": [0.14, (m) => { asiento(m, 0, 0.5, 200, 110, 0.06); toque(m, 0.005, 1050, 0.4, { caida: 55 }); }, 0.3],
+  duplicar: [0.16, (m) => { toque(m, 0, 1100, 0.5, { caida: 60 }); toque(m, 0.06, 1100, 0.28, { caida: 70 }); }, 0.26],
+  "borrar-objeto": [0.24, (m) => { soplo(m, 0, 0.18, 0.45, 1600, 400, 1); asiento(m, 0.1, 0.3, 140, 80, 0.07); }, 0.28],
+  agrupar: [0.14, (m) => { toque(m, 0, 1300, 0.45, { material: W, caida: 60 }); toque(m, 0.04, 1000, 0.5, { material: W, caida: 55 }); }, 0.26],
+  desagrupar: [0.14, (m) => { toque(m, 0, 1000, 0.5, { material: W, caida: 55 }); toque(m, 0.04, 1300, 0.45, { material: W, caida: 60 }); }, 0.26],
+  "ordenar-capas": [0.1, (m) => { toque(m, 0, 1400, 0.45, { material: W, caida: 70 }); toque(m, 0.03, 1200, 0.35, { material: W, caida: 70 }); }, 0.22],
+  bloquear: [0.16, (m) => { clic(m, 0, 0.5, 2600); toque(m, 0.03, 1300, 0.45, { material: MET, caida: 55, contacto: 0 }); asiento(m, 0.03, 0.25, 180, 110, 0.05); }, 0.28],
+  desbloquear: [0.16, (m) => { toque(m, 0, 1500, 0.4, { material: MET, caida: 55, contacto: 0 }); clic(m, 0.035, 0.45, 3000); }, 0.26],
+  ocultar: [0.18, (m) => soplo(m, 0, 0.16, 0.45, 1400, 500, 1.1), 0.18],
+  mostrar: [0.18, (m) => soplo(m, 0, 0.16, 0.45, 500, 1400, 1.1), 0.18],
+  "dibujar-trazo": [0.12, (m) => soplo(m, 0, 0.1, 0.5, 3000, 3300, 2.5), 0.1],
+  borrador: [0.22, (m) => { soplo(m, 0, 0.1, 0.5, 1800, 1500, 1.2); soplo(m, 0.1, 0.1, 0.45, 1700, 1400, 1.2); }, 0.14],
+  "elegir-color": [0.2, (m) => { toque(m, 0, 1250, 0.45, { caida: 60 }); fm(m, 0.01, N.Fs5, 0.12, { dur: 0.16, caida: 16, indice: 0.6 }); }, 0.26],
+  "aplicar-efecto": [0.5, (m) => { soplo(m, 0, 0.22, 0.3, 600, 1600, 1); fm(m, 0.12, N.D5, 0.2, { dur: 0.36, caida: 8 }); fm(m, 0.12, N.A5, 0.12, { dur: 0.32, caida: 9 }); }, 0.28, SALA],
+  "aplicar-animacion": [0.18, (m) => { [1000, 1150, 1300].forEach((f, i) => toque(m, i * 0.04, f, 0.4, { material: W, caida: 70 })); }, 0.24],
+  fotograma: [0.06, (m) => toque(m, 0, 1800, 0.45, { material: MET, caida: 110, contacto: 0.15 }), 0.18],
+  "escribir-texto": [0.05, (m) => { clic(m, 0, 0.4, 4200); toque(m, 0.001, 2400, 0.25, { caida: 140, contacto: 0 }); }, 0.12],
+  deshacer: [0.14, (m) => { toque(m, 0, 1000, 0.45, { caida: 60 }); soplo(m, 0, 0.1, 0.18, 1400, 700, 1.2); }, 0.22],
+  rehacer: [0.14, (m) => { toque(m, 0, 1000, 0.45, { caida: 60 }); soplo(m, 0, 0.1, 0.18, 700, 1400, 1.2); }, 0.22],
+  // — Guardar y avisos (los únicos con tono) —
+  guardar: [0.5, (m) => { fm(m, 0, N.D5, 0.3, { dur: 0.14, caida: 18 }); fm(m, 0.09, N.A5, 0.26, { dur: 0.32, caida: 9 }); }, 0.3, SALA],
+  "listo-exito": [0.8, (m) => { fm(m, 0, N.A4, 0.22, { dur: 0.16, caida: 14 }); fm(m, 0, N.D5, 0.22, { dur: 0.16, caida: 14 }); fm(m, 0.12, N.Fs5, 0.26, { dur: 0.5, caida: 5 }); }, 0.32, SALA],
+  "aviso-error": [0.4, (m) => { fm(m, 0, N.Fs4, 0.3, { dur: 0.12, caida: 18, indice: 0.9 }); fm(m, 0.11, N.D4, 0.3, { dur: 0.22, caida: 11, indice: 0.9 }); asiento(m, 0.11, 0.2, 130, 80, 0.06); }, 0.3],
   // — Menús —
-  "abrir-menu": [0.4, (m) => { escarcha(m, 0, 0.2, 0.4, 600, 2300); pop(m, 0.12, 700, 0.3); }, 0.36, SALA],
-  "cerrar-menu": [0.36, (m) => { escarcha(m, 0, 0.19, 0.4, 2300, 600); pop(m, 0.1, 700, 0.26, { baja: true }); }, 0.34],
-  // El cajón de recursos: un panel de vidrio esmerilado que se desliza y asienta con una burbujita.
-  "abrir-recursos": [0.7, (m) => { escarcha(m, 0, 0.24, 0.45, 500, 2000); pop(m, 0.14, 560, 0.4); copa(m, 0.16, N.G5, 0.14, 4, 0.5); tink(m, 0.2, N.D6, 0.05, 10); }, 0.42, SALA],
-  "cerrar-recursos": [0.5, (m) => { escarcha(m, 0, 0.2, 0.45, 2000, 500); pop(m, 0.1, 640, 0.35, { baja: true }); copa(m, 0.12, N.C5, 0.12, 6, 0.36); }, 0.38],
-  "bajar-hoja": [0.24, (m) => escarcha(m, 0, 0.2, 0.6, 1500, 480, { q: 1.1 }), 0.24],
-  "subir-hoja": [0.24, (m) => escarcha(m, 0, 0.2, 0.6, 480, 1500, { q: 1.1 }), 0.24],
-  atras: [0.24, (m) => { pop(m, 0, 700, 0.4, { baja: true }); escarcha(m, 0, 0.14, 0.2, 1600, 700); }, 0.32],
-  "interruptor-encender": [0.3, (m) => { clic(m, 0, 0.3, { brillo: 0.6 }); pop(m, 0.01, 900, 0.4); tink(m, 0.04, N.E6, 0.08, 14); }, 0.36],
-  "interruptor-apagar": [0.24, (m) => { clic(m, 0, 0.3, { brillo: 0.4 }); pop(m, 0.01, 900, 0.36, { baja: true }); }, 0.32],
-  "probar-pagina": [1, (m) => { escarcha(m, 0, 0.5, 0.35, 500, 3000); pop(m, 0.3, 620, 0.3); copa(m, 0.32, N.C6, 0.16, 2.6, 0.7); copa(m, 0.46, N.G6, 0.1, 3, 0.55); }, 0.42, SALA_GRANDE],
+  "abrir-menu": [0.22, (m) => { soplo(m, 0, 0.16, 0.4, 400, 1400, 1); toque(m, 0.13, 900, 0.3, { caida: 60, contacto: 0.15 }); }, 0.22],
+  "cerrar-menu": [0.2, (m) => { soplo(m, 0, 0.15, 0.4, 1400, 400, 1); toque(m, 0.11, 700, 0.28, { caida: 65, contacto: 0.15 }); }, 0.2],
+  // El cajón de recursos: un panel que se desliza limpio y asienta con un toque de madera.
+  "abrir-recursos": [0.4, (m) => { soplo(m, 0, 0.22, 0.45, 350, 1200, 0.9); toque(m, 0.19, 760, 0.4, { material: W, caida: 45, contacto: 0.2 }); fm(m, 0.2, N.D5, 0.08, { dur: 0.18, caida: 12, indice: 0.4 }); }, 0.26, SALA],
+  "cerrar-recursos": [0.32, (m) => { soplo(m, 0, 0.2, 0.45, 1200, 350, 0.9); toque(m, 0.17, 620, 0.38, { material: W, caida: 50, contacto: 0.2 }); }, 0.24],
+  "bajar-hoja": [0.2, (m) => soplo(m, 0, 0.18, 0.5, 1200, 450, 0.9), 0.16],
+  "subir-hoja": [0.2, (m) => soplo(m, 0, 0.18, 0.5, 450, 1200, 0.9), 0.16],
+  atras: [0.14, (m) => { toque(m, 0, 880, 0.45, { caida: 60 }); soplo(m, 0.01, 0.1, 0.16, 1200, 600, 1.2); }, 0.22],
+  "interruptor-encender": [0.1, (m) => { clic(m, 0, 0.45, 3400); toque(m, 0.012, 1300, 0.4, { caida: 70, contacto: 0 }); }, 0.24],
+  "interruptor-apagar": [0.1, (m) => { clic(m, 0, 0.45, 2800); toque(m, 0.012, 900, 0.38, { caida: 70, contacto: 0 }); }, 0.22],
+  "probar-pagina": [0.6, (m) => { soplo(m, 0, 0.34, 0.35, 300, 1500, 0.9); fm(m, 0.26, N.D5, 0.18, { dur: 0.32, caida: 7 }); fm(m, 0.26, N.A5, 0.1, { dur: 0.3, caida: 8 }); }, 0.28, SALA],
   // — Páginas —
-  "pagina-nueva": [0.5, (m) => { aire(m, 0, 0.26, 0.7, { f0: 1800, f1: 5200, q: 0.9, am: 38, forma: sube }); pop(m, 0.22, 720, 0.3); }, 0.4],
-  "pagina-duplicar": [0.5, (m) => { aire(m, 0, 0.16, 0.6, { f0: 2000, f1: 4800, q: 0.9, am: 40, forma: sube }); aire(m, 0.16, 0.16, 0.6, { f0: 2200, f1: 5000, q: 0.9, am: 40, forma: sube }); tink(m, 0.3, N.A6, 0.08, 12); }, 0.38],
-  "pagina-cambiar": [0.34, (m) => { aire(m, 0, 0.26, 0.8, { f0: 1600, f1: 4600, q: 0.9, am: 36, forma: sube }); pop(m, 0.2, 560, 0.15, { dur: 0.05 }); }, 0.34],
-  "pagina-borrar": [0.5, (m) => { for (let i = 0; i < 8; i++) aire(m, i * 0.034 + azar() * 0.01, 0.05, 0.6, { f0: 1500 + azar() * 2500, f1: 1200 + azar() * 1500, q: 1.4, forma: golpe }); pop(m, 0.3, 460, 0.25, { baja: true }); }, 0.36],
-  "pagina-reordenar": [0.34, (m) => { escarcha(m, 0, 0.22, 0.4, 900, 1700); madera(m, 0.18, N.E6, 0.3, 18); }, 0.34],
+  "pagina-nueva": [0.3, (m) => { soplo(m, 0, 0.2, 0.45, 1200, 2600, 0.8); toque(m, 0.18, 900, 0.3, { caida: 60, contacto: 0.15 }); }, 0.22],
+  "pagina-duplicar": [0.34, (m) => { soplo(m, 0, 0.13, 0.4, 1300, 2500, 0.8); soplo(m, 0.13, 0.13, 0.35, 1400, 2700, 0.8); toque(m, 0.26, 1000, 0.28, { caida: 60, contacto: 0.15 }); }, 0.22],
+  "pagina-cambiar": [0.22, (m) => soplo(m, 0, 0.2, 0.55, 1000, 2300, 0.8), 0.18],
+  "pagina-borrar": [0.3, (m) => { soplo(m, 0, 0.22, 0.45, 2200, 500, 0.9); asiento(m, 0.18, 0.28, 150, 85, 0.07); }, 0.24],
+  "pagina-reordenar": [0.2, (m) => { soplo(m, 0, 0.14, 0.4, 700, 1300, 1); toque(m, 0.12, 1150, 0.35, { material: W, caida: 60 }); }, 0.22],
   // — Música —
-  reproducir: [0.4, (m) => { pop(m, 0, 520, 0.4); tink(m, 0.03, N.E6, 0.1, 9); }, 0.38],
-  pausar: [0.34, (m) => { pop(m, 0, 620, 0.36, { baja: true }); tink(m, 0.03, N.C6, 0.08, 11); }, 0.36],
+  reproducir: [0.3, (m) => { toque(m, 0, 1000, 0.25, { caida: 70, contacto: 0.15 }); fm(m, 0.01, N.D5, 0.2, { dur: 0.24, caida: 10 }); }, 0.24],
+  pausar: [0.26, (m) => { toque(m, 0, 900, 0.25, { caida: 70, contacto: 0.15 }); fm(m, 0.01, N.A4, 0.2, { dur: 0.2, caida: 12 }); }, 0.22],
   // — Publicar —
-  publicar: [1.4, (m) => { escarcha(m, 0, 0.45, 0.35, 600, 2600); pop(m, 0.3, 560, 0.3); [N.C5, N.G5, N.E6].forEach((f, i) => copa(m, 0.32 + i * 0.1, f, 0.15, 2.4, 1)); }, 0.46, SALA_GRANDE],
+  publicar: [1, (m) => { soplo(m, 0, 0.36, 0.3, 400, 1800, 0.9); [N.D5, N.Fs5, N.A5].forEach((f, i) => fm(m, 0.28 + i * 0.06, f, 0.16, { dur: 0.6, caida: 4.5 })); }, 0.32, SALA_GRANDE],
   // — Fase 20 y 22: menús, la pareja, Detallitos y el gatito —
-  brillo: [0.7, (m) => { pop(m, 0, 640, 0.35); copa(m, 0.03, N.E6, 0.16, 4, 0.6); }, 0.38, SALA],
-  "girar-tarjeta": [0.6, (m) => { escarcha(m, 0, 0.3, 0.45, 700, 2600); tink(m, 0.24, N.G6, 0.14, 8); }, 0.38, SALA],
-  "abrir-sobre": [0.7, (m) => { aire(m, 0, 0.3, 0.6, { f0: 500, f1: 1800, q: 0.9, am: 30, forma: sube }); pop(m, 0.26, 600, 0.35); tink(m, 0.3, N.C6, 0.1, 8); }, 0.4, SALA],
-  latido: [0.5, (m) => { barrido(m, 140, 70, 0, 0.12, 0.9, { curva: 0.5, caida: 3 }); barrido(m, 125, 62, 0.19, 0.14, 0.7, { curva: 0.5, caida: 3 }); }, 0.5, { reverb: 0.08 }],
-  "vincular-pareja": [1.8, (m) => { pop(m, 0, 560, 0.3); rueda(m, [N.C5, N.E5, N.G5], 0.04, 0.08, { timbre: "vidrio", vol: 0.2, caida: 1.8, dur: 1.5, ataque: 0.01 }); tink(m, 0.3, N.C6, 0.1, 5); tink(m, 0.42, N.E6, 0.07, 5); }, 0.46, SALA_GRANDE],
-  desvincular: [1, (m) => { rueda(m, [N.G5, N.E5, N.C5], 0, 0.14, { timbre: "vidrio", vol: 0.18, caida: 3, dur: 0.8 }); escarcha(m, 0.1, 0.5, 0.2, 1800, 500); }, 0.4, SALA_GRANDE],
-  "tecla-codigo": [0.12, (m) => { clic(m, 0, 0.4, { brillo: 0.6, dur: 0.005 }); tink(m, 0.002, N.E6, 0.1, 30); }, 0.26],
-  "coleccion-abrir": [1.1, (m) => { aire(m, 0, 0.36, 0.5, { f0: 400, f1: 1600, q: 1, am: 26, forma: sube }); pop(m, 0.22, 520, 0.3); copa(m, 0.24, N.C5, 0.14, 2.6, 0.8); copa(m, 0.32, N.G5, 0.12, 2.8, 0.7); }, 0.42, SALA_GRANDE],
-  "detallito-abrir": [0.8, (m) => { aire(m, 0, 0.24, 0.5, { f0: 600, f1: 1800, q: 0.9, am: 30, forma: sube }); pop(m, 0.18, 700, 0.35); tink(m, 0.22, N.D6, 0.1, 7); }, 0.4, SALA],
-  // El gatito del menú, si lo tocas: un «prrp» y ronronea.
-  "gatito-ronroneo": [1.7, (m) => {
+  brillo: [0.5, (m) => { fm(m, 0, N.A4, 0.22, { dur: 0.14, caida: 16 }); fm(m, 0.08, N.D5, 0.24, { dur: 0.36, caida: 7 }); }, 0.28, SALA],
+  "girar-tarjeta": [0.3, (m) => { soplo(m, 0, 0.22, 0.4, 600, 1800, 1); toque(m, 0.2, 1400, 0.25, { material: MET, caida: 70, contacto: 0 }); }, 0.22],
+  "abrir-sobre": [0.34, (m) => { soplo(m, 0, 0.14, 0.45, 900, 2600, 0.9); toque(m, 0.13, 820, 0.35, { caida: 55, contacto: 0.2 }); }, 0.24],
+  latido: [0.45, (m) => { asiento(m, 0, 0.9, 110, 55, 0.13); asiento(m, 0.19, 0.7, 100, 50, 0.15); }, 0.42, { reverb: 0.04 }],
+  "vincular-pareja": [1.4, (m) => { fm(m, 0, N.D4, 0.18, { dur: 1.2, caida: 2.4, ataque: 0.02 }); fm(m, 0.05, N.A4, 0.16, { dur: 1.1, caida: 2.6, ataque: 0.02 }); fm(m, 0.1, N.Fs5, 0.14, { dur: 1, caida: 3, ataque: 0.02 }); }, 0.36, SALA_GRANDE],
+  desvincular: [0.8, (m) => { fm(m, 0, N.A4, 0.2, { dur: 0.22, caida: 10 }); fm(m, 0.14, N.Fs4, 0.2, { dur: 0.24, caida: 9 }); fm(m, 0.28, N.D4, 0.2, { dur: 0.4, caida: 5 }); }, 0.3, SALA],
+  "tecla-codigo": [0.06, (m) => { clic(m, 0, 0.35, 3800); toque(m, 0.001, 1500, 0.35, { caida: 90, contacto: 0 }); }, 0.18],
+  "coleccion-abrir": [0.7, (m) => { soplo(m, 0, 0.26, 0.35, 400, 1500, 0.9); fm(m, 0.2, N.D5, 0.16, { dur: 0.44, caida: 5 }); fm(m, 0.26, N.A5, 0.1, { dur: 0.4, caida: 6 }); }, 0.28, SALA],
+  "detallito-abrir": [0.5, (m) => { soplo(m, 0, 0.16, 0.4, 800, 2200, 0.9); fm(m, 0.14, N.Fs5, 0.16, { dur: 0.34, caida: 7 }); }, 0.26, SALA],
+  // El gatito del menú, si lo tocas: ronronea bajito.
+  "gatito-ronroneo": [1.6, (m) => {
     const am = 22 + azar() * 6, f = (x) => Math.sin(Math.PI * x) ** 1.4;
-    pop(m, 0, 340, 0.18, { dur: 0.09 });
-    aire(m, 0.04, 0.7, 1, { f0: 150, f1: 210, q: 1.6, am, forma: f });
-    aire(m, 0.84, 0.76, 0.9, { f0: 170, f1: 140, q: 1.6, am: am * 1.05, forma: f });
-  }, 0.5, { reverb: 0.05 }],
+    aire(m, 0, 0.7, 1, { f0: 150, f1: 200, q: 1.6, am, forma: f });
+    aire(m, 0.8, 0.74, 0.9, { f0: 165, f1: 140, q: 1.6, am: am * 1.05, forma: f });
+  }, 0.36, { reverb: 0.03 }],
   // — La abejita (su voz, su hola, su adiós…) y el huevito de pascua —
-  "abejita-habla": [0.12, (m) => { pop(m, 0, 760, 0.4, { dur: 0.055 }); tink(m, 0.01, N.A6, 0.03, 30); }, 0.26],
-  "abejita-hola": [0.32, (m) => { pop(m, 0, 620, 0.35); pop(m, 0.09, 830, 0.35); }, 0.32],
-  "abejita-adios": [0.34, (m) => { pop(m, 0, 830, 0.35, { baja: true }); pop(m, 0.1, 620, 0.32, { baja: true }); }, 0.32],
-  "abejita-feliz": [0.4, (m) => { [700, 880, 1040].forEach((f, i) => pop(m, i * 0.06, f, 0.3, { dur: 0.05 })); tink(m, 0.14, N.E6, 0.06, 12); }, 0.34],
-  "abejita-susto": [0.3, (m) => { barrido(m, 500, 1300, 0, 0.1, 0.4, { curva: 0.4 }); tink(m, 0.08, N.G6, 0.08, 14); }, 0.32],
-  "abejita-zumbido": [0.6, (m) => aire(m, 0, 0.55, 1, { f0: 220, f1: 250, q: 6, am: 34, forma: sube }), 0.24],
-  "secreto-interferencia": [0.6, (m) => { for (let i = 0; i < 9; i++) aire(m, i * 0.055 + azar() * 0.02, 0.05, 0.8, { f0: 600 + azar() * 4000, f1: 500 + azar() * 4000, q: 0.8, forma: golpe }); }, 0.28],
-  "secreto-campanita": [0.9, (m) => { copa(m, 0, N.E6, 0.2, 3, 0.8); tink(m, 0.02, N.B6, 0.06, 8); }, 0.32, SALA_GRANDE],
+  "abejita-habla": [0.08, (m) => fm(m, 0, N.B4, 0.3, { dur: 0.06, caida: 30, indice: 0.8, glide: 1.04 }), 0.18],
+  "abejita-hola": [0.3, (m) => { fm(m, 0, N.A4, 0.25, { dur: 0.1, caida: 20 }); fm(m, 0.08, N.D5, 0.25, { dur: 0.18, caida: 12 }); }, 0.24],
+  "abejita-adios": [0.32, (m) => { fm(m, 0, N.D5, 0.25, { dur: 0.1, caida: 20 }); fm(m, 0.09, N.A4, 0.25, { dur: 0.2, caida: 11 }); }, 0.24],
+  "abejita-feliz": [0.3, (m) => { fm(m, 0, N.E5, 0.24, { dur: 0.1, caida: 20 }); fm(m, 0.07, N.A5, 0.22, { dur: 0.18, caida: 12 }); }, 0.24],
+  "abejita-susto": [0.2, (m) => { soplo(m, 0, 0.08, 0.3, 900, 2600, 1.2); toque(m, 0.05, 1600, 0.3, { material: MET, caida: 60, contacto: 0 }); }, 0.22],
+  "abejita-zumbido": [0.6, (m) => aire(m, 0, 0.55, 1, { f0: 220, f1: 250, q: 6, am: 34, forma: (x) => Math.sin(Math.PI * x) }), 0.16],
+  "secreto-interferencia": [0.6, (m) => { for (let i = 0; i < 8; i++) aire(m, i * 0.06 + azar() * 0.02, 0.04, 0.6, { f0: 800 + azar() * 3000, f1: 700 + azar() * 3000, q: 0.9, forma: (x) => (1 - x) ** 2 }); }, 0.2],
+  "secreto-campanita": [0.9, (m) => fm(m, 0, N.Fs5, 0.25, { dur: 0.8, caida: 4, ratio: 3.5, indice: 0.9, caidaIndice: 6 }), 0.24, SALA_GRANDE],
 };
 
 // Reacciones a una página de tu amorcito: cada una con TRES figuras distintas (v = 0, 1, 2).
 const SON_REACCION = {
-  "reaccion-te-amo": [1.6, (m, v) => {
-    const ac = [[N.C5, N.E5, N.G5], [N.G4, N.C5, N.E5], [N.E5, N.G5, N.C6]][v];
-    pop(m, 0, [560, 520, 620][v], 0.35);
-    rueda(m, ac, 0.04, 0.07, { timbre: "vidrio", vol: 0.18, caida: 2, dur: 1.3, ataque: 0.01 });
-    tink(m, 0.26, ac[2] * 2, 0.08, 6);
-  }, 0.46, SALA_GRANDE],
-  "reaccion-me-encanto": [1, (m, v) => {
-    [[600, 760, 940], [640, 820, 1000], [580, 720, 900]][v].forEach((f, i) => pop(m, i * 0.065, f, 0.32, { dur: 0.06 }));
-    tink(m, 0.2, [N.G6, N.A6, N.E6][v], 0.1, 7);
-  }, 0.42, SALA],
-  "reaccion-llore": [1.6, (m, v) => {
-    const f = [N.A5, N.E5, N.G5][v];
-    gota(m, 0, f * 1.2, 0.4);
-    copa(m, 0.06, f, 0.18, 2.2, 1.2);
-    copa(m, 0.3, f * 2 ** (-3 / 12), 0.12, 2.4, 1);
-  }, 0.42, { reverb: 0.36, tam: 1.9 }],
-  "reaccion-abrazo": [1.6, (m, v) => {
-    for (const f of [[N.C4, N.G4, N.E5], [N.A4, N.E5, N.C6], [N.G4, N.D5, N.G5]][v]) nota(m, f, 0, { timbre: "vidrio", vol: 0.18, caida: 1.3, dur: 1.5, ataque: 0.16 });
-    pop(m, 0.02, 400, 0.25, { dur: 0.09 });
-  }, 0.44, SALA_GRANDE],
-  "reaccion-beso": [0.8, (m, v) => {
-    aire(m, 0, 0.05, 0.3, { f0: 2400, f1: 3400, q: 2, forma: golpe });
-    pop(m, 0.03, [880, 960, 820][v], 0.4, { dur: 0.06 });
-    tink(m, 0.07, [N.E6, N.G6, N.D6][v], 0.12, 9);
-  }, 0.42, SALA],
-  "reaccion-risa": [0.8, (m, v) => {
-    [[700, 860, 760, 940], [640, 780, 900, 820], [760, 700, 880, 820]][v].forEach((f, i) => pop(m, i * 0.075, f, 0.3, { dur: 0.055 }));
-  }, 0.4],
-  "reaccion-quitar": [0.5, (m, v) => {
-    pop(m, 0, [700, 640, 760][v], 0.35, { baja: true });
-    escarcha(m, 0, 0.26, 0.25, 2600, 800);
-  }, 0.34, SALA],
+  "reaccion-te-amo": [1.2, (m, v) => {
+    const [a, b] = [[N.D5, N.Fs5], [N.A4, N.D5], [N.Fs5, N.A5]][v];
+    fm(m, 0, a, 0.2, { dur: 0.9, caida: 3.2 });
+    fm(m, 0.07, b, 0.2, { dur: 0.9, caida: 3.2 });
+  }, 0.34, SALA_GRANDE],
+  "reaccion-me-encanto": [0.8, (m, v) => {
+    const [a, b] = [[N.D5, N.A5], [N.E5, N.B5], [N.A4, N.E5]][v];
+    fm(m, 0, a, 0.22, { dur: 0.16, caida: 14 });
+    fm(m, 0.1, b, 0.24, { dur: 0.5, caida: 5 });
+  }, 0.32, SALA],
+  "reaccion-llore": [1.3, (m, v) => {
+    const f = [N.A5, N.Fs5, N.E5][v];
+    fm(m, 0, f, 0.22, { dur: 0.4, caida: 6, vib: 0.006 });
+    fm(m, 0.24, f * 2 ** (-3 / 12), 0.2, { dur: 0.8, caida: 3, vib: 0.008 });
+  }, 0.3, SALA_GRANDE],
+  "reaccion-abrazo": [1.3, (m, v) => {
+    for (const f of [[N.D4, N.A4, N.Fs5], [N.A3, N.E4, N.D5], [N.Fs4, N.D5, N.A5]][v]) fm(m, 0, f, 0.16, { dur: 1.1, caida: 2.4, ataque: 0.14, indice: 0.7 });
+  }, 0.34, SALA_GRANDE],
+  "reaccion-beso": [0.5, (m, v) => {
+    toque(m, 0, [1300, 1400, 1200][v], 0.3, { caida: 70 });
+    fm(m, 0.03, [N.Fs5, N.A5, N.E5][v], 0.2, { dur: 0.32, caida: 9 });
+  }, 0.28, SALA],
+  "reaccion-risa": [0.4, (m, v) => {
+    [[N.E5, N.Fs5, N.A5], [N.D5, N.E5, N.Fs5], [N.A4, N.B4, N.D5]][v].forEach((f, i) => fm(m, i * 0.075, f, 0.2, { dur: 0.08, caida: 26 }));
+  }, 0.28],
+  "reaccion-quitar": [0.3, (m, v) => {
+    soplo(m, 0, 0.16, 0.35, 1600, 600, 1);
+    toque(m, 0.12, [800, 740, 860][v], 0.35, { caida: 60, contacto: 0.15 });
+  }, 0.24],
 };
-
 const PROPIAS = new Set(Object.keys(SON_REACCION));
 Object.assign(SON, SON_REACCION);
 // Los que suben por la escala al repetirse (o marcan escalones): con una versión basta.
@@ -282,19 +259,19 @@ const TONOS = [1, 1.1225, 0.8909];
 
 mkdirSync(DIR, { recursive: true });
 const solo = process.argv.slice(2);
-let total = 0, n = 0;
+let total = 0, cuantos = 0;
 for (const [nombre, [dur, hacer, pico, fin]] of Object.entries(SON)) {
   const versiones = UNA_SOLA.has(nombre) ? 1 : 3;
   for (let v = 0; v < versiones; v++) {
     semilla = 11 + v * 7919 + nombre.length * 31;
     T = PROPIAS.has(nombre) ? 1 : TONOS[v];
-    const m = lienzo(dur + 0.12 + (fin?.reverb > 0.2 ? 0.3 : 0));
+    const m = lienzo(dur + 0.08 + (fin?.reverb > 0.1 ? 0.25 : 0));
     hacer(m, v);
     const b = wav(terminar(m, pico, fin));
     if (solo.length && !solo.includes(nombre)) continue;
     writeFileSync(DIR + nombre + (v ? "-" + (v + 1) : "") + ".wav", b);
-    total += b.length; n++;
+    total += b.length; cuantos++;
   }
 }
 T = 1;
-console.log(`${n} archivos · ${(total / 1024).toFixed(0)} KB en assets/sonidos-editor/`);
+console.log(`${cuantos} archivos · ${(total / 1024).toFixed(0)} KB en assets/sonidos-editor/`);

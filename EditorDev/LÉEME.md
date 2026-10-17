@@ -610,6 +610,13 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Suaves y sin repetirse** | nada de cascadas de notas ni fanfarrias (como mucho dos o tres notas, como un acorde), registro medio, un pasa-bajos suave y una sala chiquita en los de vidrio. Cada sonido tiene su propia figura y tres versiones; se comprobó que ningún archivo se repite ni quedó igual a los del pixel art ni a los de antes |
 | **Si falta un archivo** | el respaldo vuelve a tonos redondos (de burbuja y copa), filtrados |
 
+### Fase 26: sonidos de interfaz profesionales
+
+| | |
+| --- | --- |
+| **Los 82 sonidos, rehechos** (`herramientas/sonidos-editor.mjs`) | con el criterio de los sonidos de un sistema operativo o una app de trabajo: las interacciones (tocar, elegir, soltar, teclas, interruptores, seguros) son **toques táctiles**: un contacto cortísimo y la resonancia de un material suave (polímero, madera mate o metal suave) que se apaga enseguida; lo que se abre o se desliza (menús, recursos, hojas, páginas) es **aire limpio** filtrado, sin temblores; y sólo los avisos (guardar, listo, error, publicar, Detallitos, reacciones) llevan **tono**, de piano eléctrico suave (FM), todos en re mayor y nunca más de dos o tres notas |
+| **Cortos y discretos** | los frecuentes duran alrededor de una décima de segundo y suenan bajito; la sala es casi imperceptible. Cada uno con su propia figura y tres versiones: ningún archivo se repite ni quedó igual a los de las fases 23, 24 y 25 |
+
 ## Cómo está hecho
 
 ```
