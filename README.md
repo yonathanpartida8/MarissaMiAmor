@@ -89,7 +89,7 @@ mandan **Detallitos** a su amorcito («Vincular a tu Amorcito» con un código
 principal —un álbum de recortes con su gatito dormido— muestra sus dos fotos y
 cuántos días llevan juntos. Sus detallitos se ven en una colección con la
 portadita de cada página, de quién es, y se les puede reaccionar con sonidos
-en pixel art. Todos los sonidos del editor (suaves, de consola) se cambian poniendo tu `nombre.mp3`
+de burbuja y cristal. Todos los sonidos del editor (suaves, entre «pop» y vidrio) se cambian poniendo tu `nombre.mp3`
 en `assets/sonidos-editor/` (ver su `LÉEME.md`). Para empezar de
 cero con las cuentas de prueba: `librito borrar-cuentas`. El token de GitHub es uno
 solo, cifrado en el teléfono: nunca está en el editor. Se instala con una línea

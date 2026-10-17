@@ -602,6 +602,14 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **La abejita y el huevito** | ahora también traen sus sonidos de fábrica en pixel art (su voz es un «blip» de consola que cambia de tono, como en los juegos), y siguen siendo cambiables con tu archivo |
 | **Si falta un archivo** | el sonidito de respaldo que hace el editor también es de consola (triangular y cuadrada, filtradas) |
 
+### Fase 25: sonidos entre «Cute UI / Pop» y «Glass UI»
+
+| | |
+| --- | --- |
+| **Los 82 sonidos, rehechos otra vez** (`herramientas/sonidos-editor.mjs`) | en lugar del pixel art, una mezcla de dos estilos de interfaz: **cute / pop** (burbujitas redondas que hacen «plop» hacia arriba o hacia abajo, pulsaditos de madera suave, gotitas) y **glass / glassmorphism** (el «tink» limpio de una copa, copas que se quedan sonando y el aire de un vidrio esmerilado cuando algo se abre o se desliza). Por ejemplo: tocar un botón es una burbujita con un filito de cristal; abrir recursos, un panel de vidrio que se desliza y asienta con un «plop» y una copa; guardar, una copa con su tink |
+| **Suaves y sin repetirse** | nada de cascadas de notas ni fanfarrias (como mucho dos o tres notas, como un acorde), registro medio, un pasa-bajos suave y una sala chiquita en los de vidrio. Cada sonido tiene su propia figura y tres versiones; se comprobó que ningún archivo se repite ni quedó igual a los del pixel art ni a los de antes |
+| **Si falta un archivo** | el respaldo vuelve a tonos redondos (de burbuja y copa), filtrados |
+
 ## Cómo está hecho
 
 ```

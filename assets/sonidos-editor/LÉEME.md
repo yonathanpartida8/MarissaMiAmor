@@ -21,11 +21,12 @@ pon tu archivo con ese nombre y listo: no hay que tocar nada del editor.
   lo que se repite seguido (elegir, pegar con el imán, colocar, duplicar,
   ordenar capas, fotogramas) **sube por la escala** como una escalerita.
 
-Los de aquí los genera `node herramientas/sonidos-editor.mjs`, **todos en
-estilo pixel art** (como una consola de 8 bits: cuadrada, triangular y ruido de
-consola), pero suaves y serios: registro grave y medio, filtrados para que nada
-chille, sin fanfarrias ni estrellitas, y cada uno con su propia figura (no hay
-dos iguales). Si cambias uno a mano, no vuelvas a correr esa herramienta o lo
+Los de aquí los genera `node herramientas/sonidos-editor.mjs`, **todos en una
+mezcla de «Cute UI / Pop» y «Glass UI»**: burbujitas que hacen «plop»,
+pulsaditos de madera suave y gotitas, con el tink limpio de una copa, copas que
+se quedan sonando y el aire de un vidrio esmerilado al abrir o deslizar algo.
+Suaves, sin cascadas de notas ni fanfarrias, y cada uno con su propia figura
+(no hay dos iguales). Si cambias uno a mano, no vuelvas a correr esa herramienta o lo
 sobrescribe (puedes pasarle sólo los nombres que quieras rehacer:
 `node herramientas/sonidos-editor.mjs tocar-boton`).
 
@@ -105,7 +106,7 @@ momento.
 | `reaccion-quitar` | quitar tu reacción |
 | `gatito-ronroneo` | tocar al gatito dormido del menú |
 
-### La abejita y el huevito de pascua (también de fábrica, en pixel art)
+### La abejita y el huevito de pascua (también de fábrica)
 
 | Archivo | Cuándo suena |
 | --- | --- |
