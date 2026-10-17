@@ -2591,8 +2591,9 @@ def api_reacciones_vistas(h, s):
 def api_portadita(h, s, did):
     """La miniatura de la portada (la dibuja el editor al mandarla): jpg, png o webp, chiquita."""
     d = detallito_de(s, did)
-    if d["de"] != s["usuario_id"]:
-        raise Falla("Sólo quien mandó la página le pone su portadita.", 403)
+    # Quien la mandó, siempre; quien la recibió, sólo si todavía no tiene (las de antes: la dibuja su editor).
+    if d["de"] != s["usuario_id"] and d["portadita"]:
+        raise Falla("Sólo quien mandó la página le cambia su portadita.", 403)
     try:
         n = int(h.headers.get("Content-Length") or -1)
     except ValueError:

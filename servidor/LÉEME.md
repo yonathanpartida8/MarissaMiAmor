@@ -356,7 +356,7 @@ azar) · `/api/…`:
 | `GET/POST /api/detallitos` · `POST …/<id>/visto` · `GET …/<id>/paquete` · `DELETE …/<id>` | sesión | mandar, ver, guardar y quitar detallitos |
 | `PUT /api/detallitos/<id>/reaccion` (`{"reaccion":"te-amo"}`; vacío la quita) | quien lo recibió | reaccionar: te-amo, me-encanto, llore, abrazo, beso o risa |
 | `POST /api/detallitos/reacciones/vistas` | sesión | ya viste las reacciones a lo que mandaste |
-| `PUT /api/detallitos/<id>/portadita` (jpg, png o webp, hasta 600 KB) | quien lo mandó | su miniatura; se ve en `/d/<id>/portadita.<ext>` |
+| `PUT /api/detallitos/<id>/portadita` (jpg, png o webp, hasta 600 KB) | quien lo mandó (o quien lo recibió, si todavía no tiene) | su miniatura; se ve en `/d/<id>/portadita.<ext>` |
 | `POST /api/admin/usuarios/borrar-todas` (`{"confirmar":"BORRAR"}`) | admin | borra todas las cuentas que no son de administrador |
 | `/api/admin/…` (resumen, ajustes, github, usuarios, invitaciones, actividad, túnel) | admin | el panel |
 

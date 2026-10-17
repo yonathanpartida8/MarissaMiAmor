@@ -34,7 +34,7 @@ import { RAIZ } from "../assets/biblioteca.js";
 import { cambiar, sinMovimiento as reducido } from "./transiciones.js";
 import * as PF from "./perfil.js";
 import { REACCIONES, reaccion, svgReaccion, estallido } from "./reacciones.js";
-import { dibujarPortadita } from "./portadita.js";
+import { dibujarPortadita, portaditaDePaquete } from "./portadita.js";
 
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 const cuando = (iso) => {
@@ -392,7 +392,7 @@ export class Detallitos {
     const enviar = el("button.ed-btn.primario.dt-btn.dt-enviar", { type: "button", html: I("detallito", `Mandárselo a ${nombre}`), onClick: async () => {
       enviar.disabled = true; avance.hidden = false; estado.textContent = "Envolviendo tu página…";
       // Su portadita (para la colección) se dibuja mientras se envuelve.
-      const mini = dibujarPortadita(app).catch(() => null);
+      const mini = dibujarPortadita(app, undefined, 480).catch(() => null);
       const poner = (p) => { avance.firstChild.style.width = Math.round(p * 100) + "%"; };
       // 1 · La página se mete al sobre y el sobre se cierra (mientras sube, late).
       previa?.classList.add("adentro");
@@ -538,6 +538,47 @@ export class Detallitos {
     return rej;
   }
 
+  /**
+   * Las páginas que se mandaron sin portadita (las de antes): se dibuja con su
+   * paquete, de una en una y sólo las que asoman en la pantalla, y se sube para
+   * que a los dos ya les salga. Mientras, se ve su tapita de colores.
+   */
+  _sinPortadita(x, tapa) {
+    const poner = (u) => {
+      const im = el("img.dt-cv-img", { alt: "", decoding: "async", draggable: "false" });
+      im.onload = () => im.classList.add("lista");
+      im.src = u;
+      tapa.append(im);
+    };
+    this._minis ||= new Map();
+    const ya = this._minis.get(x.id);
+    if (ya) { if (typeof ya === "string") poner(ya); return; }
+    if (!("IntersectionObserver" in window) || (x.bytes || 0) > 25e6) return;
+    this._cola ||= [];
+    this._vigia ||= new IntersectionObserver((es) => {
+      for (const e of es) if (e.isIntersecting) { this._vigia.unobserve(e.target); if (e.target._pedir) this._cola.push(e.target._pedir); }
+      this._siguiente();
+    }, { rootMargin: "240px 0px" });
+    tapa._pedir = async () => {
+      if (this._minis.has(x.id)) return;
+      this._minis.set(x.id, true);
+      try {
+        const b = await portaditaDePaquete(this.app, await SRV.paqueteDetallito(x.id));
+        if (!b) return;
+        const u = URL.createObjectURL(b);
+        this._minis.set(x.id, u);
+        if (tapa.isConnected) poner(u);
+        SRV.subirPortadita(x.id, b).catch(() => {});
+      } catch (e) { /* se queda con su tapita */ }
+    };
+    this._vigia.observe(tapa);
+  }
+  async _siguiente() {
+    if (this._haciendo) return;
+    this._haciendo = true;
+    try { while (this._cola.length) await this._cola.shift()(); } finally { this._haciendo = false; }
+  }
+
   /** Una página de la colección: su portadita (o una hecha con su color y su título), de quién es y su reacción. */
   _tarjeta(x, i, nombre) {
     const nuevo = !x._mio && !x.visto, rx = reaccion(x.reaccion);
@@ -550,7 +591,7 @@ export class Detallitos {
       im.onerror = () => im.remove();
       im.src = SRV.enlace(x.portadita);
       tapa.append(im);
-    }
+    } else this._sinPortadita(x, tapa);
     if (rx) tapa.append(el("span.dt-cv-rx", { title: x._mio ? `${nombre} ${rx.largo}` : rx.tuyo, html: svgReaccion(rx.id) }));
     const t = el("button.dt-cv" + (nuevo ? ".nueva" : "") + (x._mio && x.reaccion_nueva ? ".rx-nueva" : ""), {
       type: "button", "aria-label": `${x.titulo}, ${x._mio ? "tuya" : "de " + nombre}${rx ? ", " + rx.corto : ""}`,

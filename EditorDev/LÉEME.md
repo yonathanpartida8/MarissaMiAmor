@@ -582,6 +582,17 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Mandar** (Exportar → Enviar Detallito) | igual que antes, y la tarjeta «Nuestra colección» con las miniaturas de las últimas lleva a la colección |
 | **Resultado** (teléfono simulado, procesador 4 veces más lento) | el menú álbum va a **56–59** cuadros por segundo (antes 51–54), 0 destellos; Detallitos y el editor a 61 |
 
+### Fase 23: sonidos tibios, toques que siguen al objeto, atrás al menú y portaditas para todas
+
+| | |
+| --- | --- |
+| **Sin brillitos** | el menú de recursos ya no suena a campanitas agudas: se desliza como papel, hace un «plop» de burbujita con un golpecito de madera y un acorde tibio de **piano de fieltro**. Igual se rehicieron los demás que eran brillitos (cerrar recursos, entrar a tu cuenta, aplicar efecto o animación, probar, publicar, «listo», vincularse, abrir un detallito o la colección, colocar y duplicar); las reacciones siguen de cristal pero una octava más abajo y sin siseo. Todos con sus tres versiones y cambiables con tu `nombre.mp3` |
+| **Los toques siguen a lo que tocas** (`components/tacto.js`) | la onda nace **dentro** del botón o la carta que tocaste, así que si se desliza, se encoge o se va con la pantalla, la onda va con él (antes se quedaba fija donde estaba); los corazoncitos también lo acompañan. En el editor, la cinta y las florcitas de elegir, el confeti de colocar y la mancha de soltar **siguen al objeto** si lo arrastras justo después o haces zoom (`canvas/fx.js`) |
+| **El gatito** | al tocarlo ya no sale onda, ni recuadro, ni lluvia: sólo sus **Zzz** que flotan (y su ronroneo) |
+| **Atrás = menú principal** (`components/salir.js`) | la flecha de arriba del editor (dice «Menú» si hay espacio) y el «atrás» del teléfono cierran primero lo abierto y luego te regresan al **menú principal**, guardando por detrás, sin preguntar. Desde «Crear librito», atrás también vuelve al menú. Sólo en el menú principal, atrás pregunta si te vas del todo; para ir al librito está «Volver al librito» abajo |
+| **Portaditas para todas** (`components/portadita.js`) | las páginas que se mandaron antes de que existieran las portaditas ya no se quedan con la tapita de colores: al asomar en la colección, el editor dibuja su primera hoja con su paquete (de una en una, sólo las que se ven) y la sube, así a los dos ya les sale para siempre. Las nuevas se dibujan más nítidas (480 px) |
+| **Estabilidad** | abrir y cerrar el menú muchas veces no deja nada acumulado (ondas, corazones, grupos de efectos, menús viejos); probado con 12 vueltas seguidas en teléfono y computadora, sin errores |
+
 ## Cómo está hecho
 
 ```

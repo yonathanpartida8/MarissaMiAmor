@@ -22,8 +22,8 @@ pon tu archivo con ese nombre y listo: no hay que tocar nada del editor.
   ordenar capas, fotogramas) **sube por la escala** como una escalerita.
 
 Los de aquí los genera `node herramientas/sonidos-editor.mjs` (todos en la
-misma escala, para que combinen; las reacciones, de cristal, con su eco de
-sala grande). Si cambias uno a mano, no vuelvas a correr esa herramienta o lo
+misma escala, para que combinen; nada de brillitos agudos: burbujita, madera y
+piano de fieltro; las reacciones, de cristal, con su eco de sala grande). Si cambias uno a mano, no vuelvas a correr esa herramienta o lo
 sobrescribe (puedes pasarle sólo los nombres que quieras rehacer:
 `node herramientas/sonidos-editor.mjs tocar-boton`).
 

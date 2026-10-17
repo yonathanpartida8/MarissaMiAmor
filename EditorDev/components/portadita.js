@@ -15,6 +15,7 @@
 const RT = () => window.LibritoRT;
 
 function cargar(url) {
+  if (url && typeof url.then === "function") return url.then(cargar, () => null);
   return new Promise((ok) => {
     if (!url) return ok(null);
     const im = new Image();
@@ -173,9 +174,10 @@ function svgDe(e) {
 }
 
 /** La portadita de `pagina` (por defecto, la que está abierta). Ancho en píxeles. */
-export async function dibujarPortadita(app, pagina = app.estado?.pagina, ancho = 360) {
+export async function dibujarPortadita(app, pagina = app.estado?.pagina, ancho = 360, { proyecto, url: urlDe } = {}) {
   if (!pagina) return null;
-  const P = app.estado.proyecto, m = app.lienzo?.m, a = P?.ajustes || {};
+  // `proyecto` y `url` (id de foto → dirección): para dibujar uno que no es el abierto (el de un paquete).
+  const P = proyecto || app.estado.proyecto, m = proyecto ? null : app.lienzo?.m, a = P?.ajustes || {};
   const W = m?.auto ? m.W : a.ancho || 390, H = m?.auto ? m.H : a.alto || 844;
   const k = ancho / W, alto = Math.round(Math.min(H * k, ancho * 2.2));
   const lienzo = document.createElement("canvas");
@@ -184,7 +186,7 @@ export async function dibujarPortadita(app, pagina = app.estado?.pagina, ancho =
   // Las fotos que hacen falta, todas a la vez.
   const els = (pagina.els || []).filter((e) => !e.oculto && e.w > 0 && e.h > 0);
   const imgs = new Map();
-  const url = (id) => (id ? app.bib?.url?.(id) : null);
+  const url = (id) => (id ? (urlDe ? urlDe(id) : app.bib?.url?.(id)) : null);
   const f = pagina.fondo || {};
   const pedidos = [cargar(url(f.imagen?.asset)).then((im) => imgs.set("__fondo", im))];
   for (const e of els) {
@@ -219,4 +221,31 @@ export async function dibujarPortadita(app, pagina = app.estado?.pagina, ancho =
     await pintar(false);
     try { return await aBlob(); } catch (e2) { return null; }
   }
+}
+
+/**
+ * Fase 23: la portadita de un detallito hecha con su paquete (el .zip con su
+ * project.json y sus fotos), para las páginas que se mandaron sin ella. Dibuja
+ * su primera hoja igual que al mandarla; las fotos que no vienen en el paquete
+ * (las que viven en la nube de quien la mandó) quedan como su recuadro.
+ */
+export async function portaditaDePaquete(app, blob, ancho = 480) {
+  const [{ leerZip }, { normalizar }] = await Promise.all([import("../export/zip.js"), import("../core/modelo.js")]);
+  const zip = await leerZip(blob);
+  const pj = zip["project.json"];
+  if (!pj) return null;
+  // Igual que al abrir un librito: lo de versiones viejas queda con su forma de hoy.
+  const P = normalizar(JSON.parse(new TextDecoder().decode(await pj())));
+  const pagina = P?.paginas?.[P.orden?.[0]];
+  if (!pagina) return null;
+  const hechas = [], urls = new Map();
+  const url = (id) => {
+    if (!urls.has(id)) {
+      const a = P.assets?.[id], leer = a?.archivoZip && zip[a.archivoZip];
+      urls.set(id, leer ? leer().then((d) => { const u = URL.createObjectURL(new Blob([d], { type: a.mime || "" })); hechas.push(u); return u; }) : null);
+    }
+    return urls.get(id);
+  };
+  try { return await dibujarPortadita(app, pagina, ancho, { proyecto: P, url }); }
+  finally { for (const u of hechas) URL.revokeObjectURL(u); }
 }
