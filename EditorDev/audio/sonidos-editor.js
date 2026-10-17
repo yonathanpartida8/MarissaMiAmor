@@ -261,15 +261,19 @@ export class SonidosEditor {
     const k = (op.tono || 1) * (0.985 + Math.random() * 0.03);
     let fin = 0;
     this.voces++;
-    for (const [forma, f0, f1, dur, v, ret = 0] of SINTE[momento]) {
+    for (let [forma, f0, f1, dur, v, ret = 0] of SINTE[momento]) {
       const t = t0 + ret, o = ac.createOscillator(), g = ac.createGain();
-      o.type = forma;
+      // Fase 24: estilo pixel art también aquí (triangular y cuadrada de consola, filtradas para que sean suaves).
+      o.type = forma === "sawtooth" || forma === "square" ? "square" : "triangle";
+      if (o.type === "square") v *= 0.45;
       o.frequency.setValueAtTime(f0 * k, t);
       o.frequency.exponentialRampToValueAtTime(Math.max(20, f1 * k), t + dur);
       g.gain.setValueAtTime(0, t);
       g.gain.linearRampToValueAtTime(v * vol, t + Math.min(0.006, dur / 4));
       g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
-      o.connect(g).connect(this._bus());
+      const lp = ac.createBiquadFilter();
+      lp.type = "lowpass"; lp.frequency.value = 3400; lp.Q.value = 0.5;
+      o.connect(lp).connect(g).connect(this._bus());
       o.start(t); o.stop(t + dur + 0.02);
       o.onended = () => { try { g.disconnect(); } catch (e) { /* nada */ } };
       fin = Math.max(fin, ret + dur);

@@ -1869,6 +1869,36 @@ export default {
    }
   ],
   "sonidos": {
+   "abejita-adios": [
+    "assets/sonidos-editor/abejita-adios-2.wav",
+    "assets/sonidos-editor/abejita-adios-3.wav",
+    "assets/sonidos-editor/abejita-adios.wav"
+   ],
+   "abejita-feliz": [
+    "assets/sonidos-editor/abejita-feliz-2.wav",
+    "assets/sonidos-editor/abejita-feliz-3.wav",
+    "assets/sonidos-editor/abejita-feliz.wav"
+   ],
+   "abejita-habla": [
+    "assets/sonidos-editor/abejita-habla-2.wav",
+    "assets/sonidos-editor/abejita-habla-3.wav",
+    "assets/sonidos-editor/abejita-habla.wav"
+   ],
+   "abejita-hola": [
+    "assets/sonidos-editor/abejita-hola-2.wav",
+    "assets/sonidos-editor/abejita-hola-3.wav",
+    "assets/sonidos-editor/abejita-hola.wav"
+   ],
+   "abejita-susto": [
+    "assets/sonidos-editor/abejita-susto-2.wav",
+    "assets/sonidos-editor/abejita-susto-3.wav",
+    "assets/sonidos-editor/abejita-susto.wav"
+   ],
+   "abejita-zumbido": [
+    "assets/sonidos-editor/abejita-zumbido-2.wav",
+    "assets/sonidos-editor/abejita-zumbido-3.wav",
+    "assets/sonidos-editor/abejita-zumbido.wav"
+   ],
    "abrir-menu": [
     "assets/sonidos-editor/abrir-menu-2.wav",
     "assets/sonidos-editor/abrir-menu-3.wav",
@@ -2176,6 +2206,16 @@ export default {
     "assets/sonidos-editor/reproducir-2.wav",
     "assets/sonidos-editor/reproducir-3.wav",
     "assets/sonidos-editor/reproducir.wav"
+   ],
+   "secreto-campanita": [
+    "assets/sonidos-editor/secreto-campanita-2.wav",
+    "assets/sonidos-editor/secreto-campanita-3.wav",
+    "assets/sonidos-editor/secreto-campanita.wav"
+   ],
+   "secreto-interferencia": [
+    "assets/sonidos-editor/secreto-interferencia-2.wav",
+    "assets/sonidos-editor/secreto-interferencia-3.wav",
+    "assets/sonidos-editor/secreto-interferencia.wav"
    ],
    "seleccionar-elemento": [
     "assets/sonidos-editor/seleccionar-elemento.wav"

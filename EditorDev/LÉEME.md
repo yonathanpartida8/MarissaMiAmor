@@ -593,6 +593,15 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Portaditas para todas** (`components/portadita.js`) | las páginas que se mandaron antes de que existieran las portaditas ya no se quedan con la tapita de colores: al asomar en la colección, el editor dibuja su primera hoja con su paquete (de una en una, sólo las que se ven) y la sube, así a los dos ya les sale para siempre. Las nuevas se dibujan más nítidas (480 px) |
 | **Estabilidad** | abrir y cerrar el menú muchas veces no deja nada acumulado (ondas, corazones, grupos de efectos, menús viejos); probado con 12 vueltas seguidas en teléfono y computadora, sin errores |
 
+### Fase 24: todos los sonidos en pixel art
+
+| | |
+| --- | --- |
+| **Los 82 sonidos, rehechos** (`herramientas/sonidos-editor.mjs`) | todo lo que suena en el editor ahora es **pixel art**, como una consola de 8 bits: cuadrada al 12, 25 y 50 %, triangular de 4 bits y ruido de consola, con el tono y el volumen cambiando a pasitos (eso es lo que suena «a pixel»). Pero **suaves y serios**: registro grave y medio, un pasa-bajos al final para que nada chille, sin fanfarrias, sin estrellitas, sin campanitas agudas; los que abren algo llevan un eco cortito de consola |
+| **Ninguno igual** | cada sonido tiene su propia figura (notas, intervalos, onda y ritmo) y sale en tres versiones que se turnan; se comprobó que ningún archivo se repite ni quedó igual al de antes |
+| **La abejita y el huevito** | ahora también traen sus sonidos de fábrica en pixel art (su voz es un «blip» de consola que cambia de tono, como en los juegos), y siguen siendo cambiables con tu archivo |
+| **Si falta un archivo** | el sonidito de respaldo que hace el editor también es de consola (triangular y cuadrada, filtradas) |
+
 ## Cómo está hecho
 
 ```
