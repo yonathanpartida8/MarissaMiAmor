@@ -1,9 +1,10 @@
 /**
  * EFECTITOS DEL EDITOR — que trabajar se sienta lindo, suave y satisfactorio.
  *
- *   arrastrar   una estela de acuarela pastel que va saliendo por detrás de lo
- *               que se mueve (rosa → durazno → lila), con granito de papel, y
- *               se seca y desaparece sola; nunca pinta encima del objeto
+ *   arrastrar   una cinta de acuarela pastel que pasa exacto por donde pasó lo
+ *               que mueves: sale de detrás, se afila hacia la cola, con velo,
+ *               borde de agua y granito de papel, y se seca sola; nunca pinta
+ *               encima del objeto
  *   elegir      una cinta de colores que se dibuja alrededor y florcitas que
  *               se abren en las esquinas (lila si son varios)
  *   soltar      una mancha de acuarela que florece debajo y pétalos que se
@@ -246,6 +247,8 @@ export class FxEditor {
   }
 
   // ─────────────────────────────── La estela de acuarela ───────────────────────────────
+  // Una cinta continua que pasa EXACTO por donde pasó el centro de lo que arrastras (también si el
+  // imán lo pegó a una guía): sale de detrás del objeto, se afila hacia la cola y se seca sola.
   _tono() { return PASTEL[Math.floor((this._h || 0) / 2) % PASTEL.length]; }
 
   _lienzo() {
@@ -258,6 +261,7 @@ export class FxEditor {
       // Encima de la hoja pero debajo del marco y las manijas.
       vista.insertBefore(c, this.app.lienzo.sobre || this.capa);
       this._g = c.getContext("2d");
+      this._granoP = null;
     }
     const dpr = Math.min(2, devicePixelRatio || 1), w = vista.clientWidth, h = vista.clientHeight;
     if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
@@ -265,61 +269,44 @@ export class FxEditor {
     return c;
   }
 
-  /** Las gotas de pintura, hechas una sola vez: pincel suave de acuarela con granito de papel. */
-  _gotas() {
-    if (this._spr) return this._spr;
-    this._spr = PINTURA.map((hex) => {
-      const s = document.createElement("canvas");
-      s.width = s.height = 64;
-      const g = s.getContext("2d"), c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(",");
-      const r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-      r.addColorStop(0, `rgba(${c},.6)`); r.addColorStop(0.5, `rgba(${c},.5)`); r.addColorStop(0.8, `rgba(${c},.24)`); r.addColorStop(1, `rgba(${c},0)`);
-      g.fillStyle = r;
-      g.beginPath(); g.arc(32, 32, 32, 0, Math.PI * 2); g.fill();
-      g.globalCompositeOperation = "destination-out";
-      for (let i = 0; i < 110; i++) { g.fillStyle = `rgba(0,0,0,${Math.random() * 0.4})`; g.fillRect(Math.random() * 64, Math.random() * 64, 1.6, 1.6); }
-      return s;
-    });
-    return this._spr;
+  /** El granito del papel (hecho una sola vez): se le quita a la pintura para que se vea de acuarela. */
+  _grano() {
+    if (this._granoP) return this._granoP;
+    const s = document.createElement("canvas");
+    s.width = s.height = 96;
+    const g = s.getContext("2d");
+    for (let i = 0; i < 520; i++) { g.fillStyle = `rgba(0,0,0,${(Math.random() * 0.55).toFixed(2)})`; g.fillRect(Math.random() * 96, Math.random() * 96, 1.4, 1.4); }
+    return (this._granoP = this._g.createPattern(s, "repeat"));
   }
 
-  /** Llamado en cada movimiento al arrastrar, con la caja en pantalla. */
+  /** Llamado en cada movimiento al arrastrar, con la caja en pantalla (ya movida y pegada). */
   estela(b) {
     const k = this.nivel;
     if (!k) return;
-    const ahora = performance.now(), c = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+    const ahora = performance.now(), x = b.x + b.w / 2, y = b.y + b.h / 2;
     this._obj = b;
-    const u = this._ult;
-    if (!u || ahora - u.t > 260) { this._ult = { ...c, t: ahora }; this._viaje = 0; this._dir = null; this._pt = null; return; }
-    const dx = c.x - u.x, dy = c.y - u.y, d = Math.hypot(dx, dy);
-    if (d < 1.5) return;
-    this._lienzo();
-    const vel = d / Math.max(8, ahora - u.t);
-    // La dirección se suaviza: así el punto de donde sale la pintura rodea el objeto
-    // despacito al cambiar de rumbo, en vez de saltar al otro lado.
-    const dv = this._dir || { x: dx / d, y: dy / d };
-    let ux = dv.x * 0.7 + (dx / d) * 0.3, uy = dv.y * 0.7 + (dy / d) * 0.3;
-    const n = Math.hypot(ux, uy) || 1;
-    ux /= n; uy /= n;
-    this._dir = { x: ux, y: uy };
-    // El borde de atrás según hacia dónde va: la pintura sale por detrás, nunca encima.
-    const atras = Math.abs(ux) * b.w / 2 + Math.abs(uy) * b.h / 2;
-    const base = Math.max(9, Math.min(30, Math.min(b.w, b.h) * 0.22)) * (k < 1 ? 0.8 : 1);
-    const paso = Math.max(2.5, base * (k < 1 ? 0.5 : 0.26));
-    const T = { x: c.x - ux * (atras + base * 0.2), y: c.y - uy * (atras + base * 0.2) };
-    const P = this._pt || T, seg = Math.hypot(T.x - P.x, T.y - P.y);
-    const pasos = Math.max(1, Math.ceil(seg / paso));
-    for (let i = 1; i <= pasos; i++) {
-      const f = i / pasos, x = P.x + (T.x - P.x) * f, y = P.y + (T.y - P.y) * f;
-      this._h = ((this._h || 0) + seg / pasos / 26) % (PINTURA.length * 2);
-      const r = base * (0.72 + Math.min(1.1, vel * 0.55)) * azar(0.88, 1.1);
-      this.st.push({ x: x + azar(-0.1, 0.1) * base, y: y + azar(-0.1, 0.1) * base, r, c: Math.floor(this._h / 2) % PINTURA.length, a: azar(0.42, 0.55), t: ahora });
-      // Gotitas salpicadas cuando va rápido.
-      if (vel > 1.1 && Math.random() < 0.08) { const lado = Math.random() < 0.5 ? -1 : 1; this.st.push({ x: x - uy * lado * base * azar(1, 1.8), y: y + ux * lado * base * azar(1, 1.8), r: base * azar(0.18, 0.32), c: Math.floor(this._h / 2) % PINTURA.length, a: 0.7, t: ahora }); }
+    let ci = this._viva;
+    const u = ci?.pts[ci.pts.length - 1];
+    if (!ci || !u || ahora - u.t > 260) {
+      // Un trazo nuevo, con su par de tonos (cambian de un arrastre al otro) y su ancho según el objeto.
+      this._h = ((this._h || 0) + 2) % (PINTURA.length * 2);
+      const i = Math.floor(this._h / 2) % PINTURA.length;
+      ci = this._viva = { pts: [{ x, y, t: ahora, v: 0 }], a: PINTURA[i], b: PINTURA[(i + 2) % PINTURA.length], W: Math.max(10, Math.min(64, Math.min(b.w, b.h) * 0.55)) * (k < 1 ? 0.8 : 1), gotas: [] };
+      this.st.push(ci);
+      this._viaje = 0;
+      return;
     }
-    this._pt = T;
-    if (this.st.length > 700) this.st.splice(0, this.st.length - 700);
-    this._ult = { ...c, t: ahora };
+    const d = Math.hypot(x - u.x, y - u.y);
+    if (d < 0.75) return;
+    const vel = d / Math.max(8, ahora - u.t);
+    ci.pts.push({ x, y, t: ahora, v: u.v * 0.6 + vel * 0.4 });
+    if (ci.pts.length > 160) ci.pts.splice(0, ci.pts.length - 160);
+    // Unas pocas gotitas que salpican a los lados cuando va rápido.
+    if (k >= 1 && vel > 1.2 && Math.random() < 0.1) {
+      const lado = Math.random() < 0.5 ? -1 : 1, nx = -(y - u.y) / d, ny = (x - u.x) / d, a = ci.W * azar(0.6, 0.95);
+      ci.gotas.push({ x: u.x + nx * lado * a, y: u.y + ny * lado * a, r: ci.W * azar(0.05, 0.1), t: ahora });
+    }
+    this._lienzo();
     // El roce del pincel: de vez en cuando y más fuerte cuanto más rápido (nunca metralleta).
     this._viaje = (this._viaje || 0) + d;
     if (this._viaje > 230 && ahora - (this._tRoce || 0) > 280) {
@@ -329,37 +316,117 @@ export class FxEditor {
     if (!this._raf) this._raf = requestAnimationFrame(this._pintar);
   }
 
-  finEstela() { this._ult = null; this._pt = null; this._dir = null; }
+  finEstela() { this._viva = null; }
+
+  /** Los puntos, suavizados con una curva que pasa por todos (Catmull-Rom): ni esquinas ni huecos. */
+  _suave(p) {
+    if (p.length < 3) return p;
+    const r = [p[0]];
+    for (let i = 0; i < p.length - 1; i++) {
+      const a = p[Math.max(0, i - 1)], b = p[i], c = p[i + 1], d = p[Math.min(p.length - 1, i + 2)];
+      const pasos = Math.max(1, Math.min(6, Math.ceil(Math.hypot(c.x - b.x, c.y - b.y) / 7)));
+      for (let s = 1; s <= pasos; s++) {
+        const t = s / pasos, t2 = t * t, t3 = t2 * t;
+        r.push({
+          x: 0.5 * (2 * b.x + (-a.x + c.x) * t + (2 * a.x - 5 * b.x + 4 * c.x - d.x) * t2 + (-a.x + 3 * b.x - 3 * c.x + d.x) * t3),
+          y: 0.5 * (2 * b.y + (-a.y + c.y) * t + (2 * a.y - 5 * b.y + 4 * c.y - d.y) * t2 + (-a.y + 3 * b.y - 3 * c.y + d.y) * t3),
+          t: b.t + (c.t - b.t) * t, v: b.v + (c.v - b.v) * t,
+        });
+      }
+    }
+    return r;
+  }
+
+  /** El contorno de la cinta (ancho `k` veces el suyo) como un camino de bordes suaves. */
+  _contorno(g, P, anchos, k) {
+    const izq = [], der = [];
+    for (let i = 0; i < P.length; i++) {
+      const a = P[Math.max(0, i - 1)], b = P[Math.min(P.length - 1, i + 1)];
+      let tx = b.x - a.x, ty = b.y - a.y;
+      const l = Math.hypot(tx, ty) || 1, hw = anchos[i] * k;
+      tx /= l; ty /= l;
+      izq.push([P[i].x - ty * hw, P[i].y + tx * hw]);
+      der.push([P[i].x + ty * hw, P[i].y - tx * hw]);
+    }
+    const lado = (l, primero) => {
+      if (primero) g.moveTo(l[0][0], l[0][1]); else g.lineTo(l[0][0], l[0][1]);
+      for (let i = 1; i < l.length - 1; i++) g.quadraticCurveTo(l[i][0], l[i][1], (l[i][0] + l[i + 1][0]) / 2, (l[i][1] + l[i + 1][1]) / 2);
+      g.lineTo(l[l.length - 1][0], l[l.length - 1][1]);
+    };
+    g.beginPath();
+    lado(izq, true);
+    lado(der.reverse(), false);
+    g.closePath();
+  }
+
+  /** Una cinta: velo ancho, centro más intenso, el borde de agua y el granito de papel. */
+  _trazo(g, ci, ahora, vida) {
+    const vivos = ci.pts.filter((p) => ahora - p.t < vida);
+    const cab = vivos[vivos.length - 1];
+    if (vivos.length >= 2) {
+      const P = this._suave(vivos);
+      // Junto al objeto, el ancho completo; hacia la cola (lo más viejo) se afila. Más rápido, un poquito más ancho.
+      const anchos = P.map((p) => (ci.W / 2) * Math.pow(Math.max(0, 1 - (ahora - p.t) / vida), 0.55) * (0.82 + 0.28 * Math.min(1, p.v / 1.4)));
+      const f = 1 - Math.pow(Math.min(1, (ahora - cab.t) / vida), 2);
+      const gr = g.createLinearGradient(P[0].x, P[0].y, cab.x, cab.y);
+      gr.addColorStop(0, ci.b);
+      gr.addColorStop(1, ci.a);
+      g.fillStyle = gr;
+      this._contorno(g, P, anchos, 1.3);
+      g.globalAlpha = 0.24 * f;
+      g.fill();
+      this._contorno(g, P, anchos, 1);
+      g.globalAlpha = 0.44 * f;
+      g.fill();
+      // El borde de agua: la acuarela se oscurece un pelito donde se seca.
+      g.strokeStyle = gr;
+      g.lineWidth = 1.1;
+      g.globalAlpha = 0.36 * f;
+      g.stroke();
+      // El granito del papel.
+      g.globalCompositeOperation = "destination-out";
+      g.globalAlpha = 0.5;
+      g.fillStyle = this._grano();
+      this._contorno(g, P, anchos, 1.3);
+      g.fill();
+      g.globalCompositeOperation = "source-over";
+    }
+    for (const o of ci.gotas) {
+      const e = (ahora - o.t) / vida;
+      if (e >= 1) continue;
+      g.globalAlpha = 0.55 * (1 - e);
+      g.fillStyle = ci.a;
+      g.beginPath();
+      g.arc(o.x, o.y, o.r * (1 + e * 0.25), 0, Math.PI * 2);
+      g.fill();
+    }
+    g.globalAlpha = 1;
+  }
 
   _pintar = () => {
     const c = this._cv, g = this._g;
     if (!c || !g) { this._raf = 0; return; }
-    const ahora = performance.now(), vida = this.nivel < 1 ? 700 : 1150, spr = this._gotas(), dpr = this._dpr || 1;
+    const ahora = performance.now(), vida = this.nivel < 1 ? 650 : 1050, dpr = this._dpr || 1;
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, c.width, c.height);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    let vivos = 0;
-    for (const s of this.st) {
-      const e = (ahora - s.t) / vida;
-      if (e >= 1) continue;
-      vivos++;
-      // Al secarse se abre un poquito y se aclara (como la acuarela en papel).
-      const r = s.r * (1 + e * 0.3);
-      g.globalAlpha = s.a * (1 - e) * (1 - e * 0.4);
-      g.drawImage(spr[s.c], s.x - r, s.y - r, r * 2, r * 2);
-    }
-    g.globalAlpha = 1;
+    // Se quedan las cintas que todavía tienen algo fresco (la de ahorita, siempre).
+    this.st = this.st.filter((ci) => ci === this._viva || ahora - ci.pts[ci.pts.length - 1].t < vida);
+    for (const ci of this.st) this._trazo(g, ci, ahora, vida);
     // Lo que está encima de la pintura (el objeto) queda limpio.
     const o = this._obj;
-    if (o && vivos) {
+    if (o && this.st.length) {
       g.globalCompositeOperation = "destination-out";
+      g.globalAlpha = 1;
+      g.fillStyle = "#000"; // sólido: borra todo lo que quede debajo del objeto
       const m = Math.min(o.w, o.h) * 0.04, r = Math.min(12, o.w / 4, o.h / 4);
       g.beginPath();
       if (g.roundRect) g.roundRect(o.x + m, o.y + m, o.w - 2 * m, o.h - 2 * m, r); else g.rect(o.x + m, o.y + m, o.w - 2 * m, o.h - 2 * m);
       g.fill();
       g.globalCompositeOperation = "source-over";
     }
-    if (vivos) { if (vivos < this.st.length * 0.6) this.st = this.st.filter((s) => ahora - s.t < vida); this._raf = requestAnimationFrame(this._pintar); }
+    const frescas = this.st.some((ci) => ahora - ci.pts[ci.pts.length - 1].t < vida);
+    if (frescas) this._raf = requestAnimationFrame(this._pintar);
     else { this.st.length = 0; this._raf = 0; this._obj = null; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height); }
   };
 

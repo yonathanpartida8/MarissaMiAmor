@@ -617,6 +617,14 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Los 82 sonidos, rehechos** (`herramientas/sonidos-editor.mjs`) | con el criterio de los sonidos de un sistema operativo o una app de trabajo: las interacciones (tocar, elegir, soltar, teclas, interruptores, seguros) son **toques táctiles**: un contacto cortísimo y la resonancia de un material suave (polímero, madera mate o metal suave) que se apaga enseguida; lo que se abre o se desliza (menús, recursos, hojas, páginas) es **aire limpio** filtrado, sin temblores; y sólo los avisos (guardar, listo, error, publicar, Detallitos, reacciones) llevan **tono**, de piano eléctrico suave (FM), todos en re mayor y nunca más de dos o tres notas |
 | **Cortos y discretos** | los frecuentes duran alrededor de una décima de segundo y suenan bajito; la sala es casi imperceptible. Cada uno con su propia figura y tres versiones: ningún archivo se repite ni quedó igual a los de las fases 23, 24 y 25 |
 
+### Fase 27: la estela al mover objetos, precisa y más linda
+
+| | |
+| --- | --- |
+| **Precisa** (`canvas/fx.js`) | antes eran manchitas sueltas que salían del borde de atrás según una dirección «suavizada» (se atrasaba en las curvas y a veces salía por otro lado). Ahora es **una sola cinta continua** que pasa exactamente por donde pasó el centro de lo que arrastras (también si el imán lo pegó a una guía), suavizada con una curva que pasa por cada punto: sin esquinas ni huecos aunque lo muevas rápido. Sale de detrás del objeto y nunca pinta encima |
+| **Linda, con el mismo estilo** | sigue siendo acuarela pastel: un velo ancho y un centro más intenso, el borde de agua que deja la acuarela al secarse, el granito de papel y un degradado entre dos tonos que cambian en cada arrastre; se afila hacia la cola y, si vas rápido, salpica unas pocas gotitas. Al soltar (o si te quedas quieta) se seca encogiéndose hacia el objeto |
+| **Medido** | en teléfono y computadora: la pintura está justo sobre el camino recorrido, nada a 70 px de él, nada encima del objeto, al soltar no queda ni un pixel y el arrastre va a 59–60 cuadros por segundo |
+
 ## Cómo está hecho
 
 ```
