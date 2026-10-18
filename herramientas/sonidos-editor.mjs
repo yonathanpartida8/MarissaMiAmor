@@ -201,6 +201,11 @@ const SON = {
   "tecla-codigo": [0.06, (m) => { clic(m, 0, 0.35, 3800); toque(m, 0.001, 1500, 0.35, { caida: 90, contacto: 0 }); }, 0.18],
   "coleccion-abrir": [0.7, (m) => { soplo(m, 0, 0.26, 0.35, 400, 1500, 0.9); fm(m, 0.2, N.D5, 0.16, { dur: 0.44, caida: 5 }); fm(m, 0.26, N.A5, 0.1, { dur: 0.4, caida: 6 }); }, 0.28, SALA],
   "detallito-abrir": [0.5, (m) => { soplo(m, 0, 0.16, 0.4, 800, 2200, 0.9); fm(m, 0.14, N.Fs5, 0.16, { dur: 0.34, caida: 7 }); }, 0.26, SALA],
+  // Fase 30 · los mensajitos: mandarlo (un airecito que sale y dos notas que suben), que te llegue
+  // uno (dos notas tibias de marimba, como un «toc toc») y pegar un sticker (se despega y se aprieta).
+  "mensaje-enviar": [0.42, (m) => { soplo(m, 0, 0.16, 0.32, 700, 2600, 0.9); fm(m, 0.07, N.A4, 0.16, { dur: 0.12, caida: 18 }); fm(m, 0.13, N.D5, 0.17, { dur: 0.3, caida: 8 }); }, 0.26, SALA],
+  "mensaje-llega": [0.62, (m) => { toque(m, 0, N.Fs5, 0.3, { material: W, caida: 22, contacto: 0.15 }); fm(m, 0.005, N.Fs5, 0.1, { dur: 0.3, caida: 9 }); toque(m, 0.13, N.D5, 0.34, { material: W, caida: 16, contacto: 0.15 }); fm(m, 0.135, N.A5, 0.07, { dur: 0.42, caida: 6 }); }, 0.3, SALA],
+  "sticker-pegar": [0.32, (m) => { aire(m, 0, 0.09, 0.55, { f0: 3200, f1: 1400, q: 1.2, forma: (x) => (1 - x) ** 1.5 }); asiento(m, 0.08, 0.5, 170, 90, 0.07); toque(m, 0.085, 980, 0.28, { caida: 60, contacto: 0.3 }); }, 0.26],
   // El gatito del menú, si lo tocas: ronronea bajito.
   "gatito-ronroneo": [1.6, (m) => {
     const am = 22 + azar() * 6, f = (x) => Math.sin(Math.PI * x) ** 1.4;

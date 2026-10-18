@@ -2094,6 +2094,16 @@ export default {
     "assets/sonidos-editor/listo-exito-3.wav",
     "assets/sonidos-editor/listo-exito.wav"
    ],
+   "mensaje-enviar": [
+    "assets/sonidos-editor/mensaje-enviar-2.wav",
+    "assets/sonidos-editor/mensaje-enviar-3.wav",
+    "assets/sonidos-editor/mensaje-enviar.wav"
+   ],
+   "mensaje-llega": [
+    "assets/sonidos-editor/mensaje-llega-2.wav",
+    "assets/sonidos-editor/mensaje-llega-3.wav",
+    "assets/sonidos-editor/mensaje-llega.wav"
+   ],
    "menu-mantener": [
     "assets/sonidos-editor/menu-mantener-2.wav",
     "assets/sonidos-editor/menu-mantener-3.wav",
@@ -2227,6 +2237,11 @@ export default {
     "assets/sonidos-editor/soltar-objeto-2.wav",
     "assets/sonidos-editor/soltar-objeto-3.wav",
     "assets/sonidos-editor/soltar-objeto.wav"
+   ],
+   "sticker-pegar": [
+    "assets/sonidos-editor/sticker-pegar-2.wav",
+    "assets/sonidos-editor/sticker-pegar-3.wav",
+    "assets/sonidos-editor/sticker-pegar.wav"
    ],
    "subir-hoja": [
     "assets/sonidos-editor/subir-hoja-2.wav",

@@ -593,9 +593,10 @@ async function latir() {
     const r = await SRV.latido();
     // Sólo lo que se ve (el «visto hace…» cambia en cada latido y no debe repintar nada).
     const firma = (p) => (p ? [p.usuario, !!p.en_linea, p.nombre, p.foto_v, p.novios, p.cumple].join("|") : "");
-    const antes = app.amorNuevos, parejaAntes = firma(app.pareja), rxAntes = app.amorReacciones || 0;
+    const antes = app.amorNuevos, parejaAntes = firma(app.pareja), rxAntes = app.amorReacciones || 0, chatAntes = app.amorChat || 0;
     app.amorNuevos = r.nuevos || 0;
     app.amorReacciones = r.reacciones || 0;
+    app.amorChat = r.chat || 0;
     app.pareja = r.pareja;
     PF.poner({ pareja: r.pareja || null });
     // El globito va en Exportar y en «Más» (en el teléfono, Exportar vive dentro de «Más»).
@@ -617,13 +618,19 @@ async function latir() {
       app.sonidos?.sonar("brillo");
       aviso(`${PF.nombreDe(r.pareja) || "Tu amorcito"} reaccionó a tu página`, 7000, "", { t: "Verla", al: () => app.detallitos.abrir(null, "coleccion") });
     }
-    if (app.amorNuevos !== antes || app.amorReacciones !== rxAntes || firma(app.pareja) !== parejaAntes) dispatchEvent(new CustomEvent("ed-amor"));
+    // Un mensajito nuevo (si el chat no está abierto: ahí ya llegó solo).
+    if (app.amorChat > chatAntes && !(app.detallitos.abierto && app.detallitos.actual === "chat")) {
+      app.sonidos?.sonar("mensaje-llega");
+      aviso(`${PF.nombreDe(r.pareja) || "Tu amorcito"} te mandó ${app.amorChat - chatAntes === 1 ? "un mensajito" : "mensajitos"}`, 7000, "", { t: "Verlos", al: () => app.detallitos.abrir(null, "chat") });
+    }
+    if (app.amorNuevos !== antes || app.amorReacciones !== rxAntes || app.amorChat !== chatAntes || firma(app.pareja) !== parejaAntes) dispatchEvent(new CustomEvent("ed-amor"));
   } catch (e) { /* sin conexión: la próxima */ }
 }
 setTimeout(latir, 4000);
-setInterval(latir, 45000);
+setInterval(latir, 25000);
 addEventListener("ed-cuenta", () => setTimeout(latir, 300));
 addEventListener("ed-detallito-visto", () => setTimeout(latir, 300));
+addEventListener("ed-chat-visto", () => setTimeout(latir, 300));
 document.addEventListener("visibilitychange", () => { if (!document.hidden) latir(); });
 
 /** Duplica un librito (o, con `desde`, una copia completa guardada) como uno nuevo, aparte. */

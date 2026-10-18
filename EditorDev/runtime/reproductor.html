@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Vista previa</title>
 <link rel="stylesheet" href="librito.css">
-<style>html,body{margin:0;height:100%;background:#111;overflow:hidden}</style>
+<style>html,body{margin:0;height:100%;background:#111;overflow:hidden;touch-action:pan-x pan-y}</style>
 </head>
 <body>
 <div id="librito"></div>
@@ -20,6 +20,9 @@
 <script src="rt-musica.js"></script>
 <script src="rt-player.js"></script>
 <script>
+  /* Dentro del editor (Probar, Detallitos): pellizcar o tocar dos veces aquí no agranda TODO el editor
+     (la foto que se amplía dentro de la página maneja sus propios dedos). */
+  ["gesturestart", "gesturechange"].forEach(function (t) { document.addEventListener(t, function (ev) { ev.preventDefault(); }, { passive: false }); });
   /* La vista previa del editor: el editor le manda el proyecto entero y las
      direcciones de cada archivo (las fotos subidas viven en el navegador). */
   addEventListener("message", function (ev) {

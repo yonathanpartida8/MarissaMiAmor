@@ -31,6 +31,7 @@ import { formularioCuenta } from "./cuenta.js";
 import { cambiar, ajustar, letrasListas, sinMovimiento } from "./transiciones.js";
 import * as PF from "./perfil.js";
 import * as A from "./album-arte.js";
+import { ICONO_CHAT } from "./chat.js";
 
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 
@@ -192,6 +193,7 @@ export class MenuPrincipal {
     if (nuevos && !g) r.tarjetaDet.append(el("em.dt-globo", { text: String(nuevos) }));
     else if (!nuevos && g) g.remove();
     else if (g && g.textContent !== String(nuevos)) g.textContent = String(nuevos);
+    this._globoChat();
     // Llegó (o se quitó) una foto: sólo cambia la de su polaroid.
     for (const [quien, nodo] of [["yo", r.fotoYo], ["pareja", r.fotoPa]]) {
       if (!nodo) continue;
@@ -206,6 +208,27 @@ export class MenuPrincipal {
       const poner = () => { r.stats.replaceWith(s); r.stats = s; };
       if (seVe) ajustar(r.vistaInicio, poner, [s]); else poner();
     }
+  }
+
+  /** Con tu amorcito vinculado: los mensajitos (con su globito de los que no has leído). */
+  _irChat() {
+    const pa = SRV.conectado() ? PF.datos().pareja : null;
+    if (!pa) { this.r.chatG = null; return null; }
+    this.r.chatG = el("em.dt-globo", { hidden: "" });
+    const b = el("button.mp-chat-ir", { type: "button", style: { "--i": 4 }, onClick: (e) => this.app.detallitos.abrir(e.currentTarget, "chat") }, [
+      el("i.mp-chat-ico", { html: ICONO_CHAT }),
+      el("span.mp-chat-t", {}, [el("b", { text: "Mensajitos" }), el("small", { text: `Escríbele a ${PF.nombreDe(pa)}` })]),
+      this.r.chatG, el("span.mp-carta-ir", { html: FLECHA }),
+    ]);
+    this.r.chatB = b;
+    this._globoChat();
+    return b;
+  }
+  _globoChat() {
+    const g = this.r?.chatG, n = this.app.amorChat || 0;
+    if (!g) return;
+    g.hidden = !n; g.textContent = String(n);
+    this.r.chatB.classList.toggle("con-nuevos", !!n);
   }
 
   _clave() { const d = PF.datos(); return SRV.conectado() ? (d.pareja ? "pareja" : "sola") : "fuera"; }
@@ -351,6 +374,7 @@ export class MenuPrincipal {
       el("div.mp-dias-caja", { style: { "--i": 1 } }, [r.stats]),
       el("div.mp-crear-fila", { style: { "--i": 2 } }, [crear, el("i.mp-crear-chispa.c1", { html: A.DESTELLO_LLENO }), el("i.mp-crear-chispa.c2", { html: A.DESTELLO_LLENO }), el("i.mp-crear-chispa.c3", { html: A.DESTELLO }), this._gatito()]),
       el("p.mp-saludo", { style: { "--i": 3 } }, [r.saludo, el("i", { html: ico("corazon") }), seguir]),
+      this._irChat(),
       el("div.mp-cartas", {}, [r.tarjetaDet, libritos, perfil]),
     ]);
     return r.vistaInicio;

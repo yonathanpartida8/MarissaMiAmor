@@ -256,6 +256,13 @@ export const borrarDetallito = (id) => pedir("detallitos/" + encodeURIComponent(
 /* Fase 22: reaccionar a una página de tu amorcito («» = quitarla), ver las suyas y la portadita al mandar. */
 export const reaccionar = (id, reaccion) => pedir(`detallitos/${encodeURIComponent(id)}/reaccion`, { method: "PUT", body: { reaccion: reaccion || "" } });
 export const reaccionesVistas = () => pedir("detallitos/reacciones/vistas", { method: "POST", body: {} });
+/* Los mensajitos de los dos (Fase 30). */
+export const chat = (p = {}) => pedir("chat?" + new URLSearchParams(Object.fromEntries(Object.entries(p).filter(([, v]) => v != null && v !== "").map(([k, v]) => [k, String(v)]))));
+export const mandarMensaje = ({ texto = "", gif = null }) => pedir("chat", { method: "POST", body: { texto, gif } }).then((d) => d.mensaje);
+export const reaccionarMensaje = (id, reaccion) => pedir(`chat/${encodeURIComponent(id)}/reaccion`, { method: "PUT", body: { reaccion: reaccion || "" } }).then((d) => d.mensaje);
+export const pegarSticker = (id, st) => pedir(`chat/${encodeURIComponent(id)}/sticker`, { method: "POST", body: st }).then((d) => d.mensaje);
+export const borrarMensaje = (id) => pedir("chat/" + encodeURIComponent(id), { method: "DELETE" });
+export const chatVistos = () => pedir("chat/vistos", { method: "POST", body: {} });
 export async function subirPortadita(id, blob) {
   const r = await enviar("PUT", `detallitos/${encodeURIComponent(id)}/portadita`, blob, blob.type || "image/jpeg");
   if (r.status < 200 || r.status >= 300) throw Object.assign(new Error(r.datos?.error || `${NOMBRE} contestó ${r.status}`), { status: r.status });

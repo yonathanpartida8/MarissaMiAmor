@@ -863,3 +863,224 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 .dt-ver-escena.grande .dt-ver-luz { inset: 10% 0; opacity: .45; }
 .dt-ver-escena.grande .dt-ver-cerrar { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); left: 50%; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px 0 10px; border: 1px solid rgba(255, 255, 255, .35); border-radius: 99px; background: rgba(20, 10, 18, .62); color: #fff; font: 500 13px Jost, system-ui, sans-serif; transform: translateX(-50%); }
 .dt-ver-escena.grande .dt-ver-cerrar .ed-ico { width: 16px; height: 16px; }
+
+/* ═══ Fase 30 · Mensajitos (el chat de los dos), el detallito como la foto y nada de zoom ═══ */
+.dt-capa { --ch-suya: rgba(255, 255, 255, .97); --ch-papel: rgba(255, 255, 255, .96); --ch-borde: rgba(216, 57, 122, .16); --ch-sombra: rgba(120, 40, 80, .13); --ch-pastilla: rgba(255, 255, 255, .74); --ch-mia: linear-gradient(140deg, #ff9cc6 0%, #ec5f98 55%, #d8397a 100%); }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .dt-capa { --ch-suya: #3a2335; --ch-papel: #2c1b29; --ch-borde: rgba(255, 156, 198, .16); --ch-sombra: rgba(0, 0, 0, .38); --ch-pastilla: rgba(58, 35, 53, .82); --ch-mia: linear-gradient(140deg, #f0789f 0%, #d64f87 55%, #b8306b 100%); } }
+:root[data-tema="oscuro"] .dt-capa { --ch-suya: #3a2335; --ch-papel: #2c1b29; --ch-borde: rgba(255, 156, 198, .16); --ch-sombra: rgba(0, 0, 0, .38); --ch-pastilla: rgba(58, 35, 53, .82); --ch-mia: linear-gradient(140deg, #f0789f 0%, #d64f87 55%, #b8306b 100%); }
+
+/* Sin zoom del navegador en las pantallas de la app (pellizcar o doble toque): sólo se desliza. */
+.dt-capa, .dt-vista, .mp-capa, .ch-lista, .ch-rejilla, .ch-menu { touch-action: pan-x pan-y; }
+@media (pointer: coarse) { .dt-input, .pf-input, .cu-campo input, .ch-input, .ch-buscar { font-size: 16px; } }
+
+/* Ir a los mensajitos (en la colección y en el menú principal) */
+.dt-ir-chat { display: flex; align-items: center; gap: 14px; width: 100%; border: 0; text-align: left; font: inherit; color: var(--amor-tinta); cursor: pointer; transition: transform .25s cubic-bezier(.3, 1.4, .5, 1); }
+.dt-ir-chat:active { transform: scale(.98); }
+.dt-chat-ico { flex: none; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 17px; background: var(--ch-mia); color: #fff; box-shadow: 0 8px 18px rgba(216, 57, 122, .3); }
+.dt-chat-ico svg { width: 27px; height: 27px; }
+.dt-chat-t { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.dt-chat-t b { font: 400 20px/1.1 "Patrick Hand", sans-serif; }
+.dt-chat-t small { color: var(--amor-suave); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dt-ir-chat > .dt-globo { margin: 0; }
+.con-nuevos .dt-chat-ico, .con-nuevos .mp-chat-ico { animation: dtLate 1.6s ease-in-out infinite; }
+.mp-chat-ir { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 12px; padding: 10px 12px 10px 10px; border: 0; border-radius: 18px; background: var(--pp-papel, #fff); color: var(--pp-tinta, #4a2338); box-shadow: 0 8px 20px rgba(110, 50, 70, .14); text-align: left; cursor: pointer; transition: transform .25s cubic-bezier(.3, 1.4, .5, 1); }
+.mp-chat-ir:active { transform: scale(.98); }
+.mp-chat-ico { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 15px; background: linear-gradient(140deg, #ff9cc6, #d8397a); color: #fff; }
+.mp-chat-ico svg { width: 25px; height: 25px; }
+.mp-chat-t { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.mp-chat-t b { font: 400 21px/1.05 var(--pp-letra, "Patrick Hand", sans-serif); }
+.mp-chat-t small { font: 400 15px/1.15 var(--pp-letra, "Patrick Hand", sans-serif); color: var(--pp-suave, #8d5f78); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-chat-ir > .dt-globo { margin: 0; }
+.mp-chat-ir .mp-carta-ir { margin: 0; background: rgba(216, 57, 122, .12); }
+
+/* El chat ocupa toda la pantalla: su lista se desliza y lo de escribir se queda abajo. */
+.dt-capa.en-chat .dt-vista { overflow: hidden; padding: 0; }
+.dt-capa.en-chat .dt-escena { height: 100%; }
+.ch { height: 100%; display: flex; flex-direction: column; gap: 0; }
+.ch > * { animation: none; }
+.ch-marco { position: relative; flex: 1; min-height: 0; display: flex; }
+.ch-lista { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; overflow-anchor: none; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 6px 14px 14px; scrollbar-width: thin; }
+.ch-lista > .dt-cargando { height: 100%; }
+.ch-inicio { display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 28px; padding: 10px 0 4px; color: var(--amor-suave); font: 400 16px/1.2 "Patrick Hand", sans-serif; }
+.ch-inicio-av { display: flex; align-items: center; gap: 4px; }
+.ch-inicio-av > i { width: 16px; height: 16px; color: var(--amor-2); }
+.ch-inicio-av svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+.ch-girando { width: 22px; height: 22px; border-radius: 50%; border: 3px solid rgba(216, 57, 122, .2); border-top-color: var(--amor-2); animation: dtGira .8s linear infinite; }
+.ch-dia { display: flex; justify-content: center; margin: 14px 0 6px; }
+.ch-dia span { padding: 4px 12px; border-radius: 99px; background: var(--ch-pastilla); color: var(--amor-suave); font: 600 12px/1.3 Jost, system-ui, sans-serif; box-shadow: 0 2px 8px var(--ch-sombra); }
+.ch-fila { position: relative; display: flex; align-items: flex-end; gap: 6px; margin-top: 3px; }
+.ch-fila.primero { margin-top: 10px; }
+.ch-fila.con-rx { margin-bottom: 13px; }
+.ch-fila.mio { justify-content: flex-end; }
+.ch-av { flex: none; width: 30px; visibility: hidden; }
+.ch-fila.ultimo .ch-av { visibility: visible; }
+.ch-av-i { --tam: 30px; }
+.ch-cuerpo { display: flex; flex-direction: column; min-width: 0; max-width: min(78%, 470px); }
+.mio .ch-cuerpo { align-items: flex-end; }
+.suyo .ch-cuerpo { align-items: flex-start; }
+.ch-burbuja { position: relative; display: block; max-width: 100%; margin: 0; padding: 9px 14px 10px; border: 0; border-radius: 21px; font: 400 16px/1.38 Jost, system-ui, sans-serif; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; cursor: pointer; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; transition: transform .2s cubic-bezier(.3, 1.5, .5, 1), box-shadow .2s; }
+.mio .ch-burbuja { background: var(--ch-mia); color: #fff; box-shadow: 0 6px 16px rgba(216, 57, 122, .26); }
+.suyo .ch-burbuja { background: var(--ch-suya); color: var(--amor-tinta); box-shadow: 0 4px 14px var(--ch-sombra); }
+.mio:not(.primero) .ch-burbuja { border-top-right-radius: 8px; }
+.mio:not(.ultimo) .ch-burbuja { border-bottom-right-radius: 8px; }
+.mio.ultimo .ch-burbuja { border-bottom-right-radius: 5px; }
+.suyo:not(.primero) .ch-burbuja { border-top-left-radius: 8px; }
+.suyo:not(.ultimo) .ch-burbuja { border-bottom-left-radius: 8px; }
+.suyo.ultimo .ch-burbuja { border-bottom-left-radius: 5px; }
+.ch-burbuja:active, .ch-burbuja.elegida { transform: scale(1.035); }
+.ch-burbuja.elegida { box-shadow: 0 0 0 3px rgba(255, 156, 198, .55), 0 10px 26px var(--ch-sombra); }
+.ch-burbuja.gif { padding: 4px; }
+.ch-gif { display: block; max-width: 100%; height: auto; border-radius: 17px; background: rgba(216, 57, 122, .08); }
+.ch-burbuja.gif .ch-texto { display: block; padding: 6px 10px 4px; }
+.ch-burbuja.emoji { padding: 0 2px; background: none !important; box-shadow: none !important; font-size: 46px; line-height: 1.12; }
+.ch-hora { margin: 4px 8px 0; color: var(--amor-suave); font: 400 11.5px/1.2 Jost, system-ui, sans-serif; }
+.ch-hora:empty { display: none; }
+.ch-fila.enviando .ch-burbuja { opacity: .72; }
+.ch-fila.llega { animation: chLlega .46s cubic-bezier(.2, .9, .3, 1.25) both; }
+.mio.llega { transform-origin: right bottom; }
+.suyo.llega { transform-origin: left bottom; }
+@keyframes chLlega { from { opacity: 0; transform: translateY(16px) scale(.9); } }
+.ch-rx { position: absolute; bottom: -14px; z-index: 3; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--ch-papel); box-shadow: 0 3px 10px var(--ch-sombra); }
+.mio .ch-rx { left: -8px; }
+.suyo .ch-rx { right: -8px; }
+.ch-rx svg { width: 21px; height: 21px; }
+.ch-rx.nueva { animation: chRx .7s cubic-bezier(.3, 1.8, .5, 1) both; }
+@keyframes chRx { 0% { transform: scale(0) rotate(-30deg); } 60% { transform: scale(1.5) rotate(8deg); } }
+.ch-pegados { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.ch-sticker { position: absolute; width: 76px; height: 76px; object-fit: contain; transform: translate(-50%, -50%) rotate(var(--r, 0deg)) scale(var(--s, 1)); filter: drop-shadow(0 3px 5px rgba(60, 20, 40, .28)); }
+.ch-sticker.nuevo { animation: chPega .55s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes chPega { 0% { opacity: 0; transform: translate(-50%, -50%) rotate(calc(var(--r, 0deg) - 25deg)) scale(calc(var(--s, 1) * 1.9)); } 55% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--r, 0deg)) scale(calc(var(--s, 1) * .88)); } }
+.ch-vacio { display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 360px; margin: 9vh auto 0; padding: 22px 18px; border-radius: 24px; background: var(--ch-pastilla); text-align: center; box-shadow: 0 8px 22px var(--ch-sombra); }
+.ch-vacio b { font: 700 28px/1.05 Caveat, "Segoe Script", cursive; color: var(--amor-2); }
+.ch-vacio p { margin: 0 0 6px; font-size: 14px; line-height: 1.4; color: var(--amor-suave); }
+.ch-vacio-ico { display: grid; place-items: center; width: 60px; height: 60px; border-radius: 21px; background: var(--ch-mia); color: #fff; box-shadow: 0 10px 22px rgba(216, 57, 122, .3); animation: dtFlota 3.4s ease-in-out infinite; }
+.ch-vacio-ico svg { width: 34px; height: 34px; }
+.ch-sugeridos { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.ch-sugerido, .ch-chip { min-height: 36px; padding: 0 14px; border: 1.5px solid var(--ch-borde); border-radius: 99px; background: var(--ch-papel); color: var(--amor-tinta); font: 500 14px/1 Jost, system-ui, sans-serif; cursor: pointer; transition: transform .2s cubic-bezier(.3, 1.6, .5, 1), background .2s; }
+.ch-sugerido:active, .ch-chip:active { transform: scale(.94); }
+.ch-chip.on { background: var(--amor-2); border-color: transparent; color: #fff; }
+.ch-bajar { position: absolute; right: 14px; bottom: 12px; z-index: 4; display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 12px 0 8px; border: 0; border-radius: 99px; background: var(--ch-papel); color: var(--amor-2); font: 600 13px/1 Jost, system-ui, sans-serif; box-shadow: 0 6px 16px var(--ch-sombra); cursor: pointer; animation: chLlega .35s cubic-bezier(.2, .9, .3, 1.25); }
+.ch-bajar[hidden] { display: none; }
+.ch-bajar i { width: 18px; height: 18px; }
+.ch-bajar svg { display: block; width: 100%; height: 100%; }
+/* Escribir */
+.ch-escribir { flex: none; display: flex; align-items: flex-end; gap: 6px; padding: 8px 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
+.ch-caja { flex: 1; min-width: 0; display: flex; border: 1.5px solid var(--ch-borde); border-radius: 24px; background: var(--ch-papel); box-shadow: 0 4px 14px var(--ch-sombra); transition: border-color .15s, box-shadow .15s; }
+.ch-caja:focus-within { border-color: var(--amor-2); box-shadow: 0 0 0 4px rgba(216, 57, 122, .14); }
+.ch-input { flex: 1; min-width: 0; height: 46px; max-height: 124px; margin: 0; padding: 12px 16px; border: 0; background: none; color: var(--amor-tinta); font: 400 16px/1.35 Jost, system-ui, sans-serif; resize: none; outline: none; box-sizing: border-box; -webkit-user-select: text; user-select: text; }
+.ch-input::placeholder { color: var(--amor-suave); opacity: .8; }
+.ch-b { flex: none; display: grid; place-items: center; width: 46px; height: 46px; padding: 0; border: 0; border-radius: 50%; background: var(--ch-papel); color: var(--amor-2); box-shadow: 0 4px 14px var(--ch-sombra); cursor: pointer; transition: transform .2s cubic-bezier(.3, 1.6, .5, 1), background .2s, color .2s; }
+.ch-b:active { transform: scale(.9); }
+.ch-b.on { background: var(--amor-2); color: #fff; }
+.ch-b .ed-ico, .ch-b svg { width: 22px; height: 22px; }
+.ch-b-gif b { padding: 3px 4px 2px; border: 2px solid currentColor; border-radius: 7px; font: 800 11px/1 system-ui, sans-serif; letter-spacing: .04em; }
+.ch-mandar { flex: none; display: grid; place-items: center; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 50%; background: var(--ch-mia); color: #fff; box-shadow: 0 8px 18px rgba(216, 57, 122, .34); cursor: pointer; transition: transform .2s cubic-bezier(.3, 1.6, .5, 1), opacity .2s; }
+.ch-mandar svg { width: 23px; height: 23px; margin-left: -2px; }
+.ch-mandar.vacio { opacity: .55; box-shadow: none; }
+.ch-mandar:active { transform: scale(.88) rotate(-10deg); }
+/* Pegando un sticker: los mensajitos se ofrecen para recibirlo */
+.ch-pegando { flex: none; display: flex; align-items: center; gap: 10px; margin: 0 10px; padding: 8px 8px 8px 10px; border-radius: 18px; background: var(--ch-papel); color: var(--amor-tinta); font: 400 17px/1.2 "Patrick Hand", sans-serif; box-shadow: 0 6px 18px var(--ch-sombra); animation: chLlega .35s cubic-bezier(.2, .9, .3, 1.25); }
+.ch-pegando[hidden] { display: none; }
+.ch-pegando img { flex: none; width: 44px; height: 44px; object-fit: contain; animation: dtFlota 2.4s ease-in-out infinite; }
+.ch-pegando span { flex: 1; min-width: 0; }
+.ch-pegando-x { flex: none; min-height: 36px; padding: 0 12px; border: 0; border-radius: 12px; background: rgba(216, 57, 122, .1); color: var(--amor-2); font: 600 13px/1 Jost, system-ui, sans-serif; cursor: pointer; }
+.ch.pegando .ch-burbuja { outline: 2px dashed rgba(216, 57, 122, .5); outline-offset: 3px; cursor: crosshair; }
+.ch.pegando .ch-fila.destino .ch-burbuja { outline: 3px solid var(--amor-2); }
+/* GIFs y stickers */
+.ch-panel { flex: none; display: flex; flex-direction: column; height: min(50vh, 420px); margin: 0 8px 2px; border-radius: 24px; background: var(--ch-papel); box-shadow: 0 -6px 26px var(--ch-sombra); overflow: hidden; }
+.ch-panel[hidden] { display: none; }
+.ch-panel-cab { display: flex; align-items: center; gap: 8px; padding: 10px 10px 4px; }
+.ch-tabs { display: flex; flex: 1; gap: 4px; padding: 4px; border-radius: 15px; background: rgba(216, 57, 122, .08); }
+.ch-tab { flex: 1; min-height: 36px; border: 0; border-radius: 11px; background: none; color: var(--amor-suave); font: 600 14px/1 Jost, system-ui, sans-serif; cursor: pointer; transition: background .2s, color .2s; }
+.ch-tab.on { background: var(--ch-suya); color: var(--amor-2); box-shadow: 0 2px 8px var(--ch-sombra); }
+.ch-panel-x { flex: none; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: rgba(216, 57, 122, .08); color: var(--amor-2); cursor: pointer; }
+.ch-panel-x .ed-ico, .ch-panel-x svg { width: 18px; height: 18px; }
+.ch-buscar-caja { display: flex; align-items: center; gap: 8px; margin: 6px 10px 4px; padding: 0 12px; border: 1.5px solid var(--ch-borde); border-radius: 15px; background: var(--ch-suya); }
+.ch-buscar-caja > i { flex: none; width: 18px; height: 18px; color: var(--amor-suave); }
+.ch-buscar-caja svg { display: block; width: 100%; height: 100%; }
+.ch-buscar { flex: 1; min-width: 0; height: 42px; border: 0; background: none; color: var(--amor-tinta); font: 400 16px/1 Jost, system-ui, sans-serif; outline: none; -webkit-user-select: text; user-select: text; }
+.ch-chips { flex: none; display: flex; gap: 6px; padding: 4px 10px 8px; overflow-x: auto; scrollbar-width: none; touch-action: pan-x; }
+.ch-chips::-webkit-scrollbar { display: none; }
+.ch-chip { flex: none; min-height: 32px; font-size: 13px; }
+.ch-rejilla { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 10px 8px; columns: 3 96px; column-gap: 6px; }
+.ch-rejilla > .dt-cargando, .ch-nada { column-span: all; }
+.ch-nada { margin: 14px 4px; color: var(--amor-suave); font-size: 14px; text-align: center; }
+.ch-mini { display: block; width: 100%; margin: 0 0 6px; padding: 0; border: 0; border-radius: 13px; overflow: hidden; background: rgba(216, 57, 122, .08); cursor: pointer; break-inside: avoid; transition: transform .2s cubic-bezier(.3, 1.6, .5, 1); }
+.ch-mini.st { background: repeating-conic-gradient(rgba(216, 57, 122, .07) 0 25%, transparent 0 50%) 0 0 / 16px 16px; }
+.ch-mini:active { transform: scale(.93); }
+.ch-mini img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ch-mini.st img { object-fit: contain; }
+.ch-giphy { flex: none; padding: 4px 12px 8px; color: var(--amor-suave); font: 700 10.5px/1 system-ui, sans-serif; letter-spacing: .06em; text-align: right; text-transform: uppercase; opacity: .75; }
+/* Tocar un mensajito: reaccionar, pegarle un sticker, copiar o borrar */
+.ch-velo { position: fixed; inset: 0; z-index: 59; background: rgba(30, 10, 25, .14); animation: chVelo .2s ease both; }
+@keyframes chVelo { from { opacity: 0; } }
+.ch-menu { position: fixed; z-index: 60; display: flex; flex-direction: column; gap: 6px; width: min(300px, calc(100vw - 20px)); padding: 8px; border-radius: 22px; background: var(--ch-papel); color: var(--amor-tinta); box-shadow: 0 16px 40px rgba(60, 20, 40, .28); font-family: Jost, system-ui, sans-serif; animation: chMenu .26s cubic-bezier(.2, .9, .3, 1.25) both; }
+@keyframes chMenu { from { opacity: 0; transform: scale(.85); } }
+.ch-menu-rx { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; padding: 2px; border-radius: 16px; background: rgba(216, 57, 122, .07); }
+.ch-menu-rxb { display: grid; place-items: center; height: 46px; padding: 0; border: 0; border-radius: 13px; background: none; cursor: pointer; transition: transform .25s cubic-bezier(.3, 1.7, .5, 1), background .2s; }
+.ch-menu-rxb svg { width: 31px; height: 31px; }
+.ch-menu-rxb:hover, .ch-menu-rxb:focus-visible { transform: translateY(-3px) scale(1.12); }
+.ch-menu-rxb:active { transform: scale(.88); }
+.ch-menu-rxb.on { background: rgba(255, 156, 198, .35); }
+.ch-menu-acc { display: flex; flex-direction: column; }
+.ch-menu-b { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 12px; border: 0; border-radius: 13px; background: none; color: inherit; font: 500 15px/1 Jost, system-ui, sans-serif; text-align: left; cursor: pointer; }
+.ch-menu-b:hover, .ch-menu-b:focus-visible { background: rgba(216, 57, 122, .08); }
+.ch-menu-b .ed-ico { width: 19px; height: 19px; color: var(--amor-2); }
+.ch-menu-b.peligro { color: #d23c5a; }
+.ch-menu-b.peligro .ed-ico { color: inherit; }
+
+/* — Ver un detallito, como la foto: el celular grande y todo lo demás debajo (o a un lado, en la compu) — */
+.dt-capa.en-ver .dt-marco { max-width: 1160px; }
+.dt-ver.dt-ver-movil { display: grid; justify-items: center; gap: 16px 34px; }
+.dt-ver-lado { display: flex; flex-direction: column; align-items: center; gap: 12px; width: min(100%, 520px); min-width: 0; }
+.dt-ver-lado > .dt-ver-msg { margin: 0; max-width: 100%; font: 700 31px/1.05 Caveat, "Segoe Script", cursive; color: var(--amor-2); text-align: center; overflow-wrap: anywhere; }
+.dt-ver-lado > .dt-ver-de { font: 400 15px/1.2 "Patrick Hand", sans-serif; }
+.dt-ver-acc { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+.dt-pildora { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; min-height: 52px; padding: 8px 14px; border: 0; border-radius: 99px; color: #fff; font: 400 18px/1.05 "Patrick Hand", sans-serif; text-align: left; cursor: pointer; transition: transform .2s cubic-bezier(.3, 1.6, .5, 1), box-shadow .2s, opacity .2s; }
+.dt-pildora .ed-ico { flex: none; width: 21px; height: 21px; }
+.dt-pildora span { min-width: 0; }
+.dt-pildora.rosa { background: linear-gradient(135deg, #ff9cc6, #e0558f 60%, #d8397a); box-shadow: 0 10px 22px rgba(216, 57, 122, .32); }
+.dt-pildora.lila { background: linear-gradient(135deg, #c9b6ff, #9f86f0 60%, #8a6be0); box-shadow: 0 10px 22px rgba(130, 100, 220, .3); }
+.dt-pildora:hover { transform: translateY(-2px); }
+.dt-pildora:active { transform: scale(.95); }
+.dt-pildora:disabled { opacity: .6; }
+.dt-ver-lado .dt-rx { width: 100%; padding: 6px 0 0; background: none !important; box-shadow: none !important; }
+.dt-ver-lado .dt-rx-t { font-size: 19px; }
+.dt-ver-lado .dt-rx-b { font: 400 14px/1.1 "Patrick Hand", sans-serif; }
+.dt-ver-lado .dt-rx-b svg { width: 42px; height: 42px; opacity: .92; }
+.dt-ver-lado .dt-rx-b.on svg { transform: scale(1.2); }
+.dt-ver-chat { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px; padding: 0 14px; border: 1.5px dashed rgba(216, 57, 122, .35); border-radius: 18px; background: none; color: var(--amor-2); font: 400 17px/1.1 "Patrick Hand", sans-serif; cursor: pointer; transition: background .2s, transform .2s; }
+.dt-ver-chat:hover { background: rgba(216, 57, 122, .06); }
+.dt-ver-chat:active { transform: scale(.97); }
+.dt-ver-chat i { width: 22px; height: 22px; }
+.dt-ver-chat svg { display: block; width: 100%; height: 100%; }
+.dt-ver-mas { width: 100%; }
+.dt-ver-mas:empty { display: none; }
+.dt-ver-mas-t { display: flex; align-items: center; justify-content: space-between; margin: 8px 2px 8px; font: 700 25px/1 Caveat, "Segoe Script", cursive; color: var(--amor-2); }
+.dt-ver-todos { min-height: 34px; padding: 0 12px; border: 0; border-radius: 99px; background: rgba(216, 57, 122, .09); color: var(--amor-2); font: 600 13px/1 Jost, system-ui, sans-serif; cursor: pointer; }
+.dt-ver-lista { display: flex; flex-direction: column; gap: 8px; }
+.dt-renglon { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 66px; padding: 8px 12px 8px 8px; border: 0; border-radius: 18px; background: var(--ch-pastilla); color: var(--amor-tinta); text-align: left; box-shadow: 0 4px 14px var(--ch-sombra); cursor: pointer; transition: transform .22s cubic-bezier(.3, 1.5, .5, 1); }
+.dt-renglon:hover { transform: translateX(3px); }
+.dt-renglon:active { transform: scale(.98); }
+.dt-renglon-mini { position: relative; flex: none; display: grid; place-items: center; width: 50px; height: 50px; border-radius: 13px; overflow: hidden; background: var(--c); color: rgba(255, 255, 255, .9); }
+.dt-renglon-mini > i { width: 20px; height: 20px; }
+.dt-renglon-mini > i svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+.dt-renglon-mini img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.dt-renglon-t { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.dt-renglon-t b { font: 400 17px/1.15 "Patrick Hand", sans-serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dt-renglon-t small { color: var(--amor-suave); font-size: 12.5px; }
+.dt-renglon-rx { flex: none; display: flex; flex-direction: column; align-items: center; gap: 1px; color: var(--amor-suave); font: 400 13px/1 "Patrick Hand", sans-serif; }
+.dt-renglon-rx svg { width: 26px; height: 26px; }
+.dt-renglon-nuevo { flex: none; padding: 3px 9px; border-radius: 99px; background: var(--ch-mia); color: #fff; font: 700 10.5px/1.2 system-ui, sans-serif; font-style: normal; }
+.dt-ver-quitar { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; margin-top: 2px; padding: 0 12px; border: 0; border-radius: 12px; background: none; color: var(--amor-suave); font: 500 13px/1 Jost, system-ui, sans-serif; cursor: pointer; opacity: .85; }
+.dt-ver-quitar:hover { color: #d23c5a; opacity: 1; }
+.dt-ver-quitar .ed-ico { width: 16px; height: 16px; }
+@media (min-width: 860px) {
+  .dt-ver.dt-ver-movil { grid-template-columns: auto minmax(330px, 1fr); align-items: start; justify-items: stretch; }
+  .dt-ver.dt-ver-movil > .dt-ver-escena { position: sticky; top: 4px; }
+  .dt-ver-lado { align-items: flex-start; width: 100%; max-width: 560px; padding-top: 22px; }
+  .dt-ver-lado > .dt-ver-msg { font-size: 40px; text-align: left; }
+  .dt-ver-lado .dt-rx { align-items: flex-start; }
+}
+@media (max-width: 380px) { .dt-pildora { font-size: 16px; padding: 8px 10px; } .dt-ver-lado .dt-rx-b svg { width: 36px; height: 36px; } }
+@media (prefers-reduced-motion: reduce) { .ch-fila.llega, .ch-rx.nueva, .ch-sticker.nuevo, .ch-vacio-ico, .ch-pegando img, .con-nuevos .dt-chat-ico, .con-nuevos .mp-chat-ico, .ch-menu, .ch-bajar { animation: none !important; } }

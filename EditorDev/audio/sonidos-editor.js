@@ -77,6 +77,8 @@ export const ARCHIVO = {
   "reaccion-abrazo": "reaccion-abrazo", "reaccion-beso": "reaccion-beso", "reaccion-risa": "reaccion-risa", "reaccion-quitar": "reaccion-quitar",
   "abeja-habla": "abejita-habla", "abeja-hola": "abejita-hola", "abeja-feliz": "abejita-feliz", "abeja-susto": "abejita-susto", "abeja-adios": "abejita-adios", "abeja-zumbido": "abejita-zumbido",
   "glitch-ruido": "secreto-interferencia", "glitch-campanita": "secreto-campanita",
+  // Fase 30: los mensajitos.
+  "mensaje-enviar": "mensaje-enviar", "mensaje-llega": "mensaje-llega", "sticker-pegar": "sticker-pegar",
 };
 /* Lo que se repite seguido sube por la escala (do, re, mi, sol, la, do…) en vez
    de sonar igual: elegir cinco cosas seguidas es una escalerita, no un martillo.
@@ -88,7 +90,7 @@ const SUAVES = new Set(["botones", "seleccionar", "deseleccionar"]);
 // Cuánto se hace a un lado MusicaDev mientras suena un efecto del editor (1 = nada).
 const AGACHAR = 0.6;
 // Lo mínimo entre dos sonidos del mismo momento (ms): sin metralletas.
-const MIN = { coleccion: 600, "detallito-abrir": 400, gatito: 1600, "reaccion-quitar": 300, "zoom-paso": 55, "zoom-acercar": 380, "zoom-alejar": 380, pincel: 240, "seleccionar-varios": 90, rehacer: 120, publicar: 800, botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250, atras: 150, activar: 100, desactivar: 100, menu: 150, iman: 260, escribir: 200, probar: 400, "abrir-recursos": 200, "cerrar-recursos": 200 };
+const MIN = { coleccion: 600, "mensaje-llega": 350, "mensaje-enviar": 120, "sticker-pegar": 120, "detallito-abrir": 400, gatito: 1600, "reaccion-quitar": 300, "zoom-paso": 55, "zoom-acercar": 380, "zoom-alejar": 380, pincel: 240, "seleccionar-varios": 90, rehacer: 120, publicar: 800, botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250, atras: 150, activar: 100, desactivar: 100, menu: 150, iman: 260, escribir: 200, probar: 400, "abrir-recursos": 200, "cerrar-recursos": 200 };
 /* Sonidos hechos a mano: [forma, frec. inicial, frec. final, duración s, volumen, retraso s]. */
 const SINTE = {
   colocar: [["sine", 520, 250, 0.11, 0.5], ["triangle", 1040, 900, 0.03, 0.12]],
@@ -118,6 +120,9 @@ const SINTE = {
   "reaccion-beso": [["sine", 2637, 2637, 0.4, 0.12, 0.02], ["sine", 3520, 3520, 0.45, 0.1, 0.09]],
   "reaccion-risa": [["sine", 2093, 2093, 0.2, 0.1], ["sine", 2637, 2637, 0.2, 0.1, 0.07], ["sine", 2349, 2349, 0.2, 0.1, 0.14], ["sine", 3136, 3136, 0.3, 0.1, 0.21]],
   "reaccion-quitar": [["sine", 1568, 1170, 0.4, 0.12]],
+  "mensaje-enviar": [["sine", 440, 440, 0.12, 0.14], ["sine", 587, 587, 0.3, 0.15, 0.06]],
+  "mensaje-llega": [["sine", 740, 740, 0.25, 0.16], ["sine", 587, 587, 0.35, 0.16, 0.13]],
+  "sticker-pegar": [["sine", 180, 90, 0.08, 0.2], ["sine", 980, 980, 0.06, 0.08, 0.02]],
   coleccion: [["triangle", 520, 1046, 0.2, 0.12], ["sine", 1318, 1318, 0.5, 0.1, 0.16], ["sine", 1568, 1568, 0.5, 0.09, 0.23]],
   "detallito-abrir": [["triangle", 700, 1400, 0.14, 0.1], ["sine", 1568, 1568, 0.6, 0.12, 0.12]],
   gatito: [["sawtooth", 62, 58, 0.7, 0.05], ["sawtooth", 60, 64, 0.7, 0.045, 0.8]],

@@ -35,6 +35,7 @@ import { cambiar, sinMovimiento as reducido } from "./transiciones.js";
 import * as PF from "./perfil.js";
 import { REACCIONES, reaccion, svgReaccion, estallido } from "./reacciones.js";
 import { dibujarPortadita, portaditaDePaquete } from "./portadita.js";
+import { vistaChat, ICONO_CHAT } from "./chat.js";
 
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 const cuando = (iso) => {
@@ -48,7 +49,7 @@ const cuando = (iso) => {
 const ROTAR = [-2.2, 1.6, -1, 2.4, -1.8, 1.1, -2.6, 0.8];
 const HILO = '<svg viewBox="0 0 200 60" preserveAspectRatio="none"><path class="vn-cuerda" d="M2 14 C 60 62, 140 62, 198 14"/><path class="vn-luz" d="M2 14 C 60 62, 140 62, 198 14"/></svg>';
 /* Cómo se llega a cada pantalla. */
-const LLEGA = { vincular: "carta", ver: "sobre", previa: "zoom", inicio: "deslizar", coleccion: "deslizar", cuenta: "carta", cargando: "zoom" };
+const LLEGA = { vincular: "carta", ver: "sobre", previa: "zoom", inicio: "deslizar", coleccion: "deslizar", cuenta: "carta", cargando: "zoom", chat: "deslizar" };
 
 export class Detallitos {
   constructor(app) {
@@ -161,7 +162,7 @@ export class Detallitos {
 
   /** Atrás: la pantalla anterior, o cerrar. */
   atras() {
-    if (this._grande(false)) return true;
+    if (this._chatAtras?.() || this._grande(false)) return true;
     if (this.pila.length > 1) { this.pila.pop(); this._mostrar(this.pila[this.pila.length - 1], "atras"); return true; }
     this.cerrar();
     return true;
@@ -186,8 +187,11 @@ export class Detallitos {
     this._col = null;
     const real = this._real(vista);
     this.actual = real;
-    const v = { cuenta: () => this._vCuenta(), cargando: () => this._vCargando(), vincular: () => this._vVincular(), ver: () => this._vVer(datos), previa: () => this._vPrevia(), coleccion: () => this._vColeccion() }[real]?.() || this._vInicio();
+    const v = { cuenta: () => this._vCuenta(), cargando: () => this._vCargando(), vincular: () => this._vVincular(), ver: () => this._vVer(datos), previa: () => this._vPrevia(), coleccion: () => this._vColeccion(), chat: () => vistaChat(this) }[real]?.() || this._vInicio();
     if (!v) return;
+    // El chat ocupa toda la pantalla (con su propia lista que se desliza); el detallito, todo lo ancho.
+    this.capa.classList.toggle("en-chat", real === "chat");
+    this.capa.classList.toggle("en-ver", real === "ver");
     this.atrasB.setAttribute("aria-label", this.pila.length > 1 ? "Atrás" : "Cerrar Detallitos");
     this._cabeza();
     this.vista.scrollTop = 0;
@@ -198,6 +202,7 @@ export class Detallitos {
   _cabeza() {
     const pa = this.amor?.pareja, con = SRV.conectado();
     const sub = { cuenta: SRV.NOMBRE, cargando: "un momentito…", vincular: pa ? "su vínculo" : "vincular a tu amorcito", previa: "así le va a llegar" }[this.actual] || (pa ? `con ${PF.nombreDe(pa)}${pa.en_linea ? " · en línea" : ""}` : "con tu amorcito");
+    this.tituloB.textContent = this.actual === "chat" ? "Mensajitos" : "Detallitos";
     if (this.actual === "ver") this.tituloS.textContent = this.tituloS.textContent || "";
     else this.tituloS.textContent = sub;
     const k = con ? (pa ? "p" + !!pa.en_linea + PF.nombreDe(pa) : this.amor ? "s" : "?") : "f";
@@ -239,7 +244,19 @@ export class Detallitos {
     if (this.amor?.pareja && pa && pa.usuario === this.amor.pareja.usuario) this.amor.pareja = { ...this.amor.pareja, ...pa };
     if (!!pa !== !!this.amor?.pareja) { this._refrescar(); return; }
     this._cabeza();
+    this._globoChat?.();
     if (this.actual === "inicio" || this.actual === "coleccion") this._recargarCol?.();
+  }
+
+  /** El botón para ir a los mensajitos, con su globito de los que no has leído. */
+  _botonChat(clase, texto, sub, i) {
+    const g = el("em.dt-globo", { hidden: "" });
+    const b = el("button." + clase, { type: "button", style: { "--i": i }, onClick: (e) => this.ir("chat", null, { desde: e.currentTarget }) }, [
+      el("i.dt-chat-ico", { html: ICONO_CHAT }), el("span.dt-chat-t", {}, [el("b", { text: texto }), sub ? el("small", { text: sub }) : null]), g, el("i.dt-ir-col-f", { html: ico("derecha") }),
+    ]);
+    this._globoChat = () => { const n = this.app.amorChat || 0; g.hidden = !n; g.textContent = String(n); b.classList.toggle("con-nuevos", !!n); };
+    this._globoChat();
+    return b;
   }
 
   /* — Sin cuenta: entrar — */
@@ -508,13 +525,15 @@ export class Detallitos {
       try {
         const cambio = await this._cargarDatos();
         if (!caja.isConnected) return;
-        if (cambio || caja._actual?.classList.contains("dt-cargando")) pintar(caja._actual?.classList.contains("dt-cargando") ? null : "zoom");
+        // Lo que llega solo (un latido, una reacción) se pone en su lugar, sin zoom ni animación.
+        if (cambio || caja._actual?.classList.contains("dt-cargando")) pintar();
         this._avisarReacciones(nombre);
       } catch (e) { if (!this.datos && caja.isConnected) { caja.replaceChildren(el("p.dt-vacio", { text: e.message })); caja._actual = caja.firstChild; } }
     };
     this._recargarCol();
     return el("section.dt-pantalla.dt-col", {}, [
       el("div.dt-col-cab", { style: { "--i": 0 } }, [el("h2", {}, [el("span", { text: "Nuestra colección" }), el("i.dt-col-corazon", { html: ico("corazon") })]), resumen]),
+      this._botonChat("dt-tarjeta.dt-ir-chat", "Mensajitos", `Escríbele a ${nombre}, con GIFs y stickers`, 1),
       el("div.dt-col-filtros", { style: { "--i": 1 } }, [tabs]),
       el("div.dt-col-cuerpo", { style: { "--i": 2 } }, [caja]),
       el("button.dt-enlace", { type: "button", style: { "--i": 3 }, html: I("vincular", "Nuestro vínculo"), onClick: (e) => this.ir("vincular", null, { desde: e.currentTarget }) }),
@@ -678,21 +697,21 @@ export class Detallitos {
     ]);
   }
 
-  /* — Ver un detallito: sale de su sobre — */
   /*
-   * — Ver un detallito (Fase 29): la página dentro de un celular —
+   * — Ver un detallito (Fases 29 y 30): la página dentro de un celular —
    * No se abre tal cual se subió (con su reproductor de entonces, la portada «Toca para abrir» y lo que
    * tuviera mal): se arma con su paquete y el reproductor de HOY, así todas las páginas ya mandadas se
-   * ven bien, directo, con sus botones funcionando, sin nada repetido ni amontonado, y con la pantalla
-   * con que se hicieron (sólo se escalan). Todo cabe a la vista: el celular se ajusta para que el
-   * mensaje, quién la mandó y las reacciones no se tapen. «Ver en grande» lo lleva a pantalla completa
-   * sin recargar la página.
+   * ven bien, directo, con sus botones funcionando y con la pantalla con que se hicieron (sólo se
+   * escalan). Fase 30, como la foto: el celular grande (aprovecha la pantalla), debajo su mensajito
+   * escrito a mano y quién la mandó, «Ver en grande» y «Guardar en mis borradores» lado a lado, las
+   * reacciones sueltas (sin tarjeta) y la lista de sus otros detallitos para pasar de uno a otro. En
+   * la compu, el celular a la izquierda y todo lo demás a su lado.
    */
   _vVer(x) {
     if (!x) { setTimeout(() => this.atras(), 0); return null; }
     this.tituloS.textContent = x.titulo;
     const recibido = x._mio != null ? !x._mio : x.de && x.de !== SRV.usuario()?.usuario;
-    const url = SRV.enlace(x.ver);
+    const url = SRV.enlace(x.ver), nombre = PF.nombreDe(this.amor?.pareja) || x.de_nombre || x.de || "tu amorcito";
     if (recibido && !x.visto) SRV.visto(x.id).then(() => { x.visto = new Date().toISOString(); dispatchEvent(new CustomEvent("ed-detallito-visto")); }).catch(() => {});
     const marco = el("iframe.ed-prueba-marco.dt-marco-ver", { title: x.titulo, allow: "autoplay; fullscreen" });
     const movil = el("div.ed-movil.dt-movil", { style: { "--fondo": x.color || "#ffd1e6", "--mw": "390px", "--mh": "844px" } }, [
@@ -702,42 +721,79 @@ export class Detallitos {
     ]);
     const cerrarGrande = el("button.dt-ver-cerrar", { type: "button", html: I("cerrar", "Cerrar"), onClick: () => this._grande(false) });
     const escena = el("div.dt-ver-escena", {}, [el("i.dt-ver-luz"), movil, cerrarGrande]);
-    const msg = x.mensaje ? el("p.dt-ver-msg", { text: `«${x.mensaje}»` }) : null;
+    const msg = x.mensaje ? el("p.dt-ver-msg", { text: x.mensaje }) : null;
     const de = el("small.dt-ver-de", {}, [PF.avatar(recibido ? "pareja" : "yo", "dt-ver-av"), el("span", { text: `${recibido ? "De " + (x.de_nombre || x.de) : "Tuya, para " + (x.para_nombre || x.para)} · ${cuando(x.creado)}` })]);
+    const guardar = el("button.dt-pildora.lila", { type: "button", html: I("nota", "Guardar en mis borradores"), onClick: async (ev) => {
+      const b = ev.currentTarget; b.disabled = true;
+      try { const blob = await SRV.paqueteDetallito(x.id); this.cerrar(); await abrirComoBorrador(this.app, blob, x.titulo); }
+      catch (e) { aviso("No se pudo abrir: " + e.message, 4500, "error"); b.disabled = false; }
+    } });
+    const acciones = el("div.dt-ver-acc", {}, [el("button.dt-pildora.rosa", { type: "button", html: I("ojo", "Ver en grande"), onClick: () => this._grande(true) }), guardar]);
     const rx = recibido ? this._reaccionar(x) : this._suReaccion(x);
-    const raiz = el("div.dt-ver.dt-ver-movil", { style: { "--c": x.color || "#ffd1e6" } }, [
-      escena, msg, de, rx,
-      el("div.dt-fila.dt-ver-acc", {}, [
-        el("button.ed-btn.primario", { type: "button", html: I("pantalla", "Ver en grande"), onClick: () => this._grande(true) }),
-        el("button.ed-btn", { type: "button", html: I("guardar", "Guardar en mis borradores"), onClick: async (ev) => {
-          const b = ev.currentTarget; b.disabled = true;
-          try { const blob = await SRV.paqueteDetallito(x.id); this.cerrar(); await abrirComoBorrador(this.app, blob, x.titulo); }
-          catch (e) { aviso("No se pudo abrir: " + e.message, 4500, "error"); b.disabled = false; }
-        } }),
-        el("button.ed-btn.peligro-suave", { type: "button", html: I("borrar", recibido ? "Quitar de mi colección" : "Quitar de mis enviados"), onClick: async () => {
-          if (!(await confirmar(recibido ? "¿Quitarlo de tu colección?" : "¿Quitarlo de tus enviados? (A tu amorcito se le queda)", "Quitar"))) return;
-          try { await SRV.borrarDetallito(x.id); this.datos = null; aviso("Quitado"); this.app.sonidos?.sonar("borrar"); this.atras(); } catch (e) { aviso(e.message, 3500, "error"); }
-        } }),
-      ]),
-    ]);
-    // El tamaño del celular: que quepa con su mensaje, quién la mandó y las reacciones (o, en grande, toda la pantalla).
+    const chat = this.amor?.pareja ? el("button.dt-ver-chat", { type: "button", onClick: (e) => this.ir("chat", null, { desde: e.currentTarget }) }, [el("i", { html: ICONO_CHAT }), el("span", { text: recibido ? `Contestarle a ${nombre} con un mensajito` : `Escribirle a ${nombre}` })]) : null;
+    const mas = el("div.dt-ver-mas");
+    const quitar = el("button.dt-ver-quitar", { type: "button", html: I("borrar", recibido ? "Quitar de mi colección" : "Quitar de mis enviados"), onClick: async () => {
+      if (!(await confirmar(recibido ? "¿Quitarlo de tu colección?" : "¿Quitarlo de tus enviados? (A tu amorcito se le queda)", "Quitar"))) return;
+      try { await SRV.borrarDetallito(x.id); this.datos = null; aviso("Quitado"); this.app.sonidos?.sonar("borrar"); this.atras(); } catch (e) { aviso(e.message, 3500, "error"); }
+    } });
+    const lado = el("div.dt-ver-lado", {}, [msg, de, acciones, rx, chat, mas, quitar]);
+    const raiz = el("div.dt-ver.dt-ver-movil", { style: { "--c": x.color || "#ffd1e6" } }, [escena, lado]);
+    // Sus otros detallitos (los más nuevos primero): tocar uno lo abre aquí mismo.
+    const ponerMas = () => {
+      const d = this.datos;
+      if (!d || !mas.isConnected) return;
+      const otros = [...d.recibidos, ...d.enviados].filter((y) => y.id !== x.id).sort((a, b) => (b.creado > a.creado ? 1 : -1));
+      if (!otros.length) { mas.replaceChildren(); return; }
+      mas.replaceChildren(
+        el("h3.dt-ver-mas-t", {}, [el("span", { text: "Más detallitos" }), el("button.dt-ver-todos", { type: "button", text: "Ver todos", onClick: () => this._aLaColeccion() })]),
+        el("div.dt-ver-lista", {}, otros.slice(0, 6).map((y) => this._renglon(y, nombre))),
+      );
+    };
+    if (this.datos) requestAnimationFrame(ponerMas); else this._cargarDatos().then(ponerMas).catch(() => {});
+    // El tamaño del celular: lo más grande que quepa, dejando a la vista su mensajito, quién la mandó y
+    // los dos botones (en la compu, a lo alto, con lo demás a un lado; en grande, toda la pantalla).
     const v = { W: 390, H: 844 };
     this._verMovil = { escena, movil, v, acomodar: () => {
-      const grande = escena.classList.contains("grande"), B = 22;
-      const aw = (grande ? innerWidth - 32 : Math.min(innerWidth - 40, 460)) - B;
-      const reservado = grande ? 120 : 150 + (msg ? 70 : 0) + 36 + (rx ? 150 : 0);
-      const ah = Math.max(180, innerHeight - reservado) - B;
+      const grande = escena.classList.contains("grande"), B = 22, ancho = innerWidth >= 860;
+      const cab = this.vista.getBoundingClientRect().top || 64;
+      const aw = (grande ? innerWidth - 32 : ancho ? Math.min(560, this.vista.clientWidth * 0.5) : innerWidth - 36) - B;
+      const ah = (grande ? innerHeight - 120 : ancho ? innerHeight - cab - 40 : innerHeight - cab - (msg ? 62 : 0) - 34 - 64 - 34) - B;
       movil.style.setProperty("--mw", v.W + "px");
       movil.style.setProperty("--mh", v.H + "px");
-      movil.style.setProperty("--k", Math.max(0.2, Math.min(1, aw / v.W, ah / v.H)).toFixed(4));
+      movil.style.setProperty("--k", Math.max(0.2, Math.min(1.2, aw / v.W, Math.max(160, ah) / v.H)).toFixed(4));
       marco.style.width = v.W + "px"; marco.style.height = v.H + "px";
     } };
     this._verMovil.acomodar();
+    requestAnimationFrame(() => this._verMovil?.acomodar());
     addEventListener("resize", this._verMovil.acomodar);
     this._limpiezas.push(() => { removeEventListener("resize", this._verMovil?.acomodar); this._verMovil = null; document.body.classList.remove("dt-viendo-grande"); });
     this._cargarEnMovil(x, marco, movil, v, url).catch(() => { marco.src = url; marco.addEventListener("load", () => { marco.classList.add("listo"); movil.classList.add("lista"); }, { once: true }); });
     requestAnimationFrame(() => movil.classList.add("brilla"));
     return el("section.dt-pantalla", {}, [raiz]);
+  }
+
+  /** Un renglón de «Más detallitos»: su portadita, título o mensajito, cuándo y su reacción. */
+  _renglon(y, nombre) {
+    const rx = reaccion(y.reaccion), nuevo = !y._mio && !y.visto;
+    const mini = el("span.dt-renglon-mini", { style: { "--c": y.color || "#ffd1e6" } }, [el("i", { html: ico("corazon") })]);
+    if (y.portadita) { const im = el("img", { alt: "", loading: "lazy", decoding: "async", draggable: "false" }); im.onload = () => mini.classList.add("con-img"); im.onerror = () => im.remove(); im.src = SRV.enlace(y.portadita); mini.append(im); }
+    return el("button.dt-renglon" + (nuevo ? ".nuevo" : ""), { type: "button", "aria-label": `${y.titulo}, ${y._mio ? "tuya" : "de " + nombre}`, onClick: (e) => {
+      this.app.sonidos?.sonar("detallito-abrir");
+      // Se cambia en su lugar: «atrás» sigue llevando a la colección (no de detallito en detallito).
+      this.pila[this.pila.length - 1] = { vista: "ver", datos: y };
+      this._mostrar(this.pila[this.pila.length - 1], "deslizar", { desde: e.currentTarget, sinSonido: true });
+    } }, [
+      mini,
+      el("span.dt-renglon-t", {}, [el("b", { text: y.mensaje || y.titulo }), el("small", { text: `${y._mio ? "Tuya" : "De " + nombre} · ${cuando(y.creado)}` })]),
+      rx ? el("span.dt-renglon-rx", { title: y._mio ? `${nombre} ${rx.largo}` : rx.tuyo, html: svgReaccion(rx.id) + `<span>${rx.corto}</span>` }) : nuevo ? el("em.dt-renglon-nuevo", { text: "Nueva" }) : null,
+    ]);
+  }
+
+  /** «Ver todos»: la colección (la de abajo, si se llegó desde ahí). */
+  _aLaColeccion() {
+    const k = this.pila.findIndex((p) => p.vista === "coleccion");
+    if (k >= 0) { this.pila.length = k + 1; this._mostrar(this.pila[k], "atras"); }
+    else this.ir("coleccion");
   }
 
   /** «Ver en grande»: el mismo celular (sin recargar la página) a pantalla completa, y de vuelta. */
