@@ -31,6 +31,7 @@
       url: function (id) { return d.urls[id] || null; },
       urlDatos: function (id) { return (d.datosUrls || {})[id] || null; },
       soloPagina: !!d.soloPagina,
+      prueba: !!d.prueba,
       fijar: d.fijar || null,
       silencio: !!d.silencio,
       ruta: function (r) { return d.base + r.split("/").map(encodeURIComponent).join("/"); },

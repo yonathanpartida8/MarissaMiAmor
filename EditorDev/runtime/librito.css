@@ -247,3 +247,7 @@
 .rt-vwrap:fullscreen, .rt-vwrap:-webkit-full-screen { padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: #000 !important; filter: none !important; }
 .rt-vwrap:fullscreen .rt-vid, .rt-vwrap:-webkit-full-screen .rt-vid { width: 100% !important; height: 100% !important; object-fit: contain !important; border-radius: 0 !important; }
 .rt-vwrap:fullscreen .rt-vamb, .rt-vwrap:-webkit-full-screen .rt-vamb { display: none; }
+/* Fase 28: sin botones repetidos. Si la hoja trae los suyos para pasar página, las flechas del
+   librito no salen en ella; y los que no tienen a dónde ir (primera / última / página suelta), tampoco. */
+.rt-nav-propia .rt-nav { display: none !important; }
+.rt-sin-destino { visibility: hidden !important; pointer-events: none !important; }

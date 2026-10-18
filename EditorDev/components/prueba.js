@@ -1,25 +1,19 @@
 /**
- * PROBAR PÁGINA — como abrir la página de verdad, no como esconder paneles.
+ * PROBAR PÁGINA — tu página dentro de un celular, como la va a ver ella (Fase 28).
  *
- *   abrir()               la página actual, con el MISMO reproductor del librito
- *                         (animaciones, interacciones, HTML, fondo, música, pistas)
- *   abrir({ html })       un HTML suelto (lo que se está escribiendo en el editor
- *                         de HTML), aislado, a pantalla completa
+ *   abrir()               el librito desde la página que estás viendo, con el MISMO
+ *                         reproductor (animaciones, interacciones, HTML, fondo, música)
+ *                         y sus botones para pasar de hoja funcionando
+ *   abrir({ html })       un HTML suelto (lo que se escribe en el editor de HTML)
  *
- * Al empezar, los menús del editor se van (cada uno hacia su orilla) y la
- * página crece desde donde estaba en la hoja hasta llenar la pantalla.
- * Al terminar, la página vuelve a su sitio y los menús regresan por etapas:
- * primero se asoman un poquito, luego vuelven a su lugar y al final quedan
- * del todo visibles. Cuanto más larga fue la prueba, más pausado el regreso.
- * Se termina con «Terminar prueba», Esc o el botón «atrás» del teléfono.
- *
- * Pantalla completa DE VERDAD donde el sistema la da (Android, computadora,
- * iPad): se ocultan las barras del navegador y del sistema. En el iPhone
- * Safari no deja a una página ponerse a pantalla completa: se usa todo lo
- * visible (o, instalado en la pantalla de inicio, la pantalla entera).
- * La página se arma con la MISMA pantalla que en el editor y sólo se escala
- * (igual a lo ancho y a lo alto: nada se deforma ni se corta), dentro de la
- * zona segura (muesca, barra de gestos); lo que sobra lleva el color del fondo.
+ * Un escenario oscuro con el brillo del color de tu página y, al centro, un
+ * celular (marco, isla, botones y reflejo del vidrio). La página va dentro con
+ * la MISMA pantalla con que se arma en el editor y sólo se escala: nada se
+ * corre, ni se deforma, ni se corta (si es horizontal, el celular se acuesta).
+ * Entra subiendo desde la hoja con un rebote suave y un destello en el vidrio;
+ * al terminar regresa a la hoja. Todo con transform y opacidad (nada de
+ * desenfoques animados, que trababan). Se termina con «Terminar prueba», Esc o
+ * el botón «atrás» del teléfono.
  */
 import { el } from "../../src/utils/dom.js";
 import { ico } from "./iconos.js";
@@ -33,18 +27,7 @@ const CROMO = ".ed-barra, .ed-lateral, .ed-insp, .ed-contexto, .ed-linea:not([hi
 const SUAVE = "cubic-bezier(.2,.8,.2,1)";
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-/** Hacia dónde se va cada menú: a su orilla más cercana. */
-function rumbo(n) {
-  const r = n.getBoundingClientRect();
-  const W = innerWidth, H = innerHeight;
-  if (!r.width || !r.height) return { dx: 0, dy: 24 };
-  if (r.top < 8 && r.height < H * 0.4) return { dx: 0, dy: -(r.bottom + 12) };
-  if (r.bottom > H - 8 && r.height < H * 0.6) return { dx: 0, dy: H - r.top + 12 };
-  if (r.left < 8 && r.width < W * 0.6) return { dx: -(r.right + 12), dy: 0 };
-  if (r.right > W - 8 && r.width < W * 0.6) return { dx: W - r.left + 12, dy: 0 };
-  return { dx: 0, dy: 40 };
-}
-const tr = (d, k) => `translate3d(${(d.dx * k).toFixed(1)}px, ${(d.dy * k).toFixed(1)}px, 0)`;
+const BISEL = 11;
 
 /** Data URLs de lo que piden los HTML de la página (un marco aislado no abre las `blob:`). */
 export async function datosDe(app, pagina) {
@@ -71,35 +54,55 @@ export class Prueba {
     app.audio?.pausarParaVista(true);
     document.querySelector(".ed-menu")?.remove();
     document.querySelector(".ed-pop")?._cerrar?.();
-    // 1 · Los menús se van, cada uno hacia su orilla.
-    this._salen = [...document.querySelectorAll(CROMO)].filter((n) => n.offsetParent !== null || getComputedStyle(n).position === "fixed").map((n, i) => {
-      const d = rumbo(n);
-      // Primero se vuelven translúcidos (se ve la página detrás) y luego se van.
-      const a = n.animate([
-        { opacity: 1, transform: "none", filter: "none" },
-        { opacity: 0.32, transform: tr(d, 0.12), filter: "blur(1.5px) saturate(.7)", offset: 0.45 },
-        { opacity: 0, transform: tr(d, 1), filter: "blur(3px) saturate(.6)" },
-      ], { duration: 460, delay: Math.min(i, 6) * 22, easing: "cubic-bezier(.45,0,.6,.5)", fill: "forwards" });
-      return { n, d, a };
-    });
-    document.body.classList.add("ed-probando");
-    // 2 · La página crece desde la hoja hasta toda la pantalla.
+    // La MISMA pantalla con que se arma la hoja en el editor: nada se corre al probar.
+    const pant = app.lienzo?.pantallaDeHoja?.() || { w: 390, h: 844 };
+    const W = Math.max(200, Math.round(pant.w)), H = Math.max(200, Math.round(pant.h));
+    this.W = W; this.H = H;
     const pagina = app.estado.pagina;
-    const fondo = pagina?.fondo?.color || P?.ajustes?.tema?.fondo || "#111";
-    const marco = el("iframe.ed-prueba-marco", { title: "Prueba de la página", allow: "autoplay; fullscreen; accelerometer; gyroscope" });
+    const fondo = pagina?.fondo?.color || P?.ajustes?.tema?.fondo || "#ffd9e6";
+    // 1 · Los menús se desvanecen (sólo opacidad: fluido en cualquier teléfono).
+    this._salen = [...document.querySelectorAll(CROMO)].filter((n) => n.offsetParent !== null || getComputedStyle(n).position === "fixed")
+      .map((n) => ({ n, a: n.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: "ease-out", fill: "forwards" }) }));
+    document.body.classList.add("ed-probando");
+    // 2 · El escenario y el celular.
+    const marco = el("iframe.ed-prueba-marco", { title: "Prueba de la página", allow: "autoplay; fullscreen; accelerometer; gyroscope", style: { width: W + "px", height: H + "px" } });
+    const movil = el("div.ed-movil" + (W > H ? ".horizontal" : ""), { style: { "--mw": W + "px", "--mh": H + "px" } }, [
+      el("i.ed-movil-boton.b1"), el("i.ed-movil-boton.b2"), el("i.ed-movil-boton.b3"),
+      el("div.ed-movil-pantalla", {}, [marco, el("i.ed-movil-cargando")]),
+      el("i.ed-movil-isla"), el("i.ed-movil-reflejo"),
+    ]);
     const x = el("button.ed-prueba-x", { type: "button", html: `${ico("cerrar")}<span>Terminar prueba</span>`, onClick: () => this.cerrar() });
-    const capa = el("div.ed-prueba", { role: "dialog", "aria-label": "Probando la página", style: { background: html != null ? "#fff" : fondo } }, [marco, x]);
-    this.capa = capa;
+    const pie = html == null ? el("p.ed-prueba-pie", { text: "Desliza o toca sus botones para pasar de hoja" }) : null;
+    const capa = el("div.ed-prueba", { role: "dialog", "aria-label": "Probando la página", style: { "--fondo": fondo } }, [el("i.ed-prueba-luz"), el("div.ed-prueba-escena", {}, [movil]), x, pie].filter(Boolean));
+    this.capa = capa; this.movil = movil;
     document.body.append(capa);
-    // Pantalla completa real (dentro del toque que abrió la prueba; si el sistema no la da, no pasa nada).
+    this._acomodar = () => {
+      const s = getComputedStyle(this.capa.querySelector(".ed-prueba-escena"));
+      const aw = innerWidth - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight) - BISEL * 2;
+      const ah = innerHeight - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom) - BISEL * 2;
+      movil.style.setProperty("--k", clamp(Math.min(1, aw / W, ah / H), 0.2, 1).toFixed(4));
+    };
+    this._acomodar();
+    addEventListener("resize", this._acomodar);
+    // En el teléfono, pantalla completa de verdad donde se pueda (más espacio para el celular).
     this._fs = false;
-    const doc = document.documentElement;
-    const pedir = doc.requestFullscreen || doc.webkitRequestFullscreen;
-    if (pedir && !(document.fullscreenElement || document.webkitFullscreenElement) && (document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
+    const doc = document.documentElement, pedir = doc.requestFullscreen || doc.webkitRequestFullscreen;
+    if (innerWidth < 700 && pedir && !(document.fullscreenElement || document.webkitFullscreenElement) && (document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
       try { const r = pedir.call(doc, { navigationUI: "hide" }); this._fs = true; r?.catch?.(() => { this._fs = false; }); } catch (e) { this._fs = false; }
     }
-    this._entrada = capa.animate([{ transform: this._desdeHoja(), borderRadius: "18px", opacity: 0.6 }, { transform: "none", borderRadius: "0px", opacity: 1 }], { duration: 480, easing: SUAVE });
-    const mostrar = () => marco.classList.add("listo");
+    // 3 · Entra: el escenario se ilumina y el celular sube desde la hoja con un rebote suave.
+    this._desde = this._desdeHoja();
+    capa.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: "ease-out" });
+    this._entrada = movil.animate([
+      { transform: this._desde, opacity: 0.35 },
+      { transform: "translate3d(0, -8px, 0) scale(1.015)", opacity: 1, offset: 0.72 },
+      { transform: "none", opacity: 1 },
+    ], { duration: 640, easing: SUAVE });
+    this._entrada.finished.then(() => movil.classList.add("brilla")).catch(() => {});
+    const mostrar = () => { marco.classList.add("listo"); movil.classList.add("lista"); };
+    // La página se carga cuando el celular ya llegó: así la entrada va suave (mientras, un destello).
+    await this._entrada.finished.catch(() => {});
+    if (!this.abierta || this.capa !== capa) return;
     if (html != null) {
       marco.setAttribute("sandbox", "allow-scripts allow-forms allow-modals allow-pointer-lock allow-popups");
       const ctx = { url: (id) => app.bib.url(id), urlDatos: (id) => app.bib.urlDatos(id) };
@@ -107,7 +110,8 @@ export class Prueba {
       marco.addEventListener("load", mostrar, { once: true });
       marco.srcdoc = RT.envolverHtml(RT.conArchivos(html, archivos, ctx));
     } else {
-      const datosUrls = await datosDe(app, pagina);
+      const datosUrls = {};
+      for (const pid of P.orden) Object.assign(datosUrls, await datosDe(app, P.paginas[pid]));
       marco.src = "runtime/reproductor.html";
       this._msg = (ev) => {
         if (ev.source !== marco.contentWindow) return;
@@ -115,20 +119,19 @@ export class Prueba {
           marco.contentWindow.postMessage({
             tipo: "librito",
             datos: { nombre: P.nombre, ajustes: P.ajustes, orden: P.orden, paginas: P.paginas, titulos: {} },
-            urls: app.bib.mapa(), datosUrls, base: RAIZ, inicio: app.estado.paginaId, portadilla: false, soloPagina: true, fuentes: [...fuentesUsadas(P)],
-            // La MISMA pantalla con la que se arma la hoja en el editor: nada se corre al probar.
-            fijar: app.lienzo?.pantallaDeHoja?.() || null,
+            urls: app.bib.mapa(), datosUrls, base: RAIZ, inicio: app.estado.paginaId, portadilla: false, prueba: true, fuentes: [...fuentesUsadas(P)],
+            fijar: { w: W, h: H },
           }, location.origin);
           setTimeout(mostrar, 90);
         } else if (ev.data?.tipo === "cerrar-vista") this.cerrar();
       };
       addEventListener("message", this._msg);
+      this._revisarNavegacion(capa);
     }
-    if (html == null) this._revisarNavegacion(capa);
     this._tecla = (e) => { if (e.key === "Escape") { e.preventDefault(); this.cerrar(); } };
     addEventListener("keydown", this._tecla);
-    // El botón se hace discreto para no tapar la página (vuelve al pasar cerca).
-    this._dim = setTimeout(() => x.classList.add("discreto"), 2600);
+    // El botón y la ayuda se hacen discretos para no distraer (vuelven al pasar cerca).
+    this._dim = setTimeout(() => { x.classList.add("discreto"); pie?.classList.add("ido"); }, 3200);
     dispatchEvent(new CustomEvent("ed-hoja", { detail: "abrir" }));
   }
 
@@ -169,49 +172,40 @@ export class Prueba {
     const t = setTimeout(quitar, 14000);
   }
 
-  /** De la hoja a la pantalla con la MISMA escala a lo ancho y a lo alto (antes se estiraba al entrar y salir). */
+  /** De dónde sale el celular: la hoja del editor (mismo centro, escalado a su tamaño). */
   _desdeHoja() {
-    const r = this._rectHoja(), k = Math.min(r.width / innerWidth, r.height / innerHeight) || 1;
-    const x = r.left + (r.width - innerWidth * k) / 2, y = r.top + (r.height - innerHeight * k) / 2;
-    return `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${k.toFixed(4)})`;
+    const r = this._rectHoja(), p = this.movil.getBoundingClientRect();
+    if (!p.width || !p.height) return "scale(.9)";
+    const s = Math.min(r.width / p.width, r.height / p.height) || 1;
+    const dx = r.left + r.width / 2 - (p.left + p.width / 2), dy = r.top + r.height / 2 - (p.top + p.height / 2);
+    return `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) scale(${s.toFixed(4)})`;
   }
 
   _rectHoja() {
     const h = document.querySelector(".ed-centro .ed-hoja");
     const r = h?.getBoundingClientRect();
     if (r && r.width > 20 && r.height > 20 && r.bottom > 0 && r.top < innerHeight) return r;
-    return { left: innerWidth * 0.08, top: innerHeight * 0.08, width: innerWidth * 0.84, height: innerHeight * 0.84 };
+    return { left: innerWidth * 0.2, top: innerHeight * 0.2, width: innerWidth * 0.6, height: innerHeight * 0.6 };
   }
 
   cerrar() {
     if (!this.abierta) return;
     this.abierta = false;
-    const app = this.app;
-    const capa = this.capa;
-    this.capa = null;
+    const app = this.app, capa = this.capa, movil = this.movil;
+    this.capa = null; this.movil = null;
     clearTimeout(this._dim);
     removeEventListener("keydown", this._tecla);
+    removeEventListener("resize", this._acomodar);
     if (this._msg) { removeEventListener("message", this._msg); this._msg = null; }
     this._entrada?.cancel();
     dispatchEvent(new CustomEvent("ed-hoja", { detail: "cerrar" }));
-    // Se sale de la pantalla completa (si la pidió la prueba) y la página vuelve a su sitio en la hoja.
     if (this._fs && (document.fullscreenElement || document.webkitFullscreenElement)) (document.exitFullscreen || document.webkitExitFullscreen)?.call(document)?.catch?.(() => {});
     this._fs = false;
-    const salida = capa.animate([{ transform: "none", borderRadius: "0px", opacity: 1 }, { transform: this._desdeHoja(), borderRadius: "18px", opacity: 0 }], { duration: 380, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" });
-    salida.finished.catch(() => {}).then(() => capa.remove());
     document.body.classList.remove("ed-probando");
-    // Los menús regresan por etapas; más pausado cuanto más duró la prueba.
-    const seg = (performance.now() - this.t0) / 1000;
-    const dur = clamp(480 + seg * 14, 520, 1150);
-    (this._salen || []).forEach(({ n, d, a }, i) => {
-      a.cancel();
-      n.animate([
-        { opacity: 0, transform: tr(d, 1) },
-        { opacity: 0.35, transform: tr(d, 0.55), offset: 0.3 },
-        { opacity: 0.8, transform: "none", offset: 0.72 },
-        { opacity: 1, transform: "none" },
-      ], { duration: dur, delay: 120 + Math.min(i, 6) * 55, easing: "cubic-bezier(.25,.8,.3,1)", fill: "backwards" });
-    });
+    // El celular regresa a la hoja y el escenario se apaga; los menús vuelven (sólo opacidad).
+    movil.animate([{ transform: "none", opacity: 1 }, { transform: this._desde || "scale(.9)", opacity: 0 }], { duration: 380, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" });
+    capa.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 380, delay: 60, easing: "ease-in", fill: "forwards" }).finished.catch(() => {}).then(() => capa.remove());
+    for (const { n, a } of this._salen || []) { a.cancel(); n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360, delay: 140, easing: "ease-out", fill: "backwards" }); }
     this._salen = null;
     app.audio?.pausarParaVista(false);
   }

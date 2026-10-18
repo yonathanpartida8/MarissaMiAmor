@@ -247,7 +247,10 @@ export async function exportar(app, { alProgreso, completo = false, publicar = f
   zip.agregar("styles/librito.css", await fetch(new URL("../runtime/librito.css", import.meta.url)).then((r) => r.text()));
   const { editor, paginas, assets, ...resto } = P;
   void paginas; void editor; void assets;
-  const datos = { nombre: P.nombre, ajustes: { ...resto.ajustes }, orden: P.orden, titulos, paginasArchivos, archivos, ...(publicar ? { soloVer: true } : {}) };
+  // La pantalla con la que se ve en el editor (y en la vista previa): el librito exportado se arma
+  // con ella y sólo se escala, así en el teléfono de quien lo recibe todo queda en su lugar.
+  const pantalla = app.lienzo?.pantallaDeHoja?.() || null;
+  const datos = { nombre: P.nombre, ajustes: { ...resto.ajustes }, orden: P.orden, titulos, paginasArchivos, archivos, ...(pantalla ? { pantalla: { w: Math.round(pantalla.w), h: Math.round(pantalla.h) } } : {}), ...(publicar ? { soloVer: true } : {}) };
   zip.agregar("scripts/datos.js", `window.LIBRITO_DATOS = ${JSON.stringify(datos)};\n`);
   const fuentes = [...fuentesUsadas(P)];
   for (const [nom, g] of Object.entries(P.ajustes.fuentesExtra || {})) if (fuentes.includes(nom) && !RT.FUENTES[nom]) RT.FUENTES[nom] = { g, pila: "Georgia, serif" };

@@ -44,6 +44,8 @@
       this.rep = Object.assign({ flechas: true, progreso: true, deslizar: true, indice: true, tocarParaEmpezar: true, alFinal: "quedarse", autoAvance: 0 }, a.reproduccion || {});
       // «Probar página» (editor): sólo esa página, sin flechas, barrita ni índice.
       if (this.op.soloPagina) Object.assign(this.rep, { flechas: false, progreso: false, indice: false, deslizar: false, autoAvance: 0, tocarParaEmpezar: false });
+      // «Probar página» (dentro del celular del editor): el librito desde esa hoja, con todo para pasar de hoja, sin portadilla ni índice.
+      if (this.op.prueba) Object.assign(this.rep, { indice: false, autoAvance: 0, tocarParaEmpezar: false });
       this._sonandoPistas = [];
       this.orden = datos.orden.slice();
       // Si el librito usa el botón de música de la hoja, el chip viejo «♪» ya no sale (sólo el nuevo).
@@ -118,7 +120,7 @@
         const b = h("button", "rt-chip", arriba); b.type = "button"; b.textContent = "☰"; b.setAttribute("aria-label", "Índice");
         b.addEventListener("click", () => this._indice());
       }
-      if (this.op.cerrar && !this.op.soloPagina) {
+      if (this.op.cerrar && !this.op.soloPagina && !this.op.prueba) {
         const x = h("button", "rt-chip", arriba); x.type = "button"; x.textContent = "✕"; x.setAttribute("aria-label", "Cerrar");
         x.addEventListener("click", () => this.op.cerrar());
       }
@@ -261,6 +263,15 @@
       this.progBarra.style.transform = `scaleX(${n > 1 ? this.i / (n - 1) : 1})`;
       this.ant.disabled = this.i === 0;
       this.sig.disabled = this.i === n - 1 && this.rep.alFinal !== "portada";
+      // Si la hoja trae sus propios botones para pasar o volver, las flechas del librito no salen en
+      // ella (nunca cuatro botones); y los suyos que no tienen a dónde ir (en la primera, «volver»; en
+      // la última, «seguir»; en una página suelta, los dos) no se ven.
+      const propios = (pag.els || []).filter((e) => !e.oculto && e.accion && /^(anterior|siguiente)$/.test(e.accion.tipo));
+      this.raiz.classList.toggle("rt-nav-propia", propios.length > 0);
+      for (const e of propios) {
+        const nodo = this.actual && this.actual.nodos.get(e.id);
+        if (nodo) nodo.classList.toggle("rt-sin-destino", e.accion.tipo === "anterior" ? this.i === 0 : this.sig.disabled);
+      }
       const f = pag.fondo || {};
       this.raiz.style.background = f.tipo === "gradiente" && f.gradiente ? RT.gradiente(f.gradiente) : f.css || f.color || "#111";
     }
@@ -272,7 +283,10 @@
       if (m.modo === "silencio") src = null;
       else if (m.modo === "propia" && m.asset) { src = this.op.url(m.asset); vol = RT.num(m.volumen, 0.8); bucle = m.bucle !== false; }
       else if (g.asset) { src = this.op.url(g.asset); vol = RT.num(g.volumen, 0.8); bucle = g.bucle !== false; }
-      this.btnMusica.hidden = this.botonNuevo || (!src && !this.musica.actual);
+      // Si la hoja ya trae su botón de música, el ♪ del librito no se duplica (en el librito exportado
+      // las páginas llegan de una en una, así que se mira en cada hoja).
+      const propio = (pag.els || []).some((e) => e.tipo === "musica" && !e.oculto);
+      this.btnMusica.hidden = this.botonNuevo || propio || (!src && !this.musica.actual);
       this.raiz.classList.toggle("rt-con-musica", !!src);
       this.musica.poner(src, vol, bucle);
     }
@@ -413,6 +427,9 @@
     document.title = d.nombre || "Mi librito";
     const raiz = document.getElementById("librito") || document.body;
     RT.libro = new RT.Libro(raiz, d, {
+      // La pantalla con la que se armó en el editor: en cualquier aparato se escala entera (nada se
+      // recoloca ni se amontona); lo que sobra alrededor lleva el fondo de la página.
+      fijar: d.pantalla && d.pantalla.w > 0 && d.pantalla.h > 0 ? d.pantalla : null,
       url: (id) => (d.archivos && d.archivos[id]) || null,
       ruta: (r) => "pages/originales/" + r.split("/").map(encodeURIComponent).join("/"),
       cargar: (id) => RT.cargarScript(d.paginasArchivos[id], id),
