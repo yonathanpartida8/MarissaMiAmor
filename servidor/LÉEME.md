@@ -221,13 +221,16 @@ to process»: por eso `librito actualizar` instala `git` en Termux.
   le llega un aviso con el latido.
 - El editor pregunta cada 25 s si llegó algo: globito en Exportar / Más y un
   aviso «Verlo». La pastilla de arriba dice si tu amorcito está **en línea**.
-- **Mensajitos** (1.6.0): el chat de los dos, con GIFs y stickers de GIPHY
-  pegados encima de los mensajitos, reacciones y «visto». Con el chat abierto
-  pregunta cada 3.5 s; lo escrito se guarda como texto (nunca HTML) y sólo se
-  aceptan imágenes de GIPHY.
+- **Mensajitos** (1.6.0; 1.7.0 con tiempo real): el chat de los dos, con GIFs
+  y stickers de GIPHY (que se arrastran a cualquier parte), dibujos que se ven
+  mientras se hacen, reacciones y «visto» (que cada quien puede apagar). Con el
+  chat abierto, el editor espera al servidor y éste le contesta en cuanto
+  cambia algo; lo escrito se guarda como texto (nunca HTML) y sólo se aceptan
+  imágenes de GIPHY.
 
-Las reacciones y las portaditas necesitan M.YNTHN **1.5.0** o más nuevo, y
-los Mensajitos **1.6.0**: en
+Las reacciones y las portaditas necesitan M.YNTHN **1.5.0** o más nuevo, los
+Mensajitos **1.6.0**, y los dibujos, los stickers libres y el tiempo real
+**1.7.0**: en
 el teléfono servidor corre `librito actualizar` (tus datos no se tocan; las
 columnas nuevas se agregan solas al prender). Con uno más viejo todo lo demás
 sigue igual y las páginas sin portadita llevan una tapita de colores.
@@ -362,10 +365,14 @@ azar) · `/api/…`:
 | `PUT /api/detallitos/<id>/reaccion` (`{"reaccion":"te-amo"}`; vacío la quita) | quien lo recibió | reaccionar: te-amo, me-encanto, llore, abrazo, beso o risa |
 | `POST /api/detallitos/reacciones/vistas` | sesión | ya viste las reacciones a lo que mandaste |
 | `PUT /api/detallitos/<id>/portadita` (jpg, png o webp, hasta 600 KB) | quien lo mandó (o quien lo recibió, si todavía no tiene) | su miniatura; se ve en `/d/<id>/portadita.<ext>` |
-| `GET /api/chat?n=40` · `?antes=<id>` · `?despues=<id>&desde=<ahora>` | pareja | los mensajitos de los dos: los últimos, los de antes (para ir subiendo) o los nuevos más los que cambiaron (reacción, sticker, borrado) |
-| `POST /api/chat` (`{"texto":"…","gif":{"u":"https://media.giphy.com/…","w":200,"h":150}}`) | pareja | mandar un mensajito: texto (hasta 2000), un GIF de GIPHY, o los dos; máximo 25 cada 10 s |
+| `GET /api/chat?n=40` · `?antes=<id>` · `?despues=<id>&desde=<ahora>&espera=22` | pareja | los mensajitos de los dos (y sus dibujos): los últimos, los de antes (para ir subiendo) o los nuevos más los que cambiaron (reacción, sticker, borrado, dibujos). Con `espera` (hasta 25 s) se queda esperando y contesta en cuanto cambia algo: **tiempo real** |
+| `POST /api/chat` (`{"texto":"…","gif":{"u":"https://media.giphy.com/…","w":200,"h":150,"s":1}}` · `{"espacio":360}`) | pareja | mandar un mensajito: texto (hasta 2000), un GIF o un sticker solito (`s`) de GIPHY, o los dos; máximo 25 cada 10 s. Con `espacio`, un hueco en blanco para dibujar (si lo último ya es un hueco, se agranda) |
+| `PUT /api/chat/ajustes` (`{"visto":false}`) | sesión | privacidad: si tu amorcito ve cuándo leíste lo suyo |
+| `PUT` · `DELETE /api/chat/<id>/sticker/<sid>` | quien lo pegó | mover (x, y, giro, tamaño) o quitar un sticker |
+| `POST /api/chat/trazos` (`{"ancla":<id>,"c":"#ff5f9e","a":6,"p":[[x,y],…]}`) · `POST /api/chat/trazos/<id>` (`{"p":[…],"fin":true}`) | pareja · quien dibuja | dibujar en el chat: x de 0 a 10000 a lo ancho, y en px desde su mensajito; se manda de a poquito mientras dibujas (hasta 1500 puntos por trazo) |
+| `DELETE /api/chat/trazos/<id>` · `DELETE /api/chat/trazos` | quien lo dibujó | deshacer un trazo · borrar todos tus dibujos |
 | `PUT /api/chat/<id>/reaccion` (`{"reaccion":"te-amo"}`; vacío la quita) | quien lo recibió | reaccionar a un mensajito |
-| `POST /api/chat/<id>/sticker` (`{"u":"https://media.giphy.com/…","x":0.8,"y":0.2,"r":-8,"s":1}`) | pareja | pegar un sticker de GIPHY encima de un mensajito (hasta 8) |
+| `POST /api/chat/<id>/sticker` (`{"u":"https://media.giphy.com/…","x":0.8,"y":0.2,"r":-8,"s":1}`; con `"l":1`, libre: `y` en px) | pareja | pegar un sticker de GIPHY encima de un mensajito o, libre, donde lo soltaste en el chat (hasta 12 por mensajito) |
 | `DELETE /api/chat/<id>` · `POST /api/chat/vistos` | quien lo mandó · sesión | borrar tu mensajito (para los dos) · ya leíste lo que te mandó |
 | `POST /api/admin/usuarios/borrar-todas` (`{"confirmar":"BORRAR"}`) | admin | borra todas las cuentas que no son de administrador |
 | `/api/admin/…` (resumen, ajustes, github, usuarios, invitaciones, actividad, túnel) | admin | el panel |

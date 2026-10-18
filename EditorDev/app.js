@@ -54,6 +54,7 @@ import { PLANTILLAS } from "./templates/plantillas.js";
 import { BarraContextual } from "./components/barra.js";
 import { Lateral } from "./components/lateral.js";
 import { guardasDeApp } from "./components/guardas.js";
+import { prefChat } from "./components/chat.js";
 import { AudioEditor } from "./audio/mezclador.js";
 import { ico } from "./components/iconos.js";
 import { Hoja } from "./components/hoja.js";
@@ -619,7 +620,7 @@ async function latir() {
       aviso(`${PF.nombreDe(r.pareja) || "Tu amorcito"} reaccionó a tu página`, 7000, "", { t: "Verla", al: () => app.detallitos.abrir(null, "coleccion") });
     }
     // Un mensajito nuevo (si el chat no está abierto: ahí ya llegó solo).
-    if (app.amorChat > chatAntes && !(app.detallitos.abierto && app.detallitos.actual === "chat")) {
+    if (app.amorChat > chatAntes && !(app.detallitos.abierto && app.detallitos.actual === "chat") && prefChat().avisos) {
       app.sonidos?.sonar("mensaje-llega");
       app.avisoChat = aviso(`${PF.nombreDe(r.pareja) || "Tu amorcito"} te mandó ${app.amorChat - chatAntes === 1 ? "un mensajito" : "mensajitos"}`, 7000, "", { t: "Verlos", al: () => app.detallitos.abrir(null, "chat") });
     }

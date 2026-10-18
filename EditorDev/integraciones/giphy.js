@@ -59,6 +59,7 @@ function normalizar(g) {
     im,
     analitica: g.analytics || null,
     enlace: g.url || "",
+    fecha: g.import_datetime || "",
   };
 }
 
