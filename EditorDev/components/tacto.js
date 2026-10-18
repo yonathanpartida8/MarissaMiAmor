@@ -8,6 +8,7 @@
  *   corazoncitos  los botones principales sueltan unos corazones chiquitos
  *   desplazar     al bajar en un panel, su cabecera se separa con una sombrita
  *                 (`data-desplazado` en el que se desplaza; lo pinta el CSS)
+ *   fantasmas     un clic que cae en algo que no se tocó (apareció bajo el dedo) no cuenta
  *
  * Un solo oyente para cada cosa (delegado en el documento) y nada se mide más
  * que al tocar. Todo SIGUE a lo que tocaste (Fase 23): la onda vive dentro del
@@ -117,10 +118,35 @@ function revisar() {
   pend.clear();
 }
 
+/*
+ * — Toques fantasma (Fase 28) —
+ * Si al tocar algo aparece otra cosa justo debajo del dedo (el cajón de elementos, la hojita de
+ * GIFs o Stickers), en iPhone el «clic» de ese mismo toque cae sobre lo nuevo: añadía una ficha
+ * sin querer o cerraba la hojita en el acto. Un clic sólo cuenta si cae en lo mismo que se tocó
+ * al bajar el dedo (o dentro de ello). Los del teclado y los de una etiqueta a su casilla, siempre.
+ */
+const INTERACTIVO = "button, a[href], label, input, select, textarea, summary, [role=button], [role=tab], [role=option], [role=menuitem], [tabindex]";
+let bajo = null;
+function fantasma(e) {
+  const b = bajo, t = e.target instanceof Element ? e.target : null;
+  if (!b || !t || e.detail === 0 || performance.now() - b.ts > 1500 || !b.n.isConnected) return false;
+  if (b.n === t || b.n.contains(t) || t.contains(b.n)) return false;
+  const ib = b.n.closest(INTERACTIVO), it = t.closest(INTERACTIVO);
+  if (ib === it) return false;
+  if (it && it.labels && [...it.labels].some((l) => l.contains(b.n))) return false;
+  return true;
+}
+
 let puesto = false;
 export function iniciarTacto() {
   if (puesto) return;
   puesto = true;
+  document.addEventListener("pointerdown", (e) => { bajo = e.target instanceof Element ? { n: e.target, ts: performance.now() } : null; }, { capture: true, passive: true });
+  addEventListener("click", (e) => {
+    if (!fantasma(e)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }, true);
   let ultimo = null;
   document.addEventListener("pointerdown", (e) => {
     ultimo = null;
