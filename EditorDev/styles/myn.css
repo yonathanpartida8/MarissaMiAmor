@@ -865,9 +865,9 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 .dt-ver-escena.grande .dt-ver-cerrar .ed-ico { width: 16px; height: 16px; }
 
 /* ═══ Fase 30 · Mensajitos (el chat de los dos), el detallito como la foto y nada de zoom ═══ */
-.dt-capa { --ch-suya: rgba(255, 255, 255, .97); --ch-papel: rgba(255, 255, 255, .96); --ch-borde: rgba(216, 57, 122, .16); --ch-sombra: rgba(120, 40, 80, .13); --ch-pastilla: rgba(255, 255, 255, .74); --ch-mia: linear-gradient(140deg, #ff9cc6 0%, #ec5f98 55%, #d8397a 100%); }
-@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .dt-capa { --ch-suya: #3a2335; --ch-papel: #2c1b29; --ch-borde: rgba(255, 156, 198, .16); --ch-sombra: rgba(0, 0, 0, .38); --ch-pastilla: rgba(58, 35, 53, .82); --ch-mia: linear-gradient(140deg, #f0789f 0%, #d64f87 55%, #b8306b 100%); } }
-:root[data-tema="oscuro"] .dt-capa { --ch-suya: #3a2335; --ch-papel: #2c1b29; --ch-borde: rgba(255, 156, 198, .16); --ch-sombra: rgba(0, 0, 0, .38); --ch-pastilla: rgba(58, 35, 53, .82); --ch-mia: linear-gradient(140deg, #f0789f 0%, #d64f87 55%, #b8306b 100%); }
+.dt-capa { --ch-suya: rgba(255, 255, 255, .97); --ch-papel: rgba(255, 255, 255, .96); --ch-borde: rgba(216, 57, 122, .16); --ch-sombra: rgba(120, 40, 80, .13); --ch-pastilla: rgba(255, 255, 255, .74); --ch-mia: linear-gradient(140deg, #ff9cc6 0%, #ec5f98 55%, #d8397a 100%); --ch-mano: var(--amor-2); }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .dt-capa { --ch-suya: #3a2335; --ch-papel: #2c1b29; --ch-borde: rgba(255, 156, 198, .16); --ch-sombra: rgba(0, 0, 0, .38); --ch-pastilla: rgba(58, 35, 53, .82); --ch-mia: linear-gradient(140deg, #f0789f 0%, #d64f87 55%, #b8306b 100%); --ch-mano: #ffb8d4; } }
+:root[data-tema="oscuro"] .dt-capa { --ch-suya: #3a2335; --ch-papel: #2c1b29; --ch-borde: rgba(255, 156, 198, .16); --ch-sombra: rgba(0, 0, 0, .38); --ch-pastilla: rgba(58, 35, 53, .82); --ch-mia: linear-gradient(140deg, #f0789f 0%, #d64f87 55%, #b8306b 100%); --ch-mano: #ffb8d4; }
 
 /* Sin zoom del navegador en las pantallas de la app (pellizcar o doble toque): sólo se desliza. */
 .dt-capa, .dt-vista, .mp-capa, .ch-lista, .ch-rejilla, .ch-menu { touch-action: pan-x pan-y; }
@@ -883,7 +883,7 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 .dt-chat-t small { color: var(--amor-suave); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dt-ir-chat > .dt-globo { margin: 0; }
 .con-nuevos .dt-chat-ico, .con-nuevos .mp-chat-ico { animation: dtLate 1.6s ease-in-out infinite; }
-.mp-chat-ir { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 12px; padding: 10px 12px 10px 10px; border: 0; border-radius: 18px; background: var(--pp-papel, #fff); color: var(--pp-tinta, #4a2338); box-shadow: 0 8px 20px rgba(110, 50, 70, .14); text-align: left; cursor: pointer; transition: transform .25s cubic-bezier(.3, 1.4, .5, 1); }
+.mp-chat-ir { --cinta: rgba(190, 170, 255, .85); position: relative; display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 16px; padding: 12px 12px 12px 10px; border: 0; border-radius: 18px; background: var(--pp-papel, #fff) var(--papel-tex, none); color: var(--pp-tinta, #4a2338); box-shadow: 0 8px 20px rgba(110, 50, 70, .14); text-align: left; cursor: pointer; transition: transform .25s cubic-bezier(.3, 1.4, .5, 1); }
 .mp-chat-ir:active { transform: scale(.98); }
 .mp-chat-ico { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 15px; background: linear-gradient(140deg, #ff9cc6, #d8397a); color: #fff; }
 .mp-chat-ico svg { width: 25px; height: 25px; }
@@ -1033,8 +1033,9 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 .dt-capa.en-ver .dt-marco { max-width: 1160px; }
 .dt-ver.dt-ver-movil { display: grid; justify-items: center; gap: 16px 34px; }
 .dt-ver-lado { display: flex; flex-direction: column; align-items: center; gap: 12px; width: min(100%, 520px); min-width: 0; }
-.dt-ver-lado > .dt-ver-msg { margin: 0; max-width: 100%; font: 700 31px/1.05 Caveat, "Segoe Script", cursive; color: var(--amor-2); text-align: center; overflow-wrap: anywhere; }
+.dt-ver-lado > .dt-ver-msg { margin: 0; max-width: 100%; font: 700 31px/1.05 Caveat, "Segoe Script", cursive; color: var(--ch-mano); text-align: center; overflow-wrap: anywhere; }
 .dt-ver-lado > .dt-ver-de { font: 400 15px/1.2 "Patrick Hand", sans-serif; }
+.av.dt-ver-av { --tam: 28px; }
 .dt-ver-acc { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
 .dt-pildora { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; min-height: 52px; padding: 8px 14px; border: 0; border-radius: 99px; color: #fff; font: 400 18px/1.05 "Patrick Hand", sans-serif; text-align: left; cursor: pointer; transition: transform .2s cubic-bezier(.3, 1.6, .5, 1), box-shadow .2s, opacity .2s; }
 .dt-pildora .ed-ico { flex: none; width: 21px; height: 21px; }

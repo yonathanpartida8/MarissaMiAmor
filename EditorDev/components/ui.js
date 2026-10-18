@@ -146,6 +146,7 @@ export function aviso(texto, ms = 2600, tipo = "", accion = null) {
   if (tipo) dispatchEvent(new CustomEvent("ed-aviso", { detail: tipo }));
   requestAnimationFrame(() => t.classList.add("ver"));
   setTimeout(() => { t.classList.remove("ver"); setTimeout(() => t.remove(), 300); }, ms);
+  return t;
 }
 
 /* ── Ventanas ─────────────────────────────────────────────────────── */

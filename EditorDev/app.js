@@ -621,7 +621,7 @@ async function latir() {
     // Un mensajito nuevo (si el chat no está abierto: ahí ya llegó solo).
     if (app.amorChat > chatAntes && !(app.detallitos.abierto && app.detallitos.actual === "chat")) {
       app.sonidos?.sonar("mensaje-llega");
-      aviso(`${PF.nombreDe(r.pareja) || "Tu amorcito"} te mandó ${app.amorChat - chatAntes === 1 ? "un mensajito" : "mensajitos"}`, 7000, "", { t: "Verlos", al: () => app.detallitos.abrir(null, "chat") });
+      app.avisoChat = aviso(`${PF.nombreDe(r.pareja) || "Tu amorcito"} te mandó ${app.amorChat - chatAntes === 1 ? "un mensajito" : "mensajitos"}`, 7000, "", { t: "Verlos", al: () => app.detallitos.abrir(null, "chat") });
     }
     if (app.amorNuevos !== antes || app.amorReacciones !== rxAntes || app.amorChat !== chatAntes || firma(app.pareja) !== parejaAntes) dispatchEvent(new CustomEvent("ed-amor"));
   } catch (e) { /* sin conexión: la próxima */ }

@@ -219,10 +219,15 @@ to process»: por eso `librito actualizar` instala `git` en Termux.
   me encantó, lloré, abrazo, beso, me reí; tocar la misma la quita). Sólo
   quien la recibió puede reaccionar; quien la mandó lo ve en su colección y
   le llega un aviso con el latido.
-- El editor pregunta cada 45 s si llegó algo: globito en Exportar / Más y un
+- El editor pregunta cada 25 s si llegó algo: globito en Exportar / Más y un
   aviso «Verlo». La pastilla de arriba dice si tu amorcito está **en línea**.
+- **Mensajitos** (1.6.0): el chat de los dos, con GIFs y stickers de GIPHY
+  pegados encima de los mensajitos, reacciones y «visto». Con el chat abierto
+  pregunta cada 3.5 s; lo escrito se guarda como texto (nunca HTML) y sólo se
+  aceptan imágenes de GIPHY.
 
-Las reacciones y las portaditas necesitan M.YNTHN **1.5.0** o más nuevo: en
+Las reacciones y las portaditas necesitan M.YNTHN **1.5.0** o más nuevo, y
+los Mensajitos **1.6.0**: en
 el teléfono servidor corre `librito actualizar` (tus datos no se tocan; las
 columnas nuevas se agregan solas al prender). Con uno más viejo todo lo demás
 sigue igual y las páginas sin portadita llevan una tapita de colores.

@@ -648,6 +648,20 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Sus sonidos, más bonitos** | más largos y tibios, de piano eléctrico sobre un colchón suave: «te amo» con un latido y un acorde que se abre nota a nota; «me encantó», tres notas que suben y quedan cantando; «lloré», una melodía tierna que baja; «abrazo», un acorde grave que crece y te envuelve; «beso», un besito y una nota que sube; «me reí», notitas que rebotan. Tres versiones de cada una |
 | **Medido** | en teléfono (360×780) y computadora: la página carga en el celular con el reproductor de hoy, sin portada, celular + mensaje + reacciones caben sin taparse, la reacción pone velo, dibujo gigante y 30 piezas sin ninguna estrella, «Ver en grande» crece sin recargar y atrás lo regresa; sin errores |
 
+### Fase 30: Mensajitos (el chat de los dos), el detallito como la foto y sin zoom
+
+| | |
+| --- | --- |
+| **Mensajitos** (`components/chat.js`) | un chat lindo dentro de Detallitos: tus burbujas a la derecha (rosas), las suyas a la izquierda con su foto, por día («Hoy», «Ayer»…), pegaditas cuando se mandan seguido; sólo emojis = grandotes. Se entra desde el menú principal («Mensajitos», con el globito de los que no has leído), desde la colección y desde cada detallito («Contestarle con un mensajito») |
+| **GIFs y stickers encima** | GIF → se manda como mensajito. Sticker → eliges uno y **tocas el mensajito donde lo quieres pegar** (el tuyo o el suyo): ahí se queda, chuequito, y lo ven los dos (hasta 8 por mensajito). Buscador de GIPHY con sugerencias («te amo», «abrazo», «beso»…) |
+| **Reaccionar** | tocar su mensajito abre su menú: las seis reacciones de las páginas (con su fiesta y su sonido), «Pegarle un sticker», «Copiar»; en los tuyos, «Borrar para los dos». Si tu amorcito reacciona a lo tuyo con el chat abierto, también hay fiesta |
+| **Se desliza y llega solo** | abre en lo más nuevo; al subir se cargan los de antes de a poquito sin perder dónde ibas; lo nuevo llega solo (cada 3.5 s con el chat abierto) con su sonido, se marca «visto» y, si estabas leyendo arriba, sale «↓ 1 nuevo». Con el chat cerrado, el latido (cada 25 s) avisa «te mandó un mensajito» |
+| **Seguro** | lo que escriben se pone siempre como texto (nunca HTML); el servidor sólo acepta GIFs y stickers de GIPHY (`media*.giphy.com`/`i.giphy.com`); sólo quien lo recibió reacciona y sólo quien lo mandó borra. Necesita el servidor 1.6.0 (`librito actualizar`) |
+| **Sonidos nuevos** | `mensaje-enviar` (un airecito y dos notas que suben), `mensaje-llega` (dos notas tibias de marimba) y `sticker-pegar` (se despega y se aprieta), en el mismo estilo profesional, con sus tres versiones |
+| **El detallito, como la foto** (`components/detallitos.js`) | el celular **grande** (lo más que quepa), debajo su mensajito **escrito a mano**, quién la mandó, «Ver en grande» (rosa, con ojito) y «Guardar en mis borradores» (lila) **lado a lado**, las reacciones sueltas y más grandes (sin tarjeta), «Contestarle con un mensajito» y **«Más detallitos»**: sus otros, con portadita, mensajito, cuándo y su reacción (tocar uno lo abre ahí; atrás regresa a la colección). «Quitar» quedó como enlace discreto. En la compu: el celular a la izquierda y todo lo demás a su lado. Lindo también en modo oscuro |
+| **Sin zoom donde no hace falta** | en Detallitos, el chat y el menú principal ni pellizcar ni tocar dos veces agrandan la página (sólo se desliza); en «Probar página» y en el celular de los detallitos, pellizcar la página ya no agranda todo el editor; los campos de texto tienen letra de 16 px (el iPhone no se acerca al escribir); y la colección ya no hace zoom cada vez que llega un latido o una reacción |
+| **Medido** | en teléfono (360×780, claro y oscuro) y computadora: mandar, recibir solo, texto nunca HTML, GIF, sticker pegado donde tocaste, reaccionar con fiesta, su reacción a lo tuyo, borrar, subir para ver lo de antes, atrás cierra lo de encima y luego sale, globito del menú; el detallito con celular grande, botones lado a lado, reacciones sin tarjeta, «Más detallitos» y atrás a la colección; y siguen pasando Probar página, toques fantasma, la estela y los 237 sonidos. No probado en un iPhone ni un Android de verdad |
+
 ## Cómo está hecho
 
 ```
@@ -671,7 +685,7 @@ EditorDev/
 │                acciones.js · vista.js · inicio.js · teclado.js ·
 │                hoja.js (hojas con asa y resorte) · pantalla.js (teclado virtual, orientación) ·
 │                morfo.js (repintar sin parpadeo) · prueba.js · salir.js · ajustes.js · ayuda.js ·
-│                menu-principal.js · exportar-menu.js · detallitos.js · cuenta.js · myn.js (M.YNTHN)
+│                menu-principal.js · exportar-menu.js · detallitos.js · chat.js (Mensajitos) · cuenta.js · myn.js (M.YNTHN)
 │   └── secciones/  animar · efectos · transiciones · giphy · audio · html · fondo · navegacion
 ├── recursos/    extras.js (animaciones, transiciones, efectos y fondos propios o de assets/)
 ├── integraciones/ giphy.js (clave protegida) · gif.js (leer GIF, quitar fondo → APNG) · servidor.js (M.YNTHN)

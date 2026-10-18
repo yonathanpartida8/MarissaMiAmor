@@ -216,7 +216,7 @@ export class MenuPrincipal {
     if (!pa) { this.r.chatG = null; return null; }
     this.r.chatG = el("em.dt-globo", { hidden: "" });
     const b = el("button.mp-chat-ir", { type: "button", style: { "--i": 4 }, onClick: (e) => this.app.detallitos.abrir(e.currentTarget, "chat") }, [
-      el("i.mp-chat-ico", { html: ICONO_CHAT }),
+      el("i.mp-carta-cinta"), el("i.mp-chat-ico", { html: ICONO_CHAT }),
       el("span.mp-chat-t", {}, [el("b", { text: "Mensajitos" }), el("small", { text: `Escríbele a ${PF.nombreDe(pa)}` })]),
       this.r.chatG, el("span.mp-carta-ir", { html: FLECHA }),
     ]);

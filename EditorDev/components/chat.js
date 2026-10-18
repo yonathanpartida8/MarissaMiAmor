@@ -161,10 +161,12 @@ export function vistaChat(det) {
   }
   lista.addEventListener("scroll", () => {
     S.pegado = cerca();
+    if (S.menu) colocarMenu();
     if (S.pegado && !bajar.hidden) { S.sinVer = 0; bajar.hidden = true; }
-    if (S.menu) cerrarMenu();
     if (lista.scrollTop < 160 && S.hayMas && !S.antes) cargarAntes();
   }, { passive: true });
+  // Si TÚ deslizas, el menú de un mensajito se cierra (si se mueve solo, porque llegó algo, no).
+  for (const t of ["wheel", "touchmove"]) lista.addEventListener(t, () => { if (S.menu) cerrarMenu(); }, { passive: true });
 
   /* — Hablar con el servidor — */
   async function cargar() {
@@ -329,9 +331,9 @@ export function vistaChat(det) {
     const m = deFila(f);
     if (!m || !real(m)) return;
     if (S.pegar) { pegarEn(m, f, e); return; }
-    abrirMenu(m, f);
+    abrirMenu(m, f, e.detail === 0);
   }
-  function abrirMenu(m, f) {
+  function abrirMenu(m, f, conTeclado) {
     cerrarMenu();
     const b = f.querySelector(".ch-burbuja");
     const partes = [];
@@ -347,15 +349,19 @@ export function vistaChat(det) {
     const velo = el("div.ch-velo", { onClick: () => cerrarMenu() });
     det.capa.append(velo, caja);
     b.classList.add("elegida");
-    // Junto a la burbuja: arriba si cabe (si no, abajo), del lado de quien lo mandó.
-    const r = b.getBoundingClientRect(), w = caja.offsetWidth, h = caja.offsetHeight;
-    const x = Math.max(10, Math.min(innerWidth - w - 10, m.mio ? r.right - w : r.left));
-    const y = r.top - h - 10 > 70 ? r.top - h - 10 : Math.min(innerHeight - h - 10, r.bottom + 10);
-    caja.style.left = x + "px"; caja.style.top = Math.max(10, y) + "px";
-    caja.style.transformOrigin = `${m.mio ? "right" : "left"} ${y < r.top ? "bottom" : "top"}`;
-    S.menu = { caja, velo, b };
+    S.menu = { caja, velo, b, mio: m.mio };
+    colocarMenu();
     son?.sonar("abrir");
-    caja.querySelector("button")?.focus({ preventScroll: true });
+    if (conTeclado) caja.querySelector("button")?.focus({ preventScroll: true });
+  }
+  /** Junto a su burbuja: arriba si cabe (si no, abajo), del lado de quien lo mandó; la sigue si la lista se mueve. */
+  function colocarMenu() {
+    const { caja, b, mio } = S.menu, r = b.getBoundingClientRect(), w = caja.offsetWidth, h = caja.offsetHeight;
+    const x = Math.max(10, Math.min(innerWidth - w - 10, mio ? r.right - w : r.left));
+    const arriba = r.top - h - 10 > 70;
+    const y = arriba ? r.top - h - 10 : Math.min(innerHeight - h - 10, r.bottom + 10);
+    caja.style.left = x + "px"; caja.style.top = Math.max(10, y) + "px";
+    caja.style.transformOrigin = `${mio ? "right" : "left"} ${arriba ? "bottom" : "top"}`;
   }
   function cerrarMenu() {
     const m = S.menu;
@@ -516,6 +522,9 @@ export function vistaChat(det) {
     if (det.capa) det.capa.style.top = det.capa.style.height = det.capa.style.bottom = "";
     det._chatAtras = null;
   });
+  // Si había un aviso de «te mandó mensajitos», ya no hace falta: aquí están.
+  const av = app.avisoChat;
+  if (av?.isConnected) { av.classList.remove("ver"); setTimeout(() => av.remove(), 300); }
   cargar();
   return raiz;
 }

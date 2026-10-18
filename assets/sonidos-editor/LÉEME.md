@@ -104,6 +104,9 @@ momento.
 | `reaccion-beso` | reaccionar «Un beso» |
 | `reaccion-risa` | reaccionar «Me hiciste reír» |
 | `reaccion-quitar` | quitar tu reacción |
+| `mensaje-enviar` | mandar un mensajito en el chat |
+| `mensaje-llega` | te llega un mensajito |
+| `sticker-pegar` | pegar un sticker encima de un mensajito |
 | `gatito-ronroneo` | tocar al gatito dormido del menú |
 
 ### La abejita y el huevito de pascua (también de fábrica)

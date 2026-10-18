@@ -756,8 +756,11 @@ export class Detallitos {
     this._verMovil = { escena, movil, v, acomodar: () => {
       const grande = escena.classList.contains("grande"), B = 22, ancho = innerWidth >= 860;
       const cab = this.vista.getBoundingClientRect().top || 64;
+      // Lo que va debajo, medido de verdad (un mensajito largo ocupa dos o tres renglones).
+      const alto = (n, d) => (n?.isConnected && n.offsetHeight) || d;
+      const debajo = alto(msg, msg ? 62 : 0) + alto(de, 34) + alto(acciones, 64) + 12 * 3 + 16;
       const aw = (grande ? innerWidth - 32 : ancho ? Math.min(560, this.vista.clientWidth * 0.5) : innerWidth - 36) - B;
-      const ah = (grande ? innerHeight - 120 : ancho ? innerHeight - cab - 40 : innerHeight - cab - (msg ? 62 : 0) - 34 - 64 - 34) - B;
+      const ah = (grande ? innerHeight - 120 : ancho ? innerHeight - cab - 40 : innerHeight - cab - debajo) - B;
       movil.style.setProperty("--mw", v.W + "px");
       movil.style.setProperty("--mh", v.H + "px");
       movil.style.setProperty("--k", Math.max(0.2, Math.min(1.2, aw / v.W, Math.max(160, ah) / v.H)).toFixed(4));
@@ -765,6 +768,7 @@ export class Detallitos {
     } };
     this._verMovil.acomodar();
     requestAnimationFrame(() => this._verMovil?.acomodar());
+    document.fonts?.ready.then(() => this._verMovil?.acomodar());
     addEventListener("resize", this._verMovil.acomodar);
     this._limpiezas.push(() => { removeEventListener("resize", this._verMovil?.acomodar); this._verMovil = null; document.body.classList.remove("dt-viendo-grande"); });
     this._cargarEnMovil(x, marco, movil, v, url).catch(() => { marco.src = url; marco.addEventListener("load", () => { marco.classList.add("listo"); movil.classList.add("lista"); }, { once: true }); });
