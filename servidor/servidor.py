@@ -63,7 +63,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.6.0"
+VERSION = "1.7.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -364,6 +364,9 @@ CREATE TABLE IF NOT EXISTS ajustes_de(usuario_id INTEGER PRIMARY KEY, datos TEXT
 CREATE TABLE IF NOT EXISTS mensajes(id INTEGER PRIMARY KEY AUTOINCREMENT, de INTEGER, para INTEGER, texto TEXT, gif TEXT,
   creado REAL, visto REAL, reaccion TEXT, reaccion_t REAL, stickers TEXT, borrado INTEGER DEFAULT 0, actualizado REAL);
 CREATE INDEX IF NOT EXISTS mensajes_par ON mensajes(de, para, id);
+CREATE TABLE IF NOT EXISTS trazos(id INTEGER PRIMARY KEY AUTOINCREMENT, de INTEGER, para INTEGER, ancla INTEGER, color TEXT,
+  ancho REAL, puntos TEXT, fin INTEGER DEFAULT 0, borrado INTEGER DEFAULT 0, creado REAL, actualizado REAL);
+CREATE INDEX IF NOT EXISTS trazos_par ON trazos(de, para, id);
 """
 # Columnas que llegaron después (se agregan solas a una base vieja).
 COLUMNAS_NUEVAS = {
@@ -372,7 +375,10 @@ COLUMNAS_NUEVAS = {
     "proyectos": [("clave", "TEXT"), ("ruta", "TEXT")],
     # Fase 22: la reacción de quien lo recibió (y si quien lo mandó ya la vio) y su portadita.
     "detallitos": [("reaccion", "TEXT"), ("reaccion_t", "REAL"), ("reaccion_vista", "INTEGER DEFAULT 1"), ("portadita", "TEXT")],
+    # Fase 31: espacios en blanco para dibujar (sin mandar mensaje) y si dejas ver tu «visto».
+    "mensajes": [("espacio", "INTEGER")],
 }
+COLUMNAS_NUEVAS["usuarios"].append(("chat_visto", "INTEGER DEFAULT 1"))
 LETRAS_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 
@@ -2593,8 +2599,31 @@ def api_reacciones_vistas(h, s):
 
 # — Fase 30: mensajitos entre los dos (texto, GIFs, stickers pegados encima y reacciones) —
 GIPHY_OK = re.compile(r"^https://(media[0-9]*|i)\.giphy\.com/[A-Za-z0-9_./?=&%-]{4,400}$")
+COLOR_OK = re.compile(r"^#[0-9a-fA-F]{6}$")
 CHAT_MAX_TEXTO = 2000
-CHAT_MAX_STICKERS = 8
+CHAT_MAX_STICKERS = 12
+TRAZO_MAX_PUNTOS = 1500
+ESPACIO_MAX = 4000
+# Tiempo real: quien espera (GET /api/chat?espera=25) se despierta en cuanto cambia algo del chat.
+CHAT_AVISO = threading.Condition()
+CHAT_V = [0]
+
+
+AHORA = object()
+
+
+def _x_ya(sql, *a):
+    """Guarda con la hora tomada DENTRO del candado de la base: quien lee (también dentro) nunca se salta
+    un cambio ni lo recibe dos veces."""
+    with E.db.lock:
+        t = ahora()
+        return E.db.x(sql, *[t if v is AHORA else v for v in a])
+
+
+def _chat_cambio():
+    with CHAT_AVISO:
+        CHAT_V[0] += 1
+        CHAT_AVISO.notify_all()
 
 
 def _par_chat(s):
@@ -2615,15 +2644,33 @@ def _gif_ok(g):
         w, hh = int(g.get("w") or 200), int(g.get("h") or 200)
     except (TypeError, ValueError):
         raise Falla("Medidas de GIF no válidas.", 400)
-    return {"u": u, "w": max(1, min(2000, w)), "h": max(1, min(2000, hh))}
+    r = {"u": u, "w": max(1, min(2000, w)), "h": max(1, min(2000, hh))}
+    if g.get("s"):
+        r["s"] = 1  # un sticker mandado solito (se ve sin burbuja)
+    return r
 
 
-def fila_mensaje(m, uid):
+def _visto_oculto(uid):
+    """¿Tu amorcito apagó su «visto»? (Entonces no se te muestra cuándo leyó lo tuyo.)"""
+    p = E.db.uno("SELECT u.chat_visto FROM usuarios u JOIN usuarios yo ON yo.pareja_id=u.id WHERE yo.id=?", uid)
+    return bool(p and p["chat_visto"] == 0)
+
+
+def fila_mensaje(m, uid, oculto=False):
     if m["borrado"]:
         return {"id": m["id"], "borrado": True}
+    st = json.loads(m["stickers"]) if m["stickers"] else []
     return {"id": m["id"], "mio": m["de"] == uid, "texto": m["texto"] or "", "gif": json.loads(m["gif"]) if m["gif"] else None,
-            "creado": iso(m["creado"]), "visto": iso(m["visto"]) if m["visto"] else "", "reaccion": m["reaccion"] or "",
-            "stickers": [{k: v for k, v in st.items() if k != "de"} | {"mio": st.get("de") == uid} for st in (json.loads(m["stickers"]) if m["stickers"] else [])]}
+            "creado": iso(m["creado"]), "visto": iso(m["visto"]) if m["visto"] and not (oculto and m["de"] == uid) else "",
+            "reaccion": m["reaccion"] or "", "espacio": m.get("espacio") or 0,
+            "stickers": [{k: v for k, v in x.items() if k != "de"} | {"mio": x.get("de") == uid} for x in st]}
+
+
+def fila_trazo(t, uid):
+    if t["borrado"]:
+        return {"id": t["id"], "borrado": True}
+    return {"id": t["id"], "mio": t["de"] == uid, "ancla": t["ancla"], "c": t["color"], "a": t["ancho"],
+            "p": json.loads(t["puntos"] or "[]"), "fin": bool(t["fin"])}
 
 
 def _mensaje_de(s, mid):
@@ -2634,78 +2681,192 @@ def _mensaje_de(s, mid):
     return m
 
 
-@ruta("GET", "/api/chat", "sesion")
-def api_chat(h, s):
-    """Los mensajitos de los dos: los últimos (n), los de antes de `antes`, o los nuevos después de `despues`
-    más los que cambiaron (reacción, sticker, borrado) desde `desde`."""
-    uid, p = s["usuario_id"], _par_chat(s)
-    q = h.parametros()
+def _puntos(lista):
+    """Los puntos de un trazo: [x, y] con x de 0 a 10000 (lo ancho del chat) e y en px desde su mensajito."""
+    if not isinstance(lista, list) or len(lista) > TRAZO_MAX_PUNTOS:
+        raise Falla("Trazo no válido.", 400)
+    r = []
+    for pt in lista:
+        try:
+            x, y = int(round(float(pt[0]))), int(round(float(pt[1])))
+        except (TypeError, ValueError, IndexError):
+            raise Falla("Trazo no válido.", 400)
+        r.append([max(0, min(10000, x)), max(-3000, min(8000, y))])
+    return r
+
+
+def _respuesta_chat(uid, p, q):
     par = "((de=? AND para=?) OR (de=? AND para=?))"
     a = (uid, p, p, uid)
+    oculto = _visto_oculto(uid)
     try:
         n = max(1, min(100, int(q.get("n") or 40)))
         antes, despues, desde = int(q.get("antes") or 0), int(q.get("despues") or 0), float(q.get("desde") or 0)
     except ValueError:
         raise Falla("Parámetros no válidos.", 400)
+    with E.db.lock:
+        return _respuesta_chat_ya(uid, a, par, oculto, n, antes, despues, desde)
+
+
+def _respuesta_chat_ya(uid, a, par, oculto, n, antes, despues, desde):
+    t0 = ahora()
     if despues:
         filas = E.db.q(f"SELECT * FROM mensajes WHERE {par} AND id>? ORDER BY id LIMIT 300", *a, despues)
         cambios = E.db.q(f"SELECT * FROM mensajes WHERE {par} AND id<=? AND actualizado>? ORDER BY id", *a, despues, desde) if desde else []
-        h.responder(200, {"mensajes": [fila_mensaje(m, uid) for m in filas], "cambios": [fila_mensaje(m, uid) for m in cambios], "ahora": ahora()})
-        return
+        trazos = E.db.q(f"SELECT * FROM trazos WHERE {par} AND actualizado>? ORDER BY id", *a, desde) if desde else []
+        return {"mensajes": [fila_mensaje(m, uid, oculto) for m in filas], "cambios": [fila_mensaje(m, uid, oculto) for m in cambios],
+                "trazos": [fila_trazo(t, uid) for t in trazos], "ahora": t0}
     if antes:
         filas = E.db.q(f"SELECT * FROM mensajes WHERE {par} AND borrado=0 AND id<? ORDER BY id DESC LIMIT ?", *a, antes, n + 1)
     else:
         filas = E.db.q(f"SELECT * FROM mensajes WHERE {par} AND borrado=0 ORDER BY id DESC LIMIT ?", *a, n + 1)
     hay_mas = len(filas) > n
     filas = list(reversed(filas[:n]))
-    h.responder(200, {"mensajes": [fila_mensaje(m, uid) for m in filas], "hay_mas": hay_mas, "ahora": ahora()})
+    # Los dibujos de lo que se ve (y los de arriba de todo, si ya no hay más para atrás).
+    desde_id = filas[0]["id"] if filas else (antes or 1 << 60)
+    hasta_id = antes or 1 << 60
+    trazos = E.db.q(f"SELECT * FROM trazos WHERE {par} AND borrado=0 AND ((ancla>=? AND ancla<?) OR ancla=?) ORDER BY id DESC LIMIT 800",
+                    *a, desde_id, hasta_id, -1 if hay_mas else 0)
+    yo = E.db.uno("SELECT chat_visto FROM usuarios WHERE id=?", uid)
+    return {"mensajes": [fila_mensaje(m, uid, oculto) for m in filas], "hay_mas": hay_mas, "ahora": t0,
+            "trazos": [fila_trazo(t, uid) for t in reversed(trazos)], "ajustes": {"visto": not yo or yo["chat_visto"] != 0}}
+
+
+@ruta("GET", "/api/chat", "sesion")
+def api_chat(h, s):
+    """Los mensajitos de los dos: los últimos (n), los de antes de `antes`, o los nuevos después de `despues`
+    más los que cambiaron (reacción, sticker, borrado, dibujos) desde `desde`. Con `espera` (hasta 25 s), si
+    no hay nada nuevo se queda esperando y contesta en cuanto llega algo: así se ve todo en tiempo real."""
+    uid, p = s["usuario_id"], _par_chat(s)
+    q = h.parametros()
+    try:
+        espera = max(0.0, min(25.0, float(q.get("espera") or 0)))
+    except ValueError:
+        espera = 0.0
+    fin = time.monotonic() + espera
+    while True:
+        v0 = CHAT_V[0]
+        r = _respuesta_chat(uid, p, q)
+        vacio = q.get("despues") and not (r["mensajes"] or r["cambios"] or r["trazos"])
+        falta = fin - time.monotonic()
+        if not vacio or falta <= 0:
+            break
+        with CHAT_AVISO:
+            if CHAT_V[0] == v0:
+                CHAT_AVISO.wait(falta)
+        if CHAT_V[0] == v0:
+            break
+    h.responder(200, r)
 
 
 @ruta("POST", "/api/chat", "sesion")
 def api_chat_mandar(h, s):
-    """Mandar un mensajito: texto, un GIF de GIPHY, o los dos."""
+    """Mandar un mensajito: texto, un GIF (o un sticker solito) de GIPHY, o los dos. Con `espacio`, un hueco
+    en blanco para dibujar (si lo último ya es un hueco, se agranda)."""
     uid, p = s["usuario_id"], _par_chat(s)
     d = h.cuerpo_json()
+    t = ahora()
+    if d.get("espacio"):
+        try:
+            alto = max(80, min(1200, int(d["espacio"])))
+        except (TypeError, ValueError):
+            raise Falla("Espacio no válido.", 400)
+        u = E.db.uno("SELECT * FROM mensajes WHERE ((de=? AND para=?) OR (de=? AND para=?)) AND borrado=0 ORDER BY id DESC LIMIT 1", uid, p, p, uid)
+        if u and u["espacio"]:
+            _x_ya("UPDATE mensajes SET espacio=?, actualizado=? WHERE id=?", min(ESPACIO_MAX, u["espacio"] + alto), AHORA, u["id"])
+            mid = u["id"]
+        else:
+            mid = _x_ya("INSERT INTO mensajes(de, para, texto, creado, visto, actualizado, espacio) VALUES(?,?,?,?,?,?,?)", uid, p, "", AHORA, AHORA, AHORA, alto)
+        _chat_cambio()
+        h.responder(200, {"mensaje": fila_mensaje(E.db.uno("SELECT * FROM mensajes WHERE id=?", mid), uid)})
+        return
     texto = str(d.get("texto") or "").strip()[:CHAT_MAX_TEXTO]
     gif = _gif_ok(d.get("gif")) if d.get("gif") else None
     if not texto and not gif:
         raise Falla("El mensaje está vacío.", 400)
-    if E.db.uno("SELECT COUNT(*) n FROM mensajes WHERE de=? AND creado>?", uid, ahora() - 10)["n"] >= 25:
+    if E.db.uno("SELECT COUNT(*) n FROM mensajes WHERE de=? AND creado>?", uid, t - 10)["n"] >= 25:
         raise Falla("Más despacito: muchos mensajes seguidos.", 429)
-    t = ahora()
-    mid = E.db.x("INSERT INTO mensajes(de, para, texto, gif, creado, actualizado) VALUES(?,?,?,?,?,?)", uid, p, texto, json.dumps(gif) if gif else None, t, t)
+    mid = _x_ya("INSERT INTO mensajes(de, para, texto, gif, creado, actualizado) VALUES(?,?,?,?,?,?)", uid, p, texto, json.dumps(gif) if gif else None, AHORA, AHORA)
+    _chat_cambio()
     h.responder(200, {"mensaje": fila_mensaje(E.db.uno("SELECT * FROM mensajes WHERE id=?", mid), uid)})
+
+
+@ruta("PUT", "/api/chat/ajustes", "sesion")
+def api_chat_ajustes(h, s):
+    """Tu privacidad en el chat: si tu amorcito ve cuándo leíste lo suyo («visto»)."""
+    d = h.cuerpo_json()
+    _x_ya("UPDATE usuarios SET chat_visto=? WHERE id=?", 0 if d.get("visto") is False else 1, s["usuario_id"])
+    _x_ya("UPDATE mensajes SET actualizado=? WHERE de=(SELECT pareja_id FROM usuarios WHERE id=?) AND para=? AND visto IS NOT NULL", AHORA, s["usuario_id"], s["usuario_id"])
+    _chat_cambio()
+    h.responder(200, {"ajustes": {"visto": d.get("visto") is not False}})
 
 
 @ruta("PUT", r"/api/chat/([0-9]{1,12})/reaccion", "sesion")
 def api_chat_reaccion(h, s, mid):
     """Reaccionar a un mensaje de tu amorcito (vacío = quitarla)."""
     m = _mensaje_de(s, int(mid))
-    if m["para"] != s["usuario_id"]:
+    if m["para"] != s["usuario_id"] or m["espacio"]:
         raise Falla("Sólo puedes reaccionar a los mensajes que te mandaron.", 403)
     r = str(h.cuerpo_json().get("reaccion") or "").strip()
     if r and r not in REACCIONES:
         raise Falla("Esa reacción no existe.", 400)
-    E.db.x("UPDATE mensajes SET reaccion=?, reaccion_t=?, actualizado=? WHERE id=?", r or None, ahora() if r else None, ahora(), m["id"])
+    _x_ya("UPDATE mensajes SET reaccion=?, reaccion_t=?, actualizado=? WHERE id=?", r or None, AHORA if r else None, AHORA, m["id"])
+    _chat_cambio()
     h.responder(200, {"mensaje": fila_mensaje(E.db.uno("SELECT * FROM mensajes WHERE id=?", m["id"]), s["usuario_id"])})
+
+
+def _sticker_de(d, libre):
+    g = _gif_ok({"u": d.get("u"), "w": 1, "h": 1})
+    try:
+        x = max(0.0, min(1.0, float(d.get("x", 0.8))))
+        y = max(-3000.0, min(8000.0, float(d.get("y", 0)))) if libre else max(0.0, min(1.0, float(d.get("y", 0.2))))
+        r, k = max(-40.0, min(40.0, float(d.get("r", 0)))), max(0.5, min(2.5, float(d.get("s", 1))))
+    except (TypeError, ValueError):
+        raise Falla("Posición no válida.", 400)
+    return {"u": g["u"], "x": round(x, 4), "y": round(y, 1 if libre else 3), "r": round(r, 1), "s": round(k, 2), **({"l": 1} if libre else {})}
 
 
 @ruta("POST", r"/api/chat/([0-9]{1,12})/sticker", "sesion")
 def api_chat_sticker(h, s, mid):
-    """Pegar un sticker de GIPHY encima de un mensaje (cualquiera de los dos), en (x, y) del 0 al 1."""
+    """Pegar un sticker de GIPHY: encima de un mensajito (x, y del 0 al 1) o, con `l`, LIBRE en el chat
+    (x de 0 a 1 a lo ancho, y en px desde ese mensajito: así cae donde lo soltaste, en cualquier pantalla)."""
     m = _mensaje_de(s, int(mid))
     d = h.cuerpo_json()
-    g = _gif_ok({"u": d.get("u"), "w": 1, "h": 1})
-    try:
-        x, y = max(0.0, min(1.0, float(d.get("x", 0.8)))), max(0.0, min(1.0, float(d.get("y", 0.2))))
-        r, k = max(-40.0, min(40.0, float(d.get("r", 0)))), max(0.5, min(2.0, float(d.get("s", 1))))
-    except (TypeError, ValueError):
-        raise Falla("Posición no válida.", 400)
+    st = _sticker_de(d, bool(d.get("l")))
     l = json.loads(m["stickers"]) if m["stickers"] else []
     if len(l) >= CHAT_MAX_STICKERS:
-        raise Falla("Ese mensaje ya tiene muchos stickers.", 409)
-    l.append({"u": g["u"], "x": round(x, 3), "y": round(y, 3), "r": round(r, 1), "s": round(k, 2), "de": s["usuario_id"]})
-    E.db.x("UPDATE mensajes SET stickers=?, actualizado=? WHERE id=?", json.dumps(l), ahora(), m["id"])
+        raise Falla("Ahí ya hay muchos stickers.", 409)
+    l.append({**st, "i": secrets.token_hex(4), "de": s["usuario_id"]})
+    _x_ya("UPDATE mensajes SET stickers=?, actualizado=? WHERE id=?", json.dumps(l), AHORA, m["id"])
+    _chat_cambio()
+    h.responder(200, {"mensaje": fila_mensaje(E.db.uno("SELECT * FROM mensajes WHERE id=?", m["id"]), s["usuario_id"])})
+
+
+@ruta("PUT", r"/api/chat/([0-9]{1,12})/sticker/([0-9a-f]{8})", "sesion")
+def api_chat_sticker_mover(h, s, mid, sid):
+    """Mover (o girar y agrandar) un sticker tuyo."""
+    m = _mensaje_de(s, int(mid))
+    l = json.loads(m["stickers"]) if m["stickers"] else []
+    x = next((z for z in l if z.get("i") == sid), None)
+    if not x or x.get("de") != s["usuario_id"]:
+        raise Falla("Sólo puedes mover tus stickers.", 403)
+    x.update({k: v for k, v in _sticker_de({**x, **h.cuerpo_json(), "u": x["u"]}, bool(x.get("l"))).items() if k != "u"})
+    _x_ya("UPDATE mensajes SET stickers=?, actualizado=? WHERE id=?", json.dumps(l), AHORA, m["id"])
+    _chat_cambio()
+    h.responder(200, {"mensaje": fila_mensaje(E.db.uno("SELECT * FROM mensajes WHERE id=?", m["id"]), s["usuario_id"])})
+
+
+@ruta("DELETE", r"/api/chat/([0-9]{1,12})/sticker/([0-9a-f]{8})", "sesion")
+def api_chat_sticker_quitar(h, s, mid, sid):
+    """Quitar un sticker tuyo."""
+    m = _mensaje_de(s, int(mid))
+    l = json.loads(m["stickers"]) if m["stickers"] else []
+    x = next((z for z in l if z.get("i") == sid), None)
+    if not x or x.get("de") != s["usuario_id"]:
+        raise Falla("Sólo puedes quitar tus stickers.", 403)
+    l.remove(x)
+    _x_ya("UPDATE mensajes SET stickers=?, actualizado=? WHERE id=?", json.dumps(l) if l else None, AHORA, m["id"])
+    _chat_cambio()
     h.responder(200, {"mensaje": fila_mensaje(E.db.uno("SELECT * FROM mensajes WHERE id=?", m["id"]), s["usuario_id"])})
 
 
@@ -2715,15 +2876,76 @@ def api_chat_borrar(h, s, mid):
     m = _mensaje_de(s, int(mid))
     if m["de"] != s["usuario_id"]:
         raise Falla("Sólo puedes borrar tus mensajes.", 403)
-    E.db.x("UPDATE mensajes SET borrado=1, texto='', gif=NULL, stickers=NULL, actualizado=? WHERE id=?", ahora(), m["id"])
+    _x_ya("UPDATE mensajes SET borrado=1, texto='', gif=NULL, stickers=NULL, actualizado=? WHERE id=?", AHORA, m["id"])
+    _chat_cambio()
     h.responder(200, {"ok": True})
 
 
 @ruta("POST", "/api/chat/vistos", "sesion")
 def api_chat_vistos(h, s):
     """Ya leíste lo que te mandó."""
-    n = E.db.x("UPDATE mensajes SET visto=?, actualizado=? WHERE para=? AND visto IS NULL", ahora(), ahora(), s["usuario_id"])
+    n = _x_ya("UPDATE mensajes SET visto=?, actualizado=? WHERE para=? AND visto IS NULL", AHORA, AHORA, s["usuario_id"])
+    if n:
+        _chat_cambio()
     h.responder(200, {"vistos": n})
+
+
+@ruta("POST", "/api/chat/trazos", "sesion")
+def api_trazo_nuevo(h, s):
+    """Empezar un dibujo en el chat (se ve mientras lo haces): su mensajito ancla (0 = arriba de todo),
+    color, grosor y los primeros puntos."""
+    uid, p = s["usuario_id"], _par_chat(s)
+    d = h.cuerpo_json()
+    try:
+        ancla, ancho = int(d.get("ancla") or 0), max(1.0, min(40.0, float(d.get("a") or 4)))
+    except (TypeError, ValueError):
+        raise Falla("Trazo no válido.", 400)
+    color = str(d.get("c") or "#d8397a")
+    if not COLOR_OK.match(color):
+        raise Falla("Color no válido.", 400)
+    if ancla:
+        _mensaje_de(s, ancla)
+    t = ahora()
+    if E.db.uno("SELECT COUNT(*) n FROM trazos WHERE de=? AND creado>?", uid, t - 10)["n"] >= 60:
+        raise Falla("Más despacito: muchos trazos seguidos.", 429)
+    tid = _x_ya("INSERT INTO trazos(de, para, ancla, color, ancho, puntos, fin, creado, actualizado) VALUES(?,?,?,?,?,?,?,?,?)",
+                 uid, p, ancla, color, round(ancho, 1), json.dumps(_puntos(d.get("p") or [])), 1 if d.get("fin") else 0, AHORA, AHORA)
+    _chat_cambio()
+    h.responder(200, {"trazo": fila_trazo(E.db.uno("SELECT * FROM trazos WHERE id=?", tid), uid)})
+
+
+@ruta("POST", r"/api/chat/trazos/([0-9]{1,12})", "sesion")
+def api_trazo_mas(h, s, tid):
+    """Más puntos de tu trazo (mientras dibujas); con `fin`, se termina."""
+    uid = s["usuario_id"]
+    t = E.db.uno("SELECT * FROM trazos WHERE id=? AND de=? AND borrado=0", int(tid), uid)
+    if not t:
+        raise Falla("Ese trazo ya no está.", 404)
+    d = h.cuerpo_json()
+    pts = json.loads(t["puntos"] or "[]") + _puntos(d.get("p") or [])
+    if len(pts) > TRAZO_MAX_PUNTOS:
+        pts = pts[:TRAZO_MAX_PUNTOS]
+    _x_ya("UPDATE trazos SET puntos=?, fin=?, actualizado=? WHERE id=?", json.dumps(pts), 1 if d.get("fin") or t["fin"] else 0, AHORA, t["id"])
+    _chat_cambio()
+    h.responder(200, {"ok": True, "n": len(pts)})
+
+
+@ruta("DELETE", r"/api/chat/trazos/([0-9]{1,12})", "sesion")
+def api_trazo_borrar(h, s, tid):
+    """Borrar un trazo tuyo (deshacer)."""
+    n = _x_ya("UPDATE trazos SET borrado=1, puntos='[]', actualizado=? WHERE id=? AND de=? AND borrado=0", AHORA, int(tid), s["usuario_id"])
+    if not n:
+        raise Falla("Ese trazo ya no está.", 404)
+    _chat_cambio()
+    h.responder(200, {"ok": True})
+
+
+@ruta("DELETE", "/api/chat/trazos", "sesion")
+def api_trazos_borrar(h, s):
+    """Borrar todos TUS dibujos del chat (los de tu amorcito se quedan)."""
+    n = _x_ya("UPDATE trazos SET borrado=1, puntos='[]', actualizado=? WHERE de=? AND borrado=0", AHORA, s["usuario_id"])
+    _chat_cambio()
+    h.responder(200, {"borrados": n})
 
 
 @ruta("PUT", f"/api/detallitos/{DETALLITO_RE}/portadita", "sesion")
