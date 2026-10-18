@@ -148,6 +148,13 @@
         }
         const s = Math.min(w / this.W, hh / this.H);
         this.escala = s;
+        // Una hoja acostada en un teléfono parado (o al revés) se ve chiquita: una pastillita invita a girarlo.
+        const girar = !!f && s < 0.7 && (this.W > this.H * 1.15) !== (w > hh * 1.15);
+        if (girar && !this._avisoGirar) {
+          this._avisoGirar = h("div", "rt-girar-aviso", this.raiz);
+          this._avisoGirar.textContent = this.W > this.H ? "Gira tu teléfono para verla en grande" : "Endereza tu teléfono para verla en grande";
+        }
+        this.raiz.classList.toggle("rt-girar", girar);
         this.marco.style.transform = `translate(-50%, -50%) scale(${s})`;
       };
       this._escalar();

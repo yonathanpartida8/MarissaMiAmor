@@ -251,3 +251,7 @@
    librito no salen en ella; y los que no tienen a dónde ir (primera / última / página suelta), tampoco. */
 .rt-nav-propia .rt-nav { display: none !important; }
 .rt-sin-destino { visibility: hidden !important; pointer-events: none !important; }
+/* Una hoja acostada en un teléfono parado: una pastillita invita a girarlo (y se va sola). */
+.rt-girar-aviso { display: none; position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); z-index: 60; padding: 9px 16px; border-radius: 99px; background: rgba(30, 18, 28, .78); color: #fff; font: 500 13px/1.2 system-ui, -apple-system, sans-serif; white-space: nowrap; pointer-events: none; transform: translateX(-50%); }
+.rt-girar .rt-girar-aviso { display: block; animation: rtGirarAviso 6s ease both; }
+@keyframes rtGirarAviso { 0% { opacity: 0; transform: translate(-50%, 10px); } 10%, 80% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 0); } }
