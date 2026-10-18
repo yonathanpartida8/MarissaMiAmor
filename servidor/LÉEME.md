@@ -317,7 +317,7 @@ No se puede deshacer. Sus publicaciones (si había) pasan a ti.
   config.json            ajustes (sin secretos)
   llave.bin              llave maestra (0600)
   secretos.bin           token de GitHub, cifrado (0600)
-  librito.db             cuentas, parejas, sesiones, publicaciones, proyectos, detallitos, actividad
+  librito.db             cuentas, parejas, sesiones, publicaciones, proyectos, detallitos, mensajitos, actividad
   publicaciones/<n>/     copia de cada publicación (se ve en /p/<n>/)
   nube/archivos/ab/<huella>         cada foto, canción o video (una sola vez, por su huella)
   nube/libritos/<cuenta>/<clave>.json   cada librito de cada cuenta
@@ -352,11 +352,16 @@ azar) · `/api/…`:
 | `PUT/GET/DELETE /api/yo/foto` · `GET /api/amor/foto` | sesión | tu foto de perfil (jpg, png o webp, hasta 2 MB) y la de tu amorcito |
 | `GET/POST /api/proyectos` · `GET/DELETE /api/proyectos/<id>` | sesión | copias de antes (.zip) |
 | `GET/DELETE /api/amor` · `POST /api/amor/vincular` · `POST /api/amor/codigo` | sesión | tu código y el vínculo con tu amorcito |
-| `GET /api/latido` | sesión | «sigo aquí» + cuántos detallitos nuevos y cuántas reacciones nuevas a los tuyos |
+| `GET /api/latido` | sesión | «sigo aquí» + cuántos detallitos nuevos, cuántas reacciones nuevas a los tuyos y cuántos mensajitos sin leer (`chat`) |
 | `GET/POST /api/detallitos` · `POST …/<id>/visto` · `GET …/<id>/paquete` · `DELETE …/<id>` | sesión | mandar, ver, guardar y quitar detallitos |
 | `PUT /api/detallitos/<id>/reaccion` (`{"reaccion":"te-amo"}`; vacío la quita) | quien lo recibió | reaccionar: te-amo, me-encanto, llore, abrazo, beso o risa |
 | `POST /api/detallitos/reacciones/vistas` | sesión | ya viste las reacciones a lo que mandaste |
 | `PUT /api/detallitos/<id>/portadita` (jpg, png o webp, hasta 600 KB) | quien lo mandó (o quien lo recibió, si todavía no tiene) | su miniatura; se ve en `/d/<id>/portadita.<ext>` |
+| `GET /api/chat?n=40` · `?antes=<id>` · `?despues=<id>&desde=<ahora>` | pareja | los mensajitos de los dos: los últimos, los de antes (para ir subiendo) o los nuevos más los que cambiaron (reacción, sticker, borrado) |
+| `POST /api/chat` (`{"texto":"…","gif":{"u":"https://media.giphy.com/…","w":200,"h":150}}`) | pareja | mandar un mensajito: texto (hasta 2000), un GIF de GIPHY, o los dos; máximo 25 cada 10 s |
+| `PUT /api/chat/<id>/reaccion` (`{"reaccion":"te-amo"}`; vacío la quita) | quien lo recibió | reaccionar a un mensajito |
+| `POST /api/chat/<id>/sticker` (`{"u":"https://media.giphy.com/…","x":0.8,"y":0.2,"r":-8,"s":1}`) | pareja | pegar un sticker de GIPHY encima de un mensajito (hasta 8) |
+| `DELETE /api/chat/<id>` · `POST /api/chat/vistos` | quien lo mandó · sesión | borrar tu mensajito (para los dos) · ya leíste lo que te mandó |
 | `POST /api/admin/usuarios/borrar-todas` (`{"confirmar":"BORRAR"}`) | admin | borra todas las cuentas que no son de administrador |
 | `/api/admin/…` (resumen, ajustes, github, usuarios, invitaciones, actividad, túnel) | admin | el panel |
 

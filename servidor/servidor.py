@@ -63,7 +63,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.5.0"
+VERSION = "1.6.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -361,6 +361,9 @@ CREATE TABLE IF NOT EXISTS libritos(usuario_id INTEGER, clave TEXT, nombre TEXT,
   tam INTEGER, aparato TEXT, PRIMARY KEY(usuario_id, clave));
 CREATE TABLE IF NOT EXISTS copias(id TEXT PRIMARY KEY, usuario_id INTEGER, clave TEXT, nombre TEXT, creado REAL, paginas INTEGER, tam INTEGER);
 CREATE TABLE IF NOT EXISTS ajustes_de(usuario_id INTEGER PRIMARY KEY, datos TEXT, editado REAL);
+CREATE TABLE IF NOT EXISTS mensajes(id INTEGER PRIMARY KEY AUTOINCREMENT, de INTEGER, para INTEGER, texto TEXT, gif TEXT,
+  creado REAL, visto REAL, reaccion TEXT, reaccion_t REAL, stickers TEXT, borrado INTEGER DEFAULT 0, actualizado REAL);
+CREATE INDEX IF NOT EXISTS mensajes_par ON mensajes(de, para, id);
 """
 # Columnas que llegaron después (se agregan solas a una base vieja).
 COLUMNAS_NUEVAS = {
@@ -2483,7 +2486,8 @@ def api_latido(h, s):
     E.db.x("UPDATE usuarios SET visto=? WHERE id=?", ahora(), s["usuario_id"])
     n = E.db.uno("SELECT COUNT(*) n FROM detallitos WHERE para=? AND visto IS NULL AND borrado_para=0", s["usuario_id"])["n"]
     r = E.db.uno("SELECT COUNT(*) n FROM detallitos WHERE de=? AND reaccion IS NOT NULL AND reaccion_vista=0 AND borrado_de=0", s["usuario_id"])["n"]
-    h.responder(200, {"nuevos": n, "reacciones": r, "pareja": pareja_de(s["usuario_id"])})
+    c = E.db.uno("SELECT COUNT(*) n FROM mensajes WHERE para=? AND visto IS NULL AND borrado=0", s["usuario_id"])["n"]
+    h.responder(200, {"nuevos": n, "reacciones": r, "chat": c, "pareja": pareja_de(s["usuario_id"])})
 
 
 # — Detallitos: páginas que se mandan entre los dos y se van coleccionando —
@@ -2585,6 +2589,141 @@ def api_reacciones_vistas(h, s):
     """Quien mandó las páginas ya vio cómo reaccionó su amorcito."""
     E.db.x("UPDATE detallitos SET reaccion_vista=1 WHERE de=? AND reaccion IS NOT NULL AND reaccion_vista=0", s["usuario_id"])
     h.responder(200, {"ok": True})
+
+
+# — Fase 30: mensajitos entre los dos (texto, GIFs, stickers pegados encima y reacciones) —
+GIPHY_OK = re.compile(r"^https://(media[0-9]*|i)\.giphy\.com/[A-Za-z0-9_./?=&%-]{4,400}$")
+CHAT_MAX_TEXTO = 2000
+CHAT_MAX_STICKERS = 8
+
+
+def _par_chat(s):
+    """El otro de la pareja (sin pareja no hay chat)."""
+    u = E.db.uno("SELECT pareja_id FROM usuarios WHERE id=?", s["usuario_id"])
+    if not u or not u["pareja_id"]:
+        raise Falla("Primero vincúlate con tu amorcito.", 409)
+    return u["pareja_id"]
+
+
+def _gif_ok(g):
+    if not isinstance(g, dict):
+        return None
+    u = str(g.get("u") or "")
+    if not GIPHY_OK.match(u):
+        raise Falla("Ese GIF no es de GIPHY.", 400)
+    try:
+        w, hh = int(g.get("w") or 200), int(g.get("h") or 200)
+    except (TypeError, ValueError):
+        raise Falla("Medidas de GIF no válidas.", 400)
+    return {"u": u, "w": max(1, min(2000, w)), "h": max(1, min(2000, hh))}
+
+
+def fila_mensaje(m, uid):
+    if m["borrado"]:
+        return {"id": m["id"], "borrado": True}
+    return {"id": m["id"], "mio": m["de"] == uid, "texto": m["texto"] or "", "gif": json.loads(m["gif"]) if m["gif"] else None,
+            "creado": iso(m["creado"]), "visto": iso(m["visto"]) if m["visto"] else "", "reaccion": m["reaccion"] or "",
+            "stickers": [{k: v for k, v in st.items() if k != "de"} | {"mio": st.get("de") == uid} for st in (json.loads(m["stickers"]) if m["stickers"] else [])]}
+
+
+def _mensaje_de(s, mid):
+    p = _par_chat(s)
+    m = E.db.uno("SELECT * FROM mensajes WHERE id=? AND borrado=0 AND ((de=? AND para=?) OR (de=? AND para=?))", mid, s["usuario_id"], p, p, s["usuario_id"])
+    if not m:
+        raise Falla("Ese mensaje ya no está.", 404)
+    return m
+
+
+@ruta("GET", "/api/chat", "sesion")
+def api_chat(h, s):
+    """Los mensajitos de los dos: los últimos (n), los de antes de `antes`, o los nuevos después de `despues`
+    más los que cambiaron (reacción, sticker, borrado) desde `desde`."""
+    uid, p = s["usuario_id"], _par_chat(s)
+    q = h.parametros()
+    par = "((de=? AND para=?) OR (de=? AND para=?))"
+    a = (uid, p, p, uid)
+    try:
+        n = max(1, min(100, int(q.get("n") or 40)))
+        antes, despues, desde = int(q.get("antes") or 0), int(q.get("despues") or 0), float(q.get("desde") or 0)
+    except ValueError:
+        raise Falla("Parámetros no válidos.", 400)
+    if despues:
+        filas = E.db.q(f"SELECT * FROM mensajes WHERE {par} AND id>? ORDER BY id LIMIT 300", *a, despues)
+        cambios = E.db.q(f"SELECT * FROM mensajes WHERE {par} AND id<=? AND actualizado>? ORDER BY id", *a, despues, desde) if desde else []
+        h.responder(200, {"mensajes": [fila_mensaje(m, uid) for m in filas], "cambios": [fila_mensaje(m, uid) for m in cambios], "ahora": ahora()})
+        return
+    if antes:
+        filas = E.db.q(f"SELECT * FROM mensajes WHERE {par} AND borrado=0 AND id<? ORDER BY id DESC LIMIT ?", *a, antes, n + 1)
+    else:
+        filas = E.db.q(f"SELECT * FROM mensajes WHERE {par} AND borrado=0 ORDER BY id DESC LIMIT ?", *a, n + 1)
+    hay_mas = len(filas) > n
+    filas = list(reversed(filas[:n]))
+    h.responder(200, {"mensajes": [fila_mensaje(m, uid) for m in filas], "hay_mas": hay_mas, "ahora": ahora()})
+
+
+@ruta("POST", "/api/chat", "sesion")
+def api_chat_mandar(h, s):
+    """Mandar un mensajito: texto, un GIF de GIPHY, o los dos."""
+    uid, p = s["usuario_id"], _par_chat(s)
+    d = h.cuerpo_json()
+    texto = str(d.get("texto") or "").strip()[:CHAT_MAX_TEXTO]
+    gif = _gif_ok(d.get("gif")) if d.get("gif") else None
+    if not texto and not gif:
+        raise Falla("El mensaje está vacío.", 400)
+    if E.db.uno("SELECT COUNT(*) n FROM mensajes WHERE de=? AND creado>?", uid, ahora() - 10)["n"] >= 25:
+        raise Falla("Más despacito: muchos mensajes seguidos.", 429)
+    t = ahora()
+    mid = E.db.x("INSERT INTO mensajes(de, para, texto, gif, creado, actualizado) VALUES(?,?,?,?,?,?)", uid, p, texto, json.dumps(gif) if gif else None, t, t)
+    h.responder(200, {"mensaje": fila_mensaje(E.db.uno("SELECT * FROM mensajes WHERE id=?", mid), uid)})
+
+
+@ruta("PUT", r"/api/chat/([0-9]{1,12})/reaccion", "sesion")
+def api_chat_reaccion(h, s, mid):
+    """Reaccionar a un mensaje de tu amorcito (vacío = quitarla)."""
+    m = _mensaje_de(s, int(mid))
+    if m["para"] != s["usuario_id"]:
+        raise Falla("Sólo puedes reaccionar a los mensajes que te mandaron.", 403)
+    r = str(h.cuerpo_json().get("reaccion") or "").strip()
+    if r and r not in REACCIONES:
+        raise Falla("Esa reacción no existe.", 400)
+    E.db.x("UPDATE mensajes SET reaccion=?, reaccion_t=?, actualizado=? WHERE id=?", r or None, ahora() if r else None, ahora(), m["id"])
+    h.responder(200, {"mensaje": fila_mensaje(E.db.uno("SELECT * FROM mensajes WHERE id=?", m["id"]), s["usuario_id"])})
+
+
+@ruta("POST", r"/api/chat/([0-9]{1,12})/sticker", "sesion")
+def api_chat_sticker(h, s, mid):
+    """Pegar un sticker de GIPHY encima de un mensaje (cualquiera de los dos), en (x, y) del 0 al 1."""
+    m = _mensaje_de(s, int(mid))
+    d = h.cuerpo_json()
+    g = _gif_ok({"u": d.get("u"), "w": 1, "h": 1})
+    try:
+        x, y = max(0.0, min(1.0, float(d.get("x", 0.8)))), max(0.0, min(1.0, float(d.get("y", 0.2))))
+        r, k = max(-40.0, min(40.0, float(d.get("r", 0)))), max(0.5, min(2.0, float(d.get("s", 1))))
+    except (TypeError, ValueError):
+        raise Falla("Posición no válida.", 400)
+    l = json.loads(m["stickers"]) if m["stickers"] else []
+    if len(l) >= CHAT_MAX_STICKERS:
+        raise Falla("Ese mensaje ya tiene muchos stickers.", 409)
+    l.append({"u": g["u"], "x": round(x, 3), "y": round(y, 3), "r": round(r, 1), "s": round(k, 2), "de": s["usuario_id"]})
+    E.db.x("UPDATE mensajes SET stickers=?, actualizado=? WHERE id=?", json.dumps(l), ahora(), m["id"])
+    h.responder(200, {"mensaje": fila_mensaje(E.db.uno("SELECT * FROM mensajes WHERE id=?", m["id"]), s["usuario_id"])})
+
+
+@ruta("DELETE", r"/api/chat/([0-9]{1,12})", "sesion")
+def api_chat_borrar(h, s, mid):
+    """Borrar un mensaje tuyo (para los dos)."""
+    m = _mensaje_de(s, int(mid))
+    if m["de"] != s["usuario_id"]:
+        raise Falla("Sólo puedes borrar tus mensajes.", 403)
+    E.db.x("UPDATE mensajes SET borrado=1, texto='', gif=NULL, stickers=NULL, actualizado=? WHERE id=?", ahora(), m["id"])
+    h.responder(200, {"ok": True})
+
+
+@ruta("POST", "/api/chat/vistos", "sesion")
+def api_chat_vistos(h, s):
+    """Ya leíste lo que te mandó."""
+    n = E.db.x("UPDATE mensajes SET visto=?, actualizado=? WHERE para=? AND visto IS NULL", ahora(), ahora(), s["usuario_id"])
+    h.responder(200, {"vistos": n})
 
 
 @ruta("PUT", f"/api/detallitos/{DETALLITO_RE}/portadita", "sesion")
