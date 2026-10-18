@@ -625,6 +625,18 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Linda, con el mismo estilo** | sigue siendo acuarela pastel: un velo ancho y un centro más intenso, el borde de agua que deja la acuarela al secarse, el granito de papel y un degradado entre dos tonos que cambian en cada arrastre; se afila hacia la cola y, si vas rápido, salpica unas pocas gotitas. Al soltar (o si te quedas quieta) se seca encogiéndose hacia el objeto |
 | **Medido** | en teléfono y computadora: la pintura está justo sobre el camino recorrido, nada a 70 px de él, nada encima del objeto, al soltar no queda ni un pixel y el arrastre va a 59–60 cuadros por segundo |
 
+### Fase 28: correcciones importantes
+
+| | |
+| --- | --- |
+| **Ya no se añaden cosas solas** (`components/tacto.js`) | en el teléfono (sobre todo en iPhone), el «+» abre su menú, la pestañita el cajón de elementos y GIFs/Stickers su hojita justo donde está el dedo; el «clic» de ese mismo toque caía sobre lo que aparecía y **añadía una ficha sin querer** o **cerraba la hojita en el acto** (por eso parecía que GIFs o Stickers no funcionaban). Ahora un clic sólo cuenta si cae en lo mismo que se tocó al bajar el dedo; los del teclado y los de una etiqueta a su casilla, siempre |
+| **Botones para pasar página** (`runtime/rt-player.js`) | si la hoja trae sus propios botones («En esta página»), las flechas del librito ya no salen encima (antes eran **4 botones**); los que no tienen a dónde ir se esconden («volver» en la primera hoja, «seguir» en la última, los dos en una página suelta) y en «Probar página» funcionan de verdad |
+| **Un solo botón de música** | en el librito exportado (lo que le llega a ella) las hojas llegan de una en una y el ♪ del librito salía junto al botón de música de la hoja; ahora se mira en cada hoja y nunca se duplica |
+| **Se ve igual en cualquier pantalla** (`export/exportar.js`) | el librito exportado (Detallitos, publicar, descargar) guarda la pantalla con que se ve en el editor y **sólo se escala**: una hoja automática hecha en la compu ya no se rearma para el teléfono de ella (ahí se amontonaba todo). Si la hoja es acostada y el teléfono está parado, una pastillita invita a girarlo |
+| **Probar página en un celular** (`components/prueba.js`) | un escenario oscuro con el brillo del color de tu página y, al centro, un celular (marco, isla, botones y reflejo); tu página va dentro con su pantalla exacta. Entra subiendo desde la hoja con un rebote suave y un destello en el vidrio, y al terminar regresa a la hoja. Fluido: sólo transform y opacidad (fuera los desenfoques animados) y la página carga cuando el celular ya llegó. Se puede pasar de hoja ahí mismo |
+| **Portaditas bien acomodadas** | en la colección, la portadita se ve **entera** (antes se recortaba al centro: se perdía el título de las páginas altas y los lados de las anchas), como una hojita con sombra sobre un velo de sus propios colores |
+| **Medido** | en teléfono y computadora simulados: el clic fantasma no añade nada y un toque de verdad sí; GIFs y Stickers se quedan abiertos; Probar entra a 56–59 cuadros/s con el celular entero en pantalla, sin flechas repetidas, «siguiente» pasa de hoja y al terminar todo vuelve; la página exportada se arma con la misma hoja en el teléfono |
+
 ## Cómo está hecho
 
 ```

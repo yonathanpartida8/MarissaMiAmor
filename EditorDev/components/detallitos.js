@@ -539,17 +539,28 @@ export class Detallitos {
   }
 
   /**
+   * La portadita en su tapa (Fase 28): la página ENTERA (nunca recortada: antes se cortaba el título
+   * de arriba de las páginas altas y los lados de las anchas), como una hojita con sombra, sobre un
+   * velo hecho con sus propios colores. Mientras carga, la tapita de colores.
+   */
+  _ponerPortadita(tapa, url) {
+    const fondo = el("img.dt-cv-fondo", { alt: "", loading: "lazy", decoding: "async", draggable: "false", "aria-hidden": "true" });
+    const im = el("img.dt-cv-img", { alt: "", loading: "lazy", decoding: "async", draggable: "false" });
+    const marco = el("span.dt-cv-marco", {}, [im]);
+    im.onload = () => { tapa.classList.add("con-img"); im.classList.add("lista"); fondo.classList.add("lista"); };
+    im.onerror = () => { fondo.remove(); marco.remove(); };
+    fondo.src = url;
+    im.src = url;
+    tapa.append(fondo, marco);
+  }
+
+  /**
    * Las páginas que se mandaron sin portadita (las de antes): se dibuja con su
    * paquete, de una en una y sólo las que asoman en la pantalla, y se sube para
    * que a los dos ya les salga. Mientras, se ve su tapita de colores.
    */
   _sinPortadita(x, tapa) {
-    const poner = (u) => {
-      const im = el("img.dt-cv-img", { alt: "", decoding: "async", draggable: "false" });
-      im.onload = () => im.classList.add("lista");
-      im.src = u;
-      tapa.append(im);
-    };
+    const poner = (u) => this._ponerPortadita(tapa, u);
     this._minis ||= new Map();
     const ya = this._minis.get(x.id);
     if (ya) { if (typeof ya === "string") poner(ya); return; }
@@ -585,13 +596,8 @@ export class Detallitos {
     const tapa = el("span.dt-cv-tapa", { style: { "--c": x.color || "#ffd1e6" } }, [
       el("span.dt-cv-gen", { "aria-hidden": "true" }, [el("i.dt-cv-cinta"), el("b", { text: x.titulo }), el("i.dt-cv-cor", { html: ico("corazon") })]),
     ]);
-    if (x.portadita) {
-      const im = el("img.dt-cv-img", { alt: "", loading: "lazy", decoding: "async", draggable: "false" });
-      im.onload = () => im.classList.add("lista");
-      im.onerror = () => im.remove();
-      im.src = SRV.enlace(x.portadita);
-      tapa.append(im);
-    } else this._sinPortadita(x, tapa);
+    if (x.portadita) this._ponerPortadita(tapa, SRV.enlace(x.portadita));
+    else this._sinPortadita(x, tapa);
     if (rx) tapa.append(el("span.dt-cv-rx", { title: x._mio ? `${nombre} ${rx.largo}` : rx.tuyo, html: svgReaccion(rx.id) }));
     const t = el("button.dt-cv" + (nuevo ? ".nueva" : "") + (x._mio && x.reaccion_nueva ? ".rx-nueva" : ""), {
       type: "button", "aria-label": `${x.titulo}, ${x._mio ? "tuya" : "de " + nombre}${rx ? ", " + rx.corto : ""}`,

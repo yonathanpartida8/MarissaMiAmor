@@ -506,8 +506,13 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 .dt-cv-cinta { position: absolute; top: 9px; left: 50%; width: 48px; height: 15px; margin-left: -24px; background: rgba(255, 255, 255, .62); transform: rotate(-4deg); }
 .dt-cv-cor { width: 18px; height: 18px; color: rgba(224, 50, 95, .78); }
 .dt-cv-cor svg { width: 100%; height: 100%; fill: currentColor; stroke: none; }
-.dt-cv-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .45s ease; }
-.dt-cv-img.lista { opacity: 1; }
+/* Fase 28: la portadita entera, como una hojita con sombra, sobre un velo de sus propios colores. */
+.dt-cv-fondo { position: absolute; inset: -14%; width: 128%; height: 128%; object-fit: cover; filter: blur(16px) saturate(1.3); opacity: 0; transition: opacity .5s ease; pointer-events: none; }
+.dt-cv-fondo.lista { opacity: .7; }
+.dt-cv-marco { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 9% 9% 10%; pointer-events: none; }
+.dt-cv-img { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; border-radius: 7px; box-shadow: 0 8px 18px -6px rgba(80, 20, 50, .38), 0 0 0 1px rgba(255, 255, 255, .5); opacity: 0; transform: translateY(4px) scale(.98); transition: opacity .45s ease, transform .5s cubic-bezier(.2, .9, .3, 1.2); }
+.dt-cv-img.lista { opacity: 1; transform: none; }
+.dt-cv-tapa.con-img .dt-cv-gen { opacity: 0; transition: opacity .4s ease .1s; }
 .dt-cv-quien { position: absolute; left: 13px; top: 13px; z-index: 2; display: inline-flex; align-items: center; gap: 5px; max-width: calc(100% - 26px); padding: 3px 10px 3px 3px; border-radius: 99px; background: rgba(255, 255, 255, .95); box-shadow: 0 3px 10px rgba(80, 20, 50, .2); font: 400 14.5px/1 "Patrick Hand", sans-serif; color: #8a2a5a; }
 .dt-cv-quien > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dt-cv-quien.mia { color: #5b3fa8; }
