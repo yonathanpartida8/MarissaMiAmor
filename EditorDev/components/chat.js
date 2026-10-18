@@ -70,7 +70,7 @@ const NUEVOS_DESDE = 2018; // los stickers subidos antes se ven viejitos: no sal
 
 /* — Ajustes de este aparato (los de privacidad viven en el servidor) — */
 const CLAVE = "editordev:chat";
-const BASE = { sonidos: true, avisos: true, fondo: true, grande: false };
+const BASE = { sonidos: true, teclado: true, avisos: true, fondo: true, grande: false };
 export function prefChat() {
   try { return { ...BASE, ...JSON.parse(localStorage.getItem(CLAVE) || "{}") }; } catch (e) { return { ...BASE }; }
 }
@@ -78,7 +78,7 @@ const guardarPref = (p) => { try { localStorage.setItem(CLAVE, JSON.stringify(p)
 
 const real = (m) => typeof m.id === "number";
 const orden = (a, b) => (real(a) ? 0 : 1) - (real(b) ? 0 : 1) || (real(a) && real(b) ? a.id - b.id : 0);
-const firmaBurbuja = (m) => JSON.stringify([m.texto, m.gif?.u, m.reaccion, m.visto, m.espacio, (m.stickers || []).filter((s) => !s.l).length]);
+const firmaBurbuja = (m) => JSON.stringify([m.texto, m.gif?.u, m.espacio, (m.stickers || []).filter((s) => !s.l).length]);
 const firma = (m) => JSON.stringify([m.texto, m.gif?.u, m.reaccion, m.visto, m.espacio, (m.stickers || []).map((s) => [s.i, s.x, s.y, s.s])]);
 const diaDe = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
 const hora = (iso) => new Date(iso).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
@@ -242,12 +242,20 @@ export function vistaChat(det) {
       i.style.setProperty("--r", (+x.r || 0) + "deg"); i.style.setProperty("--s", +x.s || 1);
       return i;
     })));
-    if (rx) b.append(el("span.ch-rx", { title: m.mio ? `${nombre} ${rx.largo}` : rx.tuyo, html: svgReaccion(rx.id) }));
-    const f = el("div.ch-fila." + (m.mio ? "mio" : "suyo") + (m._enviando ? ".enviando" : "") + (rx ? ".con-rx" : "") + (st ? ".con-sticker" : ""), { dataset: { id: String(m.id) } }, [
+    const f = el("div.ch-fila." + (m.mio ? "mio" : "suyo") + (m._enviando ? ".enviando" : "") + (st ? ".con-sticker" : ""), { dataset: { id: String(m.id) } }, [
       el("div.ch-cuerpo", {}, [b, el("small.ch-hora")]),
     ]);
+    ponerRx(f, m);
     b.addEventListener("click", (e) => tocar(e, f));
     return f;
+  }
+  /** La reacción, en su lugar (sin rehacer la burbuja). */
+  function ponerRx(f, m, animar = false) {
+    const b = f?.querySelector(".ch-burbuja"), rx = reaccion(m.reaccion);
+    if (!b) return;
+    b.querySelector(".ch-rx")?.remove();
+    f.classList.toggle("con-rx", !!rx);
+    if (rx) b.append(el("span.ch-rx" + (animar ? ".nueva" : ""), { title: m.mio ? `${nombre} ${rx.largo}` : rx.tuyo, html: svgReaccion(rx.id) }));
   }
   function ponerHora(f, m) {
     const fuera = f.querySelector(".ch-hora"), dentro = f.querySelector(".ch-hora-in");
@@ -317,10 +325,10 @@ export function vistaChat(det) {
       const top = anclaTop(t.ancla);
       if (top == null || !t.p.length) { t.el?.remove(); t.el = null; continue; }
       if (!t.el) { t.el = document.createElementNS("http://www.w3.org/2000/svg", "path"); trazosSvg.append(t.el); }
-      t.el.setAttribute("d", camino(t.p.map(([x, y]) => [Math.round(x * W / 100) / 100, top + y])));
+      const pts = t.vis != null ? t.p.slice(0, Math.max(1, t.vis)) : t.p;
+      t.el.setAttribute("d", camino(pts.map(([x, y]) => [Math.round(x * W / 100) / 100, top + y])));
       t.el.setAttribute("stroke", t.c);
       t.el.setAttribute("stroke-width", t.a);
-      t.el.classList.toggle("vivo", !t.mio && !t.fin && Date.now() - (t.cuando || 0) < 8000);
       for (const [, y] of t.p) abajo = Math.max(abajo, top + y + t.a);
     }
     // Los stickers libres (los tuyos se pueden volver a arrastrar).
@@ -333,9 +341,15 @@ export function vistaChat(det) {
       vistos.add(k);
       let n = capa.querySelector(`img[data-k="${k}"]`);
       if (!n) {
-        n = el("img.ch-libre" + (x.mio ? ".mio" : "") + (x._nuevo ? ".nuevo" : ""), { src: x.u, alt: "", decoding: "async", referrerpolicy: "no-referrer", draggable: "false", dataset: { k } });
-        if (x.mio && x.i) prepararArrastreLibre(n, m, x);
-        capa.append(n);
+        // ¿Es el mismo que ya se ve con otra clave? (el que estaba «pegándose», o que cambió de mensajito)
+        const L = x.x * W, T = top + x.y;
+        n = [...capa.querySelectorAll("img.ch-libre")].find((z) => !vistos.has(z.dataset.k) && z.getAttribute("src") === x.u && !S.ms.some((mm) => (mm.stickers || []).some((y) => y.l && mm.id + ":" + (y.i || y._t) === z.dataset.k)) && Math.abs(parseFloat(z.style.left) - L) < 3 && Math.abs(parseFloat(z.style.top) - T) < 3);
+        if (n) n.dataset.k = k;
+        else {
+          n = el("img.ch-libre" + (x.mio ? ".mio" : "") + (x._nuevo ? ".nuevo" : ""), { src: x.u, alt: "", decoding: "async", referrerpolicy: "no-referrer", draggable: "false", dataset: { k } });
+          if (x.mio) prepararArrastreLibre(n);
+          capa.append(n);
+        }
       }
       n.style.left = x.x * W + "px";
       n.style.top = top + x.y + "px";
@@ -372,13 +386,47 @@ export function vistaChat(det) {
   for (const t of ["wheel", "touchmove"]) lista.addEventListener(t, () => { if (S.menu) cerrarMenu(); }, { passive: true });
 
   /* — Hablar con el servidor — */
-  function recibirTrazos(lst) {
+  /** Los dibujos que llegan. `vivo`: los de tu amorcito se van trazando suavecito (no a brincos). */
+  function recibirTrazos(lst, vivo = false) {
+    const cambiaron = [];
     for (const t of lst || []) {
       const ya = S.trazos.get(t.id);
       if (t.borrado) { ya?.el?.remove(); S.trazos.delete(t.id); continue; }
       if (ya && ya.local) continue; // el que estás dibujando aquí manda
-      S.trazos.set(t.id, { ...t, a: +t.a || 4, el: ya?.el || null, cuando: Date.now() });
+      const n = { ...t, a: +t.a || 4, el: ya?.el || null, cuando: Date.now(), vis: vivo && !t.mio && !reducido() ? Math.min(ya?.vis ?? ya?.p.length ?? 0, t.p.length) : t.p.length };
+      S.trazos.set(t.id, n);
+      cambiaron.push(n);
     }
+    if (cambiaron.some((t) => t.vis < t.p.length)) trazar();
+    return cambiaron;
+  }
+  let trazando = 0;
+  function trazar() {
+    if (trazando) return;
+    const paso = () => {
+      trazando = 0;
+      let falta = false;
+      const W = ancho();
+      for (const t of S.trazos.values()) {
+        if (t.vis == null || t.vis >= t.p.length) continue;
+        t.vis = Math.min(t.p.length, t.vis + Math.max(1, Math.ceil((t.p.length - t.vis) / 5)));
+        pintarTrazo(t, W);
+        if (t.vis < t.p.length) falta = true;
+      }
+      if (falta && S.vivo) trazando = requestAnimationFrame(paso);
+    };
+    trazando = requestAnimationFrame(paso);
+  }
+  /** Repinta sólo un trazo (y estira el lugar de abajo si hace falta). */
+  function pintarTrazo(t, W = ancho()) {
+    const top = anclaTop(t.ancla);
+    if (top == null || !t.p.length) return;
+    if (!t.el) { t.el = document.createElementNS("http://www.w3.org/2000/svg", "path"); trazosSvg.append(t.el); t.el.setAttribute("stroke", t.c); t.el.setAttribute("stroke-width", t.a); }
+    const pts = t.vis != null ? t.p.slice(0, Math.max(1, t.vis)) : t.p;
+    t.el.setAttribute("d", camino(pts.map(([x, y]) => [Math.round(x * W / 100) / 100, top + y])));
+    let abajo = 0;
+    for (const [, y] of pts) abajo = Math.max(abajo, top + y + t.a);
+    if (abajo + 24 > fin.offsetTop + fin.offsetHeight) pintarCapa();
   }
   async function cargar() {
     lista.replaceChildren(el("div.dt-cargando", {}, [el("i"), el("span", { text: "Abriendo sus mensajitos…" })]));
@@ -431,8 +479,9 @@ export function vistaChat(det) {
         S.desde = d.ahora;
         // (Sin mensajitos todavía se pregunta por «los últimos», que siempre traen lo mismo: ahí se respira.)
         const algo = S.ultimo ? (d.mensajes?.length || 0) + (d.cambios?.length || 0) + (d.trazos?.length || 0) : d.mensajes?.length || 0;
-        recibirTrazos(d.trazos);
-        recibir(d.mensajes || [], d.cambios || []);
+        const tz = recibirTrazos(d.trazos, true);
+        if ((d.mensajes?.length || 0) + (d.cambios?.length || 0)) recibir(d.mensajes || [], d.cambios || []);
+        else for (const t of tz) if (t.vis >= t.p.length) pintarTrazo(t);
         if (!algo && Date.now() - t0 < 1200) await dormir(2500);
       } catch (e) { await dormir(4000); }
     }
@@ -448,6 +497,9 @@ export function vistaChat(det) {
     let llegaron = 0, suyo = false;
     for (const m of nuevos) {
       if (m.borrado || S.nodos.has(m.id) || S.ms.some((x) => x.id === m.id)) continue;
+      // Tu mensajito llegó por aquí antes que la respuesta de «mandar»: la burbuja que ya se ve pasa a ser ésa.
+      const t = m.mio && S.ms.find((x) => x._enviando && !x._real && x.texto === m.texto && (x.gif?.u || "") === (m.gif?.u || ""));
+      if (t) { adoptar(t, m); continue; }
       S.ms.push(m); S.nuevos.add(m.id); llegaron++;
       if (!m.mio && !m.espacio) suyo = true;
     }
@@ -476,13 +528,13 @@ export function vistaChat(det) {
     if (i < 0) return;
     const antes = S.ms[i];
     S.ms[i] = m;
-    // Los stickers libres viven en la capa: si sólo cambió eso, la burbuja se queda como está.
+    // Sin parpadeos: la burbuja sólo se rehace si cambió lo que trae dentro; la reacción y el «visto»
+    // se cambian en su lugar, y los stickers libres viven en la capa.
     if (firmaBurbuja(antes) !== firmaBurbuja(m)) {
       const viejo = S.nodos.get(m.id), n = nodo(m);
       S.nodos.set(m.id, n);
       if (viejo?.isConnected) { n.className = viejo.className.replace(/\bllega\b/, ""); n.classList.toggle("con-rx", !!reaccion(m.reaccion)); viejo.replaceWith(n); }
-      if (m.reaccion && m.reaccion !== antes.reaccion) n.querySelector(".ch-rx")?.classList.add("nueva");
-    }
+    } else if (m.reaccion !== antes.reaccion) ponerRx(S.nodos.get(m.id), m, !!m.reaccion);
     if (repintar) pintar();
   }
   function quitar(id) {
@@ -508,6 +560,12 @@ export function vistaChat(det) {
     bMandar.setAttribute("aria-label", hay ? "Mandar" : "Nota de voz");
     if (!panelN.hidden && input.value && P.tipo !== "emojis") panel(null);
   }
+  // Sonidos de teclado (se apagan en ⋮): letra, espacio y borrar, también con el teclado del teléfono.
+  input.addEventListener("input", (e) => {
+    if (!PR.teclado || !PR.sonidos) return;
+    const t = e.inputType || "";
+    son?.sonar(t.startsWith("delete") ? "teclado-borrar" : t === "insertLineBreak" || e.data === " " ? "teclado-espacio" : "teclado-letra");
+  });
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey && !e.isComposing && !matchMedia("(pointer: coarse)").matches) { e.preventDefault(); mandarTexto(); }
   });
@@ -520,22 +578,14 @@ export function vistaChat(det) {
   }
   async function mandar({ texto = "", gif = null }) {
     const t = { id: "t" + ++S.temp, mio: true, texto, gif, creado: new Date().toISOString(), visto: "", reaccion: "", stickers: [], _enviando: true };
-    S.ms.push(t); S.ms.sort(orden); S.nuevos.add(t.id); S.listo = true;
-    pintar(); alFondo(true);
+    S.ms.push(t); S.ms.sort(orden); S.listo = true;
+    pintar(); alFondo(false);
+    volar(S.nodos.get(t.id));
     sonar("mensaje-enviar");
     try {
       const m = await SRV.mandarMensaje({ texto, gif });
       if (!S.vivo) return true;
-      // La burbuja que ya se ve se queda (no se vuelve a animar): sólo pasa a ser la de verdad.
-      const f = S.nodos.get(t.id);
-      S.ms = S.ms.filter((x) => x !== t);
-      S.nodos.delete(t.id);
-      if (!S.ms.some((x) => x.id === m.id)) {
-        S.ms.push(m); S.ms.sort(orden);
-        if (f) { f.dataset.id = String(m.id); f.classList.remove("enviando"); S.nodos.set(m.id, f); }
-      } else f?.remove();
-      S.ultimo = Math.max(S.ultimo, m.id);
-      pintar();
+      if (!t._real) adoptar(t, m);
       return true;
     } catch (e) {
       S.nodos.get(t.id)?.remove();
@@ -547,6 +597,34 @@ export function vistaChat(det) {
       sonar("error");
       return false;
     }
+  }
+
+  /** La burbuja de «mandando» pasa a ser la de verdad (la misma: no se vuelve a animar ni a cargar). */
+  function adoptar(t, m) {
+    t._real = m.id;
+    const f = S.nodos.get(t.id);
+    S.nodos.delete(t.id);
+    S.ms = S.ms.filter((x) => x !== t && x.id !== m.id);
+    S.ms.push(m); S.ms.sort(orden);
+    if (f) { f.dataset.id = String(m.id); f.classList.remove("enviando"); S.nodos.set(m.id, f); }
+    S.ultimo = Math.max(S.ultimo, m.id);
+    pintar();
+  }
+  /** Tu mensajito sale volando desde donde lo escribiste, con un rebotito y corazoncitos. */
+  function volar(f) {
+    if (!f || reducido()) return;
+    const b = f.querySelector(".ch-burbuja"), h = f.querySelector(".ch-hora");
+    const rb = b.getBoundingClientRect(), ri = escribir.querySelector(".ch-caja").getBoundingClientRect();
+    const dx = ri.left + Math.min(rb.width / 2 + 16, ri.width / 2) - (rb.left + rb.width / 2), dy = ri.top + ri.height / 2 - (rb.top + rb.height / 2);
+    b.animate([
+      { transform: `translate(${dx}px, ${dy}px) scale(.62)`, opacity: 0.35, filter: "blur(1.5px)" },
+      { transform: `translate(${dx * 0.18}px, ${dy * 0.12}px) scale(1.04)`, opacity: 1, filter: "blur(0)", offset: 0.55 },
+      { transform: "translate(0, -3px) scale(1.06) rotate(-1deg)", offset: 0.78 },
+      { transform: "none" },
+    ], { duration: 620, easing: "cubic-bezier(.2, .9, .3, 1)" });
+    h?.animate([{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }], { duration: 300, delay: 380, fill: "backwards" });
+    const r = bMandar.getBoundingClientRect();
+    det._chispas?.(r.left + r.width / 2, r.top + r.height / 2, 7);
   }
 
   /* — Tocar un mensajito: su menú — */
@@ -654,9 +732,13 @@ export function vistaChat(det) {
       el("div.ch-hoja-cab", {}, [el("i", { html: IC.lleno }), el("b", { text: "Ajustes del chat" })]),
       el("small.ch-hoja-sec", { text: "En este aparato" }),
       interruptor("Sonidos del chat", "Al mandar, al llegar y al pegar", PR.sonidos, pref("sonidos")),
+      interruptor("Sonidos del teclado", "Al escribir tus mensajitos", PR.teclado, pref("teclado")),
       interruptor("Avisos de mensajitos", "Cuando el chat está cerrado", PR.avisos, pref("avisos")),
       interruptor("Fondo con corazoncitos", "", PR.fondo, pref("fondo")),
       interruptor("Letra grande", "", PR.grande, pref("grande")),
+      (() => { const b = el("button.ch-hoja-item.ch-temas", { type: "button", role: "menuitem" }, [el("i.ch-temas-ico", { html: ico("diseno") }), el("span.ch-hoja-t", {}, [el("b", { text: "Temas del chat" }), el("small", { text: "Colores y fondos para su chat" })]), el("em.ch-pronto-tag", { text: "Muy pronto" })]);
+        b.addEventListener("click", () => { if (!reducido()) b.animate([{ transform: "none" }, { transform: "translateX(-4px)" }, { transform: "translateX(4px)" }, { transform: "none" }], { duration: 300 }); });
+        return b; })(),
       el("small.ch-hoja-sec", { text: "Privacidad" }),
       interruptor("Mostrar mi «visto»", `Que ${nombre} sepa cuándo leí lo suyo`, S.verVisto, async (v) => {
         try { const r = await SRV.chatAjustes({ visto: v }); S.verVisto = r.ajustes.visto; aviso(v ? "Tu «visto» se ve otra vez" : `${nombre} ya no verá cuándo lees`); return true; }
@@ -814,6 +896,7 @@ export function vistaChat(det) {
     n.addEventListener("pointerdown", (e) => {
       if (e.button > 0 || S.arrastre || S.dibujo) return;
       x0 = e.clientX; y0 = e.clientY; pid = e.pointerId;
+      if (document.activeElement === input) input.blur(); // el teclado se va: el sticker se pone donde sea, sin brincos
       const empezar = () => { espera = 0; levantar(n, u, x0, y0, pid, alSoltar, conBote); };
       if (e.pointerType === "mouse") { n._mouse = empezar; return; }
       espera = setTimeout(empezar, 230);
@@ -830,11 +913,17 @@ export function vistaChat(det) {
   function prepararArrastre(b, st) {
     arrastrable(b, { u: st.u, alSoltar: (p) => { b._arrastrado = true; setTimeout(() => { b._arrastrado = false; }, 450); if (p) pegarLibre(st, p); } });
   }
-  function prepararArrastreLibre(n, m, x) {
+  /** Tus stickers libres: al soltarlos se busca cuál es (por su clave de ese momento). */
+  function prepararArrastreLibre(n) {
     n.addEventListener("touchmove", (e) => { if (S.arrastre?.activo) e.preventDefault(); }, { passive: false });
-    arrastrable(n, { u: x.u, conBote: true, alSoltar: (p, alBote) => moverLibre(m.id, x, p, alBote) });
+    arrastrable(n, { u: n.getAttribute("src"), conBote: true, alSoltar: (p, alBote) => {
+      const [mid, sid] = n.dataset.k.split(":");
+      const m = S.ms.find((z) => String(z.id) === mid), x = m?.stickers?.find((z) => z.i === sid);
+      if (x) moverLibre(m.id, x, p, alBote);
+    } });
   }
   function levantar(origen, u, cx, cy, pid, alSoltar, conBote) {
+    document.activeElement?.blur?.();
     vibrar(12);
     sonar("arrastrar");
     const fantasma = flota(el("img.ch-fantasma", { src: u, alt: "", referrerpolicy: "no-referrer", draggable: "false" }));
@@ -981,7 +1070,7 @@ export function vistaChat(det) {
     const t = { id: null, k: "d" + ++S.temp, local: true, mio: true, fin: false, ancla: a.id, top: a.top, c: S.color, a: S.grosor, p: [[Math.round(cx / W * 10000), Math.round(cy - a.top)]], enviados: 0, cadena: Promise.resolve(), el: null };
     D.trazo = t;
     S.trazos.set(t.k, t);
-    t.reloj = setInterval(() => enviarTrazo(t), 140);
+    t.reloj = setInterval(() => enviarTrazo(t), 45);
     pintarCapa();
   }
   function agregarPunto([cx, cy]) {
@@ -1064,7 +1153,7 @@ export function vistaChat(det) {
     const h = Math.round(vv.height), t = Math.round(vv.offsetTop);
     if (Math.abs(h - innerHeight) < 2 && t <= 0) { c.style.top = c.style.height = c.style.bottom = ""; }
     else { c.style.top = t + "px"; c.style.height = h + "px"; c.style.bottom = "auto"; }
-    if (S.pegado) alFondo(false);
+    if (S.pegado && !S.arrastre) alFondo(false);
   };
   vv?.addEventListener("resize", ajustarVV);
   vv?.addEventListener("scroll", ajustarVV);

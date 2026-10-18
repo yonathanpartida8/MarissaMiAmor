@@ -205,6 +205,10 @@ const SON = {
   // uno (dos notas tibias de marimba, como un «toc toc») y pegar un sticker (se despega y se aprieta).
   "mensaje-enviar": [0.42, (m) => { soplo(m, 0, 0.16, 0.32, 700, 2600, 0.9); fm(m, 0.07, N.A4, 0.16, { dur: 0.12, caida: 18 }); fm(m, 0.13, N.D5, 0.17, { dur: 0.3, caida: 8 }); }, 0.26, SALA],
   "mensaje-llega": [0.62, (m) => { toque(m, 0, N.Fs5, 0.3, { material: W, caida: 22, contacto: 0.15 }); fm(m, 0.005, N.Fs5, 0.1, { dur: 0.3, caida: 9 }); toque(m, 0.13, N.D5, 0.34, { material: W, caida: 16, contacto: 0.15 }); fm(m, 0.135, N.A5, 0.07, { dur: 0.42, caida: 6 }); }, 0.3, SALA],
+  // Fase 32 · el teclado del chat: teclas suavecitas de plástico (letra, espacio y borrar), cortitas.
+  "teclado-letra": [0.07, (m) => { clic(m, 0, 0.32, 4300); toque(m, 0.001, 1180, 0.3, { material: P, caida: 110, contacto: 0.3 }); }, 0.15],
+  "teclado-espacio": [0.1, (m) => { clic(m, 0, 0.28, 2600); toque(m, 0.002, 640, 0.36, { material: P, caida: 70, contacto: 0.35 }); }, 0.16],
+  "teclado-borrar": [0.08, (m) => { clic(m, 0, 0.26, 3500); toque(m, 0.001, 880, 0.3, { material: P, caida: 95, contacto: 0.3 }); }, 0.15],
   "sticker-pegar": [0.32, (m) => { aire(m, 0, 0.09, 0.55, { f0: 3200, f1: 1400, q: 1.2, forma: (x) => (1 - x) ** 1.5 }); asiento(m, 0.08, 0.5, 170, 90, 0.07); toque(m, 0.085, 980, 0.28, { caida: 60, contacto: 0.3 }); }, 0.26],
   // El gatito del menú, si lo tocas: ronronea bajito.
   "gatito-ronroneo": [1.6, (m) => {

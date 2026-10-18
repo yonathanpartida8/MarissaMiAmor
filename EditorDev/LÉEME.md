@@ -677,6 +677,19 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Dónde queda cada cosa** | los stickers libres y los dibujos se guardan pegados a un mensajito: a lo ancho, en proporción; a lo alto, en px desde ese mensajito. Así caen en el mismo lugar en cualquier teléfono (en pantallas de distinto ancho, lo dibujado se estira un poquito a lo ancho) |
 | **Medido** | en teléfono (390×844, claro y oscuro) y computadora: cabecera, fondo, ánimos y barra como la foto; «Ay ora jeje»; ánimos sin hacer nada; ⋮ con interruptores que funcionan (fondo y «visto» privado); + con sus cositas; trazo visto en vivo por el otro antes de soltarlo; lo que dibuja el otro aparece solo; «+ Espacio»; deshacer; etiquetas cute sin stickers viejitos; sticker arrastrado cae justo donde lo soltaste; tocar uno lo manda; moverlo; quitarlo en el botecito; el del otro aparece y no se mueve; mensajito del otro en menos de 2 s; emojis; y siguen pasando el detallito, Probar página, toques fantasma, la estela y los 237 sonidos. No probado en un iPhone ni un Android de verdad. Necesita el servidor **1.7.0** (`librito actualizar`) |
 
+### Fase 32: celular a la medida, chat sin parpadeos, teclado con sonido
+
+| | |
+| --- | --- |
+| **El celular, a la medida de la página** (`components/detallitos.js`) | al abrir una página de la colección, el celular toma la forma de la hoja de verdad (se mide ya cargada): las de tamaño fijo (p. ej. 1080×1350) se guardaban con la forma de la pantalla del editor y sobraban franjas rellenas; ahora la página llena el celular |
+| **Sin parpadeos** (`components/chat.js`) | la burbuja ya no se rehace cuando cambia el «visto» o la reacción (se cambian en su lugar); tu mensajito que llega por el tiempo real antes que la respuesta de «mandar» se queda en la misma burbuja (antes se veía doble un instante); los stickers que pasan de «pegándose» a guardados no se vuelven a cargar; y el trazo en vivo de tu amorcito ya no titila |
+| **Mandar, más bonito** | tu mensajito sale volando desde donde lo escribiste, con un rebotito y corazoncitos |
+| **Sonidos de teclado** | letra, espacio y borrar (también con el teclado del teléfono), suavecitos; se apagan en ⋮ → «Sonidos del teclado» |
+| **Stickers sin brincos** | al tocar o arrastrar un sticker se cierra el teclado, y la lista no se mueve sola mientras lo llevas |
+| **Temas del chat** | en ⋮, con su «Muy pronto»: todavía no hace nada |
+| **Tiempo real más fluido** | lo que dibujas sale cada 45 ms (antes 140, a cambio de usar más red) y lo que dibuja tu amorcito se va trazando suavecito en vez de a brincos; sólo se repinta el trazo que cambió |
+| **Medido** | teléfono y computadora: celular con la forma de una hoja 1080×1350 y la página llenándolo; teclado con sus tres sonidos y apagable; mandar con vuelo y sin repetirse; ✓✓ sin rehacer la burbuja del GIF; «Temas» sin hacer nada; el teclado se cierra al arrastrar un sticker; y siguen pasando el chat, el detallito, Probar página y los 246 sonidos. No probado en un iPhone ni un Android de verdad |
+
 ## Cómo está hecho
 
 ```

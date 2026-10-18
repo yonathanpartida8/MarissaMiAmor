@@ -854,7 +854,21 @@ export class Detallitos {
         tipo: "librito", datos: { nombre: P.nombre, ajustes: P.ajustes, orden, paginas: P.paginas, titulos: {} },
         urls, datosUrls, base: RAIZ, inicio: orden[0], portadilla: false, prueba: true, fuentes: [...fuentesUsadas(P)], fijar: { w: v.W, h: v.H },
       }, location.origin);
-      setTimeout(() => { marco.classList.add("listo"); movil.classList.add("lista"); }, 120);
+      // Fase 32: el celular toma la forma de la hoja DE VERDAD (las de tamaño fijo, p. ej. 1080×1350, se
+      // guardaban con la forma de la pantalla del editor y sobraban franjas rellenas arriba y abajo).
+      let vueltas = 0;
+      const medir = () => {
+        const L = marco.contentWindow?.LibritoRT?.libro;
+        if (!(L?.W > 0 && L?.H > 0) && ++vueltas < 40) { setTimeout(medir, 50); return; }
+        if (L?.W > 0 && Math.abs(L.W / L.H - v.W / v.H) > 0.004) {
+          const f = Math.min(1, 900 / Math.max(L.W, L.H));
+          v.W = Math.round(L.W * f); v.H = Math.round(L.H * f);
+          movil.classList.toggle("horizontal", v.W > v.H);
+          this._verMovil?.acomodar();
+        }
+        requestAnimationFrame(() => requestAnimationFrame(() => { marco.classList.add("listo"); movil.classList.add("lista"); }));
+      };
+      setTimeout(medir, 60);
     };
     addEventListener("message", al);
     this._limpiezas.push(() => removeEventListener("message", al));

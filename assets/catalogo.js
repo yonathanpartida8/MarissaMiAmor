@@ -2253,6 +2253,21 @@ export default {
     "assets/sonidos-editor/tecla-codigo-3.wav",
     "assets/sonidos-editor/tecla-codigo.wav"
    ],
+   "teclado-borrar": [
+    "assets/sonidos-editor/teclado-borrar-2.wav",
+    "assets/sonidos-editor/teclado-borrar-3.wav",
+    "assets/sonidos-editor/teclado-borrar.wav"
+   ],
+   "teclado-espacio": [
+    "assets/sonidos-editor/teclado-espacio-2.wav",
+    "assets/sonidos-editor/teclado-espacio-3.wav",
+    "assets/sonidos-editor/teclado-espacio.wav"
+   ],
+   "teclado-letra": [
+    "assets/sonidos-editor/teclado-letra-2.wav",
+    "assets/sonidos-editor/teclado-letra-3.wav",
+    "assets/sonidos-editor/teclado-letra.wav"
+   ],
    "tocar-boton": [
     "assets/sonidos-editor/tocar-boton-2.wav",
     "assets/sonidos-editor/tocar-boton-3.wav",
