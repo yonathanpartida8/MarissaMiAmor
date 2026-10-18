@@ -161,6 +161,7 @@ export class Detallitos {
 
   /** Atrás: la pantalla anterior, o cerrar. */
   atras() {
+    if (this._grande(false)) return true;
     if (this.pila.length > 1) { this.pila.pop(); this._mostrar(this.pila[this.pila.length - 1], "atras"); return true; }
     this.cerrar();
     return true;
@@ -678,40 +679,134 @@ export class Detallitos {
   }
 
   /* — Ver un detallito: sale de su sobre — */
+  /*
+   * — Ver un detallito (Fase 29): la página dentro de un celular —
+   * No se abre tal cual se subió (con su reproductor de entonces, la portada «Toca para abrir» y lo que
+   * tuviera mal): se arma con su paquete y el reproductor de HOY, así todas las páginas ya mandadas se
+   * ven bien, directo, con sus botones funcionando, sin nada repetido ni amontonado, y con la pantalla
+   * con que se hicieron (sólo se escalan). Todo cabe a la vista: el celular se ajusta para que el
+   * mensaje, quién la mandó y las reacciones no se tapen. «Ver en grande» lo lleva a pantalla completa
+   * sin recargar la página.
+   */
   _vVer(x) {
     if (!x) { setTimeout(() => this.atras(), 0); return null; }
     this.tituloS.textContent = x.titulo;
     const recibido = x._mio != null ? !x._mio : x.de && x.de !== SRV.usuario()?.usuario;
     const url = SRV.enlace(x.ver);
-    const marco = el("iframe.dt-marco-ver", { src: url, title: x.titulo, sandbox: "allow-scripts allow-popups allow-forms allow-modals allow-pointer-lock", allow: "autoplay; fullscreen" });
     if (recibido && !x.visto) SRV.visto(x.id).then(() => { x.visto = new Date().toISOString(); dispatchEvent(new CustomEvent("ed-detallito-visto")); }).catch(() => {});
-    return el("section.dt-pantalla", {}, [
-      el("div.dt-ver", { style: { "--c": x.color || "#ffd1e6" } }, [
-        el("div.dt-ver-hoja", {}, [marco]),
-        x.mensaje ? el("p.dt-ver-msg", { text: `«${x.mensaje}»` }) : null,
-        el("small.dt-ver-de", {}, [PF.avatar(recibido ? "pareja" : "yo", "dt-ver-av"), el("span", { text: `${recibido ? "De " + (x.de_nombre || x.de) : "Tuya, para " + (x.para_nombre || x.para)} · ${cuando(x.creado)}` })]),
-        recibido ? this._reaccionar(x) : this._suReaccion(x),
-        el("div.dt-fila.dt-ver-acc", {}, [
-          el("button.ed-btn.primario", { type: "button", html: I("pantalla", "Pantalla completa"), onClick: () => abrir(url) }),
-          el("button.ed-btn", { type: "button", html: I("guardar", "Guardar en mis borradores"), onClick: async (ev) => {
-            const b = ev.currentTarget; b.disabled = true;
-            try { const blob = await SRV.paqueteDetallito(x.id); this.cerrar(); await abrirComoBorrador(this.app, blob, x.titulo); }
-            catch (e) { aviso("No se pudo abrir: " + e.message, 4500, "error"); b.disabled = false; }
-          } }),
-          el("button.ed-btn.peligro-suave", { type: "button", html: I("borrar", recibido ? "Quitar de mi colección" : "Quitar de mis enviados"), onClick: async () => {
-            if (!(await confirmar(recibido ? "¿Quitarlo de tu colección?" : "¿Quitarlo de tus enviados? (A tu amorcito se le queda)", "Quitar"))) return;
-            try { await SRV.borrarDetallito(x.id); this.datos = null; aviso("Quitado"); this.app.sonidos?.sonar("borrar"); this.atras(); } catch (e) { aviso(e.message, 3500, "error"); }
-          } }),
-        ]),
+    const marco = el("iframe.ed-prueba-marco.dt-marco-ver", { title: x.titulo, allow: "autoplay; fullscreen" });
+    const movil = el("div.ed-movil.dt-movil", { style: { "--fondo": x.color || "#ffd1e6", "--mw": "390px", "--mh": "844px" } }, [
+      el("i.ed-movil-boton.b1"), el("i.ed-movil-boton.b2"), el("i.ed-movil-boton.b3"),
+      el("div.ed-movil-pantalla", {}, [marco, el("i.ed-movil-cargando")]),
+      el("i.ed-movil-isla"), el("i.ed-movil-reflejo"),
+    ]);
+    const cerrarGrande = el("button.dt-ver-cerrar", { type: "button", html: I("cerrar", "Cerrar"), onClick: () => this._grande(false) });
+    const escena = el("div.dt-ver-escena", {}, [el("i.dt-ver-luz"), movil, cerrarGrande]);
+    const msg = x.mensaje ? el("p.dt-ver-msg", { text: `«${x.mensaje}»` }) : null;
+    const de = el("small.dt-ver-de", {}, [PF.avatar(recibido ? "pareja" : "yo", "dt-ver-av"), el("span", { text: `${recibido ? "De " + (x.de_nombre || x.de) : "Tuya, para " + (x.para_nombre || x.para)} · ${cuando(x.creado)}` })]);
+    const rx = recibido ? this._reaccionar(x) : this._suReaccion(x);
+    const raiz = el("div.dt-ver.dt-ver-movil", { style: { "--c": x.color || "#ffd1e6" } }, [
+      escena, msg, de, rx,
+      el("div.dt-fila.dt-ver-acc", {}, [
+        el("button.ed-btn.primario", { type: "button", html: I("pantalla", "Ver en grande"), onClick: () => this._grande(true) }),
+        el("button.ed-btn", { type: "button", html: I("guardar", "Guardar en mis borradores"), onClick: async (ev) => {
+          const b = ev.currentTarget; b.disabled = true;
+          try { const blob = await SRV.paqueteDetallito(x.id); this.cerrar(); await abrirComoBorrador(this.app, blob, x.titulo); }
+          catch (e) { aviso("No se pudo abrir: " + e.message, 4500, "error"); b.disabled = false; }
+        } }),
+        el("button.ed-btn.peligro-suave", { type: "button", html: I("borrar", recibido ? "Quitar de mi colección" : "Quitar de mis enviados"), onClick: async () => {
+          if (!(await confirmar(recibido ? "¿Quitarlo de tu colección?" : "¿Quitarlo de tus enviados? (A tu amorcito se le queda)", "Quitar"))) return;
+          try { await SRV.borrarDetallito(x.id); this.datos = null; aviso("Quitado"); this.app.sonidos?.sonar("borrar"); this.atras(); } catch (e) { aviso(e.message, 3500, "error"); }
+        } }),
       ]),
     ]);
+    // El tamaño del celular: que quepa con su mensaje, quién la mandó y las reacciones (o, en grande, toda la pantalla).
+    const v = { W: 390, H: 844 };
+    this._verMovil = { escena, movil, v, acomodar: () => {
+      const grande = escena.classList.contains("grande"), B = 22;
+      const aw = (grande ? innerWidth - 32 : Math.min(innerWidth - 40, 460)) - B;
+      const reservado = grande ? 120 : 150 + (msg ? 70 : 0) + 36 + (rx ? 150 : 0);
+      const ah = Math.max(180, innerHeight - reservado) - B;
+      movil.style.setProperty("--mw", v.W + "px");
+      movil.style.setProperty("--mh", v.H + "px");
+      movil.style.setProperty("--k", Math.max(0.2, Math.min(1, aw / v.W, ah / v.H)).toFixed(4));
+      marco.style.width = v.W + "px"; marco.style.height = v.H + "px";
+    } };
+    this._verMovil.acomodar();
+    addEventListener("resize", this._verMovil.acomodar);
+    this._limpiezas.push(() => { removeEventListener("resize", this._verMovil?.acomodar); this._verMovil = null; document.body.classList.remove("dt-viendo-grande"); });
+    this._cargarEnMovil(x, marco, movil, v, url).catch(() => { marco.src = url; marco.addEventListener("load", () => { marco.classList.add("listo"); movil.classList.add("lista"); }, { once: true }); });
+    requestAnimationFrame(() => movil.classList.add("brilla"));
+    return el("section.dt-pantalla", {}, [raiz]);
+  }
+
+  /** «Ver en grande»: el mismo celular (sin recargar la página) a pantalla completa, y de vuelta. */
+  _grande(si) {
+    const m = this._verMovil;
+    if (!m) return false;
+    if (si === m.escena.classList.contains("grande")) return false;
+    m.escena.classList.toggle("grande", si);
+    m.escena.parentElement?.classList.toggle("grande-on", si);
+    document.body.classList.toggle("dt-viendo-grande", si);
+    m.acomodar();
+    if (!reducido()) m.movil.animate([{ transform: si ? "scale(.82)" : "scale(1.12)", opacity: 0.6 }, { transform: "none", opacity: 1 }], { duration: 420, easing: "cubic-bezier(.2,.9,.3,1.15)" });
+    this.app.sonidos?.sonar(si ? "abrir" : "cerrar");
+    return true;
+  }
+
+  /** Arma la página del detallito con su paquete y el reproductor de hoy, dentro del celular. */
+  async _cargarEnMovil(x, marco, movil, v, url) {
+    const [{ leerZip }, { normalizar }] = await Promise.all([import("../export/zip.js"), import("../core/modelo.js")]);
+    const zip = await leerZip(await SRV.paqueteDetallito(x.id));
+    if (!zip["project.json"]) throw new Error("sin proyecto");
+    const dec = new TextDecoder();
+    const P = normalizar(JSON.parse(dec.decode(await zip["project.json"]())));
+    // Lo que se mandó (orden y pantalla) viene en su datos.js; las de antes no traían la pantalla: su hoja base.
+    let ver = {};
+    try { const t = dec.decode(await zip["scripts/datos.js"]()); ver = JSON.parse(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1)); } catch (e) { /* las de antes */ }
+    const orden = (ver.orden || P.orden).filter((id) => P.paginas[id]);
+    const pant = ver.pantalla && ver.pantalla.w > 0 ? ver.pantalla : { w: P.ajustes?.ancho || 390, h: P.ajustes?.alto || 844 };
+    v.W = Math.round(pant.w); v.H = Math.round(pant.h);
+    movil.classList.toggle("horizontal", v.W > v.H);
+    this._verMovil?.acomodar();
+    // Sus fotos, música y videos, del mismo paquete.
+    const MIME = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif", svg: "image/svg+xml", mp3: "audio/mpeg", m4a: "audio/mp4", ogg: "audio/ogg", wav: "audio/wav", mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime" };
+    const urls = {}, blobs = {}, hechas = [];
+    for (const a of Object.values(P.assets || {})) {
+      const ruta = a.archivoZip || ver.archivos?.[a.id];
+      if (!ruta || !zip[ruta]) continue;
+      const b = new Blob([await zip[ruta]()], { type: a.mime || MIME[ruta.split(".").pop().toLowerCase()] || "" });
+      blobs[a.id] = b;
+      hechas.push(urls[a.id] = URL.createObjectURL(b));
+    }
+    this._limpiezas.push(() => hechas.forEach((u) => URL.revokeObjectURL(u)));
+    // Lo que piden sus HTML va como data: (un marco aislado no abre las blob:).
+    const datosUrls = {};
+    const aDatos = (b) => new Promise((ok) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => ok(null); r.readAsDataURL(b); });
+    for (const pid of orden) {
+      const pg = P.paginas[pid];
+      for (const id of [...(pg.els || []).flatMap((e) => Object.values(e.html?.archivos || {})), ...Object.values(pg.fondo?.html?.archivos || {})]) if (blobs[id] && !datosUrls[id]) datosUrls[id] = await aDatos(blobs[id]);
+    }
+    if (!marco.isConnected) return;
+    const al = (ev) => {
+      if (ev.source !== marco.contentWindow || ev.data?.tipo !== "vista-lista") return;
+      marco.contentWindow.postMessage({
+        tipo: "librito", datos: { nombre: P.nombre, ajustes: P.ajustes, orden, paginas: P.paginas, titulos: {} },
+        urls, datosUrls, base: RAIZ, inicio: orden[0], portadilla: false, prueba: true, fuentes: [...fuentesUsadas(P)], fijar: { w: v.W, h: v.H },
+      }, location.origin);
+      setTimeout(() => { marco.classList.add("listo"); movil.classList.add("lista"); }, 120);
+    };
+    addEventListener("message", al);
+    this._limpiezas.push(() => removeEventListener("message", al));
+    marco.src = "runtime/reproductor.html";
+    void url;
   }
 
   /* — Adornos — */
   _chispas(x, y, n = 14) {
     if (reducido()) return;
     for (let i = 0; i < n; i++) {
-      const s = el("i.dt-chispa", { html: i % 3 ? ico("corazon") : ico("estrella") });
+      const s = el("i.dt-chispa", { html: ico("corazon") });
       const a = (i / n) * Math.PI * 2 + Math.random() * 0.4, d = 60 + Math.random() * 90;
       s.style.left = x + "px"; s.style.top = y + "px";
       s.style.setProperty("--dx", Math.cos(a) * d + "px");

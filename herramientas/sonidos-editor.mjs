@@ -18,7 +18,7 @@ let semilla = 11;
 const azar = () => ((semilla = (semilla * 16807) % 2147483647) / 2147483647);
 
 // Re mayor (pentatónica): todo combina con todo.
-const N = { D3: 146.83, A3: 220, D4: 293.66, E4: 329.63, Fs4: 369.99, A4: 440, B4: 493.88, D5: 587.33, E5: 659.26, Fs5: 739.99, A5: 880, B5: 987.77, D6: 1174.66 };
+const N = { D3: 146.83, Fs3: 185, G3: 196, A3: 220, B3: 246.94, Cs4: 277.18, D4: 293.66, E4: 329.63, Fs4: 369.99, G4: 392, A4: 440, B4: 493.88, Cs5: 554.37, D5: 587.33, E5: 659.26, Fs5: 739.99, A5: 880, B5: 987.77, D6: 1174.66 };
 // El tono de la versión que se está haciendo (1 = la original).
 let T = 1;
 const lienzo = (dur) => new Float32Array(Math.round(SR * dur));
@@ -218,36 +218,55 @@ const SON = {
   "secreto-campanita": [0.9, (m) => fm(m, 0, N.Fs5, 0.25, { dur: 0.8, caida: 4, ratio: 3.5, indice: 0.9, caidaIndice: 6 }), 0.24, SALA_GRANDE],
 };
 
-// Reacciones a una página de tu amorcito: cada una con TRES figuras distintas (v = 0, 1, 2).
+// Reacciones a una página de tu amorcito (Fase 29): más largas y bonitas — piano eléctrico tibio
+// sobre un colchón suave que entra despacito, con su eco de sala; nada de brillitos agudos.
+// Cada una con TRES figuras distintas (v = 0, 1, 2).
+const colchon = (m, ini, notas, vol, dur = 1.6, ataque = 0.28) => notas.forEach((f) => fm(m, ini, f, vol, { dur, ataque, caida: 1.4, indice: 0.35, caidaIndice: 3 }));
+const rodar = (m, ini, notas, paso, vol, op = {}) => notas.forEach((f, i) => fm(m, ini + i * paso, f, vol, { dur: 1.5, caida: 2.4, ...op }));
 const SON_REACCION = {
-  "reaccion-te-amo": [1.2, (m, v) => {
-    const [a, b] = [[N.D5, N.Fs5], [N.A4, N.D5], [N.Fs5, N.A5]][v];
-    fm(m, 0, a, 0.2, { dur: 0.9, caida: 3.2 });
-    fm(m, 0.07, b, 0.2, { dur: 0.9, caida: 3.2 });
-  }, 0.34, SALA_GRANDE],
-  "reaccion-me-encanto": [0.8, (m, v) => {
-    const [a, b] = [[N.D5, N.A5], [N.E5, N.B5], [N.A4, N.E5]][v];
-    fm(m, 0, a, 0.22, { dur: 0.16, caida: 14 });
-    fm(m, 0.1, b, 0.24, { dur: 0.5, caida: 5 });
-  }, 0.32, SALA],
-  "reaccion-llore": [1.3, (m, v) => {
-    const f = [N.A5, N.Fs5, N.E5][v];
-    fm(m, 0, f, 0.22, { dur: 0.4, caida: 6, vib: 0.006 });
-    fm(m, 0.24, f * 2 ** (-3 / 12), 0.2, { dur: 0.8, caida: 3, vib: 0.008 });
-  }, 0.3, SALA_GRANDE],
-  "reaccion-abrazo": [1.3, (m, v) => {
-    for (const f of [[N.D4, N.A4, N.Fs5], [N.A3, N.E4, N.D5], [N.Fs4, N.D5, N.A5]][v]) fm(m, 0, f, 0.16, { dur: 1.1, caida: 2.4, ataque: 0.14, indice: 0.7 });
-  }, 0.34, SALA_GRANDE],
-  "reaccion-beso": [0.5, (m, v) => {
-    toque(m, 0, [1300, 1400, 1200][v], 0.3, { caida: 70 });
-    fm(m, 0.03, [N.Fs5, N.A5, N.E5][v], 0.2, { dur: 0.32, caida: 9 });
-  }, 0.28, SALA],
-  "reaccion-risa": [0.4, (m, v) => {
-    [[N.E5, N.Fs5, N.A5], [N.D5, N.E5, N.Fs5], [N.A4, N.B4, N.D5]][v].forEach((f, i) => fm(m, i * 0.075, f, 0.2, { dur: 0.08, caida: 26 }));
-  }, 0.28],
-  "reaccion-quitar": [0.3, (m, v) => {
-    soplo(m, 0, 0.16, 0.35, 1600, 600, 1);
-    toque(m, 0.12, [800, 740, 860][v], 0.35, { caida: 60, contacto: 0.15 });
+  // Te amo: un latido suave y un acorde de amor que se abre nota a nota.
+  "reaccion-te-amo": [2.2, (m, v) => {
+    const ac = [[N.D4, N.Fs4, N.A4, N.Cs5], [N.G4, N.B4, N.D5, N.Fs5], [N.A3, N.Cs4, N.E4, N.A4]][v];
+    asiento(m, 0, 0.45, 120, 62, 0.11); asiento(m, 0.17, 0.32, 110, 58, 0.12);
+    rodar(m, 0.3, ac, 0.085, 0.17);
+    colchon(m, 0.3, [ac[0] / 2, ac[2] / 2], 0.07, 1.7);
+    fm(m, 0.72, ac[3] * 2, 0.07, { dur: 1, caida: 3.5, indice: 0.5 });
+  }, 0.46, SALA_GRANDE],
+  // Me encantó: tres notas que suben y quedan cantando, con un airecito que sube.
+  "reaccion-me-encanto": [1.9, (m, v) => {
+    const ns = [[N.D5, N.Fs5, N.A5], [N.A4, N.Cs5, N.E5], [N.Fs4, N.A4, N.D5]][v];
+    soplo(m, 0, 0.42, 0.18, 500, 2200, 0.9);
+    ns.forEach((f, i) => fm(m, 0.06 + i * 0.11, f, 0.2, { dur: i === 2 ? 1.4 : 0.5, caida: i === 2 ? 2.2 : 6, vib: i === 2 ? 0.005 : 0 }));
+    colchon(m, 0.1, [ns[0] / 2, ns[2] / 2], 0.06, 1.4);
+  }, 0.44, SALA_GRANDE],
+  // Lloré: una melodía tierna que baja, con su temblorcito, sobre un acorde grave.
+  "reaccion-llore": [2.3, (m, v) => {
+    const ns = [[N.A5, N.Fs5, N.E5, N.D5], [N.Fs5, N.E5, N.Cs5, N.B4], [N.E5, N.D5, N.B4, N.A4]][v];
+    ns.forEach((f, i) => fm(m, i * 0.2, f, 0.17, { dur: i === 3 ? 1.4 : 0.5, caida: i === 3 ? 2 : 4.5, vib: 0.008 }));
+    colchon(m, 0.05, [[N.B3, N.D4, N.Fs4], [N.Fs3, N.A3, N.Cs4], [N.Fs3, N.B3, N.D4]][v], 0.07, 2);
+  }, 0.4, { reverb: 0.3, tam: 1.9 }],
+  // Abrazo: un acorde grave y tibio que crece despacio y te envuelve.
+  "reaccion-abrazo": [2.2, (m, v) => {
+    const ac = [[N.D3, N.A3, N.D4, N.Fs4], [N.G3, N.D4, N.G4, N.B4], [N.A3, N.E4, N.A4, N.Cs5]][v];
+    colchon(m, 0, ac, 0.12, 2, 0.4);
+    asiento(m, 0.38, 0.35, 95, 55, 0.14);
+    fm(m, 0.5, ac[3], 0.1, { dur: 1.4, caida: 2.2, indice: 0.6 });
+  }, 0.44, SALA_GRANDE],
+  // Beso: un besito (aire cortito), una nota que sube y un acorde que queda.
+  "reaccion-beso": [1.5, (m, v) => {
+    const [a, b] = [[N.D5, N.A5], [N.E5, N.B5], [N.A4, N.Fs5]][v];
+    aire(m, 0, 0.05, 0.4, { f0: 2200, f1: 3200, q: 2, forma: (x) => (1 - x) ** 2 });
+    fm(m, 0.04, a, 0.18, { dur: 0.22, caida: 9, glide: b / a });
+    rodar(m, 0.2, [a, b], 0.06, 0.15, { dur: 1.1, caida: 3 });
+  }, 0.42, SALA],
+  // Me reí: notitas que rebotan, juguetonas pero suaves.
+  "reaccion-risa": [1.2, (m, v) => {
+    [[N.D5, N.Fs5, N.E5, N.A5, N.Fs5], [N.A4, N.Cs5, N.B4, N.E5, N.D5], [N.Fs5, N.A5, N.E5, N.D5, N.Fs5]][v]
+      .forEach((f, i) => fm(m, i * 0.085, f, 0.18, { dur: i === 4 ? 0.6 : 0.12, caida: i === 4 ? 5 : 20 }));
+  }, 0.38, SALA],
+  "reaccion-quitar": [0.5, (m, v) => {
+    soplo(m, 0, 0.22, 0.35, 1600, 500, 1);
+    toque(m, 0.16, [800, 740, 860][v], 0.35, { caida: 55, contacto: 0.15 });
   }, 0.24],
 };
 const PROPIAS = new Set(Object.keys(SON_REACCION));

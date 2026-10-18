@@ -570,6 +570,10 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 .rx-p { position: absolute; display: block; }
 .rx-p svg { display: block; width: 100%; height: 100%; }
 .rx-aro { position: absolute; width: 64px; height: 64px; border: 3px solid; border-radius: 50%; }
+/* Fase 29: la fiesta exagerada — el velo de su color y su dibujo gigante al centro. */
+.rx-velo { position: absolute; inset: 0; opacity: 0; }
+.rx-gigante { position: absolute; left: 50%; top: 42%; width: min(48vw, 230px); height: min(48vw, 230px); filter: drop-shadow(0 16px 30px rgba(120, 30, 70, .3)); will-change: transform, opacity; }
+.rx-gigante svg { display: block; width: 100%; height: 100%; }
 @media (prefers-reduced-motion: reduce) {
   .dt-cv, .dt-cv-rx, .dt-cv.rx-nueva .dt-cv-rx::after, .dt-rx-grande svg, .dt-col-corazon, .dt-col-vacio-sobre { animation: none !important; }
 }
@@ -846,3 +850,16 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
   .mp-album .mp-pola, .mp-album .mp-cinta, .mp-nota-pegada, .mp-album .mp-hilo-corazon, .mp-album .mp-hilo-luz, .mp-pixel, .mp-corona, .mp-dias-cor, .mp-barra-relleno, .mp-album .mp-crear, .mp-crear-flecha, .mp-crear-chispa,
   .mp-gato, .mp-gato > i, .mp-gato-z b, .mp-album .mp-carta, .mp-rama, .mp-rama-rosa, .mp-garabato, .mp-album .mp-destello, .mp-album .mp-marca, .mp-etiqueta { animation: none !important; }
 }
+
+/* ── Fase 29: el detallito dentro de un celular (el mismo de «Probar página») ── */
+.dt-ver-movil { gap: 8px; }
+.dt-ver-escena { position: relative; display: grid; place-items: center; padding: 4px 0 2px; }
+.dt-ver-luz { position: absolute; inset: -8% -24%; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--c) 60%, transparent), transparent); opacity: .6; pointer-events: none; }
+.dt-movil { position: relative; margin: 0 auto; }
+.dt-ver-cerrar { display: none; }
+/* En grande: el mismo celular a pantalla completa, en su escenario (sin recargar la página). */
+.dt-ver-movil.grande-on, .dt-pantalla:has(> .grande-on) { animation: none !important; transform: none !important; }
+.dt-ver-escena.grande { position: fixed; inset: 0; z-index: 50; padding: calc(64px + env(safe-area-inset-top, 0px)) 16px calc(28px + env(safe-area-inset-bottom, 0px)); background: #18121b; background: radial-gradient(130% 90% at 50% 40%, color-mix(in srgb, var(--c) 38%, #2b2030) 0%, #18121b 72%); }
+.dt-ver-escena.grande .dt-ver-luz { inset: 10% 0; opacity: .45; }
+.dt-ver-escena.grande .dt-ver-cerrar { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); left: 50%; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px 0 10px; border: 1px solid rgba(255, 255, 255, .35); border-radius: 99px; background: rgba(20, 10, 18, .62); color: #fff; font: 500 13px Jost, system-ui, sans-serif; transform: translateX(-50%); }
+.dt-ver-escena.grande .dt-ver-cerrar .ed-ico { width: 16px; height: 16px; }

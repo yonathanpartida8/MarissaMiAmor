@@ -637,6 +637,17 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Portaditas bien acomodadas** | en la colección, la portadita se ve **entera** (antes se recortaba al centro: se perdía el título de las páginas altas y los lados de las anchas), como una hojita con sombra sobre un velo de sus propios colores |
 | **Medido** | en teléfono y computadora simulados: el clic fantasma no añade nada y un toque de verdad sí; GIFs y Stickers se quedan abiertos; Probar entra a 56–59 cuadros/s con el celular entero en pantalla, sin flechas repetidas, «siguiente» pasa de hoja y al terminar todo vuelve; la página exportada se arma con la misma hoja en el teléfono |
 
+### Fase 29: ver un detallito dentro de un celular y reacciones exageradas
+
+| | |
+| --- | --- |
+| **La página, en un celular** (`components/detallitos.js`) | al abrir un detallito, su página sale dentro del mismo celular de «Probar página». Ya no se abre tal cual se subió (con su reproductor de entonces, la portada negra «Toca para abrir», botones repetidos o todo amontonado): se arma con su paquete y el **reproductor de hoy**, así **todas las páginas ya subidas se ven bien** sin volver a mandarlas: directo, con sus botones funcionando y con la pantalla con que se hicieron (las de antes, con su hoja base) |
+| **Nada se tapa** | el celular se ajusta para que el mensaje, quién la mandó y las reacciones quepan a la vista (antes la barra de reacciones tapaba el mensaje) |
+| **Ver en grande** | el mismo celular a pantalla completa, en su escenario, **sin recargar** la página; «Cerrar» o el atrás del teléfono lo regresan |
+| **Reacciones exageradas, sin estrellas** (`components/reacciones.js`) | toda la pantalla se tiñe un instante de su color, su dibujo brota **gigante** al centro (con rebote, late y se va flotando) y una lluvia del doble de piezas, más grandes y que llegan lejos. «Me encantó» ya no es una estrellita: es una carita con ojos de corazón y su lluvia son corazones dorados y rosas con burbujitas de luz |
+| **Sus sonidos, más bonitos** | más largos y tibios, de piano eléctrico sobre un colchón suave: «te amo» con un latido y un acorde que se abre nota a nota; «me encantó», tres notas que suben y quedan cantando; «lloré», una melodía tierna que baja; «abrazo», un acorde grave que crece y te envuelve; «beso», un besito y una nota que sube; «me reí», notitas que rebotan. Tres versiones de cada una |
+| **Medido** | en teléfono (360×780) y computadora: la página carga en el celular con el reproductor de hoy, sin portada, celular + mensaje + reacciones caben sin taparse, la reacción pone velo, dibujo gigante y 30 piezas sin ninguna estrella, «Ver en grande» crece sin recargar y atrás lo regresa; sin errores |
+
 ## Cómo está hecho
 
 ```
