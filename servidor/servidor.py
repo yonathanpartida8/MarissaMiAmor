@@ -63,7 +63,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.7.0"
+VERSION = "1.8.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -331,6 +331,10 @@ def verificar(contrasena, guardado):
 
 HASH_FALSO = hashear(secrets.token_hex(8))   # para que «no existe» tarde lo mismo que «contraseña mala»
 USUARIO_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,31}$")
+# La cuenta del dueño del servidor (Fase 33): al entrar con ella queda como administrador y el servidor
+# termina de instalarse. Su contraseña NUNCA va aquí (el repositorio es público): se pone UNA vez en el
+# teléfono con «librito dueño». Nadie más puede registrarse con este nombre desde fuera del teléfono.
+DUENO = "ynthnpg.my"
 
 
 def validar_contrasena(c):
@@ -367,6 +371,9 @@ CREATE INDEX IF NOT EXISTS mensajes_par ON mensajes(de, para, id);
 CREATE TABLE IF NOT EXISTS trazos(id INTEGER PRIMARY KEY AUTOINCREMENT, de INTEGER, para INTEGER, ancla INTEGER, color TEXT,
   ancho REAL, puntos TEXT, fin INTEGER DEFAULT 0, borrado INTEGER DEFAULT 0, creado REAL, actualizado REAL);
 CREATE INDEX IF NOT EXISTS trazos_par ON trazos(de, para, id);
+CREATE TABLE IF NOT EXISTS push(id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER, sesion_id TEXT, endpoint TEXT UNIQUE,
+  p256dh TEXT, auth TEXT, origen TEXT, aparato TEXT, creado REAL, ultimo_ok REAL, fallos INTEGER DEFAULT 0);
+CREATE INDEX IF NOT EXISTS push_usuario ON push(usuario_id);
 """
 # Columnas que llegaron después (se agregan solas a una base vieja).
 COLUMNAS_NUEVAS = {
@@ -1640,6 +1647,8 @@ def api_registro(h, s):
     if not USUARIO_RE.match(usuario):
         raise Falla("El usuario: de 3 a 32 letras minúsculas, números, punto, guion o guion bajo.")
     validar_contrasena(d.get("contrasena"))
+    if usuario == DUENO and not h.en_el_telefono():
+        raise Falla("Ese usuario es el del dueño del servidor: se crea en el teléfono con «librito dueño».", 403)
     inv = None
     if modo == "codigo":
         codigo = str(d.get("codigo", "")).strip().upper()
@@ -1681,13 +1690,27 @@ def api_entrar(h, s):
         raise Falla("Esta cuenta está desactivada.", 403)
     E.acierto("u:" + usuario)
     E.actividad(usuario, "entrar", d.get("cliente") or "panel", ip)
+    if u["usuario"] == DUENO:
+        encender_dueno(u, ip)
     entrar_y_responder(h, u, d)
+
+
+def encender_dueno(u, ip=""):
+    """Entró el dueño: queda como administrador y el servidor termina de instalarse (sin código)."""
+    if u["rol"] != "admin" or u["estado"] != "activo":
+        E.db.x("UPDATE usuarios SET rol='admin', estado='activo' WHERE id=?", u["id"])
+        u["rol"], u["estado"] = "admin", "activo"
+        E.actividad(u["usuario"], "instalar", "el dueño del servidor", ip)
+        log("El dueño entró:", u["usuario"], "— ya es administrador y el servidor quedó listo.")
+    E.codigo_instalacion()   # ya hay administrador: el código de instalación se borra
+    escribir_estado()
 
 
 @ruta("POST", "/api/salir")
 def api_salir(h, s):
     if s:
         E.db.x("DELETE FROM sesiones WHERE id=?", s["id"])
+        E.db.x("DELETE FROM push WHERE sesion_id=?", str(s["id"]))   # ese aparato ya no recibe avisos de esta cuenta
     h.responder(200, {"ok": True}, extra={"Set-Cookie": "librito_sesion=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"})
 
 
@@ -2555,6 +2578,7 @@ def api_mandar_detallito(h, s):
     tam = tamano_carpeta(carpeta)
     E.db.x("INSERT INTO detallitos(id,de,para,titulo,mensaje,color,creado,bytes) VALUES(?,?,?,?,?,?,?,?)", did, yo["id"], yo["pareja_id"], titulo, mensaje, color, ahora(), tam)
     E.actividad(s["usuario"], "detallito", titulo, h.ip())
+    avisar(yo["pareja_id"], {"t": f"{nombre_corto(yo['id'])} te mandó una página 💗", "b": f"«{titulo}»" + (f" — {mensaje[:120]}" if mensaje else ""), "tag": "detallito", "u": "#detallitos"})
     nombres = {u["id"]: u["usuario"] for u in E.db.q("SELECT id, usuario FROM usuarios WHERE id IN (?,?)", yo["id"], yo["pareja_id"])}
     h.responder(201, {"detallito": fila_detallito(E.db.uno("SELECT * FROM detallitos WHERE id=?", did), nombres)})
 
@@ -2585,6 +2609,7 @@ def api_reaccionar(h, s, did):
         raise Falla("Esa reacción no existe.", 400)
     if r:
         E.db.x("UPDATE detallitos SET reaccion=?, reaccion_t=?, reaccion_vista=0 WHERE id=?", r, ahora(), did)
+        avisar(d["de"], {"t": f"{nombre_corto(s['usuario_id'])} {RX_AVISO.get(r, 'reaccionó')}", "b": f"A tu página «{d['titulo']}»", "tag": "detallito", "u": "#detallitos"})
     else:
         E.db.x("UPDATE detallitos SET reaccion=NULL, reaccion_t=NULL, reaccion_vista=1 WHERE id=?", did)
     h.responder(200, {"reaccion": r})
@@ -2744,6 +2769,8 @@ def api_chat(h, s):
     except ValueError:
         espera = 0.0
     fin = time.monotonic() + espera
+    if espera:
+        CHAT_MIRANDO[uid] = time.monotonic() + espera
     while True:
         v0 = CHAT_V[0]
         r = _respuesta_chat(uid, p, q)
@@ -2756,6 +2783,8 @@ def api_chat(h, s):
                 CHAT_AVISO.wait(falta)
         if CHAT_V[0] == v0:
             break
+    if espera:
+        CHAT_MIRANDO[uid] = time.monotonic()
     h.responder(200, r)
 
 
@@ -2788,6 +2817,10 @@ def api_chat_mandar(h, s):
         raise Falla("Más despacito: muchos mensajes seguidos.", 429)
     mid = _x_ya("INSERT INTO mensajes(de, para, texto, gif, creado, actualizado) VALUES(?,?,?,?,?,?)", uid, p, texto, json.dumps(gif) if gif else None, AHORA, AHORA)
     _chat_cambio()
+    if not mirando_chat(p):
+        sin_leer = E.db.uno("SELECT COUNT(*) n FROM mensajes WHERE para=? AND visto IS NULL AND borrado=0", p)["n"]
+        avisar(p, {"t": f"{nombre_corto(uid)} 💌", "b": texto[:180] or ("Te mandó un sticker" if gif and gif.get("s") else "Te mandó un GIF"),
+                   "tag": "chat", "u": "#chat", "n": sin_leer})
     h.responder(200, {"mensaje": fila_mensaje(E.db.uno("SELECT * FROM mensajes WHERE id=?", mid), uid)})
 
 
@@ -2812,6 +2845,8 @@ def api_chat_reaccion(h, s, mid):
         raise Falla("Esa reacción no existe.", 400)
     _x_ya("UPDATE mensajes SET reaccion=?, reaccion_t=?, actualizado=? WHERE id=?", r or None, AHORA if r else None, AHORA, m["id"])
     _chat_cambio()
+    if r and not mirando_chat(m["de"]):
+        avisar(m["de"], {"t": f"{nombre_corto(s['usuario_id'])} {RX_AVISO.get(r, 'reaccionó')}", "b": f"A tu mensajito: «{(m['texto'] or 'GIF')[:80]}»", "tag": "chat", "u": "#chat"})
     h.responder(200, {"mensaje": fila_mensaje(E.db.uno("SELECT * FROM mensajes WHERE id=?", m["id"]), s["usuario_id"])})
 
 
@@ -2946,6 +2981,342 @@ def api_trazos_borrar(h, s):
     n = _x_ya("UPDATE trazos SET borrado=1, puntos='[]', actualizado=? WHERE de=? AND borrado=0", AHORA, s["usuario_id"])
     _chat_cambio()
     h.responder(200, {"borrados": n})
+
+
+# ═══ Fase 33 · Notificaciones push (Web Push: RFC 8030, 8291 y 8292) — sin nada que instalar ═══
+# Los avisos llegan aunque el editor esté cerrado: Android (Chrome), compu y iPhone (iOS 16.4+, con el
+# editor agregado a la pantalla de inicio). El servidor firma con su llave VAPID (curva P-256) y cifra cada
+# aviso para ese aparato (ECDH + HKDF + AES-128-GCM). Todo en Python puro, para que Termux no necesite más.
+_EC_P = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF
+_EC_N = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551
+_EC_B = 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B
+_EC_G = (0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296, 0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5)
+
+
+def _ec_doble(q):
+    x, y, z = q
+    if not y or not z:
+        return (0, 1, 0)
+    yy, zz = y * y % _EC_P, z * z % _EC_P
+    s_, m = 4 * x * yy % _EC_P, 3 * (x - zz) * (x + zz) % _EC_P
+    x3 = (m * m - 2 * s_) % _EC_P
+    return (x3, (m * (s_ - x3) - 8 * yy * yy) % _EC_P, 2 * y * z % _EC_P)
+
+
+def _ec_suma(p1, p2):
+    if not p1[2]:
+        return p2
+    if not p2[2]:
+        return p1
+    x1, y1, z1 = p1
+    x2, y2, z2 = p2
+    z1z1, z2z2 = z1 * z1 % _EC_P, z2 * z2 % _EC_P
+    u1, u2 = x1 * z2z2 % _EC_P, x2 * z1z1 % _EC_P
+    s1, s2 = y1 * z2 * z2z2 % _EC_P, y2 * z1 * z1z1 % _EC_P
+    if u1 == u2:
+        return _ec_doble(p1) if s1 == s2 else (0, 1, 0)
+    hh, r = (u2 - u1) % _EC_P, (s2 - s1) % _EC_P
+    h2 = hh * hh % _EC_P
+    h3, v = hh * h2 % _EC_P, u1 * h2 % _EC_P
+    x3 = (r * r - h3 - 2 * v) % _EC_P
+    return (x3, (r * (v - x3) - s1 * h3) % _EC_P, hh * z1 * z2 % _EC_P)
+
+
+def _ec_por(k, pt):
+    """k · pt (pt en coordenadas normales); devuelve (x, y)."""
+    r, q = (0, 1, 0), (pt[0], pt[1], 1)
+    for b in bin(k)[2:]:
+        r = _ec_doble(r)
+        if b == "1":
+            r = _ec_suma(r, q)
+    x, y, z = r
+    zi = pow(z, -1, _EC_P)
+    return (x * zi * zi % _EC_P, y * zi * zi * zi % _EC_P)
+
+
+def _ec_leer(b):
+    """Una llave pública P-256 «sin comprimir» (65 bytes), comprobando que de verdad está en la curva."""
+    if len(b) != 65 or b[0] != 4:
+        raise ValueError("llave no válida")
+    x, y = int.from_bytes(b[1:33], "big"), int.from_bytes(b[33:], "big")
+    if not (0 < x < _EC_P and 0 < y < _EC_P) or (y * y - (x * x * x - 3 * x + _EC_B)) % _EC_P:
+        raise ValueError("llave no válida")
+    return (x, y)
+
+
+def _ec_bytes(pt):
+    return b"\4" + pt[0].to_bytes(32, "big") + pt[1].to_bytes(32, "big")
+
+
+def _b64u(b):
+    return base64.urlsafe_b64encode(b).rstrip(b"=").decode()
+
+
+def _deb64u(t):
+    t = str(t or "")
+    return base64.urlsafe_b64decode(t + "=" * (-len(t) % 4))
+
+
+def _gf8(a, b):
+    r = 0
+    while b:
+        if b & 1:
+            r ^= a
+        a = ((a << 1) ^ 0x11B) if a & 0x80 else a << 1
+        b >>= 1
+    return r
+
+
+def _aes_tablas():
+    inv = [0] * 256
+    for x in range(1, 256):
+        y, e, base = 1, 254, x           # x^254 = x^-1 en GF(2^8)
+        while e:
+            if e & 1:
+                y = _gf8(y, base)
+            base, e = _gf8(base, base), e >> 1
+        inv[x] = y
+    rot = lambda b, n: ((b << n) | (b >> (8 - n))) & 0xFF
+    sbox = [inv[x] ^ rot(inv[x], 1) ^ rot(inv[x], 2) ^ rot(inv[x], 3) ^ rot(inv[x], 4) ^ 0x63 for x in range(256)]
+    return sbox, [_gf8(x, 2) for x in range(256)]
+
+
+_AES_S = _AES_X2 = None
+
+
+class _AES128:
+    def __init__(self, clave):
+        global _AES_S, _AES_X2
+        if _AES_S is None:
+            _AES_S, _AES_X2 = _aes_tablas()
+        S, w, rc = _AES_S, [list(clave[i:i + 4]) for i in range(0, 16, 4)], 1
+        for i in range(4, 44):
+            t = list(w[i - 1])
+            if i % 4 == 0:
+                t = [S[b] for b in t[1:] + t[:1]]
+                t[0] ^= rc
+                rc = _gf8(rc, 2)
+            w.append([a ^ b for a, b in zip(w[i - 4], t)])
+        self.rk = [sum(w[r * 4:r * 4 + 4], []) for r in range(11)]
+
+    def bloque(self, b):
+        S, X2 = _AES_S, _AES_X2
+        e = [a ^ k for a, k in zip(b, self.rk[0])]
+        for r in range(1, 11):
+            e = [S[x] for x in e]
+            e = [e[(i + 4 * (i % 4)) % 16] for i in range(16)]   # ShiftRows (columnas de 4)
+            if r < 10:
+                m = []
+                for c in range(0, 16, 4):
+                    a0, a1, a2, a3 = e[c:c + 4]
+                    m += [X2[a0] ^ X2[a1] ^ a1 ^ a2 ^ a3, a0 ^ X2[a1] ^ X2[a2] ^ a2 ^ a3, a0 ^ a1 ^ X2[a2] ^ X2[a3] ^ a3, X2[a0] ^ a0 ^ a1 ^ a2 ^ X2[a3]]
+                e = m
+            e = [a ^ k for a, k in zip(e, self.rk[r])]
+        return bytes(e)
+
+
+def _gcm_mul(x, y):
+    z = 0
+    for i in range(127, -1, -1):
+        if (x >> i) & 1:
+            z ^= y
+        y = (y >> 1) ^ 0xE1000000000000000000000000000000 if y & 1 else y >> 1
+    return z
+
+
+def _aes_gcm(clave, nonce, datos):
+    a = _AES128(clave)
+    h_ = int.from_bytes(a.bloque(bytes(16)), "big")
+    ct = bytearray()
+    for i in range(0, len(datos), 16):
+        ks = a.bloque(nonce + (2 + i // 16).to_bytes(4, "big"))
+        ct += bytes(x ^ k for x, k in zip(datos[i:i + 16], ks))
+    y = 0
+    for i in range(0, len(ct), 16):
+        y = _gcm_mul(y ^ int.from_bytes(bytes(ct[i:i + 16]).ljust(16, b"\0"), "big"), h_)
+    y = _gcm_mul(y ^ (len(ct) * 8), h_)
+    return bytes(ct) + (y ^ int.from_bytes(a.bloque(nonce + b"\0\0\0\1"), "big")).to_bytes(16, "big")
+
+
+def _hm(k, m):
+    return hmac.new(k, m, hashlib.sha256).digest()
+
+
+def cifrar_aviso(p256dh, auth, datos):
+    """El aviso cifrado sólo para ese aparato (RFC 8291, «aes128gcm»)."""
+    ua = _deb64u(p256dh)
+    ua_pt, secreto = _ec_leer(ua), _deb64u(auth)
+    priv = secrets.randbelow(_EC_N - 1) + 1
+    pub = _ec_bytes(_ec_por(priv, _EC_G))
+    ecdh = _ec_por(priv, ua_pt)[0].to_bytes(32, "big")
+    sal = secrets.token_bytes(16)
+    prk = _hm(sal, _hm(_hm(secreto, ecdh), b"WebPush: info\0" + ua + pub + b"\1"))
+    cek, nonce = _hm(prk, b"Content-Encoding: aes128gcm\0\1")[:16], _hm(prk, b"Content-Encoding: nonce\0\1")[:12]
+    return sal + (4096).to_bytes(4, "big") + bytes([65]) + pub + _aes_gcm(cek, nonce, datos + b"\2")
+
+
+_VAPID, _VAPID_LOCK, _JWTS = [], threading.Lock(), {}
+
+
+def llave_vapid():
+    """La llave VAPID del servidor: se crea una vez y vive cifrada con los demás secretos."""
+    with _VAPID_LOCK:
+        if not _VAPID:
+            d = E.caja.leer()
+            k = int(d["vapid"], 16) if d.get("vapid") else 0
+            if not k:
+                k = secrets.randbelow(_EC_N - 1) + 1
+                d["vapid"] = format(k, "064x")
+                E.caja.guardar(d)
+                log("Llave de notificaciones (VAPID) creada.")
+            _VAPID.append((k, _ec_por(k, _EC_G)))
+        return _VAPID[0]
+
+
+def firma_vapid(aud, sub):
+    """El JWT (ES256) que dice al servicio de avisos quién manda (se reusa una hora)."""
+    ya = _JWTS.get((aud, sub))
+    if ya and ya[1] > time.time() + 3600:
+        return ya[0]
+    k, _ = llave_vapid()
+    exp = int(time.time()) + 12 * 3600
+    cab = _b64u(b'{"typ":"JWT","alg":"ES256"}')
+    cuerpo = _b64u(json.dumps({"aud": aud, "exp": exp, "sub": sub}, separators=(",", ":")).encode())
+    z = int.from_bytes(hashlib.sha256((cab + "." + cuerpo).encode()).digest(), "big")
+    while True:
+        kk = secrets.randbelow(_EC_N - 1) + 1
+        r = _ec_por(kk, _EC_G)[0] % _EC_N
+        s_ = pow(kk, -1, _EC_N) * (z + r * k) % _EC_N
+        if r and s_:
+            break
+    jwt = cab + "." + cuerpo + "." + _b64u(r.to_bytes(32, "big") + s_.to_bytes(32, "big"))
+    _JWTS[(aud, sub)] = (jwt, exp)
+    return jwt
+
+
+# Sólo a los servicios de avisos de verdad (nada de mandar el servidor a cualquier dirección).
+PUSH_HOSTS = re.compile(r"^(fcm\.googleapis\.com|android\.googleapis\.com|(updates\.)?push\.services\.mozilla\.com|([a-z0-9-]+\.)*push\.apple\.com|[a-z0-9-]+\.notify\.windows\.com)$")
+_PUSH_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="avisos")
+CHAT_MIRANDO = {}
+
+
+def endpoint_ok(u):
+    prueba = os.environ.get("LIBRITO_PUSH_PRUEBA")   # sólo para las pruebas: un servicio de avisos de mentira
+    if prueba and u.startswith(prueba):
+        return True
+    try:
+        p = urllib.parse.urlsplit(u)
+    except ValueError:
+        return False
+    return p.scheme == "https" and len(u) < 1200 and bool(PUSH_HOSTS.match(p.hostname or ""))
+
+
+def mandar_push(sub, carga):
+    """Un aviso a un aparato. Devuelve el código del servicio (201 = va en camino; 404/410 = ya no existe)."""
+    p = urllib.parse.urlsplit(sub["endpoint"])
+    _, pub = llave_vapid()
+    origen = sub.get("origen") or ""
+    firma = firma_vapid(f"{p.scheme}://{p.netloc}", origen if origen.startswith("https://") else "mailto:avisos@m-ynthn.invalid")
+    datos = json.dumps(carga, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    req = urllib.request.Request(sub["endpoint"], data=cifrar_aviso(sub["p256dh"], sub["auth"], datos), method="POST", headers={
+        "TTL": "86400", "Urgency": "high", "Topic": re.sub(r"[^A-Za-z0-9_-]", "", carga.get("tag") or "librito")[:32] or "librito",
+        "Content-Type": "application/octet-stream", "Content-Encoding": "aes128gcm",
+        "Authorization": f"vapid t={firma}, k={_b64u(_ec_bytes(pub))}"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return r.status
+    except urllib.error.HTTPError as e:
+        return e.code
+    except (urllib.error.URLError, OSError, ValueError):
+        return 0
+
+
+def _entregar(subs, carga):
+    codigos = []
+    for x in subs:
+        c = mandar_push(x, carga)
+        codigos.append(c)
+        if c in (404, 410):
+            E.db.x("DELETE FROM push WHERE id=?", x["id"])
+        elif 200 <= c < 300:
+            E.db.x("UPDATE push SET ultimo_ok=?, fallos=0 WHERE id=?", ahora(), x["id"])
+        else:
+            E.db.x("UPDATE push SET fallos=fallos+1 WHERE id=?", x["id"])
+            E.db.x("DELETE FROM push WHERE id=? AND fallos>=15", x["id"])
+            log("Aviso no entregado:", c, urllib.parse.urlsplit(x["endpoint"]).netloc)
+    return codigos
+
+
+def avisar(uid, carga):
+    """Avisarle a alguien en todos sus aparatos, en segundo plano (no frena la respuesta)."""
+    subs = E.db.q("SELECT * FROM push WHERE usuario_id=?", uid)
+    if subs:
+        _PUSH_POOL.submit(_entregar, subs, carga)
+
+
+def nombre_corto(uid):
+    u = E.db.uno("SELECT nombre, usuario FROM usuarios WHERE id=?", uid) or {}
+    return (u.get("nombre") or "").strip() or u.get("usuario") or "Tu amorcito"
+
+
+def mirando_chat(uid):
+    """¿Tiene el chat abierto ahora mismo? (Entonces el mensajito ya le llegó ahí: sin aviso.)"""
+    return CHAT_MIRANDO.get(uid, 0) > time.monotonic() - 30
+
+
+RX_AVISO = {"te-amo": "te dijo «te amo» 💗", "me-encanto": "dice que le encantó 😍", "llore": "lloró de lo bonito 🥹",
+            "abrazo": "te mandó un abrazo 🤗", "beso": "te mandó un beso 💋", "risa": "se rió contigo 😂"}
+
+
+@ruta("GET", "/api/push/clave")
+def api_push_clave(h, s):
+    """La llave pública VAPID (la pide el editor para suscribirse a los avisos)."""
+    _, pub = llave_vapid()
+    h.responder(200, {"clave": _b64u(_ec_bytes(pub))})
+
+
+@ruta("POST", "/api/push/suscribir", "sesion")
+def api_push_suscribir(h, s):
+    """Este aparato quiere avisos (aunque el editor esté cerrado)."""
+    d = h.cuerpo_json()
+    ep, k = str(d.get("endpoint") or ""), d.get("keys") or {}
+    if not endpoint_ok(ep):
+        raise Falla("Ese servicio de notificaciones no es conocido.", 400)
+    try:
+        _ec_leer(_deb64u(k.get("p256dh")))
+        if len(_deb64u(k.get("auth"))) < 16:
+            raise ValueError("auth")
+    except (ValueError, TypeError):
+        raise Falla("Las llaves de notificaciones de este aparato no son válidas.", 400)
+    origen = str(d.get("origen") or "")
+    origen = origen if re.match(r"^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?$", origen) else ""
+    with E.db.lock:
+        E.db.x("DELETE FROM push WHERE endpoint=?", ep)
+        E.db.x("INSERT INTO push(usuario_id, sesion_id, endpoint, p256dh, auth, origen, aparato, creado) VALUES(?,?,?,?,?,?,?,?)",
+               s["usuario_id"], str(s["id"]), ep, str(k.get("p256dh")), str(k.get("auth")), origen, str(d.get("aparato") or "")[:60], ahora())
+        viejos = E.db.q("SELECT id FROM push WHERE usuario_id=? ORDER BY creado DESC LIMIT -1 OFFSET 10", s["usuario_id"])
+        for v in viejos:
+            E.db.x("DELETE FROM push WHERE id=?", v["id"])
+    n = E.db.uno("SELECT COUNT(*) n FROM push WHERE usuario_id=?", s["usuario_id"])["n"]
+    h.responder(200, {"ok": True, "aparatos": n})
+
+
+@ruta("DELETE", "/api/push/suscribir", "sesion")
+def api_push_quitar(h, s):
+    """Este aparato ya no quiere avisos."""
+    ep = str(h.cuerpo_json().get("endpoint") or "")
+    n = E.db.x("DELETE FROM push WHERE endpoint=? AND usuario_id=?", ep, s["usuario_id"])
+    h.responder(200, {"ok": True, "quitados": n})
+
+
+@ruta("POST", "/api/push/probar", "sesion")
+def api_push_probar(h, s):
+    """Un aviso de prueba a todos tus aparatos (y cuántos llegaron al servicio de avisos)."""
+    subs = E.db.q("SELECT * FROM push WHERE usuario_id=?", s["usuario_id"])
+    if not subs:
+        raise Falla("Este aparato todavía no tiene las notificaciones prendidas.", 409)
+    codigos = _entregar(subs, {"t": "M.YNTHN 💗", "b": "¡Listo! Así te van a llegar los avisos de tu amorcito.", "tag": "prueba", "u": ""})
+    h.responder(200, {"total": len(subs), "enviadas": sum(1 for c in codigos if 200 <= c < 300), "codigos": codigos})
 
 
 @ruta("PUT", f"/api/detallitos/{DETALLITO_RE}/portadita", "sesion")
@@ -3369,7 +3740,7 @@ def iniciar(args):
 def orden_admin(args):
     global E
     E = Estado()
-    usuario = (args.usuario or input("Usuario del administrador (ej. yonathan): ")).strip().lower()
+    usuario = (args.usuario or input(f"Usuario del administrador [{DUENO}]: ") or DUENO).strip().lower()
     if not USUARIO_RE.match(usuario):
         raise SystemExit("Usuario no válido: de 3 a 32 letras minúsculas, números, punto, guion o guion bajo (sin espacios).")
     for _ in range(3):

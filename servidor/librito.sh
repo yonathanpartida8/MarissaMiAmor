@@ -18,6 +18,7 @@
 #    librito arranque       que se prenda solo al encender el teléfono (Termux:Boot)
 #    librito respaldar      copia de los datos (sin la llave ni el token)
 #    librito actualizar     baja la versión nueva (tus datos no se tocan)
+#    librito dueño          pone (o cambia) la contraseña de la cuenta del dueño: YnthnPG.MY
 # ─────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -237,6 +238,7 @@ case "$orden" in
   panel) panel ;;
   registro|log) touch "$LOG"; tail -n 60 -f "$LOG" ;;
   admin) necesita_python; "$PY" "$APP/servidor.py" admin "$@" ;;
+  dueno|dueño) necesita_python; "$PY" "$APP/servidor.py" admin ynthnpg.my ;;
   github) necesita_python; "$PY" "$APP/servidor.py" github ;;
   llave-nueva) necesita_python; "$PY" "$APP/servidor.py" llave-nueva ;;
   borrar-cuentas) necesita_python; "$PY" "$APP/servidor.py" borrar-cuentas "$@" ;;
