@@ -113,16 +113,31 @@ export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
   const formato = el("select.ed-sel", {}, Object.entries(FORMATOS).map(([k, f]) => el("option", { value: k, text: f.auto ? f.n : `${f.n} · ${f.w}×${f.h}` })));
   formato.value = "movil";
   const nombre = el("input.ed-txt", { type: "text", placeholder: "Nombre del librito", value: "Mi librito" });
-  const portada = selectorDePortada(formato);
-  const cerrar = () => { portada.destruir(); capa.remove(); };
-  const capa = el("div.ed-inicio", { role: "dialog", "aria-label": "Crear librito" }, [
+  // «Mis libritos» (del menú principal) es sólo para tus borradores y sus copias de seguridad (Fase 33).
+  const respaldo = a === "borradores";
+  const portada = respaldo ? null : selectorDePortada(formato);
+  const cerrar = () => { portada?.destruir(); capa.remove(); };
+  const capa = el("div.ed-inicio" + (respaldo ? ".respaldo" : ""), { role: "dialog", "aria-label": respaldo ? "Mis libritos" : "Crear librito" }, [
     el("div.ed-inicio-caja", {}, [
       el("header", {}, [
         el("a.ed-volver", { href: "../index.html", title: "Volver al librito", html: ico("volver") }),
-        el("div", {}, [el("h1", { text: "Crear librito" }), el("p", { text: "Tu taller para armar libritos interactivos: páginas, fotos, música, animaciones y HTML propio." })]),
+        respaldo
+          ? el("div", {}, [el("h1", { text: "Mis libritos" }), el("p", { text: "Tus borradores y sus copias de seguridad: guarda todo en un archivo o tráelo de vuelta." })])
+          : el("div", {}, [el("h1", { text: "Crear librito" }), el("p", { text: "Tu taller para armar libritos interactivos: páginas, fotos, música, animaciones y HTML propio." })]),
         cerrable ? el("button.ed-x", { type: "button", html: ico("cerrar"), "aria-label": "Cerrar", onClick: () => cerrar() }) : null,
       ]),
-      el("section.ed-inicio-nuevo", {}, [
+      respaldo ? el("section.ed-inicio-nuevo", {}, [
+        el("div.ed-tarjeta", {}, [
+          el("b", { html: I("subir", "Importar copia de seguridad") }),
+          el("small", { text: "Trae de vuelta tus borradores desde un .zip de copia de seguridad (la de todos tus datos o la de un solo librito)." }),
+          boton("Elegir archivo", () => { cerrar(); app.importarCopia(); }),
+        ]),
+        el("div.ed-tarjeta", {}, [
+          el("b", { html: I("escudo", "Hacer copia de seguridad de mis datos") }),
+          el("small", { text: "Un .zip con todos tus borradores de este aparato, con sus fotos, sonidos, videos y dibujos, para guardarlo donde quieras." }),
+          boton("Descargar copia", () => app.copiaDeTodo(), "primario"),
+        ]),
+      ]) : el("section.ed-inicio-nuevo", {}, [
         el("div.ed-tarjeta.ed-tarjeta-nuevo", {}, [
           el("b", { html: I("nuevo", "Librito nuevo") }),
           el("small", { text: "Elige el estilo de su portada (o pon tu propia imagen). Después puedes cambiar todo." }),
@@ -144,10 +159,10 @@ export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
       borradores,
     ]),
   ]);
-  capa._destruir = portada.destruir;
+  capa._destruir = portada?.destruir;
   document.body.append(capa);
 
-  const otraVez = () => pantallaInicio(app, { cerrable: cerrable && !!app.estado.proyecto });
+  const otraVez = () => pantallaInicio(app, { cerrable: cerrable && !!app.estado.proyecto, a });
   const borrarAqui = async (id) => { await borrar(id); borrarCopias(id).catch(() => {}); if (app.estado.proyecto?.id === id) app.estado.proyecto = null; };
   /** Bajar (o poner al día) un librito de tu nube y abrirlo; la pantalla se queda si algo falla. */
   const abrirNube = async (l) => {
@@ -221,7 +236,7 @@ export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
     const idsAntes = new Set([...antes.values()].map((li) => li.dataset.id));
     const filas = items.map((li) => antes.get(li.dataset.k) || li);
     const llegan = borradores._pintado ? filas.filter((li) => !idsAntes.has(li.dataset.id)) : [];
-    const h2t = items.length ? "Tus borradores" : "Todavía no hay borradores";
+    const h2t = items.length ? (respaldo ? "Borradores y copias" : "Tus borradores") : "Todavía no hay borradores";
     ajustar(borradores, () => {
       let h2 = borradores.querySelector(":scope > h2");
       if (!h2) h2 = el("h2");
@@ -249,7 +264,7 @@ export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
   };
   cargarNube();
   // «Mis libritos» (del menú principal): directo a tus borradores.
-  if (a === "borradores") requestAnimationFrame(() => borradores.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }));
+  // (Ahora es su propia sección: ya no hace falta bajar hasta ellos.)
   // Entraste o saliste de tu cuenta con esto abierto: la lista se pone al día.
   const alCuenta = () => { if (capa.isConnected) cargarNube(); else removeEventListener("ed-cuenta", alCuenta); };
   addEventListener("ed-cuenta", alCuenta);

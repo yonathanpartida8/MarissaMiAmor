@@ -1412,8 +1412,8 @@ body.ed-sin-efectos .ed-hoja .rt-c { filter: none !important; }
 .ed-musica-b.apagada { color: var(--texto-suave); }
 .ed-musica-vol { display: flex; align-items: center; gap: 10px; min-width: 220px; }
 .ed-musica-vol input { flex: 1; accent-color: var(--acento); }
-/* «Más» de la barra de arriba: sólo en pantallas angostas (los «⋯» de cada borrador del inicio, siempre). */
-.ed-barra .ed-mas { display: none; }
+/* «Más» (⋯) de la barra de arriba: siempre (ahí vive «Páginas publicadas»); en pantallas angostas, además, lo que no cabe. */
+.ed-barra .ed-mas { display: inline-flex; }
 @media (max-width: 760px) {
   .ed-previa, .ed-guardar, .ed-ver, .ed-zoom, .ed-exportar { display: none !important; }
   .ed-barra .ed-mas { display: inline-flex; }

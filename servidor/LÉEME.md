@@ -229,8 +229,8 @@ to process»: por eso `librito actualizar` instala `git` en Termux.
   imágenes de GIPHY.
 
 Las reacciones y las portaditas necesitan M.YNTHN **1.5.0** o más nuevo, los
-Mensajitos **1.6.0**, y los dibujos, los stickers libres y el tiempo real
-**1.7.0**: en
+Mensajitos **1.6.0**, los dibujos, los stickers libres y el tiempo real
+**1.7.0**, y las notificaciones push **1.8.0**: en
 el teléfono servidor corre `librito actualizar` (tus datos no se tocan; las
 columnas nuevas se agregan solas al prender). Con uno más viejo todo lo demás
 sigue igual y las páginas sin portadita llevan una tapita de colores.
@@ -284,6 +284,31 @@ foto; tú te quedas):
 - O en el panel: **Usuarios → Cuentas de prueba → Borrar las N cuentas**.
 
 No se puede deshacer. Sus publicaciones (si había) pasan a ti.
+
+### Notificaciones push (1.8.0)
+
+Avisan aunque el editor esté cerrado (mensajito nuevo, página nueva y
+reacciones), con el ícono de la app y el sonido de notificaciones del teléfono.
+Todo es Python puro (no hay que instalar nada en Termux): el servidor crea una
+vez su llave **VAPID** (curva P-256, guardada cifrada con los demás secretos),
+firma cada aviso y lo cifra sólo para ese aparato (RFC 8291, `aes128gcm`).
+El teléfono servidor necesita internet para entregarlos a Google, Apple o
+Mozilla. Si borras `secretos.bin` (o restauras un respaldo sin él), se crea una
+llave nueva y cada aparato se vuelve a suscribir solo al abrir el editor. En
+iPhone, el editor tiene que estar agregado a la pantalla de inicio (iOS 16.4+).
+
+### La cuenta del dueño: YnthnPG.MY
+
+La cuenta del servidor es **`ynthnpg.my`** (se escribe como quieras: YnthnPG.MY
+entra igual). Al entrar con ella, queda como administrador y el servidor
+termina de instalarse (ya no pide el código de instalación). Nadie puede
+registrar ese nombre desde fuera del teléfono. Su contraseña **no** está en el
+código (el repositorio es público): ponla una vez en Termux con
+
+    librito actualizar
+    librito dueño        # te pide la contraseña dos veces (no se ve al escribir)
+
+y ya entras con YnthnPG.MY desde el editor o el panel.
 
 ## Cuentas y autenticación
 
@@ -371,6 +396,9 @@ azar) · `/api/…`:
 | `PUT` · `DELETE /api/chat/<id>/sticker/<sid>` | quien lo pegó | mover (x, y, giro, tamaño) o quitar un sticker |
 | `POST /api/chat/trazos` (`{"ancla":<id>,"c":"#ff5f9e","a":6,"p":[[x,y],…]}`) · `POST /api/chat/trazos/<id>` (`{"p":[…],"fin":true}`) | pareja · quien dibuja | dibujar en el chat: x de 0 a 10000 a lo ancho, y en px desde su mensajito; se manda de a poquito mientras dibujas (hasta 1500 puntos por trazo) |
 | `DELETE /api/chat/trazos/<id>` · `DELETE /api/chat/trazos` | quien lo dibujó | deshacer un trazo · borrar todos tus dibujos |
+| `GET /api/push/clave` | todos | la llave pública VAPID del servidor (para suscribirse a las notificaciones) |
+| `POST /api/push/suscribir` (`{"endpoint":…,"keys":{"p256dh":…,"auth":…}}`) · `DELETE /api/push/suscribir` | sesión | prender o apagar las notificaciones push en un aparato (sólo servicios de avisos de Google, Apple, Mozilla y Microsoft; hasta 10 aparatos por cuenta) |
+| `POST /api/push/probar` | sesión | una notificación de prueba a tus aparatos |
 | `PUT /api/chat/<id>/reaccion` (`{"reaccion":"te-amo"}`; vacío la quita) | quien lo recibió | reaccionar a un mensajito |
 | `POST /api/chat/<id>/sticker` (`{"u":"https://media.giphy.com/…","x":0.8,"y":0.2,"r":-8,"s":1}`; con `"l":1`, libre: `y` en px) | pareja | pegar un sticker de GIPHY encima de un mensajito o, libre, donde lo soltaste en el chat (hasta 12 por mensajito) |
 | `DELETE /api/chat/<id>` · `POST /api/chat/vistos` | quien lo mandó · sesión | borrar tu mensajito (para los dos) · ya leíste lo que te mandó |

@@ -55,6 +55,7 @@ import { BarraContextual } from "./components/barra.js";
 import { Lateral } from "./components/lateral.js";
 import { guardasDeApp } from "./components/guardas.js";
 import { prefChat } from "./components/chat.js";
+import * as PUSH from "./integraciones/avisos.js";
 import { AudioEditor } from "./audio/mezclador.js";
 import { ico } from "./components/iconos.js";
 import { Hoja } from "./components/hoja.js";
@@ -81,14 +82,14 @@ const $ = (s) => document.querySelector(s);
 const SECCIONES = [
   ["paginas", "paginas", "Páginas"],
   ["navegacion", "pasar", "Pasar página"],
-  ["publicadas", "publicar", "Páginas publicadas"],
+  ["publicadas", "publicar", "Páginas publicadas"],   // (vive en el menú ⋯, no en el riel)
   // Crear: lo que arma la página
   ["bloques", "bloques", "Bloques"],
+  ["componentes", "biblioteca", "Recursos"],
   ["elementos", "elementos", "Elementos"],
   ["texto", "texto", "Texto"],
   ["imagenes", "imagen", "Imágenes"],
   ["video", "video", "Vídeo"],
-  ["componentes", "biblioteca", "Recursos"],
   // Adornar y dar vida
   ["gifs", "gif", "GIFs"],
   ["stickers", "sticker", "Stickers"],
@@ -329,6 +330,7 @@ function construirBarra() {
     { t: `${ico("escudo")}<span>Copias de seguridad…</span>`, al: () => app.guardado.abrir() },
     { t: `${ico("exportar")}<span>Exportar…</span>`, al: () => app.exportarMenu.abrir() },
     { t: `${ico("detallito")}<span>Detallitos</span>`, al: () => app.detallitos.abrir($(".ed-mas")) },
+    { t: `${ico("publicar")}<span>Páginas publicadas</span>`, al: () => abrirSeccion("publicadas", true) },
     { t: `${ico("compartir")}<span>Compartir por WhatsApp…</span>`, al: () => app.compartir() },
     { t: `${ico("rayo")}<span>Revisar recursos…</span>`, al: () => app.revisarRecursos() },
     { t: `${ico("herramientas")}<span>Herramientas</span>`, al: () => abrirSeccion("herramientas", true) },
@@ -388,6 +390,7 @@ function construirRiel() {
   const riel = $(".ed-riel");
   for (const [id, icono, n] of SECCIONES) {
     if (id === "paginas") continue; // Páginas va arriba (botón «1/3»), no compite con las herramientas
+    if (id === "publicadas") continue; // Páginas publicadas: en el menú de los tres puntos (⋯)
     if (GRUPOS_RIEL[id]) riel.append(el("i.ed-riel-sep", { "aria-hidden": "true" }, [el("small", { text: GRUPOS_RIEL[id] })]));
     riel.append(el("button", { type: "button", dataset: { s: id }, title: n, "aria-label": n, onClick: () => {
       const activo = app.seccion === id;
@@ -598,6 +601,7 @@ async function latir() {
     app.amorNuevos = r.nuevos || 0;
     app.amorReacciones = r.reacciones || 0;
     app.amorChat = r.chat || 0;
+    PUSH.insignia(app.amorNuevos + app.amorChat + app.amorReacciones);
     app.pareja = r.pareja;
     PF.poner({ pareja: r.pareja || null });
     // El globito va en Exportar y en «Más» (en el teléfono, Exportar vive dentro de «Más»).
@@ -628,6 +632,24 @@ async function latir() {
   } catch (e) { /* sin conexión: la próxima */ }
 }
 setTimeout(latir, 4000);
+/* Notificaciones push (Fase 33): el ayudante de fondo se registra y, si ya estaban prendidas, el servidor
+   se pone al día. Tocar una notificación abre el chat o Detallitos (con el editor abierto o cerrado). */
+const abrirAviso = (u) => {
+  if (!SRV.conectado()) return;
+  if (u === "#chat") app.detallitos.abrir(null, "chat");
+  else if (u === "#detallitos") app.detallitos.abrir(null, "coleccion");
+};
+setTimeout(() => PUSH.registrar().then(() => PUSH.alDia()), 2500);
+addEventListener("ed-cuenta", () => setTimeout(() => PUSH.alDia(), 400));
+navigator.serviceWorker?.addEventListener("message", (e) => { if (e.data?.tipo === "aviso-abrir") abrirAviso(e.data.u); });
+const desdeAviso = (espera) => {
+  if (!/^#(chat|detallitos)$/.test(location.hash)) return;
+  const u = location.hash;
+  history.replaceState(history.state, "", location.pathname + location.search);
+  setTimeout(() => abrirAviso(u), espera);
+};
+desdeAviso(1600);
+addEventListener("hashchange", () => desdeAviso(0));
 setInterval(latir, 25000);
 addEventListener("ed-cuenta", () => setTimeout(latir, 300));
 addEventListener("ed-detallito-visto", () => setTimeout(latir, 300));
@@ -685,8 +707,8 @@ app.borrarProyecto = async () => {
   pantallaInicio(app);
 };
 
-app.abrirArchivo = async () => {
-  const [f] = await elegirArchivos({ accept: ".zip,.json,application/zip,application/json", multiple: false });
+app.abrirArchivo = async (archivo) => {
+  const [f] = archivo ? [archivo] : await elegirArchivos({ accept: ".zip,.json,application/zip,application/json", multiple: false });
   if (!f) return;
   const capa = el("div.ed-ocupado", {}, [el("div", {}, [el("i.ed-girando"), el("p", { text: "Abriendo " + f.name + "…" })])]);
   document.body.append(capa);
@@ -700,6 +722,45 @@ app.abrirArchivo = async () => {
     console.error(e);
     aviso("No se pudo abrir: " + e.message, 4500, "error");
   } finally { capa.remove(); }
+};
+
+/**
+ * «Mis libritos» (Fase 33): copias de seguridad. Importar trae la copia de TODOS tus datos (vuelven los
+ * borradores que no estén aquí) o la de un solo librito (se abre como borrador nuevo).
+ */
+app.importarCopia = async () => {
+  const [f] = await elegirArchivos({ accept: ".zip,.json,application/zip,application/json", multiple: false });
+  if (!f) return;
+  if (!/\.zip$/i.test(f.name) && f.type !== "application/zip") return app.abrirArchivo(f);
+  const t = el("p", { text: "Leyendo la copia…" });
+  const capa = el("div.ed-ocupado", {}, [el("div", {}, [el("i.ed-girando"), el("b", { text: "Importando copia de seguridad" }), t])]);
+  document.body.append(capa);
+  try {
+    const [{ leerZip }, C] = await Promise.all([import("./export/zip.js"), import("./storage/copia-total.js")]);
+    const zip = await leerZip(f);
+    if (!C.esCopiaDeTodo(zip)) { capa.remove(); return app.abrirArchivo(f); }
+    const r = await C.restaurarTodo(zip, (x) => { t.textContent = x; });
+    app.sonidos?.sonar("exito");
+    aviso(r.nuevos ? `Volvieron ${r.nuevos} ${r.nuevos === 1 ? "borrador" : "borradores"}${r.estaban ? ` (${r.estaban} ya estaban aquí)` : ""} 💗` : `Ya tenías todos los de esa copia (${r.estaban})`, 5000);
+    app.inicio({ a: "borradores" });
+  } catch (e) { aviso("No se pudo importar: " + e.message, 5000, "error"); }
+  finally { capa.remove(); }
+};
+app.copiaDeTodo = async () => {
+  if (app.auto.pendiente) await app.auto.ahora();
+  const t = el("p", { text: "Juntando tus borradores…" });
+  const capa = el("div.ed-ocupado", {}, [el("div", {}, [el("i.ed-girando"), el("b", { text: "Haciendo la copia de seguridad" }), t])]);
+  document.body.append(capa);
+  try {
+    const [C, { descargar }] = await Promise.all([import("./storage/copia-total.js"), import("./export/exportar.js")]);
+    const r = await C.copiaDeTodo((x) => { t.textContent = x; });
+    if (!r.n) { aviso("Todavía no hay borradores para guardar", 3500); return; }
+    const dia = new Date().toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
+    descargar(r.blob, `Mis libritos (copia de seguridad ${dia}).zip`);
+    app.sonidos?.sonar("exito");
+    aviso(`Copia de seguridad lista: ${r.n} ${r.n === 1 ? "borrador" : "borradores"} 💗 Guárdala donde quieras.`, 5000);
+  } catch (e) { aviso("No se pudo hacer la copia: " + e.message, 5000, "error"); }
+  finally { capa.remove(); }
 };
 
 /** Compartir (WhatsApp y otras apps, con el menú del teléfono) y revisar recursos. */

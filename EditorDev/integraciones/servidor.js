@@ -270,6 +270,11 @@ export const trazoNuevo = (d) => pedir("chat/trazos", { method: "POST", body: d 
 export const trazoMas = (id, d) => pedir("chat/trazos/" + encodeURIComponent(id), { method: "POST", body: d });
 export const trazoBorrar = (id) => pedir("chat/trazos/" + encodeURIComponent(id), { method: "DELETE" });
 export const trazosBorrar = () => pedir("chat/trazos", { method: "DELETE" });
+/* Notificaciones push (Fase 33). */
+export const pushClave = () => pedir("push/clave");
+export const pushSuscribir = (sub) => pedir("push/suscribir", { method: "POST", body: sub });
+export const pushQuitar = (endpoint) => pedir("push/suscribir", { method: "DELETE", body: { endpoint } });
+export const pushProbar = () => pedir("push/probar", { method: "POST", body: {} });
 export async function subirPortadita(id, blob) {
   const r = await enviar("PUT", `detallitos/${encodeURIComponent(id)}/portadita`, blob, blob.type || "image/jpeg");
   if (r.status < 200 || r.status >= 300) throw Object.assign(new Error(r.datos?.error || `${NOMBRE} contestó ${r.status}`), { status: r.status });

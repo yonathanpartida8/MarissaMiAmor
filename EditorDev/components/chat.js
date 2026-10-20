@@ -24,6 +24,7 @@ import * as PF from "./perfil.js";
 import { REACCIONES, reaccion, svgReaccion, estallido } from "./reacciones.js";
 import { sinMovimiento as reducido } from "./transiciones.js";
 import { vibrar } from "../config/preferencias.js";
+import * as PUSH from "../integraciones/avisos.js";
 
 export const ICONO_CHAT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6c-5 0-9 3.3-9 7.4 0 2.3 1.3 4.4 3.4 5.8l-.8 3.6 3.9-2.1c.8.2 1.6.3 2.5.3 5 0 9-3.3 9-7.4S17 3.6 12 3.6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 13.8s-2.8-1.6-3.4-3.3c-.4-1.3.4-2.5 1.6-2.5.8 0 1.4.5 1.8 1.1.4-.6 1-1.1 1.8-1.1 1.2 0 2 1.2 1.6 2.5-.6 1.7-3.4 3.3-3.4 3.3z" fill="currentColor"/></svg>';
 const svg = (cuerpo, extra = "", vb = "0 0 24 24") => `<svg viewBox="${vb}" aria-hidden="true"${extra}>${cuerpo}</svg>`;
@@ -726,19 +727,21 @@ export function vistaChat(det) {
     });
     return b;
   }
-  function hojaAjustes() {
+  async function hojaAjustes() {
+    S.push = await PUSH.estado().catch(() => S.push); // el estado de verdad de este aparato, justo ahora
     const pref = (k) => (v) => { PR[k] = v; guardarPref(PR); raiz.classList.toggle("sin-fondo", !PR.fondo); raiz.classList.toggle("letra-grande", PR.grande); requestAnimationFrame(pintarCapa); };
     abrirHoja(el("div.ch-hoja-in", {}, [
       el("div.ch-hoja-cab", {}, [el("i", { html: IC.lleno }), el("b", { text: "Ajustes del chat" })]),
       el("small.ch-hoja-sec", { text: "En este aparato" }),
       interruptor("Sonidos del chat", "Al mandar, al llegar y al pegar", PR.sonidos, pref("sonidos")),
       interruptor("Sonidos del teclado", "Al escribir tus mensajitos", PR.teclado, pref("teclado")),
-      interruptor("Avisos de mensajitos", "Cuando el chat está cerrado", PR.avisos, pref("avisos")),
+      interruptor("Avisos dentro del editor", "Cuando el chat está cerrado", PR.avisos, pref("avisos")),
       interruptor("Fondo con corazoncitos", "", PR.fondo, pref("fondo")),
       interruptor("Letra grande", "", PR.grande, pref("grande")),
       (() => { const b = el("button.ch-hoja-item.ch-temas", { type: "button", role: "menuitem" }, [el("i.ch-temas-ico", { html: ico("diseno") }), el("span.ch-hoja-t", {}, [el("b", { text: "Temas del chat" }), el("small", { text: "Colores y fondos para su chat" })]), el("em.ch-pronto-tag", { text: "Muy pronto" })]);
         b.addEventListener("click", () => { if (!reducido()) b.animate([{ transform: "none" }, { transform: "translateX(-4px)" }, { transform: "translateX(4px)" }, { transform: "none" }], { duration: 300 }); });
         return b; })(),
+      ...seccionPush(),
       el("small.ch-hoja-sec", { text: "Privacidad" }),
       interruptor("Mostrar mi «visto»", `Que ${nombre} sepa cuándo leí lo suyo`, S.verVisto, async (v) => {
         try { const r = await SRV.chatAjustes({ visto: v }); S.verVisto = r.ajustes.visto; aviso(v ? "Tu «visto» se ve otra vez" : `${nombre} ya no verá cuándo lees`); return true; }
@@ -754,6 +757,46 @@ export function vistaChat(det) {
       el("p.ch-hoja-nota", { text: `Sólo ustedes dos ven este chat: vive en su ${SRV.NOMBRE}.` }),
     ]), bPuntos, "ajustes");
   }
+  /** ⋮ → Notificaciones: aunque el editor esté cerrado (Android, compu y iPhone con la app en inicio). */
+  function seccionPush() {
+    const e = S.push || {};
+    const cab = el("small.ch-hoja-sec", { text: "Notificaciones" });
+    if (!e.soportado) return [cab, el("p.ch-hoja-nota", { text: e.necesitaInstalar ? "En iPhone: toca Compartir → «Agregar a inicio» y abre el editor desde ese ícono; ahí aparece para prender las notificaciones." : "Este navegador no puede recibir notificaciones (prueba con Chrome, o en iPhone con la app en tu pantalla de inicio)." })];
+    return [cab,
+      interruptor("Notificaciones push", "Aunque el editor esté cerrado, con sonido", !!e.prendidas, async (v) => {
+        try {
+          if (v) { await PUSH.prender(); aviso(`¡Listo! Te aviso cuando ${nombre} te escriba 💗`, 3500); }
+          else { await PUSH.apagar(); aviso("Notificaciones apagadas en este aparato"); }
+          S.push = await PUSH.estado();
+          return true;
+        } catch (err) { aviso(err.message || "No se pudieron prender", 6500, "error"); return false; }
+      }),
+      el("button.ch-hoja-item", { type: "button", role: "menuitem", html: I("campana", "Probar notificación"), onClick: async () => {
+        try { const r = await PUSH.probar(); aviso(r.enviadas ? `Te mandé una de prueba (${r.enviadas} de ${r.total} ${r.total === 1 ? "aparato" : "aparatos"}) 🔔` : "El servicio de notificaciones no la aceptó: apágalas y vuelve a prenderlas.", 4500, r.enviadas ? "" : "error"); }
+        catch (err) { aviso(mensajeError(err), 5000, "error"); }
+      } }),
+    ];
+  }
+  /** La primera vez: una invitación chiquita para prender las notificaciones (o, en iPhone, cómo hacerlo). */
+  const INVITA = "editordev:push-invitado";
+  function invitar(e) {
+    try { if (localStorage.getItem(INVITA)) return; } catch (x) { return; }
+    const puede = e.soportado && e.permiso === "default", iphone = !e.soportado && e.necesitaInstalar;
+    if (!puede && !iphone) return;
+    const listo = () => { try { localStorage.setItem(INVITA, "1"); } catch (x) { /* nada */ } caja.classList.add("fuera"); setTimeout(() => caja.remove(), 300); };
+    const caja = el("div.ch-invita", { role: "status" }, [
+      el("i", { html: ico("campana") }),
+      el("span", { text: puede ? `¿Te aviso cuando ${nombre} te escriba, aunque el editor esté cerrado?` : "Para que te avise en tu iPhone aunque esté cerrado: Compartir → «Agregar a inicio», y abre el editor desde ese ícono." }),
+      puede ? el("button.ch-invita-si", { type: "button", text: "Activar", onClick: async () => {
+        try { await PUSH.prender(); S.push = await PUSH.estado(); aviso(`¡Listo! Te aviso cuando ${nombre} te escriba 💗`, 3500); listo(); }
+        catch (err) { aviso(err.message, 6500, "error"); listo(); }
+      } }) : null,
+      el("button.ch-invita-no", { type: "button", text: puede ? "Ahora no" : "Entendido", onClick: listo }),
+    ]);
+    marco.append(caja);
+  }
+  PUSH.estado().then((e) => { S.push = e; if (S.vivo) invitar(e); }).catch(() => {});
+
   function hojaMas() {
     const item = (icono, t, sub, al, clase = "") => el("button.ch-hoja-item.ch-cosita" + clase, { type: "button", role: "menuitem", onClick: () => { cerrarHoja(); al(); } }, [el("i.ch-cosita-ico", { html: icono }), el("span.ch-hoja-t", {}, [el("b", { text: t }), el("small", { text: sub })])]);
     abrirHoja(el("div.ch-hoja-in", {}, [

@@ -690,6 +690,17 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Tiempo real más fluido** | lo que dibujas sale cada 45 ms (antes 140, a cambio de usar más red) y lo que dibuja tu amorcito se va trazando suavecito en vez de a brincos; sólo se repinta el trazo que cambió |
 | **Medido** | teléfono y computadora: celular con la forma de una hoja 1080×1350 y la página llenándolo; teclado con sus tres sonidos y apagable; mandar con vuelo y sin repetirse; ✓✓ sin rehacer la burbuja del GIF; «Temas» sin hacer nada; el teclado se cierra al arrastrar un sticker; y siguen pasando el chat, el detallito, Probar página y los 246 sonidos. No probado en un iPhone ni un Android de verdad |
 
+### Fase 33: notificaciones push, menú lateral, Mis libritos y la cuenta del dueño
+
+| | |
+| --- | --- |
+| **Notificaciones push** (`integraciones/avisos.js`, `sw.js`, `manifest.webmanifest`, `iconos/`) | avisos **aunque el editor esté cerrado**: cuando tu amorcito te escribe un mensajito, te manda una página o reacciona. Llegan con el **ícono de la app** (el gatito con su tulipán), la insignia de corazón en Android, el **sonido de notificaciones del teléfono** y vibración; tocar una abre el editor directo en Mensajitos o en Detallitos, y el ícono de la app muestra cuántas tienes sin ver. Si tienes el chat abierto, no te avisa (ya lo ves ahí) |
+| **Dónde funcionan** | Android y compu (Chrome, Edge, Samsung Internet, Firefox) directo. **iPhone/iPad: iOS 16.4 o más nuevo**, con el editor en la pantalla de inicio (Safari → Compartir → «Agregar a inicio») y abierto desde ese ícono: así lo pide Apple. El sonido es el de notificaciones del teléfono (la web no puede poner un sonido propio) |
+| **Prenderlas** | en el chat, ⋮ → Notificaciones → «Notificaciones push» (y «Probar notificación»). La primera vez el chat invita con un «Activar»; en iPhone sin instalar, explica cómo agregarlo a inicio. Se apagan igual, y al salir de tu cuenta ese teléfono deja de recibirlas |
+| **Menú lateral** | Recursos quedó justo debajo de Bloques. «Páginas publicadas» salió del menú lateral y vive en el menú de los tres puntos (⋯), que ahora se ve también en la compu |
+| **Mis libritos = copias de seguridad** (`storage/copia-total.js`) | sólo «Borradores y copias»: **Importar copia de seguridad** (la de todos tus datos o la de un solo librito) y **Hacer copia de seguridad de mis datos** (un .zip con todos tus borradores y sus fotos, sonidos, videos y dibujos). Al importarla vuelven los que no estén en este aparato; los que ya están no se tocan. «Librito nuevo» quedó sólo en «Crear librito» |
+| **Medido** | el cifrado de los avisos sale idéntico al ejemplo de la RFC 8291 y la firma VAPID la valida una librería independiente; de punta a punta con un servicio de avisos de prueba: suscribirse, aviso de mensajito/página/reacción descifrado con la llave del teléfono, nada si tienes el chat abierto, «Probar», aparato vencido que se borra, salir de la cuenta. En el navegador: ayudante de fondo y manifiesto, prender/apagar en ⋮, la notificación mostrada con su ícono, insignia y sonido, y abrir el chat desde ella. Menú lateral, ⋯, Mis libritos, copia de todo y su importación (sin duplicar). No probado con los servicios reales de Google y Apple ni en un iPhone o Android de verdad |
+
 ## Cómo está hecho
 
 ```
@@ -715,6 +726,7 @@ EditorDev/
 │                morfo.js (repintar sin parpadeo) · prueba.js · salir.js · ajustes.js · ayuda.js ·
 │                menu-principal.js · exportar-menu.js · detallitos.js · chat.js (Mensajitos) · cuenta.js · myn.js (M.YNTHN)
 │   └── secciones/  animar · efectos · transiciones · giphy · audio · html · fondo · navegacion
+├── sw.js · manifest.webmanifest · iconos/   el editor como app: notificaciones push con su ícono
 ├── recursos/    extras.js (animaciones, transiciones, efectos y fondos propios o de assets/)
 ├── integraciones/ giphy.js (clave protegida) · gif.js (leer GIF, quitar fondo → APNG) · servidor.js (M.YNTHN)
 ├── runtime/     EL REPRODUCTOR: rt-base · rt-render (y la hoja automática) · rt-anim (y el tiempo) ·

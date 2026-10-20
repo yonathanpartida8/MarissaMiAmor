@@ -1161,6 +1161,14 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 .ch-temas-ico { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; background: linear-gradient(135deg, #ffd0e4, #e3d6ff); color: var(--amor-2); }
 .ch-temas-ico .ed-ico, .ch-temas-ico svg { width: 18px; height: 18px; }
 .ch-pronto-tag { flex: none; padding: 3px 9px; border-radius: 99px; background: var(--ch-boton); color: var(--amor-2); font: 600 11px/1.3 Jost, system-ui, sans-serif; font-style: normal; }
+.ch-invita { position: absolute; left: 10px; right: 10px; top: 8px; z-index: 7; display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 12px; border-radius: 20px; background: var(--ch-papel); color: var(--amor-tinta); font: 400 16px/1.2 "Patrick Hand", sans-serif; box-shadow: 0 10px 26px var(--ch-sombra); animation: chItem .45s cubic-bezier(.2, .9, .3, 1.2) both; transition: opacity .25s, transform .25s; }
+.ch-invita.fuera { opacity: 0; transform: translateY(-10px); }
+.ch-invita > i { flex: none; width: 22px; height: 22px; color: #f0518e; }
+.ch-invita > i .ed-ico, .ch-invita > i svg { width: 100%; height: 100%; }
+.ch-invita > span { flex: 1; min-width: 0; }
+.ch-invita button { flex: none; min-height: 36px; padding: 0 12px; border: 0; border-radius: 99px; font: 400 15px/1 "Patrick Hand", sans-serif; cursor: pointer; }
+.ch-invita-si { background: linear-gradient(135deg, #ff8fbd, #ec5f98); color: #fff; }
+.ch-invita-no { background: var(--ch-boton); color: var(--amor-2); }
 .ch-hoja-nota { margin: 8px 8px 2px; color: var(--amor-suave); font: 400 12.5px/1.35 Jost, system-ui, sans-serif; }
 .ch-cositas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .ch-cosita { flex-direction: column; align-items: flex-start; gap: 8px; min-height: 0; padding: 12px; border-radius: 20px; background: var(--ch-c, #ffe3ee); color: var(--amor-tinta); }
