@@ -63,7 +63,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.8.0"
+VERSION = "1.9.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -374,6 +374,8 @@ CREATE INDEX IF NOT EXISTS trazos_par ON trazos(de, para, id);
 CREATE TABLE IF NOT EXISTS push(id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER, sesion_id TEXT, endpoint TEXT UNIQUE,
   p256dh TEXT, auth TEXT, origen TEXT, aparato TEXT, creado REAL, ultimo_ok REAL, fallos INTEGER DEFAULT 0);
 CREATE INDEX IF NOT EXISTS push_usuario ON push(usuario_id);
+CREATE TABLE IF NOT EXISTS coleccion(id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER, tipo TEXT, u TEXT, w INTEGER, h INTEGER,
+  favorito INTEGER DEFAULT 0, usos INTEGER DEFAULT 0, ultimo REAL, creado REAL, UNIQUE(usuario_id, tipo, u));
 """
 # Columnas que llegaron después (se agregan solas a una base vieja).
 COLUMNAS_NUEVAS = {
@@ -383,7 +385,7 @@ COLUMNAS_NUEVAS = {
     # Fase 22: la reacción de quien lo recibió (y si quien lo mandó ya la vio) y su portadita.
     "detallitos": [("reaccion", "TEXT"), ("reaccion_t", "REAL"), ("reaccion_vista", "INTEGER DEFAULT 1"), ("portadita", "TEXT")],
     # Fase 31: espacios en blanco para dibujar (sin mandar mensaje) y si dejas ver tu «visto».
-    "mensajes": [("espacio", "INTEGER")],
+    "mensajes": [("espacio", "INTEGER"), ("audio", "TEXT"), ("editado", "REAL")],
 }
 COLUMNAS_NUEVAS["usuarios"].append(("chat_visto", "INTEGER DEFAULT 1"))
 LETRAS_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -1510,6 +1512,13 @@ class Manejador(BaseHTTPRequestHandler):
             return self.panel(camino[7:])
         if camino == "/favicon.ico":
             return self.panel("icono.svg")
+        m = MEDIA_OK.match(camino)
+        if m:
+            # Stickers hechos por ustedes y mensajes de voz: su dirección es la huella de su contenido (larga, al azar).
+            final = os.path.join(MEDIA, camino[3:])
+            if not os.path.isfile(final):
+                return self.error(404, "No existe.")
+            return self.archivo(final, {"X-Robots-Tag": "noindex, nofollow", "X-Content-Type-Options": "nosniff"}, cache="public, max-age=31536000, immutable")
         m = re.match(r"^/(p|d)/([A-Za-z0-9_-]{1,40})(/.*)?$", camino)
         if m:
             tipo, slug, resto = m.group(1), m.group(2), m.group(3)
@@ -2625,6 +2634,12 @@ def api_reacciones_vistas(h, s):
 # — Fase 30: mensajitos entre los dos (texto, GIFs, stickers pegados encima y reacciones) —
 GIPHY_OK = re.compile(r"^https://(media[0-9]*|i)\.giphy\.com/[A-Za-z0-9_./?=&%-]{4,400}$")
 COLOR_OK = re.compile(r"^#[0-9a-fA-F]{6}$")
+# Fase 34: los stickers que haces con tus fotos y los mensajes de voz (en el teléfono servidor).
+MEDIA_OK = re.compile(r"^/m/[0-9a-f]{64}\.(webp|png|jpg|wav)$")
+MEDIA = os.path.join(DATOS, "mensajitos-media")
+MEDIA_TIPOS = {"sticker": ((b"\x89PNG\r\n\x1a\n", ".png"), (b"\xff\xd8\xff", ".jpg"), (b"RIFF", ".webp")), "audio": ((b"RIFF", ".wav"),)}
+MEDIA_MAX = {"sticker": 800 * 1024, "audio": 8 * 1024 * 1024}
+_MEDIA_RITMO = {}
 CHAT_MAX_TEXTO = 2000
 CHAT_MAX_STICKERS = 12
 TRAZO_MAX_PUNTOS = 1500
@@ -2663,7 +2678,7 @@ def _gif_ok(g):
     if not isinstance(g, dict):
         return None
     u = str(g.get("u") or "")
-    if not GIPHY_OK.match(u):
+    if not (GIPHY_OK.match(u) or (MEDIA_OK.match(u) and not u.endswith(".wav"))):
         raise Falla("Ese GIF no es de GIPHY.", 400)
     try:
         w, hh = int(g.get("w") or 200), int(g.get("h") or 200)
@@ -2688,6 +2703,7 @@ def fila_mensaje(m, uid, oculto=False):
     return {"id": m["id"], "mio": m["de"] == uid, "texto": m["texto"] or "", "gif": json.loads(m["gif"]) if m["gif"] else None,
             "creado": iso(m["creado"]), "visto": iso(m["visto"]) if m["visto"] and not (oculto and m["de"] == uid) else "",
             "reaccion": m["reaccion"] or "", "espacio": m.get("espacio") or 0,
+            "audio": json.loads(m["audio"]) if m.get("audio") else None, "editado": iso(m["editado"]) if m.get("editado") else "",
             "stickers": [{k: v for k, v in x.items() if k != "de"} | {"mio": x.get("de") == uid} for x in st]}
 
 
@@ -2811,17 +2827,139 @@ def api_chat_mandar(h, s):
         return
     texto = str(d.get("texto") or "").strip()[:CHAT_MAX_TEXTO]
     gif = _gif_ok(d.get("gif")) if d.get("gif") else None
-    if not texto and not gif:
+    audio = _audio_ok(d.get("audio")) if d.get("audio") else None
+    if not texto and not gif and not audio:
         raise Falla("El mensaje está vacío.", 400)
+    if gif:
+        _uso_coleccion(uid, gif["u"])
     if E.db.uno("SELECT COUNT(*) n FROM mensajes WHERE de=? AND creado>?", uid, t - 10)["n"] >= 25:
         raise Falla("Más despacito: muchos mensajes seguidos.", 429)
-    mid = _x_ya("INSERT INTO mensajes(de, para, texto, gif, creado, actualizado) VALUES(?,?,?,?,?,?)", uid, p, texto, json.dumps(gif) if gif else None, AHORA, AHORA)
+    mid = _x_ya("INSERT INTO mensajes(de, para, texto, gif, audio, creado, actualizado) VALUES(?,?,?,?,?,?,?)", uid, p, texto, json.dumps(gif) if gif else None, json.dumps(audio) if audio else None, AHORA, AHORA)
     _chat_cambio()
     if not mirando_chat(p):
         sin_leer = E.db.uno("SELECT COUNT(*) n FROM mensajes WHERE para=? AND visto IS NULL AND borrado=0", p)["n"]
-        avisar(p, {"t": f"{nombre_corto(uid)} 💌", "b": texto[:180] or ("Te mandó un sticker" if gif and gif.get("s") else "Te mandó un GIF"),
+        avisar(p, {"t": f"{nombre_corto(uid)} 💌", "b": texto[:180] or (f"🎤 Mensaje de voz ({int(audio['dur']) // 60}:{int(audio['dur']) % 60:02d})" if audio else "Te mandó un sticker" if gif and gif.get("s") else "Te mandó un GIF"),
                    "tag": "chat", "u": "#chat", "n": sin_leer})
     h.responder(200, {"mensaje": fila_mensaje(E.db.uno("SELECT * FROM mensajes WHERE id=?", mid), uid)})
+
+
+def _audio_ok(a):
+    if not isinstance(a, dict) or not MEDIA_OK.match(str(a.get("u") or "")) or not str(a.get("u")).endswith(".wav"):
+        raise Falla("Ese audio no es válido.", 400)
+    try:
+        dur = float(a.get("dur"))
+        ondas = [max(0, min(31, int(x))) for x in (a.get("ondas") or [])][:64]
+    except (TypeError, ValueError):
+        raise Falla("Ese audio no es válido.", 400)
+    if not 0.2 <= dur <= 600:
+        raise Falla("Ese audio no es válido.", 400)
+    return {"u": a["u"], "dur": round(dur, 2), "ondas": ondas}
+
+
+def _uso_coleccion(uid, u):
+    """Lo que más usas sube solito en tu colección (stickers y GIFs favoritos)."""
+    E.db.x("UPDATE coleccion SET usos=usos+1, ultimo=? WHERE usuario_id=? AND u=?", ahora(), uid, u)
+
+
+@ruta("POST", "/api/chat/media", "sesion")
+def api_chat_media(h, s):
+    """Subir un sticker hecho por ti (png, jpg o webp) o un mensaje de voz (wav). Devuelve su dirección."""
+    tipo = h.parametros().get("tipo") or "sticker"
+    if tipo not in MEDIA_TIPOS:
+        raise Falla("Tipo no válido.", 400)
+    _par_chat(s)
+    try:
+        n = int(h.headers.get("Content-Length") or -1)
+    except ValueError:
+        n = -1
+    if n <= 0 or n > MEDIA_MAX[tipo]:
+        h._leido = False
+        raise Falla("Ese archivo es muy grande." if n > 0 else "No llegó nada.", 413)
+    datos = h.rfile.read(n)
+    h._leido = True
+    ext = next((e for m, e in MEDIA_TIPOS[tipo] if datos.startswith(m) and (e != ".webp" or datos[8:12] == b"WEBP") and (e != ".wav" or datos[8:12] == b"WAVE")), None)
+    if not ext:
+        raise Falla("Ese archivo no es una imagen (png, jpg o webp)." if tipo == "sticker" else "Ese audio no es válido.", 415)
+    t = time.monotonic()
+    ritmo = [x for x in _MEDIA_RITMO.get(s["usuario_id"], []) if x > t - 60]
+    if len(ritmo) >= 30:
+        raise Falla("Más despacito: muchos archivos seguidos.", 429)
+    _MEDIA_RITMO[s["usuario_id"]] = ritmo + [t]
+    sha = hashlib.sha256(datos).hexdigest()
+    os.makedirs(MEDIA, exist_ok=True)
+    final = os.path.join(MEDIA, sha + ext)
+    if not os.path.exists(final):
+        with open(final + ".tmp", "wb") as f:
+            f.write(datos)
+        os.replace(final + ".tmp", final)
+    h.responder(200, {"u": f"/m/{sha}{ext}", "bytes": n})
+
+
+def fila_coleccion(c):
+    return {"id": c["id"], "u": c["u"], "w": c["w"] or 200, "h": c["h"] or 200, "favorito": bool(c["favorito"]), "usos": c["usos"] or 0}
+
+
+@ruta("GET", "/api/chat/coleccion", "sesion")
+def api_coleccion(h, s):
+    """Tus stickers (los que haces) y tus GIFs favoritos: favoritos arriba y luego lo que más usas."""
+    filas = E.db.q("SELECT * FROM coleccion WHERE usuario_id=? ORDER BY favorito DESC, usos DESC, ultimo DESC, id DESC", s["usuario_id"])
+    h.responder(200, {"stickers": [fila_coleccion(c) for c in filas if c["tipo"] == "sticker"], "gifs": [fila_coleccion(c) for c in filas if c["tipo"] == "gif"]})
+
+
+@ruta("POST", "/api/chat/coleccion", "sesion")
+def api_coleccion_poner(h, s):
+    """Guardar en tu colección: un sticker tuyo (de /m/…) o un GIF de GIPHY. Si ya estaba, se pone al día."""
+    d = h.cuerpo_json()
+    tipo, u = d.get("tipo"), str(d.get("u") or "")
+    if tipo == "sticker" and not (MEDIA_OK.match(u) and not u.endswith(".wav")):
+        raise Falla("Ese sticker no es válido.", 400)
+    if tipo == "gif" and not GIPHY_OK.match(u):
+        raise Falla("Ese GIF no es de GIPHY.", 400)
+    if tipo not in ("sticker", "gif"):
+        raise Falla("Tipo no válido.", 400)
+    try:
+        w, hh = max(1, min(2000, int(d.get("w") or 200))), max(1, min(2000, int(d.get("h") or 200)))
+    except (TypeError, ValueError):
+        raise Falla("Medidas no válidas.", 400)
+    uid = s["usuario_id"]
+    ya = E.db.uno("SELECT * FROM coleccion WHERE usuario_id=? AND tipo=? AND u=?", uid, tipo, u)
+    if ya:
+        if "favorito" in d:
+            E.db.x("UPDATE coleccion SET favorito=? WHERE id=?", 1 if d.get("favorito") else 0, ya["id"])
+    else:
+        if E.db.uno("SELECT COUNT(*) n FROM coleccion WHERE usuario_id=? AND tipo=?", uid, tipo)["n"] >= 400:
+            raise Falla("Tu colección ya está llena: borra alguno.", 409)
+        E.db.x("INSERT INTO coleccion(usuario_id, tipo, u, w, h, favorito, creado) VALUES(?,?,?,?,?,?,?)", uid, tipo, u, w, hh, 1 if d.get("favorito") else 0, ahora())
+    h.responder(200, {"item": fila_coleccion(E.db.uno("SELECT * FROM coleccion WHERE usuario_id=? AND tipo=? AND u=?", uid, tipo, u))})
+
+
+@ruta("PUT", r"/api/chat/coleccion/([0-9]{1,12})", "sesion")
+def api_coleccion_favorito(h, s, cid):
+    n = E.db.x("UPDATE coleccion SET favorito=? WHERE id=? AND usuario_id=?", 1 if h.cuerpo_json().get("favorito") else 0, int(cid), s["usuario_id"])
+    if not n:
+        raise Falla("Ya no está en tu colección.", 404)
+    h.responder(200, {"item": fila_coleccion(E.db.uno("SELECT * FROM coleccion WHERE id=?", int(cid)))})
+
+
+@ruta("DELETE", r"/api/chat/coleccion/([0-9]{1,12})", "sesion")
+def api_coleccion_quitar(h, s, cid):
+    E.db.x("DELETE FROM coleccion WHERE id=? AND usuario_id=?", int(cid), s["usuario_id"])
+    h.responder(200, {"ok": True})
+
+
+@ruta("PUT", r"/api/chat/([0-9]{1,12})", "sesion")
+def api_chat_editar(h, s, mid):
+    """Editar un mensajito tuyo (queda marcado «Editado» para los dos)."""
+    m = _mensaje_de(s, int(mid))
+    if m["de"] != s["usuario_id"] or m["espacio"] or m["audio"] or not (m["texto"] or "").strip():
+        raise Falla("Sólo puedes editar el texto de tus mensajitos.", 403)
+    texto = str(h.cuerpo_json().get("texto") or "").strip()[:CHAT_MAX_TEXTO]
+    if not texto:
+        raise Falla("El mensaje está vacío.", 400)
+    if texto != m["texto"]:
+        _x_ya("UPDATE mensajes SET texto=?, editado=?, actualizado=? WHERE id=?", texto, AHORA, AHORA, m["id"])
+        _chat_cambio()
+    h.responder(200, {"mensaje": fila_mensaje(E.db.uno("SELECT * FROM mensajes WHERE id=?", m["id"]), s["usuario_id"])})
 
 
 @ruta("PUT", "/api/chat/ajustes", "sesion")
@@ -2872,6 +3010,7 @@ def api_chat_sticker(h, s, mid):
     if len(l) >= CHAT_MAX_STICKERS:
         raise Falla("Ahí ya hay muchos stickers.", 409)
     l.append({**st, "i": secrets.token_hex(4), "de": s["usuario_id"]})
+    _uso_coleccion(s["usuario_id"], st["u"])
     _x_ya("UPDATE mensajes SET stickers=?, actualizado=? WHERE id=?", json.dumps(l), AHORA, m["id"])
     _chat_cambio()
     h.responder(200, {"mensaje": fila_mensaje(E.db.uno("SELECT * FROM mensajes WHERE id=?", m["id"]), s["usuario_id"])})
