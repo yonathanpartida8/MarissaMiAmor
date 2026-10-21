@@ -363,7 +363,8 @@
 .pf-et svg { width: 16px; height: 16px; color: var(--amor-2); }
 .pf-input { box-sizing: border-box; width: 100%; min-height: 46px; padding: 10px 14px; border: 1.5px solid rgba(216, 57, 122, .2); border-radius: 15px; background: #fff; color: var(--amor-tinta); font: 15px/1.2 inherit; outline: none; transition: border-color .15s, box-shadow .15s; }
 .pf-input:focus { border-color: var(--amor-2); box-shadow: 0 0 0 4px rgba(216, 57, 122, .14); }
-.pf-input[type="date"] { -webkit-appearance: none; appearance: none; }
+.pf-input[type="date"], select.pf-input { -webkit-appearance: none; appearance: none; }
+select.pf-input { padding-right: 36px; background: #fff url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27%3E%3Cpath d=%27m7 10 5 5 5-5%27 fill=%27none%27 stroke=%27%23d8397a%27 stroke-width=%272.4%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E") no-repeat right 12px center / 18px; }
 @media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .pf-input { background: #2a1a27; color-scheme: dark; } }
 :root[data-tema="oscuro"] .pf-input { background: #2a1a27; color-scheme: dark; }
 .pf-campo small { font-size: 11.5px; line-height: 1.3; color: var(--amor-suave); }
@@ -989,3 +990,84 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 @media (max-width: 360px) { .mp-album .mp-carta { column-gap: 7px; padding-left: 8px; padding-right: 7px; } .mp-album .mp-carta > b { font-size: 17px; } .mp-album .mp-carta > small { font-size: 12.5px; } .mp-album .mp-carta > .mp-carta-ico, .mp-album .mp-carta-av { width: 36px; height: 36px; --tam: 36px; } }
 /* Fase 35: sin la tira «Volver al librito», el álbum respira abajo */
 .mp-album .mp-columna { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+
+/* ══ Fase 36 · Menú principal como la foto: «Crear Detallito», «Ir al editor», saludo con rayitas,
+   tarjetas con su flechita, el hilo rojo y el corazón más delicados, y los días con su «Próximamente» ══ */
+.mp-album { --pp-durazno: #fff0e2; --pp-durazno-2: #ffdcbf; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .mp-album { --pp-durazno: #4a3326; --pp-durazno-2: #6b4a35; } }
+:root[data-tema="oscuro"] .mp-album { --pp-durazno: #4a3326; --pp-durazno-2: #6b4a35; }
+/* El hilo y el corazón */
+.mp-album .mp-hilo-sombra { fill: none; stroke: rgba(214, 53, 92, .16); stroke-width: 6; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.mp-album .mp-hilo-cuerda { stroke-width: 1.8; }
+.mp-album .mp-hilo-luz { stroke-dasharray: 6 190; }
+.mp-album .mp-hilo-corazon { bottom: calc(31% - 21px); filter: drop-shadow(0 3px 6px rgba(214, 53, 92, .32)); }
+.mp-album .mp-cor-linea { stroke: #d6355c; }
+.mp-album .mp-pareja.sola .mp-cor-relleno { opacity: .35; }
+/* Crear Detallito: la tarjeta oscura con su librito, su frase y el gatito dormido adentro */
+.mp-album .mp-crear-fila { padding-right: 0; }
+.mp-album .mp-crear { flex: 1; max-width: none; min-height: clamp(78px, 10.6dvh, 100px); justify-content: flex-start; gap: 12px; padding: 10px 80px 10px 14px; border: 1.5px solid rgba(255, 255, 255, .1); border-radius: 22px; background: radial-gradient(120% 140% at 18% 0%, rgba(255, 255, 255, .1), transparent 50%), linear-gradient(135deg, #3d3443, #2b2331 58%, #3a2e40); box-shadow: 0 14px 30px rgba(43, 35, 49, .35); text-align: left; }
+@media (hover: hover) { .mp-album .mp-crear:hover { box-shadow: 0 0 0 5px rgba(214, 160, 190, .25), 0 16px 32px rgba(43, 35, 49, .4); } }
+.mp-album .mp-crear .mp-crear-libro { width: clamp(42px, 6dvh, 52px); height: clamp(42px, 6dvh, 52px); color: #ffc7da; }
+.mp-crear-txt { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
+.mp-album .mp-crear-t { display: flex; align-items: center; gap: 10px; color: #fff; font: 400 clamp(24px, 3.5dvh, 31px)/1 var(--pp-letra); white-space: nowrap; }
+.mp-album .mp-crear-t .mp-crear-flecha { width: 24px; height: 24px; color: #fff; }
+.mp-crear-d { color: rgba(255, 236, 244, .82); font: 500 clamp(11.5px, 1.6dvh, 13.5px)/1.35 Jost, system-ui, sans-serif; letter-spacing: .01em; white-space: normal; }
+.mp-album .mp-crear-fila .mp-gato { --gato: #6f5a78; --gato-l: #93789c; right: 8px; bottom: 4px; width: 76px; height: 47px; filter: drop-shadow(0 0 8px rgba(255, 200, 230, .28)); }
+.mp-album .mp-crear-fila .mp-gato-z { color: #ffd0e2; }
+.mp-album .mp-crear-chispa.c2 { right: 108px; }
+/* Ir al editor: la tarjeta lila con su lápiz */
+.mp-album .mp-editor-ir { display: flex; align-items: center; gap: 12px; width: 100%; margin: clamp(8px, 1.4dvh, 14px) 0 0; padding: clamp(8px, 1.2dvh, 11px) 10px clamp(8px, 1.2dvh, 11px) 10px; border: 1.5px solid rgba(255, 255, 255, .7); border-radius: 24px; background: linear-gradient(120deg, rgba(236, 226, 255, .95), rgba(250, 228, 240, .95)); box-shadow: 0 10px 24px rgba(110, 70, 140, .16); color: var(--pp-tinta); text-align: left; font: inherit; }
+.mp-album .mp-editor-ir:active { transform: scale(.98); }
+.mp-editor-ico { flex: none; display: grid; place-items: center; width: clamp(40px, 5.6dvh, 48px); height: clamp(40px, 5.6dvh, 48px); border-radius: 50%; background: #fff; color: #6b4f8f; box-shadow: 0 4px 12px rgba(110, 70, 140, .16); }
+.mp-editor-ico svg { width: 52%; height: 52%; }
+.mp-editor-t { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.mp-editor-t b { font: 400 clamp(20px, 2.8dvh, 24px)/1 var(--pp-letra); }
+.mp-editor-t small { color: var(--pp-suave); font: 500 12.5px/1.25 Jost, system-ui, sans-serif; }
+.mp-editor-ir-b { flex: none; display: grid; place-items: center; width: 56px; height: 36px; border-radius: 99px; background: linear-gradient(135deg, #c27b98, #a95c7e); color: #fff; box-shadow: 0 6px 14px rgba(169, 92, 126, .3); transition: transform .3s cubic-bezier(.3, 1.6, .5, 1); }
+.mp-editor-ir-b svg { width: 20px; height: 20px; }
+@media (hover: hover) { .mp-album .mp-editor-ir:hover .mp-editor-ir-b { transform: translateX(3px); } }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .mp-album .mp-editor-ir { background: linear-gradient(120deg, #3a2f55, #4a2a40); border-color: rgba(255, 255, 255, .08); } :root:not([data-tema="claro"]) .mp-editor-ico { background: #2c2440; color: #d8c6ff; } }
+:root[data-tema="oscuro"] .mp-album .mp-editor-ir { background: linear-gradient(120deg, #3a2f55, #4a2a40); border-color: rgba(255, 255, 255, .08); }
+/* El saludo, centrado entre dos rayitas */
+.mp-album .mp-saludo { flex-wrap: nowrap; gap: 8px; margin-top: clamp(8px, 1.4dvh, 12px); }
+.mp-album .mp-saludo > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-saludo > i.mp-raya-s { flex: 1; width: auto; max-width: 80px; height: 1.5px; border-radius: 2px; background: linear-gradient(90deg, transparent, rgba(141, 95, 120, .5)); }
+.mp-saludo > i.mp-raya-s:last-child { background: linear-gradient(90deg, rgba(141, 95, 120, .5), transparent); }
+/* Las tarjetas: con su flechita y un brillito en la esquina */
+.mp-album .mp-carta { grid-template-columns: auto minmax(0, 1fr) auto; }
+.mp-album .mp-carta > .mp-carta-ir { display: grid; grid-column: 3; grid-row: 1 / 3; width: 24px; height: 24px; margin: 0; background: none; color: var(--pp-suave); }
+.mp-album .mp-carta > .mp-carta-ir svg { width: 16px; height: 16px; }
+.mp-album .mp-carta::after { content: "✦"; position: absolute; top: 6px; right: 10px; color: var(--c2); font-size: 12px; line-height: 1; opacity: .9; pointer-events: none; }
+.mp-album .mp-carta > .dt-globo { top: -6px; right: -4px; }
+.mp-album .mp-carta.durazno { --r: .8deg; --c1: var(--pp-durazno); --c2: var(--pp-durazno-2); --cinta: rgba(255, 196, 160, .85); }
+.mp-album .mp-carta.cielo .mp-carta-ico { color: #6b74c9; }
+.mp-album .mp-carta.rosa .mp-carta-ico { color: #d6457a; }
+/* Los días: «Próximamente, en construcción» */
+.mp-album .mp-dias[role="button"] { cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .25s cubic-bezier(.3, 1.5, .5, 1); }
+.mp-album .mp-dias[role="button"]:active { transform: scale(.985); }
+.mp-pronto { position: absolute; left: 50%; top: 50%; z-index: 6; display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 99px; background: rgba(255, 255, 255, .96); color: var(--pp-marca); font: 400 clamp(16px, 2.2dvh, 19px)/1.1 var(--pp-letra); white-space: nowrap; box-shadow: 0 0 0 4px rgba(255, 186, 210, .35), 0 14px 30px rgba(110, 50, 70, .24); transform: translate(-50%, -50%); animation: mpPronto .6s cubic-bezier(.2, 1.4, .4, 1) both; transition: opacity .4s, transform .45s; pointer-events: none; }
+.mp-pronto.fuera { opacity: 0; transform: translate(-50%, -80%) scale(.94); }
+.mp-pronto-b { display: block; width: 14px; height: 14px; color: #ff9cc0; animation: mpTitila 1.6s ease-in-out infinite; }
+.mp-pronto-b.b2 { animation-delay: -.8s; color: #c8a6ff; }
+.mp-pronto-b svg { display: block; width: 100%; height: 100%; }
+@keyframes mpPronto { 0% { opacity: 0; transform: translate(-50%, -20%) scale(.6); filter: blur(4px); } 60% { opacity: 1; transform: translate(-50%, -54%) scale(1.04); filter: blur(0); } 100% { transform: translate(-50%, -50%); } }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .mp-pronto { background: #3a2834; } }
+:root[data-tema="oscuro"] .mp-pronto { background: #3a2834; }
+/* Para que todo siga cabiendo sin deslizar */
+.mp-album .mp-pola { width: clamp(88px, 13.6dvh, 124px); }
+.mp-album .mp-hilo { flex-basis: clamp(66px, 10dvh, 88px); height: clamp(48px, 7.4dvh, 64px); margin-top: clamp(26px, 4.4dvh, 38px); }
+.mp-album .mp-hero { padding-top: clamp(6px, 1.6dvh, 16px); }
+.mp-album .mp-dias { margin-top: clamp(6px, 1.4dvh, 16px); }
+.mp-album .mp-cartas { margin-top: clamp(8px, 1.6dvh, 16px); }
+.mp-album .mp-carta { padding-top: clamp(8px, 1.3dvh, 13px); padding-bottom: clamp(8px, 1.2dvh, 12px); }
+@media (max-height: 690px) { .mp-album .mp-crear { min-height: 70px; } .mp-crear-d { display: none; } .mp-album .mp-editor-t small { display: none; } .mp-album .mp-pola { width: 80px; } }
+@media (max-height: 600px) { .mp-album .mp-pola { width: 66px; } .mp-album .mp-editor-ir { padding-top: 6px; padding-bottom: 6px; } }
+@media (prefers-reduced-motion: reduce) { .mp-pronto, .mp-pronto-b { animation: none; } }
+@media (max-width: 430px) {
+  .mp-album .mp-carta { column-gap: 7px; padding-left: 9px; padding-right: 5px; }
+  .mp-album .mp-carta > .mp-carta-ico, .mp-album .mp-carta-av { width: 36px; height: 36px; --tam: 36px; }
+  .mp-album .mp-carta > b { font-size: 17px; }
+  .mp-album .mp-carta > small { font-size: 12px; }
+  .mp-album .mp-carta > .mp-carta-ir { width: 16px; }
+  .mp-album .mp-carta > .mp-carta-ir svg { width: 14px; height: 14px; }
+}

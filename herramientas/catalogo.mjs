@@ -293,7 +293,13 @@ export function catalogo(RAIZ) {
   const devMusic = existsSync(dirDev)
     ? todos(dirDev).filter((f) => AUD.test(f)).map((f) => ({ nombre: bonito(f.split("/").pop()), ruta: `DevMusic/${f}`, peso: statSync(join(dirDev, f)).size }))
     : [];
-  return { categorias, musica, devMusic, estilos: estilosDe(RAIZ), extras: extrasDe(raiz) };
+  // Fase 36: EditorDev/musica/ — pega ahí tus .mp3 o .wav y salen solas en «Sonidos».
+  const dirEd = join(RAIZ, "EditorDev", "musica");
+  const musicaEditor = existsSync(dirEd)
+    ? todos(dirEd).filter((f) => /\.(mp3|wav)$/i.test(f)).sort((a, b) => a.localeCompare(b, "es", { numeric: true }))
+      .map((f) => ({ nombre: bonito(f.split("/").pop()), ruta: `EditorDev/musica/${f}`, peso: statSync(join(dirEd, f)).size }))
+    : [];
+  return { categorias, musica, devMusic, musicaEditor, estilos: estilosDe(RAIZ), extras: extrasDe(raiz) };
 }
 
 /* Cada estilo del editor en su carpeta: EditorDev/estilos/<estilo>/

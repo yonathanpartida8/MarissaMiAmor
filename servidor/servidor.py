@@ -63,7 +63,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.10.0"
+VERSION = "1.11.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -380,7 +380,7 @@ CREATE TABLE IF NOT EXISTS coleccion(id INTEGER PRIMARY KEY AUTOINCREMENT, usuar
 # Columnas que llegaron después (se agregan solas a una base vieja).
 COLUMNAS_NUEVAS = {
     "usuarios": [("codigo_amor", "TEXT"), ("pareja_id", "INTEGER"), ("pareja_desde", "REAL"), ("visto", "REAL"),
-                 ("nombre", "TEXT"), ("cumple", "TEXT"), ("novios", "TEXT"), ("foto_v", "REAL")],
+                 ("nombre", "TEXT"), ("cumple", "TEXT"), ("novios", "TEXT"), ("foto_v", "REAL"), ("genero", "TEXT")],
     "proyectos": [("clave", "TEXT"), ("ruta", "TEXT")],
     # Fase 22: la reacción de quien lo recibió (y si quien lo mandó ya la vio) y su portadita.
     "detallitos": [("reaccion", "TEXT"), ("reaccion_t", "REAL"), ("reaccion_vista", "INTEGER DEFAULT 1"), ("portadita", "TEXT")],
@@ -2329,15 +2329,16 @@ def pareja_de(uid):
     u = E.db.uno("SELECT pareja_id, pareja_desde FROM usuarios WHERE id=?", uid)
     if not u or not u["pareja_id"]:
         return None
-    p = E.db.uno("SELECT id, usuario, visto, nombre, cumple, novios, foto_v FROM usuarios WHERE id=? AND estado='activo'", u["pareja_id"])
+    p = E.db.uno("SELECT id, usuario, visto, nombre, cumple, novios, foto_v, genero FROM usuarios WHERE id=? AND estado='activo'", u["pareja_id"])
     if not p:
         return None
     return {"usuario": p["usuario"], "desde": iso(u["pareja_desde"]) if u["pareja_desde"] else "", "en_linea": bool(p["visto"] and ahora() - p["visto"] < 120),
             "visto": iso(p["visto"]) if p["visto"] else "", "nombre": p["nombre"] or "", "cumple": p["cumple"] or "", "novios": p["novios"] or "",
-            "foto_v": int(p["foto_v"] or 0)}
+            "foto_v": int(p["foto_v"] or 0), "genero": p["genero"] or ""}
 
 
-# — Tu perfil: foto, nombre, cumpleaños y desde cuándo son novios —
+# — Tu perfil: foto, nombre, cumpleaños, desde cuándo son novios y tu género —
+GENEROS = ("", "Hombre", "Mujer", "LGBTQ+", "Otro")
 FECHA_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 FOTO_MAX = 2 * 1024 * 1024
 FOTO_TIPOS = ((b"\xff\xd8\xff", ".jpg"), (b"\x89PNG\r\n\x1a\n", ".png"), (b"RIFF", ".webp"))
@@ -2361,7 +2362,8 @@ def fecha_valida(v):
 
 
 def perfil_de(u):
-    return {"usuario": u["usuario"], "nombre": u["nombre"] or "", "cumple": u["cumple"] or "", "novios": u["novios"] or "", "foto_v": int(u["foto_v"] or 0)}
+    return {"usuario": u["usuario"], "nombre": u["nombre"] or "", "cumple": u["cumple"] or "", "novios": u["novios"] or "", "foto_v": int(u["foto_v"] or 0),
+            "genero": u["genero"] or ""}
 
 
 def ruta_foto(uid):
@@ -2400,6 +2402,12 @@ def api_poner_perfil(h, s):
     for k in ("cumple", "novios"):
         if k in d:
             cambios[k] = fecha_valida(d.get(k))
+    # El género lo elige cada quien (nunca se deduce): Hombre, Mujer, LGBTQ+ u Otro (vacío = sin elegir).
+    if "genero" in d:
+        g = str(d.get("genero") or "")
+        if g not in GENEROS:
+            raise Falla("Ese género no es una de las opciones.")
+        cambios["genero"] = g
     for k, v in cambios.items():
         E.db.x(f"UPDATE usuarios SET {k}=? WHERE id=?", v, u["id"])
     # Desde cuándo son novios es de los dos: se le pone igual a tu amorcito.

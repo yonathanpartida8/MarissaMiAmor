@@ -47,8 +47,11 @@ function saludoDeLaHora() {
 /* Cómo se va de una pantalla a otra (las que no están: «zoom»). */
 const CAMINO = { "inicio>cuenta": "carta", "cuenta>inicio": "atras", "inicio>perfil": "pagina", "perfil>inicio": "regresa", "cuenta>perfil": "pagina" };
 /* El hilo rojo: dos tramos fijos y, en medio, el corazón que late (en su propia capa). */
-const HILO = '<svg viewBox="0 0 160 70" preserveAspectRatio="none" aria-hidden="true"><path class="mp-hilo-cuerda" d="M2 26C30 34 60 48 80 58M80 58C100 48 130 34 158 26"/><path class="mp-hilo-luz" d="M2 26C30 34 60 48 80 58C100 48 130 34 158 26"/></svg>';
-const HILO_CORAZON = '<svg viewBox="0 0 48 44" aria-hidden="true"><path d="M24 40C15 32 6 25 6.5 16 7 9 13 6 18 8c3 1 5 3.5 6 6 1-2.5 3-5 6-6 5-2 11 1 11.5 8 .5 9-8.5 16-17.5 24z" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+// (Fase 36) El hilo rojo: una curva suave de foto a foto que se hunde un poquito hacia el corazón,
+// con su brillo que lo recorre; el corazón, fino y redondito, con relleno rosado muy suave y su latido.
+const HILO = '<svg viewBox="0 0 160 70" preserveAspectRatio="none" aria-hidden="true"><path class="mp-hilo-sombra" d="M2 22C26 26 50 40 68 48M92 48C110 40 134 26 158 22"/><path class="mp-hilo-cuerda" d="M2 22C26 26 50 40 68 48M92 48C110 40 134 26 158 22"/><path class="mp-hilo-luz" d="M2 22C26 26 50 40 68 48M92 48C110 40 134 26 158 22"/></svg>';
+const HILO_CORAZON = '<svg viewBox="0 0 48 44" aria-hidden="true"><defs><linearGradient id="mpCorRelleno" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd3e2" stop-opacity=".9"/><stop offset="1" stop-color="#ff8db4" stop-opacity=".55"/></linearGradient></defs><path class="mp-cor-relleno" d="M24 39.4C17.6 34.2 8.4 27.8 8.1 18.4 7.9 12.3 12.2 8 17.5 8c3 0 5.3 1.6 6.5 4 1.2-2.4 3.5-4 6.5-4 5.3 0 9.6 4.3 9.4 10.4-.3 9.4-9.5 15.8-15.9 21z" fill="url(#mpCorRelleno)"/><path class="mp-cor-linea" d="M24 39.4C17.6 34.2 8.4 27.8 8.1 18.4 7.9 12.3 12.2 8 17.5 8c3 0 5.3 1.6 6.5 4 1.2-2.4 3.5-4 6.5-4 5.3 0 9.6 4.3 9.4 10.4-.3 9.4-9.5 15.8-15.9 21z" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.4 15.6c.8-1.8 2.3-2.8 4-2.9" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".85"/></svg>';
+const LAPIZ = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 1-4.2L15.6 5.2a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.2 19 4 20z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m13.8 7 3.2 3.2M4 20h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 const FLECHA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const TIENDITA = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M9 21h30v17a3 3 0 0 1-3 3H12a3 3 0 0 1-3-3z" fill="#fff6ea" stroke="#3f8f78" stroke-width="2.4" stroke-linejoin="round"/><path d="M7 13l3-6h28l3 6v3.5a4.5 4.5 0 0 1-8.5 2 4.5 4.5 0 0 1-8.5 0 4.5 4.5 0 0 1-8.5 0A4.5 4.5 0 0 1 7 16.5z" fill="#ff9ec2" stroke="#3f8f78" stroke-width="2.4" stroke-linejoin="round"/><path d="M16.5 7l-1.5 9.5M24 7v9.5M31.5 7l1.5 9.5" stroke="#3f8f78" stroke-width="2" stroke-linecap="round"/><rect x="14" y="27" width="9" height="14" rx="1.5" fill="#bfe8da" stroke="#3f8f78" stroke-width="2.2"/><path d="M33 30.6s-3.6-2.1-3.6-4.4a1.9 1.9 0 0 1 3.6-1 1.9 1.9 0 0 1 3.6 1c0 2.3-3.6 4.4-3.6 4.4z" fill="#ff5f8f"/></svg>';
 const corto = (s, n = 11) => { s = String(s || "").trim(); return s.length > n ? s.slice(0, 1).toUpperCase() : s; };
@@ -213,7 +216,7 @@ export class MenuPrincipal {
     const pa = SRV.conectado() ? PF.datos().pareja : null;
     if (!pa) { this.r.chatG = null; return null; }
     this.r.chatG = el("em.dt-globo", { hidden: "" });
-    const b = this._carta("cielo", ICONO_CHAT, "Mensajitos", el("small", { text: `Escríbele a ${PF.nombreDe(pa)}` }), (e) => this.app.detallitos.abrir(e.currentTarget, "chat"), 4);
+    const b = this._carta("rosa", ICONO_CHAT, "Mensajitos", el("small", { text: `Escríbele a ${PF.nombreDe(pa)}` }), (e) => this.app.detallitos.abrir(e.currentTarget, "chat"), 4);
     b.dataset.ir = "chat";
     b.append(this.r.chatG);
     this.r.chatB = b;
@@ -292,7 +295,7 @@ export class MenuPrincipal {
     const p = PF.proximo(d);
     const barra = el("span.mp-barra", { "aria-hidden": "true" }, [el("i.mp-barra-relleno", { style: { "--p": (p?.progreso ?? 0.5).toFixed(3) } })]);
     // Con tres o más cifras, el número se achica y el calendario se hace a un lado (lo que viene no se aprieta).
-    return el("div.mp-dias" + (p?.hoy ? ".hoy" : "") + (j.dias >= 100 ? ".largo" : ""), { title: PF.textoJuntos(j) }, [
+    const caja = el("div.mp-dias" + (p?.hoy ? ".hoy" : "") + (j.dias >= 100 ? ".largo" : ""), { title: PF.textoJuntos(j), role: "button", tabindex: "0", "aria-label": `${PF.textoJuntos(j)}. Próximamente, en construcción` }, [
       ...papel(), ...adornos(),
       el("div.mp-dias-fila", {}, [
         el("i.mp-dias-cal", { html: A.ICONO_CALENDARIO }),
@@ -302,6 +305,19 @@ export class MenuPrincipal {
       ]),
       p ? barra : el("small.mp-dias-texto", { text: PF.textoJuntos(j) }),
     ]);
+    const pronto = () => this._proximamente(caja);
+    caja.addEventListener("click", pronto);
+    caja.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pronto(); } });
+    return caja;
+  }
+
+  /** Los días todavía no abren nada: un globito suave «Próximamente, en construcción» (con brillitos). */
+  _proximamente(caja) {
+    caja.querySelector(".mp-pronto")?.remove();
+    this.app.sonidos?.sonar("brillo");
+    const g = el("div.mp-pronto", { role: "status" }, [el("i.mp-pronto-b.b1", { html: A.DESTELLO_LLENO }), el("span", { text: "Próximamente, en construcción" }), el("i.mp-pronto-b.b2", { html: A.DESTELLO_LLENO })]);
+    caja.append(g);
+    setTimeout(() => { g.classList.add("fuera"); setTimeout(() => g.remove(), 450); }, 2400);
   }
 
   /** Una tarjeta de abajo: su cinta, su dibujito, título, subtítulo y su flechita. */
@@ -351,23 +367,32 @@ export class MenuPrincipal {
     r.saludo = el("span", { text: this._saludo() });
     r.subDet = el("small", { text: this._subDetallitos() });
     const nuevos = (app.amorNuevos || 0) + (app.amorReacciones || 0);
-    r.tarjetaDet = this._carta("rosa", A.ICONO_CARPETA, "Detallitos", r.subDet, (e) => app.detallitos.abrir(e.currentTarget, "coleccion"), 5);
+    r.tarjetaDet = this._carta("menta", A.ICONO_CARPETA, "Detallitos", r.subDet, (e) => app.detallitos.abrir(e.currentTarget, "coleccion"), 5);
     if (nuevos) r.tarjetaDet.append(el("em.dt-globo", { text: String(nuevos) }));
-    const libritos = this._carta("lila", A.ICONO_LIBRO, "Mis libritos", el("small", { text: con ? "Aquí y en tu nube" : "Tus borradores" }), () => { this.cerrar(); app.inicio?.({ a: "borradores" }); }, 6);
+    const libritos = this._carta("cielo", A.ICONO_LIBRO, "Mis libritos", el("small", { text: con ? "Aquí y en tu nube" : "Tus borradores" }), () => { this.cerrar(); app.inicio?.({ a: "borradores" }); }, 6);
     // La Tiendita Cool (Fase 35): todavía en construcción. Tu perfil se abre desde tu nombre, arriba.
-    const tiendita = this._carta("menta", TIENDITA, "Tiendita Cool", el("small", { text: "Muy pronto" }), () => aviso("En construcción xd...", 2600), 7);
+    const tiendita = this._carta("durazno", TIENDITA, "Tiendita Cool", el("small", { text: "Muy pronto" }), () => aviso("En construcción xd...", 2600), 7);
     r.fechas = this._firmaDias();
     r.stats = this._dias(true);
     const crear = el("button.mp-btn.primario.mp-crear", { type: "button", onClick: () => { this.cerrar(); app.inicio?.(); } }, [
-      el("i.mp-crear-libro", { html: A.LIBRO_BRILLOS }), el("span.mp-crear-t", { text: "Crear librito" }), el("i.mp-crear-flecha", { html: FLECHA }),
+      el("i.mp-crear-libro", { html: A.LIBRO_BRILLOS }),
+      el("span.mp-crear-txt", {}, [
+        el("span.mp-crear-t", {}, [el("span", { text: "Crear Detallito" }), el("i.mp-crear-flecha", { html: FLECHA })]),
+        el("small.mp-crear-d", { text: "Convierte sus momentos juntos en una página hecha por ti, llena de recuerdos." }),
+      ]),
     ]);
     // Sin librito abierto (volviste desde «Crear librito»), el editor vuelve a ofrecer crear uno.
-    const seguir = el("button.mp-seguir", { type: "button", onClick: () => { this.cerrar(); if (!app.estado?.proyecto && !document.querySelector(".ed-inicio")) app.inicio?.(); } }, [el("span", { text: "Ir al editor" }), el("i", { html: FLECHA })]);
+    const seguir = el("button.mp-seguir.mp-editor-ir", { type: "button", style: { "--i": 3 }, onClick: () => { this.cerrar(); if (!app.estado?.proyecto && !document.querySelector(".ed-inicio")) app.inicio?.(); } }, [
+      el("i.mp-editor-ico", { html: LAPIZ }),
+      el("span.mp-editor-t", {}, [el("b", { text: "Ir al editor" }), el("small", { text: "Edita, organiza y personaliza tus páginas." })]),
+      el("i.mp-editor-ir-b", { html: FLECHA }),
+    ]);
     r.vistaInicio = el("div.mp-vista.mp-inicio", {}, [
       el("div.mp-hero", { style: { "--i": 0 } }, [this._pareja()]),
       el("div.mp-dias-caja", { style: { "--i": 1 } }, [r.stats]),
       el("div.mp-crear-fila", { style: { "--i": 2 } }, [crear, el("i.mp-crear-chispa.c1", { html: A.DESTELLO_LLENO }), el("i.mp-crear-chispa.c2", { html: A.DESTELLO_LLENO }), el("i.mp-crear-chispa.c3", { html: A.DESTELLO }), this._gatito()]),
-      el("p.mp-saludo", { style: { "--i": 3 } }, [r.saludo, el("i", { html: ico("corazon") }), seguir]),
+      seguir,
+      el("p.mp-saludo", { style: { "--i": 4 } }, [el("i.mp-raya-s"), r.saludo, el("i", { html: ico("corazon") }), el("i.mp-raya-s")]),
       el("div.mp-cartas", {}, [this._cartaChat(), r.tarjetaDet, libritos, tiendita].filter(Boolean)),
     ]);
     return r.vistaInicio;

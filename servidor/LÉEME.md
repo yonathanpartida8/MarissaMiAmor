@@ -227,6 +227,8 @@ to process»: por eso `librito actualizar` instala `git` en Termux.
   chat abierto, el editor espera al servidor y éste le contesta en cuanto
   cambia algo; lo escrito se guarda como texto (nunca HTML) y sólo se aceptan
   imágenes de GIPHY o las que ustedes suben (1.9.0).
+- **1.11.0**: el género de cada quien en su perfil (Hombre, Mujer, LGBTQ+ u Otro;
+  sólo lo cambia cada quien), que le da su color a los mensajitos en «Hormonal».
 - **1.10.0**: lo eliminado queda como «Aquí se eliminó un mensajito…» para los dos
   (y a tu amorcito se le avisa), y los mensajes de voz HD (hasta 26 MB).
 - **1.9.0**: mensajes de voz (WAV), stickers hechos por ustedes con sus fotos,
@@ -238,7 +240,8 @@ to process»: por eso `librito actualizar` instala `git` en Termux.
 Las reacciones y las portaditas necesitan M.YNTHN **1.5.0** o más nuevo, los
 Mensajitos **1.6.0**, los dibujos, los stickers libres y el tiempo real
 **1.7.0**, las notificaciones push **1.8.0**, y los audios, stickers propios,
-favoritos y editar **1.9.0**, y lo eliminado con aviso y los audios HD **1.10.0**: en
+favoritos y editar **1.9.0**, lo eliminado con aviso y los audios HD **1.10.0**, y el
+género del perfil **1.11.0**: en
 el teléfono servidor corre `librito actualizar` (tus datos no se tocan; las
 columnas nuevas se agregan solas al prender). Con uno más viejo todo lo demás
 sigue igual y las páginas sin portadita llevan una tapita de colores.
@@ -389,7 +392,7 @@ azar) · `/api/…`:
 | `PUT/GET/DELETE /api/nube/libritos/<clave>` (`?base=&forzar=1&aparato=`) | sesión | guardar, abrir y borrar un librito (avisa si cambió en otro aparato) |
 | `POST /api/nube/libritos/<clave>/copia` · `GET /api/nube/copias` · `GET/DELETE /api/nube/copias/<id>` | sesión | copias al guardar a mano |
 | `GET/PUT /api/yo/ajustes` | sesión | tus ajustes del editor |
-| `GET/PUT /api/yo/perfil` | sesión | tu nombre, cumpleaños y «novios desde» (se le pone igual a tu amorcito) |
+| `GET/PUT /api/yo/perfil` | sesión | tu nombre, cumpleaños, «novios desde» (se le pone igual a tu amorcito) y tu género (`genero`: "", "Hombre", "Mujer", "LGBTQ+" u "Otro"; desde 1.11.0) |
 | `PUT/GET/DELETE /api/yo/foto` · `GET /api/amor/foto` | sesión | tu foto de perfil (jpg, png o webp, hasta 2 MB) y la de tu amorcito |
 | `GET/POST /api/proyectos` · `GET/DELETE /api/proyectos/<id>` | sesión | copias de antes (.zip) |
 | `GET/DELETE /api/amor` · `POST /api/amor/vincular` · `POST /api/amor/codigo` | sesión | tu código y el vínculo con tu amorcito |

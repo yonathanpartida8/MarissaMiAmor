@@ -245,7 +245,7 @@ export function pedirTexto(titulo, valor = "", placeholder = "") {
 /* ── Menú contextual ──────────────────────────────────────────────── */
 export function menu(ancla, items) {
   document.querySelector(".ed-menu")?.remove();
-  const m = el("div.ed-menu", { role: "menu" }, items.filter(Boolean).map((it) => it === "-" ? el("hr") : el("button" + (it.peligro ? ".peligro" : ""), { type: "button", role: "menuitem", html: it.t, disabled: it.off || null, onClick: () => { cerrar(); it.al(); } })));
+  const m = el("div.ed-menu", { role: "menu" }, items.filter(Boolean).map((it) => it === "-" ? el("hr") : el("button" + (it.peligro ? ".peligro" : "") + (it.clase ? "." + it.clase : ""), { type: "button", role: "menuitem", html: it.t, disabled: it.off || null, onClick: () => { cerrar(); it.al(); } })));
   document.body.append(m);
   // Se ancla a un botón… o a un punto de la pantalla (el del dedo).
   const r = ancla.getBoundingClientRect ? ancla.getBoundingClientRect() : { left: ancla.x, right: ancla.x, top: ancla.y, bottom: ancla.y };

@@ -81,9 +81,15 @@ export function medirVideo(blob) {
   return new Promise((ok) => {
     const u = URL.createObjectURL(blob);
     const v = document.createElement("video");
+    let listo = false;
+    const fin = (r) => { if (listo) return; listo = true; clearTimeout(reloj); ok(r); URL.revokeObjectURL(u); v.removeAttribute("src"); v.load(); };
+    // En el iPhone sólo lee las medidas de un vídeo silenciado y «en línea»; y si no contesta, igual entra.
+    v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.setAttribute("muted", "");
     v.preload = "metadata";
-    v.onloadedmetadata = () => { ok({ w: v.videoWidth, h: v.videoHeight, dur: v.duration }); URL.revokeObjectURL(u); };
-    v.onerror = () => { ok({ w: 0, h: 0 }); URL.revokeObjectURL(u); };
+    v.onloadedmetadata = () => fin({ w: v.videoWidth, h: v.videoHeight, dur: isFinite(v.duration) ? v.duration : 0 });
+    v.onerror = () => fin({ w: 0, h: 0, dur: 0 });
+    const reloj = setTimeout(() => fin({ w: v.videoWidth || 0, h: v.videoHeight || 0, dur: isFinite(v.duration) ? v.duration || 0 : 0 }), 8000);
     v.src = u;
+    v.load();
   });
 }

@@ -1,4 +1,4 @@
-# Canciones para RetroMyLove (una ruta por línea, desde la raíz).
+# Canciones del repositorio para RetroMyLove (una ruta por línea, desde la raíz).
 # Las de la carpeta musica/ de aquí al lado van primero.
-# (Fase 35: ya no usa canciones del librito de Marissa.)
+musica arena/musica1.mp3
 DevMusic/MusicaDev.mp3

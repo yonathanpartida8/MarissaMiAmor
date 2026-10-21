@@ -17,6 +17,7 @@ on:
       - "noche-estrellada/**"
       - "assets/**"
       - "musica assets/**"
+      - "EditorDev/musica/**"
       - "mis-sonidos/**"
       - "mis-vales/**"
       - "mis-razones/**"

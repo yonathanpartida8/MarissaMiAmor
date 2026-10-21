@@ -37,7 +37,7 @@ export const nombreDe = (p) => (p?.nombre || "").trim() || p?.usuario || "";
 export const miNombre = () => nombreDe(datos().yo) || yoU();
 
 /* Sólo lo que se ve: el «visto hace…» de tu amorcito cambia cada latido y no debe repintar nada. */
-const firma = (x) => JSON.stringify(x ? [x.usuario, x.nombre, x.cumple, x.novios, x.foto_v, !!x.foto, !!x.en_linea, x.desde] : null);
+const firma = (x) => JSON.stringify(x ? [x.usuario, x.nombre, x.cumple, x.novios, x.genero, x.foto_v, !!x.foto, !!x.en_linea, x.desde] : null);
 
 async function aDatos(blob, lado = 256) {
   try {
@@ -201,6 +201,12 @@ export function vistaPerfil(app, { alListo, alVincular, alSalir } = {}) {
   const nombre = el("input.pf-input", { type: "text", value: yo.nombre || "", maxlength: 40, placeholder: yoU(), autocomplete: "nickname", "aria-label": "Tu nombre" });
   const cumple = el("input.pf-input", { type: "date", value: yo.cumple || "", max: new Date().toISOString().slice(0, 10), "aria-label": "Tu cumpleaños" });
   const novios = el("input.pf-input", { type: "date", value: pa?.novios || yo.novios || "", max: new Date().toISOString().slice(0, 10), "aria-label": "Novios desde" });
+  // Tu género (lo eliges tú; nunca se deduce): sirve para los efectos de «Hormonal» en el chat.
+  const genero = el("select.pf-input.pf-genero", { "aria-label": "Tu género" }, [
+    el("option", { value: "", text: "Elige tu género", disabled: "" }),
+    ...["Hombre", "Mujer", "LGBTQ+", "Otro"].map((v) => el("option", { value: v, text: v })),
+  ]);
+  genero.value = yo.genero || "";
   const estado = el("small.pf-estado", { role: "status" });
   const grande = avatar("yo", "pf-av");
   const subiendo = el("i.pf-girando");
@@ -230,7 +236,7 @@ export function vistaPerfil(app, { alListo, alVincular, alSalir } = {}) {
   guardar.addEventListener("click", async () => {
     guardar.disabled = true; estado.textContent = "Guardando…"; estado.className = "pf-estado";
     try {
-      await poner(await SRV.guardarPerfil({ nombre: nombre.value, cumple: cumple.value, novios: novios.value }));
+      await poner(await SRV.guardarPerfil({ nombre: nombre.value, cumple: cumple.value, novios: novios.value, genero: genero.value }));
       son?.sonar("exito");
       estado.textContent = "¡Listo! Así te ve tu amorcito.";
       estado.className = "pf-estado bien";
@@ -247,6 +253,7 @@ export function vistaPerfil(app, { alListo, alVincular, alSalir } = {}) {
     ]),
     campo("cuenta", "Tu nombre", nombre, "Así te ve tu amorcito (tu usuario para entrar no cambia)."),
     campo("pastel", "Tu cumpleaños", cumple),
+    campo("corazon", "Tu género", genero, "Lo eliges tú. Le da su color a tus mensajitos en «Hormonal»."),
     campo("calendario", "Somos novios desde", novios, pa ? `Es de los dos: a ${nombreDe(pa)} le aparece igual.` : "Cuando te vincules, le aparece igual a tu amorcito."),
     guardar, estado,
     el("div.pf-pareja", {}, pa

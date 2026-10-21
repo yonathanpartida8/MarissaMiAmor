@@ -2320,3 +2320,32 @@ ed-onda.ed-onda-capa { position: absolute; inset: 0; z-index: auto; display: blo
   :where(.ed-rejilla-assets, .ed-plantillas, .ed-borradores, .ed-anim-rejilla, .ed-efectos, .ed-trans-rejilla, .ed-fondos, .ed-deslizar, .ed-bib, .ed-bq, .ed-sfx-fila, .ed-comp-sueltos, .ed-tq-fichas) > * { animation: none; }
   :is(.ed-panel-cab, .ed-insp-tabs, .ed-hojita-cab, .ed-hoja-sec-cab, .ed-modal > header, .dt-cab) { transition: none; }
 }
+/* Fase 36 · «Enviar Detallito» destacado en el menú ⋯: rosita con un brillo que pasa de vez en cuando */
+.ed-menu button.ed-menu-destacado { position: relative; overflow: hidden; margin-bottom: 4px; border-radius: 12px; background: linear-gradient(120deg, #ffe3ef, #efe4ff); color: #b3245e; font-weight: 600; box-shadow: inset 0 0 0 1.5px rgba(216, 57, 122, .22); }
+.ed-menu button.ed-menu-destacado .ed-ico { color: #e0507f; animation: edLatidito 2.4s ease-in-out infinite; }
+.ed-menu button.ed-menu-destacado::after { content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 32%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .75), transparent); transform: skewX(-18deg); animation: edBrilloMenu 3.6s .4s ease-in-out infinite; pointer-events: none; }
+.ed-menu-chispa { width: 7px; height: 7px; margin-left: auto; border-radius: 50%; background: #ff6fa8; box-shadow: 0 0 0 3px rgba(255, 111, 168, .2); animation: edLatidito 2.4s ease-in-out infinite; }
+@keyframes edBrilloMenu { 0%, 55% { transform: translateX(0) skewX(-18deg); } 100% { transform: translateX(520%) skewX(-18deg); } }
+@keyframes edLatidito { 0%, 100% { transform: scale(1); } 14% { transform: scale(1.18); } 28% { transform: scale(1); } 42% { transform: scale(1.12); } }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .ed-menu button.ed-menu-destacado { background: linear-gradient(120deg, #4a2338, #33285a); color: #ffb3cf; } }
+:root[data-tema="oscuro"] .ed-menu button.ed-menu-destacado { background: linear-gradient(120deg, #4a2338, #33285a); color: #ffb3cf; }
+@media (prefers-reduced-motion: reduce) { .ed-menu button.ed-menu-destacado::after, .ed-menu button.ed-menu-destacado .ed-ico, .ed-menu-chispa { animation: none; } }
+/* ── Fase 36 · La barra de abajo dice qué hace cada botón; lo que da vida (Animar, Efectos) va primero ── */
+.ed-cb-et { display: none; }
+.ed-cb.vida .ed-ico { color: var(--acento); }
+@media (max-width: 1023px) {
+  :root { --cb: calc(70px + env(safe-area-inset-bottom)); }
+  .ed-contexto { gap: 4px; align-items: stretch; padding-top: 6px; padding-bottom: calc(4px + env(safe-area-inset-bottom)); }
+  .ed-cb, .ed-cb.chico { flex-direction: column; justify-content: center; gap: 3px; min-width: 56px; min-height: 56px; padding: 4px 6px; border-radius: 12px; }
+  .ed-cb .ed-ico { width: 22px; height: 22px; }
+  .ed-cb span, .ed-cb .ed-cb-et { display: block; max-width: 72px; overflow: hidden; text-overflow: ellipsis; font: 600 10.5px/1.1 Jost, system-ui, sans-serif; letter-spacing: .01em; color: var(--texto-suave, currentColor); opacity: .85; white-space: nowrap; }
+  .ed-cb.vida { background: linear-gradient(160deg, color-mix(in srgb, var(--acento) 14%, transparent), transparent); }
+  .ed-cb.vida span { color: var(--acento); opacity: 1; }
+  .ed-cb.fuente { min-width: 96px; }
+}
+/* Con la línea de tiempo abierta: los botones (con el imán y «ver toda la hoja») se hacen chiquitos y se pegan
+   arriba, a la orilla, para no tapar la hoja ni la línea */
+body.con-linea .ed-dock { top: 8px; right: 6px; transform: none; gap: 5px; }
+body.con-linea .ed-dock-grupo { padding: 2px; border-radius: 12px; border-width: 1.5px; }
+body.con-linea .ed-dock-b { width: 36px; height: 36px; }
+body.con-linea .ed-dock-b .ed-ico { width: 18px; height: 18px; }

@@ -25,8 +25,9 @@ export function elegirImagen() {
     const i = el("input", { type: "file", accept: "image/*", style: { position: "fixed", left: "-9999px" } });
     i.addEventListener("change", () => { ok(i.files?.[0] || null); i.remove(); }, { once: true });
     i.addEventListener("cancel", () => { ok(null); i.remove(); }, { once: true });
-    // Si cierran el selector sin elegir, nadie avisa en todos los navegadores: al volver el foco, se espera un ratito.
-    addEventListener("focus", () => setTimeout(() => { if (!i.files?.length) { ok(null); i.remove(); } }, 900), { once: true });
+    // Si cierran el selector sin elegir, nadie avisa en todos los navegadores: al volver el foco se espera
+    // (el iPhone tarda en preparar la foto después de cerrar el selector).
+    addEventListener("focus", () => { const t0 = Date.now(); const mirar = () => { if (!i.isConnected) return; if (i.files?.length) { ok(i.files[0]); i.remove(); } else if (Date.now() - t0 > 30000) { ok(null); i.remove(); } else setTimeout(mirar, 500); }; setTimeout(mirar, 900); }, { once: true });
     document.body.append(i);
     i.click();
   });

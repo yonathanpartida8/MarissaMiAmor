@@ -90,7 +90,7 @@ const SECCIONES = [
   ["texto", "texto", "Texto"],
   ["imagenes", "imagen", "Imágenes"],
   ["video", "video", "Vídeo"],
-  ["audio", "audio", "Audio"],
+  ["audio", "audio", "Sonidos"],
   // Adornar y dar vida
   ["gifs", "gif", "GIFs"],
   ["stickers", "sticker", "Stickers"],
@@ -322,6 +322,8 @@ function construirBarra() {
   botonMusica();
   // «Más»: lo que no cabe en el teléfono (los mismos botones de siempre).
   $(".ed-mas").addEventListener("click", (e) => menu(e.currentTarget, [
+    // Lo más importante, primero y destacado (Fase 36).
+    { t: `${ico("detallito")}<span>Enviar Detallito</span><i class="ed-menu-chispa" aria-hidden="true"></i>`, clase: "ed-menu-destacado", al: () => app.detallitos.abrir($(".ed-mas")) },
     // En teléfonos muy angostos el engrane no cabe arriba: vive aquí.
     getComputedStyle($(".ed-ajustes-b")).display === "none" ? { t: `${ico("tuerca")}<span>Configuración del editor</span>`, al: () => app.config.abrir() } : null,
     { t: `${ico("biblioteca")}<span>Ver el librito entero</span>`, al: () => $(".ed-previa").click() },
@@ -329,7 +331,6 @@ function construirBarra() {
     { t: `${ico("guardar")}<span>Guardar y borradores…</span>`, al: () => $(".ed-guardar").click() },
     { t: `${ico("escudo")}<span>Copias de seguridad…</span>`, al: () => app.guardado.abrir() },
     { t: `${ico("exportar")}<span>Exportar…</span>`, al: () => app.exportarMenu.abrir() },
-    { t: `${ico("detallito")}<span>Detallitos</span>`, al: () => app.detallitos.abrir($(".ed-mas")) },
     { t: `${ico("publicar")}<span>Páginas publicadas</span>`, al: () => abrirSeccion("publicadas", true) },
     { t: `${ico("compartir")}<span>Compartir por WhatsApp…</span>`, al: () => app.compartir() },
     { t: `${ico("rayo")}<span>Revisar recursos…</span>`, al: () => app.revisarRecursos() },
@@ -391,6 +392,7 @@ function construirRiel() {
   for (const [id, icono, n] of SECCIONES) {
     if (id === "paginas") continue; // Páginas va arriba (botón «1/3»), no compite con las herramientas
     if (id === "publicadas") continue; // Páginas publicadas: en el menú de los tres puntos (⋯)
+    if (id === "animar" || id === "efectos") continue; // Animar y Efectos: primero en la barra de abajo (Fase 36)
     if (GRUPOS_RIEL[id]) riel.append(el("i.ed-riel-sep", { "aria-hidden": "true" }, [el("small", { text: GRUPOS_RIEL[id] })]));
     riel.append(el("button", { type: "button", dataset: { s: id }, title: n, "aria-label": n, onClick: () => {
       const activo = app.seccion === id;

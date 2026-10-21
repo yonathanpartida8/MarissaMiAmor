@@ -23,6 +23,7 @@ import { ico } from "./iconos.js";
 import * as SRV from "../integraciones/servidor.js";
 import * as G from "../integraciones/giphy.js";
 import * as PF from "./perfil.js";
+import { animosChat } from "./chat-animos.js";
 import { REACCIONES, reaccion, svgReaccion, estallido } from "./reacciones.js";
 import { sinMovimiento as reducido } from "./transiciones.js";
 import { vibrar } from "../config/preferencias.js";
@@ -59,7 +60,7 @@ const IC = {
   brillo: svg('<path d="M12 3.5c.6 3.6 1.9 4.9 5.5 5.5-3.6.6-4.9 1.9-5.5 5.5-.6-3.6-1.9-4.9-5.5-5.5 3.6-.6 4.9-1.9 5.5-5.5zM18.5 14.5c.3 1.6.8 2.1 2.4 2.4-1.6.3-2.1.8-2.4 2.4-.3-1.6-.8-2.1-2.4-2.4 1.6-.3 2.1-.8 2.4-2.4z"/>', ' fill="currentColor"'),
   foto: svg('<rect x="3.4" y="4.6" width="17.2" height="14.8" rx="3.4"/><circle cx="9" cy="10" r="1.8"/><path d="m4.4 17.4 4.8-4.6 3.4 3.2 2.6-2.4 4.6 4.2"/>', LINEA),
 };
-// Los ánimos (Happy, Sad, Hot, Hormonal): por ahora sólo se ven lindos y rebotan.
+// Los ánimos (Happy, Sad, Hot, Hormonal): sus efectos viven en chat-animos.js.
 const NUBE = "M11 30h19a6.5 6.5 0 0 0 .8-13A9 9 0 0 0 13.3 15 7.6 7.6 0 0 0 11 30z";
 const ANIMOS = [
   { id: "happy", t: "Happy", s: svg(`<path d="${NUBE}" fill="#fff" stroke="#b49af5" stroke-width="1.8"/><path d="M15.4 22.6q1.3-1.6 2.6 0M22.4 22.6q1.3-1.6 2.6 0M18.4 25.4q1.6 1.4 3.2 0" fill="none" stroke="#6a4fb3" stroke-width="1.5" stroke-linecap="round"/><circle cx="14.2" cy="25.2" r="1.5" fill="#ffa8cc" opacity=".8"/><circle cx="26.4" cy="25.2" r="1.5" fill="#ffa8cc" opacity=".8"/><path d="M33.5 6.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM6.5 9l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" fill="#f4b3d0"/>`, "", "0 0 40 40") },
@@ -192,10 +193,14 @@ export function vistaChat(det) {
   const fondo = fondoDibujado();
   const marco = el("div.ch-marco", {}, [fondo, lista, lienzo, bajar]);
 
-  /* — Los ánimos (todavía no hacen nada: sólo rebotan) — */
-  const animos = el("div.ch-animos", { role: "group", "aria-label": "Cómo te sientes (muy pronto)" }, ANIMOS.map((a) => {
-    const b = el("button.ch-animo", { type: "button", "aria-label": a.t, dataset: { a: a.id } }, [el("i", { html: a.s }), el("span", { text: a.t })]);
-    b.addEventListener("click", () => { if (!reducido()) b.animate([{ transform: "scale(1)" }, { transform: "scale(.9) rotate(-3deg)" }, { transform: "scale(1.06) rotate(2deg)" }, { transform: "scale(1)" }], { duration: 420, easing: "ease-out" }); });
+  /* — Los ánimos: tocas uno y se enciende; otra vez, y se apaga — */
+  const animos = el("div.ch-animos", { role: "group", "aria-label": "Cómo te sientes" }, ANIMOS.map((a) => {
+    const b = el("button.ch-animo", { type: "button", "aria-label": a.t, "aria-pressed": "false", dataset: { a: a.id } }, [el("i", { html: a.s }), el("span", { text: a.t })]);
+    b.addEventListener("click", () => {
+      const ya = AN.poner(a.id);
+      for (const x of animos.children) { x.classList.toggle("activo", x.dataset.a === ya); x.setAttribute("aria-pressed", String(x.dataset.a === ya)); }
+      if (!reducido()) b.animate([{ transform: "scale(1)" }, { transform: "scale(.9) rotate(-3deg)" }, { transform: "scale(1.06) rotate(2deg)" }, { transform: "scale(1)" }], { duration: 420, easing: "ease-out" });
+    });
     return b;
   }));
 
@@ -256,6 +261,9 @@ export function vistaChat(det) {
     el("small.ch-dibujo-pista", { text: "Dibuja con un dedo · desliza con dos · lo ve en vivo" }),
   ]);
   const raiz = el("section.dt-pantalla.ch" + (PR.fondo ? "" : ".sin-fondo") + (PR.grande ? ".letra-grande" : ""), {}, [cab, marco, animos, panelN, barraDibujo, editBar, escribir]);
+  // El color de cada quien en «Hormonal» sale del género que eligió en su perfil (sólo «Mujer» es rosa).
+  const generoDe = (mio) => (mio ? PF.datos().yo?.genero : det.amor?.pareja?.genero ?? PF.datos().pareja?.genero) || "";
+  const AN = animosChat({ raiz, marco, lista, tono: (mio) => (generoDe(mio) === "Mujer" ? "rosa" : "carmesi") });
 
   /**
    * Mantener presionado (o clic derecho) hace `al()`; un toque normal sigue siendo un toque.
@@ -422,6 +430,18 @@ export function vistaChat(det) {
   function pintarCapa() {
     const W = ancho();
     let abajo = 0;
+    // Lo que se pegó o dibujó DEBAJO de un mensajito (más allá de su orilla) le aparta su lugar: así el
+    // mensaje que llegue después se pone abajo de eso, en su orden, y no encima (Fase 36).
+    const alto = (id) => S.nodos.get(id)?.offsetHeight || 0, ext = new Map();
+    const extender = (id, y) => { if (y > alto(id) + 24) ext.set(id, Math.max(ext.get(id) || 0, y)); };
+    for (const [, t] of S.trazos) if (t.ancla && t.p.length) { let my = -1e9; for (const [, y] of t.p) my = Math.max(my, y); extender(t.ancla, my + t.a); }
+    for (const m of S.ms) for (const x of m.stickers || []) if (x.l) extender(m.id, x.y + 56 * (+x.s || 1));
+    for (const m of S.ms) {
+      const f = S.nodos.get(m.id);
+      if (!f) continue;
+      const e = ext.get(m.id), k = e ? Math.round(e - f.offsetHeight + 8) + "px" : "";
+      if (f.style.marginBottom !== k) f.style.marginBottom = k;
+    }
     for (const [, t] of S.trazos) {
       const top = anclaTop(t.ancla);
       if (top == null || !t.p.length) { t.el?.remove(); t.el = null; continue; }
@@ -595,13 +615,14 @@ export function vistaChat(det) {
   function recibir(nuevos, cambios, propio = false) {
     const pegado = cerca();
     let llegaron = 0, suyo = false;
+    const deEl = [];
     for (const m of nuevos) {
       if ((m.borrado && m.espacio) || S.nodos.has(m.id) || S.ms.some((x) => x.id === m.id)) continue;
       // Tu mensajito llegó por aquí antes que la respuesta de «mandar»: la burbuja que ya se ve pasa a ser ésa.
       const t = m.mio && S.ms.find((x) => x._enviando && !x._real && x.texto === m.texto && (x.gif?.u || "") === (m.gif?.u || "") && (x.audio ? x.audio._u || "?" : "") === (m.audio?.u || ""));
       if (t) { adoptar(t, m); continue; }
       S.ms.push(m); S.nuevos.add(m.id); llegaron++;
-      if (!m.mio && !m.espacio && !m.borrado) suyo = true;
+      if (!m.mio && !m.espacio && !m.borrado) { suyo = true; deEl.push(m.id); }
     }
     S.ms.sort(orden);
     S.ultimo = Math.max(S.ultimo, ...S.ms.filter(real).map((m) => m.id));
@@ -623,6 +644,7 @@ export function vistaChat(det) {
       if (st.length > (a.stickers || []).length && !st[st.length - 1].mio) sonar("sticker-pegar");
     }
     pintar();
+    for (const id of deEl) AN.llego(S.nodos.get(id));
     if (llegaron) {
       if (pegado || propio) alFondo(true);
       else { S.sinVer += llegaron; bajarT.textContent = S.sinVer === 1 ? "1 nuevo" : `${S.sinVer} nuevos`; bajar.hidden = false; }
@@ -731,6 +753,7 @@ export function vistaChat(det) {
     S.ms.push(t); S.ms.sort(orden); S.listo = true;
     pintar(); alFondo(false);
     volar(S.nodos.get(t.id));
+    AN.mando(S.nodos.get(t.id));
     return t;
   }
   function noSeMando(t, e) {
@@ -919,19 +942,23 @@ export function vistaChat(det) {
     panel(null); salirDibujo(); cerrarMenu();
     S.grabando = { cargando: true };
     let g;
-    try { g = await VOZ.grabar(); }
+    // El aviso de «empezar» (sonido y vibración) va ANTES de grabar, y mientras grabas el editor se calla:
+    // así en el audio sólo queda tu voz.
+    sonar("audio-grabar");
+    vibrar(18);
+    if (son) son.callado = true;
+    try { g = await VOZ.grabar({ espera: PR.sonidos ? 380 : 120 }); }
     catch (e) {
       S.grabando = null;
+      if (son) son.callado = false;
       aviso(e?.name === "NotAllowedError" || e?.name === "SecurityError" ? "Necesito permiso para usar tu micrófono 🎤 (dáselo en los ajustes del navegador)." : e?.name === "NotFoundError" ? "No encontré ningún micrófono en este aparato." : "No se pudo empezar a grabar.", 5500, "error");
       return;
     }
-    if (!S.vivo) { g.cancelar(); return; }
+    if (!S.vivo) { g.cancelar(); if (son) son.callado = false; return; }
     S.grabando = g;
     input.blur();
     escribir.classList.add("grabando");
     grabBar.hidden = false;
-    sonar("audio-grabar");
-    vibrar(18);
     if (!reducido()) grabBar.animate([{ opacity: 0, transform: "scale(.96)" }, { opacity: 1, transform: "none" }], { duration: 280, easing: "cubic-bezier(.2, .9, .3, 1.1)" });
     const barras = [...grabOndas.children], niveles = barras.map(() => 0.08);
     let antes = 0;
@@ -952,6 +979,7 @@ export function vistaChat(det) {
     S.grabando = null;
     escribir.classList.remove("grabando");
     grabBar.hidden = true;
+    if (son) setTimeout(() => { son.callado = false; }, 250); // (el toque de mandar tampoco se cuela)
     return g;
   }
   function cancelarGrabacion() {
@@ -1680,11 +1708,13 @@ export function vistaChat(det) {
   det._chatAtras = () => cerrarMenu() || cerrarHoja() || cancelarGrabacion() || dejarDeEditar() || salirDibujo() || panel(null);
   det._limpiezas.push(() => {
     S.vivo = false;
+    AN.limpiar();
     P.ctl?.abort();
     vigia.disconnect();
     VOZ.pararVoz();
     if (S.grabando && !S.grabando.cargando) { cancelAnimationFrame(S.grabando.cuadro); S.grabando.cancelar(); }
     S.grabando = null;
+    if (son) son.callado = false;
     if (S.dibujo) { terminarTrazo(); S.dibujo = null; }
     for (const t of S.trazos.values()) clearInterval(t.reloj);
     document.removeEventListener("visibilitychange", alVolver);

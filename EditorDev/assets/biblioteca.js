@@ -172,9 +172,18 @@ export function elegirArchivos({ accept = "*/*", multiple = true } = {}) {
     i.multiple = multiple;
     i.style.display = "none";
     document.body.append(i);
-    i.addEventListener("change", () => { ok([...(i.files || [])]); i.remove(); }, { once: true });
-    // Si se cancela no hay evento en todos los navegadores: se limpia al volver.
-    addEventListener("focus", () => setTimeout(() => { if (!i.files?.length) { ok([]); i.remove(); } }, 800), { once: true });
+    let hecho = false;
+    const fin = (l) => { if (hecho) return; hecho = true; ok(l); i.remove(); };
+    i.addEventListener("change", () => fin([...(i.files || [])]), { once: true });
+    i.addEventListener("cancel", () => fin([]), { once: true });
+    // Si se cancela no hay evento en todos los navegadores. Ojo: en el iPhone un vídeo tarda en
+    // «prepararse» DESPUÉS de cerrar el selector (antes eso se tomaba como cancelar y no entraba):
+    // se espera a que lleguen los archivos hasta un minuto.
+    addEventListener("focus", () => {
+      const t0 = Date.now();
+      const mirar = () => { if (hecho) return; if (i.files?.length) fin([...i.files]); else if (Date.now() - t0 > 60000) fin([]); else setTimeout(mirar, 500); };
+      setTimeout(mirar, 800);
+    }, { once: true });
     i.click();
   });
 }

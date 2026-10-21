@@ -17,6 +17,9 @@ import { ico } from "./iconos.js";
 const RT = window.LibritoRT;
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 
+/** Un nombre cortito para el textito de un botón («Luz, brillo…» → «Luz»). */
+const corto = (t) => { const c = String(t || "").split(/[,(:·]/)[0].trim(); return c.length > 13 ? c.slice(0, 12) + "…" : c; };
+
 export class BarraContextual {
   constructor(app, raiz) {
     this.app = app;
@@ -36,6 +39,8 @@ export class BarraContextual {
   }
 
   _b(html, titulo, al, clase = "") {
+    // Cada botón dice qué hace (en el teléfono, su textito va debajo del ícono; Fase 36).
+    if (html && !/<span/.test(html)) html += `<span class="ed-cb-et">${corto(titulo)}</span>`;
     return el("button.ed-cb" + (clase ? "." + clase.split(" ").join(".") : ""), { type: "button", title: titulo, "aria-label": titulo, html, onClick: (ev) => al(ev.currentTarget) });
   }
 
@@ -90,10 +95,12 @@ export class BarraContextual {
     const partes = [];
     if (!sel.length) {
       partes.push(grupo(
+        // Primero lo que da vida (animar y efectos): ya no viven en el menú deslizable (Fase 36).
+        this._b(ico("animar") + "<span>Animar</span>", "Animaciones de la página", () => (esMovil() ? this.app.abrirSeccion("animar") : ins.abrir("animar")), "vida"),
+        this._b(ico("efectos") + "<span>Efectos</span>", "Efectos con previsualización", () => this.app.abrirSeccion("efectos"), "vida"),
         this._b(I("diseno", "Fondo"), "Fondo de la página", () => { ins.abrir("diseno", "Fondo"); }),
         this._b(ico("transiciones") + "<span>Transición</span>", "Transición al llegar", () => this.app.abrirSeccion("transiciones")),
         this._b(ico("audio") + "<span>Música</span>", "Música de la página", () => this.app.abrirSeccion("audio")),
-        this._b(ico("animar") + "<span>Animar página</span>", "Animaciones de la página", () => ins.abrir("animar")),
         this._b(I("tiempo", "Tiempo"), "Línea de tiempo", () => this.app.tiempo.alternar()),
       ));
       partes.push(el("small.ed-cb-pista", { text: "Toca algo de la hoja para editarlo" }));
@@ -167,9 +174,9 @@ export class BarraContextual {
       }
       // Lo de todos.
       partes.push(grupo(
-        this._b(ico("animar") + "<span>Animar</span>", "Animar", () => (esMovil() ? this.app.abrirSeccion("animar") : ins.abrir("animar"))),
+        this._b(ico("animar") + "<span>Animar</span>", "Animar", () => (esMovil() ? this.app.abrirSeccion("animar") : ins.abrir("animar")), "vida"),
+        this._b(ico("efectos") + "<span>Efectos</span>", "Efectos con previsualización", () => this.app.abrirSeccion("efectos"), "vida"),
         this._b(ico("luz") + "<span>Ajustes</span>", "Luz, brillo, contraste, color (o mantén presionado)", () => this.app.ajustes.abrir(sel[0].id)),
-        this._b(ico("efectos") + "<span>Efectos</span>", "Efectos con previsualización", () => this.app.abrirSeccion("efectos")),
         this._b(ico("toque") + "<span>Al tocar</span>", "Efectos al tocar, con vista previa", () => this.app.abrirSeccion("toques")),
         this._b(ico("opacidad"), "Transparencia", (a) => popover(a, [el("b.ed-pop-t", { text: "Transparencia" }), this._ctl("opacidad", { tipo: "rango", min: 0, max: 1, paso: 0.01, def: 1, nombre: "Opacidad" })]), "chico"),
         this._b(ico("capas"), "Posición", (a) => popover(a, [

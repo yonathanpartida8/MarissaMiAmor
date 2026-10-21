@@ -186,7 +186,7 @@ export class SonidosEditor {
 
   /** Suena un momento («botones», «guardar»…). Si es «botones», espera un pelito por si llega uno más importante. */
   sonar(momento, op = {}) {
-    if (!this.pref.on) return;
+    if (!this.pref.on || this.callado) return; // (callado: mientras grabas un mensaje de voz)
     if (SUAVES.has(momento)) {
       clearTimeout(this._boton);
       this._boton = setTimeout(() => { if (performance.now() - (this._fuerte || 0) > 160) this._tocar(momento, op); }, 28);

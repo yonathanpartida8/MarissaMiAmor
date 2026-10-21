@@ -40,7 +40,7 @@ export async function elegir(app, tipo = "imagen", { multiple = false, titulo } 
     resolver(nuevos.map((a) => a.id));
   });
 
-  const mios = Object.values(bib.assets).filter((a) => a.tipo === tipo && (tipo !== "audio" || a.fuente !== "librito"))
+  const mios = Object.values(bib.assets).filter((a) => a.tipo === tipo && (tipo !== "audio" || a.fuente !== "librito" || /^EditorDev\/musica\//.test(a.ruta || "")))
     .sort(tipo === "audio" ? (a, b) => String(a.nombre).localeCompare(String(b.nombre), "es", { numeric: true }) : (a, b) => b.creado - a.creado);
   const rejilla = el("div.ed-rejilla-assets" + (tipo !== "imagen" ? ".lista" : ""));
   const pintarItem = (a, url) => {
@@ -57,6 +57,17 @@ export async function elegir(app, tipo = "imagen", { multiple = false, titulo } 
     return b;
   };
   for (const a of mios) rejilla.append(pintarItem(a, bib.url(a.id)));
+  // Las canciones que pegas en EditorDev/musica/ también se eligen aquí (Fase 36).
+  if (tipo === "audio") import("../components/secciones/audio.js").then(({ musicaDeCarpeta }) => musicaDeCarpeta()).then((l) => {
+    const ya = new Set(mios.map((a) => a.ruta).filter(Boolean));
+    for (const m of l) {
+      if (ya.has(m.ruta)) continue;
+      const b = el("button.ed-asset", { type: "button", title: m.nombre }, [el("b", { html: ico("audio") }), el("span", { text: m.nombre }), el("small", { text: "carpeta musica" })]);
+      b.addEventListener("click", () => { const a = bib.delLibrito(m.ruta, "audio", m.nombre, { tam: m.peso }); caja.cerrar?.(); resolver([a.id]); });
+      rejilla.append(b);
+    }
+    if (rejilla.childElementCount && !rejilla.isConnected) cuerpoMios.replaceChildren(rejilla);
+  }).catch(() => {});
   const vacioMios = el("p.ed-vacio-txt", { text: `Todavía no has subido ${NOMBRE[tipo]} a este librito.` });
 
   const cuerpoMios = el("div", {}, [mios.length ? rejilla : vacioMios]);

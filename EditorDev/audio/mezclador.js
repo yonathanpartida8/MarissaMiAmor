@@ -23,6 +23,8 @@
  * del repositorio); si no hay, la carpeta **DevMusic/** (en la raíz; si hay
  * varias suenan una tras otra), y si no, MusicaDev.mp3 en EditorDev/,
  * «musica assets/» o la raíz. Al cambiar de estilo, cambia con un fundido.
+ * Fase 36: en Sonidos → «Música del editor» puedes elegir una canción de EditorDev/musica/ (se
+ * guarda en este aparato); es SÓLO del editor: nunca toca la música de las páginas.
  */
 import { PREF as CONFIG, alCambiar as alCambiarConfig } from "../config/preferencias.js";
 
@@ -92,7 +94,7 @@ export class AudioEditor {
     // 0) La música del estilo elegido (si tiene).
     this._estilo = CONFIG.estilo || "cuaderno";
     alCambiarConfig(() => { if ((CONFIG.estilo || "cuaderno") !== this._estilo) this.cambiarEstilo(CONFIG.estilo || "cuaderno"); });
-    const delEstilo = await this._listaDeEstilo(this._estilo);
+    const delEstilo = this.pref.cancion ? [this.pref.cancion] : await this._listaDeEstilo(this._estilo);
     if (delEstilo.length) {
       this.lista = delEstilo;
       this.url = delEstilo[0];
@@ -125,10 +127,24 @@ export class AudioEditor {
   /** Otro estilo, otra música: baja suave, cambia de canción y vuelve a subir. */
   async cambiarEstilo(estilo) {
     this._estilo = estilo;
+    if (this.pref.cancion) return; // elegiste una canción para el editor: se queda
     let lista = await this._listaDeEstilo(estilo);
     if (estilo !== this._estilo) return; // ya se cambió otra vez
     if (!lista.length) lista = this._listaBase || [];
-    if (!lista.length || (this.lista && lista.join() === this.lista.join())) return;
+    this._cambiarLista(lista);
+  }
+
+  /** La canción del editor (una de EditorDev/musica/, ya como dirección); null = la de siempre (la del estilo). */
+  async ponerCancion(url) {
+    this.pref = { ...this.pref, cancion: url || null };
+    try { localStorage.setItem(PREF, JSON.stringify(this.pref)); } catch (e) { /* nada */ }
+    let lista = url ? [url] : await this._listaDeEstilo(this._estilo || "cuaderno");
+    if (!lista.length) lista = this._listaBase || [];
+    this._cambiarLista(lista, true);
+  }
+
+  _cambiarLista(lista, forzar = false) {
+    if (!lista.length || (!forzar && this.lista && lista.join() === this.lista.join())) return;
     this.lista = lista;
     this.url = lista[0];
     this._avisar();

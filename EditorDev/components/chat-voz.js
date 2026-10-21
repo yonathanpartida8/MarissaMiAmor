@@ -24,7 +24,7 @@ export const minutos = (s) => { s = Math.max(0, Math.round(s)); return `${Math.f
  * Empieza a grabar (llamarla desde un toque: el iPhone sólo deja prender el audio así).
  * Devuelve { nivel() de 0 a 1, segundos(), parar() → { blob, dur, ondas }, cancelar() }.
  */
-export async function grabar() {
+export async function grabar({ espera = 0 } = {}) {
   const ctx = new (AC())(); // se crea ya, dentro del toque
   let flujo;
   try { flujo = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: false, channelCount: 1, sampleRate: 48000 } }); }
@@ -40,6 +40,8 @@ export async function grabar() {
   an.fftSize = 512;
   ctx.createMediaStreamSource(flujo).connect(an);
   const muestra = new Uint8Array(an.fftSize);
+  // (El sonidito de «empezar» ya terminó de sonar: no se cuela en el audio.)
+  if (espera) await new Promise((r) => setTimeout(r, espera));
   const t0 = performance.now();
   rec.start(250);
   const apagar = () => { flujo.getTracks().forEach((t) => t.stop()); ctx.close().catch(() => {}); };
@@ -75,7 +77,9 @@ async function aWav(blob) {
   let pcm = null, hz = 48000;
   for (const h of [48000, 44100, audio.sampleRate]) {
     try {
-      const off = new OAC(1, Math.max(1, Math.ceil(audio.duration * h)), h);
+      // Sin el toquecito del principio ni el del final (el dedo en la pantalla al empezar y al mandar).
+      const ini = audio.duration > 1.2 ? 0.08 : 0, fin = audio.duration > 1.2 ? 0.2 : 0, largo = Math.max(0.2, audio.duration - ini - fin);
+      const off = new OAC(1, Math.max(1, Math.ceil(largo * h)), h);
       const f = off.createBufferSource();
       f.buffer = audio;
       // Sin retumbos (graves de menos de 80 Hz: golpes, viento, el teléfono en la mesa)…
@@ -84,7 +88,7 @@ async function aWav(blob) {
       // …y la voz pareja: lo fuerte baja tantito y lo bajito se entiende (suave, sin «bombeo»).
       const comp = off.createDynamicsCompressor();
       comp.threshold.value = -22; comp.knee.value = 14; comp.ratio.value = 2.6; comp.attack.value = 0.006; comp.release.value = 0.22;
-      f.connect(graves); graves.connect(comp); comp.connect(off.destination); f.start();
+      f.connect(graves); graves.connect(comp); comp.connect(off.destination); f.start(0, ini, largo);
       pcm = (await off.startRendering()).getChannelData(0);
       hz = h;
       break;
@@ -96,7 +100,7 @@ async function aWav(blob) {
   for (let i = 0; i < pcm.length; i++) pico = Math.max(pico, Math.abs(pcm[i]));
   const k = pico > 0.001 ? Math.min(3, 0.89 / pico) : 1;
   if (Math.abs(k - 1) > 0.02) for (let i = 0; i < pcm.length; i++) pcm[i] *= k;
-  return { blob: wav(pcm, hz), dur: Math.round(audio.duration * 100) / 100, ondas: ondas(pcm) };
+  return { blob: wav(pcm, hz), dur: Math.round((pcm.length / hz) * 100) / 100, ondas: ondas(pcm) };
 }
 function wav(pcm, hz) {
   const b = new ArrayBuffer(44 + pcm.length * 2), v = new DataView(b);

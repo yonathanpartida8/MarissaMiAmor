@@ -1647,10 +1647,13 @@ export default {
    "peso": 2659650
   }
  ],
+ "musicaEditor": [],
  "estilos": {
   "baddie": {
    "musica": [
-    "DevMusic/MusicaDev.mp3"
+    "la radio/music1.mp3",
+    "la radio/music2.mp3",
+    "la radio/music3.mp3"
    ],
    "fuentes": []
   },
@@ -1662,6 +1665,7 @@ export default {
   },
   "retromylove": {
    "musica": [
+    "musica arena/musica1.mp3",
     "DevMusic/MusicaDev.mp3"
    ],
    "fuentes": []

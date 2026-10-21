@@ -471,3 +471,128 @@
 .ch-burbuja.eliminado > i { flex: none; width: 16px; height: 16px; color: var(--cm-lila); }
 .ch-burbuja.eliminado > i svg { display: block; width: 100%; height: 100%; }
 .ch-burbuja.eliminado::before, .ch-burbuja.eliminado::after { display: none; }
+
+/* ═══ Los ánimos (Fase 36): Happy, Sad, Hot y Hormonal ═══
+   La capa va DETRÁS de todo (cabecera, mensajes, barra): nada se mete donde tocas ni tapa un mensajito.
+   Sólo se anima transform y opacity; los colores son las mismas variables del chat. */
+.an-capa { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.ch .ch-fondo { transition: opacity .5s; }
+.ch[data-animo] .ch-fondo { opacity: 0; }
+.an-escena { position: absolute; inset: 0; animation: anEntra .6s ease-out both; }
+.an-escena.sale { animation: anSale .42s ease-in forwards; }
+.an-escena.quieta * { animation: none !important; }
+.an-escena > i, .an-escena > div { position: absolute; display: block; }
+.an-escena svg { display: block; width: 100%; height: 100%; overflow: visible; }
+@keyframes anEntra { from { opacity: 0; } }
+@keyframes anSale { to { opacity: 0; } }
+@keyframes anRespira { 50% { opacity: .6; transform: scale(1.06); } }
+@keyframes anSube { 0% { transform: translate(0, 0); opacity: 0; } 12% { opacity: 1; } 50% { transform: translate(var(--dx), -45vh); } 85% { opacity: .7; } 100% { transform: translate(calc(var(--dx) * -.5), -90vh); opacity: 0; } }
+.ch-animo { position: relative; transition: background-color .3s, box-shadow .3s, color .3s; }
+.ch-animo.activo { box-shadow: 0 0 0 2px var(--cm-lila), 0 8px 20px var(--cm-sombra-2); }
+
+/* — Happy: cálido, un sol sin carita y florecitas — */
+.ch.animo-happy { --cm-tinta: #5d3a48; --cm-suave: #a27d88; --cm-lila: #ff9a5c; --cm-lila-2: #ffc08a; --cm-vidrio: rgba(255, 255, 255, .66); --cm-sombra: rgba(232, 140, 90, .16); --cm-sombra-2: rgba(232, 140, 90, .3); --cm-hundido: rgba(255, 160, 100, .12);
+  --cm-mia: linear-gradient(135deg, #ff9b54 0%, #ff8580 55%, #f472a6 100%); --cm-suya: rgba(255, 255, 255, .92); }
+.an-escena.happy { background: radial-gradient(70% 40% at 100% 0%, rgba(255, 226, 140, .6), transparent 70%), radial-gradient(80% 50% at 0% 100%, rgba(255, 190, 210, .5), transparent 70%), linear-gradient(180deg, #fff8e6 0%, #fff0f1 55%, #fdf1ff 100%); }
+.an-sol { top: 9%; right: -36px; width: 150px; height: 150px; }
+.an-sol::before { content: ""; position: absolute; inset: -30%; border-radius: 50%; background: radial-gradient(circle, rgba(255, 214, 110, .5), transparent 62%); animation: anRespira 5s ease-in-out infinite; }
+.an-sol .an-rayos { transform-origin: 60px 60px; animation: anGira 40s linear infinite; }
+@keyframes anGira { to { transform: rotate(360deg); } }
+.an-flor { left: var(--x); top: var(--y); width: var(--t); height: var(--t); filter: drop-shadow(0 2px 3px rgba(220, 130, 120, .2)); animation: anMece var(--d) ease-in-out var(--r) infinite alternate; }
+@keyframes anMece { from { transform: rotate(-10deg); } to { transform: rotate(12deg) translateY(-6px); } }
+.an-flor.sube { top: auto; bottom: -30px; filter: none; opacity: 0; animation: anFlorSube var(--d) linear var(--r) infinite; }
+@keyframes anFlorSube { 0% { transform: translate(0, 0) rotate(0); opacity: 0; } 10% { opacity: .9; } 50% { transform: translate(var(--dx), -45vh) rotate(160deg); } 90% { opacity: .7; } 100% { transform: translate(0, -92vh) rotate(320deg); opacity: 0; } }
+
+/* — Sad: lavanda gris, nubes y lluvia suave (melancólico, pero bonito) — */
+.ch.animo-sad { --cm-tinta: #3e4766; --cm-suave: #7d86a6; --cm-lila: #7f93d6; --cm-lila-2: #a9b6e6; --cm-vidrio: rgba(255, 255, 255, .6); --cm-sombra: rgba(80, 100, 160, .16); --cm-sombra-2: rgba(80, 100, 160, .28); --cm-hundido: rgba(127, 147, 214, .12);
+  --cm-mia: linear-gradient(135deg, #8ea3e0 0%, #7d89cf 55%, #a093d6 100%); --cm-suya: rgba(255, 255, 255, .86); }
+.an-escena.sad { background: radial-gradient(90% 40% at 50% 0%, rgba(160, 172, 210, .45), transparent 70%), linear-gradient(180deg, #dfe4f3 0%, #e6e6f5 50%, #ece9f7 100%); }
+.an-nube { left: var(--x); top: var(--y); width: var(--t); height: calc(var(--t) / 2); fill: rgba(255, 255, 255, .8); filter: drop-shadow(0 6px 10px rgba(90, 105, 160, .14)); animation: anDeriva var(--d) ease-in-out var(--r) infinite alternate; }
+@keyframes anDeriva { to { transform: translateX(var(--dx)); } }
+.an-gotita { left: var(--x); top: 12%; width: 2px; height: 16px; border-radius: 2px; background: linear-gradient(180deg, transparent, rgba(110, 135, 215, .55)); opacity: 0; animation: anLlueve var(--d) linear var(--r) infinite; }
+@keyframes anLlueve { 0% { transform: translate(0, 0) rotate(8deg); opacity: 0; } 8% { opacity: 1; } 90% { opacity: .7; } 100% { transform: translate(-16px, 84vh) rotate(8deg); opacity: 0; } }
+
+/* — Hot: vino y coral, llamitas al entrar y luego una brisa que quema — */
+.ch.animo-hot { --cm-tinta: #ffeef2; --cm-suave: #e8b3c0; --cm-lila: #ff7a8a; --cm-lila-2: #ffab8f; --cm-vidrio: rgba(72, 16, 38, .55); --cm-vidrio-borde: rgba(255, 170, 190, .16); --cm-panel: rgba(62, 14, 34, .96); --cm-blanco: #4a1a30; --cm-sombra: rgba(0, 0, 0, .34); --cm-sombra-2: rgba(0, 0, 0, .5); --cm-hundido: rgba(255, 140, 160, .14);
+  --cm-mia: linear-gradient(135deg, #ff5f6d 0%, #ff3f7f 50%, #ff9358 100%); --cm-suya: rgba(86, 24, 48, .88); }
+.an-escena.hot { background: radial-gradient(90% 45% at 50% 105%, rgba(255, 110, 70, .45), transparent 70%), radial-gradient(70% 40% at 0% 0%, rgba(255, 60, 120, .28), transparent 70%), linear-gradient(180deg, #2c0a1c 0%, #4a0f28 50%, #6b1a2c 100%); }
+.an-luz { left: -20%; right: -20%; bottom: -25%; height: 60%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 120, 80, .42), transparent); animation: anRespira 4.5s ease-in-out infinite; }
+.an-llamas { left: -6%; right: -6%; bottom: -14px; height: 24%; opacity: .92; display: flex !important; align-items: flex-end; animation: anLlamas 2.3s ease-out forwards; }
+.an-llamas > i { display: block; flex: 1; height: var(--h); margin: 0 -3.5%; transform-origin: 50% 100%; animation: anFlama .5s ease-in-out var(--r) infinite alternate; }
+@keyframes anLlamas { 0% { transform: translateY(70%); opacity: 0; } 25% { transform: none; opacity: 1; } 70% { opacity: .9; } 100% { transform: translateY(25%); opacity: 0; } }
+@keyframes anFlama { from { transform: scale(1, .92) skewX(-3deg); } to { transform: scale(.94, 1.08) skewX(3deg); } }
+.an-brisa { left: -70%; top: var(--y); width: 70%; height: 90px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 150, 110, .22), transparent); animation: anBrisa var(--d) linear var(--r) infinite; }
+@keyframes anBrisa { to { transform: translateX(240%); } }
+.an-chispa { left: var(--x); bottom: -10px; width: var(--t); height: var(--t); border-radius: 50%; background: radial-gradient(circle, #fff3c4 0 22%, #ffb057 45%, rgba(255, 90, 60, 0) 72%); opacity: 0; animation: anSube var(--d) linear var(--r) infinite; }
+
+/* — Hormonal: carmesí romántico, brasas, ondas de calor, pétalos y corazoncitos — */
+.ch.animo-hormonal { --cm-tinta: #fff0f3; --cm-suave: #f2b6c4; --cm-lila: #ff4d6d; --cm-lila-2: #ff8aa2; --cm-vidrio: rgba(82, 8, 28, .55); --cm-vidrio-borde: rgba(255, 150, 170, .18); --cm-panel: rgba(70, 8, 26, .96); --cm-blanco: #5a1226; --cm-sombra: rgba(0, 0, 0, .34); --cm-sombra-2: rgba(0, 0, 0, .5); --cm-hundido: rgba(255, 120, 150, .14);
+  --cm-mia: linear-gradient(135deg, #ff2d55 0%, #e0123f 55%, #ff5a7a 100%); --cm-suya: rgba(98, 14, 38, .86); }
+.an-escena.hormonal { background: radial-gradient(80% 50% at 50% 110%, rgba(255, 40, 80, .5), transparent 70%), radial-gradient(60% 40% at 100% 0%, rgba(255, 90, 140, .3), transparent 70%), linear-gradient(180deg, #3d0614 0%, #5c0a20 50%, #7c0f2b 100%); }
+.an-escena.hormonal .an-luz { background: radial-gradient(closest-side, rgba(255, 40, 80, .45), transparent); }
+.an-escena.hormonal .an-chispa { background: radial-gradient(circle, #fff0e6 0 20%, #ff6a7f 45%, rgba(255, 30, 70, 0) 72%); }
+.an-escena.hormonal .an-chispa.brisa { bottom: 30%; animation-name: anBrisaArde; }
+@keyframes anBrisaArde { 0% { transform: translate(0, 0); opacity: 0; } 20% { opacity: .9; } 100% { transform: translate(var(--dx), -18vh); opacity: 0; } }
+.an-carmesi { inset: 0; background: radial-gradient(90% 60% at 50% 100%, rgba(255, 30, 70, .75), transparent 70%), radial-gradient(60% 40% at 50% 0%, rgba(255, 80, 120, .4), transparent 70%); opacity: 0; animation: anDestello 1.9s ease-out forwards; }
+@keyframes anDestello { 30% { opacity: 1; } 100% { opacity: 0; } }
+.an-petalo { left: var(--x); top: var(--y); width: var(--t); height: calc(var(--t) * 1.25); opacity: 0; }
+.an-petalo.cae { animation: anPetaloCae var(--d) ease-out var(--r) forwards; }
+@keyframes anPetaloCae { 0% { opacity: 0; transform: translateY(-20px) scale(.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), 28vh) rotate(var(--g)); } }
+.an-petalo.ronda { animation: anPetaloRonda var(--d) ease-in-out var(--r) infinite; }
+@keyframes anPetaloRonda { 0% { opacity: 0; transform: none; } 8% { opacity: .85; } 45% { opacity: .7; transform: translate(var(--dx), 40vh) rotate(var(--g)); } 55%, 100% { opacity: 0; transform: translate(0, 48vh) rotate(var(--g)); } }
+.an-brillo { left: 50%; bottom: 22%; width: 5px; height: 5px; border-radius: 50%; background: radial-gradient(circle, #fff 0 30%, #ff9db4 55%, transparent 72%); opacity: 0; animation: anChispazo var(--d) ease-out var(--r) forwards; }
+@keyframes anChispazo { 0% { opacity: 0; transform: scale(.4); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.2); } }
+.an-onda { left: -5%; right: -5%; bottom: var(--y); height: 40px; opacity: 0; animation: anOnda var(--d) ease-in-out var(--r) infinite; }
+.an-onda path { fill: none; stroke: rgba(255, 175, 195, .4); stroke-width: 1.6; }
+@keyframes anOnda { 0% { opacity: 0; transform: none; } 30% { opacity: .9; } 100% { opacity: 0; transform: translateY(-120px) scaleX(1.08) skewX(4deg); } }
+.an-cora { left: var(--x); top: var(--y); width: var(--t); height: var(--t); color: #ff5c80; opacity: 0; animation: anCora var(--d) ease-in-out var(--r) infinite; }
+@keyframes anCora { 0% { opacity: 0; transform: scale(.5); } 12% { opacity: .85; transform: none; } 30% { opacity: 0; transform: translateY(-18px) scale(.9); } 100% { opacity: 0; } }
+/* Reflejos sedosos que se deslizan por la cabecera, la barra y el ánimo encendido */
+.ch.animo-hormonal :is(.ch-cab, .ch-escribir, .ch-animo.activo)::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(105deg, transparent 38%, rgba(255, 210, 220, .26) 48%, rgba(255, 255, 255, .1) 52%, transparent 62%) no-repeat; background-size: 300% 100%; animation: anSeda 6.5s ease-in-out infinite; }
+@keyframes anSeda { 0% { background-position: 130% 0; } 45%, 100% { background-position: -30% 0; } }
+/* Los mensajitos: carmesí con su brillo; rosa pastel sólo para quien eligió «Mujer» */
+.ch.animo-hormonal .mio .ch-burbuja:not(.eliminado) { box-shadow: 0 0 0 1px rgba(255, 120, 150, .35), 0 8px 26px rgba(255, 30, 80, .42), inset 0 1px 0 rgba(255, 255, 255, .3); }
+.ch.animo-hormonal .suyo .ch-burbuja:not(.eliminado) { box-shadow: 0 0 0 1px rgba(255, 90, 120, .4), 0 6px 22px rgba(255, 30, 80, .3); }
+.ch.animo-hormonal.yo-rosa .mio .ch-burbuja:not(.eliminado) { background: linear-gradient(135deg, #ffc4dc 0%, #ffa3c9 60%, #ffb9d5 100%); color: #5a1030; text-shadow: none; box-shadow: 0 0 0 1px rgba(255, 200, 222, .5), 0 8px 24px rgba(255, 160, 200, .4), inset 0 1px 0 rgba(255, 255, 255, .5); }
+.ch.animo-hormonal.ella-rosa .suyo .ch-burbuja:not(.eliminado) { box-shadow: 0 0 0 1px rgba(255, 190, 215, .5), 0 6px 22px rgba(255, 160, 200, .34); }
+
+/* — Lo líquido de cada mensajito (se borra al terminar) — */
+.an-liquido { position: absolute; z-index: 3; pointer-events: none; }
+.an-liquido > i { position: absolute; display: block; }
+.an-liquido.carmesi { --liq: linear-gradient(180deg, #ff2a55, #c90f3c); color: #ff2a55; }
+.an-liquido.rosa { --liq: linear-gradient(180deg, rgba(255, 210, 229, .96), rgba(255, 160, 200, .92)); color: #ff9cc6; }
+.an-borde { left: 14%; right: 14%; top: calc(100% - 6px); height: 10px; border-radius: 0 0 10px 10px; background: var(--liq); transform-origin: 50% 0; animation: anBorde 1.7s ease-out var(--r) both; }
+@keyframes anBorde { 0% { transform: scaleY(0); opacity: 0; } 18% { opacity: 1; } 35% { transform: none; } 70% { opacity: 1; } 100% { transform: scaleY(.6); opacity: 0; } }
+.an-chorro { left: var(--x); top: calc(100% - 4px); width: var(--w); height: var(--h); margin-left: calc(var(--w) / -2); border-radius: 0 0 99px 99px; background: var(--liq); transform-origin: 50% 0; animation: anChorro 1.6s cubic-bezier(.4, 0, .2, 1) var(--r) both; }
+@keyframes anChorro { 0% { transform: scaleY(0); opacity: 0; } 15% { opacity: 1; } 45% { transform: none; } 75% { opacity: 1; } 100% { transform: scaleY(1.1); opacity: 0; } }
+.an-gota { left: var(--x); top: calc(100% - 4px + var(--h)); width: calc(var(--w) + 1px); height: calc(var(--w) + 3px); margin-left: calc(var(--w) / -2 - .5px); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: radial-gradient(circle at 34% 30%, rgba(255, 255, 255, .9) 0 16%, transparent 30%), var(--liq); opacity: 0; animation: anGota 1s cubic-bezier(.5, 0, .8, .6) calc(var(--r) + .6s) both; }
+@keyframes anGota { 0% { opacity: 0; transform: translateY(-4px) scale(.6); } 20% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(30px) scale(.8, 1.1); } }
+.an-lado { top: 18%; width: 5px; height: 14px; border-radius: 99px; background: radial-gradient(circle at 40% 30%, rgba(255, 255, 255, .8) 0 18%, transparent 34%), var(--liq); opacity: 0; animation: anLado 1.5s ease-in var(--r) both; }
+.mio .an-lado { right: -2px; } .suyo .an-lado { left: -2px; }
+@keyframes anLado { 0% { opacity: 0; transform: scaleY(.4); } 20% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(var(--h)) scaleY(1.2); } }
+.an-salpica { left: var(--x); top: var(--y); width: var(--t); height: var(--t); margin: calc(var(--t) / -2) 0 0 calc(var(--t) / -2); border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .85) 0 18%, transparent 32%), var(--liq); opacity: 0; animation: anSalpica .62s ease-out var(--r) both; }
+@keyframes anSalpica { 0% { opacity: 0; transform: scale(.3); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)); } }
+.an-corita { right: -6px; top: -10px; width: 14px; height: 13px; animation: anCorita 1.2s ease-out both; }
+.an-corita svg { display: block; width: 100%; height: 100%; }
+.suyo .an-corita { right: auto; left: -6px; }
+@keyframes anCorita { 0% { opacity: 0; transform: scale(.4); } 25% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0; transform: translateY(-16px) scale(.9); } }
+.an-escarcha { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(120% 80% at 50% 50%, transparent 55%, rgba(200, 230, 255, .55) 100%); opacity: 0; animation: anDestello 1.1s ease-out forwards; }
+
+/* De noche, Happy y Sad también se apagan tantito (Hot y Hormonal ya son de noche) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) .ch.animo-happy { --cm-tinta: #fff1e6; --cm-suave: #d9bfae; --cm-vidrio: rgba(62, 44, 62, .66); --cm-vidrio-borde: rgba(255, 255, 255, .08); --cm-panel: rgba(56, 40, 58, .96); --cm-blanco: #4a3446; --cm-suya: rgba(72, 52, 70, .92); --cm-sombra: rgba(0, 0, 0, .3); --cm-mia: linear-gradient(135deg, #e0834a 0%, #e06a70 55%, #cf5d90 100%); }
+  :root:not([data-tema="claro"]) .an-escena.happy { background: radial-gradient(70% 40% at 100% 0%, rgba(255, 200, 100, .22), transparent 70%), radial-gradient(80% 50% at 0% 100%, rgba(255, 150, 180, .16), transparent 70%), linear-gradient(180deg, #2b2030 0%, #2f2132 55%, #2a1f36 100%); }
+  :root:not([data-tema="claro"]) .ch.animo-sad { --cm-tinta: #e8ecff; --cm-suave: #a8b0d3; --cm-vidrio: rgba(40, 46, 76, .66); --cm-vidrio-borde: rgba(255, 255, 255, .08); --cm-panel: rgba(36, 42, 70, .96); --cm-blanco: #343c64; --cm-suya: rgba(44, 50, 82, .92); --cm-sombra: rgba(0, 0, 0, .3); --cm-mia: linear-gradient(135deg, #6f83c6 0%, #5f6cb5 55%, #7f74bd 100%); }
+  :root:not([data-tema="claro"]) .an-escena.sad { background: radial-gradient(90% 40% at 50% 0%, rgba(110, 125, 180, .3), transparent 70%), linear-gradient(180deg, #1b2033 0%, #1e2238 50%, #22233a 100%); }
+  :root:not([data-tema="claro"]) .an-nube { fill: rgba(150, 165, 215, .35); }
+}
+:root[data-tema="oscuro"] .ch.animo-happy { --cm-tinta: #fff1e6; --cm-suave: #d9bfae; --cm-vidrio: rgba(62, 44, 62, .66); --cm-vidrio-borde: rgba(255, 255, 255, .08); --cm-panel: rgba(56, 40, 58, .96); --cm-blanco: #4a3446; --cm-suya: rgba(72, 52, 70, .92); --cm-sombra: rgba(0, 0, 0, .3); --cm-mia: linear-gradient(135deg, #e0834a 0%, #e06a70 55%, #cf5d90 100%); }
+:root[data-tema="oscuro"] .an-escena.happy { background: radial-gradient(70% 40% at 100% 0%, rgba(255, 200, 100, .22), transparent 70%), radial-gradient(80% 50% at 0% 100%, rgba(255, 150, 180, .16), transparent 70%), linear-gradient(180deg, #2b2030 0%, #2f2132 55%, #2a1f36 100%); }
+:root[data-tema="oscuro"] .ch.animo-sad { --cm-tinta: #e8ecff; --cm-suave: #a8b0d3; --cm-vidrio: rgba(40, 46, 76, .66); --cm-vidrio-borde: rgba(255, 255, 255, .08); --cm-panel: rgba(36, 42, 70, .96); --cm-blanco: #343c64; --cm-suya: rgba(44, 50, 82, .92); --cm-sombra: rgba(0, 0, 0, .3); --cm-mia: linear-gradient(135deg, #6f83c6 0%, #5f6cb5 55%, #7f74bd 100%); }
+:root[data-tema="oscuro"] .an-escena.sad { background: radial-gradient(90% 40% at 50% 0%, rgba(110, 125, 180, .3), transparent 70%), linear-gradient(180deg, #1b2033 0%, #1e2238 50%, #22233a 100%); }
+:root[data-tema="oscuro"] .an-nube { fill: rgba(150, 165, 215, .35); }
+/* Con un ánimo, los botoncitos no difuminan lo de atrás (dentro de su carrusel se veía una franja) */
+.ch[data-animo] .ch-animo { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.ch-input:focus-visible { outline: none; }
+/* Las sombritas de los ánimos no se recortan en su carrusel (se veía un rectángulo): más aire por dentro, mismo lugar */
+.ch-animos { padding: 2px 12px 14px; margin: 4px 0 -4px; }
