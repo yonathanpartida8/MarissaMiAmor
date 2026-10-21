@@ -146,11 +146,6 @@ export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
           boton("Crear", () => { const v = portada.valor(); cerrar(); app.nuevo(nombre.value.trim() || "Mi librito", formato.value, v); }, "primario"),
         ]),
         el("div.ed-tarjeta", {}, [
-          el("b", { html: I("biblioteca", "Mi librito de siempre") }),
-          el("small", { text: "Una copia editable de todo el librito, sin tocar el original." }),
-          boton("Importarlo", () => { cerrar(); app.importar.importarLibrito(); }),
-        ]),
-        el("div.ed-tarjeta", {}, [
           el("b", { html: I("subir", "Abrir archivo") }),
           el("small", { text: "Un .zip que exportaste antes (o su project.json)." }),
           boton("Elegir archivo", () => { cerrar(); app.abrirArchivo(); }),

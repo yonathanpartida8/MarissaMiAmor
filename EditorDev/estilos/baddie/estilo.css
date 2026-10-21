@@ -89,7 +89,7 @@
 
 /* Botones: crema con filo negro; el principal, rojo labial con brillo */
 :root[data-estilo="baddie"] .ed-btn { border: 1.5px solid var(--bd-negro); border-radius: 999px; background: var(--bd-crema); color: var(--bd-negro); font-family: var(--bd-lectura); font-weight: 500; box-shadow: 2px 2px 0 var(--bd-negro); }
-:root[data-estilo="baddie"] .ed-btn:hover:not(:disabled) { background: var(--bd-crema-2); }
+@media (hover: hover) { :root[data-estilo="baddie"] .ed-btn:hover:not(:disabled) { background: var(--bd-crema-2); } }
 :root[data-estilo="baddie"] .ed-btn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: none; }
 :root[data-estilo="baddie"] .ed-btn.primario { background: var(--bd-gloss), linear-gradient(135deg, var(--bd-rojo-2), var(--bd-rojo)); color: #fff; border-color: var(--bd-negro); }
 :root[data-estilo="baddie"] .ed-barra .ed-btn { background: #241912; color: #fbf4ea; border-color: #d6b48c; box-shadow: none; }
@@ -98,7 +98,7 @@
 :root[data-estilo="baddie"] :is(.ed-btn, .ed-dock-b, .ed-cb, .ed-bib-chip, .ed-seg button).on { background: var(--bd-rojo) !important; color: #fff !important; border-color: var(--bd-negro) !important; }
 :root[data-estilo="baddie"] .ed-dock-grupo { background: var(--bd-crema); border: 2px solid var(--bd-negro); box-shadow: 3px 3px 0 var(--bd-negro); }
 :root[data-estilo="baddie"] .ed-dock-b { color: var(--bd-negro); }
-:root[data-estilo="baddie"] .ed-dock-b:hover { background: var(--bd-crema-2); }
+@media (hover: hover) { :root[data-estilo="baddie"] .ed-dock-b:hover { background: var(--bd-crema-2); } }
 
 /* Riel: iconos crema; el elegido, un besito rojo */
 :root[data-estilo="baddie"] .ed-riel button { color: #e9d3b6; font-family: var(--bd-lectura); }
@@ -120,7 +120,7 @@
 
 /* Fichas, tarjetas y biblioteca: crema, filo negro (las imágenes se ven sin fondo de color) */
 :root[data-estilo="baddie"] :is(.ed-bib-t, .ed-pieza, .ed-comp, .ed-deslizar-t, .ed-config-modo, .ed-tq-ficha, .ed-bq-t) { background: #fff; border: 1.5px solid var(--bd-negro) !important; color: var(--bd-negro); box-shadow: 2px 2px 0 var(--bd-negro); }
-:root[data-estilo="baddie"] :is(.ed-bib-t, .ed-pieza, .ed-comp, .ed-tq-ficha, .ed-bq-t):hover { box-shadow: 3px 3px 0 var(--bd-rojo); }
+@media (hover: hover) { :root[data-estilo="baddie"] :is(.ed-bib-t, .ed-pieza, .ed-comp, .ed-tq-ficha, .ed-bq-t):hover { box-shadow: 3px 3px 0 var(--bd-rojo); } }
 :root[data-estilo="baddie"] .ed-tq-ficha.on { background: var(--bd-rojo-suave); box-shadow: 0 0 0 2px var(--bd-rojo) inset; }
 :root[data-estilo="baddie"] .ed-bq-maq { background: #fff7ee; }
 :root[data-estilo="baddie"] .ed-bib-chip { background: #fff; border: 1.5px solid var(--bd-negro); color: var(--bd-negro); border-radius: 999px; }
@@ -128,7 +128,7 @@
 /* Ventanas, menús, avisos y la abejita */
 :root[data-estilo="baddie"] :is(.ed-modal, .ed-pop, .ed-menu, .ed-hojita, .ed-salir, .ed-abeja-globo, .ed-foco-tarjeta, .ed-consejito, .ed-dock-op, .ed-flotante, .ed-hack-carta, .ed-tarjeta, .ed-zonas-panel) { background: var(--bd-crema) !important; border: 2px solid var(--bd-negro) !important; box-shadow: 4px 4px 0 var(--bd-negro) !important; color: var(--bd-negro); }
 :root[data-estilo="baddie"] .ed-pop::before { display: none; }
-:root[data-estilo="baddie"] .ed-menu button:hover { background: var(--bd-rojo-suave); }
+@media (hover: hover) { :root[data-estilo="baddie"] .ed-menu button:hover { background: var(--bd-rojo-suave); } }
 :root[data-estilo="baddie"] .ed-flotante .ed-flot-borrar { background: var(--bd-rojo); color: #fff; }
 :root[data-estilo="baddie"] .ed-aviso { background: var(--bd-negro); color: #fbf4ea; border: 2px solid var(--bd-rojo); box-shadow: 3px 3px 0 var(--bd-rojo); }
 :root[data-estilo="baddie"] .ed-tip { background: var(--bd-negro); color: #fbf4ea; }

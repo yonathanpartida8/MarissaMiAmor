@@ -15,7 +15,11 @@
  *   Crear       el botón grande «Crear librito» y, a su lado, un gatito
  *               dormido que respira, mueve la cola y suelta sus «z» (si lo
  *               tocas, ronronea y se acomoda).
- *   Tarjetas    Detallitos (la colección de los dos), Mis libritos y tu perfil.
+ *   Tarjetas    Mensajitos (con tu amorcito vinculado), Detallitos (la colección de los
+ *               dos), Mis libritos y tu perfil: de dos en dos (Fase 34).
+ *
+ * Todo cabe en la pantalla sin deslizar (Fase 34): los tamaños se ajustan al alto
+ * de la pantalla y lo que sobra se reparte parejito.
  *   Abajo       la tira de papel oscuro «Volver al librito», una foto y la
  *               notita «Cada página también es un beso».
  *
@@ -210,16 +214,14 @@ export class MenuPrincipal {
     }
   }
 
-  /** Con tu amorcito vinculado: los mensajitos (con su globito de los que no has leído). */
-  _irChat() {
+  /** Con tu amorcito vinculado: la tarjeta de los mensajitos (con su globito de los que no has leído). */
+  _cartaChat() {
     const pa = SRV.conectado() ? PF.datos().pareja : null;
     if (!pa) { this.r.chatG = null; return null; }
     this.r.chatG = el("em.dt-globo", { hidden: "" });
-    const b = el("button.mp-chat-ir", { type: "button", style: { "--i": 4 }, onClick: (e) => this.app.detallitos.abrir(e.currentTarget, "chat") }, [
-      el("i.mp-carta-cinta"), el("i.mp-chat-ico", { html: ICONO_CHAT }),
-      el("span.mp-chat-t", {}, [el("b", { text: "Mensajitos" }), el("small", { text: `Escríbele a ${PF.nombreDe(pa)}` })]),
-      this.r.chatG, el("span.mp-carta-ir", { html: FLECHA }),
-    ]);
+    const b = this._carta("cielo", ICONO_CHAT, "Mensajitos", el("small", { text: `Escríbele a ${PF.nombreDe(pa)}` }), (e) => this.app.detallitos.abrir(e.currentTarget, "chat"), 4);
+    b.dataset.ir = "chat";
+    b.append(this.r.chatG);
     this.r.chatB = b;
     this._globoChat();
     return b;
@@ -360,7 +362,7 @@ export class MenuPrincipal {
     const libritos = this._carta("lila", A.ICONO_LIBRO, "Mis libritos", el("small", { text: con ? "Aquí y en tu nube" : "Tus borradores" }), () => { this.cerrar(); app.inicio?.({ a: "borradores" }); }, 6);
     const yo = con ? PF.datos().yo : null;
     const perfil = con
-      ? this._carta("menta", yo?.foto ? PF.avatar("yo", "mp-carta-av") : A.ICONO_PERSONA, "Mi perfil", el("small", { text: "Foto, nombre y fechas" }), (e) => this.ir("perfil", { desde: e.currentTarget }), 7)
+      ? this._carta("menta", yo?.foto ? PF.avatar("yo", "mp-carta-av") : A.ICONO_PERSONA, "Mi perfil", el("small", { text: "Foto y fechas" }), (e) => this.ir("perfil", { desde: e.currentTarget }), 7)
       : this._carta("menta", A.ICONO_PERSONA, "Mi cuenta", el("small", { text: "Entrar o crear una" }), (e) => this.ir("cuenta", { desde: e.currentTarget }), 7);
     r.fechas = this._firmaDias();
     r.stats = this._dias(true);
@@ -374,8 +376,7 @@ export class MenuPrincipal {
       el("div.mp-dias-caja", { style: { "--i": 1 } }, [r.stats]),
       el("div.mp-crear-fila", { style: { "--i": 2 } }, [crear, el("i.mp-crear-chispa.c1", { html: A.DESTELLO_LLENO }), el("i.mp-crear-chispa.c2", { html: A.DESTELLO_LLENO }), el("i.mp-crear-chispa.c3", { html: A.DESTELLO }), this._gatito()]),
       el("p.mp-saludo", { style: { "--i": 3 } }, [r.saludo, el("i", { html: ico("corazon") }), seguir]),
-      this._irChat(),
-      el("div.mp-cartas", {}, [r.tarjetaDet, libritos, perfil]),
+      el("div.mp-cartas", {}, [this._cartaChat(), r.tarjetaDet, libritos, perfil].filter(Boolean)),
     ]);
     return r.vistaInicio;
   }

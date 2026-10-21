@@ -258,7 +258,20 @@ export const reaccionar = (id, reaccion) => pedir(`detallitos/${encodeURICompone
 export const reaccionesVistas = () => pedir("detallitos/reacciones/vistas", { method: "POST", body: {} });
 /* Los mensajitos de los dos (Fase 30). */
 export const chat = (p = {}) => pedir("chat?" + new URLSearchParams(Object.fromEntries(Object.entries(p).filter(([, v]) => v != null && v !== "").map(([k, v]) => [k, String(v)]))));
-export const mandarMensaje = ({ texto = "", gif = null, espacio = 0 }) => pedir("chat", { method: "POST", body: espacio ? { espacio } : { texto, gif } }).then((d) => d.mensaje);
+export const mandarMensaje = ({ texto = "", gif = null, audio = null, espacio = 0 }) => pedir("chat", { method: "POST", body: espacio ? { espacio } : { texto, gif, audio } }).then((d) => d.mensaje);
+export const editarMensaje = (id, texto) => pedir("chat/" + encodeURIComponent(id), { method: "PUT", body: { texto } }).then((d) => d.mensaje);
+/* Fase 34: stickers hechos por ustedes y mensajes de voz (se suben tal cual) y su colección. */
+export async function subirMedia(blob, tipo) {
+  const r = await enviar("POST", "chat/media?tipo=" + tipo, blob, blob.type || "application/octet-stream");
+  if (r.status < 200 || r.status >= 300) throw Object.assign(new Error(r.datos?.error || `${NOMBRE} contestó ${r.status}`), { status: r.status });
+  return r.datos;
+}
+export const coleccion = () => pedir("chat/coleccion");
+export const ponerEnColeccion = (d) => pedir("chat/coleccion", { method: "POST", body: d }).then((r) => r.item);
+export const favoritoColeccion = (id, favorito) => pedir("chat/coleccion/" + encodeURIComponent(id), { method: "PUT", body: { favorito } }).then((r) => r.item);
+export const quitarDeColeccion = (id) => pedir("chat/coleccion/" + encodeURIComponent(id), { method: "DELETE" });
+/** Lo del chat que vive en el servidor (/m/…) se pide con su dirección completa; lo de GIPHY, tal cual. */
+export const media = (u) => (u && u.startsWith("/m/") ? enlace(u) : u);
 export const reaccionarMensaje = (id, reaccion) => pedir(`chat/${encodeURIComponent(id)}/reaccion`, { method: "PUT", body: { reaccion: reaccion || "" } }).then((d) => d.mensaje);
 export const pegarSticker = (id, st) => pedir(`chat/${encodeURIComponent(id)}/sticker`, { method: "POST", body: st }).then((d) => d.mensaje);
 export const borrarMensaje = (id) => pedir("chat/" + encodeURIComponent(id), { method: "DELETE" });

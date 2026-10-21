@@ -46,6 +46,8 @@
       if (this.op.soloPagina) Object.assign(this.rep, { flechas: false, progreso: false, indice: false, deslizar: false, autoAvance: 0, tocarParaEmpezar: false });
       // «Probar página» (dentro del celular del editor): el librito desde esa hoja, con todo para pasar de hoja, sin portadilla ni índice.
       if (this.op.prueba) Object.assign(this.rep, { indice: false, autoAvance: 0, tocarParaEmpezar: false });
+      // «Probar» del editor: sólo los botones que TÚ pusiste en la hoja (nada de flechas puestas solas).
+      if (this.op.sinNav) this.rep.flechas = false;
       this._sonandoPistas = [];
       this.orden = datos.orden.slice();
       // Si el librito usa el botón de música de la hoja, el chip viejo «♪» ya no sale (sólo el nuevo).

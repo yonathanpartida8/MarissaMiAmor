@@ -90,9 +90,10 @@ principal —un álbum de recortes con su gatito dormido— muestra sus dos foto
 cuántos días llevan juntos. Sus detallitos se ven en una colección con la
 portadita de cada página, de quién es, y se les puede reaccionar con sonidos
 suaves; y tienen **Mensajitos**, su chat en tiempo real, con GIFs, stickers cute que
-se arrastran a cualquier parte, dibujos que el otro ve mientras se hacen y
-reacciones. Todos los sonidos del editor (de estilo profesional, cortos y discretos) se cambian poniendo tu `nombre.mp3`
-en `assets/sonidos-editor/` (ver su `LÉEME.md`). Para empezar de
+se arrastran a cualquier parte, stickers hechos con sus propias fotos (con favoritos),
+mensajes de voz (x1 a x3), editar, copiar o eliminar manteniendo presionado, dibujos que
+el otro ve mientras se hacen, reacciones y notificaciones push. Todos los sonidos del editor (de estilo profesional, cortos y discretos) se cambian poniendo tu `nombre.mp3`
+en `assets/sonidos-editor/` (los del chat, en `assets/sonidos-mensajitos/`; ver su `LÉEME.md`). Para empezar de
 cero con las cuentas de prueba: `librito borrar-cuentas`. El token de GitHub es uno
 solo, cifrado en el teléfono: nunca está en el editor. Se instala con una línea
 en Termux y un asistente que te pregunta tu usuario, tu contraseña y el token, y

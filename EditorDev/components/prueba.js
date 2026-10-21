@@ -3,11 +3,13 @@
  *
  *   abrir()               el librito desde la página que estás viendo, con el MISMO
  *                         reproductor (animaciones, interacciones, HTML, fondo, música)
- *                         y sus botones para pasar de hoja funcionando
+ *                         y SÓLO los botones para pasar de hoja que tú pusiste (Fase 34:
+ *                         nada de flechas que aparecen solas; se pasa deslizando)
  *   abrir({ html })       un HTML suelto (lo que se escribe en el editor de HTML)
  *
- * Un escenario oscuro con el brillo del color de tu página y, al centro, un
- * celular (marco, isla, botones y reflejo del vidrio). La página va dentro con
+ * En la compu: un escenario oscuro con el brillo del color de tu página y, al centro, un
+ * celular (marco, isla, botones y reflejo del vidrio). En el teléfono (Fase 34): la página
+ * a pantalla completa, del tamaño justo de tu pantalla (sin marco ni espacios de sobra). La página va dentro con
  * la MISMA pantalla con que se arma en el editor y sólo se escala: nada se
  * corre, ni se deforma, ni se corta (si es horizontal, el celular se acuesta).
  * Entra subiendo desde la hoja con un rebote suave y un destello en el vidrio;
@@ -20,7 +22,6 @@ import { ico } from "./iconos.js";
 import { fuentesUsadas } from "../core/modelo.js";
 import { RAIZ } from "../assets/biblioteca.js";
 import { DIBUJO_ABEJA } from "../mascota/abeja.js";
-import { ponerBotonesPagina } from "./secciones/navegacion.js";
 
 const RT = window.LibritoRT;
 const CROMO = ".ed-barra, .ed-lateral, .ed-insp, .ed-contexto, .ed-linea:not([hidden]), .ed-asa-lateral, .ed-foco, .ed-hoja-sec.abierta, .ed-fuera:not([hidden]), .ed-hojita, .ed-codigo-pantalla, .ed-avisos";
@@ -72,11 +73,14 @@ export class Prueba {
       el("i.ed-movil-isla"), el("i.ed-movil-reflejo"),
     ]);
     const x = el("button.ed-prueba-x", { type: "button", html: `${ico("cerrar")}<span>Terminar prueba</span>`, onClick: () => this.cerrar() });
-    const pie = html == null ? el("p.ed-prueba-pie", { text: "Desliza o toca sus botones para pasar de hoja" }) : null;
-    const capa = el("div.ed-prueba", { role: "dialog", "aria-label": "Probando la página", style: { "--fondo": fondo } }, [el("i.ed-prueba-luz"), el("div.ed-prueba-escena", {}, [movil]), x, pie].filter(Boolean));
+    const pie = html == null ? el("p.ed-prueba-pie", { text: "Desliza para pasar de hoja" }) : null;
+    // En el teléfono, la página ocupa la pantalla tal cual (el celular de mentira sólo sirve en la compu).
+    const enTelefono = innerWidth < 700 || (matchMedia("(pointer: coarse)").matches && Math.min(innerWidth, innerHeight) < 700);
+    const capa = el("div.ed-prueba" + (enTelefono ? ".a-pantalla" : ""), { role: "dialog", "aria-label": "Probando la página", style: { "--fondo": fondo } }, [el("i.ed-prueba-luz"), el("div.ed-prueba-escena", {}, [movil]), x, pie].filter(Boolean));
     this.capa = capa; this.movil = movil;
     document.body.append(capa);
     this._acomodar = () => {
+      if (enTelefono) { movil.style.setProperty("--k", clamp(Math.min(innerWidth / W, innerHeight / H), 0.2, 3).toFixed(4)); return; }
       const s = getComputedStyle(this.capa.querySelector(".ed-prueba-escena"));
       const aw = innerWidth - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight) - BISEL * 2;
       const ah = innerHeight - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom) - BISEL * 2;
@@ -120,7 +124,7 @@ export class Prueba {
             tipo: "librito",
             datos: { nombre: P.nombre, ajustes: P.ajustes, orden: P.orden, paginas: P.paginas, titulos: {} },
             urls: app.bib.mapa(), datosUrls, base: RAIZ, inicio: app.estado.paginaId, portadilla: false, prueba: true, fuentes: [...fuentesUsadas(P)],
-            fijar: { w: W, h: H },
+            fijar: { w: W, h: H }, sinNav: true,
           }, location.origin);
           setTimeout(mostrar, 90);
         } else if (ev.data?.tipo === "cerrar-vista") this.cerrar();
@@ -136,8 +140,8 @@ export class Prueba {
   }
 
   /**
-   * La abejita avisa (una vez por página) si no hay botones para pasar y
-   * volver de página, o si alguno se sale de la hoja, y dice dónde se ponen.
+   * La abejita avisa (una vez por página) si un botón para pasar página se sale de la hoja.
+   * (Si no hay botones, no insiste: se pasa deslizando, y se ponen sólo si tú quieres.)
    */
   _revisarNavegacion(capa) {
     const app = this.app, E = app.estado, pg = E.pagina;
@@ -146,19 +150,14 @@ export class Prueba {
     const navs = pg.els.filter((e) => !e.oculto && e.accion && /^(anterior|siguiente|inicio|ir)$/.test(e.accion.tipo));
     const W = app.lienzo.W, H = app.lienzo.H;
     const fuera = navs.filter((e) => { const b = app.lienzo.vis(e); return b.x < -2 || b.y < -2 || b.x + b.w > W + 2 || b.y + b.h > H + 2; });
-    const clave = pg.id + (navs.length ? ":fuera" : ":faltan");
-    if ((navs.length && !fuera.length) || this._avisadas.has(clave)) return;
+    const clave = pg.id + ":fuera";
+    if (!fuera.length || this._avisadas.has(clave)) return;
     this._avisadas.add(clave);
-    const texto = navs.length
-      ? "Un botón para pasar página se sale de la hoja: en el librito no se vería entero."
-      : "No has añadido botones para pasar y volver de página. Se ponen en «Pasar página» (en el riel de la izquierda) → «En esta página».";
+    const texto = "Un botón para pasar página se sale de la hoja: en el librito no se vería entero.";
     const quitar = () => { clearTimeout(t); tarjeta.classList.remove("ver"); setTimeout(() => tarjeta.remove(), 300); };
-    const acciones = navs.length
-      ? [["Meterlo en la hoja", () => { this.cerrar(); app.lienzo.traerALaHoja(fuera.map((e) => e.id)); }, "primario"]]
-      : [["Ponerlos ahora", async () => { this.cerrar(); await ponerBotonesPagina(app); app.ayuda?.abeja?.decir?.("¡Listo! Ya tiene sus botones para pasar y volver 💛", { cara: "feliz", dura: 3200 }); }, "primario"],
-        ["Llévame ahí", () => { this.cerrar(); app.abrirSeccion("navegacion"); }, ""]];
+    const acciones = [["Meterlo en la hoja", () => { this.cerrar(); app.lienzo.traerALaHoja(fuera.map((e) => e.id)); }, "primario"]];
     const tarjeta = el("div.ed-prueba-abeja", { role: "status" }, [
-      el("span.ed-abeja.ed-abeja-mini", { html: DIBUJO_ABEJA, dataset: { ojos: navs.length ? "susto" : "normal", boca: navs.length ? "o" : "sonrisa" } }),
+      el("span.ed-abeja.ed-abeja-mini", { html: DIBUJO_ABEJA, dataset: { ojos: "susto", boca: "o" } }),
       el("div", {}, [
         el("p", { text: texto }),
         el("div.ed-prueba-abeja-b", {}, [

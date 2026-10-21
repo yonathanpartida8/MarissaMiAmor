@@ -1,19 +1,21 @@
 /**
- * MENSAJITOS — el chat de los dos (Fases 30 y 31), dentro de Detallitos.
+ * MENSAJITOS — el chat de los dos (Fases 30, 31 y 34), dentro de Detallitos.
  *
- *   · como la foto: arriba su foto con un corazón, «Mensajitos ♡», «con Maru ♡» y «Siempre juntos ∞»,
- *     videollamada, llamada (todavía no: «Ay ora jeje») y ⋮ (ajustes y privacidad); el fondo rosita con
- *     corazoncitos dibujados a mano; tus burbujas rosas con su hora y ✓✓ (rosas cuando ya lo vio), las
- *     suyas blancas con la hora adentro; abajo los ánimos (Happy, Sad, Hot, Hormonal: todavía no hacen
- *     nada) y la barra: + (las cositas), escribir con 🙂, stickers, GIF y 🎤 (que se vuelve «mandar»)
- *   · stickers cute (y nada de stickers viejitos): tocar uno lo manda solito; mantenerlo y arrastrarlo
- *     lo PEGA donde lo sueltes, en cualquier parte del chat, y tu amorcito lo ve ahí mismo. Los tuyos
- *     se pueden volver a arrastrar, o soltar en el botecito para quitarlos
- *   · dibujar en el chat con el dedo: se ve EN VIVO del otro lado (mientras dibujas), con colores y
- *     grosores, deshacer, y «+ Espacio» para tener más lugar abajo sin mandar ningún mensaje
+ *   · como la foto (Fase 34): lila suavecito con corazoncitos dibujados; arriba sólo su foto y su nombre
+ *     (con «Siempre juntos ∞»), videollamada y llamada (todavía no: «Ay ora jeje») y ⋮ (ajustes y
+ *     privacidad); abajo los ánimos (todavía no hacen nada) y la barra: + (las cositas), escribir con 🙂,
+ *     stickers, GIF y 🎤 (que se vuelve «mandar»)
+ *   · burbujas nuevas: las tuyas lila con rosita, las suyas de vidrio blanco; al mandar, la tuya sale
+ *     volando desde donde escribiste y aterriza con un rebotito y un brillo; las suyas llegan flotando
+ *   · mantener presionado un mensajito (o clic derecho): reaccionar a lo suyo, y Editar, Copiar o
+ *     Eliminar lo tuyo. Lo editado dice «Editado» abajito, sin tapar nada
+ *   · mensajes de voz: tocar 🎤 graba (con sus ondas en vivo), y se escuchan en x1, x1.5, x2 y x3
+ *   · stickers como en WhatsApp: «Stickers» son los que TÚ haces con tus fotos (favoritos arriba y luego
+ *     los que más usas) y «Explorar stickers» los de GIPHY; GIFs: «GIFs favoritos» y «Explorar GIFs»;
+ *     emojis, sólo emojis. Los stickers se pueden arrastrar y pegar donde sea, y tu amorcito los ve ahí
+ *   · dibujar en el chat con el dedo: se ve EN VIVO del otro lado, y «+ Espacio» para tener más lugar
  *   · todo llega al instante: el chat se queda esperando al servidor (hasta 22 s) y contesta en cuanto
- *     cambia algo; con un servidor viejo, pregunta cada 2.5 s
- *   · tocar un mensajito: reaccionar a lo suyo (con su fiesta), copiar o borrar lo tuyo
+ *     cambia algo
  *   · todo lo que escriben se pone como TEXTO, nunca como HTML
  */
 import { el, aviso, confirmar, debounce } from "./ui.js";
@@ -25,53 +27,71 @@ import { REACCIONES, reaccion, svgReaccion, estallido } from "./reacciones.js";
 import { sinMovimiento as reducido } from "./transiciones.js";
 import { vibrar } from "../config/preferencias.js";
 import * as PUSH from "../integraciones/avisos.js";
+import * as VOZ from "./chat-voz.js";
+import { elegirImagen, creadorSticker } from "./chat-sticker.js";
 
 export const ICONO_CHAT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6c-5 0-9 3.3-9 7.4 0 2.3 1.3 4.4 3.4 5.8l-.8 3.6 3.9-2.1c.8.2 1.6.3 2.5.3 5 0 9-3.3 9-7.4S17 3.6 12 3.6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 13.8s-2.8-1.6-3.4-3.3c-.4-1.3.4-2.5 1.6-2.5.8 0 1.4.5 1.8 1.1.4-.6 1-1.1 1.8-1.1 1.2 0 2 1.2 1.6 2.5-.6 1.7-3.4 3.3-3.4 3.3z" fill="currentColor"/></svg>';
 const svg = (cuerpo, extra = "", vb = "0 0 24 24") => `<svg viewBox="${vb}" aria-hidden="true"${extra}>${cuerpo}</svg>`;
 const LINEA = ' fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"';
 const CORAZON = "M12 20.3s-7.6-4.6-8.8-9.7C2.4 7.2 4.6 4.6 7.6 4.6c1.9 0 3.3 1.1 4.4 2.7 1.1-1.6 2.5-2.7 4.4-2.7 3 0 5.2 2.6 4.4 6-1.2 5.1-8.8 9.7-8.8 9.7z";
+const ESTRELLA = "M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.6-5.1-2.7-5.1 2.7 1-5.6-4.1-4 5.7-.8z";
 const IC = {
+  chevron: svg('<path d="m14.8 5.4-6.6 6.6 6.6 6.6"/>', ' fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"'),
   video: svg('<rect x="2.6" y="6.2" width="12.6" height="11.6" rx="3.2"/><path d="m15.2 10.4 5.2-3v9.2l-5.2-3"/>', LINEA),
   tel: svg('<path d="M6.7 3.6h2.5l1.4 4-2 1.5a12.2 12.2 0 0 0 6.3 6.3l1.5-2 4 1.4v2.5a2 2 0 0 1-2.2 2A17.4 17.4 0 0 1 4.7 5.8a2 2 0 0 1 2-2.2z"/>', LINEA),
   puntos: svg('<circle cx="12" cy="5.6" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="18.4" r="1.9"/>', ' fill="currentColor"'),
   mas: svg('<path d="M12 5v14M5 12h14"/>', ' fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"'),
   carita: svg('<circle cx="12" cy="12" r="8.6"/><path d="M8.6 14.2c.9 1.3 2 1.9 3.4 1.9s2.5-.6 3.4-1.9"/><path d="M9.2 9.6v.8M14.8 9.6v.8"/>', LINEA),
-  gato: svg('<path d="M5.3 9.6 4.8 4.6l3.8 2.6a8.8 8.8 0 0 1 6.8 0l3.8-2.6-.5 5A7.3 7.3 0 0 1 20 13.2c0 3.8-3.6 6.3-8 6.3s-8-2.5-8-6.3a7.3 7.3 0 0 1 1.3-3.6z"/><path d="M8.8 12.8q.8-.9 1.6 0M13.6 12.8q.8-.9 1.6 0M11 15.4q1 .7 2 0"/>', LINEA) ,
+  gato: svg('<path d="M5.3 9.6 4.8 4.6l3.8 2.6a8.8 8.8 0 0 1 6.8 0l3.8-2.6-.5 5A7.3 7.3 0 0 1 20 13.2c0 3.8-3.6 6.3-8 6.3s-8-2.5-8-6.3a7.3 7.3 0 0 1 1.3-3.6z"/><path d="M8.8 12.8q.8-.9 1.6 0M13.6 12.8q.8-.9 1.6 0M11 15.4q1 .7 2 0"/>', LINEA),
   mic: svg('<rect x="9" y="3.2" width="6" height="11" rx="3"/><path d="M5.6 11.2a6.4 6.4 0 0 0 12.8 0M12 17.6V21"/>', LINEA),
   enviar: svg('<path d="M3.6 10.9 19.4 4.3c.9-.4 1.8.5 1.4 1.4l-6.6 15.8c-.4.9-1.7.8-1.9-.1l-1.5-6.2-6.2-1.5c-.9-.2-1-1.5-.1-1.9z" fill="currentColor"/><path d="m11 13 4.2-4.2" stroke="#fff" stroke-opacity=".55" stroke-width="1.6" stroke-linecap="round"/>'),
+  palomita: svg('<path d="m5 12.6 4.4 4.4L19 7.4"/>', ' fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"'),
   lapiz: svg('<path d="m4 20 1-4.2L15.6 5.2a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.2 19 4 20z"/><path d="m13.8 7 3.2 3.2"/>', LINEA),
   espacio: svg('<path d="M5 4.5h14M5 19.5h14M12 8v8M8.8 12.8 12 16l3.2-3.2"/>', LINEA),
   corazon: svg(`<path d="${CORAZON}"/>`, LINEA),
   lleno: svg(`<path d="${CORAZON}"/>`, ' fill="currentColor"'),
+  estrella: svg(`<path d="${ESTRELLA}"/>`, LINEA),
+  estrellaLlena: svg(`<path d="${ESTRELLA}"/>`, ' fill="currentColor"'),
+  estrellaNo: svg(`<path d="${ESTRELLA}"/><path d="M4 4l16 16"/>`, LINEA),
   infinito: svg('<path d="M12 12c-2-2.6-3.4-3.8-5.2-3.8a3.8 3.8 0 0 0 0 7.6c1.8 0 3.2-1.2 5.2-3.8zm0 0c2 2.6 3.4 3.8 5.2 3.8a3.8 3.8 0 0 0 0-7.6c-1.8 0-3.2 1.2-5.2 3.8z"/>', LINEA),
   check: svg('<path d="M1.6 10.6 5 14l6.6-7.2M8.2 13.4l.6.6 6.6-7.2"/>', LINEA, "0 0 17 20"),
   bote: svg('<path d="M4.5 7h15M9.5 7V4.8h5V7M6.5 7l.9 12.2c.1 1 .9 1.8 1.9 1.8h5.4c1 0 1.8-.8 1.9-1.8L17.5 7M10 10.5v6.5M14 10.5v6.5"/>', LINEA),
   brillo: svg('<path d="M12 3.5c.6 3.6 1.9 4.9 5.5 5.5-3.6.6-4.9 1.9-5.5 5.5-.6-3.6-1.9-4.9-5.5-5.5 3.6-.6 4.9-1.9 5.5-5.5zM18.5 14.5c.3 1.6.8 2.1 2.4 2.4-1.6.3-2.1.8-2.4 2.4-.3-1.6-.8-2.1-2.4-2.4 1.6-.3 2.1-.8 2.4-2.4z"/>', ' fill="currentColor"'),
+  foto: svg('<rect x="3.4" y="4.6" width="17.2" height="14.8" rx="3.4"/><circle cx="9" cy="10" r="1.8"/><path d="m4.4 17.4 4.8-4.6 3.4 3.2 2.6-2.4 4.6 4.2"/>', LINEA),
 };
 // Los ánimos (Happy, Sad, Hot, Hormonal): por ahora sólo se ven lindos y rebotan.
 const NUBE = "M11 30h19a6.5 6.5 0 0 0 .8-13A9 9 0 0 0 13.3 15 7.6 7.6 0 0 0 11 30z";
 const ANIMOS = [
-  { id: "happy", t: "Happy", s: svg(`<path d="${NUBE}" fill="#fff" stroke="#ec7aa6" stroke-width="1.8"/><path d="M15.4 22.6q1.3-1.6 2.6 0M22.4 22.6q1.3-1.6 2.6 0M18.4 25.4q1.6 1.4 3.2 0" fill="none" stroke="#8f3a5e" stroke-width="1.5" stroke-linecap="round"/><circle cx="14.2" cy="25.2" r="1.5" fill="#ff9cc0" opacity=".75"/><circle cx="26.4" cy="25.2" r="1.5" fill="#ff9cc0" opacity=".75"/><path d="M33.5 6.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM6.5 9l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" fill="#f2a5c4"/>`, "", "0 0 40 40") },
-  { id: "sad", t: "Sad", s: svg(`<path d="${NUBE}" fill="#f3eeff" stroke="#a88ce8" stroke-width="1.8"/><path d="M15.4 21.6q1.3 1.1 2.6 0M22.4 21.6q1.3 1.1 2.6 0M18.4 26.2q1.6-1.3 3.2 0" fill="none" stroke="#6b4fa8" stroke-width="1.5" stroke-linecap="round"/><path d="M29 27.6c1 1.4 1.5 2.3 1.5 3a1.5 1.5 0 0 1-3 0c0-.7.5-1.6 1.5-3z" fill="#7aa7ff"/><path d="M34 8l.6 1.4 1.4.6-1.4.6L34 12l-.6-1.4L32 10l1.4-.6z" fill="#c9b6ff"/>`, "", "0 0 40 40") },
-  { id: "hot", t: "Hot", s: svg(`<defs><linearGradient id="chLlama" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff4f86"/><stop offset="1" stop-color="#ffb06a"/></linearGradient></defs><path d="M20 4c1.6 5 9.6 8.6 9.6 17A9.6 9.6 0 0 1 20 30.6 9.6 9.6 0 0 1 10.4 21c0-4.4 2.4-7.4 4.6-9 0 3 1.4 5 3.2 5.8-.8-5.2.6-10.4 1.8-13.8z" fill="url(#chLlama)"/><path d="M20 15c.9 2.6 4.6 4.4 4.6 8.4a4.6 4.6 0 0 1-9.2 0c0-2 1.1-3.5 2.2-4.3.1 1.4.7 2.3 1.5 2.7-.3-2.5.3-4.9.9-6.8z" fill="#ffd2a8" opacity=".75"/><circle cx="17.6" cy="23.6" r="1.1" fill="#7a2140"/><circle cx="22.4" cy="23.6" r="1.1" fill="#7a2140"/><path d="M18.9 26q1.1.9 2.2 0" fill="none" stroke="#7a2140" stroke-width="1.2" stroke-linecap="round"/>`, "", "0 0 40 34") },
-  { id: "hormonal", t: "Hormonal", s: svg(`<path d="M12.6 10.6 11 5.4l4.4 3.4M27.4 10.6 29 5.4l-4.4 3.4" fill="#ff5f8f" stroke="#ff5f8f" stroke-width="1.2" stroke-linejoin="round"/><path d="M10.4 15 9.6 8.8l5.6 3.6a10.6 10.6 0 0 1 9.6 0l5.6-3.6-.8 6.2a10.4 10.4 0 0 1 1.9 6c0 5.8-5.1 9.6-11.5 9.6S8.5 26.8 8.5 21a10.4 10.4 0 0 1 1.9-6z" fill="#ffd9e8" stroke="#ec7aa6" stroke-width="1.6"/><path d="M14.8 20.6q1.4-1.4 2.8 0M22.4 20.6q1.4-1.4 2.8 0M18.2 24.2q1.8 1.5 3.6 0" fill="none" stroke="#8f3a5e" stroke-width="1.5" stroke-linecap="round"/><path d="M29.6 33s-3.2-1.9-3.2-4a1.7 1.7 0 0 1 3.2-.9 1.7 1.7 0 0 1 3.2.9c0 2.1-3.2 4-3.2 4z" fill="#ff4d88"/>`, "", "0 0 40 36") },
+  { id: "happy", t: "Happy", s: svg(`<path d="${NUBE}" fill="#fff" stroke="#b49af5" stroke-width="1.8"/><path d="M15.4 22.6q1.3-1.6 2.6 0M22.4 22.6q1.3-1.6 2.6 0M18.4 25.4q1.6 1.4 3.2 0" fill="none" stroke="#6a4fb3" stroke-width="1.5" stroke-linecap="round"/><circle cx="14.2" cy="25.2" r="1.5" fill="#ffa8cc" opacity=".8"/><circle cx="26.4" cy="25.2" r="1.5" fill="#ffa8cc" opacity=".8"/><path d="M33.5 6.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM6.5 9l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" fill="#f4b3d0"/>`, "", "0 0 40 40") },
+  { id: "sad", t: "Sad", s: svg(`<path d="${NUBE}" fill="#f1ecff" stroke="#9f86ea" stroke-width="1.8"/><path d="M15.4 21.6q1.3 1.1 2.6 0M22.4 21.6q1.3 1.1 2.6 0M18.4 26.2q1.6-1.3 3.2 0" fill="none" stroke="#5c46a3" stroke-width="1.5" stroke-linecap="round"/><path d="M29 27.6c1 1.4 1.5 2.3 1.5 3a1.5 1.5 0 0 1-3 0c0-.7.5-1.6 1.5-3z" fill="#86aaff"/><path d="M34 8l.6 1.4 1.4.6-1.4.6L34 12l-.6-1.4L32 10l1.4-.6z" fill="#c9b6ff"/>`, "", "0 0 40 40") },
+  { id: "hot", t: "Hot", s: svg(`<defs><linearGradient id="chLlama" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff5f92"/><stop offset="1" stop-color="#ffb37a"/></linearGradient></defs><path d="M20 4c1.6 5 9.6 8.6 9.6 17A9.6 9.6 0 0 1 20 30.6 9.6 9.6 0 0 1 10.4 21c0-4.4 2.4-7.4 4.6-9 0 3 1.4 5 3.2 5.8-.8-5.2.6-10.4 1.8-13.8z" fill="url(#chLlama)"/><path d="M20 15c.9 2.6 4.6 4.4 4.6 8.4a4.6 4.6 0 0 1-9.2 0c0-2 1.1-3.5 2.2-4.3.1 1.4.7 2.3 1.5 2.7-.3-2.5.3-4.9.9-6.8z" fill="#ffd8b4" opacity=".75"/><circle cx="17.6" cy="23.6" r="1.1" fill="#7a2140"/><circle cx="22.4" cy="23.6" r="1.1" fill="#7a2140"/><path d="M18.9 26q1.1.9 2.2 0" fill="none" stroke="#7a2140" stroke-width="1.2" stroke-linecap="round"/>`, "", "0 0 40 34") },
+  { id: "hormonal", t: "Hormonal", s: svg(`<path d="M12.6 10.6 11 5.4l4.4 3.4M27.4 10.6 29 5.4l-4.4 3.4" fill="#b08cff" stroke="#b08cff" stroke-width="1.2" stroke-linejoin="round"/><path d="M10.4 15 9.6 8.8l5.6 3.6a10.6 10.6 0 0 1 9.6 0l5.6-3.6-.8 6.2a10.4 10.4 0 0 1 1.9 6c0 5.8-5.1 9.6-11.5 9.6S8.5 26.8 8.5 21a10.4 10.4 0 0 1 1.9-6z" fill="#efe6ff" stroke="#a487f0" stroke-width="1.6"/><path d="M14.8 20.6q1.4-1.4 2.8 0M22.4 20.6q1.4-1.4 2.8 0M18.2 24.2q1.8 1.5 3.6 0" fill="none" stroke="#5c46a3" stroke-width="1.5" stroke-linecap="round"/><path d="M29.6 33s-3.2-1.9-3.2-4a1.7 1.7 0 0 1 3.2-.9 1.7 1.7 0 0 1 3.2.9c0 2.1-3.2 4-3.2 4z" fill="#ff7aa8"/>`, "", "0 0 40 36") },
 ];
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
+const I2 = (s, t) => `<i class="ch-i">${s}</i><span>${t}</span>`;
 const SEGUIDOS = 4 * 60 * 1000;
 // Stickers cute de verdad (y nada de los viejitos): sus etiquetas buscan lo más tierno de GIPHY.
 const ETIQUETAS = {
   stickers: [["Milk & Mocha", "milk and mocha"], ["Bubu Dudu", "bubu dudu"], ["Mochi", "mochi cat"], ["Ositos", "cute bear love"], ["Gatitos", "kawaii cat"], ["Corazones", "kawaii heart"], ["Besitos", "cute kiss"], ["Abrazos", "cute hug"]],
   gifs: [["Te amo", "te amo"], ["Te extraño", "te extraño"], ["Abrazo", "cute hug"], ["Beso", "cute kiss"], ["Buenas noches", "buenas noches"], ["Jaja", "jaja"], ["Cute", "cute love"]],
 };
-const EMOJIS = "🥰 😍 😘 🥺 🥹 😊 🤭 😳 😂 😭 😴 😇 😈 🙈 🤗 🫶 🤍 💗 💖 💕 💞 💘 💝 💌 ❤️‍🔥 💋 ✨ 🌸 🌷 🌹 🦋 🎀 🧸 🐻 🐱 🐰 🍓 🍰 🍫 ☕ 🌙 ⭐ 🌈 🔥 🎁 👀 🙃".split(" ");
-const PRIMEROS = ["Te amo 🤍", "Te extraño 🥺", "¿Cómo amaneciste, mi amor?", "Buenas noches, mi vida 🌙"];
-const COLORES = ["#ff5f9e", "#b48cff", "#6fb6ff", "#5fd3a7", "#ffb04d", "#e0325f"];
+const VISTAS = { stickers: [["mios", "Stickers"], ["explorar", "Explorar stickers"]], gifs: [["mios", "GIFs favoritos"], ["explorar", "Explorar GIFs"]] };
+const PISTAS = {
+  "stickers:mios": "Toca para mandarlo · mantenlo para favoritos o arrástralo al chat",
+  "stickers:explorar": "Toca para mandarlo · mantenlo y arrástralo para pegarlo donde quieras",
+  "gifs:mios": "Toca para mandarlo · mantenlo para quitarlo de favoritos",
+  "gifs:explorar": "Toca para mandarlo · mantenlo para guardarlo en favoritos",
+  "emojis:emojis": "Toca uno para ponerlo en tu mensajito",
+};
+const EMOJIS = "🥰 😍 😘 🥺 🥹 😊 🤭 😳 😂 🤣 😭 😴 😇 😈 🙈 🤗 🫶 🤍 💜 💗 💖 💕 💞 💘 💝 💌 ❤️‍🔥 💋 😚 😙 🫠 🤤 😌 🥲 😮‍💨 😤 🙄 😏 🤫 🫣 👀 🙃 ✨ 🌸 🌷 🌹 💐 🦋 🎀 🧸 🐻 🐱 🐰 🐶 🐣 🍓 🍒 🍰 🍫 🍩 ☕ 🧋 🌙 ⭐ 🌈 ☁️ 🔥 🎁 🎶 📸 💍 👑 🫧 🤞 🙏 👏 💪".split(" ");
+const PRIMEROS = ["Te amo 💜", "Te extraño 🥺", "¿Cómo amaneciste, mi amor?", "Buenas noches, mi vida 🌙"];
+const COLORES = ["#a57cff", "#ff6fa8", "#6fb6ff", "#5fd3a7", "#ffb04d", "#e0325f"];
 const GROSORES = [3, 6, 11];
 const NUEVOS_DESDE = 2018; // los stickers subidos antes se ven viejitos: no salen
 
 /* — Ajustes de este aparato (los de privacidad viven en el servidor) — */
 const CLAVE = "editordev:chat";
-const BASE = { sonidos: true, teclado: true, avisos: true, fondo: true, grande: false };
+const BASE = { sonidos: true, teclado: true, avisos: true, fondo: true, grande: false, vel: 1 };
 export function prefChat() {
   try { return { ...BASE, ...JSON.parse(localStorage.getItem(CLAVE) || "{}") }; } catch (e) { return { ...BASE }; }
 }
@@ -79,8 +99,8 @@ const guardarPref = (p) => { try { localStorage.setItem(CLAVE, JSON.stringify(p)
 
 const real = (m) => typeof m.id === "number";
 const orden = (a, b) => (real(a) ? 0 : 1) - (real(b) ? 0 : 1) || (real(a) && real(b) ? a.id - b.id : 0);
-const firmaBurbuja = (m) => JSON.stringify([m.texto, m.gif?.u, m.espacio, (m.stickers || []).filter((s) => !s.l).length]);
-const firma = (m) => JSON.stringify([m.texto, m.gif?.u, m.reaccion, m.visto, m.espacio, (m.stickers || []).map((s) => [s.i, s.x, s.y, s.s])]);
+const firmaBurbuja = (m) => JSON.stringify([m.texto, m.gif?.u, m.audio?.u, m.espacio, (m.stickers || []).filter((s) => !s.l).length]);
+const firma = (m) => JSON.stringify([m.texto, m.gif?.u, m.audio?.u, m.reaccion, m.visto, m.editado, m.espacio, (m.stickers || []).map((s) => [s.i, s.x, s.y, s.s])]);
 const diaDe = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
 const hora = (iso) => new Date(iso).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
 function nombreDia(iso) {
@@ -108,13 +128,14 @@ function camino(pts) {
   const u = pts[pts.length - 1];
   return d + `L${u[0]} ${u[1]}`;
 }
-/** El fondo: corazoncitos dibujados a mano y «Tú y yo siempre». */
+/** El fondo: corazoncitos lilas dibujados a mano, brillitos y «Tú y yo siempre». */
 function fondoDibujado() {
   const c = (x, y, t, r, o = 1) => el("i.ch-doodle", { style: { left: x, top: y, width: t + "px", height: t + "px", transform: `rotate(${r}deg)`, opacity: o }, html: IC.corazon });
+  const b = (x, y, t, o = 1) => el("i.ch-doodle.brillo", { style: { left: x, top: y, width: t + "px", height: t + "px", opacity: o }, html: IC.brillo });
   return el("div.ch-fondo", { "aria-hidden": "true" }, [
-    c("4%", "6%", 46, -12), c("11%", "31%", 34, 8, 0.8), c("82%", "4%", 22, 10, 0.7), c("78%", "47%", 52, 14), c("6%", "74%", 40, -8, 0.85),
-    c("44%", "1.5%", 16, -6, 0.6), c("60%", "88%", 20, 12, 0.6), c("90%", "70%", 18, -14, 0.6),
-    el("i.ch-doodle.brillo", { style: { left: "49%", top: "80%" }, html: IC.brillo }),
+    c("5%", "5%", 44, -12), c("13%", "30%", 30, 8, 0.75), c("83%", "5%", 24, 10, 0.7), c("79%", "44%", 50, 14), c("6%", "72%", 38, -8, 0.85),
+    c("45%", "2%", 16, -6, 0.6), c("62%", "88%", 20, 12, 0.6), c("91%", "68%", 18, -14, 0.6),
+    b("50%", "79%", 22), b("27%", "14%", 14, 0.7), b("88%", "27%", 16, 0.8),
     el("i.ch-garabato", { html: '<svg viewBox="0 0 100 46" preserveAspectRatio="none"><path d="M2 40 C 40 34, 70 18, 98 6"/></svg>' }),
     el("span.ch-letrero", {}, [el("span", { text: "Tú" }), el("span", { text: "y yo" }), el("span", { text: "siempre" }), el("i", { html: IC.corazon })]),
   ]);
@@ -129,29 +150,30 @@ export function vistaChat(det) {
   const S = {
     ms: [], nodos: new Map(), dias: new Map(), nuevos: new Set(), trazos: new Map(), ultimo: 0, desde: 0, hayMas: false, antes: false,
     vivo: true, pegado: true, sinVer: 0, temp: 0, menu: null, hoja: null, listo: false, verVisto: true, dibujo: null, arrastre: null,
+    editando: null, grabando: null, blobs: [],
   };
   const capaDet = det.capa;
   const flota = (n) => { capaDet.append(n); return n; }; // lo que va encima (menús, el sticker que arrastras): fuera de lo que se anima
+  const M = (u) => SRV.media(u);
 
-  /* — Arriba — */
-  const atras = el("button.ch-cab-b.ch-atras", { type: "button", "aria-label": "Atrás", html: ico("izquierda"), onClick: () => det.atras() });
+  /* — Arriba: sólo su foto y su nombre — */
+  const atras = el("button.ch-atras", { type: "button", "aria-label": "Atrás", html: IC.chevron, onClick: () => det.atras() });
   const ahoraNo = (b) => { aviso("Ay ora jeje", 2600); if (!reducido()) b.animate([{ transform: "rotate(0)" }, { transform: "rotate(-12deg)" }, { transform: "rotate(10deg)" }, { transform: "rotate(-6deg)" }, { transform: "rotate(0)" }], { duration: 480 }); };
   const bVideo = el("button.ch-cab-b", { type: "button", "aria-label": "Videollamada", html: IC.video, onClick: () => ahoraNo(bVideo) });
   const bTel = el("button.ch-cab-b", { type: "button", "aria-label": "Llamar", html: IC.tel, onClick: () => ahoraNo(bTel) });
   const bPuntos = el("button.ch-cab-b", { type: "button", "aria-label": "Ajustes y privacidad del chat", "aria-haspopup": "menu", html: IC.puntos, onClick: () => hojaAjustes() });
   const cab = el("header.ch-cab", {}, [
     atras,
-    el("span.ch-cab-foto", {}, [pa ? PF.avatar("pareja", "ch-cab-av") : el("span.av.ch-cab-av"), el("i", { html: IC.lleno })]),
+    pa ? PF.avatar("pareja", "ch-cab-av") : el("span.av.ch-cab-av"),
     el("div.ch-cab-t", {}, [
-      el("b", {}, [el("span", { text: "Mensajitos" }), el("i", { html: IC.corazon })]),
-      el("small", {}, [el("span", { text: `con ${nombre}` }), el("i", { html: IC.corazon })]),
+      el("b.ch-cab-nombre", { text: nombre }),
+      el("span.ch-juntos", {}, [el("i", { html: IC.lleno }), el("span", { text: "Siempre juntos" }), el("i.inf", { html: IC.infinito })]),
     ]),
     el("div.ch-cab-acc", {}, [bVideo, bTel, bPuntos]),
-    el("span.ch-juntos", {}, [el("i", { html: IC.lleno }), el("span", { text: "Siempre juntos" }), el("i.inf", { html: IC.infinito })]),
   ]);
 
   /* — La lista (con su capa de dibujos y stickers libres) — */
-  const lista = el("div.ch-lista", { role: "log", "aria-label": `Mensajitos con ${nombre}`, "aria-live": "polite" });
+  const lista = el("div.ch-lista", { role: "log", "aria-label": `Chat con ${nombre}`, "aria-live": "polite" });
   const inicio = el("div.ch-inicio");
   const fin = el("div.ch-fin", { "aria-hidden": "true" });
   const trazosSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -160,7 +182,7 @@ export function vistaChat(det) {
   const vacio = el("div.ch-vacio", {}, [
     el("i.ch-vacio-ico", { html: ICONO_CHAT }),
     el("b", { text: "Su chat empieza aquí" }),
-    el("p", { text: `Mándale el primer mensajito a ${nombre}: texto, un GIF, un sticker o un dibujito.` }),
+    el("p", { text: `Mándale el primer mensajito a ${nombre}: texto, un audio, un GIF, un sticker o un dibujito.` }),
     el("div.ch-sugeridos", {}, PRIMEROS.map((t) => el("button.ch-sugerido", { type: "button", text: t, onClick: () => { input.value = t; alEscribir(); input.focus(); } }))),
   ]);
   const bajarT = el("span");
@@ -176,30 +198,46 @@ export function vistaChat(det) {
     return b;
   }));
 
-  /* — Escribir — */
+  /* — Escribir (y editar, y grabar audios) — */
   const input = el("textarea.ch-input", { rows: 1, maxlength: 2000, placeholder: "Escribe un mensaje...", "aria-label": "Tu mensajito", enterkeyhint: "send", autocomplete: "off", onInput: () => alEscribir() });
   const bMas = el("button.ch-mas", { type: "button", "aria-label": "Más cositas", "aria-haspopup": "menu", html: IC.mas, onClick: () => hojaMas() });
   const bEmoji = el("button.ch-emoji-b", { type: "button", "aria-label": "Emojis", html: IC.carita, onClick: () => panel("emojis") });
-  const bSt = el("button.ch-b", { type: "button", "aria-label": "Stickers", html: IC.gato, onClick: () => panel("stickers") });
+  const bSt = el("button.ch-b.ch-b-st", { type: "button", "aria-label": "Stickers", html: IC.gato, onClick: () => panel("stickers") });
   bSt.querySelector("svg").insertAdjacentHTML("beforeend", `<path class="ch-b-cor" d="M18.6 21.6s-2.6-1.5-2.6-3.3a1.4 1.4 0 0 1 2.6-.8 1.4 1.4 0 0 1 2.6.8c0 1.8-2.6 3.3-2.6 3.3z"/>`);
   const bGif = el("button.ch-b.ch-b-gif", { type: "button", "aria-label": "GIFs", html: "<b>GIF</b>", onClick: () => panel("gifs") });
-  const bMandar = el("button.ch-mandar", { type: "button", "aria-label": "Nota de voz", html: `<i class="ch-ic-mic">${IC.mic}</i><i class="ch-ic-env">${IC.enviar}</i>`, onClick: () => (input.value.trim() ? mandarTexto() : ahoraNo(bMandar)) });
+  const bMandar = el("button.ch-mandar", { type: "button", "aria-label": "Mensaje de voz", html: `<i class="ch-ic-mic">${IC.mic}</i><i class="ch-ic-env">${IC.enviar}</i><i class="ch-ic-ok">${IC.palomita}</i>`, onClick: () => alMandar() });
   // Tocar «Mandar» no le quita el teclado al campo (en el teléfono se queda abierto para seguir escribiendo).
   bMandar.addEventListener("mousedown", (e) => e.preventDefault());
-  const escribir = el("div.ch-escribir", {}, [bMas, el("div.ch-caja", {}, [input, bEmoji]), bSt, bGif, bMandar]);
+  const grabT = el("span.ch-grab-t", { text: "0:00" });
+  const grabOndas = el("div.ch-grab-ondas", { "aria-hidden": "true" }, Array.from({ length: 30 }, () => el("i")));
+  const grabBar = el("div.ch-grabando", { hidden: "", role: "group", "aria-label": "Grabando un mensaje de voz" }, [
+    el("button.ch-grab-x", { type: "button", "aria-label": "Tirar el audio", html: IC.bote, onClick: () => cancelarGrabacion() }),
+    el("span.ch-grab-punto", { "aria-hidden": "true" }), grabT, grabOndas,
+    el("button.ch-grab-si", { type: "button", "aria-label": "Mandar el audio", html: IC.enviar, onClick: () => terminarGrabacion() }),
+  ]);
+  const escribir = el("div.ch-escribir", {}, [bMas, el("div.ch-caja", {}, [input, bEmoji]), bSt, bGif, bMandar, grabBar]);
+  const editT = el("span.ch-editando-t");
+  const editBar = el("div.ch-editando", { hidden: "" }, [
+    el("i", { html: IC.lapiz }), el("span.ch-editando-in", {}, [el("b", { text: "Editando tu mensajito" }), editT]),
+    el("button.ch-editando-x", { type: "button", "aria-label": "Cancelar la edición", html: ico("cerrar"), onClick: () => dejarDeEditar() }),
+  ]);
 
-  /* — Stickers, GIFs y emojis — */
-  const P = { tipo: "", q: "", sig: 0, total: 0, cargando: false, ctl: null };
-  const tabs = [["stickers", "Stickers"], ["gifs", "GIFs"], ["emojis", "Emojis"]].map(([t, n]) => el("button.ch-tab", { type: "button", role: "tab", dataset: { t }, text: n, onClick: () => { if (P.tipo !== t) panel(t); } }));
+  /* — Stickers (los tuyos y explorar), GIFs (favoritos y explorar) y emojis — */
+  const P = { tipo: "", vista: "", q: "", sig: 0, total: 0, cargando: false, ctl: null };
+  const COL = { stickers: null, gifs: null, pide: null };
+  const nodosCol = new Map();
+  const tabsN = el("div.ch-tabs", { role: "tablist" });
+  const tituloP = el("b.ch-panel-titulo", { text: "Emojis" });
   const buscar = el("input.ch-buscar", { type: "search", enterkeyhint: "search", autocomplete: "off", "aria-label": "Buscar en GIPHY" });
   const buscarCaja = el("label.ch-buscar-caja", {}, [el("i", { html: ico("buscar") }), buscar]);
   const chips = el("div.ch-chips");
   const rejilla = el("div.ch-rejilla");
   const pista = el("small.ch-pista");
+  const giphyMarca = el("small.ch-giphy", { text: "Con GIPHY" });
   const panelN = el("div.ch-panel", { hidden: "", role: "dialog", "aria-label": "Stickers, GIFs y emojis" }, [
-    el("div.ch-panel-cab", {}, [el("div.ch-tabs", { role: "tablist" }, tabs), el("button.ch-panel-x", { type: "button", "aria-label": "Cerrar", html: ico("cerrar"), onClick: () => panel(null) })]),
+    el("div.ch-panel-cab", {}, [tabsN, tituloP, el("button.ch-panel-x", { type: "button", "aria-label": "Cerrar", html: ico("cerrar"), onClick: () => panel(null) })]),
     buscarCaja, chips, rejilla,
-    el("div.ch-panel-pie", {}, [pista, el("small.ch-giphy", { text: "Con GIPHY" })]),
+    el("div.ch-panel-pie", {}, [pista, giphyMarca]),
   ]);
 
   /* — Dibujar — */
@@ -216,7 +254,37 @@ export function vistaChat(det) {
     ]),
     el("small.ch-dibujo-pista", { text: "Dibuja con un dedo · desliza con dos · lo ve en vivo" }),
   ]);
-  const raiz = el("section.dt-pantalla.ch" + (PR.fondo ? "" : ".sin-fondo") + (PR.grande ? ".letra-grande" : ""), {}, [cab, marco, animos, panelN, barraDibujo, escribir]);
+  const raiz = el("section.dt-pantalla.ch" + (PR.fondo ? "" : ".sin-fondo") + (PR.grande ? ".letra-grande" : ""), {}, [cab, marco, animos, panelN, barraDibujo, editBar, escribir]);
+
+  /**
+   * Mantener presionado (o clic derecho) hace `al()`; un toque normal sigue siendo un toque.
+   * Mientras se aprieta, se hunde un poquito (la clase `apretando`).
+   */
+  function presionLarga(n, al, ms = 420) {
+    let t = 0, x0 = 0, y0 = 0;
+    const fuera = () => { clearTimeout(t); t = 0; n.classList.remove("apretando"); };
+    n.addEventListener("pointerdown", (e) => {
+      n._largo = false;
+      if (e.button > 0 || S.dibujo || S.arrastre) return;
+      x0 = e.clientX; y0 = e.clientY;
+      n.classList.add("apretando");
+      t = setTimeout(() => { t = 0; n.classList.remove("apretando"); n._largo = true; sinToqueAlSoltar(e); vibrar(14); al(); }, ms);
+    });
+    n.addEventListener("pointermove", (e) => { if (t && Math.hypot(e.clientX - x0, e.clientY - y0) > 9) fuera(); });
+    for (const k of ["pointerup", "pointercancel", "pointerleave"]) n.addEventListener(k, fuera);
+    n.addEventListener("contextmenu", (e) => { e.preventDefault(); if (n._largo || S.arrastre) return; fuera(); n._largo = true; al(); });
+    // Lo que se apretó largo no cuenta también como toque (ni en los botoncitos de adentro).
+    n.addEventListener("click", (e) => { if (n._largo) { n._largo = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+  }
+
+  /**
+   * Al soltar el dedo después de mantenerlo, el teléfono manda un «toque» donde quedó el dedo: si ahí ya
+   * está el menú (o su velo), ese toque lo cerraría. Se le quita al soltar.
+   */
+  function sinToqueAlSoltar(e) {
+    if (e.pointerType !== "touch") return;
+    addEventListener("touchend", (t) => { if (t.cancelable) t.preventDefault(); }, { capture: true, passive: false, once: true });
+  }
 
   /* — Una burbuja — */
   function nodo(m) {
@@ -226,19 +294,27 @@ export function vistaChat(det) {
         m.mio ? el("button.ch-espacio-x", { type: "button", html: I("borrar", "Quitar"), onClick: () => borrar(m, "este espacio") }) : null,
       ]);
     }
-    const rx = reaccion(m.reaccion), st = !!m.gif?.s, em = !m.gif && soloEmoji(m.texto);
-    const b = el("button.ch-burbuja" + (m.gif ? (st ? ".sticker" : ".gif") : "") + (em ? ".emoji" : ""), { type: "button", "aria-haspopup": "menu", "aria-label": `${m.mio ? "Tú" : nombre}: ${m.texto || (st ? "un sticker" : "un GIF")}${rx ? ", " + rx.corto : ""}` });
+    const rx = reaccion(m.reaccion), st = !!m.gif?.s, em = !m.gif && !m.audio && soloEmoji(m.texto);
+    const que = m.audio ? `un mensaje de voz de ${VOZ.minutos(m.audio.dur)}` : m.texto || (st ? "un sticker" : "un GIF");
+    const b = el("div.ch-burbuja" + (m.audio ? ".audio" : m.gif ? (st ? ".sticker" : ".gif") : "") + (em ? ".emoji" : ""), {
+      tabindex: "0", role: m.audio ? "group" : "button", "aria-haspopup": "menu", "aria-label": `${m.mio ? "Tú" : nombre}: ${que}${rx ? ", " + rx.corto : ""}. Mantén presionado para ver opciones.`,
+    });
+    if (m.audio) {
+      b.append(VOZ.reproductor(m.audio, {
+        url: M(m.audio.u), vel: () => PR.vel || 1, alVel: (v) => { PR.vel = v; guardarPref(PR); }, alSonar: () => sonar("audio-play"),
+        alError: () => aviso("Ese audio no se pudo escuchar ahora.", 3500, "error"),
+      }));
+    }
     if (m.gif) {
       const k = st ? Math.min(1, 150 / m.gif.w, 150 / m.gif.h) : Math.min(1, 240 / m.gif.w, 260 / m.gif.h);
-      const im = el("img." + (st ? "ch-st-img" : "ch-gif"), { src: m.gif.u, alt: st ? "Sticker" : "GIF", width: Math.round(m.gif.w * k), height: Math.round(m.gif.h * k), decoding: "async", referrerpolicy: "no-referrer", draggable: "false" });
+      const im = el("img." + (st ? "ch-st-img" : "ch-gif"), { src: M(m.gif.u), alt: st ? "Sticker" : "GIF", width: Math.round(m.gif.w * k), height: Math.round(m.gif.h * k), decoding: "async", referrerpolicy: "no-referrer", draggable: "false" });
       im.addEventListener("load", () => { if (S.pegado) alFondo(false); }, { once: true });
       b.append(im);
     }
     if (m.texto) b.append(el("span.ch-texto", { text: m.texto }));
-    if (!m.mio && !st && !em) b.append(el("small.ch-hora-in"));
     const pegados = (m.stickers || []).filter((x) => !x.l);
     if (pegados.length) b.append(el("span.ch-pegados", { "aria-hidden": "true" }, pegados.map((x) => {
-      const i = el("img.ch-sticker", { src: x.u, alt: "", decoding: "async", referrerpolicy: "no-referrer", draggable: "false" });
+      const i = el("img.ch-sticker", { src: M(x.u), alt: "", decoding: "async", referrerpolicy: "no-referrer", draggable: "false" });
       i.style.left = (x.x * 100).toFixed(1) + "%"; i.style.top = (x.y * 100).toFixed(1) + "%";
       i.style.setProperty("--r", (+x.r || 0) + "deg"); i.style.setProperty("--s", +x.s || 1);
       return i;
@@ -247,8 +323,21 @@ export function vistaChat(det) {
       el("div.ch-cuerpo", {}, [b, el("small.ch-hora")]),
     ]);
     ponerRx(f, m);
-    b.addEventListener("click", (e) => tocar(e, f));
+    presionLarga(b, () => { const x = deFila(f); if (x && real(x)) abrirMenu(x, f); });
+    b.addEventListener("keydown", (e) => {
+      if (e.target !== b || !["Enter", " ", "ContextMenu"].includes(e.key)) return;
+      e.preventDefault();
+      const x = deFila(f);
+      if (x && real(x)) abrirMenu(x, f, true);
+    });
+    b.addEventListener("click", () => enseñarPista());
     return f;
+  }
+  /** La primera vez que tocan un mensajito: cómo se abren sus opciones. */
+  const PISTA_MENU = "editordev:chat-pista-menu";
+  function enseñarPista() {
+    try { if (localStorage.getItem(PISTA_MENU)) return; localStorage.setItem(PISTA_MENU, "1"); } catch (e) { return; }
+    aviso("Mantén presionado un mensajito para editarlo, copiarlo o eliminarlo 💜", 3600);
   }
   /** La reacción, en su lugar (sin rehacer la burbuja). */
   function ponerRx(f, m, animar = false) {
@@ -258,15 +347,17 @@ export function vistaChat(det) {
     f.classList.toggle("con-rx", !!rx);
     if (rx) b.append(el("span.ch-rx" + (animar ? ".nueva" : ""), { title: m.mio ? `${nombre} ${rx.largo}` : rx.tuyo, html: svgReaccion(rx.id) }));
   }
+  /** Abajito de la burbuja: «Editado», la hora y ✓✓ (lilas cuando ya lo vio). */
   function ponerHora(f, m) {
-    const fuera = f.querySelector(".ch-hora"), dentro = f.querySelector(".ch-hora-in");
-    if (!fuera) return;
-    const t = m._enviando ? "Mandando…" : hora(m.creado), visto = !!(m.mio && m.visto);
-    const k = t + visto + !!dentro;
-    if (fuera._k === k) return;
-    fuera._k = k;
-    if (dentro) { dentro.textContent = t; fuera.replaceChildren(); return; }
-    fuera.replaceChildren(el("span", { text: t }), ...(m.mio && !m._enviando ? [el("i.ch-check" + (visto ? ".visto" : ""), { title: visto ? "Visto" : "Enviado", html: IC.check })] : []));
+    const n = f.querySelector(".ch-hora");
+    if (!n) return;
+    const t = m._enviando ? "Enviando…" : hora(m.creado), visto = !!(m.mio && m.visto), ed = !!m.editado;
+    const k = t + visto + ed;
+    f.classList.toggle("editado", ed);
+    if (n._k === k) return;
+    n._k = k;
+    n.replaceChildren(...(ed ? [el("em.ch-editado", { text: "Editado" })] : []), el("span", { text: t }),
+      ...(m.mio && !m._enviando ? [el("i.ch-check" + (visto ? ".visto" : ""), { title: visto ? "Visto" : "Enviado", html: IC.check })] : []));
   }
 
   /** Pone la lista al día moviendo sólo lo que cambió (lo que ya está no se vuelve a animar ni a cargar). */
@@ -277,13 +368,13 @@ export function vistaChat(det) {
       const dk = diaDe(m.creado);
       if (!prev || diaDe(prev.creado) !== dk) {
         let d = S.dias.get(dk);
-        if (!d) S.dias.set(dk, (d = el("div.ch-dia", {}, [el("i", { html: IC.corazon }), el("span", { text: nombreDia(m.creado) }), el("i", { html: IC.corazon })])));
+        if (!d) S.dias.set(dk, (d = el("div.ch-dia", {}, [el("span", { text: nombreDia(m.creado) })])));
         hijos.push(d);
         prev = null;
       }
       let f = S.nodos.get(m.id);
       if (!f) { f = nodo(m); S.nodos.set(m.id, f); }
-      if (S.nuevos.delete(m.id) && !reducido()) { f.classList.add("llega"); setTimeout(() => f.classList.remove("llega"), 600); }
+      if (S.nuevos.delete(m.id) && !reducido()) { f.classList.add("llega"); setTimeout(() => f.classList.remove("llega"), 1000); }
       if (!m.espacio) {
         f.classList.toggle("primero", !juntos(prev, m));
         f.classList.toggle("ultimo", !juntos(m, S.ms[i + 1]));
@@ -343,11 +434,11 @@ export function vistaChat(det) {
       let n = capa.querySelector(`img[data-k="${k}"]`);
       if (!n) {
         // ¿Es el mismo que ya se ve con otra clave? (el que estaba «pegándose», o que cambió de mensajito)
-        const L = x.x * W, T = top + x.y;
-        n = [...capa.querySelectorAll("img.ch-libre")].find((z) => !vistos.has(z.dataset.k) && z.getAttribute("src") === x.u && !S.ms.some((mm) => (mm.stickers || []).some((y) => y.l && mm.id + ":" + (y.i || y._t) === z.dataset.k)) && Math.abs(parseFloat(z.style.left) - L) < 3 && Math.abs(parseFloat(z.style.top) - T) < 3);
+        const L = x.x * W, T = top + x.y, src = M(x.u);
+        n = [...capa.querySelectorAll("img.ch-libre")].find((z) => !vistos.has(z.dataset.k) && z.getAttribute("src") === src && !S.ms.some((mm) => (mm.stickers || []).some((y) => y.l && mm.id + ":" + (y.i || y._t) === z.dataset.k)) && Math.abs(parseFloat(z.style.left) - L) < 3 && Math.abs(parseFloat(z.style.top) - T) < 3);
         if (n) n.dataset.k = k;
         else {
-          n = el("img.ch-libre" + (x.mio ? ".mio" : "") + (x._nuevo ? ".nuevo" : ""), { src: x.u, alt: "", decoding: "async", referrerpolicy: "no-referrer", draggable: "false", dataset: { k } });
+          n = el("img.ch-libre" + (x.mio ? ".mio" : "") + (x._nuevo ? ".nuevo" : ""), { src, alt: "", decoding: "async", referrerpolicy: "no-referrer", draggable: "false", dataset: { k } });
           if (x.mio) prepararArrastreLibre(n);
           capa.append(n);
         }
@@ -383,8 +474,6 @@ export function vistaChat(det) {
     if (S.pegado && !bajar.hidden) { S.sinVer = 0; bajar.hidden = true; }
     if (lista.scrollTop < 160 && S.hayMas && !S.antes) cargarAntes();
   }, { passive: true });
-  // Si TÚ deslizas, el menú de un mensajito se cierra (si se mueve solo, porque llegó algo, no).
-  for (const t of ["wheel", "touchmove"]) lista.addEventListener(t, () => { if (S.menu) cerrarMenu(); }, { passive: true });
 
   /* — Hablar con el servidor — */
   /** Los dibujos que llegan. `vivo`: los de tu amorcito se van trazando suavecito (no a brincos). */
@@ -443,6 +532,7 @@ export function vistaChat(det) {
       requestAnimationFrame(() => alFondo(false));
       if (S.ms.some((m) => !m.mio && !m.visto && !m.espacio)) marcarVistos();
       escuchar();
+      cargarColeccion().catch(() => {}); // tus stickers y GIFs favoritos, listos para cuando abras el panel
     } catch (e) {
       if (!S.vivo) return;
       lista.replaceChildren(el("div.ch-vacio", {}, [el("i.ch-vacio-ico", { html: ICONO_CHAT }), el("p", { text: mensajeError(e) }), el("button.ch-sugerido", { type: "button", text: "Intentar otra vez", onClick: () => cargar() })]));
@@ -492,14 +582,14 @@ export function vistaChat(det) {
   document.addEventListener("visibilitychange", alVolver);
   const marcarVistos = () => SRV.chatVistos().then(() => dispatchEvent(new CustomEvent("ed-chat-visto"))).catch(() => {});
 
-  /** Lo que llegó (nuevos) y lo que cambió (reacciones, stickers, vistos, borrados). */
+  /** Lo que llegó (nuevos) y lo que cambió (reacciones, ediciones, stickers, vistos, borrados). */
   function recibir(nuevos, cambios, propio = false) {
     const pegado = cerca();
     let llegaron = 0, suyo = false;
     for (const m of nuevos) {
       if (m.borrado || S.nodos.has(m.id) || S.ms.some((x) => x.id === m.id)) continue;
       // Tu mensajito llegó por aquí antes que la respuesta de «mandar»: la burbuja que ya se ve pasa a ser ésa.
-      const t = m.mio && S.ms.find((x) => x._enviando && !x._real && x.texto === m.texto && (x.gif?.u || "") === (m.gif?.u || ""));
+      const t = m.mio && S.ms.find((x) => x._enviando && !x._real && x.texto === m.texto && (x.gif?.u || "") === (m.gif?.u || "") && (x.audio ? x.audio._u || "?" : "") === (m.audio?.u || ""));
       if (t) { adoptar(t, m); continue; }
       S.ms.push(m); S.nuevos.add(m.id); llegaron++;
       if (!m.mio && !m.espacio) suyo = true;
@@ -511,7 +601,9 @@ export function vistaChat(det) {
       if (!a) continue;
       if (c.borrado) { quitar(c.id); continue; }
       if (firma(a) === firma(c)) continue;
+      const editado = c.editado && c.editado !== a.editado && c.texto !== a.texto;
       aplicar(c, false);
+      if (editado && !c.mio) entintar(c.id);
       if (c.mio && c.reaccion && c.reaccion !== a.reaccion) festejar(c);
       const st = c.stickers || [];
       if (st.length > (a.stickers || []).length && !st[st.length - 1].mio) sonar("sticker-pegar");
@@ -538,18 +630,34 @@ export function vistaChat(det) {
     } else if (m.reaccion !== antes.reaccion) ponerRx(S.nodos.get(m.id), m, !!m.reaccion);
     if (repintar) pintar();
   }
+  /** Un mensajito que se fue (borrado aquí o del otro lado): se encoge, se desvanece y su lugar se cierra. */
   function quitar(id) {
     const f = S.nodos.get(id);
     S.ms = S.ms.filter((m) => m.id !== id);
     S.nodos.delete(id);
-    if (f?.isConnected && !reducido()) f.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(.6)" }], { duration: 260, easing: "ease-in" }).onfinish = () => pintar();
-    else pintar();
+    if (S.editando?.id === id) dejarDeEditar();
+    if (!f?.isConnected || reducido()) { pintar(); return; }
+    const c = f.querySelector(".ch-cuerpo") || f, h = f.offsetHeight;
+    f.style.pointerEvents = "none";
+    c.animate([{ opacity: 1, transform: "none", filter: "blur(0)" }, { opacity: 0, transform: "scale(.62) translateY(-6px)", filter: "blur(6px)" }], { duration: 320, easing: "cubic-bezier(.4, 0, .6, 1)", fill: "forwards" }).onfinish = () => {
+      if (!f.isConnected) return pintar();
+      f.style.overflow = "hidden";
+      f.animate([{ height: h + "px", marginTop: getComputedStyle(f).marginTop }, { height: "0px", marginTop: "0px" }], { duration: 220, easing: "ease-in-out", fill: "forwards" }).onfinish = () => pintar();
+    };
   }
   function festejar(m) {
     sonar("reaccion-" + m.reaccion);
     const r = S.nodos.get(m.id)?.querySelector(".ch-rx")?.getBoundingClientRect();
     const l = lista.getBoundingClientRect();
     if (r && r.bottom > l.top && r.top < l.bottom) estallido(r.left + r.width / 2, r.top + r.height / 2, m.reaccion);
+  }
+  /** Un mensajito recién editado: se «vuelve a escribir» con un brillito. */
+  function entintar(id) {
+    const b = S.nodos.get(id)?.querySelector(".ch-burbuja");
+    if (!b || reducido()) return;
+    b.animate([{ transform: "scale(.95)", filter: "blur(1.5px)", opacity: 0.6 }, { transform: "scale(1.03)", filter: "blur(0)", opacity: 1, offset: 0.6 }, { transform: "none" }], { duration: 520, easing: "cubic-bezier(.2, .9, .3, 1)" });
+    b.classList.add("brilla");
+    setTimeout(() => b.classList.remove("brilla"), 1100);
   }
 
   /* — Mandar — */
@@ -558,7 +666,7 @@ export function vistaChat(det) {
     input.style.height = Math.min(124, input.scrollHeight) + "px";
     const hay = !!input.value.trim();
     escribir.classList.toggle("con-texto", hay);
-    bMandar.setAttribute("aria-label", hay ? "Mandar" : "Nota de voz");
+    bMandar.setAttribute("aria-label", S.editando ? "Guardar el cambio" : hay ? "Mandar" : "Mensaje de voz");
     if (!panelN.hidden && input.value && P.tipo !== "emojis") panel(null);
   }
   // Sonidos de teclado (se apagan en ⋮): letra, espacio y borrar, también con el teclado del teléfono.
@@ -569,35 +677,48 @@ export function vistaChat(det) {
   });
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey && !e.isComposing && !matchMedia("(pointer: coarse)").matches) { e.preventDefault(); mandarTexto(); }
+    else if (e.key === "Escape" && S.editando) { e.preventDefault(); dejarDeEditar(); }
   });
   input.addEventListener("focus", () => { if (!panelN.hidden && P.tipo !== "emojis") panel(null); if (S.pegado) setTimeout(() => alFondo(false), 260); });
+  function alMandar() {
+    if (S.grabando) return;
+    if (input.value.trim()) return mandarTexto();
+    if (S.editando) { input.focus(); return; }
+    empezarGrabacion();
+  }
   function mandarTexto() {
     const t = input.value.trim();
     if (!t) { input.focus(); return; }
+    if (S.editando) { guardarEdicion(t); return; }
     input.value = ""; alEscribir();
     mandar({ texto: t });
   }
-  async function mandar({ texto = "", gif = null }) {
-    const t = { id: "t" + ++S.temp, mio: true, texto, gif, creado: new Date().toISOString(), visto: "", reaccion: "", stickers: [], _enviando: true };
+  /** La burbuja de «enviando…», mientras el servidor contesta. */
+  function burbujaNueva(datos) {
+    const t = { id: "t" + ++S.temp, mio: true, texto: "", gif: null, audio: null, ...datos, creado: new Date().toISOString(), visto: "", reaccion: "", editado: "", stickers: [], _enviando: true };
     S.ms.push(t); S.ms.sort(orden); S.listo = true;
     pintar(); alFondo(false);
     volar(S.nodos.get(t.id));
+    return t;
+  }
+  function noSeMando(t, e) {
+    S.nodos.get(t.id)?.remove();
+    S.nodos.delete(t.id);
+    S.ms = S.ms.filter((x) => x !== t);
+    pintar();
+    if (t.texto && !input.value) { input.value = t.texto; alEscribir(); }
+    aviso(mensajeError(e), 5000, "error");
+    sonar("error");
+  }
+  async function mandar({ texto = "", gif = null }) {
+    const t = burbujaNueva({ texto, gif });
     sonar("mensaje-enviar");
     try {
       const m = await SRV.mandarMensaje({ texto, gif });
       if (!S.vivo) return true;
       if (!t._real) adoptar(t, m);
       return true;
-    } catch (e) {
-      S.nodos.get(t.id)?.remove();
-      S.nodos.delete(t.id);
-      S.ms = S.ms.filter((x) => x !== t);
-      pintar();
-      if (texto && !input.value) { input.value = texto; alEscribir(); }
-      aviso(mensajeError(e), 5000, "error");
-      sonar("error");
-      return false;
-    }
+    } catch (e) { noSeMando(t, e); return false; }
   }
 
   /** La burbuja de «mandando» pasa a ser la de verdad (la misma: no se vuelve a animar ni a cargar). */
@@ -611,67 +732,90 @@ export function vistaChat(det) {
     S.ultimo = Math.max(S.ultimo, m.id);
     pintar();
   }
-  /** Tu mensajito sale volando desde donde lo escribiste, con un rebotito y corazoncitos. */
+  /**
+   * Tu mensajito sale volando desde donde lo escribiste: hace una curvita, aterriza con un rebotito
+   * (se aplasta tantito, como gelatina), deja un halo lila y salen corazoncitos del botón.
+   */
   function volar(f) {
     if (!f || reducido()) return;
-    const b = f.querySelector(".ch-burbuja"), h = f.querySelector(".ch-hora");
-    const rb = b.getBoundingClientRect(), ri = escribir.querySelector(".ch-caja").getBoundingClientRect();
-    const dx = ri.left + Math.min(rb.width / 2 + 16, ri.width / 2) - (rb.left + rb.width / 2), dy = ri.top + ri.height / 2 - (rb.top + rb.height / 2);
-    b.animate([
-      { transform: `translate(${dx}px, ${dy}px) scale(.62)`, opacity: 0.35, filter: "blur(1.5px)" },
-      { transform: `translate(${dx * 0.18}px, ${dy * 0.12}px) scale(1.04)`, opacity: 1, filter: "blur(0)", offset: 0.55 },
-      { transform: "translate(0, -3px) scale(1.06) rotate(-1deg)", offset: 0.78 },
+    const c = f.querySelector(".ch-cuerpo"), b = f.querySelector(".ch-burbuja"), h = f.querySelector(".ch-hora");
+    const rb = b.getBoundingClientRect(), ri = escribir.getBoundingClientRect();
+    const dx = ri.left + Math.min(rb.width / 2 + 60, ri.width / 2) - (rb.left + rb.width / 2), dy = ri.top + ri.height / 2 - (rb.top + rb.height / 2);
+    c.animate([
+      { transform: `translate(${dx}px, ${dy}px) scale(.5)`, opacity: 0, filter: "blur(3px)" },
+      { transform: `translate(${dx * 0.42}px, ${dy * 0.3}px) scale(.86)`, opacity: 1, filter: "blur(.6px)", offset: 0.34 },
+      { transform: "translate(0, -7px) scale(1.045, .965)", filter: "blur(0)", offset: 0.7 },
+      { transform: "translate(0, 1px) scale(.985, 1.015)", offset: 0.86 },
       { transform: "none" },
-    ], { duration: 620, easing: "cubic-bezier(.2, .9, .3, 1)" });
-    h?.animate([{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }], { duration: 300, delay: 380, fill: "backwards" });
+    ], { duration: 780, easing: "cubic-bezier(.22, 1, .36, 1)" });
+    b.classList.add("recien");
+    setTimeout(() => b.classList.remove("recien"), 1300);
+    h?.animate([{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }], { duration: 320, delay: 520, fill: "backwards" });
     const r = bMandar.getBoundingClientRect();
     det._chispas?.(r.left + r.width / 2, r.top + r.height / 2, 7);
   }
 
-  /* — Tocar un mensajito: su menú — */
+  /* — Mantener presionado un mensajito: su menú (con la burbuja nítida encima de todo) — */
   const deFila = (f) => S.ms.find((m) => String(m.id) === f.dataset.id);
-  function tocar(e, f) {
-    const m = deFila(f);
-    if (!m || !real(m) || S.dibujo) return;
-    abrirMenu(m, f, e.detail === 0);
-  }
   function abrirMenu(m, f, conTeclado) {
-    cerrarMenu();
+    if (S.dibujo || S.grabando) return;
+    cerrarMenu(); cerrarHoja();
     const b = f.querySelector(".ch-burbuja");
+    if (!b) return;
     const partes = [];
     if (!m.mio) partes.push(el("div.ch-menu-rx", { role: "group", "aria-label": "Reaccionar" }, REACCIONES.map((r) => el("button.ch-menu-rxb" + (m.reaccion === r.id ? ".on" : ""), {
       type: "button", title: r.corto, "aria-label": r.corto, "aria-pressed": String(m.reaccion === r.id), html: svgReaccion(r.id), onClick: () => reaccionar(m, r.id),
     }))));
-    partes.push(el("div.ch-menu-acc", {}, [
-      el("button.ch-menu-b", { type: "button", role: "menuitem", html: I("sticker", "Pegarle un sticker"), onClick: () => { cerrarMenu(); panel("stickers"); } }),
-      m.texto ? el("button.ch-menu-b", { type: "button", role: "menuitem", html: I("copiar", "Copiar"), onClick: async () => { cerrarMenu(); try { await navigator.clipboard.writeText(m.texto); aviso("Copiado"); } catch (err) { aviso("No se pudo copiar aquí", 2600, "error"); } } }) : null,
-      m.mio ? el("button.ch-menu-b.peligro", { type: "button", role: "menuitem", html: I("borrar", "Borrar para los dos"), onClick: () => { cerrarMenu(); borrar(m); } }) : null,
-    ]));
+    const acc = [];
+    if (m.mio && m.texto && !m.audio) acc.push(el("button.ch-menu-b", { type: "button", role: "menuitem", html: I("editar", "Editar"), onClick: () => editar(m) }));
+    if (m.texto) acc.push(el("button.ch-menu-b", { type: "button", role: "menuitem", html: I("copiar", "Copiar"), onClick: async () => { cerrarMenu(); try { await navigator.clipboard.writeText(m.texto); aviso("Copiado 💜", 1800); } catch (err) { aviso("No se pudo copiar aquí", 2600, "error"); } } }));
+    if (m.mio) acc.push(el("button.ch-menu-b.peligro", { type: "button", role: "menuitem", html: I("borrar", "Eliminar"), onClick: () => { cerrarMenu(); borrar(m); } }));
+    if (acc.length) partes.push(el("div.ch-menu-acc", {}, acc));
+    if (!partes.length) return;
+    const velo = flota(el("div.ch-velo.foco", { onClick: () => cerrarMenu() }));
+    const copia = flota(el("div", { "aria-hidden": "true" }, [b.cloneNode(true)]));
+    copia.className = f.className.replace(/\b(llega|enviando)\b/g, "") + " ch-copia";
+    copia.querySelector(".ch-burbuja").classList.remove("apretando", "recien", "brilla");
+    copia.querySelectorAll(".ed-onda-capa").forEach((n) => n.remove());
     const caja = flota(el("div.ch-menu" + (m.mio ? ".mio" : ""), { role: "menu", "aria-label": "Qué hacer con este mensajito" }, partes));
-    const velo = el("div.ch-velo", { onClick: () => cerrarMenu() });
-    caja.before(velo);
     b.classList.add("elegida");
-    S.menu = { caja, velo, b, mio: m.mio };
+    S.menu = { caja, velo, b, mio: m.mio, copia };
     colocarMenu();
-    sonar("abrir");
+    sonar("mensaje-menu");
     if (conTeclado) caja.querySelector("button")?.focus({ preventScroll: true });
   }
+  /** Un menú chiquito junto a algo del panel (un sticker tuyo, un GIF). */
+  function menuChico(ancla, botones) {
+    cerrarMenu();
+    const velo = flota(el("div.ch-velo", { onClick: () => cerrarMenu() }));
+    const caja = flota(el("div.ch-menu.chico", { role: "menu" }, [el("div.ch-menu-acc", {}, botones)]));
+    ancla.classList.add("elegida");
+    S.menu = { caja, velo, b: ancla, chico: true };
+    colocarMenu();
+    sonar("mensaje-menu");
+  }
   function colocarMenu() {
-    const { caja, b, mio } = S.menu, r = b.getBoundingClientRect(), w = caja.offsetWidth, h = caja.offsetHeight;
-    const x = Math.max(10, Math.min(innerWidth - w - 10, mio ? r.right - w : r.left));
-    const arriba = r.top - h - 10 > 70;
-    const y = arriba ? r.top - h - 10 : Math.min(innerHeight - h - 10, r.bottom + 10);
+    const { caja, b, mio, copia, chico } = S.menu, w = caja.offsetWidth, h = caja.offsetHeight;
+    // Su lugar de verdad (sin el «hundido» de mantenerla presionada, que todavía se está deshaciendo).
+    const q = b.getBoundingClientRect(), bw = b.offsetWidth || q.width, bh = b.offsetHeight || q.height;
+    const l = q.left + q.width / 2 - bw / 2, t = q.top + q.height / 2 - bh / 2;
+    const r = { left: l, top: t, right: l + bw, bottom: t + bh, width: bw };
+    if (copia) Object.assign(copia.style, { left: r.left + "px", top: r.top + "px", width: Math.ceil(bw) + 1 + "px" }); // (+1: que el texto no se acomode distinto)
+    const x = Math.max(10, Math.min(innerWidth - w - 10, chico ? r.left + r.width / 2 - w / 2 : mio ? r.right - w : r.left));
+    const abajo = !chico && r.bottom + 10 + h < innerHeight - 10, arriba = r.top - h - 10 > 10;
+    const y = abajo ? r.bottom + 10 : arriba ? r.top - h - 10 : innerHeight - h - 10;
     caja.style.left = x + "px"; caja.style.top = Math.max(10, y) + "px";
-    caja.style.transformOrigin = `${mio ? "right" : "left"} ${arriba ? "bottom" : "top"}`;
+    caja.style.transformOrigin = `${chico ? "center" : mio ? "right" : "left"} ${abajo ? "top" : "bottom"}`;
   }
   function cerrarMenu() {
     const m = S.menu;
     if (!m) return false;
     S.menu = null;
     m.b.classList.remove("elegida");
-    m.velo.remove();
-    if (reducido()) m.caja.remove();
-    else m.caja.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(.9)" }], { duration: 140, easing: "ease-in" }).onfinish = () => m.caja.remove();
+    if (reducido()) { m.velo.remove(); m.caja.remove(); m.copia?.remove(); return true; }
+    m.velo.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, fill: "forwards" }).onfinish = () => m.velo.remove();
+    m.caja.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(.9)" }], { duration: 150, easing: "ease-in", fill: "forwards" }).onfinish = () => m.caja.remove();
+    m.copia?.animate([{ transform: "scale(1.035)" }, { transform: "none" }], { duration: 170, easing: "ease-out", fill: "forwards" }).finished.then(() => m.copia.remove(), () => m.copia.remove());
     return true;
   }
   async function reaccionar(m, id) {
@@ -687,14 +831,122 @@ export function vistaChat(det) {
     catch (e) { aplicar(antes); aviso(mensajeError(e), 4500, "error"); }
   }
   async function borrar(m, que = "este mensajito") {
-    if (!(await confirmar(`¿Borrar ${que}? Se borra para los dos.`, "Borrar"))) return;
-    try { await SRV.borrarMensaje(m.id); sonar("borrar"); quitar(m.id); }
+    if (!(await confirmar(`¿Eliminar ${que}? Se elimina para los dos.`, "Eliminar"))) return;
+    try { await SRV.borrarMensaje(m.id); sonar("mensaje-borrar"); quitar(m.id); }
     catch (e) { aviso(mensajeError(e), 4000, "error"); }
+  }
+
+  /* — Editar tu mensajito — */
+  function editar(m) {
+    cerrarMenu();
+    if (S.grabando) return;
+    panel(null);
+    dejarDeEditar(false);
+    S.editando = m;
+    editT.textContent = m.texto;
+    editBar.hidden = false;
+    raiz.classList.add("editando");
+    S.nodos.get(m.id)?.classList.add("editandose");
+    input.value = m.texto;
+    alEscribir();
+    input.focus();
+    try { input.setSelectionRange(input.value.length, input.value.length); } catch (e) { /* nada */ }
+    if (!reducido()) editBar.animate([{ opacity: 0, transform: "translateY(14px) scale(.98)" }, { opacity: 1, transform: "none" }], { duration: 280, easing: "cubic-bezier(.2, .9, .3, 1.1)" });
+    sonar("abrir");
+  }
+  function dejarDeEditar(limpiar = true) {
+    if (!S.editando) return false;
+    S.nodos.get(S.editando.id)?.classList.remove("editandose");
+    S.editando = null;
+    editBar.hidden = true;
+    raiz.classList.remove("editando");
+    if (limpiar) { input.value = ""; }
+    alEscribir();
+    return true;
+  }
+  async function guardarEdicion(texto) {
+    const m = S.ms.find((x) => x.id === S.editando.id) || S.editando;
+    dejarDeEditar();
+    if (texto === m.texto) return;
+    aplicar({ ...m, texto, editado: new Date().toISOString() });
+    sonar("mensaje-editar");
+    entintar(m.id);
+    try { aplicar(await SRV.editarMensaje(m.id, texto)); }
+    catch (e) { aplicar(m); aviso(mensajeError(e), 4500, "error"); }
+  }
+
+  /* — Mensajes de voz — */
+  async function empezarGrabacion() {
+    if (S.grabando) return;
+    if (!VOZ.puedeGrabar()) { aviso(window.isSecureContext === false ? "Para grabar audios, abre el editor con https." : "Este navegador no deja grabar audios aquí.", 4500, "error"); return; }
+    panel(null); salirDibujo(); cerrarMenu();
+    S.grabando = { cargando: true };
+    let g;
+    try { g = await VOZ.grabar(); }
+    catch (e) {
+      S.grabando = null;
+      aviso(e?.name === "NotAllowedError" || e?.name === "SecurityError" ? "Necesito permiso para usar tu micrófono 🎤 (dáselo en los ajustes del navegador)." : e?.name === "NotFoundError" ? "No encontré ningún micrófono en este aparato." : "No se pudo empezar a grabar.", 5500, "error");
+      return;
+    }
+    if (!S.vivo) { g.cancelar(); return; }
+    S.grabando = g;
+    input.blur();
+    escribir.classList.add("grabando");
+    grabBar.hidden = false;
+    sonar("audio-grabar");
+    vibrar(18);
+    if (!reducido()) grabBar.animate([{ opacity: 0, transform: "scale(.96)" }, { opacity: 1, transform: "none" }], { duration: 280, easing: "cubic-bezier(.2, .9, .3, 1.1)" });
+    const barras = [...grabOndas.children], niveles = barras.map(() => 0.08);
+    let antes = 0;
+    const paso = (t) => {
+      if (S.grabando !== g) return;
+      const s = g.segundos();
+      grabT.textContent = VOZ.minutos(s);
+      if (t - antes > 70) { antes = t; niveles.shift(); niveles.push(Math.max(0.08, g.nivel())); barras.forEach((b, i) => { b.style.transform = `scaleY(${niveles[i]})`; }); }
+      if (s >= VOZ.MAX_SEG) { terminarGrabacion(); return; }
+      g.cuadro = requestAnimationFrame(paso);
+    };
+    g.cuadro = requestAnimationFrame(paso);
+  }
+  function soltarGrabacion() {
+    const g = S.grabando;
+    if (!g || g.cargando) return null;
+    cancelAnimationFrame(g.cuadro);
+    S.grabando = null;
+    escribir.classList.remove("grabando");
+    grabBar.hidden = true;
+    return g;
+  }
+  function cancelarGrabacion() {
+    const g = soltarGrabacion();
+    if (!g) return false;
+    g.cancelar();
+    sonar("borrar");
+    return true;
+  }
+  async function terminarGrabacion() {
+    const g = soltarGrabacion();
+    if (!g) return;
+    let a;
+    try { a = await g.parar(); } catch (e) { aviso("No se pudo preparar el audio.", 4500, "error"); return; }
+    if (!S.vivo) return;
+    if (a.dur < 0.6) { aviso("Ese audio quedó muy cortito 🎤", 2600); return; }
+    const local = URL.createObjectURL(a.blob);
+    S.blobs.push(local);
+    const t = burbujaNueva({ audio: { u: local, dur: a.dur, ondas: a.ondas } });
+    sonar("audio-listo");
+    try {
+      const r = await SRV.subirMedia(a.blob, "audio");
+      t.audio._u = r.u;
+      const m = await SRV.mandarMensaje({ audio: { u: r.u, dur: a.dur, ondas: a.ondas } });
+      if (!S.vivo) return;
+      if (!t._real) adoptar(t, m);
+    } catch (e) { noSeMando(t, e); }
   }
 
   /* — Las hojitas de ⋮ (ajustes y privacidad) y de + (las cositas) — */
   function abrirHoja(nodoHoja, desde, clase) {
-    cerrarHoja();
+    cerrarHoja(); cerrarMenu();
     const velo = flota(el("div.ch-velo.suave", { onClick: () => cerrarHoja() }));
     const h = flota(el("div.ch-hoja." + clase, { role: "menu" }, [nodoHoja]));
     const r = desde.getBoundingClientRect(), w = h.offsetWidth, alto = h.offsetHeight;
@@ -733,7 +985,7 @@ export function vistaChat(det) {
     abrirHoja(el("div.ch-hoja-in", {}, [
       el("div.ch-hoja-cab", {}, [el("i", { html: IC.lleno }), el("b", { text: "Ajustes del chat" })]),
       el("small.ch-hoja-sec", { text: "En este aparato" }),
-      interruptor("Sonidos del chat", "Al mandar, al llegar y al pegar", PR.sonidos, pref("sonidos")),
+      interruptor("Sonidos del chat", "Al mandar, al llegar, audios y stickers", PR.sonidos, pref("sonidos")),
       interruptor("Sonidos del teclado", "Al escribir tus mensajitos", PR.teclado, pref("teclado")),
       interruptor("Avisos dentro del editor", "Cuando el chat está cerrado", PR.avisos, pref("avisos")),
       interruptor("Fondo con corazoncitos", "", PR.fondo, pref("fondo")),
@@ -765,7 +1017,7 @@ export function vistaChat(det) {
     return [cab,
       interruptor("Notificaciones push", "Aunque el editor esté cerrado, con sonido", !!e.prendidas, async (v) => {
         try {
-          if (v) { await PUSH.prender(); aviso(`¡Listo! Te aviso cuando ${nombre} te escriba 💗`, 3500); }
+          if (v) { await PUSH.prender(); aviso(`¡Listo! Te aviso cuando ${nombre} te escriba 💜`, 3500); }
           else { await PUSH.apagar(); aviso("Notificaciones apagadas en este aparato"); }
           S.push = await PUSH.estado();
           return true;
@@ -788,7 +1040,7 @@ export function vistaChat(det) {
       el("i", { html: ico("campana") }),
       el("span", { text: puede ? `¿Te aviso cuando ${nombre} te escriba, aunque el editor esté cerrado?` : "Para que te avise en tu iPhone aunque esté cerrado: Compartir → «Agregar a inicio», y abre el editor desde ese ícono." }),
       puede ? el("button.ch-invita-si", { type: "button", text: "Activar", onClick: async () => {
-        try { await PUSH.prender(); S.push = await PUSH.estado(); aviso(`¡Listo! Te aviso cuando ${nombre} te escriba 💗`, 3500); listo(); }
+        try { await PUSH.prender(); S.push = await PUSH.estado(); aviso(`¡Listo! Te aviso cuando ${nombre} te escriba 💜`, 3500); listo(); }
         catch (err) { aviso(err.message, 6500, "error"); listo(); }
       } }) : null,
       el("button.ch-invita-no", { type: "button", text: puede ? "Ahora no" : "Entendido", onClick: listo }),
@@ -804,8 +1056,8 @@ export function vistaChat(det) {
       el("div.ch-cositas", {}, [
         item(IC.lapiz, "Dibujar", "En vivo, en todo el chat", () => entrarDibujo(), ".rosa"),
         item(IC.espacio, "Espacio", "Más lugar para dibujar", () => { entrarDibujo(); masEspacio(); }, ".lila"),
-        item(IC.gato, "Stickers", "Cute y para pegar", () => panel("stickers"), ".durazno"),
-        item("<b>GIF</b>", "GIFs", "Para decirlo todo", () => panel("gifs"), ".menta"),
+        item(IC.foto, "Crear sticker", "Con tus fotos", () => crearSticker(), ".durazno"),
+        item(IC.mic, "Nota de voz", "Grábale un audio", () => empezarGrabacion(), ".menta"),
       ]),
       el("div.ch-pronto", {}, [el("i", { html: IC.brillo }), el("span", { text: "Aquí van a llegar más cositas muy pronto ✨" })]),
     ]), bMas, "mas");
@@ -821,53 +1073,67 @@ export function vistaChat(det) {
         antes = d.mensajes[0].id;
       }
       const yo = PF.miNombre() || "Yo";
-      const lineas = todos.filter((m) => !m.espacio && !m.borrado).map((m) => `[${new Date(m.creado).toLocaleString("es-MX")}] ${m.mio ? yo : nombre}: ${m.texto || ""}${m.gif ? (m.texto ? " " : "") + (m.gif.s ? "[sticker]" : "[GIF]") : ""}`);
-      const b = new Blob([`Mensajitos de ${yo} y ${nombre} 💗\n\n${lineas.join("\n")}\n`], { type: "text/plain;charset=utf-8" });
+      const lineas = todos.filter((m) => !m.espacio && !m.borrado).map((m) => `[${new Date(m.creado).toLocaleString("es-MX")}] ${m.mio ? yo : nombre}: ${m.audio ? `[mensaje de voz ${VOZ.minutos(m.audio.dur)}]` : ""}${m.texto || ""}${m.gif ? (m.texto ? " " : "") + (m.gif.s ? "[sticker]" : "[GIF]") : ""}${m.editado ? " (editado)" : ""}`);
+      const b = new Blob([`Mensajitos de ${yo} y ${nombre} 💜\n\n${lineas.join("\n")}\n`], { type: "text/plain;charset=utf-8" });
       const a = el("a", { href: URL.createObjectURL(b), download: `mensajitos-con-${SRV.nombreLimpio(nombre)}.txt` });
       document.body.append(a); a.click();
       setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
     } catch (e) { aviso(mensajeError(e), 4500, "error"); }
   }
 
-  /* — El panel de stickers, GIFs y emojis — */
-  function panel(tipo) {
-    if (!tipo || (tipo === P.tipo && !panelN.hidden)) {
+  /* — El panel: Stickers / Explorar stickers, GIFs favoritos / Explorar GIFs, o sólo emojis — */
+  function panel(tipo, vista) {
+    if (!tipo || (tipo === P.tipo && !vista && !panelN.hidden)) {
       if (panelN.hidden) return false;
       P.ctl?.abort();
-      P.tipo = "";
+      P.tipo = ""; P.vista = "";
       [bGif, bSt, bEmoji].forEach((b) => b.classList.remove("on"));
       raiz.classList.remove("con-panel");
       if (reducido()) panelN.hidden = true;
-      else panelN.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(18px) scale(.98)" }], { duration: 180, easing: "ease-in" }).onfinish = () => { if (!P.tipo) panelN.hidden = true; };
+      else panelN.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(22px) scale(.97)" }], { duration: 200, easing: "ease-in" }).onfinish = () => { if (!P.tipo) panelN.hidden = true; };
       sonar("cerrar");
       return true;
     }
+    if (S.grabando) return false;
     if (S.dibujo) salirDibujo();
-    const abriendo = panelN.hidden;
-    P.tipo = tipo; P.q = "";
-    buscar.value = "";
-    buscar.placeholder = tipo === "gifs" ? "Busca un GIF…" : "Busca un sticker cute…";
-    buscarCaja.hidden = tipo === "emojis";
-    tabs.forEach((b) => { const on = b.dataset.t === tipo; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); });
+    const abriendo = panelN.hidden, otroTipo = tipo !== P.tipo, vs = VISTAS[tipo] || [];
+    if (tipo === "emojis") vista = "emojis";
+    else if (!vista) vista = !otroTipo && P.vista ? P.vista : tipo === "gifs" && COL.gifs && !COL.gifs.length ? "explorar" : "mios";
+    const antesI = vs.findIndex(([v]) => v === P.vista), ahoraI = vs.findIndex(([v]) => v === vista);
+    const cambio = otroTipo || vista !== P.vista;
+    P.tipo = tipo; P.vista = vista;
+    tabsN.hidden = !vs.length; tituloP.hidden = !!vs.length;
+    if (otroTipo || tabsN.childElementCount !== vs.length) tabsN.replaceChildren(...vs.map(([v, t]) => el("button.ch-tab", { type: "button", role: "tab", dataset: { v }, text: t, onClick: () => { if (P.vista !== v) panel(tipo, v); } })));
+    tabsN.querySelectorAll(".ch-tab").forEach((b) => { const on = b.dataset.v === vista; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); });
+    tabsN.style.setProperty("--i", Math.max(0, ahoraI));
     [[bGif, "gifs"], [bSt, "stickers"], [bEmoji, "emojis"]].forEach(([b, t]) => b.classList.toggle("on", t === tipo));
-    pista.textContent = tipo === "stickers" ? "Toca para mandarlo · mantenlo y arrástralo para pegarlo donde quieras" : tipo === "gifs" ? "Toca uno para mandarlo" : "Toca para ponerlo en tu mensajito";
-    chips.replaceChildren(...(ETIQUETAS[tipo] || []).map(([t, q], i) => el("button.ch-chip" + (i === 0 ? ".on" : ""), { type: "button", text: t, dataset: { q }, onClick: (e) => { buscar.value = ""; P.q = q; chips.querySelectorAll(".ch-chip").forEach((c) => c.classList.toggle("on", c === e.currentTarget)); hacerBusqueda(true); } })));
-    chips.hidden = tipo === "emojis";
+    const explorar = vista === "explorar";
+    buscarCaja.hidden = chips.hidden = giphyMarca.hidden = !explorar;
+    pista.textContent = PISTAS[tipo + ":" + vista] || "";
     raiz.classList.add("con-panel");
     if (abriendo) {
       panelN.hidden = false;
       if (tipo !== "emojis") input.blur();
-      if (!reducido()) panelN.animate([{ opacity: 0, transform: "translateY(24px) scale(.97)" }, { opacity: 1, transform: "none" }], { duration: 300, easing: "cubic-bezier(.2,.9,.3,1.15)" });
+      if (!reducido()) panelN.animate([{ opacity: 0, transform: "translateY(28px) scale(.96)" }, { opacity: 1, transform: "none" }], { duration: 340, easing: "cubic-bezier(.2, .9, .3, 1.12)" });
       sonar("abrir");
       if (S.pegado) setTimeout(() => alFondo(false), 40);
+    } else if (cambio && !reducido()) {
+      const dir = otroTipo || antesI < 0 ? 0 : ahoraI > antesI ? 1 : -1;
+      rejilla.animate([{ opacity: 0, transform: `translateX(${dir * 22}px)` }, { opacity: 1, transform: "none" }], { duration: 260, easing: "cubic-bezier(.2, .9, .3, 1)" });
     }
-    if (tipo === "emojis") {
-      P.ctl?.abort();
+    if (!cambio && !abriendo) return true;
+    P.ctl?.abort();
+    rejilla.scrollTop = 0;
+    if (vista === "emojis") {
       rejilla.className = "ch-rejilla emojis";
       rejilla.replaceChildren(...EMOJIS.map((x) => el("button.ch-emo", { type: "button", text: x, onClick: () => ponerEmoji(x) })));
       return true;
     }
-    rejilla.className = "ch-rejilla";
+    if (vista === "mios") { verMios(); return true; }
+    rejilla.className = "ch-rejilla explorar " + tipo;
+    buscar.value = "";
+    buscar.placeholder = tipo === "gifs" ? "Busca un GIF…" : "Busca un sticker cute…";
+    chips.replaceChildren(...ETIQUETAS[tipo].map(([t, q], i) => el("button.ch-chip" + (i === 0 ? ".on" : ""), { type: "button", text: t, dataset: { q }, onClick: (e) => { buscar.value = ""; P.q = q; chips.querySelectorAll(".ch-chip").forEach((c) => c.classList.toggle("on", c === e.currentTarget)); hacerBusqueda(true); } })));
     P.q = ETIQUETAS[tipo][0][1];
     hacerBusqueda(true);
     return true;
@@ -878,7 +1144,138 @@ export function vistaChat(det) {
     input.selectionStart = input.selectionEnd = a + x.length;
     alEscribir();
   }
+
+  /* Tu colección (del servidor): favoritos arriba y luego lo que más usas. */
+  function cargarColeccion() {
+    COL.pide ??= SRV.coleccion().then((d) => { COL.stickers = d.stickers || []; COL.gifs = d.gifs || []; }).finally(() => { COL.pide = null; });
+    return COL.pide;
+  }
+  const ordenar = (l) => l.map((x, i) => [x, i]).sort(([a, i], [b, j]) => (b.favorito - a.favorito) || ((b.usos || 0) - (a.usos || 0)) || ((b._t || 0) - (a._t || 0)) || i - j).map(([x]) => x);
+  const delTipo = (tipo, id) => (COL[tipo] || []).find((z) => z.id === id);
+  function usado(tipo, u) {
+    const x = (COL[tipo] || []).find((z) => z.u === u);
+    if (x) { x.usos = (x.usos || 0) + 1; x._t = Date.now(); }
+  }
+  function verMios() {
+    const tipo = P.tipo;
+    rejilla.className = "ch-rejilla mios " + tipo;
+    if (COL[tipo]) pintarMios(false);
+    else rejilla.replaceChildren(el("div.dt-cargando", {}, [el("i"), el("span", { text: "Abriendo tu colección…" })]));
+    cargarColeccion().then(() => { if (P.vista === "mios" && P.tipo === tipo) pintarMios(true); }).catch((e) => {
+      if (P.vista === "mios" && P.tipo === tipo && !COL[tipo]) rejilla.replaceChildren(el("p.ch-nada", { text: mensajeError(e) }));
+    });
+  }
+  const deCol = (k, hacer) => { let n = nodosCol.get(k); if (!n) { n = hacer(); n.dataset.k = k; nodosCol.set(k, n); } return n; };
+  /** Pinta tus stickers (o tus GIFs favoritos); con `animar`, los que cambiaron de lugar se deslizan solitos. */
+  function pintarMios(animar) {
+    const tipo = P.tipo, l = ordenar(COL[tipo] || []), hijos = [];
+    const titulo = (k, t, icono) => deCol(tipo + ":" + k, () => el("p.ch-col-t", {}, [icono ? el("i", { html: icono }) : null, el("span", { text: t })]));
+    if (tipo === "stickers") {
+      const fav = l.filter((x) => x.favorito), resto = l.filter((x) => !x.favorito);
+      const crear = deCol("crear", () => el("button.ch-mini.ch-crear-b", { type: "button", "aria-label": "Crear un sticker con tus fotos", onClick: () => crearSticker() }, [el("i", { html: IC.mas }), el("span", { text: "Crear" })]));
+      if (fav.length) hijos.push(titulo("fav", "Favoritos", IC.estrellaLlena), ...fav.map((x) => miniMio(x, tipo)), titulo("mios", "Mis stickers"));
+      hijos.push(crear, ...resto.map((x) => miniMio(x, tipo)));
+      if (!l.length) hijos.push(deCol("vacio-st", () => el("p.ch-col-vacio", { text: "Crea tus propios stickers con tus fotos 💜 Tus favoritos y los que más uses se van acomodando hasta arriba." })));
+    } else {
+      hijos.push(...l.map((x) => miniMio(x, tipo)));
+      if (!l.length) hijos.push(deCol("vacio-gif", () => el("div.ch-col-vacio", {}, [
+        el("p", { text: "Aquí van a vivir tus GIFs favoritos. Mantén presionado un GIF en «Explorar GIFs» para guardarlo." }),
+        el("button.ch-chip.on", { type: "button", text: "Explorar GIFs", onClick: () => panel("gifs", "explorar") }),
+      ])));
+    }
+    for (const x of l) nodosCol.get("c" + x.id)?.classList.toggle("fav", !!x.favorito);
+    const antes = animar && !reducido() ? new Map([...rejilla.children].map((n) => [n, n.getBoundingClientRect()])) : null;
+    rejilla.replaceChildren(...hijos);
+    if (antes) for (const n of hijos) {
+      const a = antes.get(n);
+      if (!a) continue;
+      const r = n.getBoundingClientRect(), dx = a.left - r.left, dy = a.top - r.top;
+      if (Math.abs(dx) + Math.abs(dy) > 1) n.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: 480, easing: "cubic-bezier(.2, .9, .3, 1)" });
+    }
+    if (S.nuevoSticker) {
+      const n = nodosCol.get("c" + S.nuevoSticker);
+      S.nuevoSticker = 0;
+      if (n && !reducido()) { n.classList.add("nace"); setTimeout(() => n.classList.remove("nace"), 900); }
+      n?.scrollIntoView({ block: "nearest", behavior: reducido() ? "auto" : "smooth" });
+    }
+  }
+  function miniMio(x, tipo) {
+    return deCol("c" + x.id, () => {
+      const b = el("button.ch-mini.mio" + (tipo === "stickers" ? ".st" : ""), { type: "button", "aria-label": tipo === "stickers" ? "Tu sticker" : "Tu GIF favorito", style: tipo === "gifs" ? { aspectRatio: `${x.w} / ${x.h}` } : {} }, [
+        el("img", { src: M(x.u), alt: "", loading: "lazy", decoding: "async", referrerpolicy: "no-referrer", draggable: "false" }),
+        el("i.ch-mini-fav", { "aria-hidden": "true", html: IC.estrellaLlena }),
+      ]);
+      const yo = () => delTipo(tipo, x.id) || x;
+      const menu = () => menuColeccion(b, yo(), tipo);
+      if (tipo === "stickers") arrastrable(b, { u: M(x.u), alSoltar: (p) => { if (p) { const z = yo(); usado("stickers", z.u); pegarLibre({ u: z.u, w: z.w, h: z.h }, p); } }, alQuieto: menu });
+      else presionLarga(b, menu);
+      b.addEventListener("click", () => {
+        if (b._arrastrado) { b._arrastrado = false; return; }
+        const z = yo();
+        usado(tipo, z.u);
+        panel(null);
+        mandar({ gif: { u: z.u, w: z.w, h: z.h, ...(tipo === "stickers" ? { s: 1 } : {}) } });
+      });
+      return b;
+    });
+  }
+  function menuColeccion(n, x, tipo) {
+    const botones = [];
+    if (tipo === "stickers") botones.push(el("button.ch-menu-b", { type: "button", role: "menuitem", html: I2(x.favorito ? IC.estrellaNo : IC.estrella, x.favorito ? "Quitar de favoritos" : "Agregar a favoritos"), onClick: () => { cerrarMenu(); favorito(x, !x.favorito); } }));
+    botones.push(el("button.ch-menu-b.peligro", { type: "button", role: "menuitem", html: tipo === "stickers" ? I("borrar", "Eliminar sticker") : I2(IC.estrellaNo, "Quitar de favoritos"), onClick: () => { cerrarMenu(); quitarDeCol(x, tipo); } }));
+    menuChico(n, botones);
+  }
+  async function favorito(x, v) {
+    x.favorito = v;
+    sonar("favorito");
+    vibrar(12);
+    if (P.vista === "mios") pintarMios(true);
+    try { Object.assign(x, await SRV.favoritoColeccion(x.id, v), { _t: x._t }); }
+    catch (e) { x.favorito = !v; if (P.vista === "mios") pintarMios(true); aviso(mensajeError(e), 4500, "error"); }
+  }
+  async function quitarDeCol(x, tipo) {
+    const n = nodosCol.get("c" + x.id), antes = COL[tipo];
+    COL[tipo] = (COL[tipo] || []).filter((z) => z.id !== x.id);
+    sonar("borrar");
+    const listo = () => { nodosCol.delete("c" + x.id); if (P.tipo === tipo && P.vista === "mios") pintarMios(true); };
+    if (n?.isConnected && !reducido()) n.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(.4) rotate(-8deg)" }], { duration: 240, easing: "ease-in", fill: "forwards" }).onfinish = listo;
+    else listo();
+    try { await SRV.quitarDeColeccion(x.id); }
+    catch (e) { COL[tipo] = antes; if (P.vista === "mios") pintarMios(true); aviso(mensajeError(e), 4500, "error"); }
+  }
+  async function guardarGif(g, b) {
+    const ya = (COL.gifs || []).find((z) => z.u === g.u);
+    if (ya) { quitarDeCol(ya, "gifs"); b.classList.remove("fav"); return; }
+    b.classList.add("fav");
+    sonar("favorito");
+    try {
+      const item = await SRV.ponerEnColeccion({ tipo: "gif", u: g.u, w: g.w, h: g.h, favorito: true });
+      COL.gifs = [item, ...(COL.gifs || []).filter((z) => z.id !== item.id)];
+      aviso("Guardado en tus GIFs favoritos ★", 1800);
+    } catch (e) { b.classList.remove("fav"); aviso(mensajeError(e), 4500, "error"); }
+  }
+  async function crearSticker() {
+    if (S.grabando) return;
+    const f = await elegirImagen();
+    if (!f || !S.vivo) return;
+    await creadorSticker({ archivo: f, flota, sonar, alCrear: async ({ blob, w, h }) => {
+      let item;
+      try {
+        const r = await SRV.subirMedia(blob, "sticker");
+        item = await SRV.ponerEnColeccion({ tipo: "sticker", u: r.u, w, h });
+      } catch (e) { throw new Error(mensajeError(e)); }
+      COL.stickers = [item, ...(COL.stickers || []).filter((x) => x.id !== item.id)];
+      sonar("sticker-crear");
+      vibrar(20);
+      S.nuevoSticker = item.id;
+      if (P.tipo === "stickers" && P.vista === "mios" && !panelN.hidden) pintarMios(true);
+      else panel("stickers", "mios");
+    } });
+  }
+
+  /* Explorar (GIPHY). */
   buscar.addEventListener("input", debounce(() => {
+    if (P.vista !== "explorar") return;
     const q = buscar.value.trim();
     chips.querySelectorAll(".ch-chip").forEach((c) => c.classList.toggle("on", !q && c.dataset.q === P.q));
     P.q = q ? (P.tipo === "stickers" && !/cute|kawaii/i.test(q) ? q + " cute" : q) : ETIQUETAS[P.tipo][0][1];
@@ -911,7 +1308,7 @@ export function vistaChat(det) {
       rejilla.replaceChildren(el("p.ch-nada", { text: e instanceof G.SinConexion ? "GIPHY todavía no está conectado en este aparato. Conéctalo una vez en el editor, en la sección de GIFs." : e.message }));
     } finally { if (ctl === P.ctl) P.cargando = false; }
   }
-  rejilla.addEventListener("scroll", () => { if (P.tipo !== "emojis" && rejilla.scrollTop + rejilla.clientHeight > rejilla.scrollHeight - 320) hacerBusqueda(false); }, { passive: true });
+  rejilla.addEventListener("scroll", () => { if (P.vista === "explorar" && rejilla.scrollTop + rejilla.clientHeight > rejilla.scrollHeight - 320) hacerBusqueda(false); }, { passive: true });
   // Mientras arrastras un sticker, la rejilla no se desliza.
   rejilla.addEventListener("touchmove", (e) => { if (S.arrastre?.activo) e.preventDefault(); }, { passive: false });
   function mini(it, tipo) {
@@ -919,42 +1316,57 @@ export function vistaChat(det) {
     const g = { u: fw.webp || fw.url || it.mini, w: +fw.width || it.w || 200, h: +fw.height || it.h || 200 };
     const b = el("button.ch-mini" + (tipo === "stickers" ? ".st" : ""), { type: "button", "aria-label": it.titulo, title: it.titulo, style: { aspectRatio: `${g.w} / ${g.h}` } }, [
       el("img", { src: it.mini || g.u, alt: "", loading: "lazy", decoding: "async", referrerpolicy: "no-referrer", draggable: "false" }),
+      el("i.ch-mini-fav", { "aria-hidden": "true", html: IC.estrellaLlena }),
     ]);
     if (tipo === "stickers") prepararArrastre(b, { u: g.u, w: g.w, h: g.h, it });
+    else {
+      if ((COL.gifs || []).some((z) => z.u === g.u)) b.classList.add("fav");
+      presionLarga(b, () => menuChico(b, [el("button.ch-menu-b", { type: "button", role: "menuitem", html: b.classList.contains("fav") ? I2(IC.estrellaNo, "Quitar de favoritos") : I2(IC.estrella, "Agregar a favoritos"), onClick: () => { cerrarMenu(); guardarGif(g, b); } })]));
+    }
     b.addEventListener("click", () => { if (b._arrastrado) { b._arrastrado = false; return; } elegir(it, g, tipo); });
     return b;
   }
   async function elegir(it, g, tipo) {
     G.contar(it, "onclick");
+    if (tipo === "gifs") usado("gifs", g.u);
     panel(null);
     if (await mandar({ gif: tipo === "stickers" ? { ...g, s: 1 } : g })) G.contar(it, "onsent");
   }
 
   /* — Arrastrar stickers: del panel a cualquier parte del chat, o los tuyos de un lugar a otro — */
   const bote = el("div.ch-bote", { "aria-hidden": "true" }, [el("i", { html: IC.bote }), el("span", { text: "Suelta aquí para quitarlo" })]);
-  /** Mantener presionado (o, con ratón, empezar a mover) un sticker lo levanta. */
-  function arrastrable(n, { u, alSoltar, conBote = false }) {
-    let espera = 0, x0 = 0, y0 = 0, pid = null;
-    const limpiar = () => { clearTimeout(espera); espera = 0; };
+  /**
+   * Mantener presionado (o, con ratón, empezar a mover) un sticker lo levanta. Si lo sueltas donde
+   * mismo (o, con ratón, lo dejas presionado sin moverlo), es `alQuieto` (su menú, si tiene).
+   */
+  function arrastrable(n, { u, alSoltar, alQuieto, conBote = false }) {
+    let espera = 0, raton = 0, x0 = 0, y0 = 0, pid = null;
+    const limpiar = () => { clearTimeout(espera); espera = 0; clearTimeout(raton); raton = 0; n._mouse = null; };
+    const marcar = () => { n._arrastrado = true; setTimeout(() => { n._arrastrado = false; }, 450); };
     n.addEventListener("pointerdown", (e) => {
+      n._tipo = e.pointerType;
       if (e.button > 0 || S.arrastre || S.dibujo) return;
       x0 = e.clientX; y0 = e.clientY; pid = e.pointerId;
       if (document.activeElement === input) input.blur(); // el teclado se va: el sticker se pone donde sea, sin brincos
-      const empezar = () => { espera = 0; levantar(n, u, x0, y0, pid, alSoltar, conBote); };
-      if (e.pointerType === "mouse") { n._mouse = empezar; return; }
+      const empezar = () => { limpiar(); sinToqueAlSoltar(e); levantar(n, u, x0, y0, pid, (p, alBote, quieto) => { marcar(); if (quieto) alQuieto?.(); else alSoltar(p, alBote); }, conBote); };
+      if (e.pointerType === "mouse") {
+        n._mouse = empezar;
+        if (alQuieto) raton = setTimeout(() => { limpiar(); marcar(); vibrar(12); alQuieto(); }, 420);
+        return;
+      }
       espera = setTimeout(empezar, 230);
     });
     n.addEventListener("pointermove", (e) => {
       if (e.pointerId !== pid) return;
       const lejos = Math.hypot(e.clientX - x0, e.clientY - y0) > 7;
-      if (n._mouse && lejos) { const f = n._mouse; n._mouse = null; f(); }
+      if (n._mouse && lejos) { clearTimeout(raton); raton = 0; const f = n._mouse; n._mouse = null; f(); }
       else if (espera && lejos) limpiar(); // se movió antes de tiempo: quería deslizar
     });
-    for (const t of ["pointerup", "pointercancel", "pointerleave"]) n.addEventListener(t, () => { limpiar(); n._mouse = null; });
-    n.addEventListener("contextmenu", (e) => e.preventDefault());
+    for (const t of ["pointerup", "pointercancel", "pointerleave"]) n.addEventListener(t, () => limpiar());
+    n.addEventListener("contextmenu", (e) => { e.preventDefault(); if (n._tipo === "mouse" && alQuieto && !S.arrastre) { marcar(); alQuieto(); } });
   }
   function prepararArrastre(b, st) {
-    arrastrable(b, { u: st.u, alSoltar: (p) => { b._arrastrado = true; setTimeout(() => { b._arrastrado = false; }, 450); if (p) pegarLibre(st, p); } });
+    arrastrable(b, { u: st.u, alSoltar: (p) => { if (p) pegarLibre(st, p); } });
   }
   /** Tus stickers libres: al soltarlos se busca cuál es (por su clave de ese momento). */
   function prepararArrastreLibre(n) {
@@ -973,10 +1385,11 @@ export function vistaChat(det) {
     origen.classList.add("levantado");
     raiz.classList.add("soltando");
     if (conBote) { flota(bote); requestAnimationFrame(() => bote.classList.add("ver")); }
-    const A = (S.arrastre = { activo: true, x: cx, y: cy });
+    const A = (S.arrastre = { activo: true, x: cx, y: cy, lejos: 0 });
     let auto = 0;
     const mover = (x, y) => {
       A.x = x; A.y = y;
+      A.lejos = Math.max(A.lejos, Math.hypot(x - cx, y - cy));
       fantasma.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) rotate(-6deg) scale(1.1)`;
       const r = lista.getBoundingClientRect();
       A.dentro = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom && !A.enPanel(x, y);
@@ -1002,10 +1415,11 @@ export function vistaChat(det) {
       bote.classList.remove("ver", "encima");
       setTimeout(() => bote.remove(), 250);
       S.arrastre = null;
-      const ok = e.type === "pointerup" && (A.dentro || A.alBote);
+      const quieto = e.type === "pointerup" && A.lejos < 12;
+      const ok = !quieto && e.type === "pointerup" && (A.dentro || A.alBote);
       if (!reducido()) fantasma.animate([{ opacity: 1 }, { opacity: 0, transform: fantasma.style.transform.replace("scale(1.1)", ok ? "scale(.95)" : "scale(.4)") }], { duration: ok ? 120 : 220 }).onfinish = () => fantasma.remove();
       else fantasma.remove();
-      alSoltar(ok && !A.alBote ? { x: A.x, y: A.y } : null, !!A.alBote && ok);
+      alSoltar(ok && !A.alBote ? { x: A.x, y: A.y } : null, !!A.alBote && ok, quieto);
     };
     addEventListener("pointermove", alMover, true);
     addEventListener("pointerup", alSoltarP, true);
@@ -1202,20 +1616,24 @@ export function vistaChat(det) {
   vv?.addEventListener("scroll", ajustarVV);
 
   // Atrás (o Esc): primero se cierra lo que esté abierto encima del chat.
-  det._chatAtras = () => cerrarMenu() || cerrarHoja() || salirDibujo() || panel(null);
+  det._chatAtras = () => cerrarMenu() || cerrarHoja() || cancelarGrabacion() || dejarDeEditar() || salirDibujo() || panel(null);
   det._limpiezas.push(() => {
     S.vivo = false;
     P.ctl?.abort();
     vigia.disconnect();
+    VOZ.pararVoz();
+    if (S.grabando && !S.grabando.cargando) { cancelAnimationFrame(S.grabando.cuadro); S.grabando.cancelar(); }
+    S.grabando = null;
     if (S.dibujo) { terminarTrazo(); S.dibujo = null; }
     for (const t of S.trazos.values()) clearInterval(t.reloj);
     document.removeEventListener("visibilitychange", alVolver);
     vv?.removeEventListener("resize", ajustarVV);
     vv?.removeEventListener("scroll", ajustarVV);
-    if (S.menu) { S.menu.velo.remove(); S.menu.caja.remove(); S.menu = null; }
+    if (S.menu) { S.menu.velo.remove(); S.menu.caja.remove(); S.menu.copia?.remove(); S.menu = null; }
     if (S.hoja) { S.hoja.velo.remove(); S.hoja.h.remove(); S.hoja = null; }
     bote.remove();
     capaDet.querySelectorAll(".ch-fantasma").forEach((n) => n.remove());
+    setTimeout(() => S.blobs.forEach((u) => URL.revokeObjectURL(u)), 1000);
     if (det.capa) det.capa.style.top = det.capa.style.height = det.capa.style.bottom = "";
     det._chatAtras = null;
   });

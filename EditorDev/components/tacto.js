@@ -22,7 +22,7 @@ import { PREF, vibrar } from "../config/preferencias.js";
 
 const TOCABLE = "button, a[href], [role=button], [role=tab], summary, label.ed-btn, .ed-borrador, .mp-carta, .dt-nota";
 // Lo que es del librito (la hoja, sus manijas) o donde una onda estorba.
-const NUNCA = ".ed-mundo, .ed-sobre, .ed-hoja, input, textarea, select, [contenteditable=true], canvas, iframe, video, [data-sin-onda]";
+const NUNCA = ".ed-mundo, .ed-sobre, .ed-hoja, input, textarea, select, [contenteditable=true], canvas, iframe, video, [data-sin-onda], .ch-burbuja";
 const CLARA = ".primario, .mp-btn.primario, .dt-btn.primario, .peligro.primario";
 const CORAZON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.6 1.2 5.3 3.1 1.7-1.9 3.2-3.1 5.3-3.1 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21z"/></svg>';
 
@@ -75,9 +75,13 @@ function onda(nodo, x, y) {
     { transform: "scale(1)", opacity: 0.85, offset: 0.55, easing: "cubic-bezier(.4, 0, .7, .4)" },
     { transform: "scale(1)", opacity: 0 },
   ], { duration: 640, easing: "linear" });
-  const fin = () => { capa.remove(); vivas--; };
+  let hecho = false;
+  const fin = () => { if (hecho) return; hecho = true; capa.remove(); vivas--; };
   a.onfinish = fin;
   a.oncancel = fin;
+  // Nunca se queda encima (Fase 34): si el navegador pausa la animación (pestaña oculta, el botón
+  // escondido a medio toque…), igual se quita.
+  setTimeout(fin, 1000);
 }
 
 /** Corazoncitos que suben y se apagan desde donde tocaste (y van con el botón si se mueve). */
