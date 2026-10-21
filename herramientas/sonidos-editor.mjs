@@ -203,12 +203,22 @@ const SON = {
   "detallito-abrir": [0.5, (m) => { soplo(m, 0, 0.16, 0.4, 800, 2200, 0.9); fm(m, 0.14, N.Fs5, 0.16, { dur: 0.34, caida: 7 }); }, 0.26, SALA],
   // Fase 30 · los mensajitos: mandarlo (un airecito que sale y dos notas que suben), que te llegue
   // uno (dos notas tibias de marimba, como un «toc toc») y pegar un sticker (se despega y se aprieta).
-  "mensaje-enviar": [0.42, (m) => { soplo(m, 0, 0.16, 0.32, 700, 2600, 0.9); fm(m, 0.07, N.A4, 0.16, { dur: 0.12, caida: 18 }); fm(m, 0.13, N.D5, 0.17, { dur: 0.3, caida: 8 }); }, 0.26, SALA],
+  // Fase 34: mandar suena más suave y bonito (un airecito que sube y dos notas que quedan cantando).
+  "mensaje-enviar": [0.9, (m) => { soplo(m, 0, 0.3, 0.26, 500, 3200, 0.8); fm(m, 0.12, N.D5, 0.13, { dur: 0.5, caida: 5, ataque: 0.01 }); fm(m, 0.21, N.A5, 0.11, { dur: 0.6, caida: 4.2, ataque: 0.01 }); fm(m, 0.21, N.D5 / 2, 0.05, { dur: 0.5, caida: 3, ataque: 0.04 }); }, 0.24, SALA],
   "mensaje-llega": [0.62, (m) => { toque(m, 0, N.Fs5, 0.3, { material: W, caida: 22, contacto: 0.15 }); fm(m, 0.005, N.Fs5, 0.1, { dur: 0.3, caida: 9 }); toque(m, 0.13, N.D5, 0.34, { material: W, caida: 16, contacto: 0.15 }); fm(m, 0.135, N.A5, 0.07, { dur: 0.42, caida: 6 }); }, 0.3, SALA],
   // Fase 32 · el teclado del chat: teclas suavecitas de plástico (letra, espacio y borrar), cortitas.
   "teclado-letra": [0.07, (m) => { clic(m, 0, 0.32, 4300); toque(m, 0.001, 1180, 0.3, { material: P, caida: 110, contacto: 0.3 }); }, 0.15],
   "teclado-espacio": [0.1, (m) => { clic(m, 0, 0.28, 2600); toque(m, 0.002, 640, 0.36, { material: P, caida: 70, contacto: 0.35 }); }, 0.16],
   "teclado-borrar": [0.08, (m) => { clic(m, 0, 0.26, 3500); toque(m, 0.001, 880, 0.3, { material: P, caida: 95, contacto: 0.3 }); }, 0.15],
+  // — Más de Mensajitos: grabar y escuchar audios, el menú de un mensajito, editar, borrar, hacer stickers y favoritos —
+  "audio-grabar": [0.35, (m) => { fm(m, 0, N.A4, 0.16, { dur: 0.1, caida: 22 }); fm(m, 0.07, N.E5, 0.18, { dur: 0.24, caida: 10 }); }, 0.24, SALA],
+  "audio-listo": [0.4, (m) => { fm(m, 0, N.E5, 0.16, { dur: 0.1, caida: 22 }); fm(m, 0.08, N.A4, 0.17, { dur: 0.28, caida: 9 }); }, 0.24, SALA],
+  "audio-play": [0.12, (m) => { clic(m, 0, 0.22, 3200); toque(m, 0.001, 1320, 0.26, { material: P, caida: 80, contacto: 0.2 }); }, 0.16],
+  "mensaje-menu": [0.3, (m) => { asiento(m, 0, 0.38, 220, 120, 0.05); fm(m, 0.03, N.Fs5, 0.12, { dur: 0.2, caida: 14 }); }, 0.22, SALA],
+  "mensaje-editar": [0.4, (m) => { aire(m, 0, 0.16, 0.4, { f0: 2600, f1: 3600, q: 1.6, forma: (x) => Math.sin(Math.PI * x) }); fm(m, 0.14, N.B4, 0.12, { dur: 0.22, caida: 11 }); }, 0.2, SALA],
+  "mensaje-borrar": [0.5, (m) => { soplo(m, 0, 0.26, 0.36, 2200, 400, 1); toque(m, 0.2, 520, 0.3, { caida: 40, contacto: 0.25 }); }, 0.24],
+  "sticker-crear": [0.9, (m) => { [N.D5, N.Fs5, N.A5].forEach((f, i) => toque(m, i * 0.09, f, 0.26, { material: W, caida: 14, contacto: 0.12 })); fm(m, 0.2, N.D5, 0.07, { dur: 0.6, caida: 4 }); }, 0.28, SALA],
+  "favorito": [0.4, (m) => { fm(m, 0, N.Fs5, 0.14, { dur: 0.1, caida: 22 }); fm(m, 0.07, N.B5, 0.15, { dur: 0.3, caida: 9 }); }, 0.24, SALA],
   "sticker-pegar": [0.32, (m) => { aire(m, 0, 0.09, 0.55, { f0: 3200, f1: 1400, q: 1.2, forma: (x) => (1 - x) ** 1.5 }); asiento(m, 0.08, 0.5, 170, 90, 0.07); toque(m, 0.085, 980, 0.28, { caida: 60, contacto: 0.3 }); }, 0.26],
   // El gatito del menú, si lo tocas: ronronea bajito.
   "gatito-ronroneo": [1.6, (m) => {
@@ -286,6 +296,10 @@ const UNA_SOLA = new Set(["seleccionar-elemento", "seleccionar-varios", "colocar
 const TONOS = [1, 1.1225, 0.8909];
 
 mkdirSync(DIR, { recursive: true });
+// Fase 34: los de Mensajitos viven en su propia carpeta (assets/sonidos-mensajitos/).
+const DIR_CHAT = DIR.replace("sonidos-editor", "sonidos-mensajitos");
+const DE_CHAT = new Set(["mensaje-enviar", "mensaje-llega", "sticker-pegar", "teclado-letra", "teclado-espacio", "teclado-borrar", "audio-grabar", "audio-listo", "audio-play", "mensaje-menu", "mensaje-editar", "mensaje-borrar", "sticker-crear", "favorito"]);
+mkdirSync(DIR_CHAT, { recursive: true });
 const solo = process.argv.slice(2);
 let total = 0, cuantos = 0;
 for (const [nombre, [dur, hacer, pico, fin]] of Object.entries(SON)) {
@@ -297,7 +311,7 @@ for (const [nombre, [dur, hacer, pico, fin]] of Object.entries(SON)) {
     hacer(m, v);
     const b = wav(terminar(m, pico, fin));
     if (solo.length && !solo.includes(nombre)) continue;
-    writeFileSync(DIR + nombre + (v ? "-" + (v + 1) : "") + ".wav", b);
+    writeFileSync((DE_CHAT.has(nombre) ? DIR_CHAT : DIR) + nombre + (v ? "-" + (v + 1) : "") + ".wav", b);
     total += b.length; cuantos++;
   }
 }

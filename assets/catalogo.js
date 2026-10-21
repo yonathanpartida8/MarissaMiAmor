@@ -2094,16 +2094,6 @@ export default {
     "assets/sonidos-editor/listo-exito-3.wav",
     "assets/sonidos-editor/listo-exito.wav"
    ],
-   "mensaje-enviar": [
-    "assets/sonidos-editor/mensaje-enviar-2.wav",
-    "assets/sonidos-editor/mensaje-enviar-3.wav",
-    "assets/sonidos-editor/mensaje-enviar.wav"
-   ],
-   "mensaje-llega": [
-    "assets/sonidos-editor/mensaje-llega-2.wav",
-    "assets/sonidos-editor/mensaje-llega-3.wav",
-    "assets/sonidos-editor/mensaje-llega.wav"
-   ],
    "menu-mantener": [
     "assets/sonidos-editor/menu-mantener-2.wav",
     "assets/sonidos-editor/menu-mantener-3.wav",
@@ -2238,11 +2228,6 @@ export default {
     "assets/sonidos-editor/soltar-objeto-3.wav",
     "assets/sonidos-editor/soltar-objeto.wav"
    ],
-   "sticker-pegar": [
-    "assets/sonidos-editor/sticker-pegar-2.wav",
-    "assets/sonidos-editor/sticker-pegar-3.wav",
-    "assets/sonidos-editor/sticker-pegar.wav"
-   ],
    "subir-hoja": [
     "assets/sonidos-editor/subir-hoja-2.wav",
     "assets/sonidos-editor/subir-hoja-3.wav",
@@ -2252,21 +2237,6 @@ export default {
     "assets/sonidos-editor/tecla-codigo-2.wav",
     "assets/sonidos-editor/tecla-codigo-3.wav",
     "assets/sonidos-editor/tecla-codigo.wav"
-   ],
-   "teclado-borrar": [
-    "assets/sonidos-editor/teclado-borrar-2.wav",
-    "assets/sonidos-editor/teclado-borrar-3.wav",
-    "assets/sonidos-editor/teclado-borrar.wav"
-   ],
-   "teclado-espacio": [
-    "assets/sonidos-editor/teclado-espacio-2.wav",
-    "assets/sonidos-editor/teclado-espacio-3.wav",
-    "assets/sonidos-editor/teclado-espacio.wav"
-   ],
-   "teclado-letra": [
-    "assets/sonidos-editor/teclado-letra-2.wav",
-    "assets/sonidos-editor/teclado-letra-3.wav",
-    "assets/sonidos-editor/teclado-letra.wav"
    ],
    "tocar-boton": [
     "assets/sonidos-editor/tocar-boton-2.wav",
@@ -2290,6 +2260,76 @@ export default {
    ],
    "zoom-paso": [
     "assets/sonidos-editor/zoom-paso.wav"
+   ],
+   "audio-grabar": [
+    "assets/sonidos-mensajitos/audio-grabar-2.wav",
+    "assets/sonidos-mensajitos/audio-grabar-3.wav",
+    "assets/sonidos-mensajitos/audio-grabar.wav"
+   ],
+   "audio-listo": [
+    "assets/sonidos-mensajitos/audio-listo-2.wav",
+    "assets/sonidos-mensajitos/audio-listo-3.wav",
+    "assets/sonidos-mensajitos/audio-listo.wav"
+   ],
+   "audio-play": [
+    "assets/sonidos-mensajitos/audio-play-2.wav",
+    "assets/sonidos-mensajitos/audio-play-3.wav",
+    "assets/sonidos-mensajitos/audio-play.wav"
+   ],
+   "favorito": [
+    "assets/sonidos-mensajitos/favorito-2.wav",
+    "assets/sonidos-mensajitos/favorito-3.wav",
+    "assets/sonidos-mensajitos/favorito.wav"
+   ],
+   "mensaje-borrar": [
+    "assets/sonidos-mensajitos/mensaje-borrar-2.wav",
+    "assets/sonidos-mensajitos/mensaje-borrar-3.wav",
+    "assets/sonidos-mensajitos/mensaje-borrar.wav"
+   ],
+   "mensaje-editar": [
+    "assets/sonidos-mensajitos/mensaje-editar-2.wav",
+    "assets/sonidos-mensajitos/mensaje-editar-3.wav",
+    "assets/sonidos-mensajitos/mensaje-editar.wav"
+   ],
+   "mensaje-enviar": [
+    "assets/sonidos-mensajitos/mensaje-enviar-2.wav",
+    "assets/sonidos-mensajitos/mensaje-enviar-3.wav",
+    "assets/sonidos-mensajitos/mensaje-enviar.wav"
+   ],
+   "mensaje-llega": [
+    "assets/sonidos-mensajitos/mensaje-llega-2.wav",
+    "assets/sonidos-mensajitos/mensaje-llega-3.wav",
+    "assets/sonidos-mensajitos/mensaje-llega.wav"
+   ],
+   "mensaje-menu": [
+    "assets/sonidos-mensajitos/mensaje-menu-2.wav",
+    "assets/sonidos-mensajitos/mensaje-menu-3.wav",
+    "assets/sonidos-mensajitos/mensaje-menu.wav"
+   ],
+   "sticker-crear": [
+    "assets/sonidos-mensajitos/sticker-crear-2.wav",
+    "assets/sonidos-mensajitos/sticker-crear-3.wav",
+    "assets/sonidos-mensajitos/sticker-crear.wav"
+   ],
+   "sticker-pegar": [
+    "assets/sonidos-mensajitos/sticker-pegar-2.wav",
+    "assets/sonidos-mensajitos/sticker-pegar-3.wav",
+    "assets/sonidos-mensajitos/sticker-pegar.wav"
+   ],
+   "teclado-borrar": [
+    "assets/sonidos-mensajitos/teclado-borrar-2.wav",
+    "assets/sonidos-mensajitos/teclado-borrar-3.wav",
+    "assets/sonidos-mensajitos/teclado-borrar.wav"
+   ],
+   "teclado-espacio": [
+    "assets/sonidos-mensajitos/teclado-espacio-2.wav",
+    "assets/sonidos-mensajitos/teclado-espacio-3.wav",
+    "assets/sonidos-mensajitos/teclado-espacio.wav"
+   ],
+   "teclado-letra": [
+    "assets/sonidos-mensajitos/teclado-letra-2.wav",
+    "assets/sonidos-mensajitos/teclado-letra-3.wav",
+    "assets/sonidos-mensajitos/teclado-letra.wav"
    ]
   },
   "iconos": {},

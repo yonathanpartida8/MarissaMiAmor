@@ -50,7 +50,7 @@ const NOMBRES = {
   "3d": "3D", modelos: "3D", models: "3D",
 };
 const ORDEN = ["elementos", "botones", "buttons", "marcos", "frames", "tarjetas", "cards", "hojas", "dibujos", "efectos-animados", "decoraciones", "players", "portraits", "effects", "animations", "decorations", "stickers", "ui"];
-const SOLO_EXTRAS = new Set(["sonidos-editor", "iconos", "fondos", "transiciones", "deslizar"]);
+const SOLO_EXTRAS = new Set(["sonidos-editor", "sonidos-mensajitos", "iconos", "fondos", "transiciones", "deslizar"]);
 const DEF = { animaciones: /^animacion\.(json|css|js)$/i, transiciones: /^transicion\.(json|css|js)$/i };
 
 const bonito = (s) => s.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/^\w/, (c) => c.toUpperCase());
@@ -162,6 +162,13 @@ function extrasDe(raiz) {
     if (!AUD.test(a) || esDir(join(ds, a))) continue;
     const k = a.replace(/\.[^.]+$/, "").replace(/-\d+$/, "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/[\s_]+/g, "-");
     (ex.sonidos[k] ||= []).push(`assets/sonidos-editor/${a}`);
+  }
+  // Los de Mensajitos (Fase 34), en su propia carpeta: mismo nombre por interacción.
+  const dm = join(raiz, "sonidos-mensajitos");
+  for (const a of lista(dm)) {
+    if (!AUD.test(a) || esDir(join(dm, a))) continue;
+    const k = a.replace(/\.[^.]+$/, "").replace(/-\d+$/, "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/[\s_]+/g, "-");
+    (ex.sonidos[k] ||= []).push(`assets/sonidos-mensajitos/${a}`);
   }
   for (const [k, l] of Object.entries(ex.sonidos)) if (l.some((f) => !/\.wav$/i.test(f))) ex.sonidos[k] = l.filter((f) => !/\.wav$/i.test(f));
   for (const c of lista(ds)) {

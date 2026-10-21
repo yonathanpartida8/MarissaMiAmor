@@ -104,10 +104,7 @@ momento.
 | `reaccion-beso` | reaccionar «Un beso» |
 | `reaccion-risa` | reaccionar «Me hiciste reír» |
 | `reaccion-quitar` | quitar tu reacción |
-| `mensaje-enviar` | mandar un mensajito en el chat |
-| `mensaje-llega` | te llega un mensajito |
-| `sticker-pegar` | pegar un sticker encima de un mensajito |
-| `teclado-letra` · `teclado-espacio` · `teclado-borrar` | escribir en el chat (se apagan en ⋮ → «Sonidos del teclado») |
+| (Mensajitos) | sus sonidos viven en `assets/sonidos-mensajitos/` (ver su LÉEME) |
 | `gatito-ronroneo` | tocar al gatito dormido del menú |
 
 ### La abejita y el huevito de pascua (también de fábrica)

@@ -81,6 +81,9 @@ export const ARCHIVO = {
   "mensaje-enviar": "mensaje-enviar", "mensaje-llega": "mensaje-llega", "sticker-pegar": "sticker-pegar",
   // Fase 32: el teclado del chat.
   "teclado-letra": "teclado-letra", "teclado-espacio": "teclado-espacio", "teclado-borrar": "teclado-borrar",
+  // Fase 34 (en assets/sonidos-mensajitos/): audios, el menú de un mensajito, editar, borrar, hacer stickers y favoritos.
+  "audio-grabar": "audio-grabar", "audio-listo": "audio-listo", "audio-play": "audio-play", "mensaje-menu": "mensaje-menu",
+  "mensaje-editar": "mensaje-editar", "mensaje-borrar": "mensaje-borrar", "sticker-crear": "sticker-crear", favorito: "favorito",
 };
 /* Lo que se repite seguido sube por la escala (do, re, mi, sol, la, do…) en vez
    de sonar igual: elegir cinco cosas seguidas es una escalerita, no un martillo.
@@ -92,7 +95,7 @@ const SUAVES = new Set(["botones", "seleccionar", "deseleccionar"]);
 // Cuánto se hace a un lado MusicaDev mientras suena un efecto del editor (1 = nada).
 const AGACHAR = 0.6;
 // Lo mínimo entre dos sonidos del mismo momento (ms): sin metralletas.
-const MIN = { coleccion: 600, "teclado-letra": 28, "teclado-espacio": 28, "teclado-borrar": 28, "mensaje-llega": 350, "mensaje-enviar": 120, "sticker-pegar": 120, "detallito-abrir": 400, gatito: 1600, "reaccion-quitar": 300, "zoom-paso": 55, "zoom-acercar": 380, "zoom-alejar": 380, pincel: 240, "seleccionar-varios": 90, rehacer: 120, publicar: 800, botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250, atras: 150, activar: 100, desactivar: 100, menu: 150, iman: 260, escribir: 200, probar: 400, "abrir-recursos": 200, "cerrar-recursos": 200 };
+const MIN = { coleccion: 600, "audio-play": 60, favorito: 150, "mensaje-menu": 200, "teclado-letra": 28, "teclado-espacio": 28, "teclado-borrar": 28, "mensaje-llega": 350, "mensaje-enviar": 120, "sticker-pegar": 120, "detallito-abrir": 400, gatito: 1600, "reaccion-quitar": 300, "zoom-paso": 55, "zoom-acercar": 380, "zoom-alejar": 380, pincel: 240, "seleccionar-varios": 90, rehacer: 120, publicar: 800, botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250, atras: 150, activar: 100, desactivar: 100, menu: 150, iman: 260, escribir: 200, probar: 400, "abrir-recursos": 200, "cerrar-recursos": 200 };
 /* Sonidos hechos a mano: [forma, frec. inicial, frec. final, duración s, volumen, retraso s]. */
 const SINTE = {
   colocar: [["sine", 520, 250, 0.11, 0.5], ["triangle", 1040, 900, 0.03, 0.12]],
@@ -128,6 +131,14 @@ const SINTE = {
   "teclado-letra": [["triangle", 1180, 1100, 0.03, 0.06]],
   "teclado-espacio": [["triangle", 640, 600, 0.04, 0.07]],
   "teclado-borrar": [["triangle", 880, 820, 0.035, 0.06]],
+  "audio-grabar": [["sine", 440, 440, 0.1, 0.12], ["sine", 659, 659, 0.22, 0.13, 0.07]],
+  "audio-listo": [["sine", 659, 659, 0.1, 0.12], ["sine", 440, 440, 0.25, 0.13, 0.08]],
+  "audio-play": [["triangle", 1320, 1250, 0.04, 0.07]],
+  "mensaje-menu": [["sine", 220, 120, 0.05, 0.14], ["sine", 740, 740, 0.18, 0.08, 0.03]],
+  "mensaje-editar": [["sine", 494, 494, 0.2, 0.1, 0.1]],
+  "mensaje-borrar": [["sine", 900, 300, 0.25, 0.12], ["triangle", 520, 480, 0.06, 0.1, 0.2]],
+  "sticker-crear": [["sine", 587, 587, 0.2, 0.12], ["sine", 740, 740, 0.2, 0.12, 0.09], ["sine", 880, 880, 0.4, 0.12, 0.18]],
+  favorito: [["sine", 740, 740, 0.1, 0.12], ["sine", 988, 988, 0.25, 0.12, 0.07]],
   coleccion: [["triangle", 520, 1046, 0.2, 0.12], ["sine", 1318, 1318, 0.5, 0.1, 0.16], ["sine", 1568, 1568, 0.5, 0.09, 0.23]],
   "detallito-abrir": [["triangle", 700, 1400, 0.14, 0.1], ["sine", 1568, 1568, 0.6, 0.12, 0.12]],
   gatito: [["sawtooth", 62, 58, 0.7, 0.05], ["sawtooth", 60, 64, 0.7, 0.045, 0.8]],
