@@ -90,6 +90,7 @@ const SECCIONES = [
   ["texto", "texto", "Texto"],
   ["imagenes", "imagen", "Imágenes"],
   ["video", "video", "Vídeo"],
+  ["audio", "audio", "Audio"],
   // Adornar y dar vida
   ["gifs", "gif", "GIFs"],
   ["stickers", "sticker", "Stickers"],
@@ -99,7 +100,6 @@ const SECCIONES = [
   // Interacción y sonido
   ["toques", "toque", "Al tocar"],
   ["interactivo", "interactivo", "Interactivo"],
-  ["audio", "audio", "Audio"],
   // Avanzado
   ["html", "html", "HTML"],
   ["3d", "cubo", "3D"],
@@ -107,7 +107,7 @@ const SECCIONES = [
   ["herramientas", "herramientas", "Herramientas"],
 ];
 // Separadores del riel: antes de cada una, un título chiquito.
-const GRUPOS_RIEL = { gifs: "Adornar", interactivo: "Tocar y oír", html: "Avanzado" };
+const GRUPOS_RIEL = { gifs: "Adornar", toques: "Tocar", html: "Avanzado" };
 // Nombres viejos que otros sitios todavía piden.
 const ALIAS = { fotos: "imagenes", ajustes: "herramientas" };
 // En el teléfono, estas secciones se abren en una hojita de abajo (compacta)

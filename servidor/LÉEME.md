@@ -227,6 +227,8 @@ to process»: por eso `librito actualizar` instala `git` en Termux.
   chat abierto, el editor espera al servidor y éste le contesta en cuanto
   cambia algo; lo escrito se guarda como texto (nunca HTML) y sólo se aceptan
   imágenes de GIPHY o las que ustedes suben (1.9.0).
+- **1.10.0**: lo eliminado queda como «Aquí se eliminó un mensajito…» para los dos
+  (y a tu amorcito se le avisa), y los mensajes de voz HD (hasta 26 MB).
 - **1.9.0**: mensajes de voz (WAV), stickers hechos por ustedes con sus fotos,
   su colección (stickers y GIFs favoritos, ordenados por favoritos y por lo que
   más usan) y editar un mensajito (queda marcado «Editado» para los dos). Lo
@@ -236,7 +238,7 @@ to process»: por eso `librito actualizar` instala `git` en Termux.
 Las reacciones y las portaditas necesitan M.YNTHN **1.5.0** o más nuevo, los
 Mensajitos **1.6.0**, los dibujos, los stickers libres y el tiempo real
 **1.7.0**, las notificaciones push **1.8.0**, y los audios, stickers propios,
-favoritos y editar **1.9.0**: en
+favoritos y editar **1.9.0**, y lo eliminado con aviso y los audios HD **1.10.0**: en
 el teléfono servidor corre `librito actualizar` (tus datos no se tocan; las
 columnas nuevas se agregan solas al prender). Con uno más viejo todo lo demás
 sigue igual y las páginas sin portadita llevan una tapita de colores.
@@ -407,9 +409,9 @@ azar) · `/api/…`:
 | `POST /api/push/probar` | sesión | una notificación de prueba a tus aparatos |
 | `PUT /api/chat/<id>/reaccion` (`{"reaccion":"te-amo"}`; vacío la quita) | quien lo recibió | reaccionar a un mensajito |
 | `POST /api/chat/<id>/sticker` (`{"u":"https://media.giphy.com/…","x":0.8,"y":0.2,"r":-8,"s":1}`; con `"l":1`, libre: `y` en px) | pareja | pegar un sticker de GIPHY encima de un mensajito o, libre, donde lo soltaste en el chat (hasta 12 por mensajito) |
-| `DELETE /api/chat/<id>` · `POST /api/chat/vistos` | quien lo mandó · sesión | borrar tu mensajito (para los dos) · ya leíste lo que te mandó |
+| `DELETE /api/chat/<id>` · `POST /api/chat/vistos` | quien lo mandó · sesión | borrar tu mensajito (para los dos; desde 1.10.0 queda como `{"borrado":true}` en la lista y se le avisa al otro) · ya leíste lo que te mandó |
 | `PUT /api/chat/<id>` (`{"texto":"…"}`) | quien lo mandó | editar el texto de tu mensajito (no audios ni espacios); queda con `editado` |
-| `POST /api/chat/media?tipo=sticker` · `?tipo=audio` (el archivo tal cual) | pareja | subir un sticker tuyo (PNG, JPG o WebP, hasta 800 KB) o un mensaje de voz (WAV, hasta 8 MB); contesta `{"u":"/m/<huella>.<ext>"}`. Se manda con `POST /api/chat` (`{"gif":{"u":"/m/…","s":1}}` o `{"audio":{"u":"/m/….wav","dur":3.2,"ondas":[0…31 ×48]}}`) |
+| `POST /api/chat/media?tipo=sticker` · `?tipo=audio` (el archivo tal cual) | pareja | subir un sticker tuyo (PNG, JPG o WebP, hasta 800 KB) o un mensaje de voz (WAV, hasta 26 MB desde 1.10.0); contesta `{"u":"/m/<huella>.<ext>"}`. Se manda con `POST /api/chat` (`{"gif":{"u":"/m/…","s":1}}` o `{"audio":{"u":"/m/….wav","dur":3.2,"ondas":[0…31 ×48]}}`) |
 | `GET /m/<huella>.<ext>` | todos (la dirección es larga y al azar) | el archivo (con rangos, para adelantar audios) |
 | `GET /api/chat/coleccion` · `POST /api/chat/coleccion` (`{"tipo":"sticker"\|"gif","u":…,"w":…,"h":…,"favorito":true}`) | sesión | tus stickers y tus GIFs favoritos (favoritos arriba, luego lo que más usas) · guardar uno (hasta 400 de cada uno) |
 | `PUT /api/chat/coleccion/<id>` (`{"favorito":true}`) · `DELETE /api/chat/coleccion/<id>` | sesión | marcar o quitar de favoritos · quitarlo de tu colección |

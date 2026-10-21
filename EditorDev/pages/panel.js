@@ -51,7 +51,6 @@ export class PanelPaginas {
       el("div.ed-botonera", {}, [
         boton(I("mas", "Página en blanco"), () => A.nuevaPagina(), "primario"),
         boton(I("paginas", "Plantillas"), () => this.plantillas()),
-        boton(I("biblioteca", "Mis páginas"), () => this.app.importar.misPaginas()),
       ]),
       this.lista,
       el("div.ed-botonera.ed-pie-panel", {}, [

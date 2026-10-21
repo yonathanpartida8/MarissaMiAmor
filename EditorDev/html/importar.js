@@ -74,7 +74,6 @@ export class Importador {
       contenido: [
         el("p.ed-ayuda", { text: "«Editar como plantilla» saca a capas editables sus textos, fotos, adornos y animaciones, y deja debajo lo que se mueve con JavaScript. «Usar tal cual» la pone entera, funcionando igual que en el librito." }),
         ul,
-        el("div.ed-botonera", {}, [boton(`${ico("biblioteca")}<span>Importar mi librito entero como proyecto nuevo</span>`, () => { caja.cerrar(); this.importarLibrito(); }, "chico")]),
       ],
     });
     caja = modal.ultima;

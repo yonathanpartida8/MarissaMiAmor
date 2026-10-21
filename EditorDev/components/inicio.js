@@ -120,7 +120,6 @@ export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
   const capa = el("div.ed-inicio" + (respaldo ? ".respaldo" : ""), { role: "dialog", "aria-label": respaldo ? "Mis libritos" : "Crear librito" }, [
     el("div.ed-inicio-caja", {}, [
       el("header", {}, [
-        el("a.ed-volver", { href: "../index.html", title: "Volver al librito", html: ico("volver") }),
         respaldo
           ? el("div", {}, [el("h1", { text: "Mis libritos" }), el("p", { text: "Tus borradores y sus copias de seguridad: guarda todo en un archivo o tráelo de vuelta." })])
           : el("div", {}, [el("h1", { text: "Crear librito" }), el("p", { text: "Tu taller para armar libritos interactivos: páginas, fotos, música, animaciones y HTML propio." })]),

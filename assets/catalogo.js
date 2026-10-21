@@ -1637,66 +1637,6 @@ export default {
      "fecha": 1791236534000
     }
    ]
-  },
-  {
-   "id": "audio",
-   "nombre": "Sonidos",
-   "items": [
-    {
-     "tipo": "audio",
-     "id": "audio/musica.mp3",
-     "nombre": "Musica",
-     "ruta": "assets/audio/musica.mp3",
-     "peso": 5165704,
-     "fecha": 1789801371000
-    },
-    {
-     "tipo": "audio",
-     "id": "audio/musiyyca.mp3",
-     "nombre": "Musiyyca",
-     "ruta": "assets/audio/musiyyca.mp3",
-     "peso": 2,
-     "fecha": 1789801153000
-    },
-    {
-     "tipo": "audio",
-     "id": "audio/musicaa.mp3",
-     "nombre": "Musicaa",
-     "ruta": "assets/audio/musicaa.mp3",
-     "peso": 2,
-     "fecha": 1789800903000
-    },
-    {
-     "tipo": "audio",
-     "id": "audio/abrir.mp3",
-     "nombre": "Abrir",
-     "ruta": "assets/audio/abrir.mp3",
-     "peso": 2120686,
-     "fecha": 1786675024000
-    },
-    {
-     "tipo": "audio",
-     "id": "audio/sonido.mp3",
-     "nombre": "Sonido",
-     "ruta": "assets/audio/sonido.mp3",
-     "peso": 417243,
-     "fecha": 1786675024000
-    }
-   ]
-  },
-  {
-   "id": "img",
-   "nombre": "Imágenes",
-   "items": [
-    {
-     "tipo": "imagen",
-     "id": "img/imagen83.png",
-     "nombre": "Imagen83",
-     "ruta": "assets/img/imagen83.png",
-     "peso": 75219,
-     "fecha": 1786675024000
-    }
-   ]
   }
  ],
  "musica": [],
@@ -1710,9 +1650,7 @@ export default {
  "estilos": {
   "baddie": {
    "musica": [
-    "la radio/music1.mp3",
-    "la radio/music2.mp3",
-    "la radio/music3.mp3"
+    "DevMusic/MusicaDev.mp3"
    ],
    "fuentes": []
   },
@@ -1724,7 +1662,6 @@ export default {
   },
   "retromylove": {
    "musica": [
-    "musica arena/musica1.mp3",
     "DevMusic/MusicaDev.mp3"
    ],
    "fuentes": []

@@ -152,11 +152,11 @@ página en blanco → Guardar → **Probar** (pantalla completa); GIFs y sticker
 GIPHY (con quitar fondo), pistas de audio, fondos animados, efectos y
 transiciones con vista previa, hojas con asa y una abejita que te ayuda. Piezas
 de un solo `.html` en `assets/<carpeta>/` (con su biblioteca de Recursos), ⚙ configuración (hasta 144 Hz si la pantalla da), la abejita con sus frases de `dialogos.txt`, flechas para pasar página en
-`assets/deslizar/` y la música del editor en `DevMusic/`. Tus páginas de `paginas-html/` se pueden usar tal cual o volverse
-plantillas editables. Vive entero en **`EditorDev/`** y el libro no carga
-nada de él hasta que se entra. Su biblioteca se llena sola: componentes
-HTML en **`assets/<categoría>/<nombre>/`** (ver `assets/LÉEME.md`) y canciones
-en **`musica assets/`**. Todo explicado en
+`assets/deslizar/` y la música del editor en `DevMusic/`. Desde la Fase 35 el editor es un
+**proyecto aparte**: no toma fotos, páginas, canciones ni sonidos del librito (ni vuelve a él);
+sus canciones son las que tú subes (.mp3 o .wav). Vive entero en **`EditorDev/`**, el libro no carga
+nada de él hasta que se entra (y desde el libro se sigue entrando al editor). Su biblioteca se llena
+sola con componentes HTML en **`assets/<categoría>/<nombre>/`** (ver `assets/LÉEME.md`). Todo explicado en
 [`EditorDev/LÉEME.md`](EditorDev/LÉEME.md).
 
 Al abrirlo sale primero un **menú principal** (crear librito, Detallitos, mis
@@ -231,8 +231,7 @@ musica barco/           barco.mp3: la música de 10 s del barquito («Aunque est
 mis-sonidos/            sonidos propios: corazón.mp3 (el latido de «Mi pulso»)
 noche-estrellada/       la escena final (bosque, cabaña, cacería)
 EditorDev/              «📖 Crear librito»: el editor visual (ver su LÉEME)
-assets/<categoría>/     componentes HTML, adornos y sonidos para el editor
-musica assets/          canciones para el editor
+assets/<categoría>/     componentes HTML y adornos para el editor (assets/audio e img son del libro)
 herramientas/
   contenido.mjs         rehace la lista de lo que hay en las carpetas
   verificar.mjs         revisa el libro entero antes de publicar

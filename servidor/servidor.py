@@ -63,7 +63,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.9.0"
+VERSION = "1.10.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -2638,7 +2638,7 @@ COLOR_OK = re.compile(r"^#[0-9a-fA-F]{6}$")
 MEDIA_OK = re.compile(r"^/m/[0-9a-f]{64}\.(webp|png|jpg|wav)$")
 MEDIA = os.path.join(DATOS, "mensajitos-media")
 MEDIA_TIPOS = {"sticker": ((b"\x89PNG\r\n\x1a\n", ".png"), (b"\xff\xd8\xff", ".jpg"), (b"RIFF", ".webp")), "audio": ((b"RIFF", ".wav"),)}
-MEDIA_MAX = {"sticker": 800 * 1024, "audio": 8 * 1024 * 1024}
+MEDIA_MAX = {"sticker": 800 * 1024, "audio": 26 * 1024 * 1024}  # audios HD: WAV de 48 kHz, hasta 4 minutos
 _MEDIA_RITMO = {}
 CHAT_MAX_TEXTO = 2000
 CHAT_MAX_STICKERS = 12
@@ -2698,7 +2698,8 @@ def _visto_oculto(uid):
 
 def fila_mensaje(m, uid, oculto=False):
     if m["borrado"]:
-        return {"id": m["id"], "borrado": True}
+        # Lo eliminado queda como una burbujita («Aquí se eliminó un mensajito…»), para los dos.
+        return {"id": m["id"], "borrado": True, "mio": m["de"] == uid, "creado": iso(m["creado"]), "espacio": m.get("espacio") or 0}
     st = json.loads(m["stickers"]) if m["stickers"] else []
     return {"id": m["id"], "mio": m["de"] == uid, "texto": m["texto"] or "", "gif": json.loads(m["gif"]) if m["gif"] else None,
             "creado": iso(m["creado"]), "visto": iso(m["visto"]) if m["visto"] and not (oculto and m["de"] == uid) else "",
@@ -2758,9 +2759,9 @@ def _respuesta_chat_ya(uid, a, par, oculto, n, antes, despues, desde):
         return {"mensajes": [fila_mensaje(m, uid, oculto) for m in filas], "cambios": [fila_mensaje(m, uid, oculto) for m in cambios],
                 "trazos": [fila_trazo(t, uid) for t in trazos], "ahora": t0}
     if antes:
-        filas = E.db.q(f"SELECT * FROM mensajes WHERE {par} AND borrado=0 AND id<? ORDER BY id DESC LIMIT ?", *a, antes, n + 1)
+        filas = E.db.q(f"SELECT * FROM mensajes WHERE {par} AND (borrado=0 OR COALESCE(espacio, 0)=0) AND id<? ORDER BY id DESC LIMIT ?", *a, antes, n + 1)
     else:
-        filas = E.db.q(f"SELECT * FROM mensajes WHERE {par} AND borrado=0 ORDER BY id DESC LIMIT ?", *a, n + 1)
+        filas = E.db.q(f"SELECT * FROM mensajes WHERE {par} AND (borrado=0 OR COALESCE(espacio, 0)=0) ORDER BY id DESC LIMIT ?", *a, n + 1)
     hay_mas = len(filas) > n
     filas = list(reversed(filas[:n]))
     # Los dibujos de lo que se ve (y los de arriba de todo, si ya no hay más para atrás).
@@ -3050,9 +3051,13 @@ def api_chat_borrar(h, s, mid):
     m = _mensaje_de(s, int(mid))
     if m["de"] != s["usuario_id"]:
         raise Falla("Sólo puedes borrar tus mensajes.", 403)
-    _x_ya("UPDATE mensajes SET borrado=1, texto='', gif=NULL, stickers=NULL, actualizado=? WHERE id=?", AHORA, m["id"])
+    _x_ya("UPDATE mensajes SET borrado=1, texto='', gif=NULL, audio=NULL, stickers=NULL, actualizado=? WHERE id=?", AHORA, m["id"])
     _chat_cambio()
-    h.responder(200, {"ok": True})
+    # A tu amorcito también se le avisa (si no tiene el chat abierto, con una notificación).
+    p = m["para"]
+    if not m["espacio"] and not mirando_chat(p):
+        avisar(p, {"t": f"{nombre_corto(s['usuario_id'])} 💌", "b": "Eliminó un mensajito", "tag": "chat", "u": "#chat"})
+    h.responder(200, {"ok": True, "mensaje": fila_mensaje(E.db.uno("SELECT * FROM mensajes WHERE id=?", m["id"]), s["usuario_id"])})
 
 
 @ruta("POST", "/api/chat/vistos", "sesion")

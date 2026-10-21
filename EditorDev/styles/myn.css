@@ -987,3 +987,5 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 @media (max-height: 600px) { .mp-album .mp-pie { padding-top: 12px; } .mp-album .mp-hero { padding-top: 2px; } .mp-album .mp-dias { margin-top: 4px; } .mp-album .mp-pola { width: 74px; } .mp-album .mp-hilo { height: 44px; margin-top: 22px; } .mp-album .mp-dias .mp-barra { display: none; } .mp-album .mp-dias-num { font-size: 30px; } .mp-album .mp-crear { min-height: 42px; } .mp-album .mp-carta > small { display: none; } }
 @media (max-height: 600px) { .mp-album .mp-carta > b { grid-row: 1 / 3; align-self: center; } .mp-foto-esquina, .mp-nota-beso { display: none; } .mp-album .mp-pola-etq b { font-size: 15px; } }
 @media (max-width: 360px) { .mp-album .mp-carta { column-gap: 7px; padding-left: 8px; padding-right: 7px; } .mp-album .mp-carta > b { font-size: 17px; } .mp-album .mp-carta > small { font-size: 12.5px; } .mp-album .mp-carta > .mp-carta-ico, .mp-album .mp-carta-av { width: 36px; height: 36px; --tam: 36px; } }
+/* Fase 35: sin la tira «Volver al librito», el álbum respira abajo */
+.mp-album .mp-columna { padding-bottom: max(14px, env(safe-area-inset-bottom)); }

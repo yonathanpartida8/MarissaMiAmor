@@ -24,7 +24,6 @@ import { leerRuta } from "../core/estado.js";
 import { FORMATOS, assetsUsados } from "../core/modelo.js";
 import { DIBUJOS, FORMAS } from "../assets/dibujos.js";
 import { elegir } from "../assets/selector.js";
-import { carpetasFotos } from "../assets/librito.js";
 import { catalogo } from "../componentes/catalogo.js";
 import { rutaAUrl } from "../assets/biblioteca.js";
 import { borrarArchivo, espacio } from "../storage/db.js";
@@ -202,24 +201,7 @@ export class Paneles {
       el("img", { src: this.app.bib.miniUrl(a.id) || "", loading: "lazy", decoding: "async", alt: "", draggable: "false" }),
       usados.has(a.id) ? null : el("i.ed-borrar-asset", { html: ico("cerrar"), title: "Quitar de la biblioteca", onClick: (e) => { e.stopPropagation(); this._quitarAsset(a); } }),
     ])));
-    const libFotos = el("div");
-    const d = el("details.ed-carpeta", {}, [el("summary", { text: "Fotos del librito de siempre" }), libFotos]);
-    d.addEventListener("toggle", async () => {
-      if (!d.open || libFotos.childElementCount) return;
-      libFotos.textContent = "Buscando…";
-      const cs = await carpetasFotos();
-      libFotos.textContent = "";
-      for (const cp of cs) {
-        const r = el("div.ed-rejilla-assets");
-        const sub = el("details.ed-carpeta", {}, [el("summary", { text: `${cp.nombre} · ${cp.fotos.length}` }), r]);
-        sub.addEventListener("toggle", () => {
-          if (!sub.open || r.childElementCount) return;
-          for (const ruta of cp.fotos) r.append(el("button.ed-asset", { type: "button", title: "Toca para ponerla en la página", onClick: () => { const a = this.app.bib.delLibrito(ruta, "imagen", ruta.split("/").slice(-2).join(" · ")); A._poner(A._elFoto(a.id)); } }, [el("img", { src: rutaAUrl(ruta), loading: "lazy", decoding: "async", alt: "", draggable: "false" })]));
-        });
-        libFotos.append(sub);
-      }
-    });
-    return seccion("Tu biblioteca", [fotos.length ? rej : el("p.ed-vacio-txt", { text: "Aquí aparecerán las fotos que subas." }), d]);
+    return seccion("Tu biblioteca", [fotos.length ? rej : el("p.ed-vacio-txt", { text: "Aquí aparecerán las fotos que subas." })]);
   }
 
   async _quitarAsset(a) {
@@ -328,10 +310,6 @@ export class Paneles {
     const pz = (...a) => this._pieza(...a);
     c.append(seccion("Añadir", [el("div.ed-piezas", {}, [
       pz(ico("boton"), "Botón", () => A.boton()), pz(ico("album"), "Álbum", () => A.album()), pz(ico("carrusel"), "Carrusel", () => A.carrusel()),
-      pz(ico("video"), "Vídeo", () => A.video(), "Sube un vídeo tuyo"), pz(ico("html"), "HTML", () => A.html(), "Un bloque de HTML propio, aislado"),
-      pz(ico("pagina"), "Página original", () => this.app.importar.misPaginas(), "Una de tus páginas HTML del librito"),
-      pz(ico("componentes"), "Piezas", () => this.app.abrirSeccion("componentes"), "Componentes de assets/"),
-      pz(ico("cubo"), "Escena 3D", () => this.app.abrirSeccion("3d")),
     ])]));
     this._paraLoElegido(c, "Lo elegido", (sel) => {
       const ins = this.app.insp;

@@ -1,8 +1,10 @@
 /**
  * MENSAJES DE VOZ (Fase 34): grabar con el micrófono y el reproductor chiquito de las burbujas.
  *
- *   · se graba con lo que sepa el navegador (webm/opus, mp4/aac…) y se pasa a WAV mono de 16 kHz:
- *     así suena en TODOS los teléfonos y compus (iPhone incluido), y el servidor sólo guarda WAV
+ *   · se graba con lo que sepa el navegador (webm/opus, mp4/aac…, a 128 kbps) y se pasa a WAV mono
+ *     de 48 kHz (HD, Fase 35): así suena claro en TODOS los teléfonos y compus (iPhone incluido).
+ *     Sin el «volumen automático» del navegador (que la deformaba): se limpian los graves que retumban,
+ *     un compresor suavecito empareja la voz y se sube al volumen justo, sin saturar
  *   · las ondas (48 rayitas de 0 a 31) se calculan al grabar: el reproductor las dibuja sin bajar nada
  *   · velocidades x1, x1.5, x2 y x3 (el navegador conserva el tono: nada de voz de ardilla)
  *   · sólo suena un audio a la vez
@@ -10,7 +12,7 @@
 import { el } from "./ui.js";
 import { sinMovimiento as reducido } from "./transiciones.js";
 
-export const MAX_SEG = 240; // 4 minutos: el WAV de 16 kHz cabe holgado en lo que acepta el servidor
+export const MAX_SEG = 240; // 4 minutos: el WAV de 48 kHz (≈23 MB) cabe en lo que acepta el servidor
 export const VELOCIDADES = [1, 1.5, 2, 3];
 const BARRAS = 48;
 const AC = () => window.AudioContext || window.webkitAudioContext;
@@ -25,11 +27,13 @@ export const minutos = (s) => { s = Math.max(0, Math.round(s)); return `${Math.f
 export async function grabar() {
   const ctx = new (AC())(); // se crea ya, dentro del toque
   let flujo;
-  try { flujo = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+  try { flujo = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: false, channelCount: 1, sampleRate: 48000 } }); }
   catch (e) { ctx.close().catch(() => {}); throw e; }
   ctx.resume?.().catch(() => {});
   const tipo = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm", "audio/ogg;codecs=opus"].find((t) => MediaRecorder.isTypeSupported?.(t)) || "";
-  const rec = new MediaRecorder(flujo, tipo ? { mimeType: tipo } : undefined);
+  let rec;
+  try { rec = new MediaRecorder(flujo, { ...(tipo ? { mimeType: tipo } : {}), audioBitsPerSecond: 128000 }); }
+  catch (e) { rec = new MediaRecorder(flujo, tipo ? { mimeType: tipo } : undefined); }
   const trozos = [];
   rec.ondataavailable = (e) => { if (e.data?.size) trozos.push(e.data); };
   const an = ctx.createAnalyser();
@@ -60,7 +64,7 @@ export async function grabar() {
   };
 }
 
-/** Lo grabado → WAV mono de 16 kHz (un poquito más fuerte si quedó bajito) y sus ondas. */
+/** Lo grabado → WAV mono de 48 kHz (HD): sin retumbos, parejito y al volumen justo; y sus ondas. */
 async function aWav(blob) {
   const datos = await blob.arrayBuffer();
   const ctx = new (AC())();
@@ -68,22 +72,30 @@ async function aWav(blob) {
   try { audio = await new Promise((ok, mal) => { const p = ctx.decodeAudioData(datos, ok, mal); p?.catch?.(mal); }); }
   finally { ctx.close().catch(() => {}); }
   const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-  let pcm = null, hz = 16000;
-  for (const h of [16000, 22050, 44100]) {
+  let pcm = null, hz = 48000;
+  for (const h of [48000, 44100, audio.sampleRate]) {
     try {
       const off = new OAC(1, Math.max(1, Math.ceil(audio.duration * h)), h);
       const f = off.createBufferSource();
-      f.buffer = audio; f.connect(off.destination); f.start();
+      f.buffer = audio;
+      // Sin retumbos (graves de menos de 80 Hz: golpes, viento, el teléfono en la mesa)…
+      const graves = off.createBiquadFilter();
+      graves.type = "highpass"; graves.frequency.value = 80; graves.Q.value = 0.7;
+      // …y la voz pareja: lo fuerte baja tantito y lo bajito se entiende (suave, sin «bombeo»).
+      const comp = off.createDynamicsCompressor();
+      comp.threshold.value = -22; comp.knee.value = 14; comp.ratio.value = 2.6; comp.attack.value = 0.006; comp.release.value = 0.22;
+      f.connect(graves); graves.connect(comp); comp.connect(off.destination); f.start();
       pcm = (await off.startRendering()).getChannelData(0);
       hz = h;
       break;
     } catch (e) { /* esa frecuencia no: la siguiente */ }
   }
   if (!pcm) throw new Error("Este aparato no pudo preparar el audio.");
+  // Al volumen justo (hasta −1 dB) sin saturar: si queda bajito se sube, como mucho 3 veces.
   let pico = 0;
   for (let i = 0; i < pcm.length; i++) pico = Math.max(pico, Math.abs(pcm[i]));
-  const k = pico > 0.001 ? Math.min(4, 0.92 / pico) : 1;
-  if (k > 1.05) for (let i = 0; i < pcm.length; i++) pcm[i] *= k;
+  const k = pico > 0.001 ? Math.min(3, 0.89 / pico) : 1;
+  if (Math.abs(k - 1) > 0.02) for (let i = 0; i < pcm.length; i++) pcm[i] *= k;
   return { blob: wav(pcm, hz), dur: Math.round(audio.duration * 100) / 100, ondas: ondas(pcm) };
 }
 function wav(pcm, hz) {
@@ -92,7 +104,11 @@ function wav(pcm, hz) {
   s(0, "RIFF"); v.setUint32(4, 36 + pcm.length * 2, true); s(8, "WAVE"); s(12, "fmt ");
   v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, hz, true);
   v.setUint32(28, hz * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); s(36, "data"); v.setUint32(40, pcm.length * 2, true);
-  for (let i = 0; i < pcm.length; i++) { const x = Math.max(-1, Math.min(1, pcm[i])); v.setInt16(44 + i * 2, x < 0 ? x * 0x8000 : x * 0x7fff, true); }
+  // (Con un «dither» chiquitito: lo muy bajito no suena granuloso al pasarlo a 16 bits.)
+  for (let i = 0; i < pcm.length; i++) {
+    const x = Math.max(-1, Math.min(1, pcm[i] + (Math.random() - Math.random()) / 65536));
+    v.setInt16(44 + i * 2, Math.round(x < 0 ? x * 0x8000 : x * 0x7fff), true);
+  }
   return new Blob([b], { type: "audio/wav" });
 }
 function ondas(pcm) {

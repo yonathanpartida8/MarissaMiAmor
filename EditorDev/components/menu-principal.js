@@ -16,12 +16,12 @@
  *               dormido que respira, mueve la cola y suelta sus «z» (si lo
  *               tocas, ronronea y se acomoda).
  *   Tarjetas    Mensajitos (con tu amorcito vinculado), Detallitos (la colección de los
- *               dos), Mis libritos y tu perfil: de dos en dos (Fase 34).
+ *               dos), Mis libritos y la Tiendita Cool (en construcción): de dos en dos.
  *
  * Todo cabe en la pantalla sin deslizar (Fase 34): los tamaños se ajustan al alto
  * de la pantalla y lo que sobra se reparte parejito.
- *   Abajo       la tira de papel oscuro «Volver al librito», una foto y la
- *               notita «Cada página también es un beso».
+ *   Abajo       nada que tape: el editor es un proyecto aparte, ya no hay «Volver
+ *               al librito» (Fase 35).
  *
  * Todo se anima con transform y opacity (nada se repinta: el gatito va en
  * piezas, cada una en su capa) y espera quieto hasta que llegan las letras.
@@ -50,6 +50,7 @@ const CAMINO = { "inicio>cuenta": "carta", "cuenta>inicio": "atras", "inicio>per
 const HILO = '<svg viewBox="0 0 160 70" preserveAspectRatio="none" aria-hidden="true"><path class="mp-hilo-cuerda" d="M2 26C30 34 60 48 80 58M80 58C100 48 130 34 158 26"/><path class="mp-hilo-luz" d="M2 26C30 34 60 48 80 58C100 48 130 34 158 26"/></svg>';
 const HILO_CORAZON = '<svg viewBox="0 0 48 44" aria-hidden="true"><path d="M24 40C15 32 6 25 6.5 16 7 9 13 6 18 8c3 1 5 3.5 6 6 1-2.5 3-5 6-6 5-2 11 1 11.5 8 .5 9-8.5 16-17.5 24z" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const FLECHA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const TIENDITA = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M9 21h30v17a3 3 0 0 1-3 3H12a3 3 0 0 1-3-3z" fill="#fff6ea" stroke="#3f8f78" stroke-width="2.4" stroke-linejoin="round"/><path d="M7 13l3-6h28l3 6v3.5a4.5 4.5 0 0 1-8.5 2 4.5 4.5 0 0 1-8.5 0 4.5 4.5 0 0 1-8.5 0A4.5 4.5 0 0 1 7 16.5z" fill="#ff9ec2" stroke="#3f8f78" stroke-width="2.4" stroke-linejoin="round"/><path d="M16.5 7l-1.5 9.5M24 7v9.5M31.5 7l1.5 9.5" stroke="#3f8f78" stroke-width="2" stroke-linecap="round"/><rect x="14" y="27" width="9" height="14" rx="1.5" fill="#bfe8da" stroke="#3f8f78" stroke-width="2.2"/><path d="M33 30.6s-3.6-2.1-3.6-4.4a1.9 1.9 0 0 1 3.6-1 1.9 1.9 0 0 1 3.6 1c0 2.3-3.6 4.4-3.6 4.4z" fill="#ff5f8f"/></svg>';
 const corto = (s, n = 11) => { s = String(s || "").trim(); return s.length > n ? s.slice(0, 1).toUpperCase() : s; };
 
 export class MenuPrincipal {
@@ -93,11 +94,6 @@ export class MenuPrincipal {
     const rasgoEtq = A.rasgado(["arriba", "abajo", "izq", "der"], 3.2, 10, 5);
     const etiqueta = el("div.mp-etiqueta", {}, [el("i.mp-sombra", { style: { clipPath: rasgoEtq } }), el("i.mp-etiqueta-papel", { style: { clipPath: rasgoEtq } }), el("i.mp-corona", { html: A.CORONITA }), this.chip]);
     this.tarjeta = el("div.mp-tarjeta", {}, [el("header.mp-arriba", {}, [marca, etiqueta]), this.escena]);
-    const volver = document.querySelector(".ed-volver")?.getAttribute("href") || "../index.html";
-    this.pie = el("footer.mp-pie", {}, [
-      el("i.mp-pie-papel", { style: { clipPath: A.rasgado(["arriba"], 10, 36, 8) } }),
-      el("a.mp-volver-libro", { href: volver, html: `<span class="mp-raya"></span>${ico("libro")}<span>Volver al librito</span><span class="mp-raya"></span>` }),
-    ]);
     const decor = el("div.mp-decor", { "aria-hidden": "true" }, [
       el("i.mp-cuadricula", { style: { clipPath: A.rasgado(["der", "arriba", "abajo"], 6, 12, 2) } }),
       el("i.mp-rama", { html: A.RAMA_SECA }),
@@ -107,12 +103,10 @@ export class MenuPrincipal {
       el("i.mp-garabato.g3", { html: A.DESTELLO }),
       el("i.mp-garabato.g4", { html: A.DESTELLO }),
       el("i.mp-garabato.g5", { html: A.FLECHITA }),
-      el("figure.mp-foto-esquina", {}, [el("span", { html: A.FOTO_ESQUINA })]),
-      el("p.mp-nota-beso", {}, [el("span", { text: "Cada página también es un beso" }), el("i", { html: ico("corazon") })]),
     ]);
     const tex = A.texturaPapel();
     this.capa = el("div.mp-capa.mp-album", { role: "dialog", "aria-label": "Menú principal", style: { "--papel-tex": tex ? `url("${tex}")` : "none" } }, [
-      fondo, el("div.mp-columna", {}, [decor, this.tarjeta, this.pie]),
+      fondo, el("div.mp-columna", {}, [decor, this.tarjeta]),
     ]);
     document.body.append(this.capa);
     document.body.classList.add("con-menu-principal");
@@ -360,10 +354,8 @@ export class MenuPrincipal {
     r.tarjetaDet = this._carta("rosa", A.ICONO_CARPETA, "Detallitos", r.subDet, (e) => app.detallitos.abrir(e.currentTarget, "coleccion"), 5);
     if (nuevos) r.tarjetaDet.append(el("em.dt-globo", { text: String(nuevos) }));
     const libritos = this._carta("lila", A.ICONO_LIBRO, "Mis libritos", el("small", { text: con ? "Aquí y en tu nube" : "Tus borradores" }), () => { this.cerrar(); app.inicio?.({ a: "borradores" }); }, 6);
-    const yo = con ? PF.datos().yo : null;
-    const perfil = con
-      ? this._carta("menta", yo?.foto ? PF.avatar("yo", "mp-carta-av") : A.ICONO_PERSONA, "Mi perfil", el("small", { text: "Foto y fechas" }), (e) => this.ir("perfil", { desde: e.currentTarget }), 7)
-      : this._carta("menta", A.ICONO_PERSONA, "Mi cuenta", el("small", { text: "Entrar o crear una" }), (e) => this.ir("cuenta", { desde: e.currentTarget }), 7);
+    // La Tiendita Cool (Fase 35): todavía en construcción. Tu perfil se abre desde tu nombre, arriba.
+    const tiendita = this._carta("menta", TIENDITA, "Tiendita Cool", el("small", { text: "Muy pronto" }), () => aviso("En construcción xd...", 2600), 7);
     r.fechas = this._firmaDias();
     r.stats = this._dias(true);
     const crear = el("button.mp-btn.primario.mp-crear", { type: "button", onClick: () => { this.cerrar(); app.inicio?.(); } }, [
@@ -376,7 +368,7 @@ export class MenuPrincipal {
       el("div.mp-dias-caja", { style: { "--i": 1 } }, [r.stats]),
       el("div.mp-crear-fila", { style: { "--i": 2 } }, [crear, el("i.mp-crear-chispa.c1", { html: A.DESTELLO_LLENO }), el("i.mp-crear-chispa.c2", { html: A.DESTELLO_LLENO }), el("i.mp-crear-chispa.c3", { html: A.DESTELLO }), this._gatito()]),
       el("p.mp-saludo", { style: { "--i": 3 } }, [r.saludo, el("i", { html: ico("corazon") }), seguir]),
-      el("div.mp-cartas", {}, [this._cartaChat(), r.tarjetaDet, libritos, perfil].filter(Boolean)),
+      el("div.mp-cartas", {}, [this._cartaChat(), r.tarjetaDet, libritos, tiendita].filter(Boolean)),
     ]);
     return r.vistaInicio;
   }

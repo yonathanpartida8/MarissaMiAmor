@@ -84,6 +84,7 @@ const PISTAS = {
   "emojis:emojis": "Toca uno para ponerlo en tu mensajito",
 };
 const EMOJIS = "🥰 😍 😘 🥺 🥹 😊 🤭 😳 😂 🤣 😭 😴 😇 😈 🙈 🤗 🫶 🤍 💜 💗 💖 💕 💞 💘 💝 💌 ❤️‍🔥 💋 😚 😙 🫠 🤤 😌 🥲 😮‍💨 😤 🙄 😏 🤫 🫣 👀 🙃 ✨ 🌸 🌷 🌹 💐 🦋 🎀 🧸 🐻 🐱 🐰 🐶 🐣 🍓 🍒 🍰 🍫 🍩 ☕ 🧋 🌙 ⭐ 🌈 ☁️ 🔥 🎁 🎶 📸 💍 👑 🫧 🤞 🙏 👏 💪".split(" ");
+const ELIMINADO = "Aquí se eliminó un mensajito, tal vez foto o algo más";
 const PRIMEROS = ["Te amo 💜", "Te extraño 🥺", "¿Cómo amaneciste, mi amor?", "Buenas noches, mi vida 🌙"];
 const COLORES = ["#a57cff", "#ff6fa8", "#6fb6ff", "#5fd3a7", "#ffb04d", "#e0325f"];
 const GROSORES = [3, 6, 11];
@@ -99,8 +100,8 @@ const guardarPref = (p) => { try { localStorage.setItem(CLAVE, JSON.stringify(p)
 
 const real = (m) => typeof m.id === "number";
 const orden = (a, b) => (real(a) ? 0 : 1) - (real(b) ? 0 : 1) || (real(a) && real(b) ? a.id - b.id : 0);
-const firmaBurbuja = (m) => JSON.stringify([m.texto, m.gif?.u, m.audio?.u, m.espacio, (m.stickers || []).filter((s) => !s.l).length]);
-const firma = (m) => JSON.stringify([m.texto, m.gif?.u, m.audio?.u, m.reaccion, m.visto, m.editado, m.espacio, (m.stickers || []).map((s) => [s.i, s.x, s.y, s.s])]);
+const firmaBurbuja = (m) => JSON.stringify([!!m.borrado, m.texto, m.gif?.u, m.audio?.u, m.espacio, (m.stickers || []).filter((s) => !s.l).length]);
+const firma = (m) => JSON.stringify([!!m.borrado, m.texto, m.gif?.u, m.audio?.u, m.reaccion, m.visto, m.editado, m.espacio, (m.stickers || []).map((s) => [s.i, s.x, s.y, s.s])]);
 const diaDe = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
 const hora = (iso) => new Date(iso).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
 function nombreDia(iso) {
@@ -294,6 +295,12 @@ export function vistaChat(det) {
         m.mio ? el("button.ch-espacio-x", { type: "button", html: I("borrar", "Quitar"), onClick: () => borrar(m, "este espacio") }) : null,
       ]);
     }
+    if (m.borrado) {
+      // Lo que se eliminó deja su huellita (para los dos): sin menú, sólo el aviso.
+      return el("div.ch-fila.borrado." + (m.mio ? "mio" : "suyo"), { dataset: { id: String(m.id) } }, [
+        el("div.ch-cuerpo", {}, [el("div.ch-burbuja.eliminado", { role: "note" }, [el("i", { html: IC.bote }), el("span", { text: ELIMINADO })]), el("small.ch-hora")]),
+      ]);
+    }
     const rx = reaccion(m.reaccion), st = !!m.gif?.s, em = !m.gif && !m.audio && soloEmoji(m.texto);
     const que = m.audio ? `un mensaje de voz de ${VOZ.minutos(m.audio.dur)}` : m.texto || (st ? "un sticker" : "un GIF");
     const b = el("div.ch-burbuja" + (m.audio ? ".audio" : m.gif ? (st ? ".sticker" : ".gif") : "") + (em ? ".emoji" : ""), {
@@ -357,11 +364,13 @@ export function vistaChat(det) {
     if (n._k === k) return;
     n._k = k;
     n.replaceChildren(...(ed ? [el("em.ch-editado", { text: "Editado" })] : []), el("span", { text: t }),
-      ...(m.mio && !m._enviando ? [el("i.ch-check" + (visto ? ".visto" : ""), { title: visto ? "Visto" : "Enviado", html: IC.check })] : []));
+      ...(m.mio && !m._enviando && !m.borrado ? [el("i.ch-check" + (visto ? ".visto" : ""), { title: visto ? "Visto" : "Enviado", html: IC.check })] : []));
   }
 
   /** Pone la lista al día moviendo sólo lo que cambió (lo que ya está no se vuelve a animar ni a cargar). */
   function pintar() {
+    if (S.extraFin && !S.arrastre && S.ms.length !== S.nExtra) S.extraFin = 0;
+    S.nExtra = S.ms.length;
     const hijos = [inicio];
     let prev = null;
     S.ms.forEach((m, i) => {
@@ -402,7 +411,7 @@ export function vistaChat(det) {
   function anclaEn(y) {
     let a = null, primero = null;
     for (const m of S.ms) {
-      if (!real(m)) continue;
+      if (!real(m) || m.borrado) continue; // (a lo eliminado no se le pega nada)
       const t = anclaTop(m.id);
       if (t == null) continue;
       primero ??= { id: m.id, top: t };
@@ -452,7 +461,7 @@ export function vistaChat(det) {
     for (const n of capa.querySelectorAll("img.ch-libre")) if (!vistos.has(n.dataset.k)) n.remove();
     // Que haya lugar abajo para todo lo dibujado (sin mandar mensajes).
     const base = fin.offsetTop;
-    const falta = Math.max(0, Math.round(abajo + 24 - base));
+    const falta = Math.max(0, Math.round(abajo + 24 - base)) + (S.extraFin || 0);
     if (Math.abs((parseInt(fin.style.height) || 0) - falta) > 1) fin.style.height = falta + "px";
     const H = fin.offsetTop + fin.offsetHeight;
     trazosSvg.setAttribute("width", W);
@@ -587,19 +596,24 @@ export function vistaChat(det) {
     const pegado = cerca();
     let llegaron = 0, suyo = false;
     for (const m of nuevos) {
-      if (m.borrado || S.nodos.has(m.id) || S.ms.some((x) => x.id === m.id)) continue;
+      if ((m.borrado && m.espacio) || S.nodos.has(m.id) || S.ms.some((x) => x.id === m.id)) continue;
       // Tu mensajito llegó por aquí antes que la respuesta de «mandar»: la burbuja que ya se ve pasa a ser ésa.
       const t = m.mio && S.ms.find((x) => x._enviando && !x._real && x.texto === m.texto && (x.gif?.u || "") === (m.gif?.u || "") && (x.audio ? x.audio._u || "?" : "") === (m.audio?.u || ""));
       if (t) { adoptar(t, m); continue; }
       S.ms.push(m); S.nuevos.add(m.id); llegaron++;
-      if (!m.mio && !m.espacio) suyo = true;
+      if (!m.mio && !m.espacio && !m.borrado) suyo = true;
     }
     S.ms.sort(orden);
     S.ultimo = Math.max(S.ultimo, ...S.ms.filter(real).map((m) => m.id));
     for (const c of cambios) {
       const a = S.ms.find((m) => m.id === c.id);
       if (!a) continue;
-      if (c.borrado) { quitar(c.id); continue; }
+      if (c.borrado) {
+        const nuevo = !a.borrado && !a.espacio && !c.espacio;
+        marcarEliminado(c);
+        if (nuevo && !(c.mio ?? a.mio)) { aviso(`${nombre} eliminó un mensajito`, 3200); sonar("mensaje-borrar"); }
+        continue;
+      }
       if (firma(a) === firma(c)) continue;
       const editado = c.editado && c.editado !== a.editado && c.texto !== a.texto;
       aplicar(c, false);
@@ -626,7 +640,7 @@ export function vistaChat(det) {
     if (firmaBurbuja(antes) !== firmaBurbuja(m)) {
       const viejo = S.nodos.get(m.id), n = nodo(m);
       S.nodos.set(m.id, n);
-      if (viejo?.isConnected) { n.className = viejo.className.replace(/\bllega\b/, ""); n.classList.toggle("con-rx", !!reaccion(m.reaccion)); viejo.replaceWith(n); }
+      if (viejo?.isConnected) { for (const k of ["primero", "ultimo"]) n.classList.toggle(k, viejo.classList.contains(k)); n.classList.toggle("con-rx", !!reaccion(m.reaccion)); viejo.replaceWith(n); }
     } else if (m.reaccion !== antes.reaccion) ponerRx(S.nodos.get(m.id), m, !!m.reaccion);
     if (repintar) pintar();
   }
@@ -644,6 +658,22 @@ export function vistaChat(det) {
       f.style.overflow = "hidden";
       f.animate([{ height: h + "px", marginTop: getComputedStyle(f).marginTop }, { height: "0px", marginTop: "0px" }], { duration: 220, easing: "ease-in-out", fill: "forwards" }).onfinish = () => pintar();
     };
+  }
+  /** Un mensajito eliminado (aquí o del otro lado): se desvanece y en su lugar queda su burbujita. */
+  function marcarEliminado(c) {
+    const a = S.ms.find((x) => x.id === c.id);
+    if (!a || a.borrado) return;
+    if (S.editando?.id === c.id) dejarDeEditar();
+    if (a.espacio || c.espacio) { quitar(c.id); return; }
+    const t = { id: c.id, mio: c.mio ?? a.mio, creado: c.creado || a.creado, borrado: true, texto: "", gif: null, audio: null, stickers: [], reaccion: "", visto: a.visto, editado: "" };
+    const cuerpo = S.nodos.get(c.id)?.querySelector(".ch-cuerpo");
+    const poner = () => {
+      aplicar(t);
+      const n = S.nodos.get(c.id)?.querySelector(".ch-cuerpo");
+      if (n && !reducido()) n.animate([{ opacity: 0, transform: "scale(.86)", filter: "blur(3px)" }, { opacity: 1, transform: "none", filter: "blur(0)" }], { duration: 380, easing: "cubic-bezier(.2, .9, .3, 1.2)" });
+    };
+    if (cuerpo?.isConnected && !reducido()) cuerpo.animate([{ opacity: 1, transform: "none", filter: "blur(0)" }, { opacity: 0, transform: "scale(.7)", filter: "blur(6px)" }], { duration: 260, easing: "ease-in", fill: "forwards" }).onfinish = poner;
+    else poner();
   }
   function festejar(m) {
     sonar("reaccion-" + m.reaccion);
@@ -679,6 +709,8 @@ export function vistaChat(det) {
     if (e.key === "Enter" && !e.shiftKey && !e.isComposing && !matchMedia("(pointer: coarse)").matches) { e.preventDefault(); mandarTexto(); }
     else if (e.key === "Escape" && S.editando) { e.preventDefault(); dejarDeEditar(); }
   });
+  // Al irse el teclado, la pantalla vuelve a su lugar (el iPhone a veces la deja corrida).
+  input.addEventListener("blur", () => setTimeout(() => { if ((scrollY || scrollX) && document.activeElement !== input) scrollTo(0, 0); }, 260));
   input.addEventListener("focus", () => { if (!panelN.hidden && P.tipo !== "emojis") panel(null); if (S.pegado) setTimeout(() => alFondo(false), 260); });
   function alMandar() {
     if (S.grabando) return;
@@ -832,7 +864,12 @@ export function vistaChat(det) {
   }
   async function borrar(m, que = "este mensajito") {
     if (!(await confirmar(`¿Eliminar ${que}? Se elimina para los dos.`, "Eliminar"))) return;
-    try { await SRV.borrarMensaje(m.id); sonar("mensaje-borrar"); quitar(m.id); }
+    try {
+      await SRV.borrarMensaje(m.id);
+      sonar("mensaje-borrar");
+      if (m.espacio) quitar(m.id);
+      else { marcarEliminado({ ...m, borrado: true }); aviso(`Eliminaste un mensajito (a ${nombre} también le avisamos)`, 3200); }
+    }
     catch (e) { aviso(mensajeError(e), 4000, "error"); }
   }
 
@@ -1073,7 +1110,7 @@ export function vistaChat(det) {
         antes = d.mensajes[0].id;
       }
       const yo = PF.miNombre() || "Yo";
-      const lineas = todos.filter((m) => !m.espacio && !m.borrado).map((m) => `[${new Date(m.creado).toLocaleString("es-MX")}] ${m.mio ? yo : nombre}: ${m.audio ? `[mensaje de voz ${VOZ.minutos(m.audio.dur)}]` : ""}${m.texto || ""}${m.gif ? (m.texto ? " " : "") + (m.gif.s ? "[sticker]" : "[GIF]") : ""}${m.editado ? " (editado)" : ""}`);
+      const lineas = todos.filter((m) => !m.espacio).map((m) => m.borrado ? `[${new Date(m.creado).toLocaleString("es-MX")}] ${m.mio ? yo : nombre}: [mensajito eliminado]` : `[${new Date(m.creado).toLocaleString("es-MX")}] ${m.mio ? yo : nombre}: ${m.audio ? `[mensaje de voz ${VOZ.minutos(m.audio.dur)}]` : ""}${m.texto || ""}${m.gif ? (m.texto ? " " : "") + (m.gif.s ? "[sticker]" : "[GIF]") : ""}${m.editado ? " (editado)" : ""}`);
       const b = new Blob([`Mensajitos de ${yo} y ${nombre} 💜\n\n${lineas.join("\n")}\n`], { type: "text/plain;charset=utf-8" });
       const a = el("a", { href: URL.createObjectURL(b), download: `mensajitos-con-${SRV.nombreLimpio(nombre)}.txt` });
       document.body.append(a); a.click();
@@ -1138,6 +1175,14 @@ export function vistaChat(det) {
     hacerBusqueda(true);
     return true;
   }
+  /** Cerrar el panel sin animación (mientras está escondido por un arrastre). */
+  function cerrarPanelYa() {
+    P.ctl?.abort();
+    P.tipo = ""; P.vista = "";
+    [bGif, bSt, bEmoji].forEach((b) => b.classList.remove("on"));
+    raiz.classList.remove("con-panel");
+    panelN.hidden = true;
+  }
   function ponerEmoji(x) {
     const a = input.selectionStart ?? input.value.length, b = input.selectionEnd ?? a;
     input.value = input.value.slice(0, a) + x + input.value.slice(b);
@@ -1196,7 +1241,7 @@ export function vistaChat(det) {
       const n = nodosCol.get("c" + S.nuevoSticker);
       S.nuevoSticker = 0;
       if (n && !reducido()) { n.classList.add("nace"); setTimeout(() => n.classList.remove("nace"), 900); }
-      n?.scrollIntoView({ block: "nearest", behavior: reducido() ? "auto" : "smooth" });
+      if (n) { const rr = rejilla.getBoundingClientRect(), nr = n.getBoundingClientRect(); if (nr.top < rr.top || nr.bottom > rr.bottom) rejilla.scrollBy({ top: nr.top - rr.top - 8, behavior: reducido() ? "auto" : "smooth" }); }
     }
   }
   function miniMio(x, tipo) {
@@ -1309,8 +1354,6 @@ export function vistaChat(det) {
     } finally { if (ctl === P.ctl) P.cargando = false; }
   }
   rejilla.addEventListener("scroll", () => { if (P.vista === "explorar" && rejilla.scrollTop + rejilla.clientHeight > rejilla.scrollHeight - 320) hacerBusqueda(false); }, { passive: true });
-  // Mientras arrastras un sticker, la rejilla no se desliza.
-  rejilla.addEventListener("touchmove", (e) => { if (S.arrastre?.activo) e.preventDefault(); }, { passive: false });
   function mini(it, tipo) {
     const fw = it.im?.fixed_width || {};
     const g = { u: fw.webp || fw.url || it.mini, w: +fw.width || it.w || 200, h: +fw.height || it.h || 200 };
@@ -1354,7 +1397,7 @@ export function vistaChat(det) {
         if (alQuieto) raton = setTimeout(() => { limpiar(); marcar(); vibrar(12); alQuieto(); }, 420);
         return;
       }
-      espera = setTimeout(empezar, 230);
+      espera = setTimeout(empezar, 320); // (si se mueve antes, era para deslizar el panel)
     });
     n.addEventListener("pointermove", (e) => {
       if (e.pointerId !== pid) return;
@@ -1370,7 +1413,6 @@ export function vistaChat(det) {
   }
   /** Tus stickers libres: al soltarlos se busca cuál es (por su clave de ese momento). */
   function prepararArrastreLibre(n) {
-    n.addEventListener("touchmove", (e) => { if (S.arrastre?.activo) e.preventDefault(); }, { passive: false });
     arrastrable(n, { u: n.getAttribute("src"), conBote: true, alSoltar: (p, alBote) => {
       const [mid, sid] = n.dataset.k.split(":");
       const m = S.ms.find((z) => String(z.id) === mid), x = m?.stickers?.find((z) => z.i === sid);
@@ -1383,9 +1425,18 @@ export function vistaChat(det) {
     sonar("arrastrar");
     const fantasma = flota(el("img.ch-fantasma", { src: u, alt: "", referrerpolicy: "no-referrer", draggable: "false" }));
     origen.classList.add("levantado");
+    // El panel se hace a un lado mientras lo llevas: TODO el chat queda libre para soltarlo.
+    const desdePanel = panelN.contains(origen);
+    // (La lista crece donde estaba el panel: abajo se le da ese mismo espacio, para que nada brinque.)
+    const t0 = lista.scrollTop;
+    if (desdePanel && !panelN.hidden) { S.extraFin = panelN.offsetHeight + 12; pintarCapa(); }
     raiz.classList.add("soltando");
+    if (S.extraFin) { pintarCapa(); lista.scrollTop = t0; }
+    // Mientras lo llevas, nada de la pantalla se desliza (ni el panel, ni la lista, ni la página).
+    const quieta = (e) => { if (e.cancelable) e.preventDefault(); };
+    addEventListener("touchmove", quieta, { capture: true, passive: false });
     if (conBote) { flota(bote); requestAnimationFrame(() => bote.classList.add("ver")); }
-    const A = (S.arrastre = { activo: true, x: cx, y: cy, lejos: 0 });
+    const A = (S.arrastre = { activo: true, x: cx, y: cy, lejos: 0, medio: false, borde: 0 });
     let auto = 0;
     const mover = (x, y) => {
       A.x = x; A.y = y;
@@ -1396,10 +1447,15 @@ export function vistaChat(det) {
       A.alBote = conBote && (() => { const b = bote.getBoundingClientRect(); return x >= b.left - 10 && x <= b.right + 10 && y >= b.top - 10 && y <= b.bottom + 10; })();
       bote.classList.toggle("encima", !!A.alBote);
       fantasma.classList.toggle("fuera", !A.dentro && !A.alBote);
-      // Cerca de arriba o de abajo, la lista se va moviendo sola.
-      cancelAnimationFrame(auto);
-      const v = y < r.top + 60 ? -1 : y > r.bottom - 60 && y < r.bottom ? 1 : 0;
-      if (v) { const paso = () => { lista.scrollTop += v * 9; pintarCapa(); auto = requestAnimationFrame(paso); }; auto = requestAnimationFrame(paso); }
+      // Cerca de arriba o de abajo, la lista se va moviendo sola, pero sólo si ya pasaste por en medio
+      // y te quedas un ratito en la orilla (al venir del panel, cruzar la orilla no la mueve).
+      if (A.dentro && y > r.top + 60 && y < r.bottom - 60) A.medio = true;
+      const v = !A.medio || !A.dentro ? 0 : y < r.top + 60 ? -1 : y > r.bottom - 60 ? 1 : 0;
+      if (v !== A.v) {
+        A.v = v; A.borde = performance.now();
+        cancelAnimationFrame(auto);
+        if (v) { const paso = (t) => { if (t - A.borde > 380) { lista.scrollTop += v * 9; pintarCapa(); } auto = requestAnimationFrame(paso); }; auto = requestAnimationFrame(paso); }
+      }
     };
     A.enPanel = (x, y) => { if (panelN.hidden) return false; const r = panelN.getBoundingClientRect(); return y >= r.top && y <= r.bottom && x >= r.left && x <= r.right; };
     mover(cx, cy);
@@ -1410,13 +1466,18 @@ export function vistaChat(det) {
       removeEventListener("pointerup", alSoltarP, true);
       removeEventListener("pointercancel", alSoltarP, true);
       cancelAnimationFrame(auto);
+      removeEventListener("touchmove", quieta, { capture: true });
       origen.classList.remove("levantado");
-      raiz.classList.remove("soltando");
       bote.classList.remove("ver", "encima");
       setTimeout(() => bote.remove(), 250);
       S.arrastre = null;
       const quieto = e.type === "pointerup" && A.lejos < 12;
       const ok = !quieto && e.type === "pointerup" && (A.dentro || A.alBote);
+      // Ya lo pegaste: el panel se queda cerrado (si no, vuelve a su lugar).
+      if (ok && desdePanel && !A.alBote) cerrarPanelYa();
+      raiz.classList.remove("soltando");
+      // Si se pegó, el espacio de abajo se queda (nada brinca) hasta que llegue o mandes otro mensajito.
+      if (S.extraFin && !(ok && desdePanel && !A.alBote)) { S.extraFin = 0; requestAnimationFrame(() => pintarCapa()); }
       if (!reducido()) fantasma.animate([{ opacity: 1 }, { opacity: 0, transform: fantasma.style.transform.replace("scale(1.1)", ok ? "scale(.95)" : "scale(.4)") }], { duration: ok ? 120 : 220 }).onfinish = () => fantasma.remove();
       else fantasma.remove();
       alSoltar(ok && !A.alBote ? { x: A.x, y: A.y } : null, !!A.alBote && ok, quieto);
@@ -1608,7 +1669,7 @@ export function vistaChat(det) {
     const c = det.capa;
     if (!vv || !c) return;
     const h = Math.round(vv.height), t = Math.round(vv.offsetTop);
-    if (Math.abs(h - innerHeight) < 2 && t <= 0) { c.style.top = c.style.height = c.style.bottom = ""; }
+    if (Math.abs(h - innerHeight) < 2 && t <= 0) { c.style.top = c.style.height = c.style.bottom = ""; if (scrollY || scrollX) scrollTo(0, 0); }
     else { c.style.top = t + "px"; c.style.height = h + "px"; c.style.bottom = "auto"; }
     if (S.pegado && !S.arrastre) alFondo(false);
   };

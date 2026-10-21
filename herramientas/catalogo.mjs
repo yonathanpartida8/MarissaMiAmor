@@ -51,6 +51,10 @@ const NOMBRES = {
 };
 const ORDEN = ["elementos", "botones", "buttons", "marcos", "frames", "tarjetas", "cards", "hojas", "dibujos", "efectos-animados", "decoraciones", "players", "portraits", "effects", "animations", "decorations", "stickers", "ui"];
 const SOLO_EXTRAS = new Set(["sonidos-editor", "sonidos-mensajitos", "iconos", "fondos", "transiciones", "deslizar"]);
+// Fase 35: el editor es un proyecto aparte. Lo que también usa el librito de Marissa (assets/audio,
+// assets/img y «musica assets/») no entra al editor, y sus sonidos sueltos tampoco: en el editor sólo
+// suenan las canciones que tú subes. (Los archivos no se tocan: siguen siendo del librito.)
+const DEL_LIBRO = new Set(["audio", "img"]);
 const DEF = { animaciones: /^animacion\.(json|css|js)$/i, transiciones: /^transicion\.(json|css|js)$/i };
 
 const bonito = (s) => s.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/^\w/, (c) => c.toUpperCase());
@@ -225,7 +229,7 @@ export function catalogo(RAIZ) {
   const fechaDe = (id, ruta, abs) => F.previas.get(id) || F.git.get(ruta) || (F.habia ? Date.now() : Math.round(statSync(abs).mtimeMs));
   const SALTAR = (f) => f.startsWith(".") || f.startsWith("_") || /^(l[ée]eme|readme)\.(md|txt)$/i.test(f) || PREVIEW.test(f) || /^asset\.json$/i.test(f);
   if (existsSync(raiz)) {
-    const cats = readdirSync(raiz).filter((c) => !c.startsWith(".") && !c.startsWith("_") && !SOLO_EXTRAS.has(normCat(c)) && esDir(join(raiz, c)));
+    const cats = readdirSync(raiz).filter((c) => !c.startsWith(".") && !c.startsWith("_") && !SOLO_EXTRAS.has(normCat(c)) && !DEL_LIBRO.has(c.toLowerCase()) && esDir(join(raiz, c)));
     cats.sort((a, b) => ((ORDEN.indexOf(normCat(a)) + 1 || 99) - (ORDEN.indexOf(normCat(b)) + 1 || 99)) || orden(a, b));
     for (const cat of cats) {
       const items = [];
@@ -269,7 +273,7 @@ export function catalogo(RAIZ) {
           } else if (IMG.test(f)) {
             items.push({ tipo: "imagen", id: `${cat}/${r}`, nombre: bonito(f), ruta, ...medida(p), peso: statSync(p).size, fecha: fechaDe(`${cat}/${r}`, ruta, p) });
           } else if (AUD.test(f)) {
-            items.push({ tipo: "audio", id: `${cat}/${r}`, nombre: bonito(f), ruta, peso: statSync(p).size, fecha: fechaDe(`${cat}/${r}`, ruta, p) });
+            continue; // (Fase 35) sin sonidos predeterminados: sólo los que tú subes
           } else if (MOD.test(f)) {
             items.push({ tipo: "modelo", id: `${cat}/${r}`, nombre: bonito(f), ruta, peso: statSync(p).size, fecha: fechaDe(`${cat}/${r}`, ruta, p) });
           }
@@ -284,10 +288,7 @@ export function catalogo(RAIZ) {
       else if (items.length) categorias.push({ id: cat, nombre, items });
     }
   }
-  const dirMusica = join(RAIZ, "musica assets");
-  const musica = existsSync(dirMusica)
-    ? todos(dirMusica).filter((f) => AUD.test(f)).map((f) => ({ nombre: bonito(f.split("/").pop()), ruta: `musica assets/${f}`, peso: statSync(join(dirMusica, f)).size }))
-    : [];
+  const musica = []; // («musica assets/» es del librito de Marissa: ya no entra al editor)
   const dirDev = join(RAIZ, "DevMusic");
   const devMusic = existsSync(dirDev)
     ? todos(dirDev).filter((f) => AUD.test(f)).map((f) => ({ nombre: bonito(f.split("/").pop()), ruta: `DevMusic/${f}`, peso: statSync(join(dirDev, f)).size }))

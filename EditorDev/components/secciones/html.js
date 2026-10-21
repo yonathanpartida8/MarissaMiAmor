@@ -64,9 +64,5 @@ export const HTML = {
       el("p.ed-ayuda", { text: "Un fondo animado (partículas, degradados, canvas…) detrás de todo, que no estorba al editar." }),
       boton(I("fondo", "Fondos de esta página"), () => app.abrirSeccion("diseno"), "chico"),
     ], { abierta: false }));
-    c.append(seccion("Tus páginas HTML del librito", [
-      el("p.ed-ayuda", { text: "Úsalas tal cual (funcionan con todo su JavaScript) o conviértelas en plantilla editable." }),
-      boton(I("biblioteca", "Elegir una de mis páginas"), () => app.importar.misPaginas(), "chico"),
-    ], { abierta: false }));
   },
 };

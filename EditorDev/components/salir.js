@@ -58,7 +58,6 @@ export class Salida {
     this.app = app;
     this.saliendo = false;
     const volver = document.querySelector(".ed-volver");
-    this.destino = volver?.getAttribute("href") || "../index.html";
     volver?.setAttribute("title", "Volver al menú principal");
     volver?.setAttribute("aria-label", "Volver al menú principal");
     volver?.addEventListener("click", (ev) => { ev.preventDefault(); if (!this.cerrarLoAbierto()) this.alMenu(); });
@@ -142,8 +141,13 @@ export class Salida {
       app.html?.descartar?.();
       app.auto?.descartar();
     }
+    // El editor es un proyecto aparte (Fase 35): salir es volver a donde estabas antes de abrirlo
+    // (si no hay a dónde, te quedas en el menú).
     this.saliendo = true;
     document.body.classList.add("ed-saliendo");
-    setTimeout(() => { location.href = this.destino; }, 160);
+    setTimeout(() => {
+      history.go(-2);
+      setTimeout(() => { this.saliendo = false; document.body.classList.remove("ed-saliendo"); try { history.pushState({ editor: true }, ""); } catch (e) { /* nada */ } }, 900);
+    }, 160);
   }
 }
