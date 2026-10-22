@@ -57,6 +57,7 @@
  *                entre fotogramas.
  */
 import { alCuadro } from "../config/cuadros.js";
+import { ocupar } from "../components/rendimiento.js";
 import { el, menu, ordenable, COMPACTO, popover, control, Vinculos, fila, aviso } from "../components/ui.js";
 import { abrirEfectos } from "../components/efectos-sonido.js";
 import { ico } from "../components/iconos.js";
@@ -1171,6 +1172,7 @@ export class Linea {
     const t0 = performance.now() - desde;
     const total = this._total() + 400;
     this._raf?.();
+    ocupar("linea");
     // Un solo bucle, al ritmo de la pantalla (o al tope de Configuración).
     this._raf = alCuadro(() => {
       if (this.anim !== a || a.quieto) return false;
@@ -1228,6 +1230,7 @@ export class Linea {
   }
 
   parar(repintar = true) {
+    ocupar("linea", false);
     this._quitarAnim();
     this.app.audio?.pararPista();
     this.app.audio?.pararPistas();

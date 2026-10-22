@@ -9,6 +9,7 @@
  * página anterior a ésta (en chiquito), se puede repetir, y se elige si va
  * en esta página o en todo el librito. Abajo siguen los ajustes finos.
  */
+import { R } from "../rendimiento.js";
 import { el, seccion, fila, boton, control, aviso, confirmar } from "../ui.js";
 import { ico } from "../iconos.js";
 import { hojita } from "../hoja.js";
@@ -138,7 +139,7 @@ export const TRANSICIONES = {
     const mirar = () => { for (const b of c.querySelectorAll(".ed-trans-t[data-k]")) if (!b._mira) { b._mira = true; if (io) io.observe(b); else vistas.add(b); } };
     mirar();
     const reloj = setInterval(() => {
-      if (!c.isConnected || document.hidden) { if (!c.isConnected) parar(); return; }
+      if (!c.isConnected || document.hidden || R.reposo || R.ahorro) { if (!c.isConnected) parar(); return; }
       mirar();
       let n = 0;
       for (const b of vistas) { const t = (n++ % 8) * 60; setTimeout(() => this._miniTrans(b, b.dataset.k, b._def), t); }

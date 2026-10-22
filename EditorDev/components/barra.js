@@ -100,7 +100,6 @@ export class BarraContextual {
         this._b(ico("efectos") + "<span>Efectos</span>", "Efectos con previsualización", () => this.app.abrirSeccion("efectos"), "vida"),
         this._b(I("diseno", "Fondo"), "Fondo de la página", () => { ins.abrir("diseno", "Fondo"); }),
         this._b(ico("transiciones") + "<span>Transición</span>", "Transición al llegar", () => this.app.abrirSeccion("transiciones")),
-        this._b(ico("audio") + "<span>Música</span>", "Música de la página", () => this.app.abrirSeccion("audio")),
         this._b(I("tiempo", "Tiempo"), "Línea de tiempo", () => this.app.tiempo.alternar()),
       ));
       partes.push(el("small.ed-cb-pista", { text: "Toca algo de la hoja para editarlo" }));

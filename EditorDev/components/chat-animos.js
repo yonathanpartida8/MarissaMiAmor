@@ -1,5 +1,5 @@
 /**
- * LOS ÁNIMOS DEL CHAT (Fase 36): Happy, Sad, Hot y Hormonal.
+ * LOS ÁNIMOS DEL CHAT (Fases 36 y 37): Happy, Sad, Enojado y Hormonal.
  *
  *   · Tocas uno y se enciende; si lo vuelves a tocar, se apaga y todo vuelve a ser como siempre.
  *     Al cambiar de uno a otro, lo del anterior se va (despacito) antes de que llegue lo nuevo.
@@ -10,9 +10,10 @@
  *     cualquier otro → carmesí (se estira, late como corazón acelerado y escurre). Al apagarlo,
  *     los mensajitos se enfrían tantito y vuelven a ser los de siempre.
  *   · Sólo se anima transform y opacity (rápido en el celular), y cada gotita se borra al terminar.
- *     Con «menos movimiento» sólo cambian los colores.
+ *     Con «menos movimiento» (o el aparato sufriendo) sólo cambian los colores.
  */
 import { sinMovimiento as reducido } from "./transiciones.js";
+import { R } from "./rendimiento.js";
 
 const az = (a, b) => a + Math.random() * (b - a);
 const sg = (v) => v.toFixed(2) + "s";
@@ -29,7 +30,8 @@ function P(clase, estilo = "", html = "") {
 const SOL = `<svg viewBox="0 0 120 120"><defs><radialGradient id="anSol"><stop offset="0" stop-color="#fff7cf"/><stop offset=".6" stop-color="#ffd86e"/><stop offset="1" stop-color="#ffbb52"/></radialGradient></defs><g class="an-rayos" stroke="#ffcb63" stroke-width="5" stroke-linecap="round">${Array.from({ length: 12 }, (_, i) => `<line x1="60" y1="12" x2="60" y2="${i % 2 ? 22 : 26}" transform="rotate(${i * 30} 60 60)"/>`).join("")}</g><circle cx="60" cy="60" r="25" fill="url(#anSol)"/></svg>`;
 const FLOR = (c, m = "#ffd66b") => `<svg viewBox="0 0 40 40">${[0, 72, 144, 216, 288].map((a) => `<ellipse cx="20" cy="10.5" rx="6.4" ry="9" fill="${c}" transform="rotate(${a} 20 20)"/>`).join("")}<circle cx="20" cy="20" r="5.2" fill="${m}"/></svg>`;
 const NUBE = '<svg viewBox="0 0 120 60"><path d="M26 54h66a18 18 0 0 0 2-35.9A26 26 0 0 0 44.6 14 20 20 0 0 0 26 54z"/></svg>';
-const LLAMA = '<svg viewBox="0 0 40 64" preserveAspectRatio="none"><defs><linearGradient id="anLlama" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff3d6e"/><stop offset=".55" stop-color="#ff7a45"/><stop offset="1" stop-color="#ffc46b"/></linearGradient></defs><path d="M20 2c3 12 18 20 18 38a18 18 0 0 1-36 0c0-9 5-15 9-18 0 6 3 10 6 11-1.6-10 1-21 3-31z" fill="url(#anLlama)"/><path d="M20 30c2 6 9 9 9 17a9 9 0 0 1-18 0c0-4 2-7 4.4-8.6.2 2.8 1.4 4.6 3 5.4-.6-5 .6-9.8 1.6-13.8z" fill="#ffe3a8" opacity=".85"/></svg>';
+const RAYO = '<svg viewBox="0 0 24 48"><path d="M14 1 3 27h8l-4 20 14-28h-8l5-18z" fill="#ffe7a3" stroke="#ffb44d" stroke-width="1.2" stroke-linejoin="round"/></svg>';
+const VENA = '<svg viewBox="0 0 24 24"><path d="M9.5 3.5c.4 3-1.4 5-4.4 5.4M14.5 3.5c-.4 3 1.4 5 4.4 5.4M9.5 20.5c.4-3-1.4-5-4.4-5.4M14.5 20.5c-.4-3 1.4-5 4.4-5.4" fill="none" stroke="#ff5b4a" stroke-width="2.6" stroke-linecap="round"/></svg>';
 const PETALO = '<svg viewBox="0 0 24 30"><defs><linearGradient id="anPetalo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6f8e"/><stop offset="1" stop-color="#c3123c"/></linearGradient></defs><path d="M12 1C21 7 23 18 12 29 1 18 3 7 12 1z" fill="url(#anPetalo)"/><path d="M12 6c2.6 5 2.6 11 0 18" stroke="rgba(255,255,255,.35)" stroke-width="1" fill="none"/></svg>';
 const CORA = '<svg viewBox="0 0 24 22"><path d="M12 21S1.5 14.4 1.5 7.4A5.4 5.4 0 0 1 12 4.6a5.4 5.4 0 0 1 10.5 2.8C22.5 14.4 12 21 12 21z" fill="currentColor"/></svg>';
 const ONDA = `<svg viewBox="0 0 400 40" preserveAspectRatio="none"><path d="M0 18${" q25-12 50 0 t50 0".repeat(4)}"/><path d="M0 30${" q25-9 50 0 t50 0".repeat(4)}" opacity=".6"/></svg>`;
@@ -51,17 +53,19 @@ const ESCENAS = {
       e.append(P("an-nube", `--x:${x}%;--y:${y}%;--t:${t}px;--dx:${dx}px;--d:${d}s;--r:-${sg(az(0, d))}`, NUBE)));
     if (mov) for (let i = 0; i < 16; i++) e.append(P("an-gotita", `--x:${az(2, 98).toFixed(1)}%;--d:${sg(az(1.3, 2))};--r:-${sg(az(0, 2))}`));
   },
-  // Llamitas al entrar (un ratito) y luego una brisa que quema: luz cálida y chispas que vuelan.
-  hot(e, mov, luego) {
+  // Enojado: nubes de tormenta con algún relámpago suave, vapor que sube por las orillas y venitas
+  // de enojo que aparecen y se van. Al entrar, un destello rojo y la tormenta se sacude tantito.
+  enojado(e, mov, luego) {
     e.append(P("an-luz"));
+    [[-10, 8, 160, 18, 12], [58, 5, 180, -22, 15]].forEach(([x, y, t, dx, d]) =>
+      e.append(P("an-nube tormenta", `--x:${x}%;--y:${y}%;--t:${t}px;--dx:${dx}px;--d:${d}s;--r:-${sg(az(0, d))}`, NUBE)));
     if (!mov) return;
-    const ll = document.createElement("div");
-    ll.className = "an-llamas";
-    for (let i = 0; i < 8; i++) ll.append(P("", `--h:${Math.round(az(50, 92))}%;--r:-${sg(az(0, 0.5))}`, LLAMA));
-    e.append(ll);
-    luego(() => ll.remove(), 2500);
-    [30, 52, 74].forEach((y) => e.append(P("an-brisa", `--y:${y}%;--d:${sg(az(9, 13))};--r:-${sg(az(0, 12))}`)));
-    for (let i = 0; i < 8; i++) e.append(P("an-chispa", `--x:${orilla(i)};--t:${Math.round(az(4, 7))}px;--dx:${Math.round(az(20, 50)) * (i % 2 ? -1 : 1)}px;--d:${sg(az(7, 11))};--r:-${sg(az(0, 10))}`));
+    const entrada = [P("an-furia")];
+    e.append(...entrada);
+    luego(() => entrada.forEach((n) => n.remove()), 1600);
+    e.append(P("an-relampago", `--d:${sg(az(7, 9))};--r:-${sg(az(2, 5))}`), P("an-rayo", `--x:${az(18, 70).toFixed(1)}%;--d:${sg(az(7, 9))};--r:-${sg(az(2, 5))}`, RAYO));
+    for (let i = 0; i < 4; i++) e.append(P("an-vapor", `--x:${orilla(i)};--t:${Math.round(az(22, 34))}px;--dx:${Math.round(az(6, 16)) * (i % 2 ? -1 : 1)}px;--d:${sg(az(4.5, 6.5))};--r:-${sg(az(0, 6))}`));
+    for (let i = 0; i < 3; i++) e.append(P("an-vena", `--x:${orilla(i + 1)};--y:${az(22, 78).toFixed(1)}%;--t:${Math.round(az(14, 20))}px;--d:${sg(az(6, 9))};--r:-${sg(az(0, 8))}`, VENA));
   },
   // Destello carmesí con pétalos y chispitas al entrar; luego brasas que suben por las orillas,
   // ondas de calor, pétalos de vez en cuando, corazoncitos que aparecen y se van y una brisa que quema.
@@ -187,7 +191,7 @@ export function animosChat({ raiz, marco, lista, tono }) {
     if (e) { e.classList.add("sale"); setTimeout(() => e.remove(), 450); }
   }
   function encender(id) {
-    const mov = !reducido();
+    const mov = !reducido() && !R.ahorro;
     if (id === "hormonal") tonos();
     raiz.classList.add("animo-" + id);
     raiz.dataset.animo = id;

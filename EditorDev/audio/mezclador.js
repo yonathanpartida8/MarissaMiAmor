@@ -190,6 +190,7 @@ export class AudioEditor {
   }
 
   _arrancarDev() {
+    this._despertar();
     if (!this.ac || !this.url || !this.pref.on || this._pausaVista) return;
     if (!this.dev) {
       const audio = new Audio();
@@ -239,9 +240,16 @@ export class AudioEditor {
   }
 
   _visibilidad() {
-    if (!this.dev) return;
-    if (document.hidden) this.dev.audio.pause();
-    else if (this.pref.on && !this._pausaVista) this.dev.audio.play().catch(() => {});
+    if (document.hidden) { this.dev?.audio.pause(); this._dormir(true); return; }
+    if (this.dev && this.pref.on && !this._pausaVista) { this._despertar(); this.dev.audio.play().catch(() => {}); }
+  }
+  /* El motor de audio encendido sin sonar nada gasta pila (sobre todo en el iPhone): se duerme cuando
+     la página se oculta o la música se apaga, y se despierta justo antes de sonar algo. */
+  _despertar() { if (this.ac?.state === "suspended" && !document.hidden) this.ac.resume().catch(() => {}); }
+  _dormir(ya = false) {
+    clearTimeout(this._tDormir);
+    const zz = () => { if (this.ac?.state === "running" && (document.hidden || (!this.sonando && !this.escucha && !this._pista && !this._sonando?.length))) this.ac.suspend().catch(() => {}); };
+    if (ya) zz(); else this._tDormir = setTimeout(zz, 4000);
   }
 
   /* ── Lo que se puede tocar desde la interfaz ─────────────────────── */
@@ -250,7 +258,7 @@ export class AudioEditor {
     try { localStorage.setItem(PREF, JSON.stringify(this.pref)); } catch (e) { /* nada */ }
     if (this.pref.on) this._arrancarDev();
     this._nivel(false);
-    if (!this.pref.on && this.dev) setTimeout(() => { if (!this.pref.on) this.dev?.audio.pause(); }, 900);
+    if (!this.pref.on && this.dev) setTimeout(() => { if (!this.pref.on) { this.dev?.audio.pause(); this._dormir(); } }, 900);
     this._avisar();
   }
 
@@ -271,6 +279,7 @@ export class AudioEditor {
 
   /* ── Efectos: cortos, al instante, con «ducking» ─────────────────── */
   async efecto(url, vol = 0.9) {
+    this._despertar();
     if (!url) return null;
     if (!this.ac) this._desbloquear();
     if (!this.ac) return this._efectoSimple(url, vol);
@@ -318,6 +327,7 @@ export class AudioEditor {
 
   /* ── Escuchar una canción de la biblioteca (una a la vez) ────────── */
   escuchar(url, alTerminar) {
+    this._despertar();
     if (this.escucha && this.escucha.url === url) { this.detenerEscucha(); return false; }
     this.detenerEscucha();
     if (!this.ac) this._desbloquear();
@@ -364,6 +374,7 @@ export class AudioEditor {
 
   /* ── Pista de la línea de tiempo (la canción de la página, a pedido) ─ */
   pista(url, vol = 0.8, desde = 0) {
+    this._despertar();
     this.pararPista();
     if (!url) return;
     if (!this.ac) this._desbloquear();
@@ -454,6 +465,7 @@ export class AudioEditor {
    * fundido corto al entrar y al salir. `solo` = sólo ésas (para escuchar una).
    */
   pistas(lista, desde = 0, solo = false) {
+    this._despertar();
     this.pararPistas();
     if (!this.ac) this._desbloquear();
     const t0 = performance.now() - desde;

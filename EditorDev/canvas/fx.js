@@ -80,7 +80,7 @@ export class FxEditor {
 
   get nivel() {
     if (PREF.movimiento === "nada" || PREF.particulas === false || RT.menosMovimiento?.()) return 0;
-    return PREF.movimiento === "reducido" || document.body.classList.contains("ed-calidad-baja") ? 0.5 : 1;
+    return PREF.movimiento === "reducido" || document.body.classList.contains("ed-calidad-baja") || document.documentElement.classList.contains("rd-ahorro") ? 0.5 : 1;
   }
 
   /** La caja de un elemento en la pantalla (coordenadas de la vista). */

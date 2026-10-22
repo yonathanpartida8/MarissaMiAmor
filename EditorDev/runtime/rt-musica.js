@@ -18,10 +18,11 @@
       this.listo = false;
       this.silencio = false;
       this.deseo = null;
+      // Oculta: la canción se pausa y el motor de audio se duerme (encendido sin sonar gasta pila).
       this._vis = () => {
-        if (!this.actual) return;
-        if (document.hidden) this.actual.audio.pause();
-        else if (this.listo && !this.silencio) this.actual.audio.play().catch(() => {});
+        if (document.hidden) { this.actual?.audio.pause(); if (this.ac && this.ac.state === "running") this.ac.suspend().catch(() => {}); return; }
+        if (this.ac && this.ac.state === "suspended" && this.listo) this.ac.resume().catch(() => {});
+        if (this.actual && this.listo && !this.silencio) this.actual.audio.play().catch(() => {});
       };
       document.addEventListener("visibilitychange", this._vis);
     }

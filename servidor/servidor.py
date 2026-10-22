@@ -56,6 +56,8 @@ import subprocess
 import sys
 import tempfile
 import threading
+import gzip
+from collections import OrderedDict
 import time
 import urllib.error
 import urllib.parse
@@ -63,7 +65,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.11.0"
+VERSION = "1.12.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -1223,6 +1225,27 @@ def ruta(metodo, patron, quien="todos"):
     return poner
 
 
+# Lo que vale la pena comprimir (texto, JSON, scripts, SVG) y un poquito de memoria para no
+# comprimir el mismo archivo cada vez (se borra solo si el archivo cambia).
+COMPRIMIBLE = re.compile(r"^(text/|application/(json|javascript|manifest\+json|xml)|image/svg\+xml)")
+_GZ, _GZ_CANDADO = OrderedDict(), threading.Lock()
+
+
+def _gz_de(ruta, st):
+    clave = (ruta, st.st_mtime_ns, st.st_size)
+    with _GZ_CANDADO:
+        if clave in _GZ:
+            _GZ.move_to_end(clave)
+            return _GZ[clave]
+    with open(ruta, "rb") as f:
+        datos = gzip.compress(f.read(), 6)
+    with _GZ_CANDADO:
+        _GZ[clave] = datos
+        while len(_GZ) > 48:
+            _GZ.popitem(last=False)
+    return datos
+
+
 class Manejador(BaseHTTPRequestHandler):
     server_version = "librito"
     sys_version = ""
@@ -1279,7 +1302,7 @@ class Manejador(BaseHTTPRequestHandler):
         if o and not self.es_mio(o) and self.origen_ok(o):
             self.send_header("Access-Control-Allow-Origin", o)
             self.send_header("Access-Control-Expose-Headers", "Content-Disposition")
-        self.send_header("Vary", "Origin")
+        self.send_header("Vary", "Origin, Accept-Encoding")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
         for k, v in (extra or {}).items():
@@ -1290,9 +1313,15 @@ class Manejador(BaseHTTPRequestHandler):
             cuerpo = json.dumps(cuerpo, ensure_ascii=False).encode("utf-8")
         elif isinstance(cuerpo, str):
             cuerpo = cuerpo.encode("utf-8")
+        # Comprimido si vale la pena y el navegador lo acepta (menos datos = menos radio = menos pila).
+        gz = len(cuerpo) > 1024 and self.command != "HEAD" and COMPRIMIBLE.match(tipo) and self.acepta_gzip()
+        if gz:
+            cuerpo = gzip.compress(cuerpo, 5)
         self.send_response(codigo)
         self.send_header("Content-Type", tipo)
         self.send_header("Content-Length", str(len(cuerpo)))
+        if gz:
+            self.send_header("Content-Encoding", "gzip")
         if tipo.startswith("application/json"):
             self.send_header("Cache-Control", "no-store")
         self.cabeceras_comunes(extra)
@@ -1300,17 +1329,45 @@ class Manejador(BaseHTTPRequestHandler):
         if self.command != "HEAD":
             self.wfile.write(cuerpo)
 
+    def acepta_gzip(self):
+        return "gzip" in (self.headers.get("Accept-Encoding") or "").lower()
+
     def error(self, codigo, mensaje):
         self.responder(codigo, {"error": mensaje})
 
     def archivo(self, ruta, extra=None, cache="no-cache"):
-        tam = os.path.getsize(ruta)
+        st = os.stat(ruta)
+        tam = st.st_size
         ext = os.path.splitext(ruta)[1].lower()
         tipo = MIME_EXTRA.get(ext) or mimetypes.guess_type(ruta)[0] or "application/octet-stream"
         if tipo.startswith("text/") or tipo in ("application/json", "application/manifest+json"):
             tipo += "; charset=utf-8"
-        ini, fin, codigo = 0, tam - 1, 200
         rango = self.headers.get("Range")
+        # Lo que ya tienes no se vuelve a mandar: «304, no cambió» (con su huella, la ETag).
+        etag = f'W/"{tam:x}-{st.st_mtime_ns:x}"'
+        if cache != "no-store" and not rango and etag in (self.headers.get("If-None-Match") or ""):
+            self.send_response(304)
+            self.send_header("ETag", etag)
+            self.send_header("Cache-Control", cache)
+            self.send_header("Content-Length", "0")
+            self.cabeceras_comunes(extra)
+            self.end_headers()
+            return
+        if cache != "no-store":
+            extra = {**(extra or {}), "ETag": etag}
+        # Texto entero (páginas, scripts, JSON): comprimido.
+        if not rango and self.command != "HEAD" and 1024 < tam <= (2 << 20) and COMPRIMIBLE.match(tipo) and self.acepta_gzip():
+            datos = _gz_de(ruta, st)
+            self.send_response(200)
+            self.send_header("Content-Type", tipo)
+            self.send_header("Content-Length", str(len(datos)))
+            self.send_header("Content-Encoding", "gzip")
+            self.send_header("Cache-Control", cache)
+            self.cabeceras_comunes(extra)
+            self.end_headers()
+            self.wfile.write(datos)
+            return
+        ini, fin, codigo = 0, tam - 1, 200
         m = re.match(r"^bytes=(\d*)-(\d*)$", rango or "")
         if m and tam:
             if m.group(1):

@@ -15,6 +15,7 @@
  * escalan y giran con él sin recalcular nada. Mientras se arrastran sólo se
  * toca el DOM; al soltar se guarda una sola vez (un solo «deshacer»).
  */
+import { R } from "./rendimiento.js";
 import { el, seccion, fila, boton, control, aviso, Vinculos } from "./ui.js";
 import { hojita } from "./hoja.js";
 import { ico } from "./iconos.js";
@@ -167,7 +168,7 @@ export function previaToque(app, ids, cambio, nombre, sobre) {
         if (matchMedia("(max-width: 1023px)").matches) app.lienzo.mostrarSeleccion?.(panel.offsetHeight + 12);
         else app.lienzo.apartarDe?.(panel.getBoundingClientRect());
         setTimeout(demo, 300);
-        if (!quieto) reloj = setInterval(demo, 2200);
+        if (!quieto) reloj = setInterval(() => { if (!document.hidden && !R.reposo && !R.ahorro) demo(); }, 2200);
       });
     },
   }).then((r) => {

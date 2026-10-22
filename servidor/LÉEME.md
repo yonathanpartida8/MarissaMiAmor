@@ -227,6 +227,8 @@ to process»: por eso `librito actualizar` instala `git` en Termux.
   chat abierto, el editor espera al servidor y éste le contesta en cuanto
   cambia algo; lo escrito se guarda como texto (nunca HTML) y sólo se aceptan
   imágenes de GIPHY o las que ustedes suben (1.9.0).
+- **1.12.0**: responde comprimido (gzip) lo que vale la pena y contesta «304, no cambió»
+  (ETag) cuando el navegador ya tiene el archivo: menos datos, menos radio, menos pila.
 - **1.11.0**: el género de cada quien en su perfil (Hombre, Mujer, LGBTQ+ u Otro;
   sólo lo cambia cada quien), que le da su color a los mensajitos en «Hormonal».
 - **1.10.0**: lo eliminado queda como «Aquí se eliminó un mensajito…» para los dos

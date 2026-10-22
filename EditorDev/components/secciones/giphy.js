@@ -120,7 +120,7 @@ export const GIPHY = {
   _previaGif(it, tipo) {
     const app = this.app;
     G.contar(it, "onclick");
-    const img = el("img", { src: it.vista, alt: it.titulo, draggable: "false" });
+    const img = el("img", { src: it.vista, alt: it.titulo, loading: "lazy", decoding: "async", draggable: "false" });
     const caja = el("div.ed-gif-previa" + (tipo === "stickers" ? ".cuadros" : ""), {}, [img]);
     const v = new Vinculos();
     const op = { sinFondo: false, tolerancia: 40 };
@@ -190,7 +190,7 @@ export const GIPHY = {
     if (!id) return;
     const v = new Vinculos();
     const op = { tolerancia: 40 };
-    const img = el("img", { src: app.bib.url(id), alt: "", draggable: "false" });
+    const img = el("img", { src: app.bib.url(id), alt: "", loading: "lazy", decoding: "async", draggable: "false" });
     const caja = el("div.ed-gif-previa.cuadros", {}, [img]);
     let blob = null, cache = {};
     const pintar = async () => {

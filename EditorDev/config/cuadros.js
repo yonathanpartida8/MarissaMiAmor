@@ -9,6 +9,7 @@
  * solo con la pestaña oculta.
  */
 import { PREF } from "./preferencias.js";
+import { R } from "../components/rendimiento.js";
 
 const COMUNES = [30, 48, 50, 60, 72, 75, 90, 100, 120, 144, 165, 240];
 export const HZ = { real: 60, medido: false };
@@ -36,7 +37,8 @@ export function medirHz() {
 }
 
 /** El ritmo al que trabaja el editor ahora. */
-export const objetivo = () => (PREF.hz === "auto" ? HZ.real : Math.min(+PREF.hz || 60, HZ.real));
+// (Si el aparato sufre, como mucho 30: la mitad de trabajo y casi igual de suave.)
+export const objetivo = () => Math.min(PREF.hz === "auto" ? HZ.real : Math.min(+PREF.hz || 60, HZ.real), R.ahorro ? 30 : Infinity);
 
 /** Un bucle de cuadros con tope de Hz. Devuelve cómo pararlo. */
 export function alCuadro(fn) {

@@ -43,6 +43,7 @@ export class Configuracion {
         v.add(() => b.classList.toggle("on", PREF.modo === m));
         return b;
       })),
+      // (De lo que más importa a lo que menos: Fase 37.)
       seccion("Rendimiento", [
         fila("Refresco", hz), notaHz,
         fila("Calidad", p("calidad", { tipo: "segmento", opciones: [["baja", "Baja"], ["media", "Media"], ["alta", "Alta"]] }), "baja: sin sombras ni desenfoques de la interfaz"),
@@ -51,9 +52,13 @@ export class Configuracion {
         fila("Mostrar FPS", p("fps", { tipo: "toggle" })),
         boton(I("info", "Diagnóstico de rendimiento"), () => this.diagnostico(), "chico"),
       ]),
-      seccion("Animaciones", [
-        fila("Movimiento", p("movimiento", { tipo: "segmento", opciones: [["completo", "Completo"], ["reducido", "Reducido"], ["nada", "Sin movimiento"]] })),
-        fila("Intensidad", p("intensidad", { tipo: "rango", min: 0.3, max: 1.5, paso: 0.1 }), "cuánto se mueven la abejita y las animaciones de la interfaz"),
+      seccion("Interfaz", [
+        fila("Estilo", p("estilo", { tipo: "segmento", opciones: [["cuaderno", "Cuaderno"], ["retromylove", "RetroMyLove"], ["baddie", "Baddie"]] }), "RetroMyLove: retro de los 90 · Baddie: negro, rosa fuerte y brillo (la abejita también se arregla)"),
+        fila("Grano animado", p("grano", { tipo: "toggle" }), "sólo en RetroMyLove"),
+        fila("Parpadeo analógico", p("parpadeo", { tipo: "toggle" }), "sutil, como un monitor viejo (sólo RetroMyLove)"),
+        fila("Tema", p("tema", { tipo: "segmento", opciones: [["auto", "Como el teléfono"], ["claro", "Claro"], ["oscuro", "Oscuro"]] })),
+        fila("Tamaño de la interfaz", p("escala", { tipo: "segmento", opciones: [[0.9, "Chica"], [1, "Normal"], [1.12, "Grande"]] })),
+        fila("Transparencias", p("transparencias", { tipo: "toggle" })),
       ], { abierta: false }),
       seccion("Audio", [
         fila("Música (MusicaDev.mp3)", control(v, { tipo: "toggle", leer: () => AU?.pref.on, escribir: (on) => AU?.ponerPref({ on }) })),
@@ -61,6 +66,17 @@ export class Configuracion {
         fila("Sonidos del editor", control(v, { tipo: "toggle", leer: () => SE?.pref.on, escribir: (on) => SE?.ponerPref({ on }) })),
         fila("Volumen de efectos", control(v, { tipo: "rango", min: 0, max: 1, paso: 0.05, leer: () => SE?.pref.vol ?? 0.35, escribir: (vol) => SE?.ponerPref({ vol }) })),
         fila("Voz de la abejita", p("abejaSonido", { tipo: "toggle" })),
+      ], { abierta: false }),
+      seccion("Animaciones", [
+        fila("Movimiento", p("movimiento", { tipo: "segmento", opciones: [["completo", "Completo"], ["reducido", "Reducido"], ["nada", "Sin movimiento"]] })),
+        fila("Intensidad", p("intensidad", { tipo: "rango", min: 0.3, max: 1.5, paso: 0.1 }), "cuánto se mueven la abejita y las animaciones de la interfaz"),
+      ], { abierta: false }),
+      seccion("Interacción", [
+        fila("Vibración", p("haptic", { tipo: "toggle" }), "al tocar botones (Android; el iPhone no la permite en la web)"),
+        fila("Fuerza", p("hapticFuerza", { tipo: "rango", min: 0.5, max: 3, paso: 0.5 })),
+        fila("Ayudas (foquito)", p("ayudas", { tipo: "toggle" })),
+        fila("Etiquetas al pasar el ratón", p("tooltips", { tipo: "toggle" })),
+        fila("Consejos automáticos", p("consejos", { tipo: "toggle" }), "muy de vez en cuando, discretos"),
       ], { abierta: false }),
       seccion("Abejita", [
         fila("Abejita", p("abeja", { tipo: "toggle" }), "apagada, el foquito sólo da consejos"),
@@ -71,21 +87,6 @@ export class Configuracion {
           boton(I("varita", "Probar el evento especial"), () => { this.m?.cerrar(null); app.ayuda?.hackeo(); }, "chico"),
         ]),
         el("small.ed-ayuda", { text: "Sus frases están en dialogos.txt (en la carpeta principal): una por línea; las que empiezan con «-» son el evento especial." }),
-      ], { abierta: false }),
-      seccion("Interacción", [
-        fila("Vibración", p("haptic", { tipo: "toggle" }), "al tocar botones (Android; el iPhone no la permite en la web)"),
-        fila("Fuerza", p("hapticFuerza", { tipo: "rango", min: 0.5, max: 3, paso: 0.5 })),
-        fila("Ayudas (foquito)", p("ayudas", { tipo: "toggle" })),
-        fila("Etiquetas al pasar el ratón", p("tooltips", { tipo: "toggle" })),
-        fila("Consejos automáticos", p("consejos", { tipo: "toggle" }), "muy de vez en cuando, discretos"),
-      ], { abierta: false }),
-      seccion("Interfaz", [
-        fila("Estilo", p("estilo", { tipo: "segmento", opciones: [["cuaderno", "Cuaderno"], ["retromylove", "RetroMyLove"], ["baddie", "Baddie"]] }), "RetroMyLove: retro de los 90 · Baddie: negro, rosa fuerte y brillo (la abejita también se arregla)"),
-        fila("Grano animado", p("grano", { tipo: "toggle" }), "sólo en RetroMyLove"),
-        fila("Parpadeo analógico", p("parpadeo", { tipo: "toggle" }), "sutil, como un monitor viejo (sólo RetroMyLove)"),
-        fila("Tema", p("tema", { tipo: "segmento", opciones: [["auto", "Como el teléfono"], ["claro", "Claro"], ["oscuro", "Oscuro"]] })),
-        fila("Tamaño de la interfaz", p("escala", { tipo: "segmento", opciones: [[0.9, "Chica"], [1, "Normal"], [1.12, "Grande"]] })),
-        fila("Transparencias", p("transparencias", { tipo: "toggle" })),
       ], { abierta: false }),
       seccion("Otros", [
         el("div.ed-botonera", {}, [

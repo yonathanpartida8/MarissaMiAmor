@@ -24,6 +24,7 @@
  */
 const PREF = "editordev:autoguardar";
 export const CADA_COPIA = 5 * 60 * 1000;
+import { cada } from "../components/rendimiento.js";
 import { guardarCambios, revGuardada, pedirPersistencia } from "./db.js";
 import { guardarCopia } from "./respaldos.js";
 import { revisar, rescatar, quitarRescate } from "./seguro.js";
@@ -55,7 +56,7 @@ export class Autoguardado {
     addEventListener("pagehide", salir);
     addEventListener("freeze", salir);
     document.addEventListener("visibilitychange", () => { if (document.hidden) salir(); });
-    setInterval(() => this.copiaCompleta("cada 5 minutos"), CADA_COPIA);
+    cada(() => this.copiaCompleta("cada 5 minutos"), CADA_COPIA);
   }
 
   get pendiente() {

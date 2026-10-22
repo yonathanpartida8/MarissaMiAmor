@@ -2349,3 +2349,18 @@ body.con-linea .ed-dock { top: 8px; right: 6px; transform: none; gap: 5px; }
 body.con-linea .ed-dock-grupo { padding: 2px; border-radius: 12px; border-width: 1.5px; }
 body.con-linea .ed-dock-b { width: 36px; height: 36px; }
 body.con-linea .ed-dock-b .ed-ico { width: 18px; height: 18px; }
+
+/* ═══ Rendimiento (Fase 37): lo que no se ve, o lo decorativo cuando nadie toca, no se anima ═══
+   Las animaciones se quedan quietas justo donde iban (no saltan) y siguen al volver. Ver components/rendimiento.js. */
+html.rd-oculto *, html.rd-oculto *::before, html.rd-oculto *::after,
+.rd-tapado, .rd-tapado::before, .rd-tapado::after, .rd-tapado *, .rd-tapado *::before, .rd-tapado *::after,
+html:is(.rd-reposo, .rd-ahorro) :is(.mp-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon),
+html:is(.rd-reposo, .rd-ahorro) :is(.mp-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon) *,
+html:is(.rd-reposo, .rd-ahorro) :is(.mp-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon) *::before,
+html:is(.rd-reposo, .rd-ahorro) :is(.mp-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon) *::after,
+html:is(.rd-reposo, .rd-ahorro) :is(.mp-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon)::before,
+html:is(.rd-reposo, .rd-ahorro) :is(.mp-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon)::after { animation-play-state: paused !important; }
+/* Con el aparato sufriendo: sin desenfoques de fondo (lo que más le cuesta al celular) */
+html.rd-ahorro *, html.rd-ahorro *::before, html.rd-ahorro *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+/* Las miniaturas de páginas (Crear librito, Páginas) nunca se animan: se ven quietas, como una foto */
+.ed-mini-escala *, .ed-mini-escala *::before, .ed-mini-escala *::after { animation-duration: .001s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }

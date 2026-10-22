@@ -23,6 +23,7 @@
  *   integraciones/  GIPHY (GIFs y stickers) y quitar el fondo de un GIF animado
  *   components/secciones/  cada sección grande del panel en su archivo
  */
+import * as RD from "./components/rendimiento.js";
 import { FxEditor } from "./canvas/fx.js";
 import { el, aviso, modal, esMovil, menu, popover } from "./components/ui.js";
 import { Estado } from "./core/estado.js";
@@ -79,35 +80,40 @@ const ULTIMO = "editordev:ultimo";
 const $ = (s) => document.querySelector(s);
 
 /** Las categorías del riel: [id, icono, nombre]. */
+// Ordenadas de lo esencial a lo avanzado (Fase 37): primero lo que pones en la página, luego lo que la
+// adorna, lo que se toca y al final lo avanzado. Nada se repite en otro menú.
 const SECCIONES = [
   ["paginas", "paginas", "Páginas"],
-  ["navegacion", "pasar", "Pasar página"],
   ["publicadas", "publicar", "Páginas publicadas"],   // (vive en el menú ⋯, no en el riel)
-  // Crear: lo que arma la página
-  ["bloques", "bloques", "Bloques"],
-  ["componentes", "biblioteca", "Recursos"],
-  ["elementos", "elementos", "Elementos"],
+  // Lo esencial: lo que pones en la página
   ["texto", "texto", "Texto"],
   ["imagenes", "imagen", "Imágenes"],
   ["video", "video", "Vídeo"],
   ["audio", "audio", "Sonidos"],
-  // Adornar y dar vida
-  ["gifs", "gif", "GIFs"],
+  // Adornar
   ["stickers", "sticker", "Stickers"],
-  ["efectos", "efectos", "Efectos"],
-  ["animar", "animar", "Animar"],
-  ["transiciones", "transiciones", "Transiciones"],
-  // Interacción y sonido
+  ["gifs", "gif", "GIFs"],
+  ["elementos", "elementos", "Elementos"],
+  ["bloques", "bloques", "Bloques"],
+  ["componentes", "biblioteca", "Recursos"],
+  // Tocar
   ["toques", "toque", "Al tocar"],
+  ["navegacion", "pasar", "Pasar página"],
   ["interactivo", "interactivo", "Interactivo"],
   // Avanzado
+  ["diseno", "diseno", "Tema"],
   ["html", "html", "HTML"],
   ["3d", "cubo", "3D"],
-  ["diseno", "diseno", "Tema"],
   ["herramientas", "herramientas", "Herramientas"],
+  // Dar vida a la página: en la barra de abajo (no en el riel)
+  ["animar", "animar", "Animar"],
+  ["efectos", "efectos", "Efectos"],
+  ["transiciones", "transiciones", "Transiciones"],
 ];
 // Separadores del riel: antes de cada una, un título chiquito.
-const GRUPOS_RIEL = { gifs: "Adornar", toques: "Tocar", html: "Avanzado" };
+const GRUPOS_RIEL = { stickers: "Adornar", toques: "Tocar", diseno: "Avanzado" };
+// Lo que ya está en la barra de abajo no se repite en el riel.
+const EN_LA_BARRA = new Set(["animar", "efectos", "transiciones"]);
 // Nombres viejos que otros sitios todavía piden.
 const ALIAS = { fotos: "imagenes", ajustes: "herramientas" };
 // En el teléfono, estas secciones se abren en una hojita de abajo (compacta)
@@ -115,6 +121,7 @@ const ALIAS = { fotos: "imagenes", ajustes: "herramientas" };
 const HOJAS = new Set(["animar", "efectos", "transiciones", "gifs", "stickers", "toques"]);
 
 const app = {};
+app.rendimiento = RD;
 window.EditorDev = app;
 
 // Red de seguridad: un error suelto nunca deja el editor trabado. Suelta los
@@ -321,20 +328,20 @@ function construirBarra() {
   $(".ed-paginas-b").addEventListener("click", () => abrirSeccion(app.seccion === "paginas" && !document.body.classList.contains("sin-panel") && !esMovil() ? null : "paginas", true));
   botonMusica();
   // «Más»: lo que no cabe en el teléfono (los mismos botones de siempre).
+  // «Más» (⋯), de lo más importante a lo menos. Lo que ya se ve arriba (en la compu) no se repite aquí;
+  // en el teléfono, donde esos botones no caben, sí aparece.
+  const escondido = (sel) => { const b = $(sel); return !b || getComputedStyle(b).display === "none"; };
   $(".ed-mas").addEventListener("click", (e) => menu(e.currentTarget, [
-    // Lo más importante, primero y destacado (Fase 36).
     { t: `${ico("detallito")}<span>Enviar Detallito</span><i class="ed-menu-chispa" aria-hidden="true"></i>`, clase: "ed-menu-destacado", al: () => app.detallitos.abrir($(".ed-mas")) },
-    // En teléfonos muy angostos el engrane no cabe arriba: vive aquí.
-    getComputedStyle($(".ed-ajustes-b")).display === "none" ? { t: `${ico("tuerca")}<span>Configuración del editor</span>`, al: () => app.config.abrir() } : null,
-    { t: `${ico("biblioteca")}<span>Ver el librito entero</span>`, al: () => $(".ed-previa").click() },
-    { t: `${ico("telefono")}<span>Ver como…</span>`, al: () => $(".ed-ver").click() },
-    { t: `${ico("guardar")}<span>Guardar y borradores…</span>`, al: () => $(".ed-guardar").click() },
-    { t: `${ico("escudo")}<span>Copias de seguridad…</span>`, al: () => app.guardado.abrir() },
-    { t: `${ico("exportar")}<span>Exportar…</span>`, al: () => app.exportarMenu.abrir() },
-    { t: `${ico("publicar")}<span>Páginas publicadas</span>`, al: () => abrirSeccion("publicadas", true) },
+    escondido(".ed-guardar") ? { t: `${ico("guardar")}<span>Guardar y borradores…</span>`, al: () => $(".ed-guardar").click() } : null,
+    escondido(".ed-previa") ? { t: `${ico("biblioteca")}<span>Ver el librito entero</span>`, al: () => $(".ed-previa").click() } : null,
     { t: `${ico("compartir")}<span>Compartir por WhatsApp…</span>`, al: () => app.compartir() },
+    escondido(".ed-exportar") ? { t: `${ico("exportar")}<span>Exportar…</span>`, al: () => app.exportarMenu.abrir() } : null,
+    { t: `${ico("publicar")}<span>Páginas publicadas</span>`, al: () => abrirSeccion("publicadas", true) },
+    escondido(".ed-ver") ? { t: `${ico("telefono")}<span>Ver como…</span>`, al: () => $(".ed-ver").click() } : null,
+    { t: `${ico("escudo")}<span>Copias de seguridad…</span>`, al: () => app.guardado.abrir() },
     { t: `${ico("rayo")}<span>Revisar recursos…</span>`, al: () => app.revisarRecursos() },
-    { t: `${ico("herramientas")}<span>Herramientas</span>`, al: () => abrirSeccion("herramientas", true) },
+    escondido(".ed-ajustes-b") ? { t: `${ico("tuerca")}<span>Configuración del editor</span>`, al: () => app.config.abrir() } : null,
     { t: `${ico("foco")}<span>Recorrido con la abejita</span>`, al: () => app.ayuda?.recorrido() },
   ]));
   $(".ed-deshacer").addEventListener("click", () => E.deshacer());
@@ -392,7 +399,7 @@ function construirRiel() {
   for (const [id, icono, n] of SECCIONES) {
     if (id === "paginas") continue; // Páginas va arriba (botón «1/3»), no compite con las herramientas
     if (id === "publicadas") continue; // Páginas publicadas: en el menú de los tres puntos (⋯)
-    if (id === "animar" || id === "efectos") continue; // Animar y Efectos: primero en la barra de abajo (Fase 36)
+    if (EN_LA_BARRA.has(id)) continue; // Animar, Efectos y Transición: en la barra de abajo (no se repiten)
     if (GRUPOS_RIEL[id]) riel.append(el("i.ed-riel-sep", { "aria-hidden": "true" }, [el("small", { text: GRUPOS_RIEL[id] })]));
     riel.append(el("button", { type: "button", dataset: { s: id }, title: n, "aria-label": n, onClick: () => {
       const activo = app.seccion === id;
@@ -593,7 +600,9 @@ app.guardarAMano = async () => {
 
 /* El latido: cada tanto se le pregunta a M.YNTHN si tu amorcito te mandó un detallito. */
 app.amorNuevos = 0;
-async function latir() {
+// (Una sola vez a la vez: si un latido sigue en camino, el siguiente lo reutiliza.)
+const latir = () => RD.unaVez("latido", latirYa);
+async function latirYa() {
   if (!SRV.conectado() || document.hidden) return;
   try {
     const r = await SRV.latido();
@@ -652,7 +661,7 @@ const desdeAviso = (espera) => {
 };
 desdeAviso(1600);
 addEventListener("hashchange", () => desdeAviso(0));
-setInterval(latir, 25000);
+RD.cada(latir, 25000); // con la página oculta no despierta al aparato
 addEventListener("ed-cuenta", () => setTimeout(latir, 300));
 addEventListener("ed-detallito-visto", () => setTimeout(latir, 300));
 addEventListener("ed-chat-visto", () => setTimeout(latir, 300));

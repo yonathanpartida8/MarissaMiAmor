@@ -79,7 +79,22 @@ export async function asegurarUrl(forzar = false) {
 
 const DORMIDO = `${NOMBRE} no contesta ahora mismo (el teléfono del servidor puede estar apagado o sin internet). Tus cosas siguen guardadas en este aparato; inténtalo en un ratito.`;
 
-async function pedir(ruta, { method = "GET", body } = {}, otraVez = true) {
+/**
+ * Lo mismo pedido dos veces a la vez (dos pantallas que preguntan lo mismo) viaja UNA sola vez:
+ * la segunda espera a la primera y recibe su propia copia de la respuesta. (Sólo para leer: GET.)
+ */
+const enVuelo = new Map();
+function pedir(ruta, op = {}, otraVez = true) {
+  if ((op.method || "GET") !== "GET") return pedirYa(ruta, op, otraVez);
+  const k = ruta + "|" + (leer().token || "");
+  const ya = enVuelo.get(k);
+  if (ya) return ya.then((d) => (typeof structuredClone === "function" ? structuredClone(d) : JSON.parse(JSON.stringify(d))));
+  const p = pedirYa(ruta, op, otraVez).finally(() => { if (enVuelo.get(k) === p) enVuelo.delete(k); });
+  enVuelo.set(k, p);
+  return p;
+}
+
+async function pedirYa(ruta, { method = "GET", body } = {}, otraVez = true) {
   const base = await asegurarUrl();
   if (!base) throw new Error(`${NOMBRE} no está disponible ahora mismo. Inténtalo en un ratito.`);
   if (bloqueada(base)) throw new Error(`${NOMBRE} no tiene una dirección segura (https) ahora mismo.`);
@@ -96,7 +111,7 @@ async function pedir(ruta, { method = "GET", body } = {}, otraVez = true) {
     if (!navigator.onLine) throw new Error("Este aparato está sin internet.");
     // Quizá el túnel cambió de dirección (el teléfono se reinició): se busca la nueva y se vuelve a intentar UNA vez.
     const nueva = await asegurarUrl(true);
-    if (otraVez && nueva && nueva !== base) return pedir(ruta, { method, body }, false);
+    if (otraVez && nueva && nueva !== base) return pedirYa(ruta, { method, body }, false);
     throw new Error(DORMIDO);
   }
   let d = {};
