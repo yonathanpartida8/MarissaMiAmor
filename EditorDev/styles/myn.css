@@ -1082,3 +1082,6 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
   .mp-album .mp-nota-pegada { display: none; }
 }
 @media (max-height: 580px) { .mp-album .mp-crear { min-height: 62px; } .mp-album .mp-saludo { margin-top: 2px; margin-bottom: 2px; } }
+/* Fase 39: el inicio del menú nunca se desliza (se acomoda solo al alto que se ve: components/menu-principal.js) */
+.mp-capa.mp-album { height: 100vh; height: 100dvh; bottom: auto; }
+.mp-capa.mp-album.mp-fijo { overflow: hidden; }

@@ -196,7 +196,10 @@ export class Abeja {
     const k = movimiento();
     const otra = (ms) => { this._t = setTimeout(() => this._vivir(), ms); };
     // Oculta, en reposo o con el aparato sufriendo: no vuela (espera a que vuelvas a tocar algo).
-    if (document.hidden || R.reposo || R.ahorro) { const n = this.n; this._t = 0; cuandoActivo().then(() => { if (this.n === n && !this._t) this._vivir(); }); return; }
+    if (document.hidden || R.reposo) { const n = this.n; this._t = 0; cuandoActivo().then(() => { if (this.n === n && !this._t) this._vivir(); }); return; }
+    // Con el aparato en ahorro descansa un ratito (con reloj: esperar «a que toque algo» aquí era un bucle
+    // sin fin que congelaba la página y la dejaba en blanco).
+    if (R.ahorro) return otra(8000);
     if (!k || this.hablando) return otra(2200);
     const r = Math.random();
     if (r < 0.66) {

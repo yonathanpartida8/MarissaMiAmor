@@ -61,7 +61,7 @@ export async function abrirCompartir(app) {
   };
   const preparar = async (completo) => {
     if (app.auto.pendiente) await app.auto.ahora();
-    const t = el("small.ed-ayuda", { text: "Juntando todo…" });
+    const t = el("small.ed-ayuda.ed-estado", { text: "Juntando todo…" });
     cuerpo.replaceChildren(el("div.ed-comp-prep", {}, [el("i.ed-girando"), el("b", { text: completo ? "Preparando la copia completa…" : "Preparando el librito…" }), t]));
     try {
       const { exportar } = await import("../export/exportar.js");
@@ -85,7 +85,7 @@ export async function abrirCompartir(app) {
         const c = el("button.ed-comp-item", { type: "button", "aria-pressed": "false" }, [a.tipo === "imagen" ? el("img", { src: app.bib.miniUrl(a.id) || "", alt: "", loading: "lazy", decoding: "async" }) : el("i", { html: ico(a.tipo === "audio" ? "audio" : "video") }), el("small", { text: a.nombre })]);
         c.addEventListener("click", () => { if (elegidos.has(a.id)) elegidos.delete(a.id); else elegidos.add(a.id); const on = elegidos.has(a.id); c.classList.toggle("on", on); c.setAttribute("aria-pressed", String(on)); n.textContent = elegidos.size ? `${elegidos.size} elegido${elegidos.size === 1 ? "" : "s"}` : "Elige qué mandar."; btn.disabled = !elegidos.size; });
         return c;
-      })) : el("p.ed-ayuda", { text: "Todavía no subiste fotos, canciones ni vídeos a este librito." }),
+      })) : el("p.ed-ayuda.ed-estado", { text: "Todavía no subiste fotos, canciones ni vídeos a este librito." }),
       n,
       el("div.ed-botonera", {}, [btn, el("button.ed-btn", { type: "button", html: I("volver", "Atrás"), onClick: () => opciones() })]),
     );

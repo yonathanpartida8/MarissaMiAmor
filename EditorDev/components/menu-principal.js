@@ -55,6 +55,8 @@ const LAPIZ = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 1-4.2L
 const FLECHA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const TIENDITA = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M9 21h30v17a3 3 0 0 1-3 3H12a3 3 0 0 1-3-3z" fill="#fff6ea" stroke="#3f8f78" stroke-width="2.4" stroke-linejoin="round"/><path d="M7 13l3-6h28l3 6v3.5a4.5 4.5 0 0 1-8.5 2 4.5 4.5 0 0 1-8.5 0 4.5 4.5 0 0 1-8.5 0A4.5 4.5 0 0 1 7 16.5z" fill="#ff9ec2" stroke="#3f8f78" stroke-width="2.4" stroke-linejoin="round"/><path d="M16.5 7l-1.5 9.5M24 7v9.5M31.5 7l1.5 9.5" stroke="#3f8f78" stroke-width="2" stroke-linecap="round"/><rect x="14" y="27" width="9" height="14" rx="1.5" fill="#bfe8da" stroke="#3f8f78" stroke-width="2.2"/><path d="M33 30.6s-3.6-2.1-3.6-4.4a1.9 1.9 0 0 1 3.6-1 1.9 1.9 0 0 1 3.6 1c0 2.3-3.6 4.4-3.6 4.4z" fill="#ff5f8f"/></svg>';
 const corto = (s, n = 11) => { s = String(s || "").trim(); return s.length > n ? s.slice(0, 1).toUpperCase() : s; };
+/** En las fotitos sólo la inicial (en mayúscula) junto a su corazoncito (Fase 39). */
+const inicial = (s) => (String(s || "").trim().slice(0, 1) || "?").toUpperCase();
 
 export class MenuPrincipal {
   constructor(app) {
@@ -64,6 +66,15 @@ export class MenuPrincipal {
   }
 
   abrir(vista = "inicio") {
+    if (!this._ajusteListo) {
+      this._ajusteListo = true;
+      const aj = () => { if (this.abierto) this._ajustar(); };
+      addEventListener("resize", aj);
+      visualViewport?.addEventListener("resize", aj);
+      document.fonts?.ready.then(aj);
+      addEventListener("ed-perfil", () => setTimeout(aj, 120));
+    }
+    setTimeout(() => this._ajustar(), 900);
     if (this.abierto) { this.ir(vista); return; }
     this.abierto = true;
     this.vista = null;
@@ -159,6 +170,30 @@ export class MenuPrincipal {
     this.vista = vista;
     const nodo = vista === "cuenta" ? this._vCuenta() : vista === "perfil" ? this._vPerfil() : this._vInicio();
     cambiar(this.escena, nodo, { tipo: tipo || CAMINO[antes + ">" + vista] || "zoom", desde, sonidos: this.app.sonidos, sinSonido: sinSonido || !antes });
+    this._ajustar();
+  }
+
+  /**
+   * El inicio NUNCA se desliza (Fase 39): si en este aparato (barras del navegador, letra grande del
+   * sistema, nombres largos…) no cabe en el alto que de verdad se ve, todo se acomoda un poquito más
+   * chico, en proporción. Las demás vistas (tu cuenta, tu perfil) sí se deslizan.
+   */
+  _ajustar() {
+    cancelAnimationFrame(this._rAj);
+    this._rAj = requestAnimationFrame(() => {
+      const c = this.capa, col = c?.querySelector(".mp-columna");
+      if (!col) return;
+      col.style.zoom = "";
+      c.classList.toggle("mp-fijo", this.vista === "inicio");
+      if (this.vista !== "inicio") return;
+      for (let i = 0; i < 4; i++) {
+        // (El alto que de verdad se ve: sin la barra del navegador que tapa abajo.)
+        const alto = Math.min(c.clientHeight, Math.round(visualViewport?.height || c.clientHeight)), todo = c.scrollHeight;
+        if (todo <= alto + 1) break;
+        const z = (+col.style.zoom || 1) * (alto / todo) * 0.995;
+        col.style.zoom = String(Math.max(0.6, z));
+      }
+    });
   }
 
   /* — Arriba a la derecha: tu cuenta, en su etiqueta de papel — */
@@ -185,8 +220,8 @@ export class MenuPrincipal {
       return;
     }
     const r = this.r, pa = d.pareja;
-    if (r.nombreYo) r.nombreYo.textContent = corto(PF.miNombre());
-    if (r.nombrePa && pa) r.nombrePa.textContent = corto(PF.nombreDe(pa));
+    if (r.nombreYo) r.nombreYo.textContent = inicial(PF.miNombre());
+    if (r.nombrePa && pa) r.nombrePa.textContent = inicial(PF.nombreDe(pa));
     r.polaPa?.classList.toggle("en-linea", !!pa?.en_linea);
     r.saludo.textContent = this._saludo();
     if (r.subDet) r.subDet.textContent = this._subDetallitos();
@@ -248,13 +283,13 @@ export class MenuPrincipal {
 
   _pareja() {
     const r = this.r, con = SRV.conectado(), pa = con ? PF.datos().pareja : null;
-    r.nombreYo = el("b", { text: con ? corto(PF.miNombre()) : "Tú" });
+    r.nombreYo = el("b", { text: con ? inicial(PF.miNombre()) : "Tú" });
     r.fotoYo = this._fotoPola("yo");
     const polaYo = el("figure.mp-pola.yo", {}, [el("i.mp-cinta"), el("span.mp-pola-marco", {}, [r.fotoYo]), el("figcaption.mp-pola-etq", {}, [r.nombreYo, el("i", { html: ico("corazon") })])]);
     const hilo = el("div.mp-hilo", { "aria-hidden": "true", html: HILO }, []);
     hilo.append(el("i.mp-hilo-corazon", { html: HILO_CORAZON }));
     if (pa) {
-      r.nombrePa = el("b", { text: corto(PF.nombreDe(pa)) });
+      r.nombrePa = el("b", { text: inicial(PF.nombreDe(pa)) });
       r.fotoPa = this._fotoPola("pareja");
       r.polaPa = el("button.mp-pola.ella" + (pa.en_linea ? ".en-linea" : ""), { type: "button", "aria-label": `Nuestro vínculo con ${PF.nombreDe(pa)}`, onClick: (e) => this.app.detallitos.abrir(e.currentTarget, "vincular") }, [
         el("i.mp-cinta"), el("span.mp-pola-marco", {}, [r.fotoPa]),

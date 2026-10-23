@@ -1,13 +1,16 @@
 /**
- * MODO PROFESIONAL — la línea de tiempo como un editor de vídeo (Fase 38).
+ * MODO PROFESIONAL — la línea de tiempo como CapCut (Fase 38; como CapCut de verdad desde la 39).
  *
  * Al tocar «Tiempo» (o al abrir la línea desde cualquier sitio) una transición suave lleva a una
- * pantalla aparte, con su propio color de noche (ciruela con acentos pastel):
- *   arriba     ‹ Editor (volver) · el nombre de la página y el tiempo · deshacer/rehacer · ⋯
+ * pantalla aparte, negra como CapCut:
+ *   arriba     ✕ (volver al editor) · la página (cambiar de página) · ⋯ · «Probar»
  *   en medio   la vista previa: la misma hoja, en vivo (lo que cambias aquí ES la página)
- *   abajo      reproducir/pausar y el reloj, y las pistas: página, música, audios y una por elemento
+ *   abajo      el reloj, reproducir y deshacer/rehacer; y las pistas con el cabezal FIJO al centro
+ *              (se desplaza la línea): lo de la hoja arriba, la página como clip principal con sus
+ *              cuadritos (y las páginas vecinas con su transición y el «+»), la música y «Añadir audio»
  *   al fondo   las herramientas, según lo elegido (nunca todas a la vez):
- *                nada      → Añadir: Texto, Imagen, Video, Música, Sonido, Sticker, Efectos, Transición
+ *                nada      → Cortar página, Transición y las pestañas (Bloques, Recursos, Elementos,
+ *                            Texto, Música, Imágenes, Videos, Stickers, Efectos, Sonido)
  *                un clip   → Dividir, Empieza aquí, Termina aquí, Correr, Animación, Efectos, Luz y color,
  *                            Fotograma, Capa, Ocultar, Bloquear, Duplicar, Borrar
  *                un audio  → Volumen, Silenciar, Bucle, Empieza/Termina aquí, Duplicar, Quitar
@@ -33,12 +36,15 @@ export class ModoPro {
     this.titulo = el("b");
     this.sub = el("small");
     this.barra = el("header.pro-barra", { role: "toolbar", "aria-label": "Modo profesional" }, [
-      el("button.pro-volver", { type: "button", "aria-label": "Volver al editor", onClick: () => this.cerrar() }, [el("i", { html: ico("izquierda") }), el("span", { text: "Editor" })]),
-      el("div.pro-tit", {}, [this.titulo, this.sub]),
-      b("deshacer", "Deshacer", () => this.E.deshacer()),
-      b("rehacer", "Rehacer", () => this.E.rehacer()),
+      b("cerrar", "Volver al editor", () => this.cerrar(), ".pro-x"),
+      el("i.pro-esp"),
+      el("button.pro-tit", { type: "button", "aria-label": "Cambiar de página", onClick: (ev) => this._paginas(ev.currentTarget) }, [this.titulo, this.sub, el("i", { html: ico("abajo") })]),
       b("puntos", "Opciones de la línea", (a) => this._opciones(a)),
+      el("button.pro-probar", { type: "button", onClick: () => this.app.prueba?.abrir() }, [el("i", { html: ico("play") }), el("span", { text: "Probar" })]),
     ]);
+    // Deshacer y rehacer van en la fila del reproductor (como en CapCut).
+    this.dh = el("div.pro-dh", {}, [b("deshacer", "Deshacer", () => this.E.deshacer()), b("rehacer", "Rehacer", () => this.E.rehacer())]);
+    app.tiempo?.cab?.append(this.dh);
     this.herr = el("nav.pro-herr", { "aria-label": "Herramientas de la línea de tiempo" });
     document.body.append(this.barra, this.herr);
     this.E.on("sel", () => this.refrescar());
@@ -64,8 +70,10 @@ export class ModoPro {
       const L = this.L;
       L.conMusica = true; // en el modo profesional se oye todo al reproducir
       L._alternarCrudo(true);
-      const barra = this.barra.offsetHeight || 56, abajo = this.herr.offsetHeight || 70;
-      L._alto(Math.round((innerHeight - barra - abajo) * (innerWidth >= 1024 ? 0.46 : 0.5)));
+      const barra = this.barra.offsetHeight || 46, abajo = this.herr.offsetHeight || 62;
+      L._alto(Math.round((innerHeight - barra - abajo) * (innerWidth >= 1024 ? 0.44 : 0.47)));
+      // El cabezal fijo al centro: la línea arranca donde iba.
+      requestAnimationFrame(() => { L.pintar(); L._irScroll(L.x(L.t)); });
       this._ids = new Set((this.E.pagina?.els || []).map((x) => x.id));
       this._clave = "";
       this._titulo();
@@ -78,6 +86,7 @@ export class ModoPro {
     if (!this.abierto) return;
     this._telon(null, () => {
       this.abierto = false;
+      this.L.pausar?.();
       document.body.classList.remove("modo-pro");
       this.L._alternarCrudo(false);
       requestAnimationFrame(() => this.app.lienzo?.ajustar?.());
@@ -99,8 +108,14 @@ export class ModoPro {
 
   _titulo() {
     const P = this.E.proyecto, i = P?.orden?.indexOf(this.E.paginaId) ?? 0;
-    this.titulo.textContent = "Línea de tiempo";
-    this.sub.textContent = `Página ${i + 1} de ${P?.orden?.length || 1} · ${fmt(this.L?._total?.() || 0)}`;
+    this.titulo.textContent = `Página ${i + 1}`;
+    this.sub.textContent = `de ${P?.orden?.length || 1}`;
+  }
+
+  /** La página que se edita (como el «1080P ▾» de CapCut, pero para ir de página en página). */
+  _paginas(ancla) {
+    const P = this.E.proyecto;
+    menu(ancla, P.orden.map((pid, i) => ({ t: `<span>${i + 1}. ${(P.paginas[pid]?.nombre || "Página").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c])}</span>`, al: () => this.E.irPagina(pid), clase: pid === this.E.paginaId ? "on" : "" })));
   }
 
   /** Lo que se añade en el modo profesional aparece en el cabezal. */
@@ -164,17 +179,23 @@ export class ModoPro {
         b("borrar", "Borrar", () => A.borrar(), ".peligro"),
       ];
     } else {
-      // Lo nuevo aparece en el cabezal (ver `_nuevos`).
-      const t = () => Math.round(L.t / 50) * 50;
+      // Lo nuevo aparece en el cabezal (ver `_nuevos`). Las pestañas del editor, en chiquito.
+      // Tocar otra vez la misma pestaña la cierra (Fase 39).
+      const sec = (id) => (app.seccion === id && app.lateral?.abierto ? app.lateral.cerrar() : app.abrirSeccion(id, true));
       xs = [
+        b("tijeras", "Cortar página", () => L.dividirPagina()),
+        b("transiciones", "Transición", (n) => L._elegirTrans(E.paginaId, n)),
+        sep(),
+        b("bloques", "Bloques", () => sec("bloques")),
+        b("biblioteca", "Recursos", () => sec("componentes")),
+        b("elementos", "Elementos", () => sec("elementos")),
         b("texto", "Texto", () => A.texto("parrafo")),
-        b("imagen", "Imagen", () => app.abrirSeccion("imagenes", true)),
-        b("video", "Video", () => app.abrirSeccion("video", true)),
-        b("audio", "Música", () => app.paneles?.agregarPista?.(t())),
+        b("audio", "Música", () => sec("audio")),
+        b("imagen", "Imágenes", () => sec("imagenes")),
+        b("video", "Videos", () => sec("video")),
+        b("sticker", "Stickers", () => sec("stickers")),
+        b("efectos", "Efectos", () => sec("efectos")),
         b("campana", "Sonido", (n) => abrirEfectos(app, n)),
-        b("sticker", "Sticker", () => app.abrirSeccion("stickers", true)),
-        b("efectos", "Efectos", () => app.abrirSeccion("efectos")),
-        b("transiciones", "Transición", () => app.abrirSeccion("transiciones")),
       ];
     }
     this.herr.replaceChildren(...xs.filter(Boolean));

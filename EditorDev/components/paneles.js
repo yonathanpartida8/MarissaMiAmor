@@ -114,7 +114,7 @@ export class Paneles {
   /** Para lo elegido: un aviso si no hay nada elegido. */
   _paraLoElegido(c, titulo, fn) {
     const sel = this.E.seleccionados;
-    if (!sel.length) { c.append(seccion(titulo, [el("p.ed-nota.suave", { text: "Toca algo de la hoja para elegirlo y aquí aparecerán sus opciones." })])); return; }
+    if (!sel.length) { c.append(seccion(titulo, [el("p.ed-nota.suave.ed-guia-txt", { text: "Toca algo de la hoja para elegirlo y aquí aparecerán sus opciones." })])); return; }
     fn(sel);
   }
 
@@ -432,7 +432,7 @@ export class Paneles {
     const pintarGiphy = async () => {
       const k = await GIF.como();
       giphy.textContent = "";
-      giphy.append(el("small.ed-ayuda", { text: k === "proxy" ? "Conectado por tu proxy (la clave no está en el navegador)." : k === "local" ? "Conectado por el servidor local (la clave no sale de tu computadora)." : k === "clave" ? `Conectado con tu clave (guardada sólo en este aparato) · ${GIF.USUARIO}` : "Sin conectar: ábrelo en GIFs o Stickers." }));
+      giphy.append(el("small.ed-ayuda.ed-estado", { text: k === "proxy" ? "Conectado por tu proxy (la clave no está en el navegador)." : k === "local" ? "Conectado por el servidor local (la clave no sale de tu computadora)." : k === "clave" ? `Conectado con tu clave (guardada sólo en este aparato) · ${GIF.USUARIO}` : "Sin conectar: ábrelo en GIFs o Stickers." }));
       if (k === "clave" || k === "proxy") giphy.append(boton(I("borrar", "Olvidar la clave"), () => { GIF.olvidar(); pintarGiphy(); aviso("GIPHY desconectado en este aparato"); }, "chico"));
     };
     pintarGiphy();
@@ -447,7 +447,7 @@ export class Paneles {
         boton(I("rayo", "Revisar recursos…"), () => app.revisarRecursos(), "chico"),
         boton(I("guardar", "Guardar ya"), () => app.guardarYa(), "chico"),
       ]),
-      el("small.ed-ayuda", { text: `${this.P.orden.length} páginas · ${usados.size} archivos en uso de ${Object.keys(this.P.assets).length} en la biblioteca` }),
+      el("small.ed-ayuda.ed-estado", { text: `${this.P.orden.length} páginas · ${usados.size} archivos en uso de ${Object.keys(this.P.assets).length} en la biblioteca` }),
     ]));
     const esp = el("small.ed-ayuda");
     espacio().then((e) => { if (e) esp.textContent = `Espacio usado por el navegador: ${formatoBytes(e.usage)} de ${formatoBytes(e.quota)}`; });

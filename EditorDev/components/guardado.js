@@ -120,7 +120,7 @@ export class IndicadorGuardado {
       ]),
     ];
     if (st === "error") partes.push(el("p.ed-gd-error", { text: `${A.error?.message || "El navegador no dejó escribir"}. La última versión buena sigue intacta; lo nuevo queda pendiente y se reintenta solo.` }), el("div.ed-botonera", {}, [b("Reintentar ahora", "refrescar", () => app.guardarYa(), "primario"), b("Descargar copia (.zip)", "exportar", () => { this.cerrar(); app.exportar({ completo: true }); })]));
-    else if (st === "sin-guardar") partes.push(el("p.ed-ayuda", { text: "El guardado automático está apagado (Herramientas → Guardar)." }), el("div.ed-botonera", {}, [b("Guardar ahora", "guardar", () => app.guardarYa(), "primario")]));
+    else if (st === "sin-guardar") partes.push(el("p.ed-ayuda.ed-estado", { text: "El guardado automático está apagado (Herramientas → Guardar)." }), el("div.ed-botonera", {}, [b("Guardar ahora", "guardar", () => app.guardarYa(), "primario")]));
     else partes.push(el("div.ed-botonera", {}, [b("Guardar ahora", "guardar", () => app.guardarYa())]));
 
     // Tu nube: el mismo librito en cualquier aparato.

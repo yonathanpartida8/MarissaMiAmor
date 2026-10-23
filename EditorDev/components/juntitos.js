@@ -49,6 +49,15 @@ const COSAS = [
   { t: "ducha", n: "¿Hoy me duché?", c: "menta", modo: "si" },
 ];
 const PIN = svg('<path d="M16 28s-8.5-7.6-8.5-14.3a8.5 8.5 0 0 1 17 0C24.5 20.4 16 28 16 28z"/><circle cx="16" cy="13.6" r="3.2"/>');
+// El mapa (Fase 39): satélite con calles y nombres encima (lindo y claro), o el mapa de calles.
+const SAT = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const SAT_NOMBRES = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
+const SAT_CALLES = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}";
+const CALLES = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+const CAPA_MAPA = "editordev:mapa-capa";
+const SATELITE = svg('<circle cx="16" cy="16" r="11"/><path d="M5 16h22M16 5c3.5 3.2 5 7 5 11s-1.5 7.8-5 11c-3.5-3.2-5-7-5-11s1.5-7.8 5-11z"/>');
+const MAPA = svg('<path d="M4 8.5l8-3.5 8 3.5 8-3.5v18.5l-8 3.5-8-3.5-8 3.5z"/><path d="M12 5v18.5M20 8.5V27"/>');
+const CENTRAR = svg('<circle cx="16" cy="16" r="5"/><path d="M16 3v5M16 24v5M3 16h5M24 16h5"/>');
 const TEMAS = [["rosa", "Rosa"], ["lila", "Lila"], ["durazno", "Durazno"], ["menta", "Menta"], ["noche", "Noche"]];
 const fechaLarga = (s) => (s ? new Date(s.length === 10 ? s + "T12:00:00" : s).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }) : "");
 const hace = (iso) => {
@@ -378,8 +387,14 @@ export class Juntitos {
   async _mapa() {
     const estado = el("div.jt-ub-estado");
     const caja = el("div.jt-mapa", { role: "region", "aria-label": "Mapa" }, [el("p.jt-cargando", { text: "Cargando el mapa…" })]);
+    const dist = el("span.jt-mapa-dist", { hidden: "" });
+    const botonCapa = el("button.jt-mapa-b", { type: "button", "aria-label": "Cambiar entre satélite y mapa", onClick: () => this._ponerCapa(this.mapa?.capa === "sat" ? "calles" : "sat") });
+    const marco = el("div.jt-mapa-marco", {}, [caja, dist, el("div.jt-mapa-ctl", {}, [
+      botonCapa,
+      el("button.jt-mapa-b.redondo", { type: "button", "aria-label": "Ver a los dos", title: "Ver a los dos", html: CENTRAR, onClick: () => { if (this.mapa) { this.mapa.centrado = false; this._refrescarMapa(); } } }),
+    ])]);
     const gente = el("div.jt-gente"), lugares = el("ul.jt-lugares"), eventos = el("ul.jt-eventos");
-    this.vista.replaceChildren(estado, caja, gente,
+    this.vista.replaceChildren(estado, marco, gente,
       el("div.jt-sec", {}, [el("h2", { text: "Lugares" }), el("button.jt-btn.chico", { type: "button", text: "Añadir lugar", onClick: () => this._nuevoLugar() })]), lugares,
       el("p.jt-nota", { text: "Los avisos de entrar o salir funcionan mientras la app está abierta en el aparato de quien se mueve (la web no puede seguirte con la app cerrada; para eso hace falta la app nativa)." }),
       el("div.jt-sec", {}, [el("h2", { text: "Lo último" })]), eventos);
@@ -391,21 +406,46 @@ export class Juntitos {
     };
     pintarEstado();
     this.A.al(UB.alCambiar(pintarEstado));
-    this._mapaEls = { caja, gente, lugares, eventos };
+    this._mapaEls = { caja, gente, lugares, eventos, dist, botonCapa };
     try {
       const L = await UB.cargarMapa();
       if (this.tab !== "mapa") return;
       caja.replaceChildren();
-      const m = L.map(caja, { zoomControl: true, attributionControl: true }).setView([19.4326, -99.1332], 4);
-      // (OpenStreetMap pide saber desde qué página se usa: se manda sólo el origen, nunca la dirección completa.)
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap", referrerPolicy: "strict-origin-when-cross-origin" }).addTo(m);
-      this.mapa = { L, m, capas: L.layerGroup().addTo(m), centrado: false };
+      const m = L.map(caja, { zoomControl: false, attributionControl: true, zoomSnap: 0.5 }).setView([19.4326, -99.1332], 4);
+      L.control.zoom({ position: "bottomright", zoomInTitle: "Acercar", zoomOutTitle: "Alejar" }).addTo(m);
+      m.attributionControl.setPrefix(false);
+      // (Los mapas piden saber desde qué página se usan: se manda sólo el origen, nunca la dirección completa.)
+      const op = { maxZoom: 19, maxNativeZoom: 18, referrerPolicy: "strict-origin-when-cross-origin" };
+      const bases = {
+        sat: L.layerGroup([
+          L.tileLayer(SAT, { ...op, attribution: "Imágenes © Esri, Maxar, Earthstar" }),
+          L.tileLayer(SAT_CALLES, { ...op, opacity: 0.85 }),
+          L.tileLayer(SAT_NOMBRES, { ...op }),
+        ]),
+        calles: L.tileLayer(CALLES, { ...op, subdomains: "abcd", maxNativeZoom: 19, attribution: "© OpenStreetMap · © CARTO" }),
+      };
+      this.mapa = { L, m, bases, capa: null, capas: L.layerGroup().addTo(m), centrado: false };
+      let capa = "sat";
+      try { capa = localStorage.getItem(CAPA_MAPA) === "calles" ? "calles" : "sat"; } catch (e) { /* nada */ }
+      this._ponerCapa(capa, false);
       m.on("click", (ev) => { if (this._eligiendo) { this._eligiendo = false; caja.classList.remove("eligiendo"); this._formLugar({ lat: ev.latlng.lat, lng: ev.latlng.lng }); } });
       this.A.al(() => { m.remove(); this.mapa = null; });
     } catch (e) { caja.replaceChildren(el("p.jt-cargando", { text: e.message })); }
     await this._refrescarMapa();
     // Mientras se ve el mapa, se pregunta cada 30 s (con la página oculta no se pregunta nada).
     this._parar = this.A.cada(() => this._refrescarMapa(), 30000);
+  }
+
+  /** Satélite (con calles y nombres) o el mapa de calles; se recuerda en este aparato. */
+  _ponerCapa(capa, guardar = true) {
+    const M = this.mapa, E = this._mapaEls;
+    if (!M) return;
+    if (M.capa && M.bases[M.capa]) M.m.removeLayer(M.bases[M.capa]);
+    M.capa = capa;
+    M.bases[capa].addTo(M.m);
+    E?.caja.classList.toggle("sat", capa === "sat");
+    if (E?.botonCapa) E.botonCapa.innerHTML = capa === "sat" ? `${MAPA}<span>Mapa</span>` : `${SATELITE}<span>Satélite</span>`;
+    if (guardar) try { localStorage.setItem(CAPA_MAPA, capa); } catch (e) { /* nada */ }
   }
 
   async _refrescarMapa() {
@@ -441,6 +481,13 @@ export class Juntitos {
     for (const l of d.lugares) { L.circle([l.lat, l.lng], { radius: l.radio, color: "#f2a65a", weight: 1.5, dashArray: "4 4", fillOpacity: 0.1 }).addTo(capas).bindTooltip(l.nombre); puntos.push([l.lat, l.lng]); }
     if (d.yo) marcador("yo", d.yo);
     if (d.pareja) marcador("pareja", d.pareja);
+    // Los dos a la vista: un hilito entre ustedes y a cuánto están.
+    if (d.yo && d.pareja) {
+      L.polyline([[d.yo.lat, d.yo.lng], [d.pareja.lat, d.pareja.lng]], { color: "#ff8fbf", weight: 3, opacity: 0.9, dashArray: "2 9", lineCap: "round", interactive: false }).addTo(capas);
+      const km = m.distance([d.yo.lat, d.yo.lng], [d.pareja.lat, d.pareja.lng]) / 1000;
+      E.dist.textContent = `💞 ${km < 1 ? `a ${Math.max(1, Math.round(km * 1000))} m` : `a ${km < 10 ? km.toFixed(1) : Math.round(km)} km`} de ${this.pareja}`;
+      E.dist.hidden = false;
+    } else E.dist.hidden = true;
     if (!M.centrado && puntos.length) { M.centrado = true; if (puntos.length === 1) m.setView(puntos[0], 15); else m.fitBounds(puntos, { padding: [40, 40], maxZoom: 16 }); }
   }
 

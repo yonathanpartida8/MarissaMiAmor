@@ -62,7 +62,7 @@ export const EFECTOS_SEC = {
     const app = this.app;
     const sel = E.seleccionados;
     const foto = sel.length === 1 && sel[0].tipo === "imagen" && sel[0].imagen?.asset ? app.bib.url(sel[0].imagen.asset) : null;
-    if (!sel.length) c.append(el("p.ed-nota.suave", { text: "Toca algo de la hoja para elegirlo; luego toca un efecto para verlo antes de usarlo." }));
+    if (!sel.length) c.append(el("p.ed-nota.suave.ed-guia-txt", { text: "Toca algo de la hoja para elegirlo; luego toca un efecto para verlo antes de usarlo." }));
     const miniatura = (nombre, f) => {
       const b = el("button.ed-efecto", { type: "button", title: nombre }, [
         el("span.ed-efecto-img", {}, [el("img", { src: foto || MUESTRA, alt: "", loading: "lazy", decoding: "async", draggable: "false", style: { filter: RT.efectos(f) } })]),
@@ -138,7 +138,7 @@ export const EFECTOS_SEC = {
     marco.style.height = Math.round(H * k) + "px";
     hojita({
       titulo: "Previsualización del efecto",
-      contenido: [marco, el("b", { text: it.nombre }), it.descripcion ? el("small.ed-ayuda", { text: it.descripcion }) : null].filter(Boolean),
+      contenido: [marco, el("b", { text: it.nombre }), it.descripcion ? el("small.ed-ayuda.ed-estado", { text: it.descripcion }) : null].filter(Boolean),
       acciones: [[I("volver", "Atrás"), null], [I("mas", "Usar"), "usar", "primario"]],
     }).then((r) => { if (r === "usar") this.app.acciones.componente(it); });
   },

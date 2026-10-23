@@ -408,7 +408,7 @@ function construirRiel() {
     if (GRUPOS_RIEL[id]) riel.append(el("i.ed-riel-sep", { "aria-hidden": "true" }, [el("small", { text: GRUPOS_RIEL[id] })]));
     riel.append(el("button", { type: "button", dataset: { s: id }, title: n, "aria-label": n, onClick: () => {
       const activo = app.seccion === id;
-      if (esMovil()) { if (activo && app.lateral.abierto) app.lateral.cerrar(); else abrirSeccion(id, true); }
+      if (esMovil()) { if (activo && app.lateral.abierto) app.lateral.cerrar(); else abrirSeccion(id, true); } // (en hojita: abrirSeccion la cierra)
       else abrirSeccion(activo && !document.body.classList.contains("sin-panel") ? null : id, true);
     } }, [el("b", { html: ico(icono) }), el("span", { text: n })]));
   }
@@ -474,6 +474,8 @@ function devolverDesplazado(cont, id) {
 
 function abrirSeccion(id, desdeUsuario) {
   id = ALIAS[id] || id;
+  // Tocar otra vez lo que ya está abierto (en su hojita de abajo) lo cierra (Fase 39).
+  if (desdeUsuario && id && esMovil() && HOJAS.has(id) && document.body.classList.contains("con-hoja-sec") && $(".ed-hoja-sec-cuerpo")?._sec === id) { cerrarHojaSec(); return; }
   // Lo que se estaba escuchando para al cambiar de pestaña (o al cerrarla).
   if (id !== app.seccion || !id) app.audio?.detenerEscucha?.();
   const cont = $(".ed-panel-cuerpo");

@@ -187,7 +187,7 @@ export const TOQUES_SEC = {
     const E = this.E, app = this.app, v = this.v;
     const sel = E.seleccionados;
     if (!sel.length) {
-      c.append(el("p.ed-nota.suave", { text: "Toca algo de la hoja para elegirlo: luego toca un efecto y lo verás en él antes de usarlo." }));
+      c.append(el("p.ed-nota.suave.ed-guia-txt", { text: "Toca algo de la hoja para elegirlo: luego toca un efecto y lo verás en él antes de usarlo." }));
       c.append(seccionToquePagina(this));
       return;
     }

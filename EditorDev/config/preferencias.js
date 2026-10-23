@@ -24,6 +24,8 @@ export const DEF = {
   escala: 1, tema: "auto", transparencias: true,
   estilo: "cuaderno", grano: true, parpadeo: false, // RetroMyLove: grano animado y parpadeo analógico (opcional)
   abeja: true, abejaSonido: true, dialogos: true, frecuencia: 75, // segundos entre charlitas
+  idioma: "latam",       // latam (por defecto) | mx | dev (el de antes: dialogos.txt y todos los textos guía)
+  explicito: false,      // «lenguaje poquitito explícito» en la abejita (wey, qué onda…)
 };
 
 export const MODOS = {
@@ -62,6 +64,8 @@ export function aplicar() {
   b.classList.toggle("ed-sin-efectos", !PREF.efectos);
   b.classList.toggle("ed-sin-transparencias", !PREF.transparencias);
   b.classList.toggle("ed-sin-tooltips", !PREF.tooltips);
+  b.classList.toggle("ed-sin-guias", PREF.idioma !== "dev"); // fuera de Dev no salen los «dónde añadir…»
+  r.lang = PREF.idioma === "mx" ? "es-MX" : "es-419";
   r.style.setProperty("--anim-k", String(mov === "nada" ? 0 : (mov === "reducido" ? 0.5 : 1) * PREF.intensidad));
   r.style.setProperty("--ui-escala", String(PREF.escala));
   if (PREF.tema === "auto") delete r.dataset.tema; else r.dataset.tema = PREF.tema;

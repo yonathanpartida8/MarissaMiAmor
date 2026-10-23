@@ -679,7 +679,7 @@ export class Inspector {
       ]),
       el("small.ed-ayuda", { text: "La transición y la música de esta página están en sus paneles (Transiciones y Audio). Cuándo aparece cada cosa, en la línea de tiempo." }),
     ]));
-    this.cuerpo.append(el("p.ed-nota.suave", { text: "Toca algo de la hoja para editarlo, o añade cosas desde la barra de la izquierda." }));
+    this.cuerpo.append(el("p.ed-nota.suave.ed-guia-txt", { text: "Toca algo de la hoja para editarlo, o añade cosas desde la barra de la izquierda." }));
   }
 
   /* ── Animar un elemento ─────────────────────────────────────────── */
@@ -875,14 +875,14 @@ export class Inspector {
       boton(I("animar", "Aplicar la secuencia"), () => { secuencia(E, els, sq); aviso("Secuencia lista: pruébala con ▶"); }, "chico primario"),
     ], { abierta: true }));
     if (sel.length && hayAnimCopiada()) this.cuerpo.append(el("div.ed-botonera", {}, [boton(I("pegar", "Pegar la animación copiada en los elegidos"), () => pegarAnim(E, sel.map((x) => x.id)), "chico")]));
-    this.cuerpo.append(el("p.ed-nota.suave", { text: "Elige un elemento para darle su propia entrada, su bucle y su salida." }));
+    this.cuerpo.append(el("p.ed-nota.suave.ed-guia-txt", { text: "Elige un elemento para darle su propia entrada, su bucle y su salida." }));
   }
 
   /* ── Capas ──────────────────────────────────────────────────────── */
   _capas() {
     const E = this.E;
     const els = [...E.pagina.els].reverse();
-    if (!els.length) { this.cuerpo.append(el("p.ed-nota.suave", { text: "Esta página está vacía. Lo que añadas aparecerá aquí: lo de arriba de la lista se ve encima." })); return; }
+    if (!els.length) { this.cuerpo.append(el("p.ed-nota.suave.ed-guia-txt", { text: "Esta página está vacía. Lo que añadas aparecerá aquí: lo de arriba de la lista se ve encima." })); return; }
     const L = this.app.lienzo;
     const fuera = (e) => { const b = L.vis(e); return b.x + b.w < 0 || b.y + b.h < 0 || b.x > L.W || b.y > L.H; };
     const A = this.app.acciones;

@@ -65,6 +65,7 @@ import { TIPOS, uid } from "../core/modelo.js";
 import { holgura, TOQUE_LARGO, vibrar, enCuadro } from "../canvas/gestos.js";
 import { hijos, parchear } from "../components/morfo.js";
 import { resorte } from "../components/hoja.js";
+import { rutaAUrl } from "../assets/biblioteca.js";
 import { abrirCurva } from "../components/curva.js";
 import { PROPS, CAMPOS, editable, aV2, claves, ventana, ponerClave, cambiarClave, moverClave, quitarClave, duplicarClave, valoresEn, claveEn } from "./fotogramas.js";
 
@@ -127,8 +128,8 @@ export class Linea {
     this.cuerpo = el("div.ed-tl-cuerpo", {}, [this.lienzo]);
     // Ancho y desplazamiento guardados (los lee el cabezal en cada cuadro sin forzar cálculos).
     this._cw = 0; this._sl = 0;
-    new ResizeObserver(() => { this._cw = this.cuerpo.clientWidth; }).observe(this.cuerpo);
-    this.cuerpo.addEventListener("scroll", () => { this._sl = this.cuerpo.scrollLeft; }, { passive: true });
+    new ResizeObserver(() => { const w = this.cuerpo.clientWidth; if (w !== this._cw) { this._cw = w; if (this.centro && this.abierta) this._re?.(); } }).observe(this.cuerpo);
+    this.cuerpo.addEventListener("scroll", () => { this._sl = this.cuerpo.scrollLeft; this._alDesplazar(); }, { passive: true });
     this.raiz.append(this.asaEl, this.cab, this.cuerpo);
     this._enlazar();
   }
@@ -178,10 +179,17 @@ export class Linea {
     return Math.max(t, (p?.duracion || 0) * 1000);
   }
 
+  /** Lo que dura la página como clip (en el modo CapCut): cuando pasa sola, o lo que dura lo de adentro. */
+  _finPag() { const d = (this.E.pagina?.duracion || 0) * 1000; return d || Math.max(3000, this._total()); }
+
   _largo() { return Math.max(6000, Math.ceil((Math.max(this._total(), this.t) + 2500) / 1000) * 1000); }
   x(ms) { return (ms / 1000) * this.pps; }
-  /** El ancho de verdad de la columna de nombres (cambia con el CSS del teléfono). */
-  get et() { return this._etw || ET; }
+  /** El ancho de verdad de la columna de nombres (cambia con el CSS del teléfono; 0 en el modo profesional). */
+  get et() { return this._etw ?? ET; }
+  /** Fase 39 — en el modo profesional la línea va como en CapCut: el cabezal se queda fijo al centro
+   *  y lo que se mueve es la línea (desplazar = ir en el tiempo). */
+  get centro() { return document.body.classList.contains("modo-pro"); }
+  get pad() { return this.centro ? Math.round(Math.max(0, (this._cw || this.cuerpo.clientWidth) - this.et) / 2) : 0; }
   ms(px) { return (px / this.pps) * 1000; }
 
   /** Cuánto suena una pista (su recorte, o el archivo entero desde `desde`). */
@@ -199,18 +207,21 @@ export class Linea {
     this.T = T;
     const W = this.x(T);
     this._icono();
-    this.reloj.textContent = `${fmt(this.t)} / ${fmt(this._total())}`;
+    this.reloj.textContent = `${fmt(this.t)} / ${fmt(this.centro ? this._finPag() : this._total())}`;
     hijos(this.herr, this._herramientas());
     // El nodo del deslizador se reutiliza: su valor se pone a mano (si no se está arrastrando).
     const zm = this.herr.querySelector(".ed-tl-zoom");
     if (zm && !zm.matches(":active")) zm.value = String(this._zoomPct());
     hijos(this.cRegla, this._regla(T));
-    this._etw = this.cRegla.firstChild?.offsetWidth || ET;
-    this.lienzo.style.width = this.et + W + 40 + "px";
-    hijos(this.cFijas, el("div", {}, [this._filaPagina(p, T), this._filaMusica(p, T)]));
-    hijos(this.cAudios, el("div", {}, (p.audios || []).map((a) => this._filaAudio(a, T))));
+    const centro = this.centro;
+    this._etw = centro ? 0 : this.cRegla.firstChild?.offsetWidth || ET;
+    const pad = this.pad;
+    this.lienzo.style.setProperty("--tl-pad", pad + "px");
+    this.lienzo.style.width = this.et + W + (centro ? pad * 2 : 40) + "px";
+    hijos(this.cFijas, el("div", {}, [centro ? this._filaPrincipal(p, T) : this._filaPagina(p, T), this._filaMusica(p, T)]));
+    hijos(this.cAudios, el("div", {}, [...(p.audios || []).map((a) => this._filaAudio(a, T)), centro ? this._filaMasAudio() : null].filter(Boolean)));
     const els = [...p.els].reverse();
-    hijos(this.filas, el("div", {}, els.length ? els.map((e) => this._fila(e, T)) : [el("p.ed-vacio-txt", { dataset: { k: "vacio" }, text: "Nada en esta página todavía: lo que añadas aparece aquí con su pista." })]));
+    hijos(this.filas, el("div", {}, els.length ? els.map((e) => this._fila(e, T)) : centro ? [] : [el("p.ed-vacio-txt", { dataset: { k: "vacio" }, text: "Nada en esta página todavía: lo que añadas aparece aquí con su pista." })]));
     this._pintarCabezal();
     // Lo elegido (o la pista que se acaba de abrir) se trae a la vista, sin saltos.
     const u = this.E.unico?.id || null, clave = u + (u && this.abiertos.has(u) ? ":a" : "");
@@ -331,7 +342,7 @@ export class Linea {
   verTodo() {
     const ancho = Math.max(120, this.cuerpo.clientWidth - this.et - 40);
     this._zoom((ancho / Math.max(1500, this._total() + 600)) * 1000);
-    this.cuerpo.scrollLeft = 0;
+    if (this.centro) this.ir(0); else this.cuerpo.scrollLeft = 0;
   }
 
   _regla(T) {
@@ -351,6 +362,139 @@ export class Linea {
     const fin = el("div.ed-tl-pfin" + (d ? "" : ".nada"), { dataset: { arr: "pagina-fin" }, style: { transform: `translateX(${this.x(d || T - 1000)}px)` }, title: d ? `Pasa sola a los ${d / 1000} s · arrastra para cambiarlo` : "Espera a que pase la hoja · arrastra para que pase sola" }, [el("i"), el("span", { text: d ? `pasa sola · ${(d / 1000).toFixed(1)} s` : "pasa al tocar" })]);
     pista.append(fin);
     return el("div.ed-tl-fila.ed-tl-fpag", { dataset: { k: "pag" } }, [el("div.ed-tl-et", {}, [el("b", { html: ico("paginas") }), el("span", { text: "Página" })]), pista]);
+  }
+
+  /* ── Fase 39: la pista principal como en CapCut ─────────────────────
+     La página es el clip grande (con su miniatura repetida, como los cuadros de un vídeo). Antes del
+     0 se asoma la página anterior y después del final la siguiente; entre ellas, el cuadrito de la
+     transición (tócalo para elegirla) y al final el «+» para añadir otra página. */
+  _filaPrincipal(p, T) {
+    const P = this.E.proyecto, i = P.orden.indexOf(p.id);
+    const ant = P.paginas[P.orden[i - 1]], sig = P.paginas[P.orden[i + 1]];
+    const d = (p.duracion || 0) * 1000;
+    const D = d || Math.max(3000, this._total());
+    const ancho = Math.max(24, this.x(D));
+    const pista = el("div.ed-tl-pista.principal");
+    const tr = (pag) => { const t = pag?.transicion?.tipo ? pag.transicion : P.ajustes.transicion; return t?.tipo && t.tipo !== "ninguna" ? t : null; };
+    const cuadro = (pag, x) => {
+      const t = tr(pag);
+      return el("button.ed-tl-tcuad" + (t ? ".on" : ""), { type: "button", dataset: { k: "tr:" + pag.id, trans: pag.id }, style: { left: x + "px" }, title: `Transición al llegar a «${pag.nombre}»: ${t ? RT.TRANS?.[t.tipo]?.n || t.tipo : "ninguna"}`, "aria-label": "Elegir la transición", html: ico(t ? "transiciones" : "mas") });
+    };
+    if (ant) {
+      pista.append(el("button.ed-tl-stub.ant", { type: "button", dataset: { k: "ant:" + ant.id, irpag: ant.id }, title: `Ir a «${ant.nombre}»`, "aria-label": `Ir a la página anterior` }, [this._miniPag(ant, 4)]));
+      pista.append(cuadro(p, -7));
+    }
+    const clip = el("div.ed-tl-pclip", { dataset: { k: "pclip:" + p.id }, style: { width: ancho + "px" } }, [
+      this._miniPag(p, Math.min(24, Math.ceil(ancho / 40))),
+      el("span.ed-tl-pnom", { text: `${p.nombre} · ${(D / 1000).toFixed(1)} s` }),
+    ]);
+    pista.append(clip);
+    // El final de la página: arrástralo (ahí pasa sola) — el mismo de siempre, como borde del clip.
+    pista.append(el("div.ed-tl-pfin" + (d ? "" : ".nada"), { dataset: { arr: "pagina-fin" }, style: { transform: `translateX(${this.x(D)}px)` }, title: d ? `Pasa sola a los ${d / 1000} s · arrastra para cambiarlo` : "Pasa al tocar · arrastra para que pase sola" }, [el("i"), el("span", { text: d ? "pasa sola" : "al tocar" })]));
+    if (sig) {
+      pista.append(cuadro(sig, ancho + 7));
+      pista.append(el("button.ed-tl-stub.sig", { type: "button", dataset: { k: "sig:" + sig.id, irpag: sig.id }, style: { left: ancho + 14 + "px" }, title: `Ir a «${sig.nombre}»`, "aria-label": "Ir a la página siguiente" }, [this._miniPag(sig, 4)]));
+    }
+    pista.append(el("button.ed-tl-maspag", { type: "button", dataset: { k: "mas", maspag: "1" }, style: { left: ancho + (sig ? 14 + 4 * 40 + 10 : 14) + "px" }, title: "Añadir una página después de esta", "aria-label": "Añadir página", html: ico("mas") }));
+    return el("div.ed-tl-fila.ed-tl-fprin", { dataset: { k: "prin" } }, [el("div.ed-tl-et", {}, [el("b", { html: ico("paginas") }), el("span", { text: "Página" })]), pista]);
+  }
+
+  /** «+ Añadir audio» (como en CapCut): una pista nueva en el cabezal. */
+  _filaMasAudio() {
+    return el("div.ed-tl-fila.ed-tl-fmas", { dataset: { k: "masaudio" } }, [el("div.ed-tl-et"), el("div.ed-tl-pista", {}, [
+      el("button.ed-tl-masaudio", { type: "button", dataset: { masaudio: "1" } }, [el("i", { html: ico("mas") }), el("span", { text: "Añadir audio" })]),
+    ])]);
+  }
+
+  /** Cuadritos de una página (una miniatura de verdad, copiada `n` veces). Se rehace sólo si la página cambió. */
+  _miniPag(p, n) {
+    const { ancho: W, alto: H } = this.E.proyecto.ajustes;
+    const tw = 40, th = 46, k = Math.max(tw / W, th / H);
+    this._minis = this._minis || new Map();
+    let m = this._minis.get(p.id);
+    if (!m || (m.p !== p && performance.now() - m.t > 900)) {
+      m?.pag?.destruir?.();
+      let pag = null, nodo;
+      try {
+        pag = new RT.Pagina(p, { modo: "mini", url: (id) => this.app.bib.url(id), ruta: (r) => rutaAUrl(r) }, W, H);
+        nodo = pag.nodo;
+      } catch (e) { nodo = el("div"); }
+      nodo.style.transform = `translate(${(tw - W * k) / 2}px, ${(th - H * k) / 2}px) scale(${k})`;
+      nodo.style.transformOrigin = "0 0";
+      m = { p, pag, nodo, t: performance.now(), v: (m?.v || 0) + 1 };
+      this._minis.set(p.id, m);
+      // Las de páginas que ya no existen se sueltan.
+      for (const [id, x] of this._minis) if (!this.E.proyecto.paginas[id]) { x.pag?.destruir?.(); this._minis.delete(id); }
+    } else if (m.p !== p) { clearTimeout(this._tMini); this._tMini = setTimeout(() => this._re?.(), 950); }
+    const cuadros = el("span.ed-tl-cuadros", { dataset: { k: `${p.id}:${m.v}:${n}` } });
+    for (let i = 0; i < n; i++) {
+      const c = i ? m.nodo.cloneNode(true) : m.nodo;
+      if (i) c.querySelectorAll("video, iframe, audio, canvas, script").forEach((x) => x.remove());
+      cuadros.append(el("i.ed-tl-cuadro", {}, [c]));
+    }
+    return cuadros;
+  }
+
+  /** Elegir la transición al llegar a una página (el cuadrito entre dos páginas). */
+  _elegirTrans(pid, ancla) {
+    const P = this.E.proyecto, pag = P.paginas[pid];
+    if (!pag) return;
+    const actual = pag.transicion?.tipo || "";
+    const poner = (tipo) => this.E.setPag({ transicion: tipo ? { tipo, dur: pag.transicion?.dur || 700 } : { tipo: "ninguna" } }, "Transición", null, pid);
+    const tipos = Object.entries(RT.TRANS || {}).filter(([k]) => k !== "ninguna");
+    menu(ancla, [
+      { t: `${ico("cerrar")}<span>Sin transición</span>`, al: () => poner(""), clase: actual === "ninguna" ? "on" : "" },
+      { t: `${ico("ajustes")}<span>La del librito</span>`, al: () => this.E.setPag({ transicion: null }, "Transición", null, pid), clase: actual ? "" : "on" },
+      "-",
+      ...tipos.map(([k, v]) => ({ t: `${ico("transiciones")}<span>${v.n || k}</span>`, al: () => poner(k), clase: actual === k ? "on" : "" })),
+    ]);
+  }
+
+  /** Fase 39 — cortar la página en el cabezal: lo de antes se queda y lo de después pasa a una página
+   *  nueva justo detrás (como dividir un clip). La primera pasa sola a la segunda en ese instante. */
+  dividirPagina() {
+    const E = this.E, p = E.pagina;
+    if (!p) return;
+    const t = Math.round(this.t / PASO) * PASO, total = Math.max(this._total(), (p.duracion || 0) * 1000);
+    if (t < 200 || t > total - 200) { aviso("Pon el cabezal a la mitad de la página para cortarla en dos"); return; }
+    const q = JSON.parse(JSON.stringify(p));
+    q.id = uid("p");
+    q.nombre = p.nombre.replace(/ \(\d+\)$/, "") + " (2)";
+    q.transicion = { tipo: "ninguna" }; // sigue sin brinco; el cuadrito entre las dos la cambia
+    q.duracion = p.duracion ? Math.max(0, Math.round((p.duracion * 1000 - t) / 100) / 10) : 0;
+    const mapa = {}, quedan = [];
+    q.els = [];
+    for (const e of p.els) {
+      const ini = RT.inicioDe(e), fin = RT.finDe(e);
+      if (ini >= t) quedan.push(e.id); // empieza después del corte: sólo en la segunda
+      if (fin != null && fin <= t) continue; // ya se fue: sólo en la primera
+      const c = JSON.parse(JSON.stringify(e));
+      mapa[e.id] = c.id = uid("e");
+      const ni = Math.max(0, ini - t), nf = fin != null ? fin - t : null;
+      if (c.tiempo || ni || nf != null) c.tiempo = { ...(c.tiempo || {}), inicio: ni, fin: nf };
+      if (ini < t && c.anim?.entrada) c.anim.entrada = { tipo: "ninguna" }; // ya estaba a la vista
+      q.els.push(c);
+    }
+    for (const c of q.els) {
+      if (c.origen?.de && mapa[c.origen.de]) c.origen.de = mapa[c.origen.de];
+      if (c.accion?.destino && mapa[c.accion.destino]) c.accion.destino = mapa[c.accion.destino];
+    }
+    const audios = [];
+    q.audios = [];
+    for (const a of p.audios || []) {
+      const s0 = a.inicio || 0, d = this._durPista(a);
+      if (s0 < t) audios.push(s0 + d > t ? { ...a, dur: t - s0 } : a);
+      if (s0 + d <= t) continue;
+      q.audios.push(s0 >= t ? { ...a, id: uid("au"), inicio: s0 - t } : { ...a, id: uid("au"), inicio: 0, desde: (a.desde || 0) + (t - s0), dur: d - (t - s0) });
+    }
+    q.marcas = (p.marcas || []).filter((m) => m > t).map((m) => m - t);
+    const i = E.proyecto.orden.indexOf(p.id);
+    E.transaccion("Cortar la página en dos", () => {
+      E.setPag({ duracion: t / 1000, audios, marcas: (p.marcas || []).filter((m) => m < t) }, "Cortar la página");
+      if (quedan.length) E.quitarEls(quedan);
+      E.agregarPagina(q, i + 1);
+    });
+    aviso("Listo: la página quedó en dos · toca el cuadrito entre ellas para ponerle transición");
   }
 
   _filaMusica(p, T) {
@@ -436,9 +580,16 @@ export class Linea {
     clip.append(el("i.ed-tl-asa.izq", { dataset: { arr: "ini", id: e.id }, title: "Cuándo aparece" }), el("i.ed-tl-asa.der", { dataset: { arr: "fin", id: e.id }, title: "Cuándo se va" }));
     const so = e.sonidos;
     if (so?.aparecer) clip.append(el("i.ed-tl-marca", { style: { left: this.x((en && en.tipo !== "ninguna" ? en.retraso || 0 : 0)) + "px" }, title: "Suena al aparecer", html: ico("campana") }));
+    if (this.centro) {
+      clip.classList.add("t-" + e.tipo);
+      clip.append(el("span.ed-tl-cnom", { html: ico(TIPOS[e.tipo]?.ico || "elementos") + `<b>${(e.nombre || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c])}</b>` }));
+      const as = e.imagen?.asset || e.album?.fotos?.[0]?.asset || e.carrusel?.fotos?.[0]?.asset || null;
+      const src = as && this.app.bib.url(as);
+      if (src) clip.style.setProperty("--tl-img", `url("${String(src).replace(/"/g, "%22")}")`);
+    }
     const pista = el("div.ed-tl-pista", {}, [clip]);
     const conKf = editable(pr);
-    const abierta = conKf && this.abiertos.has(e.id);
+    const abierta = conKf && this.abiertos.has(e.id) && !this.centro;
     const marcas = [e.accion?.tipo ? el("i", { title: "Hace algo al tocarlo", html: ico("toque") }) : null, so?.tocar ? el("i", { title: "Suena al tocarlo", html: ico("sonido") }) : null, e.inicioOculto ? el("i", { title: "Empieza escondido", html: ico("ojoNo") }) : null].filter(Boolean);
     const et = el("div.ed-tl-et" + (sel ? ".on" : ""), { dataset: { id: e.id } }, [
       el("button.ed-asa", { type: "button", html: ico("agarre"), title: "Arrastra para cambiar la capa", "aria-label": "Cambiar la capa" }),
@@ -707,7 +858,7 @@ export class Linea {
         addEventListener("pointerup", fuera);
         return;
       }
-      if (ev.target.closest(".ed-tl-pp, [data-abrir]")) return;
+      if (ev.target.closest(".ed-tl-pp, [data-abrir], [data-irpag], [data-trans], [data-maspag], [data-masaudio]")) return;
       const kf = ev.target.closest(".ed-tl-kf");
       if (kf) { this._tocarKf(ev, kf); return; }
       if (ev.target.closest(".ed-tl-cabezal, .ed-tl-regla, .ed-tl-fregla")) { this._buscar(ev); return; }
@@ -719,6 +870,13 @@ export class Linea {
     // Elegir tocando el nombre.
     this.cuerpo.addEventListener("click", (ev) => {
       if (ev.target.closest(".ed-asa")) return;
+      // Fase 39: la pista principal (páginas vecinas, transiciones, «+») y «Añadir audio».
+      const ip = ev.target.closest("[data-irpag]");
+      if (ip) { this.E.irPagina(ip.dataset.irpag); return; }
+      const tq = ev.target.closest("[data-trans]");
+      if (tq) { this._elegirTrans(tq.dataset.trans, tq); return; }
+      if (ev.target.closest("[data-maspag]")) { this.app.acciones?.nuevaPagina?.(); return; }
+      if (ev.target.closest("[data-masaudio]")) { this.app.paneles?.agregarPista?.(Math.round(this.t / PASO) * PASO); return; }
       // Ojo y candado de cada pista.
       const mu = ev.target.closest("[data-mudo]");
       if (mu) { const a = this._pista(mu.dataset.mudo); if (a) this._ponerPista(a.id, { silencio: !a.silencio }, a.silencio ? "Pista con sonido" : "Silenciar pista"); return; }
@@ -852,7 +1010,7 @@ export class Linea {
     const ancla = (cx ?? r.left + et + (r.width - et) / 2) - r.left - et;
     const msAncla = this.ms(c.scrollLeft + ancla);
     this.pps = pps;
-    const pintar = () => { this.pintar(); this.cuerpo.scrollLeft = Math.max(0, this.x(msAncla) - ancla); };
+    const pintar = this.centro ? () => { this.pintar(); this._irScroll(this.x(this.t)); } : () => { this.pintar(); this.cuerpo.scrollLeft = Math.max(0, this.x(msAncla) - ancla); };
     if (suave) { cancelAnimationFrame(this._rz); this._rz = requestAnimationFrame(pintar); } else pintar();
   }
 
@@ -1140,6 +1298,7 @@ export class Linea {
     if (!this.anim) this._preparar(null);
     if (this.anim) { this.anim.quieto = true; this.anim.ir(this.t); }
     this._pintarCabezal(desdeRegla);
+    this._videos(false);
   }
 
   alternarPlay() { if (this.anim && !this.anim.quieto) this.pausar(); else this._play(this.t >= this._total() + 400 ? 0 : this.t); }
@@ -1190,8 +1349,35 @@ export class Linea {
         this.t = total; this.pausar(); return false;
       }
       this._pintarCabezal(false, true);
+      if ((this._vf = (this._vf || 0) + 1) % 12 === 0) this._videos(true);
     });
+    this._videos(true);
     this._icono();
+  }
+
+  /** Fase 39: los vídeos de la hoja siguen a la línea (a su hora y desde su punto); en pausa muestran ese cuadro. */
+  _videos(sonando) {
+    const hoja = this.app.lienzo?.hoja, p = this.E.pagina;
+    if (!hoja || !p || !this.abierta) return;
+    for (const e of p.els) {
+      if (e.tipo !== "video") continue;
+      const n = hoja.querySelector(`.rt-el[data-id="${CSS.escape(e.id)}"] video`);
+      if (!n) continue;
+      const ini = RT.inicioDe(e), fin = RT.finDe(e), dentro = this.t >= ini && (fin == null || this.t < fin);
+      let pos = Math.max(0, (this.t - ini) / 1000);
+      const dur = n.duration;
+      if (Number.isFinite(dur) && dur > 0) pos = e.video?.bucle ? pos % dur : Math.min(pos, dur - 0.05);
+      const ir = (x) => { try { n.currentTime = x; } catch (er) { /* aún no cargó */ } };
+      if (sonando && dentro) {
+        n.muted = !!e.video?.silencio || !this.conMusica;
+        if (n.paused) { ir(pos); n.play().catch(() => { n.muted = true; n.play().catch(() => {}); }); }
+        else if (Math.abs(n.currentTime - pos) > 0.35) ir(pos);
+      } else {
+        if (!n.paused) n.pause();
+        n.muted = true;
+        if (Math.abs(n.currentTime - pos) > 0.04) ir(pos);
+      }
+    }
   }
 
   pausar() {
@@ -1202,6 +1388,7 @@ export class Linea {
     this.app.audio?.pausarParaVista(false, "linea");
     if (this.anim) { this.anim.pausar(); this.anim.quieto = true; this.anim.ir(this.t); }
     this._pintarCabezal();
+    this._videos(false);
     this._icono();
   }
 
@@ -1240,6 +1427,7 @@ export class Linea {
   parar(repintar = true) {
     ocupar("linea", false);
     this._quitarAnim();
+    this._videos(false);
     this.app.audio?.pararPista();
     this.app.audio?.pararPistas();
     this.app.audio?.pausarParaVista(false, "linea");
@@ -1257,13 +1445,15 @@ export class Linea {
     // cabezal obligaba a recalcular toda la página en cada cuadro (el tirón al reproducir).
     const c = this.cuerpo;
     let ir = null;
-    if (siguiendo && !desdeRegla) {
+    const centro = this.centro;
+    if (centro) { if (desdeRegla !== "scroll" && Math.abs(this._sl - x) > 0.5) ir = x; }
+    else if (siguiendo && !desdeRegla) {
       const vis = (this._cw || c.clientWidth) - this.et, sl = this._sl;
       if (x > sl + vis - 40 || x < sl) ir = Math.max(0, x - vis * 0.2);
     }
-    const tr = `translateX(${this.et + x}px)`;
+    const tr = `translateX(${this.et + (centro ? this.pad : 0) + x}px)`;
     if (this._tr !== tr) { this._tr = tr; this.cabezal.style.transform = tr; }
-    const txt = `${fmt(this.t)} / ${fmt(this._total())}`;
+    const txt = `${fmt(this.t)} / ${fmt(centro ? this._finPag() : this._total())}`;
     if (this.reloj.textContent !== txt) this.reloj.textContent = txt;
     // «Dividir» sólo se ve activo con el cabezal dentro del clip elegido.
     if (!this._dv?.isConnected) this._dv = this.herr.querySelector('[data-ac="dividir"]');
@@ -1273,6 +1463,26 @@ export class Linea {
       if (dv._off !== off) { dv._off = off; dv.classList.toggle("apagado", off); }
     }
     // Que el cabezal no se salga de lo que se ve al reproducir.
-    if (ir != null) { c.scrollLeft = ir; this._sl = ir; }
+    if (ir != null) this._irScroll(ir);
+  }
+
+  /** Mover la línea desde aquí (y que el oyente de desplazamiento no lo tome por el dedo). */
+  _irScroll(px) {
+    const c = this.cuerpo;
+    c.scrollLeft = px;
+    this._sl = c.scrollLeft;
+    this._slYo = this._sl;
+  }
+
+  /** Desplazar con el dedo en el modo CapCut = mover el cabezal (y si estaba sonando, se pausa ahí). */
+  _alDesplazar() {
+    if (!this.centro || !this.abierta) return;
+    if (this._slYo != null && Math.abs(this._sl - this._slYo) < 1.5) return;
+    this._slYo = null;
+    cancelAnimationFrame(this._rs);
+    this._rs = requestAnimationFrame(() => {
+      if (this.anim && !this.anim.quieto) this.pausar();
+      this.ir(this.ms(this._sl), "scroll");
+    });
   }
 }

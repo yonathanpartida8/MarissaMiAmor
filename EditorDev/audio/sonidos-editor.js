@@ -222,6 +222,52 @@ export class SonidosEditor {
     }
   }
 
+  /** El sonido de girar: suena mientras dura el giro (un ronroneo de dos tonos con un poquito de aire). */
+  _giro(on) {
+    const ac = this.audio?.ac;
+    if (on) {
+      if (this._g || !this.pref.on || this.callado || !ac) return;
+      this.audio._despertar?.();
+      const t = ac.currentTime, vol = Math.max(0, Math.min(1, this.pref.vol)) * 0.13;
+      const g = ac.createGain(), mezcla = ac.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.setTargetAtTime(vol, t, 0.05);
+      const o1 = ac.createOscillator(), o2 = ac.createOscillator(), trem = ac.createOscillator(), tg = ac.createGain();
+      o1.type = "triangle"; o1.frequency.value = 196;
+      o2.type = "sine"; o2.frequency.value = 294;
+      trem.frequency.value = 9; tg.gain.value = 0.3; mezcla.gain.value = 0.55;
+      trem.connect(tg).connect(mezcla.gain);
+      const buf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const ruido = ac.createBufferSource(), bp = ac.createBiquadFilter(), rg = ac.createGain();
+      ruido.buffer = buf; ruido.loop = true; bp.type = "bandpass"; bp.frequency.value = 1200; bp.Q.value = 0.9; rg.gain.value = 0.18;
+      o1.connect(mezcla); o2.connect(mezcla); ruido.connect(bp).connect(rg).connect(mezcla); mezcla.connect(g).connect(this._bus());
+      const nodos = [o1, o2, trem, ruido];
+      for (const n of nodos) n.start(t);
+      this._g = { g, nodos, o1, o2, bp, vel: 0, rot: null, t: 0, vol };
+      // (Por si algo no avisa que se soltó: nunca se queda sonando.)
+      clearTimeout(this._gT); this._gT = setTimeout(() => this._giro(false), 20000);
+      return;
+    }
+    const x = this._g;
+    if (!x || !ac) return;
+    this._g = null;
+    clearTimeout(this._gT);
+    const t = ac.currentTime;
+    x.g.gain.cancelScheduledValues(t); x.g.gain.setValueAtTime(x.g.gain.value, t); x.g.gain.setTargetAtTime(0, t, 0.05);
+    for (const n of x.nodos) { try { n.stop(t + 0.3); } catch (e) { /* ya paró */ } }
+  }
+
+  _giroTono() {
+    const x = this._g, ac = this.audio?.ac;
+    if (!x || !ac) return;
+    const t = ac.currentTime, v = x.vel;
+    x.o1.frequency.setTargetAtTime(196 + v * 180, t, 0.06);
+    x.o2.frequency.setTargetAtTime(294 + v * 260, t, 0.06);
+    x.bp.frequency.setTargetAtTime(1200 + v * 2200, t, 0.06);
+    x.g.gain.setTargetAtTime(x.vol * (0.3 + v * 0.9), t, 0.08);
+  }
+
   /** Por donde pasan todos: un limitador suave hacia la mezcla general. */
   _bus() {
     const ac = this.audio.ac;
@@ -396,10 +442,21 @@ export class SonidosEditor {
     const gesto = E.gesto.bind(E);
     E.gesto = (nombre) => {
       const m = nombre in INICIO ? INICIO[nombre] : "arrastrar";
-      if (m) this.sonar(m);
+      // Girar: un ronroneo suave que dura TODO el giro (más agudo cuanto más rápido) y se apaga al soltar (Fase 39).
+      if (m === "rotar") this._giro(true); else if (m) this.sonar(m);
       const fin = gesto(nombre);
-      return (guardar = true) => { if (guardar && m) this.sonar("soltar"); return fin(guardar); };
+      return (guardar = true) => { if (m === "rotar") this._giro(false); if (guardar && m) this.sonar("soltar"); return fin(guardar); };
     };
+    // Lo rápido que gira se oye: cada cambio de «rot» mientras suena el giro.
+    E.on("el", ({ e: id, rutas }) => {
+      const g = this._g;
+      if (!g || !(rutas || []).some((r) => r === "rot" || r.startsWith("rot"))) return;
+      const rot = E.el(id)?.rot ?? 0, t = performance.now();
+      if (g.rot != null) { const v = Math.min(1, Math.abs(rot - g.rot) / Math.max(8, t - g.t) * 6); g.vel = g.vel * 0.6 + v * 0.4; this._giroTono(); }
+      g.rot = rot; g.t = t;
+      // Si el dedo se queda quieto, baja a un murmullo (y vuelve en cuanto sigue girando).
+      clearTimeout(this._gD); this._gD = setTimeout(() => { if (this._g === g) { g.vel = 0; this._giroTono(); } }, 160);
+    });
     // Organizar, páginas, animaciones y efectos (una vez por acción, nunca por cuadro).
     envolver(app.acciones, "agrupar", "agrupar");
     envolver(app.acciones, "desagrupar", "desagrupar");

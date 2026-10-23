@@ -160,7 +160,7 @@ export class Ayuda {
       if ("ayudas" in c) this.revisar();
       if (("abeja" in c && !p.abeja) || ("ayudas" in c && !p.ayudas)) this.irse();
       if ("dialogos" in c || "frecuencia" in c) this._programarCharla();
-      if ("consejos" in c) this._programarConsejo();
+      if ("consejos" in c || "idioma" in c) this._programarConsejo();
     });
     // Consejos al momento: bloques, mover/imán, girar, tamaño, capas (y efectos y vídeo por contexto).
     try { this._momentos = JSON.parse(localStorage.getItem(MOMENTOS) || "{}"); } catch (e) { this._momentos = {}; }
@@ -188,7 +188,8 @@ export class Ayuda {
   /** Un consejo de AL_MOMENTO (si toca y si no estorba). `pausa`: lo mínimo desde el último. */
   alMomento(clave, pausa = 15000) {
     const lista = AL_MOMENTO[clave];
-    if (!lista || !PREF.ayudas) return;
+    // Fuera de «Dev» no salen solos los consejos de dónde va cada cosa (sí al tocar el foquito).
+    if (!lista || !PREF.ayudas || PREF.idioma !== "dev") return;
     const n = this._momentos[clave] || 0;
     if (n >= lista.length) return;
     const ahora = Date.now();
@@ -372,7 +373,7 @@ export class Ayuda {
   /* ── Consejos automáticos (sin abejita): discretos y pocos ─────── */
   _programarConsejo() {
     clearTimeout(this._cons);
-    if (!PREF.consejos || !PREF.ayudas) return;
+    if (!PREF.consejos || !PREF.ayudas || PREF.idioma !== "dev") return;
     this._dados = this._dados || 0;
     if (this._dados >= 3) return;
     this._cons = setTimeout(() => {

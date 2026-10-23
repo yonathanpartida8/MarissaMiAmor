@@ -2430,3 +2430,165 @@ body.modo-pro .ed-tl-cab { justify-content: center; gap: 10px; }
 body.modo-pro .ed-tl-et span { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.1; text-overflow: clip; overflow-wrap: normal; word-break: normal; hyphens: none; font-size: 13px; }
 @media (max-width: 1023px) { body.modo-pro .ed-tl-et .ed-tl-pp { display: none; } }
 @media (max-width: 1023px) { body.modo-pro .ed-tl-et .ed-asa { display: none; } body.modo-pro .ed-tl-et span { font-size: 12.5px; } }
+
+/* ═══ Fase 39: el editor «slim» en el teléfono — menos herramienta, más página ═══
+   Barras más delgadas, riel angosto, cajón y hojitas compactos, abejita y globos chiquitos. */
+@media (max-width: 1023px) {
+  :root { --barra: 46px; --riel: 54px; --cb: calc(56px + env(safe-area-inset-bottom)); }
+  body:not(.modo-pro) .ed-barra .ed-btn { min-height: 34px; }
+  body:not(.modo-pro) .ed-barra .ed-btn.ico, .ed-acciones .ed-btn.ico { width: 34px; height: 34px; }
+  .ed-barra .ed-ico { width: 19px; height: 19px; }
+  .ed-riel button { padding: 5px 1px 6px; gap: 2px; font-size: 10px; line-height: 1.05; }
+  .ed-riel button b { width: 30px; height: 26px; }
+  .ed-riel button b .ed-ico { width: 18px; height: 18px; }
+  .ed-riel .ed-riel-sep small { font-size: 8.5px; }
+  .ed-cb { min-height: 48px; padding-top: 4px; padding-bottom: 3px; }
+  .ed-cb .ed-ico { width: 19px; height: 19px; }
+  .ed-cb span, .ed-cb .ed-cb-et { font-size: 9.5px; }
+  .ed-dock-b, body.con-linea .ed-dock-b { width: 34px; height: 34px; }
+  .ed-dock-b .ed-ico { width: 18px; height: 18px; }
+  .ed-dock-grupo { padding: 2px; border-width: 1.5px; border-radius: 12px; }
+  /* El cajón: más angosto y con todo un poco más chico (no gigante) */
+  .ed-lateral { width: min(292px, calc(100vw - var(--riel) - 40px)); }
+  .ed-lateral :is(.ed-panel-cab, .ed-panel-cuerpo) { zoom: .86; }
+  .ed-panel-titulo { font-size: 20px; padding: 10px 10px 4px; }
+  :is(.ed-hoja-sec-cuerpo, .ed-insp-cuerpo, .ed-hojita-cuerpo) { zoom: .9; }
+  /* La abejita y sus globos, chiquitos */
+  .ed-abeja { width: 56px; height: 50px; }
+  .ed-abeja-globo { max-width: min(250px, calc(100vw - 24px)); padding: 9px 11px 8px; border-radius: 14px; border-width: 1.5px; }
+  .ed-abeja-globo p { min-height: 0; margin-bottom: 6px; font-size: 14.5px; line-height: 1.3; }
+  .ed-abeja-pie { zoom: .85; }
+}
+
+/* Fase 39 — fuera del idioma «Dev» no salen los textos que dicen dónde añadir las cosas
+   (sí los avisos de estado, las notas de cada ajuste y los «todavía no hay…»). */
+body.ed-sin-guias .ed-solo-dev { display: none !important; }
+body.ed-sin-guias :is(.ed-ayuda, .ed-guia-txt, .ed-cb-pista):not(.ed-estado, .ed-fila > .ed-ayuda, .ed-config .ed-ayuda) { display: none !important; }
+
+/* ═══ Fase 39: el modo profesional, como CapCut ═══
+   Negro, vista previa arriba, la fila del reproductor (reloj · ▶ · deshacer/rehacer), las pistas con el
+   cabezal blanco FIJO al centro (se desplaza la línea), la página como clip principal con sus cuadritos y
+   las herramientas con su nombre abajo. Ver components/modo-pro.js y timeline/linea.js (_filaPrincipal). */
+.ed-menu button.on { color: var(--acento); font-weight: 700; }
+body.modo-pro {
+  --fondo: #000; --superficie: #141414; --superficie-2: #222; --linea: #262626; --linea-fuerte: #3a3a3a;
+  --texto: #fff; --texto-suave: #9b9b9b; --tinta: #fff; --acento: #fff; --acento-suave: #2a2a2a; --acento-texto: #000;
+  --lienzo: #000; --regla-fondo: #000; --regla-hoja: #0d0d0d; --regla-linea: #2c2c2c; --regla-texto: #777;
+  --cian: #2fd4ff; --barra: 46px; --cb: calc(62px + env(safe-area-inset-bottom));
+}
+.pro-telon { background: #000; }
+.pro-barra { background: #000; border-bottom: 0; gap: 2px; padding-left: 4px; padding-right: 8px; }
+.pro-esp { flex: 1; }
+.pro-tb.pro-x { width: 40px; }
+.pro-barra .pro-tit { flex: none; flex-direction: row; align-items: center; gap: 4px; height: 34px; padding: 0 8px; border: 0; border-radius: 8px; background: none; color: #fff; cursor: pointer; font: 600 14px/1 Jost, system-ui, sans-serif; }
+.pro-barra .pro-tit b { font: inherit; }
+.pro-barra .pro-tit small { font: 500 13px/1 Jost, system-ui, sans-serif; color: var(--texto-suave); }
+.pro-barra .pro-tit .ed-ico { width: 14px; height: 14px; }
+.pro-probar { display: flex; align-items: center; gap: 5px; height: 32px; margin-left: 4px; padding: 0 14px 0 11px; border: 0; border-radius: 8px; background: #fff; color: #000; font: 700 13.5px/1 Jost, system-ui, sans-serif; cursor: pointer; }
+.pro-probar .ed-ico { width: 14px; height: 14px; }
+.pro-probar:active { transform: scale(.96); }
+/* La fila del reproductor. */
+.pro-dh { display: none; }
+body.modo-pro .ed-linea { background: #000; box-shadow: none; border-radius: 0; }
+body.modo-pro .ed-linea > .ed-tl-asa { display: none; }
+body.modo-pro .ed-linea .ed-tl-cab { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0; padding: 2px 8px 4px; border-bottom: 0; overflow: visible; }
+body.modo-pro .ed-tl-reloj { grid-column: 1; grid-row: 1; justify-self: start; min-width: 0; color: #fff; font: 600 12.5px/1 ui-monospace, "SF Mono", Menlo, monospace; }
+body.modo-pro .ed-tl-transporte { grid-column: 2; grid-row: 1; }
+body.modo-pro .ed-tl-transporte .ed-tl-b:not(.grande) { display: none; }
+body.modo-pro .ed-tl-transporte .ed-tl-b.grande { width: 40px; height: 40px; border-radius: 50%; background: none; color: #fff; box-shadow: none; }
+body.modo-pro .ed-tl-transporte .ed-tl-b.grande .ed-ico { width: 26px; height: 26px; }
+body.modo-pro .pro-dh { grid-column: 3; grid-row: 1; justify-self: end; display: flex; gap: 2px; }
+body.modo-pro .pro-dh .pro-tb { width: 36px; height: 36px; }
+body.modo-pro .pro-dh .pro-tb .ed-ico { width: 20px; height: 20px; }
+/* Las pistas: sin columna de nombres; el relleno de cada lado deja el cabezal al centro. */
+body.modo-pro .ed-tl-et { display: none !important; }
+body.modo-pro :is(.ed-tl-pista, .ed-tl-regla) { margin-left: var(--tl-pad, 0px); }
+body.modo-pro .ed-tl-lienzo { display: flex; flex-direction: column; }
+body.modo-pro .ed-tl-fregla { order: 0; min-height: 24px; background: #000; }
+body.modo-pro .ed-tl-filas { order: 1; }
+body.modo-pro .ed-tl-grupo { order: 2; }
+body.modo-pro .ed-tl-audios { order: 3; }
+body.modo-pro .ed-tl-fila { min-height: 34px; border-bottom: 0; background: none; }
+body.modo-pro .ed-tl-fila.on { background: none; }
+body.modo-pro .ed-tl-regla i { border-left: 0; padding-left: 0; transform: translateX(-50%); font: 500 10px/24px ui-monospace, monospace; color: #7a7a7a; }
+body.modo-pro .ed-tl-regla i.m { top: 0; width: 3px; height: 3px; margin-top: 11px; border-radius: 50%; background: #444; }
+body.modo-pro .ed-tl-cabezal { width: 2px; margin-left: -1px; background: #fff; pointer-events: none; box-shadow: 0 0 0 .5px rgba(0, 0, 0, .5), 0 0 8px rgba(0, 0, 0, .6); }
+body.modo-pro .ed-tl-cabezal i { display: none; }
+/* La pista principal: la página con sus cuadritos, sus vecinas, las transiciones y el «+». */
+.ed-tl-fprin { min-height: 56px; }
+.ed-tl-pista.principal { overflow: visible; }
+.ed-tl-pclip, .ed-tl-stub { position: absolute; top: 5px; height: 46px; overflow: hidden; border-radius: 6px; background: #1d1d1d; }
+.ed-tl-pclip { left: 0; pointer-events: none; }
+.ed-tl-stub { width: 160px; padding: 0; border: 0; opacity: .5; cursor: pointer; }
+.ed-tl-stub.ant { left: -174px; }
+.ed-tl-stub:active { opacity: .8; }
+.ed-tl-cuadros { display: flex; height: 100%; }
+.ed-tl-cuadro { position: relative; flex: 0 0 40px; width: 40px; height: 46px; overflow: hidden; background: #fff; border-right: 1px solid rgba(0, 0, 0, .4); }
+.ed-tl-cuadro > * { position: absolute; left: 0; top: 0; pointer-events: none; }
+.ed-tl-pnom { position: absolute; left: 6px; bottom: 4px; max-width: calc(100% - 12px); overflow: hidden; text-overflow: ellipsis; padding: 1px 6px; border-radius: 4px; background: rgba(0, 0, 0, .55); color: #fff; font: 600 10px/1.4 Jost, system-ui, sans-serif; white-space: nowrap; }
+.ed-tl-tcuad { position: absolute; top: 50%; z-index: 4; display: grid; place-items: center; width: 22px; height: 22px; margin: -11px 0 0 -11px; padding: 0; border: 0; border-radius: 4px; background: #fff; color: #000; box-shadow: 0 1px 5px rgba(0, 0, 0, .6); cursor: pointer; }
+.ed-tl-tcuad .ed-ico { width: 14px; height: 14px; }
+.ed-tl-tcuad.on { background: var(--cian, #2fd4ff); }
+.ed-tl-maspag { position: absolute; top: 50%; display: grid; place-items: center; width: 34px; height: 34px; margin-top: -17px; padding: 0; border: 0; border-radius: 6px; background: #fff; color: #000; cursor: pointer; }
+.ed-tl-maspag .ed-ico { width: 20px; height: 20px; }
+body.modo-pro .ed-tl-fprin .ed-tl-pfin { top: 5px; bottom: auto; height: 46px; margin-left: -6px; z-index: 3; }
+body.modo-pro .ed-tl-fprin .ed-tl-pfin i { width: 6px; margin-left: 0; border-radius: 0 6px 6px 0; background: #fff; }
+body.modo-pro .ed-tl-fprin .ed-tl-pfin.nada i { background: #777; }
+body.modo-pro .ed-tl-fprin .ed-tl-pfin span { display: none; }
+/* Lo de la hoja: clips de colores (como texto, stickers y superposiciones en CapCut) con su nombre dentro. */
+body.modo-pro .ed-tl-clip { top: 3px; bottom: 3px; border: 0; border-radius: 5px; background: #3b3b3b; box-shadow: none; }
+body.modo-pro .ed-tl-clip.on { outline: 2px solid #fff; outline-offset: 0; box-shadow: none; }
+body.modo-pro .ed-tl-clip:is(.t-texto, .t-boton) { background: #a8662b; }
+body.modo-pro .ed-tl-clip:is(.t-sticker, .t-gif, .t-dibujo, .t-trazo, .t-forma) { background: #7a55d1; }
+body.modo-pro .ed-tl-clip:is(.t-imagen, .t-album, .t-carrusel, .t-video) { background: #1f4f6b var(--tl-img, none) repeat-x left center / auto 100%; }
+body.modo-pro .ed-tl-clip:is(.t-componente, .t-html, .t-escena3d, .t-pagina) { background: #2a7363; }
+body.modo-pro .ed-tl-clip.t-musica { background: #2d5f45; }
+body.modo-pro .ed-tl-clip.escondido { background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, .12) 0 6px, transparent 6px 12px); }
+.ed-tl-cnom { position: absolute; left: 6px; top: 50%; z-index: 1; display: flex; align-items: center; gap: 4px; max-width: calc(100% - 12px); transform: translateY(-50%); overflow: hidden; color: #fff; font: 600 11px/1 Jost, system-ui, sans-serif; white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, .55); pointer-events: none; }
+.ed-tl-cnom .ed-ico { flex: none; width: 12px; height: 12px; }
+.ed-tl-cnom b { overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+body.modo-pro .ed-tl-seg { top: 0; bottom: 0; border-radius: 0; background: rgba(255, 255, 255, .14); }
+body.modo-pro .ed-tl-seg.salida { background: rgba(0, 0, 0, .22); }
+body.modo-pro .ed-tl-seg.bucle { background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .1) 0 6px, transparent 6px 12px); }
+body.modo-pro .ed-tl-seg span { display: none; }
+body.modo-pro .ed-tl-asa::after { background: rgba(255, 255, 255, .8); }
+body.modo-pro .ed-tl-clip:not(.on) .ed-tl-asa::after { display: none; }
+/* Música y audios. */
+body.modo-pro .ed-tl-onda { top: 4px; bottom: 4px; border-radius: 5px; background: repeating-linear-gradient(90deg, rgba(110, 231, 183, .35) 0 2px, transparent 2px 5px), #133d33; color: #c9f5e2; }
+body.modo-pro .ed-tl-aclip { background: #12403a; }
+body.modo-pro .ed-tl-anom { color: #fff; }
+body.modo-pro .ed-tl-nada { color: #666; font-size: 11px; }
+.ed-tl-fmas { min-height: 36px; }
+.ed-tl-masaudio { position: absolute; left: 0; top: 4px; bottom: 4px; display: flex; align-items: center; gap: 6px; padding: 0 12px; border: 0; border-radius: 6px; background: #1a1a1a; color: #d6d6d6; font: 600 12px/1 Jost, system-ui, sans-serif; white-space: nowrap; cursor: pointer; }
+.ed-tl-masaudio .ed-ico { width: 15px; height: 15px; }
+/* Las herramientas de abajo: iconos con su nombre, finitos. */
+.pro-herr { background: #000; border-top: 1px solid #161616; padding-top: 4px; padding-bottom: env(safe-area-inset-bottom); }
+.pro-b { min-width: 60px; height: 52px; gap: 4px; padding: 4px 6px; border-radius: 10px; background: none; color: #ececec; font: 500 10.5px/1.1 Jost, system-ui, sans-serif; }
+.pro-herr[data-modo="nada"] .pro-b { min-width: 60px; }
+.pro-b .ed-ico { width: 22px; height: 22px; }
+.pro-b.on { color: var(--cian, #2fd4ff); }
+.pro-b.atras { color: #fff; }
+.pro-sep { margin: 14px 4px; background: #2a2a2a; }
+body.modo-pro .ed-centro, body.modo-pro .ed-vista { background: #000; }
+body.modo-pro .ed-tl-fmus:has(.ed-tl-nada) { display: none; }
+/* Las pestañas en el modo profesional: un panel finito que sube encima de las pistas (la vista previa
+   se sigue viendo), como los paneles de CapCut. Tocar otra vez la pestaña lo cierra. */
+@media (max-width: 1023px) {
+  body.modo-pro .ed-lateral { top: auto !important; left: 0 !important; right: 0; bottom: var(--cb) !important; width: auto !important; height: var(--tl); transform: none !important; z-index: 96; border-right: 0; border-top: 1px solid #262626; border-radius: 14px 14px 0 0; box-shadow: 0 -12px 30px rgba(0, 0, 0, .55); overflow: hidden; }
+  body.modo-pro:not(.lateral-abierto) .ed-lateral { display: none !important; }
+  body.modo-pro.lateral-abierto .ed-lateral { visibility: visible !important; animation: pro-sube .24s cubic-bezier(.22, .8, .26, 1); }
+  body.modo-pro .ed-velo { display: none; }
+  body.modo-pro .ed-lateral :is(.ed-panel-cab, .ed-panel-cuerpo) { zoom: .8; }
+  body.modo-pro .ed-hoja-sec { bottom: var(--cb); height: var(--tl); max-height: var(--tl); border: 0; border-top: 1px solid #262626; border-radius: 14px 14px 0 0; background: var(--superficie); }
+  body.modo-pro .ed-hoja-sec.abierta { transform: none !important; }
+  body.modo-pro .ed-hoja-sec .ed-hoja-sec-cuerpo { zoom: .85; }
+  body.modo-pro .pro-herr { z-index: 97; }
+}
+@keyframes pro-sube { from { transform: translateY(40%) !important; opacity: 0; } }
+body.modo-pro .ed-tl-fila.ed-tl-fprin { min-height: 58px; }
+body.modo-pro .ed-tl-fila.ed-tl-fmas { min-height: 38px; }
+/* Con el riel finito, los nombres largos se achican un poco en vez de cortarse. */
+@media (max-width: 1023px) {
+  .ed-riel button span { font-size: 9.8px; max-width: 100%; }
+  .ed-riel button:is([data-s="herramientas"], [data-s="transiciones"], [data-s="interactivo"]) span { font-size: 8.4px; letter-spacing: -.1px; }
+}

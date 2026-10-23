@@ -66,7 +66,7 @@ export const ANIMAR = {
     const fases = el("div.ed-seg.ed-anim-fases", {}, FASES.map(([v, t]) => el("button" + (v === fase ? ".on" : ""), { type: "button", text: t, onClick: () => { this.faseAnim = v; this.rehacer(); } })));
     c.append(fases);
     if (!sel.length) {
-      c.append(el("p.ed-nota.suave", { text: "Toca algo de la hoja para animarlo. Aquí lo pruebas antes de usarlo." }));
+      c.append(el("p.ed-nota.suave.ed-guia-txt", { text: "Toca algo de la hoja para animarlo. Aquí lo pruebas antes de usarlo." }));
       c.append(boton(I("animar", "Animar toda la página en cascada"), () => app.insp.abrir("animar"), "chico"));
     }
     const actual = sel.length === 1 ? sel[0].anim?.[fase]?.tipo : null;
@@ -126,7 +126,7 @@ export const ANIMAR = {
     const nueva = el("button.ed-anim-t.nueva", { type: "button", title: "Crear una animación con CSS, JSON o JS", onClick: () => crearPorCodigo(app, "animacion", fase).then((d) => { if (d) { this.faseAnim = d.fase; this.rehacer(); } }) }, [el("i", { html: ico("varita") }), el("span", { text: "Crear" })]);
     c.append(seccion("Mías", [el("div.ed-anim-rejilla", {}, [nueva, ...misT])], { clase: "compacta" }));
     // De la carpeta.
-    const carpeta = el("div.ed-anim-rejilla", {}, [el("small.ed-ayuda", { text: "Buscando en assets/animaciones/…" })]);
+    const carpeta = el("div.ed-anim-rejilla", {}, [el("small.ed-ayuda.ed-estado", { text: "Buscando en assets/animaciones/…" })]);
     c.append(seccion("De la carpeta", [carpeta], { clase: "compacta", abierta: true }));
     extras().then(async (ex) => {
       const lista = [];

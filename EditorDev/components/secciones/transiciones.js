@@ -71,7 +71,7 @@ export const TRANSICIONES = {
     const m = Object.values(mias().transiciones);
     const nueva = el("button.ed-trans-t.nueva", { type: "button", onClick: () => crearPorCodigo(app, "transicion").then((d) => { if (d) this.rehacer(); }) }, [el("span.ed-trans-escena", { html: ico("varita") }), el("span", { text: "Crear" })]);
     c.append(seccion("Mías", [el("div.ed-trans-rejilla", {}, [nueva, ...m.map((d) => tile(d.id, d.n, d, async () => { if (await confirmar(`¿Borrar «${d.n}» de tus transiciones?`, "Borrar")) { borrarMia("transiciones", d.id); this.rehacer(); } }))])], { clase: "compacta" }));
-    const carpeta = el("div.ed-trans-rejilla", {}, [el("small.ed-ayuda", { text: "Buscando en assets/transiciones/…" })]);
+    const carpeta = el("div.ed-trans-rejilla", {}, [el("small.ed-ayuda.ed-estado", { text: "Buscando en assets/transiciones/…" })]);
     c.append(seccion("De la carpeta", [carpeta], { clase: "compacta" }));
     extras().then(async (ex) => {
       const lista = [];

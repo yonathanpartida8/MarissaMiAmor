@@ -44,6 +44,10 @@ export class Configuracion {
         return b;
       })),
       // (De lo que más importa a lo que menos: Fase 37.)
+      seccion("Idioma", [
+        fila("Español", p("idioma", { tipo: "segmento", opciones: [["latam", "Latinoamérica"], ["mx", "México"], ["dev", "Dev"]] }), "Latinoamérica viene de fábrica. Dev: el de antes, con las frases de dialogos.txt y los textos que dicen dónde va cada cosa"),
+        fila("Habilitar lenguaje poquitito explícito", p("explicito", { tipo: "toggle" }), "la abejita habla más suelta: «wey», «qué onda», «no manches»…"),
+      ]),
       seccion("Rendimiento", [
         fila("Refresco", hz), notaHz,
         fila("Calidad", p("calidad", { tipo: "segmento", opciones: [["baja", "Baja"], ["media", "Media"], ["alta", "Alta"]] }), "baja: sin sombras ni desenfoques de la interfaz"),
@@ -80,13 +84,13 @@ export class Configuracion {
       ], { abierta: false }),
       seccion("Abejita", [
         fila("Abejita", p("abeja", { tipo: "toggle" }), "apagada, el foquito sólo da consejos"),
-        fila("Charlitas (dialogos.txt)", p("dialogos", { tipo: "toggle" })),
+        fila("Charlitas", p("dialogos", { tipo: "toggle" })),
         fila("Cada cuánto habla", p("frecuencia", { tipo: "segmento", opciones: [[30, "30 s"], [75, "1 min"], [180, "3 min"], [420, "7 min"]] })),
         el("div.ed-botonera", {}, [
           boton(I("foco", "Que diga algo"), () => { this.m?.cerrar(null); app.ayuda?.decirAlgo(); }, "chico"),
           boton(I("varita", "Probar el evento especial"), () => { this.m?.cerrar(null); app.ayuda?.hackeo(); }, "chico"),
         ]),
-        el("small.ed-ayuda", { text: "Sus frases están en dialogos.txt (en la carpeta principal): una por línea; las que empiezan con «-» son el evento especial." }),
+        el("small.ed-ayuda.ed-solo-dev", { text: "Sus frases están en dialogos.txt (en la carpeta principal): una por línea; las que empiezan con «-» son el evento especial." }),
       ], { abierta: false }),
       seccion("Otros", [
         el("div.ed-botonera", {}, [
@@ -108,7 +112,7 @@ export class Configuracion {
   }
 
   async diagnostico() {
-    const ocupado = el("p.ed-ayuda", { text: "Midiendo…" });
+    const ocupado = el("p.ed-ayuda.ed-estado", { text: "Midiendo…" });
     modal({ titulo: "Diagnóstico", contenido: ocupado, ancho: 460, acciones: [["Cerrar", null]] });
     if (!HZ.medido) await medirHz();
     const fps = await medirFps(1500);

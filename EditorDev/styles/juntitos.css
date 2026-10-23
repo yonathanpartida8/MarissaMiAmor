@@ -191,3 +191,26 @@
 .jt-carta-txt { text-align: left; }
 .jt-carta-in > * { position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) { .jt-carta-in::before { animation: none; } }
+
+/* ── Fase 39: el mapa, lindo y en satélite ── */
+.jt-mapa-marco { position: relative; margin: 12px 0; border-radius: 24px; overflow: hidden; box-shadow: var(--jt-sombra); isolation: isolate; }
+.jt-mapa-marco .jt-mapa { height: min(54vh, 480px); margin: 0; border-radius: 0; box-shadow: none; }
+.jt-mapa.sat { background: #1d2a22; }
+.jt-mapa-ctl { position: absolute; z-index: 2; top: 12px; right: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.jt-mapa-b { display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px 0 11px; border: 0; border-radius: 99px; background: rgba(255, 255, 255, .92); color: #3a2440; font: 600 13px/1 inherit; box-shadow: 0 4px 14px rgba(20, 10, 30, .25); cursor: pointer; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.jt-mapa-b svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.jt-mapa-b.redondo { width: 38px; padding: 0; justify-content: center; }
+.jt-mapa-b:active { transform: scale(.95); }
+.jt-mapa-dist { position: absolute; z-index: 2; left: 12px; top: 12px; max-width: calc(100% - 150px); padding: 8px 12px; border-radius: 99px; background: rgba(255, 255, 255, .92); color: #3a2440; font-weight: 600; font-size: 13px; line-height: 1.2; box-shadow: 0 4px 14px rgba(20, 10, 30, .25); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jt-mapa-dist[hidden] { display: none; }
+.jt-mapa .leaflet-control-zoom { border: 0 !important; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 14px rgba(20, 10, 30, .25) !important; margin: 0 12px 26px 0 !important; }
+.jt-mapa .leaflet-control-zoom a { width: 38px !important; height: 38px !important; line-height: 38px !important; border: 0 !important; background: rgba(255, 255, 255, .92) !important; color: #3a2440 !important; font-size: 20px !important; }
+.jt-mapa .leaflet-control-zoom a + a { border-top: 1px solid rgba(58, 36, 64, .12) !important; }
+.jt-mapa .leaflet-control-attribution { font-size: 9px; background: rgba(255, 255, 255, .55); border-radius: 8px 0 0 0; }
+.jt-mapa .leaflet-popup-content-wrapper { border-radius: 16px; }
+.jt-pin-in { position: relative; border: 3px solid #fff; }
+.jt-pin-in::after { content: ""; position: absolute; inset: -9px; border-radius: inherit; border: 2px solid currentColor; color: #a985e8; opacity: 0; animation: jt-latido 2.6s ease-out infinite; }
+.jt-pin.pareja .jt-pin-in::after { color: #f07aa8; }
+@keyframes jt-latido { 0% { opacity: .7; transform: scale(.85); } 70%, 100% { opacity: 0; transform: scale(1.35); } }
+@media (prefers-reduced-motion: reduce) { .jt-pin-in::after { animation: none; } }
+html:is(.rd-ahorro, .rd-reposo, .rd-oculto) .jt-pin-in::after { animation: none; }

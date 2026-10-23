@@ -76,7 +76,7 @@ export const AUDIO = {
         boton(actual ? I("cambiar", "Cambiar canción") : I("mas", "Elegir canción"), elegirCancion, actual ? "chico" : "chico primario"),
         actual ? boton(I("borrar", "Quitar"), quitar, "chico") : null,
       ].filter(Boolean)),
-      actual ? el("small.ed-ayuda", { text: propia ? "Suena sólo en esta página." : "Suena en todo el librito." }) : null,
+      actual ? el("small.ed-ayuda.ed-estado", { text: propia ? "Suena sólo en esta página." : "Suena en todo el librito." }) : null,
       actual ? fila("Volumen", propia
         ? this._pag()("musica.volumen", { tipo: "rango", min: 0, max: 1, paso: 0.05, def: 0.85 })
         : this._proy()("ajustes.musica.volumen", { tipo: "rango", min: 0, max: 1, paso: 0.05 })) : null,

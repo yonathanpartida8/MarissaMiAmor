@@ -776,6 +776,23 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Lo que falta para la ubicación en segundo plano** | la web **no puede** seguirte con la app cerrada o en segundo plano: los avisos de lugares funcionan mientras la app está abierta en el aparato de quien se mueve. Para que funcionen siempre hace falta la **app nativa** (Capacitor/Android/iOS) con ubicación en segundo plano (Android: permiso `ACCESS_BACKGROUND_LOCATION` y `GeofencingClient`; iOS: «Siempre» y `CLLocationManager` con regiones) que mande la posición al mismo `PUT /api/ubicacion`; el servidor ya está listo |
 | **Medido** | teléfono, compu y modo oscuro: el riel y sus nombres sin cortar, temas aplicados y deshechos, el menú de mantener (texto sin luz), bloquear que no se mueve, capas en orden real, ocultar y mostrar, el modo profesional (transición, herramientas sin cortar, añadir en el cabezal, correr 0,1 s, reproducir, volver), las 10 cositas con sus datos y su privacidad, el mesecito sin duplicados, la ubicación con permiso, el lugar y dejar de compartir, y siguen pasando las pruebas de antes. **No probado en un iPhone ni un Android de verdad**, ni las notificaciones de lugares en la calle |
 
+### Fase 39: línea de tiempo como CapCut, idiomas, editor más finito y arreglos
+
+| | |
+| --- | --- |
+| **La abejita ya no congela** (`mascota/abeja.js`) | con el aparato en ahorro, esperar «a que toques algo» se volvía un bucle sin fin que dejaba la pantalla en blanco (aun al recargar). Ahora descansa con reloj; medido: la página sigue a ~60 cuadros/s con la abejita en ahorro. |
+| **Tocar otra vez cierra** (`components/ui.js`, `app.js`, `components/modo-pro.js`) | menús ⋯, popovers, pestañas del riel y las del modo profesional: el segundo toque cierra (antes se volvían a abrir). |
+| **Menú principal sin desplazarse de verdad** (`components/menu-principal.js`) | usa el alto que de verdad se ve (`visualViewport`, sin la barra del navegador) y, si no cabe, todo se acomoda un poquito más chico. Medido en 320×480, 360×640, 390×664 y 390×844. Las fotitos llevan sólo la **inicial** y el corazoncito. |
+| **Más finito** (`styles/editor.css`) | en el teléfono: barra de arriba, riel, cajón, barra de abajo y el globito de la abejita más chicos, para que se vea más la página. |
+| **Sonido de girar constante** (`audio/sonidos-editor.js`) | suena todo el giro (más agudo cuanto más rápido), baja a un murmullo si el dedo se queda quieto y se apaga al soltar. |
+| **Línea de tiempo como CapCut** (`components/modo-pro.js`, `timeline/linea.js`) | negra; arriba ✕ · la página (para cambiar de página) · ⋯ · **Probar**. La fila del reproductor: reloj · ▶ · deshacer/rehacer. **Cabezal blanco fijo al centro**: se desplaza la línea (desplazar = ir en el tiempo; al reproducir, la línea corre debajo). La página es el **clip principal con sus cuadritos**, con la anterior y la siguiente asomándose, el **cuadrito de transición** entre ellas (tócalo y elige) y el **+** para otra página. Clips de colores con su nombre dentro, **«Añadir audio»** y herramientas con su nombre abajo. |
+| **Cortar página** | corta la página en el cabezal: lo de antes se queda (y pasa sola a la segunda en ese instante), lo de después pasa a una página nueva con sus tiempos corridos (también audios y marcadores). Se deshace de un toque. |
+| **Pestañas finitas en la línea** | Bloques, Recursos, Elementos, Texto, Música, Imágenes, Videos, Stickers, Efectos y Sonido abren un panel finito encima de las pistas (la vista previa se sigue viendo). |
+| **Vídeos al reproducir** | los vídeos de la hoja se reproducen con la línea, a su hora y desde su punto; en pausa muestran ese cuadro. |
+| **Idiomas** (`config/preferencias.js`, `mascota/dialogos.js`) | Configuración → **Idioma**: **Latinoamérica** (de fábrica), **México** y **Dev** (el de antes). Fuera de Dev no salen los textos que dicen dónde añadir cada cosa ni los consejos automáticos; en Dev sí, con las frases de `dialogos.txt`. **«Habilitar lenguaje poquitito explícito»**: la abejita habla más suelta («wey», «qué onda», «no manches»…). |
+| **Mapa en satélite** (`components/juntitos.js`) | satélite con calles y nombres encima (o mapa de calles, se recuerda), botón para ver a los dos, un hilito entre ustedes y **a cuánto están**; pines con su latido (se calma en ahorro). |
+| **Medido** | `ed39` (34 comprobaciones, teléfono y compu), `jt39` (mapa), y de nuevo `ed38`, `rend37`, `menu36`, `chat36`, `editor36`, `libritos33`, `fantasma28`, `probar28`, `sonidos24` y `verificar`: todo en verde. **No probado en aparatos de verdad** (sólo Chromium con pantalla de teléfono). |
+
 ## Cómo está hecho
 
 ```

@@ -243,8 +243,12 @@ export function pedirTexto(titulo, valor = "", placeholder = "") {
 }
 
 /* ── Menú contextual ──────────────────────────────────────────────── */
+// Tocar otra vez el botón que abrió un menú (o un globito) lo CIERRA, no lo vuelve a abrir (Fase 39).
+let menuCerradoPor = { ancla: null, t: 0 };
 export function menu(ancla, items) {
-  document.querySelector(".ed-menu")?.remove();
+  const ya = document.querySelector(".ed-menu");
+  if (ya) { const mismo = ya._ancla === ancla; ya._cerrar ? ya._cerrar() : ya.remove(); if (mismo) return null; }
+  if (ancla && menuCerradoPor.ancla === ancla && performance.now() - menuCerradoPor.t < 450) { menuCerradoPor = { ancla: null, t: 0 }; return null; }
   const m = el("div.ed-menu", { role: "menu" }, items.filter(Boolean).map((it) => it === "-" ? el("hr") : el("button" + (it.peligro ? ".peligro" : "") + (it.clase ? "." + it.clase : ""), { type: "button", role: "menuitem", html: it.t, disabled: it.off || null, onClick: () => { cerrar(); it.al(); } })));
   document.body.append(m);
   // Se ancla a un botón… o a un punto de la pantalla (el del dedo).
@@ -255,8 +259,10 @@ export function menu(ancla, items) {
   m.style.top = (r.bottom + mh + 8 > H ? Math.max(8, r.top - mh - 4) : r.bottom + 4) + "px";
   // Quien edita se entera (el lienzo corre la hoja para que lo elegido no quede tapado).
   dispatchEvent(new CustomEvent("ed-menu-abierto", { detail: m.getBoundingClientRect() }));
-  const fuera = (e) => { if (!m.contains(e.target)) cerrar(); };
+  const fuera = (e) => { if (!m.contains(e.target)) { if (ancla?.contains?.(e.target)) menuCerradoPor = { ancla, t: performance.now() }; cerrar(); } };
   const cerrar = () => { m.remove(); document.removeEventListener("pointerdown", fuera, true); dispatchEvent(new CustomEvent("ed-hoja", { detail: "cerrar" })); };
+  m._ancla = ancla;
+  m._cerrar = cerrar;
   setTimeout(() => document.addEventListener("pointerdown", fuera, true), 0);
   return m;
 }
@@ -355,7 +361,8 @@ export function elegirFuente(ancla, leer, poner, op) {
 }
 
 export function popover(ancla, contenido, { clase = "" } = {}) {
-  document.querySelector(".ed-pop")?._cerrar?.();
+  const ya = document.querySelector(".ed-pop");
+  if (ya) { const mismo = ya._ancla === ancla; ya._cerrar?.(); if (mismo) return { nodo: document.createElement("div"), cerrar() {}, cerrado: true }; }
   const p = el("div.ed-pop" + (clase ? "." + clase : ""), { role: "dialog" }, [].concat(contenido));
   document.body.append(p);
   const r = ancla.getBoundingClientRect();
@@ -372,6 +379,7 @@ export function popover(ancla, contenido, { clase = "" } = {}) {
   const quitar = () => { p.remove(); document.removeEventListener("pointerdown", fuera, true); removeEventListener("keydown", tecla); };
   const cerrar = () => { if (h && h.abierta) { h.cerrar("codigo"); document.removeEventListener("pointerdown", fuera, true); removeEventListener("keydown", tecla); } else quitar(); };
   p._cerrar = cerrar;
+  p._ancla = ancla;
   setTimeout(() => { document.addEventListener("pointerdown", fuera, true); addEventListener("keydown", tecla); }, 0);
   if (esMovil()) {
     // En el teléfono: una hojita con su asa, que se baja con el dedo.
