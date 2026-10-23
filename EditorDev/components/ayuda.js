@@ -16,6 +16,7 @@ import { ico } from "./iconos.js";
 import { Abeja } from "../mascota/abeja.js";
 import { siguiente as dialogo, evento, deContexto } from "../mascota/dialogos.js";
 import { revisar, resumen } from "../mascota/revisor.js";
+import { opinar, REACCIONES, una1 } from "../mascota/opina.js";
 import { hackeo } from "../mascota/glitch.js";
 import { PREF, alCambiar } from "../config/preferencias.js";
 
@@ -148,14 +149,28 @@ export class Ayuda {
       const n = this._contar(), antes = this._cuantos;
       this._cuantos = n;
       if (!this.abeja.viva || this.abeja.hablando) return;
-      if (n > antes) { this.abeja.reaccionar("insertar"); if (Math.random() < 0.35) this.abeja.decir(["¡Qué lindo quedó eso! ✨", "Ooh, me gusta 🥹", "¡Eso! Así se hace 🐝"][Math.random() * 3 | 0], { cara: "feliz", dura: 3200 }); }
-      else if (n < antes && Math.random() < 0.3) this.abeja.reaccionar("borrar");
+      const di = (l, cara = "feliz") => this.abeja.decir(una1(l), { espera: true, cara, dura: 3200 });
+      // (Con personalidad, Fase 43: dice algo de LO QUE añadiste; deshacer y borrar también tienen lo suyo.)
+      if (E._deshaciendo) { if (Math.random() < 0.15) di(REACCIONES.deshacer, "guino"); return; }
+      if (n > antes) {
+        this.abeja.reaccionar("insertar");
+        const nuevo = E.pagina?.els?.[E.pagina.els.length - 1];
+        if (Math.random() < 0.4) di(REACCIONES[nuevo?.tipo] || ["¡Qué lindo quedó eso! ✨", "Ooh, me gusta 🥹", "¡Eso! Así se hace 🐝"]);
+      } else if (n < antes) { this.abeja.reaccionar("borrar"); if (Math.random() < 0.2) di(REACCIONES.borrar, "sorpresa"); }
     });
+    this._npag = 0;
+    E.on("actual", () => {
+      const k = E.proyecto?.orden?.length || 0, antes = this._npag;
+      this._npag = k;
+      if (antes && k > antes && this.abeja.viva && !this.abeja.hablando && Math.random() < 0.4) this.abeja.decir(una1(REACCIONES.pagina), { espera: true, cara: "feliz", dura: 3000 });
+    });
+    // Llega sola un ratito después de abrir (Fase 43): platica cada cierto tiempo y opina de lo que haces.
+    E.on("cargado", () => this._llegarSola(26000));
     E.on("sel", () => { if (this.abeja.viva && !this.abeja.hablando && Math.random() < 0.15) { const id = E.sel[0]; const n = id && document.querySelector(`.ed-hoja [data-id="${id}"]`); if (n) this.abeja.visitar(n.getBoundingClientRect()); } });
     addEventListener("ed-evento", (ev) => {
       if (!this.abeja.viva) return;
-      if (ev.detail === "guardado") { this.abeja.reaccionar("guardar"); this.abeja.decir("¡Guardadito! 💾💖", { cara: "enamorada", dura: 2600 }); }
-      if (ev.detail === "exportado") { this.abeja.reaccionar("carino"); this.abeja.decir("¡Tu librito está listo! Qué orgullo 🥹", { cara: "enamorada", dura: 3600 }); }
+      if (ev.detail === "guardado") { this.abeja.reaccionar("guardar"); this.abeja.decir("¡Guardadito! 💾💖", { espera: true, cara: "enamorada", dura: 2600 }); }
+      if (ev.detail === "exportado") { this.abeja.reaccionar("carino"); this.abeja.decir("¡Tu librito está listo! Qué orgullo 🥹", { espera: true, cara: "enamorada", dura: 3600 }); }
     });
     alCambiar((p, c) => {
       if ("ayudas" in c) this.revisar();
@@ -199,7 +214,7 @@ export class Ayuda {
     this._momentos[clave] = n + 1;
     try { localStorage.setItem(MOMENTOS, JSON.stringify(this._momentos)); } catch (e) { /* nada */ }
     this._ultMomento = ahora;
-    if (this.abeja.viva) this.abeja.decir(lista[n], { dura: 4200 });
+    if (this.abeja.viva) this.abeja.decir(lista[n], { espera: true, dura: 4200 });
     else this._consejito(lista[n], 4800);
   }
 
@@ -251,6 +266,30 @@ export class Ayuda {
     clearTimeout(this._charla);
     this.abeja.irse();
     this.revisar();
+    // Si la mandas a volar, vuelve una vez, un buen rato después; la segunda, ya no viene sola.
+    this._echada = (this._echada || 0) + 1;
+    if (this._echada === 1) this._llegarSola(8 * 60000);
+    else clearTimeout(this._tl);
+  }
+
+  /** Viene sola (si está encendida y no estás en algo importante) y saluda con su carácter. */
+  _llegarSola(ms) {
+    clearTimeout(this._tl);
+    // (En pruebas automáticas no llega sola: cambiaría la pantalla a mitad de una medición.)
+    if (!PREF.abeja || (this._echada || 0) >= 2 || navigator.webdriver) return;
+    this._tl = setTimeout(() => {
+      if (this.abeja.viva || !PREF.abeja) return;
+      if (document.hidden || document.body.classList.contains("ed-probando") || document.querySelector(".ed-modal-fondo, .ed-hojita.abierta, .ed-codigo-pantalla, .mp-capa.ver, .jt-capa.ver")) return this._llegarSola(20000);
+      this.llegar();
+    }, ms);
+  }
+
+  /** Llegar volando y saludar (sin abrir los consejos). */
+  llegar() {
+    if (this.abeja.viva || !PREF.abeja) return;
+    const r = this.boton.getBoundingClientRect();
+    this.abeja.venir({ x: r.left + r.width / 2, y: r.top + r.height / 2 }).then(() => this.abeja.decir(una1(this._echada ? REACCIONES.volver : REACCIONES.hola), { espera: true, cara: "feliz", dura: 3800 }));
+    this._programarCharla();
   }
 
   _tips() { return TIPS[this.k] || TIPS.hoja; }
@@ -352,14 +391,19 @@ export class Ayuda {
     if (document.hidden || this.abeja.hablando || document.body.classList.contains("ed-probando") || document.querySelector(".ed-modal-fondo, .ed-hojita.abierta, .ed-codigo-pantalla")) return this._programarCharla();
     // Fase 41: a veces, en vez de charlar, mira la página y avisa (con cariño) si algo se ve mal…
     if (Math.random() < 0.35 && this._psst()) return this._programarCharla();
+    // …o opina de la página que estás haciendo (lo que de verdad hay en ella).
+    if (Math.random() < 0.45) {
+      const o = opinar(this.app, PREF.idioma);
+      if (o) { this.abeja.decir(o, { espera: true, cara: /te amo|amor|derret|ternura|🥹/.test(o) ? "enamorada" : "feliz", dura: Math.min(9000, 2600 + o.length * 55) }); this._programarCharla(); return; }
+    }
     // …o comenta lo que está pasando (la hora, cuántas páginas, si hay música).
     if (PREF.idioma !== "dev" && Math.random() < 0.3) {
       const t = deContexto(this._contexto());
-      if (t) { this.abeja.decir(t, { cara: "feliz", dura: Math.min(9000, 2600 + t.length * 55) }); this._programarCharla(); return; }
+      if (t) { this.abeja.decir(t, { espera: true, cara: "feliz", dura: Math.min(9000, 2600 + t.length * 55) }); this._programarCharla(); return; }
     }
     const d = await dialogo();
     if (d.tipo === "hackeo") await this.hackeo(d.texto);
-    else this.abeja.decir(d.texto, { cara: /💖|🥹|amor|bbsita|lind|bonit/i.test(d.texto) ? "enamorada" : "feliz", dura: Math.min(9000, 2600 + d.texto.length * 55) });
+    else this.abeja.decir(d.texto, { espera: true, cara: /💖|🥹|amor|bbsita|lind|bonit/i.test(d.texto) ? "enamorada" : "feliz", dura: Math.min(9000, 2600 + d.texto.length * 55) });
     this._programarCharla();
   }
 
@@ -381,7 +425,7 @@ export class Ayuda {
     const botones = [[`<span>Ahora no</span>`, () => this.abeja.callar()]];
     if (h.arreglar) botones.unshift([`${ico("varita")}<span>Arréglalo</span>`, () => { h.arreglar(); this.abeja.callar(); this.abeja.reaccionar("insertar"); aviso("¡Listo, arreglado! ✨", 1800); }, "primario"]);
     if (h.els?.length) E.seleccionar(h.els.filter((id) => E.el(id)));
-    this.abeja.decir("Psst… " + h.texto, { cara: "sorpresa", botones, cuenta: "Se ve un poco mal" });
+    this.abeja.decir("Psst… " + h.texto, { espera: true, cara: "sorpresa", botones, cuenta: "Se ve un poco mal" });
     return true;
   }
 

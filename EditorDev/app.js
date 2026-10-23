@@ -98,6 +98,7 @@ const SECCIONES = [
   ["imagenes", "imagen", "Imágenes"],
   ["video", "video", "Videos"],
   // Adornar
+  ["estilo", "fondo", "Estilo"],        // Fase 43: el fondo de la página, rápido
   ["stickers", "sticker", "Stickers"],
   ["gifs", "gif", "GIFs"],
   // Tocar
@@ -114,7 +115,7 @@ const SECCIONES = [
   ["transiciones", "transiciones", "Transiciones"],
 ];
 // Separadores del riel: antes de cada una, un título chiquito.
-const GRUPOS_RIEL = { stickers: "Adornar", toques: "Tocar", diseno: "Avanzado" };
+const GRUPOS_RIEL = { estilo: "Adornar", toques: "Tocar", diseno: "Avanzado" };
 // Lo que ya está en la barra de abajo no se repite en el riel.
 const EN_LA_BARRA = new Set(["animar", "efectos", "transiciones"]);
 // Nombres viejos que otros sitios todavía piden.
@@ -211,7 +212,8 @@ async function arrancar() {
     },
   });
   app.gifs = app.paneles;
-  app.abrirSeccion = (id) => abrirSeccion(id, true);
+  // En LovEdit (Fase 43) todo se abre en su menú, encima de las pistas.
+  app.abrirSeccion = (id) => (app.pro?.abierto && id ? app.pro.verMenu(ALIAS[id] || id) : abrirSeccion(id, true));
 
   app.guardado = new IndicadorGuardado(app, $(".ed-guardado"));
   app.auto = new Autoguardado(E, (st, err) => {
@@ -474,7 +476,12 @@ function construirRiel() {
   app.alElegirPagina = () => { if (esMovil()) app.lateral.cerrar(); };
   app.alDibujar = () => { if (esMovil()) app.lateral.cerrar(); };
   // En el teléfono, lo recién añadido se ve en la hoja (no debajo del cajón).
-  app.alAnadir = () => { if (esMovil() && !document.querySelector(".ed-modal-fondo")) app.lateral.cerrar(); };
+  app.alAnadir = () => {
+    if (document.querySelector(".ed-modal-fondo")) return;
+    // En LovEdit, como en CapCut: al añadir algo el menú se guarda y lo nuevo se ve en su pista.
+    if (app.pro?.abierto) app.pro.cerrarMenu();
+    else if (esMovil()) app.lateral.cerrar();
+  };
 }
 
 /* Cada sección recuerda dónde ibas: al volver a ella (o al repintarse) sigue ahí, sin

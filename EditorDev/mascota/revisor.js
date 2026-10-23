@@ -43,6 +43,8 @@ function detras(e, els, fondo) {
   return fondo;
 }
 const DE_EJEMPLO = new Set(["https://open.spotify.com/", "https://wa.me/", "https://maps.google.com/"]);
+const RT_ini = (e) => Math.max(0, +(e.tiempo?.inicio) || 0);
+const RT_fin = (e) => (e.tiempo?.fin != null ? +e.tiempo.fin : Infinity);
 const textoPlano = (html) => String(html || "").replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 const nombre = (e) => (e.nombre || e.tipo || "algo").toLowerCase();
 const area = (a) => Math.max(0, a.w) * Math.max(0, a.h);
@@ -54,6 +56,7 @@ const cruce = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.
  */
 export function revisar(app) {
   const E = app.estado, P = E.proyecto;
+  if (P && !P.orden) return [];
   if (!P) return [];
   const W = P.ajustes?.ancho || 390, H = P.ajustes?.alto || 844;
   const r = [];
@@ -115,13 +118,36 @@ export function revisar(app) {
         }
       }
     }
-    // Textos encimados (más de la mitad del más chico).
-    const textos = visibles.filter((e) => e.tipo === "texto" && textoPlano(e.texto?.html));
+    // Encimados (Fase 43): encimar es normal —un texto sobre una forma, adornos sobre una foto, las piezas
+    // de un bloque—; sólo se avisa cuando de verdad estorba:
+    //   · dos textos que se leen a la vez, uno sobre otro (no del mismo bloque, ni uno con su cajita de fondo)
+    //   · un texto que queda DEBAJO de una foto, un vídeo o una forma rellena que lo tapa casi entero
+    const aLaVez = (A, B) => { const a0 = RT_ini(A), a1 = RT_fin(A), b0 = RT_ini(B), b1 = RT_fin(B); return a0 < b1 && b0 < a1; };
+    const textos = visibles.filter((e) => e.tipo === "texto" && !e.inicioOculto && textoPlano(e.texto?.html));
     for (let a = 0; a < textos.length; a++) for (let b = a + 1; b < textos.length; b++) {
       const A = textos[a], B = textos[b];
+      if (A.grupo && A.grupo === B.grupo) continue;
+      const arriba = els.indexOf(A) > els.indexOf(B) ? A : B;
+      if (arriba.caja?.fondo || arriba.caja?.gradiente || !aLaVez(A, B)) continue;
       const c = cruce(A, B), m = Math.min(area(A), area(B));
-      if (m > 0 && c > m * 0.5) { add("ojo", `En la página ${n} hay dos textos encimados: uno tapa al otro.`, pid, [A.id, B.id]); a = textos.length; break; }
+      if (m > 0 && c > m * 0.5) { add("ojo", `En la página ${n}, «${textoPlano(A.texto.html).slice(0, 18)}…» y «${textoPlano(B.texto.html).slice(0, 18)}…» se leen uno encima del otro.`, pid, [A.id, B.id]); a = textos.length; break; }
     }
+    for (const t of textos) {
+      const i = els.indexOf(t);
+      const tapa = els.slice(i + 1).find((o) => !o.oculto && !o.inicioOculto && aLaVez(o, t) && (/^(imagen|video|album)$/.test(o.tipo) || (o.tipo === "forma" && o.forma?.figura !== "linea" && (o.forma?.relleno || o.forma?.gradiente) && (o.opacidad ?? 1) > 0.85)) && cruce(o, t) > area(t) * 0.6);
+      if (tapa) add("mal", `En la página ${n}, «${textoPlano(t.texto.html).slice(0, 22)}» quedó debajo de ${tapa.tipo === "forma" ? "una forma" : "una foto"} y casi no se ve. ¿Lo traigo al frente?`, pid, [t.id], () => { if (E.paginaId !== pid) E.irPagina(pid); E.seleccionar([t.id]); app.acciones?.capa?.("frente"); });
+    }
+    // Lo que nunca se ve: aparece cuando la página ya se fue.
+    const durPag = (p.duracion || 0) * 1000;
+    if (durPag) for (const e of visibles) if (RT_ini(e) >= durPag) add("mal", `En la página ${n}, «${nombre(e)}» aparece a los ${(RT_ini(e) / 1000).toFixed(1)} s, pero la página se va a los ${durPag / 1000} s: nunca se ve.`, pid, [e.id]);
+    // Textos de ejemplo que se quedaron, botones difíciles de tocar, cosas pegadas a la orilla.
+    for (const e of visibles) {
+      const txt = e.tipo === "texto" ? textoPlano(e.texto?.html) : e.tipo === "boton" ? e.boton?.texto || "" : "";
+      if (/^(escribe aqu[ií]|tu texto|texto aqu[ií]|escribe aqu[ií] lo que sientes)/i.test(txt)) add("ojo", `En la página ${n} todavía dice «${txt.slice(0, 28)}…»: cámbialo por tus palabras 💌`, pid, [e.id], null);
+      if (e.tipo === "boton" && ((e.h || 0) < 34 || (e.w || 0) < 56)) add("ojo", `En la página ${n}, el botón «${(e.boton?.texto || "").slice(0, 18)}» es muy chiquito: en el teléfono cuesta tocarlo.`, pid, [e.id], () => E.setEl(e.id, { w: Math.max(e.w || 0, 120), h: Math.max(e.h || 0, 46) }, "Botón más grande"));
+      if ((e.tipo === "texto" || e.tipo === "boton") && txt && !e.rot && ((e.x || 0) >= 0 && (e.x || 0) < 6 || (e.x || 0) + (e.w || 0) > W - 6 && (e.x || 0) + (e.w || 0) <= W) && (e.w || 0) < W * 0.9) add("ojo", `En la página ${n}, «${txt.slice(0, 18)}» está pegadito a la orilla: en algunos teléfonos se corta.`, pid, [e.id]);
+    }
+    if (visibles.length > 28) add("idea", `La página ${n} tiene ${visibles.length} cosas: si la partes en dos (LovEdit → Cortar página) se disfruta más.`, pid);
     // ¿Cómo se pasa a la siguiente? (sin flechas, sin botón y sin tiempo)
     const rep = P.ajustes?.reproduccion || {};
     if (i < P.orden.length - 1 && rep.flechas === false && rep.deslizar === false && !p.duracion && !els.some((e) => e.accion?.tipo === "siguiente" || e.accion?.tipo === "ir")) {

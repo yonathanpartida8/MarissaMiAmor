@@ -239,6 +239,37 @@
     setTimeout(() => { if (n._mgToque !== A) return; for (const x of A.extras) x.remove(); n._mgToque = null; }, max + 1400);
   };
 
+  /* ── Fase 43: una animación al tocarlo (de una vez; se suma a lo que ya haga y a su acción) ── */
+  RT.AL_TOCAR = [["", "Nada"], ["saltito", "Saltito"], ["latido", "Latido"], ["giro", "Una vuelta"], ["gelatina", "Gelatina"], ["sacudir", "Sacudirse"], ["tada", "¡Tadá!"], ["brillo", "Brillo"], ["corazones", "Corazoncitos"]];
+  const AL_TOCAR = {
+    saltito: [[{ transform: "translateY(0)" }, { transform: "translateY(-18%)", offset: 0.35 }, { transform: "translateY(0)", offset: 0.7 }, { transform: "translateY(-5%)", offset: 0.85 }, { transform: "translateY(0)" }], 620],
+    latido: [[{ transform: "scale(1)" }, { transform: "scale(1.18)", offset: 0.25 }, { transform: "scale(.97)", offset: 0.45 }, { transform: "scale(1.1)", offset: 0.65 }, { transform: "scale(1)" }], 760],
+    giro: [[{ transform: "rotate(0deg)" }, { transform: "rotate(360deg)" }], 700],
+    gelatina: [[{ transform: "scale(1,1)" }, { transform: "scale(1.2,.82)", offset: 0.3 }, { transform: "scale(.88,1.12)", offset: 0.5 }, { transform: "scale(1.06,.95)", offset: 0.7 }, { transform: "scale(1,1)" }], 720],
+    sacudir: [[{ transform: "translateX(0)" }, { transform: "translateX(-7%) rotate(-4deg)", offset: 0.2 }, { transform: "translateX(6%) rotate(3deg)", offset: 0.4 }, { transform: "translateX(-4%) rotate(-2deg)", offset: 0.6 }, { transform: "translateX(2%)", offset: 0.8 }, { transform: "translateX(0)" }], 560],
+    tada: [[{ transform: "scale(1) rotate(0)" }, { transform: "scale(.9) rotate(-4deg)", offset: 0.15 }, { transform: "scale(1.14) rotate(4deg)", offset: 0.35 }, { transform: "scale(1.14) rotate(-4deg)", offset: 0.55 }, { transform: "scale(1.14) rotate(3deg)", offset: 0.75 }, { transform: "scale(1) rotate(0)" }], 900],
+    brillo: [[{ filter: "brightness(1) drop-shadow(0 0 0 rgba(255,170,210,0))" }, { filter: "brightness(1.35) drop-shadow(0 0 16px rgba(255,170,210,.95))", offset: 0.4 }, { filter: "brightness(1) drop-shadow(0 0 0 rgba(255,170,210,0))" }], 800],
+  };
+  RT.animarAlTocar = function (n, tipo, ev) {
+    if (!n || !n._rt || !n.animate) return;
+    if (tipo === "corazones") {
+      // Unos corazoncitos que salen del dedo (sin tocar al elemento).
+      const r = n.getBoundingClientRect(), x = ev && ev.clientX != null ? ev.clientX : r.left + r.width / 2, y = ev && ev.clientY != null ? ev.clientY : r.top + r.height / 2;
+      for (let i = 0; i < 7; i++) {
+        const c = document.createElement("i"), a = (i / 7) * Math.PI * 2, d = 34 + Math.random() * 30;
+        c.textContent = "♥";
+        c.style.cssText = `position:fixed;left:${x}px;top:${y}px;z-index:2147483000;pointer-events:none;font-style:normal;font-size:${14 + Math.random() * 10}px;color:${["#ff5c8a", "#ff8fbf", "#d8397a"][i % 3]}`;
+        document.body.appendChild(c);
+        c.animate([{ transform: "translate(-50%,-50%) scale(.4)", opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d - 20}px)) scale(1)`, opacity: 0 }], { duration: 900, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = () => c.remove();
+      }
+      return;
+    }
+    const k = AL_TOCAR[tipo];
+    if (!k) return;
+    try { n._rt.ab.animate(k[0], { duration: k[1], easing: "cubic-bezier(.3,1.2,.5,1)", composite: "add" }); }
+    catch (er) { try { n._rt.ab.animate(k[0], { duration: k[1], easing: "ease-out" }); } catch (e2) { /* nada */ } }
+  };
+
   /* ── Reacciones: lo que hace el elemento mientras lo presionan ───── */
   RT.REACCIONES = [["", "Nada"], ["hundir", "Hundirse"], ["crecer", "Crecer"], ["brillar", "Brillar"], ["gelatina", "Gelatina"], ["inclinar", "Inclinarse"]];
   const PRESION = {

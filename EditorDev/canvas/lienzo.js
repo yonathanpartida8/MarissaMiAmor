@@ -281,7 +281,9 @@ export class Lienzo {
     const abajo = Math.min(r.bottom, innerHeight - (this._tapadoAbajo || 0));
     const c = this.aMundo(r.left + r.width / 2, r.top + Math.max(40, abajo - r.top) / 2);
     const W = this.W, H = this.H, w = e.w, h = e.h;
-    const ix = clamp(c.x - w / 2, 0, Math.max(0, W - w)), iy = clamp(c.y - h / 2, 0, Math.max(0, H - h));
+    // (Con un margencito: lo nuevo nunca nace pegado a la orilla, donde algunos teléfonos lo cortan.)
+    const mx = Math.min(12, Math.max(0, (W - w) / 2)), my = Math.min(12, Math.max(0, (H - h) / 2));
+    const ix = clamp(c.x - w / 2, mx, Math.max(mx, W - w - mx)), iy = clamp(c.y - h / 2, my, Math.max(my, H - h - my));
     const otros = (this.estado.pagina?.els || [])
       .filter((o) => !o.oculto && o.tipo !== "pagina" && o.tipo !== "trazo" && !(o.ancla?.h === "estirar" && o.ancla?.v === "estirar"))
       .map((o) => cajaDe(this.vis(o)))
@@ -291,8 +293,8 @@ export class Lienzo {
     if (otros.length && tapa(ix, iy) > 0) {
       let mejor = Infinity;
       const paso = Math.max(8, Math.round(Math.min(W, H) / 40));
-      for (let y = 0; y <= Math.max(0, H - h); y += paso) {
-        for (let x = 0; x <= Math.max(0, W - w); x += paso) {
+      for (let y = my; y <= Math.max(my, H - h - my); y += paso) {
+        for (let x = mx; x <= Math.max(mx, W - w - mx); x += paso) {
           const costo = tapa(x, y) + Math.hypot(x - ix, y - iy) * 20;
           if (costo < mejor) { mejor = costo; b = { x, y }; }
         }

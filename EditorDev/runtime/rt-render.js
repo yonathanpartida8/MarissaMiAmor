@@ -25,7 +25,7 @@
     if (e.sonidos && e.sonidos.tocar) return true;
     if (RT.tieneToque && RT.tieneToque(e.toque)) return true;
     const an = e.anim;
-    if (an && ((an.reaccion && an.reaccion.presionar) || (an.magia || []).some((m) => m.momento === "tocar"))) return true;
+    if (an && ((an.reaccion && an.reaccion.presionar) || an.alTocar || (an.magia || []).some((m) => m.momento === "tocar"))) return true;
     switch (e.tipo) {
       case "boton": case "carrusel": case "pagina": return true;
       case "componente": return !(e.componente && e.componente.decorativo);
@@ -694,6 +694,8 @@
       let ultimo = 0;
       n.addEventListener("click", function (ev) {
         const x = n._rt.e;
+        // Su animación al tocarlo (Fase 43), además de su acción.
+        if (x.anim && x.anim.alTocar && RT.animarAlTocar) RT.animarAlTocar(n, x.anim.alTocar, ev);
         if (!(x.accion && x.accion.tipo && ctx.accion)) return;
         ev.stopPropagation();
         const ahora = performance.now();

@@ -21,6 +21,9 @@
   };
   RT.clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   RT.num = (v, d) => (typeof v === "number" && isFinite(v) ? v : d);
+  /** Fase 43: una página con botones (o algo que pasa, vuelve o lleva a otra página al tocarlo) espera tu
+   *  toque: no pasa sola con el tiempo, aunque tenga duración. */
+  RT.esperaToque = (pag) => (pag && pag.els || []).some((e) => !e.oculto && (e.tipo === "boton" || (e.accion && /^(siguiente|anterior|ir|inicio)$/.test(e.accion.tipo || ""))));
 
   /* ── Tipografías ─────────────────────────────────────────────────
      Las tres del libro primero. Las de Google se piden sólo cuando

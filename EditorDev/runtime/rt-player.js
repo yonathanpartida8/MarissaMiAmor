@@ -262,7 +262,7 @@
       this._sonar(pag);
       this.ocupado = false;
       this._adelantar(i + 1);
-      const auto = this.op.soloPagina ? 0 : RT.num(pag.duracion, 0) || RT.num(this.rep.autoAvance, 0);
+      const auto = this.op.soloPagina || RT.esperaToque(pag) ? 0 : RT.num(pag.duracion, 0) || RT.num(this.rep.autoAvance, 0);
       if (auto > 0) this._auto = setTimeout(() => this.siguiente(), auto * 1000);
       if (this._pendiente) { const p = this._pendiente; this._pendiente = null; this.ir(p[0], p[1]); }
     }

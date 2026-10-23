@@ -1,8 +1,9 @@
 /**
  * COSITAS JUNTITOS (Fase 38) — «Nuestros días juntos»: lo de todos los días de los dos.
  *
- * Se abre al tocar los días juntos del menú principal. Es una página aparte (se desliza de arriba
- * a abajo) con su barra de abajo, siempre a la mano:
+ * Se abre al tocar los días juntos del menú principal. Desde la Fase 43 sale primero EL MAPA (de fondo)
+ * y encima una hojita que se desliza de abajo hacia arriba, con botones cuadrados que abren cada cosa en
+ * su pestañita (y «Nuestra casita» y «Promesa», en construcción); más abajo, dónde están y sus lugares:
  *
  *   Cositas    las tarjetitas: «Te extraño» y «Decir te amo» le llegan a tu amorcito (con aviso);
  *              caca, pis, agua y palabrotas son contadores (hoy y en total); chismes, enojos y colapsos
@@ -13,7 +14,7 @@
  *   Dibujar    Dibujar Juntos (Fase 40, en lugar de Diario): una hoja de los dos en tiempo real, con
  *              pinceles, sonidos y lápiz virtual (components/dibujo-juntos.js).
  *
- * Cada pestaña tiene sus cosas arriba a la derecha: en Cositas, «Notas» (lo que escribiste y lo que tu
+ * Cada pestañita tiene sus cosas arriba a la derecha: en Cositas, «Notas» (lo que escribiste y lo que tu
  * amorcito te compartió, lo que antes era Diario); en Mesecitos, cuánto falta para el siguiente.
  * Todo vive en su M.YNTHN (servidor 1.14.0): nada se inventa ni se queda «de adorno».
  */
@@ -52,6 +53,17 @@ const COSAS = [
   { t: "palabrotas", n: "Palabrotas dichas", c: "durazno", modo: "cuenta" },
   { t: "ducha", n: "¿Hoy me duché?", c: "menta", modo: "si" },
 ];
+const CALENDARIO = svg('<rect x="5" y="7" width="22" height="20" rx="4"/><path d="M5 13h22M11 4.5v5M21 4.5v5"/><path d="M16 23.4s-4-2.4-4-5a2 2 0 0 1 4-1 2 2 0 0 1 4 1c0 2.6-4 5-4 5z" fill="currentColor" fill-opacity=".25"/>');
+const PINCEL = svg('<path d="M5 27c3 0 5-1.5 5-4a3 3 0 0 0-3-3c-2 0-3 1.6-3 3.5 0 1.6-.6 2.6-2 3.5z" fill="currentColor" fill-opacity=".2"/><path d="M10 21L25.5 5.5a2.1 2.1 0 0 1 3 3L13 24"/>');
+const CASITA = svg('<path d="M5 15L16 6l11 9"/><path d="M8 13v13h16V13"/><path d="M16 23.6s-3.4-2-3.4-4.2a1.7 1.7 0 0 1 3.4-.9 1.7 1.7 0 0 1 3.4.9c0 2.2-3.4 4.2-3.4 4.2z" fill="currentColor" fill-opacity=".3"/>');
+const PROMESA = svg('<path d="M9.5 18.5c-2-1.6-3.2-3.6-3.2-5.6a3.6 3.6 0 0 1 6.4-2.3"/><path d="M22.5 18.5c2-1.6 3.2-3.6 3.2-5.6a3.6 3.6 0 0 0-6.4-2.3"/><path d="M11 21.5c1.6 1.8 3.2 3 5 4 1.8-1 3.4-2.2 5-4"/><path d="M13 16.5h6M14 13.8l2-2 2 2"/>');
+/** Fase 43: los botones cuadrados de la hojita (cada uno abre su pestañita). */
+const CUADROS = [["cositas", "Cositas Juntitos", "rosa"], ["mesecitos", "Mesecitos", "lila"], ["dibujar", "Dibujar Juntos", "menta"]];
+const PRONTO = [
+  ["casita", "Nuestra casita", "durazno", "Una casita de los dos para decorar juntitos, cuarto por cuarto, con sus fotos y sus cosas."],
+  ["promesa", "Promesa", "cielo", "Sus promesas de amor, guardaditas con su fecha, para cumplirlas y recordarlas."],
+];
+const TITULOS = { cositas: "Cositas Juntitos", mesecitos: "Mesecitos", dibujar: "Dibujar Juntos", casita: "Nuestra casita", promesa: "Promesa" };
 const PIN = svg('<path d="M16 28s-8.5-7.6-8.5-14.3a8.5 8.5 0 0 1 17 0C24.5 20.4 16 28 16 28z"/><circle cx="16" cy="13.6" r="3.2"/>');
 // El mapa (Fase 39): satélite con calles y nombres encima (lindo y claro), o el mapa de calles.
 const SAT = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
@@ -91,31 +103,48 @@ export class Juntitos {
 
   get pareja() { return PF.nombreDe(PF.datos().pareja) || "tu amorcito"; }
 
+  /**
+   * Fase 43: el mapa primero, de fondo; encima, una hojita que se desliza de abajo hacia arriba con los
+   * botones cuadrados (Cositas Juntitos, Mesecitos, Dibujar Juntos y, debajo, lo que viene: Nuestra
+   * casita y Promesa); más abajo, dónde están, sus lugares y lo último. Cada botón abre su pestañita.
+   */
   _montar() {
-    const tabs = [["cositas", "Cositas", ICONOS.teamo], ["mesecitos", "Mesecitos", svg('<rect x="5" y="7" width="22" height="20" rx="4"/><path d="M5 13h22M11 4.5v5M21 4.5v5"/><path d="M16 23.4s-4-2.4-4-5a2 2 0 0 1 4-1 2 2 0 0 1 4 1c0 2.6-4 5-4 5z" fill="currentColor" fill-opacity=".25"/>')], ["mapa", "Mapa", PIN], ["dibujar", "Dibujar", svg('<path d="M5 27c3 0 5-1.5 5-4a3 3 0 0 0-3-3c-2 0-3 1.6-3 3.5 0 1.6-.6 2.6-2 3.5z" fill="currentColor" fill-opacity=".2"/><path d="M10 21L25.5 5.5a2.1 2.1 0 0 1 3 3L13 24"/>')]];
-    this.nav = el("nav.jt-nav", { "aria-label": "Cositas Juntitos" }, tabs.map(([k, n, i]) => el("button.jt-tab", { type: "button", dataset: { k }, onClick: () => this.ir(k) }, [el("i", { html: i }), el("span", { text: n })])));
-    this.vista = el("main.jt-vista");
-    this.titulo = el("b.jt-cab-t");
-    this.chip = el("button.jt-chip", { type: "button", hidden: "", onClick: () => this.ir("mapa") }, [el("i", { html: PIN }), el("span", { text: "Compartiendo ubicación" })]);
+    this.fondo = el("div.jt-fondo", { role: "region", "aria-label": "Mapa" });
+    this.dist = el("span.jt-mapa-dist", { hidden: "" });
+    this.botonCapa = el("button.jt-mapa-b", { type: "button", "aria-label": "Cambiar entre satélite y mapa", onClick: () => this._ponerCapa(this.mapa?.capa === "sat" ? "calles" : "sat") });
+    const ctl = el("div.jt-fondo-ctl", {}, [this.botonCapa, el("button.jt-mapa-b.redondo", { type: "button", "aria-label": "Ver a los dos", title: "Ver a los dos", html: CENTRAR, onClick: () => { if (this.mapa) { this.mapa.centrado = false; this._refrescarMapa(); } } })]);
+    this.titulo = el("b.jt-cab-t", { text: "Nuestros días juntos" });
+    this.chip = el("button.jt-chip", { type: "button", hidden: "", onClick: () => this._hojaIr("alto", true) }, [el("i", { html: PIN }), el("span", { text: "Compartiendo ubicación" })]);
+    const cab = el("header.jt-cab.flota", {}, [el("button.jt-atras", { type: "button", "aria-label": "Atrás", html: ico("izquierda"), onClick: () => this.atras() }), this.titulo, this.chip]);
+    // La hojita de abajo.
+    this.sheetCuerpo = el("div.jt-sheet-cuerpo");
+    this.sheet = el("section.jt-sheet", { "aria-label": "Nuestras cositas" }, [el("button.jt-sheet-asa", { type: "button", "aria-label": "Subir o bajar la hojita" }, [el("i")]), this.sheetCuerpo]);
+    // La pestañita de cada botón.
+    this.secTit = el("b.jt-cab-t");
     this.accion = el("div.jt-accion");
-    const cab = el("header.jt-cab", {}, [el("button.jt-atras", { type: "button", "aria-label": "Atrás", html: ico("izquierda"), onClick: () => this.atras() }), this.titulo, this.accion, this.chip]);
+    this.vista = el("main.jt-vista");
+    this.secPanel = el("section.jt-secpanel", { role: "dialog", "aria-modal": "true" }, [el("header.jt-cab", {}, [el("button.jt-atras", { type: "button", "aria-label": "Volver al mapa", html: ico("izquierda"), onClick: () => this.inicio() }), this.secTit, this.accion]), this.vista]);
     this.velo = el("div.jt-velo", { onClick: () => this._cerrarHoja() });
     this.hojaEl = el("section.jt-hoja", { role: "dialog", "aria-modal": "true" });
-    this.capa = el("div.jt-capa", { role: "dialog", "aria-label": "Cositas Juntitos" }, [cab, this.vista, this.nav, this.velo, this.hojaEl]);
+    this.capa = el("div.jt-capa.v43", { role: "dialog", "aria-label": "Nuestros días juntos" }, [this.fondo, ctl, this.dist, cab, this.sheet, this.secPanel, this.velo, this.hojaEl]);
     document.body.append(this.capa);
+    this._gestosHoja();
   }
 
-  abrir(tab = "cositas") {
+  abrir(tab = "inicio") {
     if (!SRV.conectado()) { aviso(`Entra a tu ${SRV.NOMBRE} y vincúlate con tu amorcito para usar Cositas Juntitos.`, 4200); return; }
     if (!this.capa) this._montar();
     this.A?.limpiar();
     this.A = ambito("juntitos");
-    this.A.al(UB.alCambiar(() => this._chip()));
+    this.A.al(UB.alCambiar(() => { this._chip(); this._pintarUb?.(); }));
     this._chip();
     this.abierto = true;
     this.capa.classList.add("ver");
     document.body.classList.add("con-juntitos");
-    this.ir(tab);
+    this.tab = "inicio";
+    this._inicio();
+    if (tab === "mapa" || tab === "inicio") this._hojaIr(tab === "mapa" ? "alto" : "bajo", false);
+    else { this._hojaIr("bajo", false); this.ir(tab); }
   }
 
   cerrar() {
@@ -127,43 +156,161 @@ export class Juntitos {
     this.dj?.limpiar(); this.dj = null;
     if (this.mapa) { this.mapa.m.remove(); this.mapa = null; }
     this.capa.querySelectorAll(".jt-carta-mes").forEach((n) => n.remove());
+    this.secPanel.classList.remove("ver");
     this.capa.classList.remove("ver");
     document.body.classList.remove("con-juntitos");
   }
 
-  /** Atrás: primero la hoja abierta, luego vuelve a Cositas, luego cierra. */
+  /** Atrás: primero la hoja abierta, luego la pestañita (vuelve al mapa), luego cierra. */
   atras() {
     if (this.hojaEl?.classList.contains("ver")) { this._cerrarHoja(); return true; }
     const carta = this.capa?.querySelector(".jt-carta-mes:not(.fuera)");
     if (carta) { carta.querySelector(".jt-x")?.click(); return true; }
-    if (this.tab !== "cositas") { this.ir("cositas"); return true; }
+    if (this.tab !== "inicio") { this.inicio(); return true; }
+    if (this._hojaPos === "alto") { this._hojaIr("bajo", true); return true; }
     this.cerrar();
     return true;
   }
 
   _chip() { if (this.chip) this.chip.hidden = !UB.estadoUbicacion().compartiendo; }
 
+  /** Abre la pestañita de un botón (Cositas, Mesecitos, Dibujar, o lo que viene). */
   ir(tab) {
     if (tab === "diario") tab = "cositas"; // (Diario ya vive en Cositas → Notas)
-    const ORDEN = ["cositas", "mesecitos", "mapa", "dibujar"];
-    const antes = this.tab;
+    if (tab === "mapa" || tab === "inicio") { this.inicio(); if (tab === "mapa") this._hojaIr("alto", true); return; }
     this.tab = tab;
-    this._parar?.();
-    this._parar = null;
-    this._eligiendo = false;
+    this._parar?.(); this._parar = null;
     this.dj?.limpiar(); this.dj = null;
-    if (this.mapa) { this.mapa.m.remove(); this.mapa = null; } // un solo mapa vivo, y sólo en su pestaña
-    for (const b of this.nav.children) { const on = b.dataset.k === tab; b.classList.toggle("on", on); b.setAttribute("aria-current", on ? "page" : "false"); }
-    this.nav.style.setProperty("--i", String(ORDEN.indexOf(tab)));
-    this.titulo.textContent = { cositas: "Nuestros días juntos", mesecitos: "Mesecitos", mapa: "Dónde estamos", dibujar: "Dibujar Juntos" }[tab];
+    this.secTit.textContent = TITULOS[tab] || "";
     this.accion.replaceChildren();
     this.capa.dataset.tab = tab;
     this.vista.scrollTop = 0;
-    // La página nueva entra desde el lado de la pestaña (izquierda o derecha).
-    this.vista.classList.remove("entra-izq", "entra-der");
-    if (!reducido() && antes && antes !== tab) { void this.vista.offsetWidth; this.vista.classList.add(ORDEN.indexOf(tab) > ORDEN.indexOf(antes) ? "entra-der" : "entra-izq"); }
     this.vista.replaceChildren(el("p.jt-cargando", { text: "Un momentito…" }));
-    ({ cositas: () => this._cositas(), mesecitos: () => this._mesecitos(), mapa: () => this._mapa(), dibujar: () => this._dibujar() })[tab]();
+    this.secPanel.classList.add("ver");
+    ({ cositas: () => this._cositas(), mesecitos: () => this._mesecitos(), dibujar: () => this._dibujar(), casita: () => this._pronto("casita"), promesa: () => this._pronto("promesa") })[tab]?.();
+  }
+
+  /** De vuelta al mapa con su hojita. */
+  inicio() {
+    this.tab = "inicio";
+    this.capa.dataset.tab = "inicio";
+    this.dj?.limpiar(); this.dj = null;
+    this.secPanel.classList.remove("ver");
+    this._refrescarMapa();
+    if (!this._parar && this.A) this._parar = this.A.cada(() => this._refrescarMapa(), 30000);
+  }
+
+  /** Lo que viene (en construcción): se ve lo que será, con cariño y sin botones de adorno. */
+  _pronto(k) {
+    const x = PRONTO.find((y) => y[0] === k);
+    this.vista.replaceChildren(el("div.jt-pronto-pag", {}, [
+      el("div.jt-pronto-ico." + x[2], { html: k === "casita" ? CASITA : PROMESA }),
+      el("h1", { text: x[1] }),
+      el("span.jt-pronto-tag", { text: "🚧 En construcción" }),
+      el("p", { text: x[3] }),
+      el("p.jt-nota", { text: "La estamos construyendo con mucho amor 🛠️💗 Cuando esté lista aparecerá aquí sola, sin que tengan que hacer nada." }),
+    ]));
+  }
+
+  /* ── La hojita de abajo: se jala hacia arriba (todo) o hacia abajo (el mapa) ── */
+  _hojaIr(pos, anim) {
+    const s = this.sheet;
+    if (!s) return;
+    this._hojaPos = pos;
+    const H = this.capa.clientHeight || innerHeight, alto = s.offsetHeight || H * 0.88;
+    const y = pos === "alto" ? 0 : Math.max(0, alto - Math.max(250, Math.round(H * 0.42)));
+    s.classList.toggle("anim", !!anim && !reducido());
+    s.classList.toggle("arriba", pos === "alto");
+    s.style.transform = `translate3d(0, ${y}px, 0)`;
+    if (pos === "bajo") this.sheetCuerpo.scrollTop = 0;
+  }
+
+  _gestosHoja() {
+    const s = this.sheet, asa = s.querySelector(".jt-sheet-asa");
+    let g = null;
+    const yDe = () => { const m = /translate3d\(0(?:px)?, ([\d.-]+)px/.exec(s.style.transform); return m ? +m[1] : 0; };
+    const empezar = (e) => { if (e.button > 0) return; g = { id: e.pointerId, y0: e.clientY, base: yDe(), movio: false, vy: 0, uy: e.clientY, ut: performance.now() }; try { e.currentTarget.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } };
+    const mover = (e) => {
+      if (!g || g.id !== e.pointerId) return;
+      const dy = e.clientY - g.y0;
+      if (Math.abs(dy) > 5) g.movio = true;
+      const t = performance.now();
+      if (t > g.ut) { g.vy = 0.7 * g.vy + 0.3 * ((e.clientY - g.uy) / (t - g.ut)); g.uy = e.clientY; g.ut = t; }
+      s.classList.remove("anim");
+      s.style.transform = `translate3d(0, ${Math.max(0, Math.min(s.offsetHeight - 120, g.base + dy))}px, 0)`;
+    };
+    const soltar = (e) => {
+      if (!g || g.id !== e.pointerId) return;
+      const x = g; g = null;
+      if (!x.movio) { this._hojaIr(this._hojaPos === "alto" ? "bajo" : "alto", true); return; }
+      const y = yDe();
+      this._hojaIr(x.vy < -0.3 ? "alto" : x.vy > 0.3 ? "bajo" : y < s.offsetHeight * 0.3 ? "alto" : "bajo", true);
+    };
+    for (const n of [asa]) { n.addEventListener("pointerdown", empezar); n.addEventListener("pointermove", mover); n.addEventListener("pointerup", soltar); n.addEventListener("pointercancel", soltar); }
+    // Desplazar lo de adentro estando abajo la sube; ya arriba, jalar hacia abajo desde el tope la baja.
+    this.sheetCuerpo.addEventListener("scroll", () => { if (this._hojaPos !== "alto" && this.sheetCuerpo.scrollTop > 6) this._hojaIr("alto", true); }, { passive: true });
+    let y0 = null;
+    this.sheetCuerpo.addEventListener("touchstart", (e) => { y0 = this.sheetCuerpo.scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true });
+    this.sheetCuerpo.addEventListener("touchmove", (e) => { if (y0 != null && this._hojaPos === "alto" && e.touches[0].clientY - y0 > 70) { y0 = null; this._hojaIr("bajo", true); } }, { passive: true });
+    addEventListener("resize", () => { if (this.abierto) this._hojaIr(this._hojaPos || "bajo", false); });
+  }
+
+  /* ── Lo de inicio: el mapa de fondo y la hojita con sus botones ── */
+  _inicio() {
+    const cuadro = ([k, n, c], html, extra) => el("button.jt-cuadro." + c, { type: "button", dataset: { k }, onClick: () => this.ir(k) }, [el("i", { html }), el("b", { text: n }), extra || null].filter(Boolean));
+    const estado = el("div.jt-ub-estado"), gente = el("div.jt-gente"), lugares = el("ul.jt-lugares"), eventos = el("ul.jt-eventos");
+    this.sheetCuerpo.replaceChildren(
+      el("div.jt-hola.chico", {}, [el("h1", { text: "Nuestros días juntos" }), el("p", { text: `Todo lo de ${this.pareja} y tú, a un toque` })]),
+      el("div.jt-cuadros", {}, CUADROS.map((x) => cuadro(x, { cositas: ICONOS.teamo, mesecitos: CALENDARIO, dibujar: PINCEL }[x[0]]))),
+      el("h2.jt-sub", { text: "Más cositas" }),
+      el("div.jt-cuadros", {}, PRONTO.map((x) => cuadro(x, x[0] === "casita" ? CASITA : PROMESA, el("small.jt-pronto", { text: "En construcción" })))),
+      el("h2.jt-sub", { text: "Dónde estamos" }), estado, gente,
+      el("div.jt-sec", {}, [el("h2", { text: "Lugares" }), el("button.jt-btn.chico", { type: "button", text: "Añadir lugar", onClick: () => this._nuevoLugar() })]), lugares,
+      el("p.jt-nota", { text: "Los avisos de entrar o salir funcionan mientras la app está abierta en el aparato de quien se mueve (la web no puede seguirte con la app cerrada; para eso hace falta la app nativa)." }),
+      el("div.jt-sec", {}, [el("h2", { text: "Lo último" })]), eventos,
+    );
+    this._pintarUb = () => {
+      const e = UB.estadoUbicacion();
+      estado.replaceChildren(e.compartiendo
+        ? el("div.jt-ub.on", {}, [el("i", { html: PIN }), el("div", {}, [el("b", { text: "Estás compartiendo tu ubicación" }), el("small", { text: e.error || (e.enviado ? `Actualizada ${hace(e.enviado.t)}` : "Buscando dónde estás…") })]), el("button.jt-btn.suave.chico", { type: "button", text: "Dejar de compartir", onClick: async () => { await UB.dejar(); aviso("Dejaste de compartir: se borró tu ubicación del servidor.", 3200); this._refrescarMapa(); } })])
+        : el("div.jt-ub", {}, [el("div", {}, [el("b", { text: "Tu ubicación no se comparte" }), el("small", { text: e.error || `Si quieres, ${this.pareja} podrá verla en este mapa. Puedes dejar de compartirla cuando quieras.` })]), el("button.jt-btn.chico", { type: "button", text: "Compartir mi ubicación", onClick: async () => { if (await UB.compartir()) { aviso("Compartiendo tu ubicación (sólo mientras la app está abierta)", 3200); this._refrescarMapa(); } } })]));
+    };
+    this._pintarUb();
+    this._mapaEls = { caja: this.fondo, gente, lugares, eventos, dist: this.dist, botonCapa: this.botonCapa };
+    this._mapaFondo();
+  }
+
+  async _mapaFondo() {
+    const caja = this.fondo;
+    if (this.mapa) { this._refrescarMapa(); return; }
+    caja.replaceChildren(el("p.jt-cargando", { text: "Cargando el mapa…" }));
+    try {
+      const L = await UB.cargarMapa();
+      if (!this.abierto) return;
+      caja.replaceChildren();
+      const m = L.map(caja, { zoomControl: false, attributionControl: true, zoomSnap: 0.5 }).setView([19.4326, -99.1332], 4);
+      L.control.zoom({ position: "topleft", zoomInTitle: "Acercar", zoomOutTitle: "Alejar" }).addTo(m);
+      m.attributionControl.setPrefix(false);
+      // (Los mapas piden saber desde qué página se usan: se manda sólo el origen, nunca la dirección completa.)
+      const op = { maxZoom: 19, maxNativeZoom: 18, referrerPolicy: "strict-origin-when-cross-origin" };
+      const bases = {
+        sat: L.layerGroup([
+          L.tileLayer(SAT, { ...op, attribution: "Imágenes © Esri, Maxar, Earthstar" }),
+          L.tileLayer(SAT_CALLES, { ...op, opacity: 0.85 }),
+          L.tileLayer(SAT_NOMBRES, { ...op }),
+        ]),
+        calles: L.tileLayer(CALLES, { ...op, subdomains: "abcd", maxNativeZoom: 19, attribution: "© OpenStreetMap · © CARTO" }),
+      };
+      this.mapa = { L, m, bases, capa: null, capas: L.layerGroup().addTo(m), centrado: false };
+      let capa = "sat";
+      try { capa = localStorage.getItem(CAPA_MAPA) === "calles" ? "calles" : "sat"; } catch (e) { /* nada */ }
+      this._ponerCapa(capa, false);
+      m.on("click", (ev) => { if (this._eligiendo) { this._eligiendo = false; caja.classList.remove("eligiendo"); this._formLugar({ lat: ev.latlng.lat, lng: ev.latlng.lng }); } });
+      this.A?.al(() => { m.remove(); this.mapa = null; });
+    } catch (e) { caja.replaceChildren(el("p.jt-cargando", { text: e.message })); }
+    await this._refrescarMapa();
+    // Mientras se ve el mapa, se pregunta cada 30 s (con la página oculta no se pregunta nada).
+    this._parar = this.A?.cada(() => this._refrescarMapa(), 30000);
   }
 
   _error(e) { this.vista.replaceChildren(el("div.jt-vacio", {}, [el("b", { text: "No se pudo cargar" }), el("p", { text: e.status === 409 ? "Primero vincúlate con tu amorcito (en el menú principal)." : e.message || "Sin conexión." }), el("button.jt-btn", { type: "button", text: "Reintentar", onClick: () => this.ir(this.tab) })])); }
@@ -403,58 +550,6 @@ export class Juntitos {
   }
 
   /* ════ Mapa ════ */
-  async _mapa() {
-    const estado = el("div.jt-ub-estado");
-    const caja = el("div.jt-mapa", { role: "region", "aria-label": "Mapa" }, [el("p.jt-cargando", { text: "Cargando el mapa…" })]);
-    const dist = el("span.jt-mapa-dist", { hidden: "" });
-    const botonCapa = el("button.jt-mapa-b", { type: "button", "aria-label": "Cambiar entre satélite y mapa", onClick: () => this._ponerCapa(this.mapa?.capa === "sat" ? "calles" : "sat") });
-    const marco = el("div.jt-mapa-marco", {}, [caja, dist, el("div.jt-mapa-ctl", {}, [
-      botonCapa,
-      el("button.jt-mapa-b.redondo", { type: "button", "aria-label": "Ver a los dos", title: "Ver a los dos", html: CENTRAR, onClick: () => { if (this.mapa) { this.mapa.centrado = false; this._refrescarMapa(); } } }),
-    ])]);
-    const gente = el("div.jt-gente"), lugares = el("ul.jt-lugares"), eventos = el("ul.jt-eventos");
-    this.vista.replaceChildren(estado, marco, gente,
-      el("div.jt-sec", {}, [el("h2", { text: "Lugares" }), el("button.jt-btn.chico", { type: "button", text: "Añadir lugar", onClick: () => this._nuevoLugar() })]), lugares,
-      el("p.jt-nota", { text: "Los avisos de entrar o salir funcionan mientras la app está abierta en el aparato de quien se mueve (la web no puede seguirte con la app cerrada; para eso hace falta la app nativa)." }),
-      el("div.jt-sec", {}, [el("h2", { text: "Lo último" })]), eventos);
-    const pintarEstado = () => {
-      const e = UB.estadoUbicacion();
-      estado.replaceChildren(e.compartiendo
-        ? el("div.jt-ub.on", {}, [el("i", { html: PIN }), el("div", {}, [el("b", { text: "Estás compartiendo tu ubicación" }), el("small", { text: e.error || (e.enviado ? `Actualizada ${hace(e.enviado.t)}` : "Buscando dónde estás…") })]), el("button.jt-btn.suave.chico", { type: "button", text: "Dejar de compartir", onClick: async () => { await UB.dejar(); aviso("Dejaste de compartir: se borró tu ubicación del servidor.", 3200); this._refrescarMapa(); } })])
-        : el("div.jt-ub", {}, [el("div", {}, [el("b", { text: "Tu ubicación no se comparte" }), el("small", { text: e.error || `Si quieres, ${this.pareja} podrá verla en este mapa. Puedes dejar de compartirla cuando quieras.` })]), el("button.jt-btn.chico", { type: "button", text: "Compartir mi ubicación", onClick: async () => { if (await UB.compartir()) { aviso("Compartiendo tu ubicación (sólo mientras la app está abierta)", 3200); this._refrescarMapa(); } } })]));
-    };
-    pintarEstado();
-    this.A.al(UB.alCambiar(pintarEstado));
-    this._mapaEls = { caja, gente, lugares, eventos, dist, botonCapa };
-    try {
-      const L = await UB.cargarMapa();
-      if (this.tab !== "mapa") return;
-      caja.replaceChildren();
-      const m = L.map(caja, { zoomControl: false, attributionControl: true, zoomSnap: 0.5 }).setView([19.4326, -99.1332], 4);
-      L.control.zoom({ position: "bottomright", zoomInTitle: "Acercar", zoomOutTitle: "Alejar" }).addTo(m);
-      m.attributionControl.setPrefix(false);
-      // (Los mapas piden saber desde qué página se usan: se manda sólo el origen, nunca la dirección completa.)
-      const op = { maxZoom: 19, maxNativeZoom: 18, referrerPolicy: "strict-origin-when-cross-origin" };
-      const bases = {
-        sat: L.layerGroup([
-          L.tileLayer(SAT, { ...op, attribution: "Imágenes © Esri, Maxar, Earthstar" }),
-          L.tileLayer(SAT_CALLES, { ...op, opacity: 0.85 }),
-          L.tileLayer(SAT_NOMBRES, { ...op }),
-        ]),
-        calles: L.tileLayer(CALLES, { ...op, subdomains: "abcd", maxNativeZoom: 19, attribution: "© OpenStreetMap · © CARTO" }),
-      };
-      this.mapa = { L, m, bases, capa: null, capas: L.layerGroup().addTo(m), centrado: false };
-      let capa = "sat";
-      try { capa = localStorage.getItem(CAPA_MAPA) === "calles" ? "calles" : "sat"; } catch (e) { /* nada */ }
-      this._ponerCapa(capa, false);
-      m.on("click", (ev) => { if (this._eligiendo) { this._eligiendo = false; caja.classList.remove("eligiendo"); this._formLugar({ lat: ev.latlng.lat, lng: ev.latlng.lng }); } });
-      this.A.al(() => { m.remove(); this.mapa = null; });
-    } catch (e) { caja.replaceChildren(el("p.jt-cargando", { text: e.message })); }
-    await this._refrescarMapa();
-    // Mientras se ve el mapa, se pregunta cada 30 s (con la página oculta no se pregunta nada).
-    this._parar = this.A.cada(() => this._refrescarMapa(), 30000);
-  }
-
   /** Satélite (con calles y nombres) o el mapa de calles; se recuerda en este aparato. */
   _ponerCapa(capa, guardar = true) {
     const M = this.mapa, E = this._mapaEls;
@@ -469,7 +564,7 @@ export class Juntitos {
 
   async _refrescarMapa() {
     const E = this._mapaEls;
-    if (!E || this.tab !== "mapa") return;
+    if (!E || !this.abierto || this.tab !== "inicio") return;
     let d;
     try { d = await SRV.ubicacion(); } catch (e) { E.gente.replaceChildren(el("p.jt-aviso", { text: "Sin conexión con su servidor: no se puede ver dónde están ahora." })); return; }
     this.ub = d;
@@ -514,7 +609,7 @@ export class Juntitos {
     if ((this.ub?.lugares?.length || 0) >= 10) { aviso("Ya tienen 10 lugares: quita alguno para añadir otro.", 3200); return; }
     this._hoja("Añadir lugar", [
       el("p.jt-hoja-p", { text: "Elige dónde está:" }),
-      el("button.jt-btn", { type: "button", text: "Tocar el lugar en el mapa", onClick: () => { this._cerrarHoja(); if (!this.mapa) { aviso("El mapa no cargó: usa tu ubicación actual.", 3000); return; } this._eligiendo = true; this._mapaEls.caja.classList.add("eligiendo"); this._mapaEls.caja.scrollIntoView({ behavior: reducido() ? "auto" : "smooth", block: "center" }); aviso("Toca el mapa donde está el lugar", 2600); } }),
+      el("button.jt-btn", { type: "button", text: "Tocar el lugar en el mapa", onClick: () => { this._cerrarHoja(); if (!this.mapa) { aviso("El mapa no cargó: usa tu ubicación actual.", 3000); return; } this._eligiendo = true; this._mapaEls.caja.classList.add("eligiendo"); this._hojaIr("bajo", true); aviso("Toca el mapa donde está el lugar", 2600); } }),
       el("button.jt-btn.suave", { type: "button", text: "Usar mi ubicación actual", onClick: () => {
         if (!UB.puede()) { aviso("Este navegador no da la ubicación.", 3000, "error"); return; }
         navigator.geolocation.getCurrentPosition((p) => this._formLugar({ lat: p.coords.latitude, lng: p.coords.longitude }), (e) => aviso(e.code === 1 ? "No diste permiso de ubicación." : "No se pudo saber dónde estás.", 3200, "error"), { enableHighAccuracy: true, timeout: 20000 });

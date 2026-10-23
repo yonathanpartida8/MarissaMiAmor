@@ -43,6 +43,7 @@ import { BIBLIOTECA } from "./secciones/biblioteca.js";
 import { BLOQUES } from "./secciones/bloques.js";
 import { TOQUES_SEC } from "./toques.js";
 import { PUBLICADAS } from "./secciones/publicadas.js";
+import { ESTILO } from "./secciones/estilo.js";
 import * as GIF from "../integraciones/giphy.js";
 import { miniatura } from "../assets/miniaturas.js";
 
@@ -307,9 +308,7 @@ export class Paneles {
       el("div.ed-muestras", {}, ["Cormorant Garamond", "Caveat", "Jost", "Playfair Display", "Dancing Script", "Great Vibes", "Quicksand"].map((f) => el("button", { type: "button", text: f, title: "Usarla en los textos", style: { fontFamily: RT.pilaFuente(f) }, onClick: () => usarLetras({ "ajustes.tema.fuente": f }) }))),
     ]));
     c.append(seccion("Esta página", [
-      el("p.ed-ayuda", { text: "El fondo de la página (color, degradado o foto) se cambia en el inspector, sin nada elegido." }),
-      boton(I("diseno", "Tema sólo para esta hoja…"), () => this.app.temaDeHoja?.(), "chico"),
-      boton(I("diseno", "Fondo de esta página"), () => { E.seleccionar([]); this.app.insp.abrir("diseno"); }, "chico"),
+      boton(I("fondo", "Estilo de esta página (color, degradado, hoja, foto)"), () => this.app.abrirSeccion("estilo"), "chico"),
     ]));
     this._fondoHtml(c);
     RT.cargarFuentes(["Playfair Display", "Dancing Script", "Great Vibes", "Quicksand"]);
@@ -470,4 +469,4 @@ export class Paneles {
 }
 
 // Las secciones grandes viven cada una en su archivo (components/secciones/).
-Object.assign(Paneles.prototype, ANIMAR, EFECTOS_SEC, TRANSICIONES, GIPHY, AUDIO, HTML, FONDO_HTML, NAVEGACION, BIBLIOTECA, BLOQUES, TOQUES_SEC, PUBLICADAS);
+Object.assign(Paneles.prototype, ANIMAR, EFECTOS_SEC, TRANSICIONES, GIPHY, AUDIO, HTML, FONDO_HTML, NAVEGACION, BIBLIOTECA, BLOQUES, TOQUES_SEC, PUBLICADAS, ESTILO);

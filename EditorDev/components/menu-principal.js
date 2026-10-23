@@ -344,7 +344,7 @@ export class MenuPrincipal {
     // cintita lo dice y abre sus Mesecitos (para hacerle su página especial, si quieren).
     const meses = j.a * 12 + j.m, hoyMes = j.d === 0 && meses > 0;
     if (hoyMes) { caja.classList.add("mesecito"); caja.append(el("span.mp-mesecito", { text: `¡Hoy cumplen ${meses} ${meses === 1 ? "mes" : "meses"}! ✦` })); }
-    const pronto = () => this.app.juntitos?.abrir(hoyMes ? "mesecitos" : "cositas");
+    const pronto = () => this.app.juntitos?.abrir(hoyMes ? "mesecitos" : "inicio");
     caja.addEventListener("click", pronto);
     caja.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pronto(); } });
     return caja;

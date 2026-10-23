@@ -18,13 +18,36 @@ import { elegir } from "../../assets/selector.js";
 import { catalogo, listar } from "../../componentes/catalogo.js";
 import { rutaAUrl } from "../../assets/biblioteca.js";
 
-/** Las canciones de la carpeta EditorDev/musica/ (del catálogo o, recién pegadas, mirando la carpeta). */
+const bonito = (f) => f.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/^\w/, (x) => x.toUpperCase());
+const porNombre = (l) => l.sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { numeric: true }));
+
+/**
+ * Fase 43: en la página publicada (…github.io/<repositorio>/), si el catálogo todavía no las tiene
+ * (la acción de GitHub tarda un ratito, o no corrió), se le pregunta a GitHub qué hay en la carpeta.
+ * Se guarda 10 minutos para no preguntar de más.
+ */
+async function deGitHub() {
+  const m = /^([a-z0-9-]+)\.github\.io$/i.exec(location.hostname);
+  const repo = location.pathname.split("/").filter(Boolean)[0];
+  if (!m || !repo) return [];
+  const k = "editordev:musica-gh";
+  try { const c = JSON.parse(sessionStorage.getItem(k) || "null"); if (c && Date.now() - c.t < 10 * 60e3) return c.l; } catch (e) { /* nada */ }
+  try {
+    const r = await fetch(`https://api.github.com/repos/${m[1]}/${encodeURIComponent(repo)}/contents/EditorDev/musica`, { headers: { Accept: "application/vnd.github+json" } });
+    if (!r.ok) return [];
+    const l = porNombre((await r.json()).filter((f) => f.type === "file" && /\.(mp3|wav)$/i.test(f.name)).map((f) => ({ nombre: bonito(f.name), ruta: "EditorDev/musica/" + f.name, peso: f.size })));
+    try { sessionStorage.setItem(k, JSON.stringify({ t: Date.now(), l })); } catch (e) { /* nada */ }
+    return l;
+  } catch (e) { return []; }
+}
+
+/** Las canciones de siempre: las de la carpeta EditorDev/musica/ (del catálogo, mirando la carpeta o, publicado, a GitHub). */
 export async function musicaDeCarpeta() {
   const c = await catalogo().catch(() => ({}));
   if (c.musicaEditor?.length) return c.musicaEditor;
   const l = (await listar("EditorDev/musica/").catch(() => null)) || [];
-  return l.filter((f) => /\.(mp3|wav)$/i.test(f)).sort((a, b) => a.localeCompare(b, "es", { numeric: true }))
-    .map((f) => ({ nombre: f.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/^\w/, (x) => x.toUpperCase()), ruta: "EditorDev/musica/" + f }));
+  if (l.length) return porNombre(l.filter((f) => /\.(mp3|wav)$/i.test(f)).map((f) => ({ nombre: bonito(f), ruta: "EditorDev/musica/" + f })));
+  return deGitHub();
 }
 
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
@@ -81,7 +104,9 @@ export const AUDIO = {
         ? this._pag()("musica.volumen", { tipo: "rango", min: 0, max: 1, paso: 0.05, def: 0.85 })
         : this._proy()("ajustes.musica.volumen", { tipo: "rango", min: 0, max: 1, paso: 0.05 })) : null,
     ].filter(Boolean)));
-    // ── Tus músicas: todas, con su nombre ──
+    // ── Canciones de siempre (Fase 43): las que pones en EditorDev/musica/ de tu GitHub ──
+    const siempre = el("div.ed-rejilla-assets.lista.ed-musicas", {}, [el("p.ed-vacio-txt", { text: "Buscando las canciones de siempre…" })]);
+    // ── Tus músicas: las que subes tú ──
     const lista = el("div.ed-rejilla-assets.lista.ed-musicas", {}, [el("p.ed-vacio-txt", { text: "Buscando tus canciones…" })]);
     const fila_ = (n, url, alUsar, etiqueta) => el("div.ed-asset.ed-musica", {}, [
       this._botonEscuchar(url), el("span", { text: n }), el("small", { text: etiqueta }),
@@ -91,17 +116,19 @@ export const AUDIO = {
       const subidas = Object.values(P.assets).filter((a) => a.tipo === "audio" && a.fuente === "local").sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), "es", { numeric: true }));
       const carpeta = await musicaDeCarpeta();
       if (!lista.isConnected && this.actual !== "audio") return;
-      const filas = [
-        ...subidas.map((a) => fila_(a.nombre, () => app.bib.url(a.id), () => usar(a.id), "subida")),
-        ...carpeta.map((m) => fila_(m.nombre, () => rutaAUrl(m.ruta), () => usar(app.bib.delLibrito(m.ruta, "audio", m.nombre, { tam: m.peso }).id), "carpeta")),
-      ];
-      lista.replaceChildren(...(filas.length ? filas : [el("p.ed-vacio-txt", { text: "Todavía no hay canciones. Sube una (.mp3 o .wav) o pégala en la carpeta EditorDev/musica/." })]));
+      const filas = subidas.map((a) => fila_(a.nombre, () => app.bib.url(a.id), () => usar(a.id), "subida"));
+      const deSiempre = carpeta.map((m) => fila_(m.nombre, () => rutaAUrl(m.ruta), () => usar(app.bib.delLibrito(m.ruta, "audio", m.nombre, { tam: m.peso }).id), "de siempre"));
+      siempre.replaceChildren(...(deSiempre.length ? deSiempre : [el("p.ed-vacio-txt", { text: "Todavía no hay. Sube tus .mp3 a la carpeta EditorDev/musica/ de tu GitHub y salen aquí solas." })]));
+      lista.replaceChildren(...(filas.length ? filas : [el("p.ed-vacio-txt", { text: "Todavía no subes canciones aquí. Usa el botón de abajo (.mp3 o .wav)." })]));
     };
     pintarLista();
+    c.append(seccion("Canciones de siempre", [
+      siempre,
+      el("small.ed-ayuda", { text: "Las que pones en EditorDev/musica/ de tu GitHub: listas para usarlas en cualquier librito." }),
+    ]));
     c.append(seccion("Tus músicas", [
       lista,
       boton(I("subir", "Subir canción (.mp3 o .wav)"), async () => { const [id] = await elegir(app, "audio", { titulo: "Tus músicas" }); if (id) usar(id); this.rehacer(); }, "chico"),
-      el("small.ed-ayuda", { text: "Las que pegas en la carpeta EditorDev/musica/ salen aquí solas." }),
     ]));
     // ── Música del editor (sólo mientras editas; nunca va en la página) ──
     const AU = app.audio;

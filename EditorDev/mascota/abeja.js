@@ -109,7 +109,7 @@ export class Abeja {
     const pon = (b, k = 1) => { if (b && b.width > 2 && b.height > 2 && b.bottom > 0 && b.right > 0 && b.top < innerHeight && b.left < innerWidth) z.push({ l: b.left, t: b.top, r: b.right, b: b.bottom, k }); };
     const L = this.app.lienzo;
     if (L?.hoja && !B.contains("ed-probando")) pon(L.hoja.getBoundingClientRect());
-    for (const n of document.querySelectorAll(".ed-hoja-sec.abierta, .ed-insp.abierta, .ed-hojita.abierta, .ed-modal, .ed-menu, .ed-pop.ver, .ed-linea:not([hidden]), .jt-capa.ver, .mp-capa.ver")) pon(n.getBoundingClientRect());
+    for (const n of document.querySelectorAll(".ed-hoja-sec.abierta, .ed-insp.abierta, .ed-hojita.abierta, .ed-modal, .ed-menu, .ed-pop.ver, .ed-linea:not([hidden]), .pro-menu.abierto, .jt-capa.ver, .mp-capa.ver")) pon(n.getBoundingClientRect());
     if (B.contains("lateral-abierto")) pon(document.querySelector(".ed-lateral")?.getBoundingClientRect());
     for (const n of document.querySelectorAll(".ed-barra, .ed-contexto, .ed-riel, .ed-dock, .pro-barra, .pro-herr")) pon(n.getBoundingClientRect(), 0.25);
     return z;
@@ -145,6 +145,8 @@ export class Abeja {
       susto: [[1400, 0, 0.12, 700], [900, 0.13, 0.2, 380]],
       adios: [[1318, 0, 0.1], [988, 0.11, 0.1], [784, 0.22, 0.18]],
       zumbido: [[180, 0, 0.45, 200, "triangle", 0.35]],
+      // Una palabra: un «pip» cortito, cada uno un poquito distinto (como una vocecita).
+      palabra: [[azar(720, 1180), 0, 0.055, 0, "sine", 0.75]],
     }[tipo] || Array.from({ length: Math.max(2, Math.min(5, silabas)) }, (_, i) => [azar(820, 1250), i * 0.085, 0.07]);
     const t0 = ac.currentTime + 0.01;
     for (const [f, d, dur, hasta, forma = "sine", k = 1] of notas) {
@@ -183,6 +185,7 @@ export class Abeja {
     this.n = null;
     clearTimeout(this._t);
     clearTimeout(this._tp);
+    this._cola = [];
     this.callar();
     this.destruirGlobo();
     this._quietar(n);
@@ -337,6 +340,12 @@ export class Abeja {
    */
   async decir(texto, op = {}) {
     if (!this.n) return;
+    // Uno a la vez (Fase 43): lo que dice por su cuenta espera a que termine lo que estabas leyendo.
+    if (op.espera && this.globoVisible) {
+      this._cola = (this._cola || []).filter((x) => x[0] !== texto).slice(-1);
+      this._cola.push([texto, op]);
+      return;
+    }
     this.hablando = true;
     clearTimeout(this._t);
     clearTimeout(this._tg);
@@ -358,16 +367,21 @@ export class Abeja {
     p.setAttribute("aria-label", texto);
     const ya = el("span"), falta = el("span.falta", { text: texto });
     p.replaceChildren(ya, falta);
+    // Escribe letra por letra y suena un sonidito con cada palabra (Fase 43). Por letras de verdad
+    // (los emojis no se parten a la mitad).
+    const letras = Array.from(texto);
     let i = 0;
-    const cada = movimiento() ? 2 : texto.length;
+    const cada = movimiento() ? 1 : letras.length;
     this.n.classList.add("hablando");
     this._tecla = setInterval(() => {
-      i += cada;
-      ya.textContent = texto.slice(0, i); falta.textContent = texto.slice(i);
-      if (i >= texto.length) { clearInterval(this._tecla); this.n?.classList.remove("hablando"); }
-    }, 22);
+      const antes = i;
+      i = Math.min(letras.length, i + cada);
+      ya.textContent = letras.slice(0, i).join(""); falta.textContent = letras.slice(i).join("");
+      for (let k = antes; k < i; k++) if (/[\p{L}\p{N}]/u.test(letras[k]) && (k === 0 || !/[\p{L}\p{N}'’]/u.test(letras[k - 1]))) { this.sonar("palabra"); break; }
+      if (i >= letras.length) { clearInterval(this._tecla); this.n?.classList.remove("hablando"); }
+    }, 30);
     this.cara(op.cara || "normal", op.cara ? 2600 : 0);
-    this.sonar(op.voz || "habla", Math.ceil(texto.length / 18));
+    if (op.voz) this.sonar(op.voz);
     this._evitar = op.evitar || null;
     this._colocar();
     g.classList.add("ver");
@@ -382,7 +396,8 @@ export class Abeja {
   _colocar() {
     const g = this.g;
     if (!g || !this.n) return;
-    const w = Math.min(290, innerWidth - 24);
+    // En LovEdit, delgadito (Fase 43): hay poco espacio y lo importante es la página y las pistas.
+    const w = Math.min(document.body.classList.contains("modo-pro") ? 240 : 290, innerWidth - 24);
     // Si ya estaba abajo (la hoja hecha a un lado por él), se queda abajo: medir huecos con la hoja
     // encogida daría un «hueco» que deja de serlo en cuanto la hoja vuelve a su tamaño.
     const seguia = g.classList.contains("acomoda") && g.classList.contains("ver");
@@ -432,7 +447,10 @@ export class Abeja {
     // Centrado en el espacio de la hoja (no detrás del riel de la izquierda).
     const a = v && v.width > 200 ? v : { left: 0, width: innerWidth };
     const hh = g.offsetHeight || 110, fx = Math.round(a.left + (a.width - g.offsetWidth) / 2);
-    const fy = Math.round((v && v.bottom > 120 ? v.bottom : innerHeight - 70) - hh - 8);
+    // (En LovEdit las pistas tapan la parte de abajo de la vista: se pone justo encima de ellas.)
+    const lin = document.body.classList.contains("modo-pro") ? document.querySelector(".ed-linea:not([hidden])")?.getBoundingClientRect() : null;
+    const piso = Math.min(v && v.bottom > 120 ? v.bottom : innerHeight - 70, lin && lin.top > 120 ? lin.top : Infinity);
+    const fy = Math.round(piso - hh - 8);
     return { fx, fy, junto: { x: fx + 2, y: fy + Math.max(0, hh / 2 - 34) } };
   }
 
@@ -446,6 +464,9 @@ export class Abeja {
     if (g) { const acomodaba = g.classList.contains("acomoda"); g.classList.remove("ver", "acomoda"); if (acomodaba) dispatchEvent(new CustomEvent("ed-hoja", { detail: "abeja" })); }
     this.lupa(false);
     if (this.hablando) { this.hablando = false; if (this.n) { clearTimeout(this._t); this._t = setTimeout(() => this._vivir(), 900); } }
+    // Lo que esperaba su turno, un ratito después (para que se note que es otro diálogo).
+    clearTimeout(this._tcola);
+    if (this._cola?.length) this._tcola = setTimeout(() => { const x = this._cola?.shift(); if (x && this.n && !this.globoVisible) this.decir(x[0], x[1]); }, 1100);
   }
 
   /** Quitar el globito del todo (al irse). */

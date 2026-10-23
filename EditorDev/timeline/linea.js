@@ -432,8 +432,8 @@ export class Linea {
         pista.append(el("button.ed-tl-tcuad" + (t ? ".on" : ""), { type: "button", dataset: { k: "tr:" + pag.id, trans: pag.id }, style: { left: x0 + "px" }, title: `Transición al llegar a «${pag.nombre}»: ${t ? RT.TRANS?.[t.tipo]?.n || t.tipo : "ninguna"}`, "aria-label": "Elegir la transición", html: ico(t ? "transiciones" : "mas") }));
       }
       if (actual) {
-        const d = (pag.duracion || 0) * 1000;
-        pista.append(el("div.ed-tl-pfin" + (d ? "" : ".nada"), { dataset: { arr: "pagina-fin", k: "pfin" }, style: { transform: `translateX(${x0 + this.x(s0.dur)}px)` }, title: d ? `Pasa sola a los ${d / 1000} s · arrastra para cambiarlo` : "Pasa al tocar · arrastra para que pase sola" }, [el("i"), el("span", { text: d ? "pasa sola" : "al tocar" })]));
+        const d = (pag.duracion || 0) * 1000, espera = RT.esperaToque?.(pag);
+        pista.append(el("div.ed-tl-pfin" + (d && !espera ? "" : ".nada"), { dataset: { arr: "pagina-fin", k: "pfin" }, style: { transform: `translateX(${x0 + this.x(s0.dur)}px)` }, title: espera ? "Tiene botones: pasa cuando la tocan (no con el tiempo)" : d ? `Pasa sola a los ${d / 1000} s · arrastra para cambiarlo` : "Pasa al tocar · arrastra para que pase sola" }, [el("i"), el("span", { text: espera ? "con su botón" : d ? "pasa sola" : "al tocar" })]));
       }
     }
     const fin = this.x(this._totalG || 0);
@@ -506,13 +506,15 @@ export class Linea {
   dividirPagina() {
     const E = this.E, p = E.pagina;
     if (!p) return;
-    const t = Math.round(this.t / PASO) * PASO, total = Math.max(this._total(), (p.duracion || 0) * 1000);
+    // Lo que la página dura EN LA LÍNEA (con su mínimo de 3 s si no tiene duración): así se puede cortar
+    // otra vez la que acaba de salir de un corte, cuantas veces quieras (Fase 43).
+    const t = Math.round(this.t / PASO) * PASO, total = this._finPag(p);
     if (t < 200 || t > total - 200) { aviso("Pon el cabezal a la mitad de la página para cortarla en dos"); return; }
     const q = JSON.parse(JSON.stringify(p));
     q.id = uid("p");
     q.nombre = p.nombre.replace(/ \(\d+\)$/, "") + " (2)";
     q.transicion = { tipo: "ninguna" }; // sigue sin brinco; el cuadrito entre las dos la cambia
-    q.duracion = p.duracion ? Math.max(0, Math.round((p.duracion * 1000 - t) / 100) / 10) : 0;
+    q.duracion = Math.max(0.2, Math.round((total - t) / 100) / 10);
     const mapa = {}, quedan = [];
     q.els = [];
     for (const e of p.els) {
@@ -1367,6 +1369,12 @@ export class Linea {
   _siguiente() {
     const P = this.E.proyecto, pid = P.orden[P.orden.indexOf(this.E.paginaId) + 1];
     if (!pid) return false;
+    // Una página con botones espera el toque (como en el librito): aquí se queda hasta que sigas tú.
+    if (RT.esperaToque?.(this.E.pagina)) {
+      if (!this._avisoToque || this._avisoToque !== this.E.paginaId) aviso("Esta página tiene botones: en el librito espera que la toquen. Dale ▶ para seguir", 3200);
+      this._avisoToque = this.E.paginaId;
+      return false;
+    }
     const L = this.app.lienzo, viejo = this._fotoHoja(L);
     const seg = (this._segs || []).find((x) => x.pid === pid);
     this.E.irPagina(pid);

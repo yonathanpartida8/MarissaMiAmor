@@ -2631,18 +2631,7 @@ body.modo-pro :is(.ed-tl-filas, .ed-tl-audios, .ed-tl-fmus) .ed-tl-pista { margi
 .ed-hoja.transicionando { overflow: hidden; }
 .ed-hoja > .ed-hoja-sale { pointer-events: none; }
 
-/* Fase 41: la pestañita de LovEdit y el menú por la izquierda, sobre las pistas (la página siempre a la vista). */
-.pro-asa { display: none; }
-@media (max-width: 1023px) {
-  body.modo-pro { --riel-pro: 54px; }
-  body.modo-pro .pro-asa { display: flex; flex-direction: column; justify-content: center; gap: 3px; position: fixed; z-index: 95; left: 0; bottom: calc(var(--cb) + var(--tl) * .5 - 34px); width: 20px; height: 68px; padding: 0 0 0 5px; border: 0; border-radius: 0 14px 14px 0; background: linear-gradient(180deg, #ff8fbf, #b49cff); box-shadow: 4px 0 16px rgba(255, 143, 191, .35); cursor: grab; touch-action: none; transition: transform .2s, opacity .2s; }
-  body.modo-pro .pro-asa i { display: block; width: 3px; height: 14px; border-radius: 2px; background: rgba(255, 255, 255, .9); }
-  body.modo-pro .pro-asa i:nth-child(2) { height: 20px; }
-  body.modo-pro.lateral-abierto .pro-asa { left: calc(var(--riel-pro) + min(330px, 100vw - var(--riel-pro) - 36px)); }
-  body.modo-pro.lateral-abierto .ed-riel { display: flex !important; position: fixed; z-index: 97; left: 0; top: auto; bottom: var(--cb); height: var(--tl); width: var(--riel-pro); padding: 6px 2px; background: #111; border-right: 1px solid #262626; overflow-y: auto; animation: pro-lado .22s cubic-bezier(.22, .8, .26, 1); }
-  body.modo-pro.lateral-abierto .ed-riel button { color: #ddd; }
-  body.modo-pro.lateral-abierto .ed-riel button.on { color: #fff; }
-}
+/* (Fase 43: la pestañita de LovEdit se fue; su menú ahora es `.pro-menu`, abajo.) */
 @keyframes pro-lado { from { transform: translateX(-60%); opacity: 0; } }
 
 /* Fase 41: publicar con tu enlace propio, la tarjeta para compartir, el QR y el enlace a cada página. */
@@ -2735,3 +2724,67 @@ body:is(.modo-pro, .ed-probando) .ed-pestana { display: none; }
 .ed-abeja.hablando .ab-c-ojos { animation: ab-habla .18s ease-in-out infinite alternate; }
 @keyframes ab-habla { to { transform: scaleY(.92) translateY(1px); } }
 body.ed-mov-nada .ed-abeja .ab-capa { animation: none !important; transition: none; }
+
+/* ═══ Fase 43: LovEdit — el menú de todas las herramientas, la página arriba y más para editar ═══
+   El menú sale de la izquierda (con «Menú» o deslizando desde la orilla), ENCIMA DE LAS PISTAS: la página
+   de arriba se sigue viendo. Ancho completo, letras y fichas de tamaño normal (nada achicado). Cerrado,
+   no queda nada asomado. */
+.pro-menu, .pro-borde { display: none; }
+body.modo-pro .pro-menu:not([hidden]) { display: flex; }
+body.modo-pro .pro-menu { flex-direction: column; position: fixed; z-index: 98; left: 0; right: 0; bottom: var(--cb); height: calc(var(--tl) + 6px); max-width: 720px; background: #121212; color: #f2f2f2; border-top: 1px solid #2a2a2a; border-right: 1px solid #2a2a2a; border-radius: 0 18px 0 0; box-shadow: 18px 0 40px rgba(0, 0, 0, .55); transform: translate3d(-100%, 0, 0); will-change: transform; touch-action: pan-y; }
+body.modo-pro .pro-menu.anim { transition: transform .32s cubic-bezier(.22, .8, .26, 1); }
+.pro-menu-cab { display: flex; align-items: center; gap: 6px; flex: none; padding: 8px 8px 6px; border-bottom: 1px solid #222; }
+.pro-menu-todo, .pro-menu-x { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 12px; background: #1f1f1f; color: #fff; }
+.pro-menu-todo .ed-ico, .pro-menu-x .ed-ico { width: 20px; height: 20px; }
+.pro-menu[data-vista="todo"] .pro-menu-todo { background: linear-gradient(135deg, #ff8fbf, #b49cff); color: #1a0d16; }
+.pro-menu-chips { display: flex; gap: 6px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 16px), transparent); }
+.pro-menu-chips::-webkit-scrollbar { display: none; }
+.pro-chip { flex: none; display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 0; border-radius: 99px; background: #1f1f1f; color: #e8e8e8; font: 500 13.5px/1 Jost, system-ui, sans-serif; white-space: nowrap; scroll-snap-align: center; }
+.pro-chip i, .pro-chip .ed-ico { display: grid; place-items: center; width: 17px; height: 17px; }
+.pro-chip.on { background: #fff; color: #111; }
+.pro-menu-cuerpo { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 10px 12px calc(16px + env(safe-area-inset-bottom)); background: var(--superficie); color: var(--texto); border-radius: 14px 14px 0 0; }
+.pro-menu[data-vista="todo"] .pro-menu-cuerpo { background: #121212; color: #eee; }
+.pro-menu-t { margin: 2px 2px 10px; font: 600 14px/1.2 Jost, system-ui, sans-serif; color: #bdbdbd; letter-spacing: .2px; }
+.pro-menu-rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; }
+.pro-menu-ficha { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; aspect-ratio: 1; padding: 8px 4px; border: 0; border-radius: 18px; background: #1d1d1d; color: #f2f2f2; font: 500 12.5px/1.15 Jost, system-ui, sans-serif; text-align: center; box-shadow: inset 0 0 0 1px #2b2b2b; transition: transform .2s var(--resorte, ease), background .2s; }
+.pro-menu-ficha i, .pro-menu-ficha .ed-ico { display: grid; place-items: center; width: 26px; height: 26px; color: #ff9fc8; }
+.pro-menu-ficha:active { transform: scale(.94); background: #262626; }
+@media (hover: hover) { .pro-menu-ficha:hover { background: #262626; } }
+.pro-menu-rejilla > * { animation: pro-ficha .34s cubic-bezier(.3, 1.3, .5, 1) both; }
+.pro-menu-rejilla > :nth-child(n+5) { animation-delay: .03s; } .pro-menu-rejilla > :nth-child(n+9) { animation-delay: .06s; } .pro-menu-rejilla > :nth-child(n+13) { animation-delay: .09s; } .pro-menu-rejilla > :nth-child(n+17) { animation-delay: .12s; }
+@keyframes pro-ficha { from { opacity: 0; transform: translateY(10px) scale(.92); } }
+:where(body.ed-mov-nada) .pro-menu-rejilla > * { animation: none; }
+/* La orilla izquierda: deslizar desde ahí abre el menú (invisible, sobre las pistas). */
+body.modo-pro .pro-borde { display: block; position: fixed; z-index: 96; left: 0; width: 18px; bottom: var(--cb); height: var(--tl); touch-action: none; }
+body.modo-pro.pro-menu-abierto .pro-borde { display: none; }
+/* Abajo: un poco más grandes, que se lean bien; «Menú» con su colorcito. */
+body.modo-pro .pro-b { min-width: 64px; height: 56px; font-size: 11.5px; }
+body.modo-pro .pro-b .ed-ico { width: 23px; height: 23px; }
+body.modo-pro .pro-b.menu { color: #fff; }
+body.modo-pro .pro-b.menu i { width: 34px; height: 26px; border-radius: 9px; background: linear-gradient(135deg, #ff8fbf, #b49cff); color: #1a0d16; }
+body.modo-pro .pro-b.menu.on i { box-shadow: 0 0 0 2px #fff; }
+.pro-herr { scroll-snap-type: x proximity; }
+.pro-herr > .pro-b { scroll-snap-align: start; }
+.ed-menu small.pro-menu-sub { display: block; padding: 2px 0; color: var(--texto-suave); font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; }
+.ed-menu button b { margin-left: auto; padding-left: 10px; color: var(--acento); }
+/* Centrar la página (en la fila del reproductor). */
+body.modo-pro .pro-dh .pro-centrar { color: #ff9fc8; }
+/* La página va hasta arriba (como el video principal en CapCut) y lo demás abajo; al bajar por las pistas,
+   la regla y la página se quedan a la vista. */
+body.modo-pro .ed-tl-grupo:not(.ed-tl-audios) { order: 1; position: sticky; top: 24px; z-index: 4; background: #000; }
+body.modo-pro .ed-tl-filas { order: 2; }
+body.modo-pro .ed-tl-fregla { position: sticky; top: 0; z-index: 5; }
+/* Fase 43: Estilo de la página — colores redonditos y degradados como fichas. */
+.ed-estilo-colores { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 10px; margin: 4px 0 10px; }
+.ed-estilo-colores button { aspect-ratio: 1; min-height: 36px; padding: 0; border: 1.5px solid rgba(0, 0, 0, .12); border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .5); transition: transform .2s var(--resorte, ease); }
+.ed-estilo-colores button.on { box-shadow: 0 0 0 2.5px var(--superficie), 0 0 0 4.5px var(--acento); transform: scale(1.06); }
+.ed-estilo-degs { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.ed-estilo-degs button { position: relative; height: 62px; padding: 0; border: 0; border-radius: 14px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08); overflow: hidden; transition: transform .2s var(--resorte, ease); }
+.ed-estilo-degs button small { position: absolute; left: 6px; bottom: 5px; padding: 1px 6px; border-radius: 99px; background: rgba(255, 255, 255, .78); color: #3a2440; font: 600 10.5px/1.4 Jost, sans-serif; }
+.ed-estilo-degs button.on { box-shadow: 0 0 0 2.5px var(--superficie), 0 0 0 4.5px var(--acento); }
+.ed-estilo-colores button:active, .ed-estilo-degs button:active { transform: scale(.94); }
+/* Fase 43: en LovEdit, el globito de la abejita es delgadito (y nunca tapa la página ni las pistas). */
+body.modo-pro .ed-abeja-globo { max-width: min(240px, calc(100vw - 24px)); padding: 6px 10px 5px; border-width: 1.5px; border-radius: 14px; }
+body.modo-pro .ed-abeja-globo p { min-height: 0; margin: 0 0 3px; font-size: 13.5px; line-height: 1.25; }
+body.modo-pro .ed-abeja-globo .ed-abeja-pie { zoom: .82; }
+body.modo-pro .ed-abeja-globo.acomoda { max-width: calc(100vw - 16px); padding-left: 60px; }

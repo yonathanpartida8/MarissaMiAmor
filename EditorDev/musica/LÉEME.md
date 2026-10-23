@@ -1,11 +1,24 @@
-# Música para el editor
+# Canciones de siempre (y música para el editor)
 
-Pega aquí tus canciones **.mp3** o **.wav** (puedes hacer subcarpetas). El editor las detecta
-solas, sin tocar el código: al subirlas al repositorio, la acción de GitHub (o
-`node herramientas/contenido.mjs`) las agrega al catálogo; y mientras pruebas en tu compu, el
-editor también mira esta carpeta directo.
+Pon aquí tus canciones **.mp3** o **.wav**. Salen solas en el editor, en **Músicas → Canciones de
+siempre**, listas para usarlas en cualquier librito (en una página o en todo el librito).
 
-En el editor salen en **Sonidos**, con su nombre, para dos cosas que nunca se mezclan:
+## Desde GitHub (sin compu)
+
+1. Abre tu repositorio en GitHub y entra a la carpeta `EditorDev/musica/`.
+2. **Add file → Upload files** y arrastra tus canciones.
+3. **Commit changes**.
+
+Listo: la acción de GitHub «Lista de contenido» las agrega al catálogo en un minutito. Y mientras
+tanto, el editor publicado (…github.io/…) le pregunta directo a GitHub qué canciones hay, así que
+aparecen aunque la acción todavía no termine.
+
+## Desde tu compu
+
+Pégalas en esta carpeta (puedes hacer subcarpetas) y `node herramientas/contenido.mjs` las agrega al
+catálogo; mientras pruebas en tu compu, el editor también mira la carpeta directo.
+
+## Para qué sirven
 
 - **Música de la página**: la que suena en la página que estás creando (y en el librito).
 - **Música del editor**: la que suena mientras editas (sólo para ti; nunca va en la página).
