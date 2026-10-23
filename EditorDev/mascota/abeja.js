@@ -23,21 +23,21 @@ import { R, cuandoActivo } from "../components/rendimiento.js";
 import { el } from "../../src/utils/dom.js";
 import { PREF, movimiento } from "../config/preferencias.js";
 
-const DIBUJO = `<svg viewBox="0 0 80 74" aria-hidden="true">
+/* Fase 42: por capas. Lo que se mueve todo el tiempo (alitas, antenas, patitas y ojitos) va en su
+   propia capa y se anima la capa entera: el navegador la mueve sin recalcular nada. Animado por dentro
+   del SVG, cada cuadro obligaba a recalcular estilos y diseño de la pantalla (y más aún al mover el dedo). */
+const DIBUJO = `<svg class="ab-capa ab-c-ala ab-c-ala-i" viewBox="0 0 80 74" aria-hidden="true"><ellipse class="ab-ala" cx="26" cy="25" rx="11" ry="15" transform="rotate(-24 26 25)"/></svg>
+<svg class="ab-capa ab-c-ala ab-c-ala-d" viewBox="0 0 80 74" aria-hidden="true"><ellipse class="ab-ala" cx="54" cy="25" rx="11" ry="15" transform="rotate(24 54 25)"/></svg>
+<svg class="ab-capa ab-c-patas" viewBox="0 0 80 74" aria-hidden="true"><path class="ab-patas" d="M33.5 63.5q-1.2 3.6-3.6 5M46.5 63.5q1.2 3.6 3.6 5" fill="none" stroke="#4a3320" stroke-width="2" stroke-linecap="round"/></svg>
+<svg class="ab-capa ab-c-cuerpo" viewBox="0 0 80 74" aria-hidden="true">
 <defs>
   <radialGradient id="ab-cuerpo" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="#fff3a6"/><stop offset=".55" stop-color="#ffd23f"/><stop offset="1" stop-color="#f4a71d"/></radialGradient>
   <linearGradient id="ab-ala-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".95"/><stop offset=".55" stop-color="#dcefff" stop-opacity=".72"/><stop offset="1" stop-color="#ffd3ea" stop-opacity=".62"/></linearGradient>
   <clipPath id="ab-recorte"><circle cx="40" cy="44" r="22"/></clipPath>
 </defs>
-<g class="ab-alas">
-  <ellipse class="ab-ala ab-ala-i" cx="26" cy="25" rx="11" ry="15" transform="rotate(-24 26 25)"/>
-  <ellipse class="ab-ala ab-ala-d" cx="54" cy="25" rx="11" ry="15" transform="rotate(24 54 25)"/>
-</g>
+
 <path class="ab-tallos" d="M33 25q-5-9-8-15M47 25q5-9 8-15" fill="none" stroke="#4a3320" stroke-width="2" stroke-linecap="round"/>
 <g class="ab-lupa"><path d="M57 58l7 8" stroke="#7a4a1f" stroke-width="3.4" stroke-linecap="round"/><circle cx="54" cy="53" r="8" fill="rgba(210,236,255,.55)" stroke="#4a3320" stroke-width="2.2"/><path d="M50 50q2-2.5 5-2.5" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8"/></g>
-<path class="ab-antena" d="M25 10c-3-3-7 1-3 4l3 3 3-3c4-3 0-7-3-4z" fill="#ff7aa2"/>
-<path class="ab-antena" d="M55 10c-3-3-7 1-3 4l3 3 3-3c4-3 0-7-3-4z" fill="#ff7aa2"/>
-<path class="ab-patas" d="M33.5 63.5q-1.2 3.6-3.6 5M46.5 63.5q1.2 3.6 3.6 5" fill="none" stroke="#4a3320" stroke-width="2" stroke-linecap="round"/>
 <path d="M40 70l-3.5-5h7z" fill="#4a3320"/>
 <circle cx="40" cy="44" r="22" fill="url(#ab-cuerpo)"/>
 <g class="ab-rayas" clip-path="url(#ab-recorte)" fill="#4a3320" opacity=".9"><rect x="14" y="54" width="52" height="5" rx="2.5"/><rect x="14" y="61.5" width="52" height="4" rx="2"/></g>
@@ -45,7 +45,7 @@ const DIBUJO = `<svg viewBox="0 0 80 74" aria-hidden="true">
 <ellipse class="ab-luz" cx="31" cy="31.5" rx="7.5" ry="3.6" transform="rotate(-28 31 31.5)" fill="#fff" opacity=".5"/>
 <circle cx="49" cy="29.5" r="1.4" fill="#fff" opacity=".7"/>
 <g class="ab-cara">
-  <g data-o="normal" class="ab-ojos-n"><ellipse cx="32" cy="41" rx="3.4" ry="4.2" fill="#2b1d12"/><ellipse cx="48" cy="41" rx="3.4" ry="4.2" fill="#2b1d12"/><circle cx="33.3" cy="39.3" r="1.4" fill="#fff"/><circle cx="49.3" cy="39.3" r="1.4" fill="#fff"/><circle cx="31.2" cy="43" r=".6" fill="#fff"/><circle cx="47.2" cy="43" r=".6" fill="#fff"/></g>
+  
   <g data-o="feliz" fill="none" stroke="#2b1d12" stroke-width="2.2" stroke-linecap="round"><path d="M28.5 42q3.5-5 7 0M44.5 42q3.5-5 7 0"/></g>
   <g data-o="guino"><ellipse cx="32" cy="41" rx="3.4" ry="4.2" fill="#2b1d12"/><circle cx="33.3" cy="39.3" r="1.4" fill="#fff"/><path d="M44.5 41.5q3.5 3 7 0" fill="none" stroke="#2b1d12" stroke-width="2.2" stroke-linecap="round"/></g>
   <g data-o="corazon" fill="#ff4f7f"><path d="M32 45l-4-4c-2-2 0-5 2.2-4l1.8 1.3 1.8-1.3c2.2-1 4.2 2 2.2 4z"/><path d="M48 45l-4-4c-2-2 0-5 2.2-4l1.8 1.3 1.8-1.3c2.2-1 4.2 2 2.2 4z"/></g>
@@ -63,7 +63,10 @@ const DIBUJO = `<svg viewBox="0 0 80 74" aria-hidden="true">
     <g class="ab-mono" stroke="#17100b" stroke-width="1" stroke-linejoin="round"><path d="M40 24.5l-8.5-5.2q-2 4.6 0 9.6z" fill="#d6b48c"/><path d="M40 24.5l8.5-5.2q2 4.6 0 9.6z" fill="#d6b48c"/><circle cx="40" cy="24.5" r="2.3" fill="#a3101c"/><g fill="#17100b" stroke="none"><circle cx="34" cy="22.6" r=".9"/><circle cx="35.6" cy="26.4" r=".8"/><circle cx="46" cy="22.6" r=".9"/><circle cx="44.4" cy="26.4" r=".8"/></g></g>
   </g>
 </g>
-</svg>`;
+</svg>
+<svg class="ab-capa ab-c-antena ab-c-antena-i" viewBox="0 0 80 74" aria-hidden="true"><path d="M25 10c-3-3-7 1-3 4l3 3 3-3c4-3 0-7-3-4z" fill="#ff7aa2"/></svg>
+<svg class="ab-capa ab-c-antena ab-c-antena-d" viewBox="0 0 80 74" aria-hidden="true"><path d="M55 10c-3-3-7 1-3 4l3 3 3-3c4-3 0-7-3-4z" fill="#ff7aa2"/></svg>
+<svg class="ab-capa ab-c-ojos" viewBox="0 0 80 74" aria-hidden="true"><g data-o="normal" class="ab-ojos-n"><ellipse cx="32" cy="41" rx="3.4" ry="4.2" fill="#2b1d12"/><ellipse cx="48" cy="41" rx="3.4" ry="4.2" fill="#2b1d12"/><circle cx="33.3" cy="39.3" r="1.4" fill="#fff"/><circle cx="49.3" cy="39.3" r="1.4" fill="#fff"/><circle cx="31.2" cy="43" r=".6" fill="#fff"/><circle cx="47.2" cy="43" r=".6" fill="#fff"/></g></svg>`;
 
 /** El dibujo de la abejita (para avisos fuera de su globito, como en «Probar»). */
 export const DIBUJO_ABEJA = DIBUJO;
@@ -87,8 +90,14 @@ export class Abeja {
         pend = null;
         if (!this.n) return;
         const cx = this.pos.x + 36, cy = this.pos.y + 32, dx = e.clientX - cx, dy = e.clientY - cy, d = Math.hypot(dx, dy) || 1, k = Math.min(1, d / 160);
-        this.n.style.setProperty("--mx", ((dx / d) * 1.8 * k).toFixed(2) + "px");
-        this.n.style.setProperty("--my", ((dy / d) * 1.5 * k).toFixed(2) + "px");
+        // Sólo se mueve la capita de los ojos (cambiar una variable de toda la abejita la recalculaba entera),
+        // y sólo si de verdad cambió (menos de un cuarto de píxel no se nota).
+        const o = this._ojos?.isConnected ? this._ojos : (this._ojos = this.n.querySelector(".ab-c-ojos"));
+        if (!o) return;
+        const x = Math.round((dx / d) * 1.8 * k * 4) / 4, y = Math.round((dy / d) * 1.5 * k * 4) / 4;
+        if (x === this._mx && y === this._my) return;
+        this._mx = x; this._my = y;
+        o.style.translate = `${x}px ${y}px`;
       });
     }, { passive: true });
   }
@@ -164,6 +173,7 @@ export class Abeja {
     n.querySelector(".ed-abeja-cuerpo").animate([{ opacity: 0, scale: 0.2, rotate: "-40deg" }, { opacity: 1, scale: 1.18, rotate: "8deg", offset: 0.65 }, { opacity: 1, scale: 1, rotate: "0deg" }], { duration: 520, easing: "cubic-bezier(.3,1.4,.5,1)" });
     this.sonar("hola");
     this.chispas(7);
+    this._parpadear();
     return this.volarA(this.casa(), 760).then(() => this._vivir());
   }
 
@@ -172,6 +182,7 @@ export class Abeja {
     if (!n) return;
     this.n = null;
     clearTimeout(this._t);
+    clearTimeout(this._tp);
     this.callar();
     this.destruirGlobo();
     this._quietar(n);
@@ -261,6 +272,19 @@ export class Abeja {
     else if (r < 0.9) { this._clase("baila", 1300); otra(2400); }
     else if (r < 0.95) { this._clase("mira", 1600); this.cara("sorpresa", 900); otra(2400); }
     else { if (Math.random() < 0.4) this.sonar("zumbido"); this.cara(Math.random() < 0.5 ? "guino" : "enamorada", 1400); otra(azar(1600, 2600)); }
+  }
+
+  /** Parpadea de vez en cuando (a veces dos seguiditos). Una animación cortita cada pocos segundos, no
+   *  un bucle infinito: el parpadeo en bucle hacía recalcular la pantalla 60 veces por segundo. */
+  _parpadear() {
+    clearTimeout(this._tp);
+    if (!this.n) return;
+    this._tp = setTimeout(() => {
+      const o = this.n?.querySelector(".ab-c-ojos");
+      const uno = () => o?.animate([{ transform: "scaleY(1)" }, { transform: "scaleY(.08)", offset: 0.45 }, { transform: "scaleY(1)" }], { duration: 170, easing: "ease-in-out" });
+      if (o && movimiento() && !document.hidden && !R.reposo && !R.ahorro) { uno(); if (Math.random() < 0.2) setTimeout(uno, 260); }
+      this._parpadear();
+    }, azar(2600, 5600));
   }
 
   saltito() { this._clase("salta", 600); }

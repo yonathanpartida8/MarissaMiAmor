@@ -44,6 +44,7 @@ import { BLOQUES } from "./secciones/bloques.js";
 import { TOQUES_SEC } from "./toques.js";
 import { PUBLICADAS } from "./secciones/publicadas.js";
 import * as GIF from "../integraciones/giphy.js";
+import { miniatura } from "../assets/miniaturas.js";
 
 const RT = window.LibritoRT;
 const FUENTES = Object.keys(RT.FUENTES).map((f) => [f, f]);
@@ -141,7 +142,7 @@ export class Paneles {
       adornos, btnLapiz, opLapiz,
     ]));
     catalogo().then((cat) => {
-      for (const g of cat.categorias) for (const it of g.items) if (it.tipo === "imagen") adornos.append(el("button.ed-asset", { type: "button", title: `${it.nombre} · ${g.nombre}`, onClick: () => A.imagenCatalogo(it) }, [el("img", { src: rutaAUrl(it.ruta), loading: "lazy", decoding: "async", alt: "", draggable: "false" })]));
+      for (const g of cat.categorias) for (const it of g.items) if (it.tipo === "imagen") adornos.append(el("button.ed-asset", { type: "button", title: `${it.nombre} · ${g.nombre}`, onClick: () => A.imagenCatalogo(it) }, [miniatura(rutaAUrl(it.ruta))]));
     });
     const marcos = [["polaroid", "Polaroid"], ["cinta", "Con cinta"], ["washi", "Washi"], ["vintage", "Vintage"], ["sello", "Sello"], ["doble", "Doble"]];
     c.append(seccion("Marcos", [

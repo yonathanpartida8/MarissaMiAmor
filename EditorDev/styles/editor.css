@@ -1484,8 +1484,6 @@ body.ed-sin-efectos .ed-hoja .rt-c { filter: none !important; }
 body.ed-mov-nada .ed-abeja-in, body.ed-mov-nada .ed-abeja .ab-ala { animation: none !important; }
 @keyframes ed-ab-flota { 0%, 100% { translate: 0 0; rotate: -3deg; } 50% { translate: 0 calc(-7px * var(--anim-k, 1)); rotate: 3deg; } }
 @keyframes ed-ab-ala { to { transform: scaleY(.4) rotate(-4deg); } }
-@keyframes ed-ab-antena { 50% { transform: rotate(-10deg); } }
-@keyframes ed-ab-parpadeo { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
 @keyframes ed-ab-late { 50% { transform: scale(1.18); } }
 @keyframes ed-ab-habla { to { transform: scaleY(.92) translateY(1px); } }
 @keyframes ed-ab-salta { 40% { transform: translateY(-14px) scale(1.06, .94); } 70% { transform: translateY(2px) scale(.96, 1.05); } }
@@ -2668,19 +2666,72 @@ body.modo-pro :is(.ed-tl-filas, .ed-tl-audios, .ed-tl-fmus) .ed-tl-pista { margi
 
 /* ═══ Fase 41: la abejita — ojos que te siguen, parpadeo, baile, lupa y globito que nunca tapa ═══ */
 .ed-abeja { z-index: 72; }
-.ed-abeja .ab-ojos-n { translate: var(--mx, 0px) var(--my, 0px); transition: translate .14s ease-out; transform-box: fill-box; transform-origin: center; animation: ed-ab-parpadeo 4.6s infinite; }
-@keyframes ed-ab-parpadeo { 0%, 94%, 100% { scale: 1 1; } 96% { scale: 1 .08; } }
+/* (Fase 42: dentro del dibujo SVG sólo se anima `transform`: con `scale`/`rotate`/`translate` sueltos el
+   navegador recalculaba estilos y diseño 60 veces por segundo — 150 ms de cada segundo con el editor quieto.
+   La mirada va en su grupito de afuera; el parpadeo, en el de adentro.) */
+.ed-abeja .ab-ojos-n { transform-box: fill-box; transform-origin: center; animation: ed-ab-parpadeo 4.6s infinite; }
+@keyframes ed-ab-parpadeo { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.08); } }
 .ed-abeja .ab-lupa { display: none; }
 .ed-abeja[data-lupa] .ab-lupa { display: inline; transform-box: fill-box; transform-origin: 20% 80%; animation: ed-ab-lupa 1.2s ease-in-out infinite; }
-@keyframes ed-ab-lupa { 0%, 100% { rotate: -8deg; translate: 0 0; } 50% { rotate: 10deg; translate: -3px 1px; } }
+@keyframes ed-ab-lupa { 0%, 100% { transform: rotate(-8deg); } 50% { transform: translate(-3px, 1px) rotate(10deg); } }
 .ed-abeja-in.baila { animation: ed-ab-baila 1.3s ease-in-out; }
 @keyframes ed-ab-baila { 0%, 100% { transform: none; } 15% { transform: translateY(-8px) rotate(-14deg); } 35% { transform: translateY(0) rotate(12deg) scale(1.08); } 55% { transform: translateY(-10px) rotate(-10deg); } 75% { transform: rotate(360deg) scale(1.1); } }
 .ed-abeja-in.mira { animation: ed-ab-mira 1.6s ease-in-out; }
 @keyframes ed-ab-mira { 0%, 100% { transform: none; } 25% { transform: rotate(-14deg) translateX(-4px); } 60% { transform: rotate(14deg) translateX(4px); } }
 .ed-abeja .ab-antena { transform-box: fill-box; transform-origin: 50% 100%; animation: ed-ab-antena 2.8s ease-in-out infinite; }
-@keyframes ed-ab-antena { 0%, 100% { rotate: 0deg; } 50% { rotate: 12deg; } }
+@keyframes ed-ab-antena { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(12deg); } }
 .ed-abeja-globo.acomoda { max-width: calc(100vw - 16px); padding-left: 78px; border-radius: 20px; }
 .ed-abeja-globo.acomoda::after { display: none; }
 .ed-abeja-globo .ed-abeja-nivel { display: inline-block; margin: 0 6px 0 0; padding: 2px 8px; border-radius: 99px; font: 800 11px/1.4 Jost, sans-serif; vertical-align: 2px; }
 .ed-abeja-nivel.mal { background: #ffe1e6; color: #c63a54; } .ed-abeja-nivel.ojo { background: #fff2cf; color: #9a6a00; } .ed-abeja-nivel.idea { background: #e7f0ff; color: #3d6fc4; }
 body.ed-mov-nada .ed-abeja :is(.ab-ojos-n, .ab-antena, .ab-lupa) { animation: none !important; }
+
+/* ═══ Fase 42: vuelve la pestañita de la izquierda (editor de páginas) ═══
+   En el teléfono va pegada al riel: tócala o jálala y el cajón sale siguiendo tu dedo; ella viaja en su
+   orilla y otro toque lo cierra. En la compu pliega o despliega el panel. */
+.ed-pestana { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; position: fixed; z-index: 60; left: calc(var(--riel) + var(--panel)); top: calc(50% - 34px); width: 18px; height: 68px; padding: 0 2px 0 0; border: 0; border-radius: 0 14px 14px 0; background: linear-gradient(180deg, #ff8fbf, #b49cff); box-shadow: 4px 2px 14px rgba(224, 85, 142, .3); cursor: pointer; touch-action: none; transition: left .26s cubic-bezier(.22, .8, .26, 1), width .2s, box-shadow .2s, opacity .2s; animation: ed-pestana-hola 1.4s 1.2s cubic-bezier(.3, 1.5, .5, 1) both; }
+.ed-pestana i { display: block; width: 3px; height: 13px; border-radius: 2px; background: rgba(255, 255, 255, .92); transition: transform .3s cubic-bezier(.3, 1.5, .5, 1), height .2s; }
+.ed-pestana i:nth-child(2) { height: 19px; }
+body.sin-panel .ed-pestana { left: var(--riel); }
+@media (hover: hover) { .ed-pestana:hover { width: 22px; box-shadow: 6px 2px 18px rgba(224, 85, 142, .42); } }
+.ed-pestana:active { cursor: grabbing; }
+.ed-pestana:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+/* Abierta: las rayitas se inclinan como una flechita «‹» para cerrar. */
+.ed-pestana.abierta i:nth-child(1), body.ed:not(.sin-panel) .ed-pestana.compu i:nth-child(1) { transform: translateY(2px) rotate(28deg); height: 11px; }
+.ed-pestana.abierta i:nth-child(3), body.ed:not(.sin-panel) .ed-pestana.compu i:nth-child(3) { transform: translateY(-2px) rotate(-28deg); height: 11px; }
+.ed-pestana.abierta i:nth-child(2), body.ed:not(.sin-panel) .ed-pestana.compu i:nth-child(2) { height: 0; }
+body:is(.modo-pro, .ed-probando) .ed-pestana { display: none; }
+@keyframes ed-pestana-hola { 0% { translate: -18px 0; opacity: 0; } 45% { translate: 0 0; opacity: 1; } 62% { translate: 6px 0; } 78% { translate: 0 0; } 88% { translate: 3px 0; } 100% { translate: 0 0; opacity: 1; } }
+:where(body.ed-mov-nada, html.rd-ahorro) .ed-pestana { animation: none; }
+@media (prefers-reduced-motion: reduce) { .ed-pestana { animation: none; } }
+@media (max-width: 1023px) {
+  .ed-pestana, body.sin-panel .ed-pestana { left: var(--riel); top: calc(var(--barra) + (100% - var(--barra) - var(--cb)) / 2 - 34px); z-index: 82; transition: width .2s, box-shadow .2s, opacity .2s; will-change: transform; }
+  .ed-pestana.anim { transition: transform .32s cubic-bezier(.22, .8, .26, 1), width .2s, opacity .2s; }
+  /* Con una hojita o el inspector abiertos (tapan la mitad de abajo), se hace a un lado. */
+  body:is(.con-hoja-sec, [data-hoja]) .ed-pestana:not(.abierta) { opacity: 0; pointer-events: none; }
+}
+
+/* ═══ Fase 42: la abejita por capas ═══
+   Alitas, antenas, patitas y ojitos van cada uno en su capa (un <svg> encima de otro, con el mismo lienzo)
+   y se anima la capa entera: eso lo mueve la tarjeta de video sin recalcular nada. Antes se animaban por
+   dentro del dibujo y, cada vez que algo cambiaba en pantalla (mover el dedo, arrastrar), obligaban a
+   recalcular el diseño en cada cuadro. Ahora las alitas salen parejitas desde los hombros. */
+.ed-abeja-cuerpo, .ed-abeja.ed-abeja-mini { position: relative; }
+.ed-abeja .ab-capa { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.ed-abeja .ab-capa :is(.ab-ala, .ab-patas, .ab-ojos-n) { animation: none; transform-box: view-box; transform-origin: 0 0; }
+.ed-abeja .ab-c-ala-i { transform-origin: 42.5% 46%; animation: ab-aletea-i .075s ease-in-out infinite alternate; }
+.ed-abeja .ab-c-ala-d { transform-origin: 57.5% 46%; animation: ab-aletea-d .075s ease-in-out infinite alternate; }
+@keyframes ab-aletea-i { from { transform: rotate(5deg); } to { transform: rotate(-9deg) scaleY(.55); } }
+@keyframes ab-aletea-d { from { transform: rotate(-5deg); } to { transform: rotate(9deg) scaleY(.55); } }
+.ed-abeja .ab-c-patas { transform-origin: 50.25% 85.8%; animation: ab-patitas 1.2s ease-in-out infinite; }
+@keyframes ab-patitas { 50% { transform: rotate(6deg); } }
+.ed-abeja .ab-c-antena-i { transform-origin: 31.25% 23%; animation: ab-antena-i 2.8s ease-in-out infinite; }
+.ed-abeja .ab-c-antena-d { transform-origin: 68.75% 23%; animation: ab-antena-d 2.8s ease-in-out infinite; }
+@keyframes ab-antena-i { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-12deg); } }
+@keyframes ab-antena-d { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(12deg); } }
+/* Los ojitos: te siguen (translate) y, mientras escribe, se mueven con la carita. El parpadeo lo pone
+   abeja.js de vez en cuando (en bucle, aun en su capa, recalculaba la pantalla 60 veces por segundo). */
+.ed-abeja .ab-c-ojos { transform-origin: 50% 55.4%; transition: translate .14s ease-out; }
+.ed-abeja.hablando .ab-c-ojos { animation: ab-habla .18s ease-in-out infinite alternate; }
+@keyframes ab-habla { to { transform: scaleY(.92) translateY(1px); } }
+body.ed-mov-nada .ed-abeja .ab-capa { animation: none !important; transition: none; }

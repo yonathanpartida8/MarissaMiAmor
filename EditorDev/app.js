@@ -186,7 +186,30 @@ async function arrancar() {
   app.pro = new ModoPro(app); // la línea de tiempo, como un editor de vídeo (Fase 38)
   app.juntitos = new Juntitos(app); // Cositas Juntitos: «Nuestros días juntos» (Fase 38)
   app.barra = new BarraContextual(app, $(".ed-contexto"));
-  app.lateral = new Lateral({ raiz: $(".ed-lateral"), riel: $(".ed-riel"), velo: $(".ed-velo"), alCambiar: (on) => { if (on) { cerrarHoja(); cerrarHojaSec(); } else app.audio?.detenerEscucha?.(); } });
+  // La pestañita de la izquierda (Fase 42): abre el cajón con lo último que usaste ahí (o Bloques).
+  const pestana = el("button.ed-pestana", { type: "button", "aria-label": "Abrir el menú (Bloques, Recursos, Elementos…)", title: "Desliza o toca: Bloques, Recursos, Elementos…" }, [el("i"), el("i"), el("i")]);
+  document.body.append(pestana);
+  // (En la compu sus rayitas dicen si el panel está abierto: «‹» cierra, «|||» abre.)
+  const compu = () => pestana.classList.toggle("compu", !esMovil());
+  compu(); matchMedia("(max-width: 1023px)").addEventListener("change", compu);
+  const panelSec = () => { const s = $(".ed-panel-cuerpo")._sec; return s && !HOJAS.has(s) ? s : "bloques"; };
+  app.lateral = new Lateral({
+    raiz: $(".ed-lateral"), riel: $(".ed-riel"), velo: $(".ed-velo"), asa: pestana,
+    alAsa: (que) => {
+      const cajon = esMovil();
+      if (que === "preparar") { if ($(".ed-panel-cuerpo")._sec !== panelSec()) abrirSeccion(panelSec(), false); return; }
+      if (cajon) { if (app.lateral.abierto) app.lateral.cerrar(); else { if ($(".ed-panel-cuerpo")._sec !== panelSec()) abrirSeccion(panelSec(), false); app.lateral.abrir(); } }
+      else abrirSeccion(document.body.classList.contains("sin-panel") ? panelSec() : null, true);
+    },
+    alCambiar: (on) => {
+      if (on) {
+        cerrarHoja(); cerrarHojaSec();
+        // (Abierto jalando la pestañita: el riel marca lo que se ve.)
+        const s = $(".ed-panel-cuerpo")._sec;
+        if (s) { app.seccion = s; document.body.classList.remove("sin-panel"); for (const b of document.querySelectorAll(".ed-riel button")) b.classList.toggle("on", b.dataset.s === s); }
+      } else app.audio?.detenerEscucha?.();
+    },
+  });
   app.gifs = app.paneles;
   app.abrirSeccion = (id) => abrirSeccion(id, true);
 

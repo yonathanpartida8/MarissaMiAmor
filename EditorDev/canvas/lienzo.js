@@ -35,6 +35,7 @@ import { permite } from "../core/modelo.js";
 import { enCuadro, holgura, TOQUE_LARGO, vibrar, Reserva, estilo, clase } from "./gestos.js";
 import { ico } from "../components/iconos.js";
 import { orientacion, PANTALLA, escribiendo } from "../components/pantalla.js";
+import { movimiento } from "../config/preferencias.js";
 
 const RT = window.LibritoRT;
 /** Lo que sube desde abajo y puede tapar la hoja (en el teléfono). */
@@ -145,11 +146,18 @@ export class Lienzo {
   _escuchar() {
     const E = this.estado;
     E.on("cargado", () => { this.montar(); this.ajustar(); });
-    E.on("actual", () => { this.terminarTexto(); this.salirRecorte(); this.salirProbar(); this.montar(); });
+    E.on("actual", () => {
+      this.terminarTexto(); this.salirRecorte(); this.salirProbar();
+      const o = E.proyecto?.orden || [], i0 = o.indexOf(this._pidMontado), i1 = o.indexOf(E.paginaId);
+      this.montar();
+      if (i0 >= 0 && i1 >= 0 && i0 !== i1) this._entrarPagina(i1 > i0 ? 1 : -1);
+    });
     E.on("els", ({ p }) => {
       if (p !== E.paginaId || !this.pag) return;
       RT.cargarFuentes(E.pagina.els.map((x) => x.texto?.fuente || x.boton?.fuente));
+      const antes = this._ids;
       this.pag.sincronizar(E.pagina); this.pintarSobre();
+      this._aparecer(antes);
     });
     E.on("pagina", ({ p, ruta }) => {
       if (/^audios/.test(ruta || "")) return; // las pistas de audio no cambian nada de la hoja
@@ -295,8 +303,31 @@ export class Lienzo {
   }
 
   /** Pinta la página actual (y suelta la anterior entera). */
+  /** Fase 42: ¿se nota el movimiento aquí? (no en LovEdit —tiene sus transiciones—, ni probando, ni con «sin movimiento»). */
+  _anima() { return movimiento() && !document.body.classList.contains("modo-pro") && !document.body.classList.contains("ed-probando"); }
+
+  /** Al cambiar de página, la nueva entra deslizándose desde su lado (la siguiente por la derecha). */
+  _entrarPagina(dir) {
+    if (!this.pag?.nodo || !this._anima()) return;
+    this.pag.nodo.animate([{ opacity: 0.2, translate: `${dir * 34}px 0` }, { opacity: 1, translate: "0 0" }], { duration: 280, easing: "cubic-bezier(.22,.8,.26,1)" });
+  }
+
+  /** Lo que acabas de añadir aparece con un «pop» suavecito (varias piezas, una tras otra). */
+  _aparecer(antes) {
+    const els = this.estado.pagina?.els || [];
+    this._ids = new Set(els.map((x) => x.id));
+    if (!antes || !this.pag || !this._anima()) return;
+    const nuevos = els.filter((x) => !antes.has(x.id) && x.tipo !== "trazo" && x.tipo !== "musica");
+    if (!nuevos.length || nuevos.length > 40) return; // (deshacer algo grande no hace un desfile)
+    nuevos.slice(0, 16).forEach((x, i) => this.pag.nodos?.get(x.id)?.animate(
+      [{ opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1.05, offset: 0.65 }, { opacity: 1, scale: 1 }],
+      { duration: 380, delay: Math.min(i, 12) * 32, easing: "cubic-bezier(.3,1.25,.5,1)", fill: "backwards" }));
+  }
+
   montar() {
     if (this.pag) { this.pag.destruir(); this.pag = null; }
+    this._pidMontado = this.estado.paginaId;
+    this._ids = new Set((this.estado.pagina?.els || []).map((x) => x.id));
     this.salirProbar();
     this._medir();
     const p = this.estado.pagina;
@@ -364,9 +395,18 @@ export class Lienzo {
 
   _vistaAjustada() {
     const r = this.vistaEl.getBoundingClientRect();
-    const mx = r.width < 600 ? 20 : 56, my = r.width < 600 ? 20 : 48, dw = this._reservaDerecha(r);
-    const z = Math.max(0.05, Math.min((r.width - mx - dw) / this.W, (r.height - my) / this.H));
-    return { z, px: (r.width - dw - this.W * z) / 2, py: (r.height - this.H * z) / 2, ajustar: true };
+    const mx = r.width < 600 ? 20 : 56, my = r.width < 600 ? 20 : 48, dw = this._reservaDerecha(r), dl = this._reservaIzquierda(r);
+    const z = Math.max(0.05, Math.min((r.width - mx - dw - dl) / this.W, (r.height - my) / this.H));
+    return { z, px: dl + (r.width - dw - dl - this.W * z) / 2, py: (r.height - this.H * z) / 2, ajustar: true };
+  }
+
+  /** En pantallas angostas, lo que ocupa la pestañita de la izquierda (Fase 42): la hoja no queda debajo de ella. */
+  _reservaIzquierda(r) {
+    if (r.width >= 760 || document.body.classList.contains("lateral-abierto")) return 0;
+    const a = document.querySelector(".ed-pestana");
+    if (!a || !a.offsetWidth || getComputedStyle(a).display === "none") return 0;
+    // (offsetLeft: donde queda quieta, sin su animación de saludo.)
+    return Math.max(0, Math.round(a.offsetLeft + a.offsetWidth - r.left + 4));
   }
 
   /** En pantallas angostas, el ancho de la barra flotante de la derecha: la hoja ajustada no queda debajo de ella. */
@@ -408,7 +448,7 @@ export class Lienzo {
     }
     // Lo que queda libre encima del panel. Si el panel ocupa casi toda la
     // pantalla, encoger la hoja hasta un sello no sirve: se deja como está.
-    const m = 14, dw = this._reservaDerecha(r), lw = r.width - dw, lh = r.height - tapado;
+    const m = 14, dw = this._reservaDerecha(r), dl = this._reservaIzquierda(r), lw = r.width - dw - dl, lh = r.height - tapado;
     if (lh < Math.max(150, r.height * 0.2)) return;
     // Si estaba volviendo a su sitio y algo la tapa otra vez, «antes» sigue siendo ese sitio.
     if (!this._acAntes) { const vv = this._volverA; this._acAntes = vv && this._animHasta === vv.hasta ? { ...vv.antes } : { ...this.v }; }
@@ -418,7 +458,7 @@ export class Lienzo {
     const zPag = Math.max(0.05, Math.min((lw - 2 * m) / this.W, (lh - 2 * m) / this.H));
     // Nunca más grande que antes (si ya cabía, sólo sube): agrandarla sería un brinco y se tomaría por «su sitio».
     const z = Math.min(antes.z, zPag);
-    const hasta = { z, px: (lw - this.W * z) / 2, py: (lh - this.H * z) / 2, ajustar: false };
+    const hasta = { z, px: dl + (lw - this.W * z) / 2, py: (lh - this.H * z) / 2, ajustar: false };
     this._acPuesta = hasta;
     this._animarVista(hasta);
   }

@@ -14,6 +14,7 @@ import { ico } from "../iconos.js";
 import { hojita } from "../hoja.js";
 import { catalogo } from "../../componentes/catalogo.js";
 import { rutaAUrl } from "../../assets/biblioteca.js";
+import { miniatura } from "../../assets/miniaturas.js";
 
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 export const CATEGORIAS = [
@@ -115,7 +116,7 @@ export const BIBLIOTECA = {
     const tarjeta = (it) => {
       const caja = el("div.ed-bib-prev" + (it.tipo === "componente" ? ".vivo" : ""));
       if (it.miniatura) caja.append(el("img", { src: rutaAUrl(it.miniatura), alt: "", loading: "lazy", draggable: "false" }));
-      else if (it.tipo === "imagen") caja.append(el("img", { src: rutaAUrl(it.ruta), alt: "", loading: "lazy", draggable: "false" }));
+      else if (it.tipo === "imagen") caja.append(miniatura(rutaAUrl(it.ruta)));
       else { caja._it = it; io.observe(caja); }
       const t = el("div.ed-bib-t", {}, [
         el("button.ed-bib-ver", { type: "button", title: "Ver en grande y probar", "aria-label": `Ver ${it.nombre}`, onClick: () => previa(it) }, [caja]),

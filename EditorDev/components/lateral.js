@@ -2,10 +2,12 @@
  * LA BARRA LATERAL — el riel de categorías y su panel, a la izquierda.
  *
  * En la computadora (pantalla ancha) van fijos y el panel se pliega.
- * En el teléfono y la tableta el RIEL se queda siempre a la vista (Fase 38: sin
- * pestañita) y su panel es un cajón como el de una app:
- *   · se abre tocando una herramienta del riel o deslizándolo a la derecha; se
- *     cierra deslizándolo a la izquierda, tocando fuera (el velo) o el botón ✕;
+ * En el teléfono y la tableta el RIEL se queda siempre a la vista y su panel es
+ * un cajón como el de una app:
+ *   · se abre tocando una herramienta del riel, deslizándolo a la derecha o con
+ *     la PESTAÑITA (Fase 42: volvió) que va pegada a su orilla: tócala o jálala;
+ *     se cierra deslizándolo a la izquierda, tocando fuera (el velo), el botón ✕
+ *     o la pestañita otra vez (ella viaja en la orilla del cajón);
  *   · mientras se arrastra, el cajón SIGUE AL DEDO (no aparece de golpe) y al
  *     soltar termina de abrirse o de cerrarse según la velocidad y la mitad;
  *   · lo de dentro sigue desplazándose de arriba a abajo: sólo un gesto
@@ -18,10 +20,12 @@ import { vibrar } from "../canvas/gestos.js";
 const NO_ARRASTRA = "input, textarea, select, [contenteditable='true'], .ed-rango, .ed-seg, .ed-tl, iframe, .ed-asa, .ed-capas li, .ed-paginas li";
 
 export class Lateral {
-  constructor({ raiz, riel, velo, alCambiar }) {
+  constructor({ raiz, riel, velo, asa = null, alAsa = null, alCambiar }) {
     this.raiz = raiz;
     this.riel = riel;
     this.velo = velo;
+    this.asa = asa;
+    this.alAsa = alAsa; // ("preparar" antes de jalarla, "tocar" al tocarla)
     this.alCambiar = alCambiar;
     this.abierto = false;
     this._g = null;
@@ -47,6 +51,8 @@ export class Lateral {
     this.velo.style.opacity = String(((t - m) / Math.max(1, w - m)) * 0.42);
     this.velo.style.pointerEvents = t > m + 2 ? "auto" : "none";
     this.raiz.style.visibility = t > 0 || anim ? "visible" : "hidden";
+    // La pestañita va en la orilla del cajón (lo sigue mientras se jala).
+    if (this.asa) { this.asa.classList.toggle("anim", !!anim); this.asa.style.transform = t > 0 ? `translate3d(${t}px, 0, 0)` : ""; this.asa.classList.toggle("abierta", t > w / 2); }
   }
 
   abrir() {
@@ -75,6 +81,7 @@ export class Lateral {
     else {
       this.raiz.style.transform = "";
       this.raiz.style.visibility = "";
+      if (this.asa) { this.asa.style.transform = ""; this.asa.classList.remove("abierta", "anim"); }
       this.velo.style.opacity = "";
       this.velo.style.pointerEvents = "none";
       document.body.classList.remove("lateral-abierto");
@@ -94,6 +101,8 @@ export class Lateral {
     const empezar = (ev, desde) => {
       if (!this.compacto || ev.button > 0) return;
       if (desde === "dentro" && (ev.target.closest(NO_ARRASTRA) || this._desplazaDeLado(ev.target))) return;
+      // Jalar la pestañita: el panel ya tiene que estar lleno (si no, el cajón saldría vacío).
+      if (desde === "asa" && !this.abierto) this.alAsa?.("preparar");
       this._g = { id: ev.pointerId, x0: ev.clientX, y0: ev.clientY, t0: performance.now(), base: this.abierto ? this.ancho : 0, desde, decidido: desde !== "dentro", vx: 0, ux: ev.clientX, ut: performance.now() };
       if (this._g.decidido) { try { ev.currentTarget.setPointerCapture(ev.pointerId); } catch (e) { /* nada */ } }
     };
@@ -122,8 +131,9 @@ export class Lateral {
       cancelAnimationFrame(this._rf);
       if (!g.decidido) return;
       if (!g.movio) {
-        // Un toque en el velo cierra.
+        // Un toque en el velo cierra; en la pestañita, abre o cierra.
         if (g.desde === "velo") this.cerrar();
+        else if (g.desde === "asa") { vibrar(6); this.alAsa?.("tocar"); }
         return;
       }
       const dx = ev.clientX - g.x0;
@@ -133,12 +143,14 @@ export class Lateral {
       if (abrir) this.abrir(); else this.cerrar();
     };
     // (Deslizar el riel a la derecha también abre el panel.)
-    for (const [n, desde] of [[this.velo, "velo"], [this.raiz, "dentro"], [this.riel, "dentro"]].filter(([n]) => n)) {
+    for (const [n, desde] of [[this.velo, "velo"], [this.raiz, "dentro"], [this.riel, "dentro"], [this.asa, "asa"]].filter(([n]) => n)) {
       n.addEventListener("pointerdown", (ev) => empezar(ev, desde));
       n.addEventListener("pointermove", mover);
       n.addEventListener("pointerup", soltar);
       n.addEventListener("pointercancel", soltar);
     }
+    // En la compu (pliega o despliega el panel) y con teclado, la pestañita es un botón normal.
+    this.asa?.addEventListener("click", (ev) => { if (!this.compacto || ev.detail === 0) this.alAsa?.("tocar"); });
     addEventListener("keydown", (ev) => { if (ev.key === "Escape" && this.abierto && !document.querySelector(".ed-modal-fondo, .ed-pop, .ed-menu")) this.cerrar(); });
     let antes = this.compacto;
     matchMedia(COMPACTO).addEventListener("change", () => {
