@@ -13,6 +13,11 @@
  *   volarA(p) · casa() · visitar(rect)
  * Mientras está, se mueve sola todo el tiempo (con tope de movimiento de
  * Configuración, y quieta del todo si se pide «sin movimiento»).
+ *
+ * Fase 41: NUNCA tapa lo tuyo. Ella y su globito buscan un hueco libre (fuera de la hoja, de las
+ * hojitas abiertas y de la línea de tiempo); si no hay ninguno (el teléfono, con la hoja a todo lo
+ * ancho), el globito se pone abajo y la hoja se hace a un ladito para que se vea entera. Además: sus
+ * ojos siguen tu dedo, parpadea, baila cuando guardas o publicas y saca su lupa cuando revisa.
  */
 import { R, cuandoActivo } from "../components/rendimiento.js";
 import { el } from "../../src/utils/dom.js";
@@ -29,6 +34,7 @@ const DIBUJO = `<svg viewBox="0 0 80 74" aria-hidden="true">
   <ellipse class="ab-ala ab-ala-d" cx="54" cy="25" rx="11" ry="15" transform="rotate(24 54 25)"/>
 </g>
 <path class="ab-tallos" d="M33 25q-5-9-8-15M47 25q5-9 8-15" fill="none" stroke="#4a3320" stroke-width="2" stroke-linecap="round"/>
+<g class="ab-lupa"><path d="M57 58l7 8" stroke="#7a4a1f" stroke-width="3.4" stroke-linecap="round"/><circle cx="54" cy="53" r="8" fill="rgba(210,236,255,.55)" stroke="#4a3320" stroke-width="2.2"/><path d="M50 50q2-2.5 5-2.5" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8"/></g>
 <path class="ab-antena" d="M25 10c-3-3-7 1-3 4l3 3 3-3c4-3 0-7-3-4z" fill="#ff7aa2"/>
 <path class="ab-antena" d="M55 10c-3-3-7 1-3 4l3 3 3-3c4-3 0-7-3-4z" fill="#ff7aa2"/>
 <path class="ab-patas" d="M33.5 63.5q-1.2 3.6-3.6 5M46.5 63.5q1.2 3.6 3.6 5" fill="none" stroke="#4a3320" stroke-width="2" stroke-linecap="round"/>
@@ -73,6 +79,45 @@ export class Abeja {
     this.app = app;
     this.n = null;
     this.pos = { x: 0, y: 0 };
+    // Sus ojos siguen tu dedo (o el ratón): una vez por cuadro como mucho.
+    let pend = null;
+    addEventListener("pointermove", (e) => {
+      if (!this.n || pend) return;
+      pend = requestAnimationFrame(() => {
+        pend = null;
+        if (!this.n) return;
+        const cx = this.pos.x + 36, cy = this.pos.y + 32, dx = e.clientX - cx, dy = e.clientY - cy, d = Math.hypot(dx, dy) || 1, k = Math.min(1, d / 160);
+        this.n.style.setProperty("--mx", ((dx / d) * 1.8 * k).toFixed(2) + "px");
+        this.n.style.setProperty("--my", ((dy / d) * 1.5 * k).toFixed(2) + "px");
+      });
+    }, { passive: true });
+  }
+
+  /* ── Dónde NO ponerse (Fase 41) ── */
+  /** Lo que importa (la hoja, lo abierto, la línea de tiempo) pesa 1; las barras, poquito. */
+  _zonas() {
+    const z = [], B = document.body.classList;
+    const pon = (b, k = 1) => { if (b && b.width > 2 && b.height > 2 && b.bottom > 0 && b.right > 0 && b.top < innerHeight && b.left < innerWidth) z.push({ l: b.left, t: b.top, r: b.right, b: b.bottom, k }); };
+    const L = this.app.lienzo;
+    if (L?.hoja && !B.contains("ed-probando")) pon(L.hoja.getBoundingClientRect());
+    for (const n of document.querySelectorAll(".ed-hoja-sec.abierta, .ed-insp.abierta, .ed-hojita.abierta, .ed-modal, .ed-menu, .ed-pop.ver, .ed-linea:not([hidden]), .jt-capa.ver, .mp-capa.ver")) pon(n.getBoundingClientRect());
+    if (B.contains("lateral-abierto")) pon(document.querySelector(".ed-lateral")?.getBoundingClientRect());
+    for (const n of document.querySelectorAll(".ed-barra, .ed-contexto, .ed-riel, .ed-dock, .pro-barra, .pro-herr")) pon(n.getBoundingClientRect(), 0.25);
+    return z;
+  }
+  /** El hueco de w×h que menos tapa (y más cerca de `cerca`). `extra`: más cosas que no tapar. */
+  _libre(w, h, cerca, extra = []) {
+    const z = this._zonas();
+    for (const b of extra) if (b) z.push({ l: b.left, t: b.top, r: b.right, b: b.bottom, k: 1.5 });
+    const W = innerWidth, H = innerHeight, m = 6, paso = 14;
+    let mejor = null;
+    for (let y = 50; y <= H - h - m; y += paso) for (let x = m; x <= W - w - m; x += paso) {
+      let tapa = 0;
+      for (const q of z) { const ix = Math.min(x + w, q.r) - Math.max(x, q.l), iy = Math.min(y + h, q.b) - Math.max(y, q.t); if (ix > 0 && iy > 0) tapa += ix * iy * q.k; }
+      const s = tapa * 4 + Math.hypot(x - cerca.x, y - cerca.y);
+      if (!mejor || s < mejor.s) mejor = { x, y, s, tapa };
+    }
+    return mejor || { x: cerca.x, y: cerca.y, tapa: 0 };
   }
 
   get viva() { return !!this.n; }
@@ -157,11 +202,13 @@ export class Abeja {
 
   _quietar(n = this.n) { if (n) for (const a of n.getAnimations()) a.cancel(); }
 
-  /** Su sitio: junto al foquito, por encima, sin tapar nada importante. */
+  /** Su sitio: cerca del foquito, en el hueco libre más cercano (sin tapar la hoja ni lo abierto). */
   casa() {
     const f = document.querySelector(".ed-foco")?.getBoundingClientRect();
-    const x = f ? f.left - 70 : innerWidth - 120, y = f ? f.top - 88 : innerHeight - 160;
-    return { x: Math.max(6, Math.min(innerWidth - 86, x)), y: Math.max(56, Math.min(innerHeight - 90, y)) };
+    const x = f && f.width ? f.left - 70 : innerWidth - 120, y = f && f.height ? f.top - 88 : innerHeight - 160;
+    const cerca = { x: Math.max(6, Math.min(innerWidth - 86, x)), y: Math.max(56, Math.min(innerHeight - 90, y)) };
+    const l = this._libre(76, 64, cerca);
+    return l.tapa > 76 * 64 * 0.3 ? cerca : { x: l.x, y: l.y };
   }
 
   /** Vuela en curva hasta `p` (se inclina hacia donde va). */
@@ -202,17 +249,25 @@ export class Abeja {
     if (R.ahorro) return otra(8000);
     if (!k || this.hablando) return otra(2200);
     const r = Math.random();
-    if (r < 0.66) {
+    if (r < 0.6) {
+      // Revolotea por los huecos libres cercanos (nunca encima de la hoja si hay otro sitio).
       const c = this.casa();
-      const p = { x: c.x + azar(-70, 34) * k, y: c.y + azar(-50, 26) * k };
-      p.x = Math.max(6, Math.min(innerWidth - 86, p.x)); p.y = Math.max(56, Math.min(innerHeight - 90, p.y));
+      const quiere = { x: c.x + azar(-90, 50) * k, y: c.y + azar(-70, 30) * k };
+      const l = this._libre(76, 64, quiere);
+      const p = l.tapa > 76 * 64 * 0.3 ? c : { x: l.x, y: l.y };
       this.volarA(p, azar(1500, 2400)).then(() => otra(azar(500, 1600)));
-    } else if (r < 0.82) { this.saltito(); otra(azar(1400, 2200)); }
-    else if (r < 0.92) { this._clase("vuelta", 900); if (Math.random() < 0.5) this.chispas(4); otra(2200); }
+    } else if (r < 0.74) { this.saltito(); otra(azar(1400, 2200)); }
+    else if (r < 0.84) { this._clase("vuelta", 900); if (Math.random() < 0.5) this.chispas(4); otra(2200); }
+    else if (r < 0.9) { this._clase("baila", 1300); otra(2400); }
+    else if (r < 0.95) { this._clase("mira", 1600); this.cara("sorpresa", 900); otra(2400); }
     else { if (Math.random() < 0.4) this.sonar("zumbido"); this.cara(Math.random() < 0.5 ? "guino" : "enamorada", 1400); otra(azar(1600, 2600)); }
   }
 
   saltito() { this._clase("salta", 600); }
+  /** Un bailecito (al guardar, publicar o cuando todo está bonito). */
+  bailar() { this._clase("baila", 1300); this.chispas(8, "♥"); }
+  /** Saca (o guarda) su lupa: está revisando tu librito. */
+  lupa(on = true) { if (this.n) this.n.toggleAttribute("data-lupa", on); }
   _clase(c, ms) { const i = this.n?.firstChild; if (!i) return; i.classList.remove(c); void i.offsetWidth; i.classList.add(c); setTimeout(() => i.classList.remove(c), ms); }
 
   /* ── Caras y reacciones ─────────────────────────────────────────── */
@@ -227,7 +282,7 @@ export class Abeja {
   reaccionar(tipo) {
     if (!this.n) return;
     const r = {
-      insertar: ["feliz", "feliz", 6], guardar: ["enamorada", "feliz", 8], borrar: ["sorpresa", "habla", 0],
+      insertar: ["feliz", "feliz", 6], guardar: ["enamorada", "feliz", 8], borrar: ["sorpresa", "habla", 0], publicar: ["enamorada", "feliz", 12],
       hackeo: ["asustada", "susto", 0], carino: ["enamorada", "hola", 10],
     }[tipo] || ["feliz", "habla", 3];
     this.cara(r[0], 1800);
@@ -235,6 +290,7 @@ export class Abeja {
     this.saltito();
     if (r[2]) this.chispas(r[2], tipo === "guardar" || tipo === "carino" ? "♥" : "✦");
     if (tipo === "hackeo") this._clase("tiembla", 2400);
+    if (tipo === "guardar" || tipo === "publicar") setTimeout(() => this._clase("baila", 1300), 300);
   }
 
   /** Brillitos que salen de ella (si las partículas están encendidas). */
@@ -260,8 +316,6 @@ export class Abeja {
     this.hablando = true;
     clearTimeout(this._t);
     clearTimeout(this._tg);
-    const c = this.casa();
-    if (!op.aqui && Math.hypot(c.x - this.pos.x, c.y - this.pos.y) > 120) await this.volarA(c, 650);
     if (!this.n) return;
     let g = this.g;
     if (!g) {
@@ -296,33 +350,66 @@ export class Abeja {
     if (op.dura) this._tg = setTimeout(() => this.callar(), op.dura);
   }
 
+  /**
+   * Fase 41: el globito busca un hueco que no tape nada (y ella se pone a su lado). Si no hay
+   * (teléfono con la hoja a lo ancho), va abajo, ella dentro de él, y la hoja se hace a un ladito
+   * hacia arriba (lienzo → «acomodo»): así lo tuyo siempre se ve entero.
+   */
   _colocar() {
     const g = this.g;
-    if (!g) return;
+    if (!g || !this.n) return;
     const w = Math.min(290, innerWidth - 24);
+    // Si ya estaba abajo (la hoja hecha a un lado por él), se queda abajo: medir huecos con la hoja
+    // encogida daría un «hueco» que deja de serlo en cuanto la hoja vuelve a su tamaño.
+    const seguia = g.classList.contains("acomoda") && g.classList.contains("ver");
     g.style.width = w + "px";
+    g.classList.remove("acomoda");
     const h = g.offsetHeight || 110;
-    const cx = this.pos.x + 40;
-    const x = Math.max(12, Math.min(innerWidth - w - 12, cx > innerWidth / 2 ? cx - w + 28 : cx - 28));
-    const arriba = this.pos.y - h - 4 > 8;
-    const y = arriba ? this.pos.y - h - 2 : Math.min(innerHeight - h - 12, this.pos.y + 74);
-    let fx = x, fy = y;
-    // En el recorrido, el globito no tapa lo que se está explicando.
-    const r = this._evitar;
-    const tapa = (gx, gy) => r && gx < r.right + 6 && gx + w > r.left - 6 && gy < r.bottom + 6 && gy + h > r.top - 6;
-    if (tapa(fx, fy)) {
-      const cand = [
-        [Math.max(12, Math.min(innerWidth - w - 12, r.left)), r.bottom + 14],
-        [Math.max(12, Math.min(innerWidth - w - 12, r.left)), r.top - h - 14],
-        [r.left - w - 14, Math.max(12, Math.min(innerHeight - h - 12, r.top))],
-        [r.right + 14, Math.max(12, Math.min(innerHeight - h - 12, r.top))],
-      ].filter(([a, b]) => a >= 8 && b >= 8 && a + w <= innerWidth - 8 && b + h <= innerHeight - 8 && !tapa(a, b));
-      if (cand.length) [fx, fy] = cand[0];
+    const extra = this._evitar ? [this._evitar] : [];
+    const l = seguia ? { tapa: Infinity } : this._libre(w, h, { x: this.pos.x - w / 2, y: this.pos.y - h }, extra);
+    let fx, fy, junto;
+    if (l.tapa < 40) {
+      fx = l.x; fy = l.y;
+      // Ella, pegadita al globito, también en un hueco.
+      const caja = { left: fx, top: fy, right: fx + w, bottom: fy + h };
+      const b = this._libre(76, 64, { x: fx + w - 50, y: fy + h + 4 }, [...extra, caja]);
+      junto = b.tapa < 76 * 64 * 0.4 ? { x: b.x, y: b.y } : { x: Math.min(innerWidth - 82, fx + w - 40), y: Math.max(50, fy - 60) };
+    } else {
+      // Sin hueco: abajo, a lo ancho, con ella adentro; la hoja se acomoda arriba.
+      const vw = this.app.lienzo?.vistaEl?.getBoundingClientRect().width || innerWidth;
+      g.style.width = Math.min(360, (vw > 200 ? vw : innerWidth) - 16) + "px";
+      g.classList.add("acomoda");
+      ({ fx, fy, junto } = this._abajo());
+      // Si cambia el espacio de la hoja (se va una barra), el globito baja con ella.
+      if (!this._ro && window.ResizeObserver && this.app.lienzo?.vistaEl) {
+        this._ro = new ResizeObserver(() => {
+          if (!this.globoVisible || !this.g.classList.contains("acomoda")) return;
+          const a = this._abajo();
+          this.g.style.transform = `translate3d(${a.fx}px,${a.fy}px,0)`;
+          this.volarA(a.junto, 300);
+          dispatchEvent(new CustomEvent("ed-hoja", { detail: "abeja" }));
+        });
+        this._ro.observe(this.app.lienzo.vistaEl);
+      }
     }
     g.style.transform = `translate3d(${fx}px,${fy}px,0)`;
-    g.classList.toggle("abajo", !arriba);
-    g.classList.toggle("suelto", fx !== x || fy !== y);
+    const cx = junto.x + 38, arriba = junto.y + 30 < fy;
+    g.classList.toggle("abajo", arriba);
+    g.classList.toggle("suelto", g.classList.contains("acomoda") || cx < fx + 10 || cx > fx + w - 10);
     g.style.setProperty("--cola", `${Math.max(18, Math.min(w - 22, cx - fx))}px`);
+    if (Math.hypot(junto.x - this.pos.x, junto.y - this.pos.y) > 4) this.volarA(junto, 520);
+    // Que la hoja se acomode (o vuelva a su sitio).
+    dispatchEvent(new CustomEvent("ed-hoja", { detail: "abeja" }));
+  }
+
+  /** El sitio del globito «acomodado»: abajo de la hoja, centrado, con ella adentro. */
+  _abajo() {
+    const g = this.g, v = this.app.lienzo?.vistaEl?.getBoundingClientRect();
+    // Centrado en el espacio de la hoja (no detrás del riel de la izquierda).
+    const a = v && v.width > 200 ? v : { left: 0, width: innerWidth };
+    const hh = g.offsetHeight || 110, fx = Math.round(a.left + (a.width - g.offsetWidth) / 2);
+    const fy = Math.round((v && v.bottom > 120 ? v.bottom : innerHeight - 70) - hh - 8);
+    return { fx, fy, junto: { x: fx + 2, y: fy + Math.max(0, hh / 2 - 34) } };
   }
 
   get globoVisible() { return !!this.g?.classList.contains("ver"); }
@@ -332,7 +419,8 @@ export class Abeja {
     clearTimeout(this._tg);
     this.n?.classList.remove("hablando");
     const g = this.g;
-    if (g) { g.classList.remove("ver"); }
+    if (g) { const acomodaba = g.classList.contains("acomoda"); g.classList.remove("ver", "acomoda"); if (acomodaba) dispatchEvent(new CustomEvent("ed-hoja", { detail: "abeja" })); }
+    this.lupa(false);
     if (this.hablando) { this.hablando = false; if (this.n) { clearTimeout(this._t); this._t = setTimeout(() => this._vivir(), 900); } }
   }
 

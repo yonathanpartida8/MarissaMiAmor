@@ -211,15 +211,18 @@ export async function esperar(id, alPaso) {
   }
   throw new Error(`${NOMBRE} sigue trabajando; vuelve a mirar en un ratito.`);
 }
-export async function publicar(blob, { titulo, nombre, paginas, reemplazar }, alPaso) {
+export async function publicar(blob, { titulo, nombre, paginas, reemplazar, exacto }, alPaso) {
   const q = new URLSearchParams({ titulo, nombre: nombre || "", paginas: String(paginas || 0) });
   if (reemplazar) q.set("reemplazar", reemplazar);
+  if (exacto) q.set("exacto", "1");
   const r = await subir("publicaciones?" + q, blob, (p) => alPaso?.(`Subiendo a ${NOMBRE}… ${Math.round(p * 100)} %`, p));
   alPaso?.(`${NOMBRE} lo está guardando en GitHub…`);
   const res = await esperar(r.trabajo, (t) => alPaso?.(t.paso, t.total ? t.hechos / t.total : null));
   return { ...r, ...res, local: enlace(res.local || r.local) };
 }
 export const publicaciones = () => pedir("publicaciones").then((d) => d.publicaciones || []);
+/** Fase 41: ¿ese enlace propio está libre? → { slug, libre, sugerido, enlace } */
+export const enlaceLibre = (nombre) => pedir("publicaciones/disponible?nombre=" + encodeURIComponent(nombre || ""));
 export const quitar = (slug) => pedir("publicaciones/" + encodeURIComponent(slug), { method: "DELETE" });
 export const subirOtraVez = (slug) => pedir(`publicaciones/${encodeURIComponent(slug)}/subir`, { method: "POST", body: {} });
 

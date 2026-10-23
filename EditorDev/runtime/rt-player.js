@@ -435,7 +435,11 @@
     if (!d) return;
     document.title = d.nombre || "Mi librito";
     const raiz = document.getElementById("librito") || document.body;
+    // Fase 41: enlace directo a una página: …/#3 (o #p3) abre la tercera; cambiarlo después también lleva ahí.
+    const deEnlace = () => { const m = /^#p?(\d{1,4})$/.exec(location.hash || ""); return m ? Math.max(0, Math.min(d.orden.length - 1, +m[1] - 1)) : null; };
+    addEventListener("hashchange", () => { const j = deEnlace(); if (j != null && RT.libro && j !== RT.libro.i) RT.libro.ir(j, j < RT.libro.i); });
     RT.libro = new RT.Libro(raiz, d, {
+      inicio: deEnlace() || 0,
       // La pantalla con la que se armó en el editor: en cualquier aparato se escala entera (nada se
       // recoloca ni se amontona); lo que sobra alrededor lleva el fondo de la página.
       fijar: d.pantalla && d.pantalla.w > 0 && d.pantalla.h > 0 ? d.pantalla : null,

@@ -400,6 +400,14 @@ Hojas de cada pareja (hasta 30) con trazos en tiempo real (`GET …/trazos?esper
 se despierta en cuanto el otro dibuja). Pinceles: lápiz, pluma, marcador,
 acuarela, neón, brillitos, corazones, borrador. Rutas en la tabla de abajo.
 
+### Tu enlace propio (1.15.0)
+
+- `GET /api/publicaciones/disponible?nombre=…` dice si ese enlace está libre
+  (`{slug, libre, sugerido, sitio, carpeta, enlace}`); si ya es de otra página,
+  sugiere uno parecido que sí esté libre.
+- Publicar con `?exacto=1` usa **exactamente** ese nombre o responde 409 (antes
+  de subir nada): así el enlace que eligió tu amorcito nunca cambia sin avisar.
+
 ## Cuentas y autenticación
 
 - **Registro** (Panel → Ajustes): «Abierto: cualquiera crea su cuenta y entra
@@ -463,7 +471,8 @@ azar) · `/api/…`:
 | `POST /api/instalar` | con el código | primer administrador |
 | `POST /api/registro` · `POST /api/entrar` · `POST /api/salir` | todos | cuentas |
 | `GET /api/yo` · `POST /api/yo/contrasena` · `GET/DELETE /api/yo/sesiones` | sesión | tu cuenta |
-| `GET/POST /api/publicaciones` · `DELETE /api/publicaciones/<n>` · `POST /api/publicaciones/<n>/subir` | sesión | publicar (el .zip va en el cuerpo, `?titulo=&nombre=&reemplazar=`) |
+| `GET/POST /api/publicaciones` · `DELETE /api/publicaciones/<n>` · `POST /api/publicaciones/<n>/subir` | sesión | publicar (el .zip va en el cuerpo, `?titulo=&nombre=&reemplazar=&exacto=`) |
+| `GET /api/publicaciones/disponible?nombre=` | sesión | ¿ese enlace está libre? (y uno sugerido si no) |
 | `GET /api/trabajos/<id>` | sesión | cómo va una publicación |
 | `GET /api/nube` | sesión | tus libritos en la nube, tu espacio y tu cuota |
 | `POST /api/nube/faltan` | sesión | de estas huellas, cuáles faltan (lo que ya está no se vuelve a subir) |

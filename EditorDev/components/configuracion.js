@@ -88,6 +88,7 @@ export class Configuracion {
         fila("Cada cuánto habla", p("frecuencia", { tipo: "segmento", opciones: [[30, "30 s"], [75, "1 min"], [180, "3 min"], [420, "7 min"]] })),
         el("div.ed-botonera", {}, [
           boton(I("foco", "Que diga algo"), () => { this.m?.cerrar(null); app.ayuda?.decirAlgo(); }, "chico"),
+          boton(I("buscar", "Que revise mi librito"), () => { this.m?.cerrar(null); app.ayuda?.revisarLibrito(); }, "chico"),
           boton(I("varita", "Probar el evento especial"), () => { this.m?.cerrar(null); app.ayuda?.hackeo(); }, "chico"),
         ]),
         el("small.ed-ayuda.ed-solo-dev", { text: "Sus frases están en dialogos.txt (en la carpeta principal): una por línea; las que empiezan con «-» son el evento especial." }),

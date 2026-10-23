@@ -23,17 +23,36 @@ const FRASES = {
     "Hola amorcito 🥹💖", "¿Cómo vas? Esto ya se ve precioso.", "Te amo, ¿sabías? 🐝💛", "¡Ánimo, bbsita! Vas súper bien.",
     "Un poquito de brillo aquí no le caería mal ✨", "¿Ya guardaste? Por si acaso 💾", "Me encanta cómo te está quedando.",
     "Tómate un respiro y un vasito de agua 💧", "Esa foto quedó hermosa 📸", "Bzz bzz… aquí ando, acompañándote.",
+    // Fase 41: más chistosas.
+    "Yo no sé dibujar, pero sé zumbar bonito. Cada quien su talento 🐝", "Si esto fuera miel, ya estaría empalagosa de tan linda 🍯",
+    "Me puse lentes de diseñadora: 😎 …sí, aprobado.", "Alerta de ternura: niveles peligrosamente altos 🚨💗",
+    "¿Sabías que las abejas bailan para avisar dónde hay flores? Yo bailo cuando guardas 💃", "Shhh… estoy viendo cómo trabajas. Es como ver una película romántica 🍿",
+    "Si me das un pixel más de amor, exploto de bonito ✨", "No es por presumir, pero tu librito y yo somos lo más lindo de esta pantalla 🐝",
+    "Una página más y te nombran Ministra del Amor 👑", "Bzzz… perdón, se me escapó un zumbido de emoción.",
+    "Le pregunté a mi panal y dice que te quedó divino 🍯", "Revisando… revisando… ¡sí! Sigue siendo precioso 🔍",
+    "Si te trabas, respira hondo: hasta las abejas hacemos pausas para el néctar 🌸", "¿Y si le pones un corazoncito ahí? Nunca sobran 💗",
+    "Mis alas aplauden. Bueno, aletean. Es lo mismo 👏🐝", "Soy chiquita pero tengo ojo de crítica de arte. Y me encanta 🎨",
   ],
   mx: [
     "¡Holi, amorcito! 🥹💖", "¿Cómo vas? Ya quedó bien bonito.", "Te amo un chorro 🐝💛", "¡Échale ganas, bbsita, vas rebien!",
     "Ponle tantito brillo aquí, ¿no? ✨", "¿Ya guardaste? No vaya a ser… 💾", "Ay, qué chulada te está quedando.",
     "Tómate tu aguita, ándale 💧", "Esa foto quedó bien padre 📸", "Aquí ando de metiche, bzz bzz 🐝",
+    // Fase 41: más chistosas.
+    "Esto está más bonito que tamal de dulce en diciembre 🫔💗", "¡Ay, qué chulada! Me dieron ganas de bailar el payaso de rodeo 🤠",
+    "Tantito más brillo y nos deslumbramos todos ✨", "Ni la abuelita hace cosas tan bonitas… bueno, casi 👵💗",
+    "Si esto fuera taquería, ya tendría fila hasta la esquina 🌮", "Con calmita y buena letra, como dicen 📝",
+    "Ándale, que ya mero queda. Yo te echo porras: ¡dale, dale! 📣", "Me sentí en la novela de las nueve con tanto romance 📺",
+    "¿Ya viste qué bonito? Hasta me puse chapeada 😳", "Bzz… perdón, es que me emociono con las cosas bonitas.",
+    "Esto merece mariachi, mínimo 🎺", "Si me das chance, le pongo un moñito a todo 🎀",
   ],
   // Sólo con «Habilitar lenguaje poquitito explícito» (se mezclan con las de arriba).
   explicito: [
     "¿Qué onda, wey? 🐝", "No manches, está quedando bien perrón 🔥", "Neta, qué chulada, wey.", "Chale, ¿y si guardas, wey? 💾",
     "¿Qué pedo, ya mero? Te amo 💛", "Órale, te está quedando de poca madre ✨", "Ay wey, qué bonito te quedó 🥹",
     "Ya, wey, tómate tu agua 💧", "Está bien chido, neta 😎", "No inventes, me encanta 💖",
+    "Wey, ¿quién te enseñó a hacer cosas tan bonitas? 😳", "Neta que esto está más chido que un viernes de quincena 💸",
+    "No manches, hasta mis antenas se pusieron chinas ✨", "Órale, ¿y ese talento? ¿Lo compraste en el tianguis? 😂",
+    "Qué onda con esta página, está bien perrona 🔥", "Ay, no, wey, me voy a poner sentimental 🥹",
   ],
 };
 
@@ -81,6 +100,23 @@ export async function siguiente() {
   ultima = i;
   if (l[i].tipo === "hackeo") ultimoEvento = Date.now();
   return l[i];
+}
+
+/**
+ * Fase 41: lo que dice según lo que está pasando (la hora, cuántas páginas, si hay música…).
+ * `c`: { paginas, els, hora, minutos, musica, idioma }. Devuelve una frase o null.
+ */
+export function deContexto(c = {}) {
+  const mx = c.idioma === "mx", op = [];
+  if (c.hora >= 0 && c.hora < 5) op.push(mx ? "Ya es bien noche… yo no duermo porque soy digital, pero tú sí, ¿eh? 🌙" : "Es tardísimo… yo no duermo porque soy digital, pero tú deberías 🌙");
+  if (c.hora >= 6 && c.hora < 10) op.push("¡Buenos días! Nada como empezar el día haciendo algo lindo ☀️");
+  if (c.minutos > 50) op.push(mx ? `Llevas ${Math.round(c.minutos)} minutos dándole: estírate tantito y tómate tu agüita 💧` : `Llevas ${Math.round(c.minutos)} minutos creando: estírate un poquito y toma agua 💧`);
+  if (c.paginas >= 8) op.push(`¡Ya van ${c.paginas} páginas! Esto ya es casi una novela 📖`);
+  else if (c.paginas === 1) op.push("Una página es un buen comienzo… ¿le hacemos compañía con otra? 📄💗");
+  if (c.els > 22) op.push("Esta página está más llena que mi panal 🍯 ¿Y si pasamos algo a otra página?");
+  if (c.els === 0) op.push("Esta hoja está más vacía que mi agenda un domingo 😅 ¿Le ponemos un bloque?");
+  if (c.musica === false) op.push(mx ? "Shhh… está muy callado aquí, ¿no? Ponle una rolita 🎶" : "Shhh… ¿no está muy callado? Ponle una canción 🎶");
+  return op.length ? op[Math.floor(Math.random() * op.length)] : null;
 }
 
 /** Las frases según el idioma de Configuración (Dev = dialogos.txt tal cual). */

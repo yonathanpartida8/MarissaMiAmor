@@ -101,7 +101,7 @@ export class Linea {
       if ((rutas || []).some((r) => /^anim|^nombre|^oculto|^tiempo|^sonidos|^accion|^inicioOculto|^bloqueado|^grupo/.test(r))) { re(); this._refrescarAnim(); }
     });
     this.E.on("els", () => { re(); this._refrescarAnim(); });
-    this.E.on("actual", () => { this.parar(false); this.t = 0; this.audioSel = null; re(); });
+    this.E.on("actual", () => { this.parar(false); this.t = 0; this.audioSel = null; this._off = this._segs?.find((s) => s.pid === this.E.paginaId)?.ini || 0; re(); });
     this.E.on("sel", () => { if (this.E.sel.length) this.audioSel = null; re(); });
     this.E.on("pagina", ({ ruta }) => { if (/^duracion|^musica|^transicion|^audios|^marcas/.test(ruta || "")) re(); });
     this.E.on("assets", re);
@@ -167,8 +167,7 @@ export class Linea {
   }
 
   /* ── Medidas ────────────────────────────────────────────────────── */
-  _total() {
-    const p = this.E.pagina;
+  _total(p = this.E.pagina) {
     let t = 0;
     for (const e of p?.els || []) {
       t = Math.max(t, RT.finEntrada(e));
@@ -180,7 +179,50 @@ export class Linea {
   }
 
   /** Lo que dura la página como clip (en el modo CapCut): cuando pasa sola, o lo que dura lo de adentro. */
-  _finPag() { const d = (this.E.pagina?.duracion || 0) * 1000; return d || Math.max(3000, this._total()); }
+  _finPag(p = this.E.pagina) { const d = (p?.duracion || 0) * 1000; return d || Math.max(3000, this._total(p)); }
+
+  /** Fase 41 — LovEdit continuo: TODAS las páginas seguidas en un solo tiempo (como los clips de CapCut).
+   *  Cada página empieza donde acaba la anterior; al desplazar o reproducir, la página cambia sola. */
+  _paginasLinea() {
+    const P = this.E.proyecto, l = [];
+    let ini = 0;
+    for (const pid of P?.orden || []) {
+      const p = P.paginas[pid];
+      if (!p) continue;
+      const dur = this._finPag(p);
+      l.push({ pid, p, ini, dur });
+      ini += dur;
+    }
+    return l;
+  }
+  _segsAlDia() { this._segs = this._paginasLinea(); this._totalG = this._segs.reduce((a, x) => a + x.dur, 0); this._off = this._segs.find((x) => x.pid === this.E.paginaId)?.ini || 0; return this._segs; }
+
+  /** Ir a un instante del librito entero (en LovEdit): si cae en otra página, se pasa a ella sola. */
+  irGlobal(tg, desde) {
+    const segs = this._segs?.length ? this._segs : this._segsAlDia();
+    const total = this._totalG || 0;
+    tg = clamp(tg, 0, total);
+    const s = segs.find((x) => tg < x.ini + x.dur) || segs[segs.length - 1];
+    if (!s) return this.ir(tg, desde);
+    if (s.pid !== this.E.paginaId) {
+      const tocando = this.anim && !this.anim.quieto;
+      const P = this.E.proyecto, de = P.orden.indexOf(this.E.paginaId), a = P.orden.indexOf(s.pid);
+      // Al pasar con el dedo a la página de al lado también se ve su transición (rapidito).
+      const L = this.app.lienzo, vecina = desde === "scroll" && Math.abs(a - de) === 1;
+      const viejo = vecina ? this._fotoHoja(L) : null;
+      this.E.irPagina(s.pid);   // (lo que escucha «actual» pone el tiempo en 0: aquí se corrige)
+      this._off = s.ini;
+      if (viejo) {
+        const llega = P.paginas[P.orden[Math.max(a, de)]], cfg = llega?.transicion?.tipo ? llega.transicion : P.ajustes.transicion;
+        if (cfg?.tipo && cfg.tipo !== "ninguna" && L.pag?.nodo) {
+          L.hoja.classList.add("transicionando");
+          RT.transicion(viejo, L.pag.nodo, { ...cfg, dur: Math.min(450, RT.num?.(cfg.dur, 700) ?? 450) }, a < de).finally(() => { viejo.remove(); L.hoja.classList.remove("transicionando"); });
+        } else viejo.remove();
+      }
+      if (tocando) { this._play(tg - s.ini); return; }
+    }
+    this.ir(tg - s.ini, desde);
+  }
 
   _largo() { return Math.max(6000, Math.ceil((Math.max(this._total(), this.t) + 2500) / 1000) * 1000); }
   x(ms) { return (ms / 1000) * this.pps; }
@@ -203,20 +245,24 @@ export class Linea {
   pintar() {
     const p = this.E.pagina;
     if (!p) { hijos(this.filas, el("div")); return; }
-    const T = this._largo();
+    const centro = this.centro;
+    // En LovEdit: las pistas de la página llegan hasta su final; la regla y lo ancho son del librito entero.
+    if (centro) this._segsAlDia();
+    const T = centro ? Math.max(this._finPag(), this.t + 200) : this._largo();
     this.T = T;
-    const W = this.x(T);
+    const Tg = centro ? Math.ceil((this._totalG + 1000) / 1000) * 1000 : T;
+    const W = this.x(Tg);
     this._icono();
-    this.reloj.textContent = `${fmt(this.t)} / ${fmt(this.centro ? this._finPag() : this._total())}`;
+    this.reloj.textContent = centro ? `${fmt(this._off + this.t)} / ${fmt(this._totalG)}` : `${fmt(this.t)} / ${fmt(this._total())}`;
     hijos(this.herr, this._herramientas());
     // El nodo del deslizador se reutiliza: su valor se pone a mano (si no se está arrastrando).
     const zm = this.herr.querySelector(".ed-tl-zoom");
     if (zm && !zm.matches(":active")) zm.value = String(this._zoomPct());
-    hijos(this.cRegla, this._regla(T));
-    const centro = this.centro;
+    hijos(this.cRegla, this._regla(Tg));
     this._etw = centro ? 0 : this.cRegla.firstChild?.offsetWidth || ET;
     const pad = this.pad;
     this.lienzo.style.setProperty("--tl-pad", pad + "px");
+    this.lienzo.style.setProperty("--tl-off", (centro ? this.x(this._off) : 0) + "px");
     this.lienzo.style.width = this.et + W + (centro ? pad * 2 : 40) + "px";
     hijos(this.cFijas, el("div", {}, [centro ? this._filaPrincipal(p, T) : this._filaPagina(p, T), this._filaMusica(p, T)]));
     hijos(this.cAudios, el("div", {}, [...(p.audios || []).map((a) => this._filaAudio(a, T)), centro ? this._filaMasAudio() : null].filter(Boolean)));
@@ -341,8 +387,8 @@ export class Linea {
   /** Que se vea toda la página (de 0 al final) en el ancho de la línea. */
   verTodo() {
     const ancho = Math.max(120, this.cuerpo.clientWidth - this.et - 40);
-    this._zoom((ancho / Math.max(1500, this._total() + 600)) * 1000);
-    if (this.centro) this.ir(0); else this.cuerpo.scrollLeft = 0;
+    this._zoom((ancho / Math.max(1500, (this.centro ? this._totalG || this._total() : this._total()) + 600)) * 1000);
+    if (this.centro) this.irGlobal(0); else this.cuerpo.scrollLeft = 0;
   }
 
   _regla(T) {
@@ -369,34 +415,30 @@ export class Linea {
      0 se asoma la página anterior y después del final la siguiente; entre ellas, el cuadrito de la
      transición (tócalo para elegirla) y al final el «+» para añadir otra página. */
   _filaPrincipal(p, T) {
-    const P = this.E.proyecto, i = P.orden.indexOf(p.id);
-    const ant = P.paginas[P.orden[i - 1]], sig = P.paginas[P.orden[i + 1]];
-    const d = (p.duracion || 0) * 1000;
-    const D = d || Math.max(3000, this._total());
-    const ancho = Math.max(24, this.x(D));
+    const P = this.E.proyecto;
+    const segs = this._segs || this._segsAlDia();
     const pista = el("div.ed-tl-pista.principal");
     const tr = (pag) => { const t = pag?.transicion?.tipo ? pag.transicion : P.ajustes.transicion; return t?.tipo && t.tipo !== "ninguna" ? t : null; };
-    const cuadro = (pag, x) => {
-      const t = tr(pag);
-      return el("button.ed-tl-tcuad" + (t ? ".on" : ""), { type: "button", dataset: { k: "tr:" + pag.id, trans: pag.id }, style: { left: x + "px" }, title: `Transición al llegar a «${pag.nombre}»: ${t ? RT.TRANS?.[t.tipo]?.n || t.tipo : "ninguna"}`, "aria-label": "Elegir la transición", html: ico(t ? "transiciones" : "mas") });
-    };
-    if (ant) {
-      pista.append(el("button.ed-tl-stub.ant", { type: "button", dataset: { k: "ant:" + ant.id, irpag: ant.id }, title: `Ir a «${ant.nombre}»`, "aria-label": `Ir a la página anterior` }, [this._miniPag(ant, 4)]));
-      pista.append(cuadro(p, -7));
+    for (const [k, s0] of segs.entries()) {
+      const pag = s0.p, x0 = this.x(s0.ini), ancho = Math.max(24, this.x(s0.dur)), actual = pag.id === p.id;
+      // Cada página es un clip con sus cuadritos (tocar uno lleva a su principio); la de ahora, resaltada.
+      pista.append(el("button.ed-tl-pclip" + (actual ? ".on" : ""), { type: "button", dataset: { k: "pclip:" + pag.id, irpag: pag.id }, style: { left: x0 + "px", width: ancho + "px" }, "aria-label": `Ir a «${pag.nombre}»` }, [
+        this._miniPag(pag, Math.max(1, Math.min(24, Math.ceil(ancho / 40)))),
+        el("span.ed-tl-pnom", { text: `${k + 1} · ${pag.nombre} · ${(s0.dur / 1000).toFixed(1)} s` }),
+      ]));
+      // Entre una página y la siguiente: el cuadrito de su transición.
+      if (k > 0) {
+        const t = tr(pag);
+        pista.append(el("button.ed-tl-tcuad" + (t ? ".on" : ""), { type: "button", dataset: { k: "tr:" + pag.id, trans: pag.id }, style: { left: x0 + "px" }, title: `Transición al llegar a «${pag.nombre}»: ${t ? RT.TRANS?.[t.tipo]?.n || t.tipo : "ninguna"}`, "aria-label": "Elegir la transición", html: ico(t ? "transiciones" : "mas") }));
+      }
+      if (actual) {
+        const d = (pag.duracion || 0) * 1000;
+        pista.append(el("div.ed-tl-pfin" + (d ? "" : ".nada"), { dataset: { arr: "pagina-fin", k: "pfin" }, style: { transform: `translateX(${x0 + this.x(s0.dur)}px)` }, title: d ? `Pasa sola a los ${d / 1000} s · arrastra para cambiarlo` : "Pasa al tocar · arrastra para que pase sola" }, [el("i"), el("span", { text: d ? "pasa sola" : "al tocar" })]));
+      }
     }
-    const clip = el("div.ed-tl-pclip", { dataset: { k: "pclip:" + p.id }, style: { width: ancho + "px" } }, [
-      this._miniPag(p, Math.min(24, Math.ceil(ancho / 40))),
-      el("span.ed-tl-pnom", { text: `${p.nombre} · ${(D / 1000).toFixed(1)} s` }),
-    ]);
-    pista.append(clip);
-    // El final de la página: arrástralo (ahí pasa sola) — el mismo de siempre, como borde del clip.
-    pista.append(el("div.ed-tl-pfin" + (d ? "" : ".nada"), { dataset: { arr: "pagina-fin" }, style: { transform: `translateX(${this.x(D)}px)` }, title: d ? `Pasa sola a los ${d / 1000} s · arrastra para cambiarlo` : "Pasa al tocar · arrastra para que pase sola" }, [el("i"), el("span", { text: d ? "pasa sola" : "al tocar" })]));
-    if (sig) {
-      pista.append(cuadro(sig, ancho + 7));
-      pista.append(el("button.ed-tl-stub.sig", { type: "button", dataset: { k: "sig:" + sig.id, irpag: sig.id }, style: { left: ancho + 14 + "px" }, title: `Ir a «${sig.nombre}»`, "aria-label": "Ir a la página siguiente" }, [this._miniPag(sig, 4)]));
-    }
-    pista.append(el("button.ed-tl-maspag", { type: "button", dataset: { k: "mas", maspag: "1" }, style: { left: ancho + (sig ? 14 + 4 * 40 + 10 : 14) + "px" }, title: "Añadir una página después de esta", "aria-label": "Añadir página", html: ico("mas") }));
-    return el("div.ed-tl-fila.ed-tl-fprin", { dataset: { k: "prin" } }, [el("div.ed-tl-et", {}, [el("b", { html: ico("paginas") }), el("span", { text: "Página" })]), pista]);
+    const fin = this.x(this._totalG || 0);
+    pista.append(el("button.ed-tl-maspag", { type: "button", dataset: { k: "mas", maspag: "1" }, style: { left: fin + 14 + "px" }, title: "Añadir una página al final", "aria-label": "Añadir página", html: ico("mas") }));
+    return el("div.ed-tl-fila.ed-tl-fprin", { dataset: { k: "prin" } }, [el("div.ed-tl-et", {}, [el("b", { html: ico("paginas") }), el("span", { text: "Páginas" })]), pista]);
   }
 
   /** «+ Añadir audio» (como en CapCut): una pista nueva en el cabezal. */
@@ -440,7 +482,16 @@ export class Linea {
     const P = this.E.proyecto, pag = P.paginas[pid];
     if (!pag) return;
     const actual = pag.transicion?.tipo || "";
-    const poner = (tipo) => this.E.setPag({ transicion: tipo ? { tipo, dur: pag.transicion?.dur || 700 } : { tipo: "ninguna" } }, "Transición", null, pid);
+    // Al elegirla, LovEdit la enseña: reproduce desde un poquito antes de esa página.
+    const verla = () => setTimeout(() => {
+      if (!this.centro) return;
+      const seg = this._segsAlDia().find((x) => x.pid === pid);
+      if (!seg || !seg.ini) return;
+      if (this.anim && !this.anim.quieto) this.pausar();
+      this.irGlobal(Math.max(0, seg.ini - 1200));
+      this._play(this.t);
+    }, 120);
+    const poner = (tipo) => { this.E.setPag({ transicion: tipo ? { tipo, dur: pag.transicion?.dur || 700 } : { tipo: "ninguna" } }, "Transición", null, pid); if (tipo) verla(); };
     const tipos = Object.entries(RT.TRANS || {}).filter(([k]) => k !== "ninguna");
     menu(ancla, [
       { t: `${ico("cerrar")}<span>Sin transición</span>`, al: () => poner(""), clase: actual === "ninguna" ? "on" : "" },
@@ -875,7 +926,7 @@ export class Linea {
       if (ip) { this.E.irPagina(ip.dataset.irpag); return; }
       const tq = ev.target.closest("[data-trans]");
       if (tq) { this._elegirTrans(tq.dataset.trans, tq); return; }
-      if (ev.target.closest("[data-maspag]")) { this.app.acciones?.nuevaPagina?.(); return; }
+      if (ev.target.closest("[data-maspag]")) { this.app.acciones?.nuevaPagina?.(undefined, this.E.proyecto.orden.length); return; }
       if (ev.target.closest("[data-masaudio]")) { this.app.paneles?.agregarPista?.(Math.round(this.t / PASO) * PASO); return; }
       // Ojo y candado de cada pista.
       const mu = ev.target.closest("[data-mudo]");
@@ -931,7 +982,7 @@ export class Linea {
     ev.preventDefault();
     const regla = this.cRegla.querySelector(".ed-tl-regla");
     const rr = regla.getBoundingClientRect();
-    const ir = enCuadro((m) => this.ir(this.ms(m.clientX - rr.left), true));
+    const ir = enCuadro((m) => (this.centro ? this.irGlobal(this.ms(m.clientX - rr.left), true) : this.ir(this.ms(m.clientX - rr.left), true)));
     ir(ev);
     const id = ev.pointerId;
     const t = this.cuerpo;
@@ -1010,7 +1061,7 @@ export class Linea {
     const ancla = (cx ?? r.left + et + (r.width - et) / 2) - r.left - et;
     const msAncla = this.ms(c.scrollLeft + ancla);
     this.pps = pps;
-    const pintar = this.centro ? () => { this.pintar(); this._irScroll(this.x(this.t)); } : () => { this.pintar(); this.cuerpo.scrollLeft = Math.max(0, this.x(msAncla) - ancla); };
+    const pintar = this.centro ? () => { this.pintar(); this._irScroll(this.x((this._off || 0) + this.t)); } : () => { this.pintar(); this.cuerpo.scrollLeft = Math.max(0, this.x(msAncla) - ancla); };
     if (suave) { cancelAnimationFrame(this._rz); this._rz = requestAnimationFrame(pintar); } else pintar();
   }
 
@@ -1096,7 +1147,7 @@ export class Linea {
     const en0 = { ...(e?.anim?.entrada || {}) }, pr0 = { ...(e?.anim?.propia || {}) }, sa0 = { ...(e?.anim?.salida || {}) };
     const desde0 = pa?.desde || 0, durP0 = pa ? this._durPista(pa) : 0;
     const largoArchivo = pa ? this.app.audio?.duracionDe(this.app.bib.url(pa.asset)) : null;
-    const dur0 = (p.duracion || 0) * 1000 || this.T - 1000;
+    const dur0 = (p.duracion || 0) * 1000 || (this.centro ? this._finPag() : this.T - 1000);
     const imanes = [0, this.t];
     for (const o of p.els) if (o.id !== id) { imanes.push(RT.inicioDe(o)); const f = RT.finDe(o); if (f != null) imanes.push(f); }
     for (const o of p.audios || []) if (o.id !== id) { imanes.push(o.inicio || 0); imanes.push((o.inicio || 0) + this._durPista(o)); }
@@ -1293,7 +1344,7 @@ export class Linea {
   /** Ir a un instante: la hoja se queda quieta mostrando ese momento. */
   ir(ms, desdeRegla) {
     const tocando = this.anim && !this.anim.quieto;
-    this.t = clamp(Math.round(ms), 0, this.T || this._largo());
+    this.t = clamp(Math.round(ms), 0, this.centro ? this._finPag() : this.T || this._largo());
     if (tocando) { this._play(this.t); return; }
     if (!this.anim) this._preparar(null);
     if (this.anim) { this.anim.quieto = true; this.anim.ir(this.t); }
@@ -1301,7 +1352,47 @@ export class Linea {
     this._videos(false);
   }
 
-  alternarPlay() { if (this.anim && !this.anim.quieto) this.pausar(); else this._play(this.t >= this._total() + 400 ? 0 : this.t); }
+  alternarPlay() {
+    if (this.anim && !this.anim.quieto) { this.pausar(); return; }
+    if (this.centro) {
+      // Al final de una página se sigue con la siguiente; al final del librito, desde el principio.
+      if (this.t >= this._finPag() - 30) { this._segsAlDia(); const g = this._off + this._finPag(); this.irGlobal(g >= this._totalG - 30 ? 0 : g); }
+      this._play(this.t);
+      return;
+    }
+    this._play(this.t >= this._total() + 400 ? 0 : this.t);
+  }
+
+  /** LovEdit reproduciendo: al acabar la página pasa a la siguiente CON su transición, sin parar. */
+  _siguiente() {
+    const P = this.E.proyecto, pid = P.orden[P.orden.indexOf(this.E.paginaId) + 1];
+    if (!pid) return false;
+    const L = this.app.lienzo, viejo = this._fotoHoja(L);
+    const seg = (this._segs || []).find((x) => x.pid === pid);
+    this.E.irPagina(pid);
+    if (seg) this._off = seg.ini;
+    this.t = 0;
+    const pag = P.paginas[pid], cfg = pag.transicion?.tipo ? pag.transicion : P.ajustes.transicion;
+    if (viejo && cfg?.tipo && cfg.tipo !== "ninguna" && L?.pag?.nodo) {
+      L.hoja.classList.add("transicionando");
+      RT.transicion(viejo, L.pag.nodo, cfg).finally(() => { viejo.remove(); L.hoja.classList.remove("transicionando"); });
+    } else viejo?.remove();
+    requestAnimationFrame(() => this._play(0));
+    return true;
+  }
+
+  /** Una copia quieta de la página que se va (para su transición en la vista previa). */
+  _fotoHoja(L) {
+    const n = L?.pag?.nodo;
+    if (!n) return null;
+    const c = n.cloneNode(true);
+    c.querySelectorAll("video, audio, iframe").forEach((v) => v.remove());
+    c.querySelectorAll("[data-id]").forEach((v) => v.removeAttribute("data-id"));   // (que nadie la confunda con la de verdad)
+    c.classList.add("ed-hoja-sale");
+    c.setAttribute("aria-hidden", "true");
+    L.hoja.append(c);
+    return c;
+  }
 
   /** Reproduce las entradas (de todo o de unos pocos) sobre el lienzo. */
   probar(ids) {
@@ -1337,7 +1428,7 @@ export class Linea {
       if (id) this.app.audio.pista(this.app.bib.url(id), m.modo === "propia" ? m.volumen ?? 0.8 : g.volumen ?? 0.7, desde);
     }
     const t0 = performance.now() - desde;
-    const total = this._total() + 400;
+    const total = this.centro && !ids ? this._finPag() : this._total() + 400;
     this._raf?.();
     ocupar("linea");
     // Un solo bucle, al ritmo de la pantalla (o al tope de Configuración).
@@ -1345,6 +1436,7 @@ export class Linea {
       if (this.anim !== a || a.quieto) return false;
       this.t = performance.now() - t0;
       if (this.t >= total) {
+        if (this.centro && !this.anim?.ids && this._siguiente()) return false;
         if (this.bucle && !this.anim?.ids) { this.t = 0; requestAnimationFrame(() => this._play(0)); return false; }
         this.t = total; this.pausar(); return false;
       }
@@ -1446,14 +1538,15 @@ export class Linea {
     const c = this.cuerpo;
     let ir = null;
     const centro = this.centro;
-    if (centro) { if (desdeRegla !== "scroll" && Math.abs(this._sl - x) > 0.5) ir = x; }
+    const xg = centro ? this.x((this._off || 0) + this.t) : x;
+    if (centro) { if (desdeRegla !== "scroll" && Math.abs(this._sl - xg) > 0.5) ir = xg; }
     else if (siguiendo && !desdeRegla) {
       const vis = (this._cw || c.clientWidth) - this.et, sl = this._sl;
       if (x > sl + vis - 40 || x < sl) ir = Math.max(0, x - vis * 0.2);
     }
-    const tr = `translateX(${this.et + (centro ? this.pad : 0) + x}px)`;
+    const tr = `translateX(${this.et + (centro ? this.pad : 0) + xg}px)`;
     if (this._tr !== tr) { this._tr = tr; this.cabezal.style.transform = tr; }
-    const txt = `${fmt(this.t)} / ${fmt(centro ? this._finPag() : this._total())}`;
+    const txt = centro ? `${fmt((this._off || 0) + this.t)} / ${fmt(this._totalG || 0)}` : `${fmt(this.t)} / ${fmt(this._total())}`;
     if (this.reloj.textContent !== txt) this.reloj.textContent = txt;
     // «Dividir» sólo se ve activo con el cabezal dentro del clip elegido.
     if (!this._dv?.isConnected) this._dv = this.herr.querySelector('[data-ac="dividir"]');
@@ -1482,7 +1575,7 @@ export class Linea {
     cancelAnimationFrame(this._rs);
     this._rs = requestAnimationFrame(() => {
       if (this.anim && !this.anim.quieto) this.pausar();
-      this.ir(this.ms(this._sl), "scroll");
+      this.irGlobal(this.ms(this._sl), "scroll");
     });
   }
 }

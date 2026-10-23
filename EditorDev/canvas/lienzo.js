@@ -38,7 +38,7 @@ import { orientacion, PANTALLA, escribiendo } from "../components/pantalla.js";
 
 const RT = window.LibritoRT;
 /** Lo que sube desde abajo y puede tapar la hoja (en el teléfono). */
-const ACOMODO = ".ed-hoja-sec.abierta:not(.cerrando), .ed-insp.ed-desliza.abierta:not(.cerrando), .ed-hojita.abierta:not(.cerrando), .ed-pop.ver:not(.cerrando), .ed-menu, .ed-modal-fondo.ver .ed-modal:not(.cerrando), .ed-linea:not([hidden])";
+const ACOMODO = ".ed-hoja-sec.abierta:not(.cerrando), .ed-insp.ed-desliza.abierta:not(.cerrando), .ed-hojita.abierta:not(.cerrando), .ed-pop.ver:not(.cerrando), .ed-menu, .ed-modal-fondo.ver .ed-modal:not(.cerrando), .ed-linea:not([hidden]), .ed-abeja-globo.ver.acomoda";
 const PROPORCION = new Set(["imagen", "dibujo", "trazo", "video", "componente", "escena3d"]);
 const MANIJAS = { nw: [-1, -1], n: [0, -1], ne: [1, -1], e: [1, 0], se: [1, 1], s: [0, 1], sw: [-1, 1], w: [-1, 0] };
 const CURSORES = ["ns-resize", "nesw-resize", "ew-resize", "nwse-resize"];
@@ -321,7 +321,8 @@ export class Lienzo {
     let tope = Infinity;
     for (const n of document.querySelectorAll(ACOMODO)) {
       const r = n.getBoundingClientRect();
-      if (r.width < innerWidth * 0.55 || r.height < 24 || r.bottom < vr.bottom - 14 || r.top >= vr.bottom - 4) continue;
+      // (El globito «acomodado» de la abejita va un pelín arriba de la barra: reserva desde su borde de arriba.)
+      if (r.width < innerWidth * 0.55 || r.height < 24 || (r.bottom < vr.bottom - 14 && !n.classList.contains("acomoda")) || r.top >= vr.bottom - 4) continue;
       // Se mide cómo QUEDARÁ, no el cuadro de en medio: lo que está abriéndose (aún transparente)
       // cuenta; lo que se aparta para una vista previa no; lo que se cierra ya está fuera (ACOMODO).
       if (document.body.classList.contains("con-previa") && n.matches(".ed-hoja-sec, .ed-insp")) continue;

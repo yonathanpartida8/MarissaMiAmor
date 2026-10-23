@@ -47,7 +47,11 @@ export class ModoPro {
     this.dh = el("div.pro-dh", {}, [b("deshacer", "Deshacer", () => this.E.deshacer()), b("rehacer", "Rehacer", () => this.E.rehacer())]);
     app.tiempo?.cab?.append(this.dh);
     this.herr = el("nav.pro-herr", { "aria-label": "Herramientas de LovEdit" });
-    document.body.append(this.barra, this.herr);
+    // La pestañita (Fase 41): se toca o se desliza para abrir el menú (Bloques, Recursos, Elementos…),
+    // que sale por la izquierda SOBRE LAS PISTAS: la página de arriba siempre queda a la vista.
+    this.asa = el("button.pro-asa", { type: "button", "aria-label": "Abrir el menú (Bloques, Recursos, Elementos…)", title: "Desliza o toca: Bloques, Recursos, Elementos…" }, [el("i"), el("i"), el("i")]);
+    this._asa();
+    document.body.append(this.barra, this.herr, this.asa);
     this.E.on("sel", () => this.refrescar());
     this.E.on("actual", () => { this._ids = new Set((this.E.pagina?.els || []).map((x) => x.id)); this._titulo(); });
     this.E.on("els", () => this._nuevos());
@@ -57,6 +61,27 @@ export class ModoPro {
   }
 
   get L() { return this.app.tiempo; }
+
+  /** La pestañita: tocar abre o cierra; deslizarla hacia la derecha también abre. */
+  _asa() {
+    const app = this.app;
+    // (Las que se abren en hojita —animar, efectos, stickers…— no van en el cajón: ahí, Bloques.)
+    const enHojita = /^(animar|efectos|transiciones|gifs|stickers|toques|paginas)$/;
+    const abrir = () => app.abrirSeccion(app.seccion && !enHojita.test(app.seccion) ? app.seccion : "bloques", true);
+    const alternar = () => (app.lateral?.abierto ? app.lateral.cerrar() : abrir());
+    let x0 = null, movio = false;
+    this.asa.addEventListener("pointerdown", (e) => { x0 = e.clientX; movio = false; try { this.asa.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } });
+    this.asa.addEventListener("pointermove", (e) => {
+      if (x0 == null) return;
+      const dx = e.clientX - x0;
+      this.asa.style.transform = `translateX(${Math.max(0, Math.min(40, dx))}px)`;
+      if (dx > 34 && !movio) { movio = true; if (!app.lateral?.abierto) abrir(); }
+    });
+    const soltar = () => { x0 = null; this.asa.style.transform = ""; };
+    this.asa.addEventListener("pointerup", soltar);
+    this.asa.addEventListener("pointercancel", soltar);
+    this.asa.addEventListener("click", () => { if (!movio) alternar(); movio = false; });
+  }
 
   /* ── Entrar y salir (con una transición suave) ─────────────────────── */
   abrir(desde) {

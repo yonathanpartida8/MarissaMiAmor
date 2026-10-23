@@ -1792,6 +1792,33 @@ body.ed-mov-nada .ed-abeja .ab-patas, body.ed-mov-nada .ed-abeja .ab-ojos-n { an
 .bq-vid::after { content: ""; position: absolute; left: 50%; top: 50%; margin: -6px 0 0 -3px; border-left: 9px solid #fff; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
 .bq-num { font: 700 24px/1 Georgia, serif; color: var(--bq); }
 .bq-cor { color: var(--bq); font-size: 16px; line-height: 1; }
+/* Fase 41: maquetas de los bloques profesionales */
+.ed-bq-maq .bl { background: #fff; box-shadow: none; }
+.bq-banda { display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 5px; position: absolute; inset: 0; background: linear-gradient(150deg, var(--bq), #7b5cff); }
+.bq-banda .bq-nav { width: 70%; margin-top: 3px; }
+.bq-banda .bq-nav .bq-b:last-child { background: none; border: 1.5px solid #fff; }
+.bq-hist { display: grid !important; gap: 6px; width: 70%; padding-left: 10px; border-left: 2px solid color-mix(in srgb, var(--bq) 45%, #fff); }
+.bq-hist i { position: relative; height: 5px; width: 80%; border-radius: 3px; background: #c9b0bd; }
+.bq-hist i::before { content: ""; position: absolute; left: -15px; top: -2px; width: 8px; height: 8px; border-radius: 50%; background: var(--bq); }
+.bq-nums { display: flex !important; gap: 4px; width: 88%; }
+.bq-nums b { flex: 1; padding: 7px 0; border-radius: 6px; background: #fff; box-shadow: 0 2px 5px rgba(120, 40, 80, .14); color: var(--bq); font: 700 11px/1 Georgia, serif; text-align: center; }
+.bq-avatar { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--bq); background: linear-gradient(135deg, #ffc3d6, #c7b6f0); }
+.bq-pill { width: 72%; height: 9px; border-radius: 4px; background: color-mix(in srgb, var(--bq) 22%, #fff); }
+.bq-faq { display: grid !important; gap: 4px; width: 80%; }
+.bq-faq i { height: 9px; border-radius: 4px; background: color-mix(in srgb, var(--bq) 22%, #fff); }
+.bq-faq i.ab { height: 4px; width: 70%; margin-left: 8px; background: #c9b0bd; }
+.bq-regalo { font-size: 30px; line-height: 1; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .15)); }
+.bq-disco { display: flex !important; align-items: center; gap: 7px; width: 90%; padding: 7px; border-radius: 8px; background: #241b2b; }
+.bq-vinilo { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle, var(--bq) 0 22%, #120c16 24% 100%); box-shadow: 0 0 0 2px #3a2c42; }
+.bq-col { display: flex !important; flex: 1; flex-direction: column; gap: 4px; align-items: flex-start; }
+.bq-col .bq-l { background: #6d5a76; }
+.bq-mural { position: relative; display: block; width: 76px; height: 50px; }
+.bq-mural .bq-pola { position: absolute; width: 28px; height: 32px; }
+.bq-mural .bq-pola:nth-child(1) { left: 0; top: 4px; transform: rotate(-8deg); }
+.bq-mural .bq-pola:nth-child(2) { right: 0; top: 0; transform: rotate(7deg); }
+.bq-mural .bq-pola:nth-child(3) { left: 24px; top: 14px; transform: rotate(-2deg); }
+.bq-sep { display: flex !important; align-items: center; gap: 6px; width: 80%; }
+.bq-sep i { flex: 1; height: 2px; background: color-mix(in srgb, var(--bq) 50%, #fff); }
 :root[data-estilo="retromylove"] .ed-bq-t, :root[data-estilo="retromylove"] .ed-bq-maq { border-radius: 0; }
 :root[data-estilo="retromylove"] .ed-bq-t { border: 2px solid var(--rml-tinta); box-shadow: 2px 2px 0 var(--rml-tinta); }
 :root[data-estilo="retromylove"] .ed-bq-t b { font: 400 18px/1.05 var(--rml-pixel); }
@@ -2574,9 +2601,9 @@ body.modo-pro .ed-tl-fmus:has(.ed-tl-nada) { display: none; }
 /* Las pestañas en el modo profesional: un panel finito que sube encima de las pistas (la vista previa
    se sigue viendo), como los paneles de CapCut. Tocar otra vez la pestaña lo cierra. */
 @media (max-width: 1023px) {
-  body.modo-pro .ed-lateral { top: auto !important; left: 0 !important; right: 0; bottom: var(--cb) !important; width: auto !important; height: var(--tl); transform: none !important; z-index: 96; border-right: 0; border-top: 1px solid #262626; border-radius: 14px 14px 0 0; box-shadow: 0 -12px 30px rgba(0, 0, 0, .55); overflow: hidden; }
+  body.modo-pro .ed-lateral { top: auto !important; left: var(--riel-pro, 54px) !important; right: auto; bottom: var(--cb) !important; width: min(330px, calc(100vw - var(--riel-pro, 54px) - 36px)) !important; height: var(--tl); transform: none !important; z-index: 96; border-right: 1px solid #262626; border-top: 1px solid #262626; border-radius: 0 16px 0 0; box-shadow: 14px 0 30px rgba(0, 0, 0, .55); overflow: hidden; }
   body.modo-pro:not(.lateral-abierto) .ed-lateral { display: none !important; }
-  body.modo-pro.lateral-abierto .ed-lateral { visibility: visible !important; animation: pro-sube .24s cubic-bezier(.22, .8, .26, 1); }
+  body.modo-pro.lateral-abierto .ed-lateral { visibility: visible !important; animation: pro-lado .26s cubic-bezier(.22, .8, .26, 1); }
   body.modo-pro .ed-velo { display: none; }
   body.modo-pro .ed-lateral :is(.ed-panel-cab, .ed-panel-cuerpo) { zoom: .8; }
   body.modo-pro .ed-hoja-sec { bottom: var(--cb); height: var(--tl); max-height: var(--tl); border: 0; border-top: 1px solid #262626; border-radius: 14px 14px 0 0; background: var(--superficie); }
@@ -2595,3 +2622,65 @@ body.modo-pro .ed-tl-fila.ed-tl-fmas { min-height: 38px; }
 /* Fase 40: LovEdit, con su nombre arriba. */
 .pro-marca { font: 800 15px/1 Jost, system-ui, sans-serif; letter-spacing: .2px; background: linear-gradient(90deg, #ff8fbf, #b49cff); -webkit-background-clip: text; background-clip: text; color: transparent; white-space: nowrap; }
 @media (max-width: 360px) { .pro-marca { display: none; } }
+
+/* ═══ Fase 41: LovEdit continuo — todas las páginas seguidas, como los clips de CapCut ═══
+   Las pistas de lo de la hoja (y su música y audios) empiezan donde empieza la página de ahora. */
+body.modo-pro :is(.ed-tl-filas, .ed-tl-audios, .ed-tl-fmus) .ed-tl-pista { margin-left: calc(var(--tl-pad, 0px) + var(--tl-off, 0px)); }
+.ed-tl-pclip { padding: 0; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; pointer-events: auto; opacity: .78; transition: opacity .2s, box-shadow .2s; }
+.ed-tl-pclip.on { opacity: 1; box-shadow: 0 0 0 2px #fff; }
+.ed-tl-pclip:active { opacity: .9; }
+/* La transición entre páginas, en vivo en la vista previa. */
+.ed-hoja.transicionando { overflow: hidden; }
+.ed-hoja > .ed-hoja-sale { pointer-events: none; }
+
+/* Fase 41: la pestañita de LovEdit y el menú por la izquierda, sobre las pistas (la página siempre a la vista). */
+.pro-asa { display: none; }
+@media (max-width: 1023px) {
+  body.modo-pro { --riel-pro: 54px; }
+  body.modo-pro .pro-asa { display: flex; flex-direction: column; justify-content: center; gap: 3px; position: fixed; z-index: 95; left: 0; bottom: calc(var(--cb) + var(--tl) * .5 - 34px); width: 20px; height: 68px; padding: 0 0 0 5px; border: 0; border-radius: 0 14px 14px 0; background: linear-gradient(180deg, #ff8fbf, #b49cff); box-shadow: 4px 0 16px rgba(255, 143, 191, .35); cursor: grab; touch-action: none; transition: transform .2s, opacity .2s; }
+  body.modo-pro .pro-asa i { display: block; width: 3px; height: 14px; border-radius: 2px; background: rgba(255, 255, 255, .9); }
+  body.modo-pro .pro-asa i:nth-child(2) { height: 20px; }
+  body.modo-pro.lateral-abierto .pro-asa { left: calc(var(--riel-pro) + min(330px, 100vw - var(--riel-pro) - 36px)); }
+  body.modo-pro.lateral-abierto .ed-riel { display: flex !important; position: fixed; z-index: 97; left: 0; top: auto; bottom: var(--cb); height: var(--tl); width: var(--riel-pro); padding: 6px 2px; background: #111; border-right: 1px solid #262626; overflow-y: auto; animation: pro-lado .22s cubic-bezier(.22, .8, .26, 1); }
+  body.modo-pro.lateral-abierto .ed-riel button { color: #ddd; }
+  body.modo-pro.lateral-abierto .ed-riel button.on { color: #fff; }
+}
+@keyframes pro-lado { from { transform: translateX(-60%); opacity: 0; } }
+
+/* Fase 41: publicar con tu enlace propio, la tarjeta para compartir, el QR y el enlace a cada página. */
+.ed-pub-url { display: flex; align-items: center; min-width: 0; border: 1.5px solid var(--linea); border-radius: 12px; background: var(--superficie); overflow: hidden; }
+.ed-pub-prefijo { flex: none; max-width: 52%; padding: 0 2px 0 10px; color: var(--texto-suave); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left; }
+.ed-pub-enlace { flex: 1; min-width: 60px; border: 0 !important; background: none !important; box-shadow: none !important; padding: 9px 10px 9px 2px !important; font-weight: 700; color: var(--acento); }
+.ed-pub-estado { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: -2px 0 6px; color: var(--texto-suave); font-size: 12.5px; }
+.ed-pub-estado.ok { color: #23905f; font-weight: 700; }
+.ed-pub-estado.mal { color: #c63a54; }
+.ed-pub-desc { width: 100%; resize: vertical; min-height: 54px; }
+.ed-pub-tarjeta { display: grid; overflow: hidden; margin: 2px 0 10px; border: 1px solid var(--linea); border-radius: 14px; background: var(--superficie); box-shadow: var(--sombra-chica); }
+.ed-pub-tarjeta img { display: block; width: 100%; aspect-ratio: 1200 / 630; object-fit: cover; }
+.ed-pub-tarjeta div { display: grid; gap: 2px; padding: 8px 12px 10px; }
+.ed-pub-tarjeta b { font-size: 14px; } .ed-pub-tarjeta small { color: var(--texto-suave); }
+.ed-pub-extra { display: flex; gap: 14px; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--linea); }
+.ed-pub-qr { flex: none; width: 120px; height: 120px; padding: 6px; border-radius: 12px; background: #fff; }
+.ed-pub-qr svg { width: 100%; height: 100%; display: block; }
+.ed-pub-extra > div { display: grid; gap: 4px; min-width: 0; }
+.ed-pub-fila { display: flex; gap: 6px; align-items: center; }
+.ed-pub-pag { min-width: 0; flex: 1; }
+
+/* ═══ Fase 41: la abejita — ojos que te siguen, parpadeo, baile, lupa y globito que nunca tapa ═══ */
+.ed-abeja { z-index: 72; }
+.ed-abeja .ab-ojos-n { translate: var(--mx, 0px) var(--my, 0px); transition: translate .14s ease-out; transform-box: fill-box; transform-origin: center; animation: ed-ab-parpadeo 4.6s infinite; }
+@keyframes ed-ab-parpadeo { 0%, 94%, 100% { scale: 1 1; } 96% { scale: 1 .08; } }
+.ed-abeja .ab-lupa { display: none; }
+.ed-abeja[data-lupa] .ab-lupa { display: inline; transform-box: fill-box; transform-origin: 20% 80%; animation: ed-ab-lupa 1.2s ease-in-out infinite; }
+@keyframes ed-ab-lupa { 0%, 100% { rotate: -8deg; translate: 0 0; } 50% { rotate: 10deg; translate: -3px 1px; } }
+.ed-abeja-in.baila { animation: ed-ab-baila 1.3s ease-in-out; }
+@keyframes ed-ab-baila { 0%, 100% { transform: none; } 15% { transform: translateY(-8px) rotate(-14deg); } 35% { transform: translateY(0) rotate(12deg) scale(1.08); } 55% { transform: translateY(-10px) rotate(-10deg); } 75% { transform: rotate(360deg) scale(1.1); } }
+.ed-abeja-in.mira { animation: ed-ab-mira 1.6s ease-in-out; }
+@keyframes ed-ab-mira { 0%, 100% { transform: none; } 25% { transform: rotate(-14deg) translateX(-4px); } 60% { transform: rotate(14deg) translateX(4px); } }
+.ed-abeja .ab-antena { transform-box: fill-box; transform-origin: 50% 100%; animation: ed-ab-antena 2.8s ease-in-out infinite; }
+@keyframes ed-ab-antena { 0%, 100% { rotate: 0deg; } 50% { rotate: 12deg; } }
+.ed-abeja-globo.acomoda { max-width: calc(100vw - 16px); padding-left: 78px; border-radius: 20px; }
+.ed-abeja-globo.acomoda::after { display: none; }
+.ed-abeja-globo .ed-abeja-nivel { display: inline-block; margin: 0 6px 0 0; padding: 2px 8px; border-radius: 99px; font: 800 11px/1.4 Jost, sans-serif; vertical-align: 2px; }
+.ed-abeja-nivel.mal { background: #ffe1e6; color: #c63a54; } .ed-abeja-nivel.ojo { background: #fff2cf; color: #9a6a00; } .ed-abeja-nivel.idea { background: #e7f0ff; color: #3d6fc4; }
+body.ed-mov-nada .ed-abeja :is(.ab-ojos-n, .ab-antena, .ab-lupa) { animation: none !important; }

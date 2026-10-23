@@ -80,7 +80,7 @@ function icono(tam, fondo) {
  * publicar.json. `deLaNube(asset)`: el original de una foto achicada que este
  * aparato no tiene (copia de seguridad completa).
  */
-export async function exportar(app, { alProgreso, completo = false, publicar = false, soloPaginas = null, conProyecto = false, nube = null, ficha = null, deLaNube = null } = {}) {
+export async function exportar(app, { alProgreso, completo = false, publicar = false, soloPaginas = null, conProyecto = false, nube = null, ficha = null, deLaNube = null, compartir = null } = {}) {
   const P0 = app.estado.proyecto;
   const P = soloPaginas ? {
     ...P0,
@@ -277,7 +277,17 @@ ${urlF ? `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="${escapar(P.nombre.slice(0, 30))}">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icono-180.png">
+<link rel="apple-touch-icon" href="icono-180.png">${compartir ? `
+<meta name="description" content="${escapar(compartir.descripcion || P.nombre)}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="${escapar(P.nombre)}">
+<meta property="og:description" content="${escapar(compartir.descripcion || "")}">${compartir.imagen ? `
+<meta property="og:image" content="${escapar((compartir.url || "") + "compartir.png")}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">` : ""}${compartir.url ? `
+<meta property="og:url" content="${escapar(compartir.url)}">
+<link rel="canonical" href="${escapar(compartir.url)}">` : ""}` : ""}
 <style>
 html,body{overscroll-behavior:none;touch-action:manipulation}
 #visor-carga{position:fixed;inset:0;z-index:2147483600;display:grid;place-items:center;background:${fondo};transition:opacity .6s ease,visibility .6s}
@@ -313,6 +323,7 @@ html,body{overscroll-behavior:none;touch-action:manipulation}
       icons: [{ src: "icono-192.png", sizes: "192x192", type: "image/png" }, { src: "icono-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }],
     }, null, 1));
     for (const t of [180, 192, 512]) { const b = await icono(t, fondo); if (b) zip.agregar(`icono-${t}.png`, b); }
+    if (compartir?.imagen) zip.agregar("compartir.png", compartir.imagen);
   }
   if (ficha) zip.agregar("publicar.json", JSON.stringify({ ...ficha, ...(Object.keys(refs).length ? { nube: refs } : {}) }, null, 1));
   if (publicar && !conProyecto) {

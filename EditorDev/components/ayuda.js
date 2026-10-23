@@ -14,7 +14,8 @@ import { el } from "../../src/utils/dom.js";
 import { aviso } from "./ui.js";
 import { ico } from "./iconos.js";
 import { Abeja } from "../mascota/abeja.js";
-import { siguiente as dialogo, evento } from "../mascota/dialogos.js";
+import { siguiente as dialogo, evento, deContexto } from "../mascota/dialogos.js";
+import { revisar, resumen } from "../mascota/revisor.js";
 import { hackeo } from "../mascota/glitch.js";
 import { PREF, alCambiar } from "../config/preferencias.js";
 
@@ -330,6 +331,7 @@ export class Ayuda {
       cuenta: tips.length > 1 ? `${this.i + 1} de ${tips.length}` : "",
       botones: [
         ...(tips.length > 1 ? [[`${ico("refrescar")}<span>Otro</span>`, () => this.hablar(this.i + 1)]] : []),
+        [`${ico("buscar")}<span>Revisa mi librito</span>`, () => this.revisarLibrito()],
         [`${ico("play")}<span>Enséñame todo</span>`, () => this.recorrido()],
         [`<span>Gracias</span>`, () => this.abeja.callar(), "primario"],
       ],
@@ -348,10 +350,77 @@ export class Ayuda {
     if (!this.abeja.viva) return;
     if (this.enTour) return this._programarCharla();
     if (document.hidden || this.abeja.hablando || document.body.classList.contains("ed-probando") || document.querySelector(".ed-modal-fondo, .ed-hojita.abierta, .ed-codigo-pantalla")) return this._programarCharla();
+    // Fase 41: a veces, en vez de charlar, mira la página y avisa (con cariño) si algo se ve mal…
+    if (Math.random() < 0.35 && this._psst()) return this._programarCharla();
+    // …o comenta lo que está pasando (la hora, cuántas páginas, si hay música).
+    if (PREF.idioma !== "dev" && Math.random() < 0.3) {
+      const t = deContexto(this._contexto());
+      if (t) { this.abeja.decir(t, { cara: "feliz", dura: Math.min(9000, 2600 + t.length * 55) }); this._programarCharla(); return; }
+    }
     const d = await dialogo();
     if (d.tipo === "hackeo") await this.hackeo(d.texto);
     else this.abeja.decir(d.texto, { cara: /💖|🥹|amor|bbsita|lind|bonit/i.test(d.texto) ? "enamorada" : "feliz", dura: Math.min(9000, 2600 + d.texto.length * 55) });
     this._programarCharla();
+  }
+
+  _contexto() {
+    const E = this.app.estado, P = E.proyecto;
+    this._desde = this._desde || Date.now();
+    return { paginas: P?.orden?.length || 0, els: (E.pagina?.els || []).filter((x) => x.tipo !== "musica").length, hora: new Date().getHours(),
+      minutos: (Date.now() - this._desde) / 60000, musica: !!(P?.ajustes?.musica?.asset || P?.orden?.some((id) => P.paginas[id]?.musica?.modo === "propia")), idioma: PREF.idioma };
+  }
+
+  /** «Psst…»: algo de ESTA página se ve mal y no lo había dicho → lo dice (una vez cada cosa). */
+  _psst() {
+    if (!this.abeja.viva || this.abeja.hablando) return false;
+    const E = this.app.estado;
+    this._dichos = this._dichos || new Set();
+    const h = revisar(this.app).find((x) => x.nivel === "mal" && x.pagina === E.paginaId && !this._dichos.has(x.texto));
+    if (!h) return false;
+    this._dichos.add(h.texto);
+    const botones = [[`<span>Ahora no</span>`, () => this.abeja.callar()]];
+    if (h.arreglar) botones.unshift([`${ico("varita")}<span>Arréglalo</span>`, () => { h.arreglar(); this.abeja.callar(); this.abeja.reaccionar("insertar"); aviso("¡Listo, arreglado! ✨", 1800); }, "primario"]);
+    if (h.els?.length) E.seleccionar(h.els.filter((id) => E.el(id)));
+    this.abeja.decir("Psst… " + h.texto, { cara: "sorpresa", botones, cuenta: "Se ve un poco mal" });
+    return true;
+  }
+
+  /**
+   * Fase 41: «Revisa mi librito» — saca su lupa, mira cada página y dice qué se ve mal, qué se puede
+   * mejorar e ideas; va a cada cosa (la elige en la hoja) y, si se puede, la arregla de un toque.
+   */
+  async revisarLibrito() {
+    if (!PREF.abeja) { this._consejito("La abejita está apagada en ⚙ Configuración → Abejita."); return; }
+    if (!this.abeja.viva) { this.venir(); await new Promise((ok) => setTimeout(ok, 1400)); }
+    clearTimeout(this._charla);
+    this.abeja.callar();
+    this.abeja.lupa(true);
+    this.abeja.cara("sorpresa", 900);
+    const L = this.app.lienzo;
+    if (L?.hoja) { const r = L.hoja.getBoundingClientRect(); await this.abeja.visitar(r); }
+    await new Promise((ok) => setTimeout(ok, 700));
+    const lista = revisar(this.app);
+    this._hallazgos = lista;
+    const n = this.app.estado.proyecto?.orden?.length || 0;
+    this.abeja.lupa(true);
+    if (!lista.length) { this.abeja.bailar(); this.abeja.decir(resumen(lista, n), { cara: "enamorada", botones: [[`<span>¡Gracias!</span>`, () => this.abeja.callar(), "primario"]] }); return; }
+    this.abeja.decir(resumen(lista, n), { cara: lista.some((x) => x.nivel === "mal") ? "sorpresa" : "feliz", botones: [[`<span>Enséñamelos</span>`, () => this._hallazgo(0), "primario"], [`<span>Luego</span>`, () => this.abeja.callar()]] });
+  }
+
+  _hallazgo(i) {
+    const l = this._hallazgos || [], E = this.app.estado;
+    if (!l.length) { this.abeja.bailar(); this.abeja.decir("¡Ya quedó todo! Ahora sí está precioso 🐝💗", { cara: "enamorada", dura: 4200 }); return; }
+    this._ih = ((i % l.length) + l.length) % l.length;
+    const h = l[this._ih];
+    if (h.pagina && E.proyecto.paginas[h.pagina] && E.paginaId !== h.pagina) E.irPagina(h.pagina);
+    if (h.els?.length) setTimeout(() => E.seleccionar(h.els.filter((id) => E.el(id))), 60);
+    const botones = [];
+    if (h.arreglar) botones.push([`${ico("varita")}<span>Arréglalo</span>`, () => { try { h.arreglar(); } catch (e) { console.warn(e); } this.abeja.reaccionar("insertar"); l.splice(this._ih, 1); this._hallazgo(this._ih); }, "primario"]);
+    if (l.length > 1) botones.push([`${ico("derecha")}<span>Siguiente</span>`, () => this._hallazgo(this._ih + 1)]);
+    botones.push([`<span>Listo</span>`, () => this.abeja.callar()]);
+    const nivel = { mal: "Se ve un poco mal", ojo: "Para que quede mejor", idea: "Una idea" }[h.nivel];
+    this.abeja.lupa(true);
+    this.abeja.decir(h.texto, { cara: h.nivel === "mal" ? "sorpresa" : h.nivel === "ojo" ? "normal" : "feliz", cuenta: `${nivel} · ${this._ih + 1} de ${l.length}`, botones });
   }
 
   /** El evento especial (también lo prueba Configuración). */

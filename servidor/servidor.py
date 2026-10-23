@@ -68,7 +68,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.14.0"
+VERSION = "1.15.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -2074,6 +2074,10 @@ def api_publicar(h, s):
     q = h.parametros()
     if s["rol"] != "admin" and not q.get("reemplazar") and E.db.uno("SELECT COUNT(*) n FROM publicaciones WHERE usuario_id=?", s["usuario_id"])["n"] >= E.aj["max_publicaciones"]:
         raise Falla(f"Ya tienes {E.aj['max_publicaciones']} páginas publicadas: quita alguna o actualiza una que ya esté.", 413)
+    if q.get("exacto") and not q.get("reemplazar"):   # (antes de subir nada: así no se espera la subida para saberlo)
+        base = nombre_limpio(q.get("nombre") or q.get("titulo") or "")
+        if base in nombres_usados():
+            raise Falla(f"El enlace «{base}» ya es de otra página: elige otro (por ejemplo «{nombre_sugerido(base)}»).", 409)
     tmp = h.cuerpo_a_archivo()
     carpeta_nueva = None
     try:
@@ -2092,7 +2096,11 @@ def api_publicar(h, s):
             slug = reemplazar
             E.db.x("UPDATE publicaciones SET titulo=?, estado='preparando', actualizado=? WHERE slug=?", titulo, ahora(), slug)
         else:
-            slug = E.reservar_nombre(nombre_limpio(q.get("nombre") or titulo), s["usuario_id"], titulo)
+            base = nombre_limpio(q.get("nombre") or titulo)
+            # Fase 41: con un enlace elegido a mano («exacto»), si ya es de otra página se avisa (no se cambia solo).
+            if q.get("exacto") and base in nombres_usados():
+                raise Falla(f"El enlace «{base}» ya es de otra página: elige otro (por ejemplo «{nombre_sugerido(base)}»).", 409)
+            slug = E.reservar_nombre(base, s["usuario_id"], titulo)
         carpeta = os.path.join(DATOS, "publicaciones", slug)
         carpeta_nueva = carpeta + ".nueva"
         shutil.rmtree(carpeta_nueva, ignore_errors=True)
@@ -2122,6 +2130,31 @@ def api_publicar(h, s):
     t = E.trabajo("publicar", s["usuario_id"], correr, slug)
     sitio = E.sitio()
     h.responder(202, {"trabajo": t["id"], "slug": slug, "local": f"/p/{slug}/", "enlace": f"{sitio}{CARPETA_PUB}/{slug}/" if sitio else ""})
+
+
+def nombres_usados():
+    return {r["slug"] for r in E.db.q("SELECT slug FROM publicaciones")} | E.carpetas_github() | RESERVADOS
+
+
+def nombre_sugerido(base, usados=None):
+    usados = nombres_usados() if usados is None else usados
+    sug, n = base, 2
+    while sug in usados:
+        sufijo = f"-{n}"
+        sug = base[:40 - len(sufijo)] + sufijo
+        n += 1
+    return sug
+
+
+@ruta("GET", "/api/publicaciones/disponible", "sesion")
+def api_nombre_libre(h, s):
+    """¿Ese enlace está libre? (para elegir el enlace propio de una página: …/publicaciones/<enlace>/)."""
+    base = nombre_limpio(h.parametros().get("nombre") or "")
+    usados = nombres_usados()
+    sitio = E.sitio() if E.github() else ""
+    sug = nombre_sugerido(base, usados)
+    h.responder(200, {"slug": base, "libre": base not in usados, "sugerido": sug, "sitio": sitio, "carpeta": CARPETA_PUB,
+                      "enlace": f"{sitio}{CARPETA_PUB}/{base}/" if sitio else ""})
 
 
 @ruta("POST", "/api/publicaciones/([a-z0-9-]{1,40})/subir", "sesion")
