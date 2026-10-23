@@ -1,5 +1,5 @@
 /**
- * MODO PROFESIONAL — la línea de tiempo como CapCut (Fase 38; como CapCut de verdad desde la 39).
+ * MODO PROFESIONAL — LovEdit como CapCut (Fase 38; como CapCut de verdad desde la 39).
  *
  * Al tocar «Tiempo» (o al abrir la línea desde cualquier sitio) una transición suave lleva a una
  * pantalla aparte, negra como CapCut:
@@ -37,6 +37,7 @@ export class ModoPro {
     this.sub = el("small");
     this.barra = el("header.pro-barra", { role: "toolbar", "aria-label": "Modo profesional" }, [
       b("cerrar", "Volver al editor", () => this.cerrar(), ".pro-x"),
+      el("b.pro-marca", { text: "LovEdit" }),
       el("i.pro-esp"),
       el("button.pro-tit", { type: "button", "aria-label": "Cambiar de página", onClick: (ev) => this._paginas(ev.currentTarget) }, [this.titulo, this.sub, el("i", { html: ico("abajo") })]),
       b("puntos", "Opciones de la línea", (a) => this._opciones(a)),
@@ -45,7 +46,7 @@ export class ModoPro {
     // Deshacer y rehacer van en la fila del reproductor (como en CapCut).
     this.dh = el("div.pro-dh", {}, [b("deshacer", "Deshacer", () => this.E.deshacer()), b("rehacer", "Rehacer", () => this.E.rehacer())]);
     app.tiempo?.cab?.append(this.dh);
-    this.herr = el("nav.pro-herr", { "aria-label": "Herramientas de la línea de tiempo" });
+    this.herr = el("nav.pro-herr", { "aria-label": "Herramientas de LovEdit" });
     document.body.append(this.barra, this.herr);
     this.E.on("sel", () => this.refrescar());
     this.E.on("actual", () => { this._ids = new Set((this.E.pagina?.els || []).map((x) => x.id)); this._titulo(); });

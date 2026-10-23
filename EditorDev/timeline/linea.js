@@ -262,7 +262,7 @@ export class Linea {
         b("pista", "onda", "Añadir una pista de audio aquí"),
       ]),
       el("div.ed-tl-g.zoom", {}, [b("menos", "zoomMenos", "Alejar (−)"), zoom, b("mas", "zoomMas", "Acercar (+)"), b("todo", "ajustar", "Ver todo (0)")]),
-      b("cerrar", "cerrar", "Cerrar la línea de tiempo"),
+      b("cerrar", "cerrar", "Cerrar LovEdit"),
     ]);
   }
 
@@ -1109,7 +1109,7 @@ export class Linea {
       largo = setTimeout(() => { if (movio) return; largo = "hecho"; vibrar(10); if (pa) this._menuAudio(pa, x0, y0); else this._menuClip(e, x0, y0); }, TOQUE_LARGO);
     }
     const empezar = () => {
-      fin = E.gesto(esAudio ? "Pista de audio" : "Línea de tiempo");
+      fin = E.gesto(esAudio ? "Pista de audio" : "LovEdit");
       this._arrastrando = true;
       this.raiz.classList.add("moviendo");
       if (e && !E.sel.includes(e.id)) E.seleccionar([e.id]);
@@ -1156,7 +1156,7 @@ export class Linea {
           break;
         }
       }
-      if (e && Object.keys(c).length) E.setEl(e.id, c, "Línea de tiempo");
+      if (e && Object.keys(c).length) E.setEl(e.id, c, "LovEdit");
       this._repintarFila(e, pa);
     });
     const soltar = (u) => {

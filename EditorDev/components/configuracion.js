@@ -98,7 +98,7 @@ export class Configuracion {
           boton(I("limpiar", "Limpiar datos temporales"), () => this.limpiar(), "chico"),
         ]),
         el("div.ed-config-info", {}, [
-          el("b", { text: `Crear librito · versión ${VERSION}` }),
+          el("b", { text: `My Love Pages · versión ${VERSION}` }),
           el("small", { text: "Hecho con amor por YonathanPG. Tu librito se guarda en este aparato; expórtalo (.zip) para tener una copia." }),
         ]),
       ], { abierta: false }),

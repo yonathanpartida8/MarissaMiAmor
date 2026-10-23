@@ -18,7 +18,12 @@
 #    librito arranque       que se prenda solo al encender el teléfono (Termux:Boot)
 #    librito respaldar      copia de los datos (sin la llave ni el token)
 #    librito actualizar     baja la versión nueva (tus datos no se tocan)
-#    librito dueño          pone (o cambia) la contraseña de la cuenta del dueño: YnthnPG.MY
+#    librito dueño          pone (o cambia) la contraseña de la cuenta del dueño: YonathanPG
+#    librito traer          trae el servidor de siempre (con todo) a ESTE teléfono
+#    librito recuperar      vuelve a ser el servidor aquí (si se había pasado a otro)
+#    librito aparato        batería, temperatura, RAM y espacio del teléfono
+#
+#    (Más bonito, con menú: «start my».)
 # ─────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -45,7 +50,19 @@ hay_teclado() {
   [ -t 0 ]
 }
 
-prendido() { [ -f "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null; }
+# ¿Prendido DE VERDAD? Android recicla los números de proceso: no basta con que el número exista,
+# tiene que ser este servidor. Si el número se perdió pero el servidor sigue vivo, se adopta.
+es_servidor() { [ -r "/proc/$1/cmdline" ] && tr '\0' ' ' <"/proc/$1/cmdline" 2>/dev/null | grep -q "servidor.py iniciar"; }
+huerfano() { command -v pgrep >/dev/null 2>&1 && pgrep -f "$APP/servidor.py iniciar" 2>/dev/null | head -n 1 || true; }
+prendido() {
+  local p=""
+  [ -f "$PID" ] && p="$(cat "$PID" 2>/dev/null || true)"
+  if [ -n "$p" ] && kill -0 "$p" 2>/dev/null && { [ ! -d /proc/$p ] || es_servidor "$p"; }; then return 0; fi
+  p="$(huerfano)"
+  if [ -n "$p" ]; then mkdir -p "$DATOS"; echo "$p" >"$PID"; return 0; fi
+  rm -f "$PID"
+  return 1
+}
 # La dirección la escribe el servidor prendido en estado.json (nunca una vieja del registro).
 direccion() { prendido && [ -f "$ESTADO" ] && sed -n 's/^ *"url": *"\(https:[^"]*\)".*/\1/p' "$ESTADO" | head -n 1 || true; }
 necesita_python() { [ -n "$PY" ] || { echo "Falta Python. En Termux: pkg install python"; exit 1; }; }
@@ -76,6 +93,7 @@ paquetes() {
   mkdir -p "$DATOS"; chmod 700 "$DATOS"
   if [ "$ES_TERMUX" = 1 ] && [ -d "$PREFIX/bin" ]; then
     ln -sf "$APP/librito.sh" "$PREFIX/bin/librito"
+    [ -f "$APP/start.sh" ] && chmod +x "$APP/start.sh" && ln -sf "$APP/start.sh" "$PREFIX/bin/start"
   fi
 }
 
@@ -116,7 +134,7 @@ asistente() {
   echo
   if prendido; then reiniciar; else iniciar; fi
   if [ "$ES_TERMUX" = 1 ]; then
-    bien "Ya puedes escribir «librito» desde cualquier carpeta."
+    bien "Listo. Para manejarlo con menú (bonito): start my"
     command -v termux-open-url >/dev/null 2>&1 && termux-open-url "http://127.0.0.1:$(puerto)/" >/dev/null 2>&1 || true
   fi
   nota "   Para que se prenda solo al encender el teléfono: librito arranque"
@@ -134,7 +152,12 @@ iniciar() {
   command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock || true
   local antes=0; [ -f "$LOG" ] && antes="$(wc -l <"$LOG")"
   # El servidor ya escribe su propio registro; aquí sólo se juntan los errores graves (stderr).
-  nohup "$PY" "$APP/servidor.py" iniciar >/dev/null 2>>"$LOG" &
+  # setsid: queda en su propia sesión, así cerrar ESTA terminal (o abrir otra) no lo apaga.
+  if command -v setsid >/dev/null 2>&1; then
+    setsid nohup "$PY" "$APP/servidor.py" iniciar "$@" >/dev/null 2>>"$LOG" </dev/null &
+  else
+    nohup "$PY" "$APP/servidor.py" iniciar "$@" >/dev/null 2>>"$LOG" </dev/null &
+  fi
   echo $! >"$PID"
   dice "Prendiendo…"
   local espera=8
@@ -147,6 +170,12 @@ iniciar() {
   done
   if ! prendido; then
     echo
+    if tail -n +"$((antes + 1))" "$LOG" | grep -q "ya no es el servidor"; then
+      ojo "Este teléfono ya no es el servidor (se pasó a otro)."
+      nota "   Para volver a serlo aquí: start my → «Volver a ser el servidor aquí» (o: librito recuperar)."
+      rm -f "$PID"
+      return 1
+    fi
     ojo "No arrancó. Esto dijo:"
     tail -n +"$((antes + 1))" "$LOG" | tail -n 12
     rm -f "$PID"
@@ -230,7 +259,7 @@ case "$orden" in
     elif prendido; then estado
     else iniciar; fi ;;
   instalar|asistente) asistente ;;
-  iniciar|prender) iniciar ;;
+  iniciar|prender) iniciar "$@" ;;
   detener|apagar) detener ;;
   reiniciar) reiniciar ;;
   estado) estado ;;
@@ -238,7 +267,13 @@ case "$orden" in
   panel) panel ;;
   registro|log) touch "$LOG"; tail -n 60 -f "$LOG" ;;
   admin) necesita_python; "$PY" "$APP/servidor.py" admin "$@" ;;
-  dueno|dueño) necesita_python; "$PY" "$APP/servidor.py" admin ynthnpg.my ;;
+  dueno|dueño) necesita_python; "$PY" "$APP/servidor.py" admin yonathanpg ;;
+  traer)
+    necesita_python
+    prendido && detener
+    "$PY" "$APP/servidor.py" traer "$@" && iniciar ;;
+  recuperar) necesita_python; "$PY" "$APP/servidor.py" recuperar "$@" ;;
+  aparato) necesita_python; "$PY" "$APP/servidor.py" aparato ;;
   github) necesita_python; "$PY" "$APP/servidor.py" github ;;
   llave-nueva) necesita_python; "$PY" "$APP/servidor.py" llave-nueva ;;
   borrar-cuentas) necesita_python; "$PY" "$APP/servidor.py" borrar-cuentas "$@" ;;
@@ -246,5 +281,5 @@ case "$orden" in
   arranque) arranque ;;
   respaldar) respaldar ;;
   actualizar) actualizar ;;
-  *) sed -n '3,21p' "$0" | sed 's/^# \{0,1\}//' ;;
+  *) sed -n '3,27p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac

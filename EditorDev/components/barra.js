@@ -100,7 +100,7 @@ export class BarraContextual {
         this._b(ico("efectos") + "<span>Efectos</span>", "Efectos con previsualización", () => this.app.abrirSeccion("efectos"), "vida"),
         this._b(I("diseno", "Fondo"), "Fondo de la página", () => { ins.abrir("diseno", "Fondo"); }),
         this._b(ico("transiciones") + "<span>Transición</span>", "Transición al llegar", () => this.app.abrirSeccion("transiciones")),
-        this._b(I("tiempo", "Tiempo"), "Línea de tiempo (modo profesional)", (b) => this.app.pro.abrir(b)),
+        this._b(I("tiempo", "LovEdit"), "LovEdit: edita en el tiempo, como CapCut", (b) => this.app.pro.abrir(b)),
       ));
       partes.push(el("small.ed-cb-pista", { text: "Toca algo de la hoja para editarlo" }));
     } else {

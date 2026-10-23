@@ -327,3 +327,13 @@ export const dejarUbicacion = () => pedir("ubicacion", { method: "DELETE" });
 export const nuevoLugar = (d) => pedir("lugares", { method: "POST", body: d }).then((r) => r.lugar);
 export const editarLugar = (id, d) => pedir("lugares/" + encodeURIComponent(id), { method: "PUT", body: d }).then((r) => r.lugar);
 export const borrarLugar = (id) => pedir("lugares/" + encodeURIComponent(id), { method: "DELETE" });
+/* Fase 40: Dibujar Juntos (hojas de los dos, en tiempo real). */
+export const lienzos = () => pedir("dibujo");
+export const nuevoLienzo = (d = {}) => pedir("dibujo", { method: "POST", body: d }).then((r) => r.lienzo);
+export const editarLienzo = (id, d) => pedir("dibujo/" + encodeURIComponent(id), { method: "PUT", body: d }).then((r) => r.lienzo);
+export const borrarLienzo = (id) => pedir("dibujo/" + encodeURIComponent(id), { method: "DELETE" });
+export const dibujo = (id, desde = 0, espera = 0) => pedir(`dibujo/${encodeURIComponent(id)}/trazos?desde=${desde}&espera=${espera}`);
+export const dibujoTrazo = (id, d) => pedir(`dibujo/${encodeURIComponent(id)}/trazos`, { method: "POST", body: d }).then((r) => r.trazo);
+export const dibujoMas = (id, tid, d) => pedir(`dibujo/${encodeURIComponent(id)}/trazos/${encodeURIComponent(tid)}`, { method: "POST", body: d });
+export const dibujoDeshacer = (id, tid) => pedir(`dibujo/${encodeURIComponent(id)}/trazos/${encodeURIComponent(tid)}`, { method: "DELETE" });
+export const dibujoLimpiar = (id, soloMio = false) => pedir(`dibujo/${encodeURIComponent(id)}/trazos${soloMio ? "?solo=mio" : ""}`, { method: "DELETE" });

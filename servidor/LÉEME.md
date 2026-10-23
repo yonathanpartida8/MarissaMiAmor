@@ -1,4 +1,4 @@
-# M.YNTHN — el servidor del librito (Termux)
+# M.YNTHN — el servidor de My Love Pages (Termux)
 
 **M.YNTHN** es el servidor **público** del editor de libritos: vive en tu
 teléfono viejo con Termux y atiende a **todas** las personas que usan el
@@ -314,18 +314,91 @@ Mozilla. Si borras `secretos.bin` (o restauras un respaldo sin él), se crea una
 llave nueva y cada aparato se vuelve a suscribir solo al abrir el editor. En
 iPhone, el editor tiene que estar agregado a la pantalla de inicio (iOS 16.4+).
 
-### La cuenta del dueño: YnthnPG.MY
+### La cuenta del dueño: YonathanPG (1.14.0)
 
-La cuenta del servidor es **`ynthnpg.my`** (se escribe como quieras: YnthnPG.MY
-entra igual). Al entrar con ella, queda como administrador y el servidor
-termina de instalarse (ya no pide el código de instalación). Nadie puede
-registrar ese nombre desde fuera del teléfono. Su contraseña **no** está en el
-código (el repositorio es público): ponla una vez en Termux con
+La cuenta del servidor es **`yonathanpg`** (se escribe como quieras: YonathanPG
+entra igual; la de antes, **YnthnPG.MY**, también entra y, si existía, se
+renombró sola a `yonathanpg` con todo lo suyo). Al entrar con ella queda como
+administrador y el servidor termina de instalarse (ya no pide el código de
+instalación). Nadie puede registrar ese nombre desde fuera del teléfono. Su
+contraseña **no** está en el código (el repositorio es público): ponla una vez en
+Termux con
 
-    librito actualizar
-    librito dueño        # te pide la contraseña dos veces (no se ve al escribir)
+    start my             # → 6 · Cuenta del dueño (te pide la contraseña dos veces; no se ve)
 
-y ya entras con YnthnPG.MY desde el editor o el panel.
+y ya entras con YonathanPG desde el editor o el panel (la nube). Con esa misma
+cuenta se trae el servidor a otro teléfono (abajo).
+
+### start my — My Love Pages en Termux, con menú (1.14.0)
+
+Escribe **`start my`** en Termux: una tarjeta con cómo va todo (prendido o
+apagado y su dirección, la pila, la temperatura, el ritmo, el espacio, la RAM,
+el dueño, las cuentas y GitHub) y un menú de una tecla:
+
+```
+ 1 Encender / Apagar        6 Cuenta del dueño (YonathanPG)
+ 2 Reiniciar                7 Traer el servidor a este teléfono
+ 3 La dirección y el estado 8 Conectar GitHub
+ 4 Abrir la nube (el panel) 9 Prenderse solo al encender el teléfono
+ 5 Ver lo que pasa          r Respaldar · a Actualizar · s Si se apaga solo… · 0 Salir
+```
+
+También directo: `start my encender`, `start my apagar`, `start my estado`,
+`start my traer`, `start my nube`… («librito» sigue funcionando igual).
+
+### Pasar el servidor a otro teléfono (1.14.0)
+
+Antes, si prendías el servidor en otro teléfono, ése empezaba **vacío** (sin
+cuentas ni libritos) y además le quitaba la dirección al de siempre: el editor
+se quedaba sin sus cosas. Ahora:
+
+- Cada servidor tiene su **id**, y `servidor.json` lo lleva. Un servidor nuevo
+  **no le quita la dirección** a otro que sigue contestando con otro id (lo dice
+  en el registro y en la nube).
+- En el teléfono nuevo: `start my` → **7 · Traer el servidor a este teléfono**.
+  Con la cuenta del dueño (usuario y contraseña, que se escriben ahí) se trae
+  **todo** por el túnel https: cuentas, nubes, chats, fotos, ajustes, GitHub y la
+  llave. Mientras se copia, el de siempre queda en **sólo lectura** (nada se
+  pierde a medias). Lo que hubiera en el teléfono nuevo se guarda aparte
+  (`~/librito-datos.antes-…`), no se borra.
+- Al terminar, el de siempre queda **relevado**: deja de anunciarse y se apaga
+  solo; si lo vuelves a prender, dice que ya no es el servidor. El nuevo se
+  prende con el **mismo id** y se anuncia: el editor lo encuentra solo.
+- Para volver a ser el servidor en el de antes: `start my` → **v** (o
+  `librito recuperar`). Para traerlo de vuelta con lo nuevo: «Traer» desde ahí.
+- Si algo se corta a medio camino, no pasa nada: a los 15 minutos (o al
+  cancelar) el de siempre sigue normal.
+
+### Arranque a prueba de todo (1.14.0)
+
+- `start my`/`librito` comprueban que el proceso **de verdad** sea el servidor
+  (Android recicla los números de proceso); si el número se perdió pero el
+  servidor sigue vivo, lo adoptan.
+- Se prende con `setsid`: **abrir o cerrar otra terminal no lo apaga**.
+- Android 12+ cierra procesos «de fondo» de Termux: `start my` → **s** explica
+  cómo evitarlo (sin restricciones de batería, wake lock, «Desactivar
+  restricciones de procesos secundarios» en Android 14+, o el comando adb en 12 y 13).
+
+### El teléfono servidor, aprovechado y cuidado (1.14.0)
+
+- **Lo que sabe del teléfono**: modelo, Android, núcleos, carga, RAM, espacio,
+  la **pila** (si está cargando) y la **temperatura** (de `/sys` o, si Android no
+  deja, de `termux-battery-status`: app Termux:API + `pkg install termux-api`).
+  En la nube: el tablero «Tu teléfono servidor» con cuatro anillos, al día cada
+  20 s. En Termux: la tarjeta de `start my`. API: `GET /api/admin/aparato`.
+- **El ritmo**: con poca pila y sin cargador (**ahorro**) o caliente (**fresco**,
+  ≥ 44 °C), el vigía del túnel pregunta tres veces menos, la limpieza grande
+  espera y se comprime más ligero. Vuelve a **normal** solo.
+- **SQLite afinado**: WAL con sincronía normal (mucho menos escritura en la
+  memoria flash), tablas temporales en RAM, caché según la RAM del teléfono
+  (8–48 MB), `mmap` y `PRAGMA optimize` cada hora.
+- Más cola para las ráfagas del editor (64 conexiones esperando).
+
+### Dibujar Juntos (1.14.0)
+
+Hojas de cada pareja (hasta 30) con trazos en tiempo real (`GET …/trazos?espera=25`
+se despierta en cuanto el otro dibuja). Pinceles: lápiz, pluma, marcador,
+acuarela, neón, brillitos, corazones, borrador. Rutas en la tabla de abajo.
 
 ## Cuentas y autenticación
 
@@ -415,6 +488,11 @@ azar) · `/api/…`:
 | `PUT /api/chat/ajustes` (`{"visto":false}`) | sesión | privacidad: si tu amorcito ve cuándo leíste lo suyo |
 | `PUT` · `DELETE /api/chat/<id>/sticker/<sid>` | quien lo pegó | mover (x, y, giro, tamaño) o quitar un sticker |
 | `POST /api/chat/trazos` (`{"ancla":<id>,"c":"#ff5f9e","a":6,"p":[[x,y],…]}`) · `POST /api/chat/trazos/<id>` (`{"p":[…],"fin":true}`) | pareja · quien dibuja | dibujar en el chat: x de 0 a 10000 a lo ancho, y en px desde su mensajito; se manda de a poquito mientras dibujas (hasta 1500 puntos por trazo) |
+| `GET /api/dibujo` · `POST /api/dibujo` (`{"nombre":…,"fondo":"papel"\|"cuadros"\|"rayas"\|"rosa"\|"noche"}`) · `PUT`/`DELETE /api/dibujo/<id>` | pareja | Dibujar Juntos: sus hojas (la primera se crea sola; hasta 30), una nueva, cambiarle nombre o fondo, borrarla (para los dos) |
+| `GET /api/dibujo/<id>/trazos?desde=<ahora>&espera=25` | pareja | los trazos de la hoja (o los que cambiaron); con `espera` contesta en cuanto el otro dibuja: **tiempo real** |
+| `POST /api/dibujo/<id>/trazos` (`{"pincel":"lapiz","c":"#d8397a","a":6,"p":[[x,y,presión],…]}`) · `POST …/trazos/<tid>` (`{"p":[…],"fin":true}`) · `DELETE …/trazos/<tid>` · `DELETE …/trazos[?solo=mio]` | pareja · quien dibuja | dibujar a pedacitos (x e y de 0 a 10000; hasta 4000 puntos), deshacer lo tuyo, limpiar lo tuyo o la hoja |
+| `POST /api/dueno/traspaso` · `POST /api/dueno/relevo` · `POST /api/dueno/cancelar` (`{"usuario":"YonathanPG","contrasena":…}`) | la cuenta del dueño, con su contraseña | pasar el servidor a otro teléfono: manda todo (tar) dejando éste en sólo lectura · éste queda relevado y se apaga · cancelar |
+| `GET /api/admin/aparato` | admin | el teléfono servidor: pila, cargando, temperatura, ritmo, núcleos, carga, RAM, espacio, desde cuándo está prendido, quién está en línea y si hay otro servidor |
 | `DELETE /api/chat/trazos/<id>` · `DELETE /api/chat/trazos` | quien lo dibujó | deshacer un trazo · borrar todos tus dibujos |
 | `GET /api/push/clave` | todos | la llave pública VAPID del servidor (para suscribirse a las notificaciones) |
 | `POST /api/push/suscribir` (`{"endpoint":…,"keys":{"p256dh":…,"auth":…}}`) · `DELETE /api/push/suscribir` | sesión | prender o apagar las notificaciones push en un aparato (sólo servicios de avisos de Google, Apple, Mozilla y Microsoft; hasta 10 aparatos por cuenta) |
@@ -472,6 +550,8 @@ azar) · `/api/…`:
 
 ## Comandos
 
+Lo más fácil: **`start my`** (con menú). Lo de siempre sigue igual:
+
 ```
 librito                  lo deja listo y prendido (la primera vez, te guía)
 librito instalar         el asistente otra vez (paquetes, administrador, GitHub)
@@ -487,6 +567,10 @@ librito respaldar        copia de ~/librito-datos (SIN llave ni token)
 librito arranque         prenderse solo (Termux:Boot)
 librito actualizar       bajar la versión nueva (tus datos no se tocan; instala lo que falte, como git)
 librito primer-plano     correrlo aquí mismo para ver errores
+librito dueño            la contraseña de la cuenta del dueño (YonathanPG)
+librito traer            trae el servidor de siempre (con todo) a ESTE teléfono
+librito recuperar        volver a ser el servidor aquí (si se había pasado a otro)
+librito aparato          pila, temperatura, RAM y espacio del teléfono (JSON)
 ```
 
 ## Si algo falla

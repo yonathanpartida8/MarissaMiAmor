@@ -214,3 +214,99 @@
 @keyframes jt-latido { 0% { opacity: .7; transform: scale(.85); } 70%, 100% { opacity: 0; transform: scale(1.35); } }
 @media (prefers-reduced-motion: reduce) { .jt-pin-in::after { animation: none; } }
 html:is(.rd-ahorro, .rd-reposo, .rd-oculto) .jt-pin-in::after { animation: none; }
+
+/* ═══ Fase 40: más lindo y vivo, cada pestaña con lo suyo, y Dibujar Juntos ═══ */
+/* La barra de abajo: una pastillita que se desliza a la pestaña elegida. */
+.jt-nav { --i: 0; isolation: isolate; }
+.jt-nav::before { content: ""; position: absolute; z-index: -1; top: 6px; bottom: 6px; left: 6px; width: calc((100% - 12px - 12px) / 4); border-radius: 18px; background: var(--jt-rosa);
+  transform: translateX(calc(var(--i) * (100% + 4px))); transition: transform .38s cubic-bezier(.3, 1.3, .5, 1); }
+.jt-tab.on { background: none; }
+.jt-tab i { transition: transform .3s cubic-bezier(.3, 1.6, .5, 1); }
+.jt-tab.on i { transform: translateY(-2px) scale(1.12); }
+/* La página entra desde el lado de su pestaña; las tarjetitas, una tras otra. */
+.jt-vista.entra-der { animation: jtEntraDer .34s cubic-bezier(.2, .9, .3, 1); }
+.jt-vista.entra-izq { animation: jtEntraIzq .34s cubic-bezier(.2, .9, .3, 1); }
+@keyframes jtEntraDer { from { opacity: 0; transform: translateX(26px); } }
+@keyframes jtEntraIzq { from { opacity: 0; transform: translateX(-26px); } }
+.jt-rejilla > .jt-carta { animation: jtCarta .5s cubic-bezier(.2, 1.2, .4, 1) both; }
+.jt-rejilla > .jt-carta:nth-child(2) { animation-delay: .03s; } .jt-rejilla > .jt-carta:nth-child(3) { animation-delay: .06s; }
+.jt-rejilla > .jt-carta:nth-child(4) { animation-delay: .09s; } .jt-rejilla > .jt-carta:nth-child(5) { animation-delay: .12s; }
+.jt-rejilla > .jt-carta:nth-child(6) { animation-delay: .15s; } .jt-rejilla > .jt-carta:nth-child(7) { animation-delay: .18s; }
+.jt-rejilla > .jt-carta:nth-child(8) { animation-delay: .21s; } .jt-rejilla > .jt-carta:nth-child(n+9) { animation-delay: .24s; }
+@keyframes jtCarta { from { opacity: 0; transform: translateY(14px) scale(.96); } }
+.jt-carta-ico { transition: transform .3s cubic-bezier(.3, 1.6, .5, 1); }
+.jt-carta.pulso .jt-carta-ico { transform: rotate(-8deg) scale(1.15); }
+.jt-hola h1 { background: linear-gradient(90deg, var(--jt-acento), var(--jt-acento-2), var(--jt-acento)); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: jtBrillo 6s linear infinite; }
+@keyframes jtBrillo { to { background-position: -200% 0; } }
+/* Lo de cada pestaña, arriba a la derecha. */
+.jt-accion { display: flex; align-items: center; gap: 6px; flex: none; }
+.jt-accion:empty { display: none; }
+.jt-accion-b { display: flex; align-items: center; gap: 5px; height: 36px; padding: 0 12px 0 9px; border: 0; border-radius: 99px; background: var(--jt-papel); color: var(--jt-tinta); box-shadow: var(--jt-sombra); font: 800 13px/1 "Nunito", sans-serif; cursor: pointer; }
+.jt-accion-b i, .jt-accion-b svg { width: 20px; height: 20px; display: block; color: var(--jt-acento); }
+.jt-accion-b b { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--jt-acento); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+.jt-accion-pill { padding: 8px 12px; border-radius: 99px; background: var(--jt-lila); color: var(--jt-lila-t); font: 800 12.5px/1 "Nunito", sans-serif; white-space: nowrap; animation: jtCarta .5s both; }
+.jt-hoja-sub { margin-top: 4px; font: 800 13px/1.2 "Nunito", sans-serif; color: var(--jt-suave); }
+/* En reposo o ahorro, quietecito. */
+html:is(.rd-ahorro, .rd-reposo, .rd-oculto) :is(.jt-hola h1, .jt-rejilla > .jt-carta) { animation: none; }
+@media (prefers-reduced-motion: reduce) { .jt-vista, .jt-rejilla > .jt-carta, .jt-hola h1, .jt-nav::before { animation: none !important; transition: none !important; } }
+
+/* ── Dibujar Juntos ── */
+.jt-capa[data-tab="dibujar"] .jt-vista { display: flex; flex-direction: column; overflow: hidden; padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+.dj { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.dj-barra { display: flex; align-items: center; gap: 6px; }
+.dj-hojas { display: flex; align-items: center; gap: 5px; min-width: 0; height: 38px; padding: 0 10px; border: 0; border-radius: 14px; background: var(--jt-papel); color: var(--jt-tinta); box-shadow: var(--jt-sombra); font: 800 13.5px/1 "Nunito", sans-serif; cursor: pointer; }
+.dj-hojas b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 42vw; }
+.dj-hojas .ed-ico { width: 17px; height: 17px; flex: none; }
+.dj-estado { flex: 1; min-width: 0; color: var(--jt-acento); font-weight: 800; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dj-b { display: grid; place-items: center; flex: none; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 14px; background: var(--jt-papel); color: var(--jt-tinta); box-shadow: var(--jt-sombra); cursor: pointer; }
+.dj-b .ed-ico, .dj-b svg { width: 21px; height: 21px; }
+.dj-b:active, .dj-hojas:active, .dj-pincel:active { transform: scale(.94); }
+.dj-b[aria-pressed="true"] { background: var(--jt-rosa); }
+.dj-marco { flex: 1; min-height: 160px; display: grid; place-items: center; }
+.dj-hoja { position: relative; overflow: hidden; border-radius: 18px; background-color: #fffdf8; box-shadow: 0 10px 30px rgba(120, 60, 90, .14), 0 0 0 1px var(--jt-linea); touch-action: none; animation: jtCarta .45s both; }
+.dj-hoja.cuadros { background-image: linear-gradient(rgba(120, 140, 200, .2) 1px, transparent 1px), linear-gradient(90deg, rgba(120, 140, 200, .2) 1px, transparent 1px); background-size: 4% 3%; }
+.dj-hoja.rayas { background-image: linear-gradient(rgba(120, 140, 200, .22) 1px, transparent 1px); background-size: 100% 3%; }
+.dj-hoja.rosa { background-color: #fff0f6; }
+.dj-hoja.noche { background-color: #1d1830; background-image: radial-gradient(1px 1px at 20% 30%, #fff8, transparent), radial-gradient(1px 1px at 70% 60%, #fff6, transparent), radial-gradient(1.5px 1.5px at 40% 80%, #fff5, transparent); }
+.dj-hoja canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.dj-viva { touch-action: none; cursor: crosshair; }
+.dj-hoja.borrando .dj-viva { cursor: cell; }
+.dj-lapiz, .dj-su-lapiz { position: absolute; left: 0; top: 0; pointer-events: none; will-change: transform; }
+.dj-lapiz svg { position: absolute; left: -2px; top: -30px; width: 32px; height: 32px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .25)); }
+.dj-guia { position: absolute; left: 0; top: 0; height: 0; border-top: 2px dashed rgba(229, 103, 154, .45); transform-origin: 0 0; pointer-events: none; }
+.dj-su-lapiz { transition: transform .12s linear; }
+.dj-su-lapiz span svg { position: absolute; left: -2px; top: -30px; width: 30px; height: 30px; opacity: .9; }
+.dj-su-lapiz b { position: absolute; left: 18px; top: -38px; padding: 3px 8px; border-radius: 99px; background: var(--jt-acento-2); color: #fff; font: 800 11px/1 "Nunito", sans-serif; white-space: nowrap; animation: jtCarta .3s both; }
+.dj-herr { display: grid; gap: 8px; padding: 10px; border-radius: 20px; background: var(--jt-papel); box-shadow: var(--jt-sombra); }
+.dj-pinceles { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: -2px; padding: 2px; }
+.dj-pinceles::-webkit-scrollbar { display: none; }
+.dj-pincel { flex: none; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 62px; padding: 7px 6px 6px; border: 0; border-radius: 14px; background: var(--jt-fondo); color: var(--jt-suave); font: 800 10.5px/1 "Nunito", sans-serif; cursor: pointer; transition: background .2s, color .2s, transform .2s; }
+.dj-pincel svg { width: 24px; height: 24px; display: block; }
+.dj-pincel.on { background: var(--jt-rosa); color: var(--jt-rosa-t); transform: translateY(-2px); }
+.dj-fila { display: flex; align-items: center; gap: 8px; }
+.dj-colores { display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; flex: 1; padding: 3px; }
+.dj-colores::-webkit-scrollbar { display: none; }
+.dj-color { position: relative; flex: none; width: 30px; height: 30px; padding: 0; border: 2px solid var(--jt-papel); border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px var(--jt-linea); cursor: pointer; transition: transform .2s; }
+.dj-color.on { transform: scale(1.15); box-shadow: 0 0 0 2px var(--jt-acento); }
+.dj-color.propio { overflow: hidden; background: conic-gradient(#ff6b9a, #ffc23d, #2fbf8f, #4aa3ff, #8f6fe8, #ff6b9a); }
+.dj-color-propio { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.dj-muestra { flex: none; width: 12px; height: 12px; margin: 0 4px; border-radius: 50%; box-shadow: 0 0 0 1px var(--jt-linea); }
+.dj-muestra.borrador { box-shadow: 0 0 0 2px var(--jt-suave); }
+.dj-grosor { flex: 1; min-width: 60px; accent-color: var(--jt-acento); }
+.dj-virtual svg { width: 24px; height: 24px; }
+.dj-hojas-lista { display: grid; gap: 6px; }
+.dj-hoja-item { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-radius: 14px; background: var(--jt-fondo); color: var(--jt-tinta); text-align: left; cursor: pointer; }
+.dj-hoja-item.on { box-shadow: 0 0 0 2px var(--jt-acento); }
+.dj-hoja-item i { width: 34px; height: 44px; border-radius: 6px; background: #fffdf8; box-shadow: 0 0 0 1px var(--jt-linea); }
+.dj-hoja-item i.rosa { background: #fff0f6; } .dj-hoja-item i.noche { background: #1d1830; }
+.dj-hoja-item i.cuadros { background-image: linear-gradient(rgba(120, 140, 200, .3) 1px, transparent 1px), linear-gradient(90deg, rgba(120, 140, 200, .3) 1px, transparent 1px); background-size: 6px 6px; }
+.dj-hoja-item i.rayas { background-image: linear-gradient(rgba(120, 140, 200, .3) 1px, transparent 1px); background-size: 100% 6px; }
+.dj-hoja-item small { color: var(--jt-suave); font-weight: 700; }
+.dj-sub { font: 800 13px/1.2 "Nunito", sans-serif; color: var(--jt-suave); }
+.dj-fondos { display: flex; gap: 8px; flex-wrap: wrap; }
+.dj-fondo { display: grid; place-items: end center; width: 58px; height: 70px; padding: 0 0 5px; border: 0; border-radius: 12px; background: #fffdf8; box-shadow: 0 0 0 1px var(--jt-linea); color: #6a5a68; font: 800 10.5px/1 "Nunito", sans-serif; cursor: pointer; }
+.dj-fondo.on { box-shadow: 0 0 0 2px var(--jt-acento); }
+.dj-fondo.rosa { background: #fff0f6; } .dj-fondo.noche { background: #1d1830; color: #e9e4ff; }
+.dj-fondo.cuadros { background-image: linear-gradient(rgba(120, 140, 200, .3) 1px, transparent 1px), linear-gradient(90deg, rgba(120, 140, 200, .3) 1px, transparent 1px); background-size: 8px 8px; }
+.dj-fondo.rayas { background-image: linear-gradient(rgba(120, 140, 200, .3) 1px, transparent 1px); background-size: 100% 8px; }
+.dj-acciones { display: flex; flex-wrap: wrap; gap: 8px; }

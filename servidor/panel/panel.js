@@ -51,6 +51,8 @@
     salir: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
     refrescar: '<path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/>',
     invitar: '<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/>',
+    telefono: '<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/>',
+    mudar: '<path d="M4 7h11l-3-3"/><path d="M20 17H9l3 3"/><rect x="2" y="4" width="0" height="0"/>',
   };
   const ico = (n) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n] || ""}</svg>`;
   function btn(texto, al, clase = "", icono = "") {
@@ -175,7 +177,7 @@
   function pintarApp() {
     const esAdmin = YO.rol === "admin";
     const lado = h("nav.lado", { "aria-label": "Secciones" },
-      h("div.marca", {}, h("i"), h("div", {}, h("b", { text: INFO.nombre || "M.YNTHN" }), h("small", { text: `${YO.usuario} · ${esAdmin ? "administrador" : "editor"}` }))),
+      h("div.marca", {}, h("i"), h("div", {}, h("b", { text: "My Love Pages" }), h("small", { text: `${INFO.nombre || "M.YNTHN"} · ${YO.usuario}${esAdmin ? " · admin" : ""}` }))),
       VISTAS.filter((v) => !v[3] || esAdmin).map(([id, t, icono]) => {
         const b = h("button.nav" + (VISTA === id ? ".on" : ""), { type: "button", html: ico(icono), onClick: () => ir(id), "data-v": id });
         b.append(h("span", { text: t }));
@@ -210,6 +212,47 @@
   const vacio = (t) => h("div.vacio", {}, h("i"), t);
   const pildora = (t, tipo = "") => h("span.pildora" + (tipo ? "." + tipo.split(" ").join(".") : ""), { text: t });
 
+  /* — El teléfono servidor (Fase 40): pila, temperatura, memoria y el ritmo, al día mientras lo ves — */
+  function tablero(a) {
+    if (!a) return null;
+    const anillo = (pct, color, centro, pie) => {
+      const v = Math.max(0, Math.min(100, pct || 0));
+      const e = h("div.anillo", { role: "img", "aria-label": `${pie}: ${centro}` }, h("b", { text: centro }), h("small", { text: pie }));
+      e.style.setProperty("--v", String(v)); e.style.setProperty("--c", color);   // (con CSSOM: la CSP no deja estilos en línea)
+      return e;
+    };
+    const caja = h("div.caja.tablero.ancha");
+    const pintar = (a) => {
+      const pila = a.bateria;
+      const colPila = pila == null ? "var(--muy-suave)" : a.cargando || pila >= 40 ? "var(--ok)" : pila >= 20 ? "var(--aviso)" : "var(--mal)";
+      const t = a.temp;
+      const colT = t == null ? "var(--muy-suave)" : t < 40 ? "var(--ok)" : t < 44 ? "var(--aviso)" : "var(--mal)";
+      const ram = a.ram_total ? Math.round(((a.ram_total - a.ram_libre) / a.ram_total) * 100) : 0;
+      const disco = a.disco_total ? Math.round(((a.disco_total - a.disco_libre) / a.disco_total) * 100) : 0;
+      const ritmo = { normal: ["Ritmo normal", "ok"], ahorro: ["Modo ahorro: poca pila y sin cargador", "aviso"], fresco: ["Enfriándose: el teléfono está caliente", "aviso"] }[a.ritmo] || ["", ""];
+      const prendido = Math.max(0, Math.round((Date.now() - new Date(a.prendido_desde)) / 60000));
+      caja.replaceChildren(
+        h("h2", { html: ico("telefono") + `<span>Tu teléfono servidor</span>` }),
+        h("p.sub", { text: [a.modelo, a.android ? `Android ${a.android}` : "", `${a.nucleos} núcleos`, `Python ${a.python}`].filter(Boolean).join(" · ") }),
+        h("div.anillos", {},
+          anillo(pila == null ? 0 : pila, colPila, pila == null ? "—" : `${pila}%`, a.cargando ? "pila ⚡" : "pila"),
+          anillo(t == null ? 0 : Math.min(100, ((t - 20) / 30) * 100), colT, t == null ? "—" : `${Math.round(t)}°`, "temperatura"),
+          anillo(ram, "var(--lila)", `${ram}%`, "memoria"),
+          anillo(disco, "var(--acento)", `${disco}%`, "espacio")),
+        h("div.fila.estados", {}, pildora(ritmo[0], ritmo[1]), pildora(`Prendido hace ${prendido < 60 ? prendido + " min" : Math.round(prendido / 60) + " h"}`, "lila"),
+          pildora(`${a.en_linea ?? 0} en línea ahora`, "ok"), a.carga != null ? pildora(`carga ${a.carga}`, "") : null),
+        pila == null ? h("small", { text: "Para ver la pila y la temperatura: instala la app Termux:API y en Termux «pkg install termux-api»." }) : null);
+    };
+    pintar(a);
+    // Al día cada 20 s mientras se ve (con la pestaña escondida, nada).
+    const vivo = setInterval(async () => {
+      if (!caja.isConnected) { clearInterval(vivo); return; }
+      if (document.hidden) return;
+      try { pintar(await api("admin/aparato")); } catch (e) { /* sigue el de antes */ }
+    }, 20000);
+    return caja;
+  }
+
   /* — Inicio — */
   async function inicio(c) {
     c.append(cabeza(`Hola, ${YO.usuario}`, "Así está tu servidor ahora mismo."));
@@ -233,6 +276,10 @@
     const seg = (cls, v) => { const i = h("i." + cls); i.style.width = Math.max(v > 0 ? 0.6 : 0, (v / total) * 100) + "%"; return i; };
     const otros = Math.max(0, d.telefono_usado - d.publicaciones - d.proyectos - (d.detallitos || 0) - d.base);
     zona.replaceChildren(
+      r.otro && r.otro.url ? h("div.caja.alerta.ancha", {}, h("h2", { html: ico("mudar") + "<span>Otro teléfono es el servidor</span>" }),
+        h("p", { text: `${r.otro.url} contesta con los datos de siempre, así que este no le quita la dirección (para que nadie se quede sin sus cuentas).` }),
+        h("p", { text: "Para que ESTE teléfono sea el servidor, con todo: en Termux, start my → «Traer el servidor a este teléfono»." })) : null,
+      tablero(r.aparato),
       h("div.caja.destacada.ancha", {}, h("h2", { html: ico("enlace") + "<span>Conectar el editor</span>" }),
         url ? h("p", { text: "Esta es la dirección de tu servidor en internet. El editor la encuentra solo: no hay que copiarla en ningún lado." })
           : h("p", { text: r.tunel === "cloudflare" ? (r.cloudflared ? "Abriendo el túnel… (tarda unos segundos)" : "Falta cloudflared: en Termux escribe «pkg install cloudflared» y reinicia el servidor.") : "El túnel está apagado: el servidor sólo se ve en tu wifi." }),

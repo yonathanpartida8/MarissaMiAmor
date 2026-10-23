@@ -192,8 +192,8 @@ export class Inspector {
         fila("Aparece a los", c("tiempo.inicio", { min: 0, max: 600000, paso: 50, unidad: "ms", def: 0, nombre: "Aparece" })),
         fila("Se va a los", control(this.v, { tipo: "numero", min: 0, max: 600000, paso: 50, unidad: "ms", leer: () => this.E.el(e.id)?.tiempo?.fin ?? null, escribir: (x) => this.E.setEl(e.id, { "tiempo.fin": x > 0 ? x : null }, "Se va", "tfin" + e.id) })),
       ]),
-      el("small.ed-ayuda", { text: "Vacío = se queda hasta el final. Más fácil desde la línea de tiempo." }),
-      boton(I("tiempo", "Línea de tiempo"), () => this.app.tiempo.alternar(true), "chico"),
+      el("small.ed-ayuda", { text: "Vacío = se queda hasta el final. Más fácil desde LovEdit." }),
+      boton(I("tiempo", "LovEdit"), () => this.app.tiempo.alternar(true), "chico"),
     ], { abierta: !!(e.inicioOculto || e.tiempo?.inicio || e.tiempo?.fin != null) }));
     this.cuerpo.append(this._permisos(e));
     this.cuerpo.append(el("div.ed-botonera.ed-pie-insp", {}, [
@@ -460,7 +460,7 @@ export class Inspector {
       el("div.ed-botonera", {}, [c("video.epico", { tipo: "toggle", nombre: "Resplandor épico" }), el("small", { text: "resplandor épico (más grande, vivo y que respira)" })]),
       fila("Estilo", c("video.estilo", { tipo: "select", opciones: Object.entries(RT.ESTILOS_VIDEO), def: "normal", nombre: "Estilo del vídeo" })),
       boton(I("efectos", "Efectos y filtros"), () => this.app.abrirSeccion("efectos", true), "chico"),
-      el("small.ed-ayuda", { text: "Para que empiece solo, el teléfono pide que esté sin sonido. En la línea de tiempo decides cuándo aparece (y empieza)." }),
+      el("small.ed-ayuda", { text: "Para que empiece solo, el teléfono pide que esté sin sonido. En LovEdit decides cuándo aparece (y empieza)." }),
     ]);
   }
 
@@ -677,7 +677,7 @@ export class Inspector {
         boton(I("limpiar", "Dejar en blanco"), () => A.limpiarPagina(), "chico"),
         boton(I("borrar", "Borrar"), () => A.borrarPagina(), "chico peligro"),
       ]),
-      el("small.ed-ayuda", { text: "La transición y la música de esta página están en sus paneles (Transiciones y Audio). Cuándo aparece cada cosa, en la línea de tiempo." }),
+      el("small.ed-ayuda", { text: "La transición y la música de esta página están en sus paneles (Transiciones y Audio). Cuándo aparece cada cosa, en LovEdit." }),
     ]));
     this.cuerpo.append(el("p.ed-nota.suave.ed-guia-txt", { text: "Toca algo de la hoja para editarlo, o añade cosas desde la barra de la izquierda." }));
   }
@@ -752,7 +752,7 @@ export class Inspector {
     });
     const nuevo = (tipo, momento) => poner([...lista, { tipo, momento, color: "#ff7fae", cantidad: 1, retraso: 0 }], "Añadir magia");
     return seccion("Magia · chispas, estelas, brillos", [
-      el("p.ed-ayuda", { text: "Se suman a sus animaciones y entre sí: ponle varias. Se ven al probar la página y en la línea de tiempo." }),
+      el("p.ed-ayuda", { text: "Se suman a sus animaciones y entre sí: ponle varias. Se ven al probar la página y en LovEdit." }),
       ...filas,
       el("div.ed-botonera.ed-mg-rapidos", {}, [
         boton(I("varita", "Chispas al llegar"), () => nuevo("chispas", "entrada"), "chico"),
@@ -776,7 +776,7 @@ export class Inspector {
     this.cuerpo.append(el("div.ed-insp-cab", {}, [el("b.ed-tipo", { html: ico("animar") }), el("span", { text: e.nombre })]));
     this.cuerpo.append(el("div.ed-botonera", {}, [
       boton(I("play", "Probar"), () => this.app.tiempo.probar([e.id]), "primario"),
-      boton(I("tiempo", "Línea de tiempo"), () => this.app.tiempo.alternar(true), "chico"),
+      boton(I("tiempo", "LovEdit"), () => this.app.tiempo.alternar(true), "chico"),
     ]));
     this.cuerpo.append(this._faseAnim(e, "entrada", "Entrada · al llegar a la página"));
     this.cuerpo.append(this._faseAnim(e, "bucle", "Mientras está · se repite"));
@@ -811,7 +811,7 @@ export class Inspector {
       fila("Repetir", control(this.v, { tipo: "select", opciones: [["inf", "Para siempre"], [1, "1 vez"], [2, "2 veces"], [3, "3 veces"], [5, "5 veces"]], leer: () => this.E.el(e.id)?.anim?.propia?.repetir ?? 1, escribir: (x) => this.E.setEl(e.id, { "anim.propia.repetir": x }, "Repetir") })),
       fila("Sentido", c("anim.propia.direccion", { tipo: "select", opciones: [["normal", "Normal"], ["reverse", "Al revés"], ["alternate", "Ida y vuelta"], ["alternate-reverse", "Vuelta e ida"]], def: "normal" })),
       this._ritmo(e, "anim.propia.facil", "suave"),
-      el("p.ed-ayuda", { text: "En la línea de tiempo, la flechita de su pista muestra cada propiedad con sus fotogramas (◆): ahí se mueven, se copian y cada uno lleva su propio ritmo." }),
+      el("p.ed-ayuda", { text: "En LovEdit, la flechita de su pista muestra cada propiedad con sus fotogramas (◆): ahí se mueven, se copian y cada uno lleva su propio ritmo." }),
     ];
     if (pr.raw) {
       hijos.unshift(el("p.ed-nota", { text: `Animación original de la página${pr.nombre ? " («" + pr.nombre + "»)" : ""}: ${pr.raw.length} fotogramas. Puedes cambiar su duración, retraso, repeticiones y sentido.` }));
@@ -847,7 +847,7 @@ export class Inspector {
     this.cuerpo.append(el("div.ed-insp-cab", {}, [el("b.ed-tipo", { html: ico("animar") }), el("span", { text: sel.length ? `${sel.length} elementos` : "Toda la página" })]));
     this.cuerpo.append(el("div.ed-botonera", {}, [
       boton(I("play", "Probar la página"), () => this.app.tiempo.probar(), "primario"),
-      boton(I("tiempo", "Línea de tiempo"), () => this.app.tiempo.alternar(true), "chico"),
+      boton(I("tiempo", "LovEdit"), () => this.app.tiempo.alternar(true), "chico"),
     ]));
     const cascada = (tipo, dir) => E.transaccion("Entrada en cascada", () => {
       [...els].sort((a, b) => a.y - b.y || a.x - b.x).forEach((e, i) => E.setEl(e.id, { "anim.entrada": { tipo, dur: 800, retraso: i * 160, facil: "suave", dir: dir || "arriba", dist: 30 } }));

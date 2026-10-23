@@ -2592,3 +2592,6 @@ body.modo-pro .ed-tl-fila.ed-tl-fmas { min-height: 38px; }
   .ed-riel button span { font-size: 9.8px; max-width: 100%; }
   .ed-riel button:is([data-s="herramientas"], [data-s="transiciones"], [data-s="interactivo"]) span { font-size: 8.4px; letter-spacing: -.1px; }
 }
+/* Fase 40: LovEdit, con su nombre arriba. */
+.pro-marca { font: 800 15px/1 Jost, system-ui, sans-serif; letter-spacing: .2px; background: linear-gradient(90deg, #ff8fbf, #b49cff); -webkit-background-clip: text; background-clip: text; color: transparent; white-space: nowrap; }
+@media (max-width: 360px) { .pro-marca { display: none; } }

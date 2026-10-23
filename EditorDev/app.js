@@ -386,7 +386,7 @@ function pintarNombre() {
   const P = app.estado.proyecto;
   if (!P) return;
   $(".ed-nombre input").value = P.nombre;
-  document.title = P.nombre + " · Crear librito";
+  document.title = P.nombre + " · My Love Pages";
 }
 
 function pintarHistorial() {

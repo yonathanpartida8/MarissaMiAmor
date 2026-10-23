@@ -180,3 +180,37 @@ code.k { padding: 1px 6px; border-radius: 6px; background: var(--fondo-2); font-
   .item .acciones { width: 100%; margin-left: 52px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ═══ Fase 40: la nube de My Love Pages, más linda y viva ═══ */
+body { background:
+  radial-gradient(40% 30% at 0% 0%, rgba(255, 143, 191, .16), transparent 70%),
+  radial-gradient(35% 30% at 100% 10%, rgba(143, 111, 232, .13), transparent 70%),
+  radial-gradient(45% 35% at 60% 100%, rgba(255, 196, 160, .12), transparent 70%), var(--fondo);
+  background-attachment: fixed; }
+.lado { background: color-mix(in srgb, var(--sup) 82%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.lado .marca i { animation: latir 2.6s ease-in-out infinite; }
+.lado .marca b { background: linear-gradient(90deg, var(--acento), var(--lila)); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; }
+.nav { transition: background .2s, transform .15s; }
+.nav:active { transform: scale(.97); }
+.caja { animation: subir .45s cubic-bezier(.2, .9, .3, 1) both; transition: transform .2s, box-shadow .2s; }
+.rejilla > .caja:nth-child(2) { animation-delay: .04s; } .rejilla > .caja:nth-child(3) { animation-delay: .08s; }
+.rejilla > .caja:nth-child(4) { animation-delay: .12s; } .rejilla > .caja:nth-child(5) { animation-delay: .16s; }
+.rejilla > .caja:nth-child(n+6) { animation-delay: .2s; }
+@media (hover: hover) { .caja:hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(80, 30, 60, .06), 0 14px 32px rgba(80, 30, 60, .1); } }
+.caja.alerta { border-color: color-mix(in srgb, var(--aviso) 45%, transparent); background: linear-gradient(135deg, var(--aviso-suave), var(--sup)); }
+.caja.alerta h2 svg { color: var(--aviso); }
+.caja.alerta p { margin: 4px 0; color: var(--suave); }
+/* El tablero del teléfono: cuatro anillos que se llenan. */
+.caja.tablero { background: linear-gradient(135deg, color-mix(in srgb, var(--acento-suave) 70%, var(--sup)), var(--sup) 55%, color-mix(in srgb, var(--lila-suave) 70%, var(--sup))); }
+.caja.tablero .sub { margin: -6px 0 14px; color: var(--suave); font-size: 13px; }
+.anillos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+@media (max-width: 520px) { .anillos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@property --v2 { syntax: "<number>"; inherits: false; initial-value: 0; }
+.anillo { position: relative; display: grid; place-items: center; align-content: center; aspect-ratio: 1; max-width: 108px; width: 100%; margin: 0 auto; border-radius: 50%;
+  --v2: var(--v, 0);
+  background: radial-gradient(closest-side, var(--sup) 74%, transparent 75% 100%), conic-gradient(var(--c, var(--acento)) calc(var(--v2) * 1%), var(--linea) 0);
+  animation: llenar 1.1s cubic-bezier(.2, .9, .3, 1) both; transition: --v2 .8s ease; }
+@keyframes llenar { from { --v2: 0; } }
+.anillo b { font-size: clamp(18px, 4.6vw, 24px); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.anillo small { font-size: 11px; margin-top: 3px; }
+@media (prefers-reduced-motion: reduce) { .caja, .anillo, .lado .marca i { animation: none; } }

@@ -57,10 +57,10 @@ export const ANIMAR = {
     const app = this.app;
     const sel = E.seleccionados;
     const fase = this.faseAnim || "entrada";
-    // Arriba: probar la página entera, la línea de tiempo y lo fino.
+    // Arriba: probar la página entera, LovEdit y lo fino.
     c.append(el("div.ed-anim-barra", {}, [
       boton(I("play", "Probar página"), () => app.prueba.abrir(), "primario chico"),
-      boton(I("tiempo", "Línea de tiempo"), () => app.tiempo.alternar(true), "chico"),
+      boton(I("tiempo", "LovEdit"), () => app.tiempo.alternar(true), "chico"),
       sel.length ? boton(I("herramientas", "Ajustes finos"), () => app.insp.abrir("animar"), "chico") : null,
     ].filter(Boolean)));
     const fases = el("div.ed-seg.ed-anim-fases", {}, FASES.map(([v, t]) => el("button" + (v === fase ? ".on" : ""), { type: "button", text: t, onClick: () => { this.faseAnim = v; this.rehacer(); } })));

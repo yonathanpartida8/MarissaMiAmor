@@ -14,13 +14,13 @@ set -euo pipefail
 # otro lado: LIBRITO_BASE=https://…/servidor
 DESTINO="${LIBRITO_APP:-$HOME/librito-servidor}"
 BASE="${LIBRITO_BASE:-https://yonathanpartida8.github.io/MarissaMiAmor/servidor}"
-ARCHIVOS="servidor.py librito.sh instalar.sh L%C3%89EME.md panel/index.html panel/panel.css panel/panel.js panel/icono.svg"
+ARCHIVOS="servidor.py librito.sh start.sh instalar.sh L%C3%89EME.md panel/index.html panel/panel.css panel/panel.js panel/icono.svg"
 
 if [ -n "${PREFIX:-}" ] && command -v pkg >/dev/null 2>&1; then
   command -v curl >/dev/null 2>&1 || pkg install -y curl
 fi
 
-echo "♥ Bajando M.YNTHN, el servidor del librito…"
+echo "♥ Bajando My Love Pages (el servidor M.YNTHN)…"
 mkdir -p "$DESTINO/panel"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
@@ -31,7 +31,7 @@ for f in $ARCHIVOS; do
 done
 # Todo bajó bien: recién ahora se reemplaza lo de antes.
 cp -R "$tmp/." "$DESTINO/"
-chmod +x "$DESTINO/librito.sh" "$DESTINO/instalar.sh"
+chmod +x "$DESTINO/librito.sh" "$DESTINO/start.sh" "$DESTINO/instalar.sh"
 echo "✓ Archivos en $DESTINO"
 
 [ "${1:-}" = "--solo-archivos" ] && exit 0

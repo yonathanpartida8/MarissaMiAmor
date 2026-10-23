@@ -3,7 +3,7 @@
  * recortes de los dos (Fase 22). Mientras está a la vista, el editor se va
  * cargando por detrás.
  *
- *   Arriba      el corazón de píxeles, M.YNTHN y su lema; tu cuenta en una
+ *   Arriba      el corazón de píxeles, My Love Pages (la app; su servidor es M.YNTHN) y su lema; tu cuenta en una
  *               etiqueta de papel con su coronita (tu foto y tu nombre → perfil).
  *   La pareja   dos polaroids con cinta washi (tu foto y la de tu amorcito o,
  *               sin foto, un atardecer y una ciudad de noche), unidas por un
@@ -102,7 +102,7 @@ export class MenuPrincipal {
     this.escena = el("div.mp-escena");
     const marca = el("div.mp-marca", {}, [
       el("i.mp-pixel", { html: A.CORAZON_PIXEL }),
-      el("div.mp-marca-t", {}, [el("b", { text: SRV.NOMBRE }), el("small", {}, [el("span", { text: "Pequeños mundos, grandes historias…" }), el("i", { html: A.GARABATO_CORAZON })])]),
+      el("div.mp-marca-t", {}, [el("b", { text: "My Love Pages" }), el("small", {}, [el("span", { text: "Pequeños mundos, grandes historias…" }), el("i", { html: A.GARABATO_CORAZON })])]),
     ]);
     // Los papeles rasgados llevan su «sombra» como otro papelito debajo (un filtro repintaría a cada cuadro).
     const rasgoEtq = A.rasgado(["arriba", "abajo", "izq", "der"], 3.2, 10, 5);

@@ -226,7 +226,7 @@ export class Paneles {
     ])));
     c.append(seccion("Tus vídeos", [vids.length ? lista : el("p.ed-vacio-txt", { text: "Todavía no hay vídeos en este librito." })]));
     c.append(seccion("Cómo se reproducen", [
-      el("p.ed-ayuda", { text: "Elige el vídeo en la hoja para decidir si empieza solo, si se repite, si va sin sonido y si se ven sus controles. En la línea de tiempo puedes decidir en qué momento aparece (y empieza)." }),
+      el("p.ed-ayuda", { text: "Elige el vídeo en la hoja para decidir si empieza solo, si se repite, si va sin sonido y si se ven sus controles. En LovEdit puedes decidir en qué momento aparece (y empieza)." }),
     ], { abierta: false }));
   }
 
@@ -405,7 +405,7 @@ export class Paneles {
     ].filter(Boolean)));
     c.append(seccion("Ver y ordenar", [el("div.ed-piezas", {}, [
       this._pieza(ico("capas"), "Capas", () => app.insp.abrir("capas")),
-      this._pieza(ico("tiempo"), "Línea de tiempo", () => app.tiempo.alternar(true)),
+      this._pieza(ico("tiempo"), "LovEdit", () => app.tiempo.alternar(true)),
       this._pieza(ico("ajustar"), "Ver la hoja entera", () => { app.lienzo.ajustar(); app.lateral?.cerrar(); }),
       this._pieza(ico("recuperar"), "Traer lo perdido", () => { const ids = (E.pagina?.els || []).map((x) => x.id); app.lienzo.traerALaHoja(ids); }, "Mete en la hoja todo lo que se salió"),
       this._pieza(ico("play"), "Vista previa", () => app.vista.abrir(Math.max(0, this.P.orden.indexOf(E.paginaId)))),

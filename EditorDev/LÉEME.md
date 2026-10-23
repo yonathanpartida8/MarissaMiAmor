@@ -793,6 +793,15 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Mapa en satélite** (`components/juntitos.js`) | satélite con calles y nombres encima (o mapa de calles, se recuerda), botón para ver a los dos, un hilito entre ustedes y **a cuánto están**; pines con su latido (se calma en ahorro). |
 | **Medido** | `ed39` (34 comprobaciones, teléfono y compu), `jt39` (mapa), y de nuevo `ed38`, `rend37`, `menu36`, `chat36`, `editor36`, `libritos33`, `fantasma28`, `probar28`, `sonidos24` y `verificar`: todo en verde. **No probado en aparatos de verdad** (sólo Chromium con pantalla de teléfono). |
 
+### Fase 40: My Love Pages, LovEdit, Dibujar Juntos y un servidor que se muda de teléfono
+
+| | |
+| --- | --- |
+| **Nombres** | la app ahora se llama **My Love Pages** (título, ícono en la pantalla de inicio, menú principal y Configuración); la línea de tiempo se llama **LovEdit** (con su nombre arriba). Su servidor sigue siendo M.YNTHN. |
+| **Dibujar Juntos** (`components/dibujo-juntos.js`) | en Cositas Juntitos, en lugar de Diario: una hoja de los dos **en tiempo real** (ves crecer el trazo de tu amorcito, con su lápiz y su nombre). 8 pinceles (lápiz, pluma, marcador, acuarela, neón, brillitos, corazones, borrador), colores, grosor, deshacer, varias hojas con nombre y fondo (papel, cuadritos, rayitas, rosita, noche), guardar o compartir como imagen. Cada pincel **suena** mientras lo mueves. **Lápiz virtual**: con el dedo, la punta queda arriba del dedo (se ve el lápiz y una guía), así el dedo no tapa lo que dibujas. |
+| **Cositas Juntitos más vivo** (`components/juntitos.js`, `styles/juntitos.css`) | la barra de abajo con una pastillita que se desliza, páginas que entran desde el lado de su pestaña, tarjetitas que aparecen una tras otra, título con brillo; todo se calma en ahorro o reposo. **Cada pestaña con lo suyo arriba**: Cositas → **Notas** (lo que era Diario: tus chismes, enojos y colapsos y lo que te compartieron; también manteniendo presionada su tarjetita), Mesecitos → cuánto falta para el siguiente. |
+| **Medido** | `jt40` (Cositas, Notas, Mesecitos, mapa y Dibujar Juntos con dos cuentas: lo que dibuja una le llega a la otra, el lápiz virtual queda 64 px arriba del dedo, el sonido suena, su lápiz y «… está dibujando» en vivo, deshacer, hojas nuevas), en teléfono y compu; y de nuevo `ed39`, `ed38`, `rend37`, `menu36`, `chat36`, `libritos33`, `fantasma28`, `probar28`, `sonidos24`, `verificar`. **No probado en aparatos de verdad.** |
+
 ## Cómo está hecho
 
 ```

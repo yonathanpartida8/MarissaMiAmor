@@ -10,9 +10,12 @@
  *   Mesecitos  cada mes que cumplen (desde la fecha de novios de su perfil) puede tener su página especial:
  *              una sola por mes, con título, carta, fotos y color; se guarda en su servidor y se reabre.
  *   Mapa       la ubicación compartida (de verdad y sólo si tú quieres) y sus lugares con avisos.
- *   Diario     lo que escribiste (y lo que tu amorcito te compartió).
+ *   Dibujar    Dibujar Juntos (Fase 40, en lugar de Diario): una hoja de los dos en tiempo real, con
+ *              pinceles, sonidos y lápiz virtual (components/dibujo-juntos.js).
  *
- * Todo vive en su M.YNTHN (servidor 1.13.0): nada se inventa ni se queda «de adorno».
+ * Cada pestaña tiene sus cosas arriba a la derecha: en Cositas, «Notas» (lo que escribiste y lo que tu
+ * amorcito te compartió, lo que antes era Diario); en Mesecitos, cuánto falta para el siguiente.
+ * Todo vive en su M.YNTHN (servidor 1.14.0): nada se inventa ni se queda «de adorno».
  */
 import { el, aviso, confirmar } from "./ui.js";
 import { ico } from "./iconos.js";
@@ -21,6 +24,7 @@ import * as PF from "./perfil.js";
 import * as UB from "./ubicacion.js";
 import { sinMovimiento as reducido } from "./transiciones.js";
 import { ambito } from "./rendimiento.js";
+import { DibujoJuntos } from "./dibujo-juntos.js";
 
 const svg = (d, vb = "0 0 32 32") => `<svg viewBox="${vb}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const ICONOS = {
@@ -88,12 +92,13 @@ export class Juntitos {
   get pareja() { return PF.nombreDe(PF.datos().pareja) || "tu amorcito"; }
 
   _montar() {
-    const tabs = [["cositas", "Cositas", ICONOS.teamo], ["mesecitos", "Mesecitos", svg('<rect x="5" y="7" width="22" height="20" rx="4"/><path d="M5 13h22M11 4.5v5M21 4.5v5"/><path d="M16 23.4s-4-2.4-4-5a2 2 0 0 1 4-1 2 2 0 0 1 4 1c0 2.6-4 5-4 5z" fill="currentColor" fill-opacity=".25"/>')], ["mapa", "Mapa", PIN], ["diario", "Diario", svg('<path d="M8 5h14a3 3 0 0 1 3 3v17a2 2 0 0 1-2 2H8z"/><path d="M8 5v22M12.5 11h8M12.5 15h8M12.5 19h5"/>')]];
+    const tabs = [["cositas", "Cositas", ICONOS.teamo], ["mesecitos", "Mesecitos", svg('<rect x="5" y="7" width="22" height="20" rx="4"/><path d="M5 13h22M11 4.5v5M21 4.5v5"/><path d="M16 23.4s-4-2.4-4-5a2 2 0 0 1 4-1 2 2 0 0 1 4 1c0 2.6-4 5-4 5z" fill="currentColor" fill-opacity=".25"/>')], ["mapa", "Mapa", PIN], ["dibujar", "Dibujar", svg('<path d="M5 27c3 0 5-1.5 5-4a3 3 0 0 0-3-3c-2 0-3 1.6-3 3.5 0 1.6-.6 2.6-2 3.5z" fill="currentColor" fill-opacity=".2"/><path d="M10 21L25.5 5.5a2.1 2.1 0 0 1 3 3L13 24"/>')]];
     this.nav = el("nav.jt-nav", { "aria-label": "Cositas Juntitos" }, tabs.map(([k, n, i]) => el("button.jt-tab", { type: "button", dataset: { k }, onClick: () => this.ir(k) }, [el("i", { html: i }), el("span", { text: n })])));
     this.vista = el("main.jt-vista");
     this.titulo = el("b.jt-cab-t");
     this.chip = el("button.jt-chip", { type: "button", hidden: "", onClick: () => this.ir("mapa") }, [el("i", { html: PIN }), el("span", { text: "Compartiendo ubicación" })]);
-    const cab = el("header.jt-cab", {}, [el("button.jt-atras", { type: "button", "aria-label": "Atrás", html: ico("izquierda"), onClick: () => this.atras() }), this.titulo, this.chip]);
+    this.accion = el("div.jt-accion");
+    const cab = el("header.jt-cab", {}, [el("button.jt-atras", { type: "button", "aria-label": "Atrás", html: ico("izquierda"), onClick: () => this.atras() }), this.titulo, this.accion, this.chip]);
     this.velo = el("div.jt-velo", { onClick: () => this._cerrarHoja() });
     this.hojaEl = el("section.jt-hoja", { role: "dialog", "aria-modal": "true" });
     this.capa = el("div.jt-capa", { role: "dialog", "aria-label": "Cositas Juntitos" }, [cab, this.vista, this.nav, this.velo, this.hojaEl]);
@@ -119,6 +124,7 @@ export class Juntitos {
     this._cerrarHoja();
     this.A?.limpiar();
     this.A = null;
+    this.dj?.limpiar(); this.dj = null;
     if (this.mapa) { this.mapa.m.remove(); this.mapa = null; }
     this.capa.querySelectorAll(".jt-carta-mes").forEach((n) => n.remove());
     this.capa.classList.remove("ver");
@@ -138,16 +144,26 @@ export class Juntitos {
   _chip() { if (this.chip) this.chip.hidden = !UB.estadoUbicacion().compartiendo; }
 
   ir(tab) {
+    if (tab === "diario") tab = "cositas"; // (Diario ya vive en Cositas → Notas)
+    const ORDEN = ["cositas", "mesecitos", "mapa", "dibujar"];
+    const antes = this.tab;
     this.tab = tab;
     this._parar?.();
     this._parar = null;
     this._eligiendo = false;
+    this.dj?.limpiar(); this.dj = null;
     if (this.mapa) { this.mapa.m.remove(); this.mapa = null; } // un solo mapa vivo, y sólo en su pestaña
     for (const b of this.nav.children) { const on = b.dataset.k === tab; b.classList.toggle("on", on); b.setAttribute("aria-current", on ? "page" : "false"); }
-    this.titulo.textContent = { cositas: "Nuestros días juntos", mesecitos: "Mesecitos", mapa: "Dónde estamos", diario: "Diario" }[tab];
+    this.nav.style.setProperty("--i", String(ORDEN.indexOf(tab)));
+    this.titulo.textContent = { cositas: "Nuestros días juntos", mesecitos: "Mesecitos", mapa: "Dónde estamos", dibujar: "Dibujar Juntos" }[tab];
+    this.accion.replaceChildren();
+    this.capa.dataset.tab = tab;
     this.vista.scrollTop = 0;
+    // La página nueva entra desde el lado de la pestaña (izquierda o derecha).
+    this.vista.classList.remove("entra-izq", "entra-der");
+    if (!reducido() && antes && antes !== tab) { void this.vista.offsetWidth; this.vista.classList.add(ORDEN.indexOf(tab) > ORDEN.indexOf(antes) ? "entra-der" : "entra-izq"); }
     this.vista.replaceChildren(el("p.jt-cargando", { text: "Un momentito…" }));
-    ({ cositas: () => this._cositas(), mesecitos: () => this._mesecitos(), mapa: () => this._mapa(), diario: () => this._diario() })[tab]();
+    ({ cositas: () => this._cositas(), mesecitos: () => this._mesecitos(), mapa: () => this._mapa(), dibujar: () => this._dibujar() })[tab]();
   }
 
   _error(e) { this.vista.replaceChildren(el("div.jt-vacio", {}, [el("b", { text: "No se pudo cargar" }), el("p", { text: e.status === 409 ? "Primero vincúlate con tu amorcito (en el menú principal)." : e.message || "Sin conexión." }), el("button.jt-btn", { type: "button", text: "Reintentar", onClick: () => this.ir(this.tab) })])); }
@@ -170,6 +186,8 @@ export class Juntitos {
     const p = d.pareja, nombre = this.pareja;
     const suyo = [p.extrano.hoy ? `te extrañó ${p.extrano.hoy === 1 ? "una vez" : p.extrano.hoy + " veces"}` : "", p.teamo.hoy ? `te dijo «te amo» ${p.teamo.hoy === 1 ? "una vez" : p.teamo.hoy + " veces"}` : ""].filter(Boolean);
     this.cartas = new Map();
+    const nNotas = (d.notas?.length || 0) + (d.de_pareja?.length || 0);
+    this.accion.replaceChildren(el("button.jt-accion-b", { type: "button", onClick: () => this._notas() }, [el("i", { html: ICONOS.chismes }), el("span", { text: "Notas" }), nNotas ? el("b", { text: String(nNotas) }) : null]));
     this.vista.replaceChildren(...[
       el("div.jt-hola", {}, [el("h1", { text: "Cositas Juntitos" }), el("p", { text: "Selecciona qué hacer con tu pareja o amiga/o" })]),
       suyo.length ? el("div.jt-suyo", {}, [el("i", { html: ICONOS.teamo }), el("span", { text: `Hoy ${nombre} ${suyo.join(" y ")} 💗` })]) : null,
@@ -236,7 +254,7 @@ export class Juntitos {
   _detalle(c) {
     const m = this.d?.mias?.[c.t];
     if (!m) return;
-    if (c.modo === "escribe") { this.ir("diario"); return; }
+    if (c.modo === "escribe") { this._notas(c.t); return; }
     const comp = el("input", { type: "checkbox", checked: m.compartir ? "" : null });
     comp.checked = !!m.compartir;
     comp.addEventListener("change", async () => {
@@ -261,7 +279,7 @@ export class Juntitos {
     this._hoja(c.n, [
       t,
       el("label.jt-interruptor", {}, [comp, el("span", { text: `Compartirlo con ${this.pareja}` })]),
-      el("p.jt-hoja-p.suave", { text: "Si no lo compartes, sólo tú lo ves (en Diario)." }),
+      el("p.jt-hoja-p.suave", { text: "Si no lo compartes, sólo tú lo ves (en Notas)." }),
       el("button.jt-btn", { type: "button", text: "Guardar", onClick: async () => {
         try {
           const r = await SRV.cosita(c.t, { nota: t.value.trim(), compartida: comp.checked });
@@ -285,6 +303,7 @@ export class Juntitos {
     }
     const porMes = new Map(d.paginas.map((x) => [x.mes, x]));
     const sig = d.siguiente ? new Date(d.siguiente + "T12:00:00") : null, faltan = sig ? Math.max(0, Math.ceil((sig - Date.now()) / 86400000)) : 0;
+    if (sig) this.accion.replaceChildren(el("span.jt-accion-pill", { text: faltan === 0 ? "¡Hoy cumplen! 💗" : `Faltan ${faltan} ${faltan === 1 ? "día" : "días"}` }));
     const filas = [];
     for (let n = d.meses; n >= 1; n--) {
       const p = porMes.get(n), f = mesDe(d.novios, n);
@@ -523,28 +542,41 @@ export class Juntitos {
     ]);
   }
 
-  /* ════ Diario ════ */
-  async _diario() {
-    let d;
-    try { d = await SRV.cositas(); } catch (e) { this._error(e); return; }
-    if (this.tab !== "diario") return;
+  /* ════ Notas (lo que era Diario): tus chismes, enojos y colapsos, y lo que tu amorcito te compartió ════ */
+  async _notas(tipo = null) {
+    try { const n = await SRV.cositas(); this.d = { ...(this.d || {}), ...n }; } catch (e) { if (!this.d) { aviso(e.message, 3000, "error"); return; } }
+    const d = this.d;
     const nombreTipo = { chismes: "Chisme", enojos: "Enojo", colapsos: "Colapso" };
+    const de = (l) => (tipo ? l.filter((x) => x.tipo === tipo) : l);
     const fila = (x, mio) => {
       const comp = el("input", { type: "checkbox", "aria-label": `Compartir con ${this.pareja}` });
       comp.checked = x.compartida;
-      comp.addEventListener("change", () => SRV.compartirCosita(x.id, comp.checked).then(() => aviso(comp.checked ? `Compartido con ${this.pareja}` : "Ahora es sólo tuyo", 1800)).catch((e) => { comp.checked = !comp.checked; aviso(e.message, 3000, "error"); }));
-      return el("li.jt-entrada." + x.tipo, {}, [
+      comp.addEventListener("change", () => SRV.compartirCosita(x.id, comp.checked).then(() => { x.compartida = comp.checked; aviso(comp.checked ? `Compartido con ${this.pareja}` : "Ahora es sólo tuyo", 1800); }).catch((e) => { comp.checked = !comp.checked; aviso(e.message, 3000, "error"); }));
+      const li = el("li.jt-entrada." + x.tipo, {}, [
         el("i", { html: ICONOS[x.tipo] }),
         el("div", {}, [el("small", { text: `${nombreTipo[x.tipo]} · ${fechaLarga(x.dia)}` }), el("p", { text: x.nota || "(sin nota)" })]),
         mio ? el("div.jt-entrada-ac", {}, [el("label.jt-mini-int", {}, [comp, el("span", { text: "Compartir" })]),
-          el("button.jt-icono", { type: "button", "aria-label": "Borrar", html: ico("borrar"), onClick: async () => { if (await confirmar("¿Borrar esta entrada?", "Borrar")) { await SRV.borrarCosita(x.id).catch((e) => aviso(e.message, 3000, "error")); this.ir("diario"); } } })]) : null,
+          el("button.jt-icono", { type: "button", "aria-label": "Borrar", html: ico("borrar"), onClick: async () => {
+            if (!(await confirmar("¿Borrar esta nota?", "Borrar"))) return;
+            try { const r = await SRV.borrarCosita(x.id); d.notas = d.notas.filter((y) => y.id !== x.id); if (r?.resumen) d.mias = r.resumen; li.remove(); } catch (e) { aviso(e.message, 3000, "error"); }
+          } })]) : null,
       ]);
+      return li;
     };
-    this.vista.replaceChildren(
-      el("div.jt-sec", {}, [el("h2", { text: "Lo que escribiste" })]),
-      d.notas.length ? el("ul.jt-entradas", {}, d.notas.map((x) => fila(x, true))) : el("p.jt-vacio-chico", { text: "Aquí aparecen tus chismes, enojos y colapsos. Sólo tú los ves, salvo que los compartas." }),
-      el("div.jt-sec", {}, [el("h2", { text: `Lo que ${this.pareja} te compartió` })]),
-      d.de_pareja.length ? el("ul.jt-entradas", {}, d.de_pareja.map((x) => fila(x, false))) : el("p.jt-vacio-chico", { text: "Todavía nada." }),
-    );
+    const mias = de(d.notas || []), suyas = de(d.de_pareja || []);
+    this._hoja(tipo ? `${{ chismes: "Chismes", enojos: "Enojos", colapsos: "Colapsos" }[tipo]}` : "Notas", [
+      tipo ? el("button.jt-btn", { type: "button", text: "Escribir otra", onClick: () => this._escribir(COSAS.find((c) => c.t === tipo)) }) : null,
+      el("b.jt-hoja-sub", { text: "Lo que escribiste" }),
+      mias.length ? el("ul.jt-entradas", {}, mias.map((x) => fila(x, true))) : el("p.jt-vacio-chico", { text: "Todavía nada. Sólo tú lo ves, salvo que lo compartas." }),
+      el("b.jt-hoja-sub", { text: `Lo que ${this.pareja} te compartió` }),
+      suyas.length ? el("ul.jt-entradas", {}, suyas.map((x) => fila(x, false))) : el("p.jt-vacio-chico", { text: "Todavía nada." }),
+    ]);
+  }
+
+  /* ════ Dibujar Juntos ════ */
+  _dibujar() {
+    if (!PF.datos().pareja) { this.vista.replaceChildren(el("div.jt-vacio", {}, [el("b", { text: "Para dibujar juntos" }), el("p", { text: "Primero vincúlate con tu amorcito (en el menú principal)." })])); return; }
+    this.dj = new DibujoJuntos(this.app, { pareja: this.pareja, hoja: (t, h) => this._hoja(t, h), cerrarHoja: () => this._cerrarHoja() });
+    this.dj.montar(this.vista);
   }
 }

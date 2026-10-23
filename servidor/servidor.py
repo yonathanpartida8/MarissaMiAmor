@@ -57,6 +57,7 @@ import sys
 import tempfile
 import threading
 import gzip
+import tarfile
 from collections import OrderedDict
 import time
 import datetime
@@ -67,7 +68,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.13.0"
+VERSION = "1.14.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -81,6 +82,9 @@ VIGIA_S = max(5, int(os.environ.get("LIBRITO_VIGIA_S", "150")))  # cada cuánto 
 # lo que pase de esto se sube con git (como desde una copia del repositorio).
 LIMITE_API = int(float(os.environ.get("LIBRITO_LIMITE_API_MB", "20")) * 1024 * 1024)
 GIT_URL = os.environ.get("LIBRITO_GIT_URL", "")   # para pruebas (si no, https://github.com/<repo>.git)
+# Dónde está la página de My Love Pages (para encontrar al servidor de siempre al traerlo a otro teléfono).
+SITIO_FABRICA = os.environ.get("LIBRITO_SITIO", "https://yonathanpartida8.github.io/MarissaMiAmor/").rstrip("/") + "/"
+INICIO = time.time()
 
 AJUSTES_BASE = {
     "nombre": "M.YNTHN",
@@ -98,6 +102,9 @@ AJUSTES_BASE = {
     "max_publicaciones": 30,           # publicaciones por usuario (el administrador no tiene tope)
     "copias_por_proyecto": 15,         # copias que se guardan de cada proyecto (las más nuevas)
     "github": {"repo": "", "rama": ""},
+    "id_servidor": "",                 # quién es este servidor (viaja con los datos al pasarlo a otro teléfono)
+    "relevado": {},                    # si ya pasó a otro teléfono: {"en": fecha} (éste ya no se prende solo)
+    "forzar_anuncio": False,           # ser el servidor aquí aunque otro teléfono lo esté siendo (start my lo pregunta)
 }
 RESERVADOS = {"lista", "index", "servidor", "assets", "scripts", "pages", "styles"}
 MIME_EXTRA = {".js": "text/javascript", ".mjs": "text/javascript", ".webmanifest": "application/manifest+json", ".svg": "image/svg+xml",
@@ -335,10 +342,148 @@ def verificar(contrasena, guardado):
 
 HASH_FALSO = hashear(secrets.token_hex(8))   # para que «no existe» tarde lo mismo que «contraseña mala»
 USUARIO_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,31}$")
-# La cuenta del dueño del servidor (Fase 33): al entrar con ella queda como administrador y el servidor
-# termina de instalarse. Su contraseña NUNCA va aquí (el repositorio es público): se pone UNA vez en el
-# teléfono con «librito dueño». Nadie más puede registrarse con este nombre desde fuera del teléfono.
-DUENO = "ynthnpg.my"
+# La cuenta del dueño del servidor (Fase 33; YonathanPG desde la 40): al entrar con ella queda como
+# administrador y el servidor termina de instalarse. Su contraseña NUNCA va aquí (el repositorio es
+# público): se pone UNA vez en el teléfono con «start my» → Cuenta del dueño (o «librito dueño»).
+# Nadie más puede registrarse con este nombre desde fuera del teléfono. «YnthnPG.MY» (el nombre de
+# antes) entra igual y, si existía, se renombra solo a «yonathanpg» con todo lo suyo.
+DUENO = "yonathanpg"
+DUENOS_ANTES = ("ynthnpg.my",)
+
+
+def nombre_dueno(usuario):
+    """El nombre de antes del dueño entra como el de ahora."""
+    u = str(usuario or "").strip().lower()[:40]
+    return DUENO if u in DUENOS_ANTES else u
+
+
+# ══════════════════════════════════════════════════════════════════
+#  El teléfono servidor (Fase 40): saber cómo está para aprovecharlo y cuidarlo
+#
+#  · Batería, si está cargando y su temperatura: /sys (si Android deja leerlo) o
+#    «termux-battery-status» (paquete termux-api + la app Termux:API, opcional).
+#  · Temperatura del procesador (/sys/class/thermal), núcleos, carga, RAM y espacio.
+#  · El RITMO: «normal»; «ahorro» con poca pila y sin cargador; «fresco» si está
+#    caliente. En ahorro o fresco, el vigía del túnel pregunta menos, las limpiezas
+#    grandes esperan y se comprime más ligero: menos trabajo = menos calor y pila.
+#  Todo se lee como mucho cada 30 s (leerlo también gasta).
+# ══════════════════════════════════════════════════════════════════
+_APARATO = {"t": 0, "d": None}
+_APARATO_LOCK = threading.Lock()
+
+
+def _leer(ruta):
+    try:
+        with open(ruta, encoding="utf-8", errors="replace") as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
+def _prop(nombre):
+    """getprop de Android (modelo, versión); vacío fuera de Android."""
+    exe = shutil.which("getprop")
+    if not exe:
+        return ""
+    try:
+        return subprocess.run([exe, nombre], capture_output=True, text=True, timeout=3).stdout.strip()[:60]
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def _memoria():
+    m = {}
+    for linea in _leer("/proc/meminfo").splitlines():
+        k, _, v = linea.partition(":")
+        if k in ("MemTotal", "MemAvailable", "MemFree"):
+            try:
+                m[k] = int(v.split()[0]) * 1024
+            except (ValueError, IndexError):
+                pass
+    return m.get("MemTotal", 0), m.get("MemAvailable", m.get("MemFree", 0))
+
+
+def cache_sqlite_kb():
+    """Caché de SQLite según la RAM: 8 MB en un teléfono chico, hasta 48 MB en uno grande."""
+    total, _ = _memoria()
+    return int(min(49152, max(8192, total / 1024 / 1024 * 12))) if total else 16384
+
+
+def _bateria():
+    base = "/sys/class/power_supply/battery"
+    cap = _leer(base + "/capacity")
+    if cap.isdigit():
+        st = _leer(base + "/status").lower()
+        t = _leer(base + "/temp")
+        temp = int(t) / 10 if t.lstrip("-").isdigit() and abs(int(t)) < 1500 else None
+        return {"bateria": int(cap), "cargando": st in ("charging", "full"), "temp_bateria": temp, "fuente": "sistema"}
+    exe = shutil.which("termux-battery-status")
+    if exe:
+        try:
+            r = subprocess.run([exe], capture_output=True, text=True, timeout=6)
+            d = json.loads(r.stdout or "{}")
+            if "percentage" in d:
+                return {"bateria": int(d["percentage"]), "cargando": str(d.get("status", "")).upper() in ("CHARGING", "FULL") or d.get("plugged") not in (None, "UNPLUGGED"),
+                        "temp_bateria": round(float(d["temperature"]), 1) if d.get("temperature") is not None else None, "fuente": "termux-api"}
+        except (OSError, subprocess.SubprocessError, ValueError, TypeError):
+            pass
+    return {"bateria": None, "cargando": None, "temp_bateria": None, "fuente": ""}
+
+
+def _temp_cpu():
+    mayor = None
+    try:
+        zonas = os.listdir("/sys/class/thermal")
+    except OSError:
+        return None
+    for z in zonas:
+        if not z.startswith("thermal_zone"):
+            continue
+        v = _leer(f"/sys/class/thermal/{z}/temp")
+        if v.lstrip("-").isdigit():
+            c = int(v) / (1000 if abs(int(v)) > 200 else 1)
+            if 15 <= c <= 115:
+                mayor = c if mayor is None else max(mayor, c)
+    return round(mayor, 1) if mayor is not None else None
+
+
+def aparato(forzar=False):
+    with _APARATO_LOCK:
+        if not forzar and _APARATO["d"] and time.time() - _APARATO["t"] < 30:
+            return _APARATO["d"]
+    total, libre_ram = _memoria()
+    try:
+        disco = shutil.disk_usage(DATOS)
+    except OSError:
+        disco = (0, 0, 0)
+    try:
+        carga = round(os.getloadavg()[0], 2)
+    except (OSError, AttributeError):
+        carga = None
+    b = _bateria()
+    cpu = _temp_cpu()
+    temp = max([t for t in (b["temp_bateria"], cpu) if t is not None], default=None)
+    ritmo = "normal"
+    if temp is not None and temp >= 44:
+        ritmo = "fresco"
+    elif b["bateria"] is not None and b["bateria"] < 20 and not b["cargando"]:
+        ritmo = "ahorro"
+    d = {"modelo": _prop("ro.product.model") or socket.gethostname()[:40], "android": _prop("ro.build.version.release"),
+         "termux": bool(os.environ.get("PREFIX", "").startswith("/data/data/com.termux")), "nucleos": os.cpu_count() or 1, "carga": carga,
+         "ram_total": total, "ram_libre": libre_ram, "disco_total": disco[0], "disco_libre": disco[2],
+         **b, "temp_cpu": cpu, "temp": temp, "ritmo": ritmo, "prendido_desde": iso(INICIO), "python": sys.version.split()[0]}
+    with _APARATO_LOCK:
+        antes = (_APARATO["d"] or {}).get("ritmo")
+        _APARATO.update(t=time.time(), d=d)
+    if antes and antes != ritmo:
+        log({"ahorro": "Poca pila y sin cargador: el servidor va en AHORRO (menos trabajo de fondo).",
+             "fresco": f"El teléfono está caliente ({temp} °C): el servidor baja el ritmo para que se enfríe.",
+             "normal": "El teléfono está bien otra vez: ritmo normal."}[ritmo])
+    return d
+
+
+def ritmo():
+    return (_APARATO["d"] or {}).get("ritmo", "normal")
 
 
 def validar_contrasena(c):
@@ -375,6 +520,12 @@ CREATE INDEX IF NOT EXISTS mensajes_par ON mensajes(de, para, id);
 CREATE TABLE IF NOT EXISTS trazos(id INTEGER PRIMARY KEY AUTOINCREMENT, de INTEGER, para INTEGER, ancla INTEGER, color TEXT,
   ancho REAL, puntos TEXT, fin INTEGER DEFAULT 0, borrado INTEGER DEFAULT 0, creado REAL, actualizado REAL);
 CREATE INDEX IF NOT EXISTS trazos_par ON trazos(de, para, id);
+CREATE TABLE IF NOT EXISTS lienzos(id INTEGER PRIMARY KEY AUTOINCREMENT, a INTEGER, b INTEGER, nombre TEXT, fondo TEXT,
+  creado REAL, actualizado REAL, borrado INTEGER DEFAULT 0);
+CREATE INDEX IF NOT EXISTS lienzos_par ON lienzos(a, b);
+CREATE TABLE IF NOT EXISTS dibujos(id INTEGER PRIMARY KEY AUTOINCREMENT, lienzo INTEGER, de INTEGER, pincel TEXT, color TEXT,
+  ancho REAL, puntos TEXT, fin INTEGER DEFAULT 0, borrado INTEGER DEFAULT 0, creado REAL, actualizado REAL);
+CREATE INDEX IF NOT EXISTS dibujos_lienzo ON dibujos(lienzo, id);
 CREATE TABLE IF NOT EXISTS push(id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER, sesion_id TEXT, endpoint TEXT UNIQUE,
   p256dh TEXT, auth TEXT, origen TEXT, aparato TEXT, creado REAL, ultimo_ok REAL, fallos INTEGER DEFAULT 0);
 CREATE INDEX IF NOT EXISTS push_usuario ON push(usuario_id);
@@ -414,6 +565,15 @@ class Base:
         self.c.row_factory = sqlite3.Row
         self.c.execute("PRAGMA journal_mode=WAL")
         self.c.execute("PRAGMA foreign_keys=ON")
+        # Afinada para el teléfono (Fase 40): WAL con sincronía normal (segura y mucho menos escritura en la
+        # memoria flash), tablas temporales en RAM y una caché según la RAM que tenga el aparato.
+        self.c.execute("PRAGMA synchronous=NORMAL")
+        self.c.execute("PRAGMA temp_store=MEMORY")
+        self.c.execute(f"PRAGMA cache_size=-{cache_sqlite_kb()}")
+        try:
+            self.c.execute("PRAGMA mmap_size=67108864")
+        except sqlite3.DatabaseError:
+            pass
         self.c.executescript(ESQUEMA)
         for tabla, cols in COLUMNAS_NUEVAS.items():
             tiene = {r[1] for r in self.c.execute(f"PRAGMA table_info({tabla})").fetchall()}
@@ -423,6 +583,10 @@ class Base:
         self.c.execute("CREATE UNIQUE INDEX IF NOT EXISTS usuarios_codigo_amor ON usuarios(codigo_amor)")
         # Ya no hay aprobación: las cuentas que quedaron esperando de antes entran directo.
         self.c.execute("UPDATE usuarios SET estado='activo' WHERE estado='pendiente'")
+        # El dueño ahora es «yonathanpg»: la cuenta de antes se renombra (con todo lo suyo: va por su número).
+        viejo = self.c.execute("SELECT id FROM usuarios WHERE usuario IN (%s)" % ",".join("?" * len(DUENOS_ANTES)), DUENOS_ANTES).fetchone()
+        if viejo and not self.c.execute("SELECT id FROM usuarios WHERE usuario=?", (DUENO,)).fetchone():
+            self.c.execute("UPDATE usuarios SET usuario=? WHERE id=?", (DUENO, viejo[0]))
         self.c.commit()
         for u in self.q("SELECT id FROM usuarios WHERE codigo_amor IS NULL"):
             self.x("UPDATE usuarios SET codigo_amor=? WHERE id=?", self.codigo_libre(), u["id"])
@@ -699,6 +863,11 @@ class Estado:
         self.anunciando = ""
         self.arranque_id = secrets.token_hex(8)  # para que el vigía del túnel sepa que contesta ESTE servidor
         self.tunel_ok = 0                        # la última vez que el túnel se probó desde internet y contestó
+        if not self.aj["id_servidor"]:           # quién es este servidor (viaja con los datos a otro teléfono)
+            self.aj.poner(id_servidor=secrets.token_hex(8))
+        self.mudando = 0                         # mientras se pasa a otro teléfono: sólo se lee (nada se pierde)
+        self.otro = {}                           # otro servidor prendido que es el de siempre (no se le quita la dirección)
+        self.peticiones = 0
         if arranque:
             # Sólo al prender: lo que quedó a medias de la vez anterior. (Las otras
             # órdenes —estado, admin, github— corren MIENTRAS el servidor trabaja.)
@@ -1043,9 +1212,9 @@ def anunciar_direccion():
     pocos minutos: la dirección sólo se da por anunciada cuando el commit entró."""
     url = E.url_publica()
     gh = E.github()
-    if not (url and gh and E.aj["anunciar"]) or url in (E.anunciada, E.anunciando):
+    if not (url and gh and E.aj["anunciar"]) or url in (E.anunciada, E.anunciando) or E.aj["relevado"]:
         return
-    cuerpo = json.dumps({"url": url, "nombre": E.aj["nombre"], "actualizado": iso()}, ensure_ascii=False, indent=1).encode() + b"\n"
+    cuerpo = json.dumps({"url": url, "nombre": E.aj["nombre"], "id": E.aj["id_servidor"], "actualizado": iso()}, ensure_ascii=False, indent=1).encode() + b"\n"
 
     def hacer(t):
         try:
@@ -1059,6 +1228,18 @@ def anunciar_direccion():
                         pass
                 return [{"path": ARCHIVO_ANUNCIO, "mode": "100644", "type": "blob", "sha": gh.blob(cuerpo)}]
             commit, arbol = gh.cabeza()
+            # Fase 40: si la dirección es de OTRO servidor que sigue prendido (otro teléfono con sus propios
+            # datos), no se le quita: así tu librito no se queda sin sus cuentas. Para pasarlo a este
+            # teléfono está «start my» → Traer el servidor a este teléfono (se trae todo y el otro se apaga).
+            otro = otro_servidor(gh.leer(ARCHIVO_ANUNCIO, commit))
+            if otro:
+                if E.otro.get("url") != otro["url"]:
+                    log("Hay otro servidor prendido con los datos de tu librito:", otro["url"], "— no le quito la dirección.",
+                        "Para que éste sea el servidor: start my → «Traer el servidor a este teléfono».")
+                E.otro = {**otro, "visto": iso()}
+                escribir_estado()
+                return {}
+            E.otro = {}
             if armar(commit, arbol):
                 gh.confirmar(armar, "Dirección del servidor del librito")
                 gh.reconstruir()
@@ -1075,6 +1256,26 @@ def anunciar_direccion():
     E.trabajo("anunciar", None, hacer)
 
 
+def otro_servidor(actual):
+    """¿servidor.json apunta a OTRO servidor (otro id) que contesta ahora mismo? Entonces es el de siempre."""
+    try:
+        d = json.loads(actual or b"{}")
+    except ValueError:
+        return None
+    url = str(d.get("url") or "").rstrip("/")
+    if not url or url == E.url_publica() or (d.get("id") and d.get("id") == E.aj["id_servidor"]) or E.aj["forzar_anuncio"]:
+        return None
+    try:
+        req = urllib.request.Request(url + "/api/salud", headers={"User-Agent": "librito/" + VERSION})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            sal = json.loads(r.read() or b"{}")
+    except Exception:   # noqa: BLE001 — si no contesta, la dirección se puede tomar
+        return None
+    if not sal.get("ok") or sal.get("relevado") or sal.get("servidor") == E.aj["id_servidor"]:
+        return None
+    return {"url": url, "nombre": sal.get("nombre") or d.get("nombre") or "", "version": sal.get("version", "")}
+
+
 def escribir_estado(borrar=False):
     """estado.json: lo que «librito» necesita saber del servidor PRENDIDO (nunca secretos)."""
     if borrar:
@@ -1087,7 +1288,8 @@ def escribir_estado(borrar=False):
         escribir_seguro(RUTA_ESTADO, json.dumps({
             "pid": os.getpid(), "version": VERSION, "puerto": E.aj["puerto"], "red_local": ip_local(),
             "url": E.url_publica(), "tunel": E.aj["tunel"], "tunel_listo": bool(E.url_tunel), "tunel_probado": iso(E.tunel_ok) if E.tunel_ok else "",
-            "instalado": E.instalado(), "github": bool(E.github()), "desde": iso()}, ensure_ascii=False, indent=1))
+            "instalado": E.instalado(), "github": bool(E.github()), "desde": iso(), "otro": E.otro.get("url", ""),
+            "relevado": bool(E.aj["relevado"])}, ensure_ascii=False, indent=1))
     except OSError:
         pass
 
@@ -1181,7 +1383,8 @@ class Tunel(threading.Thread):
     def vigia(self):
         """Prueba el túnel desde internet; si no contesta 3 veces seguidas, lo reabre."""
         while not self.parar:
-            for _ in range(VIGIA_S):
+            # Con poca pila o el teléfono caliente se pregunta tres veces menos (Fase 40).
+            for _ in range(VIGIA_S * (1 if ritmo() == "normal" else 3)):
                 if self.parar:
                     return
                 time.sleep(1)
@@ -1329,7 +1532,7 @@ class Manejador(BaseHTTPRequestHandler):
         # Comprimido si vale la pena y el navegador lo acepta (menos datos = menos radio = menos pila).
         gz = len(cuerpo) > 1024 and self.command != "HEAD" and COMPRIMIBLE.match(tipo) and self.acepta_gzip()
         if gz:
-            cuerpo = gzip.compress(cuerpo, 5)
+            cuerpo = gzip.compress(cuerpo, 5 if ritmo() == "normal" else 1)
         self.send_response(codigo)
         self.send_header("Content-Type", tipo)
         self.send_header("Content-Length", str(len(cuerpo)))
@@ -1497,6 +1700,11 @@ class Manejador(BaseHTTPRequestHandler):
             o = self.headers.get("Origin")
             if o and not self.origen_ok(o):
                 return self.error(403, "Este origen no puede usar el servidor (agrégalo en el panel → Ajustes → Orígenes).")
+            E.peticiones += 1
+            if E.mudando and self.command not in ("GET", "HEAD") and not camino.startswith("/api/dueno/"):
+                if ahora() - E.mudando < 900:
+                    return self.error(503, "El servidor se está pasando a otro teléfono: en un minutito vuelve (no se pierde nada).")
+                E.mudando = 0   # nadie terminó el traspaso en 15 minutos: todo sigue como antes
             for metodo, patron, quien, f in RUTAS:
                 m = patron.match(camino)
                 if m and metodo == self.command.replace("HEAD", "GET"):
@@ -1669,7 +1877,8 @@ def api_info(h, s):
 @ruta("GET", "/api/salud")
 def api_salud(h, s):
     """Para el vigía del túnel (y para ti): ¿contesta este servidor?"""
-    h.responder(200, {"ok": True, "id": E.arranque_id, "version": VERSION})
+    h.responder(200, {"ok": True, "id": E.arranque_id, "servidor": E.aj["id_servidor"], "version": VERSION, "nombre": E.aj["nombre"],
+                      "relevado": bool(E.aj["relevado"])})
 
 
 @ruta("POST", "/api/instalar")
@@ -1726,8 +1935,8 @@ def api_registro(h, s):
     if not USUARIO_RE.match(usuario):
         raise Falla("El usuario: de 3 a 32 letras minúsculas, números, punto, guion o guion bajo.")
     validar_contrasena(d.get("contrasena"))
-    if usuario == DUENO and not h.en_el_telefono():
-        raise Falla("Ese usuario es el del dueño del servidor: se crea en el teléfono con «librito dueño».", 403)
+    if (usuario == DUENO or usuario in DUENOS_ANTES) and not h.en_el_telefono():
+        raise Falla("Ese usuario es el del dueño del servidor: se crea en el teléfono con «start my» → Cuenta del dueño.", 403)
     inv = None
     if modo == "codigo":
         codigo = str(d.get("codigo", "")).strip().upper()
@@ -1751,7 +1960,7 @@ def api_registro(h, s):
 @ruta("POST", "/api/entrar")
 def api_entrar(h, s):
     d = h.cuerpo_json()
-    usuario = str(d.get("usuario", "")).strip().lower()[:40]
+    usuario = nombre_dueno(d.get("usuario", ""))
     ip = h.ip()
     if E.frenado("ip:" + ip) or E.frenado("u:" + usuario):
         raise Falla("Demasiados intentos. Espera unos minutos y vuelve a probar.", 429)
@@ -3206,6 +3415,208 @@ def api_trazos_borrar(h, s):
     h.responder(200, {"borrados": n})
 
 
+# ══════════════════════════════════════════════════════════════════
+#  Dibujar Juntos (Fase 40): hojas de los dos, en tiempo real
+#
+#  Cada pareja tiene sus hojas (hasta 30). Cada trazo lleva su pincel, color, grosor y puntos
+#  [x, y, presión] con x e y de 0 a 10000 (la hoja es 3:4; así se ve igual en cualquier pantalla).
+#  Mientras dibujas, el trazo se va mandando a pedacitos y tu amorcito lo ve crecer (y dónde está
+#  tu lápiz). Quien espera (GET …?espera=25) se despierta en cuanto cambia algo de esa hoja.
+# ══════════════════════════════════════════════════════════════════
+PINCELES = ("lapiz", "pluma", "marcador", "acuarela", "neon", "brillitos", "corazones", "borrador")
+FONDOS_DIBUJO = ("papel", "cuadros", "rayas", "rosa", "noche")
+DIBUJO_MAX_PUNTOS = 4000
+LIENZOS_MAX = 30
+DIBUJO_AVISO = threading.Condition()
+DIBUJO_V = [0]
+
+
+def _dibujo_cambio():
+    with DIBUJO_AVISO:
+        DIBUJO_V[0] += 1
+        DIBUJO_AVISO.notify_all()
+
+
+def _pareja_dibujo(s):
+    p = _par_chat(s)
+    u = s["usuario_id"]
+    return min(u, p), max(u, p)
+
+
+def _lienzo_de(s, lid):
+    a, b = _pareja_dibujo(s)
+    l = E.db.uno("SELECT * FROM lienzos WHERE id=? AND a=? AND b=? AND borrado=0", int(lid), a, b)
+    if not l:
+        raise Falla("Esa hoja ya no está.", 404)
+    return l
+
+
+def fila_lienzo(l, n=None):
+    return {"id": l["id"], "nombre": l["nombre"] or "Hoja", "fondo": l["fondo"] or "papel", "actualizado": l["actualizado"], **({"trazos": n} if n is not None else {})}
+
+
+def fila_dibujo(t, uid):
+    if t["borrado"]:
+        return {"id": t["id"], "borrado": True}
+    return {"id": t["id"], "mio": t["de"] == uid, "pincel": t["pincel"], "c": t["color"], "a": t["ancho"],
+            "p": json.loads(t["puntos"] or "[]"), "fin": bool(t["fin"]), "t": t["actualizado"]}
+
+
+def _puntos_dibujo(lista):
+    if not isinstance(lista, list) or len(lista) > DIBUJO_MAX_PUNTOS:
+        raise Falla("Trazo no válido.", 400)
+    r = []
+    for pt in lista:
+        try:
+            x, y = int(round(float(pt[0]))), int(round(float(pt[1])))
+            pr = int(round(float(pt[2]))) if len(pt) > 2 else 50
+        except (TypeError, ValueError, IndexError):
+            raise Falla("Trazo no válido.", 400)
+        r.append([max(0, min(10000, x)), max(0, min(10000, y)), max(0, min(100, pr))])
+    return r
+
+
+@ruta("GET", "/api/dibujo", "sesion")
+def api_lienzos(h, s):
+    a, b = _pareja_dibujo(s)
+    l = E.db.q("SELECT * FROM lienzos WHERE a=? AND b=? AND borrado=0 ORDER BY actualizado DESC", a, b)
+    if not l:
+        _x_ya("INSERT INTO lienzos(a, b, nombre, fondo, creado, actualizado) VALUES(?,?,?,?,?,?)", a, b, "Nuestra primera hoja", "papel", AHORA, AHORA)
+        l = E.db.q("SELECT * FROM lienzos WHERE a=? AND b=? AND borrado=0 ORDER BY actualizado DESC", a, b)
+    n = {r["lienzo"]: r["n"] for r in E.db.q(f"SELECT lienzo, COUNT(*) n FROM dibujos WHERE borrado=0 AND lienzo IN ({','.join('?' * len(l))}) GROUP BY lienzo", *[x["id"] for x in l])}
+    h.responder(200, {"lienzos": [fila_lienzo(x, n.get(x["id"], 0)) for x in l], "pinceles": PINCELES, "fondos": FONDOS_DIBUJO})
+
+
+def _datos_lienzo(d):
+    nombre = str(d.get("nombre") or "").strip()[:40]
+    fondo = str(d.get("fondo") or "")
+    if fondo and fondo not in FONDOS_DIBUJO:
+        raise Falla("Fondo no válido.", 400)
+    return nombre, fondo
+
+
+@ruta("POST", "/api/dibujo", "sesion")
+def api_lienzo_nuevo(h, s):
+    a, b = _pareja_dibujo(s)
+    if E.db.uno("SELECT COUNT(*) n FROM lienzos WHERE a=? AND b=? AND borrado=0", a, b)["n"] >= LIENZOS_MAX:
+        raise Falla(f"Ya tienen {LIENZOS_MAX} hojas: borren alguna para hacer otra.", 409)
+    nombre, fondo = _datos_lienzo(h.cuerpo_json())
+    lid = _x_ya("INSERT INTO lienzos(a, b, nombre, fondo, creado, actualizado) VALUES(?,?,?,?,?,?)", a, b, nombre or "Hoja nueva", fondo or "papel", AHORA, AHORA)
+    _dibujo_cambio()
+    h.responder(200, {"lienzo": fila_lienzo(E.db.uno("SELECT * FROM lienzos WHERE id=?", lid), 0)})
+
+
+@ruta("PUT", r"/api/dibujo/([0-9]{1,12})", "sesion")
+def api_lienzo_editar(h, s, lid):
+    l = _lienzo_de(s, lid)
+    nombre, fondo = _datos_lienzo(h.cuerpo_json())
+    _x_ya("UPDATE lienzos SET nombre=?, fondo=?, actualizado=? WHERE id=?", nombre or l["nombre"], fondo or l["fondo"], AHORA, l["id"])
+    _dibujo_cambio()
+    h.responder(200, {"lienzo": fila_lienzo(E.db.uno("SELECT * FROM lienzos WHERE id=?", l["id"]))})
+
+
+@ruta("DELETE", r"/api/dibujo/([0-9]{1,12})", "sesion")
+def api_lienzo_borrar(h, s, lid):
+    l = _lienzo_de(s, lid)
+    _x_ya("UPDATE lienzos SET borrado=1, actualizado=? WHERE id=?", AHORA, l["id"])
+    _x_ya("UPDATE dibujos SET borrado=1, puntos='[]', actualizado=? WHERE lienzo=?", AHORA, l["id"])
+    _dibujo_cambio()
+    h.responder(200, {"ok": True})
+
+
+@ruta("GET", r"/api/dibujo/([0-9]{1,12})/trazos", "sesion")
+def api_dibujo(h, s, lid):
+    """Los trazos de una hoja (todos, o los que cambiaron desde `desde`). Con `espera` (hasta 25 s), si
+    no hay nada nuevo se queda esperando y contesta en cuanto tu amorcito dibuja algo."""
+    uid = s["usuario_id"]
+    l = _lienzo_de(s, lid)
+    q = h.parametros()
+    try:
+        desde = float(q.get("desde") or 0)
+        espera = max(0.0, min(25.0, float(q.get("espera") or 0)))
+    except ValueError:
+        raise Falla("Parámetros no válidos.", 400)
+    fin = time.monotonic() + espera
+    while True:
+        v0 = DIBUJO_V[0]
+        with E.db.lock:
+            t0 = ahora()
+            if desde:
+                filas = E.db.q("SELECT * FROM dibujos WHERE lienzo=? AND actualizado>? ORDER BY id", l["id"], desde)
+            else:
+                filas = E.db.q("SELECT * FROM dibujos WHERE lienzo=? AND borrado=0 ORDER BY id", l["id"])
+            lien = E.db.uno("SELECT * FROM lienzos WHERE id=?", l["id"])
+        falta = fin - time.monotonic()
+        if filas or not desde or falta <= 0 or lien["borrado"] or (lien["actualizado"] or 0) > desde:
+            break
+        with DIBUJO_AVISO:
+            if DIBUJO_V[0] == v0:
+                DIBUJO_AVISO.wait(falta)
+    h.responder(200, {"trazos": [fila_dibujo(t, uid) for t in filas], "lienzo": fila_lienzo(lien) | {"borrado": bool(lien["borrado"])}, "ahora": t0})
+
+
+@ruta("POST", r"/api/dibujo/([0-9]{1,12})/trazos", "sesion")
+def api_dibujo_trazo(h, s, lid):
+    uid = s["usuario_id"]
+    l = _lienzo_de(s, lid)
+    d = h.cuerpo_json()
+    pincel = str(d.get("pincel") or "lapiz")
+    if pincel not in PINCELES:
+        raise Falla("Pincel no válido.", 400)
+    color = str(d.get("c") or "#d8397a")
+    if not COLOR_OK.match(color):
+        raise Falla("Color no válido.", 400)
+    try:
+        ancho = max(1.0, min(80.0, float(d.get("a") or 6)))
+    except (TypeError, ValueError):
+        raise Falla("Trazo no válido.", 400)
+    t = ahora()
+    if E.db.uno("SELECT COUNT(*) n FROM dibujos WHERE de=? AND creado>?", uid, t - 10)["n"] >= 80:
+        raise Falla("Más despacito: muchos trazos seguidos.", 429)
+    tid = _x_ya("INSERT INTO dibujos(lienzo, de, pincel, color, ancho, puntos, fin, creado, actualizado) VALUES(?,?,?,?,?,?,?,?,?)",
+                l["id"], uid, pincel, color, round(ancho, 1), json.dumps(_puntos_dibujo(d.get("p") or [])), 1 if d.get("fin") else 0, AHORA, AHORA)
+    _x_ya("UPDATE lienzos SET actualizado=? WHERE id=?", AHORA, l["id"])
+    _dibujo_cambio()
+    h.responder(200, {"trazo": fila_dibujo(E.db.uno("SELECT * FROM dibujos WHERE id=?", tid), uid)})
+
+
+@ruta("POST", r"/api/dibujo/([0-9]{1,12})/trazos/([0-9]{1,12})", "sesion")
+def api_dibujo_mas(h, s, lid, tid):
+    uid = s["usuario_id"]
+    l = _lienzo_de(s, lid)
+    t = E.db.uno("SELECT * FROM dibujos WHERE id=? AND lienzo=? AND de=? AND borrado=0", int(tid), l["id"], uid)
+    if not t:
+        raise Falla("Ese trazo ya no está.", 404)
+    d = h.cuerpo_json()
+    pts = (json.loads(t["puntos"] or "[]") + _puntos_dibujo(d.get("p") or []))[:DIBUJO_MAX_PUNTOS]
+    _x_ya("UPDATE dibujos SET puntos=?, fin=?, actualizado=? WHERE id=?", json.dumps(pts), 1 if d.get("fin") or t["fin"] else 0, AHORA, t["id"])
+    _dibujo_cambio()
+    h.responder(200, {"ok": True, "n": len(pts)})
+
+
+@ruta("DELETE", r"/api/dibujo/([0-9]{1,12})/trazos/([0-9]{1,12})", "sesion")
+def api_dibujo_deshacer(h, s, lid, tid):
+    l = _lienzo_de(s, lid)
+    n = _x_ya("UPDATE dibujos SET borrado=1, puntos='[]', actualizado=? WHERE id=? AND lienzo=? AND de=? AND borrado=0", AHORA, int(tid), l["id"], s["usuario_id"])
+    if not n:
+        raise Falla("Ese trazo ya no está.", 404)
+    _dibujo_cambio()
+    h.responder(200, {"ok": True})
+
+
+@ruta("DELETE", r"/api/dibujo/([0-9]{1,12})/trazos", "sesion")
+def api_dibujo_limpiar(h, s, lid):
+    """Limpiar la hoja (todo) o sólo lo tuyo (?solo=mio)."""
+    l = _lienzo_de(s, lid)
+    if h.parametros().get("solo") == "mio":
+        n = _x_ya("UPDATE dibujos SET borrado=1, puntos='[]', actualizado=? WHERE lienzo=? AND de=? AND borrado=0", AHORA, l["id"], s["usuario_id"])
+    else:
+        n = _x_ya("UPDATE dibujos SET borrado=1, puntos='[]', actualizado=? WHERE lienzo=? AND borrado=0", AHORA, l["id"])
+    _x_ya("UPDATE lienzos SET actualizado=? WHERE id=?", AHORA, l["id"])
+    _dibujo_cambio()
+    h.responder(200, {"borrados": n})
+
+
 # ═══ Fase 33 · Notificaciones push (Web Push: RFC 8030, 8291 y 8292) — sin nada que instalar ═══
 # Los avisos llegan aunque el editor esté cerrado: Android (Chrome), compu y iPhone (iOS 16.4+, con el
 # editor agregado a la pantalla de inicio). El servidor firma con su llave VAPID (curva P-256) y cifra cada
@@ -3989,6 +4400,118 @@ def api_borrar_detallito(h, s, did):
 
 
 # — Administración —
+# ══════════════════════════════════════════════════════════════════
+#  Pasar el servidor a otro teléfono (Fase 40)
+#
+#  En el teléfono NUEVO: «start my» → Traer el servidor a este teléfono. Con la cuenta del dueño
+#  (usuario y contraseña, pedidos ahí mismo; nunca se guardan en el código):
+#    1. /api/dueno/traspaso   este servidor queda en «sólo lectura» (nada se pierde a medias) y manda
+#                             TODO (cuentas, nubes, chats, fotos, ajustes y su llave) por el túnel https.
+#    2. el nuevo lo acomoda en su ~/librito-datos (lo que hubiera ahí se guarda aparte, no se borra).
+#    3. /api/dueno/relevo     este se marca «relevado», deja de anunciarse y se apaga solo. El nuevo
+#                             se prende con el MISMO id de servidor y se anuncia: el editor lo encuentra solo.
+#  Si algo falla a medio camino, a los 15 min éste vuelve a la normalidad (y «cancelar» lo hace ya).
+# ══════════════════════════════════════════════════════════════════
+NO_VIAJA = {"tmp", "servidor.pid", "servidor.log", "servidor.log.1", "estado.json", "codigo-instalacion.txt",
+            "librito.db", "librito.db-wal", "librito.db-shm", "librito.db-journal"}
+
+
+def dueno_por_contrasena(h, d):
+    usuario, ip = nombre_dueno(d.get("usuario")), h.ip()
+    if E.frenado("dueno:" + ip) or E.frenado("u:" + usuario):
+        raise Falla("Demasiados intentos. Espera unos minutos y vuelve a probar.", 429)
+    u = E.db.uno("SELECT * FROM usuarios WHERE usuario=?", usuario)
+    ok = verificar(str(d.get("contrasena", ""))[:200], u["hash"] if u else HASH_FALSO)
+    if not (u and ok and usuario == DUENO and u["rol"] == "admin" and u["estado"] == "activo"):
+        E.fallo("dueno:" + ip, limite=5)
+        E.fallo("u:" + usuario, limite=5)
+        E.actividad(usuario, "traspaso-fallo", "", ip)
+        raise Falla("Eso sólo lo puede hacer la cuenta del dueño (YonathanPG) con su contraseña.", 403)
+    E.acierto("dueno:" + ip)
+    return u
+
+
+@ruta("POST", "/api/dueno/traspaso")
+def api_traspaso(h, s):
+    d = h.cuerpo_json()
+    u = dueno_por_contrasena(h, d)
+    if E.aj["relevado"]:
+        raise Falla("Este servidor ya pasó a otro teléfono.", 409)
+    E.mudando = ahora()
+    E.actividad(u["usuario"], "traspaso", "pasando el servidor a otro teléfono", h.ip())
+    log("Pasando el servidor a otro teléfono (", h.ip(), "): mientras tanto, sólo lectura.")
+    os.makedirs(os.path.join(DATOS, "tmp"), exist_ok=True)
+    fd, foto = tempfile.mkstemp(dir=os.path.join(DATOS, "tmp"), suffix=".db")
+    os.close(fd)
+    try:
+        # La base, copiada en caliente y entera (sin quedar a medias aunque alguien lea mientras).
+        destino = sqlite3.connect(foto)
+        with E.db.lock:
+            E.db.c.backup(destino)
+        destino.close()
+        h._leido = True
+        h.close_connection = True
+        h.send_response(200)
+        h.send_header("Content-Type", "application/x-tar")
+        h.send_header("Content-Disposition", 'attachment; filename="servidor.tar"')
+        h.send_header("Cache-Control", "no-store")
+        h.send_header("Connection", "close")
+        h.cabeceras_comunes()
+        h.end_headers()
+        n = 0
+        # Sin comprimir: casi todo son fotos, música y videos (ya vienen comprimidos) y así el teléfono no se calienta.
+        with tarfile.open(fileobj=h.wfile, mode="w|") as tar:
+            tar.add(foto, arcname="librito.db")
+            for raiz, carpetas, archivos in os.walk(DATOS):
+                rel = os.path.relpath(raiz, DATOS)
+                if rel == ".":
+                    carpetas[:] = [c for c in carpetas if c not in NO_VIAJA]
+                for f in archivos:
+                    if rel == "." and f in NO_VIAJA:
+                        continue
+                    ruta_f = os.path.join(raiz, f)
+                    if os.path.islink(ruta_f):
+                        continue
+                    tar.add(ruta_f, arcname=os.path.normpath(os.path.join(rel, f)), recursive=False)
+                    n += 1
+        log(f"Traspaso enviado ({n} archivos). Esperando a que el teléfono nuevo diga «listo».")
+    finally:
+        try:
+            os.unlink(foto)
+        except OSError:
+            pass
+
+
+@ruta("POST", "/api/dueno/relevo")
+def api_relevo(h, s):
+    """El teléfono nuevo ya tiene todo: éste deja de ser el servidor y se apaga."""
+    d = h.cuerpo_json()
+    u = dueno_por_contrasena(h, d)
+    E.aj.poner(relevado={"en": iso(), "ip": h.ip(), "a": str(d.get("url") or "")[:200]}, forzar_anuncio=False)
+    E.mudando = 0
+    E.actividad(u["usuario"], "traspaso", "el servidor pasó a otro teléfono", h.ip())
+    log("Listo: el servidor pasó a otro teléfono. Éste se apaga (para volver a serlo: start my → «Volver a ser el servidor aquí»).")
+    escribir_estado()
+    h.responder(200, {"ok": True})
+    threading.Timer(3, lambda: os.kill(os.getpid(), signal.SIGTERM)).start()
+
+
+@ruta("POST", "/api/dueno/cancelar")
+def api_cancelar_traspaso(h, s):
+    dueno_por_contrasena(h, h.cuerpo_json())
+    E.mudando = 0
+    log("Traspaso cancelado: el servidor sigue aquí, normal.")
+    h.responder(200, {"ok": True})
+
+
+@ruta("GET", "/api/admin/aparato", "admin")
+def api_aparato(h, s):
+    """El teléfono servidor: batería, temperatura, ritmo, RAM, espacio… y cómo va el servidor."""
+    a = aparato()
+    h.responder(200, {**a, "peticiones": E.peticiones, "en_linea": E.db.uno("SELECT COUNT(DISTINCT usuario_id) n FROM sesiones WHERE ultimo>?", ahora() - 600)["n"],
+                      "otro": E.otro, "relevado": E.aj["relevado"], "id_servidor": E.aj["id_servidor"], "mudando": bool(E.mudando)})
+
+
 def uso_disco():
     total, usado, libre = shutil.disk_usage(DATOS)
     return {"total": total, "libre": libre, "telefono_usado": usado,
@@ -4012,7 +4535,7 @@ def api_resumen(h, s):
         "github": {"repo": g.get("repo", ""), "rama": g.get("rama", ""), "token": bool(caja.get("github_token")), "listo": bool(E.github())},
         "url_publica": E.url_publica(), "tunel": E.aj["tunel"], "cloudflared": bool(shutil.which("cloudflared")),
         "tunel_probado": iso(E.tunel_ok) if E.tunel_ok else "", "anunciada": E.anunciada == E.url_publica() and bool(E.anunciada),
-        "red_local": ip_local(), "puerto": E.aj["puerto"], "version": VERSION, "datos": DATOS,
+        "red_local": ip_local(), "puerto": E.aj["puerto"], "version": VERSION, "datos": DATOS, "aparato": aparato(), "otro": E.otro,
         "trabajando": [{"tipo": t["tipo"], "paso": t["paso"]} for t in E.trabajos.values() if t["estado"] in ("esperando", "trabajando")]})
 
 
@@ -4285,9 +4808,11 @@ def mantenimiento():
         time.sleep(60)
         vuelta += 1
         try:
+            if vuelta % 2 == 0:
+                aparato(forzar=True)        # batería y temperatura: el ritmo del servidor
             if vuelta % 5 == 0:
                 anunciar_direccion()        # si falló antes (sin internet), aquí se reintenta
-            if vuelta % 360 == 0:
+            if vuelta % 360 == 0 and ritmo() == "normal":   # la limpieza grande espera a que haya pila y esté fresco
                 limpiar_nube()
                 sub = os.path.join(DATOS, "tmp", "subidas")
                 for f in os.listdir(sub):
@@ -4295,6 +4820,7 @@ def mantenimiento():
                         os.unlink(os.path.join(sub, f))
             if vuelta % 60 == 0:
                 E.db.x("DELETE FROM sesiones WHERE expira < ?", ahora())
+                E.db.x("PRAGMA optimize")
                 tmp = os.path.join(DATOS, "tmp")
                 for f in os.listdir(tmp):
                     if f == "subidas":
@@ -4309,6 +4835,13 @@ def mantenimiento():
 def iniciar(args):
     global E, TUNEL
     E = Estado(arranque=True)
+    rel = E.aj["relevado"]
+    if rel and not getattr(args, "forzar", False):
+        raise SystemExit(f"Este teléfono ya no es el servidor: pasó a otro el {str(rel.get('en', ''))[:16].replace('T', ' ')}. "
+                         "Para volver a serlo aquí: start my → «Volver a ser el servidor aquí» (o: librito recuperar).")
+    if rel:
+        E.aj.poner(relevado={})
+    ThreadingHTTPServer.request_queue_size = 64   # ráfagas (el editor abre varias cosas a la vez) sin rechazar a nadie
     puerto = args.puerto or E.aj["puerto"]
     if args.puerto:
         E.aj.poner(puerto=puerto)
@@ -4323,6 +4856,9 @@ def iniciar(args):
     log(f"  En este teléfono:  http://127.0.0.1:{puerto}/")
     log(f"  En tu wifi:        http://{ip_local()}:{puerto}/")
     log(f"  Datos en:          {DATOS}")
+    a = aparato(forzar=True)
+    log(f"  Teléfono:          {a['modelo']}" + (f" · Android {a['android']}" if a["android"] else "") + f" · {a['nucleos']} núcleos · RAM {a['ram_total'] // 1048576} MB"
+        + (f" · pila {a['bateria']} %" + (" (cargando)" if a["cargando"] else "") if a["bateria"] is not None else "") + (f" · {a['temp']} °C" if a["temp"] is not None else ""))
     codigo = E.codigo_instalacion()
     if codigo:
         log("")
@@ -4355,7 +4891,7 @@ def iniciar(args):
 def orden_admin(args):
     global E
     E = Estado()
-    usuario = (args.usuario or input(f"Usuario del administrador [{DUENO}]: ") or DUENO).strip().lower()
+    usuario = nombre_dueno(args.usuario or input(f"Usuario del administrador [{DUENO}]: ") or DUENO)
     if not USUARIO_RE.match(usuario):
         raise SystemExit("Usuario no válido: de 3 a 32 letras minúsculas, números, punto, guion o guion bajo (sin espacios).")
     for _ in range(3):
@@ -4454,7 +4990,11 @@ def orden_estado(args):
     admins = [u["usuario"] for u in E.db.q("SELECT usuario FROM usuarios WHERE rol='admin' AND estado='activo'")]
     if getattr(args, "json", False):
         print(json.dumps({"prendido": bool(vivo), "url": (vivo or {}).get("url", ""), "admins": admins, "github": bool(gh),
-                          "codigo": E.codigo_instalacion() or "", "puerto": E.aj["puerto"]}, ensure_ascii=False))
+                          "codigo": E.codigo_instalacion() or "", "puerto": E.aj["puerto"], "version": VERSION, "nombre": E.aj["nombre"],
+                          "dueno": bool(E.db.uno("SELECT id FROM usuarios WHERE usuario=? AND rol='admin'", DUENO)),
+                          "usuarios": E.db.uno("SELECT COUNT(*) n FROM usuarios")["n"], "relevado": E.aj["relevado"],
+                          "otro": (vivo or {}).get("otro", ""), "cloudflared": bool(shutil.which("cloudflared")),
+                          "aparato": aparato() if getattr(args, "aparato", False) else None}, ensure_ascii=False))
         return
     print(f"{E.aj['nombre']} {VERSION}")
     print("  Datos:", DATOS)
@@ -4470,6 +5010,125 @@ def orden_estado(args):
         print("  Código de instalación:", codigo, "(sólo para crear el administrador desde otro aparato)")
 
 
+def _pedir(url, cuerpo=None, timeout=30):
+    datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
+    return urllib.request.urlopen(urllib.request.Request(url, data=datos, method="POST" if datos else "GET",
+                                  headers={"Content-Type": "application/json", "User-Agent": "librito/" + VERSION}), timeout=timeout)
+
+
+def _error_de(e):
+    try:
+        return json.loads(e.read() or b"{}").get("error") or str(e)
+    except (ValueError, OSError):
+        return str(e)
+
+
+def _miembros_seguros(tar):
+    for m in tar:
+        partes = m.name.replace("\\", "/").split("/")
+        if m.name.startswith("/") or ".." in partes or not (m.isfile() or m.isdir()):
+            continue
+        yield m
+
+
+def orden_traer(args):
+    """start my → «Traer el servidor a este teléfono»: todo lo del servidor de siempre pasa a éste."""
+    if leer_estado():
+        raise SystemExit("El servidor de ESTE teléfono está prendido: apágalo primero (start my lo hace solo).")
+    desde = (args.desde or "").strip().rstrip("/")
+    if not desde:
+        sitio = SITIO_FABRICA
+        try:
+            with open(os.path.join(DATOS, "config.json"), encoding="utf-8") as f:
+                repo = (json.load(f).get("github") or {}).get("repo")
+            if repo:
+                sitio = sitio_de(repo)
+        except (OSError, ValueError):
+            pass
+        try:
+            with _pedir(sitio + f"servidor.json?v={int(time.time())}", timeout=20) as r:
+                desde = str(json.loads(r.read() or b"{}").get("url") or "").rstrip("/")
+        except Exception as e:   # noqa: BLE001
+            raise SystemExit(f"No encontré la dirección del servidor de siempre ({e}). Escríbela tú: la de «librito direccion» en el otro teléfono.")
+    if not re.match(r"^https?://[^\s/]+$", desde or ""):
+        raise SystemExit("Esa dirección no se ve bien (algo como https://xxxx.trycloudflare.com).")
+    try:
+        with _pedir(desde + "/api/salud", timeout=20) as r:
+            sal = json.loads(r.read() or b"{}")
+    except Exception as e:   # noqa: BLE001
+        raise SystemExit(f"El servidor de siempre ({desde}) no contesta: ¿está prendido el otro teléfono? ({e})")
+    if sal.get("relevado"):
+        raise SystemExit("Ese servidor ya se pasó a otro teléfono.")
+    print(f"♥ Servidor de ahora: {sal.get('nombre') or 'M.YNTHN'} {sal.get('version', '')} en {desde}")
+    usuario = nombre_dueno(args.usuario or input(f"Usuario del dueño [YonathanPG]: ") or DUENO)
+    cred = {"usuario": usuario, "contrasena": getpass.getpass("Contraseña del dueño (no se ve al escribir): ")}
+    tmp = DATOS.rstrip("/") + ".traspaso.tar"
+    print("↓ Trayendo todo (cuentas, nubes, chats, fotos y ajustes)…")
+    try:
+        with _pedir(desde + "/api/dueno/traspaso", cred, timeout=120) as r, open(tmp, "wb") as f:
+            os.chmod(tmp, 0o600)
+            n, t0, ult = 0, time.time(), 0
+            while True:
+                trozo = r.read(1 << 20)
+                if not trozo:
+                    break
+                f.write(trozo)
+                n += len(trozo)
+                if time.time() - ult > 1.5:
+                    ult = time.time()
+                    print(f"\r  {n / 1048576:8.1f} MB · {n / 1048576 / max(0.1, ult - t0):.1f} MB/s   ", end="", flush=True)
+        print(f"\r  {n / 1048576:8.1f} MB en {time.time() - t0:.0f} s          ")
+    except urllib.error.HTTPError as e:
+        raise SystemExit("No se pudo: " + _error_de(e))
+    except Exception as e:   # noqa: BLE001
+        try:
+            _pedir(desde + "/api/dueno/cancelar", cred, timeout=15).close()
+        except Exception:   # noqa: BLE001
+            pass
+        raise SystemExit(f"Se cortó a medio camino ({e}). No pasa nada: el de siempre sigue igual. Vuelve a intentarlo.")
+    try:
+        with tarfile.open(tmp, "r:") as t:
+            nombres = set(t.getnames())
+        if not {"librito.db", "config.json"} <= nombres:
+            raise tarfile.TarError("faltan librito.db o config.json")
+    except tarfile.TarError as e:
+        os.unlink(tmp)
+        raise SystemExit(f"Lo que llegó no está completo ({e}). Vuelve a intentarlo.")
+    if os.path.isdir(DATOS) and os.listdir(DATOS):
+        aparte = DATOS.rstrip("/") + ".antes-" + time.strftime("%Y%m%d-%H%M%S")
+        os.rename(DATOS, aparte)
+        print("  Lo que había en este teléfono quedó guardado aparte en", aparte)
+    os.makedirs(DATOS, exist_ok=True)
+    os.chmod(DATOS, 0o700)
+    with tarfile.open(tmp, "r:") as t:
+        miembros = list(_miembros_seguros(t))
+        if hasattr(tarfile, "data_filter"):
+            t.extractall(DATOS, members=miembros, filter="data")
+        else:
+            t.extractall(DATOS, members=miembros)
+    os.unlink(tmp)
+    aj = Ajustes()
+    aj.poner(relevado={}, forzar_anuncio=False)
+    print(f"✓ Todo está aquí ({len(miembros)} archivos).")
+    try:
+        _pedir(desde + "/api/dueno/relevo", cred, timeout=30).close()
+        print("✓ El otro teléfono dejó de ser el servidor y se apaga solo.")
+    except Exception as e:   # noqa: BLE001
+        print(f"! No pude avisarle al otro teléfono ({e}): apágalo allá (start my → Apagar) para que no se peleen la dirección.")
+    print("♥ Listo: ESTE teléfono ya es el servidor, con todo lo de siempre.")
+
+
+def orden_recuperar(args):
+    """Volver a ser el servidor en este teléfono (si se pasó a otro que ya no está)."""
+    aj = Ajustes()
+    aj.poner(relevado={}, forzar_anuncio=bool(getattr(args, "forzar", False)))
+    print("✓ Este teléfono puede volver a ser el servidor. (Si el otro sigue prendido, no se le quita la dirección.)")
+
+
+def orden_aparato(args):
+    print(json.dumps(aparato(forzar=True), ensure_ascii=False))
+
+
 def orden_llave(args):
     global E
     E = Estado()
@@ -4483,19 +5142,28 @@ def principal():
     i = sub.add_parser("iniciar", help="arranca el servidor")
     i.add_argument("--puerto", type=int)
     i.add_argument("--sin-tunel", action="store_true", help="no abrir el túnel de cloudflared")
+    i.add_argument("--forzar", action="store_true", help="prenderlo aunque se haya pasado a otro teléfono")
+    t = sub.add_parser("traer", help="trae el servidor de siempre (con todo) a este teléfono")
+    t.add_argument("--desde", help="la dirección del servidor de ahora (si no, la de servidor.json de tu página)")
+    t.add_argument("--usuario")
+    r = sub.add_parser("recuperar", help="volver a ser el servidor aquí")
+    r.add_argument("--forzar", action="store_true", help="aunque haya otro servidor prendido")
+    sub.add_parser("aparato", help="batería, temperatura, RAM y espacio del teléfono (JSON)")
     a = sub.add_parser("admin", help="crea o reinicia un administrador")
     a.add_argument("usuario", nargs="?")
     sub.add_parser("github", help="guarda el token de GitHub (cifrado)")
     e = sub.add_parser("estado", help="cómo está todo")
     e.add_argument("--json", action="store_true")
+    e.add_argument("--aparato", action="store_true", help="con la batería, temperatura y memoria del teléfono")
     sub.add_parser("llave-nueva", help="cambia la llave que cifra los secretos")
     b = sub.add_parser("borrar-cuentas", help="borra todas las cuentas que no son de administrador (las de prueba)")
     b.add_argument("--si", action="store_true", help="sin preguntar")
     args = p.parse_args()
     os.umask(0o077)   # todo lo que se cree aquí, sólo para tu usuario
-    os.makedirs(DATOS, exist_ok=True)
+    if args.orden != "traer":
+        os.makedirs(DATOS, exist_ok=True)
     {"iniciar": iniciar, "admin": orden_admin, "github": orden_github, "estado": orden_estado, "llave-nueva": orden_llave,
-     "borrar-cuentas": orden_borrar_cuentas}.get(args.orden or "iniciar", iniciar)(args if args.orden else p.parse_args(["iniciar"]))
+     "borrar-cuentas": orden_borrar_cuentas, "traer": orden_traer, "recuperar": orden_recuperar, "aparato": orden_aparato}.get(args.orden or "iniciar", iniciar)(args if args.orden else p.parse_args(["iniciar"]))
 
 
 if __name__ == "__main__":

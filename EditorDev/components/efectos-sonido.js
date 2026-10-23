@@ -2,10 +2,10 @@
  * EFECTOS DE SONIDO — elegir y poner, sin buscar archivos.
  *
  * Tocar un efecto lo hace sonar; su «+» lo pone donde digas:
- *   · en la línea de tiempo, en el cabezal (como una pista: se mueve,
+ *   · en LovEdit, en el cabezal (como una pista: se mueve,
  *     se recorta, se silencia y se duplica como cualquier otra)
  *   · al tocar lo elegido, o al aparecer lo elegido
- * Se abre desde la línea de tiempo (botón de la campanita), desde Audio y
+ * Se abre desde LovEdit (botón de la campanita), desde Audio y
  * desde los sonidos del elemento.
  */
 import { el, popover, aviso } from "./ui.js";
@@ -35,10 +35,10 @@ export function abrirEfectos(app, ancla, { donde = "linea" } = {}) {
   const E = app.estado, T = app.tiempo;
   const sel = E.unico;
   let dest = sel ? donde : "linea";
-  const opciones = [["linea", "En la línea de tiempo"], ...(sel ? [["tocar", "Al tocarlo"], ["aparecer", "Al aparecer"]] : [])];
+  const opciones = [["linea", "En LovEdit"], ...(sel ? [["tocar", "Al tocarlo"], ["aparecer", "Al aparecer"]] : [])];
   const seg = el("div.ed-seg.ed-sfx-donde", { role: "radiogroup" }, opciones.map(([k, t]) => el("button" + (k === dest ? ".on" : ""), { type: "button", role: "radio", "aria-checked": String(k === dest), dataset: { k }, text: t })));
   const ayuda = el("small.ed-ayuda");
-  const pintarAyuda = () => { ayuda.textContent = dest === "linea" ? `Toca uno para oírlo; con «+» se pone en la línea de tiempo donde está el cabezal (${fmt(T?.t)}).` : `Toca uno para oírlo; con «+» suena ${dest === "tocar" ? "al tocar" : "al aparecer"} «${sel?.nombre || "lo elegido"}».`; };
+  const pintarAyuda = () => { ayuda.textContent = dest === "linea" ? `Toca uno para oírlo; con «+» se pone en LovEdit donde está el cabezal (${fmt(T?.t)}).` : `Toca uno para oírlo; con «+» suena ${dest === "tocar" ? "al tocar" : "al aparecer"} «${sel?.nombre || "lo elegido"}».`; };
   seg.addEventListener("click", (ev) => {
     const b = ev.target.closest("[data-k]");
     if (!b) return;
@@ -54,7 +54,7 @@ export function abrirEfectos(app, ancla, { donde = "linea" } = {}) {
       if (dest === "linea") {
         const t = Math.round((T?.t || 0) / 50) * 50;
         T.agregarPista(id, t, { nombre: s.n });
-        aviso(`«${s.n}» en ${fmt(t)} de la línea de tiempo`, 2400);
+        aviso(`«${s.n}» en ${fmt(t)} de LovEdit`, 2400);
       } else if (sel) {
         E.setEl(sel.id, { ["sonidos." + dest]: id }, "Sonido " + (dest === "tocar" ? "al tocar" : "al aparecer"));
         aviso(`«${s.n}» suena ${dest === "tocar" ? "al tocar" : "al aparecer"} «${sel.nombre}»`, 2400);
