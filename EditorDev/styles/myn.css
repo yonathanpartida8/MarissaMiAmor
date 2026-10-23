@@ -1071,3 +1071,14 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
   .mp-album .mp-carta > .mp-carta-ir { width: 16px; }
   .mp-album .mp-carta > .mp-carta-ir svg { width: 14px; height: 14px; }
 }
+/* Fase 38: el día que cumplen un mes más, una cintita en los días juntos (abre sus Mesecitos) */
+.mp-mesecito { position: absolute; right: 12px; bottom: -9px; z-index: 3; padding: 4px 10px; border-radius: 99px; background: linear-gradient(135deg, #ff8fb8, #b693ff); color: #fff; font: 800 11.5px/1 Jost, sans-serif; box-shadow: 0 4px 10px rgba(180, 80, 140, .25); white-space: nowrap; }
+/* Fase 38: en los teléfonos más angostos (≤ 340 px) los nombres de las tarjetas caben enteros */
+@media (max-width: 340px) {
+  .mp-album .mp-carta { gap: 6px; padding-left: 8px; padding-right: 8px; }
+  .mp-album .mp-carta .mp-carta-ir { display: none !important; }
+  .mp-album .mp-carta-ico { width: 32px; height: 32px; }
+  .mp-album .mp-carta > b { font-size: 16px; white-space: nowrap; overflow: visible; text-overflow: clip; }
+  .mp-album .mp-nota-pegada { display: none; }
+}
+@media (max-height: 580px) { .mp-album .mp-crear { min-height: 62px; } .mp-album .mp-saludo { margin-top: 2px; margin-bottom: 2px; } }

@@ -2364,3 +2364,69 @@ html:is(.rd-reposo, .rd-ahorro) :is(.mp-capa, .an-capa, .ch-fondo, .ed-foco, .ed
 html.rd-ahorro *, html.rd-ahorro *::before, html.rd-ahorro *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 /* Las miniaturas de páginas (Crear librito, Páginas) nunca se animan: se ven quietas, como una foto */
 .ed-mini-escala *, .ed-mini-escala *::before, .ed-mini-escala *::after { animation-duration: .001s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
+
+/* ═══ Fase 38: en el teléfono el riel se queda siempre a la vista (sin pestañita) ═══
+   Cerrado, sólo se ve el riel; al tocar una herramienta se desliza su panel. La hoja se acomoda a su lado. */
+@media (max-width: 1023px) {
+  :root { --riel: 66px; }
+  .ed-riel { display: flex; flex-direction: column; position: fixed; z-index: 81; left: 0; top: var(--barra); bottom: var(--cb); width: var(--riel); padding: 6px 3px 10px; padding-left: calc(3px + env(safe-area-inset-left)); overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; border-right: 1px solid var(--linea); }
+  .ed-lateral { left: var(--riel); bottom: var(--cb); width: min(340px, calc(100vw - var(--riel) - 34px)); }
+  .ed-centro { margin-left: var(--riel); }
+  body.ed-probando .ed-centro { margin-left: 0; }
+  body.ed-probando .ed-riel { display: none; }
+}
+@media (max-width: 1023px) { .ed-riel button { font-size: 11.5px; } .ed-riel button b { width: 36px; height: 30px; } }
+.ed-riel button { height: auto; flex: none; white-space: normal; text-align: center; overflow: visible; }
+.ed-paletas button.on { box-shadow: 0 0 0 2px var(--superficie), 0 0 0 4.5px var(--acento); }
+.ed-muestras button { padding: 3px 6px; border: 0; border-radius: 10px; background: none; color: inherit; font-size: inherit; cursor: pointer; }
+@media (hover: hover) { .ed-muestras button:hover { background: var(--superficie-2); } }
+.ed-muestras button:active { transform: scale(.96); }
+
+/* ═══ Modo profesional (Fase 38): la línea de tiempo como un editor de vídeo ═══
+   Su propio color (noche de ciruela con acentos pastel), vista previa arriba, pistas abajo y las
+   herramientas al fondo según lo elegido. Ver components/modo-pro.js. */
+.pro-barra, .pro-herr { display: none; }
+body.modo-pro {
+  --fondo: #1d1720; --superficie: #272029; --superficie-2: #2f2632; --linea: #3c3141; --linea-fuerte: #574a5c;
+  --texto: #f4e8ef; --texto-suave: #b8a7b6; --tinta: #f4e8ef; --acento: #ff8fb8; --acento-suave: #45233a; --acento-texto: #2a0f1d;
+  --lienzo: #161117; --regla-fondo: #1f1922; --regla-hoja: #2a222d; --regla-linea: #4d4052; --regla-texto: #a796a8;
+  --cb: calc(72px + env(safe-area-inset-bottom)); --riel: 0px;
+  color-scheme: dark; background: var(--fondo);
+}
+body.modo-pro .ed-barra { visibility: hidden; }
+body.modo-pro :is(.ed-riel, .ed-contexto, .ed-dock, .ed-flotante, .ed-foco, .ed-tl-herr, .ed-asa-hoja:not(.ed-tl-asa)) { display: none !important; }
+body.modo-pro .ed-centro { margin-left: 0; background: var(--lienzo); }
+@media (min-width: 1024px) {
+  body.ed.modo-pro { grid-template-columns: 0 var(--panel) minmax(0, 1fr) var(--insp); }
+  body.ed.modo-pro.sin-panel { grid-template-columns: 0 0 minmax(0, 1fr) var(--insp); }
+}
+body.modo-pro .ed-linea { bottom: var(--cb); border-top: 0; box-shadow: 0 -10px 30px rgba(0, 0, 0, .35); border-radius: 18px 18px 0 0; }
+body.modo-pro .ed-vista, body.modo-pro .ed-regla-y { bottom: calc(var(--cb) + var(--tl)); }
+.pro-barra { position: fixed; z-index: 95; left: 0; right: 0; top: 0; height: calc(var(--barra) + var(--sat, 0px)); padding: var(--sat, 0px) 8px 0; align-items: center; gap: 6px; background: var(--superficie); border-bottom: 1px solid var(--linea); color: var(--texto); }
+body.modo-pro .pro-barra { display: flex; }
+.pro-volver { display: flex; align-items: center; gap: 4px; height: 40px; padding: 0 12px 0 6px; border: 0; border-radius: 99px; background: var(--superficie-2); color: var(--texto); font: 700 14px/1 Jost, system-ui, sans-serif; cursor: pointer; }
+.pro-volver i, .pro-volver .ed-ico { width: 20px; height: 20px; display: grid; place-items: center; }
+.pro-tit { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+.pro-tit b { font: 700 15px/1.2 Jost, system-ui, sans-serif; }
+.pro-tit small { color: var(--texto-suave); font: 500 12px/1.2 Jost, system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.pro-tb { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 12px; background: none; color: var(--texto); cursor: pointer; }
+.pro-tb .ed-ico { width: 21px; height: 21px; }
+.pro-herr { position: fixed; z-index: 30; left: 0; right: 0; bottom: 0; height: var(--cb); padding: 6px 6px env(safe-area-inset-bottom); align-items: center; gap: 2px; overflow-x: auto; overflow-y: hidden; background: var(--superficie); border-top: 1px solid var(--linea); scrollbar-width: none; overscroll-behavior-x: contain; }
+.pro-herr::-webkit-scrollbar { display: none; }
+body.modo-pro .pro-herr { display: flex; }
+.pro-b { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 64px; height: 58px; padding: 4px 8px; border: 0; border-radius: 16px; background: none; color: var(--texto); font: 600 11.5px/1.1 Jost, system-ui, sans-serif; white-space: nowrap; cursor: pointer; transition: background-color .15s, transform .12s; }
+.pro-b i, .pro-b .ed-ico { display: grid; place-items: center; width: 24px; height: 24px; }
+.pro-b:active { background: var(--superficie-2); transform: scale(.95); }
+@media (hover: hover) { .pro-b:hover, .pro-tb:hover, .pro-volver:hover { background: var(--superficie-2); } }
+.pro-b.on { color: var(--acento); }
+.pro-b.peligro { color: var(--peligro, #ff6b81); }
+.pro-b.atras { min-width: 54px; color: var(--acento); }
+.pro-sep { flex: none; align-self: stretch; width: 1px; margin: 12px 4px; background: var(--linea); }
+.pro-herr[data-modo="nada"] .pro-b { min-width: 68px; }
+@media (min-width: 700px) { .pro-herr { justify-content: center; } }
+.pro-telon { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; background: radial-gradient(circle at 50% 40%, #3b2a42, #1d1720 72%); }
+/* En el modo profesional, la línea respira: nombres sin recortar y transporte al centro */
+body.modo-pro .ed-tl-cab { justify-content: center; gap: 10px; }
+body.modo-pro .ed-tl-et span { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.1; text-overflow: clip; overflow-wrap: normal; word-break: normal; hyphens: none; font-size: 13px; }
+@media (max-width: 1023px) { body.modo-pro .ed-tl-et .ed-tl-pp { display: none; } }
+@media (max-width: 1023px) { body.modo-pro .ed-tl-et .ed-asa { display: none; } body.modo-pro .ed-tl-et span { font-size: 12.5px; } }

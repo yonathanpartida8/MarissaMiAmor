@@ -11,7 +11,7 @@
  *   arrastrar                   mover LO ELEGIDO (con imán y sin perderse fuera de la hoja).
  *                               Con el dedo, algo que no está elegido NO se mueve:
  *                               deslizar encima desplaza la hoja; primero se toca.
- *   mantener presionado         sus ajustes (luz, brillo, contraste…); en vacío, el
+ *   mantener presionado         su menú (bloquear, capas, ocultar, al tocar, luz y color…); en vacío, el
  *                               menú de la hoja. Botón derecho: el menú del elemento
  *   doble toque                 editar el texto / encuadrar la foto / abrir el HTML;
  *                               en un grupo, entrar a editar uno; en vacío, acercar
@@ -27,7 +27,7 @@
  * Hoja «Automática»: aquí se ve con la forma de la pantalla elegida en «Ver
  * como» (o la de este aparato) y cada elemento se coloca según su ancla.
  */
-import { el, menu } from "../components/ui.js";
+import { el, menu, aviso } from "../components/ui.js";
 import { rutaAUrl } from "../assets/biblioteca.js";
 import { cajaDe, union, candidatos, imanMover, imanBorde, pintarRegla } from "./guias.js";
 import { tocaZona } from "../componentes/analizar.js";
@@ -1091,10 +1091,10 @@ export class Lienzo {
   }
 
   /** Mantener presionado un elemento: elegirlo y abrir sus ajustes (o su menú si no hay). */
+  /** Mantener presionado: su menú (Fase 38). La luz y el color están dentro, no se abren solos. */
   _largoSobre(e, x, y) {
     if (!this.estado.sel.includes(e.id)) this.estado.seleccionar(this._grupo(e));
-    if (this.app.ajustes) this.app.ajustes.abrir(e.id, { x, y });
-    else this.menuEn(x, y);
+    this.menuEn(x, y);
   }
 
   /** Tocar fuera de todo: con el dedo desplaza, con el ratón elige varios. */
@@ -1482,41 +1482,44 @@ export class Lienzo {
     const uno = sel.length === 1 ? sel[0] : null;
     let items;
     if (sel.length) {
-      const bloq = sel.every((x) => x.bloqueado);
+      // Lo que corresponde a lo elegido (Fase 38). Copiar, duplicar y borrar viven en la barrita que flota
+      // sobre lo elegido; agrupar, en la barra de abajo: aquí no se repiten.
+      const bloq = sel.every((x) => x.bloqueado), oculto = sel.every((x) => x.oculto);
       const editar = uno && !bloq && (
         uno.tipo === "texto" ? { t: t("editar", "Escribir"), al: () => this.editarTexto(uno) }
           : uno.tipo === "imagen" ? { t: t(uno.imagen?.asset ? "recortar" : "imagen", uno.imagen?.asset ? "Encuadrar la foto" : "Poner foto"), al: () => this.editar(uno) }
             : uno.tipo === "html" ? { t: t("html", "Editar HTML"), al: () => A.editarHtml(uno) }
               : /componente|escena3d|album|carrusel|video|boton/.test(uno.tipo) ? { t: t("herramientas", "Personalizar"), al: () => this.app.insp.abrir("diseno") } : null);
       const probable = uno && /componente|html|pagina|escena3d/.test(uno.tipo);
-      const agrupados = sel.some((x) => x.grupo);
+      // La luz y el color sólo donde tienen sentido (fotos, vídeos, formas, dibujos…), nunca en un texto.
+      const conLuz = sel.every((x) => /^(imagen|video|album|carrusel|componente|forma|dibujo|escena3d|gif|sticker)$/.test(x.tipo));
+      const W = this.P.ajustes.ancho, H = this.P.ajustes.alto;
+      const fuera = sel.some((x) => x.x + x.w < 0 || x.y + x.h < 0 || x.x > W || x.y > H);
+      const ins = this.app.insp;
       items = [
         editar,
         probable ? { t: t("play", "Probar aquí"), al: () => this.probarAqui(uno) } : null,
         editar || probable ? "-" : null,
-        { t: t("duplicar", "Duplicar"), al: () => A.duplicar(), off: bloq },
-        { t: t("copiar", "Copiar"), al: () => A.copiar() },
-        { t: t("tijeras", "Cortar"), al: () => A.cortar(), off: bloq },
-        { t: t("pegar", "Pegar"), al: () => A.pegar(), off: !A.portapapeles },
+        { t: t(bloq ? "abierto" : "candado", bloq ? "Desbloquear" : "Bloquear"), al: () => { A.alternar("bloqueado"); aviso(bloq ? "Desbloqueado: ya se puede mover" : "Bloqueado: no se moverá por accidente", 1800); } },
+        { t: t(oculto ? "ojo" : "ojoNo", oculto ? "Mostrar" : "Ocultar"), al: () => { A.alternar("oculto"); if (!oculto) aviso("Oculto (no se borró): mantén presionada la hoja y «Mostrar lo oculto»", 3200); } },
         "-",
         { t: t("alFrente", "Traer al frente"), al: () => A.capa("frente") },
-        { t: t("alFondo", "Llevar al fondo"), al: () => A.capa("fondo") },
-        sel.length > 1 && !agrupados ? { t: t("enlazar", "Agrupar"), al: () => A.agrupar() } : null,
-        agrupados ? { t: t("desenlazar", "Desagrupar"), al: () => A.desagrupar() } : null,
-        { t: t("recuperar", "Traer dentro de la hoja"), al: () => this.traerALaHoja(sel.map((x) => x.id)) },
+        { t: t("bajarCapa", "Enviar atrás"), al: () => A.capa("bajar") },
+        { t: t("alFondo", "Enviar al fondo"), al: () => A.capa("fondo") },
+        { t: t("alinearH", "Alinear…"), al: () => A.menuAlinear({ x, y }) },
+        fuera ? { t: t("recuperar", "Traer dentro de la hoja"), al: () => this.traerALaHoja(sel.map((x) => x.id)) } : null,
         "-",
-        { t: t(bloq ? "abierto" : "candado", bloq ? "Desbloquear" : "Bloquear"), al: () => A.alternar("bloqueado") },
-        { t: t("mano", "Permisos (mover, tamaño…)"), al: () => this.app.insp.abrir("diseno", "Permisos") },
-        { t: t("ojoNo", "Ocultar en el editor"), al: () => A.alternar("oculto") },
-        { t: t("animar", "Animar"), al: () => this.app.insp.abrir("animar") },
-        "-",
-        { t: t("borrar", "Borrar"), al: () => A.borrar(), peligro: true, off: bloq },
+        { t: t("animar", "Animar al tocar"), al: () => this.app.abrirSeccion("toques") },
+        { t: t("sonido", "Añadir sonido"), al: () => ins.abrir("diseno", "Sonidos") },
+        { t: t("toque", "Añadir interacción"), al: () => ins.abrir("diseno", "Qué hace al tocarlo") },
+        conLuz ? { t: t("luz", "Luz y color"), al: () => this.app.ajustes?.abrir(sel[0].id, { x, y }) } : null,
       ];
     } else {
       items = [
         { t: t("pegar", "Pegar"), al: () => A.pegar(), off: !A.portapapeles },
         { t: t("texto", "Añadir texto"), al: () => A.texto("parrafo") },
         { t: t("ok", "Elegir todo"), al: () => E.seleccionar(E.pagina.els.filter((x) => !x.bloqueado && !x.oculto && permite(x, "seleccionar")).map((x) => x.id)) },
+        E.pagina.els.some((x) => x.oculto) ? { t: t("ojo", `Mostrar lo oculto (${E.pagina.els.filter((x) => x.oculto).length})`), al: () => E.transaccion("Mostrar lo oculto", () => { for (const x of E.pagina.els) if (x.oculto) E.setEl(x.id, { oculto: false }); }) } : null,
         "-",
         { t: t("diseno", "Tema de esta hoja…"), al: () => this.app.temaDeHoja?.() },
         { t: t("fondo", "Fondo de la página"), al: () => this.app.insp.abrir("diseno", "Fondo") },

@@ -308,3 +308,22 @@ export async function subirPortadita(id, blob) {
   if (r.status < 200 || r.status >= 300) throw Object.assign(new Error(r.datos?.error || `${NOMBRE} contestó ${r.status}`), { status: r.status });
   return r.datos;
 }
+
+/* Fase 38: las páginas de cada mes, Cositas Juntitos y la ubicación compartida. */
+/** El día de este aparato (no el del servidor): así «hoy» y los meses cumplidos son los tuyos. */
+export const hoyLocal = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+export const mesecitos = () => pedir("mesecitos?hoy=" + hoyLocal());
+export const ponerMesecito = (mes, d) => pedir(`mesecitos/${mes}?hoy=${hoyLocal()}`, { method: "PUT", body: d }).then((r) => r.pagina);
+export const borrarMesecito = (mes) => pedir(`mesecitos/${mes}`, { method: "DELETE" });
+export const mesecitoVisto = (mes) => pedir(`mesecitos/${mes}/visto`, { method: "POST", body: {} });
+export const cositas = () => pedir("cositas?hoy=" + hoyLocal());
+export const cosita = (tipo, extra = {}) => pedir("cositas", { method: "POST", body: { tipo, dia: hoyLocal(), ...extra } });
+export const borrarCosita = (id) => pedir("cositas/" + encodeURIComponent(id), { method: "DELETE" });
+export const compartirCosita = (id, compartida) => pedir("cositas/" + encodeURIComponent(id), { method: "PUT", body: { compartida } });
+export const ajusteCosita = (tipo, compartir) => pedir("cositas/ajustes", { method: "PUT", body: { tipo, compartir } });
+export const ubicacion = () => pedir("ubicacion");
+export const ponerUbicacion = (d) => pedir("ubicacion", { method: "PUT", body: d });
+export const dejarUbicacion = () => pedir("ubicacion", { method: "DELETE" });
+export const nuevoLugar = (d) => pedir("lugares", { method: "POST", body: d }).then((r) => r.lugar);
+export const editarLugar = (id, d) => pedir("lugares/" + encodeURIComponent(id), { method: "PUT", body: d }).then((r) => r.lugar);
+export const borrarLugar = (id) => pedir("lugares/" + encodeURIComponent(id), { method: "DELETE" });

@@ -2,10 +2,10 @@
  * LA BARRA LATERAL — el riel de categorías y su panel, a la izquierda.
  *
  * En la computadora (pantalla ancha) van fijos y el panel se pliega.
- * En el teléfono y la tableta es un cajón como el de una app:
- *   · se abre deslizando desde el borde izquierdo, tocando la pestañita o el
- *     botón de arriba; se cierra deslizándolo hacia la izquierda, tocando
- *     fuera (el velo) o el botón ✕;
+ * En el teléfono y la tableta el RIEL se queda siempre a la vista (Fase 38: sin
+ * pestañita) y su panel es un cajón como el de una app:
+ *   · se abre tocando una herramienta del riel o deslizándolo a la derecha; se
+ *     cierra deslizándolo a la izquierda, tocando fuera (el velo) o el botón ✕;
  *   · mientras se arrastra, el cajón SIGUE AL DEDO (no aparece de golpe) y al
  *     soltar termina de abrirse o de cerrarse según la velocidad y la mitad;
  *   · lo de dentro sigue desplazándose de arriba a abajo: sólo un gesto
@@ -18,33 +18,34 @@ import { vibrar } from "../canvas/gestos.js";
 const NO_ARRASTRA = "input, textarea, select, [contenteditable='true'], .ed-rango, .ed-seg, .ed-tl, iframe, .ed-asa, .ed-capas li, .ed-paginas li";
 
 export class Lateral {
-  constructor({ raiz, velo, borde, asa, alCambiar }) {
+  constructor({ raiz, riel, velo, alCambiar }) {
     this.raiz = raiz;
+    this.riel = riel;
     this.velo = velo;
-    this.borde = borde;
-    this.asa = asa;
     this.alCambiar = alCambiar;
     this.abierto = false;
     this._g = null;
     // Su ancho, guardado: medirlo al abrir (con el panel recién llenado) forzaba
     // a calcular todo de golpe y el deslizamiento arrancaba con un tirón.
     this._w = 0;
-    new ResizeObserver(() => { this._w = this.raiz.offsetWidth; }).observe(this.raiz);
+    // (Si cambia de ancho cerrado —p. ej. al entrar al modo profesional—, se vuelve a esconder entero.)
+    new ResizeObserver(() => { this._w = this.raiz.offsetWidth; if (this.compacto && !this.abierto) this._poner(0, false); }).observe(this.raiz);
     this._enlazar();
   }
 
   get compacto() { return esMovil(); }
   get ancho() { return this._w || this.raiz.offsetWidth || 320; }
 
+
   /** `t` = cuánto se ve (0 cerrado … ancho abierto). */
   _poner(t, anim) {
-    const w = this.ancho;
-    t = Math.max(0, Math.min(w, t));
+    const w = this.ancho, m = 0;
+    t = Math.max(m, Math.min(w, t));
     this.raiz.classList.toggle("anim", !!anim);
     this.velo.classList.toggle("anim", !!anim);
     this.raiz.style.transform = `translate3d(${t - w}px, 0, 0)`;
-    this.velo.style.opacity = String((t / w) * 0.42);
-    this.velo.style.pointerEvents = t > 2 ? "auto" : "none";
+    this.velo.style.opacity = String(((t - m) / Math.max(1, w - m)) * 0.42);
+    this.velo.style.pointerEvents = t > m + 2 ? "auto" : "none";
     this.raiz.style.visibility = t > 0 || anim ? "visible" : "hidden";
   }
 
@@ -121,9 +122,8 @@ export class Lateral {
       cancelAnimationFrame(this._rf);
       if (!g.decidido) return;
       if (!g.movio) {
-        // Un toque: la pestañita abre, el velo cierra.
+        // Un toque en el velo cierra.
         if (g.desde === "velo") this.cerrar();
-        else if (g.desde === "borde" || g.desde === "asa") this.abrir();
         return;
       }
       const dx = ev.clientX - g.x0;
@@ -132,14 +132,13 @@ export class Lateral {
       if (abrir !== this.abierto) vibrar(6);
       if (abrir) this.abrir(); else this.cerrar();
     };
-    for (const [n, desde] of [[this.borde, "borde"], [this.asa, "asa"], [this.velo, "velo"], [this.raiz, "dentro"]]) {
+    // (Deslizar el riel a la derecha también abre el panel.)
+    for (const [n, desde] of [[this.velo, "velo"], [this.raiz, "dentro"], [this.riel, "dentro"]].filter(([n]) => n)) {
       n.addEventListener("pointerdown", (ev) => empezar(ev, desde));
       n.addEventListener("pointermove", mover);
       n.addEventListener("pointerup", soltar);
       n.addEventListener("pointercancel", soltar);
     }
-    // El botón de la pestañita también funciona con teclado.
-    this.asa.addEventListener("click", (ev) => { if (ev.detail === 0) this.abrir(); });
     addEventListener("keydown", (ev) => { if (ev.key === "Escape" && this.abierto && !document.querySelector(".ed-modal-fondo, .ed-pop, .ed-menu")) this.cerrar(); });
     let antes = this.compacto;
     matchMedia(COMPACTO).addEventListener("change", () => {

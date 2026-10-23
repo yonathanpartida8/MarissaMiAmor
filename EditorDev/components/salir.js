@@ -82,9 +82,11 @@ export class Salida {
   cerrarLoAbierto() {
     const app = this.app;
     if (document.querySelector(".ed-salir-fondo")) return true;
+    if (app.juntitos?.abierto) return app.juntitos.atras();
     if (app.detallitos?.abierto) return app.detallitos.atras();
     if (app.exportarMenu?.abierto) return app.exportarMenu.atras();
     if (MODALES.length) return cerrarUltimoModal();
+    if (app.pro?.abierto) { app.pro.cerrar(); return true; }
     // Con el menú principal abierto: de «Tu cuenta» o «Mi perfil» vuelve a su inicio; en su inicio, nada (pregunta si te vas).
     const mp = app.menuPrincipal;
     if (mp?.abierto) { if (mp.vista && mp.vista !== "inicio") { mp.ir("inicio"); return true; } return false; }

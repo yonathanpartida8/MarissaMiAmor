@@ -24,6 +24,9 @@
  *   components/secciones/  cada sección grande del panel en su archivo
  */
 import * as RD from "./components/rendimiento.js";
+import { ModoPro } from "./components/modo-pro.js";
+import { Juntitos } from "./components/juntitos.js";
+import * as UB from "./components/ubicacion.js";
 import { FxEditor } from "./canvas/fx.js";
 import { el, aviso, modal, esMovil, menu, popover } from "./components/ui.js";
 import { Estado } from "./core/estado.js";
@@ -80,28 +83,28 @@ const ULTIMO = "editordev:ultimo";
 const $ = (s) => document.querySelector(s);
 
 /** Las categorías del riel: [id, icono, nombre]. */
-// Ordenadas de lo esencial a lo avanzado (Fase 37): primero lo que pones en la página, luego lo que la
+// El riel, de arriba hacia abajo (Fase 38): primero cómo se pasa la página y lo que arma la hoja
+// (Bloques, Recursos, Elementos), luego el contenido (Texto, Músicas, Imágenes, Videos), lo que
 // adorna, lo que se toca y al final lo avanzado. Nada se repite en otro menú.
 const SECCIONES = [
   ["paginas", "paginas", "Páginas"],
   ["publicadas", "publicar", "Páginas publicadas"],   // (vive en el menú ⋯, no en el riel)
-  // Lo esencial: lo que pones en la página
+  ["navegacion", "pasar", "Pasar página"],
+  ["bloques", "bloques", "Bloques"],
+  ["componentes", "biblioteca", "Recursos"],
+  ["elementos", "elementos", "Elementos"],
   ["texto", "texto", "Texto"],
+  ["audio", "audio", "Músicas"],
   ["imagenes", "imagen", "Imágenes"],
-  ["video", "video", "Vídeo"],
-  ["audio", "audio", "Sonidos"],
+  ["video", "video", "Videos"],
   // Adornar
   ["stickers", "sticker", "Stickers"],
   ["gifs", "gif", "GIFs"],
-  ["elementos", "elementos", "Elementos"],
-  ["bloques", "bloques", "Bloques"],
-  ["componentes", "biblioteca", "Recursos"],
   // Tocar
   ["toques", "toque", "Al tocar"],
-  ["navegacion", "pasar", "Pasar página"],
   ["interactivo", "interactivo", "Interactivo"],
   // Avanzado
-  ["diseno", "diseno", "Tema"],
+  ["diseno", "diseno", "Temas"],
   ["html", "html", "HTML"],
   ["3d", "cubo", "3D"],
   ["herramientas", "herramientas", "Herramientas"],
@@ -180,8 +183,10 @@ async function arrancar() {
   app.paneles = new Paneles(app);
   app.paginas = new PanelPaginas(app);
   app.tiempo = new Linea(app, $(".ed-linea"));
+  app.pro = new ModoPro(app); // la línea de tiempo, como un editor de vídeo (Fase 38)
+  app.juntitos = new Juntitos(app); // Cositas Juntitos: «Nuestros días juntos» (Fase 38)
   app.barra = new BarraContextual(app, $(".ed-contexto"));
-  app.lateral = new Lateral({ raiz: $(".ed-lateral"), velo: $(".ed-velo"), borde: $(".ed-borde-izq"), asa: $(".ed-asa-lateral"), alCambiar: (on) => { if (on) { cerrarHoja(); cerrarHojaSec(); } else app.audio?.detenerEscucha?.(); } });
+  app.lateral = new Lateral({ raiz: $(".ed-lateral"), riel: $(".ed-riel"), velo: $(".ed-velo"), alCambiar: (on) => { if (on) { cerrarHoja(); cerrarHojaSec(); } else app.audio?.detenerEscucha?.(); } });
   app.gifs = app.paneles;
   app.abrirSeccion = (id) => abrirSeccion(id, true);
 
@@ -409,7 +414,6 @@ function construirRiel() {
   }
   $(".ed-panel-x").innerHTML = ico("cerrar");
   $(".ed-panel-x").addEventListener("click", () => { if (esMovil()) app.lateral.cerrar(); else abrirSeccion(null); });
-  $(".ed-asa-lateral").innerHTML = ico("derecha");
   // El inspector en el teléfono: una hoja que sigue al dedo desde su asa de color.
   const insp = $(".ed-insp");
   const asaInsp = insp.querySelector(".ed-hoja-asa");
@@ -509,7 +513,7 @@ function abrirSeccion(id, desdeUsuario) {
   VISTAS.add(id);
   cont._sec = id;
   devolverDesplazado(cont, id);
-  if (id === "animar" && !esMovil()) { app.insp.abrir("animar"); app.tiempo.alternar(true); }
+  if (id === "animar" && !esMovil()) app.insp.abrir("animar"); // (la línea de tiempo es el modo profesional: se abre con «Tiempo»)
   if (esMovil() && desdeUsuario) app.lateral.abrir();
 }
 
@@ -649,12 +653,14 @@ const abrirAviso = (u) => {
   if (!SRV.conectado()) return;
   if (u === "#chat") app.detallitos.abrir(null, "chat");
   else if (u === "#detallitos") app.detallitos.abrir(null, "coleccion");
+  else if (u === "#cositas") app.juntitos.abrir("cositas");
+  else if (u === "#cositas-mapa") app.juntitos.abrir("mapa");
 };
 setTimeout(() => PUSH.registrar().then(() => PUSH.alDia()), 2500);
 addEventListener("ed-cuenta", () => setTimeout(() => PUSH.alDia(), 400));
 navigator.serviceWorker?.addEventListener("message", (e) => { if (e.data?.tipo === "aviso-abrir") abrirAviso(e.data.u); });
 const desdeAviso = (espera) => {
-  if (!/^#(chat|detallitos)$/.test(location.hash)) return;
+  if (!/^#(chat|detallitos|cositas|cositas-mapa)$/.test(location.hash)) return;
   const u = location.hash;
   history.replaceState(history.state, "", location.pathname + location.search);
   setTimeout(() => abrirAviso(u), espera);
@@ -662,6 +668,8 @@ const desdeAviso = (espera) => {
 desdeAviso(1600);
 addEventListener("hashchange", () => desdeAviso(0));
 RD.cada(latir, 25000); // con la página oculta no despierta al aparato
+// La ubicación sólo sigue compartiéndose si TÚ lo decidiste antes (y sólo con la app a la vista).
+setTimeout(() => UB.iniciar(), 3000);
 addEventListener("ed-cuenta", () => setTimeout(latir, 300));
 addEventListener("ed-detallito-visto", () => setTimeout(latir, 300));
 addEventListener("ed-chat-visto", () => setTimeout(latir, 300));

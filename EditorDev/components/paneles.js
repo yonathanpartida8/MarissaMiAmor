@@ -247,11 +247,39 @@ export class Paneles {
 
   /* ── Tema ───────────────────────────────────────────────────────── */
   _diseno(c) {
-    const p = this._proy();
     const E = this.E;
     const t = () => this.P.ajustes.tema;
-    const aplicarFondo = () => E.transaccion("Fondo a todas", () => { for (const pid of this.P.orden) E.setPag({ fondo: { tipo: "color", color: t().fondo } }, "Fondo", null, pid); });
-    const aplicarLetras = () => E.transaccion("Letra a todos", () => {
+    const igual = (a, b) => !!a && !!b && String(a).toLowerCase() === String(b).toLowerCase();
+    /**
+     * Un tema se aplica DE VERDAD (Fase 38): cambia los colores del librito y lo que ya está hecho con
+     * ellos se pinta con los nuevos — el fondo de color de cada página, los textos que usaban el color
+     * de texto o el de acento, y las formas, botones y botones de música con el acento. Lo que tú
+     * pintaste de otro color se respeta. Todo en un solo paso (se deshace de un jalón).
+     */
+    const usarTema = (nuevo, nombre = "Tema del librito") => E.transaccion(nombre, () => {
+      const v = { ...t() }, n = { ...v, ...nuevo };
+      E.setProy({ "ajustes.tema.fondo": n.fondo, "ajustes.tema.texto": n.texto, "ajustes.tema.acento": n.acento }, nombre);
+      const color = (c) => (igual(c, v.texto) ? n.texto : igual(c, v.acento) ? n.acento : igual(c, v.fondo) ? n.fondo : null);
+      for (const pid of this.P.orden) {
+        const pg = this.P.paginas[pid];
+        // El fondo: el color liso pasa al del tema; un degradado toma el fondo y un toque del acento (sigue siendo degradado).
+        if (!pg.fondo || pg.fondo.tipo === "color") E.setPag({ fondo: { ...(pg.fondo || {}), tipo: "color", color: n.fondo } }, "Fondo", null, pid);
+        else if (pg.fondo.tipo === "gradiente" && !pg.fondo.css) E.setPag({ fondo: { ...pg.fondo, color: n.fondo, gradiente: { ...(pg.fondo.gradiente || {}), a: n.fondo, b: mezclar(n.acento, n.fondo, 0.72) } } }, "Fondo", null, pid);
+        for (const x of pg.els) {
+          const cambios = {};
+          for (const ruta of ["texto.color", "forma.relleno", "boton.fondo", "boton.color", "musica.fondo", "musica.color", "dibujo.color"]) {
+            const [a, b] = ruta.split(".");
+            const c2 = x[a] && color(x[a][b]);
+            if (c2) cambios[ruta] = c2;
+          }
+          if (x.tipo === "texto" && !x.texto?.color) cambios["texto.color"] = n.texto;
+          if (Object.keys(cambios).length) E.setEl(x.id, cambios, nombre, null, pid);
+        }
+      }
+    });
+    /** Las letras también: títulos (los textos grandes) y textos, en todo el librito. */
+    const usarLetras = (cambio) => E.transaccion("Letras del librito", () => {
+      E.setProy(cambio, "Letras");
       for (const pid of this.P.orden) for (const x of this.P.paginas[pid].els) if (x.tipo === "texto") E.setEl(x.id, { "texto.fuente": x.texto.tam >= 32 ? t().fuenteTitulos : t().fuente }, "Letra", null, pid);
       RT.cargarFuentes([t().fuente, t().fuenteTitulos]);
     });
@@ -259,20 +287,23 @@ export class Paneles {
       { n: nombre, fondo: mezclar(q.a, "#ffffff", 0.84), texto: q.deep, acento: q.b },
       { n: nombre + " · noche", fondo: q.deep, texto: mezclar(q.a, "#ffffff", 0.55), acento: q.a },
     ]);
-    const rej = el("div.ed-paletas", {}, temas.map((x) => el("button", { type: "button", title: x.n, style: { background: x.fondo }, onClick: () => E.setProy({ "ajustes.tema.fondo": x.fondo, "ajustes.tema.texto": x.texto, "ajustes.tema.acento": x.acento }, "Tema") }, [el("i", { style: { background: x.acento } }), el("i", { style: { background: x.texto } })])));
+    const rej = el("div.ed-paletas", { role: "radiogroup", "aria-label": "Temas" }, temas.map((x) => {
+      const b = el("button", { type: "button", role: "radio", title: x.n, "aria-label": x.n, style: { background: x.fondo }, onClick: () => { usarTema(x, "Tema: " + x.n); aviso(`Tema «${x.n}» en todo el librito`, 1800); } }, [el("i", { style: { background: x.acento } }), el("i", { style: { background: x.texto } })]);
+      this.v.add(() => { const on = igual(t().fondo, x.fondo) && igual(t().acento, x.acento); b.classList.toggle("on", on); b.setAttribute("aria-checked", String(on)); });
+      return b;
+    }));
+    const colorTema = (k) => control(this.v, { tipo: "color", leer: () => t()[k], escribir: (c) => usarTema({ [k]: c }) });
     c.append(seccion("Colores del librito", [
-      el("p.ed-ayuda", { text: "Lo nuevo que añadas usa estos colores. Las paletas son las mismas del libro." }),
+      el("p.ed-ayuda", { text: "Toca un tema y se aplica a todo el librito: fondos, textos y adornos. Lo que pintaste de otro color se queda como está." }),
       rej,
-      fila("Fondo", p("ajustes.tema.fondo", { tipo: "color" })),
-      fila("Texto", p("ajustes.tema.texto", { tipo: "color" })),
-      fila("Acento", p("ajustes.tema.acento", { tipo: "color" })),
-      boton("Poner este fondo en todas las páginas", aplicarFondo, "chico"),
+      fila("Fondo", colorTema("fondo")),
+      fila("Texto", colorTema("texto")),
+      fila("Acento", colorTema("acento")),
     ]));
     c.append(seccion("Letras", [
-      fila("Títulos", p("ajustes.tema.fuenteTitulos", { tipo: "select", opciones: FUENTES })),
-      fila("Textos", p("ajustes.tema.fuente", { tipo: "select", opciones: FUENTES })),
-      el("div.ed-muestras", {}, ["Cormorant Garamond", "Caveat", "Jost", "Playfair Display", "Dancing Script", "Great Vibes", "Quicksand"].map((f) => el("span", { text: f, style: { fontFamily: RT.pilaFuente(f) } }))),
-      boton("Usar estas letras en todos los textos", aplicarLetras, "chico"),
+      fila("Títulos", control(this.v, { tipo: "select", opciones: FUENTES, leer: () => t().fuenteTitulos, escribir: (f) => usarLetras({ "ajustes.tema.fuenteTitulos": f }) })),
+      fila("Textos", control(this.v, { tipo: "select", opciones: FUENTES, leer: () => t().fuente, escribir: (f) => usarLetras({ "ajustes.tema.fuente": f }) })),
+      el("div.ed-muestras", {}, ["Cormorant Garamond", "Caveat", "Jost", "Playfair Display", "Dancing Script", "Great Vibes", "Quicksand"].map((f) => el("button", { type: "button", text: f, title: "Usarla en los textos", style: { fontFamily: RT.pilaFuente(f) }, onClick: () => usarLetras({ "ajustes.tema.fuente": f }) }))),
     ]));
     c.append(seccion("Esta página", [
       el("p.ed-ayuda", { text: "El fondo de la página (color, degradado o foto) se cambia en el inspector, sin nada elegido." }),

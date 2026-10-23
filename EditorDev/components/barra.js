@@ -100,7 +100,7 @@ export class BarraContextual {
         this._b(ico("efectos") + "<span>Efectos</span>", "Efectos con previsualización", () => this.app.abrirSeccion("efectos"), "vida"),
         this._b(I("diseno", "Fondo"), "Fondo de la página", () => { ins.abrir("diseno", "Fondo"); }),
         this._b(ico("transiciones") + "<span>Transición</span>", "Transición al llegar", () => this.app.abrirSeccion("transiciones")),
-        this._b(I("tiempo", "Tiempo"), "Línea de tiempo", () => this.app.tiempo.alternar()),
+        this._b(I("tiempo", "Tiempo"), "Línea de tiempo (modo profesional)", (b) => this.app.pro.abrir(b)),
       ));
       partes.push(el("small.ed-cb-pista", { text: "Toca algo de la hoja para editarlo" }));
     } else {
@@ -168,34 +168,19 @@ export class BarraContextual {
         const mismo = sel.every((x) => x.grupo && x.grupo === sel[0].grupo);
         partes.push(grupo(
           mismo ? this._b(I("desenlazar", "Desagrupar"), "Desagrupar", () => A.desagrupar()) : this._b(I("enlazar", "Agrupar"), "Agrupar", () => A.agrupar()),
-          this._b(I("alinearH", "Alinear"), "Alinear", (a) => A.menuAlinear(a)),
         ));
       }
       // Lo de todos.
       partes.push(grupo(
         this._b(ico("animar") + "<span>Animar</span>", "Animar", () => (esMovil() ? this.app.abrirSeccion("animar") : ins.abrir("animar")), "vida"),
         this._b(ico("efectos") + "<span>Efectos</span>", "Efectos con previsualización", () => this.app.abrirSeccion("efectos"), "vida"),
-        this._b(ico("luz") + "<span>Ajustes</span>", "Luz, brillo, contraste, color (o mantén presionado)", () => this.app.ajustes.abrir(sel[0].id)),
-        this._b(ico("toque") + "<span>Al tocar</span>", "Efectos al tocar, con vista previa", () => this.app.abrirSeccion("toques")),
         this._b(ico("opacidad"), "Transparencia", (a) => popover(a, [el("b.ed-pop-t", { text: "Transparencia" }), this._ctl("opacidad", { tipo: "rango", min: 0, max: 1, paso: 0.01, def: 1, nombre: "Opacidad" })]), "chico"),
-        this._b(ico("capas"), "Posición", (a) => popover(a, [
-          el("b.ed-pop-t", { text: "Posición" }),
-          el("div.ed-botonera", {}, [
-            this._b(I("alFrente", "Al frente"), "Al frente", () => A.capa("frente"), "chico"), this._b(I("subirCapa", "Adelante"), "Adelante", () => A.capa("subir"), "chico"),
-            this._b(I("bajarCapa", "Atrás"), "Atrás", () => A.capa("bajar"), "chico"), this._b(I("alFondo", "Al fondo"), "Al fondo", () => A.capa("fondo"), "chico"),
-          ]),
-          el("div.ed-botonera", {}, ["izq", "centroH", "der", "arriba", "centroV", "abajo"].map((m, i) => this._b(ico(["izqA", "alinearH", "derA", "arribaA", "centroV", "abajoA"][i]), "Alinear", () => A.alinear(m), "chico"))),
-          el("div.ed-botonera", {}, [this._b(I("capas", "Ver capas"), "Capas", () => ins.abrir("capas"), "chico"), this._b(I("recuperar", "Traer a la hoja"), "Meterlo dentro de la hoja", () => L.traerALaHoja(E.sel), "chico")]),
-        ]), "chico"),
-        // «Más»: sólo lo que no está ya en otra barra (copiar, duplicar y borrar
-        // están en la barrita de arriba de lo elegido; efectos, aquí mismo).
+        // «Más»: sólo lo avanzado (Fase 38). Bloquear, capas, ocultar, alinear, al tocar, sonido,
+        // interacción y luz y color están en su menú (mantener presionado o clic derecho); copiar,
+        // duplicar y borrar, en la barrita de arriba de lo elegido.
         this._b(ico("mas"), "Más", (a) => menu(a, [
-          { t: I("sonido", "Sonidos"), al: () => ins.abrir("diseno", "Sonidos") },
-          { t: I("toque", "Qué hace al tocarlo…"), al: () => ins.abrir("diseno", "Qué hace al tocarlo") },
           { t: I("ojoNo", "Empieza escondido / tiempo…"), al: () => ins.abrir("diseno", "Visibilidad") },
           { t: I("mano", "Permisos…"), al: () => ins.abrir("diseno", "Permisos") },
-          { t: sel.every((x) => x.bloqueado) ? I("abierto", "Desbloquear") : I("candado", "Bloquear"), al: () => A.alternar("bloqueado") },
-          { t: I("ojo", "Ocultar en el editor"), al: () => A.alternar("oculto") },
           { t: I("diseno", "Todas sus opciones"), al: () => ins.abrir("diseno") },
         ]), "chico"),
       ));

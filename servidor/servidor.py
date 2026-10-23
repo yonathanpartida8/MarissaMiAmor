@@ -59,13 +59,15 @@ import threading
 import gzip
 from collections import OrderedDict
 import time
+import datetime
+import math
 import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.12.0"
+VERSION = "1.13.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -378,6 +380,17 @@ CREATE TABLE IF NOT EXISTS push(id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id
 CREATE INDEX IF NOT EXISTS push_usuario ON push(usuario_id);
 CREATE TABLE IF NOT EXISTS coleccion(id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER, tipo TEXT, u TEXT, w INTEGER, h INTEGER,
   favorito INTEGER DEFAULT 0, usos INTEGER DEFAULT 0, ultimo REAL, creado REAL, UNIQUE(usuario_id, tipo, u));
+CREATE TABLE IF NOT EXISTS mesecitos(id INTEGER PRIMARY KEY AUTOINCREMENT, a INTEGER, b INTEGER, mes INTEGER, autor INTEGER,
+  titulo TEXT, texto TEXT, fotos TEXT, tema TEXT, creado REAL, actualizado REAL, visto REAL, UNIQUE(a, b, mes));
+CREATE TABLE IF NOT EXISTS cositas(id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER, tipo TEXT, nota TEXT,
+  compartida INTEGER DEFAULT 0, dia TEXT, creado REAL);
+CREATE INDEX IF NOT EXISTS cositas_u ON cositas(usuario_id, tipo, dia);
+CREATE TABLE IF NOT EXISTS cositas_ajustes(usuario_id INTEGER, tipo TEXT, compartir INTEGER DEFAULT 0, PRIMARY KEY(usuario_id, tipo));
+CREATE TABLE IF NOT EXISTS ubicaciones(usuario_id INTEGER PRIMARY KEY, lat REAL, lng REAL, prec REAL, t REAL, desde REAL, clat REAL, clng REAL);
+CREATE TABLE IF NOT EXISTS lugares(id INTEGER PRIMARY KEY AUTOINCREMENT, a INTEGER, b INTEGER, autor INTEGER, nombre TEXT, lat REAL, lng REAL,
+  radio REAL, avisar TEXT, alertas INTEGER DEFAULT 1, creado REAL);
+CREATE TABLE IF NOT EXISTS lugares_estado(lugar_id INTEGER, usuario_id INTEGER, dentro INTEGER, t REAL, PRIMARY KEY(lugar_id, usuario_id));
+CREATE TABLE IF NOT EXISTS lugares_eventos(id INTEGER PRIMARY KEY AUTOINCREMENT, lugar_id INTEGER, usuario_id INTEGER, tipo TEXT, t REAL);
 """
 # Columnas que llegaron después (se agregan solas a una base vieja).
 COLUMNAS_NUEVAS = {
@@ -2703,7 +2716,8 @@ COLOR_OK = re.compile(r"^#[0-9a-fA-F]{6}$")
 MEDIA_OK = re.compile(r"^/m/[0-9a-f]{64}\.(webp|png|jpg|wav)$")
 MEDIA = os.path.join(DATOS, "mensajitos-media")
 MEDIA_TIPOS = {"sticker": ((b"\x89PNG\r\n\x1a\n", ".png"), (b"\xff\xd8\xff", ".jpg"), (b"RIFF", ".webp")), "audio": ((b"RIFF", ".wav"),)}
-MEDIA_MAX = {"sticker": 800 * 1024, "audio": 26 * 1024 * 1024}  # audios HD: WAV de 48 kHz, hasta 4 minutos
+MEDIA_TIPOS["foto"] = MEDIA_TIPOS["sticker"]  # Fase 38: las fotos de las páginas de cada mes
+MEDIA_MAX = {"sticker": 800 * 1024, "audio": 26 * 1024 * 1024, "foto": 3 * 1024 * 1024}  # audios HD: WAV de 48 kHz, hasta 4 minutos
 _MEDIA_RITMO = {}
 CHAT_MAX_TEXTO = 2000
 CHAT_MAX_STICKERS = 12
@@ -3471,6 +3485,398 @@ def nombre_corto(uid):
 def mirando_chat(uid):
     """¿Tiene el chat abierto ahora mismo? (Entonces el mensajito ya le llegó ahí: sin aviso.)"""
     return CHAT_MIRANDO.get(uid, 0) > time.monotonic() - 30
+
+
+# ════════════════════════════════════════════════════════════════════════
+#  Fase 38: los mesecitos, Cositas Juntitos y la ubicación compartida
+# ════════════════════════════════════════════════════════════════════════
+def _par(s):
+    """La pareja ordenada (a < b) y quién es el otro. Sin pareja, nada de esto existe."""
+    otro = _par_chat(s)
+    yo = s["usuario_id"]
+    return min(yo, otro), max(yo, otro), otro
+
+
+def _mes_mas(fecha, n):
+    """La fecha `n` meses después (el 31 de enero + 1 mes = el último día de febrero)."""
+    y, m = fecha.year + (fecha.month - 1 + n) // 12, (fecha.month - 1 + n) % 12 + 1
+    ultimo = [31, 29 if (y % 4 == 0 and y % 100) or y % 400 == 0 else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]
+    return datetime.date(y, m, min(fecha.day, ultimo))
+
+
+def _meses_cumplidos(novios, hoy):
+    """Cuántos meses de novios se han cumplido hasta `hoy` (y la fecha del siguiente)."""
+    try:
+        ini = datetime.date.fromisoformat(novios)
+    except (TypeError, ValueError):
+        return 0, None
+    n = 0
+    while n < 1200 and _mes_mas(ini, n + 1) <= hoy:
+        n += 1
+    return n, _mes_mas(ini, n + 1)
+
+
+def _hoy_de(h):
+    """El día de quien pregunta (su aparato manda `hoy`); nunca más de un día lejos del servidor."""
+    srv = datetime.datetime.now(datetime.timezone.utc).date()
+    try:
+        d = datetime.date.fromisoformat(str(h.parametros().get("hoy") or ""))
+        if abs((d - srv).days) <= 1:
+            return d
+    except ValueError:
+        pass
+    return srv
+
+
+TEMAS_MES = ("rosa", "lila", "durazno", "menta", "noche")
+
+
+def fila_mesecito(m, uid):
+    return {"mes": m["mes"], "mio": m["autor"] == uid, "titulo": m["titulo"] or "", "texto": m["texto"] or "",
+            "fotos": json.loads(m["fotos"]) if m["fotos"] else [], "tema": m["tema"] or "rosa",
+            "creado": iso(m["creado"]), "actualizado": iso(m["actualizado"]), "visto": iso(m["visto"]) if m["visto"] else ""}
+
+
+@ruta("GET", "/api/mesecitos", "sesion")
+def api_mesecitos(h, s):
+    """Los meses que ya cumplieron y la página especial de cada uno (una por mes, de la pareja)."""
+    a, b, _ = _par(s)
+    yo = E.db.uno("SELECT novios FROM usuarios WHERE id=?", s["usuario_id"])
+    n, sig = _meses_cumplidos(yo["novios"] if yo else "", _hoy_de(h))
+    filas = E.db.q("SELECT * FROM mesecitos WHERE a=? AND b=? ORDER BY mes DESC", a, b)
+    h.responder(200, {"novios": (yo or {}).get("novios") or "", "meses": n, "siguiente": sig.isoformat() if sig else "",
+                      "paginas": [fila_mesecito(m, s["usuario_id"]) for m in filas]})
+
+
+@ruta("PUT", r"/api/mesecitos/([0-9]{1,4})", "sesion")
+def api_mesecito_poner(h, s, mes):
+    """Crear (o editar, si es tuya) la página especial de un mes cumplido. Nunca dos para el mismo mes."""
+    a, b, otro = _par(s)
+    mes = int(mes)
+    yo = E.db.uno("SELECT novios FROM usuarios WHERE id=?", s["usuario_id"])
+    n, _ = _meses_cumplidos(yo["novios"] if yo else "", _hoy_de(h))
+    if not yo or not yo["novios"]:
+        raise Falla("Primero pon la fecha en que se hicieron novios (en tu perfil).", 409)
+    if mes < 1 or mes > n:
+        raise Falla("Ese mes todavía no se cumple.", 409)
+    d = h.cuerpo_json()
+    titulo = str(d.get("titulo") or f"Nuestro mes {mes}").strip()[:80]
+    texto = str(d.get("texto") or "").strip()[:4000]
+    tema = d.get("tema") if d.get("tema") in TEMAS_MES else "rosa"
+    fotos = [str(u) for u in (d.get("fotos") or []) if MEDIA_OK.match(str(u)) and not str(u).endswith(".wav")][:6]
+    with E.db.lock:
+        ya = E.db.uno("SELECT * FROM mesecitos WHERE a=? AND b=? AND mes=?", a, b, mes)
+        if ya and ya["autor"] != s["usuario_id"]:
+            raise Falla("Tu amorcito ya hizo la página de este mes: ábrela para verla.", 409)
+        if ya:
+            E.db.x("UPDATE mesecitos SET titulo=?, texto=?, fotos=?, tema=?, actualizado=? WHERE id=?", titulo, texto, json.dumps(fotos), tema, ahora(), ya["id"])
+        else:
+            E.db.x("INSERT INTO mesecitos(a, b, mes, autor, titulo, texto, fotos, tema, creado, actualizado) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                   a, b, mes, s["usuario_id"], titulo, texto, json.dumps(fotos), tema, ahora(), ahora())
+    if not ya:
+        avisar(otro, {"t": f"{nombre_corto(s['usuario_id'])} te preparó una sorpresa 💗", "b": f"La página de su mes {mes}: «{titulo}»", "tag": "mesecito", "u": "#cositas"})
+    h.responder(200, {"pagina": fila_mesecito(E.db.uno("SELECT * FROM mesecitos WHERE a=? AND b=? AND mes=?", a, b, mes), s["usuario_id"])})
+
+
+@ruta("DELETE", r"/api/mesecitos/([0-9]{1,4})", "sesion")
+def api_mesecito_borrar(h, s, mes):
+    a, b, _ = _par(s)
+    m = E.db.uno("SELECT * FROM mesecitos WHERE a=? AND b=? AND mes=?", a, b, int(mes))
+    if not m:
+        raise Falla("No existe.", 404)
+    if m["autor"] != s["usuario_id"]:
+        raise Falla("Sólo quien la hizo puede borrarla.", 403)
+    E.db.x("DELETE FROM mesecitos WHERE id=?", m["id"])
+    h.responder(200, {"ok": True})
+
+
+@ruta("POST", r"/api/mesecitos/([0-9]{1,4})/visto", "sesion")
+def api_mesecito_visto(h, s, mes):
+    a, b, _ = _par(s)
+    E.db.x("UPDATE mesecitos SET visto=? WHERE a=? AND b=? AND mes=? AND autor<>? AND visto IS NULL", ahora(), a, b, int(mes), s["usuario_id"])
+    h.responder(200, {"ok": True})
+
+
+# — Cositas Juntitos: contadores y registros (privados salvo que tú los compartas) —
+COSITAS = {
+    # tipo: (avisa a tu amorcito, lleva nota, compartida de entrada)
+    "extrano": (True, False, True), "teamo": (True, False, True),
+    "caca": (False, False, False), "pis": (False, False, False), "agua": (False, False, False), "palabrotas": (False, False, False),
+    "chismes": (False, True, False), "enojos": (False, True, False), "colapsos": (False, True, False),
+    "ducha": (False, False, False),
+}
+_COSITAS_RITMO, _COSITAS_AVISO = {}, {}
+
+
+def _dia_de(d):
+    srv = datetime.datetime.now(datetime.timezone.utc).date()
+    try:
+        x = datetime.date.fromisoformat(str(d or ""))
+        if abs((x - srv).days) <= 1:
+            return x.isoformat()
+    except ValueError:
+        pass
+    return srv.isoformat()
+
+
+def _resumen_cositas(uid, hoy, solo_compartidas=False):
+    ajustes = {r["tipo"]: bool(r["compartir"]) for r in E.db.q("SELECT tipo, compartir FROM cositas_ajustes WHERE usuario_id=?", uid)}
+    filtro = " AND compartida=1" if solo_compartidas else ""
+    out = {}
+    for t, (_, _, comp0) in COSITAS.items():
+        total = E.db.uno(f"SELECT COUNT(*) n FROM cositas WHERE usuario_id=? AND tipo=?{filtro}", uid, t)["n"]
+        dia = E.db.uno(f"SELECT COUNT(*) n FROM cositas WHERE usuario_id=? AND tipo=? AND dia=?{filtro}", uid, t, hoy)["n"]
+        out[t] = {"total": total, "hoy": dia, "compartir": ajustes.get(t, comp0)}
+    # La racha de la ducha: días seguidos (hasta hoy o ayer) que dijiste que sí.
+    dias = {r["dia"] for r in E.db.q(f"SELECT DISTINCT dia FROM cositas WHERE usuario_id=? AND tipo='ducha'{filtro}", uid)}
+    d, racha = datetime.date.fromisoformat(hoy), 0
+    if d.isoformat() not in dias:
+        d -= datetime.timedelta(days=1)
+    while d.isoformat() in dias:
+        racha += 1
+        d -= datetime.timedelta(days=1)
+    out["ducha"]["racha"] = racha
+    return out
+
+
+def fila_cosita(c, uid):
+    return {"id": c["id"], "tipo": c["tipo"], "nota": c["nota"] or "", "compartida": bool(c["compartida"]), "dia": c["dia"], "creado": iso(c["creado"]), "mia": c["usuario_id"] == uid}
+
+
+@ruta("GET", "/api/cositas", "sesion")
+def api_cositas(h, s):
+    """Tus contadores y registros, y lo que tu amorcito quiso compartir contigo."""
+    _, _, otro = _par(s)
+    hoy = _dia_de(h.parametros().get("hoy"))
+    uid = s["usuario_id"]
+    notas = E.db.q("SELECT * FROM cositas WHERE usuario_id=? AND tipo IN ('chismes','enojos','colapsos') ORDER BY id DESC LIMIT 60", uid)
+    suyas = E.db.q("SELECT * FROM cositas WHERE usuario_id=? AND compartida=1 AND tipo IN ('chismes','enojos','colapsos') ORDER BY id DESC LIMIT 30", otro)
+    h.responder(200, {"hoy": hoy, "mias": _resumen_cositas(uid, hoy), "pareja": _resumen_cositas(otro, hoy, True),
+                      "notas": [fila_cosita(c, uid) for c in notas], "de_pareja": [fila_cosita(c, uid) for c in suyas]})
+
+
+@ruta("POST", "/api/cositas", "sesion")
+def api_cosita(h, s):
+    """Registrar una cosita. «Te extraño» y «Te amo» le llegan a tu amorcito; lo demás es tuyo (salvo que lo compartas)."""
+    _, _, otro = _par(s)
+    d = h.cuerpo_json()
+    tipo = d.get("tipo")
+    if tipo not in COSITAS:
+        raise Falla("Esa cosita no existe.", 400)
+    avisa, con_nota, comp0 = COSITAS[tipo]
+    uid, t = s["usuario_id"], time.monotonic()
+    ritmo = [x for x in _COSITAS_RITMO.get(uid, []) if x > t - 60]
+    if len(ritmo) >= 60:
+        raise Falla("Más despacito 🙈", 429)
+    _COSITAS_RITMO[uid] = ritmo + [t]
+    dia = _dia_de(d.get("dia"))
+    nota = str(d.get("nota") or "").strip()[:600] if con_nota else ""
+    aj = E.db.uno("SELECT compartir FROM cositas_ajustes WHERE usuario_id=? AND tipo=?", uid, tipo)
+    compartida = bool(d["compartida"]) if con_nota and "compartida" in d else (bool(aj["compartir"]) if aj else comp0)
+    if tipo == "ducha":
+        # «¿Hoy me duché?»: sí o no, una vez por día (tocar otra vez lo quita).
+        ya = E.db.uno("SELECT id FROM cositas WHERE usuario_id=? AND tipo='ducha' AND dia=?", uid, dia)
+        if ya:
+            E.db.x("DELETE FROM cositas WHERE id=?", ya["id"])
+        else:
+            E.db.x("INSERT INTO cositas(usuario_id, tipo, nota, compartida, dia, creado) VALUES(?,?,?,?,?,?)", uid, tipo, "", int(compartida), dia, ahora())
+        return h.responder(200, {"resumen": _resumen_cositas(uid, dia)})
+    cid = E.db.x("INSERT INTO cositas(usuario_id, tipo, nota, compartida, dia, creado) VALUES(?,?,?,?,?,?)", uid, tipo, nota, int(compartida), dia, ahora())
+    if avisa and t - _COSITAS_AVISO.get((uid, tipo), 0) > 30:
+        _COSITAS_AVISO[(uid, tipo)] = t
+        quien = nombre_corto(uid)
+        avisar(otro, {"t": f"{quien} te extraña 🥺" if tipo == "extrano" else f"{quien} te dijo «te amo» 💗",
+                      "b": "Ábrelo y mándale un abracito." if tipo == "extrano" else "Y te lo dice de corazón.", "tag": "cositas", "u": "#cositas"})
+    h.responder(200, {"id": cid, "resumen": _resumen_cositas(uid, dia)})
+
+
+@ruta("DELETE", r"/api/cositas/([0-9]{1,12})", "sesion")
+def api_cosita_borrar(h, s, cid):
+    n = E.db.x("DELETE FROM cositas WHERE id=? AND usuario_id=?", int(cid), s["usuario_id"])
+    if not n:
+        raise Falla("No existe.", 404)
+    h.responder(200, {"ok": True})
+
+
+@ruta("PUT", r"/api/cositas/([0-9]{1,12})", "sesion")
+def api_cosita_compartir(h, s, cid):
+    d = h.cuerpo_json()
+    n = E.db.x("UPDATE cositas SET compartida=? WHERE id=? AND usuario_id=?", int(bool(d.get("compartida"))), int(cid), s["usuario_id"])
+    if not n:
+        raise Falla("No existe.", 404)
+    h.responder(200, {"ok": True})
+
+
+@ruta("PUT", "/api/cositas/ajustes", "sesion")
+def api_cositas_ajustes(h, s):
+    """Que tu amorcito vea (o no) un contador tuyo. Se aplica a todo lo que ya contaste."""
+    _par(s)
+    d = h.cuerpo_json()
+    tipo = d.get("tipo")
+    if tipo not in COSITAS or COSITAS[tipo][1]:
+        raise Falla("Esa cosita no existe.", 400)
+    v = int(bool(d.get("compartir")))
+    E.db.x("INSERT INTO cositas_ajustes(usuario_id, tipo, compartir) VALUES(?,?,?) ON CONFLICT(usuario_id, tipo) DO UPDATE SET compartir=excluded.compartir", s["usuario_id"], tipo, v)
+    E.db.x("UPDATE cositas SET compartida=? WHERE usuario_id=? AND tipo=?", v, s["usuario_id"], tipo)
+    h.responder(200, {"ok": True})
+
+
+# — Ubicación compartida (sólo si tú la compartes, y se borra al dejar de compartirla) —
+LUGARES_MAX = 10
+AVISAR_LUGAR = ("yo", "pareja", "ambos")
+
+
+def _metros(a1, o1, a2, o2):
+    r = math.radians
+    x = math.sin(r(a2 - a1) / 2) ** 2 + math.cos(r(a1)) * math.cos(r(a2)) * math.sin(r(o2 - o1) / 2) ** 2
+    return 6371000 * 2 * math.asin(min(1, math.sqrt(x)))
+
+
+def _num(v, lo, hi, nombre):
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        raise Falla(f"{nombre} no es válido.", 400)
+    if not math.isfinite(x) or x < lo or x > hi:
+        raise Falla(f"{nombre} no es válido.", 400)
+    return x
+
+
+def fila_ubicacion(u):
+    if not u:
+        return None
+    return {"lat": u["lat"], "lng": u["lng"], "prec": u["prec"], "t": iso(u["t"]), "desde": iso(u["desde"])}
+
+
+def fila_lugar(l, uid):
+    return {"id": l["id"], "nombre": l["nombre"], "lat": l["lat"], "lng": l["lng"], "radio": l["radio"], "avisar": l["avisar"],
+            "alertas": bool(l["alertas"]), "mio": l["autor"] == uid}
+
+
+def _revisar_lugares(uid, a, b, otro, lat, lng, prec):
+    """¿Entró o salió de algún lugar? (Con un margen para que el GPS no haga «entró-salió» solo.)"""
+    for l in E.db.q("SELECT * FROM lugares WHERE a=? AND b=?", a, b):
+        d = _metros(l["lat"], l["lng"], lat, lng)
+        est = E.db.uno("SELECT dentro FROM lugares_estado WHERE lugar_id=? AND usuario_id=?", l["id"], uid)
+        antes = None if not est else bool(est["dentro"])
+        if antes is None:
+            dentro = d <= l["radio"]
+        elif antes:
+            dentro = d <= l["radio"] + max(30, min(prec or 0, 150))
+        else:
+            dentro = d <= l["radio"]
+        E.db.x("INSERT INTO lugares_estado(lugar_id, usuario_id, dentro, t) VALUES(?,?,?,?) ON CONFLICT(lugar_id, usuario_id) DO UPDATE SET dentro=excluded.dentro, t=excluded.t",
+               l["id"], uid, int(dentro), ahora())
+        if antes is None or antes == dentro:
+            continue
+        tipo = "entro" if dentro else "salio"
+        E.db.x("INSERT INTO lugares_eventos(lugar_id, usuario_id, tipo, t) VALUES(?,?,?,?)", l["id"], uid, tipo, ahora())
+        if not l["alertas"]:
+            continue
+        quien = nombre_corto(uid)
+        para = {"yo": [uid], "pareja": [otro], "ambos": [uid, otro]}.get(l["avisar"], [otro])
+        for p in para:
+            sujeto = "Llegaste" if p == uid and dentro else "Saliste" if p == uid else f"{quien} llegó" if dentro else f"{quien} salió"
+            avisar(p, {"t": f"{sujeto} {'a' if dentro else 'de'} «{l['nombre']}» 📍", "b": "Según la ubicación que comparte en Cositas Juntitos.", "tag": f"lugar{l['id']}", "u": "#cositas-mapa"})
+
+
+@ruta("GET", "/api/ubicacion", "sesion")
+def api_ubicacion(h, s):
+    """Dónde está cada quien (sólo quien la comparte), sus lugares y lo último que pasó en ellos."""
+    a, b, otro = _par(s)
+    uid = s["usuario_id"]
+    eventos = E.db.q("SELECT e.*, l.nombre FROM lugares_eventos e JOIN lugares l ON l.id=e.lugar_id WHERE l.a=? AND l.b=? ORDER BY e.id DESC LIMIT 20", a, b)
+    h.responder(200, {
+        "yo": fila_ubicacion(E.db.uno("SELECT * FROM ubicaciones WHERE usuario_id=?", uid)),
+        "pareja": fila_ubicacion(E.db.uno("SELECT * FROM ubicaciones WHERE usuario_id=?", otro)),
+        "lugares": [fila_lugar(l, uid) for l in E.db.q("SELECT * FROM lugares WHERE a=? AND b=? ORDER BY id", a, b)],
+        "eventos": [{"lugar": e["nombre"], "tipo": e["tipo"], "mio": e["usuario_id"] == uid, "t": iso(e["t"])} for e in eventos],
+    })
+
+
+@ruta("PUT", "/api/ubicacion", "sesion")
+def api_ubicacion_poner(h, s):
+    """Tu ubicación (sólo llega si tú decidiste compartirla). «desde» = desde cuándo estás en ese lugar."""
+    a, b, otro = _par(s)
+    d = h.cuerpo_json()
+    lat, lng = _num(d.get("lat"), -90, 90, "La latitud"), _num(d.get("lng"), -180, 180, "La longitud")
+    prec = _num(d.get("prec") or 0, 0, 100000, "La precisión")
+    uid = s["usuario_id"]
+    with E.db.lock:
+        ya = E.db.uno("SELECT * FROM ubicaciones WHERE usuario_id=?", uid)
+        t = ahora()
+        if ya and ya["clat"] is not None and _metros(ya["clat"], ya["clng"], lat, lng) <= max(80, min(prec, 300)):
+            desde, clat, clng = ya["desde"], ya["clat"], ya["clng"]
+        else:
+            desde, clat, clng = t, lat, lng
+        E.db.x("INSERT INTO ubicaciones(usuario_id, lat, lng, prec, t, desde, clat, clng) VALUES(?,?,?,?,?,?,?,?) "
+               "ON CONFLICT(usuario_id) DO UPDATE SET lat=excluded.lat, lng=excluded.lng, prec=excluded.prec, t=excluded.t, desde=excluded.desde, clat=excluded.clat, clng=excluded.clng",
+               uid, lat, lng, prec, t, desde, clat, clng)
+    _revisar_lugares(uid, a, b, otro, lat, lng, prec)
+    h.responder(200, {"yo": fila_ubicacion(E.db.uno("SELECT * FROM ubicaciones WHERE usuario_id=?", uid))})
+
+
+@ruta("DELETE", "/api/ubicacion", "sesion")
+def api_ubicacion_dejar(h, s):
+    """Dejar de compartir: se borra tu ubicación del servidor (no queda nada)."""
+    E.db.x("DELETE FROM ubicaciones WHERE usuario_id=?", s["usuario_id"])
+    E.db.x("DELETE FROM lugares_estado WHERE usuario_id=?", s["usuario_id"])
+    h.responder(200, {"ok": True})
+
+
+def _datos_lugar(d, parcial=False):
+    out = {}
+    if not parcial or "nombre" in d:
+        nombre = str(d.get("nombre") or "").strip()[:40]
+        if not nombre:
+            raise Falla("Ponle un nombre al lugar.", 400)
+        out["nombre"] = nombre
+    if not parcial or "lat" in d:
+        out["lat"] = _num(d.get("lat"), -90, 90, "La latitud")
+        out["lng"] = _num(d.get("lng"), -180, 180, "La longitud")
+    if not parcial or "radio" in d:
+        out["radio"] = _num(d.get("radio") or 150, 50, 5000, "El radio")
+    if not parcial or "avisar" in d:
+        out["avisar"] = d.get("avisar") if d.get("avisar") in AVISAR_LUGAR else "pareja"
+    if not parcial or "alertas" in d:
+        out["alertas"] = int(bool(d.get("alertas", True)))
+    return out
+
+
+@ruta("POST", "/api/lugares", "sesion")
+def api_lugar_nuevo(h, s):
+    a, b, _ = _par(s)
+    if E.db.uno("SELECT COUNT(*) n FROM lugares WHERE a=? AND b=?", a, b)["n"] >= LUGARES_MAX:
+        raise Falla(f"Ya tienen {LUGARES_MAX} lugares: borra alguno para añadir otro.", 409)
+    x = _datos_lugar(h.cuerpo_json())
+    lid = E.db.x("INSERT INTO lugares(a, b, autor, nombre, lat, lng, radio, avisar, alertas, creado) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                 a, b, s["usuario_id"], x["nombre"], x["lat"], x["lng"], x["radio"], x["avisar"], x["alertas"], ahora())
+    h.responder(200, {"lugar": fila_lugar(E.db.uno("SELECT * FROM lugares WHERE id=?", lid), s["usuario_id"])})
+
+
+@ruta("PUT", r"/api/lugares/([0-9]{1,12})", "sesion")
+def api_lugar_editar(h, s, lid):
+    a, b, _ = _par(s)
+    l = E.db.uno("SELECT * FROM lugares WHERE id=? AND a=? AND b=?", int(lid), a, b)
+    if not l:
+        raise Falla("No existe.", 404)
+    x = _datos_lugar(h.cuerpo_json(), parcial=True)
+    if x:
+        E.db.x("UPDATE lugares SET " + ", ".join(f"{k}=?" for k in x) + " WHERE id=?", *x.values(), l["id"])
+    if "lat" in x or "radio" in x:
+        E.db.x("DELETE FROM lugares_estado WHERE lugar_id=?", l["id"])  # se vuelve a medir sin avisar
+    h.responder(200, {"lugar": fila_lugar(E.db.uno("SELECT * FROM lugares WHERE id=?", l["id"]), s["usuario_id"])})
+
+
+@ruta("DELETE", r"/api/lugares/([0-9]{1,12})", "sesion")
+def api_lugar_borrar(h, s, lid):
+    a, b, _ = _par(s)
+    n = E.db.x("DELETE FROM lugares WHERE id=? AND a=? AND b=?", int(lid), a, b)
+    if not n:
+        raise Falla("No existe.", 404)
+    E.db.x("DELETE FROM lugares_estado WHERE lugar_id=?", int(lid))
+    E.db.x("DELETE FROM lugares_eventos WHERE lugar_id=?", int(lid))
+    h.responder(200, {"ok": True})
 
 
 RX_AVISO = {"te-amo": "te dijo «te amo» 💗", "me-encanto": "dice que le encantó 😍", "llore": "lloró de lo bonito 🥹",

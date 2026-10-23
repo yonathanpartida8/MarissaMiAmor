@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="styles/editor.css">
 <link rel="stylesheet" href="styles/myn.css">
 <link rel="stylesheet" href="styles/mensajitos.css">
+<link rel="stylesheet" href="styles/juntitos.css">
   <!-- Cada estilo vive en su carpeta: estilos/<estilo>/ (css, imágenes, fuentes y música) -->
   <link rel="stylesheet" href="estilos/cuaderno/estilo.css">
   <link rel="stylesheet" href="estilos/retromylove/estilo.css">
@@ -65,8 +66,10 @@
 <link rel="modulepreload" href="components/iconos.js">
 <link rel="modulepreload" href="components/inicio.js">
 <link rel="modulepreload" href="components/inspector.js">
+<link rel="modulepreload" href="components/juntitos.js">
 <link rel="modulepreload" href="components/lateral.js">
 <link rel="modulepreload" href="components/menu-principal.js">
+<link rel="modulepreload" href="components/modo-pro.js">
 <link rel="modulepreload" href="components/morfo.js">
 <link rel="modulepreload" href="components/myn.js">
 <link rel="modulepreload" href="components/paneles.js">
@@ -94,6 +97,7 @@
 <link rel="modulepreload" href="components/temas-hoja.js">
 <link rel="modulepreload" href="components/toques.js">
 <link rel="modulepreload" href="components/transiciones.js">
+<link rel="modulepreload" href="components/ubicacion.js">
 <link rel="modulepreload" href="components/ui.js">
 <link rel="modulepreload" href="components/vista.js">
 <link rel="modulepreload" href="components/vivo.js">
@@ -162,10 +166,10 @@
     </div>
   </header>
 
-  <!-- La barra lateral: el riel de categorías y su panel. En la computadora
-       van fijos; en el teléfono y la tableta es un cajón que sigue al dedo. -->
-  <div class="ed-lateral" aria-label="Herramientas">
-    <nav class="ed-riel" aria-label="Secciones"></nav>
+  <!-- El riel de herramientas (siempre a la vista) y su panel. En la computadora van fijos;
+       en el teléfono y la tableta el panel es un cajón que sale de detrás del riel. -->
+  <nav class="ed-riel" aria-label="Herramientas"></nav>
+  <div class="ed-lateral" aria-label="Panel de herramientas">
     <aside class="ed-panel" aria-label="Panel">
       <div class="ed-panel-cab">
         <h2 class="ed-panel-titulo"></h2>
@@ -175,8 +179,6 @@
     </aside>
   </div>
   <div class="ed-velo" aria-hidden="true"></div>
-  <div class="ed-borde-izq" aria-hidden="true"></div>
-  <button type="button" class="ed-asa-lateral" aria-label="Abrir herramientas"></button>
 
   <main class="ed-centro">
     <div class="ed-contexto" role="toolbar" aria-label="Herramientas de lo elegido" hidden></div>

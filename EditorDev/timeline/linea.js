@@ -134,7 +134,14 @@ export class Linea {
   }
 
   /* ── Abrir y cerrar ─────────────────────────────────────────────── */
+  /** Abrir o cerrar: la línea vive en el modo profesional (Fase 38), que la abre con su transición. */
   alternar(forzar) {
+    const abrir = forzar ?? !this.abierta;
+    if (this.app.pro) { if (abrir) this.app.pro.abrir(); else this.app.pro.cerrar(); return; }
+    this._alternarCrudo(abrir);
+  }
+
+  _alternarCrudo(forzar) {
     this.abierta = forzar ?? !this.abierta;
     this.raiz.hidden = !this.abierta;
     document.body.classList.toggle("con-linea", this.abierta);
@@ -217,6 +224,7 @@ export class Linea {
         if (fr.top < arriba || fr.bottom > cr.bottom) c.scrollBy({ top: fr.top - arriba - 4, behavior: "smooth" });
       });
     } else if (!u) this._visto = null;
+    this.app.pro?.refrescar();
   }
 
   _herramientas() {

@@ -24,7 +24,7 @@ import { RAIZ } from "../assets/biblioteca.js";
 import { DIBUJO_ABEJA } from "../mascota/abeja.js";
 
 const RT = window.LibritoRT;
-const CROMO = ".ed-barra, .ed-lateral, .ed-insp, .ed-contexto, .ed-linea:not([hidden]), .ed-asa-lateral, .ed-foco, .ed-hoja-sec.abierta, .ed-fuera:not([hidden]), .ed-hojita, .ed-codigo-pantalla, .ed-avisos";
+const CROMO = ".ed-barra, .ed-lateral, .ed-insp, .ed-contexto, .ed-linea:not([hidden]), .ed-riel, .ed-foco, .ed-hoja-sec.abierta, .ed-fuera:not([hidden]), .ed-hojita, .ed-codigo-pantalla, .ed-avisos";
 const SUAVE = "cubic-bezier(.2,.8,.2,1)";
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 

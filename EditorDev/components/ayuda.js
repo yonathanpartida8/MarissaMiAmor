@@ -101,7 +101,7 @@ const MOMENTOS = "editordev:consejos-al-momento";
    Cada paso usa el primer selector que se vea (computadora o teléfono). */
 const RECORRIDO = [
   { sel: null, cara: "feliz", t: "¡Hola! Te enseño cómo funciona todo en un ratito. Puedes salir cuando quieras y volver a verlo desde mi foquito o desde ⋯." },
-  { sel: [".ed-riel", ".ed-asa-lateral"], t: "A la izquierda están las herramientas por grupos: CREAR (Bloques, Elementos, Texto, Imágenes, Vídeo, Recursos), ADORNAR, TOCAR Y OÍR y AVANZADO. En el teléfono se abren deslizando desde el borde o con esta pestañita." },
+  { sel: [".ed-riel"], t: "A la izquierda, siempre a la vista, están las herramientas de arriba hacia abajo: Pasar página, Bloques, Recursos, Elementos, Texto, Músicas, Imágenes y Videos; luego ADORNAR, TOCAR y AVANZADO. Toca una y se abre su panel." },
   { sel: [".ed-hoja"], t: "Ésta es tu página. Toca algo para elegirlo y arrástralo para moverlo; con dos dedos acercas o alejas. Doble toque en un texto para escribir." },
   { sel: [".ed-dock"], t: "Lo de todo el rato, a un toque: deshacer, rehacer, pegar, duplicar, capas, el imán (para alinear solito) y «ver toda la hoja»." },
   { sel: [".ed-contexto"], t: "Esta barra cambia según lo que elijas: letra y color para un texto, marco para una foto, probar para un HTML… Sin nada elegido, es la de la página: fondo, transición y música." },

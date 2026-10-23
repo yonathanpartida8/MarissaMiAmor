@@ -295,7 +295,7 @@ export class MenuPrincipal {
     const p = PF.proximo(d);
     const barra = el("span.mp-barra", { "aria-hidden": "true" }, [el("i.mp-barra-relleno", { style: { "--p": (p?.progreso ?? 0.5).toFixed(3) } })]);
     // Con tres o más cifras, el número se achica y el calendario se hace a un lado (lo que viene no se aprieta).
-    const caja = el("div.mp-dias" + (p?.hoy ? ".hoy" : "") + (j.dias >= 100 ? ".largo" : ""), { title: PF.textoJuntos(j), role: "button", tabindex: "0", "aria-label": `${PF.textoJuntos(j)}. Próximamente, en construcción` }, [
+    const caja = el("div.mp-dias" + (p?.hoy ? ".hoy" : "") + (j.dias >= 100 ? ".largo" : ""), { title: PF.textoJuntos(j), role: "button", tabindex: "0", "aria-label": `${PF.textoJuntos(j)}. Abrir Cositas Juntitos` }, [
       ...papel(), ...adornos(),
       el("div.mp-dias-fila", {}, [
         el("i.mp-dias-cal", { html: A.ICONO_CALENDARIO }),
@@ -305,20 +305,16 @@ export class MenuPrincipal {
       ]),
       p ? barra : el("small.mp-dias-texto", { text: PF.textoJuntos(j) }),
     ]);
-    const pronto = () => this._proximamente(caja);
+    // Tocar los días juntos abre «Cositas Juntitos» (Fase 38). El día que cumplen un mes más, una
+    // cintita lo dice y abre sus Mesecitos (para hacerle su página especial, si quieren).
+    const meses = j.a * 12 + j.m, hoyMes = j.d === 0 && meses > 0;
+    if (hoyMes) { caja.classList.add("mesecito"); caja.append(el("span.mp-mesecito", { text: `¡Hoy cumplen ${meses} ${meses === 1 ? "mes" : "meses"}! ✦` })); }
+    const pronto = () => this.app.juntitos?.abrir(hoyMes ? "mesecitos" : "cositas");
     caja.addEventListener("click", pronto);
     caja.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pronto(); } });
     return caja;
   }
 
-  /** Los días todavía no abren nada: un globito suave «Próximamente, en construcción» (con brillitos). */
-  _proximamente(caja) {
-    caja.querySelector(".mp-pronto")?.remove();
-    this.app.sonidos?.sonar("brillo");
-    const g = el("div.mp-pronto", { role: "status" }, [el("i.mp-pronto-b.b1", { html: A.DESTELLO_LLENO }), el("span", { text: "Próximamente, en construcción" }), el("i.mp-pronto-b.b2", { html: A.DESTELLO_LLENO })]);
-    caja.append(g);
-    setTimeout(() => { g.classList.add("fuera"); setTimeout(() => g.remove(), 450); }, 2400);
-  }
 
   /** Una tarjeta de abajo: su cinta, su dibujito, título, subtítulo y su flechita. */
   _carta(color, dibujo, titulo, sub, al, i) {

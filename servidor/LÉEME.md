@@ -227,6 +227,10 @@ to process»: por eso `librito actualizar` instala `git` en Termux.
   chat abierto, el editor espera al servidor y éste le contesta en cuanto
   cambia algo; lo escrito se guarda como texto (nunca HTML) y sólo se aceptan
   imágenes de GIPHY o las que ustedes suben (1.9.0).
+- **1.13.0**: las páginas de cada mes (`/api/mesecitos`, una por mes de la pareja), Cositas
+  Juntitos (`/api/cositas`: contadores y registros privados salvo que se compartan; «te extraño» y
+  «te amo» avisan) y la ubicación compartida (`/api/ubicacion`, sólo si cada quien la comparte; al
+  dejar de compartir se borra) con sus lugares (`/api/lugares`, hasta 10, avisos al entrar o salir).
 - **1.12.0**: responde comprimido (gzip) lo que vale la pena y contesta «304, no cambió»
   (ETag) cuando el navegador ya tiene el archivo: menos datos, menos radio, menos pila.
 - **1.11.0**: el género de cada quien en su perfil (Hombre, Mujer, LGBTQ+ u Otro;
@@ -395,6 +399,9 @@ azar) · `/api/…`:
 | `POST /api/nube/libritos/<clave>/copia` · `GET /api/nube/copias` · `GET/DELETE /api/nube/copias/<id>` | sesión | copias al guardar a mano |
 | `GET/PUT /api/yo/ajustes` | sesión | tus ajustes del editor |
 | `GET/PUT /api/yo/perfil` | sesión | tu nombre, cumpleaños, «novios desde» (se le pone igual a tu amorcito) y tu género (`genero`: "", "Hombre", "Mujer", "LGBTQ+" u "Otro"; desde 1.11.0) |
+| `GET /api/mesecitos` · `PUT/DELETE /api/mesecitos/<mes>` · `POST /api/mesecitos/<mes>/visto` | sesión (con pareja) | los meses cumplidos y su página especial (una por mes; sólo quien la hizo la edita o borra; desde 1.13.0) |
+| `GET/POST /api/cositas` · `PUT/DELETE /api/cositas/<id>` · `PUT /api/cositas/ajustes` | sesión (con pareja) | tus contadores y registros; lo que tu amorcito compartió; compartir un registro o un contador |
+| `GET/PUT/DELETE /api/ubicacion` · `POST /api/lugares` · `PUT/DELETE /api/lugares/<id>` | sesión (con pareja) | dónde está cada quien (sólo si la comparte), desde cuándo, sus lugares y lo último que pasó en ellos |
 | `PUT/GET/DELETE /api/yo/foto` · `GET /api/amor/foto` | sesión | tu foto de perfil (jpg, png o webp, hasta 2 MB) y la de tu amorcito |
 | `GET/POST /api/proyectos` · `GET/DELETE /api/proyectos/<id>` | sesión | copias de antes (.zip) |
 | `GET/DELETE /api/amor` · `POST /api/amor/vincular` · `POST /api/amor/codigo` | sesión | tu código y el vínculo con tu amorcito |
