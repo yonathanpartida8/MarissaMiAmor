@@ -341,15 +341,3 @@ export const dibujoMas = (id, tid, d) => pedir(`dibujo/${encodeURIComponent(id)}
 export const dibujoDeshacer = (id, tid) => pedir(`dibujo/${encodeURIComponent(id)}/trazos/${encodeURIComponent(tid)}`, { method: "DELETE" });
 export const dibujoLimpiar = (id, soloMio = false) => pedir(`dibujo/${encodeURIComponent(id)}/trazos${soloMio ? "?solo=mio" : ""}`, { method: "DELETE" });
 
-/* ── Llamadas y videollamadas (Fase 44): el servidor sólo los presenta; la voz y el video van directo ── */
-export const llamadaIce = () => pedir("llamada/ice");
-export const llamar = (tipo, oferta) => pedir("llamada", { method: "POST", body: { tipo, oferta } });
-export const senalLlamada = (id, d) => pedir("llamada/" + encodeURIComponent(id), { method: "POST", body: d });
-export const eventosLlamada = (desde = 0, espera = 0) => pedir(`llamada/eventos?desde=${desde}&espera=${espera}`);
-export const historialLlamadas = () => pedir("llamadas");
-/** Colgar aunque la app se esté cerrando (el aviso sale aunque la página ya no exista). */
-export function colgarYa(id) {
-  const c = leer();
-  if (!c.url || !c.token) return;
-  try { fetch(c.url + "/api/llamada/" + encodeURIComponent(id), { method: "POST", keepalive: true, credentials: "omit", headers: { "Content-Type": "application/json", Authorization: "Bearer " + c.token }, body: '{"t":"colgar"}' }); } catch (e) { /* nada */ }
-}

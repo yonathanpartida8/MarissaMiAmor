@@ -1,0 +1,85 @@
+/* ═══ Fase 45 · La cámara de Mensajitos (camara/camara.js) ═══
+   A pantalla completa, encima de todo (menos de los avisos). Botones de color sólido: nada de vidrio
+   borroso encima del video (se desenfocaría en cada cuadro y calienta el teléfono). */
+.cm-capa { position: fixed; inset: 0; z-index: 2147483380; overflow: hidden; background: #0d070d; color: #fff; font-family: Jost, Nunito, system-ui, sans-serif; -webkit-user-select: none; user-select: none; touch-action: manipulation; opacity: 0; transform: scale(1.03); transition: opacity .25s ease, transform .35s cubic-bezier(.2, .8, .2, 1); }
+.cm-capa.ver { opacity: 1; transform: none; }
+.cm-capa.fuera { opacity: 0; transform: scale(.98); pointer-events: none; }
+body:has(.cm-capa) .ed-avisos { z-index: 2147483460; }
+.cm-vista { position: absolute; inset: 0; transition: transform .4s cubic-bezier(.3, 1.2, .5, 1); }
+.cm-vista.gira { transform: rotateY(90deg) scale(.96); }
+.cm-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; }
+.cm-video[hidden] { display: none; }
+.cm-vista.espejo .cm-video { transform: scaleX(-1); }
+.cm-fuente { position: fixed; right: 0; bottom: 0; z-index: -1; width: 2px; height: 2px; opacity: 0; pointer-events: none; }
+
+.cm-arriba { position: absolute; left: 0; right: 0; top: 0; z-index: 3; display: flex; align-items: center; gap: 10px; padding: calc(10px + env(safe-area-inset-top)) 12px 18px; background: linear-gradient(180deg, rgba(10, 4, 10, .55), transparent); }
+.cm-titulo { flex: 1; text-align: center; font: 600 15px/1 Jost, system-ui, sans-serif; letter-spacing: .03em; opacity: .9; }
+.cm-arriba-d { display: flex; gap: 8px; }
+.cm-b { display: grid; place-items: center; flex: none; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: rgba(24, 10, 24, .55); color: #fff; cursor: pointer; transition: transform .18s ease, background .2s, color .2s; -webkit-tap-highlight-color: transparent; }
+.cm-b svg { width: 23px; height: 23px; }
+.cm-b:active { transform: scale(.9); }
+.cm-b.on { background: #fff; color: #c2416f; }
+.cm-b[hidden] { display: none; }
+.cm-b:focus-visible, .cm-disparo:focus-visible, .cm-filtro:focus-visible { outline: 3px solid #ffb6d3; outline-offset: 3px; }
+
+.cm-abajo { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 30px 0 calc(18px + env(safe-area-inset-bottom)); background: linear-gradient(0deg, rgba(10, 4, 10, .6), transparent); }
+.cm-filtros { display: flex; gap: 8px; max-width: 100%; padding: 2px 14px; overflow-x: auto; scrollbar-width: none; overscroll-behavior: contain; touch-action: pan-x; }
+.cm-filtros::-webkit-scrollbar { display: none; }
+.cm-filtro { position: relative; flex: none; display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border: 1.5px solid rgba(255, 255, 255, .25); border-radius: 99px; background: rgba(24, 10, 24, .5); color: #fff; font: 600 13.5px/1 Jost, system-ui, sans-serif; white-space: nowrap; cursor: pointer; transition: background .2s, border-color .2s, transform .15s; }
+.cm-filtro i { font-style: normal; font-size: 17px; }
+.cm-filtro:active { transform: scale(.95); }
+.cm-filtro[aria-checked="true"] { border-color: #ffd1e3; background: #fff; color: #c2416f; }
+.cm-filtro:disabled { opacity: .55; }
+.cm-filtro.cargando { pointer-events: none; }
+.cm-filtro.cargando::after { content: ""; width: 13px; height: 13px; margin-left: 2px; border: 2px solid rgba(194, 65, 111, .25); border-top-color: currentColor; border-radius: 50%; animation: cm-gira .8s linear infinite; }
+@keyframes cm-gira { to { transform: rotate(360deg); } }
+.cm-controles { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: min(100%, 420px); padding: 0 22px; }
+.cm-lado { display: flex; justify-content: flex-end; }
+/* El obturador: su anillo se va llenando mientras juntas energía (teletransporte). */
+.cm-disparo { --carga: 0; position: relative; width: 78px; height: 78px; padding: 0; border: 0; border-radius: 50%; background: conic-gradient(#8fe3ff calc(var(--carga) * 360deg), rgba(255, 255, 255, .9) 0); cursor: pointer; transition: transform .15s ease; -webkit-tap-highlight-color: transparent; }
+.cm-disparo i { position: absolute; inset: 6px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 3px #0d070d; transition: transform .15s ease, background .2s; }
+.cm-disparo:active i { transform: scale(.88); background: #ffe3ee; }
+.cm-capa.cargando .cm-disparo { transform: scale(1.06); }
+
+.cm-ayuda { display: flex; align-items: center; gap: 10px; max-width: min(92%, 460px); padding: 10px 12px; border-radius: 16px; background: rgba(12, 30, 48, .72); font: 500 13px/1.35 Jost, system-ui, sans-serif; }
+.cm-ayuda[hidden] { display: none; }
+.cm-probar { flex: none; min-height: 38px; padding: 0 14px; border: 0; border-radius: 99px; background: #8fe3ff; color: #0d2733; font: 700 13.5px/1 Nunito, system-ui, sans-serif; cursor: pointer; }
+.cm-letrero { position: absolute; left: 50%; top: calc(76px + env(safe-area-inset-top)); z-index: 3; transform: translateX(-50%); pointer-events: none; }
+.cm-letrero::after { display: block; padding: 8px 14px; border-radius: 99px; background: rgba(12, 30, 48, .72); color: #dff7ff; font: 700 14px/1 Nunito, system-ui, sans-serif; white-space: nowrap; }
+.cm-capa.cargando .cm-letrero::after { content: "Juntando energía… ✨"; }
+.cm-capa[data-goku="ida"] .cm-letrero::after { content: "¡Teletransportación!"; }
+.cm-capa[data-goku="invisible"] .cm-letrero::after { content: "Invisible 👻"; }
+.cm-capa[data-goku="vuelta"] .cm-letrero::after { content: "¡De vuelta! ✨"; }
+.cm-numero { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; font: 800 120px/1 Nunito, system-ui, sans-serif; color: #fff; text-shadow: 0 6px 30px rgba(0, 0, 0, .45); pointer-events: none; }
+.cm-numero.late { animation: cm-late .9s ease-out both; }
+@keyframes cm-late { from { transform: scale(1.5); opacity: 0; } 25% { transform: scale(1); opacity: 1; } to { transform: scale(.85); opacity: 0; } }
+.cm-capa.flash::before { content: ""; position: absolute; inset: 0; z-index: 5; background: #fff; pointer-events: none; animation: cm-flash .45s ease-out forwards; }
+@keyframes cm-flash { from { opacity: .95; } to { opacity: 0; } }
+.cm-permiso { position: absolute; left: 50%; top: 50%; z-index: 4; display: grid; justify-items: center; gap: 10px; width: min(88%, 380px); padding: 22px 20px; transform: translate(-50%, -50%); border-radius: 22px; background: #fff; color: #3a2440; text-align: center; box-shadow: 0 20px 50px rgba(0, 0, 0, .4); }
+.cm-permiso[hidden] { display: none; }
+.cm-permiso b { font: 700 18px/1.2 Nunito, system-ui, sans-serif; }
+.cm-permiso p { margin: 0; font: 400 14px/1.45 Jost, system-ui, sans-serif; color: #6b5672; }
+.cm-permiso .cm-probar { background: #f28bb0; color: #fff; }
+
+/* La foto recién tomada. */
+.cm-revisar { position: absolute; inset: 0; z-index: 6; display: grid; grid-template-rows: 1fr auto; background: #0d070d; opacity: 0; transform: scale(1.04); transition: opacity .22s ease, transform .3s cubic-bezier(.2, .8, .2, 1); }
+.cm-revisar.ver { opacity: 1; transform: none; }
+.cm-revisar.fuera { opacity: 0; }
+.cm-foto { width: 100%; height: 100%; min-height: 0; object-fit: contain; }
+.cm-revisar-abajo { display: flex; justify-content: center; gap: 12px; padding: 14px 14px calc(16px + env(safe-area-inset-bottom)); }
+.cm-acc { display: inline-flex; align-items: center; gap: 8px; min-height: 50px; padding: 0 18px; border: 0; border-radius: 99px; background: rgba(255, 255, 255, .14); color: #fff; font: 700 14.5px/1 Nunito, system-ui, sans-serif; cursor: pointer; transition: transform .15s; }
+.cm-acc i { display: grid; }
+.cm-acc svg { width: 21px; height: 21px; }
+.cm-acc:active { transform: scale(.95); }
+.cm-acc.rosa { background: linear-gradient(180deg, #f28bb0, #e46d98); box-shadow: 0 6px 18px rgba(228, 109, 152, .35); }
+@media (max-width: 420px) { .cm-acc { padding: 0 14px; } .cm-acc:not(.rosa) span { display: none; } }
+@media (prefers-reduced-motion: reduce) { .cm-capa, .cm-revisar, .cm-vista { transition: none; } .cm-numero.late, .cm-capa.flash::before { animation-duration: .01s; } }
+
+/* En el chat: las fotos (se ven como foto y se abren en grande) y el botón de la cámara en «Cositas». */
+.ch-burbuja .ch-foto { display: block; max-width: 100%; height: auto; border-radius: 16px; cursor: zoom-in; object-fit: cover; background: rgba(255, 255, 255, .4); }
+.ch-cosita.cielo { --ch-c: #e6f4ff; --ch-i: linear-gradient(135deg, #a9dcff, #6db7f2); }
+.ch-verfoto { position: fixed; inset: 0; z-index: 2147483390; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom)); background: rgba(12, 5, 12, .92); opacity: 0; transition: opacity .22s ease; cursor: zoom-out; }
+.ch-verfoto.ver { opacity: 1; }
+.ch-verfoto img { max-width: 100%; max-height: 100%; border-radius: 14px; box-shadow: 0 20px 60px rgba(0, 0, 0, .5); transform: scale(.94); transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
+.ch-verfoto.ver img { transform: none; }
+.ch-verfoto-x { position: absolute; top: calc(12px + env(safe-area-inset-top)); right: 12px; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .16); color: #fff; font-size: 18px; cursor: pointer; }

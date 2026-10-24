@@ -3,9 +3,12 @@
  *
  *   oculto    la página está escondida o en segundo plano → <html class="rd-oculto">: se pausa todo lo
  *             animado y `cada()` no despierta al aparato; el chat, la abejita y la música esperan a que vuelvas.
- *   reposo    tras 15 s sin tocar nada → «rd-reposo»: lo decorativo (el menú, los ánimos del chat, la
- *             abejita, lo que se mueve en la hoja) se queda quieto donde estaba; al tocar, sigue. Nunca
- *             mientras algo «ocupado» (la línea de tiempo, un vídeo o un audio sonando, grabar).
+ *   reposo    tras 15 s sin tocar nada → «rd-reposo»: lo decorativo que se repite sin fin (el menú, los
+ *             ánimos del chat, la abejita, lo que se mueve en la hoja) se queda quieto donde estaba; al
+ *             tocar, sigue. Nunca mientras algo «ocupado» (la línea de tiempo, un vídeo o un audio sonando,
+ *             grabar). (Fase 45) Sólo lo que se repite para siempre: lo que está ENTRANDO nunca se congela
+ *             (antes, una pantalla abierta sin tocar —el «atrás» del teléfono— o con el aparato en ahorro se
+ *             quedaba en su primer cuadro: invisible). Ir y venir entre pantallas también cuenta como actividad.
  *   tapado    lo que queda debajo de una pantalla completa (el menú, Detallitos, Crear librito, Probar)
  *             no se ve: «rd-tapado» lo pausa.
  *   ahorro    si el aparato sufre (cuadros lentos seguidos, la presión del procesador, pila baja sin
@@ -21,6 +24,9 @@ const H = document.documentElement;
 const REPOSO = 15000, AHORRO_MIN = 120000;
 
 export const R = { oculto: document.hidden, reposo: false, ahorro: false, motivo: "", ocupado: new Set() };
+// (Fase 45: va hasta arriba. Con «Ahorro de datos» o poca memoria el ahorro empieza al cargar y ya los
+// necesita; declarados más abajo, la app entera no arrancaba en esos teléfonos.)
+const liberadores = new Set();
 const oyentes = new Set();
 let antes = "";
 function avisar() {
@@ -52,7 +58,7 @@ export const cuandoVisible = () => (document.hidden ? new Promise((r) => esperan
 let ultimo = performance.now(), relojReposo = 0, esperanActividad = [];
 function actividad() {
   ultimo = performance.now();
-  if (R.reposo) { R.reposo = false; H.classList.remove("rd-reposo"); avisar(); }
+  if (R.reposo) { R.reposo = false; H.classList.remove("rd-reposo"); if (!R.ahorro) soltarQuietos(); avisar(); }
   if (esperanActividad.length) { const l = esperanActividad; esperanActividad = []; l.forEach((r) => r()); }
   if (!relojReposo) relojReposo = setTimeout(revisarReposo, REPOSO);
 }
@@ -62,11 +68,30 @@ function revisarReposo() {
   if (falta > 60 || ocupado()) { relojReposo = setTimeout(revisarReposo, Math.max(falta, 3000)); return; }
   if (document.hidden) return; // al volver, `actividad()` lo vuelve a armar
   R.reposo = true;
+  aquietar();
   H.classList.add("rd-reposo");
   avisar();
 }
 for (const t of ["pointerdown", "pointermove", "keydown", "wheel", "touchstart"]) addEventListener(t, actividad, { passive: true, capture: true });
 document.addEventListener("scroll", actividad, { passive: true, capture: true });
+// Ir y venir sin tocar la pantalla (el «atrás» del teléfono, un aviso que abre algo) también es actividad.
+for (const t of ["popstate", "hashchange", "focus", "orientationchange"]) addEventListener(t, actividad, { passive: true });
+
+/* — Lo que se queda quieto: sólo lo decorativo que se repite sin fin («rd-q») — */
+const DECOR = ".mp-capa, .jt-capa, .dt-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon";
+let quietos = [];
+/** Marca los elementos cuyas animaciones (todas las que van corriendo) son de las que se repiten para siempre. */
+function aquietar() {
+  if (!document.getAnimations || typeof CSSAnimation === "undefined") return;
+  const por = new Map();
+  for (const a of document.getAnimations()) {
+    const t = a.effect?.target;
+    if (!t || !(a instanceof CSSAnimation) || a.playState !== "running") continue;
+    por.set(t, (por.get(t) ?? true) && a.effect.getTiming().iterations === Infinity);
+  }
+  for (const [t, sinFin] of por) if (sinFin && !t.classList.contains("rd-q") && t.closest(DECOR)) { t.classList.add("rd-q"); quietos.push(t); }
+}
+function soltarQuietos() { for (const t of quietos) t.classList.remove("rd-q"); quietos = []; }
 /** Algo que no debe quedarse quieto aunque nadie toque (reproducir, grabar…). */
 export function ocupar(motivo, on = true) { if (on) { R.ocupado.add(motivo); actividad(); } else R.ocupado.delete(motivo); }
 const ocupado = () => R.ocupado.size > 0 || [...document.querySelectorAll("video, audio")].some((m) => !m.paused && !m.muted && !m.ended);
@@ -75,8 +100,8 @@ export const cuandoActivo = () => (R.reposo || document.hidden ? new Promise((r)
 actividad();
 
 /* ── Tapado: lo que queda debajo de una pantalla completa ────────────── */
-const BASE = ".dt-capa, .mp-capa, .ed-inicio, .ed-prueba";
-const ARRIBA = ".dt-capa.ver, .mp-capa.ver, .ed-inicio, .ed-prueba";
+const BASE = ".dt-capa, .mp-capa, .ed-inicio, .ed-prueba, .cm-capa";
+const ARRIBA = ".dt-capa.ver, .mp-capa.ver, .ed-inicio, .ed-prueba, .cm-capa.ver";
 const zDe = (n) => parseInt(getComputedStyle(n).zIndex, 10) || 0;
 let programado = 0;
 function revisarCapas() {
@@ -90,7 +115,12 @@ function revisarCapas() {
     if (n.classList.contains("rd-tapado") !== tapado) n.classList.toggle("rd-tapado", tapado);
   }
 }
-const programar = () => { if (!programado) programado = requestAnimationFrame(revisarCapas); };
+const programar = () => {
+  if (!programado) programado = requestAnimationFrame(revisarCapas);
+  // Se abrió o cerró una pantalla: es actividad; y en ahorro, lo nuevo que se repite se aquieta ya que terminó de entrar.
+  actividad();
+  if (R.ahorro) { clearTimeout(programar.t); programar.t = setTimeout(aquietar, 2500); }
+};
 const mirando = new WeakSet();
 const obsClase = new MutationObserver(programar);
 const obsHijos = new MutationObserver(() => {
@@ -107,6 +137,7 @@ function sufre(motivo) {
   ultimaQueja = t;
   if (R.ahorro) return;
   R.ahorro = true; R.motivo = motivo; desdeAhorro = t;
+  aquietar();
   H.classList.add("rd-ahorro");
   liberar();
   avisar();
@@ -117,6 +148,7 @@ function quizaRecupera() {
   if (t - desdeAhorro < AHORRO_MIN || t - ultimaQueja < 60000) return;
   R.ahorro = false; R.motivo = "";
   H.classList.remove("rd-ahorro");
+  if (!R.reposo) soltarQuietos();
   avisar();
 }
 /** Cuadros que tardan demasiado: muchos en 10 s = el aparato sufre. */
@@ -216,7 +248,6 @@ export function ambito(nombre) {
   ambitos.add(A);
   return A;
 }
-const liberadores = new Set();
 /** Un caché que se puede soltar cuando falta memoria o el aparato sufre. */
 export function alLiberar(fn) { liberadores.add(fn); return () => liberadores.delete(fn); }
 function liberar() { for (const f of liberadores) { try { f(); } catch (e) { /* nada */ } } }
@@ -237,7 +268,7 @@ function revisarFugas() {
 /** Cómo va todo (para la consola: `EditorDev.rendimiento.informe()`). */
 export function informe() {
   return {
-    oculto: R.oculto, reposo: R.reposo, ahorro: R.ahorro, motivo: R.motivo, ocupado: [...R.ocupado],
+    oculto: R.oculto, reposo: R.reposo, ahorro: R.ahorro, motivo: R.motivo, ocupado: [...R.ocupado], quietos: quietos.length,
     animaciones: document.getAnimations?.().filter((a) => a.playState === "running").length,
     tapados: [...document.querySelectorAll(".rd-tapado")].map((n) => n.className.split(" ")[0]),
     ambitos: [...ambitos].map((a) => `${a.nombre}: ${a.vivos}`), enCurso: [...enCurso.keys()],

@@ -2,8 +2,10 @@ package io.github.yonathanpartida8.librito;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.Manifest;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -14,7 +16,9 @@ import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
+import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -27,21 +31,31 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * El librito como app: abre tu GitHub Pages a pantalla completa, sin barra de
- * direcciones. Todo lo demás (el libro, el editor, la caché sin internet) es
+ * My Love Pages como app: abre tu GitHub Pages a pantalla completa, sin barra de
+ * direcciones. Todo lo demás (el editor, Mensajitos, Detallitos, Nuestros días) es
  * la misma página de siempre; aquí sólo se le da lo que un navegador da y una
- * vista web no: elegir fotos, vídeo a pantalla completa, guardar descargas y
- * el botón «atrás» del teléfono.
+ * vista web no: elegir fotos, vídeo a pantalla completa, guardar descargas, el
+ * botón «atrás» del teléfono y (Fase 45) la cámara, el micrófono y la ubicación,
+ * que se piden al teléfono sólo cuando la página los usa y sólo para tu sitio.
+ * Lo que no puede una vista web: las notificaciones push (para eso, la app
+ * instalada desde Chrome).
  */
 public class MainActivity extends Activity {
-    private static final int ELEGIR = 7;
+    private static final int ELEGIR = 7, PERMISOS_MEDIOS = 8, PERMISO_UBICACION = 9;
     private WebView web;
     private String host;
     private ValueCallback<Uri[]> alElegir;
     private View pantallaCompleta;
     private WebChromeClient.CustomViewCallback alSalirDePantalla;
+    private PermissionRequest pedidoMedios;
+    private String origenUbicacion;
+    private GeolocationPermissions.Callback alUbicacion;
+    /** La página que se ve ahora (el puente de descargas sólo atiende a tu sitio). */
+    private volatile String paginaActual = "";
 
     // Las descargas de la página (el .zip del editor, fotos…) son «blob:», que el
     // gestor de descargas de Android no entiende: se leen en la página y llegan aquí.
@@ -57,8 +71,9 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle guardado) {
         super.onCreate(guardado);
         host = Uri.parse(BuildConfig.URL_LIBRITO).getHost();
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
         web = new WebView(this);
-        web.setBackgroundColor(0xFF0A0510);
+        web.setBackgroundColor(0xFFFFF6F1);
         setContentView(web);
         pantallaEntera();
 
@@ -75,6 +90,7 @@ public class MainActivity extends Activity {
         s.setBuiltInZoomControls(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
+        s.setGeolocationEnabled(true);
         s.setUserAgentString(s.getUserAgentString() + " LibritoApp/1");
         web.addJavascriptInterface(new Puente(), "LibritoAndroid");
 
@@ -90,11 +106,47 @@ public class MainActivity extends Activity {
 
             @Override
             public void onPageFinished(WebView v, String url) {
-                v.evaluateJavascript(DESCARGAS, null);
+                paginaActual = url == null ? "" : url;
+                if (esMio(url)) v.evaluateJavascript(DESCARGAS, null);
+            }
+
+            @Override
+            public void doUpdateVisitedHistory(WebView v, String url, boolean recarga) {
+                paginaActual = url == null ? "" : url;
             }
         });
 
         web.setWebChromeClient(new WebChromeClient() {
+            // La cámara y el micrófono (getUserMedia): sólo para tu sitio, y con el permiso del teléfono.
+            @Override
+            public void onPermissionRequest(PermissionRequest r) {
+                if (!esMio(r.getOrigin().toString())) { r.deny(); return; }
+                List<String> faltan = new ArrayList<>();
+                for (String rec : r.getResources()) {
+                    if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(rec) && !tiene(Manifest.permission.CAMERA)) faltan.add(Manifest.permission.CAMERA);
+                    if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(rec) && !tiene(Manifest.permission.RECORD_AUDIO)) faltan.add(Manifest.permission.RECORD_AUDIO);
+                }
+                if (faltan.isEmpty()) { r.grant(r.getResources()); return; }
+                if (pedidoMedios != null) pedidoMedios.deny();
+                pedidoMedios = r;
+                requestPermissions(faltan.toArray(new String[0]), PERMISOS_MEDIOS);
+            }
+
+            @Override
+            public void onPermissionRequestCanceled(PermissionRequest r) {
+                if (pedidoMedios == r) pedidoMedios = null;
+            }
+
+            // La ubicación (Nuestros días): lo mismo.
+            @Override
+            public void onGeolocationPermissionsShowPrompt(String origen, GeolocationPermissions.Callback cb) {
+                if (!esMio(origen)) { cb.invoke(origen, false, false); return; }
+                if (tiene(Manifest.permission.ACCESS_FINE_LOCATION) || tiene(Manifest.permission.ACCESS_COARSE_LOCATION)) { cb.invoke(origen, true, false); return; }
+                origenUbicacion = origen;
+                alUbicacion = cb;
+                requestPermissions(new String[] { Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION }, PERMISO_UBICACION);
+            }
+
             @Override
             public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> cb, FileChooserParams p) {
                 if (alElegir != null) alElegir.onReceiveValue(null);
@@ -185,6 +237,37 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    public void onRequestPermissionsResult(int pedido, String[] permisos, int[] resultados) {
+        super.onRequestPermissionsResult(pedido, permisos, resultados);
+        if (pedido == PERMISOS_MEDIOS && pedidoMedios != null) {
+            PermissionRequest r = pedidoMedios;
+            pedidoMedios = null;
+            List<String> dar = new ArrayList<>();
+            for (String rec : r.getResources()) {
+                if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(rec) && tiene(Manifest.permission.CAMERA)) dar.add(rec);
+                if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(rec) && tiene(Manifest.permission.RECORD_AUDIO)) dar.add(rec);
+            }
+            if (dar.isEmpty()) r.deny(); else r.grant(dar.toArray(new String[0]));
+        } else if (pedido == PERMISO_UBICACION && alUbicacion != null) {
+            boolean si = tiene(Manifest.permission.ACCESS_FINE_LOCATION) || tiene(Manifest.permission.ACCESS_COARSE_LOCATION);
+            alUbicacion.invoke(origenUbicacion, si, false);
+            alUbicacion = null;
+            origenUbicacion = null;
+        }
+    }
+
+    private boolean tiene(String permiso) {
+        return Build.VERSION.SDK_INT < 23 || checkSelfPermission(permiso) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /** ¿Es una dirección de tu sitio (el mismo que abre la app, por https)? */
+    private boolean esMio(String url) {
+        if (url == null || host == null) return false;
+        Uri u = Uri.parse(url);
+        return "https".equals(u.getScheme()) && host.equals(u.getHost());
+    }
+
+    @Override
     public void onBackPressed() {
         if (pantallaCompleta != null) { web.getWebChromeClient().onHideCustomView(); return; }
         // El libro y el editor saben qué hacer con «atrás» (cerrar un menú, preguntar antes de salir).
@@ -220,6 +303,7 @@ public class MainActivity extends Activity {
     private class Puente {
         @JavascriptInterface
         public void guardar(String nombre, String tipo, String base64) {
+            if (!esMio(paginaActual)) return;   // sólo tu sitio puede guardar en el teléfono
             String limpio = nombre.replaceAll("[\\\\/:*?\"<>|]", "-");
             try {
                 byte[] datos = Base64.decode(base64, Base64.DEFAULT);

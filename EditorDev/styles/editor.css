@@ -1753,9 +1753,10 @@ body[data-bib-fondo="oscuro"] .ed-bib-prev img, body[data-bib-fondo="oscuro"] .e
 /* ── Fase 6: abejita más detallada (alas tornasol, brillo, patitas, mirada) ── */
 .ed-abeja .ab-ala { fill: url(#ab-ala-g); }
 .ed-abeja .ab-patas { transform-box: fill-box; transform-origin: 50% 0; animation: ed-ab-patas 1.2s ease-in-out infinite; }
-.ed-abeja .ab-ojos-n { animation: ed-ab-parpadeo 4.6s infinite, ed-ab-mira 9s ease-in-out infinite; }
+.ed-abeja .ab-ojos-n { animation: ed-ab-parpadeo 4.6s infinite, ed-ab-ojos-mira 9s ease-in-out infinite; }
 @keyframes ed-ab-patas { 50% { transform: rotate(6deg); } }
-@keyframes ed-ab-mira { 0%, 38%, 100% { translate: 0 0; } 42%, 56% { translate: 1.1px -.2px; } 60%, 74% { translate: -1.1px .2px; } 78% { translate: 0 0; } }
+/* Nombre propio: «ed-ab-mira» de más abajo (la abejita entera) lo pisaba y los ojos nunca parpadeaban. */
+@keyframes ed-ab-ojos-mira { 0%, 38%, 100% { translate: 0 0; } 42%, 56% { translate: 1.1px -.2px; } 60%, 74% { translate: -1.1px .2px; } 78% { translate: 0 0; } }
 body.ed-mov-nada .ed-abeja .ab-patas, body.ed-mov-nada .ed-abeja .ab-ojos-n { animation: none !important; }
 
 /* ── Fase 6: riel en grupos y Bloques ─────────────────────────────── */
@@ -2377,15 +2378,12 @@ body.con-linea .ed-dock-b { width: 36px; height: 36px; }
 body.con-linea .ed-dock-b .ed-ico { width: 18px; height: 18px; }
 
 /* ═══ Rendimiento (Fase 37): lo que no se ve, o lo decorativo cuando nadie toca, no se anima ═══
-   Las animaciones se quedan quietas justo donde iban (no saltan) y siguen al volver. Ver components/rendimiento.js. */
+   Las animaciones se quedan quietas justo donde iban (no saltan) y siguen al volver. Ver components/rendimiento.js.
+   (Fase 45) En reposo o ahorro sólo se aquieta lo marcado «rd-q» (lo decorativo que se repite sin fin):
+   lo que está entrando nunca se congela invisible. */
 html.rd-oculto *, html.rd-oculto *::before, html.rd-oculto *::after,
 .rd-tapado, .rd-tapado::before, .rd-tapado::after, .rd-tapado *, .rd-tapado *::before, .rd-tapado *::after,
-html:is(.rd-reposo, .rd-ahorro) :is(.mp-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon),
-html:is(.rd-reposo, .rd-ahorro) :is(.mp-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon) *,
-html:is(.rd-reposo, .rd-ahorro) :is(.mp-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon) *::before,
-html:is(.rd-reposo, .rd-ahorro) :is(.mp-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon) *::after,
-html:is(.rd-reposo, .rd-ahorro) :is(.mp-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon)::before,
-html:is(.rd-reposo, .rd-ahorro) :is(.mp-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon)::after { animation-play-state: paused !important; }
+html:is(.rd-reposo, .rd-ahorro) .rd-q, html:is(.rd-reposo, .rd-ahorro) .rd-q::before, html:is(.rd-reposo, .rd-ahorro) .rd-q::after { animation-play-state: paused !important; }
 /* Con el aparato sufriendo: sin desenfoques de fondo (lo que más le cuesta al celular) */
 html.rd-ahorro *, html.rd-ahorro *::before, html.rd-ahorro *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 /* Las miniaturas de páginas (Crear librito, Páginas) nunca se animan: se ven quietas, como una foto */
@@ -2690,7 +2688,7 @@ body.sin-panel .ed-pestana { left: var(--riel); }
 .ed-pestana.abierta i:nth-child(1), body.ed:not(.sin-panel) .ed-pestana.compu i:nth-child(1) { transform: translateY(2px) rotate(28deg); height: 11px; }
 .ed-pestana.abierta i:nth-child(3), body.ed:not(.sin-panel) .ed-pestana.compu i:nth-child(3) { transform: translateY(-2px) rotate(-28deg); height: 11px; }
 .ed-pestana.abierta i:nth-child(2), body.ed:not(.sin-panel) .ed-pestana.compu i:nth-child(2) { height: 0; }
-body:is(.modo-pro, .ed-probando) .ed-pestana { display: none; }
+body:is(.modo-pro, .ed-probando) .ed-pestana { visibility: hidden; opacity: 0; pointer-events: none; }
 @keyframes ed-pestana-hola { 0% { translate: -18px 0; opacity: 0; } 45% { translate: 0 0; opacity: 1; } 62% { translate: 6px 0; } 78% { translate: 0 0; } 88% { translate: 3px 0; } 100% { translate: 0 0; opacity: 1; } }
 :where(body.ed-mov-nada, html.rd-ahorro) .ed-pestana { animation: none; }
 @media (prefers-reduced-motion: reduce) { .ed-pestana { animation: none; } }
@@ -2802,3 +2800,85 @@ body.modo-pro .ed-abeja-globo.acomoda { max-width: calc(100vw - 16px); padding-l
   /* La página se sigue viendo detrás del cajón (apenas un velito). */
   .ed-velo { background: #1a0c16; }
 }
+
+/* ═══ Fase 45 · Dibujar a mano: la tirita delgadita de abajo (nunca tapa la hoja) ═══
+   En el teléfono va justo donde está la barra de abajo (la reemplaza mientras dibujas); en la compu,
+   una pastillita blanca al pie del lienzo. Blanco y rosita suave, sin bordes gruesos. */
+.ed-dock-op.ed-trazos { position: absolute; z-index: 30; left: 50%; right: auto; top: auto; bottom: 14px; transform: translateX(-50%); flex-direction: row; align-items: center; gap: 8px; width: auto; max-width: calc(100% - 28px); height: 56px; padding: 6px 6px 6px 8px; border: 1px solid #f4d9e4; border-radius: 20px; background: rgba(255, 255, 255, .97); box-shadow: 0 10px 30px rgba(196, 92, 140, .16), 0 1px 0 rgba(255, 255, 255, .9) inset; animation: none; }
+.ed-dock-op.ed-trazos.entra { animation: ed-tz-sube .34s cubic-bezier(.2, .9, .3, 1.15); }
+@keyframes ed-tz-sube { from { opacity: 0; translate: 0 26px; } }
+.ed-tz-herr { position: relative; flex: none; display: flex; padding: 3px; border-radius: 15px; background: #fdf0f5; }
+.ed-tz-herr::before { content: ""; position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 12px; background: #fff; box-shadow: 0 2px 8px rgba(214, 90, 142, .18); transition: transform .3s cubic-bezier(.3, 1.3, .5, 1); }
+.ed-tz-herr[data-h="borrador"]::before { transform: translateX(100%); }
+.ed-tz-h { position: relative; display: inline-flex; align-items: center; gap: 5px; height: 38px; padding: 0 10px; border: 0; border-radius: 12px; background: none; color: #a88a99; font: 600 13px/1 Jost, system-ui, sans-serif; cursor: pointer; transition: color .2s; -webkit-tap-highlight-color: transparent; }
+.ed-tz-h.on { color: #d6457f; }
+.ed-tz-h .ed-ico { width: 19px; height: 19px; }
+.ed-tz-medio { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 10px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior: contain; touch-action: pan-x; padding: 2px 4px; -webkit-mask: linear-gradient(90deg, transparent, #000 8px, #000 calc(100% - 8px), transparent); mask: linear-gradient(90deg, transparent, #000 8px, #000 calc(100% - 8px), transparent); }
+.ed-tz-medio::-webkit-scrollbar { display: none; }
+.ed-tz-colores { flex: none; display: flex; align-items: center; gap: 7px; }
+.ed-tz-colores > button, .ed-tz-otro { --c: #fff; position: relative; flex: none; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .1); cursor: pointer; transition: transform .25s cubic-bezier(.3, 1.5, .5, 1); animation: ed-tz-punto .4s cubic-bezier(.3, 1.5, .5, 1) calc(var(--i, 0) * 25ms) both; }
+.ed-tz-colores > button.on { transform: scale(1.12); box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--c), inset 0 0 0 1px rgba(0, 0, 0, .1); }
+@keyframes ed-tz-punto { from { transform: scale(0); opacity: 0; } }
+.ed-tz-otro { overflow: hidden; background: conic-gradient(#ff8fb1, #ffd23f, #5aa86a, #4a9ad9, #9b6cd9, #ff8fb1); }
+.ed-tz-otro input { position: absolute; inset: -6px; width: calc(100% + 12px); height: calc(100% + 12px); opacity: 0; cursor: pointer; }
+.ed-trazos .ed-dock-rango { flex: none; display: flex; align-items: center; gap: 6px; }
+.ed-trazos .ed-dock-rango input { width: 84px; accent-color: #e9789f; }
+.ed-tz-punto { display: grid; place-items: center; width: 26px; height: 26px; }
+.ed-trazos .ed-dock-punto { border: 0; box-shadow: 0 0 0 1px rgba(0, 0, 0, .12); transition: width .15s, height .15s, background .2s; }
+.ed-tz-b { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 36px; padding: 0 10px; border: 1px solid #f2dbe5; border-radius: 12px; background: #fff; color: #7a5a6a; font: 600 12.5px/1 Jost, system-ui, sans-serif; white-space: nowrap; cursor: pointer; transition: background .2s, transform .15s; }
+.ed-tz-b .ed-ico { width: 17px; height: 17px; }
+.ed-tz-b:active { transform: scale(.94); }
+.ed-tz-b[aria-pressed="true"] { background: #fdf0f5; color: #d6457f; }
+.ed-tz-b.peligro { color: #d14a5c; border-color: #f6d3d8; }
+.ed-tz-listo { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 42px; padding: 0 14px; border: 0; border-radius: 14px; background: linear-gradient(180deg, #f28bb0, #e46d98); color: #fff; font: 700 13.5px/1 Jost, system-ui, sans-serif; box-shadow: 0 4px 12px rgba(228, 109, 152, .3); cursor: pointer; transition: transform .15s; }
+.ed-tz-listo .ed-ico { width: 18px; height: 18px; }
+.ed-tz-listo:active { transform: scale(.94); }
+body.ed-dibujando .ed-chip-efectos { display: none; }
+@media (min-width: 1024px) {
+  /* En la compu: en el lugar de la barrita de arriba del lienzo (tampoco toca la hoja). */
+  .ed-dock-op.ed-trazos { top: 0; bottom: auto; left: 0; right: 0; transform: none; max-width: none; height: var(--ctx, 52px); justify-content: center; padding: 4px 12px; border: 0; border-bottom: 1px solid #f4d9e4; border-radius: 0; box-shadow: 0 6px 18px rgba(196, 92, 140, .08); }
+  .ed-dock-op.ed-trazos .ed-tz-medio { flex: 0 1 auto; }
+  .ed-dock-op.ed-trazos .ed-tz-h { height: 34px; }
+  .ed-dock-op.ed-trazos .ed-tz-listo { height: 36px; }
+  body.ed-dibujando .ed-contexto { visibility: hidden; }
+}
+@media (max-width: 1023px) {
+  /* En el teléfono: en el lugar de la barra de abajo (que se esconde mientras dibujas). */
+  .ed-dock-op.ed-trazos { position: fixed; z-index: 66; left: 0; right: 0; bottom: 0; transform: none; max-width: none; height: var(--cb); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); border: 0; border-top: 1px solid #f4d9e4; border-radius: 18px 18px 0 0; box-shadow: 0 -8px 24px rgba(196, 92, 140, .12); }
+  body.ed-dibujando .ed-contexto { visibility: hidden; }
+  .ed-tz-h span, .ed-tz-listo span { display: none; }
+  .ed-tz-h { padding: 0 11px; }
+  .ed-tz-listo { width: 44px; justify-content: center; padding: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .ed-dock-op.ed-trazos.entra, .ed-tz-colores > button, .ed-tz-otro { animation: none; } .ed-tz-herr::before { transition: none; } }
+
+/* ═══ Fase 45 · La pestaña lateral: blanco y rosa pastel, delgadita, sin brillos ═══
+   La pestañita, el riel y su cajón: fondo blanco, rosita suave, líneas finas, sin degradados ni
+   resplandores. (Escondida en LovEdit y en Probar con «visibility»: así no repite su entrada al volver.) */
+.ed-pestana { width: 14px; height: 60px; gap: 3px; padding: 0; border: 1px solid #f3cfde; border-left: 0; border-radius: 0 12px 12px 0; background: #fff; box-shadow: 0 2px 10px rgba(214, 120, 160, .12); }
+.ed-pestana i { width: 2px; height: 11px; background: #f0a3c2; }
+.ed-pestana i:nth-child(2) { height: 16px; }
+@media (hover: hover) { .ed-pestana:hover { width: 17px; background: #fff8fb; box-shadow: 0 2px 12px rgba(214, 120, 160, .16); } }
+.ed-pestana.abierta, body.ed:not(.sin-panel) .ed-pestana.compu { background: #fff8fb; }
+.ed-riel { background: #fff; border-right: 1px solid #f6e0e9; }
+.ed-riel button { color: #8d6f7d; }
+.ed-riel button b::before { background: #fbdbe7; opacity: .55; box-shadow: none; }
+.ed-riel button:nth-of-type(n) { --mancha: #fbdbe7; }
+.ed-riel button b .ed-ico { color: #b4577f; }
+.ed-riel button span { color: #9a7d8a; }
+.ed-riel button.on b::before { background: #f8c9da; opacity: 1; box-shadow: none; }
+.ed-riel button.on b .ed-ico { color: #c2416f; }
+.ed-riel button.on span { color: #c2416f; }
+@media (hover: hover) { .ed-riel button:hover { background: #fff6f9; } .ed-riel button:hover b::before { opacity: .8; } }
+@media (max-width: 1023px) {
+  .ed-lateral { background: #fff; box-shadow: 4px 0 22px rgba(196, 92, 140, .1); }
+  .ed-lateral > .ed-riel { border-right: 1px solid #f6e0e9; }
+  .ed-lateral > .ed-panel { background: #fff; }
+}
+
+/* ═══ Fase 45 · Crear detallito: campos con su nombre y «Crear» siempre a la mano ═══ */
+.ed-nuevo-campo { display: grid; gap: 4px; min-width: 0; }
+.ed-nuevo-campo > span { font: 600 12px/1 Jost, system-ui, sans-serif; color: var(--texto-suave); letter-spacing: .02em; }
+.ed-crear-fila { position: sticky; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 2; margin-top: 4px; }
+.ed-crear-fila .ed-btn { width: 100%; min-height: 48px; font-size: 16px; }
+.ed-crear-fila .ed-btn:disabled { opacity: .7; }

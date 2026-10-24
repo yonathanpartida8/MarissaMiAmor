@@ -421,7 +421,7 @@ select.pf-input { padding-right: 36px; background: #fff url("data:image/svg+xml,
 .vn-hilo { position: relative; z-index: 1; flex: 1; min-width: 50px; height: 60px; margin: -22px -16px 0; transform-origin: 50% 20%; animation: vnMece 3.2s ease-in-out infinite; transition: transform .9s cubic-bezier(.5, -.3, .3, 1.3), opacity .5s; }
 .vn-hilo svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .vn-cuerda { fill: none; stroke: #e0325f; stroke-width: 2.6; stroke-linecap: round; vector-effect: non-scaling-stroke; transition: stroke-dasharray .5s, opacity .5s; }
-.vn-luz { fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 12 170; vector-effect: non-scaling-stroke; opacity: .85; animation: mpHiloLuz 2.4s linear infinite; }
+.vn-luz { fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 12 170; vector-effect: non-scaling-stroke; opacity: .85; animation: vnLuz 2.4s linear infinite; }
 @keyframes vnMece { 50% { transform: scaleY(.72); } }
 .vn-corazon { position: absolute; left: 50%; top: 50%; z-index: 3; width: 32px; height: 32px; margin: -10px 0 0 -16px; color: #e0325f; transition: transform .95s cubic-bezier(.3, 1.5, .5, 1), color .4s; }
 .vn-corazon svg { width: 100%; height: 100%; fill: currentColor; stroke: none; filter: drop-shadow(0 4px 8px rgba(224, 50, 95, .35)); animation: dtLate 1.6s ease-in-out infinite; }
@@ -472,7 +472,7 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 @media (prefers-reduced-motion: reduce) {
   .dt-capa, .dt-capa.fuera { transition-duration: .01s; }
   .dt-burbujas, .mp-sube, .mp-destello, .mp-orbe, .dt-cielo, .mp-brillo { display: none; }
-  .dt-pantalla > *, .dt-nota, .mp-tarjeta, .mp-vista > *, .mp-cartas > *, .ex-pantalla > *, .dt-sobre, .dt-ver-hoja, .mp-hoja, .mp-btn.primario::after, .mp-en-linea::after, .dt-mini-punto::after, .dt-nota.nueva::after, .vn-ir.listo::before, .dt-previa-brillo::before, .mp-carta > i, .mp-chip, .dt-previa, .dt-previa-brillo, .mp-hilo-luz, .vn-luz, .vn-hilo, .vn-av, .vn-fichas span, .pf-foto::before, .mp-pola.vacia, .mp-proximo.hoy { animation: none !important; }
+  .dt-pantalla > *, .dt-nota, .mp-tarjeta, .mp-vista > *, .mp-cartas > *, .ex-pantalla > *, .dt-sobre, .dt-ver-hoja, .mp-hoja, .mp-btn.primario::after, .mp-en-linea::after, .dt-mini-punto::after, .dt-nota.nueva::after, .vn-ir.listo::before, .dt-previa-brillo::before, .mp-carta > i, .mp-chip, .dt-previa, .dt-previa-brillo, .mp-hilo-brillo, .mp-hilo-brillo::before, .vn-luz, .vn-hilo, .vn-av, .vn-fichas span, .pf-foto::before, .mp-pola.vacia, .mp-proximo.hoy { animation: none !important; }
   .mp-subrayado path { animation: none; stroke-dashoffset: 0; }
   .mp-tarjeta { transform: none !important; }
 }
@@ -650,7 +650,8 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 .mp-album .mp-pola.ella { --r: 6deg; animation-delay: .12s, 2.2s; cursor: pointer; }
 .mp-album .mp-pola.yo { margin-right: -4px; }
 @keyframes mpPolaCae { from { opacity: 0; transform: translateY(-46px) rotate(calc(var(--r) * 3)) scale(1.12); } }
-@keyframes mpPolaMece { 0%, 100% { transform: rotate(var(--r)); } 50% { transform: rotate(calc(var(--r) * .78)) translateY(-3px); } }
+/* El vaivén mueve rotate/translate (no transform) para no chocar con la entrada: así corre en la GPU. */
+@keyframes mpPolaMece { 0%, 100% { rotate: 0deg; translate: 0 0; } 50% { rotate: calc(var(--r) * -.22); translate: 0 -3px; } }
 .mp-pola-marco { position: relative; display: block; aspect-ratio: 1; overflow: hidden; background: #2a1d3a; }
 .mp-album .mp-pola-foto { --tam: 100%; display: block; width: 100%; height: 100%; border-radius: 0; box-shadow: none; }
 .mp-pola-foto.arte svg { display: block; width: 100%; height: 100%; }
@@ -663,27 +664,35 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 .mp-album .mp-pola.ella .mp-cinta { --cinta: rgba(255, 168, 198, .86); transform: rotate(6deg); animation-delay: .8s; }
 @keyframes mpCintaPega { from { opacity: 0; transform: scaleX(0) rotate(-5deg); } }
 .mp-album .mp-pola.vacia { outline: none; animation: mpPolaCae .9s .12s cubic-bezier(.2, .9, .3, 1.25) backwards, mpPolaEspera 3.4s ease-in-out 1.4s infinite; }
-@keyframes mpPolaEspera { 0%, 100% { transform: rotate(6deg); } 50% { transform: rotate(3deg) translateY(-4px); } }
+@keyframes mpPolaEspera { 0%, 100% { rotate: 0deg; translate: 0 0; } 50% { rotate: -3deg; translate: 0 -4px; } }
 .mp-album .mp-en-linea { position: absolute; right: 3px; top: 3px; z-index: 4; width: 14px; height: 14px; border-radius: 50%; background: #3ccf8e; box-shadow: 0 0 0 2.5px #fff; opacity: 0; transform: scale(0); transition: opacity .3s, transform .4s cubic-bezier(.3, 1.8, .5, 1); }
 .mp-album .mp-pola.en-linea .mp-en-linea { opacity: 1; transform: none; }
 .mp-album .mp-hilo { position: relative; z-index: 3; flex: 0 0 92px; height: 70px; margin: 42px -14px 0; }
 .mp-album .mp-hilo svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .mp-album .mp-hilo-cuerda { fill: none; stroke: #d6355c; stroke-width: 2.4; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-.mp-album .mp-hilo-luz { fill: none; stroke: #fff; stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 8 170; vector-effect: non-scaling-stroke; opacity: .8; animation: mpHiloLuz 3s linear infinite; }
-@keyframes mpHiloLuz { from { stroke-dashoffset: 180; } to { stroke-dashoffset: 0; } }
+/* La lucecita que recorre el hilo: dos destellitos (uno por mitad) que se mueven con translate/rotate
+   en la GPU. Antes era un trazo SVG con stroke-dashoffset: se veía medio segundo de cada tres, pero
+   obligaba a recalcular estilos 60 veces por segundo los tres segundos completos. */
+.mp-album .mp-hilo-brillo { position: absolute; inset: 0; pointer-events: none; opacity: 0; animation: mpBrilloIzq 3s linear infinite; }
+.mp-album .mp-hilo-brillo.b2 { --k: -1; animation-name: mpBrilloDer; }
+.mp-album .mp-hilo-brillo::before { content: ""; position: absolute; left: -3px; top: -.8px; width: 6px; height: 1.6px; border-radius: 1px; background: #fff; animation: mpBrilloGira 3s linear infinite; }
+@keyframes mpBrilloIzq { 0% { translate: 1.25% 31.43%; opacity: 0; } 3.4% { translate: 10.55% 36.63%; opacity: .8; } 6.8% { translate: 19.01% 43.68%; } 10.2% { translate: 27.03% 51.77%; } 13.6% { translate: 34.76% 60.24%; opacity: .8; } 17%, 100% { translate: 42.5% 68.57%; opacity: 0; } }
+@keyframes mpBrilloDer { 0% { translate: 57.5% 68.57%; opacity: 0; } 3.4% { translate: 65.24% 60.24%; opacity: .8; } 6.8% { translate: 72.97% 51.77%; } 10.2% { translate: 80.99% 43.68%; } 13.6% { translate: 89.45% 36.63%; opacity: .8; } 17%, 100% { translate: 98.75% 31.43%; opacity: 0; } }
+@keyframes mpBrilloGira { 0% { rotate: calc(var(--k, 1) * 16deg); } 3.4% { rotate: calc(var(--k, 1) * 29deg); } 6.8% { rotate: calc(var(--k, 1) * 35deg); } 10.2% { rotate: calc(var(--k, 1) * 39deg); } 13.6% { rotate: calc(var(--k, 1) * 40deg); } 17%, 100% { rotate: calc(var(--k, 1) * 38deg); } }
+@keyframes vnLuz { from { stroke-dashoffset: 180; } to { stroke-dashoffset: 0; } }
 .mp-album .mp-hilo-corazon { position: absolute; left: 50%; bottom: calc(17% - 3px); width: 46px; height: 42px; margin-left: -23px; color: #d6355c; transform-origin: 50% 100%; animation: mpHiloLate 1.7s ease-in-out infinite; }
 .mp-album .mp-hilo-corazon svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .mp-album .mp-hilo-corazon path { stroke: currentColor; }
 @keyframes mpHiloLate { 0%, 100% { transform: scale(1); } 14% { transform: scale(1.12); } 28% { transform: scale(1); } 42% { transform: scale(1.16); } 60% { transform: scale(1); } }
 .mp-album .mp-pareja.sola .mp-hilo-cuerda { stroke-dasharray: 4 6; opacity: .55; }
-.mp-album .mp-pareja.sola .mp-hilo-luz { display: none; }
+.mp-album .mp-pareja.sola .mp-hilo-brillo { display: none; }
 .mp-album .mp-pareja.sola .mp-hilo-corazon { color: #dcaabd; animation-duration: 3.2s; }
 .mp-nota-pegada { position: absolute; left: -14px; top: 58px; z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 66px; margin: 0; padding: 13px 5px 7px; background: #fffaf1 repeating-linear-gradient(transparent 0 15px, rgba(120, 150, 220, .28) 15px 16px); box-shadow: 0 6px 12px rgba(80, 30, 50, .18); color: #4a2338; font: 700 14.5px/.98 Caveat, cursive; text-align: center; transform: rotate(-9deg); animation: mpNotaLlega .7s .55s cubic-bezier(.2, .9, .3, 1.3) backwards, mpNotaMece 6.5s 1.6s ease-in-out infinite; }
 .mp-nota-pegada::before { content: ""; position: absolute; top: 4px; left: 8px; right: 8px; height: 5px; background: radial-gradient(circle, rgba(120, 90, 90, .38) 2px, transparent 2.5px) 0 0 / 12px 5px repeat-x; }
 .mp-nota-pegada i { width: 10px; height: 10px; color: #e0507f; }
 .mp-nota-pegada svg { display: block; width: 100%; height: 100%; fill: currentColor; stroke: none; }
 @keyframes mpNotaLlega { from { opacity: 0; transform: translateX(-30px) rotate(-30deg); } }
-@keyframes mpNotaMece { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(-6deg) translateY(-2px); } }
+@keyframes mpNotaMece { 0%, 100% { rotate: 0deg; translate: 0 0; } 50% { rotate: 3deg; translate: 0 -2px; } }
 /* La tarjetita de los días */
 .mp-dias-caja { position: relative; }
 .mp-album .mp-dias { position: relative; display: flex; flex-direction: column; align-items: stretch; margin: 18px 6px 0; padding: 13px 14px 12px 16px; text-align: left; }
@@ -850,7 +859,7 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
   .mp-album .mp-pie { margin-left: 0; margin-right: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mp-album .mp-pola, .mp-album .mp-cinta, .mp-nota-pegada, .mp-album .mp-hilo-corazon, .mp-album .mp-hilo-luz, .mp-pixel, .mp-corona, .mp-dias-cor, .mp-barra-relleno, .mp-album .mp-crear, .mp-crear-flecha, .mp-crear-chispa,
+  .mp-album .mp-pola, .mp-album .mp-cinta, .mp-nota-pegada, .mp-album .mp-hilo-corazon, .mp-album .mp-hilo-brillo, .mp-album .mp-hilo-brillo::before, .mp-pixel, .mp-corona, .mp-dias-cor, .mp-barra-relleno, .mp-album .mp-crear, .mp-crear-flecha, .mp-crear-chispa,
   .mp-gato, .mp-gato > i, .mp-gato-z b, .mp-album .mp-carta, .mp-rama, .mp-rama-rosa, .mp-garabato, .mp-album .mp-destello, .mp-album .mp-marca, .mp-etiqueta { animation: none !important; }
 }
 
@@ -999,7 +1008,6 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 /* El hilo y el corazón */
 .mp-album .mp-hilo-sombra { fill: none; stroke: rgba(214, 53, 92, .16); stroke-width: 6; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .mp-album .mp-hilo-cuerda { stroke-width: 1.8; }
-.mp-album .mp-hilo-luz { stroke-dasharray: 6 190; }
 .mp-album .mp-hilo-corazon { bottom: calc(31% - 21px); filter: drop-shadow(0 3px 6px rgba(214, 53, 92, .32)); }
 .mp-album .mp-cor-linea { stroke: #d6355c; }
 .mp-album .mp-pareja.sola .mp-cor-relleno { opacity: .35; }

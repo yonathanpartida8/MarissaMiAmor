@@ -1,5 +1,5 @@
 /**
- * LOS EFECTOS DE LA CÁMARA (Fase 44) — en las videollamadas.
+ * LOS FILTROS DE LA CÁMARA (Fase 44; desde la Fase 45 viven en la cámara de Mensajitos, camara.js).
  *
  *   · los DEL TELÉFONO, si el navegador los deja usar (fondo borroso, encuadre automático, luz y
  *     mirada a la cámara): se detectan solos (getCapabilities) y se prenden ahí mismo. Ojo: los
@@ -10,10 +10,10 @@
  *   · Fondo borroso: tú nítido(a) y lo de atrás desenfocado
  *   · Teletransporte (Goku): el índice y el medio juntitos en tu frente 3 segundos… se junta la
  *     energía, ¡desapareces! (5 segundos invisible: donde estabas se ve el fondo, de tu tamaño) y
- *     vuelves con un destello. Tu amorcito lo ve igualito (y oye el «fiuuu»).
+ *     vuelves con un destello. La foto sale tal cual se ve (con su filtro).
  * Para separarte del fondo y ver tu cara y tus manos se usa MediaPipe, que corre EN el teléfono (nada
  * de tu cámara sale a otro lado); se descarga la primera vez que prendes un efecto y queda guardado.
- * Lo que sale por la llamada es un lienzo (captureStream): sin efectos va la cámara tal cual.
+ * Con un filtro, lo que se ve (y lo que sale en la foto) es un lienzo; sin filtro, la cámara tal cual.
  */
 import { dedosEnFrente, Carga } from "./gesto.js";
 
@@ -74,7 +74,7 @@ export class Efectos {
     this.m = {};                               // las tareas de MediaPipe ya listas
     this.v = Object.assign(document.createElement("video"), { muted: true, playsInline: true });
     this.v.setAttribute("playsinline", "");
-    this.v.className = "ll-fuente";
+    this.v.className = "cm-fuente";
     this.salida = lienzo(1280, 720);
     this.o = ctx2(this.salida);
     this.fase = "normal"; this.t0 = 0; this.descanso = 0;
@@ -95,7 +95,7 @@ export class Efectos {
     if (track) { if (!this.v.isConnected) document.body.append(this.v); this.v.play().catch(() => {}); this.hayPlaca = false; this._bucle(); }
   }
 
-  /** Lo que tiene que salir por la llamada: con efectos, el lienzo; sin ellos, la cámara tal cual. */
+  /** Una pista de video con lo que se ve: con efectos, el lienzo; sin ellos, la cámara tal cual. */
   pista() {
     if (!this.activo) return this.cam;
     if (!this.track || this.track.readyState === "ended") this.track = this.salida.captureStream(30).getVideoTracks()[0];

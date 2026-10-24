@@ -2,7 +2,7 @@
  * MENSAJITOS — el chat de los dos (Fases 30, 31 y 34), dentro de Detallitos.
  *
  *   · como la foto (Fase 34): lila suavecito con corazoncitos dibujados; arriba sólo su foto y su nombre
- *     (con «Siempre juntos ∞»), videollamada y llamada (Fase 44: de verdad, llamadas/llamada.js) y ⋮ (ajustes y
+ *     (con «Siempre juntos ∞»), la cámara (Fase 45: fotos con filtros, camara/camara.js) y ⋮ (ajustes y
  *     privacidad); abajo los ánimos (todavía no hacen nada) y la barra: + (las cositas), escribir con 🙂,
  *     stickers, GIF y 🎤 (que se vuelve «mandar»)
  *   · burbujas nuevas: las tuyas lila con rosita, las suyas de vidrio blanco; al mandar, la tuya sale
@@ -28,6 +28,7 @@ import { cuandoVisible } from "./rendimiento.js";
 import { REACCIONES, reaccion, svgReaccion, estallido } from "./reacciones.js";
 import { sinMovimiento as reducido } from "./transiciones.js";
 import { vibrar } from "../config/preferencias.js";
+import { abrirCamara, ICONO_CAMARA } from "../camara/camara.js";
 import * as PUSH from "../integraciones/avisos.js";
 import * as VOZ from "./chat-voz.js";
 import { elegirImagen, creadorSticker } from "./chat-sticker.js";
@@ -162,8 +163,7 @@ export function vistaChat(det) {
 
   /* — Arriba: sólo su foto y su nombre — */
   const atras = el("button.ch-atras", { type: "button", "aria-label": "Atrás", html: IC.chevron, onClick: () => det.atras() });
-  const bVideo = el("button.ch-cab-b", { type: "button", "aria-label": "Videollamada", html: IC.video, onClick: () => app.llamadas?.llamar("video") });
-  const bTel = el("button.ch-cab-b", { type: "button", "aria-label": "Llamar", html: IC.tel, onClick: () => app.llamadas?.llamar("voz") });
+  const bCam = el("button.ch-cab-b", { type: "button", "aria-label": "Cámara: mandar una foto", title: "Cámara", html: ICONO_CAMARA, onClick: () => camara() });
   const bPuntos = el("button.ch-cab-b", { type: "button", "aria-label": "Ajustes y privacidad del chat", "aria-haspopup": "menu", html: IC.puntos, onClick: () => hojaAjustes() });
   const cab = el("header.ch-cab", {}, [
     atras,
@@ -172,7 +172,7 @@ export function vistaChat(det) {
       el("b.ch-cab-nombre", { text: nombre }),
       el("span.ch-juntos", {}, [el("i", { html: IC.lleno }), el("span", { text: "Siempre juntos" }), el("i.inf", { html: IC.infinito })]),
     ]),
-    el("div.ch-cab-acc", {}, [bVideo, bTel, bPuntos]),
+    el("div.ch-cab-acc", {}, [bCam, bPuntos]),
   ]);
 
   /* — La lista (con su capa de dibujos y stickers libres) — */
@@ -311,7 +311,7 @@ export function vistaChat(det) {
       ]);
     }
     const rx = reaccion(m.reaccion), st = !!m.gif?.s, em = !m.gif && !m.audio && soloEmoji(m.texto);
-    const que = m.audio ? `un mensaje de voz de ${VOZ.minutos(m.audio.dur)}` : m.texto || (st ? "un sticker" : "un GIF");
+    const que = m.audio ? `un mensaje de voz de ${VOZ.minutos(m.audio.dur)}` : m.texto || (st ? "un sticker" : m.gif?.f ? "una foto" : "un GIF");
     const b = el("div.ch-burbuja" + (m.audio ? ".audio" : m.gif ? (st ? ".sticker" : ".gif") : "") + (em ? ".emoji" : ""), {
       tabindex: "0", role: m.audio ? "group" : "button", "aria-haspopup": "menu", "aria-label": `${m.mio ? "Tú" : nombre}: ${que}${rx ? ", " + rx.corto : ""}. Mantén presionado para ver opciones.`,
     });
@@ -322,9 +322,11 @@ export function vistaChat(det) {
       }));
     }
     if (m.gif) {
-      const k = st ? Math.min(1, 150 / m.gif.w, 150 / m.gif.h) : Math.min(1, 240 / m.gif.w, 260 / m.gif.h);
-      const im = el("img." + (st ? "ch-st-img" : "ch-gif"), { loading: "lazy", src: M(m.gif.u), alt: st ? "Sticker" : "GIF", width: Math.round(m.gif.w * k), height: Math.round(m.gif.h * k), decoding: "async", referrerpolicy: "no-referrer", draggable: "false" });
+      const fo = !st && m.gif.f;   // (Fase 45) una foto de la cámara
+      const k = st ? Math.min(1, 150 / m.gif.w, 150 / m.gif.h) : fo ? Math.min(1, 250 / m.gif.w, 320 / m.gif.h) : Math.min(1, 240 / m.gif.w, 260 / m.gif.h);
+      const im = el("img." + (st ? "ch-st-img" : fo ? "ch-gif.ch-foto" : "ch-gif"), { loading: "lazy", src: M(m.gif.u), alt: st ? "Sticker" : fo ? "Foto" : "GIF", width: Math.round(m.gif.w * k), height: Math.round(m.gif.h * k), decoding: "async", referrerpolicy: "no-referrer", draggable: "false" });
       im.addEventListener("load", () => { if (S.pegado) alFondo(false); }, { once: true });
+      if (fo) im.addEventListener("click", (e) => { e.stopPropagation(); verFoto(im.src); });
       b.append(im);
     }
     if (m.texto) b.append(el("span.ch-texto", { text: m.texto }));
@@ -777,6 +779,32 @@ export function vistaChat(det) {
     } catch (e) { noSeMando(t, e); return false; }
   }
 
+  /** (Fase 45) La cámara: la foto aparece ya en el chat (mientras se sube) y luego se manda. */
+  function camara() { abrirCamara({ nombre, alMandar: (blob, w, h) => mandarFoto(blob, w, h) }); }
+  async function mandarFoto(blob, w, h) {
+    const local = URL.createObjectURL(blob);
+    S.blobs.push(local);
+    const t = burbujaNueva({ gif: { u: local, w, h, f: 1 } });
+    sonar("mensaje-enviar");
+    try {
+      const r = await SRV.subirMedia(blob, "foto");
+      const m = await SRV.mandarMensaje({ texto: "", gif: { u: r.u, w, h, f: 1 } });
+      if (!S.vivo) return;
+      if (!t._real) adoptar(t, m);
+    } catch (e) { noSeMando(t, e); }
+  }
+  /** Ver una foto en grande (tocarla otra vez, ✕ o atrás la cierra). */
+  function verFoto(src) {
+    const cerrar = () => { v.classList.remove("ver"); setTimeout(() => v.remove(), 240); removeEventListener("keydown", tecla, true); };
+    const tecla = (e) => { if (e.key === "Escape") { e.stopPropagation(); cerrar(); } };
+    const v = flota(el("div.ch-verfoto", { role: "dialog", "aria-label": "Foto", onClick: () => cerrar() }, [
+      el("img", { src, alt: "Foto", decoding: "async", referrerpolicy: "no-referrer" }),
+      el("button.ch-verfoto-x", { type: "button", "aria-label": "Cerrar", html: IC.cerrar || "✕", onClick: (e) => { e.stopPropagation(); cerrar(); } }),
+    ]));
+    addEventListener("keydown", tecla, true);
+    requestAnimationFrame(() => v.classList.add("ver"));
+  }
+
   /** La burbuja de «mandando» pasa a ser la de verdad (la misma: no se vuelve a animar ni a cargar). */
   function adoptar(t, m) {
     t._real = m.id;
@@ -1120,6 +1148,7 @@ export function vistaChat(det) {
     abrirHoja(el("div.ch-hoja-in", {}, [
       el("div.ch-hoja-cab", {}, [el("i", { html: IC.brillo }), el("b", { text: "Cositas" })]),
       el("div.ch-cositas", {}, [
+        item(ICONO_CAMARA, "Cámara", "Una foto con filtros", () => camara(), ".cielo"),
         item(IC.lapiz, "Dibujar", "En vivo, en todo el chat", () => entrarDibujo(), ".rosa"),
         item(IC.foto, "Crear sticker", "Con tus fotos", () => crearSticker(), ".durazno"),
         item(IC.espacio, "Espacio", "Más lugar para dibujar", () => { entrarDibujo(); masEspacio(); }, ".lila"),

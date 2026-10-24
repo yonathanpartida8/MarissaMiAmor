@@ -38,7 +38,12 @@ export const PLANTILLAS = [
     crear: (P) => nuevaPagina(P, { nombre: "Página en blanco" }),
   },
   {
-    id: "portada", cat: "portadas", n: "Portada", d: "Título grande, un subtítulo y un corazón que late.",
+    // (Fase 45) Así empieza un detallito nuevo: hoja blanca y sólo su botón de música.
+    id: "portada-clasica", cat: "portadas", n: "Clásica", d: "Hoja blanca, sin nada más que el botón de música: tú pones todo.",
+    crear: (P) => nuevaPagina(P, { nombre: "Portada", fondo: { tipo: "color", color: "#ffffff" } }),
+  },
+  {
+    id: "portada", cat: "portadas", n: "Con corazón", d: "Título grande, un subtítulo y un corazón que late.",
     crear: (P) => {
       const { ancho: W, alto: H, tema: t } = P.ajustes;
       const ty = Math.round(H * 0.42), cor = Math.round(Math.min(92, H * 0.15));
@@ -130,7 +135,7 @@ export const PLANTILLAS = [
     },
   },
   {
-    id: "portada-revista", cat: "portadas", n: "Revista (como la de Marissa)", d: "La de su librito: cabecera de revista, su nombre en dorado, foto con cinta, sticker «edición única» y el sello con su inicial para abrir.",
+    id: "portada-revista", cat: "portadas", n: "Revista", d: "Cabecera de revista, su nombre en dorado, foto con cinta, sticker «edición única» y el sello con su inicial para abrir.",
     crear: (P) => {
       const { W, H, grande } = M(P);
       const ancha = W >= H * 0.9; // en hoja cuadrada también va en dos columnas
@@ -145,7 +150,7 @@ export const PLANTILLAS = [
         con(T(P, "Nº 01 · edición de amor · ♥", cx, y0 + 6, cw, { tam: 11, fuente: "Jost", peso: 500, interletra: 3, color: "#f6dcd2", nombre: "Cabecera", anim: entra("aparecer", 200), h: 18 }), {}),
         nuevoEl("forma", P, { nombre: "Hilo dorado", x: cx, y: y0 + 28, w: cw, h: 1, opacidad: 0.7, forma: { figura: "rect", relleno: oro }, anim: entra("revelar", 250, { dir: "izquierda" }) }),
         T(P, "un librito de amor para", cx, y0 + 38, cw, { tam: 13, fuente: "Jost", peso: 400, interletra: 2, color: "#e8cfa0", nombre: "Para", anim: entra("aparecer", 450), h: 20 }),
-        con(T(P, "Marissa", cx, yN, cw, { tam: nom, fuente: "Cormorant Garamond", peso: 600, color: oro, nombre: "Su nombre", anim: entra("desenfoque", 650), h: hN }), { texto: { sombra: { x: 0, y: 2, blur: 18, color: "rgba(242,194,125,.35)" } } }),
+        con(T(P, "Mi amor", cx, yN, cw, { tam: nom, fuente: "Cormorant Garamond", peso: 600, color: oro, nombre: "Su nombre", anim: entra("desenfoque", 650), h: hN }), { texto: { sombra: { x: 0, y: 2, blur: 18, color: "rgba(242,194,125,.35)" } } }),
         nuevoEl("dibujo", P, { nombre: "Floritura", x: Math.round(cx + cw / 2 - 70), y: yF, w: 140, h: 14, dibujo: { svg: FLORITURA, color: oro, estirar: true }, anim: entra("revelar", 1000, { dir: "derecha" }) }),
         T(P, "mi amorcito", cx, yF + 18, cw, { tam: 28, fuente: "Caveat", peso: 500, color: "#ffa6cc", nombre: "Subtítulo", anim: { ...entra("aparecer", 1250), bucle: bucle("brillar", 2600) }, h: 40 }),
       );
@@ -187,7 +192,7 @@ export const PLANTILLAS = [
         nuevoEl("forma", P, { nombre: "Sombra para las letras", x: 0, y: Math.round(H * 0.45), w: W, h: H - Math.round(H * 0.45), ancla: { h: "estirar", v: "abajo" }, permisos: { seleccionar: false }, forma: { figura: "rect", relleno: "transparent", gradiente: { a: "rgba(20,8,24,0)", b: "rgba(20,8,24,.78)", angulo: 180 } }, anim: entra("aparecer", 300) }),
         T(P, "Nº 01 · EDICIÓN DE AMOR", 22, 24, Math.round(Math.max(200, Math.min(W - 150, 260))), { tam: 11, fuente: "Jost", peso: 600, interletra: 2, alin: "left", color: "#ffffff", nombre: "Cabecera", anim: entra("aparecer", 400), h: 18 }),
         con(T(P, "Nuestro librito", 22, ty, W - 44, { tam: Math.round(grande * 1.05), fuente: "Playfair Display", peso: 600, alin: "left", color: "#ffffff", nombre: "Título", anim: entra("revelar", 700, { dir: "derecha" }), h: Math.round(grande * 1.35) }), { texto: { sombra: { x: 0, y: 2, blur: 14, color: "rgba(0,0,0,.35)" } } }),
-        T(P, "para ti, Marissa", 22, ty + Math.round(grande * 1.35) + 4, W - 44, { tam: 26, fuente: "Caveat", alin: "left", color: "#ffd6e5", nombre: "Subtítulo", anim: entra("aparecer", 1200), h: 38 }),
+        T(P, "para ti, mi amor", 22, ty + Math.round(grande * 1.35) + 4, W - 44, { tam: 26, fuente: "Caveat", alin: "left", color: "#ffd6e5", nombre: "Subtítulo", anim: entra("aparecer", 1200), h: 38 }),
         nuevoEl("dibujo", P, { nombre: "Corazón", x: W - 70, y: ty - 54, w: 40, h: 40, dibujo: { svg: dib("corazon"), color: "#ff8fb5" }, anim: { ...entra("latido", 1500), bucle: bucle("latir", 1600) } }),
         nuevoEl("dibujo", P, { nombre: "Destellos", x: W - 64, y: Math.round(H * 0.4), w: 40, h: 40, dibujo: { svg: dib("brillos"), color: "#fff3cf" }, anim: { ...entra("aparecer", 1800), bucle: bucle("brillar", 2600) } }),
       );

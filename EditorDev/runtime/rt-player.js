@@ -135,11 +135,17 @@
         const escribe = ae && (ae.tagName === "IFRAME" || /INPUT|TEXTAREA|SELECT/.test(ae.tagName) || ae.isContentEditable);
         if (this.medidas && escribe && Math.abs(w - this._ultW) < 2 && hh < this._ultH * 0.86) return;
         this._ultW = w; this._ultH = hh;
-        // Hoja automática: la hoja toma la forma de la pantalla (vertical u
-        // horizontal) y lo de dentro se recoloca; con tamaño fijo, se escala.
-        // En «Probar página» la hoja se arma con la pantalla del editor (fijar) y sólo se escala.
-        const f = this.op.fijar;
-        const m = RT.medidas(this.datos.ajustes, f && f.w > 0 ? f.w : w, f && f.h > 0 ? f.h : hh);
+        // (Fase 45) La hoja se adapta al aparato de quien la ve. En una pantalla con su misma forma
+        // (las dos paradas o las dos acostadas) crece lo que haga falta para llenarla, con sus anclas:
+        // lo de arriba arriba, lo de abajo abajo, lo centrado centrado y el fondo se estira (la
+        // automática, sin límite; la de tamaño fijo, hasta 1.6 veces por un lado). Con otra forma (una
+        // hoja parada en una compu o en un teléfono acostado) se queda entera y centrada, como se
+        // diseñó (la automática, con la pantalla del editor), y lo de alrededor lleva su fondo.
+        const f = this.op.fijar, aj = this.datos.ajustes || {};
+        const W0 = aj.ancho || 390, H0 = aj.alto || 844;
+        let m;
+        if (RT.esAuto(aj)) m = !(f && f.w > 0 && f.h > 0) || RT.mismaForma(f.w, f.h, w, hh) ? RT.medidas(aj, w, hh) : RT.medidas(aj, f.w, f.h);
+        else m = RT.medidas(aj, w, hh, RT.mismaForma(W0, H0, w, hh) ? 1.6 : 0);
         this.medidas = m;
         this.ctx.medidas = m;
         if (m.W !== this.W || m.H !== this.H) {
@@ -151,7 +157,8 @@
         const s = Math.min(w / this.W, hh / this.H);
         this.escala = s;
         // Una hoja acostada en un teléfono parado (o al revés) se ve chiquita: una pastillita invita a girarlo.
-        const girar = !!f && s < 0.7 && (this.W > this.H * 1.15) !== (w > hh * 1.15);
+        const tactil = !!f || (window.matchMedia && matchMedia("(pointer: coarse)").matches);
+        const girar = tactil && s < 0.7 && (this.W > this.H * 1.15) !== (w > hh * 1.15);
         if (girar && !this._avisoGirar) {
           this._avisoGirar = h("div", "rt-girar-aviso", this.raiz);
           this._avisoGirar.textContent = this.W > this.H ? "Gira tu teléfono para verla en grande" : "Endereza tu teléfono para verla en grande";

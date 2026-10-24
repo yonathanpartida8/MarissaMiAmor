@@ -61,12 +61,22 @@
      dónde está. Con un tamaño fijo, nada de esto cambia nada. */
   RT.esAuto = function (aj) { return !!aj && aj.formato === "auto"; };
 
-  RT.medidas = function (aj, vw, vh) {
+  /* (Fase 45) `crecer`: una hoja de tamaño FIJO también se adapta al aparato de quien la ve — crece
+     hasta `crecer` veces por un lado (con las mismas anclas) para llenar la pantalla sin franjas. */
+  RT.medidas = function (aj, vw, vh, crecer) {
     aj = aj || {};
     const W0 = aj.ancho || 390, H0 = aj.alto || 844;
     const s = vw > 0 && vh > 0 ? Math.min(vw / W0, vh / H0) : 1;
-    if (!RT.esAuto(aj) || !(vw > 0 && vh > 0)) return { W: W0, H: H0, W0: W0, H0: H0, s: s, auto: false };
-    return { W: Math.max(W0, Math.round(vw / s)), H: Math.max(H0, Math.round(vh / s)), W0: W0, H0: H0, s: s, auto: true };
+    const auto = RT.esAuto(aj);
+    if (!(vw > 0 && vh > 0) || (!auto && !(crecer > 1))) return { W: W0, H: H0, W0: W0, H0: H0, s: s, auto: false };
+    const kW = auto ? Infinity : Math.round(W0 * crecer), kH = auto ? Infinity : Math.round(H0 * crecer);
+    const W = Math.min(Math.max(W0, Math.round(vw / s)), kW), H = Math.min(Math.max(H0, Math.round(vh / s)), kH);
+    return { W: W, H: H, W0: W0, H0: H0, s: s, auto: auto || W !== W0 || H !== H0 };
+  };
+  /** ¿Las dos tienen la misma forma (las dos paradas, o las dos acostadas)? Lo cuadrado va con las dos. */
+  RT.mismaForma = function (w0, h0, w, h) {
+    const a = w0 / h0, b = w / h;
+    return (a <= 1.1 && b <= 1.1) || (a >= 0.9 && b >= 0.9);
   };
 
   /* Los de un mismo grupo deducen su ancla con la caja del GRUPO entero: así

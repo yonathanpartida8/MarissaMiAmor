@@ -599,6 +599,26 @@ export class Acciones {
     if (!this.P.orden.length) this.nuevaPagina();
   }
 
+  /**
+   * (Fase 45) «Limpiar página» de LovEdit: quita TODO lo que hay en ESA página (sus elementos y sus
+   * sonidos de la línea) y nada más: su fondo, su duración, sus transiciones, su botón de música y las
+   * demás páginas se quedan igual. Un solo paso de «Deshacer».
+   */
+  async vaciarPagina(pid = this.E.paginaId) {
+    const p = this.P.paginas[pid];
+    if (!p) return;
+    const ids = p.els.filter((e) => e.tipo !== "musica").map((e) => e.id);
+    const sonidos = (p.audios || []).length;
+    if (!ids.length && !sonidos) { aviso("Esta página ya está limpia"); return; }
+    const n = ids.length + sonidos;
+    if (!(await confirmar(`Se quitará todo lo que hay en «${p.nombre}» (${n} ${n === 1 ? "cosa" : "cosas"}). Las demás páginas no se tocan y puedes deshacerlo.`, "Limpiar página"))) return;
+    this.E.transaccion("Limpiar página", () => {
+      if (ids.length) this.E.quitarEls(ids, pid);
+      if (sonidos) this.E.setPag({ audios: [] }, "Limpiar página", null, pid);
+    });
+    aviso(`«${p.nombre}» quedó limpia · puedes deshacerlo`);
+  }
+
   /** Deja una página en blanco (conserva su nombre y su lugar). */
   limpiarPagina(pid = this.E.paginaId) {
     const p = this.P.paginas[pid];

@@ -69,7 +69,8 @@ const PIN = svg('<path d="M16 28s-8.5-7.6-8.5-14.3a8.5 8.5 0 0 1 17 0C24.5 20.4 
 const SAT = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 const SAT_NOMBRES = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
 const SAT_CALLES = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}";
-const CALLES = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+// (Fase 45) Las calles, de Esri (sin clave). Las de CARTO ahora piden una clave y salían con «API KEY REQUIRED».
+const CALLES = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
 const CAPA_MAPA = "editordev:mapa-capa";
 const SATELITE = svg('<circle cx="16" cy="16" r="11"/><path d="M5 16h22M16 5c3.5 3.2 5 7 5 11s-1.5 7.8-5 11c-3.5-3.2-5-7-5-11s1.5-7.8 5-11z"/>');
 const MAPA = svg('<path d="M4 8.5l8-3.5 8 3.5 8-3.5v18.5l-8 3.5-8-3.5-8 3.5z"/><path d="M12 5v18.5M20 8.5V27"/>');
@@ -259,11 +260,20 @@ export class Juntitos {
   _inicio() {
     const cuadro = ([k, n, c], html, extra) => el("button.jt-cuadro." + c, { type: "button", dataset: { k }, onClick: () => this.ir(k) }, [el("i", { html }), el("b", { text: n }), extra || null].filter(Boolean));
     const estado = el("div.jt-ub-estado"), gente = el("div.jt-gente"), lugares = el("ul.jt-lugares"), eventos = el("ul.jt-eventos");
+    // (Fase 45) Arriba, lo de ustedes de verdad (sus fotos, sus días juntos y lo que viene) en vez de
+    // repetir el título; los botones, más sencillos; lo que está en construcción, chiquito y aparte.
+    const d = PF.datos(), j = PF.juntos(d.pareja?.novios || d.yo?.novios), pr = PF.proximo(d);
     this.sheetCuerpo.replaceChildren(
-      el("div.jt-hola.chico", {}, [el("h1", { text: "Nuestros días juntos" }), el("p", { text: `Todo lo de ${this.pareja} y tú, a un toque` })]),
+      el("div.jt-nosotros", {}, [
+        el("div.jt-dos", { "aria-hidden": "true" }, [PF.avatar("yo", "jt-av"), PF.avatar("pareja", "jt-av")]),
+        el("div.jt-nosotros-t", {}, [
+          el("b", { text: `Tú y ${this.pareja}` }),
+          el("span", { text: j ? `${j.dias.toLocaleString("es-MX")} ${j.dias === 1 ? "día" : "días"} juntos` : "Pon en tu perfil desde cuándo son novios" }),
+          pr ? el("small", { text: pr.texto }) : null,
+        ]),
+      ]),
       el("div.jt-cuadros", {}, CUADROS.map((x) => cuadro(x, { cositas: ICONOS.teamo, mesecitos: CALENDARIO, dibujar: PINCEL }[x[0]]))),
-      el("h2.jt-sub", { text: "Más cositas" }),
-      el("div.jt-cuadros", {}, PRONTO.map((x) => cuadro(x, x[0] === "casita" ? CASITA : PROMESA, el("small.jt-pronto", { text: "En construcción" })))),
+      el("div.jt-pronto-fila", {}, [el("small", { text: "Pronto" }), ...PRONTO.map((x) => el("button.jt-pronto-b", { type: "button", dataset: { k: x[0] }, onClick: () => this.ir(x[0]) }, [el("i", { html: x[0] === "casita" ? CASITA : PROMESA }), el("span", { text: x[1] })]))]),
       el("h2.jt-sub", { text: "Dónde estamos" }), estado, gente,
       el("div.jt-sec", {}, [el("h2", { text: "Lugares" }), el("button.jt-btn.chico", { type: "button", text: "Añadir lugar", onClick: () => this._nuevoLugar() })]), lugares,
       el("p.jt-nota", { text: "Los avisos de entrar o salir funcionan mientras la app está abierta en el aparato de quien se mueve (la web no puede seguirte con la app cerrada; para eso hace falta la app nativa)." }),
@@ -299,7 +309,7 @@ export class Juntitos {
           L.tileLayer(SAT_CALLES, { ...op, opacity: 0.85 }),
           L.tileLayer(SAT_NOMBRES, { ...op }),
         ]),
-        calles: L.tileLayer(CALLES, { ...op, subdomains: "abcd", maxNativeZoom: 19, attribution: "© OpenStreetMap · © CARTO" }),
+        calles: L.tileLayer(CALLES, { ...op, attribution: "Mapa © Esri, HERE, Garmin, OpenStreetMap" }),
       };
       this.mapa = { L, m, bases, capa: null, capas: L.layerGroup().addTo(m), centrado: false };
       let capa = "sat";

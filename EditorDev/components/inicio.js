@@ -19,7 +19,7 @@ const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 const RT = window.LibritoRT;
 
 // Nombre corto de cada portada en el selector (las nuevas usan su nombre).
-const CORTO = { portada: "Clásica", "portada-revista": "Como la de Marissa", "portada-tu-foto": "Tu foto", "portada-corazones": "Corazones", "portada-polaroids": "Polaroids", "portada-cine": "Estreno", "portada-foto": "Con foto", "portada-noche": "Noche", "portada-baddie": "Baddie", "portada-sobre": "Sobre", "portada-minimal": "Minimal" };
+const CORTO = { "portada-clasica": "Clásica", portada: "Con corazón", "portada-revista": "Revista", "portada-tu-foto": "Tu foto", "portada-corazones": "Corazones", "portada-polaroids": "Polaroids", "portada-cine": "Estreno", "portada-foto": "Con foto", "portada-noche": "Noche", "portada-baddie": "Baddie", "portada-sobre": "Sobre", "portada-minimal": "Minimal" };
 const ORDEN = Object.keys(CORTO);
 
 /**
@@ -28,7 +28,7 @@ const ORDEN = Object.keys(CORTO);
  */
 function selectorDePortada(formatoSel) {
   const portadas = PLANTILLAS.filter((t) => t.cat === "portadas").sort((a, b) => (ORDEN.indexOf(a.id) + 1 || 99) - (ORDEN.indexOf(b.id) + 1 || 99));
-  let elegida = "portada", foto = null, url = null, vivas = [];
+  let elegida = "portada-clasica", foto = null, url = null, vivas = [];
   const fila = el("div.ed-portadas", { role: "radiogroup", "aria-label": "Estilo de portada" });
   const pintar = () => {
     for (const v of vivas) v.destruir?.();
@@ -112,17 +112,20 @@ export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
   const borradores = el("section.ed-inicio-borradores");
   const formato = el("select.ed-sel", {}, Object.entries(FORMATOS).map(([k, f]) => el("option", { value: k, text: f.auto ? f.n : `${f.n} · ${f.w}×${f.h}` })));
   formato.value = "movil";
-  const nombre = el("input.ed-txt", { type: "text", placeholder: "Nombre del librito", value: "Mi librito" });
+  formato.setAttribute("aria-label", "Tamaño de la hoja");
+  // Enter en el nombre = Crear.
+  queueMicrotask(() => nombre.addEventListener("keydown", (e) => { if (e.key === "Enter") capa.querySelector(".ed-crear-fila .ed-btn")?.click(); }));
+  const nombre = el("input.ed-txt", { type: "text", placeholder: "Nombre del detallito", value: "Mi detallito", "aria-label": "Nombre del detallito" });
   // «Mis libritos» (del menú principal) es sólo para tus borradores y sus copias de seguridad (Fase 33).
   const respaldo = a === "borradores";
   const portada = respaldo ? null : selectorDePortada(formato);
   const cerrar = () => { portada?.destruir(); capa.remove(); };
-  const capa = el("div.ed-inicio" + (respaldo ? ".respaldo" : ""), { role: "dialog", "aria-label": respaldo ? "Mis libritos" : "Crear librito" }, [
+  const capa = el("div.ed-inicio" + (respaldo ? ".respaldo" : ""), { role: "dialog", "aria-label": respaldo ? "Mis libritos" : "Crear detallito" }, [
     el("div.ed-inicio-caja", {}, [
       el("header", {}, [
         respaldo
           ? el("div", {}, [el("h1", { text: "Mis libritos" }), el("p", { text: "Tus borradores y sus copias de seguridad: guarda todo en un archivo o tráelo de vuelta." })])
-          : el("div", {}, [el("h1", { text: "Crear librito" }), el("p", { text: "Tu taller para armar libritos interactivos: páginas, fotos, música, animaciones y HTML propio." })]),
+          : el("div", {}, [el("h1", { text: "Crear detallito" }), el("p", { text: "Tu taller para armar detallitos interactivos: páginas, fotos, música, animaciones y HTML propio." })]),
         cerrable ? el("button.ed-x", { type: "button", html: ico("cerrar"), "aria-label": "Cerrar", onClick: () => cerrar() }) : null,
       ]),
       respaldo ? el("section.ed-inicio-nuevo", {}, [
@@ -138,11 +141,19 @@ export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
         ]),
       ]) : el("section.ed-inicio-nuevo", {}, [
         el("div.ed-tarjeta.ed-tarjeta-nuevo", {}, [
-          el("b", { html: I("nuevo", "Librito nuevo") }),
+          el("b", { html: I("nuevo", "Detallito nuevo") }),
           el("small", { text: "Elige el estilo de su portada (o pon tu propia imagen). Después puedes cambiar todo." }),
           ...portada.nodos,
-          el("div.ed-nuevo-datos", {}, [nombre, formato]),
-          boton("Crear", () => { const v = portada.valor(); cerrar(); app.nuevo(nombre.value.trim() || "Mi librito", formato.value, v); }, "primario"),
+          el("div.ed-nuevo-datos", {}, [el("label.ed-nuevo-campo", {}, [el("span", { text: "Nombre" }), nombre]), el("label.ed-nuevo-campo", {}, [el("span", { text: "Tamaño" }), formato])]),
+          // (Fase 45) «Crear» siempre a la mano (en el teléfono se queda abajo mientras ves las portadas)
+          // y un solo toque: dos toques seguidos ya no crean dos detallitos.
+          el("div.ed-crear-fila", {}, [boton(I("nuevo", "Crear detallito"), (ev) => {
+            const b = ev?.currentTarget;
+            if (b?.disabled || capa._creando) return;
+            capa._creando = true;
+            if (b) b.disabled = true;
+            const v = portada.valor(); cerrar(); app.nuevo(nombre.value.trim() || "Mi detallito", formato.value, v);
+          }, "primario")]),
         ]),
         el("div.ed-tarjeta", {}, [
           el("b", { html: I("subir", "Abrir archivo") }),

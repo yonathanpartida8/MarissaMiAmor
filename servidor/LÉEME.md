@@ -227,6 +227,7 @@ to process»: por eso `librito actualizar` instala `git` en Termux.
   chat abierto, el editor espera al servidor y éste le contesta en cuanto
   cambia algo; lo escrito se guarda como texto (nunca HTML) y sólo se aceptan
   imágenes de GIPHY o las que ustedes suben (1.9.0).
+- **1.17.0**: sin llamadas ni videollamadas; fotos de la cámara en Mensajitos (`?tipo=foto`, «📷 Te mandó una foto»).
 - **1.13.0**: las páginas de cada mes (`/api/mesecitos`, una por mes de la pareja), Cositas
   Juntitos (`/api/cositas`: contadores y registros privados salvo que se compartan; «te extraño» y
   «te amo» avisan) y la ubicación compartida (`/api/ubicacion`, sólo si cada quien la comparte; al
@@ -408,20 +409,16 @@ acuarela, neón, brillitos, corazones, borrador. Rutas en la tabla de abajo.
 - Publicar con `?exacto=1` usa **exactamente** ese nombre o responde 409 (antes
   de subir nada): así el enlace que eligió tu amorcito nunca cambia sin avisar.
 
-### Llamadas y videollamadas (1.16.0)
+### Fotos de la cámara en Mensajitos (1.17.0)
 
-El servidor sólo **presenta** a los dos teléfonos (señalización WebRTC): pasa la
-oferta, la respuesta y los caminos de red (ICE). La voz y el video van directo
-entre ustedes, cifrados (DTLS-SRTP), y **nunca pasan por aquí**. Cada aparato
-espera sus avisos con `GET /api/llamada/eventos?desde=N&espera=25` (se despierta
-al momento); lo que está pasando vive en la memoria (si nadie contesta en 45 s es
-«perdida»; si un aparato deja de preguntar 75 s, «se cortó») y al terminar queda en
-el historial (`llamadas`). Con la app cerrada, la notificación «te está llamando»
-se queda hasta que la toques y luego se cambia por «llamada perdida».
-
-Casi siempre se conectan solas (STUN de Google). Si en alguna red no (algunos datos
-móviles o wifis de trabajo), en el panel → **Ajustes → Llamadas y videollamadas**
-pon un servidor **TURN** (`turn:…` o `turns:…`, usuario y contraseña).
+Las llamadas y videollamadas (1.16.0) se quitaron: en su lugar, Mensajitos tiene una
+**cámara** (con los mismos filtros) que toma una foto y la manda por el chat. La foto
+se sube con `POST /api/chat/media?tipo=foto` (JPG, PNG o WebP, hasta 3 MB) y se manda
+como `{"gif":{"u":"/m/<huella>.jpg","w":…,"h":…,"f":1}}`: el servidor sólo acepta en
+`f` archivos que subieron ustedes (nunca un enlace de fuera), y la notificación dice
+«📷 Te mandó una foto». Ya no hay rutas `/api/llamada…`, ni historial de llamadas, ni
+ajuste de TURN en el panel; lo que hubiera quedado de llamadas en una base vieja no
+estorba.
 
 ## Cuentas y autenticación
 
@@ -515,11 +512,6 @@ azar) · `/api/…`:
 | `GET /api/dibujo` · `POST /api/dibujo` (`{"nombre":…,"fondo":"papel"\|"cuadros"\|"rayas"\|"rosa"\|"noche"}`) · `PUT`/`DELETE /api/dibujo/<id>` | pareja | Dibujar Juntos: sus hojas (la primera se crea sola; hasta 30), una nueva, cambiarle nombre o fondo, borrarla (para los dos) |
 | `GET /api/dibujo/<id>/trazos?desde=<ahora>&espera=25` | pareja | los trazos de la hoja (o los que cambiaron); con `espera` contesta en cuanto el otro dibuja: **tiempo real** |
 | `POST /api/dibujo/<id>/trazos` (`{"pincel":"lapiz","c":"#d8397a","a":6,"p":[[x,y,presión],…]}`) · `POST …/trazos/<tid>` (`{"p":[…],"fin":true}`) · `DELETE …/trazos/<tid>` · `DELETE …/trazos[?solo=mio]` | pareja · quien dibuja | dibujar a pedacitos (x e y de 0 a 10000; hasta 4000 puntos), deshacer lo tuyo, limpiar lo tuyo o la hoja |
-| `GET /api/llamada/ice` | sesión | por dónde buscarse (STUN de fábrica + el TURN del panel) y cuánto suena |
-| `POST /api/llamada` (`{"tipo":"voz"\|"video","oferta":{"type":"offer","sdp":…}}`) | pareja | llamar: le suena en sus aparatos (y notificación si no tiene la app abierta). Si te estaba llamando al mismo tiempo, contesta `{"entrante":…}` para que contestes la suya |
-| `POST /api/llamada/<id>` (`{"t":"contestar","d":…}` · `"desc"` · `"ice","c":[…]` · `"estado","cam","mic"` · `"colgar"` · `"rechazar"`) | los dos de esa llamada (el aparato que contestó) | contestar (los demás aparatos dejan de sonar), renegociar, caminos de red, cámara/micrófono, colgar o rechazar |
-| `GET /api/llamada/eventos?desde=N&espera=25` | sesión | los avisos de llamada de este aparato (`desde=0`: lo que te suena ahorita); **tiempo real** |
-| `GET /api/llamadas` | pareja | las últimas 50 llamadas (hablada con su duración, perdida, rechazada) |
 | `POST /api/dueno/traspaso` · `POST /api/dueno/relevo` · `POST /api/dueno/cancelar` (`{"usuario":"YonathanPG","contrasena":…}`) | la cuenta del dueño, con su contraseña | pasar el servidor a otro teléfono: manda todo (tar) dejando éste en sólo lectura · éste queda relevado y se apaga · cancelar |
 | `GET /api/admin/aparato` | admin | el teléfono servidor: pila, cargando, temperatura, ritmo, núcleos, carga, RAM, espacio, desde cuándo está prendido, quién está en línea y si hay otro servidor |
 | `DELETE /api/chat/trazos/<id>` · `DELETE /api/chat/trazos` | quien lo dibujó | deshacer un trazo · borrar todos tus dibujos |
@@ -530,7 +522,7 @@ azar) · `/api/…`:
 | `POST /api/chat/<id>/sticker` (`{"u":"https://media.giphy.com/…","x":0.8,"y":0.2,"r":-8,"s":1}`; con `"l":1`, libre: `y` en px) | pareja | pegar un sticker de GIPHY encima de un mensajito o, libre, donde lo soltaste en el chat (hasta 12 por mensajito) |
 | `DELETE /api/chat/<id>` · `POST /api/chat/vistos` | quien lo mandó · sesión | borrar tu mensajito (para los dos; desde 1.10.0 queda como `{"borrado":true}` en la lista y se le avisa al otro) · ya leíste lo que te mandó |
 | `PUT /api/chat/<id>` (`{"texto":"…"}`) | quien lo mandó | editar el texto de tu mensajito (no audios ni espacios); queda con `editado` |
-| `POST /api/chat/media?tipo=sticker` · `?tipo=audio` (el archivo tal cual) | pareja | subir un sticker tuyo (PNG, JPG o WebP, hasta 800 KB) o un mensaje de voz (WAV, hasta 26 MB desde 1.10.0); contesta `{"u":"/m/<huella>.<ext>"}`. Se manda con `POST /api/chat` (`{"gif":{"u":"/m/…","s":1}}` o `{"audio":{"u":"/m/….wav","dur":3.2,"ondas":[0…31 ×48]}}`) |
+| `POST /api/chat/media?tipo=sticker` · `?tipo=foto` · `?tipo=audio` (el archivo tal cual) | pareja | subir un sticker tuyo (PNG, JPG o WebP, hasta 800 KB), una foto de la cámara (hasta 3 MB, desde 1.17.0) o un mensaje de voz (WAV, hasta 26 MB desde 1.10.0); contesta `{"u":"/m/<huella>.<ext>"}`. Se manda con `POST /api/chat` (`{"gif":{"u":"/m/…","s":1}}` o `{"audio":{"u":"/m/….wav","dur":3.2,"ondas":[0…31 ×48]}}`) |
 | `GET /m/<huella>.<ext>` | todos (la dirección es larga y al azar) | el archivo (con rangos, para adelantar audios) |
 | `GET /api/chat/coleccion` · `POST /api/chat/coleccion` (`{"tipo":"sticker"\|"gif","u":…,"w":…,"h":…,"favorito":true}`) | sesión | tus stickers y tus GIFs favoritos (favoritos arriba, luego lo que más usas) · guardar uno (hasta 400 de cada uno) |
 | `PUT /api/chat/coleccion/<id>` (`{"favorito":true}`) · `DELETE /api/chat/coleccion/<id>` | sesión | marcar o quitar de favoritos · quitarlo de tu colección |

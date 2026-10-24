@@ -3,7 +3,7 @@
  *
  * Atrás (la flecha «Menú» de arriba o el botón «atrás» del teléfono) primero
  * cierra lo que esté abierto (una hoja, una ventana, la prueba, el editor de
- * HTML, la pantalla de crear librito) y después te lleva de vuelta al MENÚ
+ * HTML, la pantalla de crear detallito) y después te lleva de vuelta al MENÚ
  * PRINCIPAL, guardando por detrás: ahí no se pierde nada. Sólo desde el menú
  * principal, atrás pregunta antes de irse del todo, con una tarjeta animada
  * (y dice si ahora mismo hay algo sin guardar):
@@ -17,6 +17,7 @@ import { ico } from "./iconos.js";
 import { cerrarUltima, PILA } from "./hoja.js";
 import { cerrarUltimoModal, MODALES } from "./ui.js";
 import { quitarInicio } from "./inicio.js";
+import { cerrarCamara } from "../camara/camara.js";
 
 /** La tarjeta: se cumple con "seguir" | "salir" | "guardar". */
 export function preguntarCambios({ titulo = "¿Seguro que quieres salir?", texto = "Perderás todos los cambios que no hayas guardado.", estado = "", bien = false, salir = "Salir sin guardar", guardar = "Guardar y salir", seguir = "Seguir editando" } = {}) {
@@ -82,6 +83,7 @@ export class Salida {
   cerrarLoAbierto() {
     const app = this.app;
     if (document.querySelector(".ed-salir-fondo")) return true;
+    if (cerrarCamara()) return true;
     if (app.juntitos?.abierto) return app.juntitos.atras();
     if (app.detallitos?.abierto) return app.detallitos.atras();
     if (app.exportarMenu?.abierto) return app.exportarMenu.atras();

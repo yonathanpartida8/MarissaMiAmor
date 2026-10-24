@@ -1,5 +1,5 @@
 /**
- * EL GESTO DE GOKU (Fase 44) — la Teletransportación: el índice y el medio juntitos, en la frente.
+ * EL GESTO DE GOKU (Fase 44, en la cámara desde la Fase 45) — la Teletransportación: el índice y el medio juntitos, en la frente.
  *
  * Funciones puras (sin cámara ni pantalla) para poder probarlas con puntos inventados:
  *   · `frente(cara)` — dónde está tu frente, con los puntos de la cara (ojos y boca);

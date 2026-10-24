@@ -2,7 +2,7 @@
  * ELEGIR ARCHIVOS — «+ Añadir foto», «+ Añadir canción»…
  *
  * Subir algo nuevo o reusar algo que ya subiste a este librito (Fase 35: el
- * editor es un proyecto aparte; ya no toma nada del librito de Marissa).
+ * editor es un proyecto aparte; ya no toma nada del librito original).
  * Las canciones son tuyas (.mp3 o .wav) y se listan por nombre.
  * El editor nunca elige por ti: sólo enseña lo que hay.
  */

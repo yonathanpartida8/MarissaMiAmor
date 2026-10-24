@@ -42,19 +42,31 @@ está en el pie, junto al de empezar de cero.
 
 ### Como app de Android (APK)
 
-En `android/` está la app: abre tu GitHub Pages a pantalla completa, sin barra
-de direcciones, con el botón «atrás» del teléfono, elegir fotos, vídeo a
-pantalla completa y descargas que se guardan en Descargas/Librito. La construye
-GitHub sola (Actions → «APK de Android») cada vez que cambia `android/` o el
-icono, y la deja en **Releases → «apk» → Librito.apk**: se abre desde el
-teléfono, se permite «instalar apps de este origen» y listo.
+En `android/` está la app de **My Love Pages** (Fase 45): un APK de verdad que
+abre `EditorDev/` (el editor, Mensajitos, Detallitos, Nuestros días) a pantalla
+completa, sin barra de direcciones, con el botón «atrás» del teléfono, elegir
+fotos, vídeo a pantalla completa, descargas que se guardan en Descargas/Librito
+y **la cámara, el micrófono y la ubicación** (se le piden al teléfono sólo
+cuando la página los usa, y sólo para tu sitio). La construye GitHub sola
+(Actions → «APK de Android») cada vez que cambia `android/` o el icono, revisa
+que salga firmada y la deja en **Releases → «apk» → MyLovePages.apk**: se abre
+desde el teléfono, se permite «instalar apps de este origen» y listo. Como abre
+la página publicada, los cambios de la página llegan solos (no hay que rehacer
+el APK).
 
+- Dentro de la app **no llegan las notificaciones push** (una vista web de
+  Android no las tiene): para recibirlas, instala My Love Pages desde Chrome
+  («Agregar a pantalla de inicio» / «Instalar app»).
 - Para abrir otra dirección: Actions → «APK de Android» → *Run workflow* y
   escríbela.
 - La app se firma siempre con la misma llave (guardada en la caché de
-  Actions), así que cada versión nueva se instala encima sin perder nada. Para
-  que esa llave no caduque nunca, guárdala como secreto del repositorio
-  (`ANDROID_KEYSTORE_B64` y `ANDROID_KEYSTORE_PASS`).
+  Actions, que se toca cada lunes para que no se borre), así que cada versión
+  nueva se instala encima sin perder nada. Lo más seguro es guardarla como
+  secreto del repositorio (`ANDROID_KEYSTORE_B64` y `ANDROID_KEYSTORE_PASS`).
+  Si alguna vez Android dice que «no se instaló» porque ya hay otra con el
+  mismo nombre, desinstala la de antes (la que se llamaba «Marissa×Ynthn») y
+  vuelve a instalar.
+- El APK no lleva claves ni contraseñas: sólo la dirección que abre.
 - iPhone no instala APK: ahí se usa «Añadir a pantalla de inicio» (arriba).
 
 ### Si el enlace da 404 (GitHub Pages apagado)

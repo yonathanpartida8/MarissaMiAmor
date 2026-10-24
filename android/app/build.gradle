@@ -2,9 +2,9 @@ plugins {
     id "com.android.application"
 }
 
-// La dirección que abre la app (la de tu GitHub Pages). Se cambia al construir:
-// LIBRITO_URL=https://…/ gradle assembleRelease
-def URL_LIBRITO = System.getenv("LIBRITO_URL") ?: "https://yonathanpartida8.github.io/MarissaMiAmor/"
+// La dirección que abre la app: My Love Pages (el editor, Mensajitos, Detallitos…) en tu GitHub Pages.
+// Se cambia al construir: LIBRITO_URL=https://…/ gradle assembleRelease
+def URL_LIBRITO = System.getenv("LIBRITO_URL") ?: "https://yonathanpartida8.github.io/MarissaMiAmor/EditorDev/"
 def NUMERO = (System.getenv("GITHUB_RUN_NUMBER") ?: "1") as Integer
 
 android {

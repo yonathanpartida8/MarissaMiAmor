@@ -9,7 +9,7 @@
  *              (se desplaza la línea): lo de la hoja arriba, la página como clip principal con sus
  *              cuadritos (y las páginas vecinas con su transición y el «+»), la música y «Añadir audio»
  *   al fondo   las herramientas, según lo elegido (nunca todas a la vez):
- *                nada      → Menú (todas, Fase 43), Cortar página, Transición, Estilo, Texto, Bloques,
+ *                nada      → Menú (todas, Fase 43), Cortar página, Limpiar página (Fase 45), Transición, Estilo, Texto, Bloques,
  *                            Elementos, Música, Imágenes, Stickers, Efectos, Al tocar, HTML, Sonido
  *                un clip   → Editar texto / Cambiar foto, Dividir, Empieza aquí, Termina aquí, Correr,
  *                            Acción, Al tocar, Animación, Efectos, Color, Opacidad, Centrar, Luz y color,
@@ -354,6 +354,7 @@ export class ModoPro {
       xs = [
         b("menu", "Menú", () => (this.menuAbierto ? this.cerrarMenu() : this.verMenu(null)), this.menuAbierto && !this._sec ? ".on.menu" : ".menu"),
         b("tijeras", "Cortar página", () => L.dividirPagina()),
+        b("limpiar", "Limpiar página", () => A.vaciarPagina(E.paginaId)),
         b("transiciones", "Transición", (n) => L._elegirTrans(E.paginaId, n)),
         b("fondo", "Estilo", () => sec("estilo"), enMenu("estilo")),
         sep(),

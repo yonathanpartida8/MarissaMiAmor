@@ -12,7 +12,7 @@
  *   Los días    una tarjetita de papel rasgado con su clip: cuántos días
  *               llevan juntos (sube al abrir), lo que viene (mesiversario,
  *               aniversario o un cumpleaños) y su barrita que se llena.
- *   Crear       el botón grande «Crear librito» y, a su lado, un gatito
+ *   Crear       el botón grande «Crear detallito» y, a su lado, un gatito
  *               dormido que respira, mueve la cola y suelta sus «z» (si lo
  *               tocas, ronronea y se acomoda).
  *   Tarjetas    Mensajitos (con tu amorcito vinculado), Detallitos (la colección de los
@@ -49,7 +49,7 @@ const CAMINO = { "inicio>cuenta": "carta", "cuenta>inicio": "atras", "inicio>per
 /* El hilo rojo: dos tramos fijos y, en medio, el corazón que late (en su propia capa). */
 // (Fase 36) El hilo rojo: una curva suave de foto a foto que se hunde un poquito hacia el corazón,
 // con su brillo que lo recorre; el corazón, fino y redondito, con relleno rosado muy suave y su latido.
-const HILO = '<svg viewBox="0 0 160 70" preserveAspectRatio="none" aria-hidden="true"><path class="mp-hilo-sombra" d="M2 22C26 26 50 40 68 48M92 48C110 40 134 26 158 22"/><path class="mp-hilo-cuerda" d="M2 22C26 26 50 40 68 48M92 48C110 40 134 26 158 22"/><path class="mp-hilo-luz" d="M2 22C26 26 50 40 68 48M92 48C110 40 134 26 158 22"/></svg>';
+const HILO = '<svg viewBox="0 0 160 70" preserveAspectRatio="none" aria-hidden="true"><path class="mp-hilo-sombra" d="M2 22C26 26 50 40 68 48M92 48C110 40 134 26 158 22"/><path class="mp-hilo-cuerda" d="M2 22C26 26 50 40 68 48M92 48C110 40 134 26 158 22"/></svg>';
 const HILO_CORAZON = '<svg viewBox="0 0 48 44" aria-hidden="true"><defs><linearGradient id="mpCorRelleno" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd3e2" stop-opacity=".9"/><stop offset="1" stop-color="#ff8db4" stop-opacity=".55"/></linearGradient></defs><path class="mp-cor-relleno" d="M24 39.4C17.6 34.2 8.4 27.8 8.1 18.4 7.9 12.3 12.2 8 17.5 8c3 0 5.3 1.6 6.5 4 1.2-2.4 3.5-4 6.5-4 5.3 0 9.6 4.3 9.4 10.4-.3 9.4-9.5 15.8-15.9 21z" fill="url(#mpCorRelleno)"/><path class="mp-cor-linea" d="M24 39.4C17.6 34.2 8.4 27.8 8.1 18.4 7.9 12.3 12.2 8 17.5 8c3 0 5.3 1.6 6.5 4 1.2-2.4 3.5-4 6.5-4 5.3 0 9.6 4.3 9.4 10.4-.3 9.4-9.5 15.8-15.9 21z" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.4 15.6c.8-1.8 2.3-2.8 4-2.9" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".85"/></svg>';
 const LAPIZ = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 1-4.2L15.6 5.2a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.2 19 4 20z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m13.8 7 3.2 3.2M4 20h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 const FLECHA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -183,9 +183,12 @@ export class MenuPrincipal {
     this._rAj = requestAnimationFrame(() => {
       const c = this.capa, col = c?.querySelector(".mp-columna");
       if (!col) return;
-      col.style.zoom = "";
       c.classList.toggle("mp-fijo", this.vista === "inicio");
-      if (this.vista !== "inicio") return;
+      if (this.vista !== "inicio") { col.style.zoom = ""; return; }
+      // Misma pantalla y mismo inicio que la última vez (p. ej. al volver del editor): se parte del zoom
+      // que quedó y basta una medida; antes se volvía a 1 y se medía hasta 4 veces el menú entero (~100 ms).
+      const llave = [innerWidth, innerHeight, Math.round(visualViewport?.height || 0), this._clave()].join("|");
+      col.style.zoom = llave === this._zLlave ? this._zoom : "";
       for (let i = 0; i < 4; i++) {
         // (El alto que de verdad se ve: sin la barra del navegador que tapa abajo.)
         const alto = Math.min(c.clientHeight, Math.round(visualViewport?.height || c.clientHeight)), todo = c.scrollHeight;
@@ -193,6 +196,7 @@ export class MenuPrincipal {
         const z = (+col.style.zoom || 1) * (alto / todo) * 0.995;
         col.style.zoom = String(Math.max(0.6, z));
       }
+      this._zLlave = llave; this._zoom = col.style.zoom;
     });
   }
 
@@ -287,7 +291,7 @@ export class MenuPrincipal {
     r.fotoYo = this._fotoPola("yo");
     const polaYo = el("figure.mp-pola.yo", {}, [el("i.mp-cinta"), el("span.mp-pola-marco", {}, [r.fotoYo]), el("figcaption.mp-pola-etq", {}, [r.nombreYo, el("i", { html: ico("corazon") })])]);
     const hilo = el("div.mp-hilo", { "aria-hidden": "true", html: HILO }, []);
-    hilo.append(el("i.mp-hilo-corazon", { html: HILO_CORAZON }));
+    hilo.append(el("i.mp-hilo-brillo"), el("i.mp-hilo-brillo.b2"), el("i.mp-hilo-corazon", { html: HILO_CORAZON }));
     if (pa) {
       r.nombrePa = el("b", { text: inicial(PF.nombreDe(pa)) });
       r.fotoPa = this._fotoPola("pareja");
@@ -412,7 +416,7 @@ export class MenuPrincipal {
         el("small.mp-crear-d", { text: "Convierte sus momentos juntos en una página hecha por ti, llena de recuerdos." }),
       ]),
     ]);
-    // Sin librito abierto (volviste desde «Crear librito»), el editor vuelve a ofrecer crear uno.
+    // Sin librito abierto (volviste desde «Crear detallito»), el editor vuelve a ofrecer crear uno.
     const seguir = el("button.mp-seguir.mp-editor-ir", { type: "button", style: { "--i": 3 }, onClick: () => { this.cerrar(); if (!app.estado?.proyecto && !document.querySelector(".ed-inicio")) app.inicio?.(); } }, [
       el("i.mp-editor-ico", { html: LAPIZ }),
       el("span.mp-editor-t", {}, [el("b", { text: "Ir al editor" }), el("small", { text: "Edita, organiza y personaliza tus páginas." })]),

@@ -213,7 +213,6 @@
 .jt-pin.pareja .jt-pin-in::after { color: #f07aa8; }
 @keyframes jt-latido { 0% { opacity: .7; transform: scale(.85); } 70%, 100% { opacity: 0; transform: scale(1.35); } }
 @media (prefers-reduced-motion: reduce) { .jt-pin-in::after { animation: none; } }
-html:is(.rd-ahorro, .rd-reposo, .rd-oculto) .jt-pin-in::after { animation: none; }
 
 /* ═══ Fase 40: más lindo y vivo, cada pestaña con lo suyo, y Dibujar Juntos ═══ */
 /* La barra de abajo: una pastillita que se desliza a la pestaña elegida. */
@@ -246,8 +245,7 @@ html:is(.rd-ahorro, .rd-reposo, .rd-oculto) .jt-pin-in::after { animation: none;
 .jt-accion-b b { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--jt-acento); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
 .jt-accion-pill { padding: 8px 12px; border-radius: 99px; background: var(--jt-lila); color: var(--jt-lila-t); font: 800 12.5px/1 "Nunito", sans-serif; white-space: nowrap; animation: jtCarta .5s both; }
 .jt-hoja-sub { margin-top: 4px; font: 800 13px/1.2 "Nunito", sans-serif; color: var(--jt-suave); }
-/* En reposo o ahorro, quietecito. */
-html:is(.rd-ahorro, .rd-reposo, .rd-oculto) :is(.jt-hola h1, .jt-rejilla > .jt-carta) { animation: none; }
+/* (Fase 45) En reposo o ahorro, lo que se repite se aquieta solo (rendimiento.js, «rd-q»); las entradas no se repiten al volver a tocar. */
 @media (prefers-reduced-motion: reduce) { .jt-vista, .jt-rejilla > .jt-carta, .jt-hola h1, .jt-nav::before { animation: none !important; transition: none !important; } }
 
 /* ── Dibujar Juntos ── */
@@ -352,5 +350,23 @@ html:is(.rd-ahorro, .rd-reposo, .rd-oculto) :is(.jt-hola h1, .jt-rejilla > .jt-c
 .jt-pronto-ico svg { width: 60px; height: 60px; }
 .jt-pronto-tag { padding: 6px 13px; border-radius: 99px; background: var(--jt-amarillo); color: var(--jt-amarillo-t); font: 800 13px/1.2 "Nunito", sans-serif; }
 @keyframes jtFlotaP { 50% { transform: translateY(-8px) rotate(-3deg); } }
-:where(html.rd-reposo, html.rd-ahorro) .jt-pronto-ico, :where(html.rd-reposo, html.rd-ahorro) .jt-cuadro { animation: none; }
 @media (prefers-reduced-motion: reduce) { .jt-cuadro, .jt-pronto-ico { animation: none; } .jt-sheet.anim, .jt-secpanel { transition-duration: .01s; } }
+
+/* ═══ Fase 45 · Nuestros días, más natural: lo de ustedes arriba, botones sencillos, «Pronto» aparte ═══ */
+.jt-nosotros { display: flex; align-items: center; gap: 12px; margin: 2px 2px 14px; }
+.jt-dos { display: flex; flex: none; }
+.jt-dos .jt-av { width: 46px; height: 46px; border: 2.5px solid var(--jt-papel); box-shadow: 0 2px 8px rgba(120, 60, 90, .1); font-size: 17px; }
+.jt-dos .jt-av + .jt-av { margin-left: -13px; }
+.jt-nosotros-t { display: grid; gap: 2px; min-width: 0; }
+.jt-nosotros-t b { font: 800 17px/1.2 "Nunito", sans-serif; color: var(--jt-tinta); }
+.jt-nosotros-t span { font: 700 14.5px/1.2 "Nunito", sans-serif; color: var(--jt-acento); }
+.jt-nosotros-t small { font: 500 12.5px/1.3 Jost, system-ui, sans-serif; color: var(--jt-suave); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jt-cuadros .jt-cuadro { aspect-ratio: auto; min-height: 96px; padding: 12px 6px 10px; border: 1px solid var(--jt-linea); background: var(--jt-papel); color: var(--jt-tinta); box-shadow: 0 1px 2px rgba(120, 60, 90, .05); }
+.jt-cuadros .jt-cuadro i { width: 42px; height: 42px; border-radius: 14px; background: var(--c); color: var(--t); box-shadow: none; }
+.jt-cuadros .jt-cuadro i svg { width: 24px; height: 24px; }
+@media (hover: hover) { .jt-cuadros .jt-cuadro:hover { border-color: var(--c); } }
+.jt-pronto-fila { display: flex; align-items: center; gap: 8px; margin: -4px 0 16px; overflow-x: auto; scrollbar-width: none; }
+.jt-pronto-fila > small { flex: none; font: 800 11px/1 "Nunito", sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--jt-suave); }
+.jt-pronto-b { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px 0 6px; border: 1px dashed var(--jt-linea); border-radius: 99px; background: transparent; color: var(--jt-suave); font: 700 13px/1 "Nunito", sans-serif; cursor: pointer; }
+.jt-pronto-b i { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--jt-rosa); color: var(--jt-rosa-t); }
+.jt-pronto-b i svg { width: 15px; height: 15px; }

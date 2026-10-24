@@ -91,7 +91,7 @@ export function nuevoProyecto(nombre = "Mi librito", formato = "movil") {
       formato,
       ancho: f.w,
       alto: f.h,
-      tema: { fondo: "#fff6f1", texto: "#3a2440", acento: "#d8397a", fuente: "Cormorant Garamond", fuenteTitulos: "Cormorant Garamond" },
+      tema: { fondo: "#ffffff", texto: "#3a2440", acento: "#d8397a", fuente: "Cormorant Garamond", fuenteTitulos: "Cormorant Garamond" },
       transicion: { tipo: "fundido", dur: 700, dir: "auto", facil: "entraSale" },
       musica: { asset: null, volumen: 0.7, bucle: true },
       reproduccion: { flechas: true, progreso: true, deslizar: true, indice: true, tocarParaEmpezar: true, alFinal: "quedarse", autoAvance: 0 },

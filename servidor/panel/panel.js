@@ -470,14 +470,10 @@
     const maxMb = h("input", { type: "number", min: 10, max: 2000, value: a.max_subida_mb });
     const num = (v, min, max) => h("input", { type: "number", min, max, value: v });
     const cuota = num(a.cuota_mb, 10, 100000), maxUs = num(a.max_usuarios, 1, 100000), maxPub = num(a.max_publicaciones, 1, 1000), copias = num(a.copias_por_proyecto, 1, 100);
-    // Fase 44: un servidor TURN para las llamadas (sólo si en alguna red no se conectan).
-    const t0 = (a.ice || [])[0] || {};
-    const turn = h("input", { value: (t0.urls || [])[0] || "", placeholder: "turn:mi-turn.com:3478 (opcional)" });
-    const turnU = h("input", { value: t0.username || "", placeholder: "usuario" }), turnC = h("input", { type: "password", value: t0.credential || "", placeholder: "contraseña" });
     const interruptor = (input, titulo, texto) => h("label.interruptor", {}, h("div", {}, h("b", { text: titulo }), h("small", { text: texto })), input);
     const guardar = btn("Guardar ajustes", async () => {
       try {
-        await api("admin/ajustes", { method: "PUT", body: { nombre: nombre.value, tunel: tunel.value, url_publica: urlFija.value.trim(), anunciar: anunciar.checked, permitir_local: local.checked, origenes: origenes.value.split(/\s+/).filter(Boolean), max_subida_mb: +maxMb.value, cuota_mb: +cuota.value, max_usuarios: +maxUs.value, max_publicaciones: +maxPub.value, copias_por_proyecto: +copias.value, ice: turn.value.trim() ? [{ urls: turn.value.trim(), username: turnU.value.trim(), credential: turnC.value }] : [] } });
+        await api("admin/ajustes", { method: "PUT", body: { nombre: nombre.value, tunel: tunel.value, url_publica: urlFija.value.trim(), anunciar: anunciar.checked, permitir_local: local.checked, origenes: origenes.value.split(/\s+/).filter(Boolean), max_subida_mb: +maxMb.value, cuota_mb: +cuota.value, max_usuarios: +maxUs.value, max_publicaciones: +maxPub.value, copias_por_proyecto: +copias.value } });
         INFO = await api("info"); aviso("Guardado", "ok");
         if (tunel.value !== a.tunel) { await api("admin/tunel/reiniciar", { method: "POST", body: {} }); aviso(tunel.value === "cloudflare" ? "Abriendo el túnel…" : "Túnel cerrado"); }
       } catch (e) { aviso(e.message, "mal"); }
@@ -494,10 +490,7 @@
       caja("Quién puede hablarle a la API", "llave",
         h("p", { text: `Tu GitHub Pages ya está permitido. ${INFO.sitio ? "(" + INFO.sitio + ")" : ""}` }),
         campo("Otros orígenes", origenes, "Sólo si abres el editor desde otra dirección."),
-        interruptor(local, "Permitir localhost", "Para probar el editor en este mismo teléfono o en tu computadora.")),
-      caja("Llamadas y videollamadas", "enlace",
-        h("p", { text: "Van directo de teléfono a teléfono (cifradas). Casi siempre se conectan solas; si en alguna red (datos móviles, wifi del trabajo) no, pon aquí un servidor TURN." }),
-        campo("Servidor TURN", turn, "Empieza con turn: o turns:"), campo("Usuario del TURN", turnU), campo("Contraseña del TURN", turnC))),
+        interruptor(local, "Permitir localhost", "Para probar el editor en este mismo teléfono o en tu computadora."))),
       h("div.fila", {}, guardar));
   }
 

@@ -1,7 +1,9 @@
-# Construye la app de Android (un APK) que abre el librito a pantalla completa.
-# Se hace sola cuando cambia android/ o el icono; también a mano: Actions →
-# «APK de Android» → Run workflow (ahí se puede cambiar la dirección que abre).
-# El APK queda en Releases → «apk» (Librito.apk), listo para instalar.
+# Construye la app de Android de My Love Pages (un APK de verdad: se instala y abre la app a
+# pantalla completa, con cámara, micrófono y ubicación). Se hace sola cuando cambia android/ o el
+# icono; también a mano: Actions → «APK de Android» → Run workflow (ahí se puede cambiar la dirección).
+# El APK queda en Releases → «apk» (MyLovePages.apk), listo para instalar.
+# Como la app abre la página publicada, NO hace falta rehacerla cuando cambia la página: sólo cuando
+# cambia lo de Android. No lleva ninguna clave ni contraseña dentro (la firma vive en Actions).
 name: APK de Android
 
 on:
@@ -9,13 +11,17 @@ on:
     inputs:
       url:
         description: "Dirección que abre la app"
-        default: "https://yonathanpartida8.github.io/MarissaMiAmor/"
+        default: "https://yonathanpartida8.github.io/MarissaMiAmor/EditorDev/"
   push:
     branches: ["**"]
     paths:
       - "android/**"
       - "icono/**"
       - ".github/workflows/apk.yml"
+  # (Una vez por semana sólo se toca la llave guardada: así no se borra de la caché —se borra a los
+  # 7 días sin usarse— y cada APK nuevo se sigue instalando ENCIMA del anterior.)
+  schedule:
+    - cron: "17 9 * * 1"
 
 permissions:
   contents: write
@@ -25,7 +31,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Los lunes: sólo tocar la llave guardada (para que no se borre de la caché).
+  llave:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/cache/restore@v4
+        with:
+          path: android/firma.jks
+          key: firma-apk-v1
+
   apk:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +63,7 @@ jobs:
           fi
       # La misma llave siempre: así cada APK nuevo se instala ENCIMA del anterior
       # (sin perder lo guardado). Si pones el secreto ANDROID_KEYSTORE_B64 se usa
-      # ése; si no, se crea una y se guarda en la caché de Actions.
+      # ése (lo más seguro: nunca se pierde); si no, se crea una y se guarda en la caché de Actions.
       - uses: actions/cache@v4
         with:
           path: android/firma.jks
@@ -59,24 +76,35 @@ jobs:
           if [ -n "$KS_B64" ]; then echo "$KS_B64" | base64 -d > android/firma.jks
           elif [ ! -f android/firma.jks ]; then
             keytool -genkeypair -keystore android/firma.jks -alias librito -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass "$KS_PASS" -keypass "$KS_PASS" -dname "CN=Librito"
+              -storepass "$KS_PASS" -keypass "$KS_PASS" -dname "CN=My Love Pages"
           fi
       - name: Construir
         working-directory: android
         env:
-          LIBRITO_URL: ${{ inputs.url || 'https://yonathanpartida8.github.io/MarissaMiAmor/' }}
+          LIBRITO_URL: ${{ inputs.url || 'https://yonathanpartida8.github.io/MarissaMiAmor/EditorDev/' }}
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS || 'librito-firma' }}
           KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'librito' }}
         run: gradle assembleRelease --no-daemon
+      # Que de verdad sea un APK instalable: firmado, con su nombre y lo que pide (se ve en el registro).
+      - name: Revisar el APK
+        run: |
+          A=android/app/build/outputs/apk/release/app-release.apk
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --print-certs "$A" | grep -E "Signer #1 certificate (DN|SHA-256)"
+          "$BT/aapt2" dump badging "$A" | grep -E "^package|application-label|uses-permission|targetSdk"
+          echo "Tamaño: $(du -h "$A" | cut -f1)"
       - name: Guardar el APK
         uses: actions/upload-artifact@v4
         with:
-          name: Librito-APK
+          name: MyLovePages-APK
           path: android/app/build/outputs/apk/release/app-release.apk
       - name: Publicarlo en Releases («apk»)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp android/app/build/outputs/apk/release/app-release.apk Librito.apk
-          gh release view apk >/dev/null 2>&1 || gh release create apk --title "Librito para Android" --notes "La app del librito: ábrelo en el teléfono e instálalo. Se rehace sola cuando cambia android/ o el icono." --latest=false --target "$GITHUB_SHA"
-          gh release upload apk Librito.apk --clobber
+          cp android/app/build/outputs/apk/release/app-release.apk MyLovePages.apk
+          gh release view apk >/dev/null 2>&1 || gh release create apk --title "My Love Pages para Android" --notes "La app de My Love Pages: ábrelo en el teléfono e instálalo (permite «instalar apps de fuentes desconocidas» si te lo pide). Se rehace sola cuando cambia android/ o el icono." --latest=false --target "$GITHUB_SHA"
+          gh release edit apk --title "My Love Pages para Android" >/dev/null 2>&1 || true
+          gh release upload apk MyLovePages.apk --clobber
+          # (El de antes, con su nombre viejo, se quita para que no haya dos.)
+          gh release delete-asset apk Librito.apk --yes >/dev/null 2>&1 || true

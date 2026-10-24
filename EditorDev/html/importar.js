@@ -459,7 +459,7 @@ export class Importador {
         if (e.tipo === "cover") {
           const pg = nuevaPagina(P, { nombre: "Portada", fondo: { tipo: "gradiente", color: "#1c0e2e", gradiente: { a: "#3a1d47", b: "#14091b", angulo: 170, tipo: "radial" } } });
           if (e.fotos[0]) pg.els.push(nuevoEl("imagen", P, { nombre: "Foto de portada", x: 30, y: 110, w: W - 60, h: Math.round(H * 0.55), caja: { radio: 18, sombra: { x: 0, y: 18, blur: 40, color: "rgba(0,0,0,.45)" } }, imagen: { asset: ref(e.fotos[0], "imagen", "portada") }, anim: { entrada: { tipo: "zoom", dur: 1200 }, salida: { tipo: "ninguna" }, bucle: { tipo: "ninguno" }, propia: null } }));
-          pg.els.push(nuevoEl("texto", P, { nombre: "Título", x: 24, y: Math.round(H * 0.55) + 140, w: W - 48, h: 70, texto: { html: "Marissa · Mi Amorcito", fuente: "Cormorant Garamond", tam: 40, peso: 600, cursiva: true, color: "#ffe9f1" }, anim: { entrada: { tipo: "desenfoque", dur: 1200, retraso: 500 }, salida: { tipo: "ninguna" }, bucle: { tipo: "ninguno" }, propia: null } }));
+          pg.els.push(nuevoEl("texto", P, { nombre: "Título", x: 24, y: Math.round(H * 0.55) + 140, w: W - 48, h: 70, texto: { html: "Mi Amorcito", fuente: "Cormorant Garamond", tam: 40, peso: 600, cursiva: true, color: "#ffe9f1" }, anim: { entrada: { tipo: "desenfoque", dur: 1200, retraso: 500 }, salida: { tipo: "ninguna" }, bucle: { tipo: "ninguno" }, propia: null } }));
           poner(pg, null);
           P.ajustes.portada = pg.id;
           continue;

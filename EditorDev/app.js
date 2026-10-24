@@ -26,7 +26,6 @@
 import * as RD from "./components/rendimiento.js";
 import { ModoPro } from "./components/modo-pro.js";
 import { Juntitos } from "./components/juntitos.js";
-import { Llamadas } from "./llamadas/llamada.js";
 import * as UB from "./components/ubicacion.js";
 import { FxEditor } from "./canvas/fx.js";
 import { el, aviso, modal, esMovil, menu, popover } from "./components/ui.js";
@@ -187,7 +186,6 @@ async function arrancar() {
   app.tiempo = new Linea(app, $(".ed-linea"));
   app.pro = new ModoPro(app); // la línea de tiempo, como un editor de vídeo (Fase 38)
   app.juntitos = new Juntitos(app); // Cositas Juntitos: «Nuestros días juntos» (Fase 38)
-  app.llamadas = new Llamadas(app); // llamadas y videollamadas (Fase 44)
   app.barra = new BarraContextual(app, $(".ed-contexto"));
   // La pestañita de la izquierda (Fase 42): abre el cajón con lo último que usaste ahí (o Bloques).
   const pestana = el("button.ed-pestana", { type: "button", "aria-label": "Abrir el menú (Bloques, Recursos, Elementos…)", title: "Desliza o toca: Bloques, Recursos, Elementos…" }, [el("i"), el("i"), el("i")]);
@@ -583,12 +581,12 @@ app.abrir = async (id) => {
   await app.abrirProyecto(P, notas.length > 0, notas);
 };
 
-app.nuevo = async (nombre, formato = "movil", { portada = "portada", imagen = null } = {}) => {
+app.nuevo = async (nombre, formato = "movil", { portada = "portada-clasica", imagen = null } = {}) => {
   if (app.auto.pendiente) await app.auto.ahora();
   if (!nombre) { pantallaInicio(app, { cerrable: !!app.estado.proyecto }); return; }
   const P = nuevoProyecto(nombre, formato);
   if (formato === "auto" && matchMedia("(pointer: coarse)").matches) { const t = tamAuto(); P.ajustes.ancho = t.w; P.ajustes.alto = t.h; }
-  const pg = (PLANTILLAS.find((t) => t.id === portada && t.cat === "portadas") || PLANTILLAS.find((t) => t.id === "portada")).crear(P);
+  const pg = (PLANTILLAS.find((t) => t.id === portada && t.cat === "portadas") || PLANTILLAS.find((t) => t.id === "portada-clasica")).crear(P);
   pg.nombre = "Portada";
   P.paginas[pg.id] = pg;
   P.orden.push(pg.id);
@@ -605,7 +603,7 @@ app.nuevo = async (nombre, formato = "movil", { portada = "portada", imagen = nu
       else if (a) app.estado.setPag({ fondo: { ...(pag.fondo || {}), imagen: { asset: a.id, ajuste: "cover", pos: "center", opacidad: 1 } } }, "Foto de portada", null, pg.id);
     } catch (e) { aviso("No se pudo poner tu imagen: tócala en la portada para elegirla otra vez", 4000, "error"); }
   }
-  aviso("Tu librito nuevo. Empieza tocando cualquier cosa de la portada");
+  aviso(portada === "portada-clasica" ? "Tu detallito nuevo, en blanco: añade lo que quieras desde la pestañita" : "Tu detallito nuevo. Empieza tocando cualquier cosa de la portada");
 };
 
 app.inicio = async (op = {}) => {
@@ -689,13 +687,12 @@ const abrirAviso = (u) => {
   else if (u === "#detallitos") app.detallitos.abrir(null, "coleccion");
   else if (u === "#cositas") app.juntitos.abrir("cositas");
   else if (u === "#cositas-mapa") app.juntitos.abrir("mapa");
-  else if (u === "#llamada") app.llamadas.escuchar();   // (lo que suena llega solo en cuanto la app pregunta)
 };
 setTimeout(() => PUSH.registrar().then(() => PUSH.alDia()), 2500);
 addEventListener("ed-cuenta", () => setTimeout(() => PUSH.alDia(), 400));
 navigator.serviceWorker?.addEventListener("message", (e) => { if (e.data?.tipo === "aviso-abrir") abrirAviso(e.data.u); });
 const desdeAviso = (espera) => {
-  if (!/^#(chat|detallitos|cositas|cositas-mapa|llamada)$/.test(location.hash)) return;
+  if (!/^#(chat|detallitos|cositas|cositas-mapa)$/.test(location.hash)) return;
   const u = location.hash;
   history.replaceState(history.state, "", location.pathname + location.search);
   setTimeout(() => abrirAviso(u), espera);
