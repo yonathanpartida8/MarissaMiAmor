@@ -88,11 +88,18 @@ jobs:
       # Que de verdad sea un APK instalable: firmado, con su nombre y lo que pide (se ve en el registro).
       - name: Revisar el APK
         run: |
+          # Lo que falla de verdad: la firma no sirve o falta el permiso de la cámara. Lo demás sólo se
+          # muestra (cada versión de build-tools escribe un poquito distinto; un grep no debe tumbar el paso).
+          set -o pipefail
           A=android/app/build/outputs/apk/release/app-release.apk
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
-          "$BT/apksigner" verify --print-certs "$A" | grep -E "Signer #1 certificate (DN|SHA-256)"
-          "$BT/aapt2" dump badging "$A" | grep -E "^package|application-label|uses-permission|targetSdk"
-          echo "Tamaño: $(du -h "$A" | cut -f1)"
+          echo "build-tools: $(basename "$BT") · Tamaño: $(du -h "$A" | cut -f1)"
+          "$BT/apksigner" verify --verbose "$A" | grep -iE "verif" || true
+          "$BT/apksigner" verify "$A"
+          "$BT/apksigner" verify --print-certs "$A" | grep -iE "certificate (DN|SHA-256)" || true
+          "$BT/aapt2" dump badging "$A" > badging.txt
+          grep -E "^package|application-label|uses-permission|targetSdk" badging.txt || true
+          grep -q "android.permission.CAMERA" badging.txt
       - name: Guardar el APK
         uses: actions/upload-artifact@v4
         with:
