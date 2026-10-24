@@ -111,7 +111,7 @@ jobs:
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk MyLovePages.apk
           gh release view apk >/dev/null 2>&1 || gh release create apk --title "My Love Pages para Android" --notes "La app de My Love Pages: ábrelo en el teléfono e instálalo (permite «instalar apps de fuentes desconocidas» si te lo pide). Se rehace sola cuando cambia android/ o el icono." --latest=false --target "$GITHUB_SHA"
-          gh release edit apk --title "My Love Pages para Android" >/dev/null 2>&1 || true
+          gh release edit apk --title "My Love Pages para Android" --notes "La app de My Love Pages: ábrelo en el teléfono e instálalo (permite «instalar apps de fuentes desconocidas» si te lo pide). Se rehace sola cuando cambia android/ o el icono." >/dev/null 2>&1 || true
           gh release upload apk MyLovePages.apk --clobber
           # (El de antes, con su nombre viejo, se quita para que no haya dos.)
           gh release delete-asset apk Librito.apk --yes >/dev/null 2>&1 || true
