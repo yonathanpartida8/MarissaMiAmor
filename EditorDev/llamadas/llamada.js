@@ -127,7 +127,7 @@ export class Llamadas {
       this._tono("espera");
       this.escuchar();
     } catch (e) {
-      if (this.l === l) this._fin(e.message || "No se pudo llamar.", false, true);
+      if (this.l === l) this._fin(e.status === 404 ? `Tu ${SRV.NOMBRE} todavía no sabe hacer llamadas: actualízalo («librito actualizar»).` : e.message || "No se pudo llamar.", false, true);
     }
   }
 
