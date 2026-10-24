@@ -2,7 +2,7 @@
  * MENSAJITOS — el chat de los dos (Fases 30, 31 y 34), dentro de Detallitos.
  *
  *   · como la foto (Fase 34): lila suavecito con corazoncitos dibujados; arriba sólo su foto y su nombre
- *     (con «Siempre juntos ∞»), videollamada y llamada (todavía no: «Ay ora jeje») y ⋮ (ajustes y
+ *     (con «Siempre juntos ∞»), videollamada y llamada (Fase 44: de verdad, llamadas/llamada.js) y ⋮ (ajustes y
  *     privacidad); abajo los ánimos (todavía no hacen nada) y la barra: + (las cositas), escribir con 🙂,
  *     stickers, GIF y 🎤 (que se vuelve «mandar»)
  *   · burbujas nuevas: las tuyas lila con rosita, las suyas de vidrio blanco; al mandar, la tuya sale
@@ -162,9 +162,8 @@ export function vistaChat(det) {
 
   /* — Arriba: sólo su foto y su nombre — */
   const atras = el("button.ch-atras", { type: "button", "aria-label": "Atrás", html: IC.chevron, onClick: () => det.atras() });
-  const ahoraNo = (b) => { aviso("Ay ora jeje", 2600); if (!reducido()) b.animate([{ transform: "rotate(0)" }, { transform: "rotate(-12deg)" }, { transform: "rotate(10deg)" }, { transform: "rotate(-6deg)" }, { transform: "rotate(0)" }], { duration: 480 }); };
-  const bVideo = el("button.ch-cab-b", { type: "button", "aria-label": "Videollamada", html: IC.video, onClick: () => ahoraNo(bVideo) });
-  const bTel = el("button.ch-cab-b", { type: "button", "aria-label": "Llamar", html: IC.tel, onClick: () => ahoraNo(bTel) });
+  const bVideo = el("button.ch-cab-b", { type: "button", "aria-label": "Videollamada", html: IC.video, onClick: () => app.llamadas?.llamar("video") });
+  const bTel = el("button.ch-cab-b", { type: "button", "aria-label": "Llamar", html: IC.tel, onClick: () => app.llamadas?.llamar("voz") });
   const bPuntos = el("button.ch-cab-b", { type: "button", "aria-label": "Ajustes y privacidad del chat", "aria-haspopup": "menu", html: IC.puntos, onClick: () => hojaAjustes() });
   const cab = el("header.ch-cab", {}, [
     atras,

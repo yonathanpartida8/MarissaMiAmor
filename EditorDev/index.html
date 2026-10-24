@@ -22,6 +22,7 @@
 <link rel="stylesheet" href="styles/myn.css">
 <link rel="stylesheet" href="styles/mensajitos.css">
 <link rel="stylesheet" href="styles/juntitos.css">
+<link rel="stylesheet" href="styles/llamada.css">
   <!-- Cada estilo vive en su carpeta: estilos/<estilo>/ (css, imágenes, fuentes y música) -->
   <link rel="stylesheet" href="estilos/cuaderno/estilo.css">
   <link rel="stylesheet" href="estilos/retromylove/estilo.css">
@@ -117,6 +118,9 @@
 <link rel="modulepreload" href="integraciones/giphy.js">
 <link rel="modulepreload" href="integraciones/nube.js">
 <link rel="modulepreload" href="integraciones/servidor.js">
+<link rel="modulepreload" href="llamadas/efectos.js">
+<link rel="modulepreload" href="llamadas/gesto.js">
+<link rel="modulepreload" href="llamadas/llamada.js">
 <link rel="modulepreload" href="mascota/abeja.js">
 <link rel="modulepreload" href="mascota/dialogos.js">
 <link rel="modulepreload" href="mascota/glitch.js">
@@ -171,10 +175,10 @@
     </div>
   </header>
 
-  <!-- El riel de herramientas (siempre a la vista) y su panel. En la computadora van fijos;
-       en el teléfono y la tableta el panel es un cajón que sale de detrás del riel. -->
-  <nav class="ed-riel" aria-label="Herramientas"></nav>
+  <!-- El riel de herramientas y su panel. En la computadora van fijos; en el teléfono y la tableta
+       (Fase 44) los dos son un cajón escondido que sale con la pestañita de la izquierda. -->
   <div class="ed-lateral" aria-label="Panel de herramientas">
+    <nav class="ed-riel" aria-label="Herramientas"></nav>
     <aside class="ed-panel" aria-label="Panel">
       <div class="ed-panel-cab">
         <h2 class="ed-panel-titulo"></h2>

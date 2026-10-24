@@ -68,7 +68,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.15.0"
+VERSION = "1.16.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -105,6 +105,7 @@ AJUSTES_BASE = {
     "id_servidor": "",                 # quién es este servidor (viaja con los datos al pasarlo a otro teléfono)
     "relevado": {},                    # si ya pasó a otro teléfono: {"en": fecha} (éste ya no se prende solo)
     "forzar_anuncio": False,           # ser el servidor aquí aunque otro teléfono lo esté siendo (start my lo pregunta)
+    "ice": [],                         # Fase 44: servidores TURN/STUN extra para las llamadas (si alguna red no las deja pasar)
 }
 RESERVADOS = {"lista", "index", "servidor", "assets", "scripts", "pages", "styles"}
 MIME_EXTRA = {".js": "text/javascript", ".mjs": "text/javascript", ".webmanifest": "application/manifest+json", ".svg": "image/svg+xml",
@@ -520,6 +521,9 @@ CREATE INDEX IF NOT EXISTS mensajes_par ON mensajes(de, para, id);
 CREATE TABLE IF NOT EXISTS trazos(id INTEGER PRIMARY KEY AUTOINCREMENT, de INTEGER, para INTEGER, ancla INTEGER, color TEXT,
   ancho REAL, puntos TEXT, fin INTEGER DEFAULT 0, borrado INTEGER DEFAULT 0, creado REAL, actualizado REAL);
 CREATE INDEX IF NOT EXISTS trazos_par ON trazos(de, para, id);
+CREATE TABLE IF NOT EXISTS llamadas(id TEXT PRIMARY KEY, de INTEGER, para INTEGER, tipo TEXT, creado REAL, contestada REAL,
+  fin REAL, estado TEXT);
+CREATE INDEX IF NOT EXISTS llamadas_par ON llamadas(de, para, creado);
 CREATE TABLE IF NOT EXISTS lienzos(id INTEGER PRIMARY KEY AUTOINCREMENT, a INTEGER, b INTEGER, nombre TEXT, fondo TEXT,
   creado REAL, actualizado REAL, borrado INTEGER DEFAULT 0);
 CREATE INDEX IF NOT EXISTS lienzos_par ON lienzos(a, b);
@@ -3650,6 +3654,259 @@ def api_dibujo_limpiar(h, s, lid):
     h.responder(200, {"borrados": n})
 
 
+# ══════════════════════════════════════════════════════════════════
+#  Fase 44 · Llamadas y videollamadas (WebRTC: de teléfono a teléfono)
+#  El servidor sólo los presenta («señalización»): le pasa a cada uno la oferta, la respuesta y los
+#  caminos de red (ICE) del otro. La voz y el video viajan directo entre ustedes, cifrados
+#  (DTLS-SRTP), y nunca pasan por aquí. Si alguna red no los deja ir directo (algunos datos
+#  móviles), en el panel → Ajustes → Llamadas se puede poner un servidor TURN.
+#  Cada aparato espera sus avisos con GET /api/llamada/eventos?desde=N&espera=25 (se despierta en
+#  cuanto le llega algo). Lo que está pasando vive en la memoria; al terminar queda en el historial.
+# ══════════════════════════════════════════════════════════════════
+ICE_FABRICA = [{"urls": ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"]}]
+TIPOS_LLAMADA = ("voz", "video")
+LLAMADA_TIMBRE = 45        # segundos sonando antes de que sea «llamada perdida»
+LLAMADA_SIN_SENAL = 75     # si el aparato de alguno deja de preguntar este tiempo, la llamada se cortó
+SDP_MAX = 24000
+LLAMADA_AVISO = threading.Condition()   # (su candado cuida LLAMADAS, BUZON y ESPERAN)
+LLAMADAS = {}              # id → la llamada en curso
+BUZON = {}                 # uid → [(n, aviso, sólo para esta sesión, para todas menos ésta, cuándo)]
+BUZON_N = [1]              # (empieza en 1: «desde=0» es «acabo de abrir la app»)
+ESPERAN = {}               # uid → aparatos esperando avisos ahora mismo (= tiene la app abierta)
+ULTIMO_BUZON = {}
+_LLAMAR_RITMO = {}
+
+
+def _mandar_llamada(uid, ev, solo=None, no=None):
+    with LLAMADA_AVISO:
+        BUZON_N[0] += 1
+        m = time.monotonic()
+        b = BUZON.setdefault(uid, [])
+        b.append((BUZON_N[0], ev, solo, no, m))
+        while b and (len(b) > 400 or b[0][4] < m - 120):
+            b.pop(0)
+        LLAMADA_AVISO.notify_all()
+
+
+def _en_la_app(uid):
+    """¿Tiene la app abierta ahorita? (Entonces el timbre le suena ahí: sin notificación.)"""
+    return ESPERAN.get(uid, 0) > 0 or time.monotonic() - ULTIMO_BUZON.get(uid, -99) < 4
+
+
+def _desc_ok(d, tipo=None):
+    if (not isinstance(d, dict) or d.get("type") not in ((tipo,) if tipo else ("offer", "answer"))
+            or not isinstance(d.get("sdp"), str) or not d["sdp"].startswith("v=0") or len(d["sdp"]) > SDP_MAX):
+        raise Falla("La llamada no se pudo armar.", 400)
+    return {"type": d["type"], "sdp": d["sdp"]}
+
+
+def _ice_ok(c):
+    c = [c] if isinstance(c, dict) else c
+    if not isinstance(c, list) or len(c) > 30:
+        raise Falla("Caminos de red no válidos.", 400)
+    r = []
+    for x in c:
+        if not isinstance(x, dict) or not isinstance(x.get("candidate", ""), str) or len(x.get("candidate", "")) > 700:
+            raise Falla("Caminos de red no válidos.", 400)
+        i = x.get("sdpMLineIndex")
+        r.append({"candidate": x.get("candidate", ""), "sdpMid": str(x["sdpMid"])[:16] if x.get("sdpMid") is not None else None,
+                  "sdpMLineIndex": i if isinstance(i, int) and 0 <= i < 16 else None,
+                  "usernameFragment": str(x["usernameFragment"])[:64] if x.get("usernameFragment") else None})
+    return r
+
+
+def _ice_servidores(v):
+    """Servidores STUN/TURN extra (panel → Ajustes): [{"urls": "turn:…", "username": "…", "credential": "…"}]."""
+    if not isinstance(v, list):
+        raise Falla("«ice» tiene que ser una lista.")
+    r = []
+    for x in v[:6]:
+        x = {"urls": x} if isinstance(x, str) else x
+        urls = x.get("urls") if isinstance(x, dict) else None
+        urls = [urls] if isinstance(urls, str) else urls
+        if not isinstance(urls, list) or not urls or not all(isinstance(u, str) and re.match(r"^(stun|turns?):[A-Za-z0-9.\-\[\]:]+(\?transport=(udp|tcp))?$", u.strip()) for u in urls):
+            raise Falla("Cada servidor para las llamadas empieza con stun:, turn: o turns:")
+        s = {"urls": [u.strip() for u in urls][:4]}
+        for k in ("username", "credential"):
+            if x.get(k):
+                s[k] = str(x[k])[:200]
+        r.append(s)
+    return r
+
+
+def _entrante(l):
+    return {"t": "entrante", "id": l["id"], "tipo": l["tipo"], "de": nombre_corto(l["de"]), "oferta": l["oferta"], "ice": l["ice_de"]}
+
+
+def _terminar(l, motivo, sid=None):
+    """Termina una llamada: les avisa a los dos (menos a quien colgó) y la guarda en el historial."""
+    with LLAMADA_AVISO:
+        if LLAMADAS.pop(l["id"], None) is None:
+            return
+        for u in (l["de"], l["para"]):
+            _mandar_llamada(u, {"t": "fin", "id": l["id"], "motivo": motivo}, no=sid)
+    estado = "hablada" if l["contestada"] else "rechazada" if motivo == "rechazo" else "perdida"
+    _x_ya("INSERT OR REPLACE INTO llamadas(id, de, para, tipo, creado, contestada, fin, estado) VALUES(?,?,?,?,?,?,?,?)",
+          l["id"], l["de"], l["para"], l["tipo"], l["creado"], l["contestada"] or None, AHORA, estado)
+    # La notificación de «te está llamando» se cambia por la de «llamada perdida» (misma etiqueta).
+    if estado == "perdida" and (l["avisada"] or not _en_la_app(l["para"])):
+        avisar(l["para"], {"t": ("🎥 Videollamada perdida" if l["tipo"] == "video" else "📞 Llamada perdida"),
+                           "b": f"{nombre_corto(l['de'])} te llamó", "tag": "llamada", "u": "#chat"})
+    elif l["avisada"]:
+        avisar(l["para"], {"t": "📞 Llamada terminada", "b": f"Con {nombre_corto(l['de'])}", "tag": "llamada", "u": "#chat", "callado": 1})
+
+
+def _vencer_llamadas():
+    m = time.monotonic()
+    with LLAMADA_AVISO:
+        for l in list(LLAMADAS.values()):
+            if l["estado"] == "sonando" and m - l["m0"] > LLAMADA_TIMBRE:
+                _terminar(l, "sin_respuesta")
+            elif any(m - v > LLAMADA_SIN_SENAL for v in l["visto"].values()):
+                _terminar(l, "se_corto")
+
+
+@ruta("GET", "/api/llamada/ice", "sesion")
+def api_llamada_ice(h, s):
+    """Por dónde buscarse en internet (STUN, y TURN si lo pusiste en el panel)."""
+    h.responder(200, {"ice": ICE_FABRICA + list(E.aj["ice"] or []), "timbre": LLAMADA_TIMBRE})
+
+
+@ruta("POST", "/api/llamada", "sesion")
+def api_llamar(h, s):
+    """Llamar a tu amorcito: {tipo: voz|video, oferta: {type: offer, sdp}}."""
+    uid, sid = s["usuario_id"], s["id"]
+    p = _par_chat(s)
+    d = h.cuerpo_json()
+    tipo = d.get("tipo") if d.get("tipo") in TIPOS_LLAMADA else "voz"
+    oferta = _desc_ok(d.get("oferta"), "offer")
+    m = time.monotonic()
+    r = [t for t in _LLAMAR_RITMO.get(uid, []) if m - t < 60]
+    if len(r) >= 8:
+        raise Falla("Muchas llamadas seguidas: espera un ratito.", 429)
+    _LLAMAR_RITMO[uid] = r + [m]
+    _vencer_llamadas()
+    h.responder(200, _llamar(uid, sid, p, tipo, oferta, m))
+
+
+def _llamar(uid, sid, p, tipo, oferta, m):
+    with LLAMADA_AVISO:
+        cruzada = next((l for l in LLAMADAS.values() if l["de"] == p and l["para"] == uid and l["estado"] == "sonando"), None)
+        if cruzada:
+            return {"entrante": _entrante(cruzada)}   # se llamaron los dos al mismo tiempo: mejor contesta la suya
+        for l in [x for x in LLAMADAS.values() if uid in (x["de"], x["para"])]:
+            _terminar(l, "colgo")   # una que quedó colgando (se cerró la app, otro aparato…)
+        lid = secrets.token_hex(8)
+        l = {"id": lid, "de": uid, "para": p, "tipo": tipo, "estado": "sonando", "creado": ahora(), "m0": m, "contestada": 0,
+             "s_de": sid, "s_para": None, "visto": {sid: m}, "oferta": oferta, "ice_de": [], "n_ice": 0, "avisada": False}
+        LLAMADAS[lid] = l
+        _mandar_llamada(p, _entrante(l))
+        if not _en_la_app(p):
+            l["avisada"] = True
+            avisar(p, {"t": f"{'🎥' if tipo == 'video' else '📞'} {nombre_corto(uid)} te está llamando",
+                       "b": "Videollamada · toca para contestar" if tipo == "video" else "Llamada · toca para contestar",
+                       "tag": "llamada", "u": "#llamada", "timbre": 1})
+        return {"llamada": {"id": lid, "tipo": tipo, "timbre": LLAMADA_TIMBRE}}
+
+
+@ruta("POST", r"/api/llamada/([0-9a-f]{16})", "sesion")
+def api_llamada_senal(h, s, lid):
+    """Lo que un aparato le pasa al otro: contestar · desc · ice · estado · colgar · rechazar."""
+    uid, sid = s["usuario_id"], s["id"]
+    d = h.cuerpo_json()
+    t = d.get("t")
+    _vencer_llamadas()
+    h.responder(200, _senal(uid, sid, lid, t, d))
+
+
+def _senal(uid, sid, lid, t, d):
+    with LLAMADA_AVISO:
+        l = LLAMADAS.get(lid)
+        if not l or uid not in (l["de"], l["para"]):
+            return {"fin": True}   # ya terminó: el aparato sólo cierra la pantalla
+        soy_de = l["de"] == uid
+        if (soy_de and sid != l["s_de"]) or (not soy_de and l["s_para"] and sid != l["s_para"]):
+            raise Falla("Esa llamada está en tu otro aparato.", 409)
+        otro, a_cual = (l["para"], l["s_para"]) if soy_de else (l["de"], l["s_de"])
+        if sid in l["visto"]:
+            l["visto"][sid] = time.monotonic()
+        if t == "contestar":
+            if soy_de or l["estado"] != "sonando":
+                raise Falla("Ya no está sonando.", 409)
+            resp = _desc_ok(d.get("d"), "answer")
+            l.update(estado="activa", contestada=ahora(), s_para=sid)
+            l["visto"][sid] = time.monotonic()
+            _mandar_llamada(otro, {"t": "contestada", "id": lid, "d": resp}, solo=l["s_de"])
+            _mandar_llamada(uid, {"t": "fin", "id": lid, "motivo": "en_otro"}, no=sid)   # tus otros aparatos dejan de sonar
+        elif t == "desc":
+            if l["estado"] != "activa":
+                raise Falla("La llamada todavía no empieza.", 409)
+            _mandar_llamada(otro, {"t": "desc", "id": lid, "d": _desc_ok(d.get("d"))}, solo=a_cual)
+        elif t == "ice":
+            cs = _ice_ok(d.get("c"))
+            l["n_ice"] += len(cs)
+            if l["n_ice"] > 600:
+                raise Falla("Demasiados caminos de red.", 429)
+            if soy_de and l["estado"] == "sonando":
+                l["ice_de"] = (l["ice_de"] + cs)[-80:]   # para el aparato que conteste después (desde la notificación)
+            _mandar_llamada(otro, {"t": "ice", "id": lid, "c": cs}, solo=a_cual)
+        elif t == "estado":
+            _mandar_llamada(otro, {"t": "estado", "id": lid, "cam": bool(d.get("cam")), "mic": bool(d.get("mic")),
+                                   "ef": str(d.get("ef") or "")[:24]}, solo=a_cual)
+        elif t in ("colgar", "rechazar"):
+            _terminar(l, "rechazo" if not soy_de and l["estado"] == "sonando" else "colgo", sid)
+        else:
+            raise Falla("Aviso de llamada no válido.", 400)
+    return {"ok": True}
+
+
+@ruta("GET", "/api/llamada/eventos", "sesion")
+def api_llamada_eventos(h, s):
+    """Los avisos de llamada para este aparato. desde=0 (al abrir la app o la notificación): lo que te
+    está sonando ahora mismo. Con `espera` (hasta 25 s) se queda esperando hasta que llegue algo."""
+    uid, sid = s["usuario_id"], s["id"]
+    q = h.parametros()
+    try:
+        desde = int(q.get("desde") or 0)
+        espera = max(0.0, min(25.0, float(q.get("espera") or 0)))
+    except ValueError:
+        raise Falla("Parámetros no válidos.", 400)
+    fin = time.monotonic() + espera
+    with LLAMADA_AVISO:
+        ESPERAN[uid] = ESPERAN.get(uid, 0) + 1
+        try:
+            while True:
+                _vencer_llamadas()
+                m = time.monotonic()
+                for l in LLAMADAS.values():
+                    if sid in l["visto"]:
+                        l["visto"][sid] = m
+                if not desde:
+                    ev = [_entrante(l) for l in LLAMADAS.values() if l["para"] == uid and l["estado"] == "sonando"]
+                    break
+                ev = [e for n, e, solo, no, _ in BUZON.get(uid, ()) if n > desde and solo in (None, sid) and no != sid]
+                falta = fin - m
+                if ev or falta <= 0:
+                    break
+                # (Con una llamada en curso se despierta seguido para notar si alguien se cayó.)
+                LLAMADA_AVISO.wait(min(falta, 5) if LLAMADAS else falta)
+        finally:
+            ESPERAN[uid] -= 1
+            ULTIMO_BUZON[uid] = time.monotonic()
+        n = BUZON_N[0]
+    h.responder(200, {"eventos": ev, "n": n})
+
+
+@ruta("GET", "/api/llamadas", "sesion")
+def api_llamadas(h, s):
+    """Las últimas llamadas entre ustedes."""
+    uid = s["usuario_id"]
+    p = _par_chat(s)
+    filas = E.db.q("SELECT * FROM llamadas WHERE (de=? AND para=?) OR (de=? AND para=?) ORDER BY creado DESC LIMIT 50", uid, p, p, uid)
+    h.responder(200, {"llamadas": [{"id": f["id"], "tipo": f["tipo"], "mia": f["de"] == uid, "estado": f["estado"], "creado": f["creado"],
+                                    "dura": round((f["fin"] or 0) - f["contestada"]) if f["contestada"] else 0} for f in filas]})
+
+
 # ═══ Fase 33 · Notificaciones push (Web Push: RFC 8030, 8291 y 8292) — sin nada que instalar ═══
 # Los avisos llegan aunque el editor esté cerrado: Android (Chrome), compu y iPhone (iOS 16.4+, con el
 # editor agregado a la pantalla de inicio). El servidor firma con su llave VAPID (curva P-256) y cifra cada
@@ -4573,7 +4830,7 @@ def api_resumen(h, s):
 
 
 CAMPOS_AJUSTES = {"nombre": str, "registro": str, "origenes": list, "permitir_local": bool, "tunel": str, "url_publica": str, "anunciar": bool, "max_subida_mb": int,
-                  "max_usuarios": int, "cuota_mb": int, "max_publicaciones": int, "copias_por_proyecto": int}
+                  "max_usuarios": int, "cuota_mb": int, "max_publicaciones": int, "copias_por_proyecto": int, "ice": "ice"}
 TOPES = {"max_subida_mb": (10, 2000), "max_usuarios": (1, 100000), "cuota_mb": (10, 100000), "max_publicaciones": (1, 1000), "copias_por_proyecto": (1, 100)}
 
 
@@ -4595,6 +4852,8 @@ def api_poner_ajustes(h, s):
                     v = max(lo, min(hi, int(v)))
                 except (TypeError, ValueError):
                     raise Falla(f"«{k}» tiene que ser un número.")
+            elif tipo == "ice":
+                v = _ice_servidores(v)
             elif tipo is list:
                 v = [str(x).strip().rstrip("/") for x in v if re.match(r"^https?://[A-Za-z0-9.-]+(:\d+)?/?$", str(x).strip())][:20]
             elif tipo is bool:
@@ -4841,6 +5100,8 @@ def mantenimiento():
         time.sleep(60)
         vuelta += 1
         try:
+            if LLAMADAS:
+                _vencer_llamadas()          # una llamada que nadie contestó (o que se cortó) termina aunque nadie pregunte
             if vuelta % 2 == 0:
                 aparato(forzar=True)        # batería y temperatura: el ritmo del servidor
             if vuelta % 5 == 0:

@@ -408,6 +408,21 @@ acuarela, neón, brillitos, corazones, borrador. Rutas en la tabla de abajo.
 - Publicar con `?exacto=1` usa **exactamente** ese nombre o responde 409 (antes
   de subir nada): así el enlace que eligió tu amorcito nunca cambia sin avisar.
 
+### Llamadas y videollamadas (1.16.0)
+
+El servidor sólo **presenta** a los dos teléfonos (señalización WebRTC): pasa la
+oferta, la respuesta y los caminos de red (ICE). La voz y el video van directo
+entre ustedes, cifrados (DTLS-SRTP), y **nunca pasan por aquí**. Cada aparato
+espera sus avisos con `GET /api/llamada/eventos?desde=N&espera=25` (se despierta
+al momento); lo que está pasando vive en la memoria (si nadie contesta en 45 s es
+«perdida»; si un aparato deja de preguntar 75 s, «se cortó») y al terminar queda en
+el historial (`llamadas`). Con la app cerrada, la notificación «te está llamando»
+se queda hasta que la toques y luego se cambia por «llamada perdida».
+
+Casi siempre se conectan solas (STUN de Google). Si en alguna red no (algunos datos
+móviles o wifis de trabajo), en el panel → **Ajustes → Llamadas y videollamadas**
+pon un servidor **TURN** (`turn:…` o `turns:…`, usuario y contraseña).
+
 ## Cuentas y autenticación
 
 - **Registro** (Panel → Ajustes): «Abierto: cualquiera crea su cuenta y entra
@@ -500,6 +515,11 @@ azar) · `/api/…`:
 | `GET /api/dibujo` · `POST /api/dibujo` (`{"nombre":…,"fondo":"papel"\|"cuadros"\|"rayas"\|"rosa"\|"noche"}`) · `PUT`/`DELETE /api/dibujo/<id>` | pareja | Dibujar Juntos: sus hojas (la primera se crea sola; hasta 30), una nueva, cambiarle nombre o fondo, borrarla (para los dos) |
 | `GET /api/dibujo/<id>/trazos?desde=<ahora>&espera=25` | pareja | los trazos de la hoja (o los que cambiaron); con `espera` contesta en cuanto el otro dibuja: **tiempo real** |
 | `POST /api/dibujo/<id>/trazos` (`{"pincel":"lapiz","c":"#d8397a","a":6,"p":[[x,y,presión],…]}`) · `POST …/trazos/<tid>` (`{"p":[…],"fin":true}`) · `DELETE …/trazos/<tid>` · `DELETE …/trazos[?solo=mio]` | pareja · quien dibuja | dibujar a pedacitos (x e y de 0 a 10000; hasta 4000 puntos), deshacer lo tuyo, limpiar lo tuyo o la hoja |
+| `GET /api/llamada/ice` | sesión | por dónde buscarse (STUN de fábrica + el TURN del panel) y cuánto suena |
+| `POST /api/llamada` (`{"tipo":"voz"\|"video","oferta":{"type":"offer","sdp":…}}`) | pareja | llamar: le suena en sus aparatos (y notificación si no tiene la app abierta). Si te estaba llamando al mismo tiempo, contesta `{"entrante":…}` para que contestes la suya |
+| `POST /api/llamada/<id>` (`{"t":"contestar","d":…}` · `"desc"` · `"ice","c":[…]` · `"estado","cam","mic"` · `"colgar"` · `"rechazar"`) | los dos de esa llamada (el aparato que contestó) | contestar (los demás aparatos dejan de sonar), renegociar, caminos de red, cámara/micrófono, colgar o rechazar |
+| `GET /api/llamada/eventos?desde=N&espera=25` | sesión | los avisos de llamada de este aparato (`desde=0`: lo que te suena ahorita); **tiempo real** |
+| `GET /api/llamadas` | pareja | las últimas 50 llamadas (hablada con su duración, perdida, rechazada) |
 | `POST /api/dueno/traspaso` · `POST /api/dueno/relevo` · `POST /api/dueno/cancelar` (`{"usuario":"YonathanPG","contrasena":…}`) | la cuenta del dueño, con su contraseña | pasar el servidor a otro teléfono: manda todo (tar) dejando éste en sólo lectura · éste queda relevado y se apaga · cancelar |
 | `GET /api/admin/aparato` | admin | el teléfono servidor: pila, cargando, temperatura, ritmo, núcleos, carga, RAM, espacio, desde cuándo está prendido, quién está en línea y si hay otro servidor |
 | `DELETE /api/chat/trazos/<id>` · `DELETE /api/chat/trazos` | quien lo dibujó | deshacer un trazo · borrar todos tus dibujos |

@@ -1476,7 +1476,8 @@ body.ed-sin-efectos .ed-hoja .rt-c { filter: none !important; }
 .ed-abeja[data-boca="sonrisa"] [data-b="sonrisa"], .ed-abeja[data-boca="grande"] [data-b="grande"], .ed-abeja[data-boca="gato"] [data-b="gato"], .ed-abeja[data-boca="o"] [data-b="o"] { display: inline; }
 .ed-abeja .ab-ojos-n { transform-box: fill-box; transform-origin: center; animation: ed-ab-parpadeo 4.6s infinite; }
 .ed-abeja[data-ojos="corazon"] [data-o="corazon"] { transform-box: fill-box; transform-origin: center; animation: ed-ab-late .8s ease-in-out infinite; }
-.ed-abeja.hablando .ab-cara { transform-box: fill-box; transform-origin: 50% 70%; animation: ed-ab-habla .18s ease-in-out infinite alternate; }
+/* (Al hablar se mueve toda su carita —su capa entera—, no algo por dentro del dibujo: Fase 44.) */
+.ed-abeja.hablando .ed-abeja-cuerpo { transform-origin: 50% 80%; animation: ed-ab-habla .18s ease-in-out infinite alternate; }
 .ed-abeja-in.salta { animation: ed-ab-salta .6s var(--resorte); }
 .ed-abeja-in.vuelta { animation: ed-ab-vuelta .9s cubic-bezier(.5, 0, .3, 1); }
 .ed-abeja-in.tiembla { animation: ed-ab-tiembla .09s linear infinite; }
@@ -2721,7 +2722,7 @@ body:is(.modo-pro, .ed-probando) .ed-pestana { display: none; }
 /* Los ojitos: te siguen (translate) y, mientras escribe, se mueven con la carita. El parpadeo lo pone
    abeja.js de vez en cuando (en bucle, aun en su capa, recalculaba la pantalla 60 veces por segundo). */
 .ed-abeja .ab-c-ojos { transform-origin: 50% 55.4%; transition: translate .14s ease-out; }
-.ed-abeja.hablando .ab-c-ojos { animation: ab-habla .18s ease-in-out infinite alternate; }
+
 @keyframes ab-habla { to { transform: scaleY(.92) translateY(1px); } }
 body.ed-mov-nada .ed-abeja .ab-capa { animation: none !important; transition: none; }
 
@@ -2788,3 +2789,16 @@ body.modo-pro .ed-abeja-globo { max-width: min(240px, calc(100vw - 24px)); paddi
 body.modo-pro .ed-abeja-globo p { min-height: 0; margin: 0 0 3px; font-size: 13.5px; line-height: 1.25; }
 body.modo-pro .ed-abeja-globo .ed-abeja-pie { zoom: .82; }
 body.modo-pro .ed-abeja-globo.acomoda { max-width: calc(100vw - 16px); padding-left: 60px; }
+
+/* ═══ Fase 44: en el teléfono, el riel y su panel son UN cajón escondido ═══
+   Sólo se ve la pestañita de la izquierda; al abrirla sale el cajón (riel + panel) del editor, más
+   estrecho para que se siga viendo parte de la página, y al cerrarlo se esconde todo menos la pestañita. */
+@media (max-width: 1023px) {
+  .ed-lateral { left: 0; bottom: var(--cb); width: min(calc(var(--riel) + 236px), 80vw); }
+  body.acostado .ed-lateral { width: min(calc(var(--riel) + 300px), calc(100vw - 160px)); }
+  .ed-lateral > .ed-riel { position: static; display: flex; flex: 0 0 var(--riel); width: var(--riel); height: auto; z-index: auto; padding: 6px 3px calc(10px + env(safe-area-inset-bottom)); padding-left: calc(3px + env(safe-area-inset-left)); border-right: 1px solid var(--linea); overflow-y: auto; overscroll-behavior: contain; }
+  .ed-centro { margin-left: 0; }
+  .ed-pestana, body.sin-panel .ed-pestana { left: 0; }
+  /* La página se sigue viendo detrás del cajón (apenas un velito). */
+  .ed-velo { background: #1a0c16; }
+}

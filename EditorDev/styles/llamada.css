@@ -1,0 +1,147 @@
+/* ═══ Fase 44 · Llamadas y videollamadas ═══
+   Encima de todo (también de Mensajitos), menos de los avisos. Sin vidrio borroso encima del video
+   (se volvería a desenfocar en cada cuadro: calienta el teléfono): botones de color sólido. */
+.ll-capa {
+  --ll-rosa: #ff7eb6; --ll-lila: #b48cff; --ll-verde: #2fd27c; --ll-rojo: #ff3d5e;
+  position: fixed; inset: 0; z-index: 2147483380; overflow: hidden; color: #fff; background: #170a19;
+  font-family: Jost, Nunito, system-ui, sans-serif; -webkit-user-select: none; user-select: none; touch-action: manipulation;
+  opacity: 0; transform: scale(1.04); transition: opacity .28s ease, transform .4s cubic-bezier(.2, .8, .2, 1), border-radius .35s ease;
+}
+.ll-capa.ver { opacity: 1; transform: none; }
+.ll-capa.termina { opacity: 0; transform: scale(.97); transition-delay: .9s, .9s; pointer-events: none; }
+body.en-llamada .ed-avisos { z-index: 2147483460; }
+
+/* El fondo: su foto, grandota y difuminada (es fija: se pinta una sola vez). */
+.ll-fondo { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(120% 90% at 50% 18%, #6a2f6b 0%, #2c1131 55%, #13060f 100%); }
+.ll-fondo-av { position: absolute; inset: -12%; width: 124%; height: 124%; border-radius: 0; background-size: cover; background-position: center; filter: blur(42px) saturate(1.25); opacity: .5; font-size: 0; }
+.ll-fondo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20, 6, 20, .25), rgba(20, 6, 20, .1) 40%, rgba(20, 6, 20, .78)); }
+
+/* Su video (y su voz: el mismo elemento, invisible en llamada de voz). */
+.ll-remoto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; opacity: 0; transition: opacity .4s ease; pointer-events: none; }
+.ll-capa.con-video .ll-remoto { opacity: 1; }
+
+/* Arriba: hacerla chiquita y el candadito. */
+.ll-arriba { position: absolute; left: 0; right: 0; top: 0; z-index: 4; display: flex; align-items: center; gap: 10px; padding: calc(10px + env(safe-area-inset-top)) 14px 10px; transition: opacity .3s ease, transform .3s ease; }
+.ll-b.ll-min { width: 42px; height: 42px; background: rgba(20, 8, 22, .45); }
+.ll-cifrado { display: inline-flex; align-items: center; gap: 6px; margin: 0 auto; padding: 0 54px 0 0; font: 600 12.5px/1 Jost, system-ui, sans-serif; opacity: .78; letter-spacing: .02em; }
+.ll-cifrado svg { width: 14px; height: 14px; }
+
+/* Quién: su foto con anillitos, su nombre y cómo va. */
+.ll-quien { position: absolute; left: 0; right: 0; top: calc(13vh + env(safe-area-inset-top)); z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 20px; text-align: center; transition: top .4s cubic-bezier(.2, .8, .2, 1), opacity .3s ease; }
+.ll-anillos { position: relative; display: grid; place-items: center; width: 128px; height: 128px; margin-bottom: 10px; }
+.ll-anillos::before, .ll-anillos::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(255, 170, 215, .5); opacity: 0; }
+.ll-capa:is([data-estado="llamando"], [data-estado="sonando"], [data-estado="entrante"]) .ll-anillos::before { animation: ll-onda 2.2s ease-out infinite; }
+.ll-capa:is([data-estado="llamando"], [data-estado="sonando"], [data-estado="entrante"]) .ll-anillos::after { animation: ll-onda 2.2s ease-out 1.1s infinite; }
+@keyframes ll-onda { from { transform: scale(1); opacity: .85; } to { transform: scale(1.75); opacity: 0; } }
+.ll-av { width: 128px; height: 128px; border: 3px solid rgba(255, 255, 255, .9); box-shadow: 0 14px 40px rgba(0, 0, 0, .4); font-size: 46px; }
+.ll-nombre { font: 700 clamp(24px, 6.4vw, 32px)/1.1 Nunito, Jost, system-ui, sans-serif; text-shadow: 0 2px 14px rgba(0, 0, 0, .35); }
+.ll-estado, .ll-tiempo { font: 500 15.5px/1.2 Jost, system-ui, sans-serif; opacity: .86; text-shadow: 0 1px 8px rgba(0, 0, 0, .4); }
+.ll-tiempo:empty, .ll-estado:empty { display: none; }
+.ll-tiempo { font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.ll-capa.su-mic-no .ll-nombre::after { content: " 🔇"; font-size: .6em; vertical-align: middle; }
+/* Con su video: sólo su nombre y el tiempo, arribita. */
+.ll-capa.con-video .ll-quien { top: calc(56px + env(safe-area-inset-top)); gap: 2px; }
+.ll-capa.con-video .ll-anillos { display: none; }
+.ll-capa.con-video .ll-nombre { font-size: 18px; }
+.ll-capa.con-video .ll-estado, .ll-capa.con-video .ll-tiempo { font-size: 13.5px; }
+
+/* Tu cuadrito (arrástralo a cualquier esquina; tócalo para cambiar quién se ve grande). */
+.ll-yo { --ll-mx: 14px; position: absolute; z-index: 3; display: none; width: clamp(96px, 27vw, 210px); aspect-ratio: 3 / 4; top: calc(66px + env(safe-area-inset-top)); right: var(--ll-mx); border-radius: 18px; overflow: hidden; background: #000; box-shadow: 0 12px 34px rgba(0, 0, 0, .45), 0 0 0 1.5px rgba(255, 255, 255, .35); touch-action: none; cursor: grab;
+  transition: top .35s cubic-bezier(.2, .8, .2, 1), bottom .35s cubic-bezier(.2, .8, .2, 1), left .35s cubic-bezier(.2, .8, .2, 1), right .35s cubic-bezier(.2, .8, .2, 1), width .35s ease, border-radius .35s ease; }
+.ll-capa.mi-video .ll-yo { display: block; }
+.ll-yo[data-esquina^="abajo"] { top: auto; bottom: calc(118px + env(safe-area-inset-bottom)); }
+.ll-yo[data-esquina$="izq"] { right: auto; left: var(--ll-mx); }
+.ll-local { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.ll-yo.espejo .ll-local { transform: scaleX(-1); }
+.ll-yo-off { display: none; }
+/* Mientras suena (videollamada): tu cámara en grande, como en WhatsApp. */
+.ll-capa.mi-video:is([data-estado="llamando"], [data-estado="sonando"], [data-estado="conectando"]):not(.con-video) .ll-yo,
+.ll-capa.cambiados.con-video .ll-yo { inset: 0; width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; box-shadow: none; z-index: 1; cursor: default; }
+.ll-capa.mi-video:is([data-estado="llamando"], [data-estado="sonando"], [data-estado="conectando"]):not(.con-video) .ll-fondo { opacity: 0; }
+.ll-capa.mi-video:is([data-estado="llamando"], [data-estado="sonando"]):not(.con-video) .ll-quien { top: calc(9vh + env(safe-area-inset-top)); }
+.ll-capa.cambiados.con-video .ll-remoto { inset: auto; top: calc(66px + env(safe-area-inset-top)); right: 14px; width: clamp(96px, 27vw, 210px); height: auto; aspect-ratio: 3 / 4; border-radius: 18px; z-index: 3; box-shadow: 0 12px 34px rgba(0, 0, 0, .45), 0 0 0 1.5px rgba(255, 255, 255, .35); }
+
+/* El teletransporte: el anillo que se va llenando mientras juntas energía, y los letreros. */
+.ll-yo-carga { position: absolute; inset: 0; z-index: 2; display: none; padding: 4px; border-radius: inherit; background: conic-gradient(from -90deg, #e9fbff, #7fdcff calc(var(--carga, 0) * 360deg), rgba(255, 255, 255, .08) 0);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); pointer-events: none; }
+.ll-capa.cargando .ll-yo-carga { display: block; }
+.ll-goku-letrero { position: absolute; left: 50%; bottom: calc(126px + env(safe-area-inset-bottom)); z-index: 4; transform: translateX(-50%); pointer-events: none; }
+.ll-goku-letrero::after { display: block; padding: 8px 14px; border-radius: 99px; background: rgba(12, 30, 48, .72); color: #dff7ff; font: 700 14px/1 Nunito, system-ui, sans-serif; white-space: nowrap; box-shadow: 0 0 22px rgba(127, 220, 255, .45); }
+.ll-capa.cargando .ll-goku-letrero::after { content: "Juntando energía… ✨"; }
+.ll-capa[data-goku="ida"] .ll-goku-letrero::after { content: "¡Teletransportación!"; }
+.ll-capa[data-goku="invisible"] .ll-goku-letrero::after { content: "Invisible 👻 (5 segundos)"; }
+.ll-capa[data-goku="vuelta"] .ll-goku-letrero::after { content: "¡De vuelta! ✨"; }
+
+/* Los botones. */
+.ll-b { position: relative; display: grid; place-items: center; flex: none; width: 58px; height: 58px; padding: 0; border: 0; border-radius: 50%; background: rgba(36, 14, 40, .62); color: #fff; cursor: pointer; box-shadow: 0 6px 18px rgba(0, 0, 0, .28); transition: transform .18s ease, background .2s ease, color .2s ease; -webkit-tap-highlight-color: transparent; }
+.ll-b svg { width: 26px; height: 26px; }
+.ll-b:active { transform: scale(.9); }
+.ll-b:focus-visible { outline: 3px solid var(--ll-rosa); outline-offset: 3px; }
+.ll-b.apagado { background: #fff; color: #2c1131; }
+.ll-b.rojo { background: var(--ll-rojo); }
+.ll-b.verde { background: var(--ll-verde); }
+.ll-b.grande { width: 72px; height: 72px; }
+.ll-b.grande svg { width: 32px; height: 32px; }
+.ll-b[hidden] { display: none; }
+.ll-botones { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; display: flex; justify-content: center; align-items: center; gap: clamp(10px, 3.6vw, 18px); padding: 18px 12px calc(22px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, transparent, rgba(12, 4, 14, .55)); transition: transform .32s cubic-bezier(.2, .8, .2, 1), opacity .3s ease; }
+.ll-capa[data-estado="entrante"] .ll-botones, .ll-capa[data-estado="fin"] .ll-botones { display: none; }
+.ll-capa.sin-botones .ll-botones { transform: translateY(110%); opacity: 0; pointer-events: none; }
+.ll-capa.sin-botones .ll-arriba { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+.ll-capa.sin-botones.con-video .ll-quien { opacity: 0; }
+
+/* Te están llamando: rechazar o contestar (el verde late). */
+.ll-entrante { position: absolute; left: 50%; bottom: calc(9vh + env(safe-area-inset-bottom)); z-index: 4; display: none; grid-template-columns: 1fr 1fr; justify-items: center; row-gap: 18px; width: min(100%, 460px); padding: 0 8vw; transform: translateX(-50%); }
+.ll-capa[data-estado="entrante"] .ll-entrante { display: grid; }
+.ll-ent-b { display: flex; flex-direction: column; align-items: center; gap: 10px; font: 600 14px/1 Jost, system-ui, sans-serif; }
+.ll-ent-b .verde { animation: ll-late 1.3s ease-in-out infinite; }
+.ll-ent-b .verde svg { animation: ll-tiembla 1.3s ease-in-out infinite; }
+@keyframes ll-late { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(47, 210, 124, .55); } 50% { transform: scale(1.07); box-shadow: 0 0 0 16px rgba(47, 210, 124, 0); } }
+@keyframes ll-tiembla { 0%, 60%, 100% { transform: rotate(0); } 70% { transform: rotate(-14deg); } 80% { transform: rotate(12deg); } 90% { transform: rotate(-8deg); } }
+.ll-sin-cam { grid-column: 1 / -1; min-height: 40px; padding: 0 18px; border: 1.5px solid rgba(255, 255, 255, .45); border-radius: 99px; background: rgba(20, 8, 22, .4); color: #fff; font: 600 14px/1 Jost, system-ui, sans-serif; cursor: pointer; }
+
+.ll-oir { position: absolute; left: 50%; top: 50%; z-index: 6; transform: translate(-50%, -50%); min-height: 48px; padding: 0 22px; border: 0; border-radius: 99px; background: #fff; color: #2c1131; font: 700 15px/1 Nunito, system-ui, sans-serif; box-shadow: 0 10px 30px rgba(0, 0, 0, .35); cursor: pointer; }
+.ll-oir[hidden] { display: none; }
+
+/* ✨ Efectos. */
+.ll-hoja { position: absolute; left: 50%; bottom: 0; z-index: 6; width: min(100%, 540px); max-height: 72vh; overflow-y: auto; overscroll-behavior: contain; transform: translateX(-50%); padding: 14px 16px calc(18px + env(safe-area-inset-bottom)); border-radius: 26px 26px 0 0; background: rgba(30, 12, 34, .97); box-shadow: 0 -14px 40px rgba(0, 0, 0, .4); animation: ll-sube .32s cubic-bezier(.2, .8, .2, 1); }
+@keyframes ll-sube { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
+.ll-hoja-cab { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; font: 700 18px/1 Nunito, system-ui, sans-serif; }
+.ll-hoja-x { width: 38px; height: 38px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .1); color: #fff; font-size: 16px; cursor: pointer; }
+.ll-hoja-sub { margin: 14px 0 8px; font: 700 12px/1 Jost, system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; opacity: .62; }
+.ll-hoja-nota { margin: 0; padding: 12px 14px; border-radius: 16px; background: rgba(255, 255, 255, .07); font: 400 14px/1.4 Jost, system-ui, sans-serif; opacity: .9; }
+.ll-hoja-fila { display: grid; grid-template-columns: repeat(auto-fill, minmax(98px, 1fr)); gap: 10px; }
+.ll-ef { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 84px; padding: 10px 6px; border: 1.5px solid rgba(255, 255, 255, .12); border-radius: 18px; background: rgba(255, 255, 255, .07); color: #fff; font: 600 13.5px/1.15 Jost, system-ui, sans-serif; text-align: center; cursor: pointer; transition: background .2s ease, border-color .2s ease, transform .15s ease; }
+.ll-ef i { font-size: 26px; font-style: normal; line-height: 1; }
+.ll-ef:active { transform: scale(.95); }
+.ll-ef[aria-pressed="true"] { border-color: rgba(255, 190, 225, .9); background: linear-gradient(145deg, rgba(255, 126, 182, .55), rgba(180, 140, 255, .5)); }
+.ll-ef:disabled { opacity: .55; cursor: default; }
+.ll-ef.cargando { pointer-events: none; }
+.ll-ef.cargando::after { content: ""; position: absolute; top: 8px; right: 8px; width: 14px; height: 14px; border: 2px solid rgba(255, 255, 255, .3); border-top-color: #fff; border-radius: 50%; animation: ll-gira .8s linear infinite; }
+@keyframes ll-gira { to { transform: rotate(360deg); } }
+.ll-goku-ayuda { display: none; align-items: center; gap: 12px; margin-top: 12px; padding: 12px 14px; border-radius: 16px; background: rgba(127, 220, 255, .12); font: 500 13.5px/1.35 Jost, system-ui, sans-serif; }
+.ll-hoja.goku .ll-goku-ayuda { display: flex; }
+.ll-probar { flex: none; min-height: 40px; padding: 0 14px; border: 0; border-radius: 99px; background: #8fe3ff; color: #0d2733; font: 700 13.5px/1 Nunito, system-ui, sans-serif; cursor: pointer; }
+.ll-probar:disabled { opacity: .6; }
+
+/* Chiquita (para seguir en el chat): una burbujita arriba a la derecha; tócala para volver. */
+.ll-capa.mini { inset: auto; top: calc(84px + env(safe-area-inset-top)); right: 10px; width: 108px; height: 152px; border-radius: 22px; box-shadow: 0 14px 40px rgba(0, 0, 0, .45), 0 0 0 2px rgba(255, 255, 255, .7); cursor: pointer; }
+.ll-capa.mini :is(.ll-arriba, .ll-botones, .ll-yo, .ll-entrante, .ll-goku-letrero, .ll-hoja, .ll-estado, .ll-nombre) { display: none; }
+.ll-capa.mini .ll-quien { top: 50%; transform: translateY(-50%); gap: 6px; padding: 0 6px; opacity: 1 !important; }
+.ll-capa.mini .ll-anillos { width: 56px; height: 56px; margin: 0; }
+.ll-capa.mini .ll-av { width: 56px; height: 56px; font-size: 20px; border-width: 2px; }
+.ll-capa.mini.con-video .ll-quien { top: auto; bottom: 8px; transform: none; }
+.ll-capa.mini .ll-tiempo { font-size: 13px; }
+
+/* La cámara que procesa los efectos: no se ve, pero queda DENTRO de la pantalla (Chrome pausa los videos de fuera). */
+.ll-fuente { position: fixed; right: 0; bottom: 0; z-index: -1; width: 2px; height: 2px; opacity: 0; pointer-events: none; }
+
+@media (min-width: 900px) {
+  .ll-yo { width: 220px; --ll-mx: 22px; }
+  .ll-b { width: 62px; height: 62px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ll-capa, .ll-yo, .ll-quien, .ll-botones { transition: none; }
+  .ll-anillos::before, .ll-anillos::after, .ll-ent-b .verde, .ll-ent-b .verde svg { animation: none !important; }
+}
+.ll-fondo-av img { width: 100%; height: 100%; object-fit: cover; }
+.ll-fondo-av b { display: none; }

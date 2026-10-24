@@ -842,8 +842,10 @@ export class Lienzo {
         const v = this.vis(e);
         const b = cajaDe(v);
         let dx = 0, dy = 0;
-        if (b.w <= this.W) dx = clamp(b.x, 0, this.W - b.w) - b.x; else dx = (this.W - b.w) / 2 - b.x;
-        if (b.h <= this.H) dy = clamp(b.y, 0, this.H - b.h) - b.y; else dy = (this.H - b.h) / 2 - b.y;
+        // (Con el mismo margencito que lo nuevo: entra entero y sin quedar pegado a la orilla.)
+        const mx = Math.min(12, Math.max(0, (this.W - b.w) / 2)), my = Math.min(12, Math.max(0, (this.H - b.h) / 2));
+        if (b.w <= this.W) dx = clamp(b.x, mx, this.W - b.w - mx) - b.x; else dx = (this.W - b.w) / 2 - b.x;
+        if (b.h <= this.H) dy = clamp(b.y, my, this.H - b.h - my) - b.y; else dy = (this.H - b.h) / 2 - b.y;
         if (dx || dy) E.setEl(id, { x: Math.round(e.x + dx), y: Math.round(e.y + dy) }, "Traer a la hoja");
       }
     });

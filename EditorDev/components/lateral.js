@@ -2,8 +2,8 @@
  * LA BARRA LATERAL — el riel de categorías y su panel, a la izquierda.
  *
  * En la computadora (pantalla ancha) van fijos y el panel se pliega.
- * En el teléfono y la tableta el RIEL se queda siempre a la vista y su panel es
- * un cajón como el de una app:
+ * En el teléfono y la tableta (Fase 44) el riel y su panel son UN cajón escondido: sólo se ve la
+ * pestañita de la izquierda; el cajón es como el de una app:
  *   · se abre tocando una herramienta del riel, deslizándolo a la derecha o con
  *     la PESTAÑITA (Fase 42: volvió) que va pegada a su orilla: tócala o jálala;
  *     se cierra deslizándolo a la izquierda, tocando fuera (el velo), el botón ✕
@@ -48,9 +48,12 @@ export class Lateral {
     this.raiz.classList.toggle("anim", !!anim);
     this.velo.classList.toggle("anim", !!anim);
     this.raiz.style.transform = `translate3d(${t - w}px, 0, 0)`;
-    this.velo.style.opacity = String(((t - m) / Math.max(1, w - m)) * 0.42);
+    this.velo.style.opacity = String(((t - m) / Math.max(1, w - m)) * 0.2);
     this.velo.style.pointerEvents = t > m + 2 ? "auto" : "none";
     this.raiz.style.visibility = t > 0 || anim ? "visible" : "hidden";
+    // Al terminar de cerrarse queda escondido DEL TODO (ni su sombra se asoma en la orilla).
+    clearTimeout(this._tEsconder);
+    if (t <= 0 && anim) this._tEsconder = setTimeout(() => { if (!this.abierto && !this._g && this.compacto) this.raiz.style.visibility = "hidden"; }, 420);
     // La pestañita va en la orilla del cajón (lo sigue mientras se jala).
     if (this.asa) { this.asa.classList.toggle("anim", !!anim); this.asa.style.transform = t > 0 ? `translate3d(${t}px, 0, 0)` : ""; this.asa.classList.toggle("abierta", t > w / 2); }
   }
@@ -143,7 +146,8 @@ export class Lateral {
       if (abrir) this.abrir(); else this.cerrar();
     };
     // (Deslizar el riel a la derecha también abre el panel.)
-    for (const [n, desde] of [[this.velo, "velo"], [this.raiz, "dentro"], [this.riel, "dentro"], [this.asa, "asa"]].filter(([n]) => n)) {
+    // (Si el riel va dentro del cajón —Fase 44—, sus toques ya llegan al cajón: no se escuchan dos veces.)
+    for (const [n, desde] of [[this.velo, "velo"], [this.raiz, "dentro"], [this.riel, "dentro"], [this.asa, "asa"]].filter(([n]) => n && (n === this.raiz || !this.raiz.contains(n)))) {
       n.addEventListener("pointerdown", (ev) => empezar(ev, desde));
       n.addEventListener("pointermove", mover);
       n.addEventListener("pointerup", soltar);

@@ -15,9 +15,11 @@ self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 self.addEventListener("push", (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (x) { d = { b: e.data ? e.data.text() : "" }; }
+  // (Fase 44) Una llamada: se queda hasta que la toques y vibra como timbre; «terminada» llega callada.
   const avisos = [self.registration.showNotification(d.t || "M.YNTHN 💗", {
-    body: d.b || "", icon: ICONO, badge: INSIGNIA, tag: d.tag || "librito", renotify: true, silent: false,
-    vibrate: [90, 50, 140], timestamp: Date.now(), lang: "es", data: { u: d.u || "" },
+    body: d.b || "", icon: ICONO, badge: INSIGNIA, tag: d.tag || "librito", renotify: !d.callado, silent: !!d.callado,
+    vibrate: d.timbre ? [600, 300, 600, 300, 600, 300, 600] : d.callado ? [] : [90, 50, 140], requireInteraction: !!d.timbre,
+    timestamp: Date.now(), lang: "es", data: { u: d.u || "" },
   })];
   // El numerito en el ícono de la app (Android y iPhone con la app en la pantalla de inicio).
   if (d.n && self.navigator.setAppBadge) avisos.push(self.navigator.setAppBadge(d.n).catch(() => {}));
