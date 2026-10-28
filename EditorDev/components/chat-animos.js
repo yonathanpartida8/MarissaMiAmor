@@ -1,14 +1,14 @@
 /**
- * LOS ÁNIMOS DEL CHAT (Fases 36 y 37): Happy, Sad, Enojado y Hormonal.
+ * LOS ÁNIMOS DEL CHAT (Fases 36, 37 y 46): Happy, Sad, Enojado y Hot Cake.
  *
  *   · Tocas uno y se enciende; si lo vuelves a tocar, se apaga y todo vuelve a ser como siempre.
  *     Al cambiar de uno a otro, lo del anterior se va (despacito) antes de que llegue lo nuevo.
  *   · Lo que se mueve vive en una capa DETRÁS de todo (de los mensajes, la barra y los botones),
  *     casi siempre en las orillas: nunca tapa un mensajito ni se mete donde tocas.
- *   · Hormonal, además, anima los mensajitos según el género de quien los manda (lo elige cada quien
- *     en su perfil; nunca se adivina): «Mujer» → rosa pastel (salpica agüita, late y escurre);
- *     cualquier otro → carmesí (se estira, late como corazón acelerado y escurre). Al apagarlo,
- *     los mensajitos se enfrían tantito y vuelven a ser los de siempre.
+ *   · Hot Cake (Fase 46, en lugar de Hormonal): desayuno tibio, con hot cakes, vaporcito y dulcecitos.
+ *     A cada mensajito le escurre miel según el género de quien lo manda (lo elige cada quien en su
+ *     perfil; nunca se adivina): «Mujer» → miel de fresa (salpica, late y escurre); cualquier otro →
+ *     miel de maple (se estira, late y escurre).
  *   · Sólo se anima transform y opacity (rápido en el celular), y cada gotita se borra al terminar.
  *     Con «menos movimiento» (o el aparato sufriendo) sólo cambian los colores.
  */
@@ -32,9 +32,12 @@ const FLOR = (c, m = "#ffd66b") => `<svg viewBox="0 0 40 40">${[0, 72, 144, 216,
 const NUBE = '<svg viewBox="0 0 120 60"><path d="M26 54h66a18 18 0 0 0 2-35.9A26 26 0 0 0 44.6 14 20 20 0 0 0 26 54z"/></svg>';
 const RAYO = '<svg viewBox="0 0 24 48"><path d="M14 1 3 27h8l-4 20 14-28h-8l5-18z" fill="#ffe7a3" stroke="#ffb44d" stroke-width="1.2" stroke-linejoin="round"/></svg>';
 const VENA = '<svg viewBox="0 0 24 24"><path d="M9.5 3.5c.4 3-1.4 5-4.4 5.4M14.5 3.5c-.4 3 1.4 5 4.4 5.4M9.5 20.5c.4-3-1.4-5-4.4-5.4M14.5 20.5c-.4-3 1.4-5 4.4-5.4" fill="none" stroke="#ff5b4a" stroke-width="2.6" stroke-linecap="round"/></svg>';
-const PETALO = '<svg viewBox="0 0 24 30"><defs><linearGradient id="anPetalo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6f8e"/><stop offset="1" stop-color="#c3123c"/></linearGradient></defs><path d="M12 1C21 7 23 18 12 29 1 18 3 7 12 1z" fill="url(#anPetalo)"/><path d="M12 6c2.6 5 2.6 11 0 18" stroke="rgba(255,255,255,.35)" stroke-width="1" fill="none"/></svg>';
 const CORA = '<svg viewBox="0 0 24 22"><path d="M12 21S1.5 14.4 1.5 7.4A5.4 5.4 0 0 1 12 4.6a5.4 5.4 0 0 1 10.5 2.8C22.5 14.4 12 21 12 21z" fill="currentColor"/></svg>';
-const ONDA = `<svg viewBox="0 0 400 40" preserveAspectRatio="none"><path d="M0 18${" q25-12 50 0 t50 0".repeat(4)}"/><path d="M0 30${" q25-9 50 0 t50 0".repeat(4)}" opacity=".6"/></svg>`;
+// Hot Cake: el montoncito (con mantequilla y miel) y los dulcecitos que suben.
+const HOTCAKES = `<svg viewBox="0 0 120 110"><ellipse cx="60" cy="96" rx="50" ry="10" fill="#fffaf1" stroke="#efd4b2" stroke-width="2.4"/><ellipse cx="60" cy="94" rx="36" ry="5" fill="#f3e2cb" opacity=".6"/>${[78, 64, 50].map((y, i) => `<path d="M${16 + i * 3} ${y}c0-5.4 19.7-9.6 44-9.6s44 4.2 44 9.6v6c0 5.4-19.7 9.6-44 9.6s-44-4.2-44-9.6z" fill="${["#ecaa55", "#f3b862", "#f8c771"][i]}" stroke="#c98431" stroke-width="2.4"/><path d="M${22 + i * 3} ${y + 2}c8 3.4 22 4.8 38 4.8s30-1.4 38-4.8" fill="none" stroke="#fff0cf" stroke-width="2" stroke-linecap="round" opacity=".7"/>`).join("")}<path class="an-miel-top" d="M28 50c7-5 19-7.6 32-7.6S85 45 92 50c-2 3-6 4.6-9 4-1.4 6-2.8 13-5.4 13s-2.8-8-4-11.4c-3.6 1-8 1.4-12.6 1.4-2 5-3 14-6 14-2.6 0-3-9-4-15-6-1-11-3-13-6z" fill="#d9761d" opacity=".93"/><rect x="51" y="32" width="19" height="13" rx="3.4" fill="#fff3a3" stroke="#e1bf4b" stroke-width="2"/><path d="M54.5 35.6h9" stroke="#fffbe2" stroke-width="2.4" stroke-linecap="round"/></svg>`;
+const FRESA = '<svg viewBox="0 0 24 26"><path d="M12 25C5.5 21.6 2.4 16 3.4 10.6 4.2 7 8 6 12 6.8 16 6 19.8 7 20.6 10.6 21.6 16 18.5 21.6 12 25z" fill="#ff6f8e" stroke="#e24a6c" stroke-width="1.2"/><path d="M7.4 4.6 12 7.2l4.6-2.6L14.4 8.6H9.6z" fill="#6fcf8e" stroke="#43a56a" stroke-width="1" stroke-linejoin="round"/><g fill="#fff3c4"><circle cx="9" cy="12" r=".9"/><circle cx="14.6" cy="11.6" r=".9"/><circle cx="11.8" cy="16" r=".9"/><circle cx="8.4" cy="17.4" r=".8"/><circle cx="15.4" cy="17" r=".8"/></g></svg>';
+const MANTEQUILLA = '<svg viewBox="0 0 24 18"><rect x="2" y="3" width="20" height="13" rx="3.4" fill="#fff3a3" stroke="#e1bf4b" stroke-width="1.4"/><path d="M5.6 6.6h8" stroke="#fffbe2" stroke-width="1.8" stroke-linecap="round"/></svg>';
+const MORITA = '<svg viewBox="0 0 20 20"><circle cx="10" cy="10.6" r="8" fill="#7f8fe8" stroke="#5f6bc9" stroke-width="1.2"/><path d="M7.4 6.4 10 8l2.6-1.6" fill="none" stroke="#454f9e" stroke-width="1.2" stroke-linecap="round"/><circle cx="7.4" cy="9.4" r="1.6" fill="#fff" opacity=".55"/></svg>';
 
 /** Cada ánimo arma su escena: `mov` es si se puede mover; `luego` agenda algo (y se cancela al apagarlo). */
 const ESCENAS = {
@@ -67,24 +70,19 @@ const ESCENAS = {
     for (let i = 0; i < 4; i++) e.append(P("an-vapor", `--x:${orilla(i)};--t:${Math.round(az(22, 34))}px;--dx:${Math.round(az(6, 16)) * (i % 2 ? -1 : 1)}px;--d:${sg(az(4.5, 6.5))};--r:-${sg(az(0, 6))}`));
     for (let i = 0; i < 3; i++) e.append(P("an-vena", `--x:${orilla(i + 1)};--y:${az(22, 78).toFixed(1)}%;--t:${Math.round(az(14, 20))}px;--d:${sg(az(6, 9))};--r:-${sg(az(0, 8))}`, VENA));
   },
-  // Destello carmesí con pétalos y chispitas al entrar; luego brasas que suben por las orillas,
-  // ondas de calor, pétalos de vez en cuando, corazoncitos que aparecen y se van y una brisa que quema.
-  hormonal(e, mov, luego) {
-    e.append(P("an-luz"));
+  // Hot Cake (Fase 46): desayuno tibio. Al entrar, un destello dorado y miel que escurre desde arriba;
+  // luego el montoncito en su esquina con vaporcito, dulcecitos que suben por las orillas y azúcar que brilla.
+  hotcake(e, mov, luego) {
+    e.append(P("an-luz"), P("an-hotcake", "", HOTCAKES));
     if (!mov) return;
-    const entrada = [P("an-carmesi")];
-    for (let i = 0; i < 9; i++) entrada.push(P("an-petalo cae", `--x:${(i % 2 ? az(62, 95) : az(2, 36)).toFixed(1)}%;--y:${az(8, 22).toFixed(1)}%;--t:${Math.round(az(12, 18))}px;--dx:${Math.round(az(-40, 40))}px;--g:${Math.round(az(-200, 200))}deg;--d:${sg(az(1.6, 2.3))};--r:${sg(az(0, 0.5))}`, PETALO));
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2;
-      entrada.push(P("an-brillo", `--dx:${Math.round(Math.cos(a) * az(60, 120))}px;--dy:${Math.round(Math.sin(a) * az(50, 100) - 40)}px;--d:${sg(az(0.8, 1.2))};--r:${sg(az(0.1, 0.4))}`));
-    }
+    const entrada = [P("an-dorado")];
+    for (let i = 0; i < 6; i++) entrada.push(P("an-miel cae", `--x:${(i % 2 ? az(58, 94) : az(4, 40)).toFixed(1)}%;--w:${az(5, 9).toFixed(1)}px;--h:${Math.round(az(34, 70))}px;--d:${sg(az(1.4, 2))};--r:${sg(az(0, 0.5))}`));
     e.append(...entrada);
-    luego(() => entrada.forEach((n) => n.remove()), 2700);
-    for (let i = 0; i < 10; i++) e.append(P("an-chispa", `--x:${orilla(i)};--t:${Math.round(az(4, 8))}px;--dx:${Math.round(az(8, 22)) * (i % 2 ? -1 : 1)}px;--d:${sg(az(9, 14))};--r:-${sg(az(0, 13))}`));
-    for (let i = 0; i < 4; i++) e.append(P("an-chispa brisa", `--x:${orilla(i + 1)};--t:${Math.round(az(3, 5))}px;--dx:${Math.round(az(40, 70)) * (i % 2 ? 1 : -1)}px;--d:${sg(az(6, 9))};--r:-${sg(az(0, 8))}`));
-    [12, 30].forEach((y, i) => e.append(P("an-onda", `--y:${y}%;--d:${sg(az(5, 6.5))};--r:-${sg(i * 2.8)}`, ONDA)));
-    for (let i = 0; i < 4; i++) e.append(P("an-petalo ronda", `--x:${orilla(i)};--y:${az(10, 30).toFixed(1)}%;--t:${Math.round(az(11, 15))}px;--dx:${Math.round(az(-18, 18))}px;--g:${Math.round(az(90, 260))}deg;--d:${sg(az(13, 19))};--r:-${sg(az(0, 18))}`, PETALO));
-    for (let i = 0; i < 5; i++) e.append(P("an-cora", `--x:${orilla(i + 1)};--y:${az(20, 80).toFixed(1)}%;--t:${Math.round(az(10, 15))}px;--d:${sg(az(6, 9))};--r:-${sg(az(0, 8))}`, CORA));
+    luego(() => entrada.forEach((n) => n.remove()), 2800);
+    for (let i = 0; i < 3; i++) e.append(P("an-vaporcito", `--x:${(70 + i * 7).toFixed(1)}%;--t:${Math.round(az(16, 24))}px;--dx:${Math.round(az(-10, 10))}px;--d:${sg(az(3.6, 5))};--r:-${sg(az(0, 4))}`));
+    const dulces = [FRESA, MANTEQUILLA, MORITA, CORA];
+    for (let i = 0; i < 8; i++) e.append(P("an-dulce" + (i % 4 === 3 ? " cora" : ""), `--x:${orilla(i)};--t:${Math.round(az(12, 18))}px;--dx:${Math.round(az(-16, 16))}px;--g:${Math.round(az(-120, 120))}deg;--d:${sg(az(13, 19))};--r:-${sg(az(0, 18))}`, dulces[i % 4]));
+    for (let i = 0; i < 7; i++) e.append(P("an-azucar", `--x:${az(4, 96).toFixed(1)}%;--y:${az(14, 86).toFixed(1)}%;--t:${Math.round(az(3, 6))}px;--d:${sg(az(3, 5.5))};--r:-${sg(az(0, 5))}`));
   },
 };
 
@@ -107,7 +105,7 @@ export function animosChat({ raiz, marco, lista, tono }) {
   };
   const burbuja = (f) => (f?.isConnected && !f.classList.contains("borrado") ? f.querySelector(".ch-burbuja:not(.eliminado)") : null);
   const sombra = (b) => getComputedStyle(b).boxShadow;
-  const brillo = (t) => (t === "rosa" ? "rgba(255, 170, 205, .65)" : "rgba(255, 30, 80, .6)");
+  const brillo = (t) => (t === "rosa" ? "rgba(255, 150, 185, .6)" : "rgba(236, 150, 50, .55)");
   /** Una cajita del tamaño de la burbuja (en su fila) para sus gotitas: no mueve nada y se borra sola. */
   function caja(f, b, t, ms) {
     let x = 0, y = 0, n = b;
@@ -122,7 +120,7 @@ export function animosChat({ raiz, marco, lista, tono }) {
     return c;
   }
 
-  /** El mensajito «líquido» de Hormonal (al mandarlo y al encenderlo). */
+  /** El mensajito con miel de Hot Cake (al mandarlo y al encenderlo). */
   function liquido(f) {
     const b = burbuja(f);
     if (!b) return;
@@ -149,7 +147,7 @@ export function animosChat({ raiz, marco, lista, tono }) {
       : [["none", 0], ["scale(1.1, .9)", 0.16], ["scale(.95, 1.06)", 0.3], ["scale(1.02, .99)", 0.4], ["scale(1.06)", 0.54], ["scale(1)", 0.64], ["scale(1.045)", 0.74], ["none", 0.88], ["none", 1]];
     seguir(b.animate(pasos.map(([transform, offset]) => ({ transform, offset, transformOrigin: origen })), { duration: rosa ? 1100 : 1500, delay: rosa ? 380 : 0, easing: "ease-in-out" }));
   }
-  /** Al llegarte uno en Hormonal: un pulso tibio y un corazoncito del color de quien lo manda. */
+  /** Al llegarte uno en Hot Cake: un pulso tibio y un corazoncito del color de su miel. */
   function pulso(f) {
     const b = burbuja(f);
     if (!b) return;
@@ -157,21 +155,7 @@ export function animosChat({ raiz, marco, lista, tono }) {
     seguir(b.animate([{ boxShadow: base, transform: "scale(1)" }, { boxShadow: `0 0 0 2px ${luz}, 0 0 24px 2px ${luz}`, transform: "scale(1.025)", offset: 0.4 }, { boxShadow: base, transform: "scale(1)" }], { duration: 900, easing: "ease-in-out" }));
     caja(f, b, t, 1400).append(P("an-corita", "", CORA));
   }
-  /** Al apagar Hormonal: se enfrían tantito (un velo helado en las orillas y un temblorcito) y listo. */
-  function frio() {
-    if (reducido()) return;
-    const velo = P("an-escarcha");
-    marco.append(velo);
-    setTimeout(() => velo.remove(), 1200);
-    const r = lista.getBoundingClientRect();
-    const bs = [...lista.querySelectorAll(".ch-fila:not(.borrado) .ch-burbuja")].filter((b) => { const q = b.getBoundingClientRect(); return q.bottom > r.top && q.top < r.bottom; }).slice(-12);
-    for (const b of bs) seguir(b.animate([
-      { filter: "saturate(.35) brightness(1.15)", boxShadow: "0 0 0 1.5px rgba(200, 230, 255, .85), 0 0 18px rgba(170, 215, 255, .6)", transform: "none" },
-      { transform: "translateX(-1.2px)", offset: 0.18 }, { transform: "translateX(1.2px)", offset: 0.32 }, { transform: "translateX(-.6px)", offset: 0.46 },
-      { filter: "none", boxShadow: sombra(b), transform: "none" },
-    ], { duration: 1000, easing: "ease-out" }));
-  }
-  /** Los últimos que se ven de cada quien (para que al encender Hormonal se note en los dos). */
+  /** Los últimos que se ven de cada quien (para que al encender Hot Cake se note en los dos). */
   function ultimos() {
     const r = lista.getBoundingClientRect(), fs = [...lista.querySelectorAll(".ch-fila:not(.borrado)")].reverse();
     return ["mio", "suyo"].map((k) => fs.find((f) => f.classList.contains(k) && burbuja(f)))
@@ -192,14 +176,14 @@ export function animosChat({ raiz, marco, lista, tono }) {
   }
   function encender(id) {
     const mov = !reducido() && !R.ahorro;
-    if (id === "hormonal") tonos();
+    if (id === "hotcake") tonos();
     raiz.classList.add("animo-" + id);
     raiz.dataset.animo = id;
     escena = document.createElement("div");
     escena.className = "an-escena " + id + (mov ? "" : " quieta");
     ESCENAS[id](escena, mov, luego);
     capa.append(escena);
-    if (id === "hormonal" && mov) ultimos().forEach((f, i) => luego(() => liquido(f), 650 + i * 380));
+    if (id === "hotcake" && mov) ultimos().forEach((f, i) => luego(() => liquido(f), 900 + i * 380));
   }
 
   return {
@@ -209,14 +193,13 @@ export function animosChat({ raiz, marco, lista, tono }) {
       const nuevo = id === actual ? "" : id, antes = actual;
       if (antes) apagar();
       actual = nuevo;
-      if (antes === "hormonal") frio();
       if (nuevo) encender(nuevo);
       return nuevo;
     },
     /** Tu mensajito recién mandado (espera a que aterrice). */
-    mando(f) { if (actual === "hormonal" && !reducido() && f) { tonos(); luego(() => liquido(f), 720); } },
+    mando(f) { if (actual === "hotcake" && !reducido() && f) { tonos(); luego(() => liquido(f), 720); } },
     /** Uno que te llegó. */
-    llego(f) { if (actual === "hormonal" && !reducido() && f) { tonos(); luego(() => pulso(f), 450); } },
+    llego(f) { if (actual === "hotcake" && !reducido() && f) { tonos(); luego(() => pulso(f), 450); } },
     limpiar() { if (actual) apagar(); actual = ""; capa.remove(); },
   };
 }

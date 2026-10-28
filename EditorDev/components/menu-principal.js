@@ -28,7 +28,7 @@
  * Sin parpadeos: un latido o un cambio chiquito sólo cambia su pedacito; la
  * pantalla se rehace (con transición) sólo si cambia lo grande.
  */
-import { el, aviso } from "./ui.js";
+import { el, aviso, quitarAviso } from "./ui.js";
 import { ico } from "./iconos.js";
 import * as SRV from "../integraciones/servidor.js";
 import { formularioCuenta } from "./cuenta.js";
@@ -36,6 +36,7 @@ import { cambiar, ajustar, letrasListas, sinMovimiento } from "./transiciones.js
 import * as PF from "./perfil.js";
 import * as A from "./album-arte.js";
 import { ICONO_CHAT } from "./chat.js";
+import { vistaAjustes } from "./ajustes-app.js";
 
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 
@@ -45,7 +46,7 @@ function saludoDeLaHora() {
 }
 
 /* Cómo se va de una pantalla a otra (las que no están: «zoom»). */
-const CAMINO = { "inicio>cuenta": "carta", "cuenta>inicio": "atras", "inicio>perfil": "pagina", "perfil>inicio": "regresa", "cuenta>perfil": "pagina" };
+const CAMINO = { "inicio>cuenta": "carta", "cuenta>inicio": "atras", "inicio>perfil": "pagina", "perfil>inicio": "regresa", "cuenta>perfil": "pagina", "inicio>ajustes": "pagina", "ajustes>inicio": "regresa" };
 /* El hilo rojo: dos tramos fijos y, en medio, el corazón que late (en su propia capa). */
 // (Fase 36) El hilo rojo: una curva suave de foto a foto que se hunde un poquito hacia el corazón,
 // con su brillo que lo recorre; el corazón, fino y redondito, con relleno rosado muy suave y su latido.
@@ -98,6 +99,8 @@ export class MenuPrincipal {
       fondo.append(b);
     }
     this.chip = el("button.mp-chip", { type: "button" });
+    // Fase 46: la Configuración de la app, junto a tu nombre.
+    this.ajustesB = el("button.mp-ajustes-b", { type: "button", "aria-label": "Configuración", title: "Configuración", html: ico("tuerca"), onClick: (e) => this.ir("ajustes", { desde: e.currentTarget }) });
     this.chip.addEventListener("click", () => this.ir(SRV.conectado() ? "perfil" : "cuenta", { desde: this.chip }));
     this.escena = el("div.mp-escena");
     const marca = el("div.mp-marca", {}, [
@@ -107,7 +110,7 @@ export class MenuPrincipal {
     // Los papeles rasgados llevan su «sombra» como otro papelito debajo (un filtro repintaría a cada cuadro).
     const rasgoEtq = A.rasgado(["arriba", "abajo", "izq", "der"], 3.2, 10, 5);
     const etiqueta = el("div.mp-etiqueta", {}, [el("i.mp-sombra", { style: { clipPath: rasgoEtq } }), el("i.mp-etiqueta-papel", { style: { clipPath: rasgoEtq } }), el("i.mp-corona", { html: A.CORONITA }), this.chip]);
-    this.tarjeta = el("div.mp-tarjeta", {}, [el("header.mp-arriba", {}, [marca, etiqueta]), this.escena]);
+    this.tarjeta = el("div.mp-tarjeta", {}, [el("header.mp-arriba", {}, [marca, el("div.mp-arriba-der", {}, [etiqueta, this.ajustesB])]), this.escena]);
     const decor = el("div.mp-decor", { "aria-hidden": "true" }, [
       el("i.mp-cuadricula", { style: { clipPath: A.rasgado(["der", "arriba", "abajo"], 6, 12, 2) } }),
       el("i.mp-rama", { html: A.RAMA_SECA }),
@@ -168,7 +171,7 @@ export class MenuPrincipal {
     if (vista === this.vista && !forzar) return;
     const antes = this.vista;
     this.vista = vista;
-    const nodo = vista === "cuenta" ? this._vCuenta() : vista === "perfil" ? this._vPerfil() : this._vInicio();
+    const nodo = vista === "cuenta" ? this._vCuenta() : vista === "perfil" ? this._vPerfil() : vista === "ajustes" ? this._vAjustes() : this._vInicio();
     cambiar(this.escena, nodo, { tipo: tipo || CAMINO[antes + ">" + vista] || "zoom", desde, sonidos: this.app.sonidos, sinSonido: sinSonido || !antes });
     this._ajustar();
   }
@@ -409,15 +412,25 @@ export class MenuPrincipal {
     const tiendita = this._carta("durazno", TIENDITA, "Tiendita Cool", el("small", { text: "Muy pronto" }), () => aviso("En construcción xd...", 2600), 7);
     r.fechas = this._firmaDias();
     r.stats = this._dias(true);
-    const crear = el("button.mp-btn.primario.mp-crear", { type: "button", onClick: () => { this.cerrar(); app.inicio?.(); } }, [
+    const crear = el("button.mp-btn.primario.mp-crear", { type: "button", onClick: () => { quitarAviso(this._sinProyectos); this.cerrar(); app.inicio?.(); } }, [
       el("i.mp-crear-libro", { html: A.LIBRO_BRILLOS }),
       el("span.mp-crear-txt", {}, [
         el("span.mp-crear-t", {}, [el("span", { text: "Crear Detallito" }), el("i.mp-crear-flecha", { html: FLECHA })]),
         el("small.mp-crear-d", { text: "Convierte sus momentos juntos en una página hecha por ti, llena de recuerdos." }),
       ]),
     ]);
-    // Sin librito abierto (volviste desde «Crear detallito»), el editor vuelve a ofrecer crear uno.
-    const seguir = el("button.mp-seguir.mp-editor-ir", { type: "button", style: { "--i": 3 }, onClick: () => { this.cerrar(); if (!app.estado?.proyecto && !document.querySelector(".ed-inicio")) app.inicio?.(); } }, [
+    // Fase 46: abre el que estabas editando (o el último guardado). Si no hay ninguno, lo dice claro
+    // (y ofrece crear uno) en vez de mandarte a una pantalla vacía.
+    const seguir = el("button.mp-seguir.mp-editor-ir", { type: "button", style: { "--i": 3 }, onClick: async (e) => {
+      const b = e.currentTarget;
+      if (b._yendo) return;
+      b._yendo = true;
+      try {
+        if (await app.irAlEditor?.()) { this.cerrar(); return; }
+        app.sonidos?.sonar("seleccionar");
+        this._sinProyectos = aviso("Todavía no hay proyectos guardados. Crea tu primer detallito y aquí lo encuentras ✨", 5200, "", { t: `${ico("nuevo")}<span>Crear detallito</span>`, al: () => { this.cerrar(); app.inicio?.(); } });
+      } finally { b._yendo = false; }
+    } }, [
       el("i.mp-editor-ico", { html: LAPIZ }),
       el("span.mp-editor-t", {}, [el("b", { text: "Ir al editor" }), el("small", { text: "Edita, organiza y personaliza tus páginas." })]),
       el("i.mp-editor-ir-b", { html: FLECHA }),
@@ -441,6 +454,11 @@ export class MenuPrincipal {
       el("div.mp-cuenta-cab", { style: { "--i": 1 } }, [el("i", { html: ico("cuenta") }), el("h2", { text: "Tu cuenta" }), el("p", { text: `Con tu usuario y tu contraseña, tus libritos se guardan en tu nube de ${SRV.NOMBRE} y te vinculas con tu amorcito.` })]),
       el("div.mp-cuenta-form", { style: { "--i": 2 } }, [form]),
     ]);
+  }
+
+  _vAjustes() {
+    this.r = null;
+    return vistaAjustes(this.app, { alVolver: () => this.ir("inicio") });
   }
 
   _vPerfil() {

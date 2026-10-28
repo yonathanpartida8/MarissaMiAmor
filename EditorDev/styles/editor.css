@@ -2882,3 +2882,56 @@ body.ed-dibujando .ed-chip-efectos { display: none; }
 .ed-crear-fila { position: sticky; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 2; margin-top: 4px; }
 .ed-crear-fila .ed-btn { width: 100%; min-height: 48px; font-size: 16px; }
 .ed-crear-fila .ed-btn:disabled { opacity: .7; }
+
+/* ═══ Fase 46 · Crear detallito en pasos: qué vas a crear, su nombre (obligatorio), su portada y el tamaño ═══ */
+.ed-crear { grid-template-columns: 1fr !important; }
+.ed-crear .ed-tarjeta-nuevo { gap: 18px; padding: 20px 18px 16px; }
+.ed-paso { display: grid; gap: 10px; min-width: 0; animation: edPasoEntra .45s cubic-bezier(.2, .9, .3, 1.1) backwards; }
+.ed-paso:nth-child(2) { animation-delay: .05s; } .ed-paso:nth-child(3), .ed-paso:nth-child(4) { animation-delay: .1s; } .ed-paso:nth-child(5) { animation-delay: .15s; }
+.ed-paso[hidden] { display: none; }
+@keyframes edPasoEntra { from { opacity: 0; translate: 0 10px; } }
+.ed-paso-t { display: flex; align-items: center; gap: 9px; margin: 0; font: 600 17px/1.2 Jost, system-ui, sans-serif; color: var(--tinta); }
+.ed-paso-n { display: grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--acento-suave); color: var(--acento); font: 700 13px/1 Jost, system-ui, sans-serif; font-style: normal; }
+.ed-paso-d { color: var(--texto-suave); line-height: 1.4; }
+.ed-ques { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ed-que { display: grid; justify-items: start; gap: 4px; min-width: 0; padding: 14px 13px 13px; border: 1.5px solid var(--linea); border-radius: 16px; background: var(--superficie); color: var(--tinta); text-align: left; font: inherit; cursor: pointer;
+  transition: border-color .2s, background-color .2s, box-shadow .2s, transform .18s cubic-bezier(.3, 1.5, .5, 1); -webkit-tap-highlight-color: transparent; }
+.ed-que-ico { display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: 4px; border-radius: 12px; background: var(--acento-suave); color: var(--acento); transition: transform .25s cubic-bezier(.3, 1.6, .5, 1); }
+.ed-que-ico .ed-ico, .ed-que-ico svg { width: 21px; height: 21px; }
+.ed-que b { font: 600 15px/1.2 Jost, system-ui, sans-serif; }
+.ed-que small { color: var(--texto-suave); font-size: 12.5px; line-height: 1.35; }
+.ed-que.on { border-color: var(--acento); background: color-mix(in srgb, var(--acento-suave) 55%, var(--superficie)); box-shadow: 0 6px 16px rgba(224, 85, 142, .16); }
+.ed-que.on .ed-que-ico { transform: scale(1.08) rotate(-6deg); background: var(--acento); color: #fff; }
+.ed-que:active { transform: scale(.97); }
+.ed-txt.mal { border-color: #e2577d; box-shadow: 0 0 0 3px rgba(226, 87, 125, .16); }
+.ed-nuevo-error { color: #c2416f; font-weight: 600; }
+.ed-nuevo-error[hidden] { display: none; }
+.ed-crear-fila .ed-btn[aria-disabled="true"] { filter: saturate(.45) brightness(1.08); }
+.ed-crear-otro { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; padding: 4px 6px 0; color: var(--texto-suave); text-align: center; }
+@media (max-width: 360px) { .ed-ques { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .ed-paso { animation: none; } }
+/* Mientras «Crear detallito» está abierto, la abejita y su foquito no están (llegan ya en el editor). */
+body.con-inicio .ed-abeja, body.con-inicio .ed-abeja-globo, body.con-inicio .ed-foco { visibility: hidden !important; pointer-events: none !important; }
+
+/* ═══ Fase 46 · Sin toques fantasma: nada se queda «apretado» ni con el recuadro gris de Android ═══ */
+*, *::before, *::after { -webkit-tap-highlight-color: transparent; }
+@media (hover: none) { button:focus:not(:focus-visible), [role=button]:focus:not(:focus-visible) { outline: none; } }
+
+/* ═══ Fase 46 · Ultra Rendimiento: animaciones, sí, pero cortitas y sencillas ═══
+   (Además, calidad baja + sin transparencias quitan desenfoques; rendimiento.js deja quietos los adornos que se
+   repiten al terminar de entrar; el chat pone sus ánimos quietos.) Aquí: fuera lo que más trabajo da. */
+body.ed-ultra :is(.mp-fondo, .dt-burbujas, .dt-cielo, .ed-corazones, .an-azucar, .an-dulce, .an-gotita, .an-vaporcito, .an-vapor, .mp-garabato, .mp-crear-chispa) { display: none !important; }
+body.ed-ultra :is(.mp-capa, .dt-capa, .jt-capa, .ed-inicio) :is(.mp-vista, .dt-pantalla, .jt-panel) > * { animation-duration: .28s !important; animation-delay: 0s !important; }
+body.ed-ultra :is(.mp-capa, .dt-capa, .jt-capa, .ed-inicio, .ed-modal) * { box-shadow: none !important; text-shadow: none !important; }
+body.ed-ultra :is(.mp-capa, .dt-capa, .jt-capa, .ed-inicio) :is(.mp-carta, .mp-pola, .dt-tarjeta, .jt-cuadro, .ed-tarjeta) { box-shadow: 0 1px 2px rgba(0, 0, 0, .1) !important; }
+
+/* ═══ Fase 46 · Arrastrar cositas del cajón a la hoja ═══
+   La copia que va con el dedo (suave, sin sombras pesadas) y la hoja que se ilumina cuando la cosita cae ahí. */
+.ed-panel-cuerpo :is(.ed-pieza, button.ed-asset, .ed-dibujos > button, .ed-texto-muestra, button.ed-gif, button.ed-comp, button.ed-bq-t),
+.pro-menu :is(.ed-pieza, button.ed-asset, .ed-dibujos > button, .ed-texto-muestra, button.ed-gif, button.ed-comp, button.ed-bq-t) { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.ed-cosita-vuela { position: fixed !important; z-index: 9000; margin: 0 !important; pointer-events: none; box-sizing: border-box; overflow: hidden; opacity: .94; border-radius: 14px !important; background: var(--superficie, #fff) !important; border: 2px solid #f4b6cb !important; box-shadow: 0 10px 24px rgba(214, 92, 140, .26); will-change: transform; transition: border-color .15s, box-shadow .15s; }
+.ed-cosita-vuela.sobre { border-color: #e2709c !important; box-shadow: 0 12px 28px rgba(214, 92, 140, .38), 0 0 0 4px rgba(244, 182, 203, .45); }
+body.ed-arrastrando-cosita, body.ed-arrastrando-cosita * { cursor: grabbing !important; }
+body.ed-arrastrando-cosita .pro-menu { opacity: 0; pointer-events: none; transition: opacity .15s; }
+body.ed-cosita-sobre-hoja .ed-hoja { outline: 3px dashed rgba(226, 112, 156, .55); outline-offset: 4px; }
+body.ed-ultra .ed-cosita-vuela { box-shadow: none; transition: none; }

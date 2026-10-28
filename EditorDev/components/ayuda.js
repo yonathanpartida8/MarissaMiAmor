@@ -279,7 +279,8 @@ export class Ayuda {
     if (!PREF.abeja || (this._echada || 0) >= 2 || navigator.webdriver) return;
     this._tl = setTimeout(() => {
       if (this.abeja.viva || !PREF.abeja) return;
-      if (document.hidden || document.body.classList.contains("ed-probando") || document.querySelector(".ed-modal-fondo, .ed-hojita.abierta, .ed-codigo-pantalla, .mp-capa.ver, .jt-capa.ver")) return this._llegarSola(20000);
+      // (Fase 46: tampoco con «Crear detallito» o Mensajitos abiertos: llega ya en el editor.)
+      if (document.hidden || document.body.classList.contains("ed-probando") || document.querySelector(".ed-modal-fondo, .ed-hojita.abierta, .ed-codigo-pantalla, .mp-capa.ver, .jt-capa.ver, .ed-inicio, .dt-capa.ver")) return this._llegarSola(20000);
       this.llegar();
     }, ms);
   }

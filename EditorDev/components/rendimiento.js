@@ -196,6 +196,19 @@ navigator.getBattery?.().then((b) => {
   const ver = () => { if (b.level <= 0.15 && !b.charging) { fijo = "pila baja"; sufre("pila baja"); } else if (fijo === "pila baja") { fijo = ""; quizaRecupera(); } };
   b.addEventListener("levelchange", ver); b.addEventListener("chargingchange", ver); ver();
 }).catch(() => {});
+/**
+ * Ultra Rendimiento (Fase 46, en Configuración): el ahorro queda fijo mientras esté prendido (los adornos que
+ * se repiten se quedan quietos, nada se desenfoca) y se suelta en cuanto lo apagas.
+ */
+export function ultra(on) {
+  if (on) { if (fijo !== "ultra") { fijo = "ultra"; if (R.ahorro) { R.motivo = "ultra rendimiento"; aquietar(); avisar(); } else sufre("ultra rendimiento"); } return; }
+  if (fijo !== "ultra") return;
+  fijo = "";
+  R.ahorro = false; R.motivo = "";
+  H.classList.remove("rd-ahorro");
+  if (!R.reposo) soltarQuietos();
+  avisar();
+}
 /** Ahorro de datos o un aparato con muy poca memoria: desde el principio. */
 if (navigator.connection?.saveData) { fijo = "ahorro de datos"; sufre("ahorro de datos"); }
 else if (navigator.deviceMemory && navigator.deviceMemory <= 1) { fijo = "poca memoria"; sufre("poca memoria"); }

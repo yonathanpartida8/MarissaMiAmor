@@ -58,20 +58,57 @@ export function revisarEnlace() {
   return url;
 }
 
+/** ¿Contesta de verdad ese servidor (y no se pasó a otro teléfono)? */
+async function contesta(url) {
+  const c = new AbortController(), t = setTimeout(() => c.abort(), 7000);
+  try {
+    const r = await fetch(url + "/api/salud", { cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer", signal: c.signal });
+    const d = await r.json();
+    return d.ok && !d.relevado;
+  } catch (e) { return false; } finally { clearTimeout(t); }
+}
+
+/**
+ * Dónde dice el librito que está el servidor. La página (GitHub Pages) tarda minutos en rehacerse cuando
+ * el túnel cambia o el servidor se pasa a otro teléfono; GitHub mismo lo sabe al momento (Fase 46).
+ */
+async function anuncios(conGithub) {
+  const lista = [];
+  const poner = (d, de) => { const url = limpiarUrl(d?.url); if (url && !bloqueada(url)) lista.push({ url, en: String(d.actualizado || ""), de }); };
+  let pag = null;
+  try {
+    // «?t=» salta la caché de GitHub Pages (guarda hasta 10 min).
+    const r = await fetch(new URL("../servidor.json?t=" + Math.floor(Date.now() / 15000), location.href), { cache: "no-store" });
+    if (r.ok) poner((pag = await r.json()), "página");
+  } catch (e) { /* sin anuncio en la página */ }
+  if (conGithub && /^[\w.-]+\/[\w.-]+$/.test(pag?.repo || "") && pag?.rama) {
+    try {
+      const r = await fetch(`https://api.github.com/repos/${pag.repo}/contents/servidor.json?ref=${encodeURIComponent(pag.rama)}`,
+        { headers: { Accept: "application/vnd.github.raw+json" }, cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer" });
+      if (r.ok) poner(await r.json(), "github");
+    } catch (e) { /* sin GitHub: queda lo de la página */ }
+  }
+  return lista.sort((a, b) => b.en.localeCompare(a.en));
+}
+
 let buscando = null, buscadoEn = 0;
-/** La dirección de M.YNTHN: la que el servidor anunció en servidor.json (o la última que funcionó). */
+/**
+ * La dirección de M.YNTHN: la que el servidor anunció en servidor.json (o la última que funcionó).
+ * Con «forzar» (algo no contestó) se busca en serio: la página y GitHub, y se queda la que SÍ contesta.
+ */
 export async function asegurarUrl(forzar = false) {
   if (!forzar && buscando && Date.now() - buscadoEn < 5 * 60 * 1000) return buscando;
   buscadoEn = Date.now();
   buscando = (async () => {
-    try {
-      // «?t=» salta la caché de GitHub Pages (guarda hasta 10 min): si el túnel cambió, se sabe ya.
-      const r = await fetch(new URL("../servidor.json?t=" + Math.floor(Date.now() / 15000), location.href), { cache: "no-store" });
-      if (r.ok) {
-        const url = limpiarUrl((await r.json()).url);
-        if (url && url !== leer().url) guardar({ ...leer(), url });   // el túnel cambió: la sesión sigue valiendo
-      }
-    } catch (e) { /* sin anuncio: se usa la que había */ }
+    const antes = leer().url || "";
+    const lista = await anuncios(forzar);
+    let url = lista[0]?.url || "";
+    if (forzar) {
+      const candidatas = [...new Set([...lista.map((a) => a.url), antes].filter(Boolean))];
+      url = "";
+      for (const u of candidatas) if (await contesta(u)) { url = u; break; }
+    }
+    if (url && url !== antes) guardar({ ...leer(), url });   // el túnel cambió: la sesión sigue valiendo
     return leer().url || "";
   })();
   return buscando;

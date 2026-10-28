@@ -62,14 +62,14 @@ const IC = {
   brillo: svg('<path d="M12 3.5c.6 3.6 1.9 4.9 5.5 5.5-3.6.6-4.9 1.9-5.5 5.5-.6-3.6-1.9-4.9-5.5-5.5 3.6-.6 4.9-1.9 5.5-5.5zM18.5 14.5c.3 1.6.8 2.1 2.4 2.4-1.6.3-2.1.8-2.4 2.4-.3-1.6-.8-2.1-2.4-2.4 1.6-.3 2.1-.8 2.4-2.4z"/>', ' fill="currentColor"'),
   foto: svg('<rect x="3.4" y="4.6" width="17.2" height="14.8" rx="3.4"/><circle cx="9" cy="10" r="1.8"/><path d="m4.4 17.4 4.8-4.6 3.4 3.2 2.6-2.4 4.6 4.2"/>', LINEA),
 };
-// Los ánimos (Happy, Sad, Enojado, Hormonal): cada uno con su forma y su color (sol, nube con lluvia,
-// carita enojada y corazón con cuernitos). Sus efectos viven en chat-animos.js.
+// Los ánimos (Happy, Sad, Enojado, Hot Cake): cada uno con su forma y su color (sol, nube con lluvia,
+// carita enojada y un montoncito de hot cakes con miel). Sus efectos viven en chat-animos.js.
 const GOTA = (x, y) => `M${x} ${y}c.9 1.3 1.4 2.1 1.4 2.8a1.4 1.4 0 0 1-2.8 0c0-.7.5-1.5 1.4-2.8z`;
 const ANIMOS = [
   { id: "happy", t: "Happy", s: svg(`<path d="M20 3.6v4M20 32.4v4M3.6 20h4M32.4 20h4M8.4 8.4l2.8 2.8M28.8 28.8l2.8 2.8M8.4 31.6l2.8-2.8M28.8 11.2l2.8-2.8" stroke="#ffbe4d" stroke-width="2.6" stroke-linecap="round"/><circle cx="20" cy="20" r="10.6" fill="#ffd45c" stroke="#ffb43a" stroke-width="1.4"/><path d="M15.6 18.8q1.4-1.6 2.8 0M21.6 18.8q1.4-1.6 2.8 0M16.4 22.4q3.6 3.6 7.2 0" fill="none" stroke="#7a4a12" stroke-width="1.6" stroke-linecap="round"/><circle cx="14.6" cy="22.4" r="1.5" fill="#ff9db8" opacity=".85"/><circle cx="25.4" cy="22.4" r="1.5" fill="#ff9db8" opacity=".85"/>`, "", "0 0 40 40") },
   { id: "sad", t: "Sad", s: svg(`<path d="M10 25.4h20a6.2 6.2 0 0 0 .6-12.4 8.8 8.8 0 0 0-17-1.2A7 7 0 0 0 10 25.4z" fill="#d6e1ff" stroke="#7f97e0" stroke-width="1.6"/><path d="M15.4 17.8q1.3 1.1 2.6 0M22 17.8q1.3 1.1 2.6 0M17.8 22.4q2.2-1.7 4.4 0" fill="none" stroke="#3f4f8f" stroke-width="1.5" stroke-linecap="round"/><path d="${GOTA(14, 29)}${GOTA(20, 31.4)}${GOTA(26, 29)}" fill="#6f9bff"/>`, "", "0 0 40 40") },
   { id: "enojado", t: "Enojado", s: svg(`<path d="M7.4 9.6q-1.6-2.2 0-4.4M11 7.6q-1.4-2 0-4" fill="none" stroke="#c9b9c4" stroke-width="1.6" stroke-linecap="round"/><circle cx="20" cy="22" r="11.4" fill="#ff7b5c" stroke="#e2483a" stroke-width="1.4"/><path d="M13.8 17.4l5 2.2M26.2 17.4l-5 2.2" stroke="#5b1414" stroke-width="2" stroke-linecap="round"/><circle cx="16.8" cy="21.8" r="1.3" fill="#5b1414"/><circle cx="23.2" cy="21.8" r="1.3" fill="#5b1414"/><path d="M16.4 27.6q3.6-2.6 7.2 0" fill="none" stroke="#5b1414" stroke-width="1.7" stroke-linecap="round"/><path d="M29.6 4.4c.3 1.8-.8 3-2.6 3.2M33.4 4.4c-.3 1.8.8 3 2.6 3.2M29.6 11.6c.3-1.8-.8-3-2.6-3.2M33.4 11.6c-.3-1.8.8-3 2.6-3.2" fill="none" stroke="#e2483a" stroke-width="1.7" stroke-linecap="round"/>`, "", "0 0 40 40") },
-  { id: "hormonal", t: "Hormonal", s: svg(`<path d="M12.6 12.6 10.8 6.8l4.6 3.6M27.4 12.6l1.8-5.8-4.6 3.6" fill="#c4123f" stroke="#c4123f" stroke-width="1" stroke-linejoin="round"/><path d="M20 34S6.2 25.8 6.2 16.8A7 7 0 0 1 20 13a7 7 0 0 1 13.8 3.8C33.8 25.8 20 34 20 34z" fill="#ff3b6b" stroke="#c4123f" stroke-width="1.4"/><path d="M11.6 16.2a3.6 3.6 0 0 1 3.8-3" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.6" stroke-linecap="round"/><path d="M33 3.6l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" fill="#ffb3c9"/>`, "", "0 0 40 40") },
+  { id: "hotcake", t: "Hot Cake", s: svg(`<ellipse cx="20" cy="32.4" rx="15.4" ry="3.4" fill="#fff4e4" stroke="#ebcaa4" stroke-width="1.2"/><path d="M7.6 27.2c0-1.7 5.5-3 12.4-3s12.4 1.3 12.4 3v1.8c0 1.7-5.5 3-12.4 3s-12.4-1.3-12.4-3z" fill="#f0ae58" stroke="#c98431" stroke-width="1.2"/><path d="M8.4 22.6c0-1.7 5.2-3 11.6-3s11.6 1.3 11.6 3v1.8c0 1.7-5.2 3-11.6 3s-11.6-1.3-11.6-3z" fill="#f5bb66" stroke="#c98431" stroke-width="1.2"/><path d="M9.2 18c0-1.7 4.8-3 10.8-3s10.8 1.3 10.8 3v1.8c0 1.7-4.8 3-10.8 3S9.2 21.5 9.2 19.8z" fill="#f8c873" stroke="#c98431" stroke-width="1.2"/><path d="M11.4 18.2c1.6-1.4 5-2.1 8.6-2.1s7.2.7 8.8 2.1c-.6.9-1.8 1.4-2.6 1.2-.5 1.6-.9 3.2-1.6 3.2s-.9-1.9-1.3-2.9c-1 .3-2.2.4-3.4.4-.6 1.4-.9 3.6-1.7 3.6-.7 0-.9-2.2-1.2-3.8-1.7-.3-3.1-.8-3.6-1.7z" fill="#d9771f" opacity=".92"/><rect x="16.8" y="11.6" width="6.6" height="4.4" rx="1.2" fill="#fff3a6" stroke="#e3c24f" stroke-width="1"/><path d="M18 12.8h3" stroke="#fffbe0" stroke-width="1" stroke-linecap="round"/>`, "", "0 0 40 40") },
 ];
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 const I2 = (s, t) => `<i class="ch-i">${s}</i><span>${t}</span>`;
@@ -262,7 +262,7 @@ export function vistaChat(det) {
     el("small.ch-dibujo-pista", { text: "Dibuja con un dedo · desliza con dos · lo ve en vivo" }),
   ]);
   const raiz = el("section.dt-pantalla.ch" + (PR.fondo ? "" : ".sin-fondo") + (PR.grande ? ".letra-grande" : ""), {}, [cab, marco, animos, panelN, barraDibujo, editBar, escribir]);
-  // El color de cada quien en «Hormonal» sale del género que eligió en su perfil (sólo «Mujer» es rosa).
+  // La miel de cada quien en «Hot Cake» sale del género que eligió en su perfil (de fresa para «Mujer»; de maple, los demás).
   const generoDe = (mio) => (mio ? PF.datos().yo?.genero : det.amor?.pareja?.genero ?? PF.datos().pareja?.genero) || "";
   const AN = animosChat({ raiz, marco, lista, tono: (mio) => (generoDe(mio) === "Mujer" ? "rosa" : "carmesi") });
 
@@ -1148,9 +1148,8 @@ export function vistaChat(det) {
     abrirHoja(el("div.ch-hoja-in", {}, [
       el("div.ch-hoja-cab", {}, [el("i", { html: IC.brillo }), el("b", { text: "Cositas" })]),
       el("div.ch-cositas", {}, [
-        item(ICONO_CAMARA, "Cámara", "Una foto con filtros", () => camara(), ".cielo"),
+        // (Fase 46: la cámara está arriba del chat y «Crear sticker» en el panel de stickers: aquí no se repiten.)
         item(IC.lapiz, "Dibujar", "En vivo, en todo el chat", () => entrarDibujo(), ".rosa"),
-        item(IC.foto, "Crear sticker", "Con tus fotos", () => crearSticker(), ".durazno"),
         item(IC.espacio, "Espacio", "Más lugar para dibujar", () => { entrarDibujo(); masEspacio(); }, ".lila"),
       ]),
       el("div.ch-pronto", {}, [el("i", { html: IC.brillo }), el("span", { text: "Aquí van a llegar más cositas muy pronto ✨" })]),

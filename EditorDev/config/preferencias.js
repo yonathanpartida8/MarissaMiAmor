@@ -11,7 +11,7 @@ const CLAVE = "editordev:config";
 export const VERSION = "3.1";
 
 export const DEF = {
-  modo: "equilibrado",   // equilibrado | rendimiento | calidad
+  modo: "equilibrado",   // equilibrado | rendimiento | calidad | ultra (Fase 46: Ultra Rendimiento)
   hz: "auto",            // auto | 30 | 60 | 90 | 120 | 144 (nunca más de lo que da la pantalla)
   calidad: "alta",       // baja | media | alta
   movimiento: "completo",// completo | reducido | nada
@@ -29,9 +29,12 @@ export const DEF = {
 };
 
 export const MODOS = {
-  rendimiento: { calidad: "baja", hz: "60", particulas: false, efectos: true, movimiento: "reducido" },
-  equilibrado: { calidad: "media", hz: "auto", particulas: true, efectos: true, movimiento: "completo" },
-  calidad: { calidad: "alta", hz: "auto", particulas: true, efectos: true, movimiento: "completo" },
+  rendimiento: { calidad: "baja", hz: "60", particulas: false, efectos: true, movimiento: "reducido", transparencias: true },
+  equilibrado: { calidad: "media", hz: "auto", particulas: true, efectos: true, movimiento: "completo", transparencias: true },
+  calidad: { calidad: "alta", hz: "auto", particulas: true, efectos: true, movimiento: "completo", transparencias: true },
+  // Ultra Rendimiento (Fase 46): las animaciones siguen, pero cortitas y sencillas; sin desenfoques, brillitos
+  // ni transparencias; los adornos que se repiten se quedan quietos al terminar de entrar (ver rendimiento.js).
+  ultra: { calidad: "baja", hz: "60", particulas: false, efectos: false, movimiento: "reducido", transparencias: false },
 };
 
 function leer() { try { return { ...DEF, ...JSON.parse(localStorage.getItem(CLAVE) || "{}") }; } catch (e) { return { ...DEF }; } }
@@ -65,6 +68,7 @@ export function aplicar() {
   b.classList.toggle("ed-sin-transparencias", !PREF.transparencias);
   b.classList.toggle("ed-sin-tooltips", !PREF.tooltips);
   b.classList.toggle("ed-sin-guias", PREF.idioma !== "dev"); // fuera de Dev no salen los «dónde añadir…»
+  b.classList.toggle("ed-ultra", PREF.modo === "ultra");
   r.lang = PREF.idioma === "mx" ? "es-MX" : "es-419";
   r.style.setProperty("--anim-k", String(mov === "nada" ? 0 : (mov === "reducido" ? 0.5 : 1) * PREF.intensidad));
   r.style.setProperty("--ui-escala", String(PREF.escala));

@@ -36,7 +36,7 @@ import { Autoguardado } from "./storage/autoguardado.js";
 import { IndicadorGuardado } from "./components/guardado.js";
 import { cargarSeguro, quitarRescate } from "./storage/seguro.js";
 import { borrarCopias, listarCopias, leerCopia } from "./storage/respaldos.js";
-import { cargar, guardarTodo, borrar, leerArchivo, guardarArchivo } from "./storage/db.js";
+import { cargar, guardarTodo, borrar, leerArchivo, guardarArchivo, listar } from "./storage/db.js";
 import { Lienzo, DISPOSITIVOS } from "./canvas/lienzo.js";
 import { Acciones } from "./components/acciones.js";
 import { Inspector } from "./components/inspector.js";
@@ -73,10 +73,11 @@ import { SonidosEditor } from "./audio/sonidos-editor.js";
 import { EditorZonas } from "./components/toques.js";
 import { aplicarIconos } from "./recursos/extras.js";
 import { asegurarBotones } from "./components/secciones/navegacion.js";
-import { PREF, aplicar as aplicarPref, vibrar } from "./config/preferencias.js";
+import { PREF, aplicar as aplicarPref, vibrar, alCambiar as alCambiarPref } from "./config/preferencias.js";
 import { medirHz } from "./config/cuadros.js";
 import { Configuracion } from "./components/configuracion.js";
 import { Herramientas } from "./canvas/herramientas.js";
+import { arrastrarCositas } from "./components/arrastrar-cositas.js";
 
 const RT = window.LibritoRT;
 const ULTIMO = "editordev:ultimo";
@@ -152,6 +153,9 @@ function leerUltimo() { try { return localStorage.getItem(ULTIMO); } catch (e) {
 async function arrancar() {
   guardasDeApp();
   aplicarPref();
+  // Ultra Rendimiento (Fase 46): el ahorro de rendimiento.js se queda fijo mientras esté prendido.
+  RD.ultra(PREF.modo === "ultra");
+  alCambiarPref((p, c) => { if ("modo" in c) RD.ultra(p.modo === "ultra"); });
   // Lo primero que se ve: el menú principal (el editor se carga por detrás).
   app.detallitos = new Detallitos(app);
   app.exportarMenu = new MenuExportar(app);
@@ -212,6 +216,8 @@ async function arrancar() {
     },
   });
   app.gifs = app.paneles;
+  // Las cositas del cajón también se arrastran a la hoja (Fase 46): el cajón se esconde y vuelve solo.
+  arrastrarCositas(app);
   // En LovEdit (Fase 43) todo se abre en su menú, encima de las pistas.
   app.abrirSeccion = (id) => (app.pro?.abierto && id ? app.pro.verMenu(ALIAS[id] || id) : abrirSeccion(id, true));
 
@@ -581,13 +587,17 @@ app.abrir = async (id) => {
   await app.abrirProyecto(P, notas.length > 0, notas);
 };
 
-app.nuevo = async (nombre, formato = "movil", { portada = "portada-clasica", imagen = null } = {}) => {
+app.nuevo = async (nombre, formato = "movil", { portada = "portada-clasica", imagen = null, tipo = "pagina" } = {}) => {
   if (app.auto.pendiente) await app.auto.ahora();
   if (!nombre) { pantallaInicio(app, { cerrable: !!app.estado.proyecto }); return; }
+  // Un dibujito (Fase 46): una hoja blanca y el lápiz ya en la mano.
+  const dibujito = tipo === "dibujito";
+  if (dibujito) { portada = "portada-clasica"; imagen = null; }
   const P = nuevoProyecto(nombre, formato);
+  if (dibujito) P.ajustes.tipo = "dibujito";
   if (formato === "auto" && matchMedia("(pointer: coarse)").matches) { const t = tamAuto(); P.ajustes.ancho = t.w; P.ajustes.alto = t.h; }
   const pg = (PLANTILLAS.find((t) => t.id === portada && t.cat === "portadas") || PLANTILLAS.find((t) => t.id === "portada-clasica")).crear(P);
-  pg.nombre = "Portada";
+  pg.nombre = dibujito ? "Dibujito" : "Portada";
   P.paginas[pg.id] = pg;
   P.orden.push(pg.id);
   P.ajustes.portada = pg.id;
@@ -603,7 +613,42 @@ app.nuevo = async (nombre, formato = "movil", { portada = "portada-clasica", ima
       else if (a) app.estado.setPag({ fondo: { ...(pag.fondo || {}), imagen: { asset: a.id, ajuste: "cover", pos: "center", opacidad: 1 } } }, "Foto de portada", null, pg.id);
     } catch (e) { aviso("No se pudo poner tu imagen: tócala en la portada para elegirla otra vez", 4000, "error"); }
   }
+  if (dibujito) {
+    setTimeout(() => app.herramientas?.usar("lapiz"), 350);
+    aviso("Tu dibujito: dibuja con el dedo (o el mouse). Cambia color y grosor abajo; al terminar, toca «Listo»", 5200);
+    return;
+  }
   aviso(portada === "portada-clasica" ? "Tu detallito nuevo, en blanco: añade lo que quieras desde la pestañita" : "Tu detallito nuevo. Empieza tocando cualquier cosa de la portada");
+};
+
+/**
+ * Fase 46: ya se publicó (o se le mandó): la edición se limpia para empezar de cero. El borrador se va
+ * de este aparato y de tu nube (lo publicado sigue en el servidor, en su enlace o en su colección), y
+ * «Ir al editor» dice que todavía no hay proyectos guardados. Abajo queda «Crear detallito».
+ */
+app.limpiarTrasPublicar = async () => {
+  const P = app.estado.proyecto;
+  if (!P) return;
+  const id = P.id;
+  app.auto.descartar();
+  app.herramientas?.usar(null);
+  await borrar(id).catch(() => {});
+  borrarCopias(id).catch(() => {});
+  quitarRescate(id);
+  guardarUltimo(null);
+  if (SRV.conectado() && NUBE.esMio?.(id)) NUBE.borrarDeLaNube(id).catch(() => {});
+  app.estado.proyecto = null;
+  pantallaInicio(app);
+};
+
+/** «Ir al editor»: el que estás editando, o el último guardado; si no hay ninguno, lo dice (Fase 46). */
+app.irAlEditor = async () => {
+  if (app.estado.proyecto) return true;
+  const lista = await listar().catch(() => []);
+  if (!lista.length) return false;
+  const ultimo = [...lista].sort((a, b) => (b.editado || 0) - (a.editado || 0))[0];
+  await app.abrir(ultimo.id);
+  return true;
 };
 
 app.inicio = async (op = {}) => {

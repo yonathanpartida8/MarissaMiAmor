@@ -98,7 +98,7 @@ async function qrDe(texto) {
   return q.createSvgTag({ cellSize: 5, margin: 2, scalable: true });
 }
 
-export function bloquePublicar(app, { alPublicar } = {}) {
+export function bloquePublicar(app, { alPublicar, alOtro } = {}) {
   const P = app.estado.proyecto;
   const E = app.estado;
   const titulo = el("input", { type: "text", value: P.nombre || "Mi librito", maxlength: 60, "aria-label": "Título de la página" });
@@ -197,13 +197,22 @@ export function bloquePublicar(app, { alPublicar } = {}) {
       );
       resultado.hidden = false;
       alPublicar?.(r);
+      // Fase 46: ya se publicó: la edición se limpia para empezar de cero (el enlace de arriba sigue sirviendo).
+      await app.limpiarTrasPublicar?.();
+      publicado = true;
+      btn.innerHTML = I("nuevo", "Crear otro detallito");
+      resultado.append(el("small.ed-pub-limpio", { text: "Tu edición quedó en blanco para que empieces otro detallito." }));
     } catch (e) {
       app.sonidos?.sonar("error");
       aviso(e.message || "No se pudo publicar", 5000, "error");
       if (e.status === 409) revisar();
     } finally { btn.disabled = false; prog.hidden = true; }
   };
-  const btn = el("button.ed-btn.primario.ed-pub-btn", { type: "button", html: I("publicar", `Publicar en ${SRV.NOMBRE}`), onClick: () => publicar() });
+  let publicado = false;
+  const btn = el("button.ed-btn.primario.ed-pub-btn", { type: "button", html: I("publicar", `Publicar en ${SRV.NOMBRE}`), onClick: () => {
+    if (publicado || !app.estado.proyecto) { alOtro?.(); app.inicio?.(); return; }
+    publicar();
+  } });
   const caja = el("div.ed-myn-pub", {}, [
     el("label.ed-fila", {}, [el("span.ed-et", { text: "Título" }), titulo]),
     el("label.ed-fila.ed-pub-enlace-fila", {}, [el("span.ed-et", { text: "Tu enlace" }), el("div.ed-pub-url", {}, [prefijo, enlace])]),

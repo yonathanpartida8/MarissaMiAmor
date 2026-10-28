@@ -137,15 +137,39 @@ export function control(v, { tipo = "numero", leer, escribir, min, max, paso = 1
 
 /* ── Avisos ───────────────────────────────────────────────────────── */
 let pila = null;
+/**
+ * Avisos (Fase 46): nunca se amontonan. El mismo aviso que ya se ve no se repite (sólo se queda un
+ * ratito más y da un saltito) y, si ya hay 3 a la vista, el más viejo se va para dejar entrar al nuevo.
+ */
+const MAX_AVISOS = 3;
+export function quitarAviso(t) {
+  if (!t || t._saliendo) return;
+  t._saliendo = true;
+  clearTimeout(t._t);
+  t.classList.remove("ver");
+  setTimeout(() => t.remove(), 300);
+}
 export function aviso(texto, ms = 2600, tipo = "", accion = null) {
   if (!pila) { pila = el("div.ed-avisos", { role: "status", "aria-live": "polite" }); document.body.append(pila); }
+  const clave = tipo + "|" + texto + "|" + (accion?.t || "");
+  const ya = [...pila.children].find((n) => n._clave === clave && !n._saliendo);
+  if (ya) {
+    clearTimeout(ya._t);
+    ya._t = setTimeout(() => quitarAviso(ya), ms);
+    if (accion) ya._al = accion.al;
+    ya.animate?.([{ scale: 1 }, { scale: 1.04 }, { scale: 1 }], { duration: 260, easing: "ease-out" });
+    return ya;
+  }
   const t = el("div.ed-aviso" + (tipo ? "." + tipo : ""), { text: texto });
+  t._clave = clave;
   // Un botón dentro del aviso («Probar», «Deshacer»…).
-  if (accion) t.append(el("button.ed-aviso-b", { type: "button", html: accion.t, onClick: () => { t.classList.remove("ver"); setTimeout(() => t.remove(), 300); accion.al(); } }));
+  if (accion) { t._al = accion.al; t.append(el("button.ed-aviso-b", { type: "button", html: accion.t, onClick: () => { quitarAviso(t); t._al?.(); } })); }
   pila.append(t);
+  const vivos = [...pila.children].filter((n) => !n._saliendo);
+  while (vivos.length > MAX_AVISOS) quitarAviso(vivos.shift());
   if (tipo) dispatchEvent(new CustomEvent("ed-aviso", { detail: tipo }));
   requestAnimationFrame(() => t.classList.add("ver"));
-  setTimeout(() => { t.classList.remove("ver"); setTimeout(() => t.remove(), 300); }, ms);
+  t._t = setTimeout(() => quitarAviso(t), ms);
   return t;
 }
 

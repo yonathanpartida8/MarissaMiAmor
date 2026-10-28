@@ -201,7 +201,7 @@ export function vistaPerfil(app, { alListo, alVincular, alSalir } = {}) {
   const nombre = el("input.pf-input", { type: "text", value: yo.nombre || "", maxlength: 40, placeholder: yoU(), autocomplete: "nickname", "aria-label": "Tu nombre" });
   const cumple = el("input.pf-input", { type: "date", value: yo.cumple || "", max: new Date().toISOString().slice(0, 10), "aria-label": "Tu cumpleaños" });
   const novios = el("input.pf-input", { type: "date", value: pa?.novios || yo.novios || "", max: new Date().toISOString().slice(0, 10), "aria-label": "Novios desde" });
-  // Tu género (lo eliges tú; nunca se deduce): sirve para los efectos de «Hormonal» en el chat.
+  // Tu género (lo eliges tú; nunca se deduce): le da su miel a tus mensajitos en «Hot Cake».
   const genero = el("select.pf-input.pf-genero", { "aria-label": "Tu género" }, [
     el("option", { value: "", text: "Elige tu género", disabled: "" }),
     ...["Hombre", "Mujer", "LGBTQ+", "Otro"].map((v) => el("option", { value: v, text: v })),
@@ -253,7 +253,7 @@ export function vistaPerfil(app, { alListo, alVincular, alSalir } = {}) {
     ]),
     campo("cuenta", "Tu nombre", nombre, "Así te ve tu amorcito (tu usuario para entrar no cambia)."),
     campo("pastel", "Tu cumpleaños", cumple),
-    campo("corazon", "Tu género", genero, "Lo eliges tú. Le da su color a tus mensajitos en «Hormonal»."),
+    campo("corazon", "Tu género", genero, "Lo eliges tú. Le da su miel a tus mensajitos en «Hot Cake» (de fresa o de maple)."),
     campo("calendario", "Somos novios desde", novios, pa ? `Es de los dos: a ${nombreDe(pa)} le aparece igual.` : "Cuando te vincules, le aparece igual a tu amorcito."),
     guardar, estado,
     el("div.pf-pareja", {}, pa

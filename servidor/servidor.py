@@ -68,7 +68,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.17.0"
+VERSION = "1.18.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -866,6 +866,7 @@ class Estado:
         if not self.aj["id_servidor"]:           # quién es este servidor (viaja con los datos a otro teléfono)
             self.aj.poner(id_servidor=secrets.token_hex(8))
         self.mudando = 0                         # mientras se pasa a otro teléfono: sólo se lee (nada se pierde)
+        self.relevo_token = ""                   # Fase 46: el permiso de un solo uso para que el nuevo diga «ya, apágate»
         self.otro = {}                           # otro servidor prendido que es el de siempre (no se le quita la dirección)
         self.peticiones = 0
         if arranque:
@@ -1212,9 +1213,12 @@ def anunciar_direccion():
     pocos minutos: la dirección sólo se da por anunciada cuando el commit entró."""
     url = E.url_publica()
     gh = E.github()
-    if not (url and gh and E.aj["anunciar"]) or url in (E.anunciada, E.anunciando) or E.aj["relevado"]:
+    # (Mientras se pasa a otro teléfono éste no se anuncia: si su túnel se reabre, no le quita la dirección al nuevo.)
+    if not (url and gh and E.aj["anunciar"]) or url in (E.anunciada, E.anunciando) or E.aj["relevado"] or E.mudando:
         return
-    cuerpo = json.dumps({"url": url, "nombre": E.aj["nombre"], "id": E.aj["id_servidor"], "actualizado": iso()}, ensure_ascii=False, indent=1).encode() + b"\n"
+    # Fase 46: con el repositorio y la rama, «traer» y el editor lo leen fresco de GitHub (la página tarda minutos).
+    cuerpo = json.dumps({"url": url, "nombre": E.aj["nombre"], "id": E.aj["id_servidor"], "repo": gh.repo, "rama": gh.rama,
+                         "actualizado": iso()}, ensure_ascii=False, indent=1).encode() + b"\n"
 
     def hacer(t):
         try:
@@ -1222,7 +1226,8 @@ def anunciar_direccion():
                 actual = gh.leer(ARCHIVO_ANUNCIO, commit)
                 if actual:
                     try:
-                        if json.loads(actual).get("url") == url:
+                        ya = json.loads(actual)
+                        if ya.get("url") == url and ya.get("rama") == gh.rama and ya.get("id") == E.aj["id_servidor"]:
                             return []
                     except ValueError:
                         pass
@@ -1704,7 +1709,7 @@ class Manejador(BaseHTTPRequestHandler):
             if E.mudando and self.command not in ("GET", "HEAD") and not camino.startswith("/api/dueno/"):
                 if ahora() - E.mudando < 900:
                     return self.error(503, "El servidor se está pasando a otro teléfono: en un minutito vuelve (no se pierde nada).")
-                E.mudando = 0   # nadie terminó el traspaso en 15 minutos: todo sigue como antes
+                E.mudando, E.relevo_token = 0, ""   # nadie terminó el traspaso en 15 minutos: todo sigue como antes
             for metodo, patron, quien, f in RUTAS:
                 m = patron.match(camino)
                 if m and metodo == self.command.replace("HEAD", "GET"):
@@ -1878,7 +1883,7 @@ def api_info(h, s):
 def api_salud(h, s):
     """Para el vigía del túnel (y para ti): ¿contesta este servidor?"""
     h.responder(200, {"ok": True, "id": E.arranque_id, "servidor": E.aj["id_servidor"], "version": VERSION, "nombre": E.aj["nombre"],
-                      "relevado": bool(E.aj["relevado"])})
+                      "relevado": bool(E.aj["relevado"]), "mudando": bool(E.mudando)})
 
 
 @ruta("POST", "/api/instalar")
@@ -4473,6 +4478,7 @@ def api_traspaso(h, s):
     if E.aj["relevado"]:
         raise Falla("Este servidor ya pasó a otro teléfono.", 409)
     E.mudando = ahora()
+    E.relevo_token = secrets.token_urlsafe(24)
     E.actividad(u["usuario"], "traspaso", "pasando el servidor a otro teléfono", h.ip())
     log("Pasando el servidor a otro teléfono (", h.ip(), "): mientras tanto, sólo lectura.")
     os.makedirs(os.path.join(DATOS, "tmp"), exist_ok=True)
@@ -4491,6 +4497,7 @@ def api_traspaso(h, s):
         h.send_header("Content-Disposition", 'attachment; filename="servidor.tar"')
         h.send_header("Cache-Control", "no-store")
         h.send_header("Connection", "close")
+        h.send_header("X-Relevo", E.relevo_token)
         h.cabeceras_comunes()
         h.end_headers()
         n = 0
@@ -4517,13 +4524,21 @@ def api_traspaso(h, s):
             pass
 
 
+def dueno_o_permiso(h, d):
+    """El dueño con su contraseña, o el teléfono nuevo con el permiso de un solo uso que le dio el traspaso."""
+    t = str(d.get("token") or "")
+    if t and E.relevo_token and E.mudando and ahora() - E.mudando < 900 and hmac.compare_digest(t, E.relevo_token):
+        return {"usuario": DUENO}
+    return dueno_por_contrasena(h, d)
+
+
 @ruta("POST", "/api/dueno/relevo")
 def api_relevo(h, s):
-    """El teléfono nuevo ya tiene todo: éste deja de ser el servidor y se apaga."""
+    """El teléfono nuevo ya tiene todo (y ya contesta desde internet): éste deja de ser el servidor y se apaga."""
     d = h.cuerpo_json()
-    u = dueno_por_contrasena(h, d)
+    u = dueno_o_permiso(h, d)
     E.aj.poner(relevado={"en": iso(), "ip": h.ip(), "a": str(d.get("url") or "")[:200]}, forzar_anuncio=False)
-    E.mudando = 0
+    E.mudando, E.relevo_token = 0, ""
     E.actividad(u["usuario"], "traspaso", "el servidor pasó a otro teléfono", h.ip())
     log("Listo: el servidor pasó a otro teléfono. Éste se apaga (para volver a serlo: start my → «Volver a ser el servidor aquí»).")
     escribir_estado()
@@ -4533,8 +4548,10 @@ def api_relevo(h, s):
 
 @ruta("POST", "/api/dueno/cancelar")
 def api_cancelar_traspaso(h, s):
-    dueno_por_contrasena(h, h.cuerpo_json())
-    E.mudando = 0
+    dueno_o_permiso(h, h.cuerpo_json())
+    E.mudando, E.relevo_token = 0, ""
+    E.anunciada = ""
+    anunciar_direccion()
     log("Traspaso cancelado: el servidor sigue aquí, normal.")
     h.responder(200, {"ok": True})
 
@@ -4843,6 +4860,10 @@ def mantenimiento():
         time.sleep(60)
         vuelta += 1
         try:
+            if E.mudando and ahora() - E.mudando >= 900:
+                E.mudando, E.relevo_token, E.anunciada = 0, "", ""
+                log("Traspaso: el teléfono nuevo no terminó en 15 minutos; éste sigue siendo el servidor, normal.")
+                anunciar_direccion()
             if vuelta % 2 == 0:
                 aparato(forzar=True)        # batería y temperatura: el ritmo del servidor
             if vuelta % 5 == 0:
@@ -4865,6 +4886,66 @@ def mantenimiento():
                         shutil.rmtree(p, ignore_errors=True) if os.path.isdir(p) else os.unlink(p)
         except Exception as e:   # noqa: BLE001 — el mantenimiento nunca tumba el servidor
             log("Mantenimiento:", repr(e))
+
+
+def terminar_traspaso():
+    """Fase 46: el teléfono nuevo le dice al de antes «ya puedes apagarte» sólo cuando ESTE contesta desde
+    internet (antes se le decía al terminar de copiar: si aquí el túnel no abría, se quedaban sin servidor)."""
+    ruta = os.path.join(DATOS, "traspaso.json")
+    try:
+        with open(ruta, encoding="utf-8") as f:
+            t = json.load(f)
+    except (OSError, ValueError):
+        return
+    desde, permiso = str(t.get("desde") or "").rstrip("/"), str(t.get("token") or "")
+    if not (desde and permiso):
+        os.unlink(ruta)
+        return
+    log("Traspaso: en cuanto este teléfono conteste desde internet, le aviso al de antes que ya se puede apagar.")
+    limite = ahora() + int(os.environ.get("LIBRITO_TRASPASO_S", "840"))   # el de antes espera 15 minutos en «sólo lectura»
+    por = "no logró contestar desde internet a tiempo"
+    while ahora() < limite:
+        url = E.url_tunel if TUNEL else E.url_publica() or f"http://127.0.0.1:{E.aj['puerto']}"
+        listo = False
+        if url:
+            try:
+                listo = _leer_json(url + "/api/salud", timeout=15).get("id") == E.arranque_id
+            except Exception:   # noqa: BLE001
+                listo = False
+        if listo:
+            try:
+                _pedir(desde + "/api/dueno/relevo", {"token": permiso, "url": url}, timeout=30).close()
+                hecho = True
+            except urllib.error.HTTPError as e:
+                hecho = e.code == 409   # ya estaba relevado (la respuesta de antes se perdió en el camino)
+                if e.code == 403:
+                    por = "el de antes ya no esperaba (pasaron los 15 minutos o se canceló)"
+                    break               # el permiso ya no vale
+            except Exception:   # noqa: BLE001 — el de antes no contesta (¿se cortó?): se reintenta
+                hecho = False
+            if hecho:
+                os.unlink(ruta)
+                log("✓ Traspaso terminado: el teléfono de antes dejó de ser el servidor. Este es el servidor ahora:", url)
+                E.anunciada = ""
+                anunciar_direccion()
+                return
+        time.sleep(10)
+    try:
+        os.unlink(ruta)
+    except OSError:
+        pass
+    try:   # ¿el de antes sigue siendo el servidor? Entonces éste se aparta (para no pelearse la dirección).
+        sigue = _leer_json(desde + "/api/salud", timeout=15)
+        sigue = sigue.get("ok") and not sigue.get("relevado")
+    except Exception:   # noqa: BLE001
+        sigue = False
+    if sigue:
+        log(f"Traspaso: {por}; el de antes sigue siendo el servidor.",
+            "Vuelve a intentarlo con start my → 7 (revisa que aquí haya internet y cloudflared).")
+        E.aj.poner(relevado={"en": iso(), "ip": "", "a": desde}, forzar_anuncio=False)
+        os.kill(os.getpid(), signal.SIGTERM)
+    else:
+        log("Traspaso: el de antes ya no contesta; este teléfono sigue como el servidor.")
 
 
 def iniciar(args):
@@ -4911,6 +4992,7 @@ def iniciar(args):
     elif E.url_publica():
         threading.Timer(3, anunciar_direccion).start()
     threading.Thread(target=mantenimiento, daemon=True).start()
+    threading.Thread(target=terminar_traspaso, daemon=True).start()
     # «librito detener» manda SIGTERM: se cierra igual que con Ctrl+C (y se lleva el túnel).
     signal.signal(signal.SIGTERM, lambda *_: (_ for _ in ()).throw(KeyboardInterrupt()))
     try:
@@ -5058,6 +5140,67 @@ def _error_de(e):
         return str(e)
 
 
+RAW_GITHUB = os.environ.get("LIBRITO_RAW", "https://raw.githubusercontent.com").rstrip("/")
+
+
+def _leer_json(url, timeout=12, cabeceras=None):
+    req = urllib.request.Request(url, headers={"User-Agent": "librito/" + VERSION, "Cache-Control": "no-cache", **(cabeceras or {})})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read() or b"{}")
+
+
+def _repo_de_sitio(sitio):
+    m = re.match(r"^https://([^./]+)\.github\.io/([^/]*)/?", sitio or "")
+    if not m:
+        return ""
+    return f"{m.group(1)}/{m.group(2) or m.group(1) + '.github.io'}"
+
+
+def buscar_servidor(repo="", rama="", sitio=""):
+    """Fase 46: ¿dónde está el servidor ahora? Se lee servidor.json de la página Y de GitHub mismo (la página
+    tarda minutos en rehacerse cuando el túnel cambia) y se le pregunta a cada dirección si de verdad contesta.
+    Devuelve (url, salud, anuncios): la que contesta y no se mudó, la más nueva primero."""
+    sitio = sitio or SITIO_FABRICA
+    anuncios = []
+
+    def agregar(d, de):
+        if isinstance(d, dict) and re.match(r"^https?://[^\s/]+/?$", str(d.get("url") or "")):
+            anuncios.append({**d, "url": str(d["url"]).rstrip("/"), "_de": de})
+    try:
+        agregar(_leer_json(sitio + f"servidor.json?v={int(time.time())}"), "página")
+    except Exception:   # noqa: BLE001
+        pass
+    repo = repo or next((a.get("repo") for a in anuncios if a.get("repo")), "") or os.environ.get("LIBRITO_REPO") or _repo_de_sitio(sitio)
+    ramas = list(dict.fromkeys(r for r in [rama] + [a.get("rama") for a in anuncios] if r))
+    if repo and not ramas:
+        try:
+            ramas = [_leer_json(f"{GITHUB_API}/repos/{repo}").get("default_branch") or "main"]
+        except Exception:   # noqa: BLE001
+            ramas = ["main"]
+    for r in ramas[:3]:
+        try:   # la API contesta lo último (sin la caché de la página)…
+            agregar(_leer_json(f"{GITHUB_API}/repos/{repo}/contents/{ARCHIVO_ANUNCIO}?ref={urllib.parse.quote(r)}",
+                               cabeceras={"Accept": "application/vnd.github.raw+json"}), "GitHub")
+        except Exception:   # noqa: BLE001 — …y si se acabaron sus 60 consultas por hora, el archivo tal cual
+            try:
+                agregar(_leer_json(f"{RAW_GITHUB}/{repo}/{urllib.parse.quote(r)}/{ARCHIVO_ANUNCIO}?v={int(time.time())}"), "GitHub (raw)")
+            except Exception:   # noqa: BLE001
+                pass
+    anuncios.sort(key=lambda a: str(a.get("actualizado") or ""), reverse=True)
+    vistas = set()
+    for a in anuncios:
+        if a["url"] in vistas:
+            continue
+        vistas.add(a["url"])
+        try:
+            sal = _leer_json(a["url"] + "/api/salud", timeout=10)
+        except Exception:   # noqa: BLE001
+            continue
+        if sal.get("ok") and not sal.get("relevado"):
+            return a["url"], sal, anuncios
+    return "", {}, anuncios
+
+
 def _miembros_seguros(tar):
     for m in tar:
         partes = m.name.replace("\\", "/").split("/")
@@ -5071,29 +5214,31 @@ def orden_traer(args):
     if leer_estado():
         raise SystemExit("El servidor de ESTE teléfono está prendido: apágalo primero (start my lo hace solo).")
     desde = (args.desde or "").strip().rstrip("/")
-    if not desde:
-        sitio = SITIO_FABRICA
+    if desde:
+        if not re.match(r"^https?://[^\s/]+$", desde):
+            raise SystemExit("Esa dirección no se ve bien (algo como https://xxxx.trycloudflare.com).")
+        try:
+            sal = _leer_json(desde + "/api/salud", timeout=20)
+        except Exception as e:   # noqa: BLE001
+            raise SystemExit(f"El servidor de siempre ({desde}) no contesta: ¿está prendido el otro teléfono? ({e})")
+        if sal.get("relevado"):
+            raise SystemExit("Ese servidor ya se pasó a otro teléfono.")
+    else:
+        # Fase 46: se busca solo (en tu página y en GitHub), sin escribir direcciones.
+        repo, rama = "", ""
         try:
             with open(os.path.join(DATOS, "config.json"), encoding="utf-8") as f:
-                repo = (json.load(f).get("github") or {}).get("repo")
-            if repo:
-                sitio = sitio_de(repo)
+                gh = json.load(f).get("github") or {}
+            repo, rama = gh.get("repo") or "", gh.get("rama") or ""
         except (OSError, ValueError):
             pass
-        try:
-            with _pedir(sitio + f"servidor.json?v={int(time.time())}", timeout=20) as r:
-                desde = str(json.loads(r.read() or b"{}").get("url") or "").rstrip("/")
-        except Exception as e:   # noqa: BLE001
-            raise SystemExit(f"No encontré la dirección del servidor de siempre ({e}). Escríbela tú: la de «librito direccion» en el otro teléfono.")
-    if not re.match(r"^https?://[^\s/]+$", desde or ""):
-        raise SystemExit("Esa dirección no se ve bien (algo como https://xxxx.trycloudflare.com).")
-    try:
-        with _pedir(desde + "/api/salud", timeout=20) as r:
-            sal = json.loads(r.read() or b"{}")
-    except Exception as e:   # noqa: BLE001
-        raise SystemExit(f"El servidor de siempre ({desde}) no contesta: ¿está prendido el otro teléfono? ({e})")
-    if sal.get("relevado"):
-        raise SystemExit("Ese servidor ya se pasó a otro teléfono.")
+        print("… Buscando el servidor de siempre (en tu página y en GitHub)…")
+        desde, sal, anuncios = buscar_servidor(repo, rama, sitio_de(repo) if repo else "")
+        if not desde:
+            if anuncios:
+                raise SystemExit("Encontré dónde estaba el servidor, pero no contesta: prende el otro teléfono (start my → 1),"
+                                 " espera a que diga «Túnel listo» y vuelve a intentarlo.")
+            raise SystemExit("No pude leer dónde está el servidor (ni en tu página ni en GitHub): ¿tiene internet este teléfono?")
     print(f"♥ Servidor de ahora: {sal.get('nombre') or 'M.YNTHN'} {sal.get('version', '')} en {desde}")
     usuario = nombre_dueno(args.usuario or input(f"Usuario del dueño [YonathanPG]: ") or DUENO)
     cred = {"usuario": usuario, "contrasena": getpass.getpass("Contraseña del dueño (no se ve al escribir): ")}
@@ -5102,6 +5247,7 @@ def orden_traer(args):
     try:
         with _pedir(desde + "/api/dueno/traspaso", cred, timeout=120) as r, open(tmp, "wb") as f:
             os.chmod(tmp, 0o600)
+            permiso = r.headers.get("X-Relevo") or ""
             n, t0, ult = 0, time.time(), 0
             while True:
                 trozo = r.read(1 << 20)
@@ -5145,6 +5291,14 @@ def orden_traer(args):
     aj = Ajustes()
     aj.poner(relevado={}, forzar_anuncio=False)
     print(f"✓ Todo está aquí ({len(miembros)} archivos).")
+    if permiso:
+        # Fase 46: el de antes NO se apaga todavía. Se apaga cuando éste ya contesta desde internet (lo hace
+        # el servidor de aquí al prenderse): si aquí algo falla, allá todo sigue igual y no se pierde nada.
+        escribir_seguro(os.path.join(DATOS, "traspaso.json"), json.dumps({"desde": desde, "token": permiso, "en": iso()}).encode())
+        print("… Ahora se prende el servidor AQUÍ. En cuanto este teléfono conteste desde internet, el otro se")
+        print("  apaga solo (uno o dos minutos). Si en 15 minutos no lo logra, el otro sigue siendo el servidor.")
+        return
+    # (El de antes es de una versión vieja, sin permiso de relevo: se le avisa ya, como antes.)
     try:
         _pedir(desde + "/api/dueno/relevo", cred, timeout=30).close()
         print("✓ El otro teléfono dejó de ser el servidor y se apaga solo.")
@@ -5179,7 +5333,7 @@ def principal():
     i.add_argument("--sin-tunel", action="store_true", help="no abrir el túnel de cloudflared")
     i.add_argument("--forzar", action="store_true", help="prenderlo aunque se haya pasado a otro teléfono")
     t = sub.add_parser("traer", help="trae el servidor de siempre (con todo) a este teléfono")
-    t.add_argument("--desde", help="la dirección del servidor de ahora (si no, la de servidor.json de tu página)")
+    t.add_argument("--desde", help="la dirección del servidor de ahora (si no, se busca sola en tu página y en GitHub)")
     t.add_argument("--usuario")
     r = sub.add_parser("recuperar", help="volver a ser el servidor aquí")
     r.add_argument("--forzar", action="store_true", help="aunque haya otro servidor prendido")

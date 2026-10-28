@@ -407,7 +407,9 @@ export class Detallitos {
       el("span.dt-previa-pantalla", {}, [this._marcoPrevia(), el("i.dt-previa-brillo")]),
       el("span.dt-previa-lupa", { html: I("ver", "Verla") }),
     ]) : null;
+    let enviado = false;
     const enviar = el("button.ed-btn.primario.dt-btn.dt-enviar", { type: "button", html: I("detallito", `Mandárselo a ${nombre}`), onClick: async () => {
+      if (enviado || !app.estado.proyecto) { this.cerrar(); app.inicio?.(); return; }
       enviar.disabled = true; avance.hidden = false; estado.textContent = "Envolviendo tu página…";
       // Su portadita (para la colección) se dibuja mientras se envuelve.
       const mini = dibujarPortadita(app, undefined, 480).catch(() => null);
@@ -428,8 +430,12 @@ export class Detallitos {
         const r = sobre.getBoundingClientRect();
         this._chispas(r.left + r.width / 2, r.top + r.height / 2);
         app.sonidos?.sonar("publicar");
-        estado.textContent = `¡Le llegó a ${nombre}!`;
+        estado.textContent = `¡Le llegó a ${nombre}! Tu edición quedó en blanco para empezar otro.`;
         mensaje.value = ""; B.mensaje = ""; nota.textContent = "…";
+        // Fase 46: ya se lo mandaste: la edición se limpia para empezar de cero (y «Mandar» se vuelve «Crear otro»).
+        enviado = true;
+        await app.limpiarTrasPublicar?.();
+        enviar.innerHTML = I("nuevo", "Crear otro detallito");
         setTimeout(() => {
           sobre.classList.remove("vuela", "cerrado"); sobre.classList.add("abierto", "regresa");
           previa?.classList.remove("adentro"); previa?.classList.add("regresa");

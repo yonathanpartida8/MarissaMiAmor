@@ -1,9 +1,9 @@
 /**
- * INICIO — tus libritos guardados y cómo empezar uno.
+ * INICIO — «Crear detallito» (empezar uno: de página o un dibujito) y «Mis libritos» (copias de seguridad).
  *
- * «Tus borradores» junta los de este aparato y los de tu nube (M.YNTHN):
- * cada uno dice si ya está en tu nube, si sólo está aquí o si allá hay uno más
- * nuevo; los que sólo están en la nube se bajan al tocarlos.
+ * En «Mis libritos», la lista junta los de este aparato y los de tu nube (M.YNTHN): cada uno dice si ya
+ * está en tu nube, si sólo está aquí o si allá hay uno más nuevo; los de la nube se bajan al tocarlos.
+ * (Fase 46: «Crear detallito» ya no lleva borradores: sólo crear, con su nombre obligatorio.)
  */
 import { el, boton, menu, confirmar, aviso } from "./ui.js";
 import * as SRV from "../integraciones/servidor.js";
@@ -98,7 +98,7 @@ const hace = (t) => {
 const paginas = (n) => `${n} ${n === 1 ? "página" : "páginas"}`;
 
 /** Quita la pantalla de inicio (y suelta sus miniaturas). */
-export function quitarInicio() { const c = document.querySelector(".ed-inicio"); c?._destruir?.(); c?.remove(); }
+export function quitarInicio() { const c = document.querySelector(".ed-inicio"); c?._destruir?.(); c?.remove(); document.body.classList.remove("con-inicio"); }
 
 // Cómo está cada librito frente a tu nube.
 const ETQ = {
@@ -113,19 +113,72 @@ export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
   const formato = el("select.ed-sel", {}, Object.entries(FORMATOS).map(([k, f]) => el("option", { value: k, text: f.auto ? f.n : `${f.n} · ${f.w}×${f.h}` })));
   formato.value = "movil";
   formato.setAttribute("aria-label", "Tamaño de la hoja");
+  // Fase 46: el nombre es obligatorio y empieza vacío (nada de nombres puestos de antemano).
+  const nombre = el("input.ed-txt", { type: "text", placeholder: "Ej. Para mi amor ♡", value: "", maxlength: "60", required: "", autocomplete: "off", "aria-label": "Nombre del detallito", "aria-required": "true" });
   // Enter en el nombre = Crear.
-  queueMicrotask(() => nombre.addEventListener("keydown", (e) => { if (e.key === "Enter") capa.querySelector(".ed-crear-fila .ed-btn")?.click(); }));
-  const nombre = el("input.ed-txt", { type: "text", placeholder: "Nombre del detallito", value: "Mi detallito", "aria-label": "Nombre del detallito" });
+  nombre.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); capa.querySelector(".ed-crear-fila .ed-btn")?.click(); } });
   // «Mis libritos» (del menú principal) es sólo para tus borradores y sus copias de seguridad (Fase 33).
   const respaldo = a === "borradores";
   const portada = respaldo ? null : selectorDePortada(formato);
-  const cerrar = () => { portada?.destruir(); capa.remove(); };
+  const cerrar = () => { portada?.destruir(); capa.remove(); document.body.classList.remove("con-inicio"); };
+  // — Crear detallito (Fase 46): 1 qué vas a crear · 2 su nombre · 3 su portada (o tu hoja) · 4 el tamaño —
+  let tipo = "pagina";
+  const crear = respaldo ? null : (() => {
+    const error = el("small.ed-nuevo-error", { role: "alert", hidden: "", text: "Ponle un nombre a tu detallito para crearlo." });
+    const paso = (n, titulo, hijos, clase = "") => el("div.ed-paso" + clase, {}, [el("h2.ed-paso-t", {}, [el("i.ed-paso-n", { text: String(n) }), el("span", { text: titulo })]), ...hijos]);
+    const tipos = el("div.ed-ques", { role: "radiogroup", "aria-label": "¿Qué vas a crear?" }, [
+      ["pagina", "pagina", "Detallito de página", "Páginas con fotos, textos, música y animaciones."],
+      ["dibujito", "dibujo", "Dibujito", "Una hoja en blanco para dibujarle algo con tus manos."],
+    ].map(([k, ic, t, d]) => el("button.ed-que" + (k === tipo ? ".on" : ""), { type: "button", role: "radio", "aria-checked": String(k === tipo), dataset: { k } }, [
+      el("i.ed-que-ico", { html: ico(ic) }), el("b", { text: t }), el("small", { text: d }),
+    ])));
+    const pasoPortada = paso(3, "Su portada", [el("small.ed-paso-d", { text: "Elige un estilo (o pon tu propia imagen). Después puedes cambiar todo." }), ...portada.nodos], ".ed-paso-portada");
+    const pasoHoja = paso(3, "Tu hoja", [el("small.ed-paso-d", { text: "Una hoja blanca: al crearla ya tienes el lápiz en la mano. Al terminar, toca «Listo»." })], ".ed-paso-hoja");
+    pasoHoja.hidden = true;
+    const crearB = boton(I("nuevo", "Crear detallito"), (ev) => {
+      const b = ev?.currentTarget;
+      if (b?.disabled || capa._creando) return;
+      const n = nombre.value.trim();
+      if (!n) {
+        error.hidden = false; nombre.classList.add("mal"); nombre.focus();
+        nombre.animate?.([{ translate: "0" }, { translate: "-6px" }, { translate: "6px" }, { translate: "-3px" }, { translate: "0" }], { duration: 320 });
+        return;
+      }
+      capa._creando = true;
+      if (b) b.disabled = true;
+      const v = portada.valor(); cerrar(); app.nuevo(n, formato.value, { ...v, tipo });
+    }, "primario");
+    const pintarListo = () => { const hay = !!nombre.value.trim(); crearB.setAttribute("aria-disabled", String(!hay)); if (hay) { error.hidden = true; nombre.classList.remove("mal"); } };
+    nombre.addEventListener("input", pintarListo);
+    tipos.addEventListener("click", (e) => {
+      const b = e.target.closest(".ed-que");
+      if (!b) return;
+      tipo = b.dataset.k;
+      for (const x of tipos.children) { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", String(on)); }
+      pasoPortada.hidden = tipo !== "pagina"; pasoHoja.hidden = tipo === "pagina";
+    });
+    pintarListo();
+    return el("section.ed-inicio-nuevo.ed-crear", {}, [
+      el("div.ed-tarjeta.ed-tarjeta-nuevo", {}, [
+        paso(1, "¿Qué vas a crear?", [tipos]),
+        paso(2, "¿Cómo se llama?", [el("label.ed-nuevo-campo", {}, [el("span", { text: "Nombre del detallito" }), nombre]), error]),
+        pasoPortada, pasoHoja,
+        paso(4, "Tamaño de la hoja", [el("label.ed-nuevo-campo", {}, [el("span", { text: "Tamaño" }), formato])]),
+        // «Crear» siempre a la mano (en el teléfono se queda abajo) y un solo toque: nunca crea dos.
+        el("div.ed-crear-fila", {}, [crearB]),
+      ]),
+      el("div.ed-crear-otro", {}, [
+        el("small", { text: "¿Ya tienes uno que exportaste antes?" }),
+        boton(I("subir", "Abrir archivo (.zip)"), () => { cerrar(); app.abrirArchivo(); }, "chico"),
+      ]),
+    ]);
+  })();
   const capa = el("div.ed-inicio" + (respaldo ? ".respaldo" : ""), { role: "dialog", "aria-label": respaldo ? "Mis libritos" : "Crear detallito" }, [
     el("div.ed-inicio-caja", {}, [
       el("header", {}, [
         respaldo
           ? el("div", {}, [el("h1", { text: "Mis libritos" }), el("p", { text: "Tus borradores y sus copias de seguridad: guarda todo en un archivo o tráelo de vuelta." })])
-          : el("div", {}, [el("h1", { text: "Crear detallito" }), el("p", { text: "Tu taller para armar detallitos interactivos: páginas, fotos, música, animaciones y HTML propio." })]),
+          : el("div", {}, [el("h1", { text: "Crear detallito" }), el("p", { text: "Elige qué vas a hacer, ponle nombre y listo: lo demás lo decides en el editor." })]),
         cerrable ? el("button.ed-x", { type: "button", html: ico("cerrar"), "aria-label": "Cerrar", onClick: () => cerrar() }) : null,
       ]),
       respaldo ? el("section.ed-inicio-nuevo", {}, [
@@ -139,33 +192,15 @@ export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
           el("small", { text: "Un .zip con todos tus borradores de este aparato, con sus fotos, sonidos, videos y dibujos, para guardarlo donde quieras." }),
           boton("Descargar copia", () => app.copiaDeTodo(), "primario"),
         ]),
-      ]) : el("section.ed-inicio-nuevo", {}, [
-        el("div.ed-tarjeta.ed-tarjeta-nuevo", {}, [
-          el("b", { html: I("nuevo", "Detallito nuevo") }),
-          el("small", { text: "Elige el estilo de su portada (o pon tu propia imagen). Después puedes cambiar todo." }),
-          ...portada.nodos,
-          el("div.ed-nuevo-datos", {}, [el("label.ed-nuevo-campo", {}, [el("span", { text: "Nombre" }), nombre]), el("label.ed-nuevo-campo", {}, [el("span", { text: "Tamaño" }), formato])]),
-          // (Fase 45) «Crear» siempre a la mano (en el teléfono se queda abajo mientras ves las portadas)
-          // y un solo toque: dos toques seguidos ya no crean dos detallitos.
-          el("div.ed-crear-fila", {}, [boton(I("nuevo", "Crear detallito"), (ev) => {
-            const b = ev?.currentTarget;
-            if (b?.disabled || capa._creando) return;
-            capa._creando = true;
-            if (b) b.disabled = true;
-            const v = portada.valor(); cerrar(); app.nuevo(nombre.value.trim() || "Mi detallito", formato.value, v);
-          }, "primario")]),
-        ]),
-        el("div.ed-tarjeta", {}, [
-          el("b", { html: I("subir", "Abrir archivo") }),
-          el("small", { text: "Un .zip que exportaste antes (o su project.json)." }),
-          boton("Elegir archivo", () => { cerrar(); app.abrirArchivo(); }),
-        ]),
-      ]),
-      borradores,
+      ]) : crear,
+      respaldo ? borradores : null,
     ]),
   ]);
   capa._destruir = portada?.destruir;
   document.body.append(capa);
+  // (Mientras esto está abierto, la abejita no llega ni se queda: Fase 46.)
+  document.body.classList.add("con-inicio");
+  if (!respaldo) return capa;   // «Crear detallito» ya no lleva la lista de borradores
 
   const otraVez = () => pantallaInicio(app, { cerrable: cerrable && !!app.estado.proyecto, a });
   const borrarAqui = async (id) => { await borrar(id); borrarCopias(id).catch(() => {}); if (app.estado.proyecto?.id === id) app.estado.proyecto = null; };

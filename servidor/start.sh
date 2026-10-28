@@ -165,15 +165,40 @@ dueno() {
   pausa
 }
 
+# Fase 46: un teléfono recién instalado no se prende sin la cuenta del dueño (si no, YonathanPG no
+# entra a ningún lado). Si este teléfono no tiene NADA, primero se ofrece traer el servidor de siempre.
+encender() {
+  local j; j="$("$PY" "$APP/servidor.py" estado --json 2>/dev/null || echo '{}')"
+  case "$j" in
+    *'"dueno": true'*) ;;
+    *)
+      printf '\n  %sEste teléfono todavía no tiene la cuenta del dueño (YonathanPG).%s\n' "$ama" "$fin"
+      case "$j" in
+        *'"usuarios": 0'*)
+          printf '  %s¿Es para traer el servidor de siempre (con todo)? Elige 7. Si es uno nuevo, sigue aquí.%s\n' "$gris" "$fin"
+          read -r -p "   ¿Crear la cuenta del dueño aquí y prenderlo nuevo? [s/N] " r || true
+          case "${r:-n}" in [sS]*) ;; *) return ;; esac ;;
+      esac
+      "$PY" "$APP/servidor.py" admin yonathanpg || return ;;
+  esac
+  bash "$LIBRITO" iniciar
+}
+
 traer() {
   encabezado
   printf '\n  %sTraer el servidor a este teléfono%s\n' "$neg" "$fin"
   printf '  %sSe trae TODO del teléfono que es el servidor ahora (cuentas, nubes, chats,\n  fotos, ajustes y GitHub), con la cuenta del dueño. El otro se apaga solo\n  y este queda de servidor, con la misma dirección para el editor.\n  Lo que haya en este teléfono se guarda aparte (no se borra).%s\n\n' "$gris" "$fin"
   read -r -p "   ¿Seguimos? [S/n] " r || true
   case "${r:-s}" in [nN]*) return ;; esac
-  printf '   %sDirección del servidor de ahora%s (Enter = la busco sola): ' "$neg" "$fin"
-  read -r desde || true
-  if [ -n "${desde:-}" ]; then bash "$LIBRITO" traer --desde "$desde"; else bash "$LIBRITO" traer; fi
+  # Sin cloudflared este teléfono no contestaría desde internet: se instala ANTES de traer nada
+  # (el de antes no se apaga hasta que éste conteste, pero así no se espera de balde).
+  if ! command -v cloudflared >/dev/null 2>&1; then
+    printf '   %sFalta cloudflared (el túnel a internet). Lo instalo…%s\n' "$gris" "$fin"
+    pkg install -y cloudflared >/dev/null 2>&1 || true
+    command -v cloudflared >/dev/null 2>&1 || { printf '   %sNo se pudo instalar: «pkg install cloudflared» y vuelve a intentarlo.%s\n' "$ama" "$fin"; pausa; return; }
+  fi
+  # La dirección se busca sola (en tu página y en GitHub): ya no hay que escribirla.
+  bash "$LIBRITO" traer
   pausa
 }
 
@@ -183,7 +208,7 @@ while true; do
   read -rsn1 k || exit 0
   printf '%s\n' "$k"
   case "$k" in
-    1) if bash "$LIBRITO" estado 2>/dev/null | grep -q "Prendido (PID"; then bash "$LIBRITO" detener; else bash "$LIBRITO" iniciar; fi; pausa ;;
+    1) if bash "$LIBRITO" estado 2>/dev/null | grep -q "Prendido (PID"; then bash "$LIBRITO" detener; else encender; fi; pausa ;;
     2) bash "$LIBRITO" reiniciar; pausa ;;
     3) bash "$LIBRITO" estado; pausa ;;
     4) bash "$LIBRITO" panel; pausa ;;

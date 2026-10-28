@@ -74,7 +74,7 @@ function onda(nodo, x, y) {
     { transform: "scale(.06)", opacity: 1, easing: "cubic-bezier(.2, .7, .3, 1)" },
     { transform: "scale(1)", opacity: 0.85, offset: 0.55, easing: "cubic-bezier(.4, 0, .7, .4)" },
     { transform: "scale(1)", opacity: 0 },
-  ], { duration: 640, easing: "linear" });
+  ], { duration: document.body.classList.contains("ed-ultra") ? 320 : 640, easing: "linear" });
   let hecho = false;
   const fin = () => { if (hecho) return; hecho = true; capa.remove(); vivas--; };
   a.onfinish = fin;
@@ -169,6 +169,16 @@ export function iniciarTacto() {
     corazones(u.nodo, u.x, u.y);
     vibrar(6);
   }, { capture: true, passive: true });
+  // Fase 46 · sin «toques fantasma»: con el dedo, el botón que tocaste no se queda marcado (enfocado)
+  // hasta que toques otra cosa; suelta el foco en cuanto terminó su clic. (Con teclado, sí se queda.)
+  let tipoToque = "mouse";
+  document.addEventListener("pointerdown", (e) => { tipoToque = e.pointerType || "mouse"; }, { capture: true, passive: true });
+  document.addEventListener("click", (e) => {
+    if (tipoToque === "mouse" || e.detail === 0) return;
+    const b = e.target instanceof Element ? e.target.closest("button, [role=button], [role=tab], a[href], summary") : null;
+    if (!b || b.closest(NUNCA)) return;
+    setTimeout(() => { if (document.activeElement === b && b.isConnected) b.blur(); }, 0);
+  }, { passive: true });
   document.addEventListener("scroll", (e) => {
     const n = e.target;
     if (!(n instanceof Element) || n.scrollHeight - n.clientHeight < 8) return;

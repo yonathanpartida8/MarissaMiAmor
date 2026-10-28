@@ -79,7 +79,7 @@ export class MenuExportar {
           pantalla.append(el("small.ed-nota.suave", { text: "Entra con tu cuenta (o créala al momento) y listo." }), formularioCuenta(app, { compacto: true, alEntrar: () => pintar() }));
           return;
         }
-        pantalla.append(bloquePublicar(app), el("button.ex-enlace", { type: "button", html: I("libro", "Ver mis páginas publicadas"), onClick: () => { this.cerrar(); app.abrirSeccion("publicadas"); } }));
+        pantalla.append(bloquePublicar(app, { alOtro: () => this.cerrar() }), el("button.ex-enlace", { type: "button", html: I("libro", "Ver mis páginas publicadas"), onClick: () => { this.cerrar(); app.abrirSeccion("publicadas"); } }));
       };
       pintar();
     }

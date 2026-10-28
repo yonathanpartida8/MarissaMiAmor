@@ -117,7 +117,10 @@ export class Paneles {
   _paraLoElegido(c, titulo, fn) {
     const sel = this.E.seleccionados;
     if (!sel.length) { c.append(seccion(titulo, [el("p.ed-nota.suave.ed-guia-txt", { text: "Toca algo de la hoja para elegirlo y aquí aparecerán sus opciones." })])); return; }
+    const n = c.children.length;
     fn(sel);
+    // (Son botones que hacen algo con lo elegido: no se arrastran a la hoja como las cositas.)
+    for (const s of [...c.children].slice(n)) s.classList.add("ed-no-arrastra");
   }
 
   /* ── Elementos ──────────────────────────────────────────────────── */
@@ -403,7 +406,7 @@ export class Paneles {
         escribir: (pid) => app.acciones.ponerPortada(pid),
       }), "la primera hoja que se ve"),
     ].filter(Boolean)));
-    c.append(seccion("Ver y ordenar", [el("div.ed-piezas", {}, [
+    c.append(seccion("Ver y ordenar", [el("div.ed-piezas.ed-no-arrastra", {}, [
       this._pieza(ico("capas"), "Capas", () => app.insp.abrir("capas")),
       this._pieza(ico("tiempo"), "LovEdit", () => app.tiempo.alternar(true)),
       this._pieza(ico("ajustar"), "Ver la hoja entera", () => { app.lienzo.ajustar(); app.lateral?.cerrar(); }),
