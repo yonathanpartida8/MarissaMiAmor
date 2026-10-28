@@ -34,6 +34,9 @@ export async function mandar(app, tipo, texto = "") {
 let cola = [], mostrando = false, vistoHasta = 0;
 const yaVistos = new Set();
 
+/** El último mensajito rápido que ya llegó a este aparato (el chat lo manda para recibir sólo los nuevos). */
+export const ultimoToque = () => vistoHasta;
+
 export function llegaron(app, lista = []) {
   const nuevos = lista.filter((x) => !x.mio && !yaVistos.has(x.id));
   if (!nuevos.length) return;

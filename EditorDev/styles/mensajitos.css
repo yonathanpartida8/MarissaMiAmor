@@ -607,3 +607,5 @@
 .ch-animos { padding: 2px 12px 14px; margin: 4px 0 -4px; }
 /* En el teléfono los cuatro ánimos caben a lo ancho (Enojado es más largo que Hot) */
 @media (max-width: 430px) { .ch-animos { gap: 4px; padding-left: 8px; padding-right: 8px; } .ch-animo { gap: 2px; padding: 3px 9px 3px 4px; } .ch-animo i { width: 26px; height: 26px; } }
+/* (Fase 46) La cajita de escribir crece sola con lo que escribes (sin medirla en cada letra). */
+@supports (field-sizing: content) { .ch-input { field-sizing: content; height: auto; min-height: 44px; max-height: 124px; overflow-y: auto; } }

@@ -32,6 +32,7 @@ import { abrirCamara, ICONO_CAMARA } from "../camara/camara.js";
 import * as PUSH from "../integraciones/avisos.js";
 import * as VOZ from "./chat-voz.js";
 import { elegirImagen, creadorSticker } from "./chat-sticker.js";
+import * as RAP from "./rapiditos.js";
 
 export const ICONO_CHAT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6c-5 0-9 3.3-9 7.4 0 2.3 1.3 4.4 3.4 5.8l-.8 3.6 3.9-2.1c.8.2 1.6.3 2.5.3 5 0 9-3.3 9-7.4S17 3.6 12 3.6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 13.8s-2.8-1.6-3.4-3.3c-.4-1.3.4-2.5 1.6-2.5.8 0 1.4.5 1.8 1.1.4-.6 1-1.1 1.8-1.1 1.2 0 2 1.2 1.6 2.5-.6 1.7-3.4 3.3-3.4 3.3z" fill="currentColor"/></svg>';
 const svg = (cuerpo, extra = "", vb = "0 0 24 24") => `<svg viewBox="${vb}" aria-hidden="true"${extra}>${cuerpo}</svg>`;
@@ -597,9 +598,11 @@ export function vistaChat(det) {
       if (document.hidden) { await cuandoVisible(); continue; } // oculta: no pregunta nada (ni despierta al aparato)
       const t0 = Date.now();
       try {
-        const d = await SRV.chat(S.ultimo ? { despues: S.ultimo, desde: S.desde, espera: 22 } : { n: 40 });
+        // (Fase 46) `tq`: con el chat abierto, los mensajitos rápidos del mapa llegan aquí al instante.
+        const d = await SRV.chat(S.ultimo ? { despues: S.ultimo, desde: S.desde, espera: 22, tq: RAP.ultimoToque() } : { n: 40 });
         if (!S.vivo) break;
         S.desde = d.ahora;
+        if (d.toques?.length) RAP.llegaron(app, d.toques);
         // (Sin mensajitos todavía se pregunta por «los últimos», que siempre traen lo mismo: ahí se respira.)
         const algo = S.ultimo ? (d.mensajes?.length || 0) + (d.cambios?.length || 0) + (d.trazos?.length || 0) : d.mensajes?.length || 0;
         const tz = recibirTrazos(d.trazos, true);
@@ -716,12 +719,26 @@ export function vistaChat(det) {
   }
 
   /* — Mandar — */
-  function alEscribir() {
+  // (Fase 46) Escribir se siente inmediato: medir la cajita (alto «auto» y luego su scrollHeight) obligaba a
+  // recalcular TODA la conversación en cada letra. Donde se puede, la cajita crece sola con CSS
+  // (field-sizing); donde no, se mide una vez por cuadro y sólo si cambió de renglones.
+  const creceSola = !!window.CSS?.supports?.("field-sizing", "content");
+  let altoPendiente = 0, hayAntes = null, etqAntes = "", largoAntes = 0;
+  function ajustarAlto() {
+    altoPendiente = 0;
+    const n = input.value.length, crecio = n >= largoAntes;
+    largoAntes = n;
+    if (crecio && input.scrollHeight <= input.clientHeight + 1) return;   // cabe: nada que rehacer
+    if (!crecio && input.clientHeight <= 45) return;                    // ya está en su alto mínimo
     input.style.height = "auto";
     input.style.height = Math.min(124, input.scrollHeight) + "px";
+  }
+  function alEscribir() {
+    if (!creceSola && !altoPendiente) altoPendiente = requestAnimationFrame(ajustarAlto);
     const hay = !!input.value.trim();
-    escribir.classList.toggle("con-texto", hay);
-    bMandar.setAttribute("aria-label", S.editando ? "Guardar el cambio" : hay ? "Mandar" : "Mensaje de voz");
+    if (hay !== hayAntes) { hayAntes = hay; escribir.classList.toggle("con-texto", hay); }
+    const etq = S.editando ? "Guardar el cambio" : hay ? "Mandar" : "Mensaje de voz";
+    if (etq !== etqAntes) { etqAntes = etq; bMandar.setAttribute("aria-label", etq); }
     if (!panelN.hidden && input.value && P.tipo !== "emojis") panel(null);
   }
   // Sonidos de teclado (se apagan en ⋮): letra, espacio y borrar, también con el teclado del teléfono.

@@ -3127,10 +3127,18 @@ def api_chat(h, s):
     fin = time.monotonic() + espera
     if espera:
         CHAT_MIRANDO[uid] = time.monotonic() + espera
+    # (Fase 46) Con `tq` (el último mensajito rápido que ya viste), también llegan aquí al instante los
+    # mensajitos rápidos del mapa: con el chat abierto no hay que esperar al latido.
+    try:
+        tq = int(q["tq"]) if "tq" in q else None
+    except ValueError:
+        tq = None
     while True:
         v0 = CHAT_V[0]
         r = _respuesta_chat(uid, p, q)
-        vacio = q.get("despues") and not (r["mensajes"] or r["cambios"] or r["trazos"])
+        if tq is not None:
+            r["toques"] = [fila_toque(t, uid) for t in E.db.q("SELECT * FROM toques WHERE para=? AND id>? AND visto IS NULL AND t>? ORDER BY id LIMIT 5", uid, tq, ahora() - 12 * 3600)]
+        vacio = q.get("despues") and not (r["mensajes"] or r["cambios"] or r["trazos"] or r.get("toques"))
         falta = fin - time.monotonic()
         if not vacio or falta <= 0:
             break
@@ -4242,6 +4250,7 @@ def api_toque(h, s):
     # Sólo se guardan los últimos 200 de la pareja (lo viejito se va solo).
     E.db.x("DELETE FROM toques WHERE (de=? AND para=?) AND id NOT IN (SELECT id FROM toques WHERE de=? AND para=? ORDER BY id DESC LIMIT 200)", uid, otro, uid, otro)
     titulo, cuerpo = TOQUES[tipo]
+    _chat_cambio()   # si tu amorcito tiene el chat abierto, le llega ahí mismo al instante
     avisar(otro, {"t": f"{nombre_corto(uid)} {titulo}", "b": texto or cuerpo, "tag": "toque-" + tipo, "u": "#cositas-mapa"})
     h.responder(200, {"toque": fila_toque(E.db.uno("SELECT * FROM toques WHERE id=?", tid), uid)})
 
@@ -5562,6 +5571,20 @@ def orden_llave(args):
     print("Llave nueva generada y secretos vueltos a cifrar.")
 
 
+def orden_rutas(args):
+    """La API completa en Markdown (Fase 46): lo que una app nativa (Android) necesita para hablar con M.YNTHN.
+    Sale del mismo servidor, así que nunca se queda vieja: `python3 servidor.py rutas > API.md`."""
+    legible = lambda pat: re.sub(r"\((?:\?:)?[^)]*\)(?:\{[^}]*\})?", "{…}", pat.pattern.strip("^$")).replace("\\.", ".")
+    quien = {"todos": "cualquiera", "sesion": "con sesión", "admin": "administrador"}
+    print(f"# API de {E.aj.get('nombre', 'M.YNTHN') if hasattr(E, 'aj') and E.aj else 'M.YNTHN'} (servidor {VERSION})\n")
+    print("Todas las respuestas son JSON. Con sesión: `Authorization: Bearer <token>` (lo da /api/entrar o /api/registro).")
+    print("Las fechas de «hoy» las manda el aparato (`?hoy=AAAA-MM-DD`) para que cada quien vea su día (México, EE. UU.…).\n")
+    print("| Método | Ruta | Quién | Qué hace |\n|---|---|---|---|")
+    for metodo, patron, q, f in RUTAS:
+        doc = " ".join((f.__doc__ or "").split()).split(". ")[0].replace("|", "/")
+        print(f"| {metodo} | `{legible(patron)}` | {quien.get(q, q)} | {doc} |")
+
+
 def principal():
     p = argparse.ArgumentParser(description="Servidor del librito (publicación y almacenamiento).")
     sub = p.add_subparsers(dest="orden")
@@ -5584,8 +5607,12 @@ def principal():
     sub.add_parser("llave-nueva", help="cambia la llave que cifra los secretos")
     b = sub.add_parser("borrar-cuentas", help="borra todas las cuentas que no son de administrador (las de prueba)")
     b.add_argument("--si", action="store_true", help="sin preguntar")
+    sub.add_parser("rutas", help="la API completa en Markdown (para la app nativa)")
     args = p.parse_args()
     os.umask(0o077)   # todo lo que se cree aquí, sólo para tu usuario
+    if args.orden == "rutas":
+        orden_rutas(args)
+        return
     if args.orden != "traer":
         os.makedirs(DATOS, exist_ok=True)
     {"iniciar": iniciar, "admin": orden_admin, "github": orden_github, "estado": orden_estado, "llave-nueva": orden_llave,

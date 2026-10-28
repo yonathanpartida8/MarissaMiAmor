@@ -372,7 +372,7 @@ Archivos incluidos: ${Object.keys(archivos).length}${faltan.length ? `\nNo se en
 
   avisar("Comprimiendo…");
   const blob = await zip.generar((i, total) => { if (i % 10 === 0) avisar(`Comprimiendo ${i} de ${total}…`); });
-  const dia = new Date().toISOString().slice(0, 10);
+  const h = new Date(), dia = `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, "0")}-${String(h.getDate()).padStart(2, "0")}`;   // el día de aquí (no el de Londres)
   return { blob, nombre: limpio(P.nombre) + (completo ? ` (copia de seguridad ${dia})` : "") + ".zip", faltan, archivos: zip.tamano, nube: refs };
 }
 

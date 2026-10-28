@@ -11,6 +11,7 @@ import { ico } from "./iconos.js";
 import { PREF, poner, alCambiar, VERSION } from "../config/preferencias.js";
 import * as SRV from "../integraciones/servidor.js";
 import * as PUSH from "../integraciones/avisos.js";
+import { donde } from "../integraciones/plataforma.js";
 
 /** Un interruptor (role=switch): `leer()` dice si está prendido; `escribir(on)` lo cambia. */
 function interruptor(etq, leer, escribir) {
@@ -85,7 +86,7 @@ export function vistaAjustes(app, { alVolver }) {
     grupo(9, "tuerca", "Más", [
       el("button.mp-aj-mas", { type: "button", onClick: () => app.config?.abrir() }, [el("i", { html: ico("herramientas") }), el("span", {}, [el("b", { text: "Ajustes avanzados del editor" }), el("small", { text: "Refresco, calidad, estilo del editor y más" })]), el("i.mp-aj-f", { html: ico("derecha") })]),
       el("div.mp-aj-acerca", {}, [
-        el("b", { text: `My Love Pages · versión ${VERSION} · beta` }),
+        el("b", { text: `My Love Pages · versión ${VERSION} · beta · ${{ web: "en la web", apk: "app de Android", nativa: "app nativa" }[donde()]}` }),
         el("small", { text: "La hace una sola persona y todavía está en beta: puede haber errores. ¡Gracias por tu paciencia y tu cariño! ♡" }),
       ]),
     ]),

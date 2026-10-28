@@ -177,6 +177,9 @@ export function aviso(texto, ms = 2600, tipo = "", accion = null) {
 export const MODALES = [];
 
 export function modal({ titulo, contenido, acciones = [], ancho = 520, clase = "", antesDeCerrar = null, cabecera = null }) {
+  // (Fase 46) La misma ventana dos veces (dos toques seguidos) no se encima: la que ya está da un brinquito.
+  const igual = titulo ? MODALES.find((c) => c.dataset.titulo === String(titulo) && c.dataset.clase === clase) : null;
+  if (igual) { igual.animate?.([{ transform: "scale(1)" }, { transform: "scale(1.02)" }, { transform: "scale(1)" }], { duration: 220 }); return Promise.resolve(null); }
   return new Promise((resolver) => {
     let hecho = false, preguntando = false;
     const hoja = esMovil();
@@ -212,7 +215,7 @@ export function modal({ titulo, contenido, acciones = [], ancho = 520, clase = "
     };
     const a = hoja ? asa() : null;
     const cab = el("header", {}, [el("h2", { text: titulo }), cabecera, el("button.ed-x", { type: "button", "aria-label": "Cerrar", html: ico("cerrar"), onClick: () => cerrar(null) })].filter(Boolean));
-    const caja = el("div.ed-modal" + (clase ? "." + clase : ""), { role: "dialog", "aria-modal": "true", style: { maxWidth: ancho + "px" } }, [
+    const caja = el("div.ed-modal" + (clase ? "." + clase : ""), { role: "dialog", "aria-modal": "true", style: { maxWidth: ancho + "px" }, dataset: { titulo: String(titulo), clase } }, [
       a,
       cab,
       el("div.ed-modal-cuerpo", {}, [].concat(contenido)),
@@ -249,12 +252,19 @@ export function cerrarUltimoModal() {
   return true;
 }
 
-export const confirmar = (texto, si = "Sí", clase = "peligro") =>
-  modal({
+// (Fase 46) La misma pregunta dos veces seguidas (doble toque): la segunda contesta «no» al momento, así lo
+// que se iba a hacer no se hace dos veces ni se encima otra ventana igual.
+const PREGUNTANDO = new Set();
+export const confirmar = (texto, si = "Sí", clase = "peligro") => {
+  const k = texto + "|" + si;
+  if (PREGUNTANDO.has(k)) return Promise.resolve(false);
+  PREGUNTANDO.add(k);
+  return modal({
     titulo: "¿Seguro?", ancho: 420, clase: "ed-modal-chico",
     contenido: el("div.ed-confirmar", {}, [el("i.ed-confirmar-ico" + (clase === "peligro" ? ".peligro" : ""), { html: ico(clase === "peligro" ? "borrar" : "ok") }), el("p", { text: texto })]),
     acciones: [["Cancelar", false], [si, true, clase]],
-  });
+  }).finally(() => PREGUNTANDO.delete(k));
+};
 
 /** Pedir un texto: ya viene elegido para reescribirlo, con un botón para vaciarlo y Enter para aceptar. */
 export function pedirTexto(titulo, valor = "", placeholder = "") {

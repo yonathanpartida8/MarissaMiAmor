@@ -79,6 +79,7 @@ import { Configuracion } from "./components/configuracion.js";
 import { Herramientas } from "./canvas/herramientas.js";
 import { arrastrarCositas } from "./components/arrastrar-cositas.js";
 import * as RAP from "./components/rapiditos.js";
+import * as BV from "./components/bienvenida.js";
 
 const RT = window.LibritoRT;
 const ULTIMO = "editordev:ultimo";
@@ -162,6 +163,8 @@ async function arrancar() {
   app.exportarMenu = new MenuExportar(app);
   app.menuPrincipal = new MenuPrincipal(app);
   app.menuPrincipal.abrir();
+  // Fase 46: las pantallitas de bienvenida (la primera vez, o si a tu perfil le falta algo).
+  setTimeout(() => BV.quizas(app).catch(() => {}), 900);
   vigilarPantalla();
   iniciarTacto();
   setTimeout(() => medirHz(), 1200); // con la página ya quieta, para medir bien
@@ -684,6 +687,7 @@ app.guardarAMano = async () => {
 app.amorNuevos = 0;
 // (Una sola vez a la vez: si un latido sigue en camino, el siguiente lo reutiliza.)
 const latir = () => RD.unaVez("latido", latirYa);
+app.latir = latir;   // (Fase 46) Nuestros días abierto late más seguido: lo que llega se ve casi al momento
 async function latirYa() {
   if (!SRV.conectado() || document.hidden) return;
   try {

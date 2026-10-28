@@ -206,8 +206,8 @@ export function vistaPerfil(app, { alListo, alVincular, alSalir } = {}) {
   const d = datos(), yo = d.yo || {}, pa = d.pareja;
   const son = app.sonidos;
   const nombre = el("input.pf-input", { type: "text", value: yo.nombre || "", maxlength: 40, placeholder: yoU(), autocomplete: "nickname", "aria-label": "Tu nombre" });
-  const cumple = el("input.pf-input", { type: "date", value: yo.cumple || "", max: new Date().toISOString().slice(0, 10), "aria-label": "Tu cumpleaños" });
-  const novios = el("input.pf-input", { type: "date", value: pa?.novios || yo.novios || "", max: new Date().toISOString().slice(0, 10), "aria-label": "Novios desde" });
+  const cumple = el("input.pf-input", { type: "date", value: yo.cumple || "", max: SRV.hoyLocal(), "aria-label": "Tu cumpleaños" });
+  const novios = el("input.pf-input", { type: "date", value: pa?.novios || yo.novios || "", max: SRV.hoyLocal(), "aria-label": "Novios desde" });
   // Tu género (lo eliges tú; nunca se deduce): le da su miel a tus mensajitos en «Hot Cake».
   const genero = el("select.pf-input.pf-genero", { "aria-label": "Tu género" }, [
     el("option", { value: "", text: "Elige tu género", disabled: "" }),

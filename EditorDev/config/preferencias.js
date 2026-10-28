@@ -5,6 +5,7 @@
  * (clases en <body>, variables CSS) y avisa a quien escuche. Lo de la música
  * y los sonidos vive en sus propios módulos (audio/), aquí sólo se enlaza.
  */
+import { vibrar as vibrarAparato, puede as puedeAparato } from "../integraciones/plataforma.js";
 import { aplicarEstilo } from "./estilo.js";
 
 const CLAVE = "editordev:config";
@@ -76,10 +77,11 @@ export function aplicar() {
   aplicarEstilo(PREF);
 }
 
-/** Vibración suavecita (Android; iPhone no la permite en la web). */
+/** Vibración suavecita (Android; iPhone no la permite en la web). Pasa por la plataforma (Fase 46):
+ *  así, en la app nativa de mañana, vibrará el teléfono de verdad sin cambiar nada más. */
 export function vibrar(ms = 8) {
-  if (!PREF.haptic || !navigator.vibrate) return;
-  try { navigator.vibrate(Math.max(1, Math.round(ms * PREF.hapticFuerza))); } catch (e) { /* nada */ }
+  if (!PREF.haptic || !puedeAparato("vibrar")) return;
+  vibrarAparato(Math.max(1, Math.round(ms * PREF.hapticFuerza)));
 }
 
 /** ¿Hay que moverse? (0 = quieto). Para animaciones hechas en JS. */

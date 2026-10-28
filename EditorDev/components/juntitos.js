@@ -83,7 +83,9 @@ const SATELITE = svg('<circle cx="16" cy="16" r="11"/><path d="M5 16h22M16 5c3.5
 const MAPA = svg('<path d="M4 8.5l8-3.5 8 3.5 8-3.5v18.5l-8 3.5-8-3.5-8 3.5z"/><path d="M12 5v18.5M20 8.5V27"/>');
 const CENTRAR = svg('<circle cx="16" cy="16" r="5"/><path d="M16 3v5M16 24v5M3 16h5M24 16h5"/>');
 const TEMAS = [["rosa", "Rosa"], ["lila", "Lila"], ["durazno", "Durazno"], ["menta", "Menta"], ["noche", "Noche"]];
-const fechaLarga = (s) => (s ? new Date(s.length === 10 ? s + "T12:00:00" : s).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }) : "");
+// (Una fecha «AAAA-MM-DD» se lee en la hora de este aparato; un Date se usa tal cual: nunca con toISOString,
+// que la pasa a la hora de Londres y en la noche de México o EE. UU. daba el día de mañana.)
+const fechaLarga = (s) => (s ? (s instanceof Date ? s : new Date(s.length === 10 ? s + "T12:00:00" : s)).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }) : "");
 const hace = (iso) => {
   if (!iso) return "";
   const s = Math.max(0, (Date.now() - new Date(iso)) / 1000);
@@ -163,6 +165,8 @@ export class Juntitos {
     this.A?.limpiar();
     this.A = ambito("juntitos");
     this.A.al(UB.alCambiar(() => { this._chip(); this._pintarUb?.(); }));
+    // Mientras está abierto (y a la vista), el latido va cada 8 s: mensajitos rápidos y llegadas, casi al momento.
+    this.A.cada(() => this.app.latir?.(), 8000);
     this._chip();
     this.abierto = true;
     this.capa.classList.add("ver");
@@ -585,7 +589,7 @@ export class Juntitos {
       el("div.jt-m-hero-t", {}, [
         el("small", { text: "Llevan juntitos" }),
         el("b", { text: faltan === 0 && d.meses ? `¡Hoy cumplen ${d.meses} ${d.meses === 1 ? "mes" : "meses"}! 💗` : `${d.meses} ${d.meses === 1 ? "mes" : "meses"} y ${va} ${va === 1 ? "día" : "días"}` }),
-        d.siguiente ? el("p", { text: faltan === 0 ? `El siguiente: ${fechaLarga(mesDe(d.novios, d.meses + 1).toISOString().slice(0, 10))}` : `Su mes ${d.meses + 1}: ${fechaLarga(d.siguiente)} · faltan ${faltan} ${faltan === 1 ? "día" : "días"}` }) : null,
+        d.siguiente ? el("p", { text: faltan === 0 ? `El siguiente: ${fechaLarga(mesDe(d.novios, d.meses + 1))}` : `Su mes ${d.meses + 1}: ${fechaLarga(d.siguiente)} · faltan ${faltan} ${faltan === 1 ? "día" : "días"}` }) : null,
       ]),
     ]);
   }
@@ -670,7 +674,7 @@ export class Juntitos {
 
   /** La cápsula del tiempo: una cartita para el día de su siguiente mes (sellada hasta entonces, también para ti). */
   _mesCapsula(d) {
-    const mes = d.meses + 1, abre = fechaLarga(mesDe(d.novios, mes).toISOString().slice(0, 10));
+    const mes = d.meses + 1, abre = fechaLarga(mesDe(d.novios, mes));
     const mia = d.capsulas.find((x) => x.mes === mes && x.mio), suya = d.capsulas.find((x) => x.mes === mes && !x.mio);
     const abiertas = d.capsulas.filter((x) => x.abierta && !x.mio).sort((a, b) => b.mes - a.mes);
     const sobre = (x, tuyo) => el("div.jt-sobre" + (x ? ".lleno" : ""), {}, [
@@ -797,7 +801,7 @@ export class Juntitos {
     const v = el("article.jt-carta-mes.tema-" + p.tema, { role: "dialog", "aria-label": p.titulo }, [
       el("button.jt-x", { type: "button", "aria-label": "Cerrar", html: ico("cerrar"), onClick: cerrar }),
       el("div.jt-carta-in", {}, [
-        el("small.jt-carta-mes-n", { text: `Mes ${p.mes}${f ? " · " + fechaLarga(f.toISOString().slice(0, 10)) : ""}` }),
+        el("small.jt-carta-mes-n", { text: `Mes ${p.mes}${f ? " · " + fechaLarga(f) : ""}` }),
         el("h2", { text: p.titulo }),
         p.fotos.length ? el("div.jt-carta-fotos" + (p.fotos.length === 1 ? ".una" : ""), {}, p.fotos.map((u) => el("img", { src: SRV.media(u), alt: "", loading: "lazy" }))) : null,
         p.texto ? el("p.jt-carta-txt", { text: p.texto }) : null,

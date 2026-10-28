@@ -16,6 +16,7 @@ on:
     branches: ["**"]
     paths:
       - "android/**"
+      - "!android/**/*.md"   # (la documentación de android/ no cambia el APK)
       - "icono/**"
       - ".github/workflows/apk.yml"
   # (Una vez por semana sólo se toca la llave guardada: así no se borra de la caché —se borra a los
