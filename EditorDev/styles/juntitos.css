@@ -370,3 +370,170 @@
 .jt-pronto-b { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px 0 6px; border: 1px dashed var(--jt-linea); border-radius: 99px; background: transparent; color: var(--jt-suave); font: 700 13px/1 "Nunito", sans-serif; cursor: pointer; }
 .jt-pronto-b i { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--jt-rosa); color: var(--jt-rosa-t); }
 .jt-pronto-b i svg { width: 15px; height: 15px; }
+
+/* ═══ Fase 46 · Mensajitos rápidos: cuando llegan (en cualquier parte de la app) ═══ */
+.tq-llega { --c: #ffe3ec; --t: #c84b7d; position: fixed; z-index: 2147483300; left: 50%; top: calc(12px + env(safe-area-inset-top, 0px)); width: min(380px, calc(100vw - 24px)); display: flex; align-items: center; gap: 12px; padding: 12px 16px 12px 12px; border: 0; border-radius: 22px; background: #fff; color: #4a3346; text-align: left; font-family: "Nunito", system-ui, sans-serif; box-shadow: 0 14px 36px rgba(120, 50, 90, .22), 0 0 0 1.5px var(--c); cursor: pointer; transform: translateX(-50%); animation: tqEntra .5s cubic-bezier(.25, 1.4, .45, 1) both; }
+.tq-llega.lila { --c: #efe6ff; --t: #7d5bd0; } .tq-llega.menta { --c: #ddf5ea; --t: #2f8a61; } .tq-llega.durazno { --c: #ffead9; --t: #c2702f; }
+.tq-llega.sale { animation: tqSale .26s ease-in forwards; }
+.tq-emoji { flex: none; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 18px; background: var(--c); font-size: 30px; line-height: 1; animation: tqLatir 1.1s .35s ease-in-out 2; }
+.tq-t { display: grid; gap: 2px; min-width: 0; }
+.tq-t b { font: 800 15px/1.25 "Nunito", sans-serif; color: var(--t); }
+.tq-txt { font: 700 14.5px/1.35 "Nunito", sans-serif; color: #4a3346; overflow-wrap: anywhere; white-space: pre-wrap; }
+.tq-t small { font: 600 11.5px/1.2 Jost, system-ui, sans-serif; color: #8f7a8c; }
+.tq-chispa { position: absolute; left: 38px; top: 30px; font-style: normal; font-size: 16px; pointer-events: none; opacity: 0; animation: tqChispa 1.1s calc(.15s + var(--i) * .07s) ease-out forwards; }
+.tq-chispa:nth-of-type(2n) { font-size: 12px; }
+@keyframes tqEntra { from { opacity: 0; transform: translate(-50%, -26px) scale(.92); } }
+@keyframes tqSale { to { opacity: 0; transform: translate(-50%, -18px) scale(.96); } }
+@keyframes tqLatir { 0%, 100% { transform: scale(1); } 30% { transform: scale(1.18) rotate(-6deg); } 60% { transform: scale(.96); } }
+@keyframes tqChispa { 0% { opacity: 0; transform: translate(0, 0) scale(.6); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(calc((var(--i) - 2.5) * 22px), calc(-34px - var(--i) * 4px)) scale(1.15); } }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .tq-llega { background: #2a2130; color: #f6e9f1; } :root:not([data-tema="claro"]) .tq-txt { color: #f6e9f1; } }
+:root[data-tema="oscuro"] .tq-llega { background: #2a2130; color: #f6e9f1; } :root[data-tema="oscuro"] .tq-txt { color: #f6e9f1; }
+body.ed-ultra .tq-llega, body.ed-ultra .tq-emoji { animation-duration: .2s; } body.ed-ultra .tq-llega { box-shadow: 0 0 0 1.5px var(--c); }
+@media (prefers-reduced-motion: reduce) { .tq-llega, .tq-emoji, .tq-chispa { animation: none !important; } }
+
+/* ═══ Fase 46 · Nuestros días: la barrita de abajo, todo lo del mapa junto y Mesecitos nuevo ═══ */
+.jt-nav.v46 { z-index: 14; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); padding: 6px; border-radius: 26px; box-shadow: 0 12px 30px rgba(110, 50, 90, .16), 0 0 0 1px var(--jt-linea); }
+.jt-nav.v46 .jt-tab { min-height: 52px; gap: 4px; font-size: 11px; letter-spacing: .01em; }
+.jt-nav.v46 .jt-tab i, .jt-nav.v46 .jt-tab svg { width: 23px; height: 23px; }
+.jt-nav.v46 .jt-tab.on { color: var(--jt-rosa-t); }
+.jt-nav.v46::before { background: linear-gradient(135deg, var(--jt-rosa), var(--jt-lila)); }
+.jt-capa.v46 .jt-secpanel .jt-vista { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+.jt-capa.v46 .jt-sheet-cuerpo { padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)); }
+.jt-capa.v46[data-tab="dibujar"] .jt-vista { padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+.jt-capa.v46 .leaflet-bottom { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+
+/* Los bloques de la hojita del mapa */
+.jt-bloque { margin: 18px 0 0; }
+.jt-bloque-t { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 0 2px 10px; font: 800 16.5px/1.2 "Nunito", sans-serif; color: var(--jt-tinta); }
+.jt-bloque-t small { font: 600 12px/1.2 Jost, system-ui, sans-serif; color: var(--jt-suave); }
+.jt-sec .jt-bloque-t { margin: 0; flex: 1; }
+.jt-bloque .jt-sec { margin: 0 0 10px; }
+
+/* Cuántos kilómetros: dos fotitos y un hilito con su corazón */
+.jt-km { display: flex; align-items: center; gap: 14px; min-height: 84px; padding: 14px 16px; border-radius: 24px; background: linear-gradient(135deg, var(--jt-rosa), var(--jt-lila)); box-shadow: var(--jt-sombra); }
+.jt-km-dibujo { flex: none; display: flex; align-items: center; }
+.jt-km-dibujo .jt-av { width: 40px; height: 40px; border: 2.5px solid var(--jt-papel); }
+.jt-km-hilo { position: relative; display: grid; place-items: center; width: 46px; height: 20px; margin: 0 -2px; }
+.jt-km-hilo::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 2.5px dashed rgba(200, 75, 125, .55); }
+.jt-km-hilo b { position: relative; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--jt-papel); color: var(--jt-acento); font: 900 12px/1 "Nunito", sans-serif; box-shadow: 0 2px 6px rgba(120, 60, 90, .15); animation: jtKm 2.4s ease-in-out infinite; }
+.jt-km-dibujo.vacio { opacity: .7; } .jt-km-dibujo.vacio b { animation: none; color: var(--jt-suave); }
+@keyframes jtKm { 50% { transform: scale(1.18); } }
+.jt-km-t { display: grid; gap: 1px; min-width: 0; }
+.jt-km-t small { font: 700 12.5px/1.2 "Nunito", sans-serif; color: var(--jt-suave); }
+.jt-km-t b { font: 900 26px/1.05 "Nunito", sans-serif; color: var(--jt-rosa-t); overflow-wrap: anywhere; }
+.jt-km.juntos .jt-km-t b { font-size: 22px; }
+.jt-km-vacio { margin: 0; font: 700 13.5px/1.4 "Nunito", sans-serif; color: var(--jt-tinta); }
+
+/* Mensajitos rápidos */
+.jt-rapidos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.jt-rapido { --c: var(--jt-rosa); --t: var(--jt-rosa-t); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 82px; padding: 10px 4px; border: 0; border-radius: 22px; background: var(--c); color: var(--t); font: 800 12.5px/1.1 "Nunito", sans-serif; box-shadow: var(--jt-sombra); cursor: pointer; transition: transform .2s cubic-bezier(.3, 1.4, .5, 1); -webkit-user-select: none; user-select: none; }
+.jt-rapido.lila { --c: var(--jt-lila); --t: var(--jt-lila-t); } .jt-rapido.menta { --c: var(--jt-menta); --t: var(--jt-menta-t); } .jt-rapido.durazno { --c: var(--jt-durazno); --t: var(--jt-durazno-t); }
+.jt-rapido-e { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 15px; background: var(--jt-papel); font-size: 22px; line-height: 1; }
+.jt-rapido:active { transform: scale(.93); }
+.jt-rapido:disabled { opacity: .75; }
+.jt-rapido.pulso .jt-rapido-e { animation: jtRapido .55s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes jtRapido { 35% { transform: scale(1.25) rotate(-8deg); } 70% { transform: scale(.95); } }
+.jt-rap-lista { display: grid; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
+.jt-rap-lista:empty { display: none; }
+.jt-rap-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 16px; background: var(--jt-papel); font-size: 13.5px; }
+.jt-rap-item > span { font-size: 18px; line-height: 1; }
+.jt-rap-item > div { flex: 1; min-width: 0; }
+.jt-rap-item b { font-weight: 800; }
+.jt-rap-item p { margin: 2px 0 0; color: var(--jt-tinta); overflow-wrap: anywhere; white-space: pre-wrap; }
+.jt-rap-item small { flex: none; color: var(--jt-suave); font-size: 11.5px; }
+.jt-rap-item.mio b { color: var(--jt-suave); font-weight: 700; }
+.jt-cuenta { justify-self: end; margin-top: -6px; color: var(--jt-suave); font-size: 12px; font-weight: 700; }
+
+/* Lugares: tocarlos para editar */
+.jt-lugar-pin { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 13px; background: var(--jt-durazno); color: var(--jt-durazno-t); }
+.jt-lugar-pin svg { width: 20px; height: 20px; }
+.jt-lugar-t { flex: 1; min-width: 0; display: grid; gap: 2px; padding: 4px 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.jt-lugar-t b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jt-lugar-t small { color: var(--jt-suave); font-size: 12px; }
+.jt-botones.izq { justify-content: flex-start; flex-wrap: wrap; }
+
+/* ── Mesecitos (nuevo) ── */
+.jt-m-hero { display: flex; align-items: center; gap: 16px; margin: 6px 0 12px; padding: 16px; border-radius: 28px; background: linear-gradient(140deg, var(--jt-rosa) 0%, var(--jt-lila) 100%); box-shadow: var(--jt-sombra); }
+.jt-anillo { position: relative; flex: none; width: 112px; height: 112px; color: var(--jt-rosa-t); }
+.jt-anillo > i, .jt-anillo svg { display: block; width: 100%; height: 100%; }
+.jt-anillo-va { animation: jtAnillo 1.1s cubic-bezier(.3, .9, .3, 1) both; }
+@keyframes jtAnillo { from { stroke-dashoffset: var(--c); } }
+.jt-anillo-n { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; line-height: 1; }
+.jt-anillo-n b { font: 900 38px/1 "Nunito", sans-serif; color: var(--jt-rosa-t); }
+.jt-anillo-n small { font: 800 12px/1.2 "Nunito", sans-serif; color: var(--jt-suave); }
+.jt-m-hero.hoy .jt-anillo { animation: jtKm 1.8s ease-in-out infinite; }
+.jt-m-hero-t { display: grid; gap: 3px; min-width: 0; }
+.jt-m-hero-t small { font: 800 12px/1.2 "Nunito", sans-serif; color: var(--jt-suave); text-transform: uppercase; letter-spacing: .05em; }
+.jt-m-hero-t b { font: 700 27px/1.05 Caveat, "Patrick Hand", cursive; color: var(--jt-rosa-t); }
+.jt-m-hero-t p { margin: 2px 0 0; font: 700 13px/1.35 "Nunito", sans-serif; color: var(--jt-tinta); }
+.jt-cumples { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 0 0 6px; }
+.jt-cumple { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 18px; background: var(--jt-papel); box-shadow: var(--jt-sombra); }
+.jt-cumple > i { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 13px; background: var(--jt-amarillo); font-style: normal; font-size: 20px; line-height: 1; }
+.jt-cumple > div { display: grid; gap: 2px; min-width: 0; }
+.jt-cumple b { font: 800 13.5px/1.2 "Nunito", sans-serif; }
+.jt-cumple small { font: 600 12px/1.3 Jost, system-ui, sans-serif; color: var(--jt-suave); }
+.jt-cumple.hoy { background: linear-gradient(135deg, #fff4c9, #ffe3ec); box-shadow: 0 0 0 2px #ffcf5a, var(--jt-sombra); }
+.jt-cumple.hoy small { color: #a3600c; font-weight: 800; }
+.jt-cumple.vacio { opacity: .8; box-shadow: none; border: 1px dashed var(--jt-linea); background: transparent; }
+.jt-mesitos { display: flex; gap: 10px; overflow-x: auto; margin: 0 -16px; padding: 6px 16px 12px; scroll-padding-inline: 16px; scroll-snap-type: x proximity; scrollbar-width: none; }
+.jt-mesitos::-webkit-scrollbar { display: none; }
+.jt-mesito { --m: #ffd6e5; position: relative; flex: none; width: 116px; display: grid; gap: 4px; padding: 8px 8px 10px; border: 0; border-radius: 6px; background: var(--jt-papel); color: var(--jt-tinta); text-align: center; box-shadow: 0 6px 16px rgba(120, 60, 90, .12); cursor: pointer; scroll-snap-align: start; transform: rotate(-1.5deg); transition: transform .2s cubic-bezier(.3, 1.4, .5, 1); }
+.jt-mesito:nth-child(2n) { transform: rotate(1.4deg); }
+.jt-mesito:active { transform: scale(.95); }
+.jt-mesito.tema-lila { --m: #e4d6ff; } .jt-mesito.tema-durazno { --m: #ffdcc4; } .jt-mesito.tema-menta { --m: #cfeedd; } .jt-mesito.tema-noche { --m: #3b2a48; }
+.jt-mesito-foto { display: grid; place-items: center; aspect-ratio: 1; border-radius: 3px; background: var(--m); overflow: hidden; }
+.jt-mesito-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.jt-mesito-foto b { font: 700 40px/1 Caveat, cursive; color: var(--jt-rosa-t); }
+.jt-mesito:not(.con) .jt-mesito-foto { background: repeating-linear-gradient(-45deg, var(--jt-rosa), var(--jt-rosa) 8px, var(--jt-fondo) 8px, var(--jt-fondo) 16px); }
+.jt-mesito-n { font: 700 18px/1.05 Caveat, cursive; color: var(--jt-tinta); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jt-mesito small { font: 600 11px/1 Jost, sans-serif; color: var(--jt-suave); }
+.jt-mesito .jt-nuevo { position: absolute; top: -6px; right: -6px; }
+.jt-mesito-mas { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); padding: 3px 8px; border-radius: 99px; background: var(--jt-papel); color: var(--jt-acento); font: 800 10.5px/1.2 "Nunito", sans-serif; white-space: nowrap; }
+.jt-mesito.este { box-shadow: 0 0 0 2px var(--jt-acento), 0 6px 16px rgba(120, 60, 90, .12); }
+.jt-m-cosas { display: grid; gap: 12px; margin-top: 8px; }
+@media (min-width: 760px) { .jt-m-cosas { grid-template-columns: repeat(2, minmax(0, 1fr)); } .jt-m-cosa.planes { grid-column: 1 / -1; } }
+.jt-m-cosa { display: grid; gap: 10px; padding: 14px; border-radius: 24px; background: var(--jt-papel); box-shadow: var(--jt-sombra); }
+.jt-m-cosa.momento { background: linear-gradient(180deg, var(--jt-amarillo), var(--jt-papel) 60%); }
+.jt-m-cosa.capsula { background: linear-gradient(180deg, var(--jt-lila), var(--jt-papel) 60%); }
+.jt-m-cosa.planes { background: linear-gradient(180deg, var(--jt-menta), var(--jt-papel) 60%); }
+.jt-m-cosa-cab { display: flex; align-items: center; gap: 10px; }
+.jt-m-cosa-cab > i { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 14px; background: var(--jt-papel); font-style: normal; font-size: 22px; line-height: 1; box-shadow: 0 2px 6px rgba(120, 60, 90, .08); }
+.jt-m-cosa-cab > div { display: grid; gap: 2px; min-width: 0; }
+.jt-m-cosa-cab b { font: 800 15.5px/1.2 "Nunito", sans-serif; }
+.jt-m-cosa-cab small { font: 600 12px/1.3 Jost, system-ui, sans-serif; color: var(--jt-suave); }
+.jt-m-cosa > .jt-btn { justify-self: start; }
+.jt-momentos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.jt-momento { display: grid; align-content: start; gap: 6px; min-height: 96px; padding: 10px; border-radius: 16px; background: var(--jt-fondo); }
+.jt-momento small { font: 800 11.5px/1 "Nunito", sans-serif; color: var(--jt-suave); text-transform: uppercase; letter-spacing: .04em; }
+.jt-momento p { margin: 0; font: 700 13.5px/1.35 "Nunito", sans-serif; overflow-wrap: anywhere; white-space: pre-wrap; }
+.jt-momento p.suave { color: var(--jt-suave); font-weight: 600; }
+.jt-momento img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; display: block; }
+.jt-corazones { color: var(--jt-acento); font-size: 15px; letter-spacing: 1px; }
+.jt-cor-elegir { display: flex; gap: 4px; }
+.jt-cor-elegir button { width: 42px; height: 42px; border: 0; border-radius: 12px; background: var(--jt-rosa); color: var(--jt-acento); font-size: 22px; line-height: 1; cursor: pointer; transition: transform .15s; }
+.jt-cor-elegir button:active { transform: scale(.9); }
+.jt-sobre { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 16px; background: var(--jt-fondo); }
+.jt-sobre > i { flex: none; font-style: normal; font-size: 24px; line-height: 1; }
+.jt-sobre > div { display: grid; gap: 2px; min-width: 0; }
+.jt-sobre b { font: 800 13.5px/1.25 "Nunito", sans-serif; }
+.jt-sobre small { font: 600 12px/1.3 Jost, system-ui, sans-serif; color: var(--jt-suave); }
+.jt-sobre.lleno > i { animation: jtKm 2.6s ease-in-out infinite; }
+.jt-pasados { padding: 4px 2px 0; }
+.jt-pasados summary { cursor: pointer; font: 800 13px/1.3 "Nunito", sans-serif; color: var(--jt-suave); }
+.jt-pasado { margin-top: 8px; padding: 10px 12px; border-radius: 14px; background: var(--jt-fondo); }
+.jt-pasado b { display: block; margin-bottom: 4px; font: 800 12.5px/1.2 "Nunito", sans-serif; color: var(--jt-acento); }
+.jt-pasado p { margin: 4px 0 0; font-size: 13.5px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+.jt-pasado.carta p { font: 600 15px/1.5 "Nunito", sans-serif; }
+.jt-planes { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.jt-plan { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 10px; border-radius: 14px; background: var(--jt-fondo); }
+.jt-plan label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 36px; font: 700 14px/1.3 "Nunito", sans-serif; cursor: pointer; }
+.jt-plan input { flex: none; width: 22px; height: 22px; accent-color: var(--jt-menta-t); }
+.jt-plan span { overflow-wrap: anywhere; }
+.jt-plan.hecho span { text-decoration: line-through; color: var(--jt-suave); }
+.jt-plan small { flex: none; color: var(--jt-suave); font-size: 11.5px; font-weight: 700; }
+.jt-plan .jt-icono { width: 34px; height: 34px; }
+.jt-plan-nuevo { display: flex; gap: 8px; }
+.jt-plan-nuevo .jt-campo { flex: 1; min-width: 0; padding: 9px 12px; }
+@media (prefers-reduced-motion: reduce) { .jt-km-hilo b, .jt-anillo-va, .jt-m-hero.hoy .jt-anillo, .jt-sobre.lleno > i, .jt-rapido.pulso .jt-rapido-e { animation: none !important; } }
+body.ed-ultra .jt-km-hilo b, body.ed-ultra .jt-m-hero.hoy .jt-anillo, body.ed-ultra .jt-sobre.lleno > i { animation: none; }
+body.ed-ultra .jt-mesito, body.ed-ultra .jt-m-cosa, body.ed-ultra .jt-rapido, body.ed-ultra .jt-km { box-shadow: none; }

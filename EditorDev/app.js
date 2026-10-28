@@ -78,6 +78,7 @@ import { medirHz } from "./config/cuadros.js";
 import { Configuracion } from "./components/configuracion.js";
 import { Herramientas } from "./canvas/herramientas.js";
 import { arrastrarCositas } from "./components/arrastrar-cositas.js";
+import * as RAP from "./components/rapiditos.js";
 
 const RT = window.LibritoRT;
 const ULTIMO = "editordev:ultimo";
@@ -686,7 +687,7 @@ const latir = () => RD.unaVez("latido", latirYa);
 async function latirYa() {
   if (!SRV.conectado() || document.hidden) return;
   try {
-    const r = await SRV.latido();
+    const r = await SRV.latido(RAP.ultimoEvento() ?? undefined);
     // Sólo lo que se ve (el «visto hace…» cambia en cada latido y no debe repintar nada).
     const firma = (p) => (p ? [p.usuario, !!p.en_linea, p.nombre, p.foto_v, p.novios, p.cumple].join("|") : "");
     const antes = app.amorNuevos, parejaAntes = firma(app.pareja), rxAntes = app.amorReacciones || 0, chatAntes = app.amorChat || 0;
@@ -721,6 +722,9 @@ async function latirYa() {
       app.avisoChat = aviso(`${PF.nombreDe(r.pareja) || "Tu amorcito"} te mandó ${app.amorChat - chatAntes === 1 ? "un mensajito" : "mensajitos"}`, 7000, "", { t: "Verlos", al: () => app.detallitos.abrir(null, "chat") });
     }
     if (app.amorNuevos !== antes || app.amorReacciones !== rxAntes || app.amorChat !== chatAntes || firma(app.pareja) !== parejaAntes) dispatchEvent(new CustomEvent("ed-amor"));
+    // (Fase 46) Los mensajitos rápidos del mapa (con su sonido) y quién llegó o salió de sus lugares.
+    if (r.toques?.length) RAP.llegaron(app, r.toques);
+    RAP.lugares(app, r);
   } catch (e) { /* sin conexión: la próxima */ }
 }
 setTimeout(latir, 4000);

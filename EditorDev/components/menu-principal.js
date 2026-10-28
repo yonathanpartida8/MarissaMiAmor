@@ -351,12 +351,31 @@ export class MenuPrincipal {
     // cintita lo dice y abre sus Mesecitos (para hacerle su página especial, si quieren).
     const meses = j.a * 12 + j.m, hoyMes = j.d === 0 && meses > 0;
     if (hoyMes) { caja.classList.add("mesecito"); caja.append(el("span.mp-mesecito", { text: `¡Hoy cumplen ${meses} ${meses === 1 ? "mes" : "meses"}! ✦` })); }
+    // (Fase 46) El día de su cumpleaños, tu amorcito lo ve aquí (y tú, el tuyo): cada quien con su nombre.
+    const cumplePa = pa.cumple && PF.cumpleDe(pa.cumple).hoy, cumpleYo = d.yo?.cumple && PF.cumpleDe(d.yo.cumple).hoy;
+    if ((cumplePa || cumpleYo) && !hoyMes) {
+      caja.classList.add("cumple");
+      caja.append(el("span.mp-mesecito.cumple", { text: cumplePa ? `🎂 ¡Hoy es el cumple de ${PF.nombreDe(pa)}!` : "🥳 ¡Feliz cumpleaños!" }));
+      this._felicitar(cumplePa ? pa : null);
+    }
     const pronto = () => this.app.juntitos?.abrir(hoyMes ? "mesecitos" : "inicio");
     caja.addEventListener("click", pronto);
     caja.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pronto(); } });
     return caja;
   }
 
+
+  /** Una vez al día, el día de su cumpleaños: un avisito para felicitarle (o para ti, si es el tuyo). */
+  _felicitar(pa) {
+    const k = `editordev:cumple-visto:${SRV.usuario()?.usuario || ""}:${SRV.hoyLocal()}:${pa ? "pa" : "yo"}`;
+    try { if (localStorage.getItem(k)) return; localStorage.setItem(k, "1"); } catch (e) { return; }
+    setTimeout(() => {
+      if (!this.abierto) return;
+      this.app.sonidos?.sonar("brillo");
+      if (pa) aviso(`🎂 ¡Hoy es el cumpleaños de ${PF.nombreDe(pa)}! Cumple ${PF.cumpleDe(pa.cumple).anios} 💗`, 8000, "", { t: "Felicitar", al: () => this.app.detallitos.abrir(null, "chat") });
+      else aviso("🥳 ¡Feliz cumpleaños! Hoy es tu día ✨", 6000);
+    }, 1400);
+  }
 
   /** Una tarjeta de abajo: su cinta, su dibujito, título, subtítulo y su flechita. */
   _carta(color, dibujo, titulo, sub, al, i) {

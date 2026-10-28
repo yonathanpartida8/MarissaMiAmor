@@ -95,7 +95,7 @@ const SUAVES = new Set(["botones", "seleccionar", "deseleccionar"]);
 // Cuánto se hace a un lado MusicaDev mientras suena un efecto del editor (1 = nada).
 const AGACHAR = 0.6;
 // Lo mínimo entre dos sonidos del mismo momento (ms): sin metralletas.
-const MIN = { coleccion: 600, "audio-play": 60, favorito: 150, "mensaje-menu": 200, "teclado-letra": 28, "teclado-espacio": 28, "teclado-borrar": 28, "mensaje-llega": 350, "mensaje-enviar": 120, "sticker-pegar": 120, "detallito-abrir": 400, gatito: 1600, "reaccion-quitar": 300, "zoom-paso": 55, "zoom-acercar": 380, "zoom-alejar": 380, pincel: 240, "seleccionar-varios": 90, rehacer: 120, publicar: 800, botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250, atras: 150, activar: 100, desactivar: 100, menu: 150, iman: 260, escribir: 200, probar: 400, "abrir-recursos": 200, "cerrar-recursos": 200 };
+const MIN = { "toque-besitos": 300, "toque-teamo": 300, "toque-cuidate": 300, "toque-propio": 300, "lugar-llega": 400, "lugar-sale": 400, coleccion: 600, "audio-play": 60, favorito: 150, "mensaje-menu": 200, "teclado-letra": 28, "teclado-espacio": 28, "teclado-borrar": 28, "mensaje-llega": 350, "mensaje-enviar": 120, "sticker-pegar": 120, "detallito-abrir": 400, gatito: 1600, "reaccion-quitar": 300, "zoom-paso": 55, "zoom-acercar": 380, "zoom-alejar": 380, pincel: 240, "seleccionar-varios": 90, rehacer: 120, publicar: 800, botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250, atras: 150, activar: 100, desactivar: 100, menu: 150, iman: 260, escribir: 200, probar: 400, "abrir-recursos": 200, "cerrar-recursos": 200 };
 /* Sonidos hechos a mano: [forma, frec. inicial, frec. final, duración s, volumen, retraso s]. */
 const SINTE = {
   colocar: [["sine", 520, 250, 0.11, 0.5], ["triangle", 1040, 900, 0.03, 0.12]],
@@ -142,6 +142,13 @@ const SINTE = {
   coleccion: [["triangle", 520, 1046, 0.2, 0.12], ["sine", 1318, 1318, 0.5, 0.1, 0.16], ["sine", 1568, 1568, 0.5, 0.09, 0.23]],
   "detallito-abrir": [["triangle", 700, 1400, 0.14, 0.1], ["sine", 1568, 1568, 0.6, 0.12, 0.12]],
   gatito: [["sawtooth", 62, 58, 0.7, 0.05], ["sawtooth", 60, 64, 0.7, 0.045, 0.8]],
+  // Fase 46: los mensajitos rápidos del mapa (cada uno suena distinto) y quién llega o sale de un lugar.
+  "toque-besitos": [["sine", 1500, 520, 0.08, 0.2], ["sine", 1700, 560, 0.08, 0.2, 0.15], ["sine", 2637, 2637, 0.3, 0.07, 0.26]],
+  "toque-teamo": [["sine", 98, 60, 0.12, 0.5], ["sine", 523, 523, 0.6, 0.13, 0.12], ["sine", 659, 659, 0.6, 0.12, 0.2], ["sine", 784, 784, 0.8, 0.12, 0.28], ["sine", 1046, 1046, 0.9, 0.08, 0.36]],
+  "toque-cuidate": [["triangle", 784, 784, 0.5, 0.12], ["triangle", 587, 587, 0.5, 0.11, 0.18], ["sine", 392, 392, 0.9, 0.12, 0.36]],
+  "toque-propio": [["triangle", 900, 300, 0.12, 0.08], ["sine", 1175, 1175, 0.4, 0.13, 0.1], ["sine", 880, 880, 0.6, 0.13, 0.26]],
+  "lugar-llega": [["sine", 523, 523, 0.25, 0.12], ["sine", 784, 784, 0.45, 0.12, 0.12]],
+  "lugar-sale": [["sine", 784, 784, 0.25, 0.12], ["sine", 523, 523, 0.45, 0.11, 0.12]],
 };
 
 const ALIAS = { "cerrar-recursos": "soltar", "seleccionar-varios": "seleccionar", rehacer: "deshacer", pincel: "arrastrar", publicar: "exito", "zoom-paso": "ajustar" };

@@ -17,6 +17,12 @@
  * Cada pestañita tiene sus cosas arriba a la derecha: en Cositas, «Notas» (lo que escribiste y lo que tu
  * amorcito te compartió, lo que antes era Diario); en Mesecitos, cuánto falta para el siguiente.
  * Todo vive en su M.YNTHN (servidor 1.14.0): nada se inventa ni se queda «de adorno».
+ *
+ * Fase 46: una barrita de abajo (Mapa · Cositas · Mesecitos · Dibujar) cambia de sección desde donde sea;
+ * TODO lo del mapa vive en su hojita (cuántos kilómetros los separan, mensajitos rápidos con su sonido
+ * —components/rapiditos.js—, dónde están, sus lugares para añadir, editar o quitar, y quién llegó o salió);
+ * Mesecitos es nuevo: su anillo del mes con los cumpleaños debajo, sus meses como fotitos, su momento
+ * favorito del mes, la cápsula del tiempo (sellada hasta su día) y los planes para celebrar (servidor 1.19.0).
  */
 import { el, aviso, confirmar } from "./ui.js";
 import { ico } from "./iconos.js";
@@ -26,6 +32,7 @@ import * as UB from "./ubicacion.js";
 import { sinMovimiento as reducido } from "./transiciones.js";
 import { ambito } from "./rendimiento.js";
 import { DibujoJuntos } from "./dibujo-juntos.js";
+import * as RAP from "./rapiditos.js";
 
 const svg = (d, vb = "0 0 32 32") => `<svg viewBox="${vb}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const ICONOS = {
@@ -57,8 +64,8 @@ const CALENDARIO = svg('<rect x="5" y="7" width="22" height="20" rx="4"/><path d
 const PINCEL = svg('<path d="M5 27c3 0 5-1.5 5-4a3 3 0 0 0-3-3c-2 0-3 1.6-3 3.5 0 1.6-.6 2.6-2 3.5z" fill="currentColor" fill-opacity=".2"/><path d="M10 21L25.5 5.5a2.1 2.1 0 0 1 3 3L13 24"/>');
 const CASITA = svg('<path d="M5 15L16 6l11 9"/><path d="M8 13v13h16V13"/><path d="M16 23.6s-3.4-2-3.4-4.2a1.7 1.7 0 0 1 3.4-.9 1.7 1.7 0 0 1 3.4.9c0 2.2-3.4 4.2-3.4 4.2z" fill="currentColor" fill-opacity=".3"/>');
 const PROMESA = svg('<path d="M9.5 18.5c-2-1.6-3.2-3.6-3.2-5.6a3.6 3.6 0 0 1 6.4-2.3"/><path d="M22.5 18.5c2-1.6 3.2-3.6 3.2-5.6a3.6 3.6 0 0 0-6.4-2.3"/><path d="M11 21.5c1.6 1.8 3.2 3 5 4 1.8-1 3.4-2.2 5-4"/><path d="M13 16.5h6M14 13.8l2-2 2 2"/>');
-/** Fase 43: los botones cuadrados de la hojita (cada uno abre su pestañita). */
-const CUADROS = [["cositas", "Cositas Juntitos", "rosa"], ["mesecitos", "Mesecitos", "lila"], ["dibujar", "Dibujar Juntos", "menta"]];
+/** Fase 46: la barrita de abajo (lo que antes eran los botones cuadrados de la hojita). */
+const PESTANAS = ["inicio", "cositas", "mesecitos", "dibujar"];
 const PRONTO = [
   ["casita", "Nuestra casita", "durazno", "Una casita de los dos para decorar juntitos, cuarto por cuarto, con sus fotos y sus cosas."],
   ["promesa", "Promesa", "cielo", "Sus promesas de amor, guardaditas con su fecha, para cumplirlas y recordarlas."],
@@ -85,6 +92,18 @@ const hace = (iso) => {
   if (s < 86400) return `hace ${Math.round(s / 3600)} h`;
   return `hace ${Math.round(s / 86400)} d`;
 };
+/** Kilómetros entre dos puntos (sobre la Tierra; sin depender del mapa). */
+function kmEntre(a, b) {
+  const r = Math.PI / 180, x = Math.sin(((b.lat - a.lat) * r) / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(((b.lng - a.lng) * r) / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.min(1, Math.sqrt(x)));
+}
+/** «350 m», «4.2 km», «1,234 km» (y en millas si alguno de los dos vive en EE. UU.). */
+function textoDistancia(km, millas = false) {
+  const t = km < 1 ? `${Math.max(1, Math.round(km * 1000))} m` : `${km < 10 ? km.toFixed(1) : Math.round(km).toLocaleString("es-MX")} km`;
+  return millas && km >= 1 ? `${t} (${(km * 0.621371 < 10 ? (km * 0.621371).toFixed(1) : Math.round(km * 0.621371).toLocaleString("es-MX"))} mi)` : t;
+}
+const usaMillas = () => { const d = PF.datos(); return d.yo?.pais === "US" || d.pareja?.pais === "US" || /-US$/i.test(navigator.language || ""); };
+
 /** El mes `n` después de la fecha de novios (el 31 + 1 mes = el último día del mes siguiente). */
 function mesDe(novios, n) {
   const [a, m, d] = novios.split("-").map(Number);
@@ -127,7 +146,13 @@ export class Juntitos {
     this.secPanel = el("section.jt-secpanel", { role: "dialog", "aria-modal": "true" }, [el("header.jt-cab", {}, [el("button.jt-atras", { type: "button", "aria-label": "Volver al mapa", html: ico("izquierda"), onClick: () => this.inicio() }), this.secTit, this.accion]), this.vista]);
     this.velo = el("div.jt-velo", { onClick: () => this._cerrarHoja() });
     this.hojaEl = el("section.jt-hoja", { role: "dialog", "aria-modal": "true" });
-    this.capa = el("div.jt-capa.v43", { role: "dialog", "aria-label": "Nuestros días juntos" }, [this.fondo, ctl, this.dist, cab, this.sheet, this.secPanel, this.velo, this.hojaEl]);
+    // Fase 46: la barrita de abajo, siempre a la mano (cambia de sección sin volver al mapa).
+    const icono = { inicio: MAPA, cositas: ICONOS.teamo, mesecitos: CALENDARIO, dibujar: PINCEL };
+    this.nav = el("nav.jt-nav.v46", { "aria-label": "Secciones" }, PESTANAS.map((k) => el("button.jt-tab", { type: "button", dataset: { k }, onClick: () => (k === "inicio" ? this._alMapa() : this.ir(k)) },
+      [el("i", { html: icono[k] }), el("span", { text: { inicio: "Mapa", cositas: "Cositas", mesecitos: "Mesecitos", dibujar: "Dibujar" }[k] })])));
+    this.capa = el("div.jt-capa.v43.v46", { role: "dialog", "aria-label": "Nuestros días juntos" }, [this.fondo, ctl, this.dist, cab, this.sheet, this.secPanel, this.nav, this.velo, this.hojaEl]);
+    // Lo que llega solo (un mensajito rápido, alguien que llegó o salió) se ve al momento en el mapa.
+    for (const t of ["ed-toques", "ed-lugares"]) addEventListener(t, () => { if (this.abierto && this.tab === "inicio") { this._pintarRapidos?.(); if (t === "ed-lugares") this._refrescarMapa(); } });
     document.body.append(this.capa);
     this._gestosHoja();
   }
@@ -143,6 +168,7 @@ export class Juntitos {
     this.capa.classList.add("ver");
     document.body.classList.add("con-juntitos");
     this.tab = "inicio";
+    this._marcar("inicio");
     this._inicio();
     if (tab === "mapa" || tab === "inicio") this._hojaIr(tab === "mapa" ? "alto" : "bajo", false);
     else { this._hojaIr("bajo", false); this.ir(tab); }
@@ -179,10 +205,18 @@ export class Juntitos {
   ir(tab) {
     if (tab === "diario") tab = "cositas"; // (Diario ya vive en Cositas → Notas)
     if (tab === "mapa" || tab === "inicio") { this.inicio(); if (tab === "mapa") this._hojaIr("alto", true); return; }
+    const antes = this.tab;
     this.tab = tab;
+    this._marcar(tab);
     this._parar?.(); this._parar = null;
     this.dj?.limpiar(); this.dj = null;
     this.secTit.textContent = TITULOS[tab] || "";
+    // (Entre pestañas, la página entra desde el lado de la que tocaste; desde el mapa, sube como siempre.)
+    if (antes !== "inicio" && this.secPanel.classList.contains("ver") && !reducido()) {
+      const d = PESTANAS.indexOf(tab === "casita" || tab === "promesa" ? "cositas" : tab) - PESTANAS.indexOf(antes === "casita" || antes === "promesa" ? "cositas" : antes);
+      this.vista.classList.remove("entra-der", "entra-izq"); void this.vista.offsetWidth;
+      if (d) this.vista.classList.add(d > 0 ? "entra-der" : "entra-izq");
+    }
     this.accion.replaceChildren();
     this.capa.dataset.tab = tab;
     this.vista.scrollTop = 0;
@@ -191,8 +225,23 @@ export class Juntitos {
     ({ cositas: () => this._cositas(), mesecitos: () => this._mesecitos(), dibujar: () => this._dibujar(), casita: () => this._pronto("casita"), promesa: () => this._pronto("promesa") })[tab]?.();
   }
 
+  /** La barrita: cuál está elegida (la pastillita se desliza hasta ella). */
+  _marcar(tab) {
+    const k = tab === "casita" || tab === "promesa" ? "cositas" : tab;
+    const i = Math.max(0, PESTANAS.indexOf(k));
+    this.nav?.style.setProperty("--i", i);
+    for (const b of this.nav?.children || []) { const on = b.dataset.k === k; b.classList.toggle("on", on); if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }
+  }
+
+  /** «Mapa» en la barrita: si ya estás en el mapa, sube su hojita (todo lo del mapa). */
+  _alMapa() {
+    if (this.tab === "inicio") { this._hojaIr(this._hojaPos === "alto" ? "bajo" : "alto", true); return; }
+    this.inicio();
+  }
+
   /** De vuelta al mapa con su hojita. */
   inicio() {
+    this._marcar("inicio");
     this.tab = "inicio";
     this.capa.dataset.tab = "inicio";
     this.dj?.limpiar(); this.dj = null;
@@ -256,13 +305,16 @@ export class Juntitos {
     addEventListener("resize", () => { if (this.abierto) this._hojaIr(this._hojaPos || "bajo", false); });
   }
 
-  /* ── Lo de inicio: el mapa de fondo y la hojita con sus botones ── */
+  /* ── Lo de inicio: el mapa de fondo y su hojita con TODO lo del mapa (Fase 46) ── */
   _inicio() {
-    const cuadro = ([k, n, c], html, extra) => el("button.jt-cuadro." + c, { type: "button", dataset: { k }, onClick: () => this.ir(k) }, [el("i", { html }), el("b", { text: n }), extra || null].filter(Boolean));
     const estado = el("div.jt-ub-estado"), gente = el("div.jt-gente"), lugares = el("ul.jt-lugares"), eventos = el("ul.jt-eventos");
-    // (Fase 45) Arriba, lo de ustedes de verdad (sus fotos, sus días juntos y lo que viene) en vez de
-    // repetir el título; los botones, más sencillos; lo que está en construcción, chiquito y aparte.
     const d = PF.datos(), j = PF.juntos(d.pareja?.novios || d.yo?.novios), pr = PF.proximo(d);
+    // Cuántos kilómetros los separan (se llena con su ubicación; si falta alguien, dice qué falta).
+    const km = el("div.jt-km", { "aria-live": "polite" }, [el("p.jt-km-vacio", { text: "Buscando dónde están…" })]);
+    // Los mensajitos rápidos: le llegan de verdad, con su sonido.
+    const rapidos = el("div.jt-rapidos", { role: "group", "aria-label": "Mensajitos rápidos" }, RAP.TOQUES.map((t) => el("button.jt-rapido." + t.c, { type: "button", dataset: { t: t.id }, onClick: (ev) => this._rapido(t, ev.currentTarget) },
+      [el("span.jt-rapido-e", { text: t.e, "aria-hidden": "true" }), el("b", { text: t.n })])));
+    const ultimos = el("ul.jt-rap-lista");
     this.sheetCuerpo.replaceChildren(
       el("div.jt-nosotros", {}, [
         el("div.jt-dos", { "aria-hidden": "true" }, [PF.avatar("yo", "jt-av"), PF.avatar("pareja", "jt-av")]),
@@ -272,12 +324,15 @@ export class Juntitos {
           pr ? el("small", { text: pr.texto }) : null,
         ]),
       ]),
-      el("div.jt-cuadros", {}, CUADROS.map((x) => cuadro(x, { cositas: ICONOS.teamo, mesecitos: CALENDARIO, dibujar: PINCEL }[x[0]]))),
-      el("div.jt-pronto-fila", {}, [el("small", { text: "Pronto" }), ...PRONTO.map((x) => el("button.jt-pronto-b", { type: "button", dataset: { k: x[0] }, onClick: () => this.ir(x[0]) }, [el("i", { html: x[0] === "casita" ? CASITA : PROMESA }), el("span", { text: x[1] })]))]),
-      el("h2.jt-sub", { text: "Dónde estamos" }), estado, gente,
-      el("div.jt-sec", {}, [el("h2", { text: "Lugares" }), el("button.jt-btn.chico", { type: "button", text: "Añadir lugar", onClick: () => this._nuevoLugar() })]), lugares,
-      el("p.jt-nota", { text: "Los avisos de entrar o salir funcionan mientras la app está abierta en el aparato de quien se mueve (la web no puede seguirte con la app cerrada; para eso hace falta la app nativa)." }),
-      el("div.jt-sec", {}, [el("h2", { text: "Lo último" })]), eventos,
+      km,
+      el("section.jt-bloque", {}, [el("h2.jt-bloque-t", {}, [el("span", { text: "Mensajitos rápidos" }), el("small", { text: `Le llegan a ${this.pareja} al instante` })]), rapidos, ultimos]),
+      el("section.jt-bloque", {}, [el("h2.jt-bloque-t", {}, [el("span", { text: "Dónde estamos" })]), estado, gente]),
+      el("section.jt-bloque", {}, [
+        el("div.jt-sec", {}, [el("h2.jt-bloque-t", {}, [el("span", { text: "Nuestros lugares" }), el("small", { text: "Avisan cuando alguien llega o sale" })]), el("button.jt-btn.chico", { type: "button", text: "+ Añadir", onClick: () => this._nuevoLugar() })]),
+        lugares,
+      ]),
+      el("section.jt-bloque", {}, [el("h2.jt-bloque-t", {}, [el("span", { text: "Llegadas y salidas" })]), eventos]),
+      el("p.jt-nota", { text: "Los avisos de llegar o salir funcionan mientras la app está abierta en el aparato de quien se mueve (la web no puede seguirte con la app cerrada; para eso hará falta la app nativa)." }),
     );
     this._pintarUb = () => {
       const e = UB.estadoUbicacion();
@@ -286,8 +341,48 @@ export class Juntitos {
         : el("div.jt-ub", {}, [el("div", {}, [el("b", { text: "Tu ubicación no se comparte" }), el("small", { text: e.error || `Si quieres, ${this.pareja} podrá verla en este mapa. Puedes dejar de compartirla cuando quieras.` })]), el("button.jt-btn.chico", { type: "button", text: "Compartir mi ubicación", onClick: async () => { if (await UB.compartir()) { aviso("Compartiendo tu ubicación (sólo mientras la app está abierta)", 3200); this._refrescarMapa(); } } })]));
     };
     this._pintarUb();
-    this._mapaEls = { caja: this.fondo, gente, lugares, eventos, dist: this.dist, botonCapa: this.botonCapa };
+    // Lo último de los mensajitos (de los dos), sin parpadear: sólo se repinta si cambió.
+    let firmaRap = "";
+    this._pintarRapidos = async () => {
+      let l;
+      try { l = await RAP.historial(); } catch (e) { return; }
+      const f = l.slice(0, 4).map((x) => x.id).join(",");
+      if (f === firmaRap || !ultimos.isConnected) return;
+      firmaRap = f;
+      ultimos.replaceChildren(...l.slice(0, 4).map((x) => { const t = RAP.toque(x.tipo); return el("li.jt-rap-item" + (x.mio ? ".mio" : ""), {}, [
+        el("span", { text: t.e, "aria-hidden": "true" }),
+        el("div", {}, [el("b", { text: x.mio ? t.mia : `${this.pareja} ${t.frase}` }), x.texto ? el("p", { text: x.texto }) : null]),
+        el("small", { text: hace(x.t) }),
+      ]); }));
+    };
+    this._pintarRapidos();
+    this._mapaEls = { caja: this.fondo, gente, lugares, eventos, dist: this.dist, botonCapa: this.botonCapa, km };
     this._mapaFondo();
+  }
+
+  /** Un mensajito rápido: «Escribir» abre su cajita; los otros salen al tocarlos. */
+  async _rapido(t, b) {
+    if (t.id === "propio") {
+      const txt = el("textarea.jt-campo", { rows: 3, maxlength: 140, placeholder: `Escríbele algo bonito a ${this.pareja}…`, "aria-label": "Tu mensajito" });
+      const cuenta = el("small.jt-cuenta", { text: "0 / 140" });
+      txt.addEventListener("input", () => { cuenta.textContent = `${txt.value.length} / 140`; });
+      const mandarB = el("button.jt-btn", { type: "button", text: "Mandar 💌", onClick: async () => {
+        const v = txt.value.trim();
+        if (!v) { txt.focus(); aviso("Escribe tu mensajito", 1800); return; }
+        mandarB.disabled = true;
+        try { await RAP.mandar(this.app, "propio", v); this._cerrarHoja(); aviso(`Le llegó tu mensajito a ${this.pareja} 💌`, 2400); this._pintarRapidos?.(); }
+        catch (e) { aviso(e.message, 3500, "error"); mandarB.disabled = false; }
+      } });
+      this._hoja("Un mensajito para " + this.pareja, [txt, cuenta, mandarB]);
+      return;
+    }
+    if (b.disabled) return;
+    b.disabled = true;
+    b.classList.remove("pulso"); void b.offsetWidth; b.classList.add("pulso");
+    if (!reducido()) this._chispa(b, t.e);
+    try { await RAP.mandar(this.app, t.id); aviso(`${t.mia} a ${this.pareja} ${t.e}`, 2200); this._pintarRapidos?.(); }
+    catch (e) { aviso(e.message, 3500, "error"); }
+    finally { setTimeout(() => { b.disabled = false; }, 700); }
   }
 
   async _mapaFondo() {
@@ -350,6 +445,8 @@ export class Juntitos {
       suyo.length ? el("div.jt-suyo", {}, [el("i", { html: ICONOS.teamo }), el("span", { text: `Hoy ${nombre} ${suyo.join(" y ")} 💗` })]) : null,
       el("div.jt-rejilla", {}, COSAS.map((c) => { const n = this._carta(c); this.cartas.set(c.t, n); return n; })),
       el("p.jt-nota", { text: `«Te extraño» y «Te amo» le llegan a ${nombre}. Lo demás es sólo tuyo, salvo que tú lo compartas (mantén presionada una tarjeta).` }),
+      // (Lo que viene, chiquito y aparte: antes vivía en la hojita del mapa.)
+      el("div.jt-pronto-fila", {}, [el("small", { text: "Pronto" }), ...PRONTO.map((x) => el("button.jt-pronto-b", { type: "button", dataset: { k: x[0] }, onClick: () => this.ir(x[0]) }, [el("i", { html: x[0] === "casita" ? CASITA : PROMESA }), el("span", { text: x[1] })]))]),
     ].filter(Boolean));
     for (const c of COSAS) this._pintarCarta(c);
   }
@@ -447,7 +544,10 @@ export class Juntitos {
     ]);
   }
 
-  /* ════ Mesecitos ════ */
+  /* ════ Mesecitos (Fase 46: diseño nuevo) ════
+     Arriba, su anillo del mes (cuánto va del mes que corre) con los cumpleaños debajo; luego sus meses como
+     fotitos (cada uno con su página especial), su momento favorito del mes (cada quien el suyo), la cápsula
+     del tiempo (una cartita sellada hasta el día de su siguiente mes) y los planes para celebrarlo. */
   async _mesecitos() {
     let d;
     try { d = await SRV.mesecitos(); } catch (e) { this._error(e); return; }
@@ -458,25 +558,180 @@ export class Juntitos {
         el("button.jt-btn", { type: "button", text: "Ir a mi perfil", onClick: () => { this.cerrar(); this.app.menuPrincipal?.ir?.("perfil"); } })]));
       return;
     }
-    const porMes = new Map(d.paginas.map((x) => [x.mes, x]));
-    const sig = d.siguiente ? new Date(d.siguiente + "T12:00:00") : null, faltan = sig ? Math.max(0, Math.ceil((sig - Date.now()) / 86400000)) : 0;
+    const sig = d.siguiente ? new Date(d.siguiente + "T12:00:00") : null;
+    const hoy0 = new Date(); hoy0.setHours(12, 0, 0, 0);
+    const faltan = sig ? Math.max(0, Math.round((sig - hoy0) / 86400000)) : 0;
     if (sig) this.accion.replaceChildren(el("span.jt-accion-pill", { text: faltan === 0 ? "¡Hoy cumplen! 💗" : `Faltan ${faltan} ${faltan === 1 ? "día" : "días"}` }));
-    const filas = [];
+    this.vista.replaceChildren(
+      this._mesAnillo(d, faltan),
+      this._cumples(),
+      this._mesFotitos(d),
+      el("div.jt-m-cosas", {}, [this._mesMomento(d), this._mesCapsula(d), this._mesPlanes(d)]),
+      el("p.jt-nota", { text: "Cada mes tiene una sola página (la hace quien llegue primero). El momento, la cápsula y los planes se guardan en su servidor y le llegan a tu amorcito con aviso." }),
+    );
+  }
+
+  /** El anillo: el número de meses al centro y cuánto va del mes que corre. */
+  _mesAnillo(d, faltan) {
+    const ini = d.meses ? mesDe(d.novios, d.meses) : mesDe(d.novios, 0), fin = mesDe(d.novios, d.meses + 1);
+    const hoy0 = new Date(); hoy0.setHours(12, 0, 0, 0);
+    const total = Math.max(1, Math.round((fin - ini) / 86400000)), va = Math.min(total, Math.max(0, Math.round((hoy0 - ini) / 86400000)));
+    const R = 52, C = 2 * Math.PI * R, k = faltan === 0 && d.meses ? 1 : va / total;
+    const anillo = `<svg viewBox="0 0 128 128" aria-hidden="true"><defs><linearGradient id="jtAnillo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8fbf"/><stop offset="1" stop-color="#a985e8"/></linearGradient></defs>
+      <circle cx="64" cy="64" r="${R}" fill="none" stroke="currentColor" stroke-opacity=".14" stroke-width="11"/>
+      <circle class="jt-anillo-va" cx="64" cy="64" r="${R}" fill="none" stroke="url(#jtAnillo)" stroke-width="11" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - k)).toFixed(1)}" transform="rotate(-90 64 64)" style="--c:${C.toFixed(1)}"/></svg>`;
+    return el("section.jt-m-hero" + (faltan === 0 && d.meses ? ".hoy" : ""), {}, [
+      el("div.jt-anillo", {}, [el("i", { html: anillo }), el("div.jt-anillo-n", {}, [el("b", { text: String(d.meses) }), el("small", { text: d.meses === 1 ? "mes" : "meses" })])]),
+      el("div.jt-m-hero-t", {}, [
+        el("small", { text: "Llevan juntitos" }),
+        el("b", { text: faltan === 0 && d.meses ? `¡Hoy cumplen ${d.meses} ${d.meses === 1 ? "mes" : "meses"}! 💗` : `${d.meses} ${d.meses === 1 ? "mes" : "meses"} y ${va} ${va === 1 ? "día" : "días"}` }),
+        d.siguiente ? el("p", { text: faltan === 0 ? `El siguiente: ${fechaLarga(mesDe(d.novios, d.meses + 1).toISOString().slice(0, 10))}` : `Su mes ${d.meses + 1}: ${fechaLarga(d.siguiente)} · faltan ${faltan} ${faltan === 1 ? "día" : "días"}` }) : null,
+      ]),
+    ]);
+  }
+
+  /** Los cumpleaños, debajo del contador: el de tu amorcito y el tuyo, cada uno con su nombre (nunca al revés). */
+  _cumples() {
+    const D = PF.datos(), filas = [];
+    const una = (quien, p, nombre) => {
+      if (!p?.cumple) return el("div.jt-cumple.vacio", {}, [el("i", { text: "🎂", "aria-hidden": "true" }), el("div", {}, [el("b", { text: quien === "yo" ? "Tu cumpleaños" : `Cumpleaños de ${nombre}` }), el("small", { text: quien === "yo" ? "Ponlo en tu perfil" : `${nombre} todavía no lo pone en su perfil` })])]);
+      const c = PF.cumpleDe(p.cumple);
+      return el("div.jt-cumple" + (c.hoy ? ".hoy" : ""), {}, [
+        el("i", { text: c.hoy ? "🥳" : "🎂", "aria-hidden": "true" }),
+        el("div", {}, [el("b", { text: quien === "yo" ? "Tu cumpleaños" : `Cumpleaños de ${nombre}` }), el("small", { text: `${c.fecha}${c.hoy ? ` · ¡hoy cumple${quien === "yo" ? "s" : ""} ${c.anios}!` : ` · faltan ${c.dias} ${c.dias === 1 ? "día" : "días"}`}` })]),
+      ]);
+    };
+    if (D.pareja) filas.push(una("pareja", D.pareja, this.pareja));
+    filas.push(una("yo", D.yo, "ti"));
+    return el("section.jt-cumples", { "aria-label": "Cumpleaños" }, filas);
+  }
+
+  /** Sus meses como fotitos en una tira (el más reciente primero); cada uno abre o crea su página. */
+  _mesFotitos(d) {
+    const porMes = new Map(d.paginas.map((x) => [x.mes, x]));
+    if (!d.meses) return el("section.jt-bloque", {}, [el("h2.jt-bloque-t", {}, [el("span", { text: "Sus meses" })]), el("div.jt-vacio-chico", { text: "Cuando cumplan su primer mes, aquí podrán hacerle su página especial." })]);
+    const tira = [];
     for (let n = d.meses; n >= 1; n--) {
-      const p = porMes.get(n), f = mesDe(d.novios, n);
-      const nueva = p && !p.mio && !p.visto;
-      filas.push(el("li.jt-mes" + (p ? ".con" : "") + (n === d.meses ? ".este" : ""), {}, [
-        el("div.jt-mes-n", {}, [el("b", { text: String(n) }), el("small", { text: n === 1 ? "mes" : "meses" })]),
-        el("div.jt-mes-t", {}, [el("b", { text: p ? p.titulo : n === d.meses ? "¡Su mes más reciente!" : `Mes ${n}` }), el("small", { text: `${fechaLarga(f.toISOString().slice(0, 10))}${p ? ` · ${p.mio ? "la hiciste tú" : `la hizo ${this.pareja}`}` : ""}` })]),
-        nueva ? el("span.jt-nuevo", { text: "¡Nueva!" }) : null,
-        el("button.jt-btn" + (p ? ".suave" : ""), { type: "button", text: p ? "Abrir" : "Crear", onClick: () => (p ? this._verMes(p) : this._editarMes(n)) }),
+      const p = porMes.get(n), f = mesDe(d.novios, n), nueva = p && !p.mio && !p.visto;
+      const foto = p?.fotos?.[0];
+      tira.push(el("button.jt-mesito" + (p ? ".con.tema-" + p.tema : "") + (n === d.meses ? ".este" : ""), { type: "button", "aria-label": `Mes ${n}: ${p ? p.titulo : "sin página todavía"}`, onClick: () => (p ? this._verMes(p) : this._editarMes(n)) }, [
+        el("span.jt-mesito-foto", {}, [foto ? el("img", { src: SRV.media(foto), alt: "", loading: "lazy" }) : el("b", { text: String(n) })]),
+        el("b.jt-mesito-n", { text: p ? p.titulo : `Mes ${n}` }),
+        el("small", { text: f.toLocaleDateString("es-MX", { day: "numeric", month: "short" }) }),
+        nueva ? el("span.jt-nuevo", { text: "¡Nueva!" }) : !p ? el("span.jt-mesito-mas", { text: "+ Crear" }) : null,
       ]));
     }
-    this.vista.replaceChildren(
-      el("div.jt-mes-hero", {}, [el("small", { text: "Llevan" }), el("b", { text: `${d.meses} ${d.meses === 1 ? "mes" : "meses"} ♡` }), sig ? el("p", { text: faltan ? `El siguiente: ${fechaLarga(d.siguiente)} · faltan ${faltan} ${faltan === 1 ? "día" : "días"}` : "¡Hoy cumplen un mes más!" }) : null]),
-      d.meses ? el("ul.jt-meses", {}, filas) : el("div.jt-vacio", {}, [el("b", { text: "Su primer mes ya casi llega" }), el("p", { text: "Cuando lo cumplan, aquí podrán hacerle su página especial." })]),
-      el("p.jt-nota", { text: "Cada mes tiene una sola página (la hace quien llegue primero) y se guarda en su servidor para volver a verla cuando quieran." }),
-    );
+    return el("section.jt-bloque", {}, [el("h2.jt-bloque-t", {}, [el("span", { text: "Sus meses" }), el("small", { text: "Una página especial por cada mes" })]), el("div.jt-mesitos", {}, tira)]);
+  }
+
+  /** Su momento favorito del mes que corre: el tuyo y el de tu amorcito, lado a lado. */
+  _mesMomento(d) {
+    const mes = d.meses + 1;
+    const de = (mio) => d.momentos.find((x) => x.mes === mes && x.mio === mio);
+    const lado = (mio) => {
+      const m = de(mio), quien = mio ? "Tú" : this.pareja;
+      return el("div.jt-momento" + (m ? ".con" : ""), {}, [
+        el("small", { text: quien }),
+        m ? el("p", { text: m.texto }) : el("p.suave", { text: mio ? "Todavía no eliges el tuyo" : `${this.pareja} todavía no elige el suyo` }),
+        m?.foto ? el("img", { src: SRV.media(m.foto), alt: "", loading: "lazy" }) : null,
+        m ? el("span.jt-corazones", { "aria-label": `${m.corazones} de 5 corazones`, text: "♥".repeat(m.corazones) + "♡".repeat(5 - m.corazones) }) : null,
+      ]);
+    };
+    const pasados = [...new Set(d.momentos.filter((x) => x.mes < mes).map((x) => x.mes))].sort((a, b) => b - a);
+    return el("section.jt-m-cosa.momento", {}, [
+      el("div.jt-m-cosa-cab", {}, [el("i", { text: "✨", "aria-hidden": "true" }), el("div", {}, [el("b", { text: "Nuestro momento del mes" }), el("small", { text: `Lo más bonito de su mes ${mes}, cada quien el suyo` })])]),
+      el("div.jt-momentos", {}, [lado(true), lado(false)]),
+      el("button.jt-btn.chico", { type: "button", text: de(true) ? "Cambiar el mío" : "Elegir el mío", onClick: () => this._editarMomento(mes, de(true)) }),
+      pasados.length ? el("details.jt-pasados", {}, [el("summary", { text: `Momentos de otros meses (${pasados.length})` }), ...pasados.map((n) => el("div.jt-pasado", {}, [el("b", { text: `Mes ${n}` }),
+        ...d.momentos.filter((x) => x.mes === n).map((x) => el("p", {}, [el("small", { text: x.mio ? "Tú: " : `${this.pareja}: ` }), document.createTextNode(x.texto)]))]))]) : null,
+    ]);
+  }
+
+  _editarMomento(mes, m) {
+    const t = el("textarea.jt-campo", { rows: 3, maxlength: 280, placeholder: "Ese día que… 💭", "aria-label": "Tu momento favorito" });
+    t.value = m?.texto || "";
+    let corazones = m?.corazones || 5, foto = m?.foto || "";
+    const cor = el("div.jt-cor-elegir", { role: "radiogroup", "aria-label": "¿Cuánto lo amaste?" });
+    const pintarCor = () => cor.replaceChildren(...[1, 2, 3, 4, 5].map((n) => el("button", { type: "button", role: "radio", "aria-checked": String(n === corazones), "aria-label": `${n} ${n === 1 ? "corazón" : "corazones"}`, text: n <= corazones ? "♥" : "♡", onClick: () => { corazones = n; pintarCor(); } })));
+    pintarCor();
+    const fotoCaja = el("div.jt-fotos");
+    const pintarFoto = () => fotoCaja.replaceChildren(foto
+      ? el("span.jt-foto", {}, [el("img", { src: SRV.media(foto), alt: "" }), el("button", { type: "button", "aria-label": "Quitar foto", html: ico("cerrar"), onClick: () => { foto = ""; pintarFoto(); } })])
+      : el("button.jt-foto-mas", { type: "button", "aria-label": "Añadir una foto", html: ico("mas"), onClick: () => this._subirFoto().then((u) => { if (u) { foto = u; pintarFoto(); } }) }));
+    pintarFoto();
+    const b = el("button.jt-btn", { type: "button", text: "Guardar mi momento", onClick: async () => {
+      if (!t.value.trim()) { t.focus(); aviso("Cuéntalo en unas palabritas", 1800); return; }
+      b.disabled = true;
+      try { const r = await SRV.ponerMomento(mes, { texto: t.value, corazones, foto }); this.mes = { ...this.mes, ...r }; this._cerrarHoja(); aviso(m ? "Listo, quedó tu momento ✨" : `¡Tu momento quedó! A ${this.pareja} le llega el aviso ✨`, 2600); this.ir("mesecitos"); }
+      catch (e) { aviso(e.message, 3500, "error"); b.disabled = false; }
+    } });
+    this._hoja(`Tu momento del mes ${mes}`, [t, el("small.jt-et", { text: "¿Cuánto lo amaste?" }), cor, el("small.jt-et", { text: "Una fotito (si quieres)" }), fotoCaja, b]);
+  }
+
+  /** La cápsula del tiempo: una cartita para el día de su siguiente mes (sellada hasta entonces, también para ti). */
+  _mesCapsula(d) {
+    const mes = d.meses + 1, abre = fechaLarga(mesDe(d.novios, mes).toISOString().slice(0, 10));
+    const mia = d.capsulas.find((x) => x.mes === mes && x.mio), suya = d.capsulas.find((x) => x.mes === mes && !x.mio);
+    const abiertas = d.capsulas.filter((x) => x.abierta && !x.mio).sort((a, b) => b.mes - a.mes);
+    const sobre = (x, tuyo) => el("div.jt-sobre" + (x ? ".lleno" : ""), {}, [
+      el("i", { text: x ? "💌" : "✉️", "aria-hidden": "true" }),
+      el("div", {}, [el("b", { text: tuyo ? (x ? "Tu cápsula está guardada" : "Todavía no guardas la tuya") : x ? `${this.pareja} te guardó una 🔒` : `${this.pareja} todavía no guarda la suya` }),
+        el("small", { text: x ? `Se abre el ${abre}` : tuyo ? "Escríbele algo para leerlo ese día" : "" })]),
+    ]);
+    return el("section.jt-m-cosa.capsula", {}, [
+      el("div.jt-m-cosa-cab", {}, [el("i", { text: "💌", "aria-hidden": "true" }), el("div", {}, [el("b", { text: "Cápsula del tiempo" }), el("small", { text: `Una cartita que nadie puede leer hasta su mes ${mes}` })])]),
+      sobre(mia, true), sobre(suya, false),
+      el("div.jt-botones.izq", {}, [
+        el("button.jt-btn.chico", { type: "button", text: mia ? "Cambiar la mía" : "Escribir la mía", onClick: () => this._editarCapsula(mes, mia, abre) }),
+        mia ? el("button.jt-btn.chico.suave", { type: "button", text: "Quitarla", onClick: async () => { if (!(await confirmar("¿Quitar tu cápsula de este mes?", "Quitar"))) return; try { await SRV.borrarCapsula(mes); this.ir("mesecitos"); } catch (e) { aviso(e.message, 3000, "error"); } } }) : null,
+      ]),
+      abiertas.length ? el("details.jt-pasados", { open: abiertas.some((x) => x.mes === d.meses) ? "" : null }, [el("summary", { text: `Cápsulas que ya se abrieron (${abiertas.length})` }),
+        ...abiertas.map((x) => el("div.jt-pasado.carta", {}, [el("b", { text: `Mes ${x.mes} · de ${this.pareja}` }), el("p", { text: x.texto })]))]) : null,
+    ]);
+  }
+
+  _editarCapsula(mes, x, abre) {
+    const t = el("textarea.jt-campo", { rows: 6, maxlength: 2000, placeholder: `Querido/a ${this.pareja}: cuando leas esto…`, "aria-label": "Tu cápsula" });
+    t.value = x?.texto || "";
+    const b = el("button.jt-btn", { type: "button", text: "Sellar la cápsula 💌", onClick: async () => {
+      if (!t.value.trim()) { t.focus(); aviso("Escribe algo para guardarlo", 1800); return; }
+      b.disabled = true;
+      try { await SRV.ponerCapsula(mes, t.value); this._cerrarHoja(); aviso(x ? "Cápsula cambiada (sigue sellada)" : `¡Sellada! ${this.pareja} la podrá leer el ${abre} 💌`, 3000); this.ir("mesecitos"); }
+      catch (e) { aviso(e.message, 3500, "error"); b.disabled = false; }
+    } });
+    this._hoja(`Cápsula para su mes ${mes}`, [el("p.jt-hoja-p.suave", { text: `Nadie la puede leer antes del ${abre} (ni ${this.pareja}). Ese día se abre sola.` }), t, b]);
+  }
+
+  /** Los planes para celebrar su siguiente mes: los dos añaden, palomean o quitan. */
+  _mesPlanes(d) {
+    const mes = d.meses + 1;
+    const lista = el("ul.jt-planes");
+    const pintar = (planes) => {
+      const mios = planes.filter((x) => x.mes === mes);
+      lista.replaceChildren(...(mios.length ? mios.map((x) => {
+        const c = el("input", { type: "checkbox", "aria-label": `Hecho: ${x.texto}` });
+        c.checked = x.hecho;
+        c.addEventListener("change", () => SRV.palomearPlan(x.id, c.checked).then((r) => { if (c.checked) this.app.sonidos?.sonar("favorito"); pintar(r.planes); }).catch((e) => { c.checked = !c.checked; aviso(e.message, 3000, "error"); }));
+        return el("li.jt-plan" + (x.hecho ? ".hecho" : ""), {}, [el("label", {}, [c, el("span", { text: x.texto })]), el("small", { text: x.mio ? "tú" : this.pareja }),
+          el("button.jt-icono", { type: "button", "aria-label": `Quitar «${x.texto}»`, html: ico("borrar"), onClick: () => SRV.borrarPlan(x.id).then((r) => pintar(r.planes)).catch((e) => aviso(e.message, 3000, "error")) })]);
+      }) : [el("li.jt-vacio-chico", { text: "Todavía no hay planes. ¿Una cena, una peli, una cartita…?" })]));
+    };
+    pintar(d.planes);
+    const campo = el("input.jt-campo", { type: "text", maxlength: 90, placeholder: "Añadir un plan…", "aria-label": "Nuevo plan", enterkeyhint: "done" });
+    const anadir = async () => {
+      const v = campo.value.trim();
+      if (!v) { campo.focus(); return; }
+      campo.disabled = true;
+      try { const r = await SRV.nuevoPlan(mes, v); campo.value = ""; pintar(r.planes); }
+      catch (e) { aviso(e.message, 3500, "error"); }
+      finally { campo.disabled = false; campo.focus({ preventScroll: true }); }
+    };
+    campo.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); anadir(); } });
+    return el("section.jt-m-cosa.planes", {}, [
+      el("div.jt-m-cosa-cab", {}, [el("i", { text: "🗓️", "aria-hidden": "true" }), el("div", {}, [el("b", { text: `Planes para su mes ${mes}` }), el("small", { text: "Lo que quieren hacer para celebrarlo" })])]),
+      lista,
+      el("div.jt-plan-nuevo", {}, [campo, el("button.jt-btn.chico", { type: "button", text: "Añadir", onClick: anadir })]),
+    ]);
   }
 
   _editarMes(n, p = null) {
@@ -499,6 +754,7 @@ export class Juntitos {
         try {
           const pg = await SRV.ponerMesecito(n, { titulo: titulo.value, texto: texto.value, fotos, tema });
           this._cerrarHoja();
+          if (this.tab === "mesecitos") this.ir("mesecitos");   // (su fotito ya se ve en la tira al cerrar la carta)
           aviso(p ? "Listo, quedó guardada" : `¡Su página del mes ${n} quedó lista! A ${this.pareja} le llega el aviso 💗`, 3200);
           this._verMes(pg);
         } catch (e) { aviso(e.message, 4000, "error"); ev.currentTarget.disabled = false; }
@@ -578,13 +834,15 @@ export class Juntitos {
     let d;
     try { d = await SRV.ubicacion(); } catch (e) { E.gente.replaceChildren(el("p.jt-aviso", { text: "Sin conexión con su servidor: no se puede ver dónde están ahora." })); return; }
     this.ub = d;
+    this._pintarKm(d);
     const persona = (quien, nom, u) => el("div.jt-persona." + quien, {}, [
       PF.avatar(quien === "yo" ? "yo" : "pareja", "jt-av"),
       el("div", {}, [el("b", { text: nom }), el("small", { text: u ? `Ahí desde ${hace(u.desde)} · actualizada ${hace(u.t)}` : quien === "yo" ? "No compartes tu ubicación" : `${this.pareja} no está compartiendo su ubicación` })]),
     ]);
     E.gente.replaceChildren(persona("yo", "Tú", d.yo), persona("pareja", this.pareja, d.pareja));
     E.lugares.replaceChildren(...(d.lugares.length ? d.lugares.map((l) => el("li.jt-lugar", {}, [
-      el("div", {}, [el("b", { text: l.nombre }), el("small", { text: `${Math.round(l.radio)} m · avisa ${{ yo: "a quien llega o se va", pareja: "a su pareja", ambos: "a los dos" }[l.avisar] || ""}` })]),
+      el("i.jt-lugar-pin", { html: PIN, "aria-hidden": "true" }),
+      el("button.jt-lugar-t", { type: "button", "aria-label": `Editar «${l.nombre}»`, onClick: () => this._formLugar({ lat: l.lat, lng: l.lng }, l) }, [el("b", { text: l.nombre }), el("small", { text: `${Math.round(l.radio)} m · avisa ${{ yo: "a quien llega o se va", pareja: "a su pareja", ambos: "a los dos" }[l.avisar] || ""} · tocar para editar` })]),
       (() => { const c = el("input", { type: "checkbox", "aria-label": "Avisos de este lugar" }); c.checked = l.alertas; c.addEventListener("change", () => SRV.editarLugar(l.id, { alertas: c.checked }).then(() => aviso(c.checked ? "Avisos encendidos" : "Avisos apagados", 1600)).catch((e) => { c.checked = !c.checked; aviso(e.message, 3000, "error"); })); return el("label.jt-mini-int", { title: "Avisos" }, [c, el("span", { text: "Avisos" })]); })(),
       el("button.jt-icono", { type: "button", "aria-label": `Quitar «${l.nombre}»`, html: ico("borrar"), onClick: async () => { if (await confirmar(`¿Quitar «${l.nombre}»?`, "Quitar")) { await SRV.borrarLugar(l.id).catch((e) => aviso(e.message, 3000, "error")); this._refrescarMapa(); } } }),
     ])) : [el("li.jt-vacio-chico", { text: "Todavía no guardan lugares (casa, escuela, gimnasio…). Pueden guardar hasta 10." })]));
@@ -608,11 +866,33 @@ export class Juntitos {
     // Los dos a la vista: un hilito entre ustedes y a cuánto están.
     if (d.yo && d.pareja) {
       L.polyline([[d.yo.lat, d.yo.lng], [d.pareja.lat, d.pareja.lng]], { color: "#ff8fbf", weight: 3, opacity: 0.9, dashArray: "2 9", lineCap: "round", interactive: false }).addTo(capas);
-      const km = m.distance([d.yo.lat, d.yo.lng], [d.pareja.lat, d.pareja.lng]) / 1000;
-      E.dist.textContent = `💞 ${km < 1 ? `a ${Math.max(1, Math.round(km * 1000))} m` : `a ${km < 10 ? km.toFixed(1) : Math.round(km)} km`} de ${this.pareja}`;
+      E.dist.textContent = `💞 a ${textoDistancia(kmEntre(d.yo, d.pareja))} de ${this.pareja}`;
       E.dist.hidden = false;
     } else E.dist.hidden = true;
     if (!M.centrado && puntos.length) { M.centrado = true; if (puntos.length === 1) m.setView(puntos[0], 15); else m.fitBounds(puntos, { padding: [40, 40], maxZoom: 16 }); }
+  }
+
+  /** «Estamos a … de distancia»: la tarjetita de los kilómetros (Fase 46). */
+  _pintarKm(d) {
+    const caja = this._mapaEls?.km;
+    if (!caja) return;
+    if (d.yo && d.pareja) {
+      const km = kmEntre(d.yo, d.pareja), cerca = km < 0.15;
+      const k = textoDistancia(km, usaMillas());
+      if (caja._k === k) return;   // igual que antes: nada se repinta
+      caja._k = k;
+      caja.replaceChildren(
+        el("div.jt-km-dibujo", { "aria-hidden": "true" }, [PF.avatar("yo", "jt-av"), el("i.jt-km-hilo", {}, [el("b", { text: "♥" })]), PF.avatar("pareja", "jt-av")]),
+        el("div.jt-km-t", {}, [el("small", { text: cerca ? "¡Están juntitos!" : "Estamos a" }), el("b", { text: cerca ? "💞 aquí mismo" : k }), el("small", { text: cerca ? `Tú y ${this.pareja}, en el mismo lugar` : `de distancia de ${this.pareja}` })]),
+      );
+      caja.classList.toggle("juntos", cerca);
+      return;
+    }
+    const falta = !d.yo && !d.pareja ? `Compartan su ubicación los dos para saber cuántos kilómetros los separan.` : !d.yo ? "Comparte tu ubicación para saber cuántos kilómetros los separan." : `Cuando ${this.pareja} comparta su ubicación, aquí verán cuántos kilómetros los separan.`;
+    if (caja._k === falta) return;
+    caja._k = falta;
+    caja.classList.remove("juntos");
+    caja.replaceChildren(el("div.jt-km-dibujo.vacio", { "aria-hidden": "true" }, [PF.avatar("yo", "jt-av"), el("i.jt-km-hilo", {}, [el("b", { text: "?" })]), PF.avatar("pareja", "jt-av")]), el("p.jt-km-vacio", { text: falta }));
   }
 
   _nuevoLugar() {
@@ -627,23 +907,38 @@ export class Juntitos {
     ]);
   }
 
-  _formLugar(pos) {
+  /** Un lugar nuevo (o, con `l`, editar uno: nombre, tamaño de la zona y a quién avisar). */
+  _formLugar(pos, l = null) {
     const nombre = el("input.jt-campo", { type: "text", maxlength: 40, placeholder: "Casa, escuela, gimnasio…", "aria-label": "Nombre del lugar" });
-    const radio = el("input", { type: "range", min: 50, max: 2000, step: 25, value: 150, "aria-label": "Radio" }), rt = el("b", { text: "150 m" });
+    nombre.value = l?.nombre || "";
+    const r0 = Math.round(Math.min(2000, Math.max(50, l?.radio || 150)) / 25) * 25;
+    const radio = el("input", { type: "range", min: 50, max: 2000, step: 25, value: r0, "aria-label": "Radio" }), rt = el("b", { text: r0 + " m" });
     radio.addEventListener("input", () => { rt.textContent = radio.value + " m"; });
     const avisar = el("select.jt-campo", { "aria-label": "A quién avisar" }, [["pareja", "A su pareja"], ["yo", "A quien llega o se va"], ["ambos", "A los dos"]].map(([v, t]) => el("option", { value: v, text: t })));
+    avisar.value = l?.avisar || "pareja";
     const alertas = el("input", { type: "checkbox" });
-    alertas.checked = true;
-    this._hoja("Nuevo lugar", [
+    alertas.checked = l ? !!l.alertas : true;
+    const guardar = el("button.jt-btn", { type: "button", text: l ? "Guardar cambios" : "Guardar lugar", onClick: async () => {
+      if (!nombre.value.trim()) { nombre.focus(); aviso("Ponle un nombre", 1800); return; }
+      guardar.disabled = true;
+      const datos = { nombre: nombre.value, radio: +radio.value, avisar: avisar.value, alertas: alertas.checked };
+      try {
+        if (l) await SRV.editarLugar(l.id, datos); else await SRV.nuevoLugar({ ...datos, lat: pos.lat, lng: pos.lng });
+        this._cerrarHoja(); aviso(`«${nombre.value.trim()}» ${l ? "quedó como querías" : "guardado"}`, 2000);
+        if (this.mapa && !l) this.mapa.centrado = false;
+        this._refrescarMapa();
+      } catch (e) { aviso(e.message, 3500, "error"); guardar.disabled = false; }
+    } });
+    this._hoja(l ? `Editar «${l.nombre}»` : "Nuevo lugar", [
       nombre,
       el("label.jt-rango", {}, [el("span", { text: "Tamaño de la zona" }), radio, rt]),
       el("label.jt-fila", {}, [el("span", { text: "Cuando alguien entra o sale, avisar…" }), avisar]),
       el("label.jt-interruptor", {}, [alertas, el("span", { text: "Avisos encendidos" })]),
-      el("button.jt-btn", { type: "button", text: "Guardar lugar", onClick: async () => {
-        if (!nombre.value.trim()) { nombre.focus(); aviso("Ponle un nombre", 1800); return; }
-        try { await SRV.nuevoLugar({ nombre: nombre.value, lat: pos.lat, lng: pos.lng, radio: +radio.value, avisar: avisar.value, alertas: alertas.checked }); this._cerrarHoja(); aviso(`«${nombre.value.trim()}» guardado`, 2000); if (this.mapa) this.mapa.centrado = false; this._refrescarMapa(); }
-        catch (e) { aviso(e.message, 3500, "error"); }
-      } }),
+      guardar,
+      l ? el("div.jt-botones", {}, [
+        el("button.jt-btn.suave", { type: "button", text: "Ver en el mapa", onClick: () => { this._cerrarHoja(); this._hojaIr("bajo", true); this.mapa?.m.setView([l.lat, l.lng], 16, { animate: !reducido() }); } }),
+        el("button.jt-btn.peligro", { type: "button", text: "Quitar", onClick: async () => { if (await confirmar(`¿Quitar «${l.nombre}»?`, "Quitar")) { try { await SRV.borrarLugar(l.id); this._cerrarHoja(); this._refrescarMapa(); } catch (e) { aviso(e.message, 3000, "error"); } } } }),
+      ]) : null,
     ]);
   }
 

@@ -126,7 +126,14 @@ export function textoJuntos(j) {
   return p.length > 1 ? p.slice(0, -1).join(", ") + " y " + p[p.length - 1] : p[0];
 }
 const enDias = (f) => Math.round((f - hoy()) / DIA);
-function siguienteAnual(s) { const f = aFecha(s), h = hoy(); let p = new Date(h.getFullYear(), f.getMonth(), f.getDate()); if (p < h) p = new Date(h.getFullYear() + 1, f.getMonth(), f.getDate()); return p; }
+/** Ese día y mes en el año `a` (quien nació un 29 de febrero lo celebra el 28 en los años que no son bisiestos). */
+const enAnio = (f, a) => new Date(a, f.getMonth(), Math.min(f.getDate(), new Date(a, f.getMonth() + 1, 0).getDate()));
+function siguienteAnual(s) { const f = aFecha(s), h = hoy(); let p = enAnio(f, h.getFullYear()); if (p < h) p = enAnio(f, h.getFullYear() + 1); return p; }
+/** Un cumpleaños: { fecha: «5 de agosto», dias que faltan, hoy, anios que cumple (o cumplió hoy) }. */
+export function cumpleDe(s) {
+  const f = aFecha(s), sig = siguienteAnual(s), dias = enDias(sig);
+  return { fecha: f.toLocaleDateString("es-MX", { day: "numeric", month: "long" }), dias, hoy: dias === 0, anios: sig.getFullYear() - f.getFullYear() };
+}
 function siguienteMensual(s) {
   const dia = aFecha(s).getDate(), h = hoy();
   for (let i = 0; i < 3; i++) {

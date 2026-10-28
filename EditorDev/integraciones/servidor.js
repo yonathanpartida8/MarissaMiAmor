@@ -302,7 +302,8 @@ export const amor = () => pedir("amor");
 export const vincular = (codigo) => pedir("amor/vincular", { method: "POST", body: { codigo } });
 export const desvincular = () => pedir("amor", { method: "DELETE" });
 export const codigoNuevo = () => pedir("amor/codigo", { method: "POST", body: {} });
-export const latido = () => pedir("latido");
+/** `ev`: el último aviso de lugares que ya viste (Fase 46: así llegan solos quién llegó o salió). */
+export const latido = (ev) => pedir("latido" + (ev != null ? "?ev=" + encodeURIComponent(ev) : ""));
 export const detallitos = () => pedir("detallitos");
 export const mandarDetallito = (blob, { titulo, mensaje, color }, alAvance) => subir("detallitos?" + new URLSearchParams({ titulo, mensaje: mensaje || "", color: color || "" }), blob, alAvance).then((d) => d.detallito);
 export const visto = (id) => pedir(`detallitos/${encodeURIComponent(id)}/visto`, { method: "POST", body: {} });
@@ -367,6 +368,17 @@ export const dejarUbicacion = () => pedir("ubicacion", { method: "DELETE" });
 export const nuevoLugar = (d) => pedir("lugares", { method: "POST", body: d }).then((r) => r.lugar);
 export const editarLugar = (id, d) => pedir("lugares/" + encodeURIComponent(id), { method: "PUT", body: d }).then((r) => r.lugar);
 export const borrarLugar = (id) => pedir("lugares/" + encodeURIComponent(id), { method: "DELETE" });
+/* Fase 46: mensajitos rápidos del mapa y las cosas de los dos en Mesecitos (cápsula, momento, planes). */
+export const mandarToque = (tipo, texto = "") => pedir("toques", { method: "POST", body: { tipo, texto } }).then((r) => r.toque);
+export const toques = () => pedir("toques").then((r) => r.toques);
+export const toquesVistos = (hasta) => pedir("toques/visto", { method: "POST", body: { hasta } });
+const conHoy = (r) => `${r}?hoy=${hoyLocal()}`;
+export const ponerCapsula = (mes, texto) => pedir(conHoy(`mesecitos/${mes}/capsula`), { method: "PUT", body: { texto } });
+export const borrarCapsula = (mes) => pedir(conHoy(`mesecitos/${mes}/capsula`), { method: "DELETE" });
+export const ponerMomento = (mes, d) => pedir(conHoy(`mesecitos/${mes}/momento`), { method: "PUT", body: d });
+export const nuevoPlan = (mes, texto) => pedir(conHoy(`mesecitos/${mes}/plan`), { method: "POST", body: { texto } });
+export const palomearPlan = (id, hecho) => pedir(conHoy(`mesecitos/plan/${encodeURIComponent(id)}`), { method: "PUT", body: { hecho } });
+export const borrarPlan = (id) => pedir(conHoy(`mesecitos/plan/${encodeURIComponent(id)}`), { method: "DELETE" });
 /* Fase 40: Dibujar Juntos (hojas de los dos, en tiempo real). */
 export const lienzos = () => pedir("dibujo");
 export const nuevoLienzo = (d = {}) => pedir("dibujo", { method: "POST", body: d }).then((r) => r.lienzo);

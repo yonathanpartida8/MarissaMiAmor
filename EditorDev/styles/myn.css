@@ -1135,3 +1135,5 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 .mp-aj-acerca small { color: var(--pp-tinta, #4a2338); font-size: 12.5px; line-height: 1.4; }
 :root[data-tema="oscuro"] :is(.mp-aj-grupo, .mp-ajustes-b, .mp-aj-seg button) { background: var(--pp-papel); }
 @media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) :is(.mp-aj-grupo, .mp-ajustes-b, .mp-aj-seg button) { background: var(--pp-papel); } }
+/* (Fase 46) El día de un cumpleaños, su cintita dorada en los días juntos. */
+.mp-mesecito.cumple { background: linear-gradient(135deg, #ffc65a, #ff8fb8); max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }

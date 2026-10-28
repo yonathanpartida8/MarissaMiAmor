@@ -68,7 +68,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.18.0"
+VERSION = "1.19.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -542,11 +542,16 @@ CREATE TABLE IF NOT EXISTS lugares(id INTEGER PRIMARY KEY AUTOINCREMENT, a INTEG
   radio REAL, avisar TEXT, alertas INTEGER DEFAULT 1, creado REAL);
 CREATE TABLE IF NOT EXISTS lugares_estado(lugar_id INTEGER, usuario_id INTEGER, dentro INTEGER, t REAL, PRIMARY KEY(lugar_id, usuario_id));
 CREATE TABLE IF NOT EXISTS lugares_eventos(id INTEGER PRIMARY KEY AUTOINCREMENT, lugar_id INTEGER, usuario_id INTEGER, tipo TEXT, t REAL);
+CREATE TABLE IF NOT EXISTS toques(id INTEGER PRIMARY KEY AUTOINCREMENT, de INTEGER, para INTEGER, tipo TEXT, texto TEXT, t REAL, visto REAL);
+CREATE INDEX IF NOT EXISTS toques_para ON toques(para, visto);
+CREATE TABLE IF NOT EXISTS mes_cosas(id INTEGER PRIMARY KEY AUTOINCREMENT, a INTEGER, b INTEGER, mes INTEGER, tipo TEXT, autor INTEGER,
+  texto TEXT, foto TEXT, valor INTEGER, hecho INTEGER DEFAULT 0, creado REAL, actualizado REAL);
+CREATE INDEX IF NOT EXISTS mes_cosas_par ON mes_cosas(a, b, tipo, mes);
 """
 # Columnas que llegaron después (se agregan solas a una base vieja).
 COLUMNAS_NUEVAS = {
     "usuarios": [("codigo_amor", "TEXT"), ("pareja_id", "INTEGER"), ("pareja_desde", "REAL"), ("visto", "REAL"),
-                 ("nombre", "TEXT"), ("cumple", "TEXT"), ("novios", "TEXT"), ("foto_v", "REAL"), ("genero", "TEXT")],
+                 ("nombre", "TEXT"), ("cumple", "TEXT"), ("novios", "TEXT"), ("foto_v", "REAL"), ("genero", "TEXT"), ("pais", "TEXT")],
     "proyectos": [("clave", "TEXT"), ("ruta", "TEXT")],
     # Fase 22: la reacción de quien lo recibió (y si quien lo mandó ya la vio) y su portadita.
     "detallitos": [("reaccion", "TEXT"), ("reaccion_t", "REAL"), ("reaccion_vista", "INTEGER DEFAULT 1"), ("portadita", "TEXT")],
@@ -2646,12 +2651,12 @@ def pareja_de(uid):
     u = E.db.uno("SELECT pareja_id, pareja_desde FROM usuarios WHERE id=?", uid)
     if not u or not u["pareja_id"]:
         return None
-    p = E.db.uno("SELECT id, usuario, visto, nombre, cumple, novios, foto_v, genero FROM usuarios WHERE id=? AND estado='activo'", u["pareja_id"])
+    p = E.db.uno("SELECT id, usuario, visto, nombre, cumple, novios, foto_v, genero, pais FROM usuarios WHERE id=? AND estado='activo'", u["pareja_id"])
     if not p:
         return None
     return {"usuario": p["usuario"], "desde": iso(u["pareja_desde"]) if u["pareja_desde"] else "", "en_linea": bool(p["visto"] and ahora() - p["visto"] < 120),
             "visto": iso(p["visto"]) if p["visto"] else "", "nombre": p["nombre"] or "", "cumple": p["cumple"] or "", "novios": p["novios"] or "",
-            "foto_v": int(p["foto_v"] or 0), "genero": p["genero"] or ""}
+            "foto_v": int(p["foto_v"] or 0), "genero": p["genero"] or "", "pais": p["pais"] or ""}
 
 
 # — Tu perfil: foto, nombre, cumpleaños, desde cuándo son novios y tu género —
@@ -2680,7 +2685,7 @@ def fecha_valida(v):
 
 def perfil_de(u):
     return {"usuario": u["usuario"], "nombre": u["nombre"] or "", "cumple": u["cumple"] or "", "novios": u["novios"] or "", "foto_v": int(u["foto_v"] or 0),
-            "genero": u["genero"] or ""}
+            "genero": u["genero"] or "", "pais": u["pais"] or ""}
 
 
 def ruta_foto(uid):
@@ -2725,6 +2730,12 @@ def api_poner_perfil(h, s):
         if g not in GENEROS:
             raise Falla("Ese género no es una de las opciones.")
         cambios["genero"] = g
+    # El país (Fase 46): el código de dos letras (MX, US…) o vacío. Sólo sirve para mostrarlo y para las fechas.
+    if "pais" in d:
+        pais = str(d.get("pais") or "").strip().upper()
+        if pais and not re.match(r"^[A-Z]{2}$", pais):
+            raise Falla("Ese país no es válido.")
+        cambios["pais"] = pais
     for k, v in cambios.items():
         E.db.x(f"UPDATE usuarios SET {k}=? WHERE id=?", v, u["id"])
     # Desde cuándo son novios es de los dos: se le pone igual a tu amorcito.
@@ -2850,7 +2861,7 @@ def api_latido(h, s):
     n = E.db.uno("SELECT COUNT(*) n FROM detallitos WHERE para=? AND visto IS NULL AND borrado_para=0", s["usuario_id"])["n"]
     r = E.db.uno("SELECT COUNT(*) n FROM detallitos WHERE de=? AND reaccion IS NOT NULL AND reaccion_vista=0 AND borrado_de=0", s["usuario_id"])["n"]
     c = E.db.uno("SELECT COUNT(*) n FROM mensajes WHERE para=? AND visto IS NULL AND borrado=0", s["usuario_id"])["n"]
-    h.responder(200, {"nuevos": n, "reacciones": r, "chat": c, "pareja": pareja_de(s["usuario_id"])})
+    h.responder(200, {"nuevos": n, "reacciones": r, "chat": c, "pareja": pareja_de(s["usuario_id"]), **_latido_extra(h, s["usuario_id"])})
 
 
 # — Detallitos: páginas que se mandan entre los dos y se van coleccionando —
@@ -3995,8 +4006,10 @@ def api_mesecitos(h, s):
     yo = E.db.uno("SELECT novios FROM usuarios WHERE id=?", s["usuario_id"])
     n, sig = _meses_cumplidos(yo["novios"] if yo else "", _hoy_de(h))
     filas = E.db.q("SELECT * FROM mesecitos WHERE a=? AND b=? ORDER BY mes DESC", a, b)
-    h.responder(200, {"novios": (yo or {}).get("novios") or "", "meses": n, "siguiente": sig.isoformat() if sig else "",
-                      "paginas": [fila_mesecito(m, s["usuario_id"]) for m in filas]})
+    novios = (yo or {}).get("novios") or ""
+    h.responder(200, {"novios": novios, "meses": n, "siguiente": sig.isoformat() if sig else "",
+                      "paginas": [fila_mesecito(m, s["usuario_id"]) for m in filas],
+                      **(_mes_cosas(a, b, s["usuario_id"], novios, _hoy_de(h)) if novios else {"capsulas": [], "momentos": [], "planes": []})})
 
 
 @ruta("PUT", r"/api/mesecitos/([0-9]{1,4})", "sesion")
@@ -4046,6 +4059,230 @@ def api_mesecito_visto(h, s, mes):
     a, b, _ = _par(s)
     E.db.x("UPDATE mesecitos SET visto=? WHERE a=? AND b=? AND mes=? AND autor<>? AND visto IS NULL", ahora(), a, b, int(mes), s["usuario_id"])
     h.responder(200, {"ok": True})
+
+
+# — Fase 46: Mesecitos con cosas de los dos (cada una distinta) —
+#   cápsula  una cartita para su SIGUIENTE mes: queda sellada (ni la ve tu amorcito) hasta que llega ese día.
+#   momento  su momento favorito del mes (cada quien el suyo, con corazones del 1 al 5 y una foto si quieren).
+#   plan     la listita de planes para celebrar el mes que viene: los dos añaden, palomean o quitan.
+PLANES_MAX = 15
+
+
+def _mes_info(s, h):
+    """(a, b, otro, novios, meses cumplidos, fecha de hoy del que pregunta). Sin fecha de novios no hay mesecitos."""
+    a, b, otro = _par(s)
+    yo = E.db.uno("SELECT novios FROM usuarios WHERE id=?", s["usuario_id"])
+    novios = (yo or {}).get("novios") or ""
+    if not novios:
+        raise Falla("Primero pon la fecha en que se hicieron novios (en tu perfil).", 409)
+    hoy = _hoy_de(h)
+    n, _ = _meses_cumplidos(novios, hoy)
+    return a, b, otro, novios, n, hoy
+
+
+def _fecha_mes(novios, mes):
+    return _mes_mas(datetime.date.fromisoformat(novios), mes)
+
+
+def fila_mes_cosa(c, uid, novios, hoy):
+    x = {"id": c["id"], "mes": c["mes"], "tipo": c["tipo"], "mio": c["autor"] == uid, "creado": iso(c["creado"]), "actualizado": iso(c["actualizado"])}
+    if c["tipo"] == "capsula":
+        abre = _fecha_mes(novios, c["mes"]) if novios else None
+        x["abre"] = abre.isoformat() if abre else ""
+        x["abierta"] = bool(abre and hoy >= abre)
+        # Sellada: tu amorcito sabe que existe, pero no lo que dice (ni el servidor se lo manda).
+        x["texto"] = c["texto"] or "" if (x["mio"] or x["abierta"]) else ""
+    elif c["tipo"] == "momento":
+        x.update({"texto": c["texto"] or "", "foto": c["foto"] or "", "corazones": int(c["valor"] or 0)})
+    else:
+        x.update({"texto": c["texto"] or "", "hecho": bool(c["hecho"])})
+    return x
+
+
+def _mes_cosas(a, b, uid, novios, hoy):
+    filas = E.db.q("SELECT * FROM mes_cosas WHERE a=? AND b=? ORDER BY mes DESC, id", a, b)
+    out = {"capsulas": [], "momentos": [], "planes": []}
+    for c in filas:
+        k = {"capsula": "capsulas", "momento": "momentos", "plan": "planes"}.get(c["tipo"])
+        if k:
+            out[k].append(fila_mes_cosa(c, uid, novios, hoy))
+    return out
+
+
+@ruta("PUT", r"/api/mesecitos/([0-9]{1,4})/capsula", "sesion")
+def api_capsula(h, s, mes):
+    """Tu cápsula del tiempo para un mes que todavía no llega (una por mes; se puede cambiar mientras siga sellada)."""
+    a, b, otro, novios, n, hoy = _mes_info(s, h)
+    mes = int(mes)
+    if mes <= n or mes > n + 12:
+        raise Falla("La cápsula es para un mes que todavía no llega (hasta un año).", 409)
+    texto = str(h.cuerpo_json().get("texto") or "").strip()[:2000]
+    if not texto:
+        raise Falla("Escribe algo para guardarlo en la cápsula.", 400)
+    uid = s["usuario_id"]
+    with E.db.lock:
+        ya = E.db.uno("SELECT id FROM mes_cosas WHERE a=? AND b=? AND mes=? AND tipo='capsula' AND autor=?", a, b, mes, uid)
+        if ya:
+            E.db.x("UPDATE mes_cosas SET texto=?, actualizado=? WHERE id=?", texto, ahora(), ya["id"])
+        else:
+            E.db.x("INSERT INTO mes_cosas(a, b, mes, tipo, autor, texto, creado, actualizado) VALUES(?,?,?,?,?,?,?,?)", a, b, mes, "capsula", uid, texto, ahora(), ahora())
+    if not ya:
+        abre = _fecha_mes(novios, mes)
+        avisar(otro, {"t": f"{nombre_corto(uid)} guardó una cápsula del tiempo 💌", "b": f"Se abre el día de su mes {mes} ({abre.day}/{abre.month}/{abre.year}). ¡Nada de espiar!", "tag": "capsula", "u": "#cositas"})
+    h.responder(200, _mes_cosas(a, b, uid, novios, hoy))
+
+
+@ruta("DELETE", r"/api/mesecitos/([0-9]{1,4})/capsula", "sesion")
+def api_capsula_borrar(h, s, mes):
+    a, b, _, novios, n, hoy = _mes_info(s, h)
+    E.db.x("DELETE FROM mes_cosas WHERE a=? AND b=? AND mes=? AND tipo='capsula' AND autor=?", a, b, int(mes), s["usuario_id"])
+    h.responder(200, _mes_cosas(a, b, s["usuario_id"], novios, hoy))
+
+
+@ruta("PUT", r"/api/mesecitos/([0-9]{1,4})/momento", "sesion")
+def api_momento(h, s, mes):
+    """Tu momento favorito de un mes (el que va o uno que ya cumplieron): texto, corazones y una foto si quieres."""
+    a, b, otro, novios, n, hoy = _mes_info(s, h)
+    mes = int(mes)
+    if mes < 1 or mes > n + 1:
+        raise Falla("Ese mes todavía no empieza.", 409)
+    d = h.cuerpo_json()
+    texto = str(d.get("texto") or "").strip()[:280]
+    if not texto:
+        raise Falla("Cuéntalo en unas palabritas.", 400)
+    try:
+        corazones = max(1, min(5, int(d.get("corazones") or 5)))
+    except (TypeError, ValueError):
+        corazones = 5
+    foto = str(d.get("foto") or "")
+    if foto and (not MEDIA_OK.match(foto) or foto.endswith(".wav")):
+        foto = ""
+    uid = s["usuario_id"]
+    with E.db.lock:
+        ya = E.db.uno("SELECT id FROM mes_cosas WHERE a=? AND b=? AND mes=? AND tipo='momento' AND autor=?", a, b, mes, uid)
+        if ya:
+            E.db.x("UPDATE mes_cosas SET texto=?, foto=?, valor=?, actualizado=? WHERE id=?", texto, foto, corazones, ahora(), ya["id"])
+        else:
+            E.db.x("INSERT INTO mes_cosas(a, b, mes, tipo, autor, texto, foto, valor, creado, actualizado) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                   a, b, mes, "momento", uid, texto, foto, corazones, ahora(), ahora())
+    if not ya:
+        avisar(otro, {"t": f"{nombre_corto(uid)} eligió su momento favorito del mes {mes} ✨", "b": "Ábrelo en Mesecitos y elige el tuyo.", "tag": "momento", "u": "#cositas"})
+    h.responder(200, _mes_cosas(a, b, uid, novios, hoy))
+
+
+@ruta("POST", r"/api/mesecitos/([0-9]{1,4})/plan", "sesion")
+def api_plan_nuevo(h, s, mes):
+    """Un plan para celebrar su siguiente mes (los dos pueden añadir)."""
+    a, b, otro, novios, n, hoy = _mes_info(s, h)
+    mes = int(mes)
+    if mes <= n or mes > n + 12:
+        raise Falla("Los planes son para un mes que todavía no llega.", 409)
+    texto = re.sub(r"\s+", " ", str(h.cuerpo_json().get("texto") or "")).strip()[:90]
+    if not texto:
+        raise Falla("Escribe el plan.", 400)
+    if E.db.uno("SELECT COUNT(*) n FROM mes_cosas WHERE a=? AND b=? AND mes=? AND tipo='plan'", a, b, mes)["n"] >= PLANES_MAX:
+        raise Falla(f"Ya tienen {PLANES_MAX} planes para ese mes: palomeen o quiten alguno.", 409)
+    uid = s["usuario_id"]
+    E.db.x("INSERT INTO mes_cosas(a, b, mes, tipo, autor, texto, hecho, creado, actualizado) VALUES(?,?,?,?,?,?,0,?,?)", a, b, mes, "plan", uid, texto, ahora(), ahora())
+    t = time.monotonic()
+    if t - _COSITAS_AVISO.get((uid, "plan"), 0) > 60:
+        _COSITAS_AVISO[(uid, "plan")] = t
+        avisar(otro, {"t": f"{nombre_corto(uid)} añadió un plan para su mes {mes} 🗓️", "b": texto, "tag": "plan", "u": "#cositas"})
+    h.responder(200, _mes_cosas(a, b, uid, novios, hoy))
+
+
+@ruta("PUT", r"/api/mesecitos/plan/([0-9]{1,12})", "sesion")
+def api_plan_editar(h, s, pid):
+    a, b, _, novios, n, hoy = _mes_info(s, h)
+    d = h.cuerpo_json()
+    p = E.db.uno("SELECT * FROM mes_cosas WHERE id=? AND a=? AND b=? AND tipo='plan'", int(pid), a, b)
+    if not p:
+        raise Falla("Ese plan ya no existe.", 404)
+    if "hecho" in d:
+        E.db.x("UPDATE mes_cosas SET hecho=?, actualizado=? WHERE id=?", int(bool(d.get("hecho"))), ahora(), p["id"])
+    h.responder(200, _mes_cosas(a, b, s["usuario_id"], novios, hoy))
+
+
+@ruta("DELETE", r"/api/mesecitos/plan/([0-9]{1,12})", "sesion")
+def api_plan_borrar(h, s, pid):
+    a, b, _, novios, n, hoy = _mes_info(s, h)
+    E.db.x("DELETE FROM mes_cosas WHERE id=? AND a=? AND b=? AND tipo='plan'", int(pid), a, b)
+    h.responder(200, _mes_cosas(a, b, s["usuario_id"], novios, hoy))
+
+
+# — Fase 46: mensajitos rápidos del mapa («Besitos», «Te amo», «Cuídate» o uno tuyo) —
+TOQUES = {"besitos": ("te mandó besitos 😘", "Muak, muak, muak 💋"), "teamo": ("te dijo «te amo» 💗", "Desde el mapa, con todo su corazón."),
+          "cuidate": ("te pide que te cuides 🫶", "Cuídate mucho, por favor."), "propio": ("te mandó un mensajito 💌", "")}
+_TOQUES_RITMO = {}
+
+
+def fila_toque(t, uid):
+    return {"id": t["id"], "tipo": t["tipo"], "texto": t["texto"] or "", "mio": t["de"] == uid, "t": iso(t["t"]), "visto": iso(t["visto"]) if t["visto"] else ""}
+
+
+@ruta("POST", "/api/toques", "sesion")
+def api_toque(h, s):
+    """Mandarle un mensajito rápido a tu amorcito: le llega al instante (y suena distinto en su aparato)."""
+    _, _, otro = _par(s)
+    d = h.cuerpo_json()
+    tipo = d.get("tipo")
+    if tipo not in TOQUES:
+        raise Falla("Ese mensajito no existe.", 400)
+    texto = ""
+    if tipo == "propio":
+        texto = re.sub(r"[\x00-\x08\x0b-\x1f\x7f]", "", str(d.get("texto") or "")).strip()[:140]
+        if not texto:
+            raise Falla("Escribe tu mensajito.", 400)
+    uid, t = s["usuario_id"], time.monotonic()
+    ritmo = [x for x in _TOQUES_RITMO.get(uid, []) if x > t - 60]
+    if len(ritmo) >= 20:
+        raise Falla("Más despacito 🙈 (muchos mensajitos seguidos)", 429)
+    _TOQUES_RITMO[uid] = ritmo + [t]
+    tid = E.db.x("INSERT INTO toques(de, para, tipo, texto, t) VALUES(?,?,?,?,?)", uid, otro, tipo, texto, ahora())
+    # Sólo se guardan los últimos 200 de la pareja (lo viejito se va solo).
+    E.db.x("DELETE FROM toques WHERE (de=? AND para=?) AND id NOT IN (SELECT id FROM toques WHERE de=? AND para=? ORDER BY id DESC LIMIT 200)", uid, otro, uid, otro)
+    titulo, cuerpo = TOQUES[tipo]
+    avisar(otro, {"t": f"{nombre_corto(uid)} {titulo}", "b": texto or cuerpo, "tag": "toque-" + tipo, "u": "#cositas-mapa"})
+    h.responder(200, {"toque": fila_toque(E.db.uno("SELECT * FROM toques WHERE id=?", tid), uid)})
+
+
+@ruta("GET", "/api/toques", "sesion")
+def api_toques(h, s):
+    _, _, otro = _par(s)
+    uid = s["usuario_id"]
+    filas = E.db.q("SELECT * FROM toques WHERE (de=? AND para=?) OR (de=? AND para=?) ORDER BY id DESC LIMIT 30", uid, otro, otro, uid)
+    h.responder(200, {"toques": [fila_toque(t, uid) for t in filas]})
+
+
+@ruta("POST", "/api/toques/visto", "sesion")
+def api_toques_visto(h, s):
+    try:
+        hasta = int(h.cuerpo_json().get("hasta") or 0)
+    except (TypeError, ValueError):
+        hasta = 0
+    E.db.x("UPDATE toques SET visto=? WHERE para=? AND id<=? AND visto IS NULL", ahora(), s["usuario_id"], hasta)
+    h.responder(200, {"ok": True})
+
+
+def _latido_extra(h, uid):
+    """Lo que llega solo con el latido (Fase 46): mensajitos rápidos sin ver y quién llegó o salió de sus lugares."""
+    out = {"toques": [fila_toque(t, uid) for t in E.db.q("SELECT * FROM toques WHERE para=? AND visto IS NULL AND t>? ORDER BY id DESC LIMIT 5", uid, ahora() - 12 * 3600)][::-1]}
+    u = E.db.uno("SELECT pareja_id FROM usuarios WHERE id=?", uid)
+    if not u or not u["pareja_id"]:
+        return out
+    a, b = min(uid, u["pareja_id"]), max(uid, u["pareja_id"])
+    ultimo = E.db.uno("SELECT MAX(e.id) n FROM lugares_eventos e JOIN lugares l ON l.id=e.lugar_id WHERE l.a=? AND l.b=?", a, b)["n"] or 0
+    out["ev_ultimo"] = ultimo
+    try:
+        desde = int(h.parametros().get("ev") or -1)
+    except ValueError:
+        desde = -1
+    if desde >= 0 and ultimo > desde:
+        evs = E.db.q("SELECT e.*, l.nombre, l.avisar, l.alertas FROM lugares_eventos e JOIN lugares l ON l.id=e.lugar_id WHERE l.a=? AND l.b=? AND e.id>? AND e.t>? ORDER BY e.id LIMIT 5",
+                     a, b, desde, ahora() - 6 * 3600)
+        out["lugares"] = [{"id": e["id"], "lugar": e["nombre"], "tipo": e["tipo"], "mio": e["usuario_id"] == uid, "t": iso(e["t"])} for e in evs
+                          if e["alertas"] and ((e["usuario_id"] == uid) == (e["avisar"] == "yo") or e["avisar"] == "ambos")]
+    return out
 
 
 # — Cositas Juntitos: contadores y registros (privados salvo que tú los compartas) —
