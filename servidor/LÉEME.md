@@ -398,6 +398,13 @@ Ahora:
   (scrypt): no está en el código ni en el repositorio, y el usuario se escribe como quieras
   (`YonathanPG`, `yonathanpg`…).
 
+### Dibujitos (1.20.0)
+
+- `POST /api/detallitos?…&tipo=dibujito`: un detallito hecho en el estudio de dibujo (el .zip trae `index.html`,
+  `dibujo.png` y `dibujo.json` con los trazos, para que se redibuje solito). Se guarda su `tipo`
+  (`pagina` o `dibujito`, columna nueva que se agrega sola) y `GET /api/detallitos` lo devuelve en cada uno.
+  La notificación dice «te mandó un dibujito 🎨». Los editores de antes siguen mandando páginas igual.
+
 ### Nuestros días y Mesecitos nuevos (1.19.0)
 
 - **Mensajitos rápidos** del mapa: `POST /api/toques` (`{"tipo":"besitos"|"teamo"|"cuidate"|"propio","texto":…}`,

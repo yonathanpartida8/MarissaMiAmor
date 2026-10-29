@@ -2937,3 +2937,11 @@ body.ed-arrastrando-cosita, body.ed-arrastrando-cosita * { cursor: grabbing !imp
 body.ed-arrastrando-cosita .pro-menu { opacity: 0; pointer-events: none; transition: opacity .15s; }
 body.ed-cosita-sobre-hoja .ed-hoja { outline: 3px dashed rgba(226, 112, 156, .55); outline-offset: 4px; }
 body.ed-ultra .ed-cosita-vuela { box-shadow: none; transition: none; }
+
+/* Fase 47: «Tu hojita» en Crear detallito — el dibujito que quedó sin mandar, para seguirlo. */
+.ed-dibujo-sigue { display: grid; grid-template-columns: 54px 1fr auto; align-items: center; gap: 12px; margin-top: 10px; padding: 10px 12px; border-radius: 18px; background: #fff4f8; box-shadow: 0 0 0 1.5px #ffd1e2; }
+.ed-dibujo-sigue img, .ed-dibujo-sigue > i { width: 54px; aspect-ratio: 3 / 4; border-radius: 10px; object-fit: cover; background: #fff; box-shadow: 0 3px 10px rgba(200, 80, 130, .18); display: grid; place-items: center; }
+.ed-dibujo-sigue span { display: grid; gap: 2px; min-width: 0; }
+.ed-dibujo-sigue b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ed-dibujo-sigue small { color: #8f7a8c; }
+:root[data-tema="oscuro"] .ed-dibujo-sigue { background: #3a2a36; box-shadow: 0 0 0 1.5px #5a3a4e; }

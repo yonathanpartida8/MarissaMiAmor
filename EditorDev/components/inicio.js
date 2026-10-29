@@ -106,7 +106,7 @@ const ETQ = {
   subir: ["nube", "Subiendo a tu nube pronto"], nube: ["nube", "Hay uno más nuevo en tu nube"], "los-dos": ["aviso", "Cambió en dos aparatos"],
 };
 
-export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
+export async function pantallaInicio(app, { cerrable = false, a = "", tipo: tipo0 = "pagina" } = {}) {
   quitarInicio();
   const lista = await listar().catch(() => []);
   const borradores = el("section.ed-inicio-borradores");
@@ -122,7 +122,7 @@ export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
   const portada = respaldo ? null : selectorDePortada(formato);
   const cerrar = () => { portada?.destruir(); capa.remove(); document.body.classList.remove("con-inicio"); };
   // — Crear detallito (Fase 46): 1 qué vas a crear · 2 su nombre · 3 su portada (o tu hoja) · 4 el tamaño —
-  let tipo = "pagina";
+  let tipo = tipo0 === "dibujito" ? "dibujito" : "pagina";
   const crear = respaldo ? null : (() => {
     const error = el("small.ed-nuevo-error", { role: "alert", hidden: "", text: "Ponle un nombre a tu detallito para crearlo." });
     const paso = (n, titulo, hijos, clase = "") => el("div.ed-paso" + clase, {}, [el("h2.ed-paso-t", {}, [el("i.ed-paso-n", { text: String(n) }), el("span", { text: titulo })]), ...hijos]);
@@ -133,8 +133,20 @@ export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
       el("i.ed-que-ico", { html: ico(ic) }), el("b", { text: t }), el("small", { text: d }),
     ])));
     const pasoPortada = paso(3, "Su portada", [el("small.ed-paso-d", { text: "Elige un estilo (o pon tu propia imagen). Después puedes cambiar todo." }), ...portada.nodos], ".ed-paso-portada");
-    const pasoHoja = paso(3, "Tu hoja", [el("small.ed-paso-d", { text: "Una hoja blanca: al crearla ya tienes el lápiz en la mano. Al terminar, toca «Listo»." })], ".ed-paso-hoja");
-    pasoHoja.hidden = true;
+    // Fase 47: el dibujito tiene su propio estudio (pinceles, regla, stickers y texto) y le llega como dibujo.
+    const guardado = app.dibujoGuardado?.();
+    const pasoHoja = paso(3, "Tu hojita", [
+      el("small.ed-paso-d", { text: "Una hojita para dibujarle con tus manos: pinceles, regla, stickers y texto. Le llega a sus Detallitos como dibujo y lo ve dibujarse solito." }),
+      guardado ? el("div.ed-dibujo-sigue", {}, [
+        guardado.mini ? el("img", { src: guardado.mini, alt: "", draggable: "false" }) : el("i", { html: ico("dibujo") }),
+        el("span", {}, [el("b", { text: `«${guardado.nombre}» sin mandar` }), el("small", { text: "Lo dejaste a medias: síguelo donde te quedaste." })]),
+        boton(I("lapiz", "Seguirlo"), () => { cerrar(); app.dibujar({ seguir: true }); }, "chico"),
+      ]) : null,
+    ], ".ed-paso-hoja");
+    pasoHoja.hidden = tipo === "pagina";
+    pasoPortada.hidden = tipo !== "pagina";
+    const pasoTam = paso(4, "Tamaño de la hoja", [el("label.ed-nuevo-campo", {}, [el("span", { text: "Tamaño" }), formato])]);
+    pasoTam.hidden = tipo !== "pagina";
     const crearB = boton(I("nuevo", "Crear detallito"), (ev) => {
       const b = ev?.currentTarget;
       if (b?.disabled || capa._creando) return;
@@ -142,6 +154,12 @@ export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
       if (!n) {
         error.hidden = false; nombre.classList.add("mal"); nombre.focus();
         nombre.animate?.([{ translate: "0" }, { translate: "-6px" }, { translate: "6px" }, { translate: "-3px" }, { translate: "0" }], { duration: 320 });
+        return;
+      }
+      if (tipo === "dibujito") {
+        const empezar = () => { cerrar(); app.dibujar({ nombre: n }); };
+        if (!guardado) { capa._creando = true; empezar(); return; }
+        confirmar(`Tienes «${guardado.nombre}» sin mandar. ¿Empezar uno nuevo? (Ése se borra)`, "Empezar nuevo").then((si) => { if (si) empezar(); });
         return;
       }
       capa._creando = true;
@@ -155,15 +173,18 @@ export async function pantallaInicio(app, { cerrable = false, a = "" } = {}) {
       if (!b) return;
       tipo = b.dataset.k;
       for (const x of tipos.children) { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", String(on)); }
-      pasoPortada.hidden = tipo !== "pagina"; pasoHoja.hidden = tipo === "pagina";
+      pasoPortada.hidden = tipo !== "pagina"; pasoHoja.hidden = tipo === "pagina"; pasoTam.hidden = tipo !== "pagina";
+      crearB.innerHTML = tipo === "dibujito" ? I("dibujo", "A dibujar") : I("nuevo", "Crear detallito");
+      app.sonidos?.sonar("seleccionar");
     });
     pintarListo();
+    if (tipo === "dibujito") crearB.innerHTML = I("dibujo", "A dibujar");
     return el("section.ed-inicio-nuevo.ed-crear", {}, [
       el("div.ed-tarjeta.ed-tarjeta-nuevo", {}, [
         paso(1, "¿Qué vas a crear?", [tipos]),
         paso(2, "¿Cómo se llama?", [el("label.ed-nuevo-campo", {}, [el("span", { text: "Nombre del detallito" }), nombre]), error]),
         pasoPortada, pasoHoja,
-        paso(4, "Tamaño de la hoja", [el("label.ed-nuevo-campo", {}, [el("span", { text: "Tamaño" }), formato])]),
+        pasoTam,
         // «Crear» siempre a la mano (en el teléfono se queda abajo) y un solo toque: nunca crea dos.
         el("div.ed-crear-fila", {}, [crearB]),
       ]),

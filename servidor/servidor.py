@@ -68,7 +68,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.19.0"
+VERSION = "1.20.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -554,7 +554,8 @@ COLUMNAS_NUEVAS = {
                  ("nombre", "TEXT"), ("cumple", "TEXT"), ("novios", "TEXT"), ("foto_v", "REAL"), ("genero", "TEXT"), ("pais", "TEXT")],
     "proyectos": [("clave", "TEXT"), ("ruta", "TEXT")],
     # Fase 22: la reacción de quien lo recibió (y si quien lo mandó ya la vio) y su portadita.
-    "detallitos": [("reaccion", "TEXT"), ("reaccion_t", "REAL"), ("reaccion_vista", "INTEGER DEFAULT 1"), ("portadita", "TEXT")],
+    "detallitos": [("reaccion", "TEXT"), ("reaccion_t", "REAL"), ("reaccion_vista", "INTEGER DEFAULT 1"), ("portadita", "TEXT"),
+                   ("tipo", "TEXT DEFAULT 'pagina'")],   # Fase 47: «pagina» o «dibujito»
     # Fase 31: espacios en blanco para dibujar (sin mandar mensaje) y si dejas ver tu «visto».
     "mensajes": [("espacio", "INTEGER"), ("audio", "TEXT"), ("editado", "REAL")],
 }
@@ -2880,7 +2881,8 @@ def fila_detallito(d, nombres, apodos=None):
             "de_nombre": apodos.get(d["de"], ""), "para_nombre": apodos.get(d["para"], ""), "bytes": d["bytes"],
             "reaccion": d["reaccion"] or "", "reaccion_t": iso(d["reaccion_t"]) if d["reaccion_t"] else "",
             "reaccion_nueva": bool(d["reaccion"] and not d["reaccion_vista"]),
-            "portadita": f"/d/{d['id']}/portadita.{d['portadita']}" if d["portadita"] else ""}
+            "portadita": f"/d/{d['id']}/portadita.{d['portadita']}" if d["portadita"] else "",
+            "tipo": (d["tipo"] if "tipo" in d.keys() else None) or "pagina"}
 
 
 @ruta("GET", "/api/detallitos", "sesion")
@@ -2920,10 +2922,12 @@ def api_mandar_detallito(h, s):
     titulo = (q.get("titulo") or "Un detallito").strip()[:80]
     mensaje = (q.get("mensaje") or "").strip()[:280]
     color = q.get("color") if re.match(r"^#[0-9a-fA-F]{3,8}$", q.get("color") or "") else "#ffd1e6"
+    # Fase 47: un dibujito (del estudio de dibujo) o una página (del editor).
+    tipo = "dibujito" if q.get("tipo") == "dibujito" else "pagina"
     tam = tamano_carpeta(carpeta)
-    E.db.x("INSERT INTO detallitos(id,de,para,titulo,mensaje,color,creado,bytes) VALUES(?,?,?,?,?,?,?,?)", did, yo["id"], yo["pareja_id"], titulo, mensaje, color, ahora(), tam)
+    E.db.x("INSERT INTO detallitos(id,de,para,titulo,mensaje,color,creado,bytes,tipo) VALUES(?,?,?,?,?,?,?,?,?)", did, yo["id"], yo["pareja_id"], titulo, mensaje, color, ahora(), tam, tipo)
     E.actividad(s["usuario"], "detallito", titulo, h.ip())
-    avisar(yo["pareja_id"], {"t": f"{nombre_corto(yo['id'])} te mandó una página 💗", "b": f"«{titulo}»" + (f" — {mensaje[:120]}" if mensaje else ""), "tag": "detallito", "u": "#detallitos"})
+    avisar(yo["pareja_id"], {"t": f"{nombre_corto(yo['id'])} te mandó " + ("un dibujito 🎨" if tipo == "dibujito" else "una página 💗"), "b": f"«{titulo}»" + (f" — {mensaje[:120]}" if mensaje else ""), "tag": "detallito", "u": "#detallitos"})
     nombres = {u["id"]: u["usuario"] for u in E.db.q("SELECT id, usuario FROM usuarios WHERE id IN (?,?)", yo["id"], yo["pareja_id"])}
     h.responder(201, {"detallito": fila_detallito(E.db.uno("SELECT * FROM detallitos WHERE id=?", did), nombres)})
 

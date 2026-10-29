@@ -95,7 +95,7 @@ const SUAVES = new Set(["botones", "seleccionar", "deseleccionar"]);
 // Cuánto se hace a un lado MusicaDev mientras suena un efecto del editor (1 = nada).
 const AGACHAR = 0.6;
 // Lo mínimo entre dos sonidos del mismo momento (ms): sin metralletas.
-const MIN = { "toque-besitos": 300, "toque-teamo": 300, "toque-cuidate": 300, "toque-propio": 300, "lugar-llega": 400, "lugar-sale": 400, coleccion: 600, "audio-play": 60, favorito: 150, "mensaje-menu": 200, "teclado-letra": 28, "teclado-espacio": 28, "teclado-borrar": 28, "mensaje-llega": 350, "mensaje-enviar": 120, "sticker-pegar": 120, "detallito-abrir": 400, gatito: 1600, "reaccion-quitar": 300, "zoom-paso": 55, "zoom-acercar": 380, "zoom-alejar": 380, pincel: 240, "seleccionar-varios": 90, rehacer: 120, publicar: 800, botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250, atras: 150, activar: 100, desactivar: 100, menu: 150, iman: 260, escribir: 200, probar: 400, "abrir-recursos": 200, "cerrar-recursos": 200 };
+const MIN = { "dz-herramienta": 80, "dz-color": 60, "dz-relleno": 120, "dz-regla": 40, "dz-hoja": 150, "dz-basura": 300, "dz-volar": 800, "dz-llego": 800, "toque-besitos": 300, "toque-teamo": 300, "toque-cuidate": 300, "toque-propio": 300, "lugar-llega": 400, "lugar-sale": 400, coleccion: 600, "audio-play": 60, favorito: 150, "mensaje-menu": 200, "teclado-letra": 28, "teclado-espacio": 28, "teclado-borrar": 28, "mensaje-llega": 350, "mensaje-enviar": 120, "sticker-pegar": 120, "detallito-abrir": 400, gatito: 1600, "reaccion-quitar": 300, "zoom-paso": 55, "zoom-acercar": 380, "zoom-alejar": 380, pincel: 240, "seleccionar-varios": 90, rehacer: 120, publicar: 800, botones: 70, seleccionar: 90, deseleccionar: 120, arrastrar: 160, soltar: 120, abrir: 140, cerrar: 140, minimizar: 140, restaurar: 140, ajustar: 65, herramienta: 90, fotograma: 110, duplicar: 120, colocar: 120, desplazar: 400, zoom: 350, rotar: 200, redimensionar: 200, capas: 150, dibujar: 200, borrador: 150, colorear: 150, "pagina-cambiar": 250, atras: 150, activar: 100, desactivar: 100, menu: 150, iman: 260, escribir: 200, probar: 400, "abrir-recursos": 200, "cerrar-recursos": 200 };
 /* Sonidos hechos a mano: [forma, frec. inicial, frec. final, duración s, volumen, retraso s]. */
 const SINTE = {
   colocar: [["sine", 520, 250, 0.11, 0.5], ["triangle", 1040, 900, 0.03, 0.12]],
@@ -149,6 +149,15 @@ const SINTE = {
   "toque-propio": [["triangle", 900, 300, 0.12, 0.08], ["sine", 1175, 1175, 0.4, 0.13, 0.1], ["sine", 880, 880, 0.6, 0.13, 0.26]],
   "lugar-llega": [["sine", 523, 523, 0.25, 0.12], ["sine", 784, 784, 0.45, 0.12, 0.12]],
   "lugar-sale": [["sine", 784, 784, 0.25, 0.12], ["sine", 523, 523, 0.45, 0.11, 0.12]],
+  // Fase 47: el estudio del dibujito.
+  "dz-herramienta": [["sine", 660, 990, 0.07, 0.16], ["triangle", 1320, 1320, 0.12, 0.06, 0.05]],
+  "dz-color": [["sine", 1568, 1568, 0.16, 0.09], ["sine", 2093, 2093, 0.2, 0.06, 0.04]],
+  "dz-relleno": [["sine", 220, 560, 0.12, 0.22], ["sine", 780, 1080, 0.14, 0.1, 0.06]],
+  "dz-regla": [["triangle", 2400, 2300, 0.025, 0.08]],
+  "dz-hoja": [["sine", 330, 560, 0.1, 0.13], ["triangle", 990, 990, 0.08, 0.05, 0.05]],
+  "dz-basura": [["triangle", 600, 120, 0.25, 0.14], ["sine", 300, 80, 0.3, 0.1, 0.05]],
+  "dz-volar": [["triangle", 320, 1400, 0.5, 0.1], ["sine", 880, 1760, 0.45, 0.08, 0.1], ["sine", 1318, 1318, 0.5, 0.06, 0.42]],
+  "dz-llego": [["sine", 784, 784, 0.3, 0.14], ["sine", 988, 988, 0.3, 0.13, 0.1], ["sine", 1318, 1318, 0.5, 0.13, 0.2], ["sine", 1568, 1568, 0.7, 0.1, 0.3]],
 };
 
 const ALIAS = { "cerrar-recursos": "soltar", "seleccionar-varios": "seleccionar", rehacer: "deshacer", pincel: "arrastrar", publicar: "exito", "zoom-paso": "ajustar" };

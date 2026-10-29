@@ -88,6 +88,7 @@ export class Salida {
     if (app.detallitos?.abierto) return app.detallitos.atras();
     if (app.exportarMenu?.abierto) return app.exportarMenu.atras();
     if (MODALES.length) return cerrarUltimoModal();
+    if (app.dibujito?.abierto) return app.dibujito.atras();
     if (app.pro?.abierto) { app.pro.cerrar(); return true; }
     // Con el menú principal abierto: de «Tu cuenta» o «Mi perfil» vuelve a su inicio; en su inicio, nada (pregunta si te vas).
     const mp = app.menuPrincipal;

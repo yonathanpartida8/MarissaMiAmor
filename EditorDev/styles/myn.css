@@ -466,8 +466,8 @@ select.pf-input { padding-right: 36px; background: #fff url("data:image/svg+xml,
 .vn-acciones { display: flex; flex-direction: column; gap: 2px; }
 
 /* Encima del menú principal y de Detallitos: los avisos y las preguntas («¿Quitar…?»). */
-body.con-menu-principal .ed-avisos, body.con-detallitos .ed-avisos { z-index: 2147483400; }
-body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z-index: 2147483350; }
+body.con-menu-principal .ed-avisos, body.con-detallitos .ed-avisos, body.con-dibujito .ed-avisos { z-index: 2147483400; }
+body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo, body.con-dibujito .ed-modal-fondo { z-index: 2147483350; }
 
 @media (prefers-reduced-motion: reduce) {
   .dt-capa, .dt-capa.fuera { transition-duration: .01s; }
@@ -1137,3 +1137,25 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo { z
 @media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) :is(.mp-aj-grupo, .mp-ajustes-b, .mp-aj-seg button) { background: var(--pp-papel); } }
 /* (Fase 46) El día de un cumpleaños, su cintita dorada en los días juntos. */
 .mp-mesecito.cumple { background: linear-gradient(135deg, #ffc65a, #ff8fb8); max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }
+
+/* ═══ Fase 47: los dibujitos en Detallitos — una hojita (no un celular) que se redibuja solita ═══ */
+.dt-cv.dibujito .dt-cv-tapa { background: #fff; box-shadow: inset 0 0 0 3px #fff, 0 0 0 1.5px rgba(229, 103, 154, .22); border-radius: 16px; }
+.dt-cv-dibujo { position: absolute; z-index: 2; left: 6px; bottom: 6px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 6px; border-radius: 99px; background: rgba(255, 255, 255, .92); color: #e5679a; font: 800 10.5px/1 "Nunito", sans-serif; font-style: normal; box-shadow: 0 2px 8px rgba(200, 80, 130, .2); }
+.dt-cv-dibujo .ed-ico { width: 12px; height: 12px; }
+.dt-ver.dt-ver-dibujo { display: grid; justify-items: center; gap: 16px 34px; }
+.dt-dibujo-escena { padding: 8px 0 4px; }
+.dt-dibujo-hoja { position: relative; display: block; width: min(100%, 430px, calc((100dvh - 330px) * .75)); min-width: 220px; aspect-ratio: 3 / 4; padding: 0; border: 0; border-radius: 28px; overflow: hidden; background: var(--fondo, #fff); cursor: pointer; box-shadow: 0 18px 44px rgba(200, 80, 130, .24), 0 0 0 6px #fff; animation: dtDibujoLlega .7s cubic-bezier(.2, .9, .3, 1.2) both; }
+.dt-dibujo-lienzo, .dt-dibujo-final { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.dt-dibujo-final { opacity: 0; transition: opacity .55s ease; }
+.dt-dibujo-hoja.listo .dt-dibujo-final { opacity: 1; }
+.dt-dibujo-hoja.listo .dt-dibujo-lienzo { opacity: 0; transition: opacity .55s ease .2s; }
+.dt-dibujo-hoja.cargando::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255, 210, 228, .6) 50%, transparent 70%); background-size: 220% 100%; animation: dtDibujoBrillo 1.2s linear infinite; }
+@keyframes dtDibujoBrillo { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+@keyframes dtDibujoLlega { from { opacity: 0; transform: translateY(24px) rotate(-3deg) scale(.92); } }
+@media (min-width: 860px) {
+  .dt-ver.dt-ver-dibujo { grid-template-columns: auto minmax(330px, 1fr); align-items: start; justify-items: stretch; }
+  .dt-ver.dt-ver-dibujo > .dt-ver-escena { position: sticky; top: 4px; }
+  .dt-dibujo-hoja { width: min(46vw, 460px, calc((100dvh - 150px) * .75)); }
+}
+body.ed-ultra .dt-dibujo-hoja { animation-duration: .2s; }
+@media (prefers-reduced-motion: reduce) { .dt-dibujo-hoja, .dt-dibujo-hoja.cargando::after { animation: none; } }

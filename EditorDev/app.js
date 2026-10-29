@@ -50,6 +50,7 @@ import { pantallaInicio, quitarInicio } from "./components/inicio.js";
 import { MenuPrincipal } from "./components/menu-principal.js";
 import { MenuExportar } from "./components/exportar-menu.js";
 import { Detallitos } from "./components/detallitos.js";
+import { EstudioDibujo } from "./components/estudio-dibujo.js";
 import * as SRV from "./integraciones/servidor.js";
 import * as NUBE from "./integraciones/nube.js";
 import * as PF from "./components/perfil.js";
@@ -160,6 +161,10 @@ async function arrancar() {
   alCambiarPref((p, c) => { if ("modo" in c) RD.ultra(p.modo === "ultra"); });
   // Lo primero que se ve: el menú principal (el editor se carga por detrás).
   app.detallitos = new Detallitos(app);
+  // Fase 47: el dibujito tiene su propio estudio (no es una página).
+  app.dibujito = new EstudioDibujo(app);
+  app.dibujar = (op) => { quitarInicio(); app.menuPrincipal?.cerrar?.(); app.dibujito.abrir(op); };
+  app.dibujoGuardado = () => EstudioDibujo.guardado();
   app.exportarMenu = new MenuExportar(app);
   app.menuPrincipal = new MenuPrincipal(app);
   app.menuPrincipal.abrir();
@@ -594,8 +599,9 @@ app.abrir = async (id) => {
 app.nuevo = async (nombre, formato = "movil", { portada = "portada-clasica", imagen = null, tipo = "pagina" } = {}) => {
   if (app.auto.pendiente) await app.auto.ahora();
   if (!nombre) { pantallaInicio(app, { cerrable: !!app.estado.proyecto }); return; }
-  // Un dibujito (Fase 46): una hoja blanca y el lápiz ya en la mano.
-  const dibujito = tipo === "dibujito";
+  // Un dibujito (Fase 47): ya no es una página, va a su propio estudio.
+  if (tipo === "dibujito") { app.dibujar({ nombre }); return; }
+  const dibujito = false;
   if (dibujito) { portada = "portada-clasica"; imagen = null; }
   const P = nuevoProyecto(nombre, formato);
   if (dibujito) P.ajustes.tipo = "dibujito";
@@ -713,7 +719,7 @@ async function latirYa() {
     if (app.amorNuevos > antes) {
       app.sonidos?.sonar("exito");
       const desde = () => [$(".ed-exportar"), $(".ed-mas")].find((b) => b?.offsetParent);
-      aviso(`${PF.nombreDe(r.pareja) || "Tu amorcito"} te mandó una página`, 7000, "", { t: "Verla", al: () => app.detallitos.abrir(desde(), "coleccion") });
+      aviso(`${PF.nombreDe(r.pareja) || "Tu amorcito"} te mandó un detallito`, 7000, "", { t: "Verla", al: () => app.detallitos.abrir(desde(), "coleccion") });
     }
     // Reaccionó a una de tus páginas (sólo se avisa si la colección no está abierta: ahí ya se ve).
     if (app.amorReacciones > rxAntes && !(app.detallitos.abierto && app.detallitos.actual === "coleccion")) {

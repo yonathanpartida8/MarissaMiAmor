@@ -305,7 +305,7 @@ export const codigoNuevo = () => pedir("amor/codigo", { method: "POST", body: {}
 /** `ev`: el último aviso de lugares que ya viste (Fase 46: así llegan solos quién llegó o salió). */
 export const latido = (ev) => pedir("latido" + (ev != null ? "?ev=" + encodeURIComponent(ev) : ""));
 export const detallitos = () => pedir("detallitos");
-export const mandarDetallito = (blob, { titulo, mensaje, color }, alAvance) => subir("detallitos?" + new URLSearchParams({ titulo, mensaje: mensaje || "", color: color || "" }), blob, alAvance).then((d) => d.detallito);
+export const mandarDetallito = (blob, { titulo, mensaje, color, tipo = "pagina" }, alAvance) => subir("detallitos?" + new URLSearchParams({ titulo, mensaje: mensaje || "", color: color || "", tipo }), blob, alAvance).then((d) => d.detallito);
 export const visto = (id) => pedir(`detallitos/${encodeURIComponent(id)}/visto`, { method: "POST", body: {} });
 export const paqueteDetallito = (id) => bajar(`detallitos/${encodeURIComponent(id)}/paquete`);
 export const borrarDetallito = (id) => pedir("detallitos/" + encodeURIComponent(id), { method: "DELETE" });

@@ -1,0 +1,269 @@
+/* ═══ El estudio del dibujito (Fase 47): una hojita para dibujarle algo a tu amorcito ═══
+   Rosa pastel, redondito y ligero: el fondo se mueve con transform (nada de repintar), sin desenfoques; en
+   Ultra Rendimiento lo que se mueve solo se queda quieto. Ver components/estudio-dibujo.js. */
+.dz-capa {
+  --acento: #e5679a; --lila: #b98bff; --ui: #4a3346; --suave: #8f7a8c; --boton: rgba(255, 255, 255, .74); --cajon: #fff8fb; --linea: rgba(120, 70, 100, .14);
+  --abajo: calc(194px + env(safe-area-inset-bottom, 0px));
+  position: fixed; inset: 0; z-index: 2147483150; display: grid; grid-template-rows: auto minmax(0, 1fr) 66px var(--abajo);
+  background: linear-gradient(172deg, #ffd3e4 0%, #ffe6ef 46%, #f1e5ff 100%); color: var(--ui);
+  font-family: "Nunito", Jost, system-ui, sans-serif; overflow: hidden; overscroll-behavior: none;
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  opacity: 0; transform: scale(1.03); transition: opacity .3s ease, transform .42s cubic-bezier(.2, .9, .3, 1);
+}
+.dz-capa.ver { opacity: 1; transform: none; }
+.dz-capa.saliendo { opacity: 0; transform: scale(.98); pointer-events: none; }
+.dz-capa button { font: inherit; -webkit-tap-highlight-color: transparent; }
+.dz-capa :focus-visible { outline: 3px solid rgba(229, 103, 154, .55); outline-offset: 2px; }
+
+/* El fondo: garabatitos de corazones y estrellas que se van moviendo despacito. */
+.dz-fondo { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.dz-fondo::before {
+  content: ""; position: absolute; inset: -260px; opacity: .16;
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260' fill='none' stroke='%23e5679a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M60 92s-30-18-30-38a16 16 0 0 1 30-8 16 16 0 0 1 30 8c0 20-30 38-30 38z'/><path d='M190 40l6 13 14 2-10 10 2 14-12-7-12 7 2-14-10-10 14-2z'/><path d='M200 170c2 12 8 18 20 20-12 2-18 8-20 20-2-12-8-18-20-20 12-2 18-8 20-20z'/><path d='M70 200s-14-8-14-17a7 7 0 0 1 14-4 7 7 0 0 1 14 4c0 9-14 17-14 17z'/><circle cx='130' cy='130' r='5'/><circle cx='30' cy='150' r='3'/><circle cx='240' cy='110' r='3'/><path d='M120 232q10-10 20 0t20 0'/></svg>");
+  background-size: 260px 260px; animation: dzDeriva 60s linear infinite;
+}
+@keyframes dzDeriva { to { transform: translate(260px, 260px); } }
+.dz-fondo i { position: absolute; width: 46vmax; height: 46vmax; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, .55), transparent 65%); animation: dzNube 18s ease-in-out infinite alternate; }
+.dz-fondo i:nth-child(1) { left: -18vmax; top: -12vmax; }
+.dz-fondo i:nth-child(2) { right: -20vmax; top: 30%; animation-duration: 23s; animation-delay: -6s; background: radial-gradient(circle, rgba(220, 200, 255, .45), transparent 65%); }
+.dz-fondo i:nth-child(3) { left: 10%; bottom: -26vmax; animation-duration: 27s; animation-delay: -12s; }
+@keyframes dzNube { to { transform: translate(6vmax, 4vmax) scale(1.08); } }
+
+/* — Arriba — */
+.dz-cab { position: relative; z-index: 2; display: flex; align-items: center; gap: 10px; padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 4px; }
+.dz-redondo { flex: none; display: grid; place-items: center; width: 46px; height: 46px; border: 0; border-radius: 50%; background: var(--boton); color: var(--acento); box-shadow: 0 4px 14px rgba(200, 80, 130, .14); cursor: pointer; transition: transform .16s; }
+.dz-redondo .ed-ico { width: 22px; height: 22px; }
+.dz-redondo:active, .dz-chip:active, .dz-icono:active, .dz-cuadro:active, .dz-pildora:active { transform: scale(.93); }
+.dz-titulo { flex: 1; min-width: 0; display: grid; justify-items: center; text-align: center; }
+.dz-titulo b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 31px/1.02 Caveat, "Patrick Hand", cursive; color: var(--acento); }
+.dz-titulo small { font: 800 12px/1.2 "Nunito", sans-serif; color: var(--suave); letter-spacing: .02em; }
+
+/* — La hoja — */
+.dz-centro { position: relative; z-index: 1; display: grid; place-items: center; min-height: 0; }
+.dz-hoja {
+  --u: .35px; position: relative; border-radius: calc(var(--u) * 86); background: var(--fondo, #fff); overflow: hidden; touch-action: none; cursor: crosshair;
+  box-shadow: 0 18px 42px rgba(200, 80, 130, .2), 0 0 0 5px rgba(255, 255, 255, .78); transition: background-color .35s ease;
+}
+.dz-lienzo, .dz-vivo { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.dz-objs { position: absolute; inset: 0; }
+.dz-pista { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 8px; color: rgba(143, 122, 140, .8); font: 800 15px/1.2 "Nunito", sans-serif; white-space: nowrap; pointer-events: none; transition: opacity .3s; }
+.dz-pista i { display: block; width: 50px; height: 50px; color: var(--acento); animation: dzPista 1.8s ease-in-out infinite; }
+.dz-pista svg { width: 100%; height: 100%; }
+.dz-pista.fuera { opacity: 0; }
+.dz-pista.fuera i { animation: none; }
+.dz-hoja.oscura .dz-pista { color: rgba(255, 255, 255, .65); }
+@keyframes dzPista { 0%, 100% { transform: rotate(-12deg) translate(0, 0); } 50% { transform: rotate(8deg) translate(6px, -6px); } }
+
+/* Stickers, textos y fotitos. */
+.dz-obj { position: absolute; transform-origin: center; touch-action: none; cursor: grab; }
+.dz-capa.dibujando .dz-obj { pointer-events: none; }
+.dz-obj-cont { display: block; filter: drop-shadow(0 calc(var(--u) * 5) calc(var(--u) * 7) rgba(80, 30, 60, .22)); }
+.dz-obj-sticker img { display: block; width: calc(var(--u) * 240); height: calc(var(--u) * 240); }
+.dz-obj-emoji { font: calc(var(--u) * 200) / 1 "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+.dz-obj-texto { font-size: calc(var(--u) * var(--tam, 92)); line-height: 1.12; white-space: pre; text-align: center; filter: none; padding: 0 calc(var(--u) * 10); }
+.dz-obj-foto { width: calc(var(--u) * 592); padding: calc(var(--u) * 16); background: #fff; border-radius: calc(var(--u) * 20); }
+.dz-obj-foto img { display: block; width: 100%; aspect-ratio: var(--ar, 1); object-fit: cover; border-radius: calc(var(--u) * 10); }
+.dz-obj::before { content: ""; position: absolute; inset: calc(-10px / var(--s, 1)); border: calc(2px / var(--s, 1)) dashed var(--acento); border-radius: calc(14px / var(--s, 1)); opacity: 0; transition: opacity .15s; pointer-events: none; }
+.dz-obj-x, .dz-obj-giro { position: absolute; display: grid; place-items: center; width: calc(34px / var(--s, 1)); height: calc(34px / var(--s, 1)); border-radius: 50%; background: #fff; color: var(--acento); box-shadow: 0 3px 10px rgba(120, 40, 80, .25); opacity: 0; pointer-events: none; transition: opacity .15s; }
+.dz-obj-x { top: calc(-26px / var(--s, 1)); left: calc(-26px / var(--s, 1)); border: 0; padding: 0; cursor: pointer; }
+.dz-obj-giro { right: calc(-26px / var(--s, 1)); bottom: calc(-26px / var(--s, 1)); cursor: nwse-resize; }
+.dz-obj-x .ed-ico, .dz-obj-giro svg { width: 58%; height: 58%; }
+.dz-obj.sel::before, .dz-obj.sel .dz-obj-x, .dz-obj.sel .dz-obj-giro { opacity: 1; pointer-events: auto; }
+.dz-obj.sel::before { pointer-events: none; }
+.dz-capa.dibujando .dz-obj.sel::before, .dz-capa.dibujando .dz-obj .dz-obj-x, .dz-capa.dibujando .dz-obj .dz-obj-giro { opacity: 0; pointer-events: none; }
+
+/* La regla. */
+.dz-regla { position: absolute; inset: 0; pointer-events: none; }
+.dz-regla[hidden] { display: none; }
+.dz-regla svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.dz-regla-cuerpo { fill: rgba(255, 255, 255, .64); stroke: rgba(229, 103, 154, .5); stroke-width: 3; transition: fill .2s; }
+.dz-regla.agarrada .dz-regla-cuerpo { fill: rgba(255, 255, 255, .8); }
+.dz-regla-marcas { fill: none; stroke: rgba(143, 122, 140, .8); stroke-width: 2.4; }
+.dz-regla-perilla circle { fill: #fff; stroke: var(--acento); stroke-width: 3; }
+.dz-regla-perilla path { stroke: var(--acento); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.dz-regla-grados { font: 800 38px "Nunito", sans-serif; fill: var(--acento); paint-order: stroke; stroke: #fff; stroke-width: 8px; opacity: 0; transition: opacity .2s; }
+.dz-regla.girando .dz-regla-grados { opacity: 1; }
+
+/* El grosor: barrita vertical (gruesa arriba, finita abajo) con su bolita y un puntito de muestra. */
+.dz-grosor { position: absolute; z-index: 3; right: 10px; top: 8%; bottom: 8%; width: 46px; touch-action: none; cursor: ns-resize; }
+.dz-grosor[hidden] { display: none; }
+.dz-grosor-riel { position: absolute; left: 50%; top: 0; bottom: 0; width: 22px; transform: translateX(-50%); background: rgba(196, 184, 197, .62); clip-path: polygon(0 0, 100% 0, 60% 100%, 40% 100%); border-radius: 12px; }
+.dz-grosor-bola { position: absolute; left: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; background: var(--tinta, #2b2230); box-shadow: 0 0 0 3px #fff, 0 3px 10px rgba(0, 0, 0, .25); }
+.dz-grosor-punto { position: absolute; right: calc(100% + 6px); transform: translateY(-50%); border-radius: 50%; box-shadow: 0 0 0 2px #fff, 0 2px 8px rgba(0, 0, 0, .22); pointer-events: none; }
+.dz-grosor-punto.borra { box-shadow: 0 0 0 1.5px rgba(74, 51, 70, .6), 0 2px 8px rgba(0, 0, 0, .15); }
+.dz-cursor { position: absolute; left: 0; top: 0; width: var(--d, 10px); height: var(--d, 10px); margin: calc(var(--d, 10px) / -2) 0 0 calc(var(--d, 10px) / -2); border-radius: 50%; border: 1.5px solid rgba(74, 51, 70, .55); box-shadow: 0 0 0 1px rgba(255, 255, 255, .7); pointer-events: none; opacity: 0; }
+.dz-cursor.borra { border-style: dashed; }
+.dz-cursor.cubeta { width: 14px; height: 14px; margin: -7px 0 0 -7px; }
+.dz-cursor.ve { opacity: 1; }
+.dz-capa:not(.dibujando) .dz-cursor { opacity: 0; }
+@media (pointer: coarse) { .dz-cursor { display: none; } }
+.dz-onda { position: absolute; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; border: 3px solid var(--c); pointer-events: none; animation: dzOnda .6s ease-out forwards; }
+@keyframes dzOnda { from { transform: scale(.3); opacity: 1; } to { transform: scale(7); opacity: 0; } }
+
+/* — Debajo de la hoja (en el teléfono) o a un lado (en la compu) — */
+.dz-lado { display: contents; }
+@media (min-width: 960px) and (min-height: 540px) {
+  .dz-capa { grid-template-columns: minmax(0, 1fr) 420px; grid-template-rows: auto minmax(0, 1fr); }
+  .dz-cab { grid-column: 1 / -1; }
+  .dz-centro { grid-column: 1; grid-row: 2; padding: 6px 0 24px; }
+  .dz-lado { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; justify-content: center; gap: 22px; padding: 0 28px 24px 0; min-height: 0; }
+  .dz-medio { height: 66px; padding: 0; }
+  .dz-abajo { height: 258px; flex: none; }
+  .dz-cajon { top: 0; border-radius: 30px; padding: 10px 14px 16px; grid-template-rows: auto auto auto; align-content: start; gap: 14px; }
+  .dz-colores { flex-wrap: wrap; justify-content: center; overflow: visible; }
+  .dz-herrs { padding-top: 6px; }
+  .dz-pie { inset: 0; }
+}
+/* — Los chips (componer) o la barrita (dibujar), en el mismo lugar — */
+.dz-medio { position: relative; z-index: 2; display: grid; place-items: center; padding: 0 14px; }
+.dz-chips, .dz-barra { grid-area: 1 / 1; transition: opacity .22s ease, transform .3s cubic-bezier(.2, .9, .3, 1.1); }
+.dz-chips { display: flex; justify-content: center; gap: 12px; }
+.dz-chip { display: grid; place-items: center; align-content: center; gap: 2px; width: 66px; height: 54px; border: 0; border-radius: 19px; background: var(--boton); color: var(--acento); box-shadow: 0 4px 14px rgba(200, 80, 130, .12); cursor: pointer; transition: transform .16s; }
+.dz-chip i { display: grid; place-items: center; width: 26px; height: 26px; }
+.dz-chip i svg, .dz-chip .ed-ico { width: 26px; height: 26px; }
+.dz-chip small { font: 800 10.5px/1 "Nunito", sans-serif; color: var(--suave); }
+.dz-chip-fondo { display: block; width: 22px; height: 22px; border-radius: 50%; background: var(--fondo-hoja, #fff); box-shadow: 0 0 0 2.5px #fff, 0 0 0 5px #ffb0cc; }
+.dz-chip-t { font: 900 20px/1 "Nunito", sans-serif; }
+.dz-barra { display: flex; align-items: center; gap: 6px; width: min(100%, 600px); opacity: 0; transform: translateY(8px); pointer-events: none; }
+.dz-capa.dibujando .dz-chips { opacity: 0; transform: translateY(8px) scale(.96); pointer-events: none; }
+.dz-capa.dibujando .dz-barra { opacity: 1; transform: none; pointer-events: auto; }
+.dz-hueco { flex: 1; }
+.dz-icono { display: grid; place-items: center; width: 46px; height: 46px; border: 0; border-radius: 50%; background: none; color: var(--acento); cursor: pointer; transition: transform .15s, opacity .2s; }
+.dz-icono .ed-ico { width: 26px; height: 26px; }
+.dz-icono:disabled { opacity: .35; cursor: default; }
+.dz-cuadro { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 50px; min-width: 60px; padding: 0 16px; border: 0; border-radius: 17px; background: var(--boton); color: var(--acento); box-shadow: 0 4px 14px rgba(200, 80, 130, .12); cursor: pointer; transition: transform .15s, background .2s, color .2s; }
+.dz-cuadro svg { width: 26px; height: 26px; }
+.dz-grosor-b.on { background: #fff; color: var(--ui); }
+.dz-listo-b { background: linear-gradient(135deg, #ff7fae, #b98bff); color: #fff; font: 800 18px/1 "Nunito", sans-serif; padding: 0 12px 0 20px; box-shadow: 0 8px 20px rgba(229, 103, 154, .3); }
+.dz-listo-b i { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: rgba(255, 255, 255, .3); }
+.dz-listo-b .ed-ico { width: 18px; height: 18px; }
+
+/* — Abajo: deshacer · mandar · guardar (componer) o el cajón (dibujar) — */
+.dz-abajo { position: relative; z-index: 2; min-height: 0; }
+.dz-pie { position: absolute; inset: 0 0 env(safe-area-inset-bottom, 0px); display: flex; align-items: center; justify-content: space-around; padding: 0 22px; transition: opacity .22s, transform .3s; }
+.dz-capa.dibujando .dz-pie { opacity: 0; transform: translateY(24px); pointer-events: none; }
+.dz-grande { width: 56px; height: 56px; }
+.dz-grande .ed-ico { width: 30px; height: 30px; }
+.dz-mandar { position: relative; display: grid; place-items: center; width: 104px; height: 104px; border: 0; padding: 0; border-radius: 50%; background: none; cursor: pointer; }
+.dz-anillo { position: absolute; inset: 0; }
+.dz-anillo svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.dz-anillo circle { fill: none; stroke-width: 6; }
+.dz-anillo-fondo { stroke: rgba(255, 255, 255, .85); }
+.dz-anillo-avance { stroke: #ff7fae; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: calc(100 - var(--p, 0) * 100); transition: stroke-dashoffset .35s ease; }
+.dz-mandar-c { display: grid; place-items: center; width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(145deg, #ff94bb, #e5679a); box-shadow: 0 10px 24px rgba(229, 103, 154, .4), inset 0 2px 0 rgba(255, 255, 255, .35); transition: filter .3s, opacity .3s, transform .2s; }
+.dz-mandar-c svg { width: 40px; height: 40px; margin: 2px 4px 0 0; }
+.dz-mandar-c path { fill: #fff; }
+.dz-mandar-c path:nth-child(2) { fill: rgba(255, 255, 255, .72); }
+.dz-mandar-c path:nth-child(3) { fill: rgba(255, 255, 255, .5); }
+.dz-mandar:not(.listo) .dz-mandar-c { filter: saturate(.5); opacity: .7; }
+.dz-mandar.listo .dz-mandar-c { animation: dzLatido 2.6s ease-in-out infinite; }
+.dz-mandar:active .dz-mandar-c { transform: scale(.92); }
+.dz-mandar.subiendo .dz-mandar-c { animation: dzEspera 1s ease-in-out infinite; }
+.dz-capa.dibujando .dz-mandar-c { animation-play-state: paused; }
+@keyframes dzLatido { 0%, 100% { transform: none; } 12% { transform: scale(1.07); } 24% { transform: none; } 36% { transform: scale(1.05); } 48% { transform: none; } }
+@keyframes dzEspera { 50% { transform: scale(.9); } }
+
+.dz-cajon {
+  position: absolute; left: 0; right: 0; bottom: 0; top: 2px; margin: 0 auto; max-width: 660px; display: grid; grid-template-rows: auto auto 1fr; gap: 10px;
+  padding: 8px 12px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--cajon); border-radius: 30px 30px 0 0; box-shadow: 0 -10px 30px rgba(200, 80, 130, .14);
+  transform: translateY(106%); transition: transform .38s cubic-bezier(.2, .9, .3, 1.04);
+}
+.dz-capa.dibujando .dz-cajon { transform: none; }
+.dz-asa { justify-self: center; display: block; width: 48px; height: 5px; border-radius: 9px; background: rgba(120, 70, 100, .2); }
+.dz-colores { display: flex; gap: 9px; overflow-x: auto; padding: 7px 8px; border-radius: 24px; background: rgba(120, 70, 100, .06); scrollbar-width: none; overscroll-behavior-x: contain; }
+.dz-colores::-webkit-scrollbar { display: none; }
+.dz-color { flex: none; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, .09); cursor: pointer; transition: transform .18s cubic-bezier(.3, 1.5, .5, 1), box-shadow .18s; }
+.dz-color.on { transform: scale(1.08); box-shadow: 0 0 0 3px #fff, 0 0 0 5.5px var(--acento); }
+.dz-herrs { display: flex; align-items: flex-end; justify-content: space-between; gap: 2px; padding: 0 2px; }
+.dz-herr { position: relative; isolation: isolate; flex: 1; max-width: 62px; height: 62px; border: 0; padding: 0 0 6px; background: none; display: grid; place-items: end center; color: var(--tinta, #2b2230); cursor: pointer; transition: transform .26s cubic-bezier(.3, 1.4, .5, 1); }
+.dz-herr svg { width: 42px; height: 42px; overflow: visible; }
+.dz-herr::before { content: ""; position: absolute; z-index: -1; left: 50%; bottom: 2px; width: 52px; height: 52px; margin-left: -26px; border-radius: 50%; background: #fff; box-shadow: 0 6px 16px rgba(200, 80, 130, .2); opacity: 0; transform: scale(.6); transition: opacity .2s, transform .26s cubic-bezier(.3, 1.4, .5, 1); }
+.dz-herr.on { transform: translateY(-8px); }
+.dz-herr.on::before { opacity: 1; transform: none; }
+.dz-i-cuerpo { fill: #cdbfcd; transition: fill .2s; }
+.dz-herr.on .dz-i-cuerpo { fill: #6e5670; }
+.dz-herr[data-k="regla"].on .dz-i-cuerpo { fill: #ffb0cc; }
+.dz-i-punta, .dz-i-brillo { fill: currentColor; stroke: rgba(0, 0, 0, .14); stroke-width: .6; }
+.dz-i-metal { fill: #e8e0e9; stroke: #cdbfcd; stroke-width: .8; }
+.dz-i-madera { fill: #f4d9b8; }
+.dz-i-rosa { fill: #ffb0cc; }
+.dz-i-raya { fill: none; stroke: #a593a3; stroke-width: 1.1; }
+.dz-i-asa { fill: none; stroke: #a593a3; stroke-width: 1.6; stroke-linecap: round; }
+.dz-herr[data-k="neon"] .dz-i-punta { filter: drop-shadow(0 0 2px currentColor); }
+.dz-arcoiris { position: relative; flex: none; align-self: center; display: grid; place-items: center; width: 46px; height: 46px; margin-left: 4px; border-radius: 50%; background: conic-gradient(#ff4d6d, #ffd84d, #4dd68c, #4dc3ff, #6b6bff, #d24dff, #ff4d6d); cursor: pointer; }
+.dz-arcoiris i { display: block; width: 32px; height: 32px; border-radius: 50%; border: 3px solid #fff; box-sizing: border-box; }
+.dz-arcoiris input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+
+/* — Hojitas que suben (fondo, stickers, la carta) — */
+.dz-velo { position: absolute; inset: 0; z-index: 10; background: rgba(60, 20, 50, .28); opacity: 0; transition: opacity .25s; }
+.dz-velo.ver { opacity: 1; }
+.dz-hojita { position: absolute; z-index: 11; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 560px; max-height: 72dvh; overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 12px; padding: 8px 18px calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--cajon); border-radius: 30px 30px 0 0; box-shadow: 0 -10px 30px rgba(200, 80, 130, .18); transform: translateY(106%); transition: transform .32s cubic-bezier(.2, .9, .3, 1.04); }
+.dz-hojita.ver { transform: none; }
+.dz-hojita h3 { margin: 0; text-align: center; font: 700 29px/1.05 Caveat, cursive; color: var(--acento); }
+.dz-fondos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 8px; }
+.dz-fondo-b { display: grid; justify-items: center; gap: 6px; border: 0; background: none; padding: 4px 0; font: 800 12px/1 "Nunito", sans-serif; color: var(--suave); cursor: pointer; }
+.dz-fondo-b i { display: block; width: 54px; height: 54px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, .08); transition: transform .2s, box-shadow .2s; }
+.dz-fondo-b.on i { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--acento); }
+.dz-fondo-b:active i { transform: scale(.92); }
+.dz-stickers { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 8px; }
+.dz-sticker-b { display: grid; place-items: center; aspect-ratio: 1; border: 0; border-radius: 18px; background: #fff; box-shadow: 0 3px 10px rgba(200, 80, 130, .1); cursor: pointer; transition: transform .18s cubic-bezier(.3, 1.5, .5, 1); }
+.dz-sticker-b img { width: 78%; height: 78%; }
+.dz-sticker-b.emoji { font: 34px/1 "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+.dz-sticker-b:active { transform: scale(.88) rotate(-6deg); }
+.dz-carta { display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: start; }
+.dz-carta-mini { width: 96px; aspect-ratio: 3 / 4; border-radius: 16px; background: #fff; object-fit: cover; box-shadow: 0 6px 16px rgba(200, 80, 130, .2), 0 0 0 3px #fff; transform: rotate(-3deg); }
+.dz-carta-der { display: grid; gap: 8px; min-width: 0; }
+.dz-carta-der b { font: 700 25px/1.05 Caveat, cursive; color: var(--ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dz-carta-msg { width: 100%; min-height: 88px; padding: 10px 12px; border: 2px solid var(--linea); border-radius: 16px; background: #fff; color: var(--ui); font: 700 15px/1.4 "Nunito", sans-serif; resize: none; -webkit-user-select: text; user-select: text; box-sizing: border-box; }
+.dz-carta-msg:focus { outline: none; border-color: var(--acento); }
+.dz-carta-b svg { width: 22px; height: 22px; }
+.dz-carta-b svg path { fill: #fff; }
+
+/* — Escribir — */
+.dz-escribir { position: absolute; inset: 0; z-index: 12; display: grid; grid-template-rows: auto 1fr auto auto; gap: 14px; padding: calc(14px + env(safe-area-inset-top, 0px)) 16px calc(18px + env(safe-area-inset-bottom, 0px)); background: rgba(40, 18, 36, .62); opacity: 0; transition: opacity .2s; }
+.dz-escribir.ver { opacity: 1; }
+.dz-escribir-arriba { display: flex; justify-content: space-between; }
+.dz-escribir-txt { align-self: center; width: 100%; max-height: 50dvh; border: 0; outline: 0; padding: 0; background: none; resize: none; text-align: center; font-size: 44px; line-height: 1.15; caret-color: #fff; text-shadow: 0 2px 10px rgba(0, 0, 0, .25); -webkit-user-select: text; user-select: text; }
+.dz-escribir-txt::placeholder { color: rgba(255, 255, 255, .55); }
+.dz-escribir-fuentes { display: flex; gap: 8px; overflow-x: auto; justify-content: safe center; scrollbar-width: none; padding: 2px; }
+.dz-escribir-colores { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.dz-escribir .dz-pildora { flex: none; font-size: 17px; }
+.dz-escribir .dz-pildora.on { background: var(--acento); color: #fff; }
+
+/* — Botones de pastilla — */
+.dz-pildora { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 20px; border: 0; border-radius: 99px; background: #fff; color: var(--ui); font: 800 15.5px/1 "Nunito", sans-serif; cursor: pointer; transition: transform .15s; }
+.dz-pildora.primario { background: linear-gradient(135deg, #ff7fae, #b98bff); color: #fff; box-shadow: 0 10px 22px rgba(229, 103, 154, .3); }
+.dz-pildora.suave { background: #ffe3ec; color: #c84b7d; }
+.dz-pildora.texto { background: none; color: var(--suave); min-height: 40px; }
+.dz-pildora .ed-ico, .dz-pildora svg { width: 20px; height: 20px; }
+.dz-pildora.primario .dz-i-cuerpo { fill: rgba(255, 255, 255, .7); }
+.dz-pildora.primario .dz-i-punta, .dz-pildora.primario .dz-i-madera { fill: #fff; }
+
+/* — Mandar: el avioncito, los corazones y «¡le llegó!» — */
+.dz-capa.enviando .dz-medio, .dz-capa.enviando .dz-cab .dz-basura { opacity: .4; pointer-events: none; transition: opacity .3s; }
+.dz-avion { position: fixed; z-index: 20; width: 86px; height: 86px; pointer-events: none; }
+.dz-avion svg { width: 100%; height: 100%; filter: drop-shadow(0 8px 14px rgba(229, 103, 154, .35)); }
+.dz-corazon { position: fixed; z-index: 19; width: 18px; height: 18px; margin: -9px 0 0 -9px; color: var(--c); pointer-events: none; animation: dzCorazon 1.1s ease-out forwards; }
+.dz-corazon.grande { width: 30px; height: 30px; margin: -15px 0 0 -15px; animation-duration: 1.7s; --sube: -190px; }
+.dz-corazon svg { width: 100%; height: 100%; display: block; }
+@keyframes dzCorazon { from { opacity: 0; transform: scale(.3); } 20% { opacity: 1; transform: scale(1); } to { opacity: 0; transform: translate(var(--dx, 0), var(--sube, -90px)) rotate(var(--rot, 0)) scale(.7); } }
+.dz-listo { position: absolute; z-index: 5; width: min(340px, 88%); display: grid; justify-items: center; gap: 10px; padding: 24px 20px 16px; border-radius: 30px; background: rgba(255, 255, 255, .94); text-align: center; box-shadow: 0 20px 50px rgba(200, 80, 130, .25); animation: dzListo .6s cubic-bezier(.2, .9, .3, 1.25) both; }
+.dz-listo-cor { display: block; width: 68px; height: 68px; color: #ff5c93; animation: dzLatido 1.8s ease-in-out .5s infinite; }
+.dz-listo-cor svg { width: 100%; height: 100%; }
+.dz-listo h2 { margin: 0; font: 700 36px/1 Caveat, cursive; color: var(--acento); }
+.dz-listo p { margin: 0 0 4px; font: 700 14.5px/1.4 "Nunito", sans-serif; color: var(--suave); }
+.dz-listo-botones { display: grid; gap: 8px; width: 100%; }
+@keyframes dzListo { from { opacity: 0; transform: translateY(26px) scale(.9); } }
+
+/* — Oscuro — */
+:root[data-tema="oscuro"] .dz-capa { --ui: #f6e9f1; --suave: #bba8b9; --boton: rgba(255, 255, 255, .1); --cajon: #2c2231; --linea: rgba(255, 255, 255, .12); background: linear-gradient(172deg, #33202e 0%, #2a1e2d 50%, #231d33 100%); }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .dz-capa { --ui: #f6e9f1; --suave: #bba8b9; --boton: rgba(255, 255, 255, .1); --cajon: #2c2231; --linea: rgba(255, 255, 255, .12); background: linear-gradient(172deg, #33202e 0%, #2a1e2d 50%, #231d33 100%); } }
+:root[data-tema="oscuro"] .dz-capa :is(.dz-sticker-b, .dz-carta-msg, .dz-pildora:not(.primario):not(.suave):not(.texto), .dz-listo, .dz-herr::before) { background: #3a2c40; color: var(--ui); }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .dz-capa :is(.dz-sticker-b, .dz-carta-msg, .dz-pildora:not(.primario):not(.suave):not(.texto), .dz-listo, .dz-herr::before) { background: #3a2c40; color: var(--ui); } }
+
+/* — Ultra Rendimiento y menos movimiento — */
+body.ed-ultra .dz-fondo::before, body.ed-ultra .dz-fondo i, body.ed-ultra .dz-mandar.listo .dz-mandar-c, body.ed-ultra .dz-pista i, body.ed-ultra .dz-listo-cor { animation: none; }
+body.ed-ultra .dz-obj-cont { filter: none; }
+body.ed-ultra .dz-capa, body.ed-ultra .dz-cajon, body.ed-ultra .dz-hojita, body.ed-ultra .dz-chips, body.ed-ultra .dz-barra, body.ed-ultra .dz-pie { transition-duration: .18s; }
+@media (prefers-reduced-motion: reduce) { .dz-capa, .dz-capa * { animation: none !important; transition: none !important; } }
+@media (max-height: 640px) { .dz-capa { --abajo: calc(176px + env(safe-area-inset-bottom, 0px)); grid-template-rows: auto minmax(0, 1fr) 58px var(--abajo); } .dz-titulo b { font-size: 26px; } .dz-redondo { width: 40px; height: 40px; } }

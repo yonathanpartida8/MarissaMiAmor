@@ -625,7 +625,8 @@ export class Detallitos {
     if (x.portadita) this._ponerPortadita(tapa, SRV.enlace(x.portadita));
     else this._sinPortadita(x, tapa);
     if (rx) tapa.append(el("span.dt-cv-rx", { title: x._mio ? `${nombre} ${rx.largo}` : rx.tuyo, html: svgReaccion(rx.id) }));
-    const t = el("button.dt-cv" + (nuevo ? ".nueva" : "") + (x._mio && x.reaccion_nueva ? ".rx-nueva" : ""), {
+    if (x.tipo === "dibujito") tapa.append(el("em.dt-cv-dibujo", { html: I("lapiz", "Dibujito") }));
+    const t = el("button.dt-cv" + (nuevo ? ".nueva" : "") + (x._mio && x.reaccion_nueva ? ".rx-nueva" : "") + (x.tipo === "dibujito" ? ".dibujito" : ""), {
       type: "button", "aria-label": `${x.titulo}, ${x._mio ? "tuya" : "de " + nombre}${rx ? ", " + rx.corto : ""}`,
       onClick: (e) => { this.app.sonidos?.sonar("detallito-abrir"); this.ir("ver", x, { desde: e.currentTarget, sinSonido: true }); },
     }, [
@@ -719,6 +720,7 @@ export class Detallitos {
     const recibido = x._mio != null ? !x._mio : x.de && x.de !== SRV.usuario()?.usuario;
     const url = SRV.enlace(x.ver), nombre = PF.nombreDe(this.amor?.pareja) || x.de_nombre || x.de || "tu amorcito";
     if (recibido && !x.visto) SRV.visto(x.id).then(() => { x.visto = new Date().toISOString(); dispatchEvent(new CustomEvent("ed-detallito-visto")); }).catch(() => {});
+    const dibujo = x.tipo === "dibujito";
     const marco = el("iframe.ed-prueba-marco.dt-marco-ver", { title: x.titulo, allow: "autoplay; fullscreen" });
     const movil = el("div.ed-movil.dt-movil", { style: { "--fondo": x.color || "#ffd1e6", "--mw": "390px", "--mh": "844px" } }, [
       el("i.ed-movil-boton.b1"), el("i.ed-movil-boton.b2"), el("i.ed-movil-boton.b3"),
@@ -726,7 +728,7 @@ export class Detallitos {
       el("i.ed-movil-isla"), el("i.ed-movil-reflejo"),
     ]);
     const cerrarGrande = el("button.dt-ver-cerrar", { type: "button", html: I("cerrar", "Cerrar"), onClick: () => this._grande(false) });
-    const escena = el("div.dt-ver-escena", {}, [el("i.dt-ver-luz"), movil, cerrarGrande]);
+    const escena = dibujo ? this._escenaDibujo(x) : el("div.dt-ver-escena", {}, [el("i.dt-ver-luz"), movil, cerrarGrande]);
     const msg = x.mensaje ? el("p.dt-ver-msg", { text: x.mensaje }) : null;
     const de = el("small.dt-ver-de", {}, [PF.avatar(recibido ? "pareja" : "yo", "dt-ver-av"), el("span", { text: `${recibido ? "De " + (x.de_nombre || x.de) : "Tuya, para " + (x.para_nombre || x.para)} · ${cuando(x.creado)}` })]);
     const guardar = el("button.dt-pildora.lila", { type: "button", html: I("nota", "Guardar en mis borradores"), onClick: async (ev) => {
@@ -734,7 +736,12 @@ export class Detallitos {
       try { const blob = await SRV.paqueteDetallito(x.id); this.cerrar(); await abrirComoBorrador(this.app, blob, x.titulo); }
       catch (e) { aviso("No se pudo abrir: " + e.message, 4500, "error"); b.disabled = false; }
     } });
-    const acciones = el("div.dt-ver-acc", {}, [el("button.dt-pildora.rosa", { type: "button", html: I("ojo", "Ver en grande"), onClick: () => this._grande(true) }), guardar]);
+    const acciones = dibujo
+      ? el("div.dt-ver-acc", {}, [
+        el("button.dt-pildora.rosa", { type: "button", html: I("play", "Verlo dibujarse"), onClick: () => this._repetirDibujo() }),
+        el("button.dt-pildora.lila", { type: "button", html: I("exportar", "Guardar imagen"), onClick: () => this._guardarDibujo(x) }),
+      ])
+      : el("div.dt-ver-acc", {}, [el("button.dt-pildora.rosa", { type: "button", html: I("ojo", "Ver en grande"), onClick: () => this._grande(true) }), guardar]);
     const rx = recibido ? this._reaccionar(x) : this._suReaccion(x);
     const chat = this.amor?.pareja ? el("button.dt-ver-chat", { type: "button", onClick: (e) => this.ir("chat", null, { desde: e.currentTarget }) }, [el("i", { html: ICONO_CHAT }), el("span", { text: recibido ? `Contestarle a ${nombre} con un mensajito` : `Escribirle a ${nombre}` })]) : null;
     const mas = el("div.dt-ver-mas");
@@ -743,7 +750,7 @@ export class Detallitos {
       try { await SRV.borrarDetallito(x.id); this.datos = null; aviso("Quitado"); this.app.sonidos?.sonar("borrar"); this.atras(); } catch (e) { aviso(e.message, 3500, "error"); }
     } });
     const lado = el("div.dt-ver-lado", {}, [msg, de, acciones, rx, chat, mas, quitar]);
-    const raiz = el("div.dt-ver.dt-ver-movil", { style: { "--c": x.color || "#ffd1e6" } }, [escena, lado]);
+    const raiz = el("div.dt-ver" + (dibujo ? ".dt-ver-dibujo" : ".dt-ver-movil"), { style: { "--c": x.color || "#ffd1e6" } }, [escena, lado]);
     // Sus otros detallitos (los más nuevos primero): tocar uno lo abre aquí mismo.
     const ponerMas = () => {
       const d = this.datos;
@@ -756,6 +763,7 @@ export class Detallitos {
       );
     };
     if (this.datos) requestAnimationFrame(ponerMas); else this._cargarDatos().then(ponerMas).catch(() => {});
+    if (dibujo) return el("section.dt-pantalla", {}, [raiz]);
     // El tamaño del celular: lo más grande que quepa, dejando a la vista su mensajito, quién la mandó y
     // los dos botones (en la compu, a lo alto, con lo demás a un lado; en grande, toda la pantalla).
     const v = { W: 390, H: 844 };
@@ -780,6 +788,79 @@ export class Detallitos {
     this._cargarEnMovil(x, marco, movil, v, url).catch(() => { marco.src = url; marco.addEventListener("load", () => { marco.classList.add("listo"); movil.classList.add("lista"); }, { once: true }); });
     requestAnimationFrame(() => movil.classList.add("brilla"));
     return el("section.dt-pantalla", {}, [raiz]);
+  }
+
+  /**
+   * Fase 47: un dibujito en su hojita. Se baja su paquete (el dibujo y sus trazos) y se redibuja solito,
+   * trazo por trazo y con su rasgueo; al final aparece entero (con sus stickers y textos) y salen chispitas.
+   * Tocarlo mientras se dibuja lo termina de una vez.
+   */
+  _escenaDibujo(x) {
+    const lienzo = el("canvas.dt-dibujo-lienzo", { "aria-hidden": "true" });
+    const final = el("img.dt-dibujo-final", { alt: x.titulo, draggable: "false" });
+    const hoja = el("button.dt-dibujo-hoja.cargando", { type: "button", "aria-label": x.titulo, style: { "--fondo": /^#[0-9a-f]{6}$/i.test(x.color || "") ? x.color : "#fff" }, onClick: () => { if (this._dibujo?.rep && hoja.classList.contains("dibujando")) this._dibujo.rep.parar(); } }, [lienzo, final]);
+    const v = this._dibujo = { hoja, lienzo, final, log: null, rep: null, png: null };
+    const listo = () => { hoja.classList.remove("cargando"); };
+    (async () => {
+      const { leerZip } = await import("../export/zip.js");
+      const zip = await leerZip(await SRV.paqueteDetallito(x.id));
+      if (zip["dibujo.png"]) {
+        v.png = new Blob([await zip["dibujo.png"]()], { type: "image/png" });
+        const u = URL.createObjectURL(v.png);
+        final.src = u;
+        this._limpiezas.push(() => URL.revokeObjectURL(u));
+      }
+      try { v.log = JSON.parse(new TextDecoder().decode(await zip["dibujo.json"]())).log; } catch (e) { v.log = null; }
+    })().then(() => { if (!hoja.isConnected) return; listo(); this._repetirDibujo(); }, () => {
+      if (!hoja.isConnected) return;
+      final.src = SRV.enlace(x.ver + "dibujo.png");
+      listo(); hoja.classList.add("listo");
+    });
+    return el("div.dt-ver-escena.dt-dibujo-escena", {}, [hoja]);
+  }
+
+  async _repetirDibujo() {
+    const v = this._dibujo;
+    if (!v?.hoja.isConnected || v.hoja.classList.contains("cargando")) return;
+    v.rep?.parar();
+    if (!v.log?.length || reducido()) { v.hoja.classList.add("listo"); return; }
+    const [{ repetir }, { Rasgueo }] = await Promise.all([import("./dibujo-motor.js"), import("./estudio-dibujo.js")]);
+    if (!v.hoja.isConnected) return;
+    v.hoja.classList.remove("listo"); v.hoja.classList.add("dibujando");
+    const ras = new Rasgueo(this.app);
+    let actual = null;
+    const rep = v.rep = repetir(v.lienzo, v.log, {
+      alPaso: (op) => {
+        if (op.k === "trazo") { if (op.h !== actual) { ras.parar(); actual = op.h; ras.empezar(op.h); ras.vel(2.6); } }
+        else { ras.parar(); actual = null; if (op.k === "relleno") this.app.sonidos?.sonar("dz-relleno"); }
+      },
+    });
+    this._limpiezas.push(() => { rep.parar(); ras.parar(); });
+    const completo = await rep.listo;
+    ras.parar();
+    if (!v.hoja.isConnected || v.rep !== rep) return;
+    v.hoja.classList.remove("dibujando"); v.hoja.classList.add("listo");
+    if (completo) {
+      this.app.sonidos?.sonar("dz-llego");
+      const r = v.hoja.getBoundingClientRect();
+      this._chispas(r.left + r.width / 2, r.top + r.height / 2, 18);
+    }
+  }
+
+  async _guardarDibujo(x) {
+    try {
+      const blob = this._dibujo?.png || await fetch(SRV.enlace(x.ver + "dibujo.png")).then((r) => { if (!r.ok) throw new Error("No se pudo bajar"); return r.blob(); });
+      const nombre = (x.titulo || "dibujito").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() + ".png";
+      const archivo = new File([blob], nombre || "dibujito.png", { type: "image/png" });
+      if (matchMedia("(pointer: coarse)").matches && navigator.canShare?.({ files: [archivo] })) {
+        try { await navigator.share({ files: [archivo], title: x.titulo }); return; } catch (e) { if (e?.name === "AbortError") return; }
+      }
+      const u = URL.createObjectURL(blob), a = el("a", { href: u, download: archivo.name });
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(u), 4000);
+      this.app.sonidos?.sonar("guardar");
+      aviso("Imagen guardada ♡", 2200);
+    } catch (e) { aviso("No se pudo guardar: " + e.message, 4000, "error"); }
   }
 
   /** Un renglón de «Más detallitos»: su portadita, título o mensajito, cuándo y su reacción. */
