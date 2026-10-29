@@ -2911,7 +2911,9 @@ body.ed-dibujando .ed-chip-efectos { display: none; }
 @media (max-width: 360px) { .ed-ques { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .ed-paso { animation: none; } }
 /* Mientras «Crear detallito» está abierto, la abejita y su foquito no están (llegan ya en el editor). */
-body.con-inicio .ed-abeja, body.con-inicio .ed-abeja-globo, body.con-inicio .ed-foco { visibility: hidden !important; pointer-events: none !important; }
+/* (Con display:none, no con visibility:hidden: escondidas así, Chrome dejaba de mandar a la GPU las animaciones
+   del menú —todas— y las recalculaba en el procesador, ≈ 50 ms por segundo con el menú quieto.) */
+body:is(.con-inicio, .con-bienvenida) :is(.ed-abeja, .ed-abeja-globo, .ed-foco) { display: none !important; }
 
 /* ═══ Fase 46 · Sin toques fantasma: nada se queda «apretado» ni con el recuadro gris de Android ═══ */
 *, *::before, *::after { -webkit-tap-highlight-color: transparent; }

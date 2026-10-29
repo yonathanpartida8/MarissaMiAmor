@@ -74,7 +74,6 @@ select.bv-campo.on { border-color: var(--bv-acento); }
 .bv-pantalla .cu-caja { text-align: left; }
 .bv-confeti { position: absolute; z-index: -1; left: 50%; top: 40px; width: 9px; height: 14px; border-radius: 3px; background: hsl(calc(var(--k) * 37deg) 85% 72%); opacity: 0; animation: bvConfeti 1.6s calc(var(--k) * .04s) cubic-bezier(.2, .7, .3, 1) forwards; }
 @keyframes bvConfeti { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(calc((var(--k) - 6.5) * 26px), calc(180px + var(--k) * 8px)) rotate(calc(var(--k) * 70deg)); } }
-body.con-bienvenida .ed-abeja, body.con-bienvenida .ed-abeja-globo, body.con-bienvenida .ed-foco { visibility: hidden; }
 body.ed-ultra .bv-fondo i, body.ed-ultra .bv-emoji { animation: none; }
 body.ed-ultra .bv-pantalla.entra, body.ed-ultra .bv-pantalla.vuelve { animation-duration: .2s; }
 @media (prefers-reduced-motion: reduce) { .bv-capa *, .bv-capa { animation: none !important; transition: none !important; } }

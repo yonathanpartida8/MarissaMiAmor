@@ -100,6 +100,9 @@ async function qrDe(texto) {
 
 export function bloquePublicar(app, { alPublicar, alOtro } = {}) {
   const P = app.estado.proyecto;
+  // (Fase 46: después de publicar, la edición queda en blanco: sin proyecto, se dice y se ofrece uno nuevo.)
+  if (!P) return el("div.ed-pub.ed-pub-vacio", {}, [el("p", { text: "Ya no hay un detallito abierto: el que publicaste quedó guardado en tu página. Crea otro para publicarlo." }),
+    el("button.ed-btn.primario", { type: "button", html: `${ico("nuevo")}<span>Crear otro detallito</span>`, onClick: () => { alOtro?.(); app.inicio?.(); } })]);
   const E = app.estado;
   const titulo = el("input", { type: "text", value: P.nombre || "Mi librito", maxlength: 60, "aria-label": "Título de la página" });
   // Fase 41: tu enlace propio (…/publicaciones/<enlace>/), con su comprobación al momento.
