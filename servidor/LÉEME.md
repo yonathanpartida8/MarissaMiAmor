@@ -89,13 +89,20 @@ Así el asistente te lo pide de una vez y no hay que volver.
 Pega esto en Termux y Enter:
 
 ```sh
-curl -fsSL https://yonathanpartida8.github.io/MarissaMiAmor/servidor/instalar.sh | bash
+curl -fsSL https://raw.githubusercontent.com/yonathanpartida8/MarissaMiAmor/claude/interactive-love-book-redesign-5p93fv/servidor/instalar.sh | bash
 ```
+
+> **¿Por qué esta dirección tan larga?** Porque los archivos se bajan directo de
+> GitHub, sin necesitar GitHub Pages (que está apagado en el repositorio). El
+> instalador prueba, en este orden: lo que pongas en `LIBRITO_BASE`, la rama
+> `main`, la rama de trabajo y, al final, GitHub Pages; usa la primera que
+> contesta. Así, el día que esto se junte en `main`, la dirección corta
+> (`.../main/servidor/instalar.sh`) empieza a funcionar sola.
 
 Es un asistente de **3 pasitos** y no pide ningún código:
 
 1. **Lo necesario:** instala `python` y `cloudflared` si faltan y baja **sólo**
-   la carpeta `servidor/` de tu GitHub Pages a `~/librito-servidor`.
+   la carpeta `servidor/` de tu GitHub a `~/librito-servidor`.
 2. **Tu administrador:** te pregunta **usuario** y **contraseña** (mínimo 8;
    no se ve al escribirla). Si no coinciden o es corta, te la vuelve a pedir.
 3. **GitHub:** «¿Lo conectas ahora? [S/n]» → repositorio

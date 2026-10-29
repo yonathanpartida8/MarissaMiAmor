@@ -238,11 +238,44 @@ respaldar() {
   [ -d "$HOME/storage/shared" ] || nota "Para guardarlo en la memoria del teléfono: termux-setup-storage (una vez)."
 }
 
+# ¿De dónde se baja la versión nueva? Se prueban en orden y se usa la primera que contesta.
+# (GitHub Pages está apagado en el repositorio; por eso «actualizar» daba error 404 y, como el error
+#  se perdía, parecía que todo había salido bien.)
+LIBRITO_REPO="${LIBRITO_REPO:-yonathanpartida8/MarissaMiAmor}"
+LIBRITO_RAMA="${LIBRITO_RAMA:-claude/interactive-love-book-redesign-5p93fv}"
+fuentes() {
+  if [ -n "${LIBRITO_BASE:-}" ]; then printf '%s\n' "${LIBRITO_BASE%/}"; fi
+  printf '%s\n' "https://raw.githubusercontent.com/$LIBRITO_REPO/main/servidor"
+  printf '%s\n' "https://raw.githubusercontent.com/$LIBRITO_REPO/$LIBRITO_RAMA/servidor"
+  printf '%s\n' "https://${LIBRITO_REPO%%/*}.github.io/${LIBRITO_REPO##*/}/servidor"
+}
+
 actualizar() {
   dice "Bajando la versión nueva…"
-  LIBRITO_APP="$APP" bash -c "$(curl -fsSL "${LIBRITO_BASE:-https://yonathanpartida8.github.io/MarissaMiAmor/servidor}/instalar.sh?v=$(date +%s)")" -- --solo-archivos
-  paquetes   # lo que la versión nueva necesite (git, por ejemplo) y aún no esté
-  if prendido; then reiniciar; fi
+  local tmp base="" u bajado=0
+  tmp="$(mktemp)"
+  for u in $(fuentes); do
+    if curl -fsSL --max-time 60 "$u/instalar.sh?v=$(date +%s)" -o "$tmp" 2>/dev/null \
+       && head -n 1 "$tmp" | grep -q '^#!.*sh'; then base="$u"; break; fi
+  done
+  if [ -z "$base" ]; then
+    ojo "No se pudo bajar la versión nueva: ninguna de estas direcciones contestó."
+    for u in $(fuentes); do nota "     $u/instalar.sh"; done
+    nota "   Revisa el internet del teléfono. Tu servidor y tus datos quedaron como estaban."
+  else
+    nota "   desde $base"
+    if LIBRITO_APP="$APP" LIBRITO_BASE="$base" bash "$tmp" --solo-archivos; then bajado=1
+    else ojo "La versión nueva no se pudo instalar: se quedó la de antes (tus datos están intactos)."; fi
+  fi
+  rm -f "$tmp"
+  if [ "$bajado" = 1 ]; then
+    paquetes   # lo que la versión nueva necesite (git, por ejemplo) y aún no esté
+    bien "Actualizado."
+  fi
+  # Pase lo que pase, el servidor queda prendido.
+  if ! prendido; then iniciar
+  elif [ "$bajado" = 1 ]; then reiniciar
+  else estado; fi
 }
 
 panel() {
