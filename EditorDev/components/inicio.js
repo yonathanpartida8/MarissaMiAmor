@@ -16,6 +16,11 @@ import { elegirArchivos } from "../assets/biblioteca.js";
 import { ico } from "./iconos.js";
 import { ajustar } from "./transiciones.js";
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
+/* Fase 48: los dibujitos de «¿Qué vas a crear?» — una cartita con su foto y su corazón, y una paletita con su pincel. */
+const DIBUJO_TIPO = {
+  pagina: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="12" y="8" width="40" height="50" rx="7" fill="#fff" stroke="#ffb0cc" stroke-width="3"/><rect x="18" y="14" width="28" height="20" rx="4" fill="#ffe3ec"/><path d="M18 32l8-8 6 6 4-4 10 10v-2" fill="#b8e986"/><circle cx="39" cy="20" r="3" fill="#ffd84d"/><rect x="18" y="39" width="22" height="3.5" rx="1.75" fill="#e9d6e1"/><rect x="18" y="46" width="15" height="3.5" rx="1.75" fill="#e9d6e1"/><path d="M47 49s-6-3.6-6-7.2a3 3 0 0 1 6-1.4 3 3 0 0 1 6 1.4c0 3.6-6 7.2-6 7.2z" fill="#ff5c93" stroke="#fff" stroke-width="2"/></svg>',
+  dibujito: '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 8C17 8 6 18 6 31s10 23 22 23c5 0 6-3 5-6-1-4 1-7 6-7h7c7 0 12-5 12-12C58 17 46 8 32 8z" fill="#fff4e6" stroke="#f3c48d" stroke-width="3"/><circle cx="19" cy="27" r="4.5" fill="#ff5c93"/><circle cx="28" cy="18" r="4.5" fill="#ffd84d"/><circle cx="40" cy="18" r="4.5" fill="#86d6f2"/><circle cx="47" cy="28" r="4.5" fill="#b98bff"/><path d="M22 40s-4.2-2.5-4.2-5a2.1 2.1 0 0 1 4.2-1 2.1 2.1 0 0 1 4.2 1c0 2.5-4.2 5-4.2 5z" fill="#ff8fb3"/><path d="M55 33 41 51" stroke="#a07155" stroke-width="5" stroke-linecap="round"/><path d="M41 51c-3 1-5 4-4 8 4 0 7-2 8-5z" fill="#ff5c93"/></svg>',
+};
 const RT = window.LibritoRT;
 
 // Nombre corto de cada portada en el selector (las nuevas usan su nombre).
@@ -130,7 +135,7 @@ export async function pantallaInicio(app, { cerrable = false, a = "", tipo: tipo
       ["pagina", "pagina", "Detallito de página", "Páginas con fotos, textos, música y animaciones."],
       ["dibujito", "dibujo", "Dibujito", "Una hoja en blanco para dibujarle algo con tus manos."],
     ].map(([k, ic, t, d]) => el("button.ed-que" + (k === tipo ? ".on" : ""), { type: "button", role: "radio", "aria-checked": String(k === tipo), dataset: { k } }, [
-      el("i.ed-que-ico", { html: ico(ic) }), el("b", { text: t }), el("small", { text: d }),
+      el("i.ed-que-ico.lindo", { html: DIBUJO_TIPO[k] || ico(ic) }), el("b", { text: t }), el("small", { text: d }),
     ])));
     const pasoPortada = paso(3, "Su portada", [el("small.ed-paso-d", { text: "Elige un estilo (o pon tu propia imagen). Después puedes cambiar todo." }), ...portada.nodos], ".ed-paso-portada");
     // Fase 47: el dibujito tiene su propio estudio (pinceles, regla, stickers y texto) y le llega como dibujo.

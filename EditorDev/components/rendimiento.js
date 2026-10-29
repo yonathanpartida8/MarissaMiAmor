@@ -78,7 +78,7 @@ document.addEventListener("scroll", actividad, { passive: true, capture: true })
 for (const t of ["popstate", "hashchange", "focus", "orientationchange"]) addEventListener(t, actividad, { passive: true });
 
 /* — Lo que se queda quieto: sólo lo decorativo que se repite sin fin («rd-q») — */
-const DECOR = ".mp-capa, .jt-capa, .dt-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon";
+const DECOR = ".mp-capa, .jt-capa, .dt-capa, .dz-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon";
 let quietos = [];
 /** Marca los elementos cuyas animaciones (todas las que van corriendo) son de las que se repiten para siempre. */
 function aquietar() {
@@ -227,7 +227,9 @@ export function cada(fn, ms) {
     if (document.hidden) await cuandoVisible();
     if (!vivo) return;
     try { await fn(); } catch (e) { console.warn(e); }
-    if (vivo) t = setTimeout(vuelta, ms);
+    // (Fase 48) En reposo (nadie toca la pantalla) o con ahorro de batería se espera más entre vuelta y
+    // vuelta: la radio del teléfono despierta menos veces. Al volver a tocar, se vuelve al ritmo normal.
+    if (vivo) t = setTimeout(vuelta, ms * (R.ahorro ? 3 : R.reposo ? 2.4 : 1));
   };
   t = setTimeout(vuelta, ms);
   return () => { vivo = false; clearTimeout(t); };

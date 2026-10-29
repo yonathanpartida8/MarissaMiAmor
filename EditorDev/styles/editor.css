@@ -2913,7 +2913,7 @@ body.ed-dibujando .ed-chip-efectos { display: none; }
 /* Mientras «Crear detallito» está abierto, la abejita y su foquito no están (llegan ya en el editor). */
 /* (Con display:none, no con visibility:hidden: escondidas así, Chrome dejaba de mandar a la GPU las animaciones
    del menú —todas— y las recalculaba en el procesador, ≈ 50 ms por segundo con el menú quieto.) */
-body:is(.con-inicio, .con-bienvenida) :is(.ed-abeja, .ed-abeja-globo, .ed-foco) { display: none !important; }
+body:is(.con-inicio, .con-bienvenida, .con-dibujito, .con-detallitos) :is(.ed-abeja, .ed-abeja-globo, .ed-foco) { display: none !important; }
 
 /* ═══ Fase 46 · Sin toques fantasma: nada se queda «apretado» ni con el recuadro gris de Android ═══ */
 *, *::before, *::after { -webkit-tap-highlight-color: transparent; }
@@ -2945,3 +2945,7 @@ body.ed-ultra .ed-cosita-vuela { box-shadow: none; transition: none; }
 .ed-dibujo-sigue b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ed-dibujo-sigue small { color: #8f7a8c; }
 :root[data-tema="oscuro"] .ed-dibujo-sigue { background: #3a2a36; box-shadow: 0 0 0 1.5px #5a3a4e; }
+/* Fase 48: los dibujitos de «¿Qué vas a crear?». */
+.ed-que-ico.lindo { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 18px; background: linear-gradient(145deg, #fff, #fff1f6); box-shadow: 0 4px 12px rgba(200, 80, 130, .14); transition: transform .3s cubic-bezier(.3, 1.5, .5, 1); }
+.ed-que-ico.lindo svg { width: 44px; height: 44px; }
+.ed-que.on .ed-que-ico.lindo { transform: rotate(-6deg) scale(1.08); }

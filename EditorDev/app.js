@@ -50,7 +50,6 @@ import { pantallaInicio, quitarInicio } from "./components/inicio.js";
 import { MenuPrincipal } from "./components/menu-principal.js";
 import { MenuExportar } from "./components/exportar-menu.js";
 import { Detallitos } from "./components/detallitos.js";
-import { EstudioDibujo } from "./components/estudio-dibujo.js";
 import * as SRV from "./integraciones/servidor.js";
 import * as NUBE from "./integraciones/nube.js";
 import * as PF from "./components/perfil.js";
@@ -162,9 +161,17 @@ async function arrancar() {
   // Lo primero que se ve: el menú principal (el editor se carga por detrás).
   app.detallitos = new Detallitos(app);
   // Fase 47: el dibujito tiene su propio estudio (no es una página).
-  app.dibujito = new EstudioDibujo(app);
-  app.dibujar = (op) => { quitarInicio(); app.menuPrincipal?.cerrar?.(); app.dibujito.abrir(op); };
-  app.dibujoGuardado = () => EstudioDibujo.guardado();
+  // (Fase 48: se carga hasta que lo abres —en el editor no ocupa nada— y el menú se queda debajo, pausado:
+  //  así no hay parpadeo de editor entre uno y otro.)
+  app.dibujar = async (op) => {
+    quitarInicio();
+    const { EstudioDibujo } = await import("./components/estudio-dibujo.js");
+    app.dibujito ||= new EstudioDibujo(app);
+    app.dibujito.abrir(op);
+  };
+  app.dibujoGuardado = () => {
+    try { const g = JSON.parse(localStorage.getItem("editordev:dibujito") || "null"); return g && (g.v === 1 || g.v === 2) && Array.isArray(g.log) ? g : null; } catch (e) { return null; }
+  };
   app.exportarMenu = new MenuExportar(app);
   app.menuPrincipal = new MenuPrincipal(app);
   app.menuPrincipal.abrir();

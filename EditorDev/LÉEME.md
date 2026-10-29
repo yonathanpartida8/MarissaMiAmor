@@ -913,6 +913,17 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Medido** | `dibujo47` (teléfono y compu): crear, cada pincel, cubeta, borrador, deshacer y rehacer, regla (derechito, moverla, girarla a 15°), grosor, stickers, texto, mover y deshacer, dos dedos, dedo de verdad, seguirlo después, mandarlo, que le llegue como dibujito con su mensajito y portadita, y que se redibuje solito. `crear46` puesto al día (el dibujito ya abre el estudio). |
 | **No probado en teléfonos de verdad** | cómo suena el rasgueo en cada aparato, la presión de un lápiz (S Pen / Apple Pencil), el selector de color nativo y guardar la imagen en la galería. |
 
+### Fase 48: ver dibujo sin congelarse, estudio más bonito y menos batería
+
+| | |
+| --- | --- |
+| **Ver dibujo** (`components/detallitos.js`) | Se redibuja a menor resolución (la tarea más larga medida: ~100–170 ms con el CPU 4× más lento, antes varios segundos) y **al salir se calla de verdad** (se detiene la repetición y cualquier rasgueo). La primera vez no se puede saltar («Míralo hasta el final ♡»); después ya no se repite solo: tú eliges «Verlo dibujarse». Los dibujos tienen su **sección aparte** (Páginas / Dibujitos) y salen en **marquitos** («Sin estrenar» si no lo has visto). |
+| **Cargar sólo lo que usas** (`app.js`, `components/juntitos.js`, `components/ayuda.js`) | El estudio y Dibujar juntos se cargan hasta que los abres, y al cerrar se sueltan sus hojas de memoria. Mientras dibujas, el editor queda dormido debajo (no se pinta ni corre nada) y la abejita no habla ni se ve. |
+| **Batería** (`components/rendimiento.js`) | El latido interno va 2.4× más lento en reposo y 3× en ahorro; el fondo del estudio se pausa en reposo; sin `will-change` permanente en el cielo de Detallitos. Abrir el estudio ya no muestra el editor de pasada (parpadeo). |
+| **Estudio** (`components/estudio-dibujo.js`, `components/dibujo-motor.js`, `styles/dibujito.css`) | El cajón **se desliza hacia arriba** y muestra Bonita, Fondo, Stickers, Texto y Fotito. **Bonita:** papel (liso, cuadritos, rayitas, puntitos), **tamaño de la hoja** (3:4, 1:1, 9:16, 4:3) y **hoja infinita** (zoom sin fin, cada zoom deja ver otro dibujo). **Zoom normal** con dos dedos o la lupa. La **regla** guía el trazo en su dirección. **Lápiz virtual:** el dedo lo mueve sin pintar y un toque lo arma (también en Dibujar juntos). Trazos exactos sin “bolitas”, borrador limpio, **opacidad**, pincel **crayón**, colores nuevos y un **selector moderno** (ruedita de tono, cuadrito, opacidad, tus colores y **gotero**). Fondo con corazones, fresas, moras y hotcakes con chocolate. |
+| **Medido** | `dibujo47` (ampliado), `parpadeo48` (0 parpadeos, también con CPU 4×), `juntitos46` y las pruebas del editor, menú y publicar en teléfono y compu. |
+| **No probado en teléfonos de verdad** | la batería real, parpadeos en iPhone/Android de verdad, sonidos y la presión de un lápiz. El código del editor sí se descarga al abrir la app (sólo queda dormido mientras dibujas). |
+
 ## Cómo está hecho
 
 ```

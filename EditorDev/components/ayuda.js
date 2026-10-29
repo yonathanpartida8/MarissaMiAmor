@@ -389,7 +389,7 @@ export class Ayuda {
   async _charlar() {
     if (!this.abeja.viva) return;
     if (this.enTour) return this._programarCharla();
-    if (document.hidden || this.abeja.hablando || document.body.classList.contains("ed-probando") || document.querySelector(".ed-modal-fondo, .ed-hojita.abierta, .ed-codigo-pantalla")) return this._programarCharla();
+    if (document.hidden || this.abeja.hablando || document.body.matches(".ed-probando, .con-dibujito, .con-menu-principal, .con-detallitos") || document.querySelector(".ed-modal-fondo, .ed-hojita.abierta, .ed-codigo-pantalla")) return this._programarCharla();
     // Fase 41: a veces, en vez de charlar, mira la página y avisa (con cariño) si algo se ve mal…
     if (Math.random() < 0.35 && this._psst()) return this._programarCharla();
     // …o opina de la página que estás haciendo (lo que de verdad hay en ella).

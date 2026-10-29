@@ -31,7 +31,6 @@ import * as PF from "./perfil.js";
 import * as UB from "./ubicacion.js";
 import { sinMovimiento as reducido } from "./transiciones.js";
 import { ambito } from "./rendimiento.js";
-import { DibujoJuntos } from "./dibujo-juntos.js";
 import * as RAP from "./rapiditos.js";
 
 const svg = (d, vb = "0 0 32 32") => `<svg viewBox="${vb}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
@@ -980,7 +979,12 @@ export class Juntitos {
   /* ════ Dibujar Juntos ════ */
   _dibujar() {
     if (!PF.datos().pareja) { this.vista.replaceChildren(el("div.jt-vacio", {}, [el("b", { text: "Para dibujar juntos" }), el("p", { text: "Primero vincúlate con tu amorcito (en el menú principal)." })])); return; }
-    this.dj = new DibujoJuntos(this.app, { pareja: this.pareja, hoja: (t, h) => this._hoja(t, h), cerrarHoja: () => this._cerrarHoja() });
-    this.dj.montar(this.vista);
+    // (Fase 48: Dibujar juntos se carga hasta que lo abres; el resto del tiempo no ocupa nada.)
+    const vista = this.vista, vez = (this._vezDj = {});
+    import("./dibujo-juntos.js").then(({ DibujoJuntos }) => {
+      if (this._vezDj !== vez || !this.abierto || !vista.isConnected) return;
+      this.dj = new DibujoJuntos(this.app, { pareja: this.pareja, hoja: (t, h) => this._hoja(t, h), cerrarHoja: () => this._cerrarHoja() });
+      this.dj.montar(vista);
+    }).catch((e) => aviso("No se pudo abrir Dibujar juntos: " + e.message, 4000, "error"));
   }
 }

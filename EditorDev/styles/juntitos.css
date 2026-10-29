@@ -537,3 +537,6 @@ body.ed-ultra .tq-llega, body.ed-ultra .tq-emoji { animation-duration: .2s; } bo
 @media (prefers-reduced-motion: reduce) { .jt-km-hilo b, .jt-anillo-va, .jt-m-hero.hoy .jt-anillo, .jt-sobre.lleno > i, .jt-rapido.pulso .jt-rapido-e { animation: none !important; } }
 body.ed-ultra .jt-km-hilo b, body.ed-ultra .jt-m-hero.hoy .jt-anillo, body.ed-ultra .jt-sobre.lleno > i { animation: none; }
 body.ed-ultra .jt-mesito, body.ed-ultra .jt-m-cosa, body.ed-ultra .jt-rapido, body.ed-ultra .jt-km { box-shadow: none; }
+/* Fase 48: el lápiz virtual armado (ya dibuja) brilla rosita. */
+.dj-lapiz svg { transition: filter .2s, transform .2s; }
+.dj-lapiz.armado svg { filter: drop-shadow(0 0 6px #ff5c93) drop-shadow(0 2px 3px rgba(0, 0, 0, .25)); transform: scale(1.12); }

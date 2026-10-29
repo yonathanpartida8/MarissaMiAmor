@@ -99,7 +99,7 @@
 .dt-capa.ver { clip-path: circle(150vmax at var(--x, 50%) var(--y, 50%)); }
 .dt-capa.fuera { clip-path: circle(0 at var(--x, 50%) var(--y, 50%)); transition-duration: .5s; transition-timing-function: cubic-bezier(.6, 0, .4, 1); }
 .dt-cielo { position: absolute; inset: 0; pointer-events: none; overflow: hidden; contain: strict; }
-.dt-cielo i { position: absolute; width: 90vmax; height: 90vmax; border-radius: 50%; will-change: transform; animation: mpOrbe 28s ease-in-out infinite alternate; }
+.dt-cielo i { position: absolute; width: 90vmax; height: 90vmax; border-radius: 50%; animation: mpOrbe 28s ease-in-out infinite alternate; }
 .dt-cielo i:first-child { left: -45vmax; top: -50vmax; background: radial-gradient(closest-side, rgba(255, 150, 196, .4), rgba(255, 150, 196, 0)); }
 .dt-cielo i:last-child { right: -45vmax; bottom: -55vmax; background: radial-gradient(closest-side, rgba(176, 150, 255, .36), rgba(176, 150, 255, 0)); animation-duration: 34s; animation-delay: -12s; }
 .dt-burbujas { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
@@ -1144,7 +1144,7 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo, bo
 .dt-cv-dibujo .ed-ico { width: 12px; height: 12px; }
 .dt-ver.dt-ver-dibujo { display: grid; justify-items: center; gap: 16px 34px; }
 .dt-dibujo-escena { padding: 8px 0 4px; }
-.dt-dibujo-hoja { position: relative; display: block; width: min(100%, 430px, calc((100dvh - 330px) * .75)); min-width: 220px; aspect-ratio: 3 / 4; padding: 0; border: 0; border-radius: 28px; overflow: hidden; background: var(--fondo, #fff); cursor: pointer; box-shadow: 0 18px 44px rgba(200, 80, 130, .24), 0 0 0 6px #fff; animation: dtDibujoLlega .7s cubic-bezier(.2, .9, .3, 1.2) both; }
+.dt-dibujo-hoja { position: relative; display: block; width: min(100%, 430px, calc((100dvh - 330px) * .75)); min-width: 220px; aspect-ratio: var(--ar, 3 / 4); padding: 0; border: 0; border-radius: 28px; overflow: hidden; background: var(--fondo, #fff); cursor: pointer; touch-action: manipulation; box-shadow: 0 18px 44px rgba(200, 80, 130, .24), 0 0 0 6px #fff; animation: dtDibujoLlega .7s cubic-bezier(.2, .9, .3, 1.2) both; }
 .dt-dibujo-lienzo, .dt-dibujo-final { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .dt-dibujo-final { opacity: 0; transition: opacity .55s ease; }
 .dt-dibujo-hoja.listo .dt-dibujo-final { opacity: 1; }
@@ -1159,3 +1159,30 @@ body.con-menu-principal .ed-modal-fondo, body.con-detallitos .ed-modal-fondo, bo
 }
 body.ed-ultra .dt-dibujo-hoja { animation-duration: .2s; }
 @media (prefers-reduced-motion: reduce) { .dt-dibujo-hoja, .dt-dibujo-hoja.cargando::after { animation: none; } }
+/* Fase 48: la pista de la primera vez, la hoja infinita para explorar, la sección de Dibujitos y sus marquitos. */
+.dt-dibujo-escena { display: grid; justify-items: center; gap: 8px; }
+.dt-dibujo-pista { min-height: 1.2em; font: 800 13px/1.2 "Nunito", sans-serif; color: #c85a8a; }
+.dt-dibujo-explora { z-index: 2; touch-action: none; cursor: grab; }
+.dt-dibujo-hoja.explorable .dt-dibujo-final { opacity: 0; }
+.dt-secciones { margin-bottom: 8px; }
+.dt-secciones button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.dt-secciones .ed-ico { width: 16px; height: 16px; }
+.dt-col-marcos { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 26px 16px; padding-top: 10px; }
+.dt-cv-cuadro { background: none; box-shadow: none; padding: 0; }
+.dt-cv-cuadro .dt-marquito { aspect-ratio: 3 / 4.05; }
+.dt-cv-cuadro .dt-marquito-dentro { position: absolute; inset: 9px; }
+.dt-cv-cuadro .dt-cv-quien { top: 16px; left: 16px; }
+.dt-marquito { position: relative; display: block; padding: 9px; border-radius: 14px; background: linear-gradient(145deg, #ffd9e6, #f6b9cf 45%, #e9a3be); box-shadow: 0 10px 22px rgba(200, 80, 130, .22), inset 0 1px 0 rgba(255, 255, 255, .7), inset 0 -2px 0 rgba(160, 60, 100, .18); transform: rotate(var(--r, 0deg)); transition: transform .3s cubic-bezier(.3, 1.4, .5, 1); }
+.dt-cv-cuadro:hover .dt-marquito, .dt-cv-cuadro:focus-visible .dt-marquito { transform: rotate(0deg) scale(1.03); }
+.dt-marquito-pin { position: absolute; z-index: 2; left: 50%; top: -11px; width: 22px; height: 22px; margin-left: -11px; color: #ff5c93; filter: drop-shadow(0 2px 3px rgba(120, 30, 70, .35)); }
+.dt-marquito-pin .ed-ico { width: 100%; height: 100%; }
+.dt-marquito-dentro { display: block; overflow: hidden; border-radius: 6px; background: var(--fondo, #fff); box-shadow: inset 0 0 0 5px #fff, inset 0 2px 8px rgba(120, 40, 80, .2); }
+.dt-marquito-dentro img { position: absolute; inset: 5px; width: calc(100% - 10px); height: calc(100% - 10px); object-fit: contain; opacity: 0; transition: opacity .35s; }
+.dt-marquito-dentro.con-img img { opacity: 1; }
+.dt-marquito-sello { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 4px; text-align: center; background: repeating-linear-gradient(135deg, #fff4f8 0 12px, #ffe8f0 12px 24px); color: #c84b7d; }
+.dt-marquito-sello i { width: 34px; height: 34px; animation: dtSello 2.4s ease-in-out infinite; }
+.dt-marquito-sello .ed-ico { width: 100%; height: 100%; }
+.dt-marquito-sello b { font: 800 14px/1.1 "Nunito", sans-serif; }
+.dt-marquito-sello small { font: 700 11.5px/1.2 "Nunito", sans-serif; color: #b07a95; }
+@keyframes dtSello { 50% { transform: rotate(-10deg) translateY(-3px); } }
+body.ed-ultra .dt-marquito-sello i { animation: none; }

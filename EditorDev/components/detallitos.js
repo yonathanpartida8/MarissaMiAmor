@@ -46,6 +46,11 @@ const cuando = (iso) => {
   if (d < 86400) return `hace ${Math.round(d / 3600)} h`;
   return t.toLocaleDateString("es-MX", { day: "numeric", month: "short" });
 };
+/* Los dibujitos que ya viste completos (en este aparato): ésos ya no se repiten solos al abrirlos. */
+const VISTOS = "editordev:dibujos-vistos";
+const vistos = () => { try { return new Set(JSON.parse(localStorage.getItem(VISTOS) || "[]")); } catch (e) { return new Set(); } };
+const dibujoVisto = (id) => vistos().has(id);
+const marcarDibujoVisto = (id) => { try { const s = vistos(); s.add(id); localStorage.setItem(VISTOS, JSON.stringify([...s].slice(-500))); } catch (e) { /* nada */ } };
 const ROTAR = [-2.2, 1.6, -1, 2.4, -1.8, 1.1, -2.6, 0.8];
 const HILO = '<svg viewBox="0 0 200 60" preserveAspectRatio="none"><path class="vn-cuerda" d="M2 14 C 60 62, 140 62, 198 14"/><path class="vn-luz" d="M2 14 C 60 62, 140 62, 198 14"/></svg>';
 /* Cómo se llega a cada pantalla. */
@@ -503,6 +508,10 @@ export class Detallitos {
   _vColeccion() {
     const nombre = PF.nombreDe(this.amor?.pareja) || "tu amorcito";
     this.filtro ||= "todas";
+    this.seccion ||= "paginas";
+    const SEC = [["paginas", "Páginas", "pagina"], ["dibujitos", "Dibujitos", "lapiz"]];
+    const bsSec = SEC.map(([k, tx, ic]) => el("button", { type: "button", role: "tab", dataset: { k }, html: I(ic, tx) }));
+    const secciones = el("div.dt-tabs.dt-secciones", { role: "tablist", "aria-label": "Páginas o dibujitos" }, [el("i.dt-tab-luz"), ...bsSec]);
     const FIL = [["todas", "Todas"], ["suyas", `De ${nombre}`], ["mias", "Mías"]];
     const bs = FIL.map(([k, t]) => el("button", { type: "button", role: "tab", dataset: { k } }, [el("span", { text: t })]));
     const tabs = el("div.dt-tabs.tres", { role: "tablist", "aria-label": "Qué páginas ver" }, [el("i.dt-tab-luz"), ...bs]);
@@ -511,15 +520,23 @@ export class Detallitos {
     const pintar = (tipo = null) => {
       const d = this.datos;
       tabs.dataset.on = this.filtro;
+      secciones.dataset.on = this.seccion;
+      bsSec.forEach((b) => { const on = b.dataset.k === this.seccion; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); });
       bs.forEach((b) => { const on = b.dataset.k === this.filtro; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); });
       if (d) {
         const s = d.recibidos.length, m = d.enviados.length, t = s + m;
-        resumen.textContent = t ? `${t} ${t === 1 ? "página" : "páginas"} · ${s} de ${nombre} · ${m} ${m === 1 ? "tuya" : "tuyas"}` : "Aquí se guarda todo lo que se manden";
+        resumen.textContent = t ? `${t} ${t === 1 ? "detallito" : "detallitos"} · ${s} de ${nombre} · ${m} ${m === 1 ? "tuyo" : "tuyos"}` : "Aquí se guarda todo lo que se manden";
       }
       const rej = d ? this._rejillaCol(d, nombre) : el("div.dt-cargando", {}, [el("i"), el("span", { text: "Buscando sus páginas…" })]);
       if (tipo && caja._actual) cambiar(caja, rej, { tipo, sonidos: this.app.sonidos, sinSonido: tipo === "zoom" });
       else { caja.replaceChildren(rej); caja._actual = rej; }
     };
+    bsSec.forEach((b, i) => b.addEventListener("click", () => {
+      if (b.dataset.k === this.seccion) return;
+      this.seccion = b.dataset.k;
+      this.app.sonidos?.sonar("seleccionar");
+      pintar(i ? "deslizar" : "atras");
+    }));
     bs.forEach((b, i) => b.addEventListener("click", () => {
       if (b.dataset.k === this.filtro) return;
       const antes = FIL.findIndex((f) => f[0] === this.filtro);
@@ -540,7 +557,7 @@ export class Detallitos {
     return el("section.dt-pantalla.dt-col", {}, [
       el("div.dt-col-cab", { style: { "--i": 0 } }, [el("h2", {}, [el("span", { text: "Nuestra colección" }), el("i.dt-col-corazon", { html: ico("corazon") })]), resumen]),
       this._botonChat("dt-tarjeta.dt-ir-chat", "Mensajitos", `Escríbele a ${nombre}, con GIFs y stickers`, 1),
-      el("div.dt-col-filtros", { style: { "--i": 1 } }, [tabs]),
+      el("div.dt-col-filtros", { style: { "--i": 1 } }, [secciones, tabs]),
       el("div.dt-col-cuerpo", { style: { "--i": 2 } }, [caja]),
       el("button.dt-enlace", { type: "button", style: { "--i": 3 }, html: I("vincular", "Nuestro vínculo"), onClick: (e) => this.ir("vincular", null, { desde: e.currentTarget }) }),
     ]);
@@ -548,10 +565,11 @@ export class Detallitos {
 
   _rejillaCol(d, nombre) {
     const todas = [...d.recibidos, ...d.enviados].sort((a, b) => (b.creado > a.creado ? 1 : -1));
-    const lista = todas.filter((x) => this.filtro === "todas" || (this.filtro === "mias" ? x._mio : !x._mio));
-    const rej = el("div.dt-col-rejilla");
+    const dib = this.seccion === "dibujitos";
+    const lista = todas.filter((x) => (x.tipo === "dibujito") === dib && (this.filtro === "todas" || (this.filtro === "mias" ? x._mio : !x._mio)));
+    const rej = el("div.dt-col-rejilla" + (dib ? ".dt-col-marcos" : ""));
     if (!lista.length) {
-      const [t, p] = { todas: ["Su colección empieza aquí", "Cada página que uno le mande al otro se guarda aquí, con su portadita."], suyas: [`Todavía no te llega ninguna de ${nombre}`, "En cuanto te mande una, aparece aquí."], mias: ["Todavía no le mandas ninguna", `Abre un librito y mándasela a ${nombre} desde Exportar.`] }[this.filtro];
+      const [t, p] = dib ? ({ todas: ["Su galería de dibujitos", "Los dibujitos que se manden se cuelgan aquí, en su marquito."], suyas: [`Todavía no te llega ningún dibujito de ${nombre}`, "En cuanto te dibuje algo, aparece aquí."], mias: ["Todavía no le mandas ningún dibujito", "Crea uno en Crear detallito → Dibujito."] }[this.filtro]) : { todas: ["Su colección empieza aquí", "Cada página que uno le mande al otro se guarda aquí, con su portadita."], suyas: [`Todavía no te llega ninguna de ${nombre}`, "En cuanto te mande una, aparece aquí."], mias: ["Todavía no le mandas ninguna", `Abre un librito y mándasela a ${nombre} desde Exportar.`] }[this.filtro];
       rej.append(el("div.dt-col-vacio", {}, [el("i.dt-col-vacio-sobre", { html: ico("detallito") }), el("b", { text: t }), el("p", { text: p })]));
       return rej;
     }
@@ -625,7 +643,7 @@ export class Detallitos {
     if (x.portadita) this._ponerPortadita(tapa, SRV.enlace(x.portadita));
     else this._sinPortadita(x, tapa);
     if (rx) tapa.append(el("span.dt-cv-rx", { title: x._mio ? `${nombre} ${rx.largo}` : rx.tuyo, html: svgReaccion(rx.id) }));
-    if (x.tipo === "dibujito") tapa.append(el("em.dt-cv-dibujo", { html: I("lapiz", "Dibujito") }));
+    if (x.tipo === "dibujito") return this._marquito(x, i, nombre);
     const t = el("button.dt-cv" + (nuevo ? ".nueva" : "") + (x._mio && x.reaccion_nueva ? ".rx-nueva" : "") + (x.tipo === "dibujito" ? ".dibujito" : ""), {
       type: "button", "aria-label": `${x.titulo}, ${x._mio ? "tuya" : "de " + nombre}${rx ? ", " + rx.corto : ""}`,
       onClick: (e) => { this.app.sonidos?.sonar("detallito-abrir"); this.ir("ver", x, { desde: e.currentTarget, sinSonido: true }); },
@@ -637,6 +655,34 @@ export class Detallitos {
     ]);
     t.style.setProperty("--i", Math.min(i, 10));
     t.style.setProperty("--r", (ROTAR[i % ROTAR.length] * 0.5).toFixed(2) + "deg");
+    return t;
+  }
+
+  /**
+   * Un dibujito en la colección: en su marquito (como un cuadrito colgado), con su pin de corazón. El que todavía
+   * no has visto va sellado: no se ve hasta que lo mires dibujarse completito.
+   */
+  _marquito(x, i, nombre) {
+    const visto = x._mio || dibujoVisto(x.id), nuevo = !x._mio && !visto, rx = reaccion(x.reaccion);
+    const dentro = el("span.dt-marquito-dentro", { style: { "--fondo": /^#[0-9a-f]{6}$/i.test(x.color || "") ? x.color : "#fff" } });
+    if (visto && x.portadita) {
+      const im = el("img", { alt: "", loading: "lazy", decoding: "async", draggable: "false" });
+      im.onload = () => dentro.classList.add("con-img"); im.onerror = () => im.remove();
+      im.src = SRV.enlace(x.portadita);
+      dentro.append(im);
+    } else if (!visto) dentro.append(el("span.dt-marquito-sello", {}, [el("i", { html: ico("lapiz") }), el("b", { text: "Sin estrenar" }), el("small", { text: "Míralo dibujarse" })]));
+    if (rx) dentro.append(el("span.dt-cv-rx", { title: x._mio ? `${nombre} ${rx.largo}` : rx.tuyo, html: svgReaccion(rx.id) }));
+    const t = el("button.dt-cv.dt-cv-cuadro" + (nuevo ? ".nueva" : ""), {
+      type: "button", "aria-label": `Dibujito ${x.titulo}, ${x._mio ? "tuyo" : "de " + nombre}${visto ? "" : ", sin ver"}`,
+      onClick: (e) => { this.app.sonidos?.sonar("detallito-abrir"); this.ir("ver", x, { desde: e.currentTarget, sinSonido: true }); },
+    }, [
+      el("span.dt-marquito", {}, [el("i.dt-marquito-pin", { html: ico("corazon") }), dentro]),
+      el("span.dt-cv-quien" + (x._mio ? ".mia" : ""), {}, [PF.avatar(x._mio ? "yo" : "pareja", "dt-cv-av"), el("span", { text: x._mio ? "Yo" : nombre })]),
+      nuevo ? el("em.dt-cv-nuevo", { text: "Nuevo" }) : null,
+      el("span.dt-cv-pie", {}, [el("b", { text: x.titulo }), el("small", { text: cuando(x.creado) })]),
+    ]);
+    t.style.setProperty("--i", Math.min(i, 10));
+    t.style.setProperty("--r", (ROTAR[i % ROTAR.length] * 0.6).toFixed(2) + "deg");
     return t;
   }
 
@@ -791,60 +837,132 @@ export class Detallitos {
   }
 
   /**
-   * Fase 47: un dibujito en su hojita. Se baja su paquete (el dibujo y sus trazos) y se redibuja solito,
-   * trazo por trazo y con su rasgueo; al final aparece entero (con sus stickers y textos) y salen chispitas.
-   * Tocarlo mientras se dibuja lo termina de una vez.
+   * Fase 47–48: un dibujito en su hojita. Se baja su paquete y la PRIMERA vez se redibuja solito, entero (no se
+   * puede saltar: así se ve como fue dibujado), con su rasgueo; después ya sale completo y «Verlo dibujarse» lo
+   * repite cuando tú quieras (y ahí sí, tocarlo lo termina). Se repite a media resolución (ligero en el teléfono)
+   * y todo se apaga —repetición y sonido— en cuanto sales, aunque todavía se estuviera bajando.
+   * Los de la hoja infinita, al terminar, se pueden explorar con los dedos (o la rueda) para ir descubriendo
+   * los dibujitos de adentro.
    */
   _escenaDibujo(x) {
+    const yaVisto = x._mio || dibujoVisto(x.id);
     const lienzo = el("canvas.dt-dibujo-lienzo", { "aria-hidden": "true" });
     const final = el("img.dt-dibujo-final", { alt: x.titulo, draggable: "false" });
-    const hoja = el("button.dt-dibujo-hoja.cargando", { type: "button", "aria-label": x.titulo, style: { "--fondo": /^#[0-9a-f]{6}$/i.test(x.color || "") ? x.color : "#fff" }, onClick: () => { if (this._dibujo?.rep && hoja.classList.contains("dibujando")) this._dibujo.rep.parar(); } }, [lienzo, final]);
-    const v = this._dibujo = { hoja, lienzo, final, log: null, rep: null, png: null };
-    const listo = () => { hoja.classList.remove("cargando"); };
+    const pista = el("small.dt-dibujo-pista", { text: yaVisto ? "" : "Míralo hasta el final ♡" });
+    const hoja = el("button.dt-dibujo-hoja.cargando", { type: "button", "aria-label": x.titulo, style: { "--fondo": /^#[0-9a-f]{6}$/i.test(x.color || "") ? x.color : "#fff" }, onClick: () => {
+      const v = this._dibujo;
+      if (v?.rep && v.saltable && hoja.classList.contains("dibujando")) v.rep.parar();
+    } }, [lienzo, final]);
+    const v = this._dibujo = { x, hoja, lienzo, final, pista, log: null, meta: {}, rep: null, ras: null, vez: {}, yaVisto, saltable: yaVisto };
+    this._limpiezas.push(() => { v.vez.muerto = true; v.rep?.parar(false); v.ras?.parar(); v.explora?.(); });
     (async () => {
       const { leerZip } = await import("../export/zip.js");
       const zip = await leerZip(await SRV.paqueteDetallito(x.id));
+      if (v.vez.muerto) return;
       if (zip["dibujo.png"]) {
         v.png = new Blob([await zip["dibujo.png"]()], { type: "image/png" });
         const u = URL.createObjectURL(v.png);
         final.src = u;
         this._limpiezas.push(() => URL.revokeObjectURL(u));
       }
-      try { v.log = JSON.parse(new TextDecoder().decode(await zip["dibujo.json"]())).log; } catch (e) { v.log = null; }
-    })().then(() => { if (!hoja.isConnected) return; listo(); this._repetirDibujo(); }, () => {
-      if (!hoja.isConnected) return;
+      try { v.meta = JSON.parse(new TextDecoder().decode(await zip["dibujo.json"]())); v.log = v.meta.log; } catch (e) { v.log = null; }
+    })().then(() => {
+      if (v.vez.muerto) return;
+      const w = v.meta.ancho || 1080, h = v.meta.alto || 1440;
+      hoja.style.setProperty("--ar", `${w} / ${h}`);
+      hoja.classList.remove("cargando");
+      if (yaVisto) this._dibujoListo(false); else this._repetirDibujo();
+    }, () => {
+      if (v.vez.muerto) return;
       final.src = SRV.enlace(x.ver + "dibujo.png");
-      listo(); hoja.classList.add("listo");
+      hoja.classList.remove("cargando"); hoja.classList.add("listo");
     });
-    return el("div.dt-ver-escena.dt-dibujo-escena", {}, [hoja]);
+    return el("div.dt-ver-escena.dt-dibujo-escena", {}, [hoja, pista]);
   }
 
   async _repetirDibujo() {
     const v = this._dibujo;
-    if (!v?.hoja.isConnected || v.hoja.classList.contains("cargando")) return;
-    v.rep?.parar();
-    if (!v.log?.length || reducido()) { v.hoja.classList.add("listo"); return; }
+    if (!v || v.vez.muerto || v.hoja.classList.contains("cargando")) return;
+    v.rep?.parar(false); v.ras?.parar(); v.explora?.();
+    if (!v.log?.length || reducido()) { this._dibujoListo(true); return; }
     const [{ repetir }, { Rasgueo }] = await Promise.all([import("./dibujo-motor.js"), import("./estudio-dibujo.js")]);
-    if (!v.hoja.isConnected) return;
+    if (v.vez.muerto) return;
+    const w = v.meta.ancho || 1080, h = v.meta.alto || 1440;
     v.hoja.classList.remove("listo"); v.hoja.classList.add("dibujando");
-    const ras = new Rasgueo(this.app);
+    const ras = v.ras = new Rasgueo(this.app);
     let actual = null;
     const rep = v.rep = repetir(v.lienzo, v.log, {
+      w, h, k: Math.min(1, 560 / Math.max(w, h)), vista: v.meta.infinito ? v.meta.vista : null,
       alPaso: (op) => {
+        if (v.vez.muerto) { rep.parar(false); ras.parar(); return; }
         if (op.k === "trazo") { if (op.h !== actual) { ras.parar(); actual = op.h; ras.empezar(op.h); ras.vel(2.6); } }
         else { ras.parar(); actual = null; if (op.k === "relleno") this.app.sonidos?.sonar("dz-relleno"); }
       },
     });
-    this._limpiezas.push(() => { rep.parar(); ras.parar(); });
     const completo = await rep.listo;
     ras.parar();
-    if (!v.hoja.isConnected || v.rep !== rep) return;
+    if (v.vez.muerto || v.rep !== rep) return;
+    this._dibujoListo(completo);
+  }
+
+  /** Ya se vio: aparece entero (con sus stickers y textos) y, si es de la hoja infinita, se puede explorar. */
+  _dibujoListo(completo) {
+    const v = this._dibujo;
+    if (!v || v.vez.muerto) return;
     v.hoja.classList.remove("dibujando"); v.hoja.classList.add("listo");
+    v.saltable = true; v.pista.textContent = "";
     if (completo) {
+      marcarDibujoVisto(v.x.id);
       this.app.sonidos?.sonar("dz-llego");
       const r = v.hoja.getBoundingClientRect();
       this._chispas(r.left + r.width / 2, r.top + r.height / 2, 18);
     }
+    if (v.meta.infinito && v.log?.length) this._explorarDibujo(v);
+  }
+
+  /** La hoja infinita en Detallitos: dos dedos (o la rueda) para acercarte y descubrir lo de adentro. */
+  async _explorarDibujo(v) {
+    const { LienzoInfinito } = await import("./dibujo-motor.js");
+    if (v.vez.muerto) return;
+    const w = v.meta.ancho || 1080, h = v.meta.alto || 1440, k = Math.min(1, 720 / Math.max(w, h));
+    const c = el("canvas.dt-dibujo-lienzo.dt-dibujo-explora", { "aria-hidden": "true" });
+    const L = new LienzoInfinito(c, Math.round(w * k), Math.round(h * k));
+    const base = v.meta.vista || { s: 1, x: 0, y: 0 };
+    let vis = { s: base.s * k, x: base.x, y: base.y };
+    const pintar = () => { L.vista = { ...vis, k: 1 }; L.redibujar(); };
+    pintar();
+    v.hoja.append(c);
+    v.hoja.classList.add("explorable");
+    v.pista.textContent = "Acércate con dos dedos: hay dibujitos adentro ✨";
+    let raf = 0;
+    const pedir = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; pintar(); }); };
+    const zoom = (f, cx, cy) => {
+      const wx = vis.x + cx / vis.s, wy = vis.y + cy / vis.s;
+      vis.s = Math.max(base.s * k * 0.25, Math.min(vis.s * f, 1e5));
+      vis.x = wx - cx / vis.s; vis.y = wy - cy / vis.s;
+      pedir();
+    };
+    const local = (e) => { const r = c.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * c.width, (e.clientY - r.top) / r.height * c.height]; };
+    const dedos = new Map();
+    let ant = null;
+    const abajo = (e) => { dedos.set(e.pointerId, local(e)); try { c.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } ant = null; };
+    const mueve = (e) => {
+      if (!dedos.has(e.pointerId)) return;
+      dedos.set(e.pointerId, local(e));
+      const ps = [...dedos.values()];
+      if (ps.length >= 2) {
+        const [a, b] = ps, d = Math.hypot(b[0] - a[0], b[1] - a[1]), m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+        if (ant) { zoom(d / (ant.d || 1), m[0], m[1]); vis.x -= (m[0] - ant.m[0]) / vis.s; vis.y -= (m[1] - ant.m[1]) / vis.s; pedir(); }
+        ant = { d, m };
+      } else if (ant?.uno) { vis.x -= (ps[0][0] - ant.p[0]) / vis.s; vis.y -= (ps[0][1] - ant.p[1]) / vis.s; ant = { uno: true, p: ps[0] }; pedir(); }
+      else ant = { uno: true, p: ps[0] };
+    };
+    const arriba = (e) => { dedos.delete(e.pointerId); ant = null; };
+    const rueda = (e) => { e.preventDefault(); const [x, y] = local(e); zoom(Math.exp(-e.deltaY * 0.0015), x, y); };
+    c.addEventListener("pointerdown", abajo); c.addEventListener("pointermove", mueve);
+    c.addEventListener("pointerup", arriba); c.addEventListener("pointercancel", arriba);
+    c.addEventListener("wheel", rueda, { passive: false });
+    v.explora = () => { cancelAnimationFrame(raf); c.remove(); v.hoja.classList.remove("explorable"); v.explora = null; };
   }
 
   async _guardarDibujo(x) {

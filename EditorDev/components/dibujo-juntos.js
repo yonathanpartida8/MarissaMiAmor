@@ -10,6 +10,7 @@
  *   · La hoja se guarda como imagen (o se comparte) con su fondo.
  * Los puntos van de 0 a 10000 (la hoja es 3:4): se ve igual en cualquier pantalla.
  */
+import { vibrar } from "../integraciones/plataforma.js";
 import { el, aviso, confirmar, pedirTexto } from "./ui.js";
 import { ico } from "./iconos.js";
 import * as SRV from "../integraciones/servidor.js";
@@ -280,74 +281,120 @@ export class DibujoJuntos {
     });
   }
 
-  /* ── Con el dedo (o el lápiz óptico) ── */
+  /* ── Con el dedo (o el lápiz óptico) ──
+     Fase 48 · Lápiz virtual: con el dedo, el lápiz se MUEVE sin pintar (va arriba del dedo, que no lo tapa, y sigue
+     al dedo aunque lo pongas en otro lado); un toque lo «arma» (su punta brilla) y entonces sí dibuja al moverlo;
+     otro toque lo desarma. Así no se raya la hoja sin querer. Con el lápiz óptico o el mouse, se dibuja directo. */
   _enlazar() {
     const cv = this.capaViva;
-    let ultimo = null;
-    const punto = (e) => {
-      const r = cv.getBoundingClientRect();
-      // Lápiz virtual: con el dedo, la punta queda 64 px arriba (y un poquito a la izquierda): el dedo no tapa.
-      const off = this.virtual && e.pointerType === "touch" ? { x: -10, y: -64 } : { x: 0, y: 0 };
-      const x = e.clientX + off.x - r.left, y = e.clientY + off.y - r.top;
-      const pr = e.pointerType === "pen" ? Math.round((e.pressure || 0.5) * 100) : 50;
-      return { x, y, pr, dedo: { x: e.clientX - r.left, y: e.clientY - r.top }, off };
-    };
-    const verLapiz = (q) => {
-      const on = q.off.y !== 0;
-      this.lapiz.hidden = !on; this.guia.hidden = !on;
-      if (!on) return;
+    let ultimo = null, toque = null;
+    this.punta = null; this.armado = false;
+    const local = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    const presion = (e) => (e.pointerType === "pen" ? Math.round((e.pressure || 0.5) * 100) : 50);
+    const esVirtual = (e) => this.virtual && e.pointerType === "touch";
+    const verLapiz = (q, dedo) => {
+      this.lapiz.hidden = this.guia.hidden = !dedo;
+      if (!dedo) return;
+      this.lapiz.classList.toggle("armado", this.armado);
       this.lapiz.style.transform = `translate(${q.x}px, ${q.y}px)`;
-      const dx = q.dedo.x - q.x, dy = q.dedo.y - q.y;
+      const dx = dedo.x - q.x, dy = dedo.y - q.y;
       this.guia.style.transform = `translate(${q.x}px, ${q.y}px) rotate(${Math.atan2(dy, dx)}rad)`;
       this.guia.style.width = Math.hypot(dx, dy) + "px";
     };
-    const aHoja = (q) => [Math.round(Math.max(0, Math.min(1, q.x / this.w)) * 10000), Math.round(Math.max(0, Math.min(1, q.y / this.h)) * 10000), q.pr];
-    cv.addEventListener("pointerdown", (e) => {
-      if (!this.lienzo || (e.pointerType === "mouse" && e.button !== 0)) return;
-      if (this.actual) return; // un dedo a la vez
-      e.preventDefault();
-      try { cv.setPointerCapture(e.pointerId); } catch (er) { /* nada */ }
-      const q = punto(e);
-      verLapiz(q);
-      this.dedo = e.pointerId;
-      this.actual = { id: 0, mio: true, pincel: this.pincel, c: this.color, a: this.grosor, p: [aHoja(q)], fin: false, pendientes: [] };
+    const aHoja = (q, pr) => [Math.round(Math.max(0, Math.min(1, q.x / this.w)) * 10000), Math.round(Math.max(0, Math.min(1, q.y / this.h)) * 10000), pr];
+    const empezar = (q, pr) => {
+      this.actual = { id: 0, mio: true, pincel: this.pincel, c: this.color, a: this.grosor, p: [aHoja(q, pr)], fin: false, pendientes: [] };
       this.actual.pendientes.push(this.actual.p[0]);
       ultimo = { x: q.x, y: q.y, t: performance.now() };
       this.sonido.empezar(this.pincel);
       this._crear(this.actual);
       clearInterval(this._tFlush);
       this._tFlush = setInterval(() => this._mandar(this.actual), 110);
-      this._vivos();
-    });
-    cv.addEventListener("pointermove", (e) => {
-      if (!this.actual || e.pointerId !== this.dedo) return;
-      const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-      let q = null;
-      for (const ev of evs.length ? evs : [e]) {
-        q = punto(ev);
-        const pt = aHoja(q), u = this.actual.p[this.actual.p.length - 1];
-        if (Math.hypot(pt[0] - u[0], pt[1] - u[1]) < 12) continue;
-        this.actual.p.push(pt); this.actual.pendientes.push(pt);
-      }
-      if (!q) return;
-      verLapiz(q);
+    };
+    const agregar = (q, pr) => {
+      const pt = aHoja(q, pr), u = this.actual.p[this.actual.p.length - 1];
+      if (Math.hypot(pt[0] - u[0], pt[1] - u[1]) < 12) return;
+      this.actual.p.push(pt); this.actual.pendientes.push(pt);
+    };
+    const sonar = (q) => {
       const ahora = performance.now(), d = Math.hypot(q.x - ultimo.x, q.y - ultimo.y);
       this.sonido.mover(d / Math.max(8, ahora - ultimo.t));
       ultimo = { x: q.x, y: q.y, t: ahora };
-      this._vivos();
-    });
-    const soltar = (e) => {
-      if (!this.actual || e.pointerId !== this.dedo) return;
-      this.lapiz.hidden = this.guia.hidden = true;
+    };
+    const terminar = () => {
       this.sonido.parar();
       clearInterval(this._tFlush);
       const t = this.actual;
+      if (!t) return;
       t.fin = true;
       this.actual = null;
       this._mandar(t);
       // Se queda en la hoja (abajo) ya mismo; el servidor lo confirma.
       pintarTrazo(this.base.getContext("2d"), t, this.base.width, this.base.height);
       if (t.id) this.trazos.set(t.id, { ...t, pendientes: undefined }); else t.alGuardar = () => this.trazos.set(t.id, { ...t, pendientes: undefined });
+    };
+    cv.addEventListener("pointerdown", (e) => {
+      if (!this.lienzo || (e.pointerType === "mouse" && e.button !== 0)) return;
+      if (this.actual || this.dedo != null) return; // un dedo a la vez
+      e.preventDefault();
+      try { cv.setPointerCapture(e.pointerId); } catch (er) { /* nada */ }
+      this.dedo = e.pointerId;
+      const d = local(e);
+      if (esVirtual(e)) {
+        if (!this.punta) this.punta = { x: Math.max(0, d.x - 10), y: Math.max(0, d.y - 64) };
+        toque = { d0: d, ult: d, t: performance.now(), mov: 0 };
+        verLapiz(this.punta, d);
+        return;
+      }
+      empezar(d, presion(e));
+      this._vivos();
+    });
+    cv.addEventListener("pointermove", (e) => {
+      if (e.pointerId !== this.dedo) return;
+      const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+      if (toque) {
+        let d = toque.ult;
+        for (const ev of evs.length ? evs : [e]) {
+          d = local(ev);
+          const dx = d.x - toque.ult.x, dy = d.y - toque.ult.y;
+          toque.mov += Math.hypot(dx, dy); toque.ult = d;
+          this.punta = { x: Math.max(0, Math.min(this.w, this.punta.x + dx)), y: Math.max(0, Math.min(this.h, this.punta.y + dy)) };
+          if (this.armado) {
+            if (!this.actual && toque.mov > 3) empezar(this.punta, 50);
+            else if (this.actual) agregar(this.punta, 50);
+          }
+        }
+        verLapiz(this.punta, d);
+        if (this.actual) { sonar(this.punta); this._vivos(); }
+        return;
+      }
+      if (!this.actual) return;
+      let q = null;
+      for (const ev of evs.length ? evs : [e]) { q = local(ev); agregar(q, presion(ev)); }
+      if (!q) return;
+      sonar(q);
+      this._vivos();
+    });
+    const soltar = (e) => {
+      if (e.pointerId !== this.dedo) return;
+      this.dedo = null;
+      if (toque) {
+        const tap = performance.now() - toque.t < 260 && toque.mov < 9;
+        toque = null;
+        if (this.actual) terminar();
+        else if (tap) {
+          // Un toque arma (o desarma) el lápiz.
+          this.armado = !this.armado;
+          this.app.sonidos?.sonar(this.armado ? "activar" : "desactivar");
+          vibrar(this.armado ? 12 : 6);
+        }
+        this.lapiz.classList.toggle("armado", this.armado);
+        this.guia.hidden = true;
+        this._vivos();
+        return;
+      }
+      this.lapiz.hidden = this.guia.hidden = true;
+      terminar();
       this._vivos();
     };
     cv.addEventListener("pointerup", soltar);
