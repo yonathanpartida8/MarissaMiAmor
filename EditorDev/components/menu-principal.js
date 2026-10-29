@@ -172,7 +172,9 @@ export class MenuPrincipal {
     const antes = this.vista;
     this.vista = vista;
     const nodo = vista === "cuenta" ? this._vCuenta() : vista === "perfil" ? this._vPerfil() : vista === "ajustes" ? this._vAjustes() : this._vInicio();
-    cambiar(this.escena, nodo, { tipo: tipo || CAMINO[antes + ">" + vista] || "zoom", desde, sonidos: this.app.sonidos, sinSonido: sinSonido || !antes });
+    // Se mide cuando ya terminó el cambio: a media transición conviven las dos vistas y el menú
+    // se veía chiquito y separado (Fase 49).
+    cambiar(this.escena, nodo, { tipo: tipo || CAMINO[antes + ">" + vista] || "zoom", desde, sonidos: this.app.sonidos, sinSonido: sinSonido || !antes }).then(() => this._ajustar());
     this._ajustar();
   }
 
@@ -188,6 +190,8 @@ export class MenuPrincipal {
       if (!col) return;
       c.classList.toggle("mp-fijo", this.vista === "inicio");
       if (this.vista !== "inicio") { col.style.zoom = ""; return; }
+      // Oculto o a media transición: medir ahí da un zoom equivocado.
+      if (c.clientHeight < 240 || this.escena.childElementCount > 1 || document.hidden) return;
       // Misma pantalla y mismo inicio que la última vez (p. ej. al volver del editor): se parte del zoom
       // que quedó y basta una medida; antes se volvía a 1 y se medía hasta 4 veces el menú entero (~100 ms).
       const llave = [innerWidth, innerHeight, Math.round(visualViewport?.height || 0), this._clave()].join("|");

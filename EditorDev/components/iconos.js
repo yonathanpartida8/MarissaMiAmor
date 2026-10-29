@@ -102,7 +102,7 @@ const P = {
   corazon: '<path d="M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.5 4.3 4.3 0 0 1 19.5 10c0 5.6-7.5 10-7.5 10z"/>',
   // Elementos
   forma: '<rect x="3.5" y="11" width="9.5" height="9.5" rx="1.5"/><circle cx="16" cy="8" r="5"/>',
-  dibujo: '<path d="M12 7.5a3 3 0 1 1 3-3 3 3 0 0 1 3 3 3 3 0 1 1-3 3 3 3 0 0 1-3 3 3 3 0 1 1-3-3 3 3 0 0 1-3-3 3 3 0 1 1 3 3z"/><circle cx="12" cy="7.5" r="1.4"/><path d="M12 13.5V21M12 17c-2.5 0-4-1.5-4.5-3.5M12 18.5c2.2 0 3.6-1.2 4.2-3"/>',
+  dibujo: '<path d="M4 20l1.1-4.6L15.4 5.1a2.1 2.1 0 0 1 3 0l.5.5a2.1 2.1 0 0 1 0 3L8.6 18.9 4 20z"/><path d="M13.6 6.9l3.5 3.5"/><path d="M17.6 21.2c-1.7-1-3.1-2.2-3.1-3.6a1.55 1.55 0 0 1 3.1-.3 1.55 1.55 0 0 1 3.1.3c0 1.4-1.4 2.6-3.1 3.6z"/>',
   boton: '<rect x="2.5" y="7" width="19" height="10" rx="5"/><path d="M8 12h8"/>',
   album: '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>',
   carrusel: '<rect x="6" y="5" width="12" height="14" rx="2"/><path d="M3 7v10M21 7v10"/>',

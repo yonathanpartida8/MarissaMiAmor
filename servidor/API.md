@@ -96,14 +96,14 @@ Las fechas de «hoy» las manda el aparato (`?hoy=AAAA-MM-DD`) para que cada qui
 | GET | `/api/toques` | con sesión |  |
 | POST | `/api/toques/visto` | con sesión |  |
 | GET | `/api/cositas` | con sesión | Tus contadores y registros, y lo que tu amorcito quiso compartir contigo. |
-| POST | `/api/cositas` | con sesión | Registrar una cosita |
+| POST | `/api/cositas` | con sesión | Registrar una cosita (1.21: `n` = cuántos «te amo»/«te extraño» de un jalón, 1–999; `nivel` 1–5 para el enojómetro) |
 | DELETE | `/api/cositas/{…}` | con sesión |  |
 | PUT | `/api/cositas/{…}` | con sesión |  |
 | PUT | `/api/cositas/ajustes` | con sesión | Que tu amorcito vea (o no) un contador tuyo |
 | GET | `/api/ubicacion` | con sesión | Dónde está cada quien (sólo quien la comparte), sus lugares y lo último que pasó en ellos. |
 | PUT | `/api/ubicacion` | con sesión | Tu ubicación (sólo llega si tú decidiste compartirla) |
 | DELETE | `/api/ubicacion` | con sesión | Dejar de compartir: se borra tu ubicación del servidor (no queda nada). |
-| POST | `/api/lugares` | con sesión |  |
+| POST | `/api/lugares` | con sesión | Lugar o zona (1.21: `radio` desde 10 m; `zona` = 3–300 puntos `[lat, lng]`; `clase` lugar / aviso / segura; `emoji`) |
 | PUT | `/api/lugares/{…}` | con sesión |  |
 | DELETE | `/api/lugares/{…}` | con sesión |  |
 | GET | `/api/push/clave` | cualquiera | La llave pública VAPID (la pide el editor para suscribirse a los avisos). |

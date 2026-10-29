@@ -178,6 +178,7 @@ export class DibujoJuntos {
 
   montar(cont) {
     this.vivo = true;
+    document.body.classList.toggle("dj-con-virtual", this.virtual);
     this.estado = el("small.dj-estado");
     this.nombreHoja = el("b");
     const barra = el("div.dj-barra", {}, [
@@ -202,7 +203,7 @@ export class DibujoJuntos {
     this.grosorEl = el("input.dj-grosor", { type: "range", min: "1", max: "40", step: "1", value: String(this.grosor), "aria-label": "Grosor" });
     this.grosorEl.addEventListener("input", () => { this.grosor = +this.grosorEl.value; guardarAj({ grosor: this.grosor }); this._muestra(); });
     this.muestra = el("i.dj-muestra");
-    this.bVirtual = el("button.dj-b.dj-virtual", { type: "button", "aria-pressed": String(this.virtual), title: "Lápiz virtual: la punta arriba del dedo", "aria-label": "Lápiz virtual", html: LAPIZ, onClick: () => { this.virtual = !this.virtual; guardarAj({ virtual: this.virtual }); this.bVirtual.setAttribute("aria-pressed", String(this.virtual)); aviso(this.virtual ? "Lápiz virtual: la punta queda arriba de tu dedo ✏️" : "Lápiz virtual apagado: dibujas justo donde tocas", 2200); } });
+    this.bVirtual = el("button.dj-b.dj-virtual", { type: "button", "aria-pressed": String(this.virtual), title: "Lápiz virtual: la punta arriba del dedo", "aria-label": "Lápiz virtual", html: LAPIZ, onClick: () => { this.virtual = !this.virtual; guardarAj({ virtual: this.virtual }); this.bVirtual.setAttribute("aria-pressed", String(this.virtual)); document.body.classList.toggle("dj-con-virtual", this.virtual); aviso(this.virtual ? "Lápiz virtual: muévelo con un dedo y toca con otro para dibujar (otro toque lo para) ✏️" : "Lápiz virtual apagado: dibujas justo donde tocas", 2200); } });
     this.bSonido = el("button.dj-b", { type: "button", "aria-label": "Sonidos de los pinceles", onClick: () => { this.sonido.on = !this.sonido.on; guardarAj({ sonido: this.sonido.on }); this._iconoSonido(); } });
     this._iconoSonido();
     const herr = el("div.dj-herr", {}, [this.pincelesEl, el("div.dj-fila", {}, [this.coloresEl]), el("div.dj-fila", {}, [this.muestra, this.grosorEl, this.bVirtual, this.bSonido])]);
@@ -216,6 +217,7 @@ export class DibujoJuntos {
 
   limpiar() {
     this.vivo = false;
+    document.body.classList.remove("dj-con-virtual");
     this._gen = (this._gen || 0) + 1;
     this._ro?.disconnect();
     this.sonido.parar();
@@ -333,8 +335,22 @@ export class DibujoJuntos {
       pintarTrazo(this.base.getContext("2d"), t, this.base.width, this.base.height);
       if (t.id) this.trazos.set(t.id, { ...t, pendientes: undefined }); else t.alGuardar = () => this.trazos.set(t.id, { ...t, pendientes: undefined });
     };
+    // Lápiz virtual: mientras lo mueves, un toque con otro dedo (en cualquier parte) empieza a dibujar y otro lo para.
+    const otroDedo = (e) => {
+      e.preventDefault();
+      toque.dibuja = !this.actual;
+      if (this.actual) terminar(); else { empezar(this.punta, 50); this._vivos(); }
+      vibrar(toque.dibuja ? 10 : 5);
+      this.lapiz.classList.toggle("armado", toque.dibuja || this.armado);
+    };
+    const fuera = (e) => {
+      if (!cv.isConnected) { document.removeEventListener("pointerdown", fuera, true); return; }
+      if (toque && esVirtual(e) && e.pointerId !== this.dedo && !cv.contains(e.target) && !e.target.closest?.("button, input, textarea")) otroDedo(e);
+    };
+    document.addEventListener("pointerdown", fuera, true);
     cv.addEventListener("pointerdown", (e) => {
       if (!this.lienzo || (e.pointerType === "mouse" && e.button !== 0)) return;
+      if (toque && esVirtual(e) && e.pointerId !== this.dedo) { otroDedo(e); return; }
       if (this.actual || this.dedo != null) return; // un dedo a la vez
       e.preventDefault();
       try { cv.setPointerCapture(e.pointerId); } catch (er) { /* nada */ }
@@ -359,7 +375,7 @@ export class DibujoJuntos {
           const dx = d.x - toque.ult.x, dy = d.y - toque.ult.y;
           toque.mov += Math.hypot(dx, dy); toque.ult = d;
           this.punta = { x: Math.max(0, Math.min(this.w, this.punta.x + dx)), y: Math.max(0, Math.min(this.h, this.punta.y + dy)) };
-          if (this.armado) {
+          if (this.armado || toque.dibuja) {
             if (!this.actual && toque.mov > 3) empezar(this.punta, 50);
             else if (this.actual) agregar(this.punta, 50);
           }
@@ -379,7 +395,7 @@ export class DibujoJuntos {
       if (e.pointerId !== this.dedo) return;
       this.dedo = null;
       if (toque) {
-        const tap = performance.now() - toque.t < 260 && toque.mov < 9;
+        const tap = !toque.dibuja && performance.now() - toque.t < 260 && toque.mov < 9;
         toque = null;
         if (this.actual) terminar();
         else if (tap) {

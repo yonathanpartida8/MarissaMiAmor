@@ -364,3 +364,22 @@ body.ed-ultra .dz-lapizv.armado::after { animation: none; }
 /* Con el cajón arriba, la barrita (deshacer, lápiz virtual, grosor, listo) sube con él: nada queda tapado. */
 .dz-medio { transition: transform .32s cubic-bezier(.2, .9, .3, 1); }
 .dz-capa:has(.dz-cajon.alto) .dz-medio { transform: translateY(-92px); }
+
+/* ═══ Fase 49 ═══ */
+/* Una sola columna que nunca crece más que la pantalla (antes, con el zoom, la barrita la ensanchaba y todo se corría). */
+@media (max-width: 959.98px), (max-height: 539.98px) { .dz-capa { grid-template-columns: minmax(0, 1fr); } }
+.dz-cab, .dz-centro, .dz-medio, .dz-abajo, .dz-barra { min-width: 0; }
+.dz-barra > * { flex-shrink: 1; }
+/* El zoom flota sobre la hoja (abajo al centro): no empuja nada. */
+.dz-centro { position: relative; }
+.dz-zoom-b { position: absolute; z-index: 3; left: 50%; bottom: 14px; transform: translateX(-50%); }
+/* Con el cajón arriba, la barrita se esconde suavecito y vuelve al bajarlo (no se mete en la hoja). */
+.dz-medio { transition: opacity .24s ease, transform .32s cubic-bezier(.2, .9, .3, 1); }
+.dz-capa:has(.dz-cajon.alto) .dz-medio { transform: translateY(18px) scale(.94); opacity: 0; pointer-events: none; }
+/* Los colores: todos a la vista, en dos filitas, sin barra para deslizar. */
+.dz-colores, .dz-capa .dz-colores { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px 4px; justify-items: center; overflow: visible; padding: 6px 8px; }
+.dz-color { width: min(29px, 100%); height: auto; aspect-ratio: 1; }
+.dz-color.on { box-shadow: 0 0 0 2.5px #fff, 0 0 0 4.5px var(--acento); }
+/* El lápiz virtual: sin ondas que tapen el dibujo. */
+.dz-lapizv.armado::after { content: none; }
+.dz-capa.con-virtual, .dz-capa.con-virtual * { touch-action: none; }

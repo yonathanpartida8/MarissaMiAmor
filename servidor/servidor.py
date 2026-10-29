@@ -68,7 +68,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.20.0"
+VERSION = "1.21.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -558,6 +558,11 @@ COLUMNAS_NUEVAS = {
                    ("tipo", "TEXT DEFAULT 'pagina'")],   # Fase 47: «pagina» o «dibujito»
     # Fase 31: espacios en blanco para dibujar (sin mandar mensaje) y si dejas ver tu «visto».
     "mensajes": [("espacio", "INTEGER"), ("audio", "TEXT"), ("editado", "REAL")],
+    # Fase 49: muchos «te amo» de una vez (mantener presionado), qué tan enojado, zonas dibujadas en el mapa,
+    # advertencias / zonas seguras y si quien comparte va quieto, caminando, en bici o en auto.
+    "cositas": [("cuantos", "INTEGER DEFAULT 1"), ("nivel", "INTEGER")],
+    "lugares": [("zona", "TEXT"), ("clase", "TEXT DEFAULT 'lugar'"), ("emoji", "TEXT")],
+    "ubicaciones": [("vel", "REAL"), ("modo", "TEXT"), ("modo_t", "REAL")],
 }
 COLUMNAS_NUEVAS["usuarios"].append(("chat_visto", "INTEGER DEFAULT 1"))
 LETRAS_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -4325,9 +4330,12 @@ def _resumen_cositas(uid, hoy, solo_compartidas=False):
     filtro = " AND compartida=1" if solo_compartidas else ""
     out = {}
     for t, (_, _, comp0) in COSITAS.items():
-        total = E.db.uno(f"SELECT COUNT(*) n FROM cositas WHERE usuario_id=? AND tipo=?{filtro}", uid, t)["n"]
-        dia = E.db.uno(f"SELECT COUNT(*) n FROM cositas WHERE usuario_id=? AND tipo=? AND dia=?{filtro}", uid, t, hoy)["n"]
+        total = E.db.uno(f"SELECT COALESCE(SUM(COALESCE(cuantos, 1)), 0) n FROM cositas WHERE usuario_id=? AND tipo=?{filtro}", uid, t)["n"]
+        dia = E.db.uno(f"SELECT COALESCE(SUM(COALESCE(cuantos, 1)), 0) n FROM cositas WHERE usuario_id=? AND tipo=? AND dia=?{filtro}", uid, t, hoy)["n"]
         out[t] = {"total": total, "hoy": dia, "compartir": ajustes.get(t, comp0)}
+    # Qué tan enojado (de 1 a 5): el más fuerte de hoy y el último.
+    e = E.db.uno(f"SELECT MAX(nivel) m FROM cositas WHERE usuario_id=? AND tipo='enojos' AND dia=?{filtro}", uid, hoy)
+    out["enojos"]["nivel"] = (e and e["m"]) or 0
     # La racha de la ducha: días seguidos (hasta hoy o ayer) que dijiste que sí.
     dias = {r["dia"] for r in E.db.q(f"SELECT DISTINCT dia FROM cositas WHERE usuario_id=? AND tipo='ducha'{filtro}", uid)}
     d, racha = datetime.date.fromisoformat(hoy), 0
@@ -4341,7 +4349,8 @@ def _resumen_cositas(uid, hoy, solo_compartidas=False):
 
 
 def fila_cosita(c, uid):
-    return {"id": c["id"], "tipo": c["tipo"], "nota": c["nota"] or "", "compartida": bool(c["compartida"]), "dia": c["dia"], "creado": iso(c["creado"]), "mia": c["usuario_id"] == uid}
+    return {"id": c["id"], "tipo": c["tipo"], "nota": c["nota"] or "", "compartida": bool(c["compartida"]), "dia": c["dia"], "creado": iso(c["creado"]),
+            "mia": c["usuario_id"] == uid, "nivel": c["nivel"] or 0}
 
 
 @ruta("GET", "/api/cositas", "sesion")
@@ -4382,12 +4391,17 @@ def api_cosita(h, s):
         else:
             E.db.x("INSERT INTO cositas(usuario_id, tipo, nota, compartida, dia, creado) VALUES(?,?,?,?,?,?)", uid, tipo, "", int(compartida), dia, ahora())
         return h.responder(200, {"resumen": _resumen_cositas(uid, dia)})
-    cid = E.db.x("INSERT INTO cositas(usuario_id, tipo, nota, compartida, dia, creado) VALUES(?,?,?,?,?,?)", uid, tipo, nota, int(compartida), dia, ahora())
-    if avisa and t - _COSITAS_AVISO.get((uid, tipo), 0) > 30:
+    # Mantener presionado manda muchos de una vez (Fase 49): «te amo» ×37 es un solo registro.
+    n = int(_num(d.get("n") or 1, 1, 999, "La cantidad")) if avisa else 1
+    nivel = int(_num(d.get("nivel") or 3, 1, 5, "El nivel")) if tipo == "enojos" else None
+    cid = E.db.x("INSERT INTO cositas(usuario_id, tipo, nota, compartida, dia, creado, cuantos, nivel) VALUES(?,?,?,?,?,?,?,?)", uid, tipo, nota, int(compartida), dia, ahora(), n, nivel)
+    if avisa and (n > 1 or t - _COSITAS_AVISO.get((uid, tipo), 0) > 30):
         _COSITAS_AVISO[(uid, tipo)] = t
         quien = nombre_corto(uid)
-        avisar(otro, {"t": f"{quien} te extraña 🥺" if tipo == "extrano" else f"{quien} te dijo «te amo» 💗",
-                      "b": "Ábrelo y mándale un abracito." if tipo == "extrano" else "Y te lo dice de corazón.", "tag": "cositas", "u": "#cositas"})
+        veces = "" if n == 1 else f" ×{n}"
+        avisar(otro, {"t": f"{quien} te extraña{veces} 🥺" if tipo == "extrano" else f"{quien} te dijo «te amo»{veces} 💗",
+                      "b": ("Ábrelo y mándale un abracito." if tipo == "extrano" else "Y te lo dice de corazón.") if n == 1 else
+                           (f"Te extrañó {n} veces de un jalón." if tipo == "extrano" else f"{n} «te amo» de un jalón, de corazón."), "tag": "cositas", "u": "#cositas"})
     h.responder(200, {"id": cid, "resumen": _resumen_cositas(uid, dia)})
 
 
@@ -4423,7 +4437,10 @@ def api_cositas_ajustes(h, s):
 
 
 # — Ubicación compartida (sólo si tú la compartes, y se borra al dejar de compartirla) —
-LUGARES_MAX = 10
+LUGARES_MAX = 20
+CLASES_LUGAR = ("lugar", "aviso", "segura")
+MODOS = ("quieto", "caminando", "bici", "auto")
+_MODO_AVISO = {}
 AVISAR_LUGAR = ("yo", "pareja", "ambos")
 
 
@@ -4446,39 +4463,71 @@ def _num(v, lo, hi, nombre):
 def fila_ubicacion(u):
     if not u:
         return None
-    return {"lat": u["lat"], "lng": u["lng"], "prec": u["prec"], "t": iso(u["t"]), "desde": iso(u["desde"])}
+    return {"lat": u["lat"], "lng": u["lng"], "prec": u["prec"], "t": iso(u["t"]), "desde": iso(u["desde"]),
+            "vel": u["vel"], "modo": u["modo"] or "quieto", "modo_t": iso(u["modo_t"]) if u["modo_t"] else None}
+
+
+def _zona(l):
+    try:
+        z = json.loads(l["zona"] or "null")
+        return z if isinstance(z, list) and len(z) >= 3 else None
+    except (ValueError, TypeError):
+        return None
+
+
+def _dentro(l, lat, lng, margen=0):
+    """¿El punto está en el lugar? (Círculo, o la zona que dibujaron; con margen, también si está a menos de eso de la orilla.)"""
+    z = _zona(l)
+    if not z:
+        return _metros(l["lat"], l["lng"], lat, lng) <= l["radio"] + margen
+    adentro = False
+    for i in range(len(z)):
+        (a1, o1), (a2, o2) = z[i], z[i - 1]
+        if (a1 > lat) != (a2 > lat) and lng < (o2 - o1) * (lat - a1) / ((a2 - a1) or 1e-12) + o1:
+            adentro = not adentro
+    if adentro or margen <= 0:
+        return adentro
+    # La orilla más cercana, en metros (plano local: las zonas son de unos cuantos kilómetros a lo mucho).
+    ky, kx = 111320.0, 111320.0 * math.cos(math.radians(lat))
+    mejor = float("inf")
+    for i in range(len(z)):
+        (a1, o1), (a2, o2) = z[i], z[i - 1]
+        x1, y1, x2, y2 = (o1 - lng) * kx, (a1 - lat) * ky, (o2 - lng) * kx, (a2 - lat) * ky
+        dx, dy = x2 - x1, y2 - y1
+        t = max(0.0, min(1.0, -(x1 * dx + y1 * dy) / ((dx * dx + dy * dy) or 1e-12)))
+        mejor = min(mejor, math.hypot(x1 + t * dx, y1 + t * dy))
+    return mejor <= margen
 
 
 def fila_lugar(l, uid):
     return {"id": l["id"], "nombre": l["nombre"], "lat": l["lat"], "lng": l["lng"], "radio": l["radio"], "avisar": l["avisar"],
-            "alertas": bool(l["alertas"]), "mio": l["autor"] == uid}
+            "alertas": bool(l["alertas"]), "mio": l["autor"] == uid, "zona": _zona(l), "clase": l["clase"] or "lugar", "emoji": l["emoji"] or ""}
 
 
 def _revisar_lugares(uid, a, b, otro, lat, lng, prec):
     """¿Entró o salió de algún lugar? (Con un margen para que el GPS no haga «entró-salió» solo.)"""
     for l in E.db.q("SELECT * FROM lugares WHERE a=? AND b=?", a, b):
-        d = _metros(l["lat"], l["lng"], lat, lng)
         est = E.db.uno("SELECT dentro FROM lugares_estado WHERE lugar_id=? AND usuario_id=?", l["id"], uid)
         antes = None if not est else bool(est["dentro"])
-        if antes is None:
-            dentro = d <= l["radio"]
-        elif antes:
-            dentro = d <= l["radio"] + max(30, min(prec or 0, 150))
-        else:
-            dentro = d <= l["radio"]
+        # (Ya adentro, se sale hasta pasar la orilla con un margen: así el GPS no hace «entró-salió» solo.)
+        dentro = _dentro(l, lat, lng, max(8, min(prec or 0, 150)) if antes else 0)
         E.db.x("INSERT INTO lugares_estado(lugar_id, usuario_id, dentro, t) VALUES(?,?,?,?) ON CONFLICT(lugar_id, usuario_id) DO UPDATE SET dentro=excluded.dentro, t=excluded.t",
                l["id"], uid, int(dentro), ahora())
         if antes is None or antes == dentro:
             continue
         tipo = "entro" if dentro else "salio"
         E.db.x("INSERT INTO lugares_eventos(lugar_id, usuario_id, tipo, t) VALUES(?,?,?,?)", l["id"], uid, tipo, ahora())
-        if not l["alertas"]:
+        clase = l["clase"] or "lugar"
+        # Una advertencia avisa al entrar; una zona segura, al salir; un lugar, siempre.
+        if not l["alertas"] or (clase == "aviso" and not dentro) or (clase == "segura" and dentro):
             continue
         quien = nombre_corto(uid)
         para = {"yo": [uid], "pareja": [otro], "ambos": [uid, otro]}.get(l["avisar"], [otro])
+        ico = "⚠️" if clase == "aviso" else "🛡️" if clase == "segura" else (l["emoji"] or "📍")
         for p in para:
             sujeto = "Llegaste" if p == uid and dentro else "Saliste" if p == uid else f"{quien} llegó" if dentro else f"{quien} salió"
-            avisar(p, {"t": f"{sujeto} {'a' if dentro else 'de'} «{l['nombre']}» 📍", "b": "Según la ubicación que comparte en Cositas Juntitos.", "tag": f"lugar{l['id']}", "u": "#cositas-mapa"})
+            cuerpo = ("Es una zona de advertencia." if clase == "aviso" else "Salió de su zona segura." if clase == "segura" else "Según la ubicación que comparte en Cositas Juntitos.")
+            avisar(p, {"t": f"{ico} {sujeto} {'a' if dentro else 'de'} «{l['nombre']}»", "b": cuerpo, "tag": f"lugar{l['id']}", "u": "#cositas-mapa"})
 
 
 @ruta("GET", "/api/ubicacion", "sesion")
@@ -4506,14 +4555,29 @@ def api_ubicacion_poner(h, s):
     with E.db.lock:
         ya = E.db.uno("SELECT * FROM ubicaciones WHERE usuario_id=?", uid)
         t = ahora()
+        # ¿Cómo se mueve? Lo dice el aparato (que mide seguido); si no, se calcula con la ubicación de antes.
+        vel = d.get("vel")
+        vel = _num(vel, 0, 120, "La velocidad") if vel is not None else None
+        if vel is None and ya and ya["t"] and 5 <= t - ya["t"] <= 900:
+            vel = _metros(ya["lat"], ya["lng"], lat, lng) / (t - ya["t"])
+        modo = d.get("modo") if d.get("modo") in MODOS else (None if vel is None else "quieto" if vel < 0.6 else "caminando" if vel < 2.6 else "bici" if vel < 7 else "auto")
+        modo = modo or (ya["modo"] if ya and ya["modo"] else "quieto")
+        modo_t = ya["modo_t"] if ya and ya["modo"] == modo and ya["modo_t"] else t
         if ya and ya["clat"] is not None and _metros(ya["clat"], ya["clng"], lat, lng) <= max(80, min(prec, 300)):
             desde, clat, clng = ya["desde"], ya["clat"], ya["clng"]
         else:
             desde, clat, clng = t, lat, lng
-        E.db.x("INSERT INTO ubicaciones(usuario_id, lat, lng, prec, t, desde, clat, clng) VALUES(?,?,?,?,?,?,?,?) "
-               "ON CONFLICT(usuario_id) DO UPDATE SET lat=excluded.lat, lng=excluded.lng, prec=excluded.prec, t=excluded.t, desde=excluded.desde, clat=excluded.clat, clng=excluded.clng",
-               uid, lat, lng, prec, t, desde, clat, clng)
+        E.db.x("INSERT INTO ubicaciones(usuario_id, lat, lng, prec, t, desde, clat, clng, vel, modo, modo_t) VALUES(?,?,?,?,?,?,?,?,?,?,?) "
+               "ON CONFLICT(usuario_id) DO UPDATE SET lat=excluded.lat, lng=excluded.lng, prec=excluded.prec, t=excluded.t, desde=excluded.desde, clat=excluded.clat, clng=excluded.clng, "
+               "vel=excluded.vel, modo=excluded.modo, modo_t=excluded.modo_t",
+               uid, lat, lng, prec, t, desde, clat, clng, vel, modo, modo_t)
     _revisar_lugares(uid, a, b, otro, lat, lng, prec)
+    # Empezó a moverse: se le avisa a su amorcito (una vez cada 20 minutos por cada forma de moverse).
+    antes_modo = (ya["modo"] if ya else None) or "quieto"
+    if modo != antes_modo and modo != "quieto" and time.monotonic() - _MODO_AVISO.get((uid, modo), -1e9) > 1200:
+        _MODO_AVISO[(uid, modo)] = time.monotonic()
+        frase = {"caminando": "va caminando 🚶", "bici": "va en bici o corriendo 🚴", "auto": "va en auto 🚗"}[modo]
+        avisar(otro, {"t": f"{nombre_corto(uid)} {frase}", "b": "Míralo en el mapa de Cositas Juntitos.", "tag": "modo", "u": "#cositas-mapa"})
     h.responder(200, {"yo": fila_ubicacion(E.db.uno("SELECT * FROM ubicaciones WHERE usuario_id=?", uid))})
 
 
@@ -4536,7 +4600,25 @@ def _datos_lugar(d, parcial=False):
         out["lat"] = _num(d.get("lat"), -90, 90, "La latitud")
         out["lng"] = _num(d.get("lng"), -180, 180, "La longitud")
     if not parcial or "radio" in d:
-        out["radio"] = _num(d.get("radio") or 150, 50, 5000, "El radio")
+        out["radio"] = _num(d.get("radio") or 150, 10, 5000, "El radio")
+    if "zona" in d:
+        # La zona que dibujaron: de 3 a 300 puntos [lat, lng]; su centro y su tamaño salen de ella.
+        z = d.get("zona")
+        if z is None:
+            out["zona"] = None
+        else:
+            if not isinstance(z, list) or not 3 <= len(z) <= 300:
+                raise Falla("La zona no es válida.", 400)
+            z = [[round(_num(p[0], -90, 90, "La zona"), 6), round(_num(p[1], -180, 180, "La zona"), 6)] for p in z if isinstance(p, (list, tuple)) and len(p) == 2]
+            if len(z) < 3:
+                raise Falla("La zona no es válida.", 400)
+            clat, clng = sum(p[0] for p in z) / len(z), sum(p[1] for p in z) / len(z)
+            out.update(zona=json.dumps(z, separators=(",", ":")), lat=clat, lng=clng,
+                       radio=max(10.0, min(50000.0, max(_metros(clat, clng, p[0], p[1]) for p in z))))
+    if not parcial or "clase" in d:
+        out["clase"] = d.get("clase") if d.get("clase") in CLASES_LUGAR else "lugar"
+    if not parcial or "emoji" in d:
+        out["emoji"] = str(d.get("emoji") or "")[:8]
     if not parcial or "avisar" in d:
         out["avisar"] = d.get("avisar") if d.get("avisar") in AVISAR_LUGAR else "pareja"
     if not parcial or "alertas" in d:
@@ -4550,8 +4632,8 @@ def api_lugar_nuevo(h, s):
     if E.db.uno("SELECT COUNT(*) n FROM lugares WHERE a=? AND b=?", a, b)["n"] >= LUGARES_MAX:
         raise Falla(f"Ya tienen {LUGARES_MAX} lugares: borra alguno para añadir otro.", 409)
     x = _datos_lugar(h.cuerpo_json())
-    lid = E.db.x("INSERT INTO lugares(a, b, autor, nombre, lat, lng, radio, avisar, alertas, creado) VALUES(?,?,?,?,?,?,?,?,?,?)",
-                 a, b, s["usuario_id"], x["nombre"], x["lat"], x["lng"], x["radio"], x["avisar"], x["alertas"], ahora())
+    lid = E.db.x("INSERT INTO lugares(a, b, autor, nombre, lat, lng, radio, avisar, alertas, creado, zona, clase, emoji) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                 a, b, s["usuario_id"], x["nombre"], x["lat"], x["lng"], x["radio"], x["avisar"], x["alertas"], ahora(), x.get("zona"), x["clase"], x["emoji"])
     h.responder(200, {"lugar": fila_lugar(E.db.uno("SELECT * FROM lugares WHERE id=?", lid), s["usuario_id"])})
 
 
@@ -4564,7 +4646,7 @@ def api_lugar_editar(h, s, lid):
     x = _datos_lugar(h.cuerpo_json(), parcial=True)
     if x:
         E.db.x("UPDATE lugares SET " + ", ".join(f"{k}=?" for k in x) + " WHERE id=?", *x.values(), l["id"])
-    if "lat" in x or "radio" in x:
+    if "lat" in x or "radio" in x or "zona" in x:
         E.db.x("DELETE FROM lugares_estado WHERE lugar_id=?", l["id"])  # se vuelve a medir sin avisar
     h.responder(200, {"lugar": fila_lugar(E.db.uno("SELECT * FROM lugares WHERE id=?", l["id"]), s["usuario_id"])})
 

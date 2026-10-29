@@ -296,9 +296,10 @@ export class EstudioDibujo {
     this.deshacerB = b("dz-icono", { "aria-label": "Deshacer", title: "Deshacer (Ctrl+Z)", html: ico("deshacer"), onClick: () => this.deshacer() });
     this.rehacerB = b("dz-icono", { "aria-label": "Rehacer", title: "Rehacer (Ctrl+Y)", html: ico("rehacer"), onClick: () => this.rehacer() });
     this.zoomB = b("dz-zoom-b", { hidden: "", title: "Volver al tamaño de la hoja", "aria-label": "Volver al tamaño de la hoja", onClick: () => this._zoomInicio() }, [el("i", { html: LUPA_SVG }), el("span", { text: "100%" })]);
+    this.centro.append(this.zoomB);   // flota sobre la hoja: no empuja la barrita
     this.virtualB = b("dz-cuadro.dz-virtual-b", { "aria-label": "Lápiz virtual", title: "Lápiz virtual: lo mueves sin pintar y un toque lo arma", "aria-pressed": String(this.virtual), html: MANO_SVG, onClick: () => this._ponerVirtual(!this.virtual) });
     this.grosorB = b("dz-cuadro.dz-grosor-b", { "aria-label": "Grosor", title: "Grosor", html: GROSOR_SVG, onClick: () => this._grosor(!this.grosorVisible) });
-    this.barra = el("div.dz-barra", {}, [this.deshacerB, this.rehacerB, this.zoomB, el("span.dz-hueco"), this.virtualB, this.grosorB,
+    this.barra = el("div.dz-barra", {}, [this.deshacerB, this.rehacerB, el("span.dz-hueco"), this.virtualB, this.grosorB,
       b("dz-cuadro.dz-listo-b", { "aria-label": "Listo", onClick: () => this._modo("componer") }, [el("span", { text: "listo" }), el("i", { html: ico("ok") })])]);
     this.medio = el("div.dz-medio", {}, [this.chips, this.barra]);
     // Componer: deshacer · mandar · guardar.
@@ -321,6 +322,12 @@ export class EstudioDibujo {
     for (const [t, f] of [["pointerdown", (e) => this._bajar(e)], ["pointermove", (e) => this._mover(e)], ["pointerup", (e) => this._subir(e)], ["pointercancel", (e) => this._subir(e, true)], ["pointerleave", (e) => { if (e.pointerType === "mouse") { this.cursor.classList.remove("ve"); if (!this.dedos.size) this._rect = null; } }]])
       this.hoja.addEventListener(t, f);
     this.hoja.addEventListener("contextmenu", (e) => e.preventDefault());
+    // Lápiz virtual: el otro dedo puede tocar en cualquier parte de la pantalla (no sólo en la hoja).
+    this.capa.addEventListener("pointerdown", (e) => {
+      if (!this.virtual || !this.gV || e.pointerType !== "touch" || this.hoja.contains(e.target) || e.target.closest("button, input, textarea")) return;
+      e.preventDefault();
+      this._toqueVirtual();
+    });
     this.hoja.addEventListener("wheel", (e) => this._rueda(e), { passive: false });
     this._alResize = () => this._acomodar();
     addEventListener("resize", this._alResize);
@@ -396,7 +403,7 @@ export class EstudioDibujo {
   _rgba(c, a) { const n = parseInt(c.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
 
   _pintarColores() {
-    const lista = [...COLORES, ...this.recientes.filter((c) => !COLORES.includes(c))];
+    const lista = COLORES;   // (tus colores están en la ruedita: así todos caben sin deslizar)
     this.coloresN.replaceChildren(...lista.map((c) => el("button.dz-color" + (c === this.color ? ".on" : ""), {
       type: "button", role: "radio", "aria-checked": String(c === this.color), "aria-label": "Color " + c, style: { "--c": c }, dataset: { c },
       onClick: () => this._elegirColor(c),
@@ -536,8 +543,9 @@ export class EstudioDibujo {
       this.mundo.style.transform = `translate(${((r.x - v.x) * v.s * u).toFixed(2)}px, ${((r.y - v.y) * v.s * u).toFixed(2)}px) scale(${(k * u).toFixed(5)})`;
     }
     const lejos = Math.abs(v.s - 1) > 0.01 || Math.abs(v.x) > 0.5 || Math.abs(v.y) > 0.5;
-    this.zoomB.hidden = !lejos;
-    const pct = v.s >= 100 ? Math.round(v.s) + "×" : Math.round(v.s * 100) + "%";
+    // La infinita empieza en «Zoom 0» (lo más lejos) y de ahí sólo se entra: todo el acercamiento es tuyo.
+    this.zoomB.hidden = !lejos && !this.infinito;
+    const pct = this.infinito ? "Zoom " + Math.max(0, Math.round(Math.log2(v.s))) : Math.round(v.s * 100) + "%";
     this.zoomB.lastChild.textContent = pct;
     this.capa.classList.toggle("con-zoom", lejos);
   }
@@ -545,7 +553,7 @@ export class EstudioDibujo {
   _zoomEn(f, P, base = this.vista) {
     const w = { x: P.x / base.s + base.x, y: P.y / base.s + base.y };
     let s = base.s * f;
-    s = this.infinito ? Math.max(1e-4, Math.min(1e6, s)) : Math.max(1, Math.min(8, s));
+    s = this.infinito ? Math.max(1, Math.min(1e7, s)) : Math.max(1, Math.min(8, s));
     this.vista = { s, x: w.x - P.x / s, y: w.y - P.y / s };
     this._limitarVista();
   }
@@ -599,6 +607,8 @@ export class EstudioDibujo {
     try { this.hoja.setPointerCapture(e.pointerId); } catch (err) { /* nada */ }
     e.preventDefault();
     this.dedos.set(e.pointerId, P);
+    // Lápiz virtual: mientras lo mueves, un toque con otro dedo empieza a dibujar y otro lo para.
+    if (this.virtual && this.gV && e.pointerType === "touch" && this.dedos.size === 2) { this._toqueVirtual(); return; }
     if (this.dedos.size === 2) { this._dosDedos(); return; }
     if (this.dedos.size > 2) return;
     if (this.regla.on) {
@@ -686,7 +696,7 @@ export class EstudioDibujo {
     // El punto del mundo que estaba bajo los dedos se queda bajo los dedos.
     const w = { x: m0.x / d.v0.s + d.v0.x, y: m0.y / d.v0.s + d.v0.y };
     let s = d.v0.s * d1 / d0;
-    s = this.infinito ? Math.max(1e-4, Math.min(1e6, s)) : Math.max(1, Math.min(8, s));
+    s = this.infinito ? Math.max(1, Math.min(1e7, s)) : Math.max(1, Math.min(8, s));
     this.vista = { s, x: w.x - m.x / s, y: w.y - m.y / s };
     this._limitarVista();
     this._aplicarVista();
@@ -705,11 +715,13 @@ export class EstudioDibujo {
     this.virtualB.setAttribute("aria-pressed", String(this.virtual));
     this.app.sonidos?.sonar(si ? "activar" : "desactivar");
     vibrar(6);
-    if (si) aviso("Lápiz virtual: muévelo con el dedo; un toque lo arma para dibujar y otro lo desarma ✏️", 3600);
+    if (si) aviso("Lápiz virtual: muévelo con un dedo; mientras lo mueves, toca con otro dedo para dibujar y otra vez para parar ✏️", 4200);
     this._verLapizV();
     this._guardarPref();
   }
   _verLapizV() {
+    // (Con el lápiz virtual, toda la pantalla es para los dedos: así el segundo dedo no hace que el navegador cancele el primero.)
+    this.capa.classList.toggle("con-virtual", this.virtual && this.modo === "dibujar");
     const ve = this.virtual && this.modo === "dibujar" && !!this.puntaV;
     this.lapizV.hidden = !ve;
     if (!ve) return;
@@ -722,7 +734,7 @@ export class EstudioDibujo {
       const P = this._hp(x), dx = P.x - G.ult.x, dy = P.y - G.ult.y;
       G.ult = P; G.mov += Math.hypot(dx, dy) * this._u;
       this.puntaV = { x: Math.max(0, Math.min(this.W, this.puntaV.x + dx)), y: Math.max(0, Math.min(this.H, this.puntaV.y + dy)) };
-      if (this.armado && this.herr !== "cubeta") {
+      if ((this.armado || G.dibuja) && this.herr !== "cubeta") {
         if (!this.trazo && G.mov > 4) this._empezarTrazo({ pointerId: G.id, pressure: 0.5, pointerType: "touch", timeStamp: x.timeStamp }, this.puntaV);
         else if (this.trazo) this._punto(this.puntaV, 0.5, "touch", x.timeStamp || performance.now());
       }
@@ -730,8 +742,19 @@ export class EstudioDibujo {
     this._verLapizV();
     if (this.trazo) this._pintarVivo();
   }
+  /** El otro dedo tocó mientras mueves el lápiz: empieza o para el trazo justo en la punta. */
+  _toqueVirtual() {
+    const G = this.gV;
+    if (this.herr === "cubeta") { this._rellenar(this.puntaV); return; }
+    G.dibuja = !this.trazo;
+    if (this.trazo) this._terminarTrazo();
+    else this._empezarTrazo({ pointerId: G.id, pressure: 0.5, pointerType: "touch", timeStamp: performance.now() }, this.puntaV);
+    vibrar(G.dibuja ? 10 : 5);
+    this.lapizV.classList.toggle("armado", G.dibuja || this.armado);
+  }
   _soltarVirtual(cancelado) {
     const G = this.gV; this.gV = null;
+    if (G.dibuja) { if (this.trazo) this._terminarTrazo(); this._verLapizV(); return; }
     const tap = !cancelado && performance.now() - G.t < 260 && G.mov < 9;
     if (this.trazo) { this._terminarTrazo(); return; }
     if (!tap) return;
@@ -1112,7 +1135,7 @@ export class EstudioDibujo {
   _ponerInfinito(si) {
     if (this.infinito === !!si) return;
     this.infinito = !!si;
-    if (!si) this.vista = { s: 1, x: 0, y: 0 };
+    this.vista = { s: 1, x: 0, y: 0 };   // (la infinita arranca en Zoom 0)
     this._crearLienzo(this.lienzo.log);
     this._pintarObjs();
     this.app.sonidos?.sonar(si ? "activar" : "desactivar");

@@ -14,10 +14,10 @@ import * as SRV from "../integraciones/servidor.js";
 import { cuandoVisible } from "./rendimiento.js";
 
 const CLAVE = () => `editordev:ubicacion:${SRV.usuario()?.usuario || ""}`;
-const MIN_METROS = 25, MIN_MS = 120000;
+const MIN_METROS = 15, MIN_MS = 90000;
 export const puede = () => "geolocation" in navigator && window.isSecureContext !== false;
 
-let mira = null, ultimo = null, ultimoEnvio = 0, estado = { compartiendo: false, error: "", enviado: null };
+let mira = null, ultimo = null, ultimoEnvio = 0, previo = null, velocidades = [], modoEnviado = "quieto", estado = { compartiendo: false, error: "", enviado: null };
 const oyentes = new Set();
 const avisar = () => { for (const f of oyentes) { try { f(estado); } catch (e) { console.warn(e); } } };
 export const alCambiar = (fn) => { oyentes.add(fn); return () => oyentes.delete(fn); };
@@ -32,10 +32,32 @@ const decidir = (si) => { try { if (si) localStorage.setItem(CLAVE(), "si"); els
 
 const ERRORES = { 1: "No diste permiso de ubicación (actívalo en los ajustes del navegador).", 2: "Este aparato no pudo saber dónde estás ahora.", 3: "La ubicación tardó demasiado; se vuelve a intentar." };
 
+/**
+ * ¿Quieto, caminando, en bici o en auto? (Fase 49) Con la velocidad del aparato o, si no la da, con la
+ * distancia entre dos lecturas; se toma la mediana de las últimas para que un brinco del GPS no cuente.
+ */
+function modoDe(p, pos, t) {
+  let v = Number.isFinite(p.coords.speed) && p.coords.speed >= 0 ? p.coords.speed : null;
+  if (v == null && previo && t - previo.t > 4000 && t - previo.t < 600000) {
+    const d = metros(previo, pos);
+    if (d > Math.max(6, (pos.prec + previo.prec) * 0.35)) v = d / ((t - previo.t) / 1000); else v = 0;
+  }
+  if (!previo || t - previo.t > 4000) previo = { ...pos, t };
+  if (v == null) return { vel: null, modo: modoEnviado };
+  velocidades = [...velocidades.slice(-2), v];
+  const m = [...velocidades].sort((a, b) => a - b)[Math.floor(velocidades.length / 2)];
+  return { vel: Math.round(m * 10) / 10, modo: m < 0.6 ? "quieto" : m < 2.6 ? "caminando" : m < 7 ? "bici" : "auto" };
+}
+
 async function mandar(p, forzar = false) {
   const pos = { lat: p.coords.latitude, lng: p.coords.longitude, prec: Math.round(p.coords.accuracy || 0) };
   const t = Date.now();
-  if (!forzar && ultimo && metros(ultimo, pos) < MIN_METROS && t - ultimoEnvio < MIN_MS) return;
+  const mv = modoDe(p, pos, t);
+  // (Si cambió cómo te mueves, se manda ya; si no, sólo al moverte unos metros o cada tanto.)
+  if (!forzar && mv.modo === modoEnviado && ultimo && metros(ultimo, pos) < MIN_METROS && t - ultimoEnvio < MIN_MS) return;
+  modoEnviado = mv.modo;
+  pos.modo = mv.modo;
+  if (mv.vel != null) pos.vel = mv.vel;
   ultimo = pos; ultimoEnvio = t;
   try { const r = await SRV.ponerUbicacion(pos); estado = { ...estado, error: "", enviado: r.yo }; }
   catch (e) { estado = { ...estado, error: e.message || "Sin conexión con el servidor." }; }

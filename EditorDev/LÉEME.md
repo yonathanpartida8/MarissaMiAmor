@@ -924,6 +924,17 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Medido** | `dibujo47` (ampliado), `parpadeo48` (0 parpadeos, también con CPU 4×), `juntitos46` y las pruebas del editor, menú y publicar en teléfono y compu. |
 | **No probado en teléfonos de verdad** | la batería real, parpadeos en iPhone/Android de verdad, sonidos y la presión de un lápiz. El código del editor sí se descarga al abrir la app (sólo queda dormido mientras dibujas). |
 
+### Fase 49: menú sin encogerse, estudio pulido, mapa con zonas y Cositas remasterizado
+
+| | |
+| --- | --- |
+| **Menú principal** (`components/menu-principal.js`) | Al entrar o salir de una pestaña ya no se ve chiquito y separado: se medía a media transición (con las dos vistas a la vez) y guardaba ese zoom. Ahora se mide al terminar y nunca oculto. |
+| **Estudio** (`components/estudio-dibujo.js`, `styles/dibujito.css`) | El zoom es sólo de la hoja: antes la barrita crecía y ensanchaba toda la pantalla (todo se corría y se perdía el bote de basura). El «197 %» flota sobre la hoja. Al subir el cajón, la barrita se esconde suavecito y vuelve al bajarlo. Los 16 colores caben en dos filitas sin barra para deslizar. Ícono nuevo de dibujar (lápiz con corazón). **Lápiz virtual:** un dedo lo mueve y, mientras lo mueves, un toque con otro dedo (en cualquier parte) empieza a dibujar y otro lo para; sin ondas. Igual en Dibujar juntos. La hoja infinita empieza en «Zoom 0» y de ahí sólo se acerca (hasta 10 millones ×). |
+| **Mapa** (`components/juntitos.js`, `components/ubicacion.js`, servidor 1.21.0) | Abre **primero donde está tu pareja** (botones para ir con ella, contigo o ver a los dos). **Editor de zonas:** «Marcar una zona» pone un lápiz virtual sobre el mapa (un dedo mueve, un toque o el otro dedo marca/para, «Mover mapa» para pasear); la línea se suaviza y se rellena sola. Cada zona es **Lugar** (avisa al llegar y salir), **Advertencia ⚠️** (avisa al entrar) o **Zona segura 🛡️** (avisa al salir), con su dibujito. Círculos desde **10 m** (antes 50) y hasta 20 zonas. El teléfono calcula si vas **quieto, caminando, en bici o en auto**: el pin brinca con 🚶/🚴/🚗, sale un cartelito con pasitos («Marissa va caminando · 5 km/h») y a tu pareja le llega un aviso (uno cada 20 min por forma de moverse). |
+| **Cositas** | **Te extraño (azul)** y **Te amo (rojo)** abren una pestañita con un corazón que se llena mientras lo mantienes presionado (cada vez más rápido, con corazoncitos que suben y vibración); al soltar se mandan todos de un jalón y le llega «te dijo te amo ×37». **Enojómetro** (😒 a 🌋, con termómetro y temblorcito). El **pis** se llena con 5 y el **agua** con 14 vasitos. En lugar de «Notas», el **Marcador del amor** (quién dijo más «te amo» hoy). |
+| **Medido** | `juntitos49` (teléfono y compu: mapa en la pareja, cartelito, zona dibujada con dedos de verdad, advertencia guardada, entrar a la zona, 10 m, te amo manteniendo, enojómetro, agua, marcador), `juntitos46`, `dibujo47`, `parpadeo48`, `menu36`, `crear46` y el lápiz virtual con dos dedos. |
+| **No probado en teléfonos de verdad** | el GPS real (caminar o manejar de verdad), los avisos push en el teléfono, las vibraciones y el menú en el aparato donde se veía chiquito. |
+
 ## Cómo está hecho
 
 ```
