@@ -100,8 +100,10 @@ export const cuandoActivo = () => (R.reposo || document.hidden ? new Promise((r)
 actividad();
 
 /* ── Tapado: lo que queda debajo de una pantalla completa ────────────── */
-const BASE = ".dt-capa, .mp-capa, .ed-inicio, .ed-prueba, .cm-capa";
-const ARRIBA = ".dt-capa.ver, .mp-capa.ver, .ed-inicio, .ed-prueba, .cm-capa.ver";
+// (Fase 46) También Nuestros días y la bienvenida: con ellas abiertas, el menú de abajo (gatito, polaroids,
+// brillitos…) seguía animándose a escondidas y gastaba un tercio del procesador.
+const BASE = ".dt-capa, .mp-capa, .ed-inicio, .ed-prueba, .cm-capa, .jt-capa, .bv-capa";
+const ARRIBA = ".dt-capa.ver, .mp-capa.ver, .ed-inicio, .ed-prueba, .cm-capa.ver, .jt-capa.ver, .bv-capa.ver";
 const zDe = (n) => parseInt(getComputedStyle(n).zIndex, 10) || 0;
 let programado = 0;
 function revisarCapas() {

@@ -370,6 +370,46 @@ se quedaba sin sus cosas. Ahora:
 - Si algo se corta a medio camino, no pasa nada: a los 15 minutos (o al
   cancelar) el de siempre sigue normal.
 
+### Mudarse sin escribir direcciones y la cuenta del dueño (1.18.0)
+
+Mudarlo fallaba de verdad: el nuevo le pedía al viejo «ya, relévate» **antes** de tener su propio túnel
+prendido, así que el viejo dejaba de anunciarse y por unos minutos (o para siempre, si el túnel nuevo
+fallaba) no quedaba ningún servidor al que llegar. Además había que escribir la dirección del viejo a mano.
+Ahora:
+
+- **«Traer» busca solo al servidor de siempre**: lee `servidor.json` en tu página (GitHub Pages) y en
+  GitHub (la rama configurada), prueba cada dirección con `/api/salud` y usa la que contesta. Ya no se
+  escribe ninguna dirección (`--desde` sigue existiendo por si acaso). Si falta `cloudflared`, se instala.
+- El viejo entrega todo y una **llave de un solo uso** (`X-Relevo`). El nuevo **primero** se prende y
+  espera hasta que SU dirección contesta; **sólo entonces** usa esa llave para relevar al viejo. Si el
+  nuevo no logra prenderse en 14 minutos, el viejo sigue siendo el servidor y el nuevo se hace a un lado
+  (nada se pierde).
+- Mientras se muda, el viejo queda en sólo lectura y no se anuncia; si se cancela o pasan 15 minutos,
+  vuelve a anunciarse solo. `servidor.json` lleva también `repo` y `rama` para que el editor busque igual.
+- **La cuenta del dueño (YonathanPG)** se crea en el teléfono: `start my` → **1 · Encender** la pide si
+  no existe (o **6 · Cuenta del dueño**). La contraseña **la escribes tú ahí** y se guarda como huella
+  (scrypt): no está en el código ni en el repositorio, y el usuario se escribe como quieras
+  (`YonathanPG`, `yonathanpg`…).
+
+### Nuestros días y Mesecitos nuevos (1.19.0)
+
+- **Mensajitos rápidos** del mapa: `POST /api/toques` (`{"tipo":"besitos"|"teamo"|"cuidate"|"propio","texto":…}`,
+  el propio hasta 140 letras, sólo texto; 20 por minuto). Le llega notificación a tu amorcito y, con la app
+  abierta, llegan con el latido (`toques`) o al instante por la espera del chat (`GET /api/chat?…&tq=<último>`).
+  `GET /api/toques` (los últimos 30) y `POST /api/toques/visto` (`{"hasta":id}`).
+- **Llegadas y salidas** también con la app abierta: `GET /api/latido?ev=<último aviso visto>` responde
+  `ev_ultimo` y `lugares` (sólo los que te tocan según «a quién avisar» de cada lugar).
+- **Mesecitos**: `GET /api/mesecitos` trae además `capsulas`, `momentos` y `planes`.
+  `PUT|DELETE /api/mesecitos/<mes>/capsula` (una cartita para un mes que no llega: **sellada** — el
+  servidor ni le manda el texto a tu amorcito — hasta ese día), `PUT /api/mesecitos/<mes>/momento`
+  (`{texto, corazones 1–5, foto}`), `POST /api/mesecitos/<mes>/plan`, `PUT|DELETE /api/mesecitos/plan/<id>`.
+  Las fechas son las del aparato (`?hoy=AAAA-MM-DD`, a un día de la del servidor como mucho): así se
+  ve igual en México y en EE. UU.
+- **El país** en tu perfil (`"pais":"MX"`, dos letras) para las pantallitas de bienvenida y para mostrar
+  millas a quien vive en EE. UU.
+- **`python3 servidor.py rutas`** escribe la API completa en Markdown (`API.md`): lo que necesitará la app
+  nativa de Android (ver `android/NATIVA.md`).
+
 ### Arranque a prueba de todo (1.14.0)
 
 - `start my`/`librito` comprueban que el proceso **de verdad** sea el servidor
@@ -592,6 +632,7 @@ librito dueño            la contraseña de la cuenta del dueño (YonathanPG)
 librito traer            trae el servidor de siempre (con todo) a ESTE teléfono
 librito recuperar        volver a ser el servidor aquí (si se había pasado a otro)
 librito aparato          pila, temperatura, RAM y espacio del teléfono (JSON)
+python3 servidor.py rutas   la API completa en Markdown (para la app nativa)
 ```
 
 ## Si algo falla
