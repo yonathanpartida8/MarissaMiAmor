@@ -12,7 +12,7 @@
  * `preguntarCambios()` es la misma tarjeta para cualquier cosa con cambios
  * (el editor de HTML la usa al cerrarse).
  */
-import { el } from "../../src/utils/dom.js";
+import { el } from "../compartido/utils/dom.js";
 import { ico } from "./iconos.js";
 import { cerrarUltima, PILA } from "./hoja.js";
 import { cerrarUltimoModal, MODALES } from "./ui.js";

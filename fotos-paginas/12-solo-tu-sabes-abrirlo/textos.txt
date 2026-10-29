@@ -1,3 +1,0 @@
-titulo: Sólo tú sabes abrirlo
-arriba: gira hasta dar con ello
-texto: Aquí dentro hay algo guardado y no pienso darte la combinación, porque ya te la sabes. Es un número que a cualquier otra persona no le diría nada.

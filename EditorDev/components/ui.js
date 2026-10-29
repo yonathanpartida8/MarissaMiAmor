@@ -5,7 +5,7 @@
  * cada vez que algo cambia: se construyen una vez y luego cada control se
  * «refresca» solo (y no si lo estás tocando, para no quitarte el foco).
  */
-import { el } from "../../src/utils/dom.js";
+import { el } from "../compartido/utils/dom.js";
 import { ico } from "./iconos.js";
 import { Hoja, asa } from "./hoja.js";
 import { elegirLetra, elegirColor, normalHex } from "./selectores.js";

@@ -8,7 +8,7 @@
  * (nunca encima de la hoja) con lápiz o goma, colores, grosor, encima/detrás,
  * «Elegir el dibujo» y «Listo» (o Esc).
  */
-import { el } from "../../src/utils/dom.js";
+import { el } from "../compartido/utils/dom.js";
 import { ico } from "../components/iconos.js";
 import { confirmar, aviso } from "../components/ui.js";
 import { PREF, poner, alCambiar } from "../config/preferencias.js";

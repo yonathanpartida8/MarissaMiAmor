@@ -21,7 +21,7 @@
  *   · tocar el asa alterna entre las paradas.
  * Todo con `transform` (lo mueve la GPU) y un solo cuadro por movimiento.
  */
-import { el } from "../../src/utils/dom.js";
+import { el } from "../compartido/utils/dom.js";
 import { holgura, vibrar } from "../canvas/gestos.js";
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));

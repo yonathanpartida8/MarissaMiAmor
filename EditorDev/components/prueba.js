@@ -17,7 +17,7 @@
  * desenfoques animados, que trababan). Se termina con «Terminar prueba», Esc o
  * el botón «atrás» del teléfono.
  */
-import { el } from "../../src/utils/dom.js";
+import { el } from "../compartido/utils/dom.js";
 import { ico } from "./iconos.js";
 import { fuentesUsadas } from "../core/modelo.js";
 import { RAIZ } from "../assets/biblioteca.js";

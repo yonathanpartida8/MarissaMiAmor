@@ -10,7 +10,7 @@
  * Sin abejita, de vez en cuando aparece un consejito discreto (si se pide).
  * Todo se ajusta en ⚙ Configuración.
  */
-import { el } from "../../src/utils/dom.js";
+import { el } from "../compartido/utils/dom.js";
 import { aviso } from "./ui.js";
 import { ico } from "./iconos.js";
 import { Abeja } from "../mascota/abeja.js";

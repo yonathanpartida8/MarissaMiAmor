@@ -10,15 +10,19 @@ import { rutaAUrl } from "./biblioteca.js";
 
 let datos = null;
 
-/** Se importan bajo demanda (la primera vez que se abre algo del librito). */
+/** Se importan bajo demanda. Si el libro ya no está en este sitio, todo queda en listas vacías (sin errores). */
 async function cargar() {
   if (datos) return datos;
-  const [contenido, man, cap] = await Promise.all([
-    import("../../src/data/contenido.js").then((m) => m.default),
-    import("../../src/data/manifest.js"),
-    import("../../src/data/chapters.js"),
-  ]);
-  datos = { contenido, manifest: man.manifest, chapterById: cap.chapterById };
+  try {
+    const [contenido, man, cap] = await Promise.all([
+      import("../../src/data/contenido.js").then((m) => m.default),
+      import("../../src/data/manifest.js"),
+      import("../../src/data/chapters.js"),
+    ]);
+    datos = { contenido, manifest: man.manifest, chapterById: cap.chapterById };
+  } catch (e) {
+    datos = { contenido: { paginasHtml: [], fotosPaginas: {}, misFotos: [], misVideos: [], amores: [] }, manifest: [], chapterById: {} };
+  }
   return datos;
 }
 

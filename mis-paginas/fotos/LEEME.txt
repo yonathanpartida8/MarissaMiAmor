@@ -1,8 +1,0 @@
-Aquí van fotos sueltas: cada una sale sola como una página del libro.
-
-Para ponerle título y texto, un .txt con el MISMO nombre que la foto
-(nuestra-tarde.jpg → nuestra-tarde.txt) con:
-
-    titulo: Nuestra tarde
-    arriba: una de tantas
-    texto: Lo que quieras contar de esta foto.

@@ -20,7 +20,7 @@
  * ojos siguen tu dedo, parpadea, baila cuando guardas o publicas y saca su lupa cuando revisa.
  */
 import { R, cuandoActivo } from "../components/rendimiento.js";
-import { el } from "../../src/utils/dom.js";
+import { el } from "../compartido/utils/dom.js";
 import { PREF, movimiento } from "../config/preferencias.js";
 
 /* Fase 42: por capas. Lo que se mueve todo el tiempo (alitas, antenas, patitas y ojitos) va en su

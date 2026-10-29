@@ -1,4 +1,0 @@
-titulo: Te dedico este video
-arriba: dale play 🤍
-orden: 1
-texto: ¡Míralo completo! 🤍

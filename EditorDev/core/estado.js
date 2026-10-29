@@ -11,7 +11,7 @@
  * Eventos: el {p,e} · els {p} · pagina {p} · paginas · proyecto · assets ·
  *          sel · actual · historial · sucio
  */
-import { Emitter } from "../../src/core/Emitter.js";
+import { Emitter } from "../compartido/core/Emitter.js";
 import { Historial } from "../history/historial.js";
 import { clonar, uid } from "./modelo.js";
 

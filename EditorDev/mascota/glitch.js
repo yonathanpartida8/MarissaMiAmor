@@ -9,7 +9,7 @@
  *      normalidad con una pequeña «recuperación».
  * Toda la secuencia dura unos 8 s; tocar después de la revelación la cierra.
  */
-import { el } from "../../src/utils/dom.js";
+import { el } from "../compartido/utils/dom.js";
 import { PREF, movimiento } from "../config/preferencias.js";
 
 const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
