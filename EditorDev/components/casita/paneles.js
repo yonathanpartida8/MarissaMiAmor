@@ -9,6 +9,7 @@ import { monitoSVG, PIELES, COLOR_PELO, COLOR_ROPA, PEINADOS, ARRIBAS, ABAJOS, A
 import { CATEGORIAS, deCategoria, colorDe, recetasDe, arteReceta } from "./catalogo/index.js";
 import { CUARTOS, PAREDES, PATRONES, PISOS, cuarto } from "./cuartos.js";
 import { SONIDOS } from "./sonidos.js";
+import { PERFILES } from "./graficos.js";
 
 /** Una hojita que sube desde abajo (se cierra con la ✕, jalando su pestañita o con Atrás). */
 export function hoja(j, titulo, cuerpo, clase = "") {
@@ -100,9 +101,44 @@ export function ajustes(j) {
     sec("Sonidos", fila("Sonidos del juego", p.on !== false, (v) => { s.ponerPref({ on: v }); if (v) j.sonar("ding"); }), el("label.ca-ajuste", {}, [el("span", { text: "Volumen" }), vol]), fila("Música de los aparatos", p.musica !== false, (v) => { s.ponerPref({ musica: v }); j.alCambiarMusica(); })),
     sec("Tus propios sonidos", el("p.ca-nota", { text: tuyos.length ? `Ya suenan ${tuyos.length} tuyos.` : "Todos suenan como de fábrica." }),
       el("p.ca-nota", { text: "Para cambiar uno, deja tu archivo (.mp3, .m4a, .ogg o .wav) en su carpeta, dentro de assets/sonidos-casita/ (cada sonido tiene la suya con su nombre), y súbelo." }), verLista, lista),
-    sec("Cómo se ve", fila("Estilo pixel", j.leerPixel(), (v) => j.pixel(v))),
+    sec("Gráficos", el("p.ca-nota", { text: "Elige cuánto se esfuerza tu teléfono. Si se calienta o va lento, baja un nivel." }),
+      el("div.ca-gfx", { role: "radiogroup", "aria-label": "Perfil de gráficos" }, PERFILES.map(([k, t, d]) => {
+        const b = el("button.ca-gfx-b" + (j.gfx === k ? ".on" : ""), { type: "button", role: "radio", "aria-checked": String(j.gfx === k), dataset: { k }, onClick: () => {
+          for (const x of b.parentElement.children) { x.classList.toggle("on", x === b); x.setAttribute("aria-checked", String(x === b)); }
+          j.graficos(k); j.sonar("pop", { volumen: 0.6 });
+        } }, [el("b", { text: t }), el("small", { text: d })]);
+        return b;
+      })),
+      fila("Estilo pixel en las cosas", j.leerPixel(), (v) => j.pixel(v))),
     sec("La música del editor", el("p.ca-nota", { text: "Mientras juegan en la casita, la canción del editor se calla sola y vuelve al salir." })),
   ]), "ajustes");
+}
+
+/** El clima y la hora (los ven los dos). */
+export function clima(j) {
+  const ops = (lista, act, al) => el("div.ca-clima-ops", {}, lista.map(([k, t, ico]) => {
+    const b = el("button.ca-clima-b" + (k === act ? ".on" : ""), { type: "button", dataset: { k }, "aria-pressed": String(k === act), onClick: () => {
+      for (const x of b.parentElement.children) { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", String(x === b)); }
+      al(k);
+    } }, [el("i", { html: ICO[ico] }), el("span", { text: t })]);
+    return b;
+  }));
+  hoja(j, "El clima y la hora", el("div.ca-deco", {}, [
+    sec("Clima", ops([["sol", "Soleado", "sol"], ["lluvia", "Lluvia", "lluvia"], ["tormenta", "Tormenta", "rayo"], ["extra", "Tormentota", "extra"]], j.climaActual(), (k) => j.ponerClima(k))),
+    sec("Hora", ops([["dia", "Día", "sol"], ["tarde", "Tarde", "tarde"], ["noche", "Noche", "noche"], ["real", "La de verdad", "reloj"]], j.casa?.cuartos?.jardin?.hora || "real", (k) => j.ponerHora(k))),
+    el("p.ca-nota", { text: `${j.pareja} ve el mismo clima y la misma hora.` }),
+  ]), "clima");
+}
+
+/** Vaciar (al acomodar): este cuarto o toda la casa; se puede deshacer. */
+export function vaciar(j) {
+  const c = cuarto(j.cuartoActual);
+  const op = (todo, t, d) => el("button.ca-vaciar-b" + (todo ? ".peligro" : ""), { type: "button", onClick: () => { j.cerrarHoja(); j.vaciar(todo); } }, [el("i", { html: ICO.vaciar }), el("span", {}, [el("b", { text: t }), el("small", { text: d })])]);
+  hoja(j, "Vaciar", el("div.ca-deco", {}, [
+    el("p.ca-nota", { text: "Quita todo de una vez. Si te arrepientes, toca «Deshacer»." }),
+    op(false, "Vaciar este cuarto", `Todo lo de ${c.n}`),
+    op(true, "Vaciar toda la casa", "Todos los cuartos quedan vacíos (no se vuelve a llenar sola)"),
+  ]), "vaciar");
 }
 
 /** La pared y el piso del cuarto en el que estás. */

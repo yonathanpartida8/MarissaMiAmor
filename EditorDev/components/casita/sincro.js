@@ -39,7 +39,7 @@ export class Sincro {
   casa() { return aplicarOps(clonar(this.base || {}), [...this.hechos.map((h) => h.op), ...this.enviando, ...this.pend]); }
 
   iniciar() { this.vivo = true; this._escuchar(); }
-  parar() { this.vivo = false; clearTimeout(this._t); }
+  parar() { this.vivo = false; clearTimeout(this._t); if (this.pend.length) this._mandar(); }   // (lo pendiente sale aunque ya te vayas)
 
   op(o) { this.pend.push(o); this._estado(); clearTimeout(this._t); this._t = setTimeout(() => this._mandar(), 220); }
   ops(lista) { for (const o of lista) this.pend.push(o); this._estado(); clearTimeout(this._t); this._t = setTimeout(() => this._mandar(), 220); }

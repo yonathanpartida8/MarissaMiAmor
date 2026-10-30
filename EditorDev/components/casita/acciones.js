@@ -13,16 +13,16 @@ export function rebote(n, clase = "toque") { if (!n) return; n.classList.remove(
 const alternar = (j, o, k, si, no) => { const on = !o.e?.[k]; j.estado(o, { [k]: on }); j.sonar(on ? si : no); return on; };
 
 export const ACCIONES = {
-  luz(j, o) { j.cuartoLuz(o.c); j.sonar("clic"); },
+  luz(j, o) { j.cuartoLuz(o.c); j.sonar("interruptor"); },
   tele(j, o) {
     const canal = ((o.e?.canal | 0) + 1) % 4;
     j.estado(o, { canal });
-    j.sonar(canal ? "tele" : "clic");
+    j.sonar(canal ? "tele" : "interruptor");
     if (canal) j.particulas("estrella", o, 0, -110, 3);
   },
   async refri(j, o) {
     if (!(await j.irJunto(o))) return;
-    j.mientras(o, "abierto", 1800); j.sonar("abrir");
+    j.mientras(o, "abierto", 1800); j.sonar("refri");
     setTimeout(() => j.dar(azar(["manzana", "helado", "sandia", "galleta", "uvas", "platano"]), o), 450);
   },
   // La cocina: se elige qué cocinar y se sirve en una mesa (mesa.js).
@@ -33,12 +33,12 @@ export const ACCIONES = {
   mesa(j, o, n) { return tocarMesa(j, o, n); },
   async frutero(j, o) {
     if (!(await j.irJunto(o))) return;
-    j.sonar("pop"); j.dar(azar(["manzana", "platano", "uvas"]), o);
+    j.sonar("fruta"); j.dar(azar(["manzana", "platano", "uvas"]), o);
   },
   async basura(j, o, n) {
-    if (!j.yo.lleva) { rebote(n); j.sonar("clic"); j.decir("Está limpiecito", false); return; }
+    if (!j.yo.lleva) { rebote(n); j.sonar("tapa"); j.decir("Está limpiecito", false); return; }
     if (!(await j.irJunto(o))) return;
-    j.mientras(o, "abierto", 900); j.soltar(true); j.sonar("poof");
+    j.mientras(o, "abierto", 900); j.sonar("tapa"); j.soltar(true); setTimeout(() => j.sonar("tirar"), 180);
   },
   async agua(j, o) {
     if (!(await j.irJunto(o))) return;
@@ -57,30 +57,30 @@ export const ACCIONES = {
   },
   async libro(j, o) {
     if (!(await j.irJunto(o))) return;
-    j.sonar("hoja"); j.dar("libro", o);
+    j.sonar("libro"); j.dar("libro", o);
   },
   // El buzón: si tu amorcito te dejó una cartita, se abre y la lees; si no, te deja un recadito.
   async buzon(j, o) {
     if (!(await j.irJunto(o))) return;
-    j.mientras(o, "abierto", 1500); j.sonar("campanita");
+    j.mientras(o, "abierto", 1500); j.sonar("buzon");
     const nueva = j.mensajes.cartaNueva();
-    if (nueva) { setTimeout(() => { if (!j.vivo) return; j.mensajes.carta(nueva); j.dar("carta", o); }, 600); return; }
+    if (nueva) { setTimeout(() => j.sonar("campanita"), 260); setTimeout(() => { if (!j.vivo) return; j.mensajes.carta(nueva); j.dar("carta", o); }, 600); return; }
     j.decir(azar([`${j.pareja} te ama muchísimo`, "Hoy es un buen día para un abrazo", "Eres mi lugar favorito", "Te toca darle un besito", "Juntos todo es más bonito", "Alguien piensa en ti ahorita mismo", "Eres lo mejor que me pasó"]), false);
     setTimeout(() => j.dar("carta", o), 700);
   },
   async vestir(j, o) {
-    j.mientras(o, "abierto", 1600); j.sonar("abrir");
+    j.mientras(o, "abierto", 1600); j.sonar("ropero");
     j.vestidor();
   },
-  laptop(j, o) { alternar(j, o, "on", "ding", "clic"); },
+  laptop(j, o) { alternar(j, o, "on", "laptop", "interruptor"); },
   fuego(j, o) { if (alternar(j, o, "on", "fuego", "poof")) j.particulas("chispa", o, 0, -60, 4); },
-  musica(j, o) { if (alternar(j, o, "on", "ding", "clic")) { j.particulas("nota", o, 0, -o.def.h, 4); j.emote("baila"); } },
+  musica(j, o) { if (alternar(j, o, "on", "interruptor", "interruptor")) { j.particulas("nota", o, 0, -o.def.h, 4); j.emote("baila"); } },
   pecera(j, o, n) { rebote(n, "susto"); j.sonar("pez"); j.particulas("burbuja", o, 0, -110, 5); },
   cortinas(j, o) { j.estado(o, { cerrada: !o.e?.cerrada }); j.sonar("cortina"); },
   // El reloj cambia la hora del día en la casita: día, tarde, noche o la de verdad (lo ven los dos).
   reloj(j, o, n) { rebote(n); j.sonar("tic"); j.cambiarHora(); },
   recoger(j, o) { return j.recoger(o); },
-  async galletas(j, o, n) { if (!(await j.irJunto(o))) return; rebote(n); j.sonar("abrir"); j.dar("galleta", o); },
+  async galletas(j, o, n) { if (!(await j.irJunto(o))) return; rebote(n); j.sonar("frasco"); j.dar("galleta", o); },
   async trampolin(j, o, n) {
     if (!(await j.irJunto(o))) return;
     j.trampolin(o, n);
@@ -93,7 +93,7 @@ export const ACCIONES = {
   },
   fuente(j, o) { j.sonar("agua", { volumen: 0.7 }); j.particulas("agua", o, 0, -120, 6); },
   async puerta(j, o, n) { rebote(n); j.sonar("puerta"); await j.esperar(250); j.entrarA("sala"); },
-  sacude(j, o, n) { rebote(n, "baila"); j.sonar("hoja"); j.particulas("hoja", o, 0, -o.def.h * 0.7, 3); },
+  sacude(j, o, n) { rebote(n, "baila"); j.sonar("hojas"); j.particulas("hoja", o, 0, -o.def.h * 0.7, 3); },
   boing(j, o, n) { rebote(n, "salta"); j.sonar("boing"); },
   cuac(j, o, n) { rebote(n, "salta"); j.sonar("cuac"); j.particulas("burbuja", o, 0, -40, 3); },
   chillido(j, o, n) { rebote(n, "salta"); j.sonar("chillido"); j.particulas("corazon", o, 0, -70, 3); },
@@ -120,7 +120,7 @@ export const ACCIONES = {
     else j.decir("De día sólo se ven nubes… vuelvan de noche", false);
   },
   gira(j, o, n) { rebote(n, "gira"); j.sonar("whoosh"); },
-  neon(j, o) { const ap = !o.e?.apagado; j.estado(o, { apagado: ap }); j.sonar(ap ? "clic" : "ding"); },
+  neon(j, o) { const ap = !o.e?.apagado; j.estado(o, { apagado: ap }); j.sonar(ap ? "interruptor" : "neon"); },
   karaoke(j, o, n) { rebote(n, "baila"); j.probarMusica("musica-fiesta", 4200); j.emote("baila"); j.particulas("nota", o, 0, -120, 5); j.decir("¡A cantar!", false); },
   // El baño y la recámara.
   async ducha(j, o) {
@@ -128,10 +128,10 @@ export const ACCIONES = {
     j.sonar("regadera"); j.particulas("burbuja", { gx: j.yo.gx, y: j.yo.y - 80 }, 0, 0, 4);
   },
   async lavadora(j, o) { if (!(await j.irJunto(o))) return; j.mientras(o, "lava", 3200); j.sonar("lavadora"); j.particulas("burbuja", o, 0, -70, 4); },
-  lava(j, o) { alternar(j, o, "on", "ding", "clic"); },
+  lava(j, o) { alternar(j, o, "on", "interruptor", "interruptor"); },
   async baul(j, o) {
     if (!(await j.irJunto(o))) return;
-    j.mientras(o, "abierto", 1500); j.sonar("abrir");
+    j.mientras(o, "abierto", 1500); j.sonar("baul");
     setTimeout(() => j.dar(azar(["pelotita", "osito", "estrellita"]), o), 500);
   },
   // La terraza.
@@ -140,13 +140,13 @@ export const ACCIONES = {
     j.sonar("alberca"); j.particulas("agua", { gx: j.yo.gx, y: j.yo.y - 30 }, 0, 0, 6);
   },
   async regar(j, o, n) {
-    rebote(n, "baila"); j.sonar("regadera"); j.particulas("agua", o, 18, -30, 5);
+    rebote(n, "baila"); j.sonar("regar"); j.particulas("agua", o, 18, -30, 5);
     // Las flores de junto crecen.
     for (const r of j.objs.values()) if (r.d.al === "florecer" && r.o.c === o.c && Math.abs(r.gx - o.gx) < 170 && (r.o.e?.etapa | 0) < 2) { j.estado({ id: r.o.id }, { etapa: (r.o.e?.etapa | 0) + 1 }); rebote(r.n, "crece"); }
   },
   async hielera(j, o) {
     if (!(await j.irJunto(o))) return;
-    j.mientras(o, "abierto", 1300); j.sonar("abrir");
+    j.mientras(o, "abierto", 1300); j.sonar("hielera");
     setTimeout(() => j.dar(azar(["paleta", "limonada", "helado", "sandia"]), o), 450);
   },
   async fogata(j, o) {
@@ -155,7 +155,7 @@ export const ACCIONES = {
     j.sonar("fuego"); j.dar("malvavisco", o);
   },
   bici(j, o, n) { rebote(n, "salta"); j.sonar("bici"); },
-  cactus(j, o, n) { rebote(n, "susto"); j.sonar("nop"); j.decir("¡Auch! Pica tantito", false); },
+  cactus(j, o, n) { rebote(n, "susto"); j.sonar("auch"); j.decir("¡Auch! Pica tantito", false); },
 };
 
 /** Las caritas y gestos de tu monito (al tocarlo) y lo que pueden hacer juntos (al tocar al de tu amorcito). */

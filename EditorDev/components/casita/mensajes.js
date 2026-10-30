@@ -1,6 +1,6 @@
 /**
- * LOS MENSAJITOS DE LA CASITA (Fase 55, como en Roblox): una barrita delgada abajo para escribir sin tapar
- * la casa; lo que escriben sale en globitos arriba de su monito (hasta 3 seguidos: al llegar otro, se va el
+ * LOS MENSAJITOS DE LA CASITA (Fase 55, como en Roblox; Fase 56: se escribe dentro de la burbujita de tu
+ * monito): lo que escriben sale en globitos arriba de su monito (hasta 3 seguidos: al llegar otro, se va el
  * más viejo). Un cajoncito chiquito guarda los de esta vez y se limpia al salir. Las cartitas siguen
  * llegando al buzón del jardín. Lo guarda el servidor (/api/casita/mensaje y /api/casita/leer) y llega con
  * la escucha de la casita (`r.msgs`). Todo se pinta como texto (textContent), nunca como HTML.
@@ -73,32 +73,110 @@ export class Mensajes {
     }
   }
 
-  /* ── La barrita para escribir (no tapa la casa) ── */
+  /* ── Escribir dentro de la burbujita de tu monito (Fase 56) ──
+   * No hay cajón ni pantalla blanca: la burbujita sale arriba de su cabeza y ahí escribes. Al abrir el
+   * teclado la casita NO cambia de tamaño (se congela la medida) y sólo se sube lo justo para que tu
+   * monito y su burbujita queden arriba del teclado; al cerrarlo, todo regresa como estaba. */
   barra(on = !this.abierto()) {
     const j = this.j;
     if (!this.barraN) {
-      this.campo = el("input.ca-chat-campo", { type: "text", maxlength: String(MAX.msg), placeholder: "Escribe algo…", enterkeyhint: "send", autocomplete: "off", "aria-label": "Mensaje" });
+      this.campo = el("input.ca-chat-campo", { type: "text", maxlength: String(MAX.msg), placeholder: "Escribe algo…", enterkeyhint: "send", autocomplete: "off", autocapitalize: "sentences", "aria-label": "Mensaje" });
       this.campo.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); this._enviar(); } else if (e.key === "Escape") this.barra(false); });
+      this.campo.addEventListener("focus", () => this._teclado(true));
+      this.campo.addEventListener("blur", () => setTimeout(() => {
+        if (!this.abierto() || this.barraN.contains(document.activeElement)) return;
+        this._teclado(false);
+        if (!this.campo.value.trim()) this.barra(false);   // (si dejaste algo escrito, la burbujita se queda)
+      }, 160));
       this.logN = el("div.ca-chat-log", { hidden: "", role: "log", "aria-label": "Mensajes de esta vez" });
-      this.logB = el("button.ca-chat-b", { type: "button", "aria-label": "Ver los mensajes de esta vez", title: "Los de esta vez", html: ICO.historial, onClick: () => { this.logN.hidden = !this.logN.hidden; this.logB.classList.toggle("on", !this.logN.hidden); this._pintarLog(); } });
-      this.barraN = el("div.ca-chat", {}, [
-        this.logN,
-        el("div.ca-chat-fila", {}, [
-          this.logB,
-          el("button.ca-chat-b", { type: "button", "aria-label": "Escribir una cartita", title: "Cartitas", html: ICO.carta, onClick: () => this.cartas() }),
+      const b = (k, t, al, extra = "") => el("button.ca-chat-b" + extra, { type: "button", "aria-label": t, title: t, html: ICO[k], onPointerdown: (e) => e.preventDefault(), onClick: al });
+      this.logB = b("historial", "Los mensajes de esta vez", () => { this.logN.hidden = !this.logN.hidden; this.logB.classList.toggle("on", !this.logN.hidden); this._pintarLog(); });
+      this.barraN = el("div.ca-chat", { role: "dialog", "aria-label": "Escribir un mensajito" }, [
+        el("div.ca-chat-globo", {}, [
           this.campo,
-          el("button.ca-chat-b.mandar", { type: "button", "aria-label": "Mandar", html: ICO.enviar, onClick: () => this._enviar() }),
-          el("button.ca-chat-b", { type: "button", "aria-label": "Cerrar", html: ICO.cerrar, onClick: () => this.barra(false) }),
+          el("div.ca-chat-fila", {}, [
+            this.logB,
+            b("carta", "Escribir una cartita", () => this.cartas()),
+            el("span.ca-hueco"),
+            b("cerrar", "Cerrar", () => this.barra(false)),
+            b("enviar", "Mandar", () => this._enviar(), ".mandar"),
+          ]),
         ]),
+        el("i.ca-chat-cola"),
       ]);
-      j.raiz.append(this.barraN);
+      j.raiz.append(this.logN, this.barraN);
     }
     this.barraN.classList.toggle("ver", on);
     j.mensajesB?.classList.toggle("on", on);
     j.raiz.classList.toggle("con-chat", on);
-    if (on) setTimeout(() => this.campo.focus({ preventScroll: true }), 60);
-    else this.campo.blur();
+    clearInterval(this._tU);
+    if (on) {
+      j._seguir(j.yo.gx);
+      this._ubicar();
+      this._tU = setInterval(() => this._ubicar(), 120);    // sigue a tu monito si camina
+      setTimeout(() => this.abierto() && this.campo.focus({ preventScroll: true }), 60);
+    } else {
+      this.logN.hidden = true; this.logB.classList.remove("on");
+      this.campo.blur();
+      this._teclado(false);
+    }
     j.sonar(on ? "abrir" : "cerrar", { volumen: 0.5 });
+  }
+  /** Teclado abierto: congela la medida de la casita y escucha cómo cambia la parte visible de la pantalla. */
+  _teclado(on) {
+    const j = this.j, vv = window.visualViewport;
+    if (on === !!j._congelado) { this._ubicar(); return; }
+    j._congelado = on;
+    j.raiz.classList.toggle("escribiendo", on);
+    document.body.classList.toggle("ca-escribiendo", on);
+    if (on) {
+      this._alVV = () => this._ubicar();
+      vv?.addEventListener("resize", this._alVV); vv?.addEventListener("scroll", this._alVV);
+      window.addEventListener("resize", this._alVV);
+      // (Al salir el teclado, el navegador desplaza la página y sus cajas para mostrar el campo: eso hacía
+      //  que todo brincara. Aquí no se mueve nada: lo regresamos y sólo sube la casita, a nuestra manera.)
+      window.addEventListener("scroll", this._alVV, true);
+    } else {
+      vv?.removeEventListener("resize", this._alVV); vv?.removeEventListener("scroll", this._alVV);
+      window.removeEventListener("resize", this._alVV);
+      window.removeEventListener("scroll", this._alVV, true);
+      this._sinDesplazar();
+      j._subir = 0;
+      j.mundo.classList.remove("subiendo");
+      requestAnimationFrame(() => { if (j.vivo) { j._medir(); this._ubicar(); } });
+    }
+  }
+  /** Regresa a su lugar lo que el navegador haya desplazado (la página y las cajas de arriba de la casita). */
+  _sinDesplazar() {
+    const j = this.j;
+    for (let n = j.raiz; n && n !== document.documentElement; n = n.parentElement) if (n.scrollTop) n.scrollTop = 0;
+    for (const n of [j.escena, j.vistaN.parentElement]) if (n?.scrollTop) n.scrollTop = 0;
+    if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
+  }
+  /** Pone la burbujita arriba de la cabeza de tu monito y, con el teclado abierto, sube la casita lo justo. */
+  _ubicar() {
+    const j = this.j, n = this.barraN;
+    if (!n || !this.abierto() || !j.vivo) return;
+    if (j._congelado) this._sinDesplazar();
+    const R = j.raiz.getBoundingClientRect(), V = j.vistaN.getBoundingClientRect(), vv = window.visualViewport;
+    const vTop = Math.max(V.top, vv ? vv.offsetTop : 0), vBot = Math.min(V.bottom, vv ? vv.offsetTop + vv.height : innerHeight);
+    const C = j.yo.caja.getBoundingClientRect(), bh = n.offsetHeight, bw = n.offsetWidth;
+    if (j._congelado) {
+      // (Medidas sin lo que ya se subió: pies abajo del teclado → subir; burbujita que no se salga por arriba.)
+      const s0 = j._subir || 0, pies = C.bottom + s0, arriba = C.top + s0 - 12 - bh;
+      const s = Math.round(Math.max(0, Math.min(pies - (vBot - 10), arriba - (vTop + 6))));
+      if (Math.abs(s - s0) > 1) { j._subir = s; j.mundo.classList.add("subiendo"); j._moverMundo(); }
+    }
+    const C2 = j.yo.caja.getBoundingClientRect(), cx = (C2.left + C2.right) / 2 - R.left;
+    const x = Math.max(8, Math.min(R.width - bw - 8, cx - bw / 2)), y = Math.max(vTop - R.top + 6, C2.top - R.top - 12 - bh);
+    n.style.transform = `translate(${x.toFixed(0)}px, ${y.toFixed(0)}px)`;
+    n.style.setProperty("--cola", Math.max(16, Math.min(bw - 16, cx - x)).toFixed(0) + "px");
+  }
+  /** Al salir de la casita: nada se queda escuchando ni corriendo. */
+  cerrarTodo() {
+    clearInterval(this._tU);
+    if (this.j._congelado) this._teclado(false);
+    document.body.classList.remove("ca-escribiendo");
   }
   _enviar() {
     const t = this.campo.value;

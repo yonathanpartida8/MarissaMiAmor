@@ -61,4 +61,13 @@ export const ICO = {
   regalo: ic('<rect x="3" y="9" width="18" height="12" rx="2"/><path d="M3 13h18M12 9v12M12 9c-2-4-6-4-6-1s4 1 6 1zM12 9c2-4 6-4 6-1s-4 1-6 1z"/>'),
   comer: ic('<path d="M12 7c-2-3-7-2-7 3 0 6 4 10 7 10s7-4 7-10c0-5-5-6-7-3z"/><path d="M12 7c0-2 1-3 3-4"/>'),
   soltar: ic('<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>'),
+  // (Fase 56) El clima, vaciar y los gráficos.
+  sol: ic('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>'),
+  rayo: ic('<path d="M7 14a4 4 0 0 1-.6-8 5.5 5.5 0 0 1 10.6 1.2A3.4 3.4 0 0 1 17 14"/><path d="M12.5 12l-2.5 4h3.5l-2 5"/>'),
+  extra: ic('<path d="M7 13a4 4 0 0 1-.6-8 5.5 5.5 0 0 1 10.6 1.2A3.4 3.4 0 0 1 17 13"/><path d="M12.5 11l-2.5 4h3.5l-2 5"/><path d="M3 17h4M2 20h5M17 17h4"/>'),
+  noche: ic('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>'),
+  tarde: ic('<path d="M3 18h18M6 14a6 6 0 0 1 12 0"/><path d="M12 4v3M4.6 8.6l1.8 1.4M19.4 8.6l-1.8 1.4"/>'),
+  reloj: ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  vaciar: ic('<path d="M14 3l-4 9"/><path d="M6 13h9l2 8H4z"/><path d="M8 17v4M12 17v4"/>'),
+  graficos: ic('<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 13l3-4 3 3 4-5"/>'),
 };

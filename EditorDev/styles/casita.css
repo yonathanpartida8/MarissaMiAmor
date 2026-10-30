@@ -203,7 +203,7 @@ body.ca-en-completa { overflow: hidden; }
 /* ── Los monitos ── */
 .ca-monito { position: absolute; width: 0; height: 0; transition-property: left, top; transition-timing-function: linear; transition-duration: 0s; }
 .ca-mono-caja { position: absolute; left: -44px; bottom: 0; width: 88px; height: 150px; transition: transform .35s cubic-bezier(.3, .9, .3, 1); }
-.ca-mono-flip { position: absolute; inset: 0; transition: transform .2s; }
+.ca-mono-flip { position: absolute; inset: 0; }   /* (Fase 56: voltea al instante; nada de girar como hoja de papel) */
 .ca-monito.izq .ca-mono-flip { transform: scaleX(-1); }
 .ca-mono-cuerpo, .ca-mono-svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .ca-mono-svg * { transform-box: view-box; }
@@ -478,9 +478,9 @@ body.ca-en-completa { overflow: hidden; }
 @keyframes caPolvo { 0% { opacity: .9; transform: scale(.3); } 100% { opacity: 0; transform: translate(var(--dx, 0px), -14px) scale(1.5); } }
 
 /* Ultra rendimiento y movimiento reducido: lo que se mueve solo, quieto (lo que tú haces sí se ve). */
-body.ed-ultra .ca .ca-mariposa::before, body.ed-ultra .ca .ca-mariposa::after { animation: none !important; }
-body.ed-ultra .ca :is(.ca-nube, .ca-mariposa, .ca-luciernagas, .foco, .cola, .ojitos, .orejas, .copa, .pez1, .pez2, .burbu, .flota, .tilin, .vela, .ca-ojos, .nube) { animation: none !important; }
-body.ed-ultra .ca .fuente .agua { animation: none; }
+.ca:not(.fx1) .ca-mariposa::before, .ca:not(.fx1) .ca-mariposa::after { animation: none !important; }
+.ca:not(.fx1) :is(.ca-nube, .ca-mariposa, .ca-luciernagas, .foco, .cola, .ojitos, .orejas, .copa, .pez1, .pez2, .burbu, .flota, .tilin, .vela, .ca-ojos, .nube) { animation: none !important; }
+.ca:not(.fx1) .fuente .agua { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .ca *, .ca *::before, .ca *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
@@ -519,17 +519,17 @@ body.ed-ultra .ca .fuente .agua { animation: none; }
 .ca-brillo[hidden] { display: none; }
 .ca-mundo.tarde .ca-brillo.on { opacity: .32; }
 .ca-mundo.noche .ca-brillo.on, .ca-brillo.on.cuarto-oscuro { opacity: .5; }
-:root:not([data-modo="ultra"]):not([data-modo="rendimiento"]) .ca-brillo { mix-blend-mode: screen; }
-:root:not([data-modo="ultra"]):not([data-modo="rendimiento"]) .ca-mundo.noche .ca-brillo.on,
-:root:not([data-modo="ultra"]):not([data-modo="rendimiento"]) .ca-brillo.on.cuarto-oscuro { opacity: .78; }
+.ca.fx2 .ca-brillo { mix-blend-mode: screen; }
+ .ca.fx2 .ca-mundo.noche .ca-brillo.on,
+.ca.fx2 .ca-brillo.on.cuarto-oscuro { opacity: .78; }
 /* Fiesta: la bocina prendida llena el cuarto de lucecitas. */
 .ca-oscuro.fiesta { opacity: .5 !important; animation: caFiesta 1.6s steps(1) infinite;
   background: radial-gradient(circle at 14% 66%, rgba(255, 92, 147, .85), transparent 5%), radial-gradient(circle at 36% 74%, rgba(124, 180, 255, .85), transparent 4.5%), radial-gradient(circle at 58% 64%, rgba(255, 222, 90, .85), transparent 4%), radial-gradient(circle at 80% 76%, rgba(150, 255, 190, .8), transparent 5%), radial-gradient(circle at 26% 88%, rgba(201, 167, 255, .8), transparent 4%), radial-gradient(circle at 70% 90%, rgba(255, 150, 120, .8), transparent 4.5%), rgba(60, 30, 90, .16); }
 .ca-mundo.noche .ca-oscuro.fiesta { opacity: .7 !important; }
 
 /* ── Sombras suaves ── */
-:root:not([data-modo="ultra"]):not([data-modo="rendimiento"]) .ca-obj.capa-pared > .ca-obj-arte { filter: drop-shadow(0 6px 5px rgba(90, 40, 70, .15)); }
-:root[data-modo="calidad"] .ca-obj.capa-piso > .ca-obj-arte { filter: drop-shadow(0 3px 2px rgba(90, 40, 70, .1)); }
+.ca.fx2 .ca-obj.capa-pared > .ca-obj-arte { filter: drop-shadow(0 6px 5px rgba(90, 40, 70, .15)); }
+.ca.fx3 .ca-obj.capa-piso > .ca-obj-arte { filter: drop-shadow(0 3px 2px rgba(90, 40, 70, .1)); }
 
 /* ── La terraza: ciudad a lo lejos y barandal ── */
 .ca-ciudad { position: absolute; left: 0; right: 0; top: 300px; height: 90px; opacity: .55;
@@ -673,7 +673,7 @@ body.ed-ultra .ca .fuente .agua { animation: none; }
 .ca-obj.caballete[data-etapa="1"] .p1, .ca-obj.caballete[data-etapa="2"] .p2, .ca-obj.caballete[data-etapa="3"] .p3 { display: inline; }
 .ca-obj.neon .tubo { opacity: .3; transition: opacity .3s; }
 .ca-obj.neon:not(.e-apagado) .tubo { opacity: 1; }
-:root:not([data-modo="ultra"]):not([data-modo="rendimiento"]) .ca-obj.neon:not(.e-apagado) .tubo { filter: drop-shadow(0 0 3px #ff6fae); }
+.ca.fx2 .ca-obj.neon:not(.e-apagado) .tubo { filter: drop-shadow(0 0 3px #ff6fae); }
 .ca-obj.lampara_lava.e-on .lava-b > * { animation: caLava 5s ease-in-out infinite alternate; }
 .ca-obj.lampara_lava.e-on .lava-b > :nth-child(2) { animation-duration: 3.6s; animation-direction: alternate-reverse; }
 .ca-obj.hamster .rueda { animation: caGiraRueda 1.4s linear infinite; transform-origin: center; }
@@ -750,7 +750,7 @@ body.ed-ultra .ca .fuente .agua { animation: none; }
 @keyframes caPajaro { 0%, 70%, 100% { transform: none; } 78% { transform: translateY(-5px) rotate(-6deg); } 86% { transform: none; } 92% { transform: translateY(-3px); } }
 @keyframes caLluvia { to { stroke-dashoffset: -16; } }
 @keyframes caOla { to { transform: translateX(12px); } }
-@keyframes caPasea { 0%, 8% { translate: 0 0; scale: 1 1; } 26% { translate: 30px 0; scale: 1 1; } 29%, 36% { translate: 30px 0; scale: -1 1; } 58% { translate: -24px 0; scale: -1 1; } 61%, 70% { translate: -24px 0; scale: 1 1; } 88%, 100% { translate: 0 0; scale: 1 1; } }
+@keyframes caPasea { 0%, 8% { translate: 0 0; scale: 1 1; } 26% { translate: 30px 0; scale: 1 1; } 26.4%, 36% { translate: 30px 0; scale: -1 1; } 58% { translate: -24px 0; scale: -1 1; } 58.4%, 70% { translate: -24px 0; scale: 1 1; } 88%, 100% { translate: 0 0; scale: 1 1; } }
 @keyframes caRegalito { 0%, 70%, 100% { transform: none; } 78% { transform: rotate(-7deg) scale(1.05); } 86% { transform: rotate(5deg); } 93% { transform: rotate(-2deg); } }
 @keyframes caToca { from { transform: rotate(-26deg); } to { transform: rotate(-40deg); } }
 @keyframes caToca2 { from { transform: rotate(26deg); } to { transform: rotate(40deg); } }
@@ -758,17 +758,17 @@ body.ed-ultra .ca .fuente .agua { animation: none; }
 @keyframes caMira { 0%, 38%, 100% { transform: none; } 44%, 52% { transform: rotate(-5deg); } 60%, 68% { transform: rotate(4deg); } 76% { transform: none; } }
 
 /* Ultra rendimiento (y Rendimiento): sin polvito, sin mezclas de luz ni animaciones de adorno. */
-:root:is([data-modo="ultra"], [data-modo="rendimiento"]) .ca .ca-polvito, :root:is([data-modo="ultra"], [data-modo="rendimiento"]) .ca .ca-escena::after { display: none; }
-:root:is([data-modo="ultra"], [data-modo="rendimiento"]) .ca .ca-pared::before { display: none; }
-body.ed-ultra .ca :is(.ca-polvito, .ca-obj-arte, .ca-mono-cuerpo, .ca-cabeza, .rueda, .pajaro, .ola, .patito-a, .lava-b > *, .ca-regalito, .brinca-j, .monedas) { animation: none !important; }
-body.ed-ultra .ca .ca-plato-vapor { display: none; }
-body.ed-ultra .ca .ca-oscuro.fiesta { animation: none; }
-body.ed-ultra .ca .ca-rayo { display: none; }
+.ca:not(.fx3) .ca-polvito, .ca:not(.fx1) .ca-escena::after, .ca:not(.fx2) .ca-rayo { display: none; }
+.ca:not(.fx2) .ca-pared::before, .ca:not(.fx2) .ca-piso::after { display: none; }
+.ca:not(.fx1) :is(.ca-polvito, .ca-obj-arte, .ca-mono-cuerpo, .ca-cabeza, .rueda, .pajaro, .ola, .patito-a, .lava-b > *, .ca-regalito, .brinca-j, .monedas) { animation: none !important; }
+.ca:not(.fx1) .ca-plato-vapor { display: none; }
+.ca:not(.fx1) .ca-oscuro.fiesta { animation: none; }
+.ca:not(.fx1) .ca-rayo { display: none; }
 
 /* ═══════════ FASE 55: pixel, puertas, lluvia, chat como Roblox, gestos y más ═══════════ */
 .ca-filtros { position: absolute; width: 0; height: 0; pointer-events: none; }
 /* Estilo pixel (sólo el juego; los botones siguen igual). Se quita en Ajustes o con Ultra rendimiento. */
-:root:not([data-modo="ultra"]) .ca.pixel :is(.ca-obj-arte svg, .ca-mono-svg, .ca-plato svg, .ca-lleva svg, .ca-vuela svg, .ca-regalito) { filter: url(#ca-pixel); }
+.ca.pixel.fx2 :is(.ca-obj-arte svg, .ca-mono-svg, .ca-plato svg, .ca-lleva svg, .ca-vuela svg, .ca-regalito) { filter: url(#ca-pixel); }
 .ca.pixel :is(.ca-globito, .ca-mono-nombre) { border-radius: 6px; box-shadow: 0 0 0 2px #4a3346, 3px 3px 0 rgba(74, 51, 70, .25); }
 .ca.pixel .ca-part { border-radius: 1px !important; }
 
@@ -819,26 +819,35 @@ body.ed-ultra .ca .ca-rayo { display: none; }
 .ca-globito:last-child::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 10px; height: 10px; margin-left: -5px; background: inherit; transform: rotate(45deg); }
 .ca-globito.se-va { opacity: 0; transform: translateY(-8px) scale(.9); }
 .ca-monito:is(.sentado, .dormido, .banando, .columpio) .ca-globos { bottom: 120px; }
-.ca-chat { position: absolute; z-index: 30; left: 8px; right: 8px; bottom: calc(40px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 6px; pointer-events: none; opacity: 0; transform: translateY(14px); transition: opacity .2s, transform .25s cubic-bezier(.3, 1.2, .5, 1); }
-.ca-chat.ver { opacity: 1; transform: none; }
+/* Escribir dentro de la burbujita de tu monito (Fase 56): la pone mensajes.js arriba de su cabeza. */
+.ca-chat { position: absolute; z-index: 30; left: 0; top: 0; width: min(300px, calc(100% - 16px)); pointer-events: none; opacity: 0; transform: translate(-999px, 0); transition: opacity .18s; }
+.ca-chat.ver { opacity: 1; }
 .ca-chat.ver > * { pointer-events: auto; }
-.ca-chat-fila { display: flex; align-items: center; gap: 4px; padding: 5px; border-radius: 18px; background: rgba(255, 255, 255, .9); box-shadow: 0 6px 18px rgba(90, 40, 70, .18); }
-.ca-chat-campo { flex: 1; min-width: 0; height: 38px; padding: 0 12px; border: 0; border-radius: 13px; background: #fff3f8; color: var(--ca-tinta); font: 700 15px/1 "Nunito", sans-serif; }
-.ca-chat-campo:focus { outline: 2px solid var(--ca-acento); outline-offset: 0; }
-.ca-chat-b { flex: none; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 12px; background: transparent; color: var(--ca-acento); cursor: pointer; }
-.ca-chat-b svg { width: 20px; height: 20px; }
-.ca-chat-b.on, .ca-chat-b:active { background: var(--ca-rosa); }
-.ca-chat-b.mandar { background: var(--ca-acento); color: #fff; }
-.ca-chat-log { max-height: min(28vh, 180px); overflow-y: auto; overscroll-behavior: contain; padding: 8px 10px; border-radius: 14px; background: rgba(40, 24, 40, .55); color: #fff; }
+.ca-chat-globo { position: relative; padding: 6px 6px 4px; border-radius: 18px; background: #fff; color: #4a3346; box-shadow: 0 6px 18px rgba(90, 40, 70, .22); animation: caGlobito .28s cubic-bezier(.3, 1.6, .5, 1); }
+.ca-chat-cola { position: absolute; left: var(--cola, 50%); bottom: -6px; width: 14px; height: 14px; margin-left: -7px; background: #fff; transform: rotate(45deg); box-shadow: 4px 4px 6px rgba(90, 40, 70, .12); pointer-events: none !important; }
+.ca.pixel .ca-chat-globo { border-radius: 8px; box-shadow: 0 0 0 2.5px #4a3346, 4px 4px 0 rgba(74, 51, 70, .25); }
+.ca.pixel .ca-chat-cola { box-shadow: 2.5px 2.5px 0 #4a3346; }
+/* (16 px: así el iPhone no hace zoom al escribir y nada «crece».) */
+.ca-chat-campo { display: block; width: 100%; height: 38px; padding: 0 8px; border: 0; border-radius: 10px; background: transparent; color: #4a3346; font: 800 16px/1.2 "Nunito", sans-serif; text-align: center; }
+.ca-chat-campo::placeholder { color: #b39aae; }
+.ca-chat-campo:focus { outline: none; }
+.ca-chat-fila { display: flex; align-items: center; gap: 2px; margin-top: 2px; padding-top: 4px; border-top: 1.5px dashed #f3d3e1; }
+.ca-chat-b { flex: none; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 11px; background: transparent; color: #e5679a; cursor: pointer; }
+.ca-chat-b svg { width: 19px; height: 19px; }
+.ca-chat-b.on, .ca-chat-b:active { background: #ffe3ec; }
+.ca-chat-b.mandar { background: #e5679a; color: #fff; }
+.ca-chat-log { position: absolute; z-index: 29; top: calc(70px + env(safe-area-inset-top, 0px)); left: 8px; width: min(420px, calc(100% - 16px)); max-height: min(30vh, 200px); overflow-y: auto; overscroll-behavior: contain; padding: 8px 10px; border-radius: 14px; background: rgba(40, 24, 40, .62); color: #fff; }
 .ca-chat-log[hidden] { display: none; }
 .ca-chat-l { margin: 0 0 3px; font: 600 13px/1.3 "Nunito", sans-serif; overflow-wrap: anywhere; }
 .ca-chat-l b { color: #ffc4dc; } .ca-chat-l.mio b { color: #bfe6ff; }
 .ca-chat-l small { margin-left: 6px; font-size: 10px; opacity: .65; }
 .ca-chat-vacio { margin: 0; font: 600 12px/1.35 "Nunito", sans-serif; opacity: .8; }
 .ca-r.on { background: var(--ca-rosa); }
-:root[data-tema="oscuro"] .ca .ca-chat-fila { background: rgba(42, 33, 48, .94); }
-:root[data-tema="oscuro"] .ca .ca-chat-campo { background: #3a2c3f; }
-@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .ca .ca-chat-fila { background: rgba(42, 33, 48, .94); } :root:not([data-tema="claro"]) .ca .ca-chat-campo { background: #3a2c3f; } }
+/* Mientras escribes: sin barras abajo (no brincan con el teclado) y la casita sube suavecito. */
+.ca.escribiendo :is(.ca-hud-cuartos, .ca-barra, .ca-hud) { visibility: hidden; }
+.ca.escribiendo .ca-monito.yo .ca-globos { display: none; }
+body.ca-escribiendo .jt-nav { display: none; }
+.ca-mundo.subiendo { transition: transform .22s ease-out; }
 
 /* La tablita de gestos: con título y en cuadritos. */
 .ca-menu { grid-template-columns: none; display: grid; gap: 6px; max-width: min(92vw, 360px); max-height: 46vh; overflow-y: auto; overscroll-behavior: contain; padding: 10px; border-radius: 22px; }
@@ -889,5 +898,78 @@ body.ed-ultra .ca .ca-rayo { display: none; }
 @keyframes caTrampolin { 0%, 100% { transform: translateY(0) scale(1.06, .92); } 45% { transform: translateY(-90px) scale(.96, 1.05); } }
 @keyframes caFlash { from { opacity: .9; } to { opacity: 0; } }
 @keyframes caMecerSuave { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
-body.ed-ultra .ca .ca-lluvia::before { animation: none; }
+.ca:not(.fx1) .ca-lluvia::before { animation: none; }
 @media (prefers-reduced-motion: reduce) { .ca-lluvia::before { animation: none !important; } .ca-auto { display: none; } }
+
+/* ═════════════ Fase 56 ═════════════ */
+/* El fondo pixel de afuera (fondo.js): cielo con tramado, nubes, la ciudad con ventanitas, casitas y árboles. */
+.ca-fondo-px { position: absolute; left: 0; top: -330px; width: 100%; height: 766px; display: none; pointer-events: none; image-rendering: crisp-edges; image-rendering: pixelated; }
+.ca-cuarto.px .ca-fondo-px { display: block; }
+.ca-cuarto.px :is(.ca-sol, .ca-nube, .ca-estrellas, .ca-lomas, .ca-ciudad) { display: none; }
+.ca-cuarto.px .ca-cielo { transition: none; }
+
+/* El relámpago: destello doble; con Equilibrado o más, ilumina «de verdad» (mezcla de luz) y echa sombras. */
+.ca-flash { position: absolute; inset: 0; z-index: 15; display: none; pointer-events: none; background: radial-gradient(130% 90% at 50% -10%, rgba(240, 244, 255, .95), rgba(200, 214, 255, .55) 55%, rgba(170, 190, 255, .25)); }
+.ca-flash.ver { display: block; animation: caFlash .7s ease-out forwards; }
+.ca.fx2 .ca-flash { mix-blend-mode: screen; }
+.ca.gl .ca-flash { display: none; }
+@keyframes caFlash { 0% { opacity: var(--fuerza, .8); } 12% { opacity: calc(var(--fuerza, .8) * .2); } 24% { opacity: calc(var(--fuerza, .8) * .85); } 100% { opacity: 0; } }
+.ca.fx3 .ca-mundo.relampago .ca-mono-cuerpo { filter: drop-shadow(10px 4px 0 rgba(16, 18, 44, .35)); }
+.ca.fx4 .ca-mundo.relampago .ca-obj.capa-piso > .ca-obj-arte { filter: drop-shadow(8px 3px 0 rgba(16, 18, 44, .28)); }
+
+/* Tormenta y tormentota: más oscuro, lluvia más tupida y rápida (y chueca por el viento). */
+.ca-mundo.tormenta .ca-oscuro.jardin, .ca-mundo.tormenta .ca-oscuro.terraza { opacity: .36; background: #1b1f3d; }
+.ca-mundo.extra .ca-oscuro.jardin, .ca-mundo.extra .ca-oscuro.terraza { opacity: .46; }
+.ca-mundo.tormenta .ca-oscuro:not(.jardin):not(.terraza):not(.apagado) { opacity: .12; }
+.ca-mundo.tormenta.noche .ca-oscuro:not(.jardin):not(.terraza):not(.apagado) { opacity: .18; }
+.ca-mundo.tormenta .ca-lluvia::before { animation-duration: .36s; background-image: repeating-linear-gradient(104deg, transparent 0 7px, rgba(210, 228, 255, .62) 7px 8.5px, transparent 8.5px 18.5px); }
+.ca-mundo.extra .ca-lluvia::before { animation-duration: .24s; background-image: repeating-linear-gradient(104deg, transparent 0 4px, rgba(222, 236, 255, .7) 4px 5.6px, transparent 5.6px 12.33px); }
+.ca-mundo.extra .ca-lluvia { transform: skewX(-8deg); }
+.ca.fx1 .ca-mundo.extra .ca-obj:is(.arbol, .arbusto, .flores, .sombrilla, .maceta_grande, .luces) > .ca-obj-arte { animation: caViento 1.4s ease-in-out infinite alternate; transform-origin: 50% 100%; }
+@keyframes caViento { from { transform: skewX(-3deg); } to { transform: skewX(3deg); } }
+/* Reflejos (Ultra): los charquitos brillan y los monitos se reflejan en el piso. */
+.ca.fx4 .ca-mundo.lluvia .ca-charcos { animation: caCharco 2.4s ease-in-out infinite alternate; }
+@keyframes caCharco { from { filter: brightness(1); } to { filter: brightness(1.35); } }
+.ca.fx4 .ca-mono-flip { -webkit-box-reflect: below -6px linear-gradient(transparent 72%, rgba(255, 255, 255, .13)); }
+.ca.fx4 .ca-mundo.lluvia .ca-monito.fuera .ca-mono-flip { -webkit-box-reflect: below -6px linear-gradient(transparent 55%, rgba(255, 255, 255, .3)); }
+.ca.fx4 .ca-monito:is(.sentado, .dormido, .banando, .columpio, .cargado) .ca-mono-flip { -webkit-box-reflect: unset; }
+
+/* La capa WebGL 2 de Ultra (graficos.js): luces en tiempo real, lluvia, relámpagos y luciérnagas. */
+.ca-gl { position: absolute; inset: 0; z-index: 14; width: 100%; height: 100%; pointer-events: none; }
+.ca.gl .ca-brillo { display: none; }
+
+/* «Compilando las cositas»: la pantallita de carga al entrar. */
+.ca-carga { position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; background: linear-gradient(#1a1946, #3a2e6e 55%, #c08bc6 85%, #ec9db3); transition: opacity .35s; }
+.ca-carga.fuera { opacity: 0; pointer-events: none; }
+.ca-carga-caja { display: grid; justify-items: center; gap: 12px; width: min(280px, 80%); color: #fff; text-align: center; }
+.ca-carga-ico { display: block; width: 56px; height: 56px; color: #ffb3cf; animation: caCargaBrinca 1s ease-in-out infinite; }
+.ca-carga-ico svg { width: 100%; height: 100%; }
+.ca-carga-caja b { font: 900 17px/1.2 "Nunito", sans-serif; letter-spacing: .02em; }
+.ca-carga-caja small { font: 700 12.5px/1.2 "Nunito", sans-serif; opacity: .85; }
+.ca-carga-pista { width: 100%; height: 12px; padding: 2px; background: rgba(255, 255, 255, .12); box-shadow: 0 0 0 2px #fff; }
+.ca-carga-barra { display: block; height: 100%; background: repeating-linear-gradient(90deg, #ff86b0 0 8px, #ffb3cf 8px 12px); transform-origin: 0 50%; transform: scaleX(0); transition: transform .3s; }
+@keyframes caCargaBrinca { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@media (prefers-reduced-motion: reduce) { .ca-carga-ico { animation: none; } }
+
+/* Ajustes → Gráficos, la hojita del clima y Vaciar. */
+.ca-gfx { display: grid; gap: 6px; margin-bottom: 6px; }
+.ca-gfx-b { display: grid; gap: 2px; padding: 10px 12px; border: 2px solid transparent; border-radius: 14px; background: var(--ca-rosa); color: var(--ca-tinta); text-align: left; cursor: pointer; }
+.ca-gfx-b b { font: 800 14px/1.2 "Nunito", sans-serif; }
+.ca-gfx-b small { font: 600 12px/1.3 "Nunito", sans-serif; color: var(--ca-suave); }
+.ca-gfx-b.on { border-color: var(--ca-acento); }
+.ca-clima-ops { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.ca-clima-b { display: grid; justify-items: center; gap: 4px; padding: 10px 2px; border: 2px solid transparent; border-radius: 14px; background: var(--ca-rosa); color: var(--ca-tinta); font: 800 12px/1.2 "Nunito", sans-serif; cursor: pointer; }
+.ca-clima-b i { display: block; width: 26px; height: 26px; color: var(--ca-acento); }
+.ca-clima-b i svg { width: 100%; height: 100%; }
+.ca-clima-b.on { border-color: var(--ca-acento); }
+.ca-vaciar-b { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 8px; padding: 12px; border: 0; border-radius: 14px; background: var(--ca-rosa); color: var(--ca-tinta); text-align: left; cursor: pointer; }
+.ca-vaciar-b i { flex: none; width: 28px; height: 28px; color: var(--ca-acento); }
+.ca-vaciar-b i svg { width: 100%; height: 100%; }
+.ca-vaciar-b span { display: grid; gap: 2px; }
+.ca-vaciar-b b { font: 800 14px/1.2 "Nunito", sans-serif; }
+.ca-vaciar-b small { font: 600 12px/1.3 "Nunito", sans-serif; color: var(--ca-suave); }
+.ca-vaciar-b.peligro i { color: #d9534f; }
+/* La hamaca: acostadito en la curva de la tela (no colgando por abajo) y meciéndose. */
+.ca-monito.dormido.en-hamaca .ca-mono-caja { transform: translateY(-16px) rotate(-90deg) scale(.8); }
+.ca.fx1 .ca-monito.dormido.en-hamaca .ca-mono-caja { animation: caMeceHamaca 3.4s ease-in-out infinite; }
+@keyframes caMeceHamaca { 0%, 100% { transform: translate(-3px, -16px) rotate(-91deg) scale(.8); } 50% { transform: translate(3px, -14px) rotate(-89deg) scale(.8); } }

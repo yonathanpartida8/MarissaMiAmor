@@ -11,11 +11,16 @@
  * Módulos: cuartos.js (cuartos y acomodo de entrada) · catalogo/ (las cosas, una categoría por archivo, y
  * las recetas) · monito.js (dibujo y ropa) · acciones.js (qué pasa al tocar) · mesa.js (cocinar, servir y
  * comer juntos) · mensajes.js (mensajitos y cartitas) · paneles.js (hojitas) · sonidos.js · sincro.js
- * (servidor) · iconos.js. Para crecer, casi siempre basta con agregar en uno de ellos.
+ * (servidor) · iconos.js · graficos.js (los 5 perfiles y la capa WebGL 2) · fondo.js (el fondo pixel de
+ * afuera). Para crecer, casi siempre basta con agregar en uno de ellos.
  *
  * Fase 54: cuartos Estudio y Terraza, muchas cosas nuevas, cocinar con recetas y comer juntos en la mesa,
  * mensajes y cartitas, monitos 2.0, cosas que se llevan con el dedo, regalito del día, mascotas que pasean,
  * luz suave (rayos de sol, lámparas que alumbran de noche, fiesta) y la canción del editor callada aquí.
+ *
+ * Fase 56: fondo pixel de atardecer, clima (lluvia, tormenta, tormentota con relámpagos y truenos), cinco
+ * perfiles de gráficos (Ultra con WebGL 2), mensajes dentro de la burbujita, vaciar, «Compilando las
+ * cositas» al entrar y todo cerrado al salir.
  */
 import { el, aviso } from "../ui.js";
 import * as PF from "../perfil.js";
@@ -31,6 +36,8 @@ import { ICO } from "./iconos.js";
 import * as P from "./paneles.js";
 import { cocinar, pintarPlatos, laPareja } from "./mesa.js";
 import { Mensajes } from "./mensajes.js";
+import { leerGfx, guardarGfx, nivel, maxParticulas, filtroPixel, crearCapaGL } from "./graficos.js";
+import { pintarFondo } from "./fondo.js";
 
 const lim = (v, a, b) => Math.max(a, Math.min(b, v));
 const MAX_OBJETOS = 300;
@@ -43,6 +50,7 @@ const PIXEL = "editordev:casita-pixel";
 const zMono = (y) => 1000 + Math.round(y);
 const zMascota = (y) => 900 + Math.round(y);
 const puedeSubir = (d) => d.capa === "piso" && d.h <= 120 && d.tope == null && !d.superficie;
+export const CLIMAS = ["sol", "lluvia", "tormenta", "extra"];
 const hoy = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 
 export class Casita {
@@ -52,6 +60,7 @@ export class Casita {
     this.editando = false; this.pila = []; this.cuartoActual = "sala"; this.k = 1; this.offY = 0;
     this.son = crearSonidos(app);
     this.mensajes = new Mensajes(this);
+    this.gfx = leerGfx();
   }
 
   /* ═════════════ Armar ═════════════ */
@@ -72,11 +81,14 @@ export class Casita {
     this.mundo.append(this.yo.n, this.suyo.n);
     this.escena = el("div.ca-escena", {}, [this.vistaN]);
     this.raiz = el("div.ca", { dataset: { sinOnda: "" } }, [this.escena]);
-    // Estilo pixel (se puede quitar en Ajustes): un filtro que cuadricula cada cosa y a los monitos.
-    this.raiz.insertAdjacentHTML("afterbegin", '<svg class="ca-filtros" aria-hidden="true" width="0" height="0"><filter id="ca-pixel" x="-30%" y="-30%" width="160%" height="160%"><feFlood x="1.5" y="1.5" height="1" width="1"/><feComposite width="4" height="4"/><feTile result="t"/><feComposite in="SourceGraphic" in2="t" operator="in"/><feMorphology operator="dilate" radius="2"/></filter></svg>');
+    // Estilo pixel (se puede quitar en Ajustes): un filtro que cuadricula cada cosa y a los monitos
+    // (lo pone graficos(), más fino o más grueso según el perfil).
     this.pixel(this.leerPixel());
     this._armarHud();
+    this._primera = new Promise((ok) => { this._yaLlego = ok; });
     cont.replaceChildren(this.raiz);
+    this.graficos(this.gfx, false);
+    this._compilar();
     this._enlazar();
     this._medir();
     this._ro = new ResizeObserver(() => this._medir());
@@ -85,13 +97,19 @@ export class Casita {
       if (this.vistaN.scrollTop) this.vistaN.scrollTop = 0;
       cancelAnimationFrame(this._rqS); this._rqS = requestAnimationFrame(() => this._alDeslizar());
     }, { passive: true });
-    this._fs = () => { if (!document.fullscreenElement && this._pedida) { this._pedida = false; this._completa(false); } };
+    // Pantalla completa, girar el teléfono o volver de otra app: medir y repintar (sin pantalla negra).
+    this._fs = () => { if (!document.fullscreenElement && !document.webkitFullscreenElement && this._pedida) { this._pedida = false; this._completa(false); } this._reparar(); };
     document.addEventListener("fullscreenchange", this._fs);
+    document.addEventListener("webkitfullscreenchange", this._fs);
+    this._gira = () => this._reparar();
+    window.addEventListener("orientationchange", this._gira);
+    this._vis = () => { if (document.hidden) { this.capa?.parar(); clearTimeout(this._tRayo); return; } this._reparar(); this.capa?.prender(); this._programarRayo(); };
+    document.addEventListener("visibilitychange", this._vis);
     requestAnimationFrame(() => this.irCuarto("sala", false));
     this._tiempo();
     this._reloj = setInterval(() => this._tiempo(), 30000);
     this._amb = setInterval(() => this._ambienteTic(), 3500);
-    this.sync = new Sincro({ alRecibir: (r, p) => (r ? this._recibir(r, p) : this._pintarCasa(this.sync.casa())), alEstado: (t, k) => this._guardado(t, k) });
+    this.sync = new Sincro({ alRecibir: (r, p) => { this._yaLlego?.(); return r ? this._recibir(r, p) : this._pintarCasa(this.sync.casa()); }, alEstado: (t, k) => this._guardado(t, k) });
     this.sync.iniciar();
   }
 
@@ -109,8 +127,16 @@ export class Casita {
     this.app.audio?.mantenerDespierto?.("casita", false);
     this.app.audio?.pausarParaVista?.(false, "casita");
     document.removeEventListener("fullscreenchange", this._fs);
+    document.removeEventListener("webkitfullscreenchange", this._fs);
+    window.removeEventListener("orientationchange", this._gira);
+    document.removeEventListener("visibilitychange", this._vis);
     if (this.raiz?.classList.contains("completa")) this._completa(false);
     cancelAnimationFrame(this._rqAuto);
+    // (Fase 56) Al salir se cierra todo de verdad: la capa de luces, los rayos, el teclado y la casita.
+    clearTimeout(this._tRayo); clearTimeout(this._tRep); clearTimeout(this._tRel);
+    this.mensajes.cerrarTodo();
+    this.capa?.destruir(); this.capa = null;
+    this.raiz?.remove();
   }
 
   /** Atrás: primero lo que esté abierto (menú, hojita, selección, Acomodar, pantalla completa). */
@@ -133,9 +159,10 @@ export class Casita {
       ]);
       const cielo = () => el("div.ca-cielo", {}, [el("i.ca-sol"), el("i.ca-nube.n1"), el("i.ca-nube.n2"), el("i.ca-nube.n3"), el("i.ca-estrellas"), el("i.ca-mariposa.m1"), el("i.ca-mariposa.m2"), el("i.ca-luciernagas")]);
       // La terraza: cielo, la ciudad a lo lejos y su barandal (sin la cerca ni la fachada del jardín).
-      if (c.terraza) n.append(cielo(), el("div.ca-lomas"), el("div.ca-ciudad"), el("div.ca-baranda"));
+      // (Fase 56: el fondo de afuera es pixel art dibujado una vez en un lienzo chiquito, fondo.js.)
+      if (c.terraza) n.append(cielo(), el("canvas.ca-fondo-px", { "aria-hidden": "true" }), el("div.ca-lomas"), el("div.ca-ciudad"), el("div.ca-baranda"));
       else if (c.afuera) n.append(
-        cielo(),
+        cielo(), el("canvas.ca-fondo-px", { "aria-hidden": "true" }),
         el("div.ca-lomas"), el("div.ca-cerca"), el("div.ca-camino"),
         el("div.ca-fachada", {}, [el("i.ca-techo"), el("i.ca-fachada-ventana"), el("i.ca-fachada-ventana.v2")]),
       );
@@ -192,7 +219,7 @@ export class Casita {
     this.edCuartoN = el("small");
     this.deshacerB = boton("deshacer", "Deshacer", () => this._deshacer());
     this.edicionN = el("div.ca-edicion", {}, [
-      el("div.ca-ed-arriba", {}, [el("div.ca-ed-t", {}, [el("b", { text: "Acomodando" }), this.edCuartoN]), el("span.ca-hueco"), this.deshacerB, boton("listo", "Listo", () => this._editar(false), ".primario")]),
+      el("div.ca-ed-arriba", {}, [el("div.ca-ed-t", {}, [el("b", { text: "Acomodando" }), this.edCuartoN]), el("span.ca-hueco"), boton("vaciar", "Vaciar", () => P.vaciar(this)), this.deshacerB, boton("listo", "Listo", () => this._editar(false), ".primario")]),
       this.cajonN = P.cajonCatalogo(this),
     ]);
     this.basuraN = el("div.ca-basura", { "aria-hidden": "true" }, [el("i", { html: ICO.borrar }), el("span", { text: "Suelta aquí para quitar" })]);
@@ -203,10 +230,11 @@ export class Casita {
     ]);
     this.volverN = el("div.ca-barra", {}, [
       el("button.ca-volver", { type: "button", onClick: () => this._volver() }, [el("i", { html: ICO.volver }), el("span", { text: "Volver atrás" })]),
-      this.climaB = el("button.ca-ajustes-b.clima", { type: "button", "aria-label": "Lluvia", title: "Que llueva (o que salga el sol)", html: ICO.lluvia, onClick: () => this.alternarLluvia() }),
+      this.climaB = el("button.ca-ajustes-b.clima", { type: "button", "aria-label": "El clima y la hora", title: "El clima y la hora", html: ICO.sol, onClick: () => P.clima(this) }),
       el("button.ca-ajustes-b", { type: "button", "aria-label": "Ajustes", title: "Ajustes", html: ICO.sonido, onClick: () => P.ajustes(this) }),
     ]);
-    this.escena.append(this.hudN, this.cuartosB, this.edicionN, this.basuraN);
+    this.flashN = el("i.ca-flash", { "aria-hidden": "true" });
+    this.escena.append(this.flashN, this.hudN, this.cuartosB, this.edicionN, this.basuraN);
     this.raiz.append(this.selN, this.volverN);
   }
 
@@ -220,8 +248,90 @@ export class Casita {
   leerPixel() { try { return localStorage.getItem(PIXEL) !== "0"; } catch (e) { return true; } }
   pixel(on) { this.raiz.classList.toggle("pixel", !!on); try { localStorage.setItem(PIXEL, on ? "1" : "0"); } catch (e) { /* nada */ } }
 
+  /* ═════════════ Gráficos (Fase 56): cinco perfiles que de verdad cambian lo que se dibuja ═════════════ */
+  graficos(k, avisar = true) {
+    this.gfx = k; guardarGfx(k);
+    const nv = nivel(k), R = this.raiz;
+    R.dataset.gfx = k;
+    for (let i = 1; i <= 4; i++) R.classList.toggle("fx" + i, nv >= i);
+    R.querySelector(".ca-filtros")?.remove();
+    R.insertAdjacentHTML("afterbegin", filtroPixel(k));
+    this._fondoClave = ""; this._pintarFondos();
+    // Ultra: la capa WebGL 2 de luces (si el teléfono no la tiene, se queda con lo de Calidad).
+    if (k === "ultra" && !reducido()) {
+      if (!this.capa) {
+        this.capa = crearCapaGL(this);
+        if (this.capa) this.escena.insertBefore(this.capa.n, this.hudN);
+        else if (avisar) aviso("Tu teléfono no tiene WebGL 2: Ultra usa los efectos de Calidad", 3200);
+      }
+      this.capa?.prender();
+    } else { this.capa?.destruir(); this.capa = null; }
+    R.classList.toggle("gl", !!this.capa);
+  }
+  _sinGL(t) { this.capa?.destruir(); this.capa = null; this.raiz?.classList.remove("gl"); if (t) aviso(t + ": Ultra sigue con los efectos de Calidad", 2600); }
+  /** Lo que la capa WebGL necesita en cada cuadro: las luces prendidas (en la pantalla), la hora y el clima. */
+  estadoGL() {
+    const k = this.k, sx = this.vistaN.scrollLeft, oy = this.offY - (this._subir || 0), vw = this.vistaN.clientWidth, luces = [];
+    const noche = this.esNoche() ? 1 : this.mundo.classList.contains("tarde") ? 0.45 : 0;
+    for (const r of this.objs.values()) {
+      const g = r.glow;
+      if (!g || g.hidden || !g.classList.contains("on")) continue;
+      const b = r.d.brilla, x = (parseFloat(g.style.left) + b.r) * k - sx;
+      if (x < -b.r * k || x > vw + b.r * k) continue;
+      luces.push({ x, y: oy + (parseFloat(g.style.top) + b.r) * k, r: b.r * k * 1.25, i: g.classList.contains("cuarto-oscuro") || noche ? 0.95 : 0.5, c: b.c || "#ffd68c" });
+    }
+    const cl = this.climaActual(), ll = { sol: 0, lluvia: 0.5, tormenta: 0.8, extra: 1 }[cl] || 0;
+    return { luces, noche, lluvia: ll, viento: cl === "extra" ? 1.6 : cl === "tormenta" ? 0.9 : 0.35, flash: this._flash || 0, afuera: !!cuarto(this.cuartoActual).afuera, ambiente: noche ? [0.07, 0.06, 0.2] : ll ? [0.12, 0.14, 0.22] : [0.25, 0.12, 0.2] };
+  }
+  /** El fondo pixel de afuera (jardín y terraza): se dibuja sólo cuando cambia la hora, el clima o el perfil. */
+  _pintarFondos() {
+    if (!this.cuartosN || !this.mundo) return;
+    const hora = this.esNoche() ? "noche" : this.mundo.classList.contains("tarde") ? "tarde" : "dia", clima = this.climaActual();
+    const clave = `${hora}|${clima}|${this.gfx}`;
+    if (clave === this._fondoClave) return;
+    this._fondoClave = clave;
+    for (const c of CUARTOS) {
+      const n = c.afuera && this.cuartosN.get(c.k), cv = n?.querySelector(".ca-fondo-px");
+      if (!cv) continue;
+      const cielo = n.querySelector(".ca-cielo");
+      try {
+        const r = pintarFondo(cv, { ancho: c.w, hora, clima, tipo: c.terraza ? "ciudad" : "barrio", semilla: c.terraza ? 7 : 3 });
+        n.classList.add("px");
+        if (cielo) cielo.style.background = r.arriba;   // arriba del dibujo, el mismo color del cielo
+      } catch (e) { n.classList.remove("px"); if (cielo) cielo.style.background = ""; }
+    }
+  }
+  /** «Compilando las cositas»: prepara todo antes de jugar (dibujos, fondo, sonidos, luces y la casa) para que luego vaya fluido. */
+  async _compilar() {
+    const barra = el("i.ca-carga-barra"), txt = el("small", { text: "Preparando…" });
+    const n = el("div.ca-carga", { role: "status", "aria-live": "polite" }, [el("div.ca-carga-caja", {}, [
+      el("i.ca-carga-ico", { html: ICO.cuartos }), el("b", { text: "Compilando las cositas" }), el("div.ca-carga-pista", {}, [barra]), txt,
+    ])]);
+    this.raiz.append(n);
+    this.cargaN = n;
+    const pasos = [
+      ["Dibujando los muebles", () => { for (const d of Object.values(CATALOGO)) { try { d.arte({}, colorDe(d, {})); } catch (e) { /* nada */ } } }],
+      ["Pintando el cielo y la ciudad", () => this._pintarFondos()],
+      ["Afinando los sonidos", () => this.son.precargar()],
+      ["Prendiendo las luces", () => this.capa?.prender()],
+      ["Abriendo la puerta", () => this._primera],
+    ];
+    for (let i = 0; i < pasos.length; i++) {
+      if (!this.vivo) return;
+      txt.textContent = pasos[i][0] + "…";
+      barra.style.transform = `scaleX(${((i + 0.4) / pasos.length).toFixed(2)})`;
+      await new Promise((ok) => requestAnimationFrame(() => setTimeout(ok, 0)));
+      try { await Promise.race([pasos[i][1](), new Promise((ok) => setTimeout(ok, 4000))]); } catch (e) { /* sigue */ }
+    }
+    barra.style.transform = "scaleX(1)";
+    n.classList.add("fuera");
+    setTimeout(() => { n.remove(); if (this.cargaN === n) this.cargaN = null; }, 380);
+  }
+
   /* ═════════════ Cámara y medidas ═════════════ */
   _medir() {
+    // (Mientras escribes, la casita no cambia de tamaño aunque el teclado achique la pantalla.)
+    if (this._congelado) { this._moverMundo(); return; }
     const vh = this.vistaN.clientHeight, vw = this.vistaN.clientWidth;
     if (!vh || !vw) return;
     // El alto manda, pero en un teléfono parado no se agranda tanto que no quepa casi nada de un cuarto.
@@ -229,11 +339,27 @@ export class Casita {
     const abajo = this.editando ? Math.min(vh * 0.45, (this.cajonN?.offsetHeight || 150) + 18) : 58;
     this.k = lim(Math.min((vh - abajo) / H, vw / 400), 0.42, 1.45);
     this.offY = Math.max(0, vh - abajo - H * this.k);
-    this.mundo.style.transform = `translate(0px, ${this.offY.toFixed(1)}px) scale(${this.k.toFixed(4)})`;
+    this._moverMundo();
     this.mundo.style.setProperty("--techo", (-this.offY / this.k).toFixed(1) + "px");
     this.lienzo.style.width = Math.round(ANCHO * this.k) + "px";
     this.lienzo.style.height = vh + "px";
     this._ubicarSel();
+  }
+  /** `_subir`: cuánto se sube la casita para que tu monito y su burbujita se vean arriba del teclado. */
+  _moverMundo() { this.mundo.style.transform = `translate(0px, ${(this.offY - (this._subir || 0)).toFixed(1)}px) scale(${this.k.toFixed(4)})`; }
+  /** Después de pantalla completa, girar el teléfono o volver de otra app: medir de nuevo y repintar las capas
+   *  (algunos teléfonos se quedaban con la pantalla negra). */
+  _reparar() {
+    if (!this.vivo) return;
+    clearTimeout(this._tRep);
+    const una = () => {
+      if (!this.vivo || !this.mundo.isConnected) return;
+      this.mensajes._sinDesplazar();
+      this.mundo.style.display = "none"; void this.mundo.offsetHeight; this.mundo.style.display = "";
+      this._medir(); this._seguir(this.yo.gx);
+    };
+    requestAnimationFrame(() => requestAnimationFrame(una));
+    this._tRep = setTimeout(una, 450);
   }
   /** Un punto del mundo en la pantalla. */
   enPantalla(gx, y) { const r = this.mundo.getBoundingClientRect(); return { x: r.left + gx * this.k, y: r.top + y * this.k }; }
@@ -442,18 +568,29 @@ export class Casita {
     this._pintarCasa(this.sync.casa());
     this.decir({ dia: "¡Ya es de día!", tarde: "Ya es de tarde", noche: "Ya es de noche", real: "Como la hora de verdad" }[sig], false);
   }
-  /** La lluvia (la ven los dos): el perrito de afuera se mete a su casita. */
-  alternarLluvia() {
-    const v = !this.casa?.cuartos?.jardin?.lluvia;
-    this.sync.op({ o: "cuarto", k: "jardin", v: { lluvia: v } });
+  /** La hora elegida (dia, tarde, noche o la de verdad). */
+  ponerHora(k) {
+    if ((this.casa?.cuartos?.jardin?.hora || "real") === k) return;
+    this.sync.op({ o: "cuarto", k: "jardin", v: { hora: k } });
     this._pintarCasa(this.sync.casa());
-    this.sonar(v ? "trueno" : "pajaritos");
-    aviso(v ? "Empezó a llover" : "Salió el sol", 1800);
+  }
+  /** El clima (lo ven los dos): sol, lluvia, tormenta o tormentota. Con lluvia, el perrito se mete a su casita. */
+  climaActual() { const j = this.casa?.cuartos?.jardin; return CLIMAS.includes(j?.clima) ? j.clima : j?.lluvia ? "lluvia" : "sol"; }
+  ponerClima(k) {
+    if (!CLIMAS.includes(k) || k === this.climaActual()) return;
+    this.sync.op({ o: "cuarto", k: "jardin", v: { clima: k, lluvia: k !== "sol" } });
+    this._pintarCasa(this.sync.casa());
+    if (k === "sol") this.sonar("pajaritos");
+    if (k === "tormenta" || k === "extra") setTimeout(() => this._relampago(true), 500);
+    aviso({ sol: "Salió el sol", lluvia: "Empezó a llover", tormenta: "Se soltó una tormenta", extra: "¡Tormentota! Con viento y muchos rayos" }[k], 2000);
   }
   _clima() {
-    const lluvia = !!this.casa?.cuartos?.jardin?.lluvia;
+    const cl = this.climaActual(), lluvia = cl !== "sol";
     this.mundo.classList.toggle("lluvia", lluvia);
+    this.mundo.classList.toggle("tormenta", cl === "tormenta" || cl === "extra");
+    this.mundo.classList.toggle("extra", cl === "extra");
     this.climaB?.classList.toggle("on", lluvia);
+    if (this.climaB && this.climaB.dataset.k !== cl) { this.climaB.dataset.k = cl; this.climaB.innerHTML = ICO[{ sol: "sol", lluvia: "lluvia", tormenta: "rayo", extra: "extra" }[cl]]; }
     for (const r of this.objs.values()) {
       if (r.d.k !== "perrito") continue;
       const casa = cuarto(r.o.c).afuera ? [...this.objs.values()].find((x) => x.d.k === "casita_perro" && x.o.c === r.o.c) : null;
@@ -461,17 +598,50 @@ export class Casita {
       if (casa) { r.n.style.setProperty("--a-x", (casa.gx - r.gx).toFixed(0) + "px"); r.n.style.setProperty("--a-y", (casa.o.y - r.o.y).toFixed(0) + "px"); casa.n.classList.toggle("con-perro", dentro); }
       r.n.classList.toggle("refugiado", dentro);
     }
-    if (lluvia !== this._llovia) { this._llovia = lluvia; this._ambienteTic(true); }
+    if (cl !== this._climaVisto) { this._climaVisto = cl; this._ambienteTic(true); this._programarRayo(); }
+    this._pintarFondos();
+  }
+  /** Con tormenta, un relámpago cada tantito (con tormentota, más seguido y más cerca). */
+  _programarRayo() {
+    clearTimeout(this._tRayo);
+    const cl = this.climaActual();
+    if (!this.vivo || document.hidden || (cl !== "tormenta" && cl !== "extra")) return;
+    const espera = cl === "extra" ? 3500 + Math.random() * 5500 : 7000 + Math.random() * 9000;
+    this._tRayo = setTimeout(() => { this._relampago(Math.random() < (cl === "extra" ? 0.6 : 0.35)); this._programarRayo(); }, espera);
+  }
+  /** Un relámpago: destella (más afuera), lo de enfrente echa sombra y el trueno llega después, según qué tan lejos cayó. */
+  _relampago(cerca = false, lejos = false) {
+    if (!this.vivo || document.hidden) return;
+    const afuera = !!cuarto(this.cuartoActual).afuera, dist = lejos ? 0.95 : cerca ? 0.1 + Math.random() * 0.2 : 0.35 + Math.random() * 0.4;
+    const F = (1 - dist) * (afuera ? 1 : 0.45);
+    if (!reducido()) {
+      this.flashN.style.setProperty("--fuerza", F.toFixed(2));
+      this.flashN.classList.remove("ver"); void this.flashN.offsetWidth; this.flashN.classList.add("ver");
+      this.mundo.classList.add("relampago"); clearTimeout(this._tRel);
+      this._tRel = setTimeout(() => { this.mundo.classList.remove("relampago"); this.flashN.classList.remove("ver"); }, 720);
+      // (En Ultra lo dibuja también la capa WebGL: un destello doble que se apaga.)
+      if (this.capa) {
+        const t0 = performance.now();
+        const paso = () => { const t = performance.now() - t0; this._flash = t < 90 ? F : t < 160 ? F * 0.25 : t < 260 ? F * 0.8 : Math.max(0, F * 0.8 * (1 - (t - 260) / 440)); if (t < 700 && this.vivo) requestAnimationFrame(paso); else this._flash = 0; };
+        paso();
+      }
+    }
+    // La luz llega antes que el sonido: mientras más lejos, más tarda y más bajito.
+    setTimeout(() => { if (!this.vivo) return; this.sonar(dist < 0.5 ? "trueno" : "trueno-lejos", { volumen: (afuera ? 1 : 0.5) * (1.1 - dist * 0.7) }); if (dist < 0.3) vibrar(20); }, 120 + dist * 2600);
   }
   /** El ambiente de afuera: lluvia (y truenos), pajaritos de día, grillos de noche y carros que pasan. */
   _ambienteTic(soloLluvia = false) {
     if (!this.vivo || document.hidden) return;
-    const afuera = !!cuarto(this.cuartoActual).afuera, lluvia = !!this._llovia;
-    if (lluvia) { if (!this._lluviaS) this._lluviaS = this.son.lluvia(afuera ? 1 : 0.35); else this._lluviaS.nivel(afuera ? 1 : 0.35); }
+    const afuera = !!cuarto(this.cuartoActual).afuera, cl = this.climaActual(), lluvia = cl !== "sol";
+    const fuerza = { lluvia: 1, tormenta: 1.3, extra: 1.6 }[cl] || 0, nv = afuera ? fuerza : fuerza * 0.35;
+    if (lluvia) { if (!this._lluviaS) this._lluviaS = this.son.lluvia(nv); else this._lluviaS.nivel(nv); }
     else if (this._lluviaS) { this._lluviaS.parar(); this._lluviaS = null; }
+    // (Para los reflejos de Ultra en el piso mojado: quién anda afuera.)
+    for (const m of [this.yo, this.suyo]) m?.n.classList.toggle("fuera", !!cuarto(enCuarto(m.gx).c).afuera);
     if (soloLluvia || this.editando) return;
     const r = Math.random();
-    if (lluvia && r < 0.07) this.sonar("trueno", { volumen: afuera ? 0.8 : 0.4 });
+    if (cl === "lluvia" && r < 0.05) this._relampago(false, true);
+    if (cl === "extra" && r < 0.35) this.sonar("viento", { volumen: afuera ? 0.75 : 0.3 });
     if (!lluvia && afuera) { if (this.esNoche()) { if (r < 0.55) this.sonar("grillo", { volumen: 0.5 }); } else if (r < 0.4) this.sonar("pajaritos", { volumen: 0.55 }); }
     if (r > 0.86) {
       this.sonar("auto", { volumen: afuera ? 0.8 : 0.22 });
@@ -487,6 +657,7 @@ export class Casita {
     this.mundo.classList.toggle("tarde", !noche && tarde);
     this.raiz?.classList.toggle("es-noche", noche);
     for (const r of this.objs.values()) if (r.d.k === "reloj") this._ponerReloj(r.n);
+    this._pintarFondos();
   }
   _ponerReloj(n) {
     const d = new Date(), m = d.getMinutes(), h = (d.getHours() % 12) + m / 60;
@@ -506,7 +677,12 @@ export class Casita {
     return { quien, n, caja, cuerpo, llevaN, globo, globos, nombreN, gx, y: SUELO, ropa: { ...ropa }, accion: "", mueble: "", lleva: "", mira: 1, orden: 0, t: 0, evAt: 0, dt: 0 };
   }
   _vestirMono(m, ropa) { m.ropa = { ...m.ropa, ...ropa }; m.cuerpo.innerHTML = monitoSVG(m.ropa); }
-  _mirar(m, lado) { m.mira = lado < 0 ? -1 : 1; m.n.classList.toggle("izq", m.mira < 0); }
+  /** Voltear: al instante, con un saltito (antes giraba como hoja de papel). */
+  _mirar(m, lado) {
+    const antes = m.mira;
+    m.mira = lado < 0 ? -1 : 1; m.n.classList.toggle("izq", m.mira < 0);
+    if (antes !== m.mira && !reducido() && nivel(this.gfx) >= 1) m.caja.animate([{ translate: "0 0" }, { translate: "0 -3px" }, { translate: "0 0" }], { duration: 150, easing: "ease-out" });
+  }
   _visible(m) { const v = this.vistaN, px = m.gx * this.k; return px > v.scrollLeft - 40 && px < v.scrollLeft + v.clientWidth + 40; }
   /** Caminar hasta (gx, y) (y es lo hondo del piso) y luego `luego()`. */
   _caminar(m, gx, y, luego = null, ya = false) {
@@ -536,6 +712,8 @@ export class Casita {
     m.n.classList.remove(...POSES);
     if (pose) m.n.classList.add(pose);
     if (z != null) m.n.style.zIndex = z;
+    // (En la hamaca se acomoda en la curva de la tela, más chiquito y meciéndose.)
+    m.n.classList.toggle("en-hamaca", pose === "dormido" && this.objs.get(mueble.split(":")[0])?.d.k === "hamaca");
     if (pose === "dormido") { m.globo.hidden = false; m.globo.textContent = "z z z"; m.globo.classList.add("zzz"); }
     else if (m.globo.classList.contains("zzz")) { m.globo.classList.remove("zzz"); m.globo.hidden = true; }
     this._marcarOcupados?.();
@@ -788,8 +966,8 @@ export class Casita {
   /** Partículas (corazones, burbujas, chispas, notas, vapor, agua, hojas, polvo, migajas…). */
   particulas(tipo, ref, dx = 0, dy = 0, n = 4) {
     if (!this.vivo) return;
-    const ultra = document.body.classList.contains("ed-ultra");
-    if (reducido()) n = Math.min(n, 1); else if (ultra) n = Math.min(n, 2);
+    // (Cuántas, según el perfil de gráficos: de 1 en Máximo rendimiento a más en Ultra.)
+    n = reducido() ? Math.min(n, 1) : Math.min(this.gfx === "ultra" ? Math.ceil(n * 1.4) : n, maxParticulas(this.gfx));
     const gx = (ref.gx ?? 0) + dx, y = (ref.y ?? ref.o?.y ?? SUELO) + dy;
     for (let i = 0; i < n; i++) {
       const p = el("i.ca-part." + tipo, { style: { left: gx + (Math.random() * 44 - 22) + "px", top: y + (Math.random() * 16 - 8) + "px", animationDelay: (i * 0.09).toFixed(2) + "s", "--dx": (Math.random() * 60 - 30).toFixed(0) + "px", "--rot": (Math.random() * 60 - 30).toFixed(0) + "deg" } });
@@ -971,6 +1149,21 @@ export class Casita {
     this._pintarCasa(this.sync.casa());
     this.deshacerB.disabled = false;
   }
+  /** Vaciar este cuarto (o toda la casa, aunque quede vacía de verdad): se puede deshacer con «Deshacer». */
+  vaciar(todo = false) {
+    const quitar = [...this.objs.values()].filter((r) => todo || r.o.c === this.cuartoActual);
+    if (!quitar.length) { aviso(todo ? "La casita ya está vacía" : "Este cuarto ya está vacío", 2000); this.sonar("nop"); return; }
+    this._seleccionar(null);
+    const inv = quitar.map((r) => ({ o: "pon", obj: JSON.parse(JSON.stringify(r.o)) }));
+    const ops = quitar.map((r) => ({ o: "quita", id: r.o.id }));
+    if (todo) ops.push({ o: "cuarto", k: "jardin", v: { vacia: true } });
+    this.pila.push(inv);
+    this.sync.ops(ops);
+    this._pintarCasa(this.sync.casa());
+    this.sonar("poof"); vibrar(16);
+    this.deshacerB.disabled = false;
+    aviso(`${todo ? "La casita quedó vacía" : `${cuarto(this.cuartoActual).n}: vacío`}. Puedes deshacerlo.`, 2600);
+  }
   _deshacer() {
     const inv = this.pila.pop();
     this.deshacerB.disabled = !this.pila.length;
@@ -1066,7 +1259,7 @@ export class Casita {
   /* ═════════════ En tiempo real ═════════════ */
   _recibir(r, primera) {
     // La casa: la primera vez (o si era la de antes), se arma la de entrada.
-    if (!r.casa?.objetos?.length && !this._iniciada) { this._iniciada = true; this.sync.op({ o: "iniciar", casa: casaInicial(r.casa) }); }
+    if (!r.casa?.objetos?.length && !r.casa?.cuartos?.jardin?.vacia && !this._iniciada) { this._iniciada = true; this.sync.op({ o: "iniciar", casa: casaInicial(r.casa) }); }
     // Una casita de antes también estrena los cuartos nuevos (con su acomodo de entrada), una sola vez.
     else if (r.casa?.objetos?.length && !this._estrenados) {
       this._estrenados = true;

@@ -85,6 +85,24 @@ La lista de qué hay en cada carpeta (`indice.json`) se rehace sola en GitHub al
 | `pincel/` | Pintar en el caballete | de fábrica |
 | `micro/` | El microondas | de fábrica |
 | `licuadora/` | La licuadora | de fábrica |
+| `trueno-lejos/` | Truenos lejanos (lluvia y tormenta) | de fábrica |
+| `viento/` | El viento de la tormentota | de fábrica |
+| `interruptor/` | El apagador de la luz y los aparatos | de fábrica |
+| `refri/` | Abrir el refri (su chuponcito y su zumbido) | de fábrica |
+| `buzon/` | La tapita de metal del buzón | de fábrica |
+| `baul/` | La tapa de madera del baúl | de fábrica |
+| `ropero/` | Las puertas del ropero | de fábrica |
+| `tapa/` | La tapa del bote de basura | de fábrica |
+| `tirar/` | Tirar algo al bote | de fábrica |
+| `hielera/` | Los hielitos de la hielera | de fábrica |
+| `neon/` | El zumbido del letrero de neón | de fábrica |
+| `laptop/` | Prender la compu | de fábrica |
+| `auch/` | ¡Auch! (el cactus) | de fábrica |
+| `fruta/` | Agarrar fruta | de fábrica |
+| `libro/` | Hojear un libro | de fábrica |
+| `hojas/` | Las hojitas de las plantas | de fábrica |
+| `regar/` | Regar con la regadera | de fábrica |
+| `frasco/` | El frasco de galletas (tapa de vidrio) | de fábrica |
 | `musica-baile/` | Canción del tocadiscos (se repite) | de fábrica |
 | `musica-cuna/` | Canción de la cajita musical (se repite) | de fábrica |
 | `musica-fiesta/` | Canción de la bocina (se repite) | de fábrica |

@@ -33,6 +33,10 @@ export const SONIDOS = [
   ["lavadora", "La lavadora"], ["consola", "Jugar videojuegos"], ["guitarra", "La guitarra"], ["piano", "Cada tecla del piano (se afina sola: deja una nota Do)"],
   ["telescopio", "Mirar las estrellas"], ["alberca", "Echarse a la alberca"], ["hamaca", "Mecerse en la hamaca"],
   ["pio", "El pajarito"], ["lluvia", "La lluvia (se repite mientras llueve)"], ["trueno", "Truenos lejanos cuando llueve"], ["auto", "Un carro que pasa allá afuera"], ["claxon", "El claxon de un carro"], ["grillo", "Grillitos de noche afuera"], ["pajaritos", "Pajaritos de día afuera"], ["puerta-cuarto", "Las puertas entre los cuartos"], ["trampolin", "Brincar en el trampolín"], ["columpio", "Empujar el columpio"], ["bici", "El timbre de la bici"], ["pincel", "Pintar en el caballete"], ["micro", "El microondas"], ["licuadora", "La licuadora"],
+  ["trueno-lejos", "Truenos lejanos (lluvia y tormenta)"], ["viento", "El viento de la tormentota"], ["interruptor", "El apagador de la luz y los aparatos"], ["refri", "Abrir el refri (su chuponcito y su zumbido)"],
+  ["buzon", "La tapita de metal del buzón"], ["baul", "La tapa de madera del baúl"], ["ropero", "Las puertas del ropero"], ["tapa", "La tapa del bote de basura"], ["tirar", "Tirar algo al bote"],
+  ["hielera", "Los hielitos de la hielera"], ["neon", "El zumbido del letrero de neón"], ["laptop", "Prender la compu"], ["auch", "¡Auch! (el cactus)"], ["fruta", "Agarrar fruta"],
+  ["libro", "Hojear un libro"], ["hojas", "Las hojitas de las plantas"], ["regar", "Regar con la regadera"], ["frasco", "El frasco de galletas (tapa de vidrio)"],
   ["musica-baile", "Canción del tocadiscos (se repite)"], ["musica-cuna", "Canción de la cajita musical (se repite)"], ["musica-fiesta", "Canción de la bocina (se repite)"],
 ];
 
@@ -65,7 +69,7 @@ const SON = {
   cuac: [["square", 950, 620, 0.12, 0.08], ["square", 900, 600, 0.12, 0.07, 0.14]],
   chillido: [["sine", 1300, 1900, 0.12, 0.16], ["sine", 1900, 1400, 0.1, 0.12, 0.1]],
   lluvia: [["ruido", 1500, 1300, 1.4, 0.07], ["ruido", 3000, 2800, 1.4, 0.04, 0.1]],
-  trueno: [["ruido", 260, 60, 2.6, 0.3], ["ruido", 140, 50, 1.8, 0.25, 0.4]],
+  trueno: [["ruido", 2600, 500, 0.22, 0.28], ["ruido", 300, 60, 3, 0.34, 0.04], ["ruido", 140, 45, 2.4, 0.28, 0.45], ["sine", 52, 34, 2.2, 0.16, 0.08]],
   auto: [["sawtooth", 62, 86, 1.1, 0.025], ["sawtooth", 86, 58, 1.1, 0.025, 1.1], ["ruido", 300, 1300, 1.1, 0.07], ["ruido", 1300, 280, 1.1, 0.07, 1.1]],
   claxon: [["square", 415, 415, 0.16, 0.025], ["square", 523, 523, 0.16, 0.02], ["square", 415, 415, 0.22, 0.025, 0.24], ["square", 523, 523, 0.22, 0.02, 0.24]],
   grillo: [["sine", 4300, 4300, 0.035, 0.025], ["sine", 4300, 4300, 0.035, 0.025, 0.07], ["sine", 4300, 4300, 0.035, 0.025, 0.14]],
@@ -110,6 +114,25 @@ const SON = {
   piano: [["triangle", 262, 262, 0.9, 0.16], ["sine", 524, 524, 0.6, 0.06]],
   telescopio: [["sine", 2093, 2093, 0.4, 0.06], ["sine", 2637, 2637, 0.4, 0.05, 0.12], ["sine", 3136, 3136, 0.5, 0.04, 0.24]],
   alberca: [["ruido", 1400, 400, 0.5, 0.3], ["sine", 300, 900, 0.1, 0.06, 0.1], ["sine", 1200, 1800, 0.05, 0.06, 0.4]],
+  // (Fase 56) Sonidos que sí suenan a lo que son.
+  "trueno-lejos": [["ruido", 180, 55, 3.2, 0.22], ["ruido", 110, 45, 2.6, 0.18, 0.5], ["sine", 48, 36, 2.4, 0.12, 0.2]],
+  viento: [["ruido", 380, 900, 1.6, 0.07], ["ruido", 900, 320, 2.2, 0.06, 1.1], ["ruido", 600, 1200, 1.2, 0.04, 0.4]],
+  interruptor: [["square", 3400, 2600, 0.012, 0.09], ["triangle", 1500, 900, 0.03, 0.08, 0.006]],
+  refri: [["ruido", 500, 220, 0.14, 0.22], ["triangle", 2600, 2100, 0.03, 0.05, 0.03], ["sine", 118, 118, 0.9, 0.035, 0.12], ["sine", 236, 236, 0.9, 0.015, 0.12]],
+  buzon: [["triangle", 1180, 1130, 0.35, 0.09], ["triangle", 2470, 2420, 0.28, 0.06, 0.004], ["square", 620, 560, 0.04, 0.05], ["triangle", 1180, 1130, 0.2, 0.05, 0.22]],
+  baul: [["sawtooth", 150, 96, 0.38, 0.04], ["ruido", 520, 260, 0.34, 0.08], ["sine", 170, 110, 0.12, 0.24, 0.36], ["ruido", 900, 400, 0.08, 0.1, 0.36]],
+  ropero: [["sawtooth", 230, 170, 0.28, 0.035], ["ruido", 700, 400, 0.26, 0.05], ["sine", 190, 130, 0.1, 0.18, 0.28]],
+  tapa: [["triangle", 880, 820, 0.1, 0.12], ["ruido", 2800, 1900, 0.09, 0.1], ["triangle", 640, 610, 0.14, 0.08, 0.14]],
+  tirar: [["ruido", 1300, 500, 0.16, 0.18], ["sine", 240, 120, 0.12, 0.2, 0.06], ["ruido", 2400, 1600, 0.05, 0.06, 0.12]],
+  hielera: [["ruido", 3200, 2600, 0.22, 0.07], ["triangle", 3300, 3200, 0.05, 0.06, 0.04], ["triangle", 2900, 2800, 0.05, 0.05, 0.11], ["triangle", 3600, 3500, 0.04, 0.05, 0.17], ["sine", 300, 200, 0.1, 0.1, 0.24]],
+  neon: [["sawtooth", 120, 120, 0.45, 0.025], ["square", 240, 240, 0.45, 0.012], ["triangle", 2400, 2400, 0.03, 0.05], ["sawtooth", 120, 120, 0.12, 0.03, 0.55]],
+  laptop: [["sine", 523, 523, 0.6, 0.07], ["sine", 784, 784, 0.6, 0.06, 0.03], ["sine", 1046, 1046, 0.7, 0.05, 0.06], ["sine", 1568, 1568, 0.6, 0.025, 0.09]],
+  auch: [["triangle", 920, 520, 0.16, 0.12], ["sine", 700, 420, 0.2, 0.1, 0.06]],
+  fruta: [["ruido", 2600, 1900, 0.05, 0.12], ["sine", 520, 700, 0.06, 0.1, 0.02], ["ruido", 1800, 1400, 0.04, 0.06, 0.08]],
+  libro: [["ruido", 4200, 2200, 0.09, 0.09], ["ruido", 3600, 1900, 0.09, 0.07, 0.11], ["ruido", 3000, 1700, 0.11, 0.06, 0.22]],
+  hojas: [["ruido", 5200, 3600, 0.3, 0.05], ["ruido", 4400, 3100, 0.26, 0.045, 0.12], ["ruido", 6000, 4200, 0.18, 0.03, 0.26]],
+  regar: [["ruido", 2400, 2000, 0.9, 0.07], ["sine", 1400, 1800, 0.04, 0.04, 0.2], ["sine", 1300, 1700, 0.04, 0.04, 0.5], ["sine", 1500, 1900, 0.04, 0.03, 0.72]],
+  frasco: [["triangle", 2600, 2560, 0.18, 0.08], ["triangle", 3900, 3860, 0.14, 0.04, 0.004], ["ruido", 3000, 2000, 0.05, 0.05, 0.1]],
   hamaca: [["triangle", 180, 230, 0.4, 0.06], ["ruido", 900, 700, 0.3, 0.05, 0.1]],
 };
 
@@ -148,7 +171,7 @@ function cargarIndice() {
 export function crearSonidos(app) {
   let ruido = null, pref = leerPref(), archivos = {};
   const buffers = new Map(), cuando = {}, ultimo = {};
-  cargarIndice().then((r) => { archivos = r; });
+  const indice = cargarIndice().then((r) => { archivos = r; });
   const ac = () => app.audio?.ac;
   const salida = () => app.audio?.general || ac().destination;
   const vol = () => Math.max(0, Math.min(1, +pref.vol || 0));
@@ -282,8 +305,16 @@ export function crearSonidos(app) {
       parar() { vivo = false; cortar(); },
     };
   }
+  /** (Pantalla de carga) Deja listos tus archivos y el ruido base, para que el primer sonido no tarde. */
+  function precargar() {
+    return indice.then(() => {
+      if (!ac()) return null;
+      bufRuido();
+      return Promise.all(Object.values(archivos).flat().slice(0, 48).map(buffer));
+    });
+  }
   return {
-    lluvia,
+    lluvia, precargar,
     sonar, musica,
     get pref() { return pref; },
     ponerPref(c) { pref = { ...pref, ...c }; try { localStorage.setItem(PREF, JSON.stringify(pref)); } catch (e) { /* nada */ } },
