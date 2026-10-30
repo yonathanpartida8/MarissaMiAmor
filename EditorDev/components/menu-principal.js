@@ -159,6 +159,8 @@ export class MenuPrincipal {
     document.body.classList.remove("con-menu-principal");
     setTimeout(() => c.remove(), sinMovimiento() ? 10 : 720);
     this.app.sonidos?.sonar("abrir");
+    // Sin librito abierto, debajo del menú no hay nada que editar: ahí va «Crear detallito».
+    setTimeout(() => { if (!this.abierto && !this.app.estado?.proyecto && !document.querySelector(".ed-inicio")) this.app.inicio?.(); }, 60);
   }
 
   /** (Lo usan otras partes: «Entrar o crear mi cuenta» abre el menú en «cuenta».) */
@@ -378,6 +380,7 @@ export class MenuPrincipal {
         p ? el("div.mp-dias-viene", {}, [el("i.mp-dias-cor" + (p.icono === "pastel" || p.icono === "anillos" ? "" : ".lleno"), { html: ico(p.icono === "pastel" || p.icono === "anillos" ? p.icono : "corazon") }), el("div", {}, [el("b", { text: p.linea1 }), el("small", { text: p.linea2 })])]) : null,
       ]),
       p ? barra : el("small.mp-dias-texto", { text: PF.textoJuntos(j) }),
+      p?.mes ? el("small.mp-dias-mes", {}, [el("i", { html: ico("corazon") }), el("span", { text: p.mes.texto })]) : null,
     ]);
     // Tocar los días juntos abre «Cositas Juntitos» (Fase 38). El día que cumplen un mes más, una
     // cintita lo dice y abre sus Mesecitos (para hacerle su página especial, si quieren).
@@ -387,7 +390,7 @@ export class MenuPrincipal {
     const cumplePa = pa.cumple && PF.cumpleDe(pa.cumple).hoy, cumpleYo = d.yo?.cumple && PF.cumpleDe(d.yo.cumple).hoy;
     if ((cumplePa || cumpleYo) && !hoyMes) {
       caja.classList.add("cumple");
-      caja.append(el("span.mp-mesecito.cumple", { text: cumplePa ? ` ¡Hoy es el cumple de ${PF.nombreDe(pa)}!` : " ¡Feliz cumpleaños!" }));
+      caja.append(el("span.mp-mesecito.cumple", { text: cumplePa ? `¡Hoy es el cumple de ${PF.nombreDe(pa)}!` : "¡Feliz cumpleaños!" }));
       this._felicitar(cumplePa ? pa : null);
     }
     const pronto = () => this.app.juntitos?.abrir(hoyMes ? "mesecitos" : "inicio");
@@ -404,8 +407,8 @@ export class MenuPrincipal {
     setTimeout(() => {
       if (!this.abierto) return;
       this.app.sonidos?.sonar("brillo");
-      if (pa) aviso(` ¡Hoy es el cumpleaños de ${PF.nombreDe(pa)}! Cumple ${PF.cumpleDe(pa.cumple).anios}`, 8000, "", { t: "Felicitar", al: () => this.app.detallitos.abrir(null, "chat") });
-      else aviso(" ¡Feliz cumpleaños! Hoy es tu día", 6000);
+      if (pa) aviso(`¡Hoy es el cumpleaños de ${PF.nombreDe(pa)}! Cumple ${PF.cumpleDe(pa.cumple).anios}`, 8000, "", { t: "Felicitar", al: () => this.app.detallitos.abrir(null, "chat") });
+      else aviso("¡Feliz cumpleaños! Hoy es tu día", 6000);
     }, 1400);
   }
 

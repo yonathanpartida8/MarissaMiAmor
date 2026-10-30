@@ -110,7 +110,8 @@ function revisarCapas() {
   programado = 0;
   const hijos = [...document.body.children];
   let top = -Infinity;
-  for (const n of hijos) if (n.matches(ARRIBA)) top = Math.max(top, zDe(n));
+  // (La que se está yendo —«fuera», «saliendo»— ya no tapa: lo de abajo se ve mientras se va.)
+  for (const n of hijos) if (n.matches(ARRIBA) && !n.matches(".fuera, .saliendo")) top = Math.max(top, zDe(n));
   for (const n of hijos) {
     if (/^(SCRIPT|STYLE|LINK|TEMPLATE|META)$/.test(n.tagName)) continue;
     const tapado = top > -Infinity && !n.matches(".rd-libre") && zDe(n) < top;

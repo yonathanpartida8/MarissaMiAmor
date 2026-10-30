@@ -340,7 +340,7 @@ export class Juntitos {
       el("h1", { text: x[1] }),
       el("span.jt-pronto-tag", { text: "En construcción" }),
       el("p", { text: x[3] }),
-      el("p.jt-nota", { text: "La estamos construyendo con mucho amor Cuando esté lista aparecerá aquí sola, sin que tengan que hacer nada." }),
+      el("p.jt-nota", { text: "La estamos construyendo con mucho amor. Cuando esté lista aparecerá aquí sola, sin que tengan que hacer nada." }),
     ]));
   }
 

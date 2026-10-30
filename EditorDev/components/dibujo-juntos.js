@@ -200,7 +200,7 @@ export class DibujoJuntos {
     this.colorPropio.addEventListener("input", () => this._ponerColor(this.colorPropio.value));
     this.coloresEl = el("div.dj-colores", {}, [...COLORES.map((c) => { const b = el("button.dj-color", { type: "button", dataset: { c }, "aria-label": "Color " + c, onClick: () => this._ponerColor(c) }); b.style.setProperty("--c", c); return b; }),
       el("label.dj-color.propio", { title: "Otro color" }, [this.colorPropio])]);
-    this.grosorEl = el("input.dj-grosor", { type: "range", min: "1", max: "40", step: "1", value: String(this.grosor), "aria-label": "Grosor" });
+    this.grosorEl = el("input.dj-grosor", { type: "range", min: "1", max: "120", step: "1", value: String(this.grosor), "aria-label": "Grosor" });
     this.grosorEl.addEventListener("input", () => { this.grosor = +this.grosorEl.value; guardarAj({ grosor: this.grosor }); this._muestra(); });
     this.muestra = el("i.dj-muestra");
     this.bVirtual = el("button.dj-b.dj-virtual", { type: "button", "aria-pressed": String(this.virtual), title: "Lápiz virtual: la punta arriba del dedo", "aria-label": "Lápiz virtual", html: LAPIZ, onClick: () => { this.virtual = !this.virtual; guardarAj({ virtual: this.virtual }); this.bVirtual.setAttribute("aria-pressed", String(this.virtual)); document.body.classList.toggle("dj-con-virtual", this.virtual); aviso(this.virtual ? "Lápiz virtual: muévelo con un dedo y toca con otro para dibujar (otro toque lo para) ✏️" : "Lápiz virtual apagado: dibujas justo donde tocas", 2200); } });
@@ -239,7 +239,7 @@ export class DibujoJuntos {
     this._muestra();
   }
   _muestra() {
-    const px = Math.max(4, Math.min(30, this.grosor * 0.8));
+    const px = Math.max(4, Math.min(46, this.grosor * 0.8));
     this.muestra.style.width = this.muestra.style.height = px + "px";
     this.muestra.style.background = this.pincel === "borrador" ? "transparent" : this.color;
     this.muestra.classList.toggle("borrador", this.pincel === "borrador");

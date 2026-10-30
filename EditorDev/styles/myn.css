@@ -1229,3 +1229,10 @@ body.ed-ultra .dt-marquito-sello i { animation: none; }
 .mp-album .mp-pola { width: clamp(100px, 17dvh, 148px); }
 .mp-album .mp-carta > b { font-size: 19.5px; }
 @media (max-width: 380px) { .mp-album .mp-carta > b { font-size: 18px; } }
+/* Fase 51: abajo de la barrita, cuánto falta para su cumplemes (cuando lo primero es un cumpleaños). */
+.mp-dias-mes { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; font: 400 16px/1.15 var(--pp-letra); color: var(--pp-suave); }
+.mp-dias-mes i { display: grid; place-items: center; width: 16px; height: 16px; color: #e0557f; }
+.mp-dias-mes i svg { width: 16px; height: 16px; fill: currentColor; }
+/* Fase 51: los botones de «así le va a llegar» caben siempre (uno debajo del otro si no hay lugar). */
+.dt-ver-acc { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: min(100%, 460px); padding: 0 14px; box-sizing: border-box; }
+.dt-ver-acc > .ed-btn { flex: 1 1 200px; min-width: 0; max-width: 100%; justify-content: center; white-space: normal; text-align: center; line-height: 1.15; }

@@ -267,7 +267,8 @@ async function arrancar() {
   const ultimo = leerUltimo();
   const r = ultimo ? await cargarSeguro(ultimo).catch(() => ({ P: null, notas: [] })) : { P: null, notas: [] };
   if (r.P) await app.abrirProyecto(r.P, r.notas.length > 0, r.notas);
-  else await pantallaInicio(app);
+  // (Fase 51: con el menú abierto no se arma «Crear detallito» escondido debajo: se arma al cerrar el menú.)
+  else if (!app.menuPrincipal.abierto) await pantallaInicio(app);
   document.body.classList.add("listo");
   // Un enlace de emparejamiento (…/EditorDev/#servidor=https://…): se guarda la dirección de tu servidor.
   if (SRV.revisarEnlace()) aviso(`Conectado a ${SRV.NOMBRE}`, 3000);
@@ -875,7 +876,7 @@ app.copiaDeTodo = async () => {
     const dia = new Date().toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
     descargar(r.blob, `Mis libritos (copia de seguridad ${dia}).zip`);
     app.sonidos?.sonar("exito");
-    aviso(`Copia de seguridad lista: ${r.n} ${r.n === 1 ? "borrador" : "borradores"} Guárdala donde quieras.`, 5000);
+    aviso(`Copia de seguridad lista: ${r.n} ${r.n === 1 ? "borrador" : "borradores"}. Guárdala donde quieras.`, 5000);
   } catch (e) { aviso("No se pudo hacer la copia: " + e.message, 5000, "error"); }
   finally { capa.remove(); }
 };

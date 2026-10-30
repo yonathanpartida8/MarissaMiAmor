@@ -260,6 +260,82 @@ export function aplicar(ctx, op, v = VISTA) {
 
 const hoja = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
 
+/* ── Fase 51 · Lo que quedó totalmente tapado ──
+   Un trazo que ya no se ve ni tantito, porque encima tiene al menos 3 capas opacas (plumón, pincel, neón o
+   borrador, sin transparencia) en TODO lo que ocupa, no se vuelve a pintar: ni al abrir, ni al repetirlo, ni
+   se manda. Se queda en la historia, así que al deshacer lo de encima vuelve a aparecer. Se mide en una
+   rejilla de cuadritos y siempre por lo seguro: un cuadrito cuenta como tapado por un trazo sólo si queda
+   entero dentro de lo más angosto de ese trazo, y lo que hay antes de un relleno de cubeta no se toca (el
+   relleno depende de lo que tenía debajo). */
+const CELDA = 12, CAPAS = 3, MEDIA = CELDA * Math.SQRT1_2;
+const OPACOS = new Set(["plumon", "pincel", "neon", "borrador"]);
+
+/** La curva de verdad de un trazo, en pedacitos rectos: [x0, y0, x1, y1, radio] (radio = medio ancho ahí). */
+function pedacitos(op) {
+  const p = op.p, n = pts(op), s = op.s, out = [];
+  const variable = op.h === "pincel" || op.h === "lapiz" || op.h === "crayon";
+  const ancho = (i) => {
+    if (!variable) return s;
+    const punta = Math.min(1, (i + 1) / 4, (n - i) / 3);
+    const k = op.h === "crayon" ? 0.75 + 0.25 * Math.max(0, punta) : 0.45 + 0.55 * Math.max(0, punta);
+    return s * (p[i * 3 + 2] / 100) * k;
+  };
+  if (n === 1) { out.push([p[0], p[1], p[0], p[1], ancho(0) / 2]); return out; }
+  let ax = p[0], ay = p[1];
+  for (let i = 1; i < n; i++) {
+    const x = p[i * 3], y = p[i * 3 + 1];
+    const mx = i < n - 1 ? (x + p[i * 3 + 3]) / 2 : x, my = i < n - 1 ? (y + p[i * 3 + 4]) / 2 : y;
+    const r = Math.min(ancho(i - 1), ancho(i)) / 2;
+    let px = ax, py = ay;
+    for (let t = 0.25; t <= 1; t += 0.25) {
+      const u = 1 - t, qx = u * u * ax + 2 * u * t * x + t * t * mx, qy = u * u * ay + 2 * u * t * y + t * t * my;
+      out.push([px, py, qx, qy, r]);
+      px = qx; py = qy;
+    }
+    ax = mx; ay = my;
+  }
+  return out;
+}
+const distSeg = (cx, cy, x0, y0, x1, y1) => {
+  const dx = x1 - x0, dy = y1 - y0, l = dx * dx + dy * dy;
+  const t = l ? Math.max(0, Math.min(1, ((cx - x0) * dx + (cy - y0) * dy) / l)) : 0;
+  return Math.hypot(cx - x0 - t * dx, cy - y0 - t * dy);
+};
+/** Recorre los cuadritos cerca de cada pedacito: `f(celda, distancia del centro al trazo, radio)`; si f da false, para. */
+function porCeldas(segs, alcance, cw, ch, f) {
+  for (const [x0, y0, x1, y1, r] of segs) {
+    const R = alcance(r) + MEDIA;
+    const i0 = Math.max(0, Math.floor((Math.min(x0, x1) - R) / CELDA)), i1 = Math.min(cw - 1, Math.floor((Math.max(x0, x1) + R) / CELDA));
+    const j0 = Math.max(0, Math.floor((Math.min(y0, y1) - R) / CELDA)), j1 = Math.min(ch - 1, Math.floor((Math.max(y0, y1) + R) / CELDA));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      if (f(j * cw + i, distSeg((i + 0.5) * CELDA, (j + 0.5) * CELDA, x0, y0, x1, y1), r) === false) return false;
+    }
+  }
+  return true;
+}
+/** Las operaciones que ya no se ven (un Set). Sólo para la hoja normal (la infinita no tiene orillas). */
+export function ocultas(log, W = ANCHO, H = ALTO) {
+  const fuera = new Set();
+  if (!log || log.length < 4) return fuera;
+  const cw = Math.ceil(W / CELDA), ch = Math.ceil(H / CELDA), capas = new Uint8Array(cw * ch), marca = new Int32Array(cw * ch);
+  let relleno = false;
+  for (let i = log.length - 1; i >= 0; i--) {
+    const op = log[i];
+    if (!op) continue;
+    if (op.k === "limpiar") { for (let j = 0; j < i; j++) fuera.add(log[j]); break; }
+    if (op.k === "relleno") { relleno = true; continue; }
+    if (op.k !== "trazo" || !op.p?.length) continue;
+    const segs = pedacitos(op);
+    // Hasta dónde llega lo que pinta (el neón brilla más allá de su línea).
+    const llega = op.h === "neon" ? () => op.s * 2.6 + 1 : (r) => Math.max(r, op.s * 0.75) + 1;
+    if (!relleno && porCeldas(segs, llega, cw, ch, (c, d, r) => d > llega(r) + MEDIA || capas[c] >= CAPAS)) { fuera.add(op); continue; }
+    if (OPACOS.has(op.h) && (op.o ?? 1) >= 0.999) {
+      porCeldas(segs, (r) => r, cw, ch, (c, d, r) => { if (d <= r - MEDIA - 0.75 && marca[c] !== i + 1) { marca[c] = i + 1; if (capas[c] < 255) capas[c]++; } });
+    }
+  }
+  return fuera;
+}
+
 /**
  * La hoja de siempre (W × H) con su historia. `log` = todas las operaciones (para guardarlo y para repetirlo); las
  * más viejas se aplanan en `base` para que deshacer sea rápido aunque el dibujo sea enorme.
@@ -270,21 +346,36 @@ export class Lienzo {
     this.W = w; this.H = h;
     this.ctx = canvas.getContext("2d");
     this.base = hoja(w, h); this.bctx = this.base.getContext("2d");
-    this.log = []; this.baseN = 0;
+    this.log = []; this.baseN = 0; this.saltadas = 0;
     this.vista = VISTA;
   }
   agregar(op, yaPintada = false) {
     if (!yaPintada) aplicar(this.ctx, op);
     this.log.push(op);
     if (this.log.length - this.baseN > 80) {
-      for (let i = this.baseN; i < this.baseN + 20; i++) aplicar(this.bctx, this.log[i]);
+      // (Lo que ya quedó tapado por completo no se aplana: no cuesta nada.)
+      const oc = ocultas(this.log, this.W, this.H);
+      for (let i = this.baseN; i < this.baseN + 20; i++) { if (oc.has(this.log[i])) this.saltadas++; else aplicar(this.bctx, this.log[i]); }
       this.baseN += 20;
     }
   }
-  puedeQuitar() { return this.log.length > this.baseN; }
+  /** Vuelve a armar la hoja de abajo con las primeras `n` operaciones (sin lo que siga tapado). */
+  _rehacerBase(n) {
+    this.bctx.clearRect(0, 0, this.W, this.H);
+    const oc = ocultas(this.log, this.W, this.H);
+    this.saltadas = 0;
+    for (let i = 0; i < n; i++) { if (oc.has(this.log[i])) this.saltadas++; else aplicar(this.bctx, this.log[i]); }
+    this.baseN = n;
+  }
+  // (Fase 51: se puede deshacer hasta el principio; al pasar lo aplanado, se vuelve a armar.)
+  puedeQuitar() { return this.log.length > 0; }
   quitar() {
     if (!this.puedeQuitar()) return null;
     const op = this.log.pop();
+    // Si se aplanó algo que estaba tapado o ya se deshizo lo aplanado, la hoja de abajo se vuelve a armar
+    // (así reaparece lo que esto tapaba).
+    const destapa = this.saltadas && (op.k === "limpiar" || (op.k === "trazo" && OPACOS.has(op.h) && (op.o ?? 1) >= 0.999));
+    if (destapa || this.log.length < this.baseN) this._rehacerBase(Math.min(this.baseN, Math.max(0, this.log.length - 40)));
     this.redibujar();
     return op;
   }
@@ -294,9 +385,8 @@ export class Lienzo {
     for (let i = this.baseN; i < this.log.length; i++) aplicar(this.ctx, this.log[i]);
   }
   cargar(log) {
-    this.log = []; this.baseN = 0;
-    this.bctx.clearRect(0, 0, this.W, this.H);
-    for (const op of log || []) if (valida(op)) this.agregar(op, true);
+    this.log = (log || []).filter(valida);
+    this._rehacerBase(Math.max(0, this.log.length - 60));
     this.redibujar();
   }
   hayAlgo() { return hayAlgo(this.log); }
@@ -352,6 +442,7 @@ export function repetir(canvas, log, { alPaso = null, duracion = null, w = ANCHO
   let ops = (log || []).filter(valida);
   for (let i = ops.length - 1; i >= 0; i--) if (ops[i].k === "limpiar") { ops = ops.slice(i + 1); break; }
   if (vista) ops = ops.filter((op) => op.k !== "trazo" || seVe(op, v, canvas.width, canvas.height));
+  else { const oc = ocultas(ops, w, h); if (oc.size) ops = ops.filter((op) => !oc.has(op)); }   // lo tapado ni se repite
   const costo = (op) => op.k === "trazo" ? Math.max(6, pts(op)) : op.k === "relleno" ? 18 : 4;
   const total = ops.reduce((a, op) => a + costo(op), 0) || 1;
   const ms = duracion ?? Math.max(1500, Math.min(6500, total * 9));

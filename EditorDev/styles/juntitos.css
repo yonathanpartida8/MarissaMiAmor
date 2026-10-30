@@ -746,3 +746,17 @@ body.ed-ultra .jt-carta-cacas i { animation: none; }
 .jt-carta-cacas { bottom: 4px; opacity: .92; }
 .jt-carta-cacas i { width: 24px; height: 24px; }
 .jt-carta-cacas { bottom: 54px; left: 50px; right: 6px; justify-content: flex-end; }
+/* Fase 51: las caquitas van en su propia filita debajo del texto (ya no tapan nada). */
+.jt-carta-cacas, .jt-carta .jt-carta-cacas { position: static; z-index: auto; order: 10; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 1px 2px; width: 100%; margin: 2px 0 0; opacity: 1; }
+.jt-carta-cacas:empty { display: none; }
+.jt-carta-cacas i { width: 17px; height: 17px; margin: 0; }
+/* Fase 51: las herramientas de Dibujar juntos nunca se salen de la pantalla. */
+.dj-herr { grid-template-columns: minmax(0, 1fr); }
+.dj-fila { min-width: 0; }
+.dj-colores { min-width: 0; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+.dj-colores::-webkit-scrollbar { display: none; }
+.dj-fila > .dj-b { flex: none; }
+.dj-grosor { min-width: 0; height: 26px; }
+/* Fase 51: el texto encima del «líquido» siempre se lee (un halito del color de la tarjeta). */
+.jt-carta.con-liquido :is(.jt-carta-num, .jt-carta-n) { text-shadow: 0 0 3px var(--c), 0 0 8px var(--c), 0 0 1px var(--c); }
+.jt-carta-liquido { opacity: .85; }

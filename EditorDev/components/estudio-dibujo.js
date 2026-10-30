@@ -29,7 +29,7 @@ import { vibrar } from "../integraciones/plataforma.js";
 import { sinMovimiento as reducido } from "./transiciones.js";
 import { elegirImagen } from "./chat-sticker.js";
 import { pantallaInicio } from "./inicio.js";
-import { ANCHO, ALTO, TAMANOS, VISTA, PINCELES, Lienzo, LienzoInfinito, pintarTrazo, rellenar, aplicar } from "./dibujo-motor.js";
+import { ANCHO, ALTO, TAMANOS, VISTA, PINCELES, Lienzo, LienzoInfinito, pintarTrazo, rellenar, aplicar, ocultas } from "./dibujo-motor.js";
 
 const GUARDA = "editordev:dibujito", PREF = "editordev:dibujito-pref";
 const COLORES = ["#3a2a35", "#ffffff", "#ff5c93", "#ffadc9", "#f0435e", "#ff9b7a", "#ffc98b", "#ffe27a", "#b8e986", "#6fd3a6", "#86d6f2", "#7aa7ff", "#c3a6ff", "#9b6be0", "#a07155", "#5a3b2e"];
@@ -251,6 +251,14 @@ export class EstudioDibujo {
     this.app.sonidos?.sonar("cerrar");
     if (!this.enviado && (this.lienzo.hayAlgo() || this.objs.length)) aviso("Tu dibujito quedó guardado: lo sigues en Crear detallito → Dibujito", 4200);
     if (!sinMenu) this.app.salida?.alMenu?.();
+  }
+
+  /** El dibujo para mandarlo: sin lo que quedó totalmente tapado (pesa menos y se repite más rápido). */
+  _logLimpio() {
+    const log = this.lienzo.log;
+    if (this.infinito) return log;
+    const oc = ocultas(log, this.W, this.H);
+    return oc.size ? log.filter((o) => !oc.has(o)) : log;
   }
 
   /** Al cerrar, los lienzos grandes se sueltan (en el teléfono, cada uno pesa varios MB). */
@@ -479,11 +487,12 @@ export class EstudioDibujo {
   _armarGrosor() {
     this.grosorBola = el("i.dz-grosor-bola");
     this.grosorPunto = el("i.dz-grosor-punto");
-    const n = el("div.dz-grosor", { hidden: "", role: "slider", "aria-label": "Grosor", "aria-valuemin": "2", "aria-valuemax": "90" }, [el("i.dz-grosor-riel"), this.grosorBola, this.grosorPunto]);
+    const n = el("div.dz-grosor", { hidden: "", role: "slider", "aria-label": "Grosor", "aria-valuemin": "2", "aria-valuemax": "500" }, [el("i.dz-grosor-riel"), this.grosorBola, this.grosorPunto]);
     let activo = null;
     const poner = (e) => {
       const r = n.getBoundingClientRect(), t = 1 - Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
-      const s = Math.round(2 * Math.pow(45, t) * 2) / 2;
+      // (Fase 51: de 2 a 500, mucho más grueso; abajo sigue finito y preciso.)
+      const s = Math.round(2 * Math.pow(250, t) * 2) / 2;
       if (this.herr !== "cubeta") this.grosores[this.herr] = s;
       this._pintarPunto();
       this._grosorEspera();
@@ -505,10 +514,10 @@ export class EstudioDibujo {
   _grosorEspera() { clearTimeout(this._tgr); this._tgr = setTimeout(() => this._grosor(false), 2600); }
   _pintarPunto() {
     if (!this.grosorBola) return;
-    const s = this.grosores[this.herr] || 14, t = Math.log(s / 2) / Math.log(45);
+    const s = this.grosores[this.herr] || 14, t = Math.min(1, Math.log(s / 2) / Math.log(250));
     this.grosorBola.style.top = ((1 - t) * 100).toFixed(2) + "%";
     this.grosorPunto.style.top = ((1 - t) * 100).toFixed(2) + "%";
-    const px = Math.max(3, s * (this._u || 0.35));
+    const px = Math.min(120, Math.max(3, s * (this._u || 0.35)));   // (la muestrita no tapa toda la hoja)
     this.grosorPunto.style.width = this.grosorPunto.style.height = px.toFixed(1) + "px";
     this.grosorPunto.style.background = this.herr === "borrador" ? "#fff" : this._rgba(this.color, this.opac);
     this.grosorPunto.classList.toggle("borra", this.herr === "borrador");
@@ -1442,7 +1451,7 @@ export class EstudioDibujo {
       else if (k === "r") this._ponerRegla(!this.regla.on);
       else if (k === "i") this._ponerGotero(!this.gotero);
       else if (k === "v") this._ponerVirtual(!this.virtual);
-      else if (k === "[" || k === "]") { const s = this.grosores[this.herr] || 14; this.grosores[this.herr] = Math.max(2, Math.min(90, Math.round(s * (k === "]" ? 1.25 : 0.8)))); this._pintarPunto(); this._ponerCursor(); }
+      else if (k === "[" || k === "]") { const s = this.grosores[this.herr] || 14; this.grosores[this.herr] = Math.max(2, Math.min(500, Math.round(s * (k === "]" ? 1.25 : 0.8)))); this._pintarPunto(); this._ponerCursor(); }
     } else if ((e.key === "Delete" || e.key === "Backspace") && this.sel) { e.preventDefault(); this._quitarObj(this.sel); }
   }
 
@@ -1555,7 +1564,7 @@ export class EstudioDibujo {
       const titulo = this.nombre;
       z.agregar("index.html", paginaVer(titulo, mensaje, this.fondo, this.W, this.H));
       z.agregar("dibujo.png", png);
-      z.agregar("dibujo.json", JSON.stringify({ v: 2, ancho: this.W, alto: this.H, fondo: this.fondo, papel: this.papel, titulo, infinito: this.infinito, vista: this.infinito ? this.vista : null, log: this.lienzo.log }));
+      z.agregar("dibujo.json", JSON.stringify({ v: 2, ancho: this.W, alto: this.H, fondo: this.fondo, papel: this.papel, titulo, infinito: this.infinito, vista: this.infinito ? this.vista : null, log: this._logLimpio() }));
       const blob = await z.generar();
       volo = this._volar();
       const det = await SRV.mandarDetallito(blob, { titulo, mensaje, color: this.fondo, tipo: "dibujito" }, (p) => this._anillo(0.04 + p * 0.94));

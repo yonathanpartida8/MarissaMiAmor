@@ -947,6 +947,19 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Cositas** (servidor 1.22.0) | Sin chismes, enojómetro, colapsos ni palabrotas. Cada quien ve todo lo del otro: cada tarjeta dice lo de tu amorcito al lado y el Marcador compara las 6. La de caca se llena de caquitas dibujadas. |
 | **No probado en teléfonos de verdad** | el tacto de la pestañita, el zoom en un teléfono lento y cómo se ve el tema oscuro en cada pantalla. Las pantallas de bienvenida y el chat siguen con sus emojis (son parte de su contenido). |
 
+### Fase 51: dibujos más ligeros, grosores enormes, widget con cumplemes y botones que se ven
+
+| | |
+| --- | --- |
+| **Lo tapado no se pinta** (`components/dibujo-motor.js` → `ocultas`) | Un trazo que ya no se ve ni tantito porque tiene encima 3 capas opacas (plumón, pincel, neón o borrador) en todo lo que ocupa se salta al abrir, al aplanar, al repetirlo en Detallitos y al mandarlo (pesa menos). Se queda en la historia: al deshacer lo de encima, la hoja se vuelve a armar y reaparece. Siempre por lo seguro (lo de antes de un relleno de cubeta no se toca). Probado: se ve idéntico pixel por pixel. |
+| **Deshacer sin límite** | En el estudio se puede deshacer hasta el principio (antes, sólo los últimos ~80 trazos). |
+| **Grosor** | De 2 a **500** en el estudio (antes 90) y de 1 a 120 en Dibujar juntos (antes 40); la muestrita no tapa la hoja. |
+| **Widget de los días** (`components/perfil.js`, `components/menu-principal.js`) | Si lo más cercano es un cumpleaños, abajo dice cuánto falta para su cumplemes; al pasar el cumpleaños, el cumplemes vuelve a ser lo primero. |
+| **Cositas** | Las caquitas van en su propia filita (ya no tapan el texto) y el texto sobre el «líquido» lleva un halito para leerse siempre. |
+| **Botones** | «Listo, quiero mandarla» y «Seguir editándola» ya no se salen de la pantalla; la fila del grosor de Dibujar juntos tampoco. Un revisor automático recorrió 20 pantallas a 360 px buscando botones cortados o tapados. |
+| **Menús más ligeros** | Sin librito abierto, «Crear detallito» ya no se arma escondido debajo del menú (se arma al cerrarlo): capas de 127 a 71 y cambios de pantalla 15–35 % más ligeros (medido con el CPU 4× más lento). Lo que se está cerrando ya no cuenta como «tapando». |
+| **No probado en teléfonos de verdad** | la fluidez real de los menús y del deshacer en dibujos muy grandes. |
+
 ## Cómo está hecho
 
 ```
