@@ -544,6 +544,6 @@ export class DibujoJuntos {
     const a = el("a", { href: URL.createObjectURL(blob), download: nombre });
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    aviso("Imagen guardada 🎨", 1800);
+    aviso("Imagen guardada", 1800);
   }
 }

@@ -50,7 +50,6 @@ const CAMINO = { "inicio>cuenta": "carta", "cuenta>inicio": "atras", "inicio>per
 /* El hilo rojo: dos tramos fijos y, en medio, el corazón que late (en su propia capa). */
 // (Fase 36) El hilo rojo: una curva suave de foto a foto que se hunde un poquito hacia el corazón,
 // con su brillo que lo recorre; el corazón, fino y redondito, con relleno rosado muy suave y su latido.
-const HILO = '<svg viewBox="0 0 160 70" preserveAspectRatio="none" aria-hidden="true"><path class="mp-hilo-sombra" d="M2 22C26 26 50 40 68 48M92 48C110 40 134 26 158 22"/><path class="mp-hilo-cuerda" d="M2 22C26 26 50 40 68 48M92 48C110 40 134 26 158 22"/></svg>';
 const HILO_CORAZON = '<svg viewBox="0 0 48 44" aria-hidden="true"><defs><linearGradient id="mpCorRelleno" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd3e2" stop-opacity=".9"/><stop offset="1" stop-color="#ff8db4" stop-opacity=".55"/></linearGradient></defs><path class="mp-cor-relleno" d="M24 39.4C17.6 34.2 8.4 27.8 8.1 18.4 7.9 12.3 12.2 8 17.5 8c3 0 5.3 1.6 6.5 4 1.2-2.4 3.5-4 6.5-4 5.3 0 9.6 4.3 9.4 10.4-.3 9.4-9.5 15.8-15.9 21z" fill="url(#mpCorRelleno)"/><path class="mp-cor-linea" d="M24 39.4C17.6 34.2 8.4 27.8 8.1 18.4 7.9 12.3 12.2 8 17.5 8c3 0 5.3 1.6 6.5 4 1.2-2.4 3.5-4 6.5-4 5.3 0 9.6 4.3 9.4 10.4-.3 9.4-9.5 15.8-15.9 21z" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.4 15.6c.8-1.8 2.3-2.8 4-2.9" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".85"/></svg>';
 const LAPIZ = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 1-4.2L15.6 5.2a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.2 19 4 20z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m13.8 7 3.2 3.2M4 20h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 const FLECHA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -296,26 +295,55 @@ export class MenuPrincipal {
     const r = this.r, con = SRV.conectado(), pa = con ? PF.datos().pareja : null;
     r.nombreYo = el("b", { text: con ? inicial(PF.miNombre()) : "Tú" });
     r.fotoYo = this._fotoPola("yo");
-    const polaYo = el("figure.mp-pola.yo", {}, [el("i.mp-cinta"), el("span.mp-pola-marco", {}, [r.fotoYo]), el("figcaption.mp-pola-etq", {}, [r.nombreYo, el("i", { html: ico("corazon") })])]);
-    const hilo = el("div.mp-hilo", { "aria-hidden": "true", html: HILO }, []);
-    hilo.append(el("i.mp-hilo-brillo"), el("i.mp-hilo-brillo.b2"), el("i.mp-hilo-corazon", { html: HILO_CORAZON }));
+    const polaYo = el("figure.mp-pola.yo", {}, [el("i.mp-cinta"), el("span.mp-pola-marco", {}, [r.fotoYo]), el("figcaption.mp-pola-etq", {}, [r.nombreYo, el("i", { html: ico("corazon") })]), el("i.mp-pin.der")]);
+    // Fase 50: el hilo rojo va de alfiler a alfiler (uno en cada foto) y el corazón cuelga justo a la mitad.
+    const hilo = el("div.mp-hilo", { "aria-hidden": "true" });
+    const lazo = el("div.mp-lazo", { "aria-hidden": "true", html: '<svg preserveAspectRatio="none"><path class="mp-hilo-sombra"/><path class="mp-hilo-cuerda"/></svg>' }, [el("i.mp-hilo-corazon", { html: HILO_CORAZON })]);
     if (pa) {
       r.nombrePa = el("b", { text: inicial(PF.nombreDe(pa)) });
       r.fotoPa = this._fotoPola("pareja");
       r.polaPa = el("button.mp-pola.ella" + (pa.en_linea ? ".en-linea" : ""), { type: "button", "aria-label": `Nuestro vínculo con ${PF.nombreDe(pa)}`, onClick: (e) => this.app.detallitos.abrir(e.currentTarget, "vincular") }, [
         el("i.mp-cinta"), el("span.mp-pola-marco", {}, [r.fotoPa]),
         el("figcaption.mp-pola-etq", {}, [r.nombrePa, el("i", { html: ico("corazon") })]),
-        el("i.mp-en-linea", { title: "En línea" }),
+        el("i.mp-en-linea", { title: "En línea" }), el("i.mp-pin.izq"),
       ]);
     } else {
       r.nombrePa = null; r.fotoPa = null;
       r.polaPa = el("button.mp-pola.ella.vacia", { type: "button", "aria-label": con ? "Vincular a mi amorcito" : "Entrar a mi cuenta", onClick: (e) => (con ? this.app.detallitos.abrir(e.currentTarget, "vincular") : this.ir("cuenta", { desde: e.currentTarget })) }, [
         el("i.mp-cinta"), el("span.mp-pola-marco", {}, [el("span.mp-pola-foto.arte", { html: A.FOTO_VACIA })]),
-        el("figcaption.mp-pola-etq", {}, [el("b", { text: con ? "¿tu amor?" : "¿y tu amor?" })]),
+        el("figcaption.mp-pola-etq", {}, [el("b", { text: con ? "¿tu amor?" : "¿y tu amor?" })]), el("i.mp-pin.izq"),
       ]);
     }
     const nota = el("p.mp-nota-pegada", { "aria-hidden": "true" }, [el("span", { text: "Juntos siempre es mejor" }), el("i", { html: ico("corazon") })]);
-    return el("div.mp-pareja" + (pa ? "" : ".sola"), {}, [nota, polaYo, hilo, r.polaPa]);
+    const pareja = el("div.mp-pareja" + (pa ? "" : ".sola"), {}, [nota, polaYo, hilo, r.polaPa, lazo]);
+    this._atarHilo(pareja, lazo);
+    return pareja;
+  }
+
+  /** Dibuja el hilo entre los dos alfileres (mide dónde quedaron las fotos, aunque el menú esté encogido). */
+  _atarHilo(pareja, lazo) {
+    const svg = lazo.querySelector("svg"), cor = lazo.querySelector(".mp-hilo-corazon");
+    const atar = () => {
+      if (!pareja.isConnected) { ro.disconnect(); return; }
+      const R = pareja.getBoundingClientRect(), W = pareja.clientWidth, H = pareja.clientHeight;
+      const a = pareja.querySelector(".mp-pin.der")?.getBoundingClientRect(), b = pareja.querySelector(".mp-pin.izq")?.getBoundingClientRect();
+      if (!W || !a || !b) return;
+      const k = R.width / W || 1;   // (el zoom con el que se encoge el menú)
+      const x1 = (a.left + a.width / 2 - R.left) / k, y1 = (a.top + a.height / 2 - R.top) / k;
+      const x2 = (b.left + b.width / 2 - R.left) / k, y2 = (b.top + b.height / 2 - R.top) / k;
+      const cx = (x1 + x2) / 2, cy = Math.max(y1, y2) + Math.max(22, Math.abs(x2 - x1) * 0.42);
+      const d = `M${x1.toFixed(1)} ${y1.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+      svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+      for (const p of svg.children) p.setAttribute("d", d);
+      cor.style.left = cx.toFixed(1) + "px";
+      cor.style.top = ((y1 + 2 * cy + y2) / 4).toFixed(1) + "px";
+      lazo.classList.add("listo");
+    };
+    const ro = new ResizeObserver(() => requestAnimationFrame(atar));
+    ro.observe(pareja);
+    // (Las fotos caen con su animación: se vuelve a atar cuando ya llegaron.)
+    pareja.addEventListener("animationend", (e) => { if (e.target.classList?.contains("mp-pola")) atar(); });
+    setTimeout(atar, 1000); setTimeout(atar, 1600);
   }
 
   /** La tarjetita de los días: «3 días juntos» y lo que viene, con su barrita. */
@@ -354,12 +382,12 @@ export class MenuPrincipal {
     // Tocar los días juntos abre «Cositas Juntitos» (Fase 38). El día que cumplen un mes más, una
     // cintita lo dice y abre sus Mesecitos (para hacerle su página especial, si quieren).
     const meses = j.a * 12 + j.m, hoyMes = j.d === 0 && meses > 0;
-    if (hoyMes) { caja.classList.add("mesecito"); caja.append(el("span.mp-mesecito", { text: `¡Hoy cumplen ${meses} ${meses === 1 ? "mes" : "meses"}! ✦` })); }
+    if (hoyMes) { caja.classList.add("mesecito"); caja.append(el("span.mp-mesecito", { text: `¡Hoy cumplen ${meses} ${meses === 1 ? "mes" : "meses"}!` })); }
     // (Fase 46) El día de su cumpleaños, tu amorcito lo ve aquí (y tú, el tuyo): cada quien con su nombre.
     const cumplePa = pa.cumple && PF.cumpleDe(pa.cumple).hoy, cumpleYo = d.yo?.cumple && PF.cumpleDe(d.yo.cumple).hoy;
     if ((cumplePa || cumpleYo) && !hoyMes) {
       caja.classList.add("cumple");
-      caja.append(el("span.mp-mesecito.cumple", { text: cumplePa ? `🎂 ¡Hoy es el cumple de ${PF.nombreDe(pa)}!` : "🥳 ¡Feliz cumpleaños!" }));
+      caja.append(el("span.mp-mesecito.cumple", { text: cumplePa ? ` ¡Hoy es el cumple de ${PF.nombreDe(pa)}!` : " ¡Feliz cumpleaños!" }));
       this._felicitar(cumplePa ? pa : null);
     }
     const pronto = () => this.app.juntitos?.abrir(hoyMes ? "mesecitos" : "inicio");
@@ -376,8 +404,8 @@ export class MenuPrincipal {
     setTimeout(() => {
       if (!this.abierto) return;
       this.app.sonidos?.sonar("brillo");
-      if (pa) aviso(`🎂 ¡Hoy es el cumpleaños de ${PF.nombreDe(pa)}! Cumple ${PF.cumpleDe(pa.cumple).anios} 💗`, 8000, "", { t: "Felicitar", al: () => this.app.detallitos.abrir(null, "chat") });
-      else aviso("🥳 ¡Feliz cumpleaños! Hoy es tu día ✨", 6000);
+      if (pa) aviso(` ¡Hoy es el cumpleaños de ${PF.nombreDe(pa)}! Cumple ${PF.cumpleDe(pa.cumple).anios}`, 8000, "", { t: "Felicitar", al: () => this.app.detallitos.abrir(null, "chat") });
+      else aviso(" ¡Feliz cumpleaños! Hoy es tu día", 6000);
     }, 1400);
   }
 
@@ -430,7 +458,7 @@ export class MenuPrincipal {
     const nuevos = (app.amorNuevos || 0) + (app.amorReacciones || 0);
     r.tarjetaDet = this._carta("menta", A.ICONO_CARPETA, "Detallitos", r.subDet, (e) => app.detallitos.abrir(e.currentTarget, "coleccion"), 5);
     if (nuevos) r.tarjetaDet.append(el("em.dt-globo", { text: String(nuevos) }));
-    const libritos = this._carta("cielo", A.ICONO_LIBRO, "Mis libritos", el("small", { text: con ? "Aquí y en tu nube" : "Tus borradores" }), () => { this.cerrar(); app.inicio?.({ a: "borradores" }); }, 6);
+    const libritos = this._carta("cielo", A.ICONO_LIBRO, "Mis libritos", el("small", { text: con ? "Aquí y en tu nube" : "Tus borradores" }), () => app.inicio?.({ a: "borradores", sobreMenu: true }), 6);   // (encima del menú: al salir, vuelves aquí)
     // La Tiendita Cool (Fase 35): todavía en construcción. Tu perfil se abre desde tu nombre, arriba.
     const tiendita = this._carta("durazno", TIENDITA, "Tiendita Cool", el("small", { text: "Muy pronto" }), () => aviso("En construcción xd...", 2600), 7);
     r.fechas = this._firmaDias();
@@ -451,7 +479,7 @@ export class MenuPrincipal {
       try {
         if (await app.irAlEditor?.()) { this.cerrar(); return; }
         app.sonidos?.sonar("seleccionar");
-        this._sinProyectos = aviso("Todavía no hay proyectos guardados. Crea tu primer detallito y aquí lo encuentras ✨", 5200, "", { t: `${ico("nuevo")}<span>Crear detallito</span>`, al: () => { this.cerrar(); app.inicio?.(); } });
+        this._sinProyectos = aviso("Todavía no hay proyectos guardados. Crea tu primer detallito y aquí lo encuentras", 5200, "", { t: `${ico("nuevo")}<span>Crear detallito</span>`, al: () => { this.cerrar(); app.inicio?.(); } });
       } finally { b._yendo = false; }
     } }, [
       el("i.mp-editor-ico", { html: LAPIZ }),

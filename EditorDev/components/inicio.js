@@ -111,7 +111,7 @@ const ETQ = {
   subir: ["nube", "Subiendo a tu nube pronto"], nube: ["nube", "Hay uno más nuevo en tu nube"], "los-dos": ["aviso", "Cambió en dos aparatos"],
 };
 
-export async function pantallaInicio(app, { cerrable = false, a = "", tipo: tipo0 = "pagina" } = {}) {
+export async function pantallaInicio(app, { cerrable = false, a = "", tipo: tipo0 = "pagina", sobreMenu = false } = {}) {
   quitarInicio();
   const lista = await listar().catch(() => []);
   const borradores = el("section.ed-inicio-borradores");
@@ -125,7 +125,8 @@ export async function pantallaInicio(app, { cerrable = false, a = "", tipo: tipo
   // «Mis libritos» (del menú principal) es sólo para tus borradores y sus copias de seguridad (Fase 33).
   const respaldo = a === "borradores";
   const portada = respaldo ? null : selectorDePortada(formato);
-  const cerrar = () => { portada?.destruir(); capa.remove(); document.body.classList.remove("con-inicio"); };
+  // (Abierta encima del menú: la × te deja en el menú; ir a un librito cierra también el menú.)
+  const cerrar = (quedarse = false) => { portada?.destruir(); capa.remove(); document.body.classList.remove("con-inicio"); if (sobreMenu && !quedarse) app.menuPrincipal?.cerrar?.(); };
   // — Crear detallito (Fase 46): 1 qué vas a crear · 2 su nombre · 3 su portada (o tu hoja) · 4 el tamaño —
   let tipo = tipo0 === "dibujito" ? "dibujito" : "pagina";
   const crear = respaldo ? null : (() => {
@@ -199,13 +200,13 @@ export async function pantallaInicio(app, { cerrable = false, a = "", tipo: tipo
       ]),
     ]);
   })();
-  const capa = el("div.ed-inicio" + (respaldo ? ".respaldo" : ""), { role: "dialog", "aria-label": respaldo ? "Mis libritos" : "Crear detallito" }, [
+  const capa = el("div.ed-inicio" + (respaldo ? ".respaldo" : "") + (sobreMenu ? ".sobre-menu" : ""), { role: "dialog", "aria-label": respaldo ? "Mis libritos" : "Crear detallito" }, [
     el("div.ed-inicio-caja", {}, [
       el("header", {}, [
         respaldo
           ? el("div", {}, [el("h1", { text: "Mis libritos" }), el("p", { text: "Tus borradores y sus copias de seguridad: guarda todo en un archivo o tráelo de vuelta." })])
           : el("div", {}, [el("h1", { text: "Crear detallito" }), el("p", { text: "Elige qué vas a hacer, ponle nombre y listo: lo demás lo decides en el editor." })]),
-        cerrable ? el("button.ed-x", { type: "button", html: ico("cerrar"), "aria-label": "Cerrar", onClick: () => cerrar() }) : null,
+        cerrable ? el("button.ed-x", { type: "button", html: ico("cerrar"), "aria-label": "Cerrar", onClick: () => cerrar(true) }) : null,
       ]),
       respaldo ? el("section.ed-inicio-nuevo", {}, [
         el("div.ed-tarjeta", {}, [
@@ -228,7 +229,7 @@ export async function pantallaInicio(app, { cerrable = false, a = "", tipo: tipo
   document.body.classList.add("con-inicio");
   if (!respaldo) return capa;   // «Crear detallito» ya no lleva la lista de borradores
 
-  const otraVez = () => pantallaInicio(app, { cerrable: cerrable && !!app.estado.proyecto, a });
+  const otraVez = () => pantallaInicio(app, { cerrable: sobreMenu || (cerrable && !!app.estado.proyecto), a, sobreMenu });
   const borrarAqui = async (id) => { await borrar(id); borrarCopias(id).catch(() => {}); if (app.estado.proyecto?.id === id) app.estado.proyecto = null; };
   /** Bajar (o poner al día) un librito de tu nube y abrirlo; la pantalla se queda si algo falla. */
   const abrirNube = async (l) => {

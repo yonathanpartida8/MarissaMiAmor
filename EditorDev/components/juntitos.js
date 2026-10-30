@@ -53,16 +53,48 @@ const COSAS = [
   // enojómetro; el pis se llena con 5 y el agua con 14 vasitos.
   { t: "extrano", n: "Te extraño", c: "azul", modo: "llena", hint: "Le llega al instante" },
   { t: "teamo", n: "Decir te amo", c: "rojo", modo: "llena", hint: "Le llega al instante" },
-  { t: "caca", n: "Veces que he hecho caca", c: "durazno", modo: "cuenta" },
-  { t: "chismes", n: "Chismes", c: "menta", modo: "escribe" },
-  { t: "enojos", n: "Enojómetro", c: "enojo", modo: "enojo" },
-  { t: "colapsos", n: "Colapsos", c: "lila", modo: "escribe" },
+  // (Fase 50: sin chismes, enojómetro, colapsos ni palabrotas; cada quien ve todo lo del otro.)
+  { t: "caca", n: "Veces que he hecho caca", c: "durazno", modo: "cuenta", cacas: true },
   { t: "pis", n: "Veces que he hecho pis", c: "amarillo", modo: "cuenta", meta: 5 },
   { t: "agua", n: "Vasitos de agua", c: "cielo", modo: "cuenta", meta: 14 },
-  { t: "palabrotas", n: "Palabrotas dichas", c: "durazno", modo: "cuenta" },
   { t: "ducha", n: "¿Hoy me duché?", c: "menta", modo: "si" },
 ];
-const ENOJOS = [["😒", "Poquito"], ["😠", "Enojadito"], ["😤", "Enojado"], ["🤬", "Muy enojado"], ["🌋", "¡Volcán!"]];
+// Fase 50: iconitos dibujados (sin emojis).
+const ic = (d) => svg(d, "0 0 24 24").replace('stroke-width="1.7"', 'stroke-width="2"');
+const IC = {
+  caminar: ic('<circle cx="13" cy="4.5" r="2"/><path d="M10 21l2-6 3 3v4M7.5 12l3.5-4 3 1 2 3 3 1M11 8l-1 5"/>'),
+  bici: ic('<circle cx="6" cy="17" r="3.5"/><circle cx="18" cy="17" r="3.5"/><path d="M6 17l4-7h5l3 7M10 10l-1-3H7M15 10l-2 7"/>'),
+  auto: ic('<path d="M4 16v-3l2-5h12l2 5v3z"/><circle cx="7.5" cy="16.5" r="1.8"/><circle cx="16.5" cy="16.5" r="1.8"/><path d="M6 12h12"/>'),
+  pin: ic('<path d="M12 21s-6.5-5.8-6.5-11a6.5 6.5 0 0 1 13 0c0 5.2-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/>'),
+  alerta: ic('<path d="M12 3.5l9 16H3z"/><path d="M12 10v4M12 17v.5"/>'),
+  escudo: ic('<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>'),
+  casa: ic('<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>'),
+  escuela: ic('<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5"/>'),
+  trabajo: ic('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 13h18"/>'),
+  pesa: ic('<path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/>'),
+  cafe: ic('<path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17M8 3v3M12 3v3"/>'),
+  tienda: ic('<path d="M3 4h2l2.5 11h11L21 7H6.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/>'),
+  hospital: ic('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/>'),
+  parque: ic('<path d="M12 21v-6"/><path d="M12 3c-4 0-6 3-6 6 0 3 2.5 6 6 6s6-3 6-6c0-3-2-6-6-6z"/>'),
+  comida: ic('<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 3c-2 2-2.5 5-2.5 8h4V3zM17.5 11v10"/>'),
+  juegos: ic('<path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 14h-4l-1 1.6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3M16 12h.01M18 13.5h.01"/>'),
+  corazon: ic('<path d="M12 20s-7-4.3-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.7-7 10-7 10z"/>'),
+  mano: ic('<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11M11 10V4.5a1.5 1.5 0 0 1 3 0V11M14 10.5V6a1.5 1.5 0 0 1 3 0v8a7 7 0 0 1-7 7 6 6 0 0 1-5-3l-2.5-4a1.5 1.5 0 0 1 2.5-1.6L8 15"/>'),
+  lapiz: ic('<path d="M4 20l1-4.5L15.5 5a2.1 2.1 0 0 1 3 3L8 18.5z"/><path d="M13.5 7l3.5 3.5"/>'),
+  deshacer: ic('<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/>'),
+  listo: ic('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+  cerrar: ic('<path d="M6 6l12 12M18 6L6 18"/>'),
+  trofeo: ic('<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/>'),
+  candado: ic('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
+  pastel: ic('<path d="M4 20h16v-7H4z"/><path d="M4 16c2 1.2 4 1.2 6 0s4-1.2 6 0 3 .8 4 0M12 13V9M12 6.5v.01"/>'),
+  estrella: ic('<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'),
+  carta: ic('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'),
+  calendario: ic('<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/>'),
+  obra: ic('<path d="M3 20h18M5 20l3-9h8l3 9M9.5 11l1-3h3l1 3"/>'),
+};
+// La carita de caca (para llenar su tarjeta, una por cada vez).
+const CACA = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4c1.5 2 1 3.5-.5 4.5 4 0 6 1.8 5.5 4.2 3 .3 4.5 2.3 4 4.8 2.8.7 4 2.7 3.5 5C28 26 25 28 16 28S4 26 3.5 22.5C3 20.2 4.2 18.2 7 17.5c-.5-2.5 1-4.5 4-4.8-.5-2.4 1.5-4.2 5-4.2z" fill="#a0673f"/><path d="M9 14.5c2.2.8 4.8.9 7.4.3M7.6 19.6c3.4 1 7.8 1.1 11.6.2" stroke="#8a5432" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="12.5" cy="21.5" r="1.5" fill="#3a2218"/><circle cx="19.5" cy="21.5" r="1.5" fill="#3a2218"/><path d="M14 24.3c1.2.9 2.8.9 4 0" stroke="#3a2218" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>';
+const CORAZON_LLENO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-4.9-8-11.2A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 8 2.8C20 16.1 12 21 12 21z" fill="currentColor"/></svg>';
 const LLENO_EN = 50;   // a los 50 «te amo» el corazón queda llenito (y sigue contando)
 const CORAZON_LL = '<svg viewBox="0 0 100 92" aria-hidden="true"><path d="M50 88C22 68 4 51 4 29 4 14 16 4 29 4c9 0 16 5 21 12C55 9 62 4 71 4c13 0 25 10 25 25 0 22-18 39-46 59z"/></svg>';
 const CALENDARIO = svg('<rect x="5" y="7" width="22" height="20" rx="4"/><path d="M5 13h22M11 4.5v5M21 4.5v5"/><path d="M16 23.4s-4-2.4-4-5a2 2 0 0 1 4-1 2 2 0 0 1 4 1c0 2.6-4 5-4 5z" fill="currentColor" fill-opacity=".25"/>');
@@ -87,11 +119,13 @@ const CAPA_MAPA = "editordev:mapa-capa";
 const SATELITE = svg('<circle cx="16" cy="16" r="11"/><path d="M5 16h22M16 5c3.5 3.2 5 7 5 11s-1.5 7.8-5 11c-3.5-3.2-5-7-5-11s1.5-7.8 5-11z"/>');
 const MAPA = svg('<path d="M4 8.5l8-3.5 8 3.5 8-3.5v18.5l-8 3.5-8-3.5-8 3.5z"/><path d="M12 5v18.5M20 8.5V27"/>');
 // Fase 49: cómo se mueve quien comparte, las clases de zona y el lápiz para marcarlas en el mapa.
-const MODOS = { caminando: ["🚶", "va caminando"], bici: ["🚴", "va en bici o corriendo"], auto: ["🚗", "va en auto"] };
-const CLASES = { lugar: ["📍", "Lugar", "Avisa al llegar y al salir"], aviso: ["⚠️", "Advertencia", "Avisa cuando alguien entra"], segura: ["🛡️", "Zona segura", "Avisa cuando alguien sale"] };
-const EMOJIS = ["🏠", "🏫", "💼", "🏋️", "☕", "🛒", "⛪", "🏥", "🌳", "🍔", "🎮", "💗"];
+const MODOS = { caminando: [IC.caminar, "va caminando"], bici: [IC.bici, "va en bici o corriendo"], auto: [IC.auto, "va en auto"] };
+const CLASES = { lugar: [IC.pin, "Lugar", "Avisa al llegar y al salir"], aviso: [IC.alerta, "Advertencia", "Avisa cuando alguien entra"], segura: [IC.escudo, "Zona segura", "Avisa cuando alguien sale"] };
+const LUGAR_ICOS = ["casa", "escuela", "trabajo", "pesa", "cafe", "tienda", "hospital", "parque", "comida", "juegos", "corazon", "estrella"];
+/** El dibujito de una zona: el que eligieron (o el de su clase). */
+const icoZona = (l) => IC[l.emoji] || CLASES[l.clase || "lugar"][0];
 const ESTILO_ZONA = { lugar: { color: "#ff5c93", fillColor: "#ffb3cf" }, aviso: { color: "#ff7a3d", fillColor: "#ffc29e", dashArray: "9 7" }, segura: { color: "#2fae7b", fillColor: "#9fe5c6" } };
-const LAPIZ_ZONA = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 42l2.4-10.2L33 7.2a4 4 0 0 1 5.7 0l2.1 2.1a4 4 0 0 1 0 5.7L16.2 39.6z" fill="#fff" stroke="#e5679a" stroke-width="3" stroke-linejoin="round"/><path d="M29.5 10.7l7.8 7.8" stroke="#e5679a" stroke-width="3"/><path d="M6 42l2.4-10.2 7.8 7.8z" fill="#ff8fb8"/><circle cx="6" cy="42" r="2.6" fill="#e5679a"/></svg>';
+const LAPIZ_ZONA = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 42l2.4-10.2L33 7.2a4 4 0 0 1 5.7 0l2.1 2.1a4 4 0 0 1 0 5.7L16.2 39.6z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M29.5 10.7l7.8 7.8" stroke="#e9e3e7" stroke-width="2.5"/><path d="M6 42l2.4-10.2 7.8 7.8z" fill="#f3eef1"/><circle cx="6" cy="42" r="2.4" fill="#8b7a85"/></svg>';
 /** El modo de alguien (si su ubicación es de hace rato, ya no cuenta: está quieto). */
 const modoDe = (u) => (u && MODOS[u.modo] && Date.now() - new Date(u.t) < 6 * 60000 ? u.modo : "");
 const CORAZON_PIN = svg('<path d="M16 28s-8.5-7.6-8.5-14.3a8.5 8.5 0 0 1 17 0C24.5 20.4 16 28 16 28z"/><path d="M16 18.2s-3.4-2-3.4-4.2a1.7 1.7 0 0 1 3.4-.9 1.7 1.7 0 0 1 3.4.9c0 2.2-3.4 4.2-3.4 4.2z" fill="currentColor"/>');
@@ -304,9 +338,9 @@ export class Juntitos {
     this.vista.replaceChildren(el("div.jt-pronto-pag", {}, [
       el("div.jt-pronto-ico." + x[2], { html: k === "casita" ? CASITA : PROMESA }),
       el("h1", { text: x[1] }),
-      el("span.jt-pronto-tag", { text: "🚧 En construcción" }),
+      el("span.jt-pronto-tag", { text: "En construcción" }),
       el("p", { text: x[3] }),
-      el("p.jt-nota", { text: "La estamos construyendo con mucho amor 🛠️💗 Cuando esté lista aparecerá aquí sola, sin que tengan que hacer nada." }),
+      el("p.jt-nota", { text: "La estamos construyendo con mucho amor Cuando esté lista aparecerá aquí sola, sin que tengan que hacer nada." }),
     ]));
   }
 
@@ -361,7 +395,7 @@ export class Juntitos {
     const km = el("div.jt-km", { "aria-live": "polite" }, [el("p.jt-km-vacio", { text: "Buscando dónde están…" })]);
     // Los mensajitos rápidos: le llegan de verdad, con su sonido.
     const rapidos = el("div.jt-rapidos", { role: "group", "aria-label": "Mensajitos rápidos" }, RAP.TOQUES.map((t) => el("button.jt-rapido." + t.c, { type: "button", dataset: { t: t.id }, onClick: (ev) => this._rapido(t, ev.currentTarget) },
-      [el("span.jt-rapido-e", { text: t.e, "aria-hidden": "true" }), el("b", { text: t.n })])));
+      [el("span.jt-rapido-e", { html: t.e }), el("b", { text: t.n })])));
     const ultimos = el("ul.jt-rap-lista");
     this.sheetCuerpo.replaceChildren(
       el("div.jt-nosotros", {}, [
@@ -399,7 +433,7 @@ export class Juntitos {
       if (f === firmaRap || !ultimos.isConnected) return;
       firmaRap = f;
       ultimos.replaceChildren(...l.slice(0, 4).map((x) => { const t = RAP.toque(x.tipo); return el("li.jt-rap-item" + (x.mio ? ".mio" : ""), {}, [
-        el("span", { text: t.e, "aria-hidden": "true" }),
+        el("span.jt-rap-e", { html: t.e }),
         el("div", {}, [el("b", { text: x.mio ? t.mia : `${this.pareja} ${t.frase}` }), x.texto ? el("p", { text: x.texto }) : null]),
         el("small", { text: hace(x.t) }),
       ]); }));
@@ -415,11 +449,11 @@ export class Juntitos {
       const txt = el("textarea.jt-campo", { rows: 3, maxlength: 140, placeholder: `Escríbele algo bonito a ${this.pareja}…`, "aria-label": "Tu mensajito" });
       const cuenta = el("small.jt-cuenta", { text: "0 / 140" });
       txt.addEventListener("input", () => { cuenta.textContent = `${txt.value.length} / 140`; });
-      const mandarB = el("button.jt-btn", { type: "button", text: "Mandar 💌", onClick: async () => {
+      const mandarB = el("button.jt-btn", { type: "button", text: "Mandar", onClick: async () => {
         const v = txt.value.trim();
         if (!v) { txt.focus(); aviso("Escribe tu mensajito", 1800); return; }
         mandarB.disabled = true;
-        try { await RAP.mandar(this.app, "propio", v); this._cerrarHoja(); aviso(`Le llegó tu mensajito a ${this.pareja} 💌`, 2400); this._pintarRapidos?.(); }
+        try { await RAP.mandar(this.app, "propio", v); this._cerrarHoja(); aviso(`Le llegó tu mensajito a ${this.pareja}`, 2400); this._pintarRapidos?.(); }
         catch (e) { aviso(e.message, 3500, "error"); mandarB.disabled = false; }
       } });
       this._hoja("Un mensajito para " + this.pareja, [txt, cuenta, mandarB]);
@@ -428,8 +462,8 @@ export class Juntitos {
     if (b.disabled) return;
     b.disabled = true;
     b.classList.remove("pulso"); void b.offsetWidth; b.classList.add("pulso");
-    if (!reducido()) this._chispa(b, t.e);
-    try { await RAP.mandar(this.app, t.id); aviso(`${t.mia} a ${this.pareja} ${t.e}`, 2200); this._pintarRapidos?.(); }
+    if (!reducido()) this._chispa(b, "♥");
+    try { await RAP.mandar(this.app, t.id); aviso(`${t.mia} a ${this.pareja}`, 2200); this._pintarRapidos?.(); }
     catch (e) { aviso(e.message, 3500, "error"); }
     finally { setTimeout(() => { b.disabled = false; }, 700); }
   }
@@ -488,12 +522,12 @@ export class Juntitos {
     const suyo = [p.extrano.hoy ? `te extrañó ${p.extrano.hoy === 1 ? "una vez" : p.extrano.hoy + " veces"}` : "", p.teamo.hoy ? `te dijo «te amo» ${p.teamo.hoy === 1 ? "una vez" : p.teamo.hoy + " veces"}` : ""].filter(Boolean);
     this.cartas = new Map();
     // (Fase 49: en lugar de «Notas», el marcador del amor: quién dijo más «te amo» hoy.)
-    this.accion.replaceChildren(el("button.jt-accion-b", { type: "button", onClick: () => this._marcador() }, [el("span", { text: "🏆", "aria-hidden": "true" }), el("span", { text: "Marcador" })]));
+    this.accion.replaceChildren(el("button.jt-accion-b", { type: "button", onClick: () => this._marcador() }, [el("i", { html: IC.trofeo }), el("span", { text: "Marcador" })]));
     this.vista.replaceChildren(...[
       el("div.jt-hola", {}, [el("h1", { text: "Cositas Juntitos" }), el("p", { text: "Selecciona qué hacer con tu pareja o amiga/o" })]),
-      suyo.length ? el("div.jt-suyo", {}, [el("i", { html: ICONOS.teamo }), el("span", { text: `Hoy ${nombre} ${suyo.join(" y ")} 💗` })]) : null,
+      suyo.length ? el("div.jt-suyo", {}, [el("i", { html: ICONOS.teamo }), el("span", { text: `Hoy ${nombre} ${suyo.join(" y ")}` })]) : null,
       el("div.jt-rejilla", {}, COSAS.map((c) => { const n = this._carta(c); this.cartas.set(c.t, n); return n; })),
-      el("p.jt-nota", { text: `«Te extraño» y «Te amo» le llegan a ${nombre} (con cuántos le mandaste). Lo demás es sólo tuyo, salvo que tú lo compartas (mantén presionada una tarjeta).` }),
+      el("p.jt-nota", { text: `Todo lo tuyo lo ve ${nombre} y todo lo suyo lo ves tú: así se comparan. «Te extraño» y «Te amo» le llegan al momento, con cuántos le mandaste.` }),
       // (Lo que viene, chiquito y aparte: antes vivía en la hojita del mapa.)
       el("div.jt-pronto-fila", {}, [el("small", { text: "Pronto" }), ...PRONTO.map((x) => el("button.jt-pronto-b", { type: "button", dataset: { k: x[0] }, onClick: () => this.ir(x[0]) }, [el("i", { html: x[0] === "casita" ? CASITA : PROMESA }), el("span", { text: x[1] })]))]),
     ].filter(Boolean));
@@ -503,9 +537,11 @@ export class Juntitos {
   _carta(c) {
     const b = el("button.jt-carta." + c.c + (c.meta || c.modo === "llena" ? ".con-liquido" : ""), { type: "button", dataset: { t: c.t } }, [
       c.meta || c.modo === "llena" ? el("i.jt-carta-liquido", { "aria-hidden": "true" }) : null,
+      c.cacas ? el("i.jt-carta-cacas", { "aria-hidden": "true" }) : null,
       el("i.jt-carta-ico", { html: ICONOS[c.t] }),
       el("b.jt-carta-n", { text: c.n }),
       el("span.jt-carta-num"),
+      el("span.jt-carta-vs"),
       el("span.jt-carta-ac"),
     ]);
     let largo = 0, hizoLargo = false;
@@ -523,17 +559,12 @@ export class Juntitos {
     if (!b || !m) return;
     const num = b.querySelector(".jt-carta-num"), ac = b.querySelector(".jt-carta-ac");
     if (c.modo === "si") {
-      num.replaceChildren(el("b", { text: m.hoy ? "¡Sí! ✓" : "Todavía no" }), el("small", { text: m.racha ? `${m.racha} ${m.racha === 1 ? "día" : "días"} seguidos` : "Sin racha" }));
+      num.replaceChildren(el("b", { text: m.hoy ? "¡Sí!" : "Todavía no" }), el("small", { text: m.racha ? `${m.racha} ${m.racha === 1 ? "día" : "días"} seguidos` : "Sin racha" }));
       ac.textContent = m.hoy ? "Tocar si no" : "Ya me duché";
       b.classList.toggle("hecho", !!m.hoy);
-    } else if (c.modo === "enojo") {
-      const e = ENOJOS[(m.nivel || 0) - 1];
-      num.replaceChildren(el("b", { text: e ? e[0] : "😌" }), el("small", { text: e ? `${e[1]} · ${m.hoy} hoy` : "Hoy en paz" }));
-      ac.textContent = "Medir";
-      b.style.setProperty("--lleno", String((m.nivel || 0) / 5));
     } else if (c.meta) {
       // Se llena poco a poco: el pis con 5, el agua con 14 vasitos.
-      num.replaceChildren(el("b", { text: `${m.hoy}/${c.meta}` }), el("small", { text: m.hoy >= c.meta ? "¡Lleno! ✨" : `${c.t === "agua" ? "vasitos" : "veces"} hoy · ${m.total} en total` }));
+      num.replaceChildren(el("b", { text: `${m.hoy}/${c.meta}` }), el("small", { text: m.hoy >= c.meta ? "¡Lleno!" : `${c.t === "agua" ? "vasitos" : "veces"} hoy · ${m.total} en total` }));
       ac.textContent = "+1";
       b.style.setProperty("--lleno", String(Math.min(1, m.hoy / c.meta)));
       b.classList.toggle("lleno", m.hoy >= c.meta);
@@ -542,22 +573,30 @@ export class Juntitos {
       ac.textContent = c.modo === "llena" ? "Mantener" : c.modo === "escribe" ? "Escribir" : "+1";
       if (c.modo === "llena") b.style.setProperty("--lleno", String(Math.min(1, m.hoy / LLENO_EN)));
     }
+    // Lo de tu amorcito, al lado, para comparar.
+    const su = this.d?.pareja?.[c.t];
+    b.querySelector(".jt-carta-vs").replaceChildren(...(su ? [PF.avatar("pareja", "jt-av-mini"), el("span", { text: c.modo === "si" ? (su.hoy ? `${this.pareja}: sí` : `${this.pareja}: todavía no`) : `${this.pareja}: ${su.hoy} hoy` })] : []));
+    // La de caca se llena de caquitas (una por cada vez de hoy, hasta 24).
+    const cacas = b.querySelector(".jt-carta-cacas");
+    if (cacas && cacas.childElementCount !== Math.min(24, m.hoy)) {
+      const n = Math.min(24, m.hoy);
+      while (cacas.childElementCount > n) cacas.lastChild.remove();
+      while (cacas.childElementCount < n) { const k = cacas.childElementCount; cacas.append(el("i", { html: CACA, style: { "--r": ((k * 37) % 50 - 25) + "deg", "--d": (k * 0.04).toFixed(2) + "s" } })); }
+    }
     b.setAttribute("aria-label", `${c.n}: ${c.modo === "si" ? (m.hoy ? "sí" : "todavía no") : `${m.hoy} hoy, ${m.total} en total`}. ${ac.textContent}`);
   }
 
   async _usar(c, b) {
     if (c.modo === "escribe") { this._escribir(c); return; }
     if (c.modo === "llena") { this._llenar(c); return; }
-    if (c.modo === "enojo") { this._enojo(c); return; }
     b.classList.add("pulso");
     setTimeout(() => b.classList.remove("pulso"), 520);
-    if (!reducido() && c.modo !== "si") this._chispa(b, c.modo === "manda" ? "💗" : "+1");
+    if (!reducido() && c.modo !== "si") this._chispa(b, "+1");
     try {
       const r = await SRV.cosita(c.t);
       if (r.id) (this.ultimos[c.t] = this.ultimos[c.t] || []).push(r.id);
       this.d.mias = r.resumen;
       this._pintarCarta(c);
-      if (c.modo === "manda") aviso(c.t === "extrano" ? `Le llegó a ${this.pareja}: te extraña 🥺` : `Le dijiste «te amo» a ${this.pareja} 💗`, 2200);
     } catch (e) { aviso(e.message, 3500, "error"); }
   }
 
@@ -572,7 +611,7 @@ export class Juntitos {
   _detalle(c) {
     const m = this.d?.mias?.[c.t];
     if (!m) return;
-    if (c.modo === "escribe" || c.modo === "enojo") { this._notas(c.t); return; }
+    if (c.modo === "escribe") { this._notas(c.t); return; }
     const comp = el("input", { type: "checkbox", checked: m.compartir ? "" : null });
     comp.checked = !!m.compartir;
     comp.addEventListener("change", async () => {
@@ -582,7 +621,7 @@ export class Juntitos {
     const ult = this.ultimos[c.t] || [];
     this._hoja(c.n, [
       el("p.jt-hoja-p", { text: c.modo === "si" ? `${m.hoy ? "Hoy sí" : "Hoy todavía no"} · racha de ${m.racha || 0} ${m.racha === 1 ? "día" : "días"}` : `${m.hoy} hoy · ${m.total} en total` }),
-      c.modo === "llena" ? el("p.jt-hoja-p.suave", { text: `${this.pareja} siempre ve estos (es para decírselo).` }) : el("label.jt-interruptor", {}, [comp, el("span", { text: `Que ${this.pareja} vea este contador` })]),
+      el("p.jt-hoja-p.suave", { text: `${this.pareja} ve todo lo tuyo y tú todo lo suyo.` }),
       c.modo === "cuenta" && ult.length ? el("button.jt-btn.suave", { type: "button", text: "Quitar el último que conté", onClick: async () => {
         try { await SRV.borrarCosita(ult.pop()); this._cerrarHoja(); this.ir("cositas"); } catch (e) { aviso(e.message, 3500, "error"); }
       } }) : null,
@@ -610,7 +649,8 @@ export class Juntitos {
     };
     const burbuja = () => {
       if (reducido() || caja.childElementCount > 26) return;
-      const x = el("i.jt-ll-burbuja", { text: azul ? (Math.random() < 0.5 ? "💙" : "🥺") : (Math.random() < 0.5 ? "❤️" : "💗") });
+      const x = el("i.jt-ll-burbuja", { html: CORAZON_LLENO });
+      x.style.setProperty("--s", (0.7 + Math.random() * 0.6).toFixed(2));
       x.style.left = (20 + Math.random() * 60).toFixed(0) + "%";
       x.style.setProperty("--x", (Math.random() * 60 - 30).toFixed(0) + "px");
       caja.append(x);
@@ -637,13 +677,13 @@ export class Juntitos {
         try {
           const r = await SRV.cosita(c.t, { n: k });
           this.d.mias = r.resumen; this._pintarCarta(c);
-          estado.textContent = azul ? `Le llegaron tus ${k} «te extraño» 💙` : `Le llegaron tus ${k} «te amo» ❤️`;
+          estado.textContent = azul ? `Le llegaron tus ${k} «te extraño»` : `Le llegaron tus ${k} «te amo»`;
           caja.querySelector(".jt-ll-hoy").textContent = `Hoy ya van ${r.resumen[c.t].hoy}`;
           caja.classList.remove("volo"); void caja.offsetWidth; caja.classList.add("volo");
         } catch (e) { estado.textContent = e.message; pendiente += k; }
       });
     };
-    const bajar = (e) => { e.preventDefault(); if (apretado) return; apretado = true; clearTimeout(tEnvio); t0 = performance.now(); siguiente = t0; cora.classList.add("apretado"); estado.textContent = "¡Sigue, sigue! 💞"; raf = requestAnimationFrame(latir); try { cora.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } };
+    const bajar = (e) => { e.preventDefault(); if (apretado) return; apretado = true; clearTimeout(tEnvio); t0 = performance.now(); siguiente = t0; cora.classList.add("apretado"); estado.textContent = "¡Sigue, sigue!"; raf = requestAnimationFrame(latir); try { cora.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } };
     const subir = () => { if (!apretado) return; apretado = false; cancelAnimationFrame(raf); cora.classList.remove("apretado"); estado.textContent = pendiente ? "Soltaste… (si vuelves a apretar, se suman)" : estado.textContent; clearTimeout(tEnvio); tEnvio = setTimeout(mandar, 900); };
     cora.addEventListener("pointerdown", bajar);
     for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) cora.addEventListener(t, subir);
@@ -657,60 +697,27 @@ export class Juntitos {
     vigila.observe(this.hojaEl, { attributes: true, attributeFilter: ["class"], childList: true });
   }
 
-  /** El enojómetro: qué tan enojado (de 😒 a 🌋), qué pasó (si quieres) y si se lo compartes. */
-  _enojo(c) {
-    let nivel = 0;
-    const termo = el("div.jt-termo", { "aria-hidden": "true" }, [el("i.jt-termo-lleno")]);
-    const caras = el("div.jt-caras", { role: "radiogroup", "aria-label": "Qué tan enojado" }, ENOJOS.map(([e, t], i) => el("button.jt-cara", { type: "button", role: "radio", "aria-label": t, onClick: () => poner(i + 1) }, [el("span", { text: e }), el("small", { text: t })])));
-    const titulo = el("b.jt-enojo-t", { text: "¿Qué tan enojado estás?" });
-    const caja = el("div.jt-enojo", {}, [titulo, termo, caras]);
-    const poner = (k) => {
-      nivel = k;
-      caja.style.setProperty("--nivel", String(k / 5));
-      caja.dataset.nivel = String(k);
-      [...caras.children].forEach((b, i) => { b.classList.toggle("on", i + 1 === k); b.setAttribute("aria-checked", String(i + 1 === k)); });
-      titulo.textContent = `${ENOJOS[k - 1][0]} ${ENOJOS[k - 1][1]}`;
-      vibrar(4 + k * 4);
-      caja.classList.remove("tiembla"); void caja.offsetWidth; if (k >= 4 && !reducido()) caja.classList.add("tiembla");
-    };
-    const t = el("textarea.jt-campo", { rows: 3, maxlength: 600, placeholder: "¿Qué pasó? (si quieres)" });
-    const comp = el("input", { type: "checkbox" });
-    this._hoja("Enojómetro", [caja, t,
-      el("label.jt-interruptor", {}, [comp, el("span", { text: `Que ${this.pareja} lo sepa` })]),
-      el("button.jt-btn", { type: "button", text: "Guardar", onClick: async () => {
-        if (!nivel) { aviso("Elige qué tan enojado estás", 1800); return; }
-        try {
-          const r = await SRV.cosita(c.t, { nota: t.value.trim(), compartida: comp.checked, nivel });
-          this.d.mias = r.resumen; this._pintarCarta(c); this._cerrarHoja();
-          aviso(nivel >= 4 ? "Respira hondo… 🫶 ya quedó guardado" : comp.checked ? `${this.pareja} ya lo sabe` : "Guardado (sólo para ti)", 2400);
-        } catch (e) { aviso(e.message, 3500, "error"); }
-      } }),
-    ]);
-  }
-
-  /** El marcador del amor: tú contra tu amorcito, hoy (lo que cada quien comparte). */
+  /** El marcador del amor: tú contra tu amorcito, hoy, en todo. */
   async _marcador() {
     try { const n = await SRV.cositas(); this.d = { ...(this.d || {}), ...n }; } catch (e) { if (!this.d) { aviso(e.message, 3000, "error"); return; } }
-    const yo = this.d.mias || {}, el2 = this.d.pareja || {};
-    const filas = [["teamo", "❤️", "Te amo"], ["extrano", "💙", "Te extraño"], ["agua", "🥛", "Vasitos de agua"], ["pis", "💛", "Pis"], ["caca", "💩", "Caca"], ["palabrotas", "🤭", "Palabrotas"]];
-    let ptsYo = 0, ptsEl = 0;
-    const lista = filas.map(([k, e, t]) => {
-      const a = yo[k]?.hoy || 0, b = el2[k]?.hoy || 0, max = Math.max(1, a, b);
-      if (k === "teamo" || k === "extrano") { if (a > b) ptsYo++; else if (b > a) ptsEl++; }
-      const visible = k === "teamo" || k === "extrano" || el2[k]?.compartir;
-      return el("li.jt-marc", {}, [
-        el("span.jt-marc-e", { text: e }),
-        el("div.jt-marc-b", {}, [el("small", { text: t }),
-          el("div.jt-marc-barra.yo", { style: { "--v": String(a / max) } }, [el("i"), el("b", { text: String(a) })]),
-          el("div.jt-marc-barra.el", { style: { "--v": visible ? String(b / max) : "0" } }, [el("i"), el("b", { text: visible ? String(b) : "🔒" })])]),
+    const yo = this.d.mias || {}, su = this.d.pareja || {};
+    let ptsYo = 0, ptsSu = 0;
+    const lista = COSAS.map((c) => {
+      const a = yo[c.t]?.hoy || 0, b = su[c.t]?.hoy || 0, max = Math.max(1, a, b);
+      if (c.modo === "llena") { if (a > b) ptsYo++; else if (b > a) ptsSu++; }
+      return el("li.jt-marc." + c.c, {}, [
+        el("i.jt-marc-e", { html: ICONOS[c.t] }),
+        el("div.jt-marc-b", {}, [el("small", { text: c.n }),
+          el("div.jt-marc-barra.yo", { style: { "--v": String(a / max) } }, [el("i"), el("b", { text: c.modo === "si" ? (a ? "sí" : "no") : String(a) })]),
+          el("div.jt-marc-barra.el", { style: { "--v": String(b / max) } }, [el("i"), el("b", { text: c.modo === "si" ? (b ? "sí" : "no") : String(b) })])]),
       ]);
     });
-    const corona = ptsYo > ptsEl ? "¡Hoy vas ganando tú! 👑" : ptsEl > ptsYo ? `¡Hoy va ganando ${this.pareja}! 👑` : "¡Empate de amor! 💞";
+    const corona = ptsYo > ptsSu ? "¡Hoy vas ganando tú!" : ptsSu > ptsYo ? `¡Hoy va ganando ${this.pareja}!` : "¡Empate de amor!";
     this._hoja("Marcador del amor", [
-      el("div.jt-marc-cab", {}, [PF.avatar("yo", "jt-av"), el("b", { text: corona }), PF.avatar("pareja", "jt-av")]),
+      el("div.jt-marc-cab", {}, [PF.avatar("yo", "jt-av"), el("div.jt-marc-t", {}, [el("i", { html: IC.trofeo }), el("strong", { text: corona })]), PF.avatar("pareja", "jt-av")]),
       el("div.jt-marc-ley", {}, [el("span.yo", { text: "Tú" }), el("span.el", { text: this.pareja })]),
       el("ul.jt-marc-lista", {}, lista),
-      el("p.jt-hoja-p.suave", { text: "🔒 = no lo comparte. Se reinicia cada día." }),
+      el("p.jt-hoja-p.suave", { text: "Se reinicia cada día." }),
       el("button.jt-btn", { type: "button", text: "Listo", onClick: () => this._cerrarHoja() }),
     ]);
   }
@@ -750,7 +757,7 @@ export class Juntitos {
     const sig = d.siguiente ? new Date(d.siguiente + "T12:00:00") : null;
     const hoy0 = new Date(); hoy0.setHours(12, 0, 0, 0);
     const faltan = sig ? Math.max(0, Math.round((sig - hoy0) / 86400000)) : 0;
-    if (sig) this.accion.replaceChildren(el("span.jt-accion-pill", { text: faltan === 0 ? "¡Hoy cumplen! 💗" : `Faltan ${faltan} ${faltan === 1 ? "día" : "días"}` }));
+    if (sig) this.accion.replaceChildren(el("span.jt-accion-pill", { text: faltan === 0 ? "¡Hoy cumplen!" : `Faltan ${faltan} ${faltan === 1 ? "día" : "días"}` }));
     this.vista.replaceChildren(
       this._mesAnillo(d, faltan),
       this._cumples(),
@@ -773,7 +780,7 @@ export class Juntitos {
       el("div.jt-anillo", {}, [el("i", { html: anillo }), el("div.jt-anillo-n", {}, [el("b", { text: String(d.meses) }), el("small", { text: d.meses === 1 ? "mes" : "meses" })])]),
       el("div.jt-m-hero-t", {}, [
         el("small", { text: "Llevan juntitos" }),
-        el("b", { text: faltan === 0 && d.meses ? `¡Hoy cumplen ${d.meses} ${d.meses === 1 ? "mes" : "meses"}! 💗` : `${d.meses} ${d.meses === 1 ? "mes" : "meses"} y ${va} ${va === 1 ? "día" : "días"}` }),
+        el("b", { text: faltan === 0 && d.meses ? `¡Hoy cumplen ${d.meses} ${d.meses === 1 ? "mes" : "meses"}!` : `${d.meses} ${d.meses === 1 ? "mes" : "meses"} y ${va} ${va === 1 ? "día" : "días"}` }),
         d.siguiente ? el("p", { text: faltan === 0 ? `El siguiente: ${fechaLarga(mesDe(d.novios, d.meses + 1))}` : `Su mes ${d.meses + 1}: ${fechaLarga(d.siguiente)} · faltan ${faltan} ${faltan === 1 ? "día" : "días"}` }) : null,
       ]),
     ]);
@@ -783,10 +790,10 @@ export class Juntitos {
   _cumples() {
     const D = PF.datos(), filas = [];
     const una = (quien, p, nombre) => {
-      if (!p?.cumple) return el("div.jt-cumple.vacio", {}, [el("i", { text: "🎂", "aria-hidden": "true" }), el("div", {}, [el("b", { text: quien === "yo" ? "Tu cumpleaños" : `Cumpleaños de ${nombre}` }), el("small", { text: quien === "yo" ? "Ponlo en tu perfil" : `${nombre} todavía no lo pone en su perfil` })])]);
+      if (!p?.cumple) return el("div.jt-cumple.vacio", {}, [el("i", { html: IC.pastel }), el("div", {}, [el("b", { text: quien === "yo" ? "Tu cumpleaños" : `Cumpleaños de ${nombre}` }), el("small", { text: quien === "yo" ? "Ponlo en tu perfil" : `${nombre} todavía no lo pone en su perfil` })])]);
       const c = PF.cumpleDe(p.cumple);
       return el("div.jt-cumple" + (c.hoy ? ".hoy" : ""), {}, [
-        el("i", { text: c.hoy ? "🥳" : "🎂", "aria-hidden": "true" }),
+        el("i", { html: c.hoy ? IC.estrella : IC.pastel }),
         el("div", {}, [el("b", { text: quien === "yo" ? "Tu cumpleaños" : `Cumpleaños de ${nombre}` }), el("small", { text: `${c.fecha}${c.hoy ? ` · ¡hoy cumple${quien === "yo" ? "s" : ""} ${c.anios}!` : ` · faltan ${c.dias} ${c.dias === 1 ? "día" : "días"}`}` })]),
       ]);
     };
@@ -828,7 +835,7 @@ export class Juntitos {
     };
     const pasados = [...new Set(d.momentos.filter((x) => x.mes < mes).map((x) => x.mes))].sort((a, b) => b - a);
     return el("section.jt-m-cosa.momento", {}, [
-      el("div.jt-m-cosa-cab", {}, [el("i", { text: "✨", "aria-hidden": "true" }), el("div", {}, [el("b", { text: "Nuestro momento del mes" }), el("small", { text: `Lo más bonito de su mes ${mes}, cada quien el suyo` })])]),
+      el("div.jt-m-cosa-cab", {}, [el("i", { html: IC.estrella }), el("div", {}, [el("b", { text: "Nuestro momento del mes" }), el("small", { text: `Lo más bonito de su mes ${mes}, cada quien el suyo` })])]),
       el("div.jt-momentos", {}, [lado(true), lado(false)]),
       el("button.jt-btn.chico", { type: "button", text: de(true) ? "Cambiar el mío" : "Elegir el mío", onClick: () => this._editarMomento(mes, de(true)) }),
       pasados.length ? el("details.jt-pasados", {}, [el("summary", { text: `Momentos de otros meses (${pasados.length})` }), ...pasados.map((n) => el("div.jt-pasado", {}, [el("b", { text: `Mes ${n}` }),
@@ -837,7 +844,7 @@ export class Juntitos {
   }
 
   _editarMomento(mes, m) {
-    const t = el("textarea.jt-campo", { rows: 3, maxlength: 280, placeholder: "Ese día que… 💭", "aria-label": "Tu momento favorito" });
+    const t = el("textarea.jt-campo", { rows: 3, maxlength: 280, placeholder: "Ese día que…", "aria-label": "Tu momento favorito" });
     t.value = m?.texto || "";
     let corazones = m?.corazones || 5, foto = m?.foto || "";
     const cor = el("div.jt-cor-elegir", { role: "radiogroup", "aria-label": "¿Cuánto lo amaste?" });
@@ -851,7 +858,7 @@ export class Juntitos {
     const b = el("button.jt-btn", { type: "button", text: "Guardar mi momento", onClick: async () => {
       if (!t.value.trim()) { t.focus(); aviso("Cuéntalo en unas palabritas", 1800); return; }
       b.disabled = true;
-      try { const r = await SRV.ponerMomento(mes, { texto: t.value, corazones, foto }); this.mes = { ...this.mes, ...r }; this._cerrarHoja(); aviso(m ? "Listo, quedó tu momento ✨" : `¡Tu momento quedó! A ${this.pareja} le llega el aviso ✨`, 2600); this.ir("mesecitos"); }
+      try { const r = await SRV.ponerMomento(mes, { texto: t.value, corazones, foto }); this.mes = { ...this.mes, ...r }; this._cerrarHoja(); aviso(m ? "Listo, quedó tu momento" : `¡Tu momento quedó! A ${this.pareja} le llega el aviso`, 2600); this.ir("mesecitos"); }
       catch (e) { aviso(e.message, 3500, "error"); b.disabled = false; }
     } });
     this._hoja(`Tu momento del mes ${mes}`, [t, el("small.jt-et", { text: "¿Cuánto lo amaste?" }), cor, el("small.jt-et", { text: "Una fotito (si quieres)" }), fotoCaja, b]);
@@ -863,12 +870,12 @@ export class Juntitos {
     const mia = d.capsulas.find((x) => x.mes === mes && x.mio), suya = d.capsulas.find((x) => x.mes === mes && !x.mio);
     const abiertas = d.capsulas.filter((x) => x.abierta && !x.mio).sort((a, b) => b.mes - a.mes);
     const sobre = (x, tuyo) => el("div.jt-sobre" + (x ? ".lleno" : ""), {}, [
-      el("i", { text: x ? "💌" : "✉️", "aria-hidden": "true" }),
-      el("div", {}, [el("b", { text: tuyo ? (x ? "Tu cápsula está guardada" : "Todavía no guardas la tuya") : x ? `${this.pareja} te guardó una 🔒` : `${this.pareja} todavía no guarda la suya` }),
+      el("i", { html: IC.carta }),
+      el("div", {}, [el("b", { text: tuyo ? (x ? "Tu cápsula está guardada" : "Todavía no guardas la tuya") : x ? `${this.pareja} te guardó una` : `${this.pareja} todavía no guarda la suya` }),
         el("small", { text: x ? `Se abre el ${abre}` : tuyo ? "Escríbele algo para leerlo ese día" : "" })]),
     ]);
     return el("section.jt-m-cosa.capsula", {}, [
-      el("div.jt-m-cosa-cab", {}, [el("i", { text: "💌", "aria-hidden": "true" }), el("div", {}, [el("b", { text: "Cápsula del tiempo" }), el("small", { text: `Una cartita que nadie puede leer hasta su mes ${mes}` })])]),
+      el("div.jt-m-cosa-cab", {}, [el("i", { html: IC.carta }), el("div", {}, [el("b", { text: "Cápsula del tiempo" }), el("small", { text: `Una cartita que nadie puede leer hasta su mes ${mes}` })])]),
       sobre(mia, true), sobre(suya, false),
       el("div.jt-botones.izq", {}, [
         el("button.jt-btn.chico", { type: "button", text: mia ? "Cambiar la mía" : "Escribir la mía", onClick: () => this._editarCapsula(mes, mia, abre) }),
@@ -882,10 +889,10 @@ export class Juntitos {
   _editarCapsula(mes, x, abre) {
     const t = el("textarea.jt-campo", { rows: 6, maxlength: 2000, placeholder: `Querido/a ${this.pareja}: cuando leas esto…`, "aria-label": "Tu cápsula" });
     t.value = x?.texto || "";
-    const b = el("button.jt-btn", { type: "button", text: "Sellar la cápsula 💌", onClick: async () => {
+    const b = el("button.jt-btn", { type: "button", text: "Sellar la cápsula", onClick: async () => {
       if (!t.value.trim()) { t.focus(); aviso("Escribe algo para guardarlo", 1800); return; }
       b.disabled = true;
-      try { await SRV.ponerCapsula(mes, t.value); this._cerrarHoja(); aviso(x ? "Cápsula cambiada (sigue sellada)" : `¡Sellada! ${this.pareja} la podrá leer el ${abre} 💌`, 3000); this.ir("mesecitos"); }
+      try { await SRV.ponerCapsula(mes, t.value); this._cerrarHoja(); aviso(x ? "Cápsula cambiada (sigue sellada)" : `¡Sellada! ${this.pareja} la podrá leer el ${abre}`, 3000); this.ir("mesecitos"); }
       catch (e) { aviso(e.message, 3500, "error"); b.disabled = false; }
     } });
     this._hoja(`Cápsula para su mes ${mes}`, [el("p.jt-hoja-p.suave", { text: `Nadie la puede leer antes del ${abre} (ni ${this.pareja}). Ese día se abre sola.` }), t, b]);
@@ -917,7 +924,7 @@ export class Juntitos {
     };
     campo.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); anadir(); } });
     return el("section.jt-m-cosa.planes", {}, [
-      el("div.jt-m-cosa-cab", {}, [el("i", { text: "🗓️", "aria-hidden": "true" }), el("div", {}, [el("b", { text: `Planes para su mes ${mes}` }), el("small", { text: "Lo que quieren hacer para celebrarlo" })])]),
+      el("div.jt-m-cosa-cab", {}, [el("i", { html: IC.calendario }), el("div", {}, [el("b", { text: `Planes para su mes ${mes}` }), el("small", { text: "Lo que quieren hacer para celebrarlo" })])]),
       lista,
       el("div.jt-plan-nuevo", {}, [campo, el("button.jt-btn.chico", { type: "button", text: "Añadir", onClick: anadir })]),
     ]);
@@ -944,7 +951,7 @@ export class Juntitos {
           const pg = await SRV.ponerMesecito(n, { titulo: titulo.value, texto: texto.value, fotos, tema });
           this._cerrarHoja();
           if (this.tab === "mesecitos") this.ir("mesecitos");   // (su fotito ya se ve en la tira al cerrar la carta)
-          aviso(p ? "Listo, quedó guardada" : `¡Su página del mes ${n} quedó lista! A ${this.pareja} le llega el aviso 💗`, 3200);
+          aviso(p ? "Listo, quedó guardada" : `¡Su página del mes ${n} quedó lista! A ${this.pareja} le llega el aviso`, 3200);
           this._verMes(pg);
         } catch (e) { aviso(e.message, 4000, "error"); ev.currentTarget.disabled = false; }
       } }),
@@ -1027,13 +1034,13 @@ export class Juntitos {
     const persona = (quien, nom, u) => { const mv = modoDe(u); return el("div.jt-persona." + quien + (mv ? ".mueve" : ""), {}, [
       PF.avatar(quien === "yo" ? "yo" : "pareja", "jt-av"),
       el("div", {}, [el("b", { text: nom }), el("small", { text: !u ? (quien === "yo" ? "No compartes tu ubicación" : `${this.pareja} no está compartiendo su ubicación`)
-        : mv ? `${MODOS[mv][0]} ${quien === "yo" ? MODOS[mv][1].replace(/^va/, "vas") : MODOS[mv][1]}${u.vel ? ` · ${Math.round(u.vel * 3.6)} km/h` : ""} · ${hace(u.t)}` : `Ahí desde ${hace(u.desde)} · actualizada ${hace(u.t)}` })]),
-      mv ? el("span.jt-persona-modo", { text: MODOS[mv][0], "aria-hidden": "true" }) : null,
+        : mv ? `${quien === "yo" ? MODOS[mv][1].replace(/^va/, "vas") : MODOS[mv][1]}${u.vel ? ` · ${Math.round(u.vel * 3.6)} km/h` : ""} · ${hace(u.t)}` : `Ahí desde ${hace(u.desde)} · actualizada ${hace(u.t)}` })]),
+      mv ? el("span.jt-persona-modo", { html: MODOS[mv][0] }) : null,
     ]); };
     E.gente.replaceChildren(persona("pareja", this.pareja, d.pareja), persona("yo", "Tú", d.yo));
     this._pintarMov(d.pareja);
     E.lugares.replaceChildren(...(d.lugares.length ? d.lugares.map((l) => el("li.jt-lugar." + (l.clase || "lugar"), {}, [
-      el("i.jt-lugar-pin", { text: l.emoji || CLASES[l.clase || "lugar"][0], "aria-hidden": "true" }),
+      el("i.jt-lugar-pin", { html: icoZona(l) }),
       el("button.jt-lugar-t", { type: "button", "aria-label": `Editar «${l.nombre}»`, onClick: () => this._formLugar({ lat: l.lat, lng: l.lng }, l) }, [el("b", { text: l.nombre }), el("small", { text: `${CLASES[l.clase || "lugar"][1]} · ${l.zona ? "zona marcada" : Math.round(l.radio) + " m"} · avisa ${{ yo: "a quien llega o se va", pareja: "a su pareja", ambos: "a los dos" }[l.avisar] || ""}` })]),
       (() => { const c = el("input", { type: "checkbox", "aria-label": "Avisos de este lugar" }); c.checked = l.alertas; c.addEventListener("change", () => SRV.editarLugar(l.id, { alertas: c.checked }).then(() => aviso(c.checked ? "Avisos encendidos" : "Avisos apagados", 1600)).catch((e) => { c.checked = !c.checked; aviso(e.message, 3000, "error"); })); return el("label.jt-mini-int", { title: "Avisos" }, [c, el("span", { text: "Avisos" })]); })(),
       el("button.jt-icono", { type: "button", "aria-label": `Quitar «${l.nombre}»`, html: ico("borrar"), onClick: async () => { if (await confirmar(`¿Quitar «${l.nombre}»?`, "Quitar")) { await SRV.borrarLugar(l.id).catch((e) => aviso(e.message, 3000, "error")); this._refrescarMapa(); } } }),
@@ -1055,7 +1062,7 @@ export class Juntitos {
     for (const l of d.lugares) {
       const st = { ...ESTILO_ZONA[l.clase || "lugar"], weight: 2.5, fillOpacity: 0.2, lineJoin: "round" };
       (l.zona ? L.polygon(l.zona, { ...st, smoothFactor: 1.2 }) : L.circle([l.lat, l.lng], { ...st, radius: l.radio })).addTo(capas).bindTooltip(l.nombre);
-      L.marker([l.lat, l.lng], { icon: L.divIcon({ className: "jt-zona-ico " + (l.clase || "lugar"), html: `<span>${(l.emoji || CLASES[l.clase || "lugar"][0]).replace(/[<>&"]/g, "")}</span>`, iconSize: [30, 30], iconAnchor: [15, 15] }), interactive: false, keyboard: false }).addTo(capas);
+      L.marker([l.lat, l.lng], { icon: L.divIcon({ className: "jt-zona-ico " + (l.clase || "lugar"), html: `<span>${icoZona(l)}</span>`, iconSize: [30, 30], iconAnchor: [15, 15] }), interactive: false, keyboard: false }).addTo(capas);
       puntos.push([l.lat, l.lng]);
     }
     if (d.yo) marcador("yo", d.yo);
@@ -1063,7 +1070,7 @@ export class Juntitos {
     // Los dos a la vista: un hilito entre ustedes y a cuánto están.
     if (d.yo && d.pareja) {
       L.polyline([[d.yo.lat, d.yo.lng], [d.pareja.lat, d.pareja.lng]], { color: "#ff8fbf", weight: 3, opacity: 0.9, dashArray: "2 9", lineCap: "round", interactive: false }).addTo(capas);
-      E.dist.textContent = `💞 a ${textoDistancia(kmEntre(d.yo, d.pareja))} de ${this.pareja}`;
+      E.dist.textContent = `A ${textoDistancia(kmEntre(d.yo, d.pareja))} de ${this.pareja}`;
       E.dist.hidden = false;
     } else E.dist.hidden = true;
     // Al abrir, primero tu amorcito (luego tú); «Ver a los dos» enseña a los dos y sus zonas.
@@ -1088,7 +1095,7 @@ export class Juntitos {
       caja._k = k;
       caja.replaceChildren(
         el("div.jt-km-dibujo", { "aria-hidden": "true" }, [PF.avatar("yo", "jt-av"), el("i.jt-km-hilo", {}, [el("b", { text: "♥" })]), PF.avatar("pareja", "jt-av")]),
-        el("div.jt-km-t", {}, [el("small", { text: cerca ? "¡Están juntitos!" : "Estamos a" }), el("b", { text: cerca ? "💞 aquí mismo" : k }), el("small", { text: cerca ? `Tú y ${this.pareja}, en el mismo lugar` : `de distancia de ${this.pareja}` })]),
+        el("div.jt-km-t", {}, [el("small", { text: cerca ? "¡Están juntitos!" : "Estamos a" }), el("b", { text: cerca ? "aquí mismo" : k }), el("small", { text: cerca ? `Tú y ${this.pareja}, en el mismo lugar` : `de distancia de ${this.pareja}` })]),
       );
       caja.classList.toggle("juntos", cerca);
       return;
@@ -1104,7 +1111,7 @@ export class Juntitos {
     if ((this.ub?.lugares?.length || 0) >= 20) { aviso("Ya tienen 20 zonas: quita alguna para añadir otra.", 3200); return; }
     this._hoja("Añadir zona o lugar", [
       el("p.jt-hoja-p", { text: "Elige cómo marcarlo:" }),
-      el("button.jt-btn", { type: "button", text: "✏️ Marcar la zona con el lápiz", onClick: () => this._editorZona() }),
+      el("button.jt-btn", { type: "button", text: "Marcar la zona con el lápiz", onClick: () => this._editorZona() }),
       el("button.jt-btn.suave", { type: "button", text: "Tocar el centro en el mapa (círculo)", onClick: () => { this._cerrarHoja(); if (!this.mapa) { aviso("El mapa no cargó: usa tu ubicación actual.", 3000); return; } this._eligiendo = true; this._mapaEls.caja.classList.add("eligiendo"); this._hojaIr("bajo", true); aviso("Toca el mapa donde está el lugar", 2600); } }),
       el("button.jt-btn.suave", { type: "button", text: "Usar mi ubicación actual", onClick: () => {
         if (!UB.puede()) { aviso("Este navegador no da la ubicación.", 3000, "error"); return; }
@@ -1126,12 +1133,12 @@ export class Juntitos {
     const alertas = el("input", { type: "checkbox" });
     alertas.checked = l ? !!l.alertas : true;
     // La clase: un lugar avisa al llegar y salir; una advertencia, al entrar; una zona segura, al salir.
-    let clase = l?.clase || "lugar", emoji = l?.emoji || "";
+    let clase = l?.clase || "lugar", emoji = IC[l?.emoji] ? l.emoji : "";
     const pista = el("small.jt-clase-pista");
-    const clases = el("div.jt-clases", { role: "radiogroup", "aria-label": "Qué es" }, Object.entries(CLASES).map(([k, [e, t]]) => el("button.jt-clase." + k, { type: "button", role: "radio", dataset: { k }, onClick: () => ponerClase(k) }, [el("span", { text: e }), el("b", { text: t })])));
+    const clases = el("div.jt-clases", { role: "radiogroup", "aria-label": "Qué es" }, Object.entries(CLASES).map(([k, [e, t]]) => el("button.jt-clase." + k, { type: "button", role: "radio", dataset: { k }, onClick: () => ponerClase(k) }, [el("span", { html: e }), el("b", { text: t })])));
     const ponerClase = (k) => { clase = k; for (const b of clases.children) { const on = b.dataset.k === k; b.classList.toggle("on", on); b.setAttribute("aria-checked", String(on)); } pista.textContent = CLASES[k][2]; };
     ponerClase(clase);
-    const emojis = el("div.jt-emojis", { role: "radiogroup", "aria-label": "Su dibujito" }, EMOJIS.map((e) => el("button.jt-emoji" + (e === emoji ? ".on" : ""), { type: "button", text: e, "aria-label": e, onClick: (ev) => { emoji = emoji === e ? "" : e; for (const b of emojis.children) b.classList.toggle("on", b.textContent === emoji); ev.currentTarget.animate?.([{ transform: "scale(1.3)" }, { transform: "none" }], { duration: 260 }); } })));
+    const emojis = el("div.jt-emojis", { role: "radiogroup", "aria-label": "Su dibujito" }, LUGAR_ICOS.map((k) => el("button.jt-emoji" + (k === emoji ? ".on" : ""), { type: "button", html: IC[k], dataset: { k }, "aria-label": k, onClick: (ev) => { emoji = emoji === k ? "" : k; for (const b of emojis.children) b.classList.toggle("on", b.dataset.k === emoji); ev.currentTarget.animate?.([{ transform: "scale(1.25)" }, { transform: "none" }], { duration: 260 }); } })));
     const guardar = el("button.jt-btn", { type: "button", text: l ? "Guardar cambios" : "Guardar", onClick: async () => {
       if (!nombre.value.trim()) { nombre.focus(); aviso("Ponle un nombre", 1800); return; }
       guardar.disabled = true;
@@ -1139,7 +1146,7 @@ export class Juntitos {
       if (zona) datos.zona = zona; else if (!conZona) datos.radio = +radio.value;
       try {
         if (l) await SRV.editarLugar(l.id, datos); else await SRV.nuevoLugar({ ...datos, lat: pos.lat, lng: pos.lng });
-        this._cerrarHoja(); aviso(`«${nombre.value.trim()}» ${l ? "quedó como querías" : "guardado"} ${CLASES[clase][0]}`, 2000);
+        this._cerrarHoja(); aviso(`«${nombre.value.trim()}» ${l ? "quedó como querías" : "guardado"}`, 2000);
         this._refrescarMapa();
       } catch (e) { aviso(e.message, 3500, "error"); guardar.disabled = false; }
     } });
@@ -1169,7 +1176,7 @@ export class Juntitos {
     M.m.flyTo([u.lat, u.lng], 17, { duration: reducido() ? 0 : 0.9 });
   }
 
-  /** Su cartelito: «🚶 Maru va caminando · 4 km/h», con sus pasitos animados. */
+  /** Su cartelito: «Maru va caminando · 4 km/h», con su monito y sus pasitos animados. */
   _pintarMov(u) {
     const n = this.movN, mv = modoDe(u);
     if (!n) return;
@@ -1178,7 +1185,7 @@ export class Juntitos {
     n._k = k;
     n.hidden = !mv;
     n.className = "jt-mov" + (mv ? " " + mv : "");
-    if (mv) n.replaceChildren(el("span.jt-mov-e", { text: MODOS[mv][0], "aria-hidden": "true" }), el("b", { text: `${this.pareja} ${MODOS[mv][1]}` }), u.vel ? el("small", { text: `${Math.round(u.vel * 3.6)} km/h` }) : null, el("i.jt-mov-pasos", { "aria-hidden": "true" }, [el("i"), el("i"), el("i")]));
+    if (mv) n.replaceChildren(el("span.jt-mov-e", { html: MODOS[mv][0] }), el("b", { text: `${this.pareja} ${MODOS[mv][1]}` }), u.vel ? el("small", { text: `${Math.round(u.vel * 3.6)} km/h` }) : null, el("i.jt-mov-pasos", { "aria-hidden": "true" }, [el("i"), el("i"), el("i")]));
   }
 
   /**
@@ -1198,12 +1205,12 @@ export class Juntitos {
     const area = L.polygon([], { color: "#ff5c93", weight: 2, dashArray: "6 8", fillColor: "#ffb3cf", fillOpacity: 0.24, interactive: false }).addTo(m);
     const lapiz = el("i.jt-zl", { html: LAPIZ_ZONA, "aria-hidden": "true" });
     const capa = el("div.jt-zona-capa", {}, [lapiz]);
-    const b = (t, ico, al, cls = "") => el("button.jt-zona-b" + cls, { type: "button", onClick: al }, [el("span", { text: ico, "aria-hidden": "true" }), el("small", { text: t })]);
-    const moverB = b("Mover mapa", "✋", () => ponerModo(modo === "lapiz" ? "mover" : "lapiz"));
-    const deshacerB = b("Deshacer", "↶", () => { if (actual?.length) { actual = null; marca = false; } else tramos.pop(); ver(); pintar(); });
-    const listoB = b("Listo", "✓", () => listo(), ".listo");
+    const b = (t, ico, al, cls = "") => el("button.jt-zona-b" + cls, { type: "button", onClick: al }, [el("span", { html: ico }), el("small", { text: t })]);
+    const moverB = b("Mover mapa", IC.mano, () => ponerModo(modo === "lapiz" ? "mover" : "lapiz"));
+    const deshacerB = b("Deshacer", IC.deshacer, () => { if (actual?.length) { actual = null; marca = false; } else tramos.pop(); ver(); pintar(); });
+    const listoB = b("Listo", IC.listo, () => listo(), ".listo");
     const pista = el("div.jt-zona-pista", { text: "Mueve el lápiz con un dedo. Toca con otro dedo (o da un toquecito) para marcar, y otra vez para parar." });
-    const ui = el("div.jt-zona-ed", { role: "dialog", "aria-label": "Marcar zona" }, [capa, pista, el("div.jt-zona-barra", {}, [b("Cancelar", "✕", () => fin()), moverB, deshacerB, listoB])]);
+    const ui = el("div.jt-zona-ed", { role: "dialog", "aria-label": "Marcar zona" }, [capa, pista, el("div.jt-zona-barra", {}, [b("Cancelar", IC.cerrar, () => fin()), moverB, deshacerB, listoB])]);
     this.capa.append(ui);
     this.capa.classList.add("con-zona");
     const quieto = () => { m.dragging.disable(); m.touchZoom.disable(); m.doubleClickZoom.disable(); m.scrollWheelZoom.disable(); };
@@ -1214,7 +1221,7 @@ export class Juntitos {
       capa.classList.toggle("libre", k === "mover");
       moverB.classList.toggle("on", k === "mover");
       moverB.lastChild.textContent = k === "mover" ? "Lápiz" : "Mover mapa";
-      moverB.firstChild.textContent = k === "mover" ? "✏️" : "✋";
+      moverB.firstChild.innerHTML = k === "mover" ? IC.lapiz : IC.mano;
       if (k === "mover") { if (marca) alternar(); libre(); } else quieto();
     };
     const todos = () => tramos.flat().concat(actual || []);

@@ -933,7 +933,7 @@ export class Detallitos {
     pintar();
     v.hoja.append(c);
     v.hoja.classList.add("explorable");
-    v.pista.textContent = "Acércate con dos dedos: hay dibujitos adentro ✨";
+    v.pista.textContent = "Acércate con dos dedos: hay dibujitos adentro";
     let raf = 0;
     const pedir = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; pintar(); }); };
     const zoom = (f, cx, cy) => {

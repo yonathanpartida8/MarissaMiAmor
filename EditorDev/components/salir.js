@@ -92,6 +92,9 @@ export class Salida {
     if (app.pro?.abierto) { app.pro.cerrar(); return true; }
     // Con el menú principal abierto: de «Tu cuenta» o «Mi perfil» vuelve a su inicio; en su inicio, nada (pregunta si te vas).
     const mp = app.menuPrincipal;
+    // «Mis libritos» se abre encima del menú: atrás lo quita y queda el menú (Fase 50).
+    const sobre = document.querySelector(".ed-inicio.sobre-menu");
+    if (sobre) { quitarInicio(); return true; }
     if (mp?.abierto) { if (mp.vista && mp.vista !== "inicio") { mp.ir("inicio"); return true; } return false; }
     // La pantalla de crear librito (se abre desde el menú): atrás regresa al menú.
     if (document.querySelector(".ed-inicio")) { quitarInicio(); this.alMenu(); return true; }

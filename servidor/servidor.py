@@ -68,7 +68,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.21.0"
+VERSION = "1.22.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -4361,7 +4361,7 @@ def api_cositas(h, s):
     uid = s["usuario_id"]
     notas = E.db.q("SELECT * FROM cositas WHERE usuario_id=? AND tipo IN ('chismes','enojos','colapsos') ORDER BY id DESC LIMIT 60", uid)
     suyas = E.db.q("SELECT * FROM cositas WHERE usuario_id=? AND compartida=1 AND tipo IN ('chismes','enojos','colapsos') ORDER BY id DESC LIMIT 30", otro)
-    h.responder(200, {"hoy": hoy, "mias": _resumen_cositas(uid, hoy), "pareja": _resumen_cositas(otro, hoy, True),
+    h.responder(200, {"hoy": hoy, "mias": _resumen_cositas(uid, hoy), "pareja": _resumen_cositas(otro, hoy),   # (Fase 50: cada quien ve todo lo del otro)
                       "notas": [fila_cosita(c, uid) for c in notas], "de_pareja": [fila_cosita(c, uid) for c in suyas]})
 
 
@@ -4399,7 +4399,7 @@ def api_cosita(h, s):
         _COSITAS_AVISO[(uid, tipo)] = t
         quien = nombre_corto(uid)
         veces = "" if n == 1 else f" ×{n}"
-        avisar(otro, {"t": f"{quien} te extraña{veces} 🥺" if tipo == "extrano" else f"{quien} te dijo «te amo»{veces} 💗",
+        avisar(otro, {"t": f"{quien} te extraña{veces}" if tipo == "extrano" else f"{quien} te dijo «te amo»{veces}",
                       "b": ("Ábrelo y mándale un abracito." if tipo == "extrano" else "Y te lo dice de corazón.") if n == 1 else
                            (f"Te extrañó {n} veces de un jalón." if tipo == "extrano" else f"{n} «te amo» de un jalón, de corazón."), "tag": "cositas", "u": "#cositas"})
     h.responder(200, {"id": cid, "resumen": _resumen_cositas(uid, dia)})
@@ -4523,11 +4523,10 @@ def _revisar_lugares(uid, a, b, otro, lat, lng, prec):
             continue
         quien = nombre_corto(uid)
         para = {"yo": [uid], "pareja": [otro], "ambos": [uid, otro]}.get(l["avisar"], [otro])
-        ico = "⚠️" if clase == "aviso" else "🛡️" if clase == "segura" else (l["emoji"] or "📍")
         for p in para:
             sujeto = "Llegaste" if p == uid and dentro else "Saliste" if p == uid else f"{quien} llegó" if dentro else f"{quien} salió"
             cuerpo = ("Es una zona de advertencia." if clase == "aviso" else "Salió de su zona segura." if clase == "segura" else "Según la ubicación que comparte en Cositas Juntitos.")
-            avisar(p, {"t": f"{ico} {sujeto} {'a' if dentro else 'de'} «{l['nombre']}»", "b": cuerpo, "tag": f"lugar{l['id']}", "u": "#cositas-mapa"})
+            avisar(p, {"t": f"{sujeto} {'a' if dentro else 'de'} «{l['nombre']}»", "b": cuerpo, "tag": f"lugar{l['id']}", "u": "#cositas-mapa"})
 
 
 @ruta("GET", "/api/ubicacion", "sesion")
@@ -4576,7 +4575,7 @@ def api_ubicacion_poner(h, s):
     antes_modo = (ya["modo"] if ya else None) or "quieto"
     if modo != antes_modo and modo != "quieto" and time.monotonic() - _MODO_AVISO.get((uid, modo), -1e9) > 1200:
         _MODO_AVISO[(uid, modo)] = time.monotonic()
-        frase = {"caminando": "va caminando 🚶", "bici": "va en bici o corriendo 🚴", "auto": "va en auto 🚗"}[modo]
+        frase = {"caminando": "va caminando", "bici": "va en bici o corriendo", "auto": "va en auto"}[modo]
         avisar(otro, {"t": f"{nombre_corto(uid)} {frase}", "b": "Míralo en el mapa de Cositas Juntitos.", "tag": "modo", "u": "#cositas-mapa"})
     h.responder(200, {"yo": fila_ubicacion(E.db.uno("SELECT * FROM ubicaciones WHERE usuario_id=?", uid))})
 

@@ -312,7 +312,7 @@ function botonMusica() {
   b.addEventListener("click", () => {
     if (abrio || !AU) return;
     AU.ponerPref({ on: !AU.pref.on });
-    aviso(AU.pref.on ? (AU.disponible ? "Música encendida 🎶" : "No encontré MusicaDev.mp3") : "Música apagada", 1600);
+    aviso(AU.pref.on ? (AU.disponible ? "Música encendida" : "No encontré MusicaDev.mp3") : "Música apagada", 1600);
   });
 }
 
@@ -670,7 +670,7 @@ app.irAlEditor = async () => {
 
 app.inicio = async (op = {}) => {
   if (app.auto.pendiente) await app.auto.ahora();
-  pantallaInicio(app, { cerrable: !!app.estado.proyecto, a: op.a });
+  pantallaInicio(app, { cerrable: !!app.estado.proyecto || !!op.sobreMenu, a: op.a, sobreMenu: !!op.sobreMenu });
 };
 
 app.guardarYa = async () => {
@@ -858,7 +858,7 @@ app.importarCopia = async () => {
     if (!C.esCopiaDeTodo(zip)) { capa.remove(); return app.abrirArchivo(f); }
     const r = await C.restaurarTodo(zip, (x) => { t.textContent = x; });
     app.sonidos?.sonar("exito");
-    aviso(r.nuevos ? `Volvieron ${r.nuevos} ${r.nuevos === 1 ? "borrador" : "borradores"}${r.estaban ? ` (${r.estaban} ya estaban aquí)` : ""} 💗` : `Ya tenías todos los de esa copia (${r.estaban})`, 5000);
+    aviso(r.nuevos ? `Volvieron ${r.nuevos} ${r.nuevos === 1 ? "borrador" : "borradores"}${r.estaban ? ` (${r.estaban} ya estaban aquí)` : ""}` : `Ya tenías todos los de esa copia (${r.estaban})`, 5000);
     app.inicio({ a: "borradores" });
   } catch (e) { aviso("No se pudo importar: " + e.message, 5000, "error"); }
   finally { capa.remove(); }
@@ -875,7 +875,7 @@ app.copiaDeTodo = async () => {
     const dia = new Date().toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
     descargar(r.blob, `Mis libritos (copia de seguridad ${dia}).zip`);
     app.sonidos?.sonar("exito");
-    aviso(`Copia de seguridad lista: ${r.n} ${r.n === 1 ? "borrador" : "borradores"} 💗 Guárdala donde quieras.`, 5000);
+    aviso(`Copia de seguridad lista: ${r.n} ${r.n === 1 ? "borrador" : "borradores"} Guárdala donde quieras.`, 5000);
   } catch (e) { aviso("No se pudo hacer la copia: " + e.message, 5000, "error"); }
   finally { capa.remove(); }
 };

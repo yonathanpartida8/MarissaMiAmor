@@ -14,10 +14,10 @@ import { vibrar } from "../config/preferencias.js";
 import { sinMovimiento as reducido } from "./transiciones.js";
 
 export const TOQUES = [
-  { id: "besitos", n: "Besitos", e: "😘", c: "rosa", frase: "te mandó besitos", mia: "Le mandaste besitos" },
-  { id: "teamo", n: "Te amo", e: "💗", c: "lila", frase: "te dijo «te amo»", mia: "Le dijiste «te amo»" },
-  { id: "cuidate", n: "Cuídate", e: "🫶", c: "menta", frase: "te pide que te cuides", mia: "Le pediste que se cuide" },
-  { id: "propio", n: "Escribir", e: "💌", c: "durazno", frase: "te mandó un mensajito", mia: "Le mandaste un mensajito" },
+  { id: "besitos", n: "Besitos", e: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12c2.5-3.5 5-5 7-4 1 .5 1.4 1 2 1s1-.5 2-1c2-1 4.5.5 7 4-2.5 3.5-5.5 5.5-9 5.5S5.5 15.5 3 12z" fill="#ff6f9c"/><path d="M3.5 12c3 1 5.8 1.4 8.5 1.4s5.5-.4 8.5-1.4" stroke="#c2336b" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>', c: "rosa", frase: "te mandó besitos", mia: "Le mandaste besitos" },
+  { id: "teamo", n: "Te amo", e: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-4.9-8-11.2A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 8 2.8C20 16.1 12 21 12 21z" fill="#ff7fae"/><path d="M8 9.5a2.4 2.4 0 0 1 2.2-1.6" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>', c: "lila", frase: "te dijo «te amo»", mia: "Le dijiste «te amo»" },
+  { id: "cuidate", n: "Cuídate", e: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z" fill="#7fd1ae"/><path d="M12 16.5s-3.6-2.2-3.6-4.8a1.8 1.8 0 0 1 3.6-.6 1.8 1.8 0 0 1 3.6.6c0 2.6-3.6 4.8-3.6 4.8z" fill="#fff"/></svg>', c: "menta", frase: "te pide que te cuides", mia: "Le pediste que se cuide" },
+  { id: "propio", n: "Escribir", e: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13.5" rx="2.5" fill="#ffc09a"/><path d="M3.5 7.5l8.5 6 8.5-6" stroke="#fff" stroke-width="1.6" fill="none" stroke-linejoin="round"/><path d="M12 17.2s-2.4-1.5-2.4-3.2a1.2 1.2 0 0 1 2.4-.4 1.2 1.2 0 0 1 2.4.4c0 1.7-2.4 3.2-2.4 3.2z" fill="#e5679a"/></svg>', c: "durazno", frase: "te mandó un mensajito", mia: "Le mandaste un mensajito" },
 ];
 export const toque = (id) => TOQUES.find((t) => t.id === id) || TOQUES[3];
 const sonido = (id) => "toque-" + (toque(id).id);
@@ -55,9 +55,9 @@ function siguiente(app) {
   const T = toque(x.tipo), nombre = PF.nombreDe(PF.datos().pareja) || "Tu amorcito";
   app.sonidos?.sonar(sonido(x.tipo));
   vibrar(20);
-  const chispas = reducido() || document.body.classList.contains("ed-ultra") ? [] : Array.from({ length: 6 }, (_, i) => el("i.tq-chispa", { text: T.e, style: { "--i": i } }));
+  const chispas = reducido() || document.body.classList.contains("ed-ultra") ? [] : Array.from({ length: 6 }, (_, i) => el("i.tq-chispa", { html: T.e, style: { "--i": i } }));
   const n = el("button.tq-llega." + T.c, { type: "button", role: "status", "aria-live": "polite", "aria-label": `${nombre} ${T.frase}${x.texto ? ": " + x.texto : ""}. Abrir el mapa` }, [
-    el("span.tq-emoji", { text: T.e, "aria-hidden": "true" }),
+    el("span.tq-emoji", { html: T.e }),
     el("span.tq-t", {}, [el("b", { text: `${nombre} ${T.frase}` }), x.texto ? el("span.tq-txt", { text: x.texto }) : null, el("small", { text: "Toca para verlo en el mapa" })]),
     ...chispas,
   ]);
@@ -89,7 +89,7 @@ export function lugares(app, r) {
   for (const e of (r.lugares || []).slice(-2)) {
     const llega = e.tipo === "entro";
     app.sonidos?.sonar(llega ? "lugar-llega" : "lugar-sale");
-    aviso(`📍 ${e.mio ? (llega ? "Llegaste a" : "Saliste de") : `${nombre} ${llega ? "llegó a" : "salió de"}`} «${e.lugar}»`, 6000, "", { t: "Ver mapa", al: () => app.juntitos?.abrir("mapa") });
+    aviso(`${e.mio ? (llega ? "Llegaste a" : "Saliste de") : `${nombre} ${llega ? "llegó a" : "salió de"}`} «${e.lugar}»`, 6000, "", { t: "Ver mapa", al: () => app.juntitos?.abrir("mapa") });
   }
   if (r.lugares?.length) dispatchEvent(new CustomEvent("ed-lugares"));
 }

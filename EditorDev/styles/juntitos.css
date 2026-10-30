@@ -197,7 +197,7 @@
 .jt-mapa-marco .jt-mapa { height: min(54vh, 480px); margin: 0; border-radius: 0; box-shadow: none; }
 .jt-mapa.sat { background: #1d2a22; }
 .jt-mapa-ctl { position: absolute; z-index: 2; top: 12px; right: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-.jt-mapa-b { display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px 0 11px; border: 0; border-radius: 99px; background: rgba(255, 255, 255, .92); color: #3a2440; font: 600 13px/1 inherit; box-shadow: 0 4px 14px rgba(20, 10, 30, .25); cursor: pointer; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.jt-mapa-b { display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px 0 11px; border: 0; border-radius: 99px; background: rgba(255, 255, 255, .96); color: #3a2440; font: 600 13px/1 inherit; box-shadow: 0 4px 14px rgba(20, 10, 30, .25); cursor: pointer; }
 .jt-mapa-b svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .jt-mapa-b.redondo { width: 38px; padding: 0; justify-content: center; }
 .jt-mapa-b:active { transform: scale(.95); }
@@ -674,3 +674,75 @@ body.ed-ultra :is(.jt-pin-modo, .jt-mov-e, .jt-mov-pasos i, .jt-persona-modo) { 
 body.ed-ultra .jt-carta-liquido::before, body.ed-ultra .jt-ll-liquido::before { animation: none; }
 @media (prefers-reduced-motion: reduce) { .jt-carta-liquido::before, .jt-ll-liquido::before, .jt-ll-burbuja { animation: none !important; } }
 body.dj-con-virtual .jt-vista, body.dj-con-virtual .jt-vista * { touch-action: none; }
+
+/* ═══ Fase 50: iconitos (sin emojis), Cositas para comparar y un mapa más bonito ═══ */
+.jt-pin-modo svg, .jt-persona-modo svg, .jt-mov-e svg { display: block; width: 18px; height: 18px; color: #c84b7d; }
+.jt-mov-e svg { width: 20px; height: 20px; }
+.jt-persona-modo svg { width: 24px; height: 24px; }
+.jt-lugar-pin { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: #fff0f5; color: #e5679a; }
+.jt-lugar.aviso .jt-lugar-pin { background: #fff1e8; color: #e0642c; } .jt-lugar.segura .jt-lugar-pin { background: #e6f7ef; color: #2a9a6c; }
+.jt-lugar-pin svg { width: 20px; height: 20px; }
+.jt-zona-ico span { color: #e5679a; } .jt-zona-ico.aviso span { color: #e0642c; } .jt-zona-ico.segura span { color: #2a9a6c; }
+.jt-zona-ico span svg { width: 17px; height: 17px; }
+.jt-clase span svg { display: block; width: 24px; height: 24px; }
+.jt-clase.lugar span { color: #e5679a; } .jt-clase.aviso span { color: #e0642c; } .jt-clase.segura span { color: #2a9a6c; }
+.jt-emoji { display: grid; place-items: center; color: #b4577f; }
+.jt-emoji svg { width: 22px; height: 22px; }
+.jt-emoji.on { color: #e5679a; }
+.jt-zona-b span { display: grid; place-items: center; }
+.jt-zona-b span svg { width: 21px; height: 21px; }
+.jt-zona-b.listo span svg { color: #fff; }
+.jt-accion-b i svg { width: 18px; height: 18px; display: block; }
+:is(.jt-cumple, .jt-m-cosa-cab) > i svg { width: 26px; height: 26px; display: block; color: #e5679a; }
+/* El lápiz del mapa: blanco, con su sombrita para verse sobre el satélite. */
+.jt-zl svg { filter: drop-shadow(0 0 1.5px rgba(40, 20, 40, .9)) drop-shadow(0 3px 5px rgba(20, 10, 20, .45)); }
+.jt-zl.marca svg { filter: drop-shadow(0 0 1.5px rgba(40, 20, 40, .9)) drop-shadow(0 0 8px rgba(255, 255, 255, .9)); }
+/* Te amo / te extraño: corazones dibujados que suben. */
+.jt-ll-burbuja { color: var(--tono2); width: 24px; height: 24px; scale: var(--s, 1); }
+.jt-ll-burbuja svg { display: block; width: 100%; height: 100%; }
+/* Lo de tu amorcito, en cada tarjeta. */
+.jt-carta-vs { display: flex; align-items: center; gap: 6px; min-height: 22px; color: var(--jt-suave); font: 700 12.5px/1.1 "Nunito", sans-serif; }
+.jt-carta-vs:empty { display: none; }
+.jt-av-mini { --tam: 20px; width: 20px; height: 20px; font-size: 10px; }
+.jt-carta-vs .jt-av-mini { flex: none; }
+/* La de caca: se va llenando de caquitas (una por cada vez). */
+.jt-carta-cacas { position: absolute; z-index: -1; left: 8px; right: 8px; bottom: 6px; display: flex; flex-wrap: wrap-reverse; justify-content: center; gap: 0 2px; pointer-events: none; }
+.jt-carta-cacas i { width: 26px; height: 26px; margin-top: -8px; rotate: var(--r); animation: jtCacaCae .55s cubic-bezier(.3, 1.5, .5, 1) backwards; animation-delay: var(--d); }
+.jt-carta-cacas i svg { display: block; width: 100%; height: 100%; }
+@keyframes jtCacaCae { from { transform: translateY(-40px) scale(.4); opacity: 0; } }
+/* El marcador. */
+.jt-marc-e svg { display: block; width: 24px; height: 24px; }
+.jt-marc-t { flex: 1; display: grid; justify-items: center; gap: 4px; text-align: center; }
+.jt-marc-t i svg { width: 26px; height: 26px; color: #e0a93b; }
+.jt-marc-t strong { font-size: 15px; }
+/* El mapa: controles juntitos en una pastilla, cabecera limpia y chips con aire. */
+.jt-fondo-ctl { gap: 0; padding: 4px; border-radius: 22px; background: rgba(255, 255, 255, .96); box-shadow: 0 8px 22px rgba(30, 10, 30, .22); }
+.jt-fondo-ctl .jt-mapa-b { box-shadow: none; background: none; }
+.jt-fondo-ctl .jt-mapa-b:not(.redondo) { margin-bottom: 2px; background: #fff0f5; color: #c84b7d; }
+.jt-fondo-ctl .jt-mapa-b.redondo { width: 42px; height: 42px; color: #7a5a6a; }
+.jt-fondo-ctl .jt-mapa-b.jt-ir-pareja { color: #e5679a; }
+.jt-mapa-dist, .jt-mov { border-radius: 16px; box-shadow: 0 6px 18px rgba(30, 10, 30, .2); }
+.leaflet-control-zoom { border: 0 !important; border-radius: 16px !important; overflow: hidden; box-shadow: 0 6px 18px rgba(30, 10, 30, .2) !important; }
+.leaflet-control-zoom a { width: 40px !important; height: 40px !important; line-height: 40px !important; color: #c84b7d !important; }
+.jt-pin-in { box-shadow: 0 8px 18px rgba(60, 20, 60, .35), 0 0 0 4px rgba(255, 255, 255, .55); }
+.jt-sheet { border-radius: 30px 30px 0 0; }
+/* Tema oscuro del mapa: pastillas ciruela, no blancas. */
+:root[data-tema="oscuro"] :is(.jt-fondo-ctl, .jt-mapa-dist, .jt-mov, .jt-zona-barra, .jt-zona-pista) { background: rgba(48, 36, 50, .96); color: #ecdfe7; }
+:root[data-tema="oscuro"] .jt-fondo-ctl .jt-mapa-b { color: #f0c3d6; } :root[data-tema="oscuro"] .jt-fondo-ctl .jt-mapa-b:not(.redondo) { background: #4a2f42; }
+:root[data-tema="oscuro"] .jt-zona-b { color: #ecdfe7; } :root[data-tema="oscuro"] .jt-lugar-pin { background: #4a2f42; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) :is(.jt-fondo-ctl, .jt-mapa-dist, .jt-mov, .jt-zona-barra, .jt-zona-pista) { background: rgba(48, 36, 50, .96); color: #ecdfe7; }
+  :root:not([data-tema="claro"]) .jt-fondo-ctl .jt-mapa-b { color: #f0c3d6; } :root:not([data-tema="claro"]) .jt-fondo-ctl .jt-mapa-b:not(.redondo) { background: #4a2f42; }
+  :root:not([data-tema="claro"]) .jt-zona-b { color: #ecdfe7; } :root:not([data-tema="claro"]) .jt-lugar-pin { background: #4a2f42; }
+}
+body.ed-ultra .jt-carta-cacas i { animation: none; }
+.tq-emoji svg { width: 34px; height: 34px; display: block; }
+.tq-chispa { width: 14px; height: 14px; } .tq-chispa svg { width: 100%; height: 100%; display: block; }
+.jt-rapido-e svg { width: 26px; height: 26px; display: block; }
+.jt-rap-e { display: grid; place-items: center; } .jt-rap-e svg { width: 22px; height: 22px; display: block; }
+/* Las tarjetas se leen aunque estén llenas de caquitas o de agua. */
+.jt-carta-vs { align-self: flex-start; padding: 3px 9px 3px 3px; border-radius: 99px; background: color-mix(in srgb, var(--jt-papel) 88%, transparent); }
+.jt-carta.con-liquido .jt-carta-num, .jt-carta-num { position: relative; }
+.jt-carta-cacas { bottom: 4px; opacity: .92; }
+.jt-carta-cacas i { width: 24px; height: 24px; }
+.jt-carta-cacas { bottom: 54px; left: 50px; right: 6px; justify-content: flex-end; }

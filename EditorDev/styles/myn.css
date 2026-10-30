@@ -1186,3 +1186,46 @@ body.ed-ultra .dt-dibujo-hoja { animation-duration: .2s; }
 .dt-marquito-sello small { font: 700 11.5px/1.2 "Nunito", sans-serif; color: #b07a95; }
 @keyframes dtSello { 50% { transform: rotate(-10deg) translateY(-3px); } }
 body.ed-ultra .dt-marquito-sello i { animation: none; }
+
+/* ═══ Fase 50 · Página principal: todo junto y a la mano, hilo rojo atado de verdad ═══ */
+/* Sin huecos grandes: las partes van juntitas y centradas (lo que sobra queda arriba y abajo). */
+.mp-album .mp-inicio { justify-content: center; gap: clamp(12px, 2dvh, 18px); }
+.mp-album .mp-inicio > :is(.mp-dias-caja, .mp-crear-fila, .mp-seguir, .mp-saludo, .mp-cartas) { margin-top: 0; margin-bottom: 0; }
+.mp-album .mp-inicio .mp-dias { margin-top: 0; }
+.mp-album .mp-hero { padding-top: clamp(6px, 1.4dvh, 14px); padding-bottom: 0; }
+.mp-album .mp-cartas { gap: 11px; }
+.mp-album .mp-carta { min-height: 70px; border-radius: 20px; padding: 12px 12px 12px 12px; box-shadow: 0 8px 18px rgba(110, 50, 70, .14), inset 0 0 0 1px rgba(255, 255, 255, .5); }
+.mp-album .mp-carta > .mp-carta-ico { width: 46px; height: 46px; background: rgba(255, 255, 255, .7); box-shadow: 0 2px 6px rgba(110, 50, 70, .1); }
+.mp-album .mp-carta > b { font-size: 20.5px; }
+.mp-album .mp-carta > small { font-size: 14px; }
+.mp-album .mp-carta:active { transform: scale(.97); }
+.mp-album .mp-seguir.mp-editor-ir { min-height: 66px; }
+.mp-album .mp-saludo { font-size: 17px; }
+/* El hilo: de alfiler a alfiler, con el corazón colgando a la mitad. */
+.mp-album .mp-hilo { visibility: hidden; }
+.mp-lazo { position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; transition: opacity .4s ease; }
+.mp-lazo.listo { opacity: 1; }
+.mp-lazo svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.mp-album .mp-lazo .mp-hilo-cuerda { fill: none; stroke: #d6355c; stroke-width: 2.2; stroke-linecap: round; }
+.mp-album .mp-lazo .mp-hilo-sombra { fill: none; stroke: rgba(214, 53, 92, .16); stroke-width: 6; stroke-linecap: round; }
+.mp-album .mp-lazo .mp-hilo-corazon { left: 50%; top: 50%; bottom: auto; margin: 0; translate: -50% -42%; transform-origin: 50% 20%; }
+.mp-pin { position: absolute; z-index: 4; top: 42%; width: 11px; height: 11px; border-radius: 50%; background: radial-gradient(circle at 35% 32%, #ff9fb6 0 18%, #e2385f 55%, #a8173d 100%); box-shadow: 0 2px 3px rgba(80, 10, 30, .35); pointer-events: none; }
+.mp-pin.der { right: 2px; } .mp-pin.izq { left: 2px; }
+.mp-pareja.sola .mp-lazo .mp-hilo-cuerda { stroke-dasharray: 4 6; opacity: .55; }
+/* Las fotos ya no se mecen (así el hilo queda atado y se gasta menos batería). */
+.mp-album .mp-pola { animation: mpPolaCae .9s cubic-bezier(.2, .9, .3, 1.25) backwards; }
+/* «Volver»: se ve clarito (pastilla blanca, letra fuerte) y por encima de los garabatos. */
+.mp-volver { position: relative; z-index: 3; padding: 10px 16px 10px 11px; border-radius: 99px; background: #fff; color: #c2336b; font-weight: 700; font-size: 15px; box-shadow: 0 4px 14px rgba(190, 60, 110, .18), inset 0 0 0 1.5px #f6c6d8; }
+.mp-volver svg { width: 20px; height: 20px; }
+/* Tema oscuro: nada de blanco deslumbrante sobre negro. */
+:root[data-tema="oscuro"] .mp-album :is(.mp-pola, .mp-nota-pegada) { filter: brightness(.8) saturate(.92); }
+:root[data-tema="oscuro"] .mp-volver { background: #43303f; color: #ffc0d9; box-shadow: 0 4px 14px rgba(0, 0, 0, .3), inset 0 0 0 1.5px #64465b; }
+:root[data-tema="oscuro"] .mp-album .mp-carta > .mp-carta-ico { background: rgba(255, 255, 255, .1); box-shadow: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) .mp-album :is(.mp-pola, .mp-nota-pegada) { filter: brightness(.8) saturate(.92); }
+  :root:not([data-tema="claro"]) .mp-volver { background: #43303f; color: #ffc0d9; box-shadow: 0 4px 14px rgba(0, 0, 0, .3), inset 0 0 0 1.5px #64465b; }
+  :root:not([data-tema="claro"]) .mp-album .mp-carta > .mp-carta-ico { background: rgba(255, 255, 255, .1); box-shadow: none; }
+}
+.mp-album .mp-pola { width: clamp(100px, 17dvh, 148px); }
+.mp-album .mp-carta > b { font-size: 19.5px; }
+@media (max-width: 380px) { .mp-album .mp-carta > b { font-size: 18px; } }

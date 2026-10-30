@@ -935,6 +935,18 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Medido** | `juntitos49` (teléfono y compu: mapa en la pareja, cartelito, zona dibujada con dedos de verdad, advertencia guardada, entrar a la zona, 10 m, te amo manteniendo, enojómetro, agua, marcador), `juntitos46`, `dibujo47`, `parpadeo48`, `menu36`, `crear46` y el lápiz virtual con dos dedos. |
 | **No probado en teléfonos de verdad** | el GPS real (caminar o manejar de verdad), los avisos push en el teléfono, las vibraciones y el menú en el aparato donde se veía chiquito. |
 
+### Fase 50: temas oscuros suaves, página principal nueva, hilo atado y Cositas para comparar
+
+| | |
+| --- | --- |
+| **Temas oscuros** (`styles/editor.css`, `styles/myn.css`, `styles/juntitos.css`) | Ciruela suave en lugar de negro, letras crema en lugar de blanco puro. La pestañita, el riel, el cajón y las herramientas de trazo ya no son blancas en oscuro; las fotos del menú se atenúan y los controles del mapa son ciruela. |
+| **Pestañita lateral** (`components/lateral.js`) | Un toque aunque el dedo tiemble (hasta 10 px) ya no se toma como arrastre; zona de toque más grande sin verse más gruesa. |
+| **Página principal** (`components/menu-principal.js`) | Todo junto y centrado (sin huecos grandes), tarjetas más grandes y cómodas, fotos más grandes. **El hilo rojo** va de un alfiler en cada foto al otro y el corazón cuelga justo a la mitad (se mide dónde quedaron las fotos, aunque el menú se encoja); las fotos ya no se mecen. **«Volver»** en pastilla clarita, por encima de los garabatos. **Mis libritos** se abre encima del menú: al salir regresas al menú, no al editor. |
+| **Zoom** | En el estudio, un cambio por cuadro, la hoja como una sola capa mientras pellizcas y sin tocar clases ni textos a cada movimiento. En el mapa, sin desenfoques encima de los mosaicos. |
+| **Sin emojis** | Iconitos dibujados en el mapa (caminar, bici, auto, zonas y sus dibujitos), Cositas, Mesecitos, mensajitos rápidos y avisos. El lápiz del mapa es blanco. |
+| **Cositas** (servidor 1.22.0) | Sin chismes, enojómetro, colapsos ni palabrotas. Cada quien ve todo lo del otro: cada tarjeta dice lo de tu amorcito al lado y el Marcador compara las 6. La de caca se llena de caquitas dibujadas. |
+| **No probado en teléfonos de verdad** | el tacto de la pestañita, el zoom en un teléfono lento y cómo se ve el tema oscuro en cada pantalla. Las pantallas de bienvenida y el chat siguen con sus emojis (son parte de su contenido). |
+
 ## Cómo está hecho
 
 ```

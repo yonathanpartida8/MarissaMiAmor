@@ -120,7 +120,9 @@ export class Lateral {
         g.decidido = true;
         try { this.raiz.setPointerCapture(ev.pointerId); } catch (e) { /* nada */ }
       }
-      g.movio = g.movio || Math.abs(dx) > 4;
+      // (Un toquecito con el dedo siempre tiembla unos píxeles: hasta 10 sigue siendo un toque.)
+      g.movio = g.movio || Math.abs(dx) > 10;
+      if (!g.movio) return;
       const t = performance.now();
       if (t > g.ut) { g.vx = 0.7 * g.vx + 0.3 * ((ev.clientX - g.ux) / (t - g.ut)); g.ux = ev.clientX; g.ut = t; }
       cancelAnimationFrame(this._rf);

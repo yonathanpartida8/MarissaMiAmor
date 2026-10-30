@@ -43,7 +43,7 @@ export function vistaAjustes(app, { alVolver }) {
   const sonar = () => SE?.sonar("seleccionar");
 
   const modo = con(segmentos("Rendimiento", [["equilibrado", "Normal"], ["ultra", "Ultra Rendimiento"]], () => (PREF.modo === "ultra" ? "ultra" : "equilibrado"),
-    (v) => { poner({ modo: v }); sonar(); aviso(v === "ultra" ? "Ultra Rendimiento prendido: todo más ligero y rapidito ⚡" : "Rendimiento normal: con todos sus brillitos ✨", 2600); }));
+    (v) => { poner({ modo: v }); sonar(); aviso(v === "ultra" ? "Ultra Rendimiento prendido: todo más ligero y rapidito" : "Rendimiento normal: con todos sus brillitos", 2600); }));
   const mov = con(segmentos("Animaciones", [["completo", "Completas"], ["reducido", "Suaves"], ["nada", "Sin movimiento"]], () => PREF.movimiento, (v) => { poner({ movimiento: v }); sonar(); }));
   const tema = con(segmentos("Tema", [["auto", "Como el teléfono"], ["claro", "Claro"], ["oscuro", "Oscuro"]], () => PREF.tema, (v) => { poner({ tema: v }); sonar(); }));
   const tam = con(segmentos("Tamaño", [[0.9, "Chico"], [1, "Normal"], [1.12, "Grande"]], () => PREF.escala, (v) => { poner({ escala: v }); sonar(); }));

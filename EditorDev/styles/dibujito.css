@@ -383,3 +383,6 @@ body.ed-ultra .dz-lapizv.armado::after { animation: none; }
 /* El lápiz virtual: sin ondas que tapen el dibujo. */
 .dz-lapizv.armado::after { content: none; }
 .dz-capa.con-virtual, .dz-capa.con-virtual * { touch-action: none; }
+/* Fase 50: mientras haces zoom con dos dedos, la hoja se mueve como una sola capa (sin volver a pintarse a cada cuadro). */
+.dz-capa.zoomeando .dz-mundo { will-change: transform; }
+.dz-capa.zoomeando .dz-fondo, .dz-capa.zoomeando .dz-fondo * { animation-play-state: paused !important; }

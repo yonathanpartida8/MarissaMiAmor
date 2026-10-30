@@ -2949,3 +2949,66 @@ body.ed-ultra .ed-cosita-vuela { box-shadow: none; transition: none; }
 .ed-que-ico.lindo { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 18px; background: linear-gradient(145deg, #fff, #fff1f6); box-shadow: 0 4px 12px rgba(200, 80, 130, .14); transition: transform .3s cubic-bezier(.3, 1.5, .5, 1); }
 .ed-que-ico.lindo svg { width: 44px; height: 44px; }
 .ed-que.on .ed-que-ico.lindo { transform: rotate(-6deg) scale(1.08); }
+.ed-inicio.sobre-menu { z-index: 2147483200; }
+
+/* ═══ Fase 50 · Temas oscuros más agradables: ciruela suave, sin negro con blanco que deslumbra ═══
+   (Las superficies blancas fijas de las fases 44–45 —pestañita, riel, cajón, herramientas de trazo—
+   toman tonos ciruela; los textos son crema, no blanco puro.) */
+:root[data-tema="oscuro"] {
+  --fondo: #251d27; --superficie: #2f2631; --superficie-2: #382d3b; --linea: #47394b; --linea-fuerte: #5e4d62;
+  --texto: #ecdfe7; --texto-suave: #b5a4b3; --tinta: #ecdfe7; --acento: #f49bbf; --acento-suave: #4a2a3f; --lienzo: #1f1821;
+  --regla-fondo: #221b25; --regla-hoja: #2e2531;
+}
+:root[data-tema="oscuro"] .ed-pestana { background: #3a2c39; border-color: #574354; box-shadow: 0 2px 12px rgba(0, 0, 0, .3); }
+:root[data-tema="oscuro"] .ed-pestana i { background: #f0a3c2; }
+:root[data-tema="oscuro"] .ed-pestana.abierta, :root[data-tema="oscuro"] body.ed:not(.sin-panel) .ed-pestana.compu { background: #45333f; }
+:root[data-tema="oscuro"] .ed-riel { background: #2a2130; border-right-color: #3d3142; }
+:root[data-tema="oscuro"] .ed-riel button { color: #c9b3c1; }
+:root[data-tema="oscuro"] .ed-riel button span { color: #b9a3b2; }
+:root[data-tema="oscuro"] .ed-riel button b::before { background: #4a3346; }
+:root[data-tema="oscuro"] .ed-riel button:nth-of-type(n) { --mancha: #4a3346; }
+:root[data-tema="oscuro"] .ed-riel button b .ed-ico { color: #f3a7c6; }
+:root[data-tema="oscuro"] .ed-riel button.on b::before { background: #6a3a57; }
+:root[data-tema="oscuro"] .ed-riel button.on b .ed-ico, :root[data-tema="oscuro"] .ed-riel button.on span { color: #ffc2da; }
+:root[data-tema="oscuro"] .ed-lateral, :root[data-tema="oscuro"] .ed-lateral > .ed-panel { background: #2a2130; }
+:root[data-tema="oscuro"] .ed-lateral > .ed-riel { border-right-color: #3d3142; }
+:root[data-tema="oscuro"] .ed-tz-herr { background: #3a2c39; }
+:root[data-tema="oscuro"] .ed-tz-herr::before { background: #54394c; box-shadow: none; }
+:root[data-tema="oscuro"] .ed-tz-h { color: #bfa6b5; } :root[data-tema="oscuro"] .ed-tz-h.on { color: #ffb3d1; }
+:root[data-tema="oscuro"] .ed-tz-b { background: #33283a; border-color: #4a3a4e; color: #e2cfdb; }
+:root[data-tema="oscuro"] .ed-tz-b[aria-pressed="true"] { background: #4a2f42; color: #ffb3d1; }
+:root[data-tema="oscuro"] .ed-pub-hero > i, :root[data-tema="oscuro"] .ed-mini, :root[data-tema="oscuro"] .ed-tl-cuadro { background: #f2e9ee; }
+:root[data-tema="oscuro"] .ed-toggle i { background: #f2e6ee; }
+@media (prefers-color-scheme: dark) {
+:root:not([data-tema="claro"]) {
+  --fondo: #251d27; --superficie: #2f2631; --superficie-2: #382d3b; --linea: #47394b; --linea-fuerte: #5e4d62;
+  --texto: #ecdfe7; --texto-suave: #b5a4b3; --tinta: #ecdfe7; --acento: #f49bbf; --acento-suave: #4a2a3f; --lienzo: #1f1821;
+  --regla-fondo: #221b25; --regla-hoja: #2e2531;
+}
+:root:not([data-tema="claro"]) .ed-pestana { background: #3a2c39; border-color: #574354; box-shadow: 0 2px 12px rgba(0, 0, 0, .3); }
+:root:not([data-tema="claro"]) .ed-pestana i { background: #f0a3c2; }
+:root:not([data-tema="claro"]) .ed-pestana.abierta, :root:not([data-tema="claro"]) body.ed:not(.sin-panel) .ed-pestana.compu { background: #45333f; }
+:root:not([data-tema="claro"]) .ed-riel { background: #2a2130; border-right-color: #3d3142; }
+:root:not([data-tema="claro"]) .ed-riel button { color: #c9b3c1; }
+:root:not([data-tema="claro"]) .ed-riel button span { color: #b9a3b2; }
+:root:not([data-tema="claro"]) .ed-riel button b::before { background: #4a3346; }
+:root:not([data-tema="claro"]) .ed-riel button:nth-of-type(n) { --mancha: #4a3346; }
+:root:not([data-tema="claro"]) .ed-riel button b .ed-ico { color: #f3a7c6; }
+:root:not([data-tema="claro"]) .ed-riel button.on b::before { background: #6a3a57; }
+:root:not([data-tema="claro"]) .ed-riel button.on b .ed-ico, :root:not([data-tema="claro"]) .ed-riel button.on span { color: #ffc2da; }
+:root:not([data-tema="claro"]) .ed-lateral, :root:not([data-tema="claro"]) .ed-lateral > .ed-panel { background: #2a2130; }
+:root:not([data-tema="claro"]) .ed-lateral > .ed-riel { border-right-color: #3d3142; }
+:root:not([data-tema="claro"]) .ed-tz-herr { background: #3a2c39; }
+:root:not([data-tema="claro"]) .ed-tz-herr::before { background: #54394c; box-shadow: none; }
+:root:not([data-tema="claro"]) .ed-tz-h { color: #bfa6b5; } :root:not([data-tema="claro"]) .ed-tz-h.on { color: #ffb3d1; }
+:root:not([data-tema="claro"]) .ed-tz-b { background: #33283a; border-color: #4a3a4e; color: #e2cfdb; }
+:root:not([data-tema="claro"]) .ed-tz-b[aria-pressed="true"] { background: #4a2f42; color: #ffb3d1; }
+:root:not([data-tema="claro"]) .ed-pub-hero > i, :root:not([data-tema="claro"]) .ed-mini, :root:not([data-tema="claro"]) .ed-tl-cuadro { background: #f2e9ee; }
+:root:not([data-tema="claro"]) .ed-toggle i { background: #f2e6ee; }
+}
+
+/* ═══ Fase 50 · La pestañita lateral: más bonita y más fácil de tocar ═══ */
+.ed-pestana { width: 18px; height: 66px; gap: 4px; border-radius: 0 16px 16px 0; background: linear-gradient(180deg, #fff, #fff3f8); }
+.ed-pestana::before { content: ""; position: absolute; top: -18px; bottom: -18px; left: 0; width: 44px; }   /* el dedo atina aunque sea delgadita */
+.ed-pestana i { width: 3px; border-radius: 3px; }
+.ed-pestana:active { width: 22px; transition: width .12s; }

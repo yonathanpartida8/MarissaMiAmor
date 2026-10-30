@@ -135,7 +135,7 @@ export class Configuracion {
     if (fps < objetivo() * 0.8) consejos.push("Va un poco lento: prueba el modo Rendimiento.");
     if (marcos > 8) consejos.push("Hay muchos bloques HTML vivos: apagar «Partículas» ayuda.");
     if (LARGAS.n > 20) consejos.push("Hubo varios tirones: cierra otras pestañas o baja la calidad.");
-    if (!consejos.length) consejos.push("Todo va fluido 🐝✨");
+    if (!consejos.length) consejos.push("Todo va fluido");
     ocupado.replaceWith(el("div.ed-diag", {}, [
       el("dl", {}, datos.flatMap(([a, b]) => [el("dt", { text: a }), el("dd", { text: b })])),
       ...consejos.map((c) => el("p.ed-nota", { text: c })),

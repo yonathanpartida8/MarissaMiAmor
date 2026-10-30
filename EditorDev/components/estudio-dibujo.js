@@ -544,10 +544,12 @@ export class EstudioDibujo {
     }
     const lejos = Math.abs(v.s - 1) > 0.01 || Math.abs(v.x) > 0.5 || Math.abs(v.y) > 0.5;
     // La infinita empieza en «Zoom 0» (lo más lejos) y de ahí sólo se entra: todo el acercamiento es tuyo.
-    this.zoomB.hidden = !lejos && !this.infinito;
+    // (Sólo se toca lo que cambió: cambiar clases o textos a cada cuadro hacía que el zoom se trabara.)
+    const ocultar = !lejos && !this.infinito;
+    if (this.zoomB.hidden !== ocultar) this.zoomB.hidden = ocultar;
     const pct = this.infinito ? "Zoom " + Math.max(0, Math.round(Math.log2(v.s))) : Math.round(v.s * 100) + "%";
-    this.zoomB.lastChild.textContent = pct;
-    this.capa.classList.toggle("con-zoom", lejos);
+    if (this.zoomB.lastChild.textContent !== pct) this.zoomB.lastChild.textContent = pct;
+    if (this._lejos !== lejos) { this._lejos = lejos; this.capa.classList.toggle("con-zoom", lejos); }
   }
   /** Acercar/alejar alrededor de un punto de la hoja. */
   _zoomEn(f, P, base = this.vista) {
@@ -660,6 +662,7 @@ export class EstudioDibujo {
     if (this.dos) {
       if (this.dedos.size) return;
       const d = this.dos; this.dos = null;
+      this.capa.classList.remove("zoomeando");
       if (d.zoom) { this._renderInfinito(); this._guardarPronto(); return; }
       // Dos dedos tocando a la vez (sin arrastrar) = deshacer.
       if (!cancelado && performance.now() - d.t < 380 && d.mov < 40) this.deshacer();
@@ -699,7 +702,9 @@ export class EstudioDibujo {
     s = this.infinito ? Math.max(1, Math.min(1e7, s)) : Math.max(1, Math.min(8, s));
     this.vista = { s, x: w.x - m.x / s, y: w.y - m.y / s };
     this._limitarVista();
-    this._aplicarVista();
+    // Un solo cambio por cuadro de pantalla (los dedos mandan más movimientos que cuadros).
+    if (!this._rqVista) this._rqVista = requestAnimationFrame(() => { this._rqVista = 0; this._aplicarVista(); });
+    if (!this.capa.classList.contains("zoomeando")) this.capa.classList.add("zoomeando");
     // En la infinita, de vez en cuando se vuelve a pintar (para que se vea nítido aunque sigas acercando).
     if (this.infinito && performance.now() - d.ultRender > 260) {
       const r = this.lienzo.vista.s / s;
