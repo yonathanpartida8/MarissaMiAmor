@@ -102,11 +102,11 @@ const PINCEL = svg('<path d="M5 27c3 0 5-1.5 5-4a3 3 0 0 0-3-3c-2 0-3 1.6-3 3.5 
 const CASITA = svg('<path d="M5 15L16 6l11 9"/><path d="M8 13v13h16V13"/><path d="M16 23.6s-3.4-2-3.4-4.2a1.7 1.7 0 0 1 3.4-.9 1.7 1.7 0 0 1 3.4.9c0 2.2-3.4 4.2-3.4 4.2z" fill="currentColor" fill-opacity=".3"/>');
 const PROMESA = svg('<path d="M9.5 18.5c-2-1.6-3.2-3.6-3.2-5.6a3.6 3.6 0 0 1 6.4-2.3"/><path d="M22.5 18.5c2-1.6 3.2-3.6 3.2-5.6a3.6 3.6 0 0 0-6.4-2.3"/><path d="M11 21.5c1.6 1.8 3.2 3 5 4 1.8-1 3.4-2.2 5-4"/><path d="M13 16.5h6M14 13.8l2-2 2 2"/>');
 /** Fase 46: la barrita de abajo (lo que antes eran los botones cuadrados de la hojita). */
-const PESTANAS = ["inicio", "cositas", "mesecitos", "dibujar"];
+const PESTANAS = ["inicio", "cositas", "mesecitos", "dibujar", "jueguitos"];
 const PRONTO = [
   ["promesa", "Promesa", "cielo", "Sus promesas de amor, guardaditas con su fecha, para cumplirlas y recordarlas."],
 ];
-const TITULOS = { cositas: "Cositas Juntitos", mesecitos: "Mesecitos", dibujar: "Dibujar Juntos", casita: "Nuestra casita", promesa: "Promesa" };
+const TITULOS = { cositas: "Cositas Juntitos", mesecitos: "Mesecitos", dibujar: "Dibujar Juntos", casita: "Nuestra casita", promesa: "Promesa", jueguitos: "Jueguitos" };
 const PIN = svg('<path d="M16 28s-8.5-7.6-8.5-14.3a8.5 8.5 0 0 1 17 0C24.5 20.4 16 28 16 28z"/><circle cx="16" cy="13.6" r="3.2"/>');
 // El mapa (Fase 39): satélite con calles y nombres encima (lindo y claro), o el mapa de calles.
 const SAT = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
@@ -116,6 +116,7 @@ const SAT_CALLES = "https://server.arcgisonline.com/ArcGIS/rest/services/Referen
 const CALLES = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
 const CAPA_MAPA = "editordev:mapa-capa";
 const SATELITE = svg('<circle cx="16" cy="16" r="11"/><path d="M5 16h22M16 5c3.5 3.2 5 7 5 11s-1.5 7.8-5 11c-3.5-3.2-5-7-5-11s1.5-7.8 5-11z"/>');
+const MANDO = svg('<path d="M9 11h14a6 6 0 0 1 6 6v3a4 4 0 0 1-7 2.6L20 20h-8l-2 2.6A4 4 0 0 1 3 20v-3a6 6 0 0 1 6-6z"/><path d="M10 14.5v5M7.5 17h5"/><circle cx="21" cy="15.5" r="1" fill="currentColor"/><circle cx="23.5" cy="18.5" r="1" fill="currentColor"/>');
 const MAPA = svg('<path d="M4 8.5l8-3.5 8 3.5 8-3.5v18.5l-8 3.5-8-3.5-8 3.5z"/><path d="M12 5v18.5M20 8.5V27"/>');
 // Fase 49: cómo se mueve quien comparte, las clases de zona y el lápiz para marcarlas en el mapa.
 const MODOS = { caminando: [IC.caminar, "va caminando"], bici: [IC.bici, "va en bici o corriendo"], auto: [IC.auto, "va en auto"] };
@@ -226,9 +227,9 @@ export class Juntitos {
     // (Fase 52: la pestañita de arriba ya se jala hacia abajo para cerrar la hojita.)
     jalarParaCerrar(this.hojaEl, () => this._cerrarHoja(), { asa: ".jt-hoja-asa" });
     // Fase 46: la barrita de abajo, siempre a la mano (cambia de sección sin volver al mapa).
-    const icono = { inicio: MAPA, cositas: ICONOS.teamo, mesecitos: CALENDARIO, dibujar: PINCEL };
+    const icono = { inicio: MAPA, cositas: ICONOS.teamo, mesecitos: CALENDARIO, dibujar: PINCEL, jueguitos: MANDO };
     this.nav = el("nav.jt-nav.v46", { "aria-label": "Secciones" }, PESTANAS.map((k) => el("button.jt-tab", { type: "button", dataset: { k }, onClick: () => (k === "inicio" ? this._alMapa() : this.ir(k)) },
-      [el("i", { html: icono[k] }), el("span", { text: { inicio: "Mapa", cositas: "Cositas", mesecitos: "Mesecitos", dibujar: "Dibujar" }[k] })])));
+      [el("i", { html: icono[k] }), el("span", { text: { inicio: "Mapa", cositas: "Cositas", mesecitos: "Mesecitos", dibujar: "Dibujar", jueguitos: "Jueguitos" }[k] })])));
     this.capa = el("div.jt-capa.v43.v46", { role: "dialog", "aria-label": "Nuestros días juntos" }, [this.fondo, ctl, this.dist, this.movN, cab, this.sheet, this.secPanel, this.nav, this.velo, this.hojaEl]);
     // Lo que llega solo (un mensajito rápido, alguien que llegó o salió) se ve al momento en el mapa.
     for (const t of ["ed-toques", "ed-lugares"]) addEventListener(t, () => { if (this.abierto && this.tab === "inicio") { this._pintarRapidos?.(); if (t === "ed-lugares") this._refrescarMapa(); } });
@@ -275,7 +276,7 @@ export class Juntitos {
     if (this._finZona) { this._finZona(); return true; }
     if (this.hojaEl?.classList.contains("ver")) { this._cerrarHoja(); return true; }
     if (this.dj?.atras?.()) return true;
-    if (this.tab === "casita") { this.ir("cositas"); return true; }
+    if (this.tab === "casita") { this.ir("jueguitos"); return true; }
     const carta = this.capa?.querySelector(".jt-carta-mes:not(.fuera)");
     if (carta) { carta.querySelector(".jt-x")?.click(); return true; }
     if (this.tab !== "inicio") { this.inicio(); return true; }
@@ -298,7 +299,8 @@ export class Juntitos {
     this.secTit.textContent = TITULOS[tab] || "";
     // (Entre pestañas, la página entra desde el lado de la que tocaste; desde el mapa, sube como siempre.)
     if (antes !== "inicio" && this.secPanel.classList.contains("ver") && !reducido()) {
-      const d = PESTANAS.indexOf(tab === "casita" || tab === "promesa" ? "cositas" : tab) - PESTANAS.indexOf(antes === "casita" || antes === "promesa" ? "cositas" : antes);
+      const sec = (t) => (t === "casita" ? "jueguitos" : t === "promesa" ? "cositas" : t);
+      const d = PESTANAS.indexOf(sec(tab)) - PESTANAS.indexOf(sec(antes));
       this.vista.classList.remove("entra-der", "entra-izq"); void this.vista.offsetWidth;
       if (d) this.vista.classList.add(d > 0 ? "entra-der" : "entra-izq");
     }
@@ -307,12 +309,12 @@ export class Juntitos {
     this.vista.scrollTop = 0;
     this.vista.replaceChildren(el("p.jt-cargando", { text: "Un momentito…" }));
     this.secPanel.classList.add("ver");
-    ({ cositas: () => this._cositas(), mesecitos: () => this._mesecitos(), dibujar: () => this._dibujar(), casita: () => this._casita(), promesa: () => this._pronto("promesa") })[tab]?.();
+    ({ cositas: () => this._cositas(), mesecitos: () => this._mesecitos(), dibujar: () => this._dibujar(), casita: () => this._casita(), jueguitos: () => this._jueguitos(), promesa: () => this._pronto("promesa") })[tab]?.();
   }
 
   /** La barrita: cuál está elegida (la pastillita se desliza hasta ella). */
   _marcar(tab) {
-    const k = tab === "casita" || tab === "promesa" ? "cositas" : tab;
+    const k = tab === "casita" ? "jueguitos" : tab === "promesa" ? "cositas" : tab;
     const i = Math.max(0, PESTANAS.indexOf(k));
     this.nav?.style.setProperty("--i", i);
     for (const b of this.nav?.children || []) { const on = b.dataset.k === k; b.classList.toggle("on", on); if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }
@@ -532,8 +534,6 @@ export class Juntitos {
       el("div.jt-rejilla", {}, COSAS.map((c) => { const n = this._carta(c); this.cartas.set(c.t, n); return n; })),
       el("p.jt-nota", { text: `Todo lo tuyo lo ve ${nombre} y todo lo suyo lo ves tú: así se comparan. «Te extraño» y «Te amo» le llegan al momento, con cuántos le mandaste.` }),
       // (Lo que viene, chiquito y aparte: antes vivía en la hojita del mapa.)
-      // (Fase 52: Nuestra casita ya está lista: un jueguito de los dos.)
-      el("button.jt-casita-b", { type: "button", onClick: () => this.ir("casita") }, [el("i", { html: CASITA }), el("span", {}, [el("b", { text: "Nuestra casita" }), el("small", { text: "Su casita para jugar juntitos: vístanse, decoren y paseen por los cuartos" })]), el("em", { text: "Nuevo" })]),
       el("div.jt-pronto-fila", {}, [el("small", { text: "Pronto" }), ...PRONTO.map((x) => el("button.jt-pronto-b", { type: "button", dataset: { k: x[0] }, onClick: () => this.ir(x[0]) }, [el("i", { html: PROMESA }), el("span", { text: x[1] })]))]),
     ].filter(Boolean));
     for (const c of COSAS) this._pintarCarta(c);
@@ -1351,6 +1351,23 @@ export class Juntitos {
     }).catch((e) => aviso("No se pudo abrir Dibujar juntos: " + e.message, 4000, "error"));
   }
 
+  /* ════ Jueguitos (Fase 55): los juegos de los dos, cada uno en su cuadrito (y lo que viene). ════ */
+  _jueguitos() {
+    this.vista.replaceChildren(
+      el("div.jt-hola", {}, [el("h1", { text: "Jueguitos" }), el("p", { text: "Para jugar juntitos, cada quien desde su teléfono" })]),
+      el("div.jt-juegos", {}, [
+        el("button.jt-juego.casita", { type: "button", onClick: () => this.ir("casita") }, [
+          el("i.jt-juego-arte", { html: CASITA }), el("b", { text: "Nuestra casita" }),
+          el("small", { text: "Cocinen, decoren, coman juntos y paseen por los cuartos" }), el("em", { text: "Jugar" }),
+        ]),
+        el("div.jt-juego.pronto", { "aria-label": "Pronto habrá más" }, [
+          el("i.jt-juego-arte", { html: MANDO }), el("b", { text: "Pronto habrá más" }),
+          el("small", { text: "Estamos preparando más jueguitos para ustedes dos" }), el("em", { text: "Pronto" }),
+        ]),
+      ]),
+    );
+  }
+
   /* ════ Nuestra casita (Fase 52): se carga hasta que la abres, como Dibujar juntos ════ */
   _casita() {
     if (!PF.datos().pareja) { this.vista.replaceChildren(el("div.jt-vacio", {}, [el("b", { text: "Para jugar en su casita" }), el("p", { text: "Primero vincúlate con tu amorcito (en el menú principal)." })])); return; }
@@ -1358,7 +1375,7 @@ export class Juntitos {
     // (Fase 53: la casita es modular, en components/casita/; su barrita «Volver atrás» regresa a Cositas.)
     import("./casita/index.js").then(({ Casita }) => {
       if (this._vezDj !== vez || !this.abierto || !vista.isConnected || this.tab !== "casita") return;
-      this.dj = new Casita(this.app, { pareja: this.pareja, volver: () => this.ir("cositas") });
+      this.dj = new Casita(this.app, { pareja: this.pareja, volver: () => this.ir("jueguitos") });
       this.dj.montar(vista);
     }).catch((e) => aviso("No se pudo abrir su casita: " + e.message, 4000, "error"));
   }

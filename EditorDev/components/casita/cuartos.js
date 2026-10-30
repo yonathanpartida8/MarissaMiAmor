@@ -40,7 +40,7 @@ export const PISOS = [["madera", "Madera"], ["clara", "Madera clara"], ["mosaico
 
 /** Lo que hay la primera vez en cada cuarto: [tipo, x, y?, volteado?]. */
 const INICIAL = {
-  jardin: [["arbol", 150, 515], ["banca", 350, 512], ["flores", 44, 552], ["flores", 252, 548], ["buzon", 470, 520], ["farol", 540, 522], ["puerta", 626, 470], ["perrito", 340, 553]],
+  jardin: [["arbol", 150, 515], ["banca", 350, 512], ["flores", 44, 552], ["flores", 252, 548], ["buzon", 470, 520], ["farol", 540, 522], ["puerta", 626, 470], ["perrito", 340, 553], ["casita_perro", 430, 470]],
   sala: [["ventana", 345, 330], ["fotos", 150, 250], ["reloj", 545, 190], ["colgante", 44, 200], ["alfombra", 230, 556], ["lampara", 46, 505], ["sofa", 205, 500], ["mesita", 222, 548], ["tele", 478, 505], ["tocadiscos", 600, 505], ["gatito", 370, 553]],
   cocina: [["alacena", 170, 240], ["ventana", 440, 320], ["refri", 60, 505], ["estufa", 180, 505], ["fregadero", 315, 505], ["mesa", 480, 538], ["silla", 400, 532], ["silla", 560, 532, true]],
   recamara: [["ventana", 230, 320], ["guirnalda", 330, 104], ["cuadro", 480, 250], ["buro", 46, 505], ["cama", 212, 512], ["ropero", 408, 505], ["escritorio", 566, 505], ["silla_esc", 566, 545], ["peluche", 330, 553]],

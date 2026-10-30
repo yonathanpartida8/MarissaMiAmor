@@ -32,7 +32,7 @@ export const SONIDOS = [
   ["miau", "El gatito"], ["guau", "El perrito"], ["cuac", "El patito"], ["chillido", "El osito"], ["ding", "Listo (al acomodar y más)"], ["nop", "Cuando algo no se puede"],
   ["lavadora", "La lavadora"], ["consola", "Jugar videojuegos"], ["guitarra", "La guitarra"], ["piano", "Cada tecla del piano (se afina sola: deja una nota Do)"],
   ["telescopio", "Mirar las estrellas"], ["alberca", "Echarse a la alberca"], ["hamaca", "Mecerse en la hamaca"],
-  ["pio", "El pajarito"], ["bici", "El timbre de la bici"], ["pincel", "Pintar en el caballete"], ["micro", "El microondas"], ["licuadora", "La licuadora"],
+  ["pio", "El pajarito"], ["lluvia", "La lluvia (se repite mientras llueve)"], ["trueno", "Truenos lejanos cuando llueve"], ["auto", "Un carro que pasa allá afuera"], ["claxon", "El claxon de un carro"], ["grillo", "Grillitos de noche afuera"], ["pajaritos", "Pajaritos de día afuera"], ["puerta-cuarto", "Las puertas entre los cuartos"], ["trampolin", "Brincar en el trampolín"], ["columpio", "Empujar el columpio"], ["bici", "El timbre de la bici"], ["pincel", "Pintar en el caballete"], ["micro", "El microondas"], ["licuadora", "La licuadora"],
   ["musica-baile", "Canción del tocadiscos (se repite)"], ["musica-cuna", "Canción de la cajita musical (se repite)"], ["musica-fiesta", "Canción de la bocina (se repite)"],
 ];
 
@@ -64,6 +64,15 @@ const SON = {
   guau: [["sawtooth", 320, 190, 0.11, 0.08], ["sawtooth", 300, 180, 0.12, 0.08, 0.17]],
   cuac: [["square", 950, 620, 0.12, 0.08], ["square", 900, 600, 0.12, 0.07, 0.14]],
   chillido: [["sine", 1300, 1900, 0.12, 0.16], ["sine", 1900, 1400, 0.1, 0.12, 0.1]],
+  lluvia: [["ruido", 1500, 1300, 1.4, 0.07], ["ruido", 3000, 2800, 1.4, 0.04, 0.1]],
+  trueno: [["ruido", 260, 60, 2.6, 0.3], ["ruido", 140, 50, 1.8, 0.25, 0.4]],
+  auto: [["sawtooth", 62, 86, 1.1, 0.025], ["sawtooth", 86, 58, 1.1, 0.025, 1.1], ["ruido", 300, 1300, 1.1, 0.07], ["ruido", 1300, 280, 1.1, 0.07, 1.1]],
+  claxon: [["square", 415, 415, 0.16, 0.025], ["square", 523, 523, 0.16, 0.02], ["square", 415, 415, 0.22, 0.025, 0.24], ["square", 523, 523, 0.22, 0.02, 0.24]],
+  grillo: [["sine", 4300, 4300, 0.035, 0.025], ["sine", 4300, 4300, 0.035, 0.025, 0.07], ["sine", 4300, 4300, 0.035, 0.025, 0.14]],
+  pajaritos: [["sine", 2800, 3700, 0.08, 0.045], ["sine", 3100, 2400, 0.1, 0.04, 0.13], ["sine", 3300, 4000, 0.06, 0.035, 0.3]],
+  "puerta-cuarto": [["triangle", 240, 180, 0.16, 0.07], ["ruido", 900, 500, 0.12, 0.04, 0.04]],
+  trampolin: [["sine", 180, 520, 0.22, 0.2], ["triangle", 360, 900, 0.18, 0.06, 0.02]],
+  columpio: [["ruido", 400, 1800, 0.45, 0.14], ["triangle", 300, 420, 0.3, 0.04, 0.1]],
   pio: [["sine", 2200, 3300, 0.07, 0.12], ["sine", 2600, 3600, 0.06, 0.1, 0.11], ["sine", 2400, 3000, 0.05, 0.08, 0.2]],
   bici: [["sine", 2637, 2637, 0.32, 0.12], ["sine", 2637, 2637, 0.32, 0.1, 0.16]],
   pincel: [["ruido", 1800, 900, 0.18, 0.12], ["ruido", 1400, 700, 0.16, 0.1, 0.2]],
@@ -253,7 +262,28 @@ export function crearSonidos(app) {
     id = setInterval(tic, 150);
     return () => { vivo = false; clearInterval(id); };
   }
+  /** La lluvia en bucle (tu archivo o un soplido suave); devuelve cómo cambiar su volumen y pararla. */
+  function lluvia(nivel = 1) {
+    let vivo = true, nodos = null;
+    const mio = deCarpeta("lluvia"), base = () => (mio ? 0.9 : 0.1) * vol() * nivel;
+    if (callado()) return { nivel() {}, parar() {} };
+    listo(() => {
+      if (!vivo) return;
+      if (mio) { tocarArchivo(mio, { lazo: true, volumen: nivel }).then((r) => { if (!r) return; nodos = { g: r.g, s: [r.s] }; if (!vivo) cortar(); }); return; }
+      const c = ac(), s = c.createBufferSource(), h = c.createBiquadFilter(), f = c.createBiquadFilter(), g = c.createGain();
+      s.buffer = bufRuido(); s.loop = true; h.type = "highpass"; h.frequency.value = 500; f.type = "lowpass"; f.frequency.value = 2600;
+      g.gain.value = 0.0001; g.gain.setTargetAtTime(base(), c.currentTime, 0.8);
+      s.connect(h).connect(f).connect(g).connect(salida()); s.start();
+      nodos = { g, s: [s] };
+    });
+    function cortar() { try { if (nodos) { nodos.g.gain.setTargetAtTime(0.0001, ac().currentTime, 0.4); for (const x of nodos.s) x.stop(ac().currentTime + 1.6); } } catch (e) { /* nada */ } }
+    return {
+      nivel(n) { nivel = n; try { nodos?.g.gain.setTargetAtTime(base(), ac().currentTime, 0.5); } catch (e) { /* nada */ } },
+      parar() { vivo = false; cortar(); },
+    };
+  }
   return {
+    lluvia,
     sonar, musica,
     get pref() { return pref; },
     ponerPref(c) { pref = { ...pref, ...c }; try { localStorage.setItem(PREF, JSON.stringify(pref)); } catch (e) { /* nada */ } },

@@ -91,6 +91,7 @@ export const ITEMS = {
     arte: (e, C) => svg(126, 114, `
       <path d="M12 52h102v60H12z" fill="${MADERA_C}" ${OL}/>${[64, 76, 88, 100].map((y) => `<path d="M14 ${y}h98" stroke="${MADERA}" stroke-width="2"/>`).join("")}
       <path d="M4 56L63 6l59 50z" fill="${C}" ${OL}/>${brillo(30, 34, 40, 5, 2)}
-      <path d="M44 112V86a19 19 0 0 1 38 0v26z" fill="#4a3b46"/>${corazon(63, 64, 0.9, "#ff5c93")}`),
+      <path d="M44 112V86a19 19 0 0 1 38 0v26z" fill="#4a3b46"/>${corazon(63, 64, 0.9, "#ff5c93")}
+      <g class="perro-dentro"><ellipse cx="63" cy="100" rx="15" ry="12" fill="#e8c39e"/><path d="M48 96q-4 10 4 14M78 96q4 10-4 14" fill="#c8956d"/><circle cx="57" cy="97" r="2.2" fill="#3a2a35"/><circle cx="69" cy="97" r="2.2" fill="#3a2a35"/><ellipse cx="63" cy="104" rx="3" ry="2.2" fill="#3a2a35"/><path d="M60 108q3 3 6 0" stroke="#3a2a35" stroke-width="1.4" fill="none"/></g>`),
   },
 };

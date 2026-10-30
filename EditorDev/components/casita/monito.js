@@ -146,12 +146,15 @@ export function monitoSVG(r0) {
     <g class="ojo-f"><path d="M36 53q4-5 8 0M56 53q4-5 8 0" stroke="#3a2a35" stroke-width="2.4" fill="none" stroke-linecap="round"/></g>
     <g class="ojo-z"><path d="M36 52q4 4 8 0M56 52q4 4 8 0" stroke="#3a2a35" stroke-width="2.2" fill="none" stroke-linecap="round"/></g>
     <g class="ojo-c">${cor(40, 52.5, 0.62, "#ff4d8d")}${cor(60, 52.5, 0.62, "#ff4d8d")}<circle cx="37.6" cy="49.6" r="1" fill="#fff"/><circle cx="57.6" cy="49.6" r="1" fill="#fff"/></g>
+    <g class="ojo-g"><path d="M36 53q4-4 8 0" stroke="#3a2a35" stroke-width="2.4" fill="none" stroke-linecap="round"/><ellipse cx="60" cy="52" rx="3.8" ry="4.8" fill="#3a2a35"/><circle cx="61.4" cy="50.2" r="1.5" fill="#fff"/></g>
+    <path class="ca-cejas-e" d="M35 40l10 4M65 40l-10 4" stroke="${osc(pelo, 0.7)}" stroke-width="2.6" fill="none" stroke-linecap="round"/>
     <g class="ojo-s"><circle cx="40" cy="51.5" r="5.4" fill="#fff" ${OL}/><circle cx="60" cy="51.5" r="5.4" fill="#fff" ${OL}/><circle cx="40" cy="52" r="2.4" fill="#3a2a35"/><circle cx="60" cy="52" r="2.4" fill="#3a2a35"/></g>
     <ellipse cx="50" cy="58" rx="2.2" ry="1.5" fill="${osc(piel, 0.78)}"/>
     <ellipse cx="32" cy="60" rx="5.5" ry="3.2" fill="#ff8fb8" opacity=".5"/><ellipse cx="68" cy="60" rx="5.5" ry="3.2" fill="#ff8fb8" opacity=".5"/>${pecas}
     <path class="bo-n" d="M45 63q5 5 10 0" stroke="#c2336b" stroke-width="2.3" fill="none" stroke-linecap="round"/>
     <path class="bo-a" d="M44 62h12q-1 8-6 8t-6-8z" fill="#c2336b"/>
     <ellipse class="bo-o" cx="50" cy="65" rx="3" ry="3.6" fill="#c2336b"/>
+    <path class="bo-t" d="M45 67q5-5 10 0" stroke="#c2336b" stroke-width="2.3" fill="none" stroke-linecap="round"/>
     <g class="bo-b"><path d="M47 63q3-2 4 1 1-3 4-1-1 4-4 5-3-1-4-5z" fill="#ff5c93"/></g>
     ${fleco}${brilloPelo}${acc}
     </g>

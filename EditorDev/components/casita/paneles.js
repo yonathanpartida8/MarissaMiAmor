@@ -61,9 +61,12 @@ export function recetas(j, o, donde) {
   ]))), "recetas");
 }
 
-/** El piano: dos octavitas para tocar (cada tecla con su nota). */
+/** El piano: tres octavas para tocar (cada tecla con su nota; se desliza a los lados). Sólo suena el piano,
+ *  y tu amorcito lo oye si está cerca. */
 export function piano(j, o) {
-  const BLANCAS = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81, 83, 84], NOMBRES = ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"];
+  const BLANCAS = [], NOMBRES = ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"];
+  for (let oct = 48; oct <= 72; oct += 12) for (const d of [0, 2, 4, 5, 7, 9, 11]) BLANCAS.push(oct + d);
+  BLANCAS.push(84);
   const tocar = (midi, b) => { j.tocarNota(o, midi); b.classList.remove("toca"); void b.offsetWidth; b.classList.add("toca"); };
   const tecla = (midi, negra, i) => {
     const b = el("button.ca-tecla" + (negra ? ".negra" : ""), { type: "button", "aria-label": negra ? "Tecla negra" : NOMBRES[i % 7], style: negra ? { "--i": i } : null });
@@ -74,7 +77,11 @@ export function piano(j, o) {
   };
   const negras = [];
   BLANCAS.forEach((m, i) => { if (i < BLANCAS.length - 1 && [0, 1, 3, 4, 5].includes(i % 7)) negras.push(tecla(m + 1, true, i)); });
-  hoja(j, "Piano", el("div.ca-piano", {}, [el("div.ca-teclado", {}, [...BLANCAS.map((m, i) => tecla(m, false, i)), ...negras])]), "piano-hoja");
+  const teclado = el("div.ca-teclado", { style: { "--n": BLANCAS.length } }, [...BLANCAS.map((m, i) => tecla(m, false, i)), ...negras]);
+  const caja = el("div.ca-piano", {}, [teclado]);
+  hoja(j, "Piano", el("div.ca-piano-marco", {}, [el("p.ca-nota", { text: `Desliza para ver más teclas. ${j.pareja} te oye si está cerquita.` }), caja]), "piano-hoja");
+  // Empieza en el Do de en medio.
+  requestAnimationFrame(() => { const b = teclado.children[7]; if (b) caja.scrollLeft = b.offsetLeft - 12; });
 }
 
 /** Ajustes de la casita: sus sonidos (aparte de los del editor), el volumen, la música y escuchar cada uno. */
@@ -93,6 +100,7 @@ export function ajustes(j) {
     sec("Sonidos", fila("Sonidos del juego", p.on !== false, (v) => { s.ponerPref({ on: v }); if (v) j.sonar("ding"); }), el("label.ca-ajuste", {}, [el("span", { text: "Volumen" }), vol]), fila("Música de los aparatos", p.musica !== false, (v) => { s.ponerPref({ musica: v }); j.alCambiarMusica(); })),
     sec("Tus propios sonidos", el("p.ca-nota", { text: tuyos.length ? `Ya suenan ${tuyos.length} tuyos.` : "Todos suenan como de fábrica." }),
       el("p.ca-nota", { text: "Para cambiar uno, deja tu archivo (.mp3, .m4a, .ogg o .wav) en su carpeta, dentro de assets/sonidos-casita/ (cada sonido tiene la suya con su nombre), y súbelo." }), verLista, lista),
+    sec("Cómo se ve", fila("Estilo pixel", j.leerPixel(), (v) => j.pixel(v))),
     sec("La música del editor", el("p.ca-nota", { text: "Mientras juegan en la casita, la canción del editor se calla sola y vuelve al salir." })),
   ]), "ajustes");
 }
@@ -134,11 +142,14 @@ export function cajonCatalogo(j) {
   return n;
 }
 
-/** El menú flotante de un monito: sus gestos (o lo que pueden hacer juntos). */
-export function menuMonito(j, m, opciones) {
+/** El menú flotante de un monito: sus gestos (o lo que pueden hacer juntos), en una tablita con título. */
+export function menuMonito(j, m, opciones, titulo = "") {
   j.cerrarMenu();
   const p = j.enPantalla(m.gx, m.y - 160);
-  const menu = el("div.ca-menu", { role: "menu" }, opciones.map(([k, t, al]) => el("button.ca-menu-b", { type: "button", role: "menuitem", onClick: () => { j.cerrarMenu(); al(); } }, [el("i", { html: ICO[k] || ICO.corazon }), el("span", { text: t })])));
+  const menu = el("div.ca-menu", { role: "menu", "aria-label": titulo || "Gestos" }, [
+    titulo ? el("b.ca-menu-t", { text: titulo }) : null,
+    el("div.ca-menu-rejilla", {}, opciones.map(([k, t, al]) => el("button.ca-menu-b", { type: "button", role: "menuitem", dataset: { k }, onClick: () => { j.cerrarMenu(); al(); } }, [el("i", { html: ICO[k] || ICO.corazon }), el("span", { text: t })]))),
+  ].filter(Boolean));
   j.raiz.append(menu);
   const R = j.raiz.getBoundingClientRect(), w = menu.offsetWidth, h = menu.offsetHeight;
   menu.style.left = Math.max(8, Math.min(R.width - w - 8, p.x - R.left - w / 2)) + "px";

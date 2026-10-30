@@ -402,7 +402,7 @@ export class SonidosEditor {
     // Botones, piezas, pestañas y menús (no lo que pasa dentro de la hoja ni al escribir).
     document.addEventListener("click", (ev) => {
       const b = ev.target.closest?.("button, .ed-pieza, [role=menuitem], summary, .ed-asset, .ed-comp, label.ed-fila");
-      if (!b || b.disabled || ev.target.closest(".ed-vista, input, textarea, select, .ed-tl-cuerpo")) return;
+      if (!b || b.disabled || ev.target.closest(".ed-vista, .ca, input, textarea, select, .ed-tl-cuerpo")) return; // (la casita tiene sus propios sonidos)
       // Interruptores: suena cómo QUEDAN (encendido o apagado), ya cambiados.
       if (b.matches(".ed-toggle")) { setTimeout(() => this.sonar(b.classList.contains("on") ? "activar" : "desactivar"), 0); return; }
       // «Atrás» / «Cancelar» de las ventanas y vistas previas: suena a volver (y no además a cerrar).

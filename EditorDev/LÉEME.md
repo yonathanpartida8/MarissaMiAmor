@@ -1002,6 +1002,26 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Probado** | En Chromium a 390×844 (táctil) y 1280×800, con dos cuentas vinculadas: cuartos nuevos con su acomodo, canción del editor pausada y motor despierto, mensajes (como texto, globito, numerito, «Visto»), cartita por el buzón (banderita, leerla, leída en el servidor), cocinar pizza al horno (el otro ve la estufa prendida), servir dos platos (guardados en el servidor), comer juntos con fiestita en los dos teléfonos y platos que se acaban, cargar al gatito, piano, bocina de fiesta, luces de noche, rayo de sol, vestidor nuevo (el otro ve la ropa), Ajustes con los 68 sonidos, regalito del día y una casita de antes que estrena Estudio y Terraza; sin errores. Regresión de las fases 36–53. |
 | **No probado en teléfonos de verdad** | cómo suenan los sonidos y el piano en bocinas reales, si el motor de sonido despierta bien en iPhone tras bloquear la pantalla, el rendimiento de las luces (mezclas y sombras) en teléfonos Android sencillos, y archivos de sonido tuyos reales en las carpetas (la lista se probó vacía). |
 
+### Fase 55: Jueguitos, estilo pixel, puertas, lluvia, columpio y mensajes como en Roblox
+
+| | |
+| --- | --- |
+| **Jueguitos** | Nueva pestaña en la barra de Juntitos, junto a «Dibujar»: cada juego en su cuadrito («Nuestra casita») y uno de «Pronto habrá más». La casita ya no está en Cositas y «Volver atrás» regresa a Jueguitos. |
+| **Estilo pixel** | Las cosas, los monitos, los platitos y lo que traen en la mano se ven en pixel art (un filtro que los cuadricula); los botones siguen igual. Se puede quitar en Ajustes y se quita solo en Ultra rendimiento. |
+| **Siempre al frente** | Los monitos van enfrente de los muebles y las mascotas también (nunca quedan tapados). Ya no se voltean a cada rato al cargarlos ni mueven la cabecita de lado a lado. |
+| **Paredes con puerta** | Entre cuarto y cuarto (adentro) hay una pared con su puerta, que se abre sola cuando un monito pasa (con su sonidito). |
+| **Cosas en el piso y física** | Soltar lo que traes lo deja tirado en el piso (cae con rebotito) y se recoge al tocarlo. Las cosas chiquitas se pueden poner encima de mesas, burós, barras, repisas y muebles (se quedan arriba y se ven enfrente); si las sueltas en el aire, caen al mueble de abajo o al piso, y jugando, si las avientas, se resbalan. |
+| **Cositas** | Categoría nueva para llenar huecos: florero, velitas, taza, pila de libros, portarretrato, lamparita, radio, frasco de galletas, tetera, despertador, pecerita, plantita y pastel de cumple; más trampolín (para brincar) y maquinita de arcade. |
+| **Lluvia y ambiente** | Botón de nube en la barrita de abajo: llueve para los dos (gotas, charquitos, cielo gris, ventanas mojadas, sonido de lluvia y truenos) y el perrito se mete a su casita (a las casitas de antes se les agrega una en el jardín). Afuera se oyen pajaritos de día, grillos de noche y carros que pasan (se ve uno pasar por el jardín), cada uno con su carpeta en `assets/sonidos-casita/`. |
+| **Día, tarde y noche** | Tocar el reloj cambia la hora de la casita para los dos: día → tarde → noche → la hora de verdad. |
+| **Columpio** | Al subirte sale «Pídele a … que te empuje» (y puedes pedirlo desde tus gestos); tu amorcito, al tocarte, tiene «Empujar el columpio»: camina detrás de ti, te empuja y vuelas alto en los dos teléfonos. |
+| **Piano** | Tres octavas (se desliza a los lados, empieza en el Do de en medio). Al tocarlo sólo suena el piano (los botones de la casita ya no hacen el sonido del editor) y tu amorcito oye tus notas si está cerquita (más bajito entre más lejos). |
+| **Mensajes como en Roblox** | «Mensajes» abre una barrita delgada para escribir, sin cajón que tape la casa. Lo que escriben sale en globitos arriba de su monito, hasta 3 seguidos: al llegar otro se va el más viejo. Un cajoncito guarda los de esta vez y se limpia al salir. Las cartitas siguen en el buzón (botón de sobre en la barrita). |
+| **Gestos** | La tablita ahora tiene título y cuadritos: Saludar, Bailar, Brincar, Besito, Beso volado, Corazón, Aplaudir, Reír, Guiñar, ¡Sorpresa!, Pensar, Estirarse, Tristecito y Enojadito; juntos: Abrazar, Besito, De la mano, Chócalas, Bailar juntos, Cosquillas y Selfie (con flash). |
+| **Barrita de cuartos** | Se puede esconder con su flechita (queda su botoncito) y se acuerda. |
+| **Probado** | En Chromium a 390×844 (táctil) y 1280×800 con dos cuentas: Jueguitos, pixel, monitos y mascotas al frente, puerta que se abre, soltar y recoger, globitos (3 máximo) y cajoncito limpio al volver, lluvia y perrito a su casita en los dos, reloj día/tarde/noche en los dos, columpio con «pídele» y empujón visto en los dos, gestos nuevos, piano de 3 octavas que sólo suena a piano y que ella oye cerca, florero encima de la mesa y barrita de cuartos que se esconde; sin errores. Regresión de las fases 46–54. |
+| **No probado en teléfonos de verdad** | el filtro pixel en iPhone (si se ve raro, se apaga en Ajustes → «Estilo pixel»), qué tan fluido va con lluvia en un Android sencillo y el teclado del teléfono con la barrita de mensajes abierta. |
+
 ## Cómo está hecho
 
 ```

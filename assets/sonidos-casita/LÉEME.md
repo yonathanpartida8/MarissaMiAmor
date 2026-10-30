@@ -72,6 +72,15 @@ La lista de qué hay en cada carpeta (`indice.json`) se rehace sola en GitHub al
 | `alberca/` | Echarse a la alberca | de fábrica |
 | `hamaca/` | Mecerse en la hamaca | de fábrica |
 | `pio/` | El pajarito | de fábrica |
+| `lluvia/` | La lluvia (se repite mientras llueve) | de fábrica |
+| `trueno/` | Truenos lejanos cuando llueve | de fábrica |
+| `auto/` | Un carro que pasa allá afuera | de fábrica |
+| `claxon/` | El claxon de un carro | de fábrica |
+| `grillo/` | Grillitos de noche afuera | de fábrica |
+| `pajaritos/` | Pajaritos de día afuera | de fábrica |
+| `puerta-cuarto/` | Las puertas entre los cuartos | de fábrica |
+| `trampolin/` | Brincar en el trampolín | de fábrica |
+| `columpio/` | Empujar el columpio | de fábrica |
 | `bici/` | El timbre de la bici | de fábrica |
 | `pincel/` | Pintar en el caballete | de fábrica |
 | `micro/` | El microondas | de fábrica |

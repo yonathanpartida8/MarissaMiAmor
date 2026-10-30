@@ -77,10 +77,13 @@ export const ACCIONES = {
   musica(j, o) { if (alternar(j, o, "on", "ding", "clic")) { j.particulas("nota", o, 0, -o.def.h, 4); j.emote("baila"); } },
   pecera(j, o, n) { rebote(n, "susto"); j.sonar("pez"); j.particulas("burbuja", o, 0, -110, 5); },
   cortinas(j, o) { j.estado(o, { cerrada: !o.e?.cerrada }); j.sonar("cortina"); },
-  reloj(j, o, n) {
-    rebote(n); j.sonar("tic");
-    const d = new Date(), h = d.getHours(), m = String(d.getMinutes()).padStart(2, "0");
-    j.decir(`Son las ${h % 12 || 12}:${m} ${h < 12 ? "de la mañana" : h < 19 ? "de la tarde" : "de la noche"}`, false);
+  // El reloj cambia la hora del día en la casita: día, tarde, noche o la de verdad (lo ven los dos).
+  reloj(j, o, n) { rebote(n); j.sonar("tic"); j.cambiarHora(); },
+  recoger(j, o) { return j.recoger(o); },
+  async galletas(j, o, n) { if (!(await j.irJunto(o))) return; rebote(n); j.sonar("abrir"); j.dar("galleta", o); },
+  async trampolin(j, o, n) {
+    if (!(await j.irJunto(o))) return;
+    j.trampolin(o, n);
   },
   async florecer(j, o, n) {
     const etapa = o.e?.etapa | 0;
@@ -158,6 +161,9 @@ export const ACCIONES = {
 /** Las caritas y gestos de tu monito (al tocarlo) y lo que pueden hacer juntos (al tocar al de tu amorcito). */
 export const GESTOS = [
   ["saluda", "Saludar", "saludo", 1300], ["baila", "Bailar", "risa", 3200], ["brinca", "Brincar", "brinco", 900],
-  ["besito", "Besito", "beso", 1300], ["aplaude", "Aplaudir", "aplauso", 1500], ["rie", "Reír", "risa", 1600],
+  ["besito", "Besito", "beso", 1300], ["volado", "Beso volado", "beso", 1600], ["corazon", "Corazón", "regalito", 1900],
+  ["aplaude", "Aplaudir", "aplauso", 1500], ["rie", "Reír", "risa", 1600], ["guino", "Guiñar", "pop", 1100],
+  ["sorpresa", "¡Sorpresa!", "boing", 1300], ["piensa", "Pensar", "tic", 2200], ["estira", "Estirarse", "whoosh", 1700],
+  ["triste", "Tristecito", "nop", 2200], ["enojado", "Enojadito", "nop", 1900],
 ];
-export const JUNTOS = [["abrazo", "Abrazar"], ["beso", "Besito"], ["choca", "Chócalas"], ["bailemos", "Bailar juntos"]];
+export const JUNTOS = [["abrazo", "Abrazar"], ["beso", "Besito"], ["manita", "De la mano"], ["choca", "Chócalas"], ["bailemos", "Bailar juntos"], ["cosquillas", "Cosquillas"], ["selfie", "Selfie"]];

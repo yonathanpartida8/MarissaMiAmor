@@ -37,6 +37,12 @@ const MAX_OBJETOS = 300;
 const POSES = ["sentado", "dormido", "banando", "columpio", "cocinando", "duchando"];
 const nuevoId = () => Math.random().toString(36).slice(2, 10);
 const REGALITO = "editordev:casita-regalito";
+const PLEGADO = "editordev:casita-cuartos-plegados";
+const PIXEL = "editordev:casita-pixel";
+// Los monitos van siempre enfrente de los muebles (y las mascotas, enfrente de los muebles pero detrás de ellos).
+const zMono = (y) => 1000 + Math.round(y);
+const zMascota = (y) => 900 + Math.round(y);
+const puedeSubir = (d) => d.capa === "piso" && d.h <= 120 && d.tope == null && !d.superficie;
 const hoy = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 
 export class Casita {
@@ -66,6 +72,9 @@ export class Casita {
     this.mundo.append(this.yo.n, this.suyo.n);
     this.escena = el("div.ca-escena", {}, [this.vistaN]);
     this.raiz = el("div.ca", { dataset: { sinOnda: "" } }, [this.escena]);
+    // Estilo pixel (se puede quitar en Ajustes): un filtro que cuadricula cada cosa y a los monitos.
+    this.raiz.insertAdjacentHTML("afterbegin", '<svg class="ca-filtros" aria-hidden="true" width="0" height="0"><filter id="ca-pixel" x="-30%" y="-30%" width="160%" height="160%"><feFlood x="1.5" y="1.5" height="1" width="1"/><feComposite width="4" height="4"/><feTile result="t"/><feComposite in="SourceGraphic" in2="t" operator="in"/><feMorphology operator="dilate" radius="2"/></filter></svg>');
+    this.pixel(this.leerPixel());
     this._armarHud();
     cont.replaceChildren(this.raiz);
     this._enlazar();
@@ -81,6 +90,7 @@ export class Casita {
     requestAnimationFrame(() => this.irCuarto("sala", false));
     this._tiempo();
     this._reloj = setInterval(() => this._tiempo(), 30000);
+    this._amb = setInterval(() => this._ambienteTic(), 3500);
     this.sync = new Sincro({ alRecibir: (r, p) => (r ? this._recibir(r, p) : this._pintarCasa(this.sync.casa())), alEstado: (t, k) => this._guardado(t, k) });
     this.sync.iniciar();
   }
@@ -89,7 +99,9 @@ export class Casita {
     this.vivo = false;
     this.sync?.parar();
     this._ro?.disconnect();
-    clearInterval(this._reloj);
+    clearInterval(this._reloj); clearInterval(this._amb);
+    this._lluviaS?.parar(); this._lluviaS = null;
+    clearInterval(this._tNotas);
     for (const m of [this.yo, this.suyo]) if (m) { clearTimeout(m.tc); clearTimeout(m.tg); clearInterval(m.tp); clearTimeout(m.tgesto); clearTimeout(m.tcome); }
     for (const parar of this.musicas.values()) parar();
     this.musicas.clear();
@@ -105,6 +117,7 @@ export class Casita {
   atras() {
     if (this.cerrarMenu()) return true;
     if (this.cerrarHoja()) return true;
+    if (this.mensajes.abierto()) { this.mensajes.barra(false); return true; }
     if (this.sel) { this._seleccionar(null); return true; }
     if (this.editando) { this._editar(false); return true; }
     if (this.raiz?.classList.contains("completa")) { this._completa(false); return true; }
@@ -132,6 +145,30 @@ export class Casita {
       const o = el("i.ca-oscuro." + c.k, { style: { left: inicioDe(c.k) + "px", width: c.w + "px" } });
       this.oscuroN.set(c.k, o);
       this.mundo.append(o);
+      if (c.afuera) n.append(el("i.ca-lluvia"), el("i.ca-charcos"));
+      if (c.k === "jardin") n.append(el("i.ca-auto"));
+    }
+    // Entre cuarto y cuarto (adentro), una pared con su puerta que se abre sola al pasar.
+    this.puertas = [];
+    for (let i = 1; i < CUARTOS.length; i++) {
+      const a = CUARTOS[i - 1], b = CUARTOS[i];
+      if (a.afuera || b.afuera) continue;
+      const x = inicioDe(b.k), n = el("div.ca-muro", { style: { left: x + "px" } }, [el("i.ca-muro-pared"), el("i.ca-puerta-marco"), el("i.ca-puerta-hoja", {}, [el("i.ca-puerta-perilla")])]);
+      this.mundo.append(n);
+      this.puertas.push({ x, n });
+    }
+  }
+  /** Las puertas que cruza un monito en su camino se abren justo cuando pasa. */
+  _puertasEnCamino(m, x0, x1, s) {
+    for (const p of this.puertas || []) {
+      if ((p.x - x0) * (p.x - x1) >= 0) continue;
+      const t = s ? (Math.abs(p.x - x0) / Math.abs(x1 - x0)) * s * 1000 : 0;
+      setTimeout(() => {
+        if (!this.vivo) return;
+        p.n.classList.add("abierta"); clearTimeout(p.t);
+        p.t = setTimeout(() => p.n.classList.remove("abierta"), 950);
+        if (m.quien === "yo" || this._visible(m)) this.sonar("puerta-cuarto", { volumen: m.quien === "yo" ? 0.7 : 0.4 });
+      }, Math.max(0, t - 260));
     }
   }
 
@@ -144,11 +181,14 @@ export class Casita {
     this.completaB.querySelector("span").textContent = "Completa";
     this.hudN = el("div.ca-hud", {}, [
       el("div.ca-hud-izq", {}, [this.nombreN, el("div.ca-hud-linea", {}, [this.estadoN, this.guardadoN])]),
-      el("div.ca-hud-der", {}, [this.mensajesB = boton("mensajes", "Mensajes", () => this.mensajes.panel()), boton("vestir", "Vestir", () => this.vestidor()), boton("acomodar", "Acomodar", () => this._editar(true)), this.completaB]),
+      el("div.ca-hud-der", {}, [this.mensajesB = boton("mensajes", "Mensajes", () => this.mensajes.barra()), boton("vestir", "Vestir", () => this.vestidor()), boton("acomodar", "Acomodar", () => this._editar(true)), this.completaB]),
     ]);
     this.badgeN = el("b.ca-badge", { hidden: "", "aria-label": "Sin leer" });
     this.mensajesB.append(this.badgeN);
+    this.plegarB = el("button.ca-cuarto-b.plegar", { type: "button", "aria-label": "Esconder los cuartos", title: "Esconder los cuartos", html: ICO.plegar, onClick: () => this._plegar() });
     this.cuartosB = el("div.ca-hud-cuartos", { role: "tablist", "aria-label": "Cuartos" }, CUARTOS.map((c) => el("button.ca-cuarto-b", { type: "button", role: "tab", "aria-label": c.n, title: c.n, dataset: { k: c.k }, html: ICO[c.k] || ICO.corazon, onClick: () => { this.irCuarto(c.k); this.sonar("whoosh", { volumen: 0.5 }); } })));
+    this.cuartosB.prepend(this.plegarB);
+    try { if (localStorage.getItem(PLEGADO) === "1") this._plegar(true); } catch (e) { /* nada */ }
     this.edCuartoN = el("small");
     this.deshacerB = boton("deshacer", "Deshacer", () => this._deshacer());
     this.edicionN = el("div.ca-edicion", {}, [
@@ -163,11 +203,22 @@ export class Casita {
     ]);
     this.volverN = el("div.ca-barra", {}, [
       el("button.ca-volver", { type: "button", onClick: () => this._volver() }, [el("i", { html: ICO.volver }), el("span", { text: "Volver atrás" })]),
-      el("button.ca-ajustes-b", { type: "button", "aria-label": "Ajustes de sonido", title: "Ajustes de sonido", html: ICO.sonido, onClick: () => P.ajustes(this) }),
+      this.climaB = el("button.ca-ajustes-b.clima", { type: "button", "aria-label": "Lluvia", title: "Que llueva (o que salga el sol)", html: ICO.lluvia, onClick: () => this.alternarLluvia() }),
+      el("button.ca-ajustes-b", { type: "button", "aria-label": "Ajustes", title: "Ajustes", html: ICO.sonido, onClick: () => P.ajustes(this) }),
     ]);
     this.escena.append(this.hudN, this.cuartosB, this.edicionN, this.basuraN);
     this.raiz.append(this.selN, this.volverN);
   }
+
+  /** Esconder (o mostrar) los botones de los cuartos: queda sólo su botoncito. */
+  _plegar(on = !this.cuartosB.classList.contains("plegado")) {
+    this.cuartosB.classList.toggle("plegado", on);
+    this.plegarB.innerHTML = on ? ICO.cuartos : ICO.plegar;
+    this.plegarB.setAttribute("aria-label", on ? "Mostrar los cuartos" : "Esconder los cuartos");
+    try { localStorage.setItem(PLEGADO, on ? "1" : "0"); } catch (e) { /* nada */ }
+  }
+  leerPixel() { try { return localStorage.getItem(PIXEL) !== "0"; } catch (e) { return true; } }
+  pixel(on) { this.raiz.classList.toggle("pixel", !!on); try { localStorage.setItem(PIXEL, on ? "1" : "0"); } catch (e) { /* nada */ } }
 
   /* ═════════════ Cámara y medidas ═════════════ */
   _medir() {
@@ -256,6 +307,8 @@ export class Casita {
     this._marcarOcupados();
     this._musicas();
     this.mensajes.marcas();
+    this._tiempo();
+    this._clima();
   }
   _crearObj(o, d) {
     const n = el("div.ca-obj." + d.k + ".capa-" + d.capa + (d.mascota ? ".mascota" : "") + (d.portatil ? ".portatil" : ""), { dataset: { id: o.id }, role: d.al || d.lugares || d.portatil ? "button" : null, "aria-label": d.n, style: { width: d.w + "px", height: d.h + "px" } });
@@ -279,7 +332,10 @@ export class Casita {
   _colocar(r) {
     const { o, d } = r, gx = global(o.c, o.x);
     r.gx = gx;
-    const z = d.capa === "alfombra" ? 3 : d.capa === "pared" ? 10 + Math.round(o.y / 60) : Math.round(o.y);
+    let z = d.capa === "alfombra" ? 3 : d.capa === "pared" ? 10 + Math.round(o.y / 60) : Math.round(o.y);
+    if (d.mascota) z = zMascota(o.y);
+    // (Encima de un mueble: justo enfrente de él.)
+    else if (puedeSubir(d) && o.y < FONDO) { const a = this._apoyo(gx, o.y, o.id); if (a) z = (parseInt(a.r.n.style.zIndex, 10) || 0) + 1; }
     for (const n of [r.n, r.fr]) { if (!n) continue; n.style.left = (gx - d.w / 2).toFixed(1) + "px"; n.style.top = (o.y - d.h).toFixed(1) + "px"; n.classList.toggle("f", !!o.f); }
     r.n.style.zIndex = z;
     if (r.fr) r.fr.style.zIndex = z + 2;
@@ -287,6 +343,29 @@ export class Casita {
       const b = d.brilla, x = gx - d.w / 2 + (o.f ? d.w - b.x : b.x), y = o.y - d.h + b.y;
       r.glow.style.left = (x - b.r).toFixed(1) + "px"; r.glow.style.top = (y - b.r).toFixed(1) + "px";
     }
+  }
+  /** La superficie de un mueble justo debajo de (gx, y): para que lo que sueltas se quede encima. */
+  _apoyo(gx, y, sinId) {
+    let mejor = null;
+    for (const r of this.objs.values()) {
+      if (r.o.id === sinId || r.d.tope == null || Math.abs(gx - r.gx) > r.d.w / 2 - 4) continue;
+      const tope = r.o.y - r.d.h + r.d.tope;
+      if (tope < y - 16) continue;
+      if (!mejor || tope < mejor.y) mejor = { y: tope, r };
+    }
+    return mejor;
+  }
+  /** Física de juguete: cae desde `alto` (con su rebotito, polvito y sonido al tocar). */
+  _caer(r, alto) {
+    if (reducido() || Math.abs(alto) < 6) return;
+    const t = Math.min(700, 260 + Math.sqrt(Math.abs(alto)) * 28);
+    r.n.animate([
+      { transform: `translateY(${-alto}px)`, easing: "cubic-bezier(.55,0,1,.45)" },
+      { transform: "translateY(0) scale(1.08,.9)", offset: 0.62, easing: "ease-out" },
+      { transform: `translateY(${-Math.min(26, alto * 0.22)}px)`, offset: 0.8, easing: "ease-in" },
+      { transform: "translateY(0)" },
+    ], { duration: t });
+    setTimeout(() => { if (!this.vivo) return; this.particulas("polvo", { gx: r.gx, y: r.o.y }, 0, 0, 2); this.sonar("boing", { volumen: 0.45 }); }, t * 0.62);
   }
   _estadoClases(r) {
     const e = r.o.e || {}, n = r.n;
@@ -355,11 +434,58 @@ export class Casita {
     this._paraPrueba = () => { clearTimeout(t); parar?.(); this._paraPrueba = null; };
   }
   esNoche() { return this.mundo.classList.contains("noche"); }
+  /** El reloj: día → tarde → noche → la hora de verdad (lo ven los dos). */
+  cambiarHora() {
+    const orden = ["dia", "tarde", "noche", "real"], ahora = this.casa?.cuartos?.jardin?.hora || "real";
+    const sig = orden[(orden.indexOf(ahora) + 1) % orden.length];
+    this.sync.op({ o: "cuarto", k: "jardin", v: { hora: sig } });
+    this._pintarCasa(this.sync.casa());
+    this.decir({ dia: "¡Ya es de día!", tarde: "Ya es de tarde", noche: "Ya es de noche", real: "Como la hora de verdad" }[sig], false);
+  }
+  /** La lluvia (la ven los dos): el perrito de afuera se mete a su casita. */
+  alternarLluvia() {
+    const v = !this.casa?.cuartos?.jardin?.lluvia;
+    this.sync.op({ o: "cuarto", k: "jardin", v: { lluvia: v } });
+    this._pintarCasa(this.sync.casa());
+    this.sonar(v ? "trueno" : "pajaritos");
+    aviso(v ? "Empezó a llover" : "Salió el sol", 1800);
+  }
+  _clima() {
+    const lluvia = !!this.casa?.cuartos?.jardin?.lluvia;
+    this.mundo.classList.toggle("lluvia", lluvia);
+    this.climaB?.classList.toggle("on", lluvia);
+    for (const r of this.objs.values()) {
+      if (r.d.k !== "perrito") continue;
+      const casa = cuarto(r.o.c).afuera ? [...this.objs.values()].find((x) => x.d.k === "casita_perro" && x.o.c === r.o.c) : null;
+      const dentro = lluvia && !!casa;
+      if (casa) { r.n.style.setProperty("--a-x", (casa.gx - r.gx).toFixed(0) + "px"); r.n.style.setProperty("--a-y", (casa.o.y - r.o.y).toFixed(0) + "px"); casa.n.classList.toggle("con-perro", dentro); }
+      r.n.classList.toggle("refugiado", dentro);
+    }
+    if (lluvia !== this._llovia) { this._llovia = lluvia; this._ambienteTic(true); }
+  }
+  /** El ambiente de afuera: lluvia (y truenos), pajaritos de día, grillos de noche y carros que pasan. */
+  _ambienteTic(soloLluvia = false) {
+    if (!this.vivo || document.hidden) return;
+    const afuera = !!cuarto(this.cuartoActual).afuera, lluvia = !!this._llovia;
+    if (lluvia) { if (!this._lluviaS) this._lluviaS = this.son.lluvia(afuera ? 1 : 0.35); else this._lluviaS.nivel(afuera ? 1 : 0.35); }
+    else if (this._lluviaS) { this._lluviaS.parar(); this._lluviaS = null; }
+    if (soloLluvia || this.editando) return;
+    const r = Math.random();
+    if (lluvia && r < 0.07) this.sonar("trueno", { volumen: afuera ? 0.8 : 0.4 });
+    if (!lluvia && afuera) { if (this.esNoche()) { if (r < 0.55) this.sonar("grillo", { volumen: 0.5 }); } else if (r < 0.4) this.sonar("pajaritos", { volumen: 0.55 }); }
+    if (r > 0.86) {
+      this.sonar("auto", { volumen: afuera ? 0.8 : 0.22 });
+      if (Math.random() < 0.25) setTimeout(() => this.sonar("claxon", { volumen: afuera ? 0.5 : 0.15 }), 800);
+      const a = this.cuartosN.get("jardin")?.querySelector(".ca-auto");
+      if (a && !reducido()) { a.classList.remove("pasa"); void a.offsetWidth; a.classList.add("pasa"); }
+    }
+  }
   _tiempo() {
-    const h = new Date().getHours();
-    this.mundo.classList.toggle("noche", h >= 20 || h < 7);
-    this.mundo.classList.toggle("tarde", h >= 18 && h < 20);
-    this.raiz?.classList.toggle("es-noche", h >= 20 || h < 7);
+    const modo = this.casa?.cuartos?.jardin?.hora || "real", h = new Date().getHours();
+    const noche = modo === "noche" || (modo === "real" && (h >= 20 || h < 7)), tarde = modo === "tarde" || (modo === "real" && h >= 18 && h < 20);
+    this.mundo.classList.toggle("noche", noche);
+    this.mundo.classList.toggle("tarde", !noche && tarde);
+    this.raiz?.classList.toggle("es-noche", noche);
     for (const r of this.objs.values()) if (r.d.k === "reloj") this._ponerReloj(r.n);
   }
   _ponerReloj(n) {
@@ -374,9 +500,10 @@ export class Casita {
     const flip = el("div.ca-mono-flip", {}, [cuerpo, llevaN]);
     const caja = el("div.ca-mono-caja", {}, [flip]);
     const globo = el("div.ca-globo", { hidden: "" });
+    const globos = el("div.ca-globos", { "aria-live": "polite" });
     const nombreN = el("span.ca-mono-nombre", { text: nombre });
-    const n = el("div.ca-monito." + quien, { role: "img", "aria-label": nombre, style: { left: gx + "px", top: SUELO + "px", zIndex: SUELO } }, [caja, globo, nombreN]);
-    return { quien, n, caja, cuerpo, llevaN, globo, nombreN, gx, y: SUELO, ropa: { ...ropa }, accion: "", mueble: "", lleva: "", mira: 1, orden: 0, t: 0, evAt: 0, dt: 0 };
+    const n = el("div.ca-monito." + quien, { role: "img", "aria-label": nombre, style: { left: gx + "px", top: SUELO + "px", zIndex: zMono(SUELO) } }, [caja, globo, globos, nombreN]);
+    return { quien, n, caja, cuerpo, llevaN, globo, globos, nombreN, gx, y: SUELO, ropa: { ...ropa }, accion: "", mueble: "", lleva: "", mira: 1, orden: 0, t: 0, evAt: 0, dt: 0 };
   }
   _vestirMono(m, ropa) { m.ropa = { ...m.ropa, ...ropa }; m.cuerpo.innerHTML = monitoSVG(m.ropa); }
   _mirar(m, lado) { m.mira = lado < 0 ? -1 : 1; m.n.classList.toggle("izq", m.mira < 0); }
@@ -392,15 +519,16 @@ export class Casita {
     const vel = lim(d * 0.55, 210, 620), s = ya || reducido() ? 0 : Math.max(0.18, d / vel);
     m.n.classList.toggle("corre", vel > 330);
     m.n.style.transitionDuration = s + "s";
-    m.n.style.zIndex = Math.round(Math.max(m.y, y));
+    m.n.style.zIndex = zMono(Math.max(m.y, y));
     m.n.style.left = gx.toFixed(1) + "px"; m.n.style.top = y.toFixed(1) + "px";
+    this._puertasEnCamino(m, m.gx, gx, s);
     m.gx = gx; m.y = y;
     m.llega = performance.now() + s * 1000;
     if (s > 0.2) {
       m.n.classList.add("camina");
       if (m.quien === "yo" || this._visible(m)) { let i = 0; m.tp = setInterval(() => this.sonar(i++ % 2 ? "paso" : "paso2", { volumen: m.quien === "yo" ? 0.9 : 0.5 }), vel > 330 ? 170 : 260); }
     }
-    m.tc = setTimeout(() => { m.n.classList.remove("camina", "corre"); clearInterval(m.tp); m.n.style.zIndex = Math.round(y); luego?.(); }, s * 1000 + 30);
+    m.tc = setTimeout(() => { m.n.classList.remove("camina", "corre"); clearInterval(m.tp); m.n.style.zIndex = zMono(y); luego?.(); }, s * 1000 + 30);
     if (m.quien === "yo" && !ya) this._seguir(gx);
   }
   _pose(m, pose, mueble = "", z = null) {
@@ -450,6 +578,7 @@ export class Casita {
     const { c, x } = enCuarto(r.gx + l.dx * sx);
     this.sync.yo({ c, x: Math.round(x), y: Math.round(r.o.y + l.dy), mira: l.mira ? l.mira * sx : this.yo.mira, accion: l.pose, mueble: `${o.id}:${j}` });
     const ok = await this._irLugar(this.yo, r, j);
+    if (ok && l.pose === "columpio") setTimeout(() => this.vivo && this.sigueEn(o) && this._globo(this.yo, `Pídele a ${this.pareja} que te empuje`, 4600), 400);
     if (ok) { vibrar(8); this.sonar({ dormido: "dormir", banando: "burbujas", columpio: "whoosh" }[l.pose] || "sentar"); if (l.pose === "banando") this.particulas("burbuja", { gx: this.yo.gx, y: this.yo.y - 60 }, 0, 0, 5); }
     return ok;
   }
@@ -502,12 +631,12 @@ export class Casita {
     this._globo(this.yo, t);
     if (mandar) { this._mandarYo({ dice: String(t).slice(0, 60) }); this.sonar("pop"); }
   }
+  /** Un globito arriba del monito (como en Roblox: hasta 3 seguidos; al llegar otro, se va el más viejo). */
   _globo(m, t, ms = 4200) {
-    m.globo.classList.remove("zzz");
-    m.globo.hidden = false; m.globo.textContent = t;
-    m.globo.classList.remove("sale"); void m.globo.offsetWidth; m.globo.classList.add("sale");
-    clearTimeout(m.tg);
-    m.tg = setTimeout(() => { if (m.accion === "dormido") { m.globo.textContent = "z z z"; m.globo.classList.add("zzz"); } else m.globo.hidden = true; }, ms);
+    const b = el("div.ca-globito", { text: String(t) });
+    m.globos.append(b);
+    while (m.globos.children.length > 3) m.globos.firstElementChild.remove();
+    setTimeout(() => { b.classList.add("se-va"); setTimeout(() => b.remove(), 320); }, ms);
   }
   vestidor() { P.vestidor(this); }
   vestir(r) { this._vestirMono(this.yo, r); clearTimeout(this._tRopa); this._tRopa = setTimeout(() => this._mandarYo({ ropa: { ...this.yo.ropa } }), 500); }
@@ -515,7 +644,7 @@ export class Casita {
   gesto(m, k, mandar = true) {
     const g = GESTOS.find((x) => x[0] === k);
     if (!g) return;
-    if (m.accion && k !== "saluda" && k !== "besito" && k !== "rie") { if (m === this.yo) this.pararse(); else this._pose(m, ""); }
+    if (m.accion && !["saluda", "besito", "rie", "volado", "corazon", "guino", "sorpresa", "piensa", "triste", "enojado"].includes(k)) { if (m === this.yo) this.pararse(); else this._pose(m, ""); }
     clearTimeout(m.tgesto);
     m.n.classList.remove(...GESTOS.map((x) => "g-" + x[0]));
     void m.n.offsetWidth;
@@ -524,6 +653,11 @@ export class Casita {
     if (m === this.yo || this._visible(m)) this.sonar(g[2], { volumen: m === this.yo ? 1 : 0.6 });
     const sobre = { gx: m.gx, y: m.y - 130 };
     if (k === "besito") this.particulas("corazon", sobre, 10 * m.mira, 30, 5);
+    if (k === "volado") setTimeout(() => this.vivo && this.particulas("corazon", sobre, 50 * m.mira, 20, 6), 500);
+    if (k === "corazon") this.particulas("corazon", sobre, 0, -10, 7);
+    if (k === "triste") this.particulas("agua", { gx: m.gx, y: m.y - 100 }, 0, 0, 3);
+    if (k === "enojado") this.particulas("vapor", sobre, 0, 10, 3);
+    if (k === "piensa") this._globo(m, "…", 2000);
     if (k === "baila") this.particulas("nota", sobre, 0, 0, 4);
     if (k === "aplaude") this.particulas("chispa", sobre, 0, 40, 5);
     if (mandar) this._mandarYo({ ev: { k: "gesto", t: k } });
@@ -539,7 +673,40 @@ export class Casita {
     m.tgesto = setTimeout(() => { m.n.classList.remove("g-come"); this._ponerLleva(m, ""); this._mandarYo({ lleva: "" }); this._globo(m, "¡Qué rico!", 1800); }, 1600);
     this._mandarYo({ ev: { k: "come", t: m.lleva } });
   }
-  soltar(callado = false) { const m = this.yo; if (!m.lleva) return; this._ponerLleva(m, ""); if (!callado) { this.sonar("soltar"); this.particulas("polvo", { gx: m.gx, y: m.y }, 0, 0, 3); } this._mandarYo({ lleva: "" }); }
+  /** Soltar lo que traes: se queda tirado en el piso (cae con su rebotito) y se recoge al tocarlo. */
+  soltar(alBote = false) {
+    const m = this.yo, k = m.lleva;
+    if (!k) return;
+    this._ponerLleva(m, ""); this._mandarYo({ lleva: "" });
+    if (alBote || this.objs.size >= MAX_OBJETOS) return;
+    this.sonar("soltar");
+    const gx = lim(m.gx + 28 * m.mira, 24, ANCHO - 24), { c, x } = enCuarto(gx);
+    const o = { id: nuevoId(), t: "cosita", c, x: Math.round(x), y: Math.round(lim(m.y + 8, FONDO, FRENTE)), f: false, e: { k } };
+    this.sync.op({ o: "pon", obj: o });
+    this._pintarCasa(this.sync.casa());
+    const r = this.objs.get(o.id);
+    if (r) this._caer(r, 70);
+  }
+  /** Recoger algo del piso (si traías otra cosa, la deja ahí). */
+  async recoger(o) {
+    const r = this.objs.get(o.id), k = r?.o.e?.k;
+    if (!r || !COSAS_MANO[k]) return;
+    if (!(await this.irJunto({ id: o.id }))) return;
+    if (!this.objs.has(o.id)) return;
+    if (this.yo.lleva) this.soltar();
+    this.sync.op({ o: "quita", id: o.id });
+    this._pintarCasa(this.sync.casa());
+    this._ponerLleva(this.yo, k); this.sonar("levantar"); this._mandarYo({ lleva: k });
+  }
+  /** Brincar en el trampolín un ratito (rebota y suena). */
+  trampolin(o, n) {
+    const m = this.yo, y0 = m.y, orden = ++m.orden;
+    m.n.style.transitionDuration = ".25s"; m.n.style.top = o.y - 20 + "px"; m.n.style.zIndex = zMono(o.y + 40);
+    m.n.classList.add("g-trampolin");
+    this._mandarYo({ ev: { k: "gesto", t: "brinca" } });
+    let i = 0;
+    const t = setInterval(() => { if (!this.vivo || m.orden !== orden || i++ > 5) { clearInterval(t); m.n.classList.remove("g-trampolin"); if (this.vivo && m.orden === orden) { m.n.style.top = y0 + "px"; m.n.style.zIndex = zMono(y0); } return; } this.sonar("trampolin"); rebote(n, "salta"); }, 560);
+  }
   /** Cocinar algo (mesa.js): desde «¿Qué cocinamos?», el micro o la licuadora. */
   cocinar(o, k) { return cocinar(this, o, k); }
   /** Una tecla del piano: su nota, notitas que salen y tu monito tocando (tu amorcito lo ve). */
@@ -551,8 +718,13 @@ export class Casita {
     clearTimeout(m.ttoca);
     m.n.classList.add("tocando");
     m.ttoca = setTimeout(() => m.n.classList.remove("tocando"), 700);
-    const ahora = performance.now();
-    if (ahora - (this._ultToca || 0) > 2500) { this._ultToca = ahora; this._mandarYo({ ev: { k: "toca", t: "piano" } }); }
+    // Las notas viajan en grupitos para que tu amorcito las oiga si está cerca.
+    (this._notas ||= []).push(midi);
+    if (!this._tNotas) this._tNotas = setInterval(() => {
+      const ns = (this._notas || []).splice(0, 8);
+      if (!ns.length) { clearInterval(this._tNotas); this._tNotas = null; return; }
+      this._mandarYo({ ev: { k: "notas", t: ns.join(".") } });
+    }, 380);
   }
 
   /** Lo que hacen juntos: tu monito va con el de tu amorcito y lo hacen los dos. */
@@ -569,9 +741,9 @@ export class Casita {
       return;
     }
     if (k === "bailemos") { this.gesto(yo, "baila", false); this.gesto(el2, "baila", false); this._mandarYo({ ev: { k: "bailemos" } }); return; }
-    // Abrazo, besito y chócalas: primero se acerca.
+    // Abrazo, besito, chócalas, de la mano, cosquillas, selfie o empujar el columpio: primero se acerca.
     const lado = yo.gx < el2.gx ? -1 : 1, enPiso = !el2.mueble;
-    const gx = el2.gx + lado * (k === "choca" ? 58 : 44), y = enPiso ? el2.y : lim(el2.y + 30, FONDO, FRENTE);
+    const gx = el2.gx + lado * ({ choca: 58, manita: 52, selfie: 50, empujar: 62 }[k] || 44), y = enPiso ? el2.y : lim(el2.y + 30, FONDO, FRENTE);
     if (yo.mueble) this._pose(yo, "");
     const orden = ++yo.orden;
     this._caminar(yo, gx, y, () => {
@@ -581,22 +753,36 @@ export class Casita {
     });
     this._mandarYo({ accion: "", mueble: "", ...enCuartoXY(gx, y), mira: -lado, ev: { k, t: "" } });
   }
+  /** `a` hace la cosa con `b` (en los dos teléfonos se ve igual). */
   _juntosHacer(k, a, b) {
-    const clase = { abrazo: "g-abrazo", beso: "g-besito", choca: "g-choca" }[k];
     this.ultimoJuntos = k;
+    const poner = (m, clases, ms = 2300) => { clearTimeout(m.tgesto); m.n.classList.add(...clases); m.tgesto = setTimeout(() => m.n.classList.remove(...clases), ms); };
+    // Empujar el columpio: quien empuja estira los brazos y quien va sentado vuela alto un ratito.
+    if (k === "empujar") {
+      poner(a, ["g-empuja"], 1200);
+      b.n.classList.add("empujado"); clearTimeout(b.tEmpuje);
+      const arbol = this.objs.get(String(b.mueble).split(":")[0]);
+      arbol?.n.classList.add("empujado");
+      b.tEmpuje = setTimeout(() => { b.n.classList.remove("empujado"); arbol?.n.classList.remove("empujado"); }, 4600);
+      this.sonar("columpio"); setTimeout(() => this.vivo && this.sonar("columpio", { volumen: 0.6 }), 1300);
+      this._globo(b, "¡Wiii!", 1800);
+      vibrar(10);
+      return;
+    }
+    const clase = { abrazo: ["g-abrazo", "enamorado"], beso: ["g-besito", "enamorado"], choca: ["g-choca"], manita: ["g-manita", "enamorado"], selfie: ["g-saluda", "g-selfie"] }[k];
     for (const m of [a, b]) {
       if (m.accion && m.accion !== "sentado") continue;
-      clearTimeout(m.tgesto);
-      m.n.classList.add(clase);
-      // (Al abrazarse y con besito, ojitos de corazón.)
-      if (k !== "choca") m.n.classList.add("enamorado");
-      m.tgesto = setTimeout(() => m.n.classList.remove(clase, "enamorado"), 2300);
+      if (k === "cosquillas") poner(m, m === a ? ["g-cosquillas"] : ["g-rie"], 2000);
+      else if (clase) poner(m, clase, k === "manita" ? 3600 : 2300);
     }
     if (!b.mueble) this._mirar(b, a.gx < b.gx ? -1 : 1);
     const medio = { gx: (a.gx + b.gx) / 2, y: Math.min(a.y, b.y) - 120 };
     if (k === "abrazo") { this.sonar("abrazo"); this.particulas("corazon", medio, 0, 0, 7); vibrar(14); }
     if (k === "beso") { this.sonar("beso"); this.particulas("corazon", medio, 0, 10, 9); vibrar(12); }
     if (k === "choca") { this.sonar("aplauso", { volumen: 0.8 }); this.particulas("chispa", medio, 0, 0, 7); vibrar(10); }
+    if (k === "manita") { this.sonar("beso", { volumen: 0.6 }); this.particulas("corazon", medio, 0, 30, 4); }
+    if (k === "cosquillas") { this.sonar("risa"); this.particulas("chispa", { gx: b.gx, y: b.y - 90 }, 0, 0, 5); }
+    if (k === "selfie") { this.sonar("clic"); this.raiz.classList.remove("flash"); void this.raiz.offsetWidth; this.raiz.classList.add("flash"); this.particulas("estrella", medio, 0, 0, 5); if (a === this.yo) aviso("¡Qué bonita foto de los dos!", 2200); }
   }
 
   /** Partículas (corazones, burbujas, chispas, notas, vapor, agua, hojas, polvo, migajas…). */
@@ -667,16 +853,18 @@ export class Casita {
   }
   _menuYo() {
     const m = this.yo, ops = GESTOS.map(([k, t]) => [k, t, () => this.gesto(m, k)]);
+    if (m.accion === "columpio") ops.unshift(["empujar", "Pedir que me empuje", () => { this._globo(m, `${this.pareja}, ¡empújame!`, 3800); this._mandarYo({ dice: "¡Empújame!" }); }]);
     const c = COSAS_MANO[m.lleva];
     if (c?.comible) ops.unshift(["comer", `Comer ${c.n.toLowerCase()}`, () => this.comer()]);
     if (m.lleva) ops.push(["soltar", "Soltar", () => this.soltar()]);
     if (m.mueble) ops.unshift(["brinca", "Pararme", () => this.pararse()]);
-    P.menuMonito(this, m, ops);
+    P.menuMonito(this, m, ops, "Tú");
   }
   _menuSuyo() {
     const ops = JUNTOS.map(([k, t]) => [k, t, () => this.juntos(k)]);
     if (this.yo.lleva) ops.unshift(["regalo", `Regalarle ${COSAS_MANO[this.yo.lleva].n.toLowerCase()}`, () => this.juntos("regalo")]);
-    P.menuMonito(this, this.suyo, ops);
+    if (this.suyo.accion === "columpio") ops.unshift(["empujar", "Empujar el columpio", () => this.juntos("empujar")]);
+    P.menuMonito(this, this.suyo, ops, `Con ${this.pareja}`);
   }
   cerrarMenu() { const n = this.menu; if (!n) return false; this.menu = null; n.classList.remove("ver"); setTimeout(() => n.remove(), 180); return true; }
   cerrarHoja() { const h = this.panel; if (!h) return false; this.panel = null; h.classList.remove("ver"); h.style.transform = ""; setTimeout(() => h.remove(), 260); this.sonar("cerrar", { volumen: 0.5 }); return true; }
@@ -685,10 +873,8 @@ export class Casita {
   _cargar(g, e) {
     const m = this.yo, p = this._xy(e);
     if (!g.cargando) { g.cargando = true; m.orden++; clearTimeout(m.tc); clearInterval(m.tp); this._pose(m, ""); m.n.classList.remove("camina"); m.n.classList.add("cargado"); m.n.style.transitionDuration = "0s"; vibrar(10); this.sonar("levantar"); }
-    const vx = e.movementX || 0;
     m.gx = lim(p.x, 24, ANCHO - 24); m.y = Math.min(FRENTE, p.y + 74);
     m.n.style.left = m.gx + "px"; m.n.style.top = m.y + "px";
-    if (Math.abs(vx) > 1) this._mirar(m, vx);
     this._autoDeslizar(e);
   }
   _soltarMono(g, e) {
@@ -701,7 +887,7 @@ export class Casita {
       if (p.x >= x0 && p.x <= x0 + r.d.w && p.y + 40 >= y0 && p.y + 40 <= r.o.y + 20) { this.usarLugar({ id: r.o.id }); return; }
     }
     m.y = lim(m.y, FONDO, FRENTE);
-    m.n.style.transitionDuration = ".34s"; m.n.style.top = m.y + "px"; m.n.style.zIndex = Math.round(m.y);
+    m.n.style.transitionDuration = ".34s"; m.n.style.top = m.y + "px"; m.n.style.zIndex = zMono(m.y);
     m.n.classList.add("aterriza"); setTimeout(() => m.n.classList.remove("aterriza"), 480);
     this.sonar("boing"); this.particulas("polvo", { gx: m.gx, y: m.y }, 0, 0, 3);
     this._mandarYo({ accion: "", mueble: "" });
@@ -807,6 +993,7 @@ export class Casita {
     let gx = lim(p.x + g.off.dx, d.w * 0.3, ANCHO - d.w * 0.3), y = p.y + g.off.dy;
     if (d.capa === "pared") y = lim(y, d.h + 8, PISO - 6);
     else if (d.capa === "alfombra") y = lim(y, FONDO + 24, H);
+    else if (puedeSubir(d)) y = lim(y, 150, FRENTE + 4);
     else y = lim(y, FONDO, FRENTE + 4);
     g.vx = 0.7 * g.vx + 0.3 * (gx - (g.gx ?? gx));
     g.gx = gx; g.y = y;
@@ -829,17 +1016,23 @@ export class Casita {
     if (r.glow) r.glow.hidden = false;
     if (g.basura) { this._colocar(r); this._borrar(r); return; }
     if (g.gx == null) { this._colocar(r); return; }
+    // Física: si lo aventaste, se resbala un poquito; si quedó en el aire, cae al mueble de abajo o al piso.
+    if (g.jugando) g.gx = lim(g.gx + lim(g.vx * 6, -90, 90), r.d.w * 0.3, ANCHO - r.d.w * 0.3);
+    const soltadoEn = g.y;
+    if (puedeSubir(r.d) && g.y < FONDO) { const a = this._apoyo(g.gx, g.y, r.o.id); g.y = a ? a.y : FONDO + 8; }
     const { c, x } = enCuarto(g.gx);
     // Jugando (una mascota, el osito…): se queda donde lo soltaste, rebota y hace su ruidito.
     if (g.jugando) {
       this.sync.op({ o: "pon", obj: { ...JSON.parse(JSON.stringify(r.o)), c, x: Math.round(x), y: Math.round(g.y) } });
       this._pintarCasa(this.sync.casa());
-      if (!reducido()) { r.n.classList.add("aterriza"); setTimeout(() => r.n.classList.remove("aterriza"), 480); }
+      if (g.y - soltadoEn > 8) this._caer(r, g.y - soltadoEn);
+      else if (!reducido()) { r.n.classList.add("aterriza"); setTimeout(() => r.n.classList.remove("aterriza"), 480); }
       this.particulas("polvo", { gx: g.gx, y: g.y }, 0, 0, 3);
       this.sonar({ miau: "miau", guau: "guau", chillido: "chillido", cuac: "cuac" }[r.d.al] || "boing", { volumen: 0.8 });
       return;
     }
     this._guardarObj(r, { c, x: Math.round(x), y: Math.round(g.y) }, "soltar");
+    if (g.y - soltadoEn > 8) this._caer(r, g.y - soltadoEn);
     if (!reducido()) { r.n.classList.add("aterriza"); setTimeout(() => r.n.classList.remove("aterriza"), 480); }
     if (r.d.capa !== "pared") this.particulas("polvo", { gx: g.gx, y: g.y }, 0, 0, 3);
     this._seleccionar(r);
@@ -878,6 +1071,11 @@ export class Casita {
     else if (r.casa?.objetos?.length && !this._estrenados) {
       this._estrenados = true;
       const ops = CUARTOS_NUEVOS.filter((k) => !r.casa.cuartos?.[k]).flatMap(opsCuartoNuevo);
+      // (Fase 55: el perrito necesita su casita para cuando llueve.)
+      if (!r.casa.cuartos?.jardin?.v55) {
+        if (!r.casa.objetos.some((o) => o.t === "casita_perro" && o.c === "jardin")) ops.push({ o: "pon", obj: { id: "ja8", t: "casita_perro", c: "jardin", x: 430, y: 470, f: false, e: {} } });
+        ops.push({ o: "cuarto", k: "jardin", v: { v55: true } });
+      }
       if (ops.length) this.sync.ops(ops);
     }
     this._pintarCasa(this.sync.casa());
@@ -926,6 +1124,7 @@ export class Casita {
     if (ev.k === "comemesa") laPareja(this, ev, espera);
     else if (ev.k === "sirve" && RECETAS[ev.t]) { aviso(`${this.pareja} sirvió ${RECETAS[ev.t].n.toLowerCase()} en la mesa`, 2800); this.sonar("mesa", { volumen: 0.7 }); }
     else if (ev.k === "cocina" && RECETAS[ev.t]) { if (this._visible(m)) this._globo(m, `Cocinando ${RECETAS[ev.t].n.toLowerCase()}…`, 2600); }
+    else if (ev.k === "notas") this._notasDeElla(ev.t, espera);
     else if (ev.k === "toca") setTimeout(() => {
       m.n.classList.add("tocando"); setTimeout(() => m.n.classList.remove("tocando"), 2400);
       this.particulas("nota", { gx: m.gx, y: m.y - 140 }, 0, 0, 3);
@@ -934,7 +1133,7 @@ export class Casita {
     else if (ev.k === "gesto") setTimeout(() => this.gesto(m, ev.t, false), espera);
     else if (ev.k === "come") { m.n.classList.add("g-come"); setTimeout(() => m.n.classList.remove("g-come"), 1600); if (this._visible(m)) this.sonar("comer", { volumen: 0.6 }); }
     else if (ev.k === "bailemos") { this.gesto(m, "baila", false); if (!yo.mueble) this.gesto(yo, "baila", false); this._globo(m, "¡Bailemos!", 1800); }
-    else if (ev.k === "abrazo" || ev.k === "beso" || ev.k === "choca") setTimeout(() => { this._mirar(m, yo.gx < m.gx ? -1 : 1); this._juntosHacer(ev.k, m, yo); }, espera);
+    else if (["abrazo", "beso", "choca", "manita", "cosquillas", "selfie", "empujar"].includes(ev.k)) setTimeout(() => { if (ev.k !== "empujar") this._mirar(m, yo.gx < m.gx ? -1 : 1); this._juntosHacer(ev.k, m, yo); }, espera);
     else if (ev.k === "regalo" && COSAS_MANO[ev.t]) {
       this._volar(ev.t, m.gx, m.y - 60, yo.gx, yo.y - 60);
       setTimeout(() => {
@@ -945,6 +1144,20 @@ export class Casita {
         if (!yo.lleva) { this._ponerLleva(yo, ev.t); this._mandarYo({ lleva: ev.t }); }
       }, 520);
     }
+  }
+
+  /** El piano de tu amorcito: lo oyes si estás cerquita (más bajito entre más lejos). */
+  _notasDeElla(t, espera) {
+    const m = this.suyo, notas = String(t || "").split(".").map(Number).filter((n) => n >= 36 && n <= 96).slice(0, 8);
+    const d = Math.abs(m.gx - this.yo.gx), mismo = enCuarto(m.gx).c === enCuarto(this.yo.gx).c;
+    setTimeout(() => {
+      if (!this.vivo) return;
+      m.n.classList.add("tocando"); clearTimeout(m.ttoca); m.ttoca = setTimeout(() => m.n.classList.remove("tocando"), notas.length * 120 + 500);
+      this.particulas("nota", { gx: m.gx, y: m.y - 140 }, 0, 0, Math.min(3, notas.length));
+      if (!mismo && d > 520) return;
+      const v = lim(1 - d / 800, 0.25, 1);
+      notas.forEach((n, i) => setTimeout(() => this.vivo && this.sonar("piano", { nota: n, volumen: v }), i * 120));
+    }, espera);
   }
 
   /* ═════════════ El regalito del día (sólo tuyo: uno cada día) ═════════════ */
