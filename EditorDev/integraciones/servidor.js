@@ -364,6 +364,9 @@ export const ponerMonito = (d) => pedir("casita/yo", { method: "PUT", body: d })
 export const ponerCasa = (casa) => pedir("casita/casa", { method: "PUT", body: { casa } });
 // (1.25) Cambios sueltos de la casa (poner, mover, quitar, estado, colores de un cuarto), en orden.
 export const casitaOps = (ops) => pedir("casita/ops", { method: "POST", body: { ops } });
+// (1.26) Mensajitos dentro de la casita y cartitas al buzón (siempre texto); y marcarlos como leídos.
+export const casitaMensaje = (texto, tipo = "msg") => pedir("casita/mensaje", { method: "POST", body: { texto, tipo } }).then((r) => r.msg);
+export const casitaLeer = (d) => pedir("casita/leer", { method: "POST", body: d });
 export const cosita = (tipo, extra = {}) => pedir("cositas", { method: "POST", body: { tipo, dia: hoyLocal(), ...extra } });
 export const borrarCosita = (id) => pedir("cositas/" + encodeURIComponent(id), { method: "DELETE" });
 export const compartirCosita = (id, compartida) => pedir("cositas/" + encodeURIComponent(id), { method: "PUT", body: { compartida } });

@@ -75,4 +75,34 @@ export const ITEMS = {
       <rect x="4" y="40" width="52" height="24" rx="5" fill="#ff9cbf" ${OL}/>${brillo(8, 43, 30, 4, 2)}
       <rect x="22" y="48" width="16" height="8" rx="3" fill="#ffd96b"/>`),
   },
+  tocador: {
+    n: "Tocador", cat: "recamara", w: 126, h: 174, al: "vestir", junto: { dx: 0, dy: 24 }, colores: ["#ffd0e2", "#e3d6ff", "#cdeeff", "#fff0b8", "#ffffff"],
+    arte: (e, C) => svg(126, 174, `
+      <path d="M20 170l2-10M106 170l-2-10" stroke="${MADERA_O}" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="63" cy="46" rx="36" ry="44" fill="${tono(C, 0.88)}" ${OL}/><ellipse cx="63" cy="46" rx="29" ry="37" fill="#e6f4ff"/>
+      <path d="M44 30q8-14 20-16" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none" opacity=".85"/><path d="M52 60l22-22" stroke="#fff" stroke-width="3" opacity=".5"/>
+      ${corazon(63, 6, 0.8, "#ff5c93")}
+      <rect x="4" y="96" width="118" height="12" rx="5" fill="${tono(C, 0.92)}" ${OL}/>
+      <rect x="10" y="106" width="106" height="56" rx="8" fill="${C}" ${OL}/><rect x="16" y="114" width="44" height="40" rx="5" fill="${tono(C, 1.1)}" ${OL2}/><rect x="66" y="114" width="44" height="40" rx="5" fill="${tono(C, 1.1)}" ${OL2}/>
+      <circle cx="38" cy="134" r="3" fill="${MADERA_O}"/><circle cx="88" cy="134" r="3" fill="${MADERA_O}"/>
+      <rect x="14" y="78" width="12" height="18" rx="3" fill="#ff9cbf" ${OL2}/><rect x="17" y="72" width="6" height="7" rx="2" fill="#ffd36e"/>
+      <path d="M96 96c0-10 6-14 10-14s10 4 10 14z" fill="#c9a7ff" ${OL2}/><circle cx="106" cy="80" r="3" fill="#fff"/>
+      <rect x="32" y="88" width="20" height="8" rx="4" fill="#fff" ${OL2}/>`),
+  },
+  lampara_lava: {
+    n: "Lámpara de lava", cat: "recamara", w: 44, h: 96, y: 548, al: "lava", colores: ["#ff86b0", "#c39bff", "#7fd3ff", "#ffd36e"],
+    brilla: { x: 22, y: 48, r: 100, c: "#ff8fc4", propio: "on" },
+    arte: (e, C) => svg(44, 96, `
+      <path d="M8 94l6-22h16l6 22z" fill="#6b5a66" ${OL}/><path d="M14 10l-6 62h28l-6-62z" fill="${C}" fill-opacity=".35" ${OL}/>
+      <g class="lava-b"><ellipse cx="20" cy="56" rx="6" ry="8" fill="${C}"/><ellipse cx="25" cy="34" rx="5" ry="6" fill="${C}"/><circle cx="18" cy="20" r="3.5" fill="${C}"/></g>
+      <path d="M12 4h20l-2 6H14z" fill="#6b5a66" ${OL2}/><path d="M15 16l-3 44" stroke="#fff" stroke-opacity=".5" stroke-width="2.5" stroke-linecap="round"/>`),
+  },
+  baul: {
+    n: "Baúl de juguetes", cat: "recamara", w: 114, h: 80, y: 546, al: "baul", colores: ["#ffd96b", "#ff9cbf", "#8fd0ff", "#94dfbd"],
+    arte: (e, C) => svg(114, 80, `
+      <rect x="6" y="28" width="102" height="50" rx="8" fill="${MADERA}" ${OL}/><rect x="6" y="40" width="102" height="8" fill="${C}"/>
+      ${estrella(30, 62, 8, C)}${corazon(84, 60, 0.9, "#ff5c93")}<rect x="52" y="44" width="10" height="12" rx="3" fill="#ffd36e" ${OL2}/>
+      <g class="tapa"><path d="M4 30q53-30 106 0z" fill="${MADERA_C}" ${OL}/><path d="M4 30h106" stroke="${C}" stroke-width="5"/></g>
+      <g class="juguetes"><circle cx="40" cy="22" r="9" fill="#ff86b0" ${OL2}/><path d="M31 22h18" stroke="#fff" stroke-width="2"/><rect x="58" y="12" width="16" height="16" rx="3" fill="#8fd0ff" ${OL2}/>${estrella(84, 18, 7, "#ffd84d")}</g>`),
+  },
 };

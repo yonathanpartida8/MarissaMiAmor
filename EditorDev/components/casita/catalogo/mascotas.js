@@ -35,4 +35,30 @@ export const ITEMS = {
       <circle cx="25" cy="40" r="2.4" fill="#3a2a35"/><circle cx="37" cy="40" r="2.4" fill="#3a2a35"/><ellipse cx="31" cy="46" rx="2" ry="1.5" fill="#ff86b0"/>
       <ellipse cx="22" cy="47" rx="3" ry="2" fill="#ff9cbf" opacity=".6"/><ellipse cx="40" cy="47" rx="3" ry="2" fill="#ff9cbf" opacity=".6"/><circle cx="52" cy="66" r="6" fill="#fff" ${OL2}/>`),
   },
+  hamster: {
+    n: "Hámster", cat: "mascotas", w: 98, h: 86, y: 548, al: "chillido",
+    arte: () => svg(98, 86, `
+      <rect x="4" y="70" width="90" height="14" rx="5" fill="#ff9cbf" ${OL}/>
+      <path d="M8 72V34a41 30 0 0 1 82 0v38" fill="#fff" fill-opacity=".25" stroke="#b9aab6" stroke-width="2.5"/>${[18, 30, 42, 54, 66, 78].map((x) => `<path d="M${x} 72V${x < 49 ? 26 - (49 - x) * 0.25 : 26 - (x - 49) * 0.25}" stroke="#b9aab6" stroke-width="1.6"/>`).join("")}
+      <g class="rueda"><circle cx="34" cy="48" r="20" fill="none" stroke="#8fd0ff" stroke-width="4"/><path d="M34 28v40M14 48h40M20 34l28 28M48 34L20 62" stroke="#bfe6ff" stroke-width="1.5"/></g>
+      <ellipse cx="34" cy="62" rx="9" ry="6.5" fill="#f2b45a" ${OL2}/><circle cx="41" cy="59" r="5.5" fill="#f2b45a" ${OL2}/><circle cx="43" cy="58" r="1.2" fill="#3a2a35"/><circle cx="39" cy="54" r="2" fill="#ffb3cf"/><ellipse cx="33" cy="64" rx="5" ry="3" fill="#fff4e0"/>
+      <rect x="72" y="28" width="9" height="26" rx="4" fill="#bfe6ff" ${OL2}/><path d="M76 54v8" stroke="#b9aab6" stroke-width="2"/><circle cx="49" cy="4" r="4" fill="none" stroke="#b9aab6" stroke-width="2"/>`),
+  },
+  pajarito: {
+    n: "Pajarito", cat: "mascotas", w: 74, h: 162, al: "pio",
+    arte: () => svg(74, 162, `
+      <ellipse cx="37" cy="158" rx="20" ry="4" fill="#6b5a66" ${OL2}/><rect x="34" y="84" width="6" height="74" rx="3" fill="#b39a8a"/>
+      <path d="M8 84V40a29 29 0 0 1 58 0v44" fill="#fff" fill-opacity=".2" stroke="#d9a05b" stroke-width="2.5"/>${[16, 26, 37, 48, 58].map((x) => `<path d="M${x} 84V${18 + Math.abs(37 - x) * 0.7}" stroke="#d9a05b" stroke-width="1.5"/>`).join("")}
+      <rect x="4" y="82" width="66" height="7" rx="3" fill="#d9a05b" ${OL2}/><circle cx="37" cy="9" r="4" fill="none" stroke="#d9a05b" stroke-width="2.4"/>
+      <path d="M16 62h42" stroke="#b07a4a" stroke-width="3" stroke-linecap="round"/>
+      <g class="pajaro"><ellipse cx="36" cy="52" rx="10" ry="8.5" fill="#ffd84d" ${OL2}/><circle cx="42" cy="44" r="6.5" fill="#ffd84d" ${OL2}/><path d="M48 44l5 1.5-5 2z" fill="#ff8a3d"/><circle cx="44" cy="42.6" r="1.3" fill="#3a2a35"/><circle cx="41" cy="47" r="1.8" fill="#ff9cbf" opacity=".7"/><path d="M26 52q-6 2-8 8 6 0 10-4" fill="#f5c430" ${OL2}/><path d="M34 54q4 4 8 0" stroke="#f5c430" stroke-width="2" fill="none"/></g>`),
+  },
+  tortuga: {
+    n: "Tortuguita", cat: "mascotas", w: 74, h: 46, y: 552, al: "tortuga",
+    arte: () => svg(74, 46, `
+      <g class="patas"><ellipse cx="18" cy="38" rx="6" ry="5" fill="#94dfbd" ${OL2}/><ellipse cx="50" cy="38" rx="6" ry="5" fill="#94dfbd" ${OL2}/><g class="cabeza"><circle cx="64" cy="26" r="8" fill="#94dfbd" ${OL2}/><circle cx="66" cy="23.5" r="1.4" fill="#3a2a35"/><path d="M64 30q3 2 6-1" stroke="#3a2a35" stroke-width="1.2" fill="none"/><ellipse cx="62" cy="28" rx="2" ry="1.3" fill="#ff9cbf" opacity=".7"/></g></g>
+      <path d="M6 36a28 26 0 0 1 56 0z" fill="#7fbf6a" ${OL}/>
+      <path d="M22 16l12-4 12 4 2 12-14 6-14-6z" fill="#9bd685" stroke="#5e9e4e" stroke-width="1.5"/><path d="M22 16l-10 10M46 16l10 10M20 28l-10 6M48 28l10 6M34 34v2" stroke="#5e9e4e" stroke-width="1.5"/>
+      <rect x="4" y="33" width="60" height="5" rx="2.5" fill="#6aa85a"/>${corazon(34, 22, 0.45, "#fff", 'opacity=".6"')}`),
+  },
 };

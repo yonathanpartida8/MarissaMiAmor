@@ -1,12 +1,14 @@
 /**
- * LAS HOJITAS de la casita: vestidor, decir algo, pared y piso, el catálogo de «Acomodar» y el menú
- * flotante de los monitos. Reciben `j` (el juego) y le avisan lo que eligió quien juega.
+ * LAS HOJITAS de la casita: vestidor, pared y piso, el catálogo de «Acomodar», qué cocinar, el piano,
+ * los ajustes de sonido y el menú flotante de los monitos. Reciben `j` (el juego) y le avisan lo que
+ * eligió quien juega. (Los mensajes y las cartitas están en mensajes.js.)
  */
 import { el, aviso, jalarParaCerrar } from "../ui.js";
 import { ICO } from "./iconos.js";
-import { monitoSVG, PIELES, COLOR_PELO, COLOR_ROPA, PEINADOS, ARRIBAS, ABAJOS, ACCESORIOS } from "./monito.js";
-import { CATEGORIAS, deCategoria, colorDe } from "./catalogo/index.js";
+import { monitoSVG, PIELES, COLOR_PELO, COLOR_ROPA, PEINADOS, ARRIBAS, ABAJOS, ACCESORIOS, CALZADOS, OJOS, PECAS } from "./monito.js";
+import { CATEGORIAS, deCategoria, colorDe, recetasDe, arteReceta } from "./catalogo/index.js";
 import { CUARTOS, PAREDES, PATRONES, PISOS, cuarto } from "./cuartos.js";
+import { SONIDOS } from "./sonidos.js";
 
 /** Una hojita que sube desde abajo (se cierra con la ✕, jalando su pestañita o con Atrás). */
 export function hoja(j, titulo, cuerpo, clase = "") {
@@ -39,25 +41,60 @@ export function vestidor(j) {
     vista,
     el("div.ca-vest-ops", {}, [
       sec("Peinado", chips(PEINADOS, r.pelo, (k) => poner({ pelo: k })), colores(COLOR_PELO, r.peloColor, (c) => poner({ peloColor: c }))),
+      sec("Ojitos", chips(OJOS, r.ojos || "redondos", (k) => poner({ ojos: k })), chips(PECAS, r.pecas || "no", (k) => poner({ pecas: k }))),
       sec("Arriba", chips(ARRIBAS, r.arriba, (k) => poner({ arriba: k })), colores(COLOR_ROPA, r.arribaColor, (c) => poner({ arribaColor: c }))),
       sec("Abajo", chips(ABAJOS, r.abajo, (k) => poner({ abajo: k })), colores(COLOR_ROPA, r.abajoColor, (c) => poner({ abajoColor: c }))),
-      sec("Zapatitos", colores(COLOR_ROPA, r.zapatos, (c) => poner({ zapatos: c }))),
+      sec("Zapatitos", chips(CALZADOS, r.calzado || "tenis", (k) => poner({ calzado: k })), colores(COLOR_ROPA, r.zapatos, (c) => poner({ zapatos: c }))),
       sec("Accesorio", chips(ACCESORIOS, r.accesorio, (k) => poner({ accesorio: k }))),
       sec("Piel", colores(PIELES, r.piel, (c) => poner({ piel: c }))),
     ]),
   ]), "vestidor");
 }
 
-/** Decir algo: frasecitas o lo que quieras (hasta 60 letras; siempre como texto). */
-export function decir(j) {
-  const frases = ["Te amo", "Ven conmigo", "¿Vemos la tele?", "Tengo hambre", "Buenas noches", "Te extraño", "Abrazo", "Hola, amor", "Eres hermosa", "Eres hermoso", "¿Bailamos?", "Qué bonito"];
-  const campo = el("input.ca-campo", { type: "text", maxlength: "60", placeholder: "Escribe algo lindo…", enterkeyhint: "send" });
-  const mandar = (t) => { t = String(t || "").trim().slice(0, 60); if (!t) return; j.cerrarHoja(); j.decir(t); };
-  campo.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); mandar(campo.value); } });
-  hoja(j, "Decir algo", el("div.ca-decir", {}, [
-    el("div.ca-decir-fila", {}, [campo, el("button.ca-boton", { type: "button", text: "Decir", onClick: () => mandar(campo.value) })]),
-    el("div.ca-frases", {}, frases.map((f) => el("button.ca-chip", { type: "button", text: f, onClick: () => mandar(f) }))),
-  ]), "decir");
+/** «¿Qué cocinamos?»: las recetas de ese aparato (la estufa: sartén, olla y horno; el asador…). */
+export function recetas(j, o, donde) {
+  const LUGAR = { sarten: "Sartén", olla: "Olla", horno: "Horno", parrilla: "Asador", micro: "Micro", licuadora: "Licuadora" };
+  hoja(j, "¿Qué cocinamos?", el("div.ca-recetas", {}, recetasDe(donde).map((rc) => el("button.ca-receta", { type: "button", "aria-label": `Cocinar ${rc.n}`, onClick: () => { j.cerrarHoja(); j.cocinar(o, rc.k); } }, [
+    el("i.ca-receta-arte", { html: arteReceta(rc) }),
+    el("b", { text: rc.n }),
+    el("small", { text: `${LUGAR[rc.en] || ""} · ${Math.round(rc.ms / 1000)} s` }),
+  ]))), "recetas");
+}
+
+/** El piano: dos octavitas para tocar (cada tecla con su nota). */
+export function piano(j, o) {
+  const BLANCAS = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81, 83, 84], NOMBRES = ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"];
+  const tocar = (midi, b) => { j.tocarNota(o, midi); b.classList.remove("toca"); void b.offsetWidth; b.classList.add("toca"); };
+  const tecla = (midi, negra, i) => {
+    const b = el("button.ca-tecla" + (negra ? ".negra" : ""), { type: "button", "aria-label": negra ? "Tecla negra" : NOMBRES[i % 7], style: negra ? { "--i": i } : null });
+    b.addEventListener("pointerdown", (e) => { e.preventDefault(); tocar(midi, b); });
+    b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tocar(midi, b); } });
+    if (!negra) b.append(el("small", { text: NOMBRES[i % 7] }));
+    return b;
+  };
+  const negras = [];
+  BLANCAS.forEach((m, i) => { if (i < BLANCAS.length - 1 && [0, 1, 3, 4, 5].includes(i % 7)) negras.push(tecla(m + 1, true, i)); });
+  hoja(j, "Piano", el("div.ca-piano", {}, [el("div.ca-teclado", {}, [...BLANCAS.map((m, i) => tecla(m, false, i)), ...negras])]), "piano-hoja");
+}
+
+/** Ajustes de la casita: sus sonidos (aparte de los del editor), el volumen, la música y escuchar cada uno. */
+export function ajustes(j) {
+  const s = j.son, p = s.pref;
+  const fila = (t, on, al) => { const b = el("button.ca-interruptor" + (on ? ".on" : ""), { type: "button", role: "switch", "aria-checked": String(on), "aria-label": t, onClick: () => { const v = !b.classList.contains("on"); b.classList.toggle("on", v); b.setAttribute("aria-checked", String(v)); al(v); } }, [el("i")]); return el("label.ca-ajuste", {}, [el("span", { text: t }), b]); };
+  const vol = el("input.ca-vol", { type: "range", min: "0", max: "100", step: "5", value: String(Math.round((p.vol ?? 0.85) * 100)), "aria-label": "Volumen de los sonidos" });
+  vol.addEventListener("input", () => s.ponerPref({ vol: +vol.value / 100 }));
+  vol.addEventListener("change", () => j.sonar("pop"));
+  const tuyos = s.tuyos();
+  const lista = el("div.ca-sonidos", { hidden: "" }, SONIDOS.map(([n, cuando]) => el("button.ca-sonido-b", { type: "button", "aria-label": `Escuchar ${n}`, onClick: () => { if (n.startsWith("musica-")) j.probarMusica(n); else j.sonar(n); } }, [
+    el("i", { html: ICO.play }), el("span", {}, [el("b", { text: n + (tuyos.includes(n) ? " · tuyo" : "") }), el("small", { text: cuando })]),
+  ])));
+  const verLista = el("button.ca-chip", { type: "button", text: "Escuchar cada sonido", onClick: () => { lista.hidden = !lista.hidden; verLista.textContent = lista.hidden ? "Escuchar cada sonido" : "Ocultar la lista"; } });
+  hoja(j, "Ajustes de la casita", el("div.ca-deco", {}, [
+    sec("Sonidos", fila("Sonidos del juego", p.on !== false, (v) => { s.ponerPref({ on: v }); if (v) j.sonar("ding"); }), el("label.ca-ajuste", {}, [el("span", { text: "Volumen" }), vol]), fila("Música de los aparatos", p.musica !== false, (v) => { s.ponerPref({ musica: v }); j.alCambiarMusica(); })),
+    sec("Tus propios sonidos", el("p.ca-nota", { text: tuyos.length ? `Ya suenan ${tuyos.length} tuyos.` : "Todos suenan como de fábrica." }),
+      el("p.ca-nota", { text: "Para cambiar uno, deja tu archivo (.mp3, .m4a, .ogg o .wav) en su carpeta, dentro de assets/sonidos-casita/ (cada sonido tiene la suya con su nombre), y súbelo." }), verLista, lista),
+    sec("La música del editor", el("p.ca-nota", { text: "Mientras juegan en la casita, la canción del editor se calla sola y vuelve al salir." })),
+  ]), "ajustes");
 }
 
 /** La pared y el piso del cuarto en el que estás. */

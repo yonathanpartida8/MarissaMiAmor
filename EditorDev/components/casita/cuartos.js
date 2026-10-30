@@ -15,7 +15,11 @@ export const CUARTOS = [
   { k: "cocina", n: "Cocina", w: 620, foco: 300, pared: "#f9e4d6", patron: "ladrillo", piso: "mosaico" },
   { k: "recamara", n: "Recámara", w: 660, foco: 600, pared: "#ece3ff", patron: "corazones", piso: "alfombra" },
   { k: "bano", n: "Baño", w: 560, foco: 210, pared: "#dff3fb", patron: "azulejo", piso: "mosaico" },
+  { k: "estudio", n: "Estudio", w: 640, foco: 330, pared: "#e3ecff", patron: "estrellas", piso: "clara" },
+  { k: "terraza", n: "Terraza", w: 720, afuera: true, terraza: true, pared: "#bfe6ff", patron: "liso", piso: "duela" },
 ];
+/** Los cuartos que llegaron después: a una casita que ya existía se le agregan con su acomodo de entrada. */
+export const CUARTOS_NUEVOS = ["estudio", "terraza"];
 export const ANCHO = CUARTOS.reduce((a, c) => a + c.w, 0);
 const INICIO = {};
 { let x = 0; for (const c of CUARTOS) { INICIO[c.k] = x; x += c.w; } }
@@ -32,7 +36,7 @@ export const global = (c, x) => inicioDe(c) + (x || 0);
 
 export const PAREDES = ["#ffe1ec", "#ffd6e0", "#fde8d0", "#f9e4d6", "#fff4c8", "#e6f6ea", "#dff3fb", "#e3ecff", "#ece3ff", "#f3e7da", "#ffffff", "#ffc9de", "#d8f0e6", "#f6dbe9"];
 export const PATRONES = [["liso", "Liso"], ["rayas", "Rayitas"], ["puntos", "Puntitos"], ["corazones", "Corazones"], ["ladrillo", "Ladrillo"], ["azulejo", "Azulejo"], ["cuadros", "Cuadritos"], ["estrellas", "Estrellitas"]];
-export const PISOS = [["madera", "Madera"], ["clara", "Madera clara"], ["mosaico", "Mosaico"], ["alfombra", "Alfombrita"], ["barro", "Barro"], ["pasto", "Pasto"]];
+export const PISOS = [["madera", "Madera"], ["clara", "Madera clara"], ["mosaico", "Mosaico"], ["alfombra", "Alfombrita"], ["barro", "Barro"], ["pasto", "Pasto"], ["duela", "Duela de terraza"]];
 
 /** Lo que hay la primera vez en cada cuarto: [tipo, x, y?, volteado?]. */
 const INICIAL = {
@@ -41,6 +45,8 @@ const INICIAL = {
   cocina: [["alacena", 170, 240], ["ventana", 440, 320], ["refri", 60, 505], ["estufa", 180, 505], ["fregadero", 315, 505], ["mesa", 480, 538], ["silla", 400, 532], ["silla", 560, 532, true]],
   recamara: [["ventana", 230, 320], ["guirnalda", 330, 104], ["cuadro", 480, 250], ["buro", 46, 505], ["cama", 212, 512], ["ropero", 408, 505], ["escritorio", 566, 505], ["silla_esc", 566, 545], ["peluche", 330, 553]],
   bano: [["espejo", 420, 330], ["toallero", 275, 350], ["tapete", 140, 557], ["tina", 138, 512], ["inodoro", 295, 508], ["lavabo", 420, 506], ["patito", 60, 552], ["maceta", 515, 548]],
+  estudio: [["ventana", 455, 320], ["neon", 250, 200], ["corcho", 110, 250], ["poster", 592, 250], ["tapete_redondo", 300, 557], ["librero_alto", 64, 505], ["piano", 210, 506], ["guitarra", 312, 540], ["sillon_lectura", 395, 512], ["lampara_arco", 486, 505], ["consola", 562, 506], ["puff", 214, 550], ["globo_mundo", 600, 552]],
+  terraza: [["luces", 330, 466], ["hamaca", 128, 476], ["sombrilla", 640, 490], ["mesa_picnic", 560, 512], ["alberca", 300, 545], ["camastro", 112, 552], ["flamenco", 214, 554], ["cactus", 462, 552], ["maceta_grande", 672, 552]],
 };
 
 /** La casa de entrada (v2). Si había una casita de antes (v1), se respetan sus colores y sus cositas. */
@@ -62,4 +68,13 @@ export function casaInicial(antes) {
     objetos.push({ id: "v" + String(v.id || Math.random().toString(36).slice(2, 8)).slice(0, 10), t, c, x: Math.round((((+v.x || 0) % 420) / 420) * w), y: pared ? Math.min(PISO - 20, Math.max(80, +v.y || 200)) : 550, f: false, e: {} });
   }
   return { v: 2, cuartos, objetos };
+}
+
+/** Lo que hay que mandar para que una casita de antes también tenga un cuarto nuevo (con ids fijos: si los
+ *  dos teléfonos lo hacen a la vez, queda igual). */
+export function opsCuartoNuevo(k) {
+  const c = CUARTOS.find((q) => q.k === k);
+  if (!c) return [];
+  return [{ o: "cuarto", k, v: { pared: c.pared, patron: c.patron, piso: c.piso } },
+    ...(INICIAL[k] || []).map(([t, x, y, f], i) => ({ o: "pon", obj: { id: `${k.slice(0, 2)}${i}`, t, c: k, x, y, f: !!f, e: {} } }))];
 }

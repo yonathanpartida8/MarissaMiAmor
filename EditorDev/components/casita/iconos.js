@@ -21,6 +21,17 @@ export const ICO = {
   cocina: ic('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M5 10h14M9 6v1M9 13v3"/>'),
   recamara: ic('<path d="M3 18V8M3 14h18v4M21 18v-4a3 3 0 0 0-3-3H10v3"/><circle cx="6.5" cy="11" r="1.5"/>'),
   bano: ic('<path d="M4 12h16v2a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M6 12V6a2 2 0 0 1 4 0M7 19l-1 2M17 19l1 2"/>'),
+  estudio: ic('<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/><path d="M9 10l10-2"/>'),
+  terraza: ic('<path d="M3 11a9 7 0 0 1 18 0z"/><path d="M12 11v10M8 21h8"/><path d="M12 4V3"/>'),
+  // Mensajes, cartitas y ajustes.
+  mensajes: ic('<path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H10l-5 4v-4H6a2 2 0 0 1-2-2z"/><path d="M12 12.6s-2.8-1.7-2.8-3.4a1.4 1.4 0 0 1 2.8-.4 1.4 1.4 0 0 1 2.8.4c0 1.7-2.8 3.4-2.8 3.4z"/>'),
+  carta: ic('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'),
+  enviar: ic('<path d="M4 12l16-8-6 16-3-6z"/><path d="M11 14l9-10"/>'),
+  sonido: ic('<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>'),
+  play: ic('<path d="M8 5v14l11-7z"/>'),
+  cocinar: ic('<path d="M4 11h16v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z"/><path d="M20 12h2M9 8c0-2 2-2 2-4M13 8c0-2 2-2 2-4"/>'),
+  sentarse: ic('<path d="M7 4v9h10v7M7 13v7"/><path d="M7 9h8"/>'),
+  escribir: ic('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>'),
   // Gestos y cosas de pareja.
   saluda: ic('<path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v7c0 4-3 7-6.5 7S5 17.5 4 15l-1-3a1.5 1.5 0 0 1 2.6-1.4L8 13"/>'),
   baila: ic('<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>'),

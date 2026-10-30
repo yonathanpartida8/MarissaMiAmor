@@ -1,0 +1,39 @@
+# Cuando subes sonidos tuyos a assets/sonidos-casita/<nombre>/, esto rehace la lista (indice.json)
+# para que Nuestra casita los use. También se puede correr a mano: Actions → «Sonidos de la casita».
+name: Sonidos de la casita
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["**"]
+    paths:
+      - "assets/sonidos-casita/**"
+      - "!assets/sonidos-casita/indice.json"
+      - "!assets/sonidos-casita/LÉEME.md"
+      - "!assets/sonidos-casita/*/LÉEME.txt"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sonidos-casita-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  indice:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Rehacer la lista de sonidos
+        run: node herramientas/sonidos-casita.mjs
+      - name: Guardarla
+        run: |
+          if [ -z "$(git status --porcelain assets/sonidos-casita)" ]; then echo "Sin cambios"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/sonidos-casita
+          git commit -m "Sonidos de la casita: lista actualizada"
+          git push

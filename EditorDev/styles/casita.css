@@ -393,7 +393,7 @@ body.ca-en-completa { overflow: hidden; }
 .ca-sel-b.peligro { background: #ffe1e6; color: #d0485f; }
 .ca-sel-b[hidden] { display: none; }
 
-/* ── Las hojitas (vestidor, decir, pared y piso) ── */
+/* ── Las hojitas (vestidor, pared y piso) ── */
 .ca-hoja { position: absolute; left: 0; right: 0; bottom: 0; z-index: 45; max-height: 78%; display: flex; flex-direction: column; border-radius: 26px 26px 0 0; background: #fff; color: var(--ca-tinta); box-shadow: 0 -12px 34px rgba(90, 40, 70, .22); transform: translateY(105%); transition: transform .3s cubic-bezier(.3, .9, .3, 1); padding-bottom: env(safe-area-inset-bottom, 0px); }
 .ca-hoja.ver { transform: none; }
 .ca-hoja-asa { flex: none; display: block; height: 24px; touch-action: none; cursor: grab; }
@@ -402,7 +402,7 @@ body.ca-en-completa { overflow: hidden; }
 .ca-hoja > header b { font: 900 17px/1.2 "Nunito", sans-serif; }
 .ca-hoja-x { display: grid; place-items: center; width: 38px; height: 38px; border: 0; border-radius: 50%; background: var(--ca-rosa); color: var(--ca-acento); cursor: pointer; }
 .ca-hoja-x svg { width: 18px; height: 18px; }
-.ca-vest, .ca-deco, .ca-decir { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 16px 18px; }
+.ca-vest, .ca-deco { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 16px 18px; }
 .ca-vest { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 14px; align-items: start; }
 .ca-vest-vista { position: sticky; top: 0; padding: 10px 8px 4px; border-radius: 20px; background: linear-gradient(#ffeef4, #fff7f4); }
 .ca-vest-vista svg { display: block; width: 100%; height: auto; }
@@ -416,8 +416,6 @@ body.ca-en-completa { overflow: hidden; }
 .ca-colores { display: flex; flex-wrap: wrap; gap: 7px; }
 .ca-color { width: 31px; height: 31px; padding: 0; border: 2.5px solid #fff; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px rgba(120, 70, 100, .22); cursor: pointer; }
 .ca-color.on { box-shadow: 0 0 0 2.5px var(--ca-acento); }
-.ca-decir { display: grid; gap: 12px; }
-.ca-decir-fila { display: flex; gap: 8px; }
 .ca-campo { flex: 1; min-width: 0; height: 44px; padding: 0 14px; border: 1.5px solid rgba(120, 70, 100, .16); border-radius: 16px; background: #fff7fa; color: var(--ca-tinta); font: 700 15px/1 "Nunito", sans-serif; user-select: text; -webkit-user-select: text; }
 .ca-campo:focus { outline: none; border-color: var(--ca-acento); }
 .ca-boton { flex: none; height: 44px; padding: 0 18px; border: 0; border-radius: 16px; background: var(--ca-acento); color: #fff; font: 800 14px/1 "Nunito", sans-serif; cursor: pointer; }
@@ -499,8 +497,291 @@ body.ca-en-completa { overflow: hidden; }
 @keyframes caPolvo { 0% { opacity: .9; transform: scale(.3); } 100% { opacity: 0; transform: translate(var(--dx, 0px), -14px) scale(1.5); } }
 
 /* Ultra rendimiento y movimiento reducido: lo que se mueve solo, quieto (lo que tú haces sí se ve). */
-body.ed-ultra .ca :is(.ca-nube, .ca-mariposa, .ca-mariposa::before, .ca-mariposa::after, .ca-luciernagas, .foco, .cola, .ojitos, .orejas, .copa, .pez1, .pez2, .burbu, .flota, .tilin, .vela, .ca-ojos, .nube) { animation: none !important; }
+body.ed-ultra .ca .ca-mariposa::before, body.ed-ultra .ca .ca-mariposa::after { animation: none !important; }
+body.ed-ultra .ca :is(.ca-nube, .ca-mariposa, .ca-luciernagas, .foco, .cola, .ojitos, .orejas, .copa, .pez1, .pez2, .burbu, .flota, .tilin, .vela, .ca-ojos, .nube) { animation: none !important; }
 body.ed-ultra .ca .fuente .agua { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .ca *, .ca *::before, .ca *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* ═══════════ FASE 54: luz suave, texturas, mensajes, cocina, monitos 2.0 y más ═══════════
+   Lo caro (mezclas de luz, sombras con filtro, polvito) sólo en Equilibrado y Calidad; en Rendimiento
+   y Ultra la casita se ve igual de bonita pero sin esos extras. */
+
+/* ── Texturas y sombritas de los cuartos ── */
+.ca-cuarto:not(.afuera) .ca-pared { box-shadow: inset 28px 0 34px -26px rgba(90, 40, 70, .16), inset -28px 0 34px -26px rgba(90, 40, 70, .16); }
+.ca-cuarto:not(.afuera) .ca-pared::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .18 0 0 0 0 .3 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.ca-piso::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(rgba(255, 255, 255, .2), transparent 34%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .16 0 0 0 0 .1 0 0 0 .1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.ca-cuarto[data-piso="duela"] .ca-piso { background: repeating-linear-gradient(0deg, transparent 0 22px, rgba(120, 70, 40, .2) 22px 24px), repeating-linear-gradient(90deg, #dcaa74 0 58px, #c9935f 58px 60px); }
+/* Luz de la tarde (cálida) y viñeta suave alrededor de la pantalla. */
+.ca-mundo.tarde .ca-oscuro:not(.apagado):not(.fiesta) { opacity: .13; background: #ff7a3c; }
+.ca-escena::after { content: ""; position: absolute; inset: 0; z-index: 15; pointer-events: none; background: radial-gradient(ellipse at 50% 46%, transparent 60%, rgba(70, 30, 60, .14) 100%); transition: background .8s; }
+.ca.es-noche .ca-escena::after { background: radial-gradient(ellipse at 50% 46%, transparent 52%, rgba(20, 12, 50, .3) 100%); }
+.ca.editando .ca-escena::after { opacity: 0; }
+
+/* ── El sol que entra por la ventana (con polvito) ── */
+.ca-rayo { position: absolute; z-index: -1; left: 4%; top: 72%; width: 124%; height: 300px; pointer-events: none; overflow: hidden;
+  background: linear-gradient(172deg, rgba(255, 247, 210, .46), rgba(255, 247, 210, .16) 52%, transparent 88%); clip-path: polygon(6% 0, 84% 0, 100% 100%, 24% 100%); transition: opacity .8s; }
+.ca-mundo.tarde .ca-rayo { background: linear-gradient(172deg, rgba(255, 196, 150, .5), rgba(255, 196, 150, .18) 52%, transparent 88%); }
+.ca-mundo.noche .ca-rayo { opacity: .22; background: linear-gradient(172deg, rgba(170, 190, 255, .4), transparent 70%); }
+.ca-obj.ventana.e-cerrada .ca-rayo { opacity: .12; }
+.ca-obj.ventana.f > .ca-rayo { left: auto; right: 4%; transform: scaleX(-1); }
+.ca-polvito { position: absolute; inset: 0; opacity: .85; animation: caPolvito 14s linear infinite;
+  background-image: radial-gradient(1.8px 1.8px at 22% 18%, #fff 50%, transparent 60%), radial-gradient(1.4px 1.4px at 48% 34%, #fff 50%, transparent 60%), radial-gradient(2px 2px at 64% 12%, #fff 50%, transparent 60%), radial-gradient(1.4px 1.4px at 38% 62%, #fff 50%, transparent 60%), radial-gradient(1.8px 1.8px at 72% 54%, #fff 50%, transparent 60%), radial-gradient(1.2px 1.2px at 56% 80%, #fff 50%, transparent 60%); }
+.ca-mundo.noche .ca-polvito { display: none; }
+
+/* ── Lámparas que alumbran de noche (y cuando apagas el cuarto) ── */
+.ca-brillo { position: absolute; z-index: 5001; pointer-events: none; border-radius: 50%; opacity: 0; transition: opacity .8s;
+  background: radial-gradient(closest-side, var(--c), transparent); }
+.ca-brillo[hidden] { display: none; }
+.ca-mundo.tarde .ca-brillo.on { opacity: .32; }
+.ca-mundo.noche .ca-brillo.on, .ca-brillo.on.cuarto-oscuro { opacity: .5; }
+:root:not([data-modo="ultra"]):not([data-modo="rendimiento"]) .ca-brillo { mix-blend-mode: screen; }
+:root:not([data-modo="ultra"]):not([data-modo="rendimiento"]) .ca-mundo.noche .ca-brillo.on,
+:root:not([data-modo="ultra"]):not([data-modo="rendimiento"]) .ca-brillo.on.cuarto-oscuro { opacity: .78; }
+/* Fiesta: la bocina prendida llena el cuarto de lucecitas. */
+.ca-oscuro.fiesta { opacity: .5 !important; animation: caFiesta 1.6s steps(1) infinite;
+  background: radial-gradient(circle at 14% 66%, rgba(255, 92, 147, .85), transparent 5%), radial-gradient(circle at 36% 74%, rgba(124, 180, 255, .85), transparent 4.5%), radial-gradient(circle at 58% 64%, rgba(255, 222, 90, .85), transparent 4%), radial-gradient(circle at 80% 76%, rgba(150, 255, 190, .8), transparent 5%), radial-gradient(circle at 26% 88%, rgba(201, 167, 255, .8), transparent 4%), radial-gradient(circle at 70% 90%, rgba(255, 150, 120, .8), transparent 4.5%), rgba(60, 30, 90, .16); }
+.ca-mundo.noche .ca-oscuro.fiesta { opacity: .7 !important; }
+
+/* ── Sombras suaves ── */
+:root:not([data-modo="ultra"]):not([data-modo="rendimiento"]) .ca-obj.capa-pared > .ca-obj-arte { filter: drop-shadow(0 6px 5px rgba(90, 40, 70, .15)); }
+:root[data-modo="calidad"] .ca-obj.capa-piso > .ca-obj-arte { filter: drop-shadow(0 3px 2px rgba(90, 40, 70, .1)); }
+
+/* ── La terraza: ciudad a lo lejos y barandal ── */
+.ca-ciudad { position: absolute; left: 0; right: 0; top: 300px; height: 90px; opacity: .55;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='90'%3E%3Cg fill='%23b9c8f0'%3E%3Crect x='6' y='30' width='34' height='60' rx='4'/%3E%3Crect x='46' y='10' width='26' height='80' rx='4'/%3E%3Crect x='78' y='44' width='40' height='46' rx='4'/%3E%3Crect x='124' y='22' width='30' height='68' rx='4'/%3E%3Crect x='160' y='50' width='34' height='40' rx='4'/%3E%3Crect x='200' y='16' width='30' height='74' rx='4'/%3E%3C/g%3E%3Cg fill='%23fff' opacity='.6'%3E%3Crect x='52' y='20' width='5' height='6'/%3E%3Crect x='62' y='34' width='5' height='6'/%3E%3Crect x='130' y='32' width='5' height='6'/%3E%3Crect x='206' y='28' width='5' height='6'/%3E%3Crect x='216' y='44' width='5' height='6'/%3E%3Crect x='14' y='42' width='5' height='6'/%3E%3C/g%3E%3C/svg%3E") 0 100% / 240px 90px repeat-x; }
+.ca-mundo.noche .ca-ciudad { opacity: .8; filter: brightness(.55) saturate(1.4); }
+.ca-baranda { position: absolute; left: 0; right: 0; top: 366px; height: 74px; z-index: 1;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='74'%3E%3Crect x='0' y='4' width='48' height='9' rx='3' fill='%23fff7ef'/%3E%3Crect x='0' y='12' width='48' height='2' fill='%23e5cdb8'/%3E%3Crect x='20' y='12' width='8' height='62' rx='2' fill='%23fff7ef'/%3E%3Crect x='26' y='12' width='2' height='62' fill='%23e5cdb8'/%3E%3C/svg%3E") 0 0 / 48px 74px repeat-x; }
+.ca-cuarto.terraza .ca-lomas { top: 342px; opacity: .85; }
+.ca-mundo.noche .ca-oscuro.terraza { opacity: .28; }
+
+/* ── El botón de mensajes (con su numerito) y la barrita de abajo con Ajustes ── */
+.ca-r { position: relative; }
+.ca-badge { position: absolute; top: -5px; right: -5px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 99px; background: #ff4d7d; color: #fff; font: 900 11px/20px "Nunito", sans-serif; text-align: center; box-shadow: 0 0 0 2.5px #fff; animation: caPop .3s cubic-bezier(.3, 1.6, .5, 1); }
+.ca-badge[hidden] { display: none; }
+.ca-barra { flex: none; display: flex; align-items: stretch; background: rgba(255, 255, 255, .94); box-shadow: 0 -4px 14px rgba(110, 50, 90, .08); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.ca-barra .ca-volver { flex: 1; width: auto; padding-bottom: 4px; background: transparent; box-shadow: none; }
+.ca-ajustes-b { flex: none; display: grid; place-items: center; width: 50px; min-height: 30px; padding: 0; border: 0; border-left: 1px solid rgba(120, 70, 100, .1); background: transparent; color: var(--ca-acento); cursor: pointer; }
+.ca-ajustes-b svg { width: 18px; height: 18px; }
+.ca-ajustes-b:active, .ca-barra .ca-volver:active { background: var(--ca-rosa); }
+:root[data-tema="oscuro"] .ca .ca-barra { background-color: #2a2130; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .ca .ca-barra { background-color: #2a2130; } }
+
+/* ── Mensajitos y cartitas ── */
+.ca-hoja.mensajes, .ca-hoja.carta-hoja { height: 76%; }
+.ca-msg { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 0 14px 12px; }
+.ca-msg-tabs { flex: none; }
+.ca-msgs { flex: 1; min-height: 110px; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 6px; padding: 10px 8px; border-radius: 18px; background: linear-gradient(#fff6fa, #f6f0ff); }
+.ca-burbuja { max-width: 80%; align-self: flex-start; padding: 8px 12px 6px; border-radius: 18px 18px 18px 6px; background: #fff; color: var(--ca-tinta); box-shadow: 0 2px 6px rgba(90, 40, 70, .08); animation: caPop .25s ease-out; }
+.ca-burbuja.mia { align-self: flex-end; border-radius: 18px 18px 6px 18px; background: #ffd9e6; }
+.ca-burbuja p { margin: 0; font: 600 14.5px/1.35 "Nunito", sans-serif; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ca-burbuja small { display: block; margin-top: 3px; text-align: right; font: 700 10.5px/1 "Nunito", sans-serif; color: var(--ca-suave); }
+.ca-msg-vacio { margin: auto; padding: 18px; text-align: center; font: 700 13px/1.45 "Nunito", sans-serif; color: var(--ca-suave); }
+.ca-msg-pie { flex: none; display: grid; gap: 8px; }
+.ca-msg-pie[hidden] { display: none; }
+.ca-msg-frases { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+.ca-msg-frases::-webkit-scrollbar { display: none; }
+.ca-msg-frases .ca-chip { flex: none; height: 32px; }
+.ca-msg-fila { display: flex; gap: 8px; align-items: flex-end; }
+.ca-msg-campo { resize: none; height: 44px; min-height: 44px; max-height: 110px; padding: 11px 14px; font: 600 15px/1.35 "Nunito", sans-serif; color: var(--ca-tinta); background: #fff; }
+.ca-msg-enviar { width: 50px; padding: 0; display: grid; place-items: center; }
+.ca-msg-enviar svg { width: 22px; height: 22px; }
+.ca-msgs.cartas { gap: 8px; }
+.ca-carta-nueva, .ca-carta-b { flex: none; display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: 0; border-radius: 16px; background: #fff; color: var(--ca-tinta); text-align: left; box-shadow: 0 2px 8px rgba(90, 40, 70, .08); cursor: pointer; }
+.ca-carta-nueva { background: linear-gradient(135deg, #ffe0ec, #efe4ff); }
+.ca-carta-nueva > i, .ca-carta-b > i { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: #fff; color: var(--ca-acento); }
+.ca-carta-nueva svg, .ca-carta-b svg { width: 20px; height: 20px; }
+.ca-carta-nueva > span, .ca-carta-b > span { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.ca-carta-nueva b, .ca-carta-b b { font: 800 14px/1.2 "Nunito", sans-serif; }
+.ca-carta-nueva small, .ca-carta-b small { font: 600 12px/1.3 "Nunito", sans-serif; color: var(--ca-suave); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ca-carta-b em { flex: none; font: 800 11px/1 "Nunito", sans-serif; font-style: normal; color: var(--ca-suave); }
+.ca-carta-b.nueva em { padding: 5px 9px; border-radius: 99px; background: #ff4d7d; color: #fff; }
+.ca-carta-nueva:active, .ca-carta-b:active { transform: scale(.98); }
+.ca-carta { min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; align-content: start; gap: 12px; padding: 2px 16px 18px; }
+.ca-carta-papel { position: relative; padding: 18px 18px 14px; border-radius: 14px; color: #4a3346; background: repeating-linear-gradient(#fffdf6 0 27px, #f3dfe8 27px 28px); box-shadow: 0 8px 20px rgba(90, 40, 70, .12), inset 0 0 0 1px rgba(120, 70, 100, .08); }
+.ca-carta-papel::before { content: ""; position: absolute; right: 14px; top: 12px; width: 30px; height: 26px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21s-9-5.6-11-11.3C-.3 5.4 3.4 1.6 7.4 2.6 9.5 3.2 11 5 12 6.4 13 5 14.5 3.2 16.6 2.6c4-1 7.7 2.8 6.4 7.1C21 15.4 12 21 12 21z' fill='%23ff86b0'/%3E%3C/svg%3E") center / contain no-repeat; opacity: .8; }
+.ca-carta-papel small { display: block; margin-bottom: 6px; font: 700 12px/1 "Nunito", sans-serif; color: var(--ca-suave); }
+.ca-carta-papel p { margin: 0 0 12px; font: 600 21px/28px "Caveat", "Nunito", sans-serif; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ca-carta-papel > b { display: block; text-align: right; font: 700 20px/1.2 "Caveat", "Nunito", sans-serif; color: #c2336b; }
+.ca-carta-campo { display: block; width: 100%; min-height: 210px; padding: 0; border: 0; background: transparent; resize: vertical; font: 600 21px/28px "Caveat", "Nunito", sans-serif; color: #4a3346; outline: none; }
+.ca-carta-cuenta { align-self: center; font: 700 12px/1 "Nunito", sans-serif; color: var(--ca-suave); }
+.ca-carta .ca-chip { justify-self: center; }
+/* El buzón con cartita nueva: banderita arriba y un sobrecito que brinca. */
+.ca-obj.buzon.hay-carta .banderita { transform: rotate(-80deg); }
+.ca-obj.buzon.hay-carta > .ca-obj-arte::after { content: ""; position: absolute; left: 50%; top: -38px; width: 34px; height: 26px; margin-left: -17px; pointer-events: none; animation: caAvisoCarta 1.1s ease-in-out infinite alternate;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 26'%3E%3Crect x='1.5' y='1.5' width='31' height='23' rx='4' fill='%23fff' stroke='%23ff86b0' stroke-width='2.5'/%3E%3Cpath d='M3 4l14 10L31 4' fill='none' stroke='%23ff86b0' stroke-width='2.5'/%3E%3Cpath d='M17 21s-5-3-6-6c-.6-2 1.2-4 3.2-3.4 1.2.3 2.2 1.4 2.8 2.2.6-.8 1.6-1.9 2.8-2.2 2-.6 3.8 1.4 3.2 3.4-1 3-6 6-6 6z' fill='%23ff5c93'/%3E%3C/svg%3E") center / contain no-repeat; }
+
+/* ── ¿Qué cocinamos?, el piano y los ajustes ── */
+.ca-recetas { min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; padding: 2px 16px 18px; }
+.ca-receta { display: grid; justify-items: center; align-content: start; gap: 3px; padding: 10px 6px 9px; border: 0; border-radius: 18px; background: linear-gradient(#fff7fa, #fff); color: var(--ca-tinta); box-shadow: 0 3px 10px rgba(90, 40, 70, .1), inset 0 0 0 1.5px rgba(229, 103, 154, .12); cursor: pointer; transition: transform .15s; }
+.ca-receta:active { transform: scale(.95); }
+.ca-receta-arte { display: block; width: 78px; height: 54px; }
+.ca-receta-arte svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ca-receta b { font: 800 12.5px/1.15 "Nunito", sans-serif; text-align: center; }
+.ca-receta small { font: 700 10.5px/1 "Nunito", sans-serif; color: var(--ca-suave); }
+.ca-piano { padding: 4px 12px 18px; overflow-x: auto; overscroll-behavior-x: contain; }
+.ca-teclado { position: relative; display: flex; height: 158px; min-width: 520px; }
+.ca-tecla { position: relative; flex: 1; display: flex; align-items: flex-end; justify-content: center; margin: 0 1.5px; padding: 0 0 10px; border: 0; border-radius: 0 0 11px 11px; background: linear-gradient(#fff, #fdf0f6); box-shadow: inset 0 -6px 0 rgba(229, 103, 154, .16), 0 2px 6px rgba(90, 40, 70, .16); touch-action: manipulation; cursor: pointer; }
+.ca-tecla small { font: 800 10px/1 "Nunito", sans-serif; color: var(--ca-suave); pointer-events: none; }
+.ca-tecla.negra { position: absolute; z-index: 2; top: 0; width: calc(100% / 15 * .6); height: 60%; margin: 0; left: calc((var(--i) + 1) * 100% / 15 - 100% / 15 * .3); background: linear-gradient(#5f475b, #3a2a35); box-shadow: inset 0 -5px 0 rgba(255, 255, 255, .12), 0 3px 6px rgba(0, 0, 0, .25); }
+.ca-tecla.toca { animation: caTecla .26s ease-out; }
+.ca-ajuste { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; font: 700 14px/1.2 "Nunito", sans-serif; }
+.ca-interruptor { position: relative; flex: none; width: 50px; height: 30px; padding: 0; border: 0; border-radius: 99px; background: #e8dde5; cursor: pointer; transition: background .2s; }
+.ca-interruptor i { position: absolute; left: 3px; top: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(0, 0, 0, .18); transition: transform .2s; }
+.ca-interruptor.on { background: var(--ca-acento); }
+.ca-interruptor.on i { transform: translateX(20px); }
+.ca-vol { flex: 1; max-width: 220px; accent-color: var(--ca-acento); }
+.ca-nota { margin: 0; font: 600 13px/1.45 "Nunito", sans-serif; color: var(--ca-suave); }
+.ca-sonidos { display: grid; gap: 4px; max-height: 280px; overflow-y: auto; overscroll-behavior: contain; }
+.ca-sonidos[hidden] { display: none; }
+.ca-sonido-b { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border: 0; border-radius: 12px; background: #fff7fa; color: var(--ca-tinta); text-align: left; cursor: pointer; }
+.ca-sonido-b > i { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #fff; color: var(--ca-acento); }
+.ca-sonido-b svg { width: 14px; height: 14px; }
+.ca-sonido-b > span { display: grid; gap: 1px; min-width: 0; }
+.ca-sonido-b b { font: 800 12.5px/1.2 "Nunito", sans-serif; }
+.ca-sonido-b small { font: 600 11px/1.25 "Nunito", sans-serif; color: var(--ca-suave); }
+:root[data-tema="oscuro"] .ca :is(.ca-msgs, .ca-burbuja, .ca-carta-nueva, .ca-carta-b, .ca-receta, .ca-sonido-b, .ca-msg-campo) { background: #2a2130; color: var(--ca-tinta); }
+:root[data-tema="oscuro"] .ca .ca-burbuja.mia { background: #5a2f48; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) .ca :is(.ca-msgs, .ca-burbuja, .ca-carta-nueva, .ca-carta-b, .ca-receta, .ca-sonido-b, .ca-msg-campo) { background: #2a2130; color: var(--ca-tinta); }
+  :root:not([data-tema="claro"]) .ca .ca-burbuja.mia { background: #5a2f48; }
+}
+
+/* ── Los platitos servidos en la mesa ── */
+.ca-platos { position: absolute; inset: 0; pointer-events: none; }
+.ca-plato { position: absolute; width: 44px; height: 30px; animation: caPlato .45s cubic-bezier(.3, 1.6, .5, 1); }
+.ca:not(.editando) .ca-obj[role="button"] .ca-plato { pointer-events: auto; cursor: pointer; }
+.ca-plato > i { position: absolute; inset: 0; }
+.ca-plato svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ca-plato[data-b="2"] .ca-plato-comida { clip-path: inset(0 0 0 30%); }
+.ca-plato[data-b="1"] .ca-plato-comida { clip-path: inset(0 0 0 60%); }
+.ca-plato.se-acaba { animation: caSeVa .4s ease-in forwards; }
+.ca-plato-vapor::before, .ca-plato-vapor::after { content: ""; position: absolute; left: 38%; bottom: 72%; width: 6px; height: 14px; border-radius: 6px; background: rgba(255, 255, 255, .8); animation: caVaporPlato 2.4s ease-in-out infinite; }
+.ca-plato-vapor::after { left: 58%; animation-delay: -1.2s; }
+.ca-obj.con-platos .adorno { display: none; }
+/* La estufa: la olla, el color de lo que se cocina y el horno sólo al hornear. */
+.ca-obj.estufa .hotcake ellipse:first-child { fill: var(--comida, #f2b45a); }
+.ca-obj.estufa .olla { display: none; }
+.ca-obj.estufa .caldo { fill: var(--comida, #ffb46b); }
+.ca-obj.estufa.e-on[data-trasto="olla"] .olla { display: inline; }
+.ca-obj.estufa.e-on[data-trasto="olla"] .sarten { display: none; }
+.ca-obj.estufa.e-on:not([data-trasto="horno"]) .horno { fill: #3d3440; }
+.ca-obj.estufa.e-on[data-trasto="horno"] .horno { fill: #ff9e5a; }
+.ca-obj.estufa[data-trasto="horno"] :is(.hotcake, .fuego) { opacity: 0 !important; }
+.ca-obj.barra_micro .dentro-micro rect { transition: opacity .3s; }
+.ca-obj.barra_micro.e-on .dentro-micro rect { opacity: .85; }
+.ca-obj.barra_micro.e-on .plato-micro { animation: caGiraPlato 1s linear infinite; transform-origin: center; }
+.ca-obj.barra_licuadora.e-on .vaso-l { animation: caLicua .1s linear infinite alternate; }
+
+/* ── Cosas nuevas que se mueven ── */
+.ca-obj.consola .juego { opacity: 0; transition: opacity .3s; }
+.ca-obj.consola.e-on .juego { opacity: 1; }
+.ca-obj.consola.e-on .pantalla { fill: #bfe6ff; }
+.ca-obj.consola.e-on .brinca-j { animation: caBrincaJ .7s ease-in-out infinite; }
+.ca-obj.consola.e-on .monedas { animation: caMonedas 1.4s linear infinite; }
+.ca-obj.bocina .notas, .ca-obj.piano .notas { opacity: 0; }
+.ca-obj.bocina.e-on .notas, .ca-obj.piano.suena .notas { opacity: 1; animation: caNotas 1.4s ease-in-out infinite; }
+.ca-obj.bocina.e-on .cono { animation: caLate .42s ease-in-out infinite alternate; transform-origin: center; }
+.ca-obj.bocina.e-on .led { animation: caFoco .5s ease-in-out infinite alternate; }
+.ca-obj.caballete :is(.p1, .p2, .p3) { display: none; }
+.ca-obj.caballete[data-etapa="1"] .p0, .ca-obj.caballete[data-etapa="2"] .p0, .ca-obj.caballete[data-etapa="3"] .p0 { display: none; }
+.ca-obj.caballete[data-etapa="1"] .p1, .ca-obj.caballete[data-etapa="2"] .p2, .ca-obj.caballete[data-etapa="3"] .p3 { display: inline; }
+.ca-obj.neon .tubo { opacity: .3; transition: opacity .3s; }
+.ca-obj.neon:not(.e-apagado) .tubo { opacity: 1; }
+:root:not([data-modo="ultra"]):not([data-modo="rendimiento"]) .ca-obj.neon:not(.e-apagado) .tubo { filter: drop-shadow(0 0 3px #ff6fae); }
+.ca-obj.lampara_lava.e-on .lava-b > * { animation: caLava 5s ease-in-out infinite alternate; }
+.ca-obj.lampara_lava.e-on .lava-b > :nth-child(2) { animation-duration: 3.6s; animation-direction: alternate-reverse; }
+.ca-obj.hamster .rueda { animation: caGiraRueda 1.4s linear infinite; transform-origin: center; }
+.ca-obj.pajarito .pajaro { animation: caPajaro 3.2s ease-in-out infinite; transform-origin: center bottom; }
+.ca-obj.tortuga .patas { transition: transform .3s, opacity .3s; transform-origin: center; }
+.ca-obj.tortuga.esconde .patas { transform: scale(.3); opacity: 0; }
+.ca-obj.lavadora.lava .tambor { animation: caGiraRueda .45s linear infinite; transform-origin: center; }
+.ca-obj.regadera .agua-cae { opacity: 0; transition: opacity .3s; }
+.ca-obj.regadera.ocupado .agua-cae { opacity: 1; animation: caLluvia .35s linear infinite; }
+.ca-obj.alberca .ola { animation: caOla 3s ease-in-out infinite alternate; }
+.ca-obj-frente.alberca .patito-a { animation: caFlota 2.4s ease-in-out infinite alternate; }
+.ca-obj :is(.tapa, .juguetes) { transition: transform .35s cubic-bezier(.3, 1.4, .5, 1), opacity .3s; transform-origin: left bottom; }
+.ca-obj.abierto .tapa { transform: rotate(-26deg) translateY(-4px); }
+.ca-obj.baul .juguetes { opacity: 0; }
+.ca-obj.baul.abierto .juguetes { opacity: 1; transform: translateY(-10px); }
+.ca-obj.fogata .fuego, .ca-obj.fogata .brasas { opacity: 0; transition: opacity .4s; }
+.ca-obj.fogata.e-on .fuego, .ca-obj.fogata.e-on .brasas { opacity: 1; }
+.ca-obj.fogata.e-on .fuego { animation: caLlama .5s ease-in-out infinite alternate; transform-origin: center bottom; }
+.ca-calendario { position: absolute; inset: 0; pointer-events: none; }
+.ca-calendario small { position: absolute; left: 0; right: 0; top: 16px; text-align: center; font: 900 10.5px/1 "Nunito", sans-serif; letter-spacing: .12em; color: #fff; }
+.ca-calendario b { position: absolute; left: 0; right: 0; top: 40px; text-align: center; font: 900 30px/1 "Nunito", sans-serif; color: #4a3346; }
+/* Las mascotitas pasean solitas (y se dejan cargar con el dedo). */
+.ca:not(.editando) .ca-obj.mascota:not(.levantado) > .ca-obj-arte { animation: caPasea 17s ease-in-out infinite; }
+.ca-obj.mascota.perrito > .ca-obj-arte { animation-delay: -6s; animation-duration: 13s; }
+.ca-obj.mascota.conejito > .ca-obj-arte { animation-delay: -10s; animation-duration: 15s; }
+.ca-obj.mascota.tortuga > .ca-obj-arte { animation-duration: 30s; }
+.ca:not(.editando) .ca-obj.portatil { touch-action: none; }
+.ca:not(.editando) .ca-obj.portatil svg * { cursor: grab; }
+
+/* ── El regalito del día ── */
+.ca-regalito { position: absolute; width: 52px; height: 54px; padding: 0; border: 0; background: none; cursor: pointer; animation: caRegalito 2.6s ease-in-out infinite; transform-origin: 50% 100%; }
+.ca-regalito-caja { position: absolute; left: 4px; right: 4px; bottom: 0; height: 36px; border-radius: 7px; background: linear-gradient(90deg, transparent 42%, #ffd84d 42% 58%, transparent 58%), #ff86b0; box-shadow: inset 0 -5px 0 rgba(0, 0, 0, .08), 0 6px 10px rgba(90, 40, 70, .2); }
+.ca-regalito-tapa { position: absolute; z-index: 1; left: 0; right: 0; top: 10px; height: 13px; border-radius: 5px; background: linear-gradient(90deg, transparent 42%, #ffd84d 42% 58%, transparent 58%), #ff5c93; }
+.ca-regalito-lazo { position: absolute; z-index: 2; left: 50%; top: 0; width: 28px; height: 15px; margin-left: -14px; background: radial-gradient(circle at 28% 60%, #ffd84d 45%, transparent 48%), radial-gradient(circle at 72% 60%, #ffd84d 45%, transparent 48%); }
+.ca-regalito.abierto { animation: none; }
+.ca-regalito.abierto :is(.ca-regalito-tapa, .ca-regalito-lazo) { transform: translateY(-46px) rotate(-28deg); opacity: 0; transition: transform .55s cubic-bezier(.3, 1.4, .5, 1), opacity .4s .35s; }
+.ca.editando .ca-regalito { pointer-events: none; opacity: .4; }
+
+/* ── Monitos 2.0: caritas, cuchara, ducha, tocar y animaciones de reposo ── */
+.ca-mono-svg :is(.ojo-c, .ojo-s, .ca-cuchara) { display: none; }
+.ca-monito.enamorado :is(.ojo-n, .ojo-f, .ojo-z) { display: none !important; }
+.ca-monito.enamorado .ojo-c { display: inline !important; }
+.ca-monito:is(.sorpresa, .cargado) :is(.ojo-n, .ojo-f) { display: none !important; }
+.ca-monito:is(.sorpresa, .cargado) .ojo-s { display: inline !important; }
+.ca-monito:is(.sorpresa, .cargado) :is(.bo-n, .bo-a) { display: none !important; }
+.ca-monito:is(.sorpresa, .cargado) .bo-o { display: inline !important; }
+.ca-monito.comiendo .ca-cuchara { display: inline; }
+.ca-monito.comiendo .ca-bd { animation: caComer .95s ease-in-out infinite alternate; }
+.ca-monito.comiendo .bo-n { display: none; }
+.ca-monito.comiendo .bo-o { display: inline; transform-origin: 50px 65px; animation: caMastica .32s ease-in-out infinite alternate; }
+.ca-monito.tocando .ca-bi { animation: caToca .24s ease-in-out infinite alternate; }
+.ca-monito.tocando .ca-bd { animation: caToca2 .24s ease-in-out infinite alternate-reverse; }
+.ca-monito.duchando :is(.ca-mono-nombre) { opacity: 0; }
+.ca-monito.duchando .ca-sombra { display: none; }
+.ca-monito.duchando .ojo-n { display: none; } .ca-monito.duchando .ojo-f { display: inline; }
+.ca-monito.duchando .ca-bi { animation: caBrazoArriba .5s ease-in-out infinite alternate; }
+.ca-monito.duchando .ca-bd { animation: caBrazoArriba2 .5s ease-in-out infinite alternate; }
+.ca-monito:not(.camina):not(.corre):not(.cargado):not(.dormido):not(.banando):not(.g-besito):not(.g-abrazo):not(.g-baila) .ca-mono-cuerpo { animation: caRespiro 3.6s ease-in-out infinite; transform-origin: 50% 100%; }
+.ca-monito:not(.camina):not(.corre):not(.cargado):not(.dormido):not(.comiendo) .ca-cabeza { animation: caMira 11s ease-in-out infinite; transform-origin: 50px 76px; }
+.ca-monito.pareja .ca-cabeza { animation-delay: -5.5s; }
+.ca-monito.pareja .ca-mono-cuerpo { animation-delay: -1.7s; }
+
+@keyframes caPolvito { from { transform: translateY(0); } to { transform: translateY(-60px); } }
+@keyframes caFiesta { 0% { filter: hue-rotate(0deg); } 50% { filter: hue-rotate(150deg); } }
+@keyframes caAvisoCarta { from { transform: translateY(0) rotate(-6deg); } to { transform: translateY(-8px) rotate(6deg); } }
+@keyframes caTecla { 0% { transform: translateY(3px); filter: brightness(.9); } }
+@keyframes caPlato { from { transform: translateY(-26px) scale(.7); opacity: 0; } }
+@keyframes caVaporPlato { 0% { transform: translateY(4px) scale(.6); opacity: 0; } 40% { opacity: .9; } 100% { transform: translateY(-16px) scale(1.2); opacity: 0; } }
+@keyframes caGiraPlato { 50% { transform: scaleX(.4); } }
+@keyframes caLicua { to { transform: translate(1px, -1px) rotate(1deg); } }
+@keyframes caBrincaJ { 50% { transform: translateY(-14px); } }
+@keyframes caMonedas { to { transform: translateX(-26px); } }
+@keyframes caLate { to { transform: scale(1.08); } }
+@keyframes caLava { to { transform: translateY(-16px); } }
+@keyframes caGiraRueda { to { transform: rotate(360deg); } }
+@keyframes caPajaro { 0%, 70%, 100% { transform: none; } 78% { transform: translateY(-5px) rotate(-6deg); } 86% { transform: none; } 92% { transform: translateY(-3px); } }
+@keyframes caLluvia { to { stroke-dashoffset: -16; } }
+@keyframes caOla { to { transform: translateX(12px); } }
+@keyframes caPasea { 0%, 8% { translate: 0 0; scale: 1 1; } 26% { translate: 30px 0; scale: 1 1; } 29%, 36% { translate: 30px 0; scale: -1 1; } 58% { translate: -24px 0; scale: -1 1; } 61%, 70% { translate: -24px 0; scale: 1 1; } 88%, 100% { translate: 0 0; scale: 1 1; } }
+@keyframes caRegalito { 0%, 70%, 100% { transform: none; } 78% { transform: rotate(-7deg) scale(1.05); } 86% { transform: rotate(5deg); } 93% { transform: rotate(-2deg); } }
+@keyframes caToca { from { transform: rotate(-26deg); } to { transform: rotate(-40deg); } }
+@keyframes caToca2 { from { transform: rotate(26deg); } to { transform: rotate(40deg); } }
+@keyframes caRespiro { 50% { transform: scale(1.012, .99); } }
+@keyframes caMira { 0%, 38%, 100% { transform: none; } 44%, 52% { transform: rotate(-5deg); } 60%, 68% { transform: rotate(4deg); } 76% { transform: none; } }
+
+/* Ultra rendimiento (y Rendimiento): sin polvito, sin mezclas de luz ni animaciones de adorno. */
+:root:is([data-modo="ultra"], [data-modo="rendimiento"]) .ca .ca-polvito, :root:is([data-modo="ultra"], [data-modo="rendimiento"]) .ca .ca-escena::after { display: none; }
+:root:is([data-modo="ultra"], [data-modo="rendimiento"]) .ca .ca-pared::before { display: none; }
+body.ed-ultra .ca :is(.ca-polvito, .ca-obj-arte, .ca-mono-cuerpo, .ca-cabeza, .rueda, .pajaro, .ola, .patito-a, .lava-b > *, .ca-regalito, .brinca-j, .monedas) { animation: none !important; }
+body.ed-ultra .ca .ca-plato-vapor { display: none; }
+body.ed-ultra .ca .ca-oscuro.fiesta { animation: none; }
+body.ed-ultra .ca .ca-rayo { display: none; }

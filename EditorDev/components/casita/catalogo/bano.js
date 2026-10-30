@@ -55,4 +55,38 @@ export const ITEMS = {
     n: "Tapete", cat: "bano", capa: "alfombra", w: 132, h: 34, y: 556, colores: ["#cdeeff", "#ffd0e2", "#d4f3e3", "#fff0b8"],
     arte: (e, C) => svg(132, 34, `<rect x="2" y="4" width="128" height="26" rx="13" fill="${C}" ${OL}/>${[18, 40, 62, 84, 106].map((x) => `<circle cx="${x + 4}" cy="17" r="4" fill="#fff" opacity=".7"/>`).join("")}`),
   },
+  regadera: {
+    n: "Regadera", cat: "bano", w: 118, h: 234, al: "ducha", colores: ["#ff9cbf", "#c9a7ff", "#8fd0ff", "#94dfbd", "#ffd36e"],
+    // En la regadera: el monito va entre la pared de azulejo y el vidrio con la cortina.
+    lugares: [{ dx: 10, dy: -14, pose: "duchando", z: 1 }],
+    arte: () => svg(118, 234, `
+      <rect x="6" y="12" width="106" height="210" rx="8" fill="#eaf6fb" ${OL}/>
+      <path d="M6 54h106M6 96h106M6 138h106M6 180h106M41 12v210M77 12v210" stroke="#fff" stroke-width="2.5"/>
+      <path d="M90 222V40a14 14 0 0 0-14-14H62" stroke="#b39a8a" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <path d="M46 24h28l-4 11H50z" fill="#d9cfd6" ${OL2}/><circle cx="92" cy="150" r="5" fill="#d9cfd6" ${OL2}/>
+      <g class="agua-cae"><path d="M52 38v150M58 38v156M64 38v150M70 38v156" stroke="#8fd0ff" stroke-width="2.2" stroke-dasharray="7 9" stroke-linecap="round"/></g>
+      <rect x="0" y="216" width="118" height="16" rx="6" fill="#fff" ${OL}/>`),
+    frente: (e, C) => svg(118, 234, `
+      <rect x="40" y="22" width="74" height="196" rx="6" fill="#cdeeff" fill-opacity=".2" stroke="#9fc9df" stroke-width="2"/>
+      <path d="M58 44l12 140" stroke="#fff" stroke-opacity=".55" stroke-width="5" stroke-linecap="round"/>
+      <path d="M4 16h40v196c-12 5-28 5-40 0z" fill="${C}" ${OL}/><path d="M14 22v186M26 22v188M36 22v186" stroke="${tono(C, 0.85)}" stroke-width="2"/>
+      <rect x="0" y="12" width="118" height="6" rx="3" fill="#b39a8a"/><rect x="0" y="216" width="118" height="16" rx="6" fill="#fff" ${OL}/>`),
+  },
+  lavadora: {
+    n: "Lavadora", cat: "bano", w: 98, h: 124, al: "lavadora", colores: ["#ffffff", "#ffd0e2", "#cdeeff", "#e3d6ff"],
+    arte: (e, C) => svg(98, 124, `
+      <rect x="4" y="6" width="90" height="116" rx="10" fill="${C}" ${OL}/><rect x="4" y="6" width="90" height="24" rx="10" fill="${tono(C, 0.94)}"/>
+      <rect x="12" y="12" width="24" height="11" rx="3" fill="#94dfbd"/><circle cx="62" cy="18" r="5" fill="#d9cfd6" ${OL2}/><circle cx="78" cy="18" r="5" fill="#ff9cbf" ${OL2}/>
+      <circle cx="49" cy="76" r="31" fill="#d9cfd6" ${OL}/><circle cx="49" cy="76" r="24" fill="#bfe6ff"/>
+      <g class="tambor"><circle cx="40" cy="70" r="8" fill="#ff9cbf"/><circle cx="58" cy="72" r="7" fill="#ffd36e"/><circle cx="48" cy="86" r="8" fill="#c9a7ff"/><circle cx="56" cy="62" r="4" fill="#fff"/></g>
+      <path d="M33 62a20 20 0 0 1 14-9" stroke="#fff" stroke-opacity=".7" stroke-width="3.5" stroke-linecap="round" fill="none"/>${brillo(10, 36, 6, 70, 3, 0.35)}`),
+  },
+  cesto: {
+    n: "Cesto de ropa", cat: "bano", w: 68, h: 72, y: 548, al: "sacude",
+    arte: () => svg(68, 72, `
+      <path d="M14 10c4-8 14-10 20-2 4-6 14-8 20 0" fill="#ff9cbf" ${OL2}/><path d="M30 10c2-10 12-12 16-4" fill="#8fd0ff" ${OL2}/>
+      <path d="M6 14h56l-6 54a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4z" fill="#e7c08e" ${OL}/>
+      ${[24, 36, 48, 60].map((y) => `<path d="M${8 + (y - 14) * 0.11} ${y}h${52 - (y - 14) * 0.22}" stroke="#c9905c" stroke-width="2"/>`).join("")}${[18, 30, 42, 54].map((x) => `<path d="M${x} 16v52" stroke="#d9a46b" stroke-width="1.6"/>`).join("")}
+      <rect x="2" y="10" width="64" height="8" rx="4" fill="#d9a46b" ${OL2}/>`),
+  },
 };

@@ -68,7 +68,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.25.0"
+VERSION = "1.26.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -544,6 +544,8 @@ CREATE TABLE IF NOT EXISTS lugares_estado(lugar_id INTEGER, usuario_id INTEGER, 
 CREATE TABLE IF NOT EXISTS lugares_eventos(id INTEGER PRIMARY KEY AUTOINCREMENT, lugar_id INTEGER, usuario_id INTEGER, tipo TEXT, t REAL);
 CREATE TABLE IF NOT EXISTS casitas(a INTEGER, b INTEGER, datos TEXT, t REAL, PRIMARY KEY(a, b));
 CREATE TABLE IF NOT EXISTS monitos(usuario_id INTEGER PRIMARY KEY, datos TEXT, t REAL);
+CREATE TABLE IF NOT EXISTS casita_msgs(id INTEGER PRIMARY KEY AUTOINCREMENT, a INTEGER, b INTEGER, de INTEGER, tipo TEXT, texto TEXT, leido INTEGER DEFAULT 0, t REAL);
+CREATE INDEX IF NOT EXISTS casita_msgs_par ON casita_msgs(a, b, id);
 CREATE TABLE IF NOT EXISTS toques(id INTEGER PRIMARY KEY AUTOINCREMENT, de INTEGER, para INTEGER, tipo TEXT, texto TEXT, t REAL, visto REAL);
 CREATE INDEX IF NOT EXISTS toques_para ON toques(para, visto);
 CREATE TABLE IF NOT EXISTS mes_cosas(id INTEGER PRIMARY KEY AUTOINCREMENT, a INTEGER, b INTEGER, mes INTEGER, tipo TEXT, autor INTEGER,
@@ -4542,9 +4544,12 @@ def api_casita(h, s):
     casa = E.db.uno("SELECT datos FROM casitas WHERE a=? AND b=?", a, b)
     yo = E.db.uno("SELECT datos FROM monitos WHERE usuario_id=?", uid)
     pa = E.db.uno("SELECT datos FROM monitos WHERE usuario_id=?", otro)
+    # 1.26: los mensajes de la casita (los últimos) y las cartitas del buzón.
+    msgs = E.db.q("SELECT id, de, tipo, texto, leido, t FROM casita_msgs WHERE a=? AND b=? ORDER BY id DESC LIMIT 60", a, b)
     h.responder(200, {"v": vv, "casa": json.loads(casa["datos"]) if casa else None,
                       "yo": json.loads(yo["datos"]) if yo else None, "pareja": json.loads(pa["datos"]) if pa else None,
-                      "pareja_aqui": time.time() - CASA_MIRANDO.get(otro, 0) < 40})
+                      "pareja_aqui": time.time() - CASA_MIRANDO.get(otro, 0) < 40,
+                      "msgs": [{"id": m["id"], "mio": m["de"] == uid, "tipo": m["tipo"] or "msg", "texto": m["texto"] or "", "leido": bool(m["leido"]), "t": m["t"]} for m in reversed(msgs)]})
 
 
 CASA_MIRANDO = {}
@@ -4631,6 +4636,61 @@ def _aplicar_ops(casa, ops):
                 cuartos[ck] = {**(cuartos.get(ck) or {}), **{str(a)[:12]: b for a, b in list(op["v"].items())[:8] if isinstance(b, (str, int, float, bool))}}
     casa["v"] = 2
     return casa
+
+
+_RITMO = {}
+_RITMO_CANDADO = threading.Lock()
+
+
+def _ya_limite(clave, maximo, ventana, mensaje):
+    """Freno suavecito: no más de `maximo` veces en `ventana` segundos."""
+    t = time.time()
+    with _RITMO_CANDADO:
+        lista = [x for x in _RITMO.get(clave, []) if t - x < ventana]
+        if len(lista) >= maximo:
+            _RITMO[clave] = lista
+            raise Falla(mensaje, 429)
+        lista.append(t)
+        _RITMO[clave] = lista
+        if len(_RITMO) > 2000:
+            for k in [k for k, v in _RITMO.items() if not v or t - v[-1] > 3600]:
+                del _RITMO[k]
+
+
+@ruta("POST", "/api/casita/mensaje", "sesion")
+def api_casita_mensaje(h, s):
+    """1.26 · Un mensajito dentro de la casita (`tipo` msg) o una cartita al buzón (`tipo` carta). Siempre texto."""
+    a, b, otro = _par(s)
+    uid = s["usuario_id"]
+    d = h.cuerpo_json() or {}
+    tipo = "carta" if d.get("tipo") == "carta" else "msg"
+    texto = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", str(d.get("texto") or "")).strip()
+    if not texto:
+        raise Falla("Escribe algo primero.", 400)
+    if len(texto) > (1000 if tipo == "carta" else 300):
+        raise Falla("Es demasiado largo.", 413)
+    _ya_limite(f"casita-msg:{uid}", 40, 60, "Vas muy rápido: espera tantito.")
+    i = E.db.x("INSERT INTO casita_msgs(a, b, de, tipo, texto, leido, t) VALUES(?,?,?,?,?,0,?)", a, b, uid, tipo, texto, ahora())
+    E.db.x("DELETE FROM casita_msgs WHERE a=? AND b=? AND id <= (SELECT id FROM casita_msgs WHERE a=? AND b=? ORDER BY id DESC LIMIT 1 OFFSET 500)", a, b, a, b)
+    CASA_MIRANDO[uid] = time.time()
+    _casa_cambio(a, b)
+    if tipo == "carta" or time.time() - CASA_MIRANDO.get(otro, 0) > 40:
+        avisar(otro, {"t": f"{nombre_corto(uid)} te dejó una cartita en su casita" if tipo == "carta" else f"{nombre_corto(uid)} en su casita",
+                      "b": "Ábrela en el buzón de Nuestra casita." if tipo == "carta" else texto[:120], "tag": "casita", "u": "#casita"})
+    h.responder(200, {"msg": {"id": i, "mio": True, "tipo": tipo, "texto": texto, "leido": False, "t": ahora()}})
+
+
+@ruta("POST", "/api/casita/leer", "sesion")
+def api_casita_leer(h, s):
+    """1.26 · Ya leíste lo que te mandó (hasta `hasta`, o una cartita en particular con `id`)."""
+    a, b, otro = _par(s)
+    d = h.cuerpo_json() or {}
+    if d.get("id"):
+        E.db.x("UPDATE casita_msgs SET leido=1 WHERE a=? AND b=? AND de=? AND id=?", a, b, otro, int(_num(d.get("id"), 1, 1e15, "El mensaje")))
+    else:
+        E.db.x("UPDATE casita_msgs SET leido=1 WHERE a=? AND b=? AND de=? AND tipo='msg' AND id<=?", a, b, otro, int(_num(d.get("hasta") or 0, 0, 1e15, "El mensaje")))
+    _casa_cambio(a, b)
+    h.responder(200, {"ok": True})
 
 
 @ruta("POST", "/api/casita/ops", "sesion")

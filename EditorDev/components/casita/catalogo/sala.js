@@ -36,11 +36,11 @@ export const ITEMS = {
       <path d="M20 104l-4 13M100 104l4 13" stroke="${MADERA_O}" stroke-width="6" stroke-linecap="round"/>`),
   },
   mesita: {
-    n: "Mesita", cat: "sala", w: 150, h: 70, y: 548,
+    n: "Mesita", cat: "sala", w: 150, h: 70, y: 548, al: "mesa", superficie: [[30, 26], [120, 26]],
     arte: () => svg(150, 70, `
       <path d="M58 10c0-8 6-10 10-10s10 2 10 10l-3 14h-14z" fill="#8fd0ff" ${OL2}/>
       <path d="M68 2c-4-6-1-12 4-12" stroke="#57b884" stroke-width="2.5" fill="none"/>${corazon(73, -12, 0.7, "#ff5c93")}
-      <rect x="92" y="14" width="34" height="10" rx="3" fill="#ffb48a" ${OL2}/><rect x="96" y="6" width="28" height="9" rx="3" fill="#c9a7ff" ${OL2}/>
+      <g class="adorno"><rect x="92" y="14" width="34" height="10" rx="3" fill="#ffb48a" ${OL2}/><rect x="96" y="6" width="28" height="9" rx="3" fill="#c9a7ff" ${OL2}/></g>
       <ellipse cx="75" cy="27" rx="73" ry="9" fill="${MADERA}" ${OL}/>${brillo(20, 22, 90, 4, 2)}
       <rect x="10" y="30" width="130" height="10" rx="4" fill="${MADERA_O}"/>
       <path d="M22 38l-6 30M128 38l6 30M48 40l-2 24M102 40l2 24" stroke="${MADERA_O}" stroke-width="7" stroke-linecap="round"/>`),

@@ -1,0 +1,4 @@
+Sonido «levantar»: Cargar a tu monito o levantar algo.
+
+Deja aquí tu archivo (.mp3, .m4a, .ogg o .wav, con el nombre que quieras) y suena el tuyo
+en lugar del de fábrica. Si dejas varios, se turnan. Si borras los tuyos, vuelve el de fábrica.

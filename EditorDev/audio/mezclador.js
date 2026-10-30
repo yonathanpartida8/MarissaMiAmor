@@ -242,13 +242,21 @@ export class AudioEditor {
   _visibilidad() {
     if (document.hidden) { this.dev?.audio.pause(); this._dormir(true); return; }
     if (this.dev && this.pref.on && !this._pausaVista) { this._despertar(); this.dev.audio.play().catch(() => {}); }
+    else if (this._despiertos?.size) this._despertar();
   }
   /* El motor de audio encendido sin sonar nada gasta pila (sobre todo en el iPhone): se duerme cuando
      la página se oculta o la música se apaga, y se despierta justo antes de sonar algo. */
   _despertar() { if (this.ac?.state === "suspended" && !document.hidden) this.ac.resume().catch(() => {}); }
+  /** (Fase 54) Algo que suena por su cuenta (la casita y sus sonidos) pide que el motor no se duerma
+   *  mientras está abierto; con la página oculta sí se duerme, y al volver se despierta solo. */
+  mantenerDespierto(quien, on) {
+    this._despiertos ||= new Set();
+    if (on) { this._despiertos.add(quien); if (!this.ac) this._desbloquear(); this._despertar(); }
+    else this._despiertos.delete(quien);
+  }
   _dormir(ya = false) {
     clearTimeout(this._tDormir);
-    const zz = () => { if (this.ac?.state === "running" && (document.hidden || (!this.sonando && !this.escucha && !this._pista && !this._sonando?.length))) this.ac.suspend().catch(() => {}); };
+    const zz = () => { if (this.ac?.state === "running" && (document.hidden || (!this.sonando && !this.escucha && !this._pista && !this._sonando?.length && !this._despiertos?.size))) this.ac.suspend().catch(() => {}); };
     if (ya) zz(); else this._tDormir = setTimeout(zz, 4000);
   }
 

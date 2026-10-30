@@ -97,4 +97,38 @@ export const ITEMS = {
       <text x="84" y="44" text-anchor="middle" font-family="Caveat, Nunito, sans-serif" font-size="26" font-weight="700" fill="#c2336b">Nuestro hogar</text>
       ${corazon(16, 34, 0.7, "#ff86b0")}${corazon(152, 34, 0.7, "#ff86b0")}`),
   },
+  banderines: {
+    n: "Banderines", cat: "deco", capa: "pared", w: 246, h: 66, y: 120,
+    arte: () => {
+      const C = ["#ff9cbf", "#ffd36e", "#8fd0ff", "#94dfbd", "#c9a7ff"];
+      let b = "";
+      for (let i = 0; i < 9; i++) { const x = 14 + i * 25.4, y = 10 + Math.sin((i / 8) * Math.PI) * 16; b += `<path d="M${x.toFixed(1)} ${y.toFixed(1)}h22l-11 ${i % 2 ? 26 : 30}z" fill="${C[i % 5]}" ${OL2}/><circle cx="${(x + 11).toFixed(1)}" cy="${(y + 9).toFixed(1)}" r="2.6" fill="#fff" opacity=".85"/>`; }
+      return svg(246, 66, `<path d="M4 8q119 40 238 0" stroke="#b39a8a" stroke-width="2" fill="none"/>${b}`);
+    },
+  },
+  calendario: {
+    n: "Calendario", cat: "deco", capa: "pared", w: 74, h: 90, y: 236,
+    dom: () => {
+      const d = new Date();
+      return el("div.ca-calendario", {}, [el("b", { text: String(d.getDate()) }), el("small", { text: ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"][d.getMonth()] })]);
+    },
+    arte: () => svg(74, 90, `
+      <rect x="4" y="10" width="66" height="76" rx="8" fill="#fff" ${OL}/><rect x="4" y="10" width="66" height="22" rx="8" fill="#ff86b0"/><rect x="4" y="24" width="66" height="8" fill="#ff86b0"/>
+      <rect x="18" y="4" width="6" height="14" rx="3" fill="#b39a8a"/><rect x="50" y="4" width="6" height="14" rx="3" fill="#b39a8a"/>
+      ${[0, 1, 2, 3, 4].map((i) => `<circle cx="${14 + i * 11.5}" cy="78" r="2" fill="#ffd0e2"/>`).join("")}`),
+  },
+  planta_alta: {
+    n: "Planta alta", cat: "deco", w: 74, h: 178, al: "sacude",
+    arte: () => svg(74, 178, `<g class="hojas">
+      ${[[-6, 120, 30], [-14, 96, 18], [2, 132, 40], [10, 104, 52], [-20, 84, 26], [16, 90, 44]].map(([a, l, x], i) => `<path transform="translate(${x} 130) rotate(${a})" d="M0 0C-6-${l * 0.3}-5-${l * 0.7} 0-${l} 5-${l * 0.7} 6-${l * 0.3} 0 0z" fill="${i % 2 ? "#57b884" : "#7fd29b"}" ${OL2}/><path transform="translate(${x} 130) rotate(${a})" d="M0-6V-${l - 8}" stroke="#d4f3e3" stroke-width="1.3" stroke-dasharray="4 5"/>`).join("")}</g>
+      <path d="M14 130h46l-5 44H19z" fill="#f3e3d3" ${OL}/><rect x="10" y="126" width="54" height="9" rx="4" fill="#e9d2bc" ${OL2}/><path d="M20 150h34" stroke="#ff9cbf" stroke-width="3"/>`),
+  },
+  espejo_sol: {
+    n: "Espejo de sol", cat: "deco", capa: "pared", w: 100, h: 100, y: 222,
+    arte: () => {
+      let r = "";
+      for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2, l = i % 2 ? 44 : 49; r += `<path d="M${(50 + Math.cos(a) * 28).toFixed(1)} ${(50 + Math.sin(a) * 28).toFixed(1)}L${(50 + Math.cos(a) * l).toFixed(1)} ${(50 + Math.sin(a) * l).toFixed(1)}" stroke="#e9b94a" stroke-width="${i % 2 ? 4 : 6}" stroke-linecap="round"/>`; }
+      return svg(100, 100, `${r}<circle cx="50" cy="50" r="30" fill="#f2c45e" ${OL}/><circle cx="50" cy="50" r="23" fill="#e6f4ff"/><path d="M38 42q6-10 14-11" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M44 62l16-16" stroke="#fff" stroke-width="2.5" opacity=".6"/>`);
+    },
+  },
 };
