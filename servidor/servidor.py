@@ -68,7 +68,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.24.0"
+VERSION = "1.25.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -4467,7 +4467,11 @@ def api_cositas_ajustes(h, s):
 # hace). Se ve en tiempo real: quien mira espera (hasta 25 s) a que algo cambie, como en el chat. —
 CASA_AVISO = threading.Condition()
 CASA_V = {}
-ACCIONES_MONITO = ("", "sentado", "dormido", "banando", "columpio", "comiendo", "abrazo", "saluda", "tele", "cocinando")
+# (1.25: las acciones y poses ya no son una lista fija: así la casita crece sin tocar el servidor.)
+_ACCION_OK = re.compile(r"^[a-z]{0,16}$")
+_ID_OK = re.compile(r"^[A-Za-z0-9_-]{1,16}$")
+CASA_CANDADO = threading.Lock()
+CASA_OBJETOS_MAX = 300
 
 
 def _casa_cambio(a, b):
@@ -4490,14 +4494,25 @@ def _monito_limpio(d, antes):
     """Lo que puede cambiar de tu monito: dónde está (x en la casa), hacia dónde mira, qué hace, en qué
     mueble y su ropa (un diccionario chiquito de textos)."""
     m = dict(antes or {})
+    if "c" in d:
+        m["c"] = str(d.get("c") or "")[:16]
     if "x" in d:
-        m["x"] = round(_num(d.get("x"), 0, 5000, "La posición"), 1)
+        m["x"] = round(_num(d.get("x"), 0, 20000, "La posición"), 1)
+    if "y" in d:
+        m["y"] = round(_num(d.get("y"), 0, 2000, "La posición"), 1)
     if "mira" in d:
         m["mira"] = -1 if d.get("mira") == -1 else 1
     if "accion" in d:
-        m["accion"] = d.get("accion") if d.get("accion") in ACCIONES_MONITO else ""
+        ac = str(d.get("accion") or "")
+        m["accion"] = ac if _ACCION_OK.match(ac) else ""
     if "mueble" in d:
         m["mueble"] = str(d.get("mueble") or "")[:24]
+    if "lleva" in d:
+        m["lleva"] = str(d.get("lleva") or "")[:24]
+    if "ev" in d:
+        # Lo último que pasó (un saludo, un abrazo, un regalo…): el otro teléfono lo repite una vez.
+        ev = d.get("ev") if isinstance(d.get("ev"), dict) else {}
+        m["ev"] = {"k": str(ev.get("k") or "")[:16], "t": str(ev.get("t") or "")[:24], "at": ahora()}
     if "ropa" in d and isinstance(d.get("ropa"), dict):
         m["ropa"] = {str(k)[:16]: str(v)[:24] for k, v in list(d["ropa"].items())[:16]}
     if "dice" in d:
@@ -4557,9 +4572,85 @@ def api_casita_casa(h, s):
     casa = d.get("casa")
     if not isinstance(casa, dict):
         raise Falla("La casita no es válida.", 400)
-    E.db.x("INSERT INTO casitas(a, b, datos, t) VALUES(?,?,?,?) ON CONFLICT(a, b) DO UPDATE SET datos=excluded.datos, t=excluded.t", a, b, _json_chico(casa, 60000, "La casita"), ahora())
+    with CASA_CANDADO:
+        E.db.x("INSERT INTO casitas(a, b, datos, t) VALUES(?,?,?,?) ON CONFLICT(a, b) DO UPDATE SET datos=excluded.datos, t=excluded.t", a, b, _json_chico(casa, 150000, "La casita"), ahora())
     _casa_cambio(a, b)
     h.responder(200, {"ok": True})
+
+
+def _obj_limpio(o):
+    """Un objeto de la casa: su tipo (del catálogo del editor), su cuarto, dónde está, si está volteado y su
+    estado (prendido, abierto…)."""
+    if not isinstance(o, dict) or not _ID_OK.match(str(o.get("id") or "")):
+        raise Falla("Ese objeto no es válido.", 400)
+    e = o.get("e") if isinstance(o.get("e"), dict) else {}
+    if len(json.dumps(e)) > 300:
+        raise Falla("El estado del objeto es demasiado grande.", 413)
+    return {"id": str(o["id"]), "t": str(o.get("t") or "")[:24], "c": str(o.get("c") or "")[:16],
+            "x": round(_num(o.get("x"), -200, 20000, "La posición"), 1), "y": round(_num(o.get("y"), -400, 2000, "La posición"), 1),
+            "f": bool(o.get("f")), "e": e}
+
+
+def _aplicar_ops(casa, ops):
+    """Los cambios de la casa, uno por uno (así si los dos acomodan a la vez, no se pisan)."""
+    objs = casa.setdefault("objetos", [])
+    cuartos = casa.setdefault("cuartos", {})
+    for op in ops:
+        if not isinstance(op, dict):
+            continue
+        k = op.get("o")
+        if k == "iniciar":
+            # La casa de entrada (con sus muebles): sólo si todavía no tenía.
+            nueva = op.get("casa")
+            if isinstance(nueva, dict) and not casa.get("objetos"):
+                casa.clear()
+                casa.update({"v": 2, "cuartos": nueva.get("cuartos") if isinstance(nueva.get("cuartos"), dict) else {},
+                             "objetos": [_obj_limpio(x) for x in (nueva.get("objetos") or [])[:CASA_OBJETOS_MAX]]})
+                objs = casa["objetos"]
+                cuartos = casa["cuartos"]
+        elif k == "pon":
+            ob = _obj_limpio(op.get("obj"))
+            i = next((j for j, x in enumerate(objs) if x.get("id") == ob["id"]), -1)
+            if i >= 0:
+                objs[i] = ob
+            elif len(objs) < CASA_OBJETOS_MAX:
+                objs.append(ob)
+            else:
+                raise Falla("Ya hay demasiadas cosas en la casita: quita alguna.", 413)
+        elif k == "quita":
+            casa["objetos"] = objs = [x for x in objs if x.get("id") != op.get("id")]
+        elif k == "estado":
+            for x in objs:
+                if x.get("id") == op.get("id") and isinstance(op.get("e"), dict):
+                    x["e"] = {**(x.get("e") or {}), **op["e"]}
+                    if len(json.dumps(x["e"])) > 300:
+                        raise Falla("El estado del objeto es demasiado grande.", 413)
+        elif k == "cuarto":
+            ck = str(op.get("k") or "")[:16]
+            if ck and isinstance(op.get("v"), dict):
+                cuartos[ck] = {**(cuartos.get(ck) or {}), **{str(a)[:12]: b for a, b in list(op["v"].items())[:8] if isinstance(b, (str, int, float, bool))}}
+    casa["v"] = 2
+    return casa
+
+
+@ruta("POST", "/api/casita/ops", "sesion")
+def api_casita_ops(h, s):
+    """1.25 · Cambios de la casa (poner, mover, quitar, estado de un objeto, colores de un cuarto) aplicados en
+    orden y de un jalón, sobre lo que ya tiene el servidor."""
+    a, b, _ = _par(s)
+    ops = (h.cuerpo_json() or {}).get("ops")
+    if not isinstance(ops, list) or not ops or len(ops) > 60:
+        raise Falla("Cambios no válidos.", 400)
+    with CASA_CANDADO:
+        fila = E.db.uno("SELECT datos FROM casitas WHERE a=? AND b=?", a, b)
+        casa = json.loads(fila["datos"]) if fila else {}
+        if not isinstance(casa, dict):
+            casa = {}
+        casa = _aplicar_ops(casa, ops)
+        E.db.x("INSERT INTO casitas(a, b, datos, t) VALUES(?,?,?,?) ON CONFLICT(a, b) DO UPDATE SET datos=excluded.datos, t=excluded.t",
+               a, b, _json_chico(casa, 150000, "La casita"), ahora())
+    _casa_cambio(a, b)
+    h.responder(200, {"ok": True, "n": len(casa.get("objetos") or []), "v": CASA_V.get((a, b), 0)})
 
 
 LUGARES_MAX = 20

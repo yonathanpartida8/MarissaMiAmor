@@ -1,11 +1,14 @@
-/* ═══════════ NUESTRA CASITA (Fase 52): el jueguito de los dos ═══════════
-   El mundo mide 420 × 560 por cuarto y se escala con transform (el alto manda). Todo lo que se mueve es
-   transform/opacity; las animaciones infinitas se apagan en Ultra rendimiento y con movimiento reducido. */
-.jt-capa[data-tab="casita"] .jt-vista { display: flex; flex-direction: column; overflow: hidden; padding: 0 0 calc(84px + env(safe-area-inset-bottom, 0px)); }
-.jt-capa.v46[data-tab="casita"] .jt-vista { padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
-@media (min-width: 980px) { .jt-capa[data-tab="casita"] .jt-vista { padding-left: 0; padding-right: 0; } }
+/* ═══════════ NUESTRA CASITA (Fase 53): el jueguito de los dos ═══════════
+   El mundo mide 560 de alto (la pared hasta 432, luego el piso) y se escala con transform. Lo que se mueve
+   es transform/opacity; lo que se mueve solo se aquieta en Ultra rendimiento y con movimiento reducido. */
 
-/* El botón grande en Cositas (ya no es «Pronto»). */
+/* ── Dentro de Juntitos: sin cabecera ni barra de abajo (la casita tiene su barrita «Volver atrás») ── */
+.jt-capa[data-tab="casita"] .jt-vista { display: flex; flex-direction: column; overflow: hidden; padding: 0 !important; }
+.jt-capa[data-tab="casita"] .jt-secpanel > .jt-cab { display: none; }
+.jt-capa[data-tab="casita"] .jt-nav { transform: translateY(calc(100% + 30px)); opacity: 0; pointer-events: none; transition: transform .35s cubic-bezier(.3, .9, .3, 1), opacity .25s; }
+.jt-nav { transition: transform .35s cubic-bezier(.3, .9, .3, 1), opacity .25s; }
+
+/* El botón grande en Cositas. */
 .jt-casita-b { display: flex; align-items: center; gap: 12px; width: 100%; margin: 4px 0 14px; padding: 12px 14px; border: 0; border-radius: 20px; text-align: left; cursor: pointer;
   background: linear-gradient(135deg, #ffe7d6, #ffe0ec 60%, #efe4ff); color: #5a3550; box-shadow: var(--jt-sombra); }
 .jt-casita-b > i { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: #fff; color: #e5679a; }
@@ -25,262 +28,479 @@
 }
 
 /* ── El marco ── */
-.ca { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding-top: 2px; }
-.ca-barra { display: flex; align-items: center; gap: 6px; padding: 0 12px; }
-.ca-titulo { font: 800 16px/1 "Nunito", sans-serif; color: var(--jt-tinta); }
-.ca-hueco { flex: 1; }
-.ca-b { display: inline-flex; align-items: center; gap: 5px; height: 36px; padding: 0 12px 0 9px; border: 0; border-radius: 99px; background: var(--jt-papel); color: var(--jt-acento); font: 800 13px/1 "Nunito", sans-serif; box-shadow: var(--jt-sombra); cursor: pointer; }
-.ca-b i { display: grid; place-items: center; }
-.ca-b i svg { width: 18px; height: 18px; }
-.ca-b:active { transform: scale(.95); }
-@media (max-width: 380px) { .ca-b span { display: none; } .ca-b { width: 38px; padding: 0; justify-content: center; } }
-
-.ca-vista { position: relative; flex: 1; min-height: 0; margin: 0 8px; display: flex; align-items: flex-end; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; border-radius: 24px; background: linear-gradient(#f3e4f0, #f9eef2); touch-action: pan-x; }
+.ca { --ca-tinta: #4a3346; --ca-suave: #8f7a8c; --ca-papel: #fff; --ca-acento: #e5679a; --ca-rosa: #ffe3ec;
+  position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: #f3e6ef; color: var(--ca-tinta);
+  -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+.ca button { -webkit-tap-highlight-color: transparent; font-family: "Nunito", sans-serif; }
+.ca button:focus:not(:focus-visible) { outline: none; }
+.ca.completa { position: fixed; inset: 0; z-index: 9500; }
+body.ca-en-completa { overflow: hidden; }
+.ca-escena { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.ca-vista { position: relative; flex: 1; min-height: 0; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: pan-x; }
 .ca-vista::-webkit-scrollbar { display: none; }
-.ca-lienzo { position: relative; flex: none; }
-.ca-mundo { position: absolute; left: 0; top: 0; transform-origin: 0 0; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; contain: layout; }
-
-.ca-tabs { display: flex; gap: 4px; padding: 0 8px; overflow-x: auto; scrollbar-width: none; }
-.ca-tabs::-webkit-scrollbar { display: none; }
-.ca-tab { flex: 1; min-width: 60px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 4px; border: 0; border-radius: 14px; background: transparent; color: var(--jt-suave); font: 700 11px/1 "Nunito", sans-serif; cursor: pointer; transition: background-color .2s, color .2s; }
-.ca-tab i svg { width: 20px; height: 20px; }
-.ca-tab.on { background: var(--jt-rosa); color: var(--jt-rosa-t); }
-.ca-estado { display: block; text-align: center; padding: 0 12px; font: 600 11.5px/1.2 "Nunito", sans-serif; color: var(--jt-suave); }
+.ca-lienzo { position: relative; }
+.ca-mundo { position: absolute; left: 0; top: 0; width: 0; height: 560px; transform-origin: 0 0; -webkit-touch-callout: none; }
+.ca-mundo.ajusta { transition: transform .4s cubic-bezier(.3, .9, .3, 1); }
 
 /* ── Los cuartos ── */
-.ca-cuarto { position: absolute; top: 0; overflow: hidden; z-index: 0; --pared: #ffe1ec; }
-.ca-pared { position: absolute; left: 0; right: 0; top: 0; height: 452px; background-color: var(--pared); }
-.ca-cuarto[data-patron="rayas"] .ca-pared { background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, .4) 0 16px, transparent 16px 36px); }
-.ca-cuarto[data-patron="puntos"] .ca-pared { background-image: radial-gradient(rgba(255, 255, 255, .7) 3px, transparent 3.6px); background-size: 28px 28px; }
-.ca-cuarto[data-patron="corazones"] .ca-pared { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cpath d='M22 30c-6-4-9-7-9-10a4.5 4.5 0 0 1 9-2 4.5 4.5 0 0 1 9 2c0 3-3 6-9 10z' fill='white' fill-opacity='.55'/%3E%3C/svg%3E"); background-size: 44px 44px; }
-.ca-zoclo { position: absolute; left: 0; right: 0; top: 442px; height: 12px; background: #fffaf7; box-shadow: 0 2px 0 rgba(90, 40, 70, .06); }
-.ca-piso { position: absolute; left: 0; right: 0; top: 452px; bottom: 0; background: #e2b98f; }
-.ca-piso::before { content: ""; position: absolute; inset: 0 0 auto; height: 16px; background: linear-gradient(rgba(90, 40, 60, .12), transparent); }
-.ca-cuarto[data-piso="madera"] .ca-piso { background: repeating-linear-gradient(90deg, #e6bf96 0 62px, #d4a77b 62px 64px), #e6bf96; }
-.ca-cuarto[data-piso="mosaico"] .ca-piso { background: conic-gradient(#ffffff 25%, #dcefff 0 50%, #ffffff 0 75%, #dcefff 0) 0 0 / 36px 36px; }
+.ca-cuarto { position: absolute; top: 0; height: 560px; z-index: 0; --pared: #ffe1ec; }
+.ca-pared { position: absolute; left: 0; right: 0; top: -900px; height: 1332px; background-color: var(--pared); }
+.ca-pared::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: linear-gradient(transparent, rgba(90, 40, 70, .07)); }
+.ca-cuarto[data-patron="rayas"] .ca-pared { background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, .42) 0 18px, transparent 18px 40px); }
+.ca-cuarto[data-patron="puntos"] .ca-pared { background-image: radial-gradient(rgba(255, 255, 255, .75) 3.2px, transparent 3.8px), radial-gradient(rgba(255, 255, 255, .45) 2px, transparent 2.6px); background-size: 34px 34px; background-position: 0 0, 17px 17px; }
+.ca-cuarto[data-patron="corazones"] .ca-pared { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M24 32c-6-4-9-7-9-10a4.5 4.5 0 0 1 9-2 4.5 4.5 0 0 1 9 2c0 3-3 6-9 10z' fill='white' fill-opacity='.55'/%3E%3C/svg%3E"); background-size: 48px 48px; }
+.ca-cuarto[data-patron="ladrillo"] .ca-pared { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='52'%3E%3Cg fill='white' fill-opacity='.22'%3E%3Crect x='2' y='2' width='60' height='22' rx='4'/%3E%3Crect x='-30' y='28' width='60' height='22' rx='4'/%3E%3Crect x='34' y='28' width='60' height='22' rx='4'/%3E%3C/g%3E%3C/svg%3E"); background-size: 64px 52px; }
+.ca-cuarto[data-patron="azulejo"] .ca-pared { background-image: linear-gradient(rgba(255, 255, 255, .6) 2px, transparent 2px), linear-gradient(90deg, rgba(255, 255, 255, .6) 2px, transparent 2px), radial-gradient(rgba(255, 255, 255, .35) 30%, transparent 32%); background-size: 36px 36px; }
+.ca-cuarto[data-patron="cuadros"] .ca-pared { background-image: linear-gradient(90deg, rgba(255, 255, 255, .38) 50%, transparent 50%), linear-gradient(rgba(255, 255, 255, .38) 50%, transparent 50%); background-size: 40px 40px; }
+.ca-cuarto[data-patron="estrellas"] .ca-pared { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cpath d='M16 8l2.4 5 5.6.6-4.2 3.8 1.2 5.6-5-2.9-5 2.9 1.2-5.6L8 13.6l5.6-.6zM42 34l1.6 3.3 3.6.4-2.7 2.5.8 3.6-3.3-1.9-3.3 1.9.8-3.6-2.7-2.5 3.6-.4z' fill='white' fill-opacity='.6'/%3E%3C/svg%3E"); background-size: 56px 56px; }
+.ca-zoclo { position: absolute; left: 0; right: 0; top: 420px; height: 14px; background: #fffaf7; box-shadow: 0 -2px 0 rgba(255, 255, 255, .6), 0 3px 0 rgba(90, 40, 70, .07); z-index: 1; }
+.ca-piso { position: absolute; left: 0; right: 0; top: 432px; height: 300px; background: #e2b98f; }
+.ca-piso::before { content: ""; position: absolute; inset: 0 0 auto; height: 22px; background: linear-gradient(rgba(90, 40, 60, .16), transparent); }
+.ca-cuarto[data-piso="madera"] .ca-piso { background: repeating-linear-gradient(0deg, transparent 0 30px, rgba(140, 90, 55, .18) 30px 32px), repeating-linear-gradient(90deg, #e6bf96 0 118px, #dcb288 118px 120px), #e6bf96; }
+.ca-cuarto[data-piso="clara"] .ca-piso { background: repeating-linear-gradient(0deg, transparent 0 30px, rgba(160, 120, 80, .14) 30px 32px), repeating-linear-gradient(90deg, #f6dfc2 0 98px, #ecd2b2 98px 100px), #f6dfc2; }
+.ca-cuarto[data-piso="mosaico"] .ca-piso { background: conic-gradient(#ffffff 25%, #dcefff 0 50%, #ffffff 0 75%, #dcefff 0) 0 0 / 40px 40px; }
 .ca-cuarto[data-piso="alfombra"] .ca-piso { background: radial-gradient(rgba(255, 255, 255, .55) 2px, transparent 2.6px) 0 0 / 18px 18px, #f6c6d8; }
-.ca-cuarto[data-piso="pasto"] .ca-piso { background: radial-gradient(rgba(255, 255, 255, .25) 2px, transparent 2.6px) 0 0 / 22px 22px, linear-gradient(#a3e3ae, #7fd29b); }
-/* Las paredes entre cuartos (una columnita blanca). */
-.ca-cuarto:not(.jardin)::before { content: ""; position: absolute; left: 0; top: 0; width: 10px; height: 452px; z-index: 1; background: linear-gradient(90deg, #fff, #f6e9ee); box-shadow: 2px 0 6px rgba(90, 40, 70, .08); }
-.ca-sombras { display: none; }
+.ca-cuarto[data-piso="barro"] .ca-piso { background: linear-gradient(rgba(255, 255, 255, .45) 2px, transparent 2px) 0 0 / 48px 32px, linear-gradient(90deg, rgba(255, 255, 255, .45) 2px, transparent 2px) 0 0 / 48px 32px, #f0b49b; }
+.ca-cuarto[data-piso="pasto"] .ca-piso { background: radial-gradient(rgba(255, 255, 255, .28) 2px, transparent 2.6px) 0 0 / 24px 22px, linear-gradient(#a8e6b3, #7fd29b); }
+.ca-columna { position: absolute; left: -6px; top: -900px; width: 14px; height: 1336px; z-index: 2; background: linear-gradient(90deg, #f6e9ee, #fff 45%, #f3e3ea); box-shadow: 2px 0 8px rgba(90, 40, 70, .1), -2px 0 8px rgba(90, 40, 70, .06); }
+/* El techo (justo arriba de lo que se ve) con su lámpara colgante. */
+.ca-techo-r { position: absolute; z-index: 2; left: 0; right: 0; top: calc(var(--techo, 0px) - 2px); height: 30px; background: linear-gradient(#fffaf7, #f6e7ee); box-shadow: 0 4px 0 rgba(255, 255, 255, .6), 0 8px 16px rgba(90, 40, 70, .08); }
+.ca-pendiente { position: absolute; z-index: 3; top: var(--techo, 0px); width: 3px; margin-left: -1.5px; height: calc(64px - var(--techo, 0px)); background: #b39a8a; }
+.ca-pendiente::before { content: ""; position: absolute; left: -30px; bottom: -30px; width: 62px; height: 32px; border-radius: 32px 32px 6px 6px; background: #ffd0e2; box-shadow: inset 0 -6px 0 #ffb3cf, 0 4px 10px rgba(90, 40, 70, .12); }
+.ca-pendiente-luz { position: absolute; left: -9px; bottom: -40px; width: 20px; height: 14px; border-radius: 0 0 10px 10px; background: #fff3b0; }
+.ca-pendiente-luz::after { content: ""; position: absolute; left: -110px; top: 10px; width: 240px; height: 380px; background: radial-gradient(50% 60% at 50% 0%, rgba(255, 243, 176, .38), transparent 70%); opacity: 0; transition: opacity .7s; pointer-events: none; }
+.ca-mundo.noche .ca-cuarto:not(.apagado) .ca-pendiente-luz::after { opacity: 1; }
 
-/* El jardín: cielo, sol o luna, nubes, cerca y la casita por fuera. */
-.ca-cielo { position: absolute; left: 0; right: 0; top: 0; height: 452px; background: linear-gradient(#93d3ff, #e3f5ff); transition: background .8s; }
-.ca-cuarto.jardin .ca-pared { display: none; }
-.ca-sol { position: absolute; right: 150px; top: 46px; width: 58px; height: 58px; border-radius: 50%; background: #ffe17a; box-shadow: 0 0 0 12px rgba(255, 225, 122, .28); }
-.ca-nube { position: absolute; width: 92px; height: 30px; border-radius: 30px; background: #fff; opacity: .95; animation: caNube 46s linear infinite alternate; }
+/* El jardín: cielo, sol o luna, nubes, mariposas (de día) y luciérnagas (de noche), lomas, cerca y la casa. */
+.ca-cuarto.afuera .ca-pared { display: none; }
+.ca-cielo { position: absolute; left: 0; right: 0; top: -900px; height: 1332px; overflow: hidden; background: linear-gradient(#6fbff5 0%, #9fd8ff 55%, #e6f6ff 100%); transition: background 1.2s; }
+.ca-sol { position: absolute; right: 120px; bottom: 360px; width: 70px; height: 70px; border-radius: 50%; background: #ffe17a; box-shadow: 0 0 0 14px rgba(255, 225, 122, .3), 0 0 0 30px rgba(255, 225, 122, .14); }
+.ca-nube { position: absolute; width: 110px; height: 34px; border-radius: 34px; background: #fff; opacity: .96; animation: caNube 50s linear infinite alternate; }
 .ca-nube::before, .ca-nube::after { content: ""; position: absolute; border-radius: 50%; background: inherit; }
-.ca-nube::before { width: 40px; height: 40px; left: 16px; top: -20px; }
-.ca-nube::after { width: 30px; height: 30px; left: 46px; top: -12px; }
-.ca-nube.n1 { left: 20px; top: 70px; }
-.ca-nube.n2 { left: 210px; top: 130px; transform: scale(.7); animation-duration: 60s; }
-.ca-nube.n3 { left: 100px; top: 210px; transform: scale(.55); animation-duration: 38s; }
-.ca-estrellas { position: absolute; inset: 0; opacity: 0; transition: opacity 1s;
-  background-image: radial-gradient(2px 2px at 12% 20%, #fff 50%, transparent 55%), radial-gradient(2px 2px at 30% 8%, #fff 50%, transparent 55%), radial-gradient(1.6px 1.6px at 48% 28%, #fff 50%, transparent 55%), radial-gradient(2px 2px at 66% 14%, #fff 50%, transparent 55%), radial-gradient(1.6px 1.6px at 82% 30%, #fff 50%, transparent 55%), radial-gradient(2px 2px at 22% 42%, #fff 50%, transparent 55%), radial-gradient(1.6px 1.6px at 58% 48%, #fff 50%, transparent 55%), radial-gradient(2px 2px at 90% 10%, #fff 50%, transparent 55%); }
-.ca-cerca { position: absolute; left: 0; top: 392px; width: 420px; height: 70px; }
-.ca-cerca svg { display: block; width: 100%; height: 100%; }
-.ca-fachada { position: absolute; left: 318px; top: 196px; width: 110px; height: 258px; background: repeating-linear-gradient(0deg, #ffd6e2 0 22px, #ffcbdb 22px 24px); border-radius: 6px 0 0 0; box-shadow: inset 6px 0 0 rgba(255, 255, 255, .5); }
-.ca-techo { position: absolute; left: -22px; top: -58px; width: 0; height: 0; border-style: solid; border-width: 0 0 62px 140px; border-color: transparent transparent #ff86b0 transparent; }
-.ca-fachada-ventana { position: absolute; left: 34px; top: 22px; width: 44px; height: 44px; border-radius: 50%; border: 6px solid #fff; background: #bfe6ff; }
+.ca-nube::before { width: 46px; height: 46px; left: 18px; top: -24px; }
+.ca-nube::after { width: 36px; height: 36px; left: 54px; top: -15px; }
+.ca-nube.n1 { left: 30px; bottom: 480px; }
+.ca-nube.n2 { left: 300px; bottom: 420px; transform: scale(.75); animation-duration: 64s; }
+.ca-nube.n3 { left: 470px; bottom: 540px; transform: scale(.55); animation-duration: 40s; }
+.ca-estrellas { position: absolute; inset: 0; opacity: 0; transition: opacity 1.2s;
+  background-image: radial-gradient(2px 2px at 12% 72%, #fff 50%, transparent 55%), radial-gradient(2px 2px at 30% 64%, #fff 50%, transparent 55%), radial-gradient(1.6px 1.6px at 48% 78%, #fff 50%, transparent 55%), radial-gradient(2px 2px at 66% 68%, #fff 50%, transparent 55%), radial-gradient(1.6px 1.6px at 82% 76%, #fff 50%, transparent 55%), radial-gradient(2px 2px at 22% 84%, #fff 50%, transparent 55%), radial-gradient(1.6px 1.6px at 58% 86%, #fff 50%, transparent 55%), radial-gradient(2px 2px at 90% 62%, #fff 50%, transparent 55%), radial-gradient(1.4px 1.4px at 40% 58%, #fff 50%, transparent 55%); }
+.ca-mariposa { position: absolute; width: 18px; height: 14px; bottom: 120px; animation: caMariposa 14s ease-in-out infinite; }
+.ca-mariposa::before, .ca-mariposa::after { content: ""; position: absolute; top: 0; width: 9px; height: 12px; border-radius: 50% 50% 40% 40%; background: #ff9cbf; transform-origin: 100% 60%; animation: caAla .28s ease-in-out infinite alternate; }
+.ca-mariposa::after { left: 9px; background: #ffb3cf; transform-origin: 0 60%; }
+.ca-mariposa.m1 { left: 220px; }
+.ca-mariposa.m2 { left: 520px; bottom: 160px; animation-duration: 18s; animation-delay: -5s; }
+.ca-mariposa.m2::before, .ca-mariposa.m2::after { background: #c9a7ff; }
+.ca-luciernagas { position: absolute; left: 0; right: 0; bottom: 0; height: 260px; opacity: 0; transition: opacity 1.2s;
+  background-image: radial-gradient(3px 3px at 15% 40%, #fff6a0 50%, transparent 60%), radial-gradient(3px 3px at 42% 70%, #fff6a0 50%, transparent 60%), radial-gradient(2.5px 2.5px at 68% 30%, #fff6a0 50%, transparent 60%), radial-gradient(3px 3px at 85% 60%, #fff6a0 50%, transparent 60%), radial-gradient(2.5px 2.5px at 30% 20%, #fff6a0 50%, transparent 60%); animation: caLuciernaga 3.4s ease-in-out infinite alternate; }
+.ca-lomas { position: absolute; left: -20px; right: -20px; top: 330px; height: 120px; background: radial-gradient(60% 100% at 25% 100%, #9fdcae 99%, transparent 100%), radial-gradient(55% 90% at 80% 100%, #b3e6bf 99%, transparent 100%); }
+.ca-cerca { position: absolute; left: 0; right: 0; top: 372px; height: 76px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='76'%3E%3Cpath d='M10 76V18l12-14 12 14v58z' fill='white' stroke='%23e8cfd9' stroke-width='2'/%3E%3Crect x='0' y='34' width='44' height='10' fill='white'/%3E%3Crect x='0' y='58' width='44' height='8' fill='white'/%3E%3C/svg%3E") repeat-x; }
+.ca-camino { position: absolute; right: 30px; top: 470px; width: 170px; height: 90px; background: radial-gradient(22px 9px at 70% 12%, #f3e3d3 98%, transparent 100%), radial-gradient(24px 10px at 45% 40%, #f3e3d3 98%, transparent 100%), radial-gradient(26px 11px at 22% 72%, #f3e3d3 98%, transparent 100%); }
+.ca-fachada { position: absolute; right: 0; top: 196px; width: 150px; height: 276px; z-index: 1; border-radius: 6px 0 0 0;
+  background: repeating-linear-gradient(0deg, #ffd6e2 0 22px, #ffcbdb 22px 24px); box-shadow: inset 6px 0 0 rgba(255, 255, 255, .5), -6px 0 14px rgba(90, 40, 70, .08); }
+.ca-techo { position: absolute; left: -28px; right: -6px; top: -66px; height: 70px; background: #ff86b0; clip-path: polygon(0 100%, 100% 0, 100% 100%); }
+.ca-techo::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 10px; background: #f06c9b; }
+.ca-fachada-ventana { position: absolute; left: 20px; top: 26px; width: 48px; height: 48px; border-radius: 50%; border: 6px solid #fff; background: #bfe6ff; transition: background .8s; }
+.ca-fachada-ventana.v2 { left: auto; right: 16px; top: 34px; width: 40px; height: 54px; border-radius: 20px 20px 6px 6px; }
 
-/* Las ventanas: tocar abre o cierra las cortinas. */
-.ca-ventana { position: absolute; top: 108px; width: 140px; height: 150px; padding: 0; border: 10px solid #fff; border-radius: 70px 70px 14px 14px; overflow: hidden; background: none; cursor: pointer;
-  box-shadow: 0 8px 0 -2px #f3dfe6, 0 10px 18px rgba(120, 60, 90, .12); -webkit-tap-highlight-color: transparent; }
-.ca-ventana-cielo { position: absolute; inset: 0; background: linear-gradient(#93d3ff, #e3f5ff); transition: background .8s; }
-.ca-ventana .ca-sol { right: 16px; top: 18px; width: 28px; height: 28px; box-shadow: 0 0 0 6px rgba(255, 225, 122, .3); }
-.ca-ventana .ca-nube { left: 6px; top: 60px; transform: scale(.55); }
-.ca-ventana-cruz::before, .ca-ventana-cruz::after { content: ""; position: absolute; background: #fff; }
-.ca-ventana-cruz::before { left: calc(50% - 4px); top: 0; bottom: 0; width: 8px; }
-.ca-ventana-cruz::after { left: 0; right: 0; top: 56%; height: 8px; }
-.ca-cortina { position: absolute; top: 0; bottom: 0; width: 34%; background: repeating-linear-gradient(90deg, #ffb3cf 0 8px, #ff9cbf 8px 14px); transition: transform .5s cubic-bezier(.3, .9, .3, 1); }
-.ca-cortina.izq { left: 0; transform-origin: 0 50%; border-radius: 0 0 40% 0; }
-.ca-cortina.der { right: 0; transform-origin: 100% 50%; border-radius: 0 0 0 40%; }
-.ca-cuarto.cortinas .ca-cortina { transform: scaleX(1.5); }
-
-/* Sus fotos en la sala. */
-.ca-fotos { position: absolute; left: 44px; top: 150px; display: flex; align-items: center; gap: 4px; padding: 8px; border-radius: 14px; background: #fff; box-shadow: 0 8px 18px rgba(120, 60, 90, .14); transform: rotate(-3deg); }
-.ca-fotos .av { --tam: 44px; border-radius: 10px; box-shadow: none; font-size: 16px; }
-.ca-foto-cor { width: 12px; height: 12px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.6A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z' fill='%23ff5c93'/%3E%3C/svg%3E") center / contain no-repeat; }
-
-/* La luz de cada cuarto. */
-.ca-oscuro { position: absolute; top: 0; height: 560px; z-index: 8; pointer-events: none; background: #1c1640; opacity: 0; transition: opacity .6s; }
+/* La luz de cada cuarto, de día y de noche. */
+.ca-oscuro { position: absolute; top: -900px; height: 1500px; z-index: 5000; pointer-events: none; background: #1c1640; opacity: 0; transition: opacity .7s; }
 .ca-mundo.noche .ca-oscuro { opacity: .1; }
 .ca-mundo.noche .ca-oscuro.jardin { opacity: .3; }
-.ca-oscuro.apagado { opacity: .32; }
-.ca-mundo.noche .ca-oscuro.apagado { opacity: .55; }
-.ca-mundo.noche .ca-cielo, .ca-mundo.noche .ca-ventana-cielo { background: linear-gradient(#25235a, #5b4c93); }
-.ca-mundo.noche .ca-estrellas { opacity: 1; }
-.ca-mundo.noche .ca-nube { opacity: .2; }
-.ca-mundo.noche .ca-sol { background: transparent; box-shadow: inset -12px 4px 0 0 #fff3c4; }
+.ca-oscuro.apagado { opacity: .34; }
+.ca-mundo.noche .ca-oscuro.apagado { opacity: .56; }
+.ca-mundo.tarde .ca-cielo { background: linear-gradient(#8c7ad8 0%, #ff9cbf 60%, #ffd2a8 100%); }
+.ca-mundo.noche .ca-cielo { background: linear-gradient(#1d1b4a 0%, #3d3478 60%, #6a5aa0 100%); }
+.ca-mundo.noche .ca-estrellas, .ca-mundo.noche .ca-luciernagas { opacity: 1; }
+.ca-mundo.noche .ca-mariposa { display: none; }
+.ca-mundo.noche .ca-nube { opacity: .18; }
+.ca-mundo.noche .ca-sol { background: transparent; box-shadow: inset -16px 6px 0 0 #fff3c4, 0 0 30px rgba(255, 243, 196, .2); }
 .ca-mundo.noche .ca-fachada-ventana { background: #ffe9a8; }
 
-/* ── Los muebles ── */
-.ca-mueble { position: absolute; display: block; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: pan-x; transform-origin: 50% 100%; }
-.ca-mueble svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.ca-mueble svg * { transform-box: fill-box; }
-.ca-mueble.fondo, .ca-mueble.piso, .ca-mueble.mesa, .ca-mueble.repisa, .ca-mueble.toalla, .ca-mueble.lavabo { pointer-events: none; }
-.ca-mueble:focus-visible { outline: 3px solid #e5679a; outline-offset: 4px; border-radius: 12px; }
-.ca-mueble.toque { animation: caToque .36s cubic-bezier(.3, 1.6, .5, 1); }
-.ca-mueble.baila { animation: caBaila .7s ease-in-out; }
-.ca-mueble.salta { animation: caSalta .6s cubic-bezier(.3, 1.4, .5, 1); }
-.ca-tele-show { opacity: 0; transition: opacity .3s; }
-.ca-mueble.tele.prendida .ca-tele-show { opacity: 1; }
-.ca-mueble.tele.prendida .ca-tele-pantalla { fill: #bfe6ff; }
-.ca-mueble.tele.prendida .ca-tele-show circle { transform-origin: center; animation: caTele 1.4s ease-in-out infinite alternate; }
-.ca-luz-cono { opacity: 0; transition: opacity .5s; pointer-events: none; }
-.ca-mundo.noche .ca-luz-cono { opacity: .5; }
-.ca-mueble.apagada .ca-luz-cono { opacity: 0 !important; }
-.ca-refri-puerta { transform-origin: left center; transition: transform .45s cubic-bezier(.3, .9, .3, 1); }
-.ca-mueble.refri.abierto .ca-refri-puerta, .ca-mueble.refri.con-alguien .ca-refri-puerta { transform: scaleX(.12); }
-.ca-vapor, .ca-fuego { opacity: 0; transition: opacity .3s; }
-.ca-mueble.estufa.prendida .ca-vapor, .ca-mueble.estufa.con-alguien .ca-vapor { opacity: .9; animation: caVapor 1.8s ease-in-out infinite; }
-.ca-mueble.estufa.prendida .ca-fuego, .ca-mueble.estufa.con-alguien .ca-fuego { opacity: 1; transform-origin: center; animation: caFuego .35s ease-in-out infinite alternate; }
-.ca-mueble.estufa.con-alguien .ca-olla { animation: caOlla 1s ease-in-out infinite; transform-origin: center bottom; }
-.ca-espuma { opacity: 0; transition: opacity .4s; }
-.ca-mueble.tina.con-alguien .ca-espuma { opacity: 1; animation: caEspuma 1.8s ease-in-out infinite alternate; transform-origin: center bottom; }
-.ca-mueble.columpio { transform-origin: 50% -116px; }
-.ca-mueble.columpio.con-alguien { animation: caMecer 2.6s ease-in-out infinite; }
-.ca-hojas { transform-origin: center bottom; }
-.ca-copa { transform-origin: center; }
-.ca-foquito { animation: caFoquito 1.6s ease-in-out infinite alternate; }
-.ca-foquito:nth-child(odd) { animation-delay: -.8s; }
-.ca-cobija { position: absolute; width: 140px; height: 38px; z-index: 5; pointer-events: none; border-radius: 0 6px 16px 16px; background: #ff9cbf; box-shadow: inset 0 7px 0 #ffc1d6; }
+/* ── Los objetos ── */
+.ca-obj, .ca-obj-frente { position: absolute; pointer-events: none; transform-origin: 50% 100%; }
+.ca-obj-arte { position: absolute; inset: 0; }
+.ca-obj-arte svg { display: block; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.ca-obj-arte svg * { pointer-events: visiblePainted; transform-box: fill-box; }
+.ca:not(.editando) .ca-obj:not([role="button"]) svg *, .ca-obj-frente svg * { pointer-events: none; }
+.ca-obj.f > .ca-obj-arte, .ca-obj-frente.f > .ca-obj-arte { transform: scaleX(-1); }
+.ca-obj.letrero.f > .ca-obj-arte { transform: none; }
+.ca-obj.capa-piso::after { content: ""; position: absolute; z-index: -1; left: 8%; right: 8%; bottom: -6px; height: 14px; border-radius: 50%; background: radial-gradient(closest-side, rgba(80, 40, 60, .24), transparent); }
+.ca-fotos-dentro { position: absolute; inset: 10px 14px; display: flex; align-items: center; justify-content: space-between; pointer-events: none; }
+.ca-fotos-dentro .av { --tam: 62px; border-radius: 12px; box-shadow: 0 0 0 3px #ffe3ec; font-size: 22px; }
+/* Animaciones de un toque. */
+.ca-obj.toque { animation: caToque .4s cubic-bezier(.3, 1.6, .5, 1); }
+.ca-obj.baila { animation: caBaila .7s ease-in-out; }
+.ca-obj.salta { animation: caSalta .6s cubic-bezier(.3, 1.4, .5, 1); }
+.ca-obj.susto { animation: caToque .3s ease; }
+.ca-obj.crece { animation: caCrece .5s cubic-bezier(.3, 1.6, .5, 1); }
+.ca-obj.gira { animation: caGira .45s cubic-bezier(.3, 1.4, .5, 1); }
+.ca-obj.aparece { animation: caAparece .5s cubic-bezier(.3, 1.6, .5, 1); }
+.ca-obj.cae { animation: caCae .5s cubic-bezier(.4, 0, .6, 1.5); }
+.ca-obj.aterriza { animation: caAterrizaObj .45s cubic-bezier(.3, 1.6, .5, 1); }
+.ca-obj.se-va, .ca-obj-frente.se-va { animation: caSeVa .42s cubic-bezier(.5, 0, .9, .5) forwards; }
+.ca-obj.se-mueve, .ca-obj-frente.se-mueve { transition: left .45s cubic-bezier(.3, .9, .3, 1), top .45s cubic-bezier(.3, .9, .3, 1); }
+/* Los estados (se guardan): tele, lámparas, refri, estufa, agua, ropero, cortinas, flores, música… */
+.ca-obj .luz { opacity: 0; transition: opacity .6s; }
+.ca-mundo.noche .ca-obj:not(.apagada) .luz { opacity: 1; }
+.ca-obj.tele .canal { display: none; }
+.ca-obj.tele[data-canal="1"] .c1, .ca-obj.tele[data-canal="2"] .c2, .ca-obj.tele[data-canal="3"] .c3 { display: inline; }
+.ca-obj.tele:not([data-canal="0"])[data-canal] .led { fill: #5ad18f; }
+.ca-obj .flota { animation: caFlota 2.6s ease-in-out infinite alternate; }
+.ca-obj .flota.d2 { animation-delay: -.9s; } .ca-obj .flota.d3 { animation-delay: -1.7s; }
+.ca-obj .tilin { animation: caTilin 1.8s ease-in-out infinite alternate; transform-origin: center; }
+.ca-obj .tilin.d2 { animation-delay: -.6s; } .ca-obj .tilin.d3 { animation-delay: -1.2s; }
+.ca-obj .puerta-b { transform-origin: left center; transition: transform .45s cubic-bezier(.3, .9, .3, 1); }
+.ca-obj.abierto .puerta-b { transform: scaleX(.1); }
+.ca-obj .puerta-i { transform-origin: left center; transition: transform .45s cubic-bezier(.3, .9, .3, 1); }
+.ca-obj .puerta-d { transform-origin: right center; transition: transform .45s cubic-bezier(.3, .9, .3, 1); }
+.ca-obj.abierto .puerta-i, .ca-obj.abierto .puerta-d { transform: scaleX(.14); }
+.ca-obj.estufa .fuego, .ca-obj.estufa .vapor, .ca-obj.estufa .hotcake, .ca-obj.parrilla .vapor, .ca-obj.barra_cafe .vapor { opacity: 0; transition: opacity .3s; }
+.ca-obj.e-on .fuego, .ca-obj.e-on .hotcake, .ca-obj.on .vapor, .ca-obj.e-on .vapor { opacity: 1; }
+.ca-obj.e-on .vapor, .ca-obj.on .vapor { animation: caVapor 1.6s ease-in-out infinite; }
+.ca-obj.estufa.e-on .horno { fill: #ff9e5a; }
+.ca-obj.e-on .hotcake { animation: caVoltea 1.2s ease-in-out infinite; transform-origin: center; }
+.ca-obj .chorro { opacity: 0; transform-origin: top center; }
+.ca-obj.corre .chorro { opacity: 1; animation: caChorro .3s linear infinite; }
+.ca-obj.salta .pan { animation: caPan .7s cubic-bezier(.3, 1.6, .5, 1); }
+.ca-obj.buzon .carta { opacity: 0; }
+.ca-obj.buzon.abierto .carta { opacity: 1; animation: caCarta 1.4s ease-out forwards; }
+.ca-obj.buzon .banderita { transform-origin: 56px 40px; transform-box: view-box; transition: transform .3s; }
+.ca-obj.buzon.abierto .banderita { transform: rotate(-80deg); }
+.ca-obj.escritorio .en-pantalla { display: none; }
+.ca-obj.escritorio.e-on .pantalla { fill: #ffd0e2; }
+.ca-obj.escritorio.e-on .en-pantalla { display: inline; }
+.ca-obj.chimenea .fuego, .ca-obj.chimenea .brasas { opacity: 0; transition: opacity .4s; }
+.ca-obj.chimenea.e-on .fuego, .ca-obj.chimenea.e-on .brasas { opacity: 1; }
+.ca-obj.chimenea.e-on .fuego { animation: caLlama .5s ease-in-out infinite alternate; transform-origin: center bottom; }
+.ca-obj .vela { animation: caLlama .7s ease-in-out infinite alternate; transform-origin: center bottom; }
+.ca-obj.tocadiscos .notas { opacity: 0; }
+.ca-obj.tocadiscos.e-on .notas { opacity: 1; animation: caNotas 1.6s ease-in-out infinite; }
+.ca-obj.tocadiscos.e-on .disco { animation: caDisco .8s ease-in-out infinite alternate; transform-origin: center; }
+.ca-obj.cajita.e-on .gira { animation: caGiraCor 1.2s linear infinite; transform-origin: center; }
+.ca-obj .pez1 { animation: caPez 7s ease-in-out infinite; }
+.ca-obj .pez2 { animation: caPez 5s ease-in-out infinite reverse; }
+.ca-obj .burbu { animation: caBurbu 2.4s ease-in infinite; }
+.ca-obj.flores .e1, .ca-obj.flores .e2 { display: none; }
+.ca-obj.flores[data-etapa="1"] .e0, .ca-obj.flores[data-etapa="2"] .e0, .ca-obj.flores[data-etapa="2"] .e1 { display: none; }
+.ca-obj.flores[data-etapa="1"] .e1, .ca-obj.flores[data-etapa="2"] .e2 { display: inline; }
+.ca-obj.fuente .agua { stroke-dasharray: 8 6; animation: caAgua .6s linear infinite; }
+.ca-obj .foco { animation: caFoco 1.4s ease-in-out infinite alternate; }
+.ca-obj .foco.f1 { animation-delay: -.5s; } .ca-obj .foco.f2 { animation-delay: -1s; }
+.ca-obj .cola { transform-origin: 90% 90%; animation: caCola 2.2s ease-in-out infinite alternate; }
+.ca-obj.perrito .cola { animation-duration: .35s; }
+.ca-obj .ojitos { animation: caParpadeo 4s infinite; transform-origin: center; }
+.ca-obj .orejas { animation: caOrejas 5s ease-in-out infinite; transform-origin: center bottom; }
+.ca-obj .copa { animation: caCopa 6s ease-in-out infinite alternate; transform-origin: center bottom; }
+.ca-obj .hojas { transform-origin: center bottom; }
+.ca-obj.baila .hojas { animation: caBaila .7s ease-in-out; }
+.ca-obj.arbol .columpio { transform-box: view-box; transform-origin: 206px 172px; }
+.ca-obj.arbol.ocupado .columpio { animation: caMecer 2.6s ease-in-out infinite; }
+.ca-obj-frente.tina .espuma { opacity: 0; transition: opacity .4s; }
+.ca-obj-frente.tina.ocupado .espuma { opacity: 1; animation: caEspuma 1.8s ease-in-out infinite alternate; transform-origin: center bottom; }
+.ca-obj.reloj .hora { transform-box: view-box; transform-origin: 39px 39px; transform: rotate(var(--h, 0deg)); }
+.ca-obj.reloj .min { transform-box: view-box; transform-origin: 39px 39px; transform: rotate(var(--m, 0deg)); }
+.ca-obj.ventana .cielo { fill: #9fd8ff; transition: fill .8s; }
+.ca-obj.ventana .noche-o { display: none; }
+.ca-mundo.noche .ca-obj.ventana .cielo { fill: #2f2a63; }
+.ca-mundo.noche .ca-obj.ventana .dia { display: none; }
+.ca-mundo.noche .ca-obj.ventana .noche-o { display: inline; }
+.ca-obj.ventana .nube { animation: caNubeChica 9s ease-in-out infinite alternate; }
+.ca-obj.ventana .cortina-i { transform-box: view-box; transform-origin: 10px 0; transition: transform .5s cubic-bezier(.3, .9, .3, 1); }
+.ca-obj.ventana .cortina-d { transform-box: view-box; transform-origin: 152px 0; transition: transform .5s cubic-bezier(.3, .9, .3, 1); }
+.ca-obj.ventana.e-cerrada .cortina-i, .ca-obj.ventana.e-cerrada .cortina-d { transform: scaleX(1.48); }
+.ca-mundo.noche .ca-obj.guirnalda .foco { filter: brightness(1.15); }
 
-/* Las cositas para decorar. */
-.ca-cositas { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
-.ca-cosa { position: absolute; padding: 0; border: 0; background: none; transform: translate(-50%, -50%); pointer-events: auto; touch-action: none; cursor: grab; -webkit-tap-highlight-color: transparent; }
-.ca-cosa svg { display: block; width: 100%; height: auto; overflow: visible; }
-.ca-cosa.oso { width: 60px; } .ca-cosa.globo { width: 40px; } .ca-cosa.cuadro { width: 76px; } .ca-cosa.maceta { width: 50px; }
-.ca-cosa.estrellas { width: 76px; } .ca-cosa.guirnalda { width: 160px; } .ca-cosa.gatito { width: 70px; } .ca-cosa.cojin { width: 56px; }
-.ca-cosa.globo svg { animation: caFlotar 3s ease-in-out infinite alternate; }
+/* Acomodar: todo se puede agarrar; lo elegido brilla, lo levantado flota y se inclina. */
+.ca.editando .ca-obj { pointer-events: auto; cursor: grab; touch-action: none; }
+.ca.editando .ca-obj::before { content: ""; position: absolute; inset: -4px; border-radius: 14px; border: 2px dashed rgba(229, 103, 154, .0); transition: border-color .2s; pointer-events: none; }
+@media (hover: hover) { .ca.editando .ca-obj:hover::before { border-color: rgba(229, 103, 154, .45); } }
+.ca.editando .ca-obj.sel::before { border-color: #e5679a; box-shadow: 0 0 0 4px rgba(255, 255, 255, .7), 0 0 18px rgba(229, 103, 154, .35); animation: caSel 1.6s ease-in-out infinite; }
+.ca-obj.levantado, .ca-obj-frente.levantado { cursor: grabbing; transform: translateY(-14px) scale(1.06) rotate(var(--incl, 0deg)); transition: transform .12s; filter: drop-shadow(0 14px 10px rgba(80, 40, 60, .22)); }
+.ca-obj.a-la-basura { transform: translateY(-6px) scale(.72) rotate(-8deg); opacity: .6; }
+.ca.editando .ca-monito { pointer-events: none; opacity: .55; }
 
 /* ── Los monitos ── */
-.ca-monito { position: absolute; width: 0; height: 0; z-index: 6; transition-property: left, top; transition-timing-function: linear; transition-duration: 0s; }
-.ca-mono-caja { position: absolute; left: -38px; bottom: 0; width: 76px; height: 130px; transition: transform .35s cubic-bezier(.3, .9, .3, 1); }
-.ca-mono-cuerpo { width: 100%; height: 100%; }
-.ca-mono-svg { display: block; width: 100%; height: 100%; overflow: visible; transition: transform .2s; }
+.ca-monito { position: absolute; width: 0; height: 0; transition-property: left, top; transition-timing-function: linear; transition-duration: 0s; }
+.ca-mono-caja { position: absolute; left: -44px; bottom: 0; width: 88px; height: 150px; transition: transform .35s cubic-bezier(.3, .9, .3, 1); }
+.ca-mono-flip { position: absolute; inset: 0; transition: transform .2s; }
+.ca-monito.izq .ca-mono-flip { transform: scaleX(-1); }
+.ca-mono-cuerpo, .ca-mono-svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .ca-mono-svg * { transform-box: view-box; }
-.ca-monito.izq .ca-mono-svg { transform: scaleX(-1); }
-.ca-ojos { transform-origin: 50px 52px; animation: caParpadeo 4.6s infinite; }
-.ca-ojos-cerrados { display: none; }
-.ca-pi { transform-origin: 43.5px 116px; transition: transform .3s; }
-.ca-pd { transform-origin: 56.5px 116px; transition: transform .3s; }
-.ca-bi, .ca-bd { transition: transform .3s; }
-.ca-mono-nombre { position: absolute; left: 0; top: 4px; transform: translateX(-50%); padding: 2px 8px; border-radius: 99px; background: rgba(255, 255, 255, .85); color: #6a4060; font: 800 11px/1.3 "Nunito", sans-serif; white-space: nowrap; pointer-events: none; transition: opacity .3s; }
+.ca-monito.yo .ca-mono-caja { touch-action: none; cursor: grab; }
+.ca-monito.pareja .ca-mono-caja { cursor: pointer; }
+.ca-lleva { position: absolute; left: 52px; top: 86px; width: 30px; height: 30px; pointer-events: none; transition: transform .25s; }
+.ca-lleva svg { display: block; width: 100%; height: 100%; }
+.ca-lleva[hidden] { display: none; }
+.ca-mono-nombre { position: absolute; left: 0; top: 6px; transform: translateX(-50%); padding: 2px 9px; border-radius: 99px; background: rgba(255, 255, 255, .9); color: #6a4060; font: 800 12px/1.35 "Nunito", sans-serif; white-space: nowrap; pointer-events: none; box-shadow: 0 2px 6px rgba(90, 40, 70, .1); transition: opacity .3s; }
 .ca-monito.pareja .ca-mono-nombre { color: #7d5bd0; }
-.ca-globo { position: absolute; left: 0; bottom: 140px; transform: translateX(-50%); max-width: 200px; padding: 7px 11px; border-radius: 16px; background: #fff; color: #4a3346; font: 800 13px/1.2 "Nunito", sans-serif; text-align: center; white-space: nowrap; box-shadow: 0 6px 16px rgba(120, 60, 90, .16); pointer-events: none; z-index: 2; }
+.ca-monito:is(.sentado, .dormido, .banando, .columpio, .cargado) .ca-mono-nombre { opacity: 0; }
+.ca-monito.ausente .ca-mono-caja { opacity: .5; }
+.ca-globo { position: absolute; left: 0; bottom: 160px; transform: translateX(-50%); max-width: 220px; padding: 8px 12px; border-radius: 18px; background: #fff; color: #4a3346; font: 800 14px/1.25 "Nunito", sans-serif; text-align: center; white-space: normal; width: max-content; box-shadow: 0 8px 18px rgba(120, 60, 90, .18); pointer-events: none; z-index: 2; }
 .ca-globo::after { content: ""; position: absolute; left: 50%; bottom: -6px; width: 12px; height: 12px; margin-left: -6px; background: inherit; transform: rotate(45deg); border-radius: 0 0 3px 0; }
 .ca-globo[hidden] { display: none; }
-.ca-globo.sale { animation: caGlobo .32s cubic-bezier(.3, 1.6, .5, 1); }
-
-/* Caminar: piernitas, bracitos y un botecito. */
-.ca-monito.camina .ca-mono-cuerpo { animation: caBote .4s ease-in-out infinite; }
+.ca-globo.sale { animation: caGlobo .34s cubic-bezier(.3, 1.6, .5, 1); }
+.ca-globo.zzz { bottom: 90px; left: -30px; background: transparent; box-shadow: none; color: #7d5bd0; font-style: italic; letter-spacing: .12em; animation: caZzz 2.4s ease-in-out infinite; }
+.ca-globo.zzz::after { display: none; }
+/* Caritas. */
+.ca-mono-svg .ojo-f, .ca-mono-svg .ojo-z, .ca-mono-svg .bo-a, .ca-mono-svg .bo-o, .ca-mono-svg .bo-b { display: none; }
+.ca-mono-svg .ca-ojos { transform-origin: 50px 52px; animation: caParpadeo 4.6s infinite; }
+.ca-monito.dormido .ojo-n { display: none; } .ca-monito.dormido .ojo-z { display: inline; }
+.ca-monito:is(.g-rie, .g-baila, .g-abrazo, .g-aplaude, .g-choca, .banando, .columpio) .ojo-n { display: none; }
+.ca-monito:is(.g-rie, .g-baila, .g-abrazo, .g-aplaude, .g-choca, .banando, .columpio) .ojo-f { display: inline; }
+.ca-monito:is(.g-rie, .g-baila, .g-aplaude, .g-choca, .g-saluda, .columpio) .bo-n { display: none; }
+.ca-monito:is(.g-rie, .g-baila, .g-aplaude, .g-choca, .g-saluda, .columpio) .bo-a { display: inline; }
+.ca-monito.g-besito .ojo-n { display: none; } .ca-monito.g-besito .ojo-f { display: inline; }
+.ca-monito.g-besito .bo-n { display: none; } .ca-monito.g-besito .bo-b { display: inline; }
+.ca-monito.g-come .bo-n { display: none; } .ca-monito.g-come .bo-o { display: inline; transform-origin: 50px 65px; animation: caMastica .3s ease-in-out infinite alternate; }
+/* Piernitas y bracitos. */
+.ca-pi { transform-origin: 42.75px 116px; transition: transform .3s; }
+.ca-pd { transform-origin: 57.25px 116px; transition: transform .3s; }
+.ca-bi, .ca-bd { transition: transform .3s; }
+.ca-monito.camina .ca-mono-flip { animation: caBote .4s ease-in-out infinite; }
 .ca-monito.camina .ca-pi { animation: caPierna .4s ease-in-out infinite alternate; }
 .ca-monito.camina .ca-pd { animation: caPierna .4s ease-in-out infinite alternate-reverse; }
 .ca-monito.camina .ca-bi { animation: caBrazo .4s ease-in-out infinite alternate-reverse; }
-.ca-monito.camina .ca-bd { animation: caBrazo .4s ease-in-out infinite alternate; }
-/* Sentado (sillón, sillas, columpio). */
+.ca-monito.camina:not(.con-cosa) .ca-bd { animation: caBrazo .4s ease-in-out infinite alternate; }
+.ca-monito.corre .ca-mono-flip, .ca-monito.corre .ca-pi, .ca-monito.corre .ca-pd, .ca-monito.corre .ca-bi, .ca-monito.corre .ca-bd { animation-duration: .24s !important; }
+.ca-monito.corre .ca-mono-cuerpo { transform: rotate(4deg); transform-origin: 50% 100%; }
+/* Poses: sentado, dormido, en la tina, columpio y cocinando. */
 .ca-monito:is(.sentado, .columpio) .ca-pi, .ca-monito:is(.sentado, .columpio) .ca-pd { transform: scaleY(.42); }
 .ca-monito:is(.sentado, .dormido, .banando, .columpio, .cargado) .ca-sombra { display: none; }
-.ca-monito:is(.sentado, .dormido, .banando, .columpio) .ca-mono-nombre { opacity: 0; }
-.ca-monito.columpio .ca-mono-caja { transform-origin: 50% -24px; animation: caMecer 2.6s ease-in-out infinite; }
-/* Dormido: acostadito en la cama, con la cobija encima y sus z z z. */
-.ca-monito.dormido { z-index: 4; }
 .ca-monito.dormido .ca-mono-caja { transform: rotate(-90deg); }
-.ca-monito.dormido .ca-mono-cuerpo { animation: caRespira 3.2s ease-in-out infinite; }
-.ca-monito.dormido .ca-ojos { display: none; }
-.ca-monito.dormido .ca-ojos-cerrados { display: inline; }
-.ca-monito.dormido .ca-globo { bottom: 96px; left: -34px; background: transparent; box-shadow: none; color: #7d5bd0; font-style: italic; letter-spacing: .1em; animation: caZzz 2.4s ease-in-out infinite; }
-.ca-monito.dormido .ca-globo::after { display: none; }
-/* En la tina (detrás de la espuma). */
-.ca-monito.banando { z-index: 3; }
-.ca-monito.banando .ca-mono-cuerpo { animation: caRespira 2.2s ease-in-out infinite; }
-/* Comiendo, cocinando, saludando y abrazando. */
-.ca-monito.comiendo .ca-bd { animation: caComer .9s ease-in-out infinite alternate; }
-.ca-monito.comiendo .ca-boca { transform-origin: 50px 62px; animation: caMastica .45s ease-in-out infinite alternate; }
-.ca-monito.cocinando .ca-bd { animation: caRevolver .7s ease-in-out infinite alternate; }
-.ca-monito.cocinando .ca-bi { transform: rotate(40deg); }
-.ca-monito.saluda .ca-bd { animation: caSaludo .3s ease-in-out 4 alternate; }
-.ca-monito.abrazo .ca-bi { transform: rotate(70deg); }
-.ca-monito.abrazo .ca-bd { transform: rotate(-70deg); }
-.ca-monito.abrazo .ca-mono-cuerpo { animation: caBrinco .6s cubic-bezier(.3, 1.5, .5, 1); }
+.ca-monito.dormido .ca-mono-flip { animation: caRespira 3.2s ease-in-out infinite; }
+.ca-monito.banando .ca-mono-flip { animation: caRespira 2.2s ease-in-out infinite; }
+.ca-monito.columpio .ca-mono-caja { transform-origin: 50% -14px; animation: caMecer 2.6s ease-in-out infinite; }
+.ca-monito.cocinando .ca-bd { animation: caRevolver .6s ease-in-out infinite alternate; }
+.ca-monito.cocinando .ca-bi { transform: rotate(-38deg); }
+/* Gestos. */
+.ca-monito.g-saluda .ca-bd { animation: caSaludo .3s ease-in-out 4 alternate; }
+.ca-monito.g-baila .ca-mono-caja { animation: caBaile .8s ease-in-out infinite; transform-origin: 50% 100%; }
+.ca-monito.g-baila .ca-bi { animation: caBrazoArriba .4s ease-in-out infinite alternate; }
+.ca-monito.g-baila .ca-bd { animation: caBrazoArriba2 .4s ease-in-out infinite alternate; }
+.ca-monito.g-brinca .ca-mono-caja { animation: caBrinco .45s cubic-bezier(.3, .8, .4, 1) 2; transform-origin: 50% 100%; }
+.ca-monito.g-besito .ca-mono-cuerpo { transform: rotate(7deg); transform-origin: 50% 100%; transition: transform .25s; }
+.ca-monito.g-aplaude .ca-bi { animation: caAplausoI .25s ease-in-out infinite alternate; }
+.ca-monito.g-aplaude .ca-bd { animation: caAplausoD .25s ease-in-out infinite alternate; }
+.ca-monito.g-rie .ca-mono-flip { animation: caRisa .18s ease-in-out infinite alternate; }
+.ca-monito.g-abrazo .ca-bi { transform: rotate(-72deg); }
+.ca-monito.g-abrazo .ca-bd { transform: rotate(-110deg); }
+.ca-monito.g-abrazo .ca-mono-cuerpo { transform: rotate(5deg); transform-origin: 50% 100%; transition: transform .25s; }
+.ca-monito.g-choca .ca-bd { transform: rotate(-160deg); }
+.ca-monito.g-choca .ca-mono-caja { animation: caBrinco .45s cubic-bezier(.3, .8, .4, 1); }
+.ca-monito.g-come .ca-bd { animation: caComer .8s ease-in-out infinite alternate; }
+.ca-monito.g-come .ca-lleva { animation: caComerLleva .8s ease-in-out infinite alternate; }
 /* Cargadito con el dedo. */
-.ca-monito.yo { touch-action: none; cursor: grab; }
-.ca-monito.cargado { z-index: 9; cursor: grabbing; }
-.ca-monito.cargado .ca-mono-caja { transform-origin: 50% 0; animation: caColgado .9s ease-in-out infinite alternate; }
+.ca-monito.cargado { z-index: 9000 !important; }
+.ca-monito.cargado .ca-mono-caja { cursor: grabbing; transform-origin: 50% 8%; animation: caColgado .9s ease-in-out infinite alternate; }
 .ca-monito.cargado .ca-pi, .ca-monito.cargado .ca-pd { animation: caPierna .5s ease-in-out infinite alternate; }
 .ca-monito.aterriza .ca-mono-caja { animation: caAterriza .45s cubic-bezier(.3, 1.6, .5, 1); transform-origin: 50% 100%; }
-.ca-monito.ausente { opacity: .55; }
 
-.ca-corazon { position: absolute; z-index: 9; width: 18px; height: 16px; margin-left: -9px; pointer-events: none; opacity: 0; animation: caCorazon 1.8s ease-out forwards;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21s-9-5.6-9-12a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.4-9 12-9 12z' fill='%23ff5c93'/%3E%3C/svg%3E") center / contain no-repeat; }
+/* ── Partículas ── */
+.ca-part { position: absolute; z-index: 6000; pointer-events: none; width: 18px; height: 16px; margin: -8px 0 0 -9px; opacity: 0; animation: caSube 1.5s ease-out forwards; }
+.ca-part.corazon { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21s-9-5.6-9-12a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.4-9 12-9 12z' fill='%23ff5c93'/%3E%3C/svg%3E") center / contain no-repeat; }
+.ca-part.burbuja { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .95); background: rgba(191, 232, 255, .45); }
+.ca-part.chispa, .ca-part.estrella { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1l3 8 8 3-8 3-3 8-3-8-8-3 8-3z' fill='%23ffd84d'/%3E%3C/svg%3E") center / contain no-repeat; }
+.ca-part.nota { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 18V5l11-2v13' stroke='%23c39bff' stroke-width='2.5' fill='none'/%3E%3Ccircle cx='6.5' cy='18' r='3.5' fill='%23c39bff'/%3E%3Ccircle cx='17.5' cy='16' r='3.5' fill='%23c39bff'/%3E%3C/svg%3E") center / contain no-repeat; }
+.ca-part.vapor { width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, .8); animation-name: caHumo; }
+.ca-part.agua { width: 8px; height: 12px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #8fd0ff; animation-name: caGota; }
+.ca-part.hoja { width: 14px; height: 10px; border-radius: 0 80% 0 80%; background: #7fd29b; animation-name: caHoja; }
+.ca-part.polvo { width: 22px; height: 22px; border-radius: 50%; background: rgba(255, 255, 255, .85); animation: caPolvo .6s ease-out forwards; }
+.ca-part.migaja { width: 6px; height: 6px; border-radius: 2px; background: #e7a95c; animation-name: caGota; animation-duration: .8s; }
+.ca-vuela { position: absolute; z-index: 30; width: 36px; height: 36px; pointer-events: none; }
+.ca-vuela svg { width: 100%; height: 100%; }
 
-/* ── Las hojitas (vestidor, decorar, decir) ── */
-.ca-hoja { position: absolute; left: 0; right: 0; bottom: 0; z-index: 20; max-height: 74%; display: flex; flex-direction: column; border-radius: 24px 24px 0 0; background: var(--jt-papel); color: var(--jt-tinta);
-  box-shadow: 0 -10px 30px rgba(90, 40, 70, .18); transform: translateY(105%); transition: transform .28s cubic-bezier(.3, .9, .3, 1); }
+/* ── Controles (HUD) ── */
+.ca-hud { position: absolute; z-index: 20; left: 0; right: 0; top: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: calc(10px + env(safe-area-inset-top, 0px)) 10px 0; pointer-events: none; transition: opacity .25s, transform .3s; }
+.ca-hud > * { pointer-events: auto; }
+.ca-hud-izq { display: grid; gap: 2px; padding: 8px 14px 9px; border-radius: 18px; background: rgba(255, 255, 255, .88); box-shadow: 0 6px 18px rgba(110, 50, 90, .12); min-width: 0; max-width: calc(100% - 252px); }
+.ca-hud-estado, .ca-hud-guardado { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.ca-hud-cuarto { font: 900 17px/1.1 "Nunito", sans-serif; color: var(--ca-tinta); }
+.ca-hud-linea { display: flex; flex-wrap: wrap; gap: 2px 8px; }
+.ca-hud-estado, .ca-hud-guardado { font: 700 11px/1.25 "Nunito", sans-serif; color: var(--ca-suave); white-space: nowrap; }
+.ca-hud-estado::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 5px; border-radius: 50%; background: #cbb8c6; vertical-align: 1px; }
+.ca-hud-estado.aqui::before { background: #4fcf8a; box-shadow: 0 0 0 3px rgba(79, 207, 138, .2); }
+.ca-hud-guardado[data-k="guardando"] { color: var(--ca-acento); }
+.ca-hud-guardado[data-k="error"] { color: #d0485f; }
+.ca-hud-der { flex: none; display: flex; justify-content: flex-end; gap: 6px; }
+.ca-r { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 54px; height: 54px; padding: 0; border: 0; border-radius: 18px; background: rgba(255, 255, 255, .92); color: var(--ca-acento); box-shadow: 0 6px 16px rgba(110, 50, 90, .14); cursor: pointer; transition: transform .15s; }
+.ca-r i { display: grid; place-items: center; }
+.ca-r i svg { width: 22px; height: 22px; }
+.ca-r span { font: 800 10.5px/1 "Nunito", sans-serif; color: var(--ca-tinta); white-space: nowrap; max-width: 54px; overflow: hidden; text-overflow: ellipsis; }
+.ca-r:active { transform: scale(.92); }
+.ca-r.completa span { font-size: 9.5px; }
+.ca-r.primario { background: var(--ca-acento); color: #fff; } .ca-r.primario span { color: #fff; }
+.ca-r:disabled { opacity: .45; }
+.ca-hud-cuartos { position: absolute; z-index: 20; left: 10px; bottom: 10px; display: flex; gap: 4px; padding: 5px; border-radius: 20px; background: rgba(255, 255, 255, .9); box-shadow: 0 6px 18px rgba(110, 50, 90, .14); max-width: calc(100% - 20px); overflow-x: auto; scrollbar-width: none; transition: opacity .25s, transform .3s; }
+.ca-hud-cuartos::-webkit-scrollbar { display: none; }
+.ca-cuarto-b { flex: none; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 15px; background: transparent; color: var(--ca-suave); cursor: pointer; transition: background-color .2s, color .2s; }
+.ca-cuarto-b svg { width: 22px; height: 22px; }
+.ca-cuarto-b.on { background: var(--ca-rosa); color: var(--ca-acento); }
+.ca-volver { flex: none; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 30px; padding: 4px 12px calc(4px + env(safe-area-inset-bottom, 0px)); border: 0; background: rgba(255, 255, 255, .94); color: var(--ca-tinta); font: 800 12.5px/1 "Nunito", sans-serif; letter-spacing: .02em; cursor: pointer; box-shadow: 0 -4px 14px rgba(110, 50, 90, .08); }
+.ca-volver i { display: grid; place-items: center; color: var(--ca-acento); }
+.ca-volver i svg { width: 16px; height: 16px; }
+.ca-volver:active { background: var(--ca-rosa); }
+@media (min-width: 760px) { .ca-r { width: 66px; } .ca-r span { max-width: 62px; } }
+
+/* El menú flotante de los monitos. */
+.ca-menu { position: absolute; z-index: 40; display: grid; grid-template-columns: repeat(3, auto); gap: 4px; padding: 8px; border-radius: 22px; background: #fff; box-shadow: 0 14px 34px rgba(110, 50, 90, .22); transform: translateY(8px) scale(.9); opacity: 0; transition: transform .22s cubic-bezier(.3, 1.4, .5, 1), opacity .18s; }
+.ca-menu.ver { transform: none; opacity: 1; }
+.ca-menu-b { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 70px; padding: 8px 6px; border: 0; border-radius: 16px; background: transparent; color: var(--ca-tinta); cursor: pointer; }
+.ca-menu-b i { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 14px; background: var(--ca-rosa); color: var(--ca-acento); }
+.ca-menu-b i svg { width: 22px; height: 22px; }
+.ca-menu-b span { font: 800 11.5px/1.15 "Nunito", sans-serif; text-align: center; max-width: 84px; }
+.ca-menu-b:active { background: var(--ca-rosa); }
+
+/* Acomodar: barra de arriba, cajón del catálogo, bote de basura y la barrita de lo elegido. */
+.ca-edicion { position: absolute; inset: 0; z-index: 25; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; opacity: 0; visibility: hidden; transition: opacity .25s, visibility 0s .25s; }
+.ca.editando .ca-edicion { opacity: 1; visibility: visible; transition: opacity .25s; }
+.ca.editando .ca-hud, .ca.editando .ca-hud-cuartos { opacity: 0; pointer-events: none; transform: translateY(-10px); }
+.ca.editando .ca-hud * { pointer-events: none; }
+.ca-ed-arriba { pointer-events: auto; display: flex; align-items: center; gap: 6px; margin: calc(10px + env(safe-area-inset-top, 0px)) 10px 0; padding: 6px 6px 6px 14px; border-radius: 20px; background: rgba(255, 255, 255, .94); box-shadow: 0 6px 18px rgba(110, 50, 90, .14); transform: translateY(-16px); transition: transform .3s cubic-bezier(.3, 1.3, .5, 1); }
+.ca.editando .ca-ed-arriba { transform: none; }
+.ca-ed-t { display: grid; gap: 1px; min-width: 0; }
+.ca-ed-t b { font: 900 15px/1.1 "Nunito", sans-serif; }
+.ca-ed-t small { font: 700 11.5px/1.2 "Nunito", sans-serif; color: var(--ca-suave); }
+.ca-hueco { flex: 1; }
+.ca-ed-arriba .ca-r { width: 64px; height: 50px; box-shadow: none; background: var(--ca-rosa); }
+.ca-ed-arriba .ca-r.primario { background: var(--ca-acento); }
+.ca-cajon { pointer-events: auto; margin: 0 8px 8px; padding: 8px 0 10px; border-radius: 24px; background: rgba(255, 255, 255, .96); box-shadow: 0 -6px 24px rgba(110, 50, 90, .16); transform: translateY(30px); transition: transform .32s cubic-bezier(.3, 1.2, .5, 1); }
+.ca.editando .ca-cajon { transform: none; }
+.ca.arrastrando .ca-cajon { transform: translateY(calc(100% + 20px)); }
+.ca-cajon-cab { display: flex; align-items: center; gap: 6px; padding: 0 10px 8px; }
+.ca-cat-tabs { flex: 1; min-width: 0; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.ca-cat-tabs::-webkit-scrollbar { display: none; }
+.ca-cat-tab { flex: none; height: 32px; padding: 0 12px; border: 0; border-radius: 99px; background: transparent; color: var(--ca-suave); font: 800 12.5px/1 "Nunito", sans-serif; cursor: pointer; }
+.ca-cat-tab.on { background: var(--ca-rosa); color: var(--ca-acento); }
+.ca-pared-b { flex: none; display: inline-flex; align-items: center; gap: 5px; }
+.ca-pared-b i { display: grid; } .ca-pared-b svg { width: 16px; height: 16px; }
+.ca-cat-tira { display: flex; gap: 8px; padding: 0 10px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+.ca-cat-tira::-webkit-scrollbar { display: none; }
+.ca-cat-b { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 4px; width: 86px; height: 92px; padding: 8px 4px 6px; border: 0; border-radius: 18px; background: #fff7fa; box-shadow: inset 0 0 0 1.5px rgba(229, 103, 154, .14); cursor: pointer; transition: transform .15s; }
+.ca-cat-b:active { transform: scale(.93); }
+.ca-cat-mini { flex: 1; min-height: 0; width: 100%; display: grid; place-items: center; }
+.ca-cat-mini svg { max-width: 70px; max-height: 56px; width: auto; height: auto; overflow: visible; }
+.ca-cat-b small { font: 800 10.5px/1.1 "Nunito", sans-serif; color: var(--ca-tinta); text-align: center; max-width: 82px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ca-basura { position: absolute; z-index: 28; left: 50%; bottom: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; transform: translate(-50%, 160%) scale(.8); opacity: 0; pointer-events: none; transition: transform .28s cubic-bezier(.3, 1.4, .5, 1), opacity .2s; }
+.ca-basura i { display: grid; place-items: center; width: 70px; height: 70px; border-radius: 50%; background: #fff; color: #d0485f; box-shadow: 0 10px 26px rgba(110, 50, 90, .24); transition: transform .2s, background-color .2s; }
+.ca-basura i svg { width: 32px; height: 32px; }
+.ca-basura span { font: 800 11px/1 "Nunito", sans-serif; color: #fff; padding: 4px 9px; border-radius: 99px; background: rgba(74, 51, 70, .7); }
+.ca-basura.ver { transform: translate(-50%, 0) scale(1); opacity: 1; }
+.ca-basura.encima i { transform: scale(1.18) rotate(-8deg); background: #ff5c7a; color: #fff; }
+.ca-sel { position: absolute; z-index: 27; display: flex; gap: 4px; padding: 5px; border-radius: 18px; background: #fff; box-shadow: 0 10px 24px rgba(110, 50, 90, .22); animation: caPop .25s cubic-bezier(.3, 1.5, .5, 1); }
+.ca-sel[hidden] { display: none; }
+.ca-sel-b { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 14px; background: var(--ca-rosa); color: var(--ca-acento); cursor: pointer; }
+.ca-sel-b svg { width: 20px; height: 20px; }
+.ca-sel-b.peligro { background: #ffe1e6; color: #d0485f; }
+.ca-sel-b[hidden] { display: none; }
+
+/* ── Las hojitas (vestidor, decir, pared y piso) ── */
+.ca-hoja { position: absolute; left: 0; right: 0; bottom: 0; z-index: 45; max-height: 78%; display: flex; flex-direction: column; border-radius: 26px 26px 0 0; background: #fff; color: var(--ca-tinta); box-shadow: 0 -12px 34px rgba(90, 40, 70, .22); transform: translateY(105%); transition: transform .3s cubic-bezier(.3, .9, .3, 1); padding-bottom: env(safe-area-inset-bottom, 0px); }
 .ca-hoja.ver { transform: none; }
-.ca-hoja-asa { flex: none; display: block; height: 22px; touch-action: none; cursor: grab; }
-.ca-hoja-asa::before { content: ""; display: block; width: 44px; height: 5px; margin: 9px auto 0; border-radius: 99px; background: var(--jt-linea); background-color: rgba(140, 90, 120, .3); }
+.ca-hoja-asa { flex: none; display: block; height: 24px; touch-action: none; cursor: grab; }
+.ca-hoja-asa::before { content: ""; display: block; width: 46px; height: 5px; margin: 10px auto 0; border-radius: 99px; background: rgba(140, 90, 120, .3); }
 .ca-hoja > header { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 12px 8px 18px; }
-.ca-hoja > header b { font: 800 16px/1.2 "Nunito", sans-serif; }
-.ca-hoja-x { display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--jt-rosa); color: var(--jt-rosa-t); cursor: pointer; }
+.ca-hoja > header b { font: 900 17px/1.2 "Nunito", sans-serif; }
+.ca-hoja-x { display: grid; place-items: center; width: 38px; height: 38px; border: 0; border-radius: 50%; background: var(--ca-rosa); color: var(--ca-acento); cursor: pointer; }
 .ca-hoja-x svg { width: 18px; height: 18px; }
-.ca-vest, .ca-deco, .ca-frases { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 16px 18px; }
-.ca-vest { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 14px; align-items: start; }
-.ca-vest-vista { position: sticky; top: 0; padding: 8px 6px 0; border-radius: 18px; background: linear-gradient(#ffeef4, #fff7f4); }
+.ca-vest, .ca-deco, .ca-decir { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 16px 18px; }
+.ca-vest { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 14px; align-items: start; }
+.ca-vest-vista { position: sticky; top: 0; padding: 10px 8px 4px; border-radius: 20px; background: linear-gradient(#ffeef4, #fff7f4); }
 .ca-vest-vista svg { display: block; width: 100%; height: auto; }
 .ca-vest-ops, .ca-deco { display: grid; gap: 14px; }
-.ca-vest-sec { display: grid; gap: 7px; }
-.ca-vest-sec > b { font: 800 11.5px/1.2 "Nunito", sans-serif; letter-spacing: .04em; text-transform: uppercase; color: var(--jt-suave); }
+.ca-sec { display: grid; gap: 7px; }
+.ca-sec > b { font: 800 11.5px/1.2 "Nunito", sans-serif; letter-spacing: .05em; text-transform: uppercase; color: var(--ca-suave); }
 .ca-ops, .ca-frases { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
-.ca-chip { height: 34px; padding: 0 13px; border: 1px solid var(--jt-linea); border-radius: 99px; background: var(--jt-papel); color: var(--jt-tinta); font: 700 13px/1 "Nunito", sans-serif; cursor: pointer; }
-.ca-chip.on { background: var(--jt-rosa); color: var(--jt-rosa-t); border-color: transparent; }
+.ca-chip { height: 34px; padding: 0 13px; border: 1.5px solid rgba(120, 70, 100, .12); border-radius: 99px; background: #fff; color: var(--ca-tinta); font: 700 13px/1 "Nunito", sans-serif; cursor: pointer; }
+.ca-chip.on { background: var(--ca-rosa); color: var(--ca-acento); border-color: transparent; }
 .ca-chip:active { transform: scale(.96); }
 .ca-colores { display: flex; flex-wrap: wrap; gap: 7px; }
-.ca-color { width: 30px; height: 30px; padding: 0; border: 2px solid #fff; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px rgba(120, 70, 100, .2); cursor: pointer; }
-.ca-color.on { box-shadow: 0 0 0 2.5px var(--jt-acento); }
-.ca-cositas-ops { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.ca-cosita-b { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; min-height: 76px; padding: 8px 4px; border: 1px solid var(--jt-linea); border-radius: 16px; background: var(--jt-papel); color: var(--jt-tinta); cursor: pointer; }
-.ca-cosita-b i { display: grid; place-items: center; height: 40px; }
-.ca-cosita-b i svg { height: 40px; width: auto; max-width: 64px; }
-.ca-cosita-b small { font: 700 11px/1 "Nunito", sans-serif; }
-.ca-cosita-b:active { transform: scale(.95); }
+.ca-color { width: 31px; height: 31px; padding: 0; border: 2.5px solid #fff; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px rgba(120, 70, 100, .22); cursor: pointer; }
+.ca-color.on { box-shadow: 0 0 0 2.5px var(--ca-acento); }
+.ca-decir { display: grid; gap: 12px; }
+.ca-decir-fila { display: flex; gap: 8px; }
+.ca-campo { flex: 1; min-width: 0; height: 44px; padding: 0 14px; border: 1.5px solid rgba(120, 70, 100, .16); border-radius: 16px; background: #fff7fa; color: var(--ca-tinta); font: 700 15px/1 "Nunito", sans-serif; user-select: text; -webkit-user-select: text; }
+.ca-campo:focus { outline: none; border-color: var(--ca-acento); }
+.ca-boton { flex: none; height: 44px; padding: 0 18px; border: 0; border-radius: 16px; background: var(--ca-acento); color: #fff; font: 800 14px/1 "Nunito", sans-serif; cursor: pointer; }
+
+/* En compu: un poquito más de aire. */
+@media (min-width: 900px) { .ca-hud { padding: 14px 16px 0; } .ca-hud-cuartos { left: 16px; bottom: 16px; } .ca-hoja { left: 50%; right: auto; width: 560px; transform: translate(-50%, 105%); } .ca-hoja.ver { transform: translate(-50%, 0); } .ca-cajon { margin: 0 auto 12px; width: min(980px, calc(100% - 24px)); } }
+@media (max-width: 420px) { .ca-hud { padding-left: 8px; padding-right: 8px; } .ca-hud-der { gap: 4px; } .ca-r { width: 50px; height: 52px; border-radius: 16px; } .ca-r span { font-size: 9.5px; max-width: 48px; } .ca-hud-izq { padding: 7px 11px 8px; max-width: calc(100% - 222px); } .ca-hud-cuarto { font-size: 15.5px; } }
+
+/* Tema oscuro: los controles se oscurecen (la casita sigue de colores). */
+:root[data-tema="oscuro"] .ca { --ca-tinta: #f6e9f1; --ca-suave: #b9a6b7; --ca-rosa: #3c2433; background: #1f1822; }
+:root[data-tema="oscuro"] .ca :is(.ca-hud-izq, .ca-r:not(.primario), .ca-hud-cuartos, .ca-volver, .ca-menu, .ca-ed-arriba, .ca-cajon, .ca-sel, .ca-hoja, .ca-chip, .ca-cat-b, .ca-campo, .ca-basura i) { background-color: #2a2130; color: var(--ca-tinta); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) .ca { --ca-tinta: #f6e9f1; --ca-suave: #b9a6b7; --ca-rosa: #3c2433; background: #1f1822; }
+  :root:not([data-tema="claro"]) .ca :is(.ca-hud-izq, .ca-r:not(.primario), .ca-hud-cuartos, .ca-volver, .ca-menu, .ca-ed-arriba, .ca-cajon, .ca-sel, .ca-hoja, .ca-chip, .ca-cat-b, .ca-campo, .ca-basura i) { background-color: #2a2130; color: var(--ca-tinta); }
+}
 
 /* ── Animaciones ── */
-@keyframes caNube { to { translate: 60px 0; } }
-@keyframes caToque { 40% { transform: scale(1.06, .95); } 70% { transform: scale(.98, 1.03); } }
+@keyframes caNube { to { translate: 70px 0; } }
+@keyframes caNubeChica { to { translate: 26px 0; } }
+@keyframes caMariposa { 0% { translate: 0 0; } 25% { translate: 70px -40px; } 50% { translate: 140px 10px; } 75% { translate: 60px -60px; } 100% { translate: 0 0; } }
+@keyframes caAla { to { transform: scaleX(.3); } }
+@keyframes caLuciernaga { to { opacity: .55; translate: 6px -8px; } }
+@keyframes caToque { 40% { transform: scale(1.06, .94); } 70% { transform: scale(.98, 1.03); } }
 @keyframes caBaila { 25% { transform: rotate(-6deg); } 50% { transform: rotate(5deg); } 75% { transform: rotate(-3deg); } }
-@keyframes caSalta { 40% { transform: translateY(-22px) rotate(-8deg); } 70% { transform: translateY(0) scale(1.08, .9); } }
-@keyframes caTele { from { transform: scale(.85); } to { transform: scale(1.15); } }
-@keyframes caVapor { 0% { transform: translateY(6px); opacity: 0; } 40% { opacity: .9; } 100% { transform: translateY(-14px); opacity: 0; } }
-@keyframes caFuego { to { transform: scale(1.3, .8); } }
-@keyframes caOlla { 50% { transform: rotate(3deg); } }
-@keyframes caEspuma { to { transform: scale(1.04, 1.12); } }
-@keyframes caMecer { 0%, 100% { transform: rotate(-11deg); } 50% { transform: rotate(11deg); } }
-@keyframes caFoquito { to { opacity: .45; } }
-@keyframes caFlotar { to { transform: translateY(-8px) rotate(3deg); } }
+@keyframes caSalta { 40% { transform: translateY(-24px) rotate(-6deg); } 70% { transform: translateY(0) scale(1.08, .9); } }
+@keyframes caCrece { 0% { transform: scale(.85); } 60% { transform: scale(1.12); } }
+@keyframes caGira { 40% { transform: scaleX(.2); } }
+@keyframes caAparece { from { transform: scale(.3); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } }
+@keyframes caCae { 0% { transform: translateY(-140px); opacity: 0; } 20% { opacity: 1; } 75% { transform: translateY(0) scale(1.06, .9); } 100% { transform: none; } }
+@keyframes caAterrizaObj { 0% { transform: scale(1.08, .88); } 60% { transform: scale(.97, 1.04); } }
+@keyframes caSeVa { to { transform: scale(.1) rotate(25deg); opacity: 0; } }
+@keyframes caSel { 50% { box-shadow: 0 0 0 6px rgba(255, 255, 255, .5), 0 0 22px rgba(229, 103, 154, .5); } }
+@keyframes caPop { from { transform: scale(.6); opacity: 0; } }
+@keyframes caFlota { to { transform: translateY(-6px); } }
+@keyframes caTilin { to { transform: scale(.8) rotate(12deg); opacity: .7; } }
+@keyframes caVapor { 0% { transform: translateY(6px); opacity: 0; } 40% { opacity: .9; } 100% { transform: translateY(-16px); opacity: 0; } }
+@keyframes caVoltea { 50% { transform: translateY(-8px) scaleY(.4); } }
+@keyframes caChorro { to { transform: scaleY(1.06); } }
+@keyframes caPan { 40% { transform: translateY(-26px); } }
+@keyframes caCarta { 0% { transform: translateY(10px); opacity: 0; } 30% { transform: translateY(-14px); opacity: 1; } 100% { transform: translateY(-30px); opacity: 0; } }
+@keyframes caLlama { to { transform: scale(1.08, .9); } }
+@keyframes caNotas { 0% { transform: translateY(6px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-14px); opacity: 0; } }
+@keyframes caDisco { to { transform: scaleX(.94); } }
+@keyframes caGiraCor { to { transform: rotateY(360deg); } }
+@keyframes caPez { 0%, 100% { transform: translateX(-22px); } 48% { transform: translateX(22px); } 50% { transform: translateX(22px) scaleX(-1); } 98% { transform: translateX(-22px) scaleX(-1); } }
+@keyframes caBurbu { 0% { transform: translateY(20px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-14px); opacity: 0; } }
+@keyframes caAgua { to { stroke-dashoffset: -14; } }
+@keyframes caFoco { to { opacity: .45; } }
+@keyframes caCola { to { transform: rotate(18deg); } }
 @keyframes caParpadeo { 0%, 94%, 100% { transform: none; } 97% { transform: scaleY(.1); } }
+@keyframes caOrejas { 0%, 90%, 100% { transform: none; } 94% { transform: rotate(-8deg); } }
+@keyframes caCopa { to { transform: rotate(1.2deg); } }
+@keyframes caMecer { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
+@keyframes caEspuma { to { transform: scale(1.04, 1.12); } }
 @keyframes caBote { 50% { transform: translateY(-4px); } }
 @keyframes caPierna { from { transform: rotate(-16deg); } to { transform: rotate(16deg); } }
 @keyframes caBrazo { from { transform: rotate(-18deg); } to { transform: rotate(18deg); } }
 @keyframes caRespira { 50% { transform: scale(1.03, .98); } }
 @keyframes caZzz { 0%, 100% { transform: translate(-50%, 0); opacity: .6; } 50% { transform: translate(-50%, -8px); opacity: 1; } }
-@keyframes caComer { from { transform: rotate(40deg); } to { transform: rotate(125deg); } }
-@keyframes caMastica { to { transform: scaleY(1.8); } }
-@keyframes caRevolver { from { transform: rotate(-30deg); } to { transform: rotate(-70deg); } }
+@keyframes caRevolver { from { transform: rotate(18deg); } to { transform: rotate(48deg); } }
 @keyframes caSaludo { from { transform: rotate(-140deg); } to { transform: rotate(-175deg); } }
-@keyframes caBrinco { 40% { transform: translateY(-14px); } }
+@keyframes caBaile { 0%, 100% { transform: rotate(-6deg) translateY(0); } 25% { transform: rotate(0) translateY(-6px); } 50% { transform: rotate(6deg) translateY(0); } 75% { transform: rotate(0) translateY(-6px); } }
+@keyframes caBrazoArriba { from { transform: rotate(150deg); } to { transform: rotate(110deg); } }
+@keyframes caBrazoArriba2 { from { transform: rotate(-110deg); } to { transform: rotate(-150deg); } }
+@keyframes caBrinco { 50% { transform: translateY(-34px) scale(.96, 1.04); } 85% { transform: translateY(0) scale(1.06, .92); } }
+@keyframes caAplausoI { from { transform: rotate(-40deg); } to { transform: rotate(-62deg); } }
+@keyframes caAplausoD { from { transform: rotate(40deg); } to { transform: rotate(62deg); } }
+@keyframes caRisa { from { transform: rotate(-2deg); } to { transform: rotate(2deg) translateY(-2px); } }
+@keyframes caComer { from { transform: rotate(10deg); } to { transform: rotate(118deg); } }
+@keyframes caComerLleva { from { transform: none; } to { transform: translate(-26px, -46px) scale(.85); } }
+@keyframes caMastica { to { transform: scaleY(1.7); } }
 @keyframes caColgado { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
 @keyframes caAterriza { 0% { transform: scale(1.12, .82); } 60% { transform: scale(.95, 1.06); } 100% { transform: none; } }
 @keyframes caGlobo { from { transform: translateX(-50%) scale(.5); opacity: 0; } }
-@keyframes caCorazon { 0% { opacity: 0; transform: translateY(0) scale(.5); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-100px) scale(1.25); } }
+@keyframes caSube { 0% { opacity: 0; transform: translate(0, 0) scale(.5); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx, 0px), -110px) scale(1.25) rotate(var(--rot, 0deg)); } }
+@keyframes caHumo { 0% { opacity: 0; transform: scale(.4); } 30% { opacity: .8; } 100% { opacity: 0; transform: translate(var(--dx, 0px), -70px) scale(1.6); } }
+@keyframes caGota { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(var(--dx, 0px), 40px); } }
+@keyframes caHoja { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(var(--dx, 0px), 70px) rotate(180deg); } }
+@keyframes caPolvo { 0% { opacity: .9; transform: scale(.3); } 100% { opacity: 0; transform: translate(var(--dx, 0px), -14px) scale(1.5); } }
 
-/* Ultra rendimiento y movimiento reducido: lo que se mueve solo, quieto (lo que tú haces, sí se ve). */
-body.ed-ultra .ca-nube, body.ed-ultra .ca-foquito, body.ed-ultra .ca-cosa.globo svg, body.ed-ultra .ca-ojos,
-body.ed-ultra .ca-monito.dormido .ca-mono-cuerpo, body.ed-ultra .ca-monito.banando .ca-mono-cuerpo, body.ed-ultra .ca-monito.dormido .ca-globo { animation: none; }
-body.ed-ultra .ca-mueble.columpio.con-alguien, body.ed-ultra .ca-monito.columpio .ca-mono-caja, body.ed-ultra .ca-mueble.tina.con-alguien .ca-espuma { animation: none; }
+/* Ultra rendimiento y movimiento reducido: lo que se mueve solo, quieto (lo que tú haces sí se ve). */
+body.ed-ultra .ca :is(.ca-nube, .ca-mariposa, .ca-mariposa::before, .ca-mariposa::after, .ca-luciernagas, .foco, .cola, .ojitos, .orejas, .copa, .pez1, .pez2, .burbu, .flota, .tilin, .vela, .ca-ojos, .nube) { animation: none !important; }
+body.ed-ultra .ca .fuente .agua { animation: none; }
 @media (prefers-reduced-motion: reduce) {
-  .ca-mundo *, .ca-mundo *::before, .ca-mundo *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
-  .ca-hoja { transition-duration: .01ms; }
+  .ca *, .ca *::before, .ca *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

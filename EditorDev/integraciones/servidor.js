@@ -362,6 +362,8 @@ export const cositas = () => pedir("cositas?hoy=" + hoyLocal());
 export const casita = (v = -1, espera = 0) => pedir(`casita?v=${v}&espera=${espera}`);
 export const ponerMonito = (d) => pedir("casita/yo", { method: "PUT", body: d }).then((r) => r.yo);
 export const ponerCasa = (casa) => pedir("casita/casa", { method: "PUT", body: { casa } });
+// (1.25) Cambios sueltos de la casa (poner, mover, quitar, estado, colores de un cuarto), en orden.
+export const casitaOps = (ops) => pedir("casita/ops", { method: "POST", body: { ops } });
 export const cosita = (tipo, extra = {}) => pedir("cositas", { method: "POST", body: { tipo, dia: hoyLocal(), ...extra } });
 export const borrarCosita = (id) => pedir("cositas/" + encodeURIComponent(id), { method: "DELETE" });
 export const compartirCosita = (id, compartida) => pedir("cositas/" + encodeURIComponent(id), { method: "PUT", body: { compartida } });

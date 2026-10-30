@@ -1,4 +1,4 @@
-# API de M.YNTHN (servidor 1.24.0)
+# API de M.YNTHN (servidor 1.25.0)
 
 Todas las respuestas son JSON. Con sesión: `Authorization: Bearer <token>` (lo da /api/entrar o /api/registro).
 Las fechas de «hoy» las manda el aparato (`?hoy=AAAA-MM-DD`) para que cada quien vea su día (México, EE. UU.…).
@@ -100,9 +100,10 @@ Las fechas de «hoy» las manda el aparato (`?hoy=AAAA-MM-DD`) para que cada qui
 | DELETE | `/api/cositas/{…}` | con sesión |  |
 | PUT | `/api/cositas/{…}` | con sesión |  |
 | PUT | `/api/cositas/ajustes` | con sesión | Que tu amorcito vea (o no) un contador tuyo |
-| GET | `/api/casita` | con sesión | 1.24 · Nuestra casita: `{v, casa, yo, pareja, pareja_aqui}`. Con `v` (la versión que ya tienes) y `espera` (hasta 25 s), contesta en cuanto algo cambie. |
-| PUT | `/api/casita/yo` | con sesión | 1.24 · Tu monito (sólo lo que mandes): `x` (0–5000), `mira` (1 / -1), `accion` (sentado, dormido, banando, columpio, comiendo, cocinando, abrazo, saluda o vacío), `mueble`, `ropa` (hasta 16 textos cortos) y `dice` (60 letras). |
-| PUT | `/api/casita/casa` | con sesión | 1.24 · La casa de los dos (`casa`: colores de cada cuarto, cositas, luces y cortinas; hasta 60 000 letras). |
+| GET | `/api/casita` | con sesión | 1.24/1.25 · Nuestra casita: `{v, casa, yo, pareja, pareja_aqui}`. Con `v` (la versión que ya tienes) y `espera` (hasta 25 s), contesta en cuanto algo cambie. |
+| PUT | `/api/casita/yo` | con sesión | Tu monito (sólo lo que mandes). 1.25: `c` (cuarto), `x` (0–20000, dentro del cuarto), `y` (lo hondo del piso), `mira` (1 / -1), `accion` (cualquier palabra de 16 letras minúsculas: sentado, dormido, banando…), `mueble` (`id:lugar`), `lleva` (lo que trae en la mano), `ropa` (hasta 16 textos cortos), `dice` (60 letras; guarda `dt`) y `ev` (`{k, t}`: un gesto, abrazo, besito, regalo…; el servidor le pone `at`). |
+| POST | `/api/casita/ops` | con sesión | 1.25 · Cambios sueltos de la casa, en orden y de un jalón (hasta 60): `{o:"pon", obj:{id, t, c, x, y, f, e}}`, `{o:"quita", id}`, `{o:"estado", id, e}`, `{o:"cuarto", k, v}` y `{o:"iniciar", casa}` (sólo si la casa aún no tenía cosas). Hasta 300 cosas. Contesta `{ok, n, v}`. |
+| PUT | `/api/casita/casa` | con sesión | La casa entera de una vez (la usaba la 1.24; hasta 150 000 letras). |
 | GET | `/api/ubicacion` | con sesión | Dónde está cada quien (sólo quien la comparte), sus lugares y lo último que pasó en ellos. |
 | PUT | `/api/ubicacion` | con sesión | Tu ubicación (sólo llega si tú decidiste compartirla) |
 | DELETE | `/api/ubicacion` | con sesión | Dejar de compartir: se borra tu ubicación del servidor (no queda nada). |

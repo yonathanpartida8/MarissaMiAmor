@@ -275,6 +275,7 @@ export class Juntitos {
     if (this._finZona) { this._finZona(); return true; }
     if (this.hojaEl?.classList.contains("ver")) { this._cerrarHoja(); return true; }
     if (this.dj?.atras?.()) return true;
+    if (this.tab === "casita") { this.ir("cositas"); return true; }
     const carta = this.capa?.querySelector(".jt-carta-mes:not(.fuera)");
     if (carta) { carta.querySelector(".jt-x")?.click(); return true; }
     if (this.tab !== "inicio") { this.inicio(); return true; }
@@ -1354,9 +1355,10 @@ export class Juntitos {
   _casita() {
     if (!PF.datos().pareja) { this.vista.replaceChildren(el("div.jt-vacio", {}, [el("b", { text: "Para jugar en su casita" }), el("p", { text: "Primero vincúlate con tu amorcito (en el menú principal)." })])); return; }
     const vista = this.vista, vez = (this._vezDj = {});
-    import("./casita.js").then(({ Casita }) => {
+    // (Fase 53: la casita es modular, en components/casita/; su barrita «Volver atrás» regresa a Cositas.)
+    import("./casita/index.js").then(({ Casita }) => {
       if (this._vezDj !== vez || !this.abierto || !vista.isConnected || this.tab !== "casita") return;
-      this.dj = new Casita(this.app, { pareja: this.pareja });
+      this.dj = new Casita(this.app, { pareja: this.pareja, volver: () => this.ir("cositas") });
       this.dj.montar(vista);
     }).catch((e) => aviso("No se pudo abrir su casita: " + e.message, 4000, "error"));
   }
