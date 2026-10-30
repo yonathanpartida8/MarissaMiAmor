@@ -50,6 +50,7 @@ const IC = {
   mic: svg('<rect x="9" y="3.2" width="6" height="11" rx="3"/><path d="M5.6 11.2a6.4 6.4 0 0 0 12.8 0M12 17.6V21"/>', LINEA),
   enviar: svg('<path d="M3.6 10.9 19.4 4.3c.9-.4 1.8.5 1.4 1.4l-6.6 15.8c-.4.9-1.7.8-1.9-.1l-1.5-6.2-6.2-1.5c-.9-.2-1-1.5-.1-1.9z" fill="currentColor"/><path d="m11 13 4.2-4.2" stroke="#fff" stroke-opacity=".55" stroke-width="1.6" stroke-linecap="round"/>'),
   palomita: svg('<path d="m5 12.6 4.4 4.4L19 7.4"/>', ' fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"'),
+  responder: svg('<path d="M10 8V4.5L3.5 11 10 17.5V14c4.5 0 7.6 1.4 10 5-1-5-4-9.8-10-11z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>'),
   lapiz: svg('<path d="m4 20 1-4.2L15.6 5.2a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.2 19 4 20z"/><path d="m13.8 7 3.2 3.2"/>', LINEA),
   espacio: svg('<path d="M5 4.5h14M5 19.5h14M12 8v8M8.8 12.8 12 16l3.2-3.2"/>', LINEA),
   corazon: svg(`<path d="${CORAZON}"/>`, LINEA),
@@ -105,7 +106,7 @@ const guardarPref = (p) => { try { localStorage.setItem(CLAVE, JSON.stringify(p)
 
 const real = (m) => typeof m.id === "number";
 const orden = (a, b) => (real(a) ? 0 : 1) - (real(b) ? 0 : 1) || (real(a) && real(b) ? a.id - b.id : 0);
-const firmaBurbuja = (m) => JSON.stringify([!!m.borrado, m.texto, m.gif?.u, m.audio?.u, m.espacio, (m.stickers || []).filter((s) => !s.l).length]);
+const firmaBurbuja = (m) => JSON.stringify([!!m.borrado, m.texto, m.gif?.u, m.audio?.u, m.espacio, m.responde?.id, (m.stickers || []).filter((s) => !s.l).length]);
 const firma = (m) => JSON.stringify([!!m.borrado, m.texto, m.gif?.u, m.audio?.u, m.reaccion, m.visto, m.editado, m.espacio, (m.stickers || []).map((s) => [s.i, s.x, s.y, s.s])]);
 const diaDe = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
 const hora = (iso) => new Date(iso).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
@@ -156,7 +157,7 @@ export function vistaChat(det) {
   const S = {
     ms: [], nodos: new Map(), dias: new Map(), nuevos: new Set(), trazos: new Map(), ultimo: 0, desde: 0, hayMas: false, antes: false,
     vivo: true, pegado: true, sinVer: 0, temp: 0, menu: null, hoja: null, listo: false, verVisto: true, dibujo: null, arrastre: null,
-    editando: null, grabando: null, blobs: [],
+    editando: null, grabando: null, blobs: [], respondiendo: null,
   };
   const capaDet = det.capa;
   const flota = (n) => { capaDet.append(n); return n; }; // lo que va encima (menús, el sticker que arrastras): fuera de lo que se anima
@@ -230,6 +231,14 @@ export function vistaChat(det) {
     el("button.ch-editando-x", { type: "button", "aria-label": "Cancelar la edición", html: ico("cerrar"), onClick: () => dejarDeEditar() }),
   ]);
 
+  // Fase 52: responder a un mensajito (como en WhatsApp): su copita arriba de donde escribes.
+  const respQuien = el("b"), respT = el("span.ch-responde-t");
+  const respBar = el("div.ch-responde", { hidden: "", role: "group", "aria-label": "Respondiendo a un mensajito" }, [
+    el("i.ch-responde-ico", { html: IC.responder }),
+    el("button.ch-responde-in", { type: "button", "aria-label": "Ir al mensajito", onClick: () => S.respondiendo && irA(S.respondiendo.id) }, [respQuien, respT]),
+    el("button.ch-editando-x", { type: "button", "aria-label": "No responder", html: ico("cerrar"), onClick: () => dejarDeResponder() }),
+  ]);
+
   /* — Stickers (los tuyos y explorar), GIFs (favoritos y explorar) y emojis — */
   const P = { tipo: "", vista: "", q: "", sig: 0, total: 0, cargando: false, ctl: null };
   const COL = { stickers: null, gifs: null, pide: null };
@@ -262,7 +271,7 @@ export function vistaChat(det) {
     ]),
     el("small.ch-dibujo-pista", { text: "Dibuja con un dedo · desliza con dos · lo ve en vivo" }),
   ]);
-  const raiz = el("section.dt-pantalla.ch" + (PR.fondo ? "" : ".sin-fondo") + (PR.grande ? ".letra-grande" : ""), {}, [cab, marco, animos, panelN, barraDibujo, editBar, escribir]);
+  const raiz = el("section.dt-pantalla.ch" + (PR.fondo ? "" : ".sin-fondo") + (PR.grande ? ".letra-grande" : ""), {}, [cab, marco, animos, panelN, barraDibujo, editBar, respBar, escribir]);
   // La miel de cada quien en «Hot Cake» sale del género que eligió en su perfil (de fresa para «Mujer»; de maple, los demás).
   const generoDe = (mio) => (mio ? PF.datos().yo?.genero : det.amor?.pareja?.genero ?? PF.datos().pareja?.genero) || "";
   const AN = animosChat({ raiz, marco, lista, tono: (mio) => (generoDe(mio) === "Mujer" ? "rosa" : "carmesi") });
@@ -330,6 +339,7 @@ export function vistaChat(det) {
       if (fo) im.addEventListener("click", (e) => { e.stopPropagation(); verFoto(im.src); });
       b.append(im);
     }
+    if (m.responde) b.prepend(cita(m.responde));
     if (m.texto) b.append(el("span.ch-texto", { text: m.texto }));
     const pegados = (m.stickers || []).filter((x) => !x.l);
     if (pegados.length) b.append(el("span.ch-pegados", { "aria-hidden": "true" }, pegados.map((x) => {
@@ -343,6 +353,7 @@ export function vistaChat(det) {
     ]);
     ponerRx(f, m);
     presionLarga(b, () => { const x = deFila(f); if (x && real(x)) abrirMenu(x, f); });
+    deslizarParaResponder(f, b);
     b.addEventListener("keydown", (e) => {
       if (e.target !== b || !["Enter", " ", "ContextMenu"].includes(e.key)) return;
       e.preventDefault();
@@ -352,6 +363,94 @@ export function vistaChat(det) {
     b.addEventListener("click", () => enseñarPista());
     return f;
   }
+  /** La copita del mensajito al que responde (tocarla lleva a él). */
+  function cita(c) {
+    const que = c.tipo === "audio" ? "Mensaje de voz" : c.tipo === "sticker" ? "Sticker" : c.tipo === "foto" ? "Foto" : c.tipo === "gif" ? "GIF" : "";
+    const n = el("button.ch-cita" + (c.mio ? ".mia" : ""), { type: "button", "aria-label": `Responde a: ${c.texto || que}` }, [
+      el("b", { text: c.mio ? "Tú" : nombre }),
+      el("span", { text: c.texto || que || "Mensajito" }),
+    ]);
+    n.addEventListener("click", (e) => { e.stopPropagation(); irA(c.id); });
+    return n;
+  }
+  /** Va al mensajito (si está más arriba, carga lo de antes) y lo hace brillar. */
+  async function irA(id) {
+    for (let i = 0; i < 6 && !S.nodos.get(id) && S.hayMas; i++) await cargarAntes();
+    const f = S.nodos.get(id);
+    if (!f) { aviso("Ese mensajito ya no está", 2200); return; }
+    f.scrollIntoView({ block: "center", behavior: reducido() ? "auto" : "smooth" });
+    f.classList.remove("señalado"); void f.offsetWidth; f.classList.add("señalado");
+    setTimeout(() => f.classList.remove("señalado"), 1600);
+  }
+  /**
+   * Deslizar una burbuja hacia la derecha (con el dedo o el mouse) = responderla, como en WhatsApp.
+   * Sólo se mueve si el gesto es claramente de lado (lo de arriba-abajo sigue siendo desplazar el chat).
+   */
+  function deslizarParaResponder(f, b) {
+    let g = null;
+    const flecha = el("i.ch-desliza", { html: IC.responder, "aria-hidden": "true" });
+    f.append(flecha);
+    b.addEventListener("pointerdown", (e) => {
+      if (e.button > 0 || S.dibujo || S.arrastre || S.grabando || f.classList.contains("borrado")) return;
+      g = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, lado: false };
+    });
+    b.addEventListener("pointermove", (e) => {
+      if (!g || e.pointerId !== g.id) return;
+      const dx = e.clientX - g.x, dy = e.clientY - g.y;
+      if (!g.lado) {
+        if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { g = null; return; }
+        if (dx < 12 || dx < Math.abs(dy) * 1.6) return;
+        g.lado = true;
+        try { b.setPointerCapture(e.pointerId); } catch (er) { /* nada */ }
+      }
+      g.dx = Math.max(0, Math.min(90, dx * 0.75));
+      f.style.setProperty("--dx", g.dx.toFixed(1) + "px");
+      f.classList.add("deslizando");
+      flecha.classList.toggle("lista", g.dx > 52);
+      if (g.dx > 52 && !g.vibro) { g.vibro = true; vibrar(8); }
+    });
+    const soltar = (e) => {
+      if (!g || e.pointerId !== g.id) return;
+      const listo = g.lado && g.dx > 52;
+      g = null;
+      f.classList.remove("deslizando");
+      f.style.removeProperty("--dx");
+      flecha.classList.remove("lista");
+      if (listo) { const x = deFila(f); if (x && real(x)) responder(x); }
+    };
+    b.addEventListener("pointerup", soltar); b.addEventListener("pointercancel", soltar);
+  }
+  function responder(m) {
+    cerrarMenu();
+    if (S.grabando) return;
+    dejarDeEditar();
+    S.respondiendo = m;
+    const que = m.audio ? "Mensaje de voz" : m.gif?.s ? "Sticker" : m.gif?.f ? "Foto" : m.gif ? "GIF" : "";
+    respQuien.textContent = m.mio ? "Tú" : nombre;
+    respT.textContent = m.texto || que;
+    respBar.hidden = false;
+    respBar.classList.toggle("mia", !!m.mio);
+    raiz.classList.add("respondiendo");
+    if (!reducido()) respBar.animate([{ opacity: 0, transform: "translateY(14px) scale(.98)" }, { opacity: 1, transform: "none" }], { duration: 260, easing: "cubic-bezier(.2, .9, .3, 1.1)" });
+    input.focus();
+    sonar("abrir");
+  }
+  function dejarDeResponder() {
+    if (!S.respondiendo) return false;
+    S.respondiendo = null;
+    respBar.hidden = true;
+    raiz.classList.remove("respondiendo");
+    return true;
+  }
+  /** Lo que se manda ahora responde a… (y se suelta). */
+  function tomarRespuesta() {
+    const m = S.respondiendo;
+    if (!m) return null;
+    dejarDeResponder();
+    const tipo = m.audio ? "audio" : m.gif?.s ? "sticker" : m.gif?.f ? "foto" : m.gif ? "gif" : "texto";
+    return { id: m.id, mio: m.mio, texto: (m.texto || "").slice(0, 160), tipo };
+  }
+
   /** La primera vez que tocan un mensajito: cómo se abren sus opciones. */
   const PISTA_MENU = "editordev:chat-pista-menu";
   function enseñarPista() {
@@ -749,7 +848,7 @@ export function vistaChat(det) {
   });
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey && !e.isComposing && !matchMedia("(pointer: coarse)").matches) { e.preventDefault(); mandarTexto(); }
-    else if (e.key === "Escape" && S.editando) { e.preventDefault(); dejarDeEditar(); }
+    else if (e.key === "Escape" && (S.editando || S.respondiendo)) { e.preventDefault(); dejarDeEditar() || dejarDeResponder(); }
   });
   // Al irse el teclado, la pantalla vuelve a su lugar (el iPhone a veces la deja corrida).
   input.addEventListener("blur", () => setTimeout(() => { if ((scrollY || scrollX) && document.activeElement !== input) scrollTo(0, 0); }, 260));
@@ -786,10 +885,11 @@ export function vistaChat(det) {
     sonar("error");
   }
   async function mandar({ texto = "", gif = null }) {
-    const t = burbujaNueva({ texto, gif });
+    const responde = tomarRespuesta();
+    const t = burbujaNueva({ texto, gif, responde });
     sonar("mensaje-enviar");
     try {
-      const m = await SRV.mandarMensaje({ texto, gif });
+      const m = await SRV.mandarMensaje({ texto, gif, responde: responde?.id });
       if (!S.vivo) return true;
       if (!t._real) adoptar(t, m);
       return true;
@@ -801,11 +901,12 @@ export function vistaChat(det) {
   async function mandarFoto(blob, w, h) {
     const local = URL.createObjectURL(blob);
     S.blobs.push(local);
-    const t = burbujaNueva({ gif: { u: local, w, h, f: 1 } });
+    const responde = tomarRespuesta();
+    const t = burbujaNueva({ gif: { u: local, w, h, f: 1 }, responde });
     sonar("mensaje-enviar");
     try {
       const r = await SRV.subirMedia(blob, "foto");
-      const m = await SRV.mandarMensaje({ texto: "", gif: { u: r.u, w, h, f: 1 } });
+      const m = await SRV.mandarMensaje({ texto: "", gif: { u: r.u, w, h, f: 1 }, responde: responde?.id });
       if (!S.vivo) return;
       if (!t._real) adoptar(t, m);
     } catch (e) { noSeMando(t, e); }
@@ -867,7 +968,7 @@ export function vistaChat(det) {
     if (!m.mio) partes.push(el("div.ch-menu-rx", { role: "group", "aria-label": "Reaccionar" }, REACCIONES.map((r) => el("button.ch-menu-rxb" + (m.reaccion === r.id ? ".on" : ""), {
       type: "button", title: r.corto, "aria-label": r.corto, "aria-pressed": String(m.reaccion === r.id), html: svgReaccion(r.id), onClick: () => reaccionar(m, r.id),
     }))));
-    const acc = [];
+    const acc = [el("button.ch-menu-b", { type: "button", role: "menuitem", html: `${IC.responder}<span>Responder</span>`, onClick: () => responder(m) })];
     if (m.mio && m.texto && !m.audio) acc.push(el("button.ch-menu-b", { type: "button", role: "menuitem", html: I("editar", "Editar"), onClick: () => editar(m) }));
     if (m.texto) acc.push(el("button.ch-menu-b", { type: "button", role: "menuitem", html: I("copiar", "Copiar"), onClick: async () => { cerrarMenu(); try { await navigator.clipboard.writeText(m.texto); aviso("Copiado 💜", 1800); } catch (err) { aviso("No se pudo copiar aquí", 2600, "error"); } } }));
     if (m.mio) acc.push(el("button.ch-menu-b.peligro", { type: "button", role: "menuitem", html: I("borrar", "Eliminar"), onClick: () => { cerrarMenu(); borrar(m); } }));
@@ -948,6 +1049,7 @@ export function vistaChat(det) {
     if (S.grabando) return;
     panel(null);
     dejarDeEditar(false);
+    dejarDeResponder();
     S.editando = m;
     editT.textContent = m.texto;
     editBar.hidden = false;
@@ -1049,7 +1151,7 @@ export function vistaChat(det) {
     try {
       const r = await SRV.subirMedia(a.blob, "audio");
       t.audio._u = r.u;
-      const m = await SRV.mandarMensaje({ audio: { u: r.u, dur: a.dur, ondas: a.ondas } });
+      const m = await SRV.mandarMensaje({ audio: { u: r.u, dur: a.dur, ondas: a.ondas }, responde: tomarRespuesta()?.id });
       if (!S.vivo) return;
       if (!t._real) adoptar(t, m);
     } catch (e) { noSeMando(t, e); }
@@ -1750,7 +1852,7 @@ export function vistaChat(det) {
   vv?.addEventListener("scroll", ajustarVV);
 
   // Atrás (o Esc): primero se cierra lo que esté abierto encima del chat.
-  det._chatAtras = () => cerrarMenu() || cerrarHoja() || cancelarGrabacion() || dejarDeEditar() || salirDibujo() || panel(null);
+  det._chatAtras = () => cerrarMenu() || cerrarHoja() || cancelarGrabacion() || dejarDeEditar() || dejarDeResponder() || salirDibujo() || panel(null);
   det._limpiezas.push(() => {
     S.vivo = false;
     AN.limpiar();

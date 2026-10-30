@@ -609,3 +609,37 @@
 @media (max-width: 430px) { .ch-animos { gap: 4px; padding-left: 8px; padding-right: 8px; } .ch-animo { gap: 2px; padding: 3px 9px 3px 4px; } .ch-animo i { width: 26px; height: 26px; } }
 /* (Fase 46) La cajita de escribir crece sola con lo que escribes (sin medirla en cada letra). */
 @supports (field-sizing: content) { .ch-input { field-sizing: content; height: auto; min-height: 44px; max-height: 124px; overflow-y: auto; } }
+
+/* ═══ Fase 52 · Responder (como en WhatsApp) ═══ */
+/* La barrita de arriba de donde escribes (igual que «Editando»). */
+.ch-responde { position: relative; z-index: 2; flex: none; display: flex; align-items: center; gap: 10px; margin: 0 14px 6px; padding: 7px 7px 7px 12px; border: 1px solid var(--cm-vidrio-borde); border-radius: 18px; background: var(--cm-vidrio); box-shadow: 0 6px 18px var(--cm-sombra); }
+.ch-responde[hidden] { display: none; }
+.ch-responde-ico { flex: none; width: 20px; height: 20px; color: var(--cm-lila); }
+.ch-responde-ico svg { display: block; width: 100%; height: 100%; }
+.ch-responde-in { flex: 1; min-width: 0; display: grid; gap: 1px; padding: 2px 0 2px 10px; border: 0; border-left: 3px solid #b98bff; border-radius: 3px; background: none; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.ch-responde.mia .ch-responde-in { border-left-color: #ff7fae; }
+.ch-responde-in b { font-size: 12.5px; color: var(--cm-lila); }
+.ch-responde.mia .ch-responde-in b { color: #e5679a; }
+.ch-responde-t { font-size: 13.5px; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* La copita dentro de la burbuja. */
+.ch-cita { display: grid; gap: 1px; width: 100%; min-width: 120px; margin: 0 0 6px; padding: 6px 10px 6px 9px; border: 0; border-left: 3px solid #b98bff; border-radius: 10px; background: rgba(255, 255, 255, .55); color: inherit; text-align: left; font: inherit; cursor: pointer; }
+.ch-cita.mia { border-left-color: #ff7fae; }
+.ch-cita b { font-size: 12px; color: #7d5bd0; }
+.ch-cita.mia b { color: #d8397a; }
+.ch-cita span { font-size: 13px; opacity: .85; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mio .ch-cita { background: rgba(255, 255, 255, .26); color: inherit; }
+.mio .ch-cita b { color: #fff; }
+:root[data-tema="oscuro"] .ch-cita { background: rgba(0, 0, 0, .18); }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .ch-cita { background: rgba(0, 0, 0, .18); } }
+/* Deslizar una burbuja para responderla: la burbuja se corre y aparece la flechita. */
+.ch-burbuja { touch-action: pan-y; }
+.ch-fila { position: relative; }
+.ch-fila > .ch-cuerpo { transition: transform .28s cubic-bezier(.3, 1.4, .5, 1); }
+.ch-fila.deslizando > .ch-cuerpo { transform: translateX(var(--dx, 0)); transition: none; }
+.ch-desliza { position: absolute; left: 6px; top: 50%; width: 30px; height: 30px; margin-top: -15px; padding: 6px; border-radius: 50%; background: var(--cm-vidrio, rgba(255, 255, 255, .8)); color: var(--cm-lila, #8f6fe8); opacity: 0; transform: scale(.5); transition: opacity .15s, transform .2s cubic-bezier(.3, 1.6, .5, 1); pointer-events: none; }
+.ch-desliza svg { display: block; width: 100%; height: 100%; }
+.ch-fila.deslizando .ch-desliza { opacity: calc(var(--dx-n, .6)); transform: scale(.85); }
+.ch-desliza.lista { opacity: 1 !important; transform: scale(1.1) !important; background: #b98bff; color: #fff; }
+/* Al ir al mensajito citado, brilla un momento. */
+.ch-fila.señalado .ch-burbuja { animation: chSeñal 1.5s ease-out; }
+@keyframes chSeñal { 0%, 40% { box-shadow: 0 0 0 4px rgba(185, 139, 255, .55); } 100% { box-shadow: 0 0 0 0 rgba(185, 139, 255, 0); } }

@@ -6,7 +6,7 @@
  * En el teléfono es una hoja que sube; en la computadora, una tarjeta. Tiene
  * «atrás» (la flecha, Escape o el «atrás» del teléfono).
  */
-import { el, esMovil } from "./ui.js";
+import { el, esMovil, jalarParaCerrar } from "./ui.js";
 import { ico } from "./iconos.js";
 import * as SRV from "../integraciones/servidor.js";
 import { formularioCuenta } from "./cuenta.js";
@@ -28,6 +28,7 @@ export class MenuExportar {
     this.cuerpo = el("div.ex-cuerpo");
     this.hoja = el("div.ex-hoja" + (esMovil() ? ".abajo" : ""), { role: "dialog", "aria-modal": "true", "aria-label": "Exportar" }, [el("i.ex-asa"), this.cab, this.cuerpo]);
     this.capa = el("div.ex-capa", {}, [this.hoja]);
+    if (esMovil()) jalarParaCerrar(this.hoja, () => this.cerrar(), { asa: this.hoja.querySelector(".ex-asa") });
     this.capa.addEventListener("pointerdown", (e) => { if (e.target === this.capa) this.cerrar(); });
     this._tecla = (e) => { if (e.key === "Escape" && this.abierto && !this.app.detallitos?.abierto) { e.stopPropagation(); this.atras(); } };
     addEventListener("keydown", this._tecla, true);

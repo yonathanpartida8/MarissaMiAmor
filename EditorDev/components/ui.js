@@ -426,3 +426,49 @@ export function popover(ancla, contenido, { clase = "" } = {}) {
   } else requestAnimationFrame(() => p.classList.add("ver"));
   return { nodo: p, cerrar };
 }
+
+/**
+ * Fase 52 · Jalar hacia abajo para cerrar (las hojitas con pestañita). Se agarra de la pestañita (o de lo
+ * de arriba de la hoja, si no está desplazada) y la hoja sigue al dedo; al soltar, si bajó bastante o
+ * rápido, se cierra con su animación de siempre; si no, regresa a su lugar con un rebotito.
+ */
+export function jalarParaCerrar(hoja, cerrar, { asa = null, zona = 56 } = {}) {
+  let g = null;
+  const empezar = (e) => {
+    if (e.button > 0 || g) return;
+    const r = hoja.getBoundingClientRect();
+    const deAsa = !!asa && (typeof asa === "string" ? !!e.target.closest?.(asa) : e.target === asa || asa.contains(e.target));
+    if (!deAsa && (hoja.scrollTop > 0 || e.clientY - r.top > zona || e.target.closest("button, input, textarea, select, a, [contenteditable]"))) return;
+    g = { id: e.pointerId, y0: e.clientY, x0: e.clientX, dy: 0, v: 0, t: performance.now(), ya: !!deAsa, alto: r.height };
+    if (deAsa) { try { hoja.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } }
+  };
+  const mover = (e) => {
+    if (!g || e.pointerId !== g.id) return;
+    const dy = e.clientY - g.y0, dx = e.clientX - g.x0;
+    if (!g.ya) {
+      if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) { g = null; return; }
+      if (dy < 8) return;
+      g.ya = true;
+      try { hoja.setPointerCapture(e.pointerId); } catch (er) { /* nada */ }
+    }
+    const t = performance.now();
+    g.v = 0.7 * g.v + 0.3 * ((dy - g.dy) / Math.max(8, t - g.t)); g.t = t;
+    g.dy = dy;
+    hoja.style.transition = "none";
+    hoja.style.transform = `translateY(${dy > 0 ? dy : dy / 4}px)`;
+    e.preventDefault();
+  };
+  const soltar = (e) => {
+    if (!g || e.pointerId !== g.id) return;
+    const { dy, v, ya, alto } = g;
+    g = null;
+    if (!ya) return;
+    hoja.style.transition = "";
+    hoja.style.transform = "";
+    if (dy > Math.min(140, alto * 0.3) || v > 0.6) cerrar();
+  };
+  hoja.addEventListener("pointerdown", empezar);
+  hoja.addEventListener("pointermove", mover);
+  hoja.addEventListener("pointerup", soltar);
+  hoja.addEventListener("pointercancel", soltar);
+}

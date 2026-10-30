@@ -37,6 +37,7 @@ import * as PF from "./perfil.js";
 import * as A from "./album-arte.js";
 import { ICONO_CHAT } from "./chat.js";
 import { vistaAjustes } from "./ajustes-app.js";
+import { inicioEnCamino } from "./inicio.js";
 
 const I = (n, t) => `${ico(n)}<span>${t}</span>`;
 
@@ -160,7 +161,7 @@ export class MenuPrincipal {
     setTimeout(() => c.remove(), sinMovimiento() ? 10 : 720);
     this.app.sonidos?.sonar("abrir");
     // Sin librito abierto, debajo del menú no hay nada que editar: ahí va «Crear detallito».
-    setTimeout(() => { if (!this.abierto && !this.app.estado?.proyecto && !document.querySelector(".ed-inicio")) this.app.inicio?.(); }, 60);
+    setTimeout(() => { if (!this.abierto && !this.app.estado?.proyecto && !document.querySelector(".ed-inicio") && !inicioEnCamino() && !this.app.dibujito?.abierto) this.app.inicio?.(); }, 120);
   }
 
   /** (Lo usan otras partes: «Entrar o crear mi cuenta» abre el menú en «cuenta».) */
@@ -190,23 +191,26 @@ export class MenuPrincipal {
       const c = this.capa, col = c?.querySelector(".mp-columna");
       if (!col) return;
       c.classList.toggle("mp-fijo", this.vista === "inicio");
-      if (this.vista !== "inicio") { col.style.zoom = ""; return; }
-      // Oculto o a media transición: medir ahí da un zoom equivocado.
+      // (Fase 52) Sólo el inicio se encoge (él solito, no toda la columna): así Configuración, tu cuenta
+      // y tu perfil nunca cambian de tamaño, y el inicio vuelve ya con su tamaño (no grande y luego chico).
+      col.style.zoom = "";
+      const v = this.vista === "inicio" ? this.r?.vistaInicio : null;
+      if (!v) return;
+      // Oculto o a media transición: medir ahí da un zoom equivocado (se queda el que ya traía).
       if (c.clientHeight < 240 || this.escena.childElementCount > 1 || document.hidden) return;
-      // Misma pantalla y mismo inicio que la última vez (p. ej. al volver del editor): se parte del zoom
-      // que quedó y basta una medida; antes se volvía a 1 y se medía hasta 4 veces el menú entero (~100 ms).
-      const llave = [innerWidth, innerHeight, Math.round(visualViewport?.height || 0), this._clave()].join("|");
-      col.style.zoom = llave === this._zLlave ? this._zoom : "";
+      const llave = this._llaveZoom();
+      v.style.zoom = llave === this._zLlave ? this._zoom : "";
       for (let i = 0; i < 4; i++) {
         // (El alto que de verdad se ve: sin la barra del navegador que tapa abajo.)
         const alto = Math.min(c.clientHeight, Math.round(visualViewport?.height || c.clientHeight)), todo = c.scrollHeight;
         if (todo <= alto + 1) break;
-        const z = (+col.style.zoom || 1) * (alto / todo) * 0.995;
-        col.style.zoom = String(Math.max(0.6, z));
+        const h = v.getBoundingClientRect().height || 1, z0 = +v.style.zoom || 1;
+        v.style.zoom = String(Math.max(0.5, z0 * Math.max(0.5, (h - (todo - alto)) / h) * 0.995));
       }
-      this._zLlave = llave; this._zoom = col.style.zoom;
+      this._zLlave = llave; this._zoom = v.style.zoom;
     });
   }
+  _llaveZoom() { return [innerWidth, innerHeight, Math.round(visualViewport?.height || 0), this._clave()].join("|"); }
 
   /* — Arriba a la derecha: tu cuenta, en su etiqueta de papel — */
   _pintarChip() {
@@ -489,7 +493,7 @@ export class MenuPrincipal {
       el("span.mp-editor-t", {}, [el("b", { text: "Ir al editor" }), el("small", { text: "Edita, organiza y personaliza tus páginas." })]),
       el("i.mp-editor-ir-b", { html: FLECHA }),
     ]);
-    r.vistaInicio = el("div.mp-vista.mp-inicio", {}, [
+    r.vistaInicio = el("div.mp-vista.mp-inicio", { style: { zoom: this._zLlave && this._zLlave === this._llaveZoom() ? this._zoom : "" } }, [
       el("div.mp-hero", { style: { "--i": 0 } }, [this._pareja()]),
       el("div.mp-dias-caja", { style: { "--i": 1 } }, [r.stats]),
       el("div.mp-crear-fila", { style: { "--i": 2 } }, [crear, el("i.mp-crear-chispa.c1", { html: A.DESTELLO_LLENO }), el("i.mp-crear-chispa.c2", { html: A.DESTELLO_LLENO }), el("i.mp-crear-chispa.c3", { html: A.DESTELLO }), this._gatito()]),

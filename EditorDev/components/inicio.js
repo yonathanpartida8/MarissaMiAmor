@@ -111,9 +111,15 @@ const ETQ = {
   subir: ["nube", "Subiendo a tu nube pronto"], nube: ["nube", "Hay uno más nuevo en tu nube"], "los-dos": ["aviso", "Cambió en dos aparatos"],
 };
 
+let turnoInicio = 0, enCamino = 0;
+/** ¿Ya se está armando una pantalla de inicio? (así no se arman dos a la vez) */
+export const inicioEnCamino = () => enCamino > 0;
 export async function pantallaInicio(app, { cerrable = false, a = "", tipo: tipo0 = "pagina", sobreMenu = false } = {}) {
   quitarInicio();
-  const lista = await listar().catch(() => []);
+  const vez = ++turnoInicio;
+  enCamino++;
+  const lista = await listar().catch(() => []).finally(() => { enCamino--; });
+  if (vez !== turnoInicio) return null;   // (alguien pidió otra mientras tanto: gana la última)
   const borradores = el("section.ed-inicio-borradores");
   const formato = el("select.ed-sel", {}, Object.entries(FORMATOS).map(([k, f]) => el("option", { value: k, text: f.auto ? f.n : `${f.n} · ${f.w}×${f.h}` })));
   formato.value = "movil";
@@ -202,11 +208,12 @@ export async function pantallaInicio(app, { cerrable = false, a = "", tipo: tipo
   })();
   const capa = el("div.ed-inicio" + (respaldo ? ".respaldo" : "") + (sobreMenu ? ".sobre-menu" : ""), { role: "dialog", "aria-label": respaldo ? "Mis libritos" : "Crear detallito" }, [
     el("div.ed-inicio-caja", {}, [
+      // (Fase 52) «Volver» en lugar de la ×: te regresa al menú principal (nunca al editor).
+      el("button.ed-inicio-volver", { type: "button", html: `${ico("izquierda")}<span>Volver</span>`, onClick: () => { cerrar(true); if (!sobreMenu) app.salida?.alMenu?.(); } }),
       el("header", {}, [
         respaldo
           ? el("div", {}, [el("h1", { text: "Mis libritos" }), el("p", { text: "Tus borradores y sus copias de seguridad: guarda todo en un archivo o tráelo de vuelta." })])
           : el("div", {}, [el("h1", { text: "Crear detallito" }), el("p", { text: "Elige qué vas a hacer, ponle nombre y listo: lo demás lo decides en el editor." })]),
-        cerrable ? el("button.ed-x", { type: "button", html: ico("cerrar"), "aria-label": "Cerrar", onClick: () => cerrar(true) }) : null,
       ]),
       respaldo ? el("section.ed-inicio-nuevo", {}, [
         el("div.ed-tarjeta", {}, [

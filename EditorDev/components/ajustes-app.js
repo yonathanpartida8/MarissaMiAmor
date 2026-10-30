@@ -42,8 +42,17 @@ export function vistaAjustes(app, { alVolver }) {
   const con = (n) => { vivos.push(n); return n; };
   const sonar = () => SE?.sonar("seleccionar");
 
-  const modo = con(segmentos("Rendimiento", [["equilibrado", "Normal"], ["ultra", "Ultra Rendimiento"]], () => (PREF.modo === "ultra" ? "ultra" : "equilibrado"),
-    (v) => { poner({ modo: v }); sonar(); aviso(v === "ultra" ? "Ultra Rendimiento prendido: todo más ligero y rapidito" : "Rendimiento normal: con todos sus brillitos", 2600); }));
+  // (Fase 52) Los cuatro modos: Ultra rendimiento, Rendimiento, Equilibrado y Calidad.
+  const DESC = {
+    ultra: "Ultra rendimiento: animaciones cortitas y sencillas, sin desenfoques, brillitos ni transparencias, y los adornos se quedan quietos casi de inmediato. Para teléfonos sencillos.",
+    rendimiento: "Rendimiento: menos movimiento y sin brillitos; los adornos descansan pronto. Más batería.",
+    equilibrado: "Equilibrado: todo bonito y fluido, cuidando la batería (lo recomendado).",
+    calidad: "Calidad: todo al máximo (brillitos, efectos y adornos que se mueven más tiempo). Gasta un poco más.",
+  };
+  const descModo = el("small", { text: DESC[PREF.modo] || DESC.equilibrado });
+  const modo = con(segmentos("Rendimiento", [["ultra", "Ultra rendimiento"], ["rendimiento", "Rendimiento"], ["equilibrado", "Equilibrado"], ["calidad", "Calidad"]], () => (DESC[PREF.modo] ? PREF.modo : "equilibrado"),
+    (v) => { poner({ modo: v }); sonar(); descModo.textContent = DESC[v]; aviso({ ultra: "Ultra rendimiento prendido: todo más ligero", rendimiento: "Modo rendimiento: más batería", equilibrado: "Modo equilibrado", calidad: "Modo calidad: todo al máximo" }[v], 2400); }));
+  modo.classList.add("cuatro");
   const mov = con(segmentos("Animaciones", [["completo", "Completas"], ["reducido", "Suaves"], ["nada", "Sin movimiento"]], () => PREF.movimiento, (v) => { poner({ movimiento: v }); sonar(); }));
   const tema = con(segmentos("Tema", [["auto", "Como el teléfono"], ["claro", "Claro"], ["oscuro", "Oscuro"]], () => PREF.tema, (v) => { poner({ tema: v }); sonar(); }));
   const tam = con(segmentos("Tamaño", [[0.9, "Chico"], [1, "Normal"], [1.12, "Grande"]], () => PREF.escala, (v) => { poner({ escala: v }); sonar(); }));
@@ -68,7 +77,7 @@ export function vistaAjustes(app, { alVolver }) {
     el("div.mp-perfil-cab", { style: { "--i": 0 } }, [el("button.mp-volver", { type: "button", html: `${ico("izquierda")}<span>Volver</span>`, onClick: () => alVolver() }), el("h2", { text: "Configuración" })]),
     el("p.mp-aj-intro", { style: { "--i": 1 }, text: "Cómo se ve, se oye y se siente My Love Pages en este aparato." }),
     grupo(2, "rayo", "Rendimiento", [
-      fila("Modo", "Ultra Rendimiento: las animaciones siguen, pero cortitas y sencillas; sin desenfoques ni brillitos. Ideal para teléfonos sencillos.", modo),
+      el("div.mp-aj-fila.modo", {}, [el("div.mp-aj-t", {}, [el("b", { text: "Modo" }), descModo]), modo]),
     ], ".destacado"),
     grupo(3, "sonido", "Sonidos", [
       fila("Sonidos de la app", "Toques, avisos y mensajitos", con(interruptor("Sonidos de la app", () => SE?.pref.on, (on) => { SE?.ponerPref({ on }); if (on) sonar(); }))),

@@ -3012,3 +3012,9 @@ body.ed-ultra .ed-cosita-vuela { box-shadow: none; transition: none; }
 .ed-pestana::before { content: ""; position: absolute; top: -18px; bottom: -18px; left: 0; width: 44px; }   /* el dedo atina aunque sea delgadita */
 .ed-pestana i { width: 3px; border-radius: 3px; }
 .ed-pestana:active { width: 22px; transition: width .12s; }
+/* Fase 52: «Volver» arriba de Crear detallito y Mis libritos (regresa al menú principal). */
+.ed-inicio-volver { display: inline-flex; align-items: center; gap: 5px; margin: 0 0 8px -4px; padding: 9px 15px 9px 10px; border: 0; border-radius: 99px; background: #fff; color: #c2336b; font: 700 15px/1 Jost, system-ui, sans-serif; box-shadow: 0 4px 14px rgba(190, 60, 110, .16), inset 0 0 0 1.5px #f6c6d8; cursor: pointer; }
+.ed-inicio-volver .ed-ico { width: 19px; height: 19px; }
+.ed-inicio-volver:active { transform: scale(.95); }
+:root[data-tema="oscuro"] .ed-inicio-volver { background: #43303f; color: #ffc0d9; box-shadow: inset 0 0 0 1.5px #64465b; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .ed-inicio-volver { background: #43303f; color: #ffc0d9; box-shadow: inset 0 0 0 1.5px #64465b; } }

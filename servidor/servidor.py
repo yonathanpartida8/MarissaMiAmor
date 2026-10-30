@@ -68,7 +68,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.22.0"
+VERSION = "1.24.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -542,6 +542,8 @@ CREATE TABLE IF NOT EXISTS lugares(id INTEGER PRIMARY KEY AUTOINCREMENT, a INTEG
   radio REAL, avisar TEXT, alertas INTEGER DEFAULT 1, creado REAL);
 CREATE TABLE IF NOT EXISTS lugares_estado(lugar_id INTEGER, usuario_id INTEGER, dentro INTEGER, t REAL, PRIMARY KEY(lugar_id, usuario_id));
 CREATE TABLE IF NOT EXISTS lugares_eventos(id INTEGER PRIMARY KEY AUTOINCREMENT, lugar_id INTEGER, usuario_id INTEGER, tipo TEXT, t REAL);
+CREATE TABLE IF NOT EXISTS casitas(a INTEGER, b INTEGER, datos TEXT, t REAL, PRIMARY KEY(a, b));
+CREATE TABLE IF NOT EXISTS monitos(usuario_id INTEGER PRIMARY KEY, datos TEXT, t REAL);
 CREATE TABLE IF NOT EXISTS toques(id INTEGER PRIMARY KEY AUTOINCREMENT, de INTEGER, para INTEGER, tipo TEXT, texto TEXT, t REAL, visto REAL);
 CREATE INDEX IF NOT EXISTS toques_para ON toques(para, visto);
 CREATE TABLE IF NOT EXISTS mes_cosas(id INTEGER PRIMARY KEY AUTOINCREMENT, a INTEGER, b INTEGER, mes INTEGER, tipo TEXT, autor INTEGER,
@@ -557,7 +559,8 @@ COLUMNAS_NUEVAS = {
     "detallitos": [("reaccion", "TEXT"), ("reaccion_t", "REAL"), ("reaccion_vista", "INTEGER DEFAULT 1"), ("portadita", "TEXT"),
                    ("tipo", "TEXT DEFAULT 'pagina'")],   # Fase 47: «pagina» o «dibujito»
     # Fase 31: espacios en blanco para dibujar (sin mandar mensaje) y si dejas ver tu «visto».
-    "mensajes": [("espacio", "INTEGER"), ("audio", "TEXT"), ("editado", "REAL")],
+    "mensajes": [("espacio", "INTEGER"), ("audio", "TEXT"), ("editado", "REAL"),
+                 ("respuesta", "TEXT")],   # Fase 52: a qué mensajito responde (una copita: id, de quién, texto, tipo)
     # Fase 49: muchos «te amo» de una vez (mantener presionado), qué tan enojado, zonas dibujadas en el mapa,
     # advertencias / zonas seguras y si quien comparte va quieto, caminando, en bici o en auto.
     "cositas": [("cuantos", "INTEGER DEFAULT 1"), ("nivel", "INTEGER")],
@@ -3053,7 +3056,19 @@ def fila_mensaje(m, uid, oculto=False):
             "creado": iso(m["creado"]), "visto": iso(m["visto"]) if m["visto"] and not (oculto and m["de"] == uid) else "",
             "reaccion": m["reaccion"] or "", "espacio": m.get("espacio") or 0,
             "audio": json.loads(m["audio"]) if m.get("audio") else None, "editado": iso(m["editado"]) if m.get("editado") else "",
-            "stickers": [{k: v for k, v in x.items() if k != "de"} | {"mio": x.get("de") == uid} for x in st]}
+            "stickers": [{k: v for k, v in x.items() if k != "de"} | {"mio": x.get("de") == uid} for x in st],
+            "responde": _cita(m.get("respuesta"), uid)}
+
+
+def _cita(txt, uid):
+    """La copita del mensajito al que se responde (como en WhatsApp)."""
+    if not txt:
+        return None
+    try:
+        c = json.loads(txt)
+        return {"id": int(c["id"]), "mio": c.get("de") == uid, "texto": str(c.get("texto") or "")[:160], "tipo": str(c.get("tipo") or "texto")}
+    except (ValueError, KeyError, TypeError):
+        return None
 
 
 def fila_trazo(t, uid):
@@ -3191,7 +3206,18 @@ def api_chat_mandar(h, s):
         _uso_coleccion(uid, gif["u"])
     if E.db.uno("SELECT COUNT(*) n FROM mensajes WHERE de=? AND creado>?", uid, t - 10)["n"] >= 25:
         raise Falla("Más despacito: muchos mensajes seguidos.", 429)
-    mid = _x_ya("INSERT INTO mensajes(de, para, texto, gif, audio, creado, actualizado) VALUES(?,?,?,?,?,?,?)", uid, p, texto, json.dumps(gif) if gif else None, json.dumps(audio) if audio else None, AHORA, AHORA)
+    # Responder a un mensajito (Fase 52): se guarda una copita (así se ve aunque luego cambie).
+    respuesta = None
+    if d.get("responde"):
+        try:
+            o = E.db.uno("SELECT * FROM mensajes WHERE id=? AND borrado=0 AND ((de=? AND para=?) OR (de=? AND para=?))", int(d["responde"]), uid, p, p, uid)
+        except (TypeError, ValueError):
+            o = None
+        if o:
+            g = json.loads(o["gif"]) if o["gif"] else None
+            tipo = "audio" if o.get("audio") else "sticker" if g and g.get("s") else "foto" if g and g.get("f") else "gif" if g else "texto"
+            respuesta = json.dumps({"id": o["id"], "de": o["de"], "texto": (o["texto"] or "")[:160], "tipo": tipo}, ensure_ascii=False)
+    mid = _x_ya("INSERT INTO mensajes(de, para, texto, gif, audio, creado, actualizado, respuesta) VALUES(?,?,?,?,?,?,?,?)", uid, p, texto, json.dumps(gif) if gif else None, json.dumps(audio) if audio else None, AHORA, AHORA, respuesta)
     _chat_cambio()
     if not mirando_chat(p):
         sin_leer = E.db.uno("SELECT COUNT(*) n FROM mensajes WHERE para=? AND visto IS NULL AND borrado=0", p)["n"]
@@ -4437,6 +4463,105 @@ def api_cositas_ajustes(h, s):
 
 
 # — Ubicación compartida (sólo si tú la compartes, y se borra al dejar de compartirla) —
+# — Nuestra casita (Fase 52): la casa de los dos (cómo la decoraron) y cada monito (su ropa, dónde está y qué
+# hace). Se ve en tiempo real: quien mira espera (hasta 25 s) a que algo cambie, como en el chat. —
+CASA_AVISO = threading.Condition()
+CASA_V = {}
+ACCIONES_MONITO = ("", "sentado", "dormido", "banando", "columpio", "comiendo", "abrazo", "saluda", "tele", "cocinando")
+
+
+def _casa_cambio(a, b):
+    with CASA_AVISO:
+        CASA_V[(a, b)] = CASA_V.get((a, b), 0) + 1
+        CASA_AVISO.notify_all()
+
+
+def _json_chico(v, maximo, nombre):
+    try:
+        t = json.dumps(v, ensure_ascii=False, separators=(",", ":"))
+    except (TypeError, ValueError):
+        raise Falla(f"{nombre} no es válido.", 400)
+    if len(t) > maximo:
+        raise Falla(f"{nombre} es demasiado grande.", 413)
+    return t
+
+
+def _monito_limpio(d, antes):
+    """Lo que puede cambiar de tu monito: dónde está (x en la casa), hacia dónde mira, qué hace, en qué
+    mueble y su ropa (un diccionario chiquito de textos)."""
+    m = dict(antes or {})
+    if "x" in d:
+        m["x"] = round(_num(d.get("x"), 0, 5000, "La posición"), 1)
+    if "mira" in d:
+        m["mira"] = -1 if d.get("mira") == -1 else 1
+    if "accion" in d:
+        m["accion"] = d.get("accion") if d.get("accion") in ACCIONES_MONITO else ""
+    if "mueble" in d:
+        m["mueble"] = str(d.get("mueble") or "")[:24]
+    if "ropa" in d and isinstance(d.get("ropa"), dict):
+        m["ropa"] = {str(k)[:16]: str(v)[:24] for k, v in list(d["ropa"].items())[:16]}
+    if "dice" in d:
+        m["dice"] = str(d.get("dice") or "")[:60]
+        m["dt"] = ahora()
+    m["t"] = ahora()
+    return m
+
+
+@ruta("GET", "/api/casita", "sesion")
+def api_casita(h, s):
+    """La casita y los dos monitos. Con `v` (la versión que ya tienes) y `espera`, contesta cuando algo cambie."""
+    a, b, otro = _par(s)
+    uid = s["usuario_id"]
+    q = h.parametros()
+    try:
+        v = int(q.get("v") or -1)
+        espera = max(0.0, min(25.0, float(q.get("espera") or 0)))
+    except ValueError:
+        raise Falla("Parámetros no válidos.", 400)
+    fin = time.monotonic() + espera
+    CASA_MIRANDO[uid] = time.time() + espera
+    with CASA_AVISO:
+        while CASA_V.get((a, b), 0) == v and time.monotonic() < fin:
+            CASA_AVISO.wait(fin - time.monotonic())
+        vv = CASA_V.get((a, b), 0)
+    casa = E.db.uno("SELECT datos FROM casitas WHERE a=? AND b=?", a, b)
+    yo = E.db.uno("SELECT datos FROM monitos WHERE usuario_id=?", uid)
+    pa = E.db.uno("SELECT datos FROM monitos WHERE usuario_id=?", otro)
+    h.responder(200, {"v": vv, "casa": json.loads(casa["datos"]) if casa else None,
+                      "yo": json.loads(yo["datos"]) if yo else None, "pareja": json.loads(pa["datos"]) if pa else None,
+                      "pareja_aqui": time.time() - CASA_MIRANDO.get(otro, 0) < 40})
+
+
+CASA_MIRANDO = {}
+
+
+@ruta("PUT", "/api/casita/yo", "sesion")
+def api_casita_yo(h, s):
+    """Tu monito: a dónde caminó, qué está haciendo o su ropa nueva."""
+    a, b, _ = _par(s)
+    uid = s["usuario_id"]
+    d = h.cuerpo_json()
+    antes = E.db.uno("SELECT datos FROM monitos WHERE usuario_id=?", uid)
+    m = _monito_limpio(d, json.loads(antes["datos"]) if antes else None)
+    E.db.x("INSERT INTO monitos(usuario_id, datos, t) VALUES(?,?,?) ON CONFLICT(usuario_id) DO UPDATE SET datos=excluded.datos, t=excluded.t", uid, _json_chico(m, 4000, "Tu monito"), ahora())
+    CASA_MIRANDO[uid] = time.time()
+    _casa_cambio(a, b)
+    h.responder(200, {"yo": m})
+
+
+@ruta("PUT", "/api/casita/casa", "sesion")
+def api_casita_casa(h, s):
+    """Cómo decoraron la casa (colores de cada cuarto, sus cositas y sus luces). La pueden cambiar los dos."""
+    a, b, _ = _par(s)
+    d = h.cuerpo_json()
+    casa = d.get("casa")
+    if not isinstance(casa, dict):
+        raise Falla("La casita no es válida.", 400)
+    E.db.x("INSERT INTO casitas(a, b, datos, t) VALUES(?,?,?,?) ON CONFLICT(a, b) DO UPDATE SET datos=excluded.datos, t=excluded.t", a, b, _json_chico(casa, 60000, "La casita"), ahora())
+    _casa_cambio(a, b)
+    h.responder(200, {"ok": True})
+
+
 LUGARES_MAX = 20
 CLASES_LUGAR = ("lugar", "aviso", "segura")
 MODOS = ("quieto", "caminando", "bici", "auto")

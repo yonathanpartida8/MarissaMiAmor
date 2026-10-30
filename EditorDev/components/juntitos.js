@@ -24,7 +24,7 @@
  * Mesecitos es nuevo: su anillo del mes con los cumpleaños debajo, sus meses como fotitos, su momento
  * favorito del mes, la cápsula del tiempo (sellada hasta su día) y los planes para celebrar (servidor 1.19.0).
  */
-import { el, aviso, confirmar } from "./ui.js";
+import { el, aviso, confirmar, jalarParaCerrar } from "./ui.js";
 import { ico } from "./iconos.js";
 import * as SRV from "../integraciones/servidor.js";
 import * as PF from "./perfil.js";
@@ -104,7 +104,6 @@ const PROMESA = svg('<path d="M9.5 18.5c-2-1.6-3.2-3.6-3.2-5.6a3.6 3.6 0 0 1 6.4
 /** Fase 46: la barrita de abajo (lo que antes eran los botones cuadrados de la hojita). */
 const PESTANAS = ["inicio", "cositas", "mesecitos", "dibujar"];
 const PRONTO = [
-  ["casita", "Nuestra casita", "durazno", "Una casita de los dos para decorar juntitos, cuarto por cuarto, con sus fotos y sus cosas."],
   ["promesa", "Promesa", "cielo", "Sus promesas de amor, guardaditas con su fecha, para cumplirlas y recordarlas."],
 ];
 const TITULOS = { cositas: "Cositas Juntitos", mesecitos: "Mesecitos", dibujar: "Dibujar Juntos", casita: "Nuestra casita", promesa: "Promesa" };
@@ -224,6 +223,8 @@ export class Juntitos {
     this.secPanel = el("section.jt-secpanel", { role: "dialog", "aria-modal": "true" }, [el("header.jt-cab", {}, [el("button.jt-atras", { type: "button", "aria-label": "Volver al mapa", html: ico("izquierda"), onClick: () => this.inicio() }), this.secTit, this.accion]), this.vista]);
     this.velo = el("div.jt-velo", { onClick: () => this._cerrarHoja() });
     this.hojaEl = el("section.jt-hoja", { role: "dialog", "aria-modal": "true" });
+    // (Fase 52: la pestañita de arriba ya se jala hacia abajo para cerrar la hojita.)
+    jalarParaCerrar(this.hojaEl, () => this._cerrarHoja(), { asa: ".jt-hoja-asa" });
     // Fase 46: la barrita de abajo, siempre a la mano (cambia de sección sin volver al mapa).
     const icono = { inicio: MAPA, cositas: ICONOS.teamo, mesecitos: CALENDARIO, dibujar: PINCEL };
     this.nav = el("nav.jt-nav.v46", { "aria-label": "Secciones" }, PESTANAS.map((k) => el("button.jt-tab", { type: "button", dataset: { k }, onClick: () => (k === "inicio" ? this._alMapa() : this.ir(k)) },
@@ -273,6 +274,7 @@ export class Juntitos {
   atras() {
     if (this._finZona) { this._finZona(); return true; }
     if (this.hojaEl?.classList.contains("ver")) { this._cerrarHoja(); return true; }
+    if (this.dj?.atras?.()) return true;
     const carta = this.capa?.querySelector(".jt-carta-mes:not(.fuera)");
     if (carta) { carta.querySelector(".jt-x")?.click(); return true; }
     if (this.tab !== "inicio") { this.inicio(); return true; }
@@ -304,7 +306,7 @@ export class Juntitos {
     this.vista.scrollTop = 0;
     this.vista.replaceChildren(el("p.jt-cargando", { text: "Un momentito…" }));
     this.secPanel.classList.add("ver");
-    ({ cositas: () => this._cositas(), mesecitos: () => this._mesecitos(), dibujar: () => this._dibujar(), casita: () => this._pronto("casita"), promesa: () => this._pronto("promesa") })[tab]?.();
+    ({ cositas: () => this._cositas(), mesecitos: () => this._mesecitos(), dibujar: () => this._dibujar(), casita: () => this._casita(), promesa: () => this._pronto("promesa") })[tab]?.();
   }
 
   /** La barrita: cuál está elegida (la pastillita se desliza hasta ella). */
@@ -336,7 +338,7 @@ export class Juntitos {
   _pronto(k) {
     const x = PRONTO.find((y) => y[0] === k);
     this.vista.replaceChildren(el("div.jt-pronto-pag", {}, [
-      el("div.jt-pronto-ico." + x[2], { html: k === "casita" ? CASITA : PROMESA }),
+      el("div.jt-pronto-ico." + x[2], { html: PROMESA }),
       el("h1", { text: x[1] }),
       el("span.jt-pronto-tag", { text: "En construcción" }),
       el("p", { text: x[3] }),
@@ -529,7 +531,9 @@ export class Juntitos {
       el("div.jt-rejilla", {}, COSAS.map((c) => { const n = this._carta(c); this.cartas.set(c.t, n); return n; })),
       el("p.jt-nota", { text: `Todo lo tuyo lo ve ${nombre} y todo lo suyo lo ves tú: así se comparan. «Te extraño» y «Te amo» le llegan al momento, con cuántos le mandaste.` }),
       // (Lo que viene, chiquito y aparte: antes vivía en la hojita del mapa.)
-      el("div.jt-pronto-fila", {}, [el("small", { text: "Pronto" }), ...PRONTO.map((x) => el("button.jt-pronto-b", { type: "button", dataset: { k: x[0] }, onClick: () => this.ir(x[0]) }, [el("i", { html: x[0] === "casita" ? CASITA : PROMESA }), el("span", { text: x[1] })]))]),
+      // (Fase 52: Nuestra casita ya está lista: un jueguito de los dos.)
+      el("button.jt-casita-b", { type: "button", onClick: () => this.ir("casita") }, [el("i", { html: CASITA }), el("span", {}, [el("b", { text: "Nuestra casita" }), el("small", { text: "Su casita para jugar juntitos: vístanse, decoren y paseen por los cuartos" })]), el("em", { text: "Nuevo" })]),
+      el("div.jt-pronto-fila", {}, [el("small", { text: "Pronto" }), ...PRONTO.map((x) => el("button.jt-pronto-b", { type: "button", dataset: { k: x[0] }, onClick: () => this.ir(x[0]) }, [el("i", { html: PROMESA }), el("span", { text: x[1] })]))]),
     ].filter(Boolean));
     for (const c of COSAS) this._pintarCarta(c);
   }
@@ -1344,5 +1348,16 @@ export class Juntitos {
       this.dj = new DibujoJuntos(this.app, { pareja: this.pareja, hoja: (t, h) => this._hoja(t, h), cerrarHoja: () => this._cerrarHoja() });
       this.dj.montar(vista);
     }).catch((e) => aviso("No se pudo abrir Dibujar juntos: " + e.message, 4000, "error"));
+  }
+
+  /* ════ Nuestra casita (Fase 52): se carga hasta que la abres, como Dibujar juntos ════ */
+  _casita() {
+    if (!PF.datos().pareja) { this.vista.replaceChildren(el("div.jt-vacio", {}, [el("b", { text: "Para jugar en su casita" }), el("p", { text: "Primero vincúlate con tu amorcito (en el menú principal)." })])); return; }
+    const vista = this.vista, vez = (this._vezDj = {});
+    import("./casita.js").then(({ Casita }) => {
+      if (this._vezDj !== vez || !this.abierto || !vista.isConnected || this.tab !== "casita") return;
+      this.dj = new Casita(this.app, { pareja: this.pareja });
+      this.dj.montar(vista);
+    }).catch((e) => aviso("No se pudo abrir su casita: " + e.message, 4000, "error"));
   }
 }

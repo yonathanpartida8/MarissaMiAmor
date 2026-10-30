@@ -760,3 +760,6 @@ body.ed-ultra .jt-carta-cacas i { animation: none; }
 /* Fase 51: el texto encima del «líquido» siempre se lee (un halito del color de la tarjeta). */
 .jt-carta.con-liquido :is(.jt-carta-num, .jt-carta-n) { text-shadow: 0 0 3px var(--c), 0 0 8px var(--c), 0 0 1px var(--c); }
 .jt-carta-liquido { opacity: .85; }
+/* Fase 52: la pestañita de la hojita se agarra fácil (zona ancha) y se jala hacia abajo para cerrar. */
+.jt-hoja-asa { position: relative; width: 100%; height: 22px; margin: -6px 0 -4px; background: none; touch-action: none; cursor: grab; }
+.jt-hoja-asa::before { content: ""; position: absolute; left: 50%; top: 8px; width: 42px; height: 5px; margin-left: -21px; border-radius: 99px; background: var(--jt-linea); }

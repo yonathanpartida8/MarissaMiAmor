@@ -1,0 +1,286 @@
+/* ═══════════ NUESTRA CASITA (Fase 52): el jueguito de los dos ═══════════
+   El mundo mide 420 × 560 por cuarto y se escala con transform (el alto manda). Todo lo que se mueve es
+   transform/opacity; las animaciones infinitas se apagan en Ultra rendimiento y con movimiento reducido. */
+.jt-capa[data-tab="casita"] .jt-vista { display: flex; flex-direction: column; overflow: hidden; padding: 0 0 calc(84px + env(safe-area-inset-bottom, 0px)); }
+.jt-capa.v46[data-tab="casita"] .jt-vista { padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 980px) { .jt-capa[data-tab="casita"] .jt-vista { padding-left: 0; padding-right: 0; } }
+
+/* El botón grande en Cositas (ya no es «Pronto»). */
+.jt-casita-b { display: flex; align-items: center; gap: 12px; width: 100%; margin: 4px 0 14px; padding: 12px 14px; border: 0; border-radius: 20px; text-align: left; cursor: pointer;
+  background: linear-gradient(135deg, #ffe7d6, #ffe0ec 60%, #efe4ff); color: #5a3550; box-shadow: var(--jt-sombra); }
+.jt-casita-b > i { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: #fff; color: #e5679a; }
+.jt-casita-b > i svg { width: 26px; height: 26px; }
+.jt-casita-b > span { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.jt-casita-b b { font: 800 15px/1.15 "Nunito", sans-serif; }
+.jt-casita-b small { font: 600 12px/1.3 "Nunito", sans-serif; color: #8a6480; }
+.jt-casita-b em { flex: none; font: 800 11px/1 "Nunito", sans-serif; font-style: normal; letter-spacing: .04em; padding: 5px 9px; border-radius: 99px; background: #e5679a; color: #fff; }
+.jt-casita-b:active { transform: scale(.98); }
+:root[data-tema="oscuro"] .jt-casita-b { background: linear-gradient(135deg, #3a2a2e, #3c2433 60%, #31274a); color: #f6e9f1; }
+:root[data-tema="oscuro"] .jt-casita-b small { color: #c9b3c4; }
+:root[data-tema="oscuro"] .jt-casita-b > i { background: #2a2130; color: #ff9cc4; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) .jt-casita-b { background: linear-gradient(135deg, #3a2a2e, #3c2433 60%, #31274a); color: #f6e9f1; }
+  :root:not([data-tema="claro"]) .jt-casita-b small { color: #c9b3c4; }
+  :root:not([data-tema="claro"]) .jt-casita-b > i { background: #2a2130; color: #ff9cc4; }
+}
+
+/* ── El marco ── */
+.ca { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding-top: 2px; }
+.ca-barra { display: flex; align-items: center; gap: 6px; padding: 0 12px; }
+.ca-titulo { font: 800 16px/1 "Nunito", sans-serif; color: var(--jt-tinta); }
+.ca-hueco { flex: 1; }
+.ca-b { display: inline-flex; align-items: center; gap: 5px; height: 36px; padding: 0 12px 0 9px; border: 0; border-radius: 99px; background: var(--jt-papel); color: var(--jt-acento); font: 800 13px/1 "Nunito", sans-serif; box-shadow: var(--jt-sombra); cursor: pointer; }
+.ca-b i { display: grid; place-items: center; }
+.ca-b i svg { width: 18px; height: 18px; }
+.ca-b:active { transform: scale(.95); }
+@media (max-width: 380px) { .ca-b span { display: none; } .ca-b { width: 38px; padding: 0; justify-content: center; } }
+
+.ca-vista { position: relative; flex: 1; min-height: 0; margin: 0 8px; display: flex; align-items: flex-end; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; border-radius: 24px; background: linear-gradient(#f3e4f0, #f9eef2); touch-action: pan-x; }
+.ca-vista::-webkit-scrollbar { display: none; }
+.ca-lienzo { position: relative; flex: none; }
+.ca-mundo { position: absolute; left: 0; top: 0; transform-origin: 0 0; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; contain: layout; }
+
+.ca-tabs { display: flex; gap: 4px; padding: 0 8px; overflow-x: auto; scrollbar-width: none; }
+.ca-tabs::-webkit-scrollbar { display: none; }
+.ca-tab { flex: 1; min-width: 60px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 4px; border: 0; border-radius: 14px; background: transparent; color: var(--jt-suave); font: 700 11px/1 "Nunito", sans-serif; cursor: pointer; transition: background-color .2s, color .2s; }
+.ca-tab i svg { width: 20px; height: 20px; }
+.ca-tab.on { background: var(--jt-rosa); color: var(--jt-rosa-t); }
+.ca-estado { display: block; text-align: center; padding: 0 12px; font: 600 11.5px/1.2 "Nunito", sans-serif; color: var(--jt-suave); }
+
+/* ── Los cuartos ── */
+.ca-cuarto { position: absolute; top: 0; overflow: hidden; z-index: 0; --pared: #ffe1ec; }
+.ca-pared { position: absolute; left: 0; right: 0; top: 0; height: 452px; background-color: var(--pared); }
+.ca-cuarto[data-patron="rayas"] .ca-pared { background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, .4) 0 16px, transparent 16px 36px); }
+.ca-cuarto[data-patron="puntos"] .ca-pared { background-image: radial-gradient(rgba(255, 255, 255, .7) 3px, transparent 3.6px); background-size: 28px 28px; }
+.ca-cuarto[data-patron="corazones"] .ca-pared { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cpath d='M22 30c-6-4-9-7-9-10a4.5 4.5 0 0 1 9-2 4.5 4.5 0 0 1 9 2c0 3-3 6-9 10z' fill='white' fill-opacity='.55'/%3E%3C/svg%3E"); background-size: 44px 44px; }
+.ca-zoclo { position: absolute; left: 0; right: 0; top: 442px; height: 12px; background: #fffaf7; box-shadow: 0 2px 0 rgba(90, 40, 70, .06); }
+.ca-piso { position: absolute; left: 0; right: 0; top: 452px; bottom: 0; background: #e2b98f; }
+.ca-piso::before { content: ""; position: absolute; inset: 0 0 auto; height: 16px; background: linear-gradient(rgba(90, 40, 60, .12), transparent); }
+.ca-cuarto[data-piso="madera"] .ca-piso { background: repeating-linear-gradient(90deg, #e6bf96 0 62px, #d4a77b 62px 64px), #e6bf96; }
+.ca-cuarto[data-piso="mosaico"] .ca-piso { background: conic-gradient(#ffffff 25%, #dcefff 0 50%, #ffffff 0 75%, #dcefff 0) 0 0 / 36px 36px; }
+.ca-cuarto[data-piso="alfombra"] .ca-piso { background: radial-gradient(rgba(255, 255, 255, .55) 2px, transparent 2.6px) 0 0 / 18px 18px, #f6c6d8; }
+.ca-cuarto[data-piso="pasto"] .ca-piso { background: radial-gradient(rgba(255, 255, 255, .25) 2px, transparent 2.6px) 0 0 / 22px 22px, linear-gradient(#a3e3ae, #7fd29b); }
+/* Las paredes entre cuartos (una columnita blanca). */
+.ca-cuarto:not(.jardin)::before { content: ""; position: absolute; left: 0; top: 0; width: 10px; height: 452px; z-index: 1; background: linear-gradient(90deg, #fff, #f6e9ee); box-shadow: 2px 0 6px rgba(90, 40, 70, .08); }
+.ca-sombras { display: none; }
+
+/* El jardín: cielo, sol o luna, nubes, cerca y la casita por fuera. */
+.ca-cielo { position: absolute; left: 0; right: 0; top: 0; height: 452px; background: linear-gradient(#93d3ff, #e3f5ff); transition: background .8s; }
+.ca-cuarto.jardin .ca-pared { display: none; }
+.ca-sol { position: absolute; right: 150px; top: 46px; width: 58px; height: 58px; border-radius: 50%; background: #ffe17a; box-shadow: 0 0 0 12px rgba(255, 225, 122, .28); }
+.ca-nube { position: absolute; width: 92px; height: 30px; border-radius: 30px; background: #fff; opacity: .95; animation: caNube 46s linear infinite alternate; }
+.ca-nube::before, .ca-nube::after { content: ""; position: absolute; border-radius: 50%; background: inherit; }
+.ca-nube::before { width: 40px; height: 40px; left: 16px; top: -20px; }
+.ca-nube::after { width: 30px; height: 30px; left: 46px; top: -12px; }
+.ca-nube.n1 { left: 20px; top: 70px; }
+.ca-nube.n2 { left: 210px; top: 130px; transform: scale(.7); animation-duration: 60s; }
+.ca-nube.n3 { left: 100px; top: 210px; transform: scale(.55); animation-duration: 38s; }
+.ca-estrellas { position: absolute; inset: 0; opacity: 0; transition: opacity 1s;
+  background-image: radial-gradient(2px 2px at 12% 20%, #fff 50%, transparent 55%), radial-gradient(2px 2px at 30% 8%, #fff 50%, transparent 55%), radial-gradient(1.6px 1.6px at 48% 28%, #fff 50%, transparent 55%), radial-gradient(2px 2px at 66% 14%, #fff 50%, transparent 55%), radial-gradient(1.6px 1.6px at 82% 30%, #fff 50%, transparent 55%), radial-gradient(2px 2px at 22% 42%, #fff 50%, transparent 55%), radial-gradient(1.6px 1.6px at 58% 48%, #fff 50%, transparent 55%), radial-gradient(2px 2px at 90% 10%, #fff 50%, transparent 55%); }
+.ca-cerca { position: absolute; left: 0; top: 392px; width: 420px; height: 70px; }
+.ca-cerca svg { display: block; width: 100%; height: 100%; }
+.ca-fachada { position: absolute; left: 318px; top: 196px; width: 110px; height: 258px; background: repeating-linear-gradient(0deg, #ffd6e2 0 22px, #ffcbdb 22px 24px); border-radius: 6px 0 0 0; box-shadow: inset 6px 0 0 rgba(255, 255, 255, .5); }
+.ca-techo { position: absolute; left: -22px; top: -58px; width: 0; height: 0; border-style: solid; border-width: 0 0 62px 140px; border-color: transparent transparent #ff86b0 transparent; }
+.ca-fachada-ventana { position: absolute; left: 34px; top: 22px; width: 44px; height: 44px; border-radius: 50%; border: 6px solid #fff; background: #bfe6ff; }
+
+/* Las ventanas: tocar abre o cierra las cortinas. */
+.ca-ventana { position: absolute; top: 108px; width: 140px; height: 150px; padding: 0; border: 10px solid #fff; border-radius: 70px 70px 14px 14px; overflow: hidden; background: none; cursor: pointer;
+  box-shadow: 0 8px 0 -2px #f3dfe6, 0 10px 18px rgba(120, 60, 90, .12); -webkit-tap-highlight-color: transparent; }
+.ca-ventana-cielo { position: absolute; inset: 0; background: linear-gradient(#93d3ff, #e3f5ff); transition: background .8s; }
+.ca-ventana .ca-sol { right: 16px; top: 18px; width: 28px; height: 28px; box-shadow: 0 0 0 6px rgba(255, 225, 122, .3); }
+.ca-ventana .ca-nube { left: 6px; top: 60px; transform: scale(.55); }
+.ca-ventana-cruz::before, .ca-ventana-cruz::after { content: ""; position: absolute; background: #fff; }
+.ca-ventana-cruz::before { left: calc(50% - 4px); top: 0; bottom: 0; width: 8px; }
+.ca-ventana-cruz::after { left: 0; right: 0; top: 56%; height: 8px; }
+.ca-cortina { position: absolute; top: 0; bottom: 0; width: 34%; background: repeating-linear-gradient(90deg, #ffb3cf 0 8px, #ff9cbf 8px 14px); transition: transform .5s cubic-bezier(.3, .9, .3, 1); }
+.ca-cortina.izq { left: 0; transform-origin: 0 50%; border-radius: 0 0 40% 0; }
+.ca-cortina.der { right: 0; transform-origin: 100% 50%; border-radius: 0 0 0 40%; }
+.ca-cuarto.cortinas .ca-cortina { transform: scaleX(1.5); }
+
+/* Sus fotos en la sala. */
+.ca-fotos { position: absolute; left: 44px; top: 150px; display: flex; align-items: center; gap: 4px; padding: 8px; border-radius: 14px; background: #fff; box-shadow: 0 8px 18px rgba(120, 60, 90, .14); transform: rotate(-3deg); }
+.ca-fotos .av { --tam: 44px; border-radius: 10px; box-shadow: none; font-size: 16px; }
+.ca-foto-cor { width: 12px; height: 12px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.6A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z' fill='%23ff5c93'/%3E%3C/svg%3E") center / contain no-repeat; }
+
+/* La luz de cada cuarto. */
+.ca-oscuro { position: absolute; top: 0; height: 560px; z-index: 8; pointer-events: none; background: #1c1640; opacity: 0; transition: opacity .6s; }
+.ca-mundo.noche .ca-oscuro { opacity: .1; }
+.ca-mundo.noche .ca-oscuro.jardin { opacity: .3; }
+.ca-oscuro.apagado { opacity: .32; }
+.ca-mundo.noche .ca-oscuro.apagado { opacity: .55; }
+.ca-mundo.noche .ca-cielo, .ca-mundo.noche .ca-ventana-cielo { background: linear-gradient(#25235a, #5b4c93); }
+.ca-mundo.noche .ca-estrellas { opacity: 1; }
+.ca-mundo.noche .ca-nube { opacity: .2; }
+.ca-mundo.noche .ca-sol { background: transparent; box-shadow: inset -12px 4px 0 0 #fff3c4; }
+.ca-mundo.noche .ca-fachada-ventana { background: #ffe9a8; }
+
+/* ── Los muebles ── */
+.ca-mueble { position: absolute; display: block; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: pan-x; transform-origin: 50% 100%; }
+.ca-mueble svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ca-mueble svg * { transform-box: fill-box; }
+.ca-mueble.fondo, .ca-mueble.piso, .ca-mueble.mesa, .ca-mueble.repisa, .ca-mueble.toalla, .ca-mueble.lavabo { pointer-events: none; }
+.ca-mueble:focus-visible { outline: 3px solid #e5679a; outline-offset: 4px; border-radius: 12px; }
+.ca-mueble.toque { animation: caToque .36s cubic-bezier(.3, 1.6, .5, 1); }
+.ca-mueble.baila { animation: caBaila .7s ease-in-out; }
+.ca-mueble.salta { animation: caSalta .6s cubic-bezier(.3, 1.4, .5, 1); }
+.ca-tele-show { opacity: 0; transition: opacity .3s; }
+.ca-mueble.tele.prendida .ca-tele-show { opacity: 1; }
+.ca-mueble.tele.prendida .ca-tele-pantalla { fill: #bfe6ff; }
+.ca-mueble.tele.prendida .ca-tele-show circle { transform-origin: center; animation: caTele 1.4s ease-in-out infinite alternate; }
+.ca-luz-cono { opacity: 0; transition: opacity .5s; pointer-events: none; }
+.ca-mundo.noche .ca-luz-cono { opacity: .5; }
+.ca-mueble.apagada .ca-luz-cono { opacity: 0 !important; }
+.ca-refri-puerta { transform-origin: left center; transition: transform .45s cubic-bezier(.3, .9, .3, 1); }
+.ca-mueble.refri.abierto .ca-refri-puerta, .ca-mueble.refri.con-alguien .ca-refri-puerta { transform: scaleX(.12); }
+.ca-vapor, .ca-fuego { opacity: 0; transition: opacity .3s; }
+.ca-mueble.estufa.prendida .ca-vapor, .ca-mueble.estufa.con-alguien .ca-vapor { opacity: .9; animation: caVapor 1.8s ease-in-out infinite; }
+.ca-mueble.estufa.prendida .ca-fuego, .ca-mueble.estufa.con-alguien .ca-fuego { opacity: 1; transform-origin: center; animation: caFuego .35s ease-in-out infinite alternate; }
+.ca-mueble.estufa.con-alguien .ca-olla { animation: caOlla 1s ease-in-out infinite; transform-origin: center bottom; }
+.ca-espuma { opacity: 0; transition: opacity .4s; }
+.ca-mueble.tina.con-alguien .ca-espuma { opacity: 1; animation: caEspuma 1.8s ease-in-out infinite alternate; transform-origin: center bottom; }
+.ca-mueble.columpio { transform-origin: 50% -116px; }
+.ca-mueble.columpio.con-alguien { animation: caMecer 2.6s ease-in-out infinite; }
+.ca-hojas { transform-origin: center bottom; }
+.ca-copa { transform-origin: center; }
+.ca-foquito { animation: caFoquito 1.6s ease-in-out infinite alternate; }
+.ca-foquito:nth-child(odd) { animation-delay: -.8s; }
+.ca-cobija { position: absolute; width: 140px; height: 38px; z-index: 5; pointer-events: none; border-radius: 0 6px 16px 16px; background: #ff9cbf; box-shadow: inset 0 7px 0 #ffc1d6; }
+
+/* Las cositas para decorar. */
+.ca-cositas { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.ca-cosa { position: absolute; padding: 0; border: 0; background: none; transform: translate(-50%, -50%); pointer-events: auto; touch-action: none; cursor: grab; -webkit-tap-highlight-color: transparent; }
+.ca-cosa svg { display: block; width: 100%; height: auto; overflow: visible; }
+.ca-cosa.oso { width: 60px; } .ca-cosa.globo { width: 40px; } .ca-cosa.cuadro { width: 76px; } .ca-cosa.maceta { width: 50px; }
+.ca-cosa.estrellas { width: 76px; } .ca-cosa.guirnalda { width: 160px; } .ca-cosa.gatito { width: 70px; } .ca-cosa.cojin { width: 56px; }
+.ca-cosa.globo svg { animation: caFlotar 3s ease-in-out infinite alternate; }
+
+/* ── Los monitos ── */
+.ca-monito { position: absolute; width: 0; height: 0; z-index: 6; transition-property: left, top; transition-timing-function: linear; transition-duration: 0s; }
+.ca-mono-caja { position: absolute; left: -38px; bottom: 0; width: 76px; height: 130px; transition: transform .35s cubic-bezier(.3, .9, .3, 1); }
+.ca-mono-cuerpo { width: 100%; height: 100%; }
+.ca-mono-svg { display: block; width: 100%; height: 100%; overflow: visible; transition: transform .2s; }
+.ca-mono-svg * { transform-box: view-box; }
+.ca-monito.izq .ca-mono-svg { transform: scaleX(-1); }
+.ca-ojos { transform-origin: 50px 52px; animation: caParpadeo 4.6s infinite; }
+.ca-ojos-cerrados { display: none; }
+.ca-pi { transform-origin: 43.5px 116px; transition: transform .3s; }
+.ca-pd { transform-origin: 56.5px 116px; transition: transform .3s; }
+.ca-bi, .ca-bd { transition: transform .3s; }
+.ca-mono-nombre { position: absolute; left: 0; top: 4px; transform: translateX(-50%); padding: 2px 8px; border-radius: 99px; background: rgba(255, 255, 255, .85); color: #6a4060; font: 800 11px/1.3 "Nunito", sans-serif; white-space: nowrap; pointer-events: none; transition: opacity .3s; }
+.ca-monito.pareja .ca-mono-nombre { color: #7d5bd0; }
+.ca-globo { position: absolute; left: 0; bottom: 140px; transform: translateX(-50%); max-width: 200px; padding: 7px 11px; border-radius: 16px; background: #fff; color: #4a3346; font: 800 13px/1.2 "Nunito", sans-serif; text-align: center; white-space: nowrap; box-shadow: 0 6px 16px rgba(120, 60, 90, .16); pointer-events: none; z-index: 2; }
+.ca-globo::after { content: ""; position: absolute; left: 50%; bottom: -6px; width: 12px; height: 12px; margin-left: -6px; background: inherit; transform: rotate(45deg); border-radius: 0 0 3px 0; }
+.ca-globo[hidden] { display: none; }
+.ca-globo.sale { animation: caGlobo .32s cubic-bezier(.3, 1.6, .5, 1); }
+
+/* Caminar: piernitas, bracitos y un botecito. */
+.ca-monito.camina .ca-mono-cuerpo { animation: caBote .4s ease-in-out infinite; }
+.ca-monito.camina .ca-pi { animation: caPierna .4s ease-in-out infinite alternate; }
+.ca-monito.camina .ca-pd { animation: caPierna .4s ease-in-out infinite alternate-reverse; }
+.ca-monito.camina .ca-bi { animation: caBrazo .4s ease-in-out infinite alternate-reverse; }
+.ca-monito.camina .ca-bd { animation: caBrazo .4s ease-in-out infinite alternate; }
+/* Sentado (sillón, sillas, columpio). */
+.ca-monito:is(.sentado, .columpio) .ca-pi, .ca-monito:is(.sentado, .columpio) .ca-pd { transform: scaleY(.42); }
+.ca-monito:is(.sentado, .dormido, .banando, .columpio, .cargado) .ca-sombra { display: none; }
+.ca-monito:is(.sentado, .dormido, .banando, .columpio) .ca-mono-nombre { opacity: 0; }
+.ca-monito.columpio .ca-mono-caja { transform-origin: 50% -24px; animation: caMecer 2.6s ease-in-out infinite; }
+/* Dormido: acostadito en la cama, con la cobija encima y sus z z z. */
+.ca-monito.dormido { z-index: 4; }
+.ca-monito.dormido .ca-mono-caja { transform: rotate(-90deg); }
+.ca-monito.dormido .ca-mono-cuerpo { animation: caRespira 3.2s ease-in-out infinite; }
+.ca-monito.dormido .ca-ojos { display: none; }
+.ca-monito.dormido .ca-ojos-cerrados { display: inline; }
+.ca-monito.dormido .ca-globo { bottom: 96px; left: -34px; background: transparent; box-shadow: none; color: #7d5bd0; font-style: italic; letter-spacing: .1em; animation: caZzz 2.4s ease-in-out infinite; }
+.ca-monito.dormido .ca-globo::after { display: none; }
+/* En la tina (detrás de la espuma). */
+.ca-monito.banando { z-index: 3; }
+.ca-monito.banando .ca-mono-cuerpo { animation: caRespira 2.2s ease-in-out infinite; }
+/* Comiendo, cocinando, saludando y abrazando. */
+.ca-monito.comiendo .ca-bd { animation: caComer .9s ease-in-out infinite alternate; }
+.ca-monito.comiendo .ca-boca { transform-origin: 50px 62px; animation: caMastica .45s ease-in-out infinite alternate; }
+.ca-monito.cocinando .ca-bd { animation: caRevolver .7s ease-in-out infinite alternate; }
+.ca-monito.cocinando .ca-bi { transform: rotate(40deg); }
+.ca-monito.saluda .ca-bd { animation: caSaludo .3s ease-in-out 4 alternate; }
+.ca-monito.abrazo .ca-bi { transform: rotate(70deg); }
+.ca-monito.abrazo .ca-bd { transform: rotate(-70deg); }
+.ca-monito.abrazo .ca-mono-cuerpo { animation: caBrinco .6s cubic-bezier(.3, 1.5, .5, 1); }
+/* Cargadito con el dedo. */
+.ca-monito.yo { touch-action: none; cursor: grab; }
+.ca-monito.cargado { z-index: 9; cursor: grabbing; }
+.ca-monito.cargado .ca-mono-caja { transform-origin: 50% 0; animation: caColgado .9s ease-in-out infinite alternate; }
+.ca-monito.cargado .ca-pi, .ca-monito.cargado .ca-pd { animation: caPierna .5s ease-in-out infinite alternate; }
+.ca-monito.aterriza .ca-mono-caja { animation: caAterriza .45s cubic-bezier(.3, 1.6, .5, 1); transform-origin: 50% 100%; }
+.ca-monito.ausente { opacity: .55; }
+
+.ca-corazon { position: absolute; z-index: 9; width: 18px; height: 16px; margin-left: -9px; pointer-events: none; opacity: 0; animation: caCorazon 1.8s ease-out forwards;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21s-9-5.6-9-12a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.4-9 12-9 12z' fill='%23ff5c93'/%3E%3C/svg%3E") center / contain no-repeat; }
+
+/* ── Las hojitas (vestidor, decorar, decir) ── */
+.ca-hoja { position: absolute; left: 0; right: 0; bottom: 0; z-index: 20; max-height: 74%; display: flex; flex-direction: column; border-radius: 24px 24px 0 0; background: var(--jt-papel); color: var(--jt-tinta);
+  box-shadow: 0 -10px 30px rgba(90, 40, 70, .18); transform: translateY(105%); transition: transform .28s cubic-bezier(.3, .9, .3, 1); }
+.ca-hoja.ver { transform: none; }
+.ca-hoja-asa { flex: none; display: block; height: 22px; touch-action: none; cursor: grab; }
+.ca-hoja-asa::before { content: ""; display: block; width: 44px; height: 5px; margin: 9px auto 0; border-radius: 99px; background: var(--jt-linea); background-color: rgba(140, 90, 120, .3); }
+.ca-hoja > header { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 12px 8px 18px; }
+.ca-hoja > header b { font: 800 16px/1.2 "Nunito", sans-serif; }
+.ca-hoja-x { display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--jt-rosa); color: var(--jt-rosa-t); cursor: pointer; }
+.ca-hoja-x svg { width: 18px; height: 18px; }
+.ca-vest, .ca-deco, .ca-frases { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 16px 18px; }
+.ca-vest { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 14px; align-items: start; }
+.ca-vest-vista { position: sticky; top: 0; padding: 8px 6px 0; border-radius: 18px; background: linear-gradient(#ffeef4, #fff7f4); }
+.ca-vest-vista svg { display: block; width: 100%; height: auto; }
+.ca-vest-ops, .ca-deco { display: grid; gap: 14px; }
+.ca-vest-sec { display: grid; gap: 7px; }
+.ca-vest-sec > b { font: 800 11.5px/1.2 "Nunito", sans-serif; letter-spacing: .04em; text-transform: uppercase; color: var(--jt-suave); }
+.ca-ops, .ca-frases { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+.ca-chip { height: 34px; padding: 0 13px; border: 1px solid var(--jt-linea); border-radius: 99px; background: var(--jt-papel); color: var(--jt-tinta); font: 700 13px/1 "Nunito", sans-serif; cursor: pointer; }
+.ca-chip.on { background: var(--jt-rosa); color: var(--jt-rosa-t); border-color: transparent; }
+.ca-chip:active { transform: scale(.96); }
+.ca-colores { display: flex; flex-wrap: wrap; gap: 7px; }
+.ca-color { width: 30px; height: 30px; padding: 0; border: 2px solid #fff; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px rgba(120, 70, 100, .2); cursor: pointer; }
+.ca-color.on { box-shadow: 0 0 0 2.5px var(--jt-acento); }
+.ca-cositas-ops { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.ca-cosita-b { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; min-height: 76px; padding: 8px 4px; border: 1px solid var(--jt-linea); border-radius: 16px; background: var(--jt-papel); color: var(--jt-tinta); cursor: pointer; }
+.ca-cosita-b i { display: grid; place-items: center; height: 40px; }
+.ca-cosita-b i svg { height: 40px; width: auto; max-width: 64px; }
+.ca-cosita-b small { font: 700 11px/1 "Nunito", sans-serif; }
+.ca-cosita-b:active { transform: scale(.95); }
+
+/* ── Animaciones ── */
+@keyframes caNube { to { translate: 60px 0; } }
+@keyframes caToque { 40% { transform: scale(1.06, .95); } 70% { transform: scale(.98, 1.03); } }
+@keyframes caBaila { 25% { transform: rotate(-6deg); } 50% { transform: rotate(5deg); } 75% { transform: rotate(-3deg); } }
+@keyframes caSalta { 40% { transform: translateY(-22px) rotate(-8deg); } 70% { transform: translateY(0) scale(1.08, .9); } }
+@keyframes caTele { from { transform: scale(.85); } to { transform: scale(1.15); } }
+@keyframes caVapor { 0% { transform: translateY(6px); opacity: 0; } 40% { opacity: .9; } 100% { transform: translateY(-14px); opacity: 0; } }
+@keyframes caFuego { to { transform: scale(1.3, .8); } }
+@keyframes caOlla { 50% { transform: rotate(3deg); } }
+@keyframes caEspuma { to { transform: scale(1.04, 1.12); } }
+@keyframes caMecer { 0%, 100% { transform: rotate(-11deg); } 50% { transform: rotate(11deg); } }
+@keyframes caFoquito { to { opacity: .45; } }
+@keyframes caFlotar { to { transform: translateY(-8px) rotate(3deg); } }
+@keyframes caParpadeo { 0%, 94%, 100% { transform: none; } 97% { transform: scaleY(.1); } }
+@keyframes caBote { 50% { transform: translateY(-4px); } }
+@keyframes caPierna { from { transform: rotate(-16deg); } to { transform: rotate(16deg); } }
+@keyframes caBrazo { from { transform: rotate(-18deg); } to { transform: rotate(18deg); } }
+@keyframes caRespira { 50% { transform: scale(1.03, .98); } }
+@keyframes caZzz { 0%, 100% { transform: translate(-50%, 0); opacity: .6; } 50% { transform: translate(-50%, -8px); opacity: 1; } }
+@keyframes caComer { from { transform: rotate(40deg); } to { transform: rotate(125deg); } }
+@keyframes caMastica { to { transform: scaleY(1.8); } }
+@keyframes caRevolver { from { transform: rotate(-30deg); } to { transform: rotate(-70deg); } }
+@keyframes caSaludo { from { transform: rotate(-140deg); } to { transform: rotate(-175deg); } }
+@keyframes caBrinco { 40% { transform: translateY(-14px); } }
+@keyframes caColgado { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+@keyframes caAterriza { 0% { transform: scale(1.12, .82); } 60% { transform: scale(.95, 1.06); } 100% { transform: none; } }
+@keyframes caGlobo { from { transform: translateX(-50%) scale(.5); opacity: 0; } }
+@keyframes caCorazon { 0% { opacity: 0; transform: translateY(0) scale(.5); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-100px) scale(1.25); } }
+
+/* Ultra rendimiento y movimiento reducido: lo que se mueve solo, quieto (lo que tú haces, sí se ve). */
+body.ed-ultra .ca-nube, body.ed-ultra .ca-foquito, body.ed-ultra .ca-cosa.globo svg, body.ed-ultra .ca-ojos,
+body.ed-ultra .ca-monito.dormido .ca-mono-cuerpo, body.ed-ultra .ca-monito.banando .ca-mono-cuerpo, body.ed-ultra .ca-monito.dormido .ca-globo { animation: none; }
+body.ed-ultra .ca-mueble.columpio.con-alguien, body.ed-ultra .ca-monito.columpio .ca-mono-caja, body.ed-ultra .ca-mueble.tina.con-alguien .ca-espuma { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .ca-mundo *, .ca-mundo *::before, .ca-mundo *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  .ca-hoja { transition-duration: .01ms; }
+}

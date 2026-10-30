@@ -21,7 +21,10 @@
  *             los cachés registrados con `alLiberar()`). `informe()` dice cómo va todo.
  */
 const H = document.documentElement;
-const REPOSO = 15000, AHORRO_MIN = 120000;
+const AHORRO_MIN = 120000;
+// (Fase 52) Cuánto esperar sin tocar nada para aquietar los adornos, según el modo de Configuración.
+const REPOSOS = { ultra: 6000, rendimiento: 9000, equilibrado: 15000, calidad: 45000 };
+let REPOSO = 15000;
 
 export const R = { oculto: document.hidden, reposo: false, ahorro: false, motivo: "", ocupado: new Set() };
 // (Fase 45: va hasta arriba. Con «Ahorro de datos» o poca memoria el ahorro empieza al cargar y ya los
@@ -211,6 +214,12 @@ export function ultra(on) {
   H.classList.remove("rd-ahorro");
   if (!R.reposo) soltarQuietos();
   avisar();
+}
+/** El modo de Configuración (ultra, rendimiento, equilibrado, calidad): cuánto tarda en aquietarse. */
+export function modo(m) {
+  REPOSO = REPOSOS[m] || 15000;
+  H.dataset.modo = m in REPOSOS ? m : "equilibrado";
+  ultra(m === "ultra");
 }
 /** Ahorro de datos o un aparato con muy poca memoria: desde el principio. */
 if (navigator.connection?.saveData) { fijo = "ahorro de datos"; sufre("ahorro de datos"); }

@@ -314,7 +314,7 @@ export const reaccionar = (id, reaccion) => pedir(`detallitos/${encodeURICompone
 export const reaccionesVistas = () => pedir("detallitos/reacciones/vistas", { method: "POST", body: {} });
 /* Los mensajitos de los dos (Fase 30). */
 export const chat = (p = {}) => pedir("chat?" + new URLSearchParams(Object.fromEntries(Object.entries(p).filter(([, v]) => v != null && v !== "").map(([k, v]) => [k, String(v)]))));
-export const mandarMensaje = ({ texto = "", gif = null, audio = null, espacio = 0 }) => pedir("chat", { method: "POST", body: espacio ? { espacio } : { texto, gif, audio } }).then((d) => d.mensaje);
+export const mandarMensaje = ({ texto = "", gif = null, audio = null, espacio = 0, responde = 0 }) => pedir("chat", { method: "POST", body: espacio ? { espacio } : { texto, gif, audio, ...(responde ? { responde } : {}) } }).then((d) => d.mensaje);
 export const editarMensaje = (id, texto) => pedir("chat/" + encodeURIComponent(id), { method: "PUT", body: { texto } }).then((d) => d.mensaje);
 /* Fase 34: stickers hechos por ustedes y mensajes de voz (se suben tal cual) y su colección. */
 export async function subirMedia(blob, tipo) {
@@ -358,6 +358,10 @@ export const ponerMesecito = (mes, d) => pedir(`mesecitos/${mes}?hoy=${hoyLocal(
 export const borrarMesecito = (mes) => pedir(`mesecitos/${mes}`, { method: "DELETE" });
 export const mesecitoVisto = (mes) => pedir(`mesecitos/${mes}/visto`, { method: "POST", body: {} });
 export const cositas = () => pedir("cositas?hoy=" + hoyLocal());
+// Nuestra casita (Fase 52): la casa compartida y los dos monitos (con `v` y `espera`, contesta cuando algo cambia).
+export const casita = (v = -1, espera = 0) => pedir(`casita?v=${v}&espera=${espera}`);
+export const ponerMonito = (d) => pedir("casita/yo", { method: "PUT", body: d }).then((r) => r.yo);
+export const ponerCasa = (casa) => pedir("casita/casa", { method: "PUT", body: { casa } });
 export const cosita = (tipo, extra = {}) => pedir("cositas", { method: "POST", body: { tipo, dia: hoyLocal(), ...extra } });
 export const borrarCosita = (id) => pedir("cositas/" + encodeURIComponent(id), { method: "DELETE" });
 export const compartirCosita = (id, compartida) => pedir("cositas/" + encodeURIComponent(id), { method: "PUT", body: { compartida } });

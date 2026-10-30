@@ -386,3 +386,4 @@ body.ed-ultra .dz-lapizv.armado::after { animation: none; }
 /* Fase 50: mientras haces zoom con dos dedos, la hoja se mueve como una sola capa (sin volver a pintarse a cada cuadro). */
 .dz-capa.zoomeando .dz-mundo { will-change: transform; }
 .dz-capa.zoomeando .dz-fondo, .dz-capa.zoomeando .dz-fondo * { animation-play-state: paused !important; }
+.dz-hojita > .dz-asa { touch-action: none; cursor: grab; padding: 8px 0; background-clip: content-box; }

@@ -21,7 +21,7 @@
  *   · Al mandarlo, la hoja se encoge, se vuelve avioncito y sale volando con corazones. Le llega a tu
  *     amorcito en Detallitos como dibujo (no como página) y ahí se redibuja solito, trazo por trazo.
  */
-import { el, aviso, confirmar } from "./ui.js";
+import { el, aviso, confirmar, jalarParaCerrar } from "./ui.js";
 import { ico } from "./iconos.js";
 import * as SRV from "../integraciones/servidor.js";
 import * as PF from "./perfil.js";
@@ -517,14 +517,14 @@ export class EstudioDibujo {
     const s = this.grosores[this.herr] || 14, t = Math.min(1, Math.log(s / 2) / Math.log(250));
     this.grosorBola.style.top = ((1 - t) * 100).toFixed(2) + "%";
     this.grosorPunto.style.top = ((1 - t) * 100).toFixed(2) + "%";
-    const px = Math.min(120, Math.max(3, s * (this._u || 0.35)));   // (la muestrita no tapa toda la hoja)
+    const px = Math.min(120, Math.max(3, s * (this._u || 0.35) * (this.infinito ? 1 : this.vista?.s || 1)));   // (la muestrita no tapa toda la hoja)
     this.grosorPunto.style.width = this.grosorPunto.style.height = px.toFixed(1) + "px";
     this.grosorPunto.style.background = this.herr === "borrador" ? "#fff" : this._rgba(this.color, this.opac);
     this.grosorPunto.classList.toggle("borra", this.herr === "borrador");
     this.grosorN.setAttribute("aria-valuenow", String(s));
   }
   _ponerCursor() {
-    const s = (this.grosores?.[this.herr] || 14) * (this._u || 0.35);
+    const s = (this.grosores?.[this.herr] || 14) * (this._u || 0.35) * (this.infinito ? 1 : this.vista?.s || 1);
     this.cursor?.style.setProperty("--d", Math.max(6, s).toFixed(1) + "px");
     this.cursor?.classList.toggle("borra", this.herr === "borrador");
     this.cursor?.classList.toggle("cubeta", this.herr === "cubeta" || this.gotero);
@@ -559,6 +559,7 @@ export class EstudioDibujo {
     const pct = this.infinito ? "Zoom " + Math.max(0, Math.round(Math.log2(v.s))) : Math.round(v.s * 100) + "%";
     if (this.zoomB.lastChild.textContent !== pct) this.zoomB.lastChild.textContent = pct;
     if (this._lejos !== lejos) { this._lejos = lejos; this.capa.classList.toggle("con-zoom", lejos); }
+    if (!this.infinito && this._sCursor !== v.s && this.capa.classList.contains("dibujando")) { this._sCursor = v.s; this._ponerCursor(); }
   }
   /** Acercar/alejar alrededor de un punto de la hoja. */
   _zoomEn(f, P, base = this.vista) {
@@ -782,7 +783,9 @@ export class EstudioDibujo {
   /* — Trazos — */
   _empezarTrazo(e, P) {
     const h = this.herr;
-    const op = { k: "trazo", h, c: this.color, s: (this.grosores[h] || PINCELES[h].s) / this.vista.s, p: [] };
+    // (Fase 52) En la hoja normal el grosor es de la hoja: al acercarte se ve más gruesito (como en papel) y
+    // no se achica solo; en la infinita sigue siendo de la pantalla (para dibujar dentro del dibujo).
+    const op = { k: "trazo", h, c: this.color, s: (this.grosores[h] || PINCELES[h].s) / (this.infinito ? this.vista.s : 1), p: [] };
     if (this.opac < 0.999) op.o = +this.opac.toFixed(3);
     const ahora = performance.now();
     this.trazo = { id: e.pointerId, op, t0: ahora, tl: ahora, vel: 0, f: 100, guia: null, sm: null, crudo: null };
@@ -1092,6 +1095,7 @@ export class EstudioDibujo {
       },
     };
     velo.addEventListener("pointerdown", (e) => { e.preventDefault(); h.cerrar(); });
+    jalarParaCerrar(caja, () => h.cerrar(), { asa: caja.querySelector(".dz-asa") });
     this.capa.append(velo, caja);
     this.hojita = h;
     requestAnimationFrame(() => requestAnimationFrame(() => { velo.classList.add("ver"); caja.classList.add("ver"); }));

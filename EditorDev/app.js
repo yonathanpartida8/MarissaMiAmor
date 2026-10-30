@@ -156,8 +156,8 @@ async function arrancar() {
   guardasDeApp();
   aplicarPref();
   // Ultra Rendimiento (Fase 46): el ahorro de rendimiento.js se queda fijo mientras esté prendido.
-  RD.ultra(PREF.modo === "ultra");
-  alCambiarPref((p, c) => { if ("modo" in c) RD.ultra(p.modo === "ultra"); });
+  RD.modo(PREF.modo);
+  alCambiarPref((p, c) => { if ("modo" in c) RD.modo(p.modo); });
   // Lo primero que se ve: el menú principal (el editor se carga por detrás).
   app.detallitos = new Detallitos(app);
   // Fase 47: el dibujito tiene su propio estudio (no es una página).

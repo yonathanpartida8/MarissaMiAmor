@@ -1,4 +1,4 @@
-# API de M.YNTHN (servidor 1.19.0)
+# API de M.YNTHN (servidor 1.24.0)
 
 Todas las respuestas son JSON. Con sesión: `Authorization: Bearer <token>` (lo da /api/entrar o /api/registro).
 Las fechas de «hoy» las manda el aparato (`?hoy=AAAA-MM-DD`) para que cada quien vea su día (México, EE. UU.…).
@@ -55,7 +55,7 @@ Las fechas de «hoy» las manda el aparato (`?hoy=AAAA-MM-DD`) para que cada qui
 | PUT | `/api/detallitos/{…}/reaccion` | con sesión | Reaccionar a una página que te mandó tu amorcito (sólo quien la recibió) |
 | POST | `/api/detallitos/reacciones/vistas` | con sesión | Quien mandó las páginas ya vio cómo reaccionó su amorcito. |
 | GET | `/api/chat` | con sesión | Los mensajitos de los dos: los últimos (n), los de antes de `antes`, o los nuevos después de `despues` más los que cambiaron (reacción, sticker, borrado, dibujos) desde `desde` |
-| POST | `/api/chat` | con sesión | Mandar un mensajito: texto, un GIF (o un sticker solito) de GIPHY, o los dos |
+| POST | `/api/chat` | con sesión | Mandar un mensajito: texto, un GIF (o un sticker solito) de GIPHY, o los dos. 1.24: con `responde` (el id de un mensajito de los dos), queda como respuesta; cada mensajito trae `responde` = `{id, mio, texto, tipo}` (una copia chiquita del original, sólo texto) |
 | POST | `/api/chat/media` | con sesión | Subir un sticker hecho por ti (png, jpg o webp) o un mensaje de voz (wav) |
 | GET | `/api/chat/coleccion` | con sesión | Tus stickers (los que haces) y tus GIFs favoritos: favoritos arriba y luego lo que más usas. |
 | POST | `/api/chat/coleccion` | con sesión | Guardar en tu colección: un sticker tuyo (de /m/…) o un GIF de GIPHY |
@@ -100,6 +100,9 @@ Las fechas de «hoy» las manda el aparato (`?hoy=AAAA-MM-DD`) para que cada qui
 | DELETE | `/api/cositas/{…}` | con sesión |  |
 | PUT | `/api/cositas/{…}` | con sesión |  |
 | PUT | `/api/cositas/ajustes` | con sesión | Que tu amorcito vea (o no) un contador tuyo |
+| GET | `/api/casita` | con sesión | 1.24 · Nuestra casita: `{v, casa, yo, pareja, pareja_aqui}`. Con `v` (la versión que ya tienes) y `espera` (hasta 25 s), contesta en cuanto algo cambie. |
+| PUT | `/api/casita/yo` | con sesión | 1.24 · Tu monito (sólo lo que mandes): `x` (0–5000), `mira` (1 / -1), `accion` (sentado, dormido, banando, columpio, comiendo, cocinando, abrazo, saluda o vacío), `mueble`, `ropa` (hasta 16 textos cortos) y `dice` (60 letras). |
+| PUT | `/api/casita/casa` | con sesión | 1.24 · La casa de los dos (`casa`: colores de cada cuarto, cositas, luces y cortinas; hasta 60 000 letras). |
 | GET | `/api/ubicacion` | con sesión | Dónde está cada quien (sólo quien la comparte), sus lugares y lo último que pasó en ellos. |
 | PUT | `/api/ubicacion` | con sesión | Tu ubicación (sólo llega si tú decidiste compartirla) |
 | DELETE | `/api/ubicacion` | con sesión | Dejar de compartir: se borra tu ubicación del servidor (no queda nada). |
