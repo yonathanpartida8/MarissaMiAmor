@@ -150,6 +150,7 @@ export async function comerEnMesa(j, r) {
       if (!hayComida(p) || p.k !== comida) return;
       const b = (p.b | 0) - 1;
       j.estado({ id: r.o.id }, { ["p" + i]: b > 0 ? { ...p, b } : null });
+      j.necesidades?.sumar("hambre", 45 / BOCADOS);   // (Fase 58) un platillo llena mucho
       if (b <= 0) {
         j.sonar("comer");
         j._globo(m, "¡Qué rico!", 1800);

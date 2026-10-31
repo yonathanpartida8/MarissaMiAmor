@@ -103,6 +103,12 @@ La lista de qué hay en cada carpeta (`indice.json`) se rehace sola en GitHub al
 | `hojas/` | Las hojitas de las plantas | de fábrica |
 | `regar/` | Regar con la regadera | de fábrica |
 | `frasco/` | El frasco de galletas (tapa de vidrio) | de fábrica |
+| `charco/` | Brincar en un charquito | de fábrica |
+| `paso2/` | El otro pasito (se turnan) | de fábrica |
+| `bebida/` | Tomar algo | de fábrica |
+| `bostezo/` | Bostezar con sueño | de fábrica |
+| `traes/` | ¡Te atrapé! (las traes) | de fábrica |
+| `necesidad/` | Cuando algo ya se llenó | de fábrica |
 | `musica-baile/` | Canción del tocadiscos (se repite) | de fábrica |
 | `musica-cuna/` | Canción de la cajita musical (se repite) | de fábrica |
 | `musica-fiesta/` | Canción de la bocina (se repite) | de fábrica |

@@ -56,7 +56,7 @@ Las fechas de «hoy» las manda el aparato (`?hoy=AAAA-MM-DD`) para que cada qui
 | POST | `/api/detallitos/reacciones/vistas` | con sesión | Quien mandó las páginas ya vio cómo reaccionó su amorcito. |
 | GET | `/api/chat` | con sesión | Los mensajitos de los dos: los últimos (n), los de antes de `antes`, o los nuevos después de `despues` más los que cambiaron (reacción, sticker, borrado, dibujos) desde `desde` |
 | POST | `/api/chat` | con sesión | Mandar un mensajito: texto, un GIF (o un sticker solito) de GIPHY, o los dos. 1.24: con `responde` (el id de un mensajito de los dos), queda como respuesta; cada mensajito trae `responde` = `{id, mio, texto, tipo}` (una copia chiquita del original, sólo texto) |
-| POST | `/api/chat/media` | con sesión | Subir un sticker hecho por ti (png, jpg o webp) o un mensaje de voz (wav) |
+| POST | `/api/chat/media` | con sesión | Subir un sticker hecho por ti (png, jpg o webp) o un mensaje de voz (wav). 1.27: `tipo: "animado"` para stickers animados (gif o webp, hasta 3 MB) y las fotos (`tipo: "foto"`, hasta 4 MB) también pueden ser gif. |
 | GET | `/api/chat/coleccion` | con sesión | Tus stickers (los que haces) y tus GIFs favoritos: favoritos arriba y luego lo que más usas. |
 | POST | `/api/chat/coleccion` | con sesión | Guardar en tu colección: un sticker tuyo (de /m/…) o un GIF de GIPHY |
 | PUT | `/api/chat/coleccion/{…}` | con sesión |  |
@@ -100,12 +100,13 @@ Las fechas de «hoy» las manda el aparato (`?hoy=AAAA-MM-DD`) para que cada qui
 | DELETE | `/api/cositas/{…}` | con sesión |  |
 | PUT | `/api/cositas/{…}` | con sesión |  |
 | PUT | `/api/cositas/ajustes` | con sesión | Que tu amorcito vea (o no) un contador tuyo |
-| GET | `/api/casita` | con sesión | 1.24/1.25/1.26 · Nuestra casita: `{v, casa, yo, pareja, pareja_aqui, msgs}` (1.26: `msgs`, los últimos 60 mensajes y cartitas, del más viejo al más nuevo). Con `v` (la versión que ya tienes) y `espera` (hasta 25 s), contesta en cuanto algo cambie. |
+| GET | `/api/casita` | con sesión | 1.24/1.25/1.26/1.27 · Nuestra casita: `{v, casa, yo, pareja, pareja_aqui, msgs, voz}` (1.26: `msgs`, los últimos 60 mensajes y cartitas, del más viejo al más nuevo; 1.27: `voz`, las señales de la voz en vivo que te mandó tu amorcito, que se entregan una sola vez). Con `v` (la versión que ya tienes) y `espera` (hasta 25 s), contesta en cuanto algo cambie. |
 | PUT | `/api/casita/yo` | con sesión | Tu monito (sólo lo que mandes). 1.25: `c` (cuarto), `x` (0–20000, dentro del cuarto), `y` (lo hondo del piso), `mira` (1 / -1), `accion` (cualquier palabra de 16 letras minúsculas: sentado, dormido, banando…), `mueble` (`id:lugar`), `lleva` (lo que trae en la mano), `ropa` (hasta 16 textos cortos), `dice` (60 letras; guarda `dt`) y `ev` (`{k, t}`: un gesto, abrazo, besito, regalo…; el servidor le pone `at`). |
 | POST | `/api/casita/ops` | con sesión | 1.25 · Cambios sueltos de la casa, en orden y de un jalón (hasta 60): `{o:"pon", obj:{id, t, c, x, y, f, e}}`, `{o:"quita", id}`, `{o:"estado", id, e}`, `{o:"cuarto", k, v}` y `{o:"iniciar", casa}` (sólo si la casa aún no tenía cosas). Hasta 300 cosas. Contesta `{ok, n, v}`. |
 | PUT | `/api/casita/casa` | con sesión | La casa entera de una vez (la usaba la 1.24; hasta 150 000 letras). |
 | POST | `/api/casita/mensaje` | con sesión | 1.26 · Un mensajito (`tipo: "msg"`, hasta 300 letras) o una cartita (`tipo: "carta"`, hasta 1000) para tu amorcito: `{texto, tipo}`. Se guarda como texto (sin caracteres de control), máximo 40 por minuto y 500 por pareja. Avisa por push si es cartita o si tu amorcito no está en la casita. Contesta `{msg: {id, mio, tipo, texto, leido, t}}`. |
 | POST | `/api/casita/leer` | con sesión | 1.26 · Marcar leído: `{id}` (una cartita) o `{hasta}` (los mensajitos de tu amorcito hasta ese id). |
+| POST | `/api/casita/voz` | con sesión | 1.27 · Señales de la voz en vivo (WebRTC) para tu amorcito: `{tipo, datos}` con `tipo` en `llamar`, `oferta`, `respuesta`, `ice`, `colgar` u `ocupado` y `datos` hasta 16 000 letras (la oferta/respuesta SDP). Duran 60 s y despiertan la escucha de `/api/casita`. El audio nunca pasa por el servidor: va directo entre los dos teléfonos. |
 | GET | `/api/ubicacion` | con sesión | Dónde está cada quien (sólo quien la comparte), sus lugares y lo último que pasó en ellos. |
 | PUT | `/api/ubicacion` | con sesión | Tu ubicación (sólo llega si tú decidiste compartirla) |
 | DELETE | `/api/ubicacion` | con sesión | Dejar de compartir: se borra tu ubicación del servidor (no queda nada). |

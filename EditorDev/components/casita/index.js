@@ -38,10 +38,15 @@ import { cocinar, pintarPlatos, laPareja } from "./mesa.js";
 import { Mensajes } from "./mensajes.js";
 import { leerGfx, guardarGfx, nivel, maxParticulas, filtroPixel, crearCapaGL } from "./graficos.js";
 import { pintarFondo } from "./fondo.js";
-import { texPared, texPiso, texLluvia, texCharcos, pintarFrente } from "./texturas.js";
+import { LluviaFisica, charcoEn } from "./lluvia.js";
+import { Necesidades, NECESIDADES } from "./necesidades.js";
+import { LasTraes, VEL_TRAES } from "./traes.js";
+import { VozEnVivo, puedeVoz } from "./voz.js";
+import { texPared, texPiso, texLluvia, texCharcos, pintarFrente, texAuto, texSol, texLuna } from "./texturas.js";
 
 const lim = (v, a, b) => Math.max(a, Math.min(b, v));
 const MAX_OBJETOS = 300;
+const RECIENTES = "editordev:casita-recientes";
 const POSES = ["sentado", "dormido", "banando", "columpio", "cocinando", "duchando"];
 const nuevoId = () => Math.random().toString(36).slice(2, 10);
 const REGALITO = "editordev:casita-regalito";
@@ -71,6 +76,11 @@ export class Casita {
     this.app.audio?.pausarParaVista?.(true, "casita");
     this.app.audio?.mantenerDespierto?.("casita", true);
     const d = PF.datos();
+    this.yoUsuario = d.yo?.usuario || ""; this.parejaUsuario = d.pareja?.usuario || "";
+    // (Fase 58) Las necesidades de tu monito, las traes y la voz en vivo.
+    this.necesidades = new Necesidades(this);
+    this.traes = new LasTraes(this);
+    this.voz = new VozEnVivo(this);
     this.mundo = el("div.ca-mundo");
     this.lienzo = el("div.ca-lienzo", {}, [this.mundo]);
     this.vistaN = el("div.ca-vista", {}, [this.lienzo]);
@@ -88,6 +98,8 @@ export class Casita {
     this._armarHud();
     this._primera = new Promise((ok) => { this._yaLlego = ok; });
     cont.replaceChildren(this.raiz);
+    this.lluviaF = new LluviaFisica(this);
+    this.escena.insertBefore(this.lluviaF.cv, this.flashN);
     this.graficos(this.gfx, false);
     this._compilar();
     this._enlazar();
@@ -104,7 +116,7 @@ export class Casita {
     document.addEventListener("webkitfullscreenchange", this._fs);
     this._gira = () => this._reparar();
     window.addEventListener("orientationchange", this._gira);
-    this._vis = () => { if (document.hidden) { this.capa?.parar(); clearTimeout(this._tRayo); return; } this._reparar(); this.capa?.prender(); this._programarRayo(); };
+    this._vis = () => { if (document.hidden) { this.capa?.parar(); clearTimeout(this._tRayo); return; } this._reparar(); this.capa?.prender(); this._programarRayo(); if (this.raiz.classList.contains("lluvia-cv")) this.lluviaF?.prender(); };
     document.addEventListener("visibilitychange", this._vis);
     this._toque = (e) => this._alToque(e.detail || {});
     addEventListener("ed-toque-llega", this._toque);
@@ -112,6 +124,7 @@ export class Casita {
     this._tiempo();
     this._reloj = setInterval(() => this._tiempo(), 30000);
     this._amb = setInterval(() => this._ambienteTic(), 3500);
+    this._tNec = setInterval(() => { if (this.vivo && !document.hidden) this.necesidades.tic(1); }, 1000);
     this.sync = new Sincro({ alRecibir: (r, p) => { this._yaLlego?.(); return r ? this._recibir(r, p) : this._pintarCasa(this.sync.casa()); }, alEstado: (t, k) => this._guardado(t, k) });
     this.sync.iniciar();
   }
@@ -139,12 +152,46 @@ export class Casita {
     // (Fase 56) Al salir se cierra todo de verdad: la capa de luces, los rayos, el teclado y la casita.
     clearTimeout(this._tRayo); clearTimeout(this._tRep); clearTimeout(this._tRel);
     this.mensajes.cerrarTodo();
+    clearInterval(this._tNec); this.necesidades?.guardar();
+    this.traes?.limpiar();
+    this.voz?.apagar(true);
     this.capa?.destruir(); this.capa = null;
+    this.lluviaF?.destruir();
     this.raiz?.remove();
   }
 
+  /** El botón de la voz: apagado, llamando (late) o en vivo (verde); el de silenciar sólo en vivo. */
+  alCambiarVoz(estado, mudo) {
+    if (!this.vozB) return;
+    this.vozB.classList.toggle("llamando", estado === "llamando");
+    this.vozB.classList.toggle("en-vivo", estado === "en-vivo");
+    this.vozB.setAttribute("aria-label", estado === "apagada" ? "Voz en vivo" : "Colgar la voz");
+    this.mudoB.hidden = estado !== "en-vivo";
+    this.mudoB.classList.toggle("on", !!mudo);
+    this.raiz?.classList.toggle("con-voz", estado === "en-vivo");
+  }
+  /** (Fase 58) Tocar una necesidad: tu monito va solito a lo que la llena (la cama, la regadera, el refri…). */
+  ayudaNecesidad(k) {
+    const QUE = { sueno: ["cama", "hamaca", "camastro"], ducha: ["regadera", "tina"], bano: ["inodoro"], hambre: ["refri", "frutero", "galletas", "hielera"], sed: ["lavabo", "refri", "hielera", "cafetera"], diversion: ["columpio", "trampolin", "arcade", "consola"] };
+    const nom = NECESIDADES.find((x) => x[0] === k);
+    if (k === "diversion" && this.suyo && !this.traes.activo && this.estadoN?.classList.contains("aqui")) { aviso(`¡Jueguen a las traes! (o toca a ${this.pareja})`, 2600); this._menuSuyo(); return; }
+    let mejor = null, dist = Infinity;
+    for (const r of this.objs.values()) {
+      if (!(QUE[k] || []).includes(r.d.k)) continue;   // (exacto: la «regadera» del baño no es la del jardín)
+      const dd = Math.abs(r.gx - this.yo.gx);
+      if (dd < dist) { dist = dd; mejor = r; }
+    }
+    if (!mejor) { aviso(nom ? nom[2] : "", 3200); return; }
+    aviso(`${nom[1]}: ${nom[2].split(":")[0].toLowerCase()}`, 2200);
+    this.irCuarto(mejor.o.c);
+    this._tocarObj(mejor);
+  }
+  /** Un ratito en el que «Atrás» y «Volver atrás» no sacan del juego (al abrir/cerrar el teclado o mandar un mensaje). */
+  protegerSalida(ms = 1400) { this._sinSalirHasta = performance.now() + ms; }
+  _protegido() { return performance.now() < (this._sinSalirHasta || 0) || !!this._congelado; }
   /** Atrás: primero lo que esté abierto (menú, hojita, selección, Acomodar, pantalla completa). */
   atras() {
+    if (this._protegido()) { if (this.mensajes.abierto()) this.mensajes.barra(false); return true; }
     if (this.cerrarMenu()) return true;
     if (this.cerrarHoja()) return true;
     if (this.mensajes.abierto()) { this.mensajes.barra(false); return true; }
@@ -182,7 +229,20 @@ export class Casita {
         try { const t = texCharcos(c.w); ch.style.setProperty("--charcos", t.url); } catch (e) { /* nada */ }
         n.append(el("i.ca-lluvia"), ch);
       }
-      if (c.k === "jardin") n.append(el("i.ca-auto"));
+      if (c.afuera) {
+        // (Fase 58) El sol y la luna en pixel, con su brillo; se mueven y cambian con la hora.
+        const fp = n.querySelector(".ca-fondo-px");
+        const sol = el("i.ca-astro.sol", { "aria-hidden": "true" }), luna = el("i.ca-astro.luna", { "aria-hidden": "true" });
+        try { luna.style.backgroundImage = texLuna().url; } catch (e) { /* nada */ }
+        fp?.after(sol, luna);
+      }
+      if (c.k === "jardin") {
+        // El carrito pasa por la calle, DETRÁS de la cerca (antes pasaba por dentro).
+        const auto = el("i.ca-auto");
+        try { auto.style.backgroundImage = texAuto().url; } catch (e) { /* nada */ }
+        const fp = n.querySelector(".ca-fondo-px");
+        if (fp) fp.after(auto); else n.append(auto);
+      }
     }
     // Entre cuarto y cuarto (adentro), una pared con su puerta que se abre sola al pasar.
     this.puertas = [];
@@ -235,15 +295,19 @@ export class Casita {
     this.selN = el("div.ca-sel", { hidden: "" }, [
       el("button.ca-sel-b", { type: "button", "aria-label": "Voltear", title: "Voltear", html: ICO.voltear, onClick: () => this._voltear() }),
       this.selColorB = el("button.ca-sel-b", { type: "button", "aria-label": "Otro color", title: "Otro color", html: ICO.color, onClick: () => this._otroColor() }),
+      this.selColoresN = el("div.ca-sel-colores", { role: "radiogroup", "aria-label": "Colores" }),
+      el("button.ca-sel-b", { type: "button", "aria-label": "Duplicar", title: "Duplicar", html: ICO.duplicar, onClick: () => this._duplicar() }),
       el("button.ca-sel-b.peligro", { type: "button", "aria-label": "Quitar", title: "Quitar", html: ICO.borrar, onClick: () => { const r = this.sel; if (r) this._borrar(r); } }),
     ]);
     this.volverN = el("div.ca-barra", {}, [
       el("button.ca-volver", { type: "button", onClick: () => this._volver() }, [el("i", { html: ICO.volver }), el("span", { text: "Volver atrás" })]),
       this.climaB = el("button.ca-ajustes-b.clima", { type: "button", "aria-label": "El clima y la hora", title: "El clima y la hora", html: ICO.sol, onClick: () => P.clima(this) }),
+      this.vozB = el("button.ca-ajustes-b.voz", { type: "button", "aria-label": "Voz en vivo", title: "Hablar en vivo los dos", html: ICO.mic, hidden: puedeVoz() ? null : "", onClick: () => this.voz.alternar() }),
+      this.mudoB = el("button.ca-ajustes-b.mudo", { type: "button", "aria-label": "Silenciar mi micrófono", title: "Silenciar mi micrófono", html: ICO.mudo, hidden: "", onClick: () => this.voz.silenciar() }),
       el("button.ca-ajustes-b", { type: "button", "aria-label": "Ajustes", title: "Ajustes", html: ICO.sonido, onClick: () => P.ajustes(this) }),
     ]);
     this.flashN = el("i.ca-flash", { "aria-hidden": "true" });
-    this.escena.append(this.flashN, this.hudN, this.cuartosB, this.edicionN, this.basuraN);
+    this.escena.append(this.flashN, this.hudN, this.necesidades.armar(), this.cuartosB, this.edicionN, this.basuraN);
     this.raiz.append(this.selN, this.volverN);
   }
 
@@ -293,6 +357,7 @@ export class Casita {
       this.capa?.prender();
     } else { this.capa?.destruir(); this.capa = null; }
     R.classList.toggle("gl", !!this.capa);
+    if (this.casa) this._clima();
   }
   _sinGL(t) { this.capa?.destruir(); this.capa = null; this.raiz?.classList.remove("gl"); if (t) aviso(t + ": Ultra sigue con los efectos de Calidad", 2600); }
   /** Lo que la capa WebGL necesita en cada cuadro: las luces prendidas (en la pantalla), la hora y el clima. */
@@ -324,6 +389,8 @@ export class Casita {
         const r = pintarFondo(cv, { ancho: c.w, hora, clima, tipo: c.terraza ? "ciudad" : "barrio", semilla: c.terraza ? 7 : 3 });
         n.classList.add("px");
         if (cielo) cielo.style.background = r.arriba;   // arriba del dibujo, el mismo color del cielo
+        const sol = n.querySelector(".ca-astro.sol");
+        if (sol) sol.style.backgroundImage = texSol(hora === "tarde").url;
         const fr = n.querySelector(".ca-frente-px");
         if (fr) pintarFrente(fr, { tipo: c.terraza ? "terraza" : "jardin", ancho: c.w, hora });
       } catch (e) { n.classList.remove("px"); if (cielo) cielo.style.background = ""; }
@@ -411,6 +478,16 @@ export class Casita {
     this.edCuartoN.textContent = cuarto(c).n;
     for (const b of this.cuartosB.children) { const on = b.dataset.k === c; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); }
     this._musicas();
+    this._lejos();
+  }
+  /** Lo que queda a más de un cuarto de distancia no se dibuja ni se anima (menos trabajo, menos calor). */
+  _lejos() {
+    if (!this.vistaN || !this.k) return;
+    // (Lo que se ve, más casi un cuarto de cada lado: así nunca se nota al deslizar.)
+    const a = this.vistaN.scrollLeft / this.k - 900, b = (this.vistaN.scrollLeft + this.vistaN.clientWidth) / this.k + 900;
+    const cerca = new Set(CUARTOS.filter((c) => inicioDe(c.k) < b && inicioDe(c.k) + c.w > a).map((c) => c.k));
+    for (const c of CUARTOS) { const n = this.cuartosN.get(c.k); n?.classList.toggle("lejos", !cerca.has(c.k)); }
+    for (const r of this.objs.values()) { const lejos = !cerca.has(r.o.c) && r.o.id !== this.arrastrandoId; r.n.classList.toggle("lejos", lejos); r.fr?.classList.toggle("lejos", lejos); if (r.glow) r.glow.classList.toggle("lejos", lejos); }
   }
 
   /* ═════════════ La casa: cuartos y objetos ═════════════ */
@@ -459,6 +536,7 @@ export class Casita {
       this._quitarNodo(r);
     }
     this._yaPintada = true;
+    this._lejos();
     this._marcarOcupados();
     this._musicas();
     this.mensajes.marcas();
@@ -619,6 +697,10 @@ export class Casita {
     this.mundo.classList.toggle("tormenta", cl === "tormenta" || cl === "extra");
     this.mundo.classList.toggle("extra", cl === "extra");
     if (lluvia) { try { this.mundo.style.setProperty("--lluvia-px", texLluvia(cl).url); } catch (e) { /* nada */ } }
+    // (Fase 58) La lluvia con física (gotas, salpicaduras y ondas en los charcos); en Máximo rendimiento, la sencilla.
+    const fisica = lluvia && this.gfx !== "max" && !reducido();
+    this.raiz.classList.toggle("lluvia-cv", fisica);
+    if (fisica) this.lluviaF?.prender();
     this.climaB?.classList.toggle("on", lluvia);
     if (this.climaB && this.climaB.dataset.k !== cl) { this.climaB.dataset.k = cl; this.climaB.innerHTML = ICO[{ sol: "sol", lluvia: "lluvia", tormenta: "rayo", extra: "extra" }[cl]]; }
     for (const r of this.objs.values()) {
@@ -706,7 +788,9 @@ export class Casita {
     const n = el("div.ca-monito." + quien, { role: "img", "aria-label": nombre, style: { left: gx + "px", top: SUELO + "px", zIndex: zMono(SUELO) } }, [caja, globo, globos, nombreN]);
     return { quien, n, caja, cuerpo, llevaN, globo, globos, nombreN, gx, y: SUELO, ropa: { ...ropa }, accion: "", mueble: "", lleva: "", mira: 1, orden: 0, t: 0, evAt: 0, dt: 0 };
   }
-  _vestirMono(m, ropa) { m.ropa = { ...m.ropa, ...ropa }; m.cuerpo.innerHTML = monitoSVG(m.ropa); }
+  _vestirMono(m, ropa) { m.ropa = { ...m.ropa, ...ropa }; m.cuerpo.innerHTML = monitoSVG(m.ropa); if (m.lleva) this._ponerLleva(m, m.lleva); }
+  /** 2.5D: más atrás (y chica) se ve un poquito más chiquito; adelante, normal. */
+  _prof(m, y = m.y) { m.n.style.setProperty("--prof", (0.9 + 0.1 * lim((y - FONDO) / (FRENTE - FONDO), 0, 1)).toFixed(3)); }
   /** Voltear: al instante, con un saltito (antes giraba como hoja de papel). */
   _mirar(m, lado) {
     const antes = m.mira;
@@ -719,10 +803,14 @@ export class Casita {
     clearTimeout(m.tc); clearInterval(m.tp);
     this._pose(m, "");
     gx = lim(gx, 24, ANCHO - 24); y = lim(y, FONDO, FRENTE);
+    // (Al caminar se sueltan los gestos y lo que hacía con las manos: así los brazos nunca se quedan en un loop raro.)
+    m.n.classList.remove("tocando", "comiendo", ...GESTOS.map((x) => "g-" + x[0])); clearTimeout(m.tgesto); clearTimeout(m.ttoca);
+    this._prof(m, y);
     const d = Math.hypot(gx - m.gx, (y - m.y) * 1.6);
     if (Math.abs(gx - m.gx) > 2) this._mirar(m, gx - m.gx);
     // (Cerquita camina; lejos, corre: cruzar la casa no tarda una eternidad.)
-    const vel = lim(d * 0.55, 210, 620), s = ya || reducido() ? 0 : Math.max(0.18, d / vel);
+    // (Jugando a las traes, los dos caminan igual de rápido: nadie corre más que el otro.)
+    const vel = this.traes?.activo ? VEL_TRAES : lim(d * 0.55, 210, 620), s = ya || reducido() ? 0 : Math.max(0.18, d / vel);
     m.n.classList.toggle("corre", vel > 330);
     m.n.style.transitionDuration = s + "s";
     m.n.style.zIndex = zMono(Math.max(m.y, y));
@@ -758,7 +846,7 @@ export class Casita {
       this._caminar(m, gx, lim(r.o.y + 22, FONDO, FRENTE), () => {
         if (m.orden !== orden || !this.vivo || !this.objs.has(r.o.id)) return ok(false);
         m.n.style.transitionDuration = ya || reducido() ? "0s" : ".32s";
-        m.n.style.top = ySit + "px"; m.y = ySit;
+        m.n.style.top = ySit + "px"; m.y = ySit; this._prof(m, r.o.y);
         if (l.mira) this._mirar(m, l.mira * sx);
         const z = l.z != null ? (parseInt(r.n.style.zIndex, 10) || 0) + l.z : Math.round(ySit);
         this._pose(m, l.pose, `${r.o.id}:${jx}`, z);
@@ -829,10 +917,19 @@ export class Casita {
     this.raiz.append(s);
     s.animate([{ transform: "translate(0,0) scale(.6)" }, { transform: `translate(${(b.x - a.x) / 2}px, ${(b.y - a.y) / 2 - 60}px) scale(1.15)`, offset: 0.5 }, { transform: `translate(${b.x - a.x}px, ${b.y - a.y}px) scale(.9)` }], { duration: 520, easing: "cubic-bezier(.3,.7,.4,1)" }).onfinish = () => s.remove();
   }
+  /** (Fase 58) Lo que carga va dentro de su mano (en el brazo del dibujo), así se mueve con él. */
   _ponerLleva(m, cosa) {
     m.lleva = COSAS_MANO[cosa] ? cosa : "";
-    m.llevaN.hidden = !m.lleva;
-    m.llevaN.innerHTML = m.lleva ? COSAS_MANO[cosa].arte : "";
+    m.llevaN.hidden = true;
+    const mano = m.cuerpo.querySelector(".ca-mano-cosa");
+    if (mano) {
+      mano.replaceChildren();
+      if (m.lleva) {
+        const t = document.createElement("template"); t.innerHTML = COSAS_MANO[cosa].arte;
+        const sv = t.content.querySelector("svg");
+        if (sv) { for (const [k, v] of [["x", 59], ["y", 88], ["width", 27], ["height", 27]]) sv.setAttribute(k, v); mano.append(sv); }
+      }
+    } else { m.llevaN.hidden = !m.lleva; m.llevaN.innerHTML = m.lleva ? COSAS_MANO[cosa].arte : ""; }
     m.n.classList.toggle("con-cosa", !!m.lleva);
   }
   decir(t, mandar = true) {
@@ -874,6 +971,7 @@ export class Casita {
   comer() {
     const m = this.yo, c = COSAS_MANO[m.lleva];
     if (!c?.comible) return;
+    this.necesidades?.comio(m.lleva, !!c.plato);
     clearTimeout(m.tgesto);
     m.n.classList.add("g-come");
     this.sonar("comer");
@@ -937,6 +1035,7 @@ export class Casita {
 
   /** Lo que hacen juntos: tu monito va con el de tu amorcito y lo hacen los dos. */
   juntos(k) {
+    this.necesidades?.sumar("diversion", 6);
     const yo = this.yo, el2 = this.suyo;
     if (k === "regalo") {
       if (!yo.lleva) return;
@@ -991,6 +1090,24 @@ export class Casita {
     if (k === "manita") { this.sonar("beso", { volumen: 0.6 }); this.particulas("corazon", medio, 0, 30, 4); }
     if (k === "cosquillas") { this.sonar("risa"); this.particulas("chispa", { gx: b.gx, y: b.y - 90 }, 0, 0, 5); }
     if (k === "selfie") { this.sonar("clic"); this.raiz.classList.remove("flash"); void this.raiz.offsetWidth; this.raiz.classList.add("flash"); this.particulas("estrella", medio, 0, 0, 5); if (a === this.yo) aviso("¡Qué bonita foto de los dos!", 2200); }
+  }
+
+  /** (Fase 58) Brincar en un charquito: camina, brinca, salpica (con su sonido) y tu amorcito lo ve. */
+  brincarCharco(ch, m = this.yo, mandar = true) {
+    const orden = ++m.orden;
+    const brinca = () => {
+      if (m.orden !== orden || !this.vivo) return;
+      this.gesto(m, "brinca", false);
+      setTimeout(() => {
+        if (!this.vivo) return;
+        this.lluviaF?.chapoteo(ch.gx, ch.y);
+        this.particulas("agua", { gx: ch.gx, y: ch.y }, 0, -6, 6);
+        if (m === this.yo || this._visible(m)) this.sonar("charco", { volumen: m === this.yo ? 1 : 0.6 });
+        if (m === this.yo) { vibrar(18); this.necesidades?.sumar("diversion", 6); }
+      }, 260);
+    };
+    this._caminar(m, ch.gx, ch.y, brinca);
+    if (mandar) this._mandarYo({ accion: "", mueble: "", ev: { k: "charco", t: `${Math.round(ch.gx)},${Math.round(ch.y)}` } });
   }
 
   /** (Fase 57) Si tu amorcito te manda un mensajito rápido mientras están en la casita, su monito te lo dice. */
@@ -1050,8 +1167,10 @@ export class Casita {
       if (G.mono === this.yo) return this._menuYo();
       if (G.mono === this.suyo) return this._menuSuyo();
       if (G.obj) return this._tocarObj(G.obj);
-      // El piso (o la pared): camina hasta ahí.
+      // El piso (o la pared): camina hasta ahí. (Lloviendo, si tocas un charco, ¡brincas en él!)
       const p = this._xy(e);
+      const ch = this.climaActual() !== "sol" ? charcoEn(p.x, p.y) : null;
+      if (ch) { this.brincarCharco(ch); return; }
       this._caminar(this.yo, p.x, p.y >= PISO - 10 ? p.y : this.yo.mueble ? SUELO : this.yo.y);
       this.yo.orden++;
       this._mandarYo({ accion: "", mueble: "" });
@@ -1064,6 +1183,7 @@ export class Casita {
   }
   _tocarObj(r) {
     const d = r.d, o = { ...r.o, def: d, gx: r.gx };
+    if (["trampolin", "consola", "arcade", "guitarra", "pintar", "telescopio", "bici", "musica", "boing"].includes(d.al)) this.necesidades?.sumar("diversion", 5);
     if (d.al && ACCIONES[d.al]) { ACCIONES[d.al](this, o, r.n); return; }
     if (d.lugares) { this.usarLugar(o); return; }
     rebote(r.n); this.sonar("pop", { volumen: 0.6 });
@@ -1074,6 +1194,7 @@ export class Casita {
     const c = COSAS_MANO[m.lleva];
     if (c?.comible) ops.unshift(["comer", `Comer ${c.n.toLowerCase()}`, () => this.comer()]);
     if (m.lleva) ops.push(["soltar", "Soltar", () => this.soltar()]);
+    ops.unshift(["decir", "Decir algo", () => this.mensajes.barra(true)]);   // (lo más fácil: tocarte y escribir)
     if (m.mueble) ops.unshift(["brinca", "Pararme", () => this.pararse()]);
     P.menuMonito(this, m, ops, "Tú");
   }
@@ -1081,6 +1202,7 @@ export class Casita {
     const ops = JUNTOS.map(([k, t]) => [k, t, () => this.juntos(k)]);
     if (this.yo.lleva) ops.unshift(["regalo", `Regalarle ${COSAS_MANO[this.yo.lleva].n.toLowerCase()}`, () => this.juntos("regalo")]);
     if (this.suyo.accion === "columpio") ops.unshift(["empujar", "Empujar el columpio", () => this.juntos("empujar")]);
+    ops.unshift(this.traes.activo ? ["traes", "Terminar las traes", () => this.traes.terminar(true)] : ["traes", "Jugar a las traes", () => this.traes.empezar()]);
     P.menuMonito(this, this.suyo, ops, `Con ${this.pareja}`);
   }
   cerrarMenu() { const n = this.menu; if (!n) return false; this.menu = null; n.classList.remove("ver"); setTimeout(() => n.remove(), 180); return true; }
@@ -1104,7 +1226,7 @@ export class Casita {
       if (p.x >= x0 && p.x <= x0 + r.d.w && p.y + 40 >= y0 && p.y + 40 <= r.o.y + 20) { this.usarLugar({ id: r.o.id }); return; }
     }
     m.y = lim(m.y, FONDO, FRENTE);
-    m.n.style.transitionDuration = ".34s"; m.n.style.top = m.y + "px"; m.n.style.zIndex = zMono(m.y);
+    m.n.style.transitionDuration = ".34s"; m.n.style.top = m.y + "px"; m.n.style.zIndex = zMono(m.y); this._prof(m);
     m.n.classList.add("aterriza"); setTimeout(() => m.n.classList.remove("aterriza"), 480);
     this.sonar("boing"); this.particulas("polvo", { gx: m.gx, y: m.y }, 0, 0, 3);
     this._mandarYo({ accion: "", mueble: "" });
@@ -1135,9 +1257,45 @@ export class Casita {
     this._medir();
     this.vistaN.scrollLeft = Math.max(0, centro * this.k - this.vistaN.clientWidth / 2);
   }
+  /** Lo último que pusiste (para la pestaña «Recientes» del cajón). */
+  recientes() { try { const v = JSON.parse(localStorage.getItem(RECIENTES) || "[]"); return Array.isArray(v) ? v.filter((k) => CATALOGO[k]).slice(0, 12) : []; } catch (e) { return []; } }
+  _recordar(t) { try { localStorage.setItem(RECIENTES, JSON.stringify([t, ...this.recientes().filter((k) => k !== t)].slice(0, 12))); } catch (e) { /* nada */ } }
+  /** Arrastrar una cosa del cajón: aparece bajo tu dedo y la sueltas donde la quieras (o en la basura). */
+  arrastrarNuevo(t, ev) {
+    const d = CATALOGO[t];
+    if (!d || !this.editando) return;
+    if (this.objs.size >= MAX_OBJETOS) { aviso("Ya hay muchísimas cosas: quita alguna para poner otra", 2800); this.sonar("nop"); return; }
+    const p = this._xy(ev), gx = lim(p.x, d.w * 0.3, ANCHO - d.w * 0.3), { c, x } = enCuarto(gx);
+    const y = d.capa === "pared" ? d.y : lim(p.y + d.h / 2, FONDO, FRENTE);
+    const o = { id: nuevoId(), t, c, x: Math.round(lim(x, d.w / 2 + 4, cuarto(c).w - d.w / 2 - 4)), y: Math.round(y), f: false, e: {} };
+    const base = this.pila.length;
+    this.pila.push([{ o: "quita", id: o.id }]);
+    this.sync.op({ o: "pon", obj: o });
+    this._pintarCasa(this.sync.casa());
+    const r = this.objs.get(o.id);
+    if (!r) return;
+    this._recordar(t);
+    this._seleccionar(null);
+    const g = { id: ev.pointerId, obj: r, off: { dx: 0, dy: d.h / 2 }, mov: 99 };
+    this._arrastrarObj(g, ev);
+    const mover = (e) => { if (e.pointerId === g.id) { e.preventDefault(); this._arrastrarObj(g, e); } };
+    const soltar = (e) => {
+      if (e.pointerId !== g.id) return;
+      removeEventListener("pointermove", mover); removeEventListener("pointerup", soltar); removeEventListener("pointercancel", soltar);
+      cancelAnimationFrame(this._rqAuto);
+      if (!this.objs.has(o.id)) return;
+      this._soltarObj(g, e);
+      // «Deshacer» la quita de una vez (y si fue a dar a la basura, ni cuenta).
+      this.pila.length = Math.min(this.pila.length, base + (g.basura ? 0 : 1));
+      this.deshacerB.disabled = !this.pila.length;
+    };
+    addEventListener("pointermove", mover, { passive: false }); addEventListener("pointerup", soltar); addEventListener("pointercancel", soltar);
+    this.deshacerB.disabled = false;
+  }
   agregar(t) {
     const d = CATALOGO[t];
     if (!d) return;
+    this._recordar(t);
     if (this.objs.size >= MAX_OBJETOS) { aviso("Ya hay muchísimas cosas: quita alguna para poner otra", 2800); this.sonar("nop"); return; }
     const centro = (this.vistaN.scrollLeft + this.vistaN.clientWidth / 2) / this.k;
     const { c } = enCuarto(centro), w = cuarto(c).w;
@@ -1157,7 +1315,7 @@ export class Casita {
   _seleccionar(r) {
     if (this.sel?.n) this.sel.n.classList.remove("sel");
     this.sel = r || null;
-    if (r) { r.n.classList.add("sel"); rebote(r.n, "toque"); this.selColorB.hidden = !r.d.colores; this.sonar("pop", { volumen: 0.5 }); }
+    if (r) { r.n.classList.add("sel"); rebote(r.n, "toque"); this.selColorB.hidden = !r.d.colores; this._pintarColores(); this.sonar("pop", { volumen: 0.5 }); }
     this.selN.hidden = !r;
     this._ubicarSel();
   }
@@ -1178,7 +1336,39 @@ export class Casita {
     this.deshacerB.disabled = false;
   }
   _voltear() { const r = this.sel; if (!r) return; this._guardarObj(r, { f: !r.o.f }, "whoosh"); rebote(r.n, "gira"); }
-  _otroColor() { const r = this.sel; if (!r?.d.colores) return; this._guardarObj(r, { e: { ...(r.o.e || {}), col: ((r.o.e?.col | 0) + 1) % r.d.colores.length } }, "pop"); rebote(r.n, "toque"); }
+  _otroColor() { const r = this.sel; if (!r?.d.colores) return; this._ponerColor(((r.o.e?.col | 0) + 1) % r.d.colores.length); }
+  /** Los colorcitos de la cosa elegida, para escoger uno de un toque. */
+  _pintarColores() {
+    const r = this.sel, cols = r?.d.colores || [], act = Math.abs(r?.o.e?.col | 0) % (cols.length || 1);
+    this.selColoresN.hidden = !cols.length;
+    this.selColoresN.replaceChildren(...cols.map((c, i) => el("button.ca-sel-col" + (i === act ? ".on" : ""), { type: "button", role: "radio", "aria-checked": String(i === act), "aria-label": `Color ${i + 1}`, style: { "--c": c }, onClick: () => this._ponerColor(i) })));
+  }
+  _ponerColor(i) {
+    const r = this.sel;
+    if (!r?.d.colores || (r.o.e?.col | 0) === i) return;
+    this._guardarObj(r, { e: { ...(r.o.e || {}), col: i } }, "pop");
+    // (Al repintar, la cosa es otro nodo: se vuelve a elegir para que la barrita siga ahí.)
+    const n = this.objs.get(r.o.id);
+    if (n) { this.sel = null; this._seleccionar(n); rebote(n.n, "toque"); this.particulas("brillo", { gx: n.gx, y: n.o.y - n.d.h / 2 }, 0, 0, 3); }
+  }
+  /** Otra igualita, junto a la elegida (con su color y volteada igual). */
+  _duplicar() {
+    const r = this.sel;
+    if (!r) return;
+    if (this.objs.size >= MAX_OBJETOS) { aviso("Ya hay muchísimas cosas: quita alguna para poner otra", 2800); this.sonar("nop"); return; }
+    const w = cuarto(r.o.c).w, d = r.d;
+    let x = r.o.x + d.w * 0.6 + 10;
+    if (x > w - d.w / 2 - 4) x = r.o.x - d.w * 0.6 - 10;
+    const o = { ...JSON.parse(JSON.stringify(r.o)), id: nuevoId(), x: Math.round(lim(x, d.w / 2 + 4, w - d.w / 2 - 4)), y: d.capa === "pared" ? r.o.y : Math.round(lim(r.o.y + 8, FONDO, FRENTE)) };
+    this.pila.push([{ o: "quita", id: o.id }]);
+    this.sync.op({ o: "pon", obj: o });
+    this._pintarCasa(this.sync.casa());
+    const n = this.objs.get(o.id);
+    if (n && !reducido()) { n.n.classList.remove("aparece"); n.n.classList.add("cae"); setTimeout(() => n.n.classList.remove("cae"), 430); }
+    this.sonar("pop"); vibrar(8);
+    this._seleccionar(n);
+    this.deshacerB.disabled = false;
+  }
   _borrar(r) {
     this.pila.push([{ o: "pon", obj: JSON.parse(JSON.stringify(r.o)) }]);
     this._seleccionar(null);
@@ -1285,6 +1475,7 @@ export class Casita {
     requestAnimationFrame(() => requestAnimationFrame(() => { this._medir(); this._seguir(this.yo.gx); }));
   }
   _volver() {
+    if (this._protegido()) return;
     if (this.editando) this._editar(false);
     if (this.raiz.classList.contains("completa")) this._completa(false);
     this.sonar("cerrar");
@@ -1297,6 +1488,7 @@ export class Casita {
 
   /* ═════════════ En tiempo real ═════════════ */
   _recibir(r, primera) {
+    if (r.voz?.length) this.voz.recibir(r.voz);
     // La casa: la primera vez (o si era la de antes), se arma la de entrada.
     if (!r.casa?.objetos?.length && !r.casa?.cuartos?.jardin?.vacia && !this._iniciada) { this._iniciada = true; this.sync.op({ o: "iniciar", casa: casaInicial(r.casa) }); }
     // Una casita de antes también estrena los cuartos nuevos (con su acomodo de entrada), una sola vez.
@@ -1363,6 +1555,8 @@ export class Casita {
       if (this._visible(m)) this.sonar(ev.t === "guitarra" ? "guitarra" : "piano", { volumen: 0.5 });
     }, espera);
     else if (ev.k === "gesto") setTimeout(() => this.gesto(m, ev.t, false), espera);
+    else if (ev.k === "traes") this.traes.evento(ev.t);
+    else if (ev.k === "charco") { const [gx, y] = String(ev.t).split(",").map(Number); if (Number.isFinite(gx) && Number.isFinite(y)) setTimeout(() => { this.lluviaF?.chapoteo(gx, y); this.particulas("agua", { gx, y }, 0, -6, 4); if (this._visible(m)) this.sonar("charco", { volumen: 0.6 }); }, espera + 260); }
     else if (ev.k === "come") { m.n.classList.add("g-come"); setTimeout(() => m.n.classList.remove("g-come"), 1600); if (this._visible(m)) this.sonar("comer", { volumen: 0.6 }); }
     else if (ev.k === "bailemos") { this.gesto(m, "baila", false); if (!yo.mueble) this.gesto(yo, "baila", false); this._globo(m, "¡Bailemos!", 1800); }
     else if (["abrazo", "beso", "choca", "manita", "cosquillas", "selfie", "empujar"].includes(ev.k)) setTimeout(() => { if (ev.k !== "empujar") this._mirar(m, yo.gx < m.gx ? -1 : 1); this._juntosHacer(ev.k, m, yo); }, espera);

@@ -9,6 +9,7 @@ export const ICO = {
   volver: ic('<path d="M15 6l-6 6 6 6"/>'),
   deshacer: ic('<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>'),
   listo: ic('<path d="M5 12.5l4.5 4.5L19 7"/>'),
+  duplicar: ic('<rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
   voltear: ic('<path d="M12 3v18"/><path d="M8 7L3 12l5 5V7zM16 7l5 5-5 5V7z"/>'),
   color: ic('<path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-2 0-.6-.3-1-.6-1.4-.3-.4-.5-.8-.5-1.3 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4c0-4.2-4-7.5-9-7.5z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/>'),
   borrar: ic('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
@@ -69,5 +70,8 @@ export const ICO = {
   tarde: ic('<path d="M3 18h18M6 14a6 6 0 0 1 12 0"/><path d="M12 4v3M4.6 8.6l1.8 1.4M19.4 8.6l-1.8 1.4"/>'),
   reloj: ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
   vaciar: ic('<path d="M14 3l-4 9"/><path d="M6 13h9l2 8H4z"/><path d="M8 17v4M12 17v4"/>'),
+  mic: ic('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>'),
+  mudo: ic('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M4 4l16 16"/>'),
+  traes: ic('<circle cx="8" cy="6" r="2"/><path d="M8 8l-1 6 3 3M7 11l4-1M5 21l2-4"/><circle cx="17" cy="7" r="2"/><path d="M17 9v5l2 4M15 12l4-2"/>'),
   graficos: ic('<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 13l3-4 3 3 4-5"/>'),
 };

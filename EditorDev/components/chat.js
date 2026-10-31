@@ -56,6 +56,7 @@ const IC = {
   corazon: svg(`<path d="${CORAZON}"/>`, LINEA),
   lleno: svg(`<path d="${CORAZON}"/>`, ' fill="currentColor"'),
   estrella: svg(`<path d="${ESTRELLA}"/>`, LINEA),
+  galeria: svg('<rect x="3.4" y="4.4" width="17.2" height="15.2" rx="3"/><path d="M4 16.5 9 11l3.6 3.8 2.4-2.4 5 5"/><circle cx="15.6" cy="8.8" r="1.6"/>', LINEA),
   estrellaLlena: svg(`<path d="${ESTRELLA}"/>`, ' fill="currentColor"'),
   estrellaNo: svg(`<path d="${ESTRELLA}"/><path d="M4 4l16 16"/>`, LINEA),
   infinito: svg('<path d="M12 12c-2-2.6-3.4-3.8-5.2-3.8a3.8 3.8 0 0 0 0 7.6c1.8 0 3.2-1.2 5.2-3.8zm0 0c2 2.6 3.4 3.8 5.2 3.8a3.8 3.8 0 0 0 0-7.6c-1.8 0-3.2 1.2-5.2 3.8z"/>', LINEA),
@@ -455,7 +456,7 @@ export function vistaChat(det) {
   const PISTA_MENU = "editordev:chat-pista-menu";
   function enseñarPista() {
     try { if (localStorage.getItem(PISTA_MENU)) return; localStorage.setItem(PISTA_MENU, "1"); } catch (e) { return; }
-    aviso("Mantén presionado un mensajito para editarlo, copiarlo o eliminarlo 💜", 3600);
+    aviso("Mantén presionado un mensajito para editarlo, copiarlo o eliminarlo", 3600);
   }
   /** La reacción, en su lugar (sin rehacer la burbuja). */
   function ponerRx(f, m, animar = false) {
@@ -970,7 +971,9 @@ export function vistaChat(det) {
     }))));
     const acc = [el("button.ch-menu-b", { type: "button", role: "menuitem", html: `${IC.responder}<span>Responder</span>`, onClick: () => responder(m) })];
     if (m.mio && m.texto && !m.audio) acc.push(el("button.ch-menu-b", { type: "button", role: "menuitem", html: I("editar", "Editar"), onClick: () => editar(m) }));
-    if (m.texto) acc.push(el("button.ch-menu-b", { type: "button", role: "menuitem", html: I("copiar", "Copiar"), onClick: async () => { cerrarMenu(); try { await navigator.clipboard.writeText(m.texto); aviso("Copiado 💜", 1800); } catch (err) { aviso("No se pudo copiar aquí", 2600, "error"); } } }));
+    if (m.texto) acc.push(el("button.ch-menu-b", { type: "button", role: "menuitem", html: I("copiar", "Copiar"), onClick: async () => { cerrarMenu(); try { await navigator.clipboard.writeText(m.texto); aviso("Copiado", 1800); } catch (err) { aviso("No se pudo copiar aquí", 2600, "error"); } } }));
+    // (Fase 58) El sticker que te mandó: guárdalo en tus stickers (favoritos) para mandarlo tú también.
+    if (!m.mio && m.gif?.s && m.gif.u && !String(m.gif.u).startsWith("blob:")) acc.push(el("button.ch-menu-b", { type: "button", role: "menuitem", html: I2(IC.estrella, "Guardar en mis stickers"), onClick: () => { cerrarMenu(); guardarStickerDeElla(m.gif); } }));
     if (m.mio) acc.push(el("button.ch-menu-b.peligro", { type: "button", role: "menuitem", html: I("borrar", "Eliminar"), onClick: () => { cerrarMenu(); borrar(m); } }));
     if (acc.length) partes.push(el("div.ch-menu-acc", {}, acc));
     if (!partes.length) return;
@@ -1099,7 +1102,7 @@ export function vistaChat(det) {
     catch (e) {
       S.grabando = null;
       if (son) son.callado = false;
-      aviso(e?.name === "NotAllowedError" || e?.name === "SecurityError" ? "Necesito permiso para usar tu micrófono 🎤 (dáselo en los ajustes del navegador)." : e?.name === "NotFoundError" ? "No encontré ningún micrófono en este aparato." : "No se pudo empezar a grabar.", 5500, "error");
+      aviso(e?.name === "NotAllowedError" || e?.name === "SecurityError" ? "Necesito permiso para usar tu micrófono (dáselo en los ajustes del navegador)." : e?.name === "NotFoundError" ? "No encontré ningún micrófono en este aparato." : "No se pudo empezar a grabar.", 5500, "error");
       return;
     }
     if (!S.vivo) { g.cancelar(); if (son) son.callado = false; return; }
@@ -1143,7 +1146,7 @@ export function vistaChat(det) {
     let a;
     try { a = await g.parar(); } catch (e) { aviso("No se pudo preparar el audio.", 4500, "error"); return; }
     if (!S.vivo) return;
-    if (a.dur < 0.6) { aviso("Ese audio quedó muy cortito 🎤", 2600); return; }
+    if (a.dur < 0.6) { aviso("Ese audio quedó muy cortito", 2600); return; }
     const local = URL.createObjectURL(a.blob);
     S.blobs.push(local);
     const t = burbujaNueva({ audio: { u: local, dur: a.dur, ondas: a.ondas } });
@@ -1230,14 +1233,14 @@ export function vistaChat(det) {
     return [cab,
       interruptor("Notificaciones push", "Aunque el editor esté cerrado, con sonido", !!e.prendidas, async (v) => {
         try {
-          if (v) { await PUSH.prender(); aviso(`¡Listo! Te aviso cuando ${nombre} te escriba 💜`, 3500); }
+          if (v) { await PUSH.prender(); aviso(`¡Listo! Te aviso cuando ${nombre} te escriba`, 3500); }
           else { await PUSH.apagar(); aviso("Notificaciones apagadas en este aparato"); }
           S.push = await PUSH.estado();
           return true;
         } catch (err) { aviso(err.message || "No se pudieron prender", 6500, "error"); return false; }
       }),
       el("button.ch-hoja-item", { type: "button", role: "menuitem", html: I("campana", "Probar notificación"), onClick: async () => {
-        try { const r = await PUSH.probar(); aviso(r.enviadas ? `Te mandé una de prueba (${r.enviadas} de ${r.total} ${r.total === 1 ? "aparato" : "aparatos"}) 🔔` : "El servicio de notificaciones no la aceptó: apágalas y vuelve a prenderlas.", 4500, r.enviadas ? "" : "error"); }
+        try { const r = await PUSH.probar(); aviso(r.enviadas ? `Te mandé una de prueba (${r.enviadas} de ${r.total} ${r.total === 1 ? "aparato" : "aparatos"})` : "El servicio de notificaciones no la aceptó: apágalas y vuelve a prenderlas.", 4500, r.enviadas ? "" : "error"); }
         catch (err) { aviso(mensajeError(err), 5000, "error"); }
       } }),
     ];
@@ -1253,7 +1256,7 @@ export function vistaChat(det) {
       el("i", { html: ico("campana") }),
       el("span", { text: puede ? `¿Te aviso cuando ${nombre} te escriba, aunque el editor esté cerrado?` : "Para que te avise en tu iPhone aunque esté cerrado: Compartir → «Agregar a inicio», y abre el editor desde ese ícono." }),
       puede ? el("button.ch-invita-si", { type: "button", text: "Activar", onClick: async () => {
-        try { await PUSH.prender(); S.push = await PUSH.estado(); aviso(`¡Listo! Te aviso cuando ${nombre} te escriba 💜`, 3500); listo(); }
+        try { await PUSH.prender(); S.push = await PUSH.estado(); aviso(`¡Listo! Te aviso cuando ${nombre} te escriba`, 3500); listo(); }
         catch (err) { aviso(err.message, 6500, "error"); listo(); }
       } }) : null,
       el("button.ch-invita-no", { type: "button", text: puede ? "Ahora no" : "Entendido", onClick: listo }),
@@ -1269,9 +1272,11 @@ export function vistaChat(det) {
       el("div.ch-cositas", {}, [
         // (Fase 46: la cámara está arriba del chat y «Crear sticker» en el panel de stickers: aquí no se repiten.)
         item(IC.lapiz, "Dibujar", "En vivo, en todo el chat", () => entrarDibujo(), ".rosa"),
+        item(IC.galeria, "Galería", "Manda una foto o un GIF", () => fotoGaleria(), ".menta"),
+        item(IC.gato, "Sticker animado", "De un GIF de tu galería", () => crearSticker(), ".durazno"),
         item(IC.espacio, "Espacio", "Más lugar para dibujar", () => { entrarDibujo(); masEspacio(); }, ".lila"),
       ]),
-      el("div.ch-pronto", {}, [el("i", { html: IC.brillo }), el("span", { text: "Aquí van a llegar más cositas muy pronto ✨" })]),
+      el("div.ch-pronto", {}, [el("i", { html: IC.brillo }), el("span", { text: "Aquí van a llegar más cositas muy pronto" })]),
     ]), bMas, "mas");
   }
   async function guardarCopia() {
@@ -1395,7 +1400,7 @@ export function vistaChat(det) {
       const crear = deCol("crear", () => el("button.ch-mini.ch-crear-b", { type: "button", "aria-label": "Crear un sticker con tus fotos", onClick: () => crearSticker() }, [el("i", { html: IC.mas }), el("span", { text: "Crear" })]));
       if (fav.length) hijos.push(titulo("fav", "Favoritos", IC.estrellaLlena), ...fav.map((x) => miniMio(x, tipo)), titulo("mios", "Mis stickers"));
       hijos.push(crear, ...resto.map((x) => miniMio(x, tipo)));
-      if (!l.length) hijos.push(deCol("vacio-st", () => el("p.ch-col-vacio", { text: "Crea tus propios stickers con tus fotos 💜 Tus favoritos y los que más uses se van acomodando hasta arriba." })));
+      if (!l.length) hijos.push(deCol("vacio-st", () => el("p.ch-col-vacio", { text: "Crea tus propios stickers con tus fotos Tus favoritos y los que más uses se van acomodando hasta arriba." })));
     } else {
       hijos.push(...l.map((x) => miniMio(x, tipo)));
       if (!l.length) hijos.push(deCol("vacio-gif", () => el("div.ch-col-vacio", {}, [
@@ -1471,13 +1476,66 @@ export function vistaChat(det) {
     try {
       const item = await SRV.ponerEnColeccion({ tipo: "gif", u: g.u, w: g.w, h: g.h, favorito: true });
       COL.gifs = [item, ...(COL.gifs || []).filter((z) => z.id !== item.id)];
-      aviso("Guardado en tus GIFs favoritos ★", 1800);
+      aviso("Guardado en tus GIFs favoritos", 1800);
     } catch (e) { b.classList.remove("fav"); aviso(mensajeError(e), 4500, "error"); }
+  }
+  /** (Fase 58) Guardar en tus stickers (y favoritos) uno que te mandó tu amorcito. */
+  async function guardarStickerDeElla(g) {
+    sonar("favorito");
+    try {
+      const item = await SRV.ponerEnColeccion({ tipo: "sticker", u: g.u, w: g.w || 200, h: g.h || 200, favorito: true });
+      COL.stickers = [item, ...(COL.stickers || []).filter((x) => x.id !== item.id)];
+      aviso("Guardado en tus stickers favoritos", 2000);
+      vibrar(14);
+    } catch (e) { aviso(mensajeError(e), 4500, "error"); }
+  }
+  /** (Fase 58) Un sticker animado de un GIF de tu galería (como en WhatsApp): se guarda tal cual, moviéndose. */
+  async function stickerAnimado(f) {
+    if (f.size > 3 * 1024 * 1024) { aviso("Ese GIF pesa mucho (máximo 3 MB). Prueba uno más cortito.", 4200, "error"); return; }
+    const url = URL.createObjectURL(f);
+    let w = 200, h = 200;
+    try { const im = await new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = url; }); w = im.naturalWidth || 200; h = im.naturalHeight || 200; } catch (e) { /* sigue con 200 */ }
+    finally { URL.revokeObjectURL(url); }
+    aviso("Haciendo tu sticker animado…", 1800);
+    try {
+      const r = await SRV.subirMedia(f, "animado");
+      const item = await SRV.ponerEnColeccion({ tipo: "sticker", u: r.u, w, h });
+      COL.stickers = [item, ...(COL.stickers || []).filter((x) => x.id !== item.id)];
+      sonar("sticker-crear"); vibrar(20);
+      S.nuevoSticker = item.id;
+      if (P.tipo === "stickers" && P.vista === "mios" && !panelN.hidden) pintarMios(true);
+      else panel("stickers", "mios");
+    } catch (e) { aviso(mensajeError(e), 4500, "error"); }
+  }
+  /** (Fase 58) Mandar una foto (o un GIF) de tu galería, como foto (no como sticker). */
+  async function fotoGaleria() {
+    if (S.grabando) return;
+    const f = await elegirImagen();
+    if (!f || !S.vivo) return;
+    if (/gif$/i.test(f.type)) {
+      if (f.size > 4 * 1024 * 1024) { aviso("Ese GIF pesa mucho (máximo 4 MB).", 4000, "error"); return; }
+      const url = URL.createObjectURL(f);
+      const im = await new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = url; });
+      URL.revokeObjectURL(url);
+      mandarFoto(f, im?.naturalWidth || 300, im?.naturalHeight || 300);
+      return;
+    }
+    // Las fotos se achican (lado largo de 1600) y se mandan en JPG: llegan rápido y se ven bien.
+    try {
+      const bmp = await createImageBitmap(f);
+      const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height)), w = Math.round(bmp.width * k), h = Math.round(bmp.height * k);
+      const cv = Object.assign(document.createElement("canvas"), { width: w, height: h });
+      cv.getContext("2d").drawImage(bmp, 0, 0, w, h);
+      bmp.close?.();
+      const blob = await new Promise((ok) => cv.toBlob(ok, "image/jpeg", 0.86));
+      if (blob) mandarFoto(blob, w, h);
+    } catch (e) { aviso("No se pudo abrir esa foto.", 3200, "error"); }
   }
   async function crearSticker() {
     if (S.grabando) return;
     const f = await elegirImagen();
     if (!f || !S.vivo) return;
+    if (/gif$/i.test(f.type)) return stickerAnimado(f);
     await creadorSticker({ archivo: f, flota, sonar, alCrear: async ({ blob, w, h }) => {
       let item;
       try {

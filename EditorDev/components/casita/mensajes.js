@@ -79,6 +79,7 @@ export class Mensajes {
    * monito y su burbujita queden arriba del teclado; al cerrarlo, todo regresa como estaba. */
   barra(on = !this.abierto()) {
     const j = this.j;
+    j.protegerSalida();
     if (!this.barraN) {
       this.campo = el("input.ca-chat-campo", { type: "text", maxlength: String(MAX.msg), placeholder: "Escribe algo…", enterkeyhint: "send", autocomplete: "off", autocapitalize: "sentences", "aria-label": "Mensaje" });
       this.campo.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); this._enviar(); } else if (e.key === "Escape") this.barra(false); });
@@ -141,6 +142,7 @@ export class Mensajes {
       window.removeEventListener("resize", this._alVV);
       window.removeEventListener("scroll", this._alVV, true);
       this._sinDesplazar();
+      j.protegerSalida();   // (el teclado se acaba de ir: un «Atrás» ahorita no te saca del juego)
       j._subir = 0;
       j.mundo.classList.remove("subiendo");
       requestAnimationFrame(() => { if (j.vivo) { j._medir(); this._ubicar(); } });
@@ -178,12 +180,15 @@ export class Mensajes {
     if (this.j._congelado) this._teclado(false);
     document.body.classList.remove("ca-escribiendo");
   }
+  /** (Fase 58) Mandar y listo: la burbujita se cierra sola, el teclado se va y nada te saca del juego
+   *  (el «Atrás» o un toque que caiga en «Volver atrás» justo cuando se cierra el teclado se ignoran un ratito). */
   _enviar() {
     const t = this.campo.value;
     if (!t.trim()) { this.campo.focus(); return; }
     this.campo.value = "";
+    this.j.protegerSalida();
     this.mandar(t);
-    this.campo.focus({ preventScroll: true });
+    this.barra(false);
   }
   _pintarLog() {
     if (!this.logN || this.logN.hidden) return;

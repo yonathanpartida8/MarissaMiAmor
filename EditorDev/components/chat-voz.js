@@ -26,9 +26,14 @@ export const minutos = (s) => { s = Math.max(0, Math.round(s)); return `${Math.f
  */
 export async function grabar({ espera = 0 } = {}) {
   const ctx = new (AC())(); // se crea ya, dentro del toque
+  // (Fase 58) Mientras grabas, la canción del editor se calla para que no se cuele en el audio; vuelve al terminar.
+  const mezcla = window.EditorDev?.audio;
+  mezcla?.pausarParaVista?.(true, "grabar");
+  let soltada = false;
+  const soltar = () => { if (soltada) return; soltada = true; mezcla?.pausarParaVista?.(false, "grabar"); };
   let flujo;
   try { flujo = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: false, channelCount: 1, sampleRate: 48000 } }); }
-  catch (e) { ctx.close().catch(() => {}); throw e; }
+  catch (e) { ctx.close().catch(() => {}); soltar(); throw e; }
   ctx.resume?.().catch(() => {});
   const tipo = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm", "audio/ogg;codecs=opus"].find((t) => MediaRecorder.isTypeSupported?.(t)) || "";
   let rec;
@@ -44,7 +49,7 @@ export async function grabar({ espera = 0 } = {}) {
   if (espera) await new Promise((r) => setTimeout(r, espera));
   const t0 = performance.now();
   rec.start(250);
-  const apagar = () => { flujo.getTracks().forEach((t) => t.stop()); ctx.close().catch(() => {}); };
+  const apagar = () => { flujo.getTracks().forEach((t) => t.stop()); ctx.close().catch(() => {}); soltar(); };
   return {
     nivel() {
       an.getByteTimeDomainData(muestra);

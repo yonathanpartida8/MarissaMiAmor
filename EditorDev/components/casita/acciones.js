@@ -44,6 +44,8 @@ export const ACCIONES = {
     if (!(await j.irJunto(o))) return;
     j.mientras(o, "corre", 1700); j.sonar("agua");
     j.particulas("burbuja", o, 0, -90, 4);
+    // (Fase 58) Un vasito de agua: quita la sed.
+    setTimeout(() => { if (!j.vivo) return; j.sonar("bebida"); j.necesidades?.bebio("agua"); j._globo(j.yo, "¡Qué rica agüita!", 1600); }, 1200);
   },
   async cafe(j, o) {
     if (!(await j.irJunto(o))) return;

@@ -68,7 +68,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.26.0"
+VERSION = "1.27.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -2985,11 +2985,12 @@ def api_reacciones_vistas(h, s):
 GIPHY_OK = re.compile(r"^https://(media[0-9]*|i)\.giphy\.com/[A-Za-z0-9_./?=&%-]{4,400}$")
 COLOR_OK = re.compile(r"^#[0-9a-fA-F]{6}$")
 # Fase 34: los stickers que haces con tus fotos y los mensajes de voz (en el teléfono servidor).
-MEDIA_OK = re.compile(r"^/m/[0-9a-f]{64}\.(webp|png|jpg|wav)$")
+MEDIA_OK = re.compile(r"^/m/[0-9a-f]{64}\.(webp|png|jpg|gif|wav)$")
 MEDIA = os.path.join(DATOS, "mensajitos-media")
 MEDIA_TIPOS = {"sticker": ((b"\x89PNG\r\n\x1a\n", ".png"), (b"\xff\xd8\xff", ".jpg"), (b"RIFF", ".webp")), "audio": ((b"RIFF", ".wav"),)}
-MEDIA_TIPOS["foto"] = MEDIA_TIPOS["sticker"]  # Fase 38: las fotos de las páginas de cada mes
-MEDIA_MAX = {"sticker": 800 * 1024, "audio": 26 * 1024 * 1024, "foto": 3 * 1024 * 1024}  # audios HD: WAV de 48 kHz, hasta 4 minutos
+MEDIA_TIPOS["foto"] = MEDIA_TIPOS["sticker"] + ((b"GIF87a", ".gif"), (b"GIF89a", ".gif"))  # Fase 38 (y 1.27: también GIF de la galería)
+MEDIA_TIPOS["animado"] = ((b"GIF87a", ".gif"), (b"GIF89a", ".gif"), (b"RIFF", ".webp"))  # 1.27: stickers animados (GIF o WebP animado)
+MEDIA_MAX = {"sticker": 800 * 1024, "audio": 26 * 1024 * 1024, "foto": 4 * 1024 * 1024, "animado": 3 * 1024 * 1024}  # audios HD: WAV de 48 kHz, hasta 4 minutos
 _MEDIA_RITMO = {}
 CHAT_MAX_TEXTO = 2000
 CHAT_MAX_STICKERS = 12
@@ -3264,7 +3265,7 @@ def api_chat_media(h, s):
     h._leido = True
     ext = next((e for m, e in MEDIA_TIPOS[tipo] if datos.startswith(m) and (e != ".webp" or datos[8:12] == b"WEBP") and (e != ".wav" or datos[8:12] == b"WAVE")), None)
     if not ext:
-        raise Falla("Ese archivo no es una imagen (png, jpg o webp)." if tipo != "audio" else "Ese audio no es válido.", 415)
+        raise Falla("Ese archivo no es una imagen (png, jpg, webp o gif)." if tipo != "audio" else "Ese audio no es válido.", 415)
     t = time.monotonic()
     ritmo = [x for x in _MEDIA_RITMO.get(s["usuario_id"], []) if x > t - 60]
     if len(ritmo) >= 30:
@@ -3296,7 +3297,7 @@ def api_coleccion_poner(h, s):
     """Guardar en tu colección: un sticker tuyo (de /m/…) o un GIF de GIPHY. Si ya estaba, se pone al día."""
     d = h.cuerpo_json()
     tipo, u = d.get("tipo"), str(d.get("u") or "")
-    if tipo == "sticker" and not (MEDIA_OK.match(u) and not u.endswith(".wav")):
+    if tipo == "sticker" and not ((MEDIA_OK.match(u) and not u.endswith(".wav")) or GIPHY_OK.match(u)):   # 1.27: también los de GIPHY que te mandaron
         raise Falla("Ese sticker no es válido.", 400)
     if tipo == "gif" and not GIPHY_OK.match(u):
         raise Falla("Ese GIF no es de GIPHY.", 400)
@@ -4546,13 +4547,36 @@ def api_casita(h, s):
     pa = E.db.uno("SELECT datos FROM monitos WHERE usuario_id=?", otro)
     # 1.26: los mensajes de la casita (los últimos) y las cartitas del buzón.
     msgs = E.db.q("SELECT id, de, tipo, texto, leido, t FROM casita_msgs WHERE a=? AND b=? ORDER BY id DESC LIMIT 60", a, b)
-    h.responder(200, {"v": vv, "casa": json.loads(casa["datos"]) if casa else None,
+    # 1.27: las señales de la voz en vivo (oferta, respuesta, candidatos…) que te tocan; se entregan una vez.
+    with CASA_AVISO:
+        voz = [x for x in CASA_VOZ.pop(uid, []) if time.time() - x["t"] < 60]
+    h.responder(200, {"v": vv, "voz": voz, "casa": json.loads(casa["datos"]) if casa else None,
                       "yo": json.loads(yo["datos"]) if yo else None, "pareja": json.loads(pa["datos"]) if pa else None,
                       "pareja_aqui": time.time() - CASA_MIRANDO.get(otro, 0) < 40,
                       "msgs": [{"id": m["id"], "mio": m["de"] == uid, "tipo": m["tipo"] or "msg", "texto": m["texto"] or "", "leido": bool(m["leido"]), "t": m["t"]} for m in reversed(msgs)]})
 
 
 CASA_MIRANDO = {}
+CASA_VOZ = {}   # 1.27: señales de la voz en vivo esperando a que las recoja tu amorcito (en memoria, 60 s)
+VOZ_TIPOS = ("llamar", "oferta", "respuesta", "ice", "colgar", "ocupado")
+
+
+@ruta("POST", "/api/casita/voz", "sesion")
+def api_casita_voz(h, s):
+    """La voz en vivo de la casita (WebRTC): el servidor sólo pasa las señales para que los dos teléfonos se
+    conecten directo; el audio nunca pasa por aquí."""
+    a, b, otro = _par(s)
+    d = h.cuerpo_json()
+    tipo, datos = str(d.get("tipo") or ""), d.get("datos")
+    if tipo not in VOZ_TIPOS:
+        raise Falla("Señal no válida.", 400)
+    datos = _json_chico(datos if datos is not None else "", 16000, "La señal")
+    with CASA_AVISO:
+        cola = [x for x in CASA_VOZ.get(otro, []) if time.time() - x["t"] < 60][-80:]
+        cola.append({"tipo": tipo, "datos": json.loads(datos), "t": time.time()})
+        CASA_VOZ[otro] = cola
+    _casa_cambio(a, b)
+    h.responder(200, {"ok": True})
 
 
 @ruta("PUT", "/api/casita/yo", "sesion")

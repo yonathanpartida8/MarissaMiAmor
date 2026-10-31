@@ -6,7 +6,7 @@
 import { el, aviso, jalarParaCerrar } from "../ui.js";
 import { ICO } from "./iconos.js";
 import { monitoSVG, PIELES, COLOR_PELO, COLOR_OJOS, COLOR_ROPA, PEINADOS, ARRIBAS, ABAJOS, ACCESORIOS, CALZADOS, OJOS, PECAS } from "./monito.js";
-import { CATEGORIAS, deCategoria, colorDe, recetasDe, arteReceta } from "./catalogo/index.js";
+import { CATALOGO, CATEGORIAS, deCategoria, colorDe, recetasDe, arteReceta } from "./catalogo/index.js";
 import { CUARTOS, PAREDES, PATRONES, PISOS, cuarto } from "./cuartos.js";
 import { SONIDOS } from "./sonidos.js";
 import { PERFILES } from "./graficos.js";
@@ -152,26 +152,54 @@ export function estiloCuarto(j) {
   ].filter(Boolean)), "estilo");
 }
 
-/** El cajón de «Acomodar»: categorías arriba y sus cosas en una tira que se desliza. */
+/** El cajón de «Acomodar»: categorías arriba (con «Recientes» primero) y sus cosas en una tira que se desliza.
+ *  (Fase 58) Toca una cosa para ponerla, o ARRÁSTRALA hacia arriba y suéltala justo donde la quieres. */
 export function cajonCatalogo(j) {
   const tira = el("div.ca-cat-tira");
+  const recientes = () => j.recientes().map((k) => CATALOGO[k]).filter(Boolean);
+  const cats = () => (recientes().length ? [["recientes", "Recientes"], ...CATEGORIAS] : CATEGORIAS);
   let cat = CATEGORIAS[0][0];
-  const pintar = () => {
-    tira.replaceChildren(...deCategoria(cat).map((d) => el("button.ca-cat-b", { type: "button", "aria-label": `Poner ${d.n}`, dataset: { t: d.k }, onClick: () => j.agregar(d.k) }, [
+  const tarjeta = (d) => {
+    const b = el("button.ca-cat-b", { type: "button", "aria-label": `Poner ${d.n}`, dataset: { t: d.k }, onClick: () => { if (!b._arrastro) j.agregar(d.k); b._arrastro = false; } }, [
       el("i.ca-cat-mini", { html: d.arte({}, colorDe(d, {})) }), el("small", { text: d.n }),
-    ])));
+    ]);
+    // Arrastrar hacia arriba: sale del cajón y se pone donde la sueltes.
+    b.addEventListener("pointerdown", (e) => {
+      if (e.button > 0) return;
+      const x0 = e.clientX, y0 = e.clientY, id = e.pointerId;
+      const mover = (ev) => {
+        if (ev.pointerId !== id) return;
+        if (y0 - ev.clientY > 22 && Math.abs(ev.clientX - x0) < (y0 - ev.clientY) * 1.4) { quitar(); b._arrastro = true; j.arrastrarNuevo(d.k, ev); }
+        else if (Math.abs(ev.clientX - x0) > 14) quitar();
+      };
+      const quitar = () => { removeEventListener("pointermove", mover); removeEventListener("pointerup", quitar); removeEventListener("pointercancel", quitar); };
+      addEventListener("pointermove", mover); addEventListener("pointerup", quitar); addEventListener("pointercancel", quitar);
+    });
+    return b;
+  };
+  const pintar = () => {
+    const lista = cat === "recientes" ? recientes() : deCategoria(cat);
+    tira.replaceChildren(...lista.map(tarjeta));
     tira.scrollLeft = 0;
   };
-  const tabs = el("div.ca-cat-tabs", { role: "tablist" }, CATEGORIAS.map(([k, t]) => {
-    const b = el("button.ca-cat-tab" + (k === cat ? ".on" : ""), { type: "button", role: "tab", text: t, onClick: () => { cat = k; marcar(b); pintar(); j.sonar("hoja", { volumen: 0.5 }); } });
-    return b;
-  }));
-  pintar();
-  const n = el("div.ca-cajon", {}, [el("div.ca-cajon-cab", {}, [tabs, el("button.ca-chip.ca-pared-b", { type: "button", onClick: () => estiloCuarto(j) }, [el("i", { html: ICO.pared }), el("span", { text: "Pared y piso" })])]), tira]);
-  /** Al abrir «Acomodar», empieza en lo del cuarto donde estás. */
+  const tabs = el("div.ca-cat-tabs", { role: "tablist" });
+  const pintarTabs = () => {
+    tabs.replaceChildren(...cats().map(([k, t]) => {
+      const b = el("button.ca-cat-tab" + (k === cat ? ".on" : "") + (k === "recientes" ? ".recientes" : ""), { type: "button", role: "tab", text: t, onClick: () => { cat = k; marcar(b); pintar(); j.sonar("hoja", { volumen: 0.5 }); } });
+      return b;
+    }));
+  };
+  pintarTabs(); pintar();
+  const n = el("div.ca-cajon", {}, [
+    el("div.ca-cajon-cab", {}, [tabs, el("button.ca-chip.ca-pared-b", { type: "button", onClick: () => estiloCuarto(j) }, [el("i", { html: ICO.pared }), el("span", { text: "Pared y piso" })])]),
+    tira,
+    el("small.ca-cajon-pista", { text: "Toca una cosa para ponerla, o arrástrala hacia arriba y suéltala donde quieras" }),
+  ]);
+  /** Al abrir «Acomodar», empieza en lo del cuarto donde estás (y «Recientes» al día). */
   n.ponerCat = (k) => {
-    const i = CATEGORIAS.findIndex(([x]) => x === k);
-    if (i < 0 || k === cat) return;
+    pintarTabs();
+    const i = cats().findIndex(([x]) => x === k);
+    if (i < 0) return;
     cat = k; marcar(tabs.children[i]); pintar();
     tabs.scrollLeft = Math.max(0, tabs.children[i].offsetLeft - 24);
   };

@@ -36,7 +36,7 @@ export const SONIDOS = [
   ["trueno-lejos", "Truenos lejanos (lluvia y tormenta)"], ["viento", "El viento de la tormentota"], ["interruptor", "El apagador de la luz y los aparatos"], ["refri", "Abrir el refri (su chuponcito y su zumbido)"],
   ["buzon", "La tapita de metal del buzón"], ["baul", "La tapa de madera del baúl"], ["ropero", "Las puertas del ropero"], ["tapa", "La tapa del bote de basura"], ["tirar", "Tirar algo al bote"],
   ["hielera", "Los hielitos de la hielera"], ["neon", "El zumbido del letrero de neón"], ["laptop", "Prender la compu"], ["auch", "¡Auch! (el cactus)"], ["fruta", "Agarrar fruta"],
-  ["libro", "Hojear un libro"], ["hojas", "Las hojitas de las plantas"], ["regar", "Regar con la regadera"], ["frasco", "El frasco de galletas (tapa de vidrio)"],
+  ["libro", "Hojear un libro"], ["hojas", "Las hojitas de las plantas"], ["regar", "Regar con la regadera"], ["frasco", "El frasco de galletas (tapa de vidrio)"], ["charco", "Brincar en un charquito"], ["paso2", "El otro pasito (se turnan)"], ["bebida", "Tomar algo"], ["bostezo", "Bostezar con sueño"], ["traes", "¡Te atrapé! (las traes)"], ["necesidad", "Cuando algo ya se llenó"],
   ["musica-baile", "Canción del tocadiscos (se repite)"], ["musica-cuna", "Canción de la cajita musical (se repite)"], ["musica-fiesta", "Canción de la bocina (se repite)"],
 ];
 
@@ -47,6 +47,7 @@ const SON = {
   soltar: [["sine", 420, 180, 0.12, 0.32], ["ruido", 900, 400, 0.08, 0.12]],
   poof: [["ruido", 2600, 300, 0.32, 0.32], ["sine", 620, 120, 0.26, 0.2]],
   paso: [["ruido", 1300, 900, 0.035, 0.07]],
+  paso2: [["ruido", 1100, 800, 0.035, 0.065]],
   correr: [["ruido", 1500, 1000, 0.03, 0.07]],
   sentar: [["ruido", 700, 260, 0.16, 0.2], ["sine", 300, 210, 0.12, 0.14]],
   dormir: [["sine", 784, 784, 0.45, 0.1], ["sine", 659, 659, 0.45, 0.1, 0.24], ["sine", 523, 523, 0.7, 0.1, 0.48]],
@@ -132,6 +133,11 @@ const SON = {
   libro: [["ruido", 4200, 2200, 0.09, 0.09], ["ruido", 3600, 1900, 0.09, 0.07, 0.11], ["ruido", 3000, 1700, 0.11, 0.06, 0.22]],
   hojas: [["ruido", 5200, 3600, 0.3, 0.05], ["ruido", 4400, 3100, 0.26, 0.045, 0.12], ["ruido", 6000, 4200, 0.18, 0.03, 0.26]],
   regar: [["ruido", 2400, 2000, 0.9, 0.07], ["sine", 1400, 1800, 0.04, 0.04, 0.2], ["sine", 1300, 1700, 0.04, 0.04, 0.5], ["sine", 1500, 1900, 0.04, 0.03, 0.72]],
+  charco: [["ruido", 2600, 700, 0.28, 0.26], ["sine", 320, 110, 0.16, 0.16, 0.02], ["ruido", 3400, 1500, 0.14, 0.12, 0.13], ["sine", 1400, 2200, 0.05, 0.05, 0.2]],
+  bebida: [["sine", 500, 700, 0.06, 0.1], ["sine", 520, 720, 0.06, 0.1, 0.16], ["sine", 540, 760, 0.06, 0.1, 0.32], ["sine", 900, 1300, 0.12, 0.08, 0.5]],
+  bostezo: [["triangle", 380, 520, 0.5, 0.07], ["triangle", 520, 300, 0.7, 0.07, 0.5]],
+  traes: [["square", 784, 784, 0.08, 0.05], ["square", 1046, 1046, 0.08, 0.05, 0.08], ["square", 1568, 1568, 0.16, 0.05, 0.16], ["ruido", 3000, 1600, 0.08, 0.1]],
+  necesidad: [["sine", 1046, 1046, 0.14, 0.12], ["sine", 1318, 1318, 0.14, 0.12, 0.09], ["sine", 1568, 1568, 0.3, 0.12, 0.18]],
   frasco: [["triangle", 2600, 2560, 0.18, 0.08], ["triangle", 3900, 3860, 0.14, 0.04, 0.004], ["ruido", 3000, 2000, 0.05, 0.05, 0.1]],
   hamaca: [["triangle", 180, 230, 0.4, 0.06], ["ruido", 900, 700, 0.3, 0.05, 0.1]],
 };

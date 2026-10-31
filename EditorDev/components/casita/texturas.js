@@ -108,14 +108,18 @@ export function texLluvia(clima) {
   });
 }
 
-/* ── Charquitos (del ancho del cuarto) ── */
+/* ── Charquitos (del ancho del cuarto): dónde están (en el mundo) y su dibujo ── */
+/** [x (fracción del cuarto), y (mundo), radio x, radio y]: los usa la lluvia (ondas) y para brincar en ellos. */
+export const CHARCOS = [[0.2, 506, 39, 7], [0.62, 492, 51, 8], [0.86, 518, 30, 6], [0.4, 572, 45, 8], [0.75, 598, 33, 7], [0.28, 650, 42, 8], [0.66, 682, 36, 7]];
+export const CHARCOS_ARRIBA = 470, CHARCOS_ALTO = 240;
 export function texCharcos(ancho) {
-  return comoUrl(`ch|${ancho}`, Math.ceil(ancho / PX), 50, ({ pon }) => {
-    const W = Math.ceil(ancho / PX), A = [150, 200, 255], L = [220, 240, 255];
-    for (const [fx, fy, rx, ry] of [[0.2, 12, 13, 2.4], [0.62, 7, 17, 2.8], [0.86, 16, 10, 2], [0.4, 34, 15, 2.6], [0.75, 42, 11, 2.2]]) {
-      const cx = fx * W;
-      for (let y = -Math.ceil(ry); y <= ry; y++) for (let x = -rx; x <= rx; x++) if ((x / rx) ** 2 + (y / ry) ** 2 <= 1) pon(cx + x, fy + y, A, 150);
+  return comoUrl(`ch2|${ancho}`, Math.ceil(ancho / PX), CHARCOS_ALTO / PX, ({ pon }) => {
+    const W = Math.ceil(ancho / PX), A = [150, 200, 255], L = [220, 240, 255], O = [110, 160, 220];
+    for (const [fx, wy, wrx, wry] of CHARCOS) {
+      const cx = fx * W, fy = (wy - CHARCOS_ARRIBA) / PX, rx = Math.round(wrx / PX), ry = wry / PX;
+      for (let y = -Math.ceil(ry); y <= ry; y++) for (let x = -rx; x <= rx; x++) { const d = (x / rx) ** 2 + (y / ry) ** 2; if (d <= 1) pon(cx + x, fy + y, d > 0.7 ? O : A, d > 0.7 ? 170 : 140); }
       for (let x = -rx + 3; x < -rx + 7; x++) pon(cx + x, fy - 1, L, 220);
+      pon(cx + rx - 4, fy + 1, L, 200);
     }
   });
 }
@@ -163,4 +167,36 @@ export function pintarFrente(cv, { tipo, ancho, hora = "dia" }) {
   for (let j = 0; j < 18; j++) for (let i = 0; i < 14; i++) { const arco = j < 4 && (i - 6.5) ** 2 + (j - 4) ** 2 > 36; if (arco) continue; pon(vx + i, vy + j, i < 2 || i > 11 || j > 15 || (j < 6 && (i - 6.5) ** 2 + (j - 6) ** 2 > 25) ? MB : vid); }
   for (let j = 2; j < 16; j++) pon(vx + 7, vy + j, MB);
   return listo();
+}
+
+/* ── (Fase 58) El carrito que pasa, el sol y la luna, en pixel ── */
+export function texAuto(color = "#ff86b0") {
+  return comoUrl(`auto|${color}`, 32, 14, ({ pon, caja }) => {
+    const C = rgb(color), O = osc(C, 0.55), L = cla(C, 0.35), V = rgb("#cdeeff"), N = rgb("#3a2a35"), G = rgb("#d8d2dc");
+    caja(8, 2, 13, 4, C); caja(2, 6, 28, 5, C);
+    for (let x = 9; x < 21; x++) pon(x, 1, O);
+    caja(10, 3, 5, 3, V); caja(16, 3, 4, 3, V); pon(15, 3, C); pon(10, 3, cla(V, 0.6));
+    for (let x = 2; x < 30; x++) { pon(x, 5, x > 7 && x < 22 ? C : O); pon(x, 11, O); } for (let y = 6; y < 11; y++) { pon(1, y, O); pon(30, y, O); }
+    for (let x = 3; x < 29; x++) pon(x, 6, L);
+    pon(29, 7, [255, 243, 160]); pon(29, 8, [255, 243, 160]); pon(2, 8, [255, 120, 140]);
+    for (const cx of [8, 23]) { caja(cx - 2, 10, 5, 4, N); caja(cx - 1, 11, 3, 2, G); pon(cx, 11, [255, 255, 255]); }
+  });
+}
+export function texSol(tarde = false) {
+  return comoUrl(`sol|${tarde}`, 26, 26, ({ pon }) => {
+    const A = rgb(tarde ? "#ffb070" : "#ffe680"), B = rgb(tarde ? "#ff8f6b" : "#ffd04d"), L = rgb(tarde ? "#ffd2a8" : "#fff6c8");
+    for (let y = -7; y <= 7; y++) for (let x = -7; x <= 7; x++) { const d = x * x + y * y; if (d <= 49) pon(13 + x, 13 + y, d > 30 ? B : (x - 2) * (x - 2) + (y + 2) * (y + 2) < 8 ? L : A); }
+    for (let i = 0; i < 8; i++) { const a = (i * Math.PI) / 4; for (let r = 10; r <= 12; r++) pon(13 + Math.round(Math.cos(a) * r), 13 + Math.round(Math.sin(a) * r), B); }
+  });
+}
+export function texLuna() {
+  return comoUrl("luna", 22, 22, ({ pon }) => {
+    const A = rgb("#fff3c4"), B = rgb("#e9d79a"), C = rgb("#d8c486");
+    for (let y = -8; y <= 8; y++) for (let x = -8; x <= 8; x++) {
+      const d = x * x + y * y;
+      if (d > 64 || (x + 5) * (x + 5) + (y - 3) * (y - 3) < 44) continue;
+      pon(11 + x, 11 + y, d > 46 ? B : A);
+    }
+    for (const [x, y] of [[4, -2], [2, 3], [5, 4]]) pon(11 + x, 11 + y, C);
+  });
 }

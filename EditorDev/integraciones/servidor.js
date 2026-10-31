@@ -323,6 +323,8 @@ export async function subirMedia(blob, tipo) {
   return r.datos;
 }
 export const coleccion = () => pedir("chat/coleccion");
+/** (1.27) La voz en vivo de la casita: una señal de WebRTC para tu amorcito (llega con la escucha de la casita). */
+export const casitaVoz = (tipo, datos = "") => pedir("casita/voz", { method: "POST", body: { tipo, datos } });
 export const ponerEnColeccion = (d) => pedir("chat/coleccion", { method: "POST", body: d }).then((r) => r.item);
 export const favoritoColeccion = (id, favorito) => pedir("chat/coleccion/" + encodeURIComponent(id), { method: "PUT", body: { favorito } }).then((r) => r.item);
 export const quitarDeColeccion = (id) => pedir("chat/coleccion/" + encodeURIComponent(id), { method: "DELETE" });

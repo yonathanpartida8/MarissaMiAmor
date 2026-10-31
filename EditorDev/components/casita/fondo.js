@@ -41,7 +41,8 @@ export function pintarFondo(lienzo, { ancho, hora = "dia", clima = "sol", tipo =
   }
   // Estrellitas (de noche y sin nubes) y el sol o la luna.
   if (hora === "noche" && nublado < 0.6) for (let n = 0; n < W * 0.5; n++) { const x = R() * W, y = R() * horizonte * 0.8; pon(x, y, R() < 0.2 ? [255, 246, 200] : [200, 200, 240]); }
-  if (nublado < 0.6) {
+  // (Fase 58: el sol y la luna ya no van pintados aquí: son pixel art aparte, con brillo y movimiento.)
+  if (false) {
     const sx = Math.round(W * 0.78), sy = hora === "tarde" ? Math.round(horizonte * 0.78) : Math.round(horizonte * 0.25), r = 6;
     for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
       const dd = x * x + y * y;
