@@ -1195,11 +1195,11 @@ export class Casita {
   }
   _menuYo() {
     const m = this.yo, ops = GESTOS.map(([k, t]) => [k, t, () => this.gesto(m, k)]);
+    ops.unshift(["decir", "Decir algo", () => this.mensajes.barra(true)]);   // (lo más fácil: tocarte y escribir; lo del momento va antes)
     if (m.accion === "columpio") ops.unshift(["empujar", "Pedir que me empuje", () => { this._globo(m, `${this.pareja}, ¡empújame!`, 3800); this._mandarYo({ dice: "¡Empújame!" }); }]);
     const c = COSAS_MANO[m.lleva];
     if (c?.comible) ops.unshift(["comer", `Comer ${c.n.toLowerCase()}`, () => this.comer()]);
     if (m.lleva) ops.push(["soltar", "Soltar", () => this.soltar()]);
-    ops.unshift(["decir", "Decir algo", () => this.mensajes.barra(true)]);   // (lo más fácil: tocarte y escribir)
     if (m.mueble) ops.unshift(["brinca", "Pararme", () => this.pararse()]);
     P.menuMonito(this, m, ops, "Tú");
   }
