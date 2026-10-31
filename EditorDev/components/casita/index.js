@@ -568,7 +568,7 @@ export class Casita {
     let z = d.capa === "alfombra" ? 3 : d.capa === "pared" ? 10 + Math.round(o.y / 60) : Math.round(o.y);
     if (d.mascota) z = zMascota(o.y);
     // (Encima de un mueble: justo enfrente de él.)
-    else if (puedeSubir(d) && o.y < FONDO) { const a = this._apoyo(gx, o.y, o.id); if (a) z = (parseInt(a.r.n.style.zIndex, 10) || 0) + 1; }
+    else if (puedeSubir(d)) { const a = this._encima(gx, o.y, o.id); if (a) z = (parseInt(a.r.n.style.zIndex, 10) || 0) + 1; }
     for (const n of [r.n, r.fr]) { if (!n) continue; n.style.left = (gx - d.w / 2).toFixed(1) + "px"; n.style.top = (o.y - d.h).toFixed(1) + "px"; n.classList.toggle("f", !!o.f); }
     r.n.style.zIndex = z;
     if (r.fr) r.fr.style.zIndex = z + 2;
@@ -578,6 +578,11 @@ export class Casita {
     }
   }
   /** La superficie de un mueble justo debajo de (gx, y): para que lo que sueltas se quede encima. */
+  /** ¿Está encima de un mueble (sobre su tablero)? Con el piso hondo, una mesa de adelante tiene su tablero más abajo que el fondo. */
+  _encima(gx, y, sinId) {
+    const a = this._apoyo(gx, y, sinId);
+    return a && Math.abs(a.y - y) <= 3 && (y < FONDO || a.r.o.y > y + 4) ? a : null;
+  }
   _apoyo(gx, y, sinId) {
     let mejor = null;
     for (const r of this.objs.values()) {
@@ -1200,9 +1205,9 @@ export class Casita {
   }
   _menuSuyo() {
     const ops = JUNTOS.map(([k, t]) => [k, t, () => this.juntos(k)]);
+    ops.unshift(this.traes.activo ? ["traes", "Terminar las traes", () => this.traes.terminar(true)] : ["traes", "Jugar a las traes", () => this.traes.empezar()]);
     if (this.yo.lleva) ops.unshift(["regalo", `Regalarle ${COSAS_MANO[this.yo.lleva].n.toLowerCase()}`, () => this.juntos("regalo")]);
     if (this.suyo.accion === "columpio") ops.unshift(["empujar", "Empujar el columpio", () => this.juntos("empujar")]);
-    ops.unshift(this.traes.activo ? ["traes", "Terminar las traes", () => this.traes.terminar(true)] : ["traes", "Jugar a las traes", () => this.traes.empezar()]);
     P.menuMonito(this, this.suyo, ops, `Con ${this.pareja}`);
   }
   cerrarMenu() { const n = this.menu; if (!n) return false; this.menu = null; n.classList.remove("ver"); setTimeout(() => n.remove(), 180); return true; }
@@ -1441,7 +1446,12 @@ export class Casita {
     // Física: si lo aventaste, se resbala un poquito; si quedó en el aire, cae al mueble de abajo o al piso.
     if (g.jugando) g.gx = lim(g.gx + lim(g.vx * 6, -90, 90), r.d.w * 0.3, ANCHO - r.d.w * 0.3);
     const soltadoEn = g.y;
-    if (puedeSubir(r.d) && g.y < FONDO) { const a = this._apoyo(g.gx, g.y, r.o.id); g.y = a ? a.y : FONDO + 8; }
+    if (puedeSubir(r.d)) {
+      const a = this._apoyo(g.gx, g.y, r.o.id);
+      // En el aire: cae al mueble de abajo o al piso. En el piso, pero sobre el tablero de un mueble de más adelante: se queda encima.
+      if (g.y < FONDO) g.y = a ? a.y : FONDO + 8;
+      else if (a && a.r.o.y > g.y + 4 && a.y <= g.y + 30) g.y = a.y;
+    }
     const { c, x } = enCuarto(g.gx);
     // Jugando (una mascota, el osito…): se queda donde lo soltaste, rebota y hace su ruidito.
     if (g.jugando) {
