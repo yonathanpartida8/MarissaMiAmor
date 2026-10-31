@@ -3,11 +3,11 @@
  * Para agregar un cuarto: una fila en CUARTOS y su acomodo en INICIAL (todo lo demás se ajusta solo).
  * Cada cosa vive en su cuarto con x (desde la orilla izquierda del cuarto) y y (dónde toca el piso).
  */
-export const H = 560;          // el alto del mundo
+export const H = 640;          // el alto del mundo (Fase 57: piso más hondo, para acomodar más cosas)
 export const PISO = 432;       // donde termina la pared y empieza el piso
 export const FONDO = 468;      // lo más atrás que se puede pisar
-export const FRENTE = 552;     // lo más adelante
-export const SUELO = 524;      // donde se para un monito
+export const FRENTE = 632;     // lo más adelante
+export const SUELO = 548;      // donde se para un monito
 
 export const CUARTOS = [
   { k: "jardin", n: "Jardín", w: 700, afuera: true, pared: "#bfe6ff", patron: "liso", piso: "pasto" },

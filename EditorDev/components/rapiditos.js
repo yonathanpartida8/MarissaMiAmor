@@ -30,7 +30,7 @@ export async function mandar(app, tipo, texto = "") {
   return t;
 }
 
-/* ── Cuando llegan: una tarjetita arriba, una tras otra (sin amontonarse) ── */
+/* ── Cuando llegan: una animación en pantalla, una tras otra (sin amontonarse) ── */
 let cola = [], mostrando = false, vistoHasta = 0;
 const yaVistos = new Set();
 
@@ -48,30 +48,34 @@ export function llegaron(app, lista = []) {
   if (!mostrando) siguiente(app);
 }
 
+/** (Fase 57) Ya no sale una tarjetita para tocar: sólo una animación linda en toda la pantalla con lo que te
+ *  mandó (corazones que suben con «Te amo», besitos que flotan, estrellitas con «Cuídate» y un sobrecito que se
+ *  abre con su mensaje). No se puede tocar ni tapa nada: se va sola. Si están en su casita, su monito también
+ *  te lo dice. */
 function siguiente(app) {
   const x = cola.shift();
   if (!x) { mostrando = false; return; }
   mostrando = true;
   const T = toque(x.tipo), nombre = PF.nombreDe(PF.datos().pareja) || "Tu amorcito";
   app.sonidos?.sonar(sonido(x.tipo));
-  vibrar(20);
-  const chispas = reducido() || document.body.classList.contains("ed-ultra") ? [] : Array.from({ length: 6 }, (_, i) => el("i.tq-chispa", { html: T.e, style: { "--i": i } }));
-  const n = el("button.tq-llega." + T.c, { type: "button", role: "status", "aria-live": "polite", "aria-label": `${nombre} ${T.frase}${x.texto ? ": " + x.texto : ""}. Abrir el mapa` }, [
-    el("span.tq-emoji", { html: T.e }),
-    el("span.tq-t", {}, [el("b", { text: `${nombre} ${T.frase}` }), x.texto ? el("span.tq-txt", { text: x.texto }) : null, el("small", { text: "Toca para verlo en el mapa" })]),
-    ...chispas,
+  vibrar(T.id === "teamo" ? 40 : 20);
+  const poco = reducido() || document.body.classList.contains("ed-ultra");
+  const n = el("div.tq-show." + T.c + ".k-" + T.id, { role: "status", "aria-live": "polite", "aria-label": `${nombre} ${T.frase}${x.texto ? ": " + x.texto : ""}` }, [
+    el("i.tq-show-luz"),
+    el("div.tq-show-centro", {}, [
+      el("i.tq-show-ico", { html: T.e }),
+      el("b.tq-show-t", { text: `${nombre} ${T.frase}` }),
+      x.texto ? el("p.tq-show-txt", { text: x.texto }) : null,
+    ]),
+    ...(poco ? [] : Array.from({ length: 16 }, (_, i) => el("i.tq-show-p", { html: T.e, style: {
+      "--x": (4 + Math.random() * 92).toFixed(1) + "vw", "--d": (i * 0.11 + Math.random() * 0.3).toFixed(2) + "s",
+      "--s": (0.6 + Math.random() * 0.9).toFixed(2), "--r": (Math.random() * 60 - 30).toFixed(0) + "deg", "--v": (2.2 + Math.random() * 1.6).toFixed(2) + "s",
+    } }))),
   ]);
-  let fuera = false;
-  const quitar = () => {
-    if (fuera) return;
-    fuera = true;
-    clearTimeout(t);
-    n.classList.add("sale");
-    setTimeout(() => { n.remove(); siguiente(app); }, reducido() ? 0 : 260);
-  };
-  n.addEventListener("click", () => { quitar(); if (SRV.conectado()) app.juntitos?.abrir("mapa"); });
   document.body.append(n);
-  const t = setTimeout(quitar, x.texto ? 6500 : 4600);
+  dispatchEvent(new CustomEvent("ed-toque-llega", { detail: { tipo: T.id, texto: x.texto || "" } }));
+  const dura = x.texto ? Math.min(7800, 4200 + x.texto.length * 45) : 3300;
+  setTimeout(() => { n.classList.add("sale"); setTimeout(() => { n.remove(); siguiente(app); }, reducido() ? 0 : 520); }, dura);
 }
 
 /** Lo último de los dos (para la sección del mapa). */

@@ -1,15 +1,19 @@
 /**
- * EL MONITO: su dibujo (SVG por piezas, para que camine, salude, se siente, coma y ponga caritas) y su ropa.
- * Para agregar ropa nueva: una fila en su lista (PEINADOS, ARRIBAS…) y su dibujo abajo.
- * Las caritas se cambian con clases (ver casita.css): ojos normales / felices / dormidos / de corazón /
- * de sorpresa y boca sonriente / abierta / «o» / besito. Con sombreado suave en la cara, la ropa y el pelo.
+ * EL MONITO (Fase 57): un personajito en pixel art, de tres cuartos y viendo hacia adelante (como los de los
+ * juegos de antes), hecho cuadrito por cuadrito en una rejilla de 25 × 41. Cada parte va en su grupo para que
+ * camine, salude, se siente y ponga caritas (las clases de siempre: ca-pi, ca-pd, ca-bi, ca-bd, ca-cabeza,
+ * ojo-n, ojo-f, ojo-z, ojo-c, ojo-g, ojo-s, bo-n, bo-a, bo-o, bo-t, bo-b…; ver casita.css).
+ * El sombreado (luz de arriba a la derecha) y el contorno oscuro de cada parte se calculan solos, así que
+ * para agregar ropa o un peinado basta con dibujar su forma.
+ * Mide lo mismo que antes (100 × 170, pies en y = 166): un cuadrito = 4.
  */
 export const PIELES = ["#fff0e6", "#ffe6d2", "#ffe0c8", "#f6d3b8", "#e8b896", "#c98e68", "#9a6644", "#6e4630"];
-export const COLOR_PELO = ["#3a2a35", "#5a3b2e", "#8a5a3b", "#c2603a", "#d9a05b", "#f2d27a", "#e8e1d9", "#ff86b0", "#9b6be0", "#6fb8e8", "#2f2f3a"];
-export const COLOR_ROPA = ["#ff8fb8", "#ff5c93", "#ffb3cf", "#c39bff", "#9b6be0", "#7aa7ff", "#86d6f2", "#6fd3a6", "#ffd36e", "#ff9e7a", "#ffffff", "#f3e3d3", "#4a5a8a", "#3a2a35"];
-export const PEINADOS = [["largo", "Largo"], ["lacio", "Lacio"], ["ondulado", "Ondulado"], ["trenza", "Trenza"], ["coletas", "Coletas"], ["chongo", "Chongo"], ["bob", "Bob"], ["afro", "Afro"], ["corto", "Corto"], ["copete", "Copete"], ["chino", "Chinito"], ["rapado", "Rapado"]];
-export const ARRIBAS = [["playera", "Playera"], ["vestido", "Vestido"], ["sudadera", "Sudadera"], ["sueter", "Suéter"], ["blusita", "Blusita"], ["camisa", "Camisa"], ["rayas", "Rayitas"], ["chamarra", "Chamarra"], ["pijama", "Pijama"], ["overol", "Overol"]];
-export const ABAJOS = [["pantalon", "Pantalón"], ["jeans", "Jeans"], ["falda", "Falda"], ["short", "Short"]];
+export const COLOR_PELO = ["#3a2a35", "#5a3b2e", "#8a5a3b", "#c2603a", "#d9a05b", "#f2d27a", "#e8e1d9", "#ff86b0", "#9b6be0", "#5b8fd9", "#2f2f3a", "#6fbfa0"];
+export const COLOR_OJOS = ["#5a3b2e", "#2f2a35", "#3f8a4f", "#3f78c9", "#c08a3e", "#7d8a99", "#8a5ac8", "#d9487f"];
+export const COLOR_ROPA = ["#ff8fb8", "#ff5c93", "#ffb3cf", "#c39bff", "#9b6be0", "#7aa7ff", "#86d6f2", "#6fd3a6", "#ffd36e", "#ff9e7a", "#ffffff", "#f3e3d3", "#cfd6de", "#4a5a8a", "#3a3f4a", "#3a2a35", "#8a2e3f"];
+export const PEINADOS = [["largo", "Largo"], ["lacio", "Lacio"], ["ondulado", "Ondulado"], ["trenza", "Trenza"], ["coletas", "Coletas"], ["chongo", "Chongo"], ["cola", "Cola alta"], ["bob", "Bob"], ["afro", "Afro"], ["corto", "Corto"], ["picos", "Picos"], ["copete", "Copete"], ["chino", "Chinito"], ["rapado", "Rapado"]];
+export const ARRIBAS = [["playera", "Playera"], ["tirantes", "Tirantes"], ["vestido", "Vestido"], ["sudadera", "Sudadera"], ["sueter", "Suéter"], ["blusita", "Blusita"], ["camisa", "Camisa"], ["rayas", "Rayitas"], ["chamarra", "Chamarra"], ["pijama", "Pijama"], ["overol", "Overol"]];
+export const ABAJOS = [["pantalon", "Pantalón"], ["jeans", "Jeans"], ["deportivo", "Deportivo"], ["falda", "Falda"], ["short", "Short"]];
 export const CALZADOS = [["tenis", "Tenis"], ["botas", "Botas"], ["flats", "Flats"]];
 export const OJOS = [["redondos", "Redonditos"], ["grandes", "Grandotes"], ["pestanas", "Pestañitas"], ["puntitos", "Puntitos"]];
 export const PECAS = [["no", "Sin pecas"], ["si", "Con pecas"]];
@@ -17,146 +21,275 @@ export const ACCESORIOS = [["ninguno", "Nada"], ["mono", "Moño"], ["diadema", "
 
 /** La ropa de entrada, según lo que eligió en su perfil (mujer u hombre; si no, algo lindo para todos). */
 export function ropaDe(genero) {
-  if (genero === "Mujer") return { piel: PIELES[2], pelo: "largo", peloColor: "#5a3b2e", arriba: "vestido", arribaColor: "#ff8fb8", abajo: "falda", abajoColor: "#c39bff", zapatos: "#ff5c93", calzado: "flats", ojos: "pestanas", pecas: "no", accesorio: "mono" };
-  if (genero === "Hombre") return { piel: PIELES[4], pelo: "corto", peloColor: "#3a2a35", arriba: "playera", arribaColor: "#7aa7ff", abajo: "pantalon", abajoColor: "#4a5a8a", zapatos: "#3a2a35", calzado: "tenis", ojos: "redondos", pecas: "no", accesorio: "ninguno" };
-  return { piel: PIELES[3], pelo: "chino", peloColor: "#8a5a3b", arriba: "sudadera", arribaColor: "#c39bff", abajo: "pantalon", abajoColor: "#4a5a8a", zapatos: "#ff5c93", calzado: "tenis", ojos: "grandes", pecas: "no", accesorio: "ninguno" };
+  if (genero === "Mujer") return { piel: PIELES[2], pelo: "cola", peloColor: "#2f2f3a", ojosColor: "#3f78c9", arriba: "tirantes", arribaColor: "#cfd6de", abajo: "pantalon", abajoColor: "#8a2e3f", zapatos: "#ffd36e", calzado: "tenis", ojos: "pestanas", pecas: "no", accesorio: "mono" };
+  if (genero === "Hombre") return { piel: PIELES[3], pelo: "picos", peloColor: "#5b8fd9", ojosColor: "#3f8a4f", arriba: "tirantes", arribaColor: "#cfd6de", abajo: "deportivo", abajoColor: "#3a3f4a", zapatos: "#ffd36e", calzado: "tenis", ojos: "redondos", pecas: "no", accesorio: "ninguno" };
+  return { piel: PIELES[3], pelo: "chino", peloColor: "#8a5a3b", ojosColor: "#5a3b2e", arriba: "sudadera", arribaColor: "#c39bff", abajo: "pantalon", abajoColor: "#4a5a8a", zapatos: "#ff5c93", calzado: "tenis", ojos: "grandes", pecas: "no", accesorio: "ninguno" };
 }
 
-const seguro = (c, d) => (/^#[0-9a-f]{6}$/i.test(c || "") ? c : d);
-function osc(c, k = 0.82) { const n = parseInt(String(c).slice(1), 16) || 0; return `rgb(${Math.round((n >> 16) * k)},${Math.round(((n >> 8) & 255) * k)},${Math.round((n & 255) * k)})`; }
-function cla(c, t = 0.3) { const n = parseInt(String(c).slice(1), 16) || 0, f = (v) => Math.round(v + (255 - v) * t); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; }
-const OL = 'stroke="#4b2e42" stroke-opacity=".22" stroke-width="2.2" stroke-linejoin="round"';
-const SOMBRA = 'fill="#3a2a35" opacity=".08"';
-const cor = (x, y, s, c) => `<path transform="translate(${x} ${y}) scale(${s})" d="M0-3c-2-4-9-3-8 2 1 4 8 8 8 8s7-4 8-8c1-5-6-6-8-2z" fill="${c}"/>`;
-function estrellita(x, y, r, c) {
-  let d = "";
-  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.45 : r; d += (i ? "L" : "M") + (x + Math.cos(a) * rr).toFixed(1) + " " + (y + Math.sin(a) * rr).toFixed(1); }
-  return `<path d="${d}z" fill="${c}"/>`;
+/* ── Colores ── */
+const seguro = (c, d) => (/^#[0-9a-f]{6}$/i.test(c || "") ? c.toLowerCase() : d);
+const rgb = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const hex = (a) => "#" + a.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
+/** Más oscuro, un poquito hacia el morado (las sombras se ven más bonitas que sólo grises). */
+const osc = (h, k = 0.78) => { const [r, g, b] = rgb(h); return hex([r * k, g * k * 0.97, b * k + (1 - k) * 40]); };
+/** La sombra de la piel: más cálida (hacia rosita), nunca grisácea. */
+const sombraPiel = (h, t = 0.2) => { const [r, g, b] = rgb(h), w = [176, 92, 96]; return hex([r + (w[0] - r) * t, g + (w[1] - g) * t, b + (w[2] - b) * t]); };
+const cla = (h, t = 0.3) => { const [r, g, b] = rgb(h); return hex([r + (255 - r) * t, g + (255 - g) * t, b + (255 - b) * t * 0.9]); };
+
+/* ── La rejilla ── */
+const U = 4, Y0 = 2, ANCHO = 25;
+class Capa {
+  constructor() { this.m = new Map(); }
+  static k(c, r) { return (r + 8) * 64 + c; }
+  pon(c, r, col) { if (c < 0 || c >= ANCHO || r < -6 || r > 41) return this; this.m.set(Capa.k(c, r), [c, r, col]); return this; }
+  hay(c, r) { return this.m.has(Capa.k(c, r)); }
+  de(c, r) { return this.m.get(Capa.k(c, r))?.[2]; }
+  quita(c, r) { this.m.delete(Capa.k(c, r)); return this; }
+  fila(r, c0, c1, col) { for (let c = c0; c <= c1; c++) this.pon(c, r, col); return this; }
+  caja(c0, r0, c1, r1, col) { for (let r = r0; r <= r1; r++) this.fila(r, c0, c1, col); return this; }
+  /** Varias filas de una: [[fila, desde, hasta], …]. */
+  filas(lista, col) { for (const [r, a, b] of lista) this.fila(r, a, b, col); return this; }
+  ovalo(cx, cy, rx, ry, col, si = () => true) { for (let r = Math.floor(cy - ry); r <= Math.ceil(cy + ry); r++) for (let c = Math.floor(cx - rx); c <= Math.ceil(cx + rx); c++) if (((c - cx) / rx) ** 2 + ((r - cy) / ry) ** 2 <= 1.02 && si(c, r)) this.pon(c, r, col); return this; }
+  cada(f) { for (const [c, r, col] of [...this.m.values()]) f(c, r, col); }
+  /** Sombrea lo que es de `base`: el lado de atrás (izquierda) y abajo más oscuros; arriba a la derecha, luz. */
+  sombrea(base, { o = osc(base), l = cla(base, 0.28), luz = true } = {}) {
+    const es = (c, r) => this.hay(c, r);   // (sólo en la orilla de la figura, no junto a los dibujitos)
+    const cambios = [];
+    this.cada((c, r, col) => {
+      if (col !== base) return;
+      if (!es(c - 1, r) || !es(c, r + 1)) cambios.push([c, r, o]);
+      else if (luz && !es(c, r - 1) && es(c + 1, r)) cambios.push([c, r, l]);
+    });
+    for (const [c, r, col] of cambios) this.pon(c, r, col);
+    return this;
+  }
+}
+/** El contorno de un grupo de capas: cada orilla, del color de lo que bordea pero mucho más oscuro. */
+function contorno(capas, k = 0.42) {
+  const todo = new Map();
+  for (const L of capas) for (const [key, v] of L.m) todo.set(key, v);
+  const o = new Capa();
+  for (const [, [c, r, col]] of todo) for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const k2 = Capa.k(c + dc, r + dr);
+    if (!todo.has(k2) && !o.m.has(k2)) o.pon(c + dc, r + dr, osc(col, k));
+  }
+  return o;
+}
+/** Una capa en SVG: cuadritos juntados por fila (pocos elementos, bordes nítidos). */
+function svgDe(L) {
+  const filas = new Map();
+  for (const [c, r, col] of L.m.values()) { if (!filas.has(r)) filas.set(r, []); filas.get(r).push([c, col]); }
+  let s = "";
+  for (const [r, l] of filas) {
+    l.sort((a, b) => a[0] - b[0]);
+    for (let i = 0; i < l.length;) {
+      let j = i;
+      while (j + 1 < l.length && l[j + 1][0] === l[j][0] + 1 && l[j + 1][1] === l[i][1]) j++;
+      s += `<rect x="${l[i][0] * U}" y="${Y0 + r * U}" width="${(j - i + 1) * U}" height="${U}" fill="${l[i][1]}"/>`;
+      i = j + 1;
+    }
+  }
+  return s;
+}
+const grupo = (clase, capas, extra = "", { borde = true, attrs = "" } = {}) => `<g${clase ? ` class="${clase}"` : ""}${attrs}>${borde ? svgDe(contorno(capas)) : ""}${capas.map(svgDe).join("")}${extra}</g>`;
+
+/* ── La cara (filas 3–13) ── */
+const CARA = [[3, 9, 15], [4, 8, 16], [5, 7, 17], [6, 7, 17], [7, 7, 17], [8, 7, 17], [9, 7, 17], [10, 7, 17], [11, 8, 17], [12, 9, 16], [13, 10, 15]];
+
+/* ── El pelo: la tapa de arriba (todos menos rapado/afro) y, por peinado, el fleco y lo de atrás ── */
+function pelo(estilo, P) {
+  const frente = new Capa(), atras = new Capa();
+  const tapa = () => frente.filas([[0, 9, 14], [1, 7, 16], [2, 6, 17], [3, 5, 18], [4, 5, 18], [5, 5, 9], [6, 5, 9], [7, 6, 9], [8, 6, 8], [9, 6, 8], [10, 7, 8]], P);
+  const fleco = (tipo = "normal") => {
+    if (tipo === "recto") return frente.filas([[5, 10, 18], [6, 10, 17]], P);
+    if (tipo === "picos") { frente.filas([[5, 10, 18]], P); for (const c of [10, 11, 13, 14, 16, 17]) frente.pon(c, 6, P); for (const c of [11, 14, 17]) frente.pon(c, 7, P); return frente; }
+    if (tipo === "lado") { frente.filas([[5, 10, 18], [6, 10, 14], [7, 10, 12]], P); frente.pon(10, 8, P); return frente; }
+    frente.filas([[5, 10, 18]], P); for (const c of [10, 11, 12, 15, 16]) frente.pon(c, 6, P); frente.pon(10, 7, P); frente.pon(15, 7, P);
+    return frente;
+  };
+  const largo = (hasta, ancho = 4, onda = false) => {
+    for (let r = 5; r <= hasta; r++) { const a = onda && r % 4 < 2 ? ancho - 1 : ancho; atras.fila(r, a, 10, P); }
+    atras.fila(hasta + 1, ancho + 1, 9, P).fila(hasta + 2, ancho + 2, 8, P);
+    atras.caja(13, 11, 16, 16, P);   // lo que cae detrás del hombro de enfrente
+  };
+  switch (estilo) {
+    case "lacio": tapa(); fleco("recto"); largo(24, 4); atras.fila(26, 5, 10, P); break;
+    case "ondulado": tapa(); fleco("lado"); largo(22, 4, true); break;
+    case "trenza": tapa(); fleco("normal");
+      for (let r = 9; r <= 23; r++) atras.fila(r, (r % 2) + 4, (r % 2) + 6, P);
+      atras.pon(5, 24, "#ff86b0").pon(6, 24, "#ff86b0").pon(5, 25, P).pon(6, 26, P); break;
+    case "coletas": tapa(); fleco("normal");
+      atras.ovalo(4, 8, 2.2, 3.4, P).caja(3, 10, 5, 16, P).fila(17, 4, 4, P);
+      atras.ovalo(18, 3, 2.2, 2.8, P).caja(18, 5, 20, 12, P).fila(13, 19, 19, P);
+      atras.pon(5, 5, "#ff86b0").pon(17, 1, "#ff86b0"); break;
+    case "chongo": tapa(); fleco("normal"); atras.ovalo(8, -2, 3, 2.4, P); frente.fila(0, 7, 9, "#ff86b0"); break;
+    case "cola": tapa(); fleco("picos");
+      atras.ovalo(5, 0, 2.5, 2, P).caja(2, 1, 5, 6, P).caja(1, 6, 4, 13, P).caja(2, 14, 3, 17, P).pon(2, 18, P);
+      frente.pon(6, 1, "#c2336b").pon(6, 2, "#c2336b"); break;
+    case "bob": tapa(); fleco("recto"); frente.caja(5, 5, 9, 13, P).fila(14, 6, 9, P).caja(16, 7, 18, 12, P); break;
+    case "afro": frente.ovalo(12, 3, 9.4, 7, P, (c, r) => !(c >= 10 && c <= 18 && r >= 6)); fleco("normal"); break;
+    case "corto": tapa(); fleco("normal"); break;
+    case "picos": tapa(); frente.filas([[-1, 8, 9], [-2, 8, 8], [-1, 12, 13], [-2, 13, 13], [-1, 16, 16], [0, 15, 17], [2, 18, 18], [3, 19, 19]], P); fleco("picos"); frente.pon(4, 4, P).pon(4, 6, P); break;
+    case "copete": tapa(); frente.filas([[-1, 11, 17], [-2, 13, 17], [-3, 15, 16], [0, 15, 18]], P); fleco("lado"); break;
+    case "chino": {
+      for (const [x, y] of [[8, 1], [11, 0], [14, 0], [17, 2], [6, 3], [5, 6], [6, 9], [18, 4], [10, 2], [13, 2]]) frente.ovalo(x, y, 2.2, 2.2, P, (c, r) => !(c >= 10 && r >= 6));
+      for (const c of [10, 12, 14, 16]) frente.pon(c, 6, P);
+      break;
+    }
+    case "rapado": frente.filas([[1, 8, 15], [2, 7, 16], [3, 6, 17], [4, 6, 17], [5, 6, 9], [6, 6, 9], [7, 6, 8], [8, 6, 8]], cla(P, 0.12)); break;
+    default: tapa(); fleco("lado"); largo(21, 4);   // largo
+  }
+  // Sombra, luz y un brillito en la tapa.
+  const base = estilo === "rapado" ? cla(P, 0.12) : P;
+  frente.sombrea(base); atras.sombrea(base, { luz: false });
+  if (estilo !== "rapado") for (const [c, r] of [[11, 2], [12, 1], [13, 1], [14, 1], [15, 2]]) if (frente.de(c, r)) frente.pon(c, r, cla(P, 0.32));
+  // Mechones: rayitas más oscuras en lo largo de atrás.
+  atras.cada((c, r, col) => { if (col === P && c % 3 === 1 && r > 8) atras.pon(c, r, osc(P, 0.86)); });
+  return { frente, atras };
 }
 
-/** Los ojitos de siempre (ojo-n), según el estilo que eligió. */
-function ojos(estilo) {
-  const par = (f) => f(40, -1) + f(60, 1);
-  if (estilo === "grandes") return par((x) => `<ellipse cx="${x}" cy="51.5" rx="5" ry="6.2" fill="#3a2a35"/><ellipse cx="${x}" cy="54.6" rx="3.6" ry="2.4" fill="#7b5a86" opacity=".75"/><circle cx="${x + 1.7}" cy="49.2" r="2" fill="#fff"/><circle cx="${x - 1.6}" cy="54.2" r=".9" fill="#fff"/>`);
-  if (estilo === "puntitos") return par((x) => `<circle cx="${x}" cy="52" r="2.9" fill="#3a2a35"/><circle cx="${x + 0.9}" cy="51" r=".9" fill="#fff"/>`);
-  const base = par((x) => `<ellipse cx="${x}" cy="52" rx="3.8" ry="4.8" fill="#3a2a35"/><circle cx="${x + 1.4}" cy="50.2" r="1.5" fill="#fff"/><circle cx="${x - 1}" cy="54" r=".8" fill="#fff"/>`);
-  if (estilo === "pestanas") return base + `<path d="M36.4 49l-2.6-1.4M36.8 47.2l-1.8-2.2M63.6 49l2.6-1.4M63.2 47.2l1.8-2.2" stroke="#3a2a35" stroke-width="1.5" stroke-linecap="round"/>`;
-  return base;
+/* ── Los ojitos (con color) y las caritas ── */
+const NEGRO = "#2a1d2b", BLANCO = "#ffffff", BOCA = "#b8325f";
+function ojitos(estilo, I) {
+  const n = new Capa();
+  if (estilo === "grandes") n.caja(13, 8, 14, 8, NEGRO).caja(13, 9, 14, 9, I).pon(13, 10, BLANCO).pon(14, 10, osc(I, 0.7)).pon(16, 8, NEGRO).pon(16, 9, I).pon(16, 10, osc(I, 0.7));
+  else if (estilo === "puntitos") n.pon(14, 8, NEGRO).pon(14, 9, NEGRO).pon(16, 8, NEGRO).pon(16, 9, NEGRO);
+  else { n.fila(8, 13, 14, NEGRO).pon(13, 9, BLANCO).pon(14, 9, I).pon(16, 8, NEGRO).pon(16, 9, I); if (estilo === "pestanas") n.pon(15, 7, NEGRO).pon(12, 8, NEGRO).pon(17, 7, NEGRO); }
+  return n;
+}
+const C = (lista, col) => { const L = new Capa(); for (const [c, r] of lista) L.pon(c, r, col); return L; };
+function caritas(r, P, I, piel) {
+  const ceja = osc(P, 0.8);
+  const g = (cls, ...capas) => `<g class="${cls}">${capas.map(svgDe).join("")}</g>`;
+  return [
+    g("ca-cejas", C([[13, 7], [14, 7], [16, 7]], ceja)),
+    g("ca-cejas-e", C([[13, 6], [14, 7], [16, 7], [17, 6]], ceja)),
+    g("ca-ojos ojo-n", ojitos(r.ojos, I)),
+    g("ojo-f", C([[13, 9], [14, 8], [15, 9], [16, 8], [17, 9]], NEGRO)),
+    g("ojo-z", C([[13, 9], [14, 9], [16, 9]], NEGRO)),
+    g("ojo-c", C([[12, 8], [14, 8], [12, 9], [13, 9], [14, 9], [13, 10], [16, 8], [16, 9]], "#ff4d8d"), C([[12, 8]], "#ffc2d6")),
+    g("ojo-g", C([[13, 9], [14, 9]], NEGRO), C([[16, 8]], NEGRO), C([[16, 9]], I)),
+    g("ojo-s", C([[13, 8], [14, 8], [13, 9], [13, 10], [14, 10], [16, 8], [16, 10]], BLANCO), C([[14, 9], [16, 9]], NEGRO)),
+    g("bo-n", C([[15, 11], [16, 11]], BOCA), C([[14, 10]], osc(piel, 0.82))),
+    g("bo-a", C([[15, 11], [16, 11]], "#7d1f42"), C([[15, 12], [16, 12]], "#ff6f9c")),
+    g("bo-o", C([[16, 11], [16, 12]], "#7d1f42")),
+    g("bo-t", C([[14, 12], [15, 11], [16, 11]], BOCA)),
+    g("bo-b", C([[15, 11]], BOCA), C([[16, 11], [17, 10], [17, 11]], "#ff5c93")),
+  ].join("");
+}
+
+/* ── Accesorios (en la cabeza; la bufanda va en el cuello) ── */
+function accesorio(k, P) {
+  const a = new Capa(), ROSA = "#ff5c93", ROSA2 = "#ff9cbf", ORO = "#ffd84d";
+  switch (k) {
+    case "mono": a.filas([[0, 5, 5], [1, 5, 6], [2, 5, 5]], ROSA).filas([[0, 9, 9], [1, 8, 9], [2, 9, 9]], ROSA).pon(7, 1, ROSA2); break;
+    case "diadema": a.fila(3, 7, 9, ROSA).fila(2, 10, 15, ROSA).pon(16, 3, ROSA).pon(13, 1, ROSA2).pon(14, 1, ROSA2).pon(13, 0, ROSA2); break;
+    case "flores": for (const [c, r, col] of [[7, 2, ROSA2], [9, 1, ORO], [11, 0, "#c39bff"], [13, 0, "#86d6f2"], [15, 1, ROSA2], [17, 3, ORO]]) a.pon(c, r, col); break;
+    case "pasador": a.pon(16, 4, ORO).pon(17, 4, ORO).pon(16, 3, cla(ORO, 0.5)); break;
+    case "orejitas": a.filas([[-3, 6, 6], [-2, 6, 7], [-1, 6, 8], [0, 6, 9]], P).filas([[-3, 16, 16], [-2, 15, 16], [-1, 14, 16], [0, 13, 16]], P).pon(7, -1, ROSA2).pon(15, -1, ROSA2); break;
+    case "gorra": a.filas([[-1, 9, 14], [0, 7, 16], [1, 6, 17], [2, 5, 18], [3, 5, 19]], ROSA).fila(4, 15, 21, osc(ROSA, 0.8)).pon(12, -2, BLANCO); break;
+    case "gorro": a.filas([[-1, 9, 14], [0, 7, 16], [1, 6, 17], [2, 5, 18]], ROSA2).filas([[3, 5, 18], [4, 5, 18]], ROSA).ovalo(12, -2.6, 1.6, 1.4, BLANCO); for (const c of [7, 10, 13, 16]) a.pon(c, 1, osc(ROSA2, 0.86)); break;
+    case "lentes": a.fila(7, 12, 15, NEGRO).fila(10, 12, 15, NEGRO).pon(12, 8, NEGRO).pon(12, 9, NEGRO).pon(15, 8, NEGRO).pon(15, 9, NEGRO).fila(7, 16, 17, NEGRO).fila(10, 16, 17, NEGRO).pon(17, 8, NEGRO).pon(17, 9, NEGRO).fila(8, 9, 11, NEGRO); break;
+    case "corona": a.fila(0, 9, 15, ORO).filas([[-1, 9, 9], [-1, 12, 12], [-1, 15, 15], [-2, 9, 9], [-2, 12, 12], [-2, 15, 15]], ORO).pon(12, 0, "#ff4d8d").pon(10, 0, cla(ORO, 0.5)); break;
+    case "audifonos": a.filas([[-1, 9, 14], [0, 7, 8], [0, 15, 16], [1, 6, 6], [1, 17, 17]], "#9b6be0").caja(7, 7, 9, 11, "#c39bff").pon(9, 8, cla("#c39bff", 0.4)); break;
+    case "aretes": a.pon(9, 11, ORO); break;
+  }
+  return a;
 }
 
 /** El monito en SVG (100 × 170; los pies en y = 166). */
 export function monitoSVG(r0) {
   const r = { ...ropaDe(""), ...r0 };
-  const piel = seguro(r.piel, PIELES[2]), pelo = seguro(r.peloColor, "#5a3b2e"), arriba = seguro(r.arribaColor, "#ff8fb8"), abajo = seguro(r.abajoColor, "#7aa7ff"), zap = seguro(r.zapatos, "#3a2a35");
-  const vestido = r.arriba === "vestido", overol = r.arriba === "overol", jeans = r.abajo === "jeans";
-  const piernasDeTela = !vestido && (overol || r.abajo === "pantalon" || jeans);
-  const zapato = (x) => {
-    if (r.calzado === "botas") return `<rect x="${x - 1}" y="145" width="13.5" height="17" rx="3.5" fill="${zap}" ${OL}/><path d="M${x - 3} 158h17.4v5H${x - 3}z" fill="${zap}" ${OL}/><rect x="${x - 3}" y="162" width="17.4" height="2.6" rx="1.3" fill="#fff" opacity=".8"/><path d="M${x} 149h11" stroke="#fff" stroke-opacity=".35" stroke-width="2"/>`;
-    if (r.calzado === "flats") return `<path d="M${x - 2} 161.4a7.7 4.6 0 0 1 15.4 0v2.4H${x - 2}z" fill="${zap}" ${OL}/><circle cx="${x + 5.7}" cy="157.6" r="2" fill="${cla(zap, 0.45)}"/>`;
-    return `<path d="M${x - 3} 160a8.7 6 0 0 1 17.4 0v3H${x - 3}z" fill="${zap}" ${OL}/><rect x="${x - 3}" y="162" width="17.4" height="3" rx="1.5" fill="#fff" opacity=".85"/><path d="M${x + 1} 157.4l3 1.6M${x + 5} 156.6l3 1.6" stroke="#fff" stroke-width="1.1" opacity=".7"/>`;
+  const piel = seguro(r.piel, PIELES[2]), P = seguro(r.peloColor, "#5a3b2e"), I = seguro(r.ojosColor, "#5a3b2e");
+  const A = seguro(r.arribaColor, "#ff8fb8"), B = seguro(r.abajoColor, "#7aa7ff"), Z = seguro(r.zapatos, "#3a2a35");
+  const piel2 = sombraPiel(piel);
+  const vestido = r.arriba === "vestido", overol = r.arriba === "overol";
+  const abajo = vestido ? "" : overol ? "pantalon" : r.abajo;
+  const tela = ["pantalon", "jeans", "deportivo"].includes(abajo);
+
+  /* Piernas (con su zapato): cada una en su grupo para que se muevan al caminar. */
+  const pierna = (c0) => {
+    const L = new Capa(), ropa = new Capa(), zap = new Capa();
+    L.caja(c0, 27, c0 + 2, 36, piel);
+    if (tela) ropa.caja(c0, 27, c0 + 2, r.calzado === "botas" ? 33 : 36, B);
+    if (abajo === "short") ropa.caja(c0, 27, c0 + 2, 29, B);
+    if (abajo === "jeans") for (let rr = 28; rr <= 35; rr += 2) ropa.pon(c0 + 2, rr, cla(B, 0.35));
+    if (abajo === "jeans" && r.calzado !== "botas") ropa.fila(36, c0, c0 + 2, cla(B, 0.25));
+    if (abajo === "deportivo") for (let rr = 27; rr <= 35; rr++) ropa.pon(c0 + 2, rr, rr % 2 ? "#ffffff" : cla(B, 0.7));
+    if (r.calzado === "botas") { zap.caja(c0, 33, c0 + 2, 39, Z).pon(c0 + 3, 38, Z).pon(c0 + 3, 39, Z).fila(33, c0, c0 + 2, cla(Z, 0.3)).fila(40, c0, c0 + 3, osc(Z, 0.6)); }
+    else if (r.calzado === "flats") { zap.fila(38, c0, c0 + 3, Z).fila(39, c0, c0 + 3, Z).fila(40, c0, c0 + 3, osc(Z, 0.7)).pon(c0 + 2, 38, cla(Z, 0.45)); }
+    else { zap.fila(37, c0, c0 + 2, Z).fila(38, c0, c0 + 3, Z).fila(39, c0, c0 + 3, Z).fila(40, c0, c0 + 3, "#f4f1f6").pon(c0 + 2, 37, BLANCO).pon(c0 + 3, 39, cla(Z, 0.3)); }
+    L.sombrea(piel, { o: piel2, luz: false }); ropa.sombrea(B, { luz: false }); zap.sombrea(Z);
+    return [L, ropa, zap];
   };
-  const pierna = (x, cl) => `<g class="${cl}">
-      <rect x="${x}" y="114" width="11.5" height="46" rx="5.5" fill="${piernasDeTela ? abajo : piel}" ${OL}/>
-      <rect x="${x + 7.5}" y="116" width="3" height="40" rx="1.5" ${SOMBRA}/>
-      ${jeans ? `<path d="M${x + 5.75} 118v36" stroke="${cla(abajo, 0.35)}" stroke-width="1.2" stroke-dasharray="2.4 2"/><rect x="${x}" y="151" width="11.5" height="4" rx="1.5" fill="${cla(abajo, 0.25)}"/>` : ""}
-      ${!vestido && !overol && r.abajo === "short" ? `<rect x="${x - 1}" y="113" width="13.5" height="17" rx="5" fill="${abajo}" ${OL}/>` : ""}
-      ${!piernasDeTela && r.calzado !== "botas" ? `<rect x="${x}" y="148" width="11.5" height="7" rx="2" fill="#fff" opacity=".9"/>` : ""}
-      ${zapato(x)}</g>`;
-  const manga = { playera: 15, rayas: 34, sudadera: 34, sueter: 34, camisa: 34, pijama: 34, chamarra: 34, overol: 15, vestido: 9, blusita: 0 }[r.arriba] ?? 15;
-  const brazo = (x, cl, rot, cuchara = false) => `<g class="${cl}" style="transform-origin:${x + 5}px 82px"><g transform="rotate(${rot} ${x + 5} 82)">
-      <rect x="${x}" y="80" width="10.5" height="36" rx="5.2" fill="${piel}" ${OL}/>
-      ${manga ? `<rect x="${x - 0.5}" y="79" width="11.5" height="${manga}" rx="5.5" fill="${arriba}" ${OL}/><rect x="${x + 6.5}" y="81" width="3" height="${Math.max(4, manga - 4)}" rx="1.5" ${SOMBRA}/>` : ""}
-      ${manga === 34 && ["sueter", "sudadera", "pijama"].includes(r.arriba) ? `<rect x="${x - 0.5}" y="107" width="11.5" height="5" rx="2" fill="${osc(arriba, 0.9)}"/>` : ""}
-      ${r.arriba === "rayas" ? `<path d="M${x} 90h11M${x} 98h11M${x} 106h11" stroke="#fff" stroke-width="2.5" opacity=".8"/>` : ""}
-      ${r.arriba === "pijama" ? estrellita(x + 5, 96, 2.6, "#fff") : ""}
-      <circle cx="${x + 5.2}" cy="117" r="5.8" fill="${piel}" ${OL}/>
-      ${cuchara ? `<g class="ca-cuchara"><path d="M${x + 5.2} 118l-6.4-12" stroke="#cfc6d3" stroke-width="2.6" stroke-linecap="round"/><ellipse cx="${x - 2.4}" cy="103.4" rx="3.2" ry="4.4" fill="#ece6ee" transform="rotate(-28 ${x - 2.4} 103.4)" ${OL}/></g>` : ""}</g></g>`;
-  // El torso según la ropa (con su sombrita del lado y su brillito).
-  let torso;
-  const lado = `<rect x="60" y="81" width="9" height="40" rx="4.5" ${SOMBRA}/><rect x="33" y="83" width="5" height="24" rx="2.5" fill="#fff" opacity=".16"/>`;
-  if (vestido) torso = `<path d="M36 77h28l13 61H23z" fill="${arriba}" ${OL}/><path d="M60 79h4l13 59h-9z" ${SOMBRA}/><path d="M24 132h52" stroke="${osc(arriba)}" stroke-width="3"/><path d="M40 78q10 9 20 0" fill="#fff" opacity=".85"/>
-      <path d="M44 100l6 3 6-3-6 3z" fill="${osc(arriba, 0.75)}"/><circle cx="50" cy="102" r="2.5" fill="${osc(arriba, 0.75)}"/><path d="M30 112l-3 22M70 112l3 22" stroke="#fff" stroke-opacity=".25" stroke-width="3"/>`;
-  else if (r.arriba === "sudadera") torso = `<rect x="29" y="76" width="42" height="48" rx="14" fill="${arriba}" ${OL}/>${lado}<path d="M38 78q12 11 24 0" stroke="${osc(arriba)}" stroke-width="3" fill="none"/><path d="M45 84v8M55 84v8" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="38" y="104" width="24" height="11" rx="4" fill="${osc(arriba, 0.9)}"/>`;
-  else if (r.arriba === "sueter") torso = `<rect x="29" y="76" width="42" height="48" rx="14" fill="${arriba}" ${OL}/>${lado}${[36, 43, 57, 64].map((x) => `<path d="M${x} 84v28" stroke="${osc(arriba, 0.9)}" stroke-width="1.2"/>`).join("")}<rect x="31" y="114" width="38" height="9" rx="4" fill="${osc(arriba, 0.9)}"/><path d="M40 77q10 7 20 0" stroke="${osc(arriba, 0.85)}" stroke-width="4" fill="none"/>${cor(50, 98, 1.05, "#fff")}`;
-  else if (r.arriba === "blusita") torso = `<rect x="31" y="80" width="38" height="44" rx="12" fill="${arriba}" ${OL}/>${lado}<path d="M37 80v-6M63 80v-6" stroke="${arriba}" stroke-width="3.5"/><path d="M33 112h34" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-dasharray="3 4"/><path d="M40 82q10 7 20 0" stroke="#fff" stroke-opacity=".6" stroke-width="2" fill="none"/>`;
-  else if (r.arriba === "camisa") torso = `<rect x="30" y="77" width="40" height="46" rx="12" fill="${arriba}" ${OL}/>${lado}<path d="M50 80v42" stroke="${osc(arriba, 0.8)}" stroke-width="1.5"/>${[88, 98, 108].map((y) => `<circle cx="50" cy="${y}" r="1.5" fill="#fff"/>`).join("")}<rect x="55" y="88" width="9" height="8" rx="2" fill="${osc(arriba, 0.92)}"/><path d="M38 77l12 8 12-8-3-4-9 6-9-6z" fill="#fff" ${OL}/>`;
-  else if (r.arriba === "rayas") torso = `<rect x="30" y="77" width="40" height="46" rx="13" fill="${arriba}" ${OL}/>${[88, 98, 108, 118].map((y) => `<path d="M31 ${y}h38" stroke="#fff" stroke-width="3.5" opacity=".85"/>`).join("")}${lado}<path d="M42 78q8 6 16 0" stroke="${osc(arriba)}" stroke-width="2.5" fill="none"/>`;
-  else if (r.arriba === "chamarra") torso = `<rect x="31" y="77" width="38" height="46" rx="12" fill="#fff" ${OL}/>${cor(50, 98, 0.8, "#ff86b0")}<path d="M30 90q0-13 13-13h3v46H36a6 6 0 0 1-6-6zM70 90q0-13-13-13h-3v46h10a6 6 0 0 0 6-6z" fill="${arriba}" ${OL}/><rect x="61" y="81" width="8" height="40" rx="4" ${SOMBRA}/><path d="M46 80v42M54 80v42" stroke="${osc(arriba, 0.8)}" stroke-width="1.4"/><rect x="34" y="104" width="8" height="6" rx="2" fill="${osc(arriba, 0.88)}"/>`;
-  else if (r.arriba === "pijama") torso = `<rect x="30" y="77" width="40" height="46" rx="13" fill="${arriba}" ${OL}/>${lado}<path d="M40 78q10 8 20 0" stroke="#fff" stroke-width="2.5" fill="none"/>${[[38, 92], [58, 96], [46, 108], [62, 114], [36, 116]].map(([x, y]) => estrellita(x, y, 3, "#fff")).join("")}<path d="M50 84v38" stroke="#fff" stroke-opacity=".5" stroke-width="1.4" stroke-dasharray="3 3"/>`;
-  else if (overol) torso = `<rect x="30" y="77" width="40" height="46" rx="13" fill="${arriba}" ${OL}/><rect x="35" y="94" width="30" height="30" rx="5" fill="${abajo}" ${OL}/>${lado}<path d="M36 96l-4-16M64 96l4-16" stroke="${abajo}" stroke-width="4"/><circle cx="38" cy="98" r="2" fill="#ffd36e"/><circle cx="62" cy="98" r="2" fill="#ffd36e"/><rect x="43" y="104" width="14" height="10" rx="3" fill="${osc(abajo, 0.88)}"/>`;
-  else torso = `<rect x="30" y="77" width="40" height="46" rx="13" fill="${arriba}" ${OL}/>${lado}<path d="M42 78q8 6 16 0" stroke="${osc(arriba)}" stroke-width="2.5" fill="none"/><path d="M40 100c0-4 6-6 10-2 4-4 10-2 10 2 0 5-10 10-10 10s-10-5-10-10z" fill="#fff" opacity=".55"/>`;
-  const falda = !vestido && !overol && r.abajo === "falda" ? `<path d="M31 114h38l7 23H24z" fill="${abajo}" ${OL}/><path d="M60 115h9l7 22h-9z" ${SOMBRA}/><path d="M26 132h48" stroke="#fff" stroke-opacity=".5" stroke-width="2.5"/>` : "";
-  const cintura = !vestido && !overol && r.abajo !== "falda" ? `<rect x="31" y="111" width="38" height="12" rx="5" fill="${abajo}" ${OL}/>${jeans ? `<path d="M36 113v8M64 113v8" stroke="${cla(abajo, 0.35)}" stroke-width="1.2"/><circle cx="50" cy="116" r="1.6" fill="#ffd36e"/>` : ""}` : "";
-  const brilloPelo = `<path d="M33 25q8-8 18-9" stroke="#fff" stroke-opacity=".3" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M60 19q6 2 9 6" stroke="#fff" stroke-opacity=".18" stroke-width="3" stroke-linecap="round" fill="none"/>`;
-  const atras = {
-    largo: `<path d="M20 46Q20 15 50 15q30 0 30 31l4 66q-17 10-34 5-17 5-34-5z" fill="${pelo}" ${OL}/><path d="M66 60l6 50" stroke="${osc(pelo, 0.85)}" stroke-width="3" opacity=".5"/>`,
-    lacio: `<path d="M20 46Q20 14 50 14q30 0 30 32v74H20z" fill="${pelo}" ${OL}/><path d="M70 60v58M30 60v58" stroke="${osc(pelo, 0.85)}" stroke-width="2.5" opacity=".45"/>`,
-    ondulado: `<path d="M19 48Q19 15 50 15q31 0 31 33l3 36q-6 7-12 2-6 7-12 1-6 7-12 0-6 7-12 0-6 7-12 0-6 5-11-2z" fill="${pelo}" ${OL}/>`,
-    trenza: `<path d="M20 46Q20 15 50 15q30 0 30 31v10q-30 7-60 0z" fill="${pelo}" ${OL}/>`,
-    coletas: `<circle cx="15" cy="58" r="11" fill="${pelo}" ${OL}/><circle cx="85" cy="58" r="11" fill="${pelo}" ${OL}/><path d="M12 64q-5 18 5 32M88 64q5 18-5 32" stroke="${pelo}" stroke-width="10" stroke-linecap="round" fill="none"/>`,
-    chongo: `<circle cx="50" cy="13" r="12" fill="${pelo}" ${OL}/><path d="M44 8q6-4 12 0" stroke="#fff" stroke-opacity=".3" stroke-width="2.5" fill="none"/>`,
-    bob: `<path d="M18 50Q18 14 50 14q32 0 32 36v26q-32 9-64 0z" fill="${pelo}" ${OL}/>`,
-    afro: `<g fill="${pelo}" ${OL}>${[[50, 30, 30], [24, 40, 16], [76, 40, 16], [30, 20, 15], [70, 20, 15], [50, 10, 14], [20, 56, 12], [80, 56, 12]].map(([x, y, rr]) => `<circle cx="${x}" cy="${y}" r="${rr}"/>`).join("")}</g>`,
-  }[r.pelo] || "";
-  const fleco = {
-    largo: `<path d="M22 47q1-31 28-31t28 31q-12-16-22-13-9-8-34 13z" fill="${pelo}" ${OL}/>`,
-    lacio: `<path d="M22 52q2-36 28-36 0 12-13 22-9 7-15 14zM78 52q-2-36-28-36 0 12 13 22 9 7 15 14z" fill="${pelo}" ${OL}/>`,
-    ondulado: `<path d="M21 48q1-33 29-33t29 33q-4-10-12-14-10 6-22 2-14 2-24 12z" fill="${pelo}" ${OL}/>`,
-    trenza: `<path d="M22 47q1-31 28-31t28 31q-12-16-22-13-9-8-34 13z" fill="${pelo}" ${OL}/><g fill="${pelo}" ${OL}>${[62, 72, 82, 92, 102].map((y, i) => `<ellipse cx="${76 - i * 1.4}" cy="${y}" rx="6.4" ry="6.2"/>`).join("")}</g><circle cx="70" cy="108" r="3.2" fill="#ff86b0"/><path d="M68 110q2 8-2 12M72 110q2 8 4 11" stroke="${pelo}" stroke-width="3" stroke-linecap="round"/>`,
-    coletas: `<path d="M22 47q2-31 28-31t28 31q-14-13-28-11-14-2-28 11z" fill="${pelo}" ${OL}/><circle cx="22" cy="54" r="3.5" fill="#ff86b0"/><circle cx="78" cy="54" r="3.5" fill="#ff86b0"/>`,
-    chongo: `<path d="M22 47q2-31 28-31t28 31q-10-17-28-15-18-2-28 15z" fill="${pelo}" ${OL}/><rect x="42" y="20" width="16" height="5" rx="2.5" fill="#ff86b0"/>`,
-    bob: `<path d="M21 46q1-30 29-30t29 30q-2 3-9 3H30q-7 0-9-3z" fill="${pelo}" ${OL}/>`,
-    afro: `<g fill="${pelo}">${[28, 38, 50, 62, 72].map((x, i) => `<circle cx="${x}" cy="${26 + (i % 2) * 2}" r="7.5"/>`).join("")}</g>`,
-    corto: `<path d="M21 49q0-33 29-33t29 33q-6-15-14-17-6 4-15 3-9 1-15-3-8 2-14 17z" fill="${pelo}" ${OL}/>`,
-    copete: `<path d="M21 49q0-33 29-33t29 33q-6-13-14-15-10-10-24-2-12 0-20 17z" fill="${pelo}" ${OL}/><path d="M40 20q8-15 23-6-10 0-14 10z" fill="${pelo}" ${OL}/>`,
-    chino: `<g fill="${pelo}" ${OL}>${[[24, 38], [31, 26], [43, 19], [57, 19], [69, 26], [76, 38], [21, 50], [79, 50]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="10"/>`).join("")}</g>`,
-    rapado: `<path d="M22 45q0-29 28-29t28 29q-5-13-28-14-23 1-28 14z" fill="${pelo}" opacity=".9" ${OL}/>`,
-  }[r.pelo] || "";
-  const acc = {
-    mono: `<path d="M66 20l12-8v18zM66 20l-12-8v18z" fill="#ff5c93" ${OL}/><circle cx="66" cy="20" r="4" fill="#ff86b0"/>`,
-    diadema: `<path d="M22 40q2-26 28-26t28 26" stroke="#ff86b0" stroke-width="5" fill="none"/>${cor(64, 20, 0.7, "#ff5c93")}`,
-    flores: `<g>${[[28, 24, "#ff9cbf"], [40, 17, "#ffd36e"], [53, 16, "#c39bff"], [65, 19, "#86d6f2"], [74, 27, "#ff9cbf"]].map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="5" fill="${c}" ${OL}/><circle cx="${x}" cy="${y}" r="1.8" fill="#fff"/>`).join("")}</g>`,
-    pasador: `${estrellita(70, 30, 6.5, "#ffd84d")}<circle cx="70" cy="30" r="1.6" fill="#fff"/>`,
-    orejitas: `<path d="M24 26l2-18 14 10zM76 26l-2-18-14 10z" fill="${pelo}" ${OL}/><path d="M27 21l1-8 6 5zM73 21l-1-8-6 5z" fill="#ffb3cf"/>`,
-    gorra: `<path d="M20 40q2-26 30-26t30 26z" fill="#ff5c93" ${OL}/><path d="M50 40h38q-4 8-38 6z" fill="#e0457f" ${OL}/><circle cx="50" cy="15" r="3.5" fill="#fff"/>`,
-    gorro: `<path d="M20 42q0-30 30-30t30 30z" fill="#ff86b0" ${OL}/>${[30, 40, 50, 60, 70].map((x) => `<path d="M${x} 18q-1 10 0 20" stroke="#ff5c93" stroke-width="1.6" fill="none"/>`).join("")}<rect x="18" y="36" width="64" height="10" rx="5" fill="#ff5c93" ${OL}/><circle cx="50" cy="10" r="6.5" fill="#fff" ${OL}/>`,
-    lentes: `<g fill="rgba(255,255,255,.25)" stroke="#3a2a35" stroke-width="2.6"><circle cx="40" cy="52" r="8"/><circle cx="60" cy="52" r="8"/><path d="M48 52h4" fill="none"/></g><path d="M35 49l4-3M55 49l4-3" stroke="#fff" stroke-width="1.6" opacity=".8"/>`,
-    corona: `<path d="M32 22l6-14 12 10 12-10 6 14z" fill="#ffd84d" ${OL}/><circle cx="50" cy="16" r="2.5" fill="#ff5c93"/><circle cx="38" cy="9" r="1.6" fill="#fff"/><circle cx="62" cy="9" r="1.6" fill="#fff"/>`,
-    audifonos: `<path d="M20 50q0-36 30-36t30 36" stroke="#9b6be0" stroke-width="5" fill="none"/><rect x="14" y="44" width="12" height="18" rx="5" fill="#c39bff" ${OL}/><rect x="74" y="44" width="12" height="18" rx="5" fill="#c39bff" ${OL}/>`,
-    aretes: `<circle cx="21" cy="61" r="2.6" fill="#ffd84d" ${OL}/><circle cx="79" cy="61" r="2.6" fill="#ffd84d" ${OL}/>`,
-  }[r.accesorio] || "";
-  // La bufanda va en el cuello (debajo de la cabeza).
-  const bufanda = r.accesorio === "bufanda" ? `<path d="M31 73q19 10 38 0v9q-19 10-38 0z" fill="#ff5c93" ${OL}/><path d="M58 80l5 24h-9z" fill="#ff5c93" ${OL}/><path d="M36 78l3 5M44 80l2 5M52 80l1 5M60 78l-1 5M56 94h6" stroke="#fff" stroke-width="2" opacity=".75"/>` : "";
-  const pecas = r.pecas === "si" ? [[29, 58], [33.5, 61], [27, 62.6], [71, 58], [66.5, 61], [73, 62.6]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.1" fill="${osc(piel, 0.62)}" opacity=".75"/>`).join("") : "";
-  return `<svg viewBox="0 0 100 170" class="ca-mono-svg" aria-hidden="true">
-    <ellipse class="ca-sombra" cx="50" cy="165" rx="31" ry="5.6" fill="rgba(60,30,50,.1)"/><ellipse class="ca-sombra" cx="50" cy="165" rx="21" ry="3.6" fill="rgba(60,30,50,.16)"/>
-    ${atras}
-    ${pierna(37, "ca-pi")}${pierna(51.5, "ca-pd")}
-    ${brazo(20, "ca-bi", 12)}
-    ${torso}${cintura}${falda}
-    ${brazo(69.5, "ca-bd", -12, true)}
-    <rect x="45" y="70" width="10" height="9" fill="${osc(piel, 0.88)}"/>${bufanda}
-    <g class="ca-cabeza">
-    <circle cx="22" cy="52" r="6" fill="${piel}" ${OL}/><circle cx="78" cy="52" r="6" fill="${piel}" ${OL}/><circle cx="22" cy="52" r="3" fill="${osc(piel, 0.88)}"/><circle cx="78" cy="52" r="3" fill="${osc(piel, 0.88)}"/>
-    <circle cx="50" cy="48" r="28" fill="${piel}" ${OL}/>
-    <path d="M22.3 52A28 28 0 0 0 77.7 52A34 16 0 0 1 22.3 52z" fill="${osc(piel, 0.86)}" opacity=".32"/>
-    <ellipse cx="38" cy="35" rx="9" ry="5" fill="#fff" opacity=".2" transform="rotate(-24 38 35)"/>
-    <path d="M35 43q5-3.5 10 0M55 43q5-3.5 10 0" stroke="${osc(pelo, 0.85)}" stroke-width="2.2" fill="none" stroke-linecap="round" class="ca-cejas"/>
-    <g class="ca-ojos ojo-n">${ojos(r.ojos)}</g>
-    <g class="ojo-f"><path d="M36 53q4-5 8 0M56 53q4-5 8 0" stroke="#3a2a35" stroke-width="2.4" fill="none" stroke-linecap="round"/></g>
-    <g class="ojo-z"><path d="M36 52q4 4 8 0M56 52q4 4 8 0" stroke="#3a2a35" stroke-width="2.2" fill="none" stroke-linecap="round"/></g>
-    <g class="ojo-c">${cor(40, 52.5, 0.62, "#ff4d8d")}${cor(60, 52.5, 0.62, "#ff4d8d")}<circle cx="37.6" cy="49.6" r="1" fill="#fff"/><circle cx="57.6" cy="49.6" r="1" fill="#fff"/></g>
-    <g class="ojo-g"><path d="M36 53q4-4 8 0" stroke="#3a2a35" stroke-width="2.4" fill="none" stroke-linecap="round"/><ellipse cx="60" cy="52" rx="3.8" ry="4.8" fill="#3a2a35"/><circle cx="61.4" cy="50.2" r="1.5" fill="#fff"/></g>
-    <path class="ca-cejas-e" d="M35 40l10 4M65 40l-10 4" stroke="${osc(pelo, 0.7)}" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-    <g class="ojo-s"><circle cx="40" cy="51.5" r="5.4" fill="#fff" ${OL}/><circle cx="60" cy="51.5" r="5.4" fill="#fff" ${OL}/><circle cx="40" cy="52" r="2.4" fill="#3a2a35"/><circle cx="60" cy="52" r="2.4" fill="#3a2a35"/></g>
-    <ellipse cx="50" cy="58" rx="2.2" ry="1.5" fill="${osc(piel, 0.78)}"/>
-    <ellipse cx="32" cy="60" rx="5.5" ry="3.2" fill="#ff8fb8" opacity=".5"/><ellipse cx="68" cy="60" rx="5.5" ry="3.2" fill="#ff8fb8" opacity=".5"/>${pecas}
-    <path class="bo-n" d="M45 63q5 5 10 0" stroke="#c2336b" stroke-width="2.3" fill="none" stroke-linecap="round"/>
-    <path class="bo-a" d="M44 62h12q-1 8-6 8t-6-8z" fill="#c2336b"/>
-    <ellipse class="bo-o" cx="50" cy="65" rx="3" ry="3.6" fill="#c2336b"/>
-    <path class="bo-t" d="M45 67q5-5 10 0" stroke="#c2336b" stroke-width="2.3" fill="none" stroke-linecap="round"/>
-    <g class="bo-b"><path d="M47 63q3-2 4 1 1-3 4-1-1 4-4 5-3-1-4-5z" fill="#ff5c93"/></g>
-    ${fleco}${brilloPelo}${acc}
-    </g>
+  const pi = pierna(9), pd = pierna(13);
+
+  /* Brazos (manga + brazo + mano). */
+  const manga = { playera: 18, rayas: 18, overol: 18, vestido: 16, tirantes: 0, blusita: 0 }[r.arriba] ?? 23;
+  const brazo = (c0, cuchara = false) => {
+    const L = new Capa(), M = new Capa();
+    L.caja(c0, 16, c0 + 1, 24, piel).pon(c0 + (c0 < 12 ? 1 : 0), 15, piel).caja(c0, 25, c0 + 1, 25, piel);
+    if (manga) { M.caja(c0, 16, c0 + 1, manga, A).pon(c0 + (c0 < 12 ? 1 : 0), 15, A); if (manga === 23) M.fila(23, c0, c0 + 1, osc(A, 0.85)); if (r.arriba === "rayas") M.fila(17, c0, c0 + 1, cla(A, 0.7)); if (r.arriba === "pijama") M.pon(c0, 19, BLANCO); }
+    L.sombrea(piel, { o: piel2, luz: false }); M.sombrea(A);
+    L.pon(c0 + 1, 25, piel2);
+    let cu = "";
+    if (cuchara) { const k = new Capa(); k.pon(c0 + 2, 23, "#d8d2dc").pon(c0 + 2, 22, "#d8d2dc").pon(c0 + 2, 21, "#ece8ef").pon(c0 + 3, 21, "#ece8ef").pon(c0 + 2, 20, "#ece8ef"); cu = `<g class="ca-cuchara">${svgDe(contorno([k]))}${svgDe(k)}</g>`; }
+    return [L, M, cu];
+  };
+  const bi = brazo(6), bd = brazo(17, true);
+
+  /* El torso con su ropa (y cadera, falda o vestido). */
+  const T = new Capa(), D = new Capa();
+  const torsoF = [[15, 9, 15], ...[16, 17, 18, 19, 20, 21, 22, 23].map((rr) => [rr, 8, 16]), [24, 9, 15]];
+  T.filas(torsoF, A);
+  // Cadera.
+  if (abajo && abajo !== "falda") T.filas([[25, 9, 15], [26, 9, 15]], B).fila(25, 9, 15, osc(B, 0.82));
+  if (abajo === "falda") T.filas([[25, 9, 15], [26, 8, 16], [27, 8, 16], [28, 7, 17], [29, 7, 17]], B).fila(29, 7, 17, cla(B, 0.3));
+  if (abajo === "short") T.pon(12, 26, osc(B, 0.8));
+  if (abajo === "jeans") T.pon(12, 25, "#ffd36e");
+  if (vestido) { T.filas([[25, 8, 16], [26, 8, 16], [27, 7, 17], [28, 7, 17], [29, 6, 18], [30, 6, 18], [31, 6, 18]], A); T.fila(24, 9, 15, osc(A, 0.8)); T.fila(31, 6, 18, cla(A, 0.35)); }
+  const piel3 = (c, rr) => T.pon(c, rr, piel);
+  switch (r.arriba) {
+    case "tirantes": T.fila(15, 9, 15, piel); for (const c of [9, 10, 14, 15]) piel3(c, 16); T.pon(10, 15, A).pon(14, 15, A); break;
+    case "blusita": T.fila(15, 9, 15, piel); T.fila(16, 9, 15, piel); T.pon(10, 16, A).pon(14, 16, A); for (let c = 9; c <= 15; c += 2) T.pon(c, 24, cla(A, 0.5)); break;
+    case "playera": case "rayas": case "pijama": case "sueter": T.pon(12, 15, piel).pon(11, 15, osc(A, 0.85)).pon(13, 15, osc(A, 0.85)); break;
+    case "vestido": T.pon(12, 15, piel); T.pon(11, 15, BLANCO).pon(13, 15, BLANCO); break;
+    case "camisa": T.pon(11, 15, BLANCO).pon(13, 15, BLANCO).pon(12, 15, piel).pon(10, 16, BLANCO).pon(14, 16, BLANCO); for (let rr = 17; rr <= 23; rr++) T.pon(12, rr, osc(A, 0.85)); for (const rr of [18, 20, 22]) T.pon(12, rr, BLANCO); break;
+    case "sudadera": T.fila(15, 9, 10, osc(A, 0.8)).pon(12, 15, piel); T.pon(11, 16, BLANCO).pon(13, 16, BLANCO).pon(11, 17, BLANCO).pon(13, 17, BLANCO); T.caja(10, 20, 14, 22, osc(A, 0.88)); T.fila(24, 9, 15, osc(A, 0.82)); break;
+    case "chamarra": T.caja(11, 15, 13, 24, "#f4f1f6"); T.pon(12, 15, piel); for (let rr = 16; rr <= 24; rr++) { T.pon(10, rr, osc(A, 0.82)); T.pon(14, rr, osc(A, 0.82)); } T.pon(12, 19, "#ff86b0"); break;
+    case "overol": T.pon(12, 15, piel); T.caja(9, 19, 15, 24, B); T.caja(9, 15, 9, 18, B); T.caja(15, 15, 15, 18, B); T.pon(9, 19, "#ffd36e").pon(15, 19, "#ffd36e"); T.caja(11, 20, 13, 21, osc(B, 0.86)); break;
+  }
+  if (r.arriba === "rayas") for (const rr of [17, 19, 21, 23]) T.fila(rr, 8, 16, cla(A, 0.7));
+  if (r.arriba === "sueter") { T.fila(24, 9, 15, osc(A, 0.82)); for (const [c, rr] of [[11, 18], [13, 18], [11, 19], [12, 19], [13, 19], [12, 20]]) T.pon(c, rr, BLANCO); }
+  if (r.arriba === "pijama") for (const [c, rr] of [[10, 17], [14, 19], [11, 22], [15, 23], [9, 20]]) T.pon(c, rr, BLANCO);
+  if (r.arriba === "playera") for (const [c, rr] of [[11, 19], [13, 19], [11, 20], [12, 20], [13, 20], [12, 21]]) T.pon(c, rr, cla(A, 0.55));
+  T.sombrea(A); if (abajo) T.sombrea(B, { luz: false });
+  // El cuello y, si hay, la bufanda.
+  D.caja(11, 14, 13, 14, piel2);
+  if (r.accesorio === "bufanda") { D.filas([[14, 9, 15], [15, 9, 15]], "#ff5c93").caja(14, 16, 15, 20, "#ff5c93"); for (const c of [10, 12, 14]) D.pon(c, 15, "#ff9cbf"); D.pon(14, 20, "#ff9cbf"); }
+
+  /* La cabeza: cara, orejita, pelo y accesorio. */
+  const cara = new Capa().filas(CARA, piel);
+  // Sombrita debajo del fleco y del lado de atrás; la nariz y los cachetes.
+  for (const [c, rr] of [[10, 6], [11, 6], [12, 7], [15, 7], [16, 6], [17, 6], [8, 11], [9, 12], [10, 13], [17, 10]]) cara.pon(c, rr, piel2);
+  cara.pon(17, 9, sombraPiel(piel, 0.12)).pon(12, 10, "#ffa3bd").pon(16, 10, "#ffa3bd");
+  if (r.pecas === "si") for (const [c, rr] of [[11, 10], [13, 10], [17, 10]]) cara.pon(c, rr, sombraPiel(piel, 0.42));
+  const oreja = new Capa().pon(9, 8, piel).pon(9, 9, piel2).pon(9, 10, piel).pon(10, 9, sombraPiel(piel, 0.32));
+  const { frente, atras } = pelo(r.pelo, P);
+  // (El pelo no tapa los ojitos ni la boca.)
+  for (const [c, rr] of [[13, 8], [14, 8], [13, 9], [14, 9], [16, 8], [16, 9], [15, 11], [16, 11]]) frente.quita(c, rr);
+  const acc = r.accesorio === "bufanda" ? new Capa() : accesorio(r.accesorio, P);
+  const sombra = new Capa();
+  for (let c = 6; c <= 18; c++) sombra.pon(c, 41, "rgba(60,30,50,.16)");
+  for (let c = 8; c <= 16; c++) sombra.pon(c, 41, "rgba(60,30,50,.24)");
+
+  return `<svg viewBox="0 0 100 170" class="ca-mono-svg pixel-mono" shape-rendering="crispEdges" aria-hidden="true">
+    <g class="ca-sombra">${svgDe(sombra)}</g>
+    ${atras.m.size ? grupo("ca-pelo-atras", [atras]) : ""}
+    ${grupo("ca-bi", bi.slice(0, 2), bi[2], { attrs: ' style="transform-origin:28px 64px"' })}
+    ${grupo("ca-pi", pi)}${grupo("ca-pd", pd)}
+    ${grupo("", [T, D])}
+    ${grupo("ca-bd", bd.slice(0, 2), bd[2], { attrs: ' style="transform-origin:72px 64px"' })}
+    <g class="ca-cabeza">${svgDe(contorno([cara, frente, oreja, acc]))}${svgDe(cara)}${svgDe(oreja)}${caritas(r, P, I, piel)}${svgDe(frente)}${svgDe(acc)}</g>
   </svg>`;
 }

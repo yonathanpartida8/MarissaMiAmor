@@ -786,3 +786,39 @@ body.ed-ultra .jt-carta-cacas i { animation: none; }
   :root:not([data-tema="claro"]) .jt-juego small { color: #c9b3c4; }
   :root:not([data-tema="claro"]) .jt-juego-arte { background: #2a2130; }
 }
+
+/* ═══ Fase 57 · Mensajitos rápidos: una animación en toda la pantalla (sin tarjetita que tocar) ═══ */
+.tq-show { --c: #ff7fae; --c2: #ffe3ec; --t: #c84b7d; position: fixed; z-index: 2147483300; inset: 0; display: grid; place-items: center; pointer-events: none; overflow: hidden; animation: tqShowEntra .35s ease-out; }
+.tq-show.lila { --c: #a98bff; --c2: #efe6ff; --t: #7d5bd0; } .tq-show.menta { --c: #5fcf9c; --c2: #ddf5ea; --t: #2f8a61; } .tq-show.durazno { --c: #ffa86f; --c2: #ffead9; --t: #c2702f; }
+.tq-show.sale { animation: tqShowSale .5s ease-in forwards; }
+.tq-show-luz { position: absolute; inset: 0; background: radial-gradient(60% 45% at 50% 48%, color-mix(in srgb, var(--c2) 78%, transparent), transparent 72%); animation: tqLuz 1.6s ease-in-out infinite alternate; }
+.tq-show-centro { position: relative; display: grid; justify-items: center; gap: 10px; max-width: min(84vw, 420px); padding: 0 12px; text-align: center; }
+.tq-show-ico { display: block; width: 96px; height: 96px; filter: drop-shadow(0 6px 14px color-mix(in srgb, var(--c) 45%, transparent)); animation: tqIco .7s cubic-bezier(.3, 1.7, .5, 1) both, tqLatido 1.1s .7s ease-in-out infinite; }
+.tq-show-ico svg { width: 100%; height: 100%; display: block; }
+.tq-show-t { padding: 8px 18px; border-radius: 999px; background: rgba(255, 255, 255, .92); color: var(--t); font: 900 clamp(17px, 4.6vw, 22px)/1.2 "Nunito", sans-serif; box-shadow: 0 6px 22px rgba(90, 40, 70, .18); animation: tqTexto .6s .25s cubic-bezier(.3, 1.5, .5, 1) both; }
+.tq-show-txt { margin: 0; padding: 12px 18px; border-radius: 18px; background: rgba(255, 255, 255, .95); color: #4a3346; font: 800 clamp(16px, 4.4vw, 20px)/1.35 "Nunito", sans-serif; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 8px 26px rgba(90, 40, 70, .2); animation: tqCarta .8s .55s cubic-bezier(.3, 1.4, .5, 1) both; }
+.tq-show-p { position: absolute; left: var(--x); bottom: -60px; width: 34px; height: 34px; opacity: 0; transform: scale(var(--s)) rotate(var(--r)); animation: tqSube var(--v) var(--d) ease-out forwards; }
+.tq-show-p svg { width: 100%; height: 100%; display: block; }
+/* Cada uno se mueve distinto: besitos que flotan y se mecen, corazones que laten, estrellitas que caen (cuídate). */
+.tq-show.k-besitos .tq-show-ico { animation: tqIco .7s cubic-bezier(.3, 1.7, .5, 1) both, tqMuak .5s .7s ease-in-out 4 alternate; }
+.tq-show.k-besitos .tq-show-p { animation-name: tqFlota; }
+.tq-show.k-cuidate .tq-show-ico { animation: tqIco .7s cubic-bezier(.3, 1.7, .5, 1) both, tqCuida 2.4s .7s ease-in-out infinite; }
+.tq-show.k-cuidate .tq-show-p { bottom: auto; top: -60px; animation-name: tqCae; }
+.tq-show.k-propio .tq-show-ico { animation: tqSobre .9s cubic-bezier(.3, 1.5, .5, 1) both; }
+:root[data-tema="oscuro"] :is(.tq-show-t, .tq-show-txt) { background: rgba(42, 33, 48, .95); color: #f6e9f1; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) :is(.tq-show-t, .tq-show-txt) { background: rgba(42, 33, 48, .95); color: #f6e9f1; } }
+@keyframes tqShowEntra { from { opacity: 0; } }
+@keyframes tqShowSale { to { opacity: 0; transform: scale(1.04); } }
+@keyframes tqLuz { from { opacity: .7; } to { opacity: 1; } }
+@keyframes tqIco { 0% { opacity: 0; transform: scale(0) rotate(-20deg); } 70% { opacity: 1; transform: scale(1.25) rotate(6deg); } 100% { transform: scale(1); } }
+@keyframes tqLatido { 0%, 100% { transform: scale(1); } 14% { transform: scale(1.16); } 28% { transform: scale(.98); } 42% { transform: scale(1.1); } 60% { transform: scale(1); } }
+@keyframes tqMuak { from { transform: scale(1) rotate(-8deg); } to { transform: scale(1.12) rotate(8deg); } }
+@keyframes tqCuida { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes tqSobre { 0% { opacity: 0; transform: translateY(40px) rotate(-12deg) scale(.6); } 60% { opacity: 1; transform: translateY(-6px) rotate(4deg) scale(1.1); } 100% { transform: none; } }
+@keyframes tqTexto { from { opacity: 0; transform: translateY(14px) scale(.9); } }
+@keyframes tqCarta { from { opacity: 0; transform: translateY(24px) rotateX(60deg); } }
+@keyframes tqSube { 0% { opacity: 0; transform: translateY(0) scale(var(--s)) rotate(var(--r)); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-105vh) scale(var(--s)) rotate(calc(var(--r) * -1)); } }
+@keyframes tqFlota { 0% { opacity: 0; transform: translate(0, 0) scale(var(--s)); } 15% { opacity: 1; } 50% { transform: translate(22px, -52vh) scale(var(--s)) rotate(var(--r)); } 100% { opacity: 0; transform: translate(-18px, -105vh) scale(var(--s)); } }
+@keyframes tqCae { 0% { opacity: 0; transform: translateY(0) scale(var(--s)) rotate(0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(105vh) scale(var(--s)) rotate(240deg); } }
+@media (prefers-reduced-motion: reduce) { .tq-show, .tq-show * { animation: none !important; } }
+.tq-show-centro { z-index: 1; }

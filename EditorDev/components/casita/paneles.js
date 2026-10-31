@@ -5,7 +5,7 @@
  */
 import { el, aviso, jalarParaCerrar } from "../ui.js";
 import { ICO } from "./iconos.js";
-import { monitoSVG, PIELES, COLOR_PELO, COLOR_ROPA, PEINADOS, ARRIBAS, ABAJOS, ACCESORIOS, CALZADOS, OJOS, PECAS } from "./monito.js";
+import { monitoSVG, PIELES, COLOR_PELO, COLOR_OJOS, COLOR_ROPA, PEINADOS, ARRIBAS, ABAJOS, ACCESORIOS, CALZADOS, OJOS, PECAS } from "./monito.js";
 import { CATEGORIAS, deCategoria, colorDe, recetasDe, arteReceta } from "./catalogo/index.js";
 import { CUARTOS, PAREDES, PATRONES, PISOS, cuarto } from "./cuartos.js";
 import { SONIDOS } from "./sonidos.js";
@@ -42,7 +42,7 @@ export function vestidor(j) {
     vista,
     el("div.ca-vest-ops", {}, [
       sec("Peinado", chips(PEINADOS, r.pelo, (k) => poner({ pelo: k })), colores(COLOR_PELO, r.peloColor, (c) => poner({ peloColor: c }))),
-      sec("Ojitos", chips(OJOS, r.ojos || "redondos", (k) => poner({ ojos: k })), chips(PECAS, r.pecas || "no", (k) => poner({ pecas: k }))),
+      sec("Ojitos", chips(OJOS, r.ojos || "redondos", (k) => poner({ ojos: k })), colores(COLOR_OJOS, r.ojosColor || COLOR_OJOS[0], (c) => poner({ ojosColor: c })), chips(PECAS, r.pecas || "no", (k) => poner({ pecas: k }))),
       sec("Arriba", chips(ARRIBAS, r.arriba, (k) => poner({ arriba: k })), colores(COLOR_ROPA, r.arribaColor, (c) => poner({ arribaColor: c }))),
       sec("Abajo", chips(ABAJOS, r.abajo, (k) => poner({ abajo: k })), colores(COLOR_ROPA, r.abajoColor, (c) => poner({ abajoColor: c }))),
       sec("Zapatitos", chips(CALZADOS, r.calzado || "tenis", (k) => poner({ calzado: k })), colores(COLOR_ROPA, r.zapatos, (c) => poner({ zapatos: c }))),

@@ -14,7 +14,7 @@ function azar(semilla) { let s = semilla >>> 0 || 7; return () => { s ^= s << 13
 const PALETAS = {
   dia: { cielo: ["#4f9be3", "#74b6ee", "#9dcff5", "#c6e6fb", "#e6f5ff"], nube: "#ffffff", nubeS: "#d4e3f3", nubeL: "#ffffff", lejos: ["#9cb1d4", "#8ca2c6", "#aebfdc"], ventana: "#d8e4f4", luz: "#fff6c8", prende: 0.04,
     casas: ["#d98a7e", "#b7b2c8", "#e6c79f", "#9db5ca"], techo: "#6a5a76", arbol: ["#3c8a47", "#55a557", "#78c266"], otono: ["#b98a2e", "#d4a540", "#e6c35a"], pasto: "#5a9c47", pasto2: "#478a3a", farol: "#4a4458", sol: "#fff1a8" },
-  tarde: { cielo: ["#5a69b6", "#8a7dc8", "#c08bc6", "#ec9db3", "#f7b58c"], nube: "#7d68b0", nubeS: "#5f5196", nubeL: "#f59ab8", lejos: ["#5e4d71", "#6c5a7f", "#7b698d"], ventana: "#4b4060", luz: "#f8e4a0", prende: 0.45,
+  tarde: { cielo: ["#5a69b6", "#8a7dc8", "#c08bc6", "#ec9db3", "#f7b58c"], nube: "#a08ccc", nubeS: "#8672b6", nubeL: "#ffb3cb", lejos: ["#5e4d71", "#6c5a7f", "#7b698d"], ventana: "#4b4060", luz: "#f8e4a0", prende: 0.45,
     casas: ["#a6514d", "#7e7991", "#8d6971", "#6e6985"], techo: "#3a2f45", arbol: ["#2b3a2b", "#3e5833", "#5a6a2c"], otono: ["#7a5a22", "#9c7a2a", "#b8902e"], pasto: "#2e3c26", pasto2: "#24301f", farol: "#2b2735", sol: "#ffcf8a" },
   noche: { cielo: ["#0e0f2e", "#1a1946", "#29245e", "#3a2e6e", "#4a3a78"], nube: "#353172", nubeS: "#28265a", nubeL: "#5a53a0", lejos: ["#211f3b", "#2a2747", "#343055"], ventana: "#1c1a30", luz: "#ffd877", prende: 0.72,
     casas: ["#4d2f3f", "#3d3b51", "#493947", "#35354f"], techo: "#1b1625", arbol: ["#131d17", "#1d2b1d", "#2a3923"], otono: ["#3a3016", "#4a3c1a", "#5a4a20"], pasto: "#161f14", pasto2: "#10170f", farol: "#1b1923", sol: "#fff3c4" },

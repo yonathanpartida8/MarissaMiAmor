@@ -1,5 +1,5 @@
 /* ═══════════ NUESTRA CASITA (Fase 53): el jueguito de los dos ═══════════
-   El mundo mide 560 de alto (la pared hasta 432, luego el piso) y se escala con transform. Lo que se mueve
+   El mundo mide 640 de alto (la pared hasta 432, luego el piso) y se escala con transform. Lo que se mueve
    es transform/opacity; lo que se mueve solo se aquieta en Ultra rendimiento y con movimiento reducido. */
 
 /* ── Dentro de Juntitos: sin cabecera ni barra de abajo (la casita tiene su barrita «Volver atrás») ── */
@@ -20,11 +20,11 @@ body.ca-en-completa { overflow: hidden; }
 .ca-vista { position: relative; flex: 1; min-height: 0; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: pan-x; }
 .ca-vista::-webkit-scrollbar { display: none; }
 .ca-lienzo { position: relative; }
-.ca-mundo { position: absolute; left: 0; top: 0; width: 0; height: 560px; transform-origin: 0 0; -webkit-touch-callout: none; }
+.ca-mundo { position: absolute; left: 0; top: 0; width: 0; height: 640px; transform-origin: 0 0; -webkit-touch-callout: none; }
 .ca-mundo.ajusta { transition: transform .4s cubic-bezier(.3, .9, .3, 1); }
 
 /* ── Los cuartos ── */
-.ca-cuarto { position: absolute; top: 0; height: 560px; z-index: 0; --pared: #ffe1ec; }
+.ca-cuarto { position: absolute; top: 0; height: 640px; z-index: 0; --pared: #ffe1ec; }
 .ca-pared { position: absolute; left: 0; right: 0; top: -900px; height: 1332px; background-color: var(--pared); }
 .ca-pared::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: linear-gradient(transparent, rgba(90, 40, 70, .07)); }
 .ca-cuarto[data-patron="rayas"] .ca-pared { background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, .42) 0 18px, transparent 18px 40px); }
@@ -35,7 +35,7 @@ body.ca-en-completa { overflow: hidden; }
 .ca-cuarto[data-patron="cuadros"] .ca-pared { background-image: linear-gradient(90deg, rgba(255, 255, 255, .38) 50%, transparent 50%), linear-gradient(rgba(255, 255, 255, .38) 50%, transparent 50%); background-size: 40px 40px; }
 .ca-cuarto[data-patron="estrellas"] .ca-pared { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cpath d='M16 8l2.4 5 5.6.6-4.2 3.8 1.2 5.6-5-2.9-5 2.9 1.2-5.6L8 13.6l5.6-.6zM42 34l1.6 3.3 3.6.4-2.7 2.5.8 3.6-3.3-1.9-3.3 1.9.8-3.6-2.7-2.5 3.6-.4z' fill='white' fill-opacity='.6'/%3E%3C/svg%3E"); background-size: 56px 56px; }
 .ca-zoclo { position: absolute; left: 0; right: 0; top: 420px; height: 14px; background: #fffaf7; box-shadow: 0 -2px 0 rgba(255, 255, 255, .6), 0 3px 0 rgba(90, 40, 70, .07); z-index: 1; }
-.ca-piso { position: absolute; left: 0; right: 0; top: 432px; height: 300px; background: #e2b98f; }
+.ca-piso { position: absolute; left: 0; right: 0; top: 432px; height: 700px; background: #e2b98f; }
 .ca-piso::before { content: ""; position: absolute; inset: 0 0 auto; height: 22px; background: linear-gradient(rgba(90, 40, 60, .16), transparent); }
 .ca-cuarto[data-piso="madera"] .ca-piso { background: repeating-linear-gradient(0deg, transparent 0 30px, rgba(140, 90, 55, .18) 30px 32px), repeating-linear-gradient(90deg, #e6bf96 0 118px, #dcb288 118px 120px), #e6bf96; }
 .ca-cuarto[data-piso="clara"] .ca-piso { background: repeating-linear-gradient(0deg, transparent 0 30px, rgba(160, 120, 80, .14) 30px 32px), repeating-linear-gradient(90deg, #f6dfc2 0 98px, #ecd2b2 98px 100px), #f6dfc2; }
@@ -84,7 +84,7 @@ body.ca-en-completa { overflow: hidden; }
 .ca-fachada-ventana.v2 { left: auto; right: 16px; top: 34px; width: 40px; height: 54px; border-radius: 20px 20px 6px 6px; }
 
 /* La luz de cada cuarto, de día y de noche. */
-.ca-oscuro { position: absolute; top: -900px; height: 1500px; z-index: 5000; pointer-events: none; background: #1c1640; opacity: 0; transition: opacity .7s; }
+.ca-oscuro { position: absolute; top: -900px; height: 1580px; z-index: 5000; pointer-events: none; background: #1c1640; opacity: 0; transition: opacity .7s; }
 .ca-mundo.noche .ca-oscuro { opacity: .1; }
 .ca-mundo.noche .ca-oscuro.jardin { opacity: .3; }
 .ca-oscuro.apagado { opacity: .34; }
@@ -209,7 +209,7 @@ body.ca-en-completa { overflow: hidden; }
 .ca-mono-svg * { transform-box: view-box; }
 .ca-monito.yo .ca-mono-caja { touch-action: none; cursor: grab; }
 .ca-monito.pareja .ca-mono-caja { cursor: pointer; }
-.ca-lleva { position: absolute; left: 52px; top: 86px; width: 30px; height: 30px; pointer-events: none; transition: transform .25s; }
+.ca-lleva { position: absolute; left: 50px; top: 78px; width: 30px; height: 30px; pointer-events: none; transition: transform .25s; }
 .ca-lleva svg { display: block; width: 100%; height: 100%; }
 .ca-lleva[hidden] { display: none; }
 .ca-mono-nombre { position: absolute; left: 0; top: 6px; transform: translateX(-50%); padding: 2px 9px; border-radius: 99px; background: rgba(255, 255, 255, .9); color: #6a4060; font: 800 12px/1.35 "Nunito", sans-serif; white-space: nowrap; pointer-events: none; box-shadow: 0 2px 6px rgba(90, 40, 70, .1); transition: opacity .3s; }
@@ -224,7 +224,7 @@ body.ca-en-completa { overflow: hidden; }
 .ca-globo.zzz::after { display: none; }
 /* Caritas. */
 .ca-mono-svg .ojo-f, .ca-mono-svg .ojo-z, .ca-mono-svg .bo-a, .ca-mono-svg .bo-o, .ca-mono-svg .bo-b { display: none; }
-.ca-mono-svg .ca-ojos { transform-origin: 50px 52px; animation: caParpadeo 4.6s infinite; }
+.ca-mono-svg .ca-ojos { transform-origin: 58px 37px; animation: caParpadeo 4.6s infinite; }
 .ca-monito.dormido .ojo-n { display: none; } .ca-monito.dormido .ojo-z { display: inline; }
 .ca-monito:is(.g-rie, .g-baila, .g-abrazo, .g-aplaude, .g-choca, .banando, .columpio) .ojo-n { display: none; }
 .ca-monito:is(.g-rie, .g-baila, .g-abrazo, .g-aplaude, .g-choca, .banando, .columpio) .ojo-f { display: inline; }
@@ -232,10 +232,10 @@ body.ca-en-completa { overflow: hidden; }
 .ca-monito:is(.g-rie, .g-baila, .g-aplaude, .g-choca, .g-saluda, .columpio) .bo-a { display: inline; }
 .ca-monito.g-besito .ojo-n { display: none; } .ca-monito.g-besito .ojo-f { display: inline; }
 .ca-monito.g-besito .bo-n { display: none; } .ca-monito.g-besito .bo-b { display: inline; }
-.ca-monito.g-come .bo-n { display: none; } .ca-monito.g-come .bo-o { display: inline; transform-origin: 50px 65px; animation: caMastica .3s ease-in-out infinite alternate; }
+.ca-monito.g-come .bo-n { display: none; } .ca-monito.g-come .bo-o { display: inline; transform-origin: 66px 48px; animation: caMastica .3s ease-in-out infinite alternate; }
 /* Piernitas y bracitos. */
-.ca-pi { transform-origin: 42.75px 116px; transition: transform .3s; }
-.ca-pd { transform-origin: 57.25px 116px; transition: transform .3s; }
+.ca-pi { transform-origin: 42px 108px; transition: transform .3s; }
+.ca-pd { transform-origin: 58px 108px; transition: transform .3s; }
 .ca-bi, .ca-bd { transition: transform .3s; }
 .ca-monito.camina .ca-mono-flip { animation: caBote .4s ease-in-out infinite; }
 .ca-monito.camina .ca-pi { animation: caPierna .4s ease-in-out infinite alternate; }
@@ -723,7 +723,7 @@ body.ca-en-completa { overflow: hidden; }
 .ca-monito.comiendo .ca-cuchara { display: inline; }
 .ca-monito.comiendo .ca-bd { animation: caComer .95s ease-in-out infinite alternate; }
 .ca-monito.comiendo .bo-n { display: none; }
-.ca-monito.comiendo .bo-o { display: inline; transform-origin: 50px 65px; animation: caMastica .32s ease-in-out infinite alternate; }
+.ca-monito.comiendo .bo-o { display: inline; transform-origin: 66px 48px; animation: caMastica .32s ease-in-out infinite alternate; }
 .ca-monito.tocando .ca-bi { animation: caToca .24s ease-in-out infinite alternate; }
 .ca-monito.tocando .ca-bd { animation: caToca2 .24s ease-in-out infinite alternate-reverse; }
 .ca-monito.duchando :is(.ca-mono-nombre) { opacity: 0; }
@@ -768,12 +768,12 @@ body.ca-en-completa { overflow: hidden; }
 /* ═══════════ FASE 55: pixel, puertas, lluvia, chat como Roblox, gestos y más ═══════════ */
 .ca-filtros { position: absolute; width: 0; height: 0; pointer-events: none; }
 /* Estilo pixel (sólo el juego; los botones siguen igual). Se quita en Ajustes o con Ultra rendimiento. */
-.ca.pixel.fx2 :is(.ca-obj-arte svg, .ca-mono-svg, .ca-plato svg, .ca-lleva svg, .ca-vuela svg, .ca-regalito) { filter: url(#ca-pixel); }
+.ca.pixel.fx2 :is(.ca-obj-arte svg, .ca-plato svg, .ca-lleva svg, .ca-vuela svg, .ca-regalito) { filter: url(#ca-pixel); }
 .ca.pixel :is(.ca-globito, .ca-mono-nombre) { border-radius: 6px; box-shadow: 0 0 0 2px #4a3346, 3px 3px 0 rgba(74, 51, 70, .25); }
 .ca.pixel .ca-part { border-radius: 1px !important; }
 
 /* Las puertas entre cuartos: se abren al pasar. */
-.ca-muro { position: absolute; z-index: 20; top: 0; width: 0; height: 560px; pointer-events: none; }
+.ca-muro { position: absolute; z-index: 20; top: 0; width: 0; height: 640px; pointer-events: none; }
 .ca-muro-pared { position: absolute; left: -9px; top: -900px; width: 18px; height: 1188px; background: linear-gradient(90deg, #f3e4ea, #fffaf7 45%, #ecdce3); box-shadow: 0 0 0 1px rgba(90, 40, 70, .08), 4px 0 10px rgba(90, 40, 70, .1); }
 .ca-puerta-marco { position: absolute; left: -40px; top: 300px; width: 80px; height: 170px; border-radius: 40px 40px 0 0; background: #4a3346; box-shadow: inset 0 0 0 7px #fff4ea, inset 0 0 0 9px rgba(90, 40, 70, .14); }
 .ca-puerta-hoja { position: absolute; left: -33px; top: 307px; width: 66px; height: 163px; border-radius: 33px 33px 0 0; transform-origin: left center; transition: transform .38s cubic-bezier(.3, 1.2, .5, 1);
@@ -785,10 +785,10 @@ body.ca-en-completa { overflow: hidden; }
 
 /* La lluvia (afuera), los charquitos, las ventanas mojadas y el perrito que se mete a su casita. */
 .ca-lluvia, .ca-charcos { position: absolute; left: 0; right: 0; pointer-events: none; opacity: 0; transition: opacity 1s; }
-.ca-lluvia { z-index: 4999; top: -900px; height: 1460px; overflow: hidden; }
+.ca-lluvia { z-index: 4999; top: -900px; height: 1540px; overflow: hidden; }
 .ca-lluvia::before { content: ""; position: absolute; left: 0; right: 0; top: -200px; height: 1660px; animation: caLlueve .5s linear infinite;
   background: repeating-linear-gradient(104deg, transparent 0 13px, rgba(200, 225, 255, .55) 13px 14.5px, transparent 14.5px 37px); background-size: 74px 46px; }
-.ca-charcos { z-index: 1; top: 470px; height: 90px; background: radial-gradient(40px 7px at 20% 60%, rgba(150, 200, 255, .55) 95%, transparent), radial-gradient(54px 8px at 62% 40%, rgba(150, 200, 255, .5) 95%, transparent), radial-gradient(30px 6px at 86% 75%, rgba(150, 200, 255, .5) 95%, transparent); }
+.ca-charcos { z-index: 1; top: 470px; height: 150px; background: radial-gradient(40px 7px at 20% 60%, rgba(150, 200, 255, .55) 95%, transparent), radial-gradient(54px 8px at 62% 40%, rgba(150, 200, 255, .5) 95%, transparent), radial-gradient(30px 6px at 86% 75%, rgba(150, 200, 255, .5) 95%, transparent); }
 .ca-mundo.lluvia :is(.ca-lluvia, .ca-charcos) { opacity: 1; }
 .ca-mundo.lluvia .ca-cielo { background: linear-gradient(#7d8aa8 0%, #a3adc4 60%, #cfd5e2 100%); }
 .ca-mundo.lluvia.noche .ca-cielo { background: linear-gradient(#1b1d33 0%, #2c3050 60%, #464b6e 100%); }
@@ -973,3 +973,45 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-monito.dormido.en-hamaca .ca-mono-caja { transform: translateY(-16px) rotate(-90deg) scale(.8); }
 .ca.fx1 .ca-monito.dormido.en-hamaca .ca-mono-caja { animation: caMeceHamaca 3.4s ease-in-out infinite; }
 @keyframes caMeceHamaca { 0%, 100% { transform: translate(-3px, -16px) rotate(-91deg) scale(.8); } 50% { transform: translate(3px, -14px) rotate(-89deg) scale(.8); } }
+
+/* ═════════════ Fase 57: todo en pixel art ═════════════ */
+/* Paredes y pisos con texturas pixel (texturas.js); sombras en escalones en vez de degradados suaves. */
+.ca.pixel :is(.ca-pared, .ca-piso, .ca-charcos, .ca-lluvia::before) { image-rendering: crisp-edges; image-rendering: pixelated; }
+.ca.pixel .ca-pared::after { background: linear-gradient(transparent 0 40%, rgba(90, 40, 70, .035) 40% 60%, rgba(90, 40, 70, .065) 60% 80%, rgba(90, 40, 70, .1) 80%); }
+.ca.pixel .ca-piso::before { height: 24px; background: linear-gradient(rgba(90, 40, 60, .2) 0 6px, rgba(90, 40, 60, .12) 6px 12px, rgba(90, 40, 60, .06) 12px 18px, transparent 18px); }
+.ca.pixel .ca-zoclo { box-shadow: 0 -3px 0 #fff, 0 3px 0 rgba(90, 40, 70, .12); }
+.ca.pixel .ca-columna { background: linear-gradient(90deg, #ecdce3 0 3px, #fffaf7 3px 11px, #f3e4ea 11px); box-shadow: 3px 0 0 rgba(90, 40, 70, .1); }
+.ca.pixel .ca-muro-pared { background: linear-gradient(90deg, #ecdce3 0 3px, #fffaf7 3px 15px, #f3e4ea 15px); box-shadow: 0 0 0 1px rgba(90, 40, 70, .12); }
+/* Lo de enfrente de afuera (cerca, fachada, caminito, barandal) dibujado en pixel. */
+.ca-frente-px { position: absolute; left: 0; top: 120px; width: 100%; height: 444px; z-index: 1; display: none; pointer-events: none; image-rendering: crisp-edges; image-rendering: pixelated; }
+.ca-cuarto.px .ca-frente-px { display: block; }
+.ca-cuarto.px :is(.ca-cerca, .ca-fachada, .ca-camino, .ca-baranda) { display: none; }
+/* Lluvia de gotitas pixel y charquitos pixel. */
+.ca.pixel .ca-lluvia::before, .ca.pixel .ca-mundo.tormenta .ca-lluvia::before, .ca.pixel .ca-mundo.extra .ca-lluvia::before { background: var(--lluvia-px) 0 0 / 72px 72px; animation: caLluevePx .42s linear infinite; }
+.ca.pixel .ca-mundo.tormenta .ca-lluvia::before { animation-duration: .32s; }
+.ca.pixel .ca-mundo.extra .ca-lluvia::before { animation-duration: .24s; }
+@keyframes caLluevePx { from { transform: translateY(0); } to { transform: translateY(72px); } }
+.ca.pixel .ca-charcos { background: var(--charcos) 0 0 / 100% 150px no-repeat; }
+/* Los monitos ya son pixel art: el pelo largo se mece al caminar y con el aire. */
+.ca-monito.camina .ca-pelo-atras { animation: caPeloMece .4s ease-in-out infinite alternate; transform-origin: 30px 30px; }
+.ca-monito.corre .ca-pelo-atras { animation-duration: .24s; }
+.ca.fx1 .ca-monito:not(.camina):not(.dormido) .ca-pelo-atras { animation: caPeloAire 3.8s ease-in-out infinite; transform-origin: 30px 30px; }
+@keyframes caPeloMece { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+@keyframes caPeloAire { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(1.6deg); } }
+.ca-vest-vista svg { image-rendering: pixelated; }
+/* La interfaz también en pixel: letra pixel, esquinas cuadraditas y bordes de dos cuadritos. */
+.ca.pixel { --ca-px-letra: "Jersey 10", "Nunito", sans-serif; }
+.ca.pixel :is(.ca-hud-cuarto, .ca-volver span, .ca-hoja header b, .ca-sec > b, .ca-menu-t, .ca-menu-b span, .ca-carga-caja b, .ca-ed-t b, .ca-cat-tab, .ca-mono-nombre, .ca-chip, .ca-gfx-b b, .ca-clima-b span, .ca-vaciar-b b, .ca-basura span) { font-family: var(--ca-px-letra); font-weight: 400; letter-spacing: .03em; font-size-adjust: ex-height .54; }
+.ca.pixel :is(.ca-r, .ca-hud-izq, .ca-hud-cuartos, .ca-cuarto-b, .ca-ed-arriba, .ca-menu, .ca-menu-b, .ca-chip, .ca-cat-b, .ca-cat-tab, .ca-gfx-b, .ca-clima-b, .ca-vaciar-b, .ca-receta, .ca-carta-b, .ca-carta-nueva) { border-radius: 6px; }
+.ca.pixel :is(.ca-r, .ca-hud-izq, .ca-hud-cuartos, .ca-ed-arriba, .ca-menu) { box-shadow: 0 0 0 2px #4a3346, 4px 4px 0 rgba(74, 51, 70, .28); }
+.ca.pixel .ca-hoja { border-radius: 10px 10px 0 0; box-shadow: 0 0 0 2px #4a3346, 0 -6px 0 rgba(74, 51, 70, .12); }
+.ca.pixel .ca-cuarto-b.on { box-shadow: inset 0 0 0 2px var(--ca-acento); }
+.ca.pixel .ca-carga-pista { box-shadow: 0 0 0 2px #fff, 4px 4px 0 rgba(0, 0, 0, .25); }
+/* El bote de basura (al acomodar) ahora sale arriba: abajo queda todo el piso para acomodar. */
+.ca-basura { top: calc(10px + env(safe-area-inset-top, 0px)); bottom: auto; flex-direction: row; gap: 8px; transform: translate(-50%, -160%) scale(.8); }
+.ca-basura i { width: 54px; height: 54px; }
+.ca-basura i svg { width: 26px; height: 26px; }
+.ca.pixel .ca-basura i { border-radius: 8px; box-shadow: 0 0 0 2px #4a3346, 4px 4px 0 rgba(74, 51, 70, .28); }
+.ca.arrastrando .ca-ed-arriba { opacity: 0; pointer-events: none; transition: opacity .15s; }
+/* Las miniaturas del cajón y de las recetas también en pixel (como las cosas puestas). */
+.ca.pixel.fx2 :is(.ca-cat-mini svg, .ca-receta-arte svg) { filter: url(#ca-pixel); }

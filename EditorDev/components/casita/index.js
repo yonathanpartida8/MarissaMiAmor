@@ -38,6 +38,7 @@ import { cocinar, pintarPlatos, laPareja } from "./mesa.js";
 import { Mensajes } from "./mensajes.js";
 import { leerGfx, guardarGfx, nivel, maxParticulas, filtroPixel, crearCapaGL } from "./graficos.js";
 import { pintarFondo } from "./fondo.js";
+import { texPared, texPiso, texLluvia, texCharcos, pintarFrente } from "./texturas.js";
 
 const lim = (v, a, b) => Math.max(a, Math.min(b, v));
 const MAX_OBJETOS = 300;
@@ -105,6 +106,8 @@ export class Casita {
     window.addEventListener("orientationchange", this._gira);
     this._vis = () => { if (document.hidden) { this.capa?.parar(); clearTimeout(this._tRayo); return; } this._reparar(); this.capa?.prender(); this._programarRayo(); };
     document.addEventListener("visibilitychange", this._vis);
+    this._toque = (e) => this._alToque(e.detail || {});
+    addEventListener("ed-toque-llega", this._toque);
     requestAnimationFrame(() => this.irCuarto("sala", false));
     this._tiempo();
     this._reloj = setInterval(() => this._tiempo(), 30000);
@@ -130,6 +133,7 @@ export class Casita {
     document.removeEventListener("webkitfullscreenchange", this._fs);
     window.removeEventListener("orientationchange", this._gira);
     document.removeEventListener("visibilitychange", this._vis);
+    removeEventListener("ed-toque-llega", this._toque);
     if (this.raiz?.classList.contains("completa")) this._completa(false);
     cancelAnimationFrame(this._rqAuto);
     // (Fase 56) Al salir se cierra todo de verdad: la capa de luces, los rayos, el teclado y la casita.
@@ -160,11 +164,12 @@ export class Casita {
       const cielo = () => el("div.ca-cielo", {}, [el("i.ca-sol"), el("i.ca-nube.n1"), el("i.ca-nube.n2"), el("i.ca-nube.n3"), el("i.ca-estrellas"), el("i.ca-mariposa.m1"), el("i.ca-mariposa.m2"), el("i.ca-luciernagas")]);
       // La terraza: cielo, la ciudad a lo lejos y su barandal (sin la cerca ni la fachada del jardín).
       // (Fase 56: el fondo de afuera es pixel art dibujado una vez en un lienzo chiquito, fondo.js.)
-      if (c.terraza) n.append(cielo(), el("canvas.ca-fondo-px", { "aria-hidden": "true" }), el("div.ca-lomas"), el("div.ca-ciudad"), el("div.ca-baranda"));
+      if (c.terraza) n.append(cielo(), el("canvas.ca-fondo-px", { "aria-hidden": "true" }), el("div.ca-lomas"), el("div.ca-ciudad"), el("div.ca-baranda"), el("canvas.ca-frente-px", { "aria-hidden": "true" }));
       else if (c.afuera) n.append(
         cielo(), el("canvas.ca-fondo-px", { "aria-hidden": "true" }),
         el("div.ca-lomas"), el("div.ca-cerca"), el("div.ca-camino"),
         el("div.ca-fachada", {}, [el("i.ca-techo"), el("i.ca-fachada-ventana"), el("i.ca-fachada-ventana.v2")]),
+        el("canvas.ca-frente-px", { "aria-hidden": "true" }),
       );
       else n.append(el("i.ca-columna"), el("i.ca-techo-r"), c.foco ? el("i.ca-pendiente", { style: { left: c.foco + "px" } }, [el("i.ca-pendiente-luz")]) : null);
       this.mundo.append(n);
@@ -172,7 +177,11 @@ export class Casita {
       const o = el("i.ca-oscuro." + c.k, { style: { left: inicioDe(c.k) + "px", width: c.w + "px" } });
       this.oscuroN.set(c.k, o);
       this.mundo.append(o);
-      if (c.afuera) n.append(el("i.ca-lluvia"), el("i.ca-charcos"));
+      if (c.afuera) {
+        const ch = el("i.ca-charcos");
+        try { const t = texCharcos(c.w); ch.style.setProperty("--charcos", t.url); } catch (e) { /* nada */ }
+        n.append(el("i.ca-lluvia"), ch);
+      }
       if (c.k === "jardin") n.append(el("i.ca-auto"));
     }
     // Entre cuarto y cuarto (adentro), una pared con su puerta que se abre sola al pasar.
@@ -246,7 +255,24 @@ export class Casita {
     try { localStorage.setItem(PLEGADO, on ? "1" : "0"); } catch (e) { /* nada */ }
   }
   leerPixel() { try { return localStorage.getItem(PIXEL) !== "0"; } catch (e) { return true; } }
-  pixel(on) { this.raiz.classList.toggle("pixel", !!on); try { localStorage.setItem(PIXEL, on ? "1" : "0"); } catch (e) { /* nada */ } }
+  pixel(on) {
+    this.raiz.classList.toggle("pixel", !!on);
+    try { localStorage.setItem(PIXEL, on ? "1" : "0"); } catch (e) { /* nada */ }
+    if (this.casa) for (const c of CUARTOS) this._texturas(c.k, this.cfgCuarto(c.k));
+  }
+  /** (Fase 57) Paredes y pisos en pixel art: su tapiz y su piso como texturas chiquitas agrandadas sin suavizar. */
+  _texturas(k, cfg) {
+    const n = this.cuartosN?.get(k);
+    if (!n) return;
+    const on = this.raiz.classList.contains("pixel"), clave = on ? `${cfg.pared}|${cfg.patron}|${cfg.piso}` : "";
+    if (n._tex === clave) return;
+    n._tex = clave;
+    const pared = n.querySelector(":scope > .ca-pared"), piso = n.querySelector(":scope > .ca-piso");
+    const limpiar = (x) => Object.assign(x.style, { backgroundImage: "", backgroundSize: "", backgroundRepeat: "" });
+    if (!on) { limpiar(pared); limpiar(piso); return; }
+    try { Object.assign(pared.style, texPared(cfg.pared, cfg.patron)); Object.assign(piso.style, texPiso(cfg.piso)); }
+    catch (e) { limpiar(pared); limpiar(piso); }
+  }
 
   /* ═════════════ Gráficos (Fase 56): cinco perfiles que de verdad cambian lo que se dibuja ═════════════ */
   graficos(k, avisar = true) {
@@ -298,6 +324,8 @@ export class Casita {
         const r = pintarFondo(cv, { ancho: c.w, hora, clima, tipo: c.terraza ? "ciudad" : "barrio", semilla: c.terraza ? 7 : 3 });
         n.classList.add("px");
         if (cielo) cielo.style.background = r.arriba;   // arriba del dibujo, el mismo color del cielo
+        const fr = n.querySelector(".ca-frente-px");
+        if (fr) pintarFrente(fr, { tipo: c.terraza ? "terraza" : "jardin", ancho: c.w, hora });
       } catch (e) { n.classList.remove("px"); if (cielo) cielo.style.background = ""; }
     }
   }
@@ -402,6 +430,7 @@ export class Casita {
       const n = this.cuartosN.get(c.k), cfg = this.cfgCuarto(c.k);
       n.style.setProperty("--pared", cfg.pared);
       n.dataset.patron = cfg.patron; n.dataset.piso = cfg.piso;
+      this._texturas(c.k, cfg);
       this.oscuroN.get(c.k).classList.toggle("apagado", cfg.luz === false);
       n.classList.toggle("apagado", cfg.luz === false);
     }
@@ -589,6 +618,7 @@ export class Casita {
     this.mundo.classList.toggle("lluvia", lluvia);
     this.mundo.classList.toggle("tormenta", cl === "tormenta" || cl === "extra");
     this.mundo.classList.toggle("extra", cl === "extra");
+    if (lluvia) { try { this.mundo.style.setProperty("--lluvia-px", texLluvia(cl).url); } catch (e) { /* nada */ } }
     this.climaB?.classList.toggle("on", lluvia);
     if (this.climaB && this.climaB.dataset.k !== cl) { this.climaB.dataset.k = cl; this.climaB.innerHTML = ICO[{ sol: "sol", lluvia: "lluvia", tormenta: "rayo", extra: "extra" }[cl]]; }
     for (const r of this.objs.values()) {
@@ -817,7 +847,7 @@ export class Casita {
     setTimeout(() => { b.classList.add("se-va"); setTimeout(() => b.remove(), 320); }, ms);
   }
   vestidor() { P.vestidor(this); }
-  vestir(r) { this._vestirMono(this.yo, r); clearTimeout(this._tRopa); this._tRopa = setTimeout(() => this._mandarYo({ ropa: { ...this.yo.ropa } }), 500); }
+  vestir(r) { this._vestirMono(this.yo, r); if (this._visible(this.yo)) this.particulas("chispa", { gx: this.yo.gx, y: this.yo.y - 80 }, 0, 0, 3); clearTimeout(this._tRopa); this._tRopa = setTimeout(() => this._mandarYo({ ropa: { ...this.yo.ropa } }), 500); }
   /** Un gesto (saludar, bailar, brincar, besito, aplaudir, reír). */
   gesto(m, k, mandar = true) {
     const g = GESTOS.find((x) => x[0] === k);
@@ -961,6 +991,15 @@ export class Casita {
     if (k === "manita") { this.sonar("beso", { volumen: 0.6 }); this.particulas("corazon", medio, 0, 30, 4); }
     if (k === "cosquillas") { this.sonar("risa"); this.particulas("chispa", { gx: b.gx, y: b.y - 90 }, 0, 0, 5); }
     if (k === "selfie") { this.sonar("clic"); this.raiz.classList.remove("flash"); void this.raiz.offsetWidth; this.raiz.classList.add("flash"); this.particulas("estrella", medio, 0, 0, 5); if (a === this.yo) aviso("¡Qué bonita foto de los dos!", 2200); }
+  }
+
+  /** (Fase 57) Si tu amorcito te manda un mensajito rápido mientras están en la casita, su monito te lo dice. */
+  _alToque({ tipo, texto }) {
+    if (!this.vivo) return;
+    const m = this.suyo;
+    this.gesto(m, { besitos: "volado", teamo: "corazon", cuidate: "saluda" }[tipo] || "saluda", false);
+    this._globo(m, texto || { besitos: "¡Muak, muak!", teamo: "¡Te amo!", cuidate: "¡Cuídate mucho!" }[tipo] || "", 5200);
+    if (this._visible(m)) this.particulas("corazon", { gx: m.gx, y: m.y - 120 }, 0, 0, 6);
   }
 
   /** Partículas (corazones, burbujas, chispas, notas, vapor, agua, hojas, polvo, migajas…). */
