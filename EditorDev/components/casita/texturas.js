@@ -200,3 +200,39 @@ export function texLuna() {
     for (const [x, y] of [[4, -2], [2, 3], [5, 4]]) pon(11 + x, 11 + y, C);
   });
 }
+
+/** (Fase 59) Nubecita pixel (tres formas), blanca con su sombra abajo y su brillito arriba. */
+export function texNubePx(v = 0) {
+  const B = [[[10, 9, 9, 5], [20, 6, 9, 6], [30, 8, 8, 5], [38, 10, 7, 4]], [[9, 9, 8, 4], [18, 7, 8, 5], [27, 9, 7, 4]], [[8, 10, 7, 4], [17, 7, 10, 6], [28, 6, 8, 6], [37, 9, 8, 5], [45, 11, 6, 3]]][v % 3];
+  return comoUrl(`nube|${v % 3}`, 52, 16, ({ pon }) => {
+    const A = rgb("#ffffff"), S = rgb("#e4dcf2"), L = rgb("#fffaff");
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 52; x++) {
+      const dentro = B.some(([bx, by, rx, ry]) => ((x - bx) / rx) ** 2 + ((y - by) / ry) ** 2 <= 1) && y <= 13;
+      if (!dentro) continue;
+      const abajo = !B.some(([bx, by, rx, ry]) => ((x - bx) / rx) ** 2 + ((y + 2 - by) / ry) ** 2 <= 1) || y >= 12;
+      const arriba = !B.some(([bx, by, rx, ry]) => ((x - bx) / rx) ** 2 + ((y - 2 - by) / ry) ** 2 <= 1);
+      pon(x, y, abajo ? S : arriba ? L : A);
+    }
+  });
+}
+/** (Fase 59) Pajarito pixel con dos cuadros (alas arriba y abajo) para que aletee. */
+export function texPajaro() {
+  return comoUrl("pajaro", 14, 5, ({ pon }) => {
+    const K = rgb("#4b3a52");
+    for (const [x, y] of [[0, 0], [1, 1], [2, 2], [3, 2], [4, 1], [5, 0], [3, 3]]) pon(x, y, K);
+    for (const [x, y] of [[0, 3], [1, 2], [2, 2], [3, 2], [4, 2], [5, 3], [3, 3]]) pon(7 + x, y, K);
+  });
+}
+
+/** (Fase 59) La base de la pared entre dos cuartos, en perspectiva (2.5D): sale de la esquina de atrás y se abre
+ *  hacia ti según dónde esté la cámara (`off`: cuánto se corre al frente, en unidades del mundo). 80 × 72 cuadritos. */
+export function pintarMuro3d(cv, off) {
+  const L = lienzo(80, 72, cv), A = rgb("#fff6ee"), O = rgb("#e3c9d4"), S = rgb("#5a2846");
+  for (let y = 0; y < 72; y++) {
+    const t = y / 71, cx = 40 + (off / 4) * t, m = 2 + Math.round(2.6 * t), a = Math.round(cx - m), b = Math.round(cx + m);
+    for (let x = a; x <= b; x++) L.pon(x, y, x === a || x === b || y === 71 ? O : A);
+    // Su sombrita en el piso (la luz viene de arriba a la izquierda).
+    for (let i = 1; i <= 3; i++) L.pon(b + i, y, S, [70, 40, 18][i - 1]);
+  }
+  L.listo();
+}

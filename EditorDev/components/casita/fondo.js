@@ -27,6 +27,8 @@ export function pintarFondo(lienzo, { ancho, hora = "dia", clima = "sol", tipo =
   lienzo.width = W; lienzo.height = H;
   const c = lienzo.getContext("2d"), img = c.createImageData(W, H), d = img.data;
   const P = PALETAS[hora] || PALETAS.dia, R = azar(semilla * 9301 + 49297);
+  // (Fase 59) Las estrellitas y las nubes usan su propio azar: así la ciudad es la MISMA de día, tarde y noche.
+  const Re = azar(semilla * 7919 + 11), Rn = azar(semilla * 6271 + 5);
   const nublado = { sol: 0, lluvia: 0.55, tormenta: 0.78, extra: 0.92 }[clima] ?? 0;
   const col = (h) => (nublado ? mezcla(rgb(h), GRIS, nublado * (hora === "noche" ? 0.35 : 0.6)) : rgb(h));
   const pon = (x, y, k) => { x |= 0; y |= 0; if (x < 0 || y < 0 || x >= W || y >= H) return; const i = (y * W + x) * 4; d[i] = k[0]; d[i + 1] = k[1]; d[i + 2] = k[2]; d[i + 3] = 255; };
@@ -40,7 +42,7 @@ export function pintarFondo(lienzo, { ancho, hora = "dia", clima = "sol", tipo =
     for (let x = 0; x < W; x++) pon(x, y, f > BAYER[(y % 4) * 4 + (x % 4)] ? C[Math.min(C.length - 1, i + 1)] : C[i]);
   }
   // Estrellitas (de noche y sin nubes) y el sol o la luna.
-  if (hora === "noche" && nublado < 0.6) for (let n = 0; n < W * 0.5; n++) { const x = R() * W, y = R() * horizonte * 0.8; pon(x, y, R() < 0.2 ? [255, 246, 200] : [200, 200, 240]); }
+  if (hora === "noche" && nublado < 0.6) for (let n = 0; n < W * 0.5; n++) { const x = Re() * W, y = Re() * horizonte * 0.8; pon(x, y, Re() < 0.2 ? [255, 246, 200] : [200, 200, 240]); }
   // (Fase 58: el sol y la luna ya no van pintados aquí: son pixel art aparte, con brillo y movimiento.)
   if (false) {
     const sx = Math.round(W * 0.78), sy = hora === "tarde" ? Math.round(horizonte * 0.78) : Math.round(horizonte * 0.25), r = 6;
@@ -53,8 +55,8 @@ export function pintarFondo(lienzo, { ancho, hora = "dia", clima = "sol", tipo =
   // 2) Nubes: grupitos de óvalos, con orilla de abajo iluminada (rosita en la tarde).
   const nNubes = Math.round(W / 26 * (1 + nublado * 1.6));
   for (let n = 0; n < nNubes; n++) {
-    const cx = R() * W, cy = 8 + R() * horizonte * (0.75 + nublado * 0.2), ancho = 16 + R() * 32 * (1 + nublado), alto = 4 + R() * 5;
-    const bolas = Array.from({ length: 4 + (R() * 4) | 0 }, () => [cx + (R() - 0.5) * ancho, cy + (R() - 0.5) * alto, ancho * (0.18 + R() * 0.2), alto * (0.7 + R() * 0.6)]);
+    const cx = Rn() * W, cy = 8 + Rn() * horizonte * (0.75 + nublado * 0.2), ancho = 16 + Rn() * 32 * (1 + nublado), alto = 4 + Rn() * 5;
+    const bolas = Array.from({ length: 4 + (Rn() * 4) | 0 }, () => [cx + (Rn() - 0.5) * ancho, cy + (Rn() - 0.5) * alto, ancho * (0.18 + Rn() * 0.2), alto * (0.7 + Rn() * 0.6)]);
     const dentro = (x, y) => bolas.some(([bx, by, rx, ry]) => ((x - bx) / rx) ** 2 + ((y - by) / ry) ** 2 <= 1);
     for (let y = Math.floor(cy - alto * 2); y <= cy + alto * 2; y++) for (let x = Math.floor(cx - ancho); x <= cx + ancho; x++) {
       if (!dentro(x, y)) continue;

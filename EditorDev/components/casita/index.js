@@ -42,7 +42,8 @@ import { LluviaFisica, charcoEn } from "./lluvia.js";
 import { Necesidades, NECESIDADES } from "./necesidades.js";
 import { LasTraes, VEL_TRAES } from "./traes.js";
 import { VozEnVivo, puedeVoz } from "./voz.js";
-import { texPared, texPiso, texLluvia, texCharcos, pintarFrente, texAuto, texSol, texLuna } from "./texturas.js";
+import { CieloVivo } from "./cielo.js";
+import { texPared, texPiso, texLluvia, texCharcos, pintarFrente, texAuto, texSol, texLuna, pintarMuro3d } from "./texturas.js";
 
 const lim = (v, a, b) => Math.max(a, Math.min(b, v));
 const MAX_OBJETOS = 300;
@@ -85,6 +86,8 @@ export class Casita {
     this.lienzo = el("div.ca-lienzo", {}, [this.mundo]);
     this.vistaN = el("div.ca-vista", {}, [this.lienzo]);
     this._armarCuartos();
+    this.cielo = new CieloVivo(this);
+    this.cielo.armar();
     // Los monitos (la primera vez, cada quien de un lado de la sala: igual en los dos teléfonos).
     const izq = String(d.yo?.usuario || "") <= String(d.pareja?.usuario || "");
     this.yo = this._monito("yo", ropaDe(d.yo?.genero), "Tú", global("sala", izq ? 130 : 520));
@@ -157,6 +160,7 @@ export class Casita {
     this.voz?.apagar(true);
     this.capa?.destruir(); this.capa = null;
     this.lluviaF?.destruir();
+    this.cielo?.limpiar();
     this.raiz?.remove();
   }
 
@@ -249,9 +253,11 @@ export class Casita {
     for (let i = 1; i < CUARTOS.length; i++) {
       const a = CUARTOS[i - 1], b = CUARTOS[i];
       if (a.afuera || b.afuera) continue;
-      const x = inicioDe(b.k), n = el("div.ca-muro", { style: { left: x + "px" } }, [el("i.ca-muro-pared"), el("i.ca-puerta-marco"), el("i.ca-puerta-hoja", {}, [el("i.ca-puerta-perilla")])]);
+      // (Fase 59) Con su base en perspectiva sobre el piso (2.5D), que se acomoda según dónde mires.
+      const cv = el("canvas.ca-muro-3d", { "aria-hidden": "true" });
+      const x = inicioDe(b.k), n = el("div.ca-muro", { style: { left: x + "px" } }, [cv, el("i.ca-muro-pared"), el("i.ca-puerta-marco"), el("i.ca-puerta-hoja", {}, [el("i.ca-puerta-perilla")])]);
       this.mundo.append(n);
-      this.puertas.push({ x, n });
+      this.puertas.push({ x, n, cv });
     }
   }
   /** Las puertas que cruza un monito en su camino se abren justo cuando pasa. */
@@ -386,7 +392,7 @@ export class Casita {
       if (!cv) continue;
       const cielo = n.querySelector(".ca-cielo");
       try {
-        const r = pintarFondo(cv, { ancho: c.w, hora, clima, tipo: c.terraza ? "ciudad" : "barrio", semilla: c.terraza ? 7 : 3 });
+        const r = pintarFondo(cv, { ancho: c.w + 300, hora, clima, tipo: c.terraza ? "ciudad" : "barrio", semilla: c.terraza ? 7 : 3 });
         n.classList.add("px");
         if (cielo) cielo.style.background = r.arriba;   // arriba del dibujo, el mismo color del cielo
         const sol = n.querySelector(".ca-astro.sol");
@@ -439,6 +445,7 @@ export class Casita {
     this.lienzo.style.width = Math.round(ANCHO * this.k) + "px";
     this.lienzo.style.height = vh + "px";
     this._ubicarSel();
+    this._profundidad();
   }
   /** `_subir`: cuánto se sube la casita para que tu monito y su burbujita se vean arriba del teclado. */
   _moverMundo() { this.mundo.style.transform = `translate(0px, ${(this.offY - (this._subir || 0)).toFixed(1)}px) scale(${this.k.toFixed(4)})`; }
@@ -467,7 +474,29 @@ export class Casita {
     const v = this.vistaN, px = gx * this.k, m = Math.min(90, v.clientWidth * 0.2);
     if (px < v.scrollLeft + m || px > v.scrollLeft + v.clientWidth - m) v.scrollTo({ left: px - v.clientWidth / 2, behavior: reducido() ? "auto" : "smooth" });
   }
+  /** (Fase 59) 2.5D: la ciudad y el cielo se mueven más despacio que la casa (están lejos) y la base de las
+   *  paredes entre cuartos se ve en perspectiva según dónde esté la cámara. */
+  _profundidad() {
+    const v = this.vistaN, k = this.k || 1;
+    if (!v || !this.cuartosN) return;
+    const centro = (v.scrollLeft + v.clientWidth / 2) / k, vista = v.clientWidth / k;
+    for (const c of CUARTOS) {
+      if (!c.afuera) continue;
+      const n = this.cuartosN.get(c.k), dx = centro - (inicioDe(c.k) + c.w / 2);
+      if (Math.abs(dx) > c.w / 2 + vista) continue;
+      n.style.setProperty("--px-ciudad", lim(dx * 0.2, -150, 150).toFixed(1) + "px");
+      n.style.setProperty("--px-cielo", lim(dx * 0.35, -260, 260).toFixed(1) + "px");
+    }
+    for (const p of this.puertas || []) {
+      if (!p.cv || Math.abs(p.x - centro) > vista + 400) continue;
+      const q = Math.round(lim((p.x - centro) * 0.32, -180, 180) / 4);
+      if (q === p.q) continue;
+      p.q = q;
+      try { pintarMuro3d(p.cv, q * 4); } catch (e) { /* nada */ }
+    }
+  }
   _alDeslizar() {
+    this._profundidad();
     const centro = (this.vistaN.scrollLeft + this.vistaN.clientWidth / 2) / (this.k || 1);
     const { c } = enCuarto(centro);
     this._ubicarSel();

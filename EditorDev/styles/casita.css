@@ -245,7 +245,6 @@ body.ca-en-completa { overflow: hidden; }
 .ca-monito.corre .ca-mono-flip, .ca-monito.corre .ca-pi, .ca-monito.corre .ca-pd, .ca-monito.corre .ca-bi, .ca-monito.corre .ca-bd { animation-duration: .24s !important; }
 .ca-monito.corre .ca-mono-cuerpo { transform: rotate(4deg); transform-origin: 50% 100%; }
 /* Poses: sentado, dormido, en la tina, columpio y cocinando. */
-.ca-monito:is(.sentado, .columpio) .ca-pi, .ca-monito:is(.sentado, .columpio) .ca-pd { transform: scaleY(.42); }
 .ca-monito:is(.sentado, .dormido, .banando, .columpio, .cargado) .ca-sombra { display: none; }
 .ca-monito.dormido .ca-mono-caja { transform: rotate(-90deg); }
 .ca-monito.dormido .ca-mono-flip { animation: caRespira 3.2s ease-in-out infinite; }
@@ -451,9 +450,9 @@ body.ca-en-completa { overflow: hidden; }
 @keyframes caCopa { to { transform: rotate(1.2deg); } }
 @keyframes caMecer { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
 @keyframes caEspuma { to { transform: scale(1.04, 1.12); } }
-@keyframes caBote { 50% { transform: translateY(-4px); } }
-@keyframes caPierna { from { transform: rotate(-16deg); } to { transform: rotate(16deg); } }
-@keyframes caBrazo { from { transform: rotate(-18deg); } to { transform: rotate(18deg); } }
+@keyframes caBote { 50% { transform: translateY(-2px); } }
+@keyframes caPierna { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+@keyframes caBrazo { from { transform: rotate(-8deg); } to { transform: rotate(8deg); } }
 @keyframes caRespira { 50% { transform: scale(1.03, .98); } }
 @keyframes caZzz { 0%, 100% { transform: translate(-50%, 0); opacity: .6; } 50% { transform: translate(-50%, -8px); opacity: 1; } }
 @keyframes caRevolver { from { transform: rotate(18deg); } to { transform: rotate(48deg); } }
@@ -1017,20 +1016,14 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca.pixel.fx2 :is(.ca-cat-mini svg, .ca-receta-arte svg) { filter: url(#ca-pixel); }
 
 /* ═════════════ Fase 58: monitos 2.5D ═════════════ */
-/* Sentarse de verdad: el muslo se dobla hacia adelante y la canilla cuelga (ya no se achican las patas). */
-.ca-muslo, .ca-canilla { transition: transform .28s cubic-bezier(.3, 1.3, .5, 1); }
-.ca-monito:is(.sentado, .columpio) :is(.ca-pi, .ca-pd) { transform: none; animation: none; }
-.ca-monito:is(.sentado, .columpio) .ca-pi .ca-muslo { transform: rotate(-90deg); transform-origin: 42px 108px; }
-.ca-monito:is(.sentado, .columpio) .ca-pd .ca-muslo { transform: rotate(-90deg); transform-origin: 58px 108px; }
-.ca-monito:is(.sentado, .columpio) .ca-pi .ca-canilla { transform: translate(18px, -21px); transform-origin: 42px 130px; }
-.ca-monito:is(.sentado, .columpio) .ca-pd .ca-canilla { transform: translate(18px, -21px); transform-origin: 58px 130px; }
-/* Las dos rodillas juntitas hacia el mismo lado (de tres cuartos), la de atrás un poquito más oscura. */
-.ca-monito:is(.sentado, .columpio) .ca-pd { transform: translateX(-11px); }
-.ca.fx2 .ca-monito:is(.sentado, .columpio) .ca-pi { filter: brightness(.86); }
-/* Mecer los pies sentado (lindo y suavecito), desde la rodilla. */
-.ca.fx1 .ca-monito.sentado .ca-pd .ca-canilla { animation: caPiesMece 2.6s ease-in-out infinite; }
-.ca.fx1 .ca-monito.sentado .ca-pi .ca-canilla { animation: caPiesMece 2.6s ease-in-out -1.3s infinite; }
-@keyframes caPiesMece { 0%, 100% { transform: translate(18px, -21px) rotate(0); } 50% { transform: translate(18px, -21px) rotate(-10deg); } }
+/* (Fase 59) Sentado de frente, como en Toca: el regazo, las rodillas y las canillas que cuelgan (es su propio dibujo). */
+.ca-sienta { display: none; }
+.ca-monito:is(.sentado, .columpio) .ca-sienta { display: inline; }
+.ca-monito:is(.sentado, .columpio) :is(.ca-pi, .ca-pd) { display: none; }
+/* Los pies se mecen por turnos, suavecito (de frente: suben y bajan un pixel). */
+.ca.fx1 .ca-monito.sentado .ca-sp-i { animation: caPieSube 2.4s steps(1) infinite; }
+.ca.fx1 .ca-monito.sentado .ca-sp-d { animation: caPieSube 2.4s steps(1) -1.2s infinite; }
+@keyframes caPieSube { 0%, 100% { transform: none; } 40%, 60% { transform: translateY(-4px); } }
 /* Profundidad: más atrás, un poquito más chiquito (lo pone el juego en --prof). */
 .ca-monito { scale: var(--prof, 1); transition-property: left, top, scale; }
 /* Lo que cargas va en tu mano (dentro del brazo): se mueve con él. */
@@ -1041,7 +1034,7 @@ body.ca-escribiendo .jt-nav { display: none; }
 @keyframes caCargaCosa { from { transform: rotate(-20deg); } to { transform: rotate(-30deg); } }
 /* Parpadeo y respiración más suaves; al caminar, un saltito de cada paso. */
 @keyframes caPaso { 0%, 100% { translate: 0 0; } 50% { translate: 0 -3px; } }
-.ca.fx1 .ca-monito.camina .ca-mono-cuerpo { animation: caPaso .4s ease-in-out infinite; }
+/* (Fase 59: un solo rebotito al caminar; antes se sumaban dos y se veía raro.) */
 .ca.fx1 .ca-monito.corre .ca-mono-cuerpo { animation-duration: .24s; }
 
 /* El carrito pasa por la calle, detrás de la cerca, y es pixel. */
@@ -1116,3 +1109,41 @@ body.ca-escribiendo .jt-nav { display: none; }
 /* Optimización: lo que está lejos ni se dibuja ni se anima. */
 .ca-obj.lejos, .ca-obj-frente.lejos, .ca-brillo.lejos { visibility: hidden; content-visibility: hidden; }
 .ca-obj.lejos *, .ca-obj-frente.lejos *, .ca-cuarto.lejos * { animation-play-state: paused !important; }
+
+/* ═════════════ Fase 59: cuartos 2.5D, cielo vivo y el sol arriba ═════════════ */
+/* La pared entre cuartos llega hasta el piso (desde que el piso es más hondo quedaba un hueco) y la puerta, parada en él. */
+.ca-muro-pared { height: 1332px; }
+.ca-puerta-marco { top: 262px; }
+.ca-puerta-hoja { top: 269px; }
+/* Su base en perspectiva sobre el piso: se abre hacia ti según dónde mires (pixel art). */
+.ca-muro-3d { position: absolute; left: -160px; top: 432px; width: 320px; height: 288px; pointer-events: none; image-rendering: crisp-edges; image-rendering: pixelated; }
+/* Paralaje: la ciudad y el cielo, lejos, se mueven más despacio que la casa. */
+.ca-fondo-px { left: -150px; width: calc(100% + 300px); transform: translateX(var(--px-ciudad, 0px)); }
+.ca-cielo-vivo, .ca-astro { translate: var(--px-cielo, 0px) 0; }
+.ca-cielo-vivo { position: absolute; left: 0; right: 0; top: -330px; height: 766px; overflow: hidden; pointer-events: none; }
+.ca-cuarto:not(.px) .ca-cielo-vivo { display: none; }
+/* Nubecitas pixel que pasan despacito. */
+.ca-nubepx { position: absolute; left: 0; background: center / 100% 100% no-repeat; image-rendering: crisp-edges; image-rendering: pixelated; opacity: .95; animation: caNubePx 150s linear infinite; will-change: transform; }
+@keyframes caNubePx { from { transform: translateX(-260px); } to { transform: translateX(var(--w, 800px)); } }
+.ca-mundo.tarde .ca-nubepx { filter: sepia(.35) saturate(1.8) hue-rotate(-28deg); }
+.ca-mundo.noche .ca-nubepx { opacity: .25; }
+.ca-mundo.lluvia .ca-nubepx { filter: grayscale(.7) brightness(.8); opacity: 1; }
+/* Estrellitas que titilan y estrellas fugaces (de noche). */
+.ca-titila { position: absolute; width: 3px; height: 3px; background: #fff6d8; opacity: 0; }
+.ca-titila.grande { box-shadow: 3px 0 0 #fff6d8, -3px 0 0 #fff6d8, 0 3px 0 #fff6d8, 0 -3px 0 #fff6d8; }
+.ca-mundo.noche:not(.lluvia) .ca-titila { opacity: .8; animation: caTitila 3s steps(3) infinite; }
+@keyframes caTitila { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
+.ca-fugaz { position: absolute; width: 90px; height: 3px; background: linear-gradient(90deg, #fffbe8, rgba(255, 251, 232, 0)); rotate: -24deg; transform-origin: 0 50%; animation: caFugaz 1.2s ease-in forwards; }
+.ca-fugaz::before { content: ""; position: absolute; left: -2px; top: -2px; width: 6px; height: 6px; background: #fff; box-shadow: 0 0 6px #fff6c8; }
+@keyframes caFugaz { 0% { translate: 0 0; opacity: 0; } 12% { opacity: 1; } 100% { translate: -260px 116px; opacity: 0; } }
+/* Pajaritos que cruzan aleteando (de día, sin lluvia). */
+.ca-parva { position: absolute; left: 0; top: 440px; animation: caParva 46s linear infinite; }
+.ca-mundo:is(.noche, .lluvia) .ca-parva { display: none; }
+@keyframes caParva { 0% { transform: translateX(-90px); } 50% { transform: translateX(var(--w, 800px)); } 50.1%, 100% { transform: translateX(var(--w, 800px)); visibility: hidden; } }
+.ca-pajarito { position: absolute; width: 21px; height: 15px; background-size: 42px 15px; image-rendering: crisp-edges; image-rendering: pixelated; animation: caAleteo .36s steps(2) infinite; }
+@keyframes caAleteo { to { background-position: -42px 0; } }
+/* En Máximo rendimiento, quietecito. */
+.ca:not(.fx1) :is(.ca-nubepx, .ca-titila, .ca-pajarito) { animation: none !important; }
+.ca:not(.fx1) :is(.ca-parva, .ca-fugaz) { display: none; }
+/* El sol siempre arriba en el cielo: en la tarde, más naranja, pero ya no baja hasta la ciudad. */
+.ca-mundo.tarde .ca-cuarto.px .ca-astro.sol { top: 118px; width: 86px; height: 86px; }

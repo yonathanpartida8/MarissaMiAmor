@@ -233,6 +233,47 @@ export function monitoSVG(r0) {
   };
   const pi = pierna(9), pd = pierna(13);
 
+  /* (Fase 59) Sentado de frente, como en Toca: el regazo (los muslos hacia ti), las rodillas, las canillas que
+     cuelgan y los zapatos de frente. Se dibuja aparte y sólo se ve al sentarse (ya no se doblan ni se achican las patas). */
+  const faldita = abajo === "falda" || vestido, K = vestido ? A : B;
+  const canillaSentada = (c0, lado) => {
+    const L = new Capa(), ropa = new Capa(), zap = new Capa(), t0 = lado < 0 ? c0 - 1 : c0, t1 = t0 + 3;
+    L.caja(c0, 31, c0 + 2, 35, piel);
+    if (tela) ropa.caja(c0, 31, c0 + 2, r.calzado === "botas" ? 32 : 35, B);
+    if (abajo === "deportivo") for (let rr = 31; rr <= 35; rr++) ropa.pon(lado < 0 ? c0 : c0 + 2, rr, rr % 2 ? "#ffffff" : cla(B, 0.7));
+    if (r.calzado === "botas") zap.caja(c0, 33, c0 + 2, 37, Z).fila(33, c0, c0 + 2, cla(Z, 0.3)).fila(37, t0, t1, Z).fila(38, t0, t1, osc(Z, 0.6));
+    else if (r.calzado === "flats") zap.fila(36, c0, c0 + 2, Z).fila(37, t0, t1, Z).fila(38, t0, t1, osc(Z, 0.7));
+    else { if (!tela) ropa.fila(35, c0, c0 + 2, BLANCO); zap.fila(36, c0, c0 + 2, Z).fila(37, t0, t1, Z).fila(38, t0, t1, "#f4f1f6").pon(c0 + 1, 36, cla(Z, 0.4)); }
+    L.sombrea(piel, { o: piel2, luz: false });
+    if (tela) ropa.sombrea(B, { luz: false });
+    zap.sombrea(Z);
+    // La rodilla le hace sombrita a la canilla (así se ve que dobla).
+    (tela ? ropa : L).fila(31, c0, c0 + 2, tela ? osc(B, 0.72) : piel2);
+    return [L, ropa, zap];
+  };
+  const regazo = () => {
+    const L = new Capa(), ropa = new Capa();
+    // Los muslos vienen hacia ti: más anchos abajo; arriba les da la luz; las rodillas, dos bolitas.
+    L.filas([[27, 8, 16], [28, 7, 17], [29, 7, 17]], piel).fila(30, 7, 10, piel).fila(30, 14, 17, piel);
+    if (tela || abajo === "short") {
+      ropa.filas([[27, 8, 16], [28, 7, 17], [29, 7, 17]], B);
+      if (tela) ropa.fila(30, 7, 10, B).fila(30, 14, 17, B);
+      ropa.sombrea(B, { luz: false });
+      ropa.fila(27, 9, 15, cla(B, 0.3)).fila(28, 8, 16, cla(B, 0.14)).pon(12, 29, osc(B, 0.66)).pon(12, 28, osc(B, 0.8));
+      if (abajo === "jeans") ropa.pon(9, 29, cla(B, 0.35)).pon(15, 29, cla(B, 0.35));
+      if (abajo === "short") ropa.fila(29, 7, 11, osc(B, 0.86)).fila(29, 13, 17, osc(B, 0.86));
+    } else if (faldita) {
+      ropa.filas([[27, 7, 17], [28, 6, 18], [29, 6, 18], [30, 6, 18]], K);
+      ropa.sombrea(K, { luz: false });
+      ropa.fila(27, 8, 16, cla(K, 0.28)).fila(28, 7, 17, cla(K, 0.14)).fila(30, 6, 18, cla(K, 0.32));
+    }
+    L.sombrea(piel, { o: piel2, luz: false });
+    if (!tela && !faldita) { L.fila(27, 9, 15, cla(piel, 0.2)).pon(12, 29, piel2); }
+    if (!tela) L.pon(8, 30, cla(piel, 0.3)).pon(15, 30, cla(piel, 0.3));   // brillito de las rodillas
+    return [L, ropa];
+  };
+  const sienta = `<g class="ca-sienta">${grupo("ca-sp-i", canillaSentada(8, -1))}${grupo("ca-sp-d", canillaSentada(14, 1))}${grupo("ca-regazo", regazo())}</g>`;
+
   /* Brazos (manga + brazo + mano). */
   const manga = { playera: 18, rayas: 18, overol: 18, vestido: 16, tirantes: 0, blusita: 0 }[r.arriba] ?? 23;
   const brazo = (c0, cuchara = false) => {
@@ -295,9 +336,9 @@ export function monitoSVG(r0) {
   return `<svg viewBox="0 0 100 170" class="ca-mono-svg pixel-mono" shape-rendering="crispEdges" aria-hidden="true">
     <g class="ca-sombra">${svgDe(sombra)}</g>
     ${atras.m.size ? grupo("ca-pelo-atras", [atras]) : ""}
-    ${grupo("ca-bi", bi.slice(0, 2), bi[2], { attrs: ' style="transform-origin:28px 64px"' })}
-    ${piernaSVG("ca-pi", pi)}${piernaSVG("ca-pd", pd)}
+    ${piernaSVG("ca-pi", pi)}${piernaSVG("ca-pd", pd)}${sienta}
     ${grupo("", [T, D])}
+    ${grupo("ca-bi", bi.slice(0, 2), bi[2], { attrs: ' style="transform-origin:28px 64px"' })}
     ${grupo("ca-bd", bd.slice(0, 2), bd[2] + '<g class="ca-mano-cosa"></g>', { attrs: ' style="transform-origin:72px 64px"' })}
     <g class="ca-cabeza">${svgDe(contorno([cara, frente, oreja, acc]))}${svgDe(cara)}${svgDe(oreja)}${caritas(r, P, I, piel)}${svgDe(frente)}${svgDe(acc)}</g>
   </svg>`;

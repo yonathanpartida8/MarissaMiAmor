@@ -1069,6 +1069,19 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Probado** | En Chromium a 390×844 (táctil) y 1280×800 con dos cuentas: cuartos más grandes, lo lejano sin dibujar, sentarse con las piernas dobladas, la cosa en la mano, gestos que se quitan al caminar, carro detrás de la cerca, sol y luna, lluvia con gotas, brincar en un charco, barras de necesidades (dormir llena en un minuto, galleta contra platillo), ir a la ducha, las traes (misma velocidad, atrapar y cambiar en los dos), mandar un mensaje sin salir (con «Atrás» justo después), arrastrar del cajón, Recientes, colores, Duplicar y Deshacer, cositas nuevas, voz en vivo conectada de verdad con micrófono de prueba (en alta definición) y colgar, guardar un sticker de ella, sticker animado de un GIF y mandar un GIF por Galería; regresión de las fases 52 a 57. |
 | **No probado en teléfonos de verdad** | La voz en vivo entre dos redes celulares: sólo usa STUN (sin servidor TURN), así que en algunas redes móviles o con algunos módems puede no conectarse (avisa «la red no dejó conectarse»). También falta ver en un Android sencillo el rendimiento de la lluvia en Calidad/Ultra y cómo se sienten el arrastre del cajón y los charcos con el dedo. |
 
+### Fase 59: cuartos 2.5D, sentarse como en Toca, cielo vivo y lluvia fija
+
+| | |
+| --- | --- |
+| **Sentarse de frente** | Al sentarse, el monito tiene su propio dibujo en pixel, como en Toca: el regazo (los muslos hacia ti, con luz arriba), las rodillas, las canillas que cuelgan con su sombrita y los zapatos de frente; con falda o vestido, la tela cubre el regazo. Los pies se mecen por turnos. Ya no se doblan ni se achican las piernas paradas. |
+| **Caminar bonito** | Un solo rebotito por paso (antes se sumaban dos), brazos y piernas con poco movimiento (ya no aletean) y el brazo izquierdo se dibuja al frente del cuerpo (las manos ya no quedan detrás). |
+| **Cuartos 2.5D** | La base de la pared entre cuartos se ve en perspectiva sobre el piso y se acomoda según dónde mires al deslizar (pixel art). La pared llega hasta el piso y la puerta está parada en él (desde la Fase 58 quedaba un hueco). Afuera hay paralaje: la ciudad y el cielo se mueven más despacio que la casa. |
+| **Cielo vivo** | Nubecitas pixel que pasan despacito (rosas en la tarde, grises con lluvia), estrellitas que titilan y estrellas fugaces de noche, y pajaritos que cruzan aleteando de día (`casita/cielo.js`). En Máximo rendimiento se queda quieto. |
+| **Sol y ciudad** | El sol se queda arriba en el cielo también en la tarde (ya no baja hasta la ciudad). La ciudad es la misma de día, tarde y noche: sólo cambian las luces y los colores. |
+| **Lluvia fija** | Las gotas viven en el mundo: al deslizar ya no te siguen, se quedan cayendo en su lugar, y cubren todo lo de afuera de lado a lado y de arriba a abajo, sin pedazos sin lluvia. |
+| **Probado** | En Chromium a 390×844 (táctil) y 1280×800 con dos cuentas: el dibujo de sentado (y que las piernas paradas no se vean), el brazo al frente, un solo rebote y movimientos chiquitos al caminar, la base de la pared en perspectiva que cambia con la cámara, la pared hasta el piso, el paralaje, nubes, estrellitas, pajaritos y estrellas fugaces, el sol arriba en la tarde, la ciudad igual de día y de noche, y la lluvia que no sigue a la cámara y cubre todo; regresión de las fases 52 a 58. |
+| **No probado en teléfonos de verdad** | Cómo se siente el paralaje y la lluvia al deslizar con el dedo en un Android sencillo, y el rendimiento del cielo vivo en iPhone. No hace falta `librito actualizar` (el servidor no cambió). |
+
 ## Cómo está hecho
 
 ```
