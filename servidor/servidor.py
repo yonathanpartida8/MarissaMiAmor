@@ -6062,7 +6062,8 @@ def orden_espejo(args):
         print("… Buscando el servidor (en tu página y en GitHub)…")
         url, sal, _ = buscar()
         if not url:
-            raise SystemExit("El servidor no contesta ahorita: prende el teléfono del servidor y vuelve a intentarlo.")
+            raise SystemExit("El servidor de siempre no contesta (su teléfono está apagado): no hay de dónde copiar."
+                             " Si no lo tienes, prende el servidor AQUÍ: start my → 1 · Encender (empieza nuevo).")
         print(f"♥ Servidor: {sal.get('nombre') or 'M.YNTHN'} {sal.get('version', '')} en {url}")
         usuario = nombre_dueno(args.usuario or input("Usuario del dueño [YonathanPG]: ") or DUENO)
         cred = {"usuario": usuario, "contrasena": getpass.getpass("Contraseña del dueño (no se ve al escribir): "),

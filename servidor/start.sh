@@ -185,6 +185,18 @@ encender() {
   bash "$LIBRITO" iniciar
 }
 
+# 1.28: ser espejo; si el servidor de siempre no contesta (el otro teléfono no está), se ofrece prender
+# el servidor AQUÍ desde cero para no quedarse sin servidor.
+espejo() {
+  printf '  %s(Déjalo así; Ctrl+C para salir)%s\n' "$gris" "$fin"
+  if ! bash "$LIBRITO" espejo; then
+    printf '\n  %sSin el otro teléfono no se pueden traer sus datos, pero este teléfono puede ser el servidor desde ahora.%s\n' "$ama" "$fin"
+    read -r -p "   ¿Prender el servidor AQUÍ (nuevo, sin el otro teléfono)? [s/N] " r || true
+    case "${r:-n}" in [sS]*) "$PY" "$APP/servidor.py" recuperar --forzar >/dev/null 2>&1 || true; encender ;; esac
+  fi
+  pausa
+}
+
 traer() {
   encabezado
   printf '\n  %sTraer el servidor a este teléfono%s\n' "$neg" "$fin"
@@ -216,7 +228,7 @@ while true; do
     5) printf '  %s(Ctrl+C para volver)%s\n' "$gris" "$fin"; trap ':' INT; bash "$LIBRITO" registro; trap - INT ;;
     6) dueno ;;
     7) traer ;;
-    e|E) printf '  %s(Déjalo así; Ctrl+C para salir)%s\n' "$gris" "$fin"; bash "$LIBRITO" espejo; pausa ;;
+    e|E) espejo ;;
     8) bash "$LIBRITO" github; pausa ;;
     9) bash "$LIBRITO" arranque; pausa ;;
     v|V) bash "$LIBRITO" recuperar && bash "$LIBRITO" iniciar; pausa ;;
