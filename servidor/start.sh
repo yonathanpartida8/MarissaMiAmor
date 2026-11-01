@@ -170,17 +170,32 @@ dueno() {
 # entra a ningún lado). Si este teléfono no tiene NADA, primero se ofrece traer el servidor de siempre.
 encender() {
   local j; j="$("$PY" "$APP/servidor.py" estado --json 2>/dev/null || echo '{}')"
+  # 1.28: si este teléfono quedó marcado «ya no es el servidor» (se pasó a otro que ya no está), tú pediste
+  # prenderlo AQUÍ: se libera solo.
+  case "$j" in
+    *'"relevado": {}'*) ;;
+    *'"relevado"'*) printf '   %sEste teléfono estaba marcado como «ya no es el servidor»: lo vuelvo a hacer servidor.%s\n' "$gris" "$fin"
+                    "$PY" "$APP/servidor.py" recuperar --forzar >/dev/null 2>&1 || true ;;
+  esac
   case "$j" in
     *'"dueno": true'*) ;;
     *)
-      printf '\n  %sEste teléfono todavía no tiene la cuenta del dueño (YonathanPG).%s\n' "$ama" "$fin"
-      case "$j" in
-        *'"usuarios": 0'*)
-          printf '  %s¿Es para traer el servidor de siempre (con todo)? Elige 7. Si es uno nuevo, sigue aquí.%s\n' "$gris" "$fin"
-          read -r -p "   ¿Crear la cuenta del dueño aquí y prenderlo nuevo? [s/N] " r || true
-          case "${r:-n}" in [sS]*) ;; *) return ;; esac ;;
-      esac
-      "$PY" "$APP/servidor.py" admin yonathanpg || return ;;
+      printf '\n  %sEste teléfono todavía no tiene la cuenta del dueño (YonathanPG): créala ahora.%s\n' "$ama" "$fin"
+      "$PY" "$APP/servidor.py" admin yonathanpg || { pausa; return; } ;;
+  esac
+  # Sin cloudflared sólo se ve en tu wifi: se instala solo.
+  if ! command -v cloudflared >/dev/null 2>&1; then
+    printf '   %sInstalando cloudflared (para que se vea desde internet)…%s\n' "$gris" "$fin"
+    pkg install -y cloudflared >/dev/null 2>&1 || true
+    command -v cloudflared >/dev/null 2>&1 || printf '   %sNo se pudo instalar cloudflared: «pkg install cloudflared» y luego Reiniciar.%s\n' "$ama" "$fin"
+  fi
+  # Sin GitHub el editor no encuentra este teléfono (la dirección se anuncia en GitHub).
+  case "$j" in
+    *'"github": false'*)
+      printf '\n  %sFalta conectar GitHub: sin eso el editor y el teléfono de tu novia no encuentran este servidor.%s\n' "$ama" "$fin"
+      printf '  %sNecesitas un token (github.com → Settings → Developer settings → Tokens, con permiso de «Contents»).%s\n' "$gris" "$fin"
+      read -r -p "   ¿Conectarlo ahora? [S/n] " r || true
+      case "${r:-s}" in [nN]*) ;; *) bash "$LIBRITO" github || true ;; esac ;;
   esac
   bash "$LIBRITO" iniciar
 }
