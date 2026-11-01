@@ -68,7 +68,7 @@ import urllib.request
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.27.0"
+VERSION = "1.28.0"
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PANEL = os.path.join(AQUI, "panel")
 DATOS = os.path.abspath(os.path.expanduser(os.environ.get("LIBRITO_DATOS", "~/librito-datos")))
@@ -105,6 +105,7 @@ AJUSTES_BASE = {
     "id_servidor": "",                 # quién es este servidor (viaja con los datos al pasarlo a otro teléfono)
     "relevado": {},                    # si ya pasó a otro teléfono: {"en": fecha} (éste ya no se prende solo)
     "forzar_anuncio": False,           # ser el servidor aquí aunque otro teléfono lo esté siendo (start my lo pregunta)
+    "generacion": 0,                   # 1.28: sube cada vez que un espejo toma el lugar (el de datos viejos no se vuelve a prender)
 }
 RESERVADOS = {"lista", "index", "servidor", "assets", "scripts", "pages", "styles"}
 MIME_EXTRA = {".js": "text/javascript", ".mjs": "text/javascript", ".webmanifest": "application/manifest+json", ".svg": "image/svg+xml",
@@ -1234,7 +1235,7 @@ def anunciar_direccion():
         return
     # Fase 46: con el repositorio y la rama, «traer» y el editor lo leen fresco de GitHub (la página tarda minutos).
     cuerpo = json.dumps({"url": url, "nombre": E.aj["nombre"], "id": E.aj["id_servidor"], "repo": gh.repo, "rama": gh.rama,
-                         "actualizado": iso()}, ensure_ascii=False, indent=1).encode() + b"\n"
+                         "gen": int(E.aj["generacion"] or 0), "actualizado": iso()}, ensure_ascii=False, indent=1).encode() + b"\n"
 
     def hacer(t):
         try:
@@ -1899,7 +1900,8 @@ def api_info(h, s):
 def api_salud(h, s):
     """Para el vigía del túnel (y para ti): ¿contesta este servidor?"""
     h.responder(200, {"ok": True, "id": E.arranque_id, "servidor": E.aj["id_servidor"], "version": VERSION, "nombre": E.aj["nombre"],
-                      "relevado": bool(E.aj["relevado"]), "mudando": bool(E.mudando)})
+                      "relevado": bool(E.aj["relevado"]), "mudando": bool(E.mudando),
+                      "generacion": int(E.aj["generacion"] or 0)})
 
 
 @ruta("POST", "/api/instalar")
@@ -5083,7 +5085,7 @@ def api_borrar_detallito(h, s, did):
 #                             se prende con el MISMO id de servidor y se anuncia: el editor lo encuentra solo.
 #  Si algo falla a medio camino, a los 15 min éste vuelve a la normalidad (y «cancelar» lo hace ya).
 # ══════════════════════════════════════════════════════════════════
-NO_VIAJA = {"tmp", "servidor.pid", "servidor.log", "servidor.log.1", "estado.json", "codigo-instalacion.txt",
+NO_VIAJA = {"tmp", "servidor.pid", "espejo-de.json", "traspaso.json", "servidor.log", "servidor.log.1", "estado.json", "codigo-instalacion.txt",
             "librito.db", "librito.db-wal", "librito.db-shm", "librito.db-journal"}
 
 
@@ -5112,11 +5114,18 @@ def api_traspaso(h, s):
     E.relevo_token = secrets.token_urlsafe(24)
     E.actividad(u["usuario"], "traspaso", "pasando el servidor a otro teléfono", h.ip())
     log("Pasando el servidor a otro teléfono (", h.ip(), "): mientras tanto, sólo lectura.")
+    enviar_datos(h, cabeceras={"X-Relevo": E.relevo_token})
+    log("Traspaso enviado. Esperando a que el teléfono nuevo diga «listo».")
+
+
+def enviar_datos(h, desde=0, cabeceras=None):
+    """Manda la base (copiada en caliente) y los archivos en un .tar por la conexión. Con `desde` (1.28, espejos),
+    sólo los archivos que cambiaron después de esa hora; la base va siempre entera."""
     os.makedirs(os.path.join(DATOS, "tmp"), exist_ok=True)
     fd, foto = tempfile.mkstemp(dir=os.path.join(DATOS, "tmp"), suffix=".db")
     os.close(fd)
+    n = 0
     try:
-        # La base, copiada en caliente y entera (sin quedar a medias aunque alguien lea mientras).
         destino = sqlite3.connect(foto)
         with E.db.lock:
             E.db.c.backup(destino)
@@ -5128,10 +5137,10 @@ def api_traspaso(h, s):
         h.send_header("Content-Disposition", 'attachment; filename="servidor.tar"')
         h.send_header("Cache-Control", "no-store")
         h.send_header("Connection", "close")
-        h.send_header("X-Relevo", E.relevo_token)
+        for k, v in (cabeceras or {}).items():
+            h.send_header(k, str(v))
         h.cabeceras_comunes()
         h.end_headers()
-        n = 0
         # Sin comprimir: casi todo son fotos, música y videos (ya vienen comprimidos) y así el teléfono no se calienta.
         with tarfile.open(fileobj=h.wfile, mode="w|") as tar:
             tar.add(foto, arcname="librito.db")
@@ -5143,16 +5152,72 @@ def api_traspaso(h, s):
                     if rel == "." and f in NO_VIAJA:
                         continue
                     ruta_f = os.path.join(raiz, f)
-                    if os.path.islink(ruta_f):
+                    if os.path.islink(ruta_f) or (desde and os.path.getmtime(ruta_f) < desde and f != "config.json"):
                         continue
                     tar.add(ruta_f, arcname=os.path.normpath(os.path.join(rel, f)), recursive=False)
                     n += 1
-        log(f"Traspaso enviado ({n} archivos). Esperando a que el teléfono nuevo diga «listo».")
     finally:
         try:
             os.unlink(foto)
         except OSError:
             pass
+    return n
+
+
+# ══════════════════════════════════════════════════════════════════
+#  Espejos (1.28): el servidor en VARIOS teléfonos
+#
+#  En otro teléfono: «start my» → «Ser espejo» (o: librito espejo). Con la cuenta del dueño se da de alta una
+#  vez; luego copia todo cada 2 minutos (la base entera y sólo los archivos nuevos). Si el servidor deja de
+#  contestar 5 minutos (y el espejo sí tiene internet), el espejo se vuelve el servidor con lo último que copió,
+#  sube la «generación» y se anuncia: el editor lo encuentra solo. El teléfono de antes, al prenderse, ve que hay
+#  uno más nuevo y no se pelea: se queda de espejo.
+# ══════════════════════════════════════════════════════════════════
+def _espejos():
+    try:
+        with open(os.path.join(DATOS, "espejos.json"), encoding="utf-8") as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+@ruta("POST", "/api/dueno/espejo")
+def api_espejo_alta(h, s):
+    """Dar de alta un teléfono espejo (con la contraseña del dueño): le da su permiso para copiar."""
+    d = h.cuerpo_json()
+    u = dueno_por_contrasena(h, d)
+    token, eid = secrets.token_urlsafe(32), secrets.token_hex(6)
+    lista = _espejos()
+    lista[eid] = {"nombre": re.sub(r"[^\w .-]", "", str(d.get("nombre") or "otro teléfono"))[:40] or "otro teléfono",
+                  "hash": hashlib.sha256(token.encode()).hexdigest(), "alta": iso(), "visto": ""}
+    escribir_seguro(os.path.join(DATOS, "espejos.json"), json.dumps(lista, ensure_ascii=False).encode())
+    E.actividad(u["usuario"], "espejo", "nuevo espejo: " + lista[eid]["nombre"], h.ip())
+    h.responder(200, {"ok": True, "id": eid, "token": token, "servidor": E.aj["id_servidor"]})
+
+
+@ruta("POST", "/api/dueno/espejo/copia")
+def api_espejo_copia(h, s):
+    """La copia para un espejo: la base entera y los archivos que cambiaron desde `desde`."""
+    d = h.cuerpo_json()
+    ip = h.ip()
+    if E.frenado("espejo:" + ip):
+        raise Falla("Demasiados intentos. Espera unos minutos.", 429)
+    e = _espejos().get(str(d.get("id") or ""))
+    t = str(d.get("token") or "")
+    if not (e and t and hmac.compare_digest(hashlib.sha256(t.encode()).hexdigest(), e.get("hash", ""))):
+        E.fallo("espejo:" + ip, limite=5)
+        raise Falla("Ese espejo no tiene permiso (dale de alta otra vez).", 403)
+    if E.aj["relevado"]:
+        raise Falla("Este servidor ya pasó a otro teléfono.", 409)
+    try:
+        desde = max(0.0, float(d.get("desde") or 0))
+    except (TypeError, ValueError):
+        desde = 0.0
+    lista = _espejos()
+    lista[str(d.get("id"))]["visto"] = iso()
+    escribir_seguro(os.path.join(DATOS, "espejos.json"), json.dumps(lista, ensure_ascii=False).encode())
+    enviar_datos(h, desde=desde - 5 if desde else 0, cabeceras={"X-Hasta": f"{time.time():.0f}", "X-Generacion": int(E.aj["generacion"] or 0)})
 
 
 def dueno_o_permiso(h, d):
@@ -5588,6 +5653,14 @@ def iniciar(args):
                          "Para volver a serlo aquí: start my → «Volver a ser el servidor aquí» (o: librito recuperar).")
     if rel:
         E.aj.poner(relevado={})
+    # 1.28: si un espejo tomó el lugar (generación más nueva, o el mismo servidor contestando en otro teléfono),
+    # éste trae datos viejos: no se prende (se vuelve espejo con «librito espejo» y se pone al día solo).
+    if not getattr(args, "forzar", False) and not getattr(args, "sin_tunel", False):
+        nuevo = servidor_mas_nuevo()
+        if nuevo:
+            E.aj.poner(relevado={"en": iso(), "ip": "", "a": nuevo})
+            raise SystemExit(f"Otro teléfono ya es el servidor ({nuevo}) con lo más nuevo. Para no perder nada, éste no se prende:"
+                             " vuélvelo espejo con start my → «Ser espejo» (o: librito espejo).")
     ThreadingHTTPServer.request_queue_size = 64   # ráfagas (el editor abre varias cosas a la vez) sin rechazar a nadie
     puerto = args.puerto or E.aj["puerto"]
     if args.puerto:
@@ -5938,6 +6011,151 @@ def orden_traer(args):
     print("♥ Listo: ESTE teléfono ya es el servidor, con todo lo de siempre.")
 
 
+def _repo_config():
+    try:
+        with open(os.path.join(DATOS, "config.json"), encoding="utf-8") as f:
+            gh = json.load(f).get("github") or {}
+        return gh.get("repo") or "", gh.get("rama") or ""
+    except (OSError, ValueError):
+        return "", ""
+
+
+def servidor_mas_nuevo():
+    """¿Hay otro teléfono con ESTE mismo servidor más nuevo (un espejo que tomó el lugar)? Devuelve su dirección."""
+    yo, gen = Ajustes()["id_servidor"], int(Ajustes()["generacion"] or 0)
+    if not yo:
+        return ""
+    try:
+        repo, rama = _repo_config()
+        url, sal, anuncios = buscar_servidor(repo, rama, sitio_de(repo) if repo else "")
+    except Exception:   # noqa: BLE001 — sin internet: se prende como siempre
+        return ""
+    for a in anuncios:
+        if a.get("id") == yo and int(a.get("gen") or 0) > gen:
+            return a["url"]
+    if url and sal.get("servidor") == yo and int(sal.get("generacion") or 0) >= gen and not sal.get("relevado"):
+        return url
+    return ""
+
+
+def orden_espejo(args):
+    """start my → «Ser espejo»: este teléfono copia todo del servidor cada pocos minutos y, si el servidor se apaga,
+    toma su lugar solo (con lo último que copió). Sale (para que «librito» prenda el servidor aquí) sólo al tomarlo."""
+    if leer_estado():
+        raise SystemExit("El servidor de ESTE teléfono está prendido: apágalo primero (start my lo hace solo).")
+    os.makedirs(DATOS, exist_ok=True)
+    ruta = os.path.join(DATOS, "espejo-de.json")
+    try:
+        with open(ruta, encoding="utf-8") as f:
+            cfg = json.load(f)
+    except (OSError, ValueError):
+        cfg = {}
+
+    def buscar():
+        if args.desde:
+            sal = _leer_json(args.desde.rstrip("/") + "/api/salud", timeout=20)
+            return args.desde.rstrip("/"), sal, [{"url": args.desde}]
+        repo, rama = _repo_config()
+        return buscar_servidor(repo, rama, sitio_de(repo) if repo else "")
+
+    if not cfg.get("token") or args.nuevo:
+        print("… Buscando el servidor (en tu página y en GitHub)…")
+        url, sal, _ = buscar()
+        if not url:
+            raise SystemExit("El servidor no contesta ahorita: prende el teléfono del servidor y vuelve a intentarlo.")
+        print(f"♥ Servidor: {sal.get('nombre') or 'M.YNTHN'} {sal.get('version', '')} en {url}")
+        usuario = nombre_dueno(args.usuario or input("Usuario del dueño [YonathanPG]: ") or DUENO)
+        cred = {"usuario": usuario, "contrasena": getpass.getpass("Contraseña del dueño (no se ve al escribir): "),
+                "nombre": args.nombre or socket.gethostname() or "otro teléfono"}
+        try:
+            with _pedir(url + "/api/dueno/espejo", cred, timeout=30) as r:
+                alta = json.loads(r.read() or b"{}")
+        except urllib.error.HTTPError as e:
+            raise SystemExit("No se pudo: " + _error_de(e))
+        cfg = {"id": alta["id"], "token": alta["token"], "servidor": alta.get("servidor", ""), "hasta": 0}
+        escribir_seguro(ruta, json.dumps(cfg).encode())
+        os.chmod(ruta, 0o600)
+        print("✓ Este teléfono ya es espejo. Copia todo cada", args.cada, "segundos; déjalo prendido con Termux.")
+
+    def copiar(url):
+        tmp = os.path.join(DATOS, "tmp", "espejo")
+        shutil.rmtree(tmp, ignore_errors=True)
+        os.makedirs(tmp, exist_ok=True)
+        tar_ruta = tmp + ".tar"
+        with _pedir(url + "/api/dueno/espejo/copia", {"id": cfg["id"], "token": cfg["token"], "desde": cfg.get("hasta", 0)}, timeout=300) as r, \
+                open(tar_ruta, "wb") as f:
+            hasta, gen = float(r.headers.get("X-Hasta") or time.time()), int(r.headers.get("X-Generacion") or 0)
+            shutil.copyfileobj(r, f, 1 << 20)
+        with tarfile.open(tar_ruta, "r:") as t:
+            miembros = list(_miembros_seguros(t))
+            if "librito.db" not in {m.name for m in miembros}:
+                raise tarfile.TarError("no llegó la base")
+            if hasattr(tarfile, "data_filter"):
+                t.extractall(tmp, members=miembros, filter="data")
+            else:
+                t.extractall(tmp, members=miembros)
+        os.unlink(tar_ruta)
+        # Se acomoda: cada archivo en su lugar (la base al final, de un jalón).
+        n = 0
+        for raiz, _, archivos in os.walk(tmp):
+            for a in archivos:
+                origen = os.path.join(raiz, a)
+                rel = os.path.relpath(origen, tmp)
+                if rel == "librito.db":
+                    continue
+                destino = os.path.join(DATOS, rel)
+                os.makedirs(os.path.dirname(destino), exist_ok=True)
+                os.replace(origen, destino)
+                n += 1
+        for x in ("librito.db-wal", "librito.db-shm"):
+            try:
+                os.unlink(os.path.join(DATOS, x))
+            except OSError:
+                pass
+        os.replace(os.path.join(tmp, "librito.db"), os.path.join(DATOS, "librito.db"))
+        shutil.rmtree(tmp, ignore_errors=True)
+        cfg["hasta"], cfg["gen"] = hasta, gen
+        escribir_seguro(ruta, json.dumps(cfg).encode())
+        return n
+
+    sin_contestar, url = 0.0, ""
+    while True:
+        try:
+            if not url:
+                url, sal, anuncios = buscar()
+                if not url:
+                    raise ConnectionError("no contesta" if anuncios else "sin internet")
+            n = copiar(url)
+            sin_contestar = 0.0
+            print(f"[{time.strftime('%H:%M')}] ✓ Copia al día ({n} archivos nuevos) de {url}", flush=True)
+        except urllib.error.HTTPError as e:
+            if e.code in (403, 409):
+                raise SystemExit("El servidor ya no le da permiso a este espejo: " + _error_de(e) + " (start my → «Ser espejo» para darlo de alta otra vez).")
+            url = ""
+            print(f"[{time.strftime('%H:%M')}] ! {_error_de(e)}", flush=True)
+        except KeyboardInterrupt:
+            raise SystemExit(1)
+        except Exception as e:   # noqa: BLE001 — sin servidor o sin internet: se reintenta
+            url = ""
+            # Sólo cuenta como «el servidor se apagó» si AQUÍ sí hay internet (se leyó dónde estaba y no contestó).
+            if "sin internet" in str(e):
+                print(f"[{time.strftime('%H:%M')}] … Este teléfono no tiene internet; reintento.", flush=True)
+            else:
+                sin_contestar = sin_contestar or time.time()
+                faltan = args.espera * 60 - (time.time() - sin_contestar)
+                print(f"[{time.strftime('%H:%M')}] ! El servidor no contesta ({e}).", f"Si sigue así, en {max(0, faltan) / 60:.0f} min este teléfono toma su lugar." if cfg.get("hasta") else "", flush=True)
+                if cfg.get("hasta") and faltan <= 0:
+                    break
+        try:
+            time.sleep(args.cada)
+        except KeyboardInterrupt:
+            raise SystemExit(1)
+    aj = Ajustes()
+    aj.poner(relevado={}, forzar_anuncio=True, generacion=int(aj["generacion"] or 0) + 1)
+    print(f"♥ El servidor no contestó en {args.espera} minutos: ESTE teléfono es el servidor ahora (con la copia de las",
+          time.strftime("%H:%M", time.localtime(cfg["hasta"])) + "). Se prende y se anuncia solo.")
+
+
 def orden_recuperar(args):
     """Volver a ser el servidor en este teléfono (si se pasó a otro que ya no está)."""
     aj = Ajustes()
@@ -5980,6 +6198,13 @@ def principal():
     t = sub.add_parser("traer", help="trae el servidor de siempre (con todo) a este teléfono")
     t.add_argument("--desde", help="la dirección del servidor de ahora (si no, se busca sola en tu página y en GitHub)")
     t.add_argument("--usuario")
+    es = sub.add_parser("espejo", help="este teléfono copia el servidor y toma su lugar si se apaga")
+    es.add_argument("--desde", help="la dirección del servidor (si no, se busca sola)")
+    es.add_argument("--usuario")
+    es.add_argument("--nombre", help="cómo se llama este teléfono")
+    es.add_argument("--nuevo", action="store_true", help="darlo de alta otra vez")
+    es.add_argument("--cada", type=int, default=120, help="cada cuántos segundos copia (120)")
+    es.add_argument("--espera", type=float, default=5, help="minutos sin contestar antes de tomar su lugar (5)")
     r = sub.add_parser("recuperar", help="volver a ser el servidor aquí")
     r.add_argument("--forzar", action="store_true", help="aunque haya otro servidor prendido")
     sub.add_parser("aparato", help="batería, temperatura, RAM y espacio del teléfono (JSON)")
@@ -5998,10 +6223,10 @@ def principal():
     if args.orden == "rutas":
         orden_rutas(args)
         return
-    if args.orden != "traer":
+    if args.orden not in ("traer", "espejo"):
         os.makedirs(DATOS, exist_ok=True)
     {"iniciar": iniciar, "admin": orden_admin, "github": orden_github, "estado": orden_estado, "llave-nueva": orden_llave,
-     "borrar-cuentas": orden_borrar_cuentas, "traer": orden_traer, "recuperar": orden_recuperar, "aparato": orden_aparato}.get(args.orden or "iniciar", iniciar)(args if args.orden else p.parse_args(["iniciar"]))
+     "borrar-cuentas": orden_borrar_cuentas, "traer": orden_traer, "espejo": orden_espejo, "recuperar": orden_recuperar, "aparato": orden_aparato}.get(args.orden or "iniciar", iniciar)(args if args.orden else p.parse_args(["iniciar"]))
 
 
 if __name__ == "__main__":

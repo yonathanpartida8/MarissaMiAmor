@@ -20,6 +20,7 @@
 #    librito actualizar     baja la versión nueva (tus datos no se tocan)
 #    librito dueño          pone (o cambia) la contraseña de la cuenta del dueño: YonathanPG
 #    librito traer          trae el servidor de siempre (con todo) a ESTE teléfono
+#    librito espejo         este teléfono copia el servidor y toma su lugar si se apaga (varios teléfonos)
 #    librito recuperar      vuelve a ser el servidor aquí (si se había pasado a otro)
 #    librito aparato        batería, temperatura, RAM y espacio del teléfono
 #
@@ -305,6 +306,12 @@ case "$orden" in
     necesita_python
     prendido && detener
     "$PY" "$APP/servidor.py" traer "$@" && iniciar ;;
+  espejo)
+    # 1.28: este teléfono copia el servidor y, si el servidor se apaga, toma su lugar solo (y se prende aquí).
+    necesita_python
+    prendido && detener
+    command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock || true
+    "$PY" "$APP/servidor.py" espejo "$@" && iniciar ;;
   recuperar) necesita_python; "$PY" "$APP/servidor.py" recuperar "$@" ;;
   aparato) necesita_python; "$PY" "$APP/servidor.py" aparato ;;
   github) necesita_python; "$PY" "$APP/servidor.py" github ;;

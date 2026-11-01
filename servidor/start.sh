@@ -122,6 +122,7 @@ menu() {
   opcion 5 "Ver lo que pasa" "(registro en vivo)"
   opcion 6 "Cuenta del dueño" "(YonathanPG)"
   opcion 7 "Traer el servidor a este teléfono"
+  opcion e "Ser espejo" "(respaldo que toma el lugar si el servidor se apaga)"
   opcion 8 "Conectar GitHub"
   opcion 9 "Prenderse solo al encender el teléfono"
   [ "$relevado" = 1 ] && opcion v "Volver a ser el servidor aquí"
@@ -215,6 +216,7 @@ while true; do
     5) printf '  %s(Ctrl+C para volver)%s\n' "$gris" "$fin"; trap ':' INT; bash "$LIBRITO" registro; trap - INT ;;
     6) dueno ;;
     7) traer ;;
+    e|E) printf '  %s(Déjalo así; Ctrl+C para salir)%s\n' "$gris" "$fin"; bash "$LIBRITO" espejo; pausa ;;
     8) bash "$LIBRITO" github; pausa ;;
     9) bash "$LIBRITO" arranque; pausa ;;
     v|V) bash "$LIBRITO" recuperar && bash "$LIBRITO" iniciar; pausa ;;

@@ -121,6 +121,8 @@ Las fechas de «hoy» las manda el aparato (`?hoy=AAAA-MM-DD`) para que cada qui
 | GET | `/api/detallitos/{…}/paquete` | con sesión |  |
 | DELETE | `/api/detallitos/{…}` | con sesión |  |
 | POST | `/api/dueno/traspaso` | cualquiera |  |
+| POST | `/api/dueno/espejo` | cualquiera | 1.28 · Dar de alta un teléfono espejo con la contraseña del dueño: `{usuario, contrasena, nombre}` → `{id, token, servidor}`. |
+| POST | `/api/dueno/espejo/copia` | cualquiera | 1.28 · La copia para un espejo (`{id, token, desde}`): un .tar con la base entera y los archivos que cambiaron desde `desde`; cabeceras `X-Hasta` y `X-Generacion`. |
 | POST | `/api/dueno/relevo` | cualquiera | El teléfono nuevo ya tiene todo (y ya contesta desde internet): éste deja de ser el servidor y se apaga. |
 | POST | `/api/dueno/cancelar` | cualquiera |  |
 | GET | `/api/admin/aparato` | administrador | El teléfono servidor: batería, temperatura, ritmo, RAM, espacio… y cómo va el servidor. |

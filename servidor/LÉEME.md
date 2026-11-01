@@ -377,6 +377,21 @@ se quedaba sin sus cosas. Ahora:
 - Si algo se corta a medio camino, no pasa nada: a los 15 minutos (o al
   cancelar) el de siempre sigue normal.
 
+### El servidor en varios teléfonos: espejos (1.28.0)
+
+Para que todo siga funcionando aunque se apague el teléfono del servidor:
+
+1. En otro teléfono (con Termux y My Love Pages instalado): `start my` → **e · Ser espejo** (o `librito espejo`).
+   Pide una sola vez el usuario y la contraseña del dueño; el teléfono del servidor tiene que estar prendido.
+2. Déjalo así (Termux abierto o con el *wake lock*): cada 2 minutos copia todo (la base entera y sólo los archivos nuevos).
+3. Si el servidor deja de contestar 5 minutos (y el espejo sí tiene internet), el espejo se vuelve el servidor con lo
+   último que copió, se anuncia y el editor lo encuentra solo. Las sesiones siguen valiendo (nadie tiene que volver a entrar).
+4. Cuando prendas el teléfono de antes, ve que hay uno más nuevo y no se prende como servidor (para no tener dos con datos
+   distintos): vuélvelo espejo con **e · Ser espejo** y se pone al día solo.
+
+Puedes tener varios espejos. Lo que se haya hecho en los últimos ~2 minutos antes de que se apagara el servidor puede no
+alcanzar a copiarse. Opciones: `librito espejo --cada 60` (copiar cada minuto) y `--espera 10` (esperar más antes de tomar el lugar).
+
 ### Mudarse sin escribir direcciones y la cuenta del dueño (1.18.0)
 
 Mudarlo fallaba de verdad: el nuevo le pedía al viejo «ya, relévate» **antes** de tener su propio túnel
