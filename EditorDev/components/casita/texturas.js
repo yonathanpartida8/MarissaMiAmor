@@ -224,15 +224,46 @@ export function texPajaro() {
   });
 }
 
-/** (Fase 59) La base de la pared entre dos cuartos, en perspectiva (2.5D): sale de la esquina de atrás y se abre
- *  hacia ti según dónde esté la cámara (`off`: cuánto se corre al frente, en unidades del mundo). 80 × 72 cuadritos. */
-export function pintarMuro3d(cv, off) {
-  const L = lienzo(80, 72, cv), A = rgb("#fff6ee"), O = rgb("#e3c9d4"), S = rgb("#5a2846");
-  for (let y = 0; y < 72; y++) {
-    const t = y / 71, cx = 40 + (off / 4) * t, m = 2 + Math.round(2.6 * t), a = Math.round(cx - m), b = Math.round(cx + m);
-    for (let x = a; x <= b; x++) L.pon(x, y, x === a || x === b || y === 71 ? O : A);
-    // Su sombrita en el piso (la luz viene de arriba a la izquierda).
+/** (Fase 59/60) La pared entre dos cuartos, en perspectiva (2.5D), de 80 × 180 cuadritos (todo el alto del mundo):
+ *  · su cara de lado junto a la esquina (con el color de la pared del cuarto que se ve) y su orilla,
+ *  · su base sobre el piso, que se abre hacia ti según dónde esté la cámara (`off`, en unidades del mundo),
+ *  · y su puerta DE LADO, parada sobre la base (abierta o cerrada). `exterior`: la pared de la casa (más gruesa). */
+export function pintarMuro3d(cv, off, { abierta = false, exterior = false, pared = "#ffe1ec" } = {}) {
+  const L = lienzo(80, 180, cv), PISO_ = 108, HONDO = 72;
+  const A = rgb(exterior ? "#f1e2d3" : "#fff6ee"), O = rgb(exterior ? "#c9ab93" : "#e3c9d4"), S = rgb("#5a2846");
+  const W = rgb(pared), Wo = W.map((v) => Math.round(v * 0.8)), Wd = W.map((v) => Math.round(v * 0.68));
+  const xEn = (t) => 40 + (off / 4) * t, yEn = (t) => PISO_ + HONDO * t;
+  const grueso = exterior ? 1.6 : 1;
+  // 1) La cara de lado de la pared, cerquita de la esquina (lo que hace que se vea en 3D).
+  const tCara = 0.2, xa = 40, xb = xEn(tCara);
+  if (Math.abs(xb - xa) >= 1) {
+    const izq = Math.min(xa, xb), der = Math.max(xa, xb);
+    for (let x = Math.floor(izq); x <= Math.ceil(der); x++) {
+      const t = Math.abs(off) < 1 ? 0 : lim01((x - 40) / ((off / 4) || 1)) , ybajo = yEn(Math.min(tCara, t));
+      for (let y = 0; y <= ybajo; y++) L.pon(x, y, (x + y) % 7 === 0 ? Wd : Wo);
+    }
+    for (let y = 0; y <= yEn(tCara); y++) L.pon(Math.round(xb), y, O);   // su orilla (el grueso de la pared)
+  }
+  // 2) La base sobre el piso.
+  for (let y = PISO_; y < 180; y++) {
+    const t = (y - PISO_) / (HONDO - 1), cx = xEn(t), m = (2 + Math.round(2.6 * t)) * grueso, a = Math.round(cx - m), b = Math.round(cx + m);
+    for (let x = a; x <= b; x++) L.pon(x, y, x === a || x === b || y === 179 ? O : A);
     for (let i = 1; i <= 3; i++) L.pon(b + i, y, S, [70, 40, 18][i - 1]);
   }
+  // 3) La puerta de lado (de t1 a t2 del fondo hacia ti), parada sobre la base.
+  const t1 = 0.3, t2 = 0.56, alto = (t) => 38 * (0.92 + 0.3 * t);
+  const MARCO = rgb(exterior ? "#8a5a44" : "#4a3346"), HOJA = rgb(exterior ? "#c98a62" : "#f2a7c3"), HOJA2 = rgb(exterior ? "#a8704f" : "#e38fb1");
+  // (Aunque la veas casi de canto, la puerta siempre tiene su anchito para que se note que es puerta.)
+  const dx0 = xEn(t2) - xEn(t1), dxP = (Math.sign(off) || 1) * Math.max(Math.abs(dx0), 8), xP = (t) => xEn(t1) + ((t - t1) / (t2 - t1)) * dxP;
+  const pasos = Math.max(2, Math.round(Math.abs(dxP)) + 2);
+  for (let i = 0; i <= pasos; i++) {
+    const t = t1 + (t2 - t1) * (i / pasos), x = Math.round(xP(t)), yb = Math.round(yEn(t)), yt = Math.round(yb - alto(t));
+    if (!abierta) for (let y = yt; y <= yb; y++) L.pon(x, y, i === 0 || i === pasos ? MARCO : (y - yt) % 9 === 0 ? HOJA2 : HOJA);
+    else { L.pon(x, yt, MARCO); for (let y = yt + 1; y <= yb; y++) if (i === 0 || i === pasos) L.pon(x, y, MARCO); }
+  }
+  // La perilla, o (abierta) la hoja pegadita a la pared hacia el fondo.
+  if (!abierta) { const t = t1 + (t2 - t1) * 0.78; L.pon(Math.round(xP(t)), Math.round(yEn(t) - alto(t) * 0.48), rgb("#ffd36e")); L.pon(Math.round(xP(t)), Math.round(yEn(t) - alto(t) * 0.48) + 1, rgb("#c9a040")); }
+  else for (let y = Math.round(yEn(t1) - alto(t1)); y <= Math.round(yEn(t1)); y++) { L.pon(Math.round(xP(t1) - Math.sign(dxP) * 2), y, HOJA2); L.pon(Math.round(xP(t1) - Math.sign(dxP)), y, HOJA); }
   L.listo();
 }
+const lim01 = (v) => Math.max(0, Math.min(1, v));

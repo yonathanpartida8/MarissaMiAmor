@@ -1147,3 +1147,71 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca:not(.fx1) :is(.ca-parva, .ca-fugaz) { display: none; }
 /* El sol siempre arriba en el cielo: en la tarde, más naranja, pero ya no baja hasta la ciudad. */
 .ca-mundo.tarde .ca-cuarto.px .ca-astro.sol { top: 118px; width: 86px; height: 86px; }
+
+/* ═════════════ Fase 60: monito de frente y de lado, animaciones, sombras con la luz, paredes y puertas de lado, luz ambiental ═════════════ */
+/* Sin huecos: nada se sale del mundo (el fondo de la terraza dejaba deslizar hasta un pedazo en blanco). */
+.ca-lienzo { overflow: hidden; }
+/* Voltear con «scale» (aparte): las animaciones de rebote ya no lo deshacen (por eso daba vueltas al ir a la izquierda). */
+.ca-monito.izq .ca-mono-flip { transform: none; scale: -1 1; }
+/* Quieto, de frente; caminando de lado, de tres cuartos (y voltea según hacia dónde va). */
+.ca-monito:not(.lado) .ca-lado-solo, .ca-monito.lado .ca-frente-solo { display: none; }
+.ca-mono-svg .ca-cara-f .ca-ojos { transform-origin: 50px 37px; }
+/* La cabecita sigue tu dedo y al soltarlo vuelve suavecito a verte de frente. */
+.ca-mono-svg .ca-cabeza { translate: var(--hx, 0px) 0; rotate: var(--hr, 0deg); transform-origin: 50px 60px; transition: translate .45s cubic-bezier(.3, 1.4, .5, 1), rotate .45s cubic-bezier(.3, 1.4, .5, 1); }
+.ca-mono-svg .ca-cara-f :is(.ca-ojos, .ojo-f, .ojo-z, .ojo-c, .ojo-g, .ojo-s) { translate: var(--ox, 0px) var(--oy, 0px); transition: translate .25s ease-out; }
+/* Quieto: de vez en cuando mira a un ladito y al otro (además de respirar y parpadear). */
+.ca.fx1 .ca-monito:not(.camina):not(.siguiendo):not(.dormido):not(.banando) .ca-cara-f { animation: caMiraQuieto 11s ease-in-out infinite; }
+@keyframes caMiraQuieto { 0%, 30%, 52%, 60%, 82%, 100% { transform: none; } 36%, 46% { transform: translateX(-4px); } 66%, 76% { transform: translateX(4px); } }
+/* Caminar de lado: zancada y brazos que se balancean (de perfil se ve natural). */
+.ca-monito.lado.camina .ca-pi { animation: caPiernaL .4s ease-in-out infinite alternate; }
+.ca-monito.lado.camina .ca-pd { animation: caPiernaL .4s ease-in-out infinite alternate-reverse; }
+.ca-monito.lado.camina .ca-bi { animation: caBrazoL .4s ease-in-out infinite alternate-reverse; }
+.ca-monito.lado.camina:not(.con-cosa) .ca-bd { animation: caBrazoL .4s ease-in-out infinite alternate; }
+@keyframes caPiernaL { from { transform: rotate(-15deg); } to { transform: rotate(15deg); } }
+@keyframes caBrazoL { from { transform: rotate(-13deg); } to { transform: rotate(13deg); } }
+/* Caminar de frente (hacia ti o hacia el fondo): las piernas suben y bajan por turnos. */
+.ca-monito.camina:not(.lado) .ca-pi { animation: caPasoF .4s ease-in-out infinite alternate; }
+.ca-monito.camina:not(.lado) .ca-pd { animation: caPasoF .4s ease-in-out infinite alternate-reverse; }
+.ca-monito.camina:not(.lado) .ca-bi { animation: caBrazoF .4s ease-in-out infinite alternate; }
+.ca-monito.camina:not(.lado):not(.con-cosa) .ca-bd { animation: caBrazoF .4s ease-in-out infinite alternate-reverse; }
+@keyframes caPasoF { from { transform: translateY(0); } to { transform: translateY(-4px); } }
+@keyframes caBrazoF { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+/* Correr: más zancada, brazos doblados, inclinado hacia adelante y rebote más vivo. */
+.ca-monito.corre.lado .ca-pi { animation: caPiernaC .26s ease-in-out infinite alternate; }
+.ca-monito.corre.lado .ca-pd { animation: caPiernaC .26s ease-in-out infinite alternate-reverse; }
+.ca-monito.corre.lado .ca-bi { animation: caBrazoC .26s ease-in-out infinite alternate-reverse; }
+.ca-monito.corre.lado:not(.con-cosa) .ca-bd { animation: caBrazoC .26s ease-in-out infinite alternate; }
+.ca-monito.corre .ca-mono-flip { animation: caBoteC .26s ease-in-out infinite; }
+.ca-monito.corre.lado .ca-mono-cuerpo { rotate: 6deg; transform-origin: 50% 100%; }
+@keyframes caPiernaC { from { transform: rotate(-26deg); } to { transform: rotate(26deg); } }
+@keyframes caBrazoC { from { transform: rotate(-34deg); } to { transform: rotate(30deg); } }
+@keyframes caBoteC { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+/* Al llegar: frena con un rebotito (se aplasta tantito y vuelve). */
+.ca-monito.llega:not(.dormido):not(.banando):not(.sentado) .ca-mono-flip { animation: caLlega .36s ease-out; transform-origin: 50% 100%; }
+@keyframes caLlega { 0% { transform: scale(1.05, .92); } 55% { transform: scale(.98, 1.03); } 100% { transform: none; } }
+/* Sombra en pixel que sale del lado contrario a la luz (lámpara o sol) y se alarga. */
+.ca-mono-svg .ca-sombra { transform-origin: 50px 168px; transform: translateX(var(--sx, 0px)) scaleX(var(--ss, 1)); opacity: var(--so, .85); transition: transform .6s ease, opacity .6s; }
+/* La flechita en el piso: a dónde vas (acostadita en el suelo, apuntando hacia donde caminas). */
+.ca-flecha { position: absolute; z-index: 4; width: 36px; height: 28px; margin: -14px 0 0 -18px; pointer-events: none; opacity: 0; transform: scaleY(.55) rotate(var(--a, 0deg)); }
+.ca-flecha svg { display: block; width: 100%; height: 100%; filter: drop-shadow(0 2px 0 rgba(90, 40, 70, .3)); }
+.ca-flecha.ver { animation: caFlecha 1.7s ease-out forwards; }
+@keyframes caFlecha { 0% { opacity: 0; translate: 0 -8px; } 15% { opacity: 1; translate: 0 0; } 30% { translate: 0 -3px; } 45% { translate: 0 0; } 75% { opacity: 1; } 100% { opacity: 0; } }
+/* Las paredes: dibujadas de alto completo (cara de lado, base y su puerta de lado), la de la casa más gruesa. */
+.ca-muro-3d { top: 0; height: 720px; }
+.ca-muro.exterior .ca-muro-pared { left: -13px; width: 26px; background: linear-gradient(90deg, #c9ab93 0 3px, #f1e2d3 3px 23px, #c9ab93 23px); }
+/* Sombrita en escalones a los lados de cada pared (las esquinas se ven hondas). */
+.ca-muro-pared::before, .ca-muro-pared::after { content: ""; position: absolute; top: 0; bottom: 0; width: 12px; pointer-events: none; }
+.ca-muro-pared::before { right: 100%; background: linear-gradient(90deg, transparent 0 4px, rgba(90, 40, 70, .05) 4px 8px, rgba(90, 40, 70, .1) 8px); }
+.ca-muro-pared::after { left: 100%; background: linear-gradient(90deg, rgba(90, 40, 70, .1) 0 4px, rgba(90, 40, 70, .05) 4px 8px, transparent 8px); }
+/* La luz ambiental de cada cuarto (cambia con la hora). */
+.ca-ambiente { position: absolute; top: -900px; height: 1660px; z-index: 4999; pointer-events: none; opacity: 0; transition: background-color .8s; }
+.ca.fx2 .ca-ambiente { opacity: 1; mix-blend-mode: soft-light; }
+.ca-ambiente.sala { background-color: rgba(255, 170, 120, .32); }
+.ca-ambiente.cocina { background-color: rgba(255, 215, 110, .32); }
+.ca-ambiente.recamara { background-color: rgba(200, 140, 255, .3); }
+.ca-ambiente.bano { background-color: rgba(110, 210, 255, .3); }
+.ca-ambiente.estudio { background-color: rgba(255, 200, 150, .26); }
+.ca-ambiente:is(.jardin, .terraza) { background-color: rgba(255, 240, 200, .12); }
+.ca-mundo.tarde .ca-ambiente:is(.jardin, .terraza) { background-color: rgba(255, 140, 110, .3); }
+.ca-mundo.noche .ca-ambiente { background-color: rgba(255, 190, 110, .34); }
+.ca-mundo.noche .ca-ambiente:is(.jardin, .terraza) { background-color: rgba(90, 110, 255, .3); }

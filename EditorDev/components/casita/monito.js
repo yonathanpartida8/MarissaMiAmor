@@ -187,6 +187,55 @@ function caritas(r, P, I, piel) {
   ].join("");
 }
 
+/* ── (Fase 60) La carita DE FRENTE: los dos ojitos iguales, la boquita en medio y sus chapitas ── */
+const CARA_F = [[3, 9, 15], [4, 8, 16], [5, 7, 17], [6, 7, 17], [7, 7, 17], [8, 7, 17], [9, 7, 17], [10, 7, 17], [11, 8, 16], [12, 9, 15], [13, 10, 14]];
+function ojitosF(estilo, I) {
+  const n = new Capa();
+  for (const c0 of [9, 14]) {
+    if (estilo === "grandes") n.pon(c0, 7, NEGRO).pon(c0 + 1, 7, NEGRO).caja(c0, 8, c0 + 1, 9, I).pon(c0, 8, NEGRO).pon(c0 + 1, 8, NEGRO).pon(c0, 9, BLANCO).pon(c0, 10, osc(I, 0.7)).pon(c0 + 1, 10, I);
+    else if (estilo === "puntitos") n.pon(c0 + (c0 < 12 ? 1 : 0), 8, NEGRO).pon(c0 + (c0 < 12 ? 1 : 0), 9, NEGRO);
+    else {
+      // Arriba el párpado oscuro, en medio el brillito y el color, abajo el color más hondo.
+      n.fila(8, c0, c0 + 1, NEGRO).pon(c0, 9, BLANCO).pon(c0 + 1, 9, I).pon(c0, 10, osc(I, 0.72)).pon(c0 + 1, 10, I);
+      if (estilo === "pestanas") n.pon(c0 < 12 ? c0 - 1 : c0 + 2, 8, NEGRO).pon(c0 < 12 ? c0 - 1 : c0 + 2, 7, NEGRO);
+    }
+  }
+  return n;
+}
+function caritasF(r, P, I, piel) {
+  const ceja = osc(P, 0.8);
+  const g = (cls, ...capas) => `<g class="${cls}">${capas.map(svgDe).join("")}</g>`;
+  return [
+    g("ca-cejas", C([[9, 7], [10, 6], [14, 6], [15, 7]], ceja)),
+    g("ca-cejas-e", C([[9, 6], [10, 7], [14, 7], [15, 6]], ceja)),
+    g("ca-ojos ojo-n", ojitosF(r.ojos, I)),
+    g("ojo-f", C([[8, 9], [9, 8], [10, 8], [11, 9], [13, 9], [14, 8], [15, 8], [16, 9]], NEGRO)),
+    g("ojo-z", C([[9, 9], [10, 9], [14, 9], [15, 9]], NEGRO), C([[9, 10], [15, 10]], sombraPiel(piel, 0.3))),
+    g("ojo-c", C([[8, 8], [10, 8], [8, 9], [9, 9], [10, 9], [9, 10], [14, 8], [16, 8], [14, 9], [15, 9], [16, 9], [15, 10]], "#ff4d8d"), C([[8, 8], [14, 8]], "#ffc2d6")),
+    g("ojo-g", C([[9, 9], [10, 9]], NEGRO), C([[14, 8], [15, 8]], NEGRO), C([[14, 9]], BLANCO), C([[15, 9]], I)),
+    g("ojo-s", C([[9, 8], [10, 8], [9, 10], [10, 10], [8, 9], [14, 8], [15, 8], [14, 10], [15, 10], [16, 9]], BLANCO), C([[10, 9], [14, 9]], NEGRO)),
+    g("bo-n", C([[11, 12], [13, 12]], BOCA), C([[12, 13]], BOCA)),
+    g("bo-a", C([[11, 12], [12, 12], [13, 12]], "#7d1f42"), C([[12, 13]], "#ff6f9c")),
+    g("bo-o", C([[12, 12], [12, 13]], "#7d1f42")),
+    g("bo-t", C([[11, 13], [12, 12], [13, 13]], BOCA)),
+    g("bo-b", C([[12, 12]], BOCA), C([[13, 12], [12, 13]], "#ff5c93")),
+  ].join("");
+}
+/** Las cosas de la cabeza, de frente: casi todas son la mitad de tres cuartos reflejada; unas van aparte. */
+function accesorioF(k, P) {
+  const a = new Capa(), ROSA = "#9b6be0", ORO = "#ffd84d";
+  if (k === "lentes") { for (const c0 of [8, 13]) a.fila(7, c0, c0 + 3, NEGRO).fila(11, c0, c0 + 3, NEGRO).caja(c0, 8, c0, 10, NEGRO).caja(c0 + 3, 8, c0 + 3, 10, NEGRO); a.pon(12, 8, NEGRO).pon(7, 8, NEGRO).pon(17, 8, NEGRO); return a; }
+  if (k === "aretes") return a.pon(6, 11, ORO).pon(18, 11, ORO);
+  if (k === "audifonos") return a.filas([[-1, 9, 15], [0, 7, 8], [0, 16, 17], [1, 6, 6], [1, 18, 18]], ROSA).caja(5, 7, 7, 11, "#c39bff").caja(17, 7, 19, 11, "#c39bff").pon(7, 8, cla("#c39bff", 0.4)).pon(17, 8, cla("#c39bff", 0.4));
+  return espejo(accesorio(k, P), !["mono", "orejitas"].includes(k));
+}
+/** Refleja la mitad de una capa (la derecha o la izquierda) para que quede igualita de los dos lados. */
+function espejo(L, der = true) {
+  const n = new Capa();
+  for (const [c, rr, col] of L.m.values()) if (der ? c >= 12 : c <= 12) n.pon(c, rr, col).pon(24 - c, rr, col);
+  return n;
+}
+
 /* ── Accesorios (en la cabeza; la bufanda va en el cuello) ── */
 function accesorio(k, P) {
   const a = new Capa(), ROSA = "#ff5c93", ROSA2 = "#ff9cbf", ORO = "#ffd84d";
@@ -329,17 +378,29 @@ export function monitoSVG(r0) {
   // (El pelo no tapa los ojitos ni la boca.)
   for (const [c, rr] of [[13, 8], [14, 8], [13, 9], [14, 9], [13, 10], [14, 10], [16, 8], [16, 9], [16, 10], [15, 12], [16, 12]]) frente.quita(c, rr);
   const acc = r.accesorio === "bufanda" ? new Capa() : accesorio(r.accesorio, P);
+  // (Fase 60) La cabeza DE FRENTE: la carita simétrica, las dos orejitas, el pelo reflejado y mechones a los lados.
+  const caraF = new Capa().filas(CARA_F, piel);
+  for (const [c, rr] of [[8, 11], [16, 11], [9, 12], [15, 12], [10, 13], [14, 13], [7, 10], [17, 10]]) caraF.pon(c, rr, piel2);
+  caraF.pon(12, 10, sombraPiel(piel, 0.12)).pon(9, 11, "#ffa3bd").pon(15, 11, "#ffa3bd").pon(10, 11, cla("#ffa3bd", 0.35)).pon(14, 11, cla("#ffa3bd", 0.35));
+  caraF.pon(11, 4, cla(piel, 0.22)).pon(12, 4, cla(piel, 0.22));
+  if (r.pecas === "si") for (const [c, rr] of [[9, 12], [11, 11], [13, 11], [15, 12]]) caraF.pon(c, rr, sombraPiel(piel, 0.42));
+  const orejaF = new Capa().caja(6, 8, 6, 10, piel).pon(6, 9, piel2).caja(18, 8, 18, 10, piel).pon(18, 9, piel2);
+  const pf = pelo(r.pelo, P), frenteF = espejo(pf.frente, true), atrasF = espejo(pf.atras, false);
+  if (!["rapado", "afro", "chino"].includes(r.pelo)) { const L2 = new Capa().filas([[5, 6, 7], [6, 6, 7], [7, 6, 7], [8, 6, 6]], P); L2.sombrea(P); for (const [c, rr, col] of L2.m.values()) frenteF.pon(c, rr, col).pon(24 - c, rr, col); }
+  for (const c of [9, 10, 14, 15]) for (let rr = 8; rr <= 10; rr++) frenteF.quita(c, rr);
+  for (const c of [11, 12, 13]) frenteF.quita(c, 12).quita(c, 13);
+  const accF = r.accesorio === "bufanda" ? new Capa() : accesorioF(r.accesorio, P);
   const sombra = new Capa();
   for (let c = 6; c <= 18; c++) sombra.pon(c, 41, "rgba(60,30,50,.16)");
   for (let c = 8; c <= 16; c++) sombra.pon(c, 41, "rgba(60,30,50,.24)");
 
   return `<svg viewBox="0 0 100 170" class="ca-mono-svg pixel-mono" shape-rendering="crispEdges" aria-hidden="true">
     <g class="ca-sombra">${svgDe(sombra)}</g>
-    ${atras.m.size ? grupo("ca-pelo-atras", [atras]) : ""}
+    ${atras.m.size ? grupo("ca-pelo-atras ca-lado-solo", [atras]) : ""}${atrasF.m.size ? grupo("ca-pelo-atras ca-frente-solo", [atrasF]) : ""}
     ${piernaSVG("ca-pi", pi)}${piernaSVG("ca-pd", pd)}${sienta}
     ${grupo("", [T, D])}
     ${grupo("ca-bi", bi.slice(0, 2), bi[2], { attrs: ' style="transform-origin:28px 64px"' })}
     ${grupo("ca-bd", bd.slice(0, 2), bd[2] + '<g class="ca-mano-cosa"></g>', { attrs: ' style="transform-origin:72px 64px"' })}
-    <g class="ca-cabeza">${svgDe(contorno([cara, frente, oreja, acc]))}${svgDe(cara)}${svgDe(oreja)}${caritas(r, P, I, piel)}${svgDe(frente)}${svgDe(acc)}</g>
+    <g class="ca-cabeza"><g class="ca-lado-solo">${svgDe(contorno([cara, frente, oreja, acc]))}${svgDe(cara)}${svgDe(oreja)}${caritas(r, P, I, piel)}${svgDe(frente)}${svgDe(acc)}</g><g class="ca-frente-solo ca-cara-f">${svgDe(contorno([caraF, frenteF, orejaF, accF]))}${svgDe(caraF)}${svgDe(orejaF)}${caritasF(r, P, I, piel)}${svgDe(frenteF)}${svgDe(accF)}</g></g>
   </svg>`;
 }

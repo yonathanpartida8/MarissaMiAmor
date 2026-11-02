@@ -47,6 +47,7 @@ import { texPared, texPiso, texLluvia, texCharcos, pintarFrente, texAuto, texSol
 
 const lim = (v, a, b) => Math.max(a, Math.min(b, v));
 const MAX_OBJETOS = 300;
+const PUERTA_T = 0.43;   // (Fase 60) a qué hondura del piso está la puerta de cada pared (0 = al fondo, 1 = enfrente)
 const RECIENTES = "editordev:casita-recientes";
 const POSES = ["sentado", "dormido", "banando", "columpio", "cocinando", "duchando"];
 const nuevoId = () => Math.random().toString(36).slice(2, 10);
@@ -227,6 +228,8 @@ export class Casita {
       this.cuartosN.set(c.k, n);
       const o = el("i.ca-oscuro." + c.k, { style: { left: inicioDe(c.k) + "px", width: c.w + "px" } });
       this.oscuroN.set(c.k, o);
+      // (Fase 60) La luz ambiental de cada cuarto (cálida en la cocina, lila en la recámara, fresca en el baño…).
+      this.mundo.append(el("i.ca-ambiente." + c.k, { "aria-hidden": "true", style: { left: inicioDe(c.k) + "px", width: c.w + "px" } }));
       this.mundo.append(o);
       if (c.afuera) {
         const ch = el("i.ca-charcos");
@@ -252,12 +255,12 @@ export class Casita {
     this.puertas = [];
     for (let i = 1; i < CUARTOS.length; i++) {
       const a = CUARTOS[i - 1], b = CUARTOS[i];
-      if (a.afuera || b.afuera) continue;
+      const ext = !!(a.afuera || b.afuera);   // (Fase 60) también la pared de la casa con su puerta (antes no había: se atravesaba)
       // (Fase 59) Con su base en perspectiva sobre el piso (2.5D), que se acomoda según dónde mires.
       const cv = el("canvas.ca-muro-3d", { "aria-hidden": "true" });
-      const x = inicioDe(b.k), n = el("div.ca-muro", { style: { left: x + "px" } }, [cv, el("i.ca-muro-pared"), el("i.ca-puerta-marco"), el("i.ca-puerta-hoja", {}, [el("i.ca-puerta-perilla")])]);
+      const x = inicioDe(b.k), n = el("div.ca-muro" + (ext ? ".exterior" : ""), { style: { left: x + "px" } }, [cv, el("i.ca-muro-pared")]);
       this.mundo.append(n);
-      this.puertas.push({ x, n, cv });
+      this.puertas.push({ x, n, cv, ext, a: a.k, b: b.k });
     }
   }
   /** Las puertas que cruza un monito en su camino se abren justo cuando pasa. */
@@ -267,8 +270,8 @@ export class Casita {
       const t = s ? (Math.abs(p.x - x0) / Math.abs(x1 - x0)) * s * 1000 : 0;
       setTimeout(() => {
         if (!this.vivo) return;
-        p.n.classList.add("abierta"); clearTimeout(p.t);
-        p.t = setTimeout(() => p.n.classList.remove("abierta"), 950);
+        p.n.classList.add("abierta"); clearTimeout(p.t); p.abierta = true; this._pintarMuro(p);
+        p.t = setTimeout(() => { p.n.classList.remove("abierta"); p.abierta = false; this._pintarMuro(p); }, 950);
         if (m.quien === "yo" || this._visible(m)) this.sonar("puerta-cuarto", { volumen: m.quien === "yo" ? 0.7 : 0.4 });
       }, Math.max(0, t - 260));
     }
@@ -470,9 +473,64 @@ export class Casita {
     const c = cuarto(k), x = (inicioDe(c.k) + c.w / 2) * this.k - this.vistaN.clientWidth / 2;
     this.vistaN.scrollTo({ left: Math.max(0, x), behavior: suave && !reducido() ? "smooth" : "auto" });
   }
+  /** (Fase 60) Cámara suave: mientras tu monito camina, la vista lo va siguiendo despacito (sin brincos);
+   *  si tú mueves la vista con el dedo, la cámara te deja. */
   _seguir(gx) {
     const v = this.vistaN, px = gx * this.k, m = Math.min(90, v.clientWidth * 0.2);
-    if (px < v.scrollLeft + m || px > v.scrollLeft + v.clientWidth - m) v.scrollTo({ left: px - v.clientWidth / 2, behavior: reducido() ? "auto" : "smooth" });
+    if (reducido()) { if (px < v.scrollLeft + m || px > v.scrollLeft + v.clientWidth - m) v.scrollLeft = px - v.clientWidth / 2; return; }
+    if (this._rqCam) return;
+    const paso = () => {
+      this._rqCam = 0;
+      if (!this.vivo || this._dedoAbajo) return;
+      const R = this.yo.n.getBoundingClientRect(), V = v.getBoundingClientRect();
+      const x = R.left + R.width / 2 - V.left, centro = v.clientWidth / 2, dif = x - centro;
+      const camina = this.yo.n.classList.contains("camina");
+      // Zona muerta en medio; afuera de ella, se acerca suave (más rápido si va corriendo).
+      // (Con tope de velocidad: aunque esté lejos, la vista nunca brinca.)
+      const tope = this.yo.n.classList.contains("corre") ? 20 : 14;
+      if (Math.abs(dif) > v.clientWidth * (camina ? 0.12 : 0.04)) v.scrollLeft += lim(dif * 0.08, -tope, tope);
+      else if (!camina) return;
+      this._rqCam = requestAnimationFrame(paso);
+    };
+    this._rqCam = requestAnimationFrame(paso);
+  }
+  /** (Fase 60) La flechita en el piso: dónde vas a llegar y hacia dónde. */
+  _flecha(gx, y) {
+    if (!this._flechaN) { this._flechaN = el("i.ca-flecha", { "aria-hidden": "true", html: '<svg viewBox="0 0 9 7" shape-rendering="crispEdges"><path d="M0 2h4V0h1v1h1v1h1v1h1v1H7v1H6v1H5v1H4V5H0z" fill="#fff"/><path d="M1 3h4V2h1v1h1v1H6v1H5V4H1z" fill="#ff6fa5"/></svg>' }); this.mundo.append(this._flechaN); }
+    const f = this._flechaN, m = this.yo, a = Math.atan2((y - m.y) * 0.6, gx - m.gx) * 180 / Math.PI;
+    f.style.left = gx + "px"; f.style.top = y + "px"; f.style.setProperty("--a", a.toFixed(0) + "deg");
+    f.classList.remove("ver"); void f.offsetWidth; f.classList.add("ver");
+  }
+  /** (Fase 60) La sombra del monito: sale del lado contrario a la luz más cercana (lámpara prendida, o el sol afuera)
+   *  y se alarga mientras más de lado le pegue. */
+  _sombra(m) {
+    if (!m?.n || !this.cuartosN) return;
+    const { c } = enCuarto(m.gx), cu = cuarto(c);
+    let lx = null, fuerza = 0.6;
+    for (const r of this.objs.values()) {
+      if (!r.glow || r.o.c !== c || !r.glow.classList.contains("on")) continue;
+      const x = parseFloat(r.glow.style.left) + r.d.brilla.r;
+      if (lx == null || Math.abs(x - m.gx) < Math.abs(lx - m.gx)) { lx = x; fuerza = 1; }
+    }
+    if (lx == null && cu.afuera && !this.esNoche()) lx = inicioDe(c) + cu.w * 0.86;   // el sol
+    let sx = 0, ss = 1, so = 0.85;
+    if (lx != null) {
+      const dx = m.gx - lx, largo = lim(Math.abs(dx) / 240, 0.15, 1.4);
+      sx = Math.sign(dx || 1) * largo * 13 * (m.mira < 0 ? -1 : 1); ss = 1 + largo * 0.9; so = lim(1.05 - Math.abs(dx) / 900, 0.5, 1) * fuerza + (1 - fuerza) * 0.7;
+    }
+    m.n.style.setProperty("--sx", sx.toFixed(1) + "px"); m.n.style.setProperty("--ss", ss.toFixed(2)); m.n.style.setProperty("--so", so.toFixed(2));
+  }
+  /** (Fase 60) Tu monito voltea la cabecita hacia tu dedo (y al soltarlo vuelve a verte de frente). */
+  _mirarDedo(x, y) {
+    const m = this.yo, cab = m?.n.querySelector(".ca-cabeza");
+    if (!cab) return;
+    if (x == null) { m.n.classList.remove("siguiendo"); for (const k of ["--hx", "--hr", "--ox", "--oy"]) m.n.style.removeProperty(k); return; }
+    const R = cab.getBoundingClientRect(), vx0 = lim((x - (R.left + R.width / 2)) / 150, -1, 1) * (m.mira < 0 ? -1 : 1), vy = lim((y - (R.top + R.height / 2)) / 220, -1, 1);
+    m.n.classList.add("siguiendo");
+    m.n.style.setProperty("--hx", Math.round(vx0 * 1.2) * 4 + "px");
+    m.n.style.setProperty("--hr", (vx0 * 7).toFixed(1) + "deg");
+    m.n.style.setProperty("--ox", Math.round(vx0 * 1.3) * 4 + "px");
+    m.n.style.setProperty("--oy", Math.round(vy * 1.2) * 4 + "px");
   }
   /** (Fase 59) 2.5D: la ciudad y el cielo se mueven más despacio que la casa (están lejos) y la base de las
    *  paredes entre cuartos se ve en perspectiva según dónde esté la cámara. */
@@ -492,8 +550,18 @@ export class Casita {
       const q = Math.round(lim((p.x - centro) * 0.32, -180, 180) / 4);
       if (q === p.q) continue;
       p.q = q;
-      try { pintarMuro3d(p.cv, q * 4); } catch (e) { /* nada */ }
+      this._pintarMuro(p);
     }
+  }
+  _pintarMuro(p) {
+    const cf = (k) => this.cfgCuarto(k)?.pared || "#ffe1ec";
+    try { pintarMuro3d(p.cv, (p.q || 0) * 4, { abierta: !!p.abierta, exterior: p.ext, pared: (p.q || 0) >= 0 ? cf(p.a) : cf(p.b) }); } catch (e) { /* nada */ }
+  }
+  /** (Fase 60) Dónde está la puerta de una pared (en el mundo), con la perspectiva de ahorita. */
+  _puertaDe(p) {
+    // (Lo mismo que dibuja pintarMuro3d: la puerta va de 0.3 a 0.56 de hondo y nunca es más angosta que 32.)
+    const off = (p.q || 0) * 4, ancho = (Math.sign(off) || 1) * Math.max(Math.abs(off * 0.26), 32);
+    return { x: p.x + off * 0.3 + ancho / 2, y: PISO + (H - PISO) * PUERTA_T };
   }
   _alDeslizar() {
     this._profundidad();
@@ -566,6 +634,7 @@ export class Casita {
     }
     this._yaPintada = true;
     this._lejos();
+    for (const mm of [this.yo, this.suyo]) this._sombra(mm);
     this._marcarOcupados();
     this._musicas();
     this.mensajes.marcas();
@@ -801,6 +870,7 @@ export class Casita {
     const noche = modo === "noche" || (modo === "real" && (h >= 20 || h < 7)), tarde = modo === "tarde" || (modo === "real" && h >= 18 && h < 20);
     this.mundo.classList.toggle("noche", noche);
     this.mundo.classList.toggle("tarde", !noche && tarde);
+    for (const mm of [this.yo, this.suyo]) this._sombra(mm);
     this.raiz?.classList.toggle("es-noche", noche);
     for (const r of this.objs.values()) if (r.d.k === "reloj") this._ponerReloj(r.n);
     this._pintarFondos();
@@ -829,34 +899,58 @@ export class Casita {
   _mirar(m, lado) {
     const antes = m.mira;
     m.mira = lado < 0 ? -1 : 1; m.n.classList.toggle("izq", m.mira < 0);
+    if (antes !== m.mira) this._sombra(m);
     if (antes !== m.mira && !reducido() && nivel(this.gfx) >= 1) m.caja.animate([{ translate: "0 0" }, { translate: "0 -3px" }, { translate: "0 0" }], { duration: 150, easing: "ease-out" });
   }
   _visible(m) { const v = this.vistaN, px = m.gx * this.k; return px > v.scrollLeft - 40 && px < v.scrollLeft + v.clientWidth + 40; }
   /** Caminar hasta (gx, y) (y es lo hondo del piso) y luego `luego()`. */
-  _caminar(m, gx, y, luego = null, ya = false) {
+  _caminar(m, gx, y, luego = null, ya = false, porPuerta = false) {
     clearTimeout(m.tc); clearInterval(m.tp);
     this._pose(m, "");
     gx = lim(gx, 24, ANCHO - 24); y = lim(y, FONDO, FRENTE);
+    // (Fase 60) Las paredes no se atraviesan: si hay una pared en medio, primero a su puerta, la cruza y sigue.
+    if (!ya && !porPuerta) {
+      const p = (this.puertas || []).filter((q) => (q.x - m.gx) * (q.x - gx) < 0).sort((a, b) => Math.abs(a.x - m.gx) - Math.abs(b.x - m.gx))[0];
+      if (p) {
+        const pu = this._puertaDe(p), dir = Math.sign(gx - m.gx);
+        const cruzar = () => this._caminar(m, pu.x + dir * 30, pu.y, () => this._caminar(m, gx, y, luego), false, true);
+        if (Math.abs(m.gx - (pu.x - dir * 30)) < 6 && Math.abs(m.y - pu.y) < 6) return cruzar();
+        return this._caminar(m, pu.x - dir * 30, pu.y, cruzar, false, true);
+      }
+    }
     // (Al caminar se sueltan los gestos y lo que hacía con las manos: así los brazos nunca se quedan en un loop raro.)
     m.n.classList.remove("tocando", "comiendo", ...GESTOS.map((x) => "g-" + x[0])); clearTimeout(m.tgesto); clearTimeout(m.ttoca);
     this._prof(m, y);
     const d = Math.hypot(gx - m.gx, (y - m.y) * 1.6);
-    if (Math.abs(gx - m.gx) > 2) this._mirar(m, gx - m.gx);
+    // De lado si va más de lado que de frente (y voltea según hacia dónde); hacia ti o hacia el fondo, de frente.
+    const deLado = Math.abs(gx - m.gx) >= Math.abs(y - m.y) * 1.1;
+    if (deLado && Math.abs(gx - m.gx) > 2) this._mirar(m, gx - m.gx);
     // (Cerquita camina; lejos, corre: cruzar la casa no tarda una eternidad.)
     // (Jugando a las traes, los dos caminan igual de rápido: nadie corre más que el otro.)
-    const vel = this.traes?.activo ? VEL_TRAES : lim(d * 0.55, 210, 620), s = ya || reducido() ? 0 : Math.max(0.18, d / vel);
-    m.n.classList.toggle("corre", vel > 330);
+    // (Fase 60: lejos de verdad —más de 420— corre, con su zancada; cerca camina.)
+    const corre = !this.traes?.activo && d > 420;
+    const vel = this.traes?.activo ? VEL_TRAES : corre ? lim(d * 0.6, 380, 640) : lim(d * 0.55, 200, 300), s = ya || reducido() ? 0 : Math.max(0.18, d / vel);
+    m.n.classList.toggle("corre", corre && s > 0.2);
     m.n.style.transitionDuration = s + "s";
     m.n.style.zIndex = zMono(Math.max(m.y, y));
     m.n.style.left = gx.toFixed(1) + "px"; m.n.style.top = y.toFixed(1) + "px";
     this._puertasEnCamino(m, m.gx, gx, s);
     m.gx = gx; m.y = y;
     m.llega = performance.now() + s * 1000;
+    m.n.classList.toggle("lado", s > 0.2 && deLado);
     if (s > 0.2) {
       m.n.classList.add("camina");
-      if (m.quien === "yo" || this._visible(m)) { let i = 0; m.tp = setInterval(() => this.sonar(i++ % 2 ? "paso" : "paso2", { volumen: m.quien === "yo" ? 0.9 : 0.5 }), vel > 330 ? 170 : 260); }
+      if (m.quien === "yo" || this._visible(m)) { let i = 0; m.tp = setInterval(() => this.sonar(i++ % 2 ? "paso" : "paso2", { volumen: m.quien === "yo" ? 0.9 : 0.5 }), corre ? 170 : 260); }
     }
-    m.tc = setTimeout(() => { m.n.classList.remove("camina", "corre"); clearInterval(m.tp); m.n.style.zIndex = zMono(y); luego?.(); }, s * 1000 + 30);
+    m.tc = setTimeout(() => {
+      const iba = m.n.classList.contains("camina");
+      m.n.classList.remove("camina", "corre", "lado"); clearInterval(m.tp); m.n.style.zIndex = zMono(y);
+      // Al llegar (si no sigue a otro lado): un rebotito de frenar, la sombra según la luz y la flechita se va.
+      if (iba && !luego && !reducido()) { m.n.classList.remove("llega"); void m.n.offsetWidth; m.n.classList.add("llega"); setTimeout(() => m.n.classList.remove("llega"), 380); }
+      if (!luego && m.quien === "yo") this._flechaN?.classList.remove("ver");
+      this._sombra(m);
+      luego?.();
+    }, s * 1000 + 30);
     if (m.quien === "yo" && !ya) this._seguir(gx);
   }
   _pose(m, pose, mueble = "", z = null) {
@@ -1205,13 +1299,24 @@ export class Casita {
       const p = this._xy(e);
       const ch = this.climaActual() !== "sol" ? charcoEn(p.x, p.y) : null;
       if (ch) { this.brincarCharco(ch); return; }
-      this._caminar(this.yo, p.x, p.y >= PISO - 10 ? p.y : this.yo.mueble ? SUELO : this.yo.y);
+      const ay = p.y >= PISO - 10 ? p.y : this.yo.mueble ? SUELO : this.yo.y;
+      this._flecha(lim(p.x, 24, ANCHO - 24), lim(ay, FONDO, FRENTE));
+      this._caminar(this.yo, p.x, ay);
       this.yo.orden++;
       this._mandarYo({ accion: "", mueble: "" });
     };
     m.addEventListener("pointerup", (e) => fin(e));
     m.addEventListener("pointercancel", (e) => fin(e, true));
     m.addEventListener("contextmenu", (e) => e.preventDefault());
+    // (Fase 60) Mientras tu dedo está en la pantalla: la cámara no te pelea y tu monito voltea a verlo.
+    const v = this.vistaN;
+    let rqMira = 0, ult = null;
+    const mira = (x, y) => { ult = [x, y]; if (!rqMira) rqMira = requestAnimationFrame(() => { rqMira = 0; if (ult) this._mirarDedo(...ult); }); };
+    const suelta = () => { this._dedoAbajo = false; ult = null; cancelAnimationFrame(rqMira); rqMira = 0; this._mirarDedo(null); };
+    v.addEventListener("pointerdown", (e) => { this._dedoAbajo = true; cancelAnimationFrame(this._rqCam); this._rqCam = 0; mira(e.clientX, e.clientY); }, { passive: true });
+    v.addEventListener("pointermove", (e) => { if (this._dedoAbajo) mira(e.clientX, e.clientY); }, { passive: true });
+    v.addEventListener("touchmove", (e) => { const t = e.touches[0]; if (t) { this._dedoAbajo = true; mira(t.clientX, t.clientY); } }, { passive: true });
+    for (const ev of ["pointerup", "pointercancel", "touchend", "touchcancel"]) v.addEventListener(ev, (e) => { if (e.type === "pointercancel" && e.pointerType === "touch") return; if (e.touches?.length) return; suelta(); }, { passive: true });
     // Con el teclado (Enter sobre una cosa), lo mismo que tocarla.
     m.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.closest?.(".ca-obj")) { e.preventDefault(); const r = this.objs.get(e.target.closest(".ca-obj").dataset.id); if (r) this._tocarObj(r); } });
   }

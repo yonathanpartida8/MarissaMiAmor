@@ -1082,6 +1082,23 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Probado** | En Chromium a 390×844 (táctil) y 1280×800 con dos cuentas: el dibujo de sentado (y que las piernas paradas no se vean), el brazo al frente, un solo rebote y movimientos chiquitos al caminar, la base de la pared en perspectiva que cambia con la cámara, la pared hasta el piso, el paralaje, nubes, estrellitas, pajaritos y estrellas fugaces, el sol arriba en la tarde, la ciudad igual de día y de noche, y la lluvia que no sigue a la cámara y cubre todo; regresión de las fases 52 a 58. |
 | **No probado en teléfonos de verdad** | Cómo se siente el paralaje y la lluvia al deslizar con el dedo en un Android sencillo, y el rendimiento del cielo vivo en iPhone. No hace falta `librito actualizar` (el servidor no cambió). |
 
+### Fase 60: monito de frente y de lado, puertas de verdad, sombras con la luz y cámara suave
+
+| | |
+| --- | --- |
+| **Sin huecos** | Ya no se puede deslizar hasta un pedazo en blanco al final de la terraza (el fondo con paralaje se salía de la casa). |
+| **Caminar sin vueltas** | Al ir a la izquierda, arriba o abajo el monito ya no da vueltas: el rebote de cada paso reemplazaba el volteo del dibujo; ahora el volteo va aparte (`scale`) y nada lo deshace. |
+| **De frente y de lado** | Quieto te mira de frente (cabeza nueva en pixel, simétrica: dos ojitos con brillo, cejas, chapitas, boquita y todas las caritas: feliz, dormido, corazones, guiño, sorpresa, besito…; el pelo y los accesorios también de frente). Al caminar de lado gira a tres cuartos según hacia dónde va; hacia el fondo o hacia ti camina de frente. |
+| **Tu dedo** | Al deslizar el dedo por la pantalla, su cabecita voltea hacia él (y los ojitos lo siguen); al soltarlo vuelve suave a verte de frente. Quieto, de vez en cuando mira a un ladito y al otro. |
+| **Animaciones nuevas** | Caminar de lado con zancada y brazos que se balancean; de frente, las piernas suben y bajan por turnos; correr (si vas lejos) con más zancada, brazos doblados, inclinado y rebote más vivo; al llegar frena con un rebotito. |
+| **Flechita** | Al tocar el piso aparece una flechita acostada en el suelo donde vas a llegar, apuntando hacia donde caminas. |
+| **Paredes y puertas** | Hay pared entre todos los cuartos, también entre la casa y el jardín o la terraza (antes ahí no había y se atravesaba). Cada pared tiene su cara de lado junto a la esquina, su base en perspectiva y su puerta de lado (ya no de frente), que se abre cuando pasas. El monito ya no atraviesa paredes: para ir a otro cuarto camina a la puerta, la cruza y sigue. Las esquinas tienen sombrita en escalones. |
+| **Sombras con la luz** | La sombra del monito sale del lado contrario a la lámpara prendida más cercana (o al sol, afuera de día) y se alarga mientras más de lado le pegue la luz. |
+| **Luz ambiental** | Cada cuarto tiene su luz: cálida en la sala y la cocina, lila en la recámara, fresca en el baño; en la tarde afuera se pone naranja y de noche las lámparas calientan todo (en Equilibrado, Calidad y Ultra). |
+| **Cámara suave** | Mientras tu monito camina, la vista lo sigue despacito y con tope de velocidad (nunca brinca); si mueves la vista con el dedo, la cámara te deja. |
+| **Probado** | En Chromium a 390×844 (táctil) y 1280×800 con dos cuentas: sin hueco al final, de frente quieto, de lado y volteado en todo el camino a la izquierda (sin vueltas), de frente hacia el fondo, correr, pasar por la puerta (y que se abra), paredes entre todos los cuartos, sombra con una lámpara, flechita al tocar el piso, cabecita que sigue el dedo y vuelve, cámara sin brincos y luz ambiental por cuarto; regresión de las fases 52 a 59. |
+| **No probado en teléfonos de verdad** | Cómo se siente seguir el dedo mientras deslizas la vista en iPhone y Android, y el costo de la luz ambiental en un Android sencillo (si se calienta, usa Rendimiento: ahí no se dibuja). No hace falta `librito actualizar` (el servidor no cambió). |
+
 ## Cómo está hecho
 
 ```
