@@ -470,6 +470,8 @@ export class Casita {
   enPantalla(gx, y) { const r = this.mundo.getBoundingClientRect(); return { x: r.left + gx * this.k, y: r.top + y * this.k }; }
   _xy(e) { const r = this.mundo.getBoundingClientRect(); return { x: (e.clientX - r.left) / this.k, y: (e.clientY - r.top) / this.k }; }
   irCuarto(k, suave = true) {
+    // (Fase 60) Tú elegiste qué ver: la cámara deja de seguir a tu monito un ratito (no te regresa la vista).
+    this._camPausa = performance.now() + 3500; cancelAnimationFrame(this._rqCam); this._rqCam = 0;
     const c = cuarto(k), x = (inicioDe(c.k) + c.w / 2) * this.k - this.vistaN.clientWidth / 2;
     this.vistaN.scrollTo({ left: Math.max(0, x), behavior: suave && !reducido() ? "smooth" : "auto" });
   }
@@ -481,7 +483,7 @@ export class Casita {
     if (this._rqCam) return;
     const paso = () => {
       this._rqCam = 0;
-      if (!this.vivo || this._dedoAbajo) return;
+      if (!this.vivo || this._dedoAbajo || performance.now() < (this._camPausa || 0)) return;
       const R = this.yo.n.getBoundingClientRect(), V = v.getBoundingClientRect();
       const x = R.left + R.width / 2 - V.left, centro = v.clientWidth / 2, dif = x - centro;
       const camina = this.yo.n.classList.contains("camina");
@@ -904,7 +906,7 @@ export class Casita {
   }
   _visible(m) { const v = this.vistaN, px = m.gx * this.k; return px > v.scrollLeft - 40 && px < v.scrollLeft + v.clientWidth + 40; }
   /** Caminar hasta (gx, y) (y es lo hondo del piso) y luego `luego()`. */
-  _caminar(m, gx, y, luego = null, ya = false, porPuerta = false) {
+  _caminar(m, gx, y, luego = null, ya = false, porPuerta = false, viaje = null) {
     clearTimeout(m.tc); clearInterval(m.tp);
     this._pose(m, "");
     gx = lim(gx, 24, ANCHO - 24); y = lim(y, FONDO, FRENTE);
@@ -912,10 +914,12 @@ export class Casita {
     if (!ya && !porPuerta) {
       const p = (this.puertas || []).filter((q) => (q.x - m.gx) * (q.x - gx) < 0).sort((a, b) => Math.abs(a.x - m.gx) - Math.abs(b.x - m.gx))[0];
       if (p) {
+        // (Todo el viaje decide una vez si va corriendo: no cambia de caminar a correr en cada tramo.)
+        viaje = viaje || { corre: Math.hypot(gx - m.gx, (y - m.y) * 1.6) > 420 };
         const pu = this._puertaDe(p), dir = Math.sign(gx - m.gx);
-        const cruzar = () => this._caminar(m, pu.x + dir * 30, pu.y, () => this._caminar(m, gx, y, luego), false, true);
+        const cruzar = () => this._caminar(m, pu.x + dir * 30, pu.y, () => this._caminar(m, gx, y, luego, false, false, viaje), false, true, viaje);
         if (Math.abs(m.gx - (pu.x - dir * 30)) < 6 && Math.abs(m.y - pu.y) < 6) return cruzar();
-        return this._caminar(m, pu.x - dir * 30, pu.y, cruzar, false, true);
+        return this._caminar(m, pu.x - dir * 30, pu.y, cruzar, false, true, viaje);
       }
     }
     // (Al caminar se sueltan los gestos y lo que hacía con las manos: así los brazos nunca se quedan en un loop raro.)
@@ -928,8 +932,8 @@ export class Casita {
     // (Cerquita camina; lejos, corre: cruzar la casa no tarda una eternidad.)
     // (Jugando a las traes, los dos caminan igual de rápido: nadie corre más que el otro.)
     // (Fase 60: lejos de verdad —más de 420— corre, con su zancada; cerca camina.)
-    const corre = !this.traes?.activo && d > 420;
-    const vel = this.traes?.activo ? VEL_TRAES : corre ? lim(d * 0.6, 380, 640) : lim(d * 0.55, 200, 300), s = ya || reducido() ? 0 : Math.max(0.18, d / vel);
+    const corre = !this.traes?.activo && (viaje ? viaje.corre : d > 420);
+    const vel = this.traes?.activo ? VEL_TRAES : corre ? (viaje ? 520 : lim(d * 0.6, 380, 640)) : lim(d * 0.55, 200, 300), s = ya || reducido() ? 0 : Math.max(0.18, d / vel);
     m.n.classList.toggle("corre", corre && s > 0.2);
     m.n.style.transitionDuration = s + "s";
     m.n.style.zIndex = zMono(Math.max(m.y, y));
