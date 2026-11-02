@@ -915,10 +915,16 @@ export class Casita {
         // (Todo el viaje decide una vez si va corriendo: no cambia de caminar a correr en cada tramo.)
         if (!viaje) { viaje = { corre: Math.hypot(gx - m.gx, (y - m.y) * 1.6) > 420 }; m.meta = { gx, y }; }
         m._enRuta = true;   // (a tu amorcito le llega a DÓNDE vas, no la puerta por la que pasas)
+        // (Por si algo raro pasara, nunca da más de 12 vueltas: entonces va directo.)
+        viaje.pasos = (viaje.pasos || 0) + 1;
+        if (viaje.pasos > 12) return this._caminar(m, gx, y, luego, ya, true, viaje);
+        // Antes y después de la pared de verdad (la puerta se dibuja con perspectiva y puede quedar corridita):
+        // así siempre la cruza y nunca se queda yendo y viniendo.
         const pu = this._puertaDe(p), dir = Math.sign(gx - m.gx);
-        const cruzar = () => this._caminar(m, pu.x + dir * 30, pu.y, () => this._caminar(m, gx, y, luego, false, false, viaje), false, true, viaje);
-        if (Math.abs(m.gx - (pu.x - dir * 30)) < 6 && Math.abs(m.y - pu.y) < 6) return cruzar();
-        return this._caminar(m, pu.x - dir * 30, pu.y, cruzar, false, true, viaje);
+        const antes = dir > 0 ? Math.min(pu.x, p.x) - 30 : Math.max(pu.x, p.x) + 30, despues = dir > 0 ? Math.max(pu.x, p.x) + 30 : Math.min(pu.x, p.x) - 30;
+        const cruzar = () => this._caminar(m, despues, pu.y, () => this._caminar(m, gx, y, luego, false, false, viaje), false, true, viaje);
+        if (Math.abs(m.gx - antes) < 6 && Math.abs(m.y - pu.y) < 6) return cruzar();
+        return this._caminar(m, antes, pu.y, cruzar, false, true, viaje);
       }
     }
     // (Al caminar se sueltan los gestos y lo que hacía con las manos: así los brazos nunca se quedan en un loop raro.)
