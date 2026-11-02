@@ -483,15 +483,13 @@ export class Casita {
     if (this._rqCam) return;
     const paso = () => {
       this._rqCam = 0;
-      if (!this.vivo || this._dedoAbajo || performance.now() < (this._camPausa || 0)) return;
+      // (Sólo mientras camina: al llegar la vista se queda quieta; tampoco si escribes o elegiste un cuarto.)
+      if (!this.vivo || this._dedoAbajo || this._congelado || performance.now() < (this._camPausa || 0) || !this.yo.n.classList.contains("camina")) return;
       const R = this.yo.n.getBoundingClientRect(), V = v.getBoundingClientRect();
       const x = R.left + R.width / 2 - V.left, centro = v.clientWidth / 2, dif = x - centro;
-      const camina = this.yo.n.classList.contains("camina");
-      // Zona muerta en medio; afuera de ella, se acerca suave (más rápido si va corriendo).
-      // (Con tope de velocidad: aunque esté lejos, la vista nunca brinca.)
+      // Zona muerta en medio; afuera de ella, se acerca suave (con tope de velocidad: la vista nunca brinca).
       const tope = this.yo.n.classList.contains("corre") ? 20 : 14;
-      if (Math.abs(dif) > v.clientWidth * (camina ? 0.12 : 0.04)) v.scrollLeft += lim(dif * 0.08, -tope, tope);
-      else if (!camina) return;
+      if (Math.abs(dif) > v.clientWidth * 0.12) v.scrollLeft += lim(dif * 0.08, -tope, tope);
       this._rqCam = requestAnimationFrame(paso);
     };
     this._rqCam = requestAnimationFrame(paso);
@@ -915,7 +913,8 @@ export class Casita {
       const p = (this.puertas || []).filter((q) => (q.x - m.gx) * (q.x - gx) < 0).sort((a, b) => Math.abs(a.x - m.gx) - Math.abs(b.x - m.gx))[0];
       if (p) {
         // (Todo el viaje decide una vez si va corriendo: no cambia de caminar a correr en cada tramo.)
-        viaje = viaje || { corre: Math.hypot(gx - m.gx, (y - m.y) * 1.6) > 420 };
+        if (!viaje) { viaje = { corre: Math.hypot(gx - m.gx, (y - m.y) * 1.6) > 420 }; m.meta = { gx, y }; }
+        m._enRuta = true;   // (a tu amorcito le llega a DÓNDE vas, no la puerta por la que pasas)
         const pu = this._puertaDe(p), dir = Math.sign(gx - m.gx);
         const cruzar = () => this._caminar(m, pu.x + dir * 30, pu.y, () => this._caminar(m, gx, y, luego, false, false, viaje), false, true, viaje);
         if (Math.abs(m.gx - (pu.x - dir * 30)) < 6 && Math.abs(m.y - pu.y) < 6) return cruzar();
@@ -924,6 +923,7 @@ export class Casita {
     }
     // (Al caminar se sueltan los gestos y lo que hacía con las manos: así los brazos nunca se quedan en un loop raro.)
     m.n.classList.remove("tocando", "comiendo", ...GESTOS.map((x) => "g-" + x[0])); clearTimeout(m.tgesto); clearTimeout(m.ttoca);
+    if (!porPuerta) m._enRuta = false;
     this._prof(m, y);
     const d = Math.hypot(gx - m.gx, (y - m.y) * 1.6);
     // De lado si va más de lado que de frente (y voltea según hacia dónde); hacia ti o hacia el fondo, de frente.
@@ -986,7 +986,7 @@ export class Casita {
       }, ya);
     });
   }
-  _posYo() { const { c, x } = enCuarto(this.yo.gx); return { c, x: Math.round(x), y: Math.round(this.yo.y), mira: this.yo.mira }; }
+  _posYo() { const m = this.yo, gx = m._enRuta ? m.meta.gx : m.gx, y = m._enRuta ? m.meta.y : m.y, { c, x } = enCuarto(gx); return { c, x: Math.round(x), y: Math.round(y), mira: m.mira }; }
   _mandarYo(d = {}) { this.sync?.yo({ ...this._posYo(), accion: this.yo.accion, mueble: this.yo.mueble, ...d }); }
 
   // ── Lo que usan las acciones (acciones.js) ──
@@ -1354,7 +1354,7 @@ export class Casita {
   // ── Cargar a tu monito con el dedo ──
   _cargar(g, e) {
     const m = this.yo, p = this._xy(e);
-    if (!g.cargando) { g.cargando = true; m.orden++; clearTimeout(m.tc); clearInterval(m.tp); this._pose(m, ""); m.n.classList.remove("camina"); m.n.classList.add("cargado"); m.n.style.transitionDuration = "0s"; vibrar(10); this.sonar("levantar"); }
+    if (!g.cargando) { g.cargando = true; m.orden++; m._enRuta = false; clearTimeout(m.tc); clearInterval(m.tp); this._pose(m, ""); m.n.classList.remove("camina"); m.n.classList.add("cargado"); m.n.style.transitionDuration = "0s"; vibrar(10); this.sonar("levantar"); }
     m.gx = lim(p.x, 24, ANCHO - 24); m.y = Math.min(FRENTE, p.y + 74);
     m.n.style.left = m.gx + "px"; m.n.style.top = m.y + "px";
     this._autoDeslizar(e);
