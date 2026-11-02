@@ -480,6 +480,8 @@ export class Casita {
   _seguir(gx) {
     const v = this.vistaN, px = gx * this.k, m = Math.min(90, v.clientWidth * 0.2);
     if (reducido()) { if (px < v.scrollLeft + m || px > v.scrollLeft + v.clientWidth - m) v.scrollLeft = px - v.clientWidth / 2; return; }
+    // Quieto (abrir la burbujita, sentarse…): sólo se asegura de que se vea, con un deslizamiento suave.
+    if (!this.yo.n.classList.contains("camina")) { if (px < v.scrollLeft + m || px > v.scrollLeft + v.clientWidth - m) v.scrollTo({ left: px - v.clientWidth / 2, behavior: "smooth" }); return; }
     if (this._rqCam) return;
     const paso = () => {
       this._rqCam = 0;
