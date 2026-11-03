@@ -505,12 +505,12 @@ export class Casita {
     const v = this.vistaN, px = gx * this.k, m = Math.min(90, v.clientWidth * 0.2);
     if (reducido()) { if (px < v.scrollLeft + m || px > v.scrollLeft + v.clientWidth - m) v.scrollLeft = px - v.clientWidth / 2; return; }
     // Quieto (abrir la burbujita, sentarse…): sólo se asegura de que se vea, con un deslizamiento suave.
-    if (!this.yo.n.classList.contains("camina")) { if (px < v.scrollLeft + m || px > v.scrollLeft + v.clientWidth - m) v.scrollTo({ left: px - v.clientWidth / 2, behavior: "smooth" }); return; }
+    if (!this.yo.n.classList.contains("camina") && !this.yo._enRuta) { if (px < v.scrollLeft + m || px > v.scrollLeft + v.clientWidth - m) v.scrollTo({ left: px - v.clientWidth / 2, behavior: "smooth" }); return; }
     if (this._rqCam) return;
     const paso = () => {
       this._rqCam = 0;
       // (Sólo mientras camina: al llegar la vista se queda quieta; tampoco si escribes o elegiste un cuarto.)
-      if (!this.vivo || this._dedoAbajo || this._congelado || performance.now() < (this._camPausa || 0) || !this.yo.n.classList.contains("camina")) return;
+      if (!this.vivo || this._dedoAbajo || this._congelado || performance.now() < (this._camPausa || 0) || (!this.yo.n.classList.contains("camina") && !this.yo._enRuta)) return;
       const R = this.yo.n.getBoundingClientRect(), V = v.getBoundingClientRect();
       const x = R.left + R.width / 2 - V.left, centro = v.clientWidth / 2, dif = x - centro;
       // Zona muerta en medio; afuera de ella, se acerca suave (con tope de velocidad: la vista nunca brinca).
@@ -981,7 +981,9 @@ export class Casita {
     const corre = !this.traes?.activo && (viaje ? viaje.corre : d > 420);
     // (Fase 61: con sueño, camina más lento.)
     const lento = !this.traes?.activo && m.n.classList.contains("n-sueno") ? 0.7 : 1;
-    const vel = (this.traes?.activo ? VEL_TRAES : corre ? (viaje ? 520 : lim(d * 0.6, 380, 640)) : lim(d * 0.55, 200, 300)) * lento, s = ya || reducido() ? 0 : Math.max(0.18, d / vel);
+    // (El tiempo va por lo que se VE: cruzar la puerta por la pared se ve largo aunque en el piso sea poquito; así no brinca.)
+    const A = this._vista(m.gx, m.y, lim(m.prof ?? m.y, PISO, H)), Bv = this._vista(gx, y), dv = Math.max(d, Math.hypot(Bv.x - A.x, (y - m.y) * 1.6));
+    const vel = (this.traes?.activo ? VEL_TRAES : corre ? (viaje ? 520 : lim(d * 0.6, 380, 640)) : lim(d * 0.55, 200, 300)) * lento, s = ya || reducido() ? 0 : Math.max(0.18, dv / vel);
     m.n.classList.toggle("corre", corre && s > 0.2);
     m.n.style.transitionDuration = s + "s";
     m.n.style.zIndex = zMono(Math.max(m.y, y));
