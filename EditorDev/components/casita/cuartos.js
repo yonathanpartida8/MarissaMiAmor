@@ -82,14 +82,19 @@ export function opsCuartoNuevo(k) {
 /* ═══ (Fase 61) Cada cuarto de adentro es una cajita en 3D: lo del fondo se ve más chiquito y más hacia el centro
  *  (perspectiva de un punto, como una casita de muñecas). El mundo (x, y) no cambia —todo se guarda igual—;
  *  sólo cambia dónde se DIBUJA. Afuera (jardín y terraza) se queda plano. ═══ */
-export const FONDO_3D = 0.75;            // qué tan chiquito se ve lo del fondo (1 = plano)
+export const FONDO_3D = 0.75;
+/** (Fase 62) Enfrente la cajita también es un poquito más angosta que el cuarto: entre cuarto y cuarto queda el
+ *  grueso de la pared (el «corte» de la casita de muñecas), de arriba abajo, en lugar de una V. */
+export const FRENTE_3D = 0.95;
+/** Lo que mide de cada lado el corte de la pared (en el mundo) para un cuarto de adentro. */
+export const corteDe = (k) => (cuarto(k).afuera ? 0 : ((1 - FRENTE_3D) / 2) * cuarto(k).w);            // qué tan chiquito se ve lo del fondo (1 = plano)
 export const PARED_3D = 300;            // lo hondo de las paredes de los lados (para su textura)
 const lim01 = (v) => Math.max(0, Math.min(1, v));
 /** La escala a esa hondura (y del piso; lo de la pared de atrás, como el fondo). */
 export function escala3d(c, prof) {
   const cu = cuarto(c);
   if (cu.afuera) return 1;
-  return FONDO_3D + (1 - FONDO_3D) * lim01((prof - PISO) / (H - PISO));
+  return FONDO_3D + (FRENTE_3D - FONDO_3D) * lim01((prof - PISO) / (H - PISO));
 }
 /** Del mundo a donde se dibuja: x global y su escala. */
 export function proyectar(gx, prof) {

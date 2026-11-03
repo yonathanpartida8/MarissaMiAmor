@@ -66,19 +66,24 @@ export function pintarFondo(lienzo, { ancho, hora = "dia", clima = "sol", tipo =
   // 3) La ciudad a lo lejos (edificios con ventanitas que se prenden en la tarde y la noche).
   // (El barrio queda arriba de la cerca del jardín; la ciudad, arriba del barandal de la terraza.)
   const sueloY = tipo === "ciudad" ? 404 : 388, base = Math.round((sueloY - 2 - ARRIBA) / PX);
-  const capas = tipo === "ciudad" ? [[0.55, 0], [0.8, 1], [1, 2]] : [[0.45, 0], [0.7, 1]];
-  for (const [alturaMax, capa] of capas) {
+  // (Fase 62) Con profundidad: hasta atrás unas torres altas casi perdidas en la neblina, y cada capa más cerca se ve más
+  // oscura y nítida (perspectiva atmosférica); entre capa y capa, una franja de neblina con tramado.
+  const capas = tipo === "ciudad" ? [[0.95, -1, 0.72], [0.55, 0, 0.45], [0.8, 1, 0.2], [1, 2, 0]] : [[0.45, 0, 0.3], [0.7, 1, 0]];
+  const cieloBajo = C[C.length - 1];
+  for (const [alturaMax, capa, neblina] of capas) {
     let x = Math.round(-R() * 10);
     while (x < W) {
-      const w = 7 + (R() * 12 | 0), h = Math.round((10 + R() * 34) * alturaMax * (tipo === "ciudad" ? 1.5 : 1)), y0 = base - h - capa * 3;
-      const k = col(P.lejos[(capa + (R() * 2 | 0)) % P.lejos.length]);
+      const w = 7 + (R() * 12 | 0), h = Math.round((10 + R() * 34) * alturaMax * (tipo === "ciudad" ? 1.5 : 1)), y0 = base - h - Math.max(0, capa) * 3;
+      const k = mezcla(col(P.lejos[(Math.max(0, capa) + (R() * 2 | 0)) % P.lejos.length]), cieloBajo, neblina);
       caja(x, y0, w, base - y0, k);
       if (R() < 0.3) caja(x + (w >> 1), y0 - 3, 1, 3, k);            // antenita
       if (R() < 0.4) caja(x + 1, y0 - 2, w - 2, 2, mezcla(k, [0, 0, 0], 0.12));
       caja(x + w - 1, y0, 1, base - y0, mezcla(k, [0, 0, 0], 0.18));   // sombrita del lado
-      for (let wy = y0 + 2; wy < base - 2; wy += 3) for (let wx = x + 2; wx < x + w - 2; wx += 2) pon(wx, wy, R() < P.prende ? rgb(P.luz) : mezcla(k, rgb(P.ventana), 0.5));
+      for (let wy = y0 + 2; wy < base - 2; wy += 3) for (let wx = x + 2; wx < x + w - 2; wx += 2) pon(wx, wy, R() < P.prende * (1 - neblina * 0.6) ? mezcla(rgb(P.luz), cieloBajo, neblina * 0.7) : mezcla(k, rgb(P.ventana), 0.5 * (1 - neblina)));
       x += w + (R() < 0.3 ? 1 + (R() * 3 | 0) : 0);
     }
+    // La neblina al pie de esta capa (deja ver la siguiente más cerca y más nítida).
+    if (neblina > 0) for (let y = base - 7; y < base; y++) for (let x2 = 0; x2 < W; x2++) if (BAYER[(y % 4) * 4 + (x2 % 4)] < (y - (base - 7)) / 9) pon(x2, y, mezcla(cieloBajo, [255, 255, 255], 0.08));
   }
   // 4) El barrio: casitas con techito, árboles redonditos y faroles; luego el pasto con arbustos.
   const suelo = Math.round((sueloY - ARRIBA) / PX);

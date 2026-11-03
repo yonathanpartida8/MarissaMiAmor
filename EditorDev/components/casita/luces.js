@@ -58,7 +58,7 @@ export class Luces {
     for (const c of CUARTOS) {
       const cv = this.mapas.get(c.k);
       if (!cv) continue;
-      const apagado = j.cfgCuarto(c.k).luz === false;
+      const apagado = !c.afuera && j.cfgCuarto(c.k).luz === false;   // (afuera, de día siempre hay sol)
       cv.classList.toggle("apagado", apagado);
       const fuentes = this._fuentes(c.k), clave = JSON.stringify(fuentes.map((f) => [f.x | 0, f.y | 0, f.r | 0, f.k]));
       this._sombras(c.k, fuentes);
@@ -89,11 +89,21 @@ export class Luces {
   }
   /** Sombra de cada mueble del piso: del lado contrario a la luz más cercana (de día, una suavecita abajo). */
   _sombras(c, fuentes) {
-    const j = this.j, noche = j.esNoche(), x0 = inicioDe(c);
+    const j = this.j, noche = j.esNoche(), tarde = j.mundo.classList.contains("tarde"), x0 = inicioDe(c), cu = cuarto(c);
+    // (Fase 62) Afuera de día, el sol (arriba a la derecha) hace sombras largas hacia la izquierda; en la tarde, más largas.
+    const alSol = cu.afuera && !noche && !j.mundo.classList.contains("lluvia");
     for (const r of j.objs.values()) {
       if (r.o.c !== c || r.d.capa !== "piso") continue;
       let sx = 0, ss = 1;
-      if (noche && fuentes.length) {
+      r.n.classList.toggle("al-sol", alSol);
+      if (alSol) {
+        const g = Math.min(1.6, 0.6 + r.d.h / 160); sx = -(tarde ? 26 : 15) * g; ss = (tarde ? 1.9 : 1.45) + g * 0.2;
+        // (Que la sombra no se salga del cuarto: junto a la orilla, más cortita.)
+        const izq = (r.v?.x ?? r.gx) - x0 - r.d.w * 0.42 * ss * (r.v?.s ?? 1) + sx;
+        // (El jardín empieza en la orilla del mundo: ahí no hay otro cuarto que tapar.)
+        if (izq < 6 && x0 > 0) { sx = Math.min(0, sx + (6 - izq)); ss = Math.max(1, ss - (6 - izq) / Math.max(20, r.d.w)); }
+      }
+      else if (noche && fuentes.length) {
         const x = (r.v?.x ?? r.gx) - x0;
         let f = fuentes[0];
         for (const g of fuentes) if (Math.abs(g.x - x) < Math.abs(f.x - x)) f = g;

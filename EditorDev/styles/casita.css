@@ -1263,20 +1263,40 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-monito.n-sueno:not(.enamorado) .ojo-n { display: none; } .ca-monito.n-sueno:not(.enamorado) .ojo-z { display: inline; }
 .ca-monito.n-sueno .ca-cabeza { translate: 0 2px; }
 .ca-monito.bostezo .bo-n, .ca-monito.bostezo .bo-t { display: none !important; } .ca-monito.bostezo .bo-o { display: inline !important; transform-origin: 62px 52px; animation: caBostezo 1.6s ease-in-out; }
-.ca-monito.bostezo .ca-mono-cuerpo { animation: caEstira 1.6s ease-in-out; }
+.ca-monito.bostezo:not(.camina):not(.cargado):not([class*=" g-"]) .ca-mono-cuerpo { animation: caEstira 1.6s ease-in-out; }
 @keyframes caBostezo { 0%, 100% { scale: 1; } 30%, 70% { scale: 1.6 2.2; } }
 @keyframes caEstira { 0%, 100% { translate: 0 0; } 40% { translate: 0 -4px; } }
 /* Con hambre, sed o aburrido: boquita triste; la pancita suena; aburrido suspira y se encoge. */
 .ca-monito:is(.n-hambre, .n-sed, .n-aburrido):not(.enamorado):not(.g-rie):not(.g-baila) .bo-n { display: none; }
 .ca-monito:is(.n-hambre, .n-sed, .n-aburrido):not(.enamorado):not(.g-rie):not(.g-baila) .bo-t { display: inline; }
-.ca-monito.panza .ca-mono-cuerpo { animation: caPanza .5s ease-in-out 3; }
+.ca-monito.panza:not(.camina):not(.cargado):not([class*=" g-"]) .ca-mono-cuerpo { animation: caPanza .5s ease-in-out 3; }
 @keyframes caPanza { 0%, 100% { translate: 0 0; } 25% { translate: -2px 0; } 75% { translate: 2px 0; } }
-.ca-monito.suspiro .ca-mono-cuerpo { animation: caSuspiro 1.6s ease-in-out; }
+.ca-monito.suspiro:not(.camina):not(.cargado):not([class*=" g-"]) .ca-mono-cuerpo { animation: caSuspiro 1.6s ease-in-out; }
 @keyframes caSuspiro { 0%, 100% { translate: 0 0; scale: 1; } 35% { translate: 0 -3px; scale: 1.02 1.03; } 70% { translate: 0 3px; scale: 1 .97; } }
-/* Con ganas de ir al baño: no se está quieto. */
-.ca-monito.n-bano:not(.camina):not(.dormido):not(.sentado) .ca-mono-caja { animation: caApurado .45s ease-in-out infinite alternate; }
-.ca-monito.apurado .ca-mono-caja { animation-duration: .2s !important; }
+/* Con ganas de ir al baño: no se está quieto. (Fase 62: en el monito mismo, con `translate`: así ya no le gana a las
+   animaciones de los gestos, del columpio ni de cuando lo cargas —eso lo dejaba «flotando» y sin responder.) */
+.ca-monito.n-bano:not(.camina):not(.dormido):not(.sentado):not(.cargado):not(.columpio):not(.banando):not([class*=" g-"]) { animation: caApurado .45s ease-in-out infinite alternate; }
+.ca-monito.n-bano.apurado:not(.camina):not(.cargado) { animation-duration: .2s; }
 @keyframes caApurado { from { translate: -2px 0; } to { translate: 2px 0; } }
 .ca:not(.fx1) .ca-estado .olor::before, .ca:not(.fx1) .ca-estado .olor::after { animation: none; }
 /* (Fase 61) Los monitos van por hondura (los tapa lo que está enfrente); hablando, su globito siempre se ve. */
 .ca-monito:has(> .ca-globos > .ca-globito:not(.se-va)), .ca-monito:has(> .ca-globo:not([hidden])):not(.dormido) { z-index: 4600 !important; }
+
+/* ═══════════ Fase 62: el corte de pared entre cuartos, afuera con sol, sombras al sol, mirar con el dedo ═══════════ */
+/* Lo de afuera (cielo, ciudad, barandal) ya no se sale de su cuarto: la ciudad cortaba el estudio por el paralaje. */
+.ca-cuarto.afuera { clip-path: inset(-1400px 0 -700px 0); }
+/* El corte de la pared entre dos cuartos (casita de muñecas): de arriba abajo, encima de los monitos. */
+.ca-tabique { position: absolute; top: -900px; height: 1700px; z-index: 1500; pointer-events: none;
+  background: linear-gradient(90deg, #c9aabb 0 3px, #fffaf6 3px 6px, #f9eee8 6px calc(50% - 1px), #f1e2dd calc(50% - 1px) calc(50% + 1px), #f9eee8 calc(50% + 1px) calc(100% - 6px), #eedcd6 calc(100% - 6px) calc(100% - 3px), #c9aabb calc(100% - 3px)); }
+.ca-tabique.exterior { background: linear-gradient(90deg, #b48f7a 0 3px, #f7e8da 3px 6px, #efdccb 6px calc(100% - 6px), #e3cdbb calc(100% - 6px) calc(100% - 3px), #b48f7a calc(100% - 3px)); }
+/* Afuera de día siempre hay sol (nunca se ve opaco, aunque se apague el interruptor de afuera). */
+.ca.fx1 .ca-mundo:not(.noche):not(.tarde) .ca-luzmapa.afuera { opacity: 0; }
+/* Sombras al sol (afuera, de día): más marcadas, en escalones de pixel, hacia la izquierda. */
+.ca.fx1 .ca-obj.al-sol.capa-piso::after { height: 16px; bottom: -7px; transform-origin: 75% 50%;
+  background: radial-gradient(closest-side, rgba(36, 58, 40, .34) 0 48%, rgba(36, 58, 40, .2) 48% 76%, rgba(36, 58, 40, .08) 76% 100%, transparent 100%); }
+/* Dedo presionado: la vista no se desliza mientras tu monito te sigue con la mirada. */
+.ca.mirando .ca-vista { touch-action: none; }
+/* Ya no está el cuadrito de los cuartos (te mueves deslizando o caminando). */
+.ca-hud-cuartos { display: none !important; }
+/* Iconos con su bolita de color: que se vea suave también al presionar. */
+.ca-r:active .ico-bola, .ca-ajustes-b:active .ico-bola { r: 9.4; }

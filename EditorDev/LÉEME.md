@@ -1117,6 +1117,22 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Probado** | En Chromium a 390×844 (táctil) y 1280×800 con dos cuentas: cajita 3D en cada cuarto, más chiquito al fondo, tocar el piso y llegar justo ahí, arrastrar un mueble bajo el dedo, de día sin oscurecer, de noche con la lámpara alumbrando y sin zona prendida, luz apagada más oscura, manos que se sueltan, mensajes sin mover la cámara, las seis necesidades con su carita y su animación, más lento con sueño y choques al acomodar; regresión de las fases 52 a 60. |
 | **No probado en teléfonos de verdad** | Cómo se ve la cajita 3D y el mapa de luz en pantallas reales de iPhone y Android, y cuánto cuesta en un Android sencillo (si se calienta, usa Rendimiento). Tu amorcito no ve todavía las necesidades de tu monito (son de cada quien, en tu teléfono). No hace falta `librito actualizar` (el servidor no cambió). |
 
+### Fase 62: paredes que encajan, afuera con sol, el monito que mira tu dedo e iconos nuevos
+
+| | |
+| --- | --- |
+| **La ciudad ya no corta el estudio** | El cielo y la ciudad de la terraza (más anchos por el paralaje) se pintaban encima del estudio en un bloque enorme. Ahora lo de afuera se queda dentro de su cuarto (`clip-path`). |
+| **Paredes y puertas que encajan** | Entre cuarto y cuarto ya no se forma una V con los dos pisos: cada cajita termina un poquito antes de la orilla (`FRENTE_3D`) y ahí queda el corte de la pared, como en una casita de muñecas, de arriba abajo y encima de los monitos (al cruzar la puerta pasan por detrás). Las puertas de la pared de su lado son más altas que el monito y más anchas, con marco claro, orilla, tableros hundidos, manija y rendija; abiertas se ve el pasillo oscurito. El estilo y lo que hay en cada cuarto es lo mismo. |
+| **Afuera con sol** | En el jardín y la terraza, de día siempre se ve con todo el sol (antes, si se apagaba el interruptor de afuera, se veía opaco como un cuarto); ese interruptor sólo apaga los faroles. |
+| **Sombras al sol** | Afuera de día, los árboles, bancas y demás cosas tienen sombra larga hacia el lado contrario al sol (más larga en la tarde y sin sombra si se nubla), sin salirse de su lugar. |
+| **Ciudad con profundidad** | La ciudad tiene una capa más de torres hasta atrás, perdidas en la neblina, y cada capa más cerca se ve más nítida, con neblina entre una y otra. |
+| **Mirar tu dedo** | Si dejas el dedo presionado (quieto un ratito), la cámara ya no se mueve y tu monito sigue tu dedo con la cabecita y los ojitos; al soltarlo vuelve a verte de frente y no se pone a caminar. |
+| **Ya no se queda flotando** | Con ganas de ir al baño, su animación de «no me estoy quieto» le ganaba a las de los gestos, el columpio y cuando lo cargas (por eso a veces se quedaba como flotando sin responder). Ahora va en otra capa y no pisa nada. |
+| **Sin el cuadrito de los cuartos** | Ya no está el botoncito de la casita para ir a los cuartos: te mueves deslizando o caminando. |
+| **Iconos nuevos** | Todos los iconitos de la casita (arriba, abajo, menús y necesidades) tienen una bolita pastel de color detrás, como sticker: rosa en mensajes, lila en vestir, menta en acomodar, celeste en pantalla completa… |
+| **Probado** | En Chromium a 390×844 (táctil) y 1280×800 con dos cuentas: corte de pared entre los seis pares de cuartos y sin la V, la terraza sin salirse sobre el estudio, afuera de día sin oscurecer aunque se apague el interruptor, sombras al sol, dedo presionado sin mover la cámara (y al soltar no camina), gestos y cargarlo con ganas de ir al baño, sin cuadrito de cuartos e iconos nuevos; regresión de las fases 52 a 61. |
+| **No probado en teléfonos de verdad** | Cómo se siente el dedo presionado en iPhone (Safari) y Android reales y si la vista se queda quieta igual que en la prueba. No hace falta `librito actualizar` (el servidor no cambió). |
+
 ## Cómo está hecho
 
 ```

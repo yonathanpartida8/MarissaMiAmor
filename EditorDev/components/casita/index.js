@@ -26,7 +26,7 @@ import { el, aviso } from "../ui.js";
 import * as PF from "../perfil.js";
 import { vibrar } from "../../integraciones/plataforma.js";
 import { sinMovimiento as reducido } from "../transiciones.js";
-import { H, PISO, FONDO, FRENTE, SUELO, CUARTOS, CUARTOS_NUEVOS, ANCHO, inicioDe, cuarto, enCuarto, global, casaInicial, opsCuartoNuevo, proyectar, desproyectar, escala3d } from "./cuartos.js";
+import { H, PISO, FONDO, FRENTE, SUELO, CUARTOS, CUARTOS_NUEVOS, ANCHO, inicioDe, cuarto, enCuarto, global, casaInicial, opsCuartoNuevo, proyectar, desproyectar, escala3d, corteDe } from "./cuartos.js";
 import { CATALOGO, COSAS_MANO, RECETAS, colorDe } from "./catalogo/index.js";
 import { monitoSVG, ropaDe } from "./monito.js";
 import { crearSonidos } from "./sonidos.js";
@@ -263,6 +263,10 @@ export class Casita {
       // (Fase 61: la pared y su puerta ya son parte de las cajitas 3D de los dos cuartos; este nodo sólo marca «abierta».)
       const x = inicioDe(b.k), n = el("div.ca-muro" + (ext ? ".exterior" : ""), { style: { left: x + "px" } });
       this.mundo.append(n);
+      // (Fase 62) El corte de la pared entre los dos cuartos (como en una casita de muñecas): de arriba abajo, encima de
+      // los monitos (al cruzar la puerta pasan por detrás de él) y sin la V de antes.
+      const ca = corteDe(a.k), cb = corteDe(b.k);
+      if (ca + cb > 0) this.mundo.append(el("i.ca-tabique" + (ext ? ".exterior" : ""), { "aria-hidden": "true", style: { left: (x - ca).toFixed(1) + "px", width: (ca + cb).toFixed(1) + "px" } }));
       this.puertas.push({ x, n, ext, a: a.k, b: b.k });
     }
   }
@@ -629,8 +633,10 @@ export class Casita {
       n.style.setProperty("--pared", cfg.pared);
       n.dataset.patron = cfg.patron; n.dataset.piso = cfg.piso;
       this._texturas(c.k, cfg);
-      this.oscuroN.get(c.k).classList.toggle("apagado", cfg.luz === false);
-      n.classList.toggle("apagado", cfg.luz === false);
+      // (Fase 62: afuera manda el sol: apagar el interruptor de afuera sólo apaga los faroles, nunca oscurece de día.)
+      const oscuro = !c.afuera && cfg.luz === false;
+      this.oscuroN.get(c.k).classList.toggle("apagado", oscuro);
+      n.classList.toggle("apagado", oscuro);
     }
     const vistos = new Set();
     for (const o of casa.objetos || []) {
@@ -853,6 +859,7 @@ export class Casita {
     }
     if (cl !== this._climaVisto) { this._climaVisto = cl; this._ambienteTic(true); this._programarRayo(); }
     this._pintarFondos();
+    try { this.luces?.pintar(); } catch (e) { /* nada */ }   // (las sombras del sol se van si se nubla)
   }
   /** Con tormenta, un relámpago cada tantito (con tormentota, más seguido y más cerca). */
   _programarRayo() {
@@ -1366,7 +1373,7 @@ export class Casita {
       cancelAnimationFrame(this._rqAuto);
       if (G.arrastra) { this._soltarObj(G, e); return; }
       if (G.cargando) { this._soltarMono(G, e); return; }
-      if (cancelado || G.mov > 10 || performance.now() - G.t0 > 700) return;
+      if (cancelado || G.mov > 10 || performance.now() - G.t0 > 700 || this._mirando) return;   // (dedo presionado = sólo mirar)
       if (this.editando) { this._seleccionar(G.obj || null); return; }
       if (G.mono === this.yo) return this._menuYo();
       if (G.mono === this.suyo) return this._menuSuyo();
@@ -1393,6 +1400,22 @@ export class Casita {
     v.addEventListener("pointermove", (e) => { if (this._dedoAbajo) mira(e.clientX, e.clientY); }, { passive: true });
     v.addEventListener("touchmove", (e) => { const t = e.touches[0]; if (t) { this._dedoAbajo = true; mira(t.clientX, t.clientY); } }, { passive: true });
     for (const ev of ["pointerup", "pointercancel", "touchend", "touchcancel"]) v.addEventListener(ev, (e) => { if (e.type === "pointercancel" && e.pointerType === "touch") return; if (e.touches?.length) return; suelta(); }, { passive: true });
+    // (Fase 62) Dedo PRESIONADO (quieto un ratito): la cámara ya no se mueve y tu monito te sigue con la cabecita y los
+    // ojitos a donde muevas el dedo; al soltarlo vuelve a verte de frente (y no camina).
+    let tMira = 0, x0 = 0, y0 = 0;
+    const quitarMira = () => { clearTimeout(tMira); tMira = 0; if (this._mirando) { this._mirando = false; this.raiz?.classList.remove("mirando"); } };
+    v.addEventListener("pointerdown", (e) => {
+      quitarMira();
+      if (this.editando || e.button > 0 || e.target.closest?.(".ca-monito, button, .ca-menu")) return;
+      const o = e.target.closest?.(".ca-obj");
+      if (o && this.objs.get(o.dataset.id)?.d.portatil) return;
+      x0 = e.clientX; y0 = e.clientY;
+      tMira = setTimeout(() => { tMira = 0; this._mirando = true; this.raiz?.classList.add("mirando"); vibrar(6); }, 320);
+    }, { passive: true });
+    const movio = (x, y) => { if (tMira && Math.hypot(x - x0, y - y0) > 10) { clearTimeout(tMira); tMira = 0; } };
+    v.addEventListener("pointermove", (e) => movio(e.clientX, e.clientY), { passive: true });
+    v.addEventListener("touchmove", (e) => { if (this._mirando && e.cancelable) e.preventDefault(); const t = e.touches[0]; if (t) movio(t.clientX, t.clientY); }, { passive: false });
+    for (const ev of ["pointerup", "pointercancel", "touchend", "touchcancel"]) v.addEventListener(ev, (e) => { if (e.touches?.length) return; setTimeout(quitarMira, 0); }, { passive: true });
     // Con el teclado (Enter sobre una cosa), lo mismo que tocarla.
     m.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.closest?.(".ca-obj")) { e.preventDefault(); const r = this.objs.get(e.target.closest(".ca-obj").dataset.id); if (r) this._tocarObj(r); } });
   }

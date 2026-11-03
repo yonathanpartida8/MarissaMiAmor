@@ -37,7 +37,7 @@ const ICON = {
   sueno: '<path d="M18 15A7 7 0 0 1 9 6a7 7 0 1 0 9 9z"/><path d="M15 4h4l-4 4h4"/>',
   diversion: '<circle cx="12" cy="12" r="8"/><path d="M8.5 14a4 4 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/>',
 };
-const ico = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
+const ico = (k, c = "#ffd0e2") => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="14" cy="13.6" r="8.4" fill="${c}" fill-opacity=".38" stroke="none"/>${ICON[k]}</svg>`;   // (Fase 62: con su bolita de color)
 const lim = (v) => Math.max(0, Math.min(100, v));
 
 export class Necesidades {
@@ -61,7 +61,7 @@ export class Necesidades {
     this.filas = {};
     this.n = el("div.ca-nec", { role: "group", "aria-label": "Necesidades de tu monito" }, NECESIDADES.map(([k, t, ayuda, c]) => {
       const barra = el("i.ca-nec-barra", { style: { "--c": c } }, [el("b")]);
-      const f = el("button.ca-nec-f", { type: "button", dataset: { k }, title: `${t}: ${ayuda}`, "aria-label": t, onClick: () => this.j.ayudaNecesidad?.(k) }, [el("i.ca-nec-ico", { html: ico(k) }), barra, el("small", { text: t })]);
+      const f = el("button.ca-nec-f", { type: "button", dataset: { k }, title: `${t}: ${ayuda}`, "aria-label": t, onClick: () => this.j.ayudaNecesidad?.(k) }, [el("i.ca-nec-ico", { html: ico(k, c) }), barra, el("small", { text: t })]);
       this.filas[k] = { f, b: barra.firstChild };
       return f;
     }));
