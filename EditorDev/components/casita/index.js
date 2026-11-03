@@ -981,8 +981,10 @@ export class Casita {
     const corre = !this.traes?.activo && (viaje ? viaje.corre : d > 420);
     // (Fase 61: con sueño, camina más lento.)
     const lento = !this.traes?.activo && m.n.classList.contains("n-sueno") ? 0.7 : 1;
-    // (El tiempo va por lo que se VE: cruzar la puerta por la pared se ve largo aunque en el piso sea poquito; así no brinca.)
-    const A = this._vista(m.gx, m.y, lim(m.prof ?? m.y, PISO, H)), Bv = this._vista(gx, y), dv = Math.max(d, Math.hypot(Bv.x - A.x, (y - m.y) * 1.6));
+    // (Al cruzar una pared por la puerta, el tiempo va por lo que se VE: en el piso es poquito pero atraviesa el grueso de las
+    //  dos paredes; así no brinca. Dentro de un cuarto, por el piso: los dos van igual de rápido.)
+    let dv = d;
+    if (enCuarto(m.gx).c !== enCuarto(gx).c) { const A = this._vista(m.gx, m.y, lim(m.prof ?? m.y, PISO, H)), Bv = this._vista(gx, y); dv = Math.max(d, Math.hypot(Bv.x - A.x, (y - m.y) * 1.6)); }
     const vel = (this.traes?.activo ? VEL_TRAES : corre ? (viaje ? 520 : lim(d * 0.6, 380, 640)) : lim(d * 0.55, 200, 300)) * lento, s = ya || reducido() ? 0 : Math.max(0.18, dv / vel);
     m.n.classList.toggle("corre", corre && s > 0.2);
     m.n.style.transitionDuration = s + "s";
