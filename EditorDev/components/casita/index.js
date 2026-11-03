@@ -490,7 +490,15 @@ export class Casita {
   /** Un punto del mundo en la pantalla. */
   /** (Fase 61) Dónde se ve un punto del mundo: adentro, con la perspectiva de la cajita (prof = qué tan hondo está en el piso). */
   _vista(gx, y, prof = y) { const P = proyectar(gx, prof); return { x: P.x, y: prof - (prof - y) * P.s, s: P.s }; }
-  enPantalla(gx, y, prof = lim(y, PISO, H)) { const r = this.mundo.getBoundingClientRect(), v = this._vista(gx, y, prof); return { x: r.left + v.x * this.k, y: r.top + v.y * this.k }; }
+  /** (Fase 61) Qué tan hondo está un punto que no está en el piso: si cae sobre un monito o un mueble, a la hondura de su base. */
+  _profDe(gx, y) {
+    let mejor = null;
+    const ver = (base, cerca) => { if (cerca && y <= base + 4 && (mejor == null || base < mejor)) mejor = base; };
+    for (const m of [this.yo, this.suyo]) { const b = m?.prof ?? m?.y; if (m) ver(b, Math.abs(m.gx - gx) < 50 && y >= b - 190); }
+    for (const r of this.objs?.values() || []) if (r.d.capa !== "pared" && r.d.capa !== "alfombra") ver(r.o.y, Math.abs(r.gx - gx) <= r.d.w / 2 && y >= r.o.y - r.d.h - 10);
+    return lim(mejor ?? y, PISO, H);
+  }
+  enPantalla(gx, y, prof = this._profDe(gx, y)) { const r = this.mundo.getBoundingClientRect(), v = this._vista(gx, y, prof); return { x: r.left + v.x * this.k, y: r.top + v.y * this.k }; }
   /** Del dedo al mundo: X es lo que se ve; x es dónde queda en el piso (sin la perspectiva), según lo hondo de y. */
   _xy(e) { const r = this.mundo.getBoundingClientRect(), X = (e.clientX - r.left) / this.k, y = (e.clientY - r.top) / this.k; return { X, x: desproyectar(X, lim(y, PISO, H)), y }; }
   irCuarto(k, suave = true) {
@@ -985,7 +993,9 @@ export class Casita {
     //  dos paredes; así no brinca. Dentro de un cuarto, por el piso: los dos van igual de rápido.)
     let dv = d;
     if (enCuarto(m.gx).c !== enCuarto(gx).c) { const A = this._vista(m.gx, m.y, lim(m.prof ?? m.y, PISO, H)), Bv = this._vista(gx, y); dv = Math.max(d, Math.hypot(Bv.x - A.x, (y - m.y) * 1.6)); }
-    const vel = (this.traes?.activo ? VEL_TRAES : corre ? (viaje ? 520 : lim(d * 0.6, 380, 640)) : lim(d * 0.55, 200, 300)) * lento, s = ya || reducido() ? 0 : Math.max(0.18, dv / vel);
+    let vel = (this.traes?.activo ? VEL_TRAES : corre ? (viaje ? 520 : lim(d * 0.6, 380, 640)) : lim(d * 0.55, 200, 300)) * lento;
+    if (dv > d) vel = Math.max(vel, 340 * lento);   // (cruzando la puerta, con paso decidido: ni brinco ni eterno)
+    const s = ya || reducido() ? 0 : Math.max(0.18, dv / vel);
     m.n.classList.toggle("corre", corre && s > 0.2);
     m.n.style.transitionDuration = s + "s";
     m.n.style.zIndex = zMono(Math.max(m.y, y));
