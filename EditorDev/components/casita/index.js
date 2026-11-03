@@ -992,7 +992,8 @@ export class Casita {
     // (Al cruzar una pared por la puerta, el tiempo va por lo que se VE: en el piso es poquito pero atraviesa el grueso de las
     //  dos paredes; así no brinca. Dentro de un cuarto, por el piso: los dos van igual de rápido.)
     let dv = d;
-    if (enCuarto(m.gx).c !== enCuarto(gx).c) { const A = this._vista(m.gx, m.y, lim(m.prof ?? m.y, PISO, H)), Bv = this._vista(gx, y); dv = Math.max(d, Math.hypot(Bv.x - A.x, (y - m.y) * 1.6)); }
+    // (Jugando a las traes, los dos exactamente igual: por el piso.)
+    if (enCuarto(m.gx).c !== enCuarto(gx).c && !this.traes?.activo) { const A = this._vista(m.gx, m.y, lim(m.prof ?? m.y, PISO, H)), Bv = this._vista(gx, y); dv = Math.max(d, Math.hypot(Bv.x - A.x, (y - m.y) * 1.6)); }
     let vel = (this.traes?.activo ? VEL_TRAES : corre ? (viaje ? 520 : lim(d * 0.6, 380, 640)) : lim(d * 0.55, 200, 300)) * lento;
     if (dv > d) vel = Math.max(vel, 340 * lento);   // (cruzando la puerta, con paso decidido: ni brinco ni eterno)
     const s = ya || reducido() ? 0 : Math.max(0.18, dv / vel);
