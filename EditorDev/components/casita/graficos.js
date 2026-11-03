@@ -36,7 +36,7 @@ export const maxParticulas = (k) => PARTES[k] ?? 4;
 /** El filtro pixel: más fino en Calidad y Ultra (cuadritos de 3), más grueso en Equilibrado (de 4). */
 export function filtroPixel(k) {
   const c = nivel(k) >= 3 ? 3 : 4, r = c === 3 ? 1.5 : 2, o = c === 3 ? 1 : 1.5;
-  return `<svg class="ca-filtros" aria-hidden="true" width="0" height="0"><filter id="ca-pixel" x="-30%" y="-30%" width="160%" height="160%"><feFlood x="${o}" y="${o}" height="1" width="1"/><feComposite width="${c}" height="${c}"/><feTile result="t"/><feComposite in="SourceGraphic" in2="t" operator="in"/><feMorphology operator="dilate" radius="${r}"/></filter></svg>`;
+  return `<svg class="ca-filtros" aria-hidden="true" width="0" height="0"><filter id="ca-pixel" x="-30%" y="-30%" width="160%" height="160%"><feFlood x="${o}" y="${o}" height="1.4" width="1.4"/><feComposite width="${c}" height="${c}"/><feTile result="t"/><feComposite in="SourceGraphic" in2="t" operator="in"/><feMorphology operator="dilate" radius="${r}"/></filter></svg>`;
 }
 
 /* ═════════════ La capa WebGL 2 (sólo Ultra) ═════════════ */

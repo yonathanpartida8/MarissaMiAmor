@@ -209,7 +209,7 @@ export function cajonCatalogo(j) {
 /** El menú flotante de un monito: sus gestos (o lo que pueden hacer juntos), en una tablita con título. */
 export function menuMonito(j, m, opciones, titulo = "") {
   j.cerrarMenu();
-  const p = j.enPantalla(m.gx, m.y - 160);
+  const C = m.caja.getBoundingClientRect(), p = { x: (C.left + C.right) / 2, y: C.top + 10 };   // (Fase 61: arriba de donde se ve)
   const menu = el("div.ca-menu", { role: "menu", "aria-label": titulo || "Gestos" }, [
     titulo ? el("b.ca-menu-t", { text: titulo }) : null,
     el("div.ca-menu-rejilla", {}, opciones.map(([k, t, al]) => el("button.ca-menu-b", { type: "button", role: "menuitem", dataset: { k }, onClick: () => { j.cerrarMenu(); al(); } }, [el("i", { html: ICO[k] || ICO.corazon }), el("span", { text: t })]))),

@@ -95,6 +95,32 @@ export class Necesidades {
     if (BEBIDA[cosa]) this.sumar("sed", BEBIDA[cosa]);
     if (!COMIDA[cosa] && !BEBIDA[cosa]) this.sumar("hambre", 16);
   }
+  /** (Fase 61) Lo que le hace falta se le NOTA a tu monito: con sueño, ojitos cansados, bostezos y camina más lento;
+   *  sucio, manchitas y su olorcito; con hambre, la pancita suena; con sed, gotita; con ganas de ir al baño, no se está
+   *  quieto; aburrido, suspira y se ve desganado. (Al llenarse, se le quita solito.) */
+  _consecuencias(dt) {
+    const j = this.j, m = j.yo, n = m?.n;
+    if (!n) return;
+    if (!this.estado?.isConnected) { this.estado = el("i.ca-estado", { "aria-hidden": "true" }, [el("i.mugre"), el("i.olor"), el("i.gota")]); n.append(this.estado); }
+    const bajo = (k) => this.v[k] < 25, dormido = m.accion === "dormido";
+    const marcas = { "n-sueno": bajo("sueno") && !dormido, "n-sucio": bajo("ducha"), "n-hambre": bajo("hambre"), "n-sed": bajo("sed"), "n-bano": bajo("bano"), "n-aburrido": bajo("diversion") && !dormido };
+    for (const [c, on] of Object.entries(marcas)) n.classList.toggle(c, on);
+    // De vez en cuando (no a cada rato, y nunca a medio camino ni haciendo algo): bostezo, pancita, suspiro o brinquito.
+    if (m.accion || n.classList.contains("camina")) return;
+    this._tc = (this._tc || 0) + dt;
+    if (this._tc < 14) return;
+    const op = [];
+    if (marcas["n-sueno"]) op.push(["bostezo", "bostezo"]);
+    if (marcas["n-hambre"]) op.push(["panza", "panza"]);
+    if (marcas["n-aburrido"]) op.push(["suspiro", "suspiro"]);
+    if (marcas["n-bano"]) op.push(["apurado", null]);
+    if (!op.length) return;
+    this._tc = -Math.random() * 8;
+    const [cls, son] = op[Math.floor(Math.random() * op.length)];
+    n.classList.remove(cls); void n.offsetWidth; n.classList.add(cls);
+    clearTimeout(this._tq); this._tq = setTimeout(() => n.classList.remove(cls), 1700);
+    if (son && j._visible?.(m)) j.sonar(son, { volumen: 0.5 });
+  }
   bebio(cosa = "agua") { this.sumar("sed", BEBIDA[cosa] || 30); }
   /** Cada segundo: bajan, o suben si estás haciendo la acción (un minuto del 0 al 100). */
   tic(dt = 1) {
@@ -110,6 +136,7 @@ export class Necesidades {
     if (llena && this.v[llena] >= 99.5 && this._avisoLleno !== llena) { this._avisoLleno = llena; this.j.sonar("necesidad", { volumen: 0.6 }); }
     if (!llena) this._avisoLleno = "";
     this.pintar();
+    this._consecuencias(dt);
     if ((this._g = (this._g || 0) + dt) > 10) { this._g = 0; this.guardar(); }
     // Si algo ya hace falta, tu monito lo dice (de vez en cuando, nunca a cada rato).
     const ahora = performance.now();

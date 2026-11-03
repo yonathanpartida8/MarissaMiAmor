@@ -112,7 +112,7 @@ export class Mensajes {
     j.raiz.classList.toggle("con-chat", on);
     clearInterval(this._tU);
     if (on) {
-      j._seguir(j.yo.gx);
+      // (Fase 61: abrir o mandar un mensaje ya NO mueve la cámara a tu cuarto: te quedas viendo lo que estabas viendo.)
       this._ubicar();
       this._tU = setInterval(() => this._ubicar(), 120);    // sigue a tu monito si camina
       setTimeout(() => this.abierto() && this.campo.focus({ preventScroll: true }), 60);
@@ -163,6 +163,15 @@ export class Mensajes {
     const R = j.raiz.getBoundingClientRect(), V = j.vistaN.getBoundingClientRect(), vv = window.visualViewport;
     const vTop = Math.max(V.top, vv ? vv.offsetTop : 0), vBot = Math.min(V.bottom, vv ? vv.offsetTop + vv.height : innerHeight);
     const C = j.yo.caja.getBoundingClientRect(), bh = n.offsetHeight, bw = n.offsetWidth;
+    // (Fase 61) Si tu monito no está en lo que ves, la burbujita sale abajo al centro (sin mover ni subir la casita).
+    const fuera = C.right < V.left + 10 || C.left > V.right - 10;
+    n.classList.toggle("suelta", fuera);
+    if (fuera) {
+      if (j._subir) { j._subir = 0; j._moverMundo(); }
+      const x = Math.max(8, (R.width - bw) / 2), y = Math.max(vTop - R.top + 6, vBot - R.top - bh - 12);
+      n.style.transform = `translate(${x.toFixed(0)}px, ${y.toFixed(0)}px)`;
+      return;
+    }
     if (j._congelado) {
       // (Medidas sin lo que ya se subió: pies abajo del teclado → subir; burbujita que no se salga por arriba.)
       const s0 = j._subir || 0, pies = C.bottom + s0, arriba = C.top + s0 - 12 - bh;

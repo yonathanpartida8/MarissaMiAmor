@@ -1215,3 +1215,68 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-mundo.tarde .ca-ambiente:is(.jardin, .terraza) { background-color: rgba(255, 140, 110, .3); }
 .ca-mundo.noche .ca-ambiente { background-color: rgba(255, 190, 110, .34); }
 .ca-mundo.noche .ca-ambiente:is(.jardin, .terraza) { background-color: rgba(90, 110, 255, .3); }
+
+/* ═══════════ Fase 61: cuartos como cajitas 3D, luz de verdad, necesidades con consecuencias ═══════════ */
+/* La cajita: piso y paredes de los lados en perspectiva (un lienzo pixel por cuarto); las cosas se achican al fondo. */
+.ca-obj, .ca-obj-frente { scale: var(--s3, 1); }
+.ca-obj.perrito.refugiado { scale: calc(var(--s3, 1) * .6); }
+.ca-caja-cv { position: absolute; left: 0; top: -330px; width: 100%; height: 1130px; z-index: 1; pointer-events: none; image-rendering: pixelated; }
+.ca-cuarto:not(.afuera) :is(.ca-columna, .ca-techo-r) { display: none; }
+.ca-muro { display: none; }
+/* El mapa de luz: de noche oscurece y cada lámpara (y el foco del techo) abre su charco de luz cálida. */
+.ca-luzmapa { position: absolute; z-index: 5000; pointer-events: none; image-rendering: pixelated; opacity: 0; transition: opacity 1.6s ease; display: none; }
+.ca.fx1 .ca-luzmapa { display: block; }
+.ca.fx1 .ca-mundo.tarde .ca-luzmapa { opacity: .24; }
+.ca.fx1 .ca-luzmapa.apagado { opacity: .46; }
+.ca.fx1 .ca-mundo.noche .ca-luzmapa { opacity: .6; }
+.ca.fx1 .ca-mundo.noche .ca-luzmapa.afuera { opacity: .5; }
+.ca.fx1 .ca-mundo.noche .ca-luzmapa.apagado { opacity: .84; }
+.ca.fx1 :is(.ca-oscuro, .ca-brillo) { display: none; }
+.ca.fx1 .ca-pendiente-luz::after { display: none; }
+.ca.fx1 .ca-obj .luz { display: none; }   /* (el cono amarillo dibujado: ahora la lámpara alumbra de verdad) */
+/* (La zona que se quedaba iluminada de noche: el tinte cálido de la noche y el rayo de la ventana. Ya no.) */
+.ca-mundo.noche .ca-ambiente:not(.jardin):not(.terraza) { background-color: rgba(120, 110, 200, .12); }
+.ca-mundo.noche .ca-rayo { display: none; }
+/* Sombras de los muebles: hacia el lado contrario de la luz más cercana, en escalones de pixel. */
+.ca.fx1 .ca-obj.capa-piso::after { translate: var(--osx, 0px) 0; scale: var(--oss, 1) 1; transition: translate .8s, scale .8s;
+  background: radial-gradient(closest-side, rgba(70, 34, 60, .3) 0 45%, rgba(70, 34, 60, .18) 45% 72%, rgba(70, 34, 60, .08) 72% 100%, transparent 100%); }
+/* Motitas de polvo flotando en el aire. */
+.ca-mota { position: absolute; z-index: 2; width: 3px; height: 3px; background: #fff6d8; opacity: 0; pointer-events: none; display: none; animation: caMota 9s ease-in-out infinite; }
+.ca.fx2 .ca-mota { display: block; }
+.ca-mundo.noche .ca-mota { background: #ffd89a; }
+.ca-cuarto.lejos .ca-mota { display: none; }
+@keyframes caMota { 0% { opacity: 0; translate: 0 0; } 20% { opacity: .75; } 50% { translate: 14px -26px; } 80% { opacity: .45; } 100% { opacity: 0; translate: -6px -52px; } }
+.ca-chat.suelta .ca-chat-cola { display: none; }
+/* Necesidades con consecuencias (Fase 61): se le nota a tu monito lo que le hace falta. */
+.ca-estado { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; z-index: 3; }
+.ca-estado > i { position: absolute; display: none; width: 4px; height: 4px; }
+.ca-monito.n-sucio .ca-estado .mugre { display: block; left: -26px; top: -104px; opacity: .7;
+  box-shadow: 4px 0 #8a6a4a, 20px 12px #7a5a3c, 34px -4px #8a6a4a, 8px 30px #7a5a3c, 28px 38px #8a6a4a, 42px 22px #6e5034, 14px 56px #7a5a3c, 38px 62px #8a6a4a, -2px 44px #6e5034; }
+.ca-monito.n-sucio .ca-estado .olor { display: block; left: -22px; top: -160px; width: 44px; height: 40px; }
+.ca-estado .olor::before, .ca-estado .olor::after { content: ""; position: absolute; bottom: 0; width: 4px; height: 4px; box-shadow: 0 0 #9bd36a, 4px -8px #9bd36a, 0 -16px #9bd36a, 4px -24px #9bd36a; animation: caOlor 2.4s ease-in-out infinite; }
+.ca-estado .olor::before { left: 2px; } .ca-estado .olor::after { left: 36px; animation-delay: -1.2s; }
+.ca-monito.n-sucio .ca-mono-cuerpo { filter: saturate(.78) brightness(.95); }
+@keyframes caOlor { 0% { opacity: 0; translate: 0 6px; } 40% { opacity: .85; } 100% { opacity: 0; translate: 3px -18px; } }
+.ca-monito.n-sed .ca-estado .gota { display: block; left: 26px; top: -150px; box-shadow: 0 0 #7ec8ff, 0 4px #7ec8ff, -4px 8px #7ec8ff, 0 8px #d7f0ff, 4px 8px #7ec8ff, 0 12px #7ec8ff; animation: caGotaSed 2.8s ease-in infinite; }
+@keyframes caGotaSed { 0%, 55% { opacity: 0; translate: 0 0; } 65% { opacity: 1; } 100% { opacity: 0; translate: 0 24px; } }
+/* Con sueño: ojitos cansados (a medio cerrar) y la cabeza se le cae tantito; bostezo de vez en cuando. */
+.ca-monito.n-sueno:not(.enamorado) .ojo-n { display: none; } .ca-monito.n-sueno:not(.enamorado) .ojo-z { display: inline; }
+.ca-monito.n-sueno .ca-cabeza { translate: 0 2px; }
+.ca-monito.bostezo .bo-n, .ca-monito.bostezo .bo-t { display: none !important; } .ca-monito.bostezo .bo-o { display: inline !important; transform-origin: 62px 52px; animation: caBostezo 1.6s ease-in-out; }
+.ca-monito.bostezo .ca-mono-cuerpo { animation: caEstira 1.6s ease-in-out; }
+@keyframes caBostezo { 0%, 100% { scale: 1; } 30%, 70% { scale: 1.6 2.2; } }
+@keyframes caEstira { 0%, 100% { translate: 0 0; } 40% { translate: 0 -4px; } }
+/* Con hambre, sed o aburrido: boquita triste; la pancita suena; aburrido suspira y se encoge. */
+.ca-monito:is(.n-hambre, .n-sed, .n-aburrido):not(.enamorado):not(.g-rie):not(.g-baila) .bo-n { display: none; }
+.ca-monito:is(.n-hambre, .n-sed, .n-aburrido):not(.enamorado):not(.g-rie):not(.g-baila) .bo-t { display: inline; }
+.ca-monito.panza .ca-mono-cuerpo { animation: caPanza .5s ease-in-out 3; }
+@keyframes caPanza { 0%, 100% { translate: 0 0; } 25% { translate: -2px 0; } 75% { translate: 2px 0; } }
+.ca-monito.suspiro .ca-mono-cuerpo { animation: caSuspiro 1.6s ease-in-out; }
+@keyframes caSuspiro { 0%, 100% { translate: 0 0; scale: 1; } 35% { translate: 0 -3px; scale: 1.02 1.03; } 70% { translate: 0 3px; scale: 1 .97; } }
+/* Con ganas de ir al baño: no se está quieto. */
+.ca-monito.n-bano:not(.camina):not(.dormido):not(.sentado) .ca-mono-caja { animation: caApurado .45s ease-in-out infinite alternate; }
+.ca-monito.apurado .ca-mono-caja { animation-duration: .2s !important; }
+@keyframes caApurado { from { translate: -2px 0; } to { translate: 2px 0; } }
+.ca:not(.fx1) .ca-estado .olor::before, .ca:not(.fx1) .ca-estado .olor::after { animation: none; }
+/* (Fase 61) Los monitos van por hondura (los tapa lo que está enfrente); hablando, su globito siempre se ve. */
+.ca-monito:has(> .ca-globos > .ca-globito:not(.se-va)), .ca-monito:has(> .ca-globo:not([hidden])):not(.dormido) { z-index: 4600 !important; }

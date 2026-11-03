@@ -78,3 +78,30 @@ export function opsCuartoNuevo(k) {
   return [{ o: "cuarto", k, v: { pared: c.pared, patron: c.patron, piso: c.piso } },
     ...(INICIAL[k] || []).map(([t, x, y, f], i) => ({ o: "pon", obj: { id: `${k.slice(0, 2)}${i}`, t, c: k, x, y, f: !!f, e: {} } }))];
 }
+
+/* ═══ (Fase 61) Cada cuarto de adentro es una cajita en 3D: lo del fondo se ve más chiquito y más hacia el centro
+ *  (perspectiva de un punto, como una casita de muñecas). El mundo (x, y) no cambia —todo se guarda igual—;
+ *  sólo cambia dónde se DIBUJA. Afuera (jardín y terraza) se queda plano. ═══ */
+export const FONDO_3D = 0.75;            // qué tan chiquito se ve lo del fondo (1 = plano)
+export const PARED_3D = 300;            // lo hondo de las paredes de los lados (para su textura)
+const lim01 = (v) => Math.max(0, Math.min(1, v));
+/** La escala a esa hondura (y del piso; lo de la pared de atrás, como el fondo). */
+export function escala3d(c, prof) {
+  const cu = cuarto(c);
+  if (cu.afuera) return 1;
+  return FONDO_3D + (1 - FONDO_3D) * lim01((prof - PISO) / (H - PISO));
+}
+/** Del mundo a donde se dibuja: x global y su escala. */
+export function proyectar(gx, prof) {
+  const { c, x } = enCuarto(gx), cu = cuarto(c);
+  if (cu.afuera) return { x: gx, s: 1 };
+  const s = escala3d(c, prof), mitad = cu.w / 2;
+  return { x: inicioDe(c) + mitad + (x - mitad) * s, s };
+}
+/** De donde se tocó en la pantalla al mundo (a esa hondura). */
+export function desproyectar(X, prof) {
+  const { c, x } = enCuarto(X), cu = cuarto(c);
+  if (cu.afuera) return X;
+  const s = escala3d(c, prof), mitad = cu.w / 2;
+  return inicioDe(c) + Math.max(4, Math.min(cu.w - 4, mitad + (x - mitad) / s));
+}

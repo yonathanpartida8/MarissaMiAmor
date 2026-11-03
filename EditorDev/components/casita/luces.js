@@ -1,0 +1,107 @@
+/**
+ * LA LUZ DE VERDAD (Fase 61): un mapa de luz por cuarto, en pixel art.
+ *
+ *   · Es un lienzo encima de TODO lo del cuarto (piso, paredes, muebles y monitos): de noche oscurece, y alrededor
+ *     de cada lámpara prendida (y del foco del techo si la luz del cuarto está prendida) la oscuridad se abre en
+ *     un charco de luz cálida, con tramado en escalones (pixel). Así la luz cae sobre las cosas y el piso de verdad,
+ *     en lugar de manchas amarillas dibujadas.
+ *   · Día, tarde y noche cambian suave (la opacidad del mapa pasa despacito); con la luz del cuarto apagada, más oscuro.
+ *   · Las sombras de los muebles salen del lado contrario a la luz más cercana (y las del monito, igual).
+ *   · Motitas de polvo que flotan en cada cuarto (de noche sólo se ven cerca de la luz).
+ *   · En Máximo rendimiento se queda lo sencillo de antes.
+ */
+import { CUARTOS, inicioDe, cuarto } from "./cuartos.js";
+
+const RES = 6, ARRIBA = -330, ALTO = 1130;          // un cuadrito del mapa = 6 del mundo
+const OSCURO = [18, 12, 42];
+const rgb = (h) => { const m = /^#?([0-9a-f]{6})$/i.exec(h || ""); const n = m ? parseInt(m[1], 16) : 0xffd68c; return [n >> 16, (n >> 8) & 255, n & 255]; };
+
+export class Luces {
+  constructor(j) { this.j = j; this.mapas = new Map(); this.claves = new Map(); }
+  armar() {
+    for (const c of CUARTOS) {
+      const cv = document.createElement("canvas");
+      cv.className = "ca-luzmapa " + c.k + (c.afuera ? " afuera" : "");
+      cv.setAttribute("aria-hidden", "true");
+      Object.assign(cv.style, { left: inicioDe(c.k) + "px", width: c.w + "px", top: ARRIBA + "px", height: ALTO + "px" });
+      this.j.mundo.append(cv);
+      this.mapas.set(c.k, cv);
+      // Motitas de polvo flotando (adentro).
+      if (!c.afuera) {
+        const n = this.j.cuartosN.get(c.k);
+        for (let i = 0; i < 7; i++) {
+          const m = document.createElement("i");
+          m.className = "ca-mota";
+          Object.assign(m.style, { left: (8 + Math.random() * 84).toFixed(1) + "%", top: Math.round(120 + Math.random() * 520) + "px", animationDelay: -(Math.random() * 9).toFixed(2) + "s", animationDuration: (7 + Math.random() * 6).toFixed(1) + "s" });
+          n?.append(m);
+        }
+      }
+    }
+  }
+  /** Las luces que alumbran un cuarto ahorita (en coordenadas de donde se dibujan). */
+  _fuentes(c) {
+    const j = this.j, cu = cuarto(c), cfg = j.cfgCuarto(c), x0 = inicioDe(c), lista = [];
+    for (const r of j.objs.values()) {
+      if (!r.glow || r.o.c !== c || !r.glow.classList.contains("on")) continue;
+      const b = r.d.brilla, v = r.v || { x: r.gx, y: r.o.y, s: 1 }, s = v.s;
+      const x = v.x - x0 + ((r.o.f ? r.d.w - b.x : b.x) - r.d.w / 2) * s, y = v.y - (r.d.h - b.y) * s;
+      lista.push({ x, y, r: Math.max(150, b.r * 2.1) * s, k: rgb(b.c), i: 1 });
+    }
+    // El foco del techo (si la luz del cuarto está prendida): alumbra todo el cuarto, más suave.
+    if (!cu.afuera && cu.foco && cfg.luz !== false) lista.push({ x: cu.foco, y: 330, r: 900, k: [255, 220, 170], i: 0.95 });
+    return lista;
+  }
+  /** Repinta los mapas que cambiaron (lámparas que se prenden o se apagan, cosas que se mueven). */
+  pintar() {
+    const j = this.j;
+    if (!j.cuartosN) return;
+    for (const c of CUARTOS) {
+      const cv = this.mapas.get(c.k);
+      if (!cv) continue;
+      const apagado = j.cfgCuarto(c.k).luz === false;
+      cv.classList.toggle("apagado", apagado);
+      const fuentes = this._fuentes(c.k), clave = JSON.stringify(fuentes.map((f) => [f.x | 0, f.y | 0, f.r | 0, f.k]));
+      this._sombras(c.k, fuentes);
+      if (this.claves.get(c.k) === clave) continue;
+      this.claves.set(c.k, clave);
+      const W = Math.ceil(c.w / RES), Hh = Math.ceil(ALTO / RES);
+      cv.width = W; cv.height = Hh;
+      const ctx = cv.getContext("2d"), img = ctx.createImageData(W, Hh), d = img.data;
+      for (let jj = 0; jj < Hh; jj++) for (let ii = 0; ii < W; ii++) {
+        const X = (ii + 0.5) * RES, Y = ARRIBA + (jj + 0.5) * RES;
+        let L = 0, kr = 0, kg = 0, kb = 0;
+        for (const f of fuentes) {
+          const dd = Math.hypot(X - f.x, (Y - f.y) * 1.25) / f.r;
+          if (dd >= 1) continue;
+          const a = f.i * Math.pow(1 - dd, 1.5);
+          L += a; kr += f.k[0] * a; kg += f.k[1] * a; kb += f.k[2] * a;
+        }
+        L = Math.min(1, L);
+        // Escalones finos (pixel, sin degradado liso, pero sin anillos marcados).
+        const q = Math.min(1, Math.floor(L * 14) / 14);
+        const o = (jj * W + ii) * 4, tot = Math.max(0.0001, kr + kg + kb ? (kr + kg + kb) / 3 / 200 : 1);
+        const warm = L > 0 ? [kr / tot / 1.4, kg / tot / 1.4, kb / tot / 1.4].map((v) => Math.min(255, v)) : OSCURO;
+        d[o] = OSCURO[0] * (1 - q) + warm[0] * q; d[o + 1] = OSCURO[1] * (1 - q) + warm[1] * q; d[o + 2] = OSCURO[2] * (1 - q) + warm[2] * q;
+        d[o + 3] = Math.round(255 * ((1 - q) * 0.96 + q * 0.16));
+      }
+      ctx.putImageData(img, 0, 0);
+    }
+  }
+  /** Sombra de cada mueble del piso: del lado contrario a la luz más cercana (de día, una suavecita abajo). */
+  _sombras(c, fuentes) {
+    const j = this.j, noche = j.esNoche(), x0 = inicioDe(c);
+    for (const r of j.objs.values()) {
+      if (r.o.c !== c || r.d.capa !== "piso") continue;
+      let sx = 0, ss = 1;
+      if (noche && fuentes.length) {
+        const x = (r.v?.x ?? r.gx) - x0;
+        let f = fuentes[0];
+        for (const g of fuentes) if (Math.abs(g.x - x) < Math.abs(f.x - x)) f = g;
+        const dx = x - f.x, largo = Math.min(1.3, Math.abs(dx) / 260);
+        sx = Math.sign(dx || 1) * largo * 16; ss = 1 + largo * 0.7;
+      }
+      r.n.style.setProperty("--osx", sx.toFixed(1) + "px"); r.n.style.setProperty("--oss", ss.toFixed(2));
+    }
+  }
+  limpiar() { for (const cv of this.mapas.values()) cv.remove(); this.mapas.clear(); }
+}

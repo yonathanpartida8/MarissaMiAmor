@@ -1,3 +1,4 @@
+import { FONDO_3D, PARED_3D, PISO as PISO_M, H as H_M } from "./cuartos.js";
 /**
  * TEXTURAS EN PIXEL ART (Fase 57): los tapices de las paredes, los pisos, la lluvia y los charquitos, y lo de
  * enfrente de afuera (la cerca, la fachada de la casa, el caminito y el barandal de la terraza), dibujados
@@ -22,7 +23,8 @@ function lienzo(w, h, cv = document.createElement("canvas")) {
 const comoUrl = (k, w, h, dibujar) => {
   if (cache.has(k)) return cache.get(k);
   const L = lienzo(w, h); dibujar(L);
-  const r = { url: `url("${L.listo().toDataURL("image/png")}")`, w: w * PX, h: h * PX };
+  const cv = L.listo();
+  const r = { url: `url("${cv.toDataURL("image/png")}")`, w: w * PX, h: h * PX, cv, tw: w, th: h };
   cache.set(k, r);
   return r;
 };
@@ -267,3 +269,90 @@ export function pintarMuro3d(cv, off, { abierta = false, exterior = false, pared
   L.listo();
 }
 const lim01 = (v) => Math.max(0, Math.min(1, v));
+
+
+/* ═══ (Fase 61) La cajita 3D de cada cuarto, en pixel art: las paredes de los lados con su tapiz EN PERSPECTIVA,
+ *  el piso en perspectiva (las tablas se juntan hacia el fondo), zoclos en las tres paredes, la esquina con su
+ *  sombrita, el corte de la pared adelante y las puertas DE LADO (en la pared de su lado, abiertas o cerradas).
+ *  La pared de atrás es la de siempre (CSS); este lienzo pinta todo lo demás. Un cuadrito = 3 del mundo. ═══ */
+const ARRIBA3D = -330, ABAJO3D = 800, PXC = 3;   // (hasta 800: abajo del cuarto se sigue viendo el piso)
+const datosDe = (t) => { if (!t) return null; if (!t.datos) t.datos = t.cv.getContext("2d").getImageData(0, 0, t.tw, t.th).data; return t; };
+const muestra = (t, u, v) => { const x = ((Math.floor(u) % t.tw) + t.tw) % t.tw, y = ((Math.floor(v) % t.th) + t.th) % t.th, i = (y * t.tw + x) * 4; return [t.datos[i], t.datos[i + 1], t.datos[i + 2]]; };
+const BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+/** cfg: { w, pared: clave del tapiz, piso: clave del piso, izq/der: null o { puerta, abierta, exterior, cap } } */
+export function pintarCaja(cv, cfg, soloPuertas = false) {
+  const W = Math.ceil(cfg.w / PXC), HH = Math.ceil((ABAJO3D - ARRIBA3D) / PXC);
+  let c = cv._c, img = cv._img;
+  if (!img || cv.width !== W || cv.height !== HH || !soloPuertas) { cv.width = W; cv.height = HH; c = cv.getContext("2d"); img = c.createImageData(W, HH); cv._c = c; cv._img = img; }
+  const d = img.data, w = cfg.w, cx = w / 2, B = FONDO_3D, L = cx - (w * B) / 2, Rr = cx + (w * B) / 2;
+  const tp = datosDe(cache.get(cfg.pared)), tf = datosDe(cache.get(cfg.piso));
+  const ZOC = [255, 250, 247], ZOC2 = [232, 214, 222], LINEA = [120, 80, 105];
+  const put = (i, j, k, f = 1, a = 255) => { const o = (j * W + i) * 4; d[o] = Math.min(255, k[0] * f); d[o + 1] = Math.min(255, k[1] * f); d[o + 2] = Math.min(255, k[2] * f); d[o + 3] = a; };
+  const puertaEn = (lado, u, hgt) => {
+    const p = lado < 0 ? cfg.izq : cfg.der;
+    // (La puerta va de 0.2 a 0.62 de hondo: ancha, para que se vea bien aunque esté de lado.)
+    if (!p?.puerta || u < 0.2 || u > 0.62 || hgt > 162) return null;
+    const MARCO = p.exterior ? [138, 90, 68] : [92, 62, 88], HOJA = p.exterior ? [201, 138, 98] : [242, 167, 195];
+    if (u < 0.218 || u > 0.602 || hgt > 152) return hgt > 158 || u < 0.206 || u > 0.614 ? MARCO.map((v) => v * 0.8) : MARCO;
+    if (p.abierta) {   // abierta: se ve el otro cuarto oscurito y la hoja pegada a la pared
+      if (u < 0.27) return (u * 100 | 0) % 5 ? HOJA.map((v) => v * 0.78) : HOJA.map((v) => v * 0.66);
+      const f = 0.5 + 0.3 * (hgt / 152); return [52 * f, 38 * f, 60 * f];
+    }
+    if (Math.abs(u - 0.565) < 0.011 && Math.abs(hgt - 72) < 4) return [255, 211, 110];   // la manija
+    if (Math.abs(u - 0.565) < 0.016 && Math.abs(hgt - 72) < 6) return [178, 120, 60];
+    // Tableros de la puerta (dos de arriba y dos de abajo) con su sombrita.
+    const enT = (u0, u1, h0, h1) => u > u0 && u < u1 && hgt > h0 && hgt < h1;
+    if (enT(0.25, 0.39, 86, 140) || enT(0.43, 0.57, 86, 140) || enT(0.25, 0.39, 18, 70) || enT(0.43, 0.57, 18, 70)) return HOJA.map((v) => v * 0.9);
+    return HOJA;
+  };
+  const pixel = (i, j) => {
+    const X = (i + 0.5) * PXC, Y = ARRIBA3D + (j + 0.5) * PXC, b = BAY[(j % 4) * 4 + (i % 4)] / 16;
+    // El corte de la pared adelante (el grueso de la pared entre cuartos).
+    for (const [lado, p] of [[-1, cfg.izq], [1, cfg.der]]) {
+      if (!p?.cap) continue;
+      const dx = lado < 0 ? X : w - X;
+      if (dx < 10) { const k = p.exterior ? [241, 226, 211] : [255, 246, 238]; return put(i, j, dx < 2.5 || dx > 7.5 ? (p.exterior ? [201, 171, 147] : [227, 201, 212]) : k); }
+    }
+    if (Y >= PISO_M) {
+      const t = (Y - PISO_M) / (H_M - PISO_M), s = B + (1 - B) * t, half = (w / 2) * s, ax = Math.abs(X - cx);
+      if (ax <= half) {   // El piso.
+        if (!tf) return put(i, j, [0, 0, 0], 1, 0);
+        const xl = cx + (X - cx) / s, k = muestra(tf, xl / PXC, (Y - PISO_M) / PXC / s);
+        let f = 0.84 + 0.16 * t;
+        if (half - ax < 10) f *= 0.86 + (half - ax) / 70;   // sombrita junto a las paredes
+        if (Y - PISO_M < 8) f *= 0.82 + (Y - PISO_M) / 45;  // y junto a la de atrás
+        return put(i, j, k, f + (b - 0.5) * 0.03);
+      }
+    } else if (X >= L && X <= Rr) {
+      // La pared de atrás se ve a través; sólo su esquina y la sombrita junto a ella.
+      const e = Math.min(X - L, Rr - X);
+      if (e < 1.6) return put(i, j, LINEA, 1, 150);
+      if (e < 14) return put(i, j, [60, 30, 50], 1, Math.round((1 - e / 14) * 46 * (b > 0.4 ? 1 : 0.7)));
+      return put(i, j, [0, 0, 0], 1, 0);
+    }
+    // Las paredes de los lados.
+    const lado = X < cx ? -1 : 1, se = Math.min(1, Math.max(B, (lado < 0 ? cx - X : X - cx) / (w / 2))), u = (se - B) / (1 - B), Ye = PISO_M + u * (H_M - PISO_M);
+    const hgt = (Ye - Y) / se;
+    if (hgt < 0) return put(i, j, [0, 0, 0], 1, 0);
+    const pu = puertaEn(lado, u, hgt);
+    if (pu) return put(i, j, pu);
+    let f = (lado < 0 ? 0.9 : 0.95) * (0.92 + 0.08 * u);
+    if (hgt < 1.8) return put(i, j, LINEA, 0.9);
+    if (hgt < 14) return put(i, j, hgt > 12 ? ZOC2 : ZOC, f + 0.06);
+    if (!tp) return put(i, j, [255, 225, 236], f);
+    return put(i, j, muestra(tp, (u * PARED_3D) / PXC, -hgt / PXC), f + (b - 0.5) * 0.025);
+  };
+  if (!soloPuertas) { for (let j = 0; j < HH; j++) for (let i = 0; i < W; i++) pixel(i, j); c.putImageData(img, 0, 0); return; }
+  // Sólo donde están las puertas (al abrirse o cerrarse): rapidito.
+  for (const lado of [-1, 1]) {
+    if (!(lado < 0 ? cfg.izq : cfg.der)?.puerta) continue;
+    const xs = [0.19, 0.63].map((u) => { const se = B + u * (1 - B); return lado < 0 ? cx - se * w / 2 : cx + se * w / 2; });
+    const i0 = Math.max(0, Math.floor(Math.min(...xs) / PXC) - 1), i1 = Math.min(W - 1, Math.ceil(Math.max(...xs) / PXC) + 1);
+    const y1 = PISO_M + 0.63 * (H_M - PISO_M), j0 = Math.max(0, Math.floor((PISO_M + 0.19 * (H_M - PISO_M) - 170 - ARRIBA3D) / PXC)), j1 = Math.min(HH - 1, Math.ceil((y1 - ARRIBA3D) / PXC) + 1);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) pixel(i, j);
+    c.putImageData(img, 0, 0, i0, j0, i1 - i0 + 1, j1 - j0 + 1);
+  }
+}
+/** La clave con la que se guardó el tapiz / el piso (para la cajita 3D). */
+export const claveTapiz = (color, patron) => `p|${color}|${patron}`;
+export const clavePiso = (tipo) => (PISOS[tipo] || ["mosaico", "alfombra", "barro"].includes(tipo) ? `f|${tipo}` : "f|pasto");
