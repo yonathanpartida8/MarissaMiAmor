@@ -12,7 +12,9 @@
  * las recetas) · monito.js (dibujo y ropa) · acciones.js (qué pasa al tocar) · mesa.js (cocinar, servir y
  * comer juntos) · mensajes.js (mensajitos y cartitas) · paneles.js (hojitas) · sonidos.js · sincro.js
  * (servidor) · iconos.js · graficos.js (los 5 perfiles y la capa WebGL 2) · fondo.js (el fondo pixel de
- * afuera). Para crecer, casi siempre basta con agregar en uno de ellos.
+ * afuera) · exterior.js y patio.js (el patio grande, Fase 64) · suciedad.js (hojitas y polvito) · girar.js (girar
+ * las cosas con perspectiva) · ruta.js y puertas.js (caminos y puertas, Fase 63). Para crecer, casi siempre basta con
+ * agregar en uno de ellos.
  *
  * Fase 54: cuartos Estudio y Terraza, muchas cosas nuevas, cocinar con recetas y comer juntos en la mesa,
  * mensajes y cartitas, monitos 2.0, cosas que se llevan con el dedo, regalito del día, mascotas que pasean,
@@ -26,7 +28,11 @@ import { el, aviso } from "../ui.js";
 import * as PF from "../perfil.js";
 import { vibrar } from "../../integraciones/plataforma.js";
 import { sinMovimiento as reducido } from "../transiciones.js";
-import { H, PISO, FONDO, FRENTE, SUELO, CUARTOS, CUARTOS_NUEVOS, ANCHO, inicioDe, cuarto, enCuarto, global, casaInicial, opsCuartoNuevo, proyectar, desproyectar, escala3d, corteDe, COLOR_PUERTA } from "./cuartos.js";
+import { H, PISO, FONDO, FRENTE, SUELO, CUARTOS, CUARTOS_NUEVOS, ANCHO, inicioDe, cuarto, enCuarto, global, casaInicial, opsCuartoNuevo, proyectar, desproyectar, escala3d, corteDe, COLOR_PUERTA, LIMITE_EDIT, frenteDe, opsMudanza, FRENTE_3D, FONDO_3D } from "./cuartos.js";
+import { MAPA, FACHADA, MUDANZA, editable as editableMapa } from "./exterior.js";
+import { Patio } from "./patio.js";
+import { Suciedad } from "./suciedad.js";
+import { giroDe, vistaGirada, lugarGirado, hondura, ELEV_GIRO } from "./girar.js";
 import { CATALOGO, COSAS_MANO, RECETAS, colorDe } from "./catalogo/index.js";
 import { monitoSVG, ropaDe } from "./monito.js";
 import { crearSonidos } from "./sonidos.js";
@@ -61,6 +67,10 @@ const PIXEL = "editordev:casita-pixel";
 const zMono = (y) => Math.round(y) + 2;     // (detrás del sillón, el sillón lo tapa; enfrente, se ve encima)
 const zMascota = (y) => Math.round(y) + 1;   // (Fase 61: por hondura, como todo; ya no siempre encima de los muebles)
 const puedeSubir = (d) => d.capa === "piso" && d.h <= 120 && d.tope == null && !d.superficie;
+// (Fase 64) Lo que no se rompe al caer (es suavecito o está vivo) y qué tanto se daña según de qué tan alto cayó.
+const blando = (d) => !!d.mascota || d.capa === "alfombra" || /cojin|peluche|puff|osito|almohada|globo|cobija|fuerte|flores|arbusto|arbol|tapete|hamaca|cama|pasto/.test(d.k);
+const danoPor = (alto) => (alto > 400 ? 3 : alto > 210 ? 2 : alto > 90 ? 1 : 0);
+const enPared = (o, d) => d.capa === "pared" && !o.e?.tirado;
 export const CLIMAS = ["sol", "lluvia", "tormenta", "extra"];
 const hoy = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 
@@ -93,6 +103,9 @@ export class Casita {
     this.luces = new Luces(this); this.luces.armar();   // (Fase 61) la luz de verdad
     // (Fase 63) Las puertas de verdad, la navegación que rodea los muebles y el cuarto que se ve (uno a la vez).
     this.puertasN = new Puertas(this); this.nav = new Navegacion(this); this.vistaCuarto = "sala";
+    // (Fase 64) El patio grande (su terreno, la fachada y el escenario) y las hojitas y el polvito.
+    this.patio = new Patio(this); this.patio.armar(this.cuartosN.get("jardin"));
+    this.suciedad = new Suciedad(this); this.suciedad.prender();
     this.cielo = new CieloVivo(this);
     this.cielo.armar();
     // Los monitos (la primera vez, cada quien de un lado de la sala: igual en los dos teléfonos).
@@ -117,7 +130,7 @@ export class Casita {
     this._ro = new ResizeObserver(() => this._medir());
     this._ro.observe(this.vistaN);
     this.vistaN.addEventListener("scroll", () => {
-      if (this.vistaN.scrollTop) this.vistaN.scrollTop = 0;
+      if (this.vistaN.scrollTop && !cuarto(this.vistaCuarto).mapa) this.vistaN.scrollTop = 0;
       cancelAnimationFrame(this._rqS); this._rqS = requestAnimationFrame(() => this._alDeslizar());
     }, { passive: true });
     // Pantalla completa, girar el teléfono o volver de otra app: medir y repintar (sin pantalla negra).
@@ -140,6 +153,7 @@ export class Casita {
   }
 
   limpiar() {
+    this.suciedad?.limpiarTodo();
     this.vivo = false;
     this.sync?.parar();
     this._ro?.disconnect();
@@ -221,7 +235,8 @@ export class Casita {
       const cielo = () => el("div.ca-cielo", {}, [el("i.ca-sol"), el("i.ca-nube.n1"), el("i.ca-nube.n2"), el("i.ca-nube.n3"), el("i.ca-estrellas"), el("i.ca-mariposa.m1"), el("i.ca-mariposa.m2"), el("i.ca-luciernagas")]);
       // La terraza: cielo, la ciudad a lo lejos y su barandal (sin la cerca ni la fachada del jardín).
       // (Fase 56: el fondo de afuera es pixel art dibujado una vez en un lienzo chiquito, fondo.js.)
-      if (c.terraza) n.append(cielo(), el("canvas.ca-fondo-px", { "aria-hidden": "true" }), el("div.ca-lomas"), el("div.ca-ciudad"), el("div.ca-baranda"), el("canvas.ca-frente-px", { "aria-hidden": "true" }));
+      if (c.mapa) n.classList.add("px", "mapa");   // (Fase 64: el patio grande lo arma patio.js)
+      else if (c.terraza) n.append(cielo(), el("canvas.ca-fondo-px", { "aria-hidden": "true" }), el("div.ca-lomas"), el("div.ca-ciudad"), el("div.ca-baranda"), el("canvas.ca-frente-px", { "aria-hidden": "true" }));
       else if (c.afuera) n.append(
         cielo(), el("canvas.ca-fondo-px", { "aria-hidden": "true" }),
         el("div.ca-lomas"), el("div.ca-cerca"), el("div.ca-camino"),
@@ -247,9 +262,14 @@ export class Casita {
         const fp = n.querySelector(".ca-fondo-px");
         const sol = el("i.ca-astro.sol", { "aria-hidden": "true" }), luna = el("i.ca-astro.luna", { "aria-hidden": "true" });
         try { luna.style.backgroundImage = texLuna().url; } catch (e) { /* nada */ }
-        fp?.after(sol, luna);
+        if (fp) fp.after(sol, luna); else n.append(sol, luna);
       }
-      if (c.k === "jardin") {
+      // (Fase 64) Al acomodar: lo de más adelante del piso no se acomoda (para caminar); se ve en naranja.
+      if (!c.mapa) {
+        const sA = c.afuera ? 1 : escala3d(c.k, LIMITE_EDIT), sB = c.afuera ? 1 : FRENTE_3D, iA = ((1 - sA) / 2) * 100, iB = ((1 - sB) / 2) * 100;
+        n.append(el("i.ca-noedit-franja", { "aria-hidden": "true", style: { top: LIMITE_EDIT + "px", height: H - LIMITE_EDIT + "px", clipPath: `polygon(${iA.toFixed(2)}% 0, ${(100 - iA).toFixed(2)}% 0, ${(100 - iB).toFixed(2)}% 100%, ${iB.toFixed(2)}% 100%)` } }));
+      }
+      if (c.k === "jardin" && !c.mapa) {
         // El carrito pasa por la calle, DETRÁS de la cerca (antes pasaba por dentro).
         const auto = el("i.ca-auto");
         try { auto.style.backgroundImage = texAuto().url; } catch (e) { /* nada */ }
@@ -297,12 +317,30 @@ export class Casita {
     this.basuraN = el("div.ca-basura", { "aria-hidden": "true" }, [el("i", { html: ICO.borrar }), el("span", { text: "Suelta aquí para quitar" })]);
     this.selN = el("div.ca-sel", { hidden: "" }, [
       el("button.ca-sel-b", { type: "button", "aria-label": "Voltear", title: "Voltear", html: ICO.voltear, onClick: () => this._voltear() }),
+      this.selGirarB = el("button.ca-sel-b.girar", { type: "button", "aria-label": "Girar (o arrastra para girar libre)", title: "Girar (o arrastra para girar libre)", html: ICO.girar }),
+      this.selArreglarB = el("button.ca-sel-b", { type: "button", "aria-label": "Arreglar", title: "Arreglar", html: ICO.arreglar, hidden: "", onClick: () => this._arreglar() }),
       this.selColorB = el("button.ca-sel-b", { type: "button", "aria-label": "Otro color", title: "Otro color", html: ICO.color, onClick: () => this._otroColor() }),
       this.selPuertaB = el("button.ca-sel-b", { type: "button", "aria-label": "A dónde lleva", title: "A dónde lleva", html: ICO.cuartos, hidden: "", onClick: () => { const r = this.sel; if (r) this.puertasN.tocar("o:" + r.o.id); } }),
       this.selColoresN = el("div.ca-sel-colores", { role: "radiogroup", "aria-label": "Colores" }),
       el("button.ca-sel-b", { type: "button", "aria-label": "Duplicar", title: "Duplicar", html: ICO.duplicar, onClick: () => this._duplicar() }),
       el("button.ca-sel-b.peligro", { type: "button", "aria-label": "Quitar", title: "Quitar", html: ICO.borrar, onClick: () => { const r = this.sel; if (r) this._borrar(r); } }),
     ]);
+    {
+      const gb = this.selGirarB; let gi = null;
+      gb.addEventListener("pointerdown", (e) => { const r = this.sel; if (!r) return; e.preventDefault(); gi = { id: e.pointerId, x: e.clientX, g0: giroDe(r.o), g: giroDe(r.o), mov: false }; try { gb.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } });
+      gb.addEventListener("pointermove", (e) => {
+        if (!gi || e.pointerId !== gi.id) return;
+        const dx = e.clientX - gi.x;
+        if (Math.abs(dx) > 6) gi.mov = true;
+        if (!gi.mov || !this.sel) return;
+        const g = (((gi.g0 + Math.round(dx / 14) * 15) % 360) + 360) % 360;
+        if (g !== gi.g) { gi.g = g; this._dibujarObj(this.sel, { ...this.sel.o, e: { ...(this.sel.o.e || {}), giro: g } }); this.sonar("clic", { volumen: 0.3 }); }
+      });
+      const fin = (e) => { if (!gi || e.pointerId !== gi.id) return; const G = gi; gi = null; if (this.sel) this._girar(this.sel, G.mov ? G.g : (G.g0 + 45) % 360); };
+      gb.addEventListener("pointerup", fin);
+      gb.addEventListener("pointercancel", (e) => { if (gi && e.pointerId === gi.id) { gi = null; if (this.sel) this._dibujarObj(this.sel, this.sel.o); } });
+      gb.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && this.sel) { e.preventDefault(); this._girar(this.sel, (giroDe(this.sel.o) + 45) % 360); } });
+    }
     this.volverN = el("div.ca-barra", {}, [
       el("button.ca-volver", { type: "button", onClick: () => this._volver() }, [el("i", { html: ICO.volver }), el("span", { text: "Volver atrás" })]),
       this.climaB = el("button.ca-ajustes-b.clima", { type: "button", "aria-label": "El clima y la hora", title: "El clima y la hora", html: ICO.sol, onClick: () => P.clima(this) }),
@@ -311,7 +349,9 @@ export class Casita {
       el("button.ca-ajustes-b", { type: "button", "aria-label": "Ajustes", title: "Ajustes", html: ICO.sonido, onClick: () => P.ajustes(this) }),
     ]);
     this.flashN = el("i.ca-flash", { "aria-hidden": "true" });
-    this.escena.append(this.flashN, this.hudN, this.necesidades.armar(), this.cuartosB, this.edicionN, this.basuraN);
+    // (Fase 64) Volver a ver a tu monito (si moviste la cámara): chiquito y discreto.
+    this._enfocarB = el("button.ca-enfocar", { type: "button", "aria-label": "Ver a mi monito", title: "Ver a mi monito", html: ICO.enfocar, onClick: () => this.enfocar() });
+    this.escena.append(this.flashN, this.hudN, this.necesidades.armar(), this.cuartosB, this.edicionN, this.basuraN, this._enfocarB);
     this.raiz.append(this.selN, this.volverN);
   }
 
@@ -403,6 +443,7 @@ export class Casita {
     if (clave === this._fondoClave) return;
     this._fondoClave = clave;
     for (const c of CUARTOS) {
+      if (c.mapa) { this.patio?.pintarHora(hora, clima); continue; }
       const n = c.afuera && this.cuartosN.get(c.k), cv = n?.querySelector(".ca-fondo-px");
       if (!cv) continue;
       const cielo = n.querySelector(".ca-cielo");
@@ -454,12 +495,14 @@ export class Casita {
     // (Abajo se deja lugar para los cuartitos (o, al acomodar, para el cajón): ahí se ve el piso, que sigue.)
     const abajo = this.editando ? Math.min(vh * 0.45, (this.cajonN?.offsetHeight || 150) + 18) : 58;
     this.k = lim(Math.min((vh - abajo) / H, vw / 400), 0.42, 1.45);
-    this.offY = Math.max(0, vh - abajo - H * this.k);
+    // (Fase 64) En el patio grande el mundo es más hondo: se desliza también para abajo (y se ve un poquito de cielo).
+    const mapa = !!cuarto(this.vistaCuarto || "sala").mapa;
+    this.offY = mapa ? MAPA.arriba * this.k : Math.max(0, vh - abajo - H * this.k);
     this._moverMundo();
     this.mundo.style.setProperty("--techo", (-this.offY / this.k).toFixed(1) + "px");
     // (Fase 63) El lienzo mide sólo el cuarto que se ve: no se puede deslizar a los otros (y quedan ocultos).
     this.lienzo.style.width = Math.round(cuarto(this.vistaCuarto || "sala").w * this.k) + "px";
-    this.lienzo.style.height = vh + "px";
+    this.lienzo.style.height = (mapa ? Math.round((MAPA.alto + MAPA.arriba) * this.k) : vh) + "px";
     this._ubicarSel();
     this._profundidad();
   }
@@ -501,23 +544,47 @@ export class Casita {
   /** (Fase 60) Cámara suave: mientras tu monito camina, la vista lo va siguiendo despacito (sin brincos);
    *  si tú mueves la vista con el dedo, la cámara te deja. */
   _seguir(gx) {
-    const v = this.vistaN, px = (gx - inicioDe(this.vistaCuarto)) * this.k, m = Math.min(90, v.clientWidth * 0.2);
-    if (reducido()) { if (px < v.scrollLeft + m || px > v.scrollLeft + v.clientWidth - m) v.scrollLeft = px - v.clientWidth / 2; return; }
+    // (Fase 64) Si moviste la cámara con el dedo, ya no lo sigue (hasta que tocas «Ver a mi monito»).
+    if (this._camLibre) { this._verEnfocar(); return; }
+    const v = this.vistaN, mapa = !!cuarto(this.vistaCuarto).mapa, k = this.k;
+    const px = (gx - inicioDe(this.vistaCuarto)) * k, py = mapa ? ((this.yo.y || 0) + MAPA.arriba - 70) * k : 0;
+    const mx = Math.min(90, v.clientWidth * 0.2), my = Math.min(130, v.clientHeight * 0.22);
+    const fuera = () => px < v.scrollLeft + mx || px > v.scrollLeft + v.clientWidth - mx || (mapa && (py < v.scrollTop + my || py > v.scrollTop + v.clientHeight - my));
+    if (reducido()) { if (fuera()) { v.scrollLeft = px - v.clientWidth / 2; if (mapa) v.scrollTop = py - v.clientHeight / 2; } return; }
     // Quieto (abrir la burbujita, sentarse…): sólo se asegura de que se vea, con un deslizamiento suave.
-    if (!this.yo.n.classList.contains("camina") && !this.yo._enRuta) { if (px < v.scrollLeft + m || px > v.scrollLeft + v.clientWidth - m) v.scrollTo({ left: px - v.clientWidth / 2, behavior: "smooth" }); return; }
+    if (!this.yo.n.classList.contains("camina") && !this.yo._enRuta) { if (fuera()) v.scrollTo({ left: px - v.clientWidth / 2, top: mapa ? py - v.clientHeight / 2 : 0, behavior: "smooth" }); return; }
     if (this._rqCam) return;
     const paso = () => {
       this._rqCam = 0;
-      // (Sólo mientras camina: al llegar la vista se queda quieta; tampoco si escribes o elegiste un cuarto.)
-      if (!this.vivo || this._dedoAbajo || this._congelado || performance.now() < (this._camPausa || 0) || (!this.yo.n.classList.contains("camina") && !this.yo._enRuta)) return;
+      // (Sólo mientras camina: al llegar la vista se queda quieta; tampoco si escribes, si mueves la cámara o elegiste un cuarto.)
+      if (!this.vivo || this._dedoAbajo || this._congelado || this._camLibre || performance.now() < (this._camPausa || 0) || (!this.yo.n.classList.contains("camina") && !this.yo._enRuta)) return;
       const R = this.yo.n.getBoundingClientRect(), V = v.getBoundingClientRect();
-      const x = R.left + R.width / 2 - V.left, centro = v.clientWidth / 2, dif = x - centro;
+      const dx = R.left + R.width / 2 - V.left - v.clientWidth / 2, dy = R.top + R.height * 0.5 - V.top - v.clientHeight / 2;
       // Zona muerta en medio; afuera de ella, se acerca suave (con tope de velocidad: la vista nunca brinca).
       const tope = this.yo.n.classList.contains("corre") ? 20 : 14;
-      if (Math.abs(dif) > v.clientWidth * 0.12) v.scrollLeft += lim(dif * 0.08, -tope, tope);
+      if (Math.abs(dx) > v.clientWidth * 0.12) v.scrollLeft += lim(dx * 0.08, -tope, tope);
+      if (mapa && Math.abs(dy) > v.clientHeight * 0.12) v.scrollTop += lim(dy * 0.08, -tope, tope);
       this._rqCam = requestAnimationFrame(paso);
     };
     this._rqCam = requestAnimationFrame(paso);
+  }
+  /** (Fase 64) El botoncito para volver a ver a tu monito: sale si moviste la cámara o si tu monito no se ve. */
+  _verEnfocar() {
+    const b = this._enfocarB;
+    if (!b) return;
+    const ver = !this.editando && (this._camLibre || !this._visible(this.yo, 0.02));
+    b.classList.toggle("ver", ver);
+  }
+  /** Volver a ver a tu monito (y que la cámara lo siga otra vez). */
+  enfocar() {
+    this._camLibre = false;
+    const m = this.yo, c = enCuarto(m.gx).c;
+    if (c !== this.vistaCuarto) { this._mostrarCuarto(c, m.gx, m.y); this._verEnfocar(); return; }
+    const v = this.vistaN, mapa = !!cuarto(c).mapa, k = this.k;
+    v.scrollTo({ left: (m.gx - inicioDe(c)) * k - v.clientWidth / 2, top: mapa ? (m.y + MAPA.arriba - 70) * k - v.clientHeight / 2 : 0, behavior: reducido() ? "auto" : "smooth" });
+    this._enfocarB?.classList.remove("ver");
+    this.sonar("whoosh", { volumen: 0.4 });
+    if (m.n.classList.contains("camina") || m._enRuta) setTimeout(() => this.vivo && this._seguir(m.gx), 400);
   }
   /** (Fase 60) La flechita en el piso: dónde vas a llegar y hacia dónde. */
   _flecha(gx, y) {
@@ -563,6 +630,8 @@ export class Casita {
   /** (Fase 59) 2.5D: la ciudad y el cielo se mueven más despacio que la casa (están lejos) y la base de las
    *  paredes entre cuartos se ve en perspectiva según dónde esté la cámara. */
   _profundidad() {
+    // (Fase 64) El fondo ya no se recorre con el dedo (eso daba tironcitos): se queda fijo y estable.
+    if (this.vivo) return;
     const v = this.vistaN, k = this.k || 1;
     if (!v || !this.cuartosN) return;
     const centro = (v.scrollLeft + v.clientWidth / 2) / k + inicioDe(this.vistaCuarto), vista = v.clientWidth / k;
@@ -594,7 +663,7 @@ export class Casita {
     });
   }
   /** (Fase 63) Qué cuarto se ve: uno a la vez (los demás quedan fuera del lienzo, ocultos, y no se pueden deslizar). */
-  _mostrarCuarto(k, gx = null) {
+  _mostrarCuarto(k, gx = null, gy = null) {
     if (!this.cuartosN || !CUARTOS.some((c) => c.k === k)) return;
     const cambio = k !== this.vistaCuarto;
     this.vistaCuarto = k;
@@ -602,7 +671,11 @@ export class Casita {
     this._medir();
     const v = this.vistaN, cu = cuarto(k), x = (gx ?? inicioDe(k) + cu.w / 2) - inicioDe(k);
     v.scrollLeft = Math.max(0, x * this.k - v.clientWidth / 2);
-    if (cambio) { this._pintado = false; this.puertasN.pintar(); try { this.luces?.pintar(); } catch (e) { /* nada */ } }
+    // (Fase 64) En el patio, también a la altura de tu monito (o de la puerta).
+    if (cu.mapa) this.patio?.pintarTerreno();
+    if (cu.mapa) { const y = gy ?? (enCuarto(this.yo.gx).c === k ? this.yo.y : MAPA.fondo + 160); v.scrollTop = Math.max(0, (y + MAPA.arriba - 70) * this.k - v.clientHeight / 2); }
+    else v.scrollTop = 0;
+    if (cambio) { this._camLibre = false; this._pintado = false; this.puertasN.pintar(); this.suciedad?.pintar(); try { this.luces?.pintar(); } catch (e) { /* nada */ } }
     this._alDeslizar();
   }
   /** Lo que dice el HUD de tu amorcito (Fase 63: en qué cuarto anda, si no está contigo). */
@@ -612,9 +685,10 @@ export class Casita {
     this.estadoN.textContent = !this._parejaAqui ? `${this.pareja} no está ahorita` : c === this.vistaCuarto ? `${this.pareja} está aquí` : `${this.pareja} está en ${cuarto(c).n}`;
   }
   /** Ver un punto del mundo (cambia al cuarto donde está). */
-  verX(gx) { this._mostrarCuarto(enCuarto(gx).c, gx); }
+  verX(gx, gy = null) { this._mostrarCuarto(enCuarto(gx).c, gx, gy); }
   _alDeslizar() {
     this._profundidad();
+    this._verEnfocar();
     const c = this.vistaCuarto;
     this._ubicarSel();
     if (c === this.cuartoActual && this._pintado) return;
@@ -633,6 +707,7 @@ export class Casita {
     // (Fase 63: sólo el cuarto que se ve.)
     const cerca = new Set([this.vistaCuarto]);
     for (const c of CUARTOS) { const n = this.cuartosN.get(c.k); n?.classList.toggle("lejos", !cerca.has(c.k)); }
+    this.patio?.lejos(!cerca.has("jardin"));
     for (const r of this.objs.values()) { const lejos = !cerca.has(r.o.c) && r.o.id !== this.arrastrandoId; r.n.classList.toggle("lejos", lejos); r.fr?.classList.toggle("lejos", lejos); if (r.glow) r.glow.classList.toggle("lejos", lejos); }
   }
 
@@ -667,7 +742,7 @@ export class Casita {
       let r = this.objs.get(o.id);
       const nuevo = !r;
       if (!r) { r = this._crearObj(o, d); this.objs.set(o.id, r); }
-      else if ((r.o.e?.col | 0) !== (o.e?.col | 0)) this._dibujarObj(r, o);
+      else if ((r.o.e?.col | 0) !== (o.e?.col | 0) || giroDe(r.o) !== giroDe(o) || (r.o.e?.dano | 0) !== (o.e?.dano | 0)) this._dibujarObj(r, o);
       const movio = !nuevo && (r.o.x !== o.x || r.o.y !== o.y || r.o.c !== o.c);
       r.o = JSON.parse(JSON.stringify(o));
       if (o.id === this.arrastrandoId) continue;
@@ -685,6 +760,7 @@ export class Casita {
     }
     this._yaPintada = true;
     this.nav?.invalidar(); this.puertasN?.pintar();   // (Fase 63)
+    this.suciedad?.pintar();   // (Fase 64)
     this._lejos();
     for (const mm of [this.yo, this.suyo]) this._sombra(mm);
     this._marcarOcupados();
@@ -709,13 +785,62 @@ export class Casita {
   _dibujarObj(r, o) {
     const C = colorDe(r.d, o.e);
     const arte = r.n.querySelector(":scope > .ca-obj-arte") || r.n.appendChild(el("div.ca-obj-arte"));
-    arte.innerHTML = r.d.arte(o.e || {}, C);
-    if (r.fr) r.fr.innerHTML = `<div class="ca-obj-arte">${r.d.frente(o.e || {}, C)}</div>`;
+    // (Fase 64) Girado: se ve desde ese ángulo (se prepara un ratito; mientras, el dibujo de siempre).
+    const g = this._girable(r.d) ? giroDe(o) : 0, t = (r._tg = (r._tg || 0) + 1);
+    if (!g || !r.vg) { arte.innerHTML = r.d.arte(o.e || {}, C); if (r.vg) { r.vg = null; this._colocar(r); } }
+    r.n.classList.toggle("girado", !!g);
+    if (r.fr) { r.fr.innerHTML = `<div class="ca-obj-arte">${r.d.frente(o.e || {}, C)}</div>`; r.fr.hidden = !!g; }
+    if (g) vistaGirada(r.d, o.e, C, g, false).then((v) => {
+      if (r._tg !== t || !r.n.isConnected) return;
+      if (!v) { arte.innerHTML = r.d.arte(o.e || {}, C); return; }
+      r.vg = v; arte.innerHTML = `<img class="ca-girado" alt="" draggable="false" src="${v.url}">`;
+      if (this.arrastrandoId !== r.o.id) this._colocar(r);
+    });
+  }
+  /** (Fase 64) Lo que se puede girar: lo del piso (las mascotas no, ellas solitas se voltean). */
+  _girable(d) { return d.capa === "piso" && !d.mascota && !d.noGira && d.k !== "cosita"; }
+  /** (Fase 64) Qué herramienta de limpieza trae tu monito (barrer, trapear, aspirar, sacudir, regar) o "". */
+  herramienta() { return COSAS_MANO[this.yo.lleva]?.herramienta || ""; }
+  /** Limpiar donde está tu monito con lo que trae (las hojitas, el polvito): unos segunditos barriendo y listo. */
+  async _limpiar() {
+    const m = this.yo, k = m.lleva, h = this.herramienta(), c = enCuarto(m.gx).c, cu = cuarto(c);
+    if (!this.vivo || !["barrer", "trapear", "aspirar"].includes(h)) return;
+    if (h !== "barrer" && cu.afuera) { this._globo(m, h === "aspirar" ? "La aspiradora es para adentro de la casa" : "El trapeador es para adentro de la casa", 2400); this.sonar("nop"); return; }
+    const orden = m.orden;
+    m.n.classList.add("limpiando", "l-" + h);
+    this.sonar(h === "aspirar" ? "viento" : h === "trapear" ? "burbujas" : "hojas", { volumen: 0.7 });
+    for (let i = 0; i < 3; i++) setTimeout(() => this.vivo && this.particulas(h === "trapear" ? "burbuja" : "polvo", { gx: m.gx + 26 * m.mira, y: m.y - 4 }, 0, 0, 3), i * 420);
+    this._mandarYo({ ev: { k: "limpia", t: h } });
+    await this.esperar(1400);
+    m.n.classList.remove("limpiando", "l-" + h);
+    if (m.orden !== orden || m.lleva !== k) return;
+    const n = this.suciedad.limpiar(c, m.gx, m.y, h === "aspirar" ? 130 : 100);
+    if (n) { this.particulas("brillo", { gx: m.gx, y: m.y - 30 }, 0, 0, 5); this.necesidades?.sumar("diversion", 2); this.sonar("ding", { volumen: 0.5 }); }
+    this._globo(m, n ? (n > 3 ? "¡Quedó rechinando de limpio!" : "Listo, ya está limpiecito") : cu.afuera ? "Aquí no hay hojitas" : "Aquí no hay polvito", 2200);
+  }
+  /** Sacudirle el polvo a un mueble con el plumero. */
+  async _sacudirObj(r) {
+    if (!(await this.irJunto({ id: r.o.id }))) return;
+    const m = this.yo;
+    m.n.classList.add("limpiando", "l-sacudir"); r.n.classList.add("reluce");
+    this.sonar("hojas", { volumen: 0.6 }); this.particulas("polvo", { gx: r.gx, y: r.o.y - r.d.h * 0.6 }, 0, 0, 5);
+    await this.esperar(1200);
+    m.n.classList.remove("limpiando", "l-sacudir"); setTimeout(() => r.n.classList.remove("reluce"), 1800);
+    this.particulas("brillo", { gx: r.gx, y: r.o.y - r.d.h * 0.7 }, 0, 0, 5);
+    this.suciedad.limpiar(r.o.c, r.gx, r.o.y + 10, 90);
+    this._globo(m, "¡Sin polvito!", 1800); this.necesidades?.sumar("diversion", 1);
+  }
+  /** Regar una planta (las flores crecen). */
+  async _regarObj(r) {
+    if (!(await this.irJunto({ id: r.o.id }))) return;
+    ACCIONES.regar(this, { ...r.o, def: r.d, gx: r.gx }, r.n);
+    this.yo.n.classList.add("limpiando", "l-regar"); setTimeout(() => this.yo.n.classList.remove("limpiando", "l-regar"), 1200);
+    this.necesidades?.sumar("diversion", 1);
   }
   _colocar(r) {
     const { o, d } = r, gx = global(o.c, o.x);
     r.gx = gx;
-    let z = d.capa === "alfombra" ? 3 : d.capa === "pared" ? 10 + Math.round(o.y / 60) : Math.round(o.y);
+    let z = d.capa === "alfombra" ? 3 : enPared(o, d) ? 10 + Math.round(o.y / 60) : Math.round(o.y);
     if (d.mascota) z = zMascota(o.y);
     // (Encima de un mueble: justo enfrente de él.)
     else if (puedeSubir(d)) { const a = this._encima(gx, o.y, o.id); if (a) z = (parseInt(a.r.n.style.zIndex, 10) || 0) + 1; }
@@ -727,12 +852,20 @@ export class Casita {
    *  (Lo de la pared, en la pared de atrás; lo que está encima de un mueble, a la hondura de ese mueble.) */
   _ponerObj(r, gx, y, prof = null) {
     const { o, d } = r;
-    if (prof == null) prof = d.capa === "pared" ? PISO : (puedeSubir(d) && this._encima(gx, y, o.id)?.r.o.y) || y;
-    const P = proyectar(gx, Math.max(PISO, Math.min(H, prof))), s = P.s, yv = d.capa === "pared" ? y : prof - (prof - y) * s;
+    const pared = enPared(o, d) && !(prof != null && prof > PISO);
+    if (prof == null) prof = pared ? PISO : (puedeSubir(d) && this._encima(gx, y, o.id)?.r.o.y) || y;
+    const P = proyectar(gx, Math.max(PISO, Math.min(H, prof))), s = P.s, yv = pared ? y : prof - (prof - y) * s;
     r.v = { x: P.x, y: yv, s };
     for (const n of [r.n, r.fr]) {
       if (!n) continue;
-      n.style.left = (P.x - d.w / 2).toFixed(1) + "px"; n.style.top = (yv - d.h).toFixed(1) + "px";
+      if (r.vg && n === r.n) {
+        // (Fase 64) Girado: del tamaño de su vista, anclado al centro de su base (gira en su lugar).
+        const ya = yv - (hondura(d) * ELEV_GIRO * s) / 2;
+        Object.assign(n.style, { left: (P.x - r.vg.ax).toFixed(1) + "px", top: (ya - r.vg.ay).toFixed(1) + "px", width: r.vg.w + "px", height: r.vg.h + "px", transformOrigin: `${r.vg.ax.toFixed(1)}px ${r.vg.ay.toFixed(1)}px` });
+      } else {
+        n.style.left = (P.x - d.w / 2).toFixed(1) + "px"; n.style.top = (yv - d.h).toFixed(1) + "px";
+        if (n === r.n && n.style.transformOrigin) Object.assign(n.style, { width: d.w + "px", height: d.h + "px", transformOrigin: "" });
+      }
       if (s < 0.999) n.style.setProperty("--s3", s.toFixed(3)); else n.style.removeProperty("--s3");
       n.classList.toggle("f", !!o.f);
     }
@@ -758,9 +891,12 @@ export class Casita {
     return mejor;
   }
   /** Física de juguete: cae desde `alto` (con su rebotito, polvito y sonido al tocar). */
-  _caer(r, alto) {
-    if (reducido() || Math.abs(alto) < 6) return;
-    const t = Math.min(700, 260 + Math.sqrt(Math.abs(alto)) * 28);
+  _caer(r, alto, golpe = 0, luego = null) {
+    if (reducido() || Math.abs(alto) < 6) { luego?.(); return; }
+    const t = Math.min(760, 260 + Math.sqrt(Math.abs(alto)) * 26);
+    // (Fase 64) Al pegar en el piso: si se dañó, tiembla, suena y suelta astillitas.
+    if (golpe) setTimeout(() => { if (!this.vivo) return; r.n.classList.remove("crac"); void r.n.offsetWidth; r.n.classList.add("crac"); setTimeout(() => r.n.classList.remove("crac"), 420); this.particulas("migaja", { gx: r.gx, y: r.o.y - 8 }, 0, 0, 3 + golpe * 2); this.sonar(golpe >= 2 ? "poof" : "nop", { volumen: 0.8 }); vibrar(golpe * 12); if (golpe === 1) aviso("Se despostilló un poquito", 1800); else if (golpe === 2) aviso("Se rompió: se queda de adorno (lo puedes arreglar)", 2600); }, t * 0.62);
+    if (luego) setTimeout(() => this.vivo && luego(), t * 0.66);
     r.n.animate([
       { transform: `translateY(${-alto}px)`, easing: "cubic-bezier(.55,0,1,.45)" },
       { transform: "translateY(0) scale(1.08,.9)", offset: 0.62, easing: "ease-out" },
@@ -783,7 +919,7 @@ export class Casita {
     if (r.d.superficie) pintarPlatos(r);
     if (r.glow) {
       const b = r.d.brilla, p = b.propio;
-      const on = b.siempre ? true : p ? (p[0] === "!" ? !e[p.slice(1)] : !!e[p]) : !apagado;
+      const on = (e.dano | 0) < 2 && (b.siempre ? true : p ? (p[0] === "!" ? !e[p.slice(1)] : !!e[p]) : !apagado);
       r.glow.classList.toggle("on", on);
       r.glow.classList.toggle("cuarto-oscuro", apagado);
     }
@@ -980,13 +1116,20 @@ export class Casita {
     if (antes !== m.mira) this._sombra(m);
     if (antes !== m.mira && !reducido() && nivel(this.gfx) >= 1) m.caja.animate([{ translate: "0 0" }, { translate: "0 -3px" }, { translate: "0 0" }], { duration: 150, easing: "ease-out" });
   }
-  _visible(m) { if (enCuarto(m.gx).c !== this.vistaCuarto) return false; const v = this.vistaN, px = (m.gx - inicioDe(this.vistaCuarto)) * this.k; return px > v.scrollLeft - 40 && px < v.scrollLeft + v.clientWidth + 40; }
+  _visible(m, dentro = 0) {
+    if (enCuarto(m.gx).c !== this.vistaCuarto) return false;
+    const v = this.vistaN, px = (m.gx - inicioDe(this.vistaCuarto)) * this.k, mx = dentro ? v.clientWidth * dentro : -40;
+    if (px < v.scrollLeft + mx || px > v.scrollLeft + v.clientWidth - mx) return false;
+    if (!cuarto(this.vistaCuarto).mapa) return true;
+    const py = (m.y + MAPA.arriba) * this.k, my = dentro ? v.clientHeight * dentro : -40;
+    return py > v.scrollTop + my && py - 140 * this.k < v.scrollTop + v.clientHeight - my;
+  }
   /** Caminar hasta (gx, y) (y es lo hondo del piso) y luego `luego()`. */
   _caminar(m, gx, y, luego = null, ya = false, tramo = false, viaje = null, ultimo = true) {
     clearTimeout(m.tc); clearInterval(m.tp); clearTimeout(m.tGiro);
     this._pose(m, "");
     m.n.classList.remove("entra");
-    gx = lim(gx, 24, ANCHO - 24); y = lim(y, FONDO, FRENTE);
+    gx = lim(gx, 24, ANCHO - 24); y = lim(y, FONDO, frenteDe(enCuarto(gx).c));
     const ci = enCuarto(m.gx).c, cf = enCuarto(gx).c;
     if (!tramo && !ya) {
       m.tkPuerta = (m.tkPuerta || 0) + 1; m._cruzando = false;   // (si iba cruzando una puerta, se cancela)
@@ -1033,6 +1176,8 @@ export class Casita {
     m.n.classList.toggle("lado", s > 0.2 && deLado);
     m.n.classList.toggle("atras", s > 0.2 && atras);
     if (s > 0.2) {
+      // (Fase 64) Al arrancar, un apachurradito de impulso (sin brincos).
+      if (!m.n.classList.contains("camina") && !reducido() && nivel(this.gfx) >= 1) m.caja.animate([{ scale: "1 1" }, { scale: "1.05 .94", offset: 0.45 }, { scale: "1 1" }], { duration: 200, easing: "ease-out" });
       m.n.classList.add("camina");
       if (m.quien === "yo" || this._visible(m)) { let i = 0; clearInterval(m.tp); m.tp = setInterval(() => this.sonar(i++ % 2 ? "paso" : "paso2", { volumen: m.quien === "yo" ? 0.9 : 0.5 }), corre ? 170 : 260); }
     }
@@ -1076,15 +1221,18 @@ export class Casita {
   _irLugar(m, r, jx, ya = false) {
     const l = r.d.lugares?.[jx];
     if (!l) return Promise.resolve(false);
-    const sx = r.o.f ? -1 : 1, gx = r.gx + l.dx * sx, ySit = r.o.y + l.dy;
+    // (Fase 64) Si la cosa está girada, el asiento gira con ella y el monito mira hacia donde mira el mueble.
+    const sx = r.o.f ? -1 : 1, G = lugarGirado(l, this._girable(r.d) ? giroDe(r.o) : 0, sx), gx = r.gx + G.dx, ySit = r.o.y + G.dy;
     const orden = ++m.orden;
     return new Promise((ok) => {
-      this._caminar(m, gx, lim(r.o.y + 22, FONDO, FRENTE), () => {
+      this._caminar(m, gx, lim(r.o.y + 22, FONDO, frenteDe(r.o.c)), () => {
         if (m.orden !== orden || !this.vivo || !this.objs.has(r.o.id)) return ok(false);
         m.n.style.transitionDuration = ya || reducido() ? "0s" : ".32s";
         m.y = ySit; this._ponerMono(m, gx, ySit, r.o.y);
-        if (l.mira) this._mirar(m, l.mira * sx);
-        const z = l.z != null ? (parseInt(r.n.style.zIndex, 10) || 0) + l.z : Math.round(ySit);
+        if (G.mira) this._mirar(m, G.mira);
+        clearTimeout(m.tGiro);
+        m.n.classList.toggle("atras", G.cara === "atras"); m.n.classList.toggle("lado", G.cara === "der" || G.cara === "izq");
+        const zo = parseInt(r.n.style.zIndex, 10) || 0, z = G.cara === "atras" ? zo - 1 : l.z != null ? zo + l.z : Math.round(ySit);
         this._pose(m, l.pose, `${r.o.id}:${jx}`, z);
         ok(true);
       }, ya);
@@ -1106,9 +1254,9 @@ export class Casita {
     const libres = r.d.lugares.map((_, i) => i).filter((i) => !this.ocupado(this.suyo, `${o.id}:${i}`));
     const j = jx != null && libres.includes(jx) ? jx : libres[0];
     if (j == null) { this.decir("Ya está ocupado", false); this.sonar("nop"); return false; }
-    const l = r.d.lugares[j], sx = r.o.f ? -1 : 1;
-    const { c, x } = enCuarto(r.gx + l.dx * sx);
-    this.sync.yo({ c, x: Math.round(x), y: Math.round(r.o.y + l.dy), mira: l.mira ? l.mira * sx : this.yo.mira, accion: l.pose, mueble: `${o.id}:${j}` });
+    const l = r.d.lugares[j], sx = r.o.f ? -1 : 1, G = lugarGirado(l, this._girable(r.d) ? giroDe(r.o) : 0, sx);
+    const { c, x } = enCuarto(r.gx + G.dx);
+    this.sync.yo({ c, x: Math.round(x), y: Math.round(r.o.y + G.dy), mira: G.mira || this.yo.mira, accion: l.pose, mueble: `${o.id}:${j}` });
     const ok = await this._irLugar(this.yo, r, j);
     if (ok && l.pose === "columpio") setTimeout(() => this.vivo && this.sigueEn(o) && this._globo(this.yo, `Pídele a ${this.pareja} que te empuje`, 4600), 400);
     if (ok) { vibrar(8); this.sonar({ dormido: "dormir", banando: "burbujas", columpio: "whoosh" }[l.pose] || "sentar"); if (l.pose === "banando") this.particulas("burbuja", { gx: this.yo.gx, y: this.yo.y - 60 }, 0, 0, 5); }
@@ -1388,6 +1536,8 @@ export class Casita {
       g = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), mov: 0, blanco: t, mono: mono === this.yo.n ? this.yo : mono === this.suyo.n ? this.suyo : null, obj: on ? this.objs.get(on.dataset.id) : null, p0: p };
       // Al acomodar todo se agarra; jugando, tu monito y las cosas portátiles (mascotas, osito, cojín…).
       g.jugando = !this.editando && !g.mono && !!g.obj?.d.portatil;
+      // (Fase 64) Con el mouse, arrastrar el piso mueve la cámara (como deslizar con el dedo).
+      if (e.pointerType === "mouse" && !this.editando && !g.mono && !g.obj) g.pan = { sl: this.vistaN.scrollLeft, st: this.vistaN.scrollTop };
       if (this.editando || g.jugando) {
         if (g.obj) { g.off = { dx: (g.obj.v?.x ?? g.obj.gx) - p.X, dy: g.obj.o.y - p.y }; try { m.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } }
       } else if (g.mono === this.yo) { try { m.setPointerCapture(e.pointerId); } catch (er) { /* nada */ } }
@@ -1397,6 +1547,7 @@ export class Casita {
       g.mov = Math.max(g.mov, Math.hypot(e.clientX - g.x0, e.clientY - g.y0));
       if (g.mov < 7) return;
       g.ultimo = e;
+      if (g.pan) { this.vistaN.scrollLeft = g.pan.sl - (e.clientX - g.x0); this.vistaN.scrollTop = g.pan.st - (e.clientY - g.y0); this._libreCam?.(); return; }
       if ((this.editando || g.jugando) && g.obj) { this._arrastrarObj(g, e); e.preventDefault(); }
       else if (!this.editando && g.mono === this.yo) { this._cargar(g, e); e.preventDefault(); }
     });
@@ -1411,6 +1562,9 @@ export class Casita {
       const pu = G.blanco?.closest?.(".ca-puerta");
       if (pu && !G.mono) return this.puertasN.tocar(pu.dataset.puerta);
       if (this.editando) { this._seleccionar(G.obj || null); return; }
+      // (Fase 64) Algo del escenario del patio (un árbol, la fuente, un letrero…).
+      const es = !G.mono && !G.obj && G.blanco?.closest?.(".ca-esc");
+      if (es) return this.patio.tocar(es.dataset.esc);
       if (G.mono === this.yo) return this._menuYo();
       if (G.mono === this.suyo) return this._menuSuyo();
       if (G.obj) return this._tocarObj(G.obj);
@@ -1418,11 +1572,13 @@ export class Casita {
       const p = this._xy(e);
       const ch = this.climaActual() !== "sol" ? charcoEn(p.x, p.y) : null;
       if (ch) { this.brincarCharco(ch); return; }
-      const ay0 = lim(p.y >= PISO - 10 ? p.y : this.yo.mueble ? SUELO : this.yo.y, FONDO, FRENTE), x0 = inicioDe(this.vistaCuarto);
+      const ay0 = lim(p.y >= PISO - 10 ? p.y : this.yo.mueble ? SUELO : this.yo.y, FONDO, frenteDe(this.vistaCuarto)), x0 = inicioDe(this.vistaCuarto);
       // (Fase 63: si tocaste encima de un mueble, la flechita sale en el lugar libre más cercano, a donde de verdad llega.)
       const [ax, ay] = this.nav.libre(this.vistaCuarto, lim(desproyectar(p.X, ay0), x0 + 20, x0 + cuarto(this.vistaCuarto).w - 20), ay0);
       this._flecha(ax, ay);
-      this._caminar(this.yo, ax, ay);
+      // (Fase 64) Con la escoba (o el trapeador, la aspiradora…) en la mano: va y limpia ahí.
+      if (["barrer", "trapear", "aspirar"].includes(this.herramienta())) this._caminar(this.yo, ax, ay, () => this._limpiar());
+      else this._caminar(this.yo, ax, ay);
       this.yo.orden++;
       this._mandarYo({ accion: "", mueble: "" });
     };
@@ -1434,7 +1590,12 @@ export class Casita {
     let rqMira = 0, ult = null;
     const mira = (x, y) => { ult = [x, y]; if (!rqMira) rqMira = requestAnimationFrame(() => { rqMira = 0; if (ult) this._mirarDedo(...ult); }); };
     const suelta = () => { this._dedoAbajo = false; ult = null; cancelAnimationFrame(rqMira); rqMira = 0; this._mirarDedo(null); };
-    v.addEventListener("pointerdown", (e) => { this._dedoAbajo = true; cancelAnimationFrame(this._rqCam); this._rqCam = 0; mira(e.clientX, e.clientY); }, { passive: true });
+    v.addEventListener("pointerdown", (e) => { this._dedoAbajo = true; this._dedo0 = [e.clientX, e.clientY]; cancelAnimationFrame(this._rqCam); this._rqCam = 0; mira(e.clientX, e.clientY); }, { passive: true });
+    // (Fase 64) Si deslizas la vista con el dedo (o la rueda del mouse), la cámara te deja explorar: ya no regresa sola.
+    const libre = () => { if (this.arrastrandoId || this.yo.n.classList.contains("cargado") || this._mirando || this.editando) return; if (!this._camLibre) { this._camLibre = true; cancelAnimationFrame(this._rqCam); this._rqCam = 0; } this._verEnfocar(); };
+    v.addEventListener("touchmove", (e) => { const t = e.touches[0], d0 = this._dedo0; if (t && d0 && Math.hypot(t.clientX - d0[0], t.clientY - d0[1]) > 14) libre(); }, { passive: true });
+    v.addEventListener("wheel", () => libre(), { passive: true });
+    this._libreCam = libre;
     v.addEventListener("pointermove", (e) => { if (this._dedoAbajo) mira(e.clientX, e.clientY); }, { passive: true });
     v.addEventListener("touchmove", (e) => { const t = e.touches[0]; if (t) { this._dedoAbajo = true; mira(t.clientX, t.clientY); } }, { passive: true });
     for (const ev of ["pointerup", "pointercancel", "touchend", "touchcancel"]) v.addEventListener(ev, (e) => { if (e.type === "pointercancel" && e.pointerType === "touch") return; if (e.touches?.length) return; suelta(); }, { passive: true });
@@ -1459,6 +1620,13 @@ export class Casita {
   }
   _tocarObj(r) {
     const d = r.d, o = { ...r.o, def: d, gx: r.gx };
+    // (Fase 64) Lo que se rompió se queda de adorno: ya no se usa (se arregla al acomodar).
+    if ((r.o.e?.dano | 0) >= 2) { rebote(r.n); this.sonar("nop"); this._globo(this.yo, "Está roto: lo puedes arreglar al acomodar", 2800); return; }
+    // (Fase 64) Con una herramienta en la mano: el plumero sacude, la regadera riega y la escoba barre junto a lo que tocaste.
+    const h = this.herramienta();
+    if (h === "sacudir" && !d.mascota && d.al !== "herramienta") return this._sacudirObj(r);
+    if (h === "regar" && /flor|planta|maceta|arbol|arbusto|cactus|jardinera|monstera|huerto|colgante|rosita|arbolito/.test(d.k)) return this._regarObj(r);
+    if (["barrer", "trapear", "aspirar"].includes(h) && d.al !== "herramienta" && d.al !== "basura" && !d.lugares) { this.irJunto({ id: r.o.id }).then((ok) => ok && this._limpiar()); return; }
     if (["trampolin", "consola", "arcade", "guitarra", "pintar", "telescopio", "bici", "musica", "boing"].includes(d.al)) this.necesidades?.sumar("diversion", 5);
     if (d.al && ACCIONES[d.al]) { ACCIONES[d.al](this, o, r.n); return; }
     if (d.lugares) { this.usarLugar(o); return; }
@@ -1471,6 +1639,8 @@ export class Casita {
     const c = COSAS_MANO[m.lleva];
     if (c?.comible) ops.unshift(["comer", `Comer ${c.n.toLowerCase()}`, () => this.comer()]);
     if (m.lleva) ops.push(["soltar", "Soltar", () => this.soltar()]);
+    const h = this.herramienta();
+    if (["barrer", "trapear", "aspirar"].includes(h)) ops.unshift(["escoba", { barrer: "Barrer aquí", trapear: "Trapear aquí", aspirar: "Aspirar aquí" }[h], () => this._limpiar()]);
     if (m.mueble) ops.unshift(["brinca", "Pararme", () => this.pararse()]);
     P.menuMonito(this, m, ops, "Tú");
   }
@@ -1489,7 +1659,7 @@ export class Casita {
     const m = this.yo, p = this._xy(e);
     if (!g.cargando) { g.cargando = true; m.orden++; m._enRuta = false; clearTimeout(m.tc); clearInterval(m.tp); this._pose(m, ""); m.n.classList.remove("camina"); m.n.classList.add("cargado"); m.n.style.transitionDuration = "0s"; vibrar(10); this.sonar("levantar"); }
     const x0 = inicioDe(this.vistaCuarto);
-    m.y = Math.min(FRENTE, p.y + 74); m.gx = lim(desproyectar(p.X, lim(m.y, PISO, H)), x0 + 20, x0 + cuarto(this.vistaCuarto).w - 20);
+    m.y = Math.min(frenteDe(this.vistaCuarto), p.y + 74); m.gx = lim(desproyectar(p.X, lim(m.y, PISO, H)), x0 + 20, x0 + cuarto(this.vistaCuarto).w - 20);
     m.n.style.left = p.X.toFixed(1) + "px"; m.n.style.top = m.y.toFixed(1) + "px";
     this._autoDeslizar(e);
   }
@@ -1502,7 +1672,9 @@ export class Casita {
       const v = r.v || { x: r.gx, y: r.o.y, s: 1 }, w = r.d.w * v.s, x0 = v.x - w / 2, y0 = v.y - r.d.h * v.s;
       if (p.X >= x0 && p.X <= x0 + w && p.y + 40 >= y0 && p.y + 40 <= v.y + 20) { this.usarLugar({ id: r.o.id }); return; }
     }
-    m.y = lim(m.y, FONDO, FRENTE);
+    m.y = lim(m.y, FONDO, frenteDe(this.vistaCuarto));
+    // (Fase 64) Si lo soltaste en el agua, las espinas o encima de algo, cae en el lugar libre más cercano.
+    [m.gx, m.y] = this.nav.libre(this.vistaCuarto, m.gx, m.y);
     m.n.style.transitionDuration = ".34s"; this._ponerMono(m); m.n.style.zIndex = zMono(m.y);
     m.n.classList.add("aterriza"); setTimeout(() => m.n.classList.remove("aterriza"), 480);
     this.sonar("boing"); this.particulas("polvo", { gx: m.gx, y: m.y }, 0, 0, 3);
@@ -1511,10 +1683,13 @@ export class Casita {
   /** Si arrastras cerca de la orilla, la casita se desliza sola hacia ese lado. */
   _autoDeslizar(e) {
     cancelAnimationFrame(this._rqAuto);
-    const v = this.vistaN, R = v.getBoundingClientRect(), borde = Math.min(60, R.width * 0.12);
+    const v = this.vistaN, R = v.getBoundingClientRect(), borde = Math.min(60, R.width * 0.12), mapa = !!cuarto(this.vistaCuarto).mapa;
     const dir = e.clientX < R.left + borde ? -1 : e.clientX > R.right - borde ? 1 : 0;
-    if (!dir) return;
-    const paso = () => { v.scrollLeft += dir * 9; this._rqAuto = requestAnimationFrame(paso); };
+    // (Fase 64) En el patio, también para arriba y para abajo.
+    const fondoV = R.bottom - (this.editando ? (this.cajonN?.offsetHeight || 0) + 12 : 0);
+    const dirY = !mapa ? 0 : e.clientY < R.top + borde * 1.4 ? -1 : e.clientY > fondoV - borde * 1.6 && e.clientY < fondoV ? 1 : 0;
+    if (!dir && !dirY) return;
+    const paso = () => { v.scrollLeft += dir * 9; v.scrollTop += dirY * 9; this._rqAuto = requestAnimationFrame(paso); };
     this._rqAuto = requestAnimationFrame(paso);
   }
 
@@ -1543,7 +1718,7 @@ export class Casita {
     const d = CATALOGO[t];
     if (!d || !this.editando) return;
     if (this.objs.size >= MAX_OBJETOS) { aviso("Ya hay muchísimas cosas: quita alguna para poner otra", 2800); this.sonar("nop"); return; }
-    const p = this._xy(ev), y = d.capa === "pared" ? d.y : lim(p.y + d.h / 2, FONDO, FRENTE);
+    const p = this._xy(ev), y = d.capa === "pared" ? d.y : lim(p.y + d.h / 2, FONDO, frenteDe(this.vistaCuarto));
     const x0 = inicioDe(this.vistaCuarto), gx = lim(desproyectar(p.X, d.capa === "pared" ? PISO : y), x0 + d.w * 0.3, x0 + cuarto(this.vistaCuarto).w - d.w * 0.3), { c, x } = enCuarto(gx);
     const o = { id: nuevoId(), t, c, x: Math.round(lim(x, d.w / 2 + 4, cuarto(c).w - d.w / 2 - 4)), y: Math.round(y), f: false, e: {} };
     const base = this.pila.length;
@@ -1575,12 +1750,20 @@ export class Casita {
     if (!d) return;
     this._recordar(t);
     if (this.objs.size >= MAX_OBJETOS) { aviso("Ya hay muchísimas cosas: quita alguna para poner otra", 2800); this.sonar("nop"); return; }
-    const centro = (this.vistaN.scrollLeft + this.vistaN.clientWidth / 2) / this.k + inicioDe(this.vistaCuarto);
-    const c = this.vistaCuarto, w = cuarto(c).w;
-    const x = lim(centro - inicioDe(c) + (Math.random() * 60 - 30), d.w / 2 + 4, w - d.w / 2 - 4);
-    // (Lo nuevo cae hasta adelante, para que se vea y se pueda agarrar luego luego.)
-    const y = d.capa === "piso" ? lim(FRENTE - 6 - Math.random() * 10, FONDO, FRENTE) : d.y;
-    const o = { id: nuevoId(), t, c, x: Math.round(x), y: Math.round(y), f: false, e: {} };
+    const v = this.vistaN, c = this.vistaCuarto, cu = cuarto(c), w = cu.w, x0 = inicioDe(c);
+    let gx = (v.scrollLeft + v.clientWidth / 2) / this.k + x0 + (Math.random() * 60 - 30), y = d.y;
+    const e = {};
+    // (Fase 64) Lo nuevo cae en un lugar donde sí se puede acomodar (y que se ve): lo de la pared, en una pared de verdad.
+    if (d.capa === "pared") {
+      if (cu.mapa) { gx = x0 + FACHADA.puerta + (gx > x0 + FACHADA.puerta ? 1 : -1) * 230; y = Math.min(FACHADA.base - 20, FACHADA.pared + d.h + 30); }
+      if (!this._enPared(c, gx, y, d)) { e.tirado = true; y = cu.mapa ? 560 : 560; }
+    } else if (cu.mapa) {
+      const cy = (v.scrollTop + v.clientHeight * 0.62) / this.k - MAPA.arriba, L = this._lugarEditable(c, gx, lim(cy, FONDO + 40, frenteDe(c) - 40));
+      if (L) { gx = L.x; y = L.y; } else y = 600;
+    } else if (d.capa !== "alfombra") y = lim(LIMITE_EDIT - 6 - Math.random() * 26, FONDO, LIMITE_EDIT);
+    if (e.tirado && cu.mapa) { const L = this._lugarEditable(c, gx, y); if (L) { gx = L.x; y = L.y; } }
+    const x = lim(gx - x0, d.w / 2 + 4, w - d.w / 2 - 4);
+    const o = { id: nuevoId(), t, c, x: Math.round(x), y: Math.round(y), f: false, e };
     this.pila.push([{ o: "quita", id: o.id }]);
     this.sync.op({ o: "pon", obj: o });
     this._pintarCasa(this.sync.casa());
@@ -1593,7 +1776,7 @@ export class Casita {
   _seleccionar(r) {
     if (this.sel?.n) this.sel.n.classList.remove("sel");
     this.sel = r || null;
-    if (r) { r.n.classList.add("sel"); rebote(r.n, "toque"); this.selColorB.hidden = !r.d.colores; this.selPuertaB.hidden = r.d.al !== "puerta"; this._pintarColores(); this.sonar("pop", { volumen: 0.5 }); }
+    if (r) { r.n.classList.add("sel"); rebote(r.n, "toque"); this.selColorB.hidden = !r.d.colores; this.selPuertaB.hidden = r.d.al !== "puerta"; this.selArreglarB.hidden = !(r.o.e?.dano > 0); this.selGirarB.hidden = !this._girable(r.d); this._pintarColores(); this.sonar("pop", { volumen: 0.5 }); }
     this.selN.hidden = !r;
     this._ubicarSel();
   }
@@ -1614,6 +1797,15 @@ export class Casita {
     this.deshacerB.disabled = false;
   }
   _voltear() { const r = this.sel; if (!r) return; this._guardarObj(r, { f: !r.o.f }, "whoosh"); rebote(r.n, "gira"); }
+  /** (Fase 64) Girar lo elegido a ese ángulo (se guarda y lo ve tu amorcito). */
+  _girar(r, g) {
+    if (!r || !this._girable(r.d)) return;
+    const id = r.o.id;
+    if (giroDe(r.o) !== g) this._guardarObj(r, { e: { ...(r.o.e || {}), giro: g } }, "whoosh");
+    else this._dibujarObj(r, r.o);
+    const n = this.objs.get(id);
+    if (n) { this.sel = null; this._seleccionar(n); }
+  }
   _otroColor() { const r = this.sel; if (!r?.d.colores) return; this._ponerColor(((r.o.e?.col | 0) + 1) % r.d.colores.length); }
   /** Los colorcitos de la cosa elegida, para escoger uno de un toque. */
   _pintarColores() {
@@ -1637,7 +1829,9 @@ export class Casita {
     const w = cuarto(r.o.c).w, d = r.d;
     let x = r.o.x + d.w * 0.6 + 10;
     if (x > w - d.w / 2 - 4) x = r.o.x - d.w * 0.6 - 10;
-    const o = { ...JSON.parse(JSON.stringify(r.o)), id: nuevoId(), x: Math.round(lim(x, d.w / 2 + 4, w - d.w / 2 - 4)), y: d.capa === "pared" ? r.o.y : Math.round(lim(r.o.y + 8, FONDO, FRENTE)) };
+    const o = { ...JSON.parse(JSON.stringify(r.o)), id: nuevoId(), x: Math.round(lim(x, d.w / 2 + 4, w - d.w / 2 - 4)), y: enPared(r.o, d) ? r.o.y : Math.round(lim(r.o.y + 8, FONDO, cuarto(r.o.c).mapa ? frenteDe(r.o.c) : LIMITE_EDIT)) };
+    // (Fase 64) La copia también en un lugar permitido.
+    if (!enPared(o, d) && !this._editableEn(o.c, global(o.c, o.x), o.y)) { const L = this._lugarEditable(o.c, global(o.c, o.x), o.y); if (L) { o.x = Math.round(L.x - inicioDe(o.c)); o.y = Math.round(L.y); } }
     this.pila.push([{ o: "quita", id: o.id }]);
     this.sync.op({ o: "pon", obj: o });
     this._pintarCasa(this.sync.casa());
@@ -1691,16 +1885,20 @@ export class Casita {
       g.vx = 0;
     }
     let y = p.y + g.off.dy;
-    if (d.capa === "pared") y = lim(y, d.h + 8, PISO - 6);
-    else if (d.capa === "alfombra") y = lim(y, FONDO + 24, H);
-    else if (puedeSubir(d)) y = lim(y, 150, FRENTE + 4);
-    else y = lim(y, FONDO, FRENTE + 4);
+    // (Fase 64) Se puede levantar a donde sea (si no hay de qué sostenerse, al soltarlo se cae) y lo de la pared también
+    // se puede bajar al piso. Lo alfombrado sólo va en el piso.
+    const cu0 = cuarto(this.vistaCuarto), techo = cu0.mapa ? -MAPA.arriba + 10 : -this.offY / this.k + 6, fr = frenteDe(this.vistaCuarto);
+    if (d.capa === "alfombra") y = lim(y, FONDO + 24, fr);
+    else y = lim(y, techo + d.h, fr + 4);
     // (Fase 61: el dedo está en lo que se ve; se regresa al mundo según la hondura a la que va.)
     const x0 = inicioDe(this.vistaCuarto), x1 = x0 + cuarto(this.vistaCuarto).w;   // (Fase 63: dentro del cuarto que se ve)
-    const gx = lim(desproyectar(p.X + g.off.dx, d.capa === "pared" ? PISO : lim(y, PISO, H)), x0 + d.w * 0.3, x1 - d.w * 0.3);
+    const enAire = d.capa === "pared" ? y < PISO : false;
+    const gx = lim(desproyectar(p.X + g.off.dx, enAire ? PISO : lim(y, PISO, H)), x0 + d.w * 0.3, x1 - d.w * 0.3);
     g.vx = 0.7 * g.vx + 0.3 * (gx - (g.gx ?? gx));
     g.gx = gx; g.y = y;
-    this._ponerObj(r, gx, y, d.capa === "pared" ? PISO : y);
+    this._ponerObj(r, gx, y, enAire ? PISO : y);
+    // (Al pasar por donde no se puede acomodar, se nota.)
+    if (!g.jugando) r.n.classList.toggle("no-cabe", !this._sePuede(r, gx, y));
     for (const n of [r.n, r.fr]) n?.style.setProperty("--incl", lim(g.vx * 1.4, -9, 9).toFixed(1) + "deg");
     r.n.style.zIndex = 9000; if (r.fr) r.fr.style.zIndex = 9001;
     if (!g.jugando) {
@@ -1733,31 +1931,100 @@ export class Casita {
     if (g.gx == null) { this._colocar(r); return; }
     // Física: si lo aventaste, se resbala un poquito; si quedó en el aire, cae al mueble de abajo o al piso.
     if (g.jugando) g.gx = lim(g.gx + lim(g.vx * 6, -90, 90), r.d.w * 0.3, ANCHO - r.d.w * 0.3);
-    const soltadoEn = g.y;
-    if (puedeSubir(r.d)) {
+    r.n.classList.remove("no-cabe");
+    const d = r.d, soltadoEn = g.y, c0 = enCuarto(g.gx).c, e0 = { ...(r.o.e || {}) };
+    let tirado = false;
+    if (d.capa === "pared") {
+      // (Fase 64) Lo de la pared sólo se cuelga donde de verdad hay pared (adentro, la de atrás; en el patio, la fachada).
+      // En el cielo o en el piso no se sostiene: se cae y queda tirado en el piso.
+      if (!this._enPared(c0, g.gx, g.y, d)) { tirado = true; if (g.y < FONDO + 6) g.y = cuarto(c0).mapa ? MAPA.fondo + 34 : FONDO + 10; }
+    } else if (puedeSubir(d)) {
       const a = this._apoyo(g.gx, g.y, r.o.id);
       // En el aire: cae al mueble de abajo o al piso. En el piso, pero sobre el tablero de un mueble de más adelante: se queda encima.
       if (g.y < FONDO) g.y = a ? a.y : FONDO + 8;
       else if (a && a.r.o.y > g.y + 4 && a.y <= g.y + 30) g.y = a.y;
+    } else if (g.y < FONDO) g.y = cuarto(c0).mapa ? MAPA.fondo + 34 : FONDO + 8;
+    const cayo = Math.max(0, g.y - soltadoEn), encima = puedeSubir(d) && !!this._encima(g.gx, g.y, r.o.id);
+    // (Fase 64) Donde no se puede acomodar (lo naranja): se recorre al lugar permitido más cercano. Jugando, al piso libre.
+    if ((d.capa !== "pared" || tirado) && !encima) {
+      if (g.jugando) { if (cuarto(c0).mapa) [g.gx, g.y] = this.nav.libre(c0, g.gx, g.y); }
+      else if (!this._editableEn(c0, g.gx, g.y)) { const L = this._lugarEditable(c0, g.gx, g.y); if (L) { g.gx = L.x; g.y = L.y; } this._noAqui(); }
     }
     // (Fase 61) Colisiones al acomodar: un mueble del piso no se mete dentro de otro; se recorre al lugar libre más cercano.
-    if (r.d.capa === "piso" && !r.d.mascota && !r.d.portatil && !this._encima(g.gx, g.y, r.o.id)) { const L = this._libre(r, g.gx, g.y); g.gx = L.x; g.y = L.y; }
+    if (d.capa === "piso" && !d.mascota && !d.portatil && !encima) { const L = this._libre(r, g.gx, g.y); g.gx = L.x; g.y = L.y; }
     const { c, x } = enCuarto(g.gx);
+    // (Fase 64) Si cayó de alto, se daña: poquito (despostillado), roto (de adorno) o hecho pedacitos (se quita; se puede deshacer).
+    const golpe = blando(d) ? 0 : danoPor(cayo), dano = Math.max(e0.dano | 0, golpe);
+    if (d.capa === "pared") { if (tirado) e0.tirado = true; else delete e0.tirado; }
+    if (dano) e0.dano = dano;
+    if (golpe >= 3) { this._ponerObj(r, g.gx, g.y); this._caer(r, cayo, 3, () => this._hechoPedazos(r)); return; }
+    const nuevo = { c, x: Math.round(x), y: Math.round(g.y), e: e0 };
     // Jugando (una mascota, el osito…): se queda donde lo soltaste, rebota y hace su ruidito.
     if (g.jugando) {
-      this.sync.op({ o: "pon", obj: { ...JSON.parse(JSON.stringify(r.o)), c, x: Math.round(x), y: Math.round(g.y) } });
+      this.sync.op({ o: "pon", obj: { ...JSON.parse(JSON.stringify(r.o)), ...nuevo } });
       this._pintarCasa(this.sync.casa());
-      if (g.y - soltadoEn > 8) this._caer(r, g.y - soltadoEn);
+      if (cayo > 8) this._caer(this.objs.get(r.o.id) || r, cayo, golpe);
       else if (!reducido()) { r.n.classList.add("aterriza"); setTimeout(() => r.n.classList.remove("aterriza"), 480); }
       this.particulas("polvo", { gx: g.gx, y: g.y }, 0, 0, 3);
       this.sonar({ miau: "miau", guau: "guau", chillido: "chillido", cuac: "cuac" }[r.d.al] || "boing", { volumen: 0.8 });
       return;
     }
-    this._guardarObj(r, { c, x: Math.round(x), y: Math.round(g.y) }, "soltar");
-    if (g.y - soltadoEn > 8) this._caer(r, g.y - soltadoEn);
-    if (!reducido()) { r.n.classList.add("aterriza"); setTimeout(() => r.n.classList.remove("aterriza"), 480); }
-    if (r.d.capa !== "pared") this.particulas("polvo", { gx: g.gx, y: g.y }, 0, 0, 3);
-    this._seleccionar(r);
+    this._guardarObj(r, nuevo, "soltar");
+    const rn = this.objs.get(r.o.id) || r;
+    if (cayo > 8) this._caer(rn, cayo, golpe);
+    if (!reducido()) { rn.n.classList.add("aterriza"); setTimeout(() => rn.n.classList.remove("aterriza"), 480); }
+    if (!enPared(rn.o, d)) this.particulas("polvo", { gx: g.gx, y: g.y }, 0, 0, 3);
+    this._seleccionar(rn);
+  }
+  /** (Fase 64) ¿Se puede acomodar algo del piso aquí? (en el patio, sólo en el pasto libre; adentro, no en lo de enfrente) */
+  _editableEn(c, gx, y) { return cuarto(c).mapa ? editableMapa(gx - inicioDe(c), y) : y <= LIMITE_EDIT + 0.5; }
+  /** ¿Hay pared para colgar algo aquí? (adentro, la de atrás; en el patio, la fachada fuera de la puerta; en la terraza no hay) */
+  _enPared(c, gx, y, d) {
+    const cu = cuarto(c), x = gx - inicioDe(c);
+    if (cu.mapa) return x - d.w / 2 >= FACHADA.x0 + 12 && x + d.w / 2 <= FACHADA.x1 - 12 && y - d.h >= FACHADA.pared - 6 && y <= FACHADA.base - 20 && Math.abs(x - FACHADA.puerta) > d.w / 2 + 64;
+    if (cu.afuera) return false;
+    return y <= PISO - 6;
+  }
+  /** ¿Se queda donde está? (para el aviso naranja mientras lo arrastras) */
+  _sePuede(r, gx, y) {
+    const c = enCuarto(gx).c, d = r.d;
+    if (d.capa === "pared" && (y < PISO || cuarto(c).mapa) && this._enPared(c, gx, y, d)) return true;
+    if (y < FONDO) return true;   // (en el aire: se va a caer, eso sí se puede)
+    return (puedeSubir(d) && !!this._encima(gx, y, r.o.id)) || this._editableEn(c, gx, y);
+  }
+  /** El lugar para acomodar más cercano (si lo soltaste donde no se puede). */
+  _lugarEditable(c, gx, y) {
+    const cu = cuarto(c), x0 = inicioDe(c), fr = frenteDe(c);
+    if (!cu.mapa) return { x: gx, y: Math.min(y, LIMITE_EDIT) };
+    for (let rr = 14; rr <= 700; rr += 14) for (let a = 0; a < 24; a++) {
+      const x = gx + Math.cos((a / 24) * Math.PI * 2) * rr, yy = y + Math.sin((a / 24) * Math.PI * 2) * rr * 0.7;
+      if (x > x0 + 40 && x < x0 + cu.w - 40 && yy > FONDO && yy < fr && this._editableEn(c, x, yy)) return { x, y: yy };
+    }
+    return null;
+  }
+  _noAqui() {
+    const R = this.raiz;
+    R.classList.remove("no-aqui"); void R.offsetWidth; R.classList.add("no-aqui");
+    clearTimeout(this._tNoAqui); this._tNoAqui = setTimeout(() => R.classList.remove("no-aqui"), 1200);
+    this.sonar("nop"); vibrar(12);
+    if (performance.now() - (this._avNoAqui || 0) > 6000) { this._avNoAqui = performance.now(); aviso("Ahí no se puede acomodar (lo naranja es para caminar): quedó en el lugar libre más cercano", 2600); }
+  }
+  /** Se rompió en pedacitos (cayó de muy alto): se quita, con sus astillitas. Se puede deshacer. */
+  _hechoPedazos(r) {
+    if (!this.objs.has(r.o.id)) return;
+    this.particulas("polvo", { gx: r.gx, y: r.o.y - 10 }, 0, 0, 8);
+    this.particulas("chispa", { gx: r.gx, y: r.o.y - 20 }, 0, 0, 5);
+    vibrar([20, 30, 20]);
+    this._borrar(r);
+    aviso("¡Cayó de muy alto y se hizo pedacitos! Puedes deshacerlo.", 2800);
+  }
+  /** (Fase 64) Arreglar algo dañado (al acomodar). */
+  _arreglar() {
+    const r = this.sel;
+    if (!r || !(r.o.e?.dano > 0)) return;
+    this._guardarObj(r, { e: { ...(r.o.e || {}), dano: 0 } }, "ding");
+    const n = this.objs.get(r.o.id);
+    if (n) { this.sel = null; this._seleccionar(n); this.particulas("brillo", { gx: n.gx, y: n.o.y - n.d.h / 2 }, 0, 0, 6); }
   }
 
   /* ═════════════ Pantalla completa y volver ═════════════ */
@@ -1797,9 +2064,11 @@ export class Casita {
       const ops = CUARTOS_NUEVOS.filter((k) => !r.casa.cuartos?.[k]).flatMap(opsCuartoNuevo);
       // (Fase 55: el perrito necesita su casita para cuando llueve.)
       if (!r.casa.cuartos?.jardin?.v55) {
-        if (!r.casa.objetos.some((o) => o.t === "casita_perro" && o.c === "jardin")) ops.push({ o: "pon", obj: { id: "ja8", t: "casita_perro", c: "jardin", x: 430, y: 470, f: false, e: {} } });
+        if (!r.casa.objetos.some((o) => o.t === "casita_perro" && o.c === "jardin")) ops.push({ o: "pon", obj: { id: "ja8", t: "casita_perro", c: "jardin", x: 1530, y: 600, f: false, e: {} } });
         ops.push({ o: "cuarto", k: "jardin", v: { v55: true } });
       }
+      // (Fase 64) El jardín chiquito de antes se muda al patio grande (una sola vez).
+      if (!r.casa.cuartos?.jardin?.mapa) ops.push(...opsMudanza(r.casa, MUDANZA, editableMapa, (t) => CATALOGO[t]?.capa));
       if (ops.length) this.sync.ops(ops);
     }
     this._pintarCasa(this.sync.casa());
@@ -1855,6 +2124,7 @@ export class Casita {
       if (this._visible(m)) this.sonar(ev.t === "guitarra" ? "guitarra" : "piano", { volumen: 0.5 });
     }, espera);
     else if (ev.k === "gesto") setTimeout(() => this.gesto(m, ev.t, false), espera);
+    else if (ev.k === "limpia") setTimeout(() => { m.n.classList.add("limpiando", "l-" + ev.t); setTimeout(() => m.n.classList.remove("limpiando", "l-" + ev.t), 1400); if (this._visible(m)) { this.particulas(ev.t === "trapear" ? "burbuja" : "polvo", { gx: m.gx + 26 * m.mira, y: m.y - 4 }, 0, 0, 4); this.sonar(ev.t === "aspirar" ? "viento" : "hojas", { volumen: 0.4 }); } }, espera);
     else if (ev.k === "traes") this.traes.evento(ev.t);
     else if (ev.k === "charco") { const [gx, y] = String(ev.t).split(",").map(Number); if (Number.isFinite(gx) && Number.isFinite(y)) setTimeout(() => { this.lluviaF?.chapoteo(gx, y); this.particulas("agua", { gx, y }, 0, -6, 4); if (this._visible(m)) this.sonar("charco", { volumen: 0.6 }); }, espera + 260); }
     else if (ev.k === "come") { m.n.classList.add("g-come"); setTimeout(() => m.n.classList.remove("g-come"), 1600); if (this._visible(m)) this.sonar("comer", { volumen: 0.6 }); }

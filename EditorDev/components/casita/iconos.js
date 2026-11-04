@@ -36,6 +36,11 @@ const ICONOS = {
   sentarse: ic('<path d="M7 4v9h10v7M7 13v7"/><path d="M7 9h8"/>'),
   plegar: ic('<path d="M6 15l6-6 6 6"/>'),
   cuartos: ic('<path d="M3 11L12 4l9 7"/><path d="M5 10v10h14V10M12 20v-5"/>'),
+  // (Fase 64) Volver a ver a tu monito; girar; arreglar algo roto; limpiar.
+  enfocar: ic('<circle cx="12" cy="12" r="6.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/><path d="M12 10.2c-.7-1-2.4-.6-2.2.7.2 1 2.2 2.3 2.2 2.3s2-1.3 2.2-2.3c.2-1.3-1.5-1.7-2.2-.7z" fill="currentColor" stroke="none"/>'),
+  girar: ic('<path d="M19 8a8 8 0 1 0 1.6 6"/><path d="M19.5 3.5V8H15"/><path d="M9.5 12.5l2.5-1.5 2.5 1.5-2.5 1.5z" fill="currentColor" stroke="none"/>'),
+  arreglar: ic('<path d="M14.5 4.5a4 4 0 0 0-4.8 5.4l-5.6 5.6a1.8 1.8 0 0 0 2.5 2.5l5.6-5.6a4 4 0 0 0 5.4-4.8l-2.4 2.4-2.2-.5-.5-2.2z"/>'),
+  escoba: ic('<path d="M15 3.5l-4.5 9"/><path d="M8 12l6 3-1.5 5.5c-2.8.3-6-1.2-7.5-3.7z"/><path d="M7.5 16.5l2 1M9.5 14.5l3.4 1.6"/>'),
   lluvia: ic('<path d="M7 15a4 4 0 0 1-.6-8 5.5 5.5 0 0 1 10.6 1.2A3.4 3.4 0 0 1 17 15z"/><path d="M8 18l-1 2.5M12 18l-1 2.5M16 18l-1 2.5"/>'),
   historial: ic('<path d="M5 6h14M5 11h14M5 16h9"/>'),
   volado: ic('<path d="M9 12a4 4 0 1 1 4-4"/><path d="M14 13l6 6M20 15v4h-4"/>'),

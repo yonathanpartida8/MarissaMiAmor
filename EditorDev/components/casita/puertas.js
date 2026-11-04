@@ -85,9 +85,10 @@ export class Puertas {
     const etiqueta = p.quitada ? "Poner una puerta aquí" : `Puerta a ${nombre(p.va)}`;
     const comun = { role: "button", tabindex: "0", "aria-label": etiqueta, title: etiqueta, dataset: { puerta: p.id } };
     if (p.pared === "atras") {
-      const P0 = proyectar(x0 + p.x, PISO), s = cu.afuera ? 1 : P0.s, base = cu.afuera ? PISO + 34 : PISO;
-      return el("div.ca-puerta.atras" + (cu.afuera ? ".afuera" : "") + (p.quitada ? ".quitada" : ""), { ...comun, style: { left: (P0.x - ANCHO_A / 2).toFixed(1) + "px", top: (base - ALTO_A).toFixed(1) + "px", "--s3": s.toFixed(3), "--hoja": color } }, [
-        cu.afuera ? el("i.pu-muro") : null,
+      // (Fase 64) La del patio está en la fachada de la casa (con su marco pintado): sin el muro suelto de afuera.
+      const P0 = proyectar(x0 + p.x, PISO), s = cu.afuera ? 1 : P0.s, base = cu.mapa ? FONDO + 2 : cu.afuera ? PISO + 34 : PISO;
+      return el("div.ca-puerta.atras" + (cu.afuera ? ".afuera" : "") + (cu.mapa ? ".fachada" : "") + (p.quitada ? ".quitada" : ""), { ...comun, style: { left: (P0.x - ANCHO_A / 2).toFixed(1) + "px", top: (base - ALTO_A).toFixed(1) + "px", "--s3": s.toFixed(3), "--hoja": color } }, [
+        cu.afuera && !cu.mapa ? el("i.pu-muro") : null,
         el("i.pu-marco"), el("i.pu-hueco"), el("i.pu-hoja", {}, [el("i.pu-tablero.t1"), el("i.pu-tablero.t2"), el("i.pu-perilla")]), el("i.pu-umbral"), this._letrero(p),
       ].filter(Boolean));
     }
@@ -137,7 +138,7 @@ export class Puertas {
     m.n.classList.add("entra");
     m.gx = pl.hx; m.y = Math.max(FONDO, Math.min(FRENTE, pl.hy));
     j._ponerMono(m, pl.hx, pl.hy, Math.max(PISO, pl.hy));
-    if (yo) j._mostrarCuarto(dest, pl.gx);
+    if (yo) j._mostrarCuarto(dest, pl.gx, pl.y);
     const seVe = yo || j.vistaCuarto === dest;
     if (ll && seVe) this.abrir(ll, true);
     void m.n.offsetWidth;

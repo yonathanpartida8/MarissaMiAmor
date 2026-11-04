@@ -96,7 +96,22 @@ export const ACCIONES = {
   fuente(j, o) { j.sonar("agua", { volumen: 0.7 }); j.particulas("agua", o, 0, -120, 6); },
   // (Fase 63) La puerta de la casa es una puerta de verdad: tu monito va, la abre y entra a donde lleva.
   puerta(j, o) { j.puertasN.tocar("o:" + o.id); },
-  sacude(j, o, n) { rebote(n, "baila"); j.sonar("hojas"); j.particulas("hoja", o, 0, -o.def.h * 0.7, 3); },
+  sacude(j, o, n) { rebote(n, "baila"); j.sonar("hojas"); j.particulas("hoja", o, 0, -o.def.h * 0.7, 3); if (o.def.hojas) j.suciedad?.sacudir(o.gx, o.y, o.def.h * 0.7, o.def.hojas, 4); },
+  // (Fase 64) Agarrar una herramienta de limpieza (tu monito la trae en la mano y te dice cómo se usa).
+  async herramienta(j, o, n) {
+    const h = o.def.herramienta, ayuda = { escoba: "Toca donde quieras barrer", rastrillo: "Toca donde quieras juntar las hojitas", trapeador: "Toca el piso para trapear", aspiradora: "Toca el piso para aspirar", plumero: "Toca un mueble para sacudirle el polvito", regadera: "Toca una planta para regarla" }[h] || "";
+    if (j.yo.lleva === h) { rebote(n); j._globo(j.yo, ayuda, 2600); return; }
+    if (!(await j.irJunto(o))) return;
+    if (j.yo.lleva) j.soltar();
+    rebote(n); j.sonar("levantar"); j._ponerLleva(j.yo, h); j._mandarYo({ lleva: h });
+    j._globo(j.yo, ayuda, 3200);
+  },
+  async frutal(j, o, n) {
+    if (!(await j.irJunto(o))) return;
+    rebote(n, "baila"); j.sonar("hojas"); j.suciedad?.sacudir(o.gx, o.y, o.def.h * 0.7, o.def.hojas, 4);
+    setTimeout(() => j.vivo && j.dar(o.def.fruta || "manzana", o), 380);
+  },
+  burbujas(j, o, n) { rebote(n, "baila"); j.sonar("burbujas"); j.particulas("burbuja", o, 0, -50, 6); },
   boing(j, o, n) { rebote(n, "salta"); j.sonar("boing"); },
   cuac(j, o, n) { rebote(n, "salta"); j.sonar("cuac"); j.particulas("burbuja", o, 0, -40, 3); },
   chillido(j, o, n) { rebote(n, "salta"); j.sonar("chillido"); j.particulas("corazon", o, 0, -70, 3); },

@@ -20,12 +20,16 @@ import { ITEMS as ESTUDIO } from "./estudio.js";
 import { ITEMS as TERRAZA } from "./terraza.js";
 import { ITEMS as COSITAS } from "./cositas.js";
 import { ITEMS as LINDAS } from "./lindas.js";
+import { ITEMS as LIMPIEZA, MANO as MANO_LIMPIEZA } from "./limpieza.js";
 import { COSAS_MANO } from "./comida.js";
 import { RECETAS, arteReceta } from "./recetas.js";
 export { COSAS_MANO };
 export { RECETAS, recetasDe, arteReceta, baseDe } from "./recetas.js";
 
-export const CATALOGO = { ...SALA, ...COCINA, ...RECAMARA, ...BANO, ...JARDIN, ...DECO, ...MASCOTAS, ...ESTUDIO, ...TERRAZA, ...COSITAS, ...LINDAS };
+export const CATALOGO = { ...SALA, ...COCINA, ...RECAMARA, ...BANO, ...JARDIN, ...DECO, ...MASCOTAS, ...ESTUDIO, ...TERRAZA, ...COSITAS, ...LINDAS, ...LIMPIEZA };
+// (Fase 64) Las herramientas de limpieza y la naranja también se traen en la mano; el árbol del columpio suelta hojitas.
+Object.assign(COSAS_MANO, MANO_LIMPIEZA);
+CATALOGO.arbol.hojas = "#7fd29b";
 
 // Las luces de lo que ya existía (las cosas nuevas lo traen en su archivo).
 const BRILLOS = {
@@ -55,7 +59,7 @@ for (const r of Object.values(RECETAS)) COSAS_MANO[r.k] = { n: r.n, comible: tru
 
 export const CATEGORIAS = [
   ["sala", "Sala"], ["cocina", "Cocina"], ["recamara", "Recámara"], ["bano", "Baño"], ["estudio", "Estudio"], ["cositas", "Cositas"],
-  ["jardin", "Jardín"], ["terraza", "Terraza"], ["deco", "Decoración"], ["mascotas", "Mascotitas"],
+  ["jardin", "Jardín"], ["terraza", "Terraza"], ["deco", "Decoración"], ["limpieza", "Limpieza"], ["mascotas", "Mascotitas"],
 ];
 export const deCategoria = (cat) => Object.values(CATALOGO).filter((d) => d.cat === cat);
 /** El color de un objeto (si tiene varios). */

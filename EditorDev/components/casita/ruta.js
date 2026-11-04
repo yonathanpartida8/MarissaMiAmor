@@ -9,7 +9,9 @@
  *     alcanzable más cercano (nunca atraviesa nada para llegar).
  *   · La rejilla se rehace sólo cuando cambia algo en ese cuarto.
  */
-import { cuarto, inicioDe, FONDO, FRENTE } from "./cuartos.js";
+import { cuarto, inicioDe, FONDO, frenteDe } from "./cuartos.js";
+import { pisable } from "./exterior.js";
+import { giroDe, huellaGirada } from "./girar.js";
 
 const CEL = 12, RX = 15, RY = 7, ORILLA = 14, PESO_Y = 1.6;
 
@@ -21,13 +23,14 @@ export class Navegacion {
     const d = r.d, j = this.j;
     if (d.capa !== "piso" || d.mascota || d.noEstorba || r.o.id === j.arrastrandoId) return null;
     if (j._esEncima?.(r)) return null;                       // lo que está encima de una mesa no estorba en el piso
-    const medio = d.w * (d.pie ?? 0.42), fondo = Math.max(12, Math.min(64, d.fondo ?? d.h * 0.3));
+    const medio = d.w * (d.pie ?? 0.42), fondo = Math.max(12, Math.min(64, d.fondo ?? d.h * 0.3)), g = j._girable?.(d) ? giroDe(r.o) : 0;
+    if (g) { const G = huellaGirada(d, g, medio, fondo), cy = r.o.y - fondo / 2; return { x0: r.gx - G.medio, x1: r.gx + G.medio, y0: cy - G.fondo / 2, y1: cy + G.fondo / 2 + 4 }; }   // (Fase 64: girado)
     return { x0: r.gx - medio, x1: r.gx + medio, y0: r.o.y - fondo, y1: r.o.y + 4 };
   }
   _rejilla(c) {
     const ya = this.cache.get(c);
     if (ya) return ya;
-    const cu = cuarto(c), x0 = inicioDe(c), W = Math.ceil(cu.w / CEL), H = Math.floor((FRENTE - FONDO) / CEL) + 1;
+    const cu = cuarto(c), x0 = inicioDe(c), W = Math.ceil(cu.w / CEL), H = Math.floor((frenteDe(c) - FONDO) / CEL) + 1;
     const bloq = new Uint8Array(W * H);
     const marca = (a, b, y0, y1) => {
       const i0 = Math.max(0, Math.floor((a - x0) / CEL)), i1 = Math.min(W - 1, Math.floor((b - x0) / CEL));
@@ -35,7 +38,16 @@ export class Navegacion {
       for (let jj = j0; jj <= j1; jj++) for (let ii = i0; ii <= i1; ii++) bloq[jj * W + ii] = 1;
     };
     // Las paredes de los lados (un poquito de orilla).
-    marca(x0 - 99, x0 + ORILLA, FONDO, FRENTE); marca(x0 + cu.w - ORILLA, x0 + cu.w + 99, FONDO, FRENTE);
+    if (!cu.mapa) { marca(x0 - 99, x0 + ORILLA, FONDO, frenteDe(c)); marca(x0 + cu.w - ORILLA, x0 + cu.w + 99, FONDO, frenteDe(c)); }
+    else {
+      // (Fase 64) El patio: el agua, las espinas, el barranco, los setos y la casa no se pisan (lo dice el terreno),
+      // ni los troncos, las rocas y la fuente del escenario.
+      for (let jj = 0; jj < H; jj++) for (let ii = 0; ii < W; ii++) {
+        const x = (ii + 0.5) * CEL, y = FONDO + jj * CEL;
+        if (!pisable(x, y) || !pisable(x - 9, y) || !pisable(x + 9, y) || !pisable(x, y - 5)) bloq[jj * W + ii] = 1;
+      }
+      for (const h of this.j.patio?.huellas() || []) marca(x0 + h.x0 - RX * 0.6, x0 + h.x1 + RX * 0.6, h.y0 - RY, h.y1 + RY);
+    }
     for (const r of this.j.objs.values()) {
       if (r.o.c !== c) continue;
       const h = this.huella(r);

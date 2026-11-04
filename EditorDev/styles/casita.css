@@ -1360,3 +1360,90 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca :is(.ca-r, .ca-ajustes-b, .ca-sel-b, .ca-menu-b):hover svg .ico-fondo { fill-opacity: .16; }
 .ca :is(.ca-r, .ca-ajustes-b, .ca-sel-b, .ca-menu-b):active svg .ico-fondo { fill-opacity: .22; }
 .ca .ca-r.on i, .ca .ca-ajustes-b.on { color: #d2588f; }
+
+/* ═════════════ Fase 64: el patio grande, la cámara libre y las hojitas ═════════════ */
+.ca[data-cuarto="jardin"] .ca-vista { overflow-y: auto; touch-action: pan-x pan-y; overscroll-behavior: contain; }
+.ca.mirando[data-cuarto="jardin"] .ca-vista { touch-action: none; }
+.ca-cuarto.mapa { height: 1640px; clip-path: inset(-140px 0 -40px 0); }
+.ca-cuarto.mapa :is(.ca-piso, .ca-zoclo, .ca-pared) { display: none; }
+.ca-cuarto.mapa .ca-astro { z-index: 1; }
+.ca-cuarto.mapa .ca-lluvia { height: 2600px; }
+.ca-cuarto.mapa .ca-charcos { z-index: 2; }
+.ca-oscuro.jardin, .ca-ambiente.jardin { height: 2700px; }
+.ca-panorama, .ca-terreno, .ca-fachada-px, .ca-noedit { position: absolute; pointer-events: none; image-rendering: crisp-edges; image-rendering: pixelated; }
+/* Lo que no se acomoda: naranja al acomodar (en el patio, una máscara; adentro, la franja de enfrente). */
+.ca-noedit { opacity: 0; transition: opacity .3s; }
+.ca.editando .ca-noedit { opacity: 1; }
+.ca-noedit-franja { position: absolute; left: 0; right: 0; z-index: 6; pointer-events: none; opacity: 0; transition: opacity .3s; background: repeating-linear-gradient(135deg, rgba(255, 150, 60, .4) 0 10px, rgba(255, 150, 60, .14) 10px 20px); box-shadow: inset 0 3px 0 rgba(255, 214, 160, .95); }
+.ca.editando .ca-noedit-franja { opacity: 1; }
+.ca.no-aqui :is(.ca-noedit, .ca-noedit-franja) { animation: caNoAqui .35s steps(2) 3; }
+@keyframes caNoAqui { 50% { filter: brightness(1.45) saturate(1.5); } }
+/* El escenario: sólo se toca el tronco (y lo de abajo de la copa); la copa se mece con el viento. */
+.ca-esc { position: absolute; pointer-events: none; transform-origin: 50% 100%; }
+.ca-esc.lejos { display: none; }
+.ca-esc > i { position: absolute; inset: 0; background-size: 100% 100%; background-repeat: no-repeat; image-rendering: crisp-edges; image-rendering: pixelated; pointer-events: none; }
+.ca-esc > .esc-toque { pointer-events: auto; cursor: pointer; inset: 12% 8% 0; }
+.ca-esc:is(.roble, .cerezo, .frutal, .pino, .abedul, .sauce) > .esc-toque { inset: 26% 28% 0; }
+.ca-esc .esc-copa { transform-origin: 50% 78%; animation: caMece var(--p, 5s) ease-in-out var(--d, 0s) infinite; will-change: transform; }
+@keyframes caMece { 0%, 100% { transform: skewX(0deg); } 30% { transform: skewX(-1.3deg) translateX(1px); } 70% { transform: skewX(.9deg) translateX(-1px); } }
+.ca[data-viento="mucho"] .ca-esc .esc-copa { animation-duration: 1.7s; }
+.ca:not(.fx1) .ca-esc .esc-copa { animation: none; }
+.ca-esc .esc-chorro { inset: 4% 46% auto; height: 28%; background: repeating-linear-gradient(180deg, #e6f7ff 0 6px, #9fd8f6 6px 12px, transparent 12px 15px); background-size: 100% 15px; animation: caChorro .5s steps(3) infinite; opacity: .9; }
+@keyframes caChorro { to { background-position: 0 15px; } }
+.ca-agua-brillos { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.ca-agua-brillos i { position: absolute; width: 9px; height: 3px; background: #fff; box-shadow: 9px 6px 0 -.5px rgba(255, 255, 255, .7); opacity: 0; animation: caBrilloAgua 3.2s steps(3) infinite; }
+@keyframes caBrilloAgua { 0%, 60%, 100% { opacity: 0; } 72%, 86% { opacity: .9; } }
+.ca:not(.fx1) .ca-agua-brillos { display: none; }
+/* Las hojitas del piso y las pelusitas de polvo (pixel). */
+.ca-sucio { position: absolute; width: 15px; height: 10px; margin: -6px 0 0 -7px; pointer-events: none; scale: var(--s3, 1); background: linear-gradient(155deg, transparent 44%, rgba(40, 30, 20, .28) 45% 55%, transparent 56%), var(--c, #7cc36a);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 4' shape-rendering='crispEdges'%3E%3Cpath d='M1 0h3v1h1v1h1v1H5v1H2V3H1V2H0V1h1z'/%3E%3C/svg%3E") center / 100% 100%; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 4' shape-rendering='crispEdges'%3E%3Cpath d='M1 0h3v1h1v1h1v1H5v1H2V3H1V2H0V1h1z'/%3E%3C/svg%3E") center / 100% 100%; }
+.ca-sucio.r1 { rotate: 70deg; } .ca-sucio.r2 { rotate: 180deg; } .ca-sucio.r3 { rotate: -40deg; }
+.ca-sucio.polvo { width: 21px; height: 14px; margin: -11px 0 0 -10px; rotate: none; background: radial-gradient(circle at 36% 45%, #4a3a52 0 1.6px, transparent 2px), radial-gradient(circle at 62% 45%, #4a3a52 0 1.6px, transparent 2px), linear-gradient(#eee8f2, var(--c, #cfc6d6));
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 5' shape-rendering='crispEdges'%3E%3Cpath d='M2 0h3v1h1v1h1v2H6v1H1V4H0V2h1V1h1z'/%3E%3C/svg%3E") center / 100% 100%; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 5' shape-rendering='crispEdges'%3E%3Cpath d='M2 0h3v1h1v1h1v2H6v1H1V4H0V2h1V1h1z'/%3E%3C/svg%3E") center / 100% 100%; animation: caPelusa 3.4s ease-in-out infinite; }
+@keyframes caPelusa { 50% { translate: 0 -2px; } }
+/* Volver a ver a tu monito: chiquito, translúcido, abajo a la derecha. */
+.ca-enfocar { position: absolute; z-index: 21; right: 12px; bottom: 72px; width: 42px; height: 42px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 15px; background: rgba(255, 255, 255, .8); color: #84557a; box-shadow: 0 4px 14px rgba(110, 50, 90, .16); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); opacity: 0; transform: translateY(8px) scale(.9); pointer-events: none; transition: opacity .25s, transform .25s; cursor: pointer; }
+.ca-enfocar.ver { opacity: 1; transform: none; pointer-events: auto; }
+.ca-enfocar svg { width: 24px; height: 24px; }
+.ca-enfocar:active { transform: scale(.92); }
+.ca.editando .ca-enfocar, .ca.escribiendo .ca-enfocar { display: none; }
+:root[data-tema="oscuro"] .ca .ca-enfocar { background: rgba(42, 33, 48, .82); color: var(--ca-tinta); }
+@media (min-width: 900px) { .ca-enfocar { right: 18px; bottom: 76px; } }
+/* La puerta de la fachada (el marco ya está pintado en la casa). */
+.ca-puerta.atras.fachada .pu-umbral { display: none; }
+.ca-fondo-px { transform: none !important; }
+/* Girado: su vista desde ese ángulo (pixel, ya con su contornito). */
+.ca-obj.girado > .ca-obj-arte > img.ca-girado { display: block; width: 100%; height: 100%; image-rendering: crisp-edges; image-rendering: pixelated; pointer-events: auto; -webkit-user-drag: none; user-select: none; }
+.ca-sel-b.girar { touch-action: none; }
+/* Dañado: despostillado (rajaditas), roto (inclinado, con un pedazo menos y rajado: de adorno) y lo de la pared que se cayó. */
+.ca-obj[data-dano="1"] > .ca-obj-arte::after, .ca-obj[data-dano="2"] > .ca-obj-arte::after { content: ""; position: absolute; inset: 14% 16% 18%; pointer-events: none; opacity: .7; image-rendering: pixelated;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 16' shape-rendering='crispEdges' fill='%233b2333'%3E%3Cpath d='M6 1h1v2H6zM7 3h1v2H7zM6 5h1v1H6zM8 5h1v2H8zM9 7h1v1H9zM17 8h1v2h-1zM16 10h1v2h-1zM18 10h1v1h-1zM15 12h1v2h-1z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; }
+.ca-obj[data-dano="2"] > .ca-obj-arte { rotate: -5deg; transform-origin: 30% 100%; filter: saturate(.7) brightness(.9); clip-path: polygon(0 8%, 16% 2%, 22% 9%, 30% 0, 70% 0, 78% 10%, 100% 6%, 96% 48%, 100% 100%, 0 100%, 4% 58%); }
+.ca-obj[data-dano="2"] > .ca-obj-arte::after { opacity: .95; inset: 6% 8% 10%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 16' shape-rendering='crispEdges' fill='%233b2333'%3E%3Cpath d='M4 0h1v3H4zM5 3h1v2H5zM3 5h2v1H3zM6 5h1v3H6zM7 8h1v2H7zM12 2h1v2h-1zM13 4h1v3h-1zM11 7h2v1h-2zM19 6h1v3h-1zM18 9h1v2h-1zM20 9h1v2h-1zM17 11h1v3h-1zM9 12h1v3H9z'/%3E%3C/svg%3E"); }
+.ca-obj.capa-pared.e-tirado > .ca-obj-arte { rotate: -11deg; transform-origin: 50% 100%; filter: drop-shadow(0 4px 2px rgba(60, 30, 50, .25)); }
+.ca-obj.crac { animation: caCrac .4s steps(4); }
+@keyframes caCrac { 25% { translate: -3px 0; } 50% { translate: 3px 0; } 75% { translate: -2px 0; } }
+.ca-obj.no-cabe > .ca-obj-arte { filter: drop-shadow(0 0 0 #ff9a3c) drop-shadow(0 0 6px rgba(255, 140, 40, .9)); }
+/* Limpiando: barre de lado a lado, la aspiradora vibra, el plumero sacude y la regadera se inclina. */
+.ca-monito.limpiando :is(.ca-bd, .ca-bi) { animation: caBarre .34s ease-in-out infinite alternate !important; }
+.ca-monito.limpiando .ca-mono-flip { animation: caBarreCuerpo .68s ease-in-out infinite !important; }
+.ca-monito.l-aspirar .ca-mono-flip { animation: caVibra .1s steps(2) infinite !important; }
+.ca-monito.l-sacudir .ca-bd { animation: caSacude .18s ease-in-out infinite alternate !important; }
+.ca-monito.l-regar :is(.ca-bd, .ca-bi) { animation: none !important; transform: rotate(-32deg); }
+@keyframes caBarre { from { transform: rotate(-22deg); } to { transform: rotate(16deg); } }
+@keyframes caBarreCuerpo { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2.5deg) translateY(-1px); } }
+@keyframes caVibra { 50% { transform: translateX(1px); } }
+@keyframes caSacude { from { transform: rotate(-40deg); } to { transform: rotate(-72deg); } }
+.ca-obj.reluce > .ca-obj-arte { animation: caReluce .6s ease-in-out 3; }
+@keyframes caReluce { 50% { filter: brightness(1.22) drop-shadow(0 0 6px #fff7c2); } }
+.ca-obj .rehilete-aspas { transform-origin: center; animation: caRehilete 1.4s linear infinite; }
+@keyframes caRehilete { to { transform: rotate(360deg); } }
+.ca:not(.fx1) .ca-obj .rehilete-aspas { animation: none; }
+/* (Fase 64) Monitos más naturales: la cabecita sigue el paso (un poquito después), se inclinan al caminar de lado,
+   cambian el peso de pie a pie cuando están quietos y respiran. */
+.ca.fx1 .ca-monito.camina .ca-cabeza { animation: caCabeceo .4s ease-in-out .06s infinite; }
+@keyframes caCabeceo { 50% { translate: 0 1.2px; } }
+.ca-monito.lado.camina:not(.corre) .ca-mono-cuerpo { rotate: 2.2deg; transform-origin: 50% 100%; transition: rotate .2s; }
+.ca.fx1 .ca-monito:not(.camina):not(.corre):not(.cargado):not(.sentado):not(.dormido):not(.banando):not(.columpio):not(.limpiando):not(.duchando):not([class*=" g-"]):not(.n-bano) .ca-mono-caja { animation: caPeso 6.4s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes caPeso { 0%, 100% { rotate: 0deg; } 30% { rotate: .9deg; } 70% { rotate: -.7deg; } }

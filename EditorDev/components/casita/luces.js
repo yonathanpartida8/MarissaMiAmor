@@ -10,7 +10,7 @@
  *   · Motitas de polvo que flotan en cada cuarto (de noche sólo se ven cerca de la luz).
  *   · En Máximo rendimiento se queda lo sencillo de antes.
  */
-import { CUARTOS, inicioDe, cuarto } from "./cuartos.js";
+import { CUARTOS, inicioDe, cuarto, altoDe } from "./cuartos.js";
 
 const RES = 6, ARRIBA = -330, ALTO = 1130;          // un cuadrito del mapa = 6 del mundo
 const OSCURO = [18, 12, 42];
@@ -23,7 +23,7 @@ export class Luces {
       const cv = document.createElement("canvas");
       cv.className = "ca-luzmapa " + c.k + (c.afuera ? " afuera" : "");
       cv.setAttribute("aria-hidden", "true");
-      Object.assign(cv.style, { left: inicioDe(c.k) + "px", width: c.w + "px", top: ARRIBA + "px", height: ALTO + "px" });
+      Object.assign(cv.style, { left: inicioDe(c.k) + "px", width: c.w + "px", top: ARRIBA + "px", height: this._alto(c.k) + "px" });
       this.j.mundo.append(cv);
       this.mapas.set(c.k, cv);
       // Motitas de polvo flotando (adentro).
@@ -38,6 +38,7 @@ export class Luces {
       }
     }
   }
+  _alto(k) { return Math.max(ALTO, altoDe(k) - ARRIBA + 20); }
   /** Las luces que alumbran un cuarto ahorita (en coordenadas de donde se dibujan). */
   _fuentes(c) {
     const j = this.j, cu = cuarto(c), cfg = j.cfgCuarto(c), x0 = inicioDe(c), lista = [];
@@ -49,6 +50,8 @@ export class Luces {
     }
     // El foco del techo (si la luz del cuarto está prendida): alumbra todo el cuarto, más suave.
     if (!cu.afuera && cu.foco && cfg.luz !== false) lista.push({ x: cu.foco, y: 330, r: 900, k: [255, 220, 170], i: 0.95 });
+    // (Fase 64) Los faroles de la fachada del patio.
+    if (cu.mapa && j.patio) lista.push(...j.patio.luces());
     return lista;
   }
   /** Repinta los mapas que cambiaron (lámparas que se prenden o se apagan, cosas que se mueven). */
@@ -64,7 +67,7 @@ export class Luces {
       this._sombras(c.k, fuentes);
       if (this.claves.get(c.k) === clave) continue;
       this.claves.set(c.k, clave);
-      const W = Math.ceil(c.w / RES), Hh = Math.ceil(ALTO / RES);
+      const W = Math.ceil(c.w / RES), Hh = Math.ceil(this._alto(c.k) / RES);
       cv.width = W; cv.height = Hh;
       const ctx = cv.getContext("2d"), img = ctx.createImageData(W, Hh), d = img.data;
       for (let jj = 0; jj < Hh; jj++) for (let ii = 0; ii < W; ii++) {

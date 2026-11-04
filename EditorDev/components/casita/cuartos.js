@@ -8,9 +8,12 @@ export const PISO = 432;       // donde termina la pared y empieza el piso
 export const FONDO = 452;      // lo más atrás que se puede pisar
 export const FRENTE = 712;     // lo más adelante
 export const SUELO = 572;      // donde se para un monito
+/** (Fase 64) Hasta dónde se puede acomodar algo en el piso de un cuarto (lo de más adelante es para caminar). */
+export const LIMITE_EDIT = 584;
 
 export const CUARTOS = [
-  { k: "jardin", n: "Jardín", w: 700, afuera: true, pared: "#bfe6ff", patron: "liso", piso: "pasto" },
+  // (Fase 64) El jardín es un patio grande para explorar (exterior.js): tres cuartos de largo y hondo hacia abajo.
+  { k: "jardin", n: "Jardín", w: 2400, afuera: true, mapa: true, pared: "#bfe6ff", patron: "liso", piso: "pasto" },
   { k: "sala", n: "Sala", w: 820, foco: 470, pared: "#ffe1ec", patron: "rayas", piso: "madera" },
   { k: "cocina", n: "Cocina", w: 780, foco: 300, pared: "#f9e4d6", patron: "ladrillo", piso: "mosaico" },
   { k: "recamara", n: "Recámara", w: 820, foco: 600, pared: "#ece3ff", patron: "corazones", piso: "alfombra" },
@@ -33,6 +36,10 @@ export function enCuarto(gx) {
   return { c: u.k, x: u.w };
 }
 export const global = (c, x) => inicioDe(c) + (x || 0);
+/** (Fase 64) Lo más adelante que se pisa y lo alto del mundo de cada cuarto (el patio es mucho más hondo). */
+export const MAPA_FRENTE = 1580, MAPA_ALTO = 1640;
+export const frenteDe = (k) => (cuarto(k).mapa ? MAPA_FRENTE : FRENTE);
+export const altoDe = (k) => (cuarto(k).mapa ? MAPA_ALTO : H);
 
 export const PAREDES = ["#ffe1ec", "#ffd6e0", "#fde8d0", "#f9e4d6", "#fff4c8", "#e6f6ea", "#dff3fb", "#e3ecff", "#ece3ff", "#f3e7da", "#ffffff", "#ffc9de", "#d8f0e6", "#f6dbe9"];
 export const PATRONES = [["liso", "Liso"], ["rayas", "Rayitas"], ["puntos", "Puntitos"], ["corazones", "Corazones"], ["ladrillo", "Ladrillo"], ["azulejo", "Azulejo"], ["cuadros", "Cuadritos"], ["estrellas", "Estrellitas"]];
@@ -40,7 +47,8 @@ export const PISOS = [["madera", "Madera"], ["clara", "Madera clara"], ["mosaico
 
 /** Lo que hay la primera vez en cada cuarto: [tipo, x, y?, volteado?]. */
 const INICIAL = {
-  jardin: [["arbol", 150, 515], ["banca", 350, 512], ["flores", 44, 552], ["flores", 252, 548], ["buzon", 470, 520], ["farol", 540, 522], ["puerta", 626, 470], ["perrito", 340, 553], ["casita_perro", 430, 470]],
+  // (Fase 64) En el patio grande: el árbol del columpio en el jardín de flores, la banca y el farol junto al caminito.
+  jardin: [["arbol", 790, 800], ["banca", 970, 650], ["flores", 1050, 540], ["flores", 1350, 540], ["buzon", 1300, 690], ["farol", 1110, 700], ["perrito", 1480, 660], ["casita_perro", 1530, 600]],
   sala: [["ventana", 345, 330], ["fotos", 150, 250], ["reloj", 545, 190], ["colgante", 44, 200], ["alfombra", 230, 556], ["lampara", 46, 505], ["sofa", 205, 500], ["mesita", 222, 548], ["tele", 478, 505], ["tocadiscos", 600, 505], ["gatito", 370, 553]],
   cocina: [["alacena", 170, 240], ["ventana", 440, 320], ["refri", 60, 505], ["estufa", 180, 505], ["fregadero", 315, 505], ["mesa", 480, 538], ["silla", 400, 532], ["silla", 560, 532, true]],
   recamara: [["ventana", 230, 320], ["guirnalda", 330, 104], ["cuadro", 480, 250], ["buro", 46, 505], ["cama", 212, 512], ["ropero", 408, 505], ["escritorio", 566, 505], ["silla_esc", 566, 545], ["peluche", 330, 553]],
@@ -55,6 +63,7 @@ export function casaInicial(antes) {
   for (const [c, lista] of Object.entries(INICIAL)) lista.forEach(([t, x, y, f], i) => objetos.push({ id: `${c.slice(0, 2)}${i}`, t, c, x, y, f: !!f, e: {} }));
   const cuartos = {};
   for (const c of CUARTOS) cuartos[c.k] = { pared: c.pared, patron: c.patron, piso: c.piso, ...(antes?.cuartos?.[c.k] || {}) };
+  cuartos.jardin.mapa = 1;   // (Fase 64: ya nace con el patio grande)
   for (const c of Object.values(cuartos)) { if (!PATRONES.some(([k]) => k === c.patron)) c.patron = "liso"; if (!PISOS.some(([k]) => k === c.piso)) c.piso = "madera"; }
   for (const [k, v] of Object.entries(antes?.luces || {})) if (cuartos[k]) cuartos[k].luz = v !== false;
   // Las cositas de la casita de antes (en cuartos de 420 de ancho) a su lugar nuevo.
@@ -118,7 +127,7 @@ export function desproyectar(X, prof) {
  * (Las de atrás quedan donde no estorban las cosas de pared de entrada.)
  */
 export const PUERTAS = {
-  jardin: [],
+  jardin: [{ id: "ja-a", pared: "atras", x: 1200, va: "sala" }],   // (Fase 64) la puerta de la fachada
   sala: [{ id: "sa-i", pared: "izq", va: "jardin" }, { id: "sa-a", pared: "atras", x: 720, va: "recamara" }, { id: "sa-d", pared: "der", va: "cocina" }],
   cocina: [{ id: "co-i", pared: "izq", va: "sala" }, { id: "co-a", pared: "atras", x: 640, va: "jardin" }, { id: "co-d", pared: "der", va: "recamara" }],
   recamara: [{ id: "re-i", pared: "izq", va: "cocina" }, { id: "re-a", pared: "atras", x: 700, va: "sala" }, { id: "re-d", pared: "der", va: "bano" }],
@@ -128,3 +137,24 @@ export const PUERTAS = {
 };
 /** El color de las puertas de cada cuarto (su identidad): rosita en la sala, madera en la cocina, lila en la recámara… */
 export const COLOR_PUERTA = { jardin: "#e8b48a", sala: "#f2b1c6", cocina: "#e6bd92", recamara: "#c8b5f0", bano: "#a6d9ec", estudio: "#a9c3ea", terraza: "#e0ae84" };
+
+/** (Fase 64) Una casita de antes con el jardín chiquito: sus cositas de entrada (si no se movieron) van a su lugar en el
+ *  patio grande, la «Puerta de la casa» de entrada se quita (ya está la de la fachada) y lo que quedó sobre las espinas,
+ *  el seto o un camino se recorre al pasto libre más cercano. Sale igual en los dos teléfonos (todo es fijo). */
+const VIEJO_JARDIN = { ja0: [150, 515], ja1: [350, 512], ja2: [44, 552], ja3: [252, 548], ja4: [470, 520], ja5: [540, 522], ja6: [626, 470], ja7: [340, 553], ja8: [430, 470] };
+export function opsMudanza(casa, MUDANZA, editable, capaDe) {
+  const ops = [];
+  for (const o of casa?.objetos || []) {
+    if (o.c !== "jardin") continue;
+    const v = VIEJO_JARDIN[o.id], quieto = v && Math.abs(o.x - v[0]) < 3 && Math.abs(o.y - v[1]) < 3;
+    if (quieto && o.id === "ja6" && o.t === "puerta") { ops.push({ o: "quita", id: o.id }); continue; }
+    if (quieto && MUDANZA[o.id]) { ops.push({ o: "pon", obj: { ...o, x: MUDANZA[o.id][0], y: MUDANZA[o.id][1] } }); continue; }
+    const capa = capaDe(o.t);
+    if (capa === "pared" || capa == null || editable(o.x, o.y)) continue;
+    let mejor = null;
+    for (let r = 24; r <= 480 && !mejor; r += 24) for (let a = 0; a < 16 && !mejor; a++) { const x = Math.round(o.x + Math.cos(a * Math.PI / 8) * r), y = Math.round(o.y + Math.sin(a * Math.PI / 8) * r * 0.6); if (editable(x, y)) mejor = [x, y]; }
+    if (mejor) ops.push({ o: "pon", obj: { ...o, x: mejor[0], y: mejor[1] } });
+  }
+  ops.push({ o: "cuarto", k: "jardin", v: { mapa: 1 } });
+  return ops;
+}

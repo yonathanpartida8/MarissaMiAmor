@@ -17,7 +17,7 @@ export class CieloVivo {
   armar() {
     for (const c of CUARTOS) {
       if (!c.afuera) continue;
-      const n = this.j.cuartosN.get(c.k), fondo = n?.querySelector(".ca-fondo-px");
+      const n = this.j.cuartosN.get(c.k), fondo = n?.querySelector(".ca-fondo-px, .ca-panorama");   // (Fase 64: también el paisaje del patio)
       if (!fondo) continue;
       const capa = document.createElement("div");
       capa.className = "ca-cielo-vivo";
