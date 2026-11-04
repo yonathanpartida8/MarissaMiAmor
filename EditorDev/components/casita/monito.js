@@ -390,17 +390,24 @@ export function monitoSVG(r0) {
   for (const c of [9, 10, 14, 15]) for (let rr = 8; rr <= 10; rr++) frenteF.quita(c, rr);
   for (const c of [11, 12, 13]) frenteF.quita(c, 12).quita(c, 13);
   const accF = r.accesorio === "bufanda" ? new Capa() : accesorioF(r.accesorio, P);
+  // (Fase 63) De espaldas: la nuca (todo pelo, o piel si va rapado), sus orejitas, el pelo largo por encima de la
+  // espalda y lo que traiga en la cabeza (moño, gorrito…). Sin carita.
+  const rapado = r.pelo === "rapado", caraA = new Capa().filas(CARA_F, rapado ? sombraPiel(piel, 0.1) : P);
+  if (!rapado) { caraA.sombrea(P); for (const c of [11, 12, 13]) caraA.pon(c, 3, cla(P, 0.18)); for (const c of [9, 15]) caraA.pon(c, 11, osc(P, 0.85)); }
   const sombra = new Capa();
   for (let c = 6; c <= 18; c++) sombra.pon(c, 41, "rgba(60,30,50,.16)");
   for (let c = 8; c <= 16; c++) sombra.pon(c, 41, "rgba(60,30,50,.24)");
+  // (Fase 63) La sombra de contacto: justo debajo de los pies (no se corre con la luz), para que se vea parado en el piso.
+  const contacto = new Capa();
+  for (let c = 8; c <= 16; c++) contacto.pon(c, 41, c === 8 || c === 16 ? "rgba(50,24,42,.22)" : "rgba(50,24,42,.4)");
 
   return `<svg viewBox="0 0 100 170" class="ca-mono-svg pixel-mono" shape-rendering="crispEdges" aria-hidden="true">
-    <g class="ca-sombra">${svgDe(sombra)}</g>
+    <g class="ca-sombra">${svgDe(sombra)}</g><g class="ca-contacto">${svgDe(contacto)}</g>
     ${atras.m.size ? grupo("ca-pelo-atras ca-lado-solo", [atras]) : ""}${atrasF.m.size ? grupo("ca-pelo-atras ca-frente-solo", [atrasF]) : ""}
     ${piernaSVG("ca-pi", pi)}${piernaSVG("ca-pd", pd)}${sienta}
     ${grupo("", [T, D])}
     ${grupo("ca-bi", bi.slice(0, 2), bi[2], { attrs: ' style="transform-origin:28px 64px"' })}
     ${grupo("ca-bd", bd.slice(0, 2), bd[2] + '<g class="ca-mano-cosa"></g>', { attrs: ' style="transform-origin:72px 64px"' })}
-    <g class="ca-cabeza"><g class="ca-lado-solo">${svgDe(contorno([cara, frente, oreja, acc]))}${svgDe(cara)}${svgDe(oreja)}${caritas(r, P, I, piel)}${svgDe(frente)}${svgDe(acc)}</g><g class="ca-frente-solo ca-cara-f">${svgDe(contorno([caraF, frenteF, orejaF, accF]))}${svgDe(caraF)}${svgDe(orejaF)}${caritasF(r, P, I, piel)}${svgDe(frenteF)}${svgDe(accF)}</g></g>
+    <g class="ca-cabeza"><g class="ca-lado-solo">${svgDe(contorno([cara, frente, oreja, acc]))}${svgDe(cara)}${svgDe(oreja)}${caritas(r, P, I, piel)}${svgDe(frente)}${svgDe(acc)}</g><g class="ca-atras-solo">${svgDe(contorno([caraA, orejaF, accF, atrasF]))}${svgDe(atrasF)}${svgDe(orejaF)}${svgDe(caraA)}${svgDe(accF)}</g><g class="ca-frente-solo ca-cara-f">${svgDe(contorno([caraF, frenteF, orejaF, accF]))}${svgDe(caraF)}${svgDe(orejaF)}${caritasF(r, P, I, piel)}${svgDe(frenteF)}${svgDe(accF)}</g></g>
   </svg>`;
 }

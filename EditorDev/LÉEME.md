@@ -1133,6 +1133,20 @@ Medido con un detector propio que graba la pantalla cuadro por cuadro con el pro
 | **Probado** | En Chromium a 390×844 (táctil) y 1280×800 con dos cuentas: corte de pared entre los seis pares de cuartos y sin la V, la terraza sin salirse sobre el estudio, afuera de día sin oscurecer aunque se apague el interruptor, sombras al sol, dedo presionado sin mover la cámara (y al soltar no camina), gestos y cargarlo con ganas de ir al baño, sin cuadrito de cuartos e iconos nuevos; regresión de las fases 52 a 61. |
 | **No probado en teléfonos de verdad** | Cómo se siente el dedo presionado en iPhone (Safari) y Android reales y si la vista se queda quieta igual que en la prueba. No hace falta `librito actualizar` (el servidor no cambió). |
 
+### Fase 63: un cuarto a la vez, puertas de verdad, caminos que rodean los muebles y luz WebGL 2
+
+| | |
+| --- | --- |
+| **Un cuarto a la vez** | Ya no se ven dos cuartos juntos ni se puede deslizar al de al lado: la vista muestra sólo el cuarto donde estás (`vistaCuarto`). Para ir a otro, tu monito tiene que pasar por una puerta. |
+| **Puertas en varias paredes** | Cada cuarto tiene puertas en la pared del fondo (con marco, hoja de dos tableros, manija, umbral y un letrerito con el iconito del cuarto al que llevan) y en las paredes de los lados. Al tocar una, tu monito camina hasta ella, la abre (la del fondo gira en 3D; la de lado se abre en pasitos), entra, la vista cambia con un círculo que se cierra y se abre (como en las caricaturas) y sale por la puerta del otro cuarto, que se cierra atrás de él. Si tocas un lugar de otro cuarto, busca solito por qué puertas pasar. |
+| **Puertas que tú eliges** | En Acomodar, toca una puerta para escoger a qué cuarto lleva (o quitarla, si el cuarto tiene otra). Se guarda para los dos. La puerta del jardín también se puede cambiar. |
+| **Caminos que rodean los muebles** | Cada mueble del piso ocupa su lugar (su «huella»). Tu monito busca la ruta más corta rodeándolos (A* en una rejilla de cuadritos de 12) y la «estira» para caminar derechito, sin zigzag. Si tocas encima de un mueble, va al lugar libre más cercano; nunca atraviesa nada. Pasa por delante o por detrás de las cosas según lo hondo. |
+| **De espaldas, de frente y de lado** | Al ir hacia el fondo se ve de espaldas (pelo, orejas y accesorios por detrás); hacia el frente, de frente; a los lados, de lado. Voltea suave, frena despacito al llegar y tiene su sombrita pegada a los pies (ya no se ve flotando). |
+| **Luz con WebGL 2 en todos los modos** | La capa de luz va con WebGL 2 en todos los modos gráficos, también en Ultra; lo que cambia según el modo es la resolución y cada cuánto se repinta. Ahora la luz sólo abre la oscuridad (ya no suma blanco): sin destellos ni manchas blancas, con escalones suaves (pixel) y cambios lentos. Los relámpagos y el brillo de la lluvia son más suaves. |
+| **Iconos translúcidos** | Los iconitos tienen el trazo más fino, un fondito translúcido del mismo color y un brillito, todos con el mismo estilo y sin colores chillones. |
+| **Probado** | En Chromium a 390×844 (táctil) y 1280×800 con dos cuentas: un solo cuarto a la vez, cruzar por puertas del fondo y de lado, ruta por varias puertas, configurar y quitar una puerta (se guarda), rodear muebles, de espaldas al ir al fondo, sombrita de contacto, WebGL 2 en los cinco modos y sin destellos; regresión de las fases 52 a 62. |
+| **No probado en teléfonos de verdad** | El círculo de transición, el giro 3D de las puertas y cuánto gasta la luz WebGL 2 en teléfonos sencillos (iPhone y Android reales). No hace falta `librito actualizar` (el servidor no cambió). |
+
 ## Cómo está hecho
 
 ```

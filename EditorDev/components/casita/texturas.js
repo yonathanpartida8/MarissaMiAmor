@@ -295,14 +295,18 @@ export function pintarCaja(cv, cfg, soloPuertas = false) {
   const puertaEn = (lado, u, hgt) => {
     const p = lado < 0 ? cfg.izq : cfg.der;
     if (!p?.puerta || u < U0 || u > U1 || hgt > HT + 7) return null;
-    const ORILLA = p.exterior ? [140, 98, 76] : [178, 136, 158], MARCO = p.exterior ? [236, 214, 196] : [255, 247, 242], HOJA = p.exterior ? [199, 136, 96] : [240, 163, 192];
+    const hx = /^#?([0-9a-f]{6})$/i.exec(p.color || ""), hn = hx ? parseInt(hx[1], 16) : 0;
+    const ORILLA = p.exterior ? [140, 98, 76] : [178, 136, 158], MARCO = p.exterior ? [236, 214, 196] : [255, 247, 242], HOJA = hx ? [hn >> 16, (hn >> 8) & 255, hn & 255] : p.exterior ? [199, 136, 96] : [240, 163, 192];
     if (u < U0 + 0.008 || u > U1 - 0.008 || hgt > HT + 4) return ORILLA;
     if (u < U0 + 0.03 || u > U1 - 0.03 || hgt > HT - 3) return MARCO.map((v) => v * (hgt > HT - 3 ? 0.97 : 1));
     if (u < U0 + 0.038 || u > U1 - 0.038 || hgt > HT - 7) return ORILLA.map((v) => v * 0.9);
     const fu = (u - U0) / (U1 - U0);   // 0 al fondo … 1 enfrente
-    if (p.abierta) {
-      if (fu < 0.2) return HOJA.map((v) => v * (0.7 + 0.15 * fu / 0.2));          // la hoja, abierta contra la pared
-      const f = 0.4 + 0.32 * (hgt / HT); return [50 * f, 36 * f, 58 * f];        // el pasillo hacia el otro cuarto
+    // (Fase 63) Abriéndose poco a poco: la hoja gira hacia su bisagra (atrás) y se va viendo el pasillo oscurito.
+    const ap = p.ap ?? (p.abierta ? 1 : 0);
+    if (ap > 0) {
+      const lim = 1 - 0.8 * ap;
+      if (fu < lim) return HOJA.map((v) => v * (0.92 - 0.24 * ap + 0.1 * (fu / Math.max(0.05, lim))));
+      const f = 0.4 + 0.32 * (hgt / HT); return [50 * f, 36 * f, 58 * f];
     }
     const ku = U1 - 0.078;
     if (Math.abs(u - ku) < 0.011 && Math.abs(hgt - 84) < 4) return [255, 214, 120];   // la manija

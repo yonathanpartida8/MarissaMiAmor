@@ -94,7 +94,8 @@ export const ACCIONES = {
     j.sonar("crecer"); j.dar("flor", o);
   },
   fuente(j, o) { j.sonar("agua", { volumen: 0.7 }); j.particulas("agua", o, 0, -120, 6); },
-  async puerta(j, o, n) { rebote(n); j.sonar("puerta"); await j.esperar(250); j.entrarA("sala"); },
+  // (Fase 63) La puerta de la casa es una puerta de verdad: tu monito va, la abre y entra a donde lleva.
+  puerta(j, o) { j.puertasN.tocar("o:" + o.id); },
   sacude(j, o, n) { rebote(n, "baila"); j.sonar("hojas"); j.particulas("hoja", o, 0, -o.def.h * 0.7, 3); },
   boing(j, o, n) { rebote(n, "salta"); j.sonar("boing"); },
   cuac(j, o, n) { rebote(n, "salta"); j.sonar("cuac"); j.particulas("burbuja", o, 0, -40, 3); },

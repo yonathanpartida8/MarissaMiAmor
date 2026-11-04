@@ -883,7 +883,7 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-monito.g-empuja .ca-mono-cuerpo { transform: rotate(8deg); transform-origin: 50% 100%; transition: transform .2s; }
 .ca-monito.g-trampolin .ca-mono-caja { animation: caTrampolin .56s cubic-bezier(.3, .8, .4, 1) infinite; transform-origin: 50% 100%; }
 .ca-monito.g-trampolin .ojo-n { display: none; } .ca-monito.g-trampolin .ojo-f { display: inline; }
-.ca.flash::after { content: ""; position: absolute; inset: 0; z-index: 60; background: #fff; pointer-events: none; animation: caFlash .5s ease-out forwards; }
+.ca.flash::after { content: ""; position: absolute; inset: 0; z-index: 60; background: #fff6fa; pointer-events: none; animation: caFlashSuave .42s ease-out forwards; }
 /* El columpio: quieto se mece poquito; cuando te empujan, vuela alto. */
 .ca-monito.columpio .ca-mono-caja { animation: caMecerSuave 3.2s ease-in-out infinite; }
 .ca-obj.arbol.ocupado .columpio { animation: caMecerSuave 3.2s ease-in-out infinite; }
@@ -908,7 +908,7 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-cuarto.px .ca-cielo { transition: none; }
 
 /* El relámpago: destello doble; con Equilibrado o más, ilumina «de verdad» (mezcla de luz) y echa sombras. */
-.ca-flash { position: absolute; inset: 0; z-index: 15; display: none; pointer-events: none; background: radial-gradient(130% 90% at 50% -10%, rgba(240, 244, 255, .95), rgba(200, 214, 255, .55) 55%, rgba(170, 190, 255, .25)); }
+.ca-flash { position: absolute; inset: 0; z-index: 15; display: none; pointer-events: none; background: radial-gradient(130% 90% at 50% -10%, rgba(232, 238, 255, .5), rgba(200, 214, 255, .26) 55%, rgba(170, 190, 255, .1)); }
 .ca-flash.ver { display: block; animation: caFlash .7s ease-out forwards; }
 .ca.fx2 .ca-flash { mix-blend-mode: screen; }
 .ca.gl .ca-flash { display: none; }
@@ -1233,7 +1233,8 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca.fx1 .ca-mundo.noche .ca-luzmapa.apagado { opacity: .84; }
 .ca.fx1 :is(.ca-oscuro, .ca-brillo) { display: none; }
 .ca.fx1 .ca-pendiente-luz::after { display: none; }
-.ca.fx1 .ca-obj .luz { display: none; }   /* (el cono amarillo dibujado: ahora la lámpara alumbra de verdad) */
+.ca.fx1 .ca-obj .luz { display: none; }
+.ca.gl .ca-obj .luz, .ca.gl :is(.ca-luzmapa, .ca-oscuro, .ca-brillo) { display: none !important; }   /* (Fase 63: con WebGL 2, la luz la pone la capa) */   /* (el cono amarillo dibujado: ahora la lámpara alumbra de verdad) */
 /* (La zona que se quedaba iluminada de noche: el tinte cálido de la noche y el rayo de la ventana. Ya no.) */
 .ca-mundo.noche .ca-ambiente:not(.jardin):not(.terraza) { background-color: rgba(120, 110, 200, .12); }
 .ca-mundo.noche .ca-rayo { display: none; }
@@ -1300,3 +1301,62 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-hud-cuartos { display: none !important; }
 /* Iconos con su bolita de color: que se vea suave también al presionar. */
 .ca-r:active .ico-bola, .ca-ajustes-b:active .ico-bola { r: 9.4; }
+
+/* ═══════════ Fase 63: cuartos independientes, puertas de verdad, monito de espaldas y con los pies en el piso ═══════════ */
+/* Un cuarto a la vez: el lienzo mide lo que el cuarto (centrado si sobra pantalla), como una casita de muñecas en su mesa. */
+.ca-lienzo { margin: 0 auto; }
+.ca-vista { background: radial-gradient(120% 100% at 50% 30%, #fbeff4, #ecd8e3); }
+.ca.es-noche .ca-vista { background: radial-gradient(120% 100% at 50% 30%, #33283f, #1d1626); }
+/* Las puertas de atrás: marco con su moldura, el hueco con su grosor de pared, la hoja con tableros que gira de verdad. */
+.ca-puerta { position: absolute; z-index: 9; pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; }
+.ca-puerta.lejos { display: none; }
+.ca-puerta.atras { width: 96px; height: 196px; transform-origin: 50% 100%; scale: var(--s3, 1); perspective: 320px; }
+.ca-puerta .pu-marco { position: absolute; inset: 0; border-radius: 5px 5px 0 0; background: #fffaf6; box-shadow: inset 0 0 0 3px #c9a3b7, inset 0 0 0 6px #fffaf6, inset 0 0 0 7px #ecdbe2, 0 4px 10px -4px rgba(90, 40, 70, .22); }
+.ca-puerta .pu-marco::before { content: ""; position: absolute; left: -7px; right: -7px; top: -9px; height: 13px; border-radius: 4px; background: #fffaf6; box-shadow: inset 0 0 0 3px #c9a3b7, inset 0 -4px 0 #f0dfe6; }
+.ca-puerta .pu-hueco { position: absolute; left: 11px; right: 11px; top: 12px; bottom: 0; background: linear-gradient(90deg, #1e1427 0 12%, #34253d 12% 88%, #2a1d33 88%), #34253d; box-shadow: inset 0 -16px 0 -6px rgba(255, 220, 200, .08); }
+.ca-puerta .pu-hoja { position: absolute; left: 11px; right: 11px; top: 12px; bottom: 0; transform-origin: 0 50%; background: var(--hoja, #f2b1c6);
+  box-shadow: inset 0 0 0 2px rgba(80, 40, 60, .34), inset -5px 0 0 rgba(255, 255, 255, .16), inset 4px 0 0 rgba(0, 0, 0, .05); transition: transform .52s cubic-bezier(.35, .62, .25, 1), filter .52s; }
+.ca-puerta.abierta .pu-hoja { transform: rotateY(-76deg); filter: brightness(.84); }
+.ca-puerta .pu-tablero { position: absolute; left: 9px; right: 9px; border-radius: 3px; box-shadow: inset 0 0 0 2px rgba(80, 40, 60, .18), inset 0 3px 0 rgba(255, 255, 255, .3), inset 0 -2px 0 rgba(0, 0, 0, .07); }
+.ca-puerta .pu-tablero.t1 { top: 12px; height: 68px; } .ca-puerta .pu-tablero.t2 { top: 94px; bottom: 12px; }
+.ca-puerta .pu-perilla { position: absolute; right: 8px; top: 90px; width: 9px; height: 9px; border-radius: 50%; background: #ffd889; box-shadow: inset -2px -2px 0 #d2a04a, 0 1px 0 rgba(0, 0, 0, .18); }
+.ca-puerta .pu-umbral { position: absolute; left: 3px; right: 3px; bottom: -4px; height: 6px; border-radius: 2px; background: #ead7de; box-shadow: 0 2px 0 rgba(90, 40, 70, .12); }
+.ca-puerta .pu-muro { position: absolute; left: -46px; right: -46px; top: -48px; bottom: 0; border-radius: 6px 6px 0 0; background: repeating-linear-gradient(0deg, #f4e4d6 0 22px, #ead6c4 22px 24px), #f4e4d6; box-shadow: inset 0 0 0 3px #d8bba4; }
+/* Su letrerito: a qué cuarto lleva (un iconito suave). */
+.ca-puerta .pu-letrero { position: absolute; left: 50%; top: -38px; width: 32px; height: 24px; margin-left: -16px; display: grid; place-items: center; border-radius: 10px; color: #8a5a78;
+  background: rgba(255, 255, 255, .8); box-shadow: 0 2px 6px rgba(90, 40, 70, .16), inset 0 0 0 1px rgba(210, 170, 190, .55); pointer-events: none; }
+.ca-puerta .pu-letrero svg { width: 17px; height: 17px; }
+.ca-puerta.lado { z-index: 8; }
+.ca-puerta.lado .pu-letrero { top: -30px; }
+.ca-puerta:focus-visible .pu-marco, .ca-puerta.lado:focus-visible { outline: 3px solid #ff8fb8; outline-offset: 2px; }
+/* Acomodando: las puertas se marcan (se tocan para elegir a dónde llevan) y los lugares de las que quitaste, punteados. */
+.ca.editando .ca-puerta { outline: 2px dashed rgba(255, 143, 184, .75); outline-offset: 4px; border-radius: 6px; }
+.ca-puerta.quitada > :not(.pu-letrero) { display: none; }
+.ca-puerta.quitada { background: rgba(255, 255, 255, .25); }
+.ca-pu-opciones { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.ca-pu-ayuda { grid-column: 1 / -1; margin: 0 0 4px; font-size: 13px; color: #8a6a7e; }
+.ca-pu-op { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 0; border-radius: 14px; background: rgba(255, 240, 246, .9); color: #6d4762; font: inherit; font-weight: 700; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(220, 170, 196, .5); }
+.ca-pu-op i { display: grid; width: 22px; height: 22px; } .ca-pu-op svg { width: 22px; height: 22px; }
+.ca-pu-op.on { background: #ffd9e7; box-shadow: inset 0 0 0 2px #ff9cc0; }
+.ca-pu-op.quitar { color: #a35a6e; background: rgba(255, 236, 236, .9); }
+/* La transición de cuarto: un iris que se cierra sobre la puerta y se abre del otro lado. */
+.ca-iris { position: absolute; inset: 0; z-index: 40; pointer-events: none; }
+.ca-iris[hidden] { display: none; }
+/* Al cruzar la puerta se desvanece hacia adentro (y al salir, aparece). */
+.ca-monito { transition-property: left, top, scale, opacity; }
+.ca-monito.entra { opacity: 0; }
+/* De espaldas (caminando hacia el fondo, o abriendo una puerta de atrás): la nuca, sin carita. */
+.ca-atras-solo { display: none; }
+.ca-monito.atras:not(.lado) .ca-atras-solo { display: inline; }
+.ca-monito.atras:not(.lado) .ca-frente-solo { display: none; }
+/* Pies en el piso: la sombra de contacto (fija debajo de los pies) y la de la luz, más suavecita. */
+.ca-monito:is(.sentado, .dormido, .banando, .columpio, .cargado, .duchando) .ca-contacto { display: none; }
+.ca-mono-svg .ca-sombra { opacity: calc(var(--so, .85) * .7); }
+@keyframes caFlashSuave { from { opacity: .42; } to { opacity: 0; } }
+/* (Fase 63) La capa de luz en pixel (sin suavizar) y los iconos con su tono suave (no saturado). */
+.ca-gl { image-rendering: pixelated; }
+.ca :is(.ca-r i, .ca-ajustes-b, .ca-volver i, .ca-nec-ico, .ca-menu-b i, .ca-sel-b, .ca-chat-b, .ca-pu-op i) { color: #84557a; }
+.ca svg .ico-fondo { transition: fill-opacity .2s; }
+.ca :is(.ca-r, .ca-ajustes-b, .ca-sel-b, .ca-menu-b):hover svg .ico-fondo { fill-opacity: .16; }
+.ca :is(.ca-r, .ca-ajustes-b, .ca-sel-b, .ca-menu-b):active svg .ico-fondo { fill-opacity: .22; }
+.ca .ca-r.on i, .ca .ca-ajustes-b.on { color: #d2588f; }

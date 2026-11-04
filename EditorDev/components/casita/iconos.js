@@ -1,15 +1,7 @@
-/** Los iconitos de la casita. (Fase 62: más modernos y tiernos: línea redondita del color del texto sobre una bolita
- *  pastel de color, un poquito corrida, como sticker; cada grupo con su tono.) */
+/** Los iconitos de la casita. (Fase 63: más finos y con una sola identidad: trazo redondito y delgado del color del
+ *  texto, sobre un fondito translúcido redondeado del mismo tono y con un brillito suave arriba, como vidrio esmerilado.) */
 const ic = (d) => d;
-const TONO = {
-  mensajes: "#ffd0e2", decir: "#ffd0e2", carta: "#ffd0e2", enviar: "#ffd0e2", historial: "#ffd0e2", escribir: "#ffd0e2",
-  vestir: "#e4d8ff", acomodar: "#cdf1e1", completa: "#d3e9ff", salirCompleta: "#d3e9ff", volver: "#ffe0cc",
-  sonido: "#fff0b3", play: "#fff0b3", mic: "#ffd0e2", mudo: "#eadfe6", sol: "#fff0b3", lluvia: "#d3e9ff", rayo: "#e4d8ff", extra: "#e4d8ff",
-  noche: "#e4d8ff", tarde: "#ffe0cc", reloj: "#d3e9ff", graficos: "#cdf1e1", vaciar: "#ffe0cc", borrar: "#ffd6d6", listo: "#cdf1e1",
-  deshacer: "#ffe0cc", duplicar: "#d3e9ff", voltear: "#e4d8ff", color: "#fff0b3", cerrar: "#eadfe6", mas: "#cdf1e1",
-  jardin: "#cdf1e1", sala: "#ffd0e2", cocina: "#fff0b3", recamara: "#e4d8ff", bano: "#d3e9ff", estudio: "#ffe0cc", terraza: "#cdf1e1",
-};
-const dibujo = (d, f) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle class="ico-bola" cx="14" cy="13.6" r="8.4" fill="${f}" stroke="none"/>${d}</svg>`;
+const dibujo = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect class="ico-fondo" x="1.2" y="1.2" width="21.6" height="21.6" rx="7.6" fill="currentColor" fill-opacity=".1" stroke="none"/><path class="ico-brillo" d="M6.2 3.9h6.6" stroke="#fff" stroke-opacity=".6" stroke-width="1.3"/>${d}</svg>`;
 const ICONOS = {
   decir: ic('<path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H10l-5 4v-4H6a2 2 0 0 1-2-2z"/><path d="M9 10h.01M12 10h.01M15 10h.01"/>'),
   vestir: ic('<path d="M8 4l4 3 4-3 4 4-3 3v9H7v-9L4 8z"/>'),
@@ -85,4 +77,4 @@ const ICONOS = {
   traes: ic('<circle cx="8" cy="6" r="2"/><path d="M8 8l-1 6 3 3M7 11l4-1M5 21l2-4"/><circle cx="17" cy="7" r="2"/><path d="M17 9v5l2 4M15 12l4-2"/>'),
   graficos: ic('<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 13l3-4 3 3 4-5"/>'),
 };
-export const ICO = Object.fromEntries(Object.entries(ICONOS).map(([k, d]) => [k, dibujo(d, TONO[k] || "#ffd9e6")]));
+export const ICO = Object.fromEntries(Object.entries(ICONOS).map(([k, d]) => [k, dibujo(d)]));

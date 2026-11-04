@@ -110,3 +110,21 @@ export function desproyectar(X, prof) {
   const s = escala3d(c, prof), mitad = cu.w / 2;
   return inicioDe(c) + Math.max(4, Math.min(cu.w - 4, mitad + (x - mitad) / s));
 }
+
+/**
+ * (Fase 63) LAS PUERTAS DE CADA CUARTO: en la pared de atrás (x dentro del cuarto) o en la de un lado (izq/der).
+ * `va` es a qué cuarto llevan de entrada; cada puerta se puede cambiar (o quitar) al acomodar. Además, la «Puerta de
+ * la casa» (un objeto del catálogo) también es puerta: se pone donde quieras y le eliges a dónde lleva.
+ * (Las de atrás quedan donde no estorban las cosas de pared de entrada.)
+ */
+export const PUERTAS = {
+  jardin: [],
+  sala: [{ id: "sa-i", pared: "izq", va: "jardin" }, { id: "sa-a", pared: "atras", x: 720, va: "recamara" }, { id: "sa-d", pared: "der", va: "cocina" }],
+  cocina: [{ id: "co-i", pared: "izq", va: "sala" }, { id: "co-a", pared: "atras", x: 640, va: "jardin" }, { id: "co-d", pared: "der", va: "recamara" }],
+  recamara: [{ id: "re-i", pared: "izq", va: "cocina" }, { id: "re-a", pared: "atras", x: 700, va: "sala" }, { id: "re-d", pared: "der", va: "bano" }],
+  bano: [{ id: "ba-i", pared: "izq", va: "recamara" }, { id: "ba-d", pared: "der", va: "estudio" }],
+  estudio: [{ id: "es-i", pared: "izq", va: "bano" }, { id: "es-d", pared: "der", va: "terraza" }],
+  terraza: [{ id: "te-a", pared: "atras", x: 76, va: "estudio" }],
+};
+/** El color de las puertas de cada cuarto (su identidad): rosita en la sala, madera en la cocina, lila en la recámara… */
+export const COLOR_PUERTA = { jardin: "#e8b48a", sala: "#f2b1c6", cocina: "#e6bd92", recamara: "#c8b5f0", bano: "#a6d9ec", estudio: "#a9c3ea", terraza: "#e0ae84" };
