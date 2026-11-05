@@ -1504,3 +1504,21 @@ body.ca-escribiendo .jt-nav { display: none; }
 /* Acostada, su sombrita va a lo largo de ella. */
 .ca-obj.capa-piso.en-suelo::after { left: 42%; right: auto; width: 250%; bottom: -2px; }
 .ca-obj.capa-piso.en-suelo.hacia-izq::after { left: auto; right: 42%; }
+
+/* ═══════════ FASE 66: todo en pixel (sombras, luces) ═══════════ */
+/* Las sombritas de las cosas: pixel, del ancho de su base (nada de óvalos borrosos). */
+.ca-obj.capa-piso::after, .ca.fx1 .ca-obj.capa-piso::after { border-radius: 0; background: var(--sombra, none) center / 100% 100% no-repeat; image-rendering: crisp-edges; image-rendering: pixelated; }
+.ca.fx1 .ca-obj.al-sol.capa-piso::after { background: var(--sombra-sol, none) center / 100% 100% no-repeat; }
+/* Girado, la sombra viene dibujada en su vista (con la forma de su huella). */
+.ca-obj.girado.capa-piso::after { display: none; }
+/* Sin viñeta lisa encima de todo; el cono de luz de la lámpara, en escaloncitos de pixel. */
+.ca-escena::after, .ca.es-noche .ca-escena::after { background: none; }
+.ca-pendiente-luz::after { background: var(--cono-px, none) center top / 100% 100% no-repeat; image-rendering: crisp-edges; image-rendering: pixelated; }
+/* (Fase 66) El monito de bulto: va adentro del dibujo del mueble (en pixel) y el de siempre se esconde mientras. */
+.ca-mono-3d { position: absolute; z-index: 2; pointer-events: none; image-rendering: crisp-edges; image-rendering: pixelated; -webkit-user-drag: none; user-select: none; transform-origin: 50% 100%; }
+.ca.fx1 .ca-mono-3d { animation: caRespira3d 3.6s steps(1) infinite; }
+@keyframes caRespira3d { 0%, 55%, 100% { translate: 0 0; } 60%, 92% { translate: 0 -1px; } }
+.ca-monito.en3d .ca-mono-caja { visibility: hidden; }
+/* El columpio: se mece con todo y monito (desde las cuerdas). */
+.ca.fx1 .ca-obj.arbol.ocupado .ca-mono-3d { animation: caMecerSuave 3.2s ease-in-out infinite; transform-origin: 50% -60px; }
+@media (prefers-reduced-motion: reduce) { .ca-mono-3d { animation: none !important; } }

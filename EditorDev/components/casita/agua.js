@@ -72,7 +72,7 @@ export class Agua {
     if (!this.listo) { this.medir(); return; }
     const v = this._vista?.();
     if (!v) return;
-    const tt = Math.floor(t * 10 * (0.75 + f * 0.6)), cielo = CIELO[this.hora], noche = this.hora === "noche", umbral = 1.22 - f * 0.38;
+    const tt = Math.floor(t * 10 * (0.42 + f * 0.55)), cielo = CIELO[this.hora], noche = this.hora === "noche", umbral = 1.22 - f * 0.38;
     for (const z of this.zonas) {
       const i0 = Math.max(0, Math.floor((v.L - z.x0) / PX)), i1 = Math.min(z.W, Math.ceil((v.R - z.x0) / PX)), j0 = Math.max(0, Math.floor((v.T - z.y0) / PX)), j1 = Math.min(z.H, Math.ceil((v.B - z.y0) / PX));
       if (i1 <= i0 || j1 <= j0) continue;

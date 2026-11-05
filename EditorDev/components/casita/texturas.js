@@ -365,3 +365,34 @@ export function pintarCaja(cv, cfg, soloPuertas = false) {
 /** La clave con la que se guardó el tapiz / el piso (para la cajita 3D). */
 export const claveTapiz = (color, patron) => `p|${color}|${patron}`;
 export const clavePiso = (tipo) => (PISOS[tipo] || ["mosaico", "alfombra", "barro"].includes(tipo) ? `f|${tipo}` : "f|pasto");
+
+/* ── (Fase 66) Sombras y luces en pixel (nada de degradados lisos) ── */
+/** La sombrita pixel de algo del piso: un óvalo de `celdas` cuadritos de ancho (de 4 del mundo), con su centro más
+ *  oscuro y la orilla tramada. `sol`: la verdosa de afuera de día. */
+export function sombraPx(celdas, sol = false) {
+  const w = Math.max(3, Math.min(90, Math.round(celdas))), h = Math.max(3, Math.min(7, Math.round(w / 6) + 2)), k = sol ? [36, 58, 40] : [70, 34, 60];
+  return comoUrl("sombra" + w + (sol ? "s" : ""), w, h, (L) => {
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      const dx = (i + 0.5 - w / 2) / (w / 2), dy = (j + 0.5 - h / 2) / (h / 2), r = dx * dx + dy * dy;
+      if (r > 1) continue;
+      const a = r < 0.3 ? (sol ? 92 : 78) : r < 0.65 ? (sol ? 58 : 48) : (i + j) % 2 ? (sol ? 30 : 24) : 0;
+      if (a) L.pon(i, j, k, a);
+    }
+  });
+}
+/** El cono de luz de la lámpara del techo, en pixel: escalones de luz con trama (no un degradado liso). */
+export function conoLuzPx() {
+  const w = 60, h = 95;
+  return comoUrl("cono", w, h, (L) => {
+    for (let j = 0; j < h; j++) {
+      const f = j / h, ancho = 6 + f * 24;
+      for (let i = 0; i < w; i++) {
+        const dx = Math.abs(i + 0.5 - w / 2) / ancho;
+        if (dx > 1) continue;
+        const v = (1 - f * 0.85) * (1 - dx * dx), b = BAY[(j % 4) * 4 + (i % 4)] / 16;
+        const n = Math.floor(v * 4 + b * 0.9);
+        if (n > 0) L.pon(i, j, [255, 243, 176], [0, 34, 58, 84, 100][Math.min(4, n)]);
+      }
+    }
+  });
+}

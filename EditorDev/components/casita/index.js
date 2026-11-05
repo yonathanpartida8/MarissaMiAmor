@@ -34,6 +34,7 @@ import { Patio } from "./patio.js";
 import { Suciedad } from "./suciedad.js";
 import { Viento } from "./viento.js";
 import { giroDe, vistaGirada, lugarGirado, hondura, ELEV_GIRO } from "./girar.js";
+import { modelo as modelo3d, pintar as pintar3d, lugarEn as lugar3d, POSES as POSES3D, CEL as CEL3D } from "./monito3d.js";
 import { CATALOGO, COSAS_MANO, RECETAS, colorDe } from "./catalogo/index.js";
 import { monitoSVG, ropaDe } from "./monito.js";
 import { crearSonidos } from "./sonidos.js";
@@ -50,13 +51,15 @@ import { Necesidades, NECESIDADES } from "./necesidades.js";
 import { LasTraes, VEL_TRAES } from "./traes.js";
 import { VozEnVivo, puedeVoz } from "./voz.js";
 import { CieloVivo } from "./cielo.js";
-import { texPared, texPiso, texLluvia, texCharcos, pintarFrente, texAuto, texSol, texLuna, pintarCaja, claveTapiz, clavePiso } from "./texturas.js";
+import { texPared, texPiso, texLluvia, texCharcos, pintarFrente, texAuto, texSol, texLuna, pintarCaja, claveTapiz, clavePiso, sombraPx, conoLuzPx } from "./texturas.js";
 import { Luces } from "./luces.js";
 import { Puertas, hondoPuerta } from "./puertas.js";
 import { Navegacion } from "./ruta.js";
 
 const lim = (v, a, b) => Math.max(a, Math.min(b, v));
 const MAX_OBJETOS = 300;
+/** (Fase 66) Las poses que hace el monito de bulto (en cualquier ángulo del mueble). */
+const POSE_3D = new Set(["sentado", "dormido", "banando", "columpio"]);
 const PUERTA_T = 0.41;   // (Fase 60) a qué hondura del piso está la puerta de cada pared (0 = al fondo, 1 = enfrente)
 const RECIENTES = "editordev:casita-recientes";
 const POSES = ["sentado", "dormido", "banando", "columpio", "cocinando", "duchando"];
@@ -117,6 +120,7 @@ export class Casita {
     this.mundo.append(this.yo.n, this.suyo.n);
     this.escena = el("div.ca-escena", {}, [this.vistaN]);
     this.raiz = el("div.ca", { dataset: { sinOnda: "" } }, [this.escena]);
+    try { this.raiz.style.setProperty("--cono-px", conoLuzPx().url); } catch (e) { /* nada */ }
     // Estilo pixel (se puede quitar en Ajustes): un filtro que cuadricula cada cosa y a los monitos
     // (lo pone graficos(), más fino o más grueso según el perfil).
     this.pixel(this.leerPixel());
@@ -258,7 +262,8 @@ export class Casita {
       if (c.afuera) {
         const ch = el("i.ca-charcos");
         try { const t = texCharcos(c.w); ch.style.setProperty("--charcos", t.url); } catch (e) { /* nada */ }
-        n.append(el("i.ca-lluvia"), ch);
+        // (En el patio grande la lluvia sencilla cubre todo lo hondo del mapa.)
+        n.append(el("i.ca-lluvia", c.mapa ? { style: { height: MAPA.alto + MAPA.arriba + 900 + "px" } } : {}), ch);
       }
       if (c.afuera) {
         // (Fase 58) El sol y la luna en pixel, con su brillo; se mueven y cambian con la hora.
@@ -791,8 +796,10 @@ export class Casita {
     const arte = r.n.querySelector(":scope > .ca-obj-arte") || r.n.appendChild(el("div.ca-obj-arte"));
     // (Fase 64) Girado: se ve desde ese ángulo (se prepara un ratito; mientras, el dibujo de siempre).
     const g = this._girable(r.d) ? giroDe(o) : 0, t = (r._tg = (r._tg || 0) + 1);
-    if (!g || !r.vg) { arte.innerHTML = r.d.arte(o.e || {}, C); if (r.vg) { r.vg = null; this._colocar(r); } }
+    if (!g || !r.vg) { arte.innerHTML = r.d.arte(o.e || {}, C); if (r.vg) { r.vg = null; this._colocar(r); } this._reponer3d(r); }
     r.n.classList.toggle("girado", !!g);
+    // (Fase 66) Su sombrita en pixel, del ancho de su base (girado, la sombra ya viene dibujada con su vista).
+    if (r.d.capa === "piso") { try { const c = (r.d.w * 0.84) / 4; r.n.style.setProperty("--sombra", sombraPx(c).url); r.n.style.setProperty("--sombra-sol", sombraPx(c, true).url); } catch (e) { /* nada */ } }
     // (Fase 65) Lo largo (la escoba) se dibuja recargado o acostado, girando sobre su base.
     const pose = r.d.larga ? o.e?.pose || "" : "";
     r.n.classList.toggle("recargada", !!pose); r.n.classList.toggle("en-suelo", pose === "suelo"); r.n.classList.toggle("hacia-izq", pose === "suelo" && +o.e.ang < 0);
@@ -801,12 +808,13 @@ export class Casita {
     if (g) vistaGirada(r.d, o.e, C, g).then((v) => {
       if (r._tg !== t || !r.n.isConnected) return;
       // (Fase 65) Lo que se mueve casi entero no se gira: se queda de frente, con todas sus animaciones.
-      if (!v || v.plano) { arte.innerHTML = r.d.arte(o.e || {}, C); r.vg = null; r.n.classList.remove("girado"); if (v?.plano && this.sel === r) aviso("Esta cosa se mueve toda: se queda de frente para no perder su animación", 2600); this._colocar(r); return; }
+      if (!v || v.plano) { arte.innerHTML = r.d.arte(o.e || {}, C); r.vg = null; r.n.classList.remove("girado"); if (v?.plano && this.sel === r) aviso("Esta cosa se mueve toda: se queda de frente para no perder su animación", 2600); this._colocar(r); this._reponer3d(r); return; }
       r.vg = v;
       // El cuerpo girado (pixel) y, encima, sus partes vivas (con sus animaciones) alineadas con el frente girado.
       const m = v.matriz.map((x) => +x.toFixed(4));
       arte.innerHTML = `<img class="ca-girado" alt="" draggable="false" src="${v.url}">` + (v.vivo ? `<div class="ca-vivo${v.frente ? "" : " tras"}" style="width:${r.d.w}px;height:${r.d.h}px;transform:matrix(${m.join(",")})">${v.vivo}</div>` : "");
       if (this.arrastrandoId !== r.o.id) this._colocar(r);
+      this._reponer3d(r);
     });
   }
   /** (Fase 64) Lo que se puede girar: lo del piso (las mascotas no, ellas solitas se voltean). */
@@ -1111,7 +1119,7 @@ export class Casita {
     n.style.left = proyectar(gx, SUELO).x.toFixed(1) + "px";
     return { quien, n, caja, cuerpo, llevaN, globo, globos, nombreN, gx, y: SUELO, prof: SUELO, ropa: { ...ropa }, accion: "", mueble: "", lleva: "", mira: 1, orden: 0, t: 0, evAt: 0, dt: 0 };
   }
-  _vestirMono(m, ropa) { m.ropa = { ...m.ropa, ...ropa }; m.cuerpo.innerHTML = monitoSVG(m.ropa); if (m.lleva) this._ponerLleva(m, m.lleva); }
+  _vestirMono(m, ropa) { m.ropa = { ...m.ropa, ...ropa }; m.cuerpo.innerHTML = monitoSVG(m.ropa); if (m.lleva) this._ponerLleva(m, m.lleva); if (m._3d) this._sentar3d(m, m._3d.r, m._3d.jx, true); }
   /** 2.5D: más atrás (y chica) se ve un poquito más chiquito; adelante, normal. */
   _prof(m, y = m.y, gx = m.gx) {
     const c = enCuarto(gx).c;
@@ -1224,6 +1232,7 @@ export class Casita {
   /** Lo que está encima de una mesa (no estorba en el piso). */
   _esEncima(r) { return puedeSubir(r.d) && !!this._encima(r.gx, r.o.y, r.o.id); }
   _pose(m, pose, mueble = "", z = null) {
+    if (m._3d && (pose !== m.accion || mueble !== m.mueble)) this._quitar3d(m, !!pose === false);
     m.accion = pose; m.mueble = mueble;
     m.n.classList.remove(...POSES);
     if (pose) m.n.classList.add(pose);
@@ -1254,14 +1263,81 @@ export class Casita {
         m._lugarDe = { lx, ly };
         m.n.classList.toggle("atras", sienta && G.cara === "atras"); m.n.classList.toggle("lado", sienta && (G.cara === "der" || G.cara === "izq"));
         if (G.mira) this._mirar(m, G.mira);
+        // (Fase 66) Cocinando en una estufa girada: de cara a la estufa (de lado, o del otro lado viéndote a ti).
+        if (l.pose === "cocinando" && G.cara !== "frente") { m.n.classList.toggle("lado", G.cara !== "atras"); if (G.cara !== "atras") this._mirar(m, G.cara === "der" ? -1 : 1); }
         m.n.style.transitionDuration = ya || reducido() ? "0s" : ".42s";
         if (!ya && !reducido() && sienta) { m.n.classList.remove("sentandose"); void m.n.offsetWidth; m.n.classList.add("sentandose"); setTimeout(() => m.n.classList.remove("sentandose"), 500); }
         m.y = ySit; this._ponerMono(m, gx, ySit, r.o.y);
-        const zo = parseInt(r.n.style.zIndex, 10) || 0, z = sienta && G.cara === "atras" ? zo - 1 : sienta && G.cara !== "frente" ? zo + 1 : l.z != null ? zo + l.z : Math.round(ySit);
+        const zo = parseInt(r.n.style.zIndex, 10) || 0, z = (sienta || l.pose === "cocinando") && G.cara === "atras" ? zo - 1 : sienta && G.cara !== "frente" ? zo + 1 : l.z != null ? zo + l.z : Math.round(ySit);
         this._pose(m, l.pose, `${r.o.id}:${jx}`, z);
+        // (Fase 66) Sentado, acostado, en la tina o en el columpio: el monito de bulto, adentro del mueble.
+        if (POSE_3D.has(l.pose)) this._sentar3d(m, r, jx, ya);
         ok(true);
       }, ya);
     });
+  }
+  /* ── (Fase 66) El monito de bulto (monito3d.js): se sienta, se acuesta o se baña en el mueble, con el ángulo del
+     mueble, y va ADENTRO de su dibujo (lo de enfrente del mueble lo tapa pixel por pixel). Al llegar, unos cuadritos
+     de transición (se agacha y se sienta; se sienta en la orilla y se acuesta); al pararse, al revés. ── */
+  async _sentar3d(m, r, jx, ya = false) {
+    const l = r.d.lugares?.[jx], tk = (m._t3 = (m._t3 || 0) + 1), clave = `${r.o.id}:${jx}`;
+    if (!l) return;
+    try {
+      const g = this._girable(r.d) ? giroDe(r.o) : 0;
+      const [M, vg] = await Promise.all([modelo3d(m.ropa), vistaGirada(r.d, r.o.e, colorDe(r.d, r.o.e), g)]);
+      if (m._t3 !== tk || m.mueble !== clave || !this.objs.has(r.o.id) || !this.vivo) return;
+      const v = vg && !vg.plano ? vg : null, cel = CEL3D * (m.alto || 1), L = lugar3d(M, r.d, l, jx, v, cel);
+      m._3d = { r, jx, M, v, g, cel, L, clave: JSON.stringify(m.ropa) + (m.alto || 1) };
+      m.n.classList.add("en3d");
+      const cuadros = [];
+      if (!ya && !reducido()) {
+        const [x, y, z] = L.ancla;
+        if (l.pose === "dormido") {
+          // Se sienta en la orilla de enfrente y se va acostando de ladito.
+          const yS = y + (M.medio - 2.4) * cel - 1.4 * cel, zS = -((v?.D ?? 20) * 4) / 2 + 3 * cel;
+          cuadros.push([POSES3D.sentado, [x, yS, zS], "cadera"], [{ ...POSES3D.medio, rodar: L.pose.rodar / 2 }, [x, (y + yS) / 2, (z + zS) / 2], "centro"]);
+        } else cuadros.push([POSES3D.agachado, [x, y - 4 * cel, z - 4 * cel], "cadera"]);
+      }
+      cuadros.push([L.pose, L.ancla, L.ancla3d]);
+      for (let i = 0; i < cuadros.length; i++) {
+        if (i) { await this.esperar(130); if (m._t3 !== tk || m.mueble !== clave) return; }
+        this._cuadro3d(m, ...cuadros[i]);
+      }
+    } catch (e) { if (m._t3 === tk) { m.n.classList.remove("en3d"); m._3d = null; m._img3d?.remove(); } }
+  }
+  /** Un cuadrito del monito de bulto en su mueble. */
+  _cuadro3d(m, pose, ancla, ancla3d) {
+    const S = m._3d;
+    if (!S) return;
+    const { r, M, v, g, cel, L } = S, d = r.d;
+    const im = pintar3d(M, pose, { clave: S.clave, g, yaw: L.yaw, ancla, ancla3d, cel, vg: v, cara: m.accion === "dormido" ? "dormido" : "normal" });
+    const arte = r.n.querySelector(":scope > .ca-obj-arte");
+    if (!arte) return;
+    let n = m._img3d;
+    if (!n) n = m._img3d = el("img.ca-mono-3d", { alt: "", draggable: "false", "aria-hidden": "true" });
+    if (n.parentNode !== arte) arte.append(n);
+    // De la vista del mueble (girada, o el dibujo de siempre) a la cajita del dibujo.
+    const left = r.vg ? im.x + r.vg.ax : im.x + d.w / 2, top = r.vg ? im.y - r.vg.H * 4 + r.vg.ay : im.y - (v ? v.H * 4 : d.h) + d.h - (hondura(d) * ELEV_GIRO) / 2;
+    n.src = im.url;
+    Object.assign(n.style, { left: left.toFixed(1) + "px", top: top.toFixed(1) + "px", width: im.w.toFixed(1) + "px", height: im.h.toFixed(1) + "px" });
+    n.dataset.z = ancla[2].toFixed(1);
+    // (Dos en el mismo mueble: el de más adelante va encima.)
+    const otros = [...arte.querySelectorAll(":scope > .ca-mono-3d")];
+    if (otros.length > 1) otros.sort((a, b) => +b.dataset.z - +a.dataset.z).forEach((x) => arte.append(x));
+  }
+  /** Quitar el monito de bulto (al pararse: un cuadrito agachándose y vuelve el de siempre). */
+  _quitar3d(m, animar = true) {
+    const S = m._3d, n = m._img3d;
+    m._3d = null; m._t3 = (m._t3 || 0) + 1;
+    const fin = () => { n?.remove(); if (!m._3d) m.n.classList.remove("en3d"); };
+    if (!S || !n || !animar || reducido() || !n.isConnected) { fin(); return; }
+    const [x, y, z] = S.L.ancla;
+    m._3d = S; this._cuadro3d(m, S.L.ancla3d === "centro" ? { ...POSES3D.sentado } : POSES3D.agachado, S.L.ancla3d === "centro" ? [x, y, z] : [x, y - 4 * S.cel, z - 4 * S.cel], "cadera"); m._3d = null;
+    setTimeout(fin, 140);
+  }
+  /** Al redibujar un mueble (se giró, se movió, cambió de color): sus monitos de bulto vuelven a su lugar. */
+  _reponer3d(r) {
+    for (const m of [this.yo, this.suyo]) if (m?._3d?.r === r || (m?._3d && m._3d.r.o.id === r.o.id)) { m._3d.r = r; this._sentar3d(m, r, m._3d.jx, true); }
   }
   _posYo() { const m = this.yo, gx = m._enRuta ? m.meta.gx : m.gx, y = m._enRuta ? m.meta.y : m.y, { c, x } = enCuarto(gx); return { c, x: Math.round(x), y: Math.round(y), mira: m.mira }; }
   _mandarYo(d = {}) { this.sync?.yo({ ...this._posYo(), accion: this.yo.accion, mueble: this.yo.mueble, ...d }); }
@@ -1311,7 +1387,7 @@ export class Casita {
       const a = this.estaturaDe(u);
       if (!m || m.alto === a) continue;
       m.alto = a; m.n.style.setProperty("--alto", String(a));
-      if (m.mueble) { const [id, jx] = m.mueble.split(":"), ro = this.objs.get(id); if (ro?.d.lugares?.[+jx]) this._irLugar(m, ro, +jx, true); }
+      if (m.mueble) { const [id, jx] = m.mueble.split(":"), ro = this.objs.get(id); if (ro?.d.lugares?.[+jx]) { m._3d = null; this._irLugar(m, ro, +jx, true); } }
     }
   }
   irJunto(o) {

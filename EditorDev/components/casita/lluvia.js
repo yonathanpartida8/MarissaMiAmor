@@ -5,7 +5,8 @@
  * afuera; cuántas gotas y cuántos cuadros por segundo, según el perfil de gráficos (en Máximo rendimiento se
  * queda la lluvia sencilla de CSS).
  */
-import { CUARTOS, inicioDe, FONDO, H } from "./cuartos.js";
+import { CUARTOS, inicioDe, FONDO, H, cuarto, frenteDe } from "./cuartos.js";
+import { MAPA } from "./exterior.js";
 import { CHARCOS } from "./texturas.js";
 
 const GOTAS = { rend: 50, equi: 110, cal: 170, ultra: 240 };
@@ -51,11 +52,15 @@ export class LluviaFisica {
     if (!w || !h) return;
     if (this.cv.width !== Math.round(w * d) || this.cv.height !== Math.round(h * d)) { this.cv.width = Math.round(w * d); this.cv.height = Math.round(h * d); }
     // (Fase 59) Las gotas viven en el MUNDO: al deslizar la vista no te siguen, se quedan cayendo en su lugar.
-    const k = j.k, sx = j.vistaN.scrollLeft, oy = j.offY - (j._subir || 0), W = this.cv.width, Hc = this.cv.height;
-    const X = (x) => (x * k - sx) * d, Y = (y) => (oy + y * k) * d;
-    const vx0 = sx / k - 60, vx1 = (sx + w) / k + 60, arriba = -oy / k - 20;
-    // Lo de afuera que se ve (más un poquito de cada lado).
-    const rangos = CUARTOS.filter((c) => c.afuera).map((c) => ({ a: Math.max(inicioDe(c.k), vx0), b: Math.min(inicioDe(c.k) + c.w, vx1) })).filter((r) => r.b > r.a);
+    // (Fase 66) Se ve un cuarto a la vez y el desplazamiento de la vista es DENTRO de ese cuarto: las gotas sólo caen
+    // si el cuarto que se ve es de afuera (antes, desde la sala se veía llover encima, como si fuera el jardín).
+    const vc = j.vistaCuarto, cv = vc && cuarto(vc), xv = vc ? inicioDe(vc) : 0, mapa = !!cv?.mapa;
+    const k = j.k, sx = j.vistaN.scrollLeft, sy = j.vistaN.scrollTop, oy = j.offY - (j._subir || 0), W = this.cv.width, Hc = this.cv.height;
+    const X = (x) => ((x - xv) * k - sx) * d, Y = mapa ? (y) => ((y + MAPA.arriba) * k - sy) * d : (y) => (oy + y * k) * d;
+    const vx0 = xv + sx / k - 60, vx1 = xv + (sx + w) / k + 60, arriba = mapa ? sy / k - MAPA.arriba - 20 : -oy / k - 20;
+    const piso0 = mapa ? Math.max(MAPA.fondo, arriba + 60) : FONDO, piso1 = mapa ? Math.min(frenteDe(vc), (sy + h) / k - MAPA.arriba) : H - 4;
+    // Lo de afuera que se ve (más un poquito de cada lado): sólo el cuarto que se ve, si es de afuera.
+    const rangos = cv?.afuera ? [{ a: Math.max(xv, vx0), b: Math.min(xv + cv.w, vx1) }].filter((r) => r.b > r.a) : [];
     const ancho = rangos.reduce((s, r) => s + r.b - r.a, 0);
     const meta = llueve ? Math.round((GOTAS[gfx] || 0) * (MAS[cl] || 1) * ancho / Math.max(1, w / k)) : 0;
     const viento = VIENTO[cl] || 30;
@@ -63,7 +68,7 @@ export class LluviaFisica {
       let u = Math.random() * ancho, r = rangos[0];
       for (const x of rangos) { if (u <= x.b - x.a) { r = x; break; } u -= x.b - x.a; }
       if (!r) return null;
-      const suelo = azar(FONDO, H - 4);
+      const suelo = azar(piso0, Math.max(piso0 + 1, piso1));
       // (Del lado de donde viene el viento salen un poquito antes, para que no quede una orilla sin lluvia.)
       Object.assign(g, { x: azar(r.a, r.b) - viento * (todo ? 0 : 0.7), y: todo ? azar(arriba, suelo) : arriba - azar(0, 80), vx: viento * azar(0.85, 1.15), vy: azar(500, 700), suelo, a: r.a, b: r.b });
       return g;

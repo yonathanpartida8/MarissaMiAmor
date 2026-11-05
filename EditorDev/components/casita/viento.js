@@ -15,7 +15,8 @@ import { cuarto, inicioDe } from "./cuartos.js";
 import { MAPA, MEDIDAS, ES_ARBOL, hash } from "./exterior.js";
 import { nivel } from "./graficos.js";
 
-const BASE = { sol: 0.24, lluvia: 0.52, tormenta: 0.8, extra: 0.95 };
+// (Fase 66) Más calmado: con sol, una brisita; con lluvia, viento normal; con tormenta, fuerte.
+const BASE = { sol: 0.1, lluvia: 0.4, tormenta: 0.7, extra: 0.9 };
 const PESO = { roble: 0.75, cerezo: 1, frutal: 0.85, pino: 0.42, abedul: 1.2, sauce: 1.35, arbusto: 0.7 };
 const sinMov = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -26,11 +27,12 @@ export function fuerzaViento(t, clima = "sol") {
   // Ráfagas: en cada ventanita de 8 s puede llegar una, con subida y bajada suaves.
   const k = Math.floor(t / 8), f = t / 8 - k;
   let raf = 0;
-  if (hash(k, 7, 311) < 0.42 + b * 0.4) {
-    const ini = 0.08 + hash(k, 8, 311) * 0.5, dur = 0.24 + hash(k, 9, 311) * 0.22, x = (f - ini) / dur;
-    if (x > 0 && x < 1) raf = Math.sin(Math.PI * x) ** 2 * (0.35 + hash(k, 10, 311) * 0.55);
+  // (Con sol casi no hay ráfagas; con lluvia y tormenta, más seguido y más fuertes.)
+  if (hash(k, 7, 311) < 0.12 + b * 0.6) {
+    const ini = 0.08 + hash(k, 8, 311) * 0.5, dur = 0.3 + hash(k, 9, 311) * 0.25, x = (f - ini) / dur;
+    if (x > 0 && x < 1) raf = Math.sin(Math.PI * x) ** 2 * (0.25 + hash(k, 10, 311) * 0.5);
   }
-  return Math.max(0, Math.min(1, b * (0.5 + lento * 0.75) + raf * (0.35 + b * 0.8)));
+  return Math.max(0, Math.min(1, b * (0.5 + lento * 0.75) + raf * b * 0.9));
 }
 
 export class Viento {
@@ -67,7 +69,8 @@ export class Viento {
         if (!peso || e.x < L || e.x > R || e.y < T || e.y > B) continue;
         const ph = hash(e.x, e.y, 6) * 6.28, w = 0.55 + hash(e.y, e.x, 5) * 0.5;
         // Se inclina con el viento (siempre hacia el mismo lado, más en las ráfagas) y se mece encima a su ritmo.
-        const a = peso * (f * 2.4 + Math.sin(t * w * (1 + f) + ph) * (0.35 + f * 1.1) + Math.sin(t * 3.1 * w + ph * 2) * f * 0.35);
+        // (Fase 66) Despacito: un vaivén de 8 a 16 segundos y un temblorcito de 4 a 7 (más con viento fuerte).
+        const a = peso * (f * 1.8 + Math.sin(t * w * 0.7 * (1 + f * 0.5) + ph) * (0.22 + f * 0.9) + Math.sin(t * 1.5 * w + ph * 2) * f * 0.25);
         const copa = n.lastElementChild?.classList.contains("esc-copa") ? n.lastElementChild : n.querySelector(".esc-copa");
         if (copa) copa.style.transform = `rotate(${(a * 0.55).toFixed(2)}deg) skewX(${(-a * 0.5).toFixed(2)}deg)`;
         else if (e.k === "arbusto") { const tr = n.querySelector(".esc-tronco"); if (tr) tr.style.transform = `skewX(${(-a * 0.9).toFixed(2)}deg)`; }
@@ -83,7 +86,7 @@ export class Viento {
       if (r.o.c !== c || !r.d.hojas) continue;
       const copa = r._copa?.isConnected ? r._copa : (r._copa = r.n.querySelector(".copa"));
       if (!copa) continue;
-      const ph = hash(r.o.x | 0, r.o.y | 0, 6) * 6.28, a = f * 2 + Math.sin(t * (0.8 + f) + ph) * (0.4 + f);
+      const ph = hash(r.o.x | 0, r.o.y | 0, 6) * 6.28, a = f * 1.6 + Math.sin(t * (0.5 + f * 0.4) + ph) * (0.25 + f * 0.8);
       copa.style.transform = `rotate(${(a * 0.6).toFixed(2)}deg)`;
     }
     // En las ráfagas se sueltan hojitas que se van volando (de a mentiras: las de verdad son las de suciedad.js).

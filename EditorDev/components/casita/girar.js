@@ -139,12 +139,15 @@ export function vistaGirada(d, e, C, g) {
       for (const [u, v] of [[0, 0], [W, 0], [0, H], [W, H]]) for (const z of [0, D]) { const [X, Y] = P(u, v, z); x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); }
       const OW = Math.ceil(x1 - x0) + 3, OH = Math.ceil(y1 - y0) + 3, zb = new Float32Array(OW * OH).fill(1e9), out = new Uint8ClampedArray(OW * OH * 4);
       const luzLado = si > 0 ? 0.74 : 0.86;
+      // (Fase 66) Lo más alto que hay en cada columna y hondura (para saber dónde se sienta o se acuesta un monito).
+      const tope = new Int16Array(W * D).fill(-1);
       const lleno3 = (u, v, z) => u >= 0 && v >= 0 && u < W && v < H && z >= 0 && z < D && op[v * W + u] && lado(z, v);
       for (let v = 0; v < H; v++) for (let u = 0; u < W; u++) {
         if (!op[v * W + u]) continue;
         const cc = col[v * W + u];
         for (let z = 0; z < D; z++) {
           if (!lado(z, v)) continue;
+          if (tope[u * D + z] < 0) tope[u * D + z] = v;
           let c;
           if (!lleno3(u, v, z - 1)) c = cc;
           else if (!lleno3(u, v - 1, z)) c = mezcla(cc, 1.12);
@@ -158,6 +161,20 @@ export function vistaGirada(d, e, C, g) {
             const [X, Y, Z] = P(u + du, v + dv, z + 0.5), i = Math.floor(X - x0) + 1, j = Math.floor(Y - y0) + 1, k = j * OW + i;
             if (i < 0 || j < 0 || i >= OW || j >= OH || Z >= zb[k]) continue;
             zb[k] = Z; out[k * 4] = c[0]; out[k * 4 + 1] = c[1]; out[k * 4 + 2] = c[2]; out[k * 4 + 3] = 255;
+          }
+        }
+      }
+      // (Fase 66) La sombrita en el piso, con la forma de su base girada (pixel, con la orilla tramada).
+      {
+        let ub0 = W, ub1 = -1; const banda = Math.max(1, Math.round(H * 0.14));
+        for (let v = H - banda; v < H; v++) if (a0[v] >= 0) { ub0 = Math.min(ub0, a0[v]); ub1 = Math.max(ub1, b0[v]); }
+        if (ub1 >= ub0) for (let z = -1; z <= D; z++) for (let u = ub0 - 1; u <= ub1 + 1; u++) {
+          const orilla = u < ub0 || u > ub1 || z < 0 || z >= D;
+          for (const [du, dz] of [[0.25, 0.25], [0.75, 0.75], [0.25, 0.75], [0.75, 0.25]]) {
+            const [X, Y] = P(u + du, H, z + dz), i = Math.floor(X - x0) + 1, j = Math.floor(Y - y0) + 1, k = j * OW + i;
+            if (i < 0 || j < 0 || i >= OW || j >= OH || out[k * 4 + 3]) continue;
+            if (orilla && (i + j) % 2) continue;
+            out[k * 4] = 70; out[k * 4 + 1] = 34; out[k * 4 + 2] = 60; out[k * 4 + 3] = orilla ? 40 : 76;
           }
         }
       }
@@ -175,7 +192,9 @@ export function vistaGirada(d, e, C, g) {
       // de lo quieto (así una pantalla queda tapada por el mueble y una flamita o unas hojas siguen moviéndose arriba).
       const frente = co > 0.12, kx = (co < 0 ? -1 : 1) * Math.min(1, (Math.abs(co) * W + Math.abs(si) * D) / W);
       const medio = [kx, 0, 0, 1, PX * (-kx * cu - x0 + 1), PX * (1 - y0)];
-      const r = { url: oc.toDataURL(), w: OW * PX, h: OH * PX, ax: (AX - x0 + 1) * PX, ay: (AY - y0 + 1) * PX, matriz: frente ? [co, -si * ELEV, 0, 1, ex, ey] : medio, frente };
+      const r = { url: oc.toDataURL(), w: OW * PX, h: OH * PX, ax: (AX - x0 + 1) * PX, ay: (AY - y0 + 1) * PX, matriz: frente ? [co, -si * ELEV, 0, 1, ex, ey] : medio, frente,
+        // (Fase 66) Para meter un monito adentro sin que se atraviese: lo hondo de cada pixel y lo alto de cada columna.
+        zb, x0, y0, OW, OH, W, H, D, cu, cz, tope, g };
       CACHE.set(clave, r);
       if (CACHE.size > 200) CACHE.delete(CACHE.keys().next().value);
       return r;

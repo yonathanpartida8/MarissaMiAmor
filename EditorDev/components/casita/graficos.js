@@ -74,23 +74,15 @@ void main() {
       float fi = float(i);
       vec2 q = vec2(fract(h(vec2(fi, 1.0)) + sin(t * 0.13 + fi) * 0.08), 0.45 + 0.4 * fract(h(vec2(fi, 7.0)) + cos(t * 0.11 + fi * 2.0) * 0.06)) * res;
       float b = 0.5 + 0.5 * sin(t * (1.4 + fi * 0.2) + fi * 3.0);
-      c += vec3(1.0, 0.94, 0.6) * smoothstep(4.5, 0.0, length(px - q)) * b * 0.32;
+      // (Fase 66) En pixel: un cuadrito brillante con su orilla tenue (no una bolita borrosa).
+      vec2 dq = abs(floor(px) - floor(q)); float m = max(dq.x, dq.y);
+      c += vec3(1.0, 0.94, 0.6) * (step(m, 0.5) + 0.35 * step(m, 1.5)) * b * 0.32;
     }
   }
-  // La lluvia: rayitas finas (suaves adentro).
-  if (efectos > 0.5 && lluvia > 0.0) {
-    vec2 q = px / res.y * vec2(70.0, 9.0);
-    q.x += q.y * viento * 0.18;
-    q.y += t * (14.0 + lluvia * 8.0);
-    vec2 cel = floor(q); vec2 fr = fract(q);
-    float gota = step(1.0 - lluvia * 0.5, h(cel)) * smoothstep(0.1, 0.0, abs(fr.x - 0.5)) * smoothstep(0.0, 0.6, fr.y) * (1.0 - fr.y);
-    c += vec3(0.75, 0.82, 0.95) * gota * (afuera > 0.5 ? 0.3 : 0.05);
-  }
+  // (Fase 66) La lluvia ya no se dibuja aquí: son las gotitas pixel de lluvia.js (las rayitas lisas no eran pixel).
   // El relámpago: aclara un poquito desde arriba (sin pantalla blanca).
   c += vec3(0.8, 0.86, 1.0) * flash * (afuera > 0.5 ? 0.26 : 0.1) * (1.1 - uv.y * 0.5);
-  // Viñeta muy suave.
-  vec2 v = uv - 0.5; float va = smoothstep(0.45, 0.9, length(v * vec2(1.0, 1.2))) * 0.16;
-  c = c * (1.0 - va) + vec3(0.06, 0.04, 0.12) * va; a = a + va * (1.0 - a);
+  // (Fase 66) Sin viñeta: era un degradado liso, no pixel.
   color = vec4(c, a);
 }`;
 
@@ -153,7 +145,7 @@ export function crearCapaGL(j, nv = 4) {
       n++;
     }
     // Si nada se mueve (sin lluvia, relámpago ni luciérnagas) y las luces siguen igual, no se vuelve a dibujar.
-    const anima = efectos && (e.lluvia > 0 || (e.afuera && e.noche > 0.5)) || e.flash > 0;
+    const anima = efectos && e.afuera && e.noche > 0.5 && e.lluvia < 0.1 || e.flash > 0;
     const firma = anima ? "" : `${W}x${H}|${e.oscuro}|${n}|${luces.subarray(0, n * 4).join(",")}`;
     if (firma && firma === ultFirma) return;
     ultFirma = firma;
