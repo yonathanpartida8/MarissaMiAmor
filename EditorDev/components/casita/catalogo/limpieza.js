@@ -26,10 +26,13 @@ export const MANO = {
 
 /** Los árboles pixel del catálogo: el dibujo del patio dentro de un svg (la copa se mece sola). */
 const arbolPx = (k, v = 0) => () => {
-  const m = MEDIDAS[k], sp = spriteEsc(k, v);
+  const m = { w: Math.round(MEDIDAS[k].w * K_ARBOL), h: Math.round(MEDIDAS[k].h * K_ARBOL) }, sp = spriteEsc(k, v);
   return svg(m.w, m.h, `<image href="${sp.tronco}" width="${m.w}" height="${m.h}" preserveAspectRatio="none" style="image-rendering:pixelated"/><g class="copa"><image href="${sp.copa}" width="${m.w}" height="${m.h}" preserveAspectRatio="none" style="image-rendering:pixelated"/></g>`);
 };
-const arbol = (k, n, v, extra = {}) => ({ n, cat: "jardin", w: MEDIDAS[k].w, h: MEDIDAS[k].h, y: 560, pie: 0.09, fondo: 16, hojas: MEDIDAS[k].hojas, noGira: true, al: "sacude", arte: arbolPx(k, v), ...extra });
+// (Fase 65) Los del catálogo son un poco más chicos que los del patio (para que quepan también en la terraza),
+// pero igual bastante más altos que los monitos.
+const K_ARBOL = 0.72;
+const arbol = (k, n, v, extra = {}) => ({ n, cat: "jardin", w: Math.round(MEDIDAS[k].w * K_ARBOL), h: Math.round(MEDIDAS[k].h * K_ARBOL), y: 560, pie: 0.09, fondo: 16, hojas: MEDIDAS[k].hojas, noGira: true, al: "sacude", arte: arbolPx(k, v), ...extra });
 
 const COLORES = ["#ff9cbf", "#c9a7ff", "#8fd0ff", "#94dfbd", "#ffd36e"];
 export const ITEMS = {

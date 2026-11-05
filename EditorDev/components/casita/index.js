@@ -32,6 +32,7 @@ import { H, PISO, FONDO, FRENTE, SUELO, CUARTOS, CUARTOS_NUEVOS, ANCHO, inicioDe
 import { MAPA, FACHADA, MUDANZA, editable as editableMapa } from "./exterior.js";
 import { Patio } from "./patio.js";
 import { Suciedad } from "./suciedad.js";
+import { Viento } from "./viento.js";
 import { giroDe, vistaGirada, lugarGirado, hondura, ELEV_GIRO } from "./girar.js";
 import { CATALOGO, COSAS_MANO, RECETAS, colorDe } from "./catalogo/index.js";
 import { monitoSVG, ropaDe } from "./monito.js";
@@ -106,6 +107,7 @@ export class Casita {
     // (Fase 64) El patio grande (su terreno, la fachada y el escenario) y las hojitas y el polvito.
     this.patio = new Patio(this); this.patio.armar(this.cuartosN.get("jardin"));
     this.suciedad = new Suciedad(this); this.suciedad.prender();
+    this.viento = new Viento(this); this.viento.prender();
     this.cielo = new CieloVivo(this);
     this.cielo.armar();
     // Los monitos (la primera vez, cada quien de un lado de la sala: igual en los dos teléfonos).
@@ -154,6 +156,7 @@ export class Casita {
 
   limpiar() {
     this.suciedad?.limpiarTodo();
+    this.viento?.apagar();
     this.vivo = false;
     this.sync?.parar();
     this._ro?.disconnect();

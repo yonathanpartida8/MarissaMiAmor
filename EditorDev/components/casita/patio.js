@@ -8,7 +8,8 @@
  */
 import { el, aviso } from "../ui.js";
 import { inicioDe } from "./cuartos.js";
-import { MAPA, FACHADA, ESCENARIO, MEDIDAS, ES_ARBOL, hash, spriteEsc, pintarTerreno, pintarPanorama, pintarFachada, pintarNoEditable, brillosAgua, huellaEsc } from "./exterior.js";
+import { MAPA, FACHADA, ESCENARIO, MEDIDAS, ES_ARBOL, hash, spriteEsc, pintarTerreno, pintarPanorama, pintarFachada, pintarNoEditable, huellaEsc } from "./exterior.js";
+import { Agua } from "./agua.js";
 
 const sinMov = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -23,8 +24,10 @@ export class Patio {
     this.ter = cv("ca-terreno", yT, MAPA.alto - yT, 1);
     this.fach = cv("ca-fachada-px", 0, 0, 2);
     this.mask = cv("ca-noedit", yT, MAPA.alto - yT, 3);
-    this.agua = el("div.ca-agua-brillos", { "aria-hidden": "true" }, brillosAgua().map(([x, y, h]) => el("i", { style: { left: x + "px", top: y + "px", animationDelay: -(h * 3).toFixed(2) + "s" } })));
-    n.append(this.pan, this.ter, this.fach, this.agua, this.mask);
+    n.append(this.pan, this.ter, this.fach, this.mask);
+    // (Fase 65) El agua viva (agua.js), encima del terreno: la mueve el ciclo del viento.
+    this.agua = new Agua(n);
+    this.agua._vista = () => { const j = this.j, v = j.vistaN, k = j.k, dx = inicioDe("jardin"); return { L: v.scrollLeft / k - dx, R: (v.scrollLeft + v.clientWidth) / k - dx, T: v.scrollTop / k - MAPA.arriba, B: (v.scrollTop + v.clientHeight) / k - MAPA.arriba }; };
     // (El terreno se dibuja en pedacitos, al rato de entrar o al ir al patio: nunca traba la pantalla.)
     this.ter.style.background = "#6dbb66";
     this._tTer = setTimeout(() => this.pintarTerreno(), 1500);
@@ -54,6 +57,7 @@ export class Patio {
     if (clave === this.hora || !this.pan) return;
     this.hora = clave;
     try {
+      this.agua?.ponHora(hora);
       const r = pintarPanorama(this.pan, hora, clima);
       const f = pintarFachada(this.fach, hora);
       Object.assign(this.fach.style, { left: f.left + "px", top: f.top + "px", width: f.width + "px", height: f.height + "px" });

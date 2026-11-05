@@ -1388,12 +1388,17 @@ body.ca-escribiendo .jt-nav { display: none; }
 @keyframes caMece { 0%, 100% { transform: skewX(0deg); } 30% { transform: skewX(-1.3deg) translateX(1px); } 70% { transform: skewX(.9deg) translateX(-1px); } }
 .ca[data-viento="mucho"] .ca-esc .esc-copa { animation-duration: 1.7s; }
 .ca:not(.fx1) .ca-esc .esc-copa { animation: none; }
+/* (Fase 65) Con el viento de verdad (viento.js) las copas las mueve él; detrás de un árbol, la copa se aclara. */
+.ca.viento-js .ca-esc .esc-copa, .ca.viento-js .ca-obj .copa { animation: none; }
+.ca-esc .esc-copa, .ca-esc .esc-tronco { transition: opacity .35s; }
+.ca-esc.tapa .esc-copa { opacity: .42; }
+.ca-esc.tapa .esc-tronco { opacity: .7; }
+.ca-esc.arbusto .esc-tronco { transform-origin: 50% 100%; }
 .ca-esc .esc-chorro { inset: 4% 46% auto; height: 28%; background: repeating-linear-gradient(180deg, #e6f7ff 0 6px, #9fd8f6 6px 12px, transparent 12px 15px); background-size: 100% 15px; animation: caChorro .5s steps(3) infinite; opacity: .9; }
 @keyframes caChorro { to { background-position: 0 15px; } }
-.ca-agua-brillos { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
-.ca-agua-brillos i { position: absolute; width: 9px; height: 3px; background: #fff; box-shadow: 9px 6px 0 -.5px rgba(255, 255, 255, .7); opacity: 0; animation: caBrilloAgua 3.2s steps(3) infinite; }
-@keyframes caBrilloAgua { 0%, 60%, 100% { opacity: 0; } 72%, 86% { opacity: .9; } }
-.ca:not(.fx1) .ca-agua-brillos { display: none; }
+/* (Fase 65) El agua viva: una capa pixel encima del agua pintada (sólo pinta el agua; la mueve el viento). */
+.ca-agua { position: absolute; z-index: 1; pointer-events: none; image-rendering: crisp-edges; image-rendering: pixelated; }
+.ca:not(.fx1) .ca-agua { display: none; }
 /* Las hojitas del piso y las pelusitas de polvo (pixel). */
 .ca-sucio { position: absolute; width: 15px; height: 10px; margin: -6px 0 0 -7px; pointer-events: none; scale: var(--s3, 1); background: linear-gradient(155deg, transparent 44%, rgba(40, 30, 20, .28) 45% 55%, transparent 56%), var(--c, #7cc36a);
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 4' shape-rendering='crispEdges'%3E%3Cpath d='M1 0h3v1h1v1h1v1H5v1H2V3H1V2H0V1h1z'/%3E%3C/svg%3E") center / 100% 100%; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 4' shape-rendering='crispEdges'%3E%3Cpath d='M1 0h3v1h1v1h1v1H5v1H2V3H1V2H0V1h1z'/%3E%3C/svg%3E") center / 100% 100%; }

@@ -95,6 +95,11 @@ export function terreno(x, y) {
   if (Math.abs(x - 1650 - 10 * Math.sin(y / 50)) < 15 && y > 471 && y < 1112 && !(y > 796 && y < 934)) return T.SETO;
   return T.PASTO;
 }
+/** (Fase 65) El agua en (x, y): su hondura (0 a 1) si es agua; -1 si es orilla; -2 si es el puente o las piedritas; 0 si no. */
+export function aguaEn(x, y) {
+  const t = terreno(x, y);
+  return t === T.AGUA ? 0.04 + PROF * 0.96 : t === T.ORILLA ? -1 : t === T.PUENTE || t === T.PIEDRAS ? -2 : 0;
+}
 /* La cuadrícula de tipos (6 del mundo por cuadrito) para lo que se pregunta mucho: caminar y acomodar. Se hace una vez. */
 const G6 = 6, GY0 = MAPA.fondo - 12;
 let REJ = null, RW = 0, RH = 0;
@@ -131,10 +136,11 @@ export const ESCENARIO = [
   ["abedul", 1640, 1300], ["arbusto", 560, 1500], ["roble", 170, 1400],
 ].map(([k, x, y, v = 0], i) => ({ id: "e" + i, k, x, y, v }));
 /** Lo que mide cada cosa del escenario y su «huella» en el piso (lo que no se pisa). */
+// (Fase 65) Los árboles de verdad grandes: dos a tres veces lo alto de los monitos (el pino y el roble, más).
 export const MEDIDAS = {
-  roble: { w: 230, h: 300, hw: 22, hd: 12, hojas: "#6cbf6a" }, cerezo: { w: 200, h: 262, hw: 18, hd: 10, hojas: "#ffb3cc" },
-  frutal: { w: 170, h: 214, hw: 16, hd: 10, hojas: "#7ccf6f" }, pino: { w: 150, h: 300, hw: 18, hd: 10, hojas: "#4f9a62" },
-  abedul: { w: 150, h: 280, hw: 14, hd: 9, hojas: "#c9e36a" }, sauce: { w: 240, h: 260, hw: 22, hd: 12, hojas: "#9ed36f" },
+  roble: { w: 380, h: 500, hw: 30, hd: 15, hojas: "#6cbf6a" }, cerezo: { w: 320, h: 420, hw: 24, hd: 12, hojas: "#ffb3cc" },
+  frutal: { w: 232, h: 296, hw: 20, hd: 11, hojas: "#7ccf6f" }, pino: { w: 236, h: 520, hw: 24, hd: 12, hojas: "#4f9a62" },
+  abedul: { w: 220, h: 450, hw: 18, hd: 10, hojas: "#c9e36a" }, sauce: { w: 390, h: 420, hw: 28, hd: 14, hojas: "#9ed36f" },
   arbusto: { w: 96, h: 64, hw: 40, hd: 16 }, roca: { w: 90, h: 54, hw: 38, hd: 16 }, fuente: { w: 190, h: 170, hw: 80, hd: 34 },
   letrero: { w: 84, h: 120, hw: 8, hd: 6 },
 };
@@ -485,7 +491,7 @@ export function spriteEsc(k, v = 0) {
     };
     const pal = PALS[k], base = H - 1, sem = 90 + v;
     out.tronco = hacer((L) => {
-      const top = k === "pino" ? Math.floor(H * 0.55) : Math.floor(H * 0.42), ancho = k === "pino" ? 6 : k === "abedul" ? 5 : 8;
+      const top = k === "pino" ? Math.floor(H * 0.55) : Math.floor(H * 0.42), ancho = { pino: 7, abedul: 6, roble: 12, sauce: 11, cerezo: 9, frutal: 8 }[k] || 8;
       const mk = tronco(L, W, H, cx, top, base, ancho, k === "abedul" ? P("#cfc6c0", "#ece6e1", "#ffffff") : CORTEZA, k === "abedul");
       // Raíces que se abren en la base.
       for (const s of [-1, 1]) for (let q = 0; q < 4; q++) { pon(L, Math.floor(cx + s * (ancho / 2 + q)), base, CORTEZA[0]); mk[(base) * W + Math.floor(cx + s * (ancho / 2 + q))] = 1; }
@@ -495,10 +501,22 @@ export function spriteEsc(k, v = 0) {
     out.copa = hacer((L) => {
       let mk;
       if (k === "pino") {
+        // (Fase 65) El pino: punta en pico y cinco pisos de ramas que se abren hacia abajo, cada uno con su orilla de
+        // agujitas (dientes) y la sombrita que le hace el de arriba.
         mk = new Uint8Array(W * H);
-        for (let piso = 0; piso < 4; piso++) {
-          const t = Math.floor(H * (0.02 + piso * 0.15)), b = Math.floor(H * (0.3 + piso * 0.16)), half0 = W * (0.12 + piso * 0.08), half1 = W * (0.3 + piso * 0.06);
-          for (let j = t; j < b; j++) { const f = (j - t) / (b - t), half = half0 + (half1 - half0) * f; for (let i = Math.floor(cx - half); i < cx + half; i++) { const u = (i - (cx - half)) / (2 * half); const q = u < 0.3 ? 3 : u < 0.55 ? 2 : u < 0.8 ? 1 : 0; pon(L, i, j, hash(i, j, sem) < 0.12 ? pal[Math.max(0, q - 1)] : pal[q]); mk[j * W + i] = 1; } }
+        for (let piso = 0; piso < 5; piso++) {
+          const t = Math.floor(H * (0.005 + piso * 0.118)), b = Math.floor(H * (0.17 + piso * 0.128)), half0 = piso === 0 ? 0.6 : W * (0.06 + piso * 0.035), half1 = W * (0.15 + piso * 0.072);
+          for (let j = t; j < b; j++) {
+            const f = (j - t) / (b - t), half = half0 + (half1 - half0) * Math.pow(f, 0.85) + (hash(j, piso, sem) - 0.5) * 1.6;
+            for (let i = Math.floor(cx - half); i < cx + half; i++) {
+              // Abajo de cada piso, dientes de agujitas (no una orilla recta).
+              if (j > b - 4 && hash(i >> 1, piso * 7 + (b - j), sem) < 0.3 + (j - (b - 4)) * 0.18) continue;
+              const u = (i - (cx - half)) / (2 * half);
+              let q = u < 0.3 ? 3 : u < 0.55 ? 2 : u < 0.8 ? 1 : 0;
+              if (f < 0.16 && piso > 0) q = Math.max(0, q - 2);
+              pon(L, i, j, hash(i, j, sem) < 0.14 ? pal[Math.max(0, q - 1)] : pal[q]); mk[j * W + i] = 1;
+            }
+          }
         }
       } else {
         const r = W * 0.27, top = H * 0.1, cy = k === "sauce" ? H * 0.32 : H * 0.3;
@@ -547,15 +565,6 @@ export function spriteEsc(k, v = 0) {
   return out;
 }
 
-/** Brillitos que se mueven en el agua (del río y del estanque), en lugares fijos. */
-export function brillosAgua(n = 26) {
-  const l = [];
-  for (let k = 0; l.length < n && k < 400; k++) {
-    const x = 80 + hash(k, 1, 91) * 2200, y = 470 + hash(k, 2, 91) * 1080;
-    if (terreno(x, y) === T.AGUA) l.push([x, y, hash(k, 3, 91)]);
-  }
-  return l;
-}
 
 /** Lo que había la primera vez en el jardín de 700 (Fase 63), y a dónde se va en el patio grande. */
 export const MUDANZA = { ja0: [790, 800], ja1: [970, 650], ja2: [1050, 540], ja3: [1350, 540], ja4: [1300, 690], ja5: [1110, 700], ja7: [1480, 660], ja8: [1530, 600] };
