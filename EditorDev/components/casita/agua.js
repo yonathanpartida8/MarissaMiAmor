@@ -93,6 +93,9 @@ export class Agua {
           const p = hondo[k];
           let c = mezcla(BAJITO, HONDO, Math.min(1, p * 1.15));
           c = mezcla(c, cielo, refl);
+          // El agua ondula toda, suavecito (en escaloncitos de color, como pixel): se ve líquida, no sólo con brillitos.
+          const on = Math.round((0.6 * S[(ii * 3 + jj * 8 - tt * 4) & 255] + 0.4 * S[(ii * 2 - jj * 5 + tt * 3) & 255]) * 2) * 5;
+          c = [c[0] + on, c[1] + on, c[2] + on * 0.6];
           // Las olitas: en el río corren hacia la derecha; en el estanque, ondas que salen del centro.
           let w;
           if (z.rio) w = S[(ii * 4 + ((jj * 9) >> 1) - tt * 6) & 255] + 0.6 * S[(jj * 13 + ii * 2 + tt * 3) & 255] + 0.3 * S[(ii * 11 - jj * 3 + tt * 2) & 255];
