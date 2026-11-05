@@ -103,6 +103,8 @@ export const ACCIONES = {
     if (j.yo.lleva === h) { rebote(n); j._globo(j.yo, ayuda, 2600); return; }
     if (!(await j.irJunto(o))) return;
     if (j.yo.lleva) j.soltar();
+    // (Fase 65) La escoba y el rastrillo son una sola cosa: al agarrarlos dejan de estar donde estaban.
+    if (o.def.larga && j.objs.has(o.id)) { j.sync.op({ o: "quita", id: o.id }); j._pintarCasa(j.sync.casa()); }
     rebote(n); j.sonar("levantar"); j._ponerLleva(j.yo, h); j._mandarYo({ lleva: h });
     j._globo(j.yo, ayuda, 3200);
   },

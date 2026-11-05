@@ -11,9 +11,28 @@
  */
 import { cuarto, inicioDe, FONDO, frenteDe } from "./cuartos.js";
 import { pisable } from "./exterior.js";
-import { giroDe, huellaGirada } from "./girar.js";
+import { giroDe, huellaGirada, hondura, rasterizar } from "./girar.js";
 
-const CEL = 12, RX = 15, RY = 7, ORILLA = 14, PESO_Y = 1.6;
+const CEL = 8, RX = 11, RY = 5, ORILLA = 14, PESO_Y = 1.6;
+/** (Fase 65) Lo que de verdad toca el piso de cada dibujo (medido de su silueta: las patas, la base), por tipo. */
+const BASES = new Map();
+export function medirBase(d, alListo) {
+  if (BASES.has(d.k)) return BASES.get(d.k);
+  BASES.set(d.k, null);
+  const W = Math.max(2, Math.ceil(d.w / 4)), H = Math.max(2, Math.ceil(d.h / 4));
+  rasterizar(d.arte({}, d.colores?.[0] || null), W, H).then((px) => {
+    let vb = -1;
+    for (let v = H - 1; v >= 0 && vb < 0; v--) for (let u = 0; u < W; u++) if (px[(v * W + u) * 4 + 3] > 100) { vb = v; break; }
+    if (vb < 0) { BASES.set(d.k, { nada: true }); alListo?.(); return; }
+    const banda = Math.max(2, Math.round(H * 0.14));
+    let u0 = W, u1 = -1;
+    for (let v = Math.max(0, vb - banda); v <= vb; v++) for (let u = 0; u < W; u++) if (px[(v * W + u) * 4 + 3] > 100) { u0 = Math.min(u0, u); u1 = Math.max(u1, u); }
+    // (Si lo de abajo está muy arriba del piso del dibujo, es algo que cuelga o flota: no estorba.)
+    BASES.set(d.k, vb < H * 0.72 ? { nada: true } : { a: (u0 * 4) / d.w, b: ((u1 + 1) * 4) / d.w });
+    alListo?.();
+  }).catch(() => BASES.set(d.k, { a: 0.5 - (d.pie ?? 0.42), b: 0.5 + (d.pie ?? 0.42) }));
+  return null;
+}
 
 export class Navegacion {
   constructor(j) { this.j = j; this.cache = new Map(); }
@@ -22,10 +41,15 @@ export class Navegacion {
   huella(r) {
     const d = r.d, j = this.j;
     if (d.capa !== "piso" || d.mascota || d.noEstorba || r.o.id === j.arrastrandoId) return null;
+    if (d.larga && r.o.e?.pose === "suelo") return null;      // (Fase 65) una escoba tirada se pasa por encima
     if (j._esEncima?.(r)) return null;                       // lo que está encima de una mesa no estorba en el piso
-    const medio = d.w * (d.pie ?? 0.42), fondo = Math.max(12, Math.min(64, d.fondo ?? d.h * 0.3)), g = j._girable?.(d) ? giroDe(r.o) : 0;
-    if (g) { const G = huellaGirada(d, g, medio, fondo), cy = r.o.y - fondo / 2; return { x0: r.gx - G.medio, x1: r.gx + G.medio, y0: cy - G.fondo / 2, y1: cy + G.fondo / 2 + 4 }; }   // (Fase 64: girado)
-    return { x0: r.gx - medio, x1: r.gx + medio, y0: r.o.y - fondo, y1: r.o.y + 4 };
+    // (Fase 65) La huella es lo que de verdad toca el piso (su base medida), no el ancho de todo el dibujo.
+    const b = d.pie == null ? medirBase(d, () => this.invalidar(r.o.c)) : null;
+    if (b?.nada) return null;
+    const sx = r.o.f ? -1 : 1, ca = b ? (b.a + b.b) / 2 - 0.5 : 0, cx = r.gx + ca * d.w * sx;
+    const medio = b ? Math.max(8, ((b.b - b.a) * d.w) / 2) : d.w * (d.pie ?? 0.42), fondo = Math.max(10, Math.min(56, d.fondo ?? hondura(d) * 0.42)), g = j._girable?.(d) ? giroDe(r.o) : 0;
+    if (g) { const G = huellaGirada(d, g, medio, fondo), cy = r.o.y - fondo / 2; return { x0: r.gx - G.medio, x1: r.gx + G.medio, y0: cy - G.fondo / 2, y1: cy + G.fondo / 2 + 3 }; }   // (Fase 64: girado)
+    return { x0: cx - medio, x1: cx + medio, y0: r.o.y - fondo, y1: r.o.y + 3 };
   }
   _rejilla(c) {
     const ya = this.cache.get(c);
@@ -87,12 +111,17 @@ export class Navegacion {
   /** La ruta de (ax, ay) a (bx, by) dentro del cuarto c: puntos a seguir (sin el de salida); el último es el destino. */
   ruta(c, ax, ay, bx, by) {
     const g = this._rejilla(c), W = g.W, N = W * g.H;
-    const [bxl, byl] = this.libre(c, bx, by), meta = this._celda(g, bxl, byl), sale = this._celda(g, ax, ay);
+    const [bxl, byl] = this.libre(c, bx, by), meta = this._celda(g, bxl, byl);
+    // (Fase 65) Si el monito quedó dentro de la orilla de algo (al pararse del sillón, si movieron un mueble junto a él),
+    // primero sale al lugar libre más cercano; antes se quedaba atorado sin poder caminar.
+    let sale = this._celda(g, ax, ay), salida = null;
+    if (g.bloq[sale[1] * W + sale[0]]) { const L = this.libre(c, ax, ay); if (Math.hypot(L[0] - ax, L[1] - ay) > 2) { salida = L; sale = this._celda(g, L[0], L[1]); } }
     const fin = meta[1] * W + meta[0], ini = sale[1] * W + sale[0];
-    if (ini === fin) return [[bxl, byl]];
+    const con = (l) => (salida ? [salida, ...l] : l);
+    if (ini === fin) return con([[bxl, byl]]);
     // Línea recta libre: sin rodeos.
     const bloqIni = g.bloq[ini]; g.bloq[ini] = 0;
-    if (this._directo(g, sale, meta)) { g.bloq[ini] = bloqIni; return [[bxl, byl]]; }
+    if (this._directo(g, sale, meta)) { g.bloq[ini] = bloqIni; return con([[bxl, byl]]); }
     const gc = new Float32Array(N).fill(Infinity), de = new Int32Array(N).fill(-1), cerrado = new Uint8Array(N);
     const hz = (k) => { const x = k % W, y = (k / W) | 0, dx = Math.abs(x - meta[0]), dy = Math.abs(y - meta[1]) * PESO_Y; return Math.max(dx, dy) + (Math.SQRT2 - 1) * Math.min(dx, dy); };
     // Montículo binario chiquito para la lista abierta.
@@ -133,6 +162,6 @@ export class Navegacion {
     g.bloq[ini] = bloqIni;
     const ruta = puntos.map(([i, jj]) => this._punto(g, i, jj));
     if (llega === fin) ruta[ruta.length - 1] = [bxl, byl]; else if (!ruta.length) ruta.push(this._punto(g, ...celdas[celdas.length - 1]));
-    return ruta.length ? ruta : [[bxl, byl]];
+    return con(ruta.length ? ruta : [[bxl, byl]]);
   }
 }

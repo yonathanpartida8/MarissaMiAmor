@@ -64,7 +64,7 @@ export const ITEMS = {
       <circle cx="16" cy="28" r="9" fill="#ff7a8a" ${OL2}/><path d="M16 19v-4" stroke="#57b884" stroke-width="2"/>`),
   },
   mesa: {
-    n: "Mesa", cat: "cocina", w: 176, h: 104, y: 535, al: "mesa", colores: ["#ffffff", "#ffd0e2", "#cdeeff", "#fff0b8"],
+    n: "Mesa", cat: "cocina", w: 176, h: 104, hondo: 116, y: 535, al: "mesa", colores: ["#ffffff", "#ffd0e2", "#cdeeff", "#fff0b8"],
     // Donde se sirven los platillos (uno de cada lado, para los dos) y las sillas de junto para comer.
     superficie: [[42, 36], [134, 36]],
     arte: (e, C) => svg(176, 104, `

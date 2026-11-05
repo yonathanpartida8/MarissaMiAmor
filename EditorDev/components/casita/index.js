@@ -761,6 +761,7 @@ export class Casita {
     this._yaPintada = true;
     this.nav?.invalidar(); this.puertasN?.pintar();   // (Fase 63)
     this.suciedad?.pintar();   // (Fase 64)
+    this._alturas();   // (Fase 65)
     this._lejos();
     for (const mm of [this.yo, this.suyo]) this._sombra(mm);
     this._marcarOcupados();
@@ -789,11 +790,19 @@ export class Casita {
     const g = this._girable(r.d) ? giroDe(o) : 0, t = (r._tg = (r._tg || 0) + 1);
     if (!g || !r.vg) { arte.innerHTML = r.d.arte(o.e || {}, C); if (r.vg) { r.vg = null; this._colocar(r); } }
     r.n.classList.toggle("girado", !!g);
+    // (Fase 65) Lo largo (la escoba) se dibuja recargado o acostado, girando sobre su base.
+    const pose = r.d.larga ? o.e?.pose || "" : "";
+    r.n.classList.toggle("recargada", !!pose); r.n.classList.toggle("en-suelo", pose === "suelo"); r.n.classList.toggle("hacia-izq", pose === "suelo" && +o.e.ang < 0);
+    if (pose) r.n.style.setProperty("--ang", (+o.e.ang || 0) + "deg"); else r.n.style.removeProperty("--ang");
     if (r.fr) { r.fr.innerHTML = `<div class="ca-obj-arte">${r.d.frente(o.e || {}, C)}</div>`; r.fr.hidden = !!g; }
-    if (g) vistaGirada(r.d, o.e, C, g, false).then((v) => {
+    if (g) vistaGirada(r.d, o.e, C, g).then((v) => {
       if (r._tg !== t || !r.n.isConnected) return;
-      if (!v) { arte.innerHTML = r.d.arte(o.e || {}, C); return; }
-      r.vg = v; arte.innerHTML = `<img class="ca-girado" alt="" draggable="false" src="${v.url}">`;
+      // (Fase 65) Lo que se mueve casi entero no se gira: se queda de frente, con todas sus animaciones.
+      if (!v || v.plano) { arte.innerHTML = r.d.arte(o.e || {}, C); r.vg = null; r.n.classList.remove("girado"); if (v?.plano && this.sel === r) aviso("Esta cosa se mueve toda: se queda de frente para no perder su animación", 2600); this._colocar(r); return; }
+      r.vg = v;
+      // El cuerpo girado (pixel) y, encima, sus partes vivas (con sus animaciones) alineadas con el frente girado.
+      const m = v.matriz.map((x) => +x.toFixed(4));
+      arte.innerHTML = `<img class="ca-girado" alt="" draggable="false" src="${v.url}">` + (v.vivo ? `<div class="ca-vivo${v.frente ? "" : " tras"}" style="width:${r.d.w}px;height:${r.d.h}px;transform:matrix(${m.join(",")})">${v.vivo}</div>` : "");
       if (this.arrastrandoId !== r.o.id) this._colocar(r);
     });
   }
@@ -862,9 +871,11 @@ export class Casita {
         // (Fase 64) Girado: del tamaño de su vista, anclado al centro de su base (gira en su lugar).
         const ya = yv - (hondura(d) * ELEV_GIRO * s) / 2;
         Object.assign(n.style, { left: (P.x - r.vg.ax).toFixed(1) + "px", top: (ya - r.vg.ay).toFixed(1) + "px", width: r.vg.w + "px", height: r.vg.h + "px", transformOrigin: `${r.vg.ax.toFixed(1)}px ${r.vg.ay.toFixed(1)}px` });
+        // (Fase 65) Volteado: se voltea sobre el centro de su base, no sobre el centro de la vista.
+        n.style.setProperty("--ax", r.vg.ax.toFixed(1) + "px");
       } else {
         n.style.left = (P.x - d.w / 2).toFixed(1) + "px"; n.style.top = (yv - d.h).toFixed(1) + "px";
-        if (n === r.n && n.style.transformOrigin) Object.assign(n.style, { width: d.w + "px", height: d.h + "px", transformOrigin: "" });
+        if (n === r.n && n.style.transformOrigin) { Object.assign(n.style, { width: d.w + "px", height: d.h + "px", transformOrigin: "" }); n.style.removeProperty("--ax"); }
       }
       if (s < 0.999) n.style.setProperty("--s3", s.toFixed(3)); else n.style.removeProperty("--s3");
       n.classList.toggle("f", !!o.f);
@@ -1127,6 +1138,9 @@ export class Casita {
   /** Caminar hasta (gx, y) (y es lo hondo del piso) y luego `luego()`. */
   _caminar(m, gx, y, luego = null, ya = false, tramo = false, viaje = null, ultimo = true) {
     clearTimeout(m.tc); clearInterval(m.tp); clearTimeout(m.tGiro);
+    // (Fase 65) Si estaba sentado, primero baja del asiento por el lado por donde llegó (no lo atraviesa).
+    if (m.mueble && m._lugarDe && !ya && !tramo) { m.gx = m._lugarDe.lx; m.y = m._lugarDe.ly; }
+    if (!tramo) m._lugarDe = m.mueble ? m._lugarDe : null;
     this._pose(m, "");
     m.n.classList.remove("entra");
     gx = lim(gx, 24, ANCHO - 24); y = lim(y, FONDO, frenteDe(enCuarto(gx).c));
@@ -1222,17 +1236,25 @@ export class Casita {
     const l = r.d.lugares?.[jx];
     if (!l) return Promise.resolve(false);
     // (Fase 64) Si la cosa está girada, el asiento gira con ella y el monito mira hacia donde mira el mueble.
-    const sx = r.o.f ? -1 : 1, G = lugarGirado(l, this._girable(r.d) ? giroDe(r.o) : 0, sx), gx = r.gx + G.dx, ySit = r.o.y + G.dy;
-    const orden = ++m.orden;
+    // (Fase 65) Llega por el lado hacia donde mira el asiento, se voltea de espaldas a él y se sienta (bajando, con su
+    // apachurradito); con más estatura, la cadera queda igual en el asiento y las piernas cuelgan más.
+    const sx = r.o.f ? -1 : 1, G = lugarGirado(l, this._girable(r.d) ? giroDe(r.o) : 0, sx), gx = r.gx + G.dx;
+    const esc = cuarto(r.o.c).afuera ? 1 : escala3d(r.o.c, r.o.y), ySit = r.o.y + G.dy + ((m.alto || 1) - 1) * 47 * esc;
+    const sienta = l.pose === "sentado", orden = ++m.orden;
+    const [lx, ly] = this.nav.libre(r.o.c, gx + (sienta ? G.llega[0] : 0), lim(r.o.y + (sienta ? G.llega[1] : 22), FONDO, frenteDe(r.o.c)));
     return new Promise((ok) => {
-      this._caminar(m, gx, lim(r.o.y + 22, FONDO, frenteDe(r.o.c)), () => {
+      this._caminar(m, lx, ly, () => {
         if (m.orden !== orden || !this.vivo || !this.objs.has(r.o.id)) return ok(false);
-        m.n.style.transitionDuration = ya || reducido() ? "0s" : ".32s";
-        m.y = ySit; this._ponerMono(m, gx, ySit, r.o.y);
-        if (G.mira) this._mirar(m, G.mira);
         clearTimeout(m.tGiro);
-        m.n.classList.toggle("atras", G.cara === "atras"); m.n.classList.toggle("lado", G.cara === "der" || G.cara === "izq");
-        const zo = parseInt(r.n.style.zIndex, 10) || 0, z = G.cara === "atras" ? zo - 1 : l.z != null ? zo + l.z : Math.round(ySit);
+        // (Fase 65) Con la escoba en la mano no se sienta nadie: la deja recargada junto (y luego la vuelve a agarrar).
+        if (m === this.yo && !ya && COSAS_MANO[m.lleva]?.larga && l.pose !== "cocinando") this.soltar(false, r);
+        m._lugarDe = { lx, ly };
+        m.n.classList.toggle("atras", sienta && G.cara === "atras"); m.n.classList.toggle("lado", sienta && (G.cara === "der" || G.cara === "izq"));
+        if (G.mira) this._mirar(m, G.mira);
+        m.n.style.transitionDuration = ya || reducido() ? "0s" : ".42s";
+        if (!ya && !reducido() && sienta) { m.n.classList.remove("sentandose"); void m.n.offsetWidth; m.n.classList.add("sentandose"); setTimeout(() => m.n.classList.remove("sentandose"), 500); }
+        m.y = ySit; this._ponerMono(m, gx, ySit, r.o.y);
+        const zo = parseInt(r.n.style.zIndex, 10) || 0, z = sienta && G.cara === "atras" ? zo - 1 : sienta && G.cara !== "frente" ? zo + 1 : l.z != null ? zo + l.z : Math.round(ySit);
         this._pose(m, l.pose, `${r.o.id}:${jx}`, z);
         ok(true);
       }, ya);
@@ -1266,8 +1288,28 @@ export class Casita {
     const m = this.yo;
     if (!m.mueble) return;
     const r = this.objs.get(m.mueble.split(":")[0]);
-    this._caminar(m, m.gx + (r ? 0 : 0), lim((r?.o.y ?? m.y) + 26, FONDO, FRENTE));
+    // (Fase 65) Se levanta estirándose y baja del asiento por el lado por donde llegó (sin atravesar el mueble).
+    const L = m._lugarDe || { lx: m.gx, ly: lim((r?.o.y ?? m.y) + 26, FONDO, frenteDe(enCuarto(m.gx).c)) };
+    this._pose(m, ""); clearTimeout(m.tc); m.orden++;
+    if (!reducido()) { m.n.classList.remove("levantandose"); void m.n.offsetWidth; m.n.classList.add("levantandose"); setTimeout(() => m.n.classList.remove("levantandose"), 420); }
+    m.n.style.transitionDuration = reducido() ? "0s" : ".36s"; m.n.style.transitionTimingFunction = "ease-out";
+    m.gx = L.lx; m.y = L.ly; this._ponerMono(m, L.lx, L.ly); m.n.style.zIndex = zMono(L.ly);
+    m._lugarDe = null;
+    m.tGiro = setTimeout(() => this._orientar(m, "frente"), 380);
     this._mandarYo({ accion: "", mueble: "" });
+  }
+  /* ── (Fase 65) La estatura de cada monito: se guarda en la casa (la eligen los dos) y lo hace más alto o más bajito
+     parejo (cabeza, cuerpo, brazos y piernas en su proporción); al sentarse, la cadera queda en el asiento. ── */
+  _claveAlto(u) { let h = 7; for (const ch of String(u || "")) h = (Math.imul(h, 31) + ch.charCodeAt(0)) | 0; return "al:" + (h >>> 0).toString(36).slice(0, 8); }
+  estaturaDe(u) { const v = +this.casa?.cuartos?.monos?.[this._claveAlto(u)]; return v >= 0.8 && v <= 1.2 ? v : 1; }
+  ponerEstatura(u, v) { this.sync.op({ o: "cuarto", k: "monos", v: { [this._claveAlto(u)]: v } }); this._pintarCasa(this.sync.casa()); this.sonar("pop", { volumen: 0.6 }); }
+  _alturas() {
+    for (const [m, u] of [[this.yo, this.yoUsuario], [this.suyo, this.parejaUsuario]]) {
+      const a = this.estaturaDe(u);
+      if (!m || m.alto === a) continue;
+      m.alto = a; m.n.style.setProperty("--alto", String(a));
+      if (m.mueble) { const [id, jx] = m.mueble.split(":"), ro = this.objs.get(id); if (ro?.d.lugares?.[+jx]) this._irLugar(m, ro, +jx, true); }
+    }
   }
   irJunto(o) {
     const r = this.objs.get(o.id);
@@ -1304,8 +1346,18 @@ export class Casita {
   _ponerLleva(m, cosa) {
     m.lleva = COSAS_MANO[cosa] ? cosa : "";
     m.llevaN.hidden = true;
-    const mano = m.cuerpo.querySelector(".ca-mano-cosa");
-    if (mano) {
+    const mano = m.cuerpo.querySelector(".ca-mano-cosa"), largo = m.cuerpo.querySelector(".ca-mano-larga"), L = COSAS_MANO[m.lleva]?.larga, dL = CATALOGO[L];
+    largo?.replaceChildren();
+    // (Fase 65) La escoba y el rastrillo de su tamaño: el palo pasa por la mano y las cerdas llegan al piso.
+    if (largo && dL) {
+      const t = document.createElement("template"); t.innerHTML = dL.arte({}, dL.colores?.[0] || null);
+      const sv = t.content.querySelector("svg"), [x, y] = COSAS_MANO[m.lleva].mano || [72 - dL.w / 2, 166 - dL.h];
+      if (sv) { for (const [k, v] of [["x", x], ["y", y], ["width", dL.w], ["height", dL.h]]) sv.setAttribute(k, v); largo.append(sv); }
+      // (El brazo se abre un poquito, -14°, y la escoba va al revés: así queda derechita, el palo por fuera del brazo
+      // y agarrado por la mano.)
+      largo.setAttribute("transform", "rotate(14 72 102)");
+      mano?.replaceChildren();
+    } else if (mano) {
       mano.replaceChildren();
       if (m.lleva) {
         const t = document.createElement("template"); t.innerHTML = COSAS_MANO[cosa].arte;
@@ -1314,6 +1366,7 @@ export class Casita {
       }
     } else { m.llevaN.hidden = !m.lleva; m.llevaN.innerHTML = m.lleva ? COSAS_MANO[cosa].arte : ""; }
     m.n.classList.toggle("con-cosa", !!m.lleva);
+    m.n.classList.toggle("con-larga", !!(largo && dL));
   }
   decir(t, mandar = true) {
     this._globo(this.yo, t);
@@ -1369,18 +1422,69 @@ export class Casita {
     this._mandarYo({ ev: { k: "come", t: m.lleva } });
   }
   /** Soltar lo que traes: se queda tirado en el piso (cae con su rebotito) y se recoge al tocarlo. */
-  soltar(alBote = false) {
+  soltar(alBote = false, junto = null) {
     const m = this.yo, k = m.lleva;
     if (!k) return;
     this._ponerLleva(m, ""); this._mandarYo({ lleva: "" });
     if (alBote || this.objs.size >= MAX_OBJETOS) return;
     this.sonar("soltar");
+    // (Fase 65) La escoba (o el rastrillo) se vuelve un objeto de verdad: se recarga en el mueble o la pared de junto,
+    // o se cae al piso; ahí se queda hasta que la vuelvas a agarrar.
+    const L = COSAS_MANO[k]?.larga;
+    if (L && CATALOGO[L]) {
+      const c0 = enCuarto(m.gx).c, A = this._recargar(CATALOGO[L], c0, m.gx + 30 * m.mira, lim(m.y + 6, FONDO + 6, frenteDe(c0) - 6), "", m.mira, junto);
+      const o = { id: nuevoId(), t: L, c: c0, x: Math.round(A.gx - inicioDe(c0)), y: Math.round(A.y), f: false, e: { pose: A.pose, ang: A.ang } };
+      this.sync.op({ o: "pon", obj: o });
+      this._pintarCasa(this.sync.casa());
+      const r = this.objs.get(o.id);
+      if (r) { this._caer(r, 26); this._volcar(r); }
+      return;
+    }
     const gx = lim(m.gx + 28 * m.mira, 24, ANCHO - 24), { c, x } = enCuarto(gx);
     const o = { id: nuevoId(), t: "cosita", c, x: Math.round(x), y: Math.round(lim(m.y + 8, FONDO, FRENTE)), f: false, e: { k } };
     this.sync.op({ o: "pon", obj: o });
     this._pintarCasa(this.sync.casa());
     const r = this.objs.get(o.id);
     if (r) this._caer(r, 70);
+  }
+  /** (Fase 65) Dónde y cómo queda algo largo que sueltas (una escoba): recargado en el mueble de junto (inclinado lo
+   *  justo para que la punta toque su orilla), en la pared de atrás, o tirado en el piso (hacia donde caiga).
+   *  Nunca atraviesa: se queda fuera de la huella del mueble y dentro del cuarto. Devuelve { gx, y, pose, ang }. */
+  _recargar(d, c, gx, y, id = "", dir = 1, junto = null) {
+    const cu = cuarto(c), x0 = inicioDe(c), a = x0 + 20, b = x0 + cu.w - 20, hueco = 22;
+    let mejor = null;
+    // (Con `junto`, se recarga en ese mueble, del lado que le quede más cerca: así se deja junto al asiento.)
+    for (const q of junto ? [junto] : this.objs.values()) {
+      if (q.o.id === id || q.o.c !== c || q.d.capa !== "piso" || q.d.mascota || q.d.portatil || q.d.larga) continue;
+      const h = this.nav.huella(q);
+      if (!h || (!junto && (y < h.y0 - 18 || y > h.y1 + 18)) || q.d.h < 50) continue;
+      let izq = gx < (h.x0 + h.x1) / 2, bx = izq ? h.x0 - hueco : h.x1 + hueco;
+      if (bx < a || bx > b) { izq = !izq; bx = izq ? h.x0 - hueco : h.x1 + hueco; }
+      const dist = Math.abs(gx - bx);
+      if ((junto || dist <= 60) && bx >= a && bx <= b && (!mejor || dist < mejor.dist)) mejor = { q, h, izq, bx, dist };
+    }
+    if (mejor) {
+      const { q, h, izq, bx } = mejor, alto = Math.min(q.d.h * 0.9, d.h - 8), ang = (Math.atan2(hueco - 4, alto) * 180) / Math.PI;
+      return { gx: bx, y: lim(y, h.y0 + 6, h.y1 - 4), pose: "mueble", ang: Math.round(izq ? ang : -ang) };
+    }
+    // La pared de atrás (adentro) o la fachada (en el patio): casi derechita, recargada hacia atrás.
+    const enFachada = cu.mapa && gx - x0 > FACHADA.x0 + 20 && gx - x0 < FACHADA.x1 - 20 && Math.abs(gx - x0 - FACHADA.puerta) > 70 && y <= MAPA.fondo + 44;
+    if ((!cu.afuera && y <= FONDO + 44) || enFachada) return { gx: lim(gx, a, b), y: enFachada ? MAPA.fondo + 10 : FONDO + 8, pose: "pared", ang: dir < 0 ? -5 : 5 };
+    // Al piso: cae acostada; si del lado que cae no cabe (la orilla del cuarto, el agua), cae para el otro.
+    let lado = dir < 0 ? -1 : 1;
+    const cabe = (s) => { const fin = gx + s * (d.h - 10); return fin >= a && fin <= b && (!cu.mapa || this.nav.libreEn(c, fin, y)); };
+    if (!cabe(lado) && cabe(-lado)) lado = -lado;
+    return { gx: lim(gx, a, b), y, pose: "suelo", ang: 90 * lado };
+  }
+  /** Cómo cae algo largo: si se recarga, se inclina hasta tocar; si se cae al piso, se va de lado y rebota. */
+  _volcar(r) {
+    const a = r.n.querySelector(":scope > .ca-obj-arte"), ang = +r.o.e?.ang || 0;
+    if (!a || reducido() || !ang) return;
+    const tumba = Math.abs(ang) > 45;
+    a.animate(tumba
+      ? [{ rotate: "0deg", easing: "cubic-bezier(.55,0,1,.6)" }, { rotate: ang * 1.04 + "deg", offset: 0.72, easing: "ease-out" }, { rotate: ang * 0.95 + "deg", offset: 0.86 }, { rotate: ang + "deg" }]
+      : [{ rotate: "0deg", easing: "ease-in" }, { rotate: ang * 1.18 + "deg", offset: 0.7, easing: "ease-out" }, { rotate: ang + "deg" }], { duration: tumba ? 620 : 420 });
+    if (tumba) setTimeout(() => { if (!this.vivo) return; this.sonar("soltar", { volumen: 0.6 }); this.particulas("polvo", { gx: r.gx + (ang > 0 ? 50 : -50), y: r.o.y }, 0, 0, 3); }, 440);
   }
   /** Recoger algo del piso (si traías otra cosa, la deja ahí). */
   async recoger(o) {
@@ -1762,13 +1866,15 @@ export class Casita {
       if (L) { gx = L.x; y = L.y; } else y = 600;
     } else if (d.capa !== "alfombra") y = lim(LIMITE_EDIT - 6 - Math.random() * 26, FONDO, LIMITE_EDIT);
     if (e.tirado && cu.mapa) { const L = this._lugarEditable(c, gx, y); if (L) { gx = L.x; y = L.y; } }
+    // (Fase 65) Una escoba nueva tampoco se para solita: se recarga en lo de junto o en la pared, o cae acostada.
+    if (d.larga) { const A = this._recargar(d, c, gx, y, "", Math.random() < 0.5 ? -1 : 1); gx = A.gx; y = A.y; e.pose = A.pose; e.ang = A.ang; }
     const x = lim(gx - x0, d.w / 2 + 4, w - d.w / 2 - 4);
     const o = { id: nuevoId(), t, c, x: Math.round(x), y: Math.round(y), f: false, e };
     this.pila.push([{ o: "quita", id: o.id }]);
     this.sync.op({ o: "pon", obj: o });
     this._pintarCasa(this.sync.casa());
     const r = this.objs.get(o.id);
-    if (r && !reducido()) { r.n.classList.remove("aparece"); r.n.classList.add("cae"); setTimeout(() => { r.n.classList.remove("cae"); this.particulas("polvo", { gx: r.gx, y: r.o.y }, 0, 0, 3); this.sonar("boing", { volumen: 0.7 }); }, 430); }
+    if (r && !reducido()) { r.n.classList.remove("aparece"); r.n.classList.add("cae"); setTimeout(() => { r.n.classList.remove("cae"); this.particulas("polvo", { gx: r.gx, y: r.o.y }, 0, 0, 3); this.sonar("boing", { volumen: 0.7 }); if (d.larga) this._volcar(r); }, 430); }
     this.sonar("pop"); vibrar(8);
     this._seleccionar(r);
     this.deshacerB.disabled = false;
@@ -1914,7 +2020,14 @@ export class Casita {
   _libre(r, gx, y) {
     const { c } = enCuarto(gx), x0 = inicioDe(c), cw = cuarto(c).w, w2 = r.d.w / 2, a = x0 + w2 + 4, b = x0 + cw - w2 - 4;
     const todos = [...this.objs.values()].filter((q) => q !== r && q.o.c === c && q.d.capa === "piso" && !q.d.mascota && !q.d.portatil && !(puedeSubir(q.d) && this._encima(q.gx, q.o.y, q.o.id)));
-    const libre = (x, yy) => !todos.some((q) => Math.abs(q.o.y - yy) < 26 && Math.abs(q.gx - x) < (q.d.w + r.d.w) / 2 - 10);
+    // (Fase 65) Se compara lo que de verdad toca el piso (las huellas medidas), no el ancho de los dibujos: una
+    // maceta cabe junto al sillón y debajo de lo que cuelga, y dos cosas nunca se enciman.
+    const hs = todos.map((q) => this.nav.huella(q)).filter(Boolean);
+    const libre = (x, yy) => {
+      const h = this.nav.huella({ d: r.d, o: { ...r.o, id: "", y: yy }, gx: x });
+      if (!h) return true;
+      return !hs.some((q) => h.x0 < q.x1 - 2 && h.x1 > q.x0 + 2 && h.y0 < q.y1 - 2 && h.y1 > q.y0 + 2);
+    };
     if (libre(gx, y)) return { x: gx, y };
     for (let dx = 12; dx <= 170; dx += 12) for (const x of [gx - dx, gx + dx]) if (x >= a && x <= b && libre(x, y)) return { x, y };
     for (const yy of [y + 30, y + 60]) if (yy <= FRENTE && libre(gx, yy)) return { x: gx, y: yy };
@@ -1952,6 +2065,8 @@ export class Casita {
     }
     // (Fase 61) Colisiones al acomodar: un mueble del piso no se mete dentro de otro; se recorre al lugar libre más cercano.
     if (d.capa === "piso" && !d.mascota && !d.portatil && !encima) { const L = this._libre(r, g.gx, g.y); g.gx = L.x; g.y = L.y; }
+    // (Fase 65) Una escoba no se para solita: se recarga en lo de junto o en la pared, o se cae al piso.
+    if (d.larga) { const A = this._recargar(d, c0, g.gx, g.y, r.o.id, g.gx >= r.gx ? 1 : -1); g.gx = A.gx; g.y = A.y; e0.pose = A.pose; e0.ang = A.ang; }
     const { c, x } = enCuarto(g.gx);
     // (Fase 64) Si cayó de alto, se daña: poquito (despostillado), roto (de adorno) o hecho pedacitos (se quita; se puede deshacer).
     const golpe = blando(d) ? 0 : danoPor(cayo), dano = Math.max(e0.dano | 0, golpe);
@@ -1972,6 +2087,7 @@ export class Casita {
     this._guardarObj(r, nuevo, "soltar");
     const rn = this.objs.get(r.o.id) || r;
     if (cayo > 8) this._caer(rn, cayo, golpe);
+    if (d.larga) this._volcar(rn);
     if (!reducido()) { rn.n.classList.add("aterriza"); setTimeout(() => rn.n.classList.remove("aterriza"), 480); }
     if (!enPared(rn.o, d)) this.particulas("polvo", { gx: g.gx, y: g.y }, 0, 0, 3);
     this._seleccionar(rn);

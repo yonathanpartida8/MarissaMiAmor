@@ -97,7 +97,7 @@ function piernaSVG(clase, capas, corte = 31) {
   const arriba = (r) => r <= corte, abajo = (r) => r > corte;
   return `<g class="${clase}"><g class="ca-muslo">${svgDe(parte(borde, arriba))}${capas.map((L) => svgDe(parte(L, arriba))).join("")}</g><g class="ca-canilla">${svgDe(parte(borde, abajo))}${capas.map((L) => svgDe(parte(L, abajo))).join("")}</g></g>`;
 }
-const grupo = (clase, capas, extra = "", { borde = true, attrs = "" } = {}) => `<g${clase ? ` class="${clase}"` : ""}${attrs}>${borde ? svgDe(contorno(capas)) : ""}${capas.map(svgDe).join("")}${extra}</g>`;
+const grupo = (clase, capas, extra = "", { borde = true, attrs = "", antes = "" } = {}) => `<g${clase ? ` class="${clase}"` : ""}${attrs}>${antes}${borde ? svgDe(contorno(capas)) : ""}${capas.map(svgDe).join("")}${extra}</g>`;
 
 /* ── La cara (filas 3–13) ── */
 const CARA = [[3, 9, 15], [4, 8, 16], [5, 7, 17], [6, 7, 17], [7, 7, 17], [8, 7, 17], [9, 7, 17], [10, 7, 17], [11, 8, 17], [12, 9, 16], [13, 10, 15]];
@@ -322,6 +322,29 @@ export function monitoSVG(r0) {
     return [L, ropa];
   };
   const sienta = `<g class="ca-sienta">${grupo("ca-sp-i", canillaSentada(8, -1))}${grupo("ca-sp-d", canillaSentada(14, 1))}${grupo("ca-regazo", regazo())}</g>`;
+  /* (Fase 65) Sentado DE LADO: el muslo hacia adelante sobre el asiento, la rodilla, la canilla que baja y el zapato
+     de punta; la pierna de atrás un poquito más oscura y corrida (así se ve la hondura). Mira a la derecha; volteado,
+     a la izquierda. Los muslos quedan en las mismas filas que de frente (27–29): el asiento queda justo debajo. */
+  const piernaLado = (dc, lejos) => {
+    const L = new Capa(), ropa = new Capa(), zap = new Capa(), k = lejos ? 0.84 : 1, Bk = lejos ? osc(B, 0.86) : B, pk = lejos ? piel2 : piel, Zk = lejos ? osc(Z, 0.86) : Z;
+    // Muslo (de la cadera a la rodilla) y canilla (de la rodilla al tobillo).
+    L.caja(9 + dc, 27, 16 + dc, 29, pk).caja(14 + dc, 30, 16 + dc, 35, pk);
+    if (tela) { ropa.caja(9 + dc, 27, 16 + dc, 29, Bk).caja(14 + dc, 30, 16 + dc, r.calzado === "botas" ? 32 : 35, Bk); ropa.fila(27, 9 + dc, 15 + dc, cla(Bk, 0.25)); }
+    else if (abajo === "short") ropa.caja(9 + dc, 27, 13 + dc, 29, Bk).fila(27, 9 + dc, 13 + dc, cla(Bk, 0.25));
+    else if (faldita) ropa.caja(8 + dc, 26, 15 + dc, 29, lejos ? osc(K, 0.86) : K).fila(29, 8 + dc, 15 + dc, cla(K, 0.3));
+    if (abajo === "deportivo" && !lejos) for (let c = 9; c <= 15; c++) ropa.pon(c + dc, 29, c % 2 ? "#ffffff" : cla(B, 0.7));
+    if (r.calzado === "botas") zap.caja(14 + dc, 33, 16 + dc, 37, Zk).fila(37, 14 + dc, 18 + dc, Zk).fila(38, 14 + dc, 18 + dc, osc(Zk, 0.6)).fila(33, 14 + dc, 16 + dc, cla(Zk, 0.3));
+    else if (r.calzado === "flats") zap.fila(36, 14 + dc, 17 + dc, Zk).fila(37, 14 + dc, 18 + dc, Zk).fila(38, 14 + dc, 18 + dc, osc(Zk, 0.7));
+    else zap.fila(36, 14 + dc, 17 + dc, Zk).fila(37, 14 + dc, 18 + dc, Zk).fila(38, 14 + dc, 18 + dc, "#f4f1f6").pon(17 + dc, 36, cla(Zk, 0.4));
+    L.sombrea(pk, { o: sombraPiel(pk, 0.25), luz: false });
+    if (tela || abajo === "short") ropa.sombrea(Bk, { luz: false });
+    zap.sombrea(Zk);
+    // La rodilla dobla: su sombrita en la esquina.
+    (tela ? ropa : L).pon(15 + dc, 30, tela ? osc(Bk, 0.72) : sombraPiel(pk, 0.3));
+    void k;
+    return [L, ropa, zap];
+  };
+  const sientaLado = `<g class="ca-sienta-lado">${grupo("ca-sl-lejos", piernaLado(-1, true))}${grupo("ca-sl-cerca", piernaLado(0, false))}</g>`;
 
   /* Brazos (manga + brazo + mano). */
   const manga = { playera: 18, rayas: 18, overol: 18, vestido: 16, tirantes: 0, blusita: 0 }[r.arriba] ?? 23;
@@ -403,11 +426,11 @@ export function monitoSVG(r0) {
 
   return `<svg viewBox="0 0 100 170" class="ca-mono-svg pixel-mono" shape-rendering="crispEdges" aria-hidden="true">
     <g class="ca-sombra">${svgDe(sombra)}</g><g class="ca-contacto">${svgDe(contacto)}</g>
-    ${atras.m.size ? grupo("ca-pelo-atras ca-lado-solo", [atras]) : ""}${atrasF.m.size ? grupo("ca-pelo-atras ca-frente-solo", [atrasF]) : ""}
-    ${piernaSVG("ca-pi", pi)}${piernaSVG("ca-pd", pd)}${sienta}
+    <g class="ca-pelo-tras">${atras.m.size ? grupo("ca-pelo-atras ca-lado-solo", [atras]) : ""}${atrasF.m.size ? grupo("ca-pelo-atras ca-frente-solo", [atrasF]) : ""}</g>
+    ${piernaSVG("ca-pi", pi)}${piernaSVG("ca-pd", pd)}${sienta}${sientaLado}
     ${grupo("", [T, D])}
     ${grupo("ca-bi", bi.slice(0, 2), bi[2], { attrs: ' style="transform-origin:28px 64px"' })}
-    ${grupo("ca-bd", bd.slice(0, 2), bd[2] + '<g class="ca-mano-cosa"></g>', { attrs: ' style="transform-origin:72px 64px"' })}
+    ${grupo("ca-bd", bd.slice(0, 2), bd[2] + '<g class="ca-mano-cosa"></g>', { attrs: ' style="transform-origin:72px 64px"', antes: '<g class="ca-mano-larga"></g>' })}
     <g class="ca-cabeza"><g class="ca-lado-solo">${svgDe(contorno([cara, frente, oreja, acc]))}${svgDe(cara)}${svgDe(oreja)}${caritas(r, P, I, piel)}${svgDe(frente)}${svgDe(acc)}</g><g class="ca-atras-solo">${svgDe(contorno([caraA, orejaF, accF, atrasF]))}${svgDe(atrasF)}${svgDe(orejaF)}${svgDe(caraA)}${svgDe(accF)}</g><g class="ca-frente-solo ca-cara-f">${svgDe(contorno([caraF, frenteF, orejaF, accF]))}${svgDe(caraF)}${svgDe(orejaF)}${caritasF(r, P, I, piel)}${svgDe(frenteF)}${svgDe(accF)}</g></g>
   </svg>`;
 }

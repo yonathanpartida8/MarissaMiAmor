@@ -34,6 +34,7 @@ const colores = (lista, actual, al) => el("div.ca-colores", {}, lista.map((c) =>
 const sec = (t, ...h) => el("section.ca-sec", {}, [el("b", { text: t }), ...h]);
 
 /** El vestidor (botón, ropero o espejo): todo se ve al momento y se guarda solo. */
+const ESTATURAS = [["0.88", "Más bajito"], ["0.94", "Bajito"], ["1", "Normal"], ["1.06", "Alto"], ["1.12", "Más alto"]];
 export function vestidor(j) {
   const r = { ...j.yo.ropa };
   const vista = el("div.ca-vest-vista", { html: monitoSVG(r) });
@@ -48,6 +49,8 @@ export function vestidor(j) {
       sec("Zapatitos", chips(CALZADOS, r.calzado || "tenis", (k) => poner({ calzado: k })), colores(COLOR_ROPA, r.zapatos, (c) => poner({ zapatos: c }))),
       sec("Accesorio", chips(ACCESORIOS, r.accesorio, (k) => poner({ accesorio: k }))),
       sec("Piel", colores(PIELES, r.piel, (c) => poner({ piel: c }))),
+      // (Fase 65) La estatura de los dos monitos (se guarda para los dos).
+      sec("Estatura", ...[["Tú", j.yoUsuario], [j.pareja, j.parejaUsuario]].map(([n, u]) => el("div.ca-estatura", {}, [el("small", { text: n }), chips(ESTATURAS, String(j.estaturaDe(u)), (k) => j.ponerEstatura(u, +k))]))),
     ]),
   ]), "vestidor");
 }

@@ -1447,3 +1447,55 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-monito.lado.camina:not(.corre) .ca-mono-cuerpo { rotate: 2.2deg; transform-origin: 50% 100%; transition: rotate .2s; }
 .ca.fx1 .ca-monito:not(.camina):not(.corre):not(.cargado):not(.sentado):not(.dormido):not(.banando):not(.columpio):not(.limpiando):not(.duchando):not([class*=" g-"]):not(.n-bano) .ca-mono-caja { animation: caPeso 6.4s ease-in-out infinite; transform-origin: 50% 100%; }
 @keyframes caPeso { 0%, 100% { rotate: 0deg; } 30% { rotate: .9deg; } 70% { rotate: -.7deg; } }
+/* (Fase 65) Girado: las partes animadas siguen vivas encima del cuerpo girado, con la misma transformación del frente. */
+.ca-obj.girado > .ca-obj-arte > .ca-vivo { position: absolute; left: 0; top: 0; z-index: 2; transform-origin: 0 0; pointer-events: none; }
+.ca-obj.girado > .ca-obj-arte > img.ca-girado { position: relative; z-index: 1; }
+/* De lado o de espaldas, lo que se mueve queda detrás del cuerpo girado (sólo se asoma lo que sobresale). */
+.ca-obj.girado > .ca-obj-arte > .ca-vivo.tras { z-index: 0; }
+.ca-obj.f.girado > .ca-obj-arte { transform-origin: var(--ax, 50%) 50%; }
+.ca-obj.girado > .ca-obj-arte > .ca-vivo > svg { display: block; width: 100%; height: 100%; overflow: visible; }
+/* ═════════════ Fase 65 ═════════════ */
+/* El pelo de atrás va pegado a la cabeza: se mueve con ella al caminar, al seguir tu dedo o con sueño (antes se quedaba). */
+.ca-mono-svg :is(.ca-cabeza, .ca-pelo-tras) { translate: var(--hx, 0px) 0; rotate: var(--hr, 0deg); transform-origin: 50px 60px; transition: translate .45s cubic-bezier(.3, 1.4, .5, 1), rotate .45s cubic-bezier(.3, 1.4, .5, 1); }
+.ca-monito.n-sueno :is(.ca-cabeza, .ca-pelo-tras) { translate: 0 2px; }
+.ca.fx1 .ca-monito.camina :is(.ca-cabeza, .ca-pelo-tras) { animation: caCabeceo .4s ease-in-out .06s infinite; }
+.ca-monito .ca-pelo-atras.ca-frente-solo { transform-origin: 50px 26px !important; }
+.ca-monito .ca-pelo-atras.ca-lado-solo { transform-origin: 34px 22px !important; }
+.ca:not(.fx1) .ca-pelo-tras { animation: none !important; }
+/* Sentado de lado: las piernas de lado (muslo, rodilla, canilla, zapato) y las manos en las piernas. De espaldas, las
+   piernas quedan del otro lado del asiento (no se ven). */
+.ca-sienta-lado { display: none; }
+.ca-monito.sentado.lado .ca-sienta { display: none; }
+.ca-monito.sentado.lado .ca-sienta-lado { display: inline; }
+.ca-monito.sentado.lado .ca-bd { transform: rotate(-36deg); }
+.ca-monito.sentado.lado .ca-bi { transform: rotate(-24deg); }
+.ca-monito.sentado.atras:not(.lado) :is(.ca-sienta, .ca-sienta-lado, .ca-pi, .ca-pd) { display: none; }
+/* Sentarse (baja con su apachurradito) y levantarse (se estira). */
+.ca-monito.sentandose .ca-mono-caja { animation: caSentarse .46s cubic-bezier(.3, .7, .3, 1); transform-origin: 50% 100%; }
+.ca-monito.levantandose .ca-mono-caja { animation: caLevantarse .38s cubic-bezier(.3, .7, .3, 1); transform-origin: 50% 100%; }
+@keyframes caSentarse { 0% { translate: 0 -8px; } 55% { translate: 0 2px; scale: 1.04 .92; } 100% { translate: 0 0; scale: 1 1; } }
+@keyframes caLevantarse { 0% { scale: 1 .93; } 45% { translate: 0 -6px; scale: .98 1.05; } 100% { translate: 0 0; scale: 1 1; } }
+/* La estatura: todo el monito parejo (no estirado), desde los pies. */
+.ca-monito { scale: calc(var(--prof, 1) * var(--alto, 1)); }
+.ca-estatura { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.ca-estatura > small { min-width: 64px; font-weight: 700; opacity: .8; }
+
+/* (Fase 65) La escoba y el rastrillo de su tamaño en la mano: el palo pasa por la mano (la mano queda encima) y las
+   cerdas llegan al piso. Al caminar se lleva casi derechita; al barrer, los dos brazos la mueven de lado a lado. */
+.ca-mano-larga svg { overflow: visible; }
+.ca-monito.con-larga .ca-mano-cosa { display: none; }
+.ca-monito.con-larga .ca-bd { transform: rotate(-14deg); }
+.ca-monito.con-larga.camina .ca-bd, .ca-monito.con-larga.corre .ca-bd { animation: caLlevaLarga .4s ease-in-out infinite alternate; }
+@keyframes caLlevaLarga { from { transform: rotate(-11deg); } to { transform: rotate(-18deg); } }
+/* Barriendo: la mano de la escoba va y viene (las cerdas barren el piso de lado a lado) y la otra la acompaña. */
+.ca-monito.con-larga.limpiando .ca-bd { animation: caBarreLarga .36s ease-in-out infinite alternate !important; }
+.ca-monito.con-larga.limpiando .ca-bi { animation: caBarreOtra .36s ease-in-out infinite alternate !important; }
+@keyframes caBarreLarga { from { transform: rotate(-27deg); } to { transform: rotate(-2deg); } }
+@keyframes caBarreOtra { from { transform: rotate(-36deg); } to { transform: rotate(-14deg); } }
+/* La escoba suelta: recargada en un mueble o en la pared, o acostada en el piso (gira sobre su base). */
+.ca-obj.recargada > .ca-obj-arte { rotate: var(--ang, 0deg); transform-origin: 50% 100%; transition: rotate .25s ease, translate .25s ease; }
+.ca-obj.recargada.en-suelo > .ca-obj-arte { translate: 0 -10px; }
+.ca-obj.recargada.levantado > .ca-obj-arte { rotate: 0deg; translate: none; }
+/* Acostada, su sombrita va a lo largo de ella. */
+.ca-obj.capa-piso.en-suelo::after { left: 42%; right: auto; width: 250%; bottom: -2px; }
+.ca-obj.capa-piso.en-suelo.hacia-izq::after { left: auto; right: 42%; }
