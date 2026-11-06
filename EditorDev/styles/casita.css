@@ -1522,3 +1522,38 @@ body.ca-escribiendo .jt-nav { display: none; }
 /* El columpio: se mece con todo y monito (desde las cuerdas). */
 .ca.fx1 .ca-obj.arbol.ocupado .ca-mono-3d { animation: caMecerSuave 3.2s ease-in-out infinite; transform-origin: 50% -60px; }
 @media (prefers-reduced-motion: reduce) { .ca-mono-3d { animation: none !important; } }
+
+/* ═══════════ FASE 67: muebles en pixel de verdad, monito 360 ═══════════ */
+/* La cosa de frente: su imagen pixel abajo y el dibujo encima con lo quieto transparente (se toca y se anima igual). */
+.ca-obj-arte > img.ca-plana { position: absolute; left: -4px; top: -4px; pointer-events: none; image-rendering: crisp-edges; image-rendering: pixelated; -webkit-user-drag: none; user-select: none; }
+.ca-obj.plana > .ca-obj-arte > svg :not([class]):not(:has([class])):not([class] *) { opacity: 0; }
+/* (Fase 67) Lo que se recoge en el patio: pixel, con un brillito cuando ya se puede recoger (como en Stardew). */
+.ca-forraje { position: absolute; pointer-events: auto; cursor: pointer; background: center / 100% 100% no-repeat; image-rendering: crisp-edges; image-rendering: pixelated; -webkit-tap-highlight-color: transparent; }
+.ca-forraje.lejos, .ca-forraje.suelo.vacio { display: none; }
+.ca-forraje:not(.vacio)::after { content: ""; position: absolute; right: 18%; top: 8%; width: 3px; height: 3px; background: #fff; box-shadow: 3px 0 0 rgba(255, 255, 255, .6), -3px 0 0 rgba(255, 255, 255, .6), 0 3px 0 rgba(255, 255, 255, .6), 0 -3px 0 rgba(255, 255, 255, .6); opacity: 0; }
+.ca.fx1 .ca-forraje:not(.vacio)::after { animation: caBrillito 3.4s steps(1) infinite; }
+.ca-forraje:nth-of-type(3n)::after { animation-delay: -1.1s !important; } .ca-forraje:nth-of-type(3n + 1)::after { animation-delay: -2.3s !important; }
+@keyframes caBrillito { 0%, 82%, 100% { opacity: 0; } 86%, 94% { opacity: 1; } }
+.ca-forraje-vuela { position: absolute; z-index: 30; width: 22px; height: 22px; pointer-events: none; image-rendering: crisp-edges; image-rendering: pixelated; }
+.ca-monito.recoge .ca-mono-caja { animation: caRecoge .64s ease-in-out; transform-origin: 50% 100%; }
+.ca-monito.recoge .ca-bd { transform: rotate(-52deg); }
+@keyframes caRecoge { 0%, 100% { transform: none; } 30%, 72% { transform: translateY(6px) scaleY(.86); } }
+/* La canasta: su botoncito pixel (arriba del de enfocar) y su panelito. */
+.ca-canasta-b { position: absolute; z-index: 21; right: 12px; bottom: 124px; width: 42px; height: 42px; padding: 0; border: 0; border-radius: 12px; background: rgba(255, 255, 255, .86); box-shadow: 0 0 0 2px #4a3346, 3px 3px 0 rgba(74, 51, 70, .25); display: grid; place-items: center; cursor: pointer; }
+.ca-canasta-b[hidden] { display: none; }
+.ca-canasta-ico { width: 28px; height: 28px; image-rendering: pixelated; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' shape-rendering='crispEdges'%3E%3Cpath fill='%234a3346' d='M4 1h6v1H4zM3 2h1v3H3zM10 2h1v3h-1zM1 5h12v1H1zM1 6h1v6H1zM12 6h1v6h-1zM2 12h10v1H2z'/%3E%3Cpath fill='%23d49b68' d='M2 6h10v6H2z'/%3E%3Cpath fill='%23a8714b' d='M2 8h10v1H2zM2 10h10v1H2zM5 6h1v6H5zM8 6h1v6H8z'/%3E%3Cpath fill='%23e8436a' d='M3 4h2v1H3zM6 3h2v2H6z'/%3E%3Cpath fill='%236a2d84' d='M9 4h2v1H9z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; }
+.ca-canasta-n { position: absolute; right: -4px; top: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #ff5c93; color: #fff; font: 700 11px/18px system-ui, sans-serif; box-shadow: 0 0 0 2px #4a3346; }
+.ca-canasta-n:empty { display: none; }
+.ca-canasta { position: absolute; z-index: 22; right: 12px; bottom: 176px; width: min(300px, calc(100% - 24px)); max-height: 46vh; overflow: auto; padding: 10px 12px; border-radius: 8px; background: #fff8fb; color: #4a3346; box-shadow: 0 0 0 3px #4a3346, 4px 4px 0 rgba(74, 51, 70, .25); font: 600 14px/1.3 system-ui, sans-serif; }
+.ca-canasta-tit { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.ca-canasta-x { border: 0; background: none; font: 700 20px/1 system-ui; color: #4a3346; cursor: pointer; padding: 2px 6px; }
+.ca-canasta-fila { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-top: 2px dashed rgba(74, 51, 70, .14); }
+.ca-canasta-fila img { width: 30px; height: 30px; image-rendering: pixelated; flex: none; }
+.ca-canasta-fila span { flex: 1; }
+.ca-canasta-acc { border: 0; border-radius: 6px; padding: 6px 9px; background: #ffd0e2; color: #4a3346; font: 700 12px system-ui; box-shadow: 0 0 0 2px #4a3346; cursor: pointer; }
+.ca-canasta-vacia { margin: 4px 0 2px; font-weight: 500; }
+
+/* (Fase 67) La vida de los monitos: tu amorcito sin conexión vive solito (más visible que «ausente») y se pone contento. */
+.ca-monito.ausente.vida .ca-mono-caja { opacity: .82; }
+.ca-monito.contento .ojo-n { display: none; } .ca-monito.contento .ojo-f { display: inline; }
+.ca-monito.contento .bo-n { display: none; } .ca-monito.contento .bo-a { display: inline; }

@@ -33,7 +33,9 @@ import { MAPA, FACHADA, MUDANZA, editable as editableMapa } from "./exterior.js"
 import { Patio } from "./patio.js";
 import { Suciedad } from "./suciedad.js";
 import { Viento } from "./viento.js";
-import { giroDe, vistaGirada, lugarGirado, hondura, ELEV_GIRO } from "./girar.js";
+import { Recolectar, FORRAJE, imagenForraje } from "./recolectar.js";
+import { Vida } from "./vida.js";
+import { giroDe, vistaGirada, vistaPlana, lugarGirado, hondura, ELEV_GIRO } from "./girar.js";
 import { modelo as modelo3d, pintar as pintar3d, lugarEn as lugar3d, POSES as POSES3D, CEL as CEL3D } from "./monito3d.js";
 import { CATALOGO, COSAS_MANO, RECETAS, colorDe } from "./catalogo/index.js";
 import { monitoSVG, ropaDe } from "./monito.js";
@@ -111,6 +113,10 @@ export class Casita {
     this.patio = new Patio(this); this.patio.armar(this.cuartosN.get("jardin"));
     this.suciedad = new Suciedad(this); this.suciedad.prender();
     this.viento = new Viento(this); this.viento.prender();
+    // (Fase 67) Lo que se recoge en el patio (bayas, hongos, flores, piñas) y la canasta de los dos.
+    this.recolectar = new Recolectar(this); this.recolectar.armar();
+    this.vida = new Vida(this); this.vida.prender();
+    this._tReco = setInterval(() => { if (this.vivo && !document.hidden && this.vistaCuarto === "jardin") this.recolectar.pintar(); }, 30000);
     this.cielo = new CieloVivo(this);
     this.cielo.armar();
     // Los monitos (la primera vez, cada quien de un lado de la sala: igual en los dos teléfonos).
@@ -161,6 +167,7 @@ export class Casita {
   limpiar() {
     this.suciedad?.limpiarTodo();
     this.viento?.apagar();
+    clearInterval(this._tReco); this.recolectar?.limpiar(); this.vida?.apagar();
     this.vivo = false;
     this.sync?.parar();
     this._ro?.disconnect();
@@ -359,10 +366,37 @@ export class Casita {
     this.flashN = el("i.ca-flash", { "aria-hidden": "true" });
     // (Fase 64) Volver a ver a tu monito (si moviste la cámara): chiquito y discreto.
     this._enfocarB = el("button.ca-enfocar", { type: "button", "aria-label": "Ver a mi monito", title: "Ver a mi monito", html: ICO.enfocar, onClick: () => this.enfocar() });
-    this.escena.append(this.flashN, this.hudN, this.necesidades.armar(), this.cuartosB, this.edicionN, this.basuraN, this._enfocarB);
+    // (Fase 67) La canasta de lo que recogen en el patio (con cuántas cosas trae).
+    this.canastaB = el("button.ca-canasta-b", { type: "button", "aria-label": "La canasta", title: "La canasta", hidden: "", onClick: () => this._abrirCanasta() }, [el("i.ca-canasta-ico"), el("b.ca-canasta-n")]);
+    this.escena.append(this.flashN, this.hudN, this.necesidades.armar(), this.cuartosB, this.edicionN, this.basuraN, this._enfocarB, this.canastaB);
     this.raiz.append(this.selN, this.volverN);
   }
 
+  /** (Fase 67) La canasta: el botoncito (en el patio, o donde sea si trae algo) y su panel. */
+  _pintarCanasta() {
+    const b = this.canastaB;
+    if (!b || !this.recolectar) return;
+    const c = this.recolectar.canasta(), n = Object.values(c).reduce((a, x) => a + x, 0);
+    b.hidden = this.editando || (!n && this.vistaCuarto !== "jardin");
+    b.querySelector(".ca-canasta-n").textContent = n ? String(n) : "";
+    if (this._canastaN?.isConnected) this._abrirCanasta(true);
+  }
+  _abrirCanasta(refrescar = false) {
+    this._canastaN?.remove();
+    if (refrescar && !this._canastaAbierta) return;
+    this._canastaAbierta = true;
+    const c = this.recolectar.canasta(), cerrar = () => { this._canastaAbierta = false; p.remove(); };
+    const filas = Object.keys(FORRAJE).filter((k) => c[k]).map((k) => el("div.ca-canasta-fila", {}, [
+      el("img", { src: imagenForraje(k, 4), alt: "" }), el("span", { text: `${FORRAJE[k].n} ×${c[k]}` }),
+      FORRAJE[k].come ? el("button.ca-canasta-acc", { type: "button", text: "Comer", onClick: () => { this.recolectar.sacar(k, true); } }) : null,
+      el("button.ca-canasta-acc", { type: "button", text: "A la mano", onClick: () => { this.recolectar.sacar(k); cerrar(); } }),
+    ].filter(Boolean)));
+    const p = (this._canastaN = el("div.ca-canasta", { role: "dialog", "aria-label": "La canasta" }, [
+      el("div.ca-canasta-tit", {}, [el("b", { text: "La canasta de los dos" }), el("button.ca-canasta-x", { type: "button", "aria-label": "Cerrar", text: "×", onClick: cerrar })]),
+      filas.length ? el("div.ca-canasta-lista", {}, filas) : el("p.ca-canasta-vacia", { text: "Todavía no recogen nada. En el patio hay zarzas con bayas, hongos bajo los árboles, flores en el pasto y piñas bajo los pinos." }),
+    ]));
+    this.escena.append(p);
+  }
   /** Esconder (o mostrar) los botones de los cuartos: queda sólo su botoncito. */
   _plegar(on = !this.cuartosB.classList.contains("plegado")) {
     this.cuartosB.classList.toggle("plegado", on);
@@ -716,6 +750,8 @@ export class Casita {
     const cerca = new Set([this.vistaCuarto]);
     for (const c of CUARTOS) { const n = this.cuartosN.get(c.k); n?.classList.toggle("lejos", !cerca.has(c.k)); }
     this.patio?.lejos(!cerca.has("jardin"));
+    for (const { n } of this.recolectar?.nodos.values() || []) n.classList.toggle("lejos", !cerca.has("jardin"));
+    this._pintarCanasta?.();
     for (const r of this.objs.values()) { const lejos = !cerca.has(r.o.c) && r.o.id !== this.arrastrandoId; r.n.classList.toggle("lejos", lejos); r.fr?.classList.toggle("lejos", lejos); if (r.glow) r.glow.classList.toggle("lejos", lejos); }
   }
 
@@ -769,6 +805,7 @@ export class Casita {
     this._yaPintada = true;
     this.nav?.invalidar(); this.puertasN?.pintar();   // (Fase 63)
     this.suciedad?.pintar();   // (Fase 64)
+    this.recolectar?.pintar();   // (Fase 67)
     this._alturas();   // (Fase 65)
     this._lejos();
     for (const mm of [this.yo, this.suyo]) this._sombra(mm);
@@ -796,7 +833,15 @@ export class Casita {
     const arte = r.n.querySelector(":scope > .ca-obj-arte") || r.n.appendChild(el("div.ca-obj-arte"));
     // (Fase 64) Girado: se ve desde ese ángulo (se prepara un ratito; mientras, el dibujo de siempre).
     const g = this._girable(r.d) ? giroDe(o) : 0, t = (r._tg = (r._tg || 0) + 1);
-    if (!g || !r.vg) { arte.innerHTML = r.d.arte(o.e || {}, C); if (r.vg) { r.vg = null; this._colocar(r); } this._reponer3d(r); }
+    if (!g || !r.vg) { arte.innerHTML = r.d.arte(o.e || {}, C); r.n.classList.remove("plana"); if (r.vg) { r.vg = null; this._colocar(r); } this._reponer3d(r); }
+    // (Fase 67) De frente también es pixel de verdad: la imagen en cuadritos abajo y el dibujo encima con lo quieto
+    // transparente (así se sigue tocando donde tiene forma y lo que se mueve se sigue moviendo).
+    if (!g && !r.d.mascota) vistaPlana(r.d, o.e, C).then((v) => {
+      if (r._tg !== t || !r.n.isConnected || !v || r.n.classList.contains("plana")) return;
+      if (!arte.querySelector(":scope > svg")) return;
+      arte.insertAdjacentHTML("afterbegin", `<img class="ca-plana" alt="" draggable="false" src="${v.url}" style="width:${v.w}px;height:${v.h}px">`);
+      r.n.classList.add("plana");
+    });
     r.n.classList.toggle("girado", !!g);
     // (Fase 66) Su sombrita en pixel, del ancho de su base (girado, la sombra ya viene dibujada con su vista).
     if (r.d.capa === "piso") { try { const c = (r.d.w * 0.84) / 4; r.n.style.setProperty("--sombra", sombraPx(c).url); r.n.style.setProperty("--sombra-sol", sombraPx(c, true).url); } catch (e) { /* nada */ } }
@@ -1296,13 +1341,18 @@ export class Casita {
           // Se sienta en la orilla de enfrente y se va acostando de ladito.
           const yS = y + (M.medio - 2.4) * cel - 1.4 * cel, zS = -((v?.D ?? 20) * 4) / 2 + 3 * cel;
           cuadros.push([POSES3D.sentado, [x, yS, zS], "cadera"], [{ ...POSES3D.medio, rodar: L.pose.rodar / 2 }, [x, (y + yS) / 2, (z + zS) / 2], "centro"]);
-        } else cuadros.push([POSES3D.agachado, [x, y - 4 * cel, z - 4 * cel], "cadera"]);
+        } else {
+          // (Fase 67) Más cuadritos: se agacha, va bajando y se acomoda.
+          const mitad = Object.fromEntries(Object.keys(L.pose).map((k) => [k, POSES3D.agachado[k] + (L.pose[k] - POSES3D.agachado[k]) * 0.55]));
+          cuadros.push([POSES3D.agachado, [x, y - 4 * cel, z - 4 * cel], "cadera"], [mitad, [x, y - 1.8 * cel, z - 1.8 * cel], "cadera"]);
+        }
       }
       cuadros.push([L.pose, L.ancla, L.ancla3d]);
       for (let i = 0; i < cuadros.length; i++) {
-        if (i) { await this.esperar(130); if (m._t3 !== tk || m.mueble !== clave) return; }
+        if (i) { await this.esperar(105); if (m._t3 !== tk || m.mueble !== clave) return; }
         this._cuadro3d(m, ...cuadros[i]);
       }
+      this._parpadeo3d(m, tk);
     } catch (e) { if (m._t3 === tk) { m.n.classList.remove("en3d"); m._3d = null; m._img3d?.remove(); } }
   }
   /** Un cuadrito del monito de bulto en su mueble. */
@@ -1310,7 +1360,11 @@ export class Casita {
     const S = m._3d;
     if (!S) return;
     const { r, M, v, g, cel, L } = S, d = r.d;
-    const im = pintar3d(M, pose, { clave: S.clave, g, yaw: L.yaw, ancla, ancla3d, cel, vg: v, cara: m.accion === "dormido" ? "dormido" : "normal" });
+    m._3dUlt = [pose, ancla, ancla3d];
+    // La carita: dormido con los ojitos cerrados; en la tina y el columpio, feliz; si no, la de siempre (o la que toque
+    // ahorita: un parpadeo, una sonrisa).
+    const cara = m._cara3d || (m.accion === "dormido" ? "dormido" : m.accion === "banando" || m.accion === "columpio" ? "feliz" : "normal");
+    const im = pintar3d(M, pose, { clave: S.clave, g, yaw: L.yaw, ancla, ancla3d, cel, vg: v, cara });
     const arte = r.n.querySelector(":scope > .ca-obj-arte");
     if (!arte) return;
     let n = m._img3d;
@@ -1325,10 +1379,21 @@ export class Casita {
     const otros = [...arte.querySelectorAll(":scope > .ca-mono-3d")];
     if (otros.length > 1) otros.sort((a, b) => +b.dataset.z - +a.dataset.z).forEach((x) => arte.append(x));
   }
+  /** (Fase 67) Sentado parpadea cada ratito, y si su amorcito está cerquita a veces le sonríe. */
+  _parpadeo3d(m, tk) {
+    clearTimeout(m._tParp);
+    m._tParp = setTimeout(() => {
+      if (!this.vivo || m._t3 !== tk || !m._3d || !m._3dUlt || m.accion === "dormido") return;
+      const otro = m === this.yo ? this.suyo : this.yo, cerca = otro && Math.hypot(otro.gx - m.gx, (otro.y - m.y) * 1.6) < 170;
+      const sonrie = cerca && Math.random() < 0.35;
+      m._cara3d = sonrie ? "feliz" : "dormido"; this._cuadro3d(m, ...m._3dUlt);
+      setTimeout(() => { if (m._t3 !== tk || !m._3d) return; m._cara3d = null; this._cuadro3d(m, ...m._3dUlt); this._parpadeo3d(m, tk); }, sonrie ? 1600 : 140);
+    }, 2400 + Math.random() * 3200);
+  }
   /** Quitar el monito de bulto (al pararse: un cuadrito agachándose y vuelve el de siempre). */
   _quitar3d(m, animar = true) {
     const S = m._3d, n = m._img3d;
-    m._3d = null; m._t3 = (m._t3 || 0) + 1;
+    m._3d = null; m._t3 = (m._t3 || 0) + 1; clearTimeout(m._tParp); m._cara3d = null;
     const fin = () => { n?.remove(); if (!m._3d) m.n.classList.remove("en3d"); };
     if (!S || !n || !animar || reducido() || !n.isConnected) { fin(); return; }
     const [x, y, z] = S.L.ancla;
@@ -1746,6 +1811,9 @@ export class Casita {
       if (pu && !G.mono) return this.puertasN.tocar(pu.dataset.puerta);
       if (this.editando) { this._seleccionar(G.obj || null); return; }
       // (Fase 64) Algo del escenario del patio (un árbol, la fuente, un letrero…).
+      // (Fase 67) Algo para recoger (una zarza con bayas, un hongo, una flor, una piña).
+      const fo = !G.mono && !G.obj && G.blanco?.closest?.(".ca-forraje");
+      if (fo) return this.recolectar.tocar(fo.dataset.forraje);
       const es = !G.mono && !G.obj && G.blanco?.closest?.(".ca-esc");
       if (es) return this.patio.tocar(es.dataset.esc);
       if (G.mono === this.yo) return this._menuYo();

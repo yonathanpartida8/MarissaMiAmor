@@ -14,7 +14,7 @@
  *     monito pixel por pixel, y lo que está atrás (el respaldo) queda atrás. Nada se atraviesa ni flota: el asiento
  *     y el colchón se miden del mueble.
  */
-import { monitoSVG } from "./monito.js";
+import { monitoSVG, ropaDe, PIELES } from "./monito.js";
 import { rasterizar, ELEV_GIRO as E } from "./girar.js";
 
 const CW = 25, R0 = -6, FILAS = 47, CEL = 3.52;   // (un cuadrito del monito mide 3.52 en el mundo: 100 → 88)
@@ -31,7 +31,7 @@ const osc = (c, k = 0.42) => [c[0] * k, c[1] * k * 0.97, c[2] * k + (1 - k) * 40
 const cerca = (a, b, t = 4) => Math.abs(a[0] - b[0]) <= t && Math.abs(a[1] - b[1]) <= t && Math.abs(a[2] - b[2]) <= t;
 
 /** Los cuadritos de una parte del monito (sin su contorno): [fila][columna] → [r, g, b] o null. */
-async function celdas(svg, vista, parte, cara = "normal") {
+async function celdas(svg, vista, parte, cara = "normal", sinBorde = true) {
   const css = `${OCULTO}{display:none!important}${VISTAS[vista]}{display:none!important}${PARTES[parte]}{display:none!important}${CARAS[cara] || ""}`;
   const s = svg.replace('viewBox="0 0 100 170"', 'viewBox="0 -32 100 202"').replace(/^(<svg[^>]*>)/, `$1<style>${css}</style>`);
   const px = await rasterizar(s, 100, 202), col = new Array(FILAS * CW).fill(null);
@@ -40,6 +40,8 @@ async function celdas(svg, vista, parte, cara = "normal") {
     if (px[i + 3] > 128) col[r * CW + c] = [px[i], px[i + 1], px[i + 2]];
   }
   // Fuera el contorno (cada orilla es el color de junto, mucho más oscuro): se vuelve a poner al final, ya girado.
+  // (La cabeza se queda con el suyo: se dibuja tal cual, como en el dibujo de siempre.)
+  if (!sinBorde) return col;
   const quita = [];
   for (let r = 0; r < FILAS; r++) for (let c = 0; c < CW; c++) {
     const k = r * CW + c, v = col[k];
@@ -57,37 +59,38 @@ export function modelo(ropa) {
   const clave = JSON.stringify(ropa || {});
   if (MODELOS.has(clave)) return MODELOS.get(clave);
   const p = (async () => {
-    const svg = monitoSVG(ropa || {});
-    const [hF, hL, hA, hFz, hLz, cu, bi, bd, pi, pd] = await Promise.all([
-      celdas(svg, "frente", "cabeza"), celdas(svg, "lado", "cabeza"), celdas(svg, "atras", "cabeza"),
-      celdas(svg, "frente", "cabeza", "dormido"), celdas(svg, "lado", "cabeza", "dormido"),
+    const svg = monitoSVG(ropa || {}), R = { ...ropaDe(""), ...(ropa || {}) };
+    // (Fase 67) La cabeza ya no es de cubitos: son los dibujos pixel de la cabeza (de frente, de tres cuartos y de
+    // espaldas, con su carita y su peinado tal cual), y se escoge el que toca según hacia dónde ve el monito.
+    const [hF, hFz, hFf, hL, hLz, hLf, hA, cu, bi, bd, pi, pd] = await Promise.all([
+      celdas(svg, "frente", "cabeza", "normal", false), celdas(svg, "frente", "cabeza", "dormido", false), celdas(svg, "frente", "cabeza", "feliz", false),
+      celdas(svg, "lado", "cabeza", "normal", false), celdas(svg, "lado", "cabeza", "dormido", false), celdas(svg, "lado", "cabeza", "feliz", false),
+      celdas(svg, "atras", "cabeza", "normal", false),
       celdas(svg, "frente", "cuerpo"), celdas(svg, "frente", "bi"), celdas(svg, "frente", "bd"), celdas(svg, "frente", "pi"), celdas(svg, "frente", "pd"),
     ]);
     const en = (L, c, r) => (c < 0 || r < 0 || c >= CW || r >= FILAS ? null : L[r * CW + c]);
-    // La cabeza: lo hondo sale de su perfil (la carita hacia la derecha = el frente).
-    let l0 = CW, l1 = -1;
-    for (let r = 0; r < FILAS; r++) for (let c = 0; c < CW; c++) if (hL[r * CW + c]) { l0 = Math.min(l0, c); l1 = Math.max(l1, c); }
-    const Dh = Math.max(4, l1 - l0 + 1), zc = (Dh - 1) / 2;
+    // De tres cuartos por detrás: la nuca de espaldas, con la orilla del cachete y la orejita del lado que se asoma.
+    const pielH = /^#[0-9a-f]{6}$/i.test(R.piel || "") ? R.piel : PIELES[2], pp = [1, 3, 5].map((i) => parseInt(pielH.slice(i, i + 2), 16));
+    const esPiel = (c) => !!c && Math.abs(c[0] - pp[0]) + Math.abs(c[1] - pp[1]) + Math.abs(c[2] - pp[2]) < 90;
+    const a34 = hA.slice();
+    for (let r = 12; r <= 20; r++) {
+      for (let c = 16; c <= 19; c++) { const f = en(hF, c, r); if (f && (esPiel(f) || !en(hA, c, r))) a34[r * CW + c] = f; }
+      for (let c = 4; c <= 7; c++) { const a = en(hA, c, r); if (esPiel(a)) a34[r * CW + c] = en(hA, c + 1, r) && !esPiel(en(hA, c + 1, r)) ? en(hA, c + 1, r) : en(hA, c + 2, r) || a; }
+    }
+    const cabezas = { frente: { normal: hF, dormido: hFz, feliz: hFf }, tres: { normal: hL, dormido: hLz, feliz: hLf }, espalda34: { normal: a34 }, espalda: { normal: hA } };
     const vox = [];   // { x, y, z, h (hueso), c: [frente, atrás, izq, der, arriba, abajo] }
     const pon = (x, y, z, h, c, cz = null) => vox.push({ x, y, z, h, c, cz });
-    const llenoCab = (x, r, z) => z >= 0 && z < Dh && !!en(hF, x, r) && !!en(hL, l1 - z, r);
-    for (let r = 0; r < FILAS; r++) for (let x = 0; x < CW; x++) {
-      if (!en(hF, x, r)) continue;
-      for (let z = 0; z < Dh; z++) {
-        if (!llenoCab(x, r, z)) continue;
-        const f = en(hF, x, r), fz = en(hFz, x, r), l = en(hL, l1 - z, r) || f, lz = en(hLz, l1 - z, r) || l, a = en(hA, CW - 1 - x, r) || l;
-        const ex = [!llenoCab(x, r, z - 1), !llenoCab(x, r, z + 1), !llenoCab(x - 1, r, z), !llenoCab(x + 1, r, z), !llenoCab(x, r - 1, z), !llenoCab(x, r + 1, z)];
-        if (!ex.some(Boolean)) continue;
-        pon(x, r, z, "t", [ex[0] && f, ex[1] && a, ex[2] && l, ex[3] && l, ex[4] && l, ex[5] && f], [ex[0] && fz, ex[1] && a, ex[2] && lz, ex[3] && lz, ex[4] && lz, ex[5] && fz]);
-      }
-    }
+    const zc = 5;
     // Cuerpo, brazos y piernas: bloquecitos con su grosor (las orillas de lado, del color de la orilla de su fila).
-    const bloque = (L, h, z0, z1, extra = null) => {
-      const lleno = (x, r, z) => z >= z0 && z <= z1 && !!en(L, x, r) || (extra && extra(x, r, z));
+    // (Fase 67) Redonditos: las esquinas de lo hondo se recortan (el cuerpo y las piernas ya no son cajas).
+    const bloque = (L, h, z0, z1, extra = null, redondo = false) => {
+      const ancho = (x, r) => { let a = x, b = x; while (en(L, a - 1, r)) a--; while (en(L, b + 1, r)) b++; return [a, b]; };
+      const esquina = (x, r, z) => { if (!redondo || (z !== z0 && z !== z1)) return false; const [a, b] = ancho(x, r); return b - a >= 2 && (x === a || x === b); };
+      const lleno = (x, r, z) => (z >= z0 && z <= z1 && !!en(L, x, r) && !esquina(x, r, z)) || (extra && extra(x, r, z));
       for (let r = 0; r < FILAS; r++) for (let x = 0; x < CW; x++) {
         const v = en(L, x, r);
         if (!v) continue;
-        let a = x, b = x; while (en(L, a - 1, r)) a--; while (en(L, b + 1, r)) b++;
+        const [a, b] = ancho(x, r);
         for (let z = z0 - 1; z <= z1; z++) {
           if (!lleno(x, r, z)) continue;
           const ex = [!lleno(x, r, z - 1), !lleno(x, r, z + 1), !lleno(x - 1, r, z), !lleno(x + 1, r, z), !lleno(x, r - 1, z), !lleno(x, r + 1, z)];
@@ -100,17 +103,18 @@ export function modelo(ropa) {
     const filasDe = (L) => { let a = FILAS, b = -1; for (let r = 0; r < FILAS; r++) for (let c = 0; c < CW; c++) if (L[r * CW + c]) { a = Math.min(a, r); b = Math.max(b, r); } return [a, b]; };
     const [pa, pb] = filasDe(pi.map((v, i) => v || pd[i])), [ba] = filasDe(bi.map((v, i) => v || bd[i]));
     const cadera = pa - 0.5, rodilla = pa + Math.round((pb - pa) * 0.48) - 0.5, hombro = ba + 0.5;
-    const zt = Math.round(zc);
-    bloque(cu, "t", zt - 2, zt + 2);
+    const zt = zc;
+    bloque(cu, "t", zt - 2, zt + 2, null, true);
     bloque(bi, "bi", zt - 1, zt);
     bloque(bd, "bd", zt - 1, zt);
     // Las piernas: el zapato con su puntita al frente.
     const punta = (L) => (x, r, z) => z === zt - 2 && r >= pb - 1 && !!en(L, x, r);
-    bloque(pi, (r) => (r < rodilla ? "mi" : "ci"), zt - 1, zt + 1, punta(pi));
-    bloque(pd, (r) => (r < rodilla ? "md" : "cd"), zt - 1, zt + 1, punta(pd));
+    bloque(pi, (r) => (r < rodilla ? "mi" : "ci"), zt - 1, zt + 1, punta(pi), true);
+    bloque(pd, (r) => (r < rodilla ? "md" : "cd"), zt - 1, zt + 1, punta(pd), true);
+    const [cuello] = filasDe(cu);
     // (Lo ancho del cuerpo desde el centro: acostado de ladito, eso queda para arriba y para abajo.)
     let medio = 0; for (const v of vox) if (v.h !== "t" || v.y > cadera - 14) medio = Math.max(medio, Math.abs(v.x + 0.5 - 12.5));
-    return { vox, cadera, rodilla, hombro, pie: pb + 0.5, zc: zt, centro: (FILAS - 1) / 2 + 2, medio };
+    return { vox, cabezas, cuello, cadera, rodilla, hombro, pie: pb + 0.5, zc: zt, centro: (FILAS - 1) / 2 + 2, medio };
   })();
   MODELOS.set(clave, p);
   if (MODELOS.size > 12) MODELOS.delete(MODELOS.keys().next().value);
@@ -169,7 +173,7 @@ export function pintar(M, pose, o) {
   const L = [0.42, -0.78, -0.46], pts = [];
   let X0 = 1e9, Y0 = 1e9, X1 = -1e9, Y1 = -1e9;
   for (const v of M.vox) {
-    const cols = o.cara === "dormido" && v.cz ? v.cz : v.c;
+    const cols = v.c;
     for (let f = 0; f < 6; f++) {
       const col = cols[f];
       if (!col) continue;
@@ -188,6 +192,21 @@ export function pintar(M, pose, o) {
         if (X < X0) X0 = X; if (X > X1) X1 = X; if (Y < Y0) Y0 = Y; if (Y > Y1) Y1 = Y;
       }
     }
+  }
+  // (Fase 67) La cabeza: el dibujo pixel que toca según hacia dónde ve (8 direcciones, las de la izquierda en espejo),
+  // con su carita (normal, ojitos cerrados o feliz), pegada al cuello y girada si está acostado.
+  const phi = ((((o.g || 0) + (o.yaw || 0)) % 360) + 360) % 360;
+  const [vista, espejo] = phi <= 22.5 || phi > 337.5 ? ["frente", false] : phi <= 112.5 ? ["tres", false] : phi <= 157.5 ? ["espalda34", false] : phi <= 202.5 ? ["espalda", false] : phi <= 247.5 ? ["espalda34", true] : ["tres", true];
+  const caras = M.cabezas[vista], cab = caras[o.cara] || caras.normal;
+  const n0 = [12.5, M.cuello, M.zc + 0.5]; xr(n0, "t");
+  const [Xn, Yn, Zn] = alMundo(n0), rr = (Math.round((pose.rodar || 0) / 90) * 90 * Math.PI) / 180, rc = Math.round(Math.cos(rr)), rs = Math.round(Math.sin(rr));
+  const celdasCab = [];
+  for (let r = 0; r < FILAS; r++) for (let c = 0; c < CW; c++) {
+    const col = cab[r * CW + c];
+    if (!col) continue;
+    const dc = (espejo ? -1 : 1) * (c + 0.5 - 12.5), dr = r - M.cuello, X = Xn + (dc * rc - dr * rs) * cel, Y = Yn + (dc * rs + dr * rc) * cel;
+    celdasCab.push(X, Y, col);
+    if (X - cel < X0) X0 = X - cel; if (X + cel > X1) X1 = X + cel; if (Y - cel < Y0) Y0 = Y - cel; if (Y + cel > Y1) Y1 = Y + cel;
   }
   // La imagen, en cuadritos del monito.
   const OX = Math.floor(X0 / cel) * cel - cel, OY = Math.floor(Y0 / cel) * cel - cel, W = Math.ceil((X1 - OX) / cel) + 2, H = Math.ceil((Y1 - OY) / cel) + 2;
@@ -227,6 +246,12 @@ export function pintar(M, pose, o) {
     borde.push([k, osc([out[q * 4], out[q * 4 + 1], out[q * 4 + 2]])]);
   }
   for (const [k, c] of borde) { out[k * 4] = c[0]; out[k * 4 + 1] = c[1]; out[k * 4 + 2] = c[2]; out[k * 4 + 3] = 255; }
+  // La cabeza encima del cuerpo (con su propio contorno), y el mueble la tapa donde tiene algo más cerca.
+  for (let q = 0; q < celdasCab.length; q += 3) {
+    const X = celdasCab[q], Y = celdasCab[q + 1], col = celdasCab[q + 2], i = Math.floor((X - OX) / cel), j = Math.floor((Y - OY) / cel), k = j * W + i;
+    if (i < 0 || j < 0 || i >= W || j >= H || tapa(X, Y, Zn)) continue;
+    out[k * 4] = col[0]; out[k * 4 + 1] = col[1]; out[k * 4 + 2] = col[2]; out[k * 4 + 3] = 255; zb[k] = Zn - 2 * cel;
+  }
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   cv.getContext("2d").putImageData(new ImageData(out, W, H), 0, 0);
   const r = { url: cv.toDataURL(), x: OX, y: OY, w: W * cel, h: H * cel };

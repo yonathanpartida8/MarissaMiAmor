@@ -203,3 +203,60 @@ export function vistaGirada(d, e, C, g) {
   PEND.set(clave, pr);
   return pr.then((r) => r && { ...r, vivo: partes.vivo });
 }
+
+/**
+ * (Fase 67) LA COSA DE FRENTE EN PIXEL DE VERDAD: lo quieto del dibujo se vuelve cuadritos de 4 (como los monitos y
+ * las cosas giradas). Cada cuadrito toma el color que más hay en él (sin mezclas de orilla), y las rayitas oscuras
+ * del dibujo (el contorno, las costuras) ganan si ocupan buena parte del cuadrito, para que no se pierdan.
+ * Lo que se mueve sigue vivo encima (el mismo dibujo, con lo quieto transparente). Se hacen de una en una.
+ */
+let COLA = Promise.resolve();
+export function vistaPlana(d, e, C) {
+  const arte = d.arte(e || {}, C), partes = separar(arte), clave = `plana|${d.k}|${huella(partes.quieto)}`;
+  if (CACHE.has(clave)) return Promise.resolve(CACHE.get(clave));
+  if (PEND.has(clave)) return PEND.get(clave);
+  const pr = (COLA = COLA.then(async () => {
+    await new Promise((r) => setTimeout(r, 0));
+    try {
+      const W = Math.max(4, Math.round(d.w)), H = Math.max(4, Math.round(d.h)), cw = Math.ceil(W / PX), ch = Math.ceil(H / PX);
+      const src = await rasterizar(partes.quieto, W, H), out = new Uint8ClampedArray(cw * ch * 4);
+      const lum = (c) => c.r * 0.3 + c.g * 0.59 + c.b * 0.11;
+      for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
+        const cubetas = new Map();
+        let n = 0;
+        for (let y = j * PX; y < Math.min(H, j * PX + PX); y++) for (let x = i * PX; x < Math.min(W, i * PX + PX); x++) {
+          const k = (y * W + x) * 4;
+          if (src[k + 3] < 128) continue;
+          n++;
+          const key = ((src[k] >> 4) << 8) | ((src[k + 1] >> 4) << 4) | (src[k + 2] >> 4), c = cubetas.get(key);
+          if (c) { c.n++; c.r += src[k]; c.g += src[k + 1]; c.b += src[k + 2]; } else cubetas.set(key, { n: 1, r: src[k], g: src[k + 1], b: src[k + 2] });
+        }
+        if (n < 7) continue;
+        let mejor = null, oscuro = null;
+        for (const c of cubetas.values()) { c.r /= c.n; c.g /= c.n; c.b /= c.n; if (!mejor || c.n > mejor.n) mejor = c; }
+        for (const c of cubetas.values()) if (c !== mejor && c.n >= 5 && lum(c) < lum(mejor) * 0.55 && (!oscuro || c.n > oscuro.n)) oscuro = c;
+        const c = oscuro || mejor, k = (j * cw + i) * 4;
+        out[k] = c.r; out[k + 1] = c.g; out[k + 2] = c.b; out[k + 3] = 255;
+      }
+      // El contorno pixel por fuera (del color de junto, mucho más oscuro), como el de los monitos: un cuadrito más
+      // de cada lado.
+      const OW2 = cw + 2, OH2 = ch + 2, o2 = new Uint8ClampedArray(OW2 * OH2 * 4), en = (i, j) => i >= 0 && j >= 0 && i < cw && j < ch && out[(j * cw + i) * 4 + 3] === 255;
+      for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) if (en(i, j)) { const a = (j * cw + i) * 4, b = ((j + 1) * OW2 + i + 1) * 4; for (let q = 0; q < 4; q++) o2[b + q] = out[a + q]; }
+      for (let j = -1; j <= ch; j++) for (let i = -1; i <= cw; i++) {
+        if (en(i, j)) continue;
+        const v = [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]].find(([a, b]) => en(a, b));
+        if (!v) continue;
+        const a = (v[1] * cw + v[0]) * 4, b = ((j + 1) * OW2 + i + 1) * 4;
+        o2[b] = out[a] * 0.42; o2[b + 1] = out[a + 1] * 0.41; o2[b + 2] = out[a + 2] * 0.42 + 23; o2[b + 3] = 255;
+      }
+      const cv = document.createElement("canvas"); cv.width = OW2; cv.height = OH2;
+      cv.getContext("2d").putImageData(new ImageData(o2, OW2, OH2), 0, 0);
+      const r = { url: cv.toDataURL(), w: OW2 * PX, h: OH2 * PX };
+      CACHE.set(clave, r);
+      if (CACHE.size > 260) CACHE.delete(CACHE.keys().next().value);
+      return r;
+    } catch (er) { return null; } finally { PEND.delete(clave); }
+  }));
+  PEND.set(clave, pr);
+  return pr;
+}
