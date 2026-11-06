@@ -46,6 +46,8 @@ const MASCOTAS_VIVAS = ["gatito", "perrito", "conejito", "tortuga"];
 for (const [k, d] of Object.entries(CATALOGO)) {
   d.k = k;
   if (FINOS2[k]) d.nuevo = true;
+  // (Fase 70) Lo redondo por todos lados (botes, cubetas, jaulitas, canastas, la lámpara de pie): girado sigue redondo.
+  if (d.torno == null && d.forma == null && /^(bote|cubeta|pajarito|canasta|barril|tambor|cesto|olla|paraguero|lampara)(_|$)/.test(k) && !/arco|colgante|pared|mesa|nube|lava/.test(k)) d.torno = true;
   d.capa ||= "piso";
   d.y ??= d.capa === "pared" ? 260 : d.capa === "alfombra" ? 556 : 505;
   if (BRILLOS[k]) d.brilla ||= BRILLOS[k];

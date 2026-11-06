@@ -171,7 +171,11 @@ function contornar(src, cw, ch, sinContorno) {
  *     es: arriba lleva luz, lo que mira a la luz casi igual y lo que se aleja un escalón más oscuro (pocos tonos, como
  *     pixel art), con su línea entre caras y el mismo contorno que de frente. */
 export function vistaGirada(d, e, C, g) {
-  const arte = d.arte(e || {}, C), partes = separar(arte);
+  const arte = d.arte(e || {}, C), partes0 = separar(arte);
+  // (Fase 70) Lo que tiene una parte de enfrente aparte (la tina, la cama: lo que tapa al monito) se gira completo:
+  // girado, esa parte se esconde, así que va dentro del volumen (y el monito queda adentro con su hondura).
+  let partes = partes0;
+  if (d.frente) { const pf = separar(d.frente(e || {}, C)); partes = { ...partes0, quieto: partes0.quieto.replace(/<\/svg>\s*$/, pf.quieto.replace(/^<svg[^>]*>/, "")) }; }
   const clave = `${d.k}|${huella(partes.quieto)}|${g}|70`;
   if (CACHE.has(clave)) return Promise.resolve({ ...CACHE.get(clave), vivo: partes.vivo });
   if (PEND.has(clave)) return PEND.get(clave).then((r) => r && { ...r, vivo: partes.vivo });
@@ -258,7 +262,9 @@ export function vistaGirada(d, e, C, g) {
       for (const [u, v] of [[0, 0], [W, 0], [0, H], [W, H]]) for (const z of [0, D]) { const [X, Y] = P(u, v, z); x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); }
       const OW = Math.ceil(x1 - x0) + 3, OH = Math.ceil(y1 - y0) + 3, zb = new Float32Array(OW * OH).fill(1e9), out = new Uint8ClampedArray(OW * OH * 4), cara = new Uint8Array(OW * OH);
       // La luz viene de arriba a la izquierda: arriba un escalón más clara; lo que mira para la derecha, más oscuro.
-      const luz = (nx, nz) => { const X = nx * co - nz * si, Z = nx * si + nz * co, phi = Math.atan2(X, -Z) / (Math.PI / 2); return escalon(phi > 0 ? 1 - 0.24 * Math.min(1, phi) : 1 - 0.08 * Math.min(1, -phi)); };
+      // (Lo que sigue casi de frente —menos de unos 35°— conserva EXACTAMENTE sus colores de frente; sólo lo que de verdad
+      // se voltea hacia la derecha baja un escalón o dos. Así girarlo poquito no le cambia el estilo.)
+      const luz = (nx, nz) => { const X = nx * co - nz * si, Z = nx * si + nz * co, phi = Math.atan2(X, -Z) / (Math.PI / 2); return escalon(phi > 0.38 ? 1 - 0.24 * Math.min(1, (phi - 0.38) / 0.62) : phi < -0.6 ? 0.96 : 1); };
       const L = { f: luz(0, -1), b: luz(0, 1), l: luz(-1, 0), r: luz(1, 0) };
       const R0 = Math.hypot(cu, cz) + 2, paso = 0.2;
       for (let j = 0; j < OH; j++) for (let i = 0; i < OW; i++) {
