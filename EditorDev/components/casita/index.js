@@ -281,6 +281,9 @@ export class Casita {
       else n.append(el("canvas.ca-caja-cv", { "aria-hidden": "true" }), el("i.ca-columna"), el("i.ca-techo-r"), c.foco ? el("i.ca-pendiente", { style: { left: c.foco + "px" } }, [el("i.ca-pendiente-luz")]) : null);
       this.mundo.append(n);
       this.cuartosN.set(c.k, n);
+      // (Fase 70) Adentro, lo de enfrente (donde ya no se acomoda) es la pared de enfrente cortada bajito, como en una
+      // casita de muñecas: su tapa clara y su cara del color de la pared. Así no parece piso. Va encima de las cosas.
+      if (!c.afuera) { n._muro = el("i.ca-frente-muro", { "aria-hidden": "true", style: { left: inicioDe(c.k) + "px", width: c.w + "px" } }); this.mundo.append(n._muro); }
       const o = el("i.ca-oscuro." + c.k, { style: { left: inicioDe(c.k) + "px", width: c.w + "px" } });
       this.oscuroN.set(c.k, o);
       // (Fase 60) La luz ambiental de cada cuarto (cálida en la cocina, lila en la recámara, fresca en el baño…).
@@ -559,6 +562,15 @@ export class Casita {
     // (Abajo se deja lugar para los cuartitos (o, al acomodar, para el cajón): ahí se ve el piso, que sigue.)
     const abajo = this.editando ? Math.min(vh * 0.45, (this.cajonN?._altoChico || this.cajonN?.offsetHeight || 150) + 18) : 58;
     this.k = lim(Math.min((vh - abajo) / H, vw / 400), 0.42, 1.45);
+    // (Fase 70) Pixel parejo: que cada cuadrito (4 del mundo) mida un número ENTERO de pixeles de la pantalla. Si no,
+    // unos cuadritos salen de 2 y otros de 3 pixeles y las cosas se ven chuecas. Se ajusta poquito (a lo más 12 %),
+    // primero para abajo (para que quepa).
+    {
+      const dpr = window.devicePixelRatio || 1, n = 4 * this.k * dpr, abajoN = Math.floor(n), arribaN = Math.round(n);
+      const kA = abajoN / (4 * dpr), kR = arribaN / (4 * dpr);
+      if (abajoN >= 2 && (this.k - kA) / this.k <= 0.12) this.k = Math.max(0.42, kA);
+      else if (arribaN >= 2 && Math.abs(kR - this.k) / this.k <= 0.06 && kR * H <= vh + 12) this.k = kR;
+    }
     // (Fase 64) En el patio grande el mundo es más hondo: se desliza también para abajo (y se ve un poquito de cielo).
     const mapa = !!cuarto(this.vistaCuarto || "sala").mapa;
     this.offY = mapa ? MAPA.arriba * this.k : Math.max(0, vh - abajo - H * this.k);
@@ -770,7 +782,7 @@ export class Casita {
     // (Lo que se ve, más casi un cuarto de cada lado: así nunca se nota al deslizar.)
     // (Fase 63: sólo el cuarto que se ve.)
     const cerca = new Set([this.vistaCuarto]);
-    for (const c of CUARTOS) { const n = this.cuartosN.get(c.k); n?.classList.toggle("lejos", !cerca.has(c.k)); }
+    for (const c of CUARTOS) { const n = this.cuartosN.get(c.k); n?.classList.toggle("lejos", !cerca.has(c.k)); n?._muro?.classList.toggle("lejos", !cerca.has(c.k)); }
     this.patio?.lejos(!cerca.has("jardin"));
     for (const { n } of this.recolectar?.nodos.values() || []) n.classList.toggle("lejos", !cerca.has("jardin"));
     this._pintarCanasta?.();
@@ -793,6 +805,7 @@ export class Casita {
     for (const c of CUARTOS) {
       const n = this.cuartosN.get(c.k), cfg = this.cfgCuarto(c.k);
       n.style.setProperty("--pared", cfg.pared);
+      n._muro?.style.setProperty("--pared", cfg.pared);
       n.dataset.patron = cfg.patron; n.dataset.piso = cfg.piso;
       this._texturas(c.k, cfg);
       // (Fase 62: afuera manda el sol: apagar el interruptor de afuera sólo apaga los faroles, nunca oscurece de día.)

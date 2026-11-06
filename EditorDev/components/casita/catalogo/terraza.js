@@ -1,5 +1,6 @@
 /** La terraza: alberca, hamaca, camastro, sombrilla, mesa de picnic, foquitos, fogata y más cosas de afuera. */
 import { svg, OL, OL2, tono, brillo, corazon, estrella, hoja, MADERA, MADERA_O, MADERA_C } from "./arte.js";
+import { pix } from "./pixel.js";
 
 const maceta = (x, y, w, h, c) => `<path d="M${x} ${y}h${w}l-${w * 0.1} ${h}h-${w * 0.8}z" fill="${c}" ${OL}/><rect x="${x - 3}" y="${y - 4}" width="${w + 6}" height="9" rx="4" fill="${tono(c, 0.88)}" ${OL2}/>`;
 
@@ -132,13 +133,53 @@ export const ITEMS = {
       <g class="brasas"><ellipse cx="57" cy="66" rx="26" ry="6" fill="#ff8a3d" opacity=".75"/></g>
       <g class="fuego"><path d="M57 18c10 12 20 20 16 34-2 8-8 12-16 12s-14-4-16-12c-3-12 8-16 16-34z" fill="#ff8a3d"/><path d="M57 34c6 8 10 12 8 20-1 4-4 6-8 6s-7-2-8-6c-2-8 4-12 8-20z" fill="#ffd84d"/></g>`),
   },
-  bici: {
-    n: "Bicicleta", cat: "terraza", w: 148, h: 94, al: "bici", colores: ["#ff9cbf", "#8fd0ff", "#94dfbd", "#ffd36e", "#c9a7ff"],
-    arte: (e, C) => svg(148, 94, `
-      ${[30, 118].map((x) => `<circle cx="${x}" cy="66" r="25" fill="none" stroke="#4a3346" stroke-width="5"/><circle cx="${x}" cy="66" r="21" fill="none" stroke="#d9cfd6" stroke-width="1.5" stroke-dasharray="2 5"/><circle cx="${x}" cy="66" r="4" fill="#6b5a66"/>`).join("")}
-      <path d="M30 66l26-34h50M56 32l18 34h-44M74 66l32-34M106 32l12 34" stroke="${C}" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M56 32l-6-12M42 18h16" stroke="#4a3346" stroke-width="5" stroke-linecap="round"/><path d="M106 32l-4-14h12" stroke="#4a3346" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-      <path d="M88 32h32a6 6 0 0 1-6 10H92z" fill="#e7b46c" ${OL2}/><path d="M90 32q14-10 28 0" fill="none" stroke="#c9905c" stroke-width="2.5"/>${corazon(104, 34, 0.5, "#ff5c93")}
-      <circle cx="74" cy="66" r="6" fill="#6b5a66"/>${hoja(110, 26, -40, 12, "#7fd29b")}`),
-  },
+  // (Fase 70) La bici en pixel de verdad: dos rueditas con sus rayos, el cuadro de bici (triángulos), su asiento, el
+  // manubrio con sus puños, el pedal con su cadena y una canastita con flores. Es plana: girada se ve delgadita.
+  bici: pix({
+    n: "Bicicleta", cat: "terraza", al: "bici", colores: ["#ff9cbf", "#8fd0ff", "#94dfbd", "#ffd36e", "#c9a7ff"],
+    forma: "plano", grosor: 8, hondo: 32, perfil: [[8, 24, 0.28, 0.72]],
+    filas: dibujoBici(),
+  }),
 };
+
+/** (Fase 70) La bici, cuadrito por cuadrito (38 × 24): se calcula para que las rueditas salgan redondas. */
+function dibujoBici() {
+  const W = 38, H = 24, G = Array.from({ length: H }, () => Array(W).fill("."));
+  const pon = (x, y, c, si = null) => { x = Math.round(x); y = Math.round(y); if (x < 0 || y < 0 || x >= W || y >= H) return; if (si && !si.includes(G[y][x])) return; G[y][x] = c; };
+  const linea = (x0, y0, x1, y1, c, si) => { const n = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) * 2); for (let t = 0; t <= n; t++) pon(x0 + ((x1 - x0) * t) / n, y0 + ((y1 - y0) * t) / n, c, si); };
+  // Las rueditas: llanta oscura (con su brillito arriba), rin de metal, ocho rayos y su centro.
+  for (const [cx, cy] of [[8, 16.5], [30, 16.5]]) {
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
+      if (d <= 6.9 && d > 5.75) pon(x, y, y + 0.5 < cy - 4.4 ? "&" : "%");
+      else if (d <= 5.75 && d > 4.9) pon(x, y, y + 0.5 < cy - 2 ? "k" : "j");
+    }
+    for (let k = 0; k < 8; k++) { const a = (k * Math.PI) / 4 + 0.39; for (let r = 1.4; r < 4.9; r += 0.5) pon(cx - 0.5 + Math.cos(a) * r, cy - 0.5 + Math.sin(a) * r, "i", "."); }
+    pon(cx - 0.5, cy - 0.5, "h"); pon(cx + 0.5, cy - 0.5, "g", ".i");
+  }
+  // El cuadro (del color de la bici): eje de atrás, pedal, asiento y manubrio.
+  const R = [8, 16], BB = [17, 17], S = [14, 8], HT = [26, 7], HB = [27, 10], F = [30, 16];
+  linea(...R, ...BB, ")"); linea(...R, ...S, ")");          // tirantes de atrás
+  linea(...BB, ...S, "[");                                   // tubo del asiento
+  linea(...S, ...HT, "]"); linea(S[0], S[1] - 1, HT[0], HT[1] - 1, "{", ".ijk");   // tubo de arriba (con su brillito)
+  linea(...BB, ...HB, "[");                                  // tubo de abajo
+  linea(...HT, ...HB, "(");                                  // la cabeza
+  linea(...HB, ...F, ")");                                   // el tenedor
+  // El asiento con su poste.
+  linea(14, 7, 13, 5, "i");
+  for (let x = 10; x <= 15; x++) pon(x, 4, "b");
+  for (let x = 11; x <= 14; x++) pon(x, 3, "c");
+  pon(16, 4, "a"); pon(9, 4, "a");
+  // El manubrio: el poste, el manubrio hacia atrás y su puño.
+  linea(26, 6, 25, 4, "h"); for (let x = 23; x <= 27; x++) pon(x, 4, "i"); pon(22, 4, "0"); pon(22, 5, "0"); pon(23, 3, "j");
+  // La canastita (de mimbre) adelante del manubrio, con flores.
+  for (let y = 6; y <= 10; y++) for (let x = 28; x <= 34; x++) pon(x, y, (x + y) % 2 ? "d" : "e");
+  for (let x = 28; x <= 34; x++) { pon(x, 5, "c"); pon(x, 11, "b"); }
+  pon(27, 6, "b"); pon(27, 11, "b"); pon(35, 6, "b"); for (let y = 7; y <= 10; y++) pon(35, y, "c");
+  for (const [x, y, c] of [[29, 4, "w"], [30, 3, "x"], [31, 4, "w"], [33, 4, "I"], [33, 3, "J"], [32, 4, "s"], [34, 4, "r"], [30, 4, "?"]]) pon(x, y, c);
+  // El pedal con su cadena.
+  for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) pon(BB[0] + dx, BB[1] + dy, dx || dy ? "i" : "h");
+  linea(17, 17, 19, 20, "h"); pon(19, 20, "0"); pon(20, 20, "0"); pon(18, 20, "%");
+  for (let x = 9; x <= 16; x++) if (x % 2) pon(x, 18, "%", ".i");
+  return G.map((f) => f.join(""));
+}

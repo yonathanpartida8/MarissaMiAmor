@@ -1849,3 +1849,16 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca.fx1 .ca-astro.luna { animation: caLunaFlota69 9s ease-in-out infinite; }
 @keyframes caLunaFlota69 { 50% { translate: 0 -3px; } }
 @media (prefers-reduced-motion: reduce) { .ca-astro.sol::before, .ca-astro.sol::after, .ca-astro.luna { animation: none !important; } }
+
+/* ═══════════ FASE 70: pared de enfrente, giro 3D nuevo ═══════════ */
+/* La pared de enfrente cortada bajito (casita de muñecas): desde la orilla del piso (712) hacia abajo. Arriba su orilla
+   oscura, la tapa clara (el corte de la pared) y su filito; abajo la cara del color de la pared de ese cuarto, un poco
+   en sombra, con su moldura y sus tableros. En cuadritos de 4, como todo. */
+.ca-frente-muro { position: absolute; top: 712px; height: 440px; z-index: 1400; pointer-events: none; background-color: var(--pared, #ffe1ec);
+  background-image:
+    linear-gradient(#a98599 0 4px, #fffaf6 4px 12px, #f3e6e8 12px 16px, #c9aabb 16px 20px, rgba(80, 40, 64, .26) 20px 24px, transparent 24px),
+    linear-gradient(transparent 0 44px, rgba(255, 255, 255, .32) 44px 48px, rgba(80, 40, 64, .2) 48px 52px, transparent 52px),
+    repeating-linear-gradient(90deg, transparent 0 60px, rgba(80, 40, 64, .14) 60px 64px),
+    linear-gradient(rgba(80, 40, 64, .16), rgba(80, 40, 64, .24));
+  box-shadow: 0 -2px 0 rgba(80, 40, 64, .18); }
+.ca-frente-muro.lejos { visibility: hidden; }
