@@ -97,6 +97,12 @@ function piernaSVG(clase, capas, corte = 31) {
   const arriba = (r) => r <= corte, abajo = (r) => r > corte;
   return `<g class="${clase}"><g class="ca-muslo">${svgDe(parte(borde, arriba))}${capas.map((L) => svgDe(parte(L, arriba))).join("")}</g><g class="ca-canilla">${svgDe(parte(borde, abajo))}${capas.map((L) => svgDe(parte(L, abajo))).join("")}</g></g>`;
 }
+/** (Fase 69) El bracito en dos: el brazo y el antebrazo (con la mano y lo que carga), para que se doble el codo. */
+function brazoSVG(clase, capas, extra = "", { attrs = "", antes = "", corte = 20 } = {}) {
+  const borde = contorno(capas), parte = (L, f) => { const n = new Capa(); for (const [c, r, col] of L.m.values()) if (f(r)) n.pon(c, r, col); return n; };
+  const arriba = (r) => r <= corte, abajo = (r) => r > corte;
+  return `<g class="${clase}"${attrs}>${antes}<g class="ca-brazo-a">${svgDe(parte(borde, arriba))}${capas.map((L) => svgDe(parte(L, arriba))).join("")}</g><g class="ca-antebrazo">${svgDe(parte(borde, abajo))}${capas.map((L) => svgDe(parte(L, abajo))).join("")}${extra}</g></g>`;
+}
 const grupo = (clase, capas, extra = "", { borde = true, attrs = "", antes = "" } = {}) => `<g${clase ? ` class="${clase}"` : ""}${attrs}>${antes}${borde ? svgDe(contorno(capas)) : ""}${capas.map(svgDe).join("")}${extra}</g>`;
 
 /* ── La cara (filas 3–13) ── */
@@ -429,8 +435,8 @@ export function monitoSVG(r0) {
     <g class="ca-pelo-tras">${atras.m.size ? grupo("ca-pelo-atras ca-lado-solo", [atras]) : ""}${atrasF.m.size ? grupo("ca-pelo-atras ca-frente-solo", [atrasF]) : ""}</g>
     ${piernaSVG("ca-pi", pi)}${piernaSVG("ca-pd", pd)}${sienta}${sientaLado}
     ${grupo("", [T, D])}
-    ${grupo("ca-bi", bi.slice(0, 2), bi[2], { attrs: ' style="transform-origin:28px 64px"' })}
-    ${grupo("ca-bd", bd.slice(0, 2), bd[2] + '<g class="ca-mano-cosa"></g>', { attrs: ' style="transform-origin:72px 64px"', antes: '<g class="ca-mano-larga"></g>' })}
+    ${brazoSVG("ca-bi", bi.slice(0, 2), bi[2], { attrs: ' style="transform-origin:28px 64px"' })}
+    ${brazoSVG("ca-bd", bd.slice(0, 2), bd[2] + '<g class="ca-mano-cosa"></g>', { attrs: ' style="transform-origin:72px 64px"', antes: '<g class="ca-mano-larga"></g>' })}
     <g class="ca-cabeza"><g class="ca-lado-solo">${svgDe(contorno([cara, frente, oreja, acc]))}${svgDe(cara)}${svgDe(oreja)}${caritas(r, P, I, piel)}${svgDe(frente)}${svgDe(acc)}</g><g class="ca-atras-solo">${svgDe(contorno([caraA, orejaF, accF, atrasF]))}${svgDe(atrasF)}${svgDe(orejaF)}${svgDe(caraA)}${svgDe(accF)}</g><g class="ca-frente-solo ca-cara-f">${svgDe(contorno([caraF, frenteF, orejaF, accF]))}${svgDe(caraF)}${svgDe(orejaF)}${caritasF(r, P, I, piel)}${svgDe(frenteF)}${svgDe(accF)}</g></g>
   </svg>`;
 }

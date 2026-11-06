@@ -1700,3 +1700,153 @@ body.ca-escribiendo .jt-nav { display: none; }
   :root:not([data-tema="claro"]) .ca .ca-cajon.v69 .ca-cat-b { background-color: var(--cj-carta); }
 }
 @media (prefers-reduced-motion: reduce) { .ca-cajon.v69 .ca-cat-b { animation: none; } }
+
+/* ── (Fase 69) Caminar y correr de verdad: rodillas y codos que se doblan, peso que cae en cada paso ──
+   Un ciclo completo son dos pasos (0.8 s caminando, 0.56 s corriendo). La pierna que va adelante pisa con el talón casi
+   derecha, se dobla tantito al recibir el peso, empuja hacia atrás y, al despegar, la rodilla se dobla para que el pie
+   pase sin arrastrarse. Los brazos van al revés de las piernas, con el codo doblado al ir adelante y un poquito tarde
+   (así se sienten sueltos). El cuerpo baja al pisar y sube al pasar sobre la pierna, y el pelo sigue después. */
+.ca-pi .ca-canilla { transform-origin: 42px 130px; }
+.ca-pd .ca-canilla { transform-origin: 58px 130px; }
+.ca-bi .ca-antebrazo { transform-origin: 28px 86px; }
+.ca-bd .ca-antebrazo { transform-origin: 72px 86px; }
+.ca-canilla, .ca-antebrazo { transition: transform .25s ease-out; }
+/* De lado */
+.ca-monito.lado.camina .ca-pi { animation: caMusloAndar .8s linear infinite; }
+.ca-monito.lado.camina .ca-pd { animation: caMusloAndar .8s linear -.4s infinite; }
+.ca-monito.lado.camina .ca-pi .ca-canilla { animation: caRodillaAndar .8s linear infinite; }
+.ca-monito.lado.camina .ca-pd .ca-canilla { animation: caRodillaAndar .8s linear -.4s infinite; }
+.ca-monito.lado.camina .ca-bi { animation: caBrazoAndar .8s linear -.36s infinite; }
+.ca-monito.lado.camina:not(.con-cosa) .ca-bd { animation: caBrazoAndar .8s linear .04s infinite; }
+.ca-monito.lado.camina .ca-bi .ca-antebrazo { animation: caCodoAndar .8s linear -.36s infinite; }
+.ca-monito.lado.camina:not(.con-cosa) .ca-bd .ca-antebrazo { animation: caCodoAndar .8s linear .04s infinite; }
+.ca-monito.camina .ca-mono-flip { animation: caBoteAndar .4s linear infinite; }
+.ca.fx1 .ca-monito.camina:not(.corre) .ca-mono-cuerpo { animation: caPesoAndar .4s linear infinite; transform-origin: 50% 100%; }
+.ca.fx1 .ca-monito.camina .ca-pelo-atras { animation: caPeloSigue .4s linear .1s infinite; }
+@keyframes caMusloAndar {
+  0% { transform: rotate(-17deg); animation-timing-function: cubic-bezier(.3, 0, .6, 1); }
+  12% { transform: rotate(-12deg); animation-timing-function: cubic-bezier(.4, 0, .6, 1); }
+  50% { transform: rotate(15deg); animation-timing-function: cubic-bezier(.4, 0, .5, 1); }
+  62% { transform: rotate(9deg); animation-timing-function: cubic-bezier(.3, 0, .5, 1); }
+  82% { transform: rotate(-12deg); animation-timing-function: cubic-bezier(.4, 0, .6, 1); }
+  100% { transform: rotate(-17deg); }
+}
+@keyframes caRodillaAndar {
+  0% { transform: rotate(2deg); animation-timing-function: ease-out; }
+  12% { transform: rotate(10deg); animation-timing-function: ease-in-out; }
+  32% { transform: rotate(3deg); animation-timing-function: ease-in; }
+  52% { transform: rotate(14deg); animation-timing-function: ease-out; }
+  66% { transform: rotate(40deg); animation-timing-function: ease-in-out; }
+  86% { transform: rotate(10deg); animation-timing-function: ease-out; }
+  100% { transform: rotate(2deg); }
+}
+@keyframes caBrazoAndar {
+  0% { transform: rotate(13deg); animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+  50% { transform: rotate(-15deg); animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+  100% { transform: rotate(13deg); }
+}
+@keyframes caCodoAndar {
+  0% { transform: rotate(-3deg); animation-timing-function: ease-in-out; }
+  45% { transform: rotate(-22deg); animation-timing-function: ease-in-out; }
+  100% { transform: rotate(-3deg); }
+}
+@keyframes caBoteAndar {
+  0% { translate: 0 .6px; animation-timing-function: ease-out; }
+  22% { translate: 0 1.4px; animation-timing-function: ease-in-out; }
+  64% { translate: 0 -1.9px; animation-timing-function: ease-in; }
+  100% { translate: 0 .6px; }
+}
+@keyframes caPesoAndar {
+  0%, 100% { scale: 1 1; animation-timing-function: ease-out; }
+  22% { scale: 1.022 .975; animation-timing-function: ease-in-out; }
+  64% { scale: .992 1.012; animation-timing-function: ease-in-out; }
+}
+@keyframes caPeloSigue {
+  0%, 100% { transform: rotate(-1.6deg); animation-timing-function: ease-in-out; }
+  50% { transform: rotate(2.4deg); animation-timing-function: ease-in-out; }
+}
+/* De frente o de espaldas: la pierna que da el paso sube y su rodilla se dobla hacia ti (la canilla se ve más corta). */
+.ca-monito.camina:not(.lado) .ca-pi { animation: caPasoFrente .8s linear infinite; }
+.ca-monito.camina:not(.lado) .ca-pd { animation: caPasoFrente .8s linear -.4s infinite; }
+.ca-monito.camina:not(.lado) .ca-pi .ca-canilla { animation: caRodillaFrente .8s linear infinite; }
+.ca-monito.camina:not(.lado) .ca-pd .ca-canilla { animation: caRodillaFrente .8s linear -.4s infinite; }
+.ca-monito.camina:not(.lado) .ca-bi { animation: caBrazoFrente .8s linear -.36s infinite; }
+.ca-monito.camina:not(.lado):not(.con-cosa) .ca-bd { animation: caBrazoFrente2 .8s linear .04s infinite; }
+@keyframes caPasoFrente {
+  0%, 48%, 100% { transform: translateY(0); animation-timing-function: ease-out; }
+  22% { transform: translateY(-4px); animation-timing-function: ease-in; }
+}
+@keyframes caRodillaFrente {
+  0%, 48%, 100% { transform: scaleY(1); animation-timing-function: ease-out; }
+  22% { transform: scaleY(.82); animation-timing-function: ease-in; }
+}
+@keyframes caBrazoFrente { 0%, 100% { transform: rotate(5deg); animation-timing-function: ease-in-out; } 50% { transform: rotate(-3deg); animation-timing-function: ease-in-out; } }
+@keyframes caBrazoFrente2 { 0%, 100% { transform: rotate(-5deg); animation-timing-function: ease-in-out; } 50% { transform: rotate(3deg); animation-timing-function: ease-in-out; } }
+/* Corriendo: zancada larga, la rodilla de atrás se dobla mucho, brazos doblados que bombean y un rebote con vuelo. */
+.ca-monito.corre.lado .ca-pi { animation: caMusloCorrer .56s linear infinite !important; }
+.ca-monito.corre.lado .ca-pd { animation: caMusloCorrer .56s linear -.28s infinite !important; }
+.ca-monito.corre.lado .ca-pi .ca-canilla { animation: caRodillaCorrer .56s linear infinite; }
+.ca-monito.corre.lado .ca-pd .ca-canilla { animation: caRodillaCorrer .56s linear -.28s infinite; }
+.ca-monito.corre.lado .ca-bi { animation: caBrazoCorrer .56s linear -.25s infinite !important; }
+.ca-monito.corre.lado:not(.con-cosa) .ca-bd { animation: caBrazoCorrer .56s linear .03s infinite !important; }
+.ca-monito.corre.lado .ca-bi .ca-antebrazo { animation: caCodoCorrer .56s linear -.25s infinite; }
+.ca-monito.corre.lado:not(.con-cosa) .ca-bd .ca-antebrazo { animation: caCodoCorrer .56s linear .03s infinite; }
+@keyframes caCodoCorrer { 0%, 100% { transform: rotate(-46deg); animation-timing-function: ease-in-out; } 50% { transform: rotate(-70deg); animation-timing-function: ease-in-out; } }
+.ca-monito.corre .ca-mono-flip { animation: caBoteCorrer .28s linear infinite !important; }
+.ca-monito.corre:not(.lado) .ca-pi { animation: caPasoFrente .56s linear infinite !important; }
+.ca-monito.corre:not(.lado) .ca-pd { animation: caPasoFrente .56s linear -.28s infinite !important; }
+.ca-monito.corre:not(.lado) .ca-pi .ca-canilla { animation: caRodillaFrente .56s linear infinite; }
+.ca-monito.corre:not(.lado) .ca-pd .ca-canilla { animation: caRodillaFrente .56s linear -.28s infinite; }
+@keyframes caMusloCorrer {
+  0% { transform: rotate(-28deg); animation-timing-function: cubic-bezier(.3, 0, .6, 1); }
+  14% { transform: rotate(-18deg); animation-timing-function: cubic-bezier(.4, 0, .6, 1); }
+  48% { transform: rotate(27deg); animation-timing-function: cubic-bezier(.4, 0, .5, 1); }
+  64% { transform: rotate(12deg); animation-timing-function: cubic-bezier(.3, 0, .5, 1); }
+  84% { transform: rotate(-24deg); animation-timing-function: cubic-bezier(.4, 0, .6, 1); }
+  100% { transform: rotate(-28deg); }
+}
+@keyframes caRodillaCorrer {
+  0% { transform: rotate(6deg); animation-timing-function: ease-out; }
+  14% { transform: rotate(18deg); animation-timing-function: ease-in-out; }
+  44% { transform: rotate(16deg); animation-timing-function: ease-out; }
+  62% { transform: rotate(80deg); animation-timing-function: ease-in-out; }
+  84% { transform: rotate(36deg); animation-timing-function: ease-out; }
+  100% { transform: rotate(6deg); }
+}
+@keyframes caBrazoCorrer {
+  0% { transform: rotate(32deg); animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+  50% { transform: rotate(-36deg); animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+  100% { transform: rotate(32deg); }
+}
+@keyframes caBoteCorrer {
+  0% { translate: 0 1px; animation-timing-function: ease-out; }
+  18% { translate: 0 2px; animation-timing-function: ease-out; }
+  60% { translate: 0 -4.5px; animation-timing-function: ease-in; }
+  100% { translate: 0 1px; }
+}
+/* Saludar: el brazo arriba y la manita (el antebrazo) es la que se mueve. */
+.ca-monito.g-saluda .ca-bd .ca-antebrazo { animation: caManita .3s ease-in-out 4 alternate; }
+@keyframes caManita { from { transform: rotate(-18deg); } to { transform: rotate(16deg); } }
+/* (Lo que carga en la mano va en el antebrazo: cargando, ése se queda quieto para que la cosa no se mueva de su lugar.) */
+.ca-monito.con-cosa .ca-bd .ca-antebrazo { animation: none !important; transform: none; }
+@media (prefers-reduced-motion: reduce) { .ca-monito :is(.ca-canilla, .ca-antebrazo) { animation: none !important; } }
+
+/* ── (Fase 69) El sol y la luna nuevos (cuadritos de 3: el sol de 40 × 40 y la luna de 34 × 34) ── */
+.ca-cuarto.px .ca-astro.sol { width: 120px; height: 120px; top: 69px; right: calc(14% - 21px); }
+.ca-mundo.tarde .ca-cuarto.px .ca-astro.sol { top: 101px; width: 120px; height: 120px; }
+.ca-cuarto.px .ca-astro.luna { width: 102px; height: 102px; top: 46px; left: calc(16% - 18px); }
+/* Los rayos se turnan (rectos y diagonales) como un destello; nada de agrandar el pixel. */
+.ca-astro.sol::before, .ca-astro.sol::after { content: ""; position: absolute; inset: 0; background: center / 100% 100% no-repeat; image-rendering: crisp-edges; image-rendering: pixelated; pointer-events: none; }
+.ca-astro.sol::before { background-image: var(--rayos-a); }
+.ca-astro.sol::after { background-image: var(--rayos-b); opacity: 0; }
+.ca.fx1 .ca-astro.sol { animation: none; }
+.ca.fx1 .ca-astro.sol::before { animation: caRayoA 3.2s steps(1, end) infinite; }
+.ca.fx1 .ca-astro.sol::after { animation: caRayoB 3.2s steps(1, end) infinite; }
+@keyframes caRayoA { 0% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes caRayoB { 0% { opacity: 0; } 50% { opacity: 1; } }
+.ca.fx2 .ca-astro.sol { filter: drop-shadow(0 0 10px rgba(255, 214, 110, .45)); }
+.ca.fx2 .ca-mundo.tarde .ca-astro.sol { filter: drop-shadow(0 0 16px rgba(255, 140, 100, .5)); }
+.ca.fx2 .ca-astro.luna { filter: drop-shadow(0 0 10px rgba(255, 243, 196, .35)); }
+.ca.fx1 .ca-astro.luna { animation: caLunaFlota69 9s ease-in-out infinite; }
+@keyframes caLunaFlota69 { 50% { translate: 0 -3px; } }
+@media (prefers-reduced-motion: reduce) { .ca-astro.sol::before, .ca-astro.sol::after, .ca-astro.luna { animation: none !important; } }

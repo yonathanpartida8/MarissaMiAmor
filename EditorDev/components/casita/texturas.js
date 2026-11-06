@@ -184,22 +184,79 @@ export function texAuto(color = "#ff86b0") {
     for (const cx of [8, 23]) { caja(cx - 2, 10, 5, 4, N); caja(cx - 1, 11, 3, 2, G); pon(cx, 11, [255, 255, 255]); }
   });
 }
+/** (Fase 69) EL SOL, más lindo: un disco con su degradado a mano (centro casi blanco, orilla dorada), su brillito arriba
+ *  a la izquierda, un halo de cuadritos que se desvanece y, aparte, dos juegos de rayos que se turnan (destellan).
+ *  En la tarde es más grande y naranja, con las franjas de atardecer de abajo (como en los juegos retro). */
 export function texSol(tarde = false) {
-  return comoUrl(`sol|${tarde}`, 26, 26, ({ pon }) => {
-    const A = rgb(tarde ? "#ffb070" : "#ffe680"), B = rgb(tarde ? "#ff8f6b" : "#ffd04d"), L = rgb(tarde ? "#ffd2a8" : "#fff6c8");
-    for (let y = -7; y <= 7; y++) for (let x = -7; x <= 7; x++) { const d = x * x + y * y; if (d <= 49) pon(13 + x, 13 + y, d > 30 ? B : (x - 2) * (x - 2) + (y + 2) * (y + 2) < 8 ? L : A); }
-    for (let i = 0; i < 8; i++) { const a = (i * Math.PI) / 4; for (let r = 10; r <= 12; r++) pon(13 + Math.round(Math.cos(a) * r), 13 + Math.round(Math.sin(a) * r), B); }
+  return comoUrl(`sol69|${tarde}`, 40, 40, ({ pon }) => {
+    const C = 20, R = tarde ? 11 : 9;
+    const ramp = (tarde ? ["#fff1c8", "#ffd27a", "#ffa25a", "#f2704f", "#d9534f"] : ["#fffdf0", "#fff3a6", "#ffe066", "#ffc845", "#f5a524"]).map(rgb);
+    // Halo: cuadritos sueltos que se van desvaneciendo (sin difuminar: sigue siendo pixel).
+    for (let y = -19; y <= 19; y++) for (let x = -19; x <= 19; x++) {
+      const d = Math.hypot(x, y);
+      if (d > R + 0.5 && d < R + 7) { const t = (d - R) / 7, a = Math.round(120 * (1 - t) ** 1.6); if (a > 8 && ((x + y) % 2 === 0 || t < 0.35)) pon(C + x, C + y, ramp[1], a); }
+    }
+    for (let y = -R; y <= R; y++) for (let x = -R; x <= R; x++) {
+      const d = Math.hypot(x, y);
+      if (d > R + 0.35) continue;
+      // La luz viene de arriba a la izquierda: el degradado se corre hacia allá.
+      const l = Math.hypot(x + R * 0.32, y + R * 0.32) / (R * 1.32);
+      let k = l < 0.28 ? 0 : l < 0.52 ? 1 : l < 0.74 ? 2 : l < 0.92 ? 3 : 4;
+      if (d > R - 0.8) k = 4;
+      // Franjas de atardecer: en la mitad de abajo, rayitas del color del cielo (huecos) cada vez más gruesas.
+      if (tarde && y > 1) { const fr = [3, 6, 8, 10]; if (fr.includes(y) || (y === 11)) continue; }
+      pon(C + x, C + y, ramp[k]);
+    }
+    // El brillito.
+    for (const [x, y] of [[-4, -5], [-5, -4], [-3, -5], [-5, -3], [-4, -4]]) pon(C + x, C + y, rgb("#ffffff"), 235);
   });
 }
-export function texLuna() {
-  return comoUrl("luna", 22, 22, ({ pon }) => {
-    const A = rgb("#fff3c4"), B = rgb("#e9d79a"), C = rgb("#d8c486");
-    for (let y = -8; y <= 8; y++) for (let x = -8; x <= 8; x++) {
-      const d = x * x + y * y;
-      if (d > 64 || (x + 5) * (x + 5) + (y - 3) * (y - 3) < 44) continue;
-      pon(11 + x, 11 + y, d > 46 ? B : A);
+/** Los rayos del sol (dos juegos que se turnan: rectos y diagonales), para que destelle sin girar. */
+export function texRayos(tarde = false, b = 0) {
+  return comoUrl(`rayos69|${tarde}|${b}`, 40, 40, ({ pon }) => {
+    const C = 20, R0 = tarde ? 13 : 11, K = rgb(tarde ? "#ffb26b" : "#ffd24a"), L = rgb(tarde ? "#ffd9a8" : "#fff2a8");
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4 + (b ? Math.PI / 8 : 0), largo = i % 2 ? 3 : 5;
+      for (let r = R0; r < R0 + largo; r++) {
+        const x = C + Math.cos(a) * r, y = C + Math.sin(a) * r;
+        pon(x, y, r === R0 ? L : K, Math.round(255 * (1 - (r - R0) / (largo + 1))));
+      }
     }
-    for (const [x, y] of [[4, -2], [2, 3], [5, 4]]) pon(11 + x, 11 + y, C);
+  });
+}
+/** La fase de la luna HOY (0 = nueva, 0.5 = llena), con el mes lunar de 29.53 días contado desde una luna nueva conocida. */
+export function faseLuna(fecha = new Date()) {
+  const dias = (fecha.getTime() - Date.UTC(2000, 0, 6, 18, 14)) / 864e5, m = 29.530588853;
+  return (((dias % m) + m) % m) / m;
+}
+/** (Fase 69) LA LUNA, más linda: con sus cráteres (orilla oscura y centro claro), su sombra según la fase de hoy (lo que no
+ *  le da el sol se ve tenue, como en la vida real: «luz de la Tierra») y un halo suave de cuadritos. */
+export function texLuna(fase = faseLuna()) {
+  // (Nunca casi toda oscura: a lo más un cuarto creciente/menguante gordito, para que siempre se vea bonita.)
+  const q = Math.max(3, Math.min(13, Math.round(fase * 16) % 16));
+  return comoUrl(`luna69|${q}`, 34, 34, ({ pon }) => {
+    const C = 17, R = 9.5, f = q / 16;
+    const A = rgb("#fff8dc"), B = rgb("#f2e4b3"), M = rgb("#dccb93"), O = rgb("#b9a875"), N = rgb("#7b7fae"), N2 = rgb("#9094c0");
+    for (let y = -16; y <= 16; y++) for (let x = -16; x <= 16; x++) {
+      const d = Math.hypot(x, y);
+      if (d > R + 0.5 && d < R + 6) { const t = (d - R) / 6, a = Math.round(70 * (1 - t) ** 2); if (a > 6 && (x + y) % 2 === 0) pon(C + x, C + y, A, a); }
+    }
+    // ¿Le da el sol? La sombra es una elipse que avanza de derecha a izquierda (hemisferio norte).
+    const iluminado = (x, y) => {
+      const yy = y / R, ancho = Math.sqrt(Math.max(0, 1 - yy * yy)), xx = x / R;
+      const k = Math.cos(f * 2 * Math.PI);   // 1 nueva, -1 llena
+      return f < 0.5 ? xx > k * ancho : xx < -k * ancho;
+    };
+    const craters = [[-3, -3, 2.2], [3, 2, 2.6], [-2, 4, 1.5], [4, -4, 1.3], [-5, 1, 1.1], [1, -1, 1]];
+    for (let y = -10; y <= 10; y++) for (let x = -10; x <= 10; x++) {
+      const d = Math.hypot(x, y);
+      if (d > R + 0.3) continue;
+      let k = d > R - 1 ? M : (x + y) < -6 ? A : B;
+      for (const [cx, cy, cr] of craters) { const dc = Math.hypot(x - cx, y - cy); if (dc <= cr) k = dc > cr - 0.9 && (x - cx) + (y - cy) > 0 ? O : M; }
+      if (!iluminado(x, y)) k = d > R - 1 ? N2 : (x + y) % 3 === 0 ? N2 : N;
+      pon(C + x, C + y, k);
+    }
+    for (const [x, y] of [[-5, -6], [-6, -5], [-4, -6]]) if (iluminado(x, y)) pon(C + x, C + y, rgb("#ffffff"), 220);
   });
 }
 

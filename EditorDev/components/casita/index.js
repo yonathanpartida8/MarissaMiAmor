@@ -56,7 +56,7 @@ import { Necesidades, NECESIDADES } from "./necesidades.js";
 import { LasTraes, VEL_TRAES } from "./traes.js";
 import { VozEnVivo, puedeVoz } from "./voz.js";
 import { CieloVivo } from "./cielo.js";
-import { texPared, texPiso, texLluvia, texCharcos, pintarFrente, texAuto, texSol, texLuna, pintarCaja, claveTapiz, clavePiso, sombraPx, conoLuzPx } from "./texturas.js";
+import { texPared, texPiso, texLluvia, texCharcos, pintarFrente, texAuto, texSol, texLuna, texRayos, pintarCaja, claveTapiz, clavePiso, sombraPx, conoLuzPx } from "./texturas.js";
 import { Luces } from "./luces.js";
 import { Puertas, hondoPuerta } from "./puertas.js";
 import { Navegacion } from "./ruta.js";
@@ -485,6 +485,14 @@ export class Casita {
     if (clave === this._fondoClave) return;
     this._fondoClave = clave;
     for (const c of CUARTOS) {
+      // (Fase 69) El sol (con sus rayos que destellan) y la luna con la fase de hoy, también en el patio grande.
+      if (c.afuera) {
+        const na = this.cuartosN.get(c.k), sol = na?.querySelector(".ca-astro.sol"), luna = na?.querySelector(".ca-astro.luna");
+        try {
+          if (sol) { const t = hora === "tarde"; sol.style.backgroundImage = texSol(t).url; sol.style.setProperty("--rayos-a", texRayos(t, 0).url); sol.style.setProperty("--rayos-b", texRayos(t, 1).url); }
+          if (luna) luna.style.backgroundImage = texLuna().url;
+        } catch (e) { /* nada */ }
+      }
       if (c.mapa) { this.patio?.pintarHora(hora, clima); continue; }
       const n = c.afuera && this.cuartosN.get(c.k), cv = n?.querySelector(".ca-fondo-px");
       if (!cv) continue;
@@ -493,8 +501,6 @@ export class Casita {
         const r = pintarFondo(cv, { ancho: c.w + 300, hora, clima, tipo: c.terraza ? "ciudad" : "barrio", semilla: c.terraza ? 7 : 3 });
         n.classList.add("px");
         if (cielo) cielo.style.background = r.arriba;   // arriba del dibujo, el mismo color del cielo
-        const sol = n.querySelector(".ca-astro.sol");
-        if (sol) sol.style.backgroundImage = texSol(hora === "tarde").url;
         const fr = n.querySelector(".ca-frente-px");
         if (fr) pintarFrente(fr, { tipo: c.terraza ? "terraza" : "jardin", ancho: c.w, hora });
       } catch (e) { n.classList.remove("px"); if (cielo) cielo.style.background = ""; }
