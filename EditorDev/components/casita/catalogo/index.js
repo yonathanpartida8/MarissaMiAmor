@@ -23,6 +23,7 @@ import { ITEMS as LINDAS } from "./lindas.js";
 import { ITEMS as LIMPIEZA, MANO as MANO_LIMPIEZA } from "./limpieza.js";
 import { ITEMS as FINOS } from "./finos.js";
 import { ITEMS as FINOS2 } from "./finos2.js";
+import { REDIBUJOS } from "./redibujos.js";
 import { COSAS_MANO } from "./comida.js";
 import { RECETAS, arteReceta } from "./recetas.js";
 export { COSAS_MANO };
@@ -43,6 +44,8 @@ const PORTATILES = ["cojin_corazon", "juego_te", "rosita", "cosita", "florero", 
 const TOPES = { mesa: 30, mesita: 20, mesa_picnic: 36, buro: 90, escritorio: 40, barra_cafe: 36, barra_tostador: 36, barra_micro: 36, barra_licuadora: 36, barra_fruta: 36, fregadero: 36, estufa: 26, piano: 16, consola: 80, tocador: 96, baul: 26, librero: 10, librero_alto: 12, ropero: 6, refri: 4, lavadora: 6, tele: 110, chimenea: 10, repisa: 34, alacena: 34, especiero: 34, hielera: 14, lavabo: 30 };
 const MASCOTAS_VIVAS = ["gatito", "perrito", "conejito", "tortuga"];
 
+// (Fase 70) Los que se redibujaron en pixel: cambia su dibujo (y su forma para girar); lo que hacen se queda igual.
+for (const [k, f] of Object.entries(REDIBUJOS)) if (CATALOGO[k]) { const nuevo = f(); delete CATALOGO[k].frente; Object.assign(CATALOGO[k], nuevo); }
 for (const [k, d] of Object.entries(CATALOGO)) {
   d.k = k;
   if (FINOS2[k]) d.nuevo = true;

@@ -216,6 +216,17 @@ export function vistaGirada(d, e, C, g) {
         const a = o[v - 1], c = o[v], b2 = o[v + 1], dif = (x, y) => Math.abs(x[0] - y[0]) + Math.abs(x[1] - y[1]) + Math.abs(x[2] - y[2]);
         if (a && c && b2 && dif(a, b2) < 40 && dif(a, c) > 60) o[v] = a;
       }
+      // (Y en franjas: mientras el color de la orilla se parezca al de la franja, sigue la franja —así el costado de un
+      // sofá o de una tienda es parejo—; si cambia de veras —la cubierta blanca sobre el mueble—, empieza otra.)
+      for (const o of [izq, der]) {
+        let banda = null; for (let v = 0; v < H; v++) { const c = o[v]; if (!c) { banda = null; continue; } if (banda && Math.abs(banda[0] - c[0]) + Math.abs(banda[1] - c[1]) + Math.abs(banda[2] - c[2]) < 70) o[v] = banda; else banda = c; }
+        // Una franja de uno o dos renglones (una costura, la orilla de un cojín) se une a la de junto: no hace raya.
+        for (let v = 0; v < H;) {
+          let w = v; while (w + 1 < H && o[w + 1] && o[v] && o[w + 1] === o[v]) w++;
+          if (o[v] && w - v + 1 <= 2) { const vecino = (v > 0 && o[v - 1]) || (w + 1 < H && o[w + 1]); if (vecino) for (let q = v; q <= w; q++) o[q] = vecino; }
+          v = w + 1;
+        }
+      }
       // La espalda de un mueble es un tablero de un solo color (el que más hay en sus orillas), no rayas.
       const dorso = (() => {
         const cuenta = new Map();
@@ -266,6 +277,10 @@ export function vistaGirada(d, e, C, g) {
       // se voltea hacia la derecha baja un escalón o dos. Así girarlo poquito no le cambia el estilo.)
       const luz = (nx, nz) => { const X = nx * co - nz * si, Z = nx * si + nz * co, phi = Math.atan2(X, -Z) / (Math.PI / 2); return escalon(phi > 0.38 ? 1 - 0.24 * Math.min(1, (phi - 0.38) / 0.62) : phi < -0.6 ? 0.96 : 1); };
       const L = { f: luz(0, -1), b: luz(0, 1), l: luz(-1, 0), r: luz(1, 0) };
+      // Lo más alto que hay en cada columna y hondura (para saber dónde se sienta o se acuesta un monito).
+      const tope = new Int16Array(W * D).fill(-1);
+      for (let u = 0; u < W; u++) for (let z = 0; z < D; z++) for (let v = 0; v < H; v++) if (dentro(u, v, z)) { tope[u * D + z] = v; break; }
+      const topeEn = (u, z) => (u < 0 || u >= W ? 1e4 : tope[u * D + z] < 0 ? 1e4 : tope[u * D + z]);
       const R0 = Math.hypot(cu, cz) + 2, paso = 0.2;
       for (let j = 0; j < OH; j++) for (let i = 0; i < OW; i++) {
         const X = x0 - 1 + i + 0.5, Y = y0 - 1 + j + 0.5;
@@ -283,7 +298,13 @@ export function vistaGirada(d, e, C, g) {
             if (!f) f = !dentro(u, v - 1, z) ? 5 : !dentro(u, v, z - 1) ? 1 : 2;
             const base = cel(u, v);
             let c, k;
-            if (f === 5) { c = mezcla(base, 1.1); }
+            if (f === 5) {
+              // (En una ladera —el techo de una tienda, la orilla de algo redondo— los cubitos hacen escalones: ahí la
+              // cara de arriba se sombrea como la ladera, pareja, en vez de rayas claras y oscuras.)
+              const tl = topeEn(u - 1, z), tr = topeEn(u + 1, z), plano = tl === v || tr === v || (tl > H && tr > H);
+              if (plano) c = mezcla(base, 1.1);
+              else { const izqda = tl > v; f = izqda ? 3 : 4; c = (izqda ? izq[v] : der[v]) || base; k = izqda ? L.l : L.r; }
+            }
             else if (torno) {
               // Lo redondo se sombrea con su curva (en escalones), no por caras: así no salen rayas.
               const uc = (a0[v] + b0[v] + 1) / 2, nx = u + 0.5 - uc, nz = ((z + 0.5 - cz) * W) / D, m = Math.hypot(nx, nz) || 1;
@@ -308,9 +329,6 @@ export function vistaGirada(d, e, C, g) {
         const arriba = cara[q - OW], izqF = cara[q - 1];
         if ((arriba && arriba !== f && arriba === 5 && f !== 5) || (!torno && izqF && izqF !== f && f !== 5 && izqF !== 5 && Math.abs(zb[q] - zb[q - 1]) < 3)) { out[q * 4] *= 0.86; out[q * 4 + 1] *= 0.84; out[q * 4 + 2] = out[q * 4 + 2] * 0.88 + 6; }
       }
-      // Lo más alto que hay en cada columna y hondura (para saber dónde se sienta o se acuesta un monito).
-      const tope = new Int16Array(W * D).fill(-1);
-      for (let u = 0; u < W; u++) for (let z = 0; z < D; z++) for (let v = 0; v < H; v++) if (dentro(u, v, z)) { tope[u * D + z] = v; break; }
       // El contorno (el mismo de frente).
       const { o2, OW2, OH2 } = contornar(out, OW, OH, d.sinContorno);
       // La sombrita en el piso, con la forma de su base girada (pixel, con la orilla tramada), debajo de todo.
