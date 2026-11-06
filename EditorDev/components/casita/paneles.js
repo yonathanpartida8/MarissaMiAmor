@@ -242,6 +242,7 @@ export function cajonCatalogo(j) {
     tabs.replaceChildren(...cats().map(([k, t]) => {
       const rep = k === "recientes" ? recientes()[0] : (CATALOGO[REPRESENTA[k]]?.cat === k && CATALOGO[REPRESENTA[k]]) || deCategoria(k).find((d) => d.pixel) || deCategoria(k)[0];
       const ico = rep ? miniPixel(rep, [22, 22], 3) : el("i.ca-cat-mini");
+      for (const t of ico.querySelectorAll("text, title")) t.remove();   // (el chip dice sólo su nombre)
       const b = el("button.ca-cat-tab" + (k === cat && !q ? ".on" : "") + (k === "recientes" ? ".recientes" : ""), { type: "button", role: "tab", "aria-label": t, style: { "--tinte": TINTE[k] || "#ffe3ec" }, onClick: () => { cat = k; if (q) { q = ""; campo.value = ""; } marcar(b); pintar(); j.sonar("hoja", { volumen: 0.5 }); } }, [ico, el("span", { text: t })]);
       if (ico._cargar) b._cargar = ico._cargar;
       return b;
