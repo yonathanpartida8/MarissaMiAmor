@@ -12,6 +12,8 @@ import { cuarto, inicioDe, FONDO, frenteDe } from "./cuartos.js";
 import { ESCENARIO, MEDIDAS, ES_ARBOL, hash, pisable } from "./exterior.js";
 
 const MAX_FUENTE = 4, TOPE = 170;
+/** (Fase 68) Lugares para pedacitos (vidrio, talavera) y charquitos en cada cuarto (v0…v9) y lo que tarda en secarse uno. */
+const RESTOS = 10, SECA = 900;
 const ahora = () => Math.floor(Date.now() / 1000);
 const semilla = (id) => { let h = 7; for (const ch of String(id)) h = (Math.imul(h, 31) + ch.charCodeAt(0)) | 0; return h; };
 const sinMov = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -44,20 +46,51 @@ export class Suciedad {
     return { id: f.id + ":" + k, f, gx, y, rot: (hash(k, 3, s) * 4) | 0 };
   }
   todo(c, t = ahora()) { const l = []; for (const f of this.fuentes(c)) l.push(...this._de(c, f, t)); return l.slice(-TOPE); }
+  /** (Fase 68) Los pedacitos y charquitos del cuarto (guardados en el cuarto: v0…v9 = "tipo|x|y|cuándo"; lo ven los dos). */
+  restos(c, t = ahora()) {
+    const cfg = this.j.cfgCuarto(c), x0 = inicioDe(c), l = [];
+    for (let i = 0; i < RESTOS; i++) {
+      const v = String(cfg["v" + i] || "");
+      if (!v) continue;
+      const [tipo, x, y, tt] = v.split("|"), t0 = +tt || 0;
+      if (tipo.startsWith("charco") && t - t0 > SECA) continue;
+      l.push({ id: `v${i}:${t0}`, slot: "v" + i, tipo, gx: x0 + (+x || 0), y: +y || FONDO + 20, t0, resto: true, rot: (t0 + i) % 4, edad: t - t0 });
+    }
+    return l;
+  }
+  /** (Fase 68) Deja pedacitos o un charquito en el piso (si ya no hay lugar, se va lo más viejo). */
+  dejar(c, tipo, gx, y) {
+    const j = this.j, cfg = j.cfgCuarto(c), t = ahora();
+    let slot = null, viejo = null;
+    for (let i = 0; i < RESTOS; i++) {
+      const v = String(cfg["v" + i] || "");
+      if (!v) { slot = "v" + i; break; }
+      const t0 = +v.split("|")[3] || 0;
+      if (!viejo || t0 < viejo[1]) viejo = ["v" + i, t0];
+    }
+    slot ||= viejo[0];
+    j.sync.op({ o: "cuarto", k: c, v: { [slot]: `${tipo}|${Math.round(gx - inicioDe(c))}|${Math.round(y)}|${t}` } });
+    j.casa = j.sync.casa();
+    this.pintar(false);
+  }
   /** Dibuja lo del cuarto que se ve (lo nuevo cae desde su árbol). */
   pintar(caer = true) {
     const j = this.j, c = j.vistaCuarto;
     if (!j.mundo || !c) return;
     const cambio = c !== this.cuarto;
     if (cambio) { for (const n of this.nodos.values()) n.remove(); this.nodos.clear(); this.cuarto = c; }
-    const lista = this.todo(c), vistos = new Set();
+    const lista = [...this.todo(c), ...this.restos(c)], vistos = new Set();
     for (const p of lista) {
       vistos.add(p.id);
-      if (this.nodos.has(p.id)) continue;
-      const v = j._vista(p.gx, p.y), n = el("i.ca-sucio" + (p.f.polvo ? ".polvo" : ".hoja") + ".r" + p.rot, { "aria-hidden": "true", style: { left: v.x.toFixed(1) + "px", top: p.y.toFixed(1) + "px", "--c": p.f.color, "--s3": v.s.toFixed(3), zIndex: Math.round(p.y) - 1 } });
+      const ya = this.nodos.get(p.id);
+      // (Los charquitos se van secando: cada vez más clarito y chiquito.)
+      if (ya) { if (p.resto && p.tipo.startsWith("charco")) ya.style.opacity = Math.max(0.25, 1 - p.edad / SECA).toFixed(2); continue; }
+      const v = j._vista(p.gx, p.y), clase = p.resto ? ".resto." + p.tipo : p.f.polvo ? ".polvo" : ".hoja";
+      const n = el("i.ca-sucio" + clase + ".r" + p.rot, { "aria-hidden": "true", style: { left: v.x.toFixed(1) + "px", top: p.y.toFixed(1) + "px", "--c": p.f?.color || "", "--s3": v.s.toFixed(3), zIndex: Math.round(p.y) - (p.resto && p.tipo.startsWith("charco") ? 3 : 1) } });
+      if (p.resto && p.tipo.startsWith("charco")) n.style.opacity = Math.max(0.25, 1 - p.edad / SECA).toFixed(2);
       j.mundo.append(n);
       this.nodos.set(p.id, n);
-      if (caer && !cambio && !p.f.polvo && !sinMov() && j._visible?.({ gx: p.gx, y: p.y })) this._cae(n, p);
+      if (caer && !cambio && !p.resto && !p.f.polvo && !sinMov() && j._visible?.({ gx: p.gx, y: p.y })) this._cae(n, p);
     }
     for (const [id, n] of this.nodos) if (!vistos.has(id)) { this.nodos.delete(id); this._fuera(n); }
   }
@@ -92,13 +125,17 @@ export class Suciedad {
   limpiar(c, gx, y, radio = 90) {
     const j = this.j, t = ahora(), v = {}, idos = [];
     for (const p of this.todo(c, t)) if (Math.hypot(p.gx - gx, (p.y - y) * 1.6) <= radio) { v["h:" + p.f.id] = t; idos.push(p); }
+    // (Fase 68) Los pedacitos de vidrio y los charquitos también se barren (o se trapean).
+    for (const p of this.restos(c, t)) if (Math.hypot(p.gx - gx, (p.y - y) * 1.6) <= radio) { v[p.slot] = ""; idos.push(p); }
     const k = Object.keys(v);
-    for (let i = 0; i < k.length; i += 8) j.sync.op({ o: "cuarto", k: c, v: Object.fromEntries(k.slice(i, i + 8).map((x) => [x, t])) });
+    for (let i = 0; i < k.length; i += 8) j.sync.op({ o: "cuarto", k: c, v: Object.fromEntries(k.slice(i, i + 8).map((x) => [x, v[x]])) });
     if (k.length) { j.casa = j.sync.casa(); this.pintar(false); }
     return idos.length;
   }
   /** ¿Hay algo que barrer cerquita? */
-  hayCerca(c, gx, y, radio = 90) { return this.todo(c).some((p) => Math.hypot(p.gx - gx, (p.y - y) * 1.6) <= radio); }
+  hayCerca(c, gx, y, radio = 90) { return [...this.todo(c), ...this.restos(c)].some((p) => Math.hypot(p.gx - gx, (p.y - y) * 1.6) <= radio); }
+  /** (Fase 68) ¿Hay pedacitos de vidrio cerquita? (para que el monito diga «¡Cuidado!») */
+  vidriosCerca(c, gx, y, radio = 40) { return this.restos(c).find((p) => !p.tipo.startsWith("charco") && Math.hypot(p.gx - gx, (p.y - y) * 1.6) <= radio) || null; }
   prender() { clearInterval(this.t); this.t = setInterval(() => { if (this.j.vivo && !document.hidden) this.pintar(); }, 4000); }
   limpiarTodo() { clearInterval(this.t); for (const n of this.nodos.values()) n.remove(); this.nodos.clear(); }
 }

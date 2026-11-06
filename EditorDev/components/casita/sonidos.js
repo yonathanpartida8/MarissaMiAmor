@@ -36,7 +36,7 @@ export const SONIDOS = [
   ["trueno-lejos", "Truenos lejanos (lluvia y tormenta)"], ["viento", "El viento de la tormentota"], ["interruptor", "El apagador de la luz y los aparatos"], ["refri", "Abrir el refri (su chuponcito y su zumbido)"],
   ["buzon", "La tapita de metal del buzón"], ["baul", "La tapa de madera del baúl"], ["ropero", "Las puertas del ropero"], ["tapa", "La tapa del bote de basura"], ["tirar", "Tirar algo al bote"],
   ["hielera", "Los hielitos de la hielera"], ["neon", "El zumbido del letrero de neón"], ["laptop", "Prender la compu"], ["auch", "¡Auch! (el cactus)"], ["fruta", "Agarrar fruta"],
-  ["libro", "Hojear un libro"], ["hojas", "Las hojitas de las plantas"], ["regar", "Regar con la regadera"], ["frasco", "El frasco de galletas (tapa de vidrio)"], ["charco", "Brincar en un charquito"], ["paso2", "El otro pasito (se turnan)"], ["bebida", "Tomar algo"], ["bostezo", "Bostezar con sueño"], ["panza", "La pancita que suena (hambre)"], ["suspiro", "Suspirar de aburrido"], ["traes", "¡Te atrapé! (las traes)"], ["necesidad", "Cuando algo ya se llenó"],
+  ["libro", "Hojear un libro"], ["hojas", "Las hojitas de las plantas"], ["regar", "Regar con la regadera"], ["frasco", "El frasco de galletas (tapa de vidrio)"], ["charco", "Brincar en un charquito"], ["vidrio", "Algo de vidrio que se rompe"], ["pum", "Chocar contra la pared"], ["tok", "Patear algo chiquito"], ["paso2", "El otro pasito (se turnan)"], ["bebida", "Tomar algo"], ["bostezo", "Bostezar con sueño"], ["panza", "La pancita que suena (hambre)"], ["suspiro", "Suspirar de aburrido"], ["traes", "¡Te atrapé! (las traes)"], ["necesidad", "Cuando algo ya se llenó"],
   ["musica-baile", "Canción del tocadiscos (se repite)"], ["musica-cuna", "Canción de la cajita musical (se repite)"], ["musica-fiesta", "Canción de la bocina (se repite)"],
 ];
 
@@ -128,6 +128,9 @@ const SON = {
   hielera: [["ruido", 3200, 2600, 0.22, 0.07], ["triangle", 3300, 3200, 0.05, 0.06, 0.04], ["triangle", 2900, 2800, 0.05, 0.05, 0.11], ["triangle", 3600, 3500, 0.04, 0.05, 0.17], ["sine", 300, 200, 0.1, 0.1, 0.24]],
   neon: [["sawtooth", 120, 120, 0.45, 0.025], ["square", 240, 240, 0.45, 0.012], ["triangle", 2400, 2400, 0.03, 0.05], ["sawtooth", 120, 120, 0.12, 0.03, 0.55]],
   laptop: [["sine", 523, 523, 0.6, 0.07], ["sine", 784, 784, 0.6, 0.06, 0.03], ["sine", 1046, 1046, 0.7, 0.05, 0.06], ["sine", 1568, 1568, 0.6, 0.025, 0.09]],
+  vidrio: [["ruido", 6200, 3800, 0.09, 0.3], ["triangle", 3135, 2900, 0.06, 0.1, 0.02], ["triangle", 4186, 3900, 0.05, 0.09, 0.07], ["ruido", 7000, 5200, 0.14, 0.16, 0.05], ["triangle", 2637, 2500, 0.07, 0.07, 0.13], ["sine", 3520, 3400, 0.05, 0.06, 0.2]],
+  pum: [["sine", 140, 55, 0.22, 0.42], ["ruido", 700, 160, 0.16, 0.3], ["sine", 90, 60, 0.3, 0.2, 0.05]],
+  tok: [["triangle", 900, 620, 0.05, 0.2], ["ruido", 2200, 1200, 0.04, 0.1]],
   auch: [["triangle", 920, 520, 0.16, 0.12], ["sine", 700, 420, 0.2, 0.1, 0.06]],
   fruta: [["ruido", 2600, 1900, 0.05, 0.12], ["sine", 520, 700, 0.06, 0.1, 0.02], ["ruido", 1800, 1400, 0.04, 0.06, 0.08]],
   libro: [["ruido", 4200, 2200, 0.09, 0.09], ["ruido", 3600, 1900, 0.09, 0.07, 0.11], ["ruido", 3000, 1700, 0.11, 0.06, 0.22]],

@@ -71,7 +71,7 @@ function revisarReposo() {
   if (falta > 60 || ocupado()) { relojReposo = setTimeout(revisarReposo, Math.max(falta, 3000)); return; }
   if (document.hidden) return; // al volver, `actividad()` lo vuelve a armar
   R.reposo = true;
-  aquietar();
+  aquietar(true);
   H.classList.add("rd-reposo");
   avisar();
 }
@@ -84,7 +84,9 @@ for (const t of ["popstate", "hashchange", "focus", "orientationchange"]) addEve
 const DECOR = ".mp-capa, .jt-capa, .dt-capa, .dz-capa, .an-capa, .ch-fondo, .ed-foco, .ed-abeja, .ed-hoja, .ed-tq-mini, .ed-musica-b, .dt-cielo, .dt-burbujas, .dt-globo, .dt-dos, .vn-hilo, .vn-luz, .vn-corazon, .dt-col-corazon, .dt-mini-corazon";
 let quietos = [];
 /** Marca los elementos cuyas animaciones (todas las que van corriendo) son de las que se repiten para siempre. */
-function aquietar() {
+// (Fase 68) En reposo, el mundo de la casita sigue vivo (la flama, el péndulo, el agua, los monitos respirando): es
+// para verlo aunque no lo toques. Sólo se aquieta si el aparato de verdad sufre (ahorro).
+function aquietar(reposo = false) {
   if (!document.getAnimations || typeof CSSAnimation === "undefined") return;
   const por = new Map();
   for (const a of document.getAnimations()) {
@@ -92,7 +94,7 @@ function aquietar() {
     if (!t || !(a instanceof CSSAnimation) || a.playState !== "running") continue;
     por.set(t, (por.get(t) ?? true) && a.effect.getTiming().iterations === Infinity);
   }
-  for (const [t, sinFin] of por) if (sinFin && !t.classList.contains("rd-q") && t.closest(DECOR)) { t.classList.add("rd-q"); quietos.push(t); }
+  for (const [t, sinFin] of por) if (sinFin && !t.classList.contains("rd-q") && t.closest(DECOR) && !(reposo && t.closest(".ca-mundo"))) { t.classList.add("rd-q"); quietos.push(t); }
 }
 function soltarQuietos() { for (const t of quietos) t.classList.remove("rd-q"); quietos = []; }
 /** Algo que no debe quedarse quieto aunque nadie toque (reproducir, grabar…). */

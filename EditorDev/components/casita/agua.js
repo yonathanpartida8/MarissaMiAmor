@@ -72,7 +72,16 @@ export class Agua {
     if (!this.listo) { this.medir(); return; }
     const v = this._vista?.();
     if (!v) return;
-    const tt = Math.floor(t * 10 * (0.42 + f * 0.55)), cielo = CIELO[this.hora], noche = this.hora === "noche", umbral = 1.22 - f * 0.38;
+    // (Fase 68) El agua va mansita: unos 2 o 3 pasitos por segundo (con viento fuerte, algo más), y si no cambió nada (ni
+    // el pasito ni lo que se ve), no se vuelve a pintar.
+    // (Su fase avanza poquito a poquito, como la del viento: así nunca brinca.)
+    const dt = this._tAnt ? Math.min(0.5, Math.max(0, t - this._tAnt)) : 0;
+    this._tAnt = t;
+    this._fase = (this._fase || 0) + dt * (2.2 + f * 2.2);
+    const tt = Math.floor(this._fase), cielo = CIELO[this.hora], noche = this.hora === "noche", umbral = 1.22 - f * 0.38;
+    const llave = `${tt}|${v.L | 0}|${v.T | 0}|${v.R | 0}|${v.B | 0}|${this.hora}`;
+    if (llave === this._llave) return;
+    this._llave = llave;
     for (const z of this.zonas) {
       const i0 = Math.max(0, Math.floor((v.L - z.x0) / PX)), i1 = Math.min(z.W, Math.ceil((v.R - z.x0) / PX)), j0 = Math.max(0, Math.floor((v.T - z.y0) / PX)), j1 = Math.min(z.H, Math.ceil((v.B - z.y0) / PX));
       if (i1 <= i0 || j1 <= j0) continue;
@@ -85,7 +94,7 @@ export class Agua {
             // Arena mojada: se oscurece cuando llega la olita.
             const m = moja[k];
             if (!m) { d[o + 3] = 0; continue; }
-            const w = S[(ii * 7 + (z.rio ? 0 : jj * 5) + tt * 5) & 255];
+            const w = S[(ii * 7 + (z.rio ? 0 : jj * 5) + tt * 2) & 255];
             d[o] = 52; d[o + 1] = 66; d[o + 2] = 78; d[o + 3] = Math.max(0, (m === 1 ? 70 : 36) + w * (m === 1 ? 46 : 30)) | 0;
             continue;
           }
@@ -94,22 +103,22 @@ export class Agua {
           let c = mezcla(BAJITO, HONDO, Math.min(1, p * 1.15));
           c = mezcla(c, cielo, refl);
           // El agua ondula toda, suavecito (en escaloncitos de color, como pixel): se ve líquida, no sólo con brillitos.
-          const on = Math.round((0.6 * S[(ii * 3 + jj * 8 - tt * 4) & 255] + 0.4 * S[(ii * 2 - jj * 5 + tt * 3) & 255]) * 2) * 5;
+          const on = Math.round((0.6 * S[(ii * 3 + jj * 8 - tt * 2) & 255] + 0.4 * S[(ii * 2 - jj * 5 + tt) & 255]) * 2) * 5;
           c = [c[0] + on, c[1] + on, c[2] + on * 0.6];
           // Las olitas: en el río corren hacia la derecha; en el estanque, ondas que salen del centro.
           let w;
-          if (z.rio) w = S[(ii * 4 + ((jj * 9) >> 1) - tt * 6) & 255] + 0.6 * S[(jj * 13 + ii * 2 + tt * 3) & 255] + 0.3 * S[(ii * 11 - jj * 3 + tt * 2) & 255];
-          else { const dx = ii * PX + z.x0 - z.cx, dy = (jj * PX + z.y0 - z.cy) * 2.2, r = Math.sqrt(dx * dx + dy * dy); w = 1.1 * S[((r * 0.9) | 0) - tt * 3 & 255] + 0.5 * S[(ii * 5 + jj * 7 + tt * 2) & 255]; }
+          if (z.rio) w = S[(ii * 4 + ((jj * 9) >> 1) - tt * 3) & 255] + 0.6 * S[(jj * 13 + ii * 2 + tt) & 255] + 0.3 * S[(ii * 11 - jj * 3 + tt) & 255];
+          else { const dx = ii * PX + z.x0 - z.cx, dy = (jj * PX + z.y0 - z.cy) * 2.2, r = Math.sqrt(dx * dx + dy * dy); w = 1.1 * S[((r * 0.9) | 0) - tt * 2 & 255] + 0.5 * S[(ii * 5 + jj * 7 + tt) & 255]; }
           if (w > umbral + 0.32) c = mezcla(c, BLANCO, 0.5);
           else if (w > umbral) c = mezcla(c, BLANCO, 0.22);
           else if (w < -umbral - 0.1) c = mezcla(c, HONDO, 0.25);
           // La espuma de la orilla que va y viene.
           const dd = dist[k];
-          if (dd === 1) { const fw = S[(ii * 9 + jj * 3 + tt * 5) & 255]; if (fw > -0.35) c = mezcla(c, BLANCO, 0.3 + fw * 0.3); }
-          else if (dd === 2 && S[(ii * 9 + jj * 3 + tt * 5 + 40) & 255] > 0.72) c = mezcla(c, BLANCO, 0.22);
+          if (dd === 1) { const fw = S[(ii * 9 + jj * 3 + tt * 2) & 255]; if (fw > -0.35) c = mezcla(c, BLANCO, 0.3 + fw * 0.3); }
+          else if (dd === 2 && S[(ii * 9 + jj * 3 + tt * 2 + 40) & 255] > 0.72) c = mezcla(c, BLANCO, 0.22);
           if (sombra[k]) c = [c[0] * 0.76, c[1] * 0.8, c[2] * 0.86];
           // Brillitos sueltos (del sol o de la luna), más con viento.
-          if (hash(ii >> 1, jj, (tt >> 3) + 1) < 0.0022 * (1 + f * 2)) c = BLANCO;
+          if (hash(ii >> 1, jj, (tt >> 2) + 1) < 0.0016 * (1 + f * 2)) c = BLANCO;
           if (noche) c = [c[0] * 0.5 + 8, c[1] * 0.52 + 10, c[2] * 0.62 + 26];
           d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = 255;
         }
@@ -122,7 +131,7 @@ export class Agua {
   _nenufares(z, d, tt) {
     const verde = [[78, 150, 82], [104, 182, 98], [140, 208, 120]], flor = [[255, 168, 204], [255, 232, 242]];
     NENUFARES.forEach(([x, y, fl], q) => {
-      const ci = Math.round((x - z.x0) / PX), cj = Math.round((y - z.y0) / PX) + (S[(tt * 2 + q * 50) & 255] > 0.55 ? 1 : 0);
+      const ci = Math.round((x - z.x0) / PX), cj = Math.round((y - z.y0) / PX) + (S[(tt * 3 + q * 50) & 255] > 0.55 ? 1 : 0);
       for (let dj = -2; dj <= 2; dj++) for (let di = -4; di <= 4; di++) {
         if ((di / 4.4) ** 2 + (dj / 2.4) ** 2 > 1) continue;
         if (di > 0 && dj === 0 && di < 4) continue;     // su piquito abierto

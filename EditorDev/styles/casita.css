@@ -141,7 +141,7 @@ body.ca-en-completa { overflow: hidden; }
 .ca-obj.estufa.e-on .horno { fill: #ff9e5a; }
 .ca-obj.e-on .hotcake { animation: caVoltea 1.2s ease-in-out infinite; transform-origin: center; }
 .ca-obj .chorro { opacity: 0; transform-origin: top center; }
-.ca-obj.corre .chorro { opacity: 1; animation: caChorro .3s linear infinite; }
+.ca-obj.corre .chorro { opacity: 1; animation: caChorro .9s steps(4) infinite; }
 .ca-obj.salta .pan { animation: caPan .7s cubic-bezier(.3, 1.6, .5, 1); }
 .ca-obj.buzon .carta { opacity: 0; }
 .ca-obj.buzon.abierto .carta { opacity: 1; animation: caCarta 1.4s ease-out forwards; }
@@ -164,7 +164,7 @@ body.ca-en-completa { overflow: hidden; }
 .ca-obj.flores .e1, .ca-obj.flores .e2 { display: none; }
 .ca-obj.flores[data-etapa="1"] .e0, .ca-obj.flores[data-etapa="2"] .e0, .ca-obj.flores[data-etapa="2"] .e1 { display: none; }
 .ca-obj.flores[data-etapa="1"] .e1, .ca-obj.flores[data-etapa="2"] .e2 { display: inline; }
-.ca-obj.fuente .agua { stroke-dasharray: 8 6; animation: caAgua .6s linear infinite; }
+.ca-obj.fuente .agua { stroke-dasharray: 8 6; animation: caAgua 1.8s steps(7) infinite; }
 .ca-obj .foco { animation: caFoco 1.4s ease-in-out infinite alternate; }
 .ca-obj .foco.f1 { animation-delay: -.5s; } .ca-obj .foco.f2 { animation-delay: -1s; }
 .ca-obj .cola { transform-origin: 90% 90%; animation: caCola 2.2s ease-in-out infinite alternate; }
@@ -242,8 +242,8 @@ body.ca-en-completa { overflow: hidden; }
 .ca-monito.camina .ca-pd { animation: caPierna .4s ease-in-out infinite alternate-reverse; }
 .ca-monito.camina .ca-bi { animation: caBrazo .4s ease-in-out infinite alternate-reverse; }
 .ca-monito.camina:not(.con-cosa) .ca-bd { animation: caBrazo .4s ease-in-out infinite alternate; }
-.ca-monito.corre .ca-mono-flip, .ca-monito.corre .ca-pi, .ca-monito.corre .ca-pd, .ca-monito.corre .ca-bi, .ca-monito.corre .ca-bd { animation-duration: .24s !important; }
-.ca-monito.corre .ca-mono-cuerpo { transform: rotate(4deg); transform-origin: 50% 100%; }
+.ca-monito.corre .ca-mono-flip, .ca-monito.corre .ca-pi, .ca-monito.corre .ca-pd, .ca-monito.corre .ca-bi, .ca-monito.corre .ca-bd { animation-duration: .3s !important; }
+.ca-monito.corre .ca-mono-cuerpo { transform: rotate(2.5deg); transform-origin: 50% 100%; }
 /* Poses: sentado, dormido, en la tina, columpio y cocinando. */
 .ca-monito:is(.sentado, .dormido, .banando, .columpio, .cargado) .ca-sombra { display: none; }
 .ca-monito.dormido .ca-mono-caja { transform: rotate(-90deg); }
@@ -682,7 +682,7 @@ body.ca-en-completa { overflow: hidden; }
 .ca-obj.lavadora.lava .tambor { animation: caGiraRueda .45s linear infinite; transform-origin: center; }
 .ca-obj.regadera .agua-cae { opacity: 0; transition: opacity .3s; }
 .ca-obj.regadera.ocupado .agua-cae { opacity: 1; animation: caLluvia .35s linear infinite; }
-.ca-obj.alberca .ola { animation: caOla 3s ease-in-out infinite alternate; }
+.ca-obj.alberca .ola { animation: caOla 6s ease-in-out infinite alternate; }
 .ca-obj-frente.alberca .patito-a { animation: caFlota 2.4s ease-in-out infinite alternate; }
 .ca-obj :is(.tapa, .juguetes) { transition: transform .35s cubic-bezier(.3, 1.4, .5, 1), opacity .3s; transform-origin: left bottom; }
 .ca-obj.abierto .tapa { transform: rotate(-26deg) translateY(-4px); }
@@ -924,7 +924,7 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-mundo.tormenta .ca-lluvia::before { animation-duration: .36s; background-image: repeating-linear-gradient(104deg, transparent 0 7px, rgba(210, 228, 255, .62) 7px 8.5px, transparent 8.5px 18.5px); }
 .ca-mundo.extra .ca-lluvia::before { animation-duration: .24s; background-image: repeating-linear-gradient(104deg, transparent 0 4px, rgba(222, 236, 255, .7) 4px 5.6px, transparent 5.6px 12.33px); }
 .ca-mundo.extra .ca-lluvia { transform: skewX(-8deg); }
-.ca.fx1 .ca-mundo.extra .ca-obj:is(.arbol, .arbusto, .flores, .sombrilla, .maceta_grande, .luces) > .ca-obj-arte { animation: caViento 1.4s ease-in-out infinite alternate; transform-origin: 50% 100%; }
+.ca.fx1 .ca-mundo.extra .ca-obj:is(.arbol, .arbusto, .flores, .sombrilla, .maceta_grande, .luces) > .ca-obj-arte { animation: caViento 3.4s ease-in-out infinite alternate; transform-origin: 50% 100%; }
 @keyframes caViento { from { transform: skewX(-3deg); } to { transform: skewX(3deg); } }
 /* Reflejos (Ultra): los charquitos brillan y los monitos se reflejan en el piso. */
 .ca.fx4 .ca-mundo.lluvia .ca-charcos { animation: caCharco 2.4s ease-in-out infinite alternate; }
@@ -993,7 +993,7 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca.pixel .ca-charcos { background: var(--charcos) 0 0 / 100% 240px no-repeat; }
 /* Los monitos ya son pixel art: el pelo largo se mece al caminar y con el aire. */
 .ca-monito.camina .ca-pelo-atras { animation: caPeloMece .4s ease-in-out infinite alternate; transform-origin: 30px 30px; }
-.ca-monito.corre .ca-pelo-atras { animation-duration: .24s; }
+.ca-monito.corre .ca-pelo-atras { animation-duration: .3s; }
 .ca.fx1 .ca-monito:not(.camina):not(.dormido) .ca-pelo-atras { animation: caPeloAire 3.8s ease-in-out infinite; transform-origin: 30px 30px; }
 @keyframes caPeloMece { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
 @keyframes caPeloAire { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(1.6deg); } }
@@ -1035,7 +1035,7 @@ body.ca-escribiendo .jt-nav { display: none; }
 /* Parpadeo y respiración más suaves; al caminar, un saltito de cada paso. */
 @keyframes caPaso { 0%, 100% { translate: 0 0; } 50% { translate: 0 -3px; } }
 /* (Fase 59: un solo rebotito al caminar; antes se sumaban dos y se veía raro.) */
-.ca.fx1 .ca-monito.corre .ca-mono-cuerpo { animation-duration: .24s; }
+.ca.fx1 .ca-monito.corre .ca-mono-cuerpo { animation-duration: .3s; }
 
 /* El carrito pasa por la calle, detrás de la cerca, y es pixel. */
 .ca-auto { z-index: 0; top: 384px; height: 42px; background-size: 100% 100% !important; image-rendering: crisp-edges; image-rendering: pixelated; }
@@ -1181,7 +1181,7 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-monito.corre.lado .ca-pd { animation: caPiernaC .26s ease-in-out infinite alternate-reverse; }
 .ca-monito.corre.lado .ca-bi { animation: caBrazoC .26s ease-in-out infinite alternate-reverse; }
 .ca-monito.corre.lado:not(.con-cosa) .ca-bd { animation: caBrazoC .26s ease-in-out infinite alternate; }
-.ca-monito.corre .ca-mono-flip { animation: caBoteC .26s ease-in-out infinite; }
+.ca-monito.corre .ca-mono-flip { animation: caBoteC .3s ease-in-out infinite; }
 .ca-monito.corre.lado .ca-mono-cuerpo { rotate: 6deg; transform-origin: 50% 100%; }
 @keyframes caPiernaC { from { transform: rotate(-26deg); } to { transform: rotate(26deg); } }
 @keyframes caBrazoC { from { transform: rotate(-34deg); } to { transform: rotate(30deg); } }
@@ -1386,7 +1386,7 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-esc:is(.roble, .cerezo, .frutal, .pino, .abedul, .sauce) > .esc-toque { inset: 26% 28% 0; }
 .ca-esc .esc-copa { transform-origin: 50% 78%; animation: caMece var(--p, 5s) ease-in-out var(--d, 0s) infinite; will-change: transform; }
 @keyframes caMece { 0%, 100% { transform: skewX(0deg); } 30% { transform: skewX(-1.3deg) translateX(1px); } 70% { transform: skewX(.9deg) translateX(-1px); } }
-.ca[data-viento="mucho"] .ca-esc .esc-copa { animation-duration: 1.7s; }
+.ca[data-viento="mucho"] .ca-esc .esc-copa { animation-duration: 3.6s; }
 .ca:not(.fx1) .ca-esc .esc-copa { animation: none; }
 /* (Fase 65) Con el viento de verdad (viento.js) las copas las mueve él; detrás de un árbol, la copa se aclara. */
 .ca.viento-js .ca-esc .esc-copa, .ca.viento-js .ca-obj .copa { animation: none; }
@@ -1394,7 +1394,7 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-esc.tapa .esc-copa { opacity: .42; }
 .ca-esc.tapa .esc-tronco { opacity: .7; }
 .ca-esc.arbusto .esc-tronco { transform-origin: 50% 100%; }
-.ca-esc .esc-chorro { inset: 4% 46% auto; height: 28%; background: repeating-linear-gradient(180deg, #e6f7ff 0 6px, #9fd8f6 6px 12px, transparent 12px 15px); background-size: 100% 15px; animation: caChorro .5s steps(3) infinite; opacity: .9; }
+.ca-esc .esc-chorro { inset: 4% 46% auto; height: 28%; background: repeating-linear-gradient(180deg, #e6f7ff 0 6px, #9fd8f6 6px 12px, transparent 12px 15px); background-size: 100% 15px; animation: caChorro 1.5s steps(5) infinite; opacity: .9; }
 @keyframes caChorro { to { background-position: 0 15px; } }
 /* (Fase 65) El agua viva: una capa pixel encima del agua pintada (sólo pinta el agua; la mueve el viento). */
 .ca-agua { position: absolute; z-index: 1; pointer-events: none; image-rendering: crisp-edges; image-rendering: pixelated; }
@@ -1525,6 +1525,9 @@ body.ca-escribiendo .jt-nav { display: none; }
 
 /* ═══════════ FASE 67: muebles en pixel de verdad, monito 360 ═══════════ */
 /* La cosa de frente: su imagen pixel abajo y el dibujo encima con lo quieto transparente (se toca y se anima igual). */
+/* (Fase 68) La capa viva va ENCIMA de la imagen pixel (antes la imagen, por ir «absolute», tapaba lo que se mueve
+   adentro de la silueta: la flama, los peces, la tele). */
+.ca-obj.plana > .ca-obj-arte > svg { position: relative; z-index: 1; }
 .ca-obj-arte > img.ca-plana { position: absolute; left: -4px; top: -4px; pointer-events: none; image-rendering: crisp-edges; image-rendering: pixelated; -webkit-user-drag: none; user-select: none; }
 .ca-obj.plana > .ca-obj-arte > svg :not([class]):not(:has([class])):not([class] *) { opacity: 0; }
 /* (Fase 67) Lo que se recoge en el patio: pixel, con un brillito cuando ya se puede recoger (como en Stardew). */
@@ -1557,3 +1560,55 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-monito.ausente.vida .ca-mono-caja { opacity: .82; }
 .ca-monito.contento .ojo-n { display: none; } .ca-monito.contento .ojo-f { display: inline; }
 .ca-monito.contento .bo-n { display: none; } .ca-monito.contento .bo-a { display: inline; }
+
+/* (Fase 68) Lo dibujado en pixel de verdad: lo que se mueve va en cuadros que se turnan (como en los juegos de antes). */
+:is(.px-b, .px3-2, .px3-3, .px4-2, .px4-3, .px4-4, .px-cucu) { display: none; }
+.ca.fx1 .ca-obj :is(.px-b, .px3-2, .px3-3, .px4-2, .px4-3, .px4-4, .px-cucu) { display: inline; }
+.ca.fx1 .ca-obj .px-a { animation: caPxA var(--pxt, .9s) steps(1, end) infinite; }
+.ca.fx1 .ca-obj .px-b { animation: caPxB var(--pxt, .9s) steps(1, end) infinite; }
+@keyframes caPxA { 50% { opacity: 0; } }
+@keyframes caPxB { 0% { opacity: 0; } 50% { opacity: 1; } }
+.ca.fx1 .ca-obj :is(.px3-1, .px3-2, .px3-3) { animation: caPx3 var(--pxt, .9s) steps(1, end) infinite; }
+.ca.fx1 .ca-obj .px3-2 { animation-delay: calc(var(--pxt, .9s) * -.6667); }
+.ca.fx1 .ca-obj .px3-3 { animation-delay: calc(var(--pxt, .9s) * -.3333); }
+@keyframes caPx3 { 0% { opacity: 1; } 33.33% { opacity: 0; } 100% { opacity: 0; } }
+.ca.fx1 .ca-obj :is(.px4-1, .px4-2, .px4-3, .px4-4) { animation: caPx4 var(--pxt, 1.2s) steps(1, end) infinite; }
+.ca.fx1 .ca-obj .px4-2 { animation-delay: calc(var(--pxt, 1.2s) * -.75); }
+.ca.fx1 .ca-obj .px4-3 { animation-delay: calc(var(--pxt, 1.2s) * -.5); }
+.ca.fx1 .ca-obj .px4-4 { animation-delay: calc(var(--pxt, 1.2s) * -.25); }
+@keyframes caPx4 { 0% { opacity: 1; } 25% { opacity: 0; } 100% { opacity: 0; } }
+/* El pajarito del reloj cucú sale un ratito de vez en cuando. */
+.ca.fx1 .ca-obj .px-cucu { animation: caCucu 14s steps(1, end) infinite; }
+@keyframes caCucu { 0% { opacity: 0; } 88% { opacity: 1; } 94% { opacity: 0; } }
+/* Lo que sólo se ve prendido (o apagado). */
+.ca-obj:not(.e-on) .px-on, :not(.ca-obj) > .ca-obj-arte .px-on, .ca-cat-mini .px-on { visibility: hidden; }
+.ca-obj.e-on .px-off { visibility: hidden; }
+/* Ya viene en pixel: no lleva el filtro (sus cuadritos ya caen en la rejilla). */
+.ca.pixel.fx2 .ca-obj.ya-pixel .ca-obj-arte svg { filter: none; }
+@media (prefers-reduced-motion: reduce) {
+  .ca .ca-obj :is(.px-b, .px3-2, .px3-3, .px4-2, .px4-3, .px4-4, .px-cucu) { display: none !important; }
+  .ca .ca-obj :is(.px-a, .px3-1, .px4-1) { animation: none !important; opacity: 1 !important; }
+}
+
+/* ═══════════ FASE 68: la física de las cosas ═══════════ */
+/* ¡Pum! contra la pared: se apachurra, rebota para atrás y se marea tantito. */
+.ca-monito.choca .ca-mono-caja { animation: caChoca .9s ease-out; transform-origin: 50% 100%; }
+@keyframes caChoca { 0% { scale: 1 1; translate: 0 0; } 12% { scale: 1.12 .86; translate: 0 2px; } 30% { scale: .96 1.04; translate: 0 -6px; } 48% { rotate: -6deg; translate: 0 0; } 64% { rotate: 5deg; } 80% { rotate: -2deg; } 100% { rotate: 0deg; scale: 1 1; } }
+/* Lo colgado queda chueco después del golpe (hasta que lo enderecen). */
+.ca-obj.capa-pared > .ca-obj-arte { rotate: var(--chueco, 0deg); transform-origin: 50% 6%; transition: rotate .35s cubic-bezier(.3,1.6,.5,1); }
+/* Lo que se cayó de lado: se acuesta sobre la orilla hacia donde cayó (no sobre su centro). */
+.ca-obj.recargada.tumbado > .ca-obj-arte { transform-origin: 100% 100%; translate: 0 0; }
+.ca-obj.recargada.tumbado.hacia-izq > .ca-obj-arte { transform-origin: 0% 100%; }
+.ca-obj.capa-piso.en-suelo.tumbado::after { left: 70%; width: 150%; }
+.ca-obj.capa-piso.en-suelo.tumbado.hacia-izq::after { left: auto; right: 70%; }
+/* Los pedacitos de vidrio y de talavera, y los charquitos (se secan solos). Se barren con la escoba. */
+.ca-sucio.resto { -webkit-mask: none; mask: none; rotate: none; image-rendering: crisp-edges; image-rendering: pixelated; background: center / 100% 100% no-repeat; transition: opacity 2s; }
+.ca-sucio.resto.vidrio { width: 50px; height: 30px; margin: -18px 0 0 -25px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6' shape-rendering='crispEdges'%3E%3Crect x='1' y='1' width='1' height='1' fill='%23d8f2fb'/%3E%3Crect x='2' y='1' width='1' height='1' fill='%239fd3ea'/%3E%3Crect x='1' y='2' width='1' height='1' fill='%239fd3ea'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%235f9fc0'/%3E%3Crect x='4' y='0' width='1' height='1' fill='%23d8f2fb'/%3E%3Crect x='5' y='1' width='1' height='1' fill='%23d8f2fb'/%3E%3Crect x='4' y='1' width='1' height='1' fill='%239fd3ea'/%3E%3Crect x='5' y='2' width='1' height='1' fill='%235f9fc0'/%3E%3Crect x='7' y='2' width='1' height='1' fill='%23d8f2fb'/%3E%3Crect x='8' y='3' width='1' height='1' fill='%239fd3ea'/%3E%3Crect x='7' y='3' width='1' height='1' fill='%235f9fc0'/%3E%3Crect x='3' y='4' width='1' height='1' fill='%23d8f2fb'/%3E%3Crect x='2' y='5' width='1' height='1' fill='%239fd3ea'/%3E%3Crect x='3' y='5' width='1' height='1' fill='%235f9fc0'/%3E%3Crect x='6' y='5' width='1' height='1' fill='%23d8f2fb'/%3E%3Crect x='9' y='5' width='1' height='1' fill='%239fd3ea'/%3E%3C/svg%3E"); }
+.ca-sucio.resto.ceramica { width: 50px; height: 30px; margin: -18px 0 0 -25px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6' shape-rendering='crispEdges'%3E%3Crect x='1' y='1' width='2' height='1' fill='%23fffaf0'/%3E%3Crect x='1' y='2' width='1' height='1' fill='%235a83c2'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23fffaf0'/%3E%3Crect x='5' y='0' width='2' height='1' fill='%23fffaf0'/%3E%3Crect x='5' y='1' width='1' height='1' fill='%2333508e'/%3E%3Crect x='6' y='1' width='1' height='1' fill='%23fffaf0'/%3E%3Crect x='8' y='3' width='1' height='1' fill='%23fffaf0'/%3E%3Crect x='8' y='4' width='1' height='1' fill='%235a83c2'/%3E%3Crect x='3' y='4' width='2' height='1' fill='%23fffaf0'/%3E%3Crect x='3' y='5' width='1' height='1' fill='%235a83c2'/%3E%3Crect x='4' y='5' width='1' height='1' fill='%23fffaf0'/%3E%3Crect x='7' y='5' width='1' height='1' fill='%23fffaf0'/%3E%3C/svg%3E"); }
+.ca-sucio.resto:is(.charco-agua, .charco-jugo) { width: 60px; height: 25px; margin: -14px 0 0 -30px; }
+.ca-sucio.resto.charco-agua { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 5' shape-rendering='crispEdges'%3E%3Crect x='3' y='0' width='6' height='1' fill='%236fb3d2'/%3E%3Crect x='1' y='1' width='10' height='1' fill='%239fd3ea'/%3E%3Crect x='0' y='2' width='12' height='1' fill='%239fd3ea'/%3E%3Crect x='1' y='3' width='10' height='1' fill='%239fd3ea'/%3E%3Crect x='3' y='4' width='6' height='1' fill='%236fb3d2'/%3E%3Crect x='3' y='1' width='3' height='1' fill='%23e6f7ff'/%3E%3Crect x='2' y='2' width='2' height='1' fill='%23e6f7ff'/%3E%3C/svg%3E"); }
+.ca-sucio.resto.charco-jugo { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 5' shape-rendering='crispEdges'%3E%3Crect x='3' y='0' width='6' height='1' fill='%23ec7428'/%3E%3Crect x='1' y='1' width='10' height='1' fill='%23ffb43c'/%3E%3Crect x='0' y='2' width='12' height='1' fill='%23ffb43c'/%3E%3Crect x='1' y='3' width='10' height='1' fill='%23ffb43c'/%3E%3Crect x='3' y='4' width='6' height='1' fill='%23ec7428'/%3E%3Crect x='3' y='1' width='3' height='1' fill='%23fff3a0'/%3E%3Crect x='2' y='2' width='2' height='1' fill='%23fff3a0'/%3E%3C/svg%3E"); }
+.ca-sucio.resto.r1, .ca-sucio.resto.r3 { scale: calc(var(--s3, 1) * -1) var(--s3, 1); }
+.ca-sucio.resto:is(.charco-agua, .charco-jugo).r3 { scale: var(--s3, 1); }
+.ca.fx1 .ca-sucio.resto.vidrio { animation: caVidrioBrilla 3.2s steps(1, end) infinite; }
+@keyframes caVidrioBrilla { 0%, 80% { filter: none; } 85% { filter: brightness(1.5); } 92% { filter: none; } }

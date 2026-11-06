@@ -16,7 +16,8 @@ import { MAPA, MEDIDAS, ES_ARBOL, hash } from "./exterior.js";
 import { nivel } from "./graficos.js";
 
 // (Fase 66) Más calmado: con sol, una brisita; con lluvia, viento normal; con tormenta, fuerte.
-const BASE = { sol: 0.1, lluvia: 0.4, tormenta: 0.7, extra: 0.9 };
+// (Fase 68) Todavía más tranquilo: con sol casi no se mueve nada; con lluvia, un viento de verdad pero sin prisa.
+const BASE = { sol: 0.07, lluvia: 0.32, tormenta: 0.6, extra: 0.82 };
 const PESO = { roble: 0.75, cerezo: 1, frutal: 0.85, pino: 0.42, abedul: 1.2, sauce: 1.35, arbusto: 0.7 };
 const sinMov = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -59,6 +60,13 @@ export class Viento {
     if (!cu?.afuera || sinMov() || nivel(j.gfx) < 1) { this._quieto(); this.f = 0; return; }
     if (!this.activo) { this.activo = true; j.raiz.classList.add("viento-js"); }
     const t = Date.now() / 1000, clima = j.climaActual?.() || "sol", f = (this.f = fuerzaViento(t, clima)), cuadro = ++this._n;
+    // (Fase 68) El vaivén lleva su propia fase, que avanza poquito a poquito (más rápido con más viento). Antes se
+    // multiplicaba la hora entera por algo que cambiaba con el viento y la fase brincaba en cada cuadro: los árboles
+    // y el agua temblaban rapidísimo.
+    const dt = this._tAnt ? Math.min(0.25, Math.max(0, t - this._tAnt)) : 0;
+    this._tAnt = t;
+    this._fase = (this._fase || 0) + dt * (1 + f * 0.6);
+    this._faseC = (this._faseC || 0) + dt * (0.32 + f * 0.3);
     const v = j.vistaN, k = j.k, x0 = inicioDe(c), L = v.scrollLeft / k - 260, R = (v.scrollLeft + v.clientWidth) / k + 260;
     const T = v.scrollTop / k - MAPA.arriba - 80, B = (v.scrollTop + v.clientHeight) / k - MAPA.arriba + 560;
     // Los árboles y arbustos del patio que se ven.
@@ -70,7 +78,8 @@ export class Viento {
         const ph = hash(e.x, e.y, 6) * 6.28, w = 0.55 + hash(e.y, e.x, 5) * 0.5;
         // Se inclina con el viento (siempre hacia el mismo lado, más en las ráfagas) y se mece encima a su ritmo.
         // (Fase 66) Despacito: un vaivén de 8 a 16 segundos y un temblorcito de 4 a 7 (más con viento fuerte).
-        const a = peso * (f * 1.8 + Math.sin(t * w * 0.7 * (1 + f * 0.5) + ph) * (0.22 + f * 0.9) + Math.sin(t * 1.5 * w + ph * 2) * f * 0.25);
+        // (Fase 68) Más despacio todavía: un vaivén de 12 a 24 segundos y un temblorcito de 7 a 12 (con tormenta, algo más rápido).
+        const a = peso * (f * 1.6 + Math.sin(this._fase * w * 0.46 + ph) * (0.2 + f * 0.85) + Math.sin(this._fase * 0.85 * w + ph * 2) * f * 0.2);
         const copa = n.lastElementChild?.classList.contains("esc-copa") ? n.lastElementChild : n.querySelector(".esc-copa");
         if (copa) copa.style.transform = `rotate(${(a * 0.55).toFixed(2)}deg) skewX(${(-a * 0.5).toFixed(2)}deg)`;
         else if (e.k === "arbusto") { const tr = n.querySelector(".esc-tronco"); if (tr) tr.style.transform = `skewX(${(-a * 0.9).toFixed(2)}deg)`; }
@@ -86,11 +95,11 @@ export class Viento {
       if (r.o.c !== c || !r.d.hojas) continue;
       const copa = r._copa?.isConnected ? r._copa : (r._copa = r.n.querySelector(".copa"));
       if (!copa) continue;
-      const ph = hash(r.o.x | 0, r.o.y | 0, 6) * 6.28, a = f * 1.6 + Math.sin(t * (0.5 + f * 0.4) + ph) * (0.25 + f * 0.8);
+      const ph = hash(r.o.x | 0, r.o.y | 0, 6) * 6.28, a = f * 1.4 + Math.sin(this._faseC + ph) * (0.22 + f * 0.75);
       copa.style.transform = `rotate(${(a * 0.6).toFixed(2)}deg)`;
     }
     // En las ráfagas se sueltan hojitas que se van volando (de a mentiras: las de verdad son las de suciedad.js).
-    if (f > 0.6 && t - this._hojaT > 1.4 - f && cu.mapa && j.patio) {
+    if (f > 0.6 && t - this._hojaT > 2.6 - f && cu.mapa && j.patio) {
       this._hojaT = t;
       const vis = [...j.patio.esc.values()].filter(({ e }) => ES_ARBOL.has(e.k) && e.x > L + 200 && e.x < R - 200 && e.y > T && e.y < B - 300);
       const it = vis[Math.floor(Math.random() * vis.length)];

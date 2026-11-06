@@ -35,8 +35,11 @@ export const maxParticulas = (k) => PARTES[k] ?? 4;
 
 /** El filtro pixel: más fino en Calidad y Ultra (cuadritos de 3), más grueso en Equilibrado (de 4). */
 export function filtroPixel(k) {
-  const c = nivel(k) >= 3 ? 3 : 4, r = c === 3 ? 1.5 : 2, o = c === 3 ? 1 : 1.5;
-  return `<svg class="ca-filtros" aria-hidden="true" width="0" height="0"><filter id="ca-pixel" x="-30%" y="-30%" width="160%" height="160%"><feFlood x="${o}" y="${o}" height="1.4" width="1.4"/><feComposite width="${c}" height="${c}"/><feTile result="t"/><feComposite in="SourceGraphic" in2="t" operator="in"/><feMorphology operator="dilate" radius="${r}"/></filter></svg>`;
+  // (Fase 68) Mejor pixel: la misma rejilla que los muebles (4 del mundo, empezando en la orilla de cada dibujo, así
+  // lo que se mueve cae justo en los cuadritos de lo quieto), un cuadrito por muestra sin encimarse (antes se
+  // engordaban y se mezclaban los colores), los colores en escalones y la orilla sin medias transparencias.
+  const n = nivel(k) >= 3 ? 10 : 8, esc = Array.from({ length: n }, (_, i) => (i / (n - 1)).toFixed(3)).join(" ");
+  return `<svg class="ca-filtros" aria-hidden="true" width="0" height="0"><filter id="ca-pixel" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feFlood x="1" y="1" width="2" height="2"/><feComposite width="4" height="4"/><feTile result="t"/><feComposite in="SourceGraphic" in2="t" operator="in"/><feMorphology operator="dilate" radius="1"/><feComponentTransfer><feFuncR type="discrete" tableValues="${esc}"/><feFuncG type="discrete" tableValues="${esc}"/><feFuncB type="discrete" tableValues="${esc}"/><feFuncA type="discrete" tableValues="0 .55 1"/></feComponentTransfer></filter></svg>`;
 }
 
 /* ═════════════ La capa WebGL 2 (sólo Ultra) ═════════════ */

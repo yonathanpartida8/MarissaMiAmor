@@ -111,7 +111,9 @@ export function vistaGirada(d, e, C, g) {
       }
       // La silueta de lado: cajas, todo lo hondo; asientos, respaldo atrás / asiento / patitas en las esquinas; lo demás
       // (mesas, lámparas, plantas, cositas), su misma silueta de frente apretada a lo hondo.
-      const caja = /ropero|refri|librero|estufa|alacena|buro|tocador|baul|lavadora|repisa|fregadero|barra|caja|cajon|piano|arcade|lavabo|tina|inodoro|consola|tele|chimenea|closet|horno|micro|cuna|cama/.test(d.k) && !/mesa|escritorio/.test(d.k);
+      const caja = d.caja ?? (/ropero|refri|librero|estufa|alacena|buro|tocador|baul|lavadora|repisa|fregadero|barra|caja|cajon|piano|arcade|lavabo|tina|inodoro|consola|tele|chimenea|closet|horno|micro|cuna|cama/.test(d.k) && !/mesa|escritorio/.test(d.k));
+      // (Fase 68) Lo redondo (lámparas, vasos, jarrones, macetas, mesitas redondas): cada renglón es un círculo.
+      const torno = !!d.torno;
       const asiento = !caja && !!d.lugares?.some((l) => l.pose === "sentado");
       let vSeat = Math.round(H * 0.5), vPatas = H;
       if (asiento) {
@@ -120,18 +122,25 @@ export function vistaGirada(d, e, C, g) {
         for (let v = H - 1; v > vSeat; v--) { let huecos = 0; for (let u = a0[v] + 1; u < b0[v]; u++) if (!op[v * W + u]) huecos++; if (huecos > W * 0.25) vPatas = v; else break; }
       }
       const perfil = PERFILES[d.k] || d.perfil;
-      const lado = (z, v) => {
+      const lado = (z, v, u) => {
         if (!fila[v]) return false;
         // (Fase 65) Lo delgado es delgado: la pantalla de la tele, el espejo del tocador, el tanque del excusado atrás…
-        if (perfil) { const py = (v + 0.5) * PX; for (const [y0, y1, z0, z1] of perfil) if (py >= y0 && py < y1) return z >= Math.floor(z0 * D) && z <= Math.max(Math.floor(z0 * D), Math.ceil(z1 * D) - 1); }
+        // (Fase 68) Una franja puede tener varios pedazos (las patitas de adelante y las de atrás).
+        if (perfil) {
+          const py = (v + 0.5) * PX;
+          let hay = false;
+          for (const [y0, y1, z0, z1] of perfil) if (py >= y0 && py < y1) { hay = true; if (z >= Math.floor(z0 * D) && z <= Math.max(Math.floor(z0 * D), Math.ceil(z1 * D) - 1)) return true; }
+          if (hay) return false;
+        }
+        if (torno) { const uc = (a0[v] + b0[v] + 1) / 2, r = (b0[v] - a0[v] + 1) / 2; return Math.hypot(u + 0.5 - uc, ((z + 0.5 - cz) * W) / D) <= r + 0.35; }
         if (caja) return true;
         if (asiento) {
           if (v < vSeat - 1) return z >= Math.floor(D * 0.64);
           if (v >= vPatas) return z <= 1 || z >= D - 2;
           return true;
         }
-        const u = Math.min(W - 1, Math.floor(((z + 0.5) / D) * W));
-        return !!op[v * W + u] || (u > a0[v] && u < b0[v] && v < H * 0.7);
+        const uu = Math.min(W - 1, Math.floor(((z + 0.5) / D) * W));
+        return !!op[v * W + uu] || (uu > a0[v] && uu < b0[v] && v < H * 0.7);
       };
       const ang = (g * Math.PI) / 180, co = Math.cos(ang), si = Math.sin(ang), cu = W / 2, cz = D / 2;
       const P = (u, v, z) => { const a = u - cu, b = z - cz, X = a * co - b * si, Z = a * si + b * co; return [X, v - Z * ELEV, Z]; };
@@ -141,12 +150,12 @@ export function vistaGirada(d, e, C, g) {
       const luzLado = si > 0 ? 0.74 : 0.86;
       // (Fase 66) Lo más alto que hay en cada columna y hondura (para saber dónde se sienta o se acuesta un monito).
       const tope = new Int16Array(W * D).fill(-1);
-      const lleno3 = (u, v, z) => u >= 0 && v >= 0 && u < W && v < H && z >= 0 && z < D && op[v * W + u] && lado(z, v);
+      const lleno3 = (u, v, z) => u >= 0 && v >= 0 && u < W && v < H && z >= 0 && z < D && op[v * W + u] && lado(z, v, u);
       for (let v = 0; v < H; v++) for (let u = 0; u < W; u++) {
         if (!op[v * W + u]) continue;
         const cc = col[v * W + u];
         for (let z = 0; z < D; z++) {
-          if (!lado(z, v)) continue;
+          if (!lado(z, v, u)) continue;
           if (tope[u * D + z] < 0) tope[u * D + z] = v;
           let c;
           if (!lleno3(u, v, z - 1)) c = cc;
@@ -238,6 +247,10 @@ export function vistaPlana(d, e, C) {
         const c = oscuro || mejor, k = (j * cw + i) * 4;
         out[k] = c.r; out[k + 1] = c.g; out[k + 2] = c.b; out[k + 3] = 255;
       }
+      // (Fase 68) Sombreado de pixel art (lo que ya viene dibujado en pixel, `d.pixel`, se queda como está): entre dos
+      // partes de colores distintos, la más oscura lleva su línea; arriba de la silueta le da la luz y abajo se
+      // asienta con su sombrita. Así lo liso se ve con volumen y con sus piezas separadas.
+      if (!d.pixel) sombrear(out, cw, ch);
       // El contorno pixel por fuera (del color de junto, mucho más oscuro), como el de los monitos: un cuadrito más
       // de cada lado.
       const OW2 = cw + 2, OH2 = ch + 2, o2 = new Uint8ClampedArray(OW2 * OH2 * 4), en = (i, j) => i >= 0 && j >= 0 && i < cw && j < ch && out[(j * cw + i) * 4 + 3] === 255;
@@ -259,4 +272,29 @@ export function vistaPlana(d, e, C) {
   }));
   PEND.set(clave, pr);
   return pr;
+}
+
+/** (Fase 68) El sombreado de pixel art de una imagen en cuadritos (cw × ch, RGBA, alfa 0 o 255). */
+function sombrear(out, cw, ch) {
+  const op = (i, j) => i >= 0 && j >= 0 && i < cw && j < ch && out[(j * cw + i) * 4 + 3] === 255;
+  const lum = (k) => out[k] * 0.3 + out[k + 1] * 0.59 + out[k + 2] * 0.11;
+  const marca = new Uint8Array(cw * ch);   // 1 luz arriba, 2 sombrita abajo, 3 línea entre partes
+  for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
+    if (!op(i, j)) continue;
+    const q = j * cw + i, k = q * 4, L = lum(k);
+    for (const [a, b] of [[i + 1, j], [i, j + 1]]) {
+      if (!op(a, b)) continue;
+      const q2 = b * cw + a, k2 = q2 * 4, dif = Math.abs(out[k] - out[k2]) + Math.abs(out[k + 1] - out[k2 + 1]) + Math.abs(out[k + 2] - out[k2 + 2]);
+      if (dif < 50) continue;
+      const L2 = lum(k2), cual = L2 < L ? q2 : q, Lc = Math.min(L, L2);
+      if (Lc > 58) marca[cual] = 3;
+    }
+    if (marca[q] !== 3) { if (!op(i, j - 1) && L > 70) marca[q] = 1; else if (!op(i, j + 1)) marca[q] = 2; }
+  }
+  for (let q = 0; q < cw * ch; q++) {
+    const m = marca[q], k = q * 4;
+    if (m === 3) { out[k] *= 0.76; out[k + 1] *= 0.74; out[k + 2] = out[k + 2] * 0.78 + 10; }
+    else if (m === 2) { out[k] *= 0.88; out[k + 1] *= 0.86; out[k + 2] = out[k + 2] * 0.9 + 6; }
+    else if (m === 1) { out[k] += (255 - out[k]) * 0.16; out[k + 1] += (248 - out[k + 1]) * 0.14; out[k + 2] += (232 - out[k + 2]) * 0.1; }
+  }
 }
