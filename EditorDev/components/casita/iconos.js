@@ -80,6 +80,8 @@ const ICONOS = {
   mic: ic('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>'),
   mudo: ic('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M4 4l16 16"/>'),
   traes: ic('<circle cx="8" cy="6" r="2"/><path d="M8 8l-1 6 3 3M7 11l4-1M5 21l2-4"/><circle cx="17" cy="7" r="2"/><path d="M17 9v5l2 4M15 12l4-2"/>'),
+  buscar: ic('<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>'),
+  agrandar: ic('<path d="M7 14l5-5 5 5"/>'),
   graficos: ic('<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 13l3-4 3 3 4-5"/>'),
 };
 export const ICO = Object.fromEntries(Object.entries(ICONOS).map(([k, d]) => [k, dibujo(d)]));

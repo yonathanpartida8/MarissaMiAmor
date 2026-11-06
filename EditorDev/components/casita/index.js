@@ -535,7 +535,7 @@ export class Casita {
     if (!vh || !vw) return;
     // El alto manda, pero en un teléfono parado no se agranda tanto que no quepa casi nada de un cuarto.
     // (Abajo se deja lugar para los cuartitos (o, al acomodar, para el cajón): ahí se ve el piso, que sigue.)
-    const abajo = this.editando ? Math.min(vh * 0.45, (this.cajonN?.offsetHeight || 150) + 18) : 58;
+    const abajo = this.editando ? Math.min(vh * 0.45, (this.cajonN?._altoChico || this.cajonN?.offsetHeight || 150) + 18) : 58;
     this.k = lim(Math.min((vh - abajo) / H, vw / 400), 0.42, 1.45);
     // (Fase 64) En el patio grande el mundo es más hondo: se desliza también para abajo (y se ve un poquito de cielo).
     const mapa = !!cuarto(this.vistaCuarto || "sala").mapa;

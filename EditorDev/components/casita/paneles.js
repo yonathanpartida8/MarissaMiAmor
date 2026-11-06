@@ -155,20 +155,63 @@ export function estiloCuarto(j) {
   ].filter(Boolean)), "estilo");
 }
 
-/** El cajón de «Acomodar»: categorías arriba (con «Recientes» primero) y sus cosas en una tira que se desliza.
- *  (Fase 58) Toca una cosa para ponerla, o ARRÁSTRALA hacia arriba y suéltala justo donde la quieres. */
+/** (Fase 69) EL CAJÓN DE «ACOMODAR», NUEVO: una tiendita de cositas en pixel.
+ *  · Arriba su asa (tócala o jálala para agrandarlo), un buscador y «Pared y piso».
+ *  · Las categorías como chips con su dibujito, y las cosas en tarjetas con su imagen pixel nítida (se cargan al verse),
+ *    con etiquetas de lo que se puede: «360°» (se gira), «Encima» (va sobre mesas y estantes), «Nuevo».
+ *  · Chiquito: dos filas que se deslizan de lado; toca para ponerla o ARRÁSTRALA hacia arriba y suéltala donde quieras.
+ *  · Grande: todas en cuadrícula; tocar una la pone y el cajón se vuelve a hacer chiquito para que la veas. */
+const sinAcentos = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+/** El dibujito de cada categoría (lo más reconocible de ella). */
+const REPRESENTA = { sala: "sofa", cocina: "estufa", recamara: "cama", bano: "tina", estudio: "escritorio", cositas: "osito", adornos: "jarron_vidrio", plantas: "maceta", jardin: "arbolito", terraza: "hamaca", deco: "cuadro", limpieza: "escoba", mascotas: "gatito" };
+const TINTE = { sala: "#ffd6e4", cocina: "#cdeedd", recamara: "#e4dafc", bano: "#d3ebfb", estudio: "#ffe2c9", cositas: "#fff0b8", adornos: "#ffd9ec", plantas: "#d6f2c6", jardin: "#cfeec0", terraza: "#ffe0cc", deco: "#eadcff", limpieza: "#d6eefa", mascotas: "#fff1c4", recientes: "#ffe3ec" };
+/** La imagen pixel de una cosa, a escala entera (nítida), para la tarjeta o el chip. */
+function miniPixel(d, caja, max = 5) {
+  const i = el("i.ca-cat-mini", { html: d.arte({}, colorDe(d, {})) });
+  i._cargar = () => {
+    if (i._ya) return; i._ya = true;
+    import("./girar.js").then((G) => G.vistaPlana(d, {}, colorDe(d, {}))).then((v) => {
+      if (!v) return;
+      const im = new Image();
+      im.onload = () => {
+        // A escala entera cuando cabe (cuadritos parejos); lo muy grande se achica para caber.
+        const nw = im.naturalWidth, nh = im.naturalHeight, f = Math.min(caja[0] / nw, caja[1] / nh), k = f < 1 ? f : Math.min(max, Math.floor(f));
+        im.width = Math.round(nw * k); im.height = Math.round(nh * k);
+        i.replaceChildren(im); i.classList.add("px");
+      };
+      im.alt = ""; im.draggable = false; im.src = v.url;
+    }).catch(() => {});
+  };
+  return i;
+}
 export function cajonCatalogo(j) {
-  const tira = el("div.ca-cat-tira");
   const recientes = () => j.recientes().map((k) => CATALOGO[k]).filter(Boolean);
   const cats = () => (recientes().length ? [["recientes", "Recientes"], ...CATEGORIAS] : CATEGORIAS);
-  let cat = CATEGORIAS[0][0];
+  let cat = CATEGORIAS[0][0], q = "";
+  const rejilla = el("div.ca-cat-tira", { role: "list" });
+  const cuenta = el("small.ca-cat-cuenta");
+  const vacio = el("p.ca-cat-vacio", { hidden: "" });
+  // Las imágenes se hacen sólo cuando se ven (y de una en una), para que abrir el cajón sea ligerito.
+  const io = "IntersectionObserver" in window ? new IntersectionObserver((l) => { for (const e of l) if (e.isIntersecting) { e.target._cargar?.(); io.unobserve(e.target); } }, { root: null, rootMargin: "60px" }) : null;
+  const ver = (n) => (io ? io.observe(n) : n._cargar?.());
+  const girable = (d) => d.capa === "piso" && !d.mascota && !d.noGira && d.k !== "cosita";
   const tarjeta = (d) => {
-    const b = el("button.ca-cat-b", { type: "button", "aria-label": `Poner ${d.n}`, dataset: { t: d.k }, onClick: () => { if (!b._arrastro) j.agregar(d.k); b._arrastro = false; } }, [
-      el("i.ca-cat-mini", { html: d.arte({}, colorDe(d, {})) }), el("small", { text: d.n }),
-    ]);
-    // Arrastrar hacia arriba: sale del cajón y se pone donde la sueltes.
+    const mini = miniPixel(d, [60, 50]);
+    const tags = [girable(d) ? el("em.t360", { text: "360°" }) : null, d.portatil && d.noEstorba ? el("em.tencima", { text: "Encima" }) : null].filter(Boolean);
+    const b = el("button.ca-cat-b", { type: "button", role: "listitem", "aria-label": `Poner ${d.n}`, dataset: { t: d.k }, style: { "--tinte": TINTE[d.cat] || "#ffe3ec" }, onClick: () => {
+      if (b._arrastro) { b._arrastro = false; return; }
+      j.agregar(d.k);
+      if (n.classList.contains("grande")) agrandar(false);
+    } }, [
+      el("span.ca-cat-base", {}, [mini]),
+      el("small", { text: d.n }),
+      tags.length ? el("span.ca-cat-tags", {}, tags) : null,
+      d.nuevo ? el("b.ca-cat-nuevo", { text: "Nuevo" }) : null,
+    ].filter(Boolean));
+    mini._cargar && (b._cargar = mini._cargar);
+    // Chiquito: arrastrar hacia arriba la saca del cajón y se pone donde la sueltes.
     b.addEventListener("pointerdown", (e) => {
-      if (e.button > 0) return;
+      if (e.button > 0 || n.classList.contains("grande")) return;
       const x0 = e.clientX, y0 = e.clientY, id = e.pointerId;
       const mover = (ev) => {
         if (ev.pointerId !== id) return;
@@ -180,29 +223,79 @@ export function cajonCatalogo(j) {
     });
     return b;
   };
+  const lista = () => {
+    if (q) { const t = sinAcentos(q); return Object.values(CATALOGO).filter((d) => CATEGORIAS.some(([k]) => k === d.cat) && (sinAcentos(d.n).includes(t) || sinAcentos((CATEGORIAS.find(([k]) => k === d.cat) || [])[1]).includes(t))).slice(0, 80); }
+    return cat === "recientes" ? recientes() : deCategoria(cat);
+  };
   const pintar = () => {
-    const lista = cat === "recientes" ? recientes() : deCategoria(cat);
-    tira.replaceChildren(...lista.map(tarjeta));
-    tira.scrollLeft = 0;
+    const l = lista();
+    rejilla.replaceChildren(...l.map(tarjeta));
+    for (const b of rejilla.children) ver(b);
+    rejilla.scrollLeft = 0; rejilla.scrollTop = 0;
+    cuenta.textContent = l.length === 1 ? "1 cosita" : `${l.length} cositas`;
+    vacio.hidden = !!l.length;
+    if (!l.length) vacio.textContent = q ? `No encontré nada con «${q}». Prueba con otra palabra.` : "Todavía no hay nada aquí.";
+    n.classList.toggle("buscando", !!q);
   };
   const tabs = el("div.ca-cat-tabs", { role: "tablist" });
   const pintarTabs = () => {
     tabs.replaceChildren(...cats().map(([k, t]) => {
-      const b = el("button.ca-cat-tab" + (k === cat ? ".on" : "") + (k === "recientes" ? ".recientes" : ""), { type: "button", role: "tab", text: t, onClick: () => { cat = k; marcar(b); pintar(); j.sonar("hoja", { volumen: 0.5 }); } });
+      const rep = k === "recientes" ? recientes()[0] : (CATALOGO[REPRESENTA[k]]?.cat === k && CATALOGO[REPRESENTA[k]]) || deCategoria(k).find((d) => d.pixel) || deCategoria(k)[0];
+      const ico = rep ? miniPixel(rep, [22, 22], 3) : el("i.ca-cat-mini");
+      const b = el("button.ca-cat-tab" + (k === cat && !q ? ".on" : "") + (k === "recientes" ? ".recientes" : ""), { type: "button", role: "tab", "aria-label": t, style: { "--tinte": TINTE[k] || "#ffe3ec" }, onClick: () => { cat = k; if (q) { q = ""; campo.value = ""; } marcar(b); pintar(); j.sonar("hoja", { volumen: 0.5 }); } }, [ico, el("span", { text: t })]);
+      if (ico._cargar) b._cargar = ico._cargar;
       return b;
     }));
+    for (const b of tabs.children) ver(b);
   };
-  pintarTabs(); pintar();
-  const n = el("div.ca-cajon", {}, [
-    el("div.ca-cajon-cab", {}, [tabs, el("button.ca-chip.ca-pared-b", { type: "button", onClick: () => estiloCuarto(j) }, [el("i", { html: ICO.pared }), el("span", { text: "Pared y piso" })])]),
-    tira,
-    el("small.ca-cajon-pista", { text: "Toca una cosa para ponerla, o arrástrala hacia arriba y suéltala donde quieras" }),
+  const campo = el("input.ca-cat-buscar", { type: "search", placeholder: "Buscar una cosita", "aria-label": "Buscar una cosita", autocomplete: "off", enterkeyhint: "search", maxlength: "30" });
+  let tq = 0;
+  campo.addEventListener("input", () => { clearTimeout(tq); tq = setTimeout(() => { q = campo.value.trim().slice(0, 30); if (!q) for (const b of tabs.children) b.classList.toggle("on", b.getAttribute("aria-label") === (cats().find(([k]) => k === cat) || [])[1]); else for (const b of tabs.children) b.classList.remove("on"); pintar(); }, 140); });
+  campo.addEventListener("keydown", (e) => { if (e.key === "Enter") campo.blur(); if (e.key === "Escape") { campo.value = ""; campo.dispatchEvent(new Event("input")); } });
+  const asa = el("button.ca-cajon-asa", { type: "button", "aria-label": "Agrandar el cajón", html: ICO.agrandar });
+  const agrandar = (si = !n.classList.contains("grande")) => {
+    // (Grande se pone ENCIMA de la casita: la cámara se queda como estaba con el cajón chiquito.)
+    if (si && !n.classList.contains("grande")) n._altoChico = n.offsetHeight;
+    if (!si) n._altoChico = 0;
+    n.classList.toggle("grande", si);
+    asa.setAttribute("aria-label", si ? "Hacer chiquito el cajón" : "Agrandar el cajón");
+    pista.textContent = si ? "Toca una cosa para ponerla en el cuarto" : "Toca una cosa para ponerla, o arrástrala hacia arriba y suéltala donde quieras";
+    j.sonar(si ? "abrir" : "cerrar", { volumen: 0.4 });
+    rejilla.scrollLeft = 0; rejilla.scrollTop = 0;
+  };
+  asa.addEventListener("click", () => { if (!asa._jalo) agrandar(); asa._jalo = false; });
+  // Jalar el asa hacia arriba lo agranda; hacia abajo lo hace chiquito.
+  asa.addEventListener("pointerdown", (e) => {
+    const y0 = e.clientY, id = e.pointerId;
+    const mover = (ev) => { if (ev.pointerId !== id) return; const dy = ev.clientY - y0; if (Math.abs(dy) > 26) { asa._jalo = true; fin(); agrandar(dy < 0); } };
+    const fin = () => { removeEventListener("pointermove", mover); removeEventListener("pointerup", fin); removeEventListener("pointercancel", fin); };
+    addEventListener("pointermove", mover); addEventListener("pointerup", fin); addEventListener("pointercancel", fin);
+  });
+  const pista = el("small.ca-cajon-pista", { text: "Toca una cosa para ponerla, o arrástrala hacia arriba y suéltala donde quieras" });
+  const n = el("div.ca-cajon.v69", {}, [
+    asa,
+    el("div.ca-cajon-cab", {}, [
+      el("label.ca-cat-busca", {}, [el("i", { html: ICO.buscar }), campo]),
+      el("button.ca-chip.ca-pared-b", { type: "button", onClick: () => estiloCuarto(j) }, [el("i", { html: ICO.pared }), el("span", { text: "Pared y piso" })]),
+    ]),
+    tabs,
+    el("div.ca-cat-sub", {}, [cuenta]),
+    rejilla, vacio,
+    pista,
   ]);
-  /** Al abrir «Acomodar», empieza en lo del cuarto donde estás (y «Recientes» al día). */
+  pintarTabs(); pintar();
+  // En la compu, la ruedita del mouse desliza de lado las tiras (las categorías y, en chiquito, las cosas).
+  for (const t of [tabs, rejilla]) t.addEventListener("wheel", (e) => {
+    if ((t === rejilla && n.classList.contains("grande")) || Math.abs(e.deltaX) > Math.abs(e.deltaY) || t.scrollWidth <= t.clientWidth) return;
+    e.preventDefault(); t.scrollLeft += e.deltaY;
+  }, { passive: false });
+  /** Al abrir «Acomodar», empieza en lo del cuarto donde estás (y «Recientes» al día), chiquito y sin búsqueda. */
   n.ponerCat = (k) => {
+    if (q) { q = ""; campo.value = ""; }
+    n.classList.remove("grande"); n._altoChico = 0;
     pintarTabs();
     const i = cats().findIndex(([x]) => x === k);
-    if (i < 0) return;
+    if (i < 0) { pintar(); return; }
     cat = k; marcar(tabs.children[i]); pintar();
     tabs.scrollLeft = Math.max(0, tabs.children[i].offsetLeft - 24);
   };

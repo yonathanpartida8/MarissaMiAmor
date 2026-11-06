@@ -45,6 +45,7 @@ const MASCOTAS_VIVAS = ["gatito", "perrito", "conejito", "tortuga"];
 
 for (const [k, d] of Object.entries(CATALOGO)) {
   d.k = k;
+  if (FINOS2[k]) d.nuevo = true;
   d.capa ||= "piso";
   d.y ??= d.capa === "pared" ? 260 : d.capa === "alfombra" ? 556 : 505;
   if (BRILLOS[k]) d.brilla ||= BRILLOS[k];
