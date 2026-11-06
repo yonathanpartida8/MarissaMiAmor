@@ -1529,11 +1529,10 @@ body.ca-escribiendo .jt-nav { display: none; }
    adentro de la silueta: la flama, los peces, la tele). */
 .ca-obj.plana > .ca-obj-arte > svg { position: relative; z-index: 1; }
 .ca-obj-arte > img.ca-plana { position: absolute; left: -4px; top: -4px; pointer-events: none; image-rendering: crisp-edges; image-rendering: pixelated; -webkit-user-drag: none; user-select: none; }
-/* (Fase 69) «[class] *» atrapaba a todos (el mueble mismo tiene clase), así que lo quieto nunca se volvía transparente
-   y tapaba la imagen pixel: ahora sólo cuenta lo que tiene clase DENTRO del dibujo. */
-/* Lo quieto que va DESPUÉS de algo vivo (encima de él, como los barrotes de la ventana sobre el cielo) se queda en el
-   dibujo para no quedar tapado. */
-.ca-obj.plana > .ca-obj-arte > svg :not([class]):not(:has([class])):not(svg [class] *):not(svg :is([class], :has([class])) ~ *):not(svg :is([class], :has([class])) ~ * *) { opacity: 0; }
+/* (Fase 69) La regla de antes («[class] *») atrapaba a todos (el mueble mismo tiene clase), así que lo quieto nunca se
+   volvía transparente y tapaba la imagen pixel. Y hacerlo con :has() costaba carísimo (cada cambio en la casa recalculaba
+   todos los dibujos). Ahora el juego marca lo quieto UNA vez, al tener lista la imagen (data-q), y aquí sólo se busca eso. */
+.ca-obj.plana > .ca-obj-arte > svg [data-q] { opacity: 0; }
 /* (Fase 67) Lo que se recoge en el patio: pixel, con un brillito cuando ya se puede recoger (como en Stardew). */
 .ca-forraje { position: absolute; pointer-events: auto; cursor: pointer; background: center / 100% 100% no-repeat; image-rendering: crisp-edges; image-rendering: pixelated; -webkit-tap-highlight-color: transparent; }
 .ca-forraje.lejos, .ca-forraje.suelo.vacio { display: none; }

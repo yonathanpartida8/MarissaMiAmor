@@ -83,6 +83,22 @@ const enPared = (o, d) => d.capa === "pared" && !o.e?.tirado;
 export const CLIMAS = ["sol", "lluvia", "tormenta", "extra"];
 const hoy = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 
+/** (Fase 69) Lo quieto del dibujo que va DEBAJO de todo lo vivo se marca (data-q) para volverse transparente y que se vea
+ *  la imagen pixel de abajo. Lo que va después de algo vivo (los barrotes de la ventana sobre el cielo) se queda en el
+ *  dibujo para no quedar tapado. Se hace una sola vez por dibujo (con CSS :has() costaba muchísimo en cada cambio). */
+function marcarQuieto(svg) {
+  if (!svg) return;
+  let vivoAntes = false;
+  const visita = (n) => {
+    for (const h of n.children) {
+      if (h.hasAttribute("class")) { vivoAntes = true; continue; }
+      if (h.querySelector("[class]")) { visita(h); continue; }
+      if (!vivoAntes) h.setAttribute("data-q", "");
+    }
+  };
+  visita(svg);
+}
+
 export class Casita {
   constructor(app, { pareja = "tu amorcito", volver = null } = {}) {
     this.app = app; this.pareja = pareja; this.volver = volver;
@@ -846,6 +862,7 @@ export class Casita {
       if (r._tg !== t || !r.n.isConnected || !v || r.n.classList.contains("plana")) return;
       if (!arte.querySelector(":scope > svg")) return;
       arte.insertAdjacentHTML("afterbegin", `<img class="ca-plana" alt="" draggable="false" src="${v.url}" style="width:${v.w}px;height:${v.h}px">`);
+      marcarQuieto(arte.querySelector(":scope > svg"));
       r.n.classList.add("plana");
     });
     r.n.classList.toggle("girado", !!g);
