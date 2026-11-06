@@ -1227,6 +1227,14 @@ export class Casita {
       }
       // (Fase 63) En el mismo cuarto: la ruta que rodea los muebles (nunca los atraviesa ni se sube), tramo por tramo.
       const ruta = this.nav.ruta(ci, m.gx, m.y, gx, y);
+      // (Fase 68) Cuándo llega al final de TODO el camino (no sólo del primer tramo): así lo que hace al llegar (empujar
+      // el columpio, abrazar…) se ve a su tiempo en el teléfono de tu amorcito.
+      {
+        const v0 = (this.traes?.activo ? VEL_TRAES : viaje.corre ? VEL_TROTE : VEL_PASO) * (!this.traes?.activo && m.n.classList.contains("n-sueno") ? 0.7 : 1);
+        let tot = 0, px = m.gx, py = m.y;
+        for (const [rx, ry] of ruta.length ? ruta : [[gx, y]]) { tot += Math.max(0.18, Math.hypot(rx - px, (ry - py) * 1.6) / v0) + 0.03; px = rx; py = ry; }
+        m.llegaFin = performance.now() + (tot + 56 / v0) * 1000;
+      }
       if (ruta.length > 1) {
         m._enRuta = true;
         const ir = (i) => { const fin = i === ruta.length - 1; this._caminar(m, ruta[i][0], ruta[i][1], fin ? () => { m._enRuta = false; luego?.(); } : () => ir(i + 1), false, true, viaje, fin); };
@@ -1265,6 +1273,7 @@ export class Casita {
     this._ponerMono(m, gx, y);
     m.gx = gx; m.y = y;
     m.llega = performance.now() + s * 1000;
+    if (ultimo) m.llegaFin = m.llega;
     m.n.classList.toggle("lado", s > 0.2 && deLado);
     m.n.classList.toggle("atras", s > 0.2 && atras);
     if (s > 0.2) {
@@ -2412,7 +2421,7 @@ export class Casita {
     if (p.dt && p.dt !== m.dt) { if (!primera && p.dice) { this._globo(m, p.dice); if (this._visible(m)) this.sonar("pop", { volumen: 0.6 }); } m.dt = p.dt; }
   }
   _evento(ev) {
-    const m = this.suyo, yo = this.yo, espera = Math.max(0, (m.llega || 0) - performance.now()) + 40;
+    const m = this.suyo, yo = this.yo, espera = Math.max(0, Math.max(m.llega || 0, m.llegaFin || 0) - performance.now()) + 40;
     if (ev.k === "comemesa") laPareja(this, ev, espera);
     else if (ev.k === "rompe") { if (enCuarto(m.gx).c === this.vistaCuarto) this.sonar("vidrio", { volumen: 0.7 }); }
     else if (ev.k === "choca") setTimeout(() => this.vivo && this.fisica?.chocar(m), espera);
