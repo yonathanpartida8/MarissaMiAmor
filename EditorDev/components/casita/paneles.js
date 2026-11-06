@@ -193,7 +193,9 @@ export function cajonCatalogo(j) {
   const vacio = el("p.ca-cat-vacio", { hidden: "" });
   // Las imágenes se hacen sólo cuando se ven (y de una en una), para que abrir el cajón sea ligerito.
   const io = "IntersectionObserver" in window ? new IntersectionObserver((l) => { for (const e of l) if (e.isIntersecting) { e.target._cargar?.(); io.unobserve(e.target); } }, { root: null, rootMargin: "60px" }) : null;
-  const ver = (n) => (io ? io.observe(n) : n._cargar?.());
+  // (Y sólo con el cajón abierto: cerrado no se prepara nada, para que la casita arranque ligerita.)
+  let abierto = false;
+  const ver = (n) => { if (abierto) io ? io.observe(n) : n._cargar?.(); };
   const girable = (d) => d.capa === "piso" && !d.mascota && !d.noGira && d.k !== "cosita";
   const tarjeta = (d) => {
     const mini = miniPixel(d, [60, 50]);
@@ -292,6 +294,7 @@ export function cajonCatalogo(j) {
   }, { passive: false });
   /** Al abrir «Acomodar», empieza en lo del cuarto donde estás (y «Recientes» al día), chiquito y sin búsqueda. */
   n.ponerCat = (k) => {
+    abierto = true;
     if (q) { q = ""; campo.value = ""; }
     n.classList.remove("grande"); n._altoChico = 0;
     pintarTabs();
