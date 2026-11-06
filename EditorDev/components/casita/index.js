@@ -283,11 +283,7 @@ export class Casita {
         try { luna.style.backgroundImage = texLuna().url; } catch (e) { /* nada */ }
         if (fp) fp.after(sol, luna); else n.append(sol, luna);
       }
-      // (Fase 64) Al acomodar: lo de más adelante del piso no se acomoda (para caminar); se ve en naranja.
-      if (!c.mapa) {
-        const sA = c.afuera ? 1 : escala3d(c.k, LIMITE_EDIT), sB = c.afuera ? 1 : FRENTE_3D, iA = ((1 - sA) / 2) * 100, iB = ((1 - sB) / 2) * 100;
-        n.append(el("i.ca-noedit-franja", { "aria-hidden": "true", style: { top: LIMITE_EDIT + "px", height: H - LIMITE_EDIT + "px", clipPath: `polygon(${iA.toFixed(2)}% 0, ${(100 - iA).toFixed(2)}% 0, ${(100 - iB).toFixed(2)}% 100%, ${iB.toFixed(2)}% 100%)` } }));
-      }
+      // (Fase 69) Ya no hay franja de «sólo para caminar»: todo el piso se puede acomodar.
       if (c.k === "jardin" && !c.mapa) {
         // El carrito pasa por la calle, DETRÁS de la cerca (antes pasaba por dentro).
         const auto = el("i.ca-auto");
@@ -856,6 +852,7 @@ export class Casita {
     r.n.classList.toggle("tumbado", pose === "suelo" && !r.d.larga);
     if (pose) r.n.style.setProperty("--ang", (+o.e.ang || 0) + "deg"); else r.n.style.removeProperty("--ang");
     if (r.fr) { r.fr.innerHTML = `<div class="ca-obj-arte">${r.d.frente(o.e || {}, C)}</div>`; r.fr.hidden = !!g; }
+    if (r.d.guarda) this._pintarGuardado(r);
     if (g) vistaGirada(r.d, o.e, C, g).then((v) => {
       if (r._tg !== t || !r.n.isConnected) return;
       // (Fase 65) Lo que se mueve casi entero no se gira: se queda de frente, con todas sus animaciones.
@@ -995,6 +992,7 @@ export class Casita {
     if (r.d.luz) n.classList.toggle("apagada", apagado);
     if (e.receta && RECETAS[e.receta]) n.style.setProperty("--comida", RECETAS[e.receta].color);
     if (r.d.superficie) pintarPlatos(r);
+    if (r.d.guarda) this._pintarGuardado(r);
     if (r.glow) {
       const b = r.d.brilla, p = b.propio;
       const on = (e.dano | 0) < 2 && (b.siempre ? true : p ? (p[0] === "!" ? !e[p.slice(1)] : !!e[p]) : !apagado);
@@ -2232,6 +2230,8 @@ export class Casita {
     if (r.glow) r.glow.hidden = false;
     if (g.basura) { this._colocar(r); this._borrar(r); return; }
     if (g.gx == null) { this._colocar(r); return; }
+    // (Fase 69) Una cosita soltada encima de un organizador se guarda adentro, en el siguiente hueco libre.
+    { const q = this._guardaEn(r, g.gx, g.y); if (q) { this._guardar(q, r); return; } }
     // Física: si lo aventaste, se resbala un poquito; si quedó en el aire, cae al mueble de abajo o al piso.
     if (g.jugando) g.gx = lim(g.gx + lim(g.vx * 6, -90, 90), r.d.w * 0.3, ANCHO - r.d.w * 0.3);
     r.n.classList.remove("no-cabe");
@@ -2285,7 +2285,7 @@ export class Casita {
     this._seleccionar(rn);
   }
   /** (Fase 64) ¿Se puede acomodar algo del piso aquí? (en el patio, sólo en el pasto libre; adentro, no en lo de enfrente) */
-  _editableEn(c, gx, y) { return cuarto(c).mapa ? editableMapa(gx - inicioDe(c), y) : y <= LIMITE_EDIT + 0.5; }
+  _editableEn(c, gx, y) { return cuarto(c).mapa ? editableMapa(gx - inicioDe(c), y) : y <= frenteDe(c) - 4; }
   /** ¿Hay pared para colgar algo aquí? (adentro, la de atrás; en el patio, la fachada fuera de la puerta; en la terraza no hay) */
   _enPared(c, gx, y, d) {
     const cu = cuarto(c), x = gx - inicioDe(c);
@@ -2303,7 +2303,7 @@ export class Casita {
   /** El lugar para acomodar más cercano (si lo soltaste donde no se puede). */
   _lugarEditable(c, gx, y) {
     const cu = cuarto(c), x0 = inicioDe(c), fr = frenteDe(c);
-    if (!cu.mapa) return { x: gx, y: Math.min(y, LIMITE_EDIT) };
+    if (!cu.mapa) return { x: gx, y: Math.min(y, fr - 4) };
     for (let rr = 14; rr <= 700; rr += 14) for (let a = 0; a < 24; a++) {
       const x = gx + Math.cos((a / 24) * Math.PI * 2) * rr, yy = y + Math.sin((a / 24) * Math.PI * 2) * rr * 0.7;
       if (x > x0 + 40 && x < x0 + cu.w - 40 && yy > FONDO && yy < fr && this._editableEn(c, x, yy)) return { x, y: yy };
@@ -2318,6 +2318,105 @@ export class Casita {
     if (performance.now() - (this._avNoAqui || 0) > 6000) { this._avNoAqui = performance.now(); aviso("Ahí no se puede acomodar (lo naranja es para caminar): quedó en el lugar libre más cercano", 2600); }
   }
   /** Se rompió en pedacitos (cayó de muy alto): se quita, con sus astillitas. Se puede deshacer. */
+  /* ── (Fase 69) El organizador ── */
+  /** El organizador donde cae lo que sueltas (sólo cositas chiquitas), si hay uno ahí. */
+  _guardaEn(r, gx, y) {
+    const d = r.d;
+    if (!d.portatil || d.mascota || d.guarda || d.h > 120 || d.capa !== "piso") return null;
+    for (const q of this.objs.values()) {
+      if (!q.d.guarda || q.o.id === r.o.id || enCuarto(gx).c !== q.o.c) continue;
+      if (Math.abs(gx - q.gx) <= q.d.w / 2 && y >= q.o.y - q.d.h - 10 && y <= q.o.y + 14) return q;
+    }
+    return null;
+  }
+  /** Lo guarda en el primer hueco libre (y se abre tantito para que lo veas entrar). */
+  _guardar(q, r) {
+    const n = q.d.guarda.huecos.length, e = q.o.e || {}, i = [...Array(n).keys()].find((k) => !e["g" + k]);
+    if (i == null) { this._colocar(r); aviso("El organizador ya está lleno: saca algo primero", 2400); this.sonar("nop"); return; }
+    const col = r.o.e?.col | 0;
+    this.sync.op({ o: "quita", id: r.o.id });
+    this._pintarCasa(this.sync.casa());
+    this.estado(q.o, { ["g" + i]: col ? `${r.o.t}:${col}` : r.o.t, abierto: true });
+    this.sonar("pop"); setTimeout(() => this.vivo && this.sonar("ding", { volumen: 0.4 }), 200);
+    const qn = this.objs.get(q.o.id);
+    if (qn) { rebote(qn.n); this.particulas("brillo", { gx: qn.gx, y: qn.o.y - qn.d.h / 2 }, 0, 0, 4); }
+    aviso(`${r.d.n} quedó guardado en el organizador`, 2000);
+  }
+  /** Saca lo del hueco i y lo pone en el piso, enfrentito. */
+  _sacarGuardado(q, i) {
+    const e = q.o.e || {}, v = String(e["g" + i] || "");
+    if (!v) return;
+    const [t, col] = v.split(":"), d = CATALOGO[t];
+    if (!d) { this.estado(q.o, { ["g" + i]: "" }); return; }
+    const c = q.o.c, x0 = inicioDe(c), lado = (i % 2 ? 1 : -1) * (24 + Math.random() * 30);
+    const o = { id: nuevoId(), t, c, x: Math.round(lim(q.gx - x0 + lado, 30, cuarto(c).w - 30)), y: Math.round(lim(q.o.y + 22 + Math.random() * 16, FONDO + 8, frenteDe(c) - 8)), f: false, e: col ? { col: +col } : {} };
+    this.estado(q.o, { ["g" + i]: "" });
+    this.sync.op({ o: "pon", obj: o });
+    this._pintarCasa(this.sync.casa());
+    this.sonar("levantar");
+    const rn = this.objs.get(o.id);
+    if (rn && !reducido()) { rn.n.classList.add("aterriza"); setTimeout(() => rn.n.classList.remove("aterriza"), 480); }
+  }
+  /** Ordena lo guardado (por tipo y nombre), sin huecos en medio. */
+  _ordenarGuardado(q) {
+    const n = q.d.guarda.huecos.length, e = q.o.e || {}, l = [];
+    for (let i = 0; i < n; i++) if (e["g" + i]) l.push(String(e["g" + i]));
+    const cat = (v) => CATALOGO[v.split(":")[0]] || {};
+    l.sort((a, b) => String(cat(a).cat).localeCompare(String(cat(b).cat)) || String(cat(a).n).localeCompare(String(cat(b).n), "es"));
+    const c = {};
+    for (let i = 0; i < n; i++) c["g" + i] = l[i] || "";
+    this.estado(q.o, c);
+    this.sonar("hoja");
+  }
+  /** Lo guardado se ve adentro, cada cosa en su hueco (paradita en su repisa). */
+  _pintarGuardado(r) {
+    const arte = r.n.querySelector(":scope > .ca-obj-arte");
+    if (!arte) return;
+    let capa = arte.querySelector(":scope > .ca-guardado");
+    if (!capa) { capa = el("div.ca-guardado", { "aria-hidden": "true" }); arte.append(capa); }
+    const e = r.o.e || {}, huecos = r.d.guarda.huecos, firma = huecos.map((_, i) => e["g" + i] || "").join("|");
+    if (capa.dataset.firma === firma) return;
+    capa.dataset.firma = firma;
+    capa.replaceChildren();
+    huecos.forEach(([x, y, w, h], i) => {
+      const v = String(e["g" + i] || ""), [t, col] = v.split(":"), d = CATALOGO[t];
+      if (!d) return;
+      const ee = col ? { col: +col } : {};
+      vistaPlana(d, ee, colorDe(d, ee)).then((p) => {
+        if (!p || capa.dataset.firma !== firma) return;
+        const s = Math.min(1, (w - 4) / p.w, (h - 2) / p.h), iw = p.w * s, ih = p.h * s;
+        capa.append(el("img", { src: p.url, alt: "", draggable: "false", style: { left: (x + (w - iw) / 2).toFixed(1) + "px", top: (y + h - ih + 3 * s).toFixed(1) + "px", width: iw.toFixed(1) + "px", height: ih.toFixed(1) + "px" } }));
+      });
+    });
+  }
+  /** La hojita del organizador abierto: sus huecos (toca uno para sacarlo), ordenar y cerrar. */
+  panelGuarda(id) {
+    const q = this.objs.get(id);
+    if (!q?.d.guarda) return;
+    const pintar = () => {
+      const r = this.objs.get(id);
+      if (!r) return;
+      const e = r.o.e || {};
+      const huecos = r.d.guarda.huecos.map((_, i) => {
+        const v = String(e["g" + i] || ""), [t, col] = v.split(":"), d = CATALOGO[t];
+        const b = el("button.ca-guarda-h" + (d ? "" : ".vacio"), { type: "button", "aria-label": d ? `Sacar ${d.n}` : "Hueco vacío", disabled: d ? null : "", onClick: () => { this._sacarGuardado(this.objs.get(id), i); setTimeout(pintar, 60); } }, [el("i"), el("small", { text: d ? d.n : "Libre" })]);
+        if (d) { const ee = col ? { col: +col } : {}; vistaPlana(d, ee, colorDe(d, ee)).then((p) => { if (p) b.querySelector("i").style.backgroundImage = `url("${p.url}")`; }); }
+        return b;
+      });
+      cuerpo.replaceChildren(
+        el("div.ca-guarda-huecos", {}, huecos),
+        el("p.ca-guarda-pista", { text: Object.keys(e).some((k) => /^g\d+$/.test(k) && e[k]) ? "Toca una cosa para sacarla. Para guardar, en «Acomodar» suelta una cosita chiquita encima del organizador." : "Está vacío. Para guardar, en «Acomodar» suelta una cosita chiquita encima del organizador." }),
+        el("div.ca-guarda-botones", {}, [
+          el("button.ca-chip", { type: "button", onClick: () => { this._ordenarGuardado(this.objs.get(id)); setTimeout(pintar, 60); } }, [el("span", { text: "Ordenar" })]),
+          el("button.ca-chip.primario", { type: "button", onClick: () => { const r2 = this.objs.get(id); if (r2) { this.estado(r2.o, { abierto: false }); this.sonar("cerrar"); } this.cerrarPanelGuarda(); } }, [el("span", { text: "Cerrar puertitas" })]),
+        ]),
+      );
+    };
+    const cuerpo = el("div.ca-guarda");
+    this._hojaGuarda = P.hoja(this, q.d.n, cuerpo, "guarda");
+    pintar();
+  }
+  cerrarPanelGuarda() { const h = this._hojaGuarda; this._hojaGuarda = null; if (h && this.panel === h) this.cerrarHoja(); }
   _hechoPedazos(r) {
     if (!this.objs.has(r.o.id)) return;
     this.particulas("polvo", { gx: r.gx, y: r.o.y - 10 }, 0, 0, 8);

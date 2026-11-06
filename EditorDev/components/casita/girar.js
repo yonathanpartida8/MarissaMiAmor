@@ -255,7 +255,8 @@ export function vistaPlana(d, e, C) {
       // de cada lado.
       const OW2 = cw + 2, OH2 = ch + 2, o2 = new Uint8ClampedArray(OW2 * OH2 * 4), en = (i, j) => i >= 0 && j >= 0 && i < cw && j < ch && out[(j * cw + i) * 4 + 3] === 255;
       for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) if (en(i, j)) { const a = (j * cw + i) * 4, b = ((j + 1) * OW2 + i + 1) * 4; for (let q = 0; q < 4; q++) o2[b + q] = out[a + q]; }
-      for (let j = -1; j <= ch; j++) for (let i = -1; i <= cw; i++) {
+      // (Fase 69) Lo delicado (un cable, una guirnalda) no lleva contorno: se vería gordo.
+      if (!d.sinContorno) for (let j = -1; j <= ch; j++) for (let i = -1; i <= cw; i++) {
         if (en(i, j)) continue;
         const v = [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]].find(([a, b]) => en(a, b));
         if (!v) continue;

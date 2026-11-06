@@ -149,6 +149,13 @@ export const ACCIONES = {
   },
   async lavadora(j, o) { if (!(await j.irJunto(o))) return; j.mientras(o, "lava", 3200); j.sonar("lavadora"); j.particulas("burbuja", o, 0, -70, 4); },
   lava(j, o) { alternar(j, o, "on", "interruptor", "interruptor"); },
+  // (Fase 69) El organizador: al tocarlo se abren (o se cierran) sus puertitas; abierto, sale su hojita para sacar u ordenar.
+  guarda(j, o) {
+    const ab = !o.e?.abierto;
+    j.estado(o, { abierto: ab });
+    j.sonar(ab ? "abrir" : "cerrar");
+    if (ab) setTimeout(() => j.vivo && j.panelGuarda(o.id), 380); else j.cerrarPanelGuarda();
+  },
   async baul(j, o) {
     if (!(await j.irJunto(o))) return;
     j.mientras(o, "abierto", 1500); j.sonar("baul");

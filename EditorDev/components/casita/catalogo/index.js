@@ -22,12 +22,13 @@ import { ITEMS as COSITAS } from "./cositas.js";
 import { ITEMS as LINDAS } from "./lindas.js";
 import { ITEMS as LIMPIEZA, MANO as MANO_LIMPIEZA } from "./limpieza.js";
 import { ITEMS as FINOS } from "./finos.js";
+import { ITEMS as FINOS2 } from "./finos2.js";
 import { COSAS_MANO } from "./comida.js";
 import { RECETAS, arteReceta } from "./recetas.js";
 export { COSAS_MANO };
 export { RECETAS, recetasDe, arteReceta, baseDe } from "./recetas.js";
 
-export const CATALOGO = { ...SALA, ...COCINA, ...RECAMARA, ...BANO, ...JARDIN, ...DECO, ...MASCOTAS, ...ESTUDIO, ...TERRAZA, ...COSITAS, ...LINDAS, ...LIMPIEZA, ...FINOS };
+export const CATALOGO = { ...SALA, ...COCINA, ...RECAMARA, ...BANO, ...JARDIN, ...DECO, ...MASCOTAS, ...ESTUDIO, ...TERRAZA, ...COSITAS, ...LINDAS, ...LIMPIEZA, ...FINOS, ...FINOS2 };
 // (Fase 64) Las herramientas de limpieza y la naranja también se traen en la mano; el árbol del columpio suelta hojitas.
 Object.assign(COSAS_MANO, MANO_LIMPIEZA);
 CATALOGO.arbol.hojas = "#7fd29b";
@@ -51,6 +52,8 @@ for (const [k, d] of Object.entries(CATALOGO)) {
   if (MASCOTAS_VIVAS.includes(k)) d.mascota = true;
   if (k === "ventana") d.rayo = true;
   if (TOPES[k] != null) d.tope = TOPES[k];
+  // (Fase 69) Lo que girarlo no le cambia nada (lo redondo, las plantas, las cositas chiquitas) no se gira.
+  if (d.torno || d.cat === "adornos" || d.cat === "plantas" || (d.portatil && d.w <= 90 && d.h <= 120) || /planta|maceta|cactus|monstera|helecho|ficus|palmera|^arbol|arbusto|^flores|bonsai|suculenta|lavanda|orquidea|pothos/.test(k)) d.noGira = true;
   // (Fase 68) Lo chiquito que se carga no estorba al caminar: se patea (y rueda) cuando pasas por encima.
   if (d.portatil && !d.mascota && d.w <= 90 && d.h <= 120) d.noEstorba = true;
 }
@@ -62,7 +65,7 @@ for (const r of Object.values(RECETAS)) COSAS_MANO[r.k] = { n: r.n, comible: tru
 
 export const CATEGORIAS = [
   ["sala", "Sala"], ["cocina", "Cocina"], ["recamara", "Recámara"], ["bano", "Baño"], ["estudio", "Estudio"], ["cositas", "Cositas"],
-  ["adornos", "Adornitos"], ["jardin", "Jardín"], ["terraza", "Terraza"], ["deco", "Decoración"], ["limpieza", "Limpieza"], ["mascotas", "Mascotitas"],
+  ["adornos", "Adornitos"], ["plantas", "Plantitas"], ["jardin", "Jardín"], ["terraza", "Terraza"], ["deco", "Decoración"], ["limpieza", "Limpieza"], ["mascotas", "Mascotitas"],
 ];
 export const deCategoria = (cat) => Object.values(CATALOGO).filter((d) => d.cat === cat);
 /** El color de un objeto (si tiene varios). */

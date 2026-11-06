@@ -148,8 +148,10 @@ export const ES_ARBOL = new Set(["roble", "cerezo", "frutal", "pino", "abedul", 
 export function huellaEsc(e) { const m = MEDIDAS[e.k]; return { x0: e.x - m.hw, x1: e.x + m.hw, y0: e.y - m.hd, y1: e.y + 4 }; }
 
 /** ¿Se puede poner algo aquí al acomodar? (sólo en el pasto, sin tocar caminos, agua, orillas ni el escenario) */
+// (Fase 69) También en los caminos y el porche se pueden poner cosas (antes sólo en el pasto).
+const PONIBLE = new Set([T.PASTO, T.TIERRA, T.PIEDRA, T.PIEDRAS, T.SURCOS, T.PORCHE]);
 export function editable(x, y) {
-  for (const [dx, dy] of [[0, 0], [-18, 0], [18, 0], [0, -10], [0, 10]]) if (tipoEn(x + dx, y + dy) !== T.PASTO) return false;
+  for (const [dx, dy] of [[0, 0], [-18, 0], [18, 0], [0, -10], [0, 10]]) if (!PONIBLE.has(tipoEn(x + dx, y + dy))) return false;
   for (const e of ESCENARIO) { const h = huellaEsc(e); if (x > h.x0 - 26 && x < h.x1 + 26 && y > h.y0 - 14 && y < h.y1 + 14) return false; }
   return y <= MAPA.frente - 20;
 }

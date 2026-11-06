@@ -261,30 +261,27 @@ export const ITEMS = {
 
   // ── Cositas chicas (se ponen encima de mesas, escritorios, estantes y repisas) ──
   vaso_agua: pix({
-    n: "Vaso de agua", cat: "adornos", y: 550, torno: true, hondo: 24, fragil: "vidrio", derrame: "agua",
-    filas: ["PQQQQP", "QQ##QP", "QSSSSP", "Q#SSRP", "Q#SSRP", "QSSSRP", "QSSSRP", "PRRRRP", ".PPPP."],
+    n: "Vaso de agua", cat: "adornos", y: 550, torno: true, hondo: 16, fragil: "vidrio", derrame: "agua",
+    filas: ["PQQP", "QSSP", "Q#SP", "QSRP", "QSRP", ".PP."],
   }),
   vaso_jugo: pix({
-    n: "Vaso de jugo", cat: "adornos", y: 550, torno: true, hondo: 24, fragil: "vidrio", derrame: "jugo",
-    filas: ["....I.", "PQQQIP", "QVVVIP", "Q?VVUP", "Q?VVUP", "QVVVUP", "QVVVUP", "QVVUUP", "PPPPPP", ".PPPP."],
+    n: "Vaso de jugo", cat: "adornos", y: 550, torno: true, hondo: 16, fragil: "vidrio", derrame: "jugo",
+    filas: ["..I.", "PQIP", "QVIP", "Q?VP", "QVUP", "QVUP", ".PP."],
   }),
   copa: pix({
-    n: "Copa", cat: "adornos", y: 550, torno: true, hondo: 28, fragil: "vidrio", derrame: "jugo",
-    filas: ["PQQQQQP", "Q#QQQQP", "QwwwwvP", ".QwwvP.", "..QvP..", "...Q...", "...Q...", "...P...", "...P...", ".QQPPP.", ".PPPPP."],
+    n: "Copa", cat: "adornos", y: 550, torno: true, hondo: 20, fragil: "vidrio", derrame: "jugo",
+    filas: ["PQQQP", "QwwvP", ".QvP.", "..Q..", "..Q..", "..P..", ".QPP.", ".PPP."],
   }),
   jarron_vidrio: pix({
-    n: "Jarrón con tulipanes", cat: "adornos", y: 550, torno: true, hondo: 40, fragil: "vidrio", derrame: "agua",
-    filas: [
-      "...I...?..", "..IJI.!?!.", "..HIH.9!9.", "...r...r..", ".s.r..r.s.", ".sr.rr.rs.", "..rsrrsr..", "...rrrr...",
-      "..QPPPPQ..", "..QrPPrP..", ".QQrPrPPP.", "Q#SSrrSSRP", "Q#SSSSSSRP", "Q#SSSSSSRP", "QSSSSSSSRP", ".QSSSSSRP.", "..QPPPPP..", "...PPPP...",
-    ],
+    n: "Jarrón con tulipanes", cat: "adornos", y: 550, torno: true, hondo: 28, fragil: "vidrio", derrame: "agua",
+    filas: [".I...?.", "IJI.!?!", ".H.r.9.", "s.r.r.s", ".srrrs.", "..rrr..", ".QPPPQ.", ".QrPrP.", "Q#SrSRP", "Q#SSSRP", "QSSSSRP", ".QSSRP.", "..PPP.."],
   }),
   lampara_mesa: pix({
-    n: "Lámpara de mesa", cat: "adornos", y: 550, al: "lava", torno: true, hondo: 44, colores: PANTALLAS, brilla: { x: 22, y: 16, r: 110, propio: "on" },
-    filas: E(["...)))", "..)[[[", "..)]]]", ".)[[[[", ".)[[[[", ")[[[[[", ")(((((", ".....n", "....mn", ".....n", ".....n", "....DC", "...EDC", "..EDCC", "..EDCC", "..EDDC", "...EDD", "..llll"]),
+    n: "Lámpara de mesa", cat: "adornos", y: 550, al: "lava", torno: true, hondo: 36, colores: PANTALLAS, brilla: { x: 18, y: 10, r: 100, propio: "on" },
+    filas: E(["..)))", ".)[[[", ".)]]]", ")[[[[", ")((((", "....n", "...mn", "...DC", "..EDC", "..EDC", "..EDD", "...ED", ".llll"]),
     capas: [
-      { p: [[3, 2, "{"], [2, 3, "{"], [3, 13, "#"], [3, 14, "#"]] },
-      { clase: "px-on", r: [[3, 1, 5, 1, "{"], [2, 2, 7, 3, "]"], [1, 5, 9, 1, "]"], [4, 6, 3, 1, "W"]] },
+      { p: [[2, 1, "{"], [1, 3, "{"], [3, 8, "#"], [3, 9, "#"]] },
+      { clase: "px-on", r: [[2, 1, 5, 1, "{"], [1, 2, 7, 2, "]"], [3, 4, 3, 1, "W"]] },
     ],
   }),
   lampara_hongo: pix({
@@ -309,21 +306,21 @@ export const ITEMS = {
     ],
   }),
   bola_nieve: pix({
-    n: "Bola de nieve", cat: "adornos", y: 550, hondo: 32, torno: true, fragil: "vidrio", derrame: "agua",
-    filas: ["..PQQP..", ".QBBBBP.", "QBBwwBBP", "QBBCCBBP", "QsBCCBsP", ".CCCCCC.", "..DDDD..", ".cddddc.", "cbbbbbbc"],
+    n: "Bola de nieve", cat: "adornos", y: 550, hondo: 24, torno: true, fragil: "vidrio", derrame: "agua",
+    filas: [".PQQP.", "QBBBBP", "QBwwBP", "QBCCBP", ".CCCC.", ".cddc.", "cbbbbc"],
     capas: [
-      { clase: "px3-1", t: 2.4, p: [[2, 1, "#"], [5, 2, "#"], [3, 4, "#"]] },
-      { clase: "px3-2", t: 2.4, p: [[2, 2, "#"], [5, 3, "#"], [6, 1, "#"]] },
-      { clase: "px3-3", t: 2.4, p: [[2, 3, "#"], [6, 2, "#"], [4, 1, "#"]] },
+      { clase: "px3-1", t: 2.4, p: [[1, 1, "#"], [4, 2, "#"]] },
+      { clase: "px3-2", t: 2.4, p: [[1, 2, "#"], [4, 3, "#"], [3, 1, "#"]] },
+      { clase: "px3-3", t: 2.4, p: [[1, 3, "#"], [4, 1, "#"]] },
     ],
   }),
   reloj_arena: pix({
-    n: "Reloj de arena", cat: "adornos", y: 550, hondo: 24, torno: true, fragil: "vidrio",
-    filas: ["mnnnnm", "lPQQPl", "lPQQPl", "l.PP.l", "l.PP.l", "l.PP.l", "lPQQPl", "lPQQPl", "lPQQPl", "mnnnnm"],
+    n: "Reloj de arena", cat: "adornos", y: 550, hondo: 16, torno: true, fragil: "vidrio",
+    filas: ["mnnm", "lPQl", "lPQl", "lPPl", "lPQl", "lPQl", "mnnm"],
     capas: [
-      { clase: "px3-1", t: 6, p: [[1, 1, "!"], [2, 1, "!"], [3, 1, "!"], [4, 1, "!"], [1, 2, "!"], [2, 2, "!"], [3, 2, "!"], [4, 2, "!"], [2, 8, "9"], [3, 8, "9"]] },
-      { clase: "px3-2", t: 6, p: [[1, 2, "!"], [2, 2, "!"], [3, 2, "!"], [4, 2, "!"], [2, 4, "!"], [1, 8, "9"], [2, 8, "9"], [3, 8, "9"], [4, 8, "9"], [2, 7, "9"], [3, 7, "9"]] },
-      { clase: "px3-3", t: 6, p: [[2, 2, "!"], [3, 2, "!"], [3, 5, "!"], [1, 8, "9"], [2, 8, "9"], [3, 8, "9"], [4, 8, "9"], [1, 7, "9"], [2, 7, "9"], [3, 7, "9"], [4, 7, "9"], [2, 6, "9"], [3, 6, "9"]] },
+      { clase: "px3-1", t: 6, p: [[1, 1, "!"], [2, 1, "!"], [1, 2, "!"], [2, 2, "!"], [1, 5, "9"]] },
+      { clase: "px3-2", t: 6, p: [[1, 2, "!"], [2, 2, "!"], [1, 3, "!"], [1, 5, "9"], [2, 5, "9"]] },
+      { clase: "px3-3", t: 6, p: [[2, 2, "!"], [1, 4, "9"], [1, 5, "9"], [2, 5, "9"], [2, 4, "9"]] },
     ],
   }),
   caja_musica: pix({
@@ -341,12 +338,12 @@ export const ITEMS = {
     capas: [{ clase: "px-a", t: 1.2, p: [[4, 0, "W"]] }, { clase: "px-b", t: 1.2, p: [[4, 0, "w"]] }],
   }),
   vela_frasco: pix({
-    n: "Vela en frasco", cat: "adornos", y: 550, al: "fuego", torno: true, hondo: 24, fragil: "vidrio", brilla: { x: 12, y: 10, r: 70, c: "#ffcf7a", propio: "on" },
-    filas: ["......", "......", "......", "......", "QQQQQP", "QQQQQP", "QCDDQP", "QCDDQP", "QCDDQP", "PPPPPP"],
+    n: "Vela en frasco", cat: "adornos", y: 550, al: "fuego", torno: true, hondo: 16, fragil: "vidrio", brilla: { x: 8, y: 6, r: 64, c: "#ffcf7a", propio: "on" },
+    filas: ["....", "....", "....", "QQQP", "QCDP", "QCDP", "PPPP"],
     capas: [
-      { p: [[2, 5, "0"]] },
-      { clase: "px-on px-a", t: 0.6, p: flama(2, 4, 0) },
-      { clase: "px-on px-b", t: 0.6, p: flama(2, 4, 1) },
+      { p: [[1, 3, "0"]] },
+      { clase: "px-on px-a", t: 0.6, p: flama(1, 2, 0) },
+      { clase: "px-on px-b", t: 0.6, p: flama(1, 2, 1) },
     ],
   }),
   carrito: pix({ n: "Carrito de juguete", cat: "adornos", y: 550, hondo: 24, filas: ["...wwww....", "..wBBwBw...", ".wwwwwwwww.", "?wwwwwwwww?", "vv00vvv00vv", "..00...00.."] }),
