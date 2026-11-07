@@ -164,7 +164,7 @@ export function estiloCuarto(j) {
 const sinAcentos = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 /** El dibujito de cada categoría (lo más reconocible de ella). */
 const REPRESENTA = { sala: "sofa", cocina: "estufa", recamara: "cama", bano: "tina", estudio: "escritorio", cositas: "osito", adornos: "jarron_vidrio", plantas: "maceta", jardin: "arbolito", terraza: "hamaca", deco: "cuadro", techo: "foco_campana", limpieza: "escoba", mascotas: "gatito" };
-const TINTE = { sala: "#ffd6e4", cocina: "#cdeedd", recamara: "#e4dafc", bano: "#d3ebfb", estudio: "#ffe2c9", cositas: "#fff0b8", adornos: "#ffd9ec", plantas: "#d6f2c6", jardin: "#cfeec0", terraza: "#ffe0cc", deco: "#eadcff", techo: "#fff1c8", limpieza: "#d6eefa", mascotas: "#fff1c4", recientes: "#ffe3ec" };
+const TINTE = { sala: "#ffd6e4", cocina: "#cdeedd", recamara: "#e4dafc", bano: "#d3ebfb", estudio: "#ffe2c9", cositas: "#fff0b8", adornos: "#ffd9ec", plantas: "#d6f2c6", jardin: "#cfeec0", rio: "#cdeefc", terraza: "#ffe0cc", deco: "#eadcff", techo: "#fff1c8", limpieza: "#d6eefa", mascotas: "#fff1c4", recientes: "#ffe3ec" };
 /** La imagen pixel de una cosa, a escala entera (nítida), para la tarjeta o el chip. */
 function miniPixel(d, caja, max = 5) {
   const i = el("i.ca-cat-mini", { html: d.arte({}, colorDe(d, {})) });

@@ -24,6 +24,7 @@ import { ITEMS as LIMPIEZA, MANO as MANO_LIMPIEZA } from "./limpieza.js";
 import { ITEMS as FINOS } from "./finos.js";
 import { ITEMS as FINOS2 } from "./finos2.js";
 import { ITEMS as TECHO } from "./techo.js";
+import { ITEMS as JARDIN2 } from "./jardin2.js";
 import { colgadoY, usarAltos } from "../cuartos.js";
 import { REDIBUJOS } from "./redibujos.js";
 import { VISTAS } from "./vistas.js";
@@ -32,7 +33,7 @@ import { RECETAS, arteReceta } from "./recetas.js";
 export { COSAS_MANO };
 export { RECETAS, recetasDe, arteReceta, baseDe } from "./recetas.js";
 
-export const CATALOGO = { ...SALA, ...COCINA, ...RECAMARA, ...BANO, ...JARDIN, ...DECO, ...MASCOTAS, ...ESTUDIO, ...TERRAZA, ...COSITAS, ...LINDAS, ...LIMPIEZA, ...FINOS, ...FINOS2, ...TECHO };
+export const CATALOGO = { ...SALA, ...COCINA, ...RECAMARA, ...BANO, ...JARDIN, ...DECO, ...MASCOTAS, ...ESTUDIO, ...TERRAZA, ...COSITAS, ...LINDAS, ...LIMPIEZA, ...FINOS, ...FINOS2, ...TECHO, ...JARDIN2 };
 // (Fase 64) Las herramientas de limpieza y la naranja también se traen en la mano; el árbol del columpio suelta hojitas.
 Object.assign(COSAS_MANO, MANO_LIMPIEZA);
 CATALOGO.arbol.hojas = "#7fd29b";
@@ -79,7 +80,7 @@ for (const r of Object.values(RECETAS)) COSAS_MANO[r.k] = { n: r.n, comible: tru
 
 export const CATEGORIAS = [
   ["sala", "Sala"], ["cocina", "Cocina"], ["recamara", "Recámara"], ["bano", "Baño"], ["estudio", "Estudio"], ["cositas", "Cositas"],
-  ["adornos", "Adornitos"], ["plantas", "Plantitas"], ["jardin", "Jardín"], ["terraza", "Terraza"], ["deco", "Decoración"], ["techo", "Techo"], ["limpieza", "Limpieza"], ["mascotas", "Mascotitas"],
+  ["adornos", "Adornitos"], ["plantas", "Plantitas"], ["jardin", "Jardín"], ["rio", "Río y caminos"], ["terraza", "Terraza"], ["deco", "Decoración"], ["techo", "Techo"], ["limpieza", "Limpieza"], ["mascotas", "Mascotitas"],
 ];
 export const deCategoria = (cat) => Object.values(CATALOGO).filter((d) => d.cat === cat);
 /** El color de un objeto (si tiene varios). */

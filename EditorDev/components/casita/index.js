@@ -1067,7 +1067,7 @@ export class Casita {
   _colocar(r) {
     const { o, d } = r, gx = global(o.c, o.x);
     r.gx = gx;
-    let z = d.capa === "alfombra" ? 3 : enPared(o, d) ? 10 + Math.round(o.y / 60) : Math.round(o.y);
+    let z = d.capa === "alfombra" ? (d.zAlf ?? 3) : enPared(o, d) ? 10 + Math.round(o.y / 60) : Math.round(o.y);
     if (d.mascota) z = zMascota(o.y);
     // (Encima de un mueble: justo enfrente de él.)
     else if (puedeSubir(d)) { const a = this._encima(gx, o.y, o.id); if (a) z = (parseInt(a.r.n.style.zIndex, 10) || 0) + 1; }
@@ -2217,8 +2217,11 @@ export class Casita {
     if (e.tirado && cu.mapa) { const L = this._lugarEditable(c, gx, y); if (L) { gx = L.x; y = L.y; } }
     // (Fase 65) Una escoba nueva tampoco se para solita: se recarga en lo de junto o en la pared, o cae acostada.
     if (d.larga) { const A = this._recargar(d, c, gx, y, "", Math.random() < 0.5 ? -1 : 1); gx = A.gx; y = A.y; e.pose = A.pose; e.ang = A.ang; }
+    // (Fase 72) Una tira de río o de camino sale ya pegadita a la que elegiste (o a la última que pusiste ahí).
+    let f = false;
+    if (d.tira) { const B = this._siguienteTira(d, c); if (B) { gx = B.x; y = B.y; f = B.f; } }
     const x = lim(gx - x0, d.w / 2 + 4, w - d.w / 2 - 4);
-    const o = { id: nuevoId(), t, c, x: Math.round(x), y: Math.round(y), f: false, e };
+    const o = { id: nuevoId(), t, c, x: Math.round(x), y: Math.round(y), f, e };
     this.pila.push([{ o: "quita", id: o.id }]);
     this.sync.op({ o: "pon", obj: o });
     this._pintarCasa(this.sync.casa());
@@ -2399,6 +2402,43 @@ export class Casita {
     for (const yy of [y + 30, y + 60]) if (yy <= FRENTE && libre(gx, yy)) return { x: gx, y: yy };
     return { x: gx, y };
   }
+  /** (Fase 72) Las bocas de una tira (río o camino) en el mundo, ya volteadas si está volteada. */
+  _bocas(d, f, gx, y) {
+    const VUELTA = { E: "W", W: "E" };
+    return (d.bocas || []).map(([bx, by, v]) => ({ x: gx + (f ? -bx : bx), y: y + by, v: f ? VUELTA[v] || v : v }));
+  }
+  /** (Fase 72) ¿Cerca de otra tira de su familia? A dónde moverla para que sus bocas se junten (la más cercana). */
+  _pegarTira(d, f, gx, y, c, id, cerca = 46) {
+    const OPUESTA = { E: "W", W: "E", N: "S", S: "N" };
+    let mejor = null;
+    for (const q of this.objs.values()) {
+      if (q.o.id === id || q.o.c !== c || q.d.tira !== d.tira) continue;
+      for (const B of this._bocas(q.d, q.o.f, q.gx, q.o.y)) for (const A of this._bocas(d, f, gx, y)) {
+        if (A.v !== OPUESTA[B.v]) continue;
+        const dx = B.x - A.x, dy = B.y - A.y, dd = Math.hypot(dx, dy);
+        if (dd < cerca && (!mejor || dd < mejor.dd)) mejor = { dd, x: gx + dx, y: y + dy };
+      }
+    }
+    return mejor;
+  }
+  /** (Fase 72) Dónde va una tira nueva: en la boca libre de la elegida (o de la última de su familia en ese cuarto). */
+  _siguienteTira(d, c) {
+    const OPUESTA = { E: "W", W: "E", N: "S", S: "N" };
+    const fam = [...this.objs.values()].filter((q) => q.o.c === c && q.d.tira === d.tira);
+    if (!fam.length) return null;
+    const base = this.sel && fam.includes(this.sel) ? this.sel : fam[fam.length - 1];
+    const ocupada = (B) => fam.some((q) => q !== base && this._bocas(q.d, q.o.f, q.gx, q.o.y).some((Q) => Math.hypot(Q.x - B.x, Q.y - B.y) < 8));
+    const x0 = inicioDe(c), x1 = x0 + cuarto(c).w, fr = frenteDe(c);
+    // (Primero hacia la derecha y hacia adelante: así el río «sigue» naturalmente.)
+    const bocas = this._bocas(base.d, base.o.f, base.gx, base.o.y).filter((B) => !ocupada(B)).sort((a, b) => "ESWN".indexOf(a.v) - "ESWN".indexOf(b.v));
+    // (Una vuelta del río se voltea sola si así es como embona: de la izquierda hacia abajo, por ejemplo.)
+    for (const B of bocas) for (const f of [false, true]) for (const A of this._bocas(d, f, 0, 0)) {
+      if (A.v !== OPUESTA[B.v]) continue;
+      const x = B.x - A.x, y = B.y - A.y;
+      if (x - d.w / 2 >= x0 && x + d.w / 2 <= x1 && y - d.h >= FONDO - 10 && y <= fr) return { x, y, f };
+    }
+    return null;
+  }
   _soltarObj(g) {
     const r = g.obj;
     this.arrastrandoId = null;
@@ -2436,6 +2476,8 @@ export class Casita {
     }
     // (Fase 61) Colisiones al acomodar: un mueble del piso no se mete dentro de otro; se recorre al lugar libre más cercano.
     if (d.capa === "piso" && !d.mascota && !d.portatil && !encima) { const L = this._libre(r, g.gx, g.y); g.gx = L.x; g.y = L.y; }
+    // (Fase 72) Una tira de río o de camino soltada junto a otra se pega sola, boca con boca.
+    if (d.tira) { const B = this._pegarTira(r.d, r.o.f, g.gx, g.y, c0, r.o.id); if (B) { g.gx = B.x; g.y = B.y; this.sonar("clic", { volumen: 0.4 }); } }
     // (Fase 65) Una escoba no se para solita: se recarga en lo de junto o en la pared, o se cae al piso.
     if (d.larga) { const A = this._recargar(d, c0, g.gx, g.y, r.o.id, g.gx >= r.gx ? 1 : -1); g.gx = A.gx; g.y = A.y; e0.pose = A.pose; e0.ang = A.ang; }
     const { c, x } = enCuarto(g.gx);
