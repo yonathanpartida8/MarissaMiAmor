@@ -12,6 +12,8 @@ const azar = (xs) => xs[Math.floor(Math.random() * xs.length)];
 export function rebote(n, clase = "toque") { if (!n) return; n.classList.remove(clase); void n.offsetWidth; n.classList.add(clase); }
 const alternar = (j, o, k, si, no) => { const on = !o.e?.[k]; j.estado(o, { [k]: on }); j.sonar(on ? si : no); return on; };
 
+/** (Fase 73) ¿Ya se está cocinando algo ahí (o ya está listo)? Entonces tocarla es cuidarlo o tomarlo. */
+const ocupada = async (j, o) => { const r = j.objs.get(o.id); return !!(r && (r.o.e?.coc || r.o.e?.listo) && (await j.cocina.tocar(r))); };
 export const ACCIONES = {
   luz(j, o) { j.cuartoLuz(o.c); j.sonar("interruptor"); },
   /** (Fase 71) Un foco del techo: se apaga o se prende solito (con el apagador del cuarto se apagan todos). */
@@ -28,8 +30,9 @@ export const ACCIONES = {
     setTimeout(() => j.dar(azar(["manzana", "helado", "sandia", "galleta", "uvas", "platano"]), o), 450);
   },
   // La cocina: se elige qué cocinar y se sirve en una mesa (mesa.js).
-  estufa(j, o) { P.recetas(j, o, ["sarten", "olla", "horno"]); },
-  parrilla(j, o) { P.recetas(j, o, "parrilla"); },
+  // (Fase 73) Si ya hay algo cocinándose (o listo) ahí, tocarlo es ir a cuidarlo (o a tomarlo).
+  async estufa(j, o) { if (await ocupada(j, o)) return; P.recetas(j, o, ["sarten", "olla", "horno"]); },
+  async parrilla(j, o) { if (await ocupada(j, o)) return; P.recetas(j, o, "parrilla"); },
   micro(j, o) { j.cocinar(o, "palomitas"); },
   licuadora(j, o) { j.cocinar(o, "licuado"); },
   mesa(j, o, n) { return tocarMesa(j, o, n); },

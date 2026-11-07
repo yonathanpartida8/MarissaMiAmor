@@ -22,7 +22,7 @@ export const ITEMS = {
       <circle cx="28" cy="32" r="7" fill="#ff86b0" ${OL2}/>${corazon(52, 30, 0.9, "#ff5c93")}<rect x="22" y="46" width="22" height="16" rx="2" fill="#fff" transform="rotate(-6 33 54)" ${OL2}/>`),
   },
   estufa: {
-    n: "Estufa", cat: "cocina", w: 122, h: 136, al: "estufa", lugares: [{ dx: 0, dy: 26, pose: "cocinando" }],
+    n: "Estufa", cat: "cocina", w: 122, h: 136, al: "estufa", lugares: [{ dx: -84, dy: 10, pose: "cocinando", mira: 1, lado: true }],
     arte: () => svg(122, 136, `
       <rect x="4" y="34" width="114" height="100" rx="10" fill="#f6efe8" ${OL}/>
       <rect x="16" y="62" width="90" height="56" rx="8" fill="#5e5260" ${OL2}/><rect class="horno" x="22" y="68" width="78" height="44" rx="6" fill="#3d3440"/>

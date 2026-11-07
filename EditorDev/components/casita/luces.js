@@ -11,6 +11,7 @@
  *   · En Máximo rendimiento se queda lo sencillo de antes.
  */
 import { CUARTOS, inicioDe, cuarto, altoDe } from "./cuartos.js";
+import { lucesCocina } from "./cocina.js";
 
 const RES = 6, ARRIBA = -330, ALTO = 1130;          // un cuadrito del mapa = 6 del mundo
 const OSCURO = [18, 12, 42];
@@ -54,6 +55,8 @@ export class Luces {
     // (Fase 71) Ya no hay foco pintado: la luz del cuarto la dan sus focos del techo (catalogo/techo.js), cada uno
     // con su charco de luz grande. Sin focos prendidos, de noche el cuarto queda oscurito (sólo sus lámparas).
     void cfg;
+    // (Fase 73) La lumbre de lo que se está cocinando (más grande al doble).
+    try { lista.push(...lucesCocina(j, c, x0)); } catch (e) { /* nada */ }
     // (Fase 64) Los faroles de la fachada del patio.
     if (cu.mapa && j.patio) lista.push(...j.patio.luces());
     return lista;

@@ -48,6 +48,7 @@ import { Sincro } from "./sincro.js";
 import { ICO } from "./iconos.js";
 import * as P from "./paneles.js";
 import { cocinar, pintarPlatos, laPareja } from "./mesa.js";
+import { Cocina } from "./cocina.js";
 import { Mensajes } from "./mensajes.js";
 import { leerGfx, guardarGfx, nivel, maxParticulas, filtroPixel, crearCapaGL } from "./graficos.js";
 import { pintarFondo } from "./fondo.js";
@@ -120,6 +121,7 @@ export class Casita {
     this.yoUsuario = d.yo?.usuario || ""; this.parejaUsuario = d.pareja?.usuario || "";
     // (Fase 58) Las necesidades de tu monito, las traes y la voz en vivo.
     this.necesidades = new Necesidades(this);
+    this.cocina = new Cocina(this);   // (Fase 73) cocinar de verdad: sigue sola, x2 si estás junto
     this.traes = new LasTraes(this);
     this.voz = new VozEnVivo(this);
     this.mundo = el("div.ca-mundo");
@@ -192,7 +194,7 @@ export class Casita {
   limpiar() {
     this.suciedad?.limpiarTodo();
     this.viento?.apagar();
-    clearInterval(this._tReco); this.recolectar?.limpiar(); this.vida?.apagar(); this.fisica?.apagar();
+    clearInterval(this._tReco); this.recolectar?.limpiar(); this.vida?.apagar(); this.fisica?.apagar(); this.cocina?.limpiar();
     this.vivo = false;
     this.sync?.parar();
     this._ro?.disconnect();
@@ -1519,6 +1521,9 @@ export class Casita {
         if (G.mira) this._mirar(m, G.mira);
         // (Fase 66) Cocinando en una estufa girada: de cara a la estufa (de lado, o del otro lado viéndote a ti).
         if (l.pose === "cocinando" && G.cara !== "frente") { m.n.classList.toggle("lado", G.cara !== "atras"); if (G.cara !== "atras") this._mirar(m, G.cara === "der" ? -1 : 1); }
+        // (Fase 73) De frente, quien cocina se para a un ladito de la estufa, de perfil y mirándola: así se ven la
+        // lumbre, el humo y lo que se está cocinando (antes se paraba enfrente y lo tapaba todo).
+        else if (l.pose === "cocinando" && l.lado) { m.n.classList.add("lado"); this._mirar(m, G.dx < 0 ? 1 : -1); }
         m.n.style.transitionDuration = ya || reducido() ? "0s" : ".42s";
         if (!ya && !reducido() && sienta) { m.n.classList.remove("sentandose"); void m.n.offsetWidth; m.n.classList.add("sentandose"); setTimeout(() => m.n.classList.remove("sentandose"), 500); }
         m.y = ySit; this._ponerMono(m, gx, ySit, r.o.y);

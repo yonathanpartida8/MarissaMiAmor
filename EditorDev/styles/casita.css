@@ -2025,3 +2025,40 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca.editando .ca-obj.sel { touch-action: none; }
 /* (Fase 73) Mientras se prepara la imagen pixel de algo nuevo, no se asoma su dibujo liso (era el «parpadeo»). */
 .ca-obj.preparando > .ca-obj-arte { visibility: hidden; }
+/* ═══════════ FASE 73: la cocina de verdad ═══════════ */
+/* Arriba de la estufa: su pastillita (el platillo, la barrita de avance en cuadritos y el «x2» cuando alguien la cuida)
+   y el lienzo de efectos en pixel (fuego, humo, vapor, chispitas, calor). Lo de antes (las rayitas de fuego y el vapor
+   lisos) se esconde mientras está el lienzo. */
+.ca-coc-capa { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.ca-coc-fx { position: absolute; image-rendering: pixelated; image-rendering: crisp-edges; }
+.ca-obj.con-fx :is(.fuego, .vapor) { visibility: hidden; }
+.ca-coc { position: absolute; left: 50%; bottom: calc(100% + 30px); display: flex; align-items: center; gap: 5px; height: 26px; padding: 2px 8px 2px 3px; transform: translateX(-50%); background: #fffaf6; border-radius: 4px; box-shadow: 0 0 0 2px #4a3346, 3px 3px 0 rgba(74, 51, 70, .3); white-space: nowrap; transition: transform .3s cubic-bezier(.3, 1.5, .5, 1); }
+.ca-coc-plato { flex: none; display: grid; width: 32px; height: 22px; }
+.ca-coc-plato svg { width: 100%; height: 100%; }
+.ca-coc-barra { flex: none; position: relative; width: 52px; height: 10px; background: #efe1e8; box-shadow: inset 0 0 0 2px #4a3346; overflow: hidden; }
+.ca-coc-barra b { position: absolute; left: 2px; top: 2px; bottom: 2px; max-width: calc(100% - 4px); background: repeating-linear-gradient(90deg, #ff9d4a 0 6px, #f07a2a 6px 8px); transition: width .2s linear; }
+.ca-coc-x2 { display: none; font: 400 15px/1 "Jersey 10", "Nunito", sans-serif; font-style: normal; color: #fff; background: #e5679a; padding: 2px 4px 1px; border-radius: 2px; box-shadow: 0 0 0 2px #4a3346; }
+.ca-coc small { display: none; font: 400 16px/1 "Jersey 10", "Nunito", sans-serif; color: #4a3346; }
+/* Al doble: la barrita rosita con sus rayitas corriendo, el «x2» que late. */
+.ca-coc-capa.doble .ca-coc-barra b { background: repeating-linear-gradient(90deg, #ff6fa6 0 6px, #e5468a 6px 8px); background-size: 16px 100%; animation: caCocRayas .35s steps(4) infinite; }
+.ca-coc-capa.doble .ca-coc-x2 { display: inline-block; animation: caCocLate .7s steps(2) infinite; }
+@keyframes caCocRayas { to { background-position: 16px 0; } }
+@keyframes caCocLate { 50% { transform: scale(1.15); } }
+/* Listo: sin barrita; el platillo grande, «¡Listo!» y un saltito. */
+.ca-coc-capa.listo .ca-coc { height: 34px; padding: 3px 10px 3px 4px; animation: caCocListo 1.1s ease-in-out infinite; }
+.ca-coc-capa.listo .ca-coc-plato { width: 42px; height: 28px; }
+.ca-coc-capa.listo .ca-coc-barra { display: none; }
+.ca-coc-capa.listo .ca-coc small { display: inline; }
+@keyframes caCocListo { 50% { transform: translateX(-50%) translateY(-4px); } }
+.ca.editando .ca-coc-capa { display: none; }
+.ca-recetas-caja .ca-nota { margin: 0 14px 10px; }
+/* (Fase 73) Cocinando de perfil, junto a la estufa: el brazo de adelante revuelve (va y viene sobre el sartén) y el de
+   atrás detiene el mango; el cuerpo se inclina tantito hacia la estufa y la cabeza sigue lo que revuelve. */
+.ca-monito.lado.cocinando .ca-bd { animation: caRevuelveLado .9s ease-in-out infinite; }
+.ca-monito.lado.cocinando .ca-bi { transform: rotate(-92deg); animation: none; }
+.ca-monito.lado.cocinando .ca-bd .ca-antebrazo { animation: caRevuelveCodo .9s ease-in-out infinite; }
+.ca-monito.lado.cocinando .ca-mono-cuerpo { rotate: 3deg; transform-origin: 50% 100%; }
+.ca.fx1 .ca-monito.lado.cocinando :is(.ca-cabeza, .ca-pelo-tras) { animation: caMiraOlla 1.8s ease-in-out infinite; }
+@keyframes caRevuelveLado { 0%, 100% { transform: rotate(-104deg); } 50% { transform: rotate(-86deg); } }
+@keyframes caRevuelveCodo { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(16deg); } }
+@keyframes caMiraOlla { 0%, 100% { translate: 0 1px; } 50% { translate: 1px 2px; } }

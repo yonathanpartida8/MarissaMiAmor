@@ -61,7 +61,7 @@ export const ITEMS = {
       <path d="M28 22v26M20 34h16" stroke="#6b5a66" stroke-width="2" opacity=".5"/>`),
   },
   parrilla: {
-    n: "Asador", cat: "jardin", w: 106, h: 120, al: "parrilla", lugares: [{ dx: 0, dy: 24, pose: "cocinando" }],
+    n: "Asador", cat: "jardin", w: 106, h: 120, al: "parrilla", lugares: [{ dx: -76, dy: 10, pose: "cocinando", mira: 1, lado: true }],
     arte: () => svg(106, 120, `
       <path d="M24 64l-12 54M82 64l12 54M53 66v50" stroke="#6b5a66" stroke-width="6" stroke-linecap="round"/>
       <path d="M6 30h94a47 36 0 0 1-94 0z" fill="#ff7a8a" ${OL}/>${brillo(16, 38, 30, 6, 3)}

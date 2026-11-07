@@ -10,7 +10,6 @@ import { vibrar } from "../../integraciones/plataforma.js";
 import { COSAS_MANO, RECETAS, baseDe } from "./catalogo/index.js";
 
 export const BOCADOS = 3;
-const SONIDO_DE = { sarten: "sarten", olla: "burbujas", horno: "tic", parrilla: "sarten", micro: "micro", licuadora: "licuadora" };
 const hayComida = (p) => !!(p && RECETAS[p.k] && (p.b | 0) > 0);
 const platosDe = (r) => (r?.d.superficie || []).map((_, i) => r.o.e?.["p" + i] || null);
 /** Dónde queda (en todo el mundo) el lugar `i` de la mesa (la mesa volteada lo refleja). */
@@ -80,29 +79,20 @@ export function juntosEnMesa(j, r) {
   return true;
 }
 
-/** Cocinar una receta en lo que tocaste (la estufa, el asador, el micro o la licuadora). */
+/** Cocinar una receta en lo que tocaste (la estufa, el asador, el micro o la licuadora).
+ *  (Fase 73) Tu monito va, lo pone a cocinar y ya: se cocina solito (cocina.js). Si se queda ahí, va al doble. */
 export async function cocinar(j, o, k) {
-  const rc = RECETAS[k], r = j.objs.get(o.id);
+  const rc = RECETAS[k];
+  let r = j.objs.get(o.id);
   if (!rc || !r) return;
-  // En la estufa y el asador se queda ahí cocinando; en el micro y la licuadora, junto.
+  // (Si ya hay algo cocinándose o listo ahí, primero eso.)
+  if (r.o.e?.coc || r.o.e?.listo) { await j.cocina.tocar(r); return; }
   const conLugar = !!r.d.lugares;
   if (!(conLugar ? await j.usarLugar({ id: o.id }, 0) : await j.irJunto({ id: o.id }))) return;
-  const trasto = rc.en === "olla" || rc.en === "horno" ? rc.en : "sarten";
-  j.estado({ id: o.id }, { on: true, receta: k, trasto });
-  j._mandarYo({ ev: { k: "cocina", t: k } });
-  const sitio = j.yo.mueble, pasos = Math.max(2, Math.round(rc.ms / 900));
-  for (let i = 0; i < pasos; i++) {
-    j.sonar(SONIDO_DE[rc.en] || "sarten", { volumen: 0.8 });
-    j.particulas(rc.en === "horno" ? "chispa" : "vapor", { gx: r.gx - 10, y: r.o.y - r.d.h - 4 }, 0, 0, 2);
-    await j.esperar(rc.ms / pasos);
-    if (!j.vivo || !j.objs.has(o.id)) return;
-    if (conLugar && j.yo.mueble !== sitio) { j.estado({ id: o.id }, { on: false }); return; }
-  }
-  j.estado({ id: o.id }, { on: false });
-  j.sonar("horno-listo");
-  j.dar(k, { gx: r.gx, y: r.o.y, def: r.d });
-  if (conLugar) j.pararse();
-  setTimeout(() => { if (j.vivo && j.yo.lleva === k) j._globo(j.yo, `¡${rc.n} listo! Sírvelo en una mesa`, 2800); }, 700);
+  r = j.objs.get(o.id);
+  if (!r || !j.vivo) return;
+  j.cocina.empezar(r, k);
+  j._globo(j.yo, `¡A cocinar ${rc.n.toLowerCase()}! Si me quedo aquí, va al doble`, 2800);
 }
 
 /** Servir lo que traes en una mesa: un plato cerca de ti y otro enfrente, para tu amorcito. */

@@ -9,6 +9,7 @@ import { monitoSVG, PIELES, COLOR_PELO, COLOR_OJOS, COLOR_ROPA, PEINADOS, ARRIBA
 import { CATALOGO, CATEGORIAS, deCategoria, colorDe, recetasDe, arteReceta } from "./catalogo/index.js";
 import { CUARTOS, PAREDES, PATRONES, PISOS, cuarto } from "./cuartos.js";
 import { SONIDOS } from "./sonidos.js";
+import { segundosDe } from "./cocina.js";
 import { PERFILES } from "./graficos.js";
 
 /** Una hojita que sube desde abajo (se cierra con la ✕, jalando su pestañita o con Atrás). */
@@ -58,11 +59,13 @@ export function vestidor(j) {
 /** «¿Qué cocinamos?»: las recetas de ese aparato (la estufa: sartén, olla y horno; el asador…). */
 export function recetas(j, o, donde) {
   const LUGAR = { sarten: "Sartén", olla: "Olla", horno: "Horno", parrilla: "Asador", micro: "Micro", licuadora: "Licuadora" };
-  hoja(j, "¿Qué cocinamos?", el("div.ca-recetas", {}, recetasDe(donde).map((rc) => el("button.ca-receta", { type: "button", "aria-label": `Cocinar ${rc.n}`, onClick: () => { j.cerrarHoja(); j.cocinar(o, rc.k); } }, [
+  const lista = el("div.ca-recetas", {}, recetasDe(donde).map((rc) => el("button.ca-receta", { type: "button", "aria-label": `Cocinar ${rc.n}`, onClick: () => { j.cerrarHoja(); j.cocinar(o, rc.k); } }, [
     el("i.ca-receta-arte", { html: arteReceta(rc) }),
     el("b", { text: rc.n }),
-    el("small", { text: `${LUGAR[rc.en] || ""} · ${Math.round(rc.ms / 1000)} s` }),
-  ]))), "recetas");
+    el("small", { text: `${LUGAR[rc.en] || ""} · unos ${segundosDe(rc)} s` }),
+  ])));
+  // (Fase 73) Se cocina solito: puedes irte a hacer otra cosa; si te quedas junto, va al doble.
+  hoja(j, "¿Qué cocinamos?", el("div.ca-recetas-caja", {}, [el("p.ca-nota", { text: "Se cocina solito aunque te vayas. Si te quedas junto a la estufa, va al doble." }), lista]), "recetas");
 }
 
 /** El piano: tres octavas para tocar (cada tecla con su nota; se desliza a los lados). Sólo suena el piano,
