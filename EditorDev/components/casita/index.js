@@ -625,6 +625,9 @@ export class Casita {
       if (abajoN >= 2 && (this.k - kA) / this.k <= 0.12) this.k = Math.max(0.42, kA);
       // (En pantallas de poca densidad, como la compu, cada escalón es grande: se deja subir un poco más.)
       else if (arribaN >= 2 && Math.abs(kR - this.k) / this.k <= (n < 5 ? 0.1 : 0.06) && kR * H <= vh + 12) this.k = kR;
+      // (Fase 72) Si ninguno queda cerca (en la compu, con la barra de arriba y el cajón), al escalón entero de abajo:
+      // un poquito más chiquito, pero nítido y sin que nada lo tape.
+      else if (abajoN >= 2 && kA >= 0.42) this.k = kA;
     }
     // (Fase 64) En el patio grande el mundo es más hondo: se desliza también para abajo (y se ve un poquito de cielo).
     const mapa = !!cuarto(this.vistaCuarto || "sala").mapa;
