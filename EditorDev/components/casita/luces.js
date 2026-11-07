@@ -48,8 +48,9 @@ export class Luces {
       const x = v.x - x0 + ((r.o.f ? r.d.w - b.x : b.x) - r.d.w / 2) * s, y = v.y - (r.d.h - b.y) * s;
       lista.push({ x, y, r: Math.max(150, b.r * 2.1) * s, k: rgb(b.c), i: 1 });
     }
-    // El foco del techo (si la luz del cuarto está prendida): alumbra todo el cuarto, más suave.
-    if (!cu.afuera && cu.foco && cfg.luz !== false) lista.push({ x: cu.foco, y: 330, r: 900, k: [255, 220, 170], i: 0.95 });
+    // (Fase 71) Ya no hay foco pintado: la luz del cuarto la dan sus focos del techo (catalogo/techo.js), cada uno
+    // con su charco de luz grande. Sin focos prendidos, de noche el cuarto queda oscurito (sólo sus lámparas).
+    void cfg;
     // (Fase 64) Los faroles de la fachada del patio.
     if (cu.mapa && j.patio) lista.push(...j.patio.luces());
     return lista;

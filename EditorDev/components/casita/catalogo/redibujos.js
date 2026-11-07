@@ -116,7 +116,84 @@ const FOQUITOS = (() => {
 })();
 
 /** Lo nuevo de cada uno (sólo su dibujo y su forma para girar). */
+/** (Fase 71) LA VENTANA NUEVA: marco blanco de madera con su cruceta, cenefa con olanes en su barra de latón, cortinas
+ *  amarradas con moño (se cierran de verdad: otro dibujo, no estiradas), repisa con un cactus y una maceta con flores, y
+ *  el vidrio con el cielo de verdad (día, tarde, noche con luna y estrellas, o lluvia), cada uno en su capa. */
+function ventana() {
+  const W = 40, H = 46, L = lienzo(W, H);
+  // La barra de latón con sus remates.
+  L.caja(1, 3, 38, 3, "n"); for (const x of [0, 39]) { L.pon(x, 2, "o"); L.pon(x, 3, "m"); L.pon(x, 4, "l"); }
+  // El marco blanco: orilla, cara (clara arriba y a la izquierda, sombrita abajo y a la derecha) y su bisel.
+  L.caja(6, 8, 33, 37, "E"); L.caja(7, 9, 32, 36, "C");
+  for (let y = 9; y <= 36; y++) { L.pon(7, y, "#"); L.pon(32, y, "D"); }
+  L.caja(7, 9, 32, 9, "#"); L.caja(7, 36, 32, 36, "D");
+  L.caja(9, 11, 30, 11, "D"); L.caja(9, 11, 9, 34, "D"); L.caja(30, 11, 30, 34, "#"); L.caja(9, 34, 30, 34, "#");
+  for (let y = 12; y <= 33; y++) for (let x = 10; x <= 29; x++) L.pon(x, y, ".");
+  // La repisa (con sus mensulitas).
+  L.caja(4, 37, 35, 37, "#"); L.caja(4, 38, 35, 38, "C"); L.caja(5, 39, 34, 39, "D");
+  for (const x of [8, 31]) { L.pon(x, 40, "E"); L.pon(x + 1, 40, "E"); L.pon(x, 41, "E"); }
+  // La cenefa con sus pliegues y olanes (del color elegido).
+  for (let x = 3; x <= 36; x++) {
+    L.pon(x, 4, "]"); L.pon(x, 5, "["); L.pon(x, 6, (x - 3) % 5 === 0 ? ")" : "[");
+    const k = (x - 3) % 5; if (k >= 1 && k <= 3) L.pon(x, 7, k === 2 ? "[" : ")"); if (k === 2) L.pon(x, 8, ")");
+  }
+  const cielo = (f) => { const p = []; for (let y = 12; y <= 33; y++) for (let x = 10; x <= 29; x++) { const c = f(x, y); if (c) p.push([x, y, c]); } return p; };
+  const dia = cielo((x, y) => {
+    const nube = (y === 15 && x >= 13 && x <= 15) || (y === 16 && x >= 12 && x <= 17) || (y === 28 && x >= 22 && x <= 24) || (y === 29 && x >= 21 && x <= 26);
+    if (nube) return y === 16 || y === 29 ? "k" : "#";
+    if (Math.hypot(x - 26, y - 14.5) < 1.6) return "W";
+    if (Math.hypot(x - 26, y - 14.5) < 2.4) return "?";
+    return y <= 18 ? "B" : y <= 26 ? "P" : "Q";
+  });
+  const tarde = cielo((x, y) => (Math.hypot(x - 24.5, y - 33) < 2.6 ? "W" : y <= 17 ? "M" : y <= 23 ? "I" : y <= 28 ? "x" : "V"));
+  const noche = cielo((x, y) => {
+    if (Math.hypot(x - 14, y - 15.5) < 2.2 && Math.hypot(x - 15.2, y - 14.6) >= 1.9) return "?";
+    if ([[22, 14], [27, 17], [12, 22], [25, 25], [17, 28], [28, 30], [21, 20]].some(([a, b]) => a === x && b === y)) return (x + y) % 2 ? "#" : "W";
+    return y <= 20 ? "y" : y <= 28 ? "z" : "L";
+  });
+  const lluvia = cielo((x, y) => ((x * 2 + y * 3) % 9 === 0 ? "k" : y <= 22 ? "i" : "j"));
+  // La cruceta (encima del cielo) y las macetitas de la repisa.
+  const cruceta = [];
+  for (let y = 12; y <= 33; y++) { cruceta.push([19, y, "C"], [20, y, "D"]); }
+  for (let x = 10; x <= 29; x++) { cruceta.push([x, 22, "#"], [x, 23, "D"]); }
+  const macetas = [
+    ...[[24, 34], [25, 34], [26, 34], [27, 34], [28, 34], [29, 34], [30, 34]].map(([x, y]) => [x, y, "8"]),
+    ...[25, 26, 27, 28, 29].flatMap((x) => [[x, 35, x === 29 ? "6" : "7"], [x, 36, x === 29 ? "6" : "7"]]),
+    [26, 33, "r"], [28, 33, "r"], [27, 32, "s"], [25, 32, "s"], [29, 32, "r"], [27, 31, "q"],
+    [25, 30, "I"], [26, 31, "J"], [28, 30, "x"], [29, 31, "J"], [27, 29, "I"], [24, 31, "J"],
+    [10, 34, "8"], [11, 34, "8"], [12, 34, "8"], [10, 35, "7"], [11, 35, "7"], [12, 35, "6"], [10, 36, "7"], [11, 36, "7"], [12, 36, "6"],
+    [11, 30, "s"], [11, 31, "r"], [11, 32, "r"], [11, 33, "r"], [10, 31, "s"], [12, 32, "s"], [10, 32, "q"], [11, 29, "J"],
+  ];
+  // Las cortinas abiertas, amarradas con su moño, y cerradas (dos paños que se juntan en medio).
+  const abiertas = [], cerradas = [];
+  for (const lado of [-1, 1]) {
+    for (let y = 8; y <= 42; y++) {
+      const [a, b] = y <= 20 ? [2, 9] : y <= 23 ? [3, 6] : y <= 32 ? [2, 7] : [1, 8];
+      for (let x = a; x <= b; x++) {
+        const fold = y <= 20 ? (x - a) % 3 === 2 : y >= 24 && (x - a) % 3 === 1;
+        const c = y === 42 ? ")" : x === a ? "]" : fold ? ")" : "[";
+        abiertas.push([lado < 0 ? x : W - 1 - x, y, c]);
+      }
+    }
+    for (let x = 1; x <= 8; x++) abiertas.push([lado < 0 ? x : W - 1 - x, 22, x === 1 || x === 8 ? "G" : "H"]);
+    for (const [x, y, c] of [[1, 21, "I"], [1, 23, "I"], [0, 22, "H"]]) abiertas.push([lado < 0 ? x : W - 1 - x, y, c]);
+    for (let y = 8; y <= 40; y++) for (let x = 2; x <= 19; x++) {
+      const c = y === 40 ? ")" : (x - 2) % 3 === 2 ? ")" : (x - 2) % 3 === 0 ? "]" : "[";
+      cerradas.push([lado < 0 ? x : W - 1 - x, y, c]);
+    }
+  }
+  return {
+    filas: L.filas(),
+    capas: [
+      { clase: "dia", p: dia }, { clase: "tarde-o", p: tarde }, { clase: "noche-o", p: noche }, { clase: "lluvia-o", p: lluvia },
+      { p: [...cruceta, ...macetas] },
+      { clase: "cortina-ab", p: abiertas }, { clase: "cortina-ce", p: cerradas },
+    ],
+  };
+}
+
 export const REDIBUJOS = {
+  ventana: () => { const v = ventana(); return pix({ filas: v.filas, capas: v.capas, sinContorno: true }); },
   mesa: () => pix({ filas: mesa(), capas: FLORERO, hondo: 116 }),
   silla: () => pix({ filas: silla() }),
   telescopio: () => pix({ filas: telescopio(), capas: DESTELLOS, noGira: true }),

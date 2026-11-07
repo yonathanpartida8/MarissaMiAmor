@@ -13,7 +13,9 @@ import { ICO } from "./iconos.js";
 import * as P from "./paneles.js";
 
 export const PUERTA_T = 0.41;
-const U0 = 0.16, U1 = 0.66, ALTO_LADO = 186, ANCHO_A = 96, ALTO_A = 196;
+// (Fase 71) Puertas de tamaño normal (un poquito más altas que el monito, no gigantes): las de los lados ya no ocupan
+// la mitad de lo hondo de la pared.
+const U0 = 0.24, U1 = 0.58, ALTO_LADO = 160, ANCHO_A = 82, ALTO_A = 166;
 export const hondoPuerta = () => PISO + (H - PISO) * PUERTA_T;
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 const nombre = (k) => cuarto(k).n;

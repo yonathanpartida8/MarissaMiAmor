@@ -78,7 +78,7 @@ export const ITEMS = {
       <path d="M50 16q16-10 32 0" stroke="#fff" stroke-opacity=".35" stroke-width="6" stroke-linecap="round" fill="none"/>`),
   },
   puerta: {
-    n: "Puerta de la casa", cat: "jardin", w: 102, h: 212, al: "puerta", colores: ["#ffb066", "#ff86b0", "#8fd0ff", "#94dfbd", "#c9a7ff"],
+    n: "Puerta de la casa", cat: "jardin", w: 86, h: 178, al: "puerta", colores: ["#ffb066", "#ff86b0", "#8fd0ff", "#94dfbd", "#c9a7ff"],
     arte: (e, C) => svg(102, 212, `
       <rect x="0" y="0" width="102" height="212" rx="51" ry="44" fill="#fff6ea" ${OL}/>
       <rect x="10" y="12" width="82" height="200" rx="41" ry="36" fill="${C}" ${OL}/>

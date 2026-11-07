@@ -9,12 +9,22 @@
  *     hornean: se quedan vivas en una capa encima, puesta con la misma transformación del frente girado (una
  *     matriz afín), así siguen moviéndose, prendiéndose y apagándose, alineadas con su lugar.
  *   · Lo que se mueve casi entero (un columpio, una hamaca) no se gira: se queda de frente (`plano`).
- *   · Se hace una vez por cosa, dibujo y ángulo (de 15 en 15 grados) y se guarda.
+ *   · Se hace una vez por cosa, dibujo y ángulo y se guarda.
+ *
+ * (Fase 71) Ya no se gira libre: cada cosa tiene CUATRO vistas —de frente, de su lado derecho, de espaldas y de su
+ * lado izquierdo— (de 90 en 90 grados). Así no salen esas vistas chuecas de en medio que parecían un bloque grueso, y
+ * el teléfono hace mucho menos trabajo. Los muebles principales traen su costado y su espalda dibujados a mano
+ * (`vistas` en catalogo/vistas.js): la forma de lado (con sus patas, su respaldo, su brazo enrollado…) y sus colores,
+ * con la misma paleta de su frente.
  */
+import { PAL, rampa } from "./catalogo/pixel.js";
+
 const PX = 4, ELEV = 0.36, CACHE = new Map(), PEND = new Map(), PODADO = new Map();
 export const ELEV_GIRO = ELEV;
-export const pasoGiro = 15;
-/** El ángulo guardado de una cosa (0…345, de 15 en 15). */
+export const pasoGiro = 90;
+/** Cómo se llama cada una de las cuatro vistas. */
+export const NOMBRE_VISTA = { 0: "De frente", 90: "Lado izquierdo", 180: "De espaldas", 270: "Lado derecho" };
+/** El ángulo guardado de una cosa (0, 90, 180 o 270; lo de antes, girado libre, va a la vista más cercana). */
 export function giroDe(o) { const g = Math.round((+o?.e?.giro || 0) / pasoGiro) * pasoGiro; return ((g % 360) + 360) % 360; }
 /** La hondura de un mueble (en el mundo): lo que de verdad mide para atrás, sin ensancharlo. */
 export const hondura = (d) => Math.max(10, Math.min(150, d.hondo ?? Math.min(d.w * 0.5, d.h * 0.45 + 20)));
@@ -96,7 +106,7 @@ const escalon = (f) => PASOS_LUZ.reduce((a, b) => (Math.abs(b - f) < Math.abs(a 
  * sombreado de pixel art. Lo que ya viene en pixel (`d.pixel`) se queda tal cual.
  */
 const REJ = new Map(), REJ_P = new Map();
-async function rejilla(d, quieto) {
+export async function rejilla(d, quieto) {
   const clave = `rej|${d.k}|${huella(quieto)}`;
   if (REJ.has(clave)) return REJ.get(clave);
   if (REJ_P.has(clave)) return REJ_P.get(clave);
@@ -176,7 +186,7 @@ export function vistaGirada(d, e, C, g) {
   // girado, esa parte se esconde, así que va dentro del volumen (y el monito queda adentro con su hondura).
   let partes = partes0;
   if (d.frente) { const pf = separar(d.frente(e || {}, C)); partes = { ...partes0, quieto: partes0.quieto.replace(/<\/svg>\s*$/, pf.quieto.replace(/^<svg[^>]*>/, "")) }; }
-  const clave = `${d.k}|${huella(partes.quieto)}|${g}|70`;
+  const clave = `${d.k}|${huella(partes.quieto)}|${g}|71`;
   if (CACHE.has(clave)) return Promise.resolve({ ...CACHE.get(clave), vivo: partes.vivo });
   if (PEND.has(clave)) return PEND.get(clave).then((r) => r && { ...r, vivo: partes.vivo });
   const pr = (async () => {
@@ -192,7 +202,27 @@ export function vistaGirada(d, e, C, g) {
         let nt = 0; for (let q = 0; q < W * H; q++) if (todo[q * 4 + 3] > 110) nt++;
         if (nt && nq / nt < 0.55) { const r = { plano: true }; CACHE.set(clave, r); return r; }
       }
-      const D = Math.max(2, Math.round(hondura(d) / PX));
+      // (Fase 71) Lo dibujado a mano: su costado (forma y color), su perfil de en medio y su espalda.
+      const V = d.vistas || null;
+      const D = V?.D || Math.max(2, Math.round(hondura(d) / PX));
+      let colV = null, ladoDe = null;
+      if (V) {
+        // Los colores del dibujo a mano se ajustan a la paleta de su frente (el mismo rosa, la misma madera).
+        const pal = { ...PAL, ...(C ? rampa(C) : {}), ...(V.pal ? V.pal(C || "#ff9cbf") : {}) }, delFrente = new Map();
+        for (let q = 0; q < W * H; q++) if (op[q]) delFrente.set((src[q * 4] << 16) | (src[q * 4 + 1] << 8) | src[q * 4 + 2], 1);
+        const lista = [...delFrente.keys()].map((n) => [n >> 16, (n >> 8) & 255, n & 255]), memo = new Map();
+        colV = (ch) => {
+          if (!ch || ch === "=") return null;
+          if (memo.has(ch)) return memo.get(ch);
+          const t = String(pal[ch] || ""), m = /^#?([0-9a-f]{6})$/i.exec(t), r = /rgb\((\d+),\s*(\d+),\s*(\d+)/.exec(t), n = m ? parseInt(m[1], 16) : 0, c = r ? [+r[1], +r[2], +r[3]] : [n >> 16, (n >> 8) & 255, n & 255];
+          let mejor = c, dm = 64;
+          for (const p of lista) { const dd = Math.abs(p[0] - c[0]) + Math.abs(p[1] - c[1]) + Math.abs(p[2] - c[2]); if (dd < dm) { dm = dd; mejor = p; } }
+          memo.set(ch, mejor);
+          return mejor;
+        };
+        const br = V.brazos | 0;
+        ladoDe = (u, v, z) => (V.centro && u >= br && u < W - br ? V.centro(v, z, u) : V.lado(v, z, u));
+      }
       // Cada renglón: sus tramos (de dónde a dónde hay dibujo), sus orillas y su color de en medio.
       const tramos = [], a0 = new Int16Array(H).fill(-1), b0 = new Int16Array(H).fill(-1), izq = [], der = [], fila = [];
       let anchoMax = 1;
@@ -220,10 +250,10 @@ export function vistaGirada(d, e, C, g) {
       // sofá o de una tienda es parejo—; si cambia de veras —la cubierta blanca sobre el mueble—, empieza otra.)
       for (const o of [izq, der]) {
         let banda = null; for (let v = 0; v < H; v++) { const c = o[v]; if (!c) { banda = null; continue; } if (banda && Math.abs(banda[0] - c[0]) + Math.abs(banda[1] - c[1]) + Math.abs(banda[2] - c[2]) < 70) o[v] = banda; else banda = c; }
-        // Una franja de uno o dos renglones (una costura, la orilla de un cojín) se une a la de junto: no hace raya.
+        // Una franja de hasta tres renglones (una costura, la orilla de un cojín) se une a la de junto: no hace raya.
         for (let v = 0; v < H;) {
           let w = v; while (w + 1 < H && o[w + 1] && o[v] && o[w + 1] === o[v]) w++;
-          if (o[v] && w - v + 1 <= 2) { const vecino = (v > 0 && o[v - 1]) || (w + 1 < H && o[w + 1]); if (vecino) for (let q = v; q <= w; q++) o[q] = vecino; }
+          if (o[v] && w - v + 1 <= 3) { const vecino = (v > 0 && o[v - 1]) || (w + 1 < H && o[w + 1]); if (vecino) for (let q = v; q <= w; q++) o[q] = vecino; }
           v = w + 1;
         }
       }
@@ -250,6 +280,7 @@ export function vistaGirada(d, e, C, g) {
       /** ¿Hay algo en este cuadrito del volumen? (u: de izquierda a derecha, v: de arriba abajo, z: de enfrente a atrás) */
       const dentro = (u, v, z) => {
         if (u < 0 || v < 0 || z < 0 || u >= W || v >= H || z >= D || !op[v * W + u]) return false;
+        if (V) return !!ladoDe(u, v, z);
         if (perfil) {
           const py = (v + 0.5) * PX;
           let hay = false;
@@ -298,7 +329,14 @@ export function vistaGirada(d, e, C, g) {
             if (!f) f = !dentro(u, v - 1, z) ? 5 : !dentro(u, v, z - 1) ? 1 : 2;
             const base = cel(u, v);
             let c, k;
-            if (f === 5) {
+            if (V) {
+              // (Fase 71) Lo dibujado a mano: el costado y lo de arriba con su color de lado; la espalda con el suyo.
+              if (f === 5) { const tl = topeEn(u - 1, z), tr = topeEn(u + 1, z), pl = tl === v || tr === v || (tl > H && tr > H); if (!pl) f = tl > v ? 3 : 4; }
+              if (f === 1) { c = base; k = L.f; }
+              else if (f === 2) { c = colV(V.atras?.(u, v)) || (V.atras ? null : mezcla(colV(ladoDe(u, v, z)) || base, 0.97)) || base; k = L.b; }
+              else { const lc = colV(ladoDe(u, v, z)) || (f === 3 ? izq[v] : der[v]) || base; c = f === 5 ? mezcla(lc, 1.06) : lc; k = f === 3 ? L.l : f === 4 ? L.r : null; }
+            }
+            else if (f === 5) {
               // (En una ladera —el techo de una tienda, la orilla de algo redondo— los cubitos hacen escalones: ahí la
               // cara de arriba se sombrea como la ladera, pareja, en vez de rayas claras y oscuras.)
               const tl = topeEn(u - 1, z), tr = topeEn(u + 1, z), plano = tl === v || tr === v || (tl > H && tr > H);

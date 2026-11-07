@@ -1,4 +1,4 @@
-import { FONDO_3D, FRENTE_3D, PARED_3D, PISO as PISO_M, H as H_M } from "./cuartos.js";
+import { FONDO_3D, FRENTE_3D, PARED_3D, PISO as PISO_M, H as H_M, TECHO_ATRAS as TB, TECHO_FRENTE as TF } from "./cuartos.js";
 /**
  * TEXTURAS EN PIXEL ART (Fase 57): los tapices de las paredes, los pisos, la lluvia y los charquitos, y lo de
  * enfrente de afuera (la cerca, la fachada de la casa, el caminito y el barandal de la terraza), dibujados
@@ -346,9 +346,9 @@ export function pintarCaja(cv, cfg, soloPuertas = false) {
   const tp = datosDe(cache.get(cfg.pared)), tf = datosDe(cache.get(cfg.piso));
   const ZOC = [255, 250, 247], ZOC2 = [232, 214, 222], LINEA = [120, 80, 105];
   const put = (i, j, k, f = 1, a = 255) => { const o = (j * W + i) * 4; d[o] = Math.min(255, k[0] * f); d[o + 1] = Math.min(255, k[1] * f); d[o + 2] = Math.min(255, k[2] * f); d[o + 3] = a; };
-  // (Fase 62) La puerta, en la pared de su lado: de 0.16 a 0.66 de hondo y más alta que el monito (186), con su marco claro,
+  // (Fase 62) La puerta, en la pared de su lado: de 0.24 a 0.58 de hondo y poquito más alta que el monito (160), con su marco claro,
   // su orilla, dos tableros hundidos, la manija del lado de enfrente y la rendija de abajo. Abierta: el pasillo oscurito.
-  const U0 = 0.16, U1 = 0.66, HT = 186;
+  const U0 = 0.24, U1 = 0.58, HT = 160;   // (Fase 71: de tamaño normal; antes 0.16…0.66 y 186 de alto)
   const puertaEn = (lado, u, hgt) => {
     const p = lado < 0 ? cfg.izq : cfg.der;
     if (!p?.puerta || u < U0 || u > U1 || hgt > HT + 7) return null;
@@ -366,19 +366,34 @@ export function pintarCaja(cv, cfg, soloPuertas = false) {
       const f = 0.4 + 0.32 * (hgt / HT); return [50 * f, 36 * f, 58 * f];
     }
     const ku = U1 - 0.078;
-    if (Math.abs(u - ku) < 0.011 && Math.abs(hgt - 84) < 4) return [255, 214, 120];   // la manija
-    if (Math.abs(u - ku) < 0.017 && Math.abs(hgt - 84) < 6.5) return [170, 116, 60];
+    if (Math.abs(u - ku) < 0.011 && Math.abs(hgt - 74) < 4) return [255, 214, 120];   // la manija
+    if (Math.abs(u - ku) < 0.017 && Math.abs(hgt - 74) < 6.5) return [170, 116, 60];
     if (hgt < 4) return HOJA.map((v) => v * 0.62);                                     // la rendija de abajo
     let f = 0.88 + 0.14 * fu + 0.04 * (hgt / HT);
     const a = U0 + 0.075, b = U1 - 0.075, m = (a + b) / 2, en = (u0, u1, h0, h1) => u > u0 && u < u1 && hgt > h0 && hgt < h1;
-    const arriba = en(a, m - 0.012, 104, HT - 24) || en(m + 0.012, b, 104, HT - 24), abajo = en(a, m - 0.012, 20, 90) || en(m + 0.012, b, 20, 90);
-    if (arriba || abajo) { f *= 0.9; if (en(a, b, abajo ? 86 : HT - 28, abajo ? 90 : HT - 24)) f *= 1.12; }   // tablero hundido con su brillito arriba
+    const arriba = en(a, m - 0.012, 88, HT - 20) || en(m + 0.012, b, 88, HT - 20), abajo = en(a, m - 0.012, 16, 76) || en(m + 0.012, b, 16, 76);
+    if (arriba || abajo) { f *= 0.9; if (en(a, b, abajo ? 72 : HT - 24, abajo ? 76 : HT - 20)) f *= 1.12; }   // tablero hundido con su brillito arriba
     return HOJA.map((v) => v * f);
   };
   const pixel = (i, j) => {
     const X = (i + 0.5) * PXC, Y = ARRIBA3D + (j + 0.5) * PXC, b = BAY[(j % 4) * 4 + (i % 4)] / 16;
     // (Fase 62) El corte de la pared (enfrente, a los lados) va en otro lado, encima de los monitos: aquí queda vacío.
     if (X < FL || X > w - FL) return put(i, j, [0, 0, 0], 1, 0);
+    // (Fase 71) EL TECHO: arriba de la pared de atrás y de las de los lados (la orilla de arriba de cada pared va de
+    // TECHO_ATRAS, al fondo, a TECHO_FRENTE, enfrente). Tablitas claras en perspectiva y su moldura donde se juntan.
+    if (Y < TB + 10) {
+      const se = Math.abs(X - cx) / (w / 2), u = se <= B ? 0 : Math.min(1, (se - B) / (F - B)), yT = TB + u * (TF - TB);
+      if (Y < yT) {
+        const t = Math.min(1, Math.max(0, (TB - Y) / (TB - TF))), sc = B + (F - B) * t, xl = cx + (X - cx) / sc;
+        let f = 0.88 + 0.12 * t;
+        if (yT - Y < 7) f *= 0.9;                                   // sombrita junto a la moldura
+        const tabla = ((xl % 46) + 46) % 46;
+        if (tabla < 2.2) return put(i, j, [214, 194, 196], f);       // la junta entre tablitas
+        return put(i, j, tabla < 8 ? [255, 250, 246] : [249, 240, 236], f + (b - 0.5) * 0.03);
+      }
+      const m = Y - yT;
+      if (m < 10) return put(i, j, m < 2.5 ? LINEA : m < 5.5 ? [255, 252, 249] : m < 8 ? [240, 226, 231] : [196, 172, 186], 1, m >= 8 ? 170 : 255);
+    }
     if (Y >= PISO_M) {
       const t = (Y - PISO_M) / (H_M - PISO_M), s = B + (F - B) * Math.min(1, t), half = (w / 2) * s, ax = Math.abs(X - cx);
       if (ax <= half) {   // El piso.
@@ -451,5 +466,114 @@ export function conoLuzPx() {
         if (n > 0) L.pon(i, j, [255, 243, 176], [0, 34, 58, 84, 100][Math.min(4, n)]);
       }
     }
+  });
+}
+
+/* ═══ (Fase 71) EL SUBTERRÁNEO: lo de enfrente del piso (donde ya no se acomoda) es un corte de la tierra, como en una
+ *  casita de muñecas sobre su terreno: la orilla del piso, capas de tierra, barro y roca, raíces, piedras, huesitos,
+ *  gusanitos, cristales, un cráneo de dinosaurio y un gnomo enterrado. Cada cuarto el suyo (sale siempre igual: su
+ *  semilla es su nombre). Un cuadrito = 4 del mundo, como los muebles. ═══ */
+const CRANEO = [
+  "...........oooooo.......",
+  "........ooobbbbbbo......",
+  "......oobbbbbbbbbboo....",
+  "....oobbbbbbbbbbbbbbo...",
+  "...obbbbbbbbbbbdddsbbo..",
+  "..obbddbbbbbbbbddddsbbo.",
+  ".obbbddbbbbbsbbbdddbbbo.",
+  "obbbbbbbbbbbbssbbbbbbbo.",
+  "otbtbtbtbtbtbbbbbbbbbo..",
+  ".ododododododssssssso...",
+  "..otbtbtbtbtbbbbbbbo....",
+  "...obbbbbbbbbbbbbbo.....",
+  "....oooooooooooooo......",
+];
+const GNOMO = [
+  "......r....",
+  ".....rr....",
+  ".....rrR...",
+  "....rrrR...",
+  "....rrrrR..",
+  "...rrrrrR..",
+  "..rrrrrrrR.",
+  "..ffffffff.",
+  "..feffffef.",
+  "..ffffnfff.",
+  ".wwwffffwww",
+  ".wwwwwwwwww",
+  "..wwwwwwww.",
+  "..bwwwwwwb.",
+  ".bbbwwwwbbb",
+  ".bbbbwwbbbb",
+  "..bbbbbbbb.",
+];
+const HUESO = ["bb...bb", ".bbbbb.", "bb...bb"];
+const PAL_SUB = { o: [96, 80, 62], b: [240, 229, 204], s: [208, 192, 160], d: [56, 42, 44], t: [255, 251, 242], r: [214, 66, 60], R: [158, 44, 48], f: [246, 204, 168], e: [44, 32, 44], n: [238, 150, 130], w: [246, 246, 246] };
+PAL_SUB.b2 = [70, 112, 192];
+export function texSubsuelo(k, wm) {
+  const w = Math.max(40, Math.ceil(wm / 4)), h = 110;
+  return comoUrl(`sub|${k}|${w}`, w, h, ({ pon, caja }) => {
+    let sem = [...k].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+    const R = () => (sem = (Math.imul(sem, 1664525) + 1013904223) >>> 0) / 4294967296;
+    const fase = R() * 6, fase2 = R() * 6;
+    const capa = (x, y) => {
+      const l1 = 16 + Math.sin(x * 0.09 + fase) * 2, l2 = 38 + Math.sin(x * 0.06 + fase2) * 3, l3 = 46 + Math.sin(x * 0.07 + fase) * 2;
+      return y < l1 ? [112, 78, 52] : y < l2 ? [96, 66, 47] : y < l3 ? [146, 94, 62] : [80, 62, 58];
+    };
+    const ocupado = new Uint8Array(w * h), marca = (x, y) => { if (x >= 0 && y >= 0 && x < w && y < h) ocupado[y * w + x] = 1; };
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const c = capa(x, y), b = BAY[(y % 4) * 4 + (x % 4)] / 16, r = R();
+      let k2 = c;
+      // En el cambio de capa, tramado (como en los juegos de antes).
+      const c2 = capa(x, y + 2);
+      if (c2 !== c && b > 0.5) k2 = c2;
+      if (r < 0.035) k2 = cla(k2, 0.16); else if (r < 0.07) k2 = osc(k2, 0.78);
+      pon(x, y, k2);
+    }
+    // La orilla del piso (el corte de la duela) y su sombrita.
+    caja(0, 0, w, 1, [92, 60, 52]); caja(0, 1, w, 1, [176, 128, 92]); caja(0, 2, w, 1, [140, 98, 72]); caja(0, 3, w, 1, [70, 48, 40]);
+    // Piedritas sueltas.
+    for (let i = 0; i < w * 0.35; i++) { const x = Math.floor(R() * w), y = 5 + Math.floor(R() * (h - 8)); pon(x, y, [150, 142, 150]); pon(x + 1, y, [118, 112, 122]); pon(x, y - 1, [182, 176, 186]); }
+    // Raíces que bajan del piso.
+    for (let i = 0; i < Math.max(3, w / 30); i++) {
+      let x = 2 + R() * (w - 4), y = 4;
+      const largo = 6 + R() * 16;
+      for (let t = 0; t < largo; t++) { pon(x, y, [158, 118, 84]); if (R() < 0.3) pon(x + (R() < 0.5 ? -1 : 1), y, [130, 96, 68]); x += R() < 0.33 ? -1 : R() < 0.5 ? 1 : 0; y += 1; }
+    }
+    // Un sprite (con su contorno de tierra oscura alrededor) donde haya lugar.
+    const dibuja = (spr, x0, y0, pal = PAL_SUB) => {
+      spr.forEach((fila, j) => [...fila].forEach((ch, i) => {
+        if (ch === ".") return;
+        const k3 = pal[ch]; if (!k3) return;
+        pon(x0 + i, y0 + j, k3); marca(x0 + i, y0 + j);
+      }));
+      spr.forEach((fila, j) => [...fila].forEach((ch, i) => {
+        if (ch === ".") return;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const xx = x0 + i + dx, yy = y0 + j + dy, f = spr[j + dy]?.[i + dx]; if ((f == null || f === ".") && !ocupado[yy * w + xx]) pon(xx, yy, osc(capa(xx, yy), 0.62)); }
+      }));
+    };
+    const PAL_GNOMO = { ...PAL_SUB, b: PAL_SUB.b2 };
+    const libre = (x0, y0, ww, hh) => { for (let y = y0 - 1; y < y0 + hh + 1; y++) for (let x = x0 - 1; x < x0 + ww + 1; x++) if (x < 0 || y < 4 || x >= w || y >= h || ocupado[y * w + x]) return false; return true; };
+    const poner = (ww, hh, y0, y1, f, intentos = 30) => { for (let i = 0; i < intentos; i++) { const x = Math.floor(R() * (w - ww - 2)) + 1, y = Math.floor(y0 + R() * (y1 - y0)); if (libre(x, y, ww, hh)) { f(x, y); return true; } } return false; };
+    // El cráneo de dinosaurio (a veces mirando al otro lado) y el gnomo enterrado.
+    const espejo = (spr) => spr.map((f) => [...f].reverse().join(""));
+    poner(24, 13, 8, 22, (x, y) => dibuja(R() < 0.5 ? CRANEO : espejo(CRANEO), x, y));
+    poner(11, 17, 6, 14, (x, y) => dibuja(GNOMO, x, y, PAL_GNOMO));
+    poner(24, 13, 52, 90, (x, y) => dibuja(R() < 0.5 ? CRANEO : espejo(CRANEO), x, y));   // otro fósil, más hondo
+    // Piedras grandes (con su luz arriba a la izquierda).
+    for (let n = 0; n < 6 + Math.floor(w / 45); n++) {
+      const rx = 2 + Math.floor(R() * 5), ry = 1 + Math.floor(R() * 3);
+      poner(rx * 2 + 1, ry * 2 + 1, 6, h - 10, (x0, y0) => {
+        for (let y = -ry; y <= ry; y++) for (let x = -rx; x <= rx; x++) {
+          const q = (x / (rx + 0.5)) ** 2 + (y / (ry + 0.5)) ** 2; if (q > 1) continue;
+          const borde = (x / (rx - 0.2)) ** 2 + (y / (ry - 0.2)) ** 2 > 1;
+          pon(x0 + rx + x, y0 + ry + y, borde ? [70, 64, 76] : x + y < -1 ? [176, 170, 184] : x + y > 1 ? [104, 98, 112] : [138, 132, 146]); marca(x0 + rx + x, y0 + ry + y);
+        }
+      });
+    }
+    // Huesitos, cristalitos y gusanitos.
+    for (let n = 0; n < 2; n++) poner(7, 3, 10, h - 6, (x, y) => dibuja(HUESO, x, y));
+    poner(5, 5, 30, h - 8, (x, y) => { const C = R() < 0.5 ? [[255, 160, 200], [200, 90, 150], [255, 220, 236]] : [[150, 200, 255], [80, 130, 210], [220, 240, 255]]; for (const [dx, dy, t] of [[2, 0, 2], [1, 1, 0], [2, 1, 0], [3, 1, 1], [0, 2, 0], [1, 2, 0], [2, 2, 1], [3, 2, 1], [4, 2, 1], [1, 3, 1], [2, 3, 1], [3, 3, 1]]) { pon(x + dx, y + dy, C[t]); marca(x + dx, y + dy); } });
+    for (let n = 0; n < 3; n++) poner(4, 2, 5, 40, (x, y) => { pon(x, y, [236, 140, 160]); pon(x + 1, y + 1, [236, 140, 160]); pon(x + 2, y + 1, [220, 120, 146]); pon(x + 3, y, [236, 140, 160]); pon(x + 3, y - 1, [60, 40, 44]); });
   });
 }

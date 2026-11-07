@@ -14,6 +14,8 @@ const alternar = (j, o, k, si, no) => { const on = !o.e?.[k]; j.estado(o, { [k]:
 
 export const ACCIONES = {
   luz(j, o) { j.cuartoLuz(o.c); j.sonar("interruptor"); },
+  /** (Fase 71) Un foco del techo: se apaga o se prende solito (con el apagador del cuarto se apagan todos). */
+  foco(j, o, n) { alternar(j, o, "apagado", "interruptor", "interruptor"); rebote(n, "columpia"); },
   tele(j, o) {
     const canal = ((o.e?.canal | 0) + 1) % 4;
     j.estado(o, { canal });

@@ -158,13 +158,13 @@ export function estiloCuarto(j) {
 /** (Fase 69) EL CAJÓN DE «ACOMODAR», NUEVO: una tiendita de cositas en pixel.
  *  · Arriba su asa (tócala o jálala para agrandarlo), un buscador y «Pared y piso».
  *  · Las categorías como chips con su dibujito, y las cosas en tarjetas con su imagen pixel nítida (se cargan al verse),
- *    con etiquetas de lo que se puede: «360°» (se gira), «Encima» (va sobre mesas y estantes), «Nuevo».
+ *    con etiquetas de lo que se puede: «4 vistas» (se gira: de frente, de lado y de espaldas), «Encima» (va sobre mesas y estantes), «Nuevo».
  *  · Chiquito: dos filas que se deslizan de lado; toca para ponerla o ARRÁSTRALA hacia arriba y suéltala donde quieras.
  *  · Grande: todas en cuadrícula; tocar una la pone y el cajón se vuelve a hacer chiquito para que la veas. */
 const sinAcentos = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 /** El dibujito de cada categoría (lo más reconocible de ella). */
-const REPRESENTA = { sala: "sofa", cocina: "estufa", recamara: "cama", bano: "tina", estudio: "escritorio", cositas: "osito", adornos: "jarron_vidrio", plantas: "maceta", jardin: "arbolito", terraza: "hamaca", deco: "cuadro", limpieza: "escoba", mascotas: "gatito" };
-const TINTE = { sala: "#ffd6e4", cocina: "#cdeedd", recamara: "#e4dafc", bano: "#d3ebfb", estudio: "#ffe2c9", cositas: "#fff0b8", adornos: "#ffd9ec", plantas: "#d6f2c6", jardin: "#cfeec0", terraza: "#ffe0cc", deco: "#eadcff", limpieza: "#d6eefa", mascotas: "#fff1c4", recientes: "#ffe3ec" };
+const REPRESENTA = { sala: "sofa", cocina: "estufa", recamara: "cama", bano: "tina", estudio: "escritorio", cositas: "osito", adornos: "jarron_vidrio", plantas: "maceta", jardin: "arbolito", terraza: "hamaca", deco: "cuadro", techo: "foco_campana", limpieza: "escoba", mascotas: "gatito" };
+const TINTE = { sala: "#ffd6e4", cocina: "#cdeedd", recamara: "#e4dafc", bano: "#d3ebfb", estudio: "#ffe2c9", cositas: "#fff0b8", adornos: "#ffd9ec", plantas: "#d6f2c6", jardin: "#cfeec0", terraza: "#ffe0cc", deco: "#eadcff", techo: "#fff1c8", limpieza: "#d6eefa", mascotas: "#fff1c4", recientes: "#ffe3ec" };
 /** La imagen pixel de una cosa, a escala entera (nítida), para la tarjeta o el chip. */
 function miniPixel(d, caja, max = 5) {
   const i = el("i.ca-cat-mini", { html: d.arte({}, colorDe(d, {})) });
@@ -199,7 +199,7 @@ export function cajonCatalogo(j) {
   const girable = (d) => d.capa === "piso" && !d.mascota && !d.noGira && d.k !== "cosita";
   const tarjeta = (d) => {
     const mini = miniPixel(d, [60, 50]);
-    const tags = [girable(d) ? el("em.t360", { text: "360°" }) : null, d.portatil && d.noEstorba ? el("em.tencima", { text: "Encima" }) : null].filter(Boolean);
+    const tags = [girable(d) ? el("em.t360", { text: "4 vistas" }) : null, d.portatil && d.noEstorba ? el("em.tencima", { text: "Encima" }) : null].filter(Boolean);
     const b = el("button.ca-cat-b", { type: "button", role: "listitem", "aria-label": `Poner ${d.n}`, dataset: { t: d.k }, style: { "--tinte": TINTE[d.cat] || "#ffe3ec" }, onClick: () => {
       if (b._arrastro) { b._arrastro = false; return; }
       j.agregar(d.k);

@@ -28,7 +28,7 @@ import { el, aviso } from "../ui.js";
 import * as PF from "../perfil.js";
 import { vibrar } from "../../integraciones/plataforma.js";
 import { sinMovimiento as reducido } from "../transiciones.js";
-import { H, PISO, FONDO, FRENTE, SUELO, CUARTOS, CUARTOS_NUEVOS, ANCHO, inicioDe, cuarto, enCuarto, global, casaInicial, opsCuartoNuevo, proyectar, desproyectar, escala3d, corteDe, COLOR_PUERTA, LIMITE_EDIT, frenteDe, opsMudanza, FRENTE_3D, FONDO_3D } from "./cuartos.js";
+import { H, PISO, FONDO, FRENTE, SUELO, CUARTOS, CUARTOS_NUEVOS, ANCHO, inicioDe, cuarto, enCuarto, global, casaInicial, opsCuartoNuevo, proyectar, desproyectar, escala3d, corteDe, COLOR_PUERTA, LIMITE_EDIT, frenteDe, opsMudanza, FRENTE_3D, FONDO_3D, opsTecho, TECHO_ATRAS } from "./cuartos.js";
 import { MAPA, FACHADA, MUDANZA, editable as editableMapa } from "./exterior.js";
 import { Patio } from "./patio.js";
 import { Suciedad } from "./suciedad.js";
@@ -38,7 +38,7 @@ import { Vida } from "./vida.js";
 import { Fisica } from "./fisica.js";
 /** (Fase 68) El paso de los monitos (del mundo por segundo): caminando, trotando (viajes de más de TROTE_DESDE). */
 const VEL_PASO = 168, VEL_TROTE = 246, TROTE_DESDE = 640;
-import { giroDe, vistaGirada, vistaPlana, lugarGirado, hondura, ELEV_GIRO } from "./girar.js";
+import { giroDe, vistaGirada, vistaPlana, lugarGirado, hondura, ELEV_GIRO, NOMBRE_VISTA } from "./girar.js";
 import { modelo as modelo3d, pintar as pintar3d, lugarEn as lugar3d, POSES as POSES3D, CEL as CEL3D } from "./monito3d.js";
 import { CATALOGO, COSAS_MANO, RECETAS, colorDe } from "./catalogo/index.js";
 import { monitoSVG, ropaDe } from "./monito.js";
@@ -56,7 +56,7 @@ import { Necesidades, NECESIDADES } from "./necesidades.js";
 import { LasTraes, VEL_TRAES } from "./traes.js";
 import { VozEnVivo, puedeVoz } from "./voz.js";
 import { CieloVivo } from "./cielo.js";
-import { texPared, texPiso, texLluvia, texCharcos, pintarFrente, texAuto, texSol, texLuna, texRayos, pintarCaja, claveTapiz, clavePiso, sombraPx, conoLuzPx } from "./texturas.js";
+import { texPared, texPiso, texLluvia, texCharcos, pintarFrente, texAuto, texSol, texLuna, texRayos, pintarCaja, claveTapiz, clavePiso, sombraPx, conoLuzPx, texSubsuelo } from "./texturas.js";
 import { Luces } from "./luces.js";
 import { Puertas, hondoPuerta } from "./puertas.js";
 import { Navegacion } from "./ruta.js";
@@ -65,7 +65,8 @@ const lim = (v, a, b) => Math.max(a, Math.min(b, v));
 const MAX_OBJETOS = 300;
 /** (Fase 66) Las poses que hace el monito de bulto (en cualquier ángulo del mueble). */
 const POSE_3D = new Set(["sentado", "dormido", "banando", "columpio"]);
-const PUERTA_T = 0.41;   // (Fase 60) a qué hondura del piso está la puerta de cada pared (0 = al fondo, 1 = enfrente)
+const PUERTA_T = 0.41;
+const x0Cuarto = (gx) => inicioDe(enCuarto(gx).c);   // (Fase 71) dónde empieza el cuarto de esa x   // (Fase 60) a qué hondura del piso está la puerta de cada pared (0 = al fondo, 1 = enfrente)
 const RECIENTES = "editordev:casita-recientes";
 const POSES = ["sentado", "dormido", "banando", "columpio", "cocinando", "duchando"];
 const nuevoId = () => Math.random().toString(36).slice(2, 10);
@@ -278,12 +279,17 @@ export class Casita {
         el("canvas.ca-frente-px", { "aria-hidden": "true" }),
       );
       // (Fase 61) Adentro, cada cuarto es una cajita 3D: piso y paredes de los lados en perspectiva (un lienzo pixel).
-      else n.append(el("canvas.ca-caja-cv", { "aria-hidden": "true" }), el("i.ca-columna"), el("i.ca-techo-r"), c.foco ? el("i.ca-pendiente", { style: { left: c.foco + "px" } }, [el("i.ca-pendiente-luz")]) : null);
+      // (Fase 71) El foco de siempre ya no viene pintado: ahora son focos de verdad colgados del techo (catalogo/techo.js).
+      else n.append(el("canvas.ca-caja-cv", { "aria-hidden": "true" }), el("i.ca-columna"), el("i.ca-techo-r"));
       this.mundo.append(n);
       this.cuartosN.set(c.k, n);
       // (Fase 70) Adentro, lo de enfrente (donde ya no se acomoda) es la pared de enfrente cortada bajito, como en una
       // casita de muñecas: su tapa clara y su cara del color de la pared. Así no parece piso. Va encima de las cosas.
       if (!c.afuera) { n._muro = el("i.ca-frente-muro", { "aria-hidden": "true", style: { left: inicioDe(c.k) + "px", width: c.w + "px" } }); this.mundo.append(n._muro); }
+      // (Fase 71) …y abajo del piso, la tierra: un subterráneo con su cráneo de dinosaurio, piedras y un gnomo enterrado.
+      if (!c.afuera) try { const t = texSubsuelo(c.k, c.w); n._muro.style.setProperty("--subsuelo", t.url); n._muro.style.setProperty("--sub-w", t.tw * 4 + "px"); } catch (e) { /* nada: se queda el color de tierra */ }
+      // (Fase 71) Y arriba, la orilla de enfrente del techo (el corte de la casita de muñecas, como el de los lados).
+      if (!c.afuera) { n._techo = el("i.ca-techo-corte", { "aria-hidden": "true", style: { left: inicioDe(c.k) + "px", width: c.w + "px" } }); this.mundo.append(n._techo); }
       const o = el("i.ca-oscuro." + c.k, { style: { left: inicioDe(c.k) + "px", width: c.w + "px" } });
       this.oscuroN.set(c.k, o);
       // (Fase 60) La luz ambiental de cada cuarto (cálida en la cocina, lila en la recámara, fresca en el baño…).
@@ -351,7 +357,7 @@ export class Casita {
     this.basuraN = el("div.ca-basura", { "aria-hidden": "true" }, [el("i", { html: ICO.borrar }), el("span", { text: "Suelta aquí para quitar" })]);
     this.selN = el("div.ca-sel", { hidden: "" }, [
       el("button.ca-sel-b", { type: "button", "aria-label": "Voltear", title: "Voltear", html: ICO.voltear, onClick: () => this._voltear() }),
-      this.selGirarB = el("button.ca-sel-b.girar", { type: "button", "aria-label": "Girar (o arrastra para girar libre)", title: "Girar (o arrastra para girar libre)", html: ICO.girar }),
+      this.selGirarB = el("button.ca-sel-b.girar", { type: "button", "aria-label": "Girar: de frente, de lado o de espaldas", title: "Girar: de frente, de lado o de espaldas", html: ICO.girar }),
       this.selArreglarB = el("button.ca-sel-b", { type: "button", "aria-label": "Arreglar", title: "Arreglar", html: ICO.arreglar, hidden: "", onClick: () => this._arreglar() }),
       this.selColorB = el("button.ca-sel-b", { type: "button", "aria-label": "Otro color", title: "Otro color", html: ICO.color, onClick: () => this._otroColor() }),
       this.selPuertaB = el("button.ca-sel-b", { type: "button", "aria-label": "A dónde lleva", title: "A dónde lleva", html: ICO.cuartos, hidden: "", onClick: () => { const r = this.sel; if (r) this.puertasN.tocar("o:" + r.o.id); } }),
@@ -367,13 +373,14 @@ export class Casita {
         const dx = e.clientX - gi.x;
         if (Math.abs(dx) > 6) gi.mov = true;
         if (!gi.mov || !this.sel) return;
-        const g = (((gi.g0 + Math.round(dx / 14) * 15) % 360) + 360) % 360;
+        // (Fase 71) Cuatro vistas: arrastrando, cada tantito cambia a la siguiente (frente, lado, espaldas, lado).
+        const g = (((gi.g0 + Math.round(dx / 40) * 90) % 360) + 360) % 360;
         if (g !== gi.g) { gi.g = g; this._dibujarObj(this.sel, { ...this.sel.o, e: { ...(this.sel.o.e || {}), giro: g } }); this.sonar("clic", { volumen: 0.3 }); }
       });
-      const fin = (e) => { if (!gi || e.pointerId !== gi.id) return; const G = gi; gi = null; if (this.sel) this._girar(this.sel, G.mov ? G.g : (G.g0 + 45) % 360); };
+      const fin = (e) => { if (!gi || e.pointerId !== gi.id) return; const G = gi; gi = null; if (this.sel) this._girar(this.sel, G.mov ? G.g : (G.g0 + 90) % 360); };
       gb.addEventListener("pointerup", fin);
       gb.addEventListener("pointercancel", (e) => { if (gi && e.pointerId === gi.id) { gi = null; if (this.sel) this._dibujarObj(this.sel, this.sel.o); } });
-      gb.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && this.sel) { e.preventDefault(); this._girar(this.sel, (giroDe(this.sel.o) + 45) % 360); } });
+      gb.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && this.sel) { e.preventDefault(); this._girar(this.sel, (giroDe(this.sel.o) + 90) % 360); } });
     }
     this.volverN = el("div.ca-barra", {}, [
       el("button.ca-volver", { type: "button", onClick: () => this._volver() }, [el("i", { html: ICO.volver }), el("span", { text: "Volver atrás" })]),
@@ -783,7 +790,7 @@ export class Casita {
     // (Lo que se ve, más casi un cuarto de cada lado: así nunca se nota al deslizar.)
     // (Fase 63: sólo el cuarto que se ve.)
     const cerca = new Set([this.vistaCuarto]);
-    for (const c of CUARTOS) { const n = this.cuartosN.get(c.k); n?.classList.toggle("lejos", !cerca.has(c.k)); n?._muro?.classList.toggle("lejos", !cerca.has(c.k)); }
+    for (const c of CUARTOS) { const n = this.cuartosN.get(c.k); n?.classList.toggle("lejos", !cerca.has(c.k)); n?._muro?.classList.toggle("lejos", !cerca.has(c.k)); n?._techo?.classList.toggle("lejos", !cerca.has(c.k)); }
     this.patio?.lejos(!cerca.has("jardin"));
     for (const { n } of this.recolectar?.nodos.values() || []) n.classList.toggle("lejos", !cerca.has("jardin"));
     this._pintarCanasta?.();
@@ -1032,8 +1039,10 @@ export class Casita {
     if (r.d.guarda) this._pintarGuardado(r);
     if (r.glow) {
       const b = r.d.brilla, p = b.propio;
-      const on = (e.dano | 0) < 2 && (b.siempre ? true : p ? (p[0] === "!" ? !e[p.slice(1)] : !!e[p]) : !apagado);
+      // (Fase 71) Un foco del techo: prende con el apagador del cuarto, y cada uno se puede apagar solito.
+      const on = (e.dano | 0) < 2 && (b.siempre ? true : b.cuarto ? !apagado && !e.apagado : p ? (p[0] === "!" ? !e[p.slice(1)] : !!e[p]) : !apagado);
       r.glow.classList.toggle("on", on);
+      n.classList.toggle("foco-on", on);
       r.glow.classList.toggle("cuarto-oscuro", apagado);
     }
   }
@@ -2114,9 +2123,22 @@ export class Casita {
   _ubicarSel() {
     const r = this.sel;
     if (!r || this.selN.hidden) return;
-    const B = r.n.getBoundingClientRect(), p = { x: (B.left + B.right) / 2, y: B.top }, R = this.raiz.getBoundingClientRect(), w = this.selN.offsetWidth || 150;
-    this.selN.style.left = lim(p.x - R.left - w / 2, 8, R.width - w - 8) + "px";
-    this.selN.style.top = lim(p.y - R.top - 52, 64, R.height - 120) + "px";
+    // (Fase 71) La barrita (girar, color…) nunca tapa lo que elegiste: va arriba si cabe; si no, abajo; si tampoco, a un
+    // lado; y si de plano no cabe (algo muy grande), donde menos lo tape y transparentita. Cuenta su alto de verdad
+    // (con los colores puede ser de dos renglones), la barra de arriba y el cajón de abajo.
+    const B = r.n.getBoundingClientRect(), R = this.raiz.getBoundingClientRect(), n = this.selN;
+    const w = n.offsetWidth || 150, h = n.offsetHeight || 50, cx = (B.left + B.right) / 2 - R.left;
+    const caj = this.cajonN && !this.cajonN.hidden ? this.cajonN.getBoundingClientRect() : null;
+    const arriba0 = Math.max(64, (this.hudN?.getBoundingClientRect().bottom || R.top) - R.top + 6), abajo0 = (caj && caj.top < R.bottom ? caj.top : R.bottom) - R.top - 8;
+    const top = B.top - R.top, bot = B.bottom - R.top, izq = B.left - R.left, der = B.right - R.left;
+    let x = lim(cx - w / 2, 8, R.width - w - 8), y, encima = false;
+    if (top - h - 10 >= arriba0) y = top - h - 10;
+    else if (bot + 10 + h <= abajo0) y = bot + 10;
+    else if (der + 10 + w <= R.width - 8 || izq - 10 - w >= 8) { x = der + 10 + w <= R.width - 8 ? der + 10 : izq - 10 - w; y = lim((top + bot) / 2 - h / 2, arriba0, abajo0 - h); }
+    else { y = top - arriba0 > abajo0 - bot ? arriba0 : abajo0 - h; encima = true; }
+    n.style.left = Math.round(x) + "px";
+    n.style.top = Math.round(lim(y, arriba0, Math.max(arriba0, abajo0 - h))) + "px";
+    n.classList.toggle("encima", encima);
   }
   _guardarObj(r, cambios, sonido = "pop") {
     const antes = JSON.parse(JSON.stringify(r.o));
@@ -2132,7 +2154,7 @@ export class Casita {
   _girar(r, g) {
     if (!r || !this._girable(r.d)) return;
     const id = r.o.id;
-    if (giroDe(r.o) !== g) this._guardarObj(r, { e: { ...(r.o.e || {}), giro: g } }, "whoosh");
+    if (giroDe(r.o) !== g) { this._guardarObj(r, { e: { ...(r.o.e || {}), giro: g } }, "whoosh"); aviso(NOMBRE_VISTA[giroDe({ e: { giro: g } })], 900); }
     else this._dibujarObj(r, r.o);
     const n = this.objs.get(id);
     if (n) { this.sel = null; this._seleccionar(n); }
@@ -2221,6 +2243,10 @@ export class Casita {
     const cu0 = cuarto(this.vistaCuarto), techo = cu0.mapa ? -MAPA.arriba + 10 : -this.offY / this.k + 6, fr = frenteDe(this.vistaCuarto);
     if (d.capa === "alfombra") y = lim(y, FONDO + 24, fr);
     else y = lim(y, techo + d.h, fr + 4);
+    // (Fase 71) Un foco del techo sólo se recorre de lado (sigue colgado). Jugando sí se puede jalar… y se cae.
+    if (d.techo && !g.jugando) y = d.y;
+    // (Y lo demás de la pared no se mete en el techo.)
+    else if (d.capa === "pared" && !cu0.afuera && !g.jugando) y = Math.max(y, TECHO_ATRAS + 10 + d.h * 0.75);
     // (Fase 61: el dedo está en lo que se ve; se regresa al mundo según la hondura a la que va.)
     const x0 = inicioDe(this.vistaCuarto), x1 = x0 + cuarto(this.vistaCuarto).w;   // (Fase 63: dentro del cuarto que se ve)
     const enAire = d.capa === "pared" ? y < PISO : false;
@@ -2269,11 +2295,14 @@ export class Casita {
     if (g.gx == null) { this._colocar(r); return; }
     // (Fase 69) Una cosita soltada encima de un organizador se guarda adentro, en el siguiente hueco libre.
     { const q = this._guardaEn(r, g.gx, g.y); if (q) { this._guardar(q, r); return; } }
-    // Física: si lo aventaste, se resbala un poquito; si quedó en el aire, cae al mueble de abajo o al piso.
-    if (g.jugando) g.gx = lim(g.gx + lim(g.vx * 6, -90, 90), r.d.w * 0.3, ANCHO - r.d.w * 0.3);
+    // Física: si lo aventaste, vuela según qué tan fuerte (y lo redondo rueda más); si quedó en el aire, cae al mueble
+    // de abajo o al piso. (Fase 71: con vuelo en arco, rebote y rodada; antes sólo se resbalaba un poquito.)
+    const desde = g.jugando && r.v ? { x: r.v.x, y: r.v.y } : null, vx0 = g.vx || 0, redondo = !!r.d.torno || /pelota|bola|naranja|globo|dona|rueda|manzana|balon/.test(r.d.k);
+    if (g.jugando) g.gx = lim(g.gx + lim(vx0 * (redondo ? 14 : 9), redondo ? -260 : -170, redondo ? 260 : 170), x0Cuarto(g.gx) + r.d.w * 0.3, x0Cuarto(g.gx) + cuarto(enCuarto(g.gx).c).w - r.d.w * 0.3);
     r.n.classList.remove("no-cabe");
     const d = r.d, soltadoEn = g.y, c0 = enCuarto(g.gx).c, e0 = { ...(r.o.e || {}) };
     let tirado = false;
+    if (d.techo && !g.jugando) g.y = d.y;
     if (d.capa === "pared") {
       // (Fase 64) Lo de la pared sólo se cuelga donde de verdad hay pared (adentro, la de atrás; en el patio, la fachada).
       // En el cielo o en el piso no se sostiene: se cae y queda tirado en el piso.
@@ -2307,7 +2336,9 @@ export class Casita {
     if (g.jugando) {
       this.sync.op({ o: "pon", obj: { ...JSON.parse(JSON.stringify(r.o)), ...nuevo } });
       this._pintarCasa(this.sync.casa());
-      if (cayo > 8) this._caer(this.objs.get(r.o.id) || r, cayo, golpe);
+      const rv = this.objs.get(r.o.id) || r;
+      if (desde && Math.abs(vx0) > 1.2 && !reducido()) this._vuelo(rv, desde, vx0, redondo, blando(d));
+      else if (cayo > 8) this._caer(rv, cayo, golpe);
       else if (!reducido()) { r.n.classList.add("aterriza"); setTimeout(() => r.n.classList.remove("aterriza"), 480); }
       this.particulas("polvo", { gx: g.gx, y: g.y }, 0, 0, 3);
       this.sonar({ miau: "miau", guau: "guau", chillido: "chillido", cuac: "cuac" }[r.d.al] || "boing", { volumen: 0.8 });
@@ -2320,6 +2351,29 @@ export class Casita {
     if (!reducido()) { rn.n.classList.add("aterriza"); setTimeout(() => rn.n.classList.remove("aterriza"), 480); }
     if (!enPared(rn.o, d)) this.particulas("polvo", { gx: g.gx, y: g.y }, 0, 0, 3);
     this._seleccionar(rn);
+  }
+  /** (Fase 71) EL VUELO de algo que aventaste: sale de donde lo soltaste, sube en arco, cae, rebota (dos veces si es
+   *  duro, una blandita y aplastándose si es suave) y, si es redondo, rueda girando. Sólo es la animación: ya quedó
+   *  guardado donde cae (así los dos teléfonos lo ven igual). */
+  _vuelo(r, desde, vx, redondo, suave) {
+    const v = r.v; if (!v || !r.n?.animate) return;
+    const dx = desde.x - v.x, dy = desde.y - v.y, alto = 30 + Math.min(70, Math.abs(vx) * 6), t = Math.min(1300, 620 + Math.abs(dx) * 1.6);
+    const b1 = suave ? 7 : 16, b2 = suave ? 0 : 5;
+    try {
+      r.n.animate([
+        { translate: `${dx}px ${dy}px`, offset: 0 },
+        { translate: `${dx * 0.45}px ${Math.min(dy, 0) * 0.5 - alto}px`, offset: 0.34, easing: "ease-in" },
+        { translate: "0px 0px", offset: 0.6, easing: "ease-out" },
+        { translate: `0px ${-b1}px`, offset: 0.74, easing: "ease-in" },
+        { translate: "0px 0px", offset: 0.86, easing: "ease-out" },
+        { translate: `0px ${-b2}px`, offset: 0.93, easing: "ease-in" },
+        { translate: "0px 0px", offset: 1 },
+      ], { duration: t, easing: "linear" });
+      if (suave) r.n.animate([{ scale: "1 1", offset: 0 }, { scale: "1 1", offset: 0.57 }, { scale: "1.14 0.84", offset: 0.62 }, { scale: "0.96 1.05", offset: 0.7 }, { scale: "1 1", offset: 0.8 }], { duration: t });
+      const arte = r.n.querySelector(".ca-obj-arte");
+      if (redondo && arte) arte.animate([{ rotate: "0deg" }, { rotate: `${(-dx / Math.max(20, r.d.w * 3.1)) * 360}deg` }], { duration: t, easing: "cubic-bezier(.2,.7,.3,1)" });
+      setTimeout(() => { if (this.vivo) { this.sonar(suave ? "boing" : "tok", { volumen: 0.5 }); this.particulas("polvo", { gx: r.gx, y: r.o.y }, 0, 0, 2); this.fisica?.aterrizo(r); } }, t * 0.6);
+    } catch (e) { /* sin animación: ya quedó en su lugar */ }
   }
   /** (Fase 64) ¿Se puede acomodar algo del piso aquí? (en el patio, sólo en el pasto libre; adentro, no en lo de enfrente) */
   _editableEn(c, gx, y) { return cuarto(c).mapa ? editableMapa(gx - inicioDe(c), y) : y <= frenteDe(c) - 4; }
@@ -2513,6 +2567,8 @@ export class Casita {
       }
       // (Fase 64) El jardín chiquito de antes se muda al patio grande (una sola vez).
       if (!r.casa.cuartos?.jardin?.mapa) ops.push(...opsMudanza(r.casa, MUDANZA, editableMapa, (t) => CATALOGO[t]?.capa));
+      // (Fase 71) Los cuartos de antes estrenan su foco colgado del techo (donde estaba el de siempre).
+      ops.push(...opsTecho(r.casa));
       if (ops.length) this.sync.ops(ops);
     }
     this._pintarCasa(this.sync.casa());

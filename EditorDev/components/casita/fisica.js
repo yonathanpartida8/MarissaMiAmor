@@ -90,6 +90,15 @@ export class Fisica {
     j.particulas("polvo", { gx, y }, 0, 0, 2);
   }
 
+  /** (Fase 71) Lo que aventaste cae: lo chiquito de junto sale rodando un poquito para afuera (como en la vida real). */
+  aterrizo(r) {
+    const j = this.j;
+    for (const q of [...j.objs.values()]) {
+      if (q === r || q.o.c !== r.o.c || !ligero(q.d) || q.o.id === j.arrastrandoId) continue;
+      const dx = q.gx - r.gx, dy = q.o.y - r.o.y, d = Math.hypot(dx, dy * 1.6);
+      if (d > 2 && d < 54) setTimeout(() => this.patear(q.o.id, dx / d, dy / d, false), 90);
+    }
+  }
   /** Al llegar: si corría hacia la pared, ¡pum!; si hay vidrios cerquita, te avisa. */
   llegar(m, embiste) {
     const j = this.j, c = enCuarto(m.gx).c;
@@ -119,6 +128,8 @@ export class Fisica {
     for (const r of [...j.objs.values()]) {
       if (r.o.c !== c || r.d.mascota || r.o.id === j.arrastrandoId) continue;
       const dx = Math.abs(r.gx - bx), e = r.o.e || {};
+      // (Fase 71) Los focos del techo se mecen colgados de su cable (no se chuequean ni se caen).
+      if (r.d.techo) { if (!sinMov() && dx < 420) { r.n.classList.remove("columpia"); void r.n.offsetWidth; r.n.classList.add("columpia"); } continue; }
       // Lo colgado se chuequea; si ya estaba muy chueco, se cae.
       if (r.d.capa === "pared" && !e.tirado && dx < 220) {
         const ch = +e.chueco || 0, nuevo = Math.round(ch + (Math.random() < 0.5 ? -1 : 1) * azar(3, 8));

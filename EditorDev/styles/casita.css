@@ -1310,7 +1310,7 @@ body.ca-escribiendo .jt-nav { display: none; }
 /* Las puertas de atrás: marco con su moldura, el hueco con su grosor de pared, la hoja con tableros que gira de verdad. */
 .ca-puerta { position: absolute; z-index: 9; pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; }
 .ca-puerta.lejos { display: none; }
-.ca-puerta.atras { width: 96px; height: 196px; transform-origin: 50% 100%; scale: var(--s3, 1); perspective: 320px; }
+.ca-puerta.atras { width: 82px; height: 166px; transform-origin: 50% 100%; scale: var(--s3, 1); perspective: 320px; }
 .ca-puerta .pu-marco { position: absolute; inset: 0; border-radius: 5px 5px 0 0; background: #fffaf6; box-shadow: inset 0 0 0 3px #c9a3b7, inset 0 0 0 6px #fffaf6, inset 0 0 0 7px #ecdbe2, 0 4px 10px -4px rgba(90, 40, 70, .22); }
 .ca-puerta .pu-marco::before { content: ""; position: absolute; left: -7px; right: -7px; top: -9px; height: 13px; border-radius: 4px; background: #fffaf6; box-shadow: inset 0 0 0 3px #c9a3b7, inset 0 -4px 0 #f0dfe6; }
 .ca-puerta .pu-hueco { position: absolute; left: 11px; right: 11px; top: 12px; bottom: 0; background: linear-gradient(90deg, #1e1427 0 12%, #34253d 12% 88%, #2a1d33 88%), #34253d; box-shadow: inset 0 -16px 0 -6px rgba(255, 220, 200, .08); }
@@ -1318,8 +1318,8 @@ body.ca-escribiendo .jt-nav { display: none; }
   box-shadow: inset 0 0 0 2px rgba(80, 40, 60, .34), inset -5px 0 0 rgba(255, 255, 255, .16), inset 4px 0 0 rgba(0, 0, 0, .05); transition: transform .52s cubic-bezier(.35, .62, .25, 1), filter .52s; }
 .ca-puerta.abierta .pu-hoja { transform: rotateY(-76deg); filter: brightness(.84); }
 .ca-puerta .pu-tablero { position: absolute; left: 9px; right: 9px; border-radius: 3px; box-shadow: inset 0 0 0 2px rgba(80, 40, 60, .18), inset 0 3px 0 rgba(255, 255, 255, .3), inset 0 -2px 0 rgba(0, 0, 0, .07); }
-.ca-puerta .pu-tablero.t1 { top: 12px; height: 68px; } .ca-puerta .pu-tablero.t2 { top: 94px; bottom: 12px; }
-.ca-puerta .pu-perilla { position: absolute; right: 8px; top: 90px; width: 9px; height: 9px; border-radius: 50%; background: #ffd889; box-shadow: inset -2px -2px 0 #d2a04a, 0 1px 0 rgba(0, 0, 0, .18); }
+.ca-puerta .pu-tablero.t1 { top: 10px; height: 56px; } .ca-puerta .pu-tablero.t2 { top: 78px; bottom: 10px; }
+.ca-puerta .pu-perilla { position: absolute; right: 7px; top: 74px; width: 9px; height: 9px; border-radius: 50%; background: #ffd889; box-shadow: inset -2px -2px 0 #d2a04a, 0 1px 0 rgba(0, 0, 0, .18); }
 .ca-puerta .pu-umbral { position: absolute; left: 3px; right: 3px; bottom: -4px; height: 6px; border-radius: 2px; background: #ead7de; box-shadow: 0 2px 0 rgba(90, 40, 70, .12); }
 .ca-puerta .pu-muro { position: absolute; left: -46px; right: -46px; top: -48px; bottom: 0; border-radius: 6px 6px 0 0; background: repeating-linear-gradient(0deg, #f4e4d6 0 22px, #ead6c4 22px 24px), #f4e4d6; box-shadow: inset 0 0 0 3px #d8bba4; }
 /* Su letrerito: a qué cuarto lleva (un iconito suave). */
@@ -1862,3 +1862,31 @@ body.ca-escribiendo .jt-nav { display: none; }
     linear-gradient(rgba(80, 40, 64, .16), rgba(80, 40, 64, .24));
   box-shadow: 0 -2px 0 rgba(80, 40, 64, .18); }
 .ca-frente-muro.lejos { visibility: hidden; }
+
+/* ═══════════ FASE 71: techo, focos colgados, cuatro vistas ═══════════ */
+/* La orilla de enfrente del techo (el corte de la casita de muñecas, igual que los de los lados), hasta TECHO_FRENTE. */
+.ca-techo-corte { position: absolute; top: -900px; height: 918px; z-index: 1500; pointer-events: none;
+  background: linear-gradient(#f9eee8 0 calc(100% - 10px), #fffaf6 calc(100% - 10px) calc(100% - 6px), #f1e2dd calc(100% - 6px) calc(100% - 3px), #c9aabb calc(100% - 3px));
+  box-shadow: 0 3px 0 rgba(80, 40, 64, .14); }
+.ca-techo-corte.lejos { visibility: hidden; }
+/* Los focos del techo: lo que brilla sólo se ve prendido; el ventilador gira sus aspas prendido. */
+.ca-obj:not(.foco-on) .foco-luz { visibility: hidden; }
+.aspa-b { display: none; }
+.ca.fx1 .ca-obj.foco-on .aspa-a { animation: caPxA .24s steps(1, end) infinite; }
+.ca.fx1 .ca-obj.foco-on .aspa-b { display: inline; animation: caPxB .24s steps(1, end) infinite; }
+/* Al tocarlo (o si le pegan), el foco se mece colgado de su cable y se va calmando. */
+.ca-obj.columpia > .ca-obj-arte { animation: caColumpio 2.4s cubic-bezier(.25, .6, .4, 1); transform-origin: 50% 0; }
+@keyframes caColumpio { 10% { transform: rotate(9deg); } 28% { transform: rotate(-7deg); } 46% { transform: rotate(5deg); } 64% { transform: rotate(-3deg); } 82% { transform: rotate(1.5deg); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ca .ca-obj :is(.aspa-a, .aspa-b) { animation: none !important; } .ca-obj.columpia > .ca-obj-arte { animation: none; } }
+/* La ventana nueva (pixel): el cielo de su vidrio según la hora y el clima, y sus cortinas abiertas o cerradas. */
+.ca-obj.ventana :is(.tarde-o, .lluvia-o, .cortina-ce) { display: none; }
+.ca-mundo.tarde .ca-obj.ventana .tarde-o, .ca-mundo.lluvia .ca-obj.ventana .lluvia-o { display: inline; }
+.ca-mundo.noche .ca-obj.ventana .tarde-o { display: none; }
+.ca-mundo.noche.lluvia .ca-obj.ventana .lluvia-o { filter: brightness(.42); }
+.ca-obj.ventana.e-cerrada .cortina-ce { display: inline; }
+.ca-obj.ventana.e-cerrada .cortina-ab { display: none; }
+/* (Fase 71) Abajo del piso (enfrente, donde ya no se acomoda): la tierra, como un subterráneo, en pixel. */
+.ca-frente-muro { background: var(--subsuelo, none) 0 0 / var(--sub-w, 100%) 440px no-repeat, #4f3d39; image-rendering: pixelated; box-shadow: 0 -2px 0 rgba(60, 30, 24, .3); }
+/* (Fase 71) Si la barrita de lo elegido no cabe sin taparlo (algo enorme), se hace transparentita. */
+.ca-sel.encima { opacity: .78; }
+.ca-sel.encima:active, .ca-sel.encima:focus-within { opacity: 1; }
