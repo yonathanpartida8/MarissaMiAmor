@@ -184,7 +184,7 @@ function cerca() {
     g[1][x0 + 1] = "]"; g[1][x0 + 2] = "["; g[0][x0 + 1] = "{"; g[0][x0 + 2] = "]";
     g[H - 1][x0] = "("; g[H - 1][x0 + 3] = "(";
   }
-  return pix({ n: "Cerquita de jardín", cat: "jardin", colores: ["#ffffff", "#ffc6dc", "#c9f0dc", "#dfac7c", "#d6ccff"], filas: filas(g), nuevo: true });
+  return pix({ n: "Cerquita de jardín", cat: "jardin", colores: ["#ffffff", "#ffc6dc", "#c9f0dc", "#dfac7c", "#d6ccff"], filas: filas(g), nuevo: true, noGira: true });
 }
 function hongo() {
   const W = 22, H = 24, g = rejilla(W, H);
@@ -194,7 +194,7 @@ function hongo() {
   elipse(g, 8.5, 6, 4.5, 2.4, "]", (x, y) => y < 9);
   for (const [x, y] of [[6, 7], [14, 5], [16, 9], [10, 3], [4, 10]]) { g[y][x] = "C"; g[y][x + 1] = "C"; g[y + 1][x] = "C"; g[y + 1][x + 1] = "D"; }
   rect(g, 9, 16, 4, 4, "a"); g[16][9] = "b"; g[16][12] = "b"; g[18][11] = "n";   // la puertita
-  return pix({ n: "Hongo casita", cat: "jardin", colores: ["#ef5a6f", "#ff9cbf", "#b998f0", "#ffb84a", "#5ab0e6"], filas: filas(g), nuevo: true });
+  return pix({ n: "Hongo casita", cat: "jardin", colores: ["#ef5a6f", "#ff9cbf", "#b998f0", "#ffb84a", "#5ab0e6"], filas: filas(g), nuevo: true, noGira: true });
 }
 function bebedero() {
   const W = 26, H = 26, g = rejilla(W, H);
