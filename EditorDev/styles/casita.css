@@ -2098,3 +2098,30 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-cat-mini.px img.llega { animation: none; }
 /* (Fase 75) Una cosita posada sobre la tapa de un mueble mientras la arrastras: casi sin levantarla, para ver dónde queda. */
 .ca-obj.levantado.posado { transform: translateY(-3px) scale(1.03) rotate(var(--incl, 0deg)); filter: drop-shadow(0 3px 2px rgba(80, 40, 60, .25)); }
+/* (Fase 76) El lienzo tiene su propia capa: al pellizcar (o con el zoom del mensaje) sólo se escala esa capa ya pintada,
+   sin volver a dibujar toda la casita en cada paso (eso, en el teléfono, se veía como parpadeos y cosas que no salían). */
+.ca-lienzo { will-change: transform; backface-visibility: hidden; }
+/* (Fase 76) El sartén y la olla en pixel: adentro se ve lo que se cocina; si la receta no tiene platillo que mostrar
+   (un chocolate, unas papitas), se ve el relleno del color de la comida. */
+.ca-obj.estufa:not(.guiso-liso) .relleno { display: none; }
+.ca-obj.estufa .guiso svg { overflow: visible; }
+/* (Fase 76) Gabinetes y refri que guardan: por dentro sólo se ve abierto (lo guardado también). */
+.ca-obj .adentro { display: none; }
+.ca-obj.e-abierto .adentro { display: inline; }
+.ca-obj.con-puertas:not(.e-abierto) .ca-guardado { visibility: hidden; }
+.ca-obj.refri.e-abierto .puerta-b { transform: scaleX(.1); }
+.ca-guardado-comida { position: absolute; display: block; animation: caGuardaEntra .4s cubic-bezier(.3, 1.5, .5, 1) both; }
+.ca-guardado-comida svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ca-guarda-huecos.cuatro, .ca-guarda-huecos.muchos { grid-template-columns: repeat(4, 1fr); }
+.ca-guarda-huecos.muchos { max-height: 46vh; overflow: auto; }
+.ca-guarda-h i.comida { display: grid; place-items: center; background: none; }
+.ca-guarda-h i.comida svg { width: 100%; height: 100%; }
+.ca-hoja.guarda .ca-guarda-huecos.cuatro .ca-guarda-h, .ca-hoja.guarda .ca-guarda-huecos.muchos .ca-guarda-h { min-height: 68px; }
+/* (Fase 76) Tus objetos: su imagen tal cual; abierto y funcionando (sus cuadros en bucle) cambian lo que se ve. */
+.ca-obj.propio .ca-obj-arte svg image { pointer-events: visiblePainted; }
+.ca-obj .prop-abierto, .ca-obj .prop-anim { display: none; }
+.ca-obj.e-abierto .prop-abierto { display: inline; }
+.ca-obj.e-abierto .prop-base { display: none; }
+.ca-obj.e-anda .prop-anim { display: inline; }
+.ca-obj.e-anda :is(.prop-base, .prop-abierto) { display: none; }
+.ca-obj .prop-c { opacity: 0; }

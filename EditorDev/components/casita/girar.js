@@ -501,6 +501,11 @@ export function vistaGirada(d, e, C, g) {
  * Lo que se mueve sigue vivo encima (el mismo dibujo, con lo quieto transparente). Se hacen de una en una.
  */
 let COLA = Promise.resolve();
+/** (Fase 76) Mientras deslizas la cámara, pellizcas o arrastras, no se prepara ninguna vista (cada una ocupa al
+ *  teléfono un ratito y eso se notaba como tirones y parpadeos): se espera a que te quedes quieta un momento. */
+let pausaHasta = 0;
+export const pausarVistas = (ms = 1200) => { pausaHasta = Math.max(pausaHasta, performance.now() + ms); };
+const esperarPausa = async () => { let n = 0; while (performance.now() < pausaHasta && n++ < 60) await new Promise((r) => setTimeout(r, Math.min(400, pausaHasta - performance.now() + 30))); };
 /**
  * (Fase 74) DE FRENTE CON VOLUMEN (2.5D): lo que va en el piso y se puede girar se ve de frente con su grosor, como en
  * una casita pixel art de verdad: el frente de siempre (los mismos cuadritos, en el mismo lugar) y, encima, su tapa en
@@ -520,6 +525,7 @@ export function vista34(d, e, C) {
   const pr = (COLA = COLA.then(async () => {
     await vistasListas;
     if (CACHE.has(k)) return CACHE.get(k);
+    await esperarPausa();
     await new Promise((r) => setTimeout(r, 0));   // (deja pintar un cuadro entre una y otra)
     const v = await vistaGirada(d, e, C, 0);
     recordar(k, v);
@@ -528,19 +534,21 @@ export function vista34(d, e, C) {
   return pr.then((v) => (v && !v.plano ? v : null), () => null);
 }
 /** (Fase 74) La vista de frente que le toca: con volumen si va en el piso; si no (o si casi todo se mueve), la plana. */
-export function vistaFrente(d, e, C) { return con34(d) ? vista34(d, e, C).then((v) => v || vistaPlana(d, e, C)) : vistaPlana(d, e, C); }
-export function vistaFrenteYa(d, e, C) { return con34(d) ? vista34Ya(d, e, C) : vistaPlanaYa(d, e, C); }
+export function vistaFrente(d, e, C) { if (d.propio) return Promise.resolve(d.vista?.() || null); return con34(d) ? vista34(d, e, C).then((v) => v || vistaPlana(d, e, C)) : vistaPlana(d, e, C); }
+export function vistaFrenteYa(d, e, C) { if (d.propio) return d.vista?.() || null; return con34(d) ? vista34Ya(d, e, C) : vistaPlanaYa(d, e, C); }
 /** (Fase 73) La vista plana si ya está hecha (para pintarla al instante, sin pasar por el dibujo liso). */
 export function vistaPlanaYa(d, e, C) {
   try { const partes = separar(d.arte(e || {}, C)); return CACHE.get(`plana|${d.k}|${huella(partes.quieto)}`) || null; } catch (er) { return null; }
 }
 export function vistaPlana(d, e, C) {
+  if (d.propio) return Promise.resolve(d.vista?.() || null);   // (Fase 76: tus objetos ya son una imagen)
   const arte = d.arte(e || {}, C), partes = separar(arte), clave = `plana|${d.k}|${huella(partes.quieto)}`;
   if (CACHE.has(clave)) return Promise.resolve(CACHE.get(clave));
   if (PEND.has(clave)) return PEND.get(clave);
   const pr = (COLA = COLA.then(async () => {
     await vistasListas;
     if (CACHE.has(clave)) { PEND.delete(clave); return CACHE.get(clave); }
+    await esperarPausa();
     await new Promise((r) => setTimeout(r, 0));
     try {
       const { cw, ch, out } = await rejilla(d, partes.quieto);

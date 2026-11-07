@@ -183,7 +183,7 @@ function miniPixel(d, caja, max = 5) {
   if (ya) { i.append(imgMini(ya)); return i; }
   // (Fase 75) Si su imagen ya está hecha (o guardada en el teléfono), sale al instante, sin aparecer de a poquito.
   const desde = (v) => { const [w, h] = tamMini(v.w / 4, v.h / 4, caja, max), m = { url: v.url, w, h }; MINIS.set(clave, m); return m; };
-  const ya2 = G0?.vistaFrenteYa(d, {}, colorDe(d, {}));
+  const ya2 = d.propio ? d.vista() : G0?.vistaFrenteYa(d, {}, colorDe(d, {}));
   if (ya2) { i.append(imgMini(desde(ya2))); return i; }
   i._cargar = () => {
     if (i._ya) return; i._ya = true;

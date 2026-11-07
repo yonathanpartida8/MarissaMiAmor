@@ -117,15 +117,19 @@ export function crearCapaGL(j, nv = 4) {
   for (const k of ["res", "t", "noche", "lluvia", "viento", "flash", "afuera", "ambiente", "n", "luz", "tono", "oscuro", "efectos"]) U[k] = gl.getUniformLocation(pr, k);
   const luces = new Float32Array(64), tonos = new Float32Array(48);
   // (Fase 63) En todos los modos: los ligeros dibujan más chiquito y menos seguido (y sin lluvia ni luciérnagas).
-  let rq = 0, ult = 0, perdido = false, muerto = false, escala = 0.5, ultFirma = "", cada = 32, efectos = 1;
+  let rq = 0, ult = 0, urgente = false, perdido = false, muerto = false, escala = 0.5, ultFirma = "", cada = 32, efectos = 1;
   const ajustar = (k) => { escala = [0.3, 0.36, 0.45, 0.55, 0.65][k] ?? 0.5; cada = k <= 1 ? 66 : 32; efectos = k >= 2 ? 1 : 0; ultFirma = ""; };
   ajustar(nv);
   const t0 = performance.now();
   const hex = (c) => { const m = /^#?([0-9a-f]{6})$/i.exec(String(c || "").trim()); const v = m ? parseInt(m[1], 16) : 0xffd68c; return [(v >> 16 & 255) / 255, (v >> 8 & 255) / 255, (v & 255) / 255]; };
   cv.addEventListener("webglcontextlost", (e) => { e.preventDefault(); perdido = true; cancelAnimationFrame(rq); if (!muerto) j._sinGL?.("Se perdió la capa de luces"); });
 
+  // (Fase 76) El tamaño del lienzo se sabe cuando cambia (no se pregunta en cada cuadro: preguntarlo obligaba al
+  // teléfono a recalcular toda la casita en cada cuadro y daba tirones al deslizar y al hacer zoom).
+  let cw = 0, ch = 0;
+  try { new ResizeObserver((l) => { const r = l[l.length - 1].contentRect; cw = r.width; ch = r.height; urgente = true; }).observe(cv); } catch (e) { /* sin ResizeObserver: se pregunta */ }
   function medir() {
-    const w = cv.clientWidth, h = cv.clientHeight;
+    const w = cw || cv.clientWidth, h = ch || cv.clientHeight;
     const W = Math.max(1, Math.round(w * escala)), H = Math.max(1, Math.round(h * escala));
     if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; gl.viewport(0, 0, W, H); }
     return [W, H];
@@ -134,16 +138,20 @@ export function crearCapaGL(j, nv = 4) {
     rq = 0;
     if (perdido || !j.vivo || document.hidden) return;
     rq = requestAnimationFrame(cuadro);
-    if (ahora - ult < cada) return;           // 30 cuadros por segundo como mucho (15 en los modos ligeros)
+    if (j._pellizcando) return;   // (Fase 76: mientras pellizcas, la capa se escala igual que la casita)
+    // 30 cuadros por segundo como mucho (15 en los modos ligeros)… salvo cuando la cámara se mueve o haces zoom: ahí
+    // la luz se acomoda en el mismo cuadro, para que no se quede atrás (se veía temblar y parpadear). (Fase 76)
+    if (!urgente && ahora - ult < cada) return;
+    urgente = false;
     // Si el teléfono va lento (más de 70 ms entre cuadros seguido), baja la resolución.
     const dt = ahora - ult; ult = ahora;
     if (dt > 70 && dt < 500) { escala = Math.max(0.33, escala - 0.02); }
-    const [W, H] = medir(), s = W / Math.max(1, cv.clientWidth);
+    const [W, H] = medir(), s = W / Math.max(1, cw || cv.clientWidth);
     const e = j.estadoGL();
     let n = 0;
     for (const L of e.luces) {
       if (n >= 16) break;
-      if (L.x < -L.r || L.x > cv.clientWidth + L.r) continue;
+      if (L.x < -L.r || L.x > (cw || cv.clientWidth) + L.r) continue;
       luces.set([L.x * s, L.y * s, L.r * s, L.i], n * 4);
       tonos.set(hex(L.c), n * 3);
       n++;
@@ -168,6 +176,8 @@ export function crearCapaGL(j, nv = 4) {
     n: cv,
     prender() { if (!rq && !perdido) { ult = 0; ultFirma = ""; rq = requestAnimationFrame(cuadro); } },
     parar() { cancelAnimationFrame(rq); rq = 0; },
+    /** (Fase 76) La cámara se movió: en el siguiente cuadro se acomoda la luz, sin esperar su turno. */
+    ya() { urgente = true; if (!rq && !perdido && j.vivo) rq = requestAnimationFrame(cuadro); },
     ajustar(k) { ajustar(k); this.nv = k; },
     destruir() { muerto = true; cancelAnimationFrame(rq); rq = 0; try { gl.deleteProgram(pr); gl.deleteBuffer(buf); gl.getExtension("WEBGL_lose_context")?.loseContext(); } catch (e) { /* nada */ } cv.remove(); },
   };

@@ -1,0 +1,6 @@
+Carpeta «cocina»: Refris, estufas, alacenas, mesas….
+
+Deja aquí tus imágenes (.png con fondo transparente es lo mejor; .jpg también: se le quita el fondo
+liso). Cada objeto en su carpetita (frente.png, derecha.png, izquierda.png, atras.png, abierto.png,
+funcionando1.png, funcionando2.png…) o suelto (miobjeto.png, miobjeto-derecha.png, miobjeto-abierto.png…).
+Mira el LÉEME.md de la carpeta de arriba para todos los detalles.

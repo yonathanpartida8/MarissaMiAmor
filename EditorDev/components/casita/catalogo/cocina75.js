@@ -45,6 +45,7 @@ function conVivo(def, viejo, quitar = [], dx = 0, dy = 0) {
   };
   return p;
 }
+const R = (x, y, w, h, c, extra = "") => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"${extra}/>`;
 const enC = (u, z, cx, cz, r) => Math.hypot(u + 0.5 - cx, z + 0.5 - cz) <= r;
 const hash = (a, b) => { let h = Math.imul(a * 73856093 ^ b * 19349663, 2654435761) >>> 0; return (h % 1000) / 1000; };
 
@@ -66,13 +67,9 @@ function refri() {
   // Por dentro (se ve al abrir): repisas y comida.
   L.caja(2, 19, 23, 46, "C");
   for (const y of [27, 36]) { L.caja(2, y, 23, y, "E"); L.caja(2, y + 1, 23, y + 1, "D"); }
-  L.caja(4, 21, 6, 26, "A"); L.caja(4, 21, 6, 22, "#"); L.pon(5, 23, "B");               // leche
-  L.caja(9, 23, 11, 26, "P"); L.caja(9, 22, 11, 22, "n"); L.pon(10, 24, "w");            // mermelada
-  L.caja(15, 24, 16, 25, "w"); L.pon(15, 24, "x"); L.pon(16, 23, "s");                    // tomate
-  L.caja(5, 31, 9, 34, "J"); L.caja(5, 31, 9, 31, "C"); L.pon(7, 30, "w");               // pastelito
-  L.caja(14, 29, 15, 34, "r"); L.pon(14, 29, "s"); L.pon(14, 30, "t");                    // botella
-  for (const x of [5, 8, 11]) { L.pon(x, 41, "C"); L.pon(x, 42, "D"); }                   // huevitos
-  L.caja(16, 40, 19, 42, "7"); L.pon(19, 39, "s");                                         // zanahoria
+  // (Fase 76) Sin comida dibujada: lo que guardas en el refri es lo que se ve en sus repisas (y se acaba al comerlo).
+  L.caja(2, 19, 23, 20, "D"); L.caja(2, 45, 23, 46, "D");                                   // la luz de arriba y el cajón de verduras
+  for (let x = 4; x <= 21; x += 3) L.pon(x, 45, "E");
   // La base con su rejilla y sus patitas.
   L.caja(0, 47, 25, 47, ")");
   L.caja(0, 48, 25, 51, ")"); for (let x = 6; x <= 19; x++) for (const y of [49, 50]) if (x % 2 === 0) L.pon(x, y, "(");
@@ -144,6 +141,21 @@ function gabinete(L, w = 30, puertas = [[2, 13], [16, 27]]) {
   // El zoclo hundido.
   L.caja(0, 30, w - 1, 31, "("); L.caja(1, 30, w - 2, 30, ")");
 }
+/** (Fase 76) Por dentro del gabinete (se ve al abrirlo): el hueco oscuro, su repisa y las puertas abiertas en las orillas. */
+function adentro(w, puertas) {
+  const a = puertas[0][0], b = puertas[puertas.length - 1][1], X = (c) => c * 4;
+  let s = R(X(a), X(14), X(b - a + 1), X(15), "#2b2333") + R(X(a), X(14), X(b - a + 1), 4, "#1b1620") + R(X(a), X(21), X(b - a + 1), 4, "#76463a") + R(X(a), X(21), X(b - a + 1), 2, "#a0634a");
+  for (let i = 0; i < puertas.length - 1; i++) s += R(X(puertas[i][1] + 1), X(14), 4, X(15), "#1d4a4c");
+  s += R(X(a) - 4, X(14), 6, X(15), "var(--puerta, #2c786f)") + R(X(b + 1) - 2, X(14), 6, X(15), "var(--puerta, #2c786f)") + R(X(a) - 4, X(14), 2, X(15), "#58b4a0");
+  return `<g class="adentro">${s}</g>`;
+}
+/** Los huecos para guardar adentro (en dos pisos, a lo ancho de las puertas). */
+const huecosGab = (puertas, n) => { const a = puertas[0][0] * 4 + 2, b = (puertas[puertas.length - 1][1] + 1) * 4 - 2, ancho = (b - a) / n; return [58, 86].flatMap((y) => [...Array(n).keys()].map((i) => [Math.round(a + i * ancho), y, Math.round(ancho - 2), 24])); };
+const GUARDA_BARRA = { huecos: huecosGab([[2, 13], [16, 27]], 2), soloAbierto: true, abrirDesde: 0.42, nombre: "el gabinete" };
+const GUARDA_FREGADERO = { huecos: huecosGab([[2, 12], [14, 24], [26, 35]], 3), soloAbierto: true, abrirDesde: 0.42, nombre: "el gabinete del fregadero" };
+/** El refri por dentro: tres repisas con cuatro lugarcitos cada una (lo que guardas se ve ahí). */
+const GUARDA_REFRI = { comida: true, nombre: "el refri", huecos: [80, 116, 152].flatMap((y) => [10, 32, 54, 76].map((x) => [x, y, 20, y === 152 ? 30 : 26])) };
+
 /** La cubierta de arriba: crema con vetitas de mármol. */
 const tapaCubierta = (u, z, W, D, v) => (v >= 9 ? (hash(u, z) < 0.07 ? "E" : z >= D - 1 ? "E" : "D") : null);
 
@@ -230,15 +242,38 @@ function alacena() {
   return L.filas();
 }
 
+/* ───────────── (Fase 76) El sartén y la olla en pixel, con lo que se está cocinando adentro ───────────── */
+/** El sartén de hierro visto un poquito desde arriba: orilla, fondo oscuro, la comida adentro y su mango de madera. */
+const SARTEN = `<g class="sarten">${R(22, 16, 48, 4, "#5a556e")}${R(18, 20, 56, 8, "#2b2333")}${R(22, 20, 48, 2, "#1b1620")}${R(18, 20, 4, 8, "#5a556e")}${R(70, 20, 4, 8, "#463b4e")}`
+  + `<g class="hotcake">${R(26, 22, 40, 6, "var(--comida, #f2b45a)", ' class="relleno"')}${R(30, 22, 16, 2, "#fff", ' class="relleno" opacity=".35"')}<g class="guiso"></g></g>`
+  + `${R(18, 28, 56, 4, "#463b4e")}${R(22, 28, 12, 2, "#8a86a2")}${R(22, 32, 48, 2, "#1b1620")}`
+  + `${R(74, 22, 8, 4, "#383447")}${R(82, 21, 24, 6, "#76463a")}${R(82, 21, 24, 2, "#a0634a")}${R(104, 21, 2, 6, "#4a2b2c")}</g>`;
+/** La olla rosita con su corazón: se ve su boca con el caldo (del color de lo que se cocina) y lo que se asoma. */
+const CORAZON = [[40, 20, 4], [48, 20, 4], [38, 22, 16], [40, 24, 12], [42, 26, 8], [44, 28, 4]].map(([x, y, w]) => R(x, y, w, 2, "#fff", ' opacity=".85"')).join("");
+const OLLA = `<g class="olla">${R(14, 12, 8, 4, "#bb5283")}${R(14, 16, 8, 2, "#7c2f55")}${R(70, 12, 8, 4, "#bb5283")}${R(70, 16, 8, 2, "#7c2f55")}`
+  + `${R(24, 2, 44, 4, "#ffc6dc")}${R(22, 6, 48, 6, "#7c2f55")}<rect class="caldo" x="26" y="7" width="40" height="5"/>${R(32, 8, 2, 2, "#fff", ' opacity=".6"')}${R(54, 9, 2, 2, "#fff", ' opacity=".5"')}`
+  + `<g class="guiso"></g>`
+  + `${R(20, 11, 52, 3, "#ffc6dc")}${R(20, 14, 52, 2, "#ef8bb4")}${R(22, 16, 48, 14, "#ef8bb4")}${R(24, 16, 4, 12, "#ffc6dc")}${R(64, 16, 6, 14, "#bb5283")}${R(22, 30, 48, 2, "#7c2f55")}${CORAZON}</g>`;
+/** Las llamitas (abajo del sartén) y el vapor (arriba), también en cuadritos. */
+const FUEGO = `<g class="fuego">${[30, 38, 46, 54, 62].map((x, i) => R(x, 30 + (i % 2), 4, 4 - (i % 2), "#ff8a3d") + R(x + 1, 32, 2, 2, "#ffd84d")).join("")}</g>`;
+const VAPOR = `<g class="vapor">${[[36, -6], [40, -11], [52, -4], [56, -12], [46, -17]].map(([x, y], i) => R(x, y, 4, 4, "#fff", ` opacity="${0.75 - i * 0.08}"`)).join("")}</g>`;
+/** Qué se ve adentro: el platillo de la receta (sin su plato), del tamaño de la boca del sartén o de la olla. */
+export function guisoDe(receta, enOlla) {
+  if (!receta || receta.base === "nada") return "";
+  return enOlla ? `<svg x="26" y="-6" width="40" height="27.3" viewBox="0 0 44 30" shape-rendering="crispEdges" overflow="visible">${receta.comida}</svg>`
+    : `<svg x="25" y="4" width="42" height="28.6" viewBox="0 0 44 30" shape-rendering="crispEdges" overflow="visible">${receta.comida}</svg>`;
+}
+
 /** Los redibujos: k → función que recibe lo de antes (para conservar lo vivo) y regresa lo nuevo. */
 export const COCINA75 = {
-  refri: (viejo) => ({ ...conVivo({ filas: refri(), capas: [{ clase: "puerta-b", f: puertaRefri() }], tapa: (u, z, W, D) => (z >= D - 1 ? "]" : u === 0 || u === W - 1 ? "]" : "{") }, null), colores: ["#f1e2c2", ...viejo.colores.filter((c) => c !== "#f1e2c2")] }),
-  estufa: (viejo) => conVivo({ filas: estufa(), tapa: tapaEstufa, vivo: () => '<rect class="horno" x="24" y="76" width="76" height="36" fill="#1b1620"/><rect class="horno-brillo" x="28" y="96" width="68" height="4" fill="#5a556e"/><rect class="horno-brillo" x="28" y="80" width="12" height="4" fill="#fff" opacity=".22"/><rect class="horno-brillo" x="40" y="84" width="8" height="4" fill="#fff" opacity=".14"/>' }, viejo.arte, ["horno"], 1, 0),
-  fregadero: (viejo) => ({ ...conVivo({ filas: fregadero(), tapa: tapaFregadero, perfil: [[0, 36, 0.6, 0.85]] }, viejo.arte, [], 0, 2), colores: ["#4f9e98", ...viejo.colores] }),
-  barra_cafe: (viejo) => ({ ...conVivo({ filas: barra(CAFETERA), tapa: tapaCubierta, perfil: [[0, 36, 0.28, 0.72]] }, viejo.arte), colores: ["#4f9e98", ...viejo.colores] }),
-  barra_tostador: (viejo) => ({ ...conVivo({ filas: barra(TOSTADOR), tapa: tapaCubierta, perfil: [[0, 36, 0.28, 0.72]] }, viejo.arte), colores: ["#4f9e98", ...viejo.colores] }),
-  barra_micro: (viejo) => ({ ...conVivo({ filas: barra(MICRO), tapa: tapaCubierta, perfil: [[0, 36, 0.22, 0.78]] }, viejo.arte), colores: ["#4f9e98", ...viejo.colores] }),
-  barra_licuadora: (viejo) => ({ ...conVivo({ filas: barra(LICUADORA), tapa: tapaCubierta, perfil: [[0, 36, 0.3, 0.7]] }, viejo.arte), colores: ["#4f9e98", ...viejo.colores] }),
-  barra_fruta: (viejo) => ({ ...conVivo({ filas: barra(FRUTERO), tapa: tapaCubierta, perfil: [[0, 36, 0.25, 0.75]] }, viejo.arte), colores: ["#4f9e98", ...viejo.colores] }),
+  refri: (viejo) => ({ ...conVivo({ filas: refri(), capas: [{ clase: "puerta-b", f: puertaRefri() }], tapa: (u, z, W, D) => (z >= D - 1 ? "]" : u === 0 || u === W - 1 ? "]" : "{") }, null), guarda: GUARDA_REFRI, colores: ["#f1e2c2", ...viejo.colores.filter((c) => c !== "#f1e2c2")] }),
+  // (Fase 76) Todo lo vivo de la estufa en pixel: el horno, el sartén y la olla (con lo que se cocina), las llamitas y el vapor.
+  estufa: () => ({ ...conVivo({ filas: estufa(), tapa: tapaEstufa, vivo: () => '<rect class="horno" x="24" y="76" width="76" height="36" fill="#1b1620"/><rect class="horno-brillo" x="28" y="96" width="68" height="4" fill="#5a556e"/><rect class="horno-brillo" x="28" y="80" width="12" height="4" fill="#fff" opacity=".22"/><rect class="horno-brillo" x="40" y="84" width="8" height="4" fill="#fff" opacity=".14"/>' + FUEGO + SARTEN + OLLA + VAPOR }, null), guiso: true }),
+  fregadero: (viejo) => ({ ...conVivo({ filas: fregadero(), tapa: tapaFregadero, perfil: [[0, 36, 0.6, 0.85]], vivo: () => adentro(38, [[2, 12], [14, 24], [26, 35]]) }, viejo.arte, [], 0, 2), guarda: GUARDA_FREGADERO, colores: ["#4f9e98", ...viejo.colores] }),
+  barra_cafe: (viejo) => ({ ...conVivo({ filas: barra(CAFETERA), tapa: tapaCubierta, perfil: [[0, 36, 0.28, 0.72]], vivo: () => adentro(30, [[2, 13], [16, 27]]) }, viejo.arte), guarda: GUARDA_BARRA, colores: ["#4f9e98", ...viejo.colores] }),
+  barra_tostador: (viejo) => ({ ...conVivo({ filas: barra(TOSTADOR), tapa: tapaCubierta, perfil: [[0, 36, 0.28, 0.72]], vivo: () => adentro(30, [[2, 13], [16, 27]]) }, viejo.arte), guarda: GUARDA_BARRA, colores: ["#4f9e98", ...viejo.colores] }),
+  barra_micro: (viejo) => ({ ...conVivo({ filas: barra(MICRO), tapa: tapaCubierta, perfil: [[0, 36, 0.22, 0.78]], vivo: () => adentro(30, [[2, 13], [16, 27]]) }, viejo.arte), guarda: GUARDA_BARRA, colores: ["#4f9e98", ...viejo.colores] }),
+  barra_licuadora: (viejo) => ({ ...conVivo({ filas: barra(LICUADORA), tapa: tapaCubierta, perfil: [[0, 36, 0.3, 0.7]], vivo: () => adentro(30, [[2, 13], [16, 27]]) }, viejo.arte), guarda: GUARDA_BARRA, colores: ["#4f9e98", ...viejo.colores] }),
+  barra_fruta: (viejo) => ({ ...conVivo({ filas: barra(FRUTERO), tapa: tapaCubierta, perfil: [[0, 36, 0.25, 0.75]], vivo: () => adentro(30, [[2, 13], [16, 27]]) }, viejo.arte), guarda: GUARDA_BARRA, colores: ["#4f9e98", ...viejo.colores] }),
   alacena: () => pix({ filas: alacena() }),
 };

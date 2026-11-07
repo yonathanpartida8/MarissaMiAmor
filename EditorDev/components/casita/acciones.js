@@ -24,10 +24,15 @@ export const ACCIONES = {
     j.sonar(canal ? "tele" : "interruptor");
     if (canal) j.particulas("estrella", o, 0, -110, 3);
   },
+  // (Fase 76) El refri tiene su propia comida: se abre y sale su hojita (sacar, agregar, guardar lo que llevas).
+  // La primera vez trae algo de súper para empezar; lo que se saca y se come, se acaba.
   async refri(j, o) {
     if (!(await j.irJunto(o))) return;
-    j.mientras(o, "abierto", 1800); j.sonar("refri");
-    setTimeout(() => j.dar(azar(["manzana", "helado", "sandia", "galleta", "uvas", "platano", "leche_fresa", "leche_platano", "leche_choco", "leche", "dona", "cuernito"]), o), 450);
+    const r = j.objs.get(o.id);
+    if (!r) return;
+    const e = r.o.e || {}, ini = e.lleno == null ? Object.fromEntries(["manzana", "leche", "helado", "uvas", "sandia", "leche_fresa", "galleta", "platano"].map((k, i) => ["g" + i, k])) : {};
+    j.estado(r.o, { ...ini, lleno: 1, abierto: true }); j.sonar("refri");
+    setTimeout(() => j.vivo && j.panelGuarda(o.id), 380);
   },
   // La cocina: se elige qué cocinar y se sirve en una mesa (mesa.js).
   // (Fase 73) Si ya hay algo cocinándose (o listo) ahí, tocarlo es ir a cuidarlo (o a tomarlo).
@@ -154,6 +159,19 @@ export const ACCIONES = {
   },
   async lavadora(j, o) { if (!(await j.irJunto(o))) return; j.mientras(o, "lava", 3200); j.sonar("lavadora"); j.particulas("burbuja", o, 0, -70, 4); },
   lava(j, o) { alternar(j, o, "on", "interruptor", "interruptor"); },
+  // (Fase 76) Tus objetos (assets/objetos-casita): se abren y se cierran, o se ponen a funcionar (su animación en
+  // bucle) hasta que los vuelvas a tocar. Con los dos: cerrado → abierto → funcionando → cerrado.
+  propio(j, o, n) {
+    const d = o.def || j.objs.get(o.id)?.d, e = o.e || {};
+    if (!d) return;
+    rebote(n);
+    let c;
+    if (d.fAbierto && d.fAnim) c = e.anda ? { anda: false, abierto: false } : e.abierto ? { abierto: false, anda: true } : { abierto: true, anda: false };
+    else if (d.fAnim) c = { anda: !e.anda };
+    else c = { abierto: !e.abierto };
+    j.estado(o, c);
+    j.sonar(c.anda ? "interruptor" : c.abierto ? "abrir" : "cerrar");
+  },
   // (Fase 69) El organizador: al tocarlo se abren (o se cierran) sus puertitas; abierto, sale su hojita para sacar u ordenar.
   guarda(j, o) {
     const ab = !o.e?.abierto;
