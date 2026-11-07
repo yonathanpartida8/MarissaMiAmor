@@ -27,7 +27,7 @@ export const ACCIONES = {
   async refri(j, o) {
     if (!(await j.irJunto(o))) return;
     j.mientras(o, "abierto", 1800); j.sonar("refri");
-    setTimeout(() => j.dar(azar(["manzana", "helado", "sandia", "galleta", "uvas", "platano"]), o), 450);
+    setTimeout(() => j.dar(azar(["manzana", "helado", "sandia", "galleta", "uvas", "platano", "leche_fresa", "leche_platano", "leche_choco", "leche", "dona", "cuernito"]), o), 450);
   },
   // La cocina: se elige qué cocinar y se sirve en una mesa (mesa.js).
   // (Fase 73) Si ya hay algo cocinándose (o listo) ahí, tocarlo es ir a cuidarlo (o a tomarlo).
@@ -179,7 +179,7 @@ export const ACCIONES = {
   async hielera(j, o) {
     if (!(await j.irJunto(o))) return;
     j.mientras(o, "abierto", 1300); j.sonar("hielera");
-    setTimeout(() => j.dar(azar(["paleta", "limonada", "helado", "sandia"]), o), 450);
+    setTimeout(() => j.dar(azar(["paleta", "limonada", "helado", "sandia", "refresco", "leche_fresa"]), o), 450);
   },
   async fogata(j, o) {
     if (!o.e?.on) { j.estado(o, { on: true }); j.sonar("fuego"); j.particulas("chispa", o, 0, -60, 5); return; }

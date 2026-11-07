@@ -8,7 +8,7 @@
 import { el } from "../ui.js";
 import { vibrar } from "../../integraciones/plataforma.js";
 import { COSAS_MANO, RECETAS, baseDe } from "./catalogo/index.js";
-import { bocados3d } from "./comer.js";
+import { bocados3d, mordida } from "./comer.js";
 
 export const BOCADOS = 3;
 const hayComida = (p) => !!(p && RECETAS[p.k] && (p.b | 0) > 0);
@@ -32,8 +32,8 @@ export function pintarPlatos(r) {
     if (!rc) return;
     if (!n) {
       n = el("i.ca-plato", { dataset: { i: String(i), k: rc.k } }, [
-        el("i.ca-plato-base", { html: `<svg viewBox="0 0 44 30" aria-hidden="true">${baseDe(rc)}</svg>` }),
-        el("i.ca-plato-comida", { html: `<svg viewBox="0 0 44 30" aria-hidden="true">${rc.comida}</svg>` }),
+        el("i.ca-plato-base", { html: `<svg class="ca-px" viewBox="0 0 44 30" aria-hidden="true" shape-rendering="crispEdges">${baseDe(rc)}</svg>` }),
+        el("i.ca-plato-comida", { html: `<svg class="ca-px" viewBox="0 0 44 30" aria-hidden="true" shape-rendering="crispEdges">${rc.comida}</svg>` }),
         el("i.ca-plato-vapor"),
       ]);
       r.platosN.append(n);
@@ -139,7 +139,7 @@ export async function comerEnMesa(j, r) {
       const r0 = j.objs.get(r.o.id), p0 = r0 && platosDe(r0)[i];
       if (!j.vivo || !r0 || m.mueble !== sitio || !hayComida(p0) || p0.k !== comida) return;
       const platoN = r0.platosN?.querySelector(`:scope > [data-i="${i}"]:not(.se-acaba)`);
-      await bocados3d(j, m, { n: 2, platoN, color: RECETAS[comida]?.color, sigue: () => j.vivo && m.mueble === sitio, alBocado: (s) => { j.sonar("cuchara"); platoN?.style.setProperty("--come", ((BOCADOS - (p0.b | 0)) + (s + 1) / 2) / BOCADOS); } });
+      await bocados3d(j, m, { n: 2, platoN, color: RECETAS[comida]?.color, sigue: () => j.vivo && m.mueble === sitio, alBocado: (s) => { j.sonar("cuchara"); if (!platoN) return; platoN.style.setProperty("--come", ((BOCADOS - (p0.b | 0)) + (s + 1) / 2) / BOCADOS); mordida(platoN.querySelector(".ca-plato-comida svg"), (BOCADOS - (p0.b | 0)) * 2 + s); } });
       const rr = j.objs.get(r.o.id);
       if (!j.vivo || !rr || m.mueble !== sitio) return;
       const p = platosDe(rr)[i];

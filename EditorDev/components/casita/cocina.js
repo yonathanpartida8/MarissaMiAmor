@@ -21,7 +21,7 @@ import { enCuarto } from "./cuartos.js";
 
 /** Cuánto tarda cada cosa (segundos, a velocidad normal). Nunca más de un minuto. */
 const BASE = { sarten: 26, olla: 38, horno: 52, parrilla: 34, micro: 18, licuadora: 12 };
-const AJUSTE = { huevos: 0.85, quesadillas: 0.9, hotcakes: 1, sopa: 0.95, pasta: 1.05, ramen: 1, pozole: 1.14, chocolate: 0.72, pizza: 1.1, pastel: 1.12, galletas: 0.9, elote: 0.85, hamburguesa: 1, brochetas: 1.05, palomitas: 1, licuado: 1 };
+const AJUSTE = { huevos: 0.85, quesadillas: 0.9, hotcakes: 1, sopa: 0.95, pasta: 1.05, ramen: 1, pozole: 1.14, chocolate: 0.72, pizza: 1.1, pastel: 1.12, galletas: 0.9, elote: 0.85, hamburguesa: 1, brochetas: 1.05, palomitas: 1, licuado: 1, tacos: 0.95, papas: 0.8, donas: 1.1, sushi: 0.9, pollo: 1.12, cuernitos: 1, hotdog: 0.75 };
 export const MAX_S = 60, MIN_S = 10;
 export const segundosDe = (rc) => Math.max(MIN_S, Math.min(MAX_S, Math.round((BASE[rc.en] || 30) * (AJUSTE[rc.k] || 1))));
 const ahora = () => Date.now() / 1000;

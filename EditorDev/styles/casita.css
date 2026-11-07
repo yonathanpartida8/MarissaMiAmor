@@ -767,7 +767,7 @@ body.ca-en-completa { overflow: hidden; }
 /* ═══════════ FASE 55: pixel, puertas, lluvia, chat como Roblox, gestos y más ═══════════ */
 .ca-filtros { position: absolute; width: 0; height: 0; pointer-events: none; }
 /* Estilo pixel (sólo el juego; los botones siguen igual). Se quita en Ajustes o con Ultra rendimiento. */
-.ca.pixel.fx2 :is(.ca-obj-arte svg, .ca-plato svg, .ca-lleva svg, .ca-vuela svg, .ca-regalito) { filter: url(#ca-pixel); }
+.ca.pixel.fx2 :is(.ca-obj-arte svg, .ca-plato svg, .ca-lleva svg, .ca-vuela svg, .ca-regalito):not(.ca-px) { filter: url(#ca-pixel); }
 .ca.pixel :is(.ca-globito, .ca-mono-nombre) { border-radius: 6px; box-shadow: 0 0 0 2px #4a3346, 3px 3px 0 rgba(74, 51, 70, .25); }
 .ca.pixel .ca-part { border-radius: 1px !important; }
 
@@ -1013,7 +1013,7 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca.pixel .ca-basura i { border-radius: 8px; box-shadow: 0 0 0 2px #4a3346, 4px 4px 0 rgba(74, 51, 70, .28); }
 .ca.arrastrando .ca-ed-arriba { opacity: 0; pointer-events: none; transition: opacity .15s; }
 /* Las miniaturas del cajón y de las recetas también en pixel (como las cosas puestas). */
-.ca.pixel.fx2 :is(.ca-cat-mini svg, .ca-receta-arte svg) { filter: url(#ca-pixel); }
+.ca.pixel.fx2 :is(.ca-cat-mini svg, .ca-receta-arte svg):not(.ca-px) { filter: url(#ca-pixel); }
 
 /* ═════════════ Fase 58: monitos 2.5D ═════════════ */
 /* (Fase 59) Sentado de frente, como en Toca: el regazo, las rodillas y las canillas que cuelgan (es su propio dibujo). */
@@ -2051,7 +2051,10 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-coc-capa.listo .ca-coc small { display: inline; }
 @keyframes caCocListo { 50% { transform: translateX(-50%) translateY(-4px); } }
 .ca.editando .ca-coc-capa { display: none; }
-.ca-recetas-caja .ca-nota { margin: 0 14px 10px; }
+/* (Fase 73) La nota arriba y la lista abajo, que se desliza sola (la cajita no crece más que la hoja). */
+.ca-recetas-caja { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.ca-recetas-caja .ca-nota { flex: none; margin: 0 14px 10px; }
+.ca-recetas-caja .ca-recetas { flex: 1 1 auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
 /* (Fase 73) Cocinando de perfil, junto a la estufa: el brazo de adelante revuelve (va y viene sobre el sartén) y el de
    atrás detiene el mango; el cuerpo se inclina tantito hacia la estufa y la cabeza sigue lo que revuelve. */
 .ca-monito.lado.cocinando .ca-bd { animation: caRevuelveLado .9s ease-in-out infinite; }
@@ -2075,5 +2078,5 @@ body.ca-escribiendo .jt-nav { display: none; }
 /* El plato se va vaciando con cada bocado (en escalones, como pixel) y le quedan migajitas. */
 .ca-plato[data-b="2"] { --come: .34; } .ca-plato[data-b="1"] { --come: .67; }
 .ca-plato:is([data-b="2"], [data-b="1"]) .ca-plato-comida { clip-path: none; }
-.ca-plato-comida { transform-origin: 50% 82%; transform: scale(calc(1 - var(--come, 0) * .62)); transition: transform .3s steps(3); }
+.ca-plato-comida { transform-origin: 50% 82%; transform: scale(calc(1 - var(--come, 0) * .38)); transition: transform .3s steps(3); }
 .ca-plato:not([data-b="3"]) .ca-plato-base::after { content: ""; position: absolute; left: 28%; top: 66%; width: 2px; height: 2px; background: var(--migaja, #c98a4a); box-shadow: 7px 2px 0 var(--migaja, #c98a4a), 13px -1px 0 var(--migaja, #c98a4a), 18px 3px 0 var(--migaja, #c98a4a); }

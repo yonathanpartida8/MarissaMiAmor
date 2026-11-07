@@ -119,26 +119,36 @@ export async function bocadosPlanos(j, m, { n = 3, color, sigue = () => true, al
   }
 }
 
-/** A lo que traes en la mano le falta un mordisco más (un hueco con su orillita, en cuadritos). */
-const MORDIDAS = [[33, 8, 8], [8, 7, 7], [21, 3, 9], [33, 24, 8]];
+/**
+ * A lo que traes en la mano (o a lo del plato) le falta un mordisco más: un hueco en escalones de pixel (del tamaño
+ * de los cuadritos del dibujo), por la orilla de la comida (no del plato). Cada mordida cae en otro lado y las de la
+ * segunda vuelta son más grandes, así se nota que se va acabando.
+ */
+const LUGARES = [[0.92, 0.22], [0.08, 0.3], [0.5, 0.02], [0.95, 0.72], [0.06, 0.74], [0.72, 0.04]];
 export function mordida(sv, i) {
   if (!sv) return;
-  const NS = "http://www.w3.org/2000/svg";
-  let g = sv.querySelector(":scope > g.ca-mordido"), mask = sv.querySelector(":scope > defs > mask");
-  if (!g || !mask) {
+  const NS = "http://www.w3.org/2000/svg", vb = sv.viewBox?.baseVal, VW = vb?.width || 40, VH = vb?.height || 40;
+  const cel = VW === 44 ? 2 : VW === 40 && sv.classList.contains("ca-px") ? 2.5 : 1;
+  let mask = sv.querySelector(":scope > defs > mask.ca-mordidas"), blanco = sv.querySelector(":scope > g.ca-comida, :scope > g.ca-mordido");
+  if (!mask) {
     const id = "mo" + Math.random().toString(36).slice(2, 9), defs = document.createElementNS(NS, "defs");
-    mask = document.createElementNS(NS, "mask"); mask.id = id; mask.setAttribute("maskUnits", "userSpaceOnUse");
-    const r = document.createElementNS(NS, "rect"); for (const [k, v] of [["x", -20], ["y", -20], ["width", 80], ["height", 80], ["fill", "#fff"]]) r.setAttribute(k, v);
+    mask = document.createElementNS(NS, "mask"); mask.id = id; mask.classList.add("ca-mordidas"); mask.setAttribute("maskUnits", "userSpaceOnUse");
+    const r = document.createElementNS(NS, "rect"); for (const [k, v] of [["x", -20], ["y", -20], ["width", VW + 40], ["height", VH + 40], ["fill", "#fff"]]) r.setAttribute(k, v);
     mask.append(r); defs.append(mask);
-    g = document.createElementNS(NS, "g"); g.classList.add("ca-mordido"); g.setAttribute("mask", `url(#${id})`);
-    while (sv.firstChild) g.append(sv.firstChild);
-    sv.append(defs, g);
+    if (!blanco) { blanco = document.createElementNS(NS, "g"); blanco.classList.add("ca-mordido"); while (sv.firstChild) blanco.append(sv.firstChild); sv.append(blanco); }
+    sv.prepend(defs);
+    blanco.setAttribute("mask", `url(#${id})`);
   }
-  const [x, y, rr] = MORDIDAS[i % MORDIDAS.length];
-  // (El mordisco en escalones, como pixel: tres rectángulos encimados en vez de un círculo liso.)
-  for (const [w, h] of [[rr * 2, rr * 1.2], [rr * 1.5, rr * 1.7], [rr * 0.9, rr * 2]]) {
+  let bb = null;
+  try { bb = blanco.getBBox(); } catch { bb = null; }
+  if (!bb || !bb.width) bb = { x: VW * 0.15, y: VH * 0.1, width: VW * 0.7, height: VH * 0.6 };
+  const [fx, fy] = LUGARES[i % LUGARES.length], vuelta = Math.floor(i / LUGARES.length);
+  const r = Math.max(cel * 1.5, Math.min(bb.width, bb.height) * (0.2 + 0.08 * vuelta));
+  const cx = bb.x + bb.width * fx, cy = bb.y + bb.height * fy, sn = (v) => Math.round(v / cel) * cel;
+  // (El mordisco en escalones, como pixel: tres rectángulos encimados, pegados a la cuadrícula del dibujo.)
+  for (const [w, h] of [[r * 2, r * 1.2], [r * 1.5, r * 1.7], [r * 0.9, r * 2]]) {
     const q = document.createElementNS(NS, "rect");
-    for (const [k, v] of [["x", x - w / 2], ["y", y - h / 2], ["width", w], ["height", h], ["fill", "#000"], ["shape-rendering", "crispEdges"]]) q.setAttribute(k, v);
+    for (const [k, v] of [["x", sn(cx - w / 2)], ["y", sn(cy - h / 2)], ["width", Math.max(cel, sn(w))], ["height", Math.max(cel, sn(h))], ["fill", "#000"], ["shape-rendering", "crispEdges"]]) q.setAttribute(k, v);
     mask.append(q);
   }
 }

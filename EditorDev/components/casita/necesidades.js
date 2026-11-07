@@ -22,8 +22,8 @@ export const NECESIDADES = [
 // Cuántos minutos tarda en vaciarse cada una mientras juegan (con la app cerrada, 4 veces más).
 const VACIA_MIN = { hambre: 45, sed: 32, bano: 50, ducha: 90, sueno: 120, diversion: 28 };
 /** Lo que llena la comida (del 0 al 100) y lo que quita la sed. */
-const COMIDA = { manzana: 14, hotcakes: 34, tostada: 18, elote: 22, helado: 12, sandia: 16, galleta: 10, platano: 14, uvas: 12, paleta: 8, malvavisco: 8, cafe: 4, limonada: 4 };
-const BEBIDA = { cafe: 26, limonada: 40, licuado: 45, paleta: 16, helado: 8, sandia: 22, agua: 34 };
+const COMIDA = { manzana: 14, hotcakes: 34, tostada: 18, elote: 22, helado: 12, sandia: 16, galleta: 10, platano: 14, uvas: 12, paleta: 8, malvavisco: 8, cafe: 4, limonada: 4, dona: 16, cuernito: 18, leche_fresa: 10, leche_platano: 10, leche_choco: 10, leche: 8, refresco: 2 };
+const BEBIDA = { cafe: 26, limonada: 40, licuado: 45, paleta: 16, helado: 8, sandia: 22, agua: 34, leche_fresa: 30, leche_platano: 30, leche_choco: 28, leche: 34, refresco: 30 };
 const PLATILLO = 45;   // un platillo de las recetas (mesa)
 const DICE = {
   hambre: "Tengo hambre… ¿y si comemos algo?", sed: "Tengo sed", bano: "¡Necesito ir al baño!", ducha: "Me hace falta un bañito",
