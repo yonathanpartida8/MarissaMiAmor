@@ -9,6 +9,7 @@
  */
 import { svg, OL, OL2, tono, brillo, corazon, MADERA, MADERA_O } from "./arte.js";
 import { spriteEsc, MEDIDAS } from "../exterior.js";
+import { mano, MANO as BOC } from "./bocaditos.js";
 
 const s40 = (c) => svg(40, 40, c);
 /** Lo que se trae en la mano (las herramientas y la naranja del naranjo). */
@@ -21,7 +22,7 @@ export const MANO = {
   aspiradora: { n: "Aspiradora", herramienta: "aspirar", arte: s40(`<ellipse cx="14" cy="28" rx="11" ry="8" fill="#ff9cbf" ${OL2}/><circle cx="9" cy="34" r="3" fill="#6b5a66"/><circle cx="19" cy="34" r="3" fill="#6b5a66"/><path d="M22 24c6-4 9-10 9-18" stroke="#c9a7ff" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="27" y="3" width="9" height="5" rx="2" fill="#a985e8"/>${brillo(8, 23, 10, 3, 2, 0.5)}`) },
   plumero: { n: "Plumero", herramienta: "sacudir", arte: s40(`<path d="M24 38L18 16" stroke="#b07a52" stroke-width="3" stroke-linecap="round"/>${[[16, 10, "#ff9cbf"], [21, 8, "#ffd36e"], [12, 14, "#c9a7ff"], [20, 13, "#8fd0ff"], [15, 6, "#ffb3cf"]].map(([x, y, c]) => `<ellipse cx="${x}" cy="${y}" rx="6" ry="4" fill="${c}" transform="rotate(-30 ${x} ${y})" ${OL2}/>`).join("")}`) },
   regadera: { n: "Regadera", herramienta: "regar", arte: s40(`<path d="M8 16h18v16a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4z" fill="#94dfbd" ${OL2}/><path d="M26 20l10-8" stroke="#94dfbd" stroke-width="4" stroke-linecap="round"/><path d="M12 16a5 5 0 0 1 10 0" stroke="#5fb38a" stroke-width="3" fill="none"/>${corazon(17, 26, 0.5, "#fff")}`) },
-  naranja: { n: "Naranja", comible: true, arte: s40(`<circle cx="20" cy="23" r="13" fill="#ff9a3c" ${OL2}/><path d="M20 10q3-6 9-5-2 5-9 5z" fill="#6fbf73"/><circle cx="15" cy="18" r="3" fill="#fff" opacity=".45"/>`) },
+  naranja: { n: "Naranja", comible: true, arte: mano(BOC.naranja) },   // (Fase 73: en pixel, como lo demás de comer)
 };
 
 /** Los árboles pixel del catálogo: el dibujo del patio dentro de un svg (la copa se mece sola). */

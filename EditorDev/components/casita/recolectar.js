@@ -82,7 +82,7 @@ export const FORRAJE = {
   pina: { n: "Piña de pino", uno: "una piña de pino", cada: 4 * 3600 },
 };
 // En la mano (y para regalar): las mismas, en pixel de 4.
-for (const [k, f] of Object.entries(FORRAJE)) if (!COSAS_MANO[k]) COSAS_MANO[k] = { n: f.n, comible: !!f.come, arte: `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">${DIBUJO[k].map((fila, j) => [...fila].map((ch, i) => (PAL[k][ch] ? `<rect x="${i * 4}" y="${j * 4}" width="4" height="4" fill="${PAL[k][ch]}"/>` : "")).join("")).join("")}</svg>` };
+for (const [k, f] of Object.entries(FORRAJE)) if (!COSAS_MANO[k]) COSAS_MANO[k] = { n: f.n, comible: !!f.come, arte: `<svg class="ca-px" data-cel="4" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">${DIBUJO[k].map((fila, j) => [...fila].map((ch, i) => (PAL[k][ch] ? `<rect x="${i * 4}" y="${j * 4}" width="4" height="4" fill="${PAL[k][ch]}"/>` : "")).join("")).join("")}</svg>` };
 
 /* ── Dónde hay (en el patio; x desde su orilla izquierda) ── */
 const ZARZAS = [[520, 860], [770, 650], [300, 1010], [990, 1380], [1430, 1420], [1840, 850], [2080, 1390], [1230, 1520]];

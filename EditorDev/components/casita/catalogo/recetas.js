@@ -43,4 +43,4 @@ for (const [k, n, en, s, color, base] of LISTA) RECETAS[k] = { k, n, en, ms: s *
 export const recetasDe = (en) => Object.values(RECETAS).filter((r) => (Array.isArray(en) ? en.includes(r.en) : r.en === en));
 export const baseDe = (r) => BASES[r.base] || "";
 /** El platillo completo (para la mano, el panel y la estufa): el plato y la comida en su grupito (ahí caen las mordidas). */
-export const arteReceta = (r) => `<svg class="ca-px" viewBox="0 0 44 30" aria-hidden="true" shape-rendering="crispEdges">${baseDe(r)}<g class="ca-comida">${r.comida}</g></svg>`;
+export const arteReceta = (r) => `<svg class="ca-px" data-cel="2" viewBox="0 0 44 30" aria-hidden="true" shape-rendering="crispEdges">${baseDe(r)}<g class="ca-comida">${r.comida}</g></svg>`;

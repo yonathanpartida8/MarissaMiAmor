@@ -103,9 +103,9 @@ function rects({ col, W, H }, t) {
   }
   return s;
 }
-const svg = (vw, vh, cuerpo) => `<svg class="ca-px" viewBox="0 0 ${vw} ${vh}" aria-hidden="true" shape-rendering="crispEdges">${cuerpo}</svg>`;
+const svg = (vw, vh, cuerpo, cel) => `<svg class="ca-px" data-cel="${cel}" viewBox="0 0 ${vw} ${vh}" aria-hidden="true" shape-rendering="crispEdges">${cuerpo}</svg>`;
 /** Algo de la mano (16 × 16 en 40 × 40). */
-export const mano = (filas) => svg(40, 40, rects(cuadricula(filas), 2.5));
+export const mano = (filas) => svg(40, 40, rects(cuadricula(filas), 2.5), 2.5);
 /** Una capa de platillo (22 × 15 en 44 × 30), sin el <svg> de afuera. */
 export const capa = (filas, contorno = true) => rects(cuadricula(filas, contorno), 2);
 
@@ -146,6 +146,24 @@ export const MANO = {
     "...dRRRRRRddd...",
     "....ddRRdddd....",
     "......dddd......",
+    "................",
+  ],
+  naranja: [
+    "................",
+    "........|.hhG...",
+    "........|hGGg...",
+    ".....OOOOOO.....",
+    "...OuuOOOOOOO...",
+    "..OuuuOOOOOOOo..",
+    "..OuOOOOOOOOOo..",
+    "..OOOOOOuOOOOo..",
+    "..OOOOOOOOOOoo..",
+    "..OOOuOOOOOOoo..",
+    "..OOOOOOOOOooo..",
+    "...OOOOOOOooo...",
+    "....oOOOOooo....",
+    ".....oooooo.....",
+    "................",
     "................",
   ],
   platano: [

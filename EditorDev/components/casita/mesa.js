@@ -33,7 +33,7 @@ export function pintarPlatos(r) {
     if (!n) {
       n = el("i.ca-plato", { dataset: { i: String(i), k: rc.k } }, [
         el("i.ca-plato-base", { html: `<svg class="ca-px" viewBox="0 0 44 30" aria-hidden="true" shape-rendering="crispEdges">${baseDe(rc)}</svg>` }),
-        el("i.ca-plato-comida", { html: `<svg class="ca-px" viewBox="0 0 44 30" aria-hidden="true" shape-rendering="crispEdges">${rc.comida}</svg>` }),
+        el("i.ca-plato-comida", { html: `<svg class="ca-px" data-cel="2" viewBox="0 0 44 30" aria-hidden="true" shape-rendering="crispEdges">${rc.comida}</svg>` }),
         el("i.ca-plato-vapor"),
       ]);
       r.platosN.append(n);

@@ -128,7 +128,7 @@ const LUGARES = [[0.92, 0.22], [0.08, 0.3], [0.5, 0.02], [0.95, 0.72], [0.06, 0.
 export function mordida(sv, i) {
   if (!sv) return;
   const NS = "http://www.w3.org/2000/svg", vb = sv.viewBox?.baseVal, VW = vb?.width || 40, VH = vb?.height || 40;
-  const cel = VW === 44 ? 2 : VW === 40 && sv.classList.contains("ca-px") ? 2.5 : 1;
+  const cel = +sv.getAttribute("data-cel") || (VW === 44 ? 2 : 1);
   let mask = sv.querySelector(":scope > defs > mask.ca-mordidas"), blanco = sv.querySelector(":scope > g.ca-comida, :scope > g.ca-mordido");
   if (!mask) {
     const id = "mo" + Math.random().toString(36).slice(2, 9), defs = document.createElementNS(NS, "defs");

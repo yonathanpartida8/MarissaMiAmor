@@ -25,6 +25,7 @@ import { ITEMS as FINOS } from "./finos.js";
 import { ITEMS as FINOS2 } from "./finos2.js";
 import { ITEMS as TECHO } from "./techo.js";
 import { ITEMS as JARDIN2 } from "./jardin2.js";
+import { ITEMS as COCINITA } from "./cocinita.js";
 import { colgadoY, usarAltos } from "../cuartos.js";
 import { REDIBUJOS } from "./redibujos.js";
 import { VISTAS } from "./vistas.js";
@@ -33,7 +34,7 @@ import { RECETAS, arteReceta } from "./recetas.js";
 export { COSAS_MANO };
 export { RECETAS, recetasDe, arteReceta, baseDe } from "./recetas.js";
 
-export const CATALOGO = { ...SALA, ...COCINA, ...RECAMARA, ...BANO, ...JARDIN, ...DECO, ...MASCOTAS, ...ESTUDIO, ...TERRAZA, ...COSITAS, ...LINDAS, ...LIMPIEZA, ...FINOS, ...FINOS2, ...TECHO, ...JARDIN2 };
+export const CATALOGO = { ...SALA, ...COCINA, ...RECAMARA, ...BANO, ...JARDIN, ...DECO, ...MASCOTAS, ...ESTUDIO, ...TERRAZA, ...COSITAS, ...LINDAS, ...LIMPIEZA, ...FINOS, ...FINOS2, ...TECHO, ...JARDIN2, ...COCINITA };
 // (Fase 64) Las herramientas de limpieza y la naranja también se traen en la mano; el árbol del columpio suelta hojitas.
 Object.assign(COSAS_MANO, MANO_LIMPIEZA);
 CATALOGO.arbol.hojas = "#7fd29b";
@@ -43,7 +44,7 @@ const BRILLOS = {
   lampara: { x: 32, y: 56, r: 150 }, buro: { x: 37, y: 40, r: 110 }, farol: { x: 28, y: 36, r: 160 },
   chimenea: { x: 88, y: 128, r: 170, c: "#ffae5c", propio: "on" }, tele: { x: 75, y: 62, r: 120, c: "#a9d8ff", propio: "canal" },
 };
-const PORTATILES = ["cojin_corazon", "juego_te", "rosita", "cosita", "florero", "velas", "taza", "libros_pila", "portarretrato", "lamparita", "radio", "frasco", "tetera", "despertador", "pecerita", "planta_chica", "pastel_cumple", "peluche", "patito", "cojin", "maceta", "globo", "gatito", "perrito", "conejito", "tortuga", "flamenco", "regadera_j", "guitarra", "globo_mundo", "puff", "lampara_lava", "hielera", "cesto"];
+const PORTATILES = ["botecito_cucharas", "pay", "panquecito", "platito_gatito", "cojin_corazon", "juego_te", "rosita", "cosita", "florero", "velas", "taza", "libros_pila", "portarretrato", "lamparita", "radio", "frasco", "tetera", "despertador", "pecerita", "planta_chica", "pastel_cumple", "peluche", "patito", "cojin", "maceta", "globo", "gatito", "perrito", "conejito", "tortuga", "flamenco", "regadera_j", "guitarra", "globo_mundo", "puff", "lampara_lava", "hielera", "cesto"];
 /** Qué tan abajo del borde de arriba está la tapa de cada mueble (donde se pueden poner cositas encima). */
 const TOPES = { mesa: 30, mesita: 20, mesa_picnic: 36, buro: 90, escritorio: 40, barra_cafe: 36, barra_tostador: 36, barra_micro: 36, barra_licuadora: 36, barra_fruta: 36, fregadero: 36, estufa: 26, piano: 16, consola: 80, tocador: 96, baul: 26, librero: 10, librero_alto: 12, ropero: 6, refri: 4, lavadora: 6, tele: 110, chimenea: 10, repisa: 34, alacena: 34, especiero: 34, hielera: 14, lavabo: 30 };
 const MASCOTAS_VIVAS = ["gatito", "perrito", "conejito", "tortuga"];
