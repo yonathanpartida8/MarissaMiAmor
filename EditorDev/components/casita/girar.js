@@ -110,7 +110,7 @@ const escalon = (f) => PASOS_LUZ.reduce((a, b) => (Math.abs(b - f) < Math.abs(a 
  */
 const REJ = new Map(), REJ_P = new Map();
 export async function rejilla(d, quieto) {
-  const clave = `rej|${d.k}|${huella(quieto)}`;
+  const clave = `rej74|${d.k}|${huella(quieto)}`;
   if (REJ.has(clave)) return REJ.get(clave);
   if (REJ_P.has(clave)) return REJ_P.get(clave);
   const pr = (async () => {
@@ -189,7 +189,7 @@ export function vistaGirada(d, e, C, g) {
   // girado, esa parte se esconde, así que va dentro del volumen (y el monito queda adentro con su hondura).
   let partes = partes0;
   if (d.frente) { const pf = separar(d.frente(e || {}, C)); partes = { ...partes0, quieto: partes0.quieto.replace(/<\/svg>\s*$/, pf.quieto.replace(/^<svg[^>]*>/, "")) }; }
-  const clave = `${d.k}|${huella(partes.quieto)}|${g}|71`;
+  const clave = `${d.k}|${huella(partes.quieto)}|${g}|74`;
   if (CACHE.has(clave)) return Promise.resolve({ ...CACHE.get(clave), vivo: partes.vivo });
   if (PEND.has(clave)) return PEND.get(clave).then((r) => r && { ...r, vivo: partes.vivo });
   const pr = (async () => {
@@ -207,6 +207,10 @@ export function vistaGirada(d, e, C, g) {
       }
       // (Fase 71) Lo dibujado a mano: su costado (forma y color), su perfil de en medio y su espalda.
       const V = d.vistas || null;
+      // (Fase 74) La tapa dibujada a mano (las hornillas, la tarja, la madera de la cubierta…): una letra de la paleta por
+      // cuadrito de arriba (u de izquierda a derecha, z de enfrente a atrás, v el renglón de esa tapa).
+      const palT = d.tapa ? { ...PAL, ...(C ? rampa(C) : {}), ...(d.palTapa || {}) } : null, memoT = new Map();
+      const colT = (ch) => { if (!ch) return null; if (memoT.has(ch)) return memoT.get(ch); const t = String(palT[ch] || ""), m = /^#?([0-9a-f]{6})$/i.exec(t), n = m ? parseInt(m[1], 16) : -1, c = n < 0 ? null : [n >> 16, (n >> 8) & 255, n & 255]; memoT.set(ch, c); return c; };
       const D = V?.D || Math.max(2, Math.round(hondura(d) / PX));
       let colV = null, ladoDe = null;
       if (V) {
@@ -315,7 +319,7 @@ export function vistaGirada(d, e, C, g) {
       const tope = new Int16Array(W * D).fill(-1);
       for (let u = 0; u < W; u++) for (let z = 0; z < D; z++) for (let v = 0; v < H; v++) if (dentro(u, v, z)) { tope[u * D + z] = v; break; }
       const topeEn = (u, z) => (u < 0 || u >= W ? 1e4 : tope[u * D + z] < 0 ? 1e4 : tope[u * D + z]);
-      const R0 = Math.hypot(cu, cz) + 2, paso = 0.2;
+      const R0 = Math.abs(si) * cu + Math.abs(co) * cz + 1.5, paso = 0.2;   // (Fase 74: sólo lo que cruza la cosa)
       for (let j = 0; j < OH; j++) for (let i = 0; i < OW; i++) {
         const X = x0 - 1 + i + 0.5, Y = y0 - 1 + j + 0.5;
         let pu = -99, pv = -99, pz = -99;
@@ -343,7 +347,13 @@ export function vistaGirada(d, e, C, g) {
               // (En una ladera —el techo de una tienda, la orilla de algo redondo— los cubitos hacen escalones: ahí la
               // cara de arriba se sombrea como la ladera, pareja, en vez de rayas claras y oscuras.)
               const tl = topeEn(u - 1, z), tr = topeEn(u + 1, z), plano = tl === v || tr === v || (tl > H && tr > H);
-              if (plano) c = mezcla(base, 1.1);
+              // (Fase 74) Si el renglón de hasta arriba del dibujo es su rayita oscura, la tapa lleva el color del material
+              // (el de abajo de la rayita); y se aclara adelante y se apaga un poquito hacia atrás.
+              if (plano) {
+                const tt = palT ? colT(d.tapa(u, z, W, D, v)) : null;
+                if (tt) c = mezcla(tt, 1.02 - 0.05 * Math.min(1, z / Math.max(1, D - 1)));
+                else { const deb = v + 1 < H && op[(v + 1) * W + u] ? cel(u, v + 1) : null, lb = (x) => x[0] * 0.3 + x[1] * 0.59 + x[2] * 0.11; c = mezcla(deb && lb(base) < lb(deb) * 0.8 ? deb : base, 1.13 - 0.07 * Math.min(1, z / Math.max(1, D - 1))); }
+              }
               else { const izqda = tl > v; f = izqda ? 3 : 4; c = (izqda ? izq[v] : der[v]) || base; k = izqda ? L.l : L.r; }
             }
             else if (torno) {
@@ -361,6 +371,24 @@ export function vistaGirada(d, e, C, g) {
           }
           pu = u; pv = v; pz = z;
         }
+      }
+      // (Fase 74) EL VOLUMEN, como pixel art a mano:
+      //  · el filo de enfrente de cada tapa agarra luz (un renglón más claro);
+      //  · lo de arriba pegado a algo más alto de atrás (el asiento junto al respaldo, la tapa junto a la repisa) queda en
+      //    su sombrita;
+      //  · y lo que toca el piso se oscurece tantito en su renglón de abajo (sombra de contacto).
+      const tinta = (q, f) => { const k = q * 4; if (f > 1) { out[k] += (255 - out[k]) * (f - 1); out[k + 1] += (250 - out[k + 1]) * (f - 1); out[k + 2] += (240 - out[k + 2]) * (f - 1); } else { out[k] *= f; out[k + 1] *= f * 0.98; out[k + 2] = out[k + 2] * f + (1 - f) * 30; } };
+      for (let j = 0; j < OH; j++) for (let i = 0; i < OW; i++) {
+        const q = j * OW + i, f = cara[q];
+        if (f !== 5) continue;
+        const ab = j + 1 < OH ? cara[q + OW] : 0, ar = j > 0 ? cara[q - OW] : 0;
+        if (ab && ab !== 5 && Math.abs(zb[q + OW] - zb[q]) < 2.2) tinta(q, 1.1);
+        else if (ar && ar !== 5 && zb[q - OW] > zb[q] + 0.6) tinta(q, 0.86);
+      }
+      {
+        const fondo = new Int16Array(OW).fill(-1);
+        for (let i = 0; i < OW; i++) for (let j = OH - 1; j >= 0; j--) if (cara[j * OW + i]) { fondo[i] = j; break; }
+        for (let i = 0; i < OW; i++) if (fondo[i] >= 0 && cara[fondo[i] * OW + i] !== 5) tinta(fondo[i] * OW + i, 0.84);
       }
       // La línea entre caras (de pixel art): donde se juntan dos caras distintas, la de abajo o la de la derecha se
       // oscurece un poquito (así se ve la orilla del mueble girado, como un dibujo).
@@ -382,10 +410,10 @@ export function vistaGirada(d, e, C, g) {
           const X = x0 - 1 + i + 0.5, Y = y0 - 1 + j + 0.5, Z = (H - Y) / ELEV, a = X * co + Z * si, b = -X * si + Z * co, u = a + cu, z = b + cz;
           // (Lo plano, como la bici, hace una sombra delgadita.)
           const zA = plano ? cz - grosor / 2 - 1 : 0, zB = plano ? cz + grosor / 2 + 1 : D;
-          if (u < ub0 - 1 || u > ub1 + 2 || z < zA - 1 || z > zB + 1) continue;
-          const orilla = u < ub0 || u > ub1 + 1 || z < zA || z > zB;
+          if (u < ub0 - 1 || u > ub1 + 3 || z < zA - 1 || z > zB + 1) continue;
+          const orilla = u < ub0 || u > ub1 + 2 || z < zA || z > zB, centro = !orilla && u > ub0 + 1 && u < ub1 && z > zA + 1;
           if (orilla && (i + j) % 2) continue;
-          o2[k2] = 70; o2[k2 + 1] = 34; o2[k2 + 2] = 60; o2[k2 + 3] = orilla ? 40 : 76;
+          o2[k2] = 70; o2[k2 + 1] = 34; o2[k2 + 2] = 60; o2[k2 + 3] = orilla ? 40 : centro ? 92 : 70;
         }
       }
       const oc = document.createElement("canvas"); oc.width = OW2; oc.height = OH2;
@@ -401,11 +429,21 @@ export function vistaGirada(d, e, C, g) {
       // de lo quieto (así una pantalla queda tapada por el mueble y una flamita o unas hojas siguen moviéndose arriba).
       const frente = co > 0.12, kx = (co < 0 ? -1 : 1) * Math.min(1, (Math.abs(co) * W + Math.abs(si) * D) / W);
       const medio = [kx, 0, 0, 1, PX * (-kx * cu - X0 + 1), PX * (1 - Y0)];
-      const r = { url: oc.toDataURL(), w: OW2 * PX, h: OH2 * PX, ax: (AX - X0 + 1) * PX, ay: (AY - Y0 + 1) * PX, matriz: frente ? [co, -si * ELEV, 0, 1, ex, ey] : medio, frente,
+      // (Fase 74) De frente (0°): en qué pixel de la vista empieza el dibujo de frente (su esquina de arriba a la
+      // izquierda), con el mismo primer paso del rayo que lo pintó: así lo vivo queda EXACTO encima de sus cuadritos.
+      let fx = 0, fy = 0;
+      if (!g) {
+        const Zf = -R0 + Math.ceil((R0 - cz) / paso - 1e-9) * paso;
+        let i0 = 0, j0 = 0;
+        while (i0 < OW && Math.floor(X0 + i0 + 0.5 + cu) < 0) i0++;
+        while (j0 < OH && Math.floor(Y0 + j0 + 0.5 + Zf * ELEV) < 0) j0++;
+        fx = (i0 + 1) * PX; fy = (j0 + 1) * PX;
+      }
+      const r = { url: oc.toDataURL(), w: OW2 * PX, h: OH2 * PX, ax: (AX - X0 + 1) * PX, ay: (AY - Y0 + 1) * PX, fx, fy, matriz: frente ? [co, -si * ELEV, 0, 1, ex, ey] : medio, frente,
         // (Fase 66) Para meter un monito adentro sin que se atraviese: lo hondo de cada pixel y lo alto de cada columna.
         zb: zb2, x0: X0, y0: Y0, OW: OW2, OH: OH2, W, H, D, cu, cz, tope, g };
       CACHE.set(clave, r);
-      if (CACHE.size > 200) CACHE.delete(CACHE.keys().next().value);
+      if (CACHE.size > 900) CACHE.delete(CACHE.keys().next().value);
       return r;
     } catch (er) { return null; } finally { PEND.delete(clave); }
   })();
@@ -419,6 +457,22 @@ export function vistaGirada(d, e, C, g) {
  * Lo que se mueve sigue vivo encima (el mismo dibujo, con lo quieto transparente). Se hacen de una en una.
  */
 let COLA = Promise.resolve();
+/**
+ * (Fase 74) DE FRENTE CON VOLUMEN (2.5D): lo que va en el piso y se puede girar se ve de frente con su grosor, como en
+ * una casita pixel art de verdad: el frente de siempre (los mismos cuadritos, en el mismo lugar) y, encima, su tapa en
+ * perspectiva (la cubierta del mueble, el asiento y el respaldo del sillón, la tapa del refri), con su filo de luz, su
+ * sombrita junto a lo más alto, su contacto con el piso y su sombra pixel en el piso. Es la misma vista que al girarlo
+ * (a 0°), así de frente y girado se ve igual de hondo. `fx`, `fy`: dónde empieza el dibujo de frente dentro de la vista.
+ * Lo que ya viene dibujado con su tapa (`ya34`), lo plano (una bici, un cuadro) y lo que casi todo se mueve se queda
+ * como estaba.
+ */
+export const con34 = (d) => d.capa === "piso" && !d.mascota && !d.noGira && !d.ya34 && d.k !== "cosita" && !soloFrenteAtras(d);
+const claveFrente = (d, e, C) => { const partes0 = separar(d.arte(e || {}, C)); let q = partes0.quieto; if (d.frente) q = q.replace(/<\/svg>\s*$/, separar(d.frente(e || {}, C)).quieto.replace(/^<svg[^>]*>/, "")); return `${d.k}|${huella(q)}|0|74`; };
+export function vista34Ya(d, e, C) { try { const v = CACHE.get(claveFrente(d, e, C)); return v && !v.plano ? v : null; } catch (er) { return null; } }
+export function vista34(d, e, C) { return vistaGirada(d, e, C, 0).then((v) => (v && !v.plano ? v : null)); }
+/** (Fase 74) La vista de frente que le toca: con volumen si va en el piso; si no (o si casi todo se mueve), la plana. */
+export function vistaFrente(d, e, C) { return con34(d) ? vista34(d, e, C).then((v) => v || vistaPlana(d, e, C)) : vistaPlana(d, e, C); }
+export function vistaFrenteYa(d, e, C) { return con34(d) ? vista34Ya(d, e, C) : vistaPlanaYa(d, e, C); }
 /** (Fase 73) La vista plana si ya está hecha (para pintarla al instante, sin pasar por el dibujo liso). */
 export function vistaPlanaYa(d, e, C) {
   try { const partes = separar(d.arte(e || {}, C)); return CACHE.get(`plana|${d.k}|${huella(partes.quieto)}`) || null; } catch (er) { return null; }
@@ -445,27 +499,58 @@ export function vistaPlana(d, e, C) {
   return pr;
 }
 
-/** (Fase 68) El sombreado de pixel art de una imagen en cuadritos (cw × ch, RGBA, alfa 0 o 255). */
+/**
+ * (Fase 68, rehecho en la Fase 74) EL SOMBREADO DE PIXEL ART de lo que viene de vectores (cw × ch, RGBA, alfa 0 o 255),
+ * por partes: cada parte del dibujo (los cuadritos juntos del mismo color) se sombrea como volumen, con la luz arriba a
+ * la izquierda:
+ *   · su filo de arriba agarra luz (y un poquito su orilla izquierda);
+ *   · su orilla de abajo y la de la derecha bajan un escalón;
+ *   · lo de abajo de las partes grandes se apaga en escalones tramados (así un cojín, un ropero o una tina no se ven
+ *     planos);
+ *   · y donde se juntan dos partes muy distintas, la línea de pixel art (la más oscura de las dos se marca).
+ */
 function sombrear(out, cw, ch) {
-  const op = (i, j) => i >= 0 && j >= 0 && i < cw && j < ch && out[(j * cw + i) * 4 + 3] === 255;
+  const N = cw * ch, op = (i, j) => i >= 0 && j >= 0 && i < cw && j < ch && out[(j * cw + i) * 4 + 3] === 255;
   const lum = (k) => out[k] * 0.3 + out[k + 1] * 0.59 + out[k + 2] * 0.11;
-  const marca = new Uint8Array(cw * ch);   // 1 luz arriba, 2 sombrita abajo, 3 línea entre partes
+  const col = (q) => (out[q * 4] << 16) | (out[q * 4 + 1] << 8) | out[q * 4 + 2];
+  // 1) Las partes: cuadritos juntos del mismo color (con su alto y su ancho).
+  const parte = new Int32Array(N).fill(-1), y0 = [], y1 = [], x0 = [], x1 = [], tam = [];
+  for (let q = 0; q < N; q++) {
+    if (parte[q] >= 0 || out[q * 4 + 3] !== 255) continue;
+    const id = y0.length, c = col(q), pila = [q];
+    parte[q] = id; y0.push(1e9); y1.push(-1); x0.push(1e9); x1.push(-1); tam.push(0);
+    while (pila.length) {
+      const r = pila.pop(), i = r % cw, j = (r / cw) | 0;
+      tam[id]++; if (j < y0[id]) y0[id] = j; if (j > y1[id]) y1[id] = j; if (i < x0[id]) x0[id] = i; if (i > x1[id]) x1[id] = i;
+      for (const [a, b] of [[i + 1, j], [i - 1, j], [i, j + 1], [i, j - 1]]) { if (!op(a, b)) continue; const t = b * cw + a; if (parte[t] < 0 && col(t) === c) { parte[t] = id; pila.push(t); } }
+    }
+  }
+  const otra = (q, a, b) => !op(a, b) || parte[b * cw + a] !== parte[q];
+  const marca = new Uint8Array(N);   // 1 filo de luz, 2 orilla en sombra, 3 línea entre partes, 4 sombra tramada abajo, 5 luz de la orilla izquierda
   for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
     if (!op(i, j)) continue;
-    const q = j * cw + i, k = q * 4, L = lum(k);
+    const q = j * cw + i, k = q * 4, L = lum(k), id = parte[q], alto = y1[id] - y0[id] + 1, ancho = x1[id] - x0[id] + 1;
+    // La línea entre partes muy distintas (la más oscura de las dos).
     for (const [a, b] of [[i + 1, j], [i, j + 1]]) {
       if (!op(a, b)) continue;
       const q2 = b * cw + a, k2 = q2 * 4, dif = Math.abs(out[k] - out[k2]) + Math.abs(out[k + 1] - out[k2 + 1]) + Math.abs(out[k + 2] - out[k2 + 2]);
-      if (dif < 50) continue;
-      const L2 = lum(k2), cual = L2 < L ? q2 : q, Lc = Math.min(L, L2);
-      if (Lc > 58) marca[cual] = 3;
+      if (dif < 60) continue;
+      const L2 = lum(k2), cual = L2 < L ? q2 : q;
+      if (Math.min(L, L2) > 58) marca[cual] = 3;
     }
-    if (marca[q] !== 3) { if (!op(i, j - 1) && L > 70) marca[q] = 1; else if (!op(i, j + 1)) marca[q] = 2; }
+    if (marca[q] === 3 || tam[id] < 3) continue;
+    if (otra(q, i, j - 1) && L > 60) marca[q] = 1;
+    else if (alto > 2 && otra(q, i, j + 1)) marca[q] = 2;
+    else if (ancho > 3 && otra(q, i + 1, j)) marca[q] = 2;
+    else if (ancho > 3 && otra(q, i - 1, j) && L > 60) marca[q] = 5;
+    else if (alto >= 6 && j > y0[id] + alto * 0.62 && ((i + j) % 2 === 0 || j > y0[id] + alto * 0.8)) marca[q] = 4;
   }
-  for (let q = 0; q < cw * ch; q++) {
+  for (let q = 0; q < N; q++) {
     const m = marca[q], k = q * 4;
     if (m === 3) { out[k] *= 0.76; out[k + 1] *= 0.74; out[k + 2] = out[k + 2] * 0.78 + 10; }
-    else if (m === 2) { out[k] *= 0.88; out[k + 1] *= 0.86; out[k + 2] = out[k + 2] * 0.9 + 6; }
-    else if (m === 1) { out[k] += (255 - out[k]) * 0.16; out[k + 1] += (248 - out[k + 1]) * 0.14; out[k + 2] += (232 - out[k + 2]) * 0.1; }
+    else if (m === 2) { out[k] *= 0.87; out[k + 1] *= 0.85; out[k + 2] = out[k + 2] * 0.89 + 7; }
+    else if (m === 4) { out[k] *= 0.94; out[k + 1] *= 0.93; out[k + 2] = out[k + 2] * 0.95 + 4; }
+    else if (m === 1) { out[k] += (255 - out[k]) * 0.2; out[k + 1] += (250 - out[k + 1]) * 0.18; out[k + 2] += (236 - out[k + 2]) * 0.13; }
+    else if (m === 5) { out[k] += (255 - out[k]) * 0.08; out[k + 1] += (250 - out[k + 1]) * 0.07; out[k + 2] += (236 - out[k + 2]) * 0.05; }
   }
 }

@@ -30,29 +30,85 @@ const comoUrl = (k, w, h, dibujar) => {
 };
 const css = (t) => ({ backgroundImage: t.url, backgroundSize: `${t.w}px ${t.h}px`, backgroundRepeat: "repeat" });
 
-/* ── Los tapices (16 × 16) ── */
-const FIG = {
-  corazon: [".X.X.", "XXXXX", "XXXXX", ".XXX.", "..X.."],
-  estrella: ["..X..", ".XXX.", "XXXXX", ".X.X."],
-  chica: [".X.", "XXX", ".X."],
+/* ═══ (Fase 74) LOS CUARTOS EN PIXEL DE VERDAD: tapices, pisos y lambrín dibujados con su relieve, en cuadritos de 4
+ *  (los mismos que los muebles y los monitos, así todo el cuarto se ve del mismo pixel art). La luz viene de arriba
+ *  a la izquierda: lo que sobresale tiene su filo claro arriba y su sombrita abajo a la derecha; lo hundido, al revés. ═══ */
+const PXR = 4;
+/** Un número fijo (0…1) por cuadrito, para que la variación (vetas, motitas, tono de cada tabla) no cambie nunca. */
+const hsh = (x, y, s = 0) => { let h = (x * 374761393 + y * 668265263 + s * 2147483647) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+const comoUrlR = (k, w, h, dibujar) => {
+  if (cache.has(k)) return cache.get(k);
+  const L = lienzo(w, h); dibujar(L);
+  const cv = L.listo();
+  const r = { url: `url("${cv.toDataURL("image/png")}")`, w: w * PXR, h: h * PXR, cv, tw: w, th: h };
+  cache.set(k, r);
+  return r;
 };
-const figura = (pon, f, x, y, k) => f.forEach((fila, j) => [...fila].forEach((ch, i) => { if (ch === "X") pon(x + i, y + j, k); }));
+/** Una figurita con su relieve: relleno, su brillito arriba a la izquierda y su sombrita abajo a la derecha. */
+function figuraRelieve(pon, f, x, y, rel, luz, sombra) {
+  const en = (i, j) => f[j]?.[i] === "X";
+  f.forEach((fila, j) => [...fila].forEach((ch, i) => {
+    if (ch !== "X") return;
+    pon(x + i, y + j, !en(i - 1, j) || !en(i, j - 1) ? luz : rel);
+    if (!en(i + 1, j + 1) && !en(i + 1, j) && !en(i, j + 1)) pon(x + i + 1, y + j + 1, sombra);
+  }));
+}
+const FIG = {
+  corazon: [".XX.XX.", "XXXXXXX", "XXXXXXX", ".XXXXX.", "..XXX..", "...X..."],
+  chico: [".X.X.", "XXXXX", ".XXX.", "..X.."],
+  estrella: ["...X...", "..XXX..", "XXXXXXX", ".XXXXX.", ".XX.XX.", "X.....X"],
+  brillo: [".X.", "XXX", ".X."],
+  punto: [".XX.", "XXXX", "XXXX", ".XX."],
+  flor: [".X.", "X.X", ".X."],
+};
 export function texPared(color, patron) {
-  return css(comoUrl(`p|${color}|${patron}`, 16, 16, ({ pon, caja }) => {
-    const B = rgb(color), L = cla(B, 0.5), D = osc(B, 0.95), D2 = osc(B, 0.9);
-    caja(0, 0, 16, 16, B);
-    // Un tramado finito para que no se vea plano.
-    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) if ((x * 3 + y * 5) % 11 === 0) pon(x, y, D);
-    if (patron === "rayas") for (let y = 0; y < 16; y++) { for (let x = 0; x < 3; x++) { pon(x, y, L); pon(x + 8, y, L); } pon(3, y, D2); pon(11, y, D2); }
-    if (patron === "puntos") { caja(3, 3, 2, 2, L); caja(11, 11, 2, 2, L); pon(4, 4, cla(B, 0.75)); pon(12, 12, cla(B, 0.75)); }
-    if (patron === "corazones") { figura(pon, FIG.corazon, 2, 2, L); figura(pon, FIG.chica, 11, 11, cla(B, 0.35)); }
-    if (patron === "estrellas") { figura(pon, FIG.estrella, 2, 3, L); pon(12, 11, L); pon(11, 12, L); pon(12, 12, L); pon(13, 12, L); pon(12, 13, L); }
-    if (patron === "ladrillo") {
-      for (let x = 0; x < 16; x++) { pon(x, 0, L); pon(x, 8, L); pon(x, 7, D2); pon(x, 15, D2); }
-      for (let y = 1; y < 8; y++) { pon(0, y, L); pon(15, y, D2); } for (let y = 9; y < 16; y++) { pon(8, y, L); pon(7, y, D2); }
+  return css(comoUrlR(`p|${color}|${patron}|74`, 24, 24, ({ pon, caja }) => {
+    const B = rgb(color), L = cla(B, 0.5), L2 = cla(B, 0.78), D = osc(B, 0.955), D2 = osc(B, 0.9), S = osc(B, 0.86);
+    caja(0, 0, 24, 24, B);
+    // El papel: motitas finitas (no plano), siempre en el mismo lugar.
+    for (let y = 0; y < 24; y++) for (let x = 0; x < 24; x++) { const h = hsh(x, y, 7); if (h < 0.07) pon(x, y, D); else if (h > 0.975) pon(x, y, cla(B, 0.18)); }
+    if (patron === "liso") { for (const [x, y] of [[5, 5], [17, 17]]) figuraRelieve(pon, FIG.flor, x, y, L, L2, D2); for (const [x, y] of [[17, 6], [6, 18]]) pon(x, y, L); }
+    if (patron === "rayas") for (let y = 0; y < 24; y++) {
+      // Una raya ancha clarita con su filo, una finita, y su sombrita (como papel con relieve).
+      for (let x = 2; x < 8; x++) pon(x, y, x === 2 ? L2 : L);
+      pon(8, y, S); pon(14, y, D2); pon(15, y, cla(B, 0.3));
+      if (y % 8 === 4) { pon(19, y, L2); pon(20, y, L); pon(19, y + 1, L); }   // puntitos bordados entre rayas
     }
-    if (patron === "azulejo") { for (let i = 0; i < 16; i++) { pon(i, 0, L); pon(0, i, L); pon(i, 8, L); pon(8, i, L); } for (const [x, y] of [[4, 4], [12, 4], [4, 12], [12, 12]]) { pon(x, y, cla(B, 0.7)); pon(x + 1, y, L); pon(x, y + 1, L); } }
-    if (patron === "cuadros") { caja(0, 0, 8, 8, L); caja(8, 8, 8, 8, L); }
+    if (patron === "puntos") { for (const [x, y] of [[2, 2], [14, 14]]) figuraRelieve(pon, FIG.punto, x, y, L, L2, S); for (const [x, y] of [[14, 3], [3, 15]]) figuraRelieve(pon, FIG.brillo, x, y, cla(B, 0.35), L, D2); }
+    if (patron === "corazones") { figuraRelieve(pon, FIG.corazon, 2, 3, L, L2, S); figuraRelieve(pon, FIG.chico, 15, 15, cla(B, 0.38), L, D2); pon(17, 5, L); pon(5, 18, L); }
+    if (patron === "estrellas") { figuraRelieve(pon, FIG.estrella, 2, 2, L, L2, S); figuraRelieve(pon, FIG.brillo, 15, 15, L, L2, D2); pon(19, 4, L2); pon(5, 19, L); pon(20, 12, cla(B, 0.3)); }
+    if (patron === "ladrillo") {
+      // Ladrillos de 12 × 6 cuadritos, cada uno de su tono, con su filo claro, su sombrita y la mezcla entre ellos.
+      const M = cla(B, 0.62);
+      for (let f = 0; f < 4; f++) for (let b = -1; b < 2; b++) {
+        const x0 = b * 12 + (f % 2) * 6, y0 = f * 6, t = 0.94 + hsh(b + 5, f, 3) * 0.1, K = osc(B, t), KL = cla(K, 0.22), KS = osc(K, 0.9);
+        for (let y = 0; y < 6; y++) for (let x = 0; x < 12; x++) {
+          const X = ((x0 + x) % 24 + 24) % 24, Y = y0 + y;
+          if (y === 5 || x === 11) { pon(X, Y, M); continue; }
+          pon(X, Y, y === 0 || x === 0 ? KL : y === 4 || x === 10 ? KS : hsh(X, Y, 9) < 0.08 ? osc(K, 0.93) : K);
+        }
+      }
+    }
+    if (patron === "azulejo") {
+      // Azulejos de 12 × 12 con su junta, su bisel y una florecita en medio.
+      const J = cla(B, 0.7);
+      for (const [x0, y0] of [[0, 0], [12, 0], [0, 12], [12, 12]]) {
+        for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) {
+          const X = x0 + x, Y = y0 + y;
+          if (x === 11 || y === 11) { pon(X, Y, J); continue; }
+          pon(X, Y, x === 0 || y === 0 ? L2 : x === 10 || y === 10 ? D2 : (x + y) % 9 === 0 ? cla(B, 0.12) : B);
+        }
+        figuraRelieve(pon, FIG.flor, x0 + 4, y0 + 4, L, L2, D2); pon(x0 + 5, y0 + 5, cla(B, 0.25));
+      }
+    }
+    if (patron === "cuadros") {
+      // Cuadritos de mantel (vichy): las bandas se cruzan y donde se encuentran se ve más oscuro, con su tejido.
+      for (let y = 0; y < 24; y++) for (let x = 0; x < 24; x++) {
+        const bx = Math.floor(x / 6) % 2 === 0, by = Math.floor(y / 6) % 2 === 0;
+        const k = bx && by ? osc(B, 0.95) : bx || by ? B : cla(B, 0.55);
+        pon(x, y, (x + y) % 2 && (bx || by) ? mez(k, cla(B, 0.55), 0.18) : k);
+      }
+    }
   }));
 }
 
@@ -62,42 +118,95 @@ const PISOS = {
   duela: ["#d9a878", "#cf9c6b", "#9a6a46", "#e6b98b"],
 };
 export function texPiso(tipo) {
-  if (PISOS[tipo]) return css(comoUrl(`f|${tipo}`, 40, 12, ({ pon, caja }) => {
-    const [a, b, s, g] = PISOS[tipo].map(rgb);
-    for (let fila = 0; fila < 3; fila++) {
-      const y = fila * 4, k = fila % 2 ? b : a, junta = [6, 26, 16][fila];
-      caja(0, y, 40, 4, k);
-      for (let x = 0; x < 40; x++) pon(x, y + 3, s);
-      for (let j = 0; j < 3; j++) { pon(junta, y + j, s); pon((junta + 1) % 40, y + j, cla(k, 0.2)); }
-      for (let i = 0; i < 5; i++) pon((junta + 5 + i * 7 + fila * 3) % 40, y + 1 + (i % 2), g);   // vetas
-      if (tipo === "duela") for (let x = 0; x < 40; x++) if (x % 10 === 3) pon(x, y + 1, osc(k, 0.86));
+  if (PISOS[tipo]) return css(comoUrlR(`f|${tipo}|74`, 64, 16, ({ pon }) => {
+    // Tablas de 4 cuadritos de ancho, de largos distintos y escalonadas: cada tabla de su tono, con su filo claro, la
+    // rendija oscura entre tablas, vetas y de vez en cuando un nudito.
+    const [a, b, s, g] = PISOS[tipo].map(rgb), tonos = [a, b, mez(a, b, 0.5), osc(a, 0.965)];
+    const LARGOS = [[0, 22, 40], [10, 34, 52], [4, 28, 46], [16, 40, 58]];
+    for (let fila = 0; fila < 4; fila++) {
+      const y0 = fila * 4, cortes = LARGOS[fila];
+      for (let x = 0; x < 64; x++) {
+        const tabla = cortes.filter((c) => c <= x).length + fila * 5, k = tonos[Math.floor(hsh(tabla, fila, 11) * 4)];
+        const junta = cortes.includes(x);
+        for (let y = 0; y < 4; y++) {
+          let c = k;
+          if (y === 3) c = s;                                            // la rendija entre filas
+          else if (junta) c = osc(s, 1.08);                              // la junta entre tablas
+          else if (cortes.includes(x - 1)) c = cla(k, 0.2);              // el filo clarito junto a la junta
+          else if (y === 0) c = cla(k, 0.16);                            // la luz sobre el filo de la tabla
+          else if (hsh(x, y0 + y, 13) < 0.11) c = osc(k, 0.93);          // vetas
+          else if (hsh(x, y0 + y, 17) > 0.965) c = g;
+          if (tipo === "duela" && y === 1 && x % 12 === 6) c = osc(k, 0.8);   // los clavitos de la terraza
+          pon(x, y0 + y, c);
+        }
+      }
+      // Un nudito por fila (con su anillo).
+      const nx = 6 + Math.floor(hsh(fila, 3, 19) * 50);
+      pon(nx, y0 + 1, osc(a, 0.78)); pon(nx + 1, y0 + 1, osc(a, 0.86)); pon(nx - 1, y0 + 1, osc(a, 0.92)); pon(nx, y0 + 2, osc(a, 0.92));
     }
   }));
-  if (tipo === "mosaico") return css(comoUrl("f|mosaico", 16, 16, ({ pon, caja }) => {
-    const A = rgb("#ffffff"), B = rgb("#dcefff"), G = rgb("#c4dcef");
-    caja(0, 0, 8, 8, A); caja(8, 8, 8, 8, A); caja(8, 0, 8, 8, B); caja(0, 8, 8, 8, B);
-    for (let i = 0; i < 16; i++) { pon(i, 7, G); pon(i, 15, G); pon(7, i, G); pon(15, i, G); }
-    pon(3, 3, B); pon(11, 11, B); pon(11, 3, cla(B, 0.5)); pon(3, 11, cla(B, 0.5));
+  if (tipo === "mosaico") return css(comoUrlR("f|mosaico|74", 16, 16, ({ pon }) => {
+    const A = rgb("#ffffff"), B = rgb("#dcefff"), G = rgb("#bcd3e6"), LA = rgb("#ffffff"), SA = rgb("#e8eef5"), LB = rgb("#eaf6ff"), SB = rgb("#c9e1f4");
+    for (const [x0, y0, blanco] of [[0, 0, 1], [8, 8, 1], [8, 0, 0], [0, 8, 0]]) for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+      const X = x0 + x, Y = y0 + y;
+      if (x === 7 || y === 7) { pon(X, Y, G); continue; }
+      pon(X, Y, x === 0 || y === 0 ? (blanco ? LA : LB) : x === 6 || y === 6 ? (blanco ? SA : SB) : blanco ? A : B);
+      if (blanco && ((x === 3 && y >= 2 && y <= 4) || (y === 3 && x >= 2 && x <= 4))) pon(X, Y, x === 3 && y === 3 ? rgb("#ffd6e6") : LB);   // la florecita
+    }
   }));
-  if (tipo === "alfombra") return css(comoUrl("f|alfombra", 12, 12, ({ pon, caja }) => {
+  if (tipo === "alfombra") return css(comoUrlR("f|alfombra|74", 12, 12, ({ pon, caja }) => {
     const A = rgb("#f6c6d8"); caja(0, 0, 12, 12, A);
-    for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) if ((x + y) % 2 === 0) pon(x, y, osc(A, 0.97));
-    for (const [x, y] of [[2, 2], [8, 8]]) { pon(x, y, [255, 255, 255]); pon(x + 1, y, cla(A, 0.6)); }
+    for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) { const h = hsh(x, y, 23); if ((x + y) % 2 === 0) pon(x, y, osc(A, 0.965)); if (h > 0.93) pon(x, y, cla(A, 0.3)); }
+    figuraRelieve(pon, FIG.chico, 1, 2, cla(A, 0.35), cla(A, 0.6), osc(A, 0.9)); pon(8, 8, rgb("#ffffff")); pon(9, 8, cla(A, 0.6));
   }));
-  if (tipo === "barro") return css(comoUrl("f|barro", 16, 10, ({ pon, caja }) => {
-    const A = rgb("#f0b49b"), G = rgb("#ffe3d4"); caja(0, 0, 16, 10, A);
-    for (let x = 0; x < 16; x++) { pon(x, 0, G); pon(x, 9, osc(A, 0.88)); } for (let y = 0; y < 10; y++) { pon(0, y, G); pon(15, y, osc(A, 0.9)); }
-    pon(5, 4, cla(A, 0.25)); pon(10, 6, osc(A, 0.94)); pon(6, 4, cla(A, 0.25));
+  if (tipo === "barro") return css(comoUrlR("f|barro|74", 16, 12, ({ pon }) => {
+    const A = rgb("#f0b49b"), G = rgb("#fbe0d2");
+    for (let f = 0; f < 2; f++) for (let b = -1; b < 2; b++) {
+      const x0 = b * 8 + (f % 2) * 4, y0 = f * 6, K = osc(A, 0.94 + hsh(b + 4, f, 29) * 0.1);
+      for (let y = 0; y < 6; y++) for (let x = 0; x < 8; x++) {
+        const X = ((x0 + x) % 16 + 16) % 16, Y = y0 + y;
+        pon(X, Y, x === 7 || y === 5 ? G : x === 0 || y === 0 ? cla(K, 0.2) : x === 6 || y === 4 ? osc(K, 0.9) : hsh(X, Y, 31) < 0.09 ? osc(K, 0.93) : K);
+      }
+    }
   }));
   // Pasto (también lo de afuera): matitas claras y oscuras, que se repiten sin que se note.
-  return css(comoUrl("f|pasto", 24, 16, ({ pon, caja }) => {
+  return css(comoUrlR("f|pasto|74", 24, 16, ({ pon, caja }) => {
     const A = rgb("#8fd59e"), D = rgb("#6fbf84"), L = rgb("#b5e8bd");
     caja(0, 0, 24, 16, A);
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 24; x++) if (hsh(x, y, 37) < 0.1) pon(x, y, osc(A, 0.95));
     for (const [x, y] of [[2, 3], [9, 1], [15, 6], [20, 2], [5, 11], [12, 13], [18, 10], [22, 14]]) { pon(x, y, D); pon(x + 1, y - 1, D); pon(x + 2, y, D); pon(x + 1, y, L); }
     for (const [x, y] of [[7, 7], [14, 3], [1, 14], [19, 8]]) { pon(x, y, [255, 214, 232]); pon(x, y + 1, D); }   // florecitas
   }));
 }
-
+/**
+ * (Fase 74) EL LAMBRÍN de abajo de las paredes, con su zoclo: un pasamanos con su filo y su sombrita, tableros
+ * hundidos (sombra arriba y a la izquierda, luz abajo y a la derecha, como molduras de verdad) y el zoclo con su
+ * remate, su ranura y su orilla. Del color de la pared, aclarado (como madera pintada). 24 × 29 cuadritos: de
+ * y = 316 a y = 432 del mundo.
+ */
+export const LAMBRIN_ARRIBA = 316, LAMBRIN_ALTO = 116;
+export function texLambrin(color) {
+  return comoUrlR(`lam|${color}|74`, 24, 29, ({ pon }) => {
+    const P = mez(rgb(color), [255, 252, 246], 0.68), PL = cla(P, 0.55), PD = osc(P, 0.92), PDD = osc(P, 0.82), LIN = osc(P, 0.7);
+    for (let y = 0; y < 29; y++) for (let x = 0; x < 24; x++) {
+      let c = P;
+      if (y === 0) c = PL; else if (y === 1) c = P; else if (y === 2) c = PD; else if (y === 3) c = PDD;          // el pasamanos
+      else if (y <= 21) {
+        const enT = x >= 3 && x <= 20 && y >= 6 && y <= 19;                                                    // el tablero hundido
+        if (enT) c = x === 3 || y === 6 ? PDD : x === 20 || y === 19 ? PL : x === 4 || y === 7 ? PD : hsh(x, y, 41) < 0.05 ? PD : cla(P, 0.12);
+        else if (x === 23) c = PD;                                                                             // la junta entre tableros
+        else if (x === 0) c = cla(P, 0.3);
+        else if (y === 4) c = osc(P, 0.95);                                                                    // sombrita bajo el pasamanos
+      }
+      else if (y === 22) c = PL;                                                                               // el remate del zoclo
+      else if (y === 23 || y === 24) c = P;
+      else if (y === 25) c = PDD;                                                                              // su ranura
+      else if (y === 26 || y === 27) c = PD;
+      else c = LIN;                                                                                            // su orilla con el piso
+      pon(x, y, c);
+    }
+  });
+}
 /* ── La lluvia: gotitas de 1 × 3, chuecas según el viento ── */
 export function texLluvia(clima) {
   const n = { lluvia: 7, tormenta: 12, extra: 18 }[clima] || 7, inc = clima === "extra" ? 2 : 1;
@@ -332,7 +441,7 @@ const lim01 = (v) => Math.max(0, Math.min(1, v));
  *  el piso en perspectiva (las tablas se juntan hacia el fondo), zoclos en las tres paredes, la esquina con su
  *  sombrita, el corte de la pared adelante y las puertas DE LADO (en la pared de su lado, abiertas o cerradas).
  *  La pared de atrás es la de siempre (CSS); este lienzo pinta todo lo demás. Un cuadrito = 3 del mundo. ═══ */
-const ARRIBA3D = -330, ABAJO3D = 800, PXC = 3;   // (hasta 800: abajo del cuarto se sigue viendo el piso)
+const ARRIBA3D = -330, ABAJO3D = 800, PXC = 4;   // (Fase 74: cuadritos de 4, como los muebles)   // (hasta 800: abajo del cuarto se sigue viendo el piso)
 const datosDe = (t) => { if (!t) return null; if (!t.datos) t.datos = t.cv.getContext("2d").getImageData(0, 0, t.tw, t.th).data; return t; };
 const muestra = (t, u, v) => { const x = ((Math.floor(u) % t.tw) + t.tw) % t.tw, y = ((Math.floor(v) % t.th) + t.th) % t.th, i = (y * t.tw + x) * 4; return [t.datos[i], t.datos[i + 1], t.datos[i + 2]]; };
 const BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
@@ -343,7 +452,7 @@ export function pintarCaja(cv, cfg, soloPuertas = false) {
   if (!img || cv.width !== W || cv.height !== HH || !soloPuertas) { cv.width = W; cv.height = HH; c = cv.getContext("2d"); img = c.createImageData(W, HH); cv._c = c; cv._img = img; }
   // (Fase 62) B: ancho al fondo; F: ancho enfrente (menos que el cuarto: a los lados queda el corte de la pared, que se dibuja aparte).
   const d = img.data, w = cfg.w, cx = w / 2, B = FONDO_3D, F = FRENTE_3D, L = cx - (w * B) / 2, Rr = cx + (w * B) / 2, FL = cx - (w * F) / 2;
-  const tp = datosDe(cache.get(cfg.pared)), tf = datosDe(cache.get(cfg.piso));
+  const tp = datosDe(cache.get(cfg.pared)), tf = datosDe(cache.get(cfg.piso)), tl = datosDe(cfg.lambrin ? cache.get(cfg.lambrin) : null);
   const ZOC = [255, 250, 247], ZOC2 = [232, 214, 222], LINEA = [120, 80, 105];
   const put = (i, j, k, f = 1, a = 255) => { const o = (j * W + i) * 4; d[o] = Math.min(255, k[0] * f); d[o + 1] = Math.min(255, k[1] * f); d[o + 2] = Math.min(255, k[2] * f); d[o + 3] = a; };
   // (Fase 62) La puerta, en la pared de su lado: de 0.24 a 0.58 de hondo y poquito más alta que el monito (160), con su marco claro,
@@ -381,7 +490,8 @@ export function pintarCaja(cv, cfg, soloPuertas = false) {
     if (X < FL || X > w - FL) return put(i, j, [0, 0, 0], 1, 0);
     // (Fase 71) EL TECHO: arriba de la pared de atrás y de las de los lados (la orilla de arriba de cada pared va de
     // TECHO_ATRAS, al fondo, a TECHO_FRENTE, enfrente). Tablitas claras en perspectiva y su moldura donde se juntan.
-    if (Y < TB + 10) {
+    let aoT = 0;   // (Fase 74) la sombrita que hace la moldura del techo sobre la pared (0…1)
+    if (Y < TB + 30) {
       const se = Math.abs(X - cx) / (w / 2), u = se <= B ? 0 : Math.min(1, (se - B) / (F - B)), yT = TB + u * (TF - TB);
       if (Y < yT) {
         const t = Math.min(1, Math.max(0, (TB - Y) / (TB - TF))), sc = B + (F - B) * t, xl = cx + (X - cx) / sc;
@@ -392,7 +502,9 @@ export function pintarCaja(cv, cfg, soloPuertas = false) {
         return put(i, j, tabla < 8 ? [255, 250, 246] : [249, 240, 236], f + (b - 0.5) * 0.03);
       }
       const m = Y - yT;
-      if (m < 10) return put(i, j, m < 2.5 ? LINEA : m < 5.5 ? [255, 252, 249] : m < 8 ? [240, 226, 231] : [196, 172, 186], 1, m >= 8 ? 170 : 255);
+      // (Fase 74) La moldura con su perfil: su línea, el bocel clarito, la media caña en sombra, otro filo y su orilla.
+      if (m < 14) return put(i, j, m < 2 ? LINEA : m < 5 ? [255, 253, 250] : m < 8 ? [236, 222, 228] : m < 10 ? [250, 244, 246] : m < 12 ? [214, 194, 204] : [150, 120, 140], 1, m >= 12 ? 190 : 255);
+      if (m < 30) aoT = 1 - (m - 14) / 16;
     }
     if (Y >= PISO_M) {
       const t = (Y - PISO_M) / (H_M - PISO_M), s = B + (F - B) * Math.min(1, t), half = (w / 2) * s, ax = Math.abs(X - cx);
@@ -408,7 +520,9 @@ export function pintarCaja(cv, cfg, soloPuertas = false) {
       // La pared de atrás se ve a través; sólo su esquina y la sombrita junto a ella.
       const e = Math.min(X - L, Rr - X);
       if (e < 1.6) return put(i, j, LINEA, 1, 150);
-      if (e < 14) return put(i, j, [60, 30, 50], 1, Math.round((1 - e / 14) * 46 * (b > 0.4 ? 1 : 0.7)));
+      // (Fase 74) Sombritas de rincón: junto a las esquinas y bajo la moldura, en escalones tramados (no un degradado).
+      const ae = e < 18 ? 1 - e / 18 : 0, a = Math.max(ae * 52, aoT * 44);
+      if (a > 0) { const esc = a > 34 ? 1 : a > 18 ? (b > 0.3 ? 0.72 : 0.5) : b > 0.55 ? 0.5 : 0; if (esc) return put(i, j, [60, 30, 50], 1, Math.round(a * esc)); }
       return put(i, j, [0, 0, 0], 1, 0);
     }
     // Las paredes de los lados.
@@ -417,8 +531,10 @@ export function pintarCaja(cv, cfg, soloPuertas = false) {
     if (hgt < 0) return put(i, j, [0, 0, 0], 1, 0);
     const pu = puertaEn(lado, u, hgt);
     if (pu) return put(i, j, pu);
-    let f = (lado < 0 ? 0.9 : 0.95) * (0.92 + 0.08 * u);
+    let f = (lado < 0 ? 0.9 : 0.95) * (0.92 + 0.08 * u) * (1 - 0.1 * aoT);
     if (hgt < 1.8) return put(i, j, LINEA, 0.9);
+    // (Fase 74) El lambrín con su zoclo también en las paredes de los lados (en perspectiva, como el de atrás).
+    if (tl && hgt < LAMBRIN_ALTO) return put(i, j, muestra(tl, (u * PARED_3D) / PXC, (LAMBRIN_ALTO - hgt) / PXC), f + 0.04);
     if (hgt < 14) return put(i, j, hgt > 12 ? ZOC2 : ZOC, f + 0.06);
     if (!tp) return put(i, j, [255, 225, 236], f);
     return put(i, j, muestra(tp, (u * PARED_3D) / PXC, -hgt / PXC), f + (b - 0.5) * 0.025);
@@ -435,8 +551,9 @@ export function pintarCaja(cv, cfg, soloPuertas = false) {
   }
 }
 /** La clave con la que se guardó el tapiz / el piso (para la cajita 3D). */
-export const claveTapiz = (color, patron) => `p|${color}|${patron}`;
-export const clavePiso = (tipo) => (PISOS[tipo] || ["mosaico", "alfombra", "barro"].includes(tipo) ? `f|${tipo}` : "f|pasto");
+export const claveTapiz = (color, patron) => `p|${color}|${patron}|74`;
+export const clavePiso = (tipo) => (PISOS[tipo] || ["mosaico", "alfombra", "barro"].includes(tipo) ? `f|${tipo}|74` : "f|pasto|74");
+export const claveLambrin = (color) => `lam|${color}|74`;
 
 /* ── (Fase 66) Sombras y luces en pixel (nada de degradados lisos) ── */
 /** La sombrita pixel de algo del piso: un óvalo de `celdas` cuadritos de ancho (de 4 del mundo), con su centro más

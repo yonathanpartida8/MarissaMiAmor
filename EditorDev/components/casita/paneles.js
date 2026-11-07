@@ -181,7 +181,7 @@ function miniPixel(d, caja, max = 5) {
   if (ya) { i.append(imgMini(ya)); return i; }
   i._cargar = () => {
     if (i._ya) return; i._ya = true;
-    import("./girar.js").then((G) => G.vistaPlana(d, {}, colorDe(d, {}))).then((v) => {
+    import("./girar.js").then((G) => G.vistaFrente(d, {}, colorDe(d, {}))).then((v) => {
       if (!v) { i.classList.remove("px"); i.innerHTML = d.arte({}, colorDe(d, {})); return; }
       const pre = new Image();
       pre.onload = () => {
@@ -200,7 +200,7 @@ function prepararMinis(ds, caja, max = 5) {
   const faltan = ds.filter((d) => !MINIS.has(`${d.k}|${caja}|${max}`));
   const uno = () => {
     const d = faltan.shift(); if (!d) return;
-    import("./girar.js").then((G) => G.vistaPlana(d, {}, colorDe(d, {}))).then((v) => {
+    import("./girar.js").then((G) => G.vistaFrente(d, {}, colorDe(d, {}))).then((v) => {
       if (!v) return;
       const pre = new Image();
       pre.onload = () => { const [w, h] = tamMini(pre.naturalWidth, pre.naturalHeight, caja, max); MINIS.set(`${d.k}|${caja}|${max}`, { url: v.url, w, h }); };

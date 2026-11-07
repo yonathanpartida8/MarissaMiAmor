@@ -2080,3 +2080,11 @@ body.ca-escribiendo .jt-nav { display: none; }
 .ca-plato:is([data-b="2"], [data-b="1"]) .ca-plato-comida { clip-path: none; }
 .ca-plato-comida { transform-origin: 50% 82%; transform: scale(calc(1 - var(--come, 0) * .38)); transition: transform .3s steps(3); }
 .ca-plato:not([data-b="3"]) .ca-plato-base::after { content: ""; position: absolute; left: 28%; top: 66%; width: 2px; height: 2px; background: var(--migaja, #c98a4a); box-shadow: 7px 2px 0 var(--migaja, #c98a4a), 13px -1px 0 var(--migaja, #c98a4a), 18px 3px 0 var(--migaja, #c98a4a); }
+
+/* ═══ Fase 74: de frente con volumen (2.5D) ═══ */
+/* La imagen con volumen ya trae su sombra pixel en el piso (con la forma de su base): la de abajo sobra. */
+.ca-obj.v34.capa-piso::after { display: none; }
+/* (Fase 74) El lambrín de la pared de atrás, con su zoclo (pixel): sólo adentro y en pixel; el zoclo liso de antes sobra. */
+.ca-lambrin { display: none; }
+.ca.pixel .ca-cuarto:not(.afuera) .ca-lambrin { display: block; position: absolute; left: 0; right: 0; top: 316px; height: 116px; z-index: 1; background-repeat: repeat-x; image-rendering: crisp-edges; image-rendering: pixelated; pointer-events: none; }
+.ca.pixel .ca-cuarto:not(.afuera) .ca-zoclo { display: none; }

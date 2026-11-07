@@ -38,7 +38,7 @@ import { Vida } from "./vida.js";
 import { Fisica } from "./fisica.js";
 /** (Fase 68) El paso de los monitos (del mundo por segundo): caminando, trotando (viajes de más de TROTE_DESDE). */
 const VEL_PASO = 168, VEL_TROTE = 246, TROTE_DESDE = 640;
-import { giroDe, vistaGirada, vistaPlana, vistaPlanaYa, lugarGirado, hondura, ELEV_GIRO, NOMBRE_VISTA, soloFrenteAtras } from "./girar.js";
+import { giroDe, vistaGirada, vistaFrente, vistaFrenteYa, lugarGirado, hondura, ELEV_GIRO, NOMBRE_VISTA, soloFrenteAtras } from "./girar.js";
 import { modelo as modelo3d, pintar as pintar3d, lugarEn as lugar3d, POSES as POSES3D, CEL as CEL3D } from "./monito3d.js";
 import { CATALOGO, COSAS_MANO, RECETAS, colorDe } from "./catalogo/index.js";
 import { monitoSVG, ropaDe } from "./monito.js";
@@ -58,7 +58,7 @@ import { Necesidades, NECESIDADES } from "./necesidades.js";
 import { LasTraes, VEL_TRAES } from "./traes.js";
 import { VozEnVivo, puedeVoz } from "./voz.js";
 import { CieloVivo } from "./cielo.js";
-import { texPared, texPiso, texLluvia, texCharcos, pintarFrente, texAuto, texSol, texLuna, texRayos, pintarCaja, claveTapiz, clavePiso, sombraPx, conoLuzPx, texSubsuelo } from "./texturas.js";
+import { texPared, texPiso, texLambrin, texLluvia, texCharcos, pintarFrente, texAuto, texSol, texLuna, texRayos, pintarCaja, claveTapiz, clavePiso, claveLambrin, sombraPx, conoLuzPx, texSubsuelo } from "./texturas.js";
 import { Luces } from "./luces.js";
 import { Puertas, hondoPuerta } from "./puertas.js";
 import { Navegacion } from "./ruta.js";
@@ -310,7 +310,7 @@ export class Casita {
     this.oscuroN = new Map();
     for (const c of CUARTOS) {
       const n = el("div.ca-cuarto." + c.k + (c.afuera ? ".afuera" : ""), { dataset: { k: c.k }, style: { left: inicioDe(c.k) + "px", width: c.w + "px" } }, [
-        el("div.ca-pared"), el("div.ca-zoclo"), el("div.ca-piso"),
+        el("div.ca-pared"), el("div.ca-lambrin"), el("div.ca-zoclo"), el("div.ca-piso"),
       ]);
       const cielo = () => el("div.ca-cielo", {}, [el("i.ca-sol"), el("i.ca-nube.n1"), el("i.ca-nube.n2"), el("i.ca-nube.n3"), el("i.ca-estrellas"), el("i.ca-mariposa.m1"), el("i.ca-mariposa.m2"), el("i.ca-luciernagas")]);
       // La terraza: cielo, la ciudad a lo lejos y su barandal (sin la cerca ni la fachada del jardín).
@@ -490,11 +490,11 @@ export class Casita {
     const cu = cuarto(k), n = this.cuartosN?.get(k), cv = n?.querySelector(":scope > .ca-caja-cv");
     if (!cv || cu.afuera) return;
     try {
-      texPared(cfg.pared, cfg.patron); texPiso(cfg.piso);   // (deja listos los cuadritos del tapiz y del piso)
+      texPared(cfg.pared, cfg.patron); texPiso(cfg.piso); texLambrin(cfg.pared);   // (deja listos los cuadritos del tapiz, el piso y el lambrín)
       // (Fase 63) Las puertas de los lados de ESTE cuarto (si las hay), qué tan abiertas y de qué color.
       const lado = (pared) => { const q = this.puertasN?.de(k).find((x) => x.pared === pared); return q && { puerta: true, ap: Math.round((this.puertasN.ap.get(q.id) || 0) * 4) / 4, exterior: !!cuarto(q.va).afuera, color: COLOR_PUERTA[k] }; };
       const izq = lado("izq"), der = lado("der");
-      const c = { w: cu.w, pared: claveTapiz(cfg.pared, cfg.patron), piso: clavePiso(cfg.piso), izq, der };
+      const c = { w: cu.w, pared: claveTapiz(cfg.pared, cfg.patron), piso: clavePiso(cfg.piso), lambrin: claveLambrin(cfg.pared), izq, der };
       const clave = JSON.stringify(c);
       if (cv._clave === clave) return;
       const soloP = soloPuertas && cv._base === `${cfg.pared}|${cfg.patron}|${cfg.piso}`;
@@ -518,6 +518,9 @@ export class Casita {
       Object.assign(pared.style, tp); Object.assign(piso.style, texPiso(cfg.piso));
       // (Fase 73) La pared de enfrente (jugando) lleva el mismo tapiz que el cuarto.
       n._muro?.style.setProperty("--tapiz", tp.backgroundImage); n._muro?.style.setProperty("--tapiz-tam", tp.backgroundSize);
+      // (Fase 74) El lambrín de la pared de atrás (con su zoclo), del mismo color que la pared.
+      const lam = n.querySelector(":scope > .ca-lambrin"), tl = texLambrin(cfg.pared);
+      if (lam) Object.assign(lam.style, { backgroundImage: tl.url, backgroundSize: `${tl.w}px ${tl.h}px` });
     }
     catch (e) { limpiar(pared); limpiar(piso); }
   }
@@ -1009,16 +1012,19 @@ export class Casita {
       const frente = (v) => {
         arte.innerHTML = r.d.arte(o.e || {}, C); r.n.classList.remove("plana", "preparando");
         if (r.vg) { r.vg = null; this._colocar(r); }
-        if (v) { arte.insertAdjacentHTML("afterbegin", `<img class="ca-plana" alt="" draggable="false" decoding="sync" src="${v.url}" style="width:${v.w}px;height:${v.h}px">`); marcarQuieto(arte.querySelector(":scope > svg")); r.n.classList.add("plana"); }
+        // (Fase 74) Con volumen: la imagen trae la tapa arriba y su sombra; su frente cae justo en el dibujo (fx, fy).
+        const v34 = !!(v && v.fx != null && v.fy != null && v.fx + v.fy > 0);
+        r.n.classList.toggle("v34", v34);
+        if (v) { arte.insertAdjacentHTML("afterbegin", `<img class="ca-plana${v34 ? " ca-34" : ""}" alt="" draggable="false" decoding="sync" src="${v.url}" style="width:${v.w}px;height:${v.h}px${v34 ? `;left:${-v.fx}px;top:${-v.fy}px` : ""}">`); marcarQuieto(arte.querySelector(":scope > svg")); r.n.classList.add("plana"); }
         this._reponer3d(r);
       };
-      const ya = vistaPlanaYa(r.d, o.e, C), vacio = !arte.firstChild;
+      const ya = vistaFrenteYa(r.d, o.e, C), vacio = !arte.firstChild;
       if (ya) frente(ya);
       else {
-        if (vacio) { frente(null); r.n.classList.add("preparando"); setTimeout(() => r.n.classList.remove("preparando"), 700); }
-        vistaPlana(r.d, o.e, C).then((v) => { if (r._tg === t && r.n.isConnected) frente(v); });
+        if (vacio) { frente(null); r.n.classList.add("preparando"); setTimeout(() => r.n.classList.remove("preparando"), 900); }
+        vistaFrente(r.d, o.e, C).then((v) => { if (r._tg === t && r.n.isConnected) frente(v); });
       }
-    } else if (!g || !r.vg) { arte.innerHTML = r.d.arte(o.e || {}, C); r.n.classList.remove("plana"); if (r.vg) { r.vg = null; this._colocar(r); } this._reponer3d(r); }
+    } else if (!g || !r.vg) { arte.innerHTML = r.d.arte(o.e || {}, C); r.n.classList.remove("plana", "v34"); if (r.vg) { r.vg = null; this._colocar(r); } this._reponer3d(r); }
     r.n.classList.toggle("girado", !!g);
     // (Fase 66) Su sombrita en pixel, del ancho de su base (girado, la sombra ya viene dibujada con su vista).
     if (r.d.capa === "piso") { try { const c = (r.d.w * 0.84) / 4; r.n.style.setProperty("--sombra", sombraPx(c).url); r.n.style.setProperty("--sombra-sol", sombraPx(c, true).url); } catch (e) { /* nada */ } }
@@ -2673,7 +2679,7 @@ export class Casita {
       const v = String(e["g" + i] || ""), [t, col] = v.split(":"), d = CATALOGO[t];
       if (!d) return;
       const ee = col ? { col: +col } : {};
-      vistaPlana(d, ee, colorDe(d, ee)).then((p) => {
+      vistaFrente(d, ee, colorDe(d, ee)).then((p) => {
         if (!p || capa.dataset.firma !== firma) return;
         const s = Math.min(1, (w - 4) / p.w, (h - 2) / p.h), iw = p.w * s, ih = p.h * s;
         capa.append(el("img", { src: p.url, alt: "", draggable: "false", style: { left: (x + (w - iw) / 2).toFixed(1) + "px", top: (y + h - ih + 3 * s).toFixed(1) + "px", width: iw.toFixed(1) + "px", height: ih.toFixed(1) + "px" } }));
@@ -2691,7 +2697,7 @@ export class Casita {
       const huecos = r.d.guarda.huecos.map((_, i) => {
         const v = String(e["g" + i] || ""), [t, col] = v.split(":"), d = CATALOGO[t];
         const b = el("button.ca-guarda-h" + (d ? "" : ".vacio"), { type: "button", "aria-label": d ? `Sacar ${d.n}` : "Hueco vacío", disabled: d ? null : "", onClick: () => { this._sacarGuardado(this.objs.get(id), i); setTimeout(pintar, 60); } }, [el("i"), el("small", { text: d ? d.n : "Libre" })]);
-        if (d) { const ee = col ? { col: +col } : {}; vistaPlana(d, ee, colorDe(d, ee)).then((p) => { if (p) b.querySelector("i").style.backgroundImage = `url("${p.url}")`; }); }
+        if (d) { const ee = col ? { col: +col } : {}; vistaFrente(d, ee, colorDe(d, ee)).then((p) => { if (p) b.querySelector("i").style.backgroundImage = `url("${p.url}")`; }); }
         return b;
       });
       cuerpo.replaceChildren(
