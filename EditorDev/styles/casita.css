@@ -2083,8 +2083,18 @@ body.ca-escribiendo .jt-nav { display: none; }
 
 /* ═══ Fase 74: de frente con volumen (2.5D) ═══ */
 /* La imagen con volumen ya trae su sombra pixel en el piso (con la forma de su base): la de abajo sobra. */
-.ca-obj.v34.capa-piso::after { display: none; }
 /* (Fase 74) El lambrín de la pared de atrás, con su zoclo (pixel): sólo adentro y en pixel; el zoclo liso de antes sobra. */
 .ca-lambrin { display: none; }
 .ca.pixel .ca-cuarto:not(.afuera) .ca-lambrin { display: block; position: absolute; left: 0; right: 0; top: 316px; height: 116px; z-index: 1; background-repeat: repeat-x; image-rendering: crisp-edges; image-rendering: pixelated; pointer-events: none; }
 .ca.pixel .ca-cuarto:not(.afuera) .ca-zoclo { display: none; }
+
+/* ═══ Fase 75 ═══ */
+/* La tapa con volumen también se toca: agarras el mueble por donde lo ves (arriba de su dibujo de frente). */
+.ca-obj.v34.capa-piso::after, .ca.fx1 .ca-obj.v34.capa-piso::after { display: block; content: ""; position: absolute; z-index: 0; left: 6%; right: 6%; top: auto; bottom: 100%; height: var(--tapa34, 0px); background: none; border-radius: 0; translate: none; scale: none; transition: none; pointer-events: none; }
+.ca.editando .ca-obj.v34.capa-piso::after { pointer-events: auto; }
+/* (Y el marquito de «elegido» abarca también su tapa.) */
+.ca.editando .ca-obj.v34::before { top: calc(-4px - var(--tapa34, 0px)); }
+/* Las miniaturas ya no aparecen con desvanecido (salían de a poquito y parecía parpadeo). */
+.ca-cat-mini.px img.llega { animation: none; }
+/* (Fase 75) Una cosita posada sobre la tapa de un mueble mientras la arrastras: casi sin levantarla, para ver dónde queda. */
+.ca-obj.levantado.posado { transform: translateY(-3px) scale(1.03) rotate(var(--incl, 0deg)); filter: drop-shadow(0 3px 2px rgba(80, 40, 60, .25)); }

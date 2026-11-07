@@ -28,6 +28,7 @@ import { ITEMS as JARDIN2 } from "./jardin2.js";
 import { ITEMS as COCINITA } from "./cocinita.js";
 import { colgadoY, usarAltos } from "../cuartos.js";
 import { REDIBUJOS } from "./redibujos.js";
+import { COCINA75 } from "./cocina75.js";
 import { VISTAS } from "./vistas.js";
 import { COSAS_MANO } from "./comida.js";
 import { RECETAS, arteReceta } from "./recetas.js";
@@ -51,6 +52,8 @@ const MASCOTAS_VIVAS = ["gatito", "perrito", "conejito", "tortuga"];
 
 // (Fase 70) Los que se redibujaron en pixel: cambia su dibujo (y su forma para girar); lo que hacen se queda igual.
 for (const [k, f] of Object.entries(REDIBUJOS)) if (CATALOGO[k]) { const nuevo = f(); delete CATALOGO[k].frente; Object.assign(CATALOGO[k], nuevo); }
+// (Fase 75) La cocina en pixel con volumen (refri, estufa, fregadero y barras): lo vivo de antes se queda encima.
+for (const [k, f] of Object.entries(COCINA75)) if (CATALOGO[k]) { const nuevo = f({ ...CATALOGO[k] }); delete CATALOGO[k].frente; Object.assign(CATALOGO[k], nuevo); }
 // (Fase 71) Los focos del techo cuelgan justo del techo (y la casa de entrada sabe cuánto miden).
 for (const d of Object.values(TECHO)) d.y = colgadoY(d.h);
 usarAltos((t) => CATALOGO[t]?.h || 100);

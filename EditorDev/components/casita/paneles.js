@@ -173,24 +173,23 @@ const TINTE = { sala: "#ffd6e4", cocina: "#cdeedd", recamara: "#e4dafc", bano: "
    el dibujo liso: mientras se prepara queda su lugarcito vacío y luego aparece suavecito; la segunda vez sale al
    instante. Al abrir el cajón se van preparando solas, de pocas en pocas, en los ratos libres. */
 const MINIS = new Map();
+/** (Fase 75) girar.js ya cargado (para buscar imágenes hechas sin esperar). */
+let G0 = null; import("./girar.js").then((G) => { G0 = G; });
 const tamMini = (nw, nh, caja, max) => { const f = Math.min(caja[0] / nw, caja[1] / nh), k = f < 1 ? f : Math.min(max, Math.floor(f)); return [Math.round(nw * k), Math.round(nh * k)]; };
 const imgMini = (m) => { const im = new Image(); im.alt = ""; im.draggable = false; im.decoding = "sync"; im.width = m.w; im.height = m.h; im.src = m.url; return im; };
 function miniPixel(d, caja, max = 5) {
   const clave = `${d.k}|${caja}|${max}`, ya = MINIS.get(clave);
   const i = el("i.ca-cat-mini.px");
   if (ya) { i.append(imgMini(ya)); return i; }
+  // (Fase 75) Si su imagen ya está hecha (o guardada en el teléfono), sale al instante, sin aparecer de a poquito.
+  const desde = (v) => { const [w, h] = tamMini(v.w / 4, v.h / 4, caja, max), m = { url: v.url, w, h }; MINIS.set(clave, m); return m; };
+  const ya2 = G0?.vistaFrenteYa(d, {}, colorDe(d, {}));
+  if (ya2) { i.append(imgMini(desde(ya2))); return i; }
   i._cargar = () => {
     if (i._ya) return; i._ya = true;
     import("./girar.js").then((G) => G.vistaFrente(d, {}, colorDe(d, {}))).then((v) => {
       if (!v) { i.classList.remove("px"); i.innerHTML = d.arte({}, colorDe(d, {})); return; }
-      const pre = new Image();
-      pre.onload = () => {
-        const [w, h] = tamMini(pre.naturalWidth, pre.naturalHeight, caja, max), m = { url: v.url, w, h };
-        MINIS.set(clave, m);
-        const im = imgMini(m); im.classList.add("llega");
-        i.replaceChildren(im);
-      };
-      pre.src = v.url;
+      i.replaceChildren(imgMini(desde(v)));
     }).catch(() => {});
   };
   return i;
@@ -202,9 +201,7 @@ function prepararMinis(ds, caja, max = 5) {
     const d = faltan.shift(); if (!d) return;
     import("./girar.js").then((G) => G.vistaFrente(d, {}, colorDe(d, {}))).then((v) => {
       if (!v) return;
-      const pre = new Image();
-      pre.onload = () => { const [w, h] = tamMini(pre.naturalWidth, pre.naturalHeight, caja, max); MINIS.set(`${d.k}|${caja}|${max}`, { url: v.url, w, h }); };
-      pre.src = v.url;
+      const [w, h] = tamMini(v.w / 4, v.h / 4, caja, max); MINIS.set(`${d.k}|${caja}|${max}`, { url: v.url, w, h });
     }).catch(() => {}).finally(() => (window.requestIdleCallback ? requestIdleCallback(uno, { timeout: 400 }) : setTimeout(uno, 40)));
   };
   uno();

@@ -38,7 +38,7 @@ import { Vida } from "./vida.js";
 import { Fisica } from "./fisica.js";
 /** (Fase 68) El paso de los monitos (del mundo por segundo): caminando, trotando (viajes de más de TROTE_DESDE). */
 const VEL_PASO = 168, VEL_TROTE = 246, TROTE_DESDE = 640;
-import { giroDe, vistaGirada, vistaFrente, vistaFrenteYa, lugarGirado, hondura, ELEV_GIRO, NOMBRE_VISTA, soloFrenteAtras } from "./girar.js";
+import { giroDe, vistaGirada, vistaFrente, vistaFrenteYa, vistasListas, lugarGirado, hondura, ELEV_GIRO, NOMBRE_VISTA, soloFrenteAtras } from "./girar.js";
 import { modelo as modelo3d, pintar as pintar3d, lugarEn as lugar3d, POSES as POSES3D, CEL as CEL3D } from "./monito3d.js";
 import { CATALOGO, COSAS_MANO, RECETAS, colorDe } from "./catalogo/index.js";
 import { monitoSVG, ropaDe } from "./monito.js";
@@ -78,6 +78,8 @@ const PIXEL = "editordev:casita-pixel";
 // Los monitos van siempre enfrente de los muebles (y las mascotas, enfrente de los muebles pero detrás de ellos).
 const zMono = (y) => Math.round(y) + 2;     // (detrás del sillón, el sillón lo tapa; enfrente, se ve encima)
 const zMascota = (y) => Math.round(y) + 1;   // (Fase 61: por hondura, como todo; ya no siempre encima de los muebles)
+/** (Fase 75) Qué tan honda es la tapa de un mueble con volumen: la cara de arriba que se ve en su dibujo 3/4 (sin su orillita). */
+const hondoTapa = (r) => (r.n?.classList.contains("v34") ? Math.max(0, (r.tapa34 || hondura(r.d) * ELEV_GIRO) - 6) : 0);
 const puedeSubir = (d) => d.capa === "piso" && d.h <= 120 && d.tope == null && !d.topes && !d.superficie;
 // (Fase 64) Lo que no se rompe al caer (es suavecito o está vivo) y qué tanto se daña según de qué tan alto cayó.
 const blando = (d) => !!d.mascota || d.capa === "alfombra" || /cojin|peluche|puff|osito|almohada|globo|cobija|fuerte|flores|arbusto|arbol|tapete|hamaca|cama|pasto/.test(d.k);
@@ -602,6 +604,9 @@ export class Casita {
       ["Afinando los sonidos", () => this.son.precargar()],
       ["Prendiendo las luces", () => this.capa?.prender()],
       ["Abriendo la puerta", () => this._primera],
+      // (Fase 75) Que todos los muebles ya tengan su imagen (con volumen) antes de enseñar la casa: así no aparecen de a
+      // poquito ni cambian de dibujo. La segunda vez salen de la memoria del teléfono, al instante.
+      ["Dando volumen a los muebles", async () => { await vistasListas; await Promise.all([...(this.objs?.values() || [])].map((r) => r._listo).filter(Boolean)); }],
     ];
     for (let i = 0; i < pasos.length; i++) {
       if (!this.vivo) return;
@@ -612,7 +617,21 @@ export class Casita {
     }
     barra.style.transform = "scaleX(1)";
     n.classList.add("fuera");
+    this._prepararCatalogo();
     setTimeout(() => { n.remove(); if (this.cargaN === n) this.cargaN = null; }, 380);
+  }
+
+  /** (Fase 75) En los ratos libres, deja listas (y guardadas) las imágenes de todo el catálogo: así el cajón de
+   *  «Acomodar» ya no muestra tarjetas vacías que se van llenando. De una en una, sin estorbarle al juego. */
+  _prepararCatalogo() {
+    const ds = Object.values(CATALOGO).filter((d) => d.k !== "cosita");
+    const uno = () => {
+      if (!this.vivo || !ds.length) return;
+      const d = ds.shift(), C = colorDe(d, {});
+      if (vistaFrenteYa(d, {}, C)) { setTimeout(uno, 0); return; }
+      vistaFrente(d, {}, C).catch(() => {}).finally(() => (window.requestIdleCallback ? requestIdleCallback(uno, { timeout: 600 }) : setTimeout(uno, 60)));
+    };
+    setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(uno, { timeout: 1500 }) : setTimeout(uno, 400)), 1200);
   }
 
   /* ═════════════ Cámara y medidas ═════════════ */
@@ -1015,14 +1034,19 @@ export class Casita {
         // (Fase 74) Con volumen: la imagen trae la tapa arriba y su sombra; su frente cae justo en el dibujo (fx, fy).
         const v34 = !!(v && v.fx != null && v.fy != null && v.fx + v.fy > 0);
         r.n.classList.toggle("v34", v34);
+        // (Fase 75) La tapa también se toca (para agarrar el mueble por arriba, donde se ve).
+        r.tapa34 = v34 ? Math.max(0, v.fy - 4) : 0;
+        if (v34) r.n.style.setProperty("--tapa34", v.fy - 4 + "px"); else r.n.style.removeProperty("--tapa34");
         if (v) { arte.insertAdjacentHTML("afterbegin", `<img class="ca-plana${v34 ? " ca-34" : ""}" alt="" draggable="false" decoding="sync" src="${v.url}" style="width:${v.w}px;height:${v.h}px${v34 ? `;left:${-v.fx}px;top:${-v.fy}px` : ""}">`); marcarQuieto(arte.querySelector(":scope > svg")); r.n.classList.add("plana"); }
         this._reponer3d(r);
       };
       const ya = vistaFrenteYa(r.d, o.e, C), vacio = !arte.firstChild;
-      if (ya) frente(ya);
+      if (ya) { frente(ya); r._listo = null; }
       else {
-        if (vacio) { frente(null); r.n.classList.add("preparando"); setTimeout(() => r.n.classList.remove("preparando"), 900); }
-        vistaFrente(r.d, o.e, C).then((v) => { if (r._tg === t && r.n.isConnected) frente(v); });
+        // (Fase 75) Sin parpadeos: lo nuevo se queda escondido hasta que su imagen pixel esté lista (ya no se asoma el
+        // dibujo liso y luego cambia); si algo falla, después de un buen rato se muestra el dibujo de siempre.
+        if (vacio) { frente(null); r.n.classList.add("preparando"); setTimeout(() => { if (r._tg === t) r.n.classList.remove("preparando"); }, 6000); }
+        r._listo = vistaFrente(r.d, o.e, C).then((v) => { if (r._tg === t && r.n.isConnected) frente(v); }, () => { if (r._tg === t) frente(null); });
       }
     } else if (!g || !r.vg) { arte.innerHTML = r.d.arte(o.e || {}, C); r.n.classList.remove("plana", "v34"); if (r.vg) { r.vg = null; this._colocar(r); } this._reponer3d(r); }
     r.n.classList.toggle("girado", !!g);
@@ -1133,17 +1157,42 @@ export class Casita {
   /** ¿Está encima de un mueble (sobre su tablero)? Con el piso hondo, una mesa de adelante tiene su tablero más abajo que el fondo. */
   _encima(gx, y, sinId) {
     const a = this._apoyo(gx, y, sinId);
-    return a && Math.abs(a.y - y) <= 3 && (y < FONDO || a.r.o.y > y + 4) ? a : null;
+    return a && y >= a.yb - 3 && y <= a.y + 3 && (y < FONDO || a.r.o.y > y + 4) ? a : null;
   }
+  /** (Fase 75) La tapa de un mueble con volumen tiene hondura: de su orilla de enfrente (`y`) a la de atrás (`yb`). Lo
+   *  que pongas encima se queda a la hondura donde lo soltaste (adelante o atrás de la tapa), no siempre en la orilla. */
   _apoyo(gx, y, sinId) {
-    let mejor = null;
+    let mejor = null, dentro = null;
     for (const r of this.objs.values()) {
       if (r.o.id === sinId || (r.d.tope == null && !r.d.topes) || Math.abs(gx - r.gx) > r.d.w / 2 - 4) continue;
       // (Fase 68) Un estante tiene varios niveles: se queda en el de abajo de donde lo sueltas.
-      for (const t of r.d.topes || [r.d.tope]) {
-        const tope = r.o.y - r.d.h + t;
-        if (tope < y - 16) continue;
-        if (!mejor || tope < mejor.y) mejor = { y: tope, r };
+      const ts = r.d.topes || [r.d.tope], arriba = Math.min(...ts);
+      for (const t of ts) {
+        const tope = r.o.y - r.d.h + t, hondo = t === arriba ? hondoTapa(r) : 0;
+        if (tope < y - 16 - hondo) continue;
+        const a = { y: tope, yb: tope - hondo, r };
+        // (Fase 75) Si ya está sobre esta tapa (entre su orilla de enfrente y la de atrás), es ésta; si dos se enciman, la de más adelante.
+        if (y >= a.yb - 3 && y <= a.y + 3 && (!dentro || r.o.y > dentro.r.o.y)) dentro = a;
+        if (!mejor || tope < mejor.y) mejor = a;
+      }
+    }
+    return dentro || mejor;
+  }
+  /** (Fase 75) Arrastrando una cosita: ¿qué tapa está debajo de lo que ves? Los muebles de atrás se ven más chicos (la
+   *  perspectiva del cuarto), así que el dedo se lleva a la escala de cada mueble; si cae en su tapa (entre la orilla de
+   *  enfrente y la de atrás), ahí se posa, a esa hondura. Si hay dos, el de más adelante (el que se ve encima). */
+  _posar(r, X, yv) {
+    const c = this.vistaCuarto, afuera = cuarto(c).afuera;
+    let mejor = null;
+    for (const q of this.objs.values()) {
+      if (q === r || q.o.c !== c || (q.d.tope == null && !q.d.topes)) continue;
+      const prof = Math.max(PISO, Math.min(H, q.o.y)), s = afuera ? 1 : escala3d(c, prof), gx = desproyectar(X, prof);
+      if (Math.abs(gx - q.gx) > q.d.w / 2 - 4) continue;
+      const yw = q.o.y - (q.o.y - yv) / s, ts = q.d.topes || [q.d.tope], arriba = Math.min(...ts);
+      for (const t of ts) {
+        const tope = q.o.y - q.d.h + t, hondo = t === arriba ? hondoTapa(q) : 0, yb = tope - hondo;
+        if (yw < yb - 12 || yw > tope + 8) continue;
+        if (!mejor || q.o.y > mejor.q.o.y) mejor = { q, x: gx, y: Math.max(yb, Math.min(tope, yw)), prof: q.o.y };
       }
     }
     return mejor;
@@ -2015,7 +2064,7 @@ export class Casita {
       // (Fase 64) Con el mouse, arrastrar el piso mueve la cámara (como deslizar con el dedo).
       if (e.pointerType === "mouse" && !this.editando && !g.mono && !g.obj) g.pan = { sl: this.vistaN.scrollLeft, st: this.vistaN.scrollTop };
       if (this.editando || g.jugando) {
-        if (g.obj) g.off = { dx: (g.obj.v?.x ?? g.obj.gx) - p.X, dy: g.obj.o.y - p.y };
+        if (g.obj) g.off = { dx: (g.obj.v?.x ?? g.obj.gx) - p.X, dy: (g.obj.v?.y ?? g.obj.o.y) - p.y };   // (Fase 75: desde el pie que se ve)
         // (Fase 73) Acomodando con el dedo, lo que NO está elegido no se mueve al deslizar (deslizar mueve la vista):
         // para moverlo, tócalo primero, o déjalo presionado un ratito (se elige, vibra y ya lo llevas).
         if (g.obj && this.editando && e.pointerType !== "mouse" && this.sel !== g.obj) {
@@ -2408,7 +2457,11 @@ export class Casita {
     // (Fase 64) Se puede levantar a donde sea (si no hay de qué sostenerse, al soltarlo se cae) y lo de la pared también
     // se puede bajar al piso. Lo alfombrado sólo va en el piso.
     const cu0 = cuarto(this.vistaCuarto), techo = cu0.mapa ? -MAPA.arriba + 10 : -this.offY / this.k + 6, fr = frenteDe(this.vistaCuarto);
+    // (Fase 75) Acomodando, un mueble del piso se queda en el piso (antes se podía subir a la pared y al soltarlo caía
+    // hasta atrás: parecía que se iba a un lugar cualquiera). Lo chiquito sí se levanta, para ponerlo encima de algo.
+    const muebleDePiso = !g.jugando && d.capa === "piso" && !d.mascota && !puedeSubir(d) && !d.techo;
     if (d.capa === "alfombra") y = lim(y, FONDO + 24, fr);
+    else if (muebleDePiso) y = lim(y, FONDO + 8, fr - 4);
     else y = lim(y, techo + d.h, fr + 4);
     // (Fase 71) Un foco del techo sólo se recorre de lado (sigue colgado). Jugando sí se puede jalar… y se cae.
     if (d.techo && !g.jugando) y = d.y;
@@ -2420,9 +2473,21 @@ export class Casita {
     const gx = lim(desproyectar(p.X + g.off.dx, enAire ? PISO : lim(y, PISO, H)), x0 + d.w * 0.3, x1 - d.w * 0.3);
     g.vx = 0.7 * g.vx + 0.3 * (gx - (g.gx ?? gx));
     g.gx = gx; g.y = y;
-    this._ponerObj(r, gx, y, enAire ? PISO : y);
+    // (Fase 75) LO QUE VES ES DONDE QUEDA: si encima de otro mueble no cabe, se recorre poquito (lo más cerca libre) y
+    // así se ve mientras lo arrastras; si cerca no hay lugar, se pinta en rojo y al soltarlo regresa a donde estaba.
+    let px = gx, py = y, pf = enAire ? PISO : py, pos = null;
+    if (muebleDePiso && d.capa === "piso" && !d.portatil) {
+      g.hs ||= this._huellasOtros(r);
+      const L = this._libreCerca(r, gx, y, g.hs);
+      g.dest = L; if (L) { px = L.x; py = L.y; }
+    } else if (!g.jugando && puedeSubir(d) && (pos = this._posar(r, p.X + g.off.dx, y))) {
+      // (Fase 75) Sobre la tapa de un mueble: se ve posada justo donde se va a quedar (con su escala y su hondura).
+      g.dest = { x: pos.x, y: pos.y }; px = pos.x; py = pos.y; pf = pos.prof;
+    } else g.dest = undefined;
+    r.n.classList.toggle("posado", !!pos);
+    this._ponerObj(r, px, py, pf);
     // (Al pasar por donde no se puede acomodar, se nota.)
-    if (!g.jugando) r.n.classList.toggle("no-cabe", !this._sePuede(r, gx, y));
+    if (!g.jugando) r.n.classList.toggle("no-cabe", g.dest === null || !this._sePuede(r, px, py));
     for (const n of [r.n, r.fr]) n?.style.setProperty("--incl", lim(g.vx * 1.4, -9, 9).toFixed(1) + "deg");
     r.n.style.zIndex = 9000; if (r.fr) r.fr.style.zIndex = 9001;
     if (!g.jugando) {
@@ -2435,6 +2500,28 @@ export class Casita {
   }
   /** (Fase 61) El lugar libre más cercano para un mueble del piso: sin encimarse en otro ni salirse del cuarto.
    *  Se recorre poquito de lado (nunca brinca lejos); si ahí no cabe, un pasito al frente; si tampoco, se queda donde lo soltaste. */
+  /** (Fase 75) Las huellas en el piso de los demás muebles del cuarto (para no encimarse), una vez por arrastre. */
+  _huellasOtros(r) {
+    const c = r.o.c;
+    return [...this.objs.values()].filter((q) => q !== r && q.o.c === c && q.d.capa === "piso" && !q.d.mascota && !q.d.portatil && !(puedeSubir(q.d) && this._encima(q.gx, q.o.y, q.o.id))).map((q) => this.nav.huella(q)).filter(Boolean);
+  }
+  /** (Fase 75) El lugar libre MÁS CERCANO a donde lo llevas, sin irse lejos (a lo más ~60): si no hay, null (no cabe). */
+  _libreCerca(r, gx, y, hs) {
+    const { c } = enCuarto(gx), x0 = inicioDe(c), cw = cuarto(c).w, w2 = r.d.w / 2, a = x0 + w2 + 4, b = x0 + cw - w2 - 4, fr = frenteDe(c);
+    const libre = (x, yy) => {
+      if (x < a || x > b || yy < FONDO + 4 || yy > fr - 4) return false;
+      const h = this.nav.huella({ d: r.d, o: { ...r.o, id: "", y: yy }, gx: x });
+      return !h || !hs.some((q) => h.x0 < q.x1 - 2 && h.x1 > q.x0 + 2 && h.y0 < q.y1 - 2 && h.y1 > q.y0 + 2);
+    };
+    const xx = lim(gx, a, b);
+    if (libre(xx, y)) return { x: xx, y };
+    let mejor = null, dm = 1e9;
+    for (let dx = -60; dx <= 60; dx += 6) for (const dy of [0, 10, -10, 20, -20, 30, -30]) {
+      const dd = Math.hypot(dx, dy * 1.6);
+      if (dd < dm && libre(xx + dx, y + dy)) { dm = dd; mejor = { x: xx + dx, y: y + dy }; }
+    }
+    return mejor;
+  }
   _libre(r, gx, y) {
     const { c } = enCuarto(gx), x0 = inicioDe(c), cw = cuarto(c).w, w2 = r.d.w / 2, a = x0 + w2 + 4, b = x0 + cw - w2 - 4;
     const todos = [...this.objs.values()].filter((q) => q !== r && q.o.c === c && q.d.capa === "piso" && !q.d.mascota && !q.d.portatil && !(puedeSubir(q.d) && this._encima(q.gx, q.o.y, q.o.id)));
@@ -2493,10 +2580,13 @@ export class Casita {
     this.arrastrandoId = null;
     this.raiz.classList.remove("arrastrando");
     this.basuraN.classList.remove("ver", "encima");
-    for (const n of [r.n, r.fr]) { if (!n) continue; n.classList.remove("levantado", "a-la-basura"); n.style.removeProperty("--incl"); }
+    for (const n of [r.n, r.fr]) { if (!n) continue; n.classList.remove("levantado", "a-la-basura", "posado"); n.style.removeProperty("--incl"); }
     if (r.glow) r.glow.hidden = false;
     if (g.basura) { this._colocar(r); this._borrar(r); return; }
     if (g.gx == null) { this._colocar(r); return; }
+    // (Fase 75) Acomodando: donde no cabe (se veía en rojo), regresa a su lugar; si cabe, queda justo donde se veía.
+    if (!g.jugando && g.dest === null) { r.n.classList.remove("no-cabe"); this._colocar(r); this._noAqui(); aviso("Ahí no cabe: regresó a su lugar", 1800); this._seleccionar(r); return; }
+    if (!g.jugando && g.dest) { g.gx = g.dest.x; g.y = g.dest.y; }
     // (Fase 69) Una cosita soltada encima de un organizador se guarda adentro, en el siguiente hueco libre.
     { const q = this._guardaEn(r, g.gx, g.y); if (q) { this._guardar(q, r); return; } }
     // Física: si lo aventaste, vuela según qué tan fuerte (y lo redondo rueda más); si quedó en el aire, cae al mueble
@@ -2514,8 +2604,10 @@ export class Casita {
     } else if (puedeSubir(d)) {
       const a = this._apoyo(g.gx, g.y, r.o.id);
       // En el aire: cae al mueble de abajo o al piso. En el piso, pero sobre el tablero de un mueble de más adelante: se queda encima.
-      if (g.y < FONDO) g.y = a ? a.y : FONDO + 8;
-      else if (a && a.r.o.y > g.y + 4 && a.y <= g.y + 30) g.y = a.y;
+      // (Fase 75) Sobre la tapa se queda a la hondura donde lo soltaste (entre la orilla de enfrente y la de atrás).
+      const sobre = (yy) => (a && yy >= a.yb - 16 && yy <= a.y ? Math.max(a.yb, yy) : a ? a.y : yy);
+      if (g.y < FONDO) g.y = a ? sobre(g.y) : FONDO + 8;
+      else if (a && a.r.o.y > g.y + 4 && a.y <= g.y + 30) g.y = sobre(g.y);
     } else if (g.y < FONDO) g.y = cuarto(c0).mapa ? MAPA.fondo + 34 : FONDO + 8;
     const cayo = Math.max(0, g.y - soltadoEn), encima = puedeSubir(d) && !!this._encima(g.gx, g.y, r.o.id);
     // (Fase 64) Donde no se puede acomodar (lo naranja): se recorre al lugar permitido más cercano. Jugando, al piso libre.
@@ -2524,7 +2616,7 @@ export class Casita {
       else if (!this._editableEn(c0, g.gx, g.y)) { const L = this._lugarEditable(c0, g.gx, g.y); if (L) { g.gx = L.x; g.y = L.y; } this._noAqui(); }
     }
     // (Fase 61) Colisiones al acomodar: un mueble del piso no se mete dentro de otro; se recorre al lugar libre más cercano.
-    if (d.capa === "piso" && !d.mascota && !d.portatil && !encima) { const L = this._libre(r, g.gx, g.y); g.gx = L.x; g.y = L.y; }
+    if (d.capa === "piso" && !d.mascota && !d.portatil && !encima && !(!g.jugando && g.dest)) { const L = this._libre(r, g.gx, g.y); g.gx = L.x; g.y = L.y; }
     // (Fase 72) Una tira de río o de camino soltada junto a otra se pega sola, boca con boca.
     if (d.tira) { const B = this._pegarTira(r.d, r.o.f, g.gx, g.y, c0, r.o.id); if (B) { g.gx = B.x; g.y = B.y; this.sonar("clic", { volumen: 0.4 }); } }
     // (Fase 65) Una escoba no se para solita: se recarga en lo de junto o en la pared, o se cae al piso.

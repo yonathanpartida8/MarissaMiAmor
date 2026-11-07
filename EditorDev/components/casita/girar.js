@@ -20,6 +20,42 @@
 import { PAL, rampa } from "./catalogo/pixel.js";
 
 const PX = 4, ELEV = 0.36, CACHE = new Map(), PEND = new Map(), PODADO = new Map();
+/**
+ * (Fase 75) SIN PARPADEOS: las vistas de frente ya hechas (pixel plano o con volumen) se guardan en el teléfono
+ * (IndexedDB). La siguiente vez que abres el juego (y las miniaturas de «Acomodar») salen al instante, sin pasar por el
+ * dibujo liso ni aparecer de a poquito. Si cambia la forma de dibujar, cambia VER_VISTAS y se hacen de nuevo.
+ */
+const VER_VISTAS = "75b", BD_VISTAS = "casita-vistas";
+let BD = null;
+const abrirBD = () => new Promise((ok) => {
+  try {
+    const q = indexedDB.open(BD_VISTAS, 1);
+    q.onupgradeneeded = () => { try { q.result.createObjectStore("v"); } catch (e) { /* ya existe */ } };
+    q.onsuccess = () => ok(q.result); q.onerror = () => ok(null); q.onblocked = () => ok(null);
+  } catch (e) { ok(null); }
+});
+export const vistasListas = (async () => {
+  try {
+    BD = await Promise.race([abrirBD(), new Promise((ok) => setTimeout(() => ok(null), 1500))]);
+    if (!BD) return;
+    const st = BD.transaction("v", "readonly").objectStore("v");
+    const [ks, vs] = await Promise.all([new Promise((ok) => { const q = st.getAllKeys(); q.onsuccess = () => ok(q.result || []); q.onerror = () => ok([]); }), new Promise((ok) => { const q = st.getAll(); q.onsuccess = () => ok(q.result || []); q.onerror = () => ok([]); })]);
+    const viejas = [];
+    ks.forEach((k, i) => { const [ver, ...resto] = String(k).split("§"); if (ver === VER_VISTAS) { if (!CACHE.has(resto.join("§"))) CACHE.set(resto.join("§"), vs[i]); } else viejas.push(k); });
+    if (viejas.length) { const tx = BD.transaction("v", "readwrite"); for (const k of viejas) tx.objectStore("v").delete(k); }
+  } catch (e) { /* sin memoria: se hacen como siempre */ }
+})();
+const POR_GUARDAR = new Map();
+let tGuardar = 0;
+/** Guarda (en ratitos, juntando varias) una vista de frente: sólo lo que hace falta para pintarla. */
+function recordar(clave, v) {
+  if (!v || !BD) return;
+  POR_GUARDAR.set(clave, v.plano ? { plano: true } : { url: v.url, w: v.w, h: v.h, fx: v.fx, fy: v.fy, ax: v.ax, ay: v.ay, frente: true });
+  clearTimeout(tGuardar);
+  tGuardar = setTimeout(() => {
+    try { const tx = BD.transaction("v", "readwrite"), st = tx.objectStore("v"); for (const [k, x] of POR_GUARDAR) st.put(x, VER_VISTAS + "§" + k); POR_GUARDAR.clear(); } catch (e) { /* nada */ }
+  }, 1200);
+}
 export const ELEV_GIRO = ELEV;
 export const pasoGiro = 90;
 /** Cómo se llama cada una de las cuatro vistas. */
@@ -260,7 +296,15 @@ export function vistaGirada(d, e, C, g) {
         // Una franja de hasta tres renglones (una costura, la orilla de un cojín) se une a la de junto: no hace raya.
         for (let v = 0; v < H;) {
           let w = v; while (w + 1 < H && o[w + 1] && o[v] && o[w + 1] === o[v]) w++;
-          if (o[v] && w - v + 1 <= 3) { const vecino = (v > 0 && o[v - 1]) || (w + 1 < H && o[w + 1]); if (vecino) for (let q = v; q <= w; q++) o[q] = vecino; }
+          if (o[v] && w - v + 1 <= 3) {
+            // (Fase 75) Se une a la de junto que sea del mismo mueble (mismo ancho; no lo que está puesto encima, como la
+            // cafetera sobre la cubierta) y, si las dos lo son, a la que más se le parece.
+            const ar = v > 0 && o[v - 1], ab = w + 1 < H && o[w + 1], ancho = (q) => Math.abs(a0[q] - a0[v]) + Math.abs(b0[q] - b0[v]) <= 2;
+            const dd = (x) => Math.abs(x[0] - o[v][0]) + Math.abs(x[1] - o[v][1]) + Math.abs(x[2] - o[v][2]);
+            let vecino = ar || ab;
+            if (ar && ab) { const sa = ancho(v - 1), sb = ancho(w + 1); vecino = sa !== sb ? (sa ? ar : ab) : dd(ar) <= dd(ab) ? ar : ab; }
+            if (vecino) for (let q = v; q <= w; q++) o[q] = vecino;
+          }
           v = w + 1;
         }
       }
@@ -469,7 +513,20 @@ let COLA = Promise.resolve();
 export const con34 = (d) => d.capa === "piso" && !d.mascota && !d.noGira && !d.ya34 && d.k !== "cosita" && !soloFrenteAtras(d);
 const claveFrente = (d, e, C) => { const partes0 = separar(d.arte(e || {}, C)); let q = partes0.quieto; if (d.frente) q = q.replace(/<\/svg>\s*$/, separar(d.frente(e || {}, C)).quieto.replace(/^<svg[^>]*>/, "")); return `${d.k}|${huella(q)}|0|74`; };
 export function vista34Ya(d, e, C) { try { const v = CACHE.get(claveFrente(d, e, C)); return v && !v.plano ? v : null; } catch (er) { return null; } }
-export function vista34(d, e, C) { return vistaGirada(d, e, C, 0).then((v) => (v && !v.plano ? v : null)); }
+export function vista34(d, e, C) {
+  let k; try { k = claveFrente(d, e, C); } catch (er) { return Promise.resolve(null); }
+  const ya = CACHE.get(k);
+  if (ya) return Promise.resolve(ya.plano ? null : ya);
+  const pr = (COLA = COLA.then(async () => {
+    await vistasListas;
+    if (CACHE.has(k)) return CACHE.get(k);
+    await new Promise((r) => setTimeout(r, 0));   // (deja pintar un cuadro entre una y otra)
+    const v = await vistaGirada(d, e, C, 0);
+    recordar(k, v);
+    return v;
+  }));
+  return pr.then((v) => (v && !v.plano ? v : null), () => null);
+}
 /** (Fase 74) La vista de frente que le toca: con volumen si va en el piso; si no (o si casi todo se mueve), la plana. */
 export function vistaFrente(d, e, C) { return con34(d) ? vista34(d, e, C).then((v) => v || vistaPlana(d, e, C)) : vistaPlana(d, e, C); }
 export function vistaFrenteYa(d, e, C) { return con34(d) ? vista34Ya(d, e, C) : vistaPlanaYa(d, e, C); }
@@ -482,6 +539,8 @@ export function vistaPlana(d, e, C) {
   if (CACHE.has(clave)) return Promise.resolve(CACHE.get(clave));
   if (PEND.has(clave)) return PEND.get(clave);
   const pr = (COLA = COLA.then(async () => {
+    await vistasListas;
+    if (CACHE.has(clave)) { PEND.delete(clave); return CACHE.get(clave); }
     await new Promise((r) => setTimeout(r, 0));
     try {
       const { cw, ch, out } = await rejilla(d, partes.quieto);
@@ -490,7 +549,7 @@ export function vistaPlana(d, e, C) {
       const cv = document.createElement("canvas"); cv.width = OW2; cv.height = OH2;
       cv.getContext("2d").putImageData(new ImageData(o2, OW2, OH2), 0, 0);
       const r = { url: cv.toDataURL(), w: OW2 * PX, h: OH2 * PX };
-      CACHE.set(clave, r);
+      CACHE.set(clave, r); recordar(clave, r);
       if (CACHE.size > 700) CACHE.delete(CACHE.keys().next().value);
       return r;
     } catch (er) { return null; } finally { PEND.delete(clave); }
